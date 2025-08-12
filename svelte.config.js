@@ -25,7 +25,7 @@ const config = {
 					'https://4i7mo0wwc3lp8d1e.public.blob.vercel-storage.com',
 					'https://blob.vercel-storage.com'
 				],
-				'font-src': ["'self'", "'data:font/woff'"],
+				'font-src': ["'self'", 'data:'],
 				'connect-src': [
 					"'self'",
 					'https://tile.openstreetmap.org',
