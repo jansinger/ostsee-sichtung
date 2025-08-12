@@ -1,11 +1,4 @@
 {
-  "name": "ostseesichtung",
-  "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": ".svelte-kit/output/client",
-  "framework": "sveltekit",
-  "installCommand": "npm ci",
-  "devCommand": "npm run dev",
   "headers": [
     {
       "source": "/(.*)",
@@ -57,21 +50,5 @@
       "destination": "/",
       "permanent": true
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/uploads/(.*)",
-      "destination": "/uploads/$1"
-    }
-  ],
-  "crons": [
-    {
-      "path": "/api/cleanup/temp-files",
-      "schedule": "0 2 * * *"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production",
-    "STORAGE_PROVIDER": "vercel-blob"
-  }
+  ]
 }
