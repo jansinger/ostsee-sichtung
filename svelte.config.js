@@ -7,12 +7,7 @@ const config = {
 	// for more information about preprocessors
 	preprocess: vitePreprocess(),
 	kit: {
-		adapter: adapter({
-			// Vercel-specific configuration for function timeouts
-			runtime: 'nodejs20.x',
-			memory: 1024,
-			maxDuration: 30
-		}),
+		adapter: adapter(),
 
 		// CSP-Konfiguration
 		csp: {
