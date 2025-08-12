@@ -112,7 +112,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 				size: metadata.size,
 				mimeType: metadata.contentType || 'application/octet-stream',
 				lastModified: new Date(metadata.uploadedAt),
-				etag: (metadata as any).etag || 'unknown'
+				etag: 'etag' in metadata && typeof metadata.etag === 'string' ? metadata.etag : 'unknown'
 			};
 		} catch (error) {
 			logger.warn({ error, filePath }, 'Failed to get metadata from Vercel Blob');
@@ -122,7 +122,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 
 	async list(prefix?: string): Promise<UploadedFile[]> {
 		try {
-			const listOptions = { token: this.token } as any;
+			const listOptions: { token: string; prefix?: string } = { token: this.token };
 			if (prefix) {
 				listOptions.prefix = prefix;
 			}
@@ -134,7 +134,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 				fileName: basename(blob.pathname),
 				filePath: blob.pathname,
 				size: blob.size,
-				mimeType: (blob as any).contentType || 'application/octet-stream',
+				mimeType: 'contentType' in blob ? (blob as { contentType: string }).contentType : 'application/octet-stream',
 				url: blob.url,
 				uploadedAt: new Date(blob.uploadedAt).toISOString()
 			}));

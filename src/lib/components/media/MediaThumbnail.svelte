@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { UploadedFileInfo } from '$lib/types/types';
-	import { Play, FileText, Eye, Download, MapPin } from '@steeze-ui/lucide-icons';
+	import { Download, Eye, FileText, MapPin, Play } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
 	let {
@@ -44,7 +44,7 @@
 </script>
 
 <div
-	class="media-thumbnail group relative overflow-hidden rounded-lg bg-base-100 shadow-sm transition-all hover:shadow-md hover:scale-105 cursor-pointer"
+	class="media-thumbnail group bg-base-100 relative cursor-pointer overflow-hidden rounded-lg shadow-sm transition-all hover:scale-105 hover:shadow-md"
 	onclick={handleClick}
 	onkeydown={handleKeydown}
 	tabindex="0"
@@ -53,7 +53,7 @@
 >
 	{#if isImage(file.mimeType)}
 		<!-- Bild Thumbnail -->
-		<div class="aspect-square relative overflow-hidden">
+		<div class="relative aspect-square overflow-hidden">
 			<img
 				src={`/uploads/${file.filePath}`}
 				alt={file.originalName}
@@ -74,20 +74,24 @@
 			>
 				<Icon src={Eye} size="24" class="text-white" />
 			</div>
-			
+
 			<!-- GPS Badge für Bilder -->
 			{#if hasGPSData()}
-				<div class="absolute top-2 right-2 bg-success text-success-content rounded-full p-1 shadow-md">
+				<div
+					class="bg-success text-success-content absolute top-2 right-2 rounded-full p-1 shadow-md"
+				>
 					<Icon src={MapPin} size="12" />
 				</div>
 			{/if}
 		</div>
 	{:else if isVideo(file.mimeType)}
 		<!-- Video Thumbnail -->
-		<div class="aspect-square relative overflow-hidden bg-base-300 flex items-center justify-center">
+		<div
+			class="bg-base-300 relative flex aspect-square items-center justify-center overflow-hidden"
+		>
 			<!-- Video Preview (falls Browser unterstützt) -->
 			<video
-				src={`/uploads/${file.filePath}`}
+				src={`/${file.filePath}`}
 				class="h-full w-full object-cover"
 				muted
 				preload="metadata"
@@ -98,30 +102,33 @@
 			>
 				<track kind="captions" />
 			</video>
-			
+
 			<!-- Play Icon Overlay -->
 			<div class="absolute inset-0 flex items-center justify-center">
-				<div class="bg-black/60 rounded-full p-3 transition-all group-hover:bg-black/80 group-hover:scale-110">
+				<div
+					class="rounded-full bg-black/60 p-3 transition-all group-hover:scale-110 group-hover:bg-black/80"
+				>
 					<Icon src={Play} size="24" class="text-white" />
 				</div>
 			</div>
-			
+
 			<!-- Hover Overlay -->
 			<div
 				class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100"
-			>
-			</div>
+			></div>
 		</div>
 	{:else}
 		<!-- Andere Dateitypen -->
-		<div class="aspect-square relative overflow-hidden bg-base-200 flex items-center justify-center">
-			<div class="text-center p-4">
-				<Icon src={FileText} size="32" class="text-base-content/60 mb-2 mx-auto" />
-				<p class="text-xs text-base-content/60 truncate max-w-full">
+		<div
+			class="bg-base-200 relative flex aspect-square items-center justify-center overflow-hidden"
+		>
+			<div class="p-4 text-center">
+				<Icon src={FileText} size="32" class="text-base-content/60 mx-auto mb-2" />
+				<p class="text-base-content/60 max-w-full truncate text-xs">
 					{file.originalName}
 				</p>
 			</div>
-			
+
 			<!-- Hover Overlay -->
 			<div
 				class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100"
@@ -132,12 +139,12 @@
 	{/if}
 
 	<!-- File Info Footer -->
-	<div class="p-2 bg-base-100">
-		<p class="text-xs font-medium text-base-content truncate" title={file.originalName}>
+	<div class="bg-base-100 p-2">
+		<p class="text-base-content truncate text-xs font-medium" title={file.originalName}>
 			{file.originalName}
 		</p>
-		<div class="flex items-center justify-between mt-1">
-			<p class="text-xs text-base-content/60">
+		<div class="mt-1 flex items-center justify-between">
+			<p class="text-base-content/60 text-xs">
 				{formatFileSize(file.size)}
 			</p>
 			{#if isVideo(file.mimeType)}
@@ -209,7 +216,7 @@
 		.media-thumbnail {
 			border: 1px solid;
 		}
-		
+
 		/* Better visibility for overlays in high contrast mode */
 		.media-thumbnail:hover div {
 			background-color: rgba(0, 0, 0, 0.9) !important;
@@ -221,7 +228,7 @@
 		.media-thumbnail {
 			min-height: 100px;
 		}
-		
+
 		.p-2 {
 			padding: 0.5rem;
 		}
@@ -230,7 +237,15 @@
 	/* Loading state for images */
 	img {
 		background-color: oklch(var(--b2));
-		background-image: linear-gradient(45deg, transparent 25%, oklch(var(--b3)) 25%, oklch(var(--b3)) 50%, transparent 50%, transparent 75%, oklch(var(--b3)) 75%);
+		background-image: linear-gradient(
+			45deg,
+			transparent 25%,
+			oklch(var(--b3)) 25%,
+			oklch(var(--b3)) 50%,
+			transparent 50%,
+			transparent 75%,
+			oklch(var(--b3)) 75%
+		);
 		background-size: 20px 20px;
 		animation: loading 1s linear infinite;
 	}
