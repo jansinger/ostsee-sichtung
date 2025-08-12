@@ -22,9 +22,10 @@ const config = {
 					'https://tile.openstreetmap.org',
 					'https://tiles.openseamap.org',
 					'https://*.tile.openstreetmap.org',
-					'https://4i7mo0wwc3lp8d1e.public.blob.vercel-storage.com'
+					'https://4i7mo0wwc3lp8d1e.public.blob.vercel-storage.com',
+					'https://blob.vercel-storage.com'
 				],
-				'font-src': ["'self'"],
+				'font-src': ["'self'", "'data:'"],
 				'connect-src': [
 					"'self'",
 					'https://tile.openstreetmap.org',
