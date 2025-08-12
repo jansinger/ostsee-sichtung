@@ -91,9 +91,17 @@ export class VercelBlobStorageProvider implements StorageProvider {
 	}
 
 	getUrl(filePath: string): string {
-		// Vercel Blob URLs are returned during upload, but we can construct them
-		// This is a fallback - ideally we store the actual URL from upload
-		return `https://blob.vercel-storage.com/${filePath}`;
+		// Vercel Blob stores files with a token-based URL pattern
+		// The token is embedded in the storage configuration
+		// Files are accessible via: https://[token-prefix].public.blob.vercel-storage.com/[filepath]
+		
+		// Extract the token prefix from the BLOB_READ_WRITE_TOKEN
+		// Format: vercel_blob_rw_[prefix]_[suffix]
+		const tokenParts = this.token.split('_');
+		const tokenPrefix = tokenParts[3]; // The prefix part after vercel_blob_rw_
+		
+		// Construct the public URL
+		return `https://${tokenPrefix}.public.blob.vercel-storage.com/${filePath}`;
 	}
 
 	async getMetadata(filePath: string): Promise<FileMetadata | null> {
