@@ -1,0 +1,27 @@
+<svg width="200" height="120" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="harborSpots" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" fill="#8e7645"/>
+      <circle cx="4" cy="4" r="1.5" fill="#5d4e37"/>
+    </pattern>
+  </defs>
+  
+  <!-- Körper -->
+  <ellipse cx="110" cy="70" rx="55" ry="22" fill="url(#harborSpots)"/>
+  
+  <!-- Kopf (rundlich) -->
+  <circle cx="50" cy="70" r="20" fill="url(#harborSpots)"/>
+  
+  <!-- V-förmige Nasenlöcher -->
+  <path d="M32 70 L30 68 L28 70 L30 72 L32 70" fill="black"/>
+  
+  <!-- Flossen -->
+  <ellipse cx="95" cy="85" rx="12" ry="6" fill="#6b5b3a"/>
+  <ellipse cx="95" cy="55" rx="12" ry="6" fill="#6b5b3a"/>
+  <ellipse cx="155" cy="70" rx="18" ry="10" fill="#6b5b3a"/>
+  
+  <!-- Auge (relativ klein) -->
+  <circle cx="40" cy="65" r="2.5" fill="black"/>
+  
+  <text x="100" y="110" text-anchor="middle" font-family="Arial" font-size="12" fill="#2c3e50">Seehund</text>
+</svg>

@@ -1,0 +1,37 @@
+<svg width="200" height="120" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="humpbackPattern" x="0" y="0" width="15" height="15" patternUnits="userSpaceOnUse">
+      <rect width="15" height="15" fill="#2c3e50"/>
+      <circle cx="7.5" cy="7.5" r="3" fill="white"/>
+    </pattern>
+  </defs>
+  
+  <!-- Körper -->
+  <ellipse cx="110" cy="75" rx="70" ry="22" fill="url(#humpbackPattern)"/>
+  
+  <!-- Kopf mit Warzen -->
+  <ellipse cx="45" cy="75" rx="25" ry="18" fill="url(#humpbackPattern)"/>
+  
+  <!-- Warzen am Kopf -->
+  <circle cx="35" cy="70" r="2" fill="#7f8c8d"/>
+  <circle cx="30" cy="75" r="1.5" fill="#7f8c8d"/>
+  <circle cx="40" cy="80" r="2" fill="#7f8c8d"/>
+  
+  <!-- Höcker auf dem Rücken -->
+  <ellipse cx="95" cy="53" rx="8" ry="5" fill="#34495e"/>
+  
+  <!-- Kleine Rückenflosse auf Höcker -->
+  <path d="M95 48 L105 45 L100 58 Z" fill="#2c3e50"/>
+  
+  <!-- Sehr lange Brustflossen (bis 5m) -->
+  <ellipse cx="70" cy="90" rx="35" ry="8" fill="#34495e"/>
+  <ellipse cx="70" cy="60" rx="35" ry="8" fill="#34495e"/>
+  
+  <!-- Schwanzflosse -->
+  <path d="M180 75 L195 60 L200 70 L195 75 L200 80 L195 90 L180 75" fill="#2c3e50"/>
+  
+  <!-- Auge -->
+  <circle cx="30" cy="70" r="3" fill="black"/>
+  
+  <text x="100" y="110" text-anchor="middle" font-family="Arial" font-size="12" fill="#2c3e50">Buckelwal</text>
+</svg>

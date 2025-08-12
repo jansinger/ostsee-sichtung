@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Sichtungen iframe Test - Lokale Datei</title>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				margin: 20px;
+				background-color: #f5f5f5;
+			}
+
+			.container {
+				max-width: 1200px;
+				margin: 0 auto;
+				background: white;
+				border-radius: 8px;
+				box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+				overflow: hidden;
+			}
+
+			.header {
+				background: #2563eb;
+				color: white;
+				padding: 20px;
+				text-align: center;
+			}
+
+			.iframe-container {
+				position: relative;
+				width: 100%;
+				min-height: 800px;
+				padding: 0;
+			}
+
+			#sichtungen-iframe {
+				width: 100%;
+				height: 800px;
+				border: none;
+				display: block;
+			}
+
+			.info {
+				padding: 20px;
+				background: #f8f9fa;
+				border-top: 1px solid #dee2e6;
+				font-size: 14px;
+				color: #6c757d;
+			}
+
+			.status {
+				margin: 10px 0;
+				padding: 10px;
+				border-radius: 4px;
+				font-weight: bold;
+			}
+
+			.status.success {
+				background: #d4edda;
+				color: #155724;
+				border: 1px solid #c3e6cb;
+			}
+
+			.status.error {
+				background: #f8d7da;
+				color: #721c24;
+				border: 1px solid #f5c6cb;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<div class="header">
+				<h1>🐋 Sichtungen-WebApp iframe Test</h1>
+				<p>Test der iframe-Einbettung mit lokaler HTML-Datei (file:// URL)</p>
+			</div>
+
+			<div id="status" class="status">
+				<span id="status-text">Lade iframe...</span>
+			</div>
+
+			<div class="iframe-container">
+				<!-- Passen Sie die src-URL an Ihre lokale Entwicklungsumgebung an -->
+				<iframe
+					id="sichtungen-iframe"
+					src="http://localhost:4000"
+					title="Sichtungen WebApp"
+					allow="geolocation; camera; microphone"
+				>
+				</iframe>
+			</div>
+
+			<div class="info">
+				<h3>📋 Test-Informationen:</h3>
+				<ul>
+					<li><strong>Datei-URL:</strong> <code id="current-url"></code></li>
+					<li><strong>iframe-Quelle:</strong> <code>http://localhost:4000</code></li>
+					<li><strong>CSP frame-ancestors:</strong> Erlaubt <code>file:</code> URLs</li>
+					<li><strong>X-Frame-Options:</strong> SAMEORIGIN (erlaubt lokale Einbettung)</li>
+				</ul>
+
+				<h4>🧪 Erwartete Funktionalität:</h4>
+				<ul>
+					<li>✅ iframe lädt ohne CSP-Fehler</li>
+					<li>✅ Automatische Höhenanpassung funktioniert</li>
+					<li>✅ Formular ist vollständig funktionsfähig</li>
+					<li>✅ Datei-Uploads funktionieren</li>
+					<li>✅ OpenStreetMap-Karten laden korrekt</li>
+				</ul>
+
+				<div id="resize-log"></div>
+			</div>
+		</div>
+
+		<script>
+			// Aktuelle URL anzeigen
+			document.getElementById('current-url').textContent = window.location.href;
+
+			// iframe-Größenanpassung und Kommunikation
+			const iframe = document.getElementById('sichtungen-iframe');
+			const statusElement = document.getElementById('status');
+			const statusText = document.getElementById('status-text');
+			const resizeLog = document.getElementById('resize-log');
+
+			let resizeCount = 0;
+
+			// Nachricht vom iframe empfangen
+			window.addEventListener('message', function (event) {
+				// Sicherheitscheck: nur localhost-Messages akzeptieren
+				if (
+					!event.origin.startsWith('http://localhost:') &&
+					!event.origin.startsWith('https://localhost:')
+				) {
+					console.warn('Unbekannte iframe-Message-Origin:', event.origin);
+					return;
+				}
+
+				if (event.data.type === 'resize' && event.data.source === 'sichtungen-iframe') {
+					const newHeight = Math.max(600, event.data.height + 50); // Min 600px + Padding
+					iframe.style.height = newHeight + 'px';
+
+					resizeCount++;
+					statusElement.className = 'status success';
+					statusText.textContent = `✅ iframe erfolgreich geladen und kommuniziert (${resizeCount} Größenänderungen)`;
+
+					// Log-Eintrag hinzufügen
+					const logEntry = document.createElement('p');
+					logEntry.innerHTML = `<small>📏 Höhe angepasst: ${newHeight}px (${new Date().toLocaleTimeString()})</small>`;
+					resizeLog.appendChild(logEntry);
+
+					// Nur die letzten 5 Einträge behalten
+					while (resizeLog.children.length > 5) {
+						resizeLog.removeChild(resizeLog.firstChild);
+					}
+				}
+			});
+
+			// iframe-Load-Event
+			iframe.addEventListener('load', function () {
+				console.log('iframe erfolgreich geladen');
+
+				// Fallback falls keine resize-Messages kommen
+				setTimeout(() => {
+					if (resizeCount === 0) {
+						statusElement.className = 'status error';
+						statusText.textContent = '⚠️ iframe geladen, aber keine Kommunikation empfangen';
+					}
+				}, 3000);
+			});
+
+			// iframe-Error-Event
+			iframe.addEventListener('error', function () {
+				statusElement.className = 'status error';
+				statusText.textContent = '❌ iframe konnte nicht geladen werden - CSP-Fehler?';
+			});
+
+			// Test-Buttons hinzufügen
+			setTimeout(() => {
+				const testButtons = document.createElement('div');
+				testButtons.innerHTML = `
+                <h4>🧪 Test-Aktionen:</h4>
+                <button onclick="testIframeReload()">🔄 iframe neu laden</button>
+                <button onclick="testIframeResize()">📏 Größe testen</button>
+                <button onclick="checkCSPErrors()">🛡️ CSP-Errors prüfen</button>
+                <style>
+                    button {
+                        margin: 5px;
+                        padding: 8px 16px;
+                        border: none;
+                        background: #2563eb;
+                        color: white;
+                        border-radius: 4px;
+                        cursor: pointer;
+                    }
+                    button:hover { background: #1d4ed8; }
+                </style>
+            `;
+				document.querySelector('.info').appendChild(testButtons);
+			}, 1000);
+
+			function testIframeReload() {
+				iframe.src = iframe.src;
+				resizeCount = 0;
+				statusText.textContent = 'iframe wird neu geladen...';
+				statusElement.className = 'status';
+			}
+
+			function testIframeResize() {
+				iframe.contentWindow?.postMessage(
+					{
+						type: 'test-resize',
+						source: 'parent-frame'
+					},
+					'*'
+				);
+			}
+
+			function checkCSPErrors() {
+				const errors = [];
+				// Browser-Console auf CSP-Errors prüfen
+				console.info('🛡️ Prüfe Browser-Console auf CSP-Violation-Errors...');
+				alert('Prüfen Sie die Browser-Konsole (F12) auf CSP-Violation-Meldungen.');
+			}
+		</script>
+	</body>
+</html>

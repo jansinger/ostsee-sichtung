@@ -1,0 +1,28 @@
+<svg width="200" height="120" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="ringedPattern" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
+      <rect width="12" height="12" fill="#2c3e50"/>
+      <circle cx="6" cy="6" r="4" fill="none" stroke="#ecf0f1" stroke-width="1"/>
+    </pattern>
+  </defs>
+  
+  <!-- Körper (kleinste Robbenart) -->
+  <ellipse cx="110" cy="70" rx="50" ry="20" fill="url(#ringedPattern)"/>
+  
+  <!-- Kopf (rundlich) -->
+  <circle cx="55" cy="70" r="18" fill="url(#ringedPattern)"/>
+  
+  <!-- Nasenlöcher -->
+  <ellipse cx="40" cy="68" rx="1.5" ry="2" fill="black"/>
+  <ellipse cx="40" cy="72" rx="1.5" ry="2" fill="black"/>
+  
+  <!-- Flossen -->
+  <ellipse cx="95" cy="85" rx="10" ry="5" fill="#34495e"/>
+  <ellipse cx="95" cy="55" rx="10" ry="5" fill="#34495e"/>
+  <ellipse cx="150" cy="70" rx="15" ry="8" fill="#34495e"/>
+  
+  <!-- Große Augen -->
+  <circle cx="45" cy="65" r="3.5" fill="black"/>
+  
+  <text x="100" y="110" text-anchor="middle" font-family="Arial" font-size="12" fill="#2c3e50">Ringelrobbe</text>
+</svg>

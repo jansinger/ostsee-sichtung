@@ -22,3 +22,21 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+*.sql.gz
+
+# Development files
+drizzle
+tmp
+.tmp
+uploads
+!src/routes/uploads
+dev.log
+*.log
+
+# Test files
+test-results/
+coverage/
+
+# Archive (for reference only)
+archive/

@@ -1,0 +1,10 @@
+<iframe src="http://localhost:4000" width="100%" id="sichtungen-frame"> </iframe>
+
+<script>
+	// Automatische Höhenanpassung
+	window.addEventListener('message', (event) => {
+		if (event.data.type === 'resize') {
+			iframe.style.height = event.data.height + 'px';
+		}
+	});
+</script>

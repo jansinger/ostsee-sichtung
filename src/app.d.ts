@@ -2,11 +2,36 @@
 // for information about these interfaces
 declare global {
 	namespace App {
-		// interface Error {}
+		interface Error {
+			message?: string;
+			code?: string;
+		}
 		// interface Locals {}
 		// interface PageData {}
 		// interface PageState {}
 		// interface Platform {}
+	}
+}
+declare module 'yup' {
+	// Define your desired `SchemaMetadata` interface by merging the
+	// `CustomSchemaMetadata` interface.
+	export interface CustomSchemaMetadata {
+		placeholder?: string;
+		valueText?: string;
+		helpText?: string;
+		type?: string;
+		options?: Array<{
+			value: string | number;
+			label: string;
+			group?: string;
+			description?: string;
+		}>;
+		description?: string;
+		step?: number;
+		selectPlaceholder?: string;
+		rows?: number;
+		description?: string;
+		icon?: string | IconSource;
 	}
 }
 

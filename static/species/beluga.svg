@@ -1,0 +1,32 @@
+<svg width="200" height="120" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="belugaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8f9fa"/>
+      <stop offset="100%" style="stop-color:#e9ecef"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Körper -->
+  <ellipse cx="110" cy="70" rx="70" ry="25" fill="url(#belugaGradient)"/>
+  
+  <!-- Rundlicher Kopf (Melon) -->
+  <circle cx="45" cy="68" r="22" fill="url(#belugaGradient)"/>
+  
+  <!-- Keine Rückenflosse - nur kleine Erhebung -->
+  <ellipse cx="100" cy="45" rx="15" ry="3" fill="#dee2e6"/>
+  
+  <!-- Breite, paddelförmige Brustflossen -->
+  <ellipse cx="80" cy="85" rx="20" ry="10" fill="#dee2e6"/>
+  <ellipse cx="80" cy="55" rx="20" ry="10" fill="#dee2e6"/>
+  
+  <!-- Schwanzflosse -->
+  <path d="M180 70 L195 55 L200 65 L195 70 L200 75 L195 85 L180 70" fill="#dee2e6"/>
+  
+  <!-- Auge -->
+  <circle cx="35" cy="63" r="3" fill="black"/>
+  
+  <!-- Mund -->
+  <path d="M25 75 Q30 78 35 75" stroke="#6c757d" stroke-width="2" fill="none"/>
+  
+  <text x="100" y="110" text-anchor="middle" font-family="Arial" font-size="12" fill="#2c3e50">Beluga (Weißwal)</text>
+</svg>

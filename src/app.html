@@ -1,12 +1,89 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" href="%sveltekit.assets%/favicon.svg" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.ico" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>OstseeSichtung - Marine Tiere melden</title>
+		<meta
+			name="description"
+			content="OstseeSichtung - Melden Sie Ihre Wal- und Robbensichtung in der Ostsee. Helfen Sie der Meeresforschung mit Ihren Beobachtungen."
+		/>
+		<meta
+			name="keywords"
+			content="OstseeSichtung, Wal, Robbe, Sichtung, Ostsee, Meeresforschung, Schweinswal, Kegelrobbe, Baltic Sea, Marine Animals"
+		/>
+		<meta name="language" content="de" />
+		<meta name="robots" content="index, follow" />
+		<meta name="author" content="Deutsches Meeresmuseum" />
+		<meta name="application-name" content="OstseeSichtung" />
+
+		<!-- Security & Performance (iframe-freundlich) -->
+		<meta http-equiv="X-Content-Type-Options" content="nosniff" />
+		<meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
+		<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+		<meta name="format-detection" content="telephone=no" />
+
+		<!-- DNS Prefetch for external resources -->
+		<link rel="dns-prefetch" href="//tile.openstreetmap.org" />
+		<link rel="dns-prefetch" href="//tiles.openseamap.org" />
+
+		<!-- Preconnect for critical resources -->
+		<link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
+		<link rel="preconnect" href="https://tiles.openseamap.org" crossorigin />
+
+		<!-- Open Graph / Facebook -->
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content="OstseeSichtung - Marine Tiere melden" />
+		<meta property="og:site_name" content="OstseeSichtung" />
+		<meta
+			property="og:description"
+			content="OstseeSichtung - Melden Sie Ihre Wal- und Robbensichtung in der Ostsee. Jede Beobachtung hilft der Meeresforschung."
+		/>
+		<meta property="og:image" content="/dmm-logo.png" />
+
+		<!-- Twitter -->
+		<meta property="twitter:card" content="summary" />
+		<meta property="twitter:title" content="OstseeSichtung - Marine Tiere melden" />
+		<meta
+			property="twitter:description"
+			content="OstseeSichtung - Melden Sie Ihre Wal- und Robbensichtung in der Ostsee."
+		/>
+		<meta property="twitter:image" content="/dmm-logo.png" />
 		%sveltekit.head%
 	</head>
-	<body data-sveltekit-preload-data="hover">
+	<body data-sveltekit-preload-data="hover" class="iframe-mode">
 		<div style="display: contents">%sveltekit.body%</div>
+
+		<!-- iframe-spezifische Funktionalität -->
+		<script>
+			// Kommunikation mit Parent-Frame
+			if (window.parent !== window) {
+				// Benachrichtige Parent über Größenänderungen
+				function notifyParentOfResize() {
+					const height = document.body.scrollHeight;
+					window.parent.postMessage(
+						{
+							type: 'resize',
+							height: height,
+							source: 'sichtungen-iframe'
+						},
+						'*'
+					);
+				}
+
+				// ResizeObserver für automatische Größenanpassung
+				if (window.ResizeObserver) {
+					const resizeObserver = new ResizeObserver(notifyParentOfResize);
+					resizeObserver.observe(document.body);
+				}
+
+				// Fallback mit regelmäßiger Prüfung
+				setInterval(notifyParentOfResize, 1000);
+
+				// Initial resize
+				setTimeout(notifyParentOfResize, 100);
+			}
+		</script>
 	</body>
 </html>

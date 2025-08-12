@@ -1,0 +1,16 @@
+{
+	"extends": "./tsconfig.json",
+	"exclude": [
+		"node_modules/**/*",
+		"src/tools/**/*",
+		"archive/**/*",
+		"**/*.test.ts",
+		"**/*.spec.ts",
+		"vite.config.ts.timestamp-*"
+	],
+	"compilerOptions": {
+		"skipLibCheck": true,
+		"noUnusedLocals": false,
+		"noUnusedParameters": false
+	}
+}

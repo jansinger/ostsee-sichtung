@@ -1,0 +1,133 @@
+/* Anpassungen für OpenLayers Kontrollen in Vollbild */
+:global(.ol-zoom) {
+	top: 4.5rem;
+	left: 0.5rem;
+}
+
+:global(.ol-zoom button) {
+	background-color: rgba(255, 255, 255, 0.9) !important;
+	border: none !important;
+	border-radius: 4px !important;
+	color: #444 !important;
+	font-weight: bold !important;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+	margin: 2px !important;
+}
+
+:global(.ol-zoom button:hover) {
+	background-color: rgba(255, 255, 255, 1) !important;
+}
+
+:global(.zoom-all-control) {
+	top: 8.5rem;
+	left: 0.5rem;
+}
+
+:global(.zoom-all-control button) {
+	background-color: rgba(255, 255, 255, 0.9);
+	border: none;
+	border-radius: 4px;
+	color: #444;
+	cursor: pointer;
+	height: 2em;
+	width: 2em;
+	font-weight: bold;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+:global(.zoom-all-control button:hover) {
+	background-color: rgba(255, 255, 255, 1);
+}
+
+/* Attribution Kontrolle anpassen */
+:global(.ol-attribution) {
+	bottom: 0.5rem;
+	right: 0.5rem;
+	background-color: rgba(255, 255, 255, 0.8) !important;
+	border-radius: 4px !important;
+	font-size: 0.75rem !important;
+}
+
+:global {
+
+/* Die Panel-Styles sind jetzt in den Svelte-Komponenten selbst definiert */
+
+/* Vollbild-Layout */
+body,
+html {
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+/* Responsive Anpassungen für kleinere Bildschirme */
+@media (max-width: 768px) {
+	h1 {
+		font-size: 1.25rem !important;
+		padding: 0.5rem !important;
+	}
+	
+	/* Panel-Breite auf mobilen Geräten anpassen */
+	:global(.w-90) {
+		width: 100vw !important;
+	}
+	
+	/* OpenLayers Zoom-Buttons größer auf Touch-Geräten */
+	:global(.ol-zoom button) {
+		height: 2.5em !important;
+		width: 2.5em !important;
+		font-size: 1.2rem !important;
+	}
+	
+	:global(.zoom-all-control button) {
+		height: 2.5em !important;
+		width: 2.5em !important;
+		font-size: 1.2rem !important;
+	}
+	
+	/* Hilfe-Button größer auf mobilen Geräten */
+	.fixed.bottom-4.left-4 {
+		height: 3.5rem !important;
+		width: 3.5rem !important;
+		font-size: 1.5rem !important;
+	}
+}
+
+/* Info-Popup Styling */
+#info {
+	background: white;
+	border-radius: 4px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	border: 1px solid #e5e7eb;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	min-width: 200px;
+	z-index: 1000;
+	position: absolute;
+	background: white;
+	border-radius: 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+	border: 1px solid #ccc;
+	pointer-events: none;
+	font-size: 12px;
+	line-height: 1.4;
+	max-width: 250px;
+	word-wrap: break-word;
+}
+
+#info strong {
+	color: #1f2937;
+	font-weight: 600;
+}
+
+#info em {
+	color: #6b7280;
+	font-size: 0.75rem;
+}
+
+#info .p-2 {
+	padding: 8px;
+}
+
+/* Alle Panel-Styles sind jetzt in den Svelte-Komponenten selbst */
+}

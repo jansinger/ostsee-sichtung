@@ -1,0 +1,47 @@
+{
+	// Verwendet IntelliSense zum Ermitteln möglicher Attribute.
+	// Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
+	// Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "chrome",
+			"request": "launch",
+			"name": "Client: Chrome",
+			"url": "http://localhost:4000",
+			"webRoot": "${workspaceFolder}"
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Server: SvelteKit",
+			"program": "${workspaceFolder}/node_modules/vite/bin/vite.js",
+			"args": ["dev", "--port", "4000"],
+			"cwd": "${workspaceFolder}",
+			"console": "integratedTerminal",
+			"restart": true,
+			"autoAttachChildProcesses": true,
+			"sourceMaps": true,
+			"skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+			"outFiles": ["${workspaceFolder}/.svelte-kit/**/*.js"]
+		},
+		{
+			"name": "Full Stack: SvelteKit",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "npm run dev -- --port 4000",
+			"serverReadyAction": {
+				"pattern": "Local:\\s+http://localhost:(\\d+)",
+				"uriFormat": "http://localhost:%s",
+				"action": "debugWithChrome"
+			},
+			"sourceMaps": true
+		}
+	],
+	"compounds": [
+		{
+			"name": "Client + Server",
+			"configurations": ["Server: SvelteKit", "Client: Chrome"]
+		}
+	]
+}

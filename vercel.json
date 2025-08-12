@@ -1,0 +1,84 @@
+{
+  "name": "ostseesichtung",
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": ".svelte-kit/output/client",
+  "framework": "sveltekit",
+  "installCommand": "npm ci",
+  "functions": {
+    "src/routes/api/**/*.ts": {
+      "maxDuration": 30
+    },
+    "src/routes/uploads/**/*.ts": {
+      "maxDuration": 60
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options", 
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(self), payment=(), usb=()"
+        }
+      ]
+    },
+    {
+      "source": "/uploads/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/_app/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control", 
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/sichtung",
+      "destination": "/",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/uploads/(.*)",
+      "destination": "/uploads/$1"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cleanup/temp-files",
+      "schedule": "0 2 * * *"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "STORAGE_PROVIDER": "vercel-blob"
+  }
+}

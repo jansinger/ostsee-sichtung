@@ -1,0 +1,29 @@
+<svg width="200" height="120" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="unknownSealPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <rect width="20" height="20" fill="#95a5a6" opacity="0.3"/>
+      <text x="10" y="15" text-anchor="middle" font-size="12" fill="#2c3e50">?</text>
+    </pattern>
+  </defs>
+  
+  <!-- Generischer Robben-Körper -->
+  <ellipse cx="110" cy="70" rx="55" ry="22" fill="url(#unknownSealPattern)" stroke="#7f8c8d" stroke-width="2" stroke-dasharray="5,5"/>
+  
+  <!-- Generischer Kopf -->
+  <ellipse cx="50" cy="70" rx="20" ry="15" fill="url(#unknownSealPattern)" stroke="#7f8c8d" stroke-width="2" stroke-dasharray="5,5"/>
+  
+  <!-- Generische Flossen -->
+  <ellipse cx="95" cy="85" rx="12" ry="6" fill="#7f8c8d" opacity="0.7"/>
+  <ellipse cx="95" cy="55" rx="12" ry="6" fill="#7f8c8d" opacity="0.7"/>
+  <ellipse cx="155" cy="70" rx="15" ry="8" fill="#7f8c8d" opacity="0.7"/>
+  
+  <!-- Fragezeichen im Zentrum -->
+  <circle cx="110" cy="70" r="12" fill="white" stroke="#e74c3c" stroke-width="2"/>
+  <text x="110" y="77" text-anchor="middle" font-family="Arial" font-size="16" font-weight="bold" fill="#e74c3c">?</text>
+  
+  <!-- Unbekannte Nasenlöcher -->
+  <ellipse cx="32" cy="68" rx="2" ry="2" fill="#7f8c8d"/>
+  <ellipse cx="32" cy="72" rx="2" ry="2" fill="#7f8c8d"/>
+  
+  <text x="100" y="110" text-anchor="middle" font-family="Arial" font-size="12" fill="#2c3e50">Unbekannte Robbenart</text>
+</svg>

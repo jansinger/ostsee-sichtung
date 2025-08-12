@@ -1,0 +1,31 @@
+<svg width="200" height="120" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="minkeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2c3e50"/>
+      <stop offset="100%" style="stop-color:#bdc3c7"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Körper -->
+  <ellipse cx="100" cy="70" rx="80" ry="22" fill="url(#minkeGradient)"/>
+  
+  <!-- Spitzer Kopf -->
+  <path d="M20 70 L5 65 L5 75 L20 70" fill="url(#minkeGradient)"/>
+  
+  <!-- Sichelförmige Rückenflosse -->
+  <path d="M90 48 Q105 40 115 55 Q100 65 90 48" fill="#34495e"/>
+  
+  <!-- Weißes Band an Brustflossen -->
+  <ellipse cx="60" cy="80" rx="18" ry="8" fill="#34495e"/>
+  <ellipse cx="60" cy="80" rx="12" ry="4" fill="white"/>
+  <ellipse cx="60" cy="60" rx="18" ry="8" fill="#34495e"/>
+  <ellipse cx="60" cy="60" rx="12" ry="4" fill="white"/>
+  
+  <!-- Schwanzflosse -->
+  <path d="M180 70 L195 55 L200 65 L195 70 L200 75 L195 85 L180 70" fill="#34495e"/>
+  
+  <!-- Auge -->
+  <circle cx="25" cy="68" r="2" fill="black"/>
+  
+  <text x="100" y="110" text-anchor="middle" font-family="Arial" font-size="12" fill="#2c3e50">Zwergwal</text>
+</svg>

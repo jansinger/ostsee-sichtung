@@ -1,0 +1,30 @@
+<svg width="200" height="120" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dolphinGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#34495e"/>
+      <stop offset="100%" style="stop-color:#ecf0f1"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Körper -->
+  <ellipse cx="100" cy="70" rx="65" ry="18" fill="url(#dolphinGradient)"/>
+  
+  <!-- Kopf mit Rostrum -->
+  <ellipse cx="45" cy="70" rx="20" ry="12" fill="url(#dolphinGradient)"/>
+  <ellipse cx="15" cy="70" rx="15" ry="6" fill="url(#dolphinGradient)"/>
+  
+  <!-- Sichelförmige Rückenflosse -->
+  <path d="M85 52 Q100 45 110 55 Q95 60 85 52" fill="#2c3e50"/>
+  
+  <!-- Schwanzflosse -->
+  <path d="M165 70 L185 55 L195 65 L190 70 L195 75 L185 85 L165 70" fill="#2c3e50"/>
+  
+  <!-- Brustflossen -->
+  <ellipse cx="75" cy="80" rx="15" ry="5" fill="#2c3e50"/>
+  <ellipse cx="75" cy="60" rx="15" ry="5" fill="#2c3e50"/>
+  
+  <!-- Auge -->
+  <circle cx="35" cy="65" r="3" fill="black"/>
+  
+  <text x="100" y="110" text-anchor="middle" font-family="Arial" font-size="12" fill="#2c3e50">Delphin</text>
+</svg>

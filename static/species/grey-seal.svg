@@ -1,0 +1,28 @@
+<svg width="200" height="120" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="greySpots" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+      <rect width="10" height="10" fill="#95a5a6"/>
+      <circle cx="5" cy="5" r="2" fill="#34495e"/>
+    </pattern>
+  </defs>
+  
+  <!-- Körper -->
+  <ellipse cx="110" cy="70" rx="60" ry="25" fill="url(#greySpots)"/>
+  
+  <!-- Kopf (kegelförmig) -->
+  <path d="M50 70 L20 60 L15 70 L20 80 L50 70" fill="url(#greySpots)"/>
+  
+  <!-- Große Nasenlöcher -->
+  <ellipse cx="18" cy="67" rx="2" ry="3" fill="black"/>
+  <ellipse cx="18" cy="73" rx="2" ry="3" fill="black"/>
+  
+  <!-- Flossen -->
+  <ellipse cx="90" cy="90" rx="15" ry="8" fill="#7f8c8d"/>
+  <ellipse cx="90" cy="50" rx="15" ry="8" fill="#7f8c8d"/>
+  <ellipse cx="160" cy="70" rx="20" ry="12" fill="#7f8c8d"/>
+  
+  <!-- Auge -->
+  <circle cx="25" cy="70" r="3" fill="black"/>
+  
+  <text x="100" y="110" text-anchor="middle" font-family="Arial" font-size="12" fill="#2c3e50">Kegelrobbe</text>
+</svg>
