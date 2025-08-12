@@ -20,7 +20,7 @@ const logger = createLogger('api:sightings');
  */
 export const saveSighting = async (formData: SightingFormData): Promise<{ id: number }> => {
 	// Konvertiere Formulardaten in das Datenbankschema
-	const sightingData: NewSighting = await mapFormToSighting(formData);
+	const sightingData: NewSighting = mapFormToSighting(formData);
 
 	logger.info({ sightingData }, 'Speichere neue Sichtung');
 	// Führe Datenbankoperation aus
@@ -58,7 +58,7 @@ export const updateSighting = async (
 	formData: SightingFormData
 ): Promise<NewSighting | null> => {
 	// Konvertiere Formulardaten in das Datenbankschema
-	const sightingData: NewSighting = await mapFormToSighting(formData);
+	const sightingData: NewSighting = mapFormToSighting(formData);
 
 	// Entferne Felder, die nicht in der Datenbank gespeichert werden sollen
 	const { id: _id, created: _created, approvedAt: _approvedAt, ...rest } = sightingData;
@@ -91,24 +91,32 @@ export const loadSightingFiles = async (sightingId: number): Promise<UploadedFil
 	const filesWithExif = await Promise.all(
 		files.map(async (file) => {
 			let exifData = null;
-			
+
 			// EXIF-Daten nur für Bilder laden
 			if (isImageFile(file.mimeType)) {
 				try {
 					const fullPath = getUploadPath(file.filePath);
 					exifData = await readImageExifData(fullPath);
-					logger.debug({ 
-						fileId: file.id, 
-						filePath: file.filePath,
-						fullPath,
-						hasExif: !!exifData,
-						exifData: exifData ? {
-							hasGPS: !!(exifData.latitude && exifData.longitude),
-							hasCameraData: !!(exifData.make || exifData.model)
-						} : null
-					}, 'EXIF data loaded for file');
+					logger.debug(
+						{
+							fileId: file.id,
+							filePath: file.filePath,
+							fullPath,
+							hasExif: !!exifData,
+							exifData: exifData
+								? {
+										hasGPS: !!(exifData.latitude && exifData.longitude),
+										hasCameraData: !!(exifData.make || exifData.model)
+									}
+								: null
+						},
+						'EXIF data loaded for file'
+					);
 				} catch (error) {
-					logger.warn({ error, fileId: file.id, filePath: file.filePath }, 'Failed to load EXIF data');
+					logger.warn(
+						{ error, fileId: file.id, filePath: file.filePath },
+						'Failed to load EXIF data'
+					);
 				}
 			}
 
@@ -120,11 +128,13 @@ export const loadSightingFiles = async (sightingId: number): Promise<UploadedFil
 				size: file.size,
 				mimeType: file.mimeType,
 				uploadedAt: file.uploadedAt,
-				exifData: exifData ? {
-					...exifData,
-					// Convert Date to ISO string for JSON serialization
-					dateTimeOriginal: exifData.dateTimeOriginal?.toISOString() || undefined
-				} : null
+				exifData: exifData
+					? {
+							...exifData,
+							// Convert Date to ISO string for JSON serialization
+							dateTimeOriginal: exifData.dateTimeOriginal?.toISOString() || undefined
+						}
+					: null
 			};
 		})
 	);

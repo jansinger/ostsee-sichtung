@@ -2,7 +2,7 @@ import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import type { SightingFormData } from '$lib/report/types';
 import type { NewSighting } from '$lib/types/sighting';
 import { sql } from 'drizzle-orm';
-import { checkBalticSea } from './checkBalticSea';
+import { checkBalticSeaFile } from '../geo/checkBalticSeaFile';
 
 /**
  * Konvertiert die Formulardaten in das Datenbankschema
@@ -11,7 +11,7 @@ import { checkBalticSea } from './checkBalticSea';
  * @returns Ein strukturiertes Objekt entsprechend dem Datenbankschema
  */
 
-export async function mapFormToSighting(formData: SightingFormData): Promise<NewSighting> {
+export function mapFormToSighting(formData: SightingFormData): NewSighting {
 	// Erstelle ein Point-Objekt für PostGIS, wenn Koordinaten vorhanden sind
 	let location = null;
 	let inBaltic = false,
@@ -24,7 +24,7 @@ export async function mapFormToSighting(formData: SightingFormData): Promise<New
 	) {
 		// PostGIS erwartet SRID 4326 für WGS84 (GPS-Koordinaten)
 		location = sql`ST_SetSRID(ST_MakePoint(${formData.longitude}, ${formData.latitude}), 4326)`;
-		({ inBaltic, inChartArea } = await checkBalticSea(
+		({ inBaltic, inChartArea } = checkBalticSeaFile(
 			Number(formData.longitude),
 			Number(formData.latitude)
 		));
