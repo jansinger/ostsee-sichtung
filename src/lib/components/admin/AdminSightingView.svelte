@@ -2,6 +2,7 @@
 	import DataTableRow from '$lib/components/admin/DataTableRow.svelte';
 	import OLMap from '$lib/components/map/OLMap.svelte';
 	import MediaGallery from '$lib/components/media/MediaGallery.svelte';
+	import ImageDebugger from '$lib/components/debug/ImageDebugger.svelte';
 	import { getAnimalBehaviorLabel } from '$lib/report/formOptions/animalBehavior';
 	import { getAnimalConditionLabel } from '$lib/report/formOptions/animalCondition';
 	import { getBoatDriveLabel } from '$lib/report/formOptions/boatDrive';
@@ -465,6 +466,14 @@
 						<Icon src={Camera} size="20" class="text-primary" />
 						Medien-Gallerie
 					</h3>
+					
+					<!-- Debug information for each file -->
+					{#each sighting.files as file}
+						{#if file.mimeType.startsWith('image/')}
+							<ImageDebugger {file} />
+						{/if}
+					{/each}
+					
 					<MediaGallery files={sighting.files} showTitle={false} />
 				</div>
 			</div>

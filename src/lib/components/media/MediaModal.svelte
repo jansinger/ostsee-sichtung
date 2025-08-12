@@ -137,6 +137,14 @@
 							alt={file.originalName}
 							class="max-h-[50vh] max-w-full object-contain"
 							loading="lazy"
+							onerror={(e) => {
+								console.error('Modal image loading failed:', file.filePath, e);
+								// Fallback for modal images
+								const img = e.target as HTMLImageElement;
+								if (!img.src.includes('_fallback')) {
+									img.src = `/uploads/${file.filePath}?_fallback=1`;
+								}
+							}}
 						/>
 					</div>
 				{:else if isVideo(file.mimeType)}

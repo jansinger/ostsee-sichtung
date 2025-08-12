@@ -59,6 +59,14 @@
 				alt={file.originalName}
 				class="h-full w-full object-cover transition-all group-hover:scale-110"
 				loading="lazy"
+				onerror={(e) => {
+					console.error('Image loading failed:', file.filePath, e);
+					// Fallback: try direct URL if redirect failed
+					const img = e.target as HTMLImageElement;
+					if (!img.src.includes('_fallback')) {
+						img.src = `/uploads/${file.filePath}?_fallback=1`;
+					}
+				}}
 			/>
 			<!-- Hover Overlay -->
 			<div
@@ -84,6 +92,9 @@
 				muted
 				preload="metadata"
 				poster=""
+				onerror={(e) => {
+					console.error('Video loading failed:', file.filePath, e);
+				}}
 			>
 				<track kind="captions" />
 			</video>
