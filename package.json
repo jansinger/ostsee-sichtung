@@ -6,7 +6,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "npx vite build",
+		"build": "npx svelte-kit sync && npx vite build",
 		"preview": "vite preview",
 		"prepare": "npx svelte-kit sync || echo ''",
 		"check": "npx svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
