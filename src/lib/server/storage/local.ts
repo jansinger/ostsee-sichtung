@@ -46,7 +46,8 @@ export class LocalStorageProvider implements StorageProvider {
 		let exifData = null;
 		if (options.extractExif && file.type.startsWith('image/')) {
 			try {
-				exifData = await readImageExifData(fullPath);
+				// Use the same buffer we already have instead of reading from file
+				exifData = await readImageExifData(buffer);
 			} catch (error) {
 				logger.warn({ error, filePath: fullPath }, 'Failed to extract EXIF data');
 			}

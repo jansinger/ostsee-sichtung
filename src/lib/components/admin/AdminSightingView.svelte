@@ -468,7 +468,7 @@
 					</h3>
 					
 					<!-- Debug information for each file -->
-					{#each sighting.files as file}
+					{#each sighting.files as file (file.filePath)}
 						{#if file.mimeType.startsWith('image/')}
 							<ImageDebugger {file} />
 						{/if}

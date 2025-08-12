@@ -4,20 +4,25 @@
 import { createLogger } from '$lib/logger';
 import type { ExifDataRaw } from '$lib/types/types';
 // import { formatLocation } from '$lib/utils/format/formatLocation';
-import { readFileSync } from 'fs';
-
 const logger = createLogger('server:exifUtils');
 
 /**
- * Liest EXIF-Daten aus einer Bilddatei
+ * Liest EXIF-Daten aus einem Buffer oder einer Datei
  */
-export async function readImageExifData(filePath: string): Promise<ExifDataRaw | null> {
+export async function readImageExifData(source: string | Buffer): Promise<ExifDataRaw | null> {
 	try {
 		// Dynamically import exifr library
 		const { default: exifr } = await import('exifr');
 		
-		// Read file buffer
-		const buffer = readFileSync(filePath);
+		// Get buffer - either passed directly or read from file
+		let buffer: Buffer;
+		if (Buffer.isBuffer(source)) {
+			buffer = source;
+		} else {
+			// For backward compatibility - read from file path
+			const { readFileSync } = await import('fs');
+			buffer = readFileSync(source);
+		}
 		
 		// Parse EXIF data with comprehensive options
 		const exifData = await exifr.parse(buffer, {
@@ -112,7 +117,7 @@ export async function readImageExifData(filePath: string): Promise<ExifDataRaw |
 		}
 
 		logger.debug({ 
-			filePath, 
+			source: Buffer.isBuffer(source) ? 'buffer' : source, 
 			hasGPS: !!(result.latitude && result.longitude),
 			hasCameraData: !!(result.make || result.model),
 			exifKeys: Object.keys(exifData || {}),
@@ -130,7 +135,7 @@ export async function readImageExifData(filePath: string): Promise<ExifDataRaw |
 				stack: error instanceof Error ? error.stack : undefined,
 				name: error instanceof Error ? error.name : undefined
 			}, 
-			filePath 
+			source: Buffer.isBuffer(source) ? 'buffer' : source 
 		}, 'Error reading EXIF data');
 		return null;
 	}

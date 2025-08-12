@@ -29,7 +29,8 @@ const config = {
 					"'self'",
 					'https://tile.openstreetmap.org',
 					'https://*.tile.openstreetmap.org',
-					'https://api.openstreetmap.org'
+					'https://api.openstreetmap.org',
+					'https://4i7mo0wwc3lp8d1e.public.blob.vercel-storage.com'
 				],
 				'worker-src': ["'self'", 'blob:'],
 				'frame-src': ["'self'"],

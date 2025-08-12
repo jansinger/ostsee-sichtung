@@ -92,30 +92,47 @@ export const loadSightingFiles = async (sightingId: number): Promise<UploadedFil
 		files.map(async (file) => {
 			let exifData = null;
 
-			// EXIF-Daten nur für Bilder laden
+			// EXIF-Daten nur für Bilder laden - aber nur bei lokalem Storage
+			// Bei Cloud Storage sind die EXIF-Daten bereits beim Upload extrahiert worden
 			if (isImageFile(file.mimeType)) {
-				try {
-					const fullPath = getUploadPath(file.filePath);
-					exifData = await readImageExifData(fullPath);
+				const { isCloudStorage } = await import('$lib/server/storage/factory');
+				
+				if (!isCloudStorage()) {
+					// Nur bei lokalem Storage EXIF-Daten nachlesen
+					try {
+						const fullPath = getUploadPath(file.filePath);
+						exifData = await readImageExifData(fullPath);
+						logger.debug(
+							{
+								fileId: file.id,
+								filePath: file.filePath,
+								fullPath,
+								hasExif: !!exifData,
+								exifData: exifData
+									? {
+											hasGPS: !!(exifData.latitude && exifData.longitude),
+											hasCameraData: !!(exifData.make || exifData.model)
+										}
+									: null
+							},
+							'EXIF data loaded for file from local storage'
+						);
+					} catch (error) {
+						logger.warn(
+							{ error, fileId: file.id, filePath: file.filePath },
+							'Failed to load EXIF data from local storage'
+						);
+					}
+				} else {
+					// Bei Cloud Storage: EXIF-Daten sind beim Upload verarbeitet worden
+					// Für jetzt keine weiteren Versuche, da die Tabelle noch kein exifData Feld hat
 					logger.debug(
 						{
 							fileId: file.id,
 							filePath: file.filePath,
-							fullPath,
-							hasExif: !!exifData,
-							exifData: exifData
-								? {
-										hasGPS: !!(exifData.latitude && exifData.longitude),
-										hasCameraData: !!(exifData.make || exifData.model)
-									}
-								: null
+							storage: 'cloud'
 						},
-						'EXIF data loaded for file'
-					);
-				} catch (error) {
-					logger.warn(
-						{ error, fileId: file.id, filePath: file.filePath },
-						'Failed to load EXIF data'
+						'Skipping EXIF extraction for cloud storage file'
 					);
 				}
 			}
