@@ -76,11 +76,17 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 			// Transform uploadedFiles to match UploadedFileInfo interface
 			const fileInfos = uploadedFiles.map((file: unknown) => {
 				const fileObj = file as Record<string, unknown>;
+				// Generate URL using storage provider
+				const { getStorageProvider } = require('$lib/server/storage/factory');
+				const storageProvider = getStorageProvider();
+				const fileUrl = storageProvider.getUrl(fileObj.filePath as string);
+				
 				return {
 					id: (fileObj.id as string) || Math.random().toString(36),
 					originalName: fileObj.originalName as string,
 					fileName: (fileObj.fileName as string) || (fileObj.filePath as string),
 					filePath: fileObj.filePath as string,
+					url: fileUrl,
 					size: fileObj.size as number,
 					mimeType: fileObj.mimeType as string,
 					uploadedAt: (fileObj.uploadedAt as string) || new Date().toISOString(),

@@ -107,7 +107,7 @@
 			</div>
 			<div class="flex flex-shrink-0 items-center gap-2">
 				<a
-					href={`/uploads/${file.filePath}`}
+					href={file.url}
 					download={file.originalName}
 					class="btn btn-ghost btn-sm"
 					aria-label="Datei herunterladen"
@@ -133,7 +133,7 @@
 					<!-- Bild anzeigen -->
 					<div class="bg-base-100 flex justify-center overflow-hidden rounded-lg">
 						<img
-							src={`/uploads/${file.filePath}`}
+							src={file.url}
 							alt={file.originalName}
 							class="max-h-[50vh] max-w-full object-contain"
 							loading="lazy"
@@ -142,7 +142,9 @@
 								// Fallback for modal images
 								const img = e.target as HTMLImageElement;
 								if (!img.src.includes('_fallback')) {
-									img.src = `/uploads/${file.filePath}?_fallback=1`;
+									if (file.url.startsWith('/uploads/')) {
+									img.src = `${file.url}?_fallback=1`;
+								}
 								}
 							}}
 						/>
@@ -151,7 +153,7 @@
 					<!-- Video anzeigen -->
 					<div class="bg-base-100 flex justify-center overflow-hidden rounded-lg">
 						<video
-							src={`/uploads/${file.filePath}`}
+							src={file.url}
 							controls
 							class="max-h-[50vh] max-w-full"
 							preload="metadata"
@@ -167,7 +169,7 @@
 						<h4 class="mb-2 text-lg font-semibold">Vorschau nicht verfügbar</h4>
 						<p class="text-base-content/60 mb-4">Für diesen Dateityp ist keine Vorschau möglich.</p>
 						<a
-							href={`/uploads/${file.filePath}`}
+							href={file.url}
 							download={file.originalName}
 							class="btn btn-primary"
 						>

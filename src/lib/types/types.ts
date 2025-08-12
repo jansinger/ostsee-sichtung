@@ -60,6 +60,7 @@ export interface UploadedFileInfo {
 	originalName: string;
 	fileName: string;
 	filePath: string;
+	url: string; // Full URL to access the file (provider-specific)
 	size: number;
 	mimeType: string;
 	uploadedAt: string;

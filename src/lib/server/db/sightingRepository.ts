@@ -137,11 +137,17 @@ export const loadSightingFiles = async (sightingId: number): Promise<UploadedFil
 				}
 			}
 
+			// Get the correct URL from storage provider
+			const { getStorageProvider } = await import('$lib/server/storage/factory');
+			const storageProvider = getStorageProvider();
+			const fileUrl = storageProvider.getUrl(file.filePath);
+
 			return {
 				id: file.id.toString(),
 				originalName: file.originalName,
 				fileName: file.fileName,
 				filePath: file.filePath,
+				url: fileUrl, // Use the provider's URL instead of hardcoded path
 				size: file.size,
 				mimeType: file.mimeType,
 				uploadedAt: file.uploadedAt,

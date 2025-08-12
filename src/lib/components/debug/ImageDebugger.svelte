@@ -8,7 +8,7 @@
 	let actualUrl = $state<string>('');
 
 	async function testImageUrl() {
-		const url = `/uploads/${file.filePath}`;
+		const url = file.url;
 		try {
 			const response = await fetch(url);
 			actualUrl = response.url; // Will show the redirected URL
@@ -40,7 +40,7 @@
 		<div><strong>MIME Type:</strong> {file.mimeType}</div>
 		<div><strong>Size:</strong> {(file.size / 1024).toFixed(1)} KB</div>
 
-		<div><strong>Request URL:</strong> <code>/uploads/{file.filePath}</code></div>
+		<div><strong>Request URL:</strong> <code>{file.url}</code></div>
 		<div><strong>Actual URL:</strong> <code>{actualUrl}</code></div>
 
 		<div>
@@ -59,7 +59,7 @@
 	<div class="mt-4">
 		<h5 class="mb-2 font-medium">Test Image:</h5>
 		<img
-			src={`/uploads/${file.filePath}`}
+			src={file.url}
 			alt={file.originalName}
 			class="border-base-300 max-h-[200px] max-w-[200px] border object-contain"
 			onload={() => console.log('Image loaded successfully:', file.filePath)}

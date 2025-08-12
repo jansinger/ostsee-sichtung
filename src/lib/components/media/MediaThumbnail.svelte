@@ -55,16 +55,16 @@
 		<!-- Bild Thumbnail -->
 		<div class="relative aspect-square overflow-hidden">
 			<img
-				src={`/uploads/${file.filePath}`}
+				src={file.url}
 				alt={file.originalName}
 				class="h-full w-full object-cover transition-all group-hover:scale-110"
 				loading="lazy"
 				onerror={(e) => {
-					console.error('Image loading failed:', file.filePath, e);
-					// Fallback: try direct URL if redirect failed
+					console.error('Image loading failed:', file.url, e);
+					// Fallback: for local storage, try with fallback parameter
 					const img = e.target as HTMLImageElement;
-					if (!img.src.includes('_fallback')) {
-						img.src = `/uploads/${file.filePath}?_fallback=1`;
+					if (!img.src.includes('_fallback') && file.url.startsWith('/uploads/')) {
+						img.src = `${file.url}?_fallback=1`;
 					}
 				}}
 			/>
@@ -91,13 +91,13 @@
 		>
 			<!-- Video Preview (falls Browser unterstützt) -->
 			<video
-				src={`/${file.filePath}`}
+				src={file.url}
 				class="h-full w-full object-cover"
 				muted
 				preload="metadata"
 				poster=""
 				onerror={(e) => {
-					console.error('Video loading failed:', file.filePath, e);
+					console.error('Video loading failed:', file.url, e);
 				}}
 			>
 				<track kind="captions" />
