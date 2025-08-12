@@ -5,6 +5,7 @@
   "outputDirectory": ".svelte-kit/output/client",
   "framework": "sveltekit",
   "installCommand": "npm ci",
+  "devCommand": "npm run dev",
   "headers": [
     {
       "source": "/(.*)",
