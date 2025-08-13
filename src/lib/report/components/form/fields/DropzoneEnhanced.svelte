@@ -8,6 +8,7 @@
 	import { FILE_VALIDATION_PRESETS } from '$lib/utils/fileValidation';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { deleteFileDirect, uploadFileDirect } from '$lib/utils/uploadUtils';
+	import { uploadResultToFormData, formDataToUploadData, type UploadFileData } from '$lib/utils/uploadHelpers';
 	import { SvelteMap } from 'svelte/reactivity';
 
 	const logger = createLogger('DropzoneEnhanced');
@@ -21,22 +22,14 @@
 	let isUploading = $state(false);
 	let dropzoneFiles = $state<File[]>([]);
 
-	// Lokaler Zustand für hochgeladene Dateien (Name -> filePath mapping)
-	let uploadedFiles = new SvelteMap<
-		string,
-		{ filePath: string; originalName: string; mimeType: string; size: number }
-	>();
+	// Lokaler Zustand für hochgeladene Dateien (Name -> full upload info mapping)
+	let uploadedFiles = new SvelteMap<string, UploadFileData>();
 
 	// Initialize uploadedFiles SvelteMap from form data array
 	if ($form.uploadedFiles && Array.isArray($form.uploadedFiles) && $form.uploadedFiles.length > 0) {
 		// Convert array format from form schema to SvelteMap format
 		$form.uploadedFiles.forEach((fileInfo) => {
-			uploadedFiles.set(fileInfo.originalName, {
-				filePath: fileInfo.filePath,
-				originalName: fileInfo.originalName,
-				mimeType: fileInfo.mimeType,
-				size: fileInfo.size
-			});
+			uploadedFiles.set(fileInfo.originalName, formDataToUploadData(fileInfo));
 		});
 	}
 
@@ -177,15 +170,10 @@
 					try {
 						const uploadResult = await uploadFileDirect(file, referenceId);
 						// Speichere die vollständigen Datei-Informationen für späteres Löschen und DB-Speicherung
-						uploadedFiles.set(file.name, {
-							filePath: uploadResult.filePath,
-							originalName: file.name,
-							mimeType: file.type,
-							size: file.size
-						});
+						uploadedFiles.set(file.name, uploadResultToFormData(uploadResult));
 						logger.info(
-							{ fileName: file.name, filePath: uploadResult.filePath },
-							'File uploaded and tracked'
+							{ fileName: file.name, uploadResult },
+							'File uploaded with full metadata'
 						);
 					} catch (uploadError) {
 						logger.error({ uploadError, fileName: file.name }, 'Failed to upload file');

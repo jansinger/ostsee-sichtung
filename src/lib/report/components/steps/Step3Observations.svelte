@@ -28,8 +28,10 @@
 			Verhaltensinformationen, Umweltbedingungen und <strong>Fotos/Videos</strong> helfen bei der Artbestimmung
 			und dem Verständnis der Meerestiere.
 		</p>
-		<div class="badge badge-outline badge-secondary">
-			Schritt 3 von 4 - Optional, aber sehr hilfreich
+		<div class="flex justify-center">
+			<div class="badge badge-outline badge-secondary text-center min-h-fit h-auto py-2 px-3 whitespace-normal sm:whitespace-nowrap max-w-xs sm:max-w-none">
+				Schritt 3 von 4 - Optional, aber sehr hilfreich
+			</div>
 		</div>
 	</div>
 

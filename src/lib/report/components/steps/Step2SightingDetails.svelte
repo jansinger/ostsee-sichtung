@@ -19,8 +19,10 @@
 			Bei Unsicherheit wählen Sie "Unbekannt" - auch geschätzte Angaben sind wertvoll für die 
 			Populationsforschung!
 		</p>
-		<div class="badge badge-outline badge-primary">
-			Schritt 2 von 4 - Beobachtung (erforderlich)
+		<div class="flex justify-center">
+			<div class="badge badge-outline badge-primary text-center min-h-fit h-auto py-2 px-3 whitespace-normal sm:whitespace-nowrap max-w-xs sm:max-w-none">
+				Schritt 2 von 4 - Beobachtung (erforderlich)
+			</div>
 		</div>
 	</div>
 

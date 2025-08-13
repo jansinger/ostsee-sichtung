@@ -9,6 +9,7 @@
 	import { FILE_VALIDATION_PRESETS } from '$lib/utils/fileValidation';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { deleteFileDirect, uploadFileDirect } from '$lib/utils/uploadUtils';
+	import { uploadResultToFormData, formDataToUploadData, type UploadFileData } from '$lib/utils/uploadHelpers';
 	import { Calendar, Camera, MapPin, SquarePen } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import { SvelteMap } from 'svelte/reactivity';
@@ -29,21 +30,13 @@
 	let uploadedPhotoPath: string | null = $state(null);
 
 	// Lokaler Zustand für hochgeladene Dateien (für Form-Updates)
-	let uploadedFiles = new SvelteMap<
-		string,
-		{ filePath: string; originalName: string; mimeType: string; size: number }
-	>();
+	let uploadedFiles = new SvelteMap<string, UploadFileData>();
 
 	// Initialize uploadedFiles SvelteMap from form data array
 	if ($form.uploadedFiles && Array.isArray($form.uploadedFiles) && $form.uploadedFiles.length > 0) {
 		// Convert array format from form schema to SvelteMap format
 		$form.uploadedFiles.forEach((fileInfo) => {
-			uploadedFiles.set(fileInfo.originalName, {
-				filePath: fileInfo.filePath,
-				originalName: fileInfo.originalName,
-				mimeType: fileInfo.mimeType,
-				size: fileInfo.size
-			});
+			uploadedFiles.set(fileInfo.originalName, formDataToUploadData(fileInfo));
 		});
 	}
 
@@ -202,13 +195,8 @@
 					const uploadResult = await uploadFileDirect(file, referenceId);
 					uploadedPhotoPath = uploadResult.filePath;
 
-					// Speichere die Datei-Informationen für späteres Löschen und DB-Speicherung
-					uploadedFiles.set(file.name, {
-						filePath: uploadResult.filePath,
-						originalName: file.name,
-						mimeType: file.type,
-						size: file.size
-					});
+					// Speichere die vollständigen Datei-Informationen für späteres Löschen und DB-Speicherung
+					uploadedFiles.set(file.name, uploadResultToFormData(uploadResult));
 
 					logger.info(
 						{ fileName: file.name, filePath: uploadResult.filePath },

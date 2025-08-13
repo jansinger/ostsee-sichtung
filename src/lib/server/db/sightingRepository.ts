@@ -5,7 +5,7 @@ import { sightingFiles, sightings } from '$lib/server/db/schema';
 import { isImageFile, readImageExifData } from '$lib/server/exifUtils';
 import { getUploadPath } from '$lib/server/uploads';
 import type { NewSighting, UpdateSighting } from '$lib/types/sighting';
-import type { UploadedFileInfo } from '$lib/types/types';
+import type { ExifData, UploadedFileInfo } from '$lib/types/types';
 import { eq } from 'drizzle-orm';
 import { mapFormToSighting } from './mapFormToSighting';
 
@@ -167,13 +167,7 @@ export const loadSightingFiles = async (sightingId: number): Promise<UploadedFil
 				size: file.size,
 				mimeType: file.mimeType,
 				uploadedAt: file.uploadedAt,
-				exifData: exifData
-					? {
-							...exifData,
-							// Convert Date to ISO string for JSON serialization
-							dateTimeOriginal: exifData.dateTimeOriginal?.toISOString() || undefined
-						}
-					: null
+				exifData: exifData as ExifData | null
 			};
 		})
 	);

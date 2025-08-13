@@ -47,7 +47,11 @@
 			ermöglichen wichtige Rückfragen zur Datenqualität. <strong>Datenschutz:</strong> Ihre persönlichen
 			Daten werden nie öffentlich angezeigt!
 		</p>
-		<div class="badge badge-outline badge-success">Schritt 4 von 4 - Fast geschafft!</div>
+		<div class="flex justify-center">
+			<div class="badge badge-outline badge-success text-center min-h-fit h-auto py-2 px-3 whitespace-normal sm:whitespace-nowrap max-w-xs sm:max-w-none">
+				Schritt 4 von 4 - Fast geschafft!
+			</div>
+		</div>
 	</div>
 
 	<!-- Personal Contact Information -->
