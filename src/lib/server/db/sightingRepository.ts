@@ -39,11 +39,13 @@ export const saveSighting = async (formData: SightingFormData): Promise<{ id: nu
 			sightingId: sightingId,
 			referenceId: formData.referenceId,
 			originalName: file.originalName,
-			fileName: file.filePath.split('/').pop() || file.originalName, // Extract filename from path
+			fileName: file.fileName || file.filePath.split('/').pop() || file.originalName, // Use fileName if available
 			filePath: file.filePath,
 			mimeType: file.mimeType,
 			size: file.size,
-			uploadedAt: new Date().toISOString()
+			url: file.url || null, // Store the URL if available
+			uploadedAt: file.uploadedAt || new Date().toISOString(),
+			exifData: file.exifData || null // Store EXIF data directly as JSONB
 		}));
 
 		await db.insert(sightingFiles).values(fileRecords);
@@ -92,9 +94,21 @@ export const loadSightingFiles = async (sightingId: number): Promise<UploadedFil
 		files.map(async (file) => {
 			let exifData = null;
 
-			// EXIF-Daten nur für Bilder laden - aber nur bei lokalem Storage
-			// Bei Cloud Storage sind die EXIF-Daten bereits beim Upload extrahiert worden
-			if (isImageFile(file.mimeType)) {
+			// EXIF-Daten zuerst aus der Datenbank laden (JSONB wird automatisch geparst)
+			if (file.exifData) {
+				exifData = file.exifData;
+				logger.debug(
+					{
+						fileId: file.id,
+						hasExif: true,
+						source: 'database'
+					},
+					'EXIF data loaded from database'
+				);
+			}
+
+			// Falls keine EXIF-Daten in DB und lokaler Storage, dann nachlesen
+			if (!exifData && isImageFile(file.mimeType)) {
 				const { isCloudStorage } = await import('$lib/server/storage/factory');
 				
 				if (!isCloudStorage()) {
@@ -108,6 +122,7 @@ export const loadSightingFiles = async (sightingId: number): Promise<UploadedFil
 								filePath: file.filePath,
 								fullPath,
 								hasExif: !!exifData,
+								source: 'file',
 								exifData: exifData
 									? {
 											hasGPS: !!(exifData.latitude && exifData.longitude),
@@ -124,8 +139,6 @@ export const loadSightingFiles = async (sightingId: number): Promise<UploadedFil
 						);
 					}
 				} else {
-					// Bei Cloud Storage: EXIF-Daten sind beim Upload verarbeitet worden
-					// Für jetzt keine weiteren Versuche, da die Tabelle noch kein exifData Feld hat
 					logger.debug(
 						{
 							fileId: file.id,
@@ -137,17 +150,20 @@ export const loadSightingFiles = async (sightingId: number): Promise<UploadedFil
 				}
 			}
 
-			// Get the correct URL from storage provider
-			const { getStorageProvider } = await import('$lib/server/storage/factory');
-			const storageProvider = getStorageProvider();
-			const fileUrl = storageProvider.getUrl(file.filePath);
+			// Use URL from database if available, otherwise generate from storage provider
+			let fileUrl = file.url;
+			if (!fileUrl) {
+				const { getStorageProvider } = await import('$lib/server/storage/factory');
+				const storageProvider = getStorageProvider();
+				fileUrl = storageProvider.getUrl(file.filePath);
+			}
 
 			return {
 				id: file.id.toString(),
 				originalName: file.originalName,
 				fileName: file.fileName,
 				filePath: file.filePath,
-				url: fileUrl, // Use the provider's URL instead of hardcoded path
+				url: fileUrl, // Use the stored URL or provider's URL
 				size: file.size,
 				mimeType: file.mimeType,
 				uploadedAt: file.uploadedAt,

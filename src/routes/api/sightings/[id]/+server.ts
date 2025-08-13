@@ -74,11 +74,12 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 			const referenceId = updatedSighting.referenceId || `ref-${Date.now()}-admin`;
 			
 			// Transform uploadedFiles to match UploadedFileInfo interface
+			const { getStorageProvider } = await import('$lib/server/storage/factory');
+			const storageProvider = getStorageProvider();
+			
 			const fileInfos = uploadedFiles.map((file: unknown) => {
 				const fileObj = file as Record<string, unknown>;
 				// Generate URL using storage provider
-				const { getStorageProvider } = require('$lib/server/storage/factory');
-				const storageProvider = getStorageProvider();
 				const fileUrl = storageProvider.getUrl(fileObj.filePath as string);
 				
 				return {

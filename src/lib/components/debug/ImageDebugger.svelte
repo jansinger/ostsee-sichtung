@@ -53,6 +53,38 @@
 				<span class="badge badge-error">Error: {errorMessage}</span>
 			{/if}
 		</div>
+
+		{#if file.exifData}
+			<div class="mt-3">
+				<strong>📸 EXIF-Daten:</strong>
+				<div class="pl-4 mt-1">
+					{#if file.exifData.latitude && file.exifData.longitude}
+						<div>GPS: {file.exifData.latitude.toFixed(6)}, {file.exifData.longitude.toFixed(6)}</div>
+					{/if}
+					{#if file.exifData.dateTimeOriginal}
+						<div>Aufnahmedatum: {new Date(file.exifData.dateTimeOriginal).toLocaleString('de-DE')}</div>
+					{/if}
+					{#if file.exifData.make || file.exifData.model}
+						<div>Kamera: {file.exifData.make} {file.exifData.model}</div>
+					{/if}
+					{#if file.exifData.width && file.exifData.height}
+						<div>Auflösung: {file.exifData.width} × {file.exifData.height}</div>
+					{/if}
+					{#if file.exifData.iso}
+						<div>ISO: {file.exifData.iso}</div>
+					{/if}
+					{#if file.exifData.fNumber}
+						<div>Blende: f/{file.exifData.fNumber}</div>
+					{/if}
+					{#if file.exifData.exposureTime}
+						<div>Belichtungszeit: {file.exifData.exposureTime}</div>
+					{/if}
+					{#if file.exifData.focalLength}
+						<div>Brennweite: {file.exifData.focalLength}mm</div>
+					{/if}
+				</div>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Test image loading -->

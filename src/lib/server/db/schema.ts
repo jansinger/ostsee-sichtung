@@ -4,6 +4,7 @@ import {
 	geometry,
 	index,
 	integer,
+	jsonb,
 	numeric,
 	pgSequence,
 	pgTable,
@@ -140,7 +141,9 @@ export const sightingFiles = pgTable('sichtungen_dateien', {
 	filePath: varchar('datei_pfad', { length: 500 }).notNull(),
 	mimeType: varchar('mime_typ', { length: 100 }).notNull(),
 	size: bigint({ mode: 'number' }).notNull(),
+	url: varchar('url', { length: 1000 }),
 	uploadedAt: timestamp('hochgeladen_am', { mode: 'string' }).notNull(),
+	exifData: jsonb('exif_daten'),
 	createdAt: timestamp('erstellt_am', { mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index('idx_sichtungen_dateien_sichtung_id').on(table.sightingId),

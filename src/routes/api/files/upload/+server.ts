@@ -1,6 +1,6 @@
 import { createLogger } from '$lib/logger';
-import { error, json } from '@sveltejs/kit';
 import { getStorageProvider } from '$lib/server/storage/factory';
+import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('FileUploadAPI');
@@ -29,7 +29,7 @@ const ALLOWED_VIDEO_TYPES = [
 	'video/m4v'
 ];
 const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 100MB
 
 // Dateivalidierung (aus api/upload übernommen)
 function validateFile(file: File): string[] {
@@ -45,7 +45,7 @@ function validateFile(file: File): string[] {
 	}
 	if (file.size > MAX_FILE_SIZE) {
 		errors.push(
-			`${file.name}: Datei zu groß (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum: 100MB`
+			`${file.name}: Datei zu groß (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum: 10MB`
 		);
 	}
 	if (file.size === 0) {

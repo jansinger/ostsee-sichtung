@@ -66,8 +66,12 @@ export const sightingSchemaBase = yup.object().shape({
 	uploadedFiles: yup.array().of(yup.object().shape({
 		filePath: yup.string().required(),
 		originalName: yup.string().required(),
+		fileName: yup.string().optional(),
 		mimeType: yup.string().required(),
-		size: yup.number().required()
+		size: yup.number().required(),
+		url: yup.string().optional(),
+		uploadedAt: yup.string().optional(),
+		exifData: yup.mixed().optional()
 	})).optional().default([]),
 
 	//----------------------------------------------------------------------
