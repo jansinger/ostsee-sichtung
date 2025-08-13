@@ -1,9 +1,11 @@
-import { getToken, setAuthCookie, verifyToken } from '$lib/auth/auth.js';
+import { API_AUDIENCE } from '$env/static/private';
+import { getToken, getTokenClaims, setAuthCookie, verifyToken } from '$lib/auth/auth.js';
 import { createLogger } from '$lib/logger';
 import type { User } from '$lib/types/types';
 import { error, redirect } from '@sveltejs/kit';
 
 const logger = createLogger('auth:auth0');
+const rolesClaim = `${API_AUDIENCE}/roles`;
 
 export async function GET({ url, cookies }) {
 	const code = url.searchParams.get('code');
@@ -27,11 +29,13 @@ export async function GET({ url, cookies }) {
 		const token = await getToken({ code });
 		logger.debug({ token }, 'token');
 
-		//const authDetails = await getAccessToken(token.access_token);
-		//logger.debug({ authDetails }, 'authDetails');
-
 		const authUser = (await verifyToken(token.id_token)) as User;
 		logger.debug({ authUser }, 'authUser');
+
+		const claims = await getTokenClaims(token.access_token);
+		logger.debug({ claims }, 'claims');
+
+		authUser.roles = claims[rolesClaim] || [];
 
 		setAuthCookie(cookies, authUser);
 		cookies.delete('csrfState', { path: '/' });

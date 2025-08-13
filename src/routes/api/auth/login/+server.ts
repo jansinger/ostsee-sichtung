@@ -1,5 +1,5 @@
-import { AUTH0_CLIENT_ID, AUTH0_DOMAIN } from '$env/static/private';
-import { PUBLIC_BASE_URL } from '$env/static/public';
+import { API_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_DOMAIN } from '$env/static/private';
+import { PUBLIC_SITE_URL } from '$env/static/public';
 import { redirect } from '@sveltejs/kit';
 export async function GET({ cookies, url }) {
 	const csrfState = Math.random().toString(36).substring(7);
@@ -16,8 +16,9 @@ export async function GET({ cookies, url }) {
 		scope: 'openid profile email',
 		response_type: 'code',
 		client_id: AUTH0_CLIENT_ID,
-		redirect_uri: `${PUBLIC_BASE_URL}/api/auth/callback?returnUrl=${returnUrl}`,
-		state: csrfState
+		redirect_uri: `${PUBLIC_SITE_URL}/api/auth/callback?returnUrl=${returnUrl}`,
+		state: csrfState,
+		audience: API_AUDIENCE
 	};
 
 	throw redirect(302, `https://${AUTH0_DOMAIN}/authorize?${new URLSearchParams(query).toString()}`);

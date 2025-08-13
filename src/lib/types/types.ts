@@ -124,4 +124,5 @@ export interface User {
 	exp: number;
 	sub: string;
 	sid: string;
+	roles: string[];
 }

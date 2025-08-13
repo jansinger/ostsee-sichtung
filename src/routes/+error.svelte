@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import {
 		ArrowLeftOutline,
 		ExclamationCircleOutline,
@@ -14,8 +14,8 @@
 	} from 'flowbite-svelte-icons';
 
 	// Error-Informationen aus der page store (Runes Mode)
-	const error = $derived($page.error);
-	const status = $derived($page.status);
+	const error = $derived(page.error);
+	const status = $derived(page.status);
 
 	/**
 	 * Navigiert zurück zur Startseite

@@ -6,13 +6,16 @@ import {
 	JWKS_URL,
 	SESSION_SECRET
 } from '$env/static/private';
-import { PUBLIC_BASE_URL } from '$env/static/public';
+import { PUBLIC_SITE_URL } from '$env/static/public';
 
+import { createLogger } from '$lib/logger';
 import type { User } from '$lib/types/types';
 import type { Cookies } from '@sveltejs/kit';
 import type { JwtHeader, SigningKeyCallback } from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';
 import { JwksClient } from 'jwks-rsa';
+
+const logger = createLogger('auth:auth0');
 
 let cachedKey: string | undefined = undefined;
 
@@ -47,17 +50,12 @@ export async function verifyToken<T>(token: string): Promise<T> {
 	});
 }
 
-export async function getAccessToken<T>(token: string): Promise<T> {
+export async function getTokenClaims<T>(token: string): Promise<T> {
 	if (!token) {
-		throw new Error('No access token provided');
+		return <T>null;
 	}
 
-	const [_one, _two, payload] = token.split('.');
-	if (!payload) {
-		throw new Error('No access token provided');
-	}
-	const jwt = JSON.parse(Buffer.from(payload, 'base64').toString());
-	return verifyToken<T>(jwt);
+	return <T>jwt.decode(token);
 }
 
 export async function getToken({ code }: { code: string }) {
@@ -67,7 +65,7 @@ export async function getToken({ code }: { code: string }) {
 			code,
 			client_id: AUTH0_CLIENT_ID,
 			client_secret: AUTH0_CLIENT_SECRET,
-			redirect_uri: `${PUBLIC_BASE_URL}/api/auth/callback`,
+			redirect_uri: `${PUBLIC_SITE_URL}/api/auth/callback`,
 			grant_type: 'authorization_code'
 		}),
 		headers: {

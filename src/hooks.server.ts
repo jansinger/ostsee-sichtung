@@ -43,6 +43,19 @@ const setAdditionalHeaders: Handle = async ({ event, resolve }) => {
 	return response;
 };
 
+const hasPermission = (user: User | null, url: URL) => {
+	const route = privateRoutes.find((route) => url.pathname.includes(route.path));
+	// Route not restricted
+	if (!route) return true;
+
+	// No User authenticated
+	if (!user) return false;
+
+	// Check if the user's roles include any of the required roles for the route
+	const hasRole = route.roles.some((role) => user.roles && user.roles.includes(role));
+	return hasRole;
+};
+
 /**
  * SvelteKit Handle Hook - Nicht-CSP Security Headers
  *
@@ -56,25 +69,22 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	logger.info({ cookie, pathname: url.pathname }, 'Authentication check');
 
+	let user = null;
 	if (cookie) {
 		// Extend the cookie
-		const user = jwt.verify(cookie, SESSION_SECRET) as User;
+		user = jwt.verify(cookie, SESSION_SECRET) as User;
 		logger.debug({ user }, 'Authenticated user');
 		setAuthCookie(event.cookies, user);
 
 		// Set user in locals for access in components
 		event.locals.user = user;
-
-		return await setAdditionalHeaders({ event, resolve });
 	}
 
-	// We need to check if the privateRoutes array contains the current path or part of it
-	// If it does, we need to redirect the user to the login page
-
-	const isPrivateRoute = privateRoutes.some((route) => url.pathname.includes(route));
-
-	if (!cookie && isPrivateRoute) {
-		return new Response('LoginRequired', {
+	if (!hasPermission(user, url)) {
+		if (user) {
+			return new Response('Permission denied', { status: 403 });
+		}
+		return new Response('Login required', {
 			status: 302,
 			headers: { location: `/api/auth/login?returnUrl=${url.pathname}` }
 		});

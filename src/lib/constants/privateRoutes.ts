@@ -1,1 +1,6 @@
-export const privateRoutes = ['/admin'];
+export const privateRoutes = [
+	{
+		path: '/admin',
+		roles: ['admin']
+	}
+];
