@@ -1,9 +1,9 @@
-import { json } from '@sveltejs/kit';
+import { sightingsToGeoJSON, type DBSighting } from '$lib/map/mapUtils';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
-import { and, between, sql } from 'drizzle-orm';
+import { json } from '@sveltejs/kit';
+import { and, between, eq, sql } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
-import { sightingsToGeoJSON, type DBSighting } from '$lib/map/mapUtils';
 
 export const GET: RequestHandler = async ({ url }) => {
 	// Filter-Parameter aus der URL extrahieren
@@ -12,7 +12,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	try {
 		// Erstellen der Abfrage-Bedingungen
-		const conditions = [];
+		const conditions = [eq(sightingsTable.verified, 1)]; // Nur öffentliche Sichtungen
 
 		// Jahr-Filter hinzufügen, wenn vorhanden
 		if (year) {
