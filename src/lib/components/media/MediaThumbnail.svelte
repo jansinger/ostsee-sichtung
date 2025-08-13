@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { UploadedFileInfo } from '$lib/types/types';
+	import { formatFileSize } from '$lib/utils/file/fileSize';
+	import { isImageFile, isVideoFile } from '$lib/utils/file/fileType';
 	import { Download, Eye, FileText, MapPin, Play } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
@@ -12,19 +14,11 @@
 	} = $props();
 
 	function isImage(mimeType: string): boolean {
-		return mimeType.startsWith('image/');
+		return isImageFile(mimeType);
 	}
 
 	function isVideo(mimeType: string): boolean {
-		return mimeType.startsWith('video/');
-	}
-
-	function formatFileSize(bytes: number): string {
-		if (bytes === 0) return '0 B';
-		const k = 1024;
-		const sizes = ['B', 'KB', 'MB', 'GB'];
-		const i = Math.floor(Math.log(bytes) / Math.log(k));
-		return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+		return isVideoFile(mimeType);
 	}
 
 	function handleClick() {

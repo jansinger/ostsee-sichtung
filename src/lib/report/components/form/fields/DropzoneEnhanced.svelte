@@ -9,6 +9,8 @@
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { deleteFileDirect, uploadFileDirect } from '$lib/utils/uploadUtils';
 	import { uploadResultToFormData, formDataToUploadData, type UploadFileData } from '$lib/utils/uploadHelpers';
+	import { formatFileSize } from '$lib/utils/file/fileSize';
+	import { getFileIcon } from '$lib/utils/file/fileType';
 	import { SvelteMap } from 'svelte/reactivity';
 
 	const logger = createLogger('DropzoneEnhanced');
@@ -274,19 +276,6 @@
 		}
 	}
 
-	function formatFileSize(bytes: number): string {
-		if (bytes === 0) return '0 Bytes';
-		const k = 1024;
-		const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-		const i = Math.floor(Math.log(bytes) / Math.log(k));
-		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-	}
-
-	function getFileIcon(type: string): string {
-		if (type.startsWith('image/')) return '🖼️';
-		if (type.startsWith('video/')) return '🎥';
-		return '📄';
-	}
 </script>
 
 <div class="space-y-4">

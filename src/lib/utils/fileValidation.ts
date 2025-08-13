@@ -1,6 +1,10 @@
 /**
- * Gemeinsame Dateityp-Validierung für Upload-Komponenten
+ * Legacy file validation - DEPRECATED
+ * Use /src/lib/utils/validation/fileValidation.ts and /src/lib/constants/upload.ts instead
+ * @deprecated
  */
+
+import { ALLOWED_MIME_TYPES, UPLOAD_LIMITS } from '$lib/constants/upload';
 
 export interface FileValidationConfig {
 	allowedTypes: string[];
@@ -17,30 +21,21 @@ export interface FileValidationResult {
 
 /**
  * Standard-Konfigurationen für verschiedene Upload-Szenarien
+ * @deprecated Use FILE_VALIDATION_PRESETS from /src/lib/constants/upload.ts
  */
 export const FILE_VALIDATION_PRESETS = {
 	// Für Foto-Upload im Position-Schritt (nur Bilder mit GPS)
 	PHOTO_GPS: {
-		allowedTypes: ['image/jpeg', 'image/jpg', 'image/png'],
-		maxSize: 10 * 1024 * 1024, // 10MB
+		allowedTypes: [...ALLOWED_MIME_TYPES.IMAGES],
+		maxSize: UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE,
 		maxFiles: 1
 	} as FileValidationConfig,
 
-	// Für allgemeine Medien-Uploads (Bilder und Videos)
+	// Für allgemeine Medien-Uploads (Bilder und Videos)  
 	MEDIA: {
-		allowedTypes: [
-			'image/jpeg',
-			'image/jpg', 
-			'image/png',
-			'image/gif',
-			'image/webp',
-			'video/mp4',
-			'video/mov',
-			'video/avi',
-			'video/webm'
-		],
-		maxSize: 50 * 1024 * 1024, // 50MB für Videos
-		maxFiles: 20
+		allowedTypes: [...ALLOWED_MIME_TYPES.MEDIA],
+		maxSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
+		maxFiles: UPLOAD_LIMITS.MAX_FILES
 	} as FileValidationConfig
 } as const;
 
