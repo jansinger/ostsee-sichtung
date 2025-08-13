@@ -8,39 +8,7 @@ import jwt from 'jsonwebtoken';
 
 const logger = createLogger('hooks:server');
 
-/**
- * SvelteKit Handle Hook - Nicht-CSP Security Headers
- *
- * WICHTIG: CSP wird in svelte.config.js konfiguriert (Vercel-optimiert)
- * Hier werden nur zusätzliche Security Headers gesetzt
- */
-export const handle: Handle = async ({ event, resolve }) => {
-	// Authentication
-	const cookie = event.cookies.get(COOKIE_NAME);
-	const url = new URL(event.request.url);
-
-	logger.info({ cookie, pathname: url.pathname }, 'Authentication check');
-
-	if (cookie) {
-		// Extend the cookie
-		const user = jwt.verify(cookie, SESSION_SECRET) as User;
-		logger.debug({ user }, 'Authenticated user');
-		setAuthCookie(event.cookies, user);
-		return await resolve(event);
-	}
-
-	// We need to check if the privateRoutes array contains the current path or part of it
-	// If it does, we need to redirect the user to the login page
-
-	const isPrivateRoute = privateRoutes.some((route) => url.pathname.includes(route));
-
-	if (!cookie && isPrivateRoute) {
-		return new Response('LoginRequired', {
-			status: 302,
-			headers: { location: `/api/auth/login?returnUrl=${url.pathname}` }
-		});
-	}
-
+const setAdditionalHeaders: Handle = async ({ event, resolve }) => {
 	// Additional Headers
 	const response = await resolve(event);
 
@@ -73,4 +41,44 @@ export const handle: Handle = async ({ event, resolve }) => {
 		response.headers.set('Set-Cookie', iframeFriendlyCookies);
 	}
 	return response;
+};
+
+/**
+ * SvelteKit Handle Hook - Nicht-CSP Security Headers
+ *
+ * WICHTIG: CSP wird in svelte.config.js konfiguriert (Vercel-optimiert)
+ * Hier werden nur zusätzliche Security Headers gesetzt
+ */
+export const handle: Handle = async ({ event, resolve }) => {
+	// Authentication
+	const cookie = event.cookies.get(COOKIE_NAME);
+	const url = new URL(event.request.url);
+
+	logger.info({ cookie, pathname: url.pathname }, 'Authentication check');
+
+	if (cookie) {
+		// Extend the cookie
+		const user = jwt.verify(cookie, SESSION_SECRET) as User;
+		logger.debug({ user }, 'Authenticated user');
+		setAuthCookie(event.cookies, user);
+
+		// Set user in locals for access in components
+		event.locals.user = user;
+
+		return await setAdditionalHeaders({ event, resolve });
+	}
+
+	// We need to check if the privateRoutes array contains the current path or part of it
+	// If it does, we need to redirect the user to the login page
+
+	const isPrivateRoute = privateRoutes.some((route) => url.pathname.includes(route));
+
+	if (!cookie && isPrivateRoute) {
+		return new Response('LoginRequired', {
+			status: 302,
+			headers: { location: `/api/auth/login?returnUrl=${url.pathname}` }
+		});
+	}
+
+	return await setAdditionalHeaders({ event, resolve });
 };
