@@ -83,8 +83,8 @@ export interface Sighting extends Omit<SightingModel, 'location'> {
 	seaState: SeaState;
 	visibility?: Visibility;
 	behavior?: AnimalBehavior;
-	
-	// Datei-Referenzen für Admin-Bearbeitung  
+
+	// Datei-Referenzen für Admin-Bearbeitung
 	files?: UploadedFileInfo[];
 }
 
@@ -107,4 +107,21 @@ export interface DropzoneProps extends HTMLInputAttributes {
 	onDrop?: HTMLLabelAttributes['ondrop'];
 	onDragOver?: HTMLLabelAttributes['ondragover'];
 	onChange?: HTMLInputAttributes['onchange'];
+}
+
+// Base user type for the application
+
+export interface User {
+	nickname: string;
+	name: string;
+	picture: string;
+	updated_at: string;
+	email: string;
+	email_verified: boolean;
+	iss: string;
+	aud: string;
+	iat: number;
+	exp: number;
+	sub: string;
+	sid: string;
 }

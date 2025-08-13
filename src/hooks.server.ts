@@ -1,12 +1,47 @@
+import { COOKIE_NAME, SESSION_SECRET } from '$env/static/private';
+import { setAuthCookie } from '$lib/auth/auth';
+import { privateRoutes } from '$lib/constants/privateRoutes';
+import { createLogger } from '$lib/logger';
+import type { User } from '$lib/types/types';
 import type { Handle } from '@sveltejs/kit';
+import jwt from 'jsonwebtoken';
+
+const logger = createLogger('hooks:server');
 
 /**
  * SvelteKit Handle Hook - Nicht-CSP Security Headers
- * 
+ *
  * WICHTIG: CSP wird in svelte.config.js konfiguriert (Vercel-optimiert)
  * Hier werden nur zusätzliche Security Headers gesetzt
  */
 export const handle: Handle = async ({ event, resolve }) => {
+	// Authentication
+	const cookie = event.cookies.get(COOKIE_NAME);
+	const url = new URL(event.request.url);
+
+	logger.info({ cookie, pathname: url.pathname }, 'Authentication check');
+
+	if (cookie) {
+		// Extend the cookie
+		const user = jwt.verify(cookie, SESSION_SECRET) as User;
+		logger.debug({ user }, 'Authenticated user');
+		setAuthCookie(event.cookies, user);
+		return await resolve(event);
+	}
+
+	// We need to check if the privateRoutes array contains the current path or part of it
+	// If it does, we need to redirect the user to the login page
+
+	const isPrivateRoute = privateRoutes.some((route) => url.pathname.includes(route));
+
+	if (!cookie && isPrivateRoute) {
+		return new Response('LoginRequired', {
+			status: 302,
+			headers: { location: `/api/auth/login?returnUrl=${url.pathname}` }
+		});
+	}
+
+	// Additional Headers
 	const response = await resolve(event);
 
 	// Zusätzliche Security Headers (CSP ist in svelte.config.js)
@@ -32,11 +67,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (existingCookies) {
 		// SameSite=None für iframe-Funktionalität (nur mit Secure)
 		const iframeFriendlyCookies = existingCookies.replace(
-			/SameSite=Strict/g, 
+			/SameSite=Strict/g,
 			'SameSite=None; Secure'
 		);
 		response.headers.set('Set-Cookie', iframeFriendlyCookies);
 	}
-
 	return response;
 };
