@@ -13,7 +13,7 @@ export async function readImageExifData(source: string | Buffer): Promise<ExifDa
 	try {
 		// Dynamically import exifr library
 		const { default: exifr } = await import('exifr');
-		
+
 		// Get buffer - either passed directly or read from file
 		let buffer: Buffer;
 		if (Buffer.isBuffer(source)) {
@@ -23,7 +23,7 @@ export async function readImageExifData(source: string | Buffer): Promise<ExifDa
 			const { readFileSync } = await import('fs');
 			buffer = readFileSync(source);
 		}
-		
+
 		// Parse EXIF data with comprehensive options
 		const exifData = await exifr.parse(buffer, {
 			gps: true,
@@ -35,7 +35,7 @@ export async function readImageExifData(source: string | Buffer): Promise<ExifDa
 			pick: [
 				// GPS
 				'GPSLatitude',
-				'GPSLongitude', 
+				'GPSLongitude',
 				'GPSAltitude',
 				'GPSAltitudeRef',
 				// Camera
@@ -116,31 +116,36 @@ export async function readImageExifData(source: string | Buffer): Promise<ExifDa
 			result.flash = (exifData.Flash & 1) === 1; // Flash fired
 		}
 
-		logger.debug({ 
-			source: Buffer.isBuffer(source) ? 'buffer' : source, 
-			hasGPS: !!(result.latitude && result.longitude),
-			hasCameraData: !!(result.make || result.model),
-			exifKeys: Object.keys(exifData || {}),
-			result: {
-				...result,
-				dateTimeOriginal: result.dateTimeOriginal?.toISOString()
-			}
-		}, 'EXIF data extracted');
+		logger.debug(
+			{
+				source: Buffer.isBuffer(source) ? 'buffer' : source,
+				hasGPS: !!(result.latitude && result.longitude),
+				hasCameraData: !!(result.make || result.model),
+				exifKeys: Object.keys(exifData || {}),
+				result: {
+					...result,
+					dateTimeOriginal: result.dateTimeOriginal ? result.dateTimeOriginal.toISOString() : null
+				}
+			},
+			'EXIF data extracted'
+		);
 
 		return result;
 	} catch (error) {
-		logger.warn({ 
-			error: {
-				message: error instanceof Error ? error.message : String(error),
-				stack: error instanceof Error ? error.stack : undefined,
-				name: error instanceof Error ? error.name : undefined
-			}, 
-			source: Buffer.isBuffer(source) ? 'buffer' : source 
-		}, 'Error reading EXIF data');
+		logger.warn(
+			{
+				error: {
+					message: error instanceof Error ? error.message : String(error),
+					stack: error instanceof Error ? error.stack : undefined,
+					name: error instanceof Error ? error.name : undefined
+				},
+				source: Buffer.isBuffer(source) ? 'buffer' : source
+			},
+			'Error reading EXIF data'
+		);
 		return null;
 	}
 }
-
 
 /**
  * Überprüft ob GPS-Koordinaten verfügbar sind
