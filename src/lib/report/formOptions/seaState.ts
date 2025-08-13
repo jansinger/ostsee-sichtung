@@ -54,7 +54,6 @@ export function getSeaStateLabel(value: SeaStateEnum | number | null | undefined
  * @returns true, wenn der Wert ein gültiger SeaState-Wert ist
  */
 export function isValidSeaState(value: unknown): boolean {
-	console.log('isValidSeaState', value);
 	if (typeof value === 'string') {
 		const numValue = parseInt(value, 10);
 		return !isNaN(numValue) && Object.values(SeaStateEnum).includes(numValue);
