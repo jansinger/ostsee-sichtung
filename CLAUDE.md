@@ -59,6 +59,10 @@ The main entity is `sichtungen` (sightings) table with comprehensive fields for 
 - Administrative fields (approval status, verification, internal comments)
 - Dead animal findings with additional details
 
+Supporting tables:
+- `sichtungen_dateien` - File attachments with metadata (JSONB for EXIF data, URLs, file information)
+- `ne_10m_ocean` - Geographic ocean boundaries for validation
+
 Key sequences: `sichtungen_seq` starts at 1840, test sequences available for development.
 
 ### Project Structure
@@ -86,9 +90,11 @@ src/
 
 ### Key Implementation Files
 - `/src/routes/report/+page.svelte` - Main multi-step form with dynamic navigation
-- `/src/lib/sightingSchema.ts` - Yup validation schema for form validation
-- `/src/lib/server/db/schema.ts` - Database schema definition with PostGIS integration
+- `/src/lib/form/validation/sightingSchema.ts` - Yup validation schema for form validation
+- `/src/lib/server/db/schema.ts` - Database schema definition with PostGIS integration and JSONB support
+- `/src/lib/server/db/sightingRepository.ts` - Data access layer for sighting operations
 - `/src/lib/report/formOptions/` - Constants for dropdown options and form selections
+- `/src/lib/server/storage/` - Storage abstraction layer supporting local and cloud providers
 
 ## Key Design Patterns
 - Always cosider the Design Guide in `DESIGNGUIDE.md` (important!)
@@ -113,6 +119,14 @@ Always check Baltic Sea geographic bounds using the `checkBalticSea` utility bef
 
 ## Development Guidelines & Code Conventions
 
+### Clean Code Principles
+- **DRY (Don't Repeat Yourself)**: Extract reusable logic into utility functions, custom hooks, or shared components
+- **Single Responsibility**: Each function, component, or module should have one clear purpose
+- **Separation of Concerns**: Keep business logic, data access, and presentation layers separate
+- **KISS (Keep It Simple)**: Prefer simple, readable solutions over complex ones
+- **YAGNI (You Aren't Gonna Need It)**: Don't add functionality until it's actually needed
+- **Composition over Inheritance**: Use component composition and utility functions instead of complex inheritance hierarchies
+
 ### TypeScript Best Practices
 - Use TypeScript types and interfaces for type safety - avoid `any` types
 - Prefer `const` and `let` over `var` for block scoping
@@ -121,24 +135,40 @@ Always check Baltic Sea geographic bounds using the `checkBalticSea` utility bef
 - Write pure functions when possible to improve testability and avoid side effects
 - Ensure functions are idempotent for better reusability
 - Make functions deterministic for predictable behavior
+- Define explicit return types for functions for better type safety
+- Use type guards and narrowing for runtime type safety
 
 ### Code Quality Standards
 - Write clear, well-structured, and maintainable code
-- Use descriptive naming conventions following project patterns
+- Use descriptive naming conventions following project patterns:
+  - Components: PascalCase (e.g., `MediaGallery.svelte`)
+  - Functions/variables: camelCase (e.g., `loadSightingFiles`)
+  - Constants: UPPER_SNAKE_CASE (e.g., `MAX_FILE_SIZE`)
+  - Types/Interfaces: PascalCase with descriptive suffixes (e.g., `SightingFormData`)
 - Document complex logic and important architectural decisions
 - Consider performance, security, and scalability in implementations
 - Write unit tests where applicable and design for testability
 - Follow existing project conventions and ESLint rules
 - Minimize technical debt and unnecessary dependencies
-- Prefer small files, i.e. create a seperat file for each function
-- Please use modern accessibility recommendations to conform with european accessibility rules
+- Prefer small, focused files - create separate files for each major function or component
+- Use modern accessibility recommendations to conform with European accessibility rules (WCAG 2.1 AA)
+
+### Database & Data Access Patterns
+- Use repository pattern for database operations (e.g., `sightingRepository.ts`)
+- Always validate data before database operations
+- Use transactions for multi-table operations
+- Leverage JSONB for flexible structured data (e.g., EXIF metadata)
+- Keep database schema changes versioned and reversible
+- Use proper indexes for frequently queried fields
 
 ### Project-Specific Conventions
 - Follow existing component organization patterns in `/src/lib/components/`
-- Use established constants from `/src/lib/constants/` for form options
+- Use established constants from `/src/lib/report/formOptions/` for form options
 - Maintain consistency with Drizzle ORM patterns for database operations
 - Respect the multi-step form structure and conditional logic patterns
 - Use PostGIS utilities for geographic data handling
 - Follow TailwindCSS + DaisyUI styling patterns established in the codebase
-- Use Svelte 5 runes mode
-- Use Pino for logging, avoid console usage
+- Use Svelte 5 runes mode (`$state`, `$derived`, `$effect`, etc.)
+- Use Pino for logging, avoid console usage except for debugging
+- Store file metadata including EXIF data as JSONB in database for efficient querying
+- Use storage abstraction layer for file operations to support multiple providers
