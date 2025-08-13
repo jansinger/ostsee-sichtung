@@ -13,10 +13,20 @@
 		// Preserve only the filter-related search parameters
 		const searchParams = $page.url.searchParams;
 		const adminUrl = new URL('/admin', $page.url.origin);
-		
+
 		// List of filter parameters to preserve
-		const filterParams = ['dateFrom', 'dateTo', 'verified', 'entryChannel', 'mediaUpload', 'sort', 'order', 'page', 'perPage'];
-		
+		const filterParams = [
+			'dateFrom',
+			'dateTo',
+			'verified',
+			'entryChannel',
+			'mediaUpload',
+			'sort',
+			'order',
+			'page',
+			'perPage'
+		];
+
 		// Copy only filter-related parameters to maintain filters
 		for (const param of filterParams) {
 			const value = searchParams.get(param);
@@ -24,7 +34,7 @@
 				adminUrl.searchParams.set(param, value);
 			}
 		}
-		
+
 		goto(adminUrl.toString());
 	}
 
@@ -38,7 +48,7 @@
 </svelte:head>
 
 <div class="container mx-auto p-4">
-	<div class="mb-4 flex justify-end">
+	<div class="mb-2 flex justify-end">
 		<button class="btn btn-ghost btn-sm" onclick={handleClose}>
 			<ArrowLeftOutline class="mr-2 h-4 w-4" />
 			Zurück zur Tabelle

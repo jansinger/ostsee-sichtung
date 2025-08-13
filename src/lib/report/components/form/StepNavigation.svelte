@@ -141,18 +141,6 @@
 		← Zurück
 	</button>
 
-	<div class="flex-1 text-center">
-		<span class="text-sm font-medium" aria-live="polite">
-			Schritt {currentStep + 1} von {totalSteps}
-		</span>
-		<progress
-			class="progress progress-primary mt-2 w-full max-w-xs"
-			value={currentStep + 1}
-			max={totalSteps}
-			aria-label={`Fortschritt: Schritt ${currentStep + 1} von ${totalSteps}`}
-		></progress>
-	</div>
-
 	<button
 		type="button"
 		onclick={nextStep}

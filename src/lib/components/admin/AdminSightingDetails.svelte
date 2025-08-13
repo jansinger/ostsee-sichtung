@@ -72,10 +72,8 @@
 </script>
 
 <div class="p-6">
-	<div class="mb-4 flex items-center justify-between">
-		<h2 class="text-xl font-bold">
-			Sichtung Details <small>(Referenz-ID: {sighting.referenceId})</small>
-		</h2>
+	<div class="mb-0 flex items-center justify-between">
+		<h2 class="text-xl font-bold">Sichtung Details</h2>
 		<div class="flex gap-2">
 			{#if allowEditing && !isEditing}
 				<button
@@ -99,6 +97,9 @@
 				</button>
 			{/if}
 		</div>
+	</div>
+	<div class="mb-4 text-sm text-gray-600">
+		Referenz-ID: {sighting.referenceId}
 	</div>
 
 	{#if isEditing}
