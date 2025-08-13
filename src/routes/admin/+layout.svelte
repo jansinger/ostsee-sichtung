@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { List, User, LogOut } from '@steeze-ui/lucide-icons';
+	import { List, LogOut, User } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import type { LayoutData } from './$types';
 
@@ -42,17 +42,14 @@
 								<span class="cursor-not-allowed px-4 py-2 opacity-50">Karte</span>
 							</li>
 						</ul>
-						
+
 						<!-- User menu - Desktop -->
 						{#if data.user}
 							<div class="dropdown dropdown-end">
-								<button
-									aria-label="Benutzer-Menü"
-									class="btn btn-ghost gap-2"
-								>
+								<button tabindex="0" aria-label="Benutzer-Menü" class="btn btn-ghost gap-2">
 									{#if data.user.picture}
 										<div class="avatar">
-											<div class="w-8 h-8 rounded-full">
+											<div class="h-8 w-8 rounded-full">
 												<img src={data.user.picture} alt="Profilbild" />
 											</div>
 										</div>
@@ -61,7 +58,9 @@
 									{/if}
 									<span class="hidden xl:inline">{data.user.nickname || data.user.name}</span>
 								</button>
-								<ul class="dropdown-content menu menu-sm rounded-box bg-base-100 z-[1] mt-3 w-52 p-2 shadow">
+								<ul
+									class="dropdown-content menu menu-sm rounded-box bg-base-100 absolute right-0 z-50 mt-3 w-52 p-2 shadow"
+								>
 									<li class="menu-title">
 										<span>{data.user.name}</span>
 									</li>
@@ -82,11 +81,12 @@
 
 					<!-- Mobile menu -->
 					<div class="dropdown dropdown-end lg:hidden">
-						<button aria-label="Menü" class="btn btn-ghost">
+						<button tabindex="0" aria-label="Menü" class="btn btn-ghost">
 							<Icon src={List} class="h-6 w-6 shrink-0" />
 						</button>
 						<ul
-							class="dropdown-content menu menu-sm rounded-box bg-base-100 z-[1] mt-3 w-52 p-2 shadow"
+							tabindex="0"
+							class="dropdown-content menu menu-sm rounded-box bg-base-100 absolute right-0 z-50 mt-3 w-52 p-2 shadow"
 						>
 							<li>
 								<a
@@ -110,7 +110,7 @@
 							<li>
 								<span class="cursor-not-allowed opacity-50">Karte</span>
 							</li>
-							
+
 							<!-- User info - Mobile -->
 							{#if data.user}
 								<li><hr class="my-2" /></li>
@@ -118,7 +118,7 @@
 									<div class="flex items-center gap-2">
 										{#if data.user.picture}
 											<div class="avatar">
-												<div class="w-6 h-6 rounded-full">
+												<div class="h-6 w-6 rounded-full">
 													<img src={data.user.picture} alt="Profilbild" />
 												</div>
 											</div>
