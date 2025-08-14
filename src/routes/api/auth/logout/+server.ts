@@ -1,9 +1,9 @@
 import { AUTH0_CLIENT_ID, AUTH0_DOMAIN } from '$env/static/private';
 import { PUBLIC_SITE_URL } from '$env/static/public';
 import { clearAuthCookie } from '$lib/auth/auth.js';
-import { redirect } from '@sveltejs/kit';
+import { redirect, type Cookies } from '@sveltejs/kit';
 
-export async function GET({ cookies }) {
+export async function GET({ cookies }: { cookies: Cookies }) {
 	// we need to remove the loggedIN cookie
 	clearAuthCookie(cookies);
 

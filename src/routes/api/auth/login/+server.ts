@@ -1,7 +1,7 @@
 import { API_AUDIENCE, AUTH0_CLIENT_ID, AUTH0_DOMAIN } from '$env/static/private';
 import { PUBLIC_SITE_URL } from '$env/static/public';
-import { redirect } from '@sveltejs/kit';
-export async function GET({ cookies, url }) {
+import { redirect, type Cookies } from '@sveltejs/kit';
+export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 	const csrfState = Math.random().toString(36).substring(7);
 	cookies.set('csrfState', csrfState, {
 		httpOnly: true,

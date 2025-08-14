@@ -2,12 +2,12 @@ import { API_AUDIENCE } from '$env/static/private';
 import { getToken, getTokenClaims, setAuthCookie, verifyToken } from '$lib/auth/auth.js';
 import { createLogger } from '$lib/logger';
 import type { User } from '$lib/types';
-import { error, redirect } from '@sveltejs/kit';
+import { error, redirect, type Cookies } from '@sveltejs/kit';
 
 const logger = createLogger('auth:auth0');
 const rolesClaim = `${API_AUDIENCE}/roles`;
 
-export async function GET({ url, cookies }) {
+export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 	const code = url.searchParams.get('code');
 	const state = url.searchParams.get('state');
 	let returnUrl = url.searchParams.get('returnUrl') || '/';
