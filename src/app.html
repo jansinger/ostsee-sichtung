@@ -23,6 +23,11 @@
 		<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 		<meta name="format-detection" content="telephone=no" />
 
+		<!-- Preload critical fonts to prevent layout shift -->
+		<link rel="preload" href="/node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+		<link rel="preload" href="/node_modules/@fontsource/inter/files/inter-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+		<link rel="preload" href="/node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+
 		<!-- DNS Prefetch for external resources -->
 		<link rel="dns-prefetch" href="//tile.openstreetmap.org" />
 		<link rel="dns-prefetch" href="//tiles.openseamap.org" />
