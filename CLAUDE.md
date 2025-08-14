@@ -180,3 +180,4 @@ Always check Baltic Sea geographic bounds using the `checkBalticSea` utility bef
 - Store file metadata including EXIF data as JSONB in database for efficient querying
 - Use storage abstraction layer for file operations to support multiple providers
 - Nach jeder Veränderung im Code sollte npm check und npm type-check ausgeführt werden
+- Alle Imports aus /lib sollen mit $lib und dem vollen Pfad importiert werden

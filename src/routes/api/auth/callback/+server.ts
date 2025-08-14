@@ -1,5 +1,5 @@
 import { API_AUDIENCE } from '$env/static/private';
-import { getToken, getTokenClaims, setAuthCookie, verifyToken } from '$lib/auth/auth.js';
+import { getToken, getTokenClaims, setAuthCookie, verifyToken } from '$lib/server/auth/auth.js';
 import { createLogger } from '$lib/logger';
 import type { User } from '$lib/types';
 import { error, redirect, type Cookies } from '@sveltejs/kit';

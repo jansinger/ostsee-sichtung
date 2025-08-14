@@ -5,7 +5,7 @@
 	import { getFormContext } from '$lib/report/formContext';
 	import { mediaStore } from '$lib/stores/mediaStore';
 	import { createToast } from '$lib/stores/toastStore';
-	import { analyzeFile, isInBalticSea, type FileMetadata } from '$lib/utils/exifUtils';
+	import { analyzeClientFile, isInBalticSea, convertServerExifToClient, type ClientFileMetadata } from '$lib/utils/client/fileAnalysis';
 	import { FILE_VALIDATION_PRESETS } from '$lib/utils/fileValidation';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { deleteFileDirect, uploadFileDirect } from '$lib/utils/uploadUtils';
@@ -24,7 +24,7 @@
 	let positionMethod = $state<'photo' | 'map' | 'manual'>('photo');
 	let isAnalyzing = $state(false);
 	let isUploading = $state(false);
-	let photoMetadata: FileMetadata | null = $state(null);
+	let photoMetadata: ClientFileMetadata | null = $state(null);
 	let photoFile: File | null = $state(null);
 	let dropzoneFiles = $state<File[]>([]);
 	let uploadedPhotoPath: string | null = $state(null);
@@ -129,49 +129,19 @@
 		photoFile = file;
 
 		try {
-			const metadata = await analyzeFile(file);
+			const metadata = await analyzeClientFile(file);
 			photoMetadata = metadata;
 
-			// Check if photo has GPS data
-			if (metadata.exif.latitude !== null && metadata.exif.longitude !== null) {
-				// Validate Baltic Sea location
-				if (isInBalticSea(metadata.exif.latitude, metadata.exif.longitude)) {
-					// Set position in form
-					handleChange({
-						target: { name: 'latitude', value: metadata.exif.latitude.toString() }
-					} as unknown as Event);
-					handleChange({
-						target: { name: 'longitude', value: metadata.exif.longitude.toString() }
-					} as unknown as Event);
-					handleChange({ target: { name: 'hasPosition', value: true } } as unknown as Event);
+			// Note: GPS data extraction is now handled server-side
+			// Client-side analysis only provides basic file metadata and thumbnails
+			
+			// Add photo to media store for later processing
+			mediaStore.addFromPositionStep(file, metadata);
 
-					// Set date/time if available
-					if (metadata.exif.timestamp) {
-						const date = metadata.exif.timestamp;
-						handleChange({
-							target: { name: 'sightingDate', value: date.toISOString().split('T')[0] }
-						} as unknown as Event);
-						handleChange({
-							target: { name: 'sightingTime', value: date.toTimeString().slice(0, 5) }
-						} as unknown as Event);
-					}
-
-					// Add photo to media store for later media upload
-					mediaStore.addFromPositionStep(file, metadata);
-
-					createToast('success', 'GPS-Position und Datum erfolgreich aus dem Foto übernommen!');
-				} else {
-					createToast(
-						'warning',
-						'Das Foto wurde außerhalb der Ostsee aufgenommen. Bitte verwenden Sie ein anderes Foto oder wählen Sie eine andere Eingabemethode.'
-					);
-				}
-			} else {
-				createToast(
-					'info',
-					'Das Foto enthält keine GPS-Daten. Sie können trotzdem die Kartenansicht oder manuelle Eingabe verwenden.'
-				);
-			}
+			createToast(
+				'info',
+				'Foto analysiert. GPS-Daten werden beim Upload verarbeitet.'
+			);
 		} catch (error) {
 			logger.warn({ error, fileName: file.name }, 'Error analyzing photo');
 			createToast('error', 'Fehler beim Analysieren des Fotos.');
@@ -198,11 +168,55 @@
 					// Speichere die vollständigen Datei-Informationen für späteres Löschen und DB-Speicherung
 					uploadedFiles.set(file.name, uploadResultToFormData(uploadResult));
 
+					// Update photo metadata with server EXIF data if available
+					if (uploadResult.exifData && photoMetadata) {
+						const serverExif = convertServerExifToClient(uploadResult.exifData);
+						photoMetadata = {
+							...photoMetadata,
+							exif: serverExif
+						};
+						
+						// Update media store with EXIF data
+						mediaStore.addFromPositionStep(file, photoMetadata);
+
+						// If GPS data found, auto-fill form and show success message
+						if (serverExif.latitude && serverExif.longitude) {
+							handleChange({
+								target: { name: 'hasPosition', value: true }
+							} as unknown as Event);
+							handleChange({
+								target: { name: 'latitude', value: serverExif.latitude.toString() }
+							} as unknown as Event);
+							handleChange({
+								target: { name: 'longitude', value: serverExif.longitude.toString() }
+							} as unknown as Event);
+
+							// Auto-fill date/time from EXIF if available
+							if (serverExif.timestamp) {
+								const date = serverExif.timestamp;
+								const dateStr = date.toISOString().split('T')[0];
+								const timeStr = date.toTimeString().slice(0, 5);
+								
+								handleChange({
+									target: { name: 'sightingDate', value: dateStr }
+								} as unknown as Event);
+								handleChange({
+									target: { name: 'sightingTime', value: timeStr }
+								} as unknown as Event);
+							}
+
+							createToast('success', 'Foto hochgeladen! GPS-Position und Datum automatisch erfasst.');
+						} else {
+							createToast('success', 'Foto hochgeladen! Keine GPS-Daten gefunden - bitte Position manuell eingeben.');
+						}
+					} else {
+						createToast('success', 'Foto erfolgreich hochgeladen!');
+					}
+
 					logger.info(
-						{ fileName: file.name, filePath: uploadResult.filePath },
+						{ fileName: file.name, filePath: uploadResult.filePath, hasGPS: !!(uploadResult.exifData?.latitude) },
 						'Position photo uploaded and tracked'
 					);
-					createToast('success', 'Foto erfolgreich hochgeladen!');
 				} catch (error) {
 					logger.error({ error, fileName: file.name }, 'Failed to upload position photo');
 					const errorMessage = (error as Error).message;

@@ -1,9 +1,9 @@
-import type { FileMetadata } from '$lib/utils/exifUtils';
+import type { ClientFileMetadata } from '$lib/utils/client/fileAnalysis';
 import { writable } from 'svelte/store';
 
 export interface MediaFile {
 	file: File;
-	metadata: FileMetadata;
+	metadata: ClientFileMetadata;
 	isFromPositionStep?: boolean;
 }
 
@@ -20,7 +20,7 @@ function createMediaStore() {
 		/**
 		 * Add a file from the position step (will be marked as first media file)
 		 */
-		addFromPositionStep: (file: File, metadata: FileMetadata) => {
+		addFromPositionStep: (file: File, metadata: ClientFileMetadata) => {
 			update((store) => ({
 				...store,
 				files: [
@@ -37,7 +37,7 @@ function createMediaStore() {
 		/**
 		 * Add additional media files
 		 */
-		addFiles: (newFiles: { file: File; metadata: FileMetadata }[]) => {
+		addFiles: (newFiles: { file: File; metadata: ClientFileMetadata }[]) => {
 			update((store) => ({
 				...store,
 				files: [

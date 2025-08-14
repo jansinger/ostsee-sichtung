@@ -1,4 +1,4 @@
-import type { FrontendSighting } from '$lib/types';
+import type { FrontendSighting } from '$lib/types/index';
 
 interface XmlSighting {
 	nr: number;
@@ -20,7 +20,7 @@ interface XmlSighting {
 }
 
 /**
- * Erzeugt XML-Daten aus Sichtungen
+ * Erzeugt XML-Daten aus Sichtungen (Server-Side)
  * Basiert auf der ursprünglichen PHP-Funktion getXmlData
  */
 export function generateXmlData(sightings: FrontendSighting[]): string {
@@ -135,25 +135,4 @@ function transformToXmlSighting(sighting: FrontendSighting): XmlSighting {
 	}
 
 	return xmlSighting;
-}
-
-/**
- * Generiert einen XML-Download für die gegebenen Sichtungen
- */
-export function downloadXml(
-	sightings: FrontendSighting[],
-	filename = 'sichtungen-export.xml'
-): void {
-	const xmlContent = generateXmlData(sightings);
-	const blob = new Blob([xmlContent], { type: 'application/xml;charset=utf-8;' });
-	const url = URL.createObjectURL(blob);
-
-	const link = document.createElement('a');
-	link.setAttribute('href', url);
-	link.setAttribute('download', filename);
-	link.style.visibility = 'hidden';
-
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
 }

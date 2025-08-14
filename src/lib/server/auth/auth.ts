@@ -8,7 +8,7 @@ import {
 } from '$env/static/private';
 import { PUBLIC_SITE_URL } from '$env/static/public';
 
-import type { User } from '$lib/types';
+import type { User } from '$lib/types/index';
 import type { Cookies } from '@sveltejs/kit';
 import type { JwtHeader, SigningKeyCallback } from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';

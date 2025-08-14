@@ -1,9 +1,6 @@
 <script lang="ts">
-	import { downloadCsv } from '$lib/export/csvExport';
-	import { downloadJson } from '$lib/export/jsonExport';
-	import { downloadKml } from '$lib/export/kmlExport';
-	import { downloadXml } from '$lib/export/xmlExport';
-	import type { FrontendSighting } from '$lib/types';
+	import { downloadHandlers, createTimestampedFilename } from '$lib/utils/download';
+	import type { FrontendSighting } from '$lib/types/index';
 	import {
 		CheckCircleOutline,
 		ExclamationCircleOutline,
@@ -57,50 +54,46 @@
 	}
 
 	// Export-Funktionen
-	function exportCsv() {
+	async function exportCsv() {
 		if (sightings.length === 0) {
 			alert('Bitte laden Sie zuerst Sichtungen.');
 			return;
 		}
 
-		const filename = `sichtungen-export-${formatDateForFilename(fromDate)}-${formatDateForFilename(toDate)}.csv`;
-		downloadCsv(sightings, filename);
+		const filename = createTimestampedFilename(fromDate, toDate, 'csv');
+		await downloadHandlers.csv(sightings, filename);
 	}
 
-	function exportJson() {
+	async function exportJson() {
 		if (sightings.length === 0) {
 			alert('Bitte laden Sie zuerst Sichtungen.');
 			return;
 		}
 
-		const filename = `sichtungen-export-${formatDateForFilename(fromDate)}-${formatDateForFilename(toDate)}.json`;
-		downloadJson(sightings, filename);
+		const filename = createTimestampedFilename(fromDate, toDate, 'json');
+		await downloadHandlers.json(sightings, filename);
 	}
 
-	function exportXml() {
+	async function exportXml() {
 		if (sightings.length === 0) {
 			alert('Bitte laden Sie zuerst Sichtungen.');
 			return;
 		}
 
-		const filename = `sichtungen-export-${formatDateForFilename(fromDate)}-${formatDateForFilename(toDate)}.xml`;
-		downloadXml(sightings, filename);
+		const filename = createTimestampedFilename(fromDate, toDate, 'xml');
+		await downloadHandlers.xml(sightings, filename);
 	}
 
-	function exportKml() {
+	async function exportKml() {
 		if (sightings.length === 0) {
 			alert('Bitte laden Sie zuerst Sichtungen.');
 			return;
 		}
 
-		const filename = `sichtungen-export-${formatDateForFilename(fromDate)}-${formatDateForFilename(toDate)}.kml`;
-		downloadKml(sightings, filename);
+		const filename = createTimestampedFilename(fromDate, toDate, 'kml');
+		await downloadHandlers.kml(sightings, filename);
 	}
 
-	// Hilfsfunktion für Dateinamen
-	function formatDateForFilename(dateString: string): string {
-		return dateString.replace(/-/g, '');
-	}
 
 	// Beim ersten Laden der Komponente
 	onMount(() => {

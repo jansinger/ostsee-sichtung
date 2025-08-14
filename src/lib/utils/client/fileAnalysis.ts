@@ -1,96 +1,65 @@
 /**
- * EXIF-Utilities für das Auslesen von GPS-Koordinaten und anderen Metadaten aus Bildern
+ * Client-side file analysis utilities
+ * Diese funktionen nutzen die browser APIs für basic file validation und analysis
  */
 import { createLogger } from '$lib/logger';
 
-const logger = createLogger('exifUtils');
+const logger = createLogger('client:fileAnalysis');
 
-export interface ExifGPS {
-	latitude: number | null;
-	longitude: number | null;
-	altitude: number | null;
-	timestamp: Date | null;
-}
-
-export interface FileMetadata {
+export interface ClientFileMetadata {
 	name: string;
 	size: number;
 	type: string;
 	lastModified: Date;
-	exif: ExifGPS;
 	thumbnail?: string;
+	exif: {
+		latitude: number | null;
+		longitude: number | null;
+		altitude: number | null;
+		timestamp: Date | null;
+	};
 }
 
 /**
- * Liest EXIF-Daten aus einem Bild mit der exifr Library
+ * Analysiert eine Datei client-seitig (ohne EXIF-Daten)
+ * Für EXIF-Daten muss die Datei server-seitig verarbeitet werden
  */
-async function readExifData(file: File): Promise<ExifGPS> {
-	try {
-		// Dynamically import exifr library
-		const exifr = await import('exifr');
-
-		// Parse GPS and DateTime from EXIF data
-		const exifData = await exifr.parse(file, {
-			gps: true,
-			pick: [
-				'GPSLatitude',
-				'GPSLongitude',
-				'GPSAltitude',
-				'GPSAltitudeRef',
-				'DateTimeOriginal',
-				'DateTime'
-			]
-		});
-
-		if (!exifData) {
-			return {
-				latitude: null,
-				longitude: null,
-				altitude: null,
-				timestamp: null
-			};
-		}
-
-		// Extract GPS data
-		const gps: ExifGPS = {
-			latitude: exifData.latitude || null,
-			longitude: exifData.longitude || null,
-			altitude: null,
-			timestamp: null
-		};
-
-		// Handle altitude with reference
-		if (exifData.GPSAltitude !== undefined) {
-			gps.altitude = exifData.GPSAltitude;
-			// GPSAltitudeRef: 0 = above sea level, 1 = below sea level
-			if (exifData.GPSAltitudeRef === 1 && gps.altitude !== null) {
-				gps.altitude = -gps.altitude;
-			}
-		}
-
-		// Handle timestamp
-		if (exifData.DateTimeOriginal) {
-			gps.timestamp = new Date(exifData.DateTimeOriginal);
-		} else if (exifData.DateTime) {
-			gps.timestamp = new Date(exifData.DateTime);
-		}
-
-		return gps;
-	} catch (error) {
-		logger.warn({ error, fileName: file.name }, 'Error reading EXIF data');
-		return {
+export async function analyzeClientFile(file: File): Promise<ClientFileMetadata> {
+	const metadata: ClientFileMetadata = {
+		name: file.name,
+		size: file.size,
+		type: file.type,
+		lastModified: new Date(file.lastModified),
+		exif: {
 			latitude: null,
 			longitude: null,
 			altitude: null,
 			timestamp: null
-		};
+		}
+	};
+
+	// Erstelle Thumbnail für Bilder
+	if (file.type.startsWith('image/')) {
+		try {
+			metadata.thumbnail = await createImageThumbnail(file);
+		} catch (error) {
+			logger.warn({ error, fileName: file.name }, 'Error creating image thumbnail');
+		}
+	} else if (file.type.startsWith('video/')) {
+		try {
+			metadata.thumbnail = await createVideoThumbnail(file);
+		} catch (error) {
+			logger.warn({ error, fileName: file.name }, 'Error creating video thumbnail');
+		}
 	}
+
+	return metadata;
 }
 
 /**
  * Erstellt ein Thumbnail für eine Bilddatei
  */
-async function createThumbnail(file: File, maxSize: number = 200): Promise<string> {
+async function createImageThumbnail(file: File, maxSize: number = 200): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const canvas = document.createElement('canvas');
 		const ctx = canvas.getContext('2d');
@@ -177,39 +146,24 @@ async function createVideoThumbnail(file: File): Promise<string> {
 }
 
 /**
- * Analysiert eine Datei und extrahiert Metadaten
+ * Konvertiert Server-EXIF-Daten zu Client-Format
  */
-export async function analyzeFile(file: File): Promise<FileMetadata> {
-	const metadata: FileMetadata = {
-		name: file.name,
-		size: file.size,
-		type: file.type,
-		lastModified: new Date(file.lastModified),
-		exif: {
+export function convertServerExifToClient(serverExifData: any): ClientFileMetadata['exif'] {
+	if (!serverExifData) {
+		return {
 			latitude: null,
 			longitude: null,
 			altitude: null,
 			timestamp: null
-		}
-	};
-
-	// Erstelle Thumbnail basierend auf Dateityp
-	try {
-		if (file.type.startsWith('image/')) {
-			// Bild: Erstelle Thumbnail und lese EXIF-Daten
-			const [thumbnail, exifData] = await Promise.all([createThumbnail(file), readExifData(file)]);
-
-			metadata.thumbnail = thumbnail;
-			metadata.exif = exifData;
-		} else if (file.type.startsWith('video/')) {
-			// Video: Erstelle Video-Thumbnail
-			metadata.thumbnail = await createVideoThumbnail(file);
-		}
-	} catch (error) {
-		logger.warn({ error, fileName: file.name }, 'Error analyzing file');
+		};
 	}
 
-	return metadata;
+	return {
+		latitude: serverExifData.latitude || null,
+		longitude: serverExifData.longitude || null,
+		altitude: serverExifData.altitude || null,
+		timestamp: serverExifData.dateTimeOriginal ? new Date(serverExifData.dateTimeOriginal) : null
+	};
 }
 
 /**

@@ -4,7 +4,7 @@
 	import { getFormContext } from '$lib/report/formContext';
 	import { mediaStore, type MediaFile } from '$lib/stores/mediaStore';
 	import { createToast } from '$lib/stores/toastStore';
-	import { analyzeFile, isInBalticSea, type FileMetadata } from '$lib/utils/exifUtils';
+	import { analyzeClientFile, isInBalticSea, convertServerExifToClient, type ClientFileMetadata } from '$lib/utils/client/fileAnalysis';
 	import { FILE_VALIDATION_PRESETS } from '$lib/utils/fileValidation';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { deleteFileDirect, uploadFileDirect } from '$lib/utils/uploadUtils';
@@ -76,7 +76,7 @@
 						const mockFile = new File([''], fileInfo.originalName, { type: fileInfo.mimeType });
 						
 						// Create basic metadata for display
-						const mockMetadata: FileMetadata = {
+						const mockMetadata: ClientFileMetadata = {
 							name: fileInfo.originalName,
 							size: fileInfo.size,
 							type: fileInfo.mimeType,
@@ -115,7 +115,7 @@
 
 		try {
 			// 1. Analysiere EXIF-Daten
-			const newAnalyses = await Promise.all(newFiles.map((file) => analyzeFile(file)));
+			const newAnalyses = await Promise.all(newFiles.map((file) => analyzeClientFile(file)));
 
 			// 2. Füge neue Dateien zum media store hinzu
 			const newMediaFiles = newAnalyses
@@ -123,38 +123,16 @@
 					file: newFiles[index],
 					metadata
 				}))
-				.filter((item): item is { file: File; metadata: FileMetadata } => item.file !== undefined);
+				.filter((item): item is { file: File; metadata: ClientFileMetadata } => item.file !== undefined);
 
 			mediaStore.addFiles(newMediaFiles);
 
-			// 3. Check for GPS coordinates in Baltic Sea nur für neue Dateien
-			const filesWithGPS = newAnalyses.filter(
-				(meta) => meta.exif.latitude !== null && meta.exif.longitude !== null
+			// 3. Note: GPS data extraction is now handled server-side
+			// Client-side analysis only provides basic file metadata and thumbnails
+			createToast(
+				'info',
+				`${newFiles.length} neue Datei(en) analysiert. GPS-Daten werden beim Upload verarbeitet.`
 			);
-
-			if (filesWithGPS.length > 0) {
-				const balticFiles = filesWithGPS.filter((meta) =>
-					isInBalticSea(meta.exif.latitude, meta.exif.longitude)
-				);
-
-				if (balticFiles.length > 0) {
-					createToast(
-						'success',
-						`${balticFiles.length} neue Datei(en) mit GPS-Koordinaten in der Ostsee gefunden!`
-					);
-				}
-
-				const nonBalticFiles = filesWithGPS.filter(
-					(meta) => !isInBalticSea(meta.exif.latitude, meta.exif.longitude)
-				);
-
-				if (nonBalticFiles.length > 0) {
-					createToast(
-						'warning',
-						`${nonBalticFiles.length} neue Datei(en) mit GPS-Koordinaten außerhalb der Ostsee gefunden.`
-					);
-				}
-			}
 		} catch (error) {
 			logger.warn({ error }, 'Error analyzing files');
 			createToast('error', 'Fehler beim Analysieren der Dateien.');
@@ -173,8 +151,27 @@
 						const uploadResult = await uploadFileDirect(file, referenceId);
 						// Speichere die vollständigen Datei-Informationen für späteres Löschen und DB-Speicherung
 						uploadedFiles.set(file.name, uploadResultToFormData(uploadResult));
+						
+						// Update media store with server EXIF data if available
+						if (uploadResult.exifData) {
+							const serverExif = convertServerExifToClient(uploadResult.exifData);
+							const existingMediaIndex = mediaFiles.findIndex(mf => mf.metadata.name === file.name);
+							
+							if (existingMediaIndex !== -1) {
+								// Update existing media file with EXIF data
+								const updatedMetadata: ClientFileMetadata = {
+									...mediaFiles[existingMediaIndex].metadata,
+									exif: serverExif
+								};
+								
+								// Remove and re-add with updated metadata
+								mediaStore.removeFile(existingMediaIndex);
+								mediaStore.addFiles([{ file, metadata: updatedMetadata }]);
+							}
+						}
+						
 						logger.info(
-							{ fileName: file.name, uploadResult },
+							{ fileName: file.name, uploadResult, hasGPS: !!(uploadResult.exifData?.latitude) },
 							'File uploaded with full metadata'
 						);
 					} catch (uploadError) {
@@ -187,7 +184,17 @@
 						throw uploadError; // Re-throw für Gesamtfehlerbehandlung
 					}
 				}
-				createToast('success', `${newFiles.length} Datei(en) erfolgreich hochgeladen!`);
+				// Count files with GPS data
+				const filesWithGPS = newFiles.filter(file => {
+					const fileData = uploadedFiles.get(file.name);
+					return fileData && fileData.originalName && uploadedFiles.get(file.name)?.filePath;
+				}).length;
+				
+				if (filesWithGPS > 0) {
+					createToast('success', `${newFiles.length} Datei(en) hochgeladen! GPS-Daten wurden extrahiert.`);
+				} else {
+					createToast('success', `${newFiles.length} Datei(en) erfolgreich hochgeladen!`);
+				}
 			} catch (error) {
 				// Allgemeine Fehlerbehandlung
 				const errorMessage = (error as Error).message;
@@ -402,7 +409,7 @@
 		onFileRemoved={handleFileRemoved}
 		onClear={handleClear}
 		title={mediaFiles.length > 0 ? 'Weitere Dateien hinzufügen' : 'Medien hochladen'}
-		additionalText="GPS-Daten werden automatisch ausgelesen"
+		additionalText="GPS-Daten werden beim Upload verarbeitet"
 		isAnalyzing={isAnalyzing || isUploading}
 		loadingText={isAnalyzing
 			? 'Analysiere Dateien...'

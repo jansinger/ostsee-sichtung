@@ -6,10 +6,10 @@ import { getSeaStateLabel } from '$lib/report/formOptions/seaState';
 import { getSightingFromLabel } from '$lib/report/formOptions/sightingFrom';
 import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
-import type { FrontendSighting } from '$lib/types';
+import type { FrontendSighting } from '$lib/types/index';
 
 /**
- * Erzeugt CSV-Daten aus Sichtungen
+ * Erzeugt CSV-Daten aus Sichtungen (Server-Side)
  * Basiert auf der ursprünglichen PHP-Funktion getCsvData
  */
 export function generateCsvData(sightings: FrontendSighting[]): string {
@@ -129,25 +129,4 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 	});
 
 	return csvContent;
-}
-
-/**
- * Generiert einen CSV-Download für die gegebenen Sichtungen
- */
-export function downloadCsv(
-	sightings: FrontendSighting[],
-	filename = 'sichtungen-export.csv'
-): void {
-	const csvContent = generateCsvData(sightings);
-	const blob = new Blob(['\ufeff', csvContent], { type: 'text/csv;charset=utf-8;' });
-	const url = URL.createObjectURL(blob);
-
-	const link = document.createElement('a');
-	link.setAttribute('href', url);
-	link.setAttribute('download', filename);
-	link.style.visibility = 'hidden';
-
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
 }

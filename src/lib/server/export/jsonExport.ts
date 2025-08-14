@@ -1,7 +1,7 @@
-import type { FrontendSighting } from '$lib/types';
+import type { FrontendSighting } from '$lib/types/index';
 
 /**
- * Erzeugt JSON-Daten aus Sichtungen
+ * Erzeugt JSON-Daten aus Sichtungen (Server-Side)
  * Basiert auf der ursprünglichen PHP-Funktion getJsonData
  */
 export function generateJsonData(sightings: FrontendSighting[]): string {
@@ -22,25 +22,4 @@ function cleanJsonData(sighting: FrontendSighting): Record<string, unknown> {
 	// Hier können wir ähnliche Transformationen durchführen, falls nötig
 
 	return cleanedSighting;
-}
-
-/**
- * Generiert einen JSON-Download für die gegebenen Sichtungen
- */
-export function downloadJson(
-	sightings: FrontendSighting[],
-	filename = 'sichtungen-export.json'
-): void {
-	const jsonContent = generateJsonData(sightings);
-	const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8;' });
-	const url = URL.createObjectURL(blob);
-
-	const link = document.createElement('a');
-	link.setAttribute('href', url);
-	link.setAttribute('download', filename);
-	link.style.visibility = 'hidden';
-
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
 }

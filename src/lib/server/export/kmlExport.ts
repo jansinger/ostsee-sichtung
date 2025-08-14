@@ -1,4 +1,4 @@
-import type { FrontendSighting } from '$lib/types';
+import type { FrontendSighting } from '$lib/types/index';
 
 interface KmlPlacemark {
 	name: string;
@@ -9,7 +9,7 @@ interface KmlPlacemark {
 }
 
 /**
- * Erzeugt KML-Daten aus Sichtungen
+ * Erzeugt KML-Daten aus Sichtungen (Server-Side)
  * Basiert auf der ursprünglichen PHP-Funktion getForKml
  */
 export function generateKmlData(sightings: FrontendSighting[]): string {
@@ -250,27 +250,4 @@ function getSpeciesName(speciesId: number): string {
 	};
 
 	return speciesMap[speciesId] || 'Unbekannt';
-}
-
-/**
- * Generiert einen KML-Download für die gegebenen Sichtungen
- */
-export function downloadKml(
-	sightings: FrontendSighting[],
-	filename = 'sichtungen-export.kml'
-): void {
-	const kmlContent = generateKmlData(sightings);
-	const blob = new Blob([kmlContent], {
-		type: 'application/vnd.google-earth.kml+xml;charset=utf-8;'
-	});
-	const url = URL.createObjectURL(blob);
-
-	const link = document.createElement('a');
-	link.setAttribute('href', url);
-	link.setAttribute('download', filename);
-	link.style.visibility = 'hidden';
-
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
 }
