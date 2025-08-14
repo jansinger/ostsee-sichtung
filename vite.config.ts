@@ -19,6 +19,31 @@ export default defineConfig({
 		host: 'localhost',
 		port: 4000
 	},
+	build: {
+		rollupOptions: {
+			// Suppresses some warnings for better build logs
+			onwarn(warning, warn) {
+				// Ignore CommonJS plugin warnings
+				if (warning.code === 'PLUGIN_WARNING' && warning.plugin === 'commonjs--resolver') {
+					return;
+				}
+				// Keep other warnings
+				warn(warning);
+			}
+		}
+	},
+	optimizeDeps: {
+		// Pre-bundle these dependencies to avoid CommonJS issues
+		include: [
+			'flowbite-svelte-icons',
+			'@fontsource/inter',
+			'@fontsource/roboto'
+		]
+	},
+	resolve: {
+		// Ensure consistent module resolution
+		conditions: ['browser', 'import', 'module', 'default']
+	},
 	test: {
 		projects: [
 			{
