@@ -116,7 +116,7 @@
 {#if !readonly}
 	<div class="alert mt-2 mb-0">
 		<Icon src={Info} class="h-6 w-6 shrink-0" />
-		<span>Marker zum Verschieben anklicken und ziehen.</span>
+		<span>Marker verschieben oder GPS-Button (📍) für aktuelle Position nutzen.</span>
 	</div>
 {/if}
 
@@ -210,6 +210,12 @@
 
 	:global(.gps-control .gps-button:hover) {
 		background-color: rgba(0, 60, 136, 0.7);
+	}
+
+	/* Aktiver Zustand für das neue Location Control */
+	:global(.gps-control .gps-button[style*="background-color: rgb(59, 130, 246)"]) {
+		background-color: #3b82f6 !important;
+		color: white !important;
 	}
 
 	:global(.gps-control .gps-button svg) {

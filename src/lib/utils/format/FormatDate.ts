@@ -1,4 +1,8 @@
-// Formatiert ein Datum für die Anzeige
+/**
+ * Formatiert ein Datum für die Anzeige
+ * @param date Das zu formatierende Datum
+ * @returns Das formatierte Datum als String
+ */
 export function formatDate(date: string | Date | null): string {
 	if (!date) return 'Nicht angegeben';
 	return new Date(date).toLocaleString('de-DE', {

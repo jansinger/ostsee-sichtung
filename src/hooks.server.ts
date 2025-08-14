@@ -16,7 +16,7 @@ const setAdditionalHeaders: Handle = async ({ event, resolve }) => {
 	// Zusätzliche Security Headers (CSP ist in svelte.config.js)
 	response.headers.set('X-Content-Type-Options', 'nosniff');
 	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-	response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+	response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=*');
 	response.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
 
 	// HSTS für Production (nur bei HTTPS)

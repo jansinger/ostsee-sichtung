@@ -1,19 +1,24 @@
+import { Feature } from 'ol';
 import { Map, View } from 'ol';
-import VectorSource from 'ol/source/Vector';
-import VectorLayer from 'ol/layer/Vector';
-import TileLayer from 'ol/layer/Tile';
-import { OSM, XYZ } from 'ol/source';
-import { Control, defaults as defaultControls } from 'ol/control';
-import GeoJSON from 'ol/format/GeoJSON';
-import Cluster from 'ol/source/Cluster';
-import { createFeatureStyle, createClusterStyle } from './styleUtils';
+import type { Control } from 'ol/control';
+import { defaults as defaultControls } from 'ol/control';
 import * as olExtent from 'ol/extent';
-import { fromLonLat } from 'ol/proj';
-import type { Feature } from 'ol';
+import GeoJSON from 'ol/format/GeoJSON';
 import type { Geometry, Point } from 'ol/geom';
-import type { Style } from 'ol/style';
+import { Point as OlPoint } from 'ol/geom';
+import TileLayer from 'ol/layer/Tile';
+import VectorLayer from 'ol/layer/Vector';
 import type { Pixel } from 'ol/pixel';
+import { fromLonLat } from 'ol/proj';
+import { OSM, XYZ } from 'ol/source';
+import Cluster from 'ol/source/Cluster';
+import VectorSource from 'ol/source/Vector';
+import { Circle, Fill, Stroke, Style } from 'ol/style';
+import { Geolocation } from 'ol';
 import type { MapTranslations } from './mapUtils';
+import { createClusterStyle, createFeatureStyle } from './styleUtils';
+import { ZoomAllControl } from './controls/ZoomAllControl.js';
+import { LocationControl } from './controls/LocationControl.js';
 
 /**
  * Interface für die Eigenschaften einer Sichtung
@@ -41,6 +46,7 @@ export interface MapOptions {
 	sliderRangeId?: string;
 	timeStartId?: string;
 	timeEndId?: string;
+	enableLocationControl?: boolean;
 }
 
 /**
@@ -60,6 +66,12 @@ export class SichtungenMap {
 	private featuresLoaded: number = 0;
 	private legendUpdateCallback?: () => void;
 	private clusterDistance: number = 50; // Pixel-Distanz für Clustering
+	
+	// Geolocation-related properties
+	private geolocation!: Geolocation;
+	private locationSource!: VectorSource<Feature<Geometry>>;
+	private locationLayer!: VectorLayer<VectorSource<Feature<Geometry>>>;
+	private isTracking: boolean = false;
 
 	constructor(options: MapOptions) {
 		this.translations = options.translations;
@@ -68,6 +80,32 @@ export class SichtungenMap {
 		// Initialisiere die Karten-Komponenten
 		this.reportsSource = new VectorSource({
 			attributions: 'Reports © <a href="http://www.meeresmuseum.de/">Deutsches Meeresmuseum</a>'
+		});
+
+		// Initialisiere Location Layer
+		this.locationSource = new VectorSource();
+		this.locationLayer = new VectorLayer({
+			source: this.locationSource,
+			style: (feature) => {
+				const type = feature.get('type');
+				if (type === 'location') {
+					// Standort-Marker Style
+					return new Style({
+						image: new Circle({
+							radius: 8,
+							fill: new Fill({ color: '#3b82f6' }),
+							stroke: new Stroke({ color: '#ffffff', width: 2 })
+						})
+					});
+				} else if (type === 'accuracy') {
+					// Genauigkeitskreis Style
+					return new Style({
+						fill: new Fill({ color: 'rgba(59, 130, 246, 0.1)' }),
+						stroke: new Stroke({ color: '#3b82f6', width: 1 })
+					});
+				}
+				return undefined;
+			}
 		});
 
 		// Cluster-Source für Gruppierung der Marker
@@ -81,18 +119,19 @@ export class SichtungenMap {
 				const timestamp = (properties.ts as number) * 1000;
 				const speciesKey = properties.ta?.toString();
 				const colorGroup = this.getColorKey(properties.ct as number);
-				
+
 				// Prüfe ob Feature durch Filter ausgeblendet wird
 				const isHiddenBySpecies = this.hiddenSpecies[speciesKey];
 				const isHiddenByColor = this.hiddenColors[colorGroup];
-				const isHiddenByTime = timestamp < this.timeFilter.lower || timestamp > this.timeFilter.upper;
-				
+				const isHiddenByTime =
+					timestamp < this.timeFilter.lower || timestamp > this.timeFilter.upper;
+
 				// Nur sichtbare Features für Clustering verwenden
 				if (!isHiddenBySpecies && !isHiddenByColor && !isHiddenByTime) {
 					const geometry = feature.getGeometry();
-					return geometry?.getType() === 'Point' ? geometry as Point : null;
+					return geometry?.getType() === 'Point' ? (geometry as Point) : null;
 				}
-				
+
 				// Versteckte Features nicht clustern
 				return null;
 			}
@@ -152,18 +191,30 @@ export class SichtungenMap {
 					})
 				}),
 				// Sichtungen-Layer
-				this.reportsLayer
+				this.reportsLayer,
+				// GPS-Position Layer
+				this.locationLayer
 			],
 			view: new View({
 				center: fromLonLat([defaultLon, defaultLat]),
 				zoom: defaultZoom,
 				projection: 'EPSG:3857'
 			}),
-			controls: defaultControls().extend([new ZoomAllControl(this)])
+			controls: defaultControls().extend(
+				this.createCustomControls()
+			),
+			// Canvas-Optimierung für häufige getImageData-Aufrufe
+			pixelRatio: window.devicePixelRatio
 		});
+
+		// Optimiere Canvas für häufige Lesevorgänge
+		this.optimizeCanvas();
 
 		// Initialisiere Filter-Elemente
 		this.initializeControls(options);
+
+		// Initialisiere Geolocation nach Map-Erstellung
+		this.initializeGeolocation();
 
 		// Lade Daten für das aktuelle Jahr
 		this.setYear(this.displayedYear);
@@ -251,11 +302,11 @@ export class SichtungenMap {
 					const singleFeature = features[0];
 					const props = singleFeature.getProperties();
 					const detailedInfo = this.createDetailedInfoText(props as SightingProperties);
-					
+
 					if (infoElement) {
 						infoElement.innerHTML = detailedInfo;
 						infoElement.style.display = 'block';
-						
+
 						// Positioniere das Info-Element
 						const pixel = this.map.getPixelFromCoordinate(event.coordinate);
 						if (pixel) {
@@ -267,11 +318,11 @@ export class SichtungenMap {
 					// Normales einzelnes Feature
 					const props = feature.getProperties();
 					const detailedInfo = this.createDetailedInfoText(props as SightingProperties);
-					
+
 					if (infoElement) {
 						infoElement.innerHTML = detailedInfo;
 						infoElement.style.display = 'block';
-						
+
 						// Positioniere das Info-Element
 						const pixel = this.map.getPixelFromCoordinate(event.coordinate);
 						if (pixel) {
@@ -361,9 +412,9 @@ export class SichtungenMap {
 	private createClusterInfoText(features: Feature<Geometry>[]): string {
 		const count = features.length;
 		const speciesCount: Record<string, number> = {};
-		
+
 		// Zähle die verschiedenen Arten im Cluster
-		features.forEach(feature => {
+		features.forEach((feature) => {
 			const properties = feature.getProperties() as SightingProperties;
 			const speciesKey = properties.ta.toString();
 			speciesCount[speciesKey] = (speciesCount[speciesKey] || 0) + 1;
@@ -371,7 +422,7 @@ export class SichtungenMap {
 
 		// Erstelle eine Zusammenfassung der häufigsten Arten
 		const sortedSpecies = Object.entries(speciesCount)
-			.sort(([,a], [,b]) => b - a)
+			.sort(([, a], [, b]) => b - a)
 			.slice(0, 3) // Zeige nur die 3 häufigsten Arten
 			.map(([speciesId, count]) => {
 				const speciesName = this.translations.speciesMap[speciesId] || 'Unbekannte Art';
@@ -395,8 +446,8 @@ export class SichtungenMap {
 
 		// Erstelle ein Extent basierend auf allen Features im Cluster
 		const ext = olExtent.createEmpty();
-		
-		features.forEach(feature => {
+
+		features.forEach((feature) => {
 			const geometry = feature.getGeometry();
 			if (geometry) {
 				olExtent.extend(ext, geometry.getExtent());
@@ -406,7 +457,12 @@ export class SichtungenMap {
 		// Wenn alle Features am selben Punkt sind, erweitere das Extent minimal
 		if (olExtent.getWidth(ext) === 0 && olExtent.getHeight(ext) === 0) {
 			const center = olExtent.getCenter(ext);
-			if (center && center.length >= 2 && typeof center[0] === 'number' && typeof center[1] === 'number') {
+			if (
+				center &&
+				center.length >= 2 &&
+				typeof center[0] === 'number' &&
+				typeof center[1] === 'number'
+			) {
 				const buffer = 1000; // 1km Buffer für Punkt-Cluster
 				if (ext && ext.length >= 4) {
 					const centerX = center[0];
@@ -725,6 +781,154 @@ export class SichtungenMap {
 	}
 
 	/**
+	 * Initialisiert die Geolocation-Funktionalität
+	 */
+	private initializeGeolocation(): void {
+		this.geolocation = new Geolocation({
+			projection: this.map.getView().getProjection(),
+			trackingOptions: {
+				enableHighAccuracy: true,
+				timeout: 10000,
+				maximumAge: 60000
+			}
+		});
+
+		// Event-Handler für Positionsänderung
+		this.geolocation.on('change:position', () => {
+			const position = this.geolocation.getPosition();
+			if (position) {
+				this.updateLocationMarker(position);
+			}
+		});
+
+		// Event-Handler für Genauigkeitsänderung
+		this.geolocation.on('change:accuracyGeometry', () => {
+			const accuracyGeometry = this.geolocation.getAccuracyGeometry();
+			if (accuracyGeometry) {
+				this.updateAccuracyCircle(accuracyGeometry);
+			}
+		});
+
+		// Event-Handler für Fehler
+		this.geolocation.on('error', (error) => {
+			console.warn('Geolocation Fehler:', error);
+			// Optional: Benutzer über Fehler informieren
+		});
+	}
+
+	/**
+	 * Aktualisiert den Standort-Marker
+	 */
+	private updateLocationMarker(position: number[]): void {
+		// Entferne vorherigen Marker
+		this.locationSource.clear();
+
+		// Erstelle neuen Marker
+		const marker = new Feature({
+			geometry: new OlPoint(position),
+			type: 'location'
+		});
+
+		this.locationSource.addFeature(marker);
+	}
+
+	/**
+	 * Aktualisiert den Genauigkeitskreis
+	 */
+	private updateAccuracyCircle(accuracyGeometry: Geometry): void {
+		// Suche nach vorhandenem Genauigkeitsfeature
+		const features = this.locationSource.getFeatures();
+		const accuracyFeature = features.find(f => f.get('type') === 'accuracy');
+		
+		if (accuracyFeature) {
+			// Aktualisiere vorhandenes Feature
+			accuracyFeature.setGeometry(accuracyGeometry);
+		} else {
+			// Erstelle neues Genauigkeitsfeature
+			const feature = new Feature({
+				geometry: accuracyGeometry,
+				type: 'accuracy'
+			});
+			
+			this.locationSource.addFeature(feature);
+		}
+	}
+
+	/**
+	 * Startet oder stoppt das GPS-Tracking
+	 */
+	public toggleGeolocation(): boolean {
+		this.isTracking = !this.isTracking;
+		this.geolocation.setTracking(this.isTracking);
+		
+		if (!this.isTracking) {
+			// Entferne Marker beim Stoppen
+			this.locationSource.clear();
+		}
+		
+		return this.isTracking;
+	}
+
+	/**
+	 * Gibt zurück ob GPS-Tracking aktiv ist
+	 */
+	public isGeolocationTracking(): boolean {
+		return this.isTracking;
+	}
+
+	/**
+	 * Gibt die interne Map-Instanz zurück
+	 */
+	public getMap(): Map {
+		return this.map;
+	}
+
+	/**
+	 * Optimiert das Canvas-Element für häufige getImageData-Operationen
+	 * Monkey-Patch für HTMLCanvasElement.getContext um willReadFrequently zu setzen
+	 */
+	private optimizeCanvas(): void {
+		// Prüfe ob bereits gepatched
+		if ((HTMLCanvasElement.prototype as unknown as Record<string, unknown>)._olOptimized) {
+			return;
+		}
+
+		// Speichere die ursprüngliche getContext-Methode
+		const originalGetContext = HTMLCanvasElement.prototype.getContext;
+		
+		// Überschreibe getContext für alle Canvas-Elemente
+		(HTMLCanvasElement.prototype.getContext as any) = function(
+			this: HTMLCanvasElement,
+			contextType: string, 
+			contextAttributes?: CanvasRenderingContext2DSettings | WebGLContextAttributes | ImageBitmapRenderingContextSettings
+		) {
+			// Für 2D-Kontext: setze willReadFrequently auf true
+			if (contextType === '2d') {
+				const attrs = contextAttributes as CanvasRenderingContext2DSettings || {};
+				attrs.willReadFrequently = true;
+				return originalGetContext.call(this, contextType, attrs);
+			}
+			return originalGetContext.call(this, contextType, contextAttributes);
+		};
+
+		// Markiere als gepatched
+		(HTMLCanvasElement.prototype as unknown as Record<string, unknown>)._olOptimized = true;
+	}
+
+	/**
+	 * Erstellt die benutzerdefinierten Controls basierend auf den Optionen
+	 */
+	private createCustomControls(): Control[] {
+		const controls: Control[] = [new ZoomAllControl(this)];
+		
+		if (this.options.enableLocationControl) {
+			controls.push(new LocationControl(this));
+		}
+		
+		return controls;
+	}
+
+	/**
 	 * Setzt eine Art als verborgen oder sichtbar
 	 */
 	public setSpeciesVisibility(speciesId: string, visible: boolean): void {
@@ -765,28 +969,6 @@ export class SichtungenMap {
 	}
 }
 
-/**
- * Control zum Zoomen auf alle Features
- */
-class ZoomAllControl extends Control {
-	constructor(mapInstance: SichtungenMap) {
-		const button = document.createElement('button');
-		button.innerHTML = 'Z';
-		button.title = 'Auf alle Sichtungen zoomen';
-
-		const element = document.createElement('div');
-		element.className = 'zoom-all-control ol-unselectable ol-control';
-		element.appendChild(button);
-
-		super({
-			element: element
-		});
-
-		button.addEventListener('click', () => {
-			mapInstance.zoomAllFeatures();
-		});
-	}
-}
 function positionInfoElement(mapContainer: HTMLElement, pixel: Pixel, infoElement: HTMLElement) {
 	if (mapContainer) {
 		const rect = mapContainer.getBoundingClientRect();

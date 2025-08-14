@@ -17,25 +17,21 @@ import { OSM, Vector as VectorSource } from 'ol/source';
 import { Icon, Style } from 'ol/style';
 import OLView from 'ol/View';
 
-const TargetIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-crosshair" viewBox="0 0 24 24">
-							<circle cx="12" cy="12" r="10"/>
-							<line x1="12" y1="2" x2="12" y2="6"/>
-							<line x1="12" y1="18" x2="12" y2="22"/>
-							<line x1="22" y1="12" x2="18" y2="12"/>
-							<line x1="6" y1="12" x2="2" y2="12"/>
-						</svg>
-					`;
 
 /**
- * GPS-Positionierungs-Control für OpenLayers
+ * GPS-Positionierungs-Control für OpenLayers (vereinfacht für OLMap)
+ * Verwendet das neue LocationControl-Design mit kontinuierlichem Tracking
  */
-export class GPSControl extends Control {
+export class FormLocationControl extends Control {
 	private onPositionCallback?: (position: Coordinate) => void;
+	private button: HTMLButtonElement;
+	private isTracking: boolean = false;
+	private watchId: number | null = null;
 
 	constructor(onPosition: (position: Coordinate) => void) {
 		const button = document.createElement('button');
-		button.innerHTML = TargetIcon;
-		button.title = 'Aktuelle GPS-Position abrufen';
+		button.innerHTML = '📍';
+		button.title = 'GPS-Position anzeigen';
 		button.className = 'gps-button';
 
 		const element = document.createElement('div');
@@ -47,75 +43,102 @@ export class GPSControl extends Control {
 		});
 
 		this.onPositionCallback = onPosition;
+		this.button = button;
 
 		button.addEventListener('click', () => {
-			this.getCurrentPosition();
+			this.toggleGeolocation();
 		});
 	}
 
-	private getCurrentPosition() {
-		const button = this.element?.querySelector('.gps-button') as HTMLButtonElement;
-
+	private toggleGeolocation() {
 		if (!navigator.geolocation) {
 			alert('Geolocation wird von Ihrem Browser nicht unterstützt.');
 			return;
 		}
 
-		// Button-Status auf "loading" setzen
-		if (button) {
-			button.disabled = true;
-			button.innerHTML = '⟳';
-			button.classList.add('loading');
-		}
+		this.isTracking = !this.isTracking;
 
-		navigator.geolocation.getCurrentPosition(
+		if (this.isTracking) {
+			// Starte GPS-Tracking
+			this.startTracking();
+		} else {
+			// Stoppe GPS-Tracking
+			this.stopTracking();
+		}
+	}
+
+	private startTracking() {
+		// Button-Erscheinungsbild aktualisieren
+		this.button.style.backgroundColor = '#3b82f6';
+		this.button.style.color = 'white';
+		this.button.title = 'GPS-Tracking stoppen';
+
+		// Kontinuierliche Positionsverfolgung starten
+		this.watchId = navigator.geolocation.watchPosition(
 			(position) => {
 				const coords: Coordinate = [position.coords.longitude, position.coords.latitude];
-
+				
 				if (this.onPositionCallback) {
 					this.onPositionCallback(coords);
 				}
-
-				// Button-Status zurücksetzen
-				if (button) {
-					button.disabled = false;
-					button.innerHTML = TargetIcon;
-					button.classList.remove('loading');
-				}
 			},
 			(error) => {
-				console.error('GPS-Positionierung fehlgeschlagen:', error);
-				let errorMessage = 'GPS-Position konnte nicht abgerufen werden.';
-
-				switch (error.code) {
-					case error.PERMISSION_DENIED:
-						errorMessage =
-							'GPS-Berechtigung wurde verweigert. Bitte erlauben Sie den Zugriff in den Browser-Einstellungen.';
-						break;
-					case error.POSITION_UNAVAILABLE:
-						errorMessage = 'GPS-Position ist nicht verfügbar.';
-						break;
-					case error.TIMEOUT:
-						errorMessage = 'GPS-Anfrage hat zu lange gedauert.';
-						break;
-				}
-
-				alert(errorMessage);
-
-				// Button-Status zurücksetzen
-				if (button) {
-					button.disabled = false;
-					button.innerHTML = TargetIcon;
-					button.classList.remove('loading');
-				}
+				console.warn('GPS-Positionierung fehlgeschlagen:', error);
+				this.stopTracking();
 			},
 			{
 				enableHighAccuracy: true,
-				timeout: 15000,
+				timeout: 10000,
 				maximumAge: 60000
 			}
 		);
 	}
+
+	private stopTracking() {
+		// Position tracking stoppen
+		if (this.watchId !== null) {
+			navigator.geolocation.clearWatch(this.watchId);
+			this.watchId = null;
+		}
+
+		this.isTracking = false;
+
+		// Button-Erscheinungsbild zurücksetzen
+		this.button.style.backgroundColor = 'rgba(0, 60, 136, 0.5)';
+		this.button.style.color = 'white';
+		this.button.title = 'GPS-Position anzeigen';
+	}
+}
+
+/**
+ * Optimiert Canvas für häufige getImageData-Operationen (OpenLayers)
+ */
+function optimizeCanvasForOpenLayers(): void {
+	// Prüfe ob bereits gepatched
+	if ((HTMLCanvasElement.prototype as unknown as Record<string, unknown>)._olOptimized) {
+		return;
+	}
+
+	// Speichere die ursprüngliche getContext-Methode
+	const originalGetContext = HTMLCanvasElement.prototype.getContext;
+	
+	// Überschreibe getContext für alle Canvas-Elemente
+	(HTMLCanvasElement.prototype.getContext as any) = function(
+		this: HTMLCanvasElement,
+		contextType: string, 
+		contextAttributes?: CanvasRenderingContext2DSettings | WebGLContextAttributes | ImageBitmapRenderingContextSettings
+	) {
+		// Für 2D-Kontext: setze willReadFrequently auf true
+		if (contextType === '2d') {
+			const attrs = contextAttributes as CanvasRenderingContext2DSettings || {};
+			attrs.willReadFrequently = true;
+			return originalGetContext.call(this, contextType, attrs);
+		}
+		return originalGetContext.call(this, contextType, contextAttributes);
+	};
+
+	// Markiere als gepatched
+	(HTMLCanvasElement.prototype as unknown as Record<string, unknown>)._olOptimized = true;
 }
 
 /**
@@ -134,6 +157,8 @@ export function createMap(
 	enableGPS: boolean = false,
 	onGPSPosition?: (position: Coordinate) => void
 ): Map {
+	// Optimiere Canvas vor Map-Erstellung
+	optimizeCanvasForOpenLayers();
 	// OSM-Layer erstellen
 	const osmLayer = new TileLayer({
 		source: new OSM()
@@ -150,7 +175,7 @@ export function createMap(
 
 	// GPS-Control hinzufügen, wenn aktiviert
 	if (enableGPS && onGPSPosition) {
-		const gpsControl = new GPSControl(onGPSPosition);
+		const gpsControl = new FormLocationControl(onGPSPosition);
 		controls.push(gpsControl);
 	}
 

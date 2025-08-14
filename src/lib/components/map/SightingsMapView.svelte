@@ -90,7 +90,8 @@
 			filterInputId: 'filter-input',
 			sliderRangeId: 'slider-range',
 			timeStartId: 'time-start',
-			timeEndId: 'time-end'
+			timeEndId: 'time-end',
+			enableLocationControl: false // Kein LocationControl für normale Karten-Views
 		});
 
 		// Initialisiere Count Manager und setze Callback
