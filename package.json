@@ -108,5 +108,8 @@
 		"svelte-forms-lib": "^2.0.1",
 		"tailwind-variants": "^2.1.0",
 		"yup": "^1.6.1"
+	},
+	"optionalDependencies": {
+		"@rollup/rollup-linux-x64-gnu": "4.24.0"
 	}
 }
