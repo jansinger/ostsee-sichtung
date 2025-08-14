@@ -80,7 +80,12 @@ export function clearStorage(): void {
 		(key) => key !== STORAGE_KEYS.USER_CONTACT_DATA
 	);
 	keysToClear.forEach((key) => {
-		localStorage.removeItem(key);
+		// Prüfe ob Schlüssel in sessionStorage ist
+		if (sessionKeys.includes(key)) {
+			sessionStorage.removeItem(key);
+		} else {
+			localStorage.removeItem(key);
+		}
 	});
 }
 
@@ -91,7 +96,8 @@ export function clearFormDataOnly(): void {
 	if (!browser) return;
 
 	// Nur FORM_DATA löschen, currentStep und user contact data behalten
-	localStorage.removeItem(STORAGE_KEYS.FORM_DATA);
+	// FORM_DATA ist in sessionStorage
+	sessionStorage.removeItem(STORAGE_KEYS.FORM_DATA);
 }
 
 /**
