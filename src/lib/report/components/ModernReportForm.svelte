@@ -8,6 +8,7 @@
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
 	import { initialFormState } from '$lib/report/formConfig';
+	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 	import {
 		clearFormDataOnly,
 		clearStorage,
@@ -148,6 +149,11 @@
 
 <div class="bg-base-100 min-h-screen py-4 sm:py-8">
 	<div class="container mx-auto max-w-4xl px-2 sm:px-4">
+		<!-- Logo Header -->
+		<div class="mb-6 flex justify-center">
+			<OstseeTiereLogo size="lg" showText={true} />
+		</div>
+		
 		<Form {...formProps} bind:context={formContext}>
 			<!-- Form Title -->
 			<div class="mb-4 text-center sm:mb-8">

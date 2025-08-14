@@ -1,0 +1,41 @@
+{
+  "name": "Ostsee-Tiere - Meerestier-Sichtungen",
+  "short_name": "Ostsee-Tiere",
+  "description": "Melden Sie Ihre Wal- und Robbensichtung in der Ostsee",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0ea5e9",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/ostsee-tiere-48.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "/ostsee-tiere-96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/ostsee-tiere-128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/ostsee-tiere-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/ostsee-tiere-256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/ostsee-tiere-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

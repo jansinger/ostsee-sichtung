@@ -11,7 +11,7 @@
 
 **Ostsee-Tiere** ist eine moderne SvelteKit-WebApp zur Erfassung und Verwaltung von Meerestier-Sichtungen in der Ostsee. Die Anwendung ermöglicht es Bürgern, Forschern und Naturbeobachtern, ihre Sichtungen von Walen, Robben und anderen Meerestieren zu melden und der Wissenschaft zur Verfügung zu stellen.
 
-![Ostsee-Tiere](https://ostsee-tiere.de)
+![Ostsee-Tiere](https://ostsee-tiere.de/ostsee-tiere-192.png)
 
 ## 🐋 Projektübersicht
 

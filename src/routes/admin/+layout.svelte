@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import { List, LogOut, User } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
+	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: import('svelte').Snippet; data: LayoutData } = $props();
@@ -13,7 +14,9 @@
 		<div class="container mx-auto">
 			<div class="navbar">
 				<div class="navbar-start">
-					<a href="/" class="btn btn-ghost text-xl">Sichtungen Admin</a>
+					<OstseeTiereLogo size="sm" showText={true} className="ml-2" />
+					<span class="divider divider-horizontal mx-2"></span>
+					<span class="text-lg font-semibold text-base-content/70">Admin</span>
 				</div>
 				<div class="navbar-end">
 					<!-- Desktop menu -->
