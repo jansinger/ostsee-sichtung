@@ -126,3 +126,22 @@ export interface User {
 	sid: string;
 	roles: string[];
 }
+/**
+ * Interface für persistente Benutzer-Kontaktdaten
+ */
+
+export interface UserContactData {
+	firstName?: string;
+	lastName?: string;
+	email?: string;
+	phone?: string;
+	street?: string;
+	zipCode?: string;
+	city?: string;
+	shipName?: string;
+	homePort?: string;
+	boatType?: string;
+	nameConsent?: boolean;
+	shipNameConsent?: boolean;
+	persistentDataConsent?: boolean; // New: consent for persistent storage
+}

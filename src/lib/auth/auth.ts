@@ -8,14 +8,11 @@ import {
 } from '$env/static/private';
 import { PUBLIC_SITE_URL } from '$env/static/public';
 
-import { createLogger } from '$lib/logger';
 import type { User } from '$lib/types/types';
 import type { Cookies } from '@sveltejs/kit';
 import type { JwtHeader, SigningKeyCallback } from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';
 import { JwksClient } from 'jwks-rsa';
-
-const logger = createLogger('auth:auth0');
 
 let cachedKey: string | undefined = undefined;
 

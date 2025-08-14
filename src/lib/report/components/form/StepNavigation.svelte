@@ -47,7 +47,6 @@
 			} else {
 				currentStep += 1;
 				scrollToElement(formContent);
-				logger.debug(`Navigated to step ${currentStep}`);
 			}
 		} catch (error) {
 			logger.error({ error }, 'Error in nextStep navigation');
@@ -59,7 +58,6 @@
 			if (!isFirstStep) {
 				currentStep -= 1;
 				scrollToElement(formContent);
-				logger.debug(`Navigated back to step ${currentStep}`);
 			}
 		} catch (error) {
 			logger.error({ error }, 'Error in previousStep navigation');

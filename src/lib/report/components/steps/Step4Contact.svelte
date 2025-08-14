@@ -3,11 +3,11 @@
   Personal information, boat details, and additional observations
 -->
 <script lang="ts">
-	import { Anchor, MessageSquare, User, Trash2 } from '@steeze-ui/lucide-icons';
+	import { createLogger } from '$lib/logger';
+	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
+	import { Anchor, MessageSquare, Trash2, User } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import FormField from '../form/fields/FormField.svelte';
-	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
-	import { createLogger } from '$lib/logger';
 
 	const logger = createLogger('report:step4-contact');
 
@@ -24,7 +24,7 @@
 			clearAllStorage();
 			hasSavedContactData = false;
 			logger.info('User contact data cleared by user request');
-			
+
 			// Reload page to clear form data
 			if (typeof window !== 'undefined') {
 				window.location.reload();
@@ -35,49 +35,54 @@
 
 <div class="space-y-8">
 	<!-- Step Header -->
-	<div class="space-y-2 text-center">
+	<div class="space-y-2 px-2 text-center sm:px-0">
 		<div class="flex justify-center">
-			<div class="bg-primary/20 flex h-12 w-12 items-center justify-center rounded-full">
-				<Icon src={User} size="24" class="text-primary" />
+			<div
+				class="bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full sm:h-12 sm:w-12"
+			>
+				<Icon src={User} size="20" class="text-primary sm:size-24" />
 			</div>
 		</div>
-		<h2 class="text-base-content text-2xl font-bold">Kontaktdaten & Abschluss</h2>
-		<p class="text-base-content/70 mx-auto max-w-2xl">
+		<h2 class="text-base-content text-xl font-bold sm:text-2xl">Kontaktdaten & Abschluss</h2>
+		<p class="text-base-content/70 mx-auto max-w-2xl text-sm sm:text-base">
 			Ihre <strong>E-Mail-Adresse</strong> ist erforderlich für die Bestätigung. Kontaktdaten
 			ermöglichen wichtige Rückfragen zur Datenqualität. <strong>Datenschutz:</strong> Ihre persönlichen
 			Daten werden nie öffentlich angezeigt!
 		</p>
 		<div class="flex justify-center">
-			<div class="badge badge-outline badge-success text-center min-h-fit h-auto py-2 px-3 whitespace-normal sm:whitespace-nowrap max-w-xs sm:max-w-none">
+			<div
+				class="badge badge-outline badge-success h-auto min-h-fit max-w-xs px-3 py-2 text-center text-xs whitespace-normal sm:max-w-none sm:text-sm sm:whitespace-nowrap"
+			>
 				Schritt 4 von 4 - Fast geschafft!
 			</div>
 		</div>
-	</div>
 
-	<!-- Personal Contact Information -->
-	<div class="card bg-base-200 shadow-sm">
-		<div class="card-body">
-			<h3 class="card-title flex items-center gap-2 text-lg">
+		<!-- Personal Contact Information -->
+		<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
+			<h3 class="mb-3 flex gap-2 text-left text-base font-semibold sm:text-lg">
 				<Icon src={User} size="20" class="text-primary" />
 				Ihre Kontaktdaten
 			</h3>
-			<div class="text-base-content/70 mb-4 text-sm">
-				<p class="mb-1 font-medium">📧 Ihre E-Mail-Adresse ist erforderlich für:</p>
-				<ul class="list-inside list-disc space-y-1 text-xs">
+			<div class="text-base-content/70 mb-4 text-left text-sm">
+				<p class="mb-1 text-left font-medium">📧 Ihre E-Mail-Adresse ist erforderlich für:</p>
+				<ul class="list-inside list-disc space-y-1 text-left text-xs">
 					<li>Bestätigung Ihrer Sichtungsmeldung</li>
 					<li>Wichtige Rückfragen zur Datenqualität</li>
 					<li>Information über wissenschaftliche Ergebnisse (optional)</li>
 				</ul>
-				
+
 				<div class="alert alert-info mt-4">
 					<div class="text-xs">
-						<p class="font-medium">💾 Automatische Speicherung für Komfort</p>
-						<p>Ihre Kontaktdaten werden nach erfolgreicher Übermittlung lokal gespeichert und bei der nächsten Sichtungsmeldung automatisch ausgefüllt.</p>
-						
+						<p class="mb-2 font-medium">💾 Automatische Speicherung für Komfort</p>
+						<p>
+							Ihre Kontaktdaten werden nach erfolgreicher Übermittlung lokal gespeichert und bei der
+							nächsten Sichtungsmeldung automatisch ausgefüllt.
+						</p>
+
 						{#if hasSavedContactData}
 							<div class="mt-3 flex items-center justify-between">
 								<span class="text-success font-medium">✓ Gespeicherte Kontaktdaten gefunden</span>
-								<button 
+								<button
 									type="button"
 									class="btn btn-ghost btn-xs text-error hover:bg-error/10"
 									onclick={clearContactData}
@@ -118,18 +123,13 @@
 				</div>
 			</details>
 		</div>
-	</div>
 
-	<!-- Boat Information Section -->
-	<div class="card bg-base-200 shadow-sm">
-		<div class="card-body">
-			<h3 class="card-title flex items-center gap-2 text-lg">
+		<!-- Boat Information Section -->
+		<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
+			<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
 				<Icon src={Anchor} size="20" class="text-primary" />
 				Boot-/Schiffsinformationen
 			</h3>
-			<p class="text-base-content/70 mb-4 text-sm">
-				Diese Informationen helfen bei der Bewertung möglicher Störungen
-			</p>
 
 			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 				<FormField name="shipName" />
@@ -141,29 +141,29 @@
 				<FormField name="boatType" />
 			</div>
 		</div>
-	</div>
 
-	<!-- Additional Information Section -->
-	<div class="card bg-base-200 shadow-sm">
-		<div class="card-body">
-			<h3 class="card-title flex items-center gap-2 text-lg">
+		<!-- Additional Information Section -->
+		<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
+			<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
 				<Icon src={MessageSquare} size="20" class="text-primary" />
 				Zusätzliche Informationen
 			</h3>
 
 			<FormField name="notes" />
 		</div>
-	</div>
 
-	<!-- Privacy and Consent Section -->
-	<div class="card bg-base-200 border-primary/20 shadow-sm">
-		<div class="card-body">
-			<h3 class="card-title flex items-center gap-2 text-lg">🔒 Datenschutz und Einverständnis</h3>
+		<!-- Privacy and Consent Section -->
+		<div class="border-primary/20 bg-base-200/50 rounded-lg border p-3 sm:p-4">
+			<h3 class="mb-3 flex gap-2 text-base font-semibold sm:text-lg">
+				🔒 Datenschutz und Einverständnis
+			</h3>
 
 			<!-- Optional Consents für Namensnennung -->
 			<div class="mt-6 space-y-4">
-				<h4 class="text-base font-semibold">📝 Optionale Veröffentlichung Ihres Namens</h4>
-				<p class="text-base-content/70 mb-4 text-sm">
+				<h4 class="text-left text-base font-semibold">
+					📝 Optionale Veröffentlichung Ihres Namens
+				</h4>
+				<p class="text-base-content/70 mb-4 text-left text-sm">
 					Diese Einverständniserklärungen sind <strong>optional</strong>. Ihre Sichtung wird auch
 					ohne diese Zustimmungen gespeichert.
 				</p>
@@ -176,10 +176,12 @@
 
 			<!-- Persistent Data Storage Consent -->
 			<div class="mt-6 space-y-4">
-				<h4 class="text-base font-semibold">💾 Dauerhafte Speicherung der Kontaktdaten</h4>
-				<p class="text-base-content/70 mb-4 text-sm">
-					Möchten Sie, dass Ihre Kontaktdaten auch nach dem Schließen des Browser-Fensters erhalten bleiben?
-					Dies erspart Ihnen das erneute Eingeben bei zukünftigen Sichtungsmeldungen.
+				<h4 class="text-left text-base font-semibold">
+					💾 Dauerhafte Speicherung der Kontaktdaten
+				</h4>
+				<p class="text-base-content/70 mb-4 text-left text-sm">
+					Möchten Sie, dass Ihre Kontaktdaten auch nach dem Schließen des Browser-Fensters erhalten
+					bleiben? Dies erspart Ihnen das erneute Eingeben bei zukünftigen Sichtungsmeldungen.
 				</p>
 
 				<div class="space-y-3">

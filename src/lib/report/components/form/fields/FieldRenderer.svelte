@@ -226,29 +226,27 @@
 
 <div class={containerClasses}>
 	<!-- Enhanced Label with Status Indicators -->
-	<label for={fieldId} class="label pb-1">
-		<div class="flex min-w-0 flex-1 items-center gap-2">
-			<span class="label-text text-base-content flex-shrink-0 font-medium">
-				{label}
-				{#if required}
-					<span class="text-error ml-1 text-sm" aria-label="Pflichtfeld">*</span>
-				{/if}
-			</span>
-
+	<label for={fieldId} class="label pb-1 w-full overflow-hidden">
+		<span class="label-text text-base-content font-medium block" style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;">
+			{label}
+			{#if required}
+				<span class="text-error ml-1 text-sm" aria-label="Pflichtfeld">*</span>
+			{/if}
+			
 			<!-- Status Indicator -->
 			{#if hasValue}
-				<div class="flex-shrink-0" aria-hidden="true">
+				<span class="ml-2 inline-block" aria-hidden="true">
 					{#if hasError}
-						<Icon src={X} size="14" class="text-error" />
+						<Icon src={X} size="14" class="text-error inline" />
 					{:else if isValid}
-						<Icon src={Check} size="14" class="text-success" />
+						<Icon src={Check} size="14" class="text-success inline" />
 					{/if}
-				</div>
+				</span>
 			{/if}
 
 			<!-- Value Information Tooltip -->
 			{#if valueText}
-				<div class="tooltip tooltip-left flex-shrink-0" data-tip={valueText}>
+				<span class="tooltip tooltip-left ml-2 inline-block" data-tip={valueText}>
 					<button
 						type="button"
 						class="btn btn-ghost btn-xs btn-circle"
@@ -257,14 +255,14 @@
 					>
 						<Icon src={Info} size="14" class="text-base-content/60" />
 					</button>
-				</div>
+				</span>
 			{/if}
-		</div>
+		</span>
 	</label>
 
 	<!-- Field Description (if different from help text) -->
 	{#if description && description !== helpText}
-		<div id={descriptionId} class="text-base-content/70 mb-2 text-sm">
+		<div id={descriptionId} class="text-base-content/70 mb-2 text-sm text-left">
 			{description}
 		</div>
 	{/if}
@@ -286,7 +284,7 @@
 
 	<!-- Help Text -->
 	{#if helpText}
-		<div id={helpId} class="mt-1">
+		<div id={helpId} class="mt-1 text-left">
 			<span class="text-base-content/60 text-xs leading-relaxed">
 				{helpText}
 			</span>
@@ -297,7 +295,7 @@
 	{#if error}
 		<div
 			id={errorId}
-			class="animate-in slide-in-from-top-1 mt-1 duration-200"
+			class="animate-in slide-in-from-top-1 mt-1 duration-200 text-left"
 			role="alert"
 			aria-live="polite"
 		>
@@ -360,6 +358,25 @@
 	/* Better visual hierarchy in cards */
 	:global(.card .form-control) {
 		margin-bottom: 1rem;
+	}
+
+	/* Ensure labels wrap properly on mobile */
+	:global(.label-text) {
+		word-wrap: break-word;
+		overflow-wrap: break-word;
+		hyphens: auto;
+		max-width: 100%;
+	}
+
+	/* Prevent overflow on small screens */
+	@media (max-width: 640px) {
+		:global(.form-control) {
+			max-width: 100%;
+		}
+		
+		:global(.label) {
+			max-width: 100%;
+		}
 	}
 
 	:global(.card .form-control:last-child) {

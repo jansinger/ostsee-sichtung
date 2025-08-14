@@ -22,10 +22,12 @@
 			class="toggle toggle-success mt-1"
 			{...props}
 		/>
-		<div class="flex-1 text-wrap">
-			<span class="font-medium">{label}</span>
+		<div class="flex-1 min-w-0 text-left">
+			<span class="font-medium" style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;">
+				{label}
+			</span>
 			{#if helpText}
-				<p class="mt-1 text-xs break-words text-gray-600">
+				<p class="mt-1 text-xs text-gray-600 text-left" style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;">
 					{helpText}
 				</p>
 			{/if}

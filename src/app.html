@@ -20,7 +20,6 @@
 
 		<!-- Security & Performance (iframe-freundlich) -->
 		<meta http-equiv="X-Content-Type-Options" content="nosniff" />
-		<meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
 		<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 		<meta name="format-detection" content="telephone=no" />
 
@@ -53,10 +52,10 @@
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover" class="iframe-mode">
-		<div style="display: contents">%sveltekit.body%</div>
+		<div class="svelte-body">%sveltekit.body%</div>
 
 		<!-- iframe-spezifische Funktionalität -->
-		<script>
+		<script nonce="%sveltekit.nonce%">
 			// Kommunikation mit Parent-Frame
 			if (window.parent !== window) {
 				// Benachrichtige Parent über Größenänderungen

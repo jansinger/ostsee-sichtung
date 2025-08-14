@@ -9,15 +9,15 @@
 	import { createLogger } from '$lib/logger';
 	import { initialFormState } from '$lib/report/formConfig';
 	import {
+		clearFormDataOnly,
 		clearStorage,
 		loadFromStorage,
 		loadUserContactData,
 		saveToStorage,
 		saveUserContactDataWithConsent,
-		setupSessionCleanup,
-		STORAGE_KEYS,
-		type UserContactData
+		STORAGE_KEYS
 	} from '$lib/storage/localStorage';
+	import { type UserContactData } from '$lib/types/types';
 	import { createId } from '@paralleldrive/cuid2';
 	import { formStepsConfig } from '../formConfig';
 	import type { FormContext, SightingFormData } from '../types';
@@ -42,12 +42,12 @@
 
 	// Lade gespeicherte Benutzer-Kontaktdaten
 	const savedUserContactData = loadUserContactData();
-	
+
 	// Kombiniere initial state mit persistenten Benutzer-Kontaktdaten
-	const initialFormData = { 
-		...initialFormState, 
+	const initialFormData = {
+		...initialFormState,
 		...savedUserContactData,
-		referenceId: createId() 
+		referenceId: createId()
 	};
 
 	// Gespeicherte Formulardaten oder Initialwerte laden
@@ -69,7 +69,7 @@
 				const result = await submitSightingForm(values);
 				submissionId = result.id;
 				submissionSuccess = result.success;
-				
+
 				// Speichere Benutzer-Kontaktdaten für zukünftige Formulare basierend auf Zustimmung
 				if (result.success) {
 					const userContactData: UserContactData = {
@@ -90,8 +90,11 @@
 					saveUserContactDataWithConsent(userContactData);
 					logger.info('User contact data saved with consent-based persistence');
 				}
-				
-				clearStorage(); // Clears form data but keeps user contact data
+
+				clearFormDataOnly(); // Clears only form data, keeps currentStep and user contact data
+				// Nach erfolgreichem Submit auf ersten Schritt zurücksetzen
+				currentStep = 0;
+				saveToStorage(STORAGE_KEYS.CURRENT_STEP, 0);
 				return onSubmit(values);
 			} catch (error: unknown) {
 				submissionError = (error as Error)?.message || 'Unbekannter Fehler bei der Übermittlung';
@@ -110,20 +113,28 @@
 	}
 
 	function onReset() {
+		logger.info('Resetting form:');
+		// Lösche alle gespeicherten Daten
+		clearFormDataOnly();
 		clearStorage();
 		currentStep = 0;
+		// Stelle sicher, dass currentStep auch im localStorage zurückgesetzt wird
+		saveToStorage(STORAGE_KEYS.CURRENT_STEP, 0);
 		formContext.updateInitialValues(initialFormData);
 	}
 
-	let currentStep: number = $state(-1);
+	// Lade currentStep aus localStorage oder starte bei 0
+	let currentStep: number = $state(loadFromStorage(STORAGE_KEYS.CURRENT_STEP, 0));
 
 	const form = $derived(formContext.form);
 
-	// Session cleanup initialization
+	// Speichere currentStep direkt bei Änderungen
 	$effect(() => {
-		setupSessionCleanup();
+		logger.info(`Effect triggered with currentStep: ${currentStep}`);
+		saveToStorage(STORAGE_KEYS.CURRENT_STEP, currentStep);
 	});
 
+	// Speichere Formulardaten
 	$effect(() => {
 		logger.info(
 			{ form: $form, uploaded: $form.uploadedFiles },
@@ -133,15 +144,15 @@
 	});
 </script>
 
-<div class="bg-base-100 min-h-screen py-8">
-	<div class="container mx-auto max-w-4xl px-4">
+<div class="bg-base-100 min-h-screen py-4 sm:py-8">
+	<div class="container mx-auto max-w-4xl px-2 sm:px-4">
 		<Form {...formProps} bind:context={formContext}>
 			<!-- Form Title -->
-			<div class="mb-8 text-center">
-				<h1 class="text-base-content mb-2 text-3xl font-bold lg:text-4xl">
+			<div class="mb-4 text-center sm:mb-8">
+				<h1 class="text-base-content mb-2 text-2xl font-bold sm:text-3xl lg:text-4xl">
 					Meerestier-Sichtung melden
 				</h1>
-				<p class="text-base-content/70 text-lg">
+				<p class="text-base-content/70 px-2 text-sm sm:text-lg">
 					Helfen Sie der Forschung mit Ihrer Wal- oder Robbensichtung
 				</p>
 			</div>
@@ -165,7 +176,7 @@
 
 			<!-- Form Content -->
 			<div class="card bg-base-100 shadow-xl" id="form-content">
-				<div class="card-body p-6 lg:p-8">
+				<div class="card-body p-3 sm:p-6 lg:p-8">
 					<!-- Step Content -->
 					<div class="min-h-[400px]">
 						{#if currentStep === 0}
@@ -201,8 +212,8 @@
 									<div>
 										<h4 class="font-semibold">🎯 Warum ist Ihre Meldung wichtig?</h4>
 										<p class="mt-1">
-											Jede Sichtung hilft Wissenschaftlern dabei, Wanderrouten zu verstehen, 
-											Populationen zu überwachen und Schutzmaßnahmen zu entwickeln. Ihre Beobachtung 
+											Jede Sichtung hilft Wissenschaftlern dabei, Wanderrouten zu verstehen,
+											Populationen zu überwachen und Schutzmaßnahmen zu entwickeln. Ihre Beobachtung
 											trägt direkt zum Artenschutz bei!
 										</p>
 									</div>
@@ -210,37 +221,43 @@
 
 								<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 									<div class="card bg-base-100 p-4">
-										<h4 class="font-semibold mb-2">📍 Schritt 1: Position & Zeit</h4>
+										<h4 class="mb-2 font-semibold">📍 Schritt 1: Position & Zeit</h4>
 										<ul class="space-y-1 text-xs">
 											<li><strong>GPS-Koordinaten:</strong> Am wertvollsten für die Forschung</li>
 											<li><strong>Gewässername:</strong> Falls keine GPS-Daten verfügbar</li>
 											<li><strong>Genaue Zeit:</strong> Hilft bei Verhaltensanalysen</li>
-											<li><strong>Tipp:</strong> Screenshots von Navigations-Apps sind hilfreich</li>
+											<li>
+												<strong>Tipp:</strong> Screenshots von Navigations-Apps sind hilfreich
+											</li>
 										</ul>
 									</div>
 
 									<div class="card bg-base-100 p-4">
-										<h4 class="font-semibold mb-2">🐋 Schritt 2: Sichtungsdetails</h4>
+										<h4 class="mb-2 font-semibold">🐋 Schritt 2: Sichtungsdetails</h4>
 										<ul class="space-y-1 text-xs">
 											<li><strong>Tierart:</strong> Bei Unsicherheit "Unbekannt" wählen</li>
 											<li><strong>Anzahl:</strong> Auch Schätzungen sind wertvoll</li>
 											<li><strong>Jungtiere:</strong> Wichtig für Populationsstudien</li>
-											<li><strong>Entfernung:</strong> Hilft bei der Einschätzung der Beobachtung</li>
+											<li>
+												<strong>Entfernung:</strong> Hilft bei der Einschätzung der Beobachtung
+											</li>
 										</ul>
 									</div>
 
 									<div class="card bg-base-100 p-4">
-										<h4 class="font-semibold mb-2">👀 Schritt 3: Beobachtungen</h4>
+										<h4 class="mb-2 font-semibold">👀 Schritt 3: Beobachtungen</h4>
 										<ul class="space-y-1 text-xs">
 											<li><strong>Verhalten:</strong> Fütterung, Ruhen, Springen, etc.</li>
-											<li><strong>Umwelt:</strong> Seegang und Sichtweite beeinflussen Sichtungen</li>
+											<li>
+												<strong>Umwelt:</strong> Seegang und Sichtweite beeinflussen Sichtungen
+											</li>
 											<li><strong>Fotos/Videos:</strong> Extrem hilfreich für Artbestimmung</li>
 											<li><strong>Tipp:</strong> Auch unscharfe Bilder können nützlich sein</li>
 										</ul>
 									</div>
 
 									<div class="card bg-base-100 p-4">
-										<h4 class="font-semibold mb-2">📧 Schritt 4: Kontaktdaten</h4>
+										<h4 class="mb-2 font-semibold">📧 Schritt 4: Kontaktdaten</h4>
 										<ul class="space-y-1 text-xs">
 											<li><strong>E-Mail:</strong> Für Bestätigung und Rückfragen</li>
 											<li><strong>Boot-Info:</strong> Hilft bei Störungsanalysen</li>
@@ -258,17 +275,19 @@
 										<div class="text-center">
 											<div class="text-lg">🐋</div>
 											<strong>Schweinswal</strong>
-											<p class="text-xs mt-1">Klein, dunkler Rücken, dreieckige Rückenflosse</p>
+											<p class="mt-1 text-xs">Klein, dunkler Rücken, dreieckige Rückenflosse</p>
 										</div>
 										<div class="text-center">
 											<div class="text-lg">🦭</div>
 											<strong>Kegelrobbe</strong>
-											<p class="text-xs mt-1">Groß, kegelförmiger Kopf, lange Schnauze</p>
+											<p class="mt-1 text-xs">Groß, kegelförmiger Kopf, lange Schnauze</p>
 										</div>
 										<div class="text-center">
 											<div class="text-lg">🐟</div>
 											<strong>Seehund</strong>
-											<p class="text-xs mt-1">Rundlicher Kopf, große Augen, V-förmige Nasenlöcher</p>
+											<p class="mt-1 text-xs">
+												Rundlicher Kopf, große Augen, V-förmige Nasenlöcher
+											</p>
 										</div>
 									</div>
 								</div>
@@ -277,9 +296,10 @@
 									<div>
 										<h4 class="font-semibold">⚠️ Totfunde - Besonders wichtig!</h4>
 										<p class="mt-1 text-xs">
-											Tote Tiere liefern wichtige Erkenntnisse über Todesursachen und Gesundheit der Population. 
-											<strong>Bitte nicht berühren!</strong> Melden Sie den Fund auch an die örtlichen Behörden 
-											(Wasserschutzpolizei, Nationalparkamt).
+											Tote Tiere liefern wichtige Erkenntnisse über Todesursachen und Gesundheit der
+											Population.
+											<strong>Bitte nicht berühren!</strong> Melden Sie den Fund auch an die örtlichen
+											Behörden (Wasserschutzpolizei, Nationalparkamt).
 										</p>
 									</div>
 								</div>
@@ -318,12 +338,12 @@
 
 	@media (max-width: 640px) {
 		.container {
-			padding-left: 1rem;
-			padding-right: 1rem;
+			padding-left: 0.5rem;
+			padding-right: 0.5rem;
 		}
 
 		.card-body {
-			padding: 1rem !important;
+			padding: 0.75rem !important;
 		}
 	}
 </style>

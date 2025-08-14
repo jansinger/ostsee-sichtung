@@ -10,6 +10,7 @@ declare global {
 		}
 		interface Locals {
 			user?: User;
+			cspNonce?: string;
 		}
 		// interface PageData {}
 		// interface PageState {}

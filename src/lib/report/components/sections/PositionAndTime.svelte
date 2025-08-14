@@ -303,9 +303,8 @@
 <!-- Position & Time Section -->
 <div class="space-y-6">
 	<!-- Position Input Method Selection -->
-	<div class="card bg-base-200 shadow-sm">
-		<div class="card-body">
-			<h3 class="card-title mb-4 flex items-center gap-2 text-lg">
+	<div class="border border-base-300 rounded-lg p-3 sm:p-4 bg-base-200/50">
+			<h3 class="font-semibold mb-3 flex items-center gap-2 text-base sm:text-lg">
 				<Icon src={MapPin} size="20" class="text-primary" />
 				Positionsangabe
 			</h3>
@@ -588,13 +587,11 @@
 					<FormField name="seaMark" />
 				</div>
 			{/if}
-		</div>
 	</div>
 
 	<!-- Date and Time Section (always visible) -->
-	<div class="card bg-base-200 shadow-sm">
-		<div class="card-body">
-			<h3 class="card-title mb-4 flex items-center gap-2 text-lg">
+	<div class="border border-base-300 rounded-lg p-3 sm:p-4 bg-base-200/50">
+			<h3 class="font-semibold mb-3 flex items-center gap-2 text-base sm:text-lg">
 				<Icon src={Calendar} size="20" class="text-primary" />
 				Datum und Uhrzeit
 			</h3>
@@ -602,17 +599,6 @@
 				<FormField name="sightingDate" />
 				<FormField name="sightingTime" />
 			</div>
-		</div>
 	</div>
 </div>
 
-<style>
-	.card {
-		transition: all 0.2s ease;
-	}
-
-	.card:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 8px 25px -8px oklch(var(--b3));
-	}
-</style>

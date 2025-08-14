@@ -24,6 +24,11 @@ body {
 	-moz-osx-font-smoothing: grayscale;
 }
 
+/* CSP compliance styles */
+.svelte-body {
+	display: contents;
+}
+
 /* Aktives Panel hat höheren z-index */
 .active-panel {
 	z-index: 950 !important;

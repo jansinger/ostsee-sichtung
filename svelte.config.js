@@ -11,6 +11,7 @@ const config = {
 
 		// CSP-Konfiguration
 		csp: {
+			mode: 'auto',
 			directives: {
 				'default-src': ["'self'"],
 				'script-src': ["'self'", "'wasm-unsafe-eval'"],

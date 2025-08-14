@@ -51,14 +51,14 @@
 	});
 </script>
 
-<div class="form-control">
-	<label class="label cursor-pointer justify-start gap-3 py-2">
+<div class="form-control w-full items-start">
+	<label class="label cursor-pointer justify-start gap-3 py-2 w-full">
 		{#if hasIcon}
 			<Icon src={icon} size="16" class="text-base-content/60 flex-shrink-0" />
 		{/if}
 		<input
 			type="checkbox"
-			class={checkboxClasses}
+			class={checkboxClasses + ' flex-shrink-0'}
 			bind:checked
 			{onchange}
 			{disabled}
@@ -71,6 +71,8 @@
 			aria-required={ariaRequired}
 			data-testid={dataTestId}
 		/>
-		<span class="label-text font-medium">{label}</span>
+		<span class="label-text font-medium flex-1 min-w-0 text-left" style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;">
+			{label}
+		</span>
 	</label>
 </div>

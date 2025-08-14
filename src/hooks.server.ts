@@ -5,6 +5,7 @@ import { createLogger } from '$lib/logger';
 import type { User } from '$lib/types/types';
 import type { Handle } from '@sveltejs/kit';
 import jwt from 'jsonwebtoken';
+import { randomBytes } from 'crypto';
 
 const logger = createLogger('hooks:server');
 
@@ -63,6 +64,10 @@ const hasPermission = (user: User | null, url: URL) => {
  * Hier werden nur zusätzliche Security Headers gesetzt
  */
 export const handle: Handle = async ({ event, resolve }) => {
+	// Generate CSP nonce
+	const nonce = randomBytes(16).toString('base64');
+	event.locals.cspNonce = nonce;
+
 	// Authentication
 	const cookie = event.cookies.get(COOKIE_NAME);
 	const url = new URL(event.request.url);
