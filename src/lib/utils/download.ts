@@ -47,9 +47,26 @@ export const downloadHandlers = {
 };
 
 /**
- * Erstellt einen Dateinamen mit Zeitstempel
+ * Erstellt einen Dateinamen mit Datums-Bereich für Export
  */
-export function createTimestampedFilename(baseName: string, extension: string): string {
-	const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '_');
-	return `${baseName}_${timestamp}.${extension}`;
+export function createTimestampedFilename(fromDate: string, toDate: string, extension: string): string;
+export function createTimestampedFilename(baseName: string, extension: string): string;
+export function createTimestampedFilename(arg1: string, arg2: string, arg3?: string): string {
+	if (arg3) {
+		// Überladung mit Datumsbereich: createTimestampedFilename(fromDate, toDate, extension)
+		const fromDate = arg1;
+		const toDate = arg2;
+		const extension = arg3;
+		
+		const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+		const dateRange = fromDate === toDate ? fromDate : `${fromDate}_bis_${toDate}`;
+		
+		return `sichtungen-export_${dateRange}_erstellt-${timestamp}.${extension}`;
+	} else {
+		// Standard-Überladung: createTimestampedFilename(baseName, extension)
+		const baseName = arg1;
+		const extension = arg2;
+		const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '_');
+		return `${baseName}_${timestamp}.${extension}`;
+	}
 }

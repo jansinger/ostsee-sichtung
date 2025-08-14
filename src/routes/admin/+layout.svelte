@@ -29,14 +29,6 @@
 							</li>
 							<li>
 								<a
-									href="/admin/export"
-									class={$page.url.pathname.includes('/export') ? 'active font-medium' : ''}
-								>
-									Export
-								</a>
-							</li>
-							<li>
-								<a
 									href="/admin/map"
 									class={$page.url.pathname.includes('/admin/map') ? 'active font-medium' : ''}
 								>
@@ -149,7 +141,11 @@
 	</header>
 
 	<!-- Page content -->
-	<main class={$page.url.pathname.includes('/admin/map') ? 'flex-grow' : 'flex-grow container mx-auto p-6'}>
+	<main
+		class={$page.url.pathname.includes('/admin/map')
+			? 'flex-grow'
+			: 'container mx-auto flex-grow p-6'}
+	>
 		{@render children()}
 	</main>
 

@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BooleanStatus from '$lib/components/admin/BooleanStatus.svelte';
+	import ExportModal from '$lib/components/admin/ExportModal.svelte';
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
 	import { createLogger } from '$lib/logger';
 	import Checkbox from '$lib/report/components/form/fields/Checkbox.svelte';
@@ -13,7 +14,7 @@
 	import type { FrontendSighting, PageData } from '$lib/types';
 	import { formatDate } from '$lib/utils/format/formatDate';
 	import type { ActionResult } from '@sveltejs/kit';
-	import { CloseOutline, EyeOutline, FilterOutline, TrashBinOutline } from 'flowbite-svelte-icons';
+	import { CloseOutline, EyeOutline, FilterOutline, TrashBinOutline, DownloadOutline } from 'flowbite-svelte-icons';
 
 	const logger = createLogger('SichtungenPage');
 
@@ -32,6 +33,7 @@
 	let showDeleteDialog = $state(false);
 	let sightingToDelete = $state<FrontendSighting | null>(null);
 	let isFilterPanelOpen = $state(false);
+	let showExportModal = $state(false);
 
 	// Prüft ob irgendwelche Filter aktiv sind
 	let hasActiveFilters = $derived(() => {
@@ -42,6 +44,17 @@
 			(selectedChannel && selectedChannel !== 'all') ||
 			mediaUpload
 		);
+	});
+
+	// Aktuelle Filter für Export-Modal
+	let currentFilters = $derived(() => {
+		return {
+			dateFrom: dateFrom || '',
+			dateTo: dateTo || '',
+			verified: verified || '',
+			entryChannel: selectedChannel !== 'all' ? selectedChannel : '',
+			mediaUpload: mediaUpload || ''
+		};
 	});
 
 	function updateSort(column: string): void {
@@ -199,6 +212,15 @@
 				{#if hasActiveFilters()}
 					<span class="badge badge-accent badge-sm ml-1">•</span>
 				{/if}
+			</button>
+			<button
+				class="btn btn-sm btn-primary"
+				onclick={() => (showExportModal = true)}
+				title="Sichtungen exportieren"
+				disabled={!data.pagination?.total}
+			>
+				<DownloadOutline class="mr-1 h-4 w-4" />
+				Export
 			</button>
 			{#if data.pagination && data.pagination.total}
 				<span class="badge badge-outline">{data.pagination.total} Ergebnisse</span>
@@ -491,5 +513,11 @@
 			showDeleteDialog = false;
 			sightingToDelete = null;
 		}}
+	/>
+
+	<ExportModal
+		bind:show={showExportModal}
+		currentFilters={currentFilters()}
+		totalRecords={data.pagination?.total || 0}
 	/>
 </div>
