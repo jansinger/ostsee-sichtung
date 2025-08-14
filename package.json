@@ -1,8 +1,8 @@
 {
-	"name": "ostseesichtung",
+	"name": "ostsee-tiere",
 	"private": true,
 	"version": "1.0.0",
-	"description": "OstseeSichtung - Marine animal sighting reporting platform for the Baltic Sea",
+	"description": "Ostsee-Tiere - Marine animal sighting reporting platform for the Baltic Sea",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",

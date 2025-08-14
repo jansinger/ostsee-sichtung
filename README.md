@@ -1,12 +1,12 @@
-# OstseeSichtung 🌊
+# Ostsee-Tiere 🌊
 
-**OstseeSichtung** ist eine moderne SvelteKit-WebApp zur Erfassung und Verwaltung von Meerestier-Sichtungen in der Ostsee. Die Anwendung ermöglicht es Bürgern, Forschern und Naturbeobachtern, ihre Sichtungen von Walen, Robben und anderen Meerestieren zu melden und der Wissenschaft zur Verfügung zu stellen.
+**Ostsee-Tiere** ist eine moderne SvelteKit-WebApp zur Erfassung und Verwaltung von Meerestier-Sichtungen in der Ostsee. Die Anwendung ermöglicht es Bürgern, Forschern und Naturbeobachtern, ihre Sichtungen von Walen, Robben und anderen Meerestieren zu melden und der Wissenschaft zur Verfügung zu stellen.
 
-![OstseeSichtung](https://via.placeholder.com/800x400?text=OstseeSichtung+-+Baltic+Sea+Marine+Wildlife)
+![Ostsee-Tiere](https://via.placeholder.com/800x400?text=Ostsee-Tiere+-+Baltic+Sea+Marine+Wildlife)
 
 ## 🐋 Projektübersicht
 
-OstseeSichtung bietet eine benutzerfreundliche Plattform zur wissenschaftlichen Erfassung von Meerestier-Sichtungen mit:
+Ostsee-Tiere bietet eine benutzerfreundliche Plattform zur wissenschaftlichen Erfassung von Meerestier-Sichtungen mit:
 
 - Ein intuitives, mehrstufiges Formular zur einfachen Dateneingabe
 - Interaktive Kartenvisualisierung mit OpenLayers
@@ -46,7 +46,12 @@ npm run db:start
 npm run dev
 ```
 
-Die Anwendung ist dann unter http://localhost:5173 verfügbar.
+Die Anwendung ist dann unter https://localhost:4000 verfügbar.
+
+**HTTPS Development Server:**
+- Automatische SSL-Zertifikatsgenerierung
+- Sichere iframe-Einbettung möglich
+- Unterstützt moderne Web-APIs
 
 ### Datenbankbefehle
 

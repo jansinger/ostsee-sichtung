@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**OstseeSichtung** is a modern SvelteKit application for recording and managing marine animal sightings in the Baltic Sea. The application enables citizens, researchers, and nature observers to report their whale, seal, and other marine animal sightings, contributing valuable data to marine research and conservation efforts.
+**Ostsee-Tiere** is a modern SvelteKit application for recording and managing marine animal sightings in the Baltic Sea. The application enables citizens, researchers, and nature observers to report their whale, seal, and other marine animal sightings, contributing valuable data to marine research and conservation efforts.
 
 The user experience is designed to be as simple and intuitive as possible using a multi-step form that only displays relevant sections based on user input. Users can visualize their sightings on an interactive map and capture precise geographic information. 
 
@@ -15,9 +15,16 @@ Administration and data management are supported through user-friendly interface
 ## Development Commands
 
 ### Core Development
-- `npm run dev` - Start development server (http://localhost:5173)
+- `npm run dev` - Start development server (https://localhost:4000)
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
+
+**HTTPS Development Server:**
+- Port: 4000 (automatisch konfiguriert)
+- SSL: Automatische Zertifikatsgenerierung mit `@vitejs/plugin-basic-ssl`
+- Zertifikate werden in `./certs/` gespeichert
+- Unterstützt `localhost` und `*.local.dev` Domains
+- Ermöglicht sichere iframe-Einbettung und moderne Web-APIs
 
 ### Database Operations
 - `npm run db:start` - Start PostgreSQL database (Docker, port 5433)

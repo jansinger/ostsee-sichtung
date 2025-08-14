@@ -43,10 +43,10 @@
 </script>
 
 <svelte:head>
-	<title>OstseeSichtung - Meerestiere melden</title>
+	<title>Ostsee-Tiere - Meerestiere melden</title>
 	<meta
 		name="description"
-		content="OstseeSichtung - Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen."
+		content="Ostsee-Tiere - Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen."
 	/>
 </svelte:head>
 
