@@ -73,3 +73,7 @@ p, span, div {
 .active-panel {
 	z-index: 950 !important;
 }
+
+.label {
+	white-space: inherit;
+}

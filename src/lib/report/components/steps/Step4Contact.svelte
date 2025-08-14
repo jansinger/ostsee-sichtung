@@ -5,7 +5,7 @@
 <script lang="ts">
 	import { createLogger } from '$lib/logger';
 	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
-	import { Anchor, MessageSquare, Trash2, User } from '@steeze-ui/lucide-icons';
+	import { Anchor, MessageSquare, Save, Trash2, User } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import FormField from '../form/fields/FormField.svelte';
 
@@ -177,7 +177,7 @@
 			<!-- Persistent Data Storage Consent -->
 			<div class="mt-6 space-y-4">
 				<h4 class="text-left text-base font-semibold">
-					💾 Dauerhafte Speicherung der Kontaktdaten
+					<Icon src={Save} size="16" class="inline" /> Dauerhafte Speicherung der Kontaktdaten
 				</h4>
 				<p class="text-base-content/70 mb-4 text-left text-sm">
 					Möchten Sie, dass Ihre Kontaktdaten auch nach dem Schließen des Browser-Fensters erhalten

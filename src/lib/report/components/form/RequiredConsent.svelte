@@ -5,7 +5,7 @@
 	import FormField from './fields/FormField.svelte';
 
 	const { form: _form } = getFormContext();
-	
+
 	let { currentStep } = $props<{
 		currentStep: number;
 	}>();
@@ -18,12 +18,13 @@
 	<!-- Required Privacy Consent - Prominently displayed before submit -->
 	<div class="bg-primary/5 border-primary/20 mb-6 rounded-lg border-2 p-4">
 		<div class="mb-4">
-			<h4 class="text-primary mb-2 flex items-center gap-2 font-bold text-lg">
+			<h4 class="text-primary mb-2 flex items-center gap-2 text-lg font-bold">
 				<Icon src={ShieldAlert} size="20" class="text-primary" />
-				🔒 Erforderliche Zustimmung zur Datenverwendung
+				Erforderliche Zustimmung zur Datenverwendung
 			</h4>
 			<p class="text-base-content/80 text-sm">
-				<strong>Diese Zustimmung ist erforderlich</strong>, um Ihre Sichtung zu speichern und für die wissenschaftliche Forschung zu nutzen.
+				<strong>Diese Zustimmung ist erforderlich</strong>, um Ihre Sichtung zu speichern und für
+				die wissenschaftliche Forschung zu nutzen.
 			</p>
 		</div>
 
@@ -34,14 +35,18 @@
 					<span class="text-success text-lg">✅</span>
 					<div>
 						<p class="font-medium">Öffentliche Wissenschaftsdaten</p>
-						<p class="text-base-content/70 text-xs">Datum, Position, Tierart werden für Forschung öffentlich gezeigt</p>
+						<p class="text-base-content/70 text-xs">
+							Datum, Position, Tierart werden für Forschung öffentlich gezeigt
+						</p>
 					</div>
 				</div>
 				<div class="flex items-start gap-3">
 					<span class="text-info text-lg">🔒</span>
 					<div>
 						<p class="font-medium">Private Kontaktdaten</p>
-						<p class="text-base-content/70 text-xs">Ihre persönlichen Daten bleiben vertraulich, nur für Rückfragen</p>
+						<p class="text-base-content/70 text-xs">
+							Ihre persönlichen Daten bleiben vertraulich, nur für Rückfragen
+						</p>
 					</div>
 				</div>
 			</div>
@@ -63,15 +68,15 @@
 	.border-primary\/20 {
 		border-color: oklch(var(--p) / 0.2);
 	}
-	
+
 	.bg-primary\/5 {
 		background-color: oklch(var(--p) / 0.05);
 	}
-	
+
 	.border-primary\/30 {
 		border-color: oklch(var(--p) / 0.3);
 	}
-	
+
 	.text-primary\/70 {
 		color: oklch(var(--p) / 0.7);
 	}
