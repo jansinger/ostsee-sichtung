@@ -7,15 +7,22 @@
 @import '@fontsource/roboto/400.css';
 @import '@fontsource/roboto/500.css';
 
-/* Override font-display for all fonts to prevent layout shift */
+/* Use font-display: swap with optimized fallback metrics */
 @font-face {
 	font-family: 'Inter';
 	font-display: swap;
+	/* Adjust metrics to match system fonts and reduce layout shift */
+	ascent-override: 95%;
+	descent-override: 25%;
+	line-gap-override: 0%;
 }
 
 @font-face {
 	font-family: 'Roboto';
 	font-display: swap;
+	ascent-override: 92.7%;
+	descent-override: 24.4%;
+	line-gap-override: 0%;
 }
 
 @import 'tailwindcss';
@@ -28,13 +35,16 @@
 
 /* Font fallbacks and body styles with optimized font loading */
 body {
-	font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Open Sans', 'Helvetica Neue', sans-serif;
+	/* Optimized font stack with similar metrics to Inter */
+	font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	font-feature-settings: 'cv08', 'cv09', 'cv11';
 	text-rendering: optimizeLegibility;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	/* Prevent layout shifts during font loading */
 	font-synthesis: none;
+	/* Set explicit line-height to prevent shifts */
+	line-height: 1.5;
 }
 
 /* CSP compliance styles */
@@ -54,10 +64,7 @@ html {
 	min-height: 100dvh; /* Dynamic viewport height for mobile */
 }
 
-/* Smooth transitions for font loading */
-* {
-	transition: font-weight 0.1s ease-in-out;
-}
+/* Remove font transitions to prevent visual jumps */
 
 /* Reserve space for common text elements */
 h1, h2, h3, h4, h5, h6 {

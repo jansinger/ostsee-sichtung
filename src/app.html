@@ -23,7 +23,15 @@
 		<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 		<meta name="format-detection" content="telephone=no" />
 
-		<!-- Font loading is handled by @fontsource imports with font-display: swap -->
+		<!-- Inline critical CSS to prevent FOUT -->
+		<style nonce="%sveltekit.nonce%">
+			/* Temporary font metrics for system fonts to match Inter */
+			@supports (font-size-adjust: 1) {
+				body {
+					font-size-adjust: 0.545; /* Match Inter's x-height */
+				}
+			}
+		</style>
 
 		<!-- DNS Prefetch for external resources -->
 		<link rel="dns-prefetch" href="//tile.openstreetmap.org" />
