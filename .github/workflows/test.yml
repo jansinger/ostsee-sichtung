@@ -1,0 +1,70 @@
+name: Test Environment Setup
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.env.example'
+      - '.github/workflows/**'
+
+jobs:
+  test-env-setup:
+    name: Test Environment Setup
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Setup environment from example
+        run: |
+          echo "📋 Setting up environment from .env.example..."
+          cp .env.example .env
+          echo "✅ Environment file created"
+          
+      - name: Verify environment variables
+        run: |
+          echo "🔍 Checking required environment variables..."
+          if [ ! -f .env ]; then
+            echo "❌ .env file not found!"
+            exit 1
+          fi
+          
+          # Check for required variables
+          required_vars=("DATABASE_POSTGRES_URL" "SESSION_SECRET" "COOKIE_NAME")
+          
+          for var in "${required_vars[@]}"; do
+            if grep -q "^${var}=" .env; then
+              echo "✅ ${var} is set"
+            else
+              echo "❌ ${var} is missing!"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All required environment variables are present"
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run svelte-kit sync
+        run: npx svelte-kit sync
+        
+      - name: Build check
+        run: npm run build
+        
+      - name: Summary
+        run: |
+          echo "## ✅ Environment Setup Test Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The workflow successfully:" >> $GITHUB_STEP_SUMMARY
+          echo "- Created .env from .env.example" >> $GITHUB_STEP_SUMMARY
+          echo "- Verified all required environment variables" >> $GITHUB_STEP_SUMMARY
+          echo "- Ran svelte-kit sync successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- Built the application successfully" >> $GITHUB_STEP_SUMMARY
