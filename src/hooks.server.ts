@@ -1,5 +1,5 @@
 import { COOKIE_NAME, SESSION_SECRET } from '$env/static/private';
-import { setAuthCookie } from '$lib/auth/auth';
+import { clearAuthCookie, setAuthCookie } from '$lib/auth/auth';
 import { privateRoutes } from '$lib/constants/privateRoutes';
 import { createLogger } from '$lib/logger';
 import type { User } from '$lib/types/types';
@@ -71,13 +71,17 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	let user = null;
 	if (cookie) {
-		// Extend the cookie
-		user = jwt.verify(cookie, SESSION_SECRET) as User;
-		logger.debug({ user }, 'Authenticated user');
-		setAuthCookie(event.cookies, user);
-
-		// Set user in locals for access in components
-		event.locals.user = user;
+		try {
+			// Extend the cookie
+			user = jwt.verify(cookie, SESSION_SECRET) as User;
+			logger.debug({ user }, 'Authenticated user');
+			setAuthCookie(event.cookies, user);
+			// Set user in locals for access in components
+			event.locals.user = user;
+		} catch (error) {
+			logger.error({ error }, 'Failed to verify cookie, deleting it');
+			clearAuthCookie(event.cookies);
+		}
 	}
 
 	if (!hasPermission(user, url)) {

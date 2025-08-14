@@ -5,19 +5,17 @@
 <script lang="ts">
 	import { toastStore } from '$lib/stores/toastStore';
 	import Toast from './Toast.svelte';
-
-	const toasts = toastStore;
 </script>
 
 <!-- Toast Container positioned at top right -->
 <div class="toast toast-top toast-end z-50">
-	{#each $toasts as toast (toast.id)}
+	{#each $toastStore as toast (toast.id)}
 		<Toast
 			type={toast.type}
-			title={toast.title}
+			title={toast.title || ''}
 			message={toast.message}
-			duration={toast.duration}
-			dismissible={toast.dismissible}
+			duration={toast.duration || 5000}
+			dismissible={!!toast.dismissible}
 			onDismiss={() => toastStore.removeToast(toast.id)}
 		/>
 	{/each}

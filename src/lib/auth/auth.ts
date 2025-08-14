@@ -94,3 +94,7 @@ export const setAuthCookie = (cookies: Cookies, user: User) => {
 		path: '/'
 	});
 };
+
+export const clearAuthCookie = (cookies: Cookies) => {
+	cookies.delete(COOKIE_NAME, { path: '/' });
+};
