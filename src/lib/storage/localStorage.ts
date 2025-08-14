@@ -105,7 +105,7 @@ export function saveUserContactData(contactData: UserContactData): void {
  * Lädt gespeicherte Benutzer-Kontaktdaten
  */
 export function loadUserContactData(): UserContactData {
-	return loadFromStorage(STORAGE_KEYS.USER_CONTACT_DATA, {});
+	return loadFromStorage(STORAGE_KEYS.USER_CONTACT_DATA, {} as UserContactData);
 }
 
 /**

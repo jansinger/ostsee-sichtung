@@ -6,18 +6,19 @@
 	import { createLogger } from '$lib/logger';
 	import { sightingSchemaFields } from '$lib/report/formConfig';
 	import { getFormContext } from '$lib/report/formContext';
+	import type { SightingFormValues } from '$lib/types/Form';
 	import * as yup from 'yup';
 	import FieldRenderer from './FieldRenderer.svelte';
 
 	const logger = createLogger('report:FormField');
 
 	let {
-		name = '',
+		name,
 		disabled = false,
 		size = 'md',
 		variant = 'default'
 	}: {
-		name: string;
+		name: keyof SightingFormValues;
 		disabled?: boolean;
 		size?: 'sm' | 'md' | 'lg';
 		variant?: 'default' | 'compact' | 'full';
@@ -42,9 +43,8 @@
 			`Field "${name}" not found in schema configuration (${fieldConfig?.meta ? 'meta configuration missing' : 'schema element missing'}).`
 		);
 	}
-
-	// Reactive values from form context
 	let error = $derived($errors[name]);
+	let value: SightingFormValues[typeof name] = $derived($form[name]);
 
 	// Only log during development
 	logger.debug({ form: $form, config: fieldConfig }, `FormField "${name}" rendered`);
@@ -54,7 +54,7 @@
 	<FieldRenderer
 		{fieldConfig}
 		{name}
-		bind:value={$form[name]}
+		bind:value
 		{error}
 		{disabled}
 		{size}

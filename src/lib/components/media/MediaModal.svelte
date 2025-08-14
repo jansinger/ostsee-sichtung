@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { SightingFile } from '$lib/types';
 	import type { UploadedFileInfo } from '$lib/types/';
-	import { formatDate } from '$lib/utils/format/FormatDate';
-	import { formatLocation } from '$lib/utils/format/FormatLocation';
+	import { formatDate } from '$lib/utils/format/formatDate';
+	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import {
 		Calendar,
 		Camera,

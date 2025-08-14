@@ -32,7 +32,7 @@ export async function GET({ url, cookies }) {
 		const authUser = (await verifyToken(token.id_token)) as User;
 		logger.debug({ authUser }, 'authUser');
 
-		const claims = await getTokenClaims(token.access_token);
+		const claims = await getTokenClaims<{ [rolesClaim]: string[] }>(token.access_token);
 		logger.debug({ claims }, 'claims');
 
 		authUser.roles = claims[rolesClaim] || [];

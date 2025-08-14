@@ -27,7 +27,7 @@
 	}: {
 		fieldConfig: yup.SchemaDescription;
 		name?: string;
-		value?: string | number | boolean;
+		value?: string | number | boolean | undefined | null;
 		error?: string | undefined;
 		disabled?: boolean;
 		size?: FieldSize;
@@ -38,7 +38,7 @@
 	// Bindable values for different component types
 	let booleanValue = $state(false);
 	let stringValue = $state('');
-	let numberValue = $state<string | number>('');
+	let numberValue = $state<number | string>('');
 
 	// Sync boolean value with main value prop
 	$effect(() => {
@@ -94,7 +94,7 @@
 				'radio'
 			].includes(normalizedType)
 		) {
-			value = numberValue;
+			value = numberValue === null ? undefined : Number(numberValue);
 			if (onchange && event) onchange(event);
 		}
 	}

@@ -43,14 +43,14 @@
 	const savedUserContactData = loadUserContactData();
 
 	// Kombiniere initial state mit persistenten Benutzer-Kontaktdaten
-	const initialFormData = {
+	const initialFormData: SightingFormData = {
 		...initialFormState,
 		...savedUserContactData,
 		referenceId: createId()
 	};
 
 	// Gespeicherte Formulardaten oder Initialwerte laden
-	const savedFormData = loadFromStorage(STORAGE_KEYS.FORM_DATA, {
+	const savedFormData: SightingFormData = loadFromStorage(STORAGE_KEYS.FORM_DATA, {
 		...initialFormData
 	});
 
@@ -72,22 +72,25 @@
 				// Speichere Benutzer-Kontaktdaten für zukünftige Formulare basierend auf Zustimmung
 				if (result.success) {
 					const userContactData: UserContactData = {
-						firstName: values.firstName || undefined,
-						lastName: values.lastName || undefined,
-						email: values.email || undefined,
-						phone: values.phone || undefined,
-						street: values.street || undefined,
-						zipCode: values.zipCode || undefined,
-						city: values.city || undefined,
-						shipName: values.shipName || undefined,
-						homePort: values.homePort || undefined,
-						boatType: values.boatType || undefined,
-						nameConsent: values.nameConsent || false,
-						shipNameConsent: values.shipNameConsent || false,
+						firstName: values.firstName,
+						lastName: values.lastName,
+						email: values.email,
+						phone: values.phone,
+						street: values.street,
+						zipCode: values.zipCode,
+						city: values.city,
+						shipName: values.shipName,
+						homePort: values.homePort,
+						boatType: values.boatType,
+						nameConsent: values.nameConsent,
+						shipNameConsent: values.shipNameConsent,
 						persistentDataConsent: values.persistentDataConsent || false
 					};
 					saveUserContactDataWithConsent(userContactData);
-					logger.info('User contact data saved with consent-based persistence');
+					logger.info(
+						{ userContactData },
+						'User contact data saved with consent-based persistence'
+					);
 				}
 
 				clearFormDataOnly(); // Clears only form data, keeps currentStep and user contact data

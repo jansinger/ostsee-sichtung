@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { SpeciesEnum, speciesGroups } from '$lib/report/formOptions/species';
+	import type { SightingFormData } from '$lib/types';
 	import { ChevronDown, ChevronRight, CircleHelp } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
 	let {
 		currentValue = undefined
 	}: {
-		currentValue?: number | string | boolean | undefined;
+		currentValue?: SightingFormData[keyof SightingFormData];
 	} = $props();
 
 	let isExpanded = $state(false);

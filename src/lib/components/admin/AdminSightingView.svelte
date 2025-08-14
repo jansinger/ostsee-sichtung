@@ -16,7 +16,7 @@
 	import { getWindDirectionLabel } from '$lib/report/formOptions/windDirection';
 	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
 	import type { FrontendSighting } from '$lib/types';
-	import { formatDate } from '$lib/utils/format/FormatDate';
+	import { formatDate } from '$lib/utils/format/formatDate';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import {
 		Activity,

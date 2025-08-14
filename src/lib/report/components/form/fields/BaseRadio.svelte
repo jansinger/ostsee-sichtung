@@ -3,14 +3,15 @@
   Independent of form context, accepts all props directly
 -->
 <script lang="ts">
+	import type { FieldOption, FieldSize } from '$lib/types';
+	import { type IconSource } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
-	import type { FieldOption, FieldSize, IconType } from '../types';
 
 	interface Props {
 		value?: string | number;
 		options?: FieldOption[];
 		size?: FieldSize;
-		icon?: IconType;
+		icon?: IconSource;
 		onchange?: (event: Event) => void;
 		// Common input attributes
 		id?: string;
@@ -18,8 +19,6 @@
 		disabled?: boolean;
 		required?: boolean;
 		'aria-describedby'?: string;
-		'aria-invalid'?: boolean;
-		'aria-required'?: boolean;
 		'data-testid'?: string;
 	}
 
@@ -34,12 +33,9 @@
 		disabled = false,
 		required = false,
 		'aria-describedby': ariaDescribedBy,
-		'aria-invalid': ariaInvalid,
-		'aria-required': ariaRequired,
 		'data-testid': dataTestId
 	}: Props = $props();
 
-	let hasIcon = $derived(!!icon);
 	let hasOptions = $derived(options && options.length > 0);
 
 	// Dynamic CSS classes
@@ -56,7 +52,7 @@
 			<label
 				class="label hover:bg-base-200/50 cursor-pointer justify-start gap-3 rounded-lg py-2 transition-colors"
 			>
-				{#if hasIcon}
+				{#if icon !== undefined}
 					<Icon src={icon} size="16" class="text-base-content/60 flex-shrink-0" />
 				{/if}
 				<input
@@ -69,8 +65,6 @@
 					{disabled}
 					{required}
 					aria-describedby={ariaDescribedBy}
-					aria-invalid={ariaInvalid}
-					aria-required={ariaRequired}
 					data-testid={dataTestId ? `${dataTestId}-${option.value}` : undefined}
 				/>
 				<span class="label-text font-medium">{option.label}</span>

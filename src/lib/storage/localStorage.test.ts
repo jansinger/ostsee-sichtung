@@ -1,3 +1,4 @@
+import type { UserContactData } from '$lib/types';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
 	clearStorage,
@@ -80,7 +81,7 @@ describe('localStorage utilities', () => {
 				lastName: 'Doe',
 				email: 'john@example.com',
 				persistentDataConsent: true
-			};
+			} as UserContactData;
 
 			saveUserContactData(contactData);
 

@@ -3,10 +3,10 @@
   Independent of form context, accepts all props directly
 -->
 <script lang="ts">
-	import { ChevronDown } from '@steeze-ui/lucide-icons';
+	import type { FieldOption, FieldSize } from '$lib/types';
+	import { ChevronDown, type IconSource } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import type { HTMLInputAttributes } from 'svelte/elements';
-	import type { FieldOption, FieldSize, IconType } from '../types';
 
 	type InputType = 'text' | 'email' | 'tel' | 'number' | 'url' | 'password' | 'date' | 'time';
 
@@ -16,7 +16,7 @@
 		size?: FieldSize;
 		hasError?: boolean;
 		isValid?: boolean;
-		icon?: IconType;
+		icon?: IconSource;
 		options?: FieldOption[];
 		onchange?: (event: Event) => void;
 	}
@@ -34,9 +34,10 @@
 		...restProps
 	}: Props = $props();
 
-	let hasIcon = $derived(!!icon);
 	let hasOptions = $derived(options && options.length > 0);
-	let datalistId = $derived(hasOptions ? `${restProps.id || restProps.name || ''}-datalist` : undefined);
+	let datalistId = $derived(
+		hasOptions ? `${restProps.id || restProps.name || ''}-datalist` : undefined
+	);
 
 	// Dynamic CSS classes
 	let inputClasses = $derived.by(() => {
@@ -44,7 +45,7 @@
 		const stateClass = hasError ? 'input-error' : isValid ? 'input-success' : '';
 		const sizeClass = size === 'sm' ? 'input-sm' : size === 'lg' ? 'input-lg' : '';
 		const focusClass = 'focus:ring-2 focus:ring-primary/20 focus:border-primary';
-		const iconPadding = hasIcon ? 'pl-10' : '';
+		const iconPadding = icon !== undefined ? 'pl-10' : '';
 		return [base, stateClass, sizeClass, focusClass, iconPadding].filter(Boolean).join(' ');
 	});
 
@@ -67,16 +68,16 @@
 		};
 
 		// Filter out undefined values
-		return Object.fromEntries(
-			Object.entries(props).filter(([, val]) => val !== undefined)
-		);
+		return Object.fromEntries(Object.entries(props).filter(([, val]) => val !== undefined));
 	});
 </script>
 
 <div class="relative">
 	<!-- Icon (if available) -->
-	{#if hasIcon}
-		<div class="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center">
+	{#if icon !== undefined}
+		<div
+			class="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center"
+		>
 			<Icon src={icon} size="16" class="text-base-content/60" />
 		</div>
 	{/if}

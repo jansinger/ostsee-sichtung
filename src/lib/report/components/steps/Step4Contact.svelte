@@ -193,16 +193,6 @@
 </div>
 
 <style>
-	/* Card hover effects */
-	.card {
-		transition: all 0.2s ease;
-	}
-
-	.card:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 8px 25px -8px oklch(var(--b3));
-	}
-
 	/* Special styling for privacy section */
 	.border-primary\/20 {
 		border-color: oklch(var(--p) / 0.2);
@@ -226,14 +216,6 @@
 	.alert {
 		border-radius: 0.75rem;
 		border: 1px solid oklch(var(--in) / 0.2);
-	}
-
-	.alert ul {
-		margin-top: 0.5rem;
-	}
-
-	.alert li {
-		margin-left: 1rem;
 	}
 
 	/* Form field styling */

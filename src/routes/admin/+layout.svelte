@@ -85,7 +85,6 @@
 							<Icon src={List} class="h-6 w-6 shrink-0" />
 						</button>
 						<ul
-							tabindex="0"
 							class="dropdown-content menu menu-sm rounded-box bg-base-100 absolute right-0 z-50 mt-3 w-52 p-2 shadow"
 						>
 							<li>

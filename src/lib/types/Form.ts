@@ -22,7 +22,11 @@ export interface FormProgress {
 
 export type SightingFormData = yup.InferType<typeof sightingSchema>;
 
+export type SightingFormValues = Omit<SightingFormData, 'uploadedFiles'>;
+
 // Import the actual FormAPI type from svelte-forms-lib
-export type FormContext = ReturnType<typeof import('svelte-forms-lib').createForm<SightingFormData>>
+export type FormContext = ReturnType<
+	typeof import('svelte-forms-lib').createForm<SightingFormData>
+>;
 
 export type FormContextKey = symbol;

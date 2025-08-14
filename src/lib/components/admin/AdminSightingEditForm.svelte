@@ -10,7 +10,7 @@
 	import Media from '$lib/report/components/sections/Media.svelte';
 	import OptionalSightingDetails from '$lib/report/components/sections/OptionalSightingDetails.svelte';
 	import type { FormContext } from '$lib/report/types';
-	import { formatDate } from '$lib/utils/format/FormatDate';
+	import { formatDate } from '$lib/utils/format/formatDate';
 	import type { Readable, Writable } from 'svelte/store';
 	import BooleanStatus from './BooleanStatus.svelte';
 	// Note: mediaStore and onMount not needed for admin edit form

@@ -11,7 +11,7 @@
 	import { getEntryChannelOptions } from '$lib/report/formOptions/entryChannel';
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import type { FrontendSighting, PageData } from '$lib/types';
-	import { formatDate } from '$lib/utils/format/FormatDate';
+	import { formatDate } from '$lib/utils/format/formatDate';
 	import type { ActionResult } from '@sveltejs/kit';
 	import { CloseOutline, EyeOutline, FilterOutline, TrashBinOutline } from 'flowbite-svelte-icons';
 

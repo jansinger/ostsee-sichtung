@@ -13,6 +13,7 @@ export interface SightingFile {
 	size: number;
 	uploadedAt: string;
 	createdAt: string;
+	url: string;
 	// Optional EXIF data for images
 	exifData?: {
 		latitude?: number | null;

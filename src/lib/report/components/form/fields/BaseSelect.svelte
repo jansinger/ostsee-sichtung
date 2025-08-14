@@ -3,9 +3,9 @@
   Independent of form context, accepts all props directly
 -->
 <script lang="ts">
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import type { FieldOption, FieldSize } from '$lib/types';
+	import { Icon, type IconSource } from '@steeze-ui/svelte-icon';
 	import type { HTMLSelectAttributes } from 'svelte/elements';
-	import type { FieldOption, FieldSize, IconType } from '../types';
 
 	interface Props extends Omit<HTMLSelectAttributes, 'size'> {
 		value?: string | number;
@@ -14,7 +14,7 @@
 		size?: FieldSize;
 		hasError?: boolean;
 		isValid?: boolean;
-		icon?: IconType;
+		icon?: IconSource;
 		onchange?: (event: Event) => void;
 	}
 
@@ -30,7 +30,6 @@
 		...restProps
 	}: Props = $props();
 
-	let hasIcon = $derived(!!icon);
 	let hasOptions = $derived(options && options.length > 0);
 
 	// Dynamic CSS classes
@@ -39,7 +38,7 @@
 		const stateClass = hasError ? 'select-error' : isValid ? 'select-success' : '';
 		const sizeClass = size === 'sm' ? 'select-sm' : size === 'lg' ? 'select-lg' : '';
 		const focusClass = 'focus:ring-2 focus:ring-primary/20 focus:border-primary';
-		const iconPadding = hasIcon ? 'pl-10' : '';
+		const iconPadding = icon !== undefined ? 'pl-10' : '';
 		return [base, stateClass, sizeClass, focusClass, iconPadding].filter(Boolean).join(' ');
 	});
 
@@ -58,7 +57,7 @@
 
 <div class="relative">
 	<!-- Icon (if available) -->
-	{#if hasIcon}
+	{#if icon !== undefined}
 		<div
 			class="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center"
 		>

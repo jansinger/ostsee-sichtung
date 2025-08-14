@@ -129,7 +129,7 @@
 		border: 1px solid #ccc;
 	}
 
-	.drag-hint {
+	:global(.drag-hint) {
 		font-size: 0.85rem;
 		color: #666;
 		background-color: #f9f9f9;

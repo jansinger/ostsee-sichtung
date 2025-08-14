@@ -96,29 +96,31 @@
 
 		// Tastatur-Navigation Setup
 		setupKeyboardNavigation();
-		
+
 		// Event-Listener für Loading-Zustände
 		setupLoadingHandlers();
 	});
-	
+
 	/**
 	 * Setup für Loading-State-Management
 	 */
 	function setupLoadingHandlers() {
 		// Überwache Filter-Änderungen
-		const filterInputs = document.querySelectorAll('#year-select, #filter-input, .species-checkbox, .color-checkbox');
-		filterInputs.forEach(input => {
+		const filterInputs = document.querySelectorAll(
+			'#year-select, #filter-input, .species-checkbox, .color-checkbox'
+		);
+		filterInputs.forEach((input) => {
 			input.addEventListener('change', () => {
 				isLoadingData = true;
 				errorMessage = null;
-				
+
 				// Loading-Indikator nach 2 Sekunden automatisch ausblenden
 				setTimeout(() => {
 					isLoadingData = false;
 				}, 2000);
 			});
 		});
-		
+
 		// Global Error Handler für API-Fehler
 		window.addEventListener('unhandledrejection', (event) => {
 			console.error('Unhandled promise rejection:', event.reason);
@@ -126,7 +128,7 @@
 			isLoadingData = false;
 		});
 	}
-	
+
 	/**
 	 * Fehler-Toast schließen
 	 */
@@ -155,7 +157,9 @@
 				case 'F': {
 					event.preventDefault();
 					// Toggle Filter Panel
-					const filterButton = document.querySelector('[aria-label*="Filter"]') as HTMLButtonElement;
+					const filterButton = document.querySelector(
+						'[aria-label*="Filter"]'
+					) as HTMLButtonElement;
 					filterButton?.click();
 					break;
 				}
@@ -163,7 +167,9 @@
 				case 'L': {
 					event.preventDefault();
 					// Toggle Legende Panel
-					const legendButton = document.querySelector('[aria-label*="Legende"]') as HTMLButtonElement;
+					const legendButton = document.querySelector(
+						'[aria-label*="Legende"]'
+					) as HTMLButtonElement;
 					legendButton?.click();
 					break;
 				}
@@ -171,7 +177,9 @@
 				case 'Z': {
 					event.preventDefault();
 					// Zoom auf alle Meldungen
-					const zoomButton = document.querySelector('.zoom-all-control button') as HTMLButtonElement;
+					const zoomButton = document.querySelector(
+						'.zoom-all-control button'
+					) as HTMLButtonElement;
 					zoomButton?.click();
 					break;
 				}
@@ -196,12 +204,11 @@
 
 	<!-- Vollbild-Karte -->
 	<div class="relative h-full w-full">
-		<div 
-			id="map" 
-			class="h-full w-full" 
-			role="application" 
+		<div
+			id="map"
+			class="h-full w-full"
+			role="application"
 			aria-label="Interaktive Sichtungskarte der Ostsee"
-			tabindex="0"
 		></div>
 		<div
 			id="info"
@@ -214,18 +221,22 @@
 		>
 			<div class="loading loading-lg loading-spinner"></div>
 		</div>
-		
+
 		<!-- Neuer Filter-Load-Indikator -->
 		{#if isLoadingData}
-			<div class="alert alert-info fixed top-4 left-1/2 z-30 w-auto -translate-x-1/2 transform shadow-lg">
+			<div
+				class="alert alert-info fixed top-4 left-1/2 z-30 w-auto -translate-x-1/2 transform shadow-lg"
+			>
 				<div class="loading loading-sm loading-spinner"></div>
 				<span>Karte wird aktualisiert...</span>
 			</div>
 		{/if}
-		
+
 		<!-- Error-Toast -->
 		{#if errorMessage}
-			<div class="alert alert-error fixed top-4 left-1/2 z-30 max-w-md -translate-x-1/2 transform shadow-lg">
+			<div
+				class="alert alert-error fixed top-4 left-1/2 z-30 max-w-md -translate-x-1/2 transform shadow-lg"
+			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					class="h-6 w-6 shrink-0 stroke-current"
@@ -292,7 +303,7 @@
 						✕
 					</button>
 				</div>
-				
+
 				<div class="space-y-3">
 					<div class="flex justify-between">
 						<kbd class="kbd kbd-sm">H oder ?</kbd>
@@ -315,8 +326,8 @@
 						<span class="text-sm">Dialoge schließen</span>
 					</div>
 				</div>
-				
-				<div class="mt-6 text-xs text-base-content/60">
+
+				<div class="text-base-content/60 mt-6 text-xs">
 					<p>🧭 Verwenden Sie die Maus oder Touch-Gesten zum Navigieren der Karte</p>
 					<p>🔍 Klicken Sie auf Marker für Details</p>
 				</div>
