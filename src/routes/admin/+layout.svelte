@@ -22,10 +22,7 @@
 							<li>
 								<a
 									href="/admin"
-									class={$page.url.pathname.startsWith('/admin') &&
-									!$page.url.pathname.includes('/export')
-										? 'active font-medium'
-										: ''}
+									class={$page.url.pathname === '/admin' ? 'active font-medium' : ''}
 								>
 									Sichtungen
 								</a>
@@ -39,7 +36,12 @@
 								</a>
 							</li>
 							<li>
-								<span class="cursor-not-allowed px-4 py-2 opacity-50">Karte</span>
+								<a
+									href="/admin/map"
+									class={$page.url.pathname.includes('/admin/map') ? 'active font-medium' : ''}
+								>
+									Karte
+								</a>
 							</li>
 						</ul>
 
@@ -90,10 +92,7 @@
 							<li>
 								<a
 									href="/admin"
-									class={$page.url.pathname.startsWith('/admin') &&
-									!$page.url.pathname.includes('/export')
-										? 'active font-medium'
-										: ''}
+									class={$page.url.pathname === '/admin' ? 'active font-medium' : ''}
 								>
 									Sichtungen
 								</a>
@@ -107,7 +106,12 @@
 								</a>
 							</li>
 							<li>
-								<span class="cursor-not-allowed opacity-50">Karte</span>
+								<a
+									href="/admin/map"
+									class={$page.url.pathname.includes('/admin/map') ? 'active font-medium' : ''}
+								>
+									Karte
+								</a>
 							</li>
 
 							<!-- User info - Mobile -->
@@ -145,14 +149,16 @@
 	</header>
 
 	<!-- Page content -->
-	<main class="flex-grow">
+	<main class={$page.url.pathname.includes('/admin/map') ? 'flex-grow' : 'flex-grow container mx-auto p-6'}>
 		{@render children()}
 	</main>
 
-	<!-- Footer -->
-	<footer class="footer-center footer bg-base-200 text-base-content p-4">
-		<div>
-			<p>© 2025 Deutsches Meeresmuseum - Alle Rechte vorbehalten</p>
-		</div>
-	</footer>
+	<!-- Footer - Hidden on map page for full screen experience -->
+	{#if !$page.url.pathname.includes('/admin/map')}
+		<footer class="footer-center footer bg-base-200 text-base-content p-4">
+			<div>
+				<p>© 2025 Deutsches Meeresmuseum - Alle Rechte vorbehalten</p>
+			</div>
+		</footer>
+	{/if}
 </div>

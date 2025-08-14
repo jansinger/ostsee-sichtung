@@ -46,26 +46,26 @@
 	aria-hidden={!isOpen}
 >
 	<div class="h-full overflow-y-auto">
-		<div class="p-6">
-			<div class="mb-4 flex items-center justify-between">
-				<h2 id="filter-title" class="text-xl font-bold">Filter</h2>
+		<div class="p-4">
+			<div class="mb-3 flex items-center justify-between">
+				<h2 id="filter-title" class="text-lg font-bold">Filter</h2>
 				<button
 					onclick={closePanel}
-					class="btn btn-ghost btn-sm hover:bg-base-200"
+					class="btn btn-ghost btn-xs hover:bg-base-200"
 					aria-label="Filter schließen"
 				>
 					<Icon src={SquareX} class="h-4 w-4" />
 				</button>
 			</div>
 
-			<div class="space-y-6">
+			<div class="space-y-4">
 				<div class="form-control w-full">
-					<label for="year-select" class="label">
-						<span class="label-text font-medium">Jahr</span>
+					<label for="year-select" class="label py-1">
+						<span class="label-text text-sm font-medium">Jahr</span>
 					</label>
 					<select
 						id="year-select"
-						class="select select-bordered focus:select-primary w-full"
+						class="select select-bordered select-sm focus:select-primary w-full text-sm"
 						title="Wählen Sie das Jahr aus, für das Sichtungen angezeigt werden sollen"
 					>
 						{#each years.toReversed() as year (year)}
@@ -75,38 +75,38 @@
 				</div>
 
 				<div class="form-control w-full">
-					<label for="filter-input" class="label">
-						<span class="label-text font-medium">Suchen</span>
+					<label for="filter-input" class="label py-1">
+						<span class="label-text text-sm font-medium">Suchen</span>
 					</label>
 					<input
 						id="filter-input"
 						type="text"
 						placeholder="E-Mail, Name, Schiff..."
-						class="input input-bordered focus:input-primary w-full"
+						class="input input-bordered input-sm focus:input-primary w-full"
 						title="Nach E-Mail, Schiffsname, Name oder Vorname filtern (Return zum filtern)."
 						aria-describedby="filter-help"
 					/>
-					<label class="label" for="filter-input">
+					<label class="label py-0" for="filter-input">
 						<span id="filter-help" class="label-text-alt text-base-content/60 text-xs">
 							Enter-Taste zum Filtern drücken
 						</span>
 					</label>
 				</div>
 
-				<div class="space-y-4">
-					<div class="label">
-						<span class="label-text font-medium">Zeitraum</span>
+				<div class="space-y-3">
+					<div class="label py-1">
+						<span class="label-text text-sm font-medium">Zeitraum</span>
 					</div>
 
-					<div class="space-y-4">
+					<div class="space-y-3">
 						<div>
-							<label class="label" for="time-range-start">
+							<label class="label py-0" for="time-range-start">
 								<span class="label-text-alt text-xs">Start</span>
 							</label>
 							<input
 								type="range"
 								id="time-range-start"
-								class="range range-primary range-sm"
+								class="range range-primary range-xs"
 								min="0"
 								max="365"
 								value="0"
@@ -114,19 +114,19 @@
 							<div class="mt-1">
 								<div
 									id="time-start"
-									class="bg-base-200 rounded p-2 text-center text-sm font-medium"
+									class="bg-base-200 rounded px-2 py-1 text-center text-xs font-medium"
 								></div>
 							</div>
 						</div>
 
 						<div>
-							<label class="label" for="time-range-end">
+							<label class="label py-0" for="time-range-end">
 								<span class="label-text-alt text-xs">Ende</span>
 							</label>
 							<input
 								type="range"
 								id="time-range-end"
-								class="range range-primary range-sm"
+								class="range range-primary range-xs"
 								min="0"
 								max="365"
 								value="365"
@@ -134,7 +134,7 @@
 							<div class="mt-1">
 								<div
 									id="time-end"
-									class="bg-base-200 rounded p-2 text-center text-sm font-medium"
+									class="bg-base-200 rounded px-2 py-1 text-center text-xs font-medium"
 								></div>
 							</div>
 						</div>

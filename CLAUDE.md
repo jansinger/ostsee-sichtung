@@ -179,3 +179,4 @@ Always check Baltic Sea geographic bounds using the `checkBalticSea` utility bef
 - Use Pino for logging, avoid console usage except for debugging
 - Store file metadata including EXIF data as JSONB in database for efficient querying
 - Use storage abstraction layer for file operations to support multiple providers
+- Nach jeder Veränderung im Code sollte npm check und npm type-check ausgeführt werden
