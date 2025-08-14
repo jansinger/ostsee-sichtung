@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { browser as isBrowser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import {
@@ -28,7 +28,7 @@
 	 * Navigiert zur vorherigen Seite oder zur Startseite
 	 */
 	const goBack = (): void => {
-		if (browser && window.history.length > 1) {
+		if (isBrowser && window.history.length > 1) {
 			window.history.back();
 		} else {
 			goHome();
@@ -39,7 +39,7 @@
 	 * Lädt die aktuelle Seite neu
 	 */
 	const reloadPage = (): void => {
-		if (browser) {
+		if (isBrowser) {
 			window.location.reload();
 		}
 	};
