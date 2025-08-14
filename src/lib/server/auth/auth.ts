@@ -8,8 +8,9 @@ import {
 } from '$env/static/private';
 import { PUBLIC_SITE_URL } from '$env/static/public';
 
+import { page } from '$app/state';
 import type { User } from '$lib/types/index';
-import type { Cookies } from '@sveltejs/kit';
+import { error, redirect, type Cookies } from '@sveltejs/kit';
 import type { JwtHeader, SigningKeyCallback } from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';
 import { JwksClient } from 'jwks-rsa';
@@ -94,4 +95,17 @@ export const setAuthCookie = (cookies: Cookies, user: User) => {
 
 export const clearAuthCookie = (cookies: Cookies) => {
 	cookies.delete(COOKIE_NAME, { path: '/' });
+};
+
+export const requireUserRole = (user: User | null | undefined, requiredRoles?: string[]): void => {
+	if (!user) {
+		const url = page.url;
+		return redirect(302, `/api/auth/login?returnUrl=${url.pathname}`);
+	}
+	if (requiredRoles && requiredRoles.length > 0) {
+		if (requiredRoles.some((role) => user.roles?.includes(role))) {
+			return;
+		}
+		throw error(403, 'Forbidden: Insufficient permissions');
+	}
 };

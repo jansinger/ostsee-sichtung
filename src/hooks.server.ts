@@ -1,11 +1,10 @@
 import { COOKIE_NAME, SESSION_SECRET } from '$env/static/private';
-import { clearAuthCookie, setAuthCookie } from '$lib/server/auth/auth';
-import { privateRoutes } from '$lib/constants/privateRoutes';
 import { createLogger } from '$lib/logger';
+import { clearAuthCookie, setAuthCookie } from '$lib/server/auth/auth';
 import type { User } from '$lib/types/index';
 import type { Handle } from '@sveltejs/kit';
-import jwt from 'jsonwebtoken';
 import { randomBytes } from 'crypto';
+import jwt from 'jsonwebtoken';
 
 const logger = createLogger('hooks:server');
 
@@ -44,19 +43,6 @@ const setAdditionalHeaders: Handle = async ({ event, resolve }) => {
 	return response;
 };
 
-const hasPermission = (user: User | null, url: URL) => {
-	const route = privateRoutes.find((route) => url.pathname.includes(route.path));
-	// Route not restricted
-	if (!route) return true;
-
-	// No User authenticated
-	if (!user) return false;
-
-	// Check if the user's roles include any of the required roles for the route
-	const hasRole = route.roles.some((role) => user.roles && user.roles.includes(role));
-	return hasRole;
-};
-
 /**
  * SvelteKit Handle Hook - Nicht-CSP Security Headers
  *
@@ -87,16 +73,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 			logger.error({ error }, 'Failed to verify cookie, deleting it');
 			clearAuthCookie(event.cookies);
 		}
-	}
-
-	if (!hasPermission(user, url)) {
-		if (user) {
-			return new Response('Permission denied', { status: 403 });
-		}
-		return new Response('Login required', {
-			status: 302,
-			headers: { location: `/api/auth/login?returnUrl=${url.pathname}` }
-		});
 	}
 
 	return await setAdditionalHeaders({ event, resolve });
