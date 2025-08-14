@@ -1,0 +1,309 @@
+name: Dependabot Combined PR
+
+on:
+  schedule:
+    # Läuft täglich um 9:00 UTC (10:00 CET)
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Manueller Trigger
+  
+jobs:
+  combine-dependabot-prs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+      - name: Get Dependabot PRs
+        id: get-prs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: 'dependabot/',
+              per_page: 100
+            });
+            
+            const dependabotPRs = pullRequests.filter(pr => 
+              pr.user.login === 'dependabot[bot]' && 
+              pr.head.ref.startsWith('dependabot/')
+            );
+            
+            if (dependabotPRs.length === 0) {
+              console.log('No Dependabot PRs found');
+              return { prs: [], count: 0 };
+            }
+            
+            console.log(`Found ${dependabotPRs.length} Dependabot PRs`);
+            
+            const prDetails = dependabotPRs.map(pr => ({
+              number: pr.number,
+              title: pr.title,
+              branch: pr.head.ref,
+              url: pr.html_url,
+              body: pr.body
+            }));
+            
+            core.setOutput('count', dependabotPRs.length);
+            core.setOutput('prs', JSON.stringify(prDetails));
+            
+            return { prs: prDetails, count: dependabotPRs.length };
+            
+      - name: Exit if no PRs
+        if: steps.get-prs.outputs.count == '0'
+        run: |
+          echo "No Dependabot PRs to combine. Exiting."
+          exit 0
+          
+      - name: Create combined branch
+        if: steps.get-prs.outputs.count != '0'
+        run: |
+          # Erstelle einen neuen Branch für die kombinierten Updates
+          BRANCH_NAME="chore/dependabot-combined-$(date +%Y-%m-%d)"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          
+          git checkout -b "$BRANCH_NAME"
+          git push origin "$BRANCH_NAME"
+          
+      - name: Merge Dependabot branches
+        if: steps.get-prs.outputs.count != '0'
+        run: |
+          # Parse PR details
+          PRS='${{ steps.get-prs.outputs.prs }}'
+          echo "$PRS" | jq -r '.[] | "\(.branch) \(.title)"' | while IFS=' ' read -r branch title; do
+            echo "Merging $branch: $title"
+            
+            # Merge den Dependabot branch
+            git fetch origin "$branch"
+            git merge "origin/$branch" --no-ff --no-edit -m "merge: $title"
+          done
+          
+      - name: Generate conventional commit message
+        if: steps.get-prs.outputs.count != '0'
+        id: commit-message
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = JSON.parse('${{ steps.get-prs.outputs.prs }}');
+            
+            // Gruppiere Updates nach Typ
+            const updates = {
+              major: [],
+              minor: [],
+              patch: [],
+              other: []
+            };
+            
+            prs.forEach(pr => {
+              const title = pr.title;
+              const match = title.match(/bump (.+) from (.+) to (.+)/i);
+              
+              if (match) {
+                const [, packageName, fromVersion, toVersion] = match;
+                const versionType = getVersionType(fromVersion, toVersion);
+                updates[versionType].push({ packageName, fromVersion, toVersion });
+              } else {
+                updates.other.push({ title: title });
+              }
+            });
+            
+            function getVersionType(from, to) {
+              const fromParts = from.split('.').map(Number);
+              const toParts = to.split('.').map(Number);
+              
+              if (toParts[0] > fromParts[0]) return 'major';
+              if (toParts[1] > fromParts[1]) return 'minor';
+              if (toParts[2] > fromParts[2]) return 'patch';
+              return 'other';
+            }
+            
+            // Erstelle Conventional Commit Message
+            let commitType = 'chore';
+            let scope = 'deps';
+            
+            // Bei Major Updates verwende 'build' für mehr Aufmerksamkeit
+            if (updates.major.length > 0) {
+              commitType = 'build';
+            }
+            
+            let subject = `update ${prs.length} dependencies`;
+            if (prs.length === 1) {
+              subject = `update ${prs[0].title.replace(/^bump /i, '').replace(/ from .+ to .+/i, '')}`;
+            }
+            
+            let body = '';
+            
+            // Major Updates
+            if (updates.major.length > 0) {
+              body += '### ⚠️ Major Updates\n\n';
+              updates.major.forEach(u => {
+                body += `- ${u.packageName}: ${u.fromVersion} → ${u.toVersion}\n`;
+              });
+              body += '\n';
+            }
+            
+            // Minor Updates
+            if (updates.minor.length > 0) {
+              body += '### ✨ Minor Updates\n\n';
+              updates.minor.forEach(u => {
+                body += `- ${u.packageName}: ${u.fromVersion} → ${u.toVersion}\n`;
+              });
+              body += '\n';
+            }
+            
+            // Patch Updates
+            if (updates.patch.length > 0) {
+              body += '### 🐛 Patch Updates\n\n';
+              updates.patch.forEach(u => {
+                body += `- ${u.packageName}: ${u.fromVersion} → ${u.toVersion}\n`;
+              });
+              body += '\n';
+            }
+            
+            // Andere Updates
+            if (updates.other.length > 0) {
+              body += '### 📦 Other Updates\n\n';
+              updates.other.forEach(u => {
+                body += `- ${u.title}\n`;
+              });
+              body += '\n';
+            }
+            
+            body += '### 🔗 Original PRs\n\n';
+            prs.forEach(pr => {
+              body += `- #${pr.number}: ${pr.title}\n`;
+            });
+            
+            const commitMessage = `${commitType}(${scope}): ${subject}`;
+            const hasMajor = updates.major.length > 0;
+            
+            core.setOutput('commit-message', commitMessage);
+            core.setOutput('pr-body', body);
+            core.setOutput('has-major', hasMajor);
+            
+            return { commitMessage, body, hasMajor };
+            
+      - name: Install dependencies and run tests
+        if: steps.get-prs.outputs.count != '0'
+        run: |
+          npm ci
+          npm run check
+          npm run lint
+          npm run type-check
+          npm run test
+          
+      - name: Commit changes
+        if: steps.get-prs.outputs.count != '0'
+        run: |
+          git add -A
+          git commit -m "${{ steps.commit-message.outputs.commit-message }}"
+          git push origin "$BRANCH_NAME"
+          
+      - name: Create combined PR
+        if: steps.get-prs.outputs.count != '0'
+        id: create-pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commitMessage = '${{ steps.commit-message.outputs.commit-message }}';
+            const prBody = `${{ steps.commit-message.outputs.pr-body }}`;
+            const hasMajor = ${{ steps.commit-message.outputs.has-major }};
+            
+            let title = commitMessage;
+            let labels = ['dependencies'];
+            
+            if (hasMajor) {
+              labels.push('breaking-change');
+              title += ' ⚠️';
+            }
+            
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              head: process.env.BRANCH_NAME,
+              base: 'main',
+              body: prBody
+            });
+            
+            // Labels hinzufügen
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: labels
+            });
+            
+            console.log(`Created combined PR: ${pr.html_url}`);
+            core.setOutput('pr-number', pr.number);
+            core.setOutput('pr-url', pr.html_url);
+            
+            return pr;
+            
+      - name: Close individual Dependabot PRs
+        if: steps.get-prs.outputs.count != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = JSON.parse('${{ steps.get-prs.outputs.prs }}');
+            const combinedPrNumber = ${{ steps.create-pr.outputs.pr-number }};
+            const combinedPrUrl = '${{ steps.create-pr.outputs.pr-url }}';
+            
+            for (const pr of prs) {
+              console.log(`Closing PR #${pr.number}: ${pr.title}`);
+              
+              // Kommentar hinterlassen
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `🤖 This dependency update has been combined with others into a single PR: ${combinedPrUrl}`
+              });
+              
+              // PR schließen
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                state: 'closed'
+              });
+            }
+            
+      - name: Auto-merge if safe
+        if: steps.get-prs.outputs.count != '0' && steps.commit-message.outputs.has-major == 'false'
+        run: |
+          # Nur auto-mergen wenn keine Major Updates dabei sind
+          gh pr merge ${{ steps.create-pr.outputs.pr-number }} --auto --squash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Comment on major updates
+        if: steps.get-prs.outputs.count != '0' && steps.commit-message.outputs.has-major == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.create-pr.outputs.pr-number }},
+              body: '⚠️ **This PR contains major version updates** that may include breaking changes. Please review carefully before merging.\n\nTests have passed, but manual review is recommended for major updates.'
+            });

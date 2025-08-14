@@ -1,39 +1,92 @@
-name: Dependabot Auto-merge
+name: Dependabot PR Testing
 
 on:
   pull_request:
     types: [opened, synchronize]
 
 jobs:
-  auto-merge:
+  test-dependabot-pr:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
+    permissions:
+      contents: read
+      pull-requests: write
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm ci
-      - run: npm run check
-      - run: npm run lint
-      - run: npm run type-check
-      - run: npm test
-      - uses: dependabot/fetch-metadata@v1
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: |
+          npm run check
+          npm run lint
+          npm run type-check
+          npm run test
+
+      - name: Get metadata
+        uses: dependabot/fetch-metadata@v1
         id: metadata
-      - name: Enable auto-merge for Dependabot PRs
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
-        run: gh pr merge --auto --squash "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      - name: Comment on major version updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+
+      - name: Label PR based on update type
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            const updateType = '${{ steps.metadata.outputs.update-type }}';
+            const dependencyNames = '${{ steps.metadata.outputs.dependency-names }}';
+            const dependencyType = '${{ steps.metadata.outputs.dependency-type }}';
+
+            let labels = ['dependencies', 'dependabot'];
+
+            // Label nach Update-Typ
+            if (updateType.includes('major')) {
+              labels.push('major-update', 'breaking-change');
+            } else if (updateType.includes('minor')) {
+              labels.push('minor-update');
+            } else if (updateType.includes('patch')) {
+              labels.push('patch-update');
+            }
+
+            // Label nach Dependency-Typ
+            if (dependencyType === 'direct:development') {
+              labels.push('dev-dependency');
+            } else if (dependencyType === 'direct:production') {
+              labels.push('production-dependency');
+            }
+
+            await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '⚠️ This is a **major version update**. Please review manually before merging.'
+              issue_number: context.issue.number,
+              labels: labels
+            });
+
+      - name: Add status comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const updateType = '${{ steps.metadata.outputs.update-type }}';
+            let emoji = '✅';
+            let status = 'ready for combination';
+
+            if (updateType.includes('major')) {
+              emoji = '⚠️';
+              status = 'contains major updates - needs review';
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `${emoji} **Tests passed!** This PR is ${status}.\n\n` +
+                    `This PR will be automatically combined with other Dependabot updates in a daily batch. ` +
+                    `Individual Dependabot PRs are no longer auto-merged to maintain a cleaner commit history.`
             })
