@@ -10,20 +10,19 @@
 	import Media from '$lib/report/components/sections/Media.svelte';
 	import OptionalSightingDetails from '$lib/report/components/sections/OptionalSightingDetails.svelte';
 	import type { FormContext } from '$lib/report/types';
-	import type { Sighting } from '$lib/types/types';
 	import { formatDate } from '$lib/utils/format/FormatDate';
 	import type { Readable, Writable } from 'svelte/store';
 	import BooleanStatus from './BooleanStatus.svelte';
 	// Note: mediaStore and onMount not needed for admin edit form
-	import type { UploadedFileInfo } from '$lib/types/types';
+	import type { FrontendSighting, UploadedFileInfo } from '$lib/types';
 
 	let {
-		sighting = {} as Sighting,
-		onSave = (_sighting: Sighting) => Promise.resolve(),
+		sighting = {} as FrontendSighting,
+		onSave = (_sighting: FrontendSighting) => Promise.resolve(),
 		onCancel = () => {}
 	} = $props<{
-		sighting: Sighting;
-		onSave?: (sighting: Sighting) => Promise<void>;
+		sighting: FrontendSighting;
+		onSave?: (sighting: FrontendSighting) => Promise<void>;
 		onCancel?: () => void;
 	}>();
 
@@ -32,11 +31,11 @@
 	// Note: Admin edit form doesn't use mediaStore for existing files
 	// Files are managed directly through the sighting.files property
 
-	async function submitForm(values: Record<string, unknown>): Promise<Sighting> {
+	async function submitForm(values: Record<string, unknown>): Promise<FrontendSighting> {
 		try {
 			// For admin edit form, use the existing files from the sighting
 			const uploadedFiles: UploadedFileInfo[] = sighting.files || [];
-			
+
 			// API-Aufruf zum Speichern der Daten
 			const response = await fetch(`/api/sightings/${sighting.id}`, {
 				method: 'PUT',

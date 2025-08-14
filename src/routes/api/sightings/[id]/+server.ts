@@ -1,10 +1,14 @@
-import type { SightingFormData } from '$lib/report/types';
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
-import type { ExifData } from '$lib/types/types';
 import { createLogger } from '$lib/logger';
+import type { SightingFormData } from '$lib/report/types';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
-import { updateSighting, loadSightingFiles, saveSightingFiles } from '$lib/server/db/sightingRepository';
+import {
+	loadSightingFiles,
+	saveSightingFiles,
+	updateSighting
+} from '$lib/server/db/sightingRepository';
+import type { ExifData } from '$lib/types';
 import { error, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
@@ -54,14 +58,19 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 	try {
 		// Daten aus dem Request-Body abrufen
 		const requestData = await request.json();
-		const { uploadedFiles, ...formData } = requestData as SightingFormData & { uploadedFiles?: unknown[] };
+		const { uploadedFiles, ...formData } = requestData as SightingFormData & {
+			uploadedFiles?: unknown[];
+		};
 
 		logger.debug({ formData, uploadedFiles }, 'Sichtung speichern');
 
 		// Validierung der Formulardaten
 		await sightingSchema.validate(formData, { abortEarly: false });
 
-		const updatedSighting = await updateSighting(Number(id), { ...formData, uploadedFiles: uploadedFiles || [] });
+		const updatedSighting = await updateSighting(Number(id), {
+			...formData,
+			uploadedFiles: uploadedFiles || []
+		});
 
 		if (!updatedSighting) {
 			logger.warn({ id }, 'Sichtung nicht gefunden oder konnte nicht aktualisiert werden');
@@ -72,16 +81,16 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 		if (uploadedFiles && uploadedFiles.length > 0) {
 			// Verwende eine existierende referenceId oder generiere eine neue
 			const referenceId = updatedSighting.referenceId || `ref-${Date.now()}-admin`;
-			
+
 			// Transform uploadedFiles to match UploadedFileInfo interface
 			const { getStorageProvider } = await import('$lib/server/storage/factory');
 			const storageProvider = getStorageProvider();
-			
+
 			const fileInfos = uploadedFiles.map((file: unknown) => {
 				const fileObj = file as Record<string, unknown>;
 				// Generate URL using storage provider
 				const fileUrl = storageProvider.getUrl(fileObj.filePath as string);
-				
+
 				return {
 					id: (fileObj.id as string) || Math.random().toString(36),
 					originalName: fileObj.originalName as string,
@@ -94,7 +103,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 					exifData: fileObj.exifData as ExifData | null
 				};
 			});
-			
+
 			await saveSightingFiles(Number(id), fileInfos, referenceId);
 		}
 

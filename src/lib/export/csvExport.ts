@@ -1,18 +1,18 @@
-import type { Sighting } from '$lib/types/types';
-import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { getAnimalBehaviorLabel } from '$lib/report/formOptions/animalBehavior';
-import { getSeaStateLabel } from '$lib/report/formOptions/seaState';
-import { getDistributionLabel } from '$lib/report/formOptions/distribution';
-import { getDistanceLabel } from '$lib/report/formOptions/distance';
-import { getSightingFromLabel } from '$lib/report/formOptions/sightingFrom';
-import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
 import { getBoatDriveLabel } from '$lib/report/formOptions/boatDrive';
+import { getDistanceLabel } from '$lib/report/formOptions/distance';
+import { getDistributionLabel } from '$lib/report/formOptions/distribution';
+import { getSeaStateLabel } from '$lib/report/formOptions/seaState';
+import { getSightingFromLabel } from '$lib/report/formOptions/sightingFrom';
+import { getSpeciesLabel } from '$lib/report/formOptions/species';
+import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
+import type { FrontendSighting } from '$lib/types';
 
 /**
  * Erzeugt CSV-Daten aus Sichtungen
  * Basiert auf der ursprünglichen PHP-Funktion getCsvData
  */
-export function generateCsvData(sightings: Sighting[]): string {
+export function generateCsvData(sightings: FrontendSighting[]): string {
 	// CSV-Header definieren
 	const headers = [
 		'ID',
@@ -134,7 +134,10 @@ export function generateCsvData(sightings: Sighting[]): string {
 /**
  * Generiert einen CSV-Download für die gegebenen Sichtungen
  */
-export function downloadCsv(sightings: Sighting[], filename = 'sichtungen-export.csv'): void {
+export function downloadCsv(
+	sightings: FrontendSighting[],
+	filename = 'sichtungen-export.csv'
+): void {
 	const csvContent = generateCsvData(sightings);
 	const blob = new Blob(['\ufeff', csvContent], { type: 'text/csv;charset=utf-8;' });
 	const url = URL.createObjectURL(blob);
@@ -148,4 +151,3 @@ export function downloadCsv(sightings: Sighting[], filename = 'sichtungen-export
 	link.click();
 	document.body.removeChild(link);
 }
-

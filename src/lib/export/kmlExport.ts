@@ -1,4 +1,4 @@
-import type { Sighting } from '$lib/types/types';
+import type { FrontendSighting } from '$lib/types';
 
 interface KmlPlacemark {
 	name: string;
@@ -12,7 +12,7 @@ interface KmlPlacemark {
  * Erzeugt KML-Daten aus Sichtungen
  * Basiert auf der ursprünglichen PHP-Funktion getForKml
  */
-export function generateKmlData(sightings: Sighting[]): string {
+export function generateKmlData(sightings: FrontendSighting[]): string {
 	const placemarks = sightings.map(sightingToKmlPlacemark);
 
 	// Zählen der verschiedenen Kategorien für Statistiken
@@ -136,7 +136,7 @@ export function generateKmlData(sightings: Sighting[]): string {
 /**
  * Konvertiert eine Sichtung in ein KML-Placemark
  */
-function sightingToKmlPlacemark(sighting: Sighting): KmlPlacemark {
+function sightingToKmlPlacemark(sighting: FrontendSighting): KmlPlacemark {
 	const date = new Date(sighting.sightingDate);
 	const formattedDate = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear().toString().slice(-2)} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
@@ -255,7 +255,10 @@ function getSpeciesName(speciesId: number): string {
 /**
  * Generiert einen KML-Download für die gegebenen Sichtungen
  */
-export function downloadKml(sightings: Sighting[], filename = 'sichtungen-export.kml'): void {
+export function downloadKml(
+	sightings: FrontendSighting[],
+	filename = 'sichtungen-export.kml'
+): void {
 	const kmlContent = generateKmlData(sightings);
 	const blob = new Blob([kmlContent], {
 		type: 'application/vnd.google-earth.kml+xml;charset=utf-8;'

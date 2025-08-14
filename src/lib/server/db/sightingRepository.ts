@@ -4,8 +4,8 @@ import { db } from '$lib/server/db';
 import { sightingFiles, sightings } from '$lib/server/db/schema';
 import { isImageFile, readImageExifData } from '$lib/server/exifUtils';
 import { getUploadPath } from '$lib/server/uploads';
+import type { ExifData, UploadedFileInfo } from '$lib/types';
 import type { NewSighting, UpdateSighting } from '$lib/types/sighting';
-import type { ExifData, UploadedFileInfo } from '$lib/types/types';
 import { eq } from 'drizzle-orm';
 import { mapFormToSighting } from './mapFormToSighting';
 
@@ -110,7 +110,7 @@ export const loadSightingFiles = async (sightingId: number): Promise<UploadedFil
 			// Falls keine EXIF-Daten in DB und lokaler Storage, dann nachlesen
 			if (!exifData && isImageFile(file.mimeType)) {
 				const { isCloudStorage } = await import('$lib/server/storage/factory');
-				
+
 				if (!isCloudStorage()) {
 					// Nur bei lokalem Storage EXIF-Daten nachlesen
 					try {

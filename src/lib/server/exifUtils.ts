@@ -2,8 +2,7 @@
  * Server-seitige EXIF-Utilities für das Auslesen von Metadaten aus hochgeladenen Bildern
  */
 import { createLogger } from '$lib/logger';
-import type { ExifDataRaw } from '$lib/types/types';
-// import { formatLocation } from '$lib/utils/format/formatLocation';
+import type { ExifDataRaw } from '$lib/types';
 const logger = createLogger('server:exifUtils');
 
 /**

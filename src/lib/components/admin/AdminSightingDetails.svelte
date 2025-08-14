@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { createLogger } from '$lib/logger';
-	import type { Sighting } from '$lib/types/types';
+	import type { FrontendSighting } from '$lib/types';
 	import { FilePenLine, SquareX } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import { onMount } from 'svelte';
@@ -17,7 +17,7 @@
 		showCloseButton = false,
 		allowEditing = true
 	} = $props<{
-		sighting: Sighting;
+		sighting: FrontendSighting;
 		onClose?: () => void;
 		showCloseButton?: boolean;
 		allowEditing?: boolean;
@@ -28,7 +28,7 @@
 
 	// Bei Mount den URL-Parameter auslesen
 	onMount(() => {
-		const editMode = $page.url.searchParams.get('edit') === 'true';
+		const editMode = page.url.searchParams.get('edit') === 'true';
 		if (editMode && allowEditing) {
 			isEditing = true;
 		}
@@ -52,7 +52,7 @@
 	// Schließen-Handler mit URL-Bereinigung
 	function handleClose() {
 		// URL von edit-Parameter bereinigen, falls vorhanden
-		if ($page.url.searchParams.has('edit')) {
+		if (page.url.searchParams.has('edit')) {
 			const url = new URL(window.location.href);
 			url.searchParams.delete('edit');
 			goto(url.toString(), { replaceState: true });
@@ -62,7 +62,7 @@
 		onClose();
 	}
 
-	async function handleSave(updatedSighting: Sighting) {
+	async function handleSave(updatedSighting: FrontendSighting) {
 		logger.info({ updatedSighting }, 'Sichtung gespeichert');
 		isEditing = false;
 		const url = new URL(window.location.href);

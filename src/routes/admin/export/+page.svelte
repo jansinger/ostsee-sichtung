@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { downloadCsv } from '$lib/export/csvExport';
 	import { downloadJson } from '$lib/export/jsonExport';
-	import { downloadXml } from '$lib/export/xmlExport';
 	import { downloadKml } from '$lib/export/kmlExport';
-	import type { Sighting } from '$lib/types/types';
+	import { downloadXml } from '$lib/export/xmlExport';
+	import type { FrontendSighting } from '$lib/types';
+	import {
+		CheckCircleOutline,
+		ExclamationCircleOutline,
+		InfoCircleOutline
+	} from 'flowbite-svelte-icons';
 	import { onMount } from 'svelte';
-	import { ExclamationCircleOutline, CheckCircleOutline, InfoCircleOutline } from 'flowbite-svelte-icons';
 
 	// Aktuelles Jahr für die Filterkriterien
 	const currentYear = new Date().getFullYear();
@@ -16,7 +20,7 @@
 	let fromDate = $state(startOfYear);
 	let toDate = $state(endOfYear);
 	let onlyVerified = $state(false);
-	let sightings = $state<Sighting[]>([]);
+	let sightings = $state<FrontendSighting[]>([]);
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 

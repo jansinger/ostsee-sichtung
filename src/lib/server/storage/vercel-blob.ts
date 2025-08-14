@@ -1,13 +1,13 @@
 /**
  * Vercel Blob storage provider
  */
-import { put, del, head, list } from '@vercel/blob';
-import { createId } from '@paralleldrive/cuid2';
-import { extname, basename } from 'path';
 import { createLogger } from '$lib/logger';
 import { readImageExifData } from '$lib/server/exifUtils';
-import type { StorageProvider, UploadedFile, UploadOptions, FileMetadata } from './types';
-import type { ExifDataRaw } from '$lib/types/types';
+import type { ExifDataRaw } from '$lib/types';
+import { createId } from '@paralleldrive/cuid2';
+import { del, head, list, put } from '@vercel/blob';
+import { basename, extname } from 'path';
+import type { FileMetadata, StorageProvider, UploadedFile, UploadOptions } from './types';
 
 const logger = createLogger('storage:vercel-blob');
 
@@ -17,55 +17,71 @@ export class VercelBlobStorageProvider implements StorageProvider {
 	constructor(token?: string) {
 		this.token = token || process.env.BLOB_READ_WRITE_TOKEN || '';
 		if (!this.token) {
-			throw new Error('BLOB_READ_WRITE_TOKEN environment variable is required for Vercel Blob storage');
+			throw new Error(
+				'BLOB_READ_WRITE_TOKEN environment variable is required for Vercel Blob storage'
+			);
 		}
 	}
 
 	async upload(file: File, options: UploadOptions): Promise<UploadedFile> {
 		const id = createId();
 		const extension = extname(file.name);
-		const fileName = options.preserveOriginalName 
+		const fileName = options.preserveOriginalName
 			? `${basename(file.name, extension)}-${id}${extension}`
 			: `${id}${extension}`;
-		
+
 		const filePath = `${options.referenceId}/${fileName}`;
 
 		try {
 			// For EXIF extraction, process the file buffer BEFORE upload
 			let exifData: ExifDataRaw | null = null;
 			let fileBuffer: ArrayBuffer | null = null;
-			
+
 			if (options.extractExif && file.type.startsWith('image/')) {
 				try {
-					logger.debug({ filePath, fileType: file.type, fileSize: file.size }, 'Extracting EXIF data for Vercel Blob upload');
-					
+					logger.debug(
+						{ filePath, fileType: file.type, fileSize: file.size },
+						'Extracting EXIF data for Vercel Blob upload'
+					);
+
 					// Get file as array buffer for EXIF processing
 					fileBuffer = await file.arrayBuffer();
 					const buffer = Buffer.from(fileBuffer);
-					
-					logger.debug({ filePath, bufferSize: buffer.length }, 'Buffer created for EXIF extraction');
-					
+
+					logger.debug(
+						{ filePath, bufferSize: buffer.length },
+						'Buffer created for EXIF extraction'
+					);
+
 					// Extract EXIF data directly from buffer
 					exifData = await readImageExifData(buffer);
-					
-					logger.debug({ 
-						filePath, 
-						hasExifData: !!exifData,
-						hasGPS: !!(exifData?.latitude && exifData?.longitude),
-						exifKeys: exifData ? Object.keys(exifData).filter(k => {
-							const value = exifData![k as keyof ExifDataRaw];
-							return value !== null && value !== undefined;
-						}) : []
-					}, 'EXIF extraction completed for Vercel Blob');
+
+					logger.debug(
+						{
+							filePath,
+							hasExifData: !!exifData,
+							hasGPS: !!(exifData?.latitude && exifData?.longitude),
+							exifKeys: exifData
+								? Object.keys(exifData).filter((k) => {
+										const value = exifData![k as keyof ExifDataRaw];
+										return value !== null && value !== undefined;
+									})
+								: []
+						},
+						'EXIF extraction completed for Vercel Blob'
+					);
 				} catch (error) {
-					logger.error({ 
-						error: {
-							message: error instanceof Error ? error.message : String(error),
-							stack: error instanceof Error ? error.stack : undefined
-						}, 
-						filePath, 
-						fileType: file.type 
-					}, 'Failed to extract EXIF data from Vercel Blob');
+					logger.error(
+						{
+							error: {
+								message: error instanceof Error ? error.message : String(error),
+								stack: error instanceof Error ? error.stack : undefined
+							},
+							filePath,
+							fileType: file.type
+						},
+						'Failed to extract EXIF data from Vercel Blob'
+					);
 				}
 			}
 
@@ -91,7 +107,6 @@ export class VercelBlobStorageProvider implements StorageProvider {
 
 			logger.debug({ uploadedFile, blobUrl: blob.url }, 'File uploaded to Vercel Blob');
 			return uploadedFile;
-
 		} catch (error) {
 			logger.error({ error, filePath }, 'Failed to upload to Vercel Blob');
 			throw error;
@@ -112,12 +127,12 @@ export class VercelBlobStorageProvider implements StorageProvider {
 		// Vercel Blob stores files with a token-based URL pattern
 		// The token is embedded in the storage configuration
 		// Files are accessible via: https://[token-prefix].public.blob.vercel-storage.com/[filepath]
-		
+
 		// Extract the token prefix from the BLOB_READ_WRITE_TOKEN
 		// Format: vercel_blob_rw_[prefix]_[suffix]
 		const tokenParts = this.token.split('_');
 		const tokenPrefix = tokenParts[3]; // The prefix part after vercel_blob_rw_
-		
+
 		// Construct the public URL
 		return `https://${tokenPrefix}.public.blob.vercel-storage.com/${filePath}`;
 	}
@@ -125,7 +140,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 	async getMetadata(filePath: string): Promise<FileMetadata | null> {
 		try {
 			const metadata = await head(filePath, { token: this.token });
-			
+
 			return {
 				size: metadata.size,
 				mimeType: metadata.contentType || 'application/octet-stream',
@@ -146,17 +161,19 @@ export class VercelBlobStorageProvider implements StorageProvider {
 			}
 			const result = await list(listOptions);
 
-			return result.blobs.map(blob => ({
+			return result.blobs.map((blob) => ({
 				id: this.extractIdFromPathname(blob.pathname),
 				originalName: basename(blob.pathname),
 				fileName: basename(blob.pathname),
 				filePath: blob.pathname,
 				size: blob.size,
-				mimeType: 'contentType' in blob ? (blob as { contentType: string }).contentType : 'application/octet-stream',
+				mimeType:
+					'contentType' in blob
+						? (blob as { contentType: string }).contentType
+						: 'application/octet-stream',
 				url: blob.url,
 				uploadedAt: new Date(blob.uploadedAt).toISOString()
 			}));
-
 		} catch (error) {
 			logger.error({ error, prefix }, 'Failed to list files from Vercel Blob');
 			return [];

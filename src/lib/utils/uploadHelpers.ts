@@ -1,4 +1,4 @@
-import type { UploadedFileInfo } from '$lib/types/types';
+import type { UploadedFileInfo } from '$lib/types';
 
 /**
  * Upload file data interface that matches the server response

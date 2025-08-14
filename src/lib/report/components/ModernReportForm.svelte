@@ -17,10 +17,9 @@
 		saveUserContactDataWithConsent,
 		STORAGE_KEYS
 	} from '$lib/storage/localStorage';
-	import { type UserContactData } from '$lib/types/types';
+	import type { FormContext, SightingFormData, UserContactData } from '$lib/types';
 	import { createId } from '@paralleldrive/cuid2';
 	import { formStepsConfig } from '../formConfig';
-	import type { FormContext, SightingFormData } from '../types';
 	import Form from './form/Form.svelte';
 	import FormSteps from './form/FormSteps.svelte';
 	import Step1LocationTime from './steps/Step1LocationTime.svelte';

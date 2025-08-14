@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { SightingFile } from '$lib/types/sightingFile';
-	import type { UploadedFileInfo } from '$lib/types/types';
+	import type { SightingFile } from '$lib/types';
+	import type { UploadedFileInfo } from '$lib/types/';
 	import { formatDate } from '$lib/utils/format/FormatDate';
-	import { formatLocation } from '$lib/utils/format/formatLocation';
+	import { formatLocation } from '$lib/utils/format/FormatLocation';
 	import {
 		Calendar,
 		Camera,
@@ -143,8 +143,8 @@
 								const img = e.target as HTMLImageElement;
 								if (!img.src.includes('_fallback')) {
 									if (file.url.startsWith('/uploads/')) {
-									img.src = `${file.url}?_fallback=1`;
-								}
+										img.src = `${file.url}?_fallback=1`;
+									}
 								}
 							}}
 						/>
@@ -152,12 +152,7 @@
 				{:else if isVideo(file.mimeType)}
 					<!-- Video anzeigen -->
 					<div class="bg-base-100 flex justify-center overflow-hidden rounded-lg">
-						<video
-							src={file.url}
-							controls
-							class="max-h-[50vh] max-w-full"
-							preload="metadata"
-						>
+						<video src={file.url} controls class="max-h-[50vh] max-w-full" preload="metadata">
 							<track kind="captions" />
 							Ihr Browser unterstützt das Video-Element nicht.
 						</video>
@@ -168,11 +163,7 @@
 						<Icon src={FileType} size="48" class="text-base-content/40 mb-4" />
 						<h4 class="mb-2 text-lg font-semibold">Vorschau nicht verfügbar</h4>
 						<p class="text-base-content/60 mb-4">Für diesen Dateityp ist keine Vorschau möglich.</p>
-						<a
-							href={file.url}
-							download={file.originalName}
-							class="btn btn-primary"
-						>
+						<a href={file.url} download={file.originalName} class="btn btn-primary">
 							<Icon src={Download} size="16" />
 							Datei herunterladen
 						</a>

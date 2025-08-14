@@ -1,4 +1,4 @@
-import type { Sighting } from '$lib/types/types';
+import type { FrontendSighting } from '$lib/types';
 
 interface XmlSighting {
 	nr: number;
@@ -23,7 +23,7 @@ interface XmlSighting {
  * Erzeugt XML-Daten aus Sichtungen
  * Basiert auf der ursprünglichen PHP-Funktion getXmlData
  */
-export function generateXmlData(sightings: Sighting[]): string {
+export function generateXmlData(sightings: FrontendSighting[]): string {
 	const xmlSightings = sightings.map(transformToXmlSighting);
 
 	// XML-Header erstellen
@@ -55,7 +55,7 @@ export function generateXmlData(sightings: Sighting[]): string {
  * Transformiert eine Sichtung in das XML-Format
  * Basiert auf der ursprünglichen PHP-Funktion in getXmlData
  */
-function transformToXmlSighting(sighting: Sighting): XmlSighting {
+function transformToXmlSighting(sighting: FrontendSighting): XmlSighting {
 	// Zeitstempel in Datum und Uhrzeit umwandeln
 	const sdt = new Date(sighting.sightingDate);
 	const formattedDate = `${sdt.getDate().toString().padStart(2, '0')}.${(sdt.getMonth() + 1).toString().padStart(2, '0')}.${sdt.getFullYear().toString().slice(-2)}`;
@@ -116,8 +116,12 @@ function transformToXmlSighting(sighting: Sighting): XmlSighting {
 	// X und Y Koordinaten berechnen (ähnlich wie in der PHP-Version)
 	const gps_n = typeof sighting.latitude === 'number' ? sighting.latitude : 0;
 	const gps_e = typeof sighting.longitude === 'number' ? sighting.longitude : 0;
-	const X = gps_e !== null && gps_e !== undefined ? Math.round((gps_e * 6371000 * Math.PI) / 180) : 0;
-	const Y = gps_n !== null && gps_n !== undefined ? Math.round(Math.log(Math.tan((gps_n * Math.PI) / 360 + Math.PI / 4)) * 6371000) : 0;
+	const X =
+		gps_e !== null && gps_e !== undefined ? Math.round((gps_e * 6371000 * Math.PI) / 180) : 0;
+	const Y =
+		gps_n !== null && gps_n !== undefined
+			? Math.round(Math.log(Math.tan((gps_n * Math.PI) / 360 + Math.PI / 4)) * 6371000)
+			: 0;
 	xmlSighting.x = Math.round(((X - 1050792.0567911) / 628251.3355417) * 1000) / 1000;
 	xmlSighting.y = Math.round(((Y - 7138521.4416712) / 909594.5299957) * 1000) / 1000;
 
@@ -136,7 +140,10 @@ function transformToXmlSighting(sighting: Sighting): XmlSighting {
 /**
  * Generiert einen XML-Download für die gegebenen Sichtungen
  */
-export function downloadXml(sightings: Sighting[], filename = 'sichtungen-export.xml'): void {
+export function downloadXml(
+	sightings: FrontendSighting[],
+	filename = 'sichtungen-export.xml'
+): void {
 	const xmlContent = generateXmlData(sightings);
 	const blob = new Blob([xmlContent], { type: 'application/xml;charset=utf-8;' });
 	const url = URL.createObjectURL(blob);

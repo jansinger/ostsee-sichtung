@@ -10,7 +10,7 @@
 	import { getDistributionLabel } from '$lib/report/formOptions/distribution';
 	import { getEntryChannelOptions } from '$lib/report/formOptions/entryChannel';
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
-	import type { PageData, Sighting } from '$lib/types/types';
+	import type { FrontendSighting, PageData } from '$lib/types';
 	import { formatDate } from '$lib/utils/format/FormatDate';
 	import type { ActionResult } from '@sveltejs/kit';
 	import { CloseOutline, EyeOutline, FilterOutline, TrashBinOutline } from 'flowbite-svelte-icons';
@@ -30,12 +30,18 @@
 	let selectedChannel = $state($page.url.searchParams.get('entryChannel') || 'all');
 	let mediaUpload = $state($page.url.searchParams.get('mediaUpload') || '');
 	let showDeleteDialog = $state(false);
-	let sightingToDelete = $state<Sighting | null>(null);
+	let sightingToDelete = $state<FrontendSighting | null>(null);
 	let isFilterPanelOpen = $state(false);
 
 	// Prüft ob irgendwelche Filter aktiv sind
 	let hasActiveFilters = $derived(() => {
-		return !!(dateFrom || dateTo || verified || (selectedChannel && selectedChannel !== 'all') || mediaUpload);
+		return !!(
+			dateFrom ||
+			dateTo ||
+			verified ||
+			(selectedChannel && selectedChannel !== 'all') ||
+			mediaUpload
+		);
 	});
 
 	function updateSort(column: string): void {
@@ -109,16 +115,16 @@
 		goto(url);
 	}
 
-	function viewSightingDetails(sighting: Sighting): void {
+	function viewSightingDetails(sighting: FrontendSighting): void {
 		// Preserve current filter parameters when navigating to detail view
 		const currentParams = $page.url.searchParams;
 		const detailUrl = new URL(`/admin/${sighting.id}`, $page.url.origin);
-		
+
 		// Copy current search parameters to maintain filters
 		for (const [key, value] of currentParams.entries()) {
 			detailUrl.searchParams.set(key, value);
 		}
-		
+
 		goto(detailUrl.toString());
 	}
 

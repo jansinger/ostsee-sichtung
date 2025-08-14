@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { UploadedFileInfo } from '$lib/types/types';
+	import type { UploadedFileInfo } from '$lib/types';
 
 	let { file }: { file: UploadedFileInfo } = $props();
 
@@ -57,12 +57,16 @@
 		{#if file.exifData}
 			<div class="mt-3">
 				<strong>📸 EXIF-Daten:</strong>
-				<div class="pl-4 mt-1">
+				<div class="mt-1 pl-4">
 					{#if file.exifData.latitude && file.exifData.longitude}
-						<div>GPS: {file.exifData.latitude.toFixed(6)}, {file.exifData.longitude.toFixed(6)}</div>
+						<div>
+							GPS: {file.exifData.latitude.toFixed(6)}, {file.exifData.longitude.toFixed(6)}
+						</div>
 					{/if}
 					{#if file.exifData.dateTimeOriginal}
-						<div>Aufnahmedatum: {new Date(file.exifData.dateTimeOriginal).toLocaleString('de-DE')}</div>
+						<div>
+							Aufnahmedatum: {new Date(file.exifData.dateTimeOriginal).toLocaleString('de-DE')}
+						</div>
 					{/if}
 					{#if file.exifData.make || file.exifData.model}
 						<div>Kamera: {file.exifData.make} {file.exifData.model}</div>

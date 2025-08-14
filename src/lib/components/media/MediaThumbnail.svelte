@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { UploadedFileInfo } from '$lib/types/types';
+	import type { UploadedFileInfo } from '$lib/types';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
 	import { isImageFile, isVideoFile } from '$lib/utils/file/fileType';
 	import { Download, Eye, FileText, MapPin, Play } from '@steeze-ui/lucide-icons';

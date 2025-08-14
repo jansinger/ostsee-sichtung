@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { UploadedFileInfo } from '$lib/types/types';
-	import { Images, Video, FileText } from '@steeze-ui/lucide-icons';
+	import type { UploadedFileInfo } from '$lib/types';
+	import { FileText, Images, Video } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
-	import MediaThumbnail from './MediaThumbnail.svelte';
 	import MediaModal from './MediaModal.svelte';
+	import MediaThumbnail from './MediaThumbnail.svelte';
 
 	let {
 		files = [],
@@ -40,19 +40,24 @@
 	}
 
 	// Gruppiere Dateien nach Typ
-	const imageFiles = $derived(files.filter(file => isImage(file.mimeType)));
-	const videoFiles = $derived(files.filter(file => isVideo(file.mimeType)));
-	const otherFiles = $derived(files.filter(file => !isImage(file.mimeType) && !isVideo(file.mimeType)));
+	const imageFiles = $derived(files.filter((file) => isImage(file.mimeType)));
+	const videoFiles = $derived(files.filter((file) => isVideo(file.mimeType)));
+	const otherFiles = $derived(
+		files.filter((file) => !isImage(file.mimeType) && !isVideo(file.mimeType))
+	);
 
 	// Debug: Log EXIF data
 	$effect(() => {
 		if (files.length > 0) {
-			console.log('MediaGallery: Files with EXIF data:', files.map(f => ({
-				name: f.originalName,
-				mimeType: f.mimeType,
-				hasExif: !!f.exifData,
-				exifData: f.exifData
-			})));
+			console.log(
+				'MediaGallery: Files with EXIF data:',
+				files.map((f) => ({
+					name: f.originalName,
+					mimeType: f.mimeType,
+					hasExif: !!f.exifData,
+					exifData: f.exifData
+				}))
+			);
 		}
 	});
 </script>
@@ -71,7 +76,7 @@
 			<div class="mb-6">
 				<div class="mb-2 flex items-center gap-2">
 					<Icon src={Images} size="16" class="text-secondary" />
-					<h5 class="text-sm font-medium text-base-content/70">
+					<h5 class="text-base-content/70 text-sm font-medium">
 						Bilder ({imageFiles.length})
 					</h5>
 				</div>
@@ -88,7 +93,7 @@
 			<div class="mb-6">
 				<div class="mb-2 flex items-center gap-2">
 					<Icon src={Video} size="16" class="text-secondary" />
-					<h5 class="text-sm font-medium text-base-content/70">
+					<h5 class="text-base-content/70 text-sm font-medium">
 						Videos ({videoFiles.length})
 					</h5>
 				</div>
@@ -105,19 +110,19 @@
 			<div class="mb-6">
 				<div class="mb-2 flex items-center gap-2">
 					<Icon src={FileText} size="16" class="text-secondary" />
-					<h5 class="text-sm font-medium text-base-content/70">
+					<h5 class="text-base-content/70 text-sm font-medium">
 						Andere Dateien ({otherFiles.length})
 					</h5>
 				</div>
 				<div class="space-y-2">
 					{#each otherFiles as file (file.id)}
-						<div class="flex items-center gap-3 rounded-lg bg-base-100 p-3 shadow-sm">
+						<div class="bg-base-100 flex items-center gap-3 rounded-lg p-3 shadow-sm">
 							<Icon src={getFileTypeIcon(file.mimeType)} size="20" class="text-base-content/60" />
-							<div class="flex-1 min-w-0">
-								<p class="text-sm font-medium text-base-content truncate">
+							<div class="min-w-0 flex-1">
+								<p class="text-base-content truncate text-sm font-medium">
 									{file.originalName}
 								</p>
-								<p class="text-xs text-base-content/60">
+								<p class="text-base-content/60 text-xs">
 									{(file.size / 1024).toFixed(1)} KB
 								</p>
 							</div>
@@ -141,10 +146,10 @@
 		<MediaModal file={selectedMedia} onClose={closeModal} />
 	{/if}
 {:else}
-	<div class="flex items-center justify-center rounded-lg bg-base-100 p-8 text-center">
+	<div class="bg-base-100 flex items-center justify-center rounded-lg p-8 text-center">
 		<div class="space-y-3">
-			<Icon src={Images} size="32" class="mx-auto text-base-content/40" />
-			<p class="text-sm text-base-content/60">Keine Medien vorhanden</p>
+			<Icon src={Images} size="32" class="text-base-content/40 mx-auto" />
+			<p class="text-base-content/60 text-sm">Keine Medien vorhanden</p>
 		</div>
 	</div>
 {/if}

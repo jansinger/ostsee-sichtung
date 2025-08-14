@@ -1,5 +1,5 @@
 import { createLogger } from '$lib/logger';
-import type { UploadedFileInfo } from '$lib/types/types';
+import type { UploadedFileInfo } from '$lib/types';
 
 const logger = createLogger('UploadUtils');
 

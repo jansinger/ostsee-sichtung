@@ -15,7 +15,7 @@
 	import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
 	import { getWindDirectionLabel } from '$lib/report/formOptions/windDirection';
 	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
-	import type { Sighting } from '$lib/types/types';
+	import type { FrontendSighting } from '$lib/types';
 	import { formatDate } from '$lib/utils/format/FormatDate';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import {
@@ -25,6 +25,7 @@
 		Camera,
 		Eye,
 		FileText,
+		LoaderPinwheel,
 		MapPin,
 		MessageSquare,
 		Settings,
@@ -42,8 +43,9 @@
 		booleanValue?: boolean;
 	}
 
-	let { sighting } = $props<{
-		sighting: Sighting;
+	let { sighting, loading = false } = $props<{
+		sighting: FrontendSighting;
+		loading?: boolean;
 	}>();
 
 	/**
@@ -251,310 +253,325 @@
 	const hasCoordinates = hasValue(sighting.latitude) && hasValue(sighting.longitude);
 </script>
 
-<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-	<div class="space-y-4">
-		<!-- Datum & Zeit -->
-		<div class="card bg-base-200 shadow-sm">
-			<div class="card-body">
-				<h3 class="card-title flex items-center gap-2 text-lg">
-					<Icon src={Calendar} size="20" class="text-primary" />
-					Datum & Zeit
-				</h3>
-				<div class="overflow-x-auto">
-					<table class="table-zebra table-sm table w-full">
-						<tbody>
-							{#each dateTimeRows as row (row.label)}
-								<DataTableRow {...row} />
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			</div>
+{#if loading}
+	<!-- Loading Animation -->
+	<div class="flex min-h-[50vh] items-center justify-center">
+		<div class="text-center">
+			<Icon src={LoaderPinwheel} size="48" class="text-primary mx-auto mb-4 animate-spin" />
+			<p class="text-base-content/70 text-lg">Daten werden geladen...</p>
+			<p class="text-base-content/50 text-sm">Bitte warten Sie einen Moment</p>
 		</div>
-
-		<!-- Tierinformationen -->
-		<div class="card bg-base-200 shadow-sm">
-			<div class="card-body">
-				<h3 class="card-title flex items-center gap-2 text-lg">
-					<Icon src={Eye} size="20" class="text-primary" />
-					Tierinformationen
-				</h3>
-				<div class="overflow-x-auto">
-					<table class="table-zebra table-sm table w-full">
-						<tbody>
-							{#each animalRows as row (row.label)}
-								<DataTableRow {...row} />
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			</div>
-		</div>
-
-		<!-- Totfund-Details -->
-		{#if deadAnimalRows.length > 0}
-			<div class="card bg-base-200 shadow-sm">
-				<div class="card-body">
-					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={TriangleAlert} size="20" class="text-primary" />
-						Totfund
-					</h3>
-					<div class="overflow-x-auto">
-						<table class="table-zebra table-sm table w-full">
-							<tbody>
-								{#each deadAnimalRows as row (row.label)}
-									<DataTableRow {...row} />
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Sichtungsdetails -->
-		{#if sightingDetailRows.length > 0}
-			<div class="card bg-base-200 shadow-sm">
-				<div class="card-body">
-					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={Activity} size="20" class="text-primary" />
-						Sichtungsdetails
-					</h3>
-					<div class="overflow-x-auto">
-						<table class="table-zebra table-sm table w-full">
-							<tbody>
-								{#each sightingDetailRows as row (row.label)}
-									<DataTableRow {...row} />
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Umweltbedingungen -->
-		{#if environmentRows.length > 0}
-			<div class="card bg-base-200 shadow-sm">
-				<div class="card-body">
-					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={Waves} size="20" class="text-primary" />
-						Umweltbedingungen
-					</h3>
-					<div class="overflow-x-auto">
-						<table class="table-zebra table-sm table w-full">
-							<tbody>
-								{#each environmentRows as row (row.label)}
-									<DataTableRow {...row} />
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Kontakt -->
-		{#if contactRows.length > 0}
-			<div class="card bg-base-200 shadow-sm">
-				<div class="card-body">
-					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={User} size="20" class="text-primary" />
-						Kontakt
-					</h3>
-					<div class="overflow-x-auto">
-						<table class="table-zebra table-sm table w-full">
-							<tbody>
-								{#each contactRows as row (row.label)}
-									<DataTableRow {...row} />
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-		{/if}
 	</div>
-
-	<div class="space-y-4">
-		<!-- Karte, falls Koordinaten vorhanden -->
-		{#if hasCoordinates}
-			<div class="card bg-base-200 overflow-hidden shadow-sm">
+{:else}
+	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+		<div class="space-y-4">
+			<!-- Datum & Zeit -->
+			<div class="card bg-base-200 shadow-sm">
 				<div class="card-body">
 					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={MapPin} size="20" class="text-primary" />
-						Karte
+						<Icon src={Calendar} size="20" class="text-primary" />
+						Datum & Zeit
 					</h3>
-					<div class="relative mt-2 h-[400px] w-full">
-						<div class="absolute inset-0">
-							<OLMap latitude={sighting.latitude} longitude={sighting.longitude} readonly={true} />
+					<div class="overflow-x-auto">
+						<table class="table-zebra table-sm table w-full">
+							<tbody>
+								{#each dateTimeRows as row (row.label)}
+									<DataTableRow {...row} />
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<!-- Tierinformationen -->
+			<div class="card bg-base-200 shadow-sm">
+				<div class="card-body">
+					<h3 class="card-title flex items-center gap-2 text-lg">
+						<Icon src={Eye} size="20" class="text-primary" />
+						Tierinformationen
+					</h3>
+					<div class="overflow-x-auto">
+						<table class="table-zebra table-sm table w-full">
+							<tbody>
+								{#each animalRows as row (row.label)}
+									<DataTableRow {...row} />
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<!-- Totfund-Details -->
+			{#if deadAnimalRows.length > 0}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={TriangleAlert} size="20" class="text-primary" />
+							Totfund
+						</h3>
+						<div class="overflow-x-auto">
+							<table class="table-zebra table-sm table w-full">
+								<tbody>
+									{#each deadAnimalRows as row (row.label)}
+										<DataTableRow {...row} />
+									{/each}
+								</tbody>
+							</table>
 						</div>
 					</div>
 				</div>
-			</div>
-		{/if}
+			{/if}
 
-		<!-- Ortsangaben -->
-		{#if locationRows.length > 0}
-			<div class="card bg-base-200 shadow-sm">
-				<div class="card-body">
-					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={MapPin} size="20" class="text-primary" />
-						Ortsangaben
-					</h3>
-					<div class="overflow-x-auto">
-						<table class="table-zebra table-sm table w-full">
-							<tbody>
-								{#each locationRows as row (row.label)}
-									<DataTableRow {...row} />
-								{/each}
-							</tbody>
-						</table>
+			<!-- Sichtungsdetails -->
+			{#if sightingDetailRows.length > 0}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={Activity} size="20" class="text-primary" />
+							Sichtungsdetails
+						</h3>
+						<div class="overflow-x-auto">
+							<table class="table-zebra table-sm table w-full">
+								<tbody>
+									{#each sightingDetailRows as row (row.label)}
+										<DataTableRow {...row} />
+									{/each}
+								</tbody>
+							</table>
+						</div>
 					</div>
 				</div>
-			</div>
-		{/if}
+			{/if}
 
-		<!-- Schiffs-/Bootsangaben -->
-		{#if shipRows.length > 0}
-			<div class="card bg-base-200 shadow-sm">
-				<div class="card-body">
-					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={Anchor} size="20" class="text-primary" />
-						Schiffs-/Bootsangaben
-					</h3>
-					<div class="overflow-x-auto">
-						<table class="table-zebra table-sm table w-full">
-							<tbody>
-								{#each shipRows as row (row.label)}
-									<DataTableRow {...row} />
-								{/each}
-							</tbody>
-						</table>
+			<!-- Umweltbedingungen -->
+			{#if environmentRows.length > 0}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={Waves} size="20" class="text-primary" />
+							Umweltbedingungen
+						</h3>
+						<div class="overflow-x-auto">
+							<table class="table-zebra table-sm table w-full">
+								<tbody>
+									{#each environmentRows as row (row.label)}
+										<DataTableRow {...row} />
+									{/each}
+								</tbody>
+							</table>
+						</div>
 					</div>
 				</div>
-			</div>
-		{/if}
+			{/if}
 
-		<!-- Status -->
-		{#if statusRows.length > 0}
-			<div class="card bg-base-200 shadow-sm">
-				<div class="card-body">
-					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={Settings} size="20" class="text-primary" />
-						Status
-					</h3>
-					<div class="overflow-x-auto">
-						<table class="table-zebra table-sm table w-full">
-							<tbody>
-								{#each statusRows as row (row.label)}
-									<DataTableRow {...row} />
-								{/each}
-							</tbody>
-						</table>
+			<!-- Kontakt -->
+			{#if contactRows.length > 0}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={User} size="20" class="text-primary" />
+							Kontakt
+						</h3>
+						<div class="overflow-x-auto">
+							<table class="table-zebra table-sm table w-full">
+								<tbody>
+									{#each contactRows as row (row.label)}
+										<DataTableRow {...row} />
+									{/each}
+								</tbody>
+							</table>
+						</div>
 					</div>
 				</div>
-			</div>
-		{/if}
+			{/if}
+		</div>
 
-		<!-- Medien-Gallerie -->
-		{#if sighting.files && sighting.files.length > 0}
-			<div class="card bg-base-200 shadow-sm">
-				<div class="card-body">
-					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={Camera} size="20" class="text-primary" />
-						Medien-Gallerie
-					</h3>
-
-					<MediaGallery files={sighting.files} showTitle={false} />
-				</div>
-			</div>
-		{:else if mediaRows.length > 0}
-			<div class="card bg-base-200 shadow-sm">
-				<div class="card-body">
-					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={Camera} size="20" class="text-primary" />
-						Medien (Legacy)
-					</h3>
-					<div class="overflow-x-auto">
-						<table class="table-zebra table-sm table w-full">
-							<tbody>
-								{#each mediaRows as row (row.label)}
-									<DataTableRow {...row} />
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Bemerkungen, falls vorhanden -->
-		{#if noteRows.length > 0}
-			<div class="card bg-base-200 shadow-sm">
-				<div class="card-body">
-					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={MessageSquare} size="20" class="text-primary" />
-						Bemerkungen
-					</h3>
-					<div class="overflow-x-auto">
-						<table class="table-zebra table-sm table w-full">
-							<tbody>
-								{#each noteRows as row (row.label)}
-									<DataTableRow {...row} isPreformatted={true} />
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Interner Kommentar, falls vorhanden -->
-		{#if hasValue(sighting.internalComment)}
-			<div class="card bg-base-200 shadow-sm">
-				<div class="card-body">
-					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={Settings} size="20" class="text-primary" />
-						Interner Kommentar
-					</h3>
-					<div class="overflow-x-auto">
-						<table class="table-zebra table-sm table w-full">
-							<tbody>
-								<DataTableRow
-									label="Kommentar"
-									value={sighting.internalComment}
-									isPreformatted={true}
+		<div class="space-y-4">
+			<!-- Karte, falls Koordinaten vorhanden -->
+			{#if hasCoordinates}
+				<div class="card bg-base-200 overflow-hidden shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={MapPin} size="20" class="text-primary" />
+							Karte
+						</h3>
+						<div class="relative mt-2 h-[400px] w-full">
+							<div class="absolute inset-0">
+								<OLMap
+									latitude={sighting.latitude}
+									longitude={sighting.longitude}
+									readonly={true}
 								/>
-							</tbody>
-						</table>
+							</div>
+						</div>
 					</div>
 				</div>
-			</div>
-		{/if}
+			{/if}
 
-		<!-- Technische Informationen -->
-		{#if techRows.length > 0}
-			<div class="card bg-base-200 shadow-sm">
-				<div class="card-body">
-					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={FileText} size="20" class="text-primary" />
-						Technische Informationen
-					</h3>
-					<div class="overflow-x-auto">
-						<table class="table-zebra table-sm table w-full">
-							<tbody>
-								{#each techRows as row (row.label)}
-									<DataTableRow {...row} />
-								{/each}
-							</tbody>
-						</table>
+			<!-- Ortsangaben -->
+			{#if locationRows.length > 0}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={MapPin} size="20" class="text-primary" />
+							Ortsangaben
+						</h3>
+						<div class="overflow-x-auto">
+							<table class="table-zebra table-sm table w-full">
+								<tbody>
+									{#each locationRows as row (row.label)}
+										<DataTableRow {...row} />
+									{/each}
+								</tbody>
+							</table>
+						</div>
 					</div>
 				</div>
-			</div>
-		{/if}
+			{/if}
+
+			<!-- Schiffs-/Bootsangaben -->
+			{#if shipRows.length > 0}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={Anchor} size="20" class="text-primary" />
+							Schiffs-/Bootsangaben
+						</h3>
+						<div class="overflow-x-auto">
+							<table class="table-zebra table-sm table w-full">
+								<tbody>
+									{#each shipRows as row (row.label)}
+										<DataTableRow {...row} />
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Status -->
+			{#if statusRows.length > 0}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={Settings} size="20" class="text-primary" />
+							Status
+						</h3>
+						<div class="overflow-x-auto">
+							<table class="table-zebra table-sm table w-full">
+								<tbody>
+									{#each statusRows as row (row.label)}
+										<DataTableRow {...row} />
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Medien-Gallerie -->
+			{#if sighting.files && sighting.files.length > 0}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={Camera} size="20" class="text-primary" />
+							Medien-Gallerie
+						</h3>
+
+						<MediaGallery files={sighting.files} showTitle={false} />
+					</div>
+				</div>
+			{:else if mediaRows.length > 0}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={Camera} size="20" class="text-primary" />
+							Medien (Legacy)
+						</h3>
+						<div class="overflow-x-auto">
+							<table class="table-zebra table-sm table w-full">
+								<tbody>
+									{#each mediaRows as row (row.label)}
+										<DataTableRow {...row} />
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Bemerkungen, falls vorhanden -->
+			{#if noteRows.length > 0}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={MessageSquare} size="20" class="text-primary" />
+							Bemerkungen
+						</h3>
+						<div class="overflow-x-auto">
+							<table class="table-zebra table-sm table w-full">
+								<tbody>
+									{#each noteRows as row (row.label)}
+										<DataTableRow {...row} isPreformatted={true} />
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Interner Kommentar, falls vorhanden -->
+			{#if hasValue(sighting.internalComment)}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={Settings} size="20" class="text-primary" />
+							Interner Kommentar
+						</h3>
+						<div class="overflow-x-auto">
+							<table class="table-zebra table-sm table w-full">
+								<tbody>
+									<DataTableRow
+										label="Kommentar"
+										value={sighting.internalComment}
+										isPreformatted={true}
+									/>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			{/if}
+
+			<!-- Technische Informationen -->
+			{#if techRows.length > 0}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body">
+						<h3 class="card-title flex items-center gap-2 text-lg">
+							<Icon src={FileText} size="20" class="text-primary" />
+							Technische Informationen
+						</h3>
+						<div class="overflow-x-auto">
+							<table class="table-zebra table-sm table w-full">
+								<tbody>
+									{#each techRows as row (row.label)}
+										<DataTableRow {...row} />
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			{/if}
+		</div>
 	</div>
-</div>
+{/if}
 
 <style>
 	/* Card hover effects */
