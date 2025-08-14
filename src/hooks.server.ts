@@ -2,7 +2,7 @@ import { COOKIE_NAME, SESSION_SECRET } from '$env/static/private';
 import { clearAuthCookie, setAuthCookie } from '$lib/auth/auth';
 import { privateRoutes } from '$lib/constants/privateRoutes';
 import { createLogger } from '$lib/logger';
-import type { User } from '$lib/types/types';
+import type { User } from '$lib/types';
 import type { Handle } from '@sveltejs/kit';
 import jwt from 'jsonwebtoken';
 import { randomBytes } from 'crypto';

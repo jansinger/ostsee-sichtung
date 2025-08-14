@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import type { UserContactData } from '$lib/types/types';
+import type { UserContactData } from '$lib/types';
 
 /**
  * Konstanten für LocalStorage-Schlüssel

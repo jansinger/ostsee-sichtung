@@ -3,13 +3,13 @@
   Independent of form context, accepts fieldConfig and value props
 -->
 <script lang="ts">
+	import type { FieldSize, FieldVariant } from '$lib/types';
 	import { Check, Info, TriangleAlert, X } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import * as yup from 'yup';
-	import type { FieldSize, FieldVariant } from './../types';
+	import BaseCheckbox from './BaseCheckbox.svelte';
 	import BaseInput from './BaseInput.svelte';
 	import BaseRadio from './BaseRadio.svelte';
-	import BaseCheckbox from './BaseCheckbox.svelte';
 	import BaseSelect from './BaseSelect.svelte';
 	import BaseTextarea from './BaseTextarea.svelte';
 	import BaseToggle from './BaseToggle.svelte';
@@ -226,13 +226,16 @@
 
 <div class={containerClasses}>
 	<!-- Enhanced Label with Status Indicators -->
-	<label for={fieldId} class="label pb-1 w-full overflow-hidden">
-		<span class="label-text text-base-content font-medium block" style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;">
+	<label for={fieldId} class="label w-full overflow-hidden pb-1">
+		<span
+			class="label-text text-base-content block font-medium"
+			style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+		>
 			{label}
 			{#if required}
 				<span class="text-error ml-1 text-sm" aria-label="Pflichtfeld">*</span>
 			{/if}
-			
+
 			<!-- Status Indicator -->
 			{#if hasValue}
 				<span class="ml-2 inline-block" aria-hidden="true">
@@ -262,7 +265,7 @@
 
 	<!-- Field Description (if different from help text) -->
 	{#if description && description !== helpText}
-		<div id={descriptionId} class="text-base-content/70 mb-2 text-sm text-left">
+		<div id={descriptionId} class="text-base-content/70 mb-2 text-left text-sm">
 			{description}
 		</div>
 	{/if}
@@ -295,7 +298,7 @@
 	{#if error}
 		<div
 			id={errorId}
-			class="animate-in slide-in-from-top-1 mt-1 duration-200 text-left"
+			class="animate-in slide-in-from-top-1 mt-1 text-left duration-200"
 			role="alert"
 			aria-live="polite"
 		>
@@ -362,8 +365,6 @@
 
 	/* Ensure labels wrap properly on mobile */
 	:global(.label-text) {
-		word-wrap: break-word;
-		overflow-wrap: break-word;
 		hyphens: auto;
 		max-width: 100%;
 	}
@@ -373,7 +374,7 @@
 		:global(.form-control) {
 			max-width: 100%;
 		}
-		
+
 		:global(.label) {
 			max-width: 100%;
 		}

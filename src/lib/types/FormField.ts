@@ -1,5 +1,5 @@
 /**
- * Type definitions for form field components
+ * Form field component types
  */
 
 // Icon type from Steeze UI

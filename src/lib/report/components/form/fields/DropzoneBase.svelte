@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { dropzone } from '$lib/form/fields/dropzone';
-	import type { DropzoneProps } from '$lib/types/types';
+	import type { DropzoneProps } from '$lib/types';
 	import clsx from 'clsx';
 	import type { ChangeEventHandler, DragEventHandler } from 'svelte/elements';
 
