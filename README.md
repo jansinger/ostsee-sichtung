@@ -1,8 +1,17 @@
 # Ostsee-Tiere 🌊
 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/jansinger/ostsee-sichtung/release.yml?style=flat-square&logo=github&label=Build)
+![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=flat-square&logo=vercel)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/jansinger/ostsee-sichtung?style=flat-square&logo=github)
+![GitHub last commit](https://img.shields.io/github/last-commit/jansinger/ostsee-sichtung?style=flat-square&logo=github)
+![GitHub issues](https://img.shields.io/github/issues/jansinger/ostsee-sichtung?style=flat-square&logo=github)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/jansinger/ostsee-sichtung?style=flat-square&logo=github)
+![GitHub](https://img.shields.io/github/license/jansinger/ostsee-sichtung?style=flat-square)
+![GitHub package.json version](https://img.shields.io/github/package-json/v/jansinger/ostsee-sichtung?style=flat-square&logo=npm)
+
 **Ostsee-Tiere** ist eine moderne SvelteKit-WebApp zur Erfassung und Verwaltung von Meerestier-Sichtungen in der Ostsee. Die Anwendung ermöglicht es Bürgern, Forschern und Naturbeobachtern, ihre Sichtungen von Walen, Robben und anderen Meerestieren zu melden und der Wissenschaft zur Verfügung zu stellen.
 
-![Ostsee-Tiere](https://via.placeholder.com/800x400?text=Ostsee-Tiere+-+Baltic+Sea+Marine+Wildlife)
+![Ostsee-Tiere](https://ostsee-tiere.de)
 
 ## 🐋 Projektübersicht
 
@@ -13,14 +22,25 @@ Ostsee-Tiere bietet eine benutzerfreundliche Plattform zur wissenschaftlichen Er
 - Filterung und Suche nach verschiedenen Kriterien
 - Verwaltung und Überprüfung von Sichtungsmeldungen
 
-## Technologie-Stack
+## 🛠️ Technologie-Stack
 
-- **Frontend**: SvelteKit (Svelte 5)
+![SvelteKit](https://img.shields.io/badge/SvelteKit-FF3E00?style=flat-square&logo=svelte&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![PostGIS](https://img.shields.io/badge/PostGIS-59A14F?style=flat-square&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
+![OpenLayers](https://img.shields.io/badge/OpenLayers-1F6B75?style=flat-square&logo=openlayers&logoColor=white)
+
+- **Frontend**: SvelteKit (Svelte 5) mit TypeScript
 - **Styling**: TailwindCSS mit DaisyUI-Komponenten
 - **Formularvalidierung**: svelte-forms-lib mit Yup
 - **Datenbank**: PostgreSQL mit PostGIS-Erweiterung
 - **ORM**: Drizzle
 - **Karten**: OpenLayers
+- **Build Tool**: Vite
+- **Deployment**: Vercel
 
 ## Installation und Entwicklung
 
@@ -33,8 +53,8 @@ Ostsee-Tiere bietet eine benutzerfreundliche Plattform zur wissenschaftlichen Er
 
 ```bash
 # Repository klonen
-git clone https://github.com/yourusername/sichtungen-webapp.git
-cd sichtungen-webapp
+git clone https://github.com/jansinger/ostsee-sichtung.git
+cd ostsee-sichtung
 
 # Abhängigkeiten installieren
 npm install
@@ -85,7 +105,7 @@ npm run test
 ## Projektstruktur
 
 ```
-sichtungen-webapp/
+ostsee-sichtung/
 ├── src/
 │   ├── lib/                # Wiederverwendbare Komponenten und Funktionen
 │   │   ├── components/     # UI-Komponenten

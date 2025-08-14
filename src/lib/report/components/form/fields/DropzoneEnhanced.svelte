@@ -4,13 +4,22 @@
 	import { getFormContext } from '$lib/report/formContext';
 	import { mediaStore, type MediaFile } from '$lib/stores/mediaStore';
 	import { createToast } from '$lib/stores/toastStore';
-	import { analyzeClientFile, isInBalticSea, convertServerExifToClient, type ClientFileMetadata } from '$lib/utils/client/fileAnalysis';
-	import { FILE_VALIDATION_PRESETS } from '$lib/utils/fileValidation';
-	import { formatLocation } from '$lib/utils/format/formatLocation';
-	import { deleteFileDirect, uploadFileDirect } from '$lib/utils/uploadUtils';
-	import { uploadResultToFormData, formDataToUploadData, type UploadFileData } from '$lib/utils/uploadHelpers';
+	import {
+		analyzeClientFile,
+		convertServerExifToClient,
+		isInBalticSea,
+		type ClientFileMetadata
+	} from '$lib/utils/client/fileAnalysis';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
 	import { getFileIcon } from '$lib/utils/file/fileType';
+	import { FILE_VALIDATION_PRESETS } from '$lib/utils/fileValidation';
+	import { formatLocation } from '$lib/utils/format/formatLocation';
+	import {
+		formDataToUploadData,
+		uploadResultToFormData,
+		type UploadFileData
+	} from '$lib/utils/uploadHelpers';
+	import { deleteFileDirect, uploadFileDirect } from '$lib/utils/uploadUtils';
 	import { SvelteMap } from 'svelte/reactivity';
 
 	const logger = createLogger('DropzoneEnhanced');
@@ -59,22 +68,26 @@
 	// Restore media files from form data when component is re-mounted or step is revisited
 	$effect(() => {
 		// Only restore if form has uploaded files but mediaStore doesn't have enough files
-		if ($form.uploadedFiles && Array.isArray($form.uploadedFiles) && $form.uploadedFiles.length > 0) {
+		if (
+			$form.uploadedFiles &&
+			Array.isArray($form.uploadedFiles) &&
+			$form.uploadedFiles.length > 0
+		) {
 			// Check if we need to restore files (handle case where PositionAndTime may have added first file already)
-			const existingFileNames = mediaFiles.map(mf => mf.metadata.name);
-			const filesToRestore = $form.uploadedFiles.filter(fileInfo => 
-				!existingFileNames.includes(fileInfo.originalName)
+			const existingFileNames = mediaFiles.map((mf) => mf.metadata.name);
+			const filesToRestore = $form.uploadedFiles.filter(
+				(fileInfo) => !existingFileNames.includes(fileInfo.originalName)
 			);
-			
+
 			if (filesToRestore.length > 0) {
 				// Convert uploaded files back to MediaFile format for display
 				const restoredMediaFiles: MediaFile[] = [];
-				
+
 				for (const fileInfo of filesToRestore) {
 					try {
 						// Create mock File object for display
 						const mockFile = new File([''], fileInfo.originalName, { type: fileInfo.mimeType });
-						
+
 						// Create basic metadata for display
 						const mockMetadata: ClientFileMetadata = {
 							name: fileInfo.originalName,
@@ -89,7 +102,7 @@
 								timestamp: null
 							}
 						};
-						
+
 						restoredMediaFiles.push({
 							file: mockFile,
 							metadata: mockMetadata,
@@ -99,10 +112,15 @@
 						logger.warn({ error, fileInfo }, 'Error restoring media file from form data');
 					}
 				}
-				
+
 				if (restoredMediaFiles.length > 0) {
-					logger.info({ count: restoredMediaFiles.length }, 'Restored additional media files from form data');
-					mediaStore.addFiles(restoredMediaFiles.map(mf => ({ file: mf.file, metadata: mf.metadata })));
+					logger.info(
+						{ count: restoredMediaFiles.length },
+						'Restored additional media files from form data'
+					);
+					mediaStore.addFiles(
+						restoredMediaFiles.map((mf) => ({ file: mf.file, metadata: mf.metadata }))
+					);
 				}
 			}
 		}
@@ -123,7 +141,9 @@
 					file: newFiles[index],
 					metadata
 				}))
-				.filter((item): item is { file: File; metadata: ClientFileMetadata } => item.file !== undefined);
+				.filter(
+					(item): item is { file: File; metadata: ClientFileMetadata } => item.file !== undefined
+				);
 
 			mediaStore.addFiles(newMediaFiles);
 
@@ -151,27 +171,29 @@
 						const uploadResult = await uploadFileDirect(file, referenceId);
 						// Speichere die vollständigen Datei-Informationen für späteres Löschen und DB-Speicherung
 						uploadedFiles.set(file.name, uploadResultToFormData(uploadResult));
-						
+
 						// Update media store with server EXIF data if available
 						if (uploadResult.exifData) {
 							const serverExif = convertServerExifToClient(uploadResult.exifData);
-							const existingMediaIndex = mediaFiles.findIndex(mf => mf.metadata.name === file.name);
-							
-							if (existingMediaIndex !== -1) {
+							const existingMediaIndex = mediaFiles.findIndex(
+								(mf) => mf.metadata.name === file.name
+							);
+
+							if (existingMediaIndex !== -1 && mediaFiles[existingMediaIndex] !== undefined) {
 								// Update existing media file with EXIF data
 								const updatedMetadata: ClientFileMetadata = {
 									...mediaFiles[existingMediaIndex].metadata,
 									exif: serverExif
 								};
-								
+
 								// Remove and re-add with updated metadata
 								mediaStore.removeFile(existingMediaIndex);
 								mediaStore.addFiles([{ file, metadata: updatedMetadata }]);
 							}
 						}
-						
+
 						logger.info(
-							{ fileName: file.name, uploadResult, hasGPS: !!(uploadResult.exifData?.latitude) },
+							{ fileName: file.name, uploadResult, hasGPS: !!uploadResult.exifData?.latitude },
 							'File uploaded with full metadata'
 						);
 					} catch (uploadError) {
@@ -185,13 +207,16 @@
 					}
 				}
 				// Count files with GPS data
-				const filesWithGPS = newFiles.filter(file => {
+				const filesWithGPS = newFiles.filter((file) => {
 					const fileData = uploadedFiles.get(file.name);
 					return fileData && fileData.originalName && uploadedFiles.get(file.name)?.filePath;
 				}).length;
-				
+
 				if (filesWithGPS > 0) {
-					createToast('success', `${newFiles.length} Datei(en) hochgeladen! GPS-Daten wurden extrahiert.`);
+					createToast(
+						'success',
+						`${newFiles.length} Datei(en) hochgeladen! GPS-Daten wurden extrahiert.`
+					);
 				} else {
 					createToast('success', `${newFiles.length} Datei(en) erfolgreich hochgeladen!`);
 				}
@@ -282,7 +307,6 @@
 			createToast('error', 'Fehler beim Löschen aller Dateien.');
 		}
 	}
-
 </script>
 
 <div class="space-y-4">
