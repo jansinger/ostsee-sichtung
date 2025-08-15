@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.1.0 (2025-08-15)
+
+* Merge pull request #21 from jansinger/preview ([035446c](https://github.com/jansinger/ostsee-sichtung/commit/035446c)), closes [#21](https://github.com/jansinger/ostsee-sichtung/issues/21)
+* test: add unit tests for exifutils and localstorageprovider ([e3fbc08](https://github.com/jansinger/ostsee-sichtung/commit/e3fbc08))
+* feat: enhance local storage provider with security hardening ([c316c4e](https://github.com/jansinger/ostsee-sichtung/commit/c316c4e))
+* feat: enhance migration scripts ([c17f876](https://github.com/jansinger/ostsee-sichtung/commit/c17f876))
+* fix: update launch configuration to use https for local server ([5d9806f](https://github.com/jansinger/ostsee-sichtung/commit/5d9806f))
+
 ## 1.0.0 (2025-08-15)
 
 * Added Vercel Adapter ([308f061](https://github.com/jansinger/ostsee-sichtung/commit/308f061))
