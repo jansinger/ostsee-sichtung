@@ -2,7 +2,7 @@
 
 /**
  * Script to generate reference IDs for all sightings using CUID2
- * 
+ *
  * Logic:
  * 1. Find all sightings that don't have a referenceId yet
  * 2. For each sighting:
@@ -10,14 +10,14 @@
  *    - If yes: reuse that referenceId for the sighting
  *    - If no: generate a new CUID2 and assign it to the sighting
  * 3. Update the sighting with the determined referenceId
- * 
+ *
  * Prerequisites:
  * - DATABASE_URL environment variable must be set
  * - Database connection must be available
- * 
- * Usage: 
- *   npx tsx tools/generate-reference-ids.ts
- * 
+ *
+ * Usage:
+ *   dotenv -e .env -- npx tsx src/tools/generate-reference-ids.ts
+ *
  * Safety:
  * - Only updates sightings that don't already have a referenceId
  * - Never overwrites existing referenceIds
@@ -25,8 +25,8 @@
  */
 
 import { createId } from '@paralleldrive/cuid2';
-import { drizzle } from 'drizzle-orm/postgres-js';
 import { eq, isNull } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '../lib/server/db/schema.js';
 
@@ -34,9 +34,9 @@ const { sightings, sightingFiles } = schema;
 
 async function generateReferenceIds() {
 	// Database connection
-	const databaseUrl = process.env.DATABASE_URL;
+	const databaseUrl = process.env.DATABASE_POSTGRES_URL;
 	if (!databaseUrl) {
-		console.error('DATABASE_URL environment variable is required');
+		console.error('DATABASE_POSTGRES_URL environment variable is required');
 		process.exit(1);
 	}
 
@@ -48,9 +48,9 @@ async function generateReferenceIds() {
 	try {
 		// Get all sightings that don't have a referenceId yet
 		const sightingsWithoutRefId = await db
-			.select({ 
+			.select({
 				id: sightings.id,
-				referenceId: sightings.referenceId 
+				referenceId: sightings.referenceId
 			})
 			.from(sightings)
 			.where(isNull(sightings.referenceId));
@@ -82,7 +82,9 @@ async function generateReferenceIds() {
 				// Reuse existing referenceId from files
 				referenceIdToUse = existingFile[0].referenceId;
 				reusedCount++;
-				console.log(`🔄 Sighting ${sighting.id}: Reusing existing reference ID: ${referenceIdToUse}`);
+				console.log(
+					`🔄 Sighting ${sighting.id}: Reusing existing reference ID: ${referenceIdToUse}`
+				);
 			} else {
 				// Generate new CUID2
 				referenceIdToUse = createId();
@@ -100,7 +102,9 @@ async function generateReferenceIds() {
 
 			// Progress indicator every 50 updates
 			if (updatedCount % 50 === 0) {
-				console.log(`📈 Progress: ${updatedCount}/${sightingsWithoutRefId.length} sightings updated`);
+				console.log(
+					`📈 Progress: ${updatedCount}/${sightingsWithoutRefId.length} sightings updated`
+				);
 			}
 		}
 
@@ -119,9 +123,10 @@ async function generateReferenceIds() {
 		if (remainingSightingsWithoutRefId.length === 0) {
 			console.log('✅ All sightings now have reference IDs!');
 		} else {
-			console.log(`⚠️  Warning: ${remainingSightingsWithoutRefId.length} sightings still don't have reference IDs`);
+			console.log(
+				`⚠️  Warning: ${remainingSightingsWithoutRefId.length} sightings still don't have reference IDs`
+			);
 		}
-
 	} catch (error) {
 		console.error('❌ Error during reference ID generation:', error);
 		process.exit(1);
