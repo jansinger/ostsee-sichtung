@@ -8,7 +8,7 @@
 			"type": "chrome",
 			"request": "launch",
 			"name": "Client: Chrome",
-			"url": "http://localhost:4000",
+			"url": "https://localhost:4000",
 			"webRoot": "${workspaceFolder}"
 		},
 		{
@@ -31,8 +31,8 @@
 			"request": "launch",
 			"command": "npm run dev -- --port 4000",
 			"serverReadyAction": {
-				"pattern": "Local:\\s+http://localhost:(\\d+)",
-				"uriFormat": "http://localhost:%s",
+				"pattern": "Local:\\s+https://localhost:(\\d+)",
+				"uriFormat": "https://localhost:%s",
 				"action": "debugWithChrome"
 			},
 			"sourceMaps": true
