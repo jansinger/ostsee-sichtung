@@ -175,9 +175,13 @@ Always check Baltic Sea geographic bounds using the `checkBalticSea` utility bef
 - Respect the multi-step form structure and conditional logic patterns
 - Use PostGIS utilities for geographic data handling
 - Follow TailwindCSS + DaisyUI styling patterns established in the codebase
-- Use Svelte 5 runes mode (`$state`, `$derived`, `$effect`, etc.)
+- INSTTRUCTION: Use Svelte 5 runes mode (`$state`, `$derived`, `$effect`, etc.)
 - Use Pino for logging, avoid console usage except for debugging
 - Store file metadata including EXIF data as JSONB in database for efficient querying
 - Use storage abstraction layer for file operations to support multiple providers
 - Nach jeder Veränderung im Code sollte npm check und npm type-check ausgeführt werden
 - Alle Imports aus /lib sollen mit $lib und dem vollen Pfad importiert werden
+- Benutze Conventional Commits für commit messages
+- commits werden mit commitlint getestet
+- Die commit message headline muss klein geschrieben sein
+- Beachte die Regeln aus `commitlint.config.mjs` für commits
