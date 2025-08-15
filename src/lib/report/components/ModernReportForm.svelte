@@ -4,11 +4,11 @@
 	import FormActions from './form/FormActions.svelte';
 	import RequiredConsent from './form/RequiredConsent.svelte';
 
+	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 	import { submitSightingForm } from '$lib/form/submitSightingForm';
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
 	import { initialFormState } from '$lib/report/formConfig';
-	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 	import {
 		clearFormDataOnly,
 		clearStorage,
@@ -153,7 +153,7 @@
 		<div class="mb-6 flex justify-center">
 			<OstseeTiereLogo size="lg" showText={true} />
 		</div>
-		
+
 		<Form {...formProps} bind:context={formContext}>
 			<!-- Form Title -->
 			<div class="mb-4 text-center sm:mb-8">

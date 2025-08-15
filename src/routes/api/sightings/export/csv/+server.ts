@@ -1,13 +1,17 @@
-import { text } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { sightings as sightingsTable } from '$lib/server/db/schema';
-import { and, between, eq } from 'drizzle-orm';
-import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { getDistanceLabel } from '$lib/report/formOptions/distance';
 import { getDistributionLabel } from '$lib/report/formOptions/distribution';
+import { getSpeciesLabel } from '$lib/report/formOptions/species';
+import { requireUserRole } from '$lib/server/auth/auth';
+import { db } from '$lib/server/db';
+import { sightings as sightingsTable } from '$lib/server/db/schema';
+import { text } from '@sveltejs/kit';
+import { and, between, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url, locals }) => {
+	// Authorization check
+	requireUserRole(url, locals.user, ['admin']);
+
 	// Filter-Parameter aus der URL extrahieren
 	const fromDate = url.searchParams.get('dateFrom') || '';
 	const toDate = url.searchParams.get('dateTo') || '';
@@ -79,7 +83,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		];
 
 		// CSV-Zeilen erstellen
-		const csvRows = sightings.map(sighting => [
+		const csvRows = sightings.map((sighting) => [
 			sighting.referenceId || '',
 			sighting.sightingDate || '',
 			sighting.created || '',
@@ -108,8 +112,8 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// CSV-String erstellen
 		const csvContent = [
-			headers.map(header => `"${header}"`).join(','),
-			...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
+			headers.map((header) => `"${header}"`).join(','),
+			...csvRows.map((row) => row.map((cell) => `"${cell}"`).join(','))
 		].join('\n');
 
 		// CSV-Datei zurückgeben
@@ -119,7 +123,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				'Content-Disposition': 'attachment; filename="sichtungen-export.csv"'
 			}
 		});
-
 	} catch (error) {
 		console.error('Fehler beim CSV-Export:', error);
 

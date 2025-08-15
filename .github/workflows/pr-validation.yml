@@ -18,6 +18,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      issues: write
     
     steps:
       - name: Checkout repository
@@ -38,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+        
       - name: Validate commit messages
         run: |
           echo "Validating commit messages from origin/main to HEAD..."
@@ -49,8 +53,11 @@ jobs:
       - name: Run type checking
         run: npm run type-check
         
-      - name: Run tests
-        run: npm run test
+      - name: Run unit tests
+        run: npm run test:unit -- --run
+        
+      - name: Run E2E tests
+        run: npm run test:e2e
         
       - name: Run Svelte check
         run: npm run check
@@ -164,66 +171,91 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const { data: commits } = await github.rest.pulls.listCommits({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-            });
-            
-            let labels = [];
-            let hasBreakingChanges = false;
-            
-            for (const commit of commits) {
-              const message = commit.commit.message;
-              
-              // Check for breaking changes
-              if (message.includes('BREAKING CHANGE') || message.includes('!:')) {
-                hasBreakingChanges = true;
-                labels.push('breaking-change');
-              }
-              
-              // Determine type
-              const match = message.match(/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)/);
-              if (match) {
-                const type = match[1];
-                switch (type) {
-                  case 'feat':
-                    labels.push('feature');
-                    break;
-                  case 'fix':
-                    labels.push('bugfix');
-                    break;
-                  case 'docs':
-                    labels.push('documentation');
-                    break;
-                  case 'refactor':
-                    labels.push('refactor');
-                    break;
-                  case 'perf':
-                    labels.push('performance');
-                    break;
-                  case 'test':
-                    labels.push('test');
-                    break;
-                  case 'build':
-                  case 'ci':
-                    labels.push('build');
-                    break;
-                  case 'chore':
-                    labels.push('maintenance');
-                    break;
-                }
-              }
-            }
-            
-            // Remove duplicates
-            labels = [...new Set(labels)];
-            
-            if (labels.length > 0) {
-              await github.rest.issues.addLabels({
+            try {
+              const { data: commits } = await github.rest.pulls.listCommits({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.issue.number,
-                labels: labels
+                pull_number: context.issue.number,
               });
+              
+              // Get existing labels in the repository
+              const { data: repoLabels } = await github.rest.issues.listLabelsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+              
+              const existingLabelNames = repoLabels.map(label => label.name);
+              
+              let labels = [];
+              let hasBreakingChanges = false;
+              
+              for (const commit of commits) {
+                const message = commit.commit.message;
+                
+                // Check for breaking changes
+                if (message.includes('BREAKING CHANGE') || message.includes('!:')) {
+                  hasBreakingChanges = true;
+                  if (existingLabelNames.includes('breaking-change')) {
+                    labels.push('breaking-change');
+                  }
+                }
+                
+                // Determine type
+                const match = message.match(/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)/);
+                if (match) {
+                  const type = match[1];
+                  let labelName = '';
+                  
+                  switch (type) {
+                    case 'feat':
+                      labelName = 'feature';
+                      break;
+                    case 'fix':
+                      labelName = 'bugfix';
+                      break;
+                    case 'docs':
+                      labelName = 'documentation';
+                      break;
+                    case 'refactor':
+                      labelName = 'refactor';
+                      break;
+                    case 'perf':
+                      labelName = 'performance';
+                      break;
+                    case 'test':
+                      labelName = 'test';
+                      break;
+                    case 'build':
+                    case 'ci':
+                      labelName = 'build';
+                      break;
+                    case 'chore':
+                      labelName = 'maintenance';
+                      break;
+                  }
+                  
+                  // Only add label if it exists in the repository
+                  if (labelName && existingLabelNames.includes(labelName)) {
+                    labels.push(labelName);
+                  }
+                }
+              }
+              
+              // Remove duplicates
+              labels = [...new Set(labels)];
+              
+              if (labels.length > 0) {
+                console.log(`Adding labels: ${labels.join(', ')}`);
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  labels: labels
+                });
+              } else {
+                console.log('No matching labels found in repository');
+              }
+            } catch (error) {
+              console.log(`Failed to add labels: ${error.message}`);
+              // Don't fail the workflow if labeling fails
             }

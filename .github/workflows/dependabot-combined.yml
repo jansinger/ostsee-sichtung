@@ -202,14 +202,26 @@ jobs:
             
             return { commitMessage, body, hasMajor };
             
-      - name: Install dependencies and run tests
+      - name: Setup environment
+        if: steps.get-prs.outputs.count != '0'
+        run: cp .env.example .env
+          
+      - name: Install dependencies
+        if: steps.get-prs.outputs.count != '0'
+        run: npm ci
+          
+      - name: Install Playwright Browsers
+        if: steps.get-prs.outputs.count != '0'
+        run: npx playwright install --with-deps
+          
+      - name: Run tests
         if: steps.get-prs.outputs.count != '0'
         run: |
-          npm ci
           npm run check
           npm run lint
           npm run type-check
-          npm run test
+          npm run test:unit -- --run
+          npm run test:e2e
           
       - name: Commit changes
         if: steps.get-prs.outputs.count != '0'

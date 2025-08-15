@@ -1,11 +1,15 @@
-import { text } from '@sveltejs/kit';
+import { getSpeciesLabel } from '$lib/report/formOptions/species';
+import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
+import { text } from '@sveltejs/kit';
 import { and, between, eq, isNotNull } from 'drizzle-orm';
-import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url, locals }) => {
+	// Authorization check
+	requireUserRole(url, locals.user, ['admin']);
+
 	// Filter-Parameter aus der URL extrahieren
 	const fromDate = url.searchParams.get('dateFrom') || '';
 	const toDate = url.searchParams.get('dateTo') || '';
@@ -53,9 +57,10 @@ export const GET: RequestHandler = async ({ url }) => {
 			.orderBy(sightingsTable.sightingDate);
 
 		// KML-Placemarks erstellen
-		const placemarks = sightings.map(sighting => {
-			const species = getSpeciesLabel(sighting.species || 0);
-			const description = `
+		const placemarks = sightings
+			.map((sighting) => {
+				const species = getSpeciesLabel(sighting.species || 0);
+				const description = `
 				<![CDATA[
 				<b>Tierart:</b> ${species}<br/>
 				<b>Anzahl:</b> ${sighting.totalCount || 'Unbekannt'}<br/>
@@ -67,7 +72,7 @@ export const GET: RequestHandler = async ({ url }) => {
 				]]>
 			`;
 
-			return `
+				return `
 			<Placemark>
 				<name>${species} - ${sighting.referenceId || sighting.id}</name>
 				<description>${description}</description>
@@ -89,7 +94,8 @@ export const GET: RequestHandler = async ({ url }) => {
 					</Data>
 				</ExtendedData>
 			</Placemark>`;
-		}).join('');
+			})
+			.join('');
 
 		// Vollständige KML-Datei erstellen
 		const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -115,7 +121,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				'Content-Disposition': 'attachment; filename="sichtungen-export.kml"'
 			}
 		});
-
 	} catch (error) {
 		console.error('Fehler beim KML-Export:', error);
 

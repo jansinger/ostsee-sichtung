@@ -1,3 +1,5 @@
+import { PUBLIC_SITE_URL } from '$env/static/public';
+import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
@@ -100,8 +102,11 @@ export const load: PageServerLoad = async ({ url }) => {
 	};
 };
 
+const defaultUrl = new URL('/admin', PUBLIC_SITE_URL);
+
 export const actions: Actions = {
-	delete: async ({ request }) => {
+	delete: async ({ request, locals }) => {
+		requireUserRole(defaultUrl, locals.user, ['admin']);
 		const formData = await request.formData();
 		const idValue = formData.get('id');
 
@@ -119,7 +124,8 @@ export const actions: Actions = {
 		};
 	},
 
-	toggleVerified: async ({ request }) => {
+	toggleVerified: async ({ request, locals }) => {
+		requireUserRole(defaultUrl, locals.user, ['admin']);
 		const formData = await request.formData();
 		const idValue = formData.get('id');
 		const currentStateValue = formData.get('currentState');

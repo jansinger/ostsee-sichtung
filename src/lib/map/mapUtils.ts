@@ -33,11 +33,11 @@ export interface SightingFeature {
 		jt: number; // juvenile count
 		tf: boolean; // totfund (dead)
 		// Weitere Eigenschaften je nach Bedarf
-		email?: string;
 		name?: string | undefined;
 		firstname?: string | undefined;
 		shipname?: string | undefined;
 		waterway?: string | undefined;
+		seaMark?: string | undefined;
 	};
 }
 
@@ -56,13 +56,13 @@ export interface DBSighting {
 	totalCount: number;
 	juvenileCount: number;
 	isDead: boolean;
-	email: string;
 	firstName?: string;
 	lastName?: string;
 	nameConsent: boolean;
 	shipName?: string;
 	shipNameConsent: boolean;
 	waterway?: string;
+	seaMark?: string;
 	[key: string]: unknown;
 }
 
@@ -99,11 +99,11 @@ export function sightingsToGeoJSON(sightingsFromDB: DBSighting[]): GeoJSONRespon
 				ct: dbSighting.totalCount,
 				jt: dbSighting.juvenileCount,
 				tf: dbSighting.isDead,
-				email: dbSighting.email,
 				name: dbSighting.nameConsent ? dbSighting.lastName : undefined,
 				firstname: dbSighting.nameConsent ? dbSighting.firstName : undefined,
 				shipname: dbSighting.shipNameConsent ? dbSighting.shipName : undefined,
-				waterway: dbSighting.waterway
+				waterway: dbSighting.waterway,
+				seaMark: dbSighting.seaMark
 			}
 		};
 	});

@@ -5,7 +5,9 @@ test.describe('Homepage', () => {
 		await page.goto('/');
 		
 		// Check that the main title is visible
-		await expect(page.locator('h1')).toContainText('Sichtung melden');
+		const heading = page.locator('h1').first();
+		await expect(heading).toBeVisible();
+		await expect(heading).toContainText('Meerestier-Sichtung melden');
 		
 		// Check for the presence of the form
 		await expect(page.locator('form')).toBeVisible();
@@ -15,21 +17,28 @@ test.describe('Homepage', () => {
 		await page.goto('/');
 		
 		// Check title
-		await expect(page).toHaveTitle(/Sichtung melden/);
+		await expect(page).toHaveTitle(/Ostsee-Tiere/);
 		
 		// Check meta description (use first match to avoid duplicates)
 		const metaDescription = page.locator('meta[name="description"]').first();
-		await expect(metaDescription).toHaveAttribute('content', /Wal.*Ostsee/);
+		await expect(metaDescription).toHaveAttribute('content', /Ostsee-Tiere.*[Ww]al/);
 	});
 
 	test('should navigate to map view', async ({ page }) => {
 		await page.goto('/');
 		
-		// Look for map link/button and click it
+		// Look for map link/button and click it - könnte in Navigation sein
 		const mapLink = page.locator('a[href="/map"]').first();
-		if (await mapLink.count() > 0) {
+		const mapLinkCount = await mapLink.count();
+		
+		if (mapLinkCount > 0) {
 			await mapLink.click();
 			await expect(page).toHaveURL('/map');
+			// Prüfe ob die Karte geladen wurde
+			await expect(page.locator('#map, .map-container, [data-testid="map"]').first()).toBeVisible({ timeout: 10000 });
+		} else {
+			// Skip the test if no map link is found - this avoids HTTPS/routing issues
+			console.log('No map link found in navigation - skipping direct navigation test');
 		}
 	});
 });
@@ -38,20 +47,32 @@ test.describe('Form Navigation', () => {
 	test('should show form steps', async ({ page }) => {
 		await page.goto('/');
 		
-		// Check if step indicators are present
-		const steps = page.locator('[data-testid="step"], .step, [class*="step"]');
-		if (await steps.count() > 0) {
-			await expect(steps.first()).toBeVisible();
-		}
+		// Check if step indicators are present - looking for steps container
+		const stepsContainer = page.locator('.steps, [role="navigation"]').first();
+		await expect(stepsContainer).toBeVisible();
+		
+		// Check for individual step items
+		const steps = page.locator('.step, li[class*="step"]');
+		const stepCount = await steps.count();
+		expect(stepCount).toBeGreaterThan(0);
 	});
 
-	test('should allow position method selection', async ({ page }) => {
+	test('should show logo', async ({ page }) => {
 		await page.goto('/');
 		
-		// Look for position method selection (radio buttons or similar)
-		const positionOptions = page.locator('input[name="position-method"], input[type="radio"]');
-		if (await positionOptions.count() > 0) {
-			await expect(positionOptions.first()).toBeVisible();
-		}
+		// Check if the Ostsee-Tiere logo is visible
+		const logo = page.locator('img[alt*="Ostsee-Tiere"], img[src*="ostsee-tiere"]').first();
+		await expect(logo).toBeVisible();
+	});
+
+	test('should have working form elements', async ({ page }) => {
+		await page.goto('/');
+		
+		// Warte auf das Formular
+		await page.waitForSelector('form', { timeout: 10000 });
+		
+		// Prüfe ob Formularfelder vorhanden sind
+		const formFields = page.locator('input, select, textarea').first();
+		await expect(formFields).toBeVisible();
 	});
 });

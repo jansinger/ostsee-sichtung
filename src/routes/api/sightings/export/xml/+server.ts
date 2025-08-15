@@ -1,10 +1,11 @@
-import { text } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
-import { sightings as sightingsTable } from '$lib/server/db/schema';
-import { and, between, eq } from 'drizzle-orm';
-import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { getDistanceLabel } from '$lib/report/formOptions/distance';
 import { getDistributionLabel } from '$lib/report/formOptions/distribution';
+import { getSpeciesLabel } from '$lib/report/formOptions/species';
+import { requireUserRole } from '$lib/server/auth/auth';
+import { db } from '$lib/server/db';
+import { sightings as sightingsTable } from '$lib/server/db/schema';
+import { text } from '@sveltejs/kit';
+import { and, between, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
 function xmlEscape(str: string | null | undefined): string {
@@ -17,7 +18,10 @@ function xmlEscape(str: string | null | undefined): string {
 		.replace(/'/g, '&#39;');
 }
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url, locals }) => {
+	// Authorization check
+	requireUserRole(url, locals.user, ['admin']);
+
 	// Filter-Parameter aus der URL extrahieren
 	const fromDate = url.searchParams.get('dateFrom') || '';
 	const toDate = url.searchParams.get('dateTo') || '';
@@ -61,7 +65,9 @@ export const GET: RequestHandler = async ({ url }) => {
 			.orderBy(sightingsTable.sightingDate);
 
 		// XML-Einträge für Sichtungen erstellen
-		const sightingXml = sightings.map(sighting => `
+		const sightingXml = sightings
+			.map(
+				(sighting) => `
 		<sichtung>
 			<referenzId>${xmlEscape(sighting.referenceId)}</referenzId>
 			<sichtungsdatum>${xmlEscape(sighting.sightingDate)}</sichtungsdatum>
@@ -95,7 +101,9 @@ export const GET: RequestHandler = async ({ url }) => {
 			<ostsee>${sighting.inBalticSeaGeo ? 'true' : 'false'}</ostsee>
 			<verifiziert>${sighting.verified ? 'true' : 'false'}</verifiziert>
 			<eingangskanal>${sighting.entryChannel || ''}</eingangskanal>
-		</sichtung>`).join('');
+		</sichtung>`
+			)
+			.join('');
 
 		// Vollständige XML-Datei erstellen
 		const xmlContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -122,7 +130,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				'Content-Disposition': 'attachment; filename="sichtungen-export.xml"'
 			}
 		});
-
 	} catch (error) {
 		console.error('Fehler beim XML-Export:', error);
 
