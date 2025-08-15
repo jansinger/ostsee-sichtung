@@ -1,5 +1,4 @@
-import { Feature } from 'ol';
-import { Map, View } from 'ol';
+import { Feature, Geolocation, Map, View } from 'ol';
 import type { Control } from 'ol/control';
 import { defaults as defaultControls } from 'ol/control';
 import * as olExtent from 'ol/extent';
@@ -14,11 +13,10 @@ import { OSM, XYZ } from 'ol/source';
 import Cluster from 'ol/source/Cluster';
 import VectorSource from 'ol/source/Vector';
 import { Circle, Fill, Stroke, Style } from 'ol/style';
-import { Geolocation } from 'ol';
+import { LocationControl } from './controls/LocationControl.js';
+import { ZoomAllControl } from './controls/ZoomAllControl.js';
 import type { MapTranslations } from './mapUtils';
 import { createClusterStyle, createFeatureStyle } from './styleUtils';
-import { ZoomAllControl } from './controls/ZoomAllControl.js';
-import { LocationControl } from './controls/LocationControl.js';
 
 /**
  * Interface für die Eigenschaften einer Sichtung
@@ -58,15 +56,17 @@ export class SichtungenMap {
 	private reportsSource: VectorSource<Feature<Geometry>>;
 	private clusterSource: Cluster;
 	private reportsLayer: VectorLayer<Cluster>;
+	private nonClusteredLayer: VectorLayer<VectorSource<Feature<Geometry>>>;
 	private translations: MapTranslations;
 	private timeFilter: { lower: number; upper: number };
 	private hiddenSpecies: Record<string, boolean> = {};
 	private hiddenColors: Record<string, boolean> = {};
 	private displayedYear: number;
-	private featuresLoaded: number = 0;
 	private legendUpdateCallback?: () => void;
 	private clusterDistance: number = 50; // Pixel-Distanz für Clustering
-	
+	private maxZoomForClustering: number = 14; // Ab dieser Zoomstufe kein Clustering mehr
+	private isUsingClusteredLayer: boolean = true; // Track welcher Layer aktiv ist
+
 	// Geolocation-related properties
 	private geolocation!: Geolocation;
 	private locationSource!: VectorSource<Feature<Geometry>>;
@@ -111,7 +111,7 @@ export class SichtungenMap {
 		// Cluster-Source für Gruppierung der Marker
 		this.clusterSource = new Cluster({
 			distance: this.clusterDistance,
-			minDistance: 10,
+			minDistance: 0,
 			source: this.reportsSource,
 			// Nur sichtbare Features für Clustering verwenden
 			geometryFunction: (feature) => {
@@ -162,6 +162,20 @@ export class SichtungenMap {
 			}
 		});
 
+		// Layer für einzelne Sichtungen ohne Clustering (für hohe Zoomstufen)
+		this.nonClusteredLayer = new VectorLayer({
+			source: this.reportsSource,
+			style: (feature): Style | Style[] | void => {
+				if (feature) {
+					const style = this.getStyle(feature as Feature<Geometry>);
+					if (style) {
+						return Array.isArray(style) ? style : [style];
+					}
+				}
+				return undefined;
+			}
+		});
+
 		// Standardkoordinaten für die Ostsee
 		const defaultLon = 12.18683691406284;
 		const defaultLat = 55.08861442949681;
@@ -200,9 +214,7 @@ export class SichtungenMap {
 				zoom: defaultZoom,
 				projection: 'EPSG:3857'
 			}),
-			controls: defaultControls().extend(
-				this.createCustomControls()
-			),
+			controls: defaultControls().extend(this.createCustomControls()),
 			// Canvas-Optimierung für häufige getImageData-Aufrufe
 			pixelRatio: window.devicePixelRatio
 		});
@@ -215,6 +227,16 @@ export class SichtungenMap {
 
 		// Initialisiere Geolocation nach Map-Erstellung
 		this.initializeGeolocation();
+
+		// Event-Listener für Zoom-Änderungen
+		this.map.getView().on('change:resolution', () => {
+			setTimeout(() => {
+				this.updateClusteringForZoom();
+			}, 10);
+		});
+
+		// Initiale Cluster-Distanz basierend auf Start-Zoom setzen
+		this.updateClusteringForZoom();
 
 		// Lade Daten für das aktuelle Jahr
 		this.setYear(this.displayedYear);
@@ -607,9 +629,10 @@ export class SichtungenMap {
 	public setFilter(start?: number, end?: number): void {
 		if (start) this.timeFilter.lower = start;
 		if (end) this.timeFilter.upper = end;
-		// Aktualisiere Cluster-Source damit nur sichtbare Features geclustert werden
+		// Aktualisiere beide Layer
 		this.clusterSource.refresh();
-		this.reportsLayer.changed(); // Aktualisiert die Anzeige
+		this.reportsLayer.changed();
+		this.nonClusteredLayer.changed()
 		this.updateLegendCounts(); // Aktualisiert die Legende
 		this.updateTimeRange(this.options.timeStartId, this.options.timeEndId); // Aktualisiert die Zeit-Anzeige
 	}
@@ -648,7 +671,6 @@ export class SichtungenMap {
 	 * Lädt die Daten aus der API
 	 */
 	private setSource(year?: number, filter?: string): void {
-		this.featuresLoaded = 0;
 		const yearToUse = year || this.displayedYear;
 		const filterParam = filter ? `&search=${encodeURIComponent(filter)}` : '';
 		const url = `/api/map/sightings?year=${yearToUse}${filterParam}`;
@@ -672,7 +694,6 @@ export class SichtungenMap {
 				});
 
 				this.reportsSource.addFeatures(features);
-				this.featuresLoaded = 1;
 				this.showLoading(false);
 				this.updateLegendCounts(); // Aktualisiere die Legende nach dem Laden
 			})
@@ -774,6 +795,64 @@ export class SichtungenMap {
 	}
 
 	/**
+	 * Setzt die maximale Zoomstufe für Clustering
+	 */
+	public setMaxZoomForClustering(maxZoom: number): void {
+		this.maxZoomForClustering = maxZoom;
+		this.updateClusteringForZoom();
+	}
+
+	/**
+	 * Gibt die maximale Zoomstufe für Clustering zurück
+	 */
+	public getMaxZoomForClustering(): number {
+		return this.maxZoomForClustering;
+	}
+
+	/**
+	 * Aktualisiert die Clustering-Anzeige basierend auf der aktuellen Zoomstufe
+	 */
+	private updateClusteringForZoom(): void {
+		const currentZoom = this.map.getView().getZoom();
+		if (currentZoom === undefined) return;
+
+		// Ab der maxZoomForClustering wechsle zu non-clustered Layer
+		if (currentZoom >= this.maxZoomForClustering) {
+			if (this.isUsingClusteredLayer) {
+				// Sichere Layer-Ersetzung
+				const layers = this.map.getLayers();
+				for (let i = 0; i < layers.getLength(); i++) {
+					if (layers.item(i) === this.reportsLayer) {
+						layers.setAt(i, this.nonClusteredLayer);
+						break;
+					}
+				}
+				this.isUsingClusteredLayer = false;
+			}
+		} else {
+			if (!this.isUsingClusteredLayer) {
+				// Sichere Layer-Ersetzung
+				const layers = this.map.getLayers();
+				for (let i = 0; i < layers.getLength(); i++) {
+					if (layers.item(i) === this.nonClusteredLayer) {
+						layers.setAt(i, this.reportsLayer);
+						break;
+					}
+				}
+				this.isUsingClusteredLayer = true;
+			}
+			// Graduell reduzierte Cluster-Distanz je höher der Zoom
+			const zoomFactor = Math.max(
+				0,
+				(this.maxZoomForClustering - currentZoom) / this.maxZoomForClustering
+			);
+			// Dynamische Distanz basierend auf Zoom
+			const adjustedDistance = Math.round(this.clusterDistance * zoomFactor);
+			this.clusterSource.setDistance(adjustedDistance);
+		}
+	}
+
+	/**
 	 * Aktualisiert manuell die Legende
 	 */
 	public refreshLegend(): void {
@@ -838,8 +917,8 @@ export class SichtungenMap {
 	private updateAccuracyCircle(accuracyGeometry: Geometry): void {
 		// Suche nach vorhandenem Genauigkeitsfeature
 		const features = this.locationSource.getFeatures();
-		const accuracyFeature = features.find(f => f.get('type') === 'accuracy');
-		
+		const accuracyFeature = features.find((f) => f.get('type') === 'accuracy');
+
 		if (accuracyFeature) {
 			// Aktualisiere vorhandenes Feature
 			accuracyFeature.setGeometry(accuracyGeometry);
@@ -849,7 +928,7 @@ export class SichtungenMap {
 				geometry: accuracyGeometry,
 				type: 'accuracy'
 			});
-			
+
 			this.locationSource.addFeature(feature);
 		}
 	}
@@ -860,12 +939,12 @@ export class SichtungenMap {
 	public toggleGeolocation(): boolean {
 		this.isTracking = !this.isTracking;
 		this.geolocation.setTracking(this.isTracking);
-		
+
 		if (!this.isTracking) {
 			// Entferne Marker beim Stoppen
 			this.locationSource.clear();
 		}
-		
+
 		return this.isTracking;
 	}
 
@@ -895,16 +974,22 @@ export class SichtungenMap {
 
 		// Speichere die ursprüngliche getContext-Methode
 		const originalGetContext = HTMLCanvasElement.prototype.getContext;
-		
+
 		// Überschreibe getContext für alle Canvas-Elemente
-		(HTMLCanvasElement.prototype.getContext as any) = function(
-			this: HTMLCanvasElement,
-			contextType: string, 
+		(HTMLCanvasElement.prototype.getContext as unknown as (
+			contextType: string,
 			contextAttributes?: CanvasRenderingContext2DSettings | WebGLContextAttributes | ImageBitmapRenderingContextSettings
+		) => RenderingContext | null) = function (
+			this: HTMLCanvasElement,
+			contextType: string,
+			contextAttributes?:
+				| CanvasRenderingContext2DSettings
+				| WebGLContextAttributes
+				| ImageBitmapRenderingContextSettings
 		) {
 			// Für 2D-Kontext: setze willReadFrequently auf true
 			if (contextType === '2d') {
-				const attrs = contextAttributes as CanvasRenderingContext2DSettings || {};
+				const attrs = (contextAttributes as CanvasRenderingContext2DSettings) || {};
 				attrs.willReadFrequently = true;
 				return originalGetContext.call(this, contextType, attrs);
 			}
@@ -920,11 +1005,11 @@ export class SichtungenMap {
 	 */
 	private createCustomControls(): Control[] {
 		const controls: Control[] = [new ZoomAllControl(this)];
-		
+
 		if (this.options.enableLocationControl) {
 			controls.push(new LocationControl(this));
 		}
-		
+
 		return controls;
 	}
 
@@ -937,9 +1022,10 @@ export class SichtungenMap {
 		} else {
 			this.hiddenSpecies[speciesId] = true;
 		}
-		// Aktualisiere Cluster-Source damit nur sichtbare Features geclustert werden
+		// Aktualisiere beide Layer
 		this.clusterSource.refresh();
 		this.reportsLayer.changed();
+		this.nonClusteredLayer.changed();
 		this.updateLegendCounts();
 	}
 
@@ -952,9 +1038,10 @@ export class SichtungenMap {
 		} else {
 			this.hiddenColors[colorGroup] = true;
 		}
-		// Aktualisiere Cluster-Source damit nur sichtbare Features geclustert werden
+		// Aktualisiere beide Layer
 		this.clusterSource.refresh();
 		this.reportsLayer.changed();
+		this.nonClusteredLayer.changed();
 		this.updateLegendCounts();
 	}
 
