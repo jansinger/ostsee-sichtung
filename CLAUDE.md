@@ -183,6 +183,6 @@ Always check Baltic Sea geographic bounds using the `checkBalticSea` utility bef
 - Alle Imports aus /lib sollen mit $lib und dem vollen Pfad importiert werden
 - Benutze Conventional Commits für commit messages
 - commits werden mit commitlint getestet
-- Die commit message headline muss klein geschrieben sein
+- INSTRUCTION: Die commit message headline muss klein geschrieben sein!
 - Beachte die Regeln aus `commitlint.config.mjs` für commits
 - INSTRUCTION: Benutze Englisch als Sprache für commit messages!
