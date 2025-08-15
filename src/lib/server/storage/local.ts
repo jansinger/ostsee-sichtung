@@ -1,8 +1,10 @@
 /**
- * Local filesystem storage provider
+ * Local filesystem storage provider with security hardening
+ * 
+ * Implements path normalization and validation to prevent directory traversal attacks
  */
-import { writeFileSync, unlinkSync, existsSync, statSync, readdirSync } from 'fs';
-import { join, extname, basename } from 'path';
+import { writeFileSync, unlinkSync, existsSync, statSync, readdirSync, mkdirSync } from 'fs';
+import { join, extname, basename, normalize, relative, resolve } from 'path';
 import { createId } from '@paralleldrive/cuid2';
 import { createLogger } from '$lib/logger';
 import { readImageExifData } from '$lib/server/exifUtils';
@@ -10,29 +12,120 @@ import type { StorageProvider, UploadedFile, UploadOptions, FileMetadata } from 
 
 const logger = createLogger('storage:local');
 
+/**
+ * Maximum file name length to prevent filesystem issues
+ */
+const MAX_FILENAME_LENGTH = 255;
+
 export class LocalStorageProvider implements StorageProvider {
-	private baseDir: string;
 	private publicUrlBase: string;
+	private resolvedBaseDir: string;
 
 	constructor(baseDir: string = 'uploads', publicUrlBase: string = '/uploads') {
-		this.baseDir = baseDir;
 		this.publicUrlBase = publicUrlBase;
+		// Resolve base directory to absolute path for security checks
+		this.resolvedBaseDir = resolve(baseDir);
+		
+		// Ensure base directory exists
+		if (!existsSync(this.resolvedBaseDir)) {
+			mkdirSync(this.resolvedBaseDir, { recursive: true });
+			logger.info({ baseDir: this.resolvedBaseDir }, 'Created base storage directory');
+		}
+	}
+
+	/**
+	 * Sanitizes a filename to prevent security issues
+	 * 
+	 * @param filename - The original filename
+	 * @returns Sanitized filename safe for filesystem operations
+	 */
+	private sanitizeFilename(filename: string): string {
+		// Remove any path components (just get the filename)
+		let sanitized = basename(filename);
+		
+		// Remove null bytes
+		sanitized = sanitized.replace(/\0/g, '');
+		
+		// Replace unsafe characters with underscores
+		sanitized = sanitized.replace(/[^a-zA-Z0-9._-]/g, '_');
+		
+		// Remove leading dots to prevent hidden files
+		sanitized = sanitized.replace(/^\.+/, '');
+		
+		// Limit length
+		if (sanitized.length > MAX_FILENAME_LENGTH) {
+			const ext = extname(sanitized);
+			const nameWithoutExt = sanitized.slice(0, sanitized.length - ext.length);
+			sanitized = nameWithoutExt.slice(0, MAX_FILENAME_LENGTH - ext.length) + ext;
+		}
+		
+		// Fallback if completely empty
+		if (!sanitized) {
+			sanitized = 'unnamed_file';
+		}
+		
+		return sanitized;
+	}
+
+	/**
+	 * Validates and normalizes a path to ensure it's within the base directory
+	 * 
+	 * @param inputPath - The path to validate
+	 * @returns Normalized safe path relative to base directory
+	 * @throws Error if path would escape base directory
+	 */
+	private validatePath(inputPath: string): string {
+		// Normalize the path to remove .. and . components
+		const normalizedPath = normalize(inputPath);
+		
+		// Remove leading slashes to ensure it's relative
+		const relativePath = normalizedPath.replace(/^[/\\]+/, '');
+		
+		// Construct the full path
+		const fullPath = resolve(this.resolvedBaseDir, relativePath);
+		
+		// Ensure the resolved path is within the base directory
+		const relativeToBase = relative(this.resolvedBaseDir, fullPath);
+		
+		// Check if path tries to escape base directory
+		if (relativeToBase.startsWith('..')) {
+			logger.error({ 
+				inputPath, 
+				normalizedPath, 
+				fullPath,
+				relativeToBase,
+				baseDir: this.resolvedBaseDir 
+			}, 'Path traversal attempt detected');
+			throw new Error('Invalid path: Directory traversal detected');
+		}
+		
+		return relativePath;
 	}
 
 	async upload(file: File, options: UploadOptions): Promise<UploadedFile> {
 		const id = createId();
-		const extension = extname(file.name);
+		
+		// Sanitize the original filename
+		const sanitizedOriginalName = this.sanitizeFilename(file.name);
+		const extension = extname(sanitizedOriginalName);
+		
+		// Create safe filename
 		const fileName = options.preserveOriginalName 
-			? `${basename(file.name, extension)}-${id}${extension}`
+			? `${basename(sanitizedOriginalName, extension)}-${id}${extension}`
 			: `${id}${extension}`;
 		
-		const relativePath = join(options.referenceId, fileName);
-		const fullPath = join(this.baseDir, relativePath);
-		const dir = join(this.baseDir, options.referenceId);
+		// Validate and sanitize the reference ID to prevent path traversal
+		const safeReferenceId = this.validatePath(options.referenceId);
+		
+		// Build safe paths
+		const relativePath = join(safeReferenceId, fileName);
+		const fullPath = join(this.resolvedBaseDir, relativePath);
+		const dir = join(this.resolvedBaseDir, safeReferenceId);
 
 		// Ensure directory exists
 		if (!existsSync(dir)) {
-			await import('fs').then(fs => fs.mkdirSync(dir, { recursive: true }));
+			mkdirSync(dir, { recursive: true });
+			logger.debug({ dir }, 'Created upload directory');
 		}
 
 		// Convert File to Buffer
@@ -70,71 +163,102 @@ export class LocalStorageProvider implements StorageProvider {
 	}
 
 	async delete(filePath: string): Promise<void> {
-		const fullPath = join(this.baseDir, filePath);
-		
-		if (existsSync(fullPath)) {
-			unlinkSync(fullPath);
-			logger.debug({ filePath }, 'File deleted from local storage');
-		} else {
-			logger.warn({ filePath }, 'File not found for deletion');
+		try {
+			// Validate path before deletion
+			const safePath = this.validatePath(filePath);
+			const fullPath = join(this.resolvedBaseDir, safePath);
+			
+			if (existsSync(fullPath)) {
+				unlinkSync(fullPath);
+				logger.debug({ filePath: safePath }, 'File deleted from local storage');
+			} else {
+				logger.warn({ filePath: safePath }, 'File not found for deletion');
+			}
+		} catch (error) {
+			logger.error({ error, filePath }, 'Failed to delete file due to invalid path');
+			throw error;
 		}
 	}
 
 	getUrl(filePath: string): string {
-		return `${this.publicUrlBase}/${filePath}`;
+		// For URL generation, we assume the path has already been validated
+		// when it was stored, but we still normalize it for consistency
+		const normalizedPath = filePath.replace(/\\/g, '/');
+		return `${this.publicUrlBase}/${normalizedPath}`;
 	}
 
 	async getMetadata(filePath: string): Promise<FileMetadata | null> {
-		const fullPath = join(this.baseDir, filePath);
-		
-		if (!existsSync(fullPath)) {
+		try {
+			// Validate path before accessing metadata
+			const safePath = this.validatePath(filePath);
+			const fullPath = join(this.resolvedBaseDir, safePath);
+			
+			if (!existsSync(fullPath)) {
+				return null;
+			}
+
+			const stats = statSync(fullPath);
+			
+			return {
+				size: stats.size,
+				mimeType: this.getMimeTypeFromExtension(extname(safePath)),
+				lastModified: stats.mtime
+			};
+		} catch (error) {
+			logger.error({ error, filePath }, 'Failed to get metadata due to invalid path');
 			return null;
 		}
-
-		const stats = statSync(fullPath);
-		
-		return {
-			size: stats.size,
-			mimeType: this.getMimeTypeFromExtension(extname(filePath)),
-			lastModified: stats.mtime
-		};
 	}
 
 	async list(prefix?: string): Promise<UploadedFile[]> {
-		const searchDir = prefix ? join(this.baseDir, prefix) : this.baseDir;
-		
-		if (!existsSync(searchDir)) {
+		try {
+			// Validate prefix if provided
+			const safePrefix = prefix ? this.validatePath(prefix) : '';
+			const searchDir = safePrefix ? join(this.resolvedBaseDir, safePrefix) : this.resolvedBaseDir;
+			
+			if (!existsSync(searchDir)) {
+				return [];
+			}
+
+			const files: UploadedFile[] = [];
+			const entries = readdirSync(searchDir, { withFileTypes: true });
+
+			for (const entry of entries) {
+				if (entry.isFile()) {
+					const fullPath = join(searchDir, entry.name);
+					const relativePath = safePrefix ? join(safePrefix, entry.name) : entry.name;
+					const stats = statSync(fullPath);
+
+					files.push({
+						id: entry.name.split('.')[0] || 'unknown',
+						originalName: entry.name,
+						fileName: entry.name,
+						filePath: relativePath,
+						size: stats.size,
+						mimeType: this.getMimeTypeFromExtension(extname(entry.name)),
+						url: this.getUrl(relativePath),
+						uploadedAt: stats.birthtime.toISOString()
+					});
+				}
+			}
+
+			return files;
+		} catch (error) {
+			logger.error({ error, prefix }, 'Failed to list files due to invalid path');
 			return [];
 		}
-
-		const files: UploadedFile[] = [];
-		const entries = readdirSync(searchDir, { withFileTypes: true });
-
-		for (const entry of entries) {
-			if (entry.isFile()) {
-				const fullPath = join(searchDir, entry.name);
-				const relativePath = prefix ? join(prefix, entry.name) : entry.name;
-				const stats = statSync(fullPath);
-
-				files.push({
-					id: entry.name.split('.')[0] || 'unknown',
-					originalName: entry.name,
-					fileName: entry.name,
-					filePath: relativePath,
-					size: stats.size,
-					mimeType: this.getMimeTypeFromExtension(extname(entry.name)),
-					url: this.getUrl(relativePath),
-					uploadedAt: stats.birthtime.toISOString()
-				});
-			}
-		}
-
-		return files;
 	}
 
 	async exists(filePath: string): Promise<boolean> {
-		const fullPath = join(this.baseDir, filePath);
-		return existsSync(fullPath);
+		try {
+			// Validate path before checking existence
+			const safePath = this.validatePath(filePath);
+			const fullPath = join(this.resolvedBaseDir, safePath);
+			return existsSync(fullPath);
+		} catch (error) {
+			logger.error({ error, filePath }, 'Failed to check file existence due to invalid path');
+			return false;
+		}
 	}
 
 	private getMimeTypeFromExtension(ext: string): string {
