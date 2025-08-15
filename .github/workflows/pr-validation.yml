@@ -56,14 +56,14 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit -- --run
         
-      - name: Run E2E tests
-        run: npm run test:e2e
-        
       - name: Run Svelte check
         run: npm run check
         
       - name: Build application
         run: npm run build
+        
+      - name: Run E2E tests
+        run: npm run test:e2e
         
       - name: Check for conventional commit format
         id: check-commits

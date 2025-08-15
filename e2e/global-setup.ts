@@ -10,9 +10,13 @@ async function globalSetup() {
 		copyFileSync('.env.example', '.env');
 	}
 
-	// SvelteKit sync to prepare types and generate files
-	console.log('🔄 Running SvelteKit sync...');
-	execSync('npx svelte-kit sync', { stdio: 'inherit' });
+	// Only run svelte-kit sync if not in CI (where we've already built)
+	if (!process.env.CI) {
+		console.log('🔄 Running SvelteKit sync...');
+		execSync('npx svelte-kit sync', { stdio: 'inherit' });
+	} else {
+		console.log('🏗️ CI environment detected - skipping sync (build already completed)');
+	}
 
 	console.log('✅ Test environment ready');
 }
