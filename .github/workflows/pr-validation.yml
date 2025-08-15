@@ -38,6 +38,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+        
       - name: Validate commit messages
         run: |
           echo "Validating commit messages from origin/main to HEAD..."
@@ -49,8 +52,11 @@ jobs:
       - name: Run type checking
         run: npm run type-check
         
-      - name: Run tests
-        run: npm run test
+      - name: Run unit tests
+        run: npm run test:unit -- --run
+        
+      - name: Run E2E tests
+        run: npm run test:e2e
         
       - name: Run Svelte check
         run: npm run check
