@@ -25,7 +25,8 @@ export default {
 				'style', // Styling/CSS
 				'perf', // Performance
 				'security', // Security
-				'a11y' // Accessibility
+				'a11y', // Accessibility
+				'release' // Release commits (semantic-release)
 			]
 		],
 		// Erlaube auch leere Scopes
@@ -34,10 +35,12 @@ export default {
 		'subject-case': [2, 'always', ['start-case', 'sentence-case', 'lower-case']],
 		// Max line length für subject
 		'subject-max-length': [2, 'always', 72],
-		// Body max line length
-		'body-max-line-length': [2, 'always', 100],
-		// Footer max line length
-		'footer-max-line-length': [2, 'always', 100]
+		// Body max line length - relaxed for release notes
+		'body-max-line-length': [1, 'always', 200], // Warning statt Error, längere Zeilen für Release Notes
+		// Footer max line length - relaxed for release notes
+		'footer-max-line-length': [1, 'always', 200], // Warning statt Error
+		// Footer leading blank line - relaxed
+		'footer-leading-blank': [1, 'always'] // Warning statt Error
 	},
 	prompt: {
 		questions: {
