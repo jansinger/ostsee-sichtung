@@ -185,3 +185,4 @@ Always check Baltic Sea geographic bounds using the `checkBalticSea` utility bef
 - commits werden mit commitlint getestet
 - Die commit message headline muss klein geschrieben sein
 - Beachte die Regeln aus `commitlint.config.mjs` für commits
+- INSTRUCTION: Benutze Englisch als Sprache für commit messages!
