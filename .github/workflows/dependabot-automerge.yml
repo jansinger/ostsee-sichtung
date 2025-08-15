@@ -27,9 +27,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
+
+      - name: Ensure Svelte Kit is in sync
+        run: npx svelte-kit sync
 
       - name: Run tests
         run: |
@@ -37,7 +40,7 @@ jobs:
           npm run lint
           npm run type-check
           npm run test:unit -- --run
-          
+
       - name: Run E2E tests
         run: npm run test:e2e
 

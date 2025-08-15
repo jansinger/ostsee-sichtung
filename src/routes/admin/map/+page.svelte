@@ -6,18 +6,8 @@
 	<title>Sichtungskarte - Admin - Deutsches Meeresmuseum</title>
 </svelte:head>
 
-<!-- Header für Admin-Karte -->
-<div class="bg-base-100 border-b p-4">
-	<div class="container mx-auto">
-		<h1 class="text-2xl font-bold">Sichtungskarte</h1>
-		<p class="text-base-content/70 text-sm">
-			Interaktive Kartenansicht aller Sichtungen mit Filtermöglichkeiten
-		</p>
-	</div>
-</div>
-
-<div style="height: calc(100vh - 120px);">
-	<SightingsMapView 
+<div style="height: calc(100vh - 65px);">
+	<SightingsMapView
 		mapContainerId="admin-map"
 		showTitle={false}
 		showLogo={true}
