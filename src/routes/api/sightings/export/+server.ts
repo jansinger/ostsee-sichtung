@@ -1,10 +1,14 @@
-import { json } from '@sveltejs/kit';
+import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
+import { json } from '@sveltejs/kit';
 import { and, between, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url, locals }) => {
+	// Authorization check
+	requireUserRole(url, locals.user, ['admin']);
+
 	// Filter-Parameter aus der URL extrahieren
 	const fromDate = url.searchParams.get('fromDate') || '';
 	const toDate = url.searchParams.get('toDate') || '';

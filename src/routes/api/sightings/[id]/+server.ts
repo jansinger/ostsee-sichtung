@@ -1,6 +1,7 @@
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger';
 import type { SightingFormData } from '$lib/report/types';
+import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import {
@@ -16,7 +17,11 @@ import type { RequestHandler } from './$types';
 // Logger für diesen API-Endpunkt erstellen
 const logger = createLogger('api:sightings');
 
-export const GET: RequestHandler = async ({ params }) => {
+export const GET: RequestHandler = async ({ params, locals, url }) => {
+	// Authorization check
+	requireUserRole(url, locals.user, ['admin']);
+
+	// Extrahiere die Sichtungs-ID aus den URL-Parametern
 	const { id } = params;
 
 	if (!id || isNaN(Number(id))) {
@@ -48,7 +53,10 @@ export const GET: RequestHandler = async ({ params }) => {
 	}
 };
 
-export const PUT: RequestHandler = async ({ params, request }) => {
+export const PUT: RequestHandler = async ({ params, request, locals, url }) => {
+	// Authorization check
+	requireUserRole(url, locals.user, ['admin']);
+
 	const { id } = params;
 
 	if (!id || isNaN(Number(id))) {

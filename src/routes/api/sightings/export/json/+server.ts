@@ -1,10 +1,14 @@
-import { text } from '@sveltejs/kit';
+import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
+import { text } from '@sveltejs/kit';
 import { and, between, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url, locals }) => {
+	// Authorization check
+	requireUserRole(url, locals.user, ['admin']);
+
 	// Filter-Parameter aus der URL extrahieren
 	const fromDate = url.searchParams.get('dateFrom') || '';
 	const toDate = url.searchParams.get('dateTo') || '';
@@ -73,7 +77,6 @@ export const GET: RequestHandler = async ({ url }) => {
 				'Content-Disposition': 'attachment; filename="sichtungen-export.json"'
 			}
 		});
-
 	} catch (error) {
 		console.error('Fehler beim JSON-Export:', error);
 

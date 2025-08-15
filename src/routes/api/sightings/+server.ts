@@ -3,6 +3,7 @@ import { createLogger } from '$lib/logger';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { saveSighting } from '$lib/server/db/sightingRepository';
+import type { SightingFormData } from '$lib/types';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { and, gte, lt, sql } from 'drizzle-orm';
 import { ValidationError } from 'yup';
@@ -73,7 +74,7 @@ export async function GET(event: RequestEvent) {
 export const POST: RequestHandler = async ({ request }) => {
 	try {
 		// Daten aus dem Request-Body extrahieren
-		const formData = await request.json();
+		const formData = (await request.json()) as SightingFormData;
 
 		logger.debug({ formData }, 'Sichtung speichern');
 
