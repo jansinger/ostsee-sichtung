@@ -19,12 +19,12 @@
 				const script = document.createElement('script');
 				script.src = 'https://cdn.jsdelivr.net/npm/@scalar/api-reference@latest/dist/browser/standalone.min.js';
 				script.onload = () => {
-					// @ts-ignore - Scalar global
+					// @ts-expect-error - Scalar global will be available after script load
 					if (typeof window.ApiReference !== 'undefined') {
 						try {
 							const container = document.getElementById('scalar-api-reference');
 							if (container) {
-								// @ts-ignore - Scalar global
+								// @ts-expect-error - Scalar global will be available after script load
 								window.ApiReference(container, {
 									spec: { url: '/openapi.yml' },
 									theme: 'default'
