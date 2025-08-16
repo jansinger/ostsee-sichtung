@@ -17,7 +17,12 @@
 	});
 </script>
 
-<div class="mx-auto max-w-4xl p-8">
+<svelte:head>
+	<title>API-Dokumentation - Ostsee-Tiere</title>
+	<meta name="description" content="Dokumentation der Sichtungen-API für Entwickler" />
+</svelte:head>
+
+<div class="mx-auto max-w-4xl">
 	<h1 class="mb-6 text-2xl font-bold">Sichtungen API</h1>
 
 	<div class="mb-6">
