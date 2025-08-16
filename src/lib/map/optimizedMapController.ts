@@ -850,9 +850,11 @@ export class SichtungenMap {
 			// Convert ta to number for getFeatureColorGroup
 			const colorGroupProperties = {
 				...properties,
-				ta: typeof properties.ta === 'string' ? parseInt(properties.ta) : (properties.ta || 0)
+				ta: typeof properties.ta === 'string' ? parseInt(properties.ta) : (properties.ta || 0),
+				tf: properties.tf || false, // Provide default value for required tf property
+				ts: properties.ts || 0 // Provide default value for required ts property
 			};
-			const colorGroup = getFeatureColorGroup(colorGroupProperties as { ta: number; ct: number; jt?: number; ts?: number; tf?: boolean; shipname?: string; waterway?: string; name?: string; firstname?: string });
+			const colorGroup = getFeatureColorGroup(colorGroupProperties);
 			const timestamp = (properties.ts || 0) * 1000;
 			
 			// Prüfe Sichtbarkeit basierend auf aktuellen Filtern
