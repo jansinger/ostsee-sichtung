@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { SimpleMapController } from '$lib/map/simpleMapController';
 	import type { MapTranslations } from '$lib/map/mapUtils';
+	import { SimpleMapController } from '$lib/map/simpleMapController';
 	import { speciesLabels } from '$lib/report/formOptions/species';
 	import 'ol/ol.css';
-	import { onMount, onDestroy } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 
 	// Props
-	let { 
+	let {
 		mapContainerId = 'simple-map',
 		showTitle = true,
 		title = 'Sichtungskarte',
@@ -48,9 +48,7 @@
 	let error = $state<string | null>(null);
 
 	// Available years (last 10 years)
-	const availableYears = Array.from({ length: 10 }, (_, i) => 
-		new Date().getFullYear() - i
-	);
+	const availableYears = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
 
 	onMount(async () => {
 		try {
@@ -107,7 +105,9 @@
 <div class={containerClass}>
 	<!-- Title -->
 	{#if showTitle}
-		<div class="absolute top-4 left-4 z-30 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md">
+		<div
+			class="absolute top-4 left-4 z-30 rounded-lg bg-white/90 px-3 py-2 shadow-md backdrop-blur-sm"
+		>
 			<h1 class="text-lg font-bold text-gray-800">{title}</h1>
 		</div>
 	{/if}
@@ -115,18 +115,18 @@
 	<!-- Controls -->
 	<div class="absolute top-4 right-4 z-30 flex flex-col gap-2">
 		{#if showYearSelector}
-			<div class="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md">
-				<label for="year-select" class="block text-sm font-medium text-gray-700 mb-1">
+			<div class="rounded-lg bg-white/90 px-3 py-2 shadow-md backdrop-blur-sm">
+				<label for="year-select" class="mb-1 block text-sm font-medium text-gray-700">
 					Jahr:
 				</label>
-				<select 
+				<select
 					id="year-select"
 					bind:value={selectedYear}
 					onchange={handleYearChange}
 					class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
 					disabled={isLoading}
 				>
-					{#each availableYears as year}
+					{#each availableYears as year (year)}
 						<option value={year}>{year}</option>
 					{/each}
 				</select>
@@ -136,7 +136,7 @@
 		<!-- Fit to data button -->
 		<button
 			onclick={fitToData}
-			class="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md hover:bg-white/95 transition-colors"
+			class="rounded-lg bg-white/90 px-3 py-2 shadow-md backdrop-blur-sm transition-colors hover:bg-white/95"
 			title="Alle Sichtungen anzeigen"
 		>
 			<span class="text-sm font-medium text-gray-700">🔍 Alle anzeigen</span>
@@ -145,9 +145,13 @@
 
 	<!-- Loading indicator -->
 	{#if isLoading}
-		<div class="absolute top-20 right-4 z-30 bg-blue-500/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md">
+		<div
+			class="absolute top-20 right-4 z-30 rounded-lg bg-blue-500/90 px-3 py-2 shadow-md backdrop-blur-sm"
+		>
 			<div class="flex items-center gap-2">
-				<div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+				<div
+					class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+				></div>
 				<span class="text-sm font-medium text-white">Lade Daten...</span>
 			</div>
 		</div>
@@ -155,32 +159,36 @@
 
 	<!-- Error message -->
 	{#if error}
-		<div class="absolute top-20 right-4 z-30 bg-red-500/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md">
+		<div
+			class="absolute top-20 right-4 z-30 rounded-lg bg-red-500/90 px-3 py-2 shadow-md backdrop-blur-sm"
+		>
 			<span class="text-sm font-medium text-white">{error}</span>
 		</div>
 	{/if}
 
 	<!-- Map container -->
-	<div id={mapContainerId} class="w-full h-full"></div>
+	<div id={mapContainerId} class="h-full w-full"></div>
 
 	<!-- Legend -->
-	<div class="absolute bottom-4 left-4 z-30 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md">
-		<h3 class="text-sm font-bold text-gray-800 mb-2">Legende</h3>
+	<div
+		class="absolute bottom-4 left-4 z-30 rounded-lg bg-white/90 px-3 py-2 shadow-md backdrop-blur-sm"
+	>
+		<h3 class="mb-2 text-sm font-bold text-gray-800">Legende</h3>
 		<div class="space-y-1">
 			<div class="flex items-center gap-2">
-				<div class="w-3 h-3 rounded-full bg-blue-500"></div>
+				<div class="h-3 w-3 rounded-full bg-blue-500"></div>
 				<span class="text-xs text-gray-700">Schweinswal</span>
 			</div>
 			<div class="flex items-center gap-2">
-				<div class="w-3 h-3 rounded-full bg-red-500"></div>
+				<div class="h-3 w-3 rounded-full bg-red-500"></div>
 				<span class="text-xs text-gray-700">Kegelrobbe</span>
 			</div>
 			<div class="flex items-center gap-2">
-				<div class="w-3 h-3 rounded-full bg-green-500"></div>
+				<div class="h-3 w-3 rounded-full bg-green-500"></div>
 				<span class="text-xs text-gray-700">Seehund</span>
 			</div>
 			<div class="flex items-center gap-2">
-				<div class="w-3 h-3 rounded-full bg-red-600"></div>
+				<div class="h-3 w-3 rounded-full bg-red-600"></div>
 				<span class="text-xs text-gray-700">Totfund</span>
 			</div>
 		</div>
@@ -190,7 +198,10 @@
 <style>
 	/* OpenLayers popup styling */
 	:global(.ol-popup) {
-		font-family: system-ui, -apple-system, sans-serif;
+		font-family:
+			system-ui,
+			-apple-system,
+			sans-serif;
 	}
 
 	:global(.ol-popup-content) {
