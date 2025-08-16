@@ -1,5 +1,5 @@
 import { createLogger } from './../logger';
-import type { SichtungenMap } from './mapController';
+import type { SichtungenMap } from './optimizedMapController';
 import type { MapTranslations } from './mapUtils';
 import { getFeatureColorGroup } from './styleUtils';
 

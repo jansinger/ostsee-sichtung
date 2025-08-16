@@ -1,4 +1,4 @@
-import { Feature, Geolocation, Map, View } from 'ol';
+import { Feature, Geolocation, Map, View, Overlay } from 'ol';
 import type { Control } from 'ol/control';
 import { defaults as defaultControls } from 'ol/control';
 import * as olExtent from 'ol/extent';
@@ -56,16 +56,17 @@ export class SichtungenMap {
 	private reportsSource: VectorSource<Feature<Geometry>>;
 	private clusterSource: Cluster;
 	private reportsLayer: VectorLayer<Cluster>;
-	private nonClusteredLayer: VectorLayer<VectorSource<Feature<Geometry>>>;
 	private translations: MapTranslations;
 	private timeFilter: { lower: number; upper: number };
 	private hiddenSpecies: Record<string, boolean> = {};
 	private hiddenColors: Record<string, boolean> = {};
 	private displayedYear: number;
 	private legendUpdateCallback?: () => void;
-	private clusterDistance: number = 50; // Pixel-Distanz für Clustering
-	private maxZoomForClustering: number = 14; // Ab dieser Zoomstufe kein Clustering mehr
-	private isUsingClusteredLayer: boolean = true; // Track welcher Layer aktiv ist
+	private clusterDistance: number = 40; // Reduzierte Pixel-Distanz für bessere Performance
+	
+	// Popup-related properties
+	private popup: Overlay;
+	private popupElement: HTMLDivElement;
 
 	// Geolocation-related properties
 	private geolocation!: Geolocation;

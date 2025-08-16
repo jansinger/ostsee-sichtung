@@ -2,7 +2,7 @@
 	import FilterPanel from './Panel/FilterPanel.svelte';
 	import LegendPanel from './Panel/LegendPanel.svelte';
 	import { MapCountManager, type CountData } from '$lib/map/countManager';
-	import { SichtungenMap } from '$lib/map/mapController';
+	import { SichtungenMap } from '$lib/map/optimizedMapController';
 	import type { MapTranslations } from '$lib/map/mapUtils';
 	import { MapPanelManager } from '$lib/map/panelManager';
 	import { MapTimeSliderManager } from '$lib/map/timeSliderManager';
