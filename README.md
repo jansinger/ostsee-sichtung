@@ -1,4 +1,6 @@
-# Ostsee-Tiere 🌊
+![Ostsee-Tiere](https://ostsee-tiere.de/ostsee-tiere-192.png)
+
+# Ostsee-Tiere 
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/jansinger/ostsee-sichtung/release.yml?style=flat-square&logo=github&label=Build)
 ![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=flat-square&logo=vercel)
@@ -10,8 +12,6 @@
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/jansinger/ostsee-sichtung?style=flat-square&logo=npm)
 
 **Ostsee-Tiere** ist eine moderne SvelteKit-WebApp zur Erfassung und Verwaltung von Meerestier-Sichtungen in der Ostsee. Die Anwendung ermöglicht es Bürgern, Forschern und Naturbeobachtern, ihre Sichtungen von Walen, Robben und anderen Meerestieren zu melden und der Wissenschaft zur Verfügung zu stellen.
-
-![Ostsee-Tiere](https://ostsee-tiere.de/ostsee-tiere-192.png)
 
 ## 🐋 Projektübersicht
 
