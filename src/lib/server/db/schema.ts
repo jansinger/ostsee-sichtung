@@ -23,22 +23,6 @@ export const sichtungenSeq = pgSequence('sichtungen_seq', {
 	cache: '1',
 	cycle: false
 });
-export const testSichtungenSeq = pgSequence('test_sichtungen_seq', {
-	startWith: '2499',
-	increment: '1',
-	minValue: '1',
-	maxValue: '9223372036854775807',
-	cache: '1',
-	cycle: false
-});
-export const testSichtungenSeqOld = pgSequence('test_sichtungen_seq_old', {
-	startWith: '1843',
-	increment: '1',
-	minValue: '1',
-	maxValue: '9223372036854775807',
-	cache: '1',
-	cycle: false
-});
 
 export const ne10MOcean = pgTable(
 	'ne_10m_ocean',
@@ -130,22 +114,26 @@ export const sightings = pgTable(
 );
 
 // Table for storing file references linked to sightings
-export const sightingFiles = pgTable('sichtungen_dateien', {
-	id: serial().primaryKey().notNull(),
-	sightingId: bigint('sichtung_id', { mode: 'number' })
-		.references(() => sightings.id, { onDelete: 'cascade' })
-		.notNull(),
-	referenceId: varchar('referenz_id', { length: 64 }).notNull(),
-	originalName: varchar('original_name', { length: 255 }).notNull(),
-	fileName: varchar('datei_name', { length: 255 }).notNull(),
-	filePath: varchar('datei_pfad', { length: 500 }).notNull(),
-	mimeType: varchar('mime_typ', { length: 100 }).notNull(),
-	size: bigint({ mode: 'number' }).notNull(),
-	url: varchar('url', { length: 1000 }),
-	uploadedAt: timestamp('hochgeladen_am', { mode: 'string' }).notNull(),
-	exifData: jsonb('exif_daten'),
-	createdAt: timestamp('erstellt_am', { mode: 'string' }).defaultNow().notNull(),
-}, (table) => [
-	index('idx_sichtungen_dateien_sichtung_id').on(table.sightingId),
-	index('idx_sichtungen_dateien_referenz_id').on(table.referenceId)
-]);
+export const sightingFiles = pgTable(
+	'sichtungen_dateien',
+	{
+		id: serial().primaryKey().notNull(),
+		sightingId: bigint('sichtung_id', { mode: 'number' })
+			.references(() => sightings.id, { onDelete: 'cascade' })
+			.notNull(),
+		referenceId: varchar('referenz_id', { length: 64 }).notNull(),
+		originalName: varchar('original_name', { length: 255 }).notNull(),
+		fileName: varchar('datei_name', { length: 255 }).notNull(),
+		filePath: varchar('datei_pfad', { length: 500 }).notNull(),
+		mimeType: varchar('mime_typ', { length: 100 }).notNull(),
+		size: bigint({ mode: 'number' }).notNull(),
+		url: varchar('url', { length: 1000 }),
+		uploadedAt: timestamp('hochgeladen_am', { mode: 'string' }).notNull(),
+		exifData: jsonb('exif_daten'),
+		createdAt: timestamp('erstellt_am', { mode: 'string' }).defaultNow().notNull()
+	},
+	(table) => [
+		index('idx_sichtungen_dateien_sichtung_id').on(table.sightingId),
+		index('idx_sichtungen_dateien_referenz_id').on(table.referenceId)
+	]
+);
