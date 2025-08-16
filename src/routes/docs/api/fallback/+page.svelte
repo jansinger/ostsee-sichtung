@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	
-	let openApiSpec = $state<any>(null);
+	let openApiSpec = $state<string | null>(null);
 	let isLoading = $state(true);
 	let error = $state<string | null>(null);
 	

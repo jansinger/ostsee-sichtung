@@ -92,7 +92,7 @@ export class SimpleMapController {
 		});
 	}
 
-	private handleMapClick(event: any): void {
+	private handleMapClick(event: { pixel: number[]; coordinate: number[] }): void {
 		const features = this.map.getFeaturesAtPixel(event.pixel);
 		
 		if (features && features.length > 0) {

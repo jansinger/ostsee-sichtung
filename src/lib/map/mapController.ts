@@ -65,8 +65,13 @@ export class SichtungenMap {
 	private clusterDistance: number = 40; // Reduzierte Pixel-Distanz für bessere Performance
 	
 	// Popup-related properties
-	private popup: Overlay;
-	private popupElement: HTMLDivElement;
+	private popup!: Overlay;
+	private popupElement!: HTMLDivElement;
+	
+	// Clustering properties
+	private nonClusteredLayer!: VectorLayer<VectorSource<Feature<Geometry>>>;
+	private maxZoomForClustering: number = 12;
+	private isUsingClusteredLayer: boolean = true;
 
 	// Geolocation-related properties
 	private geolocation!: Geolocation;
