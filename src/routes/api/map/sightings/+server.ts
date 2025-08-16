@@ -12,7 +12,9 @@ export const GET: RequestHandler = async ({ url }) => {
 
 	try {
 		// Erstellen der Abfrage-Bedingungen
-		const conditions = [eq(sightingsTable.verified, 1)]; // Nur öffentliche Sichtungen
+		const conditions = [
+			eq(sightingsTable.verified, 1) // Nur verifizierte Sichtungen
+		];
 
 		// Jahr-Filter hinzufügen, wenn vorhanden
 		if (year) {
@@ -23,20 +25,43 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Suchfilter hinzufügen, wenn vorhanden
 		if (search) {
-			// Suche in mehreren Feldern
+			// Suche nur in nicht-personenbezogenen Feldern oder mit Consent
 			conditions.push(
 				sql`(
-          ${sightingsTable.email} LIKE ${`%${search}%`} OR
-          ${sightingsTable.firstName} LIKE ${`%${search}%`} OR
-          ${sightingsTable.lastName} LIKE ${`%${search}%`} OR
-          ${sightingsTable.shipName} LIKE ${`%${search}%`}
+          ${sightingsTable.waterway} LIKE ${`%${search}%`} OR
+          ${sightingsTable.seaMark} LIKE ${`%${search}%`} OR
+          (${sightingsTable.nameConsent} = 1 AND (
+            ${sightingsTable.firstName} LIKE ${`%${search}%`} OR
+            ${sightingsTable.lastName} LIKE ${`%${search}%`}
+          )) OR
+          (${sightingsTable.shipNameConsent} = 1 AND 
+            ${sightingsTable.shipName} LIKE ${`%${search}%`}
+          )
         )`
 			);
 		}
 
-		// Sichtungen aus der Datenbank abrufen
+		// Sichtungen aus der Datenbank abrufen - nur benötigte Felder
 		const sightingsFromDB = await db
-			.select()
+			.select({
+				id: sightingsTable.id,
+				sightingDate: sightingsTable.sightingDate,
+				longitude: sightingsTable.longitude,
+				latitude: sightingsTable.latitude,
+				species: sightingsTable.species,
+				totalCount: sightingsTable.totalCount,
+				juvenileCount: sightingsTable.juvenileCount,
+				isDead: sightingsTable.isDead,
+				// Personenbezogene Daten mit Consent-Flags
+				firstName: sightingsTable.firstName,
+				lastName: sightingsTable.lastName,
+				nameConsent: sightingsTable.nameConsent,
+				shipName: sightingsTable.shipName,
+				shipNameConsent: sightingsTable.shipNameConsent,
+				// Nicht-personenbezogene Daten
+				waterway: sightingsTable.waterway,
+				seaMark: sightingsTable.seaMark
+			})
 			.from(sightingsTable)
 			.where(conditions.length > 0 ? and(...conditions) : undefined)
 			.orderBy(sightingsTable.sightingDate);

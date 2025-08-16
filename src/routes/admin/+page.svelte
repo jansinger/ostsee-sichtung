@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { deserialize } from '$app/forms';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BooleanStatus from '$lib/components/admin/BooleanStatus.svelte';
 	import ExportModal from '$lib/components/admin/ExportModal.svelte';
@@ -13,7 +12,6 @@
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import type { FrontendSighting, PageData } from '$lib/types';
 	import { formatDate } from '$lib/utils/format/formatDate';
-	import type { ActionResult } from '@sveltejs/kit';
 	import { CloseOutline, EyeOutline, FilterOutline, TrashBinOutline, DownloadOutline } from 'flowbite-svelte-icons';
 
 	const logger = createLogger('SichtungenPage');
@@ -142,53 +140,67 @@
 	}
 
 	async function deleteSighting(id: number): Promise<void> {
-		const form = new FormData();
-		form.append('id', id.toString());
+		try {
+			const response = await fetch(`/api/sightings/${id}`, {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
 
-		const response = await fetch('?/delete', {
-			method: 'POST',
-			body: form
-		});
-
-		if (response.ok) {
-			window.location.reload();
+			if (response.ok) {
+				const result = await response.json();
+				logger.info({ id, result }, 'Sichtung erfolgreich gelöscht');
+				// Reload data via SvelteKit's invalidation instead of full page reload
+				await invalidateAll();
+			} else {
+				const error = await response.json();
+				logger.error({ id, error }, 'Fehler beim Löschen der Sichtung');
+				console.error('Fehler beim Löschen:', error);
+			}
+		} catch (error) {
+			logger.error({ id, error }, 'Netzwerkfehler beim Löschen');
+			console.error('Netzwerkfehler beim Löschen:', error);
 		}
 	}
 
 	async function toggleVerifiedStatus(id: number, currentState: boolean): Promise<void> {
-		const form = new FormData();
-		form.append('id', id.toString());
-		form.append('currentState', currentState ? '1' : '0');
+		const newState = currentState ? 0 : 1; // Toggle the state
 
 		logger.debug(
 			{
 				id,
-				currentState
+				currentState,
+				newState
 			},
-			`Toggled verified status for sighting with ID: ${id}`
+			`Toggling verified status for sighting with ID: ${id}`
 		);
 
 		try {
-			const response = await fetch('?/toggleVerified', {
-				method: 'POST',
-				body: form
+			const response = await fetch(`/api/sightings/${id}/verify`, {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ verified: newState })
 			});
 
 			if (response.ok) {
-				const result: ActionResult = deserialize(await response.text());
-
-				// Lokalen State aktualisieren statt Page Reload
-				if (result.type === 'success') {
-					// Finde den Sighting-Eintrag und update den verified Status
-					const sightingIndex = sightings.findIndex((s) => s.id === id);
-					if (sightingIndex >= 0 && result.data && sightings[sightingIndex]) {
-						sightings[sightingIndex].verified = result.data.newState;
-					}
+				const result = await response.json();
+				logger.info({ id, result }, 'Verifizierungsstatus erfolgreich geändert');
+				
+				// Lokalen State aktualisieren
+				const sightingIndex = sightings.findIndex((s) => s.id === id);
+				if (sightingIndex >= 0 && sightings[sightingIndex]) {
+					sightings[sightingIndex].verified = newState;
 				}
 			} else {
-				console.error('Fehler beim Ändern des Verifizierungsstatus');
+				const error = await response.json();
+				logger.error({ id, error }, 'Fehler beim Ändern des Verifizierungsstatus');
+				console.error('Fehler beim Ändern des Verifizierungsstatus:', error);
 			}
 		} catch (error) {
+			logger.error({ id, error }, 'Netzwerkfehler beim Ändern des Verifizierungsstatus');
 			console.error('Netzwerkfehler beim Ändern des Verifizierungsstatus:', error);
 		}
 	}

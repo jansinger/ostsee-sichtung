@@ -121,3 +121,39 @@ export const PUT: RequestHandler = async ({ params, request, locals, url }) => {
 		throw error(500, 'Interner Serverfehler');
 	}
 };
+
+export const DELETE: RequestHandler = async ({ params, locals, url }) => {
+	// Authorization check - only admins can delete
+	requireUserRole(url, locals.user, ['admin']);
+
+	const { id } = params;
+
+	if (!id || isNaN(Number(id))) {
+		logger.warn({ id }, 'Ungültige Sichtungs-ID für Löschung');
+		throw error(400, 'Ungültige Sichtungs-ID');
+	}
+
+	try {
+		// Prüfen ob die Sichtung existiert
+		const existingSighting = await db
+			.select({ id: sightings.id })
+			.from(sightings)
+			.where(eq(sightings.id, Number(id)))
+			.limit(1);
+
+		if (existingSighting.length === 0) {
+			logger.warn({ id }, 'Sichtung zum Löschen nicht gefunden');
+			throw error(404, 'Sichtung nicht gefunden');
+		}
+
+		// Sichtung löschen (cascade delete für zugehörige Dateien)
+		await db.delete(sightings).where(eq(sightings.id, Number(id)));
+
+		logger.info({ id, deletedBy: locals.user?.email }, 'Sichtung erfolgreich gelöscht');
+
+		return json({ success: true, message: 'Sichtung erfolgreich gelöscht' });
+	} catch (err) {
+		logger.error({ err, id }, 'Fehler beim Löschen der Sichtung');
+		throw error(500, 'Interner Serverfehler beim Löschen der Sichtung');
+	}
+};

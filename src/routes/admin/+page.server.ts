@@ -1,9 +1,7 @@
-import { PUBLIC_SITE_URL } from '$env/static/public';
-import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
-import type { Actions, PageServerLoad } from './$types';
+import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url }) => {
 	const page = Number(url.searchParams.get('page')) || 1;
@@ -100,56 +98,4 @@ export const load: PageServerLoad = async ({ url }) => {
 			total: count
 		}
 	};
-};
-
-const defaultUrl = new URL('/admin', PUBLIC_SITE_URL);
-
-export const actions: Actions = {
-	delete: async ({ request, locals }) => {
-		requireUserRole(defaultUrl, locals.user, ['admin']);
-		const formData = await request.formData();
-		const idValue = formData.get('id');
-
-		if (idValue) {
-			const id = Number(idValue);
-			if (!isNaN(id)) {
-				await db.delete(sightings).where(eq(sightings.id, id));
-				return { type: 'success' };
-			}
-		}
-
-		return {
-			type: 'error',
-			error: 'Ungültige ID'
-		};
-	},
-
-	toggleVerified: async ({ request, locals }) => {
-		requireUserRole(defaultUrl, locals.user, ['admin']);
-		const formData = await request.formData();
-		const idValue = formData.get('id');
-		const currentStateValue = formData.get('currentState');
-
-		if (idValue && currentStateValue !== null) {
-			const id = Number(idValue);
-			const currentState = Number(currentStateValue);
-
-			if (!isNaN(id)) {
-				// Umgekehrter Wert: 0 -> 1, 1 -> 0
-				const newState = currentState === 1 ? 0 : 1;
-
-				await db.update(sightings).set({ verified: newState }).where(eq(sightings.id, id));
-
-				return {
-					type: 'success',
-					newState: newState
-				};
-			}
-		}
-
-		return {
-			type: 'error',
-			error: 'Ungültige Daten'
-		};
-	}
 };
