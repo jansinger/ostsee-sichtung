@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import type { SightingFormData } from '$lib/report/types';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
+	import { maskEmail } from '$lib/utils/privacy/emailMask';
 	import { ArrowLeft, Check } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
@@ -46,7 +47,7 @@
 						<div>
 							<h3 class="font-semibold">Bestätigung per E-Mail</h3>
 							<p class="text-base-content/70 text-sm">
-								Sie erhalten in Kürze eine Bestätigung an <strong>{submittedData?.email}</strong>
+								Sie erhalten in Kürze eine Bestätigung an <strong>{submittedData?.email ? maskEmail(submittedData.email) : '***@***.***'}</strong>
 							</p>
 						</div>
 					</div>
