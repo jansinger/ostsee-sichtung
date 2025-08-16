@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.2.0 (2025-08-16)
+
+* Merge pull request #22 from jansinger/preview ([f406fb7](https://github.com/jansinger/ostsee-sichtung/commit/f406fb7)), closes [#22](https://github.com/jansinger/ostsee-sichtung/issues/22)
+* feat: data protection adjustment ([5b23acf](https://github.com/jansinger/ostsee-sichtung/commit/5b23acf))
+* refactor: remove unused sequences ([8b8ccbc](https://github.com/jansinger/ostsee-sichtung/commit/8b8ccbc))
+
 ## 1.1.0 (2025-08-15)
 
 * Merge pull request #21 from jansinger/preview ([035446c](https://github.com/jansinger/ostsee-sichtung/commit/035446c)), closes [#21](https://github.com/jansinger/ostsee-sichtung/issues/21)
