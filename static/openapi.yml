@@ -1,0 +1,1414 @@
+openapi: 3.0.3
+info:
+  title: Ostsee-Tiere API
+  description: |
+    API für die Meldung und Verwaltung von Meerestier-Sichtungen in der Ostsee.
+    
+    Diese API ermöglicht es Bürgern, Forschern und Naturbeobachtern, ihre Sichtungen von Walen, Robben und anderen Meerestieren zu melden und zu verwalten.
+    
+    ## Authentifizierung
+    
+    Für Admin-Funktionen ist eine Authentifizierung über Auth0 erforderlich. Die Authentifizierung erfolgt über Session-Cookies.
+    
+    ## Datenformate
+    
+    - Alle Datumsangaben sind im ISO 8601 Format (YYYY-MM-DD)
+    - Koordinaten verwenden WGS84 (dezimale Grade)
+    - Alle Antworten sind im JSON-Format
+    
+  version: 1.0.0
+  contact:
+    name: Ostsee-Tiere Team
+    url: https://ostsee-tiere.de
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://localhost:4000/api
+    description: Entwicklungsserver (HTTPS)
+  - url: https://ostsee-tiere.de/api
+    description: Produktionsserver
+
+tags:
+  - name: sightings
+    description: Sichtungsmeldungen
+  - name: auth
+    description: Authentifizierung
+  - name: files
+    description: Datei-Upload und -Verwaltung
+  - name: geo
+    description: Geografische Validierung
+  - name: map
+    description: Kartendaten
+  - name: export
+    description: Datenexport
+
+paths:
+  /sightings:
+    get:
+      tags:
+        - sightings
+      summary: Sichtungen abrufen
+      description: |
+        Ruft öffentlich verfügbare Sichtungen für ein bestimmtes Jahr ab.
+        Standardmäßig werden nur genehmigte Sichtungen zurückgegeben.
+      parameters:
+        - name: year
+          in: query
+          description: Jahr der Sichtungen
+          required: false
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2030
+            default: 2024
+            example: 2024
+      responses:
+        '200':
+          description: Liste der Sichtungen
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicSighting'
+              example:
+                - id: 1840
+                  ts: 1672531200
+                  dt: "01.01.2024"
+                  ti: "14:30"
+                  lat: 54.3233
+                  lon: 13.0814
+                  ct: 3
+                  yo: 1
+                  ta: 1
+                  tf: 0
+                  na: "Max Mustermann"
+                  ar: "Greifswalder Bodden"
+                  sh: "MS Baltic"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    post:
+      tags:
+        - sightings
+      summary: Neue Sichtung melden
+      description: Erstellt eine neue Sichtungsmeldung
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SightingFormData'
+      responses:
+        '201':
+          description: Sichtung erfolgreich erstellt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SightingResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sightings/{id}:
+    get:
+      tags:
+        - sightings
+      summary: Einzelne Sichtung abrufen
+      description: Ruft Details einer bestimmten Sichtung ab (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Sichtung
+          schema:
+            type: integer
+            minimum: 1
+            example: 1840
+      responses:
+        '200':
+          description: Sichtungsdetails
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedSighting'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    put:
+      tags:
+        - sightings
+      summary: Sichtung aktualisieren
+      description: Aktualisiert eine bestehende Sichtung (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Sichtung
+          schema:
+            type: integer
+            minimum: 1
+            example: 1840
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SightingFormData'
+      responses:
+        '200':
+          description: Sichtung erfolgreich aktualisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SightingResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    delete:
+      tags:
+        - sightings
+      summary: Sichtung löschen
+      description: Löscht eine Sichtung (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Sichtung
+          schema:
+            type: integer
+            minimum: 1
+            example: 1840
+      responses:
+        '200':
+          description: Sichtung erfolgreich gelöscht
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sightings/{id}/approve:
+    post:
+      tags:
+        - sightings
+      summary: Sichtung genehmigen
+      description: Genehmigt oder widerruft die Genehmigung einer Sichtung (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Sichtung
+          schema:
+            type: integer
+            minimum: 1
+            example: 1840
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - approved
+              properties:
+                approved:
+                  type: boolean
+                  description: true für Genehmigung, false für Widerruf
+                  example: true
+      responses:
+        '200':
+          description: Genehmigungsstatus erfolgreich aktualisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sightings/{id}/verify:
+    post:
+      tags:
+        - sightings
+      summary: Sichtung verifizieren
+      description: Setzt den Verifizierungsstatus einer Sichtung (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Sichtung
+          schema:
+            type: integer
+            minimum: 1
+            example: 1840
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - verified
+              properties:
+                verified:
+                  type: integer
+                  enum: [0, 1]
+                  description: 1 für verifiziert, 0 für nicht verifiziert
+                  example: 1
+      responses:
+        '200':
+          description: Verifizierungsstatus erfolgreich aktualisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sightings/export:
+    get:
+      tags:
+        - export
+      summary: Sichtungen exportieren
+      description: Exportiert Sichtungen in verschiedenen Formaten (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - name: format
+          in: query
+          description: Exportformat
+          required: true
+          schema:
+            type: string
+            enum: [json, csv, xml, kml]
+            example: json
+        - name: dateFrom
+          in: query
+          description: Startdatum (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+        - name: dateTo
+          in: query
+          description: Enddatum (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2024-12-31"
+        - name: species
+          in: query
+          description: Tierart filtern
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+        - name: verified
+          in: query
+          description: Nur verifizierte Sichtungen
+          schema:
+            type: boolean
+            example: true
+      responses:
+        '200':
+          description: Exportdatei
+          content:
+            application/json:
+              schema:
+                type: object
+            text/csv:
+              schema:
+                type: string
+            application/xml:
+              schema:
+                type: string
+            application/vnd.google-earth.kml+xml:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sightings/export/json:
+    get:
+      tags:
+        - export
+      summary: JSON-Export
+      description: Exportiert Sichtungen im JSON-Format (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExportDateFrom'
+        - $ref: '#/components/parameters/ExportDateTo'
+        - $ref: '#/components/parameters/ExportSpecies'
+        - $ref: '#/components/parameters/ExportVerified'
+      responses:
+        '200':
+          description: JSON-Datei mit Sichtungen
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DetailedSighting'
+
+  /sightings/export/csv:
+    get:
+      tags:
+        - export
+      summary: CSV-Export
+      description: Exportiert Sichtungen im CSV-Format (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExportDateFrom'
+        - $ref: '#/components/parameters/ExportDateTo'
+        - $ref: '#/components/parameters/ExportSpecies'
+        - $ref: '#/components/parameters/ExportVerified'
+      responses:
+        '200':
+          description: CSV-Datei mit Sichtungen
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /sightings/export/xml:
+    get:
+      tags:
+        - export
+      summary: XML-Export
+      description: Exportiert Sichtungen im XML-Format (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExportDateFrom'
+        - $ref: '#/components/parameters/ExportDateTo'
+        - $ref: '#/components/parameters/ExportSpecies'
+        - $ref: '#/components/parameters/ExportVerified'
+      responses:
+        '200':
+          description: XML-Datei mit Sichtungen
+          content:
+            application/xml:
+              schema:
+                type: string
+
+  /sightings/export/kml:
+    get:
+      tags:
+        - export
+      summary: KML-Export
+      description: Exportiert Sichtungen im KML-Format für Google Earth (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ExportDateFrom'
+        - $ref: '#/components/parameters/ExportDateTo'
+        - $ref: '#/components/parameters/ExportSpecies'
+        - $ref: '#/components/parameters/ExportVerified'
+      responses:
+        '200':
+          description: KML-Datei mit Sichtungen
+          content:
+            application/vnd.google-earth.kml+xml:
+              schema:
+                type: string
+
+  /auth/login:
+    get:
+      tags:
+        - auth
+      summary: Login initieren
+      description: Startet den Auth0-Login-Flow
+      parameters:
+        - name: returnUrl
+          in: query
+          description: URL nach erfolgreichem Login
+          schema:
+            type: string
+            format: uri
+            example: "/admin"
+      responses:
+        '302':
+          description: Weiterleitung zu Auth0
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/logout:
+    get:
+      tags:
+        - auth
+      summary: Logout
+      description: Meldet den Benutzer ab und leitet zu Auth0 Logout weiter
+      responses:
+        '302':
+          description: Weiterleitung zu Auth0 Logout
+
+  /auth/callback:
+    get:
+      tags:
+        - auth
+      summary: Auth0 Callback
+      description: Verarbeitet die Antwort von Auth0 nach erfolgreichem Login
+      parameters:
+        - name: code
+          in: query
+          required: true
+          description: Authorization Code von Auth0
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          description: CSRF-Protection State
+          schema:
+            type: string
+        - name: returnUrl
+          in: query
+          description: Ursprüngliche Ziel-URL
+          schema:
+            type: string
+            format: uri
+      responses:
+        '302':
+          description: Weiterleitung nach erfolgreichem Login
+        '403':
+          description: Ungültiger State oder fehlender Code
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /files/upload:
+    post:
+      tags:
+        - files
+      summary: Datei hochladen
+      description: |
+        Lädt eine Bild- oder Videodatei hoch.
+        
+        Unterstützte Formate:
+        - Bilder: JPEG, PNG, GIF, WebP, BMP, SVG
+        - Videos: MP4, AVI, MOV, WMV, FLV, WebM, MKV, M4V
+        
+        Maximale Dateigröße: 10 MB
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Die hochzuladende Datei
+      responses:
+        '200':
+          description: Datei erfolgreich hochgeladen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileUploadResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          description: Datei zu groß
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '415':
+          description: Nicht unterstützter Medientyp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /files/delete:
+    delete:
+      tags:
+        - files
+      summary: Datei löschen
+      description: Löscht eine hochgeladene Datei
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: URL der zu löschenden Datei
+                  example: "/uploads/2024/01/image_123.jpg"
+      responses:
+        '200':
+          description: Datei erfolgreich gelöscht
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /geo/inBaltic:
+    get:
+      tags:
+        - geo
+      summary: Ostsee-Koordinaten prüfen
+      description: Überprüft, ob gegebene Koordinaten in der Ostsee liegen
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          description: Breitengrad
+          schema:
+            type: number
+            format: float
+            minimum: -90
+            maximum: 90
+            example: 54.3233
+        - name: lon
+          in: query
+          required: true
+          description: Längengrad
+          schema:
+            type: number
+            format: float
+            minimum: -180
+            maximum: 180
+            example: 13.0814
+      responses:
+        '200':
+          description: Koordinatenvalidierung erfolgreich
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - inBaltic
+                properties:
+                  inBaltic:
+                    type: boolean
+                    description: true wenn Koordinaten in der Ostsee liegen
+                    example: true
+                  message:
+                    type: string
+                    description: Zusätzliche Information
+                    example: "Koordinaten liegen in der Ostsee"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /map/sightings:
+    get:
+      tags:
+        - map
+      summary: Kartendaten für Sichtungen
+      description: |
+        Ruft Sichtungsdaten für die Kartendarstellung ab.
+        Optimiert für große Datenmengen mit räumlicher Filterung.
+      parameters:
+        - name: bbox
+          in: query
+          description: Bounding Box (minLon,minLat,maxLon,maxLat)
+          schema:
+            type: string
+            pattern: '^-?\d+\.?\d*,-?\d+\.?\d*,-?\d+\.?\d*,-?\d+\.?\d*$'
+            example: "10.0,53.0,15.0,56.0"
+        - name: zoom
+          in: query
+          description: Zoomstufe der Karte
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            example: 8
+        - name: year
+          in: query
+          description: Jahr der Sichtungen
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2030
+            example: 2024
+        - name: species
+          in: query
+          description: Tierart filtern
+          schema:
+            type: integer
+            minimum: 1
+            example: 1
+      responses:
+        '200':
+          description: Kartendaten für Sichtungen
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - features
+                  - type
+                properties:
+                  type:
+                    type: string
+                    enum: [FeatureCollection]
+                    example: "FeatureCollection"
+                  features:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SightingGeoFeature'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /csp-report:
+    post:
+      tags:
+        - security
+      summary: CSP Violation Report
+      description: Endpunkt für Content Security Policy Violation Reports
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                csp-report:
+                  type: object
+                  description: CSP Violation Report Objekt
+      responses:
+        '204':
+          description: Report erfolgreich empfangen
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  securitySchemes:
+    adminAuth:
+      type: apiKey
+      in: cookie
+      name: auth-session
+      description: Session-Cookie für Admin-Authentifizierung
+
+  parameters:
+    ExportDateFrom:
+      name: dateFrom
+      in: query
+      description: Startdatum (YYYY-MM-DD)
+      schema:
+        type: string
+        format: date
+        example: "2024-01-01"
+    
+    ExportDateTo:
+      name: dateTo
+      in: query
+      description: Enddatum (YYYY-MM-DD)
+      schema:
+        type: string
+        format: date
+        example: "2024-12-31"
+    
+    ExportSpecies:
+      name: species
+      in: query
+      description: Tierart filtern
+      schema:
+        type: integer
+        minimum: 1
+        example: 1
+    
+    ExportVerified:
+      name: verified
+      in: query
+      description: Nur verifizierte Sichtungen
+      schema:
+        type: boolean
+        example: true
+
+  schemas:
+    PublicSighting:
+      type: object
+      description: Öffentlich verfügbare Sichtungsdaten
+      required:
+        - id
+        - ts
+        - dt
+        - ti
+        - lat
+        - lon
+        - ct
+        - ta
+        - tf
+      properties:
+        id:
+          type: integer
+          description: Eindeutige ID der Sichtung
+          example: 1840
+        ts:
+          type: integer
+          format: int64
+          description: Unix Timestamp der Erstellung
+          example: 1672531200
+        dt:
+          type: string
+          description: Datum der Sichtung (DD.MM.YYYY)
+          example: "01.01.2024"
+        ti:
+          type: string
+          description: Uhrzeit der Sichtung (HH:MM)
+          example: "14:30"
+        lat:
+          type: number
+          format: float
+          description: Breitengrad
+          example: 54.3233
+        lon:
+          type: number
+          format: float
+          description: Längengrad
+          example: 13.0814
+        ct:
+          type: integer
+          description: Anzahl der Tiere
+          minimum: 0
+          example: 3
+        yo:
+          type: integer
+          nullable: true
+          description: Anzahl der Jungtiere
+          minimum: 0
+          example: 1
+        ta:
+          type: integer
+          description: Tierart (1=Schweinswal, 2=Kegelrobbe, etc.)
+          minimum: 1
+          example: 1
+        tf:
+          type: integer
+          description: Totfund (0=nein, 1=ja)
+          enum: [0, 1]
+          example: 0
+        na:
+          type: string
+          nullable: true
+          description: Name des Melders (nur wenn Einverständnis gegeben)
+          example: "Max Mustermann"
+        ar:
+          type: string
+          nullable: true
+          description: Gebiet/Gewässer
+          example: "Greifswalder Bodden"
+        sh:
+          type: string
+          nullable: true
+          description: Schiffsname (nur wenn Einverständnis gegeben)
+          example: "MS Baltic"
+
+    DetailedSighting:
+      type: object
+      description: Vollständige Sichtungsdaten (Admin-Zugriff)
+      required:
+        - id
+        - sightingDate
+        - created
+        - species
+        - totalCount
+        - latitude
+        - longitude
+      properties:
+        id:
+          type: integer
+          description: Eindeutige ID der Sichtung
+          example: 1840
+        sightingDate:
+          type: string
+          format: date-time
+          description: Datum und Uhrzeit der Sichtung
+          example: "2024-01-01T14:30:00Z"
+        created:
+          type: string
+          format: date-time
+          description: Erstellungszeitpunkt der Meldung
+          example: "2024-01-01T15:00:00Z"
+        species:
+          type: integer
+          description: Tierart
+          minimum: 1
+          example: 1
+        totalCount:
+          type: integer
+          description: Gesamtanzahl der Tiere
+          minimum: 0
+          example: 3
+        juvenileCount:
+          type: integer
+          nullable: true
+          description: Anzahl der Jungtiere
+          minimum: 0
+          example: 1
+        isDead:
+          type: integer
+          description: Totfund (0=nein, 1=ja)
+          enum: [0, 1]
+          example: 0
+        latitude:
+          type: number
+          format: float
+          description: Breitengrad
+          example: 54.3233
+        longitude:
+          type: number
+          format: float
+          description: Längengrad
+          example: 13.0814
+        distance:
+          type: integer
+          nullable: true
+          description: Entfernung in Metern
+          minimum: 0
+          example: 500
+        distribution:
+          type: integer
+          nullable: true
+          description: Verteilung der Tiere
+          example: 1
+        waterway:
+          type: string
+          nullable: true
+          description: Gewässer
+          example: "Greifswalder Bodden"
+        firstName:
+          type: string
+          nullable: true
+          description: Vorname des Melders
+          example: "Max"
+        lastName:
+          type: string
+          nullable: true
+          description: Nachname des Melders
+          example: "Mustermann"
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: E-Mail des Melders
+          example: "max@example.com"
+        phone:
+          type: string
+          nullable: true
+          description: Telefonnummer des Melders
+          example: "+49 123 456789"
+        shipName:
+          type: string
+          nullable: true
+          description: Schiffsname
+          example: "MS Baltic"
+        verified:
+          type: integer
+          description: Verifizierungsstatus (0=nicht verifiziert, 1=verifiziert)
+          enum: [0, 1]
+          example: 1
+        approvedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zeitpunkt der Genehmigung
+          example: "2024-01-02T10:00:00Z"
+        mediaUpload:
+          type: integer
+          description: Hat Medien-Upload (0=nein, 1=ja)
+          enum: [0, 1]
+          example: 1
+        entryChannel:
+          type: integer
+          nullable: true
+          description: Eingangskanal der Meldung
+          example: 1
+        nameConsent:
+          type: integer
+          description: Einverständnis zur Namensveröffentlichung
+          enum: [0, 1]
+          example: 1
+        shipNameConsent:
+          type: integer
+          description: Einverständnis zur Schiffsnamen-Veröffentlichung
+          enum: [0, 1]
+          example: 1
+        internalComment:
+          type: string
+          nullable: true
+          description: Interner Kommentar (Admin-only)
+          example: "Bestätigt durch Foto"
+        files:
+          type: array
+          description: Zugehörige Dateien
+          items:
+            $ref: '#/components/schemas/SightingFile'
+
+    SightingFormData:
+      type: object
+      description: Formulardaten für neue oder geänderte Sichtung
+      required:
+        - sightingDate
+        - species
+        - totalCount
+        - latitude
+        - longitude
+        - email
+      properties:
+        sightingDate:
+          type: string
+          format: date-time
+          description: Datum und Uhrzeit der Sichtung
+          example: "2024-01-01T14:30:00Z"
+        species:
+          type: integer
+          description: Tierart
+          minimum: 1
+          example: 1
+        totalCount:
+          type: integer
+          description: Gesamtanzahl der Tiere
+          minimum: 1
+          example: 3
+        juvenileCount:
+          type: integer
+          nullable: true
+          description: Anzahl der Jungtiere
+          minimum: 0
+          example: 1
+        isDead:
+          type: integer
+          description: Totfund (0=nein, 1=ja)
+          enum: [0, 1]
+          default: 0
+          example: 0
+        latitude:
+          type: number
+          format: float
+          description: Breitengrad
+          minimum: -90
+          maximum: 90
+          example: 54.3233
+        longitude:
+          type: number
+          format: float
+          description: Längengrad
+          minimum: -180
+          maximum: 180
+          example: 13.0814
+        distance:
+          type: integer
+          nullable: true
+          description: Entfernung in Metern
+          minimum: 0
+          example: 500
+        distribution:
+          type: integer
+          nullable: true
+          description: Verteilung der Tiere
+          example: 1
+        waterway:
+          type: string
+          nullable: true
+          description: Gewässer
+          maxLength: 255
+          example: "Greifswalder Bodden"
+        firstName:
+          type: string
+          description: Vorname des Melders
+          maxLength: 100
+          example: "Max"
+        lastName:
+          type: string
+          description: Nachname des Melders
+          maxLength: 100
+          example: "Mustermann"
+        email:
+          type: string
+          format: email
+          description: E-Mail des Melders
+          maxLength: 255
+          example: "max@example.com"
+        phone:
+          type: string
+          nullable: true
+          description: Telefonnummer des Melders
+          maxLength: 50
+          example: "+49 123 456789"
+        shipName:
+          type: string
+          nullable: true
+          description: Schiffsname
+          maxLength: 100
+          example: "MS Baltic"
+        nameConsent:
+          type: boolean
+          description: Einverständnis zur Namensveröffentlichung
+          default: false
+          example: true
+        shipNameConsent:
+          type: boolean
+          description: Einverständnis zur Schiffsnamen-Veröffentlichung
+          default: false
+          example: true
+        files:
+          type: array
+          description: URLs der hochgeladenen Dateien
+          items:
+            type: string
+            format: uri
+            example: "/uploads/2024/01/image_123.jpg"
+
+    SightingFile:
+      type: object
+      description: Datei-Metadaten zu einer Sichtung
+      properties:
+        id:
+          type: integer
+          description: Datei-ID
+          example: 1
+        sightingId:
+          type: integer
+          description: Zugehörige Sichtungs-ID
+          example: 1840
+        filename:
+          type: string
+          description: Ursprünglicher Dateiname
+          example: "whale_photo.jpg"
+        url:
+          type: string
+          format: uri
+          description: URL der Datei
+          example: "/uploads/2024/01/whale_photo_123.jpg"
+        mimeType:
+          type: string
+          description: MIME-Type der Datei
+          example: "image/jpeg"
+        fileSize:
+          type: integer
+          description: Dateigröße in Bytes
+          example: 2048576
+        uploadedAt:
+          type: string
+          format: date-time
+          description: Upload-Zeitpunkt
+          example: "2024-01-01T15:00:00Z"
+        exifData:
+          type: object
+          nullable: true
+          description: EXIF-Metadaten (für Bilder)
+          example:
+            lat: 54.3233
+            lon: 13.0814
+            timestamp: "2024-01-01T14:30:00Z"
+            camera: "Canon EOS R5"
+
+    SightingGeoFeature:
+      type: object
+      description: GeoJSON Feature für Kartendarstellung
+      required:
+        - type
+        - geometry
+        - properties
+      properties:
+        type:
+          type: string
+          enum: [Feature]
+          example: "Feature"
+        geometry:
+          type: object
+          required:
+            - type
+            - coordinates
+          properties:
+            type:
+              type: string
+              enum: [Point]
+              example: "Point"
+            coordinates:
+              type: array
+              items:
+                type: number
+              minItems: 2
+              maxItems: 2
+              description: [longitude, latitude]
+              example: [13.0814, 54.3233]
+        properties:
+          type: object
+          required:
+            - id
+            - species
+            - count
+            - date
+          properties:
+            id:
+              type: integer
+              example: 1840
+            species:
+              type: integer
+              example: 1
+            count:
+              type: integer
+              example: 3
+            juvenileCount:
+              type: integer
+              nullable: true
+              example: 1
+            isDead:
+              type: boolean
+              example: false
+            date:
+              type: string
+              format: date-time
+              example: "2024-01-01T14:30:00Z"
+            waterway:
+              type: string
+              nullable: true
+              example: "Greifswalder Bodden"
+
+    FileUploadResponse:
+      type: object
+      required:
+        - success
+        - url
+      properties:
+        success:
+          type: boolean
+          example: true
+        url:
+          type: string
+          format: uri
+          description: URL der hochgeladenen Datei
+          example: "/uploads/2024/01/image_123.jpg"
+        filename:
+          type: string
+          description: Gespeicherter Dateiname
+          example: "image_123.jpg"
+        originalName:
+          type: string
+          description: Ursprünglicher Dateiname
+          example: "my_photo.jpg"
+        mimeType:
+          type: string
+          description: MIME-Type der Datei
+          example: "image/jpeg"
+        size:
+          type: integer
+          description: Dateigröße in Bytes
+          example: 2048576
+        exifData:
+          type: object
+          nullable: true
+          description: Extrahierte EXIF-Daten
+          example:
+            lat: 54.3233
+            lon: 13.0814
+            timestamp: "2024-01-01T14:30:00Z"
+
+    SightingResponse:
+      type: object
+      required:
+        - success
+        - id
+      properties:
+        success:
+          type: boolean
+          example: true
+        id:
+          type: integer
+          description: ID der erstellten/aktualisierten Sichtung
+          example: 1840
+        message:
+          type: string
+          description: Erfolgsbestätigung
+          example: "Sichtung erfolgreich gespeichert"
+
+    SuccessResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          description: Erfolgsmeldung
+          example: "Operation erfolgreich durchgeführt"
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Fehlermeldung
+          example: "Ein Fehler ist aufgetreten"
+        details:
+          type: array
+          description: Detaillierte Fehlermeldungen
+          items:
+            type: string
+          example: ["Feld 'email' ist erforderlich", "Ungültige Koordinaten"]
+
+    ValidationErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+        - validationErrors
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Allgemeine Fehlermeldung
+          example: "Validierungsfehler"
+        validationErrors:
+          type: object
+          description: Feldspezifische Validierungsfehler
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            email: ["E-Mail ist erforderlich", "Ungültiges E-Mail-Format"]
+            latitude: ["Breitengrad muss zwischen -90 und 90 liegen"]
+
+  responses:
+    BadRequest:
+      description: Ungültige Anfrage
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Nicht authentifiziert
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Authentifizierung erforderlich"
+
+    Forbidden:
+      description: Nicht autorisiert
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Keine Berechtigung für diese Operation"
+
+    NotFound:
+      description: Ressource nicht gefunden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Ressource nicht gefunden"
+
+    ValidationError:
+      description: Validierungsfehler
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+
+    InternalServerError:
+      description: Interner Serverfehler
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Interner Serverfehler"
