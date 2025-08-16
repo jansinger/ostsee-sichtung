@@ -41,6 +41,9 @@
 					<a href="/docs/api" class="btn btn-primary">
 						API-Docs öffnen
 					</a>
+					<a href="/docs/api/fallback" class="btn btn-outline btn-sm">
+						Fallback-Ansicht
+					</a>
 				</div>
 			</div>
 		</div>

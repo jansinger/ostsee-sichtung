@@ -9,48 +9,66 @@
 	onMount(async () => {
 		if (browser) {
 			try {
-				// Try to load and initialize Scalar
+				// Verify OpenAPI spec is available
 				const response = await fetch('/openapi.yml');
 				if (!response.ok) {
 					throw new Error('OpenAPI Spec konnte nicht geladen werden');
 				}
 
-				// Add Scalar via script tag approach to avoid DOM manipulation issues
-				const script = document.createElement('script');
-				script.src = 'https://cdn.jsdelivr.net/npm/@scalar/api-reference@latest/dist/browser/standalone.min.js';
-				script.onload = () => {
-					// @ts-expect-error - Scalar global will be available after script load
-					if (typeof window.ApiReference !== 'undefined') {
+				// Load Swagger UI instead of Scalar for better reliability
+				const swaggerScript = document.createElement('script');
+				swaggerScript.src = 'https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-bundle.js';
+				swaggerScript.onload = () => {
+					// Add CSS
+					const swaggerCSS = document.createElement('link');
+					swaggerCSS.rel = 'stylesheet';
+					swaggerCSS.href = 'https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui.css';
+					document.head.appendChild(swaggerCSS);
+
+					// @ts-expect-error - SwaggerUIBundle will be available after script load
+					if (typeof window.SwaggerUIBundle !== 'undefined') {
 						try {
-							const container = document.getElementById('scalar-api-reference');
-							if (container) {
-								// @ts-expect-error - Scalar global will be available after script load
-								window.ApiReference(container, {
-									spec: { url: '/openapi.yml' },
-									theme: 'default'
-								});
-								isLoading = false;
-							}
+							// @ts-expect-error - SwaggerUIBundle global
+							window.SwaggerUIBundle({
+								url: '/openapi.yml',
+								dom_id: '#swagger-ui',
+								deepLinking: true,
+								presets: [
+									// @ts-expect-error - SwaggerUIBundle presets
+									window.SwaggerUIBundle.presets.apis,
+									// @ts-expect-error - SwaggerUIBundle presets
+									window.SwaggerUIBundle.presets.standalone
+								],
+								plugins: [
+									// @ts-expect-error - SwaggerUIBundle plugins
+									window.SwaggerUIBundle.plugins.DownloadUrl
+								],
+								layout: 'StandaloneLayout',
+								tryItOutEnabled: true,
+								supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+								validatorUrl: null,
+								docExpansion: 'list',
+								defaultModelsExpandDepth: 1,
+								defaultModelExpandDepth: 1,
+								showExtensions: true,
+								showCommonExtensions: true,
+								filter: true
+							});
+							isLoading = false;
 						} catch (err) {
-							console.error('Scalar initialization failed:', err);
+							console.error('Swagger UI initialization failed:', err);
 							hasError = true;
 							errorMessage = 'API-Dokumentation konnte nicht initialisiert werden';
 							isLoading = false;
 						}
 					}
 				};
-				script.onerror = () => {
+				swaggerScript.onerror = () => {
 					hasError = true;
-					errorMessage = 'Scalar konnte nicht geladen werden';
+					errorMessage = 'Swagger UI konnte nicht geladen werden';
 					isLoading = false;
 				};
-				document.head.appendChild(script);
-
-				// Add CSS
-				const link = document.createElement('link');
-				link.rel = 'stylesheet';
-				link.href = 'https://cdn.jsdelivr.net/npm/@scalar/api-reference@latest/dist/browser/standalone.min.css';
-				document.head.appendChild(link);
+				document.head.appendChild(swaggerScript);
 
 			} catch (error) {
 				console.error('Failed to load OpenAPI spec:', error);
@@ -152,40 +170,73 @@
 		<div class="alert alert-error">
 			<div>
 				<span>{errorMessage}</span>
-				<div class="mt-2">
-					<a href="/openapi.yml" class="btn btn-sm btn-primary">OpenAPI Spec direkt anzeigen</a>
+				<div class="mt-4 flex gap-2">
+					<a href="/docs/api/fallback" class="btn btn-sm btn-primary">
+						📄 Fallback-Dokumentation anzeigen
+					</a>
+					<a href="/openapi.yml" download="ostsee-tiere-api.yml" class="btn btn-sm btn-outline">
+						📥 OpenAPI Spec herunterladen
+					</a>
+					<button 
+						class="btn btn-sm btn-ghost" 
+						onclick={() => window.location.reload()}
+					>
+						🔄 Neu laden
+					</button>
 				</div>
 			</div>
 		</div>
 	{:else}
-		<div id="scalar-api-reference" class="w-full min-h-screen"></div>
+		<div id="swagger-ui" class="w-full min-h-screen"></div>
 	{/if}
 </div>
 
 <style>
-	/* Ensure full width for Scalar */
-	:global(.scalar-app) {
+	/* Ensure full width for Swagger UI */
+	:global(.swagger-ui) {
 		width: 100% !important;
 		max-width: none !important;
 	}
 	
+	/* Override Swagger UI container styles */
+	:global(.swagger-ui .wrapper) {
+		max-width: none !important;
+		padding: 0 !important;
+	}
+	
+	/* Custom styling for better integration */
+	:global(.swagger-ui .topbar) {
+		display: none !important;
+	}
+	
+	:global(.swagger-ui .info) {
+		margin: 20px 0 !important;
+	}
+	
 	/* Custom scrollbar for better UX */
-	:global(.scalar-app *::-webkit-scrollbar) {
+	:global(.swagger-ui *::-webkit-scrollbar) {
 		width: 8px;
 		height: 8px;
 	}
 	
-	:global(.scalar-app *::-webkit-scrollbar-track) {
+	:global(.swagger-ui *::-webkit-scrollbar-track) {
 		background: #f1f1f1;
 		border-radius: 4px;
 	}
 	
-	:global(.scalar-app *::-webkit-scrollbar-thumb) {
+	:global(.swagger-ui *::-webkit-scrollbar-thumb) {
 		background: #c1c1c1;
 		border-radius: 4px;
 	}
 	
-	:global(.scalar-app *::-webkit-scrollbar-thumb:hover) {
+	:global(.swagger-ui *::-webkit-scrollbar-thumb:hover) {
 		background: #a8a8a8;
+	}
+	
+	/* Fix responsive issues */
+	:global(.swagger-ui .scheme-container) {
+		background: none !important;
+		box-shadow: none !important;
+		padding: 0 !important;
 	}
 </style>
