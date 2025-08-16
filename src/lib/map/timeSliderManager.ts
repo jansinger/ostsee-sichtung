@@ -1,4 +1,4 @@
-import type { SichtungenMap } from './mapController';
+import type { SichtungenMap } from './optimizedMapController';
 
 /**
  * Time Slider Manager für die Zeitfilterung

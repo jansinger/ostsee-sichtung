@@ -91,6 +91,7 @@
 	},
 	"dependencies": {
 		"@paralleldrive/cuid2": "^2.2.2",
+		"@scalar/api-reference": "^1.34.2",
 		"@steeze-ui/lucide-icons": "^1.4.1",
 		"@steeze-ui/svelte-icon": "^1.6.2",
 		"@turf/boolean-point-in-polygon": "^7.2.0",

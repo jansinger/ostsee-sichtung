@@ -32,11 +32,11 @@ export default {
 		// Erlaube auch leere Scopes
 		'scope-empty': [0],
 		// Subject case: lowerCase or start-case erlaubt
-		'subject-case': [2, 'always', ['start-case', 'sentence-case', 'lower-case']],
+		'subject-case': [0, 'always', ['start-case', 'sentence-case', 'lower-case']],
 		// Max line length für subject
-		'subject-max-length': [2, 'always', 72],
+		'subject-max-length': [2, 'always', 160],
 		// Body max line length - relaxed for release notes
-		'body-max-line-length': [1, 'always', 200], // Warning statt Error, längere Zeilen für Release Notes
+		'body-max-line-length': [1, 'always', 1000], // Warning statt Error, längere Zeilen für Release Notes
 		// Footer max line length - relaxed for release notes
 		'footer-max-line-length': [1, 'always', 200], // Warning statt Error
 		// Footer leading blank line - relaxed

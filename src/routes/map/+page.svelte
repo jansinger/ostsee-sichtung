@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.meta?.title || 'Sichtungskarte - Deutsches Meeresmuseum'}</title>
+	<title>{data.meta?.title || 'Sichtungskarte - Ostsee-Tiere'}</title>
 	<meta name="description" content={data.meta?.description || 'Interaktive Karte der Meerestier-Sichtungen'} />
 </svelte:head>
 
