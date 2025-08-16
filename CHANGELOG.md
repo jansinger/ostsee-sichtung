@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.3.0 (2025-08-16)
+
+* Merge pull request #23 from jansinger/preview ([f0696d1](https://github.com/jansinger/ostsee-sichtung/commit/f0696d1)), closes [#23](https://github.com/jansinger/ostsee-sichtung/issues/23)
+* chore: remove obsolete test environment setup workflow ([2ebfa8f](https://github.com/jansinger/ostsee-sichtung/commit/2ebfa8f))
+* chore: remove Playwright test workflow ([07a958e](https://github.com/jansinger/ostsee-sichtung/commit/07a958e))
+* fix: add default values for required properties in color group processing ([847b675](https://github.com/jansinger/ostsee-sichtung/commit/847b675))
+* fix: replace scalar with swagger ui and add robust fallback documentation ([6ee5396](https://github.com/jansinger/ostsee-sichtung/commit/6ee5396))
+* fix: resolve typescript linting errors in api documentation ([c1c6600](https://github.com/jansinger/ostsee-sichtung/commit/c1c6600))
+* refactor: comment out subject-case rule in commitlint configuration ([5a9499f](https://github.com/jansinger/ostsee-sichtung/commit/5a9499f))
+* refactor: remove unused apis and restructure documentation ([cea6589](https://github.com/jansinger/ostsee-sichtung/commit/cea6589))
+* refactor(config): relax subject-case rule and increase line length limits ([e51b493](https://github.com/jansinger/ostsee-sichtung/commit/e51b493))
+* refactor(map): improve code formatting and structure for readability ([7f2caaf](https://github.com/jansinger/ostsee-sichtung/commit/7f2caaf))
+* refactor(map): Refactor map controllers and update Playwright report ([2baaba4](https://github.com/jansinger/ostsee-sichtung/commit/2baaba4))
+* feat: implement comprehensive openapi documentation with interactive ui ([d6f8654](https://github.com/jansinger/ostsee-sichtung/commit/d6f8654))
+* feat: update README to improve project visibility ([9ded96c](https://github.com/jansinger/ostsee-sichtung/commit/9ded96c))
+* feat(map): Implement map popup and clustering functionality ([35dd00b](https://github.com/jansinger/ostsee-sichtung/commit/35dd00b))
+
 ## 1.2.0 (2025-08-16)
 
 * Merge pull request #22 from jansinger/preview ([f406fb7](https://github.com/jansinger/ostsee-sichtung/commit/f406fb7)), closes [#22](https://github.com/jansinger/ostsee-sichtung/issues/22)
