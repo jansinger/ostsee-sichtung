@@ -261,6 +261,29 @@ export class LocalStorageProvider implements StorageProvider {
 		}
 	}
 
+	async getFileContent(filePath: string): Promise<Buffer | null> {
+		try {
+			// Validate path before reading content
+			const safePath = this.validatePath(filePath);
+			const fullPath = join(this.resolvedBaseDir, safePath);
+			
+			if (!existsSync(fullPath)) {
+				logger.warn({ filePath: safePath }, 'File not found for content retrieval');
+				return null;
+			}
+
+			// Import readFileSync dynamically to avoid bundling issues
+			const { readFileSync } = await import('fs');
+			const content = readFileSync(fullPath);
+			
+			logger.debug({ filePath: safePath, size: content.length }, 'File content retrieved');
+			return content;
+		} catch (error) {
+			logger.error({ error, filePath }, 'Failed to get file content');
+			return null;
+		}
+	}
+
 	private getMimeTypeFromExtension(ext: string): string {
 		const mimeTypes: Record<string, string> = {
 			'.jpg': 'image/jpeg',

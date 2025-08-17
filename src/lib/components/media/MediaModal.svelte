@@ -107,7 +107,7 @@
 			</div>
 			<div class="flex flex-shrink-0 items-center gap-2">
 				<a
-					href={file.url}
+					href={`/api/media/${file.filePath}`}
 					download={file.originalName}
 					class="btn btn-ghost btn-sm"
 					aria-label="Datei herunterladen"
@@ -133,18 +133,16 @@
 					<!-- Bild anzeigen -->
 					<div class="bg-base-100 flex justify-center overflow-hidden rounded-lg">
 						<img
-							src={file.url}
+							src={`/api/media/${file.filePath}`}
 							alt={file.originalName}
 							class="max-h-[50vh] max-w-full object-contain"
 							loading="lazy"
 							onerror={(e) => {
 								console.error('Modal image loading failed:', file.filePath, e);
-								// Fallback for modal images
+								// Fallback to original URL if secure endpoint fails
 								const img = e.target as HTMLImageElement;
-								if (!img.src.includes('_fallback')) {
-									if (file.url.startsWith('/uploads/')) {
-										img.src = `${file.url}?_fallback=1`;
-									}
+								if (!img.src.includes('fallback=true')) {
+									img.src = `${file.url}?fallback=true`;
 								}
 							}}
 						/>
@@ -152,7 +150,7 @@
 				{:else if isVideo(file.mimeType)}
 					<!-- Video anzeigen -->
 					<div class="bg-base-100 flex justify-center overflow-hidden rounded-lg">
-						<video src={file.url} controls class="max-h-[50vh] max-w-full" preload="metadata">
+						<video src={`/api/media/${file.filePath}`} controls class="max-h-[50vh] max-w-full" preload="metadata">
 							<track kind="captions" />
 							Ihr Browser unterstützt das Video-Element nicht.
 						</video>
@@ -163,7 +161,7 @@
 						<Icon src={FileType} size="48" class="text-base-content/40 mb-4" />
 						<h4 class="mb-2 text-lg font-semibold">Vorschau nicht verfügbar</h4>
 						<p class="text-base-content/60 mb-4">Für diesen Dateityp ist keine Vorschau möglich.</p>
-						<a href={file.url} download={file.originalName} class="btn btn-primary">
+						<a href={`/api/media/${file.filePath}`} download={file.originalName} class="btn btn-primary">
 							<Icon src={Download} size="16" />
 							Datei herunterladen
 						</a>

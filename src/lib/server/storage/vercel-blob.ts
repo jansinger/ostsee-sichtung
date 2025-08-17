@@ -189,6 +189,27 @@ export class VercelBlobStorageProvider implements StorageProvider {
 		}
 	}
 
+	async getFileContent(filePath: string): Promise<Buffer | null> {
+		try {
+			// Get the URL for the file and fetch it
+			const response = await fetch(this.getUrl(filePath));
+			
+			if (!response.ok) {
+				logger.warn({ filePath, status: response.status }, 'File not found for content retrieval from Vercel Blob');
+				return null;
+			}
+
+			const arrayBuffer = await response.arrayBuffer();
+			const buffer = Buffer.from(arrayBuffer);
+			
+			logger.debug({ filePath, size: buffer.length }, 'File content retrieved from Vercel Blob');
+			return buffer;
+		} catch (error) {
+			logger.error({ error, filePath }, 'Failed to get file content from Vercel Blob');
+			return null;
+		}
+	}
+
 	private extractIdFromPathname(pathname: string): string {
 		// Extract ID from filename pattern: referenceId/filename-ID.ext
 		const filename = basename(pathname);

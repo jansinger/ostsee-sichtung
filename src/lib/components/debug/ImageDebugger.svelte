@@ -8,7 +8,7 @@
 	let actualUrl = $state<string>('');
 
 	async function testImageUrl() {
-		const url = file.url;
+		const url = `/api/media/${file.filePath}`;
 		try {
 			const response = await fetch(url);
 			actualUrl = response.url; // Will show the redirected URL
@@ -40,7 +40,8 @@
 		<div><strong>MIME Type:</strong> {file.mimeType}</div>
 		<div><strong>Size:</strong> {(file.size / 1024).toFixed(1)} KB</div>
 
-		<div><strong>Request URL:</strong> <code>{file.url}</code></div>
+		<div><strong>Secure URL:</strong> <code>/api/media/{file.filePath}</code></div>
+		<div><strong>Original URL:</strong> <code>{file.url}</code></div>
 		<div><strong>Actual URL:</strong> <code>{actualUrl}</code></div>
 
 		<div>
@@ -95,11 +96,11 @@
 	<div class="mt-4">
 		<h5 class="mb-2 font-medium">Test Image:</h5>
 		<img
-			src={file.url}
+			src={`/api/media/${file.filePath}`}
 			alt={file.originalName}
 			class="border-base-300 max-h-[200px] max-w-[200px] border object-contain"
-			onload={() => console.log('Image loaded successfully:', file.filePath)}
-			onerror={(e) => console.error('Image failed to load:', file.filePath, e)}
+			onload={() => console.log('Image loaded successfully via secure endpoint:', file.filePath)}
+			onerror={(e) => console.error('Image failed to load via secure endpoint:', file.filePath, e)}
 		/>
 	</div>
 </div>

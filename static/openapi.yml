@@ -43,6 +43,8 @@ tags:
     description: Kartendaten
   - name: export
     description: Datenexport
+  - name: media
+    description: Sichere Medien-Bereitstellung
 
 paths:
   /sightings:
@@ -473,6 +475,89 @@ paths:
             application/vnd.google-earth.kml+xml:
               schema:
                 type: string
+
+  /media/{path}:
+    get:
+      tags:
+        - media
+      summary: Sichere Medien-Bereitstellung
+      description: |
+        Stellt Mediendateien mit Zugriffskontrolle bereit.
+        
+        **Zugriffskontrolle:**
+        - Öffentlicher Zugriff für genehmigte Sichtungen
+        - Admin-Zugriff für nicht genehmigte Sichtungen
+        - 404 für nicht existierende oder nicht autorisierte Dateien
+      parameters:
+        - name: path
+          in: path
+          required: true
+          description: Dateipfad der Mediendatei
+          schema:
+            type: string
+            example: "sichtung-123/photo-abc123.jpg"
+      responses:
+        '200':
+          description: Mediendatei erfolgreich bereitgestellt
+          headers:
+            Content-Type:
+              description: MIME-Type der Datei
+              schema:
+                type: string
+                example: "image/jpeg"
+            Content-Length:
+              description: Dateigröße in Bytes
+              schema:
+                type: integer
+                example: 1024000
+            Content-Disposition:
+              description: Wie die Datei angezeigt werden soll
+              schema:
+                type: string
+                example: 'inline; filename="photo.jpg"'
+            Cache-Control:
+              description: Cache-Einstellungen
+              schema:
+                type: string
+                example: "public, max-age=31536000, immutable"
+            ETag:
+              description: Entity Tag für Caching
+              schema:
+                type: string
+                example: '"abc123def456"'
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '304':
+          description: Not Modified (Cache-Hit)
+        '404':
+          description: Datei nicht gefunden oder nicht autorisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: "File not found"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /auth/login:
     get:

@@ -49,16 +49,16 @@
 		<!-- Bild Thumbnail -->
 		<div class="relative aspect-square overflow-hidden">
 			<img
-				src={file.url}
+				src={`/api/media/${file.filePath}`}
 				alt={file.originalName}
 				class="h-full w-full object-cover transition-all group-hover:scale-110"
 				loading="lazy"
 				onerror={(e) => {
-					console.error('Image loading failed:', file.url, e);
-					// Fallback: for local storage, try with fallback parameter
+					console.error('Image loading failed:', `/api/media/${file.filePath}`, e);
+					// Fallback to original URL if secure endpoint fails
 					const img = e.target as HTMLImageElement;
-					if (!img.src.includes('_fallback') && file.url.startsWith('/uploads/')) {
-						img.src = `${file.url}?_fallback=1`;
+					if (!img.src.includes('fallback=true')) {
+						img.src = `${file.url}?fallback=true`;
 					}
 				}}
 			/>
@@ -85,13 +85,13 @@
 		>
 			<!-- Video Preview (falls Browser unterstützt) -->
 			<video
-				src={file.url}
+				src={`/api/media/${file.filePath}`}
 				class="h-full w-full object-cover"
 				muted
 				preload="metadata"
 				poster=""
 				onerror={(e) => {
-					console.error('Video loading failed:', file.url, e);
+					console.error('Video loading failed:', `/api/media/${file.filePath}`, e);
 				}}
 			>
 				<track kind="captions" />

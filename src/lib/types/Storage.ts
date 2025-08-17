@@ -44,6 +44,11 @@ export interface StorageProvider {
 	 * Check if file exists
 	 */
 	exists(filePath: string): Promise<boolean>;
+	
+	/**
+	 * Get file content as Buffer for secure serving
+	 */
+	getFileContent(filePath: string): Promise<Buffer | null>;
 }
 
 export interface UploadOptions {
