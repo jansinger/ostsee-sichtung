@@ -4,18 +4,19 @@
 
 <svelte:head>
 	<title>Dokumentation - Ostsee-Tiere</title>
-	<meta name="description" content="Übersicht über die verfügbare Dokumentation der Ostsee-Tiere Plattform" />
+	<meta
+		name="description"
+		content="Übersicht über die verfügbare Dokumentation der Ostsee-Tiere Plattform"
+	/>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl">
-	<div class="text-center mb-8">
-		<h1 class="text-4xl font-bold mb-4">📚 Dokumentation</h1>
-		<p class="text-lg text-gray-600">
-			Willkommen zur Dokumentation der Ostsee-Tiere Plattform
-		</p>
+	<div class="mb-8 text-center">
+		<h1 class="mb-4 text-4xl font-bold">📚 Dokumentation</h1>
+		<p class="text-lg text-gray-600">Willkommen zur Dokumentation der Ostsee-Tiere Plattform</p>
 	</div>
 
-	<div class="grid md:grid-cols-2 gap-6">
+	<div class="grid gap-6 md:grid-cols-2">
 		<!-- API Documentation Card -->
 		<div class="card bg-base-100 shadow-xl">
 			<div class="card-body">
@@ -24,12 +25,12 @@
 					<div class="badge badge-primary">Interactive</div>
 				</h2>
 				<p class="text-sm text-gray-600">
-					Umfassende OpenAPI-Dokumentation mit interaktiver Schnittstelle. 
-					Testen Sie alle Endpunkte direkt im Browser.
+					Umfassende OpenAPI-Dokumentation mit interaktiver Schnittstelle. Testen Sie alle Endpunkte
+					direkt im Browser.
 				</p>
 				<div class="mt-4">
-					<h3 class="font-semibold text-sm mb-2">Verfügbare APIs:</h3>
-					<ul class="text-xs space-y-1 text-gray-600">
+					<h3 class="mb-2 text-sm font-semibold">Verfügbare APIs:</h3>
+					<ul class="space-y-1 text-xs text-gray-600">
 						<li>• Sichtungen verwalten</li>
 						<li>• Dateien hochladen</li>
 						<li>• Datenexport (CSV, JSON, XML, KML)</li>
@@ -37,13 +38,9 @@
 						<li>• Geografische Validierung</li>
 					</ul>
 				</div>
-				<div class="card-actions justify-end mt-4">
-					<a href="/docs/api" class="btn btn-primary">
-						API-Docs öffnen
-					</a>
-					<a href="/docs/api/fallback" class="btn btn-outline btn-sm">
-						Fallback-Ansicht
-					</a>
+				<div class="card-actions mt-4 justify-end">
+					<a href="/docs/api" class="btn btn-primary"> API-Docs öffnen </a>
+					<a href="/docs/api/fallback" class="btn btn-outline btn-sm"> Fallback-Ansicht </a>
 				</div>
 			</div>
 		</div>
@@ -55,30 +52,26 @@
 					🚀 Erste Schritte
 					<div class="badge badge-secondary">Guide</div>
 				</h2>
-				<p class="text-sm text-gray-600">
-					Schnelleinstieg für Entwickler und API-Nutzer.
-				</p>
+				<p class="text-sm text-gray-600">Schnelleinstieg für Entwickler und API-Nutzer.</p>
 				<div class="mt-4">
-					<h3 class="font-semibold text-sm mb-2">Öffentliche Endpunkte:</h3>
+					<h3 class="mb-2 text-sm font-semibold">Öffentliche Endpunkte:</h3>
 					<div class="space-y-2">
-						<div class="bg-gray-50 p-2 rounded text-xs">
+						<div class="rounded bg-gray-50 p-2 text-xs">
 							<code class="text-blue-600">GET /api/sightings</code>
-							<span class="text-gray-500 ml-2">Öffentliche Sichtungen</span>
+							<span class="ml-2 text-gray-500">Öffentliche Sichtungen</span>
 						</div>
-						<div class="bg-gray-50 p-2 rounded text-xs">
+						<div class="rounded bg-gray-50 p-2 text-xs">
 							<code class="text-blue-600">POST /api/sightings</code>
-							<span class="text-gray-500 ml-2">Neue Sichtung melden</span>
+							<span class="ml-2 text-gray-500">Neue Sichtung melden</span>
 						</div>
-						<div class="bg-gray-50 p-2 rounded text-xs">
+						<div class="rounded bg-gray-50 p-2 text-xs">
 							<code class="text-blue-600">POST /api/files/upload</code>
-							<span class="text-gray-500 ml-2">Dateien hochladen</span>
+							<span class="ml-2 text-gray-500">Dateien hochladen</span>
 						</div>
 					</div>
 				</div>
-				<div class="card-actions justify-end mt-4">
-					<a href="/docs/api#getting-started" class="btn btn-outline">
-						Loslegen
-					</a>
+				<div class="card-actions mt-4 justify-end">
+					<a href="/docs/api#getting-started" class="btn btn-outline"> Loslegen </a>
 				</div>
 			</div>
 		</div>
@@ -91,23 +84,19 @@
 					<div class="badge badge-accent">Download</div>
 				</h2>
 				<p class="text-sm text-gray-600">
-					Laden Sie die vollständige OpenAPI-Spezifikation herunter für die Verwendung 
-					in Tools wie Postman, Insomnia oder zur Code-Generierung.
+					Laden Sie die vollständige OpenAPI-Spezifikation herunter für die Verwendung in Tools wie
+					Postman, Insomnia oder zur Code-Generierung.
 				</p>
 				<div class="mt-4">
-					<h3 class="font-semibold text-sm mb-2">Formate:</h3>
-					<ul class="text-xs space-y-1 text-gray-600">
+					<h3 class="mb-2 text-sm font-semibold">Formate:</h3>
+					<ul class="space-y-1 text-xs text-gray-600">
 						<li>• YAML (empfohlen)</li>
 						<li>• JSON (über API)</li>
 						<li>• Code-Generierung unterstützt</li>
 					</ul>
 				</div>
-				<div class="card-actions justify-end mt-4">
-					<a 
-						href="/openapi.yml" 
-						download="ostsee-tiere-api.yml"
-						class="btn btn-accent"
-					>
+				<div class="card-actions mt-4 justify-end">
+					<a href="/openapi.yml" download="ostsee-tiere-api.yml" class="btn btn-accent">
 						YAML herunterladen
 					</a>
 				</div>
@@ -125,15 +114,15 @@
 					Für Admin-Funktionen ist eine Authentifizierung über Auth0 erforderlich.
 				</p>
 				<div class="mt-4">
-					<h3 class="font-semibold text-sm mb-2">Authentifizierungs-Flow:</h3>
-					<ol class="text-xs space-y-1 text-gray-600 list-decimal list-inside">
+					<h3 class="mb-2 text-sm font-semibold">Authentifizierungs-Flow:</h3>
+					<ol class="list-inside list-decimal space-y-1 text-xs text-gray-600">
 						<li>Login-Endpunkt aufrufen</li>
 						<li>Auth0-Flow durchlaufen</li>
 						<li>Session-Cookie wird gesetzt</li>
 						<li>Admin-Endpunkte verfügbar</li>
 					</ol>
 				</div>
-				<div class="card-actions justify-end mt-4">
+				<div class="card-actions mt-4 justify-end">
 					<a href="/docs/api#authentication" class="btn btn-outline btn-warning">
 						Details anzeigen
 					</a>
@@ -143,24 +132,24 @@
 	</div>
 
 	<!-- Quick Links Section -->
-	<div class="mt-12 bg-base-200 rounded-lg p-6">
-		<h2 class="text-2xl font-semibold mb-4">🔗 Schnellzugriff</h2>
-		<div class="grid md:grid-cols-3 gap-4">
+	<div class="bg-base-200 mt-12 rounded-lg p-6">
+		<h2 class="mb-4 text-2xl font-semibold">🔗 Schnellzugriff</h2>
+		<div class="grid gap-4 md:grid-cols-3">
 			<div class="text-center">
 				<a href="/map" class="btn btn-ghost btn-lg w-full">
-					🗺️<br/>
+					🗺️<br />
 					<span class="text-sm">Karte anzeigen</span>
 				</a>
 			</div>
 			<div class="text-center">
 				<a href="/" class="btn btn-ghost btn-lg w-full">
-					📝<br/>
+					📝<br />
 					<span class="text-sm">Sichtung melden</span>
 				</a>
 			</div>
 			<div class="text-center">
 				<a href="/admin" class="btn btn-ghost btn-lg w-full">
-					⚙️<br/>
+					⚙️<br />
 					<span class="text-sm">Admin-Bereich</span>
 				</a>
 			</div>
@@ -170,8 +159,8 @@
 	<!-- Project Information -->
 	<div class="mt-8 text-center text-sm text-gray-500">
 		<p>
-			Die Ostsee-Tiere Plattform ermöglicht es Bürgern, Forschern und Naturbeobachtern, 
-			ihre Sichtungen von Walen, Robben und anderen Meerestieren zu melden.
+			Die Ostsee-Tiere Plattform ermöglicht es Bürgern, Forschern und Naturbeobachtern, ihre
+			Sichtungen von Walen, Robben und anderen Meerestieren zu melden.
 		</p>
 		<div class="mt-4 flex justify-center gap-4">
 			<span class="badge badge-outline">SvelteKit</span>

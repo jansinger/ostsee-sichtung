@@ -33,12 +33,12 @@
 	<div class="mb-8">
 		<h1 class="text-3xl font-bold mb-4">📄 API-Dokumentation (Fallback)</h1>
 		<p class="text-gray-600 mb-4">
-			Diese vereinfachte Ansicht zeigt die OpenAPI-Spezifikation an, falls die interaktive Dokumentation nicht geladen werden kann.
+			Diese vereinfachte Ansicht zeigt die OpenAPI-Spezifikation an, falls die interaktive Scalar-Dokumentation nicht geladen werden kann.
 		</p>
 		
 		<div class="flex gap-4 mb-6">
 			<a href="/docs/api" class="btn btn-primary">
-				🔄 Interaktive Docs versuchen
+				🔄 Scalar-Dokumentation erneut versuchen
 			</a>
 			<a href="/openapi.yml" download="ostsee-tiere-api.yml" class="btn btn-outline">
 				📥 YAML herunterladen
