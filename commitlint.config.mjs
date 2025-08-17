@@ -26,7 +26,8 @@ export default {
 				'perf', // Performance
 				'security', // Security
 				'a11y', // Accessibility
-				'release' // Release commits (semantic-release)
+				'release', // Release commits (semantic-release)
+				'media' // Media handling
 			]
 		],
 		// Erlaube auch leere Scopes
