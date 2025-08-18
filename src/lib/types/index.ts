@@ -65,6 +65,13 @@ export type {
 	PostGISValidationRow,
 	CoordinateValidationParams,
 	DetailedValidationResult,
-	GeographicValidationErrorInfo
+	GeographicValidationErrorInfo,
+	// File-based geographic validation types
+	BalticSeaFileResult,
+	SpatialIndexItem,
+	RBushIndexJson,
+	TurfValidationOptions,
+	SpatialValidationMetrics,
+	DetailedFileValidationResult
 } from './Geography.js';
 export { GeographicValidationError } from './Geography.js';

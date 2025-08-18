@@ -236,3 +236,174 @@ export interface GeographicValidationErrorInfo {
 		technicalDetails?: string;
 	};
 }
+
+// ============================================================================
+// DATEI-BASIERTE GEOGRAFISCHE VALIDIERUNG (RBush + Turf.js)
+// ============================================================================
+
+/**
+ * Erweiterte Baltic Sea Validierungsergebnis für dateibasierte Implementierung
+ * 
+ * Enthält zusätzliche Koordinaten-Echoing für Client-Server Konsistenz
+ * und unterstützt sowohl PostGIS- als auch Turf.js-basierte Validierung.
+ */
+export interface BalticSeaFileResult extends BalticSeaValidationResult {
+	/** Echo der ursprünglichen Longitude für Client-Validierung */
+	longitude: number;
+	
+	/** Echo der ursprünglichen Latitude für Client-Validierung */
+	latitude: number;
+}
+
+/**
+ * RBush räumlicher Index Item für performante Polygon-Suche
+ * 
+ * Definiert die Struktur der Geometrie-Objekte im räumlichen Index
+ * für optimierte Bounding-Box-Abfragen bei großen Geodatensätzen.
+ */
+export interface SpatialIndexItem {
+	/** Minimale X-Koordinate (Westgrenze) der Bounding Box */
+	minX: number;
+	
+	/** Minimale Y-Koordinate (Südgrenze) der Bounding Box */
+	minY: number;
+	
+	/** Maximale X-Koordinate (Ostgrenze) der Bounding Box */
+	maxX: number;
+	
+	/** Maximale Y-Koordinate (Nordgrenze) der Bounding Box */
+	maxY: number;
+	
+	/** Index-Position des Features im ursprünglichen GeoJSON */
+	featureIndex: number;
+	
+	/** Eindeutige Identifikation des Geometrie-Features */
+	id: string;
+	
+	/** 
+	 * GeoJSON-konforme Geometrie-Definition
+	 * Unterstützt sowohl Polygon als auch MultiPolygon für komplexe Küstenlinien
+	 */
+	geometry: {
+		/** Geometrie-Typ nach GeoJSON-Spezifikation */
+		type: 'Polygon' | 'MultiPolygon';
+		
+		/**
+		 * Koordinaten-Arrays in GeoJSON-Format
+		 * 
+		 * - Polygon: number[][][] (Array von Linear Rings)
+		 * - MultiPolygon: number[][][][] (Array von Polygonen)
+		 */
+		coordinates: number[][][] | number[][][][];
+	};
+}
+
+/**
+ * RBush Index JSON-Serialisierung für persistente Spatial Indizes
+ * 
+ * Ermöglicht das Laden vorkompilierter räumlicher Indizes zur Laufzeit
+ * für verbesserte Performance bei wiederholten Abfragen.
+ */
+export interface RBushIndexJson {
+	/** Serialisierter RBush-Tree als JSON-Objekt */
+	tree: unknown;
+	
+	/** Optionale Metadaten über den Index */
+	metadata?: {
+		/** Anzahl der indizierten Features */
+		featureCount?: number;
+		
+		/** Zeitstempel der Index-Erstellung */
+		createdAt?: string;
+		
+		/** Version der verwendeten Geodaten */
+		dataVersion?: string;
+		
+		/** Bounding Box des gesamten Index */
+		bounds?: BoundingBox;
+	};
+}
+
+/**
+ * Turf.js Punkt-in-Polygon Konfiguration
+ * 
+ * Steuert das Verhalten der geometrischen Validierung für präzise
+ * Grenzbestimmung bei komplexen Küstenlinien und Inselgruppen.
+ */
+export interface TurfValidationOptions {
+	/** Toleranz für Gleitkomma-Vergleiche in Grad */
+	tolerance?: number;
+	
+	/** Soll Punkt-auf-Grenze als "innerhalb" gewertet werden? */
+	includeEdges?: boolean;
+	
+	/** Maximal verarbeitete Polygon-Komplexität (Anzahl Punkte) */
+	maxComplexity?: number;
+	
+	/** Aktiviere erweiterte Geometrie-Validierung */
+	validateGeometry?: boolean;
+}
+
+/**
+ * Performance-Metriken für räumliche Validierung
+ * 
+ * Sammelt Timing- und Effizienz-Daten für Monitoring und Optimierung
+ * der geometrischen Abfragen.
+ */
+export interface SpatialValidationMetrics {
+	/** Gesamte Ausführungszeit in Millisekunden */
+	totalDurationMs: number;
+	
+	/** Zeit für Index-Aufbau oder -Laden */
+	indexLoadMs: number;
+	
+	/** Zeit für Bounding-Box-Suche */
+	boundingBoxSearchMs: number;
+	
+	/** Zeit für präzise Punkt-in-Polygon Tests */
+	geometryTestMs: number;
+	
+	/** Anzahl gefundener Kandidaten-Polygone */
+	candidatesFound: number;
+	
+	/** Anzahl durchgeführter Geometrie-Tests */
+	geometryTestsPerformed: number;
+	
+	/** Wurde der Index aus dem Cache geladen? */
+	indexFromCache: boolean;
+	
+	/** Verwendete Validierungs-Engine */
+	validationEngine: 'turf' | 'postgis' | 'custom';
+}
+
+/**
+ * Detailliertes File-basiertes Validierungsergebnis mit Metriken
+ * 
+ * Erweitert das Standard-Validierungsergebnis um Performance-Daten
+ * und technische Details für Monitoring und Debugging.
+ */
+export interface DetailedFileValidationResult extends BalticSeaFileResult {
+	/** Performance-Metriken der Validierung */
+	metrics: SpatialValidationMetrics;
+	
+	/** Liste der gefundenen Kandidaten-Features */
+	candidateFeatures?: Array<{
+		/** Feature-ID */
+		id: string;
+		
+		/** Feature-Index im Geodatensatz */
+		featureIndex: number;
+		
+		/** Geometrie-Typ */
+		geometryType: 'Polygon' | 'MultiPolygon';
+		
+		/** Wurde bei diesem Feature ein Match gefunden? */
+		matched: boolean;
+	}>;
+	
+	/** Verwendete Validierungs-Konfiguration */
+	validationOptions?: TurfValidationOptions;
+	
+	/** Fehler-Logs während der Validierung */
+	warnings?: string[];
+}

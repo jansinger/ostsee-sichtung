@@ -44,8 +44,7 @@ import { db } from '$lib/server/db';
 import type { 
 	BalticSeaValidationResult, 
 	GeoLimits, 
-	PostGISValidationRow,
-	GeographicValidationError as GeoError
+	PostGISValidationRow
 } from '$lib/types';
 import { sql } from 'drizzle-orm';
 
