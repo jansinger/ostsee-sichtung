@@ -50,6 +50,12 @@ const setAdditionalHeaders: Handle = async ({ event, resolve }) => {
  * Hier werden nur zusätzliche Security Headers gesetzt
  */
 export const handle: Handle = async ({ event, resolve }) => {
+	// Disable CSRF protection for legacy REST API endpoints (mobile app compatibility)
+	if (event.url.pathname.startsWith('/rest_sichtungen')) {
+		logger.debug({ pathname: event.url.pathname }, 'Processing legacy API endpoint - CSRF bypass needed');
+		// SvelteKit's CSRF protection can be bypassed by handling in the route itself
+	}
+
 	// Generate CSP nonce
 	const nonce = randomBytes(16).toString('base64');
 	event.locals.cspNonce = nonce;

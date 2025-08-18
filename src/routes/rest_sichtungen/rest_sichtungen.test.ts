@@ -211,10 +211,10 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 			expect(response.status).toBe(400);
 			const responseData = await response.json();
 			
-			// PDF compliance: Error response format
-			expect(responseData).toHaveProperty('error');
+			// PDF compliance: Error response format (nested message structure)
 			expect(responseData).toHaveProperty('message');
-			expect(responseData.message).toContain('failed');
+			expect(responseData.message).toHaveProperty('message');
+			expect(responseData.message.message).toContain('failed');
 		});
 
 		it('should validate PDF datetime format strictly', async () => {
@@ -231,7 +231,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 
 			expect(response.status).toBe(400);
 			const responseData = await response.json();
-			expect(responseData.message).toContain('failed');
+			expect(responseData.message.message).toContain('failed');
 		});
 
 		it('should validate coordinate ranges as per PDF', async () => {

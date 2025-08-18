@@ -14,14 +14,10 @@ import { createLogger } from '$lib/logger';
 import { saveSighting } from '$lib/server/db/sightingRepository';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { mapLegacyToCurrentSchema } from '$lib/legacy-api/field-mapping.js';
-import type { LegacyCreateResponse, LegacyErrorResponse, LegacySightingRequest } from '$lib/legacy-api/types.js';
-import { 
-	createLegacyErrorResponse, 
-	validateContentType, 
-	validateLegacySighting,
-	validateDeathFinding,
-	validateLegacyRequest
-} from '$lib/legacy-api/validation.js';
+import type { LegacyCreateResponse, LegacySightingRequest } from '$lib/legacy-api/types.js';
+import { validateDeathFinding } from '$lib/legacy-api/validation.js';
+import { GERMAN_ERROR_MESSAGES, createSimpleErrorResponse, createOriginalApiErrorResponse } from '$lib/legacy-api/error-messages.js';
+import { validateLegacySightingWithYup, createLegacyErrorFromYup } from '$lib/legacy-api/yup-validation.js';
 
 const logger = createLogger('api:legacy:rest_sichtungen:pdf-compliant');
 
@@ -32,69 +28,66 @@ export async function POST(event: RequestEvent): Promise<Response> {
 	const clientIp = event.getClientAddress();
 	
 	try {
-		// Validate content type
-		const contentType = event.request.headers.get('content-type');
-		if (!validateContentType(contentType)) {
-			logger.warn({ contentType, ip: clientIp }, 'Invalid content type for legacy API');
+		// Handle different request types for mobile app compatibility
+		let requestData: any;
+		const contentType = event.request.headers.get('content-type') || '';
+		
+		// Handle form data (from mobile apps without Content-Type header)
+		if (contentType.includes('application/x-www-form-urlencoded') || !contentType.includes('application/json')) {
+			try {
+				const formData = await event.request.formData();
+				requestData = Object.fromEntries(formData.entries());
+				logger.debug({ ip: clientIp }, 'Processing form data from mobile app');
+			} catch (_formError) {
+				// Try JSON parsing as fallback
+				try {
+					const text = await event.request.text();
+					requestData = JSON.parse(text);
+				} catch (jsonError) {
+					logger.warn({ error: jsonError, ip: clientIp }, 'Failed to parse request body as JSON or form data');
+					const errorResponse = createSimpleErrorResponse(GERMAN_ERROR_MESSAGES.NO_DATA_SEND);
+					return json(errorResponse, { status: 200 });
+				}
+			}
+		} else {
+			// Handle JSON requests
+			try {
+				requestData = await event.request.json();
+			} catch (parseError) {
+				logger.warn({ error: parseError, ip: clientIp }, 'Failed to parse JSON request body');
+				const errorResponse = createSimpleErrorResponse(GERMAN_ERROR_MESSAGES.NO_DATA_SEND);
+				return json(errorResponse, { status: 200 });
+			}
+		}
+
+		// Check if we actually got data (empty object = no meaningful data)
+		if (!requestData || Object.keys(requestData).length === 0) {
+			logger.debug({ ip: clientIp }, 'Empty request data received');
 			
-			const errorResponse: LegacyErrorResponse = {
-				error: 'InvalidContentType',
-				message: 'Content-Type must be application/json'
-			};
+			// Use Yup validation to get proper German error messages
+			const validation = await validateLegacySightingWithYup({} as LegacySightingRequest);
+			const errorResponse = createLegacyErrorFromYup(validation);
 			
 			return json(errorResponse, { status: 400 });
 		}
 
-		// Parse request body
-		let requestData: any;
-		try {
-			requestData = await event.request.json();
-		} catch (parseError) {
-			logger.warn({ error: parseError, ip: clientIp }, 'Failed to parse JSON request body');
-			
-			const errorResponse: LegacyErrorResponse = {
-				error: 'InvalidJSON',
-				message: 'Request body must be valid JSON'
-			};
-			
-			return json(errorResponse, { status: 400 });
-		}
+		// Note: Skip Content-Type validation for mobile app compatibility
+		// Original API doesn't enforce Content-Type headers strictly
 
 		logger.debug({ 
 			data: { ...requestData, email: '***masked***' },
 			ip: clientIp 
 		}, 'Legacy sighting creation request received (PDF compliant endpoint)');
 
-		// Basic validation of legacy request format
-		try {
-			validateLegacyRequest(requestData);
-		} catch (validationError: unknown) {
-			const errorMsg = validationError instanceof Error ? validationError.message : 'Unknown validation error';
-			logger.warn({ 
-				error: errorMsg, 
-				ip: clientIp 
-			}, 'Legacy request validation failed');
-			
-			const errorResponse = createLegacyErrorResponse(
-				'Validation failed',
-				{ _general: [errorMsg] }
-			);
-			
-			return json(errorResponse, { status: 400 });
-		}
-
-		// Comprehensive field validation
-		const validation = validateLegacySighting(requestData);
+		// Comprehensive field validation using Yup schema with German messages  
+		const validation = await validateLegacySightingWithYup(requestData);
 		if (!validation.isValid) {
 			logger.warn({ 
 				errors: validation.errors, 
 				ip: clientIp 
 			}, 'Legacy field validation failed');
 			
-			const errorResponse = createLegacyErrorResponse(
-				'Field validation failed',
-				validation.errors
-			);
+			const errorResponse = createLegacyErrorFromYup(validation);
 			
 			return json(errorResponse, { status: 400 });
 		}
@@ -120,7 +113,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
 				ip: clientIp 
 			}, 'Failed to map legacy data to current schema');
 			
-			const errorResponse = createLegacyErrorResponse(
+			const errorResponse = createOriginalApiErrorResponse(
 				'Data transformation failed',
 				{ _general: [errorMsg] }
 			);
@@ -151,7 +144,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
 
 			// Handle different types of save errors
 			if (isError && saveError.name === 'ValidationError') {
-				const errorResponse = createLegacyErrorResponse(
+				const errorResponse = createOriginalApiErrorResponse(
 					'Sighting validation failed',
 					{ _general: [errorMsg] }
 				);
@@ -189,7 +182,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
 			ip: clientIp 
 		}, 'Unexpected error in PDF-compliant legacy sighting creation');
 
-		const errorResponse = createLegacyErrorResponse(
+		const errorResponse = createOriginalApiErrorResponse(
 			'Internal server error',
 			{ _general: ['An unexpected error occurred'] }
 		);
