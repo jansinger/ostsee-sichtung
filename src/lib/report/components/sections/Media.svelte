@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
 	import { getFormContext } from '$lib/report/formContext';
 	import { Camera } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
@@ -17,9 +18,9 @@
 			<Icon src={Camera} size="20" class="text-primary" />
 			Foto- oder Videoaufnahmen
 		</h3>
-		<div class="mb-4 text-sm text-base-content/70">
-			<p class="font-medium mb-2">📸 Fotos und Videos sind extrem wertvoll für die Forschung!</p>
-			<ul class="list-disc list-inside space-y-1 text-xs">
+		<div class="text-base-content/70 mb-4 text-sm">
+			<p class="mb-2 font-medium">📸 Fotos und Videos sind extrem wertvoll für die Forschung!</p>
+			<ul class="list-inside list-disc space-y-1 text-xs">
 				<li><strong>Artbestimmung:</strong> Auch unscharfe Bilder können helfen</li>
 				<li><strong>Verhaltensanalyse:</strong> Videos zeigen wichtige Verhaltensmuster</li>
 				<li><strong>GPS-Daten:</strong> Automatische Positionserkennung aus Bildern</li>
@@ -27,7 +28,12 @@
 			</ul>
 		</div>
 		<FormField name="mediaConsent" />
-		<DropzoneEnhanced {referenceId} />
+		<DropzoneEnhanced
+			{referenceId}
+			maxFiles={10}
+			config={FILE_VALIDATION_PRESETS.MEDIA}
+			enableGPSExtraction={false}
+		/>
 		<div class="alert alert-info mt-4">
 			<Icon src={Camera} size="20" />
 			<span class="text-sm">

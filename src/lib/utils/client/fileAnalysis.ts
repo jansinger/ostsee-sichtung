@@ -2,9 +2,7 @@
  * Client-side file analysis utilities
  * Diese funktionen nutzen die browser APIs für basic file validation und analysis
  */
-import { createLogger } from '$lib/logger';
-
-const logger = createLogger('client:fileAnalysis');
+import * as exifr from 'exifr';
 
 export interface ClientFileMetadata {
 	name: string;
@@ -21,37 +19,142 @@ export interface ClientFileMetadata {
 }
 
 /**
- * Analysiert eine Datei client-seitig (ohne EXIF-Daten)
- * Für EXIF-Daten muss die Datei server-seitig verarbeitet werden
+ * Extrahiert EXIF-Daten client-seitig aus einem Bild
+ */
+async function extractClientExifData(file: File): Promise<{
+	latitude: number | null;
+	longitude: number | null;
+	altitude: number | null;
+	timestamp: Date | null;
+}> {
+	try {
+		if (!file.type.startsWith('image/')) {
+			return {
+				latitude: null,
+				longitude: null,
+				altitude: null,
+				timestamp: null
+			};
+		}
+
+		// Try GPS-specific extraction first (more reliable for GPS data)
+		const gpsData = await exifr.gps(file);
+
+		// Also get general EXIF data for timestamps and altitude
+		const exifData = await exifr.parse(file, {
+			gps: true,
+			pick: ['latitude', 'longitude', 'altitude', 'DateTimeOriginal', 'DateTime']
+		});
+
+		if (!exifData && !gpsData) {
+			return {
+				latitude: null,
+				longitude: null,
+				altitude: null,
+				timestamp: null
+			};
+		}
+
+		// Extract GPS coordinates
+		let latitude: number | null = null;
+		let longitude: number | null = null;
+		let altitude: number | null = null;
+
+		// Try to get GPS coordinates from GPS-specific extraction first, then fallback to general EXIF
+		if (gpsData && gpsData.latitude && gpsData.longitude) {
+			latitude = gpsData.latitude;
+			longitude = gpsData.longitude;
+		} else if (exifData && exifData.latitude && exifData.longitude) {
+			latitude = parseFloat(exifData.latitude.toString());
+			longitude = parseFloat(exifData.longitude.toString());
+		}
+
+		if (exifData && exifData.altitude) {
+			altitude = parseFloat(exifData.altitude.toString());
+		}
+
+		// Extract timestamp
+		let timestamp: Date | null = null;
+		if (exifData && exifData.DateTimeOriginal) {
+			timestamp = new Date(exifData.DateTimeOriginal);
+		} else if (exifData && exifData.DateTime) {
+			timestamp = new Date(exifData.DateTime);
+		}
+
+
+		return {
+			latitude,
+			longitude,
+			altitude,
+			timestamp
+		};
+	} catch (_error) {
+		return {
+			latitude: null,
+			longitude: null,
+			altitude: null,
+			timestamp: null
+		};
+	}
+}
+
+/**
+ * Analysiert eine Datei client-seitig (mit EXIF-Daten wenn möglich)
  */
 export async function analyzeClientFile(file: File): Promise<ClientFileMetadata> {
+	// Extract EXIF data first (for images)
+	const exifData = await extractClientExifData(file);
+
 	const metadata: ClientFileMetadata = {
 		name: file.name,
 		size: file.size,
 		type: file.type,
 		lastModified: new Date(file.lastModified),
-		exif: {
-			latitude: null,
-			longitude: null,
-			altitude: null,
-			timestamp: null
-		}
+		exif: exifData
 	};
 
 	// Erstelle Thumbnail für Bilder
 	if (file.type.startsWith('image/')) {
 		try {
 			metadata.thumbnail = await createImageThumbnail(file);
-		} catch (error) {
-			logger.warn({ error, fileName: file.name }, 'Error creating image thumbnail');
+		} catch (_error) {
+			// Ignore thumbnail creation errors
 		}
 	} else if (file.type.startsWith('video/')) {
 		try {
 			metadata.thumbnail = await createVideoThumbnail(file);
-		} catch (error) {
-			logger.warn({ error, fileName: file.name }, 'Error creating video thumbnail');
+		} catch (_error) {
+			// Ignore thumbnail creation errors
 		}
 	}
+
+	return metadata;
+}
+
+/**
+ * Sofortige Dateianalyse für instant preview und EXIF-Anzeige
+ * Erstellt Thumbnail und extrahiert EXIF-Daten für sofortige Anzeige
+ */
+export async function analyzeFileInstant(file: File): Promise<ClientFileMetadata> {
+	// Create instant object URL for immediate preview of images
+	let thumbnail: string | undefined;
+	if (file.type.startsWith('image/')) {
+		// Create immediate object URL for instant display
+		thumbnail = URL.createObjectURL(file);
+	}
+
+	// Extract EXIF data in parallel
+	const exifData = await extractClientExifData(file);
+
+	const metadata: ClientFileMetadata = {
+		name: file.name,
+		size: file.size,
+		type: file.type,
+		lastModified: new Date(file.lastModified),
+		...(thumbnail && { thumbnail }),
+		exif: exifData
+	};
+
 
 	return metadata;
 }

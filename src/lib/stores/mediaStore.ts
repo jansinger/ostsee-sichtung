@@ -13,9 +13,21 @@ export interface MediaStore {
 
 function createMediaStore() {
 	const { subscribe, update, set } = writable<MediaStore>({ files: [] });
+	
+	let currentStore: MediaStore = { files: [] };
+	
+	// Keep track of current store value
+	subscribe(value => {
+		currentStore = value;
+	});
 
 	return {
 		subscribe,
+		
+		/**
+		 * Get current store value
+		 */
+		get: () => currentStore,
 
 		/**
 		 * Add a file from the position step (will be marked as first media file)

@@ -7,9 +7,10 @@
 import { ALLOWED_MIME_TYPES, UPLOAD_LIMITS } from '$lib/constants/upload';
 
 export interface FileValidationConfig {
-	allowedTypes: string[];
-	maxSize?: number; // in bytes
+	allowedTypes: readonly string[];
+	maxFileSize?: number; // in bytes
 	maxFiles?: number;
+	accept?: string;
 }
 
 export interface FileValidationResult {
@@ -57,13 +58,13 @@ export function validateFiles(files: FileList | File[], config: FileValidationCo
 		const fileErrors: string[] = [];
 
 		// MIME-Type prüfen
-		if (!config.allowedTypes.includes(file.type)) {
+		if (!(config.allowedTypes as string[]).includes(file.type)) {
 			fileErrors.push(`Dateityp "${file.type}" nicht erlaubt`);
 		}
 
 		// Dateigröße prüfen
-		if (config.maxSize && file.size > config.maxSize) {
-			const maxSizeMB = (config.maxSize / (1024 * 1024)).toFixed(1);
+		if (config.maxFileSize && file.size > config.maxFileSize) {
+			const maxSizeMB = (config.maxFileSize / (1024 * 1024)).toFixed(1);
 			const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
 			fileErrors.push(`Datei zu groß (${fileSizeMB}MB). Maximal ${maxSizeMB}MB erlaubt`);
 		}

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { validateFiles, FILE_VALIDATION_PRESETS } from './fileValidation';
+import { validateFiles } from './fileValidation';
+import { FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
 import type { FileValidationConfig } from './fileValidation';
 
 describe('fileValidation', () => {
@@ -10,7 +11,7 @@ describe('fileValidation', () => {
 			
 			const config: FileValidationConfig = {
 				allowedTypes: ['image/jpeg'],
-				maxSize: 5000 // 5KB
+				maxFileSize: 5000 // 5KB
 			};
 			
 			const result = validateFiles([imageFile], config);
@@ -25,7 +26,7 @@ describe('fileValidation', () => {
 			
 			const config: FileValidationConfig = {
 				allowedTypes: ['image/jpeg'],
-				maxSize: 5000 // 5KB
+				maxFileSize: 5000 // 5KB
 			};
 			
 			const result = validateFiles([largeFile], config);
@@ -38,7 +39,7 @@ describe('fileValidation', () => {
 			
 			const config: FileValidationConfig = {
 				allowedTypes: ['image/jpeg'],
-				maxSize: 5000
+				maxFileSize: 5000
 			};
 			
 			const result = validateFiles([textFile], config);
@@ -62,15 +63,15 @@ describe('fileValidation', () => {
 	});
 
 	describe('FILE_VALIDATION_PRESETS', () => {
-		it('should have PHOTO_GPS preset', () => {
-			expect(FILE_VALIDATION_PRESETS.PHOTO_GPS).toBeDefined();
-			expect(FILE_VALIDATION_PRESETS.PHOTO_GPS.maxSize).toBeGreaterThan(0);
-			expect(FILE_VALIDATION_PRESETS.PHOTO_GPS.allowedTypes).toContain('image/jpeg');
+		it('should have GPS_PHOTO preset', () => {
+			expect(FILE_VALIDATION_PRESETS.GPS_PHOTO).toBeDefined();
+			expect(FILE_VALIDATION_PRESETS.GPS_PHOTO.maxFileSize).toBeGreaterThan(0);
+			expect(FILE_VALIDATION_PRESETS.GPS_PHOTO.allowedTypes).toContain('image/jpeg');
 		});
 
 		it('should have MEDIA preset', () => {
 			expect(FILE_VALIDATION_PRESETS.MEDIA).toBeDefined();
-			expect(FILE_VALIDATION_PRESETS.MEDIA.maxSize).toBeGreaterThan(0);
+			expect(FILE_VALIDATION_PRESETS.MEDIA.maxFileSize).toBeGreaterThan(0);
 			expect(Array.isArray(FILE_VALIDATION_PRESETS.MEDIA.allowedTypes)).toBe(true);
 		});
 	});

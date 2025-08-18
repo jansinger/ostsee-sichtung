@@ -61,18 +61,24 @@ import * as yup from 'yup';
 
 export const sightingSchemaBase = yup.object().shape({
 	referenceId: yup.string().required().label('Referenz-ID'),
-	
+
 	// Array of uploaded file paths for database storage
-	uploadedFiles: yup.array().of(yup.object().shape({
-		filePath: yup.string().required(),
-		originalName: yup.string().required(),
-		fileName: yup.string().optional(),
-		mimeType: yup.string().required(),
-		size: yup.number().required(),
-		url: yup.string().optional(),
-		uploadedAt: yup.string().optional(),
-		exifData: yup.mixed().optional()
-	})).optional().default([]),
+	uploadedFiles: yup
+		.array()
+		.of(
+			yup.object().shape({
+				filePath: yup.string().required(),
+				originalName: yup.string().required(),
+				fileName: yup.string().optional(),
+				mimeType: yup.string().required(),
+				size: yup.number().required(),
+				url: yup.string().optional(),
+				uploadedAt: yup.string().optional(),
+				exifData: yup.mixed().optional()
+			})
+		)
+		.optional()
+		.default([]),
 
 	//----------------------------------------------------------------------
 	// Position (Positionsangabe)
@@ -86,7 +92,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Position verfügbar')
 		.meta({
 			type: 'toggle',
-			helpText: 'Wissen Sie die genaue GPS-Position?',
+			helpText: 'Wissen Sie die genaue GPS-Position oder haben Sie ein Bild mit GPS Daten?',
 			valueText: 'Falls nein, können Sie das Gebiet beschreiben',
 			icon: ToggleLeft
 		})
@@ -107,7 +113,7 @@ export const sightingSchemaBase = yup.object().shape({
 			is: true,
 			then: (schema) =>
 				schema
-					.required('GPS-Position: Breitengrad fehlt')
+					.required('GPS-Position: Breitengrad ist erforderlich')
 					.min(53, 'Der Wert muss zwischen 53° und 56° liegen (Ostseebereich)')
 					.max(56, 'Der Wert muss zwischen 53° und 56° liegen (Ostseebereich)'),
 			otherwise: (schema) => schema.notRequired()
@@ -133,7 +139,7 @@ export const sightingSchemaBase = yup.object().shape({
 			is: true,
 			then: (schema) =>
 				schema
-					.required('GPS-Position: Längengrad fehlt')
+					.required('GPS-Position: Längengrad ist erforderlich')
 					.min(9, 'Der Wert muss zwischen 9° und 15° liegen (Ostseebereich)')
 					.max(15, 'Der Wert muss zwischen 9° und 15° liegen (Ostseebereich)'),
 			otherwise: (schema) => schema.notRequired()
@@ -154,11 +160,11 @@ export const sightingSchemaBase = yup.object().shape({
 	 */
 	waterway: yup
 		.string()
-		.max(255, 'Der Name ist zu lang (maximal 255 Zeichen)')
+		.max(255, 'Der Name des Fahrwassers/Seegebiets ist zu lang (maximal 255 Zeichen)')
 		.label('Fahrwasser/Seegebiet')
 		.meta({
 			placeholder: 'z.B. Kieler Bucht, Fehmarnbelt',
-			helpText: 'Welches Gewässer oder Gebiet?',
+			helpText: 'In welchem Gewässer oder Gebiet befanden Sie sich zum Zeitpunkt der Sichtung?',
 			valueText: 'Alternative zur GPS-Position',
 			icon: Waves
 		})
@@ -170,11 +176,11 @@ export const sightingSchemaBase = yup.object().shape({
 	 */
 	seaMark: yup
 		.string()
-		.max(255, 'Der Name ist zu lang (maximal 255 Zeichen)')
+		.max(255, 'Der Name des Seezeichensist zu lang (maximal 255 Zeichen)')
 		.label('Seezeichen in der Nähe')
 		.meta({
 			placeholder: 'z.B. Leuchtturm Dahmeshöved',
-			helpText: 'Gab es markante Orientierungspunkte?',
+			helpText: 'Gab es markante Orientierungspunkte in der Nähe der Sichtung?',
 			valueText: 'Leuchtturm, Boje, oder andere Seezeichen',
 			icon: Anchor
 		})
@@ -190,7 +196,7 @@ export const sightingSchemaBase = yup.object().shape({
 	 */
 	sightingDate: yup
 		.string()
-		.required('Wann war die Sichtung? Datum erforderlich')
+		.required('Das Datum ist erforderlich')
 		.test('is-valid-date', 'Das Datum liegt in der Zukunft - bitte korrigieren Sie es', (value) => {
 			const date = new Date(value);
 			return !isNaN(date.getTime()) && date <= new Date();
@@ -216,8 +222,8 @@ export const sightingSchemaBase = yup.object().shape({
 		)
 		.label('Uhrzeit')
 		.meta({
-			helpText: 'Wann ungefähr? (optional)',
-			valueText: 'Muster: Morgens öfter Fütterung',
+			helpText: 'Zu welchem Zeitlpunkt ungefähr? (optional)',
+			valueText: 'Hilft bei der Erkennung von Verhaltensmustern',
 			type: 'time',
 			icon: Clock
 		})
@@ -239,7 +245,7 @@ export const sightingSchemaBase = yup.object().shape({
 		)
 		.label('Welche Tierart haben Sie gesehen?')
 		.meta({
-			helpText: 'Bei Unsicherheit wählen Sie "Unbekannt"',
+			helpText: 'Bei Unsicherheit wählen Sie "Unbekannte Wal- oder Robbenart"',
 			valueText: 'Artbestimmung hilft beim Populationsmonitoring',
 			type: 'select',
 			options: getSpeciesOptions(true),
@@ -262,7 +268,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: '1',
 			helpText: 'Schätzen Sie die Gesamtzahl',
-			valueText: 'Gruppengröße ist wichtig für Populationsanalysen',
+			valueText: 'Die Gruppengröße ist wichtig für Populationsanalysen',
 			step: 1,
 			icon: Hash
 		})
@@ -281,7 +287,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Davon Jungtiere')
 		.meta({
 			placeholder: '0',
-			helpText: 'Junge Tiere sehen? Anzahl eingeben',
+			helpText: 'Waren Junge Tiere dabei? Bitte geben Sie die Anzahl ein.',
 			valueText: 'Nachwuchsrate zeigt Gesundheit der Population',
 			icon: Baby
 		})
@@ -296,7 +302,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.boolean()
 		.label('Handelt es sich um einen Totfund?')
 		.meta({
-			helpText: 'Lebende Tiere oder Totfund?',
+			helpText: 'Handeltete es sich um Lebende Tiere oder einen Totfund?',
 			valueText: 'Totfunde liefern wichtige Informationen über Todesursachen',
 			icon: Skull
 		})
@@ -322,7 +328,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Zustand des toten Tieres')
 		.meta({
 			helpText: 'Beschreibung des Erhaltungszustands',
-			valueText: 'Zustand hilft bei der wissenschaftlichen Auswertung',
+			valueText: 'Der Zustand hilft bei der wissenschaftlichen Auswertung',
 			type: 'select',
 			options: getAnimalConditionOptions(),
 			icon: Archive
@@ -348,7 +354,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Geschlecht (Totfund)')
 		.meta({
 			helpText: 'Falls erkennbar',
-			valueText: 'Geschlechtsverteilung wichtig für Populationsstruktur',
+			valueText: 'Die Geschlechtsverteilung ist wichtig für Populationsstruktur',
 			type: 'select',
 			options: getSexOptions(),
 			icon: Users
@@ -373,7 +379,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'z.B. 150',
 			helpText: 'Geschätzte oder gemessene Länge',
-			valueText: 'Körpergröße hilft bei Altersbestimmung',
+			valueText: 'Die Körpergröße hilft bei Altersbestimmung',
 			icon: Move
 		}),
 
@@ -383,9 +389,9 @@ export const sightingSchemaBase = yup.object().shape({
 	 */
 	informedAuthorities: yup
 		.boolean()
-		.label('Behörden informiert')
+		.label('Meeresmuseum informiert')
 		.meta({
-			helpText: 'Wurden bereits Behörden über den Totfund benachrichtigt?',
+			helpText: 'Wurde das Meeresmuseum bereits über den Totfund benachrichtigt?',
 			valueText: 'Vermeidet Doppelmeldungen und koordiniert Bergung',
 			icon: UserCheck
 		})
@@ -408,7 +414,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Von wo aus wurde die Sichtung gemacht?')
 		.meta({
 			helpText: 'Wählen Sie Ihre Beobachtungsposition',
-			valueText: 'Standort bestimmt Sichtbedingungen und Beobachtungsqualität',
+			valueText: 'Der Standort bestimmt Sichtbedingungen und Beobachtungsqualität',
 			type: 'select',
 			options: getSightingFromOptions(),
 			icon: MapPin
@@ -447,8 +453,8 @@ export const sightingSchemaBase = yup.object().shape({
 		)
 		.label('Entfernung zum Tier')
 		.meta({
-			helpText: 'Wie weit waren die Tiere entfernt?',
-			valueText: 'Entfernung beeinflusst Identifikationssicherheit',
+			helpText: 'Wie weit waren die Tiere entfernt? (Schätzung)',
+			valueText: 'Die Entfernung beeinflusst die Identifikationssicherheit',
 			type: 'select',
 			options: getDistanceOptions(),
 			icon: Eye
@@ -468,7 +474,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Verteilung der Tiere')
 		.meta({
 			helpText: 'Wie waren die Tiere räumlich angeordnet?',
-			valueText: 'Gruppierungsverhalten wichtig für Sozialverhalten',
+			valueText: 'Die Verteilung der Tiere ist wichtig für das Sozialverhalten',
 			type: 'select',
 			options: getDistributionOptions(),
 			icon: Users
@@ -490,7 +496,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Sonstige Verteilung')
 		.meta({
 			placeholder: 'z.B. in lockerer Formation...',
-			helpText: 'Beschreiben Sie die Anordnung der Tiere',
+			helpText: 'Beschreiben Sie die Verteilung der Tiere',
 			icon: FileText
 		}),
 
@@ -508,8 +514,8 @@ export const sightingSchemaBase = yup.object().shape({
 		)
 		.label('Verhalten der Tiere')
 		.meta({
-			helpText: 'Beschreiben Sie das Verhalten',
-			valueText: 'Verhaltensanalysen geben Aufschluss über Lebensweise',
+			helpText: 'Beschreiben Sie das Verhalten der Tiere',
+			valueText: 'Verhaltensanalysen geben Aufschluss über die Lebensweise',
 			type: 'select',
 			options: getAnimalBehaviorOptions(),
 			icon: Activity
@@ -531,7 +537,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Sonstiges Verhalten')
 		.meta({
 			placeholder: 'z.B. Spielverhalten, ungewöhnliche Aktivität...',
-			helpText: 'Beschreiben Sie das beobachtete Verhalten',
+			helpText: 'Beschreiben Sie das beobachtete Verhalten der Tiere',
 			icon: MessageCircle
 		}),
 
@@ -564,13 +570,13 @@ export const sightingSchemaBase = yup.object().shape({
 		.transform((value) => (isNaN(value) ? undefined : value))
 		.test(
 			'is-valid-sea-state',
-			'Bitte geben Sie eine gültige Seegang-Kategorie an.',
+			'Bitte geben Sie einen gültigen Seegang an.',
 			(value) => value === undefined || isValidSeaState(value)
 		)
 		.label('Seegang')
 		.meta({
 			helpText: 'Wie war die Beschaffenheit der Meeresoberfläche?',
-			valueText: 'Seegang beeinflusst Sichtbarkeit der Tiere',
+			valueText: 'Der Seegang beeinflusst die Sichtbarkeit der Tiere',
 			type: 'select',
 			options: getSeaStateOptions(),
 			icon: Waves
@@ -592,7 +598,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Sichtweite')
 		.meta({
 			helpText: 'Wie weit konnten Sie sehen?',
-			valueText: 'Sichtweite bestimmt Entdeckungswahrscheinlichkeit',
+			valueText: 'Die geschätzte Sichtweite bestimmt die Entdeckungswahrscheinlichkeit',
 			type: 'select',
 			options: getVisibilityOptions(),
 			icon: Eye
@@ -632,7 +638,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'z.B. 3',
 			helpText: 'Windstärke nach Beaufort-Skala (0-12)',
-			valueText: 'Windstärke zeigt Wetterbedingungen während der Sichtung',
+			valueText: 'Die Windstärke zeigt die Wetterbedingungen während der Sichtung',
 			type: 'select',
 			options: getWindStrengthOptions(),
 			icon: CloudRain
@@ -681,8 +687,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.boolean()
 		.label('Einverständnis zur Mediennutzung')
 		.meta({
-			helpText: 'Stimmen Sie der wissenschaftlichen Nutzung zu?',
-			valueText: 'Ermöglicht Verwendung für Forschung und Öffentlichkeitsarbeit',
+			helpText: 'Stimmen Sie der wissenschaftlichen Nutzung der Aufnahmen zu?',
+			valueText: 'Ermöglicht die Verwendung für Forschung und Öffentlichkeitsarbeit',
 			icon: Check
 		})
 		.default(false),
@@ -734,7 +740,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'z.B. Segelboot, Motoryacht',
 			helpText: 'Art Ihres Wasserfahrzeugs',
-			valueText: 'Bootstyp beeinflusst Beobachtungsbedingungen',
+			valueText: 'Der Bootstyp beeinflusst Beobachtungsbedingungen',
 			icon: Anchor
 		})
 		.notRequired(),
@@ -753,7 +759,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'z.B. 2',
 			helpText: 'Wie viele andere Boote waren in der Nähe?',
-			valueText: 'Schiffsverkehr kann Tierverhalten beeinflussen',
+			valueText: 'Der Schiffsverkehr kann das Tierverhalten beeinflussen',
 			icon: CountIcon
 		})
 		.notRequired(),
@@ -771,8 +777,8 @@ export const sightingSchemaBase = yup.object().shape({
 		)
 		.label('Bootsantrieb')
 		.meta({
-			helpText: 'Wie wird Ihr Boot angetrieben?',
-			valueText: 'Antriebsart beeinflusst Geräuschentwicklung und Tierreaktionen',
+			helpText: 'Welcher Antrieb wurde während der Sichtung verwendet?',
+			valueText: 'Der Bootsantrieb beeinflusst Geräuschentwicklung und Tierreaktionen',
 			type: 'select',
 			options: getBoatDriveOptions(),
 			icon: Zap
@@ -794,7 +800,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Sonstiger Antrieb')
 		.meta({
 			placeholder: 'z.B. Hybridantrieb, Elektro...',
-			helpText: 'Beschreiben Sie Ihren Bootsantrieb',
+			helpText: 'Beschreiben Sie den Bootsantrieb während der Sichtung.',
 			icon: Car
 		}),
 
@@ -808,7 +814,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			helpText:
 				'Ich stimme zu, dass der Schiffsname öffentlich auf der Karte angezeigt wird und in Berichten genannt werden darf.',
-			valueText: 'Ermöglicht Würdigung der Beobachter in Publikationen',
+			valueText: 'Ermöglicht die Würdigung der Beobachtenden in Publikationen',
 			icon: Ship,
 			type: 'checkbox'
 		})
@@ -830,7 +836,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'Max',
 			helpText: 'Wie dürfen wir Sie ansprechen?',
-			valueText: 'Für persönliche Kontaktaufnahme',
+			valueText: 'Für die persönliche Kontaktaufnahme',
 			icon: User
 		}),
 
@@ -857,13 +863,13 @@ export const sightingSchemaBase = yup.object().shape({
 	email: yup
 		.string()
 		.email('Bitte geben Sie eine gültige E-Mail-Adresse ein.')
-		.required('Das sieht nicht wie eine E-Mail-Adresse aus')
+		.required('Die E-Mail-Adresse ist erforderlich.')
 		.max(64, 'Die E-Mail-Adresse darf nicht länger als 64 Zeichen sein.')
 		.label('E-Mail-Adresse')
 		.meta({
 			placeholder: 'max.mustermann@email.de',
-			helpText: 'Wo können wir Sie erreichen?',
-			valueText: 'Für Rückfragen und Bestätigung der Sichtung',
+			helpText: 'Wie können wir Sie erreichen?',
+			valueText: 'Für Rückfragen und zur Bestätigung der Sichtung',
 			type: 'email',
 			icon: Mail
 		}),
@@ -943,7 +949,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			helpText:
 				'Ich stimme zu, dass mein Name (Vor- und Nachname) öffentlich auf der Karte angezeigt wird und in Berichten genannt werden darf.',
-			valueText: 'Ermöglicht Würdigung der Beobachter in Publikationen',
+			valueText: 'Ermöglicht die Würdigung der Beobachter in Publikationen',
 			icon: UserCheck,
 			type: 'checkbox'
 		})
@@ -981,7 +987,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'Ungewöhnliches Verhalten, andere Tiere...',
 			helpText: 'Weitere interessante Beobachtungen',
-			valueText: 'Zusatzinformationen erweitern wissenschaftlichen Wert',
+			valueText: 'Zusatzinformationen erweitern den wissenschaftlichen Wert',
 			icon: MessageCircle
 		})
 		.notRequired(),
@@ -994,7 +1000,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.boolean()
 		.label('Telefonkontakt bei Totfund')
 		.meta({
-			helpText: 'Sollen wir Sie bei Totfunden anrufen?',
+			helpText: 'Dürfen wir Sie bei Totfunden anrufen?',
 			valueText: 'Ermöglicht schnelle Koordination von Bergungsmaßnahmen',
 			icon: PhoneCall
 		})
