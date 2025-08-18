@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.9.0 (2025-08-18)
+
+* Merge pull request #31 from jansinger/dependabot/npm_and_yarn/rollup/rollup-linux-x64-gnu-4.46.3 ([1c9124d](https://github.com/jansinger/ostsee-sichtung/commit/1c9124d)), closes [#31](https://github.com/jansinger/ostsee-sichtung/issues/31)
+* Merge pull request #35 from jansinger/dependabot/npm_and_yarn/sveltejs/adapter-vercel-5.9.1 ([09e8dfa](https://github.com/jansinger/ostsee-sichtung/commit/09e8dfa)), closes [#35](https://github.com/jansinger/ostsee-sichtung/issues/35)
+* Merge pull request #36 from jansinger/dependabot/npm_and_yarn/types/node-22.17.2 ([054209b](https://github.com/jansinger/ostsee-sichtung/commit/054209b)), closes [#36](https://github.com/jansinger/ostsee-sichtung/issues/36)
+* Merge pull request #37 from jansinger/feature/optimize-github-workflows ([259f6e0](https://github.com/jansinger/ostsee-sichtung/commit/259f6e0)), closes [#37](https://github.com/jansinger/ostsee-sichtung/issues/37)
+* fix(ci): correct YAML syntax for boolean comparisons ([4b6620b](https://github.com/jansinger/ostsee-sichtung/commit/4b6620b))
+* feat(ci): add optimized github actions workflows ([dd63cff](https://github.com/jansinger/ostsee-sichtung/commit/dd63cff))
+* feat(ci): complete workflow consolidation - unified PR validation ([6a66bf7](https://github.com/jansinger/ostsee-sichtung/commit/6a66bf7)), closes [#37](https://github.com/jansinger/ostsee-sichtung/issues/37)
+* feat(ci): implement advanced workflow optimizations ([bbcaa49](https://github.com/jansinger/ostsee-sichtung/commit/bbcaa49))
+* feat(ci): safely disable old dependabot-combined workflow ([7b330e9](https://github.com/jansinger/ostsee-sichtung/commit/7b330e9))
+* perf(ci): optimize workflow execution with better script usage ([2a16773](https://github.com/jansinger/ostsee-sichtung/commit/2a16773))
+* refactor(ci): remove old workflow files after successful migration ([dc342ed](https://github.com/jansinger/ostsee-sichtung/commit/dc342ed))
+* test(ci): add workflow test documentation ([3068fb6](https://github.com/jansinger/ostsee-sichtung/commit/3068fb6))
+* chore(deps-dev): bump @sveltejs/adapter-vercel from 5.8.2 to 5.9.1 ([135aa28](https://github.com/jansinger/ostsee-sichtung/commit/135aa28))
+* chore(deps-dev): bump @types/node from 22.17.1 to 22.17.2 ([eda61f2](https://github.com/jansinger/ostsee-sichtung/commit/eda61f2))
+* chore(deps): bump @rollup/rollup-linux-x64-gnu from 4.24.0 to 4.46.3 ([b9fa0af](https://github.com/jansinger/ostsee-sichtung/commit/b9fa0af))
+
 ## <small>1.8.1 (2025-08-18)</small>
 
 * Merge pull request #32 from jansinger/dependabot/npm_and_yarn/sveltejs/kit-2.31.1 ([07ecdac](https://github.com/jansinger/ostsee-sichtung/commit/07ecdac)), closes [#32](https://github.com/jansinger/ostsee-sichtung/issues/32)
