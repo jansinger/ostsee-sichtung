@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.6.0 (2025-08-18)
+
+* Merge pull request #26 from jansinger/preview ([0ab776d](https://github.com/jansinger/ostsee-sichtung/commit/0ab776d)), closes [#26](https://github.com/jansinger/ostsee-sichtung/issues/26)
+* Merge remote-tracking branch 'origin/main' into preview ([30110c9](https://github.com/jansinger/ostsee-sichtung/commit/30110c9))
+* feat: Add 'updated-dependencies' to commitlint configuration ([a550f6a](https://github.com/jansinger/ostsee-sichtung/commit/a550f6a))
+* feat: Add statistics page with data visualization and insights ([115bc21](https://github.com/jansinger/ostsee-sichtung/commit/115bc21))
+* feat: Entferne die Validierung von PR-Commits mit commitlint ([e85f4ab](https://github.com/jansinger/ostsee-sichtung/commit/e85f4ab))
+* feat: Erweiterung der commitlint-Konfiguration zur Ignorierung von Dependabot-Commits ([e7cd4d7](https://github.com/jansinger/ostsee-sichtung/commit/e7cd4d7))
+* feat: Ignore merge commits in commitlint configuration ([3b1fba3](https://github.com/jansinger/ostsee-sichtung/commit/3b1fba3))
+* feat: Implement step skipping functionality and enhance DeadAnimal section layout ([a93b265](https://github.com/jansinger/ostsee-sichtung/commit/a93b265))
+* feat: Implement user menu component and integrate it into various pages ([d0d437d](https://github.com/jansinger/ostsee-sichtung/commit/d0d437d))
+* feat: Replace custom conventional commit check with commitlint validation in PR workflow ([21700bd](https://github.com/jansinger/ostsee-sichtung/commit/21700bd))
+* feat(admin): add comprehensive statistics dashboard ([2638e66](https://github.com/jansinger/ostsee-sichtung/commit/2638e66))
+* refactor: Optimize imports and improve navbar layout for better readability ([2aeb2e7](https://github.com/jansinger/ostsee-sichtung/commit/2aeb2e7))
+* refactor: update CLAUDE.md for improved clarity and consistency in instructions ([9468bc4](https://github.com/jansinger/ostsee-sichtung/commit/9468bc4))
+
 ## 1.5.0 (2025-08-18)
 
 * Merge pull request #25 from jansinger/preview ([5b308d1](https://github.com/jansinger/ostsee-sichtung/commit/5b308d1)), closes [#25](https://github.com/jansinger/ostsee-sichtung/issues/25)
