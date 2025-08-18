@@ -38,6 +38,14 @@
 									Karte
 								</a>
 							</li>
+							<li>
+								<a
+									href="/admin/statistics"
+									class={$page.url.pathname.includes('/admin/statistics') ? 'active font-medium' : ''}
+								>
+									Statistiken
+								</a>
+							</li>
 						</ul>
 
 						<!-- User menu - Desktop -->
@@ -106,6 +114,14 @@
 									class={$page.url.pathname.includes('/admin/map') ? 'active font-medium' : ''}
 								>
 									Karte
+								</a>
+							</li>
+							<li>
+								<a
+									href="/admin/statistics"
+									class={$page.url.pathname.includes('/admin/statistics') ? 'active font-medium' : ''}
+								>
+									Statistiken
 								</a>
 							</li>
 
