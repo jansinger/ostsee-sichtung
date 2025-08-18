@@ -2,7 +2,7 @@
 
 This project uses third-party software components. The following is a list of these components and their respective licenses.
 
-Generated on: 2025-08-18
+Generated on: [AUTO-GENERATED]
 
 ## License Summary
 

@@ -65,13 +65,22 @@ jobs:
           echo "📄 Generating license notices..."
           npm run generate:licenses
           
-          # Check if THIRD-PARTY-NOTICES.md has changed
-          if git diff --exit-code THIRD-PARTY-NOTICES.md; then
+          # Check if THIRD-PARTY-NOTICES.md has changed (ignore date changes)
+          if git diff --exit-code THIRD-PARTY-NOTICES.md | grep -v "Generated on:"; then
             echo "✅ THIRD-PARTY-NOTICES.md is up to date"
           else
-            echo "⚠️ THIRD-PARTY-NOTICES.md needs to be updated"
-            echo "Run 'npm run generate:licenses' and commit the changes"
-            exit 1
+            # Check if only the date changed
+            CHANGES=$(git diff THIRD-PARTY-NOTICES.md | grep -v "Generated on:" | grep "^[+-]" | grep -v "^[+-]$" || true)
+            if [ -z "$CHANGES" ]; then
+              echo "✅ THIRD-PARTY-NOTICES.md is up to date (only date changed)"
+            else
+              echo "⚠️ THIRD-PARTY-NOTICES.md needs to be updated"
+              echo "Changes detected:"
+              git diff THIRD-PARTY-NOTICES.md
+              echo ""
+              echo "Run 'npm run generate:licenses' locally and commit the changes"
+              exit 1
+            fi
           fi
       
       - name: Check for unlicensed packages

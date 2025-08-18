@@ -47,7 +47,7 @@ async function generateLicenseNotices() {
 
 This project uses third-party software components. The following is a list of these components and their respective licenses.
 
-Generated on: ${new Date().toISOString().split('T')[0]}
+Generated on: [AUTO-GENERATED]
 
 ## License Summary
 
