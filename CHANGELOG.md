@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.11.0 (2025-08-18)
+
+* Merge pull request #42 from jansinger/feature/media-upload-flags-script ([739cd3b](https://github.com/jansinger/ostsee-sichtung/commit/739cd3b)), closes [#42](https://github.com/jansinger/ostsee-sichtung/issues/42)
+* Merge remote-tracking branch 'origin/main' into feature/media-upload-flags-script ([1b45e65](https://github.com/jansinger/ostsee-sichtung/commit/1b45e65))
+* feat(db): add media upload flags correction script ([aa1ce13](https://github.com/jansinger/ostsee-sichtung/commit/aa1ce13))
+
 ## 1.10.0 (2025-08-18)
 
 * Merge pull request #38 from jansinger/fix/workflow-yaml-syntax ([c1d227c](https://github.com/jansinger/ostsee-sichtung/commit/c1d227c)), closes [#38](https://github.com/jansinger/ostsee-sichtung/issues/38)
