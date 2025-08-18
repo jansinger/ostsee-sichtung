@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.7.0 (2025-08-18)
+
+* Merge pull request #29 from jansinger/preview ([3e86faa](https://github.com/jansinger/ostsee-sichtung/commit/3e86faa)), closes [#29](https://github.com/jansinger/ostsee-sichtung/issues/29)
+* feat: Bestimmung des Standardjahres und verfügbarer Jahre für Sichtungen ([37d5466](https://github.com/jansinger/ostsee-sichtung/commit/37d5466))
+* feat: Implementiere Validierung für Sichtungsdaten und verbotene Admin-Felder in der API ([9cbbb7d](https://github.com/jansinger/ostsee-sichtung/commit/9cbbb7d))
+* chore: update dependencies and reorganize package.json ([1463170](https://github.com/jansinger/ostsee-sichtung/commit/1463170))
+
 ## 1.6.0 (2025-08-18)
 
 * Merge pull request #26 from jansinger/preview ([0ab776d](https://github.com/jansinger/ostsee-sichtung/commit/0ab776d)), closes [#26](https://github.com/jansinger/ostsee-sichtung/issues/26)
