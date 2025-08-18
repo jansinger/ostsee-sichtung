@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.14.2 (2025-08-18)</small>
+
+* Merge pull request #51 from jansinger/fix/readme-badge-urls ([a7fdc84](https://github.com/jansinger/ostsee-sichtung/commit/a7fdc84)), closes [#51](https://github.com/jansinger/ostsee-sichtung/issues/51)
+* docs: erweitere CLAUDE.md um Hinweise zur Dokumentationsaktualisierung ([0c7601c](https://github.com/jansinger/ostsee-sichtung/commit/0c7601c))
+* docs: update outdated version references and script paths ([1f6a366](https://github.com/jansinger/ostsee-sichtung/commit/1f6a366))
+* fix(docs): correct badge URLs to match actual repository name ([6d90102](https://github.com/jansinger/ostsee-sichtung/commit/6d90102))
+* fix(docs): update remaining sichtungen-webapp references ([3beec7e](https://github.com/jansinger/ostsee-sichtung/commit/3beec7e))
+
 ## <small>1.14.1 (2025-08-18)</small>
 
 * Merge pull request #50 from jansinger/docs/update-readme ([ef9bf74](https://github.com/jansinger/ostsee-sichtung/commit/ef9bf74)), closes [#50](https://github.com/jansinger/ostsee-sichtung/issues/50)
