@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.5.0 (2025-08-18)
+
+* Merge pull request #25 from jansinger/preview ([5b308d1](https://github.com/jansinger/ostsee-sichtung/commit/5b308d1)), closes [#25](https://github.com/jansinger/ostsee-sichtung/issues/25)
+* refactor: improve validation messages and formatting in sighting schema ([7348c46](https://github.com/jansinger/ostsee-sichtung/commit/7348c46))
+* feat: Enhance media store with current value retrieval ([7baa34a](https://github.com/jansinger/ostsee-sichtung/commit/7baa34a))
+
+## 1.4.0 (2025-08-17)
+
+* Merge pull request #24 from jansinger/preview ([4f6c65f](https://github.com/jansinger/ostsee-sichtung/commit/4f6c65f)), closes [#24](https://github.com/jansinger/ostsee-sichtung/issues/24)
+* chore: Merge branch 'main' into preview ([869c2d3](https://github.com/jansinger/ostsee-sichtung/commit/869c2d3))
+* refactor: replace swagger with scalar sveltekit integration ([3d3de84](https://github.com/jansinger/ostsee-sichtung/commit/3d3de84))
+* feat(config): add 'media' scope for media handling ([2b32135](https://github.com/jansinger/ostsee-sichtung/commit/2b32135))
+* feat(media): implement secure media serving endpoint with access control ([9dfb513](https://github.com/jansinger/ostsee-sichtung/commit/9dfb513))
+
 ## 1.3.0 (2025-08-16)
 
 * Merge pull request #23 from jansinger/preview ([f0696d1](https://github.com/jansinger/ostsee-sichtung/commit/f0696d1)), closes [#23](https://github.com/jansinger/ostsee-sichtung/issues/23)
