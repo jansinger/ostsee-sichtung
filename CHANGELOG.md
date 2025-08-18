@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.14.0 (2025-08-18)
+
+* Merge pull request #49 from jansinger/fix/legacy-api-date-mapping ([96c2096](https://github.com/jansinger/ostsee-sichtung/commit/96c2096)), closes [#49](https://github.com/jansinger/ostsee-sichtung/issues/49)
+* feat(deps): add @vitest/coverage-v8 dependency to enhance test coverage reporting ([58e778d](https://github.com/jansinger/ostsee-sichtung/commit/58e778d))
+* test(api): update legacy API test to match new date/time field mapping ([70f114e](https://github.com/jansinger/ostsee-sichtung/commit/70f114e))
+* fix(api): correct legacy API date mapping to preserve sichtungsdatum ([56c5423](https://github.com/jansinger/ostsee-sichtung/commit/56c5423)), closes [#48](https://github.com/jansinger/ostsee-sichtung/issues/48)
+
 ## 1.13.0 (2025-08-18)
 
 * Merge pull request #47 from jansinger/fix/legacy-post-error-responses ([e81ac52](https://github.com/jansinger/ostsee-sichtung/commit/e81ac52)), closes [#47](https://github.com/jansinger/ostsee-sichtung/issues/47)
