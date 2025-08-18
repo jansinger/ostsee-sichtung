@@ -1,3 +1,17 @@
+/**
+ * @fileoverview CSV-Export-Funktionen für Sichtungsdaten
+ * 
+ * Dieses Modul generiert CSV-Dateien aus Sichtungsdaten für den wissenschaftlichen
+ * Export und die weitere Datenanalyse. Das CSV-Format entspricht dem ursprünglichen
+ * PHP-System und gewährleistet Kompatibilität mit bestehenden Analysewerkzeugen.
+ * 
+ * Verwendet Semikolon als Trennzeichen entsprechend der deutschen CSV-Norm
+ * und exportiert alle relevanten Sichtungsfelder mit lesbaren Labels.
+ * 
+ * @author Ostsee-Tiere Team
+ * @since 1.0.0
+ */
+
 import { getAnimalBehaviorLabel } from '$lib/report/formOptions/animalBehavior';
 import { getBoatDriveLabel } from '$lib/report/formOptions/boatDrive';
 import { getDistanceLabel } from '$lib/report/formOptions/distance';
@@ -9,76 +23,93 @@ import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
 import type { FrontendSighting } from '$lib/types/index';
 
 /**
- * Erzeugt CSV-Daten aus Sichtungen (Server-Side)
- * Basiert auf der ursprünglichen PHP-Funktion getCsvData
+ * Generiert CSV-Daten aus einer Sammlung von Sichtungen
+ * 
+ * Konvertiert Frontend-Sichtungsdaten in ein strukturiertes CSV-Format
+ * mit deutschen Spaltennamen und lesbaren Werten für den wissenschaftlichen Export.
+ * Basiert auf der ursprünglichen PHP-Implementierung für Kompatibilität.
+ * 
+ * @param sightings Array von Sichtungsdaten aus der Datenbank
+ * @returns CSV-String mit Header und Datenzeilen, Semikolon-getrennt
+ * 
+ * @example
+ * const csvData = generateCsvData(sightings);
+ * // Ergebnis: "ID;Datum;Uhrzeit;Tierart;...\n123;15.03.2024;14:30;Schweinswal;..."
+ * 
+ * @note 
+ * - Verwendet Semikolon (;) als Feldtrennzeichen (deutsche CSV-Norm)
+ * - Alle Werte sind in Anführungszeichen eingeschlossen
+ * - Datums- und Zeitformat entspricht deutscher Lokalisierung
+ * - Respektiert Datenschutz-Einwilligung für Namen und Schiffsnamen
  */
 export function generateCsvData(sightings: FrontendSighting[]): string {
-	// CSV-Header definieren
+	// CSV-Header definieren - entspricht der Struktur der ursprünglichen PHP-Version
 	const headers = [
-		'ID',
-		'Datum',
-		'Uhrzeit',
-		'Tierart',
-		'Anzahl',
-		'Jungtiere',
-		'Verteilung',
-		'Lat',
-		'Lon',
-		'Verhalten',
-		'Reaktion',
-		'Entfernung',
-		'Sichtung von',
-		'Toter Fund',
-		'Zustand',
-		'Geschlecht',
-		'Größe',
-		'Fahrwasser',
-		'Seezeichen',
-		'Seegang',
-		'Sicht',
-		'Windrichtung',
-		'Windstärke',
-		'Schiffsname',
-		'Heimathafen',
-		'Bootstyp',
-		'Bootsantrieb',
-		'Schiffsanzahl',
-		'Foto',
-		'Name',
-		'Email',
-		'Telefon',
-		'Fax',
-		'Straße',
-		'PLZ',
-		'Stadt',
-		'Anmerkungen',
-		'Andere Beobachtungen',
-		'Beschreibung',
-		'Verifiziert',
-		'Verifiziert am',
-		'Verifiziert von',
-		'Erstellt am',
-		'Geändert am'
+		'ID',                    // Eindeutige Sichtungs-ID
+		'Datum',                 // Sichtungsdatum im deutschen Format
+		'Uhrzeit',               // Sichtungszeit im 24h-Format  
+		'Tierart',               // Spezies-Name (lesbar)
+		'Anzahl',                // Gesamtanzahl der gesichteten Tiere
+		'Jungtiere',             // Anzahl Jungtiere/Kälber
+		'Verteilung',            // Räumliche Verteilung der Tiere
+		'Lat',                   // Breitengrad (Dezimalgrad)
+		'Lon',                   // Längengrad (Dezimalgrad)
+		'Verhalten',             // Beobachtetes Verhalten
+		'Reaktion',              // Reaktion auf Boot/Beobachter
+		'Entfernung',            // Entfernung zum Tier
+		'Sichtung von',          // Beobachtungsplattform
+		'Toter Fund',            // Ja/Nein für Totfund
+		'Zustand',               // Zustand bei Totfund
+		'Geschlecht',            // Geschlecht bei Totfund
+		'Größe',                 // Größe bei Totfund
+		'Fahrwasser',            // Gewässername
+		'Seezeichen',            // Navigationshilfe als Referenz
+		'Seegang',               // Wellenhöhe/Seegang
+		'Sicht',                 // Sichtweite
+		'Windrichtung',          // Windrichtung
+		'Windstärke',            // Windgeschwindigkeit/Beaufort
+		'Schiffsname',           // Name des Beobachtungsschiffs
+		'Heimathafen',           // Heimathafen des Schiffs
+		'Bootstyp',              // Art des Fahrzeugs
+		'Bootsantrieb',          // Antriebsart
+		'Schiffsanzahl',         // Anzahl Schiffe in der Nähe
+		'Foto',                  // Ja/Nein für Foto/Video vorhanden
+		'Name',                  // Beobachter-Name (bei Einwilligung)
+		'Email',                 // Kontakt-E-Mail
+		'Telefon',               // Telefonnummer
+		'Fax',                   // Faxnummer (legacy)
+		'Straße',                // Adresse
+		'PLZ',                   // Postleitzahl
+		'Stadt',                 // Ort
+		'Anmerkungen',           // Zusätzliche Notizen
+		'Andere Beobachtungen',  // Weitere Beobachtungen
+		'Beschreibung',          // Detailbeschreibung
+		'Verifiziert',           // Admin-Verifikationsstatus
+		'Verifiziert am',        // Verifikationsdatum
+		'Verifiziert von',       // Verifizierende Person
+		'Erstellt am',           // Erstellungszeitpunkt
+		'Geändert am'            // Letzte Änderung
 	];
 
-	// CSV-Header als erste Zeile
+	// CSV-Header als erste Zeile mit Semikolon-Trennung
 	let csvContent = headers.join(';') + '\n';
 
-	// Daten für jede Sichtung hinzufügen
+	// Verarbeite jede Sichtung zu einer CSV-Zeile
 	sightings.forEach((sighting) => {
+		// Datum und Zeit formatieren (deutsche Lokalisierung)
 		const sdt = new Date(sighting.sightingDate);
 		const date = `${sdt.getDate().toString().padStart(2, '0')}.${(sdt.getMonth() + 1).toString().padStart(2, '0')}.${sdt.getFullYear()}`;
 		const time = `${sdt.getHours().toString().padStart(2, '0')}:${sdt.getMinutes().toString().padStart(2, '0')}`;
 
-		// Labels aus den Form-Options abrufen
+		// Enum-Werte in lesbare Labels konvertieren
 		const speciesName = getSpeciesLabel(sighting.species);
 		const behaviorText = getAnimalBehaviorLabel(sighting.behavior);
 
-		// Name (falls Einwilligung vorhanden)
+		// Datenschutz: Namen nur bei expliziter Einwilligung anzeigen
 		const name =
 			sighting.nameConsent && sighting.firstName && sighting.lastName
 				? `${sighting.firstName} ${sighting.lastName}`
-				: '';
+				: ''; // Leer bei fehlender Einwilligung
 
 		// Werte für die CSV-Zeile
 		const row = [

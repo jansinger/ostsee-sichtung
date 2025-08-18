@@ -1,3 +1,18 @@
+/**
+ * @fileoverview Yup-Validierungsschema für Sichtungsformulare
+ * 
+ * Dieses Modul definiert das zentrale Validierungsschema für alle Sichtungsformulare
+ * in der Ostsee-Tiere-Anwendung. Es nutzt Yup für typsichere Validierung und
+ * umfasst alle Felder vom GPS-Koordinaten bis zu Kontaktdaten.
+ * 
+ * Das Schema ist in logische Abschnitte unterteilt und bietet sowohl Frontend-
+ * als auch Backend-Validierung mit detaillierten Fehlermeldungen und Metadaten
+ * für die automatische UI-Generierung.
+ * 
+ * @author Ostsee-Tiere Team
+ * @since 1.0.0
+ */
+
 import {
 	AnimalBehaviorEnum,
 	getAnimalBehaviorOptions,
@@ -59,22 +74,39 @@ import {
 } from '@steeze-ui/lucide-icons';
 import * as yup from 'yup';
 
+/**
+ * Basis-Validierungsschema für Sichtungsformulare
+ * 
+ * Definiert alle Validierungsregeln für die Erfassung von Meerestier-Sichtungen
+ * mit umfassender Abdeckung von GPS-Daten, Umweltbedingungen, Tier-Details
+ * und Kontaktinformationen. Jedes Feld enthält Metadaten für automatische
+ * UI-Generierung und mehrsprachige Fehlermeldungen.
+ * 
+ * @type {yup.ObjectSchema} Yup-Schema mit allen Sichtungsfeldern
+ */
 export const sightingSchemaBase = yup.object().shape({
+	/**
+	 * Eindeutige Referenz-ID für die Sichtung
+	 * Wird automatisch generiert zur internen Nachverfolgung
+	 */
 	referenceId: yup.string().required().label('Referenz-ID'),
 
-	// Array of uploaded file paths for database storage
+	/**
+	 * Array der hochgeladenen Mediendateien mit Metadaten
+	 * Enthält Pfade, EXIF-Daten und Dateiermaße für Fotos/Videos
+	 */
 	uploadedFiles: yup
 		.array()
 		.of(
 			yup.object().shape({
-				filePath: yup.string().required(),
-				originalName: yup.string().required(),
-				fileName: yup.string().optional(),
-				mimeType: yup.string().required(),
-				size: yup.number().required(),
-				url: yup.string().optional(),
-				uploadedAt: yup.string().optional(),
-				exifData: yup.mixed().optional()
+				filePath: yup.string().required(),     // Dateipfad im Storage
+				originalName: yup.string().required(), // Ursprünglicher Dateiname
+				fileName: yup.string().optional(),     // Interner Dateiname
+				mimeType: yup.string().required(),     // MIME-Type (image/jpeg, etc.)
+				size: yup.number().required(),         // Dateigröße in Bytes
+				url: yup.string().optional(),          // Öffentliche URL
+				uploadedAt: yup.string().optional(),   // Upload-Zeitstempel
+				exifData: yup.mixed().optional()       // EXIF-Metadaten als JSONB
 			})
 		)
 		.optional()
