@@ -55,9 +55,10 @@ jobs:
           npm run license:audit || {
             echo "⚠️ License audit found issues"
             echo "Running detailed report..."
-            npx license-checker --excludePrivatePackages
+            npx license-checker --excludePrivatePackages --summary
             exit 1
           }
+          echo "✅ All licenses are compatible with MIT"
       
       - name: Generate license report
         run: |
