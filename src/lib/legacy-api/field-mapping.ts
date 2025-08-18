@@ -1,5 +1,5 @@
 /**
- * @fileoverview Field mapping adapter for Legacy REST API
+ * @fileoverview Field mapping adapter for PDF-compliant Legacy REST API
  * 
  * Provides bidirectional field mapping between legacy API format and current schema.
  * Handles data transformation, validation, and format conversion for backwards compatibility.
@@ -10,7 +10,7 @@
 
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import type { SightingFormData } from '$lib/types';
-import type { LegacySightingRequest, LegacySightingResponse, LegacySightingRequestSeparateDateTime } from './types';
+import type { LegacySightingRequest } from './types.js';
 
 /**
  * Maps legacy API request to current SightingFormData format
@@ -105,38 +105,6 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 }
 
 /**
- * Maps current schema to legacy API response format
- * 
- * @param currentData - Current schema sighting data
- * @returns Data in legacy API response format
- */
-export function mapCurrentToLegacySchema(currentData: SightingFormData & { id: number }): LegacySightingResponse {
-	// Split datetime back into date and time components
-	const { datum, uhrzeit } = splitDateAndTime(currentData.sightingDate);
-
-	return {
-		id: currentData.id,
-		datum, // DD.MM.YYYY format
-		uhrzeit, // HH:MM format
-		breitengrad: currentData.latitude || undefined,
-		laengengrad: currentData.longitude || undefined,
-		anzahlGesamt: currentData.totalCount || 0,
-		anzahlJung: currentData.juvenileCount || 0,
-		tierart: currentData.species || 0,
-		totfund: currentData.isDead ? 1 : 0,
-		
-		// Conditional fields based on consent
-		beobachterName: currentData.nameConsent 
-			? `${currentData.firstName || ''} ${currentData.lastName || ''}`.trim()
-			: '',
-		gebiet: currentData.waterway || undefined,
-		schiffsname: currentData.shipNameConsent 
-			? currentData.shipName || undefined
-			: undefined
-	};
-}
-
-/**
  * Parses legacy datetime string (YYYY-MM-DD HH:MI) into ISO datetime string
  * 
  * @param datetime - DateTime in "YYYY-MM-DD HH:MI" format
@@ -192,105 +160,4 @@ function combineDateAndTime(date: string, time?: string): string {
 
 	// Combine and return as ISO string (compatible with current schema)
 	return `${date}T${timeStr}:00.000Z`;
-}
-
-/**
- * Splits ISO datetime string into legacy date and time components
- * 
- * @param datetime - ISO datetime string from current schema
- * @returns Object with datum (DD.MM.YYYY) and uhrzeit (HH:MM) for legacy API
- */
-function splitDateAndTime(datetime: string): { datum: string; uhrzeit: string } {
-	const date = new Date(datetime);
-	
-	// Format date as DD.MM.YYYY for legacy API (use UTC to avoid timezone issues)
-	const day = date.getUTCDate().toString().padStart(2, '0');
-	const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-	const year = date.getUTCFullYear().toString();
-	const datum = `${day}.${month}.${year}`;
-
-	// Format time as HH:MM for legacy API (use UTC to avoid timezone issues)
-	const hours = date.getUTCHours().toString().padStart(2, '0');
-	const minutes = date.getUTCMinutes().toString().padStart(2, '0');
-	const uhrzeit = `${hours}:${minutes}`;
-
-	return { datum, uhrzeit };
-}
-
-/**
- * Validates legacy API request data format
- * 
- * @param data - Legacy API request data
- * @throws Error if validation fails
- */
-export function validateLegacyRequest(data: unknown): asserts data is LegacySightingRequest {
-	const record = data as Record<string, unknown>;
-	
-	// Required fields validation
-	if (!record.sichtungsdatum) {
-		throw new Error('Field "sichtungsdatum" is required');
-	}
-	if (!record.vorname) {
-		throw new Error('Field "vorname" is required');
-	}
-	if (!record.name) {
-		throw new Error('Field "name" is required');  
-	}
-	if (!record.email) {
-		throw new Error('Field "email" is required');
-	}
-	if (record.anzahl_gesamt === undefined || record.anzahl_gesamt === null) {
-		throw new Error('Field "anzahl_gesamt" is required');
-	}
-
-	// Date format validation (YYYY-MM-DD HH:MI)
-	const datetimeRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
-	if (!datetimeRegex.test(record.sichtungsdatum as string)) {
-		throw new Error('Field "sichtungsdatum" must be in "YYYY-MM-DD HH:MI" format');
-	}
-
-	// Legacy API doesn't use separate time field - it's combined in sichtungsdatum
-
-	// Coordinate validation if provided
-	if (record.gps_breite !== undefined) {
-		const lat = Number(record.gps_breite);
-		if (isNaN(lat) || lat < -90 || lat > 90) {
-			throw new Error('Field "gps_breite" must be a number between -90 and 90');
-		}
-	}
-
-	if (record.gps_laenge !== undefined) {
-		const lon = Number(record.gps_laenge);
-		if (isNaN(lon) || lon < -180 || lon > 180) {
-			throw new Error('Field "gps_laenge" must be a number between -180 and 180');
-		}
-	}
-
-	// Count validation
-	const count = Number(record.anzahl_gesamt);
-	if (isNaN(count) || count < 0) {
-		throw new Error('Field "anzahl_gesamt" must be a non-negative number');
-	}
-
-	// Email format validation (basic)
-	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-	if (!emailRegex.test(record.email as string)) {
-		throw new Error('Field "email" must be a valid email address');
-	}
-}
-
-/**
- * Converts separate date/time format to combined datetime format
- * 
- * @param separateData - Legacy request with separate date/time fields
- * @returns Legacy request with combined datetime field
- */
-export function convertSeparateToCombinedDateTime(separateData: LegacySightingRequestSeparateDateTime): LegacySightingRequest {
-	const { datum, uhrzeit, ...rest } = separateData;
-	const sichtungsdatum = `${datum} ${uhrzeit || '12:00'}`;
-	
-	return {
-		sichtungsdatum,
-		...rest
-	};
 }

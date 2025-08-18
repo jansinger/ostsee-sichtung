@@ -1,10 +1,10 @@
 /**
- * @fileoverview Legacy REST API endpoint for creating sightings
+ * @fileoverview Legacy REST API endpoint - Exact PDF specification compliance
  * 
- * POST /api/legacy/rest_sichtungen
+ * POST /rest_sichtungen
  * 
- * Creates a new sighting using the legacy API format for mobile app compatibility.
- * Maps legacy field names to current schema and validates according to legacy rules.
+ * Creates a new sighting using the EXACT legacy API format from the PDF specification.
+ * This endpoint MUST maintain 100% compatibility with original schweinswalsichtung.de API.
  * 
  * @author Ostsee-Tiere Team
  * @since 1.10.0
@@ -13,25 +13,20 @@
 import { createLogger } from '$lib/logger';
 import { saveSighting } from '$lib/server/db/sightingRepository';
 import { json, type RequestEvent } from '@sveltejs/kit';
-import { mapLegacyToCurrentSchema, validateLegacyRequest } from '../field-mapping/index.js';
-import type { LegacyCreateResponse, LegacyErrorResponse, LegacySightingRequest } from '../field-mapping/types.js';
+import { mapLegacyToCurrentSchema } from '$lib/legacy-api/field-mapping.js';
+import type { LegacyCreateResponse, LegacyErrorResponse, LegacySightingRequest } from '$lib/legacy-api/types.js';
 import { 
 	createLegacyErrorResponse, 
 	validateContentType, 
 	validateLegacySighting,
-	validateDeathFinding
-} from '../field-mapping/validation.js';
+	validateDeathFinding,
+	validateLegacyRequest
+} from '$lib/legacy-api/validation.js';
 
-const logger = createLogger('api:legacy:rest_sichtungen');
+const logger = createLogger('api:legacy:rest_sichtungen:pdf-compliant');
 
 /**
- * POST handler for creating sightings via legacy API
- * 
- * Accepts sighting data in legacy format, validates it, transforms to current schema,
- * and saves using existing sighting repository with proper validation.
- * 
- * @param event - SvelteKit request event
- * @returns JSON response with creation result or validation errors
+ * POST handler - PDF specification compliant endpoint
  */
 export async function POST(event: RequestEvent): Promise<Response> {
 	const clientIp = event.getClientAddress();
@@ -66,9 +61,9 @@ export async function POST(event: RequestEvent): Promise<Response> {
 		}
 
 		logger.debug({ 
-			data: { ...requestData, email: '***masked***' }, // Mask email for logging
+			data: { ...requestData, email: '***masked***' },
 			ip: clientIp 
-		}, 'Legacy sighting creation request received');
+		}, 'Legacy sighting creation request received (PDF compliant endpoint)');
 
 		// Basic validation of legacy request format
 		try {
@@ -112,7 +107,6 @@ export async function POST(event: RequestEvent): Promise<Response> {
 				warnings: deathFindingErrors, 
 				ip: clientIp 
 			}, 'Death finding validation warnings (non-blocking)');
-			// These are warnings, not blocking errors
 		}
 
 		// Transform legacy data to current schema
@@ -134,12 +128,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
 			return json(errorResponse, { status: 400 });
 		}
 
-		logger.debug({ 
-			transformedData: { ...transformedData, email: '***masked***' },
-			ip: clientIp 
-		}, 'Successfully transformed legacy data to current schema');
-
-		// Save sighting using existing repository (includes validation, geo checks, etc.)
+		// Save sighting using existing repository
 		let savedSighting;
 		try {
 			savedSighting = await saveSighting(transformedData);
@@ -149,7 +138,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
 				legacyCount: requestData.anzahl_gesamt,
 				isDeathFinding: requestData.anzahl_gesamt === 0,
 				ip: clientIp 
-			}, 'Legacy sighting created successfully');
+			}, 'Legacy sighting created successfully (PDF compliant)');
 
 		} catch (saveError: unknown) {
 			const isError = saveError instanceof Error;
@@ -170,20 +159,20 @@ export async function POST(event: RequestEvent): Promise<Response> {
 			}
 
 			// Database or system error
-			const errorResponse = createLegacyErrorResponse(
-				'Failed to save sighting',
-				{ _general: ['Internal server error occurred'] }
-			);
+			const errorResponse = {
+				error: 'Failed to save sighting',
+				message: 'Internal server error occurred'
+			};
 			return json(errorResponse, { status: 500 });
 		}
 
-		// Create legacy API success response (exact PDF specification)
+		// Create PDF-compliant success response
 		const successResponse: LegacyCreateResponse = {
 			message: 'Saved'
 		};
 
-		// Set Location header as per REST API specification
-		const locationHeader = `/api/legacy/sichtungen/${savedSighting.id}`;
+		// Set Location header as per PDF specification
+		const locationHeader = `/rest_sichtungen/view/${savedSighting.id}.json`;
 		
 		return json(successResponse, { 
 			status: 201,
@@ -193,13 +182,12 @@ export async function POST(event: RequestEvent): Promise<Response> {
 		});
 
 	} catch (unexpectedError: unknown) {
-		// Log unexpected errors
 		const isError = unexpectedError instanceof Error;
 		logger.error({ 
 			error: isError ? unexpectedError.message : 'Unknown error',
 			stack: isError ? unexpectedError.stack : undefined,
 			ip: clientIp 
-		}, 'Unexpected error in legacy sighting creation');
+		}, 'Unexpected error in PDF-compliant legacy sighting creation');
 
 		const errorResponse = createLegacyErrorResponse(
 			'Internal server error',
@@ -214,28 +202,28 @@ export async function POST(event: RequestEvent): Promise<Response> {
  * Handle unsupported HTTP methods
  */
 export async function GET() {
-	const errorResponse = createLegacyErrorResponse(
-		'Method not allowed',
-		{ _general: ['Only POST method is supported for this endpoint'] }
-	);
+	const errorResponse = {
+		error: 'Method not allowed',
+		message: 'Only POST method is supported for this endpoint'
+	};
 	
 	return json(errorResponse, { status: 405 });
 }
 
 export async function PUT() {
-	const errorResponse = createLegacyErrorResponse(
-		'Method not allowed',
-		{ _general: ['Only POST method is supported for this endpoint'] }
-	);
+	const errorResponse = {
+		error: 'Method not allowed',
+		message: 'Only POST method is supported for this endpoint'
+	};
 	
 	return json(errorResponse, { status: 405 });
 }
 
 export async function DELETE() {
-	const errorResponse = createLegacyErrorResponse(
-		'Method not allowed',
-		{ _general: ['Only POST method is supported for this endpoint'] }
-	);
+	const errorResponse = {
+		error: 'Method not allowed',
+		message: 'Only POST method is supported for this endpoint'
+	};
 	
 	return json(errorResponse, { status: 405 });
 }
