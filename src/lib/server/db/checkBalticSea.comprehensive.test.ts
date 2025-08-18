@@ -38,7 +38,7 @@ vi.mock('$lib/logger', () => ({
 }));
 
 // Typisierte Mock-Referenz für bessere IDE-Unterstützung
-const mockDb = db as { execute: MockedFunction<any> };
+const mockDb = db as unknown as { execute: MockedFunction<any> };
 
 /**
  * Test-Datenstrukturen für verschiedene Koordinaten-Szenarien
@@ -254,7 +254,7 @@ describe('checkBalticSea - Umfangreiche geografische Validierung', () => {
 				
 				// Die SQL-Query sollte Prepared Statements verwenden
 				const call = mockDb.execute.mock.calls[mockDb.execute.mock.calls.length - 1];
-				expect(call[0]).toBeDefined(); // SQL Query Objekt
+				expect(call?.[0]).toBeDefined(); // SQL Query Objekt
 			}
 		});
 	});
@@ -506,6 +506,8 @@ describe('checkBalticSea - Umfangreiche geografische Validierung', () => {
 
 			for (let i = 0; i < borderCases.length; i++) {
 				const coord = borderCases[i];
+				if (!coord) continue; // Skip undefined entries
+				
 				mockDb.execute.mockResolvedValue(responses[i % responses.length]);
 				
 				const result = await checkBalticSea(coord.longitude, coord.latitude);
