@@ -27,7 +27,9 @@ const mockSightingData = [
 		waterway: 'Kieler Förde',
 		shipName: 'Fährschiff "Deutschland"',
 		shipNameConsent: true,
-		approvedAt: new Date('2012-01-26T10:00:00.000Z')
+		approvedAt: new Date('2012-01-26T10:00:00.000Z'),
+		species: 0, // Schweinswal
+		isDead: 0   // Not a death finding
 	},
 	{
 		id: 826,
@@ -42,7 +44,9 @@ const mockSightingData = [
 		waterway: null,
 		shipName: null,
 		shipNameConsent: false,
-		approvedAt: new Date('2012-03-31T09:00:00.000Z')
+		approvedAt: new Date('2012-03-31T09:00:00.000Z'),
+		species: 1, // Kegelrobbe
+		isDead: 0   // Not a death finding
 	},
 	{
 		id: 827,
@@ -57,7 +61,9 @@ const mockSightingData = [
 		waterway: 'Fehmarnbelt',
 		shipName: 'Private Yacht',
 		shipNameConsent: false, // No consent - should not show ship name
-		approvedAt: new Date('2012-04-16T08:00:00.000Z')
+		approvedAt: new Date('2012-04-16T08:00:00.000Z'),
+		species: 2, // Seehund
+		isDead: 1   // Death finding
 	}
 ];
 
@@ -113,11 +119,13 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			expect(response.status).toBe(200);
 
 			const responseData = await response.json();
-			expect(Array.isArray(responseData)).toBe(true);
-			expect(responseData.length).toBe(3);
+			// Should be an object with string keys, not an array
+			expect(typeof responseData).toBe('object');
+			expect(Array.isArray(responseData)).toBe(false);
+			expect(Object.keys(responseData)).toEqual(['0', '1', '2']);
 
 			// Verify EXACT PDF field names (abbreviated)
-			const firstSighting = responseData[0];
+			const firstSighting = responseData['0'];
 			expect(firstSighting).toHaveProperty('ts'); // Unix Timestamp
 			expect(firstSighting).toHaveProperty('id'); // Report ID
 			expect(firstSighting).toHaveProperty('dt'); // Date DD.MM.YY
@@ -126,6 +134,8 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			expect(firstSighting).toHaveProperty('lon'); // Longitude as STRING
 			expect(firstSighting).toHaveProperty('ct'); // Total count
 			expect(firstSighting).toHaveProperty('yo'); // Young count
+			expect(firstSighting).toHaveProperty('ta'); // Tierart (species)
+			expect(firstSighting).toHaveProperty('tf'); // Totfund (death finding)
 			
 			// Optional fields (consent-dependent)
 			expect(firstSighting).toHaveProperty('sh'); // Ship name
@@ -141,6 +151,8 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			expect(typeof firstSighting.lon).toBe('string'); // CRITICAL: Must be string
 			expect(typeof firstSighting.ct).toBe('number');
 			expect(typeof firstSighting.yo).toBe('number');
+			expect(typeof firstSighting.ta).toBe('string'); // Species name
+			expect(typeof firstSighting.tf).toBe('number'); // Death finding flag (0/1)
 		});
 
 		it('should format dates exactly as PDF specification (DD.MM.YY)', async () => {
@@ -148,7 +160,7 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			const response = await GET(event);
 			const responseData = await response.json();
 
-			const firstSighting = responseData[0];
+			const firstSighting = responseData['0'];
 			
 			// PDF format: DD.MM.YY (2-digit year!)
 			expect(firstSighting.dt).toBe('25.01.12');
@@ -163,7 +175,7 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			const response = await GET(event);
 			const responseData = await response.json();
 
-			const firstSighting = responseData[0];
+			const firstSighting = responseData['0'];
 			
 			// PDF requirement: Coordinates must be strings, not numbers
 			expect(firstSighting.lat).toBe('54.646667');
@@ -176,10 +188,10 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			const responseData = await response.json();
 
 			// First sighting: has name consent
-			expect(responseData[0].na).toBe('Jörg Schneider');
+			expect(responseData['0'].na).toBe('Jörg Schneider');
 			
 			// Third sighting: no name consent (nameConsent: false)
-			expect(responseData[2].na).toBeUndefined();
+			expect(responseData['2'].na).toBeUndefined();
 		});
 
 		it('should respect ship name consent settings as per PDF', async () => {
@@ -188,13 +200,13 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			const responseData = await response.json();
 
 			// First sighting: has ship name consent
-			expect(responseData[0].sh).toBe('Fährschiff "Deutschland"');
+			expect(responseData['0'].sh).toBe('Fährschiff "Deutschland"');
 			
 			// Second sighting: no ship name consent
-			expect(responseData[1].sh).toBeUndefined();
+			expect(responseData['1'].sh).toBeUndefined();
 			
 			// Third sighting: no ship name consent
-			expect(responseData[2].sh).toBeUndefined();
+			expect(responseData['2'].sh).toBeUndefined();
 		});
 
 		it('should include area/waterway information', async () => {
@@ -203,13 +215,13 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			const responseData = await response.json();
 
 			// First sighting: has waterway
-			expect(responseData[0].ar).toBe('Kieler Förde');
+			expect(responseData['0'].ar).toBe('Kieler Förde');
 			
 			// Second sighting: no waterway (null in database)
-			expect(responseData[1].ar).toBeUndefined();
+			expect(responseData['1'].ar).toBeUndefined();
 			
 			// Third sighting: has waterway
-			expect(responseData[2].ar).toBe('Fehmarnbelt');
+			expect(responseData['2'].ar).toBe('Fehmarnbelt');
 		});
 
 		it('should not include admin-only fields (bm, va) in public response', async () => {
@@ -217,11 +229,29 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			const response = await GET(event);
 			const responseData = await response.json();
 
-			responseData.forEach((sighting: any) => {
+			Object.values(responseData).forEach((sighting: any) => {
 				// PDF: "wird nur bei angemeldetem Admin geliefert"
 				expect(sighting).not.toHaveProperty('bm'); // Baltic marker
 				expect(sighting).not.toHaveProperty('va'); // Validated
 			});
+		});
+
+		it('should include species (ta) and death finding (tf) fields', async () => {
+			const event = createMockRequestEvent();
+			const response = await GET(event);
+			const responseData = await response.json();
+
+			// First sighting: Schweinswal, not dead
+			expect(responseData['0'].ta).toBe('Schweinswal');
+			expect(responseData['0'].tf).toBe(0);
+
+			// Second sighting: Kegelrobbe, not dead
+			expect(responseData['1'].ta).toBe('Kegelrobbe');
+			expect(responseData['1'].tf).toBe(0);
+
+			// Third sighting: Seehund, dead
+			expect(responseData['2'].ta).toBe('Seehund');
+			expect(responseData['2'].tf).toBe(1);
 		});
 	});
 
