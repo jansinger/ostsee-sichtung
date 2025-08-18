@@ -5,16 +5,19 @@
 </script>
 
 <div class="bg-warning/10 border-warning/20 mt-6 rounded-lg border p-4">
-	<h4 class="text-warning-content mb-3 font-semibold">
-		<Icon src={TriangleAlert} size="16" class="text-warning" /> Zusätzliche Informationen für Totfund
+	<h4 class="text-warning-content mb-3 flex items-center gap-2 font-semibold md:whitespace-nowrap">
+		<Icon src={TriangleAlert} size="16" class="text-warning-content shrink-0" />
+		<span>Zusätzliche Informationen für Totfund</span>
 	</h4>
-	<div class="mb-4 text-sm text-warning-content/80">
-		<p class="font-medium mb-2">⚠️ Totfunde sind besonders wertvoll für die Wissenschaft!</p>
-		<ul class="list-disc list-inside space-y-1 text-xs">
+	<div class="text-warning-content/80 mb-4 text-sm">
+		<p class="mb-2 font-medium">Totfunde sind besonders wertvoll für die Wissenschaft!</p>
+		<ul class="list-inside list-disc space-y-1 text-xs">
 			<li><strong>Todesursachen:</strong> Helfen bei der Identifikation von Bedrohungen</li>
 			<li><strong>Gesundheitszustand:</strong> Wichtig für Populationsanalysen</li>
 			<li><strong>Nicht berühren:</strong> Sicherheitsrisiko und Störung der Untersuchung</li>
-			<li><strong>Behörden informieren:</strong> Wasserschutzpolizei, Nationalparkamt kontaktieren</li>
+			<li>
+				<strong>Behörden informieren:</strong> Meeresmuseum, Wasserschutzpolizei, Nationalparkamt kontaktieren
+			</li>
 		</ul>
 	</div>
 

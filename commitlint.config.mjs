@@ -1,6 +1,11 @@
 /** @type {import('@commitlint/types').UserConfig} */
 export default {
 	extends: ['@commitlint/config-conventional'],
+	ignores: [
+		(commit) => commit.startsWith('Merge'),
+		(commit) => commit.startsWith('Bump'), // für Dependabot
+		(commit) => commit.includes('dependabot[bot]') // optional, falls du nach Author filtern willst
+	],
 	rules: {
 		// Scopes die in diesem Projekt verwendet werden
 		'scope-enum': [
@@ -27,7 +32,8 @@ export default {
 				'security', // Security
 				'a11y', // Accessibility
 				'release', // Release commits (semantic-release)
-				'media' // Media handling
+				'media', // Media handling
+				'updated-dependencies' // Updated dependencies
 			]
 		],
 		// Erlaube auch leere Scopes

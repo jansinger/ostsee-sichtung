@@ -20,11 +20,11 @@ Administration and data management are supported through user-friendly interface
 - `npm run preview` - Preview production build
 
 **HTTPS Development Server:**
-- Port: 4000 (automatisch konfiguriert)
-- SSL: Automatische Zertifikatsgenerierung mit `@vitejs/plugin-basic-ssl`
-- Zertifikate werden in `./certs/` gespeichert
-- Unterstützt `localhost` und `*.local.dev` Domains
-- Ermöglicht sichere iframe-Einbettung und moderne Web-APIs
+- Port: 4000 (automatically configured)
+- SSL: Automatic certificate generation with `@vitejs/plugin-basic-ssl`
+- Certificates stored in `./certs/` directory
+- Supports `localhost` and `*.local.dev` domains
+- Enables secure iframe embedding and modern Web APIs
 
 ### Database Operations
 - `npm run db:start` - Start PostgreSQL database (Docker, port 5433)
@@ -42,9 +42,10 @@ Administration and data management are supported through user-friendly interface
 
 ### Testing
 - `npm run test:unit` - Run unit tests with Vitest
-- `npm run test:unit:watch` - Run unit tests in watch mode
+- `npm run test:unit:watch` - Run unit tests in watch mode  
 - `npm run test:e2e` - Run end-to-end tests with Playwright
-- `npm run test` - Run complete test suite (type-check + lint + unit + e2e)
+- `npm run test` - Run quick test suite (lint + unit tests)
+- `npm run test:production` - Run complete production test suite (type-check + lint + unit + e2e)
 
 ## Architecture Overview
 
@@ -96,24 +97,25 @@ src/
 ```
 
 ### Key Implementation Files
-- `/src/routes/report/+page.svelte` - Main multi-step form with dynamic navigation
-- `/src/lib/form/validation/sightingSchema.ts` - Yup validation schema for form validation
+- `/src/routes/+page.svelte` - Main multi-step form with dynamic navigation
+- `/src/lib/sightingSchema.ts` - Yup validation schema for form validation
 - `/src/lib/server/db/schema.ts` - Database schema definition with PostGIS integration and JSONB support
 - `/src/lib/server/db/sightingRepository.ts` - Data access layer for sighting operations
-- `/src/lib/report/formOptions/` - Constants for dropdown options and form selections
+- `/src/lib/constants/` - Constants for dropdown options and form selections
 - `/src/lib/server/storage/` - Storage abstraction layer supporting local and cloud providers
 
 ## Key Design Patterns
-- Always cosider the Design Guide in `DESIGNGUIDE.md` (important!)
+- INSTRUCTION: Always consider the Design Guide in `DESIGNGUIDE.md` (important!)
 
 ### Key Patterns & Form Logic
 - Use Drizzle ORM with PostGIS for geographic queries
 - Leverage extensive constants files for form options (species, conditions, etc.)
-- Multi-step form implementation
+- Multi-step form implementation with conditional logic and progressive disclosure
 - Geographic validation using Baltic Sea boundaries
 - CSP configuration for OpenStreetMap tile integration
 - Form validation using svelte-forms-lib with Yup schemas
 - OpenLayers integration for interactive map functionality with coordinate capture
+- Media upload with EXIF metadata extraction and cloud storage integration
 
 
 ### Database Connection
@@ -175,14 +177,13 @@ Always check Baltic Sea geographic bounds using the `checkBalticSea` utility bef
 - Respect the multi-step form structure and conditional logic patterns
 - Use PostGIS utilities for geographic data handling
 - Follow TailwindCSS + DaisyUI styling patterns established in the codebase
-- INSTTRUCTION: Use Svelte 5 runes mode (`$state`, `$derived`, `$effect`, etc.)
+- INSTRUCTION: Use Svelte 5 runes mode (`$state`, `$derived`, `$effect`, etc.)
 - Use Pino for logging, avoid console usage except for debugging
 - Store file metadata including EXIF data as JSONB in database for efficient querying
 - Use storage abstraction layer for file operations to support multiple providers
-- Nach jeder Veränderung im Code sollte npm check und npm type-check ausgeführt werden
-- Alle Imports aus /lib sollen mit $lib und dem vollen Pfad importiert werden
-- Benutze Conventional Commits für commit messages
-- commits werden mit commitlint getestet
-- INSTRUCTION: Die commit message headline muss klein geschrieben sein!
-- Beachte die Regeln aus `commitlint.config.mjs` für commits
-- INSTRUCTION: Benutze Englisch als Sprache für commit messages!
+- Run `npm run check` and `npm run type-check` after code changes
+- Import from `/lib` using `$lib` with full paths (e.g., `import { foo } from '$lib/utils/bar'`)
+- Use Conventional Commits for commit messages
+- Commits are validated with commitlint - follow rules in `commitlint.config.mjs`
+- INSTRUCTION: Use English for commit messages with lowercase subject lines
+- Available commit scopes: deps, api, ui, db, auth, export, admin, report, map, config, build, ci, docs, test, types, style, perf, security, a11y, release, media

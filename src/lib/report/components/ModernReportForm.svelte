@@ -5,6 +5,7 @@
 	import RequiredConsent from './form/RequiredConsent.svelte';
 
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
+	import UserMenu from '$lib/components/UserMenu.svelte';
 	import { submitSightingForm } from '$lib/form/submitSightingForm';
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
@@ -18,7 +19,7 @@
 		saveUserContactDataWithConsent,
 		STORAGE_KEYS
 	} from '$lib/storage/localStorage';
-	import type { FormContext, SightingFormData, UserContactData } from '$lib/types';
+	import type { FormContext, SightingFormData, User, UserContactData } from '$lib/types';
 	import { createId } from '@paralleldrive/cuid2';
 	import { formStepsConfig } from '../formConfig';
 	import Form from './form/Form.svelte';
@@ -34,10 +35,12 @@
 		onSubmit = async (value) => {
 			logger.info({ value }, 'Form submitted:');
 		},
-		onCancel = () => {}
+		onCancel = () => {},
+		user = null
 	}: {
 		onSubmit?: (data: SightingFormData) => Promise<void>;
 		onCancel?: () => void;
+		user?: User | null;
 	} = $props();
 
 	// Lade gespeicherte Benutzer-Kontaktdaten
@@ -149,9 +152,16 @@
 
 <div class="bg-base-100 min-h-screen py-4 sm:py-8">
 	<div class="container mx-auto max-w-4xl px-2 sm:px-4">
-		<!-- Logo Header -->
-		<div class="mb-6 flex justify-center">
-			<OstseeTiereLogo size="lg" showText={true} />
+		<!-- Header with Logo and User Menu -->
+		<div class="relative mb-6 flex items-center justify-between">
+			<div class="flex flex-1 justify-center">
+				<OstseeTiereLogo size="lg" showText={true} />
+			</div>
+			{#if user}
+				<div class="flex-shrink-0">
+					<UserMenu {user} position="right" />
+				</div>
+			{/if}
 		</div>
 
 		<Form {...formProps} bind:context={formContext}>
@@ -192,7 +202,7 @@
 						{:else if currentStep === 1}
 							<Step2SightingDetails />
 						{:else if currentStep === 2}
-							<Step3Observations />
+							<Step3Observations bind:currentStep />
 						{:else if currentStep === 3}
 							<Step4Contact />
 						{/if}
