@@ -235,7 +235,7 @@ describe('checkBalticSea', () => {
 			mockDb.execute.mockRejectedValue(new Error('Connection timeout'));
 
 			// Act & Assert
-			await expect(checkBalticSea(12.5, 54.5)).rejects.toThrow('Datenbankfehler bei der Ostsee-Prüfung');
+			await expect(checkBalticSea(12.5, 54.5)).rejects.toThrow('Datenbankfehler bei der geografischen Validierung');
 		});
 	});
 

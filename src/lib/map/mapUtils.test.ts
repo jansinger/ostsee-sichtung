@@ -90,8 +90,8 @@ describe('mapUtils', () => {
 			const result = sightingsToGeoJSON([sightingWithInvalidCoords]);
 			const feature = result.features[0];
 
-			// parseFloat('invalid') returns NaN - the mapUtils code doesn't handle this case
-			expect(feature.geometry.coordinates).toEqual([NaN, NaN]);
+			// parseFloat('invalid') returns NaN, but mapUtils uses || 0 fallback for safer coordinates
+			expect(feature.geometry.coordinates).toEqual([0, 0]);
 		});
 
 		it('should handle null coordinates', () => {
