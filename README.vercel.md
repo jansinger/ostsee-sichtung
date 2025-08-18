@@ -34,7 +34,7 @@ LOG_LEVEL="info"
 ```bash
 # Clone and install dependencies
 git clone your-repo
-cd sichtungen-webapp
+cd ostsee-sichtung
 npm install
 
 # Set up local environment
