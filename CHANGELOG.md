@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.13.0 (2025-08-18)
+
+* Merge pull request #47 from jansinger/fix/legacy-post-error-responses ([e81ac52](https://github.com/jansinger/ostsee-sichtung/commit/e81ac52)), closes [#47](https://github.com/jansinger/ostsee-sichtung/issues/47)
+* feat(api): implement yup-based validation for legacy rest api ([5babfff](https://github.com/jansinger/ostsee-sichtung/commit/5babfff))
+* fix(api): achieve 100% POST endpoint compatibility with original schweinswalsichtung.de ([0abb5b9](https://github.com/jansinger/ostsee-sichtung/commit/0abb5b9)), closes [#46](https://github.com/jansinger/ostsee-sichtung/issues/46)
+
 ## <small>1.12.1 (2025-08-18)</small>
 
 * Merge pull request #45 from jansinger/fix/legacy-showreports-compatibility ([f9c4d70](https://github.com/jansinger/ostsee-sichtung/commit/f9c4d70)), closes [#45](https://github.com/jansinger/ostsee-sichtung/issues/45)
