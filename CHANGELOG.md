@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.12.0 (2025-08-18)
+
+* Merge pull request #43 from jansinger/feature/legacy-rest-api ([b568597](https://github.com/jansinger/ostsee-sichtung/commit/b568597)), closes [#43](https://github.com/jansinger/ostsee-sichtung/issues/43)
+* fix(api): resolve all legacy REST API test failures ([b9d88e1](https://github.com/jansinger/ostsee-sichtung/commit/b9d88e1))
+* fix(api): resolve timezone issues in legacy API tests ([b61313f](https://github.com/jansinger/ostsee-sichtung/commit/b61313f))
+* fix(docs): update OpenAPI specification to match current implementation ([0b8d6ca](https://github.com/jansinger/ostsee-sichtung/commit/0b8d6ca))
+* fix(test): resolve TypeScript type-check errors in legacy API tests ([2f0bc0f](https://github.com/jansinger/ostsee-sichtung/commit/2f0bc0f))
+* feat(api): implement legacy REST API for mobile app compatibility ([ba1dcc2](https://github.com/jansinger/ostsee-sichtung/commit/ba1dcc2)), closes [#27](https://github.com/jansinger/ostsee-sichtung/issues/27)
+* feat(api): implement PDF-compliant legacy REST API endpoints ([2dcccf0](https://github.com/jansinger/ostsee-sichtung/commit/2dcccf0))
+
 ## 1.11.0 (2025-08-18)
 
 * Merge pull request #42 from jansinger/feature/media-upload-flags-script ([739cd3b](https://github.com/jansinger/ostsee-sichtung/commit/739cd3b)), closes [#42](https://github.com/jansinger/ostsee-sichtung/issues/42)
