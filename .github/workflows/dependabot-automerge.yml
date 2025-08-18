@@ -41,6 +41,9 @@ jobs:
           npm run type-check
           npm run test:unit -- --run
 
+      - name: Build
+        run: npm run build
+
       - name: Run E2E tests
         run: npm run test:e2e
 
