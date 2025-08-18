@@ -117,5 +117,9 @@
 	},
 	"optionalDependencies": {
 		"@rollup/rollup-linux-x64-gnu": "4.46.3"
+	},
+	"overrides": {
+		"cookie": "^0.7.2",
+		"esbuild": "^0.25.0"
 	}
 }
