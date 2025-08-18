@@ -17,6 +17,7 @@ import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { and, between, gte, lt, sql } from 'drizzle-orm';
 import { json, type RequestEvent } from '@sveltejs/kit';
+import { formatDateDDMMYY, formatTimeHHMI, toUnixTimestamp } from '$lib/legacy-api/date-utils.js';
 
 const logger = createLogger('api:legacy:showreports:pdf-compliant');
 
@@ -258,23 +259,15 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		const pdfCompliantSightings: PDFCompliantSightingResponse[] = dbSightings.map(sighting => {
 			const date = new Date(sighting.sichtungsdatum);
 			
-			// PDF format: DD.MM.YY (2-digit year!)
-			const dt = date.toLocaleDateString('de-DE', {
-				day: '2-digit',
-				month: '2-digit', 
-				year: '2-digit'
-			});
+			// PDF format: DD.MM.YY (2-digit year!) - timezone-safe formatting
+			const dt = formatDateDDMMYY(date);
 
-			// PDF format: HH:MI
-			const ti = date.toLocaleTimeString('de-DE', {
-				hour: '2-digit',
-				minute: '2-digit',
-				hour12: false
-			});
+			// PDF format: HH:MI - timezone-safe formatting  
+			const ti = formatTimeHHMI(date);
 
 			// Create base response with required fields
 			const response: PDFCompliantSightingResponse = {
-				ts: Math.floor(date.getTime() / 1000), // Unix timestamp
+				ts: toUnixTimestamp(date), // Unix timestamp
 				id: sighting.id,
 				dt, // Date in DD.MM.YY format
 				ti, // Time in HH:MI format

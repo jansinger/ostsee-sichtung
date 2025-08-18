@@ -181,10 +181,10 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			
 			// PDF format: DD.MM.YY (2-digit year!)
 			expect(firstSighting.dt).toBe('25.01.12');
-			expect(firstSighting.ti).toBe('15:50'); // UTC time (14:50 + 1 hour timezone)
+			expect(firstSighting.ti).toBe('14:50'); // UTC time (consistent across all timezones)
 
-			// Verify Unix timestamp - calculated from actual date/time conversion
-			expect(firstSighting.ts).toBe(1327503000); // Unix timestamp after locale conversion
+			// Verify Unix timestamp - calculated from UTC date/time
+			expect(firstSighting.ts).toBe(1327503000); // Unix timestamp for 2012-01-25T14:50:00.000Z
 		});
 
 		it('should return coordinates as strings with proper precision', async () => {
