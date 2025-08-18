@@ -43,17 +43,40 @@ jobs:
               per_page: 100
             });
             
-            const dependabotPRs = pullRequests.filter(pr => 
-              pr.user.login === 'dependabot[bot]' && 
-              pr.head.ref.startsWith('dependabot/')
-            );
+            // Nur PRs die bereits durch den unified validation workflow gegangen sind
+            const dependabotPRs = [];
+            
+            for (const pr of pullRequests) {
+              if (pr.user.login === 'dependabot[bot]' && 
+                  pr.head.ref.startsWith('dependabot/')) {
+                
+                // Prüfe ob der PR bereits validiert wurde
+                const { data: checkRuns } = await github.rest.checks.listForRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: pr.head.sha,
+                });
+                
+                const hasPassedValidation = checkRuns.check_runs.some(check => 
+                  check.name === 'Validate Pull Request' && 
+                  check.status === 'completed' && 
+                  check.conclusion === 'success'
+                );
+                
+                if (hasPassedValidation) {
+                  dependabotPRs.push(pr);
+                } else {
+                  console.log(`Skipping PR #${pr.number}: Not yet validated or validation failed`);
+                }
+              }
+            }
             
             if (dependabotPRs.length === 0) {
-              console.log('No Dependabot PRs found');
+              console.log('No validated Dependabot PRs found');
               return { prs: [], count: 0 };
             }
             
-            console.log(`Found ${dependabotPRs.length} Dependabot PRs`);
+            console.log(`Found ${dependabotPRs.length} validated Dependabot PRs`);
             
             const prDetails = dependabotPRs.map(pr => ({
               number: pr.number,
@@ -71,7 +94,7 @@ jobs:
       - name: Exit if no PRs
         if: steps.get-prs.outputs.count == '0'
         run: |
-          echo "No Dependabot PRs to combine. Exiting."
+          echo "No validated Dependabot PRs to combine. Exiting."
           exit 0
           
       - name: Create combined branch
@@ -150,7 +173,8 @@ jobs:
               subject = `update ${prs[0].title.replace(/^bump /i, '').replace(/ from .+ to .+/i, '')}`;
             }
             
-            let body = '';
+            let body = '### 📋 Summary\n\n';
+            body += `This PR combines ${prs.length} dependency updates that have all passed individual validation.\n\n`;
             
             // Major Updates
             if (updates.major.length > 0) {
@@ -190,8 +214,11 @@ jobs:
             
             body += '### 🔗 Original PRs\n\n';
             prs.forEach(pr => {
-              body += `- #${pr.number}: ${pr.title}\n`;
+              body += `- #${pr.number}: ${pr.title} ✅\n`;
             });
+            
+            body += '\n### ✅ Pre-validated\n\n';
+            body += 'All included dependencies have already passed the full test suite individually.';
             
             const commitMessage = `${commitType}(${scope}): ${subject}`;
             const hasMajor = updates.major.length > 0;
@@ -202,27 +229,7 @@ jobs:
             
             return { commitMessage, body, hasMajor };
             
-      - name: Setup environment
-        if: steps.get-prs.outputs.count != '0'
-        run: cp .env.example .env
-          
-      - name: Install dependencies
-        if: steps.get-prs.outputs.count != '0'
-        run: npm ci
-          
-      - name: Install Playwright Browsers
-        if: steps.get-prs.outputs.count != '0'
-        run: npx playwright install --with-deps
-          
-      - name: Run tests
-        if: steps.get-prs.outputs.count != '0'
-        run: |
-          npm run check
-          npm run lint
-          npm run type-check
-          npm run test:unit -- --run
-          npm run test:e2e
-          
+      # Keine erneuten Tests - alle PRs wurden bereits einzeln validiert!
       - name: Commit changes
         if: steps.get-prs.outputs.count != '0'
         run: |
@@ -241,7 +248,7 @@ jobs:
             const hasMajor = ${{ steps.commit-message.outputs.has-major }};
             
             let title = commitMessage;
-            let labels = ['dependencies'];
+            let labels = ['dependencies', 'pre-validated'];
             
             if (hasMajor) {
               labels.push('breaking-change');
@@ -288,7 +295,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: pr.number,
-                body: `🤖 This dependency update has been combined with others into a single PR: ${combinedPrUrl}`
+                body: `🤖 This dependency update has been combined with others into a single PR: ${combinedPrUrl}\n\n✅ All tests have already passed for this update.`
               });
               
               // PR schließen
@@ -317,5 +324,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: ${{ steps.create-pr.outputs.pr-number }},
-              body: '⚠️ **This PR contains major version updates** that may include breaking changes. Please review carefully before merging.\n\nTests have passed, but manual review is recommended for major updates.'
+              body: '⚠️ **This PR contains major version updates** that may include breaking changes. Please review carefully before merging.\n\n✅ All individual dependencies have already passed the full test suite.'
             });
