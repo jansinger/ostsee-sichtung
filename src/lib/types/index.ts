@@ -54,3 +54,17 @@ export type {
 
 // API response types
 export type { SightingResponse, CreateSightingResponse } from './ApiResponse.js';
+
+// Geographic types
+export type {
+	GPSCoordinate,
+	GeoLimits,
+	BalticSeaValidationResult,
+	BoundingBox,
+	BalticSeaConstants,
+	PostGISValidationRow,
+	CoordinateValidationParams,
+	DetailedValidationResult,
+	GeographicValidationErrorInfo
+} from './Geography.js';
+export { GeographicValidationError } from './Geography.js';
