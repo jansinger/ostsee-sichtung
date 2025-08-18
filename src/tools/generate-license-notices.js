@@ -6,44 +6,44 @@
  */
 
 import { exec } from 'child_process';
-import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
+import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
 async function generateLicenseNotices() {
-  console.log('📄 Generating third-party license notices...');
-  
-  try {
-    // Generate JSON output of all licenses
-    const { stdout } = await execAsync('npx license-checker --production --json');
-    const licenses = JSON.parse(stdout);
-    
-    // Group licenses by type
-    const licenseGroups = {};
-    const licenseCounts = {};
-    
-    for (const [packageName, info] of Object.entries(licenses)) {
-      const licenseType = info.licenses || 'UNKNOWN';
-      
-      if (!licenseGroups[licenseType]) {
-        licenseGroups[licenseType] = [];
-        licenseCounts[licenseType] = 0;
-      }
-      
-      licenseGroups[licenseType].push({
-        name: packageName,
-        repository: info.repository,
-        publisher: info.publisher,
-        licenseFile: info.licenseFile
-      });
-      
-      licenseCounts[licenseType]++;
-    }
-    
-    // Generate markdown content
-    let content = `# Third-Party Software Notices and License Terms
+	console.log('📄 Generating third-party license notices...');
+
+	try {
+		// Generate JSON output of all licenses
+		const { stdout } = await execAsync('npx license-checker --production --json');
+		const licenses = JSON.parse(stdout);
+
+		// Group licenses by type
+		const licenseGroups = {};
+		const licenseCounts = {};
+
+		for (const [packageName, info] of Object.entries(licenses)) {
+			const licenseType = info.licenses || 'UNKNOWN';
+
+			if (!licenseGroups[licenseType]) {
+				licenseGroups[licenseType] = [];
+				licenseCounts[licenseType] = 0;
+			}
+
+			licenseGroups[licenseType].push({
+				name: packageName,
+				repository: info.repository,
+				publisher: info.publisher,
+				licenseFile: info.licenseFile
+			});
+
+			licenseCounts[licenseType]++;
+		}
+
+		// Generate markdown content
+		let content = `# Third-Party Software Notices and License Terms
 
 This project uses third-party software components. The following is a list of these components and their respective licenses.
 
@@ -54,50 +54,48 @@ Generated on: [AUTO-GENERATED]
 | License Type | Count | Compatibility |
 |-------------|-------|---------------|
 `;
-    
-    // Add license summary
-    const sortedLicenses = Object.entries(licenseCounts)
-      .sort(([,a], [,b]) => b - a);
-    
-    for (const [license, count] of sortedLicenses) {
-      const compatibility = getCompatibility(license);
-      content += `| ${license} | ${count} | ${compatibility} |\n`;
-    }
-    
-    content += `\n**Total Dependencies**: ${Object.keys(licenses).length}\n\n`;
-    
-    // Add detailed license information
-    content += `## Detailed License Information\n\n`;
-    
-    // Sort license groups by compatibility
-    const orderedGroups = Object.entries(licenseGroups)
-      .sort(([a], [b]) => {
-        const orderA = getLicenseOrder(a);
-        const orderB = getLicenseOrder(b);
-        return orderA - orderB;
-      });
-    
-    for (const [licenseType, packages] of orderedGroups) {
-      content += `### ${licenseType} (${packages.length} packages)\n\n`;
-      content += `**Compatibility**: ${getCompatibility(licenseType)}\n\n`;
-      
-      // Sort packages alphabetically
-      packages.sort((a, b) => a.name.localeCompare(b.name));
-      
-      for (const pkg of packages) {
-        content += `- **${pkg.name}**\n`;
-        if (pkg.repository) {
-          content += `  - Repository: ${pkg.repository}\n`;
-        }
-        if (pkg.publisher) {
-          content += `  - Publisher: ${pkg.publisher}\n`;
-        }
-        content += `\n`;
-      }
-    }
-    
-    // Add FOSS compliance statement
-    content += `## FOSS Compliance Statement
+
+		// Add license summary
+		const sortedLicenses = Object.entries(licenseCounts).sort(([, a], [, b]) => b - a);
+
+		for (const [license, count] of sortedLicenses) {
+			const compatibility = getCompatibility(license);
+			content += `| ${license} | ${count} | ${compatibility} |\n`;
+		}
+
+		content += `\n**Total Dependencies**: ${Object.keys(licenses).length}\n\n`;
+
+		// Add detailed license information
+		content += `## Detailed License Information\n\n`;
+
+		// Sort license groups by compatibility
+		const orderedGroups = Object.entries(licenseGroups).sort(([a], [b]) => {
+			const orderA = getLicenseOrder(a);
+			const orderB = getLicenseOrder(b);
+			return orderA - orderB;
+		});
+
+		for (const [licenseType, packages] of orderedGroups) {
+			content += `### ${licenseType} (${packages.length} packages)\n\n`;
+			content += `**Compatibility**: ${getCompatibility(licenseType)}\n\n`;
+
+			// Sort packages alphabetically
+			packages.sort((a, b) => a.name.localeCompare(b.name));
+
+			for (const pkg of packages) {
+				content += `- **${pkg.name}**\n`;
+				if (pkg.repository) {
+					content += `  - Repository: ${pkg.repository}\n`;
+				}
+				if (pkg.publisher) {
+					content += `  - Publisher: ${pkg.publisher}\n`;
+				}
+				content += `\n`;
+			}
+		}
+
+		// Add FOSS compliance statement
+		content += `## FOSS Compliance Statement
 
 This project is committed to Free and Open Source Software (FOSS) compliance:
 
@@ -126,110 +124,101 @@ If you have questions about third-party licenses or FOSS compliance, please:
 *This file is automatically generated. Do not edit manually.*
 *To regenerate, run: \`npm run generate:licenses\`*
 `;
-    
-    // Write the file
-    await fs.writeFile(
-      path.join(process.cwd(), 'THIRD-PARTY-NOTICES.md'),
-      content,
-      'utf-8'
-    );
-    
-    console.log('✅ Generated THIRD-PARTY-NOTICES.md');
-    
-    // Also generate a simple text version for inclusion in distributions
-    const textContent = generateTextVersion(licenseGroups, licenseCounts);
-    await fs.writeFile(
-      path.join(process.cwd(), 'THIRD-PARTY-NOTICES.txt'),
-      textContent,
-      'utf-8'
-    );
-    
-    console.log('✅ Generated THIRD-PARTY-NOTICES.txt');
-    
-  } catch (error) {
-    console.error('❌ Error generating license notices:', error);
-    process.exit(1);
-  }
+
+		// Write the file
+		await fs.writeFile(path.join(process.cwd(), 'THIRD-PARTY-NOTICES.md'), content, 'utf-8');
+
+		console.log('✅ Generated THIRD-PARTY-NOTICES.md');
+
+		// Also generate a simple text version for inclusion in distributions
+		const textContent = generateTextVersion(licenseGroups, licenseCounts);
+		await fs.writeFile(path.join(process.cwd(), 'THIRD-PARTY-NOTICES.txt'), textContent, 'utf-8');
+
+		console.log('✅ Generated THIRD-PARTY-NOTICES.txt');
+	} catch (error) {
+		console.error('❌ Error generating license notices:', error);
+		process.exit(1);
+	}
 }
 
 function getCompatibility(license) {
-  // Define license compatibility with MIT
-  const compatible = {
-    'MIT': '✅ Fully Compatible',
-    'ISC': '✅ Fully Compatible',
-    'BSD': '✅ Fully Compatible',
-    'BSD-2-Clause': '✅ Fully Compatible',
-    'BSD-3-Clause': '✅ Fully Compatible',
-    'Apache-2.0': '✅ Fully Compatible',
-    'CC0-1.0': '✅ Fully Compatible',
-    'Unlicense': '✅ Fully Compatible',
-    '0BSD': '✅ Fully Compatible',
-    'WTFPL': '✅ Fully Compatible',
-    'BlueOak-1.0.0': '✅ Fully Compatible',
-    'OFL-1.1': '✅ Compatible (Fonts)',
-    'CC-BY-3.0': '⚠️ Attribution Required',
-    'CC-BY-4.0': '⚠️ Attribution Required',
-    'MPL-2.0': '⚠️ Weak Copyleft',
-    'LGPL-3.0': '⚠️ Weak Copyleft',
-    'GPL-3.0': '❌ Strong Copyleft',
-    'AGPL-3.0': '❌ Strong Copyleft',
-    'UNKNOWN': '❓ Unknown'
-  };
-  
-  // Handle complex license expressions
-  if (license.includes('OR')) {
-    return '✅ Dual Licensed';
-  }
-  if (license.includes('AND')) {
-    return '⚠️ Multiple Licenses';
-  }
-  
-  return compatible[license] || '❓ Review Needed';
+	// Define license compatibility with MIT
+	const compatible = {
+		MIT: '✅ Fully Compatible',
+		ISC: '✅ Fully Compatible',
+		BSD: '✅ Fully Compatible',
+		'BSD-2-Clause': '✅ Fully Compatible',
+		'BSD-3-Clause': '✅ Fully Compatible',
+		'Apache-2.0': '✅ Fully Compatible',
+		'CC0-1.0': '✅ Fully Compatible',
+		Unlicense: '✅ Fully Compatible',
+		'0BSD': '✅ Fully Compatible',
+		WTFPL: '✅ Fully Compatible',
+		'BlueOak-1.0.0': '✅ Fully Compatible',
+		'OFL-1.1': '✅ Compatible (Fonts)',
+		'CC-BY-3.0': '⚠️ Attribution Required',
+		'CC-BY-4.0': '⚠️ Attribution Required',
+		'MPL-2.0': '⚠️ Weak Copyleft',
+		'LGPL-3.0': '⚠️ Weak Copyleft',
+		'GPL-3.0': '❌ Strong Copyleft',
+		'AGPL-3.0': '❌ Strong Copyleft',
+		UNKNOWN: '❓ Unknown'
+	};
+
+	// Handle complex license expressions
+	if (license.includes('OR')) {
+		return '✅ Dual Licensed';
+	}
+	if (license.includes('AND')) {
+		return '⚠️ Multiple Licenses';
+	}
+
+	return compatible[license] || '❓ Review Needed';
 }
 
 function getLicenseOrder(license) {
-  // Order licenses by preference/compatibility
-  const order = {
-    'MIT': 1,
-    'ISC': 2,
-    'BSD': 3,
-    'BSD-2-Clause': 3,
-    'BSD-3-Clause': 3,
-    'Apache-2.0': 4,
-    'BlueOak-1.0.0': 5,
-    'CC0-1.0': 6,
-    'Unlicense': 6,
-    '0BSD': 6,
-    'WTFPL': 7,
-    'OFL-1.1': 8,
-    'CC-BY-3.0': 9,
-    'CC-BY-4.0': 9,
-    'MPL-2.0': 10,
-    'LGPL-3.0': 11,
-    'GPL-3.0': 12,
-    'AGPL-3.0': 13,
-    'UNKNOWN': 99
-  };
-  
-  return order[license] || 50;
+	// Order licenses by preference/compatibility
+	const order = {
+		MIT: 1,
+		ISC: 2,
+		BSD: 3,
+		'BSD-2-Clause': 3,
+		'BSD-3-Clause': 3,
+		'Apache-2.0': 4,
+		'BlueOak-1.0.0': 5,
+		'CC0-1.0': 6,
+		Unlicense: 6,
+		'0BSD': 6,
+		WTFPL: 7,
+		'OFL-1.1': 8,
+		'CC-BY-3.0': 9,
+		'CC-BY-4.0': 9,
+		'MPL-2.0': 10,
+		'LGPL-3.0': 11,
+		'GPL-3.0': 12,
+		'AGPL-3.0': 13,
+		UNKNOWN: 99
+	};
+
+	return order[license] || 50;
 }
 
-function generateTextVersion(licenseGroups, licenseCounts) {
-  let text = `THIRD-PARTY SOFTWARE NOTICES AND LICENSE TERMS
+function generateTextVersion(_licenseGroups, licenseCounts) {
+	let text = `THIRD-PARTY SOFTWARE NOTICES AND LICENSE TERMS
 ===============================================
 
 This project uses the following third-party software components:
 
 `;
-  
-  for (const [license, count] of Object.entries(licenseCounts)) {
-    text += `${license}: ${count} packages\n`;
-  }
-  
-  text += `\nTotal Dependencies: ${Object.values(licenseCounts).reduce((a, b) => a + b, 0)}\n`;
-  text += `\nFor detailed information, see THIRD-PARTY-NOTICES.md\n`;
-  
-  return text;
+
+	for (const [license, count] of Object.entries(licenseCounts)) {
+		text += `${license}: ${count} packages\n`;
+	}
+
+	text += `\nTotal Dependencies: ${Object.values(licenseCounts).reduce((a, b) => a + b, 0)}\n`;
+	text += `\nFor detailed information, see THIRD-PARTY-NOTICES.md\n`;
+
+	return text;
 }
 
 // Run the generator
