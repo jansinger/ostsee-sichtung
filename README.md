@@ -2,14 +2,14 @@
 
 # Ostsee-Tiere 
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/jansinger/ostsee-sichtung/release.yml?style=flat-square&logo=github&label=Build)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/jansinger/sichtungen-webapp/release.yml?style=flat-square&logo=github&label=Build)
 ![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=flat-square&logo=vercel)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/m/jansinger/ostsee-sichtung?style=flat-square&logo=github)
-![GitHub last commit](https://img.shields.io/github/last-commit/jansinger/ostsee-sichtung?style=flat-square&logo=github)
-![GitHub issues](https://img.shields.io/github/issues/jansinger/ostsee-sichtung?style=flat-square&logo=github)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/jansinger/ostsee-sichtung?style=flat-square&logo=github)
-![GitHub](https://img.shields.io/github/license/jansinger/ostsee-sichtung?style=flat-square)
-![GitHub package.json version](https://img.shields.io/github/package-json/v/jansinger/ostsee-sichtung?style=flat-square&logo=npm)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/jansinger/sichtungen-webapp?style=flat-square&logo=github)
+![GitHub last commit](https://img.shields.io/github/last-commit/jansinger/sichtungen-webapp?style=flat-square&logo=github)
+![GitHub issues](https://img.shields.io/github/issues/jansinger/sichtungen-webapp?style=flat-square&logo=github)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/jansinger/sichtungen-webapp?style=flat-square&logo=github)
+![GitHub](https://img.shields.io/github/license/jansinger/sichtungen-webapp?style=flat-square)
+![GitHub package.json version](https://img.shields.io/github/package-json/v/jansinger/sichtungen-webapp?style=flat-square&logo=npm)
 
 **Ostsee-Tiere** ist eine moderne SvelteKit-WebApp zur Erfassung und Verwaltung von Meerestier-Sichtungen in der Ostsee. Die Anwendung ermöglicht es Bürgern, Forschern und Naturbeobachtern, ihre Sichtungen von Walen, Robben und anderen Meerestieren zu melden und der Wissenschaft zur Verfügung zu stellen.
 
@@ -33,7 +33,7 @@ Ostsee-Tiere bietet eine benutzerfreundliche Plattform zur wissenschaftlichen Er
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![OpenLayers](https://img.shields.io/badge/OpenLayers-1F6B75?style=flat-square&logo=openlayers&logoColor=white)
 
-- **Frontend**: SvelteKit (Svelte 5) mit TypeScript
+- **Frontend**: SvelteKit (Svelte 5 mit Runes) mit TypeScript
 - **Styling**: TailwindCSS mit DaisyUI-Komponenten
 - **Formularvalidierung**: svelte-forms-lib mit Yup
 - **Datenbank**: PostgreSQL mit PostGIS-Erweiterung
@@ -53,8 +53,8 @@ Ostsee-Tiere bietet eine benutzerfreundliche Plattform zur wissenschaftlichen Er
 
 ```bash
 # Repository klonen
-git clone https://github.com/jansinger/ostsee-sichtung.git
-cd ostsee-sichtung
+git clone https://github.com/jansinger/sichtungen-webapp.git
+cd sichtungen-webapp
 
 # Abhängigkeiten installieren
 npm install
@@ -76,8 +76,11 @@ Die Anwendung ist dann unter https://localhost:4000 verfügbar.
 ### Datenbankbefehle
 
 ```bash
-# Datenbank starten
+# Datenbank starten (Docker, Port 5433)
 npm run db:start
+
+# Datenbank stoppen
+npm run db:stop
 
 # Schema-Änderungen anwenden
 npm run db:push
@@ -89,58 +92,104 @@ npm run db:migrate
 npm run db:studio
 ```
 
-### Tests ausführen
+### Tests und Code-Qualität
 
 ```bash
 # Unit-Tests ausführen
 npm run test:unit
 
+# Unit-Tests im Watch-Modus
+npm run test:unit:watch
+
 # E2E-Tests ausführen
 npm run test:e2e
 
-# Alle Tests ausführen
+# Schnelle Tests (Lint + Unit-Tests)
 npm run test
+
+# Vollständige Produktions-Tests
+npm run test:production
+
+# Code-Qualität
+npm run lint
+npm run type-check
+npm run format
+npm run check
 ```
 
 ## Projektstruktur
 
 ```
-ostsee-sichtung/
+sichtungen-webapp/
 ├── src/
-│   ├── lib/                # Wiederverwendbare Komponenten und Funktionen
-│   │   ├── components/     # UI-Komponenten
+│   ├── lib/
+│   │   ├── components/     # UI-Komponenten (Form, Map, Media, Admin)
 │   │   ├── constants/      # Konstanten und Enumerationen
-│   │   ├── map/            # Karten-Funktionalitäten
-│   │   ├── db/             # Datenbankzugriff
-│   │   ├── server/         # Drizzle Schema uns Serverkomponenten
+│   │   ├── form/           # Formular-Logik und Validierung
+│   │   ├── legacy-api/     # Legacy REST API Kompatibilität
+│   │   ├── map/            # OpenLayers Karten-Funktionalitäten
+│   │   ├── report/         # Sichtungsmeldung-Komponenten und -Logik
+│   │   ├── server/         # Server-seitige Logik
+│   │   │   ├── auth/       # Authentifizierung
+│   │   │   ├── db/         # Datenbankzugriff und Schema
+│   │   │   ├── export/     # Datenexport (CSV, JSON, KML, XML)
+│   │   │   ├── storage/    # Datei-Speicher Abstraktion
+│   │   │   └── validation/ # Server-seitige Validierung
+│   │   ├── stores/         # Svelte Stores
+│   │   ├── types/          # TypeScript Typen
+│   │   └── utils/          # Hilfsfunktionen
 │   └── routes/             # SvelteKit-Routen
-│       └── api/            # Backend-API-Endpunkte
-└── static/                 # Statische Assets
+│       ├── api/            # API-Endpunkte
+│       │   └── legacy/     # Legacy REST API
+│       ├── admin/          # Admin-Interface
+│       ├── map/            # Karten-Visualisierung
+│       └── sichtungen/     # Sichtungsformular und -verwaltung
+├── static/                 # Statische Assets
+├── docs/                   # Dokumentation
+└── e2e/                    # End-to-End Tests
 ```
 
 ## Hauptfunktionen
 
-### Multi-Step-Formular
+### Multi-Step-Formular mit progressiver Offenlegung
 
-Das Herzstück der Anwendung ist ein mehrstufiges Formular, das Benutzer durch den Prozess der Sichtungsmeldung führt. Je nach Benutzereingaben werden relevante Schritte angezeigt oder übersprungen.
+Das Herzstück der Anwendung ist ein mehrstufiges Formular mit intelligenter Navigation:
+- Dynamische Schritte basierend auf Benutzereingaben
+- Conditional Logic und progressive Offenlegung
+- Yup-basierte Validierung mit svelte-forms-lib
+- Automatische GPS-Koordinaten-Erfassung
 
-### Kartenintegration
+### Interaktive Kartenvisualisierung
 
-Die Anwendung nutzt OpenLayers für die Kartenintegration und PostGIS für geografische Abfragen. Benutzer können:
+Moderne OpenLayers-Integration mit erweiterten Features:
+- Präzise Koordinaten-Erfassung durch Klick
+- Filterbare Sichtungsanzeige
+- PostGIS-basierte geografische Validierung (Ostsee-Grenzen)
+- Zeit-Slider für historische Daten
+- Export-Funktionen (CSV, JSON, KML, XML)
 
-- Sichtungspunkte auf der Karte platzieren
-- Vorhandene Sichtungen nach verschiedenen Kriterien filtern
-- Geografische Informationen visualisieren
+### Legacy REST API Kompatibilität
 
-### Datenmodell
+100% kompatible REST API für bestehende mobile Apps:
+- Exakte Feld-Mappings der Original-API
+- Backward-kompatible Antwortformate
+- Unterstützung aller ursprünglichen Endpunkte
 
-Das Datenmodell unterstützt umfangreiche Informationen zu Tiersichtungen, einschließlich:
+### Erweiterte Medienverwaltung
 
-- Geografische Koordinaten (Längen- und Breitengrad)
-- Zeitstempel und Datumsinformationen
-- Tierart und Anzahl
-- Umgebungsbedingungen (Seegang, Windrichtung, etc.)
-- Kontaktinformationen des Melders
+- EXIF-Metadaten-Extraktion für automatische GPS-Daten
+- Cloud- und lokale Speicher-Unterstützung
+- Responsive Bildergalerien
+- Automatische Thumbnail-Generierung
+
+### Umfassendes Datenmodell
+
+Detaillierte Erfassung von Meerestier-Sichtungen:
+- PostGIS Point-Geometrie für präzise Lokalisierung
+- Umweltbedingungen (Seegang, Wind, Sichtweite)
+- Tierverhalten und -zustand
+- Totfund-spezifische Datenfelder
+- Administrative Freigabe- und Verifizierungsprozesse
 
 ## Beitragen
 
