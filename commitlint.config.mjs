@@ -28,7 +28,8 @@ export default {
 				'security', // Security
 				'a11y', // Accessibility
 				'release', // Release commits (semantic-release)
-				'media' // Media handling
+				'media', // Media handling
+				'updated-dependencies' // Updated dependencies
 			]
 		],
 		// Erlaube auch leere Scopes
