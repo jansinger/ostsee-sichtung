@@ -99,12 +99,22 @@ export interface LegacyLocationResponse {
 }
 
 /**
- * Legacy API error response format
+ * Legacy API error response format - EXACT format from original API
  */
 export interface LegacyErrorResponse {
-	error: string;
-	message: string;
-	details?: Record<string, string[]>; // Field validation errors
+	message: {
+		message: string;
+		errors?: Record<string, string[]>; // Field validation errors in German
+	};
+}
+
+/**
+ * Simple error response for specific cases like "No data send"
+ */
+export interface LegacySimpleErrorResponse {
+	message: {
+		message: string;
+	};
 }
 
 /**
