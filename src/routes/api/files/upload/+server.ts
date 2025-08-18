@@ -86,6 +86,8 @@ export const POST: RequestHandler = async ({ request }) => {
 			throw error(400, validationErrors.join(' '));
 		}
 
+		// await new Promise((f) => setTimeout(f, 5000));
+
 		// Get storage provider and upload file
 		const storage = getStorageProvider();
 		const uploadedFile = await storage.upload(file, {

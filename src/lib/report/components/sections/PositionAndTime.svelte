@@ -1,315 +1,48 @@
 <script lang="ts">
-	import UnifiedDropzone from '$lib/components/form/UnifiedDropzone.svelte';
-	import OLMap from '$lib/components/map/OLMap.svelte';
-	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
-	import { mediaStore } from '$lib/stores/mediaStore';
-	import { createToast } from '$lib/stores/toastStore';
-	import { analyzeClientFile, isInBalticSea, convertServerExifToClient, type ClientFileMetadata } from '$lib/utils/client/fileAnalysis';
-	import { FILE_VALIDATION_PRESETS } from '$lib/utils/fileValidation';
-	import { formatLocation } from '$lib/utils/format/formatLocation';
-	import { deleteFileDirect, uploadFileDirect } from '$lib/utils/uploadUtils';
-	import { uploadResultToFormData, formDataToUploadData, type UploadFileData } from '$lib/utils/uploadHelpers';
+	import type { FileValidationConfig } from '$lib/utils/fileValidation';
+	import { createFormSyncEffect, createUploadedFilesMap } from '$lib/utils/upload/formIntegration';
+	import { formDataToUploadData } from '$lib/utils/uploadHelpers';
 	import { Calendar, Camera, MapPin, SquarePen } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
-	import { SvelteMap } from 'svelte/reactivity';
+	import DropzoneEnhanced from '../form/fields/DropzoneEnhanced.svelte';
 	import FormField from '../form/fields/FormField.svelte';
 	import LocationInput from '../form/LocationInput.svelte';
 	import VerifyLocation from '../form/VerifyLocation.svelte';
 
-	const logger = createLogger('PositionAndTime');
 	const { form, handleChange } = getFormContext();
 
 	// Position input method: 'photo', 'map', 'manual'
 	let positionMethod = $state<'photo' | 'map' | 'manual'>('photo');
-	let isAnalyzing = $state(false);
-	let isUploading = $state(false);
-	let photoMetadata: ClientFileMetadata | null = $state(null);
-	let photoFile: File | null = $state(null);
-	let dropzoneFiles = $state<File[]>([]);
-	let uploadedPhotoPath: string | null = $state(null);
 
-	// Lokaler Zustand für hochgeladene Dateien (für Form-Updates)
-	let uploadedFiles = new SvelteMap<string, UploadFileData>();
+	// Initialize uploaded files map with form integration
+	const initialFiles =
+		$form.uploadedFiles && Array.isArray($form.uploadedFiles)
+			? $form.uploadedFiles.map(formDataToUploadData)
+			: [];
 
-	// Initialize uploadedFiles SvelteMap from form data array
-	if ($form.uploadedFiles && Array.isArray($form.uploadedFiles) && $form.uploadedFiles.length > 0) {
-		// Convert array format from form schema to SvelteMap format
-		$form.uploadedFiles.forEach((fileInfo) => {
-			uploadedFiles.set(fileInfo.originalName, formDataToUploadData(fileInfo));
-		});
-	}
+	let uploadedFiles = createUploadedFilesMap(initialFiles, { handleChange });
 
 	// Update form when uploaded files change
-	$effect(() => {
-		const filesArray = Array.from(uploadedFiles.values());
-		handleChange({
-			target: {
-				name: 'uploadedFiles',
-				value: filesArray
-			}
-		} as unknown as Event);
-	});
+	$effect(createFormSyncEffect(uploadedFiles, { handleChange }));
 
 	// Generiere eine einfache referenceId für Upload (temporäre Lösung)
 	const referenceId = $derived($form.referenceId);
 
-	// Reactive form state (for potential future use)
-	// let hasPosition = $derived($form.hasPosition);
-
-	// Restore state from form data when component is re-mounted or step is revisited
-	$effect(() => {
-		// Restore uploaded files and photo state from form data
-		if (
-			$form.uploadedFiles &&
-			Array.isArray($form.uploadedFiles) &&
-			$form.uploadedFiles.length > 0
-		) {
-			// Find position photos in uploaded files
-			const positionPhotos = $form.uploadedFiles.filter(
-				(file) => file.mimeType?.startsWith('image/') && file.filePath && file.originalName
-			);
-
-			if (positionPhotos.length > 0 && !photoFile) {
-				const firstPhoto = positionPhotos[0];
-				if (firstPhoto) {
-					uploadedPhotoPath = firstPhoto.filePath;
-
-					// Set position method to photo if we have position data
-					if (
-						$form.hasPosition &&
-						$form.latitude &&
-						$form.longitude &&
-						positionMethod !== 'photo'
-					) {
-						positionMethod = 'photo';
-					}
-
-					// Create a mock file object for display purposes
-					// This allows showing the uploaded photo even after step navigation
-					try {
-						// Create basic metadata for display
-						photoMetadata = {
-							name: firstPhoto.originalName,
-							size: firstPhoto.size,
-							type: firstPhoto.mimeType,
-							lastModified: new Date(),
-							thumbnail: `/uploads/${firstPhoto.filePath}`, // Use server path for display
-							exif: {
-								latitude: $form.latitude ? parseFloat($form.latitude.toString()) : null,
-								longitude: $form.longitude ? parseFloat($form.longitude.toString()) : null,
-								altitude: null, // No altitude data stored in form
-								timestamp: $form.sightingDate
-									? new Date($form.sightingDate + 'T' + ($form.sightingTime || '12:00'))
-									: null
-							}
-						};
-
-						// Create a mock File object for display - this helps with the UI state
-						photoFile = new File([''], firstPhoto.originalName, { type: firstPhoto.mimeType });
-
-						// Also add this file to mediaStore if it's not already there
-						// This ensures the file appears in both Position step and Media step
-						mediaStore.addFromPositionStep(photoFile, photoMetadata);
-					} catch (error) {
-						logger.warn({ error, file: firstPhoto }, 'Error restoring photo metadata');
-					}
-				}
-			}
-		}
-	});
-
-	async function processFile(file: File) {
-		if (!file.type.startsWith('image/')) {
-			createToast('error', 'Bitte wählen Sie eine Bilddatei aus.');
-			return;
-		}
-
-		isAnalyzing = true;
-		photoFile = file;
-
-		try {
-			const metadata = await analyzeClientFile(file);
-			photoMetadata = metadata;
-
-			// Note: GPS data extraction is now handled server-side
-			// Client-side analysis only provides basic file metadata and thumbnails
-			
-			// Add photo to media store for later processing
-			mediaStore.addFromPositionStep(file, metadata);
-
-			createToast(
-				'info',
-				'Foto analysiert. GPS-Daten werden beim Upload verarbeitet.'
-			);
-		} catch (error) {
-			logger.warn({ error, fileName: file.name }, 'Error analyzing photo');
-			createToast('error', 'Fehler beim Analysieren des Fotos.');
-		} finally {
-			isAnalyzing = false;
-		}
-	}
-
-	async function handleFilesAdded(newFiles: File[]) {
-		if (newFiles.length > 0) {
-			const file = newFiles[0]; // Only take the first file for GPS position
-			if (!file) return; // TypeScript type guard
-
-			await processFile(file);
-
-			// Upload-Phase (separat von der Analyse)
-			if (photoFile && referenceId) {
-				// Upload nur wenn die Datei erfolgreich verarbeitet wurde
-				isUploading = true;
-				try {
-					const uploadResult = await uploadFileDirect(file, referenceId);
-					uploadedPhotoPath = uploadResult.filePath;
-
-					// Speichere die vollständigen Datei-Informationen für späteres Löschen und DB-Speicherung
-					uploadedFiles.set(file.name, uploadResultToFormData(uploadResult));
-
-					// Update photo metadata with server EXIF data if available
-					if (uploadResult.exifData && photoMetadata) {
-						const serverExif = convertServerExifToClient(uploadResult.exifData);
-						photoMetadata = {
-							...photoMetadata,
-							exif: serverExif
-						};
-						
-						// Update media store with EXIF data
-						mediaStore.addFromPositionStep(file, photoMetadata);
-
-						// If GPS data found, auto-fill form and show success message
-						if (serverExif.latitude && serverExif.longitude) {
-							handleChange({
-								target: { name: 'hasPosition', value: true }
-							} as unknown as Event);
-							handleChange({
-								target: { name: 'latitude', value: serverExif.latitude.toString() }
-							} as unknown as Event);
-							handleChange({
-								target: { name: 'longitude', value: serverExif.longitude.toString() }
-							} as unknown as Event);
-
-							// Auto-fill date/time from EXIF if available
-							if (serverExif.timestamp) {
-								const date = serverExif.timestamp;
-								const dateStr = date.toISOString().split('T')[0];
-								const timeStr = date.toTimeString().slice(0, 5);
-								
-								handleChange({
-									target: { name: 'sightingDate', value: dateStr }
-								} as unknown as Event);
-								handleChange({
-									target: { name: 'sightingTime', value: timeStr }
-								} as unknown as Event);
-							}
-
-							createToast('success', 'Foto hochgeladen! GPS-Position und Datum automatisch erfasst.');
-						} else {
-							createToast('success', 'Foto hochgeladen! Keine GPS-Daten gefunden - bitte Position manuell eingeben.');
-						}
-					} else {
-						createToast('success', 'Foto erfolgreich hochgeladen!');
-					}
-
-					logger.info(
-						{ fileName: file.name, filePath: uploadResult.filePath, hasGPS: !!(uploadResult.exifData?.latitude) },
-						'Position photo uploaded and tracked'
-					);
-				} catch (error) {
-					logger.error({ error, fileName: file.name }, 'Failed to upload position photo');
-					const errorMessage = (error as Error).message;
-					if (
-						errorMessage.includes('Ungültiger MIME-Type') ||
-						errorMessage.includes('Nur Bild- und Videoformate')
-					) {
-						createToast('error', 'Ungültiges Dateiformat. Nur Bilder und Videos sind erlaubt.');
-						await removeInvalidPositionFiles();
-					} else if (errorMessage.includes('zu groß') || errorMessage.includes('Maximum')) {
-						createToast('error', 'Datei zu groß. Maximum: 100MB pro Datei.');
-						await removeInvalidPositionFiles();
-					} else if (errorMessage.includes('leer')) {
-						createToast('error', 'Leere Dateien können nicht hochgeladen werden.');
-						await removeInvalidPositionFiles();
-					} else {
-						createToast('error', 'Fehler beim Hochladen des Fotos. Versuchen Sie es erneut.');
-					}
-					// Remove file from uploadedFiles map on error
-					uploadedFiles.delete(file.name);
-				} finally {
-					isUploading = false;
-				}
-			}
-		}
-	}
-
-	async function handleFileRemoved(_index: number) {
-		// Clear the photo when removed from dropzone
-		await clearPhoto();
-	}
-
-	async function handleDropzoneClear() {
-		await clearPhoto();
-	}
-
-	async function clearPhoto() {
-		try {
-			// Lösche vom Server wenn hochgeladen
-			if (uploadedPhotoPath) {
-				try {
-					await deleteFileDirect(uploadedPhotoPath);
-					logger.info({ filePath: uploadedPhotoPath }, 'Position photo deleted from server');
-				} catch (deleteError) {
-					logger.error(
-						{ deleteError, filePath: uploadedPhotoPath },
-						'Failed to delete position photo from server'
-					);
-					createToast('error', 'Fehler beim Löschen des Fotos vom Server.');
-				}
-			}
-
-			// Remove from media store if it was added
-			mediaStore.clear();
-
-			// Clear uploaded files map (will trigger form update via $effect)
-			uploadedFiles.clear();
-
-			uploadedPhotoPath = null;
-			photoFile = null;
-			photoMetadata = null;
-			dropzoneFiles = [];
-		} catch (error) {
-			logger.error({ error }, 'Failed to clear photo');
-			createToast('error', 'Fehler beim Löschen des Fotos.');
-		}
-	}
-
-	async function removeInvalidPositionFiles() {
-		try {
-			// Entferne das aktuelle Position-Foto bei Fehlern
-			await clearPhoto();
-			createToast(
-				'info',
-				'Ungültiges Foto wurde entfernt. Bitte versuchen Sie es mit einem anderen Bild.'
-			);
-		} catch (error) {
-			logger.error({ error }, 'Failed to remove invalid position file');
-		}
-	}
+	// Create a compatible config for GPS photo
+	const gpsPhotoConfig: FileValidationConfig = {
+		allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'],
+		maxFiles: 1
+	};
 
 	function selectMethod(method: 'photo' | 'map' | 'manual') {
 		positionMethod = method;
 
-		// Reset position data when switching methods (except when using photo data)
-		if (method !== 'photo' || !photoMetadata?.exif.latitude) {
+		// Reset position data when switching methods
+		if (method !== 'photo') {
 			handleChange({
 				target: { name: 'hasPosition', value: method !== 'manual' }
 			} as unknown as Event);
-			if (method === 'manual') {
-				handleChange({ target: { name: 'latitude', value: '' } } as unknown as Event);
-				handleChange({ target: { name: 'longitude', value: '' } } as unknown as Event);
-			}
 		}
 	}
 </script>
@@ -317,302 +50,169 @@
 <!-- Position & Time Section -->
 <div class="space-y-6">
 	<!-- Position Input Method Selection -->
-	<div class="border border-base-300 rounded-lg p-3 sm:p-4 bg-base-200/50">
-			<h3 class="font-semibold mb-3 flex items-center gap-2 text-base sm:text-lg">
-				<Icon src={MapPin} size="20" class="text-primary" />
-				Positionsangabe
-			</h3>
-			<p class="text-base-content/70 mb-6 text-sm">
-				Wählen Sie die für Sie einfachste Methode zur Positionsangabe
-			</p>
+	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
+		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
+			<Icon src={MapPin} size="20" class="text-primary" />
+			Positionsangabe
+		</h3>
+		<p class="text-base-content/70 mb-6 text-sm">
+			Wählen Sie die für Sie einfachste Methode zur Positionsangabe
+		</p>
 
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-				<!-- Photo Method -->
-				<div class="relative">
-					<input
-						type="radio"
-						id="method-photo"
-						name="position-method"
-						value="photo"
-						bind:group={positionMethod}
-						onchange={() => selectMethod('photo')}
-						class="sr-only"
-					/>
-					<label
-						for="method-photo"
-						class="block cursor-pointer rounded-lg border-2 p-4 transition-all
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+			<!-- Photo Method -->
+			<div class="relative">
+				<input
+					type="radio"
+					id="method-photo"
+					name="position-method"
+					value="photo"
+					bind:group={positionMethod}
+					onchange={() => selectMethod('photo')}
+					class="sr-only"
+				/>
+				<label
+					for="method-photo"
+					class="block cursor-pointer rounded-lg border-2 p-4 transition-all
 						{positionMethod === 'photo'
-							? 'border-primary bg-primary/10'
-							: 'border-base-300 hover:border-primary/50'}"
-					>
-						<div class="flex flex-col items-center text-center">
-							<Icon
-								src={Camera}
-								size="24"
-								class="mb-2 {positionMethod === 'photo' ? 'text-primary' : 'text-base-content/60'}"
-							/>
-							<h4 class="text-sm font-semibold">Foto mit GPS</h4>
-							<p class="text-base-content/60 mt-1 text-xs">Bevorzugt - GPS und Datum automatisch</p>
-						</div>
-					</label>
-				</div>
-
-				<!-- Map Method -->
-				<div class="relative">
-					<input
-						type="radio"
-						id="method-map"
-						name="position-method"
-						value="map"
-						bind:group={positionMethod}
-						onchange={() => selectMethod('map')}
-						class="sr-only"
-					/>
-					<label
-						for="method-map"
-						class="block cursor-pointer rounded-lg border-2 p-4 transition-all
-						{positionMethod === 'map'
-							? 'border-primary bg-primary/10'
-							: 'border-base-300 hover:border-primary/50'}"
-					>
-						<div class="flex flex-col items-center text-center">
-							<Icon
-								src={MapPin}
-								size="24"
-								class="mb-2 {positionMethod === 'map' ? 'text-primary' : 'text-base-content/60'}"
-							/>
-							<h4 class="text-sm font-semibold">Karte / GPS Position</h4>
-							<p class="text-base-content/60 mt-1 text-xs">Position auf Karte wählen</p>
-						</div>
-					</label>
-				</div>
-
-				<!-- Manual Method -->
-				<div class="relative">
-					<input
-						type="radio"
-						id="method-manual"
-						name="position-method"
-						value="manual"
-						bind:group={positionMethod}
-						onchange={() => selectMethod('manual')}
-						class="sr-only"
-					/>
-					<label
-						for="method-manual"
-						class="block cursor-pointer rounded-lg border-2 p-4 transition-all
-						{positionMethod === 'manual'
-							? 'border-primary bg-primary/10'
-							: 'border-base-300 hover:border-primary/50'}"
-					>
-						<div class="flex flex-col items-center text-center">
-							<Icon
-								src={SquarePen}
-								size="24"
-								class="mb-2 {positionMethod === 'manual' ? 'text-primary' : 'text-base-content/60'}"
-							/>
-							<h4 class="text-sm font-semibold">Beschreibung</h4>
-							<p class="text-base-content/60 mt-1 text-xs">Beschreibung der Position</p>
-						</div>
-					</label>
-				</div>
+						? 'border-primary bg-primary/10'
+						: 'border-base-300 hover:border-primary/50'}"
+				>
+					<div class="flex flex-col items-center text-center">
+						<Icon
+							src={Camera}
+							size="24"
+							class="mb-2 {positionMethod === 'photo' ? 'text-primary' : 'text-base-content/60'}"
+						/>
+						<h4 class="text-sm font-semibold">Foto mit GPS</h4>
+						<p class="text-base-content/60 mt-1 text-xs">Bevorzugt - GPS und Datum automatisch</p>
+					</div>
+				</label>
 			</div>
 
-			<!-- Photo Upload Section -->
-			{#if positionMethod === 'photo'}
-				<div class="bg-base-100 rounded-lg p-4">
-					<h4 class="mb-3 flex items-center gap-2 font-semibold">
-						<Icon src={Camera} size="18" />
-						Foto mit GPS-Daten hochladen
-					</h4>
-
-					{#if !photoFile}
-						<UnifiedDropzone
-							config={FILE_VALIDATION_PRESETS.PHOTO_GPS}
-							bind:files={dropzoneFiles}
-							onFilesAdded={handleFilesAdded}
-							onFileRemoved={handleFileRemoved}
-							onClear={handleDropzoneClear}
-							multiple={false}
-							title="Foto per Drag & Drop oder Klick hochladen"
-							additionalText="GPS-Daten werden automatisch ausgelesen"
-							isAnalyzing={isAnalyzing || isUploading}
-							loadingText={isAnalyzing
-								? 'Analysiere Foto...'
-								: isUploading
-									? 'Lade Foto hoch...'
-									: 'Analysiere Foto...'}
-							showPreview={false}
+			<!-- Map Method -->
+			<div class="relative">
+				<input
+					type="radio"
+					id="method-map"
+					name="position-method"
+					value="map"
+					bind:group={positionMethod}
+					onchange={() => selectMethod('map')}
+					class="sr-only"
+				/>
+				<label
+					for="method-map"
+					class="block cursor-pointer rounded-lg border-2 p-4 transition-all
+						{positionMethod === 'map'
+						? 'border-primary bg-primary/10'
+						: 'border-base-300 hover:border-primary/50'}"
+				>
+					<div class="flex flex-col items-center text-center">
+						<Icon
+							src={MapPin}
+							size="24"
+							class="mb-2 {positionMethod === 'map' ? 'text-primary' : 'text-base-content/60'}"
 						/>
-					{:else}
-						<!-- Photo Preview -->
-						<div class="bg-base-200 space-y-4 rounded-lg p-4">
-							<!-- Top section with photo and basic info -->
-							<div class="flex items-start gap-4">
-								<!-- Thumbnail -->
-								<div class="flex-shrink-0">
-									{#if photoMetadata?.thumbnail}
-										<img
-											src={photoMetadata.thumbnail}
-											alt="Foto Vorschau"
-											class="h-16 w-16 rounded object-cover"
-										/>
-									{:else}
-										<div class="bg-base-300 flex h-16 w-16 items-center justify-center rounded">
-											<Icon src={Camera} size="20" class="text-base-content/60" />
-										</div>
-									{/if}
-								</div>
+						<h4 class="text-sm font-semibold">Karte / GPS Position</h4>
+						<p class="text-base-content/60 mt-1 text-xs">Position auf Karte wählen</p>
+					</div>
+				</label>
+			</div>
 
-								<!-- Photo Info -->
-								<div class="flex-grow">
-									<h5 class="text-sm font-medium">{photoFile.name}</h5>
+			<!-- Manual Method -->
+			<div class="relative">
+				<input
+					type="radio"
+					id="method-manual"
+					name="position-method"
+					value="manual"
+					bind:group={positionMethod}
+					onchange={() => selectMethod('manual')}
+					class="sr-only"
+				/>
+				<label
+					for="method-manual"
+					class="block cursor-pointer rounded-lg border-2 p-4 transition-all
+						{positionMethod === 'manual'
+						? 'border-primary bg-primary/10'
+						: 'border-base-300 hover:border-primary/50'}"
+				>
+					<div class="flex flex-col items-center text-center">
+						<Icon
+							src={SquarePen}
+							size="24"
+							class="mb-2 {positionMethod === 'manual' ? 'text-primary' : 'text-base-content/60'}"
+						/>
+						<h4 class="text-sm font-semibold">Beschreibung</h4>
+						<p class="text-base-content/60 mt-1 text-xs">Beschreibung der Position</p>
+					</div>
+				</label>
+			</div>
+		</div>
 
-									{#if isAnalyzing}
-										<div class="mt-2 flex items-center gap-2">
-											<div class="loading loading-spinner loading-sm"></div>
-											<span class="text-base-content/60 text-xs">Analysiere Foto...</span>
-										</div>
-									{:else if photoMetadata}
-										<!-- GPS Data Display -->
-										{#if photoMetadata.exif.latitude && photoMetadata.exif.longitude}
-											<div class="mt-2 space-y-1">
-												<div class="flex items-center gap-1">
-													<Icon src={MapPin} size="14" class="text-success" />
-													<span class="text-success text-xs font-medium">GPS-Position gefunden</span
-													>
-													{#if isInBalticSea(photoMetadata.exif.latitude, photoMetadata.exif.longitude)}
-														<span class="badge badge-success badge-xs">Ostsee</span>
-													{:else}
-														<span class="badge badge-warning badge-xs">Außerhalb Ostsee</span>
-													{/if}
-												</div>
-												<p class="text-base-content/80 text-xs">
-													{formatLocation(
-														photoMetadata.exif.latitude,
-														photoMetadata.exif.longitude
-													)}
-												</p>
-											</div>
-										{:else}
-											<div class="mt-2">
-												<div class="flex items-center gap-1">
-													<Icon src={MapPin} size="14" class="text-warning" />
-													<span class="text-warning text-xs font-medium">Keine GPS-Daten</span>
-												</div>
-											</div>
-										{/if}
+		<!-- Photo Upload Section -->
+		{#if positionMethod === 'photo'}
+			<div class="bg-base-100 mt-4 rounded-lg p-4">
+				<h4 class="mb-3 flex items-center gap-2 font-semibold">
+					<Icon src={Camera} size="18" />
+					Foto mit GPS-Daten hochladen
+				</h4>
 
-										<!-- Date/Time Data -->
-										{#if photoMetadata.exif.timestamp}
-											<div class="mt-1">
-												<div class="flex items-center gap-1">
-													<Icon src={Calendar} size="14" class="text-info" />
-													<span class="text-info text-xs">
-														{photoMetadata.exif.timestamp.toLocaleString('de-DE')}
-													</span>
-												</div>
-											</div>
-										{/if}
-									{/if}
-								</div>
+				<DropzoneEnhanced
+					{referenceId}
+					maxFiles={1}
+					config={gpsPhotoConfig}
+					enableGPSExtraction={true}
+					title="Foto per Drag & Drop oder Klick hochladen"
+					additionalText="GPS-Daten werden automatisch ausgelesen"
+				/>
+			</div>
+		{/if}
 
-								<!-- Remove Button -->
-								<button
-									type="button"
-									class="btn btn-ghost btn-sm"
-									onclick={() => clearPhoto()}
-									aria-label="Foto entfernen"
-								>
-									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											stroke-width="2"
-											d="M6 18L18 6M6 6l12 12"
-										></path>
-									</svg>
-								</button>
-							</div>
+		<!-- Map/GPS Input Section -->
+		{#if positionMethod === 'map'}
+			<div class="bg-base-100 mt-4 rounded-lg p-4">
+				<h4 class="mb-3 flex items-center gap-2 font-semibold">
+					<Icon src={MapPin} size="18" />
+					Position auf Karte wählen
+				</h4>
 
-							<!-- Map section (only when GPS data is available in Baltic Sea) -->
-							{#if photoMetadata?.exif.latitude && photoMetadata.exif.longitude && isInBalticSea(photoMetadata.exif.latitude, photoMetadata.exif.longitude)}
-								<div
-									class="border-base-300 animate-in slide-in-from-bottom-2 fade-in border-t pt-4 duration-500"
-								>
-									<div class="mb-3 flex items-center gap-2">
-										<Icon src={MapPin} size="16" class="text-success" />
-										<h6 class="text-sm font-medium">Position auf der Karte</h6>
-									</div>
-									<div
-										class="bg-base-100 border-base-300 overflow-hidden rounded-lg border shadow-sm"
-										style="height: 200px;"
-									>
-										<OLMap
-											latitude={photoMetadata.exif.latitude}
-											longitude={photoMetadata.exif.longitude}
-											zoom={12}
-											readonly={true}
-											--map-height="200px"
-										/>
-									</div>
-									<p class="text-base-content/60 mt-2 text-center text-xs">
-										<Icon src={MapPin} size="16" class="text-success" /> Position aus dem Foto: {formatLocation(
-											photoMetadata.exif.latitude,
-											photoMetadata.exif.longitude
-										)}
-									</p>
-								</div>
-							{/if}
-						</div>
-					{/if}
-				</div>
-			{/if}
+				<LocationInput
+					latitude={$form.latitude}
+					longitude={$form.longitude}
+					onchange={handleChange}
+				/>
 
-			<!-- Map/GPS Input Section -->
-			{#if positionMethod === 'map'}
-				<div class="bg-base-100 rounded-lg p-4">
-					<h4 class="mb-3 flex items-center gap-2 font-semibold">
-						<Icon src={MapPin} size="18" />
-						Position auf Karte wählen
-					</h4>
+				{#if $form.latitude && $form.longitude}
+					<VerifyLocation longitude={$form.longitude} latitude={$form.latitude} />
+				{/if}
+			</div>
+		{/if}
 
-					<LocationInput
-						latitude={$form.latitude}
-						longitude={$form.longitude}
-						onchange={handleChange}
-					/>
+		<!-- Manual Input Section -->
+		{#if positionMethod === 'manual'}
+			<div class="bg-base-100 mt-4 space-y-4 rounded-lg p-4">
+				<h4 class="mb-3 flex items-center gap-2 font-semibold">
+					<Icon src={SquarePen} size="18" />
+					Beschreibung der Position
+				</h4>
 
-					{#if $form.latitude && $form.longitude}
-						<VerifyLocation longitude={$form.longitude} latitude={$form.latitude} />
-					{/if}
-				</div>
-			{/if}
-
-			<!-- Manual Input Section -->
-			{#if positionMethod === 'manual'}
-				<div class="bg-base-100 space-y-4 rounded-lg p-4">
-					<h4 class="mb-3 flex items-center gap-2 font-semibold">
-						<Icon src={SquarePen} size="18" />
-						Beschreibung der Position
-					</h4>
-
-					<FormField name="waterway" />
-					<FormField name="seaMark" />
-				</div>
-			{/if}
+				<FormField name="waterway" />
+				<FormField name="seaMark" />
+			</div>
+		{/if}
 	</div>
 
 	<!-- Date and Time Section (always visible) -->
-	<div class="border border-base-300 rounded-lg p-3 sm:p-4 bg-base-200/50">
-			<h3 class="font-semibold mb-3 flex items-center gap-2 text-base sm:text-lg">
-				<Icon src={Calendar} size="20" class="text-primary" />
-				Datum und Uhrzeit
-			</h3>
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-				<FormField name="sightingDate" />
-				<FormField name="sightingTime" />
-			</div>
+	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
+		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
+			<Icon src={Calendar} size="20" class="text-primary" />
+			Datum und Uhrzeit
+		</h3>
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+			<FormField name="sightingDate" />
+			<FormField name="sightingTime" />
+		</div>
 	</div>
 </div>
-
