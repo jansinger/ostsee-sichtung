@@ -108,7 +108,8 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 
 			// Verify correct data transformation
 			expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({
-				sightingDate: '2024-03-15T14:30:00.000Z',
+				sightingDate: '2024-03-15T12:00:00.000Z', // Date component (normalized to noon UTC)
+				sightingTime: '14:30', // Time component
 				firstName: 'Max',
 				lastName: 'Mustermann', // Maps from "name" field
 				email: 'max@example.com',
