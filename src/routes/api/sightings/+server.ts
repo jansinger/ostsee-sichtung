@@ -1,8 +1,13 @@
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger';
+import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { saveSighting } from '$lib/server/db/sightingRepository';
+import {
+	checkForbiddenAdminFields,
+	validateSightingFormData
+} from '$lib/server/validation/requestValidation';
 import type { SightingFormData } from '$lib/types';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { and, gte, lt, sql } from 'drizzle-orm';
@@ -74,14 +79,66 @@ export async function GET(event: RequestEvent) {
 export const POST: RequestHandler = async ({ request }) => {
 	try {
 		// Daten aus dem Request-Body extrahieren
-		const formData = (await request.json()) as SightingFormData;
+		const requestBody = await request.json();
 
-		logger.debug({ formData }, 'Sichtung speichern');
+		logger.debug({ requestBody }, 'Sichtung speichern - Request empfangen');
 
-		// Validierung der Formulardaten
-		await sightingSchema.validate(formData, { abortEarly: false });
+		// 1. Prüfe auf verbotene Admin-Felder
+		const adminFieldCheck = checkForbiddenAdminFields(requestBody);
+		if (adminFieldCheck.hasForbiddenFields) {
+			logger.warn(
+				{ forbiddenFields: adminFieldCheck.forbiddenFields },
+				'Verbotene Admin-Felder in Request'
+			);
 
-		const { id } = await saveSighting(formData);
+			return json(
+				{
+					success: false,
+					code: 'FORBIDDEN_FIELDS',
+					message: `Die folgenden Felder dürfen nicht von Clients gesetzt werden: ${adminFieldCheck.forbiddenFields.join(', ')}`,
+					forbiddenFields: adminFieldCheck.forbiddenFields
+				},
+				{ status: 403 }
+			);
+		}
+
+		// 2. Validiere erlaubte Felder (Whitelist)
+		const fieldValidation = validateSightingFormData(requestBody);
+		if (!fieldValidation.isValid) {
+			logger.warn(
+				{
+					rejectedFields: fieldValidation.rejectedFields,
+					error: fieldValidation.error
+				},
+				'Unerlaubte Felder in Request'
+			);
+
+			return json(
+				{
+					success: false,
+					code: 'INVALID_FIELDS',
+					message: fieldValidation.error,
+					rejectedFields: fieldValidation.rejectedFields
+				},
+				{ status: 400 }
+			);
+		}
+
+		const formData = fieldValidation.data!;
+		logger.debug({ formData }, 'Bereinigte Sichtungsdaten');
+
+		// 3. Validierung der Formulardaten mit Schema
+		// Setze Server-seitige Defaults für Felder, die nicht von Clients gesetzt werden dürfen
+		const formDataWithDefaults: SightingFormData = {
+			...formData,
+			entryChannel: formData.entryChannel ?? EntryChannelEnum.WEB, // Default: Web (0)
+			verified: false, // Immer false für neue Client-Sichtungen
+			internalComment: undefined // Keine internen Kommentare von Clients
+		};
+
+		await sightingSchema.validate(formDataWithDefaults, { abortEarly: false });
+
+		const { id } = await saveSighting(formDataWithDefaults);
 
 		logger.info({ id }, 'Sichtung erfolgreich gespeichert');
 
