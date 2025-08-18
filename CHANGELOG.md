@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.12.1 (2025-08-18)</small>
+
+* Merge pull request #45 from jansinger/fix/legacy-showreports-compatibility ([f9c4d70](https://github.com/jansinger/ostsee-sichtung/commit/f9c4d70)), closes [#45](https://github.com/jansinger/ostsee-sichtung/issues/45)
+* fix(api): ensure 100% compatibility with original schweinswalsichtung.de showreports.json ([59f4718](https://github.com/jansinger/ostsee-sichtung/commit/59f4718)), closes [#44](https://github.com/jansinger/ostsee-sichtung/issues/44)
+
 ## 1.12.0 (2025-08-18)
 
 * Merge pull request #43 from jansinger/feature/legacy-rest-api ([b568597](https://github.com/jansinger/ostsee-sichtung/commit/b568597)), closes [#43](https://github.com/jansinger/ostsee-sichtung/issues/43)
