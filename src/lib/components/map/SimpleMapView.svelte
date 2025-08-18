@@ -4,6 +4,7 @@
 	import { speciesLabels } from '$lib/report/formOptions/species';
 	import 'ol/ol.css';
 	import { onDestroy, onMount } from 'svelte';
+	import { getDefaultSightingYear, getAvailableYears } from '$lib/utils/date/defaultYear';
 
 	// Props
 	let {
@@ -43,12 +44,12 @@
 
 	// State
 	let mapController: SimpleMapController | null = null;
-	let selectedYear = $state(new Date().getFullYear());
+	let selectedYear = $state(getDefaultSightingYear());
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 
 	// Available years (last 10 years)
-	const availableYears = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
+	const availableYears = getAvailableYears(10);
 
 	onMount(async () => {
 		try {
