@@ -15,12 +15,9 @@ import { saveSighting } from '$lib/server/db/sightingRepository';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { mapLegacyToCurrentSchema } from '$lib/legacy-api/field-mapping.js';
 import type { LegacyCreateResponse, LegacySightingRequest } from '$lib/legacy-api/types.js';
-import { 
-	createLegacyErrorResponse, 
-	validateLegacySighting,
-	validateDeathFinding
-} from '$lib/legacy-api/validation.js';
-import { GERMAN_ERROR_MESSAGES, createSimpleErrorResponse } from '$lib/legacy-api/error-messages.js';
+import { validateDeathFinding } from '$lib/legacy-api/validation.js';
+import { GERMAN_ERROR_MESSAGES, createSimpleErrorResponse, createOriginalApiErrorResponse } from '$lib/legacy-api/error-messages.js';
+import { validateLegacySightingWithYup, createLegacyErrorFromYup } from '$lib/legacy-api/yup-validation.js';
 
 const logger = createLogger('api:legacy:rest_sichtungen:pdf-compliant');
 
@@ -67,18 +64,9 @@ export async function POST(event: RequestEvent): Promise<Response> {
 		if (!requestData || Object.keys(requestData).length === 0) {
 			logger.debug({ ip: clientIp }, 'Empty request data received');
 			
-			// Need to perform validation to return proper German field errors
-			const fieldErrors: Record<string, string[]> = {};
-			fieldErrors.sichtungsdatum = [GERMAN_ERROR_MESSAGES.SICHTUNGSDATUM_REQUIRED];
-			fieldErrors.email = [GERMAN_ERROR_MESSAGES.EMAIL_REQUIRED];
-			fieldErrors.anzahl_gesamt = [GERMAN_ERROR_MESSAGES.ANZAHL_GESAMT_REQUIRED];
-			fieldErrors.vorname = [GERMAN_ERROR_MESSAGES.VORNAME_REQUIRED];
-			fieldErrors.name = [GERMAN_ERROR_MESSAGES.NAME_REQUIRED];
-			
-			const errorResponse = createLegacyErrorResponse(
-				GERMAN_ERROR_MESSAGES.VALIDATION_FAILED,
-				fieldErrors
-			);
+			// Use Yup validation to get proper German error messages
+			const validation = await validateLegacySightingWithYup({} as LegacySightingRequest);
+			const errorResponse = createLegacyErrorFromYup(validation);
 			
 			return json(errorResponse, { status: 400 });
 		}
@@ -91,18 +79,15 @@ export async function POST(event: RequestEvent): Promise<Response> {
 			ip: clientIp 
 		}, 'Legacy sighting creation request received (PDF compliant endpoint)');
 
-		// Comprehensive field validation with German messages  
-		const validation = validateLegacySighting(requestData);
+		// Comprehensive field validation using Yup schema with German messages  
+		const validation = await validateLegacySightingWithYup(requestData);
 		if (!validation.isValid) {
 			logger.warn({ 
 				errors: validation.errors, 
 				ip: clientIp 
 			}, 'Legacy field validation failed');
 			
-			const errorResponse = createLegacyErrorResponse(
-				GERMAN_ERROR_MESSAGES.VALIDATION_FAILED,
-				validation.errors
-			);
+			const errorResponse = createLegacyErrorFromYup(validation);
 			
 			return json(errorResponse, { status: 400 });
 		}
@@ -128,7 +113,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
 				ip: clientIp 
 			}, 'Failed to map legacy data to current schema');
 			
-			const errorResponse = createLegacyErrorResponse(
+			const errorResponse = createOriginalApiErrorResponse(
 				'Data transformation failed',
 				{ _general: [errorMsg] }
 			);
@@ -159,7 +144,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
 
 			// Handle different types of save errors
 			if (isError && saveError.name === 'ValidationError') {
-				const errorResponse = createLegacyErrorResponse(
+				const errorResponse = createOriginalApiErrorResponse(
 					'Sighting validation failed',
 					{ _general: [errorMsg] }
 				);
@@ -197,7 +182,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
 			ip: clientIp 
 		}, 'Unexpected error in PDF-compliant legacy sighting creation');
 
-		const errorResponse = createLegacyErrorResponse(
+		const errorResponse = createOriginalApiErrorResponse(
 			'Internal server error',
 			{ _general: ['An unexpected error occurred'] }
 		);
