@@ -25,9 +25,9 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://localhost:4000/api
+  - url: https://localhost:4000
     description: Entwicklungsserver (HTTPS)
-  - url: https://ostsee-tiere.de/api
+  - url: https://ostsee-tiere.de
     description: Produktionsserver
 
 tags:
@@ -47,9 +47,11 @@ tags:
     description: Datenexport
   - name: media
     description: Sichere Medien-Bereitstellung
+  - name: security
+    description: Sicherheit und CSP Reports
 
 paths:
-  /sightings:
+  /api/sightings:
     get:
       tags:
         - sightings
@@ -119,7 +121,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /sightings/{id}:
+  /api/sightings/{id}:
     get:
       tags:
         - sightings
@@ -226,7 +228,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /sightings/{id}/approve:
+  /api/sightings/{id}/approve:
     post:
       tags:
         - sightings
@@ -274,7 +276,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /sightings/{id}/verify:
+  /api/sightings/{id}/verify:
     post:
       tags:
         - sightings
@@ -323,7 +325,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /sightings/export:
+  /api/sightings/export:
     get:
       tags:
         - export
@@ -392,7 +394,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /sightings/export/json:
+  /api/sightings/export/json:
     get:
       tags:
         - export
@@ -415,7 +417,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/DetailedSighting'
 
-  /sightings/export/csv:
+  /api/sightings/export/csv:
     get:
       tags:
         - export
@@ -436,7 +438,7 @@ paths:
               schema:
                 type: string
 
-  /sightings/export/xml:
+  /api/sightings/export/xml:
     get:
       tags:
         - export
@@ -457,7 +459,7 @@ paths:
               schema:
                 type: string
 
-  /sightings/export/kml:
+  /api/sightings/export/kml:
     get:
       tags:
         - export
@@ -478,7 +480,7 @@ paths:
               schema:
                 type: string
 
-  /media/{path}:
+  /api/media/{path}:
     get:
       tags:
         - media
@@ -561,7 +563,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /auth/login:
+  /api/auth/login:
     get:
       tags:
         - auth
@@ -581,7 +583,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
-  /auth/logout:
+  /api/auth/logout:
     get:
       tags:
         - auth
@@ -591,7 +593,7 @@ paths:
         '302':
           description: Weiterleitung zu Auth0 Logout
 
-  /auth/callback:
+  /api/auth/callback:
     get:
       tags:
         - auth
@@ -624,7 +626,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /files/upload:
+  /api/files/upload:
     post:
       tags:
         - files
@@ -674,7 +676,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /files/delete:
+  /api/files/delete:
     delete:
       tags:
         - files
@@ -708,7 +710,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /geo/inBaltic:
+  /api/geo/inBaltic:
     get:
       tags:
         - geo
@@ -758,7 +760,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /map/sightings:
+  /api/map/sightings:
     get:
       tags:
         - map
@@ -821,7 +823,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /legacy/rest_sichtungen:
+  /rest_sichtungen:
     post:
       tags:
         - legacy
@@ -853,7 +855,7 @@ paths:
               schema:
                 type: string
                 format: uri
-                example: "/api/legacy/sichtungen/1840"
+                example: "/rest_sichtungen/view/1840.json"
           content:
             application/json:
               schema:
@@ -864,10 +866,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LegacyErrorResponse'
+        '405':
+          description: Methode nicht erlaubt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Method not allowed"
+                  message:
+                    type: string
+                    example: "Only POST method is supported for this endpoint"
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /legacy/rest_sichtungen/antworten.json:
+  /rest_sichtungen/antworten.json:
     get:
       tags:
         - legacy
@@ -893,10 +908,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LegacyResponseOptions'
+        '405':
+          description: Methode nicht erlaubt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "MethodNotAllowed"
+                  message:
+                    type: string
+                    example: "Only GET method is supported for this endpoint"
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /legacy/rest_sichtungen/inBaltic.json:
+  /rest_sichtungen/inBaltic.json:
     get:
       tags:
         - legacy
@@ -943,10 +971,23 @@ paths:
                   message:
                     type: string
                     example: "Coordinates must be valid numbers"
+        '405':
+          description: Methode nicht erlaubt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "MethodNotAllowed"
+                  message:
+                    type: string
+                    example: "Only GET method is supported for this endpoint"
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /legacy/sichtungen/showreports.json:
+  /sichtungen/showreports.json:
     get:
       tags:
         - legacy
@@ -957,10 +998,17 @@ paths:
         Gibt alle genehmigten Sichtungen zurück, mit optionaler Filterung nach Jahr, 
         Standort, Entfernung und Suchbegriffen.
         
-        Nur öffentliche Daten werden zurückgegeben:
-        - Kontaktdaten nur bei expliziter Einverständnis
-        - Nur genehmigte und verifizierte Sichtungen
-        - Antwortformat entspricht der PDF-Spezifikation exakt
+        **WICHTIG: PDF-konforme abgekürzte Feldnamen**
+        - ts: Unix Timestamp
+        - id: Sichtungs-ID  
+        - dt: Datum (DD.MM.YY)
+        - ti: Zeit (HH:MI)
+        - lat, lon: Koordinaten als STRINGS
+        - ct: Gesamtanzahl
+        - yo: Jungtiere
+        - sh: Schiffsname (nur bei Einverständnis)
+        - na: Name (nur bei Einverständnis)
+        - ar: Gebiet/Gewässer
       parameters:
         - name: year
           in: query
@@ -1003,14 +1051,145 @@ paths:
       responses:
         '200':
           description: Sichtungsliste erfolgreich abgerufen
+          headers:
+            Cache-Control:
+              description: Cache-Einstellungen
+              schema:
+                type: string
+                example: "public, max-age=300"
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/LegacySightingResponse'
+                  $ref: '#/components/schemas/PDFCompliantSightingResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: Ungültige Parameter (Jahr, Location, BBox)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "InvalidYear"
+                  message:
+                    type: string
+                    example: "Year must be between 2000 and 2030"
+        '405':
+          description: Methode nicht erlaubt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "MethodNotAllowed"
+                  message:
+                    type: string
+                    example: "Only GET method is supported for this endpoint"
+        '500':
+          description: Datenbankfehler
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "DatabaseError"
+                  message:
+                    type: string
+                    example: "Failed to retrieve sightings"
+
+  /uploads/{path}:
+    get:
+      tags:
+        - media
+      summary: Upload-Dateien bereitstellen
+      description: |
+        Stellt hochgeladene Dateien bereit. Für lokalen Storage werden Dateien direkt ausgeliefert,
+        für Cloud Storage erfolgt eine Weiterleitung zur Cloud-URL.
+        
+        **Zugriffskontrolle:**
+        - Validierung des Dateipfads
+        - Cache-Optimierung für statische Inhalte
+        - Support für lokalen und Cloud-Storage
+      parameters:
+        - name: path
+          in: path
+          required: true
+          description: Relativer Pfad zur Upload-Datei
+          schema:
+            type: string
+            example: "2024/01/image_123.jpg"
+      responses:
+        '200':
+          description: Datei erfolgreich bereitgestellt (lokaler Storage)
+          headers:
+            Content-Type:
+              description: MIME-Type der Datei
+              schema:
+                type: string
+                example: "image/jpeg"
+            Content-Length:
+              description: Dateigröße in Bytes
+              schema:
+                type: integer
+                example: 1024000
+            Cache-Control:
+              description: Cache-Einstellungen
+              schema:
+                type: string
+                example: "public, max-age=31536000, immutable"
+            ETag:
+              description: Entity Tag für Caching
+              schema:
+                type: string
+                example: '"abc123def456"'
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '302':
+          description: Weiterleitung zu Cloud Storage URL
+          headers:
+            Location:
+              description: Cloud Storage URL
+              schema:
+                type: string
+                format: uri
+            Cache-Control:
+              description: Cache-Einstellungen
+              schema:
+                type: string
+                example: "public, max-age=31536000, immutable"
+        '400':
+          description: Ungültiger Dateipfad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: "Ungültiger Dateipfad"
+        '404':
+          description: Datei nicht gefunden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: "File not found"
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -1991,21 +2170,26 @@ components:
       title: Legacy Fehlerantwort
       description: Fehlerantwort der Legacy API im ursprünglichen Format
       required:
+        - error
         - message
       properties:
+        error:
+          type: string
+          description: Fehlercode/Typ
+          example: "ValidationError"
         message:
           type: string
           description: Allgemeine Fehlermeldung
           example: "Validation failed"
-        errors:
+        details:
           type: object
-          description: Feldspezifische Validierungsfehler
+          description: Feldspezifische Validierungsfehler (optional)
           additionalProperties:
             type: array
             items:
               type: string
           example:
-            anzahl_gesamt: ["Dieses Feld kann nicht leer gelassen werden."]
+            anzahl_gesamt: ["Total count is required"]
             email: ["E-Mail ist erforderlich"]
 
     LegacyLocationResponse:
@@ -2192,74 +2376,74 @@ components:
               label:
                 type: string
 
-    LegacySightingResponse:
+    PDFCompliantSightingResponse:
       type: object
-      title: Legacy Sichtungsantwort
+      title: PDF-konforme Legacy Sichtungsantwort
       description: |
-        Sichtungsdaten im Legacy-Format für showreports.json Endpunkt.
-        Feldnamen entsprechen exakt der PDF-Spezifikation.
+        Sichtungsdaten im EXAKTEN PDF-spezifizierten Format für showreports.json Endpunkt.
+        
+        **KRITISCH:** Diese Feldnamen dürfen NIEMALS geändert werden - Mobile Apps sind darauf angewiesen!
+        
+        Alle Felder verwenden die abgekürzten Namen aus der PDF-Spezifikation.
       required:
+        - ts
         - id
-        - datum
-        - uhrzeit
-        - anzahlGesamt
-        - anzahlJung
-        - tierart
-        - totfund
+        - dt
+        - ti
+        - lat
+        - lon
+        - ct
+        - yo
       properties:
+        ts:
+          type: integer
+          format: int64
+          description: 'Unix Timestamp der Sichtung'
+          example: 1327503000
         id:
           type: integer
-          description: Eindeutige Sichtungs-ID
-          example: 1840
-        datum:
+          description: 'Eindeutige Sichtungs-ID (Report ID)'
+          example: 817
+        dt:
           type: string
-          description: 'Sichtungsdatum im Format DD.MM.YYYY'
-          pattern: '^\d{2}\.\d{2}\.\d{4}$'
-          example: "01.01.2024"
-        uhrzeit:
+          description: 'Datum der Sichtung im Format DD.MM.YY (2-stelliges Jahr!)'
+          pattern: '^\d{2}\.\d{2}\.\d{2}$'
+          example: "25.01.12"
+        ti:
           type: string
-          description: 'Sichtungszeit im Format HH:MM'
+          description: 'Zeit der Sichtung im Format HH:MI (24h, UTC)'
           pattern: '^\d{2}:\d{2}$'
-          example: "14:30"
-        breitengrad:
-          type: number
-          format: float
-          description: Breitengrad (nur wenn verfügbar)
-          example: 54.3233
-        laengengrad:
-          type: number
-          format: float
-          description: Längengrad (nur wenn verfügbar)
-          example: 13.0814
-        anzahlGesamt:
+          example: "14:50"
+        lat:
+          type: string
+          description: 'Breitengrad als STRING (nicht number!) - PDF-Anforderung'
+          example: "54.646667"
+        lon:
+          type: string
+          description: 'Längengrad als STRING (nicht number!) - PDF-Anforderung'
+          example: "11.333333"
+        ct:
           type: integer
-          description: Gesamtanzahl der Tiere
-          minimum: 0
-          example: 3
-        anzahlJung:
-          type: integer
-          description: Anzahl der Jungtiere
+          description: 'Gesamtanzahl der Tiere (Total Count)'
           minimum: 0
           example: 1
-        tierart:
+        yo:
           type: integer
-          description: Tierart-ID
+          description: 'Anzahl der Jungtiere (Young Count)'
           minimum: 0
           example: 0
-        totfund:
-          type: integer
-          description: 'Totfund-Flag (0=nein, 1=ja)'
-          enum: [0, 1]
-          example: 0
-        beobachterName:
+        sh:
           type: string
-          description: 'Name des Beobachters (nur bei Einverständnis)'
-          example: "Max Mustermann"
-        gebiet:
+          nullable: true
+          description: 'Schiffsname (nur bei Einverständnis) - Ship Name'
+          example: "Fährschiff \"Deutschland\""
+        na:
           type: string
-          description: Gebiet/Gewässer
-          example: "Greifswalder Bodden"
-        schiffsname:
+          nullable: true
+          description: 'Name des Beobachters (nur bei Einverständnis) - Name'
+          example: "Jörg Schneider"
+        ar:
           type: string
-          description: 'Schiffsname (nur bei Einverständnis)'
-          example: "MS Baltic"
+          nullable: true
+          description: 'Gebiet/Gewässer - Area'
+          example: "Kieler Förde"
