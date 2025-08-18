@@ -18,6 +18,7 @@ import { sightings } from '$lib/server/db/schema';
 import { and, between, gte, lt, sql } from 'drizzle-orm';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { formatDateDDMMYY, formatTimeHHMI, toUnixTimestamp } from '$lib/legacy-api/date-utils.js';
+import { getSpeciesLabel } from '$lib/report/formOptions/species.js';
 
 const logger = createLogger('api:legacy:showreports:pdf-compliant');
 
@@ -34,6 +35,8 @@ interface PDFCompliantSightingResponse {
 	lon: string;       // Longitude as STRING (not number!)
 	ct: number;        // Total count
 	yo: number;        // Young count
+	ta?: string;       // Tierart (species name as string)
+	tf?: number;       // Totfund (death finding): 0=false, 1=true
 	sh?: string;       // Ship name (only if consent)
 	na?: string;       // Name (first + last, only if consent)
 	ar?: string;       // Area/waterway
@@ -248,7 +251,9 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				waterway: sightings.waterway,
 				shipName: sightings.shipName,
 				shipNameConsent: sightings.shipNameConsent,
-				approvedAt: sightings.approvedAt
+				approvedAt: sightings.approvedAt,
+				species: sightings.species,
+				isDead: sightings.isDead
 			})
 			.from(sightings)
 			.where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
@@ -277,6 +282,14 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				yo: sighting.juvenileCount || 0 // Young count
 			};
 
+			// Add species name (ta) - convert from enum to German label
+			if (sighting.species !== null && sighting.species !== undefined) {
+				response.ta = getSpeciesLabel(sighting.species);
+			}
+
+			// Add death finding flag (tf) - convert boolean to 0/1
+			response.tf = sighting.isDead ? 1 : 0;
+
 			// Conditional fields based on consent (as per PDF specification)
 			if (sighting.shipNameConsent && sighting.shipName) {
 				response.sh = sighting.shipName;
@@ -296,6 +309,12 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			return response;
 		});
 
+		// Convert array to object with string keys (as per original API format)
+		const responseObject: Record<string, PDFCompliantSightingResponse> = {};
+		pdfCompliantSightings.forEach((sighting, index) => {
+			responseObject[index.toString()] = sighting;
+		});
+
 		logger.info({ 
 			totalResults: pdfCompliantSightings.length,
 			filtersApplied: {
@@ -308,7 +327,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			ip: clientIp 
 		}, 'PDF-compliant legacy sightings retrieval completed');
 
-		return json(pdfCompliantSightings, {
+		return json(responseObject, {
 			headers: {
 				'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
 				'Content-Type': 'application/json'
