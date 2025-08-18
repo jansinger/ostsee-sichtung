@@ -211,3 +211,5 @@ The legacy APIs are located in `/src/routes/api/legacy/` and include field mappi
 - Commits are validated with commitlint - follow rules in `commitlint.config.mjs`
 - INSTRUCTION: Use English for commit messages with lowercase subject lines
 - Available commit scopes: deps, api, ui, db, auth, export, admin, report, map, config, build, ci, docs, test, types, style, perf, security, a11y, release, media
+- Prüfe nach Änderungen immer auf notwendige Aktualisierungen der Dokumentationen, also aller *.md Dateien
+- Aktuallisiere nach Änderungen an der API immer auch die OpenAPI Spec

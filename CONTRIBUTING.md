@@ -121,7 +121,7 @@ This will guide you through creating a conventional commit message step by step.
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd sichtungen-webapp
+   cd ostsee-sichtung
    ```
 
 2. **Install dependencies**
