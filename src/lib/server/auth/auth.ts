@@ -9,6 +9,7 @@ import {
 import { PUBLIC_SITE_URL } from '$env/static/public';
 
 import type { User } from '$lib/types/index';
+import { isUserInRole } from '$lib/utils/auth';
 import { error, redirect, type Cookies } from '@sveltejs/kit';
 import type { JwtHeader, SigningKeyCallback } from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';
@@ -104,10 +105,7 @@ export const requireUserRole = (
 	if (!user) {
 		return redirect(302, `/api/auth/login?returnUrl=${url?.pathname}`);
 	}
-	if (requiredRoles && requiredRoles.length > 0) {
-		if (requiredRoles.some((role) => user.roles?.includes(role))) {
-			return;
-		}
+	if (!isUserInRole(user, requiredRoles)) {
 		throw error(403, 'Forbidden: Insufficient permissions');
 	}
 };

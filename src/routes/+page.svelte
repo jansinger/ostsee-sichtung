@@ -8,8 +8,11 @@
 	import ModernReportForm from '$lib/report/components/ModernReportForm.svelte';
 	import SubmissionSuccess from '$lib/report/components/SubmissionSuccess.svelte';
 	import type { SightingFormData } from '$lib/report/types';
+	import type { PageData } from './$types';
 
 	const logger = createLogger('main:page');
+
+	let { data }: { data: PageData } = $props();
 
 	// Success state management
 	let submissionSuccess = $state(false);
@@ -57,7 +60,7 @@
 			<SubmissionSuccess {submittedData} {handleNewReport} />
 		{:else}
 			<div class="mx-auto max-w-2xl">
-				<ModernReportForm onSubmit={handleSubmit} onCancel={handleCancel} />
+				<ModernReportForm onSubmit={handleSubmit} onCancel={handleCancel} user={data.user} />
 			</div>
 		{/if}
 	</div>

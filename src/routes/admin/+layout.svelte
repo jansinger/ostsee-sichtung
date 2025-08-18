@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
-	import { List, LogOut, User } from '@steeze-ui/lucide-icons';
+	import UserMenu from '$lib/components/UserMenu.svelte';
+	import { List } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import type { LayoutData } from './$types';
 
@@ -50,37 +51,8 @@
 							</li>
 						</ul>
 
-						<!-- User menu - Desktop -->
-						{#if data.user}
-							<div class="dropdown dropdown-end">
-								<button tabindex="0" aria-label="Benutzer-Menü" class="btn btn-ghost gap-2">
-									{#if data.user.picture}
-										<div class="avatar">
-											<div class="h-8 w-8 rounded-full">
-												<img src={data.user.picture} alt="Profilbild" />
-											</div>
-										</div>
-									{:else}
-										<Icon src={User} class="h-5 w-5" />
-									{/if}
-									<span class="hidden xl:inline">{data.user.nickname || data.user.name}</span>
-								</button>
-								<ul
-									class="dropdown-content menu menu-sm rounded-box bg-base-100 absolute right-0 z-50 mt-3 w-52 p-2 shadow"
-								>
-									<li class="menu-title">
-										<span class="text-xs opacity-70">{data.user.email}</span>
-									</li>
-									<div class="divider my-2"></div>
-									<li>
-										<a href="/api/auth/logout">
-											<Icon src={LogOut} class="h-4 w-4" />
-											Abmelden
-										</a>
-									</li>
-								</ul>
-							</div>
-						{/if}
+						<!-- User Menu - Desktop -->
+						<UserMenu user={data.user || null} position="right" />
 					</div>
 
 					<!-- Mobile menu -->
@@ -126,33 +98,11 @@
 								</a>
 							</li>
 
-							<!-- User info - Mobile -->
-							{#if data.user}
-								<div class="divider my-2"></div>
-								<li class="menu-title">
-									<div class="flex items-center gap-2">
-										{#if data.user.picture}
-											<div class="avatar">
-												<div class="h-6 w-6 rounded-full">
-													<img src={data.user.picture} alt="Profilbild" />
-												</div>
-											</div>
-										{:else}
-											<Icon src={User} class="h-4 w-4" />
-										{/if}
-										<span>{data.user.nickname || data.user.name}</span>
-									</div>
-								</li>
-								<li class="menu-title">
-									<span class="text-xs opacity-70">{data.user.email}</span>
-								</li>
-								<li>
-									<a href="/api/auth/logout">
-										<Icon src={LogOut} class="h-4 w-4" />
-										Abmelden
-									</a>
-								</li>
-							{/if}
+							<!-- User Menu - Mobile -->
+							<div class="divider my-2"></div>
+							<div class="px-4">
+								<UserMenu user={data.user || null} position="left" />
+							</div>
 						</ul>
 					</div>
 				</div>

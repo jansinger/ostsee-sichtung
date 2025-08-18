@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
-	import { TrendingUp, Calendar, MapPin, Users, Activity, ChartPie } from '@steeze-ui/lucide-icons';
+	import { TrendingUp, Calendar, Users, Activity, ChartPie } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import type { PageData } from './$types';
 
@@ -108,7 +108,7 @@
 			<div class="flex-1">
 				<h3 class="font-bold">Wissenschaftliche Erkenntnisse</h3>
 				<div class="space-y-2 mt-2">
-					{#each scientificInsights() as insight}
+					{#each scientificInsights() as insight (insight.title)}
 						{@const alertClass = insight.type === 'critical' ? 'alert-error' : insight.type === 'warning' ? 'alert-warning' : 'alert-info'}
 						<div class="alert {alertClass} alert-sm">
 							<div>
@@ -196,7 +196,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each data.speciesStats as species}
+							{#each data.speciesStats as species (species.species)}
 								{@const deadPerc = typeof species.deadPercentage === 'string' ? parseFloat(species.deadPercentage) : (species.deadPercentage || 0)}
 								<tr class={deadPerc > 30 ? 'bg-error/10' : deadPerc > 15 ? 'bg-warning/10' : ''}>
 									<td class="font-medium">{getSpeciesLabel(species.species)}</td>
@@ -222,7 +222,7 @@
 					Saisonalität (2015-2024)
 				</h2>
 				<div class="space-y-2">
-					{#each data.monthlyStats as month}
+					{#each data.monthlyStats as month (month.month)}
 						{@const maxSightings = Math.max(...data.monthlyStats.map(m => m.sightings))}
 						{@const percentage = (month.sightings / maxSightings) * 100}
 						<div class="flex items-center gap-3">
@@ -264,7 +264,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each data.yearlyStats as year, index}
+						{#each data.yearlyStats as year, index (year.year)}
 							{@const prevYear = index > 0 ? data.yearlyStats[index - 1] : null}
 							{@const change = prevYear ? ((year.sightings - prevYear.sightings) / prevYear.sightings) * 100 : 0}
 							{@const maxSightings = Math.max(...data.yearlyStats.map(y => y.sightings))}
@@ -306,8 +306,8 @@
 					Aktivität der letzten 30 Tage
 				</h2>
 				<div class="grid grid-cols-7 gap-1 text-center">
-					{#each data.recentActivity.slice().reverse() as activity}
-						{@const date = new Date(activity.date)}
+					{#each data.recentActivity.slice().reverse() as activity (activity.date)}
+						{@const _date = new Date(activity.date)}
 						{@const maxCount = Math.max(...data.recentActivity.map(a => a.count))}
 						{@const intensity = Math.min((activity.count / maxCount) * 4, 4)}
 						<div class="tooltip" data-tip="{activity.date}: {activity.count} Sichtungen">
