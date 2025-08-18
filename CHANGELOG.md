@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.5.0 (2025-08-18)
+
+* Merge pull request #25 from jansinger/preview ([5b308d1](https://github.com/jansinger/ostsee-sichtung/commit/5b308d1)), closes [#25](https://github.com/jansinger/ostsee-sichtung/issues/25)
+* refactor: improve validation messages and formatting in sighting schema ([7348c46](https://github.com/jansinger/ostsee-sichtung/commit/7348c46))
+* feat: Enhance media store with current value retrieval ([7baa34a](https://github.com/jansinger/ostsee-sichtung/commit/7baa34a))
+
 ## 1.4.0 (2025-08-17)
 
 * Merge pull request #24 from jansinger/preview ([4f6c65f](https://github.com/jansinger/ostsee-sichtung/commit/4f6c65f)), closes [#24](https://github.com/jansinger/ostsee-sichtung/issues/24)
