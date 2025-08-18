@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.8.0 (2025-08-18)
+
+* Merge pull request #30 from jansinger/docs/comprehensive-jsdoc-documentation ([ecafd1e](https://github.com/jansinger/ostsee-sichtung/commit/ecafd1e)), closes [#30](https://github.com/jansinger/ostsee-sichtung/issues/30)
+* fix: Improve type safety and handle undefined entries in checkBalticSea tests ([24b54e4](https://github.com/jansinger/ostsee-sichtung/commit/24b54e4))
+* feat: Enhance CSV export functionality with detailed documentation and improved data handling ([8688ebd](https://github.com/jansinger/ostsee-sichtung/commit/8688ebd))
+* feat: Implement file-based geographic validation for Baltic Sea using RBush and Turf.js ([27b7dce](https://github.com/jansinger/ostsee-sichtung/commit/27b7dce))
+* feat: refactor checkBalticSea with comprehensive types and documentation ([d9d20cb](https://github.com/jansinger/ostsee-sichtung/commit/d9d20cb))
+* test: Add unit tests for various utility functions and features ([c843391](https://github.com/jansinger/ostsee-sichtung/commit/c843391))
+* test: fix tests after documentation updates ([7b8e8ab](https://github.com/jansinger/ostsee-sichtung/commit/7b8e8ab))
+
 ## 1.7.0 (2025-08-18)
 
 * Merge pull request #29 from jansinger/preview ([3e86faa](https://github.com/jansinger/ostsee-sichtung/commit/3e86faa)), closes [#29](https://github.com/jansinger/ostsee-sichtung/issues/29)
