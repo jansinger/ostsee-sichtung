@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.8.1 (2025-08-18)</small>
+
+* Merge pull request #32 from jansinger/dependabot/npm_and_yarn/sveltejs/kit-2.31.1 ([07ecdac](https://github.com/jansinger/ostsee-sichtung/commit/07ecdac)), closes [#32](https://github.com/jansinger/ostsee-sichtung/issues/32)
+* fix: add build step to dependabot automerge workflow ([8ee1ab0](https://github.com/jansinger/ostsee-sichtung/commit/8ee1ab0))
+* chore(deps-dev): bump @sveltejs/kit from 2.30.1 to 2.31.1 ([75465c8](https://github.com/jansinger/ostsee-sichtung/commit/75465c8))
+
 ## 1.8.0 (2025-08-18)
 
 * Merge pull request #30 from jansinger/docs/comprehensive-jsdoc-documentation ([ecafd1e](https://github.com/jansinger/ostsee-sichtung/commit/ecafd1e)), closes [#30](https://github.com/jansinger/ostsee-sichtung/issues/30)
