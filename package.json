@@ -3,6 +3,7 @@
 	"private": true,
 	"version": "1.9.0",
 	"description": "Ostsee-Tiere - Marine animal sighting reporting platform for the Baltic Sea",
+	"license": "MIT",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
