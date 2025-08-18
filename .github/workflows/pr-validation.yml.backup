@@ -45,9 +45,7 @@ jobs:
       - name: Ensure Svelte Kit is in sync
         run: npx svelte-kit sync
 
-      # Commit message validation nur für normale PRs (nicht Dependabot)
       - name: Validate commit messages
-        if: github.actor != 'dependabot[bot]'
         run: |
           echo "Validating commit messages from origin/main to HEAD..."
           npx commitlint --from=origin/main --to=HEAD --verbose
@@ -71,74 +69,10 @@ jobs:
         run: npm run test:e2e
 
       - name: Validate current commit (last commit) with commitlint
-        if: github.event_name == 'push' && github.actor != 'dependabot[bot]'
+        if: github.event_name == 'push'
         run: npx commitlint --last --verbose
 
-      # Dependabot-spezifische Aktionen
-      - name: Get Dependabot metadata
-        if: github.actor == 'dependabot[bot]'
-        uses: dependabot/fetch-metadata@v1
-        id: dependabot-metadata
-
-      - name: Label Dependabot PR
-        if: github.actor == 'dependabot[bot]'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const updateType = '${{ steps.dependabot-metadata.outputs.update-type }}';
-            const dependencyType = '${{ steps.dependabot-metadata.outputs.dependency-type }}';
-
-            let labels = ['dependencies', 'dependabot'];
-
-            // Label nach Update-Typ
-            if (updateType.includes('major')) {
-              labels.push('major-update', 'breaking-change');
-            } else if (updateType.includes('minor')) {
-              labels.push('minor-update');
-            } else if (updateType.includes('patch')) {
-              labels.push('patch-update');
-            }
-
-            // Label nach Dependency-Typ
-            if (dependencyType === 'direct:development') {
-              labels.push('dev-dependency');
-            } else if (dependencyType === 'direct:production') {
-              labels.push('production-dependency');
-            }
-
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: labels
-            });
-
-      - name: Add Dependabot status comment
-        if: github.actor == 'dependabot[bot]'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const updateType = '${{ steps.dependabot-metadata.outputs.update-type }}';
-            let emoji = '✅';
-            let status = 'ready for combination';
-
-            if (updateType.includes('major')) {
-              emoji = '⚠️';
-              status = 'contains major updates - needs review';
-            }
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: `${emoji} **Tests passed!** This PR is ${status}.\n\n` +
-                    `This PR will be automatically combined with other Dependabot updates in a daily batch. ` +
-                    `Individual Dependabot PRs are no longer auto-merged to maintain a cleaner commit history.`
-            });
-
-      # Normale PR Labeling (nicht Dependabot)
-      - name: Label PR based on commit types
-        if: github.actor != 'dependabot[bot]'
+      - name: Label PR based on changes
         uses: actions/github-script@v7
         with:
           script: |

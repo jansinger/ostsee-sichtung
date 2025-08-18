@@ -1,107 +1,56 @@
-name: Dependabot PR Testing
+name: Dependabot PR Testing (DISABLED)
+
+# 🚫 WORKFLOW REPLACED
+# 
+# This workflow has been replaced by the unified pr-validation.yml
+# which handles Dependabot PRs along with normal PRs efficiently:
+#
+# ✅ UNIFIED APPROACH BENEFITS:
+# - Single workflow handles both PR types
+# - Same test coverage for Dependabot PRs
+# - Context-aware validation (no commitlint for Dependabot)
+# - Consistent labeling and processing
+# - Eliminates redundant workflow logic
+#
+# 🔄 MIGRATION IMPACT:
+# - Dependabot PRs now validated by unified pr-validation.yml
+# - Same tests: check, lint, type-check, unit, e2e, build
+# - Same labeling: dependency type, update type
+# - Same quality assurance standards
+#
+# This file can be safely removed after unified workflow validation.
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  # Original triggers disabled to prevent execution
+  # pull_request:
+  #   types: [opened, synchronize]
+
+  # Placeholder trigger that will never run automatically
+  workflow_dispatch:
+    inputs:
+      dependabot_testing_disabled:
+        description: 'Dependabot testing moved to unified pr-validation.yml'
+        required: true
+        default: 'Use unified PR validation'
+        type: choice
+        options:
+          - 'Use unified PR validation'
 
 jobs:
-  test-dependabot-pr:
+  dependabot-testing-disabled:
+    name: Dependabot Testing Moved to Unified Workflow
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
-    permissions:
-      contents: read
-      pull-requests: write
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Setup environment
-        run: cp .env.example .env
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-
-      - name: Ensure Svelte Kit is in sync
-        run: npx svelte-kit sync
-
-      - name: Run tests
+      - name: Notify about workflow consolidation
         run: |
-          npm run check
-          npm run lint
-          npm run type-check
-          npm run test:unit -- --run
-
-      - name: Build
-        run: npm run build
-
-      - name: Run E2E tests
-        run: npm run test:e2e
-
-      - name: Get metadata
-        uses: dependabot/fetch-metadata@v1
-        id: metadata
-
-      - name: Label PR based on update type
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const updateType = '${{ steps.metadata.outputs.update-type }}';
-            const dependencyNames = '${{ steps.metadata.outputs.dependency-names }}';
-            const dependencyType = '${{ steps.metadata.outputs.dependency-type }}';
-
-            let labels = ['dependencies', 'dependabot'];
-
-            // Label nach Update-Typ
-            if (updateType.includes('major')) {
-              labels.push('major-update', 'breaking-change');
-            } else if (updateType.includes('minor')) {
-              labels.push('minor-update');
-            } else if (updateType.includes('patch')) {
-              labels.push('patch-update');
-            }
-
-            // Label nach Dependency-Typ
-            if (dependencyType === 'direct:development') {
-              labels.push('dev-dependency');
-            } else if (dependencyType === 'direct:production') {
-              labels.push('production-dependency');
-            }
-
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: labels
-            });
-
-      - name: Add status comment
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const updateType = '${{ steps.metadata.outputs.update-type }}';
-            let emoji = '✅';
-            let status = 'ready for combination';
-
-            if (updateType.includes('major')) {
-              emoji = '⚠️';
-              status = 'contains major updates - needs review';
-            }
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: `${emoji} **Tests passed!** This PR is ${status}.\n\n` +
-                    `This PR will be automatically combined with other Dependabot updates in a daily batch. ` +
-                    `Individual Dependabot PRs are no longer auto-merged to maintain a cleaner commit history.`
-            })
+          echo "🚫 Dependabot PR testing has been consolidated."
+          echo ""
+          echo "✅ Now handled by: Unified pr-validation.yml"
+          echo "🎯 Tests both: Normal PRs AND Dependabot PRs"
+          echo "📈 Benefits: Single workflow, consistent validation"
+          echo "🔧 Same tests: lint, type-check, unit, e2e, build"
+          echo "🏷️ Same labeling: dependency types, update types"
+          echo ""
+          echo "All Dependabot PRs now use the unified validation pipeline."
+          echo "This legacy file can be safely deleted after validation period."
+          exit 1
