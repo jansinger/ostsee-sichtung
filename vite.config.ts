@@ -63,7 +63,11 @@ export default defineConfig({
 					name: 'server',
 					environment: 'node',
 					include: ['src/**/*.{test,spec}.{js,ts}'],
-					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
+					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+					// Force UTC timezone for consistent date/time tests across environments
+					env: {
+						TZ: 'UTC'
+					}
 				}
 			}
 		]

@@ -126,6 +126,30 @@ Local development uses Docker PostgreSQL on port 5433 (not default 5432) with cr
 
 Always check Baltic Sea geographic bounds using the `checkBalticSea` utility before saving sightings.
 
+## Legacy REST API Compatibility
+
+**⚠️ CRITICAL: 100% Compliance Required**
+
+The project includes legacy REST API endpoints for mobile app compatibility. These APIs MUST maintain 100% compatibility with the original schweinswalsichtung.de specification to ensure existing mobile applications continue to function correctly.
+
+**Reference**: See `docs/LEGACY_API_SPECIFICATION.md` for the complete specification derived from the original PDF documentation.
+
+**Key Requirements:**
+- Exact field names as specified in the original API
+- Exact URL paths (no additional prefixes)
+- Exact response formats and data types
+- Backward compatibility is mandatory - any breaking changes are forbidden
+
+**Critical Implementation Notes:**
+- URL paths must match exactly: `/rest_sichtungen`, `/sichtungen/showreports.json`, etc.
+- Response field names in showreports.json must be abbreviated: `ts`, `id`, `dt`, `ti`, `lat`, `lon`, `ct`, `yo`, `sh`, `na`, `ar`
+- Coordinates must be returned as strings, not numbers
+- Boolean values must use 0/1 integers, not true/false
+- Date formats must match exactly (DD.MM.YY, YYYY-MM-DD HH:MI)
+- All wind directions must be supported: 'N','NW','W','SW','S','SO','O','NO'
+
+The legacy APIs are located in `/src/routes/api/legacy/` and include field mapping, validation, and response transformation to maintain perfect compatibility with the original API.
+
 ## Development Guidelines & Code Conventions
 
 ### Clean Code Principles
