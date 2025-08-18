@@ -1,6 +1,7 @@
 /** @type {import('@commitlint/types').UserConfig} */
 export default {
 	extends: ['@commitlint/config-conventional'],
+	ignores: [(commit) => commit.startsWith('Merge')],
 	rules: {
 		// Scopes die in diesem Projekt verwendet werden
 		'scope-enum': [
