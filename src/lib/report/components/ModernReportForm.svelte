@@ -192,7 +192,7 @@
 						{:else if currentStep === 1}
 							<Step2SightingDetails />
 						{:else if currentStep === 2}
-							<Step3Observations />
+							<Step3Observations bind:currentStep />
 						{:else if currentStep === 3}
 							<Step4Contact />
 						{/if}

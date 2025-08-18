@@ -53,6 +53,20 @@
 		}
 	}
 
+	async function skipStep(): Promise<void> {
+		try {
+			if (isLastStep) {
+				await handleFormSubmission();
+			} else {
+				currentStep += 1;
+				scrollToElement(formContent);
+			}
+			logger.info({ currentStep: currentStep - 1 }, 'Step skipped');
+		} catch (error) {
+			logger.error({ error }, 'Error in skipStep navigation');
+		}
+	}
+
 	async function previousStep(): Promise<void> {
 		try {
 			if (!isFirstStep) {

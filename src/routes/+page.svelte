@@ -52,11 +52,11 @@
 
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50">
 	<!-- Form Content -->
-	<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+	<div class="container mx-auto px-2 py-4 sm:px-4 sm:py-8">
 		{#if submissionSuccess && submittedData}
 			<SubmissionSuccess {submittedData} {handleNewReport} />
 		{:else}
-			<div class="mx-auto max-w-4xl">
+			<div class="mx-auto max-w-2xl">
 				<ModernReportForm onSubmit={handleSubmit} onCancel={handleCancel} />
 			</div>
 		{/if}
