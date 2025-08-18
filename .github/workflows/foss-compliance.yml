@@ -87,15 +87,18 @@ jobs:
         run: |
           echo "🔍 Checking for unlicensed packages..."
           
-          # Check for packages without licenses (excluding our own)
-          UNLICENSED=$(npx license-checker | grep "UNLICENSED" | grep -v "ostsee-tiere@" || true)
+          # Check for packages without licenses (excluding private packages)
+          # Private packages are expected to be UNLICENSED
+          UNLICENSED=$(npx license-checker --excludePrivatePackages --summary | grep "UNLICENSED" || true)
           
           if [ -n "$UNLICENSED" ]; then
-            echo "❌ Found unlicensed packages:"
-            echo "$UNLICENSED"
+            echo "❌ Found unlicensed non-private packages"
+            echo "Details:"
+            npx license-checker --excludePrivatePackages | grep -A2 "UNLICENSED"
             exit 1
           else
-            echo "✅ All packages have licenses"
+            echo "✅ All third-party packages have licenses"
+            echo "Note: Private packages (like ostsee-tiere) are excluded from this check"
           fi
       
       - name: Verify OSI approved licenses
