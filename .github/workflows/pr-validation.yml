@@ -115,26 +115,26 @@ jobs:
 
       # Commit message validation nur für normale PRs (nicht Dependabot)
       - name: Validate commit messages
-        if: github.actor != 'dependabot[bot]' && !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend != 'true' && steps.changes.outputs.backend != 'true')
+        if: github.actor != 'dependabot[bot]' && (steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true')
         run: |
           echo "Validating commit messages from origin/main to HEAD..."
           npx commitlint --from=origin/main --to=HEAD --verbose
 
       # Affected testing - nur relevante Tests basierend auf Änderungen
       - name: Run affected tests (frontend changes)
-        if: steps.changes.outputs.frontend == 'true' && !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend != 'true' && steps.changes.outputs.backend != 'true')
+        if: steps.changes.outputs.frontend == 'true' && (steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true')
         run: |
           echo "🎯 Running tests affected by frontend changes"
           npm run test:quick
 
       - name: Run affected tests (backend changes)
-        if: steps.changes.outputs.backend == 'true' && !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend != 'true' && steps.changes.outputs.backend != 'true')
+        if: steps.changes.outputs.backend == 'true' && (steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true')
         run: |
           echo "🎯 Running tests affected by backend changes"
           npm run test:quick
 
       - name: Run affected tests (config/dependency changes)
-        if: (steps.changes.outputs.config == 'true' || steps.changes.outputs.dependencies == 'true') && !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend != 'true' && steps.changes.outputs.backend != 'true')
+        if: (steps.changes.outputs.config == 'true' || steps.changes.outputs.dependencies == 'true') && (steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true')
         run: |
           echo "🎯 Running full test suite due to config/dependency changes"
           npm run test:quick
@@ -157,7 +157,7 @@ jobs:
 
       # Type checking and Svelte check
       - name: Run type checking
-        if: !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend != 'true' && steps.changes.outputs.backend != 'true')
+        if: steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true'
         run: npm run type-check
 
       - name: Run Svelte check
@@ -179,7 +179,7 @@ jobs:
 
       # Build application
       - name: Build application
-        if: !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend != 'true' && steps.changes.outputs.backend != 'true')
+        if: steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true'
         run: npm run build
 
       # E2E tests für relevante Änderungen (affected testing)
@@ -192,7 +192,7 @@ jobs:
             github.actor == 'dependabot[bot]' ||
             contains(github.event.pull_request.title, 'breaking')
           ) &&
-          !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend != 'true' && steps.changes.outputs.backend != 'true')
+          (steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true')
         run: |
           echo "🧪 Running E2E tests for affected areas"
           npm run test:e2e
