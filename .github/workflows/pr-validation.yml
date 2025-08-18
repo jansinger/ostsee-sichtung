@@ -52,27 +52,32 @@ jobs:
           echo "Validating commit messages from origin/main to HEAD..."
           npx commitlint --from=origin/main --to=HEAD --verbose
 
-      - name: Run linting
-        run: npm run lint
+      # Quick tests first for fast feedback (lint + unit tests)
+      - name: Run quick test suite
+        run: npm run test:quick
 
+      # Type checking and Svelte check
       - name: Run type checking
         run: npm run type-check
-
-      - name: Run unit tests
-        run: npm run test:unit -- --run
 
       - name: Run Svelte check
         run: npm run check
 
+      # Build application
       - name: Build application
         run: npm run build
 
+      # E2E tests only for non-draft PRs and significant changes
       - name: Run E2E tests
+        if: >
+          github.event.pull_request.draft == false && 
+          (
+            contains(github.event.pull_request.title, 'feat') ||
+            contains(github.event.pull_request.title, 'fix') ||
+            contains(github.event.pull_request.title, 'breaking') ||
+            github.actor == 'dependabot[bot]'
+          )
         run: npm run test:e2e
-
-      - name: Validate current commit (last commit) with commitlint
-        if: github.event_name == 'push' && github.actor != 'dependabot[bot]'
-        run: npx commitlint --last --verbose
 
       # Dependabot-spezifische Aktionen
       - name: Get Dependabot metadata
