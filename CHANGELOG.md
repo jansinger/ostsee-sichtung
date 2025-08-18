@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.14.1 (2025-08-18)</small>
+
+* Merge pull request #50 from jansinger/docs/update-readme ([ef9bf74](https://github.com/jansinger/ostsee-sichtung/commit/ef9bf74)), closes [#50](https://github.com/jansinger/ostsee-sichtung/issues/50)
+* docs: update README.md to reflect current project structure ([22f776f](https://github.com/jansinger/ostsee-sichtung/commit/22f776f))
+
 ## 1.14.0 (2025-08-18)
 
 * Merge pull request #49 from jansinger/fix/legacy-api-date-mapping ([96c2096](https://github.com/jansinger/ostsee-sichtung/commit/96c2096)), closes [#49](https://github.com/jansinger/ostsee-sichtung/issues/49)
