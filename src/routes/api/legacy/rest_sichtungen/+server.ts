@@ -146,8 +146,8 @@ export async function POST(event: RequestEvent): Promise<Response> {
 			
 			logger.info({ 
 				sightingId: savedSighting.id,
-				legacyCount: requestData.anzahlGesamt,
-				isDeathFinding: requestData.anzahlGesamt === 0,
+				legacyCount: requestData.anzahl_gesamt,
+				isDeathFinding: requestData.anzahl_gesamt === 0,
 				ip: clientIp 
 			}, 'Legacy sighting created successfully');
 
@@ -177,13 +177,9 @@ export async function POST(event: RequestEvent): Promise<Response> {
 			return json(errorResponse, { status: 500 });
 		}
 
-		// Create legacy API success response
+		// Create legacy API success response (exact PDF specification)
 		const successResponse: LegacyCreateResponse = {
-			id: savedSighting.id,
-			status: 'success',
-			message: requestData.anzahlGesamt === 0 
-				? 'Death finding recorded successfully'
-				: 'Sighting created successfully'
+			message: 'Saved'
 		};
 
 		// Set Location header as per REST API specification

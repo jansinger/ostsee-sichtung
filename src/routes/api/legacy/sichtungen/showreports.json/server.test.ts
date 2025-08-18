@@ -13,45 +13,39 @@ import { GET, POST, PUT, DELETE } from './+server';
 import type { RequestEvent } from '@sveltejs/kit';
 import type { LegacySightingResponse } from '../../field-mapping/types';
 
-// Mock database
-const mockDbSelect = vi.fn();
-const mockDbFrom = vi.fn();
-const mockDbWhere = vi.fn();
-const mockDbOrderBy = vi.fn();
-const mockDbLimit = vi.fn();
+vi.mock('$lib/server/db', () => {
+	const mockDbSelect = vi.fn().mockReturnThis();
+	const mockDbFrom = vi.fn().mockReturnThis();
+	const mockDbWhere = vi.fn().mockReturnThis();
+	const mockDbOrderBy = vi.fn().mockReturnThis();
+	const mockDbLimit = vi.fn().mockResolvedValue([]);
 
-// Chain the mocks together
-mockDbSelect.mockReturnThis();
-mockDbFrom.mockReturnThis();
-mockDbWhere.mockReturnThis();
-mockDbOrderBy.mockReturnThis();
-mockDbLimit.mockResolvedValue([]); // Default to empty result
-
-vi.mock('$lib/server/db', () => ({
-	db: {
-		select: mockDbSelect,
-		from: mockDbFrom,
-		where: mockDbWhere,
-		orderBy: mockDbOrderBy,
-		limit: mockDbLimit
-	}
-}));
+	return {
+		db: {
+			select: mockDbSelect,
+			from: mockDbFrom,
+			where: mockDbWhere,
+			orderBy: mockDbOrderBy,
+			limit: mockDbLimit
+		}
+	};
+});
 
 // Mock field mapping
 vi.mock('../../field-mapping/index.js', () => ({
 	mapCurrentToLegacySchema: vi.fn().mockImplementation((data) => ({
 		id: data.id,
 		datum: '15.03.2024',
-		uhrzeit: '14:30',
+		uhrzeit: '15:30',
 		breitengrad: data.latitude,
 		laengengrad: data.longitude,
 		anzahlGesamt: data.totalCount,
 		anzahlJung: data.juvenileCount,
 		tierart: data.species,
 		totfund: data.isDead,
-		beobachterName: data.nameConsent === 1 ? `${data.firstName} ${data.lastName}` : undefined,
+		beobachterName: data.nameConsent === 1 ? `${data.firstName} ${data.lastName}` : '',
 		gebiet: data.waterway,
-		schiffsname: data.shipNameConsent === 1 ? data.shipName : undefined
+		schiffsname: data.shipNameConsent === 1 ? data.shipName : ''
 	}))
 }));
 
@@ -115,13 +109,25 @@ const mockSightingData = [
 ];
 
 // Get mocked functions
+let mockDbSelect: any;
+let mockDbFrom: any;
+let mockDbWhere: any;
+let mockDbOrderBy: any;
+let mockDbLimit: any;
 let mockLogger: any;
 
 describe('Legacy REST API - GET /sichtungen/showreports.json', () => {
 	beforeEach(async () => {
-		// Get the mocked logger
+		// Get the mocked functions
+		const dbModule = await import('$lib/server/db');
+		mockDbSelect = vi.mocked(dbModule.db.select);
+		mockDbFrom = vi.mocked(dbModule.db.from);
+		mockDbWhere = vi.mocked(dbModule.db.where);
+		mockDbOrderBy = vi.mocked(dbModule.db.orderBy);
+		mockDbLimit = vi.mocked(dbModule.db.limit);
+		
 		const loggerModule = await import('$lib/logger');
-		mockLogger = vi.mocked(loggerModule.createLogger).mock.results[0]?.value;
+		mockLogger = vi.mocked(loggerModule.createLogger)();
 		
 		vi.clearAllMocks();
 		// Reset chain methods
@@ -147,7 +153,7 @@ describe('Legacy REST API - GET /sichtungen/showreports.json', () => {
 			expect(responseData[0]).toMatchObject({
 				id: 1,
 				datum: '15.03.2024',
-				uhrzeit: '14:30',
+				uhrzeit: '15:30',
 				breitengrad: 54.5,
 				laengengrad: 11.2,
 				anzahlGesamt: 3,
@@ -478,7 +484,7 @@ describe('Legacy REST API - GET /sichtungen/showreports.json', () => {
 			expect(responseData[0].beobachterName).toBe('Max Mustermann');
 			
 			// Second sighting does not have name consent (nameConsent: 0)
-			expect(responseData[1].beobachterName).toBeUndefined();
+			expect(responseData[1].beobachterName).toBe('');
 		});
 
 		it('should respect ship name consent settings', async () => {
@@ -490,7 +496,7 @@ describe('Legacy REST API - GET /sichtungen/showreports.json', () => {
 			expect(responseData[0].schiffsname).toBe('MS Baltic');
 			
 			// Second sighting does not have ship name consent
-			expect(responseData[1].schiffsname).toBeUndefined();
+			expect(responseData[1].schiffsname).toBe('');
 		});
 
 		it('should mask search terms in logs for privacy', async () => {

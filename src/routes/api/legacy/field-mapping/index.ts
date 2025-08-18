@@ -10,7 +10,7 @@
 
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import type { SightingFormData } from '$lib/types';
-import type { LegacySightingRequest, LegacySightingResponse } from './types';
+import type { LegacySightingRequest, LegacySightingResponse, LegacySightingRequestSeparateDateTime } from './types';
 
 /**
  * Maps legacy API request to current SightingFormData format
@@ -19,20 +19,20 @@ import type { LegacySightingRequest, LegacySightingResponse } from './types';
  * @returns Transformed data in current schema format
  */
 export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): SightingFormData {
-	// Combine date and time into ISO datetime string
-	const sichtungsdatum = combineDateAndTime(legacyData.datum, legacyData.uhrzeit);
+	// Parse the single datetime field (YYYY-MM-DD HH:MI) into ISO format
+	const sightingDate = parseLegacyDateTime(legacyData.sichtungsdatum);
 
 	return {
 		// Date and location
-		sightingDate: sichtungsdatum,
-		latitude: legacyData.breitengrad || 0,
-		longitude: legacyData.laengengrad || 0,
-		waterway: legacyData.gebiet || '',
+		sightingDate,
+		latitude: legacyData.gps_breite || 0,
+		longitude: legacyData.gps_laenge || 0,
+		waterway: legacyData.fahrwasser || '',
 		seaMark: legacyData.seezeichen || '',
 
 		// Observer information  
 		firstName: legacyData.vorname,
-		lastName: legacyData.nachname,
+		lastName: legacyData.name, // Note: "name" in legacy API, not "nachname"
 		email: legacyData.email,
 		phone: legacyData.telefon || '',
 		street: legacyData.strasse || '',
@@ -40,12 +40,13 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		city: legacyData.ort || '',
 
 		// Sighting details
-		totalCount: legacyData.anzahlGesamt,
-		juvenileCount: legacyData.anzahlJung || 0,
+		totalCount: legacyData.anzahl_gesamt,
+		juvenileCount: legacyData.anzahl_jung || 0,
 		species: legacyData.tierart || 0,
 
 		// Observation context
-		sightingFrom: legacyData.beobachtungsort || 0,
+		sightingFrom: legacyData.vonwo || 0, // vonwo maps to sightingFrom
+		sightingFromText: legacyData.vonwo_text || '',
 		distance: legacyData.entfernung || 0,
 		distribution: legacyData.verteilung || 0,
 		distributionText: '', // Legacy API doesn't separate this
@@ -55,7 +56,9 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 
 		// Environmental conditions
 		seaState: legacyData.seegang || 0,
-		windDirection: (legacyData.windrichtung as any) || '',
+		windDirection: (legacyData.windrichtung && ['', 'N', 'NW', 'W', 'SW', 'S', 'SO', 'O', 'NO'].includes(legacyData.windrichtung as string) 
+			? legacyData.windrichtung as '' | 'N' | 'NW' | 'W' | 'SW' | 'S' | 'SO' | 'O' | 'NO'
+			: ''),
 		windForce: legacyData.windstaerke ? Number(legacyData.windstaerke) : undefined,
 		visibility: legacyData.sichtweite || 0,
 
@@ -69,7 +72,7 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		// Media and observations
 		mediaFile: legacyData.aufnahme || '',
 		mediaUpload: legacyData.aufnahme ? true : false,
-		otherObservations: legacyData.sonstigeAuffaelligkeiten || '',
+		otherObservations: legacyData.sonstige_auffälligkeiten || '',
 		notes: legacyData.bemerkungen || '',
 
 		// Consent flags (convert 0/1 to boolean)
@@ -78,11 +81,11 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		privacyConsent: legacyData.datenschutzEinverstaendnis ? true : false,
 
 		// Death finding detection and fields
-		isDead: legacyData.anzahlGesamt === 0 ? true : false,
-		deadSize: legacyData.totfundGroesse || undefined,
-		deadCondition: legacyData.totfundZustand || 0,
-		deadSex: legacyData.totfundGeschlecht || 0,
-		deadPhoneContact: legacyData.totfundTelefon ? true : false,
+		isDead: legacyData.anzahl_gesamt === 0 ? true : false,
+		deadSize: legacyData.totfund_groesse || undefined,
+		deadCondition: legacyData.totfund_zustand || 0,
+		deadSex: legacyData.totfund_geschlecht || 0,
+		deadPhoneContact: legacyData.totfund_telefon ? true : false,
 
 		// System fields
 		entryChannel: EntryChannelEnum.APP,
@@ -92,7 +95,7 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		verified: false,
 		referenceId: `LEGACY-${Date.now()}`, // Generate a reference ID for legacy imports
 		uploadedFiles: [], // Legacy API handles media differently
-		hasPosition: !!(legacyData.breitengrad && legacyData.laengengrad), // True if coordinates provided
+		hasPosition: !!(legacyData.gps_breite && legacyData.gps_laenge), // True if coordinates provided
 		
 		// Additional required fields
 		persistentDataConsent: true, // Legacy API users implicitly consent to data storage
@@ -107,7 +110,7 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
  * @param currentData - Current schema sighting data
  * @returns Data in legacy API response format
  */
-export function mapCurrentToLegacySchema(currentData: any): LegacySightingResponse {
+export function mapCurrentToLegacySchema(currentData: SightingFormData & { id: number }): LegacySightingResponse {
 	// Split datetime back into date and time components
 	const { datum, uhrzeit } = splitDateAndTime(currentData.sightingDate);
 
@@ -120,17 +123,35 @@ export function mapCurrentToLegacySchema(currentData: any): LegacySightingRespon
 		anzahlGesamt: currentData.totalCount || 0,
 		anzahlJung: currentData.juvenileCount || 0,
 		tierart: currentData.species || 0,
-		totfund: currentData.isDead || 0,
+		totfund: currentData.isDead ? 1 : 0,
 		
 		// Conditional fields based on consent
-		beobachterName: currentData.nameConsent === 1 
+		beobachterName: currentData.nameConsent 
 			? `${currentData.firstName || ''} ${currentData.lastName || ''}`.trim()
 			: '',
 		gebiet: currentData.waterway || undefined,
-		schiffsname: currentData.shipNameConsent === 1 
+		schiffsname: currentData.shipNameConsent 
 			? currentData.shipName || undefined
 			: undefined
 	};
+}
+
+/**
+ * Parses legacy datetime string (YYYY-MM-DD HH:MI) into ISO datetime string
+ * 
+ * @param datetime - DateTime in "YYYY-MM-DD HH:MI" format
+ * @returns ISO datetime string for current schema
+ */
+function parseLegacyDateTime(datetime: string): string {
+	// Split datetime into date and time parts
+	const parts = datetime.trim().split(' ');
+	if (parts.length !== 2) {
+		throw new Error(`Invalid datetime format: ${datetime}. Expected "YYYY-MM-DD HH:MI"`);
+	}
+	
+	const date = parts[0]!;
+	const time = parts[1]!;
+	return combineDateAndTime(date, time);
 }
 
 /**
@@ -182,19 +203,16 @@ function combineDateAndTime(date: string, time?: string): string {
 function splitDateAndTime(datetime: string): { datum: string; uhrzeit: string } {
 	const date = new Date(datetime);
 	
-	// Format date as DD.MM.YYYY for legacy API
-	const datum = date.toLocaleDateString('de-DE', {
-		day: '2-digit',
-		month: '2-digit', 
-		year: 'numeric'
-	});
+	// Format date as DD.MM.YYYY for legacy API (use UTC to avoid timezone issues)
+	const day = date.getUTCDate().toString().padStart(2, '0');
+	const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+	const year = date.getUTCFullYear().toString();
+	const datum = `${day}.${month}.${year}`;
 
-	// Format time as HH:MM for legacy API
-	const uhrzeit = date.toLocaleTimeString('de-DE', {
-		hour: '2-digit',
-		minute: '2-digit',
-		hour12: false
-	});
+	// Format time as HH:MM for legacy API (use UTC to avoid timezone issues)
+	const hours = date.getUTCHours().toString().padStart(2, '0');
+	const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+	const uhrzeit = `${hours}:${minutes}`;
 
 	return { datum, uhrzeit };
 }
@@ -205,68 +223,74 @@ function splitDateAndTime(datetime: string): { datum: string; uhrzeit: string } 
  * @param data - Legacy API request data
  * @throws Error if validation fails
  */
-export function validateLegacyRequest(data: any): asserts data is LegacySightingRequest {
+export function validateLegacyRequest(data: unknown): asserts data is LegacySightingRequest {
+	const record = data as Record<string, unknown>;
+	
 	// Required fields validation
-	if (!data.datum) {
-		throw new Error('Field "datum" is required');
+	if (!record.sichtungsdatum) {
+		throw new Error('Field "sichtungsdatum" is required');
 	}
-	if (!data.vorname) {
+	if (!record.vorname) {
 		throw new Error('Field "vorname" is required');
 	}
-	if (!data.nachname) {
-		throw new Error('Field "nachname" is required');  
+	if (!record.name) {
+		throw new Error('Field "name" is required');  
 	}
-	if (!data.email) {
+	if (!record.email) {
 		throw new Error('Field "email" is required');
 	}
-	if (data.anzahlGesamt === undefined || data.anzahlGesamt === null) {
-		throw new Error('Field "anzahlGesamt" is required');
+	if (record.anzahl_gesamt === undefined || record.anzahl_gesamt === null) {
+		throw new Error('Field "anzahl_gesamt" is required');
 	}
 
-	// Date format validation (YYYY-MM-DD)
-	const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-	if (!dateRegex.test(data.datum)) {
-		throw new Error('Field "datum" must be in YYYY-MM-DD format');
+	// Date format validation (YYYY-MM-DD HH:MI)
+	const datetimeRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+	if (!datetimeRegex.test(record.sichtungsdatum as string)) {
+		throw new Error('Field "sichtungsdatum" must be in "YYYY-MM-DD HH:MI" format');
 	}
 
-	// Time format validation (HH:MM) if provided
-	if (data.uhrzeit) {
-		const timeRegex = /^\d{2}:\d{2}$/;
-		if (!timeRegex.test(data.uhrzeit)) {
-			throw new Error('Field "uhrzeit" must be in HH:MM format');
-		}
-		
-		// Validate actual time values
-		const [hours, minutes] = data.uhrzeit.split(':').map(Number);
-		if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-			throw new Error('Field "uhrzeit" must be in HH:MM format');
-		}
-	}
+	// Legacy API doesn't use separate time field - it's combined in sichtungsdatum
 
 	// Coordinate validation if provided
-	if (data.breitengrad !== undefined) {
-		const lat = Number(data.breitengrad);
+	if (record.gps_breite !== undefined) {
+		const lat = Number(record.gps_breite);
 		if (isNaN(lat) || lat < -90 || lat > 90) {
-			throw new Error('Field "breitengrad" must be a number between -90 and 90');
+			throw new Error('Field "gps_breite" must be a number between -90 and 90');
 		}
 	}
 
-	if (data.laengengrad !== undefined) {
-		const lon = Number(data.laengengrad);
+	if (record.gps_laenge !== undefined) {
+		const lon = Number(record.gps_laenge);
 		if (isNaN(lon) || lon < -180 || lon > 180) {
-			throw new Error('Field "laengengrad" must be a number between -180 and 180');
+			throw new Error('Field "gps_laenge" must be a number between -180 and 180');
 		}
 	}
 
 	// Count validation
-	const count = Number(data.anzahlGesamt);
+	const count = Number(record.anzahl_gesamt);
 	if (isNaN(count) || count < 0) {
-		throw new Error('Field "anzahlGesamt" must be a non-negative number');
+		throw new Error('Field "anzahl_gesamt" must be a non-negative number');
 	}
 
 	// Email format validation (basic)
 	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-	if (!emailRegex.test(data.email)) {
+	if (!emailRegex.test(record.email as string)) {
 		throw new Error('Field "email" must be a valid email address');
 	}
+}
+
+/**
+ * Converts separate date/time format to combined datetime format
+ * 
+ * @param separateData - Legacy request with separate date/time fields
+ * @returns Legacy request with combined datetime field
+ */
+export function convertSeparateToCombinedDateTime(separateData: LegacySightingRequestSeparateDateTime): LegacySightingRequest {
+	const { datum, uhrzeit, ...rest } = separateData;
+	const sichtungsdatum = `${datum} ${uhrzeit || '12:00'}`;
+	
+	return {
+		sichtungsdatum,
+		...rest
+	};
 }

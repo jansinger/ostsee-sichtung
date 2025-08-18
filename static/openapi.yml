@@ -33,6 +33,8 @@ servers:
 tags:
   - name: sightings
     description: Sichtungsmeldungen
+  - name: legacy
+    description: Legacy REST API für Mobile Apps
   - name: auth
     description: Authentifizierung
   - name: files
@@ -819,6 +821,199 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /legacy/rest_sichtungen:
+    post:
+      tags:
+        - legacy
+      summary: '[LEGACY] Sichtung anlegen'
+      description: |
+        **Legacy REST API Endpunkt für Mobile App Kompatibilität**
+        
+        Erstellt eine neue Sichtung im Legacy-Format der ursprünglichen schweinswalsichtung.de API.
+        
+        Wichtige Hinweise:
+        - Unterstützt das kombinierte Datetime-Format "YYYY-MM-DD HH:MI"
+        - Feldnamen müssen exakt dem PDF-Spezifikation entsprechen
+        - Boolean-Werte werden als 0/1 Integer übertragen
+        - Totfunde werden durch `anzahl_gesamt = 0` signalisiert
+        
+        Erfolgsantwort: HTTP 201 mit Location-Header und `{"message": "Saved"}`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LegacySightingRequest'
+      responses:
+        '201':
+          description: Sichtung erfolgreich erstellt
+          headers:
+            Location:
+              description: URL zur erstellten Ressource
+              schema:
+                type: string
+                format: uri
+                example: "/api/legacy/sichtungen/1840"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyCreateResponse'
+        '400':
+          description: Validierungsfehler
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /legacy/rest_sichtungen/antworten.json:
+    get:
+      tags:
+        - legacy
+      summary: '[LEGACY] Antwortmöglichkeiten abrufen'
+      description: |
+        **Legacy REST API Endpunkt für Dropdown-Optionen**
+        
+        Stellt alle verfügbaren Optionen für numerische Felder bereit, genau wie in der ursprünglichen API.
+        Die Feldnamen und Werte entsprechen exakt der PDF-Spezifikation.
+        
+        Enthält: tierart, vonwo, entfernung, verteilung, verhalten, seegang, windrichtung, 
+        windstaerke, sichtweite, bootsantrieb, eingangskanal, totfund_zustand, totfund_geschlecht
+      responses:
+        '200':
+          description: Dropdown-Optionen erfolgreich abgerufen
+          headers:
+            Cache-Control:
+              description: Cache-Einstellungen
+              schema:
+                type: string
+                example: "public, max-age=3600"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyResponseOptions'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /legacy/rest_sichtungen/inBaltic.json:
+    get:
+      tags:
+        - legacy
+      summary: '[LEGACY] Position prüfen'
+      description: |
+        **Legacy REST API Endpunkt für Koordinaten-Validierung**
+        
+        Überprüft, ob gegebene Koordinaten in der Ostsee bzw. im Kartenbereich liegen.
+        
+        Format der location Parameter: "breitengrad,längengrad" (Dezimalgrad, Komma-getrennt)
+        Antwort-Feldnamen sind lowercase für Legacy-Kompatibilität: `inbaltic`, `inchartarea`
+      parameters:
+        - name: location
+          in: query
+          required: true
+          description: 'Koordinaten im Format "breitengrad,längengrad"'
+          schema:
+            type: string
+            pattern: '^-?\d+\.?\d*,-?\d+\.?\d*$'
+            example: "54.3233,13.0814"
+      responses:
+        '200':
+          description: Koordinaten erfolgreich validiert
+          headers:
+            Cache-Control:
+              description: Cache-Einstellungen
+              schema:
+                type: string
+                example: "public, max-age=300"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyLocationResponse'
+        '400':
+          description: Ungültige Parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "InvalidCoordinates"
+                  message:
+                    type: string
+                    example: "Coordinates must be valid numbers"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /legacy/sichtungen/showreports.json:
+    get:
+      tags:
+        - legacy
+      summary: '[LEGACY] Sichtungsdaten abrufen'
+      description: |
+        **Legacy REST API Endpunkt für genehmigte Sichtungen**
+        
+        Gibt alle genehmigten Sichtungen zurück, mit optionaler Filterung nach Jahr, 
+        Standort, Entfernung und Suchbegriffen.
+        
+        Nur öffentliche Daten werden zurückgegeben:
+        - Kontaktdaten nur bei expliziter Einverständnis
+        - Nur genehmigte und verifizierte Sichtungen
+        - Antwortformat entspricht der PDF-Spezifikation exakt
+      parameters:
+        - name: year
+          in: query
+          description: 'Jahr der Sichtungen (Standard: aktuelles Jahr bis März, sonst Vorjahr)'
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2030
+            example: 2024
+        - name: location
+          in: query
+          description: 'Zentrumskoordinaten für Umkreissuche "breitengrad,längengrad"'
+          schema:
+            type: string
+            pattern: '^-?\d+\.?\d*,-?\d+\.?\d*$'
+            example: "54.0,13.0"
+        - name: distance
+          in: query
+          description: 'Suchradius in Metern (nur mit location Parameter)'
+          schema:
+            type: integer
+            minimum: 1000
+            maximum: 500000
+            default: 100000
+            example: 50000
+        - name: bbox
+          in: query
+          description: 'Begrenzungsbox "minLon,minLat,maxLon,maxLat" (OpenLayers-kompatibel)'
+          schema:
+            type: string
+            pattern: '^-?\d+\.?\d*,-?\d+\.?\d*,-?\d+\.?\d*,-?\d+\.?\d*$'
+            example: "9,53,31,66"
+        - name: search
+          in: query
+          description: 'Suchtext in Name, E-Mail, Schiffsname (Teilstring-Suche)'
+          schema:
+            type: string
+            maxLength: 100
+            example: "Schneider"
+      responses:
+        '200':
+          description: Sichtungsliste erfolgreich abgerufen
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LegacySightingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /csp-report:
     post:
       tags:
@@ -1497,3 +1692,574 @@ components:
           example:
             success: false
             error: "Interner Serverfehler"
+
+    # Legacy API Schemas
+    LegacySightingRequest:
+      type: object
+      title: Legacy Sichtungsanfrage
+      description: |
+        Anfrageobjekt für Legacy REST API im exakten Format der PDF-Spezifikation.
+        
+        **WICHTIG:** Feldnamen dürfen NICHT geändert werden - Mobile Apps sind darauf angewiesen!
+      required:
+        - sichtungsdatum
+        - anzahl_gesamt
+        - vorname
+        - name
+        - email
+      properties:
+        # Pflichtfelder
+        sichtungsdatum:
+          type: string
+          description: 'Datum und Uhrzeit der Sichtung im Format "YYYY-MM-DD HH:MI"'
+          pattern: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$'
+          example: "2024-01-01 14:30"
+        anzahl_gesamt:
+          type: integer
+          description: 'Gesamtanzahl der Tiere (0 = Totfund)'
+          minimum: 0
+          example: 3
+        vorname:
+          type: string
+          description: Vorname des Melders
+          maxLength: 64
+          example: "Max"
+        name:
+          type: string
+          description: 'Nachname des Melders (ACHTUNG: "name" nicht "nachname"!)'
+          maxLength: 64
+          example: "Mustermann"
+        email:
+          type: string
+          format: email
+          description: E-Mail-Adresse des Melders
+          example: "max@example.com"
+        
+        # Standortdaten
+        gps_breite:
+          type: number
+          format: float
+          description: Breitengrad in Dezimalgrad
+          minimum: -90
+          maximum: 90
+          example: 54.3233
+        gps_laenge:
+          type: number
+          format: float
+          description: Längengrad in Dezimalgrad
+          minimum: -180
+          maximum: 180
+          example: 13.0814
+        fahrwasser:
+          type: string
+          description: Fahrwasser oder Gebiet
+          maxLength: 255
+          example: "Greifswalder Bodden"
+        seezeichen:
+          type: string
+          description: Seezeichen oder Strandabschnitt
+          maxLength: 255
+          example: "Leuchtturm Arkona"
+        
+        # Sichtungskontext
+        vonwo:
+          type: integer
+          description: 'Beobachtungsstandort (0=Sonstiges, 1=Segelschiff, 2=Motorboot, 3=Land, 4=Fähre)'
+          minimum: 0
+          maximum: 4
+          example: 1
+        vonwo_text:
+          type: string
+          description: 'Beschreibung bei vonwo=0 (Sonstiges)'
+          maxLength: 255
+          example: "Angelkutter"
+        entfernung:
+          type: integer
+          description: 'Entfernung (1=<10m, 2=10-50m, 3=50-100m, 4=100-500m, 5=>500m)'
+          minimum: 1
+          maximum: 5
+          example: 3
+        anzahl_schiffe:
+          type: integer
+          description: Anzahl Schiffe in der Umgebung
+          minimum: 0
+          example: 2
+        anzahl_jung:
+          type: integer
+          description: Anzahl Jungtiere
+          minimum: 0
+          example: 1
+        verteilung:
+          type: integer
+          description: 'Verteilung der Tiere (0=Sonstiges, 1=einzeln, 2=Mutter+Kind, 3=Schule)'
+          minimum: 0
+          maximum: 3
+          example: 1
+        verteilung_text:
+          type: string
+          description: 'Beschreibung bei verteilung=0 (Sonstiges)'
+          maxLength: 255
+          
+        # Medien
+        aufnahme:
+          type: string
+          description: Dateiname der Aufnahme
+          maxLength: 255
+          example: "whale_photo.jpg"
+        aufnahmeHochladen:
+          type: integer
+          description: 'Aufnahme hochgeladen Flag (0=nein, 1=ja)'
+          enum: [0, 1]
+          example: 1
+          
+        # Verhalten
+        verhalten:
+          type: integer
+          description: 'Verhalten (0=Sonstiges, 1=schwimmen, 2=futtersuchen, 3=ruhen)'
+          minimum: 0
+          maximum: 3
+          example: 1
+        verhalten_text:
+          type: string
+          description: 'Beschreibung bei verhalten=0 (Sonstiges)'
+          maxLength: 255
+        reaktion:
+          type: string
+          description: Reaktion der Tiere
+          maxLength: 255
+          example: "Neugieriges Annähern"
+        sonstige_auffälligkeiten:
+          type: string
+          description: Weitere Auffälligkeiten
+          maxLength: 500
+          example: "Ungewöhnlich große Gruppe"
+          
+        # Umweltbedingungen
+        seegang:
+          type: integer
+          description: 'Seegang (0=keine Angabe, 1=glatt, 2=gekräuselt, 3=bewegt, 4=grob, 5=hoch)'
+          minimum: 0
+          maximum: 5
+          example: 2
+        windrichtung:
+          type: string
+          description: 'Windrichtung'
+          enum: ['N','NW','W','SW','S','SO','O','NO']
+          example: "SW"
+        windstaerke:
+          type: string
+          description: 'Windstärke in Beaufort (1-12)'
+          pattern: '^([1-9]|1[0-2])$'
+          example: "3"
+        sichtweite:
+          type: integer
+          description: 'Sichtweite (1=>20km, 2=bis 20km, 3=bis 4km, 4=bis 1km)'
+          minimum: 1
+          maximum: 4
+          example: 2
+          
+        # Schiffsdaten
+        schiffsname:
+          type: string
+          description: Name des Schiffes
+          maxLength: 64
+          example: "MS Ostsee"
+        heimathafen:
+          type: string
+          description: Heimathafen
+          maxLength: 64
+          example: "Rostock"
+        bootstyp:
+          type: string
+          description: Typ des Bootes
+          maxLength: 64
+          example: "Segelyacht"
+        bootsantrieb:
+          type: integer
+          description: 'Bootsantrieb (0=Sonstiges, 1=Motor, 2=Segel, 3=treibend, 4=Anker)'
+          minimum: 0
+          maximum: 4
+          example: 2
+        bootsantrieb_text:
+          type: string
+          description: 'Beschreibung bei bootsantrieb=0 (Sonstiges)'
+          maxLength: 255
+          
+        # Kontaktdaten
+        strasse:
+          type: string
+          description: Straße
+          maxLength: 64
+          example: "Musterstraße 123"
+        plz:
+          type: string
+          description: Postleitzahl
+          maxLength: 5
+          pattern: '^\d{5}$'
+          example: "18055"
+        ort:
+          type: string
+          description: Ort
+          maxLength: 64
+          example: "Rostock"
+        telefon:
+          type: string
+          description: Telefonnummer
+          maxLength: 64
+          example: "+49 381 123456"
+        fax:
+          type: string
+          description: Faxnummer
+          maxLength: 64
+          
+        # Einverständniserklärungen
+        namensnennung:
+          type: integer
+          description: 'Namensnennung gewünscht (0=nein, 1=ja)'
+          enum: [0, 1]
+          example: 1
+        schiffnamensnennung:
+          type: integer
+          description: 'Schiffsname darf angezeigt werden (0=nein, 1=ja)'
+          enum: [0, 1]
+          example: 0
+          
+        # Weitere Felder
+        bemerkungen:
+          type: string
+          description: Zusätzliche Bemerkungen
+          maxLength: 1000
+          example: "Sehr schöne Beobachtung bei perfektem Wetter"
+        eingangskanal:
+          type: integer
+          description: 'Eingangskanal (0=Web, 1=E-Mail, 2=Post, 3=Fax, 4=App, 5=Telefon)'
+          minimum: 0
+          maximum: 5
+          example: 4
+        tierart:
+          type: integer
+          description: 'Tierart (0=Schweinswal, 1=Kegelrobbe, 2=Seehund, etc.)'
+          minimum: 0
+          default: 0
+          example: 0
+        totfund:
+          type: integer
+          description: 'Totfund Flag (0=nein, 1=ja)'
+          enum: [0, 1]
+          example: 0
+          
+        # Totfund-spezifische Felder
+        totfund_zustand:
+          type: integer
+          description: 'Zustand des toten Tieres (0=unbekannt, 1=frisch, ...5=skelett)'
+          minimum: 0
+          maximum: 5
+          example: 2
+        totfund_geschlecht:
+          type: integer
+          description: 'Geschlecht (0=unbekannt, 1=weiblich, 2=männlich)'
+          minimum: 0
+          maximum: 2
+          example: 0
+        totfund_groesse:
+          type: integer
+          description: 'Größe des toten Tieres in cm'
+          minimum: 0
+          maximum: 3000
+          example: 150
+        totfund_telefon:
+          type: integer
+          description: 'DMM wurde bereits telefonisch informiert (0=nein, 1=ja)'
+          enum: [0, 1]
+          example: 0
+
+    LegacyCreateResponse:
+      type: object
+      title: Legacy Erfolgsantwort
+      description: Erfolgsantwort der Legacy API - exakt wie in PDF spezifiziert
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: 'Erfolgsbestätigung - muss exakt "Saved" sein'
+          enum: ["Saved"]
+          example: "Saved"
+
+    LegacyErrorResponse:
+      type: object
+      title: Legacy Fehlerantwort
+      description: Fehlerantwort der Legacy API im ursprünglichen Format
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Allgemeine Fehlermeldung
+          example: "Validation failed"
+        errors:
+          type: object
+          description: Feldspezifische Validierungsfehler
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            anzahl_gesamt: ["Dieses Feld kann nicht leer gelassen werden."]
+            email: ["E-Mail ist erforderlich"]
+
+    LegacyLocationResponse:
+      type: object
+      title: Legacy Standortprüfung
+      description: Antwort der Standortprüfung - exakte Feldnamen aus PDF
+      required:
+        - inbaltic
+        - inchartarea
+      properties:
+        inbaltic:
+          type: boolean
+          description: 'True wenn Position in der Ostsee liegt (ACHTUNG: lowercase!)'
+          example: true
+        inchartarea:
+          type: boolean
+          description: 'True wenn Position im Kartenbereich liegt (ACHTUNG: lowercase!)'
+          example: true
+
+    LegacyResponseOptions:
+      type: object
+      title: Legacy Dropdown-Optionen
+      description: |
+        Alle verfügbaren Optionen für Dropdown-Felder der Legacy API.
+        Feldnamen und Struktur entsprechen exakt der PDF-Spezifikation.
+      required:
+        - tierart
+        - vonwo
+        - entfernung
+        - verteilung
+        - verhalten
+        - seegang
+        - windrichtung
+        - windstaerke
+        - sichtweite
+        - bootsantrieb
+        - eingangskanal
+        - totfund_zustand
+        - totfund_geschlecht
+      properties:
+        tierart:
+          type: array
+          description: Verfügbare Tierarten
+          items:
+            type: object
+            properties:
+              value:
+                type: integer
+              label:
+                type: string
+          example:
+            - value: 0
+              label: "Schweinswal"
+            - value: 1
+              label: "Kegelrobbe"
+        vonwo:
+          type: array
+          description: 'Beobachtungsstandorte (ACHTUNG: "vonwo" nicht "beobachtungsort"!)'
+          items:
+            type: object
+            properties:
+              value:
+                type: integer
+              label:
+                type: string
+          example:
+            - value: 0
+              label: "Sonstiges"
+            - value: 1
+              label: "Segelschiff"
+        entfernung:
+          type: array
+          description: Entfernungsangaben
+          items:
+            type: object
+            properties:
+              value:
+                type: integer
+              label:
+                type: string
+        verteilung:
+          type: array
+          description: Tierverteilung
+          items:
+            type: object
+            properties:
+              value:
+                type: integer
+              label:
+                type: string
+        verhalten:
+          type: array
+          description: Tierverhalten
+          items:
+            type: object
+            properties:
+              value:
+                type: integer
+              label:
+                type: string
+        seegang:
+          type: array
+          description: Seegang-Stufen
+          items:
+            type: object
+            properties:
+              value:
+                type: integer
+              label:
+                type: string
+        windrichtung:
+          type: array
+          description: Windrichtungen
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              label:
+                type: string
+          example:
+            - value: "N"
+              label: "Nord"
+            - value: "SW"
+              label: "Südwest"
+        windstaerke:
+          type: array
+          description: Windstärken (Beaufort)
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              label:
+                type: string
+        sichtweite:
+          type: array
+          description: Sichtweitenstufen
+          items:
+            type: object
+            properties:
+              value:
+                type: integer
+              label:
+                type: string
+        bootsantrieb:
+          type: array
+          description: Bootsantriebsarten
+          items:
+            type: object
+            properties:
+              value:
+                type: integer
+              label:
+                type: string
+        eingangskanal:
+          type: array
+          description: Eingangskanäle der Meldung
+          items:
+            type: object
+            properties:
+              value:
+                type: integer
+              label:
+                type: string
+        totfund_zustand:
+          type: array
+          description: Zustände toter Tiere
+          items:
+            type: object
+            properties:
+              value:
+                type: integer
+              label:
+                type: string
+        totfund_geschlecht:
+          type: array
+          description: Geschlechtsangaben
+          items:
+            type: object
+            properties:
+              value:
+                type: integer
+              label:
+                type: string
+
+    LegacySightingResponse:
+      type: object
+      title: Legacy Sichtungsantwort
+      description: |
+        Sichtungsdaten im Legacy-Format für showreports.json Endpunkt.
+        Feldnamen entsprechen exakt der PDF-Spezifikation.
+      required:
+        - id
+        - datum
+        - uhrzeit
+        - anzahlGesamt
+        - anzahlJung
+        - tierart
+        - totfund
+      properties:
+        id:
+          type: integer
+          description: Eindeutige Sichtungs-ID
+          example: 1840
+        datum:
+          type: string
+          description: 'Sichtungsdatum im Format DD.MM.YYYY'
+          pattern: '^\d{2}\.\d{2}\.\d{4}$'
+          example: "01.01.2024"
+        uhrzeit:
+          type: string
+          description: 'Sichtungszeit im Format HH:MM'
+          pattern: '^\d{2}:\d{2}$'
+          example: "14:30"
+        breitengrad:
+          type: number
+          format: float
+          description: Breitengrad (nur wenn verfügbar)
+          example: 54.3233
+        laengengrad:
+          type: number
+          format: float
+          description: Längengrad (nur wenn verfügbar)
+          example: 13.0814
+        anzahlGesamt:
+          type: integer
+          description: Gesamtanzahl der Tiere
+          minimum: 0
+          example: 3
+        anzahlJung:
+          type: integer
+          description: Anzahl der Jungtiere
+          minimum: 0
+          example: 1
+        tierart:
+          type: integer
+          description: Tierart-ID
+          minimum: 0
+          example: 0
+        totfund:
+          type: integer
+          description: 'Totfund-Flag (0=nein, 1=ja)'
+          enum: [0, 1]
+          example: 0
+        beobachterName:
+          type: string
+          description: 'Name des Beobachters (nur bei Einverständnis)'
+          example: "Max Mustermann"
+        gebiet:
+          type: string
+          description: Gebiet/Gewässer
+          example: "Greifswalder Bodden"
+        schiffsname:
+          type: string
+          description: 'Schiffsname (nur bei Einverständnis)'
+          example: "MS Baltic"

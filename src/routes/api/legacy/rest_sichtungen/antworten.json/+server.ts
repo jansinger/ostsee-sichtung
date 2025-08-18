@@ -16,6 +16,7 @@ import { AnimalConditionEnum, animalConditionLabels } from '$lib/report/formOpti
 import { BoatDriveEnum, boatDriveLabels } from '$lib/report/formOptions/boatDrive';
 import { DistanceEnum, distanceLabels } from '$lib/report/formOptions/distance';
 import { DistributionEnum, distributionLabels } from '$lib/report/formOptions/distribution';
+import { EntryChannelEnum, entryChannelLabels } from '$lib/report/formOptions/entryChannel';
 import { SeaStateEnum, seaStateLabels } from '$lib/report/formOptions/seaState';
 import { SexEnum, sexLabels } from '$lib/report/formOptions/sex';
 import { SightingFromEnum, sightingFromLabels } from '$lib/report/formOptions/sightingFrom';
@@ -54,8 +55,8 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				}))
 				.sort((a, b) => a.value - b.value),
 
-			// Observation location mapping (beobachtungsort)
-			beobachtungsort: Object.entries(SightingFromEnum)
+			// Observation location mapping (vonwo)
+			vonwo: Object.entries(SightingFromEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.map(([_key, value]) => ({
 					value: value as number,
@@ -140,8 +141,17 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				}))
 				.sort((a, b) => a.value - b.value),
 
-			// Dead animal condition mapping (totfundZustand)
-			totfundZustand: Object.entries(AnimalConditionEnum)
+			// Entry channel mapping (eingangskanal)
+			eingangskanal: Object.entries(EntryChannelEnum)
+				.filter(([_key, value]) => typeof value === 'number')
+				.map(([_key, value]) => ({
+					value: value as number,
+					label: entryChannelLabels[value as EntryChannelEnum]
+				}))
+				.sort((a, b) => a.value - b.value),
+
+			// Dead animal condition mapping (totfund_zustand)
+			totfund_zustand: Object.entries(AnimalConditionEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.map(([_key, value]) => ({
 					value: value as number,
@@ -149,8 +159,8 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				}))
 				.sort((a, b) => a.value - b.value),
 
-			// Dead animal sex mapping (totfundGeschlecht)
-			totfundGeschlecht: Object.entries(SexEnum)
+			// Dead animal sex mapping (totfund_geschlecht)
+			totfund_geschlecht: Object.entries(SexEnum)
 				.filter(([_key, value]) => typeof value === 'number')
 				.map(([_key, value]) => ({
 					value: value as number,
@@ -162,7 +172,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		logger.info({ 
 			optionCounts: {
 				tierart: responseOptions.tierart.length,
-				beobachtungsort: responseOptions.beobachtungsort.length,
+				vonwo: responseOptions.vonwo.length,
 				entfernung: responseOptions.entfernung.length,
 				verteilung: responseOptions.verteilung.length,
 				verhalten: responseOptions.verhalten.length,
@@ -171,8 +181,9 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				windstaerke: responseOptions.windstaerke.length,
 				sichtweite: responseOptions.sichtweite.length,
 				bootsantrieb: responseOptions.bootsantrieb.length,
-				totfundZustand: responseOptions.totfundZustand.length,
-				totfundGeschlecht: responseOptions.totfundGeschlecht.length
+				eingangskanal: responseOptions.eingangskanal.length,
+				totfund_zustand: responseOptions.totfund_zustand.length,
+				totfund_geschlecht: responseOptions.totfund_geschlecht.length
 			},
 			ip: clientIp 
 		}, 'Legacy response options generated successfully');

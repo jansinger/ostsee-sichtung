@@ -15,7 +15,6 @@ import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { and, between, eq, gte, lt, sql } from 'drizzle-orm';
 import { json, type RequestEvent } from '@sveltejs/kit';
-import { mapCurrentToLegacySchema } from '../../field-mapping/index.js';
 import type { LegacySightingResponse } from '../../field-mapping/types.js';
 
 const logger = createLogger('api:legacy:showreports');
@@ -251,9 +250,45 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			.limit(1000); // Reasonable limit to prevent abuse
 
 		// Transform to legacy format
-		const legacySightings: LegacySightingResponse[] = dbSightings.map(sighting => 
-			mapCurrentToLegacySchema(sighting)
-		);
+		const legacySightings: LegacySightingResponse[] = dbSightings.map(sighting => {
+			// Split datetime back into date and time components
+			const date = new Date(sighting.sichtungsdatum);
+			
+			// Format date as DD.MM.YYYY for legacy API
+			const datum = date.toLocaleDateString('de-DE', {
+				day: '2-digit',
+				month: '2-digit', 
+				year: 'numeric'
+			});
+
+			// Format time as HH:MM for legacy API
+			const uhrzeit = date.toLocaleTimeString('de-DE', {
+				hour: '2-digit',
+				minute: '2-digit',
+				hour12: false
+			});
+
+			return {
+				id: sighting.id,
+				datum,
+				uhrzeit,
+				breitengrad: Number(sighting.latitude) || 0,
+				laengengrad: Number(sighting.longitude) || 0,
+				anzahlGesamt: sighting.totalCount || 0,
+				anzahlJung: sighting.juvenileCount || 0,
+				tierart: sighting.species || 0,
+				totfund: sighting.isDead ? 1 : 0,
+				
+				// Conditional fields based on consent
+				beobachterName: sighting.nameConsent 
+					? `${sighting.firstName || ''} ${sighting.lastName || ''}`.trim()
+					: '',
+				gebiet: sighting.waterway || '',
+				schiffsname: sighting.shipNameConsent 
+					? sighting.shipName || ''
+					: ''
+			};
+		});
 
 		logger.info({ 
 			totalResults: legacySightings.length,
