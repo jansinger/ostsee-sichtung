@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.10.0 (2025-08-18)
+
+* Merge pull request #38 from jansinger/fix/workflow-yaml-syntax ([c1d227c](https://github.com/jansinger/ostsee-sichtung/commit/c1d227c)), closes [#38](https://github.com/jansinger/ostsee-sichtung/issues/38)
+* refactor: streamline license notice generation process ([5b61040](https://github.com/jansinger/ostsee-sichtung/commit/5b61040))
+* refactor(build): move license generation script to src/tools ([ce99d7b](https://github.com/jansinger/ostsee-sichtung/commit/ce99d7b))
+* fix: only run FOSS on PUSH ([a7aff0b](https://github.com/jansinger/ostsee-sichtung/commit/a7aff0b))
+* fix(ci): make THIRD-PARTY-NOTICES date-agnostic for stable CI ([6e0963a](https://github.com/jansinger/ostsee-sichtung/commit/6e0963a))
+* fix(ci): properly handle private package in license checks ([4f206e5](https://github.com/jansinger/ostsee-sichtung/commit/4f206e5))
+* fix(ci): resolve license compliance issues with smart filtering ([4877231](https://github.com/jansinger/ostsee-sichtung/commit/4877231))
+* fix(ci): resolve YAML boolean expression syntax errors ([db670e9](https://github.com/jansinger/ostsee-sichtung/commit/db670e9))
+* fix(security): extend allowed licenses for complete FOSS compliance ([873036a](https://github.com/jansinger/ostsee-sichtung/commit/873036a))
+* fix(security): resolve critical and moderate npm vulnerabilities ([72ff2a5](https://github.com/jansinger/ostsee-sichtung/commit/72ff2a5))
+* feat(security): implement comprehensive FOSS compliance system ([751daac](https://github.com/jansinger/ostsee-sichtung/commit/751daac))
+
 ## 1.9.0 (2025-08-18)
 
 * Merge pull request #31 from jansinger/dependabot/npm_and_yarn/rollup/rollup-linux-x64-gnu-4.46.3 ([1c9124d](https://github.com/jansinger/ostsee-sichtung/commit/1c9124d)), closes [#31](https://github.com/jansinger/ostsee-sichtung/issues/31)
