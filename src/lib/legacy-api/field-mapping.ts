@@ -19,12 +19,13 @@ import type { LegacySightingRequest } from './types.js';
  * @returns Transformed data in current schema format
  */
 export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): SightingFormData {
-	// Parse the single datetime field (YYYY-MM-DD HH:MI) into ISO format
-	const sightingDate = parseLegacyDateTime(legacyData.sichtungsdatum);
+	// Parse the single datetime field (YYYY-MM-DD HH:MI) into separate date and time
+	const { sightingDate, sightingTime } = parseLegacyDateTimeToFields(legacyData.sichtungsdatum);
 
 	return {
 		// Date and location
 		sightingDate,
+		sightingTime,
 		latitude: legacyData.gps_breite || 0,
 		longitude: legacyData.gps_laenge || 0,
 		waterway: legacyData.fahrwasser || '',
@@ -105,12 +106,12 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 }
 
 /**
- * Parses legacy datetime string (YYYY-MM-DD HH:MI) into ISO datetime string
+ * Parses legacy datetime string (YYYY-MM-DD HH:MI) into separate date and time fields
  * 
  * @param datetime - DateTime in "YYYY-MM-DD HH:MI" format
- * @returns ISO datetime string for current schema
+ * @returns Object with separate sightingDate and sightingTime fields
  */
-function parseLegacyDateTime(datetime: string): string {
+function parseLegacyDateTimeToFields(datetime: string): { sightingDate: string; sightingTime: string } {
 	// Split datetime into date and time parts
 	const parts = datetime.trim().split(' ');
 	if (parts.length !== 2) {
@@ -119,18 +120,6 @@ function parseLegacyDateTime(datetime: string): string {
 	
 	const date = parts[0]!;
 	const time = parts[1]!;
-	return combineDateAndTime(date, time);
-}
-
-/**
- * Combines legacy date (YYYY-MM-DD) and time (HH:MM) into ISO datetime string
- * 
- * @param date - Date in YYYY-MM-DD format
- * @param time - Optional time in HH:MM format (defaults to 12:00)
- * @returns ISO datetime string for current schema
- */
-function combineDateAndTime(date: string, time?: string): string {
-	const timeStr = time || '12:00'; // Default to noon if no time provided
 	
 	// Validate date format (YYYY-MM-DD)
 	const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -138,26 +127,17 @@ function combineDateAndTime(date: string, time?: string): string {
 		throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
 	}
 	
-	// Validate actual date values  
-	const testDate = new Date(date + 'T00:00:00.000Z');
-	if (isNaN(testDate.getTime()) || testDate.toISOString().slice(0, 10) !== date) {
-		throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
-	}
-
 	// Validate time format (HH:MM)
 	const timeRegex = /^\d{2}:\d{2}$/;
-	if (!timeRegex.test(timeStr)) {
-		throw new Error(`Invalid time format: ${timeStr}. Expected HH:MM`);
+	if (!timeRegex.test(time)) {
+		throw new Error(`Invalid time format: ${time}. Expected HH:MM`);
 	}
 	
-	// Validate actual time values
-	const timeParts = timeStr.split(':').map(Number);
-	const hours = timeParts[0];
-	const minutes = timeParts[1];
-	if (hours == null || minutes == null || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-		throw new Error(`Invalid time format: ${timeStr}. Expected HH:MM`);
-	}
-
-	// Combine and return as ISO string (compatible with current schema)
-	return `${date}T${timeStr}:00.000Z`;
+	// Return ISO date string and time string
+	return {
+		sightingDate: new Date(date + 'T12:00:00.000Z').toISOString(), // Use date at noon UTC to prevent timezone issues
+		sightingTime: time
+	};
 }
+
+
