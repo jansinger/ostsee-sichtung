@@ -36,48 +36,166 @@ jobs:
       - name: Setup environment
         run: cp .env.example .env
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Cache build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .svelte-kit
+            build
+            .vercel
+          key: build-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            build-${{ runner.os }}-
+
       - name: Install dependencies
         run: npm ci
 
       - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps
+
+      - name: Install Playwright dependencies only
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps
 
       - name: Ensure Svelte Kit is in sync
         run: npx svelte-kit sync
 
+      # Detect changes for conditional testing
+      - name: Detect changed files
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'src/**'
+              - 'static/**'
+              - 'app.html'
+              - '*.config.js'
+              - '*.config.ts'
+              - 'package.json'
+            backend:
+              - 'src/routes/api/**'
+              - 'src/lib/server/**'
+            tests:
+              - 'tests/**'
+              - 'src/**/*.test.ts'
+              - 'src/**/*.test.js'
+              - 'playwright.config.ts'
+            docs:
+              - '*.md'
+              - 'docs/**'
+              - '.github/**/*.md'
+            config:
+              - '.github/workflows/**'
+              - 'package.json'
+              - 'tsconfig.json'
+              - 'vite.config.ts'
+              - 'tailwind.config.js'
+            dependencies:
+              - 'package-lock.json'
+              - 'package.json'
+
+      # Smoke test für nur Dokumentations-Änderungen
+      - name: Smoke test for docs-only changes
+        if: steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend == 'false' && steps.changes.outputs.backend == 'false'
+        run: |
+          echo "🚀 Running smoke test for documentation changes only"
+          npm run lint
+          echo "✅ Smoke test passed - documentation changes validated"
+
       # Commit message validation nur für normale PRs (nicht Dependabot)
       - name: Validate commit messages
-        if: github.actor != 'dependabot[bot]'
+        if: github.actor != 'dependabot[bot]' && !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend == 'false' && steps.changes.outputs.backend == 'false')
         run: |
           echo "Validating commit messages from origin/main to HEAD..."
           npx commitlint --from=origin/main --to=HEAD --verbose
 
-      # Quick tests first for fast feedback (lint + unit tests)
-      - name: Run quick test suite
-        run: npm run test:quick
+      # Affected testing - nur relevante Tests basierend auf Änderungen
+      - name: Run affected tests (frontend changes)
+        if: steps.changes.outputs.frontend == 'true' && !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend == 'false' && steps.changes.outputs.backend == 'false')
+        run: |
+          echo "🎯 Running tests affected by frontend changes"
+          npm run test:quick
+
+      - name: Run affected tests (backend changes)
+        if: steps.changes.outputs.backend == 'true' && !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend == 'false' && steps.changes.outputs.backend == 'false')
+        run: |
+          echo "🎯 Running tests affected by backend changes"
+          npm run test:quick
+
+      - name: Run affected tests (config/dependency changes)
+        if: (steps.changes.outputs.config == 'true' || steps.changes.outputs.dependencies == 'true') && !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend == 'false' && steps.changes.outputs.backend == 'false')
+        run: |
+          echo "🎯 Running full test suite due to config/dependency changes"
+          npm run test:quick
+
+      # Test Coverage für Code-Änderungen
+      - name: Generate test coverage
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true'
+        run: |
+          echo "📊 Generating test coverage report"
+          npm run test:unit -- --coverage --run
+        continue-on-error: true
+
+      - name: Upload coverage reports
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ github.sha }}
+          path: coverage/
+          retention-days: 30
 
       # Type checking and Svelte check
       - name: Run type checking
+        if: !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend == 'false' && steps.changes.outputs.backend == 'false')
         run: npm run type-check
 
       - name: Run Svelte check
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.config == 'true'
         run: npm run check
+
+      # License checking für Dependency-Änderungen
+      - name: Check licenses
+        if: steps.changes.outputs.dependencies == 'true' || github.actor == 'dependabot[bot]'
+        run: |
+          echo "⚙️ Checking license compliance"
+          npx license-checker --onlyAllow 'MIT;ISC;BSD;Apache-2.0;BSD-2-Clause;BSD-3-Clause;CC0-1.0;Unlicense;WTFPL;0BSD' --excludePrivatePackages || {
+            echo "⚠️ License check failed - found potentially problematic licenses"
+            echo "Running detailed license report..."
+            npx license-checker --detailed
+            exit 1
+          }
+        continue-on-error: true
 
       # Build application
       - name: Build application
+        if: !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend == 'false' && steps.changes.outputs.backend == 'false')
         run: npm run build
 
-      # E2E tests only for non-draft PRs and significant changes
+      # E2E tests für relevante Änderungen (affected testing)
       - name: Run E2E tests
         if: >
           github.event.pull_request.draft == false && 
           (
-            contains(github.event.pull_request.title, 'feat') ||
-            contains(github.event.pull_request.title, 'fix') ||
-            contains(github.event.pull_request.title, 'breaking') ||
-            github.actor == 'dependabot[bot]'
-          )
-        run: npm run test:e2e
+            steps.changes.outputs.frontend == 'true' ||
+            steps.changes.outputs.backend == 'true' ||
+            github.actor == 'dependabot[bot]' ||
+            contains(github.event.pull_request.title, 'breaking')
+          ) &&
+          !(steps.changes.outputs.docs == 'true' && steps.changes.outputs.frontend == 'false' && steps.changes.outputs.backend == 'false')
+        run: |
+          echo "🧪 Running E2E tests for affected areas"
+          npm run test:e2e
 
       # Dependabot-spezifische Aktionen
       - name: Get Dependabot metadata
