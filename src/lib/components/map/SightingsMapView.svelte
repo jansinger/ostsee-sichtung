@@ -9,6 +9,7 @@
 	import { speciesLabels } from '$lib/report/formOptions/species';
 	import 'ol/ol.css';
 	import { onMount } from 'svelte';
+	import { getAvailableYears, getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 
 	// Props
 	let { 
@@ -66,14 +67,9 @@
 	let isLoadingData = $state(false);
 	let errorMessage = $state<string | null>(null);
 
-	// Verfügbare Jahre für den Filter
-	let years: number[] = [];
-	const currentYear = new Date().getFullYear();
-
-	// Initialisiere die Jahre für den Filter (10 Jahre zurück)
-	for (let i = 0; i < 10; i++) {
-		years.unshift(currentYear - i);
-	}
+	// Verfügbare Jahre für den Filter (10 Jahre zurück)
+	const years = getAvailableYears(10);
+	const defaultYear = getDefaultSightingYear();
 
 	// Initialisiere die Karte und Manager beim Mounten der Komponente
 	onMount(() => {
@@ -277,7 +273,7 @@
 	</div>
 
 	<!-- Filter-Panel Komponente -->
-	<FilterPanel {years} />
+	<FilterPanel {years} {defaultYear} />
 
 	<!-- Legende-Panel Komponente -->
 	<LegendPanel {translations} {counts} />

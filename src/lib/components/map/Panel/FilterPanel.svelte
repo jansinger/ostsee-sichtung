@@ -2,8 +2,12 @@
 	import { Filter, SquareX } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
-	let { years = [] } = $props<{
+	let { 
+		years = [],
+		defaultYear
+	} = $props<{
 		years?: number[];
+		defaultYear?: number;
 	}>();
 
 	// Reactive state für Panel-Sichtbarkeit (Svelte 5 runes)
@@ -69,7 +73,7 @@
 						title="Wählen Sie das Jahr aus, für das Sichtungen angezeigt werden sollen"
 					>
 						{#each years.toReversed() as year (year)}
-							<option value={year}>{year}</option>
+							<option value={year} selected={year === defaultYear}>{year}</option>
 						{/each}
 					</select>
 				</div>

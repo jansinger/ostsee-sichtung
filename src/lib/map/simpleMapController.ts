@@ -12,6 +12,7 @@ import type { MapTranslations } from './mapUtils';
 import { MapDataLoader } from './dataLoader';
 import { MapPopup } from './popup';
 import { styleFunction } from './styles';
+import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 
 export interface SimpleMapOptions {
 	target: string;
@@ -175,7 +176,7 @@ export class SimpleMapController {
 		try {
 			this.vectorSource.clear();
 			
-			const features = await this.dataLoader.loadSightingsForYear(year || new Date().getFullYear());
+			const features = await this.dataLoader.loadSightingsForYear(year || getDefaultSightingYear());
 			this.vectorSource.addFeatures(features);
 
 			// Fit to data if we have features

@@ -16,6 +16,7 @@ import { Circle, Fill, Stroke, Style, Text } from 'ol/style';
 // import type { ZoomAllControl } from './controls/ZoomAllControl.js';
 import type { MapTranslations } from './mapUtils';
 import { createFeatureStyle, getFeatureColorGroup } from './styleUtils';
+import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 
 /**
  * Interface für die Eigenschaften einer Sichtung
@@ -150,7 +151,7 @@ export class SichtungenMap {
 		const defaultZoom = 7;
 
 		// Initialize the timeFilter with sensible defaults (zeige das ganze Jahr)
-		this.displayedYear = new Date().getFullYear();
+		this.displayedYear = getDefaultSightingYear();
 		const yearStart = new Date(this.displayedYear, 0, 1).getTime();
 		const yearEnd = new Date(this.displayedYear, 11, 31, 23, 59, 59).getTime();
 		this.timeFilter = {
@@ -556,6 +557,9 @@ export class SichtungenMap {
 		if (options.yearSelectorId) {
 			const yearSelect = document.getElementById(options.yearSelectorId) as HTMLSelectElement;
 			if (yearSelect) {
+				// Setze das Default-Jahr im Dropdown
+				yearSelect.value = this.displayedYear.toString();
+				
 				yearSelect.addEventListener('change', (event) => {
 					const target = event.target as HTMLSelectElement;
 					this.setYear(parseInt(target.value));
