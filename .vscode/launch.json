@@ -2,119 +2,55 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "Launch Chrome",
 			"type": "chrome",
 			"request": "launch",
-			"name": "🌐 Client (Chrome)",
 			"url": "https://localhost:4000",
-			"webRoot": "${workspaceFolder}",
-			"sourceMaps": true,
-			"userDataDir": false,
-			"runtimeArgs": [
-				"--disable-web-security",
-				"--ignore-certificate-errors"
-			],
-			"sourceMapPathOverrides": {
-				"vite:///src/*": "${webRoot}/src/*",
-				"/@fs/*": "*",
-				"/src/*": "${webRoot}/src/*",
-				"/./*": "${webRoot}/*",
-				"/*": "*",
-				"*": "${webRoot}/*"
-			}
+			"webRoot": "${workspaceFolder}"
 		},
 		{
+			"name": "Attach to Chrome",
+			"type": "chrome",
+			"request": "attach",
+			"port": 9222,
+			"webRoot": "${workspaceFolder}"
+		},
+		{
+			"name": "Debug Server",
 			"type": "node",
 			"request": "launch",
-			"name": "🚀 Server (Node)",
 			"runtimeExecutable": "npm",
 			"runtimeArgs": ["run", "dev"],
-			"cwd": "${workspaceFolder}",
 			"console": "integratedTerminal",
-			"restart": true,
-			"sourceMaps": true,
-			"autoAttachChildProcesses": true,
-			"skipFiles": [
-				"<node_internals>/**",
-				"**/node_modules/**",
-				"**/.svelte-kit/**"
-			],
-			"smartStep": true,
-			"resolveSourceMapLocations": [
-				"${workspaceFolder}/**",
-				"!**/node_modules/**"
-			],
-			"outFiles": [
-				"${workspaceFolder}/.svelte-kit/**/*.js"
-			],
-			"env": {
-				"NODE_ENV": "development",
-				"VITE_DEBUG": "true"
-			}
-		},
-		{
-			"name": "⚡ Full Stack (Auto)",
-			"type": "node-terminal",
-			"request": "launch",
-			"command": "npm run dev",
-			"cwd": "${workspaceFolder}",
 			"serverReadyAction": {
 				"pattern": "Local:\\s+(https://localhost:(\\d+))",
 				"uriFormat": "%s",
-				"action": "debugWithChrome"
-			},
-			"presentation": {
-				"hidden": false,
-				"group": "SvelteKit",
-				"order": 1
+				"action": "openExternally"
 			}
 		},
 		{
-			"type": "chrome",
-			"request": "attach",
-			"name": "🔗 Attach to Chrome",
-			"port": 9222,
-			"webRoot": "${workspaceFolder}",
-			"sourceMaps": true,
-			"sourceMapPathOverrides": {
-				"vite:///src/*": "${webRoot}/src/*",
-				"/@fs/*": "*",
-				"/src/*": "${webRoot}/src/*",
-				"/./*": "${webRoot}/*",
-				"/*": "*",
-				"*": "${webRoot}/*"
-			}
-		},
-		{
+			"name": "Full Stack",
 			"type": "node",
-			"request": "attach",
-			"name": "🔧 Debug SvelteKit Server",
-			"port": 9229,
-			"restart": true,
-			"sourceMaps": true,
-			"localRoot": "${workspaceFolder}",
-			"remoteRoot": "${workspaceFolder}",
-			"skipFiles": [
-				"<node_internals>/**",
-				"**/node_modules/**"
-			],
-			"resolveSourceMapLocations": [
-				"${workspaceFolder}/src/**",
-				"!**/node_modules/**"
-			],
-			"outFiles": [
-				"${workspaceFolder}/.svelte-kit/**/*.js",
-				"${workspaceFolder}/build/**/*.js"
-			]
+			"request": "launch",
+			"runtimeExecutable": "npm",
+			"runtimeArgs": ["run", "dev"],
+			"console": "integratedTerminal",
+			"serverReadyAction": {
+				"pattern": "Local:\\s+(https://localhost:(\\d+))",
+				"uriFormat": "%s",
+				"action": "debugWithChrome",
+				"webRoot": "${workspaceFolder}"
+			}
 		}
 	],
 	"compounds": [
 		{
-			"name": "🔥 Full Stack Debug",
-			"configurations": ["🚀 Server (Node)", "🌐 Client (Chrome)"],
+			"name": "Full Stack (Alternative)",
+			"configurations": ["Debug Server", "Launch Chrome"],
 			"stopAll": true,
 			"presentation": {
 				"hidden": false,
-				"group": "Compound",
+				"group": "Full Stack",
 				"order": 1
 			}
 		}

@@ -15,27 +15,14 @@ export default defineConfig({
 			certDir: './certs'
 		})
 	],
-	// Enable source maps in development for debugging
-	define: {
-		__DEV__: process.env.NODE_ENV === 'development'
-	},
 	server: {
 		host: 'localhost',
 		port: 4000,
-		sourcemapIgnoreList: false,
 		hmr: {
 			overlay: true
 		}
 	},
-	// Better source maps for debugging
-	esbuild: {
-		sourcemap: true
-	},
-	css: {
-		devSourcemap: true
-	},
 	build: {
-		sourcemap: true,
 		rollupOptions: {
 			// Suppresses some warnings for better build logs
 			onwarn(warning, warn) {
