@@ -20,5 +20,13 @@
 	},
 	"svelte.enable-ts-plugin": true,
 	"eslint.useFlatConfig": true,
-	"eslint.debug": true
+	"eslint.debug": true,
+	"debug.javascript.suggestPrettyPrinting": false,
+	"debug.javascript.breakOnConditionalError": true,
+	"debug.javascript.unmapMissingSources": true,
+	"debug.javascript.pauseForSourceMap": false,
+	"debug.javascript.resolveSourceMapLocations": [
+		"${workspaceFolder}/**",
+		"!**/node_modules/**"
+	]
 }

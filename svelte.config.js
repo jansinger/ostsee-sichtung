@@ -6,6 +6,10 @@ const config = {
 	// Consult https://svelte.dev/docs/kit/integrations
 	// for more information about preprocessors
 	preprocess: vitePreprocess(),
+	compilerOptions: {
+		// Enable development mode for better debugging
+		dev: process.env.NODE_ENV === 'development'
+	},
 	kit: {
 		adapter: adapter(),
 
@@ -14,7 +18,11 @@ const config = {
 			mode: 'auto',
 			directives: {
 				'default-src': ["'self'"],
-				'script-src': ["'self'", "'wasm-unsafe-eval'"],
+				'script-src': [
+					"'self'",
+					"'wasm-unsafe-eval'",
+					...(process.env.NODE_ENV === 'development' ? ["'unsafe-eval'"] : [])
+				],
 				'style-src': ["'self'", "'unsafe-inline'", 'https://openlayers.org'],
 				'img-src': [
 					"'self'",
