@@ -51,7 +51,7 @@ export const formStepsConfig: FormStep[] = [
 			'deadCondition',
 			'deadSex',
 			'deadSize',
-			'informedAuthorities'
+			'deadPhoneContact'
 		]
 	},
 	{

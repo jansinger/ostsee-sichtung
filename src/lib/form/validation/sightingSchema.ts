@@ -1,14 +1,14 @@
 /**
  * @fileoverview Yup-Validierungsschema für Sichtungsformulare
- * 
+ *
  * Dieses Modul definiert das zentrale Validierungsschema für alle Sichtungsformulare
  * in der Ostsee-Tiere-Anwendung. Es nutzt Yup für typsichere Validierung und
  * umfasst alle Felder vom GPS-Koordinaten bis zu Kontaktdaten.
- * 
+ *
  * Das Schema ist in logische Abschnitte unterteilt und bietet sowohl Frontend-
  * als auch Backend-Validierung mit detaillierten Fehlermeldungen und Metadaten
  * für die automatische UI-Generierung.
- * 
+ *
  * @author Ostsee-Tiere Team
  * @since 1.0.0
  */
@@ -59,7 +59,6 @@ import {
 	Navigation,
 	Navigation2,
 	Phone,
-	PhoneCall,
 	ShieldCheck,
 	Ship,
 	Skull,
@@ -76,12 +75,12 @@ import * as yup from 'yup';
 
 /**
  * Basis-Validierungsschema für Sichtungsformulare
- * 
+ *
  * Definiert alle Validierungsregeln für die Erfassung von Meerestier-Sichtungen
  * mit umfassender Abdeckung von GPS-Daten, Umweltbedingungen, Tier-Details
  * und Kontaktinformationen. Jedes Feld enthält Metadaten für automatische
  * UI-Generierung und mehrsprachige Fehlermeldungen.
- * 
+ *
  * @type {yup.ObjectSchema} Yup-Schema mit allen Sichtungsfeldern
  */
 export const sightingSchemaBase = yup.object().shape({
@@ -99,14 +98,14 @@ export const sightingSchemaBase = yup.object().shape({
 		.array()
 		.of(
 			yup.object().shape({
-				filePath: yup.string().required(),     // Dateipfad im Storage
+				filePath: yup.string().required(), // Dateipfad im Storage
 				originalName: yup.string().required(), // Ursprünglicher Dateiname
-				fileName: yup.string().optional(),     // Interner Dateiname
-				mimeType: yup.string().required(),     // MIME-Type (image/jpeg, etc.)
-				size: yup.number().required(),         // Dateigröße in Bytes
-				url: yup.string().optional(),          // Öffentliche URL
-				uploadedAt: yup.string().optional(),   // Upload-Zeitstempel
-				exifData: yup.mixed().optional()       // EXIF-Metadaten als JSONB
+				fileName: yup.string().optional(), // Interner Dateiname
+				mimeType: yup.string().required(), // MIME-Type (image/jpeg, etc.)
+				size: yup.number().required(), // Dateigröße in Bytes
+				url: yup.string().optional(), // Öffentliche URL
+				uploadedAt: yup.string().optional(), // Upload-Zeitstempel
+				exifData: yup.mixed().optional() // EXIF-Metadaten als JSONB
 			})
 		)
 		.optional()
@@ -416,10 +415,10 @@ export const sightingSchemaBase = yup.object().shape({
 		}),
 
 	/**
-	 * Wurden die Behörden bei einem Totfund informiert
-	 * Optional, Boolean-Wert, relevant bei Totfunden
+	 * Gibt an, ob bei einem Totfund bereits telefonisch Kontakt aufgenommen wurde
+	 * Optional, Boolean-Wert
 	 */
-	informedAuthorities: yup
+	deadPhoneContact: yup
 		.boolean()
 		.label('Meeresmuseum informiert')
 		.meta({
@@ -1023,20 +1022,6 @@ export const sightingSchemaBase = yup.object().shape({
 			icon: MessageCircle
 		})
 		.notRequired(),
-
-	/**
-	 * Gibt an, ob bei einem Totfund telefonisch Kontakt aufgenommen werden soll
-	 * Optional, Boolean-Wert
-	 */
-	deadPhoneContact: yup
-		.boolean()
-		.label('Telefonkontakt bei Totfund')
-		.meta({
-			helpText: 'Dürfen wir Sie bei Totfunden anrufen?',
-			valueText: 'Ermöglicht schnelle Koordination von Bergungsmaßnahmen',
-			icon: PhoneCall
-		})
-		.default(false),
 
 	privacyConsent: yup
 		.boolean()
