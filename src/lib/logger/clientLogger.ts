@@ -1,9 +1,15 @@
+import { dev } from '$app/environment';
 import pino from 'pino';
 
 export const createClientLogger = (context: string) => {
+	// In development mode, ensure debug logs are visible
+	const level = dev ? 'debug' : 'info';
+
 	return pino({
-		level: 'debug',
+		level,
 		base: { context },
-		browser: { asObject: true }
+		browser: {
+			asObject: true
+		}
 	});
 };

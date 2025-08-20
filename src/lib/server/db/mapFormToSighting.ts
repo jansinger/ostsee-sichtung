@@ -114,8 +114,10 @@ export function mapFormToSighting(formData: SightingFormData): NewSighting {
 		privacyConsent: formData.privacyConsent ? 1 : 0,
 
 		// Weitere Felder mit Standardwerten
-		entryChannel: Number(EntryChannelEnum.WEB), // Web-Formular
-		verified: 0, // Initial nicht verifiziert
+		entryChannel: formData.entryChannel
+			? Number(formData.entryChannel)
+			: Number(EntryChannelEnum.WEB), // Web-Formular
+		verified: formData.verified ? 1 : 0, // Initial nicht verifiziert
 		inBalticSea: inBaltic ? 1 : 0, // Annahme, dass es nicht in der Ostsee ist
 		inBalticSeaGeo: inChartArea ? 1 : 0, // Annahme, dass es nicht im Chart-Bereich ist,
 		deadPhoneContact: formData.deadPhoneContact ? 1 : 0,

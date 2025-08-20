@@ -1,4 +1,5 @@
 import { createLogger } from '$lib/logger';
+import { readImageExifData } from '$lib/server/media/exifUtils';
 import { getStorageProvider } from '$lib/server/storage/factory';
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
@@ -30,6 +31,9 @@ const ALLOWED_VIDEO_TYPES = [
 ];
 const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 100MB
+
+// Get storage provider and upload file
+const storage = getStorageProvider();
 
 // Dateivalidierung (aus api/upload übernommen)
 function validateFile(file: File): string[] {
@@ -71,6 +75,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		const formData = await request.formData();
 		const file = formData.get('file') as File;
 		const referenceId = formData.get('referenceId') as string;
+		const uid = formData.get('uid') as string;
 
 		if (!file) {
 			throw error(400, 'Keine Datei hochgeladen');
@@ -79,6 +84,9 @@ export const POST: RequestHandler = async ({ request }) => {
 		if (!referenceId) {
 			throw error(400, 'Reference ID ist erforderlich');
 		}
+		if (!uid) {
+			throw error(400, 'Upload ID ist erforderlich');
+		}
 
 		// Validierung der Datei
 		const validationErrors = validateFile(file);
@@ -86,27 +94,30 @@ export const POST: RequestHandler = async ({ request }) => {
 			throw error(400, validationErrors.join(' '));
 		}
 
-		// await new Promise((f) => setTimeout(f, 5000));
+		await new Promise((f) => setTimeout(f, 5000));
 
-		// Get storage provider and upload file
-		const storage = getStorageProvider();
-		const uploadedFile = await storage.upload(file, {
-			referenceId,
-			preserveOriginalName: false,
-			generateThumbnail: false,
-			extractExif: true
-		});
+		const fileBuffer = await file.arrayBuffer();
+		const buffer = Buffer.from(fileBuffer);
+
+		const [uploadedFile, metadata] = await Promise.all([
+			storage.upload(file, buffer, {
+				referenceId,
+				preserveOriginalName: false
+			}),
+			readImageExifData(buffer)
+		]);
 
 		logger.info(
 			{
 				fileInfo: uploadedFile,
 				referenceId,
+				uid,
 				size: file.size
 			},
 			'Datei erfolgreich hochgeladen'
 		);
 
-		return json(uploadedFile);
+		return json({ ...uploadedFile, uid, exifData: metadata });
 	} catch (err) {
 		if (err instanceof Response) {
 			throw err; // Re-throw SvelteKit errors
@@ -116,24 +127,3 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(500, 'Interner Server-Fehler beim Datei-Upload');
 	}
 };
-
-/**
- * Sanitize filename to prevent path traversal attacks
- * Currently unused with storage abstraction but kept for future use
- */
-function _sanitizeFileName(fileName: string): string {
-	return fileName
-		.replace(/[^a-zA-Z0-9.-]/g, '_') // Ersetze unsichere Zeichen
-		.replace(/\.{2,}/g, '.') // Verhindere mehrere Punkte
-		.replace(/^\./, '') // Entferne führenden Punkt
-		.slice(0, 100); // Limitiere Länge
-}
-
-/**
- * Get file extension with dot
- * Currently unused with storage abstraction but kept for future use
- */
-function _getFileExtension(fileName: string): string {
-	const lastDot = fileName.lastIndexOf('.');
-	return lastDot !== -1 ? fileName.substring(lastDot) : '';
-}

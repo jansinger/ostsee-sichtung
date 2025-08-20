@@ -30,6 +30,6 @@
 			<FormField name="deadSize" />
 		</div>
 
-		<FormField name="informedAuthorities" />
+		<FormField name="deadPhoneContact" />
 	</div>
 </div>

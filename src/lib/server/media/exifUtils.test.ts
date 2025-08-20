@@ -1,12 +1,13 @@
 /**
  * Unit Tests für exifUtils.ts
- * 
+ *
  * Testet die EXIF-Datenextraktion aus Bildern
  * mit Fokus auf Fehlerbehandlung und Edge Cases
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { readImageExifData, hasGPSData, isImageFile } from './exifUtils';
-import type { ExifDataRaw } from '$lib/types';
+import type { ExifData } from '$lib/types';
+import { isImageFile } from '$lib/utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { hasGPSData, readImageExifData } from './exifUtils';
 
 // Mock dependencies
 vi.mock('exifr', () => ({
@@ -228,7 +229,7 @@ describe('exifUtils', () => {
 			// Arrange
 			const mockBuffer = Buffer.from('image');
 			const mockExifData = {
-				Make: 'Sony',
+				Make: 'Sony'
 				// Keine GPS-Daten, kein Model, etc.
 			};
 
@@ -312,10 +313,10 @@ describe('exifUtils', () => {
 		it('sollte Flash-Werte korrekt interpretieren', async () => {
 			// Arrange & Act & Assert
 			const testCases = [
-				{ flash: 0, expected: false },  // Kein Blitz
-				{ flash: 1, expected: true },   // Blitz ausgelöst
-				{ flash: 5, expected: true },   // Blitz ausgelöst (andere Modi)
-				{ flash: 16, expected: false }, // Blitz nicht ausgelöst
+				{ flash: 0, expected: false }, // Kein Blitz
+				{ flash: 1, expected: true }, // Blitz ausgelöst
+				{ flash: 5, expected: true }, // Blitz ausgelöst (andere Modi)
+				{ flash: 16, expected: false } // Blitz nicht ausgelöst
 			];
 
 			const { default: exifr } = await import('exifr');
@@ -374,7 +375,7 @@ describe('exifUtils', () => {
 		 */
 		it('sollte true zurückgeben wenn GPS-Daten vorhanden', () => {
 			// Arrange
-			const exifData: ExifDataRaw = {
+			const exifData: ExifData = {
 				latitude: 54.123,
 				longitude: 12.456,
 				altitude: null,
@@ -394,7 +395,7 @@ describe('exifUtils', () => {
 		 */
 		it('sollte false zurückgeben wenn keine GPS-Daten vorhanden', () => {
 			// Arrange
-			const exifData: ExifDataRaw = {
+			const exifData: ExifData = {
 				latitude: null,
 				longitude: null,
 				altitude: 100,
@@ -414,7 +415,7 @@ describe('exifUtils', () => {
 		 */
 		it('sollte false zurückgeben wenn nur Latitude vorhanden', () => {
 			// Arrange
-			const exifData: ExifDataRaw = {
+			const exifData: ExifData = {
 				latitude: 54.123,
 				longitude: null,
 				altitude: null,
@@ -434,7 +435,7 @@ describe('exifUtils', () => {
 		 */
 		it('sollte false zurückgeben wenn nur Longitude vorhanden', () => {
 			// Arrange
-			const exifData: ExifDataRaw = {
+			const exifData: ExifData = {
 				latitude: null,
 				longitude: 12.456,
 				altitude: null,
@@ -465,7 +466,7 @@ describe('exifUtils', () => {
 		 */
 		it('sollte false zurückgeben für 0,0 Koordinaten (Null Island)', () => {
 			// Arrange
-			const exifData: ExifDataRaw = {
+			const exifData: ExifData = {
 				latitude: 0,
 				longitude: 0,
 				altitude: null,

@@ -2,40 +2,19 @@
  * Client-side file analysis utilities
  * Diese funktionen nutzen die browser APIs für basic file validation und analysis
  */
+import type { BrowserFileMetadata, ExifData } from '$lib/types';
 import * as exifr from 'exifr';
-
-export interface ClientFileMetadata {
-	name: string;
-	size: number;
-	type: string;
-	lastModified: Date;
-	thumbnail?: string;
-	exif: {
-		latitude: number | null;
-		longitude: number | null;
-		altitude: number | null;
-		timestamp: Date | null;
-	};
-}
 
 /**
  * Extrahiert EXIF-Daten client-seitig aus einem Bild
  */
-async function extractClientExifData(file: File): Promise<{
-	latitude: number | null;
-	longitude: number | null;
-	altitude: number | null;
-	timestamp: Date | null;
-}> {
+async function extractExifData(file: File): Promise<ExifData> {
 	try {
 		if (!file.type.startsWith('image/')) {
-			return {
-				latitude: null,
-				longitude: null,
-				altitude: null,
-				timestamp: null
-			};
+			return {};
 		}
+
+		const result: ExifData = {};
 
 		// Try GPS-specific extraction first (more reliable for GPS data)
 		const gpsData = await exifr.gps(file);
@@ -47,70 +26,43 @@ async function extractClientExifData(file: File): Promise<{
 		});
 
 		if (!exifData && !gpsData) {
-			return {
-				latitude: null,
-				longitude: null,
-				altitude: null,
-				timestamp: null
-			};
+			return result;
 		}
 
 		// Extract GPS coordinates
-		let latitude: number | null = null;
-		let longitude: number | null = null;
-		let altitude: number | null = null;
 
-		// Try to get GPS coordinates from GPS-specific extraction first, then fallback to general EXIF
-		if (gpsData && gpsData.latitude && gpsData.longitude) {
-			latitude = gpsData.latitude;
-			longitude = gpsData.longitude;
-		} else if (exifData && exifData.latitude && exifData.longitude) {
-			latitude = parseFloat(exifData.latitude.toString());
-			longitude = parseFloat(exifData.longitude.toString());
-		}
-
-		if (exifData && exifData.altitude) {
-			altitude = parseFloat(exifData.altitude.toString());
-		}
+		result.latitude = gpsData?.latitude ?? exifData.latitude;
+		result.longitude = gpsData?.longitude ?? exifData.longitude;
+		result.altitude = exifData.altitude;
 
 		// Extract timestamp
-		let timestamp: Date | null = null;
-		if (exifData && exifData.DateTimeOriginal) {
-			timestamp = new Date(exifData.DateTimeOriginal);
-		} else if (exifData && exifData.DateTime) {
-			timestamp = new Date(exifData.DateTime);
+		result.dateTime = exifData.DateTime;
+
+		if (exifData.DateTimeOriginal) {
+			result.dateTimeOriginal = new Date(exifData.DateTimeOriginal);
+		} else if (exifData.DateTime) {
+			result.dateTimeOriginal = new Date(exifData.DateTime);
 		}
 
-
-		return {
-			latitude,
-			longitude,
-			altitude,
-			timestamp
-		};
+		return result;
 	} catch (_error) {
-		return {
-			latitude: null,
-			longitude: null,
-			altitude: null,
-			timestamp: null
-		};
+		return {};
 	}
 }
 
 /**
  * Analysiert eine Datei client-seitig (mit EXIF-Daten wenn möglich)
  */
-export async function analyzeClientFile(file: File): Promise<ClientFileMetadata> {
+export async function analyzeClientFile(file: File): Promise<BrowserFileMetadata> {
 	// Extract EXIF data first (for images)
-	const exifData = await extractClientExifData(file);
+	const exifData = await extractExifData(file);
 
-	const metadata: ClientFileMetadata = {
-		name: file.name,
+	const metadata: BrowserFileMetadata = {
+		fileName: file.name,
 		size: file.size,
-		type: file.type,
+		mimeType: file.type,
 		lastModified: new Date(file.lastModified),
-		exif: exifData
+		exifData: exifData
 	};
 
 	// Erstelle Thumbnail für Bilder
@@ -127,34 +79,6 @@ export async function analyzeClientFile(file: File): Promise<ClientFileMetadata>
 			// Ignore thumbnail creation errors
 		}
 	}
-
-	return metadata;
-}
-
-/**
- * Sofortige Dateianalyse für instant preview und EXIF-Anzeige
- * Erstellt Thumbnail und extrahiert EXIF-Daten für sofortige Anzeige
- */
-export async function analyzeFileInstant(file: File): Promise<ClientFileMetadata> {
-	// Create instant object URL for immediate preview of images
-	let thumbnail: string | undefined;
-	if (file.type.startsWith('image/')) {
-		// Create immediate object URL for instant display
-		thumbnail = URL.createObjectURL(file);
-	}
-
-	// Extract EXIF data in parallel
-	const exifData = await extractClientExifData(file);
-
-	const metadata: ClientFileMetadata = {
-		name: file.name,
-		size: file.size,
-		type: file.type,
-		lastModified: new Date(file.lastModified),
-		...(thumbnail && { thumbnail }),
-		exif: exifData
-	};
-
 
 	return metadata;
 }
@@ -246,49 +170,4 @@ async function createVideoThumbnail(file: File): Promise<string> {
 		video.onerror = () => reject(new Error('Failed to load video'));
 		video.src = URL.createObjectURL(file);
 	});
-}
-
-/**
- * Konvertiert Server-EXIF-Daten zu Client-Format
- */
-export function convertServerExifToClient(serverExifData: any): ClientFileMetadata['exif'] {
-	if (!serverExifData) {
-		return {
-			latitude: null,
-			longitude: null,
-			altitude: null,
-			timestamp: null
-		};
-	}
-
-	return {
-		latitude: serverExifData.latitude || null,
-		longitude: serverExifData.longitude || null,
-		altitude: serverExifData.altitude || null,
-		timestamp: serverExifData.dateTimeOriginal ? new Date(serverExifData.dateTimeOriginal) : null
-	};
-}
-
-/**
- * Überprüft ob GPS-Koordinaten in der Ostsee liegen
- */
-export function isInBalticSea(latitude: number | null, longitude: number | null): boolean {
-	if (latitude === null || longitude === null) {
-		return false;
-	}
-
-	// Grobe Bounding Box der Ostsee
-	const balticBounds = {
-		north: 66.0,
-		south: 53.0,
-		east: 30.0,
-		west: 9.0
-	};
-
-	return (
-		latitude >= balticBounds.south &&
-		latitude <= balticBounds.north &&
-		longitude >= balticBounds.west &&
-		longitude <= balticBounds.east
-	);
 }

@@ -1,7 +1,9 @@
 import { error } from '@sveltejs/kit';
-import type { PageLoad } from './$types';
+import type { LayoutLoad } from './$types';
 
-export const load: PageLoad = async ({ params, fetch }) => {
+export const ssr = false;
+
+export const load: LayoutLoad = async ({ params, fetch }) => {
 	const { id } = params;
 	let sighting = null;
 	if (!id || isNaN(Number(id))) {

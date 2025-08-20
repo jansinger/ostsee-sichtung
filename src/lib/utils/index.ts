@@ -5,20 +5,20 @@
 
 // File utilities
 export { formatFileSize, formatFileSizeDE, parseFileSize } from './file/fileSize';
-export { 
-	isImageFile, 
-	isVideoFile, 
-	isMediaFile, 
-	getFileIcon, 
-	getFileExtension, 
-	getMimeTypeFromExtension 
+export {
+	getFileExtension,
+	getFileIcon,
+	getMimeTypeFromExtension,
+	isImageFile,
+	isMediaFile,
+	isVideoFile
 } from './file/fileType';
 
 // Form utilities
-export { 
-	createOptionsFactory, 
-	createBooleanOptionsFactory, 
+export {
+	createBooleanOptionsFactory,
 	createConsentOptionsFactory,
+	createOptionsFactory,
 	createSimpleOptionsFactory,
 	type FormOption,
 	type FormOptionsFactory
@@ -26,40 +26,22 @@ export {
 
 // Validation utilities
 export {
-	validateFile,
-	validateFiles,
-	validateGPSPhotos,
+	getValidationPreset,
 	quickValidation,
 	sanitizeFileName,
-	getValidationPreset,
-	type ValidationResult,
-	type ValidationPreset
+	validateFile,
+	validateFiles,
+	validateGPSPhotos
 } from './validation/fileValidation';
 
-// Media/EXIF utilities
-export {
-	ExifExtractor,
-	exifUtils,
-	type GPSData,
-	type CameraInfo,
-	type ImageInfo,
-	type ProcessedExifData
-} from './media/exifProcessor';
-
 // Upload utilities (existing)
-export { uploadFileDirect, deleteFileDirect } from './uploadUtils';
-export { 
-	uploadResultToFormData, 
-	formDataToUploadData, 
-	createUploadData,
-	type UploadFileData 
-} from './uploadHelpers';
+export { deleteFileDirect, uploadFileDirect } from './uploadUtils';
 
 // Constants
 export {
-	UPLOAD_LIMITS,
 	ALLOWED_MIME_TYPES,
 	FILE_VALIDATION_PRESETS,
-	UPLOAD_PATHS,
-	UPLOAD_ERROR_MESSAGES
+	UPLOAD_ERROR_MESSAGES,
+	UPLOAD_LIMITS,
+	UPLOAD_PATHS
 } from '../constants/upload';

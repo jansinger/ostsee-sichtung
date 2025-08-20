@@ -474,7 +474,7 @@
 			{/if}
 
 			<!-- Medien-Gallerie -->
-			{#if sighting.files && sighting.files.length > 0}
+			{#if sighting.uploadedFiles && sighting.uploadedFiles.length > 0}
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
@@ -482,7 +482,7 @@
 							Medien-Gallerie
 						</h3>
 
-						<MediaGallery files={sighting.files} showTitle={false} />
+						<MediaGallery files={sighting.uploadedFiles} showTitle={false} />
 					</div>
 				</div>
 			{:else if mediaRows.length > 0}

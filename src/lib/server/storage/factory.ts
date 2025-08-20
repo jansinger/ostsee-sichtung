@@ -3,9 +3,9 @@
  */
 import { dev } from '$app/environment';
 import { createLogger } from '$lib/logger';
+import type { StorageProvider, StorageProviderType } from '$lib/types';
 import { LocalStorageProvider } from './local';
 import { VercelBlobStorageProvider } from './vercel-blob';
-import type { StorageProvider, StorageProviderType } from './types';
 
 const logger = createLogger('storage:factory');
 
@@ -17,24 +17,24 @@ export function getStorageProvider(): StorageProvider {
 	}
 
 	const providerType = getStorageProviderType();
-	
+
 	switch (providerType) {
 		case 'local':
 			storageProvider = new LocalStorageProvider('uploads', '/uploads');
 			logger.info('Using local file storage');
 			break;
-			
+
 		case 'vercel-blob':
 			storageProvider = new VercelBlobStorageProvider();
 			logger.info('Using Vercel Blob storage');
 			break;
-			
+
 		case 's3':
 			throw new Error('S3 storage provider not implemented yet');
-			
+
 		case 'gcs':
 			throw new Error('Google Cloud Storage provider not implemented yet');
-			
+
 		default:
 			throw new Error(`Unknown storage provider: ${providerType}`);
 	}

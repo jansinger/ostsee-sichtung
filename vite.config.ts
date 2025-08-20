@@ -17,7 +17,10 @@ export default defineConfig({
 	],
 	server: {
 		host: 'localhost',
-		port: 4000
+		port: 4000,
+		hmr: {
+			overlay: true
+		}
 	},
 	build: {
 		rollupOptions: {

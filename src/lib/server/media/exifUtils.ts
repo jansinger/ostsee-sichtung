@@ -2,13 +2,13 @@
  * Server-seitige EXIF-Utilities für das Auslesen von Metadaten aus hochgeladenen Bildern
  */
 import { createLogger } from '$lib/logger';
-import type { ExifDataRaw } from '$lib/types';
+import type { ExifData } from '$lib/types';
 const logger = createLogger('server:exifUtils');
 
 /**
  * Liest EXIF-Daten aus einem Buffer oder einer Datei
  */
-export async function readImageExifData(source: string | Buffer): Promise<ExifDataRaw | null> {
+export async function readImageExifData(source: string | Buffer): Promise<ExifData | null> {
 	try {
 		// Dynamically import exifr library
 		const { default: exifr } = await import('exifr');
@@ -59,7 +59,7 @@ export async function readImageExifData(source: string | Buffer): Promise<ExifDa
 		}
 
 		// Extract and format data
-		const result: ExifDataRaw = {
+		const result: ExifData = {
 			latitude: exifData.latitude || null,
 			longitude: exifData.longitude || null,
 			altitude: null,
@@ -74,7 +74,7 @@ export async function readImageExifData(source: string | Buffer): Promise<ExifDa
 		if (exifData.GPSAltitude !== undefined) {
 			result.altitude = exifData.GPSAltitude;
 			// GPSAltitudeRef: 0 = above sea level, 1 = below sea level
-			if (exifData.GPSAltitudeRef === 1 && result.altitude !== null) {
+			if (exifData.GPSAltitudeRef === 1 && result.altitude) {
 				result.altitude = -result.altitude;
 			}
 		}
@@ -149,13 +149,6 @@ export async function readImageExifData(source: string | Buffer): Promise<ExifDa
 /**
  * Überprüft ob GPS-Koordinaten verfügbar sind
  */
-export function hasGPSData(exifData: ExifDataRaw | null): boolean {
+export function hasGPSData(exifData: ExifData | null): boolean {
 	return !!(exifData?.latitude && exifData?.longitude);
-}
-
-/**
- * Überprüft ob die Datei ein Bild ist (für EXIF-Verarbeitung)
- */
-export function isImageFile(mimeType: string): boolean {
-	return mimeType.startsWith('image/') && mimeType !== 'image/svg+xml';
 }

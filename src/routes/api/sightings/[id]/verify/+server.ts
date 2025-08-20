@@ -2,14 +2,14 @@ import { createLogger } from '$lib/logger';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
+import type { RequestHandler } from '@sveltejs/kit';
 import { error, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
-import type { RequestHandler } from '@sveltejs/kit';
 
 // Logger für diesen API-Endpunkt erstellen
 const logger = createLogger('api:sightings:verify');
 
-export const PATCH: RequestHandler = async ({ params, request, locals, url }: any) => {
+export const PATCH: RequestHandler = async ({ params, request, locals, url }) => {
 	// Authorization check - only admins can verify
 	requireUserRole(url, locals.user, ['admin']);
 
@@ -76,7 +76,7 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url }: an
 	}
 };
 
-export const GET: RequestHandler = async ({ params, locals, url }: any) => {
+export const GET: RequestHandler = async ({ params, locals, url }) => {
 	// Authorization check
 	requireUserRole(url, locals.user, ['admin']);
 

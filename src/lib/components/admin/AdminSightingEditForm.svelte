@@ -7,45 +7,39 @@
 	import DateTime from '$lib/report/components/sections/DateTime.svelte';
 	import Environment from '$lib/report/components/sections/Environment.svelte';
 	import Location from '$lib/report/components/sections/Location.svelte';
-	import Media from '$lib/report/components/sections/Media.svelte';
 	import OptionalSightingDetails from '$lib/report/components/sections/OptionalSightingDetails.svelte';
 	import type { FormContext } from '$lib/report/types';
 	import { formatDate } from '$lib/utils/format/formatDate';
 	import type { Readable, Writable } from 'svelte/store';
 	import BooleanStatus from './BooleanStatus.svelte';
 	// Note: mediaStore and onMount not needed for admin edit form
-	import type { FrontendSighting, UploadedFileInfo } from '$lib/types';
+	import { createLogger } from '$lib/logger';
+	import Media from '$lib/report/components/sections/Media.svelte';
+	import type { FrontendSighting } from '$lib/types';
+
+	const logger = createLogger('AdminEditForm');
 
 	let {
 		sighting = {} as FrontendSighting,
-		onSave = (_sighting: FrontendSighting) => Promise.resolve(),
+		onSave = (_sighting: FrontendSighting) => {},
 		onCancel = () => {}
 	} = $props<{
 		sighting: FrontendSighting;
-		onSave?: (sighting: FrontendSighting) => Promise<void>;
+		onSave?: (sighting: FrontendSighting) => void;
 		onCancel?: () => void;
 	}>();
 
 	let formContext: FormContext = $state({}) as FormContext;
 
-	// Note: Admin edit form doesn't use mediaStore for existing files
-	// Files are managed directly through the sighting.files property
-
 	async function submitForm(values: Record<string, unknown>): Promise<FrontendSighting> {
 		try {
-			// For admin edit form, use the existing files from the sighting
-			const uploadedFiles: UploadedFileInfo[] = sighting.files || [];
-
 			// API-Aufruf zum Speichern der Daten
 			const response = await fetch(`/api/sightings/${sighting.id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify({
-					...values,
-					uploadedFiles
-				})
+				body: JSON.stringify(values)
 			});
 
 			if (!response.ok) {
@@ -87,6 +81,12 @@
 	let isValid: Readable<boolean> = $derived(formContext.isValid);
 	let isSubmitting: Readable<boolean> = $derived(formContext.isSubmitting);
 	let errors: Writable<Record<string, string>> = $derived(formContext.errors);
+
+	const form = $derived(formContext.form);
+
+	$effect(() => {
+		logger.info({ $form }, 'Formulardaten geändert');
+	});
 </script>
 
 <Form class="space-y-6" {...initProps} bind:context={formContext}>
@@ -123,7 +123,7 @@
 		</div>
 	</div>
 	<!-- Fehler-Liste anzeigen, wenn es Validierungsfehler gibt -->
-	{#if formContext && $errors && Object.values($errors).some((message) => message !== '')}
+	{#if $errors && Object.values($errors).some((message) => typeof message === 'string' && message !== '')}
 		<div class="alert alert-error">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -141,7 +141,7 @@
 			<div>
 				<h3 class="font-bold">Eingabefehler gefunden:</h3>
 				<ul class="mt-2 list-inside list-disc">
-					{#each Object.entries($errors).filter(([_field, message]) => message !== '') as [_field, message], index (index)}
+					{#each Object.entries($errors).filter(([_field, message]) => typeof message === 'string' && message !== '') as [_field, message] (_field)}
 						<li class="text-sm">{message}</li>
 					{/each}
 				</ul>

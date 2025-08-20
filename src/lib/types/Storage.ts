@@ -2,67 +2,43 @@
  * Storage provider interfaces
  */
 
-export interface UploadedFile {
-	id: string;
-	originalName: string;
-	fileName: string;
-	filePath: string;
-	size: number;
-	mimeType: string;
-	url: string; // Public URL to access the file
-	uploadedAt: string;
-	exifData?: unknown;
-}
+import type { FileMetadata, UploadedFileInfo, UploadOptions } from './UploadedFile';
 
 export interface StorageProvider {
 	/**
 	 * Upload a file to storage
 	 */
-	upload(file: File, options: UploadOptions): Promise<UploadedFile>;
-	
+	upload(file: File, data: Buffer, options: UploadOptions): Promise<UploadedFileInfo>;
+
 	/**
 	 * Delete a file from storage
 	 */
 	delete(filePath: string): Promise<void>;
-	
+
 	/**
 	 * Get public URL for a file
 	 */
 	getUrl(filePath: string): string;
-	
+
 	/**
 	 * Get file metadata
 	 */
 	getMetadata(filePath: string): Promise<FileMetadata | null>;
-	
+
 	/**
 	 * List files in a directory
 	 */
-	list(prefix?: string): Promise<UploadedFile[]>;
-	
+	list(prefix?: string): Promise<UploadedFileInfo[]>;
+
 	/**
 	 * Check if file exists
 	 */
 	exists(filePath: string): Promise<boolean>;
-	
+
 	/**
 	 * Get file content as Buffer for secure serving
 	 */
 	getFileContent(filePath: string): Promise<Buffer | null>;
-}
-
-export interface UploadOptions {
-	referenceId: string;
-	preserveOriginalName?: boolean;
-	generateThumbnail?: boolean;
-	extractExif?: boolean;
-}
-
-export interface FileMetadata {
-	size: number;
-	mimeType: string;
-	lastModified: Date;
-	etag?: string;
 }
 
 export type StorageProviderType = 'local' | 'vercel-blob' | 's3' | 'gcs';

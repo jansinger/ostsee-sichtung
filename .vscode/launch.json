@@ -1,47 +1,58 @@
 {
-	// Verwendet IntelliSense zum Ermitteln möglicher Attribute.
-	// Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
-	// Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "Launch Chrome",
 			"type": "chrome",
 			"request": "launch",
-			"name": "Client: Chrome",
 			"url": "https://localhost:4000",
 			"webRoot": "${workspaceFolder}"
 		},
 		{
-			"type": "node",
-			"request": "launch",
-			"name": "Server: SvelteKit",
-			"program": "${workspaceFolder}/node_modules/vite/bin/vite.js",
-			"args": ["dev", "--port", "4000"],
-			"cwd": "${workspaceFolder}",
-			"console": "integratedTerminal",
-			"restart": true,
-			"autoAttachChildProcesses": true,
-			"sourceMaps": true,
-			"skipFiles": ["<node_internals>/**", "**/node_modules/**"],
-			"outFiles": ["${workspaceFolder}/.svelte-kit/**/*.js"]
+			"name": "Attach to Chrome",
+			"type": "chrome",
+			"request": "attach",
+			"port": 9222,
+			"webRoot": "${workspaceFolder}"
 		},
 		{
-			"name": "Full Stack: SvelteKit",
-			"type": "node-terminal",
+			"name": "Debug Server",
+			"type": "node",
 			"request": "launch",
-			"command": "npm run dev -- --port 4000",
+			"runtimeExecutable": "npm",
+			"runtimeArgs": ["run", "dev"],
+			"console": "integratedTerminal",
 			"serverReadyAction": {
-				"pattern": "Local:\\s+https://localhost:(\\d+)",
-				"uriFormat": "https://localhost:%s",
-				"action": "debugWithChrome"
-			},
-			"sourceMaps": true
+				"pattern": "Local:\\s+(https://localhost:(\\d+))",
+				"uriFormat": "%s",
+				"action": "openExternally"
+			}
+		},
+		{
+			"name": "Full Stack",
+			"type": "node",
+			"request": "launch",
+			"runtimeExecutable": "npm",
+			"runtimeArgs": ["run", "dev"],
+			"console": "integratedTerminal",
+			"serverReadyAction": {
+				"pattern": "Local:\\s+(https://localhost:(\\d+))",
+				"uriFormat": "%s",
+				"action": "debugWithChrome",
+				"webRoot": "${workspaceFolder}"
+			}
 		}
 	],
 	"compounds": [
 		{
-			"name": "Client + Server",
-			"configurations": ["Server: SvelteKit", "Client: Chrome"]
+			"name": "Full Stack (Alternative)",
+			"configurations": ["Debug Server", "Launch Chrome"],
+			"stopAll": true,
+			"presentation": {
+				"hidden": false,
+				"group": "Full Stack",
+				"order": 1
+			}
 		}
 	]
 }
