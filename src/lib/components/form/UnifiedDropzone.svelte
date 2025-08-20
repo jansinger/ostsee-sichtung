@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createToast } from '$lib/stores/toastStore';
-	import { type ValidationPreset, validateFiles } from '$lib/utils';
+	import type { ValidationPreset } from '$lib/types';
+	import { validateFiles } from '$lib/utils';
 	import { getFileTypeDescription } from '$lib/utils/validation/fileValidation';
 
 	import { Upload } from '@steeze-ui/lucide-icons';

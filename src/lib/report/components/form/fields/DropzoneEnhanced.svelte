@@ -20,8 +20,8 @@
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
 	import { createToast } from '$lib/stores/toastStore';
-	import type { UploadedFileInfo } from '$lib/types';
-	import { deleteFileDirect, type ValidationPreset } from '$lib/utils';
+	import type { UploadedFileInfo, ValidationPreset } from '$lib/types';
+	import { deleteFileDirect } from '$lib/utils';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
 	import { getFileIcon } from '$lib/utils/file/fileType';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
