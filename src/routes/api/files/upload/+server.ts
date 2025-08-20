@@ -94,7 +94,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			throw error(400, validationErrors.join(' '));
 		}
 
-		await new Promise((f) => setTimeout(f, 5000));
+		// JUST FOR TESTING await new Promise((f) => setTimeout(f, 5000));
 
 		const fileBuffer = await file.arrayBuffer();
 		const buffer = Buffer.from(fileBuffer);
