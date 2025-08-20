@@ -106,6 +106,23 @@
 		triggerChange('uploadedFiles', uploadedFiles);
 	}
 
+	$effect(() => {
+		if (positionMediaFile) {
+			if (positionMediaFile.exifData?.latitude && positionMediaFile.exifData?.longitude) {
+				triggerChange('latitude', positionMediaFile.exifData.latitude.toFixed(4));
+				triggerChange('longitude', positionMediaFile.exifData.longitude.toFixed(4));
+			}
+			const timestamp = positionMediaFile.timestamp;
+			if (timestamp) {
+				const sightingDate = timestamp.toISOString().split('T')[0];
+				const sightingTime = `${timestamp.getHours()}:${timestamp.getMinutes()}`;
+				logger.info({ sightingDate, sightingTime }, 'New sighting data extracted');
+				triggerChange('sightingDate', sightingDate);
+				triggerChange('sightingTime', sightingTime);
+			}
+		}
+	});
+
 	/**
 	 * Verarbeitet neu hinzugefügte Dateien
 	 *
