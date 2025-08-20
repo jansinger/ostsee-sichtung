@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { User } from '$lib/types';
 	import { isAdminUser } from '$lib/utils/auth';
-	import { LogOut, Menu, Settings, User as UserIcon } from '@steeze-ui/lucide-icons';
+	import { LogOut, Settings, User as UserIcon } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
 	let {
@@ -26,14 +26,26 @@
 
 {#if user}
 	<div class="relative">
-		<!-- Burger Menu Button -->
+		<!-- User Picture Button -->
 		<button
 			type="button"
 			class="btn btn-ghost btn-circle"
 			aria-label="Benutzer-Menü"
 			onclick={toggleMenu}
 		>
-			<Icon src={Menu} class="h-5 w-5" />
+			{#if user.picture}
+				<div class="avatar">
+					<div class="h-8 w-8 rounded-full">
+						<img src={user.picture} alt="Profilbild" />
+					</div>
+				</div>
+			{:else}
+				<div class="avatar placeholder">
+					<div class="bg-neutral text-neutral-content h-8 w-8 rounded-full">
+						<Icon src={UserIcon} class="h-4 w-4" />
+					</div>
+				</div>
+			{/if}
 		</button>
 
 		<!-- Dropdown Menu -->

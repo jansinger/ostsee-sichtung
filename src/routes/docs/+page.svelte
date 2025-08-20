@@ -6,7 +6,27 @@
 	<title>Dokumentation - Ostsee-Tiere</title>
 	<meta
 		name="description"
-		content="Übersicht über die verfügbare Dokumentation der Ostsee-Tiere Plattform"
+		content="Übersicht über die verfügbare Dokumentation der Ostsee-Tiere Plattform. API-Dokumentation, Entwicklerressourcen und Anleitungen."
+	/>
+	<meta
+		name="keywords"
+		content="Dokumentation, API, OpenAPI, Entwickler, Anleitung, Ostsee-Tiere, Integration"
+	/>
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content="Dokumentation - Ostsee-Tiere" />
+	<meta 
+		property="og:description" 
+		content="Übersicht über die verfügbare Dokumentation der Ostsee-Tiere Plattform" 
+	/>
+	<meta property="og:type" content="website" />
+	
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content="Dokumentation - Ostsee-Tiere" />
+	<meta 
+		name="twitter:description" 
+		content="Übersicht über die verfügbare Dokumentation der Ostsee-Tiere Plattform" 
 	/>
 </svelte:head>
 
@@ -148,9 +168,9 @@
 				</a>
 			</div>
 			<div class="text-center">
-				<a href="/admin" class="btn btn-ghost btn-lg w-full">
-					⚙️<br />
-					<span class="text-sm">Admin-Bereich</span>
+				<a href="/about" class="btn btn-ghost btn-lg w-full">
+					🏛️<br />
+					<span class="text-sm">Über uns</span>
 				</a>
 			</div>
 		</div>

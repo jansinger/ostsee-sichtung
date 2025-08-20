@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 	import UserMenu from '$lib/components/UserMenu.svelte';
+	import UserMenuMobile from '$lib/components/UserMenuMobile.svelte';
 	import { List } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import type { LayoutData } from './$types';
@@ -47,6 +48,22 @@
 										: ''}
 								>
 									Statistiken
+								</a>
+							</li>
+							<li>
+								<a
+									href="/admin/docs"
+									class={$page.url.pathname.includes('/admin/docs') ? 'active font-medium' : ''}
+								>
+									API-Docs
+								</a>
+							</li>
+							<li>
+								<a
+									href="/admin/about"
+									class={$page.url.pathname.includes('/admin/about') ? 'active font-medium' : ''}
+								>
+									Info
 								</a>
 							</li>
 						</ul>
@@ -97,12 +114,26 @@
 									Statistiken
 								</a>
 							</li>
+							<li>
+								<a
+									href="/admin/docs"
+									class={$page.url.pathname.includes('/admin/docs') ? 'active font-medium' : ''}
+								>
+									API-Docs
+								</a>
+							</li>
+							<li>
+								<a
+									href="/admin/about"
+									class={$page.url.pathname.includes('/admin/about') ? 'active font-medium' : ''}
+								>
+									Info
+								</a>
+							</li>
 
 							<!-- User Menu - Mobile -->
 							<div class="divider my-2"></div>
-							<div class="px-4">
-								<UserMenu user={data.user || null} position="left" />
-							</div>
+							<UserMenuMobile user={data.user || null} />
 						</ul>
 					</div>
 				</div>
@@ -119,11 +150,23 @@
 		{@render children()}
 	</main>
 
-	<!-- Footer - Hidden on map page for full screen experience -->
-	{#if !$page.url.pathname.includes('/admin/map')}
+	<!-- Footer - Hidden on map page for full screen experience and in iFrame -->
+	{#if !$page.url.pathname.includes('/admin/map') && typeof window !== 'undefined' && window === window.top}
 		<footer class="footer-center footer bg-base-200 text-base-content p-4">
-			<div>
-				<p>© 2025 Deutsches Meeresmuseum - Alle Rechte vorbehalten</p>
+			<div class="text-center">
+				<p class="mb-2">© 2025 Deutsches Meeresmuseum - Alle Rechte vorbehalten</p>
+				<div class="flex justify-center gap-4 text-sm">
+					<a 
+						href="https://github.com/jansinger/ostsee-sichtung" 
+						target="_blank" 
+						rel="noopener noreferrer" 
+						class="link link-hover opacity-70"
+					>
+						GitHub Repository
+					</a>
+					<span class="opacity-30">•</span>
+					<a href="/about" class="link link-hover opacity-70">Über die Plattform</a>
+				</div>
 			</div>
 		</footer>
 	{/if}

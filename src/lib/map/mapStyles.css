@@ -81,13 +81,8 @@
 
 /* Die Panel-Styles sind jetzt in den Svelte-Komponenten selbst definiert */
 
-/* Vollbild-Layout */
-body,
-html {
-	margin: 0;
-	padding: 0;
-	overflow: hidden;
-}
+/* ENTFERNT: Globale body/html overflow-hidden Styles, die das Scrolling blockieren */
+/* Diese sollten nur lokal in den Map-Komponenten angewendet werden */
 
 /* Responsive Anpassungen für kleinere Bildschirme */
 @media (max-width: 768px) {
