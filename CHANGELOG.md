@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.15.1 (2025-08-20)</small>
+
+* Merge pull request #53 from jansinger/fix/github-actions-workflow-syntax ([9ccd2d2](https://github.com/jansinger/ostsee-sichtung/commit/9ccd2d2)), closes [#53](https://github.com/jansinger/ostsee-sichtung/issues/53)
+* fix: repair GitHub Actions workflow syntax for dependabot PR parsing ([ebd73cd](https://github.com/jansinger/ostsee-sichtung/commit/ebd73cd))
+
 ## 1.15.0 (2025-08-20)
 
 * Merge pull request #52 from jansinger/fix/dropzone-enhanced ([f802dbb](https://github.com/jansinger/ostsee-sichtung/commit/f802dbb)), closes [#52](https://github.com/jansinger/ostsee-sichtung/issues/52)
