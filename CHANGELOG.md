@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.15.3 (2025-08-20)</small>
+
+* Merge pull request #56 from jansinger/fix/exif-auto-fill-position-time ([d809ccd](https://github.com/jansinger/ostsee-sichtung/commit/d809ccd)), closes [#56](https://github.com/jansinger/ostsee-sichtung/issues/56)
+* fix: extract sighting data from position media file in DropzoneEnhanced component ([0d19be3](https://github.com/jansinger/ostsee-sichtung/commit/0d19be3))
+
 ## <small>1.15.2 (2025-08-20)</small>
 
 * Merge pull request #55 from jansinger/fix/github-actions-workflow-syntax ([d6669e9](https://github.com/jansinger/ostsee-sichtung/commit/d6669e9)), closes [#55](https://github.com/jansinger/ostsee-sichtung/issues/55)
