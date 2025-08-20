@@ -80,7 +80,7 @@
 			});
 		}
 
-		if (validation.validFiles.length > 0) {
+		if (validation.validFiles && validation.validFiles.length > 0) {
 			if (multiple) {
 				files = [...files, ...validation.validFiles];
 			} else {

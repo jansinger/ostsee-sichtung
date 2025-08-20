@@ -14,6 +14,7 @@ import { isImageFile, isMediaFile, isVideoFile } from '$lib/utils/file/fileType'
 export interface ValidationResult {
 	isValid: boolean;
 	errors: string[];
+	validFiles?: File[];
 }
 
 export interface ValidationPreset {
@@ -76,6 +77,7 @@ export function validateFile(file: File, preset: ValidationPreset): ValidationRe
  */
 export function validateFiles(files: File[], preset: ValidationPreset): ValidationResult {
 	const errors: string[] = [];
+	const validFiles: File[] = [];
 
 	// Check file count
 	if (files.length > preset.maxFiles) {
@@ -92,11 +94,15 @@ export function validateFiles(files: File[], preset: ValidationPreset): Validati
 	for (const file of files) {
 		const fileResult = validateFile(file, preset);
 		errors.push(...fileResult.errors);
+		if (fileResult.isValid) {
+			validFiles.push(file);
+		}
 	}
 
 	return {
 		isValid: errors.length === 0,
-		errors
+		errors,
+		validFiles
 	};
 }
 
