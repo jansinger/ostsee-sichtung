@@ -101,8 +101,11 @@ jobs:
         if: steps.get-prs.outputs.count != '0'
         run: |
           # Erstelle einen neuen Branch für die kombinierten Updates
-          BRANCH_NAME="chore/dependabot-combined-$(date +%Y-%m-%d)"
+          BRANCH_NAME="chore/dependabot-combined-$(date +%Y-%m-%d-%H%M%S)"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          
+          # Lösche eventuell existierenden Branch erst
+          git push origin --delete "$BRANCH_NAME" 2>/dev/null || true
           
           git checkout -b "$BRANCH_NAME"
           git push origin "$BRANCH_NAME"
