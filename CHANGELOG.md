@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.15.2 (2025-08-20)</small>
+
+* Merge pull request #55 from jansinger/fix/github-actions-workflow-syntax ([d6669e9](https://github.com/jansinger/ostsee-sichtung/commit/d6669e9)), closes [#55](https://github.com/jansinger/ostsee-sichtung/issues/55)
+* fix(ci): ensure dependabot workflow runs from main branch ([39750b2](https://github.com/jansinger/ostsee-sichtung/commit/39750b2))
+* fix(ci): handle clean merges without staged changes ([36028de](https://github.com/jansinger/ostsee-sichtung/commit/36028de))
+* fix(ci): prevent branch name conflicts in dependabot workflow ([62ea0fb](https://github.com/jansinger/ostsee-sichtung/commit/62ea0fb))
+* chore(deps): apply dependabot updates manually ([d768067](https://github.com/jansinger/ostsee-sichtung/commit/d768067)), closes [#41](https://github.com/jansinger/ostsee-sichtung/issues/41) [#39](https://github.com/jansinger/ostsee-sichtung/issues/39)
+
 ## <small>1.15.1 (2025-08-20)</small>
 
 * Merge pull request #53 from jansinger/fix/github-actions-workflow-syntax ([9ccd2d2](https://github.com/jansinger/ostsee-sichtung/commit/9ccd2d2)), closes [#53](https://github.com/jansinger/ostsee-sichtung/issues/53)
