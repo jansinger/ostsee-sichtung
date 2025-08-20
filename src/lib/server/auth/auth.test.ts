@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { User } from '$lib/types/User';
+import type { Cookies } from '@sveltejs/kit';
 import { error, redirect } from '@sveltejs/kit';
 import jwt from 'jsonwebtoken';
 import { JwksClient } from 'jwks-rsa';
-import type { User } from '$lib/types/User';
-import type { Cookies } from '@sveltejs/kit';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock all external dependencies
 vi.mock('jsonwebtoken');
@@ -33,13 +33,13 @@ vi.mock('$env/static/public', () => ({
 
 // Import the functions to test after mocking
 import {
-	verifyToken,
-	getTokenClaims,
-	getToken,
-	getAuthUser,
-	setAuthCookie,
 	clearAuthCookie,
-	requireUserRole
+	getAuthUser,
+	getToken,
+	getTokenClaims,
+	requireUserRole,
+	setAuthCookie,
+	verifyToken
 } from './auth';
 
 describe('auth.ts', () => {
@@ -57,7 +57,7 @@ describe('auth.ts', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		
+
 		// Setup JWT mocks
 		mockJwt = {
 			verify: vi.fn(),
@@ -97,45 +97,81 @@ describe('auth.ts', () => {
 		it('should successfully verify a valid token', async () => {
 			const testPayload = { sub: 'test-user', email: 'test@example.com' };
 			const mockKey = { getPublicKey: () => 'public-key' };
-			
-			mockJwksClient.getSigningKey.mockImplementation((_kid: string, callback: (err: Error | null, key?: { getPublicKey: () => string }) => void) => {
-				callback(null, mockKey);
-			});
-			
-			mockJwt.verify.mockImplementation((_token: string, _keyFn: (header: unknown, callback: (err: Error | null, key?: string) => void) => void, _options: unknown, callback: (err: Error | null, payload?: unknown) => void) => {
-				callback(null, testPayload);
-			});
+
+			mockJwksClient.getSigningKey.mockImplementation(
+				(
+					_kid: string,
+					callback: (err: Error | null, key?: { getPublicKey: () => string }) => void
+				) => {
+					callback(null, mockKey);
+				}
+			);
+
+			mockJwt.verify.mockImplementation(
+				(
+					_token: string,
+					_keyFn: (header: unknown, callback: (err: Error | null, key?: string) => void) => void,
+					_options: unknown,
+					callback: (err: Error | null, payload?: unknown) => void
+				) => {
+					callback(null, testPayload);
+				}
+			);
 
 			const result = await verifyToken('valid-token');
-			
+
 			expect(result).toEqual(testPayload);
-			expect(mockJwt.verify).toHaveBeenCalledWith('valid-token', expect.any(Function), {}, expect.any(Function));
+			expect(mockJwt.verify).toHaveBeenCalledWith(
+				'valid-token',
+				expect.any(Function),
+				{},
+				expect.any(Function)
+			);
 		});
 
 		it('should reject invalid tokens', async () => {
 			const testError = new Error('Invalid token');
-			
-			mockJwt.verify.mockImplementation((_token: string, _keyFn: (header: unknown, callback: (err: Error | null, key?: string) => void) => void, _options: unknown, callback: (err: Error | null, payload?: unknown) => void) => {
-				callback(testError);
-			});
+
+			mockJwt.verify.mockImplementation(
+				(
+					_token: string,
+					_keyFn: (header: unknown, callback: (err: Error | null, key?: string) => void) => void,
+					_options: unknown,
+					callback: (err: Error | null, payload?: unknown) => void
+				) => {
+					callback(testError);
+				}
+			);
 
 			await expect(verifyToken('invalid-token')).rejects.toThrow('Invalid token');
 		});
 
 		it('should handle JWKS key retrieval errors', async () => {
 			const keyError = new Error('Key not found');
-			
-			mockJwksClient.getSigningKey.mockImplementation((_kid: string, callback: (err: Error | null, key?: { getPublicKey: () => string }) => void) => {
-				callback(keyError);
-			});
-			
-			mockJwt.verify.mockImplementation((_token: string, keyFn: (header: unknown, callback: (err: Error | null, key?: string) => void) => void, _options: unknown, callback: (err: Error | null, payload?: unknown) => void) => {
-				// Simulate the key function being called
-				const mockHeader = { kid: 'test-kid' };
-				keyFn(mockHeader, (err: Error | null) => {
-					if (err) callback(err);
-				});
-			});
+
+			mockJwksClient.getSigningKey.mockImplementation(
+				(
+					_kid: string,
+					callback: (err: Error | null, key?: { getPublicKey: () => string }) => void
+				) => {
+					callback(keyError);
+				}
+			);
+
+			mockJwt.verify.mockImplementation(
+				(
+					_token: string,
+					keyFn: (header: unknown, callback: (err: Error | null, key?: string) => void) => void,
+					_options: unknown,
+					callback: (err: Error | null, payload?: unknown) => void
+				) => {
+					// Simulate the key function being called
+					const mockHeader = { kid: 'test-kid' };
+					keyFn(mockHeader, (err: Error | null) => {
+						if (err) callback(err);
+					});
+				}
+			);
 
 			await expect(verifyToken('token-with-bad-key')).rejects.toThrow('Key not found');
 		});
@@ -143,23 +179,40 @@ describe('auth.ts', () => {
 		it('should use cached key when available', async () => {
 			const testPayload = { sub: 'test-user' };
 			const mockKey = { getPublicKey: () => 'public-key' };
-			
+
 			// First call to cache the key
-			mockJwksClient.getSigningKey.mockImplementationOnce((_kid: string, callback: (err: Error | null, key?: { getPublicKey: () => string }) => void) => {
-				callback(null, mockKey);
-			});
-			
-			mockJwt.verify.mockImplementation((_token: string, _keyFn: (header: unknown, callback: (err: Error | null, key?: string) => void) => void, _options: unknown, callback: (err: Error | null, payload?: unknown) => void) => {
-				callback(null, testPayload);
-			});
+			mockJwksClient.getSigningKey.mockImplementationOnce(
+				(
+					_kid: string,
+					callback: (err: Error | null, key?: { getPublicKey: () => string }) => void
+				) => {
+					callback(null, mockKey);
+				}
+			);
+
+			mockJwt.verify.mockImplementation(
+				(
+					_token: string,
+					_keyFn: (header: unknown, callback: (err: Error | null, key?: string) => void) => void,
+					_options: unknown,
+					callback: (err: Error | null, payload?: unknown) => void
+				) => {
+					callback(null, testPayload);
+				}
+			);
 
 			await verifyToken('first-token');
-			
+
 			// Second call should use cached key
-			mockJwksClient.getSigningKey.mockImplementationOnce((_kid: string, callback: (err: Error | null, key?: { getPublicKey: () => string }) => void) => {
-				// Should use cached key, so callback with cached value
-				callback(null, undefined); // key should be null but cached key should be used
-			});
+			mockJwksClient.getSigningKey.mockImplementationOnce(
+				(
+					_kid: string,
+					callback: (err: Error | null, key?: { getPublicKey: () => string }) => void
+				) => {
+					// Should use cached key, so callback with cached value
+					callback(null, undefined); // key should be null but cached key should be used
+				}
+			);
 
 			const result = await verifyToken('second-token');
 			expect(result).toEqual(testPayload);
@@ -172,14 +225,14 @@ describe('auth.ts', () => {
 			mockJwt.decode.mockReturnValue(testClaims);
 
 			const result = await getTokenClaims('valid-token');
-			
+
 			expect(result).toEqual(testClaims);
 			expect(mockJwt.decode).toHaveBeenCalledWith('valid-token');
 		});
 
 		it('should return null for empty token', async () => {
 			const result = await getTokenClaims('');
-			
+
 			expect(result).toBeNull();
 			expect(mockJwt.decode).not.toHaveBeenCalled();
 		});
@@ -187,7 +240,7 @@ describe('auth.ts', () => {
 		it('should return null for undefined token', async () => {
 			// Test with undefined token (edge case)
 			const result = await getTokenClaims(undefined as any);
-			
+
 			expect(result).toBeNull();
 			expect(mockJwt.decode).not.toHaveBeenCalled();
 		});
@@ -205,35 +258,36 @@ describe('auth.ts', () => {
 				json: () => Promise.resolve(mockTokenResponse)
 			} as Response);
 
-			const result = await getToken({ code: 'auth-code' });
+			const result = await getToken({ code: 'auth-code', pkceVerifier: 'auth-verifier' });
 
 			expect(result).toEqual(mockTokenResponse);
-			expect(fetch).toHaveBeenCalledWith(
-				'https://test-domain.auth0.com/oauth/token',
-				{
-					method: 'POST',
-					body: JSON.stringify({
-						code: 'auth-code',
-						client_id: 'test-client-id',
-						client_secret: 'test-client-secret',
-						redirect_uri: 'https://test-site.com/api/auth/callback',
-						grant_type: 'authorization_code'
-					}),
-					headers: {
-						'Content-Type': 'application/json'
-					}
+			expect(fetch).toHaveBeenCalledWith('https://test-domain.auth0.com/oauth/token', {
+				method: 'POST',
+				body: JSON.stringify({
+					code: 'auth-code',
+					client_id: 'test-client-id',
+					client_secret: 'test-client-secret',
+					redirect_uri: 'https://test-site.com/api/auth/callback',
+					grant_type: 'authorization_code',
+					code_verifier: 'auth-verifier'
+				}),
+				headers: {
+					'Content-Type': 'application/json'
 				}
-			);
+			});
 		});
 
 		it('should handle token exchange errors', async () => {
-			const errorResponse = { error: 'invalid_grant', error_description: 'Invalid authorization code' };
+			const errorResponse = {
+				error: 'invalid_grant',
+				error_description: 'Invalid authorization code'
+			};
 
 			vi.mocked(fetch).mockResolvedValue({
 				json: () => Promise.resolve(errorResponse)
 			} as Response);
 
-			const result = await getToken({ code: 'invalid-code' });
+			const result = await getToken({ code: 'invalid-code', pkceVerifier: 'invalid-verifier' });
 
 			expect(result).toEqual(errorResponse);
 		});
@@ -241,7 +295,9 @@ describe('auth.ts', () => {
 		it('should handle network errors', async () => {
 			vi.mocked(fetch).mockRejectedValue(new Error('Network error'));
 
-			await expect(getToken({ code: 'auth-code' })).rejects.toThrow('Network error');
+			await expect(getToken({ code: 'auth-code', pkceVerifier: 'auth-verifier' })).rejects.toThrow(
+				'Network error'
+			);
 		});
 	});
 
@@ -315,16 +371,13 @@ describe('auth.ts', () => {
 			setAuthCookie(mockCookies, testUser);
 
 			expect(mockJwt.sign).toHaveBeenCalledWith(testUser, 'test-session-secret');
-			expect(mockCookies.set).toHaveBeenCalledWith(
-				'test-auth-cookie',
-				signedToken,
-				{
-					httpOnly: true,
-					sameSite: 'lax',
-					maxAge: 60 * 60 * 24 * 7, // 1 week
-					path: '/'
-				}
-			);
+			expect(mockCookies.set).toHaveBeenCalledWith('test-auth-cookie', signedToken, {
+				httpOnly: true,
+				sameSite: 'lax',
+				maxAge: 60 * 60 * 24 * 7, // 1 week
+				path: '/',
+				secure: process.env.NODE_ENV === 'production'
+			});
 		});
 	});
 
@@ -345,7 +398,9 @@ describe('auth.ts', () => {
 				throw new Error(`Redirect ${status}: ${location}`);
 			});
 
-			expect(() => requireUserRole(testUrl, null)).toThrow('Redirect 302: /api/auth/login?returnUrl=/admin');
+			expect(() => requireUserRole(testUrl, null)).toThrow(
+				'Redirect 302: /api/auth/login?returnUrl=/admin'
+			);
 			expect(redirect).toHaveBeenCalledWith(302, '/api/auth/login?returnUrl=/admin');
 		});
 
@@ -355,7 +410,9 @@ describe('auth.ts', () => {
 				throw new Error(`Redirect ${status}: ${location}`);
 			});
 
-			expect(() => requireUserRole(testUrl, undefined)).toThrow('Redirect 302: /api/auth/login?returnUrl=/admin');
+			expect(() => requireUserRole(testUrl, undefined)).toThrow(
+				'Redirect 302: /api/auth/login?returnUrl=/admin'
+			);
 			expect(redirect).toHaveBeenCalledWith(302, '/api/auth/login?returnUrl=/admin');
 		});
 
@@ -447,7 +504,9 @@ describe('auth.ts', () => {
 				throw new Error(`${status}: ${body}`);
 			});
 
-			expect(() => requireUserRole(testUrl, testUser, ['admin'])).toThrow('403: Forbidden: Insufficient permissions');
+			expect(() => requireUserRole(testUrl, testUser, ['admin'])).toThrow(
+				'403: Forbidden: Insufficient permissions'
+			);
 			expect(error).toHaveBeenCalledWith(403, 'Forbidden: Insufficient permissions');
 		});
 
@@ -473,7 +532,9 @@ describe('auth.ts', () => {
 				throw new Error(`${status}: ${body}`);
 			});
 
-			expect(() => requireUserRole(testUrl, testUser, ['admin'])).toThrow('403: Forbidden: Insufficient permissions');
+			expect(() => requireUserRole(testUrl, testUser, ['admin'])).toThrow(
+				'403: Forbidden: Insufficient permissions'
+			);
 			expect(error).toHaveBeenCalledWith(403, 'Forbidden: Insufficient permissions');
 		});
 
@@ -490,7 +551,9 @@ describe('auth.ts', () => {
 				throw new Error(`${status}: ${body}`);
 			});
 
-			expect(() => requireUserRole(testUrl, testUser as User, ['admin'])).toThrow('403: Forbidden: Insufficient permissions');
+			expect(() => requireUserRole(testUrl, testUser as User, ['admin'])).toThrow(
+				'403: Forbidden: Insufficient permissions'
+			);
 			expect(error).toHaveBeenCalledWith(403, 'Forbidden: Insufficient permissions');
 		});
 
@@ -518,13 +581,15 @@ describe('auth.ts', () => {
 
 		it('should handle URL without pathname', () => {
 			const urlWithoutPath = new URL('https://example.com');
-			
+
 			// Mock redirect to throw an exception like the real function does
 			vi.mocked(redirect).mockImplementation((status: number, location: string | URL) => {
 				throw new Error(`Redirect ${status}: ${location}`);
 			});
 
-			expect(() => requireUserRole(urlWithoutPath, null)).toThrow('Redirect 302: /api/auth/login?returnUrl=/');
+			expect(() => requireUserRole(urlWithoutPath, null)).toThrow(
+				'Redirect 302: /api/auth/login?returnUrl=/'
+			);
 			expect(redirect).toHaveBeenCalledWith(302, '/api/auth/login?returnUrl=/');
 		});
 	});
