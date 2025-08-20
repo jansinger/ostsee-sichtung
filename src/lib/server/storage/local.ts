@@ -4,10 +4,10 @@
  * Implements path normalization and validation to prevent directory traversal attacks
  */
 import { createLogger } from '$lib/logger';
+import type { FileMetadata, StorageProvider, UploadedFileInfo, UploadOptions } from '$lib/types';
 import { createId } from '@paralleldrive/cuid2';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'fs';
 import { basename, extname, join, normalize, relative, resolve } from 'path';
-import type { FileMetadata, StorageProvider, UploadedFile, UploadOptions } from './types';
 
 const logger = createLogger('storage:local');
 
@@ -104,8 +104,8 @@ export class LocalStorageProvider implements StorageProvider {
 		return relativePath;
 	}
 
-	async upload(file: File, buffer: Buffer, options: UploadOptions): Promise<UploadedFile> {
-		const id = createId();
+	async upload(file: File, buffer: Buffer, options: UploadOptions): Promise<UploadedFileInfo> {
+		const uid = createId();
 
 		// Sanitize the original filename
 		const sanitizedOriginalName = this.sanitizeFilename(file.name);
@@ -113,8 +113,8 @@ export class LocalStorageProvider implements StorageProvider {
 
 		// Create safe filename
 		const fileName = options.preserveOriginalName
-			? `${basename(sanitizedOriginalName, extension)}-${id}${extension}`
-			: `${id}${extension}`;
+			? `${basename(sanitizedOriginalName, extension)}-${uid}${extension}`
+			: `${uid}${extension}`;
 
 		// Validate and sanitize the reference ID to prevent path traversal
 		const safeReferenceId = this.validatePath(options.referenceId);
@@ -133,8 +133,8 @@ export class LocalStorageProvider implements StorageProvider {
 		// Write file
 		writeFileSync(fullPath, buffer);
 
-		const uploadedFile: UploadedFile = {
-			id,
+		const uploadedFile: UploadedFileInfo = {
+			uid,
 			originalName: file.name,
 			fileName,
 			filePath: relativePath,
@@ -196,7 +196,7 @@ export class LocalStorageProvider implements StorageProvider {
 		}
 	}
 
-	async list(prefix?: string): Promise<UploadedFile[]> {
+	async list(prefix?: string): Promise<UploadedFileInfo[]> {
 		try {
 			// Validate prefix if provided
 			const safePrefix = prefix ? this.validatePath(prefix) : '';
@@ -206,7 +206,7 @@ export class LocalStorageProvider implements StorageProvider {
 				return [];
 			}
 
-			const files: UploadedFile[] = [];
+			const files: UploadedFileInfo[] = [];
 			const entries = readdirSync(searchDir, { withFileTypes: true });
 
 			for (const entry of entries) {
@@ -216,7 +216,7 @@ export class LocalStorageProvider implements StorageProvider {
 					const stats = statSync(fullPath);
 
 					files.push({
-						id: entry.name.split('.')[0] || 'unknown',
+						uid: entry.name.split('.')[0] || 'unknown',
 						originalName: entry.name,
 						fileName: entry.name,
 						filePath: relativePath,

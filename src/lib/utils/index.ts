@@ -31,9 +31,7 @@ export {
 	sanitizeFileName,
 	validateFile,
 	validateFiles,
-	validateGPSPhotos,
-	type ValidationPreset,
-	type ValidationResult
+	validateGPSPhotos
 } from './validation/fileValidation';
 
 // Upload utilities (existing)

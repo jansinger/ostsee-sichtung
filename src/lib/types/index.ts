@@ -9,7 +9,12 @@ export type { ExifData } from './ExifData.js';
 export type { User, UserContactData } from './User.js';
 
 // File upload types
-export type { BrowserFileMetadata, UploadedFileInfo } from './UploadedFile.js';
+export type {
+	BrowserFileMetadata,
+	FileMetadata,
+	UploadedFileInfo,
+	UploadOptions
+} from './UploadedFile.js';
 
 // Sighting types
 export type { FrontendSighting } from './FrontendSighting.js';
@@ -44,13 +49,7 @@ export type {
 } from './FormField.js';
 
 // Storage types
-export type {
-	FileMetadata,
-	StorageProvider,
-	StorageProviderType,
-	UploadedFile,
-	UploadOptions
-} from './Storage.js';
+export type { StorageProvider, StorageProviderType } from './Storage.js';
 
 // API response types
 export type { CreateSightingResponse, SightingResponse } from './ApiResponse.js';
@@ -75,3 +74,48 @@ export type {
 	SpatialValidationMetrics,
 	TurfValidationOptions
 } from './Geography.js';
+
+// Validation types
+export type {
+	FileValidationConfig,
+	ValidationPreset,
+	ValidationResult
+} from './validation.js';
+
+// Toast notification types
+export type { CreateToastOptions, ToastMessage, ToastOptions, ToastType } from './toast.js';
+
+// Map types
+export type {
+	CountData,
+	CountManager,
+	DBSighting,
+	GeoJSONResponse,
+	LegendGroup,
+	LoadDataOptions,
+	MapOptions,
+	MapTranslations,
+	PanelManager,
+	SightingFeature,
+	SightingProperties,
+	SimpleMapOptions,
+	SpeciesSymbol,
+	TimeSliderManager
+} from './map.js';
+
+// Export types
+export type {
+	ExportFormat,
+	ExportOptions,
+	KmlPlacemark,
+	XmlSighting
+} from './export.js';
+
+// Media types
+export type {
+	MediaFileData,
+	MediaProcessingOptions,
+	MediaStore,
+	MediaType,
+	MediaUploadResult
+} from './media.js';

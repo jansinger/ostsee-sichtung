@@ -10,6 +10,7 @@ import {
 	updateSighting
 } from '$lib/server/db/sightingRepository';
 import type { ExifData } from '$lib/types';
+import { createId } from '@paralleldrive/cuid2';
 import { error, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
@@ -100,7 +101,8 @@ export const PUT: RequestHandler = async ({ params, request, locals, url }) => {
 				const fileUrl = storageProvider.getUrl(fileObj.filePath as string);
 
 				return {
-					id: (fileObj.id as string) || Math.random().toString(36),
+					id: (fileObj.id as number) || Math.random(),
+					uid: (fileObj.uid as string) || createId(),
 					originalName: fileObj.originalName as string,
 					fileName: (fileObj.fileName as string) || (fileObj.filePath as string),
 					filePath: fileObj.filePath as string,

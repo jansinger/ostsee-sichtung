@@ -8,6 +8,7 @@ import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import type { UploadedFileInfo } from '$lib/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readImageExifData } from '../media/exifUtils';
 import {
 	loadSightingFiles,
 	saveSighting,
@@ -82,7 +83,7 @@ describe('sightingRepository', () => {
 	};
 
 	const mockUploadedFile: UploadedFileInfo = {
-		id: 'file-1',
+		uid: 'file-1',
 		originalName: 'test.jpg',
 		fileName: 'test-123.jpg',
 		filePath: 'uploads/test-123.jpg',
@@ -461,7 +462,6 @@ describe('sightingRepository', () => {
 				})
 			});
 
-			const { readImageExifData } = await import('$lib/server/exifUtils');
 			(readImageExifData as any).mockRejectedValueOnce(new Error('Corrupt image'));
 
 			// Act
@@ -480,7 +480,7 @@ describe('sightingRepository', () => {
 		it('sollte mehrere Dateien erfolgreich speichern', async () => {
 			// Arrange
 			const mockDb = db as any;
-			const files = [mockUploadedFile, { ...mockUploadedFile, id: 'file-2' }];
+			const files = [mockUploadedFile, { ...mockUploadedFile, uid: 'file-2' }];
 
 			mockDb.insert.mockReturnValue({
 				values: vi.fn().mockResolvedValue(undefined)

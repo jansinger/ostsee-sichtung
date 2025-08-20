@@ -3,7 +3,7 @@
  */
 
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
-import type { MediaStore } from '$lib/utils/upload/MediaFile';
+import type { MediaStore } from '$lib/utils/media/MediaFile';
 import * as yup from 'yup';
 
 export interface FormStep {

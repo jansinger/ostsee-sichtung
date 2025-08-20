@@ -20,6 +20,7 @@ import { sightingFiles, sightings } from '$lib/server/db/schema';
 import { getUploadPath } from '$lib/server/uploads';
 import type { ExifData, UploadedFileInfo } from '$lib/types';
 import type { NewSighting, UpdateSighting } from '$lib/types/sighting';
+import type { SightingFileInsert } from '$lib/types/sightingFile';
 import { isImageFile } from '$lib/utils';
 import { eq } from 'drizzle-orm';
 import { readImageExifData } from '../media/exifUtils';
@@ -64,6 +65,7 @@ export const saveSighting = async (formData: SightingFormData): Promise<{ id: nu
 
 		// Normalisiere Datei-Metadaten für Datenbank-Insert
 		const fileRecords = formData.uploadedFiles.map((file) => ({
+			uid: file.uid,
 			sightingId: sightingId,
 			referenceId: formData.referenceId,
 			originalName: file.originalName,
@@ -222,11 +224,12 @@ export const loadSightingFiles = async (sightingId: number): Promise<UploadedFil
 			}
 
 			return {
-				id: file.id.toString(),
+				id: file.id,
+				uid: file.uid,
 				originalName: file.originalName,
 				fileName: file.fileName,
 				filePath: file.filePath,
-				url: fileUrl, // Gespeicherte oder generierte URL
+				url: fileUrl || undefined, // Gespeicherte oder generierte URL
 				size: file.size,
 				mimeType: file.mimeType,
 				uploadedAt: file.uploadedAt,
@@ -262,8 +265,11 @@ export const saveSightingFiles = async (
 	// Early return bei leerer Dateiliste
 	if (uploadedFiles.length === 0) return;
 
+	const timestamp = new Date().toISOString();
+
 	// Normalisiere Datei-Metadaten für Datenbank-Schema
-	const fileData = uploadedFiles.map((file) => ({
+	const fileData: SightingFileInsert[] = uploadedFiles.map((file) => ({
+		uid: file.uid,
 		sightingId,
 		referenceId,
 		originalName: file.originalName,
@@ -271,8 +277,9 @@ export const saveSightingFiles = async (
 		filePath: file.filePath,
 		mimeType: file.mimeType,
 		size: file.size,
-		uploadedAt: file.uploadedAt,
-		createdAt: new Date().toISOString() // Aktuelle Zeit als Erstellungsdatum
+		uploadedAt: file.uploadedAt || timestamp,
+		createdAt: timestamp, // Aktuelle Zeit als Erstellungsdatum
+		exifData: file.exifData || null
 	}));
 
 	// Lösche zuerst alle bestehenden Datei-Referenzen für diese Sichtung

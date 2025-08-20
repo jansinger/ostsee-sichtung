@@ -10,6 +10,7 @@
  * 5. Copies files from uploads/_old_uploads/ to uploads/{referenz_id}/ (preserves originals)
  */
 
+import type { ExifData } from '$lib/types';
 import { createId } from '@paralleldrive/cuid2';
 import { and, eq, isNotNull, ne } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -18,7 +19,6 @@ import * as path from 'path';
 import postgres from 'postgres';
 import * as schema from '../lib/server/db/schema';
 import { sightingFiles, sightings } from '../lib/server/db/schema';
-import type { ExifDataRaw } from '../lib/types';
 
 // Simple logger interface for standalone script
 interface Logger {
@@ -70,7 +70,7 @@ function isImageFile(mimeType: string): boolean {
 /**
  * Liest EXIF-Daten aus einer Datei
  */
-async function readImageExifData(filePath: string): Promise<ExifDataRaw | null> {
+async function readImageExifData(filePath: string): Promise<ExifData | null> {
 	try {
 		// Dynamically import exifr library
 		const { default: exifr } = await import('exifr');
@@ -114,7 +114,7 @@ async function readImageExifData(filePath: string): Promise<ExifDataRaw | null> 
 		}
 
 		// Extract and format data
-		const result: ExifDataRaw = {
+		const result: ExifData = {
 			latitude: exifData.latitude || null,
 			longitude: exifData.longitude || null,
 			altitude: null,
@@ -129,7 +129,7 @@ async function readImageExifData(filePath: string): Promise<ExifDataRaw | null> 
 		if (exifData.GPSAltitude !== undefined) {
 			result.altitude = exifData.GPSAltitude;
 			// GPSAltitudeRef: 0 = above sea level, 1 = below sea level
-			if (exifData.GPSAltitudeRef === 1 && result.altitude !== null) {
+			if (exifData.GPSAltitudeRef === 1 && result.altitude) {
 				result.altitude = -result.altitude;
 			}
 		}
@@ -188,7 +188,7 @@ interface SightingWithUpload {
 async function getFileInfo(filePath: string): Promise<{
 	mimeType: string;
 	size: number;
-	exifData: ExifDataRaw | null;
+	exifData: ExifData | null;
 	url?: string;
 }> {
 	try {
@@ -209,7 +209,7 @@ async function getFileInfo(filePath: string): Promise<{
 		const mimeType = mimeTypes[ext] || 'application/octet-stream';
 
 		// Extract EXIF data for images
-		let exifData: ExifDataRaw | null = null;
+		let exifData: ExifData | null = null;
 		if (isImageFile(mimeType)) {
 			log.info(`Extracting EXIF data from ${path.basename(filePath)}...`);
 			try {
@@ -355,7 +355,11 @@ async function main() {
 						// Create URL path for the file
 						const fileUrl = `/uploads/${referenzId}/${fileName}`;
 
+						// Generate a unique identifier for the file
+						const uid = createId();
+
 						await db.insert(sightingFiles).values({
+							uid,
 							sightingId: sighting.id,
 							referenceId: referenzId,
 							originalName: fileName,

@@ -17,7 +17,6 @@ import { OSM, Vector as VectorSource } from 'ol/source';
 import { Icon, Style } from 'ol/style';
 import OLView from 'ol/View';
 
-
 /**
  * GPS-Positionierungs-Control für OpenLayers (vereinfacht für OLMap)
  * Verwendet das neue LocationControl-Design mit kontinuierlichem Tracking
@@ -77,7 +76,7 @@ export class FormLocationControl extends Control {
 		this.watchId = navigator.geolocation.watchPosition(
 			(position) => {
 				const coords: Coordinate = [position.coords.longitude, position.coords.latitude];
-				
+
 				if (this.onPositionCallback) {
 					this.onPositionCallback(coords);
 				}
@@ -121,16 +120,20 @@ function optimizeCanvasForOpenLayers(): void {
 
 	// Speichere die ursprüngliche getContext-Methode
 	const originalGetContext = HTMLCanvasElement.prototype.getContext;
-	
+
 	// Überschreibe getContext für alle Canvas-Elemente
-	(HTMLCanvasElement.prototype.getContext as any) = function(
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	(HTMLCanvasElement.prototype.getContext as any) = function (
 		this: HTMLCanvasElement,
-		contextType: string, 
-		contextAttributes?: CanvasRenderingContext2DSettings | WebGLContextAttributes | ImageBitmapRenderingContextSettings
+		contextType: string,
+		contextAttributes?:
+			| CanvasRenderingContext2DSettings
+			| WebGLContextAttributes
+			| ImageBitmapRenderingContextSettings
 	) {
 		// Für 2D-Kontext: setze willReadFrequently auf true
 		if (contextType === '2d') {
-			const attrs = contextAttributes as CanvasRenderingContext2DSettings || {};
+			const attrs = (contextAttributes as CanvasRenderingContext2DSettings) || {};
 			attrs.willReadFrequently = true;
 			return originalGetContext.call(this, contextType, attrs);
 		}

@@ -1,14 +1,15 @@
 /**
  * Unit Tests für LocalStorageProvider
- * 
+ *
  * Testet den lokalen Dateispeicher mit besonderem Fokus auf
  * Sicherheit (Path Traversal) und Edge Cases
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { LocalStorageProvider } from './local';
-import type { UploadOptions } from './types';
+import type { UploadOptions } from '$lib/types';
 import * as fs from 'fs';
 import * as path from 'path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readImageExifData } from '../media/exifUtils';
+import { LocalStorageProvider } from './local';
 
 // Mock dependencies
 vi.mock('fs', () => ({
@@ -25,12 +26,14 @@ vi.mock('@paralleldrive/cuid2', () => ({
 }));
 
 vi.mock('$lib/server/exifUtils', () => ({
-	readImageExifData: vi.fn(() => Promise.resolve({
-		latitude: 54.123,
-		longitude: 12.456,
-		make: 'TestCamera',
-		model: 'Model X'
-	}))
+	readImageExifData: vi.fn(() =>
+		Promise.resolve({
+			latitude: 54.123,
+			longitude: 12.456,
+			make: 'TestCamera',
+			model: 'Model X'
+		})
+	)
 }));
 
 vi.mock('$lib/logger', () => ({
@@ -61,16 +64,16 @@ describe('LocalStorageProvider', () => {
 		it('sollte eine Datei erfolgreich hochladen', async () => {
 			// Arrange
 			const mockFile = new File(['test content'], 'test.jpg', { type: 'image/jpeg' });
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: 'ref-123',
-				preserveOriginalName: false,
-				extractExif: true
+				preserveOriginalName: false
 			};
 
 			(fs.existsSync as any).mockReturnValue(false);
 
 			// Act
-			const result = await provider.upload(mockFile, options);
+			const result = await provider.upload(mockFile, buffer, options);
 
 			// Assert
 			expect(result).toMatchObject({
@@ -91,16 +94,16 @@ describe('LocalStorageProvider', () => {
 		it('sollte Originalnamen beibehalten wenn preserveOriginalName true ist', async () => {
 			// Arrange
 			const mockFile = new File(['content'], 'original-photo.png', { type: 'image/png' });
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: 'ref-456',
-				preserveOriginalName: true,
-				extractExif: false
+				preserveOriginalName: true
 			};
 
 			(fs.existsSync as any).mockReturnValue(false);
 
 			// Act
-			const result = await provider.upload(mockFile, options);
+			const result = await provider.upload(mockFile, buffer, options);
 
 			// Assert
 			expect(result.fileName).toBe('original-photo-test-id-123.png');
@@ -113,16 +116,16 @@ describe('LocalStorageProvider', () => {
 		it('sollte EXIF-Daten aus Bildern extrahieren wenn extractExif true ist', async () => {
 			// Arrange
 			const mockFile = new File(['image data'], 'photo.jpg', { type: 'image/jpeg' });
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: 'ref-789',
-				preserveOriginalName: false,
-				extractExif: true
+				preserveOriginalName: false
 			};
 
 			(fs.existsSync as any).mockReturnValue(false);
 
 			// Act
-			const result = await provider.upload(mockFile, options);
+			const result = await provider.upload(mockFile, buffer, options);
 
 			// Assert
 			expect(result.exifData).toEqual({
@@ -139,16 +142,16 @@ describe('LocalStorageProvider', () => {
 		it('sollte keine EXIF-Daten aus PDF-Dateien extrahieren', async () => {
 			// Arrange
 			const mockFile = new File(['pdf content'], 'document.pdf', { type: 'application/pdf' });
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: 'ref-pdf',
-				preserveOriginalName: false,
-				extractExif: true
+				preserveOriginalName: false
 			};
 
 			(fs.existsSync as any).mockReturnValue(false);
 
 			// Act
-			const result = await provider.upload(mockFile, options);
+			const result = await provider.upload(mockFile, buffer, options);
 
 			// Assert
 			expect(result.exifData).toBeNull();
@@ -160,18 +163,17 @@ describe('LocalStorageProvider', () => {
 		it('sollte EXIF-Fehler abfangen und trotzdem Datei speichern', async () => {
 			// Arrange
 			const mockFile = new File(['corrupt'], 'corrupt.jpg', { type: 'image/jpeg' });
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: 'ref-corrupt',
-				preserveOriginalName: false,
-				extractExif: true
+				preserveOriginalName: false
 			};
 
 			(fs.existsSync as any).mockReturnValue(false);
-			const { readImageExifData } = await import('$lib/server/exifUtils');
 			(readImageExifData as any).mockRejectedValueOnce(new Error('Corrupt EXIF'));
 
 			// Act
-			const result = await provider.upload(mockFile, options);
+			const result = await provider.upload(mockFile, buffer, options);
 
 			// Assert
 			expect(result.exifData).toBeNull();
@@ -185,15 +187,17 @@ describe('LocalStorageProvider', () => {
 		it('sollte Path Traversal Versuche verhindern', async () => {
 			// Arrange
 			const maliciousFile = new File(['malicious'], '../../../etc/passwd', { type: 'text/plain' });
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: '../../sensitive',
-				preserveOriginalName: true,
-				extractExif: false
+				preserveOriginalName: true
 			};
 
 			// Act & Assert
 			// Der Path Traversal Versuch sollte jetzt einen Fehler werfen
-			await expect(provider.upload(maliciousFile, options)).rejects.toThrow('Invalid path: Directory traversal detected');
+			await expect(provider.upload(maliciousFile, buffer, options)).rejects.toThrow(
+				'Invalid path: Directory traversal detected'
+			);
 		});
 
 		/**
@@ -202,22 +206,21 @@ describe('LocalStorageProvider', () => {
 		it('sollte Verzeichnis erstellen wenn es nicht existiert', async () => {
 			// Arrange
 			const mockFile = new File(['content'], 'file.txt', { type: 'text/plain' });
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: 'new-dir',
-				preserveOriginalName: false,
-				extractExif: false
+				preserveOriginalName: false
 			};
 
 			(fs.existsSync as any).mockReturnValue(false);
 
 			// Act
-			await provider.upload(mockFile, options);
+			await provider.upload(mockFile, buffer, options);
 
 			// Assert
-			expect(fs.mkdirSync).toHaveBeenCalledWith(
-				expect.stringContaining('new-dir'),
-				{ recursive: true }
-			);
+			expect(fs.mkdirSync).toHaveBeenCalledWith(expect.stringContaining('new-dir'), {
+				recursive: true
+			});
 		});
 
 		/**
@@ -227,16 +230,16 @@ describe('LocalStorageProvider', () => {
 			// Arrange
 			const largeContent = new Array(10 * 1024 * 1024).fill('a').join(''); // 10MB
 			const mockFile = new File([largeContent], 'large.bin', { type: 'application/octet-stream' });
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: 'large-files',
-				preserveOriginalName: false,
-				extractExif: false
+				preserveOriginalName: false
 			};
 
 			(fs.existsSync as any).mockReturnValue(false);
 
 			// Act
-			const result = await provider.upload(mockFile, options);
+			const result = await provider.upload(mockFile, buffer, options);
 
 			// Assert
 			expect(result.size).toBe(mockFile.size);
@@ -284,7 +287,9 @@ describe('LocalStorageProvider', () => {
 
 			// Act & Assert
 			// Der Path Traversal Versuch sollte jetzt einen Fehler werfen
-			await expect(provider.delete(maliciousPath)).rejects.toThrow('Invalid path: Directory traversal detected');
+			await expect(provider.delete(maliciousPath)).rejects.toThrow(
+				'Invalid path: Directory traversal detected'
+			);
 		});
 	});
 
@@ -323,7 +328,7 @@ describe('LocalStorageProvider', () => {
 				size: 1024000,
 				mtime: new Date('2024-01-15T10:00:00Z')
 			};
-			
+
 			(fs.existsSync as any).mockReturnValue(true);
 			(fs.statSync as any).mockReturnValue(mockStats);
 
@@ -427,9 +432,7 @@ describe('LocalStorageProvider', () => {
 		 */
 		it('sollte Dateien im Root-Verzeichnis auflisten wenn kein Prefix angegeben', async () => {
 			// Arrange
-			const mockFiles = [
-				{ name: 'root-file.txt', isFile: () => true }
-			];
+			const mockFiles = [{ name: 'root-file.txt', isFile: () => true }];
 
 			(fs.existsSync as any).mockReturnValue(true);
 			(fs.readdirSync as any).mockReturnValue(mockFiles);
@@ -483,17 +486,19 @@ describe('LocalStorageProvider', () => {
 		 */
 		it('sollte Dateinamen mit Sonderzeichen sanitizen', async () => {
 			// Arrange
-			const dangerousFile = new File(['content'], '<script>alert("xss")</script>.txt', { type: 'text/plain' });
+			const dangerousFile = new File(['content'], '<script>alert("xss")</script>.txt', {
+				type: 'text/plain'
+			});
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: 'safe-ref',
-				preserveOriginalName: true,
-				extractExif: false
+				preserveOriginalName: true
 			};
 
 			(fs.existsSync as any).mockReturnValue(false);
 
 			// Act
-			const result = await provider.upload(dangerousFile, options);
+			const result = await provider.upload(dangerousFile, buffer, options);
 
 			// Assert
 			expect(result).toBeDefined();
@@ -511,16 +516,16 @@ describe('LocalStorageProvider', () => {
 		it('sollte Null-Byte Injection verhindern', async () => {
 			// Arrange
 			const mockFile = new File(['content'], 'file.jpg\x00.txt', { type: 'text/plain' });
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: 'ref-null',
-				preserveOriginalName: true,
-				extractExif: false
+				preserveOriginalName: true
 			};
 
 			(fs.existsSync as any).mockReturnValue(false);
 
 			// Act
-			const result = await provider.upload(mockFile, options);
+			const result = await provider.upload(mockFile, buffer, options);
 
 			// Assert
 			expect(result.fileName).not.toContain('\x00');
@@ -535,19 +540,19 @@ describe('LocalStorageProvider', () => {
 		it('sollte versteckte Dateien (beginnend mit Punkt) verhindern', async () => {
 			// Arrange
 			const hiddenFile = new File(['secret'], '...hidden_config', { type: 'text/plain' });
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: 'ref-hidden',
-				preserveOriginalName: true,
-				extractExif: false
+				preserveOriginalName: true
 			};
 
 			(fs.existsSync as any).mockReturnValue(false);
 
 			// Act
-			const result = await provider.upload(hiddenFile, options);
+			const result = await provider.upload(hiddenFile, buffer, options);
 
 			// Assert
-			expect(result.fileName.startsWith('.')).toBe(false);
+			expect(result.fileName?.startsWith('.')).toBe(false);
 			expect(result.fileName).toBe('hidden_config-test-id-123');
 		});
 
@@ -558,22 +563,22 @@ describe('LocalStorageProvider', () => {
 			// Arrange
 			const longName = 'a'.repeat(300) + '.txt'; // 304 Zeichen
 			const longFile = new File(['content'], longName, { type: 'text/plain' });
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: 'ref-long',
-				preserveOriginalName: true,
-				extractExif: false
+				preserveOriginalName: true
 			};
 
 			(fs.existsSync as any).mockReturnValue(false);
 
 			// Act
-			const result = await provider.upload(longFile, options);
+			const result = await provider.upload(longFile, buffer, options);
 
 			// Assert
 			// Mit der ID kann der Name länger als 255 werden, das ist OK
 			// Wichtig ist, dass er nicht unbegrenzt wächst
-			expect(result.fileName.length).toBeLessThan(400); // Realistisches Limit
-			expect(result.fileName.endsWith('-test-id-123.txt')).toBe(true);
+			expect(result.fileName?.length).toBeLessThan(400); // Realistisches Limit
+			expect(result.fileName?.endsWith('-test-id-123.txt')).toBe(true);
 		});
 
 		/**
@@ -582,16 +587,16 @@ describe('LocalStorageProvider', () => {
 		it('sollte leeren Dateiname durch Fallback ersetzen', async () => {
 			// Arrange
 			const emptyFile = new File(['content'], '', { type: 'text/plain' });
+			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
 				referenceId: 'ref-empty',
-				preserveOriginalName: true,
-				extractExif: false
+				preserveOriginalName: true
 			};
 
 			(fs.existsSync as any).mockReturnValue(false);
 
 			// Act
-			const result = await provider.upload(emptyFile, options);
+			const result = await provider.upload(emptyFile, buffer, options);
 
 			// Assert
 			expect(result.fileName).toBe('unnamed_file-test-id-123');
@@ -604,7 +609,9 @@ describe('LocalStorageProvider', () => {
 		 */
 		it('sollte delete() vor Path Traversal schützen', async () => {
 			// Act & Assert
-			await expect(provider.delete('../../etc/passwd')).rejects.toThrow('Invalid path: Directory traversal detected');
+			await expect(provider.delete('../../etc/passwd')).rejects.toThrow(
+				'Invalid path: Directory traversal detected'
+			);
 		});
 
 		/**
@@ -645,11 +652,7 @@ describe('LocalStorageProvider', () => {
 		 */
 		it('sollte absolute Pfade ablehnen', async () => {
 			// Arrange
-			const absolutePaths = [
-				'/etc/passwd',
-				'C:\\Windows\\System32',
-				'/var/log/secure'
-			];
+			const absolutePaths = ['/etc/passwd', 'C:\\Windows\\System32', '/var/log/secure'];
 
 			for (const testPath of absolutePaths) {
 				// Act & Assert
@@ -670,7 +673,9 @@ describe('LocalStorageProvider', () => {
 		 */
 		it('sollte Windows-Style Path Traversal verhindern', async () => {
 			// Act & Assert
-			await expect(provider.delete('..\\..\\Windows\\System32')).rejects.toThrow('Invalid path: Directory traversal detected');
+			await expect(provider.delete('..\\..\\Windows\\System32')).rejects.toThrow(
+				'Invalid path: Directory traversal detected'
+			);
 		});
 
 		/**
@@ -686,7 +691,9 @@ describe('LocalStorageProvider', () => {
 
 			for (const attempt of traversalAttempts) {
 				// Act & Assert
-				await expect(provider.delete(attempt)).rejects.toThrow('Invalid path: Directory traversal detected');
+				await expect(provider.delete(attempt)).rejects.toThrow(
+					'Invalid path: Directory traversal detected'
+				);
 			}
 		});
 	});

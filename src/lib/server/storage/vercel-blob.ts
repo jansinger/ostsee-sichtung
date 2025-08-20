@@ -2,10 +2,10 @@
  * Vercel Blob storage provider
  */
 import { createLogger } from '$lib/logger';
+import type { FileMetadata, StorageProvider, UploadedFileInfo, UploadOptions } from '$lib/types';
 import { createId } from '@paralleldrive/cuid2';
 import { del, head, list, put } from '@vercel/blob';
 import { basename, extname } from 'path';
-import type { FileMetadata, StorageProvider, UploadedFile, UploadOptions } from './types';
 
 const logger = createLogger('storage:vercel-blob');
 
@@ -21,12 +21,12 @@ export class VercelBlobStorageProvider implements StorageProvider {
 		}
 	}
 
-	async upload(file: File, buffer: Buffer, options: UploadOptions): Promise<UploadedFile> {
-		const id = createId();
+	async upload(file: File, buffer: Buffer, options: UploadOptions): Promise<UploadedFileInfo> {
+		const uid = createId();
 		const extension = extname(file.name);
 		const fileName = options.preserveOriginalName
-			? `${basename(file.name, extension)}-${id}${extension}`
-			: `${id}${extension}`;
+			? `${basename(file.name, extension)}-${uid}${extension}`
+			: `${uid}${extension}`;
 
 		const filePath = `${options.referenceId}/${fileName}`;
 
@@ -37,8 +37,8 @@ export class VercelBlobStorageProvider implements StorageProvider {
 				contentType: file.type
 			});
 
-			const uploadedFile: UploadedFile = {
-				id,
+			const uploadedFile: UploadedFileInfo = {
+				uid,
 				originalName: file.name,
 				fileName,
 				filePath,
@@ -96,7 +96,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 		}
 	}
 
-	async list(prefix?: string): Promise<UploadedFile[]> {
+	async list(prefix?: string): Promise<UploadedFileInfo[]> {
 		try {
 			const listOptions: { token: string; prefix?: string } = { token: this.token };
 			if (prefix) {
@@ -105,7 +105,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 			const result = await list(listOptions);
 
 			return result.blobs.map((blob) => ({
-				id: this.extractIdFromPathname(blob.pathname),
+				uid: this.extractUidFromPathname(blob.pathname),
 				originalName: basename(blob.pathname),
 				fileName: basename(blob.pathname),
 				filePath: blob.pathname,
@@ -156,14 +156,14 @@ export class VercelBlobStorageProvider implements StorageProvider {
 		}
 	}
 
-	private extractIdFromPathname(pathname: string): string {
-		// Extract ID from filename pattern: referenceId/filename-ID.ext
+	private extractUidFromPathname(pathname: string): string {
+		// Extract UID from filename pattern: referenceId/filename-UID.ext
 		const filename = basename(pathname);
 		const parts = filename.split('-');
 		if (parts.length > 1) {
-			const idWithExt = parts[parts.length - 1];
-			if (idWithExt) {
-				return idWithExt.split('.')[0] || 'unknown';
+			const uidWithExt = parts[parts.length - 1];
+			if (uidWithExt) {
+				return uidWithExt.split('.')[0] || 'unknown';
 			}
 		}
 		return filename.split('.')[0] || 'unknown';

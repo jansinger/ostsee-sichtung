@@ -52,7 +52,7 @@ import type {
 	SpatialIndexItem,
 	TurfValidationOptions
 } from '$lib/types';
-import type { GEO_LIMITS } from '$lib/utils/geo/checkBalticSea';
+import { GEO_LIMITS, isInBalticArea } from '$lib/utils/geo/checkBalticSea';
 import { booleanPointInPolygon } from '@turf/boolean-point-in-polygon';
 import { multiPolygon, point, polygon } from '@turf/helpers';
 import RBush from 'rbush';

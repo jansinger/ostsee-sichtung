@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getFormContext } from '$lib/report/formContext';
-	import type { FileValidationConfig } from '$lib/utils/fileValidation';
+	import type { ValidationPreset } from '$lib/types';
 	import { Calendar, Camera, MapPin, SquarePen } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import DropzoneEnhanced from '../form/fields/DropzoneEnhanced.svelte';
@@ -17,9 +17,11 @@
 	const referenceId = $derived($form.referenceId);
 
 	// Create a compatible config for GPS photo
-	const gpsPhotoConfig: FileValidationConfig = {
+	const gpsPhotoConfig: ValidationPreset = {
 		allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'],
-		maxFiles: 1
+		maxFileSize: 30 * 1024 * 1024, // 30MB
+		maxFiles: 1,
+		accept: 'image/*'
 	};
 
 	function selectMethod(method: 'photo' | 'map' | 'manual') {

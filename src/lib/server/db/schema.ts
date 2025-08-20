@@ -118,9 +118,10 @@ export const sightingFiles = pgTable(
 	'sichtungen_dateien',
 	{
 		id: serial().primaryKey().notNull(),
-		sightingId: bigint('sichtung_id', { mode: 'number' })
-			.references(() => sightings.id, { onDelete: 'cascade' })
-			.notNull(),
+		uid: varchar('uid', { length: 64 }).notNull(),
+		sightingId: bigint('sichtung_id', { mode: 'number' }).references(() => sightings.id, {
+			onDelete: 'cascade'
+		}),
 		referenceId: varchar('referenz_id', { length: 64 }).notNull(),
 		originalName: varchar('original_name', { length: 255 }).notNull(),
 		fileName: varchar('datei_name', { length: 255 }).notNull(),
@@ -134,6 +135,7 @@ export const sightingFiles = pgTable(
 	},
 	(table) => [
 		index('idx_sichtungen_dateien_sichtung_id').on(table.sightingId),
-		index('idx_sichtungen_dateien_referenz_id').on(table.referenceId)
+		index('idx_sichtungen_dateien_referenz_id').on(table.referenceId),
+		index('idx_sichtungen_dateien_uid').on(table.uid)
 	]
 );

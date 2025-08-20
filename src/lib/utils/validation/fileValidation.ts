@@ -9,20 +9,9 @@ import {
 	UPLOAD_LIMITS,
 	type FILE_VALIDATION_PRESETS
 } from '$lib/constants/upload';
+
+import type { ValidationPreset, ValidationResult } from '$lib/types';
 import { isImageFile, isMediaFile, isVideoFile } from '$lib/utils/file/fileType';
-
-export interface ValidationResult {
-	isValid: boolean;
-	errors: string[];
-	validFiles?: File[];
-}
-
-export interface ValidationPreset {
-	allowedTypes: readonly string[];
-	maxFileSize: number;
-	maxFiles: number;
-	accept: string;
-}
 
 /**
  * Validates a single file against specified criteria
@@ -147,21 +136,21 @@ export const quickValidation = {
 	 * Check if file is a supported image type
 	 */
 	isValidImage: (file: File): boolean => {
-		return isImageFile(file) && ALLOWED_MIME_TYPES.IMAGES.includes(file.type as any);
+		return isImageFile(file) && ALLOWED_MIME_TYPES.IMAGES.includes(file.type as never);
 	},
 
 	/**
 	 * Check if file is a supported video type
 	 */
 	isValidVideo: (file: File): boolean => {
-		return isVideoFile(file) && ALLOWED_MIME_TYPES.VIDEOS.includes(file.type as any);
+		return isVideoFile(file) && ALLOWED_MIME_TYPES.VIDEOS.includes(file.type as never);
 	},
 
 	/**
 	 * Check if file is supported media (image or video)
 	 */
 	isValidMedia: (file: File): boolean => {
-		return isMediaFile(file) && ALLOWED_MIME_TYPES.MEDIA.includes(file.type as any);
+		return isMediaFile(file) && ALLOWED_MIME_TYPES.MEDIA.includes(file.type as never);
 	},
 
 	/**
