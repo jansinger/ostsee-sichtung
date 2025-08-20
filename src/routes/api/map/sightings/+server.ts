@@ -18,8 +18,9 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Jahr-Filter hinzufügen, wenn vorhanden
 		if (year) {
-			const yearStart = `${year}-01-01`;
-			const yearEnd = `${year}-12-31`;
+			const yearStart = new Date(`${year}-01-01`);
+			const yearEnd = new Date(`${year}-12-31`);
+			// @TODO: use Postgres index!
 			conditions.push(between(sightingsTable.sightingDate, yearStart, yearEnd));
 		}
 

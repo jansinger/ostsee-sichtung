@@ -10,7 +10,7 @@ describe('kmlExport', () => {
 		id: 1,
 		latitude: '54.5',
 		longitude: '13.2',
-		sightingDate: '2024-01-15T14:30:00.000Z',
+		sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 		species: 0,
 		totalCount: 1,
 		juvenileCount: 0,
@@ -18,7 +18,7 @@ describe('kmlExport', () => {
 		verified: 1,
 		inBalticSea: 1,
 		inBalticSeaGeo: 1,
-		created: '2024-01-15T10:00:00.000Z',
+		created: new Date('2024-01-15T10:00:00.000Z'),
 		waterway: null,
 		seaMark: null,
 		sightingFrom: 1,
@@ -108,7 +108,7 @@ describe('kmlExport', () => {
 
 		it('sollte einzelne Sichtung korrekt als KML-Placemark darstellen', () => {
 			const sighting = createMinimalSighting({
-				sightingDate: '2024-01-15T14:30:00.000Z',
+				sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 				species: 0, // Schweinswal
 				totalCount: 1
 			});
@@ -330,7 +330,7 @@ describe('kmlExport', () => {
 	describe('XML-Escaping', () => {
 		it('sollte XML-Sonderzeichen in Namen escapen', () => {
 			const sighting = createMinimalSighting({
-				sightingDate: '2024-01-15T14:30:00.000Z'
+				sightingDate: new Date('2024-01-15T14:30:00.000Z')
 			});
 
 			// Simuliere gefährliche Daten durch direkten XML-String
@@ -361,10 +361,10 @@ describe('kmlExport', () => {
 	describe('Zeitstempel-Formatierung', () => {
 		it('sollte verschiedene Datumsformate korrekt verarbeiten', () => {
 			const dateTests = [
-				{ input: '2024-01-15T14:30:00.000Z', expectedName: '15.01.24 15:30' }, // UTC+1 (Winter)
-				{ input: '2024-07-15T14:30:00.000Z', expectedName: '15.07.24 16:30' }, // UTC+2 (Sommer)
-				{ input: '2024-12-31T22:59:59.999Z', expectedName: '31.12.24 23:59' }, // UTC+1 (Winter)
-				{ input: '2024-02-29T11:00:00.000Z', expectedName: '29.02.24 12:00' } // UTC+1 (Winter), Schaltjahr
+				{ input: new Date('2024-01-15T14:30:00.000Z'), expectedName: '15.01.24 15:30' }, // UTC+1 (Winter)
+				{ input: new Date('2024-07-15T14:30:00.000Z'), expectedName: '15.07.24 16:30' }, // UTC+2 (Sommer)
+				{ input: new Date('2024-12-31T22:59:59.999Z'), expectedName: '31.12.24 23:59' }, // UTC+1 (Winter)
+				{ input: new Date('2024-02-29T11:00:00.000Z'), expectedName: '29.02.24 12:00' } // UTC+1 (Winter), Schaltjahr
 			];
 
 			dateTests.forEach(({ input, expectedName }) => {
@@ -372,7 +372,7 @@ describe('kmlExport', () => {
 				const kml = generateKmlData([sighting]);
 
 				expect(kml).toContain(`<name>${expectedName}</name>`);
-				expect(kml).toContain(`<when>${input}</when>`);
+				expect(kml).toContain(`<when>${input.toISOString()}</when>`);
 			});
 		});
 	});

@@ -25,7 +25,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 		// Datumsbereich hinzufügen, wenn vorhanden
 		if (fromDate && toDate) {
-			conditions.push(between(sightingsTable.sightingDate, fromDate, toDate));
+			conditions.push(between(sightingsTable.sightingDate, new Date(fromDate), new Date(toDate)));
 		}
 
 		// Verifizierungsstatus hinzufügen, wenn erforderlich

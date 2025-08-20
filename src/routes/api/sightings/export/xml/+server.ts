@@ -35,7 +35,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 		// Datumsbereich hinzufügen, wenn vorhanden
 		if (fromDate && toDate) {
-			conditions.push(between(sightingsTable.sightingDate, fromDate, toDate));
+			conditions.push(between(sightingsTable.sightingDate, new Date(fromDate), new Date(toDate)));
 		}
 
 		// Verifizierungsstatus hinzufügen, wenn erforderlich
@@ -70,8 +70,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 				(sighting) => `
 		<sichtung>
 			<referenzId>${xmlEscape(sighting.referenceId)}</referenzId>
-			<sichtungsdatum>${xmlEscape(sighting.sightingDate)}</sichtungsdatum>
-			<meldedatum>${xmlEscape(sighting.created)}</meldedatum>
+			<sichtungsdatum>${xmlEscape(sighting.sightingDate.toISOString())}</sichtungsdatum>
+			<meldedatum>${xmlEscape(sighting.created.toISOString())}</meldedatum>
 			<kontakt>
 				<email>${xmlEscape(sighting.email)}</email>
 				<name>${xmlEscape(sighting.lastName)}</name>

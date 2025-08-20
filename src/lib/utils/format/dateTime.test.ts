@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-	formatLocalDateTime,
+	combineToUTC,
+	formatDate,
+	formatForExport,
 	formatForKmlExport,
 	formatForXmlExport,
-	formatForExport,
-	combineToUTC,
-	isValidDate,
+	formatLocalDateTime,
 	getCurrentLocalTime,
-	formatDate
+	isValidDate
 } from './dateTime';
 
 describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
@@ -196,7 +196,7 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 
 			// Ergebnis sollte ein gültiger ISO-String sein
 			expect(result).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
-			
+
 			// Datum sollte korrekt sein
 			const resultDate = new Date(result);
 			expect(resultDate.getUTCFullYear()).toBe(2024);
@@ -209,7 +209,7 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 
 			// Ergebnis sollte ein gültiger ISO-String sein
 			expect(result).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
-			
+
 			// Datum sollte korrekt sein
 			const resultDate = new Date(result);
 			expect(resultDate.getUTCFullYear()).toBe(2024);
@@ -222,7 +222,7 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 
 			// Ergebnis sollte ein gültiger ISO-String sein
 			expect(result).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
-			
+
 			// Sollte Mittag entsprechen
 			const resultDate = new Date(result);
 			expect(resultDate.getUTCFullYear()).toBe(2024);
@@ -232,10 +232,10 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 
 		it('sollte Zeitzone-Übergänge korrekt handhaben', () => {
 			const result = combineToUTC('2024-03-31', '03:00');
-			
+
 			// Ergebnis sollte ein gültiger ISO-String sein
 			expect(result).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
-			
+
 			// Datum sollte korrekt sein (kann sich um einen Tag verschieben aufgrund Zeitumstellung)
 			const resultDate = new Date(result);
 			expect(resultDate.getUTCFullYear()).toBe(2024);
@@ -313,14 +313,15 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 
 	describe('Performance und Speicher', () => {
 		it('sollte große Mengen von Daten effizient verarbeiten', () => {
-			const testData = Array.from({ length: 1000 }, (_, i) => 
-				`2024-01-${(i % 28) + 1}T08:57:00.000Z`
+			const testData = Array.from(
+				{ length: 1000 },
+				(_, i) => `2024-01-${(i % 28) + 1}T08:57:00.000Z`
 			);
 
 			const startTime = performance.now();
-			
-			testData.forEach(date => formatLocalDateTime(date, 'datetime'));
-			
+
+			testData.forEach((date) => formatLocalDateTime(date, 'datetime'));
+
 			const endTime = performance.now();
 			const duration = endTime - startTime;
 

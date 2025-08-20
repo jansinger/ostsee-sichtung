@@ -20,13 +20,13 @@ interface KmlPlacemark {
 
 /**
  * Generiert KML-Daten aus Meeressäuger-Sichtungen für Google Earth/Maps.
- * 
+ *
  * Diese Funktion erstellt ein vollständiges KML-Dokument mit:
  * - Verschiedenen Marker-Stilen basierend auf Tieranzahl und Totfund-Status
  * - Geografischen Placemarks mit detaillierten Beschreibungen
  * - Zeitstempel-Informationen für zeitbasierte Visualisierung
  * - Statistiken über die Verteilung der Sichtungen
- * 
+ *
  * Die Marker-Stile folgen einem Farbschema:
  * - Rot: Totfunde
  * - Blau: 1 Tier
@@ -34,10 +34,10 @@ interface KmlPlacemark {
  * - Gelb: 6-10 Tiere
  * - Lila: 11-15 Tiere
  * - Orange: >15 Tiere
- * 
+ *
  * @param sightings - Array von Frontend-Sichtungsdaten
  * @returns Vollständiges KML-Dokument als String
- * 
+ *
  * @example
  * ```typescript
  * const sightings: FrontendSighting[] = [
@@ -51,7 +51,7 @@ interface KmlPlacemark {
  *     isDead: false
  *   }
  * ];
- * 
+ *
  * const kmlData = generateKmlData(sightings);
  * // Kann in .kml-Datei gespeichert oder an Google Earth gesendet werden
  * ```
@@ -179,18 +179,18 @@ export function generateKmlData(sightings: FrontendSighting[]): string {
 
 /**
  * Konvertiert eine Meeressäuger-Sichtung in ein KML-Placemark.
- * 
+ *
  * Diese interne Funktion transformiert die strukturierten Sichtungsdaten
  * in das KML-Placemark-Format. Sie erstellt:
- * 
+ *
  * - Einen aussagekräftigen Namen (Datum/Zeit)
  * - Eine detaillierte HTML-Beschreibung mit allen relevanten Feldern
  * - Korrekt formatierte Koordinaten
  * - ISO 8601 Zeitstempel
- * 
+ *
  * Die Beschreibung berücksichtigt Datenschutz-Einwilligungen und zeigt
  * nur autorisierte Informationen an.
- * 
+ *
  * @param sighting - Eine Frontend-Sichtung
  * @returns KML-Placemark-Objekt
  * @internal
@@ -209,8 +209,14 @@ function sightingToKmlPlacemark(sighting: FrontendSighting): KmlPlacemark {
 		description += `<p><label>Tierart: </label>${getSpeciesName(sighting.species)}</p>`;
 	}
 
-	const lat = typeof sighting.latitude === 'number' ? sighting.latitude : parseFloat(sighting.latitude || '0');
-	const lon = typeof sighting.longitude === 'number' ? sighting.longitude : parseFloat(sighting.longitude || '0');
+	const lat =
+		typeof sighting.latitude === 'number'
+			? sighting.latitude
+			: parseFloat(sighting.latitude || '0');
+	const lon =
+		typeof sighting.longitude === 'number'
+			? sighting.longitude
+			: parseFloat(sighting.longitude || '0');
 	description += `<p><label>Position: </label>${formatDMS(lat, lon)}</p>`;
 	description += `<p><label>Anzahl Tiere: </label>${sighting.totalCount}</p>`;
 
@@ -249,38 +255,37 @@ function sightingToKmlPlacemark(sighting: FrontendSighting): KmlPlacemark {
 
 /**
  * Konvertiert einen Datumsstring in einen KML-kompatiblen ISO 8601 Zeitstempel.
- * 
+ *
  * KML erwartet Zeitstempel im Format: YYYY-MM-DDTHH:mm:ssZ
  * Dies ermöglicht zeitbasierte Animationen in Google Earth.
- * 
+ *
  * @param dateString - Eingabedatum (beliebiges gültiges Format)
  * @returns ISO 8601 Zeitstempel
  * @internal
  */
-function formatKmlTimestamp(dateString: string): string {
-	const date = new Date(dateString);
-	return date.toISOString();
+function formatKmlTimestamp(dateString: Date): string {
+	return dateString.toISOString();
 }
 
 /**
  * Konvertiert Dezimalkoordinaten in das DMS-Format (Grad, Minuten, Sekunden).
- * 
+ *
  * Diese Formatierung ist benutzerfreundlicher als Dezimalgrade und wird
  * in der KML-Beschreibung angezeigt. Das Format folgt dem nautischen Standard:
- * 
+ *
  * - Breitengrad: DD° MM' SS.SS"N/S
  * - Längengrad: DDD° MM' SS.SS"E/W
- * 
+ *
  * @param latitude - Breitengrad in Dezimalgrad (-90 bis +90)
  * @param longitude - Längengrad in Dezimalgrad (-180 bis +180)
  * @returns Formatierter String im DMS-Format
- * 
+ *
  * @example
  * ```typescript
  * formatDMS(54.5, 13.2);
  * // Returns: "54° 30' 00.00"N - 013° 12' 00.00"E"
  * ```
- * 
+ *
  * @internal
  */
 function formatDMS(latitude: number, longitude: number): string {
@@ -293,7 +298,8 @@ function formatDMS(latitude: number, longitude: number): string {
 		let sec = (minFloat - min) * 60;
 
 		// Handle rounding of seconds that might result in 60
-		if (sec >= 59.995) { // Round to 2 decimal places
+		if (sec >= 59.995) {
+			// Round to 2 decimal places
 			sec = 0;
 			min += 1;
 			if (min >= 60) {
@@ -317,17 +323,17 @@ function formatDMS(latitude: number, longitude: number): string {
 
 /**
  * Escaped XML-Sonderzeichen für sichere KML-Ausgabe.
- * 
+ *
  * Verhindert XML-Injection und stellt sicher, dass Benutzerdaten
  * sicher in KML-Attributen verwendet werden können.
- * 
+ *
  * Ersetzt:
  * - & → &amp;
  * - < → &lt;
  * - > → &gt;
  * - " → &quot;
  * - ' → &apos;
- * 
+ *
  * @param unsafe - Ungefilterte Benutzereingabe
  * @returns XML-sicherer String
  * @internal
@@ -343,23 +349,23 @@ function escapeXml(unsafe: string): string {
 
 /**
  * Konvertiert numerische Tierart-IDs in lesbare deutsche Namen.
- * 
+ *
  * Diese Funktion mappt die in der Datenbank verwendeten numerischen
  * Bezeichner auf benutzerfreundliche deutsche Tiernamen für die
  * KML-Ausgabe.
- * 
+ *
  * Die IDs entsprechen den Werten aus dem species-Dropdown im Frontend.
- * 
+ *
  * @param speciesId - Numerische Tierart-ID (0-10)
  * @returns Deutscher Name der Tierart
- * 
+ *
  * @example
  * ```typescript
  * getSpeciesName(0); // 'Schweinswal'
  * getSpeciesName(3); // 'Delphin (mehrere Arten)'
  * getSpeciesName(999); // 'Unbekannt'
  * ```
- * 
+ *
  * @internal
  */
 function getSpeciesName(speciesId: number): string {
