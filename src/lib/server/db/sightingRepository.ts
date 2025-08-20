@@ -74,7 +74,7 @@ export const saveSighting = async (formData: SightingFormData): Promise<{ id: nu
 			mimeType: file.mimeType,
 			size: file.size,
 			url: file.url || null, // Cloud-Storage-URL falls verfügbar
-			uploadedAt: file.uploadedAt || new Date().toISOString(),
+			uploadedAt: file.uploadedAt ? new Date(file.uploadedAt) : new Date(),
 			exifData: file.exifData || null // EXIF-Metadaten als JSONB
 		}));
 
@@ -238,7 +238,12 @@ export const loadSightingFiles = async (sightingId: number): Promise<UploadedFil
 		})
 	);
 
-	return filesWithExif;
+	return filesWithExif.map((file) => {
+		return {
+			...file,
+			uploadedAt: file.uploadedAt ? new Date(file.uploadedAt).toISOString() : undefined
+		};
+	});
 };
 
 /**
@@ -265,7 +270,7 @@ export const saveSightingFiles = async (
 	// Early return bei leerer Dateiliste
 	if (uploadedFiles.length === 0) return;
 
-	const timestamp = new Date().toISOString();
+	const timestamp = new Date();
 
 	// Normalisiere Datei-Metadaten für Datenbank-Schema
 	const fileData: SightingFileInsert[] = uploadedFiles.map((file) => ({
@@ -277,7 +282,7 @@ export const saveSightingFiles = async (
 		filePath: file.filePath,
 		mimeType: file.mimeType,
 		size: file.size,
-		uploadedAt: file.uploadedAt || timestamp,
+		uploadedAt: file.uploadedAt ? new Date(file.uploadedAt) : timestamp,
 		createdAt: timestamp, // Aktuelle Zeit als Erstellungsdatum
 		exifData: file.exifData || null
 	}));

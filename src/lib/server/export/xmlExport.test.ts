@@ -14,7 +14,7 @@ function createTestSighting(overrides: Partial<FrontendSighting> = {}): Frontend
 		longitude: '13.2',
 		waterway: null,
 		seaMark: null,
-		sightingDate: '2024-01-15T14:30:00.000Z',
+		sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 		sightingFrom: 1,
 		sightingFromText: null,
 		distance: 1,
@@ -49,7 +49,7 @@ function createTestSighting(overrides: Partial<FrontendSighting> = {}): Frontend
 		nameConsent: 0,
 		shipNameConsent: 0,
 		notes: null,
-		created: '2024-01-15T14:30:00.000Z',
+		created: new Date('2024-01-15T14:30:00.000Z'),
 		entryChannel: 1,
 		approvedAt: null,
 		verified: 0,
@@ -91,7 +91,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -100,7 +100,7 @@ describe('xmlExport', () => {
 					juvenileCount: 0,
 					waterway: 'Fehmarnbelt',
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z',
+					created: new Date('2024-01-15T14:30:00.000Z'),
 					shipName: 'TestSchiff',
 					shipNameConsent: 1,
 					firstName: 'Max',
@@ -114,7 +114,7 @@ describe('xmlExport', () => {
 			expect(result).toContain('<sichtung>');
 			expect(result).toContain('<nr>1</nr>');
 			expect(result).toContain('<datum>15.01.24</datum>');
-			expect(result).toContain('<uhrzeit>1430</uhrzeit>');
+			expect(result).toContain('<uhrzeit>1530</uhrzeit>'); // 14:30 UTC + 1 Stunde MEZ = 15:30
 			expect(result).toContain('<tierart>0</tierart>');
 			expect(result).toContain('<fahrwasser>Fehmarnbelt</fahrwasser>');
 			expect(result).toContain('<dezigrad_n>54.5</dezigrad_n>');
@@ -131,7 +131,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -139,11 +139,11 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				}),
 				createTestSighting({
 					id: 2,
-					sightingDate: '2024-01-16T15:45:00.000Z',
+					sightingDate: new Date('2024-01-16T15:45:00.000Z'),
 					species: 1,
 					totalCount: 3,
 					latitude: '55.0',
@@ -151,7 +151,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 1,
 					verified: 0,
-					created: '2024-01-16T15:45:00.000Z'
+					created: new Date('2024-01-16T15:45:00.000Z')
 				})
 			];
 
@@ -169,7 +169,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -177,7 +177,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z',
+					created: new Date('2024-01-15T14:30:00.000Z'),
 					waterway: null, // Should be excluded
 					seaMark: undefined, // Should be excluded
 					notes: '' // Should be excluded
@@ -195,7 +195,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -203,7 +203,7 @@ describe('xmlExport', () => {
 					isDead: 1, // Should become 1
 					juvenileCount: 0,
 					verified: 0, // Should become 0
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -218,7 +218,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -226,7 +226,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -239,7 +239,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -247,11 +247,11 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				}),
 				createTestSighting({
 					id: 2,
-					sightingDate: '2024-01-15T09:05:00.000Z',
+					sightingDate: new Date('2024-01-15T09:05:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -259,21 +259,21 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T09:05:00.000Z'
+					created: new Date('2024-01-15T09:05:00.000Z')
 				})
 			];
 
 			const result = generateXmlData(sightings);
 
-			expect(result).toContain('<uhrzeit>1430</uhrzeit>');
-			expect(result).toContain('<uhrzeit>0905</uhrzeit>');
+			expect(result).toContain('<uhrzeit>1530</uhrzeit>'); // 14:30 UTC + 1 Stunde MEZ = 15:30
+			expect(result).toContain('<uhrzeit>1005</uhrzeit>'); // 09:05 UTC + 1 Stunde MEZ = 10:05
 		});
 
 		test('should handle different years correctly', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2023-12-31T23:59:00.000Z',
+					sightingDate: new Date('2023-12-31T22:59:00.000Z'), // 22:59 UTC + 1 Stunde = 23:59 am 31.12.23
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -281,11 +281,11 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2023-12-31T23:59:00.000Z'
+					created: new Date('2023-12-31T22:59:00.000Z')
 				}),
 				createTestSighting({
 					id: 2,
-					sightingDate: '2025-01-01T00:01:00.000Z',
+					sightingDate: new Date('2024-12-31T23:01:00.000Z'), // 23:01 UTC + 1 Stunde = 00:01 am 01.01.25
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -293,7 +293,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2025-01-01T00:01:00.000Z'
+					created: new Date('2024-12-31T23:01:00.000Z')
 				})
 			];
 
@@ -307,7 +307,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.123456',
@@ -315,7 +315,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -329,7 +329,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: null,
@@ -337,7 +337,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -351,7 +351,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 5, // Should be ignored for dead animals
 					latitude: '54.5',
@@ -359,7 +359,7 @@ describe('xmlExport', () => {
 					isDead: 1,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -376,7 +376,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -384,7 +384,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -399,7 +399,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 3,
 					latitude: '54.5',
@@ -407,11 +407,11 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				}),
 				createTestSighting({
 					id: 2,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 5,
 					latitude: '54.5',
@@ -419,7 +419,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -435,7 +435,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 8,
 					latitude: '54.5',
@@ -443,7 +443,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -458,7 +458,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 12,
 					latitude: '54.5',
@@ -466,7 +466,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -481,7 +481,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 20,
 					latitude: '54.5',
@@ -489,7 +489,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -504,7 +504,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: undefined,
 					latitude: '54.5',
@@ -512,7 +512,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -527,7 +527,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 5,
 					latitude: '54.5',
@@ -535,7 +535,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 2,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -548,7 +548,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 5,
 					latitude: '54.5',
@@ -556,11 +556,11 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				}),
 				createTestSighting({
 					id: 2,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 3,
 					latitude: '54.5',
@@ -568,7 +568,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: undefined,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -581,7 +581,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -589,13 +589,13 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z',
+					created: new Date('2024-01-15T14:30:00.000Z'),
 					shipName: 'TestSchiff',
 					shipNameConsent: 1
 				}),
 				createTestSighting({
 					id: 2,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -603,7 +603,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z',
+					created: new Date('2024-01-15T14:30:00.000Z'),
 					shipName: 'PrivateSchiff',
 					shipNameConsent: 0 // No consent
 				})
@@ -619,7 +619,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -627,7 +627,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z',
+					created: new Date('2024-01-15T14:30:00.000Z'),
 					shipName: 'PrivateSchiff'
 					// shipNameConsent is undefined/false
 				})
@@ -642,7 +642,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -650,7 +650,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z',
+					created: new Date('2024-01-15T14:30:00.000Z'),
 					firstName: 'Max',
 					lastName: 'Mustermann',
 					nameConsent: 1
@@ -666,7 +666,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -674,7 +674,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z',
+					created: new Date('2024-01-15T14:30:00.000Z'),
 					firstName: 'Max',
 					lastName: 'Mustermann',
 					nameConsent: 0
@@ -690,7 +690,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -698,14 +698,14 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z',
+					created: new Date('2024-01-15T14:30:00.000Z'),
 					firstName: 'Max',
 					// lastName missing
 					nameConsent: 1
 				}),
 				createTestSighting({
 					id: 2,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -713,7 +713,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z',
+					created: new Date('2024-01-15T14:30:00.000Z'),
 					// firstName missing
 					lastName: 'Mustermann',
 					nameConsent: 1
@@ -731,7 +731,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -739,7 +739,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -754,7 +754,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '0',
@@ -762,7 +762,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -776,7 +776,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: null,
@@ -784,7 +784,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -803,7 +803,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.123456789',
@@ -811,7 +811,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -840,7 +840,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any, // Schweinswal - should not be treated as falsy
 					totalCount: 1,
 					latitude: '54.5',
@@ -848,7 +848,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -861,7 +861,7 @@ describe('xmlExport', () => {
 			const speciesIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 			const sightings: FrontendSighting[] = speciesIds.map((species, index) => ({
 				id: index + 1,
-				sightingDate: '2024-01-15T14:30:00.000Z',
+				sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 				species,
 				totalCount: 1,
 				latitude: '54.5',
@@ -869,7 +869,7 @@ describe('xmlExport', () => {
 				isDead: 0,
 				juvenileCount: 0,
 				verified: 0,
-				created: '2024-01-15T14:30:00.000Z',
+				created: new Date('2024-01-15T14:30:00.000Z'),
 				distribution: 0, // oder sinnvoller Testwert
 				distance: 0 as DistanceEnum, // z.B. 0 Meter
 				sightingFrom: 0, // z.B. 'boat'
@@ -888,7 +888,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: 'invalid-date',
+					sightingDate: 'invalid-date' as unknown as Date,
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -896,7 +896,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -908,7 +908,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 999999,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1000,
 					latitude: '54.5',
@@ -916,7 +916,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 999,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -931,7 +931,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '90', // North pole
@@ -939,11 +939,11 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				}),
 				createTestSighting({
 					id: 2,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '-90', // South pole
@@ -951,7 +951,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -965,7 +965,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '0',
@@ -973,11 +973,11 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				}),
 				createTestSighting({
 					id: 2,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '0',
@@ -985,7 +985,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -1001,7 +1001,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -1009,7 +1009,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			];
 
@@ -1036,7 +1036,7 @@ describe('xmlExport', () => {
 			const sightings: FrontendSighting[] = Array.from({ length: 5 }, (_, i) =>
 				createTestSighting({
 					id: i + 1,
-					sightingDate: '2024-01-15T14:30:00.000Z',
+					sightingDate: new Date('2024-01-15T14:30:00.000Z'),
 					species: 0 as any,
 					totalCount: 1,
 					latitude: String(54.5 + i * 0.1),
@@ -1044,7 +1044,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2024-01-15T14:30:00.000Z'
+					created: new Date('2024-01-15T14:30:00.000Z')
 				})
 			);
 

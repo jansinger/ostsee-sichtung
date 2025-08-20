@@ -115,7 +115,7 @@
 			const timestamp = positionMediaFile.timestamp;
 			if (timestamp) {
 				const sightingDate = timestamp.toISOString().split('T')[0];
-				const sightingTime = `${timestamp.getHours()}:${timestamp.getMinutes()}`;
+				const sightingTime = `${timestamp.getHours().toString().padStart(2, '0')}:${timestamp.getMinutes().toString().padStart(2, '0')}`;
 				logger.info({ sightingDate, sightingTime }, 'New sighting data extracted');
 				triggerChange('sightingDate', sightingDate);
 				triggerChange('sightingTime', sightingTime);

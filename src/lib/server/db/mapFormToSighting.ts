@@ -6,21 +6,21 @@ import { checkBalticSeaFile } from '../geo/checkBalticSeaFile';
 
 /**
  * Konvertiert Formulardaten in das Datenbankschema für Meeressäuger-Sichtungen.
- * 
+ *
  * Diese zentrale Transformationsfunktion konvertiert die vom Frontend übermittelten
  * Formulardaten in die Struktur, die für die Datenbankpersistierung benötigt wird.
  * Sie führt dabei wichtige Validierungen und Datenverarbeitungen durch:
- * 
+ *
  * - Erstellt PostGIS-Geometrie-Objekte für Koordinaten
- * - Validiert Koordinaten gegen Ostsee-Grenzen  
+ * - Validiert Koordinaten gegen Ostsee-Grenzen
  * - Kombiniert Datum und Zeit zu einem DateTime-Objekt
  * - Konvertiert String-IDs zu numerischen Werten
  * - Setzt Standard- und Berechnungswerte
  * - Behandelt optionale Felder sicher
- * 
+ *
  * @param formData - Die vom Frontend übermittelten Formulardaten
  * @returns Ein strukturiertes Objekt entsprechend dem Datenbankschema
- * 
+ *
  * @example
  * ```typescript
  * const formData: SightingFormData = {
@@ -32,7 +32,7 @@ import { checkBalticSeaFile } from '../geo/checkBalticSeaFile';
  *   totalCount: '3',
  *   // ... weitere Felder
  * };
- * 
+ *
  * const dbSighting = mapFormToSighting(formData);
  * // dbSighting enthält PostGIS-Geometrie, kombinierte DateTime, etc.
  * ```
@@ -45,7 +45,7 @@ export function mapFormToSighting(formData: SightingFormData): NewSighting {
 	let location = null;
 	let inBaltic = false,
 		inChartArea = false;
-	
+
 	if (
 		formData.latitude &&
 		formData.longitude &&
@@ -55,7 +55,7 @@ export function mapFormToSighting(formData: SightingFormData): NewSighting {
 		// PostGIS erwartet SRID 4326 für WGS84 (GPS-Koordinaten)
 		// ST_MakePoint(longitude, latitude) - Achtung: X=Longitude, Y=Latitude!
 		location = sql`ST_SetSRID(ST_MakePoint(${formData.longitude}, ${formData.latitude}), 4326)`;
-		
+
 		// Geografische Validierung: Prüfe ob Koordinaten in der Ostsee liegen
 		({ inBaltic, inChartArea } = checkBalticSeaFile(
 			Number(formData.longitude),
@@ -76,7 +76,7 @@ export function mapFormToSighting(formData: SightingFormData): NewSighting {
 		const timeParts = formData.sightingTime.split(':').map(Number);
 		const hours = timeParts[0] || 0;
 		const minutes = timeParts[1] || 0;
-		
+
 		// Erstelle neues Date-Objekt um Original nicht zu mutieren
 		fullDateTime = new Date(sightingDate);
 		fullDateTime.setHours(hours, minutes, 0, 0); // Sekunden und MS auf 0
@@ -89,7 +89,7 @@ export function mapFormToSighting(formData: SightingFormData): NewSighting {
 	return {
 		// === METADATEN ===
 		// ID wird automatisch durch Datenbanksequenz generiert
-		created: new Date().toISOString(), // Erstellungszeitpunkt
+		created: new Date(), // Erstellungszeitpunkt
 
 		// === GEOGRAFISCHE DATEN ===
 		// Koordinaten als Strings für Datenbankkompatibilität
@@ -103,7 +103,7 @@ export function mapFormToSighting(formData: SightingFormData): NewSighting {
 
 		// === ZEITANGABEN ===
 		// Nutzt kombinierte DateTime oder fällt auf aktuellen Zeitpunkt zurück
-		sightingDate: fullDateTime ? fullDateTime.toISOString() : new Date().toISOString(),
+		sightingDate: fullDateTime ?? new Date(),
 
 		// === TIERBEOBACHTUNG ===
 		// Tierart (numerische ID aus Dropdown)

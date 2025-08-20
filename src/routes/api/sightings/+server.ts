@@ -52,12 +52,7 @@ export async function GET(event: RequestEvent) {
                      ELSE NULL END`
 			})
 			.from(sightings)
-			.where(
-				and(
-					gte(sightings.sightingDate, startDate.toISOString()),
-					lt(sightings.sightingDate, endDate.toISOString())
-				)
-			)
+			.where(and(gte(sightings.sightingDate, startDate), lt(sightings.sightingDate, endDate)))
 			.orderBy(sightings.sightingDate);
 
 		logger.info({ year, count: result.length }, 'Sichtungen erfolgreich abgerufen');

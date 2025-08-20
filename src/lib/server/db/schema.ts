@@ -52,7 +52,7 @@ export const sightings = pgTable(
 		longitude: numeric('gps_laenge', { precision: 8, scale: 6 }),
 		waterway: text('fahrwasser'),
 		seaMark: text('seezeichen'),
-		sightingDate: timestamp('sichtungsdatum', { mode: 'string' }).notNull(),
+		sightingDate: timestamp('sichtungsdatum', { mode: 'date' }).notNull(),
 		sightingFrom: integer('vonwo').default(0).notNull(),
 		sightingFromText: text('vonwo_text'),
 		distance: integer('entfernung').default(0).notNull(),
@@ -87,9 +87,9 @@ export const sightings = pgTable(
 		nameConsent: integer('namensnennung').default(0).notNull(),
 		shipNameConsent: integer('schiffnamensnennung').default(0).notNull(),
 		notes: text('bemerkungen'),
-		created: timestamp('created', { mode: 'string' }).notNull(),
+		created: timestamp('created', { mode: 'date' }).notNull(),
 		entryChannel: integer('eingangskanal').default(0).notNull(),
-		approvedAt: timestamp('freigegeben_am', { mode: 'string' }),
+		approvedAt: timestamp('freigegeben_am', { mode: 'date' }),
 		verified: integer('geprueft').default(0).notNull(),
 		inBalticSea: integer('ostsee').default(0),
 		internalComment: text('kommentar_intern'),
@@ -129,9 +129,9 @@ export const sightingFiles = pgTable(
 		mimeType: varchar('mime_typ', { length: 100 }).notNull(),
 		size: bigint({ mode: 'number' }).notNull(),
 		url: varchar('url', { length: 1000 }),
-		uploadedAt: timestamp('hochgeladen_am', { mode: 'string' }).notNull(),
+		uploadedAt: timestamp('hochgeladen_am', { mode: 'date' }).notNull(),
 		exifData: jsonb('exif_daten'),
-		createdAt: timestamp('erstellt_am', { mode: 'string' }).defaultNow().notNull()
+		createdAt: timestamp('erstellt_am', { mode: 'date' }).defaultNow().notNull()
 	},
 	(table) => [
 		index('idx_sichtungen_dateien_sichtung_id').on(table.sightingId),

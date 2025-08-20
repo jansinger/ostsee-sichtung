@@ -11,6 +11,7 @@
  */
 
 import type { ExifData } from '$lib/types';
+import type { SightingFileInsert } from '$lib/types/sightingFile';
 import { createId } from '@paralleldrive/cuid2';
 import { and, eq, isNotNull, ne } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -179,9 +180,10 @@ async function readImageExifData(filePath: string): Promise<ExifData | null> {
 
 interface SightingWithUpload {
 	id: number;
+	uid: string;
 	mediaFile: string;
 	mediaUpload: number;
-	sightingDate: string | null;
+	sightingDate: Date | null;
 	referenceId?: string;
 }
 
@@ -359,7 +361,7 @@ async function main() {
 						const uid = createId();
 
 						await db.insert(sightingFiles).values({
-							uid,
+							uid: uid,
 							sightingId: sighting.id,
 							referenceId: referenzId,
 							originalName: fileName,
@@ -371,7 +373,7 @@ async function main() {
 							exifData: exifData,
 							uploadedAt: uploadDate,
 							createdAt: uploadDate
-						});
+						} as SightingFileInsert);
 
 						const hasExif = exifData ? 'with EXIF' : 'no EXIF';
 						log.success(`Copied file: ${fileName} for sighting ${sighting.id} (${hasExif})`);

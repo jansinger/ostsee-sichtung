@@ -16,7 +16,7 @@
 	import { getWindDirectionLabel } from '$lib/report/formOptions/windDirection';
 	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
 	import type { FrontendSighting } from '$lib/types';
-	import { formatDate } from '$lib/utils/format/formatDate';
+	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import {
 		Activity,
@@ -101,9 +101,9 @@
 
 	// Datum & Zeit
 	const dateTimeRows: DataRowType[] = [
-		DataRow('Sichtung', formatDate(sighting.sightingDate)),
-		DataRow('Gemeldet', formatDate(sighting.created)),
-		DataRow('Freigegeben am', formatDate(sighting.approvedAt), hasValue(sighting.approvedAt))
+		DataRow('Sichtung', formatLocalDateTime(sighting.sightingDate, 'datetime')),
+		DataRow('Gemeldet', formatLocalDateTime(sighting.created, 'datetime')),
+		DataRow('Freigegeben am', formatLocalDateTime(sighting.approvedAt, 'datetime'), hasValue(sighting.approvedAt))
 	].filter((row): row is DataRowType => row !== undefined);
 
 	// Tierinformationen

@@ -1,4 +1,5 @@
 import type { FrontendSighting } from '$lib/types/index';
+import { formatForXmlExport } from '$lib/utils/format/dateTime';
 
 /**
  * Repräsentiert eine Meeressäuger-Sichtung im XML-Export-Format.
@@ -149,13 +150,11 @@ export function generateXmlData(sightings: FrontendSighting[]): string {
 function transformToXmlSighting(sighting: FrontendSighting): XmlSighting {
 	/**
 	 * SCHRITT 1: Zeitstempel-Konvertierung
-	 * ISO 8601 → Legacy-Format (DD.MM.YY + HHMM)
+	 * ISO 8601 → Legacy-Format (DD.MM.YY + HHMM) mit korrekter Zeitzonenkonvertierung
 	 */
-	const sdt = new Date(sighting.sightingDate);
-	// DD.MM.YY Format (2-stelliges Jahr für Legacy-Kompatibilität)
-	const formattedDate = `${sdt.getDate().toString().padStart(2, '0')}.${(sdt.getMonth() + 1).toString().padStart(2, '0')}.${sdt.getFullYear().toString().slice(-2)}`;
-	// HHMM Format ohne Trennzeichen für XML-Export
-	const formattedTime = `${sdt.getHours().toString().padStart(2, '0')}${sdt.getMinutes().toString().padStart(2, '0')}`;
+	const xmlDateTime = formatForXmlExport(sighting.sightingDate);
+	const formattedDate = xmlDateTime.date;
+	const formattedTime = xmlDateTime.time;
 
 	/**
 	 * SCHRITT 2: Basis-XML-Struktur initialisieren
