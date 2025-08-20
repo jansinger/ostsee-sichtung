@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.15.0 (2025-08-20)
+
+* Merge pull request #52 from jansinger/fix/dropzone-enhanced ([f802dbb](https://github.com/jansinger/ostsee-sichtung/commit/f802dbb)), closes [#52](https://github.com/jansinger/ostsee-sichtung/issues/52)
+* refactor: aktualisiere Validierungsschema und passe Feldzuordnungen an ([4b8c9b3](https://github.com/jansinger/ostsee-sichtung/commit/4b8c9b3))
+* refactor: bereinige Debugging-Konfigurationen und verbessere die Entwicklungsumgebung ([495ae41](https://github.com/jansinger/ostsee-sichtung/commit/495ae41))
+* refactor: entferne nicht verwendete EXIF-Daten-Tests aus LocalStorageProvider-Tests ([ed2816c](https://github.com/jansinger/ostsee-sichtung/commit/ed2816c))
+* refactor: import type definitions from the correct module in UnifiedDropzone and DropzoneEnhanced ([42aab27](https://github.com/jansinger/ostsee-sichtung/commit/42aab27))
+* refactor: refactor dropzone and file processing ([44a6f3a](https://github.com/jansinger/ostsee-sichtung/commit/44a6f3a))
+* fix: passe Log-Level basierend auf Entwicklungsmodus an ([8a119f9](https://github.com/jansinger/ostsee-sichtung/commit/8a119f9))
+* fix: type checks ([1f0a99f](https://github.com/jansinger/ostsee-sichtung/commit/1f0a99f))
+* fix: überprüfe auf gültige Dateien vor der Verarbeitung in UnifiedDropzone ([ba0de20](https://github.com/jansinger/ostsee-sichtung/commit/ba0de20))
+* feat: implement Admin Media Section and refactor sighting edit flow ([df62bd1](https://github.com/jansinger/ostsee-sichtung/commit/df62bd1))
+* build: erweitere Debugging-Optionen und verbessere Quellkarten für die Entwicklung ([45a1574](https://github.com/jansinger/ostsee-sichtung/commit/45a1574))
+
 ## <small>1.14.2 (2025-08-18)</small>
 
 * Merge pull request #51 from jansinger/fix/readme-badge-urls ([a7fdc84](https://github.com/jansinger/ostsee-sichtung/commit/a7fdc84)), closes [#51](https://github.com/jansinger/ostsee-sichtung/issues/51)
