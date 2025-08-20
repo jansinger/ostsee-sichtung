@@ -8,7 +8,6 @@ import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import type { UploadedFileInfo } from '$lib/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readImageExifData } from '../media/exifUtils';
 import {
 	loadSightingFiles,
 	saveSighting,
@@ -22,7 +21,10 @@ vi.mock('$lib/server/db', () => ({
 		insert: vi.fn(),
 		update: vi.fn(),
 		select: vi.fn(),
-		execute: vi.fn()
+		execute: vi.fn(),
+		delete: vi.fn(() => ({
+			where: vi.fn().mockResolvedValue(undefined)
+		}))
 	}
 }));
 
@@ -41,17 +43,18 @@ vi.mock('$lib/server/storage/factory', () => ({
 		getUrl: vi.fn((path) => `/uploads/${path}`)
 	}))
 }));
+const readImageExifDataMock = vi.fn(() =>
+	Promise.resolve({
+		latitude: 54.123,
+		longitude: 12.456,
+		make: 'TestCamera',
+		model: 'Model X'
+	})
+);
 
 vi.mock('$lib/server/exifUtils', () => ({
 	isImageFile: vi.fn((mimeType) => mimeType?.startsWith('image/')),
-	readImageExifData: vi.fn(() =>
-		Promise.resolve({
-			latitude: 54.123,
-			longitude: 12.456,
-			make: 'TestCamera',
-			model: 'Model X'
-		})
-	)
+	readImageExifData: readImageExifDataMock
 }));
 
 vi.mock('$lib/logger', () => ({
@@ -462,7 +465,7 @@ describe('sightingRepository', () => {
 				})
 			});
 
-			(readImageExifData as any).mockRejectedValueOnce(new Error('Corrupt image'));
+			readImageExifDataMock.mockRejectedValueOnce(new Error('Corrupt image'));
 
 			// Act
 			const result = await loadSightingFiles(42);
@@ -482,6 +485,11 @@ describe('sightingRepository', () => {
 			const mockDb = db as any;
 			const files = [mockUploadedFile, { ...mockUploadedFile, uid: 'file-2' }];
 
+			// Mock delete to return successful where chain
+			mockDb.delete.mockReturnValue({
+				where: vi.fn().mockResolvedValue(undefined)
+			});
+
 			mockDb.insert.mockReturnValue({
 				values: vi.fn().mockResolvedValue(undefined)
 			});
@@ -490,6 +498,7 @@ describe('sightingRepository', () => {
 			await saveSightingFiles(42, files, 'ref-123');
 
 			// Assert
+			expect(mockDb.delete).toHaveBeenCalledWith(schema.sightingFiles);
 			expect(mockDb.insert).toHaveBeenCalledWith(schema.sightingFiles);
 			expect(mockDb.insert).toHaveBeenCalledTimes(1);
 		});
@@ -516,6 +525,12 @@ describe('sightingRepository', () => {
 			const mockDb = db as any;
 			const dbError = new Error('Insert failed');
 
+			// Mock delete to return successful where chain
+			mockDb.delete.mockReturnValue({
+				where: vi.fn().mockResolvedValue(undefined)
+			});
+
+			// Mock insert to fail
 			mockDb.insert.mockReturnValue({
 				values: vi.fn().mockRejectedValue(dbError)
 			});

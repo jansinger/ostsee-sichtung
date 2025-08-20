@@ -8,7 +8,6 @@ import type { UploadOptions } from '$lib/types';
 import * as fs from 'fs';
 import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readImageExifData } from '../media/exifUtils';
 import { LocalStorageProvider } from './local';
 
 // Mock dependencies
@@ -77,7 +76,7 @@ describe('LocalStorageProvider', () => {
 
 			// Assert
 			expect(result).toMatchObject({
-				id: 'test-id-123',
+				uid: 'test-id-123',
 				originalName: 'test.jpg',
 				fileName: 'test-id-123.jpg',
 				filePath: path.join('ref-123', 'test-id-123.jpg'),
@@ -108,77 +107,6 @@ describe('LocalStorageProvider', () => {
 			// Assert
 			expect(result.fileName).toBe('original-photo-test-id-123.png');
 			expect(result.originalName).toBe('original-photo.png');
-		});
-
-		/**
-		 * Test: EXIF-Daten Extraktion bei Bildern
-		 */
-		it('sollte EXIF-Daten aus Bildern extrahieren wenn extractExif true ist', async () => {
-			// Arrange
-			const mockFile = new File(['image data'], 'photo.jpg', { type: 'image/jpeg' });
-			const buffer = Buffer.from('test content');
-			const options: UploadOptions = {
-				referenceId: 'ref-789',
-				preserveOriginalName: false
-			};
-
-			(fs.existsSync as any).mockReturnValue(false);
-
-			// Act
-			const result = await provider.upload(mockFile, buffer, options);
-
-			// Assert
-			expect(result.exifData).toEqual({
-				latitude: 54.123,
-				longitude: 12.456,
-				make: 'TestCamera',
-				model: 'Model X'
-			});
-		});
-
-		/**
-		 * Test: Keine EXIF-Extraktion bei Nicht-Bildern
-		 */
-		it('sollte keine EXIF-Daten aus PDF-Dateien extrahieren', async () => {
-			// Arrange
-			const mockFile = new File(['pdf content'], 'document.pdf', { type: 'application/pdf' });
-			const buffer = Buffer.from('test content');
-			const options: UploadOptions = {
-				referenceId: 'ref-pdf',
-				preserveOriginalName: false
-			};
-
-			(fs.existsSync as any).mockReturnValue(false);
-
-			// Act
-			const result = await provider.upload(mockFile, buffer, options);
-
-			// Assert
-			expect(result.exifData).toBeNull();
-		});
-
-		/**
-		 * Test: Fehlerbehandlung bei EXIF-Extraktion
-		 */
-		it('sollte EXIF-Fehler abfangen und trotzdem Datei speichern', async () => {
-			// Arrange
-			const mockFile = new File(['corrupt'], 'corrupt.jpg', { type: 'image/jpeg' });
-			const buffer = Buffer.from('test content');
-			const options: UploadOptions = {
-				referenceId: 'ref-corrupt',
-				preserveOriginalName: false
-			};
-
-			(fs.existsSync as any).mockReturnValue(false);
-			(readImageExifData as any).mockRejectedValueOnce(new Error('Corrupt EXIF'));
-
-			// Act
-			const result = await provider.upload(mockFile, buffer, options);
-
-			// Assert
-			expect(result.exifData).toBeNull();
-			expect(result.id).toBe('test-id-123');
-			expect(fs.writeFileSync).toHaveBeenCalled();
 		});
 
 		/**
