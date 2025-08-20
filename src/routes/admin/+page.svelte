@@ -206,6 +206,34 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Sichtungen - Admin - Ostsee-Tiere</title>
+	<meta 
+		name="description" 
+		content="Admin-Dashboard zur Verwaltung aller Meerestier-Sichtungen. Überprüfung, Bearbeitung und Verwaltung der gemeldeten Sichtungen in der Ostsee." 
+	/>
+	<meta 
+		name="keywords" 
+		content="Admin, Dashboard, Sichtungen, Verwaltung, Meerestiere, Ostsee, Moderation" 
+	/>
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content="Sichtungsverwaltung - Admin - Ostsee-Tiere" />
+	<meta 
+		property="og:description" 
+		content="Administrationsbereich zur Verwaltung und Überprüfung von Meerestier-Sichtungen" 
+	/>
+	<meta property="og:type" content="website" />
+	
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content="Sichtungsverwaltung - Admin - Ostsee-Tiere" />
+	<meta 
+		name="twitter:description" 
+		content="Administrationsbereich zur Verwaltung und Überprüfung von Meerestier-Sichtungen" 
+	/>
+</svelte:head>
+
 <div class="container mx-auto p-4">
 	<div class="mb-4 flex items-center justify-between">
 		<h1 class="text-2xl font-bold">Sichtungen</h1>

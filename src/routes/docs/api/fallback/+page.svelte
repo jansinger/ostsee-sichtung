@@ -26,7 +26,30 @@
 
 <svelte:head>
 	<title>API-Dokumentation (Fallback) - Ostsee-Tiere</title>
-	<meta name="description" content="Fallback-Ansicht der OpenAPI-Dokumentation für die Ostsee-Tiere API" />
+	<meta 
+		name="description" 
+		content="Fallback-Ansicht der OpenAPI-Dokumentation für die Ostsee-Tiere API. Vereinfachte Darstellung der API-Spezifikation." 
+	/>
+	<meta 
+		name="keywords" 
+		content="API, OpenAPI, Fallback, Dokumentation, Spezifikation, Ostsee, Meerestiere" 
+	/>
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content="API-Dokumentation (Fallback) - Ostsee-Tiere" />
+	<meta 
+		property="og:description" 
+		content="Fallback-Ansicht der OpenAPI-Dokumentation für die Ostsee-Tiere API" 
+	/>
+	<meta property="og:type" content="website" />
+	
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content="API-Dokumentation (Fallback) - Ostsee-Tiere" />
+	<meta 
+		name="twitter:description" 
+		content="Fallback-Ansicht der OpenAPI-Dokumentation für die Ostsee-Tiere API" 
+	/>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl p-4">

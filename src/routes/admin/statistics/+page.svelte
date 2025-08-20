@@ -84,7 +84,31 @@
 </script>
 
 <svelte:head>
-	<title>Statistiken - Ostsee-Tiere Admin</title>
+	<title>Statistiken - Admin - Ostsee-Tiere</title>
+	<meta 
+		name="description" 
+		content="Wissenschaftliche Statistiken und Auswertungen der Meerestier-Sichtungen. Detaillierte Analysen für Forschung und Monitoring." 
+	/>
+	<meta 
+		name="keywords" 
+		content="Statistiken, Wissenschaft, Analyse, Meerestiere, Ostsee, Forschung, Daten, Admin" 
+	/>
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content="Sichtungsstatistiken - Admin - Ostsee-Tiere" />
+	<meta 
+		property="og:description" 
+		content="Wissenschaftliche Statistiken und Auswertungen der Meerestier-Sichtungen" 
+	/>
+	<meta property="og:type" content="website" />
+	
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content="Sichtungsstatistiken - Admin - Ostsee-Tiere" />
+	<meta 
+		name="twitter:description" 
+		content="Wissenschaftliche Statistiken und Auswertungen der Meerestier-Sichtungen" 
+	/>
 </svelte:head>
 
 <div class="space-y-8">

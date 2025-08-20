@@ -51,6 +51,26 @@
 		name="description"
 		content="Ostsee-Tiere - Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen."
 	/>
+	<meta
+		name="keywords"
+		content="Meerestiere, Sichtung, Ostsee, Schweinswal, Robben, Melden, Forschung, Naturbeobachtung"
+	/>
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content="Ostsee-Tiere - Meerestiere melden" />
+	<meta 
+		property="og:description" 
+		content="Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen." 
+	/>
+	<meta property="og:type" content="website" />
+	
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content="Ostsee-Tiere - Meerestiere melden" />
+	<meta 
+		name="twitter:description" 
+		content="Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen." 
+	/>
 </svelte:head>
 
 <div class="min-h-screen min-w-sm bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50">

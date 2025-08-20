@@ -25,7 +25,31 @@
 </script>
 
 <svelte:head>
-	<title>Sichtung #{data.sighting?.id} - Bearbeiten</title>
+	<title>Sichtung #{data.sighting?.id} - Bearbeiten - Admin - Ostsee-Tiere</title>
+	<meta 
+		name="description" 
+		content="Bearbeitung der Sichtung #{data.sighting?.id}. Admin-Bereich zur Korrektur und Anpassung von Sichtungsdaten." 
+	/>
+	<meta 
+		name="keywords" 
+		content="Sichtung, Bearbeiten, Admin, {data.sighting?.species || 'Meerestier'}, Ostsee, Verwaltung" 
+	/>
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content="Sichtung #{data.sighting?.id} bearbeiten - Admin" />
+	<meta 
+		property="og:description" 
+		content="Bearbeitung einer Meerestier-Sichtung im Admin-Bereich" 
+	/>
+	<meta property="og:type" content="website" />
+	
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content="Sichtung #{data.sighting?.id} bearbeiten - Admin" />
+	<meta 
+		name="twitter:description" 
+		content="Bearbeitung einer Meerestier-Sichtung im Admin-Bereich" 
+	/>
 </svelte:head>
 
 <div class="mb-0 flex items-center justify-between">
