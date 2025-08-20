@@ -1,15 +1,17 @@
+import { formatLocalDateTime } from './dateTime';
+
 /**
  * Formatiert ein Datum für die Anzeige
+ * 
+ * @deprecated Diese Funktion ist veraltet. Verwende stattdessen formatLocalDateTime() 
+ * aus '$lib/utils/format/dateTime' für neue Implementierungen.
+ * 
+ * Diese Wrapper-Funktion stellt Rückwärtskompatibilität sicher, während die neue 
+ * zeitzonenbewusste Formatierung verwendet wird.
+ * 
  * @param date Das zu formatierende Datum
- * @returns Das formatierte Datum als String
+ * @returns Das formatierte Datum als String mit korrekter Zeitzonenkonvertierung
  */
 export function formatDate(date: string | Date | null): string {
-	if (!date) return 'Nicht angegeben';
-	return new Date(date).toLocaleString('de-DE', {
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit'
-	});
+	return formatLocalDateTime(date, 'datetime');
 }

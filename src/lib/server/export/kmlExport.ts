@@ -1,4 +1,5 @@
 import type { FrontendSighting } from '$lib/types/index';
+import { formatForKmlExport } from '$lib/utils/format/dateTime';
 
 /**
  * Repräsentiert ein KML-Placemark für eine Meeressäuger-Sichtung.
@@ -195,8 +196,8 @@ export function generateKmlData(sightings: FrontendSighting[]): string {
  * @internal
  */
 function sightingToKmlPlacemark(sighting: FrontendSighting): KmlPlacemark {
-	const date = new Date(sighting.sightingDate);
-	const formattedDate = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear().toString().slice(-2)} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+	// Formatiere Datum und Zeit mit korrekter Zeitzonenkonvertierung
+	const formattedDate = formatForKmlExport(sighting.sightingDate);
 
 	// Name des Placemarks (Datum und Uhrzeit)
 	const name = formattedDate;

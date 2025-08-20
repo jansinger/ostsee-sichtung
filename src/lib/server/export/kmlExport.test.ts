@@ -119,8 +119,9 @@ describe('kmlExport', () => {
 			expect(kml).toContain('<Placemark>');
 			expect(kml).toContain('</Placemark>');
 
-			// Name sollte formatiertes Datum sein (DD.MM.YY HH:mm)
-			expect(kml).toContain('<name>15.01.24 14:30</name>');
+			// Name sollte formatiertes Datum sein (DD.MM.YY HH:mm) - mit Zeitzonenkonvertierung
+			// 14:30 UTC + 1 Stunde MEZ (Januar) = 15:30 lokale Zeit
+			expect(kml).toContain('<name>15.01.24 15:30</name>');
 
 			// Koordinaten sollten korrekt sein
 			expect(kml).toContain('<coordinates>13.2,54.5</coordinates>');
@@ -335,11 +336,11 @@ describe('kmlExport', () => {
 			// Simuliere gefährliche Daten durch direkten XML-String
 			const kml = generateKmlData([sighting]);
 
-			// Name sollte korrekt escaped sein
-			expect(kml).toContain('<name>15.01.24 14:30</name>');
+			// Name sollte korrekt escaped sein - mit Zeitzonenkonvertierung
+			expect(kml).toContain('<name>15.01.24 15:30</name>');
 
 			// Keine unescaped XML-Zeichen
-			expect(kml).not.toContain('<name>15.01.24 14:30 & Test</name>');
+			expect(kml).not.toContain('<name>15.01.24 15:30 & Test</name>');
 		});
 
 		it('sollte mit Sonderzeichen in Beschreibungen umgehen', () => {
@@ -360,9 +361,10 @@ describe('kmlExport', () => {
 	describe('Zeitstempel-Formatierung', () => {
 		it('sollte verschiedene Datumsformate korrekt verarbeiten', () => {
 			const dateTests = [
-				{ input: '2024-01-15T14:30:00.000Z', expectedName: '15.01.24 14:30' },
-				{ input: '2024-12-31T23:59:59.999Z', expectedName: '31.12.24 23:59' },
-				{ input: '2024-02-29T12:00:00.000Z', expectedName: '29.02.24 12:00' } // Schaltjahr
+				{ input: '2024-01-15T14:30:00.000Z', expectedName: '15.01.24 15:30' }, // UTC+1 (Winter)
+				{ input: '2024-07-15T14:30:00.000Z', expectedName: '15.07.24 16:30' }, // UTC+2 (Sommer)
+				{ input: '2024-12-31T22:59:59.999Z', expectedName: '31.12.24 23:59' }, // UTC+1 (Winter)
+				{ input: '2024-02-29T11:00:00.000Z', expectedName: '29.02.24 12:00' } // UTC+1 (Winter), Schaltjahr
 			];
 
 			dateTests.forEach(({ input, expectedName }) => {

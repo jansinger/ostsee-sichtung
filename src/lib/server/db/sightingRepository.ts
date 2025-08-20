@@ -74,7 +74,7 @@ export const saveSighting = async (formData: SightingFormData): Promise<{ id: nu
 			mimeType: file.mimeType,
 			size: file.size,
 			url: file.url || null, // Cloud-Storage-URL falls verfügbar
-			uploadedAt: file.uploadedAt || new Date().toISOString(),
+			uploadedAt: file.uploadedAt ? new Date(file.uploadedAt) : new Date(),
 			exifData: file.exifData || null // EXIF-Metadaten als JSONB
 		}));
 

@@ -114,7 +114,7 @@ describe('xmlExport', () => {
 			expect(result).toContain('<sichtung>');
 			expect(result).toContain('<nr>1</nr>');
 			expect(result).toContain('<datum>15.01.24</datum>');
-			expect(result).toContain('<uhrzeit>1430</uhrzeit>');
+			expect(result).toContain('<uhrzeit>1530</uhrzeit>'); // 14:30 UTC + 1 Stunde MEZ = 15:30
 			expect(result).toContain('<tierart>0</tierart>');
 			expect(result).toContain('<fahrwasser>Fehmarnbelt</fahrwasser>');
 			expect(result).toContain('<dezigrad_n>54.5</dezigrad_n>');
@@ -265,15 +265,15 @@ describe('xmlExport', () => {
 
 			const result = generateXmlData(sightings);
 
-			expect(result).toContain('<uhrzeit>1430</uhrzeit>');
-			expect(result).toContain('<uhrzeit>0905</uhrzeit>');
+			expect(result).toContain('<uhrzeit>1530</uhrzeit>'); // 14:30 UTC + 1 Stunde MEZ = 15:30
+			expect(result).toContain('<uhrzeit>1005</uhrzeit>'); // 09:05 UTC + 1 Stunde MEZ = 10:05
 		});
 
 		test('should handle different years correctly', () => {
 			const sightings: FrontendSighting[] = [
 				createTestSighting({
 					id: 1,
-					sightingDate: '2023-12-31T23:59:00.000Z',
+					sightingDate: '2023-12-31T22:59:00.000Z', // 22:59 UTC + 1 Stunde = 23:59 am 31.12.23
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -281,11 +281,11 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2023-12-31T23:59:00.000Z'
+					created: '2023-12-31T22:59:00.000Z'
 				}),
 				createTestSighting({
 					id: 2,
-					sightingDate: '2025-01-01T00:01:00.000Z',
+					sightingDate: '2024-12-31T23:01:00.000Z', // 23:01 UTC + 1 Stunde = 00:01 am 01.01.25
 					species: 0 as any,
 					totalCount: 1,
 					latitude: '54.5',
@@ -293,7 +293,7 @@ describe('xmlExport', () => {
 					isDead: 0,
 					juvenileCount: 0,
 					verified: 0,
-					created: '2025-01-01T00:01:00.000Z'
+					created: '2024-12-31T23:01:00.000Z'
 				})
 			];
 

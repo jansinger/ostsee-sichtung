@@ -21,6 +21,7 @@ import { getSightingFromLabel } from '$lib/report/formOptions/sightingFrom';
 import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
 import type { FrontendSighting } from '$lib/types/index';
+import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 
 /**
  * Generiert CSV-Daten aus einer Sammlung von Sichtungen
@@ -152,7 +153,7 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 			sighting.notes || '',
 			sighting.otherObservations || '',
 			sighting.verified ? 'Ja' : 'Nein',
-			new Date(sighting.created).toLocaleString('de-DE')
+			formatLocalDateTime(sighting.created, 'full')
 		];
 
 		// Werte mit Anführungszeichen versehen und zur CSV hinzufügen
