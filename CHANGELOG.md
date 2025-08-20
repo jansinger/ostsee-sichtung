@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.16.0 (2025-08-20)
+
+* Create CODE_OF_CONDUCT.md ([ae2598d](https://github.com/jansinger/ostsee-sichtung/commit/ae2598d))
+* Create CODE_OF_CONDUCT.md ([f2f84c2](https://github.com/jansinger/ostsee-sichtung/commit/f2f84c2))
+* Merge pull request #57 from jansinger/docs/issue-templates ([05c3b8a](https://github.com/jansinger/ostsee-sichtung/commit/05c3b8a)), closes [#57](https://github.com/jansinger/ostsee-sichtung/issues/57)
+* Merge pull request #58 from jansinger/docs/community-standards ([691299e](https://github.com/jansinger/ostsee-sichtung/commit/691299e)), closes [#58](https://github.com/jansinger/ostsee-sichtung/issues/58)
+* Merge pull request #59 from jansinger/fix/exif-auto-fill-position-time ([083d117](https://github.com/jansinger/ostsee-sichtung/commit/083d117)), closes [#59](https://github.com/jansinger/ostsee-sichtung/issues/59)
+* Merge pull request #60 from jansinger/jansinger-patch-1 ([6b5eb55](https://github.com/jansinger/ostsee-sichtung/commit/6b5eb55)), closes [#60](https://github.com/jansinger/ostsee-sichtung/issues/60)
+* Update issue templates ([afb88ed](https://github.com/jansinger/ostsee-sichtung/commit/afb88ed))
+* fix: entferne ungenutzte Importanweisung für die Seitenstore ([8905e83](https://github.com/jansinger/ostsee-sichtung/commit/8905e83))
+* feat: enhance SEO with comprehensive svelte:head blocks ([dcfe407](https://github.com/jansinger/ostsee-sichtung/commit/dcfe407))
+* feat: füge GitHub-Link zur Fußzeile in mehreren Komponenten hinzu und verbessere die Sichtbarkeit ([c9115dd](https://github.com/jansinger/ostsee-sichtung/commit/c9115dd))
+* feat: integrate API documentation into admin area ([55eca56](https://github.com/jansinger/ostsee-sichtung/commit/55eca56))
+* feat: umfassende UI/UX und Admin-Verbesserungen ([2e8c449](https://github.com/jansinger/ostsee-sichtung/commit/2e8c449))
+
 ## <small>1.15.3 (2025-08-20)</small>
 
 * Merge pull request #56 from jansinger/fix/exif-auto-fill-position-time ([d809ccd](https://github.com/jansinger/ostsee-sichtung/commit/d809ccd)), closes [#56](https://github.com/jansinger/ostsee-sichtung/issues/56)
