@@ -15,7 +15,7 @@ jobs:
       
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           
@@ -119,10 +119,20 @@ jobs:
           echo "$PRS_JSON" | jq -r '.[] | "\(.branch) \(.title)"' | while IFS=' ' read -r branch title; do
             echo "Merging $branch: $title"
             
-            # Merge den Dependabot branch
+            # Fetch und merge den Dependabot branch
             git fetch origin "$branch"
-            git merge "origin/$branch" --no-ff --no-edit -m "merge: $title"
+            
+            # Force merge auch wenn fast-forward möglich wäre, um sicherzustellen dass Änderungen übernommen werden
+            if ! git merge "origin/$branch" --no-ff --no-edit -m "merge: $title"; then
+              echo "Merge failed for $branch, trying with strategy"
+              git merge "origin/$branch" -X ours -m "merge: $title"
+            fi
           done
+          
+          # Zeige was tatsächlich gemerged wurde
+          echo "=== Merged changes ==="
+          git log --oneline -10
+          git status
           
       - name: Generate conventional commit message
         if: steps.get-prs.outputs.count != '0'

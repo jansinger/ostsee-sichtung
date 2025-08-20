@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -232,7 +232,7 @@ jobs:
       # Dependabot-spezifische Aktionen
       - name: Get Dependabot metadata
         if: github.actor == 'dependabot[bot]'
-        uses: dependabot/fetch-metadata@v1
+        uses: dependabot/fetch-metadata@v2
         id: dependabot-metadata
 
       - name: Label Dependabot PR
