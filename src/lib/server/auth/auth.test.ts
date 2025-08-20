@@ -618,7 +618,7 @@ describe('auth.ts', () => {
 			expect(mockCookies.set).toHaveBeenCalledWith('csrfState', result, {
 				httpOnly: true,
 				sameSite: 'lax',
-				maxAge: 1000,
+				maxAge: 600,
 				path: '/api/auth',
 				secure: process.env.NODE_ENV === 'production'
 			});
@@ -668,7 +668,7 @@ describe('auth.ts', () => {
 			expect(mockCookies.set).toHaveBeenCalledWith('extendedState', expectedCookieValue, {
 				httpOnly: true,
 				sameSite: 'lax',
-				maxAge: 1000,
+				maxAge: 600,
 				path: '/api/auth',
 				secure: process.env.NODE_ENV === 'production'
 			});

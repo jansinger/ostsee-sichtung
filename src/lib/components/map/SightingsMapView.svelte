@@ -1,18 +1,19 @@
 <script lang="ts">
-	import FilterPanel from './Panel/FilterPanel.svelte';
-	import LegendPanel from './Panel/LegendPanel.svelte';
+	/* eslint-disable @typescript-eslint/no-explicit-any */
 	import { MapCountManager, type CountData } from '$lib/map/countManager';
-	import { SichtungenMap } from '$lib/map/optimizedMapController';
 	import type { MapTranslations } from '$lib/map/mapUtils';
+	import { SichtungenMap } from '$lib/map/optimizedMapController';
 	import { MapPanelManager } from '$lib/map/panelManager';
 	import { MapTimeSliderManager } from '$lib/map/timeSliderManager';
 	import { speciesLabels } from '$lib/report/formOptions/species';
-	import 'ol/ol.css';
-	import { onMount, onDestroy } from 'svelte';
 	import { getAvailableYears, getDefaultSightingYear } from '$lib/utils/date/defaultYear';
+	import 'ol/ol.css';
+	import { onDestroy, onMount } from 'svelte';
+	import FilterPanel from './Panel/FilterPanel.svelte';
+	import LegendPanel from './Panel/LegendPanel.svelte';
 
 	// Props
-	let { 
+	let {
 		mapContainerId = 'map',
 		showTitle = true,
 		title = 'Sichtungskarte',
@@ -70,7 +71,7 @@
 	// Verfügbare Jahre für den Filter (10 Jahre zurück)
 	const years = getAvailableYears(10);
 	const defaultYear = getDefaultSightingYear();
-	
+
 	// Event Handler für Cleanup
 	let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
 	let unhandledRejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
@@ -117,18 +118,18 @@
 
 		// Event-Listener für Loading-Zustände
 		setupLoadingHandlers();
-		
+
 		// Cleanup beim Unmount
 		return () => {
 			cleanup();
 		};
 	});
-	
+
 	// Cleanup-Funktion beim Destroy
 	onDestroy(() => {
 		cleanup();
 	});
-	
+
 	/**
 	 * Cleanup-Funktion für Event-Listener und Map-Instanzen
 	 */
@@ -138,12 +139,12 @@
 			document.removeEventListener('keydown', keyboardHandler);
 			keyboardHandler = null;
 		}
-		
+
 		if (unhandledRejectionHandler) {
 			window.removeEventListener('unhandledrejection', unhandledRejectionHandler);
 			unhandledRejectionHandler = null;
 		}
-		
+
 		// Cleanup Map-Instanz
 		if (mapInstance) {
 			// Die Map-Instanz hat möglicherweise eine cleanup-Methode
@@ -151,18 +152,18 @@
 				(mapInstance as any).cleanup();
 			}
 		}
-		
+
 		// Reset Manager (sie haben möglicherweise keine explizite cleanup-Methode)
 		countManager = null as any;
 		panelManager = null as any;
 		timeSliderManager = null as any;
 		mapInstance = null as any;
-		
+
 		// Entferne globale Referenz
 		if ((window as any).mapCountManager) {
 			delete (window as any).mapCountManager;
 		}
-		
+
 		// WICHTIG: Stelle sicher, dass body/html wieder scrollbar sind
 		// Falls irgendeine Library diese verändert hat
 		if (typeof document !== 'undefined') {
@@ -263,6 +264,7 @@
 	}
 </script>
 
+/** eslint-disable @typescript-eslint/no-explicit-any */
 <div class="{containerClass} map-container-wrapper">
 	{#if showTitle}
 		<h1 class={titleClass}>
@@ -408,7 +410,7 @@
 
 <style>
 	@import '$lib/map/mapStyles.css';
-	
+
 	/* Map-spezifische Styles - nicht global! */
 	.map-container-wrapper {
 		position: relative;

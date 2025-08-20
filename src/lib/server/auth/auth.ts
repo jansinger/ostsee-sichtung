@@ -30,6 +30,12 @@ let cachedKey: string | undefined = undefined;
 const COOKIE_DURATION_SECONDS = 60 * 60 * 24 * 1; // 1 Tag
 
 /**
+ * Dauer der authorization code flow Cookies in Sekunden.
+ * Standard: 10 Minuten (600 Sekunden)
+ */
+const COOKIE_AUTHORIZE_DURATION_SECONDS = 60 * 10; // 10 Minuten
+
+/**
  * Holt den öffentlichen Schlüssel von Auth0's JWKS (JSON Web Key Set) Endpoint.
  *
  * Diese Funktion wird von der JWT-Verifizierung verwendet, um den korrekten
@@ -322,7 +328,7 @@ export const setCsrfCookie = (cookies: Cookies) => {
 	cookies.set('csrfState', csrfState, {
 		httpOnly: true,
 		sameSite: 'lax',
-		maxAge: 1000,
+		maxAge: COOKIE_AUTHORIZE_DURATION_SECONDS,
 		path: '/api/auth',
 		secure: process.env.NODE_ENV === 'production'
 	});
@@ -364,7 +370,7 @@ export const setPKCECookie = (cookies: Cookies) => {
 	cookies.set('extendedState', cookieValue, {
 		httpOnly: true,
 		sameSite: 'lax',
-		maxAge: 1000,
+		maxAge: COOKIE_AUTHORIZE_DURATION_SECONDS,
 		path: '/api/auth',
 		secure: process.env.NODE_ENV === 'production'
 	});
