@@ -49,6 +49,16 @@
 									Statistiken
 								</a>
 							</li>
+							<li>
+								<a
+									href="/admin/docs"
+									class={$page.url.pathname.includes('/admin/docs')
+										? 'active font-medium'
+										: ''}
+								>
+									API-Docs
+								</a>
+							</li>
 						</ul>
 
 						<!-- User Menu - Desktop -->
@@ -95,6 +105,16 @@
 										: ''}
 								>
 									Statistiken
+								</a>
+							</li>
+							<li>
+								<a
+									href="/admin/docs"
+									class={$page.url.pathname.includes('/admin/docs')
+										? 'active font-medium'
+										: ''}
+								>
+									API-Docs
 								</a>
 							</li>
 
