@@ -24,23 +24,35 @@ vi.mock('$env/static/private', () => ({
 	AUTH0_DOMAIN: 'test-domain.auth0.com',
 	COOKIE_NAME: 'test-auth-cookie',
 	JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
-	SESSION_SECRET: 'test-session-secret'
+	SESSION_SECRET: 'test-session-secret',
+	ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
 }));
 
 vi.mock('$env/static/public', () => ({
 	PUBLIC_SITE_URL: 'https://test-site.com'
 }));
 
+// Mock crypto functions
+vi.mock('./crypto.js', () => ({
+	getPKCEChallengeData: vi.fn(),
+	encrypt: vi.fn(),
+	decrypt: vi.fn()
+}));
+
 // Import the functions to test after mocking
 import {
 	clearAuthCookie,
 	getAuthUser,
+	getPKCEVerifierFromCookie,
 	getToken,
 	getTokenClaims,
 	requireUserRole,
 	setAuthCookie,
+	setCsrfCookie,
+	setPKCECookie,
 	verifyToken
 } from './auth';
+import { decrypt, encrypt, getPKCEChallengeData } from './crypto.js';
 
 describe('auth.ts', () => {
 	let mockJwt: {
@@ -374,7 +386,7 @@ describe('auth.ts', () => {
 			expect(mockCookies.set).toHaveBeenCalledWith('test-auth-cookie', signedToken, {
 				httpOnly: true,
 				sameSite: 'lax',
-				maxAge: 60 * 60 * 24 * 7, // 1 week
+				maxAge: 60 * 60 * 24 * 1, // 1 Tag
 				path: '/',
 				secure: process.env.NODE_ENV === 'production'
 			});
@@ -591,6 +603,178 @@ describe('auth.ts', () => {
 				'Redirect 302: /api/auth/login?returnUrl=/'
 			);
 			expect(redirect).toHaveBeenCalledWith(302, '/api/auth/login?returnUrl=/');
+		});
+	});
+
+	describe('setCsrfCookie', () => {
+		it('should generate and set CSRF state cookie', () => {
+			// Mock Math.random to return value that produces non-empty string
+			const mockRandom = vi.spyOn(Math, 'random').mockReturnValue(0.9999);
+
+			const result = setCsrfCookie(mockCookies);
+
+			expect(typeof result).toBe('string');
+			expect(result.length).toBeGreaterThan(0);
+			expect(mockCookies.set).toHaveBeenCalledWith('csrfState', result, {
+				httpOnly: true,
+				sameSite: 'lax',
+				maxAge: 1000,
+				path: '/api/auth',
+				secure: process.env.NODE_ENV === 'production'
+			});
+
+			mockRandom.mockRestore();
+		});
+
+		it('should generate different CSRF tokens on subsequent calls', () => {
+			const token1 = setCsrfCookie(mockCookies);
+			const token2 = setCsrfCookie(mockCookies);
+
+			expect(token1).not.toBe(token2);
+			expect(mockCookies.set).toHaveBeenCalledTimes(2);
+		});
+	});
+
+	describe('setPKCECookie', () => {
+		beforeEach(() => {
+			// Reset mocks before each test
+			vi.clearAllMocks();
+		});
+
+		it('should generate PKCE data, encrypt verifier, and set cookie', () => {
+			const mockPKCEData = {
+				verifier: 'test-verifier-123',
+				challenge: 'test-challenge-456'
+			};
+			const mockEncryptedData = {
+				iv: Buffer.from('1234567890abcdef1234567890abcdef', 'hex'),
+				encryptedData: Buffer.from('encrypted-verifier-data', 'hex'),
+				tag: Buffer.from('auth-tag-1234567890abcdef', 'hex')
+			};
+
+			vi.mocked(getPKCEChallengeData).mockReturnValue(mockPKCEData);
+			vi.mocked(encrypt).mockReturnValue(mockEncryptedData);
+
+			const result = setPKCECookie(mockCookies);
+
+			expect(result).toBe('test-challenge-456');
+			expect(getPKCEChallengeData).toHaveBeenCalledTimes(1);
+			expect(encrypt).toHaveBeenCalledWith(
+				'test-verifier-123',
+				Buffer.from('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'hex')
+			);
+
+			const expectedCookieValue = `${mockEncryptedData.iv.toString('hex')}:${mockEncryptedData.encryptedData.toString('hex')}:${mockEncryptedData.tag.toString('hex')}`;
+			expect(mockCookies.set).toHaveBeenCalledWith('extendedState', expectedCookieValue, {
+				httpOnly: true,
+				sameSite: 'lax',
+				maxAge: 1000,
+				path: '/api/auth',
+				secure: process.env.NODE_ENV === 'production'
+			});
+		});
+
+		it('should handle encryption errors gracefully', () => {
+			const mockPKCEData = {
+				verifier: 'test-verifier',
+				challenge: 'test-challenge'
+			};
+
+			vi.mocked(getPKCEChallengeData).mockReturnValue(mockPKCEData);
+			vi.mocked(encrypt).mockImplementation(() => {
+				throw new Error('Encryption failed');
+			});
+
+			expect(() => setPKCECookie(mockCookies)).toThrow('Encryption failed');
+		});
+	});
+
+	describe('getPKCEVerifierFromCookie', () => {
+		beforeEach(() => {
+			vi.clearAllMocks();
+		});
+
+		it('should retrieve, decrypt, and delete PKCE cookie successfully', () => {
+			const mockCookieValue = '1234567890abcdef:encrypteddata:authtag123456';
+			const mockDecryptedVerifier = 'decrypted-verifier-123';
+
+			vi.mocked(mockCookies.get).mockReturnValue(mockCookieValue);
+			vi.mocked(decrypt).mockReturnValue(mockDecryptedVerifier);
+
+			const result = getPKCEVerifierFromCookie(mockCookies);
+
+			expect(result).toBe(mockDecryptedVerifier);
+			expect(mockCookies.get).toHaveBeenCalledWith('extendedState');
+			expect(mockCookies.delete).toHaveBeenCalledWith('extendedState', { path: '/api/auth' });
+			expect(decrypt).toHaveBeenCalledWith(
+				Buffer.from('encrypteddata', 'hex'),
+				Buffer.from('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'hex'),
+				Buffer.from('1234567890abcdef', 'hex'),
+				Buffer.from('authtag123456', 'hex')
+			);
+		});
+
+		it('should return null when no cookie exists', () => {
+			vi.mocked(mockCookies.get).mockReturnValue(undefined);
+
+			const result = getPKCEVerifierFromCookie(mockCookies);
+
+			expect(result).toBeNull();
+			expect(mockCookies.delete).not.toHaveBeenCalled();
+			expect(decrypt).not.toHaveBeenCalled();
+		});
+
+		it('should return null when cookie value is empty', () => {
+			vi.mocked(mockCookies.get).mockReturnValue('');
+
+			const result = getPKCEVerifierFromCookie(mockCookies);
+
+			expect(result).toBeNull();
+			expect(mockCookies.delete).not.toHaveBeenCalled();
+			expect(decrypt).not.toHaveBeenCalled();
+		});
+
+		it('should return null when cookie has invalid format', () => {
+			vi.mocked(mockCookies.get).mockReturnValue('invalid-cookie-format');
+
+			const result = getPKCEVerifierFromCookie(mockCookies);
+
+			expect(result).toBeNull();
+			expect(mockCookies.delete).toHaveBeenCalledWith('extendedState', { path: '/api/auth' });
+			expect(decrypt).not.toHaveBeenCalled();
+		});
+
+		it('should return null when cookie has missing components', () => {
+			vi.mocked(mockCookies.get).mockReturnValue('iv:encrypted:'); // missing tag
+
+			const result = getPKCEVerifierFromCookie(mockCookies);
+
+			expect(result).toBeNull();
+			expect(mockCookies.delete).toHaveBeenCalledWith('extendedState', { path: '/api/auth' });
+			expect(decrypt).not.toHaveBeenCalled();
+		});
+
+		it('should handle decryption errors', () => {
+			const mockCookieValue = 'validiv:validdata:validtag';
+			vi.mocked(mockCookies.get).mockReturnValue(mockCookieValue);
+			vi.mocked(decrypt).mockImplementation(() => {
+				throw new Error('Decryption failed');
+			});
+
+			expect(() => getPKCEVerifierFromCookie(mockCookies)).toThrow('Decryption failed');
+			expect(mockCookies.delete).toHaveBeenCalledWith('extendedState', { path: '/api/auth' });
+		});
+
+		it('should always delete cookie even on successful retrieval', () => {
+			const mockCookieValue = 'iv:data:tag';
+			const mockDecryptedVerifier = 'verifier';
+
+			vi.mocked(mockCookies.get).mockReturnValue(mockCookieValue);
+			vi.mocked(decrypt).mockReturnValue(mockDecryptedVerifier);
+
+			getPKCEVerifierFromCookie(mockCookies);
+
+			expect(mockCookies.delete).toHaveBeenCalledWith('extendedState', { path: '/api/auth' });
 		});
 	});
 });
