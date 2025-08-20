@@ -150,11 +150,23 @@
 		{@render children()}
 	</main>
 
-	<!-- Footer - Hidden on map page for full screen experience -->
-	{#if !$page.url.pathname.includes('/admin/map')}
+	<!-- Footer - Hidden on map page for full screen experience and in iFrame -->
+	{#if !$page.url.pathname.includes('/admin/map') && typeof window !== 'undefined' && window === window.top}
 		<footer class="footer-center footer bg-base-200 text-base-content p-4">
-			<div>
-				<p>© 2025 Deutsches Meeresmuseum - Alle Rechte vorbehalten</p>
+			<div class="text-center">
+				<p class="mb-2">© 2025 Deutsches Meeresmuseum - Alle Rechte vorbehalten</p>
+				<div class="flex justify-center gap-4 text-sm">
+					<a 
+						href="https://github.com/jansinger/ostsee-sichtung" 
+						target="_blank" 
+						rel="noopener noreferrer" 
+						class="link link-hover opacity-70"
+					>
+						GitHub Repository
+					</a>
+					<span class="opacity-30">•</span>
+					<a href="/about" class="link link-hover opacity-70">Über die Plattform</a>
+				</div>
 			</div>
 		</footer>
 	{/if}
