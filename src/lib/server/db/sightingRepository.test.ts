@@ -1,14 +1,19 @@
 /**
  * Unit Tests für sightingRepository.ts
- * 
+ *
  * Testet alle Funktionen des Repository-Patterns für Sichtungen
  * mit besonderem Fokus auf Sicherheit und Edge Cases
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { saveSighting, updateSighting, loadSightingFiles, saveSightingFiles } from './sightingRepository';
 import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import type { UploadedFileInfo } from '$lib/types';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+	loadSightingFiles,
+	saveSighting,
+	saveSightingFiles,
+	updateSighting
+} from './sightingRepository';
 
 // Mock dependencies
 vi.mock('$lib/server/db', () => ({
@@ -38,12 +43,14 @@ vi.mock('$lib/server/storage/factory', () => ({
 
 vi.mock('$lib/server/exifUtils', () => ({
 	isImageFile: vi.fn((mimeType) => mimeType?.startsWith('image/')),
-	readImageExifData: vi.fn(() => Promise.resolve({
-		latitude: 54.123,
-		longitude: 12.456,
-		make: 'TestCamera',
-		model: 'Model X'
-	}))
+	readImageExifData: vi.fn(() =>
+		Promise.resolve({
+			latitude: 54.123,
+			longitude: 12.456,
+			make: 'TestCamera',
+			model: 'Model X'
+		})
+	)
 }));
 
 vi.mock('$lib/logger', () => ({
@@ -245,7 +252,7 @@ describe('sightingRepository', () => {
 			// Arrange
 			const mockDb = db as any;
 			const updatedData = { ...mockFormData, location: 'Neuer Ort' };
-			
+
 			mockDb.update.mockReturnValue({
 				set: vi.fn().mockReturnValue({
 					where: vi.fn().mockReturnValue({
@@ -290,7 +297,7 @@ describe('sightingRepository', () => {
 			// Arrange
 			const mockDb = db as any;
 			const largeId = Number.MAX_SAFE_INTEGER;
-			
+
 			mockDb.update.mockReturnValue({
 				set: vi.fn().mockReturnValue({
 					where: vi.fn().mockReturnValue({
@@ -335,22 +342,24 @@ describe('sightingRepository', () => {
 		it('sollte Dateien mit EXIF-Daten aus der Datenbank laden', async () => {
 			// Arrange
 			const mockDb = db as any;
-			const mockFiles = [{
-				id: 1,
-				sightingId: 42,
-				originalName: 'test.jpg',
-				fileName: 'test-123.jpg',
-				filePath: 'uploads/test-123.jpg',
-				mimeType: 'image/jpeg',
-				size: 1024000,
-				url: '/uploads/test-123.jpg',
-				uploadedAt: new Date().toISOString(),
-				exifData: {
-					latitude: 54.123,
-					longitude: 12.456,
-					make: 'Canon'
+			const mockFiles = [
+				{
+					id: 1,
+					sightingId: 42,
+					originalName: 'test.jpg',
+					fileName: 'test-123.jpg',
+					filePath: 'uploads/test-123.jpg',
+					mimeType: 'image/jpeg',
+					size: 1024000,
+					url: '/uploads/test-123.jpg',
+					uploadedAt: new Date().toISOString(),
+					exifData: {
+						latitude: 54.123,
+						longitude: 12.456,
+						make: 'Canon'
+					}
 				}
-			}];
+			];
 
 			mockDb.select.mockReturnValue({
 				from: vi.fn().mockReturnValue({
@@ -376,18 +385,20 @@ describe('sightingRepository', () => {
 		it('sollte Dateien ohne EXIF-Daten korrekt behandeln', async () => {
 			// Arrange
 			const mockDb = db as any;
-			const mockFiles = [{
-				id: 2,
-				sightingId: 42,
-				originalName: 'document.pdf',
-				fileName: 'document-456.pdf',
-				filePath: 'uploads/document-456.pdf',
-				mimeType: 'application/pdf',
-				size: 500000,
-				url: null,
-				uploadedAt: new Date().toISOString(),
-				exifData: null
-			}];
+			const mockFiles = [
+				{
+					id: 2,
+					sightingId: 42,
+					originalName: 'document.pdf',
+					fileName: 'document-456.pdf',
+					filePath: 'uploads/document-456.pdf',
+					mimeType: 'application/pdf',
+					size: 500000,
+					url: null,
+					uploadedAt: new Date().toISOString(),
+					exifData: null
+				}
+			];
 
 			mockDb.select.mockReturnValue({
 				from: vi.fn().mockReturnValue({
@@ -429,18 +440,20 @@ describe('sightingRepository', () => {
 		it('sollte Fehler bei EXIF-Extraktion abfangen', async () => {
 			// Arrange
 			const mockDb = db as any;
-			const mockFiles = [{
-				id: 3,
-				sightingId: 42,
-				originalName: 'corrupt.jpg',
-				fileName: 'corrupt-789.jpg',
-				filePath: 'uploads/corrupt-789.jpg',
-				mimeType: 'image/jpeg',
-				size: 100,
-				url: null,
-				uploadedAt: new Date().toISOString(),
-				exifData: null
-			}];
+			const mockFiles = [
+				{
+					id: 3,
+					sightingId: 42,
+					originalName: 'corrupt.jpg',
+					fileName: 'corrupt-789.jpg',
+					filePath: 'uploads/corrupt-789.jpg',
+					mimeType: 'image/jpeg',
+					size: 100,
+					url: null,
+					uploadedAt: new Date().toISOString(),
+					exifData: null
+				}
+			];
 
 			mockDb.select.mockReturnValue({
 				from: vi.fn().mockReturnValue({
@@ -468,7 +481,7 @@ describe('sightingRepository', () => {
 			// Arrange
 			const mockDb = db as any;
 			const files = [mockUploadedFile, { ...mockUploadedFile, id: 'file-2' }];
-			
+
 			mockDb.insert.mockReturnValue({
 				values: vi.fn().mockResolvedValue(undefined)
 			});
@@ -502,15 +515,15 @@ describe('sightingRepository', () => {
 			// Arrange
 			const mockDb = db as any;
 			const dbError = new Error('Insert failed');
-			
+
 			mockDb.insert.mockReturnValue({
 				values: vi.fn().mockRejectedValue(dbError)
 			});
 
 			// Act & Assert
-			await expect(
-				saveSightingFiles(42, [mockUploadedFile], 'ref-123')
-			).rejects.toThrow('Insert failed');
+			await expect(saveSightingFiles(42, [mockUploadedFile], 'ref-123')).rejects.toThrow(
+				'Insert failed'
+			);
 		});
 	});
 });

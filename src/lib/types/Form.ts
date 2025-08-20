@@ -3,6 +3,7 @@
  */
 
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
+import type { MediaStore } from '$lib/utils/upload/MediaFile';
 import * as yup from 'yup';
 
 export interface FormStep {
@@ -27,6 +28,6 @@ export type SightingFormValues = Omit<SightingFormData, 'uploadedFiles'>;
 // Import the actual FormAPI type from svelte-forms-lib
 export type FormContext = ReturnType<
 	typeof import('svelte-forms-lib').createForm<SightingFormData>
->;
+> & { mediaStore: MediaStore };
 
 export type FormContextKey = symbol;

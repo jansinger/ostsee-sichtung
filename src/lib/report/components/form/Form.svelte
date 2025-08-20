@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { setFormContext } from '$lib/report/formContext';
 	import type { FormContext } from '$lib/report/types';
+	import type { MediaStore } from '$lib/utils/media/MediaFile';
 	import { type Snippet } from 'svelte';
 
 	import { createForm, type FormProps } from 'svelte-forms-lib';
@@ -34,10 +35,11 @@
 		validationSchema
 	});
 
+	const mediaStore = $state<MediaStore>({ mediaFiles: [] });
 	// Set form context on the parent component
 	// This allows the form context to be accessed by child components within the same component tree
 	// without passing props down manually.
-	setFormContext(context);
+	setFormContext({ ...context, mediaStore });
 </script>
 
 <form onsubmit={context.handleSubmit} {...restProps}>

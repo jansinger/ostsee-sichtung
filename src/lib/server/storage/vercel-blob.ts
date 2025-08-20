@@ -2,8 +2,6 @@
  * Vercel Blob storage provider
  */
 import { createLogger } from '$lib/logger';
-import { readImageExifData } from '$lib/server/exifUtils';
-import type { ExifDataRaw } from '$lib/types';
 import { createId } from '@paralleldrive/cuid2';
 import { del, head, list, put } from '@vercel/blob';
 import { basename, extname } from 'path';
@@ -23,7 +21,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 		}
 	}
 
-	async upload(file: File, options: UploadOptions): Promise<UploadedFile> {
+	async upload(file: File, buffer: Buffer, options: UploadOptions): Promise<UploadedFile> {
 		const id = createId();
 		const extension = extname(file.name);
 		const fileName = options.preserveOriginalName
@@ -33,61 +31,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 		const filePath = `${options.referenceId}/${fileName}`;
 
 		try {
-			// For EXIF extraction, process the file buffer BEFORE upload
-			let exifData: ExifDataRaw | null = null;
-			let fileBuffer: ArrayBuffer | null = null;
-
-			if (options.extractExif && file.type.startsWith('image/')) {
-				try {
-					logger.debug(
-						{ filePath, fileType: file.type, fileSize: file.size },
-						'Extracting EXIF data for Vercel Blob upload'
-					);
-
-					// Get file as array buffer for EXIF processing
-					fileBuffer = await file.arrayBuffer();
-					const buffer = Buffer.from(fileBuffer);
-
-					logger.debug(
-						{ filePath, bufferSize: buffer.length },
-						'Buffer created for EXIF extraction'
-					);
-
-					// Extract EXIF data directly from buffer
-					exifData = await readImageExifData(buffer);
-
-					logger.debug(
-						{
-							filePath,
-							hasExifData: !!exifData,
-							hasGPS: !!(exifData?.latitude && exifData?.longitude),
-							exifKeys: exifData
-								? Object.keys(exifData).filter((k) => {
-										const value = exifData![k as keyof ExifDataRaw];
-										return value !== null && value !== undefined;
-									})
-								: []
-						},
-						'EXIF extraction completed for Vercel Blob'
-					);
-				} catch (error) {
-					logger.error(
-						{
-							error: {
-								message: error instanceof Error ? error.message : String(error),
-								stack: error instanceof Error ? error.stack : undefined
-							},
-							filePath,
-							fileType: file.type
-						},
-						'Failed to extract EXIF data from Vercel Blob'
-					);
-				}
-			}
-
-			// Upload to Vercel Blob (use buffer if we have it, otherwise original file)
-			const uploadData = fileBuffer ? Buffer.from(fileBuffer) : file;
-			const blob = await put(filePath, uploadData, {
+			const blob = await put(filePath, buffer, {
 				access: 'public',
 				token: this.token,
 				contentType: file.type
@@ -101,8 +45,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 				size: file.size,
 				mimeType: file.type,
 				url: blob.url,
-				uploadedAt: new Date().toISOString(),
-				exifData
+				uploadedAt: new Date().toISOString()
 			};
 
 			logger.debug({ uploadedFile, blobUrl: blob.url }, 'File uploaded to Vercel Blob');
@@ -193,15 +136,18 @@ export class VercelBlobStorageProvider implements StorageProvider {
 		try {
 			// Get the URL for the file and fetch it
 			const response = await fetch(this.getUrl(filePath));
-			
+
 			if (!response.ok) {
-				logger.warn({ filePath, status: response.status }, 'File not found for content retrieval from Vercel Blob');
+				logger.warn(
+					{ filePath, status: response.status },
+					'File not found for content retrieval from Vercel Blob'
+				);
 				return null;
 			}
 
 			const arrayBuffer = await response.arrayBuffer();
 			const buffer = Buffer.from(arrayBuffer);
-			
+
 			logger.debug({ filePath, size: buffer.length }, 'File content retrieved from Vercel Blob');
 			return buffer;
 		} catch (error) {

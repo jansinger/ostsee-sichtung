@@ -98,6 +98,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.array()
 		.of(
 			yup.object().shape({
+				uid: yup.string().required(), // Eindeutige ID des Clients
 				filePath: yup.string().required(), // Dateipfad im Storage
 				originalName: yup.string().required(), // Ursprünglicher Dateiname
 				fileName: yup.string().optional(), // Interner Dateiname
@@ -105,7 +106,7 @@ export const sightingSchemaBase = yup.object().shape({
 				size: yup.number().required(), // Dateigröße in Bytes
 				url: yup.string().optional(), // Öffentliche URL
 				uploadedAt: yup.string().optional(), // Upload-Zeitstempel
-				exifData: yup.mixed().optional() // EXIF-Metadaten als JSONB
+				exifData: yup.object().optional().nullable() // EXIF-Metadaten als JSONB
 			})
 		)
 		.optional()

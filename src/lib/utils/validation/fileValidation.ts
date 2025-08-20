@@ -3,8 +3,13 @@
  * Consolidates validation logic from multiple files
  */
 
-import { ALLOWED_MIME_TYPES, UPLOAD_LIMITS, UPLOAD_ERROR_MESSAGES, type FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
-import { isMediaFile, isImageFile, isVideoFile } from '$lib/utils/file/fileType';
+import {
+	ALLOWED_MIME_TYPES,
+	UPLOAD_ERROR_MESSAGES,
+	UPLOAD_LIMITS,
+	type FILE_VALIDATION_PRESETS
+} from '$lib/constants/upload';
+import { isImageFile, isMediaFile, isVideoFile } from '$lib/utils/file/fileType';
 
 export interface ValidationResult {
 	isValid: boolean;
@@ -24,10 +29,7 @@ export interface ValidationPreset {
  * @param preset - Validation preset or custom rules
  * @returns Validation result with errors
  */
-export function validateFile(
-	file: File,
-	preset: ValidationPreset
-): ValidationResult {
+export function validateFile(file: File, preset: ValidationPreset): ValidationResult {
 	const errors: string[] = [];
 
 	// Check if file object is valid
@@ -72,10 +74,7 @@ export function validateFile(
  * @param preset - Validation preset or custom rules
  * @returns Validation result with errors
  */
-export function validateFiles(
-	files: File[],
-	preset: ValidationPreset
-): ValidationResult {
+export function validateFiles(files: File[], preset: ValidationPreset): ValidationResult {
 	const errors: string[] = [];
 
 	// Check file count
@@ -117,7 +116,9 @@ export function validateGPSPhotos(files: File[]): ValidationResult {
 
 		// Size limit for GPS photos
 		if (file.size > UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE) {
-			errors.push(UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(file.name, UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE));
+			errors.push(
+				UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(file.name, UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE)
+			);
 		}
 	}
 
@@ -168,11 +169,13 @@ export const quickValidation = {
 	 * Check if filename is safe
 	 */
 	isSafeFilename: (filename: string): boolean => {
-		return Boolean(filename && 
-			   filename.trim() !== '' && 
-			   !filename.includes('..') && 
-			   !filename.includes('/') && 
-			   !filename.includes('\\'));
+		return Boolean(
+			filename &&
+				filename.trim() !== '' &&
+				!filename.includes('..') &&
+				!filename.includes('/') &&
+				!filename.includes('\\')
+		);
 	}
 };
 
@@ -194,7 +197,9 @@ export function sanitizeFileName(fileName: string): string {
  * @param _presetName - Name of the preset
  * @returns ValidationPreset
  */
-export function getValidationPreset(_presetName: keyof typeof FILE_VALIDATION_PRESETS): ValidationPreset {
+export function getValidationPreset(
+	_presetName: keyof typeof FILE_VALIDATION_PRESETS
+): ValidationPreset {
 	// This will be implemented once we import the constants
 	// For now, return a default preset
 	return {
@@ -203,4 +208,22 @@ export function getValidationPreset(_presetName: keyof typeof FILE_VALIDATION_PR
 		maxFiles: UPLOAD_LIMITS.MAX_FILES,
 		accept: 'image/*,video/*'
 	};
+}
+
+/**
+ * Generiert eine benutzerfreundliche Liste der erlaubten Dateitypen
+ */
+export function getFileTypeDescription(allowedTypes: string[]): string {
+	const extensions = allowedTypes.map((type) => {
+		const extension = type.split('/')[1]?.toUpperCase();
+		// Spezielle Behandlung für bekannte Typen
+		switch (extension) {
+			case 'JPEG':
+				return 'JPG';
+			default:
+				return extension;
+		}
+	});
+
+	return extensions.join(', ');
 }

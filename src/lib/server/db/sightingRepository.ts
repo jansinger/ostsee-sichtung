@@ -17,11 +17,12 @@ import { createLogger } from '$lib/logger';
 import type { SightingFormData } from '$lib/report/types';
 import { db } from '$lib/server/db';
 import { sightingFiles, sightings } from '$lib/server/db/schema';
-import { isImageFile, readImageExifData } from '$lib/server/exifUtils';
 import { getUploadPath } from '$lib/server/uploads';
 import type { ExifData, UploadedFileInfo } from '$lib/types';
 import type { NewSighting, UpdateSighting } from '$lib/types/sighting';
+import { isImageFile } from '$lib/utils';
 import { eq } from 'drizzle-orm';
+import { readImageExifData } from '../media/exifUtils';
 import { mapFormToSighting } from './mapFormToSighting';
 
 // Logger für Repository-Operationen
@@ -266,7 +267,7 @@ export const saveSightingFiles = async (
 		sightingId,
 		referenceId,
 		originalName: file.originalName,
-		fileName: file.fileName,
+		fileName: file.fileName || file.originalName,
 		filePath: file.filePath,
 		mimeType: file.mimeType,
 		size: file.size,

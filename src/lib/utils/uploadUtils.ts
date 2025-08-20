@@ -6,8 +6,12 @@ const logger = createLogger('UploadUtils');
 /**
  * Direkter Upload einer Datei ohne MediaStore-Abhängigkeit
  */
-export async function uploadFileDirect(file: File, referenceId: string): Promise<UploadedFileInfo> {
-	logger.info({ fileName: file.name, referenceId }, 'Starting direct upload');
+export async function uploadFileDirect(
+	file: File,
+	referenceId: string,
+	uid: string
+): Promise<UploadedFileInfo> {
+	logger.info({ fileName: file.name, referenceId, uid }, 'Starting direct upload');
 
 	if (!referenceId) {
 		throw new Error('Reference ID ist erforderlich für Upload');
@@ -16,6 +20,7 @@ export async function uploadFileDirect(file: File, referenceId: string): Promise
 	const formData = new FormData();
 	formData.append('file', file);
 	formData.append('referenceId', referenceId);
+	formData.append('uid', uid);
 
 	const response = await fetch('/api/files/upload', {
 		method: 'POST',

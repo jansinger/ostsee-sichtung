@@ -3,13 +3,13 @@
  */
 
 // EXIF Data types
-export type { ExifData, ExifDataRaw } from './ExifData.js';
+export type { ExifData } from './ExifData.js';
 
 // User types
 export type { User, UserContactData } from './User.js';
 
 // File upload types
-export type { UploadedFileInfo } from './UploadedFile.js';
+export type { BrowserFileMetadata, UploadedFileInfo } from './UploadedFile.js';
 
 // Sighting types
 export type { FrontendSighting } from './FrontendSighting.js';
@@ -19,59 +19,59 @@ export type { NewSighting, SightingModel, UpdateSighting } from './sighting.js';
 export type { SightingFile } from './sightingFile.js';
 
 // Pagination types
-export type { Pagination, PageData } from './Pagination.js';
+export type { PageData, Pagination } from './Pagination.js';
 
 // Dropzone types
 export type { DropzoneProps } from './Dropzone.js';
 
 // Form types
-export type { 
-	FormStep, 
-	FormProgress, 
-	SightingFormData, 
-	FormContext, 
-	FormContextKey 
+export type {
+	FormContext,
+	FormContextKey,
+	FormProgress,
+	FormStep,
+	SightingFormData
 } from './Form.js';
 
 // Form field types
-export type { 
-	IconType, 
-	FieldOption, 
-	FieldSize, 
-	FieldVariant, 
-	InputType, 
-	FieldState 
+export type {
+	FieldOption,
+	FieldSize,
+	FieldState,
+	FieldVariant,
+	IconType,
+	InputType
 } from './FormField.js';
 
 // Storage types
-export type { 
-	UploadedFile, 
-	StorageProvider, 
-	UploadOptions, 
-	FileMetadata, 
-	StorageProviderType 
+export type {
+	FileMetadata,
+	StorageProvider,
+	StorageProviderType,
+	UploadedFile,
+	UploadOptions
 } from './Storage.js';
 
 // API response types
-export type { SightingResponse, CreateSightingResponse } from './ApiResponse.js';
+export type { CreateSightingResponse, SightingResponse } from './ApiResponse.js';
 
 // Geographic types
+export { GeographicValidationError } from './Geography.js';
 export type {
-	GPSCoordinate,
-	GeoLimits,
-	BalticSeaValidationResult,
-	BoundingBox,
 	BalticSeaConstants,
-	PostGISValidationRow,
-	CoordinateValidationParams,
-	DetailedValidationResult,
-	GeographicValidationErrorInfo,
 	// File-based geographic validation types
 	BalticSeaFileResult,
-	SpatialIndexItem,
+	BalticSeaValidationResult,
+	BoundingBox,
+	CoordinateValidationParams,
+	DetailedFileValidationResult,
+	DetailedValidationResult,
+	GeographicValidationErrorInfo,
+	GeoLimits,
+	GPSCoordinate,
+	PostGISValidationRow,
 	RBushIndexJson,
-	TurfValidationOptions,
+	SpatialIndexItem,
 	SpatialValidationMetrics,
-	DetailedFileValidationResult
+	TurfValidationOptions
 } from './Geography.js';
-export { GeographicValidationError } from './Geography.js';

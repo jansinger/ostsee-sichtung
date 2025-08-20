@@ -41,11 +41,11 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 		}
 
 		// Lade auch die zugehörigen Dateien
-		const files = await loadSightingFiles(Number(id));
+		const uploadedFiles = await loadSightingFiles(Number(id));
 
 		return json({
 			...sighting[0],
-			files
+			uploadedFiles
 		});
 	} catch (err) {
 		logger.error(err, 'Fehler beim Laden der Sichtung:');

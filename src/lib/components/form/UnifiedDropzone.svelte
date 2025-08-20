@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { createToast } from '$lib/stores/toastStore';
-	import { type FileValidationConfig, validateFiles, getFileTypeDescription } from '$lib/utils/fileValidation';
+	import { type ValidationPreset, validateFiles } from '$lib/utils';
+	import { getFileTypeDescription } from '$lib/utils/validation/fileValidation';
+
 	import { Upload } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
@@ -20,10 +22,10 @@
 		loadingText = 'Analysiere Dateien...',
 		showPreview = true
 	} = $props<{
-		config: FileValidationConfig;
+		config: ValidationPreset;
 		files?: File[];
 		onFilesAdded?: (files: File[]) => void;
-		onFileRemoved?: (index: number) => void;
+		onFileRemoved?: (name: string) => void;
 		onClear?: () => void;
 		multiple?: boolean;
 		title?: string;
@@ -40,7 +42,7 @@
 	let fileInput: HTMLInputElement;
 
 	// Generate unique ID for the input
-	const inputId = `dropzone-${Math.random().toString(36).substr(2, 9)}`;
+	const inputId = `dropzone-${Math.random().toString(36).substring(2, 9)}`;
 
 	function handleFileSelect(event: Event) {
 		const target = event.target as HTMLInputElement;
@@ -52,7 +54,7 @@
 	function handleDrop(event: DragEvent) {
 		event.preventDefault();
 		isDragOver = false;
-		
+
 		if (event.dataTransfer?.files) {
 			processFiles(Array.from(event.dataTransfer.files));
 		}
@@ -70,10 +72,10 @@
 
 	function processFiles(newFiles: File[]) {
 		const validation = validateFiles(newFiles, config);
-		
+
 		if (validation.errors.length > 0) {
 			// Zeige Fehler als Toast
-			validation.errors.forEach(error => {
+			validation.errors.forEach((error) => {
 				createToast('error', error);
 			});
 		}
@@ -93,9 +95,9 @@
 		}
 	}
 
-	function removeFile(index: number) {
-		files = files.filter((_: File, i: number) => i !== index);
-		onFileRemoved(index);
+	function removeFile(file: File) {
+		onFileRemoved(file.name);
+		files = files.filter((f: File) => f !== file);
 	}
 
 	function clearAll() {
@@ -151,7 +153,9 @@
 							<div class="flex items-start gap-3">
 								<!-- File Icon/Thumbnail -->
 								<div class="flex-shrink-0">
-									<div class="bg-base-200 flex h-12 w-12 items-center justify-center rounded text-xl">
+									<div
+										class="bg-base-200 flex h-12 w-12 items-center justify-center rounded text-xl"
+									>
 										{getFileIcon(file.type)}
 									</div>
 								</div>
@@ -161,7 +165,7 @@
 									<h4 class="truncate text-sm font-medium" title={file.name}>
 										{file.name}
 									</h4>
-									<p class="text-xs text-base-content/60">
+									<p class="text-base-content/60 text-xs">
 										{(file.size / (1024 * 1024)).toFixed(2)} MB
 									</p>
 								</div>
@@ -170,7 +174,7 @@
 								<button
 									type="button"
 									class="btn btn-ghost btn-xs text-error"
-									onclick={() => removeFile(index)}
+									onclick={() => removeFile(file)}
 									aria-label="Datei entfernen"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,8 +198,8 @@
 	<div
 		class="cursor-pointer rounded-lg border-2 border-dashed p-6 transition-all duration-200
 			{isDragOver
-				? 'border-primary bg-primary/10 scale-[1.02]'
-				: 'border-base-300 hover:border-primary hover:bg-primary/5'}"
+			? 'border-primary bg-primary/10 scale-[1.02]'
+			: 'border-base-300 hover:border-primary hover:bg-primary/5'}"
 		ondrop={handleDrop}
 		ondragover={handleDragOver}
 		ondragleave={handleDragLeave}
@@ -218,7 +222,7 @@
 		{#if isAnalyzing}
 			<div class="flex flex-col items-center">
 				<div class="loading loading-spinner loading-lg text-primary mb-2"></div>
-				<p class="text-sm font-medium text-primary">
+				<p class="text-primary text-sm font-medium">
 					{loadingText}
 				</p>
 			</div>
@@ -227,14 +231,10 @@
 				<Icon
 					src={Upload}
 					size="32"
-					class="mb-2 transition-colors {isDragOver
-						? 'text-primary'
-						: 'text-base-content/40'}"
+					class="mb-2 transition-colors {isDragOver ? 'text-primary' : 'text-base-content/40'}"
 				/>
 				<p class="text-sm font-medium {isDragOver ? 'text-primary' : ''}">
-					{isDragOver 
-						? `${multiple ? 'Dateien' : 'Datei'} hier ablegen!` 
-						: title}
+					{isDragOver ? `${multiple ? 'Dateien' : 'Datei'} hier ablegen!` : title}
 				</p>
 				<p class="text-base-content/60 mt-1 text-xs">
 					{emptyText}

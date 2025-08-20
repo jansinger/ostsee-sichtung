@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { getFormContext } from '$lib/report/formContext';
 	import type { FileValidationConfig } from '$lib/utils/fileValidation';
-	import { createFormSyncEffect, createUploadedFilesMap } from '$lib/utils/upload/formIntegration';
-	import { formDataToUploadData } from '$lib/utils/uploadHelpers';
 	import { Calendar, Camera, MapPin, SquarePen } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import DropzoneEnhanced from '../form/fields/DropzoneEnhanced.svelte';
@@ -14,17 +12,6 @@
 
 	// Position input method: 'photo', 'map', 'manual'
 	let positionMethod = $state<'photo' | 'map' | 'manual'>('photo');
-
-	// Initialize uploaded files map with form integration
-	const initialFiles =
-		$form.uploadedFiles && Array.isArray($form.uploadedFiles)
-			? $form.uploadedFiles.map(formDataToUploadData)
-			: [];
-
-	let uploadedFiles = createUploadedFilesMap(initialFiles, { handleChange });
-
-	// Update form when uploaded files change
-	$effect(createFormSyncEffect(uploadedFiles, { handleChange }));
 
 	// Generiere eine einfache referenceId für Upload (temporäre Lösung)
 	const referenceId = $derived($form.referenceId);

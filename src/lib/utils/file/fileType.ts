@@ -9,10 +9,8 @@
  * @returns True if the file is an image
  */
 export function isImageFile(fileOrMimeType: File | string): boolean {
-	const mimeType = typeof fileOrMimeType === 'string' 
-		? fileOrMimeType 
-		: fileOrMimeType.type;
-	
+	const mimeType = typeof fileOrMimeType === 'string' ? fileOrMimeType : fileOrMimeType.type;
+
 	return mimeType.startsWith('image/') && mimeType !== 'image/svg+xml';
 }
 
@@ -22,10 +20,8 @@ export function isImageFile(fileOrMimeType: File | string): boolean {
  * @returns True if the file is a video
  */
 export function isVideoFile(fileOrMimeType: File | string): boolean {
-	const mimeType = typeof fileOrMimeType === 'string' 
-		? fileOrMimeType 
-		: fileOrMimeType.type;
-	
+	const mimeType = typeof fileOrMimeType === 'string' ? fileOrMimeType : fileOrMimeType.type;
+
 	return mimeType.startsWith('video/');
 }
 
@@ -75,7 +71,7 @@ export function getFileExtension(fileNameOrMimeType: string): string {
 		};
 		return extensionMap[fileNameOrMimeType] || '';
 	}
-	
+
 	// If it's a filename
 	const lastDot = fileNameOrMimeType.lastIndexOf('.');
 	return lastDot !== -1 ? fileNameOrMimeType.substring(lastDot) : '';
@@ -88,7 +84,7 @@ export function getFileExtension(fileNameOrMimeType: string): string {
  */
 export function getMimeTypeFromExtension(extension: string): string {
 	const ext = extension.startsWith('.') ? extension : `.${extension}`;
-	
+
 	const mimeTypes: Record<string, string> = {
 		'.jpg': 'image/jpeg',
 		'.jpeg': 'image/jpeg',
@@ -107,6 +103,6 @@ export function getMimeTypeFromExtension(extension: string): string {
 		'.m4v': 'video/m4v',
 		'.pdf': 'application/pdf'
 	};
-	
+
 	return mimeTypes[ext.toLowerCase()] || 'application/octet-stream';
 }

@@ -150,7 +150,12 @@
 				{:else if isVideo(file.mimeType)}
 					<!-- Video anzeigen -->
 					<div class="bg-base-100 flex justify-center overflow-hidden rounded-lg">
-						<video src={`/api/media/${file.filePath}`} controls class="max-h-[50vh] max-w-full" preload="metadata">
+						<video
+							src={`/api/media/${file.filePath}`}
+							controls
+							class="max-h-[50vh] max-w-full"
+							preload="metadata"
+						>
 							<track kind="captions" />
 							Ihr Browser unterstützt das Video-Element nicht.
 						</video>
@@ -161,7 +166,11 @@
 						<Icon src={FileType} size="48" class="text-base-content/40 mb-4" />
 						<h4 class="mb-2 text-lg font-semibold">Vorschau nicht verfügbar</h4>
 						<p class="text-base-content/60 mb-4">Für diesen Dateityp ist keine Vorschau möglich.</p>
-						<a href={`/api/media/${file.filePath}`} download={file.originalName} class="btn btn-primary">
+						<a
+							href={`/api/media/${file.filePath}`}
+							download={file.originalName}
+							class="btn btn-primary"
+						>
 							<Icon src={Download} size="16" />
 							Datei herunterladen
 						</a>
@@ -187,7 +196,9 @@
 				<div class="flex items-center gap-2">
 					<Icon src={Calendar} size="14" class="text-base-content/60" />
 					<span class="text-base-content/60">Hochgeladen:</span>
-					<span class="font-medium">{formatDate(file.uploadedAt)}</span>
+					<span class="font-medium"
+						>{file.uploadedAt ? formatDate(file.uploadedAt) : 'Unbekannt'}</span
+					>
 				</div>
 			</div>
 
