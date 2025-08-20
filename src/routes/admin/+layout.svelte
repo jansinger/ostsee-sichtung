@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 	import UserMenu from '$lib/components/UserMenu.svelte';
+	import UserMenuMobile from '$lib/components/UserMenuMobile.svelte';
 	import { List } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import type { LayoutData } from './$types';
@@ -52,11 +53,17 @@
 							<li>
 								<a
 									href="/admin/docs"
-									class={$page.url.pathname.includes('/admin/docs')
-										? 'active font-medium'
-										: ''}
+									class={$page.url.pathname.includes('/admin/docs') ? 'active font-medium' : ''}
 								>
 									API-Docs
+								</a>
+							</li>
+							<li>
+								<a
+									href="/admin/about"
+									class={$page.url.pathname.includes('/admin/about') ? 'active font-medium' : ''}
+								>
+									Info
 								</a>
 							</li>
 						</ul>
@@ -110,19 +117,23 @@
 							<li>
 								<a
 									href="/admin/docs"
-									class={$page.url.pathname.includes('/admin/docs')
-										? 'active font-medium'
-										: ''}
+									class={$page.url.pathname.includes('/admin/docs') ? 'active font-medium' : ''}
 								>
 									API-Docs
+								</a>
+							</li>
+							<li>
+								<a
+									href="/admin/about"
+									class={$page.url.pathname.includes('/admin/about') ? 'active font-medium' : ''}
+								>
+									Info
 								</a>
 							</li>
 
 							<!-- User Menu - Mobile -->
 							<div class="divider my-2"></div>
-							<div class="px-4">
-								<UserMenu user={data.user || null} position="left" />
-							</div>
+							<UserMenuMobile user={data.user || null} />
 						</ul>
 					</div>
 				</div>

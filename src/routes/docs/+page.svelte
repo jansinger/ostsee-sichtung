@@ -168,9 +168,9 @@
 				</a>
 			</div>
 			<div class="text-center">
-				<a href="/admin" class="btn btn-ghost btn-lg w-full">
-					⚙️<br />
-					<span class="text-sm">Admin-Bereich</span>
+				<a href="/about" class="btn btn-ghost btn-lg w-full">
+					🏛️<br />
+					<span class="text-sm">Über uns</span>
 				</a>
 			</div>
 		</div>

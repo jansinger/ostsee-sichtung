@@ -30,7 +30,7 @@
 	/>
 </svelte:head>
 
-<div style="height: calc(100vh - 65px);">
+<div class="h-[calc(100vh-65px)] overflow-hidden">
 	<SightingsMapView
 		mapContainerId="admin-map"
 		showTitle={false}

@@ -8,7 +8,7 @@
 	import { MapTimeSliderManager } from '$lib/map/timeSliderManager';
 	import { speciesLabels } from '$lib/report/formOptions/species';
 	import 'ol/ol.css';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { getAvailableYears, getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 
 	// Props
@@ -70,6 +70,10 @@
 	// Verfügbare Jahre für den Filter (10 Jahre zurück)
 	const years = getAvailableYears(10);
 	const defaultYear = getDefaultSightingYear();
+	
+	// Event Handler für Cleanup
+	let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
+	let unhandledRejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
 
 	// Initialisiere die Karte und Manager beim Mounten der Komponente
 	onMount(() => {
@@ -113,7 +117,59 @@
 
 		// Event-Listener für Loading-Zustände
 		setupLoadingHandlers();
+		
+		// Cleanup beim Unmount
+		return () => {
+			cleanup();
+		};
 	});
+	
+	// Cleanup-Funktion beim Destroy
+	onDestroy(() => {
+		cleanup();
+	});
+	
+	/**
+	 * Cleanup-Funktion für Event-Listener und Map-Instanzen
+	 */
+	function cleanup() {
+		// Entferne Event-Listener
+		if (keyboardHandler) {
+			document.removeEventListener('keydown', keyboardHandler);
+			keyboardHandler = null;
+		}
+		
+		if (unhandledRejectionHandler) {
+			window.removeEventListener('unhandledrejection', unhandledRejectionHandler);
+			unhandledRejectionHandler = null;
+		}
+		
+		// Cleanup Map-Instanz
+		if (mapInstance) {
+			// Die Map-Instanz hat möglicherweise eine cleanup-Methode
+			if (typeof (mapInstance as any).cleanup === 'function') {
+				(mapInstance as any).cleanup();
+			}
+		}
+		
+		// Reset Manager (sie haben möglicherweise keine explizite cleanup-Methode)
+		countManager = null as any;
+		panelManager = null as any;
+		timeSliderManager = null as any;
+		mapInstance = null as any;
+		
+		// Entferne globale Referenz
+		if ((window as any).mapCountManager) {
+			delete (window as any).mapCountManager;
+		}
+		
+		// WICHTIG: Stelle sicher, dass body/html wieder scrollbar sind
+		// Falls irgendeine Library diese verändert hat
+		if (typeof document !== 'undefined') {
+			document.body.style.overflow = '';
+			document.documentElement.style.overflow = '';
+		}
+	}
 
 	/**
 	 * Setup für Loading-State-Management
@@ -136,11 +192,12 @@
 		});
 
 		// Global Error Handler für API-Fehler
-		window.addEventListener('unhandledrejection', (event) => {
+		unhandledRejectionHandler = (event) => {
 			console.error('Unhandled promise rejection:', event.reason);
 			errorMessage = 'Fehler beim Laden der Kartendaten. Bitte versuchen Sie es erneut.';
 			isLoadingData = false;
-		});
+		};
+		window.addEventListener('unhandledrejection', unhandledRejectionHandler);
 	}
 
 	/**
@@ -154,7 +211,7 @@
 	 * Tastatur-Navigation für die Karte
 	 */
 	function setupKeyboardNavigation() {
-		document.addEventListener('keydown', (event) => {
+		keyboardHandler = (event) => {
 			// Nur aktiv wenn kein Input-Element fokussiert ist
 			if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) {
 				return;
@@ -201,11 +258,12 @@
 					showKeyboardHelp = false;
 					break;
 			}
-		});
+		};
+		document.addEventListener('keydown', keyboardHandler);
 	}
 </script>
 
-<div class={containerClass}>
+<div class="{containerClass} map-container-wrapper">
 	{#if showTitle}
 		<h1 class={titleClass}>
 			{title}
@@ -350,4 +408,10 @@
 
 <style>
 	@import '$lib/map/mapStyles.css';
+	
+	/* Map-spezifische Styles - nicht global! */
+	.map-container-wrapper {
+		position: relative;
+		overflow: hidden;
+	}
 </style>
