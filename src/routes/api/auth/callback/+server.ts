@@ -1,6 +1,12 @@
 import { API_AUDIENCE } from '$env/static/private';
-import { getToken, getTokenClaims, setAuthCookie, verifyToken } from '$lib/server/auth/auth.js';
 import { createLogger } from '$lib/logger';
+import {
+	getPKCEVerifierFromCookie,
+	getToken,
+	getTokenClaims,
+	setAuthCookie,
+	verifyToken
+} from '$lib/server/auth/auth.js';
 import type { User } from '$lib/types';
 import { error, redirect, type Cookies } from '@sveltejs/kit';
 
@@ -17,8 +23,9 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 	}
 
 	const csrfState = cookies.get('csrfState');
+	const pkceVerifier = getPKCEVerifierFromCookie(cookies);
 
-	if (state !== csrfState || !code) {
+	if (state !== csrfState || !code || !pkceVerifier) {
 		throw error(403, 'Invalid state');
 	}
 
@@ -26,7 +33,7 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 		logger.debug({ code }, 'code');
 
 		// Token-Austausch mit Auth0
-		const token = await getToken({ code });
+		const token = await getToken({ code, pkceVerifier });
 		logger.debug({ token }, 'token');
 
 		const authUser = (await verifyToken(token.id_token)) as User;
