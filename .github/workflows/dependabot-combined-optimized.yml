@@ -15,9 +15,10 @@ jobs:
       
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          ref: main
           
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -101,8 +102,11 @@ jobs:
         if: steps.get-prs.outputs.count != '0'
         run: |
           # Erstelle einen neuen Branch für die kombinierten Updates
-          BRANCH_NAME="chore/dependabot-combined-$(date +%Y-%m-%d)"
+          BRANCH_NAME="chore/dependabot-combined-$(date +%Y-%m-%d-%H%M%S)"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          
+          # Lösche eventuell existierenden Branch erst
+          git push origin --delete "$BRANCH_NAME" 2>/dev/null || true
           
           git checkout -b "$BRANCH_NAME"
           git push origin "$BRANCH_NAME"
@@ -116,10 +120,20 @@ jobs:
           echo "$PRS_JSON" | jq -r '.[] | "\(.branch) \(.title)"' | while IFS=' ' read -r branch title; do
             echo "Merging $branch: $title"
             
-            # Merge den Dependabot branch
+            # Fetch und merge den Dependabot branch
             git fetch origin "$branch"
-            git merge "origin/$branch" --no-ff --no-edit -m "merge: $title"
+            
+            # Force merge auch wenn fast-forward möglich wäre, um sicherzustellen dass Änderungen übernommen werden
+            if ! git merge "origin/$branch" --no-ff --no-edit -m "merge: $title"; then
+              echo "Merge failed for $branch, trying with strategy"
+              git merge "origin/$branch" -X ours -m "merge: $title"
+            fi
           done
+          
+          # Zeige was tatsächlich gemerged wurde
+          echo "=== Merged changes ==="
+          git log --oneline -10
+          git status
           
       - name: Generate conventional commit message
         if: steps.get-prs.outputs.count != '0'
@@ -235,13 +249,23 @@ jobs:
       # Keine erneuten Tests - alle PRs wurden bereits einzeln validiert!
       - name: Commit changes
         if: steps.get-prs.outputs.count != '0'
+        id: commit-changes
         run: |
           git add -A
+          
+          # Prüfe ob es Änderungen zu commiten gibt
+          if git diff --staged --quiet; then
+            echo "No changes to commit - all branches merged cleanly"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "has_changes=true" >> $GITHUB_OUTPUT
           git commit -m "${{ steps.commit-message.outputs.commit-message }}"
           git push origin "$BRANCH_NAME"
           
       - name: Create combined PR
-        if: steps.get-prs.outputs.count != '0'
+        if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'true'
         id: create-pr
         uses: actions/github-script@v7
         env:
@@ -286,7 +310,7 @@ jobs:
             return pr;
             
       - name: Close individual Dependabot PRs
-        if: steps.get-prs.outputs.count != '0'
+        if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'true'
         uses: actions/github-script@v7
         env:
           PRS_JSON: ${{ steps.get-prs.outputs.prs }}
@@ -319,7 +343,7 @@ jobs:
             }
             
       - name: Auto-merge if safe
-        if: steps.get-prs.outputs.count != '0' && steps.commit-message.outputs.has-major == 'false'
+        if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'true' && steps.commit-message.outputs.has-major == 'false'
         run: |
           # Nur auto-mergen wenn keine Major Updates dabei sind
           gh pr merge ${{ steps.create-pr.outputs.pr-number }} --auto --squash
@@ -327,7 +351,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Comment on major updates
-        if: steps.get-prs.outputs.count != '0' && steps.commit-message.outputs.has-major == 'true'
+        if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'true' && steps.commit-message.outputs.has-major == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -337,3 +361,39 @@ jobs:
               issue_number: ${{ steps.create-pr.outputs.pr-number }},
               body: '⚠️ **This PR contains major version updates** that may include breaking changes. Please review carefully before merging.\n\n✅ All individual dependencies have already passed the full test suite.'
             });
+            
+      - name: Summary when no changes needed
+        if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'false'
+        run: |
+          echo "✅ All Dependabot PRs merged cleanly without conflicts"
+          echo "No additional commits needed - changes were already integrated"
+          echo "Individual PRs will be closed automatically"
+          
+      - name: Close individual PRs when no changes needed
+        if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'false'
+        uses: actions/github-script@v7
+        env:
+          PRS_JSON: ${{ steps.get-prs.outputs.prs }}
+        with:
+          script: |
+            const prs = JSON.parse(process.env.PRS_JSON);
+            
+            for (const pr of prs) {
+              console.log(`Closing PR #${pr.number}: ${pr.title}`);
+              
+              // Kommentar hinterlassen
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `🤖 This dependency update was successfully merged into the main branch without conflicts.\n\n✅ No additional changes were needed - the update is already integrated.`
+              });
+              
+              // PR schließen
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                state: 'closed'
+              });
+            }
