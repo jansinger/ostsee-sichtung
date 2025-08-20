@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import type { User } from '$lib/types';
 	import { isAdminUser } from '$lib/utils/auth';
 	import { LogOut, Settings, User as UserIcon } from '@steeze-ui/lucide-icons';
@@ -51,7 +50,7 @@
 			</a>
 		</li>
 	{/if}
-	
+
 	<li>
 		<a href="/api/auth/logout" class="text-error hover:bg-error/10 flex items-center gap-2">
 			<Icon src={LogOut} class="h-4 w-4" />
