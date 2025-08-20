@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.17.1 (2025-08-20)</small>
+
+* Merge pull request #62 from jansinger/test/server-functions ([2ea0b40](https://github.com/jansinger/ostsee-sichtung/commit/2ea0b40)), closes [#62](https://github.com/jansinger/ostsee-sichtung/issues/62)
+* Merge pull request #63 from jansinger/fix/position-time-sync ([13f7565](https://github.com/jansinger/ostsee-sichtung/commit/13f7565)), closes [#63](https://github.com/jansinger/ostsee-sichtung/issues/63)
+* fix: format sighting time to always show two digits for hours and minutes ([1e77751](https://github.com/jansinger/ostsee-sichtung/commit/1e77751))
+* fix: refactor date and time handling for improved localization and consistency ([d0dbf4d](https://github.com/jansinger/ostsee-sichtung/commit/d0dbf4d))
+* fix: Refactor dateTime utility tests and improve date handling in sightings API ([6f5dac7](https://github.com/jansinger/ostsee-sichtung/commit/6f5dac7))
+* test: Add comprehensive tests and security enhancements for file upload utilities ([d3e02fe](https://github.com/jansinger/ostsee-sichtung/commit/d3e02fe))
+* chore: implement PKCE flow with encryption and decryption utilities ([8571dab](https://github.com/jansinger/ostsee-sichtung/commit/8571dab))
+
 ## 1.17.0 (2025-08-20)
 
 * Merge pull request #61 from jansinger/feact/pkce-oidc-enhancement ([a4738a3](https://github.com/jansinger/ostsee-sichtung/commit/a4738a3)), closes [#61](https://github.com/jansinger/ostsee-sichtung/issues/61)
