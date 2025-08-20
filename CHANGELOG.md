@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.17.0 (2025-08-20)
+
+* Merge pull request #61 from jansinger/feact/pkce-oidc-enhancement ([a4738a3](https://github.com/jansinger/ostsee-sichtung/commit/a4738a3)), closes [#61](https://github.com/jansinger/ostsee-sichtung/issues/61)
+* fix: add encryption key to environment configuration ([04f523a](https://github.com/jansinger/ostsee-sichtung/commit/04f523a))
+* refactor: reorganize imports and improve test structure in auth.test.ts ([c07e4cf](https://github.com/jansinger/ostsee-sichtung/commit/c07e4cf))
+* feat: implement PKCE for enhanced OAuth 2.0 security and refactor authentication flow ([747b4e9](https://github.com/jansinger/ostsee-sichtung/commit/747b4e9))
+
 ## 1.16.0 (2025-08-20)
 
 * Create CODE_OF_CONDUCT.md ([ae2598d](https://github.com/jansinger/ostsee-sichtung/commit/ae2598d))
