@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.17.2 (2025-08-21)</small>
+
+* Merge pull request #64 from jansinger/fix/position-time-sync ([6c9e664](https://github.com/jansinger/ostsee-sichtung/commit/6c9e664)), closes [#64](https://github.com/jansinger/ostsee-sichtung/issues/64)
+* Merge pull request #65 from jansinger/fix/position-time-sync ([16b5d0d](https://github.com/jansinger/ostsee-sichtung/commit/16b5d0d)), closes [#65](https://github.com/jansinger/ostsee-sichtung/issues/65)
+* fix: aktualisiere Testlaufzeitgrenze und vereinheitliche Testbefehle in den Workflows ([4029255](https://github.com/jansinger/ostsee-sichtung/commit/4029255))
+* fix: correct CEST offset for date/time fields ([a1bc471](https://github.com/jansinger/ostsee-sichtung/commit/a1bc471))
+* fix: ersetze veraltete Datumsformatierung durch zeitzonenbewusste Formatierung ([972c7ce](https://github.com/jansinger/ostsee-sichtung/commit/972c7ce))
+* fix: füge Schritt hinzu, um Svelte Kit mit dem Befehl 'svelte-kit sync' zu synchronisieren ([5d79b6f](https://github.com/jansinger/ostsee-sichtung/commit/5d79b6f))
+* fix: korrigiere den Befehl für den Testlauf im Pull-Request-Skript ([73ee383](https://github.com/jansinger/ostsee-sichtung/commit/73ee383))
+* fix: Korrigiere UTC-Versatz für zentraleuropäische Sommerzeit in EXIF-Daten ([9881bf3](https://github.com/jansinger/ostsee-sichtung/commit/9881bf3))
+* fix: Korrigiere UTC-Zeitstempel in EXIF-Daten für Tests ([2b31d04](https://github.com/jansinger/ostsee-sichtung/commit/2b31d04))
+* fix: verbessere Teststruktur und stelle Zeitzone für Tests wieder her ([4246cdf](https://github.com/jansinger/ostsee-sichtung/commit/4246cdf))
+* fix: vereinfache die Validierung von Commit-Nachrichten und aktualisiere Testbefehle im Workflow ([08f1494](https://github.com/jansinger/ostsee-sichtung/commit/08f1494))
+* chore: update vscode debugging configuration ([1d1becb](https://github.com/jansinger/ostsee-sichtung/commit/1d1becb))
+
 ## <small>1.17.1 (2025-08-20)</small>
 
 * Merge pull request #62 from jansinger/test/server-functions ([2ea0b40](https://github.com/jansinger/ostsee-sichtung/commit/2ea0b40)), closes [#62](https://github.com/jansinger/ostsee-sichtung/issues/62)
