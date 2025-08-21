@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html>
+<head><title>Malicious</title></head>
+<body>
+<script>alert('This could be malicious code!');</script>
+<p>This HTML file is pretending to be a PNG image.</p>
+</body>
+</html>

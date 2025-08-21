@@ -161,11 +161,17 @@
 		mediaFiles = mediaFiles.concat(
 			filesToProcess.map((file) => {
 				const mediaFile = MediaFile.createMediaFile(referenceId, file, isPositionStep);
-				mediaFile.uploadedFile.then((uploadedFile) => {
-					// Update form data
-					addUploadedFile(uploadedFile);
-					createToast('success', 'Datei erfolgreich hochgeladen.');
-				});
+				mediaFile.uploadedFile
+					.then((uploadedFile) => {
+						// Update form data
+						addUploadedFile(uploadedFile);
+						createToast('success', 'Datei erfolgreich hochgeladen.');
+					})
+					.catch((error) => {
+						logger.error({ error }, 'Fehler beim Hochladen der Datei.');
+						deleteFile(mediaFile.uid);
+						createToast('error', 'Fehler beim Hochladen der Datei');
+					});
 				// Trigger positionMediaFile update
 				mediaFile.metadata.then(() => {
 					// Trigger $derived update

@@ -1,68 +1,17 @@
+import { FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
 import { createLogger } from '$lib/logger';
 import { readImageExifData } from '$lib/server/media/exifUtils';
 import { getStorageProvider } from '$lib/server/storage/factory';
+import { isDangerousFileType, validateMagicBytes } from '$lib/server/validation/magicBytes';
+import { validateFile } from '$lib/utils/validation/fileValidation';
+import { isCuid } from '@paralleldrive/cuid2';
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('FileUploadAPI');
 
-// Upload-Ordner konfigurieren - keeping for backward compatibility but unused with storage abstraction
-const _UPLOAD_BASE_PATH = process.env.UPLOAD_PATH || 'uploads';
-
-// Erlaubte Dateitypen (aus api/upload übernommen)
-const ALLOWED_IMAGE_TYPES = [
-	'image/jpeg',
-	'image/jpg',
-	'image/png',
-	'image/gif',
-	'image/webp',
-	'image/bmp',
-	'image/svg+xml'
-];
-const ALLOWED_VIDEO_TYPES = [
-	'video/mp4',
-	'video/avi',
-	'video/mov',
-	'video/wmv',
-	'video/flv',
-	'video/webm',
-	'video/mkv',
-	'video/m4v'
-];
-const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 100MB
-
 // Get storage provider and upload file
 const storage = getStorageProvider();
-
-// Dateivalidierung (aus api/upload übernommen)
-function validateFile(file: File): string[] {
-	const errors: string[] = [];
-	if (!(file instanceof File)) {
-		errors.push('Ungültiges Dateiformat empfangen.');
-		return errors;
-	}
-	if (!ALLOWED_TYPES.includes(file.type)) {
-		errors.push(
-			`${file.name}: Ungültiger MIME-Type "${file.type}". Nur Bild- und Videoformate sind erlaubt.`
-		);
-	}
-	if (file.size > MAX_FILE_SIZE) {
-		errors.push(
-			`${file.name}: Datei zu groß (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum: 10MB`
-		);
-	}
-	if (file.size === 0) {
-		errors.push(`${file.name}: Datei ist leer.`);
-	}
-	if (!file.name || file.name.trim() === '') {
-		errors.push('Dateiname ist ungültig.');
-	}
-	if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
-		errors.push(`${file.name}: Unsicherer Dateiname.`);
-	}
-	return errors;
-}
 
 export const POST: RequestHandler = async ({ request }) => {
 	try {
@@ -81,23 +30,54 @@ export const POST: RequestHandler = async ({ request }) => {
 			throw error(400, 'Keine Datei hochgeladen');
 		}
 
-		if (!referenceId) {
+		if (!referenceId || !isCuid(referenceId)) {
 			throw error(400, 'Reference ID ist erforderlich');
 		}
-		if (!uid) {
+		if (!uid || !isCuid(uid)) {
 			throw error(400, 'Upload ID ist erforderlich');
 		}
 
-		// Validierung der Datei
-		const validationErrors = validateFile(file);
-		if (validationErrors.length > 0) {
-			throw error(400, validationErrors.join(' '));
+		// Validierung der Datei mit zentraler Validierungslogik
+		const validationResult = validateFile(file, FILE_VALIDATION_PRESETS.MEDIA);
+		if (!validationResult.isValid) {
+			throw error(400, validationResult.errors.join(' '));
 		}
 
 		// JUST FOR TESTING await new Promise((f) => setTimeout(f, 5000));
 
 		const fileBuffer = await file.arrayBuffer();
 		const buffer = Buffer.from(fileBuffer);
+
+		// Validate magic bytes to ensure file content matches declared type
+		const magicBytesValidation = validateMagicBytes(buffer, file.type);
+		if (!magicBytesValidation.isValid) {
+			logger.warn(
+				{
+					fileName: file.name,
+					declaredType: file.type,
+					detectedType: magicBytesValidation.actualType,
+					referenceId
+				},
+				'File type mismatch detected'
+			);
+			throw error(
+				400,
+				magicBytesValidation.message || 'Dateiinhalt stimmt nicht mit dem angegebenen Typ überein'
+			);
+		}
+
+		// Check for potentially dangerous file types
+		if (isDangerousFileType(file.type)) {
+			logger.warn(
+				{
+					fileName: file.name,
+					fileType: file.type,
+					referenceId
+				},
+				'Potentially dangerous file type rejected'
+			);
+			throw error(400, 'Dieser Dateityp ist aus Sicherheitsgründen nicht erlaubt');
+		}
 
 		const [uploadedFile, metadata] = await Promise.all([
 			storage.upload(file, buffer, {

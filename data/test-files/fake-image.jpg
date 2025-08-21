@@ -1,0 +1,3 @@
+This is actually a text file, not a JPEG image!
+It contains plain text but will be uploaded with image/jpeg MIME type.
+The Magic Bytes validation should catch this.

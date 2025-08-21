@@ -5,32 +5,32 @@ on:
     # Läuft täglich um 9:00 UTC (10:00 CET)
     - cron: '0 9 * * *'
   workflow_dispatch: # Manueller Trigger
-  
+
 jobs:
   combine-dependabot-prs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
-      
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
           ref: main
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
-          
+
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
+
       - name: Get Dependabot PRs
         id: get-prs
         uses: actions/github-script@v7
@@ -43,10 +43,10 @@ jobs:
               head: 'dependabot/',
               per_page: 100
             });
-            
+
             // Nur PRs die bereits durch den unified validation workflow gegangen sind
             const dependabotPRs = [];
-            
+
             for (const pr of pullRequests) {
               if (pr.user.login === 'dependabot[bot]' && 
                   pr.head.ref.startsWith('dependabot/')) {
@@ -71,14 +71,14 @@ jobs:
                 }
               }
             }
-            
+
             if (dependabotPRs.length === 0) {
               console.log('No validated Dependabot PRs found');
               return { prs: [], count: 0 };
             }
-            
+
             console.log(`Found ${dependabotPRs.length} validated Dependabot PRs`);
-            
+
             const prDetails = dependabotPRs.map(pr => ({
               number: pr.number,
               title: pr.title,
@@ -86,31 +86,31 @@ jobs:
               url: pr.html_url,
               body: pr.body
             }));
-            
+
             core.setOutput('count', dependabotPRs.length);
             core.setOutput('prs', JSON.stringify(prDetails));
-            
+
             return { prs: prDetails, count: dependabotPRs.length };
-            
+
       - name: Exit if no PRs
         if: steps.get-prs.outputs.count == '0'
         run: |
           echo "No validated Dependabot PRs to combine. Exiting."
           exit 0
-          
+
       - name: Create combined branch
         if: steps.get-prs.outputs.count != '0'
         run: |
           # Erstelle einen neuen Branch für die kombinierten Updates
           BRANCH_NAME="chore/dependabot-combined-$(date +%Y-%m-%d-%H%M%S)"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
-          
+
           # Lösche eventuell existierenden Branch erst
           git push origin --delete "$BRANCH_NAME" 2>/dev/null || true
-          
+
           git checkout -b "$BRANCH_NAME"
           git push origin "$BRANCH_NAME"
-          
+
       - name: Merge Dependabot branches
         if: steps.get-prs.outputs.count != '0'
         env:
@@ -129,12 +129,12 @@ jobs:
               git merge "origin/$branch" -X ours -m "merge: $title"
             fi
           done
-          
+
           # Zeige was tatsächlich gemerged wurde
           echo "=== Merged changes ==="
           git log --oneline -10
           git status
-          
+
       - name: Generate conventional commit message
         if: steps.get-prs.outputs.count != '0'
         id: commit-message
@@ -144,7 +144,7 @@ jobs:
         with:
           script: |
             const prs = JSON.parse(process.env.PRS_JSON);
-            
+
             // Gruppiere Updates nach Typ
             const updates = {
               major: [],
@@ -152,7 +152,7 @@ jobs:
               patch: [],
               other: []
             };
-            
+
             prs.forEach(pr => {
               const title = pr.title;
               const match = title.match(/bump (.+) from (.+) to (.+)/i);
@@ -165,7 +165,7 @@ jobs:
                 updates.other.push({ title: title });
               }
             });
-            
+
             function getVersionType(from, to) {
               const fromParts = from.split('.').map(Number);
               const toParts = to.split('.').map(Number);
@@ -175,24 +175,24 @@ jobs:
               if (toParts[2] > fromParts[2]) return 'patch';
               return 'other';
             }
-            
+
             // Erstelle Conventional Commit Message
             let commitType = 'chore';
             let scope = 'deps';
-            
+
             // Bei Major Updates verwende 'build' für mehr Aufmerksamkeit
             if (updates.major.length > 0) {
               commitType = 'build';
             }
-            
+
             let subject = `update ${prs.length} dependencies`;
             if (prs.length === 1) {
               subject = `update ${prs[0].title.replace(/^bump /i, '').replace(/ from .+ to .+/i, '')}`;
             }
-            
+
             let body = '### 📋 Summary\n\n';
             body += `This PR combines ${prs.length} dependency updates that have all passed individual validation.\n\n`;
-            
+
             // Major Updates
             if (updates.major.length > 0) {
               body += '### ⚠️ Major Updates\n\n';
@@ -201,7 +201,7 @@ jobs:
               });
               body += '\n';
             }
-            
+
             // Minor Updates
             if (updates.minor.length > 0) {
               body += '### ✨ Minor Updates\n\n';
@@ -210,7 +210,7 @@ jobs:
               });
               body += '\n';
             }
-            
+
             // Patch Updates
             if (updates.patch.length > 0) {
               body += '### 🐛 Patch Updates\n\n';
@@ -219,7 +219,7 @@ jobs:
               });
               body += '\n';
             }
-            
+
             // Andere Updates
             if (updates.other.length > 0) {
               body += '### 📦 Other Updates\n\n';
@@ -228,42 +228,42 @@ jobs:
               });
               body += '\n';
             }
-            
+
             body += '### 🔗 Original PRs\n\n';
             prs.forEach(pr => {
               body += `- #${pr.number}: ${pr.title} ✅\n`;
             });
-            
+
             body += '\n### ✅ Pre-validated\n\n';
             body += 'All included dependencies have already passed the full test suite individually.';
-            
+
             const commitMessage = `${commitType}(${scope}): ${subject}`;
             const hasMajor = updates.major.length > 0;
-            
+
             core.setOutput('commit-message', commitMessage);
             core.setOutput('pr-body', body);
             core.setOutput('has-major', hasMajor);
-            
+
             return { commitMessage, body, hasMajor };
-            
+
       # Keine erneuten Tests - alle PRs wurden bereits einzeln validiert!
       - name: Commit changes
         if: steps.get-prs.outputs.count != '0'
         id: commit-changes
         run: |
           git add -A
-          
+
           # Prüfe ob es Änderungen zu commiten gibt
           if git diff --staged --quiet; then
             echo "No changes to commit - all branches merged cleanly"
             echo "has_changes=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           echo "has_changes=true" >> $GITHUB_OUTPUT
           git commit -m "${{ steps.commit-message.outputs.commit-message }}"
           git push origin "$BRANCH_NAME"
-          
+
       - name: Create combined PR
         if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'true'
         id: create-pr
@@ -277,15 +277,15 @@ jobs:
             const commitMessage = process.env.COMMIT_MESSAGE;
             const prBody = process.env.PR_BODY;
             const hasMajor = process.env.HAS_MAJOR === 'true';
-            
+
             let title = commitMessage;
             let labels = ['dependencies', 'pre-validated'];
-            
+
             if (hasMajor) {
               labels.push('breaking-change');
               title += ' ⚠️';
             }
-            
+
             const { data: pr } = await github.rest.pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -294,7 +294,7 @@ jobs:
               base: 'main',
               body: prBody
             });
-            
+
             // Labels hinzufügen
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
@@ -302,13 +302,13 @@ jobs:
               issue_number: pr.number,
               labels: labels
             });
-            
+
             console.log(`Created combined PR: ${pr.html_url}`);
             core.setOutput('pr-number', pr.number);
             core.setOutput('pr-url', pr.html_url);
-            
+
             return pr;
-            
+
       - name: Close individual Dependabot PRs
         if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'true'
         uses: actions/github-script@v7
@@ -321,7 +321,7 @@ jobs:
             const prs = JSON.parse(process.env.PRS_JSON);
             const combinedPrNumber = process.env.COMBINED_PR_NUMBER;
             const combinedPrUrl = process.env.COMBINED_PR_URL;
-            
+
             for (const pr of prs) {
               console.log(`Closing PR #${pr.number}: ${pr.title}`);
               
@@ -341,7 +341,7 @@ jobs:
                 state: 'closed'
               });
             }
-            
+
       - name: Auto-merge if safe
         if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'true' && steps.commit-message.outputs.has-major == 'false'
         run: |
@@ -349,7 +349,7 @@ jobs:
           gh pr merge ${{ steps.create-pr.outputs.pr-number }} --auto --squash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Comment on major updates
         if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'true' && steps.commit-message.outputs.has-major == 'true'
         uses: actions/github-script@v7
@@ -361,14 +361,14 @@ jobs:
               issue_number: ${{ steps.create-pr.outputs.pr-number }},
               body: '⚠️ **This PR contains major version updates** that may include breaking changes. Please review carefully before merging.\n\n✅ All individual dependencies have already passed the full test suite.'
             });
-            
+
       - name: Summary when no changes needed
         if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'false'
         run: |
           echo "✅ All Dependabot PRs merged cleanly without conflicts"
           echo "No additional commits needed - changes were already integrated"
           echo "Individual PRs will be closed automatically"
-          
+
       - name: Close individual PRs when no changes needed
         if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'false'
         uses: actions/github-script@v7
@@ -377,7 +377,7 @@ jobs:
         with:
           script: |
             const prs = JSON.parse(process.env.PRS_JSON);
-            
+
             for (const pr of prs) {
               console.log(`Closing PR #${pr.number}: ${pr.title}`);
               
