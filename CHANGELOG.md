@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.18.0 (2025-08-21)
+
+* Merge pull request #67 from jansinger/refactor/unified-file-validation ([d13c427](https://github.com/jansinger/ostsee-sichtung/commit/d13c427)), closes [#67](https://github.com/jansinger/ostsee-sichtung/issues/67)
+* refactor: Refactor date and time handling in sighting forms and improve tests ([8eba82f](https://github.com/jansinger/ostsee-sichtung/commit/8eba82f))
+* feat: Implement file upload and deletion functionality with database integration ([fd8663b](https://github.com/jansinger/ostsee-sichtung/commit/fd8663b))
+* feat: Refactor sighting form handling to improve date and time processing, ([32b9661](https://github.com/jansinger/ostsee-sichtung/commit/32b9661))
+
 ## <small>1.17.3 (2025-08-21)</small>
 
 * Merge pull request #66 from jansinger/refactor/unified-file-validation ([44d23c7](https://github.com/jansinger/ostsee-sichtung/commit/44d23c7)), closes [#66](https://github.com/jansinger/ostsee-sichtung/issues/66)
