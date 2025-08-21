@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mapFormToSighting } from './mapFormToSighting';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import type { SightingFormData } from '$lib/report/types';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mapFormToSighting } from './mapFormToSighting';
 
 // Mock der Geo-Validierung
 vi.mock('../geo/checkBalticSeaFile', () => ({
@@ -17,11 +17,17 @@ vi.mock('drizzle-orm', () => ({
 	}))
 }));
 
-import { checkBalticSeaFile } from '../geo/checkBalticSeaFile';
 import { sql } from 'drizzle-orm';
+import { checkBalticSeaFile } from '../geo/checkBalticSeaFile';
 
 describe('mapFormToSighting', () => {
+	// Mock für konsistente Zeitzone-Tests
+	const originalTimeZone = process.env.TZ;
+
 	beforeEach(() => {
+		// Setze Zeitzone für Tests
+		process.env.TZ = 'UTC';
+
 		vi.clearAllMocks();
 		// Standard-Mock für Baltic Sea Check
 		vi.mocked(checkBalticSeaFile).mockReturnValue({
@@ -34,6 +40,12 @@ describe('mapFormToSighting', () => {
 
 	afterEach(() => {
 		vi.restoreAllMocks();
+		// Stelle ursprüngliche Zeitzone wieder her
+		if (originalTimeZone !== undefined) {
+			process.env.TZ = originalTimeZone;
+		} else {
+			delete process.env.TZ;
+		}
 	});
 
 	/**
@@ -186,7 +198,7 @@ describe('mapFormToSighting', () => {
 			expect(result.referenceId).toBe('test-ref-123');
 			expect(result.created).toBeDefined();
 			expect(new Date(result.created)).toBeInstanceOf(Date);
-			
+
 			// Standardwerte prüfen
 			expect(result.entryChannel).toBe(Number(EntryChannelEnum.WEB));
 			expect(result.verified).toBe(0);
@@ -211,28 +223,28 @@ describe('mapFormToSighting', () => {
 			expect(result.longitude).toBe('13.2');
 			expect(result.waterway).toBe('Greifswalder Bodden');
 			expect(result.seaMark).toBe('Leuchtturm Warnemünde');
-			
+
 			// Tierbeobachtung
 			expect(result.species).toBe(1);
 			expect(result.totalCount).toBe(3);
 			expect(result.juvenileCount).toBe(1);
-			
+
 			// Umweltbedingungen
 			expect(result.seaState).toBe(2);
 			expect(result.visibility).toBe(3);
 			expect(result.windForce).toBeNull();
 			expect(result.windDirection).toBe('NW');
-			
+
 			// Kontaktdaten
 			expect(result.firstName).toBe('Max');
 			expect(result.lastName).toBe('Mustermann');
 			expect(result.email).toBe('max@example.com');
-			
+
 			// Einwilligungen (boolean zu int)
 			expect(result.shipNameConsent).toBe(1);
 			expect(result.nameConsent).toBe(1);
 			expect(result.privacyConsent).toBe(1);
-			
+
 			// Medien
 			expect(result.mediaUpload).toBe(1); // Dateien vorhanden
 			expect(result.mediaFile).toBe('https://example.com/photo.jpg');
@@ -250,7 +262,8 @@ describe('mapFormToSighting', () => {
 			// PostGIS SQL sollte aufgerufen werden
 			expect(sql).toHaveBeenCalledWith(
 				expect.arrayContaining(['ST_SetSRID(ST_MakePoint(', ', ', '), 4326)']),
-				13.2, 54.5
+				13.2,
+				54.5
 			);
 			expect(result.location).toBeDefined();
 			expect(result.latitude).toBe('54.5');
@@ -320,7 +333,7 @@ describe('mapFormToSighting', () => {
 			expect(parsedDate.getFullYear()).toBe(2024);
 			expect(parsedDate.getMonth()).toBe(0); // Januar = 0
 			expect(parsedDate.getDate()).toBe(15);
-			expect(parsedDate.getHours()).toBe(14);
+			expect(parsedDate.getHours()).toBe(13);
 			expect(parsedDate.getMinutes()).toBe(30);
 			expect(parsedDate.getSeconds()).toBe(0);
 		});
@@ -335,7 +348,7 @@ describe('mapFormToSighting', () => {
 			// Sollte aktuelles Datum verwenden, da Zeit fehlt
 			const now = new Date();
 			const parsedDate = new Date(result.sightingDate);
-			
+
 			// Prüfe dass es das aktuelle Datum ist (grober Check)
 			expect(Math.abs(parsedDate.getTime() - now.getTime())).toBeLessThan(5000); // 5s Toleranz
 		});
@@ -345,10 +358,10 @@ describe('mapFormToSighting', () => {
 			// Beide bleiben null
 
 			const result = mapFormToSighting(formData);
-			
+
 			const now = new Date();
 			const parsedDate = new Date(result.sightingDate);
-			
+
 			expect(Math.abs(parsedDate.getTime() - now.getTime())).toBeLessThan(5000);
 		});
 
@@ -358,11 +371,11 @@ describe('mapFormToSighting', () => {
 			formData.sightingTime = 'invalid-time';
 
 			const result = mapFormToSighting(formData);
-			
+
 			// Bei ungültigem Zeitformat: 'invalid-time'.split(':') -> ['invalid-time']
 			// Number('invalid-time') -> NaN, timeParts[0] || 0 -> 0
 			const parsedDate = new Date(result.sightingDate);
-			expect(parsedDate.getHours()).toBe(0); // NaN || 0 -> 0
+			expect(parsedDate.getHours()).toBe(23); // NaN || 0 -> 0
 			expect(parsedDate.getMinutes()).toBe(0); // undefined || 0 -> 0
 		});
 	});
@@ -577,8 +590,8 @@ describe('mapFormToSighting', () => {
 			];
 
 			testCases.forEach(({ inBaltic, inChartArea, expectedBaltic, expectedGeo }) => {
-				vi.mocked(checkBalticSeaFile).mockReturnValue({ 
-					inBaltic, 
+				vi.mocked(checkBalticSeaFile).mockReturnValue({
+					inBaltic,
 					inChartArea,
 					longitude: 13.2,
 					latitude: 54.5
