@@ -3,42 +3,8 @@
  */
 import { createLogger } from '$lib/logger';
 import type { ExifData } from '$lib/types';
+import { correctCestOffsetUTC } from '../datetime/correctCestOffsetUTC';
 const logger = createLogger('server:exifUtils');
-
-/**
- * Corrects the UTC offset for Central European Summer Time (CEST).
- * This function adjusts the given UTC date to account for daylight saving time in Central Europe.
- *
- * @param date - The UTC date to be corrected. Must be a UTC date.
- * @returns The corrected date, adjusted for CEST or CET as appropriate.
- */
-function correctCestOffsetUTC(date: Date): Date {
-	// Das Datum muss ein UTC-Datum sein!
-	const year = date.getUTCFullYear();
-
-	// Letzter Sonntag im März (Sommerzeit beginnt)
-	const march = new Date(Date.UTC(year, 2, 31)); // 31. März
-	const marchDay = march.getUTCDay();
-	const lastMarchSunday = 31 - marchDay;
-	const cestStart = Date.UTC(year, 2, lastMarchSunday, 1); // 2:00 MEZ == 1:00 UTC
-
-	// Letzter Sonntag im Oktober (Sommerzeit endet)
-	const october = new Date(Date.UTC(year, 9, 31)); // 31. Oktober
-	const octoberDay = october.getUTCDay();
-	const lastOctoberSunday = 31 - octoberDay;
-	const cestEnd = Date.UTC(year, 9, lastOctoberSunday, 1); // 3:00 MESZ == 1:00 UTC
-
-	const time = date.getTime();
-
-	// CEST gilt von cestStart (einschließlich) bis cestEnd (ausschließlich)
-	if (time >= cestStart && time < cestEnd) {
-		date.setHours(date.getHours() - 2); // UTC+2 (CEST)
-		return date;
-	} else {
-		date.setHours(date.getHours() - 1); // UTC+1 (CET)
-		return date;
-	}
-}
 
 /**
  * Liest EXIF-Daten aus einem Buffer oder einer Datei
@@ -122,9 +88,7 @@ export async function readImageExifData(source: string | Buffer): Promise<ExifDa
 		}
 
 		// Correct CEST offset for UTC dates (EXIF enthält keine Timezone, daher manuelle Korrektur)
-		if (result.dateTimeOriginal && result.dateTimeOriginal.getTimezoneOffset() == 0) {
-			result.dateTimeOriginal = correctCestOffsetUTC(result.dateTimeOriginal);
-		}
+		result.dateTimeOriginal = correctCestOffsetUTC(result.dateTimeOriginal);
 
 		// Handle exposure time
 		if (exifData.ExposureTime) {
