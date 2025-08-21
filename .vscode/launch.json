@@ -26,6 +26,9 @@
 				"pattern": "Local:\\s+(https://localhost:(\\d+))",
 				"uriFormat": "%s",
 				"action": "openExternally"
+			},
+			"env": {
+				"TZ": "UTC"
 			}
 		},
 		{
@@ -40,6 +43,9 @@
 				"uriFormat": "%s",
 				"action": "debugWithChrome",
 				"webRoot": "${workspaceFolder}"
+			},
+			"env": {
+				"TZ": "UTC"
 			}
 		}
 	],
