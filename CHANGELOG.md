@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.19.0 (2025-08-21)
+
+* Merge pull request #69 from jansinger/fix/improve-footer ([84de741](https://github.com/jansinger/ostsee-sichtung/commit/84de741)), closes [#69](https://github.com/jansinger/ostsee-sichtung/issues/69)
+* fix: Add PublicFooter component and integrate it into layout ([c30484c](https://github.com/jansinger/ostsee-sichtung/commit/c30484c))
+* fix: Update .gitignore to include playwright-report and clean up whitespace in tests ([5226294](https://github.com/jansinger/ostsee-sichtung/commit/5226294))
+* fix: Update baseURL in Playwright config for CI environment ([f150b25](https://github.com/jansinger/ostsee-sichtung/commit/f150b25))
+* feat: Enhance location validation for Baltic Sea coordinates ([37e57d1](https://github.com/jansinger/ostsee-sichtung/commit/37e57d1))
+* refactor: Optimize location verification and improve admin page structure ([f592968](https://github.com/jansinger/ostsee-sichtung/commit/f592968))
+
 ## 1.18.0 (2025-08-21)
 
 * Merge pull request #67 from jansinger/refactor/unified-file-validation ([d13c427](https://github.com/jansinger/ostsee-sichtung/commit/d13c427)), closes [#67](https://github.com/jansinger/ostsee-sichtung/issues/67)
