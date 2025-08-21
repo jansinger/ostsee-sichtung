@@ -16,7 +16,7 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 
 	beforeEach(() => {
 		// Setze Zeitzone für Tests
-		process.env.TZ = 'Europe/Berlin';
+		process.env.TZ = 'UTC';
 	});
 
 	afterEach(() => {

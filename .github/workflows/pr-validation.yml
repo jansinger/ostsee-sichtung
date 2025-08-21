@@ -158,7 +158,7 @@ jobs:
       # Type checking and Svelte check
       - name: Run type checking
         if: steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true'
-        run: npm run type-check
+        run: npm run test
 
       - name: Run Svelte check
         if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.config == 'true'
@@ -169,31 +169,31 @@ jobs:
         if: steps.changes.outputs.dependencies == 'true' || github.actor == 'dependabot[bot]'
         run: |
           echo "⚙️ Checking license compliance"
-          
+
           # Erstelle Temporary-File für erlaubte und problematische Lizenzen
           npx license-checker --summary > license_summary.txt
-          
+
           # Prüfe auf problematische Lizenzen (ausgenommen development tools)
           PROBLEMATIC_FOUND=false
-          
+
           # Check für MPL-2.0 (TailwindCSS/LightningCSS - Build-Tool, OK)
           if npx license-checker | grep -E "MPL-2.0" | grep -v "lightningcss"; then
             echo "⚠️ Found MPL-2.0 licenses outside of build tools"
             PROBLEMATIC_FOUND=true
           fi
-          
+
           # Check für GPL/AGPL (Copyleft - nicht erlaubt)
           if npx license-checker --summary | grep -E "GPL|AGPL"; then
             echo "⚠️ Found GPL/AGPL licenses - not permitted"
             PROBLEMATIC_FOUND=true
           fi
-          
+
           # Check für unklare Lizenzen (ausgenommen bekannte OK-Packages)
           if npx license-checker | grep -E "UNLICENSED" | grep -v "ostsee-tiere@"; then
             echo "⚠️ Found unlicensed packages"
             PROBLEMATIC_FOUND=true
           fi
-          
+
           if [ "$PROBLEMATIC_FOUND" = "true" ]; then
             echo "Running detailed license report..."
             npx license-checker --excludePrivatePackages
@@ -205,7 +205,7 @@ jobs:
             echo "📊 License Summary:"
             cat license_summary.txt
           fi
-          
+
           rm -f license_summary.txt
         continue-on-error: true
 

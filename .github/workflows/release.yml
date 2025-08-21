@@ -41,11 +41,7 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run tests
-        run: |
-          npm run check
-          npm run lint
-          npm run type-check
-          npm run test:unit -- --run
+        run: npm run test
 
       - name: Build application for E2E tests
         run: npm run build
