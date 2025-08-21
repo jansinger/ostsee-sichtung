@@ -33,6 +33,7 @@ import { getSpeciesOptions, isValidSpecies } from '$lib/report/formOptions/speci
 import { getVisibilityOptions, isValidVisibility } from '$lib/report/formOptions/visibility';
 import { getWindDirectionOptions } from '$lib/report/formOptions/windDirection';
 import { getWindStrengthOptions } from '$lib/report/formOptions/windStrength';
+import { BALTIC_SEA_BBOX } from '$lib/utils/geo/checkBalticSea';
 import {
 	Activity,
 	MapPin as AddressIcon,
@@ -146,8 +147,14 @@ export const sightingSchemaBase = yup.object().shape({
 			then: (schema) =>
 				schema
 					.required('GPS-Position: Breitengrad ist erforderlich')
-					.min(53, 'Der Wert muss zwischen 53° und 56° liegen (Ostseebereich)')
-					.max(56, 'Der Wert muss zwischen 53° und 56° liegen (Ostseebereich)'),
+					.min(
+						BALTIC_SEA_BBOX.minLatitude,
+						`Der Wert muss zwischen ${BALTIC_SEA_BBOX.minLatitude}° und ${BALTIC_SEA_BBOX.maxLatitude}° liegen (Ostseebereich)`
+					)
+					.max(
+						BALTIC_SEA_BBOX.maxLatitude,
+						`Der Wert muss zwischen ${BALTIC_SEA_BBOX.minLatitude}° und ${BALTIC_SEA_BBOX.maxLatitude}° liegen (Ostseebereich)`
+					),
 			otherwise: (schema) => schema.notRequired()
 		})
 		.label('Breitengrad')
@@ -172,8 +179,14 @@ export const sightingSchemaBase = yup.object().shape({
 			then: (schema) =>
 				schema
 					.required('GPS-Position: Längengrad ist erforderlich')
-					.min(9, 'Der Wert muss zwischen 9° und 15° liegen (Ostseebereich)')
-					.max(15, 'Der Wert muss zwischen 9° und 15° liegen (Ostseebereich)'),
+					.min(
+						BALTIC_SEA_BBOX.minLongitude,
+						`Der Wert muss zwischen ${BALTIC_SEA_BBOX.minLongitude}° und ${BALTIC_SEA_BBOX.maxLongitude}° liegen (Ostseebereich)`
+					)
+					.max(
+						BALTIC_SEA_BBOX.maxLongitude,
+						`Der Wert muss zwischen ${BALTIC_SEA_BBOX.minLongitude}° und ${BALTIC_SEA_BBOX.maxLongitude}° liegen (Ostseebereich)`
+					),
 			otherwise: (schema) => schema.notRequired()
 		})
 		.label('Längengrad')

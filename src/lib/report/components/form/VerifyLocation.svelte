@@ -121,7 +121,7 @@
 					<Icon src={CircleCheck} class="h-6 w-6 shrink-0" />
 					<span>Die Koordinaten liegen innerhalb der Ostsee.</span>
 				</div>
-			{:else}
+			{:else if currentResult.inChartArea}
 				<!-- Outside Baltic Sea (only show in browser) -->
 				<div class="alert alert-warning mt-0 mb-4">
 					<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
@@ -130,6 +130,15 @@
 						Bei Sichtungen von Land und küstennahen Sichtungen kann dieser Hinweis erscheinen, die
 						Daten werden trotzdem gespeichert.
 					</span>
+				</div>
+			{:else}
+				<!-- Invalid coordinates -->
+				<div class="alert alert-error mt-0 mb-4">
+					<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
+					<span
+						>Die Koordinaten liegen außerhalb des gültigen Bereichs oder sind ungültig. Bitte
+						überprüfen Sie die Eingabe.</span
+					>
 				</div>
 			{/if}
 		</div>

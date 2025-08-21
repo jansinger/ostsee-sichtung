@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getFormContext } from '$lib/report/formContext';
 	import type { ValidationPreset } from '$lib/types';
-	import { Calendar, Camera, CircleAlert, MapPin, SquarePen } from '@steeze-ui/lucide-icons';
+	import { Calendar, Camera, MapPin, SquarePen } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import DropzoneEnhanced from '../form/fields/DropzoneEnhanced.svelte';
 	import FormField from '../form/fields/FormField.svelte';
@@ -175,15 +175,7 @@
 			{/if}
 
 			{#if positionMethod !== 'manual'}
-				{#if $errors['latitude'] || $errors['longitude']}
-					<div class="alert alert-error mt-0 mb-4">
-						<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
-						<span>
-							Die Koordinaten liegen außerhalb der Ostsee oder sind ungültig. Bitte überprüfen Sie
-							die Eingabe.
-						</span>
-					</div>
-				{:else if $form.latitude && $form.longitude}
+				{#if $form.latitude && $form.longitude}
 					<VerifyLocation {longitude} {latitude} />
 				{/if}
 			{/if}
