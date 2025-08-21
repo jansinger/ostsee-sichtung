@@ -3,9 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
 	globalSetup: './e2e/global-setup.ts',
 	webServer: {
-		command: process.env.CI 
-			? 'npx vite preview --config vite.config.preview.ts' 
-			: 'npm run dev',
+		command: process.env.CI ? 'npx vite preview --config vite.config.preview.ts' : 'npm run dev',
 		port: process.env.CI ? 4173 : 4000,
 		reuseExistingServer: !process.env.CI,
 		timeout: 120000

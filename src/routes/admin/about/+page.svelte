@@ -1,7 +1,3 @@
-<script lang="ts">
-	// Admin-specific about page with additional technical information
-</script>
-
 <svelte:head>
 	<title>Über die Plattform - Admin - Ostsee-Tiere</title>
 	<meta
@@ -12,21 +8,21 @@
 		name="keywords"
 		content="Admin, Plattform, Architektur, Technologie, Verwaltung, Ostsee-Tiere, Dashboard"
 	/>
-	
+
 	<!-- Open Graph -->
 	<meta property="og:title" content="Über die Plattform - Admin - Ostsee-Tiere" />
-	<meta 
-		property="og:description" 
-		content="Technische Details und Verwaltungsinformationen für Administratoren" 
+	<meta
+		property="og:description"
+		content="Technische Details und Verwaltungsinformationen für Administratoren"
 	/>
 	<meta property="og:type" content="website" />
-	
+
 	<!-- Twitter Card -->
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:title" content="Über die Plattform - Admin - Ostsee-Tiere" />
-	<meta 
-		name="twitter:description" 
-		content="Technische Details und Verwaltungsinformationen für Administratoren" 
+	<meta
+		name="twitter:description"
+		content="Technische Details und Verwaltungsinformationen für Administratoren"
 	/>
 </svelte:head>
 
@@ -35,38 +31,39 @@
 	<div class="mb-8">
 		<h1 class="mb-4 text-4xl font-bold">🏛️ Plattform-Übersicht</h1>
 		<p class="text-lg text-gray-600">
-			Technische Informationen und Verwaltungsdetails für Administratoren der Ostsee-Tiere Plattform.
+			Technische Informationen und Verwaltungsdetails für Administratoren der Ostsee-Tiere
+			Plattform.
 		</p>
 	</div>
 
 	<!-- Quick Stats -->
-	<div class="grid gap-6 md:grid-cols-4 mb-12">
-		<div class="card bg-primary/5 border border-primary/20">
+	<div class="mb-12 grid gap-6 md:grid-cols-4">
+		<div class="card bg-primary/5 border-primary/20 border">
 			<div class="card-body text-center">
-				<div class="text-2xl mb-2">🐋</div>
+				<div class="mb-2 text-2xl">🐋</div>
 				<div class="stat-title text-xs">Aktive Plattform</div>
-				<div class="stat-value text-lg text-primary">Live</div>
+				<div class="stat-value text-primary text-lg">Live</div>
 			</div>
 		</div>
-		<div class="card bg-secondary/5 border border-secondary/20">
+		<div class="card bg-secondary/5 border-secondary/20 border">
 			<div class="card-body text-center">
-				<div class="text-2xl mb-2">🗺️</div>
+				<div class="mb-2 text-2xl">🗺️</div>
 				<div class="stat-title text-xs">Kartenabdeckung</div>
-				<div class="stat-value text-lg text-secondary">Ostsee</div>
+				<div class="stat-value text-secondary text-lg">Ostsee</div>
 			</div>
 		</div>
-		<div class="card bg-accent/5 border border-accent/20">
+		<div class="card bg-accent/5 border-accent/20 border">
 			<div class="card-body text-center">
-				<div class="text-2xl mb-2">🔐</div>
+				<div class="mb-2 text-2xl">🔐</div>
 				<div class="stat-title text-xs">Authentifizierung</div>
-				<div class="stat-value text-lg text-accent">Auth0</div>
+				<div class="stat-value text-accent text-lg">Auth0</div>
 			</div>
 		</div>
-		<div class="card bg-info/5 border border-info/20">
+		<div class="card bg-info/5 border-info/20 border">
 			<div class="card-body text-center">
-				<div class="text-2xl mb-2">📊</div>
+				<div class="mb-2 text-2xl">📊</div>
 				<div class="stat-title text-xs">API Version</div>
-				<div class="stat-value text-lg text-info">v1</div>
+				<div class="stat-value text-info text-lg">v1</div>
 			</div>
 		</div>
 	</div>
@@ -77,21 +74,21 @@
 		<div class="grid gap-8 md:grid-cols-2">
 			<div class="card bg-base-100 shadow-xl">
 				<div class="card-body">
-					<h3 class="card-title text-xl mb-4">🖥️ Frontend</h3>
+					<h3 class="card-title mb-4 text-xl">🖥️ Frontend</h3>
 					<div class="space-y-3">
-						<div class="flex justify-between items-center">
+						<div class="flex items-center justify-between">
 							<span class="font-medium">Framework:</span>
 							<span class="badge badge-primary">SvelteKit 5</span>
 						</div>
-						<div class="flex justify-between items-center">
+						<div class="flex items-center justify-between">
 							<span class="font-medium">Styling:</span>
 							<span class="badge badge-secondary">TailwindCSS + DaisyUI</span>
 						</div>
-						<div class="flex justify-between items-center">
+						<div class="flex items-center justify-between">
 							<span class="font-medium">Karten:</span>
 							<span class="badge badge-accent">OpenLayers</span>
 						</div>
-						<div class="flex justify-between items-center">
+						<div class="flex items-center justify-between">
 							<span class="font-medium">Formulare:</span>
 							<span class="badge badge-info">svelte-forms-lib + Yup</span>
 						</div>
@@ -101,21 +98,21 @@
 
 			<div class="card bg-base-100 shadow-xl">
 				<div class="card-body">
-					<h3 class="card-title text-xl mb-4">🗄️ Backend</h3>
+					<h3 class="card-title mb-4 text-xl">🗄️ Backend</h3>
 					<div class="space-y-3">
-						<div class="flex justify-between items-center">
+						<div class="flex items-center justify-between">
 							<span class="font-medium">Datenbank:</span>
 							<span class="badge badge-primary">PostgreSQL + PostGIS</span>
 						</div>
-						<div class="flex justify-between items-center">
+						<div class="flex items-center justify-between">
 							<span class="font-medium">ORM:</span>
 							<span class="badge badge-secondary">Drizzle</span>
 						</div>
-						<div class="flex justify-between items-center">
+						<div class="flex items-center justify-between">
 							<span class="font-medium">API:</span>
 							<span class="badge badge-accent">REST + OpenAPI 3.0</span>
 						</div>
-						<div class="flex justify-between items-center">
+						<div class="flex items-center justify-between">
 							<span class="font-medium">Auth:</span>
 							<span class="badge badge-info">Auth0</span>
 						</div>
@@ -132,7 +129,7 @@
 			<div class="card bg-base-100 shadow-lg">
 				<div class="card-body">
 					<h3 class="card-title text-lg">📋 Sichtungsverwaltung</h3>
-					<ul class="text-sm space-y-1 text-gray-600">
+					<ul class="space-y-1 text-sm text-gray-600">
 						<li>• Sichtungen prüfen und genehmigen</li>
 						<li>• Bearbeitungs- und Löschfunktionen</li>
 						<li>• Verifizierungsstatus setzen</li>
@@ -147,7 +144,7 @@
 			<div class="card bg-base-100 shadow-lg">
 				<div class="card-body">
 					<h3 class="card-title text-lg">🗺️ Kartenverwaltung</h3>
-					<ul class="text-sm space-y-1 text-gray-600">
+					<ul class="space-y-1 text-sm text-gray-600">
 						<li>• Geografische Sichtungsverteilung</li>
 						<li>• Interaktive Admin-Kartenansicht</li>
 						<li>• Räumliche Datenanalyse</li>
@@ -162,7 +159,7 @@
 			<div class="card bg-base-100 shadow-lg">
 				<div class="card-body">
 					<h3 class="card-title text-lg">📊 Statistiken</h3>
-					<ul class="text-sm space-y-1 text-gray-600">
+					<ul class="space-y-1 text-sm text-gray-600">
 						<li>• Detaillierte Auswertungen</li>
 						<li>• Zeitreihenanalysen</li>
 						<li>• Artenstatistiken</li>
@@ -180,24 +177,24 @@
 	<div class="mb-12">
 		<h2 class="mb-6 text-3xl font-bold">📤 Datenexport</h2>
 		<div class="bg-base-200 rounded-lg p-6">
-			<p class="text-gray-700 mb-4">
+			<p class="mb-4 text-gray-700">
 				Die Plattform unterstützt verschiedene Exportformate für Forschung und Analyse:
 			</p>
 			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-				<div class="flex items-center gap-2 p-3 bg-base-100 rounded">
-					<span class="text-green-600 font-mono text-sm">JSON</span>
+				<div class="bg-base-100 flex items-center gap-2 rounded p-3">
+					<span class="font-mono text-sm text-green-600">JSON</span>
 					<span class="text-xs text-gray-600">Strukturierte Daten</span>
 				</div>
-				<div class="flex items-center gap-2 p-3 bg-base-100 rounded">
-					<span class="text-blue-600 font-mono text-sm">CSV</span>
+				<div class="bg-base-100 flex items-center gap-2 rounded p-3">
+					<span class="font-mono text-sm text-blue-600">CSV</span>
 					<span class="text-xs text-gray-600">Tabellenformat</span>
 				</div>
-				<div class="flex items-center gap-2 p-3 bg-base-100 rounded">
-					<span class="text-orange-600 font-mono text-sm">XML</span>
+				<div class="bg-base-100 flex items-center gap-2 rounded p-3">
+					<span class="font-mono text-sm text-orange-600">XML</span>
 					<span class="text-xs text-gray-600">Markup-Format</span>
 				</div>
-				<div class="flex items-center gap-2 p-3 bg-base-100 rounded">
-					<span class="text-purple-600 font-mono text-sm">KML</span>
+				<div class="bg-base-100 flex items-center gap-2 rounded p-3">
+					<span class="font-mono text-sm text-purple-600">KML</span>
 					<span class="text-xs text-gray-600">Geografische Daten</span>
 				</div>
 			</div>
@@ -209,28 +206,39 @@
 		<h2 class="mb-6 text-3xl font-bold">🔌 API-Integration</h2>
 		<div class="card bg-base-100 shadow-xl">
 			<div class="card-body">
-				<div class="flex justify-between items-start mb-4">
+				<div class="mb-4 flex items-start justify-between">
 					<div>
 						<h3 class="text-xl font-semibold">OpenAPI 3.0 Spezifikation</h3>
-						<p class="text-gray-600">Vollständig dokumentierte REST-API mit interaktiver Dokumentation</p>
+						<p class="text-gray-600">
+							Vollständig dokumentierte REST-API mit interaktiver Dokumentation
+						</p>
 					</div>
 					<div class="badge badge-success">Verfügbar</div>
 				</div>
 				<div class="grid gap-4 md:grid-cols-2">
 					<div>
-						<h4 class="font-medium mb-2">Öffentliche Endpunkte:</h4>
-						<ul class="text-sm space-y-1 text-gray-600">
-							<li>• <code class="text-green-600">GET</code> /api/sightings - Öffentliche Sichtungen</li>
+						<h4 class="mb-2 font-medium">Öffentliche Endpunkte:</h4>
+						<ul class="space-y-1 text-sm text-gray-600">
+							<li>
+								• <code class="text-green-600">GET</code> /api/sightings - Öffentliche Sichtungen
+							</li>
 							<li>• <code class="text-blue-600">POST</code> /api/sightings - Neue Sichtung</li>
-							<li>• <code class="text-green-600">GET</code> /api/geo/inBaltic - Baltic Sea Check</li>
+							<li>
+								• <code class="text-green-600">GET</code> /api/geo/inBaltic - Baltic Sea Check
+							</li>
 						</ul>
 					</div>
 					<div>
-						<h4 class="font-medium mb-2">Admin-Endpunkte:</h4>
-						<ul class="text-sm space-y-1 text-gray-600">
-							<li>• <code class="text-orange-600">PUT</code> /api/sightings/{'{id}'} - Bearbeiten</li>
+						<h4 class="mb-2 font-medium">Admin-Endpunkte:</h4>
+						<ul class="space-y-1 text-sm text-gray-600">
+							<li>
+								• <code class="text-orange-600">PUT</code> /api/sightings/{'{id}'} - Bearbeiten
+							</li>
 							<li>• <code class="text-red-600">DELETE</code> /api/sightings/{'{id}'} - Löschen</li>
-							<li>• <code class="text-blue-600">POST</code> /api/sightings/{'{id}'}/approve - Genehmigen</li>
+							<li>
+								• <code class="text-blue-600">POST</code> /api/sightings/{'{id}'}/approve -
+								Genehmigen
+							</li>
 						</ul>
 					</div>
 				</div>
@@ -248,7 +256,7 @@
 			<div class="card bg-base-100 shadow-lg">
 				<div class="card-body">
 					<h3 class="card-title text-lg">🛡️ Sicherheitsfeatures</h3>
-					<ul class="text-sm space-y-2 text-gray-600">
+					<ul class="space-y-2 text-sm text-gray-600">
 						<li class="flex items-center gap-2">
 							<span class="text-green-500">✓</span>
 							HTTPS mit SSL/TLS-Verschlüsselung
@@ -276,7 +284,7 @@
 			<div class="card bg-base-100 shadow-lg">
 				<div class="card-body">
 					<h3 class="card-title text-lg">📋 Compliance</h3>
-					<ul class="text-sm space-y-2 text-gray-600">
+					<ul class="space-y-2 text-sm text-gray-600">
 						<li class="flex items-center gap-2">
 							<span class="text-green-500">✓</span>
 							DSGVO-konforme Datenverarbeitung
@@ -306,11 +314,11 @@
 	<!-- Contact & Support -->
 	<div class="bg-base-200 rounded-lg p-8 text-center">
 		<h2 class="mb-4 text-2xl font-bold">📞 Support & Kontakt</h2>
-		<p class="text-gray-700 mb-6 max-w-2xl mx-auto">
-			Bei technischen Fragen oder Support-Anfragen steht Ihnen das Administratoren-Team
-			des Deutschen Meeresmuseums zur Verfügung.
+		<p class="mx-auto mb-6 max-w-2xl text-gray-700">
+			Bei technischen Fragen oder Support-Anfragen steht Ihnen das Administratoren-Team des
+			Deutschen Meeresmuseums zur Verfügung.
 		</p>
-		<div class="flex justify-center items-center gap-6 text-sm text-gray-600">
+		<div class="flex items-center justify-center gap-6 text-sm text-gray-600">
 			<span>© 2025 Deutsches Meeresmuseum</span>
 			<span>•</span>
 			<span>Stralsund, Deutschland</span>

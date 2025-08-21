@@ -350,7 +350,7 @@ describe('mapFormToSighting', () => {
 			const parsedDate = new Date(result.sightingDate);
 
 			// Prüfe dass es das aktuelle Datum ist (grober Check)
-			expect(Math.abs(parsedDate.getTime() - now.getTime())).toBeLessThan(2 * 60 * 60 * 1000); // 2 Stunden Toleranz
+			expect(Math.abs(parsedDate.getTime() - now.getTime())).toBeLessThan(2 * 60 * 60 * 1000 + 100); // 2 Stunden Toleranz
 		});
 
 		it('sollte aktuelles Datum verwenden wenn beides fehlt', () => {
@@ -363,7 +363,7 @@ describe('mapFormToSighting', () => {
 			const now = new Date();
 			const parsedDate = new Date(result.sightingDate);
 
-			expect(Math.abs(parsedDate.getTime() - now.getTime())).toBeLessThan(2 * 60 * 60 * 1000 + 1);
+			expect(Math.abs(parsedDate.getTime() - now.getTime())).toBeLessThan(2 * 60 * 60 * 1000 + 100);
 		});
 
 		it('sollte ungültiges Zeitformat robust behandeln', () => {

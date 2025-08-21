@@ -8,13 +8,16 @@
 	import LocationInput from '../form/LocationInput.svelte';
 	import VerifyLocation from '../form/VerifyLocation.svelte';
 
-	const { form, handleChange } = getFormContext();
+	const { form, errors, handleChange } = getFormContext();
 
 	// Position input method: 'photo', 'map', 'manual'
 	let positionMethod = $state<'photo' | 'map' | 'manual'>('photo');
 
 	// Generiere eine einfache referenceId für Upload (temporäre Lösung)
 	const referenceId = $derived($form.referenceId);
+
+	const longitude = $derived($form.longitude);
+	const latitude = $derived($form.latitude);
 
 	// Create a compatible config for GPS photo
 	const gpsPhotoConfig: ValidationPreset = {
@@ -34,6 +37,10 @@
 			} as unknown as Event);
 		}
 	}
+
+	$effect(() => {
+		console.log($errors);
+	});
 </script>
 
 <!-- Position & Time Section -->
@@ -140,9 +147,9 @@
 			</div>
 		</div>
 
-		<!-- Photo Upload Section -->
-		{#if positionMethod === 'photo'}
-			<div class="bg-base-100 mt-4 rounded-lg p-4">
+		<div class="bg-base-100 mt-4 rounded-lg p-4">
+			<!-- Photo Upload Section -->
+			{#if positionMethod === 'photo'}
 				<h4 class="mb-3 flex items-center gap-2 font-semibold">
 					<Icon src={Camera} size="18" />
 					Foto mit GPS-Daten hochladen
@@ -156,32 +163,25 @@
 					title="Foto per Drag & Drop oder Klick hochladen"
 					additionalText="GPS-Daten werden automatisch ausgelesen"
 				/>
-			</div>
-		{/if}
+			{/if}
 
-		<!-- Map/GPS Input Section -->
-		{#if positionMethod === 'map'}
-			<div class="bg-base-100 mt-4 rounded-lg p-4">
+			<!-- Map/GPS Input Section -->
+			{#if positionMethod === 'map'}
 				<h4 class="mb-3 flex items-center gap-2 font-semibold">
 					<Icon src={MapPin} size="18" />
 					Position auf Karte wählen
 				</h4>
+				<LocationInput {latitude} {longitude} onchange={handleChange} />
+			{/if}
 
-				<LocationInput
-					latitude={$form.latitude}
-					longitude={$form.longitude}
-					onchange={handleChange}
-				/>
-
+			{#if positionMethod !== 'manual'}
 				{#if $form.latitude && $form.longitude}
-					<VerifyLocation longitude={$form.longitude} latitude={$form.latitude} />
+					<VerifyLocation {longitude} {latitude} />
 				{/if}
-			</div>
-		{/if}
+			{/if}
 
-		<!-- Manual Input Section -->
-		{#if positionMethod === 'manual'}
-			<div class="bg-base-100 mt-4 space-y-4 rounded-lg p-4">
+			<!-- Manual Input Section -->
+			{#if positionMethod === 'manual'}
 				<h4 class="mb-3 flex items-center gap-2 font-semibold">
 					<Icon src={SquarePen} size="18" />
 					Beschreibung der Position
@@ -189,8 +189,8 @@
 
 				<FormField name="waterway" />
 				<FormField name="seaMark" />
-			</div>
-		{/if}
+			{/if}
+		</div>
 	</div>
 
 	<!-- Date and Time Section (always visible) -->

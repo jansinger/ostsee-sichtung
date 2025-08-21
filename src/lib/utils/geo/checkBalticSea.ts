@@ -24,7 +24,7 @@ export const GEO_LIMITS: GeoLimits = {
  *
  * @constant
  */
-const BALTIC_SEA_BBOX: BoundingBox = {
+export const BALTIC_SEA_BBOX: BoundingBox = {
 	minLongitude: 9.4, // Westgrenze (etwa Skagerrak)
 	maxLongitude: 30.2, // Ostgrenze (etwa Finnischer Meerbusen)
 	minLatitude: 53.0, // Südgrenze (etwa Norddeutsche Küste)
