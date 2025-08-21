@@ -3,9 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
 	globalSetup: './e2e/global-setup.ts',
 	webServer: {
-		command: process.env.CI 
-			? 'npx vite preview --config vite.config.preview.ts' 
-			: 'npm run dev',
+		command: process.env.CI ? 'npx vite preview --config vite.config.preview.ts' : 'npm run dev',
 		port: process.env.CI ? 4173 : 4000,
 		reuseExistingServer: !process.env.CI,
 		timeout: 120000
@@ -24,7 +22,7 @@ export default defineConfig({
 	/* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
 	use: {
 		/* Base URL to use in actions like `await page.goto('/')`. */
-		baseURL: process.env.CI ? 'http://localhost:4173' : 'https://localhost:4000',
+		baseURL: 'https://localhost:4000',
 		/* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
 		trace: 'on-first-retry',
 		/* Screenshot on failure */
