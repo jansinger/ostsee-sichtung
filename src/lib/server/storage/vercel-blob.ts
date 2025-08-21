@@ -1,28 +1,27 @@
 /**
  * Vercel Blob Storage Provider - Cloud-basierter Dateispeicher für Produktion
- * 
+ *
  * Diese Implementierung des StorageProvider-Interfaces nutzt Vercel's
  * Blob Storage Service für skalierbaren, globalen Dateispeicher.
- * 
+ *
  * **Funktionen:**
  * - Öffentlich zugängliche Datei-URLs über CDN
  * - Automatische Skalierung und globale Verteilung
  * - Token-basierte Authentifizierung
  * - Eindeutige Dateinamen mit CUID2-IDs
  * - Vollständige CRUD-Operationen
- * 
+ *
  * **Konfiguration:**
  * - Benötigt BLOB_READ_WRITE_TOKEN Umgebungsvariable
  * - Token-Format: vercel_blob_rw_[prefix]_[suffix]
  * - Alle Dateien sind öffentlich zugänglich
- * 
+ *
  * **URL-Struktur:**
  * - Upload-Pfad: `${referenceId}/${filename}`
  * - Öffentliche URLs: `https://[prefix].public.blob.vercel-storage.com/[path]`
  */
 import { createLogger } from '$lib/logger';
 import type { FileMetadata, StorageProvider, UploadedFileInfo, UploadOptions } from '$lib/types';
-import { createId } from '@paralleldrive/cuid2';
 import { del, head, list, put } from '@vercel/blob';
 import { basename, extname } from 'path';
 
@@ -30,7 +29,7 @@ const logger = createLogger('storage:vercel-blob');
 
 /**
  * Vercel Blob Storage Provider Implementierung.
- * 
+ *
  * Diese Klasse stellt eine vollständige Integration mit Vercel's
  * Blob Storage Service bereit und implementiert alle StorageProvider-Methoden.
  */
@@ -43,21 +42,21 @@ export class VercelBlobStorageProvider implements StorageProvider {
 
 	/**
 	 * Erstellt eine neue Vercel Blob Storage Provider Instanz.
-	 * 
+	 *
 	 * Der Provider benötigt einen gültigen Vercel Blob API-Token für
 	 * alle Operationen. Der Token wird aus folgenden Quellen gelesen:
-	 * 
+	 *
 	 * 1. Constructor-Parameter (für Tests/manuelle Konfiguration)
 	 * 2. BLOB_READ_WRITE_TOKEN Umgebungsvariable (Standard)
-	 * 
+	 *
 	 * @param token - Optionaler Vercel Blob API-Token
 	 * @throws {Error} Wenn kein gültiger Token verfügbar ist
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * // Standardkonfiguration über Umgebungsvariable
 	 * const provider = new VercelBlobStorageProvider();
-	 * 
+	 *
 	 * // Explizite Token-Konfiguration (für Tests)
 	 * const provider = new VercelBlobStorageProvider('vercel_blob_rw_...');
 	 * ```
@@ -73,27 +72,27 @@ export class VercelBlobStorageProvider implements StorageProvider {
 
 	/**
 	 * Lädt eine Datei in den Vercel Blob Storage hoch.
-	 * 
+	 *
 	 * Diese Methode implementiert den Datei-Upload mit folgenden Funktionen:
 	 * - **Eindeutige Dateinamen**: CUID2-basierte IDs zur Kollisionsvermeidung
 	 * - **Organisierte Struktur**: Gruppierung nach referenceId
 	 * - **Originalname-Erhaltung**: Optional mit preserveOriginalName
 	 * - **Öffentlicher Zugriff**: Alle Dateien sind über CDN zugänglich
 	 * - **Content-Type-Erhaltung**: MIME-Type wird korrekt gesetzt
-	 * 
+	 *
 	 * **Dateiname-Schema:**
 	 * - Mit Original: `originalname-${uid}.ext`
 	 * - Ohne Original: `${uid}.ext`
-	 * 
+	 *
 	 * **Upload-Pfad:**
 	 * - `${referenceId}/${filename}`
-	 * 
+	 *
 	 * @param file - Browser File-Objekt mit Metadaten
 	 * @param buffer - Datei-Inhalt als Buffer
 	 * @param options - Upload-Konfiguration
 	 * @returns Promise mit vollständigen Upload-Informationen
 	 * @throws {Error} Bei Upload-Fehlern oder API-Problemen
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * const uploadInfo = await provider.upload(
@@ -104,7 +103,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 	 *     preserveOriginalName: true
 	 *   }
 	 * );
-	 * 
+	 *
 	 * // Resultat: {
 	 * //   uid: 'cm123...',
 	 * //   originalName: 'whale.jpg',
@@ -118,9 +117,9 @@ export class VercelBlobStorageProvider implements StorageProvider {
 	 */
 	async upload(file: File, buffer: Buffer, options: UploadOptions): Promise<UploadedFileInfo> {
 		// SCHRITT 1: Eindeutige Datei-ID generieren
-		const uid = createId();
+		const uid = options.uid;
 		const extension = extname(file.name);
-		
+
 		// SCHRITT 2: Dateinamen basierend auf Konfiguration erstellen
 		const fileName = options.preserveOriginalName
 			? `${basename(file.name, extension)}-${uid}${extension}`
@@ -159,18 +158,18 @@ export class VercelBlobStorageProvider implements StorageProvider {
 
 	/**
 	 * Löscht eine Datei aus dem Vercel Blob Storage.
-	 * 
+	 *
 	 * Diese Methode entfernt eine Datei permanent aus dem Storage.
 	 * Nach dem Löschen sind die Datei und ihre CDN-URL nicht mehr zugänglich.
-	 * 
+	 *
 	 * **Wichtige Hinweise:**
 	 * - Löschung ist irreversibel
 	 * - CDN-URLs werden ungültig
 	 * - Keine Fehler wenn Datei bereits gelöscht
-	 * 
+	 *
 	 * @param filePath - Vollständiger Pfad der zu löschenden Datei
 	 * @throws {Error} Bei API-Fehlern oder Netzwerkproblemen
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * await provider.delete('sichtung-123/whale-cm123....jpg');
@@ -190,28 +189,28 @@ export class VercelBlobStorageProvider implements StorageProvider {
 
 	/**
 	 * Generiert eine öffentliche URL für eine gespeicherte Datei.
-	 * 
+	 *
 	 * Diese Methode konstruiert eine CDN-URL basierend auf dem Vercel Blob
 	 * Token-Format. Die URLs sind öffentlich zugänglich und über das
 	 * globale CDN optimiert.
-	 * 
+	 *
 	 * **URL-Konstruktion:**
 	 * 1. Token-Prefix aus BLOB_READ_WRITE_TOKEN extrahieren
 	 * 2. CDN-Subdomain generieren: `[prefix].public.blob.vercel-storage.com`
 	 * 3. Vollständige URL zusammensetzen
-	 * 
+	 *
 	 * **Token-Format:**
 	 * - `vercel_blob_rw_[prefix]_[suffix]`
 	 * - Prefix wird für URL-Generierung verwendet
-	 * 
+	 *
 	 * @param filePath - Pfad der Datei im Storage
 	 * @returns Öffentliche CDN-URL für direkten Browser-Zugriff
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * const url = provider.getUrl('sichtung-123/whale-cm123....jpg');
 	 * // Returns: 'https://xyz123.public.blob.vercel-storage.com/sichtung-123/whale-cm123....jpg'
-	 * 
+	 *
 	 * // URL kann direkt im Browser verwendet werden
 	 * <img src={url} alt="Whale sighting" />
 	 * ```
@@ -230,17 +229,17 @@ export class VercelBlobStorageProvider implements StorageProvider {
 
 	/**
 	 * Ruft Metadaten einer gespeicherten Datei ab.
-	 * 
+	 *
 	 * Diese Methode verwendet die Vercel Blob HEAD-API um Dateimetadaten
 	 * ohne Download des Inhalts abzurufen. Nützlich für:
 	 * - Größenprüfungen vor Download
 	 * - Content-Type-Validierung
 	 * - Existenz-Checks
 	 * - Last-Modified-Informationen
-	 * 
+	 *
 	 * @param filePath - Pfad der Datei im Storage
 	 * @returns Metadaten-Objekt oder null wenn Datei nicht existiert
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * const metadata = await provider.getMetadata('sichtung-123/whale.jpg');
@@ -271,27 +270,27 @@ export class VercelBlobStorageProvider implements StorageProvider {
 
 	/**
 	 * Listet alle Dateien im Storage auf, optional gefiltert nach Prefix.
-	 * 
+	 *
 	 * Diese Methode verwendet die Vercel Blob LIST-API um alle verfügbaren
 	 * Dateien abzurufen. Der optionale Prefix ermöglicht das Filtern nach
 	 * Ordnern oder Sichtungs-IDs.
-	 * 
+	 *
 	 * **Performance-Hinweise:**
 	 * - Kann bei vielen Dateien langsam werden
 	 * - Verwendet Paging wenn verfügbar
 	 * - Nur Metadaten, kein Dateiinhalt
-	 * 
+	 *
 	 * @param prefix - Optionaler Pfad-Prefix zum Filtern (z.B. 'sichtung-123/')
 	 * @returns Array mit Informationen aller gefundenen Dateien
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * // Alle Dateien auflisten
 	 * const allFiles = await provider.list();
-	 * 
+	 *
 	 * // Dateien einer bestimmten Sichtung
 	 * const sichtungFiles = await provider.list('sichtung-123/');
-	 * 
+	 *
 	 * // Ergebnis: [
 	 * //   {
 	 * //     uid: 'cm123...',
@@ -310,7 +309,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 			if (prefix) {
 				listOptions.prefix = prefix; // Nur Dateien mit diesem Prefix
 			}
-			
+
 			// Liste aller Blobs vom API abrufen
 			const result = await list(listOptions);
 
@@ -336,14 +335,14 @@ export class VercelBlobStorageProvider implements StorageProvider {
 
 	/**
 	 * Prüft, ob eine Datei im Storage existiert.
-	 * 
+	 *
 	 * Diese Methode führt einen effizienten HEAD-Request durch,
 	 * um die Existenz einer Datei zu prüfen, ohne den Inhalt
 	 * herunterzuladen.
-	 * 
+	 *
 	 * @param filePath - Pfad der zu prüfenden Datei
 	 * @returns `true` wenn Datei existiert, `false` andernfalls
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * const exists = await provider.exists('sichtung-123/whale.jpg');
@@ -367,22 +366,22 @@ export class VercelBlobStorageProvider implements StorageProvider {
 
 	/**
 	 * Lädt den Inhalt einer Datei als Buffer herunter.
-	 * 
+	 *
 	 * Diese Methode verwendet die öffentliche CDN-URL um den
 	 * vollständigen Dateiinhalt herunterzuladen. Geeignet für:
 	 * - Datei-Verarbeitung auf dem Server
 	 * - EXIF-Daten-Extraktion
 	 * - Bildtransformation
 	 * - Backup-Operationen
-	 * 
+	 *
 	 * **Performance-Hinweise:**
 	 * - Lädt gesamte Datei in Speicher
 	 * - Nutzt CDN für optimale Performance
 	 * - Kann bei großen Dateien speicherintensiv sein
-	 * 
+	 *
 	 * @param filePath - Pfad der herunterzuladenden Datei
 	 * @returns Buffer mit Dateiinhalt oder null bei Fehlern
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * const content = await provider.getFileContent('sichtung-123/whale.jpg');
@@ -408,7 +407,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 
 			// SCHRITT 3: Response-Body als ArrayBuffer lesen
 			const arrayBuffer = await response.arrayBuffer();
-			
+
 			// SCHRITT 4: ArrayBuffer zu Node.js Buffer konvertieren
 			const buffer = Buffer.from(arrayBuffer);
 
@@ -422,23 +421,23 @@ export class VercelBlobStorageProvider implements StorageProvider {
 
 	/**
 	 * Extrahiert die eindeutige ID (UID) aus einem Dateipfad.
-	 * 
+	 *
 	 * Diese private Hilfsmethode analysiert den Dateinamen um die
 	 * CUID2-basierte UID zu extrahieren, die beim Upload generiert wurde.
-	 * 
+	 *
 	 * **Erwartete Dateimuster:**
 	 * - Mit Original: `originalname-${uid}.ext` → UID ist nach letztem `-`
 	 * - Ohne Original: `${uid}.ext` → UID ist vor erstem `.`
-	 * 
+	 *
 	 * @param pathname - Vollständiger Pfad der Datei
 	 * @returns Extrahierte UID oder 'unknown' als Fallback
 	 * @internal
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * extractUidFromPathname('sichtung-123/whale-cm123abc.jpg');
 	 * // Returns: 'cm123abc'
-	 * 
+	 *
 	 * extractUidFromPathname('sichtung-123/cm456def.jpg');
 	 * // Returns: 'cm456def'
 	 * ```
@@ -446,7 +445,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 	private extractUidFromPathname(pathname: string): string {
 		// SCHRITT 1: Nur Dateiname ohne Pfad extrahieren
 		const filename = basename(pathname);
-		
+
 		// SCHRITT 2: Prüfen ob Dateiname `-` enthält (originalname-uid.ext)
 		const parts = filename.split('-');
 		if (parts.length > 1) {
@@ -457,7 +456,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 				return uidWithExt.split('.')[0] || 'unknown';
 			}
 		}
-		
+
 		// Fall 2: uid.ext → UID vor erstem `.`
 		return filename.split('.')[0] || 'unknown';
 	}

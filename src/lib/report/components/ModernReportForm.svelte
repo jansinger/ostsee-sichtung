@@ -69,8 +69,8 @@
 		validationSchema: sightingSchema,
 		onSubmit: async (values: SightingFormData) => {
 			try {
-				// Remove admin only attributes
-				const { verified, internalComment, ...submitValues } = values;
+				// Remove admin only attributes and uploaded files (already uploaded)
+				const { verified, internalComment, uploadedFiles, ...submitValues } = values;
 				const result = await submitSightingForm(submitValues as SightingFormData);
 				submissionId = result.id;
 				submissionSuccess = result.success;

@@ -5,7 +5,6 @@
  */
 import { createLogger } from '$lib/logger';
 import type { FileMetadata, StorageProvider, UploadedFileInfo, UploadOptions } from '$lib/types';
-import { createId } from '@paralleldrive/cuid2';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'fs';
 import { basename, extname, join, normalize, relative, resolve } from 'path';
 
@@ -105,7 +104,7 @@ export class LocalStorageProvider implements StorageProvider {
 	}
 
 	async upload(file: File, buffer: Buffer, options: UploadOptions): Promise<UploadedFileInfo> {
-		const uid = createId();
+		const safeUid = this.validatePath(options.uid);
 
 		// Sanitize the original filename
 		const sanitizedOriginalName = this.sanitizeFilename(file.name);
@@ -113,8 +112,8 @@ export class LocalStorageProvider implements StorageProvider {
 
 		// Create safe filename
 		const fileName = options.preserveOriginalName
-			? `${basename(sanitizedOriginalName, extension)}-${uid}${extension}`
-			: `${uid}${extension}`;
+			? `${basename(sanitizedOriginalName, extension)}-${safeUid}${extension}`
+			: `${safeUid}${extension}`;
 
 		// Validate and sanitize the reference ID to prevent path traversal
 		const safeReferenceId = this.validatePath(options.referenceId);
@@ -134,7 +133,7 @@ export class LocalStorageProvider implements StorageProvider {
 		writeFileSync(fullPath, buffer);
 
 		const uploadedFile: UploadedFileInfo = {
-			uid,
+			uid: safeUid,
 			originalName: file.name,
 			fileName,
 			filePath: relativePath,

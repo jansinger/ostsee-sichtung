@@ -25,6 +25,7 @@ import { isImageFile } from '$lib/utils';
 import { eq } from 'drizzle-orm';
 import { readImageExifData } from '../media/exifUtils';
 import { mapFormToSighting } from './mapFormToSighting';
+import { setSightingIdForReferenceId } from './sightingFilesRepository';
 
 // Logger für Repository-Operationen
 const logger = createLogger('db:sightingRepository');
@@ -45,7 +46,9 @@ const logger = createLogger('db:sightingRepository');
  *
  * @throws {Error} Bei Datenbankfehlern oder Validierungsfehlern
  */
-export const saveSighting = async (formData: SightingFormData): Promise<{ id: number }> => {
+export const saveSighting = async (
+	formData: SightingFormData
+): Promise<{ id: number | undefined }> => {
 	// Konvertiere Formulardaten in das normalisierte Datenbankschema
 	const sightingData: NewSighting = mapFormToSighting(formData);
 
@@ -54,35 +57,15 @@ export const saveSighting = async (formData: SightingFormData): Promise<{ id: nu
 	// Führe Hauptinsert-Operation mit automatischer ID-Generierung aus
 	const [result] = await db.insert(sightings).values(sightingData).returning({ id: sightings.id });
 
-	const sightingId = result?.id || 0;
+	const sightingId = result?.id;
 
-	// Speichere verknüpfte Mediendateien, falls vorhanden
-	if (formData.uploadedFiles && formData.uploadedFiles.length > 0 && sightingId > 0) {
-		logger.info(
-			{ sightingId, fileCount: formData.uploadedFiles.length },
-			'Speichere verknüpfte Mediendateien'
-		);
-
-		// Normalisiere Datei-Metadaten für Datenbank-Insert
-		const fileRecords = formData.uploadedFiles.map((file) => ({
-			uid: file.uid,
-			sightingId: sightingId,
-			referenceId: formData.referenceId,
-			originalName: file.originalName,
-			fileName: file.fileName || file.filePath.split('/').pop() || file.originalName,
-			filePath: file.filePath,
-			mimeType: file.mimeType,
-			size: file.size,
-			url: file.url || null, // Cloud-Storage-URL falls verfügbar
-			uploadedAt: file.uploadedAt ? new Date(file.uploadedAt) : new Date(),
-			exifData: file.exifData || null // EXIF-Metadaten als JSONB
-		}));
-
-		await db.insert(sightingFiles).values(fileRecords);
-		logger.info(
-			{ sightingId, fileCount: fileRecords.length },
-			'Mediendateien erfolgreich verknüpft'
-		);
+	if (!sightingId) {
+		logger.error({ sightingData }, 'Fehler beim Speichern der Sichtung');
+		throw new Error('Fehler beim Speichern der Sichtung');
+	} else {
+		// Update referenced media files
+		await setSightingIdForReferenceId(formData.referenceId, sightingId);
+		logger.info({ sightingId }, 'Sichtung erfolgreich gespeichert');
 	}
 
 	return { id: sightingId };
