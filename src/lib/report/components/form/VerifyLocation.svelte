@@ -33,12 +33,12 @@
 
 	async function checkBalticSeaAPI(lon: number, lat: number): Promise<BalticSeaResult> {
 		const response = await fetch(`/api/geo/inBaltic?longitude=${lon}&latitude=${lat}`);
-		
+
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
 			throw new Error(errorData.message || `HTTP ${response.status}`);
 		}
-		
+
 		return await response.json();
 	}
 
@@ -121,7 +121,7 @@
 					<Icon src={CircleCheck} class="h-6 w-6 shrink-0" />
 					<span>Die Koordinaten liegen innerhalb der Ostsee.</span>
 				</div>
-			{:else if browser}
+			{:else}
 				<!-- Outside Baltic Sea (only show in browser) -->
 				<div class="alert alert-warning mt-0 mb-4">
 					<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
