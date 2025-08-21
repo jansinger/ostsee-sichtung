@@ -27,6 +27,7 @@
 		"test:unit:watch": "vitest --watch",
 		"test": "npm run test:quick",
 		"test:quick": "npm run lint && npm run type-check && npm run check && npm run test:unit -- --run",
+		"test:pr": "npm run lint && npm run type-check && npm run check -- --run",
 		"test:e2e": "playwright test",
 		"db:start": "docker compose up -d",
 		"db:stop": "docker compose down",

@@ -115,54 +115,29 @@ jobs:
 
       # Commit message validation nur für normale PRs (nicht Dependabot)
       - name: Validate commit messages
-        if: github.actor != 'dependabot[bot]' && (steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true')
+        if: github.actor != 'dependabot[bot]'
         run: |
           echo "Validating commit messages from origin/main to HEAD..."
           npx commitlint --from=origin/main --to=HEAD --verbose
 
-      # Affected testing - nur relevante Tests basierend auf Änderungen
-      - name: Run affected tests (frontend changes)
-        if: steps.changes.outputs.frontend == 'true' && (steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true')
+      - name: Run tests
         run: |
-          echo "🎯 Running tests affected by frontend changes"
-          npm run test:quick
-
-      - name: Run affected tests (backend changes)
-        if: steps.changes.outputs.backend == 'true' && (steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true')
-        run: |
-          echo "🎯 Running tests affected by backend changes"
-          npm run test:quick
-
-      - name: Run affected tests (config/dependency changes)
-        if: (steps.changes.outputs.config == 'true' || steps.changes.outputs.dependencies == 'true') && (steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true')
-        run: |
-          echo "🎯 Running full test suite due to config/dependency changes"
-          npm run test:quick
+          echo "🎯 Running all tests"
+          npm run test:pr
 
       # Test Coverage für Code-Änderungen
       - name: Generate test coverage
-        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true'
         run: |
           echo "📊 Generating test coverage report"
           npm run test:unit -- --coverage --run
         continue-on-error: true
 
       - name: Upload coverage reports
-        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-${{ github.sha }}
           path: coverage/
           retention-days: 30
-
-      # Type checking and Svelte check
-      - name: Run type checking
-        if: steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true'
-        run: npm run test
-
-      - name: Run Svelte check
-        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.config == 'true'
-        run: npm run check
 
       # License checking für Dependency-Änderungen
       - name: Check licenses
