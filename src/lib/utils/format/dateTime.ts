@@ -192,7 +192,7 @@ export function formatForXmlExport(utcDateTime: string | Date): {
  * @param localTime - Die lokale Uhrzeit im Format "HH:MM" (optional)
  * @returns Das kombinierte Date-Objekt oder das aktuelle Datum, wenn die Eingabe ungültig ist
  */
-export function combineToDate(localDate: string, localTime?: string | undefined): Date {
+export function combineToDate(localDate: string, localTime?: string | undefined | null): Date {
 	// Validierung der Eingabe
 	if (!localDate) {
 		return new Date();
@@ -200,11 +200,11 @@ export function combineToDate(localDate: string, localTime?: string | undefined)
 
 	const fullDateTime = new Date(localDate);
 
-	// Erstelle Zeit-String mit Standard-Mittag falls Zeit fehlt
-	const timeStr = localTime ?? '00:00'; // Standard: Mitternacht
-	const [hours, minutes] = timeStr.split(':').map(Number);
+	if (localTime && localTime.match(/^\d{2}:\d{2}$/)) {
+		const [hours, minutes] = localTime.split(':').map(Number);
+		fullDateTime.setHours(hours ?? 0, minutes ?? 0, 0, 0); // Sekunden und MS auf 0
+	}
 
-	fullDateTime.setHours(hours ?? 0, minutes ?? 0, 0, 0); // Sekunden und MS auf 0
 	return fullDateTime;
 }
 

@@ -115,6 +115,7 @@ describe('VercelBlobStorageProvider', () => {
 		const mockBuffer = Buffer.from('mock file content');
 
 		const uploadOptions: UploadOptions = {
+			uid: 'cm123test456',
 			referenceId: 'sichtung-123',
 			preserveOriginalName: true
 		};
@@ -156,6 +157,7 @@ describe('VercelBlobStorageProvider', () => {
 			mockPut.mockResolvedValue(expectedBlobResponse);
 
 			const optionsWithoutPreserve: UploadOptions = {
+				uid: 'cm123test456',
 				referenceId: 'sichtung-123',
 				preserveOriginalName: false
 			};
@@ -532,7 +534,7 @@ describe('VercelBlobStorageProvider', () => {
 
 			const mockFile = { name: 'test.jpg', size: 1000, type: 'image/jpeg' } as File;
 			const mockBuffer = Buffer.from('test');
-			const options = { referenceId: 'test', preserveOriginalName: false };
+			const options = { uid: 'cm123test456', referenceId: 'test', preserveOriginalName: false };
 
 			await expect(provider.upload(mockFile, mockBuffer, options)).rejects.toThrow(rateLimitError);
 		});
@@ -567,6 +569,7 @@ describe('VercelBlobStorageProvider', () => {
 			mockPut.mockResolvedValue(expectedBlobResponse);
 
 			const result = await provider.upload(emptyFile, emptyBuffer, {
+				uid: 'cm123test456',
 				referenceId: 'test',
 				preserveOriginalName: false
 			});
@@ -583,6 +586,7 @@ describe('VercelBlobStorageProvider', () => {
 			// Upload
 			mockPut.mockResolvedValue({ url: 'https://test.com/file.jpg' });
 			const uploadResult = await provider.upload(mockFile, mockBuffer, {
+				uid: 'cm123test456',
 				referenceId: 'test',
 				preserveOriginalName: true
 			});

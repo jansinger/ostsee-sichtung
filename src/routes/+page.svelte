@@ -7,7 +7,7 @@
 	import { createLogger } from '$lib/logger';
 	import ModernReportForm from '$lib/report/components/ModernReportForm.svelte';
 	import SubmissionSuccess from '$lib/report/components/SubmissionSuccess.svelte';
-	import type { SightingFormData } from '$lib/report/types';
+	import type { SightingFormValues } from '$lib/types/Form';
 	import type { PageData } from './$types';
 
 	const logger = createLogger('main:page');
@@ -16,12 +16,12 @@
 
 	// Success state management
 	let submissionSuccess = $state(false);
-	let submittedData = $state<SightingFormData | null>(null);
+	let submittedData = $state<SightingFormValues | null>(null);
 
 	/**
 	 * Handle form submission
 	 */
-	async function handleSubmit(formData: SightingFormData) {
+	async function handleSubmit(formData: SightingFormValues) {
 		logger.info(formData, 'Submitting sighting report submitted successfully');
 		// Simulate successful submission
 		submissionSuccess = true;
@@ -55,21 +55,21 @@
 		name="keywords"
 		content="Meerestiere, Sichtung, Ostsee, Schweinswal, Robben, Melden, Forschung, Naturbeobachtung"
 	/>
-	
+
 	<!-- Open Graph -->
 	<meta property="og:title" content="Ostsee-Tiere - Meerestiere melden" />
-	<meta 
-		property="og:description" 
-		content="Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen." 
+	<meta
+		property="og:description"
+		content="Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen."
 	/>
 	<meta property="og:type" content="website" />
-	
+
 	<!-- Twitter Card -->
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:title" content="Ostsee-Tiere - Meerestiere melden" />
-	<meta 
-		name="twitter:description" 
-		content="Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen." 
+	<meta
+		name="twitter:description"
+		content="Melden Sie Ihre Meerestier-Sichtung in der Ostsee. Unterstützen Sie die Meeresforschung mit Ihren Beobachtungen."
 	/>
 </svelte:head>
 
@@ -84,10 +84,10 @@
 			</div>
 		{/if}
 	</div>
-	
+
 	<!-- Footer with navigation (versteckt in iFrame) -->
 	{#if typeof window !== 'undefined' && window === window.top}
-		<footer class="bg-base-200/50 mt-8 text-center p-4">
+		<footer class="bg-base-200/50 mt-8 p-4 text-center">
 			<div class="flex justify-center gap-4 text-sm">
 				<a href="/about" class="link link-hover">Über uns</a>
 				<span class="opacity-30">•</span>
@@ -95,10 +95,10 @@
 				<span class="opacity-30">•</span>
 				<a href="/map" class="link link-hover">Sichtungskarte</a>
 				<span class="opacity-30">•</span>
-				<a 
-					href="https://github.com/jansinger/ostsee-sichtung" 
-					target="_blank" 
-					rel="noopener noreferrer" 
+				<a
+					href="https://github.com/jansinger/ostsee-sichtung"
+					target="_blank"
+					rel="noopener noreferrer"
 					class="link link-hover"
 				>
 					GitHub

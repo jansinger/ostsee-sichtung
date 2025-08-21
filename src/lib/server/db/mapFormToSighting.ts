@@ -75,7 +75,7 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 		fullDateTime = new Date(formData.sightingDatetime);
 	} else {
 		// Zeit verarbeiten und mit Datum kombinieren wenn vorhanden
-		fullDateTime = combineToDate(String(formData.sightingDate), String(formData.sightingTime));
+		fullDateTime = combineToDate(formData.sightingDate, formData.sightingTime);
 		// UTC-Korrektur anwenden (SERVER ONLY)
 		fullDateTime = correctCestOffsetUTC(fullDateTime);
 	}
