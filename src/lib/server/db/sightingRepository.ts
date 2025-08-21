@@ -19,6 +19,7 @@ import { db } from '$lib/server/db';
 import { sightingFiles, sightings } from '$lib/server/db/schema';
 import { getUploadPath } from '$lib/server/uploads';
 import type { ExifData, UploadedFileInfo } from '$lib/types';
+import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting, UpdateSighting } from '$lib/types/sighting';
 import type { SightingFileInsert } from '$lib/types/sightingFile';
 import { isImageFile } from '$lib/utils';
@@ -47,7 +48,7 @@ const logger = createLogger('db:sightingRepository');
  * @throws {Error} Bei Datenbankfehlern oder Validierungsfehlern
  */
 export const saveSighting = async (
-	formData: SightingFormData
+	formData: SightingFormValues
 ): Promise<{ id: number | undefined }> => {
 	// Konvertiere Formulardaten in das normalisierte Datenbankschema
 	const sightingData: NewSighting = mapFormToSighting(formData);

@@ -20,6 +20,8 @@
 		STORAGE_KEYS
 	} from '$lib/storage/localStorage';
 	import type { FormContext, SightingFormData, User, UserContactData } from '$lib/types';
+	import type { SightingFormValues } from '$lib/types/Form';
+	import { combineToDate } from '$lib/utils/format/dateTime';
 	import { createId } from '@paralleldrive/cuid2';
 	import { formStepsConfig } from '../formConfig';
 	import Form from './form/Form.svelte';
@@ -38,7 +40,7 @@
 		onCancel = () => {},
 		user = null
 	}: {
-		onSubmit?: (data: SightingFormData) => Promise<void>;
+		onSubmit?: (data: SightingFormValues) => Promise<void>;
 		onCancel?: () => void;
 		user?: User | null;
 	} = $props();
@@ -69,9 +71,19 @@
 		validationSchema: sightingSchema,
 		onSubmit: async (values: SightingFormData) => {
 			try {
+				const sightingDatetime = combineToDate(
+					String(values.sightingDate),
+					String(values.sightingTime)
+				);
 				// Remove admin only attributes and uploaded files (already uploaded)
-				const { verified, internalComment, uploadedFiles, ...submitValues } = values;
-				const result = await submitSightingForm(submitValues as SightingFormData);
+				const { verified, internalComment, uploadedFiles, ...submitValuesTemp } = values;
+				let submitValues: SightingFormValues = submitValuesTemp as SightingFormValues;
+				// set full datetime from browser to get the locale timezone of the user!
+				submitValues.sightingDatetime = sightingDatetime;
+				// set mediaUpload indicator
+				submitValues.mediaUpload = uploadedFiles ? uploadedFiles.length > 0 : false;
+
+				const result = await submitSightingForm(submitValues);
 				submissionId = result.id;
 				submissionSuccess = result.success;
 
@@ -103,7 +115,7 @@
 				// Nach erfolgreichem Submit auf ersten Schritt zurücksetzen
 				currentStep = 0;
 				saveToStorage(STORAGE_KEYS.CURRENT_STEP, 0);
-				return onSubmit(values);
+				return onSubmit(submitValues);
 			} catch (error: unknown) {
 				submissionError = (error as Error)?.message || 'Unbekannter Fehler bei der Übermittlung';
 				logger.error(error, submissionError);

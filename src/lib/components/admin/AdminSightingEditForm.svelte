@@ -15,7 +15,7 @@
 	import { createLogger } from '$lib/logger';
 	import Media from '$lib/report/components/sections/Media.svelte';
 	import type { FrontendSighting } from '$lib/types';
-	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
+	import { formatLocalDateTime, splitDateTime } from '$lib/utils/format/dateTime';
 
 	const logger = createLogger('AdminEditForm');
 
@@ -59,18 +59,12 @@
 	}
 
 	// Initialisiere das Formular mit den vorhandenen Daten
+	const { date, time } = splitDateTime(sighting.sightingDate);
 	const initProps = {
 		initialValues: {
 			...sighting,
-			sightingDate: sighting.sightingDate
-				? new Date(sighting.sightingDate).toISOString().split('T')[0]
-				: '',
-			time: sighting.sightingDate
-				? new Date(sighting.sightingDate).toLocaleTimeString('de-DE', {
-						hour: '2-digit',
-						minute: '2-digit'
-					})
-				: '',
+			sightingDate: date,
+			sightingTime: time,
 			longitude: Number(sighting.longitude)?.toFixed(4) || 0,
 			latitude: Number(sighting.latitude)?.toFixed(4) || 0,
 			hasPosition: Boolean(sighting.longitude && sighting.latitude)

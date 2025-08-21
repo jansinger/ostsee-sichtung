@@ -8,7 +8,7 @@ import {
 	checkForbiddenAdminFields,
 	validateSightingFormData
 } from '$lib/server/validation/requestValidation';
-import type { SightingFormData } from '$lib/types';
+import type { SightingFormValues } from '$lib/types/Form';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { and, gte, lt, sql } from 'drizzle-orm';
 import { ValidationError } from 'yup';
@@ -124,7 +124,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		// 3. Validierung der Formulardaten mit Schema
 		// Setze Server-seitige Defaults für Felder, die nicht von Clients gesetzt werden dürfen
-		const formDataWithDefaults: SightingFormData = {
+		const formDataWithDefaults: SightingFormValues = {
 			...formData,
 			entryChannel: formData.entryChannel ?? EntryChannelEnum.WEB, // Default: Web (0)
 			verified: false, // Immer false für neue Client-Sichtungen

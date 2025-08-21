@@ -18,12 +18,13 @@ export type AllowedSightingFormData = yup.InferType<typeof sightingSchemaBase> &
  */
 const ALLOWED_SIGHTING_FIELDS = new Set([
 	...Object.keys(sightingSchemaBase.fields),
-	'entryChannel' // This field is in sightingSchema but not in sightingSchemaBase
+	'entryChannel', // This field is in sightingSchema but not in sightingSchemaBase
+	'sightingDatetime' // additional sighting time with browser timezone!
 ]);
 
 /**
  * Validates that a request body only contains allowed fields and rejects additional fields
- * 
+ *
  * @param requestBody - The request body to validate
  * @param allowedFields - Set of allowed field names
  * @returns Object with validation result and filtered data
@@ -69,7 +70,7 @@ function validateRequestFields<T extends Record<string, unknown>>(
 /**
  * Validates sighting form data for POST requests
  * Ensures only allowed fields are present and rejects administrative fields
- * 
+ *
  * @param requestBody - The request body from the client
  * @returns Object with validation result and sanitized data
  */
@@ -89,7 +90,7 @@ export function validateSightingFormData(requestBody: unknown): {
 
 	// Validate field whitelist
 	const validation = validateRequestFields(
-		requestBody as Record<string, unknown>, 
+		requestBody as Record<string, unknown>,
 		ALLOWED_SIGHTING_FIELDS
 	);
 
@@ -121,7 +122,7 @@ export const FORBIDDEN_ADMIN_FIELDS = [
 
 /**
  * Checks if any forbidden admin fields are present in the request
- * 
+ *
  * @param requestBody - The request body to check
  * @returns Object with information about forbidden fields
  */
@@ -129,8 +130,8 @@ export function checkForbiddenAdminFields(requestBody: Record<string, unknown>):
 	hasForbiddenFields: boolean;
 	forbiddenFields: string[];
 } {
-	const forbiddenFields = Object.keys(requestBody).filter(field => 
-		FORBIDDEN_ADMIN_FIELDS.includes(field as typeof FORBIDDEN_ADMIN_FIELDS[number])
+	const forbiddenFields = Object.keys(requestBody).filter((field) =>
+		FORBIDDEN_ADMIN_FIELDS.includes(field as (typeof FORBIDDEN_ADMIN_FIELDS)[number])
 	);
 
 	return {

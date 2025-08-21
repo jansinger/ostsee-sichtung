@@ -5,10 +5,10 @@
  * @param date - The UTC date to be corrected. Must be a UTC date.
  * @returns The corrected date, adjusted for CEST or CET as appropriate.
  */
-export function correctCestOffsetUTC(date: Date | undefined): Date | undefined {
+export function correctCestOffsetUTC(date: Date): Date {
 	// Nur, wenn die Server Timezone UTC ist
 	// Dann soll das Datum als CE(S)T Interpretiert werden
-	if (!date || date.getTimezoneOffset() !== 0) {
+	if (date.getTimezoneOffset() !== 0) {
 		return date;
 	}
 	// Das Datum muss ein UTC-Datum sein!
