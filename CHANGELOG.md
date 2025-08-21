@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.17.3 (2025-08-21)</small>
+
+* Merge pull request #66 from jansinger/refactor/unified-file-validation ([44d23c7](https://github.com/jansinger/ostsee-sichtung/commit/44d23c7)), closes [#66](https://github.com/jansinger/ostsee-sichtung/issues/66)
+* fix: Implement magic bytes validation and enhance file upload security ([3f98d93](https://github.com/jansinger/ostsee-sichtung/commit/3f98d93))
+* fix: Update Node.js version to 22 in workflow files ([c4daecd](https://github.com/jansinger/ostsee-sichtung/commit/c4daecd))
+
 ## <small>1.17.2 (2025-08-21)</small>
 
 * Merge pull request #64 from jansinger/fix/position-time-sync ([6c9e664](https://github.com/jansinger/ostsee-sichtung/commit/6c9e664)), closes [#64](https://github.com/jansinger/ostsee-sichtung/issues/64)
