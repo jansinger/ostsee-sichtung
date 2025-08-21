@@ -76,7 +76,7 @@ describe('exifUtils', () => {
 				width: 4000,
 				height: 3000,
 				orientation: 1,
-				dateTimeOriginal: new Date('2024-01-15T14:30:00'),
+				dateTimeOriginal: new Date('2024-01-15T13:30:00Z'),
 				exposureTime: '1/1000',
 				fNumber: 2.8,
 				iso: 400,
@@ -203,7 +203,7 @@ describe('exifUtils', () => {
 			const result = await readImageExifData(mockBuffer);
 
 			// Assert
-			expect(result?.dateTimeOriginal).toEqual(new Date('2024-02-20T10:00:00'));
+			expect(result?.dateTimeOriginal).toEqual(new Date('2024-02-20T09:00:00Z'));
 		});
 
 		/**
