@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { SightingFile } from '$lib/types';
 	import type { UploadedFileInfo } from '$lib/types/';
-	import { formatDate } from '$lib/utils/format/formatDate';
+	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import {
 		Calendar,
@@ -77,7 +77,7 @@
 
 	function formatCaptureDateTime(): string {
 		if (!file.exifData?.dateTimeOriginal) return '';
-		return formatDate(file.exifData.dateTimeOriginal);
+		return formatLocalDateTime(file.exifData.dateTimeOriginal);
 	}
 </script>
 
@@ -197,7 +197,7 @@
 					<Icon src={Calendar} size="14" class="text-base-content/60" />
 					<span class="text-base-content/60">Hochgeladen:</span>
 					<span class="font-medium"
-						>{file.uploadedAt ? formatDate(file.uploadedAt) : 'Unbekannt'}</span
+						>{file.uploadedAt ? formatLocalDateTime(file.uploadedAt) : 'Unbekannt'}</span
 					>
 				</div>
 			</div>

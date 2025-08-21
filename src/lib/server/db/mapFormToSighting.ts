@@ -2,6 +2,7 @@ import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import type { SightingFormData } from '$lib/report/types';
 import type { NewSighting } from '$lib/types/sighting';
 import { sql } from 'drizzle-orm';
+import { correctCestOffsetUTC } from '../datetime/correctCestOffsetUTC';
 import { checkBalticSeaFile } from '../geo/checkBalticSeaFile';
 
 /**
@@ -80,6 +81,8 @@ export function mapFormToSighting(formData: SightingFormData): NewSighting {
 		// Erstelle neues Date-Objekt um Original nicht zu mutieren
 		fullDateTime = new Date(sightingDate);
 		fullDateTime.setHours(hours, minutes, 0, 0); // Sekunden und MS auf 0
+		// Wenn der Server UTC ist, muss das Datum angepasst werden
+		fullDateTime = correctCestOffsetUTC(fullDateTime);
 	}
 
 	/**
