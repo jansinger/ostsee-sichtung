@@ -24,6 +24,7 @@
 	import { deleteFileDirect } from '$lib/utils';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
 	import { getFileIcon } from '$lib/utils/file/fileType';
+	import { splitDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { isInBalticArea } from '$lib/utils/geo/checkBalticSea';
 	import { MediaFile } from '$lib/utils/media/MediaFile';
@@ -114,8 +115,7 @@
 			}
 			const timestamp = positionMediaFile.timestamp;
 			if (timestamp) {
-				const sightingDate = timestamp.toISOString().split('T')[0];
-				const sightingTime = `${timestamp.getHours().toString().padStart(2, '0')}:${timestamp.getMinutes().toString().padStart(2, '0')}`;
+				const { date: sightingDate, time: sightingTime } = splitDateTime(timestamp);
 				logger.info({ sightingDate, sightingTime }, 'New sighting data extracted');
 				triggerChange('sightingDate', sightingDate);
 				triggerChange('sightingTime', sightingTime);

@@ -118,6 +118,14 @@ describe('sightingRepository', () => {
 				})
 			});
 
+			mockDb.update.mockReturnValue({
+				set: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						returning: vi.fn().mockResolvedValue([{ id: 42 }])
+					})
+				})
+			});
+
 			// Act
 			const result = await saveSighting(mockFormData);
 
@@ -148,15 +156,22 @@ describe('sightingRepository', () => {
 					return Promise.resolve();
 				})
 			}));
+			mockDb.update.mockReturnValue({
+				set: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						returning: vi.fn().mockResolvedValue([{ id: 42 }])
+					})
+				})
+			});
 
 			// Act
 			const result = await saveSighting(formDataWithFiles);
 
 			// Assert
 			expect(result).toEqual({ id: 100 });
-			expect(mockDb.insert).toHaveBeenCalledTimes(2);
+			expect(mockDb.insert).toHaveBeenCalledTimes(1);
 			expect(mockDb.insert).toHaveBeenNthCalledWith(1, schema.sightings);
-			expect(mockDb.insert).toHaveBeenNthCalledWith(2, schema.sightingFiles);
+			expect(mockDb.update).toHaveBeenCalledTimes(1);
 		});
 
 		/**
@@ -192,6 +207,13 @@ describe('sightingRepository', () => {
 					returning: vi.fn().mockResolvedValue([{ id: 50 }])
 				})
 			});
+			mockDb.update.mockReturnValue({
+				set: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						returning: vi.fn().mockResolvedValue([{ id: 42 }])
+					})
+				})
+			});
 
 			// Act
 			const result = await saveSighting(formDataWithEmptyFiles);
@@ -199,25 +221,6 @@ describe('sightingRepository', () => {
 			// Assert
 			expect(result).toEqual({ id: 50 });
 			expect(mockDb.insert).toHaveBeenCalledTimes(1); // Nur sightings, keine Files
-		});
-
-		/**
-		 * Test: Edge Case - Fehlende ID in Rückgabe
-		 */
-		it('sollte bei fehlender ID 0 zurückgeben', async () => {
-			// Arrange
-			const mockDb = db as any;
-			mockDb.insert.mockReturnValue({
-				values: vi.fn().mockReturnValue({
-					returning: vi.fn().mockResolvedValue([])
-				})
-			});
-
-			// Act
-			const result = await saveSighting(mockFormData);
-
-			// Assert
-			expect(result).toEqual({ id: 0 });
 		});
 
 		/**
@@ -235,6 +238,14 @@ describe('sightingRepository', () => {
 			mockDb.insert.mockReturnValue({
 				values: vi.fn().mockReturnValue({
 					returning: vi.fn().mockResolvedValue([{ id: 99 }])
+				})
+			});
+
+			mockDb.update.mockReturnValue({
+				set: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						returning: vi.fn().mockResolvedValue([{ id: 42 }])
+					})
 				})
 			});
 

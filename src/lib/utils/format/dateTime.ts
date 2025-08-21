@@ -48,7 +48,8 @@ const APP_LOCALE = 'de-DE';
  */
 export function formatLocalDateTime(
 	utcDateTime: string | Date | null | undefined,
-	format: 'full' | 'date' | 'time' | 'datetime' = 'datetime'
+	format: 'full' | 'date' | 'time' | 'datetime' = 'datetime',
+	locale: string = APP_LOCALE
 ): string {
 	if (!utcDateTime) return 'Nicht angegeben';
 
@@ -90,7 +91,7 @@ export function formatLocalDateTime(
 		}
 	};
 
-	return date.toLocaleString(APP_LOCALE, formatOptions[format]);
+	return date.toLocaleString(locale, formatOptions[format]);
 }
 
 /**
@@ -183,74 +184,28 @@ export function formatForXmlExport(utcDateTime: string | Date): {
 }
 
 /**
- * Kombiniert lokales Datum und Zeit zu UTC für Datenbank-Speicherung.
+ * Kombiniert ein Datum und eine Uhrzeit zu einem vollständigen Date-Objekt.
  *
- * Diese Funktion ist für zukünftige Form-zu-DB-Konvertierung vorgesehen.
- * Sie interpretiert Benutzereingaben als lokale Zeit und konvertiert sie zu UTC.
+ * Interpretiert das Datum in der browser locale
  *
- * HINWEIS: Diese Funktion wird noch NICHT verwendet, ist aber vorbereitet
- * für zukünftige Refactoring der Form-Verarbeitung.
- *
- * @param localDate - Lokales Datum im Format YYYY-MM-DD
- * @param localTime - Lokale Zeit im Format HH:MM (optional)
- * @returns UTC ISO-String für Datenbank-Speicherung
- *
- * @example
- * ```typescript
- * // Benutzer gibt ein: 15.01.2024, 10:57 (lokale Zeit)
- * combineToUTC("2024-01-15", "10:57")
- * // Ausgabe: "2024-01-15T09:57:00.000Z" (UTC, Winter)
- * // Ausgabe: "2024-01-15T08:57:00.000Z" (UTC, Sommer)
- * ```
+ * @param localDate - Das lokale Datum im Format "YYYY-MM-DD"
+ * @param localTime - Die lokale Uhrzeit im Format "HH:MM" (optional)
+ * @returns Das kombinierte Date-Objekt oder das aktuelle Datum, wenn die Eingabe ungültig ist
  */
-export function combineToUTC(localDate: string, localTime?: string): string {
-	// Erstelle Zeit-String mit Standard-Mittag falls Zeit fehlt
-	let timeStr = '12:00:00'; // Standard: Mittag
-	if (localTime) {
-		timeStr = `${localTime}:00`;
-	}
-
+export function combineToDate(localDate: string, localTime?: string | undefined | null): Date {
 	// Validierung der Eingabe
 	if (!localDate) {
-		throw new Error('Lokales Datum ist erforderlich');
+		return new Date();
 	}
 
-	// SIMPLE UND DIREKTE LÖSUNG:
-	// Verwende den bewährten Ansatz über temporäre Zeitstempel-Konvertierung
+	const fullDateTime = new Date(localDate);
 
-	// Erstelle das deutsche Datum/Zeit als ISO-String (ohne Z = als lokale Zeit interpretiert)
-	const localISOString = `${localDate}T${timeStr}`;
+	if (localTime && localTime.match(/^\d{2}:\d{2}$/)) {
+		const [hours, minutes] = localTime.split(':').map(Number);
+		fullDateTime.setHours(hours ?? 0, minutes ?? 0, 0, 0); // Sekunden und MS auf 0
+	}
 
-	// Konvertiere zu UTC mittels der deutschen Zeitzone
-	// Trick: Verwende toLocaleString um die deutsche Zeit zu einem beliebigen UTC-Zeitpunkt zu finden
-	// Dann berechne den Offset
-
-	// Erstelle temporäres Datum als Basis
-	const tempUtcDate = new Date(`${localDate}T12:00:00.000Z`);
-
-	// Formatiere dieses UTC-Datum in deutsche Zeit
-	const germanTimeAtTempDate = tempUtcDate
-		.toLocaleString('sv-SE', {
-			timeZone: APP_TIMEZONE,
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit'
-		})
-		.replace(' ', 'T');
-
-	// Finde den Offset zwischen UTC und Deutschland für dieses Datum
-	const tempUtcMs = tempUtcDate.getTime();
-	const tempGermanMs = new Date(germanTimeAtTempDate).getTime();
-	const offsetMs = tempUtcMs - tempGermanMs;
-
-	// Wende den Offset auf unser gewünschtes deutsches Datum an
-	const localMs = new Date(localISOString).getTime();
-	const utcMs = localMs + offsetMs;
-
-	return new Date(utcMs).toISOString();
+	return fullDateTime;
 }
 
 /**
@@ -317,14 +272,15 @@ export function getCurrentLocalTime(): Date {
 }
 
 /**
- * Legacy-Wrapper für bestehende formatDate-Funktion.
+ * Hilfsfunktion: Formatiert ein Datum/Zeit-Objekt in einer bestimmten
+ * Format zur Nutzung in Eingabefeldern
  *
- * Stellt Rückwärtskompatibilität sicher, während neue Zeitzonenlogik verwendet wird.
- *
- * @param date - Zu formatierendes Datum
- * @returns Formatiertes Datum mit Zeitzonenkonvertierung
- * @deprecated Verwende stattdessen formatLocalDateTime() für neue Implementierungen
+ * @param date - Datum/Zeit-Objekt
+ * @param format - Format der Ausgabe
+ * @returns Formatiertes Datum/Zeit-Objekt als String
  */
-export function formatDate(date: string | Date | null): string {
-	return formatLocalDateTime(date, 'datetime');
+export function splitDateTime(dateTime: string | Date): { date: string; time: string } {
+	const date = formatLocalDateTime(dateTime, 'date', 'sv-SE');
+	const time = formatLocalDateTime(dateTime, 'time', 'sv-SE');
+	return { date, time };
 }

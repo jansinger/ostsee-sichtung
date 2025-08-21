@@ -88,7 +88,9 @@ export async function readImageExifData(source: string | Buffer): Promise<ExifDa
 		}
 
 		// Correct CEST offset for UTC dates (EXIF enthält keine Timezone, daher manuelle Korrektur)
-		result.dateTimeOriginal = correctCestOffsetUTC(result.dateTimeOriginal);
+		if (result.dateTimeOriginal) {
+			result.dateTimeOriginal = correctCestOffsetUTC(result.dateTimeOriginal);
+		}
 
 		// Handle exposure time
 		if (exifData.ExposureTime) {

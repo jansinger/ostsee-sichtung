@@ -27,6 +27,7 @@ export type UploadedFileInfo = SightingFormData['uploadedFiles'][0] & {
 };
 
 export interface UploadOptions {
+	uid: string;
 	referenceId: string;
 	preserveOriginalName?: boolean;
 }

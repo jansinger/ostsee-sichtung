@@ -1,5 +1,6 @@
 import { FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
 import { createLogger } from '$lib/logger';
+import { saveUploadedFile } from '$lib/server/db/sightingFilesRepository';
 import { readImageExifData } from '$lib/server/media/exifUtils';
 import { getStorageProvider } from '$lib/server/storage/factory';
 import { isDangerousFileType, validateMagicBytes } from '$lib/server/validation/magicBytes';
@@ -81,6 +82,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		const [uploadedFile, metadata] = await Promise.all([
 			storage.upload(file, buffer, {
+				uid,
 				referenceId,
 				preserveOriginalName: false
 			}),
@@ -97,7 +99,12 @@ export const POST: RequestHandler = async ({ request }) => {
 			'Datei erfolgreich hochgeladen'
 		);
 
-		return json({ ...uploadedFile, uid, exifData: metadata });
+		uploadedFile.exifData = metadata;
+
+		// Speichere die hochgeladene Datei in der Datenbank
+		await saveUploadedFile(uploadedFile, referenceId);
+
+		return json(uploadedFile);
 	} catch (err) {
 		if (err instanceof Response) {
 			throw err; // Re-throw SvelteKit errors

@@ -65,6 +65,7 @@ describe('LocalStorageProvider', () => {
 			const mockFile = new File(['test content'], 'test.jpg', { type: 'image/jpeg' });
 			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
+				uid: 'test-id-123',
 				referenceId: 'ref-123',
 				preserveOriginalName: false
 			};
@@ -95,6 +96,7 @@ describe('LocalStorageProvider', () => {
 			const mockFile = new File(['content'], 'original-photo.png', { type: 'image/png' });
 			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
+				uid: 'test-id-123',
 				referenceId: 'ref-456',
 				preserveOriginalName: true
 			};
@@ -117,6 +119,7 @@ describe('LocalStorageProvider', () => {
 			const maliciousFile = new File(['malicious'], '../../../etc/passwd', { type: 'text/plain' });
 			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
+				uid: 'test-id-123',
 				referenceId: '../../sensitive',
 				preserveOriginalName: true
 			};
@@ -136,6 +139,7 @@ describe('LocalStorageProvider', () => {
 			const mockFile = new File(['content'], 'file.txt', { type: 'text/plain' });
 			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
+				uid: 'test-id-123',
 				referenceId: 'new-dir',
 				preserveOriginalName: false
 			};
@@ -160,6 +164,7 @@ describe('LocalStorageProvider', () => {
 			const mockFile = new File([largeContent], 'large.bin', { type: 'application/octet-stream' });
 			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
+				uid: 'test-id-123',
 				referenceId: 'large-files',
 				preserveOriginalName: false
 			};
@@ -419,6 +424,7 @@ describe('LocalStorageProvider', () => {
 			});
 			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
+				uid: 'test-id-123',
 				referenceId: 'safe-ref',
 				preserveOriginalName: true
 			};
@@ -446,6 +452,7 @@ describe('LocalStorageProvider', () => {
 			const mockFile = new File(['content'], 'file.jpg\x00.txt', { type: 'text/plain' });
 			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
+				uid: 'test-id-123',
 				referenceId: 'ref-null',
 				preserveOriginalName: true
 			};
@@ -470,6 +477,7 @@ describe('LocalStorageProvider', () => {
 			const hiddenFile = new File(['secret'], '...hidden_config', { type: 'text/plain' });
 			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
+				uid: 'test-id-123',
 				referenceId: 'ref-hidden',
 				preserveOriginalName: true
 			};
@@ -493,6 +501,7 @@ describe('LocalStorageProvider', () => {
 			const longFile = new File(['content'], longName, { type: 'text/plain' });
 			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
+				uid: 'test-id-123',
 				referenceId: 'ref-long',
 				preserveOriginalName: true
 			};
@@ -517,6 +526,7 @@ describe('LocalStorageProvider', () => {
 			const emptyFile = new File(['content'], '', { type: 'text/plain' });
 			const buffer = Buffer.from('test content');
 			const options: UploadOptions = {
+				uid: 'test-id-123',
 				referenceId: 'ref-empty',
 				preserveOriginalName: true
 			};

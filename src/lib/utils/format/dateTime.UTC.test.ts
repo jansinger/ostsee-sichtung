@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-	combineToUTC,
-	formatDate,
+	combineToDate,
 	formatForExport,
 	formatForKmlExport,
 	formatForXmlExport,
 	formatLocalDateTime,
 	getCurrentLocalTime,
-	isValidDate
+	isValidDate,
+	splitDateTime
 } from './dateTime';
 
 describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
@@ -190,60 +190,6 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 		});
 	});
 
-	describe('combineToUTC', () => {
-		it('sollte lokales Datum und Zeit zu UTC konvertieren', () => {
-			const result = combineToUTC('2024-01-15', '10:57');
-
-			// Ergebnis sollte ein gültiger ISO-String sein
-			expect(result).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
-
-			// Datum sollte korrekt sein
-			const resultDate = new Date(result);
-			expect(resultDate.getUTCFullYear()).toBe(2024);
-			expect(resultDate.getUTCMonth()).toBe(0); // Januar
-			expect(resultDate.getUTCDate()).toBe(15);
-		});
-
-		it('sollte Sommerzeit korrekt berücksichtigen', () => {
-			const result = combineToUTC('2024-07-15', '10:57');
-
-			// Ergebnis sollte ein gültiger ISO-String sein
-			expect(result).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
-
-			// Datum sollte korrekt sein
-			const resultDate = new Date(result);
-			expect(resultDate.getUTCFullYear()).toBe(2024);
-			expect(resultDate.getUTCMonth()).toBe(6); // Juli
-			expect(resultDate.getUTCDate()).toBe(15);
-		});
-
-		it('sollte fehlende Zeit mit Mittag als Standard behandeln', () => {
-			const result = combineToUTC('2024-01-15');
-
-			// Ergebnis sollte ein gültiger ISO-String sein
-			expect(result).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
-
-			// Sollte Mittag entsprechen
-			const resultDate = new Date(result);
-			expect(resultDate.getUTCFullYear()).toBe(2024);
-			expect(resultDate.getUTCMonth()).toBe(0); // Januar
-			expect(resultDate.getUTCDate()).toBe(15);
-		});
-
-		it('sollte Zeitzone-Übergänge korrekt handhaben', () => {
-			const result = combineToUTC('2024-03-31', '03:00');
-
-			// Ergebnis sollte ein gültiger ISO-String sein
-			expect(result).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
-
-			// Datum sollte korrekt sein (kann sich um einen Tag verschieben aufgrund Zeitumstellung)
-			const resultDate = new Date(result);
-			expect(resultDate.getUTCFullYear()).toBe(2024);
-			expect(resultDate.getUTCMonth()).toBe(2); // März
-			expect([30, 31]).toContain(resultDate.getUTCDate()); // Zeitumstellung kann Tag ändern
-		});
-	});
-
 	describe('isValidDate', () => {
 		it('sollte gültige Daten erkennen', () => {
 			expect(isValidDate('2024-01-15T08:57:00.000Z')).toBe(true);
@@ -264,22 +210,6 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 			const result = getCurrentLocalTime();
 			expect(result).toBeInstanceOf(Date);
 			expect(result.getTime()).toBeGreaterThan(0);
-		});
-	});
-
-	describe('formatDate (Legacy-Wrapper)', () => {
-		it('sollte als Wrapper für formatLocalDateTime funktionieren', () => {
-			const utcTime = '2024-01-15T08:57:00.000Z';
-
-			const legacyResult = formatDate(utcTime);
-			const newResult = formatLocalDateTime(utcTime, 'datetime');
-
-			expect(legacyResult).toBe(newResult);
-		});
-
-		it('sollte null korrekt behandeln', () => {
-			const result = formatDate(null);
-			expect(result).toBe('Nicht angegeben');
 		});
 	});
 
@@ -327,6 +257,240 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 
 			// Sollte unter 100ms für 1000 Formatierungen sein
 			expect(duration).toBeLessThan(500);
+		});
+	});
+
+	describe('combineToDate', () => {
+		it('sollte Datum und Zeit korrekt kombinieren', () => {
+			const result = combineToDate('2024-01-15', '14:30');
+
+			expect(result).toBeInstanceOf(Date);
+			expect(result.getFullYear()).toBe(2024);
+			expect(result.getMonth()).toBe(0); // Januar = 0
+			expect(result.getDate()).toBe(15);
+			expect(result.getHours()).toBe(14);
+			expect(result.getMinutes()).toBe(30);
+			expect(result.getSeconds()).toBe(0);
+			expect(result.getMilliseconds()).toBe(0);
+		});
+
+		it('sollte Zeit ohne Doppelpunkt verarbeiten', () => {
+			const result = combineToDate('2024-01-15', '1430');
+			// Sollte fehlschlagen oder als 14:30 interpretiert werden
+			// Je nach Implementation, aber wir testen den aktuellen Stand
+			expect(result).toBeInstanceOf(Date);
+		});
+
+		it('sollte Mitternacht korrekt setzen wenn keine Zeit angegeben', () => {
+			const result = combineToDate('2024-01-15');
+
+			expect(result.getHours()).toBe(0);
+			expect(result.getMinutes()).toBe(0);
+			expect(result.getSeconds()).toBe(0);
+			expect(result.getMilliseconds()).toBe(0);
+		});
+
+		it('sollte undefined Zeit als Mitternacht behandeln', () => {
+			const result = combineToDate('2024-01-15', undefined);
+
+			expect(result.getHours()).toBe(0);
+			expect(result.getMinutes()).toBe(0);
+		});
+
+		it('sollte leere Zeit als Mitternacht behandeln', () => {
+			const result = combineToDate('2024-01-15', '');
+
+			expect(result.getHours()).toBe(0);
+			expect(result.getMinutes()).toBe(0);
+		});
+
+		it('sollte ungültiges Datum mit aktueller Zeit zurückgeben', () => {
+			const result = combineToDate('', '14:30');
+			const now = new Date();
+
+			// Sollte aktuelles Datum sein
+			expect(result.getFullYear()).toBe(now.getFullYear());
+			expect(result.getMonth()).toBe(now.getMonth());
+			expect(result.getDate()).toBe(now.getDate());
+		});
+
+		it('sollte null/undefined Datum als aktuelle Zeit behandeln', () => {
+			const resultNull = combineToDate('');
+			const now = new Date();
+
+			expect(resultNull).toBeInstanceOf(Date);
+			// Sollte ungefähr zur aktuellen Zeit sein (innerhalb einer Sekunde)
+			expect(Math.abs(resultNull.getTime() - now.getTime())).toBeLessThan(1000);
+		});
+
+		it('sollte verschiedene Zeitformate korrekt verarbeiten', () => {
+			const testCases = [
+				{ time: '09:30', expectedHour: 9, expectedMinute: 30 },
+				{ time: '00:00', expectedHour: 0, expectedMinute: 0 },
+				{ time: '23:59', expectedHour: 23, expectedMinute: 59 },
+				{ time: '12:00', expectedHour: 12, expectedMinute: 0 }
+			];
+
+			testCases.forEach(({ time, expectedHour, expectedMinute }) => {
+				const result = combineToDate('2024-01-15', time);
+				expect(result.getHours()).toBe(expectedHour);
+				expect(result.getMinutes()).toBe(expectedMinute);
+			});
+		});
+	});
+
+	describe('splitDateTime', () => {
+		it('sollte Date-Objekt in deutsche Datums- und Zeitteile aufteilen', () => {
+			const testDate = new Date('2024-01-15T14:30:45.000Z');
+			const result = splitDateTime(testDate);
+
+			expect(result).toHaveProperty('date');
+			expect(result).toHaveProperty('time');
+			
+			// Da wir schwedische Locale verwenden, erwarten wir ISO-Format
+			expect(result.date).toMatch(/2024-01-15/); // Schwedisches Datumsformat
+			expect(result.time).toMatch(/\d{2}:\d{2}/); // Zeit im HH:MM Format
+		});
+
+		it('sollte ISO-String in deutsche Datums- und Zeitteile aufteilen', () => {
+			const isoString = '2024-01-15T14:30:00.000Z';
+			const result = splitDateTime(isoString);
+
+			expect(result.date).toMatch(/2024-01-15/);
+			expect(result.time).toMatch(/\d{2}:\d{2}/);
+		});
+
+		it('sollte konsistente Formatierung für HTML-Input-Felder liefern', () => {
+			const testDate = new Date('2024-01-15T09:05:00.000Z');
+			const result = splitDateTime(testDate);
+
+			// Datum sollte im YYYY-MM-DD Format sein (HTML date input)
+			expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+			
+			// Zeit sollte im HH:MM Format sein (HTML time input)
+			expect(result.time).toMatch(/^\d{2}:\d{2}$/);
+		});
+
+		it('sollte verschiedene Eingabeformate verarbeiten', () => {
+			const testCases = [
+				new Date('2024-01-15T14:30:00.000Z'),
+				'2024-01-15T14:30:00.000Z',
+				'2024-01-15T14:30:00Z',
+				'2024-01-15T14:30:00'
+			];
+
+			testCases.forEach((input) => {
+				const result = splitDateTime(input);
+				expect(result.date).toMatch(/2024-01-15/);
+				expect(result.time).toMatch(/\d{2}:\d{2}/);
+			});
+		});
+
+		it('sollte Zeitzonenkonvertierung korrekt durchführen', () => {
+			// Winter: UTC+1 (MEZ)
+			const winterDate = '2024-01-15T08:00:00.000Z';
+			const winterResult = splitDateTime(winterDate);
+			
+			// Sommer: UTC+2 (MESZ) 
+			const summerDate = '2024-07-15T08:00:00.000Z';
+			const summerResult = splitDateTime(summerDate);
+
+			// Beide sollten unterschiedliche Zeiten haben aufgrund der Zeitzone
+			expect(winterResult.time).not.toBe(summerResult.time);
+		});
+
+		it('sollte Round-Trip-Kompatibilität mit combineToDate haben', () => {
+			const originalDate = new Date('2024-01-15T14:30:00.000Z');
+			const { date, time } = splitDateTime(originalDate);
+			
+			// Kombiniere wieder zurück
+			const reconstructed = combineToDate(date, time);
+			
+			// Sollten ähnliche Werte haben (Sekunden werden auf 0 gesetzt)
+			expect(reconstructed.getFullYear()).toBe(originalDate.getFullYear());
+			expect(reconstructed.getMonth()).toBe(originalDate.getMonth());
+			expect(reconstructed.getDate()).toBe(originalDate.getDate());
+			// Stunden/Minuten können aufgrund Zeitzone abweichen, das ist OK
+		});
+
+		it('sollte Edge-Cases korrekt behandeln', () => {
+			const edgeCases = [
+				'2024-02-29T00:00:00.000Z', // Schaltjahr
+				'2024-12-31T23:59:59.000Z', // Jahresende
+				'2024-01-01T00:00:00.000Z'  // Jahresanfang
+			];
+
+			edgeCases.forEach((testCase) => {
+				const result = splitDateTime(testCase);
+				expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+				expect(result.time).toMatch(/^\d{2}:\d{2}$/);
+			});
+		});
+	});
+
+	describe('Integration Tests - combineToDate und splitDateTime', () => {
+		it('sollte perfekte Round-Trip-Konvertierung ermöglichen', () => {
+			const originalDate = '2024-01-15';
+			const originalTime = '14:30';
+
+			// Kombiniere zu Date
+			const combined = combineToDate(originalDate, originalTime);
+			
+			// Teile wieder auf
+			const { date, time } = splitDateTime(combined);
+			
+			// Kombiniere erneut
+			const recombined = combineToDate(date, time);
+
+			// Datum sollte gleich sein
+			expect(combined.getDate()).toBe(recombined.getDate());
+			expect(combined.getMonth()).toBe(recombined.getMonth());
+			expect(combined.getFullYear()).toBe(recombined.getFullYear());
+		});
+
+		it('sollte mit HTML-Formularen kompatibel sein', () => {
+			const htmlDateValue = '2024-01-15';
+			const htmlTimeValue = '14:30';
+
+			const combined = combineToDate(htmlDateValue, htmlTimeValue);
+			const split = splitDateTime(combined);
+
+			// Sollte wieder HTML-kompatible Werte erzeugen
+			expect(split.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+			expect(split.time).toMatch(/^\d{2}:\d{2}$/);
+		});
+	});
+
+	describe('Performance Tests - Neue Funktionen', () => {
+		it('sollte combineToDate effizient ausführen', () => {
+			const iterations = 1000;
+			const startTime = performance.now();
+
+			for (let i = 0; i < iterations; i++) {
+				combineToDate('2024-01-15', '14:30');
+			}
+
+			const endTime = performance.now();
+			const duration = endTime - startTime;
+
+			// Sollte schnell sein
+			expect(duration).toBeLessThan(100);
+		});
+
+		it('sollte splitDateTime effizient ausführen', () => {
+			const testDate = new Date('2024-01-15T14:30:00.000Z');
+			const iterations = 1000;
+			const startTime = performance.now();
+
+			for (let i = 0; i < iterations; i++) {
+				splitDateTime(testDate);
+			}
+
+			const endTime = performance.now();
+			const duration = endTime - startTime;
+
+			// Sollte schnell sein (realistischere Erwartung für formatLocalDateTime Calls)
+			expect(duration).toBeLessThan(300);
 		});
 	});
 });

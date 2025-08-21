@@ -6,7 +6,7 @@
 	import { createLogger } from '$lib/logger';
 	import { sightingSchemaFields } from '$lib/report/formConfig';
 	import { getFormContext } from '$lib/report/formContext';
-	import type { SightingFormValues } from '$lib/types/Form';
+	import type { SightingFormData } from '$lib/types/Form';
 	import * as yup from 'yup';
 	import FieldRenderer from './FieldRenderer.svelte';
 
@@ -18,7 +18,7 @@
 		size = 'md',
 		variant = 'default'
 	}: {
-		name: keyof SightingFormValues;
+		name: keyof Omit<SightingFormData, 'uploadedFiles'>;
 		disabled?: boolean;
 		size?: 'sm' | 'md' | 'lg';
 		variant?: 'default' | 'compact' | 'full';
@@ -44,7 +44,7 @@
 		);
 	}
 	let error = $derived($errors[name]);
-	let value: SightingFormValues[typeof name] = $derived($form[name]);
+	let value: Omit<SightingFormData, 'uploadedFiles'>[typeof name] = $derived($form[name]);
 
 	// Only log during development
 	logger.debug({ form: $form, config: fieldConfig }, `FormField "${name}" rendered`);

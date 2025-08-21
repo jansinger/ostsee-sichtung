@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import type { SightingFormData } from '$lib/report/types';
+	import type { SightingFormValues } from '$lib/types/Form';
+	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { maskEmail } from '$lib/utils/privacy/emailMask';
 	import { ArrowLeft, Check } from '@steeze-ui/lucide-icons';
@@ -8,7 +9,7 @@
 
 	// Success state management
 	let { submittedData, handleNewReport } = $props<{
-		submittedData: SightingFormData | null;
+		submittedData: SightingFormValues | null;
 		handleNewReport: () => void;
 	}>();
 
@@ -47,7 +48,9 @@
 						<div>
 							<h3 class="font-semibold">Bestätigung per E-Mail</h3>
 							<p class="text-base-content/70 text-sm">
-								Sie erhalten in Kürze eine Bestätigung an <strong>{submittedData?.email ? maskEmail(submittedData.email) : '***@***.***'}</strong>
+								Sie erhalten in Kürze eine Bestätigung an <strong
+									>{submittedData?.email ? maskEmail(submittedData.email) : '***@***.***'}</strong
+								>
 							</p>
 						</div>
 					</div>
@@ -132,7 +135,7 @@
 						</div>
 						<div>
 							<span class="font-medium">Datum:</span>
-							{new Date(submittedData.sightingDate).toLocaleDateString('de-DE')}
+							{formatLocalDateTime(new Date(submittedData.sightingDatetime))}
 						</div>
 						<div>
 							<span class="font-medium">Position:</span>

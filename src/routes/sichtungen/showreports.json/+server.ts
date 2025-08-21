@@ -18,7 +18,7 @@ import { getSpeciesLabel } from '$lib/report/formOptions/species.js';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { json, type RequestEvent } from '@sveltejs/kit';
-import { and, between, gte, lt, sql } from 'drizzle-orm';
+import { and, between, sql } from 'drizzle-orm';
 
 const logger = createLogger('api:legacy:showreports:pdf-compliant');
 
@@ -86,9 +86,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				const startDate = new Date(yearNum, 0, 1); // January 1st
 				const endDate = new Date(yearNum + 1, 0, 1); // January 1st next year
 
-				whereConditions.push(
-					and(gte(sightings.sightingDate, startDate), lt(sightings.sightingDate, endDate))
-				);
+				whereConditions.push(and(between(sightings.sightingDate, startDate, endDate)));
 
 				logger.debug(
 					{

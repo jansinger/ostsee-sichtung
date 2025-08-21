@@ -1,6 +1,7 @@
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
-import type { SightingFormData } from '$lib/report/types';
+import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting } from '$lib/types/sighting';
+import { combineToDate } from '$lib/utils/format/dateTime';
 import { sql } from 'drizzle-orm';
 import { correctCestOffsetUTC } from '../datetime/correctCestOffsetUTC';
 import { checkBalticSeaFile } from '../geo/checkBalticSeaFile';
@@ -38,7 +39,7 @@ import { checkBalticSeaFile } from '../geo/checkBalticSeaFile';
  * // dbSighting enthält PostGIS-Geometrie, kombinierte DateTime, etc.
  * ```
  */
-export function mapFormToSighting(formData: SightingFormData): NewSighting {
+export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 	/**
 	 * SCHRITT 1: Geografische Koordinaten verarbeiten
 	 * Erstellt PostGIS-Geometrie und validiert Ostsee-Zugehörigkeit
@@ -68,20 +69,14 @@ export function mapFormToSighting(formData: SightingFormData): NewSighting {
 	 * SCHRITT 2: Datum/Zeit-Verarbeitung
 	 * Kombiniert Datum und Zeit zu einem vollständigen DateTime-Objekt
 	 */
-	const sightingDate = formData.sightingDate ? new Date(formData.sightingDate) : null;
 
-	// Zeit verarbeiten und mit Datum kombinieren wenn vorhanden
-	let fullDateTime = null;
-	if (sightingDate && formData.sightingTime) {
-		// Parst Zeit im Format "HH:MM" und kombiniert mit Datum
-		const timeParts = formData.sightingTime.split(':').map(Number);
-		const hours = timeParts[0] || 0;
-		const minutes = timeParts[1] || 0;
-
-		// Erstelle neues Date-Objekt um Original nicht zu mutieren
-		fullDateTime = new Date(sightingDate);
-		fullDateTime.setHours(hours, minutes, 0, 0); // Sekunden und MS auf 0
-		// Wenn der Server UTC ist, muss das Datum angepasst werden
+	let fullDateTime;
+	if (formData.sightingDatetime) {
+		fullDateTime = new Date(formData.sightingDatetime);
+	} else {
+		// Zeit verarbeiten und mit Datum kombinieren wenn vorhanden
+		fullDateTime = combineToDate(formData.sightingDate, formData.sightingTime);
+		// UTC-Korrektur anwenden (SERVER ONLY)
 		fullDateTime = correctCestOffsetUTC(fullDateTime);
 	}
 
@@ -106,7 +101,7 @@ export function mapFormToSighting(formData: SightingFormData): NewSighting {
 
 		// === ZEITANGABEN ===
 		// Nutzt kombinierte DateTime oder fällt auf aktuellen Zeitpunkt zurück
-		sightingDate: fullDateTime ?? new Date(),
+		sightingDate: fullDateTime,
 
 		// === TIERBEOBACHTUNG ===
 		// Tierart (numerische ID aus Dropdown)
@@ -149,7 +144,7 @@ export function mapFormToSighting(formData: SightingFormData): NewSighting {
 		// Legacy-Feld für externe Medien-URLs
 		mediaFile: formData.mediaFile ? String(formData.mediaFile) : null,
 		// Flag: Wurden Dateien hochgeladen? (bestimmt ob Dateien-Tab angezeigt wird)
-		mediaUpload: formData.uploadedFiles.length > 0 ? 1 : 0,
+		mediaUpload: formData.mediaUpload ? 1 : 0,
 
 		// === FAHRZEUG-/SCHIFFSDATEN ===
 		// Schiffsname (optional)

@@ -39,10 +39,7 @@ export const load: PageServerLoad = async () => {
 				sightings: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
-			.where(
-				sql`${sightings.sightingDate} IS NOT NULL 
-					AND EXTRACT(year FROM ${sightings.sightingDate}::timestamp) BETWEEN 2010 AND 2025`
-			)
+			.where(sql`${sightings.sightingDate} IS NOT NULL`)
 			.groupBy(sql`EXTRACT(year FROM ${sightings.sightingDate}::timestamp)`)
 			.orderBy(sql`EXTRACT(year FROM ${sightings.sightingDate}::timestamp)`);
 
@@ -53,10 +50,7 @@ export const load: PageServerLoad = async () => {
 				sightings: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
-			.where(
-				sql`${sightings.sightingDate} IS NOT NULL 
-					AND EXTRACT(year FROM ${sightings.sightingDate}::timestamp) BETWEEN 2015 AND 2024`
-			)
+			.where(sql`${sightings.sightingDate} IS NOT NULL`)
 			.groupBy(sql`EXTRACT(month FROM ${sightings.sightingDate}::timestamp)`)
 			.orderBy(sql`EXTRACT(month FROM ${sightings.sightingDate}::timestamp)`);
 
