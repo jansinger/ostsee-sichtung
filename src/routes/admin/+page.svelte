@@ -11,8 +11,14 @@
 	import { getEntryChannelOptions } from '$lib/report/formOptions/entryChannel';
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import type { FrontendSighting, PageData } from '$lib/types';
-	import { formatDate } from '$lib/utils/format/formatDate';
-	import { CloseOutline, EyeOutline, FilterOutline, TrashBinOutline, DownloadOutline } from 'flowbite-svelte-icons';
+	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
+	import {
+		CloseOutline,
+		DownloadOutline,
+		EyeOutline,
+		FilterOutline,
+		TrashBinOutline
+	} from 'flowbite-svelte-icons';
 
 	const logger = createLogger('SichtungenPage');
 
@@ -188,7 +194,7 @@
 			if (response.ok) {
 				const result = await response.json();
 				logger.info({ id, result }, 'Verifizierungsstatus erfolgreich geändert');
-				
+
 				// Lokalen State aktualisieren
 				const sightingIndex = sightings.findIndex((s) => s.id === id);
 				if (sightingIndex >= 0 && sightings[sightingIndex]) {
@@ -208,29 +214,29 @@
 
 <svelte:head>
 	<title>Sichtungen - Admin - Ostsee-Tiere</title>
-	<meta 
-		name="description" 
-		content="Admin-Dashboard zur Verwaltung aller Meerestier-Sichtungen. Überprüfung, Bearbeitung und Verwaltung der gemeldeten Sichtungen in der Ostsee." 
+	<meta
+		name="description"
+		content="Admin-Dashboard zur Verwaltung aller Meerestier-Sichtungen. Überprüfung, Bearbeitung und Verwaltung der gemeldeten Sichtungen in der Ostsee."
 	/>
-	<meta 
-		name="keywords" 
-		content="Admin, Dashboard, Sichtungen, Verwaltung, Meerestiere, Ostsee, Moderation" 
+	<meta
+		name="keywords"
+		content="Admin, Dashboard, Sichtungen, Verwaltung, Meerestiere, Ostsee, Moderation"
 	/>
-	
+
 	<!-- Open Graph -->
 	<meta property="og:title" content="Sichtungsverwaltung - Admin - Ostsee-Tiere" />
-	<meta 
-		property="og:description" 
-		content="Administrationsbereich zur Verwaltung und Überprüfung von Meerestier-Sichtungen" 
+	<meta
+		property="og:description"
+		content="Administrationsbereich zur Verwaltung und Überprüfung von Meerestier-Sichtungen"
 	/>
 	<meta property="og:type" content="website" />
-	
+
 	<!-- Twitter Card -->
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:title" content="Sichtungsverwaltung - Admin - Ostsee-Tiere" />
-	<meta 
-		name="twitter:description" 
-		content="Administrationsbereich zur Verwaltung und Überprüfung von Meerestier-Sichtungen" 
+	<meta
+		name="twitter:description"
+		content="Administrationsbereich zur Verwaltung und Überprüfung von Meerestier-Sichtungen"
 	/>
 </svelte:head>
 
@@ -424,8 +430,8 @@
 				{#each sightings as sighting (sighting.id)}
 					<tr class="hover:bg-base-200">
 						<td>{sighting.referenceId}</td>
-						<td>{formatDate(sighting.sightingDate)}</td>
-						<td>{formatDate(sighting.created)}</td>
+						<td>{formatLocalDateTime(sighting.sightingDate)}</td>
+						<td>{formatLocalDateTime(sighting.created)}</td>
 						<td
 							><a href="mailto:{sighting.email}" class="link link-primary link-hover"
 								>{sighting.email}</a

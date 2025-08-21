@@ -9,13 +9,13 @@
 	import Location from '$lib/report/components/sections/Location.svelte';
 	import OptionalSightingDetails from '$lib/report/components/sections/OptionalSightingDetails.svelte';
 	import type { FormContext } from '$lib/report/types';
-	import { formatDate } from '$lib/utils/format/formatDate';
 	import type { Readable, Writable } from 'svelte/store';
 	import BooleanStatus from './BooleanStatus.svelte';
 	// Note: mediaStore and onMount not needed for admin edit form
 	import { createLogger } from '$lib/logger';
 	import Media from '$lib/report/components/sections/Media.svelte';
 	import type { FrontendSighting } from '$lib/types';
+	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 
 	const logger = createLogger('AdminEditForm');
 
@@ -96,10 +96,10 @@
 				<!-- Technische Informationen -->
 				<div class="text-sm text-gray-600">
 					<p>Datensatz ID: {sighting.id}</p>
-					<p>Gemeldet: {formatDate(sighting.created)}</p>
+					<p>Gemeldet: {formatLocalDateTime(sighting.created)}</p>
 					<p>Geprüft: <BooleanStatus value={sighting.verified} /></p>
 					{#if sighting.approvedAt}
-						<p>Freigegeben am: {formatDate(sighting.approvedAt)}</p>
+						<p>Freigegeben am: {formatLocalDateTime(sighting.approvedAt)}</p>
 					{/if}
 				</div>
 			</div>
