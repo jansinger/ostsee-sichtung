@@ -264,7 +264,6 @@
 	}
 </script>
 
-/** eslint-disable @typescript-eslint/no-explicit-any */
 <div class="{containerClass} map-container-wrapper">
 	{#if showTitle}
 		<h1 class={titleClass}>

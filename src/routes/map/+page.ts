@@ -1,4 +1,5 @@
 import type { PageLoad } from './$types';
+export const ssr = false;
 
 export const load: PageLoad = async () => {
 	// Die Karte lädt Daten dynamisch über API
