@@ -73,8 +73,7 @@
 				// Only update if this is still the current request
 				if (coordinates === cacheKey) {
 					const errorMessage =
-						checkError instanceof Error ? checkError.message : 'Unknown error occurred';
-					console.error('Failed to check Baltic Sea location:', checkError);
+						checkError instanceof Error ? checkError.message : 'Ein Fehler ist aufgetreten.';
 					error = errorMessage;
 					isLoading = false;
 
@@ -100,47 +99,49 @@
 </script>
 
 <div class="min-h-[6rem]">
-	{#if browser && isLoading}
-		<!-- Loading state -->
-		<div class="alert mt-0 mb-4" transition:slide>
-			<span class="loading loading-spinner loading-sm"></span>
-			<span>Prüfe Position in der Ostsee...</span>
-		</div>
-	{:else if error}
-		<!-- Error state -->
-		<div class="alert alert-error mt-0 mb-4" transition:slide>
-			<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
-			<span>Fehler beim Prüfen der Position: {error}</span>
-		</div>
-	{:else if currentResult}
-		<!-- Result state -->
-		<div transition:slide>
-			{#if currentResult.inBaltic}
-				<!-- In Baltic Sea -->
-				<div class="alert alert-success mt-0 mb-4">
-					<Icon src={CircleCheck} class="h-6 w-6 shrink-0" />
-					<span>Die Koordinaten liegen innerhalb der Ostsee.</span>
-				</div>
-			{:else if currentResult.inChartArea}
-				<!-- Outside Baltic Sea (only show in browser) -->
-				<div class="alert alert-warning mt-0 mb-4">
-					<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
-					<span>
-						Die Koordinaten liegen scheinbar außerhalb der Ostsee. Bitte prüfen Sie die Position.
-						Bei Sichtungen von Land und küstennahen Sichtungen kann dieser Hinweis erscheinen, die
-						Daten werden trotzdem gespeichert.
-					</span>
-				</div>
-			{:else}
-				<!-- Invalid coordinates -->
-				<div class="alert alert-error mt-0 mb-4">
-					<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
-					<span
-						>Die Koordinaten liegen außerhalb des gültigen Bereichs oder sind ungültig. Bitte
-						überprüfen Sie die Eingabe.</span
-					>
-				</div>
-			{/if}
-		</div>
+	{#if coordinates}
+		{#if isLoading}
+			<!-- Loading state -->
+			<div class="alert mt-0 mb-4" transition:slide>
+				<span class="loading loading-spinner loading-sm"></span>
+				<span>Prüfe Position in der Ostsee...</span>
+			</div>
+		{:else if error}
+			<!-- Error state -->
+			<div class="alert alert-error mt-0 mb-4" transition:slide>
+				<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
+				<span>Fehler beim Prüfen der Position: {error}</span>
+			</div>
+		{:else if currentResult}
+			<!-- Result state -->
+			<div transition:slide>
+				{#if currentResult.inBaltic}
+					<!-- In Baltic Sea -->
+					<div class="alert alert-success mt-0 mb-4">
+						<Icon src={CircleCheck} class="h-6 w-6 shrink-0" />
+						<span>Die Koordinaten liegen innerhalb der Ostsee.</span>
+					</div>
+				{:else if currentResult.inChartArea}
+					<!-- Outside Baltic Sea (only show in browser) -->
+					<div class="alert alert-warning mt-0 mb-4">
+						<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
+						<span>
+							Die Koordinaten liegen scheinbar außerhalb der Ostsee. Bitte prüfen Sie die Position.
+							Bei Sichtungen von Land und küstennahen Sichtungen kann dieser Hinweis erscheinen, die
+							Daten werden trotzdem gespeichert.
+						</span>
+					</div>
+				{:else}
+					<!-- Invalid coordinates -->
+					<div class="alert alert-error mt-0 mb-4">
+						<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
+						<span
+							>Die Koordinaten liegen außerhalb des gültigen Bereichs oder sind ungültig. Bitte
+							überprüfen Sie die Eingabe.</span
+						>
+					</div>
+				{/if}
+			</div>
+		{/if}
 	{/if}
 </div>

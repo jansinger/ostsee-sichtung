@@ -28,11 +28,3 @@
 	</ul>
 </div>
 
-<style>
-	.step-button {
-		background: none;
-		border: none;
-		padding: 0;
-		margin: 0;
-	}
-</style>

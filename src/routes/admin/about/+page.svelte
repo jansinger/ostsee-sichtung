@@ -26,7 +26,7 @@
 	/>
 </svelte:head>
 
-<div class="mx-auto max-w-6xl">
+<div class="mx-auto max-w-6xl pt-6">
 	<!-- Header -->
 	<div class="mb-8">
 		<h1 class="mb-4 text-4xl font-bold">🏛️ Plattform-Übersicht</h1>

@@ -122,7 +122,7 @@
 	/>
 </svelte:head>
 
-<div class="space-y-8">
+<div class="space-y-8 pt-6">
 	<!-- Header -->
 	<div class="flex items-center justify-between">
 		<div>
