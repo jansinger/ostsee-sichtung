@@ -32,83 +32,123 @@
 	/>
 </svelte:head>
 
-<div class="mx-auto max-w-6xl p-6">
+<div class="mx-auto max-w-5xl p-6">
 	<!-- Hero Section -->
-	<div class="mb-12 text-center">
-		<div class="flex flex-1 justify-center">
+	<div class="mb-16 text-center">
+		<div class="mb-8 flex flex-1 justify-center">
 			<OstseeTiereLogo size="lg" showText={true} />
 		</div>
 
-		<h1 class="text-primary mb-6 text-5xl font-bold">Über Ostsee-Tiere</h1>
-		<p class="mx-auto max-w-3xl text-xl leading-relaxed text-gray-600">
-			Die Ostsee-Tiere Plattform ermöglicht es Bürgern, Forschern und Naturbeobachtern, ihre
-			Sichtungen von Walen, Robben und anderen Meerestieren zu melden und so wertvolle Daten für die
-			Meeresforschung und den Naturschutz beizutragen.
-		</p>
+		<h1 class="text-primary mb-8 text-6xl font-bold tracking-tight">Über Ostsee-Tiere</h1>
+		<div class="mx-auto max-w-4xl">
+			<p class="text-base-content/80 mb-6 text-2xl leading-relaxed">
+				Die Ostsee-Tiere Plattform ermöglicht es <strong class="text-primary"
+					>Bürgern, Forschern und Naturbeobachtern</strong
+				>, ihre Sichtungen von Walen, Robben und anderen Meerestieren zu melden.
+			</p>
+			<p class="text-base-content/70 text-lg">
+				Gemeinsam schaffen wir wertvolle Daten für die <em>Meeresforschung und den Naturschutz</em>.
+			</p>
+		</div>
 	</div>
 
 	<!-- Mission Section -->
-	<div class="mb-16">
-		<div class="grid items-center gap-8 md:grid-cols-2">
+	<div class="mb-20">
+		<div class="grid items-center gap-12 md:grid-cols-2">
 			<div>
-				<h2 class="mb-4 text-3xl font-bold">🎯 Unsere Mission</h2>
-				<p class="mb-4 leading-relaxed text-gray-700">
-					Wir glauben, dass jeder einen Beitrag zum Schutz der Meeresumwelt leisten kann. Durch das
-					Sammeln und Teilen von Sichtungsdaten schaffen wir eine umfassende Wissensbasis über die
-					Meerestiere der Ostsee.
-				</p>
-				<p class="leading-relaxed text-gray-700">
-					Ihre Beobachtungen helfen Wissenschaftlern dabei, Wanderungsmuster zu verstehen,
-					Populationen zu überwachen und Schutzmaßnahmen zu entwickeln.
-				</p>
+				<h2 class="text-primary mb-6 text-4xl font-bold">🎯 Unsere Mission</h2>
+				<div class="space-y-4">
+					<p class="text-base-content/80 text-lg leading-relaxed">
+						Wir glauben, dass <strong>jeder einen Beitrag</strong> zum Schutz der Meeresumwelt leisten
+						kann. Durch das Sammeln und Teilen von Sichtungsdaten schaffen wir eine umfassende Wissensbasis
+						über die Meerestiere der Ostsee.
+					</p>
+					<div class="border-primary/30 bg-primary/5 rounded-r-lg border-l-4 px-6 py-3 pl-4">
+						<p class="text-base-content text-base leading-relaxed font-medium">
+							Ihre Beobachtungen helfen Wissenschaftlern dabei, <em
+								>Wanderungsmuster zu verstehen</em
+							>, Populationen zu überwachen und <em>Schutzmaßnahmen zu entwickeln</em>.
+						</p>
+					</div>
+				</div>
 			</div>
-			<div class="rounded-lg bg-gradient-to-br from-blue-50 via-cyan-50 to-teal-50 p-8">
-				<div class="text-center">
-					<div class="mb-4 text-4xl">🔬</div>
-					<h3 class="mb-2 text-xl font-semibold">Citizen Science</h3>
-					<p class="text-gray-600">
-						Bürgerwissenschaft macht jeden zum Forscher und trägt zu wichtigen wissenschaftlichen
+			<div
+				class="card from-primary/5 via-secondary/5 to-accent/5 border-primary/20 bg-gradient-to-br shadow-xl"
+			>
+				<div class="card-body p-10 text-center">
+					<div class="mb-6 text-6xl opacity-80">🔬</div>
+					<h3 class="text-primary mb-4 text-2xl font-bold">Citizen Science</h3>
+					<p class="text-base-content/70 text-lg leading-relaxed">
+						Bürgerwissenschaft macht <strong>jeden zum Forscher</strong> und trägt zu wichtigen wissenschaftlichen
 						Erkenntnissen bei.
 					</p>
+					<div class="stats stats-vertical mt-6 shadow-sm">
+						<div class="stat">
+							<div class="stat-title text-xs">Seit</div>
+							<div class="stat-value text-primary text-2xl">2011</div>
+							<div class="stat-desc">aktiv</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 
 	<!-- Features Section -->
-	<div class="mb-16">
-		<h2 class="mb-8 text-center text-3xl font-bold">🚀 Unsere Plattform</h2>
-		<div class="grid gap-6 md:grid-cols-3">
-			<div class="card bg-base-100 shadow-xl">
-				<div class="card-body text-center">
-					<div class="mb-4 text-3xl">📝</div>
-					<h3 class="card-title justify-center">Einfaches Melden</h3>
-					<p class="text-sm text-gray-600">
-						Intuitive Formulare führen Sie Schritt für Schritt durch die Erfassung Ihrer Sichtung
-						mit GPS-genauer Lokalisierung.
+	<div class="mb-20">
+		<div class="mb-12 text-center">
+			<h2 class="text-primary mb-4 text-4xl font-bold">🚀 Unsere Plattform</h2>
+			<p class="text-base-content/70 mx-auto max-w-2xl text-lg">
+				Modernste Technologie für einfache Bedienung und maximale wissenschaftliche Relevanz
+			</p>
+		</div>
+
+		<div class="grid gap-8 md:grid-cols-3">
+			<div class="card bg-base-100 group shadow-xl transition-all duration-300 hover:shadow-2xl">
+				<div class="card-body p-8 text-center">
+					<div class="mb-6 text-5xl transition-transform duration-300 group-hover:scale-110">
+						📝
+					</div>
+					<h3 class="card-title text-primary mb-4 justify-center text-xl">Einfaches Melden</h3>
+					<p class="text-base-content/80 text-base leading-relaxed">
+						<strong>Intuitive Formulare</strong> führen Sie Schritt für Schritt durch die Erfassung
+						Ihrer Sichtung mit <em>GPS-genauer Lokalisierung</em>.
 					</p>
+					<div class="mt-4">
+						<div class="badge badge-primary badge-outline">GPS-Integration</div>
+					</div>
 				</div>
 			</div>
 
-			<div class="card bg-base-100 shadow-xl">
-				<div class="card-body text-center">
-					<div class="mb-4 text-3xl">🗺️</div>
-					<h3 class="card-title justify-center">Interaktive Karte</h3>
-					<p class="text-sm text-gray-600">
-						Visualisieren Sie alle Sichtungen auf einer detaillierten Karte der Ostsee und entdecken
-						Sie Muster und Hotspots.
+			<div class="card bg-base-100 group shadow-xl transition-all duration-300 hover:shadow-2xl">
+				<div class="card-body p-8 text-center">
+					<div class="mb-6 text-5xl transition-transform duration-300 group-hover:scale-110">
+						🗺️
+					</div>
+					<h3 class="card-title text-secondary mb-4 justify-center text-xl">Interaktive Karte</h3>
+					<p class="text-base-content/80 text-base leading-relaxed">
+						Visualisieren Sie <strong>alle Sichtungen</strong> auf einer detaillierten Karte der
+						Ostsee und entdecken Sie <em>Muster und Hotspots</em>.
 					</p>
+					<div class="mt-4">
+						<div class="badge badge-secondary badge-outline">OpenLayers</div>
+					</div>
 				</div>
 			</div>
 
-			<div class="card bg-base-100 shadow-xl">
-				<div class="card-body text-center">
-					<div class="mb-4 text-3xl">📊</div>
-					<h3 class="card-title justify-center">Offene Daten</h3>
-					<p class="text-sm text-gray-600">
-						Alle Daten sind für Forschungszwecke verfügbar und können in verschiedenen Formaten
-						exportiert werden.
+			<div class="card bg-base-100 group shadow-xl transition-all duration-300 hover:shadow-2xl">
+				<div class="card-body p-8 text-center">
+					<div class="mb-6 text-5xl transition-transform duration-300 group-hover:scale-110">
+						📊
+					</div>
+					<h3 class="card-title text-accent mb-4 justify-center text-xl">Offene Daten</h3>
+					<p class="text-base-content/80 text-base leading-relaxed">
+						Alle Daten sind für <strong>Forschungszwecke verfügbar</strong> und können in
+						verschiedenen Formaten <em>exportiert</em> werden.
 					</p>
+					<div class="mt-4">
+						<div class="badge badge-accent badge-outline">Open Data</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -520,16 +560,65 @@ SOFTWARE.</pre>
 	</div>
 
 	<!-- Call to Action -->
-	<div class="bg-primary/5 border-primary/10 rounded-lg border p-8 text-center">
-		<h2 class="mb-4 text-3xl font-bold">🌊 Werden Sie Teil der Bewegung</h2>
-		<p class="mx-auto mb-6 max-w-2xl text-gray-700">
-			Jede Sichtung zählt! Helfen Sie uns dabei, die Geheimnisse der Ostsee zu entschlüsseln und
-			ihre einzigartigen Bewohner zu schützen.
-		</p>
-		<div class="flex flex-wrap justify-center gap-4">
-			<a href="/" class="btn btn-primary btn-lg"> 🐋 Sichtung melden </a>
-			<a href="/map" class="btn btn-outline btn-lg"> 🗺️ Karte erkunden </a>
-			<a href="/docs" class="btn btn-ghost btn-lg"> 📚 Mehr erfahren </a>
+	<div
+		class="hero from-primary/10 via-secondary/10 to-accent/10 border-primary/20 rounded-2xl border-2 bg-gradient-to-br p-12"
+	>
+		<div class="hero-content text-center">
+			<div class="max-w-4xl">
+				<div class="mb-8">
+					<div class="avatar mb-6">
+						<div class="w-32 rounded-full ring ring-primary ring-offset-base-100 ring-offset-4 shadow-xl bg-gradient-to-br from-primary/10 to-secondary/10">
+							<OstseeTiereLogo size="lg" showText={false} />
+						</div>
+					</div>
+					<h2 class="text-primary mb-6 text-5xl font-bold tracking-tight">
+						Werden Sie Teil der Bewegung
+					</h2>
+					<p class="text-base-content/80 mb-8 text-xl leading-relaxed">
+						<strong>Jede Sichtung zählt!</strong> Helfen Sie uns dabei, die Geheimnisse der Ostsee
+						zu entschlüsseln und ihre <em>einzigartigen Bewohner</em> zu schützen.
+					</p>
+				</div>
+
+				<div class="stats bg-base-100/50 mb-8 shadow-xl">
+					<div class="stat">
+						<div class="stat-title">Bereits erfasst</div>
+						<div class="stat-value text-primary">1.800+</div>
+						<div class="stat-desc">Sichtungen</div>
+					</div>
+					<div class="stat">
+						<div class="stat-title">Aktive</div>
+						<div class="stat-value text-secondary">500+</div>
+						<div class="stat-desc">Beobachter</div>
+					</div>
+					<div class="stat">
+						<div class="stat-title">Für die</div>
+						<div class="stat-value text-accent">Wissenschaft</div>
+						<div class="stat-desc">verfügbar</div>
+					</div>
+				</div>
+
+				<div class="flex flex-wrap justify-center gap-6">
+					<a
+						href="/"
+						class="btn btn-primary btn-lg px-8 py-4 text-lg shadow-lg transition-all duration-300 hover:shadow-xl"
+					>
+						🐋 Sichtung melden
+					</a>
+					<a
+						href="/map"
+						class="btn btn-secondary btn-outline btn-lg px-8 py-4 text-lg shadow-lg transition-all duration-300 hover:shadow-xl"
+					>
+						🗺️ Karte erkunden
+					</a>
+					<a
+						href="/docs"
+						class="btn btn-accent btn-outline btn-lg px-8 py-4 text-lg shadow-lg transition-all duration-300 hover:shadow-xl"
+					>
+						📚 Mehr erfahren
+					</a>
+				</div>
+			</div>
 		</div>
 	</div>
 

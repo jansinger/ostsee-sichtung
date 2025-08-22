@@ -31,14 +31,16 @@
 </svelte:head>
 
 <!-- Admin-spezifische API-Dokumentation -->
-<ApiDocumentation
-	title="Admin API-Dokumentation"
-	description="Umfassende OpenAPI-Dokumentation für Administratoren. Hier finden Sie alle verfügbaren Endpunkte, Schemas und können die API direkt testen. Als angemeldeter Admin haben Sie Zugriff auf erweiterte Funktionen wie Sichtungsverwaltung, Datenexport und Benutzerstatistiken."
-	showQuickStart={true}
-	showDownloadButton={true}
-	showNavButtons={true}
-	containerClass="mx-auto max-w-full"
-/>
+<div class="pt-6">
+	<ApiDocumentation
+		title="Admin API-Dokumentation"
+		description="Umfassende OpenAPI-Dokumentation für Administratoren. Hier finden Sie alle verfügbaren Endpunkte, Schemas und können die API direkt testen. Als angemeldeter Admin haben Sie Zugriff auf erweiterte Funktionen wie Sichtungsverwaltung, Datenexport und Benutzerstatistiken."
+		showQuickStart={true}
+		showDownloadButton={true}
+		showNavButtons={true}
+		containerClass="mx-auto max-w-full"
+	/>
+</div>
 
 <!-- Admin-spezifische Ergänzungen -->
 <div class="mx-auto mt-8 max-w-full">

@@ -240,8 +240,9 @@
 	/>
 </svelte:head>
 
-<div class="container mx-auto p-4">
-	<div class="mb-4 flex items-center justify-between">
+<div class="mx-auto pt-6">
+	<!-- Page Header -->
+	<div class="mb-6 flex items-center justify-between">
 		<h1 class="text-2xl font-bold">Sichtungen</h1>
 		<div class="flex items-center gap-2">
 			<button
@@ -274,6 +275,7 @@
 		</div>
 	</div>
 
+	<!-- Filter Panel -->
 	{#if isFilterPanelOpen}
 		<div class="bg-base-200 mb-4 rounded-lg p-3 shadow-sm transition-all duration-300">
 			<div class="mb-2 flex items-center justify-between">

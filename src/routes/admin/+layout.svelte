@@ -11,8 +11,8 @@
 </script>
 
 <div class="flex min-h-screen flex-col">
-	<!-- Navbar -->
-	<header class="bg-base-200 shadow-md">
+	<!-- Fixed Navbar for Admin -->
+	<header class="bg-base-200 shadow-md sticky top-0 z-50 backdrop-blur-lg bg-opacity-95">
 		<div class="container mx-auto">
 			<div class="navbar">
 				<div class="navbar-start">
@@ -141,11 +141,11 @@
 		</div>
 	</header>
 
-	<!-- Page content -->
+	<!-- Page content with top padding for fixed navbar -->
 	<main
 		class={$page.url.pathname.includes('/admin/map')
-			? 'flex-grow'
-			: 'container mx-auto flex-grow p-6'}
+			? 'flex-grow pt-8'
+			: 'container mx-auto flex-grow p-6 pt-12'}
 	>
 		{@render children()}
 	</main>

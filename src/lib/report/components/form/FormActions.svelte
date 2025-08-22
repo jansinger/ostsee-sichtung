@@ -2,6 +2,8 @@
 	import { getFormContext } from '$lib/report/formContext';
 	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
 	import { createToast } from '$lib/stores/toastStore';
+	import { Trash2 } from '@steeze-ui/lucide-icons';
+	import { Icon } from '@steeze-ui/svelte-icon';
 
 	let {
 		onCancel = () => {},
@@ -12,7 +14,7 @@
 	} = $props();
 
 	const { isSubmitting } = getFormContext();
-	
+
 	// Check if user has saved contact data
 	const hasSavedContactData = $derived(() => {
 		const contactData = loadUserContactData();
@@ -20,7 +22,11 @@
 	});
 
 	function clearContactData() {
-		if (confirm('Möchten Sie wirklich alle gespeicherten Kontaktdaten löschen? Diese müssen dann bei der nächsten Sichtung erneut eingegeben werden.')) {
+		if (
+			confirm(
+				'Möchten Sie wirklich alle gespeicherten Kontaktdaten löschen? Diese müssen dann bei der nächsten Sichtung erneut eingegeben werden.'
+			)
+		) {
 			clearAllStorage();
 			createToast('success', 'Gespeicherte Kontaktdaten wurden gelöscht');
 			// Reload the page to reset the form with empty contact data
@@ -36,16 +42,16 @@
 		<button type="button" class="btn btn-outline btn-sm" onclick={onReset} disabled={$isSubmitting}>
 			Formular zurücksetzen
 		</button>
-		
+
 		{#if hasSavedContactData()}
-			<button 
-				type="button" 
-				class="btn btn-warning btn-sm" 
-				onclick={clearContactData} 
+			<button
+				type="button"
+				class="btn btn-warning btn-sm"
+				onclick={clearContactData}
 				disabled={$isSubmitting}
 				title="Löscht gespeicherte Kontaktdaten permanent"
 			>
-				🗑️ Kontaktdaten löschen
+				<Icon src={Trash2} size="14" /> Kontaktdaten löschen
 			</button>
 		{/if}
 	</div>

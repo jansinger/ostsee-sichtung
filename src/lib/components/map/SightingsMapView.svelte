@@ -19,7 +19,7 @@
 		title = 'Sichtungskarte',
 		showLogo = true,
 		containerClass = 'relative h-screen w-screen overflow-hidden',
-		titleClass = 'bg-opacity-50 text-1xl absolute top-2 left-2 z-30 rounded bg-gray-500 px-2 py-1 font-bold text-white'
+		titleClass = 'bg-gradient-to-r from-primary to-secondary text-white text-sm absolute top-3 left-3 z-30 rounded-lg px-3 py-1.5 font-bold shadow-xl backdrop-blur-md flex items-center gap-2'
 	} = $props<{
 		mapContainerId?: string;
 		showTitle?: boolean;
@@ -267,7 +267,8 @@
 <div class="{containerClass} map-container-wrapper">
 	{#if showTitle}
 		<h1 class={titleClass}>
-			{title}
+			<span class="text-lg">🗺️</span>
+			<span>{title}</span>
 		</h1>
 	{/if}
 
@@ -349,14 +350,20 @@
 
 	<!-- Logo (unten rechts) - optional -->
 	{#if showLogo}
-		<div class="absolute right-0 bottom-4 z-30 rounded p-2">
-			<img
-				src="/dmm-logo.png"
-				alt="Logo des Deutschen Meeresmuseums - wissenschaftliche Einrichtung für Meeresforschung und Meeresschutz"
-				class="bg-opacity-95 h-20 rounded bg-white p-0 shadow-md"
-				id="dmm"
-				title="Deutsches Meeresmuseum"
-			/>
+		<div class="group absolute right-1 bottom-6 z-30">
+			<div
+				class="border-primary/10 rounded-xl border bg-white/95 p-1 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+			>
+				<div class="flex flex-col items-center">
+					<img
+						src="/dmm-logo.png"
+						alt="Logo des Deutschen Meeresmuseums - wissenschaftliche Einrichtung für Meeresforschung und Meeresschutz"
+						class="h-12 w-auto"
+						id="dmm"
+						title="Deutsches Meeresmuseum"
+					/>
+				</div>
+			</div>
 		</div>
 	{/if}
 

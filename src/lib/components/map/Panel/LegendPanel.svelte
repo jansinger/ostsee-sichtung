@@ -72,7 +72,7 @@
 <!-- Toggle Button (always visible) -->
 <button
 	onclick={togglePanel}
-	class="bg-secondary text-secondary-content hover:bg-secondary-focus fixed top-52 right-0 z-50 flex h-32 w-8 cursor-pointer flex-col items-center justify-center rounded-l-lg shadow-lg transition-transform duration-300 sm:w-12 md:w-8"
+	class="bg-base-100 text-base-content hover:bg-base-200 fixed top-52 right-0 z-50 flex h-32 w-8 cursor-pointer flex-col items-center justify-center rounded-l-lg shadow-xl border-2 border-secondary/20 border-r-0 backdrop-blur-sm transition-all duration-300 sm:w-12 md:w-8"
 	style="transform: translateX({isOpen ? '-360px' : '0px'});"
 	aria-label="Legende {isOpen ? 'schließen' : 'öffnen'}"
 >
@@ -87,7 +87,7 @@
 
 <!-- Panel Container -->
 <div
-	class="bg-base-100 fixed top-0 right-0 z-40 h-full w-90 overflow-hidden pr-8 shadow-2xl transition-transform duration-300 ease-in-out"
+	class="bg-base-100 border-l-2 border-secondary/20 fixed top-0 right-0 z-40 h-full w-90 overflow-hidden pr-8 shadow-2xl backdrop-blur-sm transition-transform duration-300 ease-in-out"
 	style="transform: translateX({isOpen ? '0px' : '100%'});"
 	role="dialog"
 	aria-modal="true"
