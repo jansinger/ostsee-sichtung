@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.20.0 (2025-08-22)
+
+* Merge pull request #70 from jansinger/style/meeresmuseum ([336df12](https://github.com/jansinger/ostsee-sichtung/commit/336df12)), closes [#70](https://github.com/jansinger/ostsee-sichtung/issues/70)
+* feat: Enhance form actions with icon and improve user prompts ([ab6dd9d](https://github.com/jansinger/ostsee-sichtung/commit/ab6dd9d))
+
 ## 1.19.0 (2025-08-21)
 
 * Merge pull request #69 from jansinger/fix/improve-footer ([84de741](https://github.com/jansinger/ostsee-sichtung/commit/84de741)), closes [#69](https://github.com/jansinger/ostsee-sichtung/issues/69)
