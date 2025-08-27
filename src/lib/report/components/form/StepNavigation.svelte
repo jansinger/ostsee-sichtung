@@ -20,7 +20,7 @@
 	} = $props();
 
 	const formContext = getFormContext();
-	const { isSubmitting, form, errors, isValid } = formContext;
+	const { isSubmitting, form, errors } = formContext;
 
 	// Get field orders from form configuration
 	const stepFieldOrders = formStepsConfig.map((step) => step.fields);
