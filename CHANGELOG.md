@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.20.1 (2025-08-27)</small>
+
+* Merge pull request #71 from jansinger/dependabot/npm_and_yarn/typescript-eslint-8.40.0 ([1198adf](https://github.com/jansinger/ostsee-sichtung/commit/1198adf)), closes [#71](https://github.com/jansinger/ostsee-sichtung/issues/71)
+* Merge pull request #72 from jansinger/dependabot/npm_and_yarn/scalar/sveltekit-0.1.19 ([ccad425](https://github.com/jansinger/ostsee-sichtung/commit/ccad425)), closes [#72](https://github.com/jansinger/ostsee-sichtung/issues/72)
+* Merge pull request #73 from jansinger/dependabot/npm_and_yarn/eslint-9.34.0 ([6e179d1](https://github.com/jansinger/ostsee-sichtung/commit/6e179d1)), closes [#73](https://github.com/jansinger/ostsee-sichtung/issues/73)
+* Merge pull request #74 from jansinger/dependabot/npm_and_yarn/eslint/js-9.34.0 ([2527a9c](https://github.com/jansinger/ostsee-sichtung/commit/2527a9c)), closes [#74](https://github.com/jansinger/ostsee-sichtung/issues/74)
+* Merge pull request #77 from jansinger/dependabot/npm_and_yarn/rollup/rollup-linux-x64-gnu-4.48.1 ([38d16d5](https://github.com/jansinger/ostsee-sichtung/commit/38d16d5)), closes [#77](https://github.com/jansinger/ostsee-sichtung/issues/77)
+* Merge pull request #79 from jansinger/dependabot/npm_and_yarn/types/node-22.18.0 ([f97f97a](https://github.com/jansinger/ostsee-sichtung/commit/f97f97a)), closes [#79](https://github.com/jansinger/ostsee-sichtung/issues/79)
+* Merge pull request #80 from jansinger/dependabot/npm_and_yarn/sveltejs/vite-plugin-svelte-6.1.3 ([5da3e05](https://github.com/jansinger/ostsee-sichtung/commit/5da3e05)), closes [#80](https://github.com/jansinger/ostsee-sichtung/issues/80)
+* Merge pull request #81 from jansinger/style/meeresmuseum ([8868759](https://github.com/jansinger/ostsee-sichtung/commit/8868759)), closes [#81](https://github.com/jansinger/ostsee-sichtung/issues/81)
+* refactor: Refactor and clean up various components and routes ([6c2814b](https://github.com/jansinger/ostsee-sichtung/commit/6c2814b))
+* build(deps-dev): bump @eslint/js from 9.33.0 to 9.34.0 ([bcf53a2](https://github.com/jansinger/ostsee-sichtung/commit/bcf53a2))
+* build(deps-dev): bump @scalar/sveltekit from 0.1.17 to 0.1.19 ([72d7e4e](https://github.com/jansinger/ostsee-sichtung/commit/72d7e4e))
+* build(deps-dev): bump @sveltejs/vite-plugin-svelte from 6.1.2 to 6.1.3 ([771ada9](https://github.com/jansinger/ostsee-sichtung/commit/771ada9))
+* build(deps-dev): bump @types/node from 22.17.2 to 22.18.0 ([112ff13](https://github.com/jansinger/ostsee-sichtung/commit/112ff13))
+* build(deps-dev): bump eslint from 9.33.0 to 9.34.0 ([b980c81](https://github.com/jansinger/ostsee-sichtung/commit/b980c81))
+* build(deps-dev): bump typescript-eslint from 8.39.1 to 8.40.0 ([45dd493](https://github.com/jansinger/ostsee-sichtung/commit/45dd493))
+* build(deps): bump @rollup/rollup-linux-x64-gnu from 4.46.3 to 4.48.1 ([f61f45a](https://github.com/jansinger/ostsee-sichtung/commit/f61f45a))
+
 ## 1.20.0 (2025-08-22)
 
 * Merge pull request #70 from jansinger/style/meeresmuseum ([336df12](https://github.com/jansinger/ostsee-sichtung/commit/336df12)), closes [#70](https://github.com/jansinger/ostsee-sichtung/issues/70)
