@@ -35,31 +35,54 @@
 	}
 </script>
 
-<!-- Form Actions -->
-<div class="mt-8 flex flex-col items-center justify-between gap-4 sm:flex-row">
-	<!-- Help and Reset -->
-	<div class="flex flex-col items-center gap-4 sm:flex-row">
-		<button type="button" class="btn btn-outline btn-sm" onclick={onReset} disabled={$isSubmitting}>
-			Formular zurücksetzen
-		</button>
-
-		{#if hasSavedContactData()}
+<!-- Form Actions - 3 Column Layout -->
+<div class="mx-auto mt-8">
+	<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+		<!-- Left Column: Reset -->
+		<div class="flex justify-center sm:justify-start">
 			<button
 				type="button"
-				class="btn btn-warning btn-sm"
-				onclick={clearContactData}
+				class="btn btn-outline btn-sm w-full sm:w-auto"
+				onclick={onReset}
 				disabled={$isSubmitting}
-				title="Löscht gespeicherte Kontaktdaten permanent"
 			>
-				<Icon src={Trash2} size="14" /> Kontaktdaten löschen
+				Formular zurücksetzen
 			</button>
-		{/if}
-	</div>
+		</div>
 
-	<!-- Cancel Button -->
-	{#if onCancel}
-		<button type="button" class="btn btn-ghost" onclick={onCancel} disabled={$isSubmitting}>
-			Abbrechen
-		</button>
-	{/if}
+		<!-- Middle Column: Clear Contact Data or Empty -->
+		<div class="flex justify-center">
+			{#if hasSavedContactData()}
+				<button
+					type="button"
+					class="btn btn-warning btn-sm w-full sm:w-auto"
+					onclick={clearContactData}
+					disabled={$isSubmitting}
+					title="Löscht gespeicherte Kontaktdaten permanent"
+				>
+					<Icon src={Trash2} size="14" /> Kontaktdaten löschen
+				</button>
+			{:else}
+				<!-- Empty space to maintain grid layout -->
+				<div></div>
+			{/if}
+		</div>
+
+		<!-- Right Column: Cancel or Empty -->
+		<div class="flex justify-center sm:justify-end">
+			{#if onCancel}
+				<button
+					type="button"
+					class="btn btn-ghost w-full sm:w-auto"
+					onclick={onCancel}
+					disabled={$isSubmitting}
+				>
+					Abbrechen
+				</button>
+			{:else}
+				<!-- Empty space to maintain grid layout -->
+				<div></div>
+			{/if}
+		</div>
+	</div>
 </div>
