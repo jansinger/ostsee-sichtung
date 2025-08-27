@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.22.0 (2025-08-27)
+
+* Merge pull request #88 from jansinger/fix/cleanup-iframe ([86b80c2](https://github.com/jansinger/ostsee-sichtung/commit/86b80c2)), closes [#88](https://github.com/jansinger/ostsee-sichtung/issues/88)
+* feat: add enhanced help text component for sighting report form ([e86dcb3](https://github.com/jansinger/ostsee-sichtung/commit/e86dcb3))
+* feat: improve Dependabot PR merging process with conflict handling and summary reporting ([307d949](https://github.com/jansinger/ostsee-sichtung/commit/307d949))
+* style: adjust label height for position method selection ([4f58634](https://github.com/jansinger/ostsee-sichtung/commit/4f58634))
+* chore: remove unused isValid variable from form context ([2ff199b](https://github.com/jansinger/ostsee-sichtung/commit/2ff199b))
+
 ## 1.21.0 (2025-08-27)
 
 * Merge pull request #84 from jansinger/fix/alert-autofix-1 ([bb85608](https://github.com/jansinger/ostsee-sichtung/commit/bb85608)), closes [#84](https://github.com/jansinger/ostsee-sichtung/issues/84)
