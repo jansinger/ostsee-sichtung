@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.21.0 (2025-08-27)
+
+* Merge pull request #84 from jansinger/fix/alert-autofix-1 ([bb85608](https://github.com/jansinger/ostsee-sichtung/commit/bb85608)), closes [#84](https://github.com/jansinger/ostsee-sichtung/issues/84)
+* Merge pull request #85 from jansinger/cleanup/remove-example-iframe-test ([8bf85e8](https://github.com/jansinger/ostsee-sichtung/commit/8bf85e8)), closes [#85](https://github.com/jansinger/ostsee-sichtung/issues/85)
+* Merge pull request #86 from jansinger/fix/cleanup-iframe ([3c9c3a9](https://github.com/jansinger/ostsee-sichtung/commit/3c9c3a9)), closes [#86](https://github.com/jansinger/ostsee-sichtung/issues/86)
+* Merge pull request #87 from jansinger/fix/dependabot-conflict-handling ([d5f7f6f](https://github.com/jansinger/ostsee-sichtung/commit/d5f7f6f)), closes [#87](https://github.com/jansinger/ostsee-sichtung/issues/87)
+* Potential fix for code scanning alert no. 1: Workflow does not contain permissions ([c364d0b](https://github.com/jansinger/ostsee-sichtung/commit/c364d0b))
+* feat: improve Dependabot PR merging process with conflict handling and summary reporting ([fefba8d](https://github.com/jansinger/ostsee-sichtung/commit/fefba8d))
+* chore: remove obsolete example-iframe-test.html file ([5f6fade](https://github.com/jansinger/ostsee-sichtung/commit/5f6fade))
+* chore: remove obsolete iframe functionality and improve button styles ([0790e7d](https://github.com/jansinger/ostsee-sichtung/commit/0790e7d))
+
 ## <small>1.20.2 (2025-08-27)</small>
 
 * Merge pull request #75 from jansinger/dependabot/npm_and_yarn/vite-7.1.3 ([0df6051](https://github.com/jansinger/ostsee-sichtung/commit/0df6051)), closes [#75](https://github.com/jansinger/ostsee-sichtung/issues/75)
