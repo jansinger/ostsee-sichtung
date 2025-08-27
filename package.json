@@ -120,7 +120,7 @@
 		"yup": "^1.6.1"
 	},
 	"optionalDependencies": {
-		"@rollup/rollup-linux-x64-gnu": "4.46.3"
+		"@rollup/rollup-linux-x64-gnu": "4.48.1"
 	},
 	"overrides": {
 		"cookie": "^0.7.2",
