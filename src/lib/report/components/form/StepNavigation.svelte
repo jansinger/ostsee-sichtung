@@ -142,7 +142,7 @@
 	<button
 		type="button"
 		onclick={nextStep}
-		disabled={$isSubmitting}
+		disabled={$isSubmitting || !canGoNext}
 		class="btn btn-primary"
 		class:loading={$isSubmitting}
 		aria-label={isLastStep ? 'Formular absenden' : 'Nächster Schritt'}
