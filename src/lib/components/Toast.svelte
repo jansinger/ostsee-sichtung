@@ -34,10 +34,10 @@
 	};
 
 	const alertClasses = {
-		success: 'alert-success',
-		error: 'alert-error',
-		warning: 'alert-warning',
-		info: 'alert-info'
+		success: 'alert alert-success',
+		error: 'alert alert-error', 
+		warning: 'alert alert-warning',
+		info: 'alert alert-info'
 	};
 
 	function dismiss() {
@@ -62,13 +62,13 @@
 </script>
 
 {#if visible}
-	<div class="alert {alertClasses[type]} mb-4 shadow-lg" role="alert" aria-live="polite">
+	<div class="{alertClasses[type]} mb-4 shadow-lg" role="alert" aria-live="polite">
 		<Icon src={iconMap[type]} size="20" />
 		<div class="flex-1">
 			{#if title}
-				<h3 class="text-sm font-bold">{title}</h3>
+				<h3 class="font-bold">{title}</h3>
 			{/if}
-			<div class="text-sm">{message}</div>
+			<div>{message}</div>
 		</div>
 
 		{#if dismissible}

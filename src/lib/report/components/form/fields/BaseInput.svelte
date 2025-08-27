@@ -39,14 +39,13 @@
 		hasOptions ? `${restProps.id || restProps.name || ''}-datalist` : undefined
 	);
 
-	// Dynamic CSS classes
+	// Dynamic CSS classes - using pure DaisyUI
 	let inputClasses = $derived.by(() => {
-		const base = 'input input-bordered w-full transition-all duration-200';
+		const base = 'input input-bordered w-full';
 		const stateClass = hasError ? 'input-error' : isValid ? 'input-success' : '';
 		const sizeClass = size === 'sm' ? 'input-sm' : size === 'lg' ? 'input-lg' : '';
-		const focusClass = 'focus:ring-2 focus:ring-primary/20 focus:border-primary';
 		const iconPadding = icon !== undefined ? 'pl-10' : '';
-		return [base, stateClass, sizeClass, focusClass, iconPadding].filter(Boolean).join(' ');
+		return [base, stateClass, sizeClass, iconPadding].filter(Boolean).join(' ');
 	});
 
 	// Enhanced placeholder text

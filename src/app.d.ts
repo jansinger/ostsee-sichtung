@@ -11,6 +11,7 @@ declare global {
 		interface Locals {
 			user?: User;
 			cspNonce?: string;
+			isAdmin?: boolean;
 		}
 		// interface PageData {}
 		// interface PageState {}

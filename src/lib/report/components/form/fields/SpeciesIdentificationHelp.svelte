@@ -328,8 +328,8 @@
 		aria-controls="species-help-content"
 	>
 		<Icon src={isExpanded ? ChevronDown : ChevronRight} size="16" />
-		<Icon src={CircleHelp} size="16" class="text-white" />
-		<span class="text-white" style="color: #fff!important;">Hilfe bei der Tiererkennung</span>
+		<Icon src={CircleHelp} size="16" class="text-black" />
+		<span class="text-black">Hilfe bei der Tiererkennung</span>
 	</button>
 
 	<!-- Expandable Content -->

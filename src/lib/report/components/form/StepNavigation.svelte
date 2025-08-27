@@ -53,7 +53,6 @@
 		}
 	}
 
-
 	async function previousStep(): Promise<void> {
 		try {
 			if (!isFirstStep) {
@@ -154,13 +153,3 @@
 		{isLastStep ? 'Absenden' : 'Weiter →'}
 	</button>
 </nav>
-
-<style>
-	.btn {
-		transition: all 0.2s ease;
-	}
-
-	.btn:hover:not(:disabled) {
-		transform: translateY(-1px);
-	}
-</style>

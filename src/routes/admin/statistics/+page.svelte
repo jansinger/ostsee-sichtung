@@ -121,12 +121,11 @@
 		content="Wissenschaftliche Statistiken und Auswertungen der Meerestier-Sichtungen"
 	/>
 </svelte:head>
-
 <div class="space-y-8 pt-6">
 	<!-- Header -->
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-base-content text-3xl font-bold">Wissenschaftliche Statistiken</h1>
+			<h1 class="text-base-content text-3xl font-bold">Statistiken</h1>
 			<p class="text-base-content/70 mt-2">
 				Analyse von {formatNumber(data.basicStats?.totalSightings || 0)} Meerestier-Sichtungen
 			</p>
@@ -201,7 +200,9 @@
 					<Icon src={TrendingUp} class="h-8 w-8" />
 				</div>
 				<div class="stat-title">Totfunde</div>
-				<div class="stat-value text-warning">{formatNumber(data.basicStats?.deadAnimals || 0)}</div>
+				<div class="stat-value text-warning">
+					{formatNumber(data.basicStats?.deadAnimals || 0)}
+				</div>
 				<div class="stat-desc">
 					{formatPercentage(
 						((data.basicStats?.deadAnimals || 0) / (data.basicStats?.totalSightings || 1)) * 100
@@ -370,20 +371,22 @@
 					<Icon src={Calendar} class="h-6 w-6" />
 					Aktivität der letzten 30 Tage
 				</h2>
-				
+
 				<!-- Activity Heatmap -->
 				<div class="mb-4">
 					<div class="grid grid-cols-7 gap-1">
-						{#each Array(30).fill(null).map((_, i) => i) as dayIndex (dayIndex)}
+						{#each Array(30)
+							.fill(null)
+							.map((_, i) => i) as dayIndex (dayIndex)}
 							{@const targetDate = new Date(Date.now() - (29 - dayIndex) * 24 * 60 * 60 * 1000)}
 							{@const dateStr = targetDate.toISOString().split('T')[0]}
-							{@const activity = data.recentActivity.find(a => a.date === dateStr)}
+							{@const activity = data.recentActivity.find((a) => a.date === dateStr)}
 							{@const count = activity ? Number(activity.count) : 0}
-							{@const maxCount = Math.max(...data.recentActivity.map(a => Number(a.count)))}
-							{@const intensity = maxCount > 0 ? (count / maxCount) : 0}
+							{@const maxCount = Math.max(...data.recentActivity.map((a) => Number(a.count)))}
+							{@const intensity = maxCount > 0 ? count / maxCount : 0}
 							<div class="tooltip" data-tip="{dateStr}: {count} Sichtung{count !== 1 ? 'en' : ''}">
 								<div
-									class="border-base-300 h-8 w-8 rounded-sm border flex items-center justify-center text-xs
+									class="border-base-300 flex h-8 w-8 items-center justify-center rounded-sm border text-xs
 									{intensity === 0
 										? 'bg-base-200 text-base-content/30'
 										: intensity >= 0.75
@@ -400,7 +403,7 @@
 						{/each}
 					</div>
 				</div>
-				
+
 				<!-- Summary Stats -->
 				<div class="stats stats-vertical lg:stats-horizontal shadow">
 					<div class="stat">

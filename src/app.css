@@ -1,391 +1,209 @@
-/* ====== Fonts: Open Sans & Source Sans Pro ====== */
-@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Source+Sans+Pro:wght@400;600;700&display=swap');
-@import '@fontsource/inter/400.css';
-@import '@fontsource/inter/500.css';
-@import '@fontsource/inter/600.css';
-@import '@fontsource/inter/700.css';
-
-/* Museum-konforme Schriftarten */
-@font-face {
-  font-family: 'Open Sans';
-  font-display: swap;
-  ascent-override: 95%;
-  descent-override: 25%;
-  line-gap-override: 0%;
-}
-@font-face {
-  font-family: 'Source Sans Pro';
-  font-display: swap;
-  ascent-override: 94%;
-  descent-override: 24%;
-  line-gap-override: 0%;
-}
-
-/* ====== Tailwind & DaisyUI Theme ====== */
+/* ===== Tailwind CSS 4 ===== */
 @import 'tailwindcss';
+
+/* ===== DaisyUI Plugin mit Theme ===== */
+@plugin 'daisyui';
+@plugin "daisyui/theme" {
+  name: "meeresmuseum";
+  color-scheme: light;
+  default: true; /* set as default */
+  prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
+
+  --color-primary: oklch(0.35 0.089 235.3);       /* Aufgehellt für WCAG AA mit weißem Text */
+  --color-primary-content: oklch(1 0 0);
+  --color-secondary: oklch(0.65 0.040 215.2);     /* Aufgehellt für besseren Kontrast */
+  --color-secondary-content: oklch(1 0 0);
+  --color-accent: oklch(0.80 0.047 215.0);
+  --color-accent-content: oklch(0.25 0.089 235.3);
+  --color-neutral: oklch(0.37 0.016 251.8);
+  --color-neutral-content: oklch(1 0 0);
+  --color-base-100: oklch(0.9403 0.0104 247.9);  /* Beibehalten wie gewünscht */
+  --color-base-200: oklch(0.88 0.012 247.9);      /* Etwas dunkler als base-100 */
+  --color-base-300: oklch(0.82 0.015 247.9);      /* Noch dunkler für Borders */
+  --color-base-content: oklch(0.15 0.022 251.8);  /* Dunkler für WCAG AA Kontrast (>4.5:1) */
+  --color-info: oklch(0.91 0.05 230);      /* Sehr heller Hintergrund für Alerts */
+  --color-info-content: oklch(0.25 0.089 235.3);  /* Dunkles Blau für WCAG AA Kontrast */      
+  --color-success: oklch(0.91 0.06 145);   /* Sehr heller grüner Hintergrund */
+  --color-success-content: oklch(0.25 0.12 145);  /* Dunkles Grün für WCAG AA Kontrast */      
+  --color-warning: oklch(0.92 0.08 85);    /* Sehr heller gelber Hintergrund */
+  --color-warning-content: oklch(0.35 0.10 85);   /* Dunkles Gelb-Orange für Kontrast */
+  --color-error: oklch(0.91 0.06 25);      /* Sehr heller roter Hintergrund */
+  --color-error-content: oklch(0.35 0.14 25);     /* Dunkles Rot für WCAG AA Kontrast */
+
+  --rounded-box: 0.5rem;
+  --rounded-btn: 0.375rem;
+  --rounded-badge: 1rem;
+  --animation-btn: 0.25s;
+  --animation-input: 0.2s;
+  --btn-focus-scale: 0.98;
+  --border-btn: 1px;
+  --tab-border: 1px;
+};
+
+/* ===== OpenLayers Map ===== */
 @import 'ol/ol.css';
-@plugin '@tailwindcss/forms';
-@plugin '@tailwindcss/typography';
-@plugin 'daisyui' {
-  themes: 
-      meeresmuseum --default
-}
 
-/* ====== Body & Typography ====== */
+/* ===== Base Styles ===== */
 body {
-  font-family: 'Open Sans', 'Source Sans Pro', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-synthesis: none;
-  line-height: 1.6;
-  /* Meeresmuseum Hintergrundfarbe für perfekte Integration */
-  background: #f8f9fa;
-  color: #2c3e50;
-  font-size: 15px;
+	font-family: 'Roboto', 'system-ui', 'sans-serif';
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+  background-color: oklch(var(--base-100));
 }
 
+/* ===== iframe Integration Styles ===== */
+.iframe-mode {
+	margin: 0;
+	padding: 0;
+}
+
+.iframe-mode .container,
+.iframe-mode main {
+	padding: 1rem;
+	max-width: 100%;
+}
+
+/* Kompakte Abstände für iframe */
+.iframe-mode h1 {
+	margin-top: 0;
+	margin-bottom: 1rem;
+	font-size: 1.5rem;
+}
+
+.iframe-mode h2 {
+	margin-top: 1.5rem;
+	margin-bottom: 0.75rem;
+	font-size: 1.25rem;
+}
+
+/* Angepasste Button-Größen für iframe */
+.iframe-mode .btn {
+	padding: 0.5rem 1rem;
+	font-size: 0.9rem;
+}
+
+/* Kompaktere Form-Elemente */
+.iframe-mode .form-control {
+	margin-bottom: 1rem;
+}
+
+.iframe-mode .input,
+.iframe-mode .select,
+.iframe-mode .textarea {
+	font-size: 1rem;  /* WCAG AA: Mindestens 16px für Formulare */
+}
+
+/* Navigation für iframe anpassen */
+.iframe-mode .navbar {
+	display: none; /* Keine Navigation im iframe */
+}
+
+.iframe-mode .footer {
+	display: none; /* Kein Footer im iframe */
+}
+
+/* ===== Typography ===== */
 h1, h2, h3, h4, h5, h6 {
-  line-height: 1.3;
-  font-family: 'Source Sans Pro', 'Open Sans', system-ui, sans-serif;
-  font-weight: 600;
+	font-family: 'Roboto', 'system-ui', 'sans-serif';
+	font-weight: 600;
+	line-height: 1.2;
 }
 
-/* ====== Layout & Container ====== */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
+/* ===== Component Refinements ===== */
 
-/* ====== Accessibility & Focus ====== */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Focus styles */
-*:focus {
-  outline: 2px solid oklch(from var(--color-primary) l c h / 0.8);
-  outline-offset: 2px;
-}
-
-/* ====== Enhanced Form Fields für bessere Sichtbarkeit ====== */
-/* DaisyUI input, select, textarea mit besseren Rahmen */
-.input,
-.select,
-.textarea {
-  border: 1.5px solid #d1d5db !important;
-  border-radius: 0.5rem !important;
-  background-color: #ffffff !important;
-  transition: all 0.2s ease-in-out;
-}
-
-.input:hover,
-.select:hover, 
-.textarea:hover {
-  border-color: #9ca3af !important;
-}
-
-.input:focus,
-.select:focus,
-.textarea:focus {
-  border-color: #005377 !important;
-  box-shadow: 0 0 0 3px rgba(0, 83, 119, 0.1) !important;
-  outline: none !important;
-}
-
-/* Error state */
-.input-error,
-.select-error,
-.textarea-error {
-  border-color: #dc2626 !important;
-}
-
-.input-error:focus,
-.select-error:focus,
-.textarea-error:focus {
-  border-color: #dc2626 !important;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
-}
-
-/* Success state */
-.input-success,
-.select-success,
-.textarea-success {
-  border-color: #059669 !important;
-}
-
-.input-success:focus,
-.select-success:focus,
-.textarea-success:focus {
-  border-color: #059669 !important;
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1) !important;
-}
-
-/* Placeholder styling */
-.input::placeholder,
-.textarea::placeholder {
-  color: #9ca3af;
-  opacity: 1;
-}
-
-/* ====== Text Utility Overrides für Meeresmuseum Theme ====== */
-.text-error {
-  color: #dc2626 !important;
-}
-
+/* Text-Farben für bessere Lesbarkeit auf hellen Hintergründen */
 .text-success {
-  color: #047857 !important;
+	color: oklch(0.35 0.16 145) !important;  /* Dunkleres Grün für besseren Kontrast */
+}
+
+.text-error {
+	color: oklch(0.40 0.18 25) !important;   /* Dunkleres Rot für besseren Kontrast */
 }
 
 .text-warning {
-  color: #d97706 !important;
+	color: oklch(0.45 0.16 85) !important;   /* Dunkleres Gelb-Orange */
 }
 
 .text-info {
-  color: #005377 !important;
+	color: oklch(0.35 0.12 230) !important;  /* Dunkleres Blau */
 }
 
-/* ====== Alert Component für Meeresmuseum Theme ====== */
-/* Ensure proper alert styling following DaisyUI standards */
-.alert {
-  display: flex;
-  align-items: center;
-  border-radius: 0.5rem;
-  border-width: 1px;
-  padding: 1rem;
-  gap: 0.75rem;
-  background-color: oklch(from var(--color-base-200) l c h);
-  border-color: oklch(from var(--color-base-300) l c h);
-}
-
-.alert-info {
-  background-color: rgba(0, 83, 119, 0.08);
-  border-color: rgba(0, 83, 119, 0.2);
-  color: #1a1a1a;
-}
-
-.alert-info .alert-title,
-.alert-info strong {
-  color: #005377;
-}
-
+/* Alert-spezifische Text-Farben */
+.alert-success .text-success,
 .alert-success {
-  background-color: rgba(4, 120, 87, 0.08);
-  border-color: rgba(4, 120, 87, 0.2);
-  color: #1a1a1a;
+	color: oklch(0.25 0.12 145);  /* Nutzt success-content Farbe */
 }
 
-.alert-success .alert-title,
-.alert-success strong {
-  color: #047857;
-}
-
-.alert-warning {
-  background-color: rgba(217, 119, 6, 0.08);
-  border-color: rgba(217, 119, 6, 0.2);
-  color: #1a1a1a;
-}
-
-.alert-warning .alert-title,
-.alert-warning strong {
-  color: #d97706;
-}
-
+.alert-error .text-error,
 .alert-error {
-  background-color: rgba(220, 38, 38, 0.08);
-  border-color: rgba(220, 38, 38, 0.2);
-  color: #1a1a1a;
+	color: oklch(0.35 0.14 25);   /* Nutzt error-content Farbe */
 }
 
-.alert-error .alert-title,
-.alert-error strong {
-  color: #dc2626;
+.alert-warning .text-warning,
+.alert-warning {
+	color: oklch(0.35 0.10 85);   /* Nutzt warning-content Farbe */
 }
 
-/* Alert icons */
-.alert svg {
-  flex-shrink: 0;
-  width: 1.5rem;
-  height: 1.5rem;
+.alert-info .text-info,
+.alert-info {
+	color: oklch(0.25 0.089 235.3);  /* Nutzt info-content Farbe */
 }
 
-.alert-info svg {
-  color: #005377;
+/* Enhanced form focus - WCAG AA konform */
+.input:focus,
+.select:focus, 
+.textarea:focus {
+	outline: 3px solid oklch(var(--color-primary));  /* Deutlicher Focus-Indikator */
+	outline-offset: 2px;
+	box-shadow: 0 0 0 4px oklch(var(--color-primary) / 0.2);
 }
 
-.alert-success svg {
-  color: #047857;
+/* Subtle button hover */
+.btn:hover:not(:disabled) {
+	transform: translateY(-1px);
 }
 
-.alert-warning svg {
-  color: #d97706;
+/* Card hover effect */
+.card:hover {
+	box-shadow: 0 4px 12px hsl(var(--neutral) / 0.1);
 }
 
-.alert-error svg {
-  color: #dc2626;
+/* Alert refinements */
+.alert {
+	border-width: 1px;
+	border-style: solid;
 }
 
+.alert-info { border-left-width: 4px; }
+.alert-success { border-left-width: 4px; }
+.alert-warning { border-left-width: 4px; }
+.alert-error { border-left-width: 4px; }
 
-/* ====== Checkbox Visibility und Museum Theme ====== */
-/* Ensure checkboxes are visible in unchecked state */
-.checkbox {
-  border: 1px solid #d1d5db !important;
-  background-color: #ffffff !important;
-  border-radius: 0.375rem !important; /* Rounded corners */
+/* ===== Accessibility ===== */
+:focus-visible {
+	outline: 2px solid hsl(var(--p));
+	outline-offset: 2px;
 }
 
-/* When checked, use primary color */
-.checkbox:checked {
-  background-color: var(--color-primary) !important;
-  border-color: var(--color-primary) !important;
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+	.btn:hover:not(:disabled) {
+		transform: none;
+	}
 }
 
-/* Hover state for better UX */
-.checkbox:hover:not(:checked) {
-  border-color: #9ca3af !important;
-  background-color: #f9fafb !important;
-}
-
-/* Focus state */
-.checkbox:focus-visible {
-  outline: 2px solid var(--color-primary) !important;
-  outline-offset: 2px;
-}
-
-/* ====== Toggle Component für Meeresmuseum Theme (Nord-Style) ====== */
-/* Better visual styling for toggles based on nord theme approach */
-.toggle {
-  /* Clear, minimal design like nord theme with rounded corners */
-  border: 1px solid oklch(89.925% .016 262.749) !important; /* Nord base-300 equivalent */
-  background-color: oklch(95.127% .007 260.731) !important; /* Nord base-100 equivalent */
-  border-radius: 1rem !important; /* Rounded toggle container like nord theme */
-  width: 3rem !important; /* Moderately wider toggle container */
-  height: 1.5rem !important; /* Standard height */
-}
-
-.toggle:checked {
-  background-color: var(--color-primary) !important;
-  border-color: var(--color-primary) !important;
-}
-
-.toggle:hover:not(:checked) {
-  background-color: oklch(93.299% .01 261.788) !important; /* Nord base-200 equivalent */
-  border-color: oklch(89.925% .016 262.749) !important; /* Darker border on hover */
-}
-
-.toggle:focus-visible {
-  outline: 2px solid var(--color-primary) !important;
-  outline-offset: 2px;
-}
-
-/* Ensure the toggle slider element is round and properly centered */
-.toggle:before {
-  border-radius: 50% !important; /* Perfectly round slider element */
-  width: 1.125rem !important; /* Proportioned slider element */
-  height: 1.125rem !important; /* Proportioned slider element */
-  top: 50% !important; /* Center vertically */
-  transform: translateY(-50%) !important; /* Perfect vertical centering */
-  left: 0.125rem !important; /* Position from left */
-}
-
-/* ====== Steps Component für Meeresmuseum Theme (Nord-Style) ====== */
-/* Ultra-specific overrides to ensure they work */
-
-/* Force step styling with maximum specificity */
-ul.steps li.step,
-.steps .step {
-  --step-bg: oklch(89.925% .016 262.749) !important;
-  --step-fg: oklch(32.437% .022 264.182) !important;
-}
-
-ul.steps li.step.step-primary,
-.steps .step.step-primary {
-  --step-bg: #005377 !important;
-  --step-fg: #ffffff !important;
-}
-
-/* Direct background override as backup */
-ul.steps li.step.step-primary:after,
-ul.steps li.step.step-primary > .step-icon,
-.steps .step.step-primary:after,
-.steps .step.step-primary > .step-icon {
-  background-color: #005377 !important;
-  border-color: #005377 !important;
-  color: #ffffff !important;
-}
-
-/* Connection lines for active steps */
-ul.steps li.step.step-primary + li.step.step-primary:before,
-.steps .step.step-primary + .step.step-primary:before {
-  background-color: #005377 !important;
-  border-color: #005377 !important;
-}
-
-/* Visual improvements */
-ul.steps li.step:before,
-.steps .step:before {
-  height: 0.25rem !important;
-  border-radius: 2px !important;
-}
-
-ul.steps li.step:after,
-ul.steps li.step > .step-icon,
-.steps .step:after,
-.steps .step > .step-icon {
-  width: 2.25rem !important;
-  height: 2.25rem !important;
-  font-weight: 600 !important;
-  font-size: 0.875rem !important;
-}
-
-/* Interactive effects */
-ul.steps li.step-button:hover:not(.step-primary),
-.steps .step-button:hover:not(.step-primary) {
-  --step-bg: oklch(93.299% .01 261.788) !important;
-}
-
-ul.steps li.step-button:focus-visible,
-.steps .step-button:focus-visible {
-  outline: 2px solid #005377 !important;
-  outline-offset: 2px !important;
-}
-
-/* ====== Button Component für Meeresmuseum Theme ====== */
-/* Ensure buttons have consistent rounded corners */
-.btn {
-  border-radius: 0.375rem !important; /* Rounded corners matching checkboxes */
-}
-
-/* ====== Card Component für Meeresmuseum Theme ====== */
-/* Ensure cards have consistent rounded corners and visible borders */
-.card {
-  border-radius: 0.5rem !important; /* Rounded corners for cards */
-  border: 1px solid oklch(89.925% .016 262.749) !important; /* Subtle border for definition */
-}
-
-/* Cards with bg-base-100 need extra border visibility */
-.card.bg-base-100 {
-  border: 1px solid oklch(86% 0 0) !important; /* Slightly darker border for white background cards */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important; /* Subtle shadow for depth */
-}
-
-/* ====== Print Styles ====== */
+/* ===== Print ===== */
 @media print {
-  body {
-    background: white !important;
-    color: black !important;
-  }
-  
-  .no-print {
-    display: none !important;
-  }
+	.no-print {
+		display: none;
+	}
+}
+
+/* ===== Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+	*, *::before, *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
 }
