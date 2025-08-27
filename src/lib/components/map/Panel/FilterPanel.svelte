@@ -2,10 +2,7 @@
 	import { Filter, SquareX } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
-	let { 
-		years = [],
-		defaultYear
-	} = $props<{
+	let { years = [], defaultYear } = $props<{
 		years?: number[];
 		defaultYear?: number;
 	}>();
@@ -27,8 +24,8 @@
 <!-- Toggle Button (always visible) -->
 <button
 	onclick={togglePanel}
-	class="bg-base-100 text-base-content hover:bg-base-200 fixed top-20 right-0 z-50 flex h-32 w-8 cursor-pointer flex-col items-center justify-center rounded-l-lg shadow-xl border-2 border-primary/20 border-r-0 backdrop-blur-sm transition-all duration-300 sm:w-12 md:w-8"
-	style="transform: translateX({isOpen ? '-360px' : '0px'});"
+	class="glass text-base-content hover:bg-base-200 border-primary/20 fixed top-20 right-0 z-50 flex h-32 w-8 cursor-pointer flex-col items-center justify-center rounded-l-lg border-2 border-r-0 shadow-xl backdrop-blur-sm transition-all duration-300 sm:w-12 md:w-8"
+	style="transform: translateX({isOpen ? '-400px' : '0px'});"
 	aria-label="Filter {isOpen ? 'schließen' : 'öffnen'}"
 >
 	<Icon src={Filter} class="mb-1 h-4 w-4" />
@@ -42,7 +39,7 @@
 
 <!-- Panel Container -->
 <div
-	class="bg-base-100 border-l-2 border-primary/20 fixed top-0 right-0 z-40 h-full w-90 overflow-hidden pr-8 shadow-2xl backdrop-blur-sm transition-transform duration-300 ease-in-out"
+	class="glass border-primary/20 fixed top-20 right-0 z-40 h-full w-100 overflow-hidden border-l-2 pr-8 shadow-2xl backdrop-blur-sm transition-transform duration-300 ease-in-out"
 	style="transform: translateX({isOpen ? '0px' : '100%'});"
 	role="dialog"
 	aria-modal="true"
