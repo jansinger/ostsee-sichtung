@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.20.2 (2025-08-27)</small>
+
+* Merge pull request #75 from jansinger/dependabot/npm_and_yarn/vite-7.1.3 ([0df6051](https://github.com/jansinger/ostsee-sichtung/commit/0df6051)), closes [#75](https://github.com/jansinger/ostsee-sichtung/issues/75)
+* Merge pull request #76 from jansinger/dependabot/npm_and_yarn/playwright/test-1.55.0 ([e6381c0](https://github.com/jansinger/ostsee-sichtung/commit/e6381c0)), closes [#76](https://github.com/jansinger/ostsee-sichtung/issues/76)
+* Merge pull request #82 from jansinger/style/meeresmuseum ([8bfa26f](https://github.com/jansinger/ostsee-sichtung/commit/8bfa26f)), closes [#82](https://github.com/jansinger/ostsee-sichtung/issues/82)
+* Merge pull request #83 from jansinger/fix/devalue ([5c073de](https://github.com/jansinger/ostsee-sichtung/commit/5c073de)), closes [#83](https://github.com/jansinger/ostsee-sichtung/issues/83)
+* fix: update devalue npm package ([dea5307](https://github.com/jansinger/ostsee-sichtung/commit/dea5307))
+* build(deps-dev): bump @playwright/test from 1.54.2 to 1.55.0 ([5f75e9f](https://github.com/jansinger/ostsee-sichtung/commit/5f75e9f))
+* build(deps-dev): bump vite from 7.1.2 to 7.1.3 ([fc725e7](https://github.com/jansinger/ostsee-sichtung/commit/fc725e7))
+* style: Update styles for FilterPanel, LegendPanel, and SightingsMapView components ([1d4085f](https://github.com/jansinger/ostsee-sichtung/commit/1d4085f))
+
 ## <small>1.20.1 (2025-08-27)</small>
 
 * Merge pull request #71 from jansinger/dependabot/npm_and_yarn/typescript-eslint-8.40.0 ([1198adf](https://github.com/jansinger/ostsee-sichtung/commit/1198adf)), closes [#71](https://github.com/jansinger/ostsee-sichtung/issues/71)
