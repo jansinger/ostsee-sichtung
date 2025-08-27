@@ -69,7 +69,7 @@
 				/>
 				<label
 					for="method-photo"
-					class="block cursor-pointer rounded-lg border-2 p-4 transition-all
+					class="block cursor-pointer rounded-lg border-2 p-4 transition-all md:h-28
 						{positionMethod === 'photo'
 						? 'border-primary bg-primary/10'
 						: 'border-base-300 hover:border-primary/50'}"
@@ -99,7 +99,7 @@
 				/>
 				<label
 					for="method-map"
-					class="block cursor-pointer rounded-lg border-2 p-4 transition-all
+					class="block cursor-pointer rounded-lg border-2 p-4 transition-all md:h-28
 						{positionMethod === 'map'
 						? 'border-primary bg-primary/10'
 						: 'border-base-300 hover:border-primary/50'}"
@@ -129,7 +129,7 @@
 				/>
 				<label
 					for="method-manual"
-					class="block cursor-pointer rounded-lg border-2 p-4 transition-all
+					class="block cursor-pointer rounded-lg border-2 p-4 transition-all md:h-28
 						{positionMethod === 'manual'
 						? 'border-primary bg-primary/10'
 						: 'border-base-300 hover:border-primary/50'}"
