@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.22.1 (2025-08-27)</small>
+
+* Merge pull request #89 from jansinger/fix/cleanup-iframe ([7884eea](https://github.com/jansinger/ostsee-sichtung/commit/7884eea)), closes [#89](https://github.com/jansinger/ostsee-sichtung/issues/89)
+* fix(ci): resolve YAML syntax errors in Dependabot workflow ([9a3b98e](https://github.com/jansinger/ostsee-sichtung/commit/9a3b98e))
+
 ## 1.22.0 (2025-08-27)
 
 * Merge pull request #88 from jansinger/fix/cleanup-iframe ([86b80c2](https://github.com/jansinger/ostsee-sichtung/commit/86b80c2)), closes [#88](https://github.com/jansinger/ostsee-sichtung/issues/88)
