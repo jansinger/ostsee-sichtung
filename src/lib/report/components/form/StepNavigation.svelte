@@ -20,7 +20,7 @@
 	} = $props();
 
 	const formContext = getFormContext();
-	const { isSubmitting, form, errors } = formContext;
+	const { isSubmitting, form, errors, isValid } = formContext;
 
 	// Get field orders from form configuration
 	const stepFieldOrders = formStepsConfig.map((step) => step.fields);
@@ -142,7 +142,7 @@
 	<button
 		type="button"
 		onclick={nextStep}
-		disabled={$isSubmitting}
+		disabled={$isSubmitting || !canGoNext}
 		class="btn btn-primary"
 		class:loading={$isSubmitting}
 		aria-label={isLastStep ? 'Formular absenden' : 'Nächster Schritt'}
