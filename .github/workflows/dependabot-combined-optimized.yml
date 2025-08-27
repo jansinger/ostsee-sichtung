@@ -113,37 +113,140 @@ jobs:
 
       - name: Merge Dependabot branches
         if: steps.get-prs.outputs.count != '0'
+        id: merge-branches
         env:
           PRS_JSON: ${{ steps.get-prs.outputs.prs }}
         run: |
-          # Parse PR details
-          echo "$PRS_JSON" | jq -r '.[] | "\(.branch) \(.title)"' | while IFS=' ' read -r branch title; do
-            echo "Merging $branch: $title"
+          SUCCESSFUL_MERGES=()
+          CONFLICTED_PRS=()
+          SKIPPED_PRS=()
+          
+          # Parse PR details und versuche jeden Branch zu mergen
+          echo "$PRS_JSON" | jq -r '.[] | "\(.number) \(.branch) \(.title)"' | while IFS=' ' read -r pr_number branch title; do
+            echo "Attempting to merge $branch: $title (PR #$pr_number)"
             
-            # Fetch und merge den Dependabot branch
+            # Fetch den Dependabot branch
             git fetch origin "$branch"
             
-            # Force merge auch wenn fast-forward möglich wäre, um sicherzustellen dass Änderungen übernommen werden
-            if ! git merge "origin/$branch" --no-ff --no-edit -m "merge: $title"; then
-              echo "Merge failed for $branch, trying with strategy"
-              git merge "origin/$branch" -X ours -m "merge: $title"
+            # Prüfe ob es bereits Konflikte geben würde
+            if git merge-tree $(git merge-base HEAD "origin/$branch") HEAD "origin/$branch" | grep -q '<<<<<<< '; then
+              echo "❌ Pre-merge conflict detected for $branch (PR #$pr_number)"
+              echo "$pr_number|$branch|$title" >> /tmp/conflicted_prs.txt
+              continue
+            fi
+            
+            # Versuche den Merge
+            if git merge "origin/$branch" --no-ff --no-edit -m "merge: $title"; then
+              echo "✅ Successfully merged $branch (PR #$pr_number)"
+              echo "$pr_number|$branch|$title" >> /tmp/successful_merges.txt
+            else
+              # Merge fehlgeschlagen - Reset und als Konflikt markieren
+              echo "❌ Merge conflict for $branch (PR #$pr_number)"
+              git merge --abort 2>/dev/null || true
+              git reset --hard HEAD
+              echo "$pr_number|$branch|$title" >> /tmp/conflicted_prs.txt
             fi
           done
 
+          # Lese die Ergebnisse
+          if [ -f /tmp/successful_merges.txt ]; then
+            SUCCESSFUL_COUNT=$(wc -l < /tmp/successful_merges.txt)
+            echo "successful_count=$SUCCESSFUL_COUNT" >> $GITHUB_OUTPUT
+            echo "successful_merges<<EOF" >> $GITHUB_OUTPUT
+            cat /tmp/successful_merges.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "successful_count=0" >> $GITHUB_OUTPUT
+            echo "successful_merges=" >> $GITHUB_OUTPUT
+          fi
+
+          if [ -f /tmp/conflicted_prs.txt ]; then
+            CONFLICTED_COUNT=$(wc -l < /tmp/conflicted_prs.txt)
+            echo "conflicted_count=$CONFLICTED_COUNT" >> $GITHUB_OUTPUT
+            echo "conflicted_prs<<EOF" >> $GITHUB_OUTPUT
+            cat /tmp/conflicted_prs.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "conflicted_count=0" >> $GITHUB_OUTPUT
+            echo "conflicted_prs=" >> $GITHUB_OUTPUT
+          fi
+
           # Zeige was tatsächlich gemerged wurde
-          echo "=== Merged changes ==="
-          git log --oneline -10
-          git status
+          echo "=== Merge Summary ==="
+          echo "Successful merges: $SUCCESSFUL_COUNT"
+          echo "Conflicted PRs: $CONFLICTED_COUNT"
+          
+          if [ "$SUCCESSFUL_COUNT" -gt 0 ]; then
+            echo "=== Merged changes ==="
+            git log --oneline -10
+            git status
+          fi
+
+      - name: Handle conflicted PRs
+        if: steps.merge-branches.outputs.conflicted_count != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const conflictedPRs = `${{ steps.merge-branches.outputs.conflicted_prs }}`;
+            
+            if (!conflictedPRs) {
+              console.log('No conflicted PRs to handle');
+              return;
+            }
+            
+            const conflicts = conflictedPRs.trim().split('\n');
+            
+            for (const conflict of conflicts) {
+              const [prNumber, branch, ...titleParts] = conflict.split('|');
+              const title = titleParts.join('|');
+              
+              console.log(`Handling conflict for PR #${prNumber}: ${title}`);
+              
+              // Kommentar mit @dependabot rebase
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(prNumber),
+                body: `🔄 **Merge Conflict Detected**
+
+This PR has merge conflicts that prevent it from being included in the automated dependency combination.
+
+@dependabot rebase
+
+Once rebased, this PR will be automatically included in the next dependency combination cycle.
+
+---
+*This is an automated message from the Dependabot Combined PR workflow.*`
+              });
+              
+              console.log(`Added rebase comment to PR #${prNumber}`);
+            }
 
       - name: Generate conventional commit message
-        if: steps.get-prs.outputs.count != '0'
+        if: steps.merge-branches.outputs.successful_count != '0'
         id: commit-message
         uses: actions/github-script@v7
         env:
-          PRS_JSON: ${{ steps.get-prs.outputs.prs }}
+          SUCCESSFUL_MERGES: ${{ steps.merge-branches.outputs.successful_merges }}
         with:
           script: |
-            const prs = JSON.parse(process.env.PRS_JSON);
+            const successfulMerges = `${{ steps.merge-branches.outputs.successful_merges }}`;
+            
+            if (!successfulMerges) {
+              console.log('No successful merges to process');
+              return;
+            }
+            
+            // Parse successful merges: "pr_number|branch|title"
+            const merges = successfulMerges.trim().split('\n');
+            const prs = merges.map(merge => {
+              const [number, branch, ...titleParts] = merge.split('|');
+              return {
+                number: parseInt(number),
+                branch,
+                title: titleParts.join('|')
+              };
+            });
 
             // Gruppiere Updates nach Typ
             const updates = {
@@ -248,7 +351,7 @@ jobs:
 
       # Keine erneuten Tests - alle PRs wurden bereits einzeln validiert!
       - name: Commit changes
-        if: steps.get-prs.outputs.count != '0'
+        if: steps.merge-branches.outputs.successful_count != '0'
         id: commit-changes
         run: |
           git add -A
@@ -265,7 +368,7 @@ jobs:
           git push origin "$BRANCH_NAME"
 
       - name: Create combined PR
-        if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'true'
+        if: steps.merge-branches.outputs.successful_count != '0' && steps.commit-changes.outputs.has_changes == 'true'
         id: create-pr
         uses: actions/github-script@v7
         env:
@@ -310,17 +413,33 @@ jobs:
             return pr;
 
       - name: Close individual Dependabot PRs
-        if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'true'
+        if: steps.merge-branches.outputs.successful_count != '0' && steps.commit-changes.outputs.has_changes == 'true'
         uses: actions/github-script@v7
         env:
-          PRS_JSON: ${{ steps.get-prs.outputs.prs }}
+          SUCCESSFUL_MERGES: ${{ steps.merge-branches.outputs.successful_merges }}
           COMBINED_PR_NUMBER: ${{ steps.create-pr.outputs.pr-number }}
           COMBINED_PR_URL: ${{ steps.create-pr.outputs.pr-url }}
         with:
           script: |
-            const prs = JSON.parse(process.env.PRS_JSON);
+            const successfulMerges = process.env.SUCCESSFUL_MERGES;
             const combinedPrNumber = process.env.COMBINED_PR_NUMBER;
             const combinedPrUrl = process.env.COMBINED_PR_URL;
+
+            if (!successfulMerges) {
+              console.log('No successful merges to close');
+              return;
+            }
+            
+            // Parse successful merges: "pr_number|branch|title"
+            const merges = successfulMerges.trim().split('\n');
+            const prs = merges.map(merge => {
+              const [number, branch, ...titleParts] = merge.split('|');
+              return {
+                number: parseInt(number),
+                branch,
+                title: titleParts.join('|')
+              };
+            });
 
             for (const pr of prs) {
               console.log(`Closing PR #${pr.number}: ${pr.title}`);
@@ -343,7 +462,7 @@ jobs:
             }
 
       - name: Auto-merge if safe
-        if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'true' && steps.commit-message.outputs.has-major == 'false'
+        if: steps.merge-branches.outputs.successful_count != '0' && steps.commit-changes.outputs.has_changes == 'true' && steps.commit-message.outputs.has-major == 'false'
         run: |
           # Nur auto-mergen wenn keine Major Updates dabei sind
           gh pr merge ${{ steps.create-pr.outputs.pr-number }} --auto --squash
@@ -351,7 +470,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Comment on major updates
-        if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'true' && steps.commit-message.outputs.has-major == 'true'
+        if: steps.merge-branches.outputs.successful_count != '0' && steps.commit-changes.outputs.has_changes == 'true' && steps.commit-message.outputs.has-major == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -363,20 +482,36 @@ jobs:
             });
 
       - name: Summary when no changes needed
-        if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'false'
+        if: steps.merge-branches.outputs.successful_count != '0' && steps.commit-changes.outputs.has_changes == 'false'
         run: |
           echo "✅ All Dependabot PRs merged cleanly without conflicts"
           echo "No additional commits needed - changes were already integrated"
           echo "Individual PRs will be closed automatically"
 
       - name: Close individual PRs when no changes needed
-        if: steps.get-prs.outputs.count != '0' && steps.commit-changes.outputs.has_changes == 'false'
+        if: steps.merge-branches.outputs.successful_count != '0' && steps.commit-changes.outputs.has_changes == 'false'
         uses: actions/github-script@v7
         env:
-          PRS_JSON: ${{ steps.get-prs.outputs.prs }}
+          SUCCESSFUL_MERGES: ${{ steps.merge-branches.outputs.successful_merges }}
         with:
           script: |
-            const prs = JSON.parse(process.env.PRS_JSON);
+            const successfulMerges = process.env.SUCCESSFUL_MERGES;
+
+            if (!successfulMerges) {
+              console.log('No successful merges to close');
+              return;
+            }
+            
+            // Parse successful merges: "pr_number|branch|title"
+            const merges = successfulMerges.trim().split('\n');
+            const prs = merges.map(merge => {
+              const [number, branch, ...titleParts] = merge.split('|');
+              return {
+                number: parseInt(number),
+                branch,
+                title: titleParts.join('|')
+              };
+            });
 
             for (const pr of prs) {
               console.log(`Closing PR #${pr.number}: ${pr.title}`);
@@ -397,3 +532,24 @@ jobs:
                 state: 'closed'
               });
             }
+
+      - name: Workflow Summary
+        if: always() && steps.get-prs.outputs.count != '0'
+        run: |
+          echo "=== Dependabot Combined PR Workflow Summary ==="
+          echo "Total PRs found: ${{ steps.get-prs.outputs.count }}"
+          echo "Successfully merged: ${{ steps.merge-branches.outputs.successful_count || 0 }}"
+          echo "Conflicted PRs: ${{ steps.merge-branches.outputs.conflicted_count || 0 }}"
+          
+          if [ "${{ steps.merge-branches.outputs.successful_count || 0 }}" -gt "0" ]; then
+            echo "✅ Successfully processed PRs have been combined or integrated"
+          fi
+          
+          if [ "${{ steps.merge-branches.outputs.conflicted_count || 0 }}" -gt "0" ]; then
+            echo "🔄 Conflicted PRs have been marked for rebase by Dependabot"
+            echo "They will be included in the next workflow run after rebase"
+          fi
+          
+          if [ "${{ steps.merge-branches.outputs.successful_count || 0 }}" -eq "0" ] && [ "${{ steps.merge-branches.outputs.conflicted_count || 0 }}" -eq "0" ]; then
+            echo "ℹ️ No changes needed - all PRs were already clean"
+          fi
