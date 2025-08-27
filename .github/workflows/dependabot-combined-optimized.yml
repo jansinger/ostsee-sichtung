@@ -207,16 +207,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: parseInt(prNumber),
-                body: `🔄 **Merge Conflict Detected**
-
-This PR has merge conflicts that prevent it from being included in the automated dependency combination.
-
-@dependabot rebase
-
-Once rebased, this PR will be automatically included in the next dependency combination cycle.
-
----
-*This is an automated message from the Dependabot Combined PR workflow.*`
+                body: '🔄 **Merge Conflict Detected**\n\nThis PR has merge conflicts that prevent it from being included in the automated dependency combination.\n\n@dependabot rebase\n\nOnce rebased, this PR will be automatically included in the next dependency combination cycle.\n\n---\n*This is an automated message from the Dependabot Combined PR workflow.*'
               });
               
               console.log(`Added rebase comment to PR #${prNumber}`);
