@@ -27,16 +27,6 @@
 		<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
 		<meta name="format-detection" content="telephone=no" />
 
-		<!-- Inline critical CSS to prevent FOUT -->
-		<style nonce="%sveltekit.nonce%">
-			/* Temporary font metrics for system fonts to match Inter */
-			@supports (font-size-adjust: 1) {
-				body {
-					font-size-adjust: 0.545; /* Match Inter's x-height */
-				}
-			}
-		</style>
-
 		<!-- DNS Prefetch for external resources -->
 		<link rel="dns-prefetch" href="//tile.openstreetmap.org" />
 		<link rel="dns-prefetch" href="//tiles.openseamap.org" />
@@ -67,36 +57,5 @@
 	</head>
 	<body data-sveltekit-preload-data="hover" data-theme="meeresmuseum">
 		<div class="svelte-body">%sveltekit.body%</div>
-
-		<!-- iframe-spezifische Funktionalität -->
-		<script nonce="%sveltekit.nonce%">
-			// Kommunikation mit Parent-Frame
-			if (window.parent !== window) {
-				// Benachrichtige Parent über Größenänderungen
-				function notifyParentOfResize() {
-					const height = document.body.scrollHeight;
-					window.parent.postMessage(
-						{
-							type: 'resize',
-							height: height,
-							source: 'sichtungen-iframe'
-						},
-						'*'
-					);
-				}
-
-				// ResizeObserver für automatische Größenanpassung
-				if (window.ResizeObserver) {
-					const resizeObserver = new ResizeObserver(notifyParentOfResize);
-					resizeObserver.observe(document.body);
-				}
-
-				// Fallback mit regelmäßiger Prüfung
-				setInterval(notifyParentOfResize, 1000);
-
-				// Initial resize
-				setTimeout(notifyParentOfResize, 100);
-			}
-		</script>
 	</body>
 </html>

@@ -55,9 +55,15 @@ const config = {
 					'https://*.meeresmuseum.de',
 					'https://deutsches-meeresmuseum.de',
 					'https://*.deutsches-meeresmuseum.de',
-					// Für Development und lokale Dateien
+					// Für Development und lokale Dateien - Safari benötigt explizite Ports
 					'http://localhost:*',
 					'https://localhost:*',
+					'http://localhost:4000',
+					'https://localhost:4000',
+					'http://127.0.0.1:*',
+					'https://127.0.0.1:*',
+					'http://127.0.0.1:4000',
+					'https://127.0.0.1:4000',
 					'file:' // Erlaubt file:-URLs für lokale HTML-Dateien mit iframes
 				],
 				'upgrade-insecure-requests': process.env.NODE_ENV === 'production'
@@ -72,6 +78,12 @@ const config = {
 					'https://*.deutsches-meeresmuseum.de',
 					'http://localhost:*',
 					'https://localhost:*',
+					'http://localhost:4000',
+					'https://localhost:4000',
+					'http://127.0.0.1:*',
+					'https://127.0.0.1:*',
+					'http://127.0.0.1:4000',
+					'https://127.0.0.1:4000',
 					'file:' // Monitor auch file:-Zugriffe
 				],
 				'report-uri': ['/api/csp-report']

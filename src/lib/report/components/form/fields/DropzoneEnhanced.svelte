@@ -331,7 +331,7 @@
 											<!-- Remove button -->
 											<button
 												type="button"
-												class="btn btn-circle btn-xs bg-error hover:bg-error-focus absolute -top-2 -right-2 text-white"
+												class="btn btn-circle btn-xs btn-error btn-error:hover absolute -top-2 -right-2 text-white"
 												onclick={() => handleFileRemoved(mediaFile.uid)}
 												aria-label="Datei entfernen"
 											>

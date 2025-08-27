@@ -192,8 +192,8 @@
 	<FormSteps steps={formStepsConfig} bind:currentStep />
 
 	<!-- Form Content -->
-	<div class="card bg-base-100 shadow-xl sm:shadow-sm" id="form-content">
-		<div class="card-body p-1 sm:p-2 lg:p-4">
+	<div class="card bg-base-100" id="form-content">
+		<div class="card-body p-0">
 			<!-- Step Content -->
 			<div class="min-h-[400px]">
 				{#if currentStep === 0}
