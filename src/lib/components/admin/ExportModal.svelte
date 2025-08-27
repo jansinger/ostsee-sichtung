@@ -189,22 +189,23 @@
 	}
 </script>
 
-{#if show}
-	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-		<div class="bg-base-100 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-			<!-- Modal Header -->
-			<div class="flex items-center justify-between p-6 border-b border-base-300">
-				<h3 class="text-lg font-semibold">Sichtungen exportieren</h3>
-				<button
-					class="btn btn-ghost btn-sm btn-circle"
-					onclick={closeModal}
-					aria-label="Modal schließen"
-				>
-					<CloseOutline class="h-5 w-5" />
-				</button>
-			</div>
+<!-- Native DaisyUI Modal -->
+<input type="checkbox" bind:checked={show} id="export-modal" class="modal-toggle" />
+<div class="modal" role="dialog">
+	<div class="modal-box max-w-2xl">
+		<!-- Modal Header -->
+		<div class="flex items-center justify-between mb-6">
+			<h3 class="text-lg font-semibold">Sichtungen exportieren</h3>
+			<button
+				class="btn btn-ghost btn-sm btn-circle"
+				onclick={closeModal}
+				aria-label="Modal schließen"
+			>
+				<CloseOutline class="h-5 w-5" />
+			</button>
+		</div>
 
-			<div class="p-6 space-y-6">
+		<div class="space-y-6">
 				<!-- Filter-Info -->
 				<div class="bg-base-200 rounded-lg p-4">
 					<h4 class="text-sm font-medium mb-2">Aktuelle Filter:</h4>
@@ -263,23 +264,23 @@
 						<CheckCircleOutline class="h-6 w-6 shrink-0" />
 						<span>{loadedSightings.length} Datensätze bereit zum Export</span>
 					</div>
-				{/if}
-			</div>
+			{/if}
+		</div>
 
-			<!-- Modal Footer -->
-			<div class="flex items-center justify-end gap-3 p-6 border-t border-base-300">
-				<button class="btn btn-ghost" onclick={closeModal}>
-					Abbrechen
-				</button>
-				<button 
-					class="btn btn-primary"
-					onclick={performDownload}
-					disabled={isLoading || loadedSightings.length === 0}
-				>
-					<DownloadOutline class="h-4 w-4 mr-2" />
-					{formatInfo[selectedFormat as keyof typeof formatInfo].name} herunterladen
-				</button>
-			</div>
+		<!-- Modal Footer -->
+		<div class="modal-action">
+			<button class="btn btn-ghost" onclick={closeModal}>
+				Abbrechen
+			</button>
+			<button 
+				class="btn btn-primary"
+				onclick={performDownload}
+				disabled={isLoading || loadedSightings.length === 0}
+			>
+				<DownloadOutline class="h-4 w-4 mr-2" />
+				{formatInfo[selectedFormat as keyof typeof formatInfo].name} herunterladen
+			</button>
 		</div>
 	</div>
-{/if}
+	<label class="modal-backdrop" for="export-modal">Close</label>
+</div>

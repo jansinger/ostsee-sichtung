@@ -41,7 +41,7 @@
 		'data-testid': dataTestId
 	}: Props = $props();
 
-	// Dynamic CSS classes
+	// Dynamic CSS classes - pure DaisyUI
 	let checkboxClasses = $derived.by(() => {
 		const base = 'checkbox checkbox-primary';
 		const sizeClass = size === 'sm' ? 'checkbox-sm' : size === 'lg' ? 'checkbox-lg' : '';

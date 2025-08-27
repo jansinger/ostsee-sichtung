@@ -4,8 +4,6 @@
 	import FormActions from './form/FormActions.svelte';
 	import RequiredConsent from './form/RequiredConsent.svelte';
 
-	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
-	import UserMenu from '$lib/components/UserMenu.svelte';
 	import { submitSightingForm } from '$lib/form/submitSightingForm';
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
@@ -19,8 +17,9 @@
 		saveUserContactDataWithConsent,
 		STORAGE_KEYS
 	} from '$lib/storage/localStorage';
-	import type { FormContext, SightingFormData, User, UserContactData } from '$lib/types';
+	import type { FormContext, SightingFormData, UserContactData } from '$lib/types';
 	import type { SightingFormValues } from '$lib/types/Form';
+	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 	import { combineToDate } from '$lib/utils/format/dateTime';
 	import { createId } from '@paralleldrive/cuid2';
 	import { formStepsConfig } from '../formConfig';
@@ -37,12 +36,10 @@
 		onSubmit = async (value) => {
 			logger.info({ value }, 'Form submitted:');
 		},
-		onCancel = () => {},
-		user = null
+		onCancel = () => {}
 	}: {
 		onSubmit?: (data: SightingFormValues) => Promise<void>;
 		onCancel?: () => void;
-		user?: User | null;
 	} = $props();
 
 	// Lade gespeicherte Benutzer-Kontaktdaten
@@ -164,30 +161,18 @@
 	});
 </script>
 
-<!--div class="bg-base-100 min-h-screen py-4 sm:py-8">
-	<div class="container mx-auto max-w-4xl px-2 sm:px-4"-->
-<!-- Header with Logo and User Menu -->
-<div class="relative mb-6 flex items-center justify-between">
-	<div class="flex flex-1 justify-center">
-		<OstseeTiereLogo size="lg" showText={true} />
-	</div>
-	{#if user}
-		<div class="flex-shrink-0">
-			<UserMenu {user} position="right" />
+<Form {...formProps} bind:context={formContext}>
+	{#if isNotIFrame}
+		<!-- Form Title -->
+		<div class="mb-4 text-center sm:mb-8">
+			<h1 class="text-base-content mb-2 text-2xl font-bold sm:text-3xl lg:text-4xl">
+				Meerestier-Sichtung melden
+			</h1>
+			<p class="text-base-content/70 px-2 text-sm sm:text-lg">
+				Helfen Sie der Forschung mit Ihrer Wal- oder Robbensichtung
+			</p>
 		</div>
 	{/if}
-</div>
-
-<Form {...formProps} bind:context={formContext}>
-	<!-- Form Title -->
-	<div class="mb-4 text-center sm:mb-8">
-		<h1 class="text-base-content mb-2 text-2xl font-bold sm:text-3xl lg:text-4xl">
-			Meerestier-Sichtung melden
-		</h1>
-		<p class="text-base-content/70 px-2 text-sm sm:text-lg">
-			Helfen Sie der Forschung mit Ihrer Wal- oder Robbensichtung
-		</p>
-	</div>
 
 	<!-- Success Message -->
 	{#if submissionSuccess}
@@ -207,8 +192,8 @@
 	<FormSteps steps={formStepsConfig} bind:currentStep />
 
 	<!-- Form Content -->
-	<div class="card bg-base-100 shadow-xl" id="form-content">
-		<div class="card-body p-3 sm:p-6 lg:p-8">
+	<div class="card bg-base-100 shadow-xl sm:shadow-sm" id="form-content">
+		<div class="card-body p-1 sm:p-2 lg:p-4">
 			<!-- Step Content -->
 			<div class="min-h-[400px]">
 				{#if currentStep === 0}
@@ -339,42 +324,3 @@
 		</div>
 	</div>
 </Form>
-
-<!---/div>
-</div-->
-
-<style>
-	.container {
-		max-width: 1024px;
-	}
-
-	.card {
-		transition: all 0.2s ease;
-	}
-
-	.alert {
-		animation: slideInDown 0.3s ease;
-	}
-
-	@keyframes slideInDown {
-		from {
-			opacity: 0;
-			transform: translateY(-10px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	@media (max-width: 640px) {
-		.container {
-			padding-left: 0.5rem;
-			padding-right: 0.5rem;
-		}
-
-		.card-body {
-			padding: 0.75rem !important;
-		}
-	}
-</style>

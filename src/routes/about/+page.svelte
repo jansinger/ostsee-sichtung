@@ -567,7 +567,9 @@ SOFTWARE.</pre>
 			<div class="max-w-4xl">
 				<div class="mb-8">
 					<div class="avatar mb-6">
-						<div class="w-32 rounded-full ring ring-primary ring-offset-base-100 ring-offset-4 shadow-xl bg-gradient-to-br from-primary/10 to-secondary/10">
+						<div
+							class="ring-primary ring-offset-base-100 from-primary/10 to-secondary/10 w-32 rounded-full bg-gradient-to-br shadow-xl ring ring-offset-4"
+						>
 							<OstseeTiereLogo size="lg" showText={false} />
 						</div>
 					</div>
@@ -619,16 +621,6 @@ SOFTWARE.</pre>
 					</a>
 				</div>
 			</div>
-		</div>
-	</div>
-
-	<!-- Contact Section -->
-	<div class="mt-12 text-center text-sm text-gray-500">
-		<p class="mb-2">Bei Fragen oder Anregungen stehen wir Ihnen gerne zur Verfügung.</p>
-		<div class="flex items-center justify-center gap-4">
-			<span>© 2025 Deutsches Meeresmuseum</span>
-			<span>•</span>
-			<span>Stralsund, Deutschland</span>
 		</div>
 	</div>
 </div>

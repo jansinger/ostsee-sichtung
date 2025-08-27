@@ -8,11 +8,9 @@
 	import ModernReportForm from '$lib/report/components/ModernReportForm.svelte';
 	import SubmissionSuccess from '$lib/report/components/SubmissionSuccess.svelte';
 	import type { SightingFormValues } from '$lib/types/Form';
-	import type { PageData } from './$types';
+	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 
 	const logger = createLogger('main:page');
-
-	let { data }: { data: PageData } = $props();
 
 	// Success state management
 	let submissionSuccess = $state(false);
@@ -73,14 +71,14 @@
 	/>
 </svelte:head>
 
-<div data-theme="meeresmuseum" class="bg-base-100 mx-auto max-w-2xl p-6">
+<div class="bg-base-100 mx-auto p-6" class:max-w-[600px]={!isNotIFrame}>
 	<div class="mb-8">
 		<!-- Form Content -->
 
 		{#if submissionSuccess && submittedData}
 			<SubmissionSuccess {submittedData} {handleNewReport} />
 		{:else}
-			<ModernReportForm onSubmit={handleSubmit} onCancel={handleCancel} user={data.user} />
+			<ModernReportForm onSubmit={handleSubmit} onCancel={handleCancel} />
 		{/if}
 	</div>
 </div>

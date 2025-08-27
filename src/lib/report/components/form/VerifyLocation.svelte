@@ -98,7 +98,7 @@
 	});
 </script>
 
-<div class="min-h-[6rem]">
+<div class="mt-2 min-h-[6rem]">
 	{#if coordinates}
 		{#if isLoading}
 			<!-- Loading state -->
