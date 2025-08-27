@@ -71,7 +71,11 @@
 	/>
 </svelte:head>
 
-<div class="bg-base-100 mx-auto p-6" class:max-w-[600px]={!isNotIFrame}>
+<div
+	class="bg-base-100 mx-auto p-6"
+	class:max-w-[600px]={!isNotIFrame}
+	class:max-w-2xl={isNotIFrame}
+>
 	<div class="mb-8">
 		<!-- Form Content -->
 
