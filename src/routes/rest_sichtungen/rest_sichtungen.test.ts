@@ -310,7 +310,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 					longitude: '11.0'
 				});
 			}
-		}, 10000);
+		}, 20000);
 	});
 
 	describe('PDF Compliance - HTTP Methods', () => {

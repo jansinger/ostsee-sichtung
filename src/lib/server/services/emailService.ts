@@ -195,7 +195,7 @@ export class EmailService {
 			}
 
 			// Convert database sighting to a simpler format for email template
-			const sightingFormValues: any = {
+			const sightingFormValues: SightingFormValues = {
 				latitude: sighting.latitude ? parseFloat(sighting.latitude) : 0,
 				longitude: sighting.longitude ? parseFloat(sighting.longitude) : 0,
 				sightingDatetime: sighting.sightingDate || undefined,

@@ -182,7 +182,7 @@ export class SichtungenMap {
 						crossOrigin: 'anonymous',
 						// Handle tile loading errors gracefully
 						tileLoadFunction: (tile, src) => {
-							const img = (tile as any).getImage() as HTMLImageElement;
+							const img = (tile as { getImage(): HTMLImageElement }).getImage();
 							img.onload = () => {
 								// Tile loaded successfully - for debugging
 								// console.log('OpenSeaMap tile loaded:', src);

@@ -49,7 +49,7 @@ const DEFAULT_VALUES = {
 } as const;
 
 // In-memory cache for client-side usage
-let clientConfigCache: Record<string, any> = {};
+let clientConfigCache: Record<string, ConfigValue> = {};
 let clientCacheTimestamp = 0;
 const CLIENT_CACHE_TTL = 300000; // 5 minutes
 
@@ -93,7 +93,7 @@ export class ServerConfigService {
 		return Array.isArray(value) ? value : [];
 	}
 
-	static async getObject<T extends Record<string, any>>(key: keyof typeof DEFAULT_VALUES): Promise<T> {
+	static async getObject<T extends Record<string, unknown>>(key: keyof typeof DEFAULT_VALUES): Promise<T> {
 		const value = await this.get(key);
 		return typeof value === 'object' && value !== null && !Array.isArray(value) 
 			? value as T 
@@ -177,7 +177,7 @@ export class ClientConfigService {
 	/**
 	 * Load configurations from server for client-side usage
 	 */
-	static async loadConfigs(): Promise<Record<string, any>> {
+	static async loadConfigs(): Promise<Record<string, ConfigValue>> {
 		if (!browser) return {};
 
 		// Check cache

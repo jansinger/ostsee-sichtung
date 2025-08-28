@@ -27,7 +27,7 @@
 	let showAllSettings = $state(false);
 	let isSuperAdmin = $state(data.isSuperAdmin || false);
 
-	const categoryIcons: Record<string, any> = {
+	const categoryIcons: Record<string, typeof Mail> = {
 		email: Mail,
 		display: Globe,
 		security: Lock,
