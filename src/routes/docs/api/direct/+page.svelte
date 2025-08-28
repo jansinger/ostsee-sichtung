@@ -1,8 +1,8 @@
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
-	let scalarContainer;
+	let scalarContainer: HTMLDivElement | undefined;
 	let isLoading = true;
 	let hasError = false;
 	let errorMessage = '';
@@ -18,10 +18,10 @@
 					spec: {
 						url: '/openapi.yml'
 					},
-					layout: 'modern',
-					theme: 'default',
+					layout: 'modern' as const,
+					theme: 'default' as const,
 					showSidebar: true,
-					searchHotKey: 'k',
+					searchHotKey: 'k' as const,
 					customCss: `
 						.scalar-app {
 							font-family: 'Roboto', system-ui, sans-serif;
@@ -31,14 +31,14 @@
 					`
 				};
 
-				// Mount Scalar API Reference
-				ApiReference(scalarContainer, configuration);
+				// Mount Scalar API Reference - use new operator
+				new ApiReference(scalarContainer, configuration);
 				isLoading = false;
 
-			} catch (error) {
+			} catch (error: unknown) {
 				console.error('Failed to load Scalar API Reference:', error);
 				hasError = true;
-				errorMessage = error.message || 'Scalar API-Dokumentation konnte nicht geladen werden';
+				errorMessage = (error instanceof Error ? error.message : 'Unknown error') || 'Scalar API-Dokumentation konnte nicht geladen werden';
 				isLoading = false;
 			}
 		}

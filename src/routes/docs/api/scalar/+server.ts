@@ -8,7 +8,7 @@ const configuration = {
 	theme: 'default' as const,
 	layout: 'modern' as const,
 	showSidebar: true,
-	searchHotKey: 'k',
+	searchHotKey: 'k' as const,
 	hiddenClients: [],
 	isEditable: false,
 	darkMode: false,
