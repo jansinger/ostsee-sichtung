@@ -14,7 +14,7 @@ export const load: PageServerLoad = async () => {
 				deadAnimals: sql<number>`COUNT(CASE WHEN ${sightings.isDead} = 1 THEN 1 END)::integer`,
 				verifiedSightings: sql<number>`COUNT(CASE WHEN ${sightings.verified} = 1 THEN 1 END)::integer`,
 				approvedSightings: sql<number>`COUNT(CASE WHEN ${sightings.approvedAt} IS NOT NULL THEN 1 END)::integer`,
-				withMedia: sql<number>`COUNT(CASE WHEN ${sightings.mediaFile} IS NOT NULL AND ${sightings.mediaFile} != '' THEN 1 END)::integer`
+				withMedia: sql<number>`COUNT(CASE WHEN ${sightings.mediaUpload} != 0 THEN 1 END)::integer`
 			})
 			.from(sightings);
 

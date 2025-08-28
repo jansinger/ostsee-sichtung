@@ -207,7 +207,7 @@
 					<div class="stat-desc">
 						{formatPercentage(
 							((data.basicStats?.deadAnimals || 0) / (data.basicStats?.totalSightings || 1)) * 100
-						)} aller Sichtungen
+						)} der Sichtungen
 					</div>
 				</div>
 			</div>
@@ -222,7 +222,7 @@
 					<div class="stat-desc">
 						{formatPercentage(
 							((data.basicStats?.withMedia || 0) / (data.basicStats?.totalSightings || 1)) * 100
-						)} dokumentiert
+						)} aller Sichtungen
 					</div>
 				</div>
 			</div>
