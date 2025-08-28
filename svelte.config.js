@@ -21,6 +21,7 @@ const config = {
 				'script-src': [
 					"'self'",
 					"'wasm-unsafe-eval'",
+					"'unsafe-inline'", // Required for Scalar API documentation
 					...(process.env.NODE_ENV === 'development' ? ["'unsafe-eval'"] : [])
 				],
 				'style-src': ["'self'", "'unsafe-inline'", 'https://openlayers.org'],

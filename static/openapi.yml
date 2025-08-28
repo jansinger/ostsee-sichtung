@@ -1260,6 +1260,15 @@ components:
         example: true
 
   schemas:
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Fehlermeldung
+          example: "Ein Fehler ist aufgetreten"
     PublicSighting:
       type: object
       description: Öffentlich verfügbare Sichtungsdaten
@@ -1666,7 +1675,7 @@ components:
                 type: number
               minItems: 2
               maxItems: 2
-              description: [longitude, latitude]
+              description: "[longitude, latitude]"
               example: [13.0814, 54.3233]
         properties:
           type: object
@@ -1817,62 +1826,6 @@ components:
             email: ["E-Mail ist erforderlich", "Ungültiges E-Mail-Format"]
             latitude: ["Breitengrad muss zwischen -90 und 90 liegen"]
 
-  responses:
-    BadRequest:
-      description: Ungültige Anfrage
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-
-    Unauthorized:
-      description: Nicht authentifiziert
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            success: false
-            error: "Authentifizierung erforderlich"
-
-    Forbidden:
-      description: Nicht autorisiert
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            success: false
-            error: "Keine Berechtigung für diese Operation"
-
-    NotFound:
-      description: Ressource nicht gefunden
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            success: false
-            error: "Ressource nicht gefunden"
-
-    ValidationError:
-      description: Validierungsfehler
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ValidationErrorResponse'
-
-    InternalServerError:
-      description: Interner Serverfehler
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
-          example:
-            success: false
-            error: "Interner Serverfehler"
-
-    # Legacy API Schemas
     LegacySightingRequest:
       type: object
       title: Legacy Sichtungsanfrage
@@ -1913,244 +1866,6 @@ components:
           format: email
           description: E-Mail-Adresse des Melders
           example: "max@example.com"
-        
-        # Standortdaten
-        gps_breite:
-          type: number
-          format: float
-          description: Breitengrad in Dezimalgrad
-          minimum: -90
-          maximum: 90
-          example: 54.3233
-        gps_laenge:
-          type: number
-          format: float
-          description: Längengrad in Dezimalgrad
-          minimum: -180
-          maximum: 180
-          example: 13.0814
-        fahrwasser:
-          type: string
-          description: Fahrwasser oder Gebiet
-          maxLength: 255
-          example: "Greifswalder Bodden"
-        seezeichen:
-          type: string
-          description: Seezeichen oder Strandabschnitt
-          maxLength: 255
-          example: "Leuchtturm Arkona"
-        
-        # Sichtungskontext
-        vonwo:
-          type: integer
-          description: 'Beobachtungsstandort (0=Sonstiges, 1=Segelschiff, 2=Motorboot, 3=Land, 4=Fähre)'
-          minimum: 0
-          maximum: 4
-          example: 1
-        vonwo_text:
-          type: string
-          description: 'Beschreibung bei vonwo=0 (Sonstiges)'
-          maxLength: 255
-          example: "Angelkutter"
-        entfernung:
-          type: integer
-          description: 'Entfernung (1=<10m, 2=10-50m, 3=50-100m, 4=100-500m, 5=>500m)'
-          minimum: 1
-          maximum: 5
-          example: 3
-        anzahl_schiffe:
-          type: integer
-          description: Anzahl Schiffe in der Umgebung
-          minimum: 0
-          example: 2
-        anzahl_jung:
-          type: integer
-          description: Anzahl Jungtiere
-          minimum: 0
-          example: 1
-        verteilung:
-          type: integer
-          description: 'Verteilung der Tiere (0=Sonstiges, 1=einzeln, 2=Mutter+Kind, 3=Schule)'
-          minimum: 0
-          maximum: 3
-          example: 1
-        verteilung_text:
-          type: string
-          description: 'Beschreibung bei verteilung=0 (Sonstiges)'
-          maxLength: 255
-          
-        # Medien
-        aufnahme:
-          type: string
-          description: Dateiname der Aufnahme
-          maxLength: 255
-          example: "whale_photo.jpg"
-        aufnahmeHochladen:
-          type: integer
-          description: 'Aufnahme hochgeladen Flag (0=nein, 1=ja)'
-          enum: [0, 1]
-          example: 1
-          
-        # Verhalten
-        verhalten:
-          type: integer
-          description: 'Verhalten (0=Sonstiges, 1=schwimmen, 2=futtersuchen, 3=ruhen)'
-          minimum: 0
-          maximum: 3
-          example: 1
-        verhalten_text:
-          type: string
-          description: 'Beschreibung bei verhalten=0 (Sonstiges)'
-          maxLength: 255
-        reaktion:
-          type: string
-          description: Reaktion der Tiere
-          maxLength: 255
-          example: "Neugieriges Annähern"
-        sonstige_auffälligkeiten:
-          type: string
-          description: Weitere Auffälligkeiten
-          maxLength: 500
-          example: "Ungewöhnlich große Gruppe"
-          
-        # Umweltbedingungen
-        seegang:
-          type: integer
-          description: 'Seegang (0=keine Angabe, 1=glatt, 2=gekräuselt, 3=bewegt, 4=grob, 5=hoch)'
-          minimum: 0
-          maximum: 5
-          example: 2
-        windrichtung:
-          type: string
-          description: 'Windrichtung'
-          enum: ['N','NW','W','SW','S','SO','O','NO']
-          example: "SW"
-        windstaerke:
-          type: string
-          description: 'Windstärke in Beaufort (1-12)'
-          pattern: '^([1-9]|1[0-2])$'
-          example: "3"
-        sichtweite:
-          type: integer
-          description: 'Sichtweite (1=>20km, 2=bis 20km, 3=bis 4km, 4=bis 1km)'
-          minimum: 1
-          maximum: 4
-          example: 2
-          
-        # Schiffsdaten
-        schiffsname:
-          type: string
-          description: Name des Schiffes
-          maxLength: 64
-          example: "MS Ostsee"
-        heimathafen:
-          type: string
-          description: Heimathafen
-          maxLength: 64
-          example: "Rostock"
-        bootstyp:
-          type: string
-          description: Typ des Bootes
-          maxLength: 64
-          example: "Segelyacht"
-        bootsantrieb:
-          type: integer
-          description: 'Bootsantrieb (0=Sonstiges, 1=Motor, 2=Segel, 3=treibend, 4=Anker)'
-          minimum: 0
-          maximum: 4
-          example: 2
-        bootsantrieb_text:
-          type: string
-          description: 'Beschreibung bei bootsantrieb=0 (Sonstiges)'
-          maxLength: 255
-          
-        # Kontaktdaten
-        strasse:
-          type: string
-          description: Straße
-          maxLength: 64
-          example: "Musterstraße 123"
-        plz:
-          type: string
-          description: Postleitzahl
-          maxLength: 5
-          pattern: '^\d{5}$'
-          example: "18055"
-        ort:
-          type: string
-          description: Ort
-          maxLength: 64
-          example: "Rostock"
-        telefon:
-          type: string
-          description: Telefonnummer
-          maxLength: 64
-          example: "+49 381 123456"
-        fax:
-          type: string
-          description: Faxnummer
-          maxLength: 64
-          
-        # Einverständniserklärungen
-        namensnennung:
-          type: integer
-          description: 'Namensnennung gewünscht (0=nein, 1=ja)'
-          enum: [0, 1]
-          example: 1
-        schiffnamensnennung:
-          type: integer
-          description: 'Schiffsname darf angezeigt werden (0=nein, 1=ja)'
-          enum: [0, 1]
-          example: 0
-          
-        # Weitere Felder
-        bemerkungen:
-          type: string
-          description: Zusätzliche Bemerkungen
-          maxLength: 1000
-          example: "Sehr schöne Beobachtung bei perfektem Wetter"
-        eingangskanal:
-          type: integer
-          description: 'Eingangskanal (0=Web, 1=E-Mail, 2=Post, 3=Fax, 4=App, 5=Telefon)'
-          minimum: 0
-          maximum: 5
-          example: 4
-        tierart:
-          type: integer
-          description: 'Tierart (0=Schweinswal, 1=Kegelrobbe, 2=Seehund, etc.)'
-          minimum: 0
-          default: 0
-          example: 0
-        totfund:
-          type: integer
-          description: 'Totfund Flag (0=nein, 1=ja)'
-          enum: [0, 1]
-          example: 0
-          
-        # Totfund-spezifische Felder
-        totfund_zustand:
-          type: integer
-          description: 'Zustand des toten Tieres (0=unbekannt, 1=frisch, ...5=skelett)'
-          minimum: 0
-          maximum: 5
-          example: 2
-        totfund_geschlecht:
-          type: integer
-          description: 'Geschlecht (0=unbekannt, 1=weiblich, 2=männlich)'
-          minimum: 0
-          maximum: 2
-          example: 0
-        totfund_groesse:
-          type: integer
-          description: 'Größe des toten Tieres in cm'
-          minimum: 0
-          maximum: 3000
-          example: 150
-        totfund_telefon:
-          type: integer
-          description: 'DMM wurde bereits telefonisch informiert (0=nein, 1=ja)'
-          enum: [0, 1]
-          example: 0
 
     LegacyCreateResponse:
       type: object
@@ -2181,16 +1896,6 @@ components:
           type: string
           description: Allgemeine Fehlermeldung
           example: "Validation failed"
-        details:
-          type: object
-          description: Feldspezifische Validierungsfehler (optional)
-          additionalProperties:
-            type: array
-            items:
-              type: string
-          example:
-            anzahl_gesamt: ["Total count is required"]
-            email: ["E-Mail ist erforderlich"]
 
     LegacyLocationResponse:
       type: object
@@ -2233,141 +1938,6 @@ components:
         tierart:
           type: array
           description: Verfügbare Tierarten
-          items:
-            type: object
-            properties:
-              value:
-                type: integer
-              label:
-                type: string
-          example:
-            - value: 0
-              label: "Schweinswal"
-            - value: 1
-              label: "Kegelrobbe"
-        vonwo:
-          type: array
-          description: 'Beobachtungsstandorte (ACHTUNG: "vonwo" nicht "beobachtungsort"!)'
-          items:
-            type: object
-            properties:
-              value:
-                type: integer
-              label:
-                type: string
-          example:
-            - value: 0
-              label: "Sonstiges"
-            - value: 1
-              label: "Segelschiff"
-        entfernung:
-          type: array
-          description: Entfernungsangaben
-          items:
-            type: object
-            properties:
-              value:
-                type: integer
-              label:
-                type: string
-        verteilung:
-          type: array
-          description: Tierverteilung
-          items:
-            type: object
-            properties:
-              value:
-                type: integer
-              label:
-                type: string
-        verhalten:
-          type: array
-          description: Tierverhalten
-          items:
-            type: object
-            properties:
-              value:
-                type: integer
-              label:
-                type: string
-        seegang:
-          type: array
-          description: Seegang-Stufen
-          items:
-            type: object
-            properties:
-              value:
-                type: integer
-              label:
-                type: string
-        windrichtung:
-          type: array
-          description: Windrichtungen
-          items:
-            type: object
-            properties:
-              value:
-                type: string
-              label:
-                type: string
-          example:
-            - value: "N"
-              label: "Nord"
-            - value: "SW"
-              label: "Südwest"
-        windstaerke:
-          type: array
-          description: Windstärken (Beaufort)
-          items:
-            type: object
-            properties:
-              value:
-                type: string
-              label:
-                type: string
-        sichtweite:
-          type: array
-          description: Sichtweitenstufen
-          items:
-            type: object
-            properties:
-              value:
-                type: integer
-              label:
-                type: string
-        bootsantrieb:
-          type: array
-          description: Bootsantriebsarten
-          items:
-            type: object
-            properties:
-              value:
-                type: integer
-              label:
-                type: string
-        eingangskanal:
-          type: array
-          description: Eingangskanäle der Meldung
-          items:
-            type: object
-            properties:
-              value:
-                type: integer
-              label:
-                type: string
-        totfund_zustand:
-          type: array
-          description: Zustände toter Tiere
-          items:
-            type: object
-            properties:
-              value:
-                type: integer
-              label:
-                type: string
-        totfund_geschlecht:
-          type: array
-          description: Geschlechtsangaben
           items:
             type: object
             properties:
@@ -2447,3 +2017,58 @@ components:
           nullable: true
           description: 'Gebiet/Gewässer - Area'
           example: "Kieler Förde"
+
+  responses:
+    BadRequest:
+      description: Ungültige Anfrage
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Nicht authentifiziert
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Authentifizierung erforderlich"
+
+    Forbidden:
+      description: Nicht autorisiert
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Keine Berechtigung für diese Operation"
+
+    NotFound:
+      description: Ressource nicht gefunden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Ressource nicht gefunden"
+
+    ValidationError:
+      description: Validierungsfehler
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+
+    InternalServerError:
+      description: Interner Serverfehler
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Interner Serverfehler"
