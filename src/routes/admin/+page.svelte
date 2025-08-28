@@ -5,7 +5,7 @@
 	import ExportModal from '$lib/components/admin/ExportModal.svelte';
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
 	import { createLogger } from '$lib/logger';
-	import Checkbox from '$lib/report/components/form/fields/Checkbox.svelte';
+	import BaseToggle from '$lib/report/components/form/fields/BaseToggle.svelte';
 	import { getDistanceLabel } from '$lib/report/formOptions/distance';
 	import { getDistributionLabel } from '$lib/report/formOptions/distribution';
 	import { getEntryChannelOptions } from '$lib/report/formOptions/entryChannel';
@@ -458,12 +458,11 @@
 							/></td
 						>
 						<td>
-							<Checkbox
-								label=""
+							<BaseToggle
+								label="Verifiziert"
 								name={`verified-${sighting.id}`}
 								checked={!!sighting.verified}
-								onclick={(e: MouseEvent) => {
-									e.preventDefault();
+								onchange={() => {
 									toggleVerifiedStatus(sighting.id, !!sighting.verified);
 								}}
 							/>
