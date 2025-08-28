@@ -2,17 +2,18 @@
 
 This project uses third-party software components. The following is a list of these components and their respective licenses.
 
-Generated on: [AUTO-GENERATED]
+Generated on: 08/28/2025
 
 ## License Summary
 
 | License Type | Count | Compatibility |
 |-------------|-------|---------------|
-| MIT | 106 | ✅ Fully Compatible |
+| MIT | 131 | ✅ Fully Compatible |
+| Apache-2.0 | 8 | ✅ Fully Compatible |
 | ISC | 8 | ✅ Fully Compatible |
-| Apache-2.0 | 7 | ✅ Fully Compatible |
 | BSD-3-Clause | 3 | ✅ Fully Compatible |
 | OFL-1.1 | 2 | ✅ Compatible (Fonts) |
+| MPL-2.0 | 2 | ⚠️ Weak Copyleft |
 | Unlicense | 2 | ✅ Fully Compatible |
 | BSD-2-Clause | 1 | ✅ Fully Compatible |
 | UNLICENSED | 1 | ❓ Review Needed |
@@ -22,13 +23,16 @@ Generated on: [AUTO-GENERATED]
 | CC0-1.0 | 1 | ✅ Fully Compatible |
 | MIT AND BSD-3-Clause | 1 | ⚠️ Multiple Licenses |
 
-**Total Dependencies**: 135
+**Total Dependencies**: 163
 
 ## Detailed License Information
 
-### MIT (106 packages)
+### MIT (131 packages)
 
 **Compatibility**: ✅ Fully Compatible
+
+- **@esbuild/darwin-arm64@0.25.9**
+  - Repository: https://github.com/evanw/esbuild
 
 - **@fastify/busboy@2.1.1**
   - Repository: https://github.com/fastify/busboy
@@ -66,6 +70,34 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/petamoriken/float16
   - Publisher: Kenta Moriuchi
 
+- **@polka/url@1.0.0-next.29**
+  - Repository: https://github.com/lukeed/polka
+  - Publisher: Luke Edwards
+
+- **@rollup/rollup-darwin-arm64@4.46.2**
+  - Repository: https://github.com/rollup/rollup
+  - Publisher: Lukas Taegert-Atkinson
+
+- **@scalar/core@0.3.14**
+  - Repository: https://github.com/scalar/scalar
+  - Publisher: Scalar
+
+- **@scalar/openapi-types@0.3.7**
+  - Repository: https://github.com/scalar/scalar
+  - Publisher: Scalar
+
+- **@scalar/sveltekit@0.1.20**
+  - Repository: https://github.com/scalar/scalar
+  - Publisher: Scalar
+
+- **@scalar/types@0.2.13**
+  - Repository: https://github.com/scalar/scalar
+  - Publisher: Scalar
+
+- **@standard-schema/spec@1.0.0**
+  - Repository: https://github.com/standard-schema/standard-schema
+  - Publisher: Colin McDonnell
+
 - **@steeze-ui/lucide-icons@1.4.1**
   - Repository: https://github.com/steeze-ui/icons
   - Publisher: Justin Voitel
@@ -77,6 +109,17 @@ Generated on: [AUTO-GENERATED]
 - **@sveltejs/acorn-typescript@1.0.5**
   - Repository: https://github.com/sveltejs/acorn-typescript
   - Publisher: tyrealhu and the Svelte team
+
+- **@sveltejs/kit@2.31.1**
+  - Repository: https://github.com/sveltejs/kit
+
+- **@sveltejs/vite-plugin-svelte-inspector@5.0.0**
+  - Repository: https://github.com/sveltejs/vite-plugin-svelte
+  - Publisher: dominikg
+
+- **@sveltejs/vite-plugin-svelte@6.1.3**
+  - Repository: https://github.com/sveltejs/vite-plugin-svelte
+  - Publisher: dominikg
 
 - **@turf/boolean-point-in-polygon@7.2.0**
   - Repository: https://github.com/Turfjs/turf
@@ -94,6 +137,9 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
 
 - **@types/connect@3.4.38**
+  - Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+- **@types/cookie@0.6.0**
   - Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
 
 - **@types/estree@1.0.8**
@@ -120,7 +166,7 @@ Generated on: [AUTO-GENERATED]
 - **@types/ms@2.1.0**
   - Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
 
-- **@types/node@22.17.2**
+- **@types/node@22.18.0**
   - Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
 
 - **@types/qs@6.14.0**
@@ -152,25 +198,26 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/lukeed/clsx
   - Publisher: Luke Edwards
 
-- **colorette@2.0.20**
-  - Repository: https://github.com/jorgebucaran/colorette
-  - Publisher: Jorge Bucaran
-
-- **dateformat@4.6.3**
-  - Repository: https://github.com/felixge/node-dateformat
-  - Publisher: Steven Levithan
+- **cookie@0.7.2**
+  - Repository: https://github.com/jshttp/cookie
+  - Publisher: Roman Shtylman
 
 - **debug@4.4.1**
   - Repository: https://github.com/debug-js/debug
   - Publisher: Josh Junon
 
+- **deepmerge@4.3.1**
+  - Repository: https://github.com/TehShrike/deepmerge
+
 - **dequal@2.0.3**
   - Repository: https://github.com/lukeed/dequal
   - Publisher: Luke Edwards
 
-- **end-of-stream@1.4.5**
-  - Repository: https://github.com/mafintosh/end-of-stream
-  - Publisher: Mathias Buus
+- **devalue@5.3.2**
+  - Repository: https://github.com/sveltejs/devalue
+
+- **esbuild@0.25.9**
+  - Repository: https://github.com/evanw/esbuild
 
 - **esm-env@1.2.2**
   - Repository: https://github.com/benmccann/esm-env
@@ -183,29 +230,27 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/MikeKovarik/exifr
   - Publisher: Mike Kovarik
 
-- **fast-copy@3.0.2**
-  - Repository: https://github.com/planttheidea/fast-copy
-  - Publisher: tony_quetano@planttheidea.com
-
 - **fast-redact@3.5.0**
   - Repository: https://github.com/davidmarkclements/fast-redact
   - Publisher: David Mark Clements
 
-- **fast-safe-stringify@2.1.1**
-  - Repository: https://github.com/davidmarkclements/fast-safe-stringify
-  - Publisher: David Mark Clements
+- **fdir@6.5.0**
+  - Repository: https://github.com/thecodrr/fdir
+  - Publisher: thecodrr
 
 - **flowbite-svelte-icons@2.3.0**
   - Repository: https://github.com/themesberg/flowbite-svelte-icons
   - Publisher: Shinichi Okada
 
+- **fsevents@2.3.2**
+  - Repository: https://github.com/fsevents/fsevents
+
+- **fsevents@2.3.3**
+  - Repository: https://github.com/fsevents/fsevents
+
 - **geotiff@2.1.3**
   - Repository: https://github.com/geotiffjs/geotiff.js
   - Publisher: Fabian Schindler
-
-- **help-me@5.0.0**
-  - Repository: https://github.com/mcollina/help-me
-  - Publisher: Matteo Collina
 
 - **is-buffer@2.0.5**
   - Repository: https://github.com/feross/is-buffer
@@ -218,13 +263,12 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/Rich-Harris/is-reference
   - Publisher: Rich Harris
 
+- **jiti@2.5.1**
+  - Repository: https://github.com/unjs/jiti
+
 - **jose@4.15.9**
   - Repository: https://github.com/panva/jose
   - Publisher: Filip Skokan
-
-- **joycon@3.1.1**
-  - Repository: https://github.com/egoist/joycon
-  - Publisher: egoist
 
 - **jsonwebtoken@9.0.2**
   - Repository: https://github.com/auth0/node-jsonwebtoken
@@ -241,6 +285,10 @@ Generated on: [AUTO-GENERATED]
 - **jws@3.2.2**
   - Repository: https://github.com/brianloveswords/node-jws
   - Publisher: Brian J Brennan
+
+- **kleur@4.1.5**
+  - Repository: https://github.com/lukeed/kleur
+  - Publisher: Luke Edwards
 
 - **limiter@1.1.5**
   - Repository: https://github.com/jhurliman/node-rate-limiter
@@ -290,12 +338,24 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/rich-harris/magic-string
   - Publisher: Rich Harris
 
-- **minimist@1.2.8**
-  - Repository: https://github.com/minimistjs/minimist
-  - Publisher: James Halliday
+- **mri@1.2.0**
+  - Repository: https://github.com/lukeed/mri
+  - Publisher: Luke Edwards
+
+- **mrmime@2.0.1**
+  - Repository: https://github.com/lukeed/mrmime
+  - Publisher: Luke Edwards
 
 - **ms@2.1.3**
   - Repository: https://github.com/vercel/ms
+
+- **nanoid@3.3.11**
+  - Repository: https://github.com/ai/nanoid
+  - Publisher: Andrey Sitnik
+
+- **nanoid@5.1.5**
+  - Repository: https://github.com/ai/nanoid
+  - Publisher: Andrey Sitnik
 
 - **on-exit-leak-free@2.1.2**
   - Repository: https://github.com/mcollina/on-exit-or-gc
@@ -305,13 +365,13 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/kesla/parse-headers
   - Publisher: David Björklund
 
+- **picomatch@4.0.3**
+  - Repository: https://github.com/micromatch/picomatch
+  - Publisher: Jon Schlinkert
+
 - **pino-abstract-transport@2.0.0**
   - Repository: https://github.com/pinojs/pino-abstract-transport
   - Publisher: Matteo Collina
-
-- **pino-pretty@13.1.1**
-  - Repository: https://github.com/pinojs/pino-pretty
-  - Publisher: James Sumners
 
 - **pino-std-serializers@7.0.0**
   - Repository: https://github.com/pinojs/pino-std-serializers
@@ -325,6 +385,10 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/rowanwins/point-in-polygon-hao
   - Publisher: Rowan Winsemius
 
+- **postcss@8.5.6**
+  - Repository: https://github.com/postcss/postcss
+  - Publisher: Andrey Sitnik
+
 - **process-warning@5.0.0**
   - Repository: https://github.com/fastify/process-warning
   - Publisher: Tomas Della Vedova
@@ -336,10 +400,6 @@ Generated on: [AUTO-GENERATED]
 - **protocol-buffers-schema@3.6.0**
   - Repository: https://github.com/mafintosh/protocol-buffers-schema
   - Publisher: Mathias Buus
-
-- **pump@3.0.3**
-  - Repository: https://github.com/mafintosh/pump
-  - Publisher: Mathias Buus Madsen
 
 - **quick-format-unescaped@4.0.4**
   - Repository: https://github.com/davidmarkclements/quick-format
@@ -365,6 +425,14 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/tim-kos/node-retry
   - Publisher: Tim Koschützki
 
+- **rollup@4.46.2**
+  - Repository: https://github.com/rollup/rollup
+  - Publisher: Rich Harris
+
+- **sade@1.8.1**
+  - Repository: https://github.com/lukeed/sade
+  - Publisher: Luke Edwards
+
 - **safe-buffer@5.2.1**
   - Repository: https://github.com/feross/safe-buffer
   - Publisher: Feross Aboukhadijeh
@@ -373,13 +441,17 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/BridgeAR/safe-stable-stringify
   - Publisher: Ruben Bridgewater
 
+- **set-cookie-parser@2.7.1**
+  - Repository: https://github.com/nfriedly/set-cookie-parser
+  - Publisher: Nathan Friedly
+
+- **sirv@3.0.1**
+  - Repository: https://github.com/lukeed/sirv
+  - Publisher: Luke Edwards
+
 - **sonic-boom@4.2.0**
   - Repository: https://github.com/pinojs/sonic-boom
   - Publisher: Matteo Collina
-
-- **strip-json-comments@5.0.3**
-  - Repository: https://github.com/sindresorhus/strip-json-comments
-  - Publisher: Sindre Sorhus
 
 - **svelte-forms-lib@2.0.1**
   - Repository: https://github.com/tjinauyeung/svelte-forms-lib
@@ -410,9 +482,17 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/jquense/tiny-case
   - Publisher: Jason Quense
 
+- **tinyglobby@0.2.14**
+  - Repository: https://github.com/SuperchupuDev/tinyglobby
+  - Publisher: Superchupu
+
 - **toposort@2.0.2**
   - Repository: https://github.com/marcelklehr/toposort
   - Publisher: Marcel Klehr
+
+- **totalist@3.0.1**
+  - Repository: https://github.com/lukeed/totalist
+  - Publisher: Luke Edwards
 
 - **undici-types@6.21.0**
   - Repository: https://github.com/nodejs/undici
@@ -420,12 +500,23 @@ Generated on: [AUTO-GENERATED]
 - **undici@5.29.0**
   - Repository: https://github.com/nodejs/undici
 
+- **vite@7.1.3**
+  - Repository: https://github.com/vitejs/vite
+  - Publisher: Evan You
+
+- **vitefu@1.1.1**
+  - Repository: https://github.com/svitejs/vitefu
+
 - **yup@1.7.0**
   - Repository: https://github.com/jquense/yup
   - Publisher: @monasticpanic Jason Quense
 
 - **zimmerframe@1.1.2**
   - Repository: https://github.com/Rich-Harris/zimmerframe
+
+- **zod@3.24.1**
+  - Repository: https://github.com/colinhacks/zod
+  - Publisher: Colin McDonnell
 
 ### ISC (8 packages)
 
@@ -439,9 +530,9 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/isaacs/node-lru-cache
   - Publisher: Isaac Z. Schlueter
 
-- **once@1.4.0**
-  - Repository: https://github.com/isaacs/once
-  - Publisher: Isaac Z. Schlueter
+- **picocolors@1.1.1**
+  - Repository: https://github.com/alexeyraspopov/picocolors
+  - Publisher: Alexey Raspopov
 
 - **quickselect@3.0.0**
   - Repository: https://github.com/mourner/quickselect
@@ -455,13 +546,13 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/mcollina/split2
   - Publisher: Matteo Collina
 
-- **wrappy@1.0.2**
-  - Repository: https://github.com/npm/wrappy
-  - Publisher: Isaac Z. Schlueter
-
 - **yallist@4.0.0**
   - Repository: https://github.com/isaacs/yallist
   - Publisher: Isaac Z. Schlueter
+
+- **yaml@2.8.1**
+  - Repository: https://github.com/eemeli/yaml
+  - Publisher: Eemeli Aro
 
 ### BSD-3-Clause (3 packages)
 
@@ -475,9 +566,9 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/mapbox/pbf
   - Publisher: Konstantin Kaefer
 
-- **secure-json-parse@4.0.0**
-  - Repository: https://github.com/fastify/secure-json-parse
-  - Publisher: Eran Hammer
+- **source-map-js@1.2.1**
+  - Repository: https://github.com/7rulnik/source-map-js
+  - Publisher: Valentin 7rulnik Semirulnik
 
 ### BSD-2-Clause (1 packages)
 
@@ -486,7 +577,7 @@ Generated on: [AUTO-GENERATED]
 - **ol@10.6.1**
   - Repository: https://github.com/openlayers/openlayers
 
-### Apache-2.0 (7 packages)
+### Apache-2.0 (8 packages)
 
 **Compatibility**: ✅ Fully Compatible
 
@@ -500,6 +591,10 @@ Generated on: [AUTO-GENERATED]
 - **axobject-query@4.1.0**
   - Repository: https://github.com/A11yance/axobject-query
   - Publisher: Jesse Beach
+
+- **detect-libc@2.0.4**
+  - Repository: https://github.com/lovell/detect-libc
+  - Publisher: Lovell Fuller
 
 - **drizzle-orm@0.44.4**
   - Repository: https://github.com/drizzle-team/drizzle-orm
@@ -556,11 +651,21 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/fontsource/font-files
   - Publisher: Google Inc.
 
+### MPL-2.0 (2 packages)
+
+**Compatibility**: ⚠️ Weak Copyleft
+
+- **lightningcss-darwin-arm64@1.30.1**
+  - Repository: https://github.com/parcel-bundler/lightningcss
+
+- **lightningcss@1.30.1**
+  - Repository: https://github.com/parcel-bundler/lightningcss
+
 ### UNLICENSED (1 packages)
 
 **Compatibility**: ❓ Review Needed
 
-- **ostsee-tiere@1.8.1**
+- **ostsee-tiere@1.20.2**
 
 ### (MIT AND Zlib) (1 packages)
 

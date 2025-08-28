@@ -149,7 +149,28 @@
 				title="Scalar API Documentation"
 				class="w-full h-full border-0"
 				style="min-height: 100vh;"
+				loading="lazy"
+				sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation allow-pointer-lock"
+				allow="fullscreen"
+				onload={() => console.log('Scalar API documentation loaded successfully')}
+				onerror={() => {
+					console.error('Failed to load Scalar API documentation');
+					hasError = true;
+					errorMessage = 'Scalar API-Dokumentation konnte nicht geladen werden';
+				}}
 			></iframe>
+		</div>
+		
+		<!-- Fallback notice -->
+		<div class="mt-4 text-center">
+			<p class="text-sm text-gray-500">
+				Falls die interaktive Dokumentation nicht funktioniert, nutzen Sie die 
+				<a href="/docs/api/direct" class="link link-primary">Direkte Dokumentation</a>, 
+				<a href="/docs/api/fallback" class="link link-primary">Fallback-Dokumentation</a>
+				oder laden Sie die 
+				<a href="/openapi.yml" download="ostsee-tiere-api.yml" class="link link-primary">OpenAPI-Spec</a> 
+				direkt herunter.
+			</p>
 		</div>
 	{/if}
 </div>

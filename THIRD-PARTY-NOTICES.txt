@@ -3,11 +3,12 @@ THIRD-PARTY SOFTWARE NOTICES AND LICENSE TERMS
 
 This project uses the following third-party software components:
 
-MIT: 106 packages
+MIT: 131 packages
 OFL-1.1: 2 packages
-Apache-2.0: 7 packages
+Apache-2.0: 8 packages
 BSD-3-Clause: 3 packages
 ISC: 8 packages
+MPL-2.0: 2 packages
 BSD-2-Clause: 1 packages
 UNLICENSED: 1 packages
 (MIT AND Zlib): 1 packages
@@ -17,6 +18,6 @@ Unlicense: 2 packages
 CC0-1.0: 1 packages
 MIT AND BSD-3-Clause: 1 packages
 
-Total Dependencies: 135
+Total Dependencies: 163
 
 For detailed information, see THIRD-PARTY-NOTICES.md

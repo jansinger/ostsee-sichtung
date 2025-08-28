@@ -9,8 +9,10 @@ test.describe('Homepage', () => {
 		await expect(heading).toBeVisible();
 		await expect(heading).toContainText('Meerestier-Sichtung melden');
 
-		// Check for the presence of the form
-		await expect(page.locator('form')).toBeVisible();
+		// Check for the presence of the main form (not modal forms)
+		// Look specifically for the form that's not a modal-backdrop
+		const mainForm = page.locator('form:not(.modal-backdrop)').first();
+		await expect(mainForm).toBeVisible();
 	});
 
 	test('should have proper meta tags', async ({ page }) => {
@@ -70,8 +72,8 @@ test.describe('Form Navigation', () => {
 	test('should have working form elements', async ({ page }) => {
 		await page.goto('/');
 
-		// Warte auf das Formular
-		await page.waitForSelector('form', { timeout: 10000 });
+		// Warte auf das Hauptformular (nicht Modal-Forms)
+		await page.waitForSelector('form:not(.modal-backdrop)', { timeout: 10000 });
 
 		// Prüfe ob Formularfelder vorhanden sind
 		const formFields = page.locator('input, select, textarea').first();
