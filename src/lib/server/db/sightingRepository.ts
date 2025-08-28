@@ -23,7 +23,7 @@ import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting, UpdateSighting } from '$lib/types/sighting';
 import type { SightingFileInsert } from '$lib/types/sightingFile';
 import { isImageFile } from '$lib/utils';
-import { count, eq, isNotNull, sql } from 'drizzle-orm';
+import { count, eq, isNotNull, not, sql } from 'drizzle-orm';
 import { readImageExifData } from '../media/exifUtils';
 import { mapFormToSighting } from './mapFormToSighting';
 import { setSightingIdForReferenceId } from './sightingFilesRepository';
@@ -295,18 +295,26 @@ export interface SightingStatistics {
 	completionRate: number;
 	averageOptionalFields: number;
 	yearsOfService: number;
-	uniqueShips: number;
+	uniqueUsers: number;
 	sightingsWithMedia: number;
+	deadAnimalsFound: number;
 }
+
+// Einträge mit falsch übermitteltem Datum aussortieren
+const excludedDate = (() => {
+	const res = new Date(0);
+	res.setHours(2);
+	return res;
+})();
 
 /**
  * Ermittelt statistische Daten über Sichtungen für die FormHelp-Komponente
- * 
+ *
  * Diese Funktion berechnet verschiedene Metriken, die in der Hilfe-Sektion
  * angezeigt werden, um Benutzern den Wert ihrer Eingaben zu demonstrieren.
- * 
+ *
  * @returns Promise mit statistischen Daten
- * 
+ *
  * @example
  * const stats = await getSightingStatistics();
  * console.log(`Insgesamt ${stats.totalSightings} Sichtungen`);
@@ -316,18 +324,14 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 		logger.info('Ermittle Sichtungs-Statistiken');
 
 		// Gesamtanzahl Sichtungen
-		const [totalResult] = await db
-			.select({ count: count() })
-			.from(sightings);
-		
+		const [totalResult] = await db.select({ count: count() }).from(sightings);
+
 		const totalSightings = totalResult?.count || 0;
 
-		// Anzahl Sichtungen mit Mediendateien
 		const [mediaResult] = await db
-			.select({ count: count() })
-			.from(sightings)
-			.innerJoin(sightingFiles, eq(sightings.id, sightingFiles.sightingId));
-		
+			.selectDistinct({ count: count(sightingFiles.sightingId) })
+			.from(sightingFiles);
+
 		const sightingsWithMedia = mediaResult?.count || 0;
 
 		// Completion Rate (Prozentsatz der Sichtungen mit mindestens 8 ausgefüllten optionalen Feldern)
@@ -339,20 +343,21 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 					CASE WHEN ${sightings.seaState} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.visibility} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.windDirection} IS NOT NULL THEN 1 ELSE 0 END +
-					CASE WHEN ${sightings.windStrength} IS NOT NULL THEN 1 ELSE 0 END +
-					CASE WHEN ${sightings.animalBehavior} IS NOT NULL THEN 1 ELSE 0 END +
+					CASE WHEN ${sightings.windForce} IS NOT NULL THEN 1 ELSE 0 END +
+					CASE WHEN ${sightings.behavior} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.distribution} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.reaction} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.shipCount} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.shipName} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.boatType} IS NOT NULL THEN 1 ELSE 0 END +
-					CASE WHEN ${sightings.sightingTime} IS NOT NULL THEN 1 ELSE 0 END +
-					CASE WHEN ${sightings.remarks} IS NOT NULL THEN 1 ELSE 0 END
+					CASE WHEN ${sightings.sightingDate} IS NOT NULL THEN 1 ELSE 0 END +
+					CASE WHEN ${sightings.notes} IS NOT NULL THEN 1 ELSE 0 END
 				) >= 8`
 			);
 
 		const completeSightings = completionRateQuery[0]?.count || 0;
-		const completionRate = totalSightings > 0 ? Math.round((completeSightings / totalSightings) * 100) : 0;
+		const completionRate =
+			totalSightings > 0 ? Math.round((completeSightings / totalSightings) * 100) : 0;
 
 		// Durchschnittliche Anzahl ausgefüllter optionaler Felder
 		const avgOptionalQuery = await db
@@ -361,15 +366,15 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 					CASE WHEN ${sightings.seaState} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.visibility} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.windDirection} IS NOT NULL THEN 1 ELSE 0 END +
-					CASE WHEN ${sightings.windStrength} IS NOT NULL THEN 1 ELSE 0 END +
-					CASE WHEN ${sightings.animalBehavior} IS NOT NULL THEN 1 ELSE 0 END +
+					CASE WHEN ${sightings.windForce} IS NOT NULL THEN 1 ELSE 0 END +
+					CASE WHEN ${sightings.behavior} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.distribution} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.reaction} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.shipCount} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.shipName} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.boatType} IS NOT NULL THEN 1 ELSE 0 END +
-					CASE WHEN ${sightings.sightingTime} IS NOT NULL THEN 1 ELSE 0 END +
-					CASE WHEN ${sightings.remarks} IS NOT NULL THEN 1 ELSE 0 END
+					CASE WHEN ${sightings.sightingDate} IS NOT NULL THEN 1 ELSE 0 END +
+					CASE WHEN ${sightings.notes} IS NOT NULL THEN 1 ELSE 0 END
 				))`
 			})
 			.from(sightings);
@@ -378,62 +383,74 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 
 		// Jahre seit der ersten Sichtung
 		const firstSightingQuery = await db
-			.select({ 
-				minDate: sql<string>`MIN(${sightings.date})` 
+			.select({
+				minDate: sql<string>`MIN(${sightings.sightingDate})`
 			})
-			.from(sightings);
+			.from(sightings)
+			.where(not(eq(sightings.sightingDate, excludedDate)));
 
 		const firstSighting = firstSightingQuery[0]?.minDate;
-		const yearsOfService = firstSighting 
-			? new Date().getFullYear() - new Date(firstSighting).getFullYear() 
+		const yearsOfService = firstSighting
+			? new Date().getFullYear() - new Date(firstSighting).getFullYear()
 			: 0;
 
 		// Anzahl einzigartige Schiffe
-		const uniqueShipsQuery = await db
+		const uniqueUsersQuery = await db
 			.select({ count: count() })
 			.from(
-				db.selectDistinct({ shipName: sightings.shipName })
+				db
+					.selectDistinct({ email: sightings.email })
 					.from(sightings)
-					.where(isNotNull(sightings.shipName))
+					.where(isNotNull(sightings.email))
 					.as('unique_ships')
 			);
 
-		const uniqueShips = uniqueShipsQuery[0]?.count || 0;
+		const uniqueUsers = uniqueUsersQuery[0]?.count || 0;
+
+		// Anzahl Totfunde
+		const deadAnimalsQuery = await db
+			.select({ count: count() })
+			.from(sightings)
+			.where(eq(sightings.isDead, 1));
+
+		const deadAnimalsFound = deadAnimalsQuery[0]?.count || 0;
 
 		const statistics: SightingStatistics = {
 			totalSightings,
 			completionRate,
 			averageOptionalFields,
 			yearsOfService: Math.max(yearsOfService, 1), // Mindestens 1 Jahr anzeigen
-			uniqueShips,
-			sightingsWithMedia
+			uniqueUsers,
+			sightingsWithMedia,
+			deadAnimalsFound
 		};
 
 		logger.info(
-			{ 
+			{
 				totalSightings,
 				completionRate,
 				averageOptionalFields,
 				yearsOfService: statistics.yearsOfService,
-				uniqueShips,
-				sightingsWithMedia
+				uniqueUsers,
+				sightingsWithMedia,
+				deadAnimalsFound
 			},
 			'Sichtungs-Statistiken erfolgreich ermittelt'
 		);
 
 		return statistics;
-
 	} catch (error) {
 		logger.error({ error }, 'Fehler beim Ermitteln der Sichtungs-Statistiken');
-		
+
 		// Fallback-Statistiken bei Datenbankfehlern
 		return {
 			totalSightings: 2847, // Fallback-Wert aus der ursprünglichen Implementierung
 			completionRate: 89,
 			averageOptionalFields: 8,
 			yearsOfService: 15,
-			uniqueShips: 150,
-			sightingsWithMedia: 1200
+			uniqueUsers: 150,
+			sightingsWithMedia: 1200,
+			deadAnimalsFound: 25
 		};
 	}
 };

@@ -9,8 +9,9 @@
 		completionRate: 89,
 		averageOptionalFields: 8,
 		yearsOfService: 15,
-		uniqueShips: 150,
-		sightingsWithMedia: 1200
+		uniqueUsers: 150,
+		sightingsWithMedia: 1200,
+		deadAnimalsFound: 25
 	});
 
 	let loading = $state(true);
@@ -167,10 +168,10 @@
 									</div>
 									<div class="text-success-content text-sm font-medium">Jahre Treue</div>
 									<div class="text-success-content/70 mt-1 text-xs">
-										{#if !loading && statistics.uniqueShips > 0}
-											{statistics.uniqueShips} verschiedene Schiffe melden bereits regelmäßig
+										{#if !loading && statistics.uniqueUsers > 0}
+											{statistics.uniqueUsers} verschiedene Nutzer melden bereits regelmäßig
 										{:else}
-											melden manche Schiffe bereits regelmäßig
+											melden manche Nutzer bereits regelmäßig
 										{/if}
 									</div>
 								</div>
@@ -181,7 +182,9 @@
 										{#if loading}
 											<span class="loading loading-dots loading-sm"></span>
 										{:else}
-											{Math.round((statistics.sightingsWithMedia / statistics.totalSightings) * 100)}%
+											{Math.round(
+												(statistics.sightingsWithMedia / statistics.totalSightings) * 100
+											)}%
 										{/if}
 									</div>
 									<div class="text-success-content text-sm font-medium">mit Fotos/Videos</div>
@@ -206,6 +209,20 @@
 								<strong>Bitte nicht berühren!</strong> Melden Sie den Fund auch an die örtlichen Behörden
 								(Wasserschutzpolizei, Nationalparkamt).
 							</p>
+							<div class="bg-warning/10 mt-3 rounded-lg p-3">
+								<div class="text-center">
+									<div class="text-warning mb-1 text-xl font-bold">
+										{#if loading}
+											<span class="loading loading-dots loading-sm"></span>
+										{:else}
+											{statistics.deadAnimalsFound}
+										{/if}
+									</div>
+									<div class="text-warning-content text-xs">
+										Totfunde bereits für die Wissenschaft dokumentiert
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
 

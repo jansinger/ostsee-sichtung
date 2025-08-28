@@ -1,43 +1,88 @@
 /**
  * @fileoverview API-Endpunkt für Sichtungs-Statistiken
- * 
+ *
  * Dieser Endpunkt stellt statistische Daten über Sichtungen bereit,
  * die in der FormHelp-Komponente angezeigt werden.
+ * Implementiert server-seitiges In-Memory-Caching für 1 Stunde.
  */
 
 import { getSightingStatistics } from '$lib/server/db/sightingRepository';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import type { SightingStatistics } from '$lib/server/db/sightingRepository';
+
+interface CachedStatistics {
+	data: SightingStatistics;
+	timestamp: number;
+}
+
+// Server-seitiger Cache (1 Stunde = 3600000 ms)
+let cachedStatistics: CachedStatistics | null = null;
+const CACHE_DURATION = 3600000; // 1 Stunde in Millisekunden
+
+/**
+ * Fallback-Statistiken für Fehlerfälle
+ */
+const FALLBACK_STATISTICS: SightingStatistics = {
+	totalSightings: 2847,
+	completionRate: 89,
+	averageOptionalFields: 8,
+	yearsOfService: 15,
+	uniqueUsers: 150,
+	sightingsWithMedia: 1200,
+	deadAnimalsFound: 25
+};
+
+/**
+ * Prüft, ob die gecachten Daten noch gültig sind
+ */
+function isCacheValid(): boolean {
+	if (!cachedStatistics) return false;
+	return Date.now() - cachedStatistics.timestamp < CACHE_DURATION;
+}
 
 /**
  * GET /api/statistics
- * 
+ *
  * Gibt statistische Daten über Sichtungen zurück
+ * Nutzt server-seitiges Caching für 1 Stunde
  */
 export const GET: RequestHandler = async () => {
 	try {
+		// Prüfe Cache zuerst
+		if (isCacheValid()) {
+			return json(cachedStatistics!.data, {
+				headers: {
+					'Cache-Control': 'public, max-age=3600', // Client-seitiges Caching
+					'X-Cache-Status': 'HIT' // Debug-Header
+				}
+			});
+		}
+
+		// Cache abgelaufen oder nicht vorhanden - neue Daten laden
 		const statistics = await getSightingStatistics();
-		
+
+		// Cache aktualisieren
+		cachedStatistics = {
+			data: statistics,
+			timestamp: Date.now()
+		};
+
 		return json(statistics, {
 			headers: {
-				'Cache-Control': 'public, max-age=3600' // 1 Stunde Cache
+				'Cache-Control': 'public, max-age=3600', // Client-seitiges Caching
+				'X-Cache-Status': 'MISS' // Debug-Header
 			}
 		});
 	} catch (error) {
 		console.error('Error fetching statistics:', error);
-		
-		// Fallback-Statistiken zurückgeben
-		return json({
-			totalSightings: 2847,
-			completionRate: 89,
-			averageOptionalFields: 8,
-			yearsOfService: 15,
-			uniqueShips: 150,
-			sightingsWithMedia: 1200
-		}, {
+
+		// Bei Fehlern: Fallback-Statistiken zurückgeben
+		return json(FALLBACK_STATISTICS, {
 			status: 500,
 			headers: {
-				'Cache-Control': 'public, max-age=300' // 5 Minuten Cache bei Fehlern
+				'Cache-Control': 'public, max-age=300', // Kürzeres Caching bei Fehlern
+				'X-Cache-Status': 'ERROR' // Debug-Header
 			}
 		});
 	}
