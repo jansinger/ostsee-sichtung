@@ -19,14 +19,14 @@
 								zu überwachen und Schutzmaßnahmen zu entwickeln. Ihre Beobachtung trägt direkt zum
 								Artenschutz bei!
 							</p>
-							<div class="mt-3 bg-base-100 rounded-lg p-3">
+							<div class="bg-base-100 mt-3 rounded-lg p-3">
 								<div class="grid grid-cols-2 gap-4 text-center text-sm">
 									<div>
-										<div class="font-bold text-primary">2.847</div>
+										<div class="text-primary font-bold">2.847</div>
 										<div class="text-xs">Sichtungen gemeldet</div>
 									</div>
 									<div>
-										<div class="font-bold text-primary">89%</div>
+										<div class="text-primary font-bold">89%</div>
 										<div class="text-xs">Beobachter füllen Zusatzfelder aus</div>
 									</div>
 								</div>
@@ -69,8 +69,8 @@
 								<li><strong>Fotos/Videos:</strong> Extrem hilfreich für Artbestimmung</li>
 								<li><strong>Tipp:</strong> Auch unscharfe Bilder können nützlich sein</li>
 							</ul>
-							<div class="mt-2 bg-success/10 rounded p-2">
-								<div class="text-xs text-success-content/70">
+							<div class="bg-success/10 mt-2 rounded p-2">
+								<div class="text-success-content/70 text-xs">
 									✅ <strong>95%</strong> der Forscher nutzen Wetterdaten für Populationsmodelle
 								</div>
 							</div>
@@ -91,25 +91,30 @@
 
 					<div class="alert alert-success">
 						<div>
-							<h4 class="font-semibold">📊 Ihre Daten machen den Unterschied</h4>
-							<div class="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 text-center text-sm">
-								<div>
-									<div class="font-bold">3x häufiger</div>
-									<div class="text-xs">werden komplette Meldungen in Studien zitiert</div>
+							<h4 class="font-semibold text-center mb-4">📊 Ihre Daten machen den Unterschied</h4>
+							<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+								<div class="bg-success/10 rounded-lg p-4 text-center border border-success/20">
+									<div class="text-2xl font-bold text-success mb-2">3x</div>
+									<div class="text-sm font-medium text-success-content">häufiger zitiert</div>
+									<div class="text-xs text-success-content/70 mt-1">werden komplette Meldungen in Studien verwendet</div>
 								</div>
-								<div>
-									<div class="font-bold">15 Jahre</div>
-									<div class="text-xs">melden manche Schiffe bereits regelmäßig</div>
+								<div class="bg-success/10 rounded-lg p-4 text-center border border-success/20">
+									<div class="text-2xl font-bold text-success mb-2">15</div>
+									<div class="text-sm font-medium text-success-content">Jahre Treue</div>
+									<div class="text-xs text-success-content/70 mt-1">melden manche Schiffe bereits regelmäßig</div>
 								</div>
-								<div>
-									<div class="font-bold">47 neue</div>
-									<div class="text-xs">Verhaltensweisen durch Ihre Fotos entdeckt</div>
+								<div class="bg-success/10 rounded-lg p-4 text-center border border-success/20 sm:col-span-2 lg:col-span-1">
+									<div class="text-2xl font-bold text-success mb-2">47</div>
+									<div class="text-sm font-medium text-success-content">neue Verhaltensweisen</div>
+									<div class="text-xs text-success-content/70 mt-1">durch Ihre Fotos wissenschaftlich dokumentiert</div>
 								</div>
 							</div>
 						</div>
 					</div>
 
-					<SpeciesIdentificationHelp currentValue={0} />
+					<div class="alert alert-info">
+						<SpeciesIdentificationHelp currentValue={0} />
+					</div>
 
 					<div class="alert alert-warning">
 						<div>
@@ -127,9 +132,11 @@
 						<div>
 							<h4 class="font-semibold">🇪🇺 Einfluss auf EU-Politik</h4>
 							<p class="mt-1 text-xs">
-								Ihre Sichtungsdaten fließen direkt in die <strong>EU-Meeresschutzrichtlinie</strong> und den 
-								<strong>IPCC-Klimabericht</strong> ein. Windpark-Planungen werden anhand Ihrer Koordinaten 
-								angepasst, um Meerestiere zu schützen. <strong>Sie beeinflussen maritime Politik!</strong>
+								Ihre Sichtungsdaten fließen direkt in die <strong>EU-Meeresschutzrichtlinie</strong>
+								und den
+								<strong>IPCC-Klimabericht</strong> ein. Windpark-Planungen werden anhand Ihrer
+								Koordinaten angepasst, um Meerestiere zu schützen.
+								<strong>Sie beeinflussen maritime Politik!</strong>
 							</p>
 							<div class="mt-2 flex justify-center space-x-4 text-xs">
 								<span class="badge badge-outline">EU-MSRL</span>
