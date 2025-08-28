@@ -160,9 +160,9 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Breitengrad')
 		.meta({
 			type: 'number',
-			placeholder: '54.5',
-			helpText: 'Nördliche Position auf der Karte',
-			valueText: 'Steht meist in der GPS-Anzeige oben',
+			placeholder: 'z.B. 54.123456',
+			helpText: 'Nördliche Position (N) - je mehr Nachkommastellen, desto genauer',
+			valueText: 'GPS-Präzision: 6 Nachkommastellen = 11cm Genauigkeit',
 			icon: Navigation
 		})
 		.default(54.5),
@@ -192,9 +192,9 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Längengrad')
 		.meta({
 			type: 'number',
-			placeholder: '13.5',
-			helpText: 'Östliche Position auf der Karte',
-			valueText: 'Steht meist in der GPS-Anzeige unten',
+			placeholder: 'z.B. 13.456789',
+			helpText: 'Östliche Position (E) - je mehr Nachkommastellen, desto genauer',
+			valueText: 'Ihre GPS-Koordinaten werden mit 2.847 anderen Sichtungen verglichen',
 			icon: Navigation2
 		})
 		.default(13.5),
@@ -208,9 +208,9 @@ export const sightingSchemaBase = yup.object().shape({
 		.max(255, 'Der Name des Fahrwassers/Seegebiets ist zu lang (maximal 255 Zeichen)')
 		.label('Fahrwasser/Seegebiet')
 		.meta({
-			placeholder: 'z.B. Kieler Bucht, Fehmarnbelt',
-			helpText: 'In welchem Gewässer oder Gebiet befanden Sie sich zum Zeitpunkt der Sichtung?',
-			valueText: 'Alternative zur GPS-Position',
+			placeholder: 'z.B. Kieler Bucht, Fehmarnbelt, Greifswalder Bodden',
+			helpText: 'In welchem Gewässer oder Gebiet befanden Sie sich?',
+			valueText: 'Gewässerbezeichnungen helfen bei der regionalen Populationsverteilung - auch ungefähre Angaben sind wissenschaftlich wertvoll',
 			icon: Waves
 		})
 		.notRequired(),
@@ -224,9 +224,9 @@ export const sightingSchemaBase = yup.object().shape({
 		.max(255, 'Der Name des Seezeichensist zu lang (maximal 255 Zeichen)')
 		.label('Seezeichen in der Nähe')
 		.meta({
-			placeholder: 'z.B. Leuchtturm Dahmeshöved',
-			helpText: 'Gab es markante Orientierungspunkte in der Nähe der Sichtung?',
-			valueText: 'Leuchtturm, Boje, oder andere Seezeichen',
+			placeholder: 'z.B. Leuchtturm Dahmeshöved, Tonne 14, Ansteuerungstonne',
+			helpText: 'Gab es markante Orientierungspunkte in der Nähe?',
+			valueText: 'Seezeichen helfen Wissenschaftlern bei der Positionsverifizierung und schaffen Vertrauen in die Datenqualität',
 			icon: Anchor
 		})
 		.notRequired(),
@@ -267,6 +267,7 @@ export const sightingSchemaBase = yup.object().shape({
 		)
 		.label('Uhrzeit')
 		.meta({
+			placeholder: 'z.B. 14:30 oder 09:15',
 			helpText: 'Zu welchem Zeitpunkt ungefähr? (optional)',
 			valueText: 'Uhrzeitangaben decken Tagesrhythmen auf - 73% der Schweinswalsichtungen erfolgen morgens zwischen 6-10 Uhr',
 			type: 'time',
@@ -540,8 +541,9 @@ export const sightingSchemaBase = yup.object().shape({
 		})
 		.label('Sonstige Verteilung')
 		.meta({
-			placeholder: 'z.B. in lockerer Formation...',
-			helpText: 'Beschreiben Sie die Verteilung der Tiere',
+			placeholder: 'z.B. V-Formation, kreisförmig, entlang der Küstenlinie',
+			helpText: 'Besondere Gruppenformationen geben Hinweise auf Sozialverhalten',
+			valueText: 'Ungewöhnliche Formationen könnten Jagdstrategien oder Schutzverhalten zeigen',
 			icon: FileText
 		}),
 
@@ -581,8 +583,9 @@ export const sightingSchemaBase = yup.object().shape({
 		})
 		.label('Sonstiges Verhalten')
 		.meta({
-			placeholder: 'z.B. Spielverhalten, ungewöhnliche Aktivität...',
-			helpText: 'Beschreiben Sie das beobachtete Verhalten der Tiere',
+			placeholder: 'z.B. Spielverhalten, Jagd, Paarung, Interaktion mit Booten',
+			helpText: 'Ihre Beobachtung könnte eine noch unbekannte Verhaltensweise dokumentieren',
+			valueText: 'Neue Verhaltensbeobachtungen werden in wissenschaftlichen Journalen publiziert',
 			icon: MessageCircle
 		}),
 
@@ -682,8 +685,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Windstärke (Beaufort)')
 		.meta({
 			placeholder: 'z.B. 3',
-			helpText: 'Windstärke nach Beaufort-Skala (0-12)',
-			valueText: 'Die Windstärke zeigt die Wetterbedingungen während der Sichtung',
+			helpText: 'Windstärke (0=Windstille, 3=leichte Brise, 6=starker Wind)',
+			valueText: 'Windstärke korreliert mit Tauchverhalten - bei starkem Wind tauchen Wale länger und seltener auf',
 			type: 'select',
 			options: getWindStrengthOptions(),
 			icon: CloudRain
@@ -751,9 +754,9 @@ export const sightingSchemaBase = yup.object().shape({
 		.max(64, 'Der Schiffsname darf nicht länger als 64 Zeichen sein.')
 		.label('Schiffsname')
 		.meta({
-			placeholder: 'z.B. MS Seelöwe',
-			helpText: 'Name Ihres Bootes/Schiffes',
-			valueText: 'Hilft bei Rückfragen und Datenvalidierung',
+			placeholder: 'z.B. MS Seelöwe, SY Nordwind, FFK Seeadler',
+			helpText: 'Name Ihres Bootes/Schiffes (optional)',
+			valueText: 'Schiffsnamen ermöglichen Langzeitstudien - einige Schiffe melden seit 15 Jahren regelmäßig Sichtungen',
 			icon: Ship
 		})
 		.notRequired(),
@@ -767,9 +770,9 @@ export const sightingSchemaBase = yup.object().shape({
 		.max(64, 'Der Heimathafen darf nicht länger als 64 Zeichen sein.')
 		.label('Heimathafen')
 		.meta({
-			placeholder: 'z.B. Heiligenhafen',
-			helpText: 'Wo ist Ihr Boot registriert?',
-			valueText: 'Geografische Zuordnung des Beobachters',
+			placeholder: 'z.B. Heiligenhafen, Kiel, Rostock, Stralsund',
+			helpText: 'Wo ist Ihr Boot registriert? (optional)',
+			valueText: 'Heimathäfen zeigen regionale Beobachtungsnetzwerke - Baltic Sea Citizen Science',
 			icon: MapPin
 		})
 		.notRequired(),
@@ -783,9 +786,9 @@ export const sightingSchemaBase = yup.object().shape({
 		.max(64, 'Der Bootstyp darf nicht länger als 64 Zeichen sein.')
 		.label('Bootstyp')
 		.meta({
-			placeholder: 'z.B. Segelboot, Motoryacht',
-			helpText: 'Art Ihres Wasserfahrzeugs',
-			valueText: 'Der Bootstyp beeinflusst Beobachtungsbedingungen',
+			placeholder: 'z.B. Segelboot, Motoryacht, Kajak, Fischkutter',
+			helpText: 'Art Ihres Wasserfahrzeugs (optional)',
+			valueText: 'Segelboote ermöglichen leiseste Annäherung - Kajaks erreichen flachste Gewässer für einzigartige Beobachtungen',
 			icon: Anchor
 		})
 		.notRequired(),
@@ -844,8 +847,9 @@ export const sightingSchemaBase = yup.object().shape({
 		})
 		.label('Sonstiger Antrieb')
 		.meta({
-			placeholder: 'z.B. Hybridantrieb, Elektro...',
-			helpText: 'Beschreiben Sie den Bootsantrieb während der Sichtung.',
+			placeholder: 'z.B. Hybridantrieb, Wasserstoff, Solar-Elektro',
+			helpText: 'Innovative Antriebe interessieren besonders für Lärmstudien',
+			valueText: 'Neue Antriebstechnologien könnten Wildtierbeobachtungen revolutionieren',
 			icon: Car
 		}),
 
