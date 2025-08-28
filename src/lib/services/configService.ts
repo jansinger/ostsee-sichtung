@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { createLogger } from '$lib/logger';
 import { ConfigRepository } from '$lib/server/db/configRepository';
+import type { ConfigValue } from '$lib/server/db/configRepository';
 
 const logger = createLogger('configService');
 
@@ -198,7 +199,7 @@ export class ClientConfigService {
 		}
 
 		// Return default values if loading fails
-		return DEFAULT_VALUES;
+		return DEFAULT_VALUES as unknown as Record<string, ConfigValue>;
 	}
 
 	/**
@@ -206,7 +207,7 @@ export class ClientConfigService {
 	 */
 	static async get<T>(key: keyof typeof DEFAULT_VALUES): Promise<T> {
 		const configs = await this.loadConfigs();
-		return configs[key] !== undefined ? configs[key] : DEFAULT_VALUES[key] as T;
+		return configs[key] !== undefined ? (configs[key] as T) : (DEFAULT_VALUES[key] as T);
 	}
 
 	/**

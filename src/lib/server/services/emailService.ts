@@ -195,7 +195,7 @@ export class EmailService {
 			}
 
 			// Convert database sighting to a simpler format for email template
-			const sightingFormValues: SightingFormValues = {
+			const sightingFormValues = {
 				latitude: sighting.latitude ? parseFloat(sighting.latitude) : 0,
 				longitude: sighting.longitude ? parseFloat(sighting.longitude) : 0,
 				sightingDatetime: sighting.sightingDate || undefined,
@@ -231,7 +231,7 @@ export class EmailService {
 
 				try {
 					const result = await this.sendNewSightingNotification({
-						sighting: sightingFormValues,
+						sighting: sightingFormValues as any,
 						referenceId: sighting.referenceId || `TEST-${sightingId}`,
 						adminUrl
 					});
@@ -252,7 +252,7 @@ export class EmailService {
 			} else {
 				// Use configured recipient
 				return await this.sendNewSightingNotification({
-					sighting: sightingFormValues,
+					sighting: sightingFormValues as any,
 					referenceId: sighting.referenceId || `TEST-${sightingId}`,
 					adminUrl
 				});
