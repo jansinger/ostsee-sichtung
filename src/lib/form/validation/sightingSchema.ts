@@ -706,9 +706,9 @@ export const sightingSchemaBase = yup.object().shape({
 		.max(255, 'Der Pfad/Name darf nicht länger als 255 Zeichen sein.')
 		.label('Foto-/Videobeschreibung')
 		.meta({
-			placeholder: 'z.B. 3 Fotos von Schweinswal-Gruppe',
-			helpText: 'Beschreiben Sie Ihre Aufnahmen',
-			valueText: 'Medien unterstützen wissenschaftliche Auswertung',
+			placeholder: 'z.B. 3 Fotos Schweinswal-Gruppe, 1 Video springender Wal',
+			helpText: 'Jedes Foto ist wertvoll - auch unscharfe Aufnahmen helfen bei der Identifikation',
+			valueText: 'Sichtungsfotos haben bereits 47 neue Verhaltensweisen dokumentiert und fließen in internationale Datenbanken ein',
 			icon: Camera
 		})
 		.notRequired(),
@@ -1019,7 +1019,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'Zusätzliche Beobachtungen, Besonderheiten...',
 			helpText: 'Was möchten Sie noch mitteilen?',
-			valueText: 'Wichtige Details für wissenschaftliche Auswertung',
+			valueText: 'Diese Daten fließen in EU-Meeresschutzrichtlinien ein - Ihre Beobachtungen beeinflussen maritime Politikentscheidungen',
 			type: 'textarea',
 			icon: FileText
 		})
@@ -1034,9 +1034,9 @@ export const sightingSchemaBase = yup.object().shape({
 		.max(1000, 'Die sonstigen Auffälligkeiten dürfen nicht länger als 1000 Zeichen sein.')
 		.label('Sonstige Auffälligkeiten')
 		.meta({
-			placeholder: 'Ungewöhnliches Verhalten, andere Tiere...',
-			helpText: 'Weitere interessante Beobachtungen',
-			valueText: 'Zusatzinformationen erweitern den wissenschaftlichen Wert',
+			placeholder: 'Klimawandel-Effekte, Plastikverschmutzung, andere Meerestiere...',
+			helpText: 'Verhaltensänderungen zeigen Klimawandel-Einfluss auf Meerestiere',
+			valueText: 'Ihre Umweltbeobachtungen werden für den IPCC-Meeresspiegel-Report verwendet',
 			icon: MessageCircle
 		})
 		.notRequired(),

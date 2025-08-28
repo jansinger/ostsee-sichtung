@@ -105,7 +105,7 @@ src/
 - `/src/lib/server/storage/` - Storage abstraction layer supporting local and cloud providers
 
 ## Key Design Patterns
-- Always consider the Design Guide in `docs/DESIGN_GUIDE.md` (important!) 
+- Always consider the Design Guide in @docs/DESIGN_GUIDE.md
 
 ### Key Patterns & Form Logic
 - Use Drizzle ORM with PostGIS for geographic queries
@@ -201,7 +201,7 @@ The legacy APIs are located in `/src/routes/api/legacy/` and include field mappi
 - Respect the multi-step form structure and conditional logic patterns
 - Use PostGIS utilities for geographic data handling
 - Follow TailwindCSS + DaisyUI styling patterns established in the codebase
-- INSTRUCTION: Use Svelte 5 runes mode (`$state`, `$derived`, `$effect`, etc.)
+- **IMPORTANT**: Use Svelte 5 runes mode (`$state`, `$derived`, `$effect`, etc.)
 - Use Pino for logging, avoid console usage except for debugging
 - Store file metadata including EXIF data as JSONB in database for efficient querying
 - Use storage abstraction layer for file operations to support multiple providers
@@ -209,7 +209,7 @@ The legacy APIs are located in `/src/routes/api/legacy/` and include field mappi
 - Import from `/lib` using `$lib` with full paths (e.g., `import { foo } from '$lib/utils/bar'`)
 - Use Conventional Commits for commit messages
 - Commits are validated with commitlint - follow rules in `commitlint.config.mjs`
-- INSTRUCTION: Use English for commit messages with lowercase subject lines
+- **IMPORTANT**: Use English for commit messages with lowercase subject lines
 - Available commit scopes: deps, api, ui, db, auth, export, admin, report, map, config, build, ci, docs, test, types, style, perf, security, a11y, release, media
 - Prüfe nach Änderungen immer auf notwendige Aktualisierungen der Dokumentationen, also aller *.md Dateien
 - Aktuallisiere nach Änderungen an der API immer auch die OpenAPI Spec
