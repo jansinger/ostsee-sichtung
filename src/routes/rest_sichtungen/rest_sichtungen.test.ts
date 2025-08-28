@@ -292,36 +292,26 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 			expect(response.status).toBe(201);
 		}, 25000);
 
-		it('should support all PDF wind directions including SO', async () => {
-			const windDirections = ['N', 'NW', 'W', 'SW', 'S', 'SO', 'O', 'NO'];
-			
-			for (const direction of windDirections) {
-				const windRequest: LegacySightingRequest = {
-					sichtungsdatum: '2024-03-15 12:00',
-					anzahl_gesamt: 1,
-					vorname: 'Wind',
-					name: 'Test',
-					email: 'wind@example.com',
-					windrichtung: direction
-				};
+		it.each([
+			['N'], ['NW'], ['W'], ['SW'], ['S'], ['SO'], ['O'], ['NO']
+		])('should support PDF wind direction %s', async (direction) => {
+			const windRequest: LegacySightingRequest = {
+				sichtungsdatum: '2024-03-15 12:00',
+				anzahl_gesamt: 1,
+				vorname: 'Wind',
+				name: 'Test',
+				email: 'wind@example.com',
+				windrichtung: direction
+			};
 
-				const event = createMockRequestEvent(windRequest);
-				const response = await POST(event);
+			const event = createMockRequestEvent(windRequest);
+			const response = await POST(event);
 
-				expect(response.status).toBe(201);
-				expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({
-					windDirection: direction
-				}));
-
-				vi.clearAllMocks();
-				mockSave.mockResolvedValue({
-					id: 12345,
-					sightingDate: new Date('2024-03-15T12:00:00.000Z'),
-					latitude: '54.0',
-					longitude: '11.0'
-				});
-			}
-		}, 30000);
+			expect(response.status).toBe(201);
+			expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({
+				windDirection: direction
+			}));
+		}, 10000);
 	});
 
 	describe('PDF Compliance - HTTP Methods', () => {
