@@ -53,7 +53,7 @@ Administration and data management are supported through user-friendly interface
 - **Framework**: SvelteKit 5 with TypeScript
 - **Database**: PostgreSQL with PostGIS extension for geographical data
 - **ORM**: Drizzle with type-safe queries
-- **Styling**: TailwindCSS with DaisyUI components
+- **Styling**: TailwindCSS with DaisyUI components and custom theme `meeresmuseum`
 - **Maps**: OpenLayers for interactive mapping
 - **Forms**: svelte-forms-lib with Yup validation
 - **Logging**: Pino logger
@@ -71,7 +71,7 @@ Supporting tables:
 - `sichtungen_dateien` - File attachments with metadata (JSONB for EXIF data, URLs, file information)
 - `ne_10m_ocean` - Geographic ocean boundaries for validation
 
-Key sequences: `sichtungen_seq` starts at 1840, test sequences available for development.
+Key sequences: `sichtungen_seq`
 
 ### Project Structure
 ```
@@ -105,7 +105,7 @@ src/
 - `/src/lib/server/storage/` - Storage abstraction layer supporting local and cloud providers
 
 ## Key Design Patterns
-- INSTRUCTION: Always consider the Design Guide in `DESIGNGUIDE.md` (important!)
+- Always consider the Design Guide in `docs/DESIGN_GUIDE.md` (important!) 
 
 ### Key Patterns & Form Logic
 - Use Drizzle ORM with PostGIS for geographic queries
@@ -124,7 +124,7 @@ Local development uses Docker PostgreSQL on port 5433 (not default 5432) with cr
 - Password: mysecretpassword  
 - Database: local
 
-Always check Baltic Sea geographic bounds using the `checkBalticSea` utility before saving sightings.
+Always check Baltic Sea geographic bounds using the `checkBalticSeaFile` utility before saving sightings.
 
 ## Legacy REST API Compatibility
 
