@@ -499,7 +499,9 @@ export class EmailService {
 	}
 }
 
-// Initialize service on module load
-EmailService.initialize().catch((error) => {
-	logger.error({ error }, 'Failed to initialize email service on startup');
-});
+// Initialize service on module load (but not in test environment)
+if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
+	EmailService.initialize().catch((error) => {
+		logger.error({ error }, 'Failed to initialize email service on startup');
+	});
+}

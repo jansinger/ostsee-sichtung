@@ -31,6 +31,17 @@ vi.mock('$lib/logger', () => ({
 	})
 }));
 
+// Mock EmailService to prevent sending real emails
+vi.mock('$lib/server/services/emailService', () => ({
+	EmailService: {
+		sendNewSightingNotification: vi.fn().mockResolvedValue(true),
+		sendTestEmail: vi.fn().mockResolvedValue(true),
+		sendTestSightingEmail: vi.fn().mockResolvedValue(true),
+		initialize: vi.fn().mockResolvedValue(undefined),
+		clearTemplateCache: vi.fn()
+	}
+}));
+
 // Helper to create mock request event
 function createMockRequestEvent(body: LegacySightingRequest): RequestEvent {
 	return {
