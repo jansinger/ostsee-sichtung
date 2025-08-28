@@ -3,9 +3,14 @@ import { sightings } from '$lib/server/db/schema';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
+import { ServerConfigService } from '$lib/services/configService';
+
 export const load: PageServerLoad = async ({ url }) => {
 	const page = Number(url.searchParams.get('page')) || 1;
-	const perPage = Number(url.searchParams.get('perPage')) || 10;
+	const paginationConfig = await ServerConfigService.getPaginationConfig();
+	const requestedPerPage = Number(url.searchParams.get('perPage')) || paginationConfig.defaultPageSize;
+	// Enforce the maximum configured per page limit
+	const perPage = Math.min(requestedPerPage, paginationConfig.maxSightingsPerPage);
 	const sortBy = url.searchParams.get('sort') || 'sightingDate';
 	const sortOrder = url.searchParams.get('order') || 'desc';
 	const dateFrom = url.searchParams.get('dateFrom');
@@ -95,7 +100,8 @@ export const load: PageServerLoad = async ({ url }) => {
 			page,
 			perPage,
 			totalPages: Math.ceil(count / perPage),
-			total: count
+			total: count,
+			maxPerPage: paginationConfig.maxSightingsPerPage
 		}
 	};
 };

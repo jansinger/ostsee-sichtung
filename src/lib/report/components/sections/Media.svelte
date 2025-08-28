@@ -1,14 +1,46 @@
 <script lang="ts">
-	import { FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
+	import { getUploadConfig } from '$lib/stores/configStore';
 	import { getFormContext } from '$lib/report/formContext';
 	import { Camera } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import DropzoneEnhanced from '../form/fields/DropzoneEnhanced.svelte';
 	import FormField from '../form/fields/FormField.svelte';
+	import type { ValidationPreset } from '$lib/types';
 
 	// Generiere eine einfache referenceId für Upload (temporäre Lösung)
 	const { form } = getFormContext();
 	let referenceId = $derived($form.referenceId);
+	
+	// Dynamic upload configuration
+	let uploadConfig = $state<ValidationPreset | null>(null);
+	
+	// Generate dynamic format description
+	let formatDescription = $derived(() => {
+		if (!uploadConfig) return 'JPG, PNG, MP4, MOV, AVI';
+		
+		const imageTypes = uploadConfig.allowedTypes.filter(type => type.startsWith('image/'));
+		const videoTypes = uploadConfig.allowedTypes.filter(type => type.startsWith('video/'));
+		
+		const imageFormats = imageTypes.map(type => type.split('/')[1]?.toUpperCase()).filter(Boolean);
+		const videoFormats = videoTypes.map(type => type.split('/')[1]?.toUpperCase()).filter(Boolean);
+		
+		const allFormats = [...imageFormats, ...videoFormats];
+		return allFormats.join(', ');
+	});
+	
+	// Generate file size description
+	let maxSizeDescription = $derived(() => {
+		if (!uploadConfig) return 'max 50MB';
+		const sizeMB = Math.round(uploadConfig.maxFileSize / (1024 * 1024));
+		return `max ${sizeMB}MB`;
+	});
+	
+	// Load upload configuration on component mount
+	$effect(() => {
+		getUploadConfig().then(config => {
+			uploadConfig = config;
+		});
+	});
 </script>
 
 <!-- Media Section -->
@@ -24,16 +56,20 @@
 				<li><strong>Artbestimmung:</strong> Auch unscharfe Bilder können helfen</li>
 				<li><strong>Verhaltensanalyse:</strong> Videos zeigen wichtige Verhaltensmuster</li>
 				<li><strong>GPS-Daten:</strong> Automatische Positionserkennung aus Bildern</li>
-				<li><strong>Formatunterstützung:</strong> JPG, PNG, MP4, MOV, AVI</li>
+				<li><strong>Formatunterstützung:</strong> {formatDescription()} ({maxSizeDescription()})</li>
 			</ul>
 		</div>
 		<FormField name="mediaConsent" />
-		<DropzoneEnhanced
-			{referenceId}
-			maxFiles={10}
-			config={FILE_VALIDATION_PRESETS.MEDIA}
-			enableGPSExtraction={false}
-		/>
+		{#if uploadConfig}
+			<DropzoneEnhanced
+				{referenceId}
+				maxFiles={10}
+				config={uploadConfig}
+				enableGPSExtraction={false}
+			/>
+		{:else}
+			<div class="skeleton h-32 w-full"></div>
+		{/if}
 		<div class="alert alert-info mt-4">
 			<Icon src={Camera} size="20" />
 			<span class="text-sm">

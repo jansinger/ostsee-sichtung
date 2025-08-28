@@ -63,14 +63,17 @@
 		colorCounts: {}
 	});
 
+	// Verfügbare Jahre für den Filter (10 Jahre zurück)
+	const years = getAvailableYears(10);
+	const defaultYear = getDefaultSightingYear();
+
 	// UI-Zustände
 	let showKeyboardHelp = $state(false);
 	let isLoadingData = $state(false);
 	let errorMessage = $state<string | null>(null);
-
-	// Verfügbare Jahre für den Filter (10 Jahre zurück)
-	const years = getAvailableYears(10);
-	const defaultYear = getDefaultSightingYear();
+	
+	// Aktuell angezeigtes Jahr für den Titel
+	let currentDisplayedYear = $state(defaultYear);
 
 	// Event Handler für Cleanup
 	let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
@@ -111,6 +114,8 @@
 		// Erste Aktualisierung nach kurzer Verzögerung
 		setTimeout(() => {
 			countManager.updateCounts();
+			// Aktualisiere das angezeigte Jahr im Titel
+			currentDisplayedYear = mapInstance.getDisplayedYear();
 		}, 1500);
 
 		// Tastatur-Navigation Setup
@@ -128,6 +133,27 @@
 	// Cleanup-Funktion beim Destroy
 	onDestroy(() => {
 		cleanup();
+	});
+
+	// Effect zum Überwachen von Jahr-Änderungen
+	$effect(() => {
+		if (mapInstance && mapInstance.getDisplayedYear) {
+			// Setze einen Interval, um das Jahr regelmäßig zu überprüfen
+			// (da wir keinen direkten Event-Listener für Jahr-Änderungen haben)
+			const yearCheckInterval = setInterval(() => {
+				const newYear = mapInstance.getDisplayedYear();
+				if (newYear !== currentDisplayedYear) {
+					currentDisplayedYear = newYear;
+				}
+			}, 500); // Alle 500ms überprüfen
+			
+			return () => {
+				clearInterval(yearCheckInterval);
+			};
+		}
+		
+		// Return void if map is not available
+		return;
 	});
 
 	/**
@@ -268,7 +294,7 @@
 	{#if showTitle}
 		<h1 class={titleClass}>
 			<span class="text-lg">🗺️</span>
-			<span>{title}</span>
+			<span>{title} {currentDisplayedYear}</span>
 		</h1>
 	{/if}
 

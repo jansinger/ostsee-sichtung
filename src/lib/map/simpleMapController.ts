@@ -1,3 +1,4 @@
+import { createLogger } from '$lib/logger';
 import { Map, View } from 'ol';
 import { defaults as defaultControls } from 'ol/control';
 import { Feature } from 'ol';
@@ -13,6 +14,8 @@ import { MapDataLoader } from './dataLoader';
 import { MapPopup } from './popup';
 import { styleFunction } from './styles';
 import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
+
+const logger = createLogger('map:simple-controller');
 
 export interface SimpleMapOptions {
 	target: string;
@@ -184,7 +187,7 @@ export class SimpleMapController {
 				this.fitToData();
 			}
 		} catch (error) {
-			console.error('Error loading map data:', error);
+			logger.error({ error: error instanceof Error ? error.message : error }, 'Error loading map data');
 		}
 	}
 

@@ -24,7 +24,10 @@ import {
 } from '$lib/legacy-api/yup-validation.js';
 import { createLogger } from '$lib/logger';
 import { saveSighting } from '$lib/server/db/sightingRepository';
+import { EmailService } from '$lib/server/services/emailService';
+import { ServerConfigService } from '$lib/services/configService';
 import { json, type RequestEvent } from '@sveltejs/kit';
+import { PUBLIC_SITE_URL } from '$env/static/public';
 
 const logger = createLogger('api:legacy:rest_sichtungen:pdf-compliant');
 
@@ -160,6 +163,26 @@ export async function POST(event: RequestEvent): Promise<Response> {
 				},
 				'Legacy sighting created successfully (PDF compliant)'
 			);
+
+			// Send email notification if enabled
+			try {
+				const emailConfig = await ServerConfigService.getEmailConfig();
+				if (emailConfig.enabled && emailConfig.recipient) {
+					// Create admin URL for the sighting
+					const adminUrl = `${PUBLIC_SITE_URL || 'https://ostsee-tiere.de'}/admin/${savedSighting.id}`;
+					
+					await EmailService.sendNewSightingNotification({
+						referenceId: transformedData.referenceId,
+						sighting: transformedData,
+						adminUrl
+					});
+					
+					logger.info({ sightingId: savedSighting.id, referenceId: transformedData.referenceId }, 'Legacy API email notification sent successfully');
+				}
+			} catch (emailError) {
+				// Don't fail the request if email fails
+				logger.warn({ sightingId: savedSighting.id, emailError }, 'Failed to send email notification for legacy sighting');
+			}
 		} catch (saveError: unknown) {
 			const isError = saveError instanceof Error;
 			const errorMsg = isError ? saveError.message : 'Unknown save error';

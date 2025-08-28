@@ -213,3 +213,5 @@ The legacy APIs are located in `/src/routes/api/legacy/` and include field mappi
 - Available commit scopes: deps, api, ui, db, auth, export, admin, report, map, config, build, ci, docs, test, types, style, perf, security, a11y, release, media
 - Prüfe nach Änderungen immer auf notwendige Aktualisierungen der Dokumentationen, also aller *.md Dateien
 - Aktuallisiere nach Änderungen an der API immer auch die OpenAPI Spec
+- Benutze context7 mcp server
+- Nutze die lokale DB aus .env für lokale Ausführung mit npm run dev und für tools / scripte

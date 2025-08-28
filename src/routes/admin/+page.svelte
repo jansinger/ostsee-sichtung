@@ -13,11 +13,13 @@
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
 	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
+	import { toastStore } from '$lib/stores/toastStore';
 	import type { FrontendSighting, PageData } from '$lib/types';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import {
 		CloseOutline,
 		DownloadOutline,
+		EnvelopeOutline,
 		EyeOutline,
 		FilterOutline,
 		TableColumnOutline,
@@ -201,6 +203,47 @@
 		goto(detailUrl.toString());
 	}
 
+	async function sendTestEmail(sightingId: number) {
+		try {
+			// Show loading toast
+			const loadingToastId = toastStore.info('E-Mail wird gesendet...', { duration: 0 });
+			
+			const response = await fetch('/api/admin/test-email', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					sightingId,
+					testType: 'sighting'
+				})
+			});
+
+			// Remove loading toast
+			toastStore.removeToast(loadingToastId);
+
+			const result = await response.json();
+
+			if (result.success) {
+				toastStore.success(result.message || 'Test-E-Mail wurde erfolgreich gesendet', {
+					title: 'E-Mail gesendet',
+					duration: 5000
+				});
+			} else {
+				toastStore.error(result.error || 'Fehler beim Senden der Test-E-Mail', {
+					title: 'Fehler',
+					dismissible: true
+				});
+			}
+		} catch (error) {
+			logger.error({ error }, 'Error sending test email');
+			toastStore.error('Netzwerkfehler beim Senden der Test-E-Mail', {
+				title: 'Verbindungsfehler',
+				dismissible: true
+			});
+		}
+	}
+
 	async function deleteSighting(id: number): Promise<void> {
 		try {
 			const response = await fetch(`/api/sightings/${id}`, {
@@ -218,11 +261,9 @@
 			} else {
 				const error = await response.json();
 				logger.error({ id, error }, 'Fehler beim Löschen der Sichtung');
-				console.error('Fehler beim Löschen:', error);
 			}
 		} catch (error) {
 			logger.error({ id, error }, 'Netzwerkfehler beim Löschen');
-			console.error('Netzwerkfehler beim Löschen:', error);
 		}
 	}
 
@@ -259,11 +300,9 @@
 			} else {
 				const error = await response.json();
 				logger.error({ id, error }, 'Fehler beim Ändern des Verifizierungsstatus');
-				console.error('Fehler beim Ändern des Verifizierungsstatus:', error);
 			}
 		} catch (error) {
 			logger.error({ id, error }, 'Netzwerkfehler beim Ändern des Verifizierungsstatus');
-			console.error('Netzwerkfehler beim Ändern des Verifizierungsstatus:', error);
 		}
 	}
 </script>
@@ -542,6 +581,14 @@
 							aria-label="Details anzeigen"
 						>
 							<EyeOutline class="h-4 w-4" />
+						</button>
+						<button
+							class="btn btn-ghost btn-sm"
+							onclick={() => sendTestEmail(sighting.id)}
+							title="Test-E-Mail senden"
+							aria-label="Test-E-Mail senden"
+						>
+							<EnvelopeOutline class="h-4 w-4" />
 						</button>
 						<button
 							class="btn text-error btn-ghost btn-sm"
@@ -868,6 +915,14 @@
 										<EyeOutline class="h-4 w-4" />
 									</button>
 									<button
+										class="btn btn-ghost btn-xs"
+										onclick={() => sendTestEmail(sighting.id)}
+										title="Test-E-Mail senden"
+										aria-label="Test-E-Mail senden"
+									>
+										<EnvelopeOutline class="h-4 w-4" />
+									</button>
+									<button
 										class="btn text-error btn-ghost btn-xs"
 										onclick={() => {
 											sightingToDelete = sighting;
@@ -894,10 +949,9 @@
 				class="select-bordered select select-sm min-h-8 text-sm"
 				onchange={(e) => changeItemsPerPage(Number(e.currentTarget.value))}
 			>
-				<option value="10" selected={data.pagination.perPage === 10}>10</option>
-				<option value="20" selected={data.pagination.perPage === 20}>20</option>
-				<option value="50" selected={data.pagination.perPage === 50}>50</option>
-				<option value="100" selected={data.pagination.perPage === 100}>100</option>
+				{#each [10, 20, 50, 100].filter(size => size <= (data.pagination?.maxPerPage || 50)) as size (size)}
+					<option value={size} selected={data.pagination.perPage === size}>{size}</option>
+				{/each}
 			</select>
 		</div>
 

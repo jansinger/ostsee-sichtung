@@ -5,6 +5,7 @@ import { readImageExifData } from '$lib/server/media/exifUtils';
 import { getStorageProvider } from '$lib/server/storage/factory';
 import { isDangerousFileType, validateMagicBytes } from '$lib/server/validation/magicBytes';
 import { validateFile } from '$lib/utils/validation/fileValidation';
+import { ServerConfigService } from '$lib/services/configService';
 import { isCuid } from '@paralleldrive/cuid2';
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
@@ -38,8 +39,22 @@ export const POST: RequestHandler = async ({ request }) => {
 			throw error(400, 'Upload ID ist erforderlich');
 		}
 
-		// Validierung der Datei mit zentraler Validierungslogik
-		const validationResult = validateFile(file, FILE_VALIDATION_PRESETS.MEDIA);
+		// Get upload configuration from database
+		const uploadConfig = await ServerConfigService.getUploadConfig();
+		
+		// Create dynamic validation preset using configuration
+		const dynamicPreset = {
+			allowedTypes: uploadConfig.allowedTypes,
+			maxFileSize: uploadConfig.maxFileSizeBytes,
+			maxFiles: FILE_VALIDATION_PRESETS.MEDIA.maxFiles,
+			accept: uploadConfig.allowedTypes.map(type => 
+				type.startsWith('image/') ? 'image/*' : 
+				type.startsWith('video/') ? 'video/*' : type
+			).join(',')
+		};
+
+		// Validierung der Datei mit konfigurierten Werten
+		const validationResult = validateFile(file, dynamicPreset);
 		if (!validationResult.isValid) {
 			throw error(400, validationResult.errors.join(' '));
 		}

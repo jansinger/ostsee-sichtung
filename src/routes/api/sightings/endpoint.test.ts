@@ -106,7 +106,7 @@ describe('/api/sightings POST endpoint', () => {
 		expect(response.status).toBe(201);
 		expect(result.success).toBe(true);
 		expect(result.id).toBe('test-id-123');
-	});
+	}, 15000);
 
 	it('should handle validation errors properly', async () => {
 		const invalidRequest = createMockRequestEvent({

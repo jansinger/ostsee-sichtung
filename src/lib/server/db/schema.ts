@@ -139,3 +139,21 @@ export const sightingFiles = pgTable(
 		index('idx_sichtungen_dateien_uid').on(table.uid)
 	]
 );
+
+// Table for storing application configuration
+export const appConfig = pgTable(
+	'app_config',
+	{
+		id: serial().primaryKey().notNull(),
+		key: varchar('key', { length: 255 }).notNull().unique(),
+		value: jsonb('value').notNull(),
+		description: text('description'),
+		category: varchar('category', { length: 50 }).notNull(),
+		updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
+		updatedBy: varchar('updated_by', { length: 255 })
+	},
+	(table) => [
+		index('idx_app_config_key').on(table.key),
+		index('idx_app_config_category').on(table.category)
+	]
+);

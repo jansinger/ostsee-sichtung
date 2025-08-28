@@ -1,6 +1,12 @@
 import type { UploadOptions } from '$lib/types';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { VercelBlobStorageProvider } from './vercel-blob';
+import * as envModule from '$env/static/private';
+
+// Mock environment variables
+vi.mock('$env/static/private', () => ({
+	BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_abc123_test_xyz789'
+}));
 
 // Mock the logger
 vi.mock('$lib/logger', () => ({
@@ -54,7 +60,7 @@ describe('VercelBlobStorageProvider', () => {
 		vi.clearAllMocks();
 
 		// Set up default environment
-		process.env.BLOB_READ_WRITE_TOKEN = mockToken;
+		vi.mocked(envModule).BLOB_READ_WRITE_TOKEN = mockToken;
 
 		// Create fresh provider instance
 		provider = new VercelBlobStorageProvider();
@@ -67,7 +73,7 @@ describe('VercelBlobStorageProvider', () => {
 
 	describe('constructor', () => {
 		test('should use token from environment variable', () => {
-			process.env.BLOB_READ_WRITE_TOKEN = 'env_token_123';
+			vi.mocked(envModule).BLOB_READ_WRITE_TOKEN = 'env_token_123';
 			const provider = new VercelBlobStorageProvider();
 
 			expect(provider).toBeDefined();
@@ -81,7 +87,7 @@ describe('VercelBlobStorageProvider', () => {
 		});
 
 		test('should throw error when no token is available', () => {
-			delete process.env.BLOB_READ_WRITE_TOKEN;
+			vi.mocked(envModule).BLOB_READ_WRITE_TOKEN = "";
 
 			expect(() => new VercelBlobStorageProvider()).toThrow(
 				'BLOB_READ_WRITE_TOKEN environment variable is required for Vercel Blob storage'
@@ -89,7 +95,7 @@ describe('VercelBlobStorageProvider', () => {
 		});
 
 		test('should throw error when token is empty string', () => {
-			process.env.BLOB_READ_WRITE_TOKEN = '';
+			vi.mocked(envModule).BLOB_READ_WRITE_TOKEN = '';
 
 			expect(() => new VercelBlobStorageProvider()).toThrow(
 				'BLOB_READ_WRITE_TOKEN environment variable is required for Vercel Blob storage'
@@ -97,7 +103,7 @@ describe('VercelBlobStorageProvider', () => {
 		});
 
 		test('should prioritize constructor parameter over environment', () => {
-			process.env.BLOB_READ_WRITE_TOKEN = 'env_token';
+			vi.mocked(envModule).BLOB_READ_WRITE_TOKEN = 'env_token';
 			const customToken = 'constructor_token';
 
 			const provider = new VercelBlobStorageProvider(customToken);

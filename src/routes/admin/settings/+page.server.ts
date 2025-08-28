@@ -1,0 +1,89 @@
+import { createLogger } from '$lib/logger';
+import { ConfigRepository, type ConfigItem } from '$lib/server/db/configRepository';
+import { filterConfigsByUserAccess } from '$lib/server/config/accessControl';
+import { getDefaultConfigurationsByCategory, initializeDefaultConfigurations } from '$lib/server/services/configInitializer';
+import { isSuperAdminUser } from '$lib/utils/auth';
+import { redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
+
+const logger = createLogger('admin:settings:page');
+
+export const load: PageServerLoad = async ({ locals }) => {
+	// Check if user is authenticated and has admin or superadmin role
+	if (!locals.user || !(locals.user.roles?.includes('admin') || locals.user.roles?.includes('superadmin'))) {
+		throw redirect(303, '/');
+	}
+
+	try {
+		// Ensure default configurations are initialized
+		await initializeDefaultConfigurations();
+
+		// Get all current configurations from database
+		const currentConfigs = await ConfigRepository.getAll();
+		
+		// Get default configuration structure
+		const defaultConfigsByCategory = getDefaultConfigurationsByCategory();
+		
+		// Merge default structure with current values and filter by user access
+		const mergedConfigs: Record<string, ConfigItem[]> = {};
+		
+		for (const [category, defaultConfigs] of Object.entries(defaultConfigsByCategory)) {
+			const categoryConfigs = (defaultConfigs as ConfigItem[]).map((defaultConfig: ConfigItem) => {
+				// Find current value from database
+				const currentConfig = currentConfigs.find(c => c.key === defaultConfig.key);
+				
+				return {
+					...defaultConfig,
+					value: currentConfig?.value ?? defaultConfig.value,
+					id: currentConfig?.id ?? 0,
+					updatedAt: currentConfig?.updatedAt ?? new Date(),
+					updatedBy: currentConfig?.updatedBy ?? null
+				};
+			});
+			
+			// Filter configurations based on user access level
+			const accessibleConfigs = filterConfigsByUserAccess(categoryConfigs, locals.user);
+			
+			// Only include categories that have accessible configurations
+			if (accessibleConfigs.length > 0) {
+				mergedConfigs[category] = accessibleConfigs;
+			}
+		}
+
+		return {
+			groupedConfigs: mergedConfigs,
+			hasUnsavedChanges: false,
+			isSuperAdmin: isSuperAdminUser(locals.user)
+		};
+	} catch (error) {
+		logger.error({ error: error instanceof Error ? error.message : error }, 'Failed to load admin settings');
+		
+		// Fallback: Just show default configurations without database values, filtered by user access
+		const defaultConfigsByCategory = getDefaultConfigurationsByCategory();
+		const fallbackConfigs: Record<string, ConfigItem[]> = {};
+		
+		for (const [category, defaultConfigs] of Object.entries(defaultConfigsByCategory)) {
+			const categoryConfigs = (defaultConfigs as ConfigItem[]).map((defaultConfig: ConfigItem) => ({
+				...defaultConfig,
+				id: 0,
+				updatedAt: new Date(),
+				updatedBy: null
+			}));
+			
+			// Filter configurations based on user access level
+			const accessibleConfigs = filterConfigsByUserAccess(categoryConfigs, locals.user);
+			
+			// Only include categories that have accessible configurations
+			if (accessibleConfigs.length > 0) {
+				fallbackConfigs[category] = accessibleConfigs;
+			}
+		}
+		
+		return {
+			groupedConfigs: fallbackConfigs,
+			hasUnsavedChanges: false,
+			isSuperAdmin: isSuperAdminUser(locals.user),
+			error: 'Datenbankfehler: Einstellungen werden als Standard-Werte angezeigt. Bitte prüfen Sie die Datenbankverbindung.'
+		};
+	}
+};

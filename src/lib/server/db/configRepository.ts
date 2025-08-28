@@ -1,0 +1,263 @@
+import { createLogger } from '$lib/logger';
+import { eq } from 'drizzle-orm';
+import { db } from './index';
+import { appConfig } from './schema';
+
+const logger = createLogger('configRepository');
+
+export type ConfigValue = string | number | boolean | Record<string, unknown> | unknown[];
+
+export interface ConfigItem {
+	id?: number;
+	key: string;
+	value: ConfigValue;
+	description?: string | null;
+	category: string;
+	updatedAt?: Date;
+	updatedBy?: string | null;
+}
+
+export type ConfigCategory = 'email' | 'display' | 'security' | 'data' | 'integration' | 'mobile';
+
+const configCache = new Map<string, { value: ConfigValue; timestamp: number }>();
+const CACHE_TTL = 60000; // 1 minute cache
+
+export class ConfigRepository {
+	/**
+	 * Get a configuration value by key
+	 */
+	static async get(key: string): Promise<ConfigValue | null> {
+		try {
+			// Check cache first
+			const cached = configCache.get(key);
+			if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+				return cached.value;
+			}
+
+			const result = await db
+				.select({
+					value: appConfig.value
+				})
+				.from(appConfig)
+				.where(eq(appConfig.key, key))
+				.limit(1);
+
+			if (result.length === 0) {
+				return null;
+			}
+
+			const value = result[0]?.value as ConfigValue;
+			
+			// Update cache
+			configCache.set(key, { value, timestamp: Date.now() });
+			
+			return value;
+		} catch (error) {
+			logger.error({ error, key }, 'Failed to get configuration');
+			throw error;
+		}
+	}
+
+	/**
+	 * Get multiple configuration values by category
+	 */
+	static async getByCategory(category: ConfigCategory): Promise<ConfigItem[]> {
+		try {
+			const result = await db
+				.select({
+					id: appConfig.id,
+					key: appConfig.key,
+					value: appConfig.value,
+					description: appConfig.description,
+					category: appConfig.category,
+					updatedAt: appConfig.updatedAt,
+					updatedBy: appConfig.updatedBy
+				})
+				.from(appConfig)
+				.where(eq(appConfig.category, category));
+
+			return result.map(row => ({
+				...row,
+				value: row.value as ConfigValue
+			}));
+		} catch (error) {
+			logger.error({ error, category }, 'Failed to get configurations by category');
+			throw error;
+		}
+	}
+
+	/**
+	 * Get all configuration values
+	 */
+	static async getAll(): Promise<ConfigItem[]> {
+		try {
+			const result = await db
+				.select({
+					id: appConfig.id,
+					key: appConfig.key,
+					value: appConfig.value,
+					description: appConfig.description,
+					category: appConfig.category,
+					updatedAt: appConfig.updatedAt,
+					updatedBy: appConfig.updatedBy
+				})
+				.from(appConfig)
+				.orderBy(appConfig.category, appConfig.key);
+
+			return result.map(row => ({
+				...row,
+				value: row.value as ConfigValue
+			}));
+		} catch (error) {
+			logger.error({ error }, 'Failed to get all configurations');
+			throw error;
+		}
+	}
+
+	/**
+	 * Set a configuration value
+	 */
+	static async set(key: string, value: ConfigValue, userId?: string): Promise<void> {
+		try {
+			const existing = await db
+				.select({ id: appConfig.id })
+				.from(appConfig)
+				.where(eq(appConfig.key, key))
+				.limit(1);
+
+			if (existing.length > 0) {
+				// Update existing
+				await db
+					.update(appConfig)
+					.set({
+						value: JSON.parse(JSON.stringify(value)) as unknown,
+						updatedAt: new Date(),
+						updatedBy: userId
+					})
+					.where(eq(appConfig.key, key));
+			} else {
+				// Insert new - requires category
+				throw new Error(`Configuration key '${key}' does not exist. Use upsert() to create new configurations.`);
+			}
+
+			// Clear cache
+			configCache.delete(key);
+			
+			logger.info({ key, userId }, 'Configuration updated');
+		} catch (error) {
+			logger.error({ error, key }, 'Failed to set configuration');
+			throw error;
+		}
+	}
+
+	/**
+	 * Upsert a configuration value (insert or update)
+	 */
+	static async upsert(item: ConfigItem, userId?: string): Promise<void> {
+		try {
+
+			const existing = await db
+				.select({ id: appConfig.id })
+				.from(appConfig)
+				.where(eq(appConfig.key, item.key))
+				.limit(1);
+
+			if (existing.length > 0) {
+				// Update existing
+				await db
+					.update(appConfig)
+					.set({
+						value: JSON.parse(JSON.stringify(item.value)) as unknown,
+						description: item.description,
+						category: item.category,
+						updatedAt: new Date(),
+						updatedBy: userId
+					})
+					.where(eq(appConfig.key, item.key));
+			} else {
+				// Insert new
+				await db.insert(appConfig).values({
+					key: item.key,
+					value: JSON.parse(JSON.stringify(item.value)) as unknown,
+					description: item.description,
+					category: item.category,
+					updatedAt: new Date(),
+					updatedBy: userId
+				});
+			}
+
+			// Clear cache
+			configCache.delete(item.key);
+			
+			logger.info({ key: item.key, userId }, 'Configuration upserted');
+		} catch (error) {
+			logger.error({ error, item }, 'Failed to upsert configuration');
+			throw error;
+		}
+	}
+
+	/**
+	 * Delete a configuration
+	 */
+	static async delete(key: string): Promise<void> {
+		try {
+			await db.delete(appConfig).where(eq(appConfig.key, key));
+			
+			// Clear cache
+			configCache.delete(key);
+			
+			logger.info({ key }, 'Configuration deleted');
+		} catch (error) {
+			logger.error({ error, key }, 'Failed to delete configuration');
+			throw error;
+		}
+	}
+
+	/**
+	 * Clear the configuration cache
+	 */
+	static clearCache(): void {
+		configCache.clear();
+		logger.debug('Configuration cache cleared');
+	}
+
+	/**
+	 * Get typed configuration value with default
+	 */
+	static async getString(key: string, defaultValue: string): Promise<string> {
+		const value = await this.get(key);
+		return value !== null ? String(value) : defaultValue;
+	}
+
+	static async getNumber(key: string, defaultValue: number): Promise<number> {
+		const value = await this.get(key);
+		return value !== null ? Number(value) : defaultValue;
+	}
+
+	static async getBoolean(key: string, defaultValue: boolean): Promise<boolean> {
+		const value = await this.get(key);
+		return value !== null ? Boolean(value) : defaultValue;
+	}
+
+	static async getObject<T extends Record<string, unknown>>(
+		key: string,
+		defaultValue: T
+	): Promise<T> {
+		const value = await this.get(key);
+		return value !== null && typeof value === 'object' && !Array.isArray(value)
+			? (value as T)
+			: defaultValue;
+	}
+
+	static async getArray<T>(key: string, defaultValue: T[]): Promise<T[]> {
+		const value = await this.get(key);
+		return Array.isArray(value) ? (value as T[]) : defaultValue;
+	}
+}
+
+// Export convenience functions
+export const getConfig = ConfigRepository.get.bind(ConfigRepository);
+export const setConfig = ConfigRepository.set.bind(ConfigRepository);
+export const upsertConfig = ConfigRepository.upsert.bind(ConfigRepository);
+export const getAllConfigs = ConfigRepository.getAll.bind(ConfigRepository);
+export const getConfigsByCategory = ConfigRepository.getByCategory.bind(ConfigRepository);

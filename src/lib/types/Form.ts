@@ -25,6 +25,8 @@ export type SightingFormData = yup.InferType<typeof sightingSchema>;
 
 export type SightingFormValues = Omit<SightingFormData, 'uploadedFiles'> & {
 	sightingDatetime?: Date;
+	inBalticSea?: boolean;
+	inBalticSeaGeo?: boolean;
 };
 
 // Import the actual FormAPI type from svelte-forms-lib

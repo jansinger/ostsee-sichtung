@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getFormContext } from '$lib/report/formContext';
+	import { getUploadConfig } from '$lib/stores/configStore';
 	import type { ValidationPreset } from '$lib/types';
 	import { Calendar, Camera, MapPin, SquarePen } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
@@ -19,13 +20,22 @@
 	const longitude = $derived($form.longitude);
 	const latitude = $derived($form.latitude);
 
-	// Create a compatible config for GPS photo
-	const gpsPhotoConfig: ValidationPreset = {
-		allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'],
-		maxFileSize: 30 * 1024 * 1024, // 30MB
-		maxFiles: 1,
-		accept: 'image/*'
-	};
+	// Dynamic GPS photo configuration
+	let gpsPhotoConfig = $state<ValidationPreset | null>(null);
+	
+	// Load upload configuration and create GPS photo preset
+	$effect(() => {
+		getUploadConfig().then(config => {
+			// Create GPS photo config based on server configuration
+			// but restrict to images only and single file
+			gpsPhotoConfig = {
+				allowedTypes: config.allowedTypes.filter(type => type.startsWith('image/')),
+				maxFileSize: Math.min(config.maxFileSize, 30 * 1024 * 1024), // Use server config or 30MB, whichever is smaller
+				maxFiles: 1, // GPS photos are always single file
+				accept: 'image/*'
+			};
+		});
+	});
 
 	function selectMethod(method: 'photo' | 'map' | 'manual') {
 		positionMethod = method;
@@ -155,14 +165,18 @@
 					Foto mit GPS-Daten hochladen
 				</h4>
 
-				<DropzoneEnhanced
-					{referenceId}
-					maxFiles={1}
-					config={gpsPhotoConfig}
-					enableGPSExtraction={true}
-					title="Foto per Drag & Drop oder Klick hochladen"
-					additionalText="GPS-Daten werden automatisch ausgelesen"
-				/>
+				{#if gpsPhotoConfig}
+					<DropzoneEnhanced
+						{referenceId}
+						maxFiles={1}
+						config={gpsPhotoConfig}
+						enableGPSExtraction={true}
+						title="Foto per Drag & Drop oder Klick hochladen"
+						additionalText="GPS-Daten werden automatisch ausgelesen"
+					/>
+				{:else}
+					<div class="skeleton h-32 w-full"></div>
+				{/if}
 			{/if}
 
 			<!-- Map/GPS Input Section -->

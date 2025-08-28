@@ -1,13 +1,17 @@
+import { PUBLIC_SITE_URL } from '$env/static/public';
+import { NODE_ENV } from '$env/static/private';
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { saveSighting } from '$lib/server/db/sightingRepository';
+import { EmailService } from '$lib/server/services/emailService';
 import {
 	checkForbiddenAdminFields,
 	validateSightingFormData
 } from '$lib/server/validation/requestValidation';
+import { ServerConfigService } from '$lib/services/configService';
 import type { SightingFormValues } from '$lib/types/Form';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { and, gte, lt, sql } from 'drizzle-orm';
@@ -134,11 +138,32 @@ export const POST: RequestHandler = async ({ request }) => {
 		await sightingSchema.validate(formDataWithDefaults, { abortEarly: false });
 
 		const { id } = await saveSighting(formDataWithDefaults);
+		const referenceId = formDataWithDefaults.referenceId || `REF-${id}`;
 
-		logger.info({ id }, 'Sichtung erfolgreich gespeichert');
+		logger.info({ id, referenceId }, 'Sichtung erfolgreich gespeichert');
+
+		// Send email notification if enabled
+		try {
+			const emailConfig = await ServerConfigService.getEmailConfig();
+			if (emailConfig.enabled && emailConfig.recipient) {
+				// Create admin URL for the sighting
+				const adminUrl = `${PUBLIC_SITE_URL || 'https://ostsee-tiere.de'}/admin/${id}`;
+
+				await EmailService.sendNewSightingNotification({
+					sighting: formDataWithDefaults as any, // Type conversion for email service
+					referenceId,
+					adminUrl
+				});
+
+				logger.info({ id, referenceId }, 'Email notification sent successfully');
+			}
+		} catch (emailError) {
+			// Don't fail the request if email sending fails
+			logger.error({ emailError, id }, 'Failed to send email notification, but sighting was saved');
+		}
 
 		// Erfolgreiche Antwort
-		return json({ success: true, id }, { status: 201 });
+		return json({ success: true, id, referenceId }, { status: 201 });
 	} catch (error: unknown) {
 		// Prüfen, ob es sich um einen Yup-Validierungsfehler handelt
 		if (
@@ -194,7 +219,7 @@ export const POST: RequestHandler = async ({ request }) => {
 					code: 'DATABASE_ERROR',
 					message: 'Die Daten konnten nicht in der Datenbank gespeichert werden',
 					detail:
-						process.env.NODE_ENV === 'development'
+						NODE_ENV === 'development'
 							? 'detail' in error
 								? error.detail
 								: String(error)
@@ -213,7 +238,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				code: 'SERVER_ERROR',
 				message: 'Ein unbekannter Fehler ist aufgetreten',
 				detail:
-					process.env.NODE_ENV === 'development'
+					NODE_ENV === 'development'
 						? error instanceof Error
 							? error.message
 							: String(error)

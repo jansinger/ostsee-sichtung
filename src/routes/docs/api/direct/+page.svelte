@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { createLogger } from '$lib/logger';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+
+	const logger = createLogger('docs:api:direct');
 
 	let scalarContainer: HTMLDivElement | undefined;
 	let isLoading = true;
@@ -36,7 +39,7 @@
 				isLoading = false;
 
 			} catch (error: unknown) {
-				console.error('Failed to load Scalar API Reference:', error);
+				logger.error({ error: error instanceof Error ? error.message : error }, 'Failed to load Scalar API Reference');
 				hasError = true;
 				errorMessage = (error instanceof Error ? error.message : 'Unknown error') || 'Scalar API-Dokumentation konnte nicht geladen werden';
 				isLoading = false;

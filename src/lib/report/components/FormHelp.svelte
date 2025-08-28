@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { createLogger } from '$lib/logger';
 	import type { SightingStatistics } from '$lib/server/db/sightingRepository';
 	import { onMount } from 'svelte';
+
+	const logger = createLogger('components:FormHelp');
 	import SpeciesIdentificationHelp from './form/fields/SpeciesIdentificationHelp.svelte';
 
 	// Reaktive Statistiken mit Fallback-Werten
@@ -25,7 +28,7 @@
 				statistics = data;
 			}
 		} catch (error) {
-			console.warn('Could not load statistics, using fallback values:', error);
+			logger.warn({ error: error instanceof Error ? error.message : error }, 'Could not load statistics, using fallback values');
 		} finally {
 			loading = false;
 		}

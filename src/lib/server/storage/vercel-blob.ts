@@ -22,6 +22,7 @@
  */
 import { createLogger } from '$lib/logger';
 import type { FileMetadata, StorageProvider, UploadedFileInfo, UploadOptions } from '$lib/types';
+import { BLOB_READ_WRITE_TOKEN } from '$env/static/private';
 import { del, head, list, put } from '@vercel/blob';
 import { basename, extname } from 'path';
 
@@ -62,7 +63,7 @@ export class VercelBlobStorageProvider implements StorageProvider {
 	 * ```
 	 */
 	constructor(token?: string) {
-		this.token = token || process.env.BLOB_READ_WRITE_TOKEN || '';
+		this.token = token || BLOB_READ_WRITE_TOKEN || '';
 		if (!this.token) {
 			throw new Error(
 				'BLOB_READ_WRITE_TOKEN environment variable is required for Vercel Blob storage'

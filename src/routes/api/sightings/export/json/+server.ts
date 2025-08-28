@@ -1,9 +1,12 @@
+import { createLogger } from '$lib/logger';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { text } from '@sveltejs/kit';
 import { and, between, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
+
+const logger = createLogger('api:sightings:export:json');
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	// Authorization check
@@ -78,7 +81,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			}
 		});
 	} catch (error) {
-		console.error('Fehler beim JSON-Export:', error);
+		logger.error({ error: error instanceof Error ? error.message : error }, 'Fehler beim JSON-Export');
 
 		return text(JSON.stringify({ error: 'Fehler beim JSON-Export' }), {
 			status: 500,

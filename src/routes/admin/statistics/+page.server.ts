@@ -1,7 +1,10 @@
+import { createLogger } from '$lib/logger';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { and, eq, isNotNull, ne, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
+
+const logger = createLogger('admin:statistics:page');
 
 export const load: PageServerLoad = async () => {
 	try {
@@ -190,7 +193,7 @@ export const load: PageServerLoad = async () => {
 			}
 		};
 	} catch (error) {
-		console.error('Error loading statistics:', error);
+		logger.error({ error: error instanceof Error ? error.message : error }, 'Error loading statistics');
 		throw error;
 	}
 };

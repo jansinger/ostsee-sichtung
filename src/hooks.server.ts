@@ -1,8 +1,10 @@
-import { COOKIE_NAME, SESSION_SECRET } from '$env/static/private';
+import { COOKIE_NAME, SESSION_SECRET, NODE_ENV } from '$env/static/private';
 import { createLogger } from '$lib/logger';
 import { clearAuthCookie, setAuthCookie } from '$lib/server/auth/auth';
+import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';
 import type { User } from '$lib/types/index';
 import type { Handle } from '@sveltejs/kit';
+import { sequence } from '@sveltejs/kit/hooks';
 import { randomBytes } from 'crypto';
 import jwt from 'jsonwebtoken';
 
@@ -24,7 +26,7 @@ const setAdditionalHeaders: Handle = async ({ event, resolve }) => {
 	}
 
 	// Development-spezifische Headers
-	if (process.env.NODE_ENV === 'development') {
+	if (NODE_ENV === 'development') {
 		response.headers.set('Access-Control-Allow-Origin', '*');
 		response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
 		response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -44,12 +46,9 @@ const setAdditionalHeaders: Handle = async ({ event, resolve }) => {
 };
 
 /**
- * SvelteKit Handle Hook - Nicht-CSP Security Headers
- *
- * WICHTIG: CSP wird in svelte.config.js konfiguriert (Vercel-optimiert)
- * Hier werden nur zusätzliche Security Headers gesetzt
+ * Authentication handler
  */
-export const handle: Handle = async ({ event, resolve }) => {
+const authentication: Handle = async ({ event, resolve }) => {
 	// Disable CSRF protection for legacy REST API endpoints (mobile app compatibility)
 	if (event.url.pathname.startsWith('/rest_sichtungen')) {
 		logger.debug({ pathname: event.url.pathname }, 'Processing legacy API endpoint - CSRF bypass needed');
@@ -64,22 +63,36 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const cookie = event.cookies.get(COOKIE_NAME);
 	const url = new URL(event.request.url);
 
-	logger.info({ cookie, pathname: url.pathname }, 'Authentication check');
+	logger.debug({ pathname: url.pathname }, 'Authentication check');
 
 	let user = null;
 	if (cookie) {
 		try {
 			// Extend the cookie
 			user = jwt.verify(cookie, SESSION_SECRET) as User;
-			logger.debug({ user }, 'Authenticated user');
+			logger.debug({ userSub: user?.sub }, 'Authenticated user');
 			setAuthCookie(event.cookies, user);
 			// Set user in locals for access in components
 			event.locals.user = user;
+			// Set admin flag for easier access
+			event.locals.isAdmin = user?.roles?.includes('admin') || false;
 		} catch (error) {
 			logger.error({ error }, 'Failed to verify cookie, deleting it');
 			clearAuthCookie(event.cookies);
 		}
 	}
 
-	return await setAdditionalHeaders({ event, resolve });
+	return resolve(event);
 };
+
+/**
+ * SvelteKit Handle Hook - Combines multiple middleware in sequence
+ *
+ * WICHTIG: CSP wird in svelte.config.js konfiguriert (Vercel-optimiert)
+ * Hier werden Middleware in der richtigen Reihenfolge ausgeführt
+ */
+export const handle: Handle = sequence(
+	maintenanceMode,    // First: Check maintenance mode
+	authentication,     // Second: Handle authentication
+	setAdditionalHeaders // Third: Set security headers
+);

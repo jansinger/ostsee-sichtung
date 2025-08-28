@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Neue Sichtung - {{referenceId}}</title>
+	</head>
+	<body
+		style="
+			font-family: Arial, sans-serif;
+			line-height: 1.6;
+			color: #333;
+			max-width: 600px;
+			margin: 0 auto;
+			padding: 20px;
+		"
+	>
+		<div style="background: #0ea5e9; color: white; padding: 20px; border-radius: 8px 8px 0 0">
+			<h1 style="margin: 0; font-size: 24px">🐋 Neue Sichtung eingegangen</h1>
+		</div>
+
+		<div style="background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; border-top: none">
+			<h2 style="color: #1e40af; margin-top: 0">Referenz-ID: {{referenceId}}</h2>
+
+			{{#if spamCheck.isHighRisk}}
+			<div
+				style="
+					background: #fef2f2;
+					border: 1px solid #fecaca;
+					border-radius: 6px;
+					padding: 15px;
+					margin: 15px 0;
+				"
+			>
+				<h3 style="margin-top: 0; color: #dc2626">⚠️ Spam-Warnung</h3>
+				<p style="color: #991b1b; margin: 5px 0">
+					<strong>Risiko-Score:</strong> {{spamCheck.score}}/10
+				</p>
+				<p style="color: #991b1b; margin: 5px 0"><strong>Indikatoren:</strong></p>
+				<ul style="color: #991b1b; margin: 5px 0">
+					{{#each spamCheck.indicators}}
+					<li>{{this}}</li>
+					{{/each}}
+				</ul>
+			</div>
+			{{/if}} {{#if sighting.inBalticSea}} {{#unless sighting.inBalticSeaGeo}}
+			<div
+				style="
+					background: #fef3c7;
+					border: 1px solid #fbbf24;
+					border-radius: 6px;
+					padding: 15px;
+					margin: 15px 0;
+				"
+			>
+				<h3 style="margin-top: 0; color: #d97706">🌊 Position außerhalb Ostsee</h3>
+				<p style="color: #92400e">
+					Die angegebene Position liegt außerhalb der typischen Ostsee-Grenzen. Bitte prüfen Sie die
+					Koordinaten.
+				</p>
+			</div>
+			{{/unless}} {{else}}
+			<div
+				style="
+					background: #fee2e2;
+					border: 1px solid #fca5a5;
+					border-radius: 6px;
+					padding: 15px;
+					margin: 15px 0;
+				"
+			>
+				<h3 style="margin-top: 0; color: #dc2626">🌍 Position außerhalb Ostsee</h3>
+				<p style="color: #991b1b">
+					Die angegebene Position liegt deutlich außerhalb der Ostsee. Bitte überprüfen Sie diese
+					Sichtung sorgfältig.
+				</p>
+			</div>
+			{{/if}}
+
+			<div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0">
+				<h3 style="margin-top: 0; color: #059669">📍 Sichtungsdetails</h3>
+				<p><strong>Datum:</strong> {{sighting.sightingDate}}</p>
+				<p><strong>Tierart:</strong> {{sighting.species}}</p>
+				{{#if sighting.totalCount}}
+				<p><strong>Anzahl:</strong> {{sighting.totalCount}}</p>
+				{{/if}} {{#if sighting.coordinatesFormatted}}
+				<p><strong>Position:</strong> {{sighting.coordinatesFormatted}}</p>
+				{{/if}} {{#if sighting.behavior}}
+				<p><strong>Verhalten:</strong> {{sighting.behavior}}</p>
+				{{/if}} {{#if sighting.distance}}
+				<p><strong>Entfernung:</strong> {{sighting.distance}}</p>
+				{{/if}} {{#if sighting.waterway}}
+				<p><strong>Gewässer:</strong> {{sighting.waterway}}</p>
+				{{/if}}
+			</div>
+
+			{{#if sighting.notes}}
+			<div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0">
+				<h3 style="margin-top: 0; color: #7c3aed">💬 Bemerkungen</h3>
+				<p>{{sighting.notes}}</p>
+			</div>
+			{{/if}} {{#if sighting.firstName}}
+			<div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0">
+				<h3 style="margin-top: 0; color: #0369a1">👤 Kontaktdaten</h3>
+				<p>
+					<strong>Name:</strong> {{sighting.firstName}}{{#if sighting.lastName}}
+					{{sighting.lastName}}{{/if}}
+				</p>
+				{{#if sighting.email}}
+				<p><strong>E-Mail:</strong> <a href="mailto:{{sighting.email}}">{{sighting.email}}</a></p>
+				{{/if}} {{#if sighting.phone}}
+				<p><strong>Telefon:</strong> {{sighting.phone}}</p>
+				{{/if}}
+			</div>
+			{{/if}} {{#if sighting.isDead}}
+			<div
+				style="
+					background: #fef2f2;
+					border: 1px solid #fecaca;
+					border-radius: 6px;
+					padding: 15px;
+					margin: 15px 0;
+				"
+			>
+				<h3 style="margin-top: 0; color: #dc2626">💀 Totfund</h3>
+				<p style="color: #991b1b">Diese Sichtung betrifft ein totes Tier.</p>
+				{{#if sighting.deadCondition}}
+				<p><strong>Zustand:</strong> {{sighting.deadCondition}}</p>
+				{{/if}} {{#if sighting.deadSize}}
+				<p><strong>Größe:</strong> {{sighting.deadSize}}</p>
+				{{/if}}
+			</div>
+			{{/if}}
+
+			<div style="text-align: center; margin: 20px 0">
+				<a
+					href="{{adminUrl}}"
+					style="
+						background: #1d4ed8;
+						color: white;
+						padding: 12px 24px;
+						text-decoration: none;
+						border-radius: 6px;
+						display: inline-block;
+						font-weight: bold;
+					"
+				>
+					🔍 Sichtung im Admin-Bereich anzeigen
+				</a>
+			</div>
+
+			<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0" />
+
+			<p style="font-size: 12px; color: #64748b; text-align: center">
+				Diese E-Mail wurde automatisch vom Ostsee-Tiere System generiert.<br />
+				Gesendet am {{currentDate}} um {{currentTime}} Uhr
+			</p>
+		</div>
+	</body>
+</html>

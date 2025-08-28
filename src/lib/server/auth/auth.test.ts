@@ -25,7 +25,8 @@ vi.mock('$env/static/private', () => ({
 	COOKIE_NAME: 'test-auth-cookie',
 	JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
 	SESSION_SECRET: 'test-session-secret',
-	ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+	ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+	NODE_ENV: 'test'
 }));
 
 vi.mock('$env/static/public', () => ({
