@@ -150,7 +150,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				const adminUrl = `${PUBLIC_SITE_URL || 'https://ostsee-tiere.de'}/admin/${id}`;
 
 				await EmailService.sendNewSightingNotification({
-					sighting: formDataWithDefaults as any, // Type conversion for email service
+					sighting: formDataWithDefaults as SightingFormValues, // Type conversion for email service
 					referenceId,
 					adminUrl
 				});

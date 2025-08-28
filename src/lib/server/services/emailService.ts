@@ -26,6 +26,7 @@ export interface EmailNotificationData {
 	adminUrl: string;
 }
 
+
 export interface EmailConfig {
 	enabled: boolean;
 	recipient: string;
@@ -232,7 +233,7 @@ export class EmailService {
 
 				try {
 					const result = await this.sendNewSightingNotification({
-						sighting: sightingFormValues as any,
+						sighting: sightingFormValues as SightingFormValues,
 						referenceId: sighting.referenceId || `TEST-${sightingId}`,
 						adminUrl
 					});
@@ -253,7 +254,7 @@ export class EmailService {
 			} else {
 				// Use configured recipient
 				return await this.sendNewSightingNotification({
-					sighting: sightingFormValues as any,
+					sighting: sightingFormValues as SightingFormValues,
 					referenceId: sighting.referenceId || `TEST-${sightingId}`,
 					adminUrl
 				});
@@ -366,9 +367,7 @@ export class EmailService {
 	 */
 	private static htmlToText(html: string): string {
 		return htmlToPlainText(html, {
-			wordwrap: false,
-			ignoreHref: true,
-			ignoreImage: true
+			wordwrap: false
 		}).trim();
 	}
 

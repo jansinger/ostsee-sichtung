@@ -21,7 +21,7 @@ const PUBLIC_CONFIG_KEYS = [
 
 export const GET: RequestHandler = async ({ setHeaders }) => {
 	try {
-		const publicConfigs: Record<string, any> = {};
+		const publicConfigs: Record<string, unknown> = {};
 
 		// Fetch only public configuration values
 		for (const key of PUBLIC_CONFIG_KEYS) {

@@ -854,16 +854,16 @@
 								<td>{getDistributionLabel(sighting.distribution)}</td>
 							{/if}
 							{#if columnVisibility.behavior}
-								<td>{getAnimalBehaviorLabel((sighting as any).behavior) || '—'}</td>
+								<td>{getAnimalBehaviorLabel(sighting.behavior) || '—'}</td>
 							{/if}
 							{#if columnVisibility.seaState}
-								<td>{getSeaStateLabel((sighting as any).seaState) || '—'}</td>
+								<td>{getSeaStateLabel(sighting.seaState) || '—'}</td>
 							{/if}
 							{#if columnVisibility.wind}
-								<td>{getWindStrengthLabel((sighting as any).windForce) || '—'}</td>
+								<td>{getWindStrengthLabel(sighting.windForce ? Number(sighting.windForce) : undefined) || '—'}</td>
 							{/if}
 							{#if columnVisibility.visibility}
-								<td>{getVisibilityLabel((sighting as any).visibility) || '—'}</td>
+								<td>{getVisibilityLabel(sighting.visibility) || '—'}</td>
 							{/if}
 							{#if columnVisibility.mediaUpload}
 								<td class="text-center">
