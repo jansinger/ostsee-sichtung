@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
-import { sql } from 'drizzle-orm';
+import { and, eq, isNotNull, ne, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -29,6 +29,7 @@ export const load: PageServerLoad = async () => {
 				deadPercentage: sql<number>`ROUND(COUNT(CASE WHEN ${sightings.isDead} = 1 THEN 1 END) * 100.0 / COUNT(*), 2)::numeric`
 			})
 			.from(sightings)
+			.where(eq(sightings.verified, 1))
 			.groupBy(sightings.species)
 			.orderBy(sql`COUNT(*) DESC`);
 
@@ -39,7 +40,7 @@ export const load: PageServerLoad = async () => {
 				sightings: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
-			.where(sql`${sightings.sightingDate} IS NOT NULL`)
+			.where(and(isNotNull(sightings.sightingDate), eq(sightings.verified, 1)))
 			.groupBy(sql`EXTRACT(year FROM ${sightings.sightingDate}::timestamp)`)
 			.orderBy(sql`EXTRACT(year FROM ${sightings.sightingDate}::timestamp)`);
 
@@ -50,7 +51,7 @@ export const load: PageServerLoad = async () => {
 				sightings: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
-			.where(sql`${sightings.sightingDate} IS NOT NULL`)
+			.where(and(isNotNull(sightings.sightingDate), eq(sightings.verified, 1)))
 			.groupBy(sql`EXTRACT(month FROM ${sightings.sightingDate}::timestamp)`)
 			.orderBy(sql`EXTRACT(month FROM ${sightings.sightingDate}::timestamp)`);
 
@@ -66,16 +67,109 @@ export const load: PageServerLoad = async () => {
 			.orderBy(sql`DATE(${sightings.created}) DESC`)
 			.limit(30);
 
-		// Geographic distribution (top regions)
-		const geographicStats = await db
+		// User engagement statistics - simple version
+		const [userCount] = await db
 			.select({
-				seaState: sightings.seaState,
-				count: sql<number>`COUNT(*)`
+				uniqueUsers: sql<number>`COUNT(DISTINCT email)::integer`
 			})
 			.from(sightings)
-			.where(sql`${sightings.seaState} > 0`)
-			.groupBy(sightings.seaState)
-			.orderBy(sql`COUNT(*) DESC`);
+			.where(and(sql`email IS NOT NULL AND email != ''`, eq(sightings.verified, 1)));
+
+		// Repeat users count - safe subquery approach
+		const repeatUsers = await db
+			.select({
+				email: sql<string>`email`,
+				count: sql<number>`COUNT(*)::integer`
+			})
+			.from(sightings)
+			.where(and(sql`email IS NOT NULL AND email != ''`, eq(sightings.verified, 1)))
+			.groupBy(sql`email`)
+			.having(sql`COUNT(*) > 1`);
+
+		const userStats = {
+			uniqueUsers: userCount?.uniqueUsers || 0,
+			repeatUsers: repeatUsers.length,
+			repeatUserPercentage:
+				(userCount?.uniqueUsers || 0) > 0
+					? (repeatUsers.length / (userCount?.uniqueUsers || 1)) * 100
+					: 0
+		};
+
+		// Ship name statistics - safe version
+		const [shipCount] = await db
+			.select({
+				uniqueShips: sql<number>`COUNT(DISTINCT schiffsname)::integer`,
+				totalWithShipName: sql<number>`COUNT(*)::integer`
+			})
+			.from(sightings)
+			.where(and(sql`schiffsname IS NOT NULL AND schiffsname != ''`, eq(sightings.verified, 1)));
+
+		const shipStats = [
+			{
+				uniqueShips: shipCount?.uniqueShips || 0,
+				totalWithShipName: shipCount?.totalWithShipName || 0
+			}
+		];
+
+		// Top observers - admin view with email addresses
+		const topObservers = await db
+			.select({
+				email: sightings.email,
+				sightingCount: sql<number>`COUNT(*)::integer`,
+				firstSighting: sql<string>`MIN(${sightings.created})::date`,
+				lastSighting: sql<string>`MAX(${sightings.created})::date`,
+				avgGroupSize: sql<number>`AVG(${sightings.totalCount})::numeric`
+			})
+			.from(sightings)
+			.where(
+				sql`${sightings.email} IS NOT NULL AND ${sightings.email} != '' AND ${sightings.email} NOT LIKE '%@meeresmuseum.de' AND ${sightings.verified} = 1`
+			)
+			.groupBy(sightings.email)
+			.having(sql`COUNT(*) > 1`)
+			.orderBy(sql`COUNT(*) DESC`)
+			.limit(10);
+
+		// Data quality statistics - step-by-step safe approach
+		const [totalVerified] = await db
+			.select({ total: sql<number>`COUNT(*)` })
+			.from(sightings)
+			.where(eq(sightings.verified, 1));
+
+		const [coordVerified] = await db
+			.select({ count: sql<number>`COUNT(*)` })
+			.from(sightings)
+			.where(
+				and(
+					eq(sightings.verified, 1),
+					isNotNull(sightings.latitude),
+					isNotNull(sightings.longitude)
+				)
+			);
+
+		const [behaviorVerified] = await db
+			.select({ count: sql<number>`COUNT(*)` })
+			.from(sightings)
+			.where(
+				and(eq(sightings.verified, 1), isNotNull(sightings.behavior), ne(sightings.behavior, 0))
+			);
+
+		const qualityStats = [
+			{
+				withCoordinates: Number(coordVerified?.count) || 0,
+				withBehavior: Number(behaviorVerified?.count) || 0,
+				total: Number(totalVerified?.total) || 0
+			}
+		];
+
+		// Geographic distribution (simplified)
+		const geographicStats = await db
+			.select({
+				inBalticSea: sql<number>`COUNT(CASE WHEN ${sightings.inBalticSeaGeo} = 1 THEN 1 END)::integer`,
+				outsideBalticSea: sql<number>`COUNT(CASE WHEN ${sightings.inBalticSeaGeo} = 0 THEN 1 END)::integer`,
+				total: sql<number>`COUNT(*)::integer`
+			})
+			.from(sightings)
+			.where(eq(sightings.verified, 1));
 
 		return {
 			basicStats,
@@ -83,7 +177,17 @@ export const load: PageServerLoad = async () => {
 			yearlyStats,
 			monthlyStats,
 			recentActivity,
-			geographicStats
+			geographicStats,
+			userStats,
+			shipStats: shipStats[0] || { uniqueShips: 0, totalWithShipName: 0 },
+			topObservers,
+			qualityStats: qualityStats[0] || {
+				withCoordinates: 0,
+				withDate: 0,
+				withBehavior: 0,
+				withMedia: 0,
+				total: 0
+			}
 		};
 	} catch (error) {
 		console.error('Error loading statistics:', error);
