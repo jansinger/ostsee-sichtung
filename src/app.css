@@ -1,6 +1,13 @@
 /* ===== Tailwind CSS 4 ===== */
 @import 'tailwindcss';
 
+/* ===== Local Fonts ===== */
+@import '@fontsource/roboto/300.css';  /* Light */
+@import '@fontsource/roboto/400.css';  /* Regular */
+@import '@fontsource/roboto/500.css';  /* Medium */
+@import '@fontsource/roboto/600.css';  /* Semi-Bold */
+@import '@fontsource/roboto/700.css';  /* Bold */
+
 /* ===== DaisyUI Plugin mit Theme ===== */
 @plugin 'daisyui';
 @plugin "daisyui/theme" {
