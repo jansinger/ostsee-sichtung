@@ -13,6 +13,7 @@ import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { ConfigRepository } from '../db/configRepository';
+import { htmlToText as htmlToPlainText } from 'html-to-text';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -364,16 +365,11 @@ export class EmailService {
 	 * Convert HTML to plain text for email
 	 */
 	private static htmlToText(html: string): string {
-		return html
-			.replace(/<[^>]*>/g, '')
-			.replace(/&nbsp;/g, ' ')
-			.replace(/&amp;/g, '&')
-			.replace(/&lt;/g, '<')
-			.replace(/&gt;/g, '>')
-			.replace(/&quot;/g, '"')
-			.replace(/&#39;/g, "'")
-			.replace(/\s+/g, ' ')
-			.trim();
+		return htmlToPlainText(html, {
+			wordwrap: false,
+			ignoreHref: true,
+			ignoreImage: true
+		}).trim();
 	}
 
 	/**
