@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.23.0 (2025-08-28)
+
+* Merge pull request #90 from jansinger/fix/cleanup-iframe ([1e9b406](https://github.com/jansinger/ostsee-sichtung/commit/1e9b406)), closes [#90](https://github.com/jansinger/ostsee-sichtung/issues/90)
+* fix(test): update E2E test selectors for modal form compatibility ([95f6fa5](https://github.com/jansinger/ostsee-sichtung/commit/95f6fa5))
+* feat: enhance admin statistics page with user engagement ([1b78c17](https://github.com/jansinger/ostsee-sichtung/commit/1b78c17))
+* feat(admin): implement column visibility configuration and enhance layout for sightings table ([03146bf](https://github.com/jansinger/ostsee-sichtung/commit/03146bf))
+* feat(api): enhance Scalar API integration with TypeScript support and improved error handling ([3ff0fe5](https://github.com/jansinger/ostsee-sichtung/commit/3ff0fe5))
+* feat(api): implement sighting retrieval by reference ID with error handling ([d274801](https://github.com/jansinger/ostsee-sichtung/commit/d274801))
+* feat(api): integrate database-driven statistics in FormHelp component ([0107735](https://github.com/jansinger/ostsee-sichtung/commit/0107735))
+* feat(api): integrate Scalar API documentation with enhanced error handling and custom styling ([e4bb578](https://github.com/jansinger/ostsee-sichtung/commit/e4bb578))
+* feat(api): update SightingStatistics to include dead animals found and unique users ([f9e7ab3](https://github.com/jansinger/ostsee-sichtung/commit/f9e7ab3))
+* feat(ui): implement Phase 1 value communication enhancements ([8225689](https://github.com/jansinger/ostsee-sichtung/commit/8225689))
+* feat(ui): implement Phase 2 value communication enhancements ([c8c55dd](https://github.com/jansinger/ostsee-sichtung/commit/c8c55dd))
+* feat(ui): implement Phase 3 & 4 value communication enhancements ([02a6a4e](https://github.com/jansinger/ostsee-sichtung/commit/02a6a4e))
+* feat(ui): integrate SpeciesIdentificationHelp in FormHelp component ([14f971f](https://github.com/jansinger/ostsee-sichtung/commit/14f971f))
+* refactor: improve layout and styling of PublicFooter component ([fa09255](https://github.com/jansinger/ostsee-sichtung/commit/fa09255))
+* refactor: update admin design ([956ae66](https://github.com/jansinger/ostsee-sichtung/commit/956ae66))
+* refactor: update package dependencies and remove SimpleMapView component ([eba6cb8](https://github.com/jansinger/ostsee-sichtung/commit/eba6cb8))
+* chore: remove unused Vite configuration file for E2E tests ([f87f07e](https://github.com/jansinger/ostsee-sichtung/commit/f87f07e))
+* chore: update third-party software notices and remove unused licenses file ([0b4aed5](https://github.com/jansinger/ostsee-sichtung/commit/0b4aed5))
+* style(ui): enhance statistics display in FormHelp component ([e55e5a9](https://github.com/jansinger/ostsee-sichtung/commit/e55e5a9))
+* docs: update and reorganize design guide to reflect current implementation ([d2e0b7d](https://github.com/jansinger/ostsee-sichtung/commit/d2e0b7d))
+
 ## <small>1.22.1 (2025-08-27)</small>
 
 * Merge pull request #89 from jansinger/fix/cleanup-iframe ([7884eea](https://github.com/jansinger/ostsee-sichtung/commit/7884eea)), closes [#89](https://github.com/jansinger/ostsee-sichtung/issues/89)
