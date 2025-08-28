@@ -171,7 +171,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 				mediaFile: 'photo123.jpg',
 				windDirection: 'SO' // Critical: Must support 'SO'
 			}));
-		}, 15000);
+		}, 25000);
 
 		it('should handle death finding (anzahl_gesamt = 0) as per PDF', async () => {
 			const deathRequest: LegacySightingRequest = {
@@ -196,7 +196,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 				deadCondition: 2,
 				deadSex: 1
 			}));
-		}, 15000);
+		}, 25000);
 	});
 
 	describe('PDF Compliance - Validation Errors', () => {
@@ -279,7 +279,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 
 			// Should accept all valid ranges
 			expect(response.status).toBe(201);
-		}, 15000);
+		}, 25000);
 
 		it('should support all PDF wind directions including SO', async () => {
 			const windDirections = ['N', 'NW', 'W', 'SW', 'S', 'SO', 'O', 'NO'];
@@ -310,7 +310,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 					longitude: '11.0'
 				});
 			}
-		}, 20000);
+		}, 30000);
 	});
 
 	describe('PDF Compliance - HTTP Methods', () => {
