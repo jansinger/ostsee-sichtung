@@ -1,3 +1,7 @@
+<script lang="ts">
+	import SpeciesIdentificationHelp from './form/fields/SpeciesIdentificationHelp.svelte';
+</script>
+
 <!-- Enhanced Help Text -->
 <div class="card bg-base-200/50 border-base-300 mt-8 border">
 	<div class="card-body p-2">
@@ -105,26 +109,7 @@
 						</div>
 					</div>
 
-					<div class="space-y-3">
-						<h4 class="font-semibold">🦭 Hilfe bei der Artenbestimmung</h4>
-						<div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-							<div class="text-center">
-								<div class="text-lg">🐋</div>
-								<strong>Schweinswal</strong>
-								<p class="mt-1 text-xs">Klein, dunkler Rücken, dreieckige Rückenflosse</p>
-							</div>
-							<div class="text-center">
-								<div class="text-lg">🦭</div>
-								<strong>Kegelrobbe</strong>
-								<p class="mt-1 text-xs">Groß, kegelförmiger Kopf, lange Schnauze</p>
-							</div>
-							<div class="text-center">
-								<div class="text-lg">🐟</div>
-								<strong>Seehund</strong>
-								<p class="mt-1 text-xs">Rundlicher Kopf, große Augen, V-förmige Nasenlöcher</p>
-							</div>
-						</div>
-					</div>
+					<SpeciesIdentificationHelp currentValue={0} />
 
 					<div class="alert alert-warning">
 						<div>
