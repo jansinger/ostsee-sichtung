@@ -431,7 +431,15 @@
 			<tbody>
 				{#each sightings as sighting (sighting.id)}
 					<tr class="hover:bg-base-200">
-						<td>{sighting.referenceId}</td>
+						<td>
+							{#if sighting.referenceId}
+								<a href="/admin/ref/{sighting.referenceId}" class="link link-primary link-hover font-mono">
+									{sighting.referenceId}
+								</a>
+							{:else}
+								<span class="text-base-content/50">—</span>
+							{/if}
+						</td>
 						<td>{formatLocalDateTime(sighting.sightingDate)}</td>
 						<td>{formatLocalDateTime(sighting.created)}</td>
 						<td

@@ -454,3 +454,45 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 		};
 	}
 };
+
+/**
+ * Ruft eine Sichtung anhand der ReferenzID ab
+ *
+ * Diese Funktion sucht nach einer Sichtung in der Datenbank anhand
+ * ihrer eindeutigen ReferenzID und gibt die vollständigen Sichtungsdaten zurück.
+ *
+ * @param referenceId Die ReferenzID der zu suchenden Sichtung
+ * @returns Sichtungsdaten oder null wenn nicht gefunden
+ *
+ * @example
+ * const sighting = await getSightingByReferenceId('REF-2024-001');
+ * if (sighting) {
+ *   console.log(`Sichtung gefunden: ID ${sighting.id}`);
+ * }
+ *
+ * @throws {Error} Bei Datenbankfehlern
+ */
+export const getSightingByReferenceId = async (referenceId: string) => {
+	try {
+		logger.info({ referenceId }, 'Suche Sichtung anhand ReferenzID');
+
+		const result = await db
+			.select()
+			.from(sightings)
+			.where(eq(sightings.referenceId, referenceId))
+			.limit(1);
+
+		const sighting = result[0] || null;
+
+		if (sighting) {
+			logger.info({ sightingId: sighting.id, referenceId }, 'Sichtung anhand ReferenzID gefunden');
+		} else {
+			logger.warn({ referenceId }, 'Keine Sichtung mit dieser ReferenzID gefunden');
+		}
+
+		return sighting;
+	} catch (error) {
+		logger.error({ error, referenceId }, 'Fehler beim Suchen der Sichtung anhand ReferenzID');
+		throw error;
+	}
+};
