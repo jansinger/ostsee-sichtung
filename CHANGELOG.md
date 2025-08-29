@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.25.0 (2025-08-29)
+
+* Merge pull request #92 from jansinger/fix/secure-role-management ([702cae0](https://github.com/jansinger/ostsee-sichtung/commit/702cae0)), closes [#92](https://github.com/jansinger/ostsee-sichtung/issues/92)
+* refactor: update email notification system to use sighting ID for database retrieval ([9eb0fcb](https://github.com/jansinger/ostsee-sichtung/commit/9eb0fcb))
+* fix: improve e2e tests with flexible selectors and increased timeouts for CI ([1c124a3](https://github.com/jansinger/ostsee-sichtung/commit/1c124a3))
+* fix: remove deprecated run command from claude.md ([07adbe5](https://github.com/jansinger/ostsee-sichtung/commit/07adbe5))
+* fix: update request type assertion in endpoint tests for better type safety ([b76bcfd](https://github.com/jansinger/ostsee-sichtung/commit/b76bcfd))
+* fix: update toast management to use Svelte 5 compatible stores ([18916ec](https://github.com/jansinger/ostsee-sichtung/commit/18916ec))
+* test: improve homepage content visibility checks ([c30359e](https://github.com/jansinger/ostsee-sichtung/commit/c30359e))
+* feat: Refactor toast management to use Svelte 5 runes ([1110f3e](https://github.com/jansinger/ostsee-sichtung/commit/1110f3e))
+* feat: refactor user role handling and enhance security measures ([a8b0b42](https://github.com/jansinger/ostsee-sichtung/commit/a8b0b42))
+
 ## 1.24.0 (2025-08-29)
 
 * Merge pull request #91 from jansinger/feat/admin-config ([78b098a](https://github.com/jansinger/ostsee-sichtung/commit/78b098a)), closes [#91](https://github.com/jansinger/ostsee-sichtung/issues/91)
