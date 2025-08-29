@@ -1,17 +1,17 @@
 /**
  * @fileoverview Tests for PDF-compliant Legacy REST API sighting creation
- * 
+ *
  * Tests the POST /rest_sichtungen endpoint for 100% PDF specification compliance.
  * This endpoint MUST maintain exact compatibility with original schweinswalsichtung.de API.
- * 
+ *
  * @author Ostsee-Tiere Team
  * @since 1.10.0
  */
 
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { POST } from './+server';
-import type { RequestEvent } from '@sveltejs/kit';
 import type { LegacySightingRequest } from '$lib/legacy-api/types';
+import type { RequestEvent } from '@sveltejs/kit';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { POST } from './+server';
 
 // Mock dependencies
 vi.mock('$lib/server/db/sightingRepository', () => ({
@@ -48,7 +48,7 @@ function createMockRequestEvent(body: LegacySightingRequest): RequestEvent {
 		request: {
 			json: () => Promise.resolve(body),
 			headers: {
-				get: (name: string) => name === 'content-type' ? 'application/json' : null
+				get: (name: string) => (name === 'content-type' ? 'application/json' : null)
 			}
 		},
 		getClientAddress: () => '127.0.0.1'
@@ -62,23 +62,22 @@ let _mockLogger: any;
 
 describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 	beforeEach(async () => {
+		vi.resetAllMocks();
 		// Get the mocked functions
 		const sightingRepository = await import('$lib/server/db/sightingRepository');
 		const geoModule = await import('$lib/server/geo/checkBalticSeaFile');
 		const loggerModule = await import('$lib/logger');
-		
+
 		mockSave = vi.mocked(sightingRepository.saveSighting);
 		mockCheckBalticSea = vi.mocked(geoModule.checkBalticSeaFile);
 		_mockLogger = vi.mocked(loggerModule.createLogger).mock.results[0]?.value;
-		
-		vi.clearAllMocks();
-		
+
 		// Default geo validation to return valid Baltic Sea location
 		mockCheckBalticSea.mockReturnValue({
 			inBaltic: true,
 			inChartArea: true
 		});
-		
+
 		// Default save to return successful result
 		mockSave.mockResolvedValue({
 			id: 12345,
@@ -118,15 +117,17 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 			expect(response.headers.get('Location')).toBe('/rest_sichtungen/view/12345.json');
 
 			// Verify correct data transformation
-			expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({
-				sightingDate: '2024-03-15T12:00:00.000Z', // Date component (normalized to noon UTC)
-				sightingTime: '14:30', // Time component
-				firstName: 'Max',
-				lastName: 'Mustermann', // Maps from "name" field
-				email: 'max@example.com',
-				totalCount: 3,
-				entryChannel: 4 // APP channel
-			}));
+			expect(mockSave).toHaveBeenCalledWith(
+				expect.objectContaining({
+					sightingDate: '2024-03-15T12:00:00.000Z', // Date component (normalized to noon UTC)
+					sightingTime: '14:30', // Time component
+					firstName: 'Max',
+					lastName: 'Mustermann', // Maps from "name" field
+					email: 'max@example.com',
+					totalCount: 3,
+					entryChannel: 4 // APP channel
+				})
+			);
 		});
 
 		it('should handle all PDF-specified fields correctly', async () => {
@@ -137,7 +138,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 				vorname: 'Anna',
 				name: 'Schmidt',
 				email: 'anna@example.com',
-				
+
 				// Optional fields (PDF specification)
 				gps_breite: 54.5,
 				gps_laenge: 11.2,
@@ -168,20 +169,22 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 			const response = await POST(event);
 
 			expect(response.status).toBe(201);
-			
+
 			// Verify all fields are correctly mapped
-			expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({
-				phone: '+49 123 456789',
-				juvenileCount: 2,
-				species: 0,
-				latitude: 54.5,
-				longitude: 11.2,
-				nameConsent: true,
-				shipNameConsent: false,
-				mediaUpload: true,
-				mediaFile: 'photo123.jpg',
-				windDirection: 'SO' // Critical: Must support 'SO'
-			}));
+			expect(mockSave).toHaveBeenCalledWith(
+				expect.objectContaining({
+					phone: '+49 123 456789',
+					juvenileCount: 2,
+					species: 0,
+					latitude: 54.5,
+					longitude: 11.2,
+					nameConsent: true,
+					shipNameConsent: false,
+					mediaUpload: true,
+					mediaFile: 'photo123.jpg',
+					windDirection: 'SO' // Critical: Must support 'SO'
+				})
+			);
 		}, 25000);
 
 		it('should handle death finding (anzahl_gesamt = 0) as per PDF', async () => {
@@ -200,20 +203,22 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 			const response = await POST(event);
 
 			expect(response.status).toBe(201);
-			expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({
-				totalCount: 0,
-				isDead: true, // Auto-detected from anzahl_gesamt = 0
-				deadSize: 180,
-				deadCondition: 2,
-				deadSex: 1
-			}));
-		}, 25000);
+			expect(mockSave).toHaveBeenCalledWith(
+				expect.objectContaining({
+					totalCount: 0,
+					isDead: true, // Auto-detected from anzahl_gesamt = 0
+					deadSize: 180,
+					deadCondition: 2,
+					deadSex: 1
+				})
+			);
+		}, 5000);
 	});
 
 	describe('PDF Compliance - Validation Errors', () => {
 		it('should return exact PDF error format for validation failures', async () => {
 			const invalidRequest = {
-				sichtungsdatum: '2024-03-15 12:00',
+				sichtungsdatum: '2024-03-15 12:00'
 				// Missing required fields as per PDF
 			} as LegacySightingRequest;
 
@@ -222,7 +227,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 
 			expect(response.status).toBe(400);
 			const responseData = await response.json();
-			
+
 			// PDF compliance: Error response format (nested message structure)
 			expect(responseData).toHaveProperty('message');
 			expect(responseData.message).toHaveProperty('message');
@@ -290,7 +295,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 
 			// Should accept all valid ranges
 			expect(response.status).toBe(201);
-		}, 25000);
+		}, 5000);
 
 		// Test wind directions individually to avoid potential issues in CI
 		it('should support wind direction N', async () => {
