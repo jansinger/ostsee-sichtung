@@ -36,15 +36,6 @@ jobs:
       - name: Setup environment
         run: cp .env.example .env
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
-
       - name: Cache build outputs
         uses: actions/cache@v4
         with:
@@ -59,13 +50,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright Browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          PLAYWRIGHT_VERSION=$(npm ls @playwright/test --json | jq -r '.dependencies["@playwright/test"].version')
+          echo "version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Install Playwright dependencies only
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
 
       - name: Ensure Svelte Kit is in sync
         run: npx svelte-kit sync
@@ -188,6 +186,33 @@ jobs:
       - name: Build application
         if: steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true'
         run: npm run build
+
+      # Install Playwright browsers only when E2E tests will run
+      - name: Install Playwright Browsers
+        if: >
+          steps.playwright-cache.outputs.cache-hit != 'true' &&
+          github.event.pull_request.draft == false && 
+          (
+            steps.changes.outputs.frontend == 'true' ||
+            steps.changes.outputs.backend == 'true' ||
+            github.actor == 'dependabot[bot]' ||
+            contains(github.event.pull_request.title, 'breaking')
+          ) &&
+          (steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true')
+        run: npx playwright install --with-deps
+
+      - name: Install Playwright dependencies only
+        if: >
+          steps.playwright-cache.outputs.cache-hit == 'true' &&
+          github.event.pull_request.draft == false && 
+          (
+            steps.changes.outputs.frontend == 'true' ||
+            steps.changes.outputs.backend == 'true' ||
+            github.actor == 'dependabot[bot]' ||
+            contains(github.event.pull_request.title, 'breaking')
+          ) &&
+          (steps.changes.outputs.docs != 'true' || steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true')
+        run: npx playwright install-deps
 
       # E2E tests für relevante Änderungen (affected testing)
       - name: Run E2E tests

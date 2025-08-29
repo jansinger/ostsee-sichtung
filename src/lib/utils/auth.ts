@@ -17,3 +17,7 @@ export const isUserInRole = (user: User | null | undefined, requiredRoles?: stri
 export const isAdminUser = (user: User | null | undefined): boolean => {
 	return isUserInRole(user, ['admin']);
 };
+
+export const isSuperAdminUser = (user: User | null | undefined): boolean => {
+	return isUserInRole(user, ['superadmin']);
+};

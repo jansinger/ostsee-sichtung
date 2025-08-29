@@ -1,3 +1,4 @@
+import { createLogger } from '$lib/logger';
 import { getDistanceLabel } from '$lib/report/formOptions/distance';
 import { getDistributionLabel } from '$lib/report/formOptions/distribution';
 import { getSpeciesLabel } from '$lib/report/formOptions/species';
@@ -7,6 +8,8 @@ import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { text } from '@sveltejs/kit';
 import { and, between, eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
+
+const logger = createLogger('api:sightings:export:csv');
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	// Authorization check
@@ -124,7 +127,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			}
 		});
 	} catch (error) {
-		console.error('Fehler beim CSV-Export:', error);
+		logger.error({ error: error instanceof Error ? error.message : error }, 'Fehler beim CSV-Export');
 
 		return text('Fehler beim CSV-Export', {
 			status: 500,

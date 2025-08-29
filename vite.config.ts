@@ -67,9 +67,11 @@ export default defineConfig({
 					environment: 'node',
 					include: ['src/**/*.{test,spec}.{js,ts}'],
 					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+					setupFiles: ['./vitest-setup-server.ts'],
 					// Force UTC timezone for consistent date/time tests across environments
 					env: {
-						TZ: 'UTC'
+						TZ: 'UTC',
+						NODE_ENV: 'test'
 					}
 				}
 			}

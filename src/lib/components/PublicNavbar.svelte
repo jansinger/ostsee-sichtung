@@ -34,6 +34,14 @@
 				Statistiken
 			</a>
 		</li>
+		<li>
+			<a
+				href="/admin/settings"
+				class={currentPath === '/admin/settings' ? 'active font-medium' : ''}
+			>
+				Einstellungen
+			</a>
+		</li>
 	{/if}
 	<li>
 		<a href="/docs" class={currentPath.includes('/docs') ? 'active font-medium' : ''}> API-Docs </a>

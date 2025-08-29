@@ -5,7 +5,8 @@ import {
 	COOKIE_NAME,
 	ENCRYPTION_KEY,
 	JWKS_URL,
-	SESSION_SECRET
+	SESSION_SECRET,
+	NODE_ENV
 } from '$env/static/private';
 import { PUBLIC_SITE_URL } from '$env/static/public';
 
@@ -238,7 +239,7 @@ export const setAuthCookie = (cookies: Cookies, user: User) => {
 		sameSite: 'lax',
 		maxAge: COOKIE_DURATION_SECONDS,
 		path: '/',
-		secure: process.env.NODE_ENV === 'production'
+		secure: NODE_ENV === 'production'
 	});
 };
 
@@ -330,7 +331,7 @@ export const setCsrfCookie = (cookies: Cookies) => {
 		sameSite: 'lax',
 		maxAge: COOKIE_AUTHORIZE_DURATION_SECONDS,
 		path: '/api/auth',
-		secure: process.env.NODE_ENV === 'production'
+		secure: NODE_ENV === 'production'
 	});
 	return csrfState;
 };
@@ -372,7 +373,7 @@ export const setPKCECookie = (cookies: Cookies) => {
 		sameSite: 'lax',
 		maxAge: COOKIE_AUTHORIZE_DURATION_SECONDS,
 		path: '/api/auth',
-		secure: process.env.NODE_ENV === 'production'
+		secure: NODE_ENV === 'production'
 	});
 	return challenge;
 };

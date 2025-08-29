@@ -9,6 +9,7 @@ export interface Pagination {
 	perPage: number;
 	totalPages: number;
 	total: number;
+	maxPerPage?: number;
 }
 
 export interface PageData {

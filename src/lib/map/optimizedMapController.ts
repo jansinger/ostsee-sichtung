@@ -1,3 +1,4 @@
+import { createLogger } from '$lib/logger';
 import { Feature, Geolocation, Map, View, Overlay } from 'ol';
 import type { Control } from 'ol/control';
 import { defaults as defaultControls } from 'ol/control';
@@ -8,7 +9,7 @@ import { Point as OlPoint } from 'ol/geom';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import { fromLonLat } from 'ol/proj';
-import { OSM } from 'ol/source';
+import { OSM, XYZ } from 'ol/source';
 import Cluster from 'ol/source/Cluster';
 import VectorSource from 'ol/source/Vector';
 import { Circle, Fill, Stroke, Style, Text } from 'ol/style';
@@ -17,6 +18,8 @@ import { Circle, Fill, Stroke, Style, Text } from 'ol/style';
 import type { MapTranslations } from './mapUtils';
 import { createFeatureStyle, getFeatureColorGroup } from './styleUtils';
 import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
+
+const logger = createLogger('map:optimized-controller');
 
 /**
  * Interface für die Eigenschaften einer Sichtung
@@ -168,6 +171,31 @@ export class SichtungenMap {
 					source: new OSM({
 						attributions: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 					})
+				}),
+				// OpenSeaMap-Layer für maritime Informationen
+				new TileLayer({
+					source: new XYZ({
+						url: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',
+						attributions: '© <a href="http://www.openseamap.org/">OpenSeaMap</a> contributors',
+						maxZoom: 18,
+						minZoom: 1,
+						crossOrigin: 'anonymous',
+						// Handle tile loading errors gracefully
+						tileLoadFunction: (tile, src) => {
+							const img = (tile as unknown as { getImage(): HTMLImageElement }).getImage();
+							img.onload = () => {
+								// Tile loaded successfully - for debugging
+								// console.log('OpenSeaMap tile loaded:', src);
+							};
+							img.onerror = () => {
+								// If tile fails to load, log for debugging and hide it
+								logger.warn({ tileUrl: src }, 'OpenSeaMap tile failed to load');
+								img.style.display = 'none';
+							};
+							img.src = src;
+						}
+					}),
+					opacity: 0.8 // Slightly transparent to blend well with base map
 				}),
 				// Sichtungen-Layer (nur einer!)
 				this.reportsLayer,

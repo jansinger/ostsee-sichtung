@@ -1,9 +1,12 @@
+import { createLogger } from '$lib/logger';
 import type { Map } from 'ol';
 import type { Coordinate } from 'ol/coordinate';
 import type Feature from 'ol/Feature';
 import type BaseLayer from 'ol/layer/Base';
 
 // Direkte Importe für alle benötigten OpenLayers-Module
+
+const logger = createLogger('utils:map:openLayersHelpers');
 
 import Collection from 'ol/Collection';
 import { Control, defaults as defaultControls } from 'ol/control';
@@ -82,7 +85,7 @@ export class FormLocationControl extends Control {
 				}
 			},
 			(error) => {
-				console.warn('GPS-Positionierung fehlgeschlagen:', error);
+				logger.warn({ error: error instanceof Error ? error.message : error }, 'GPS-Positionierung fehlgeschlagen');
 				this.stopTracking();
 			},
 			{

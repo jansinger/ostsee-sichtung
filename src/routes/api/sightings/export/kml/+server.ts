@@ -1,3 +1,4 @@
+import { createLogger } from '$lib/logger';
 import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
@@ -5,6 +6,8 @@ import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { text } from '@sveltejs/kit';
 import { and, between, eq, isNotNull } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
+
+const logger = createLogger('api:sightings:export:kml');
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	// Authorization check
@@ -122,7 +125,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			}
 		});
 	} catch (error) {
-		console.error('Fehler beim KML-Export:', error);
+		logger.error({ error: error instanceof Error ? error.message : error }, 'Fehler beim KML-Export');
 
 		return text('<?xml version="1.0" encoding="UTF-8"?><error>Fehler beim KML-Export</error>', {
 			status: 500,

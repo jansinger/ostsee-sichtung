@@ -1,9 +1,12 @@
+import { createLogger } from '$lib/logger';
 import { sightingsToGeoJSON, type DBSighting } from '$lib/map/mapUtils';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { json } from '@sveltejs/kit';
 import { and, between, eq, sql } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
+
+const logger = createLogger('api:map:sightings');
 
 export const GET: RequestHandler = async ({ url }) => {
 	// Filter-Parameter aus der URL extrahieren
@@ -73,7 +76,7 @@ export const GET: RequestHandler = async ({ url }) => {
 		// Erfolgreiche Antwort zurückgeben
 		return json(geoJson);
 	} catch (error) {
-		console.error('Fehler beim Abrufen der Sichtungen für die Karte:', error);
+		logger.error({ error: error instanceof Error ? error.message : error }, 'Fehler beim Abrufen der Sichtungen für die Karte');
 
 		// Fehlerantwort zurückgeben
 		return json(

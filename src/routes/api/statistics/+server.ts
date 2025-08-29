@@ -6,10 +6,13 @@
  * Implementiert server-seitiges In-Memory-Caching für 1 Stunde.
  */
 
+import { createLogger } from '$lib/logger';
 import { getSightingStatistics } from '$lib/server/db/sightingRepository';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import type { SightingStatistics } from '$lib/server/db/sightingRepository';
+
+const logger = createLogger('api:statistics');
 
 interface CachedStatistics {
 	data: SightingStatistics;
@@ -75,7 +78,7 @@ export const GET: RequestHandler = async () => {
 			}
 		});
 	} catch (error) {
-		console.error('Error fetching statistics:', error);
+		logger.error({ error: error instanceof Error ? error.message : error }, 'Error fetching statistics');
 
 		// Bei Fehlern: Fallback-Statistiken zurückgeben
 		return json(FALLBACK_STATISTICS, {
