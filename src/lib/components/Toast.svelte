@@ -1,11 +1,11 @@
 <!--
   Toast notification component
   Supports different types: success, error, warning, info
+  Modernized with Svelte 5 $effect rune
 -->
 <script lang="ts">
 	import { CircleAlert, CircleCheck, CircleX, Info, X } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
-	import { onMount } from 'svelte';
 
 	let {
 		type = 'info',
@@ -48,11 +48,13 @@
 		onDismiss?.();
 	}
 
-	onMount(() => {
+	// Modern $effect replaces onMount/onDestroy pattern
+	$effect(() => {
 		if (duration > 0) {
 			timeout = setTimeout(dismiss, duration);
 		}
 
+		// Cleanup function (replaces onDestroy)
 		return () => {
 			if (timeout) {
 				clearTimeout(timeout);

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
 	// Props
@@ -23,24 +22,27 @@
 	let hasError = $state(false);
 	let errorMessage = $state('');
 
-	onMount(async () => {
+	// Modern $effect for API spec verification
+	$effect(() => {
 		if (browser) {
-			try {
-				// Verify OpenAPI spec is available
-				const response = await fetch('/openapi.yml');
-				if (!response.ok) {
-					throw new Error('OpenAPI Spec konnte nicht geladen werden');
+			(async () => {
+				try {
+					// Verify OpenAPI spec is available
+					const response = await fetch('/openapi.yml');
+					if (!response.ok) {
+						throw new Error('OpenAPI Spec konnte nicht geladen werden');
+					}
+
+					// Set loading to false after verification
+					isLoading = false;
+
+				} catch (error) {
+					console.error('Failed to load API documentation:', error);
+					hasError = true;
+					errorMessage = error instanceof Error ? error.message : 'API-Dokumentation konnte nicht geladen werden';
+					isLoading = false;
 				}
-
-				// Set loading to false after verification
-				isLoading = false;
-
-			} catch (error) {
-				console.error('Failed to load API documentation:', error);
-				hasError = true;
-				errorMessage = error instanceof Error ? error.message : 'API-Dokumentation konnte nicht geladen werden';
-				isLoading = false;
-			}
+			})();
 		}
 	});
 </script>

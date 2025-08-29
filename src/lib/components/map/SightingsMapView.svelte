@@ -8,7 +8,6 @@
 	import { speciesLabels } from '$lib/report/formOptions/species';
 	import { getAvailableYears, getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 	import 'ol/ol.css';
-	import { onDestroy, onMount } from 'svelte';
 	import FilterPanel from './Panel/FilterPanel.svelte';
 	import LegendPanel from './Panel/LegendPanel.svelte';
 
@@ -79,60 +78,62 @@
 	let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
 	let unhandledRejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
 
-	// Initialisiere die Karte und Manager beim Mounten der Komponente
-	onMount(() => {
-		// Initialisiere Manager
-		panelManager = new MapPanelManager();
-		timeSliderManager = new MapTimeSliderManager();
-		countManager = new MapCountManager();
+	// Modern $effect for map initialization and cleanup
+	$effect(() => {
+		// Check if we have the required DOM element
+		const mapElement = document.getElementById(mapContainerId);
+		if (mapElement) {
+			// Initialisiere Manager
+			panelManager = new MapPanelManager();
+			timeSliderManager = new MapTimeSliderManager();
+			countManager = new MapCountManager();
 
-		// Initialisiere Karte
-		mapInstance = new SichtungenMap({
-			translations,
-			target: mapContainerId,
-			yearSelectorId: 'year-select',
-			filterInputId: 'filter-input',
-			sliderRangeId: 'slider-range',
-			timeStartId: 'time-start',
-			timeEndId: 'time-end',
-			enableLocationControl: false // Kein LocationControl für normale Karten-Views
-		});
+			// Initialisiere Karte
+			mapInstance = new SichtungenMap({
+				translations,
+				target: mapContainerId,
+				yearSelectorId: 'year-select',
+				filterInputId: 'filter-input',
+				sliderRangeId: 'slider-range',
+				timeStartId: 'time-start',
+				timeEndId: 'time-end',
+				enableLocationControl: false // Kein LocationControl für normale Karten-Views
+			});
 
-		// Initialisiere Count Manager und setze Callback
-		countManager.initialize(mapInstance, translations);
-		countManager.onCountsUpdated((newCounts) => {
-			counts = newCounts;
-		});
+			// Initialisiere Count Manager und setze Callback
+			countManager.initialize(mapInstance, translations);
+			countManager.onCountsUpdated((newCounts) => {
+				counts = newCounts;
+			});
 
-		// Mache den CountManager global verfügbar für die Panel-Komponenten
-		(window as unknown as { mapCountManager: typeof countManager }).mapCountManager = countManager;
+			// Mache den CountManager global verfügbar für die Panel-Komponenten
+			(window as unknown as { mapCountManager: typeof countManager }).mapCountManager = countManager;
 
-		// Initialisiere andere Manager
-		panelManager.initializePanels();
-		timeSliderManager.initialize(mapInstance);
+			// Initialisiere andere Manager
+			panelManager.initializePanels();
+			timeSliderManager.initialize(mapInstance);
 
-		// Erste Aktualisierung nach kurzer Verzögerung
-		setTimeout(() => {
-			countManager.updateCounts();
-			// Aktualisiere das angezeigte Jahr im Titel
-			currentDisplayedYear = mapInstance.getDisplayedYear();
-		}, 1500);
+			// Erste Aktualisierung nach kurzer Verzögerung
+			setTimeout(() => {
+				countManager.updateCounts();
+				// Aktualisiere das angezeigte Jahr im Titel
+				currentDisplayedYear = mapInstance.getDisplayedYear();
+			}, 1500);
 
-		// Tastatur-Navigation Setup
-		setupKeyboardNavigation();
+			// Tastatur-Navigation Setup
+			setupKeyboardNavigation();
 
-		// Event-Listener für Loading-Zustände
-		setupLoadingHandlers();
+			// Event-Listener für Loading-Zustände
+			setupLoadingHandlers();
 
-		// Cleanup beim Unmount
-		return () => {
-			cleanup();
-		};
-	});
-
-	// Cleanup-Funktion beim Destroy
-	onDestroy(() => {
-		cleanup();
+			// Cleanup function (replaces onDestroy)
+			return () => {
+				cleanup();
+			};
+		}
+		
+		// Return undefined if mapElement is not available yet
+		return;
 	});
 
 	// Effect zum Überwachen von Jahr-Änderungen

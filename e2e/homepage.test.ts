@@ -75,8 +75,8 @@ test.describe('Form Navigation', () => {
 		// Warte auf das Hauptformular (nicht Modal-Forms)
 		await page.waitForSelector('form:not(.modal-backdrop)', { timeout: 10000 });
 
-		// Prüfe ob Formularfelder vorhanden sind
-		const formFields = page.locator('input, select, textarea').first();
+		// Prüfe ob Formularfelder vorhanden sind (ohne Honeypot und versteckte Felder)
+		const formFields = page.locator('input:not([name="_honeypot"]):not([aria-hidden="true"]), select:not([aria-hidden="true"]), textarea:not([aria-hidden="true"])').first();
 		await expect(formFields).toBeVisible();
 	});
 });

@@ -1,49 +1,51 @@
 <script lang="ts">
 	import { createLogger } from '$lib/logger';
-	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
 	const logger = createLogger('docs:api:direct');
 
 	let scalarContainer: HTMLDivElement | undefined;
-	let isLoading = true;
-	let hasError = false;
-	let errorMessage = '';
+	let isLoading = $state(true);
+	let hasError = $state(false);
+	let errorMessage = $state('');
 
-	onMount(async () => {
+	// Modern $effect for Scalar initialization
+	$effect(() => {
 		if (browser && scalarContainer) {
-			try {
-				// Import Scalar dynamically to avoid SSR issues
-				const { ApiReference } = await import('@scalar/api-reference');
-				
-				// Initialize Scalar directly without iframe
-				const configuration = {
-					spec: {
-						url: '/openapi.yml'
-					},
-					layout: 'modern' as const,
-					theme: 'default' as const,
-					showSidebar: true,
-					searchHotKey: 'k' as const,
-					customCss: `
-						.scalar-app {
-							font-family: 'Roboto', system-ui, sans-serif;
-							border: 1px solid #e5e7eb;
-							border-radius: 0.5rem;
-						}
-					`
-				};
+			(async () => {
+				try {
+					// Import Scalar dynamically to avoid SSR issues
+					const { ApiReference } = await import('@scalar/api-reference');
+					
+					// Initialize Scalar directly without iframe
+					const configuration = {
+						spec: {
+							url: '/openapi.yml'
+						},
+						layout: 'modern' as const,
+						theme: 'default' as const,
+						showSidebar: true,
+						searchHotKey: 'k' as const,
+						customCss: `
+							.scalar-app {
+								font-family: 'Roboto', system-ui, sans-serif;
+								border: 1px solid #e5e7eb;
+								border-radius: 0.5rem;
+							}
+						`
+					};
 
-				// Mount Scalar API Reference - use new operator
-				new ApiReference(scalarContainer, configuration);
-				isLoading = false;
+					// Mount Scalar API Reference - use new operator
+					new ApiReference(scalarContainer, configuration);
+					isLoading = false;
 
-			} catch (error: unknown) {
-				logger.error({ error: error instanceof Error ? error.message : error }, 'Failed to load Scalar API Reference');
-				hasError = true;
-				errorMessage = (error instanceof Error ? error.message : 'Unknown error') || 'Scalar API-Dokumentation konnte nicht geladen werden';
-				isLoading = false;
-			}
+				} catch (error: unknown) {
+					logger.error({ error: error instanceof Error ? error.message : error }, 'Failed to load Scalar API Reference');
+					hasError = true;
+					errorMessage = (error instanceof Error ? error.message : 'Unknown error') || 'Scalar API-Dokumentation konnte nicht geladen werden';
+					isLoading = false;
+				}
+			})();
 		}
 	});
 </script>

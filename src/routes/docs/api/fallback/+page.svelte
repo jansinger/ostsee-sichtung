@@ -1,26 +1,27 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	
 	let openApiSpec = $state<string | null>(null);
 	let isLoading = $state(true);
 	let error = $state<string | null>(null);
 	
-	onMount(async () => {
-		try {
-			const response = await fetch('/openapi.yml');
-			if (!response.ok) {
-				throw new Error('OpenAPI Spec konnte nicht geladen werden');
+	// Modern $effect for loading OpenAPI spec
+	$effect(() => {
+		(async () => {
+			try {
+				const response = await fetch('/openapi.yml');
+				if (!response.ok) {
+					throw new Error('OpenAPI Spec konnte nicht geladen werden');
+				}
+				
+				const yamlText = await response.text();
+				// Simple YAML parsing for display (not full YAML parser)
+				// This is just for fallback display purposes
+				openApiSpec = yamlText;
+				isLoading = false;
+			} catch (err) {
+				error = err instanceof Error ? err.message : 'Unbekannter Fehler';
+				isLoading = false;
 			}
-			
-			const yamlText = await response.text();
-			// Simple YAML parsing for display (not full YAML parser)
-			// This is just for fallback display purposes
-			openApiSpec = yamlText;
-			isLoading = false;
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Unbekannter Fehler';
-			isLoading = false;
-		}
+		})();
 	});
 </script>
 

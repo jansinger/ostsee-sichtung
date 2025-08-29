@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createToast } from '$lib/stores/toastStore';
+	import { createToast } from '$lib/stores/toastState';
 	import type { ValidationPreset } from '$lib/types';
 	import { validateFiles } from '$lib/utils';
 	import { getFileTypeDescription } from '$lib/utils/validation/fileValidation';
