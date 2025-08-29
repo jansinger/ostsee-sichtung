@@ -213,5 +213,260 @@ The legacy APIs are located in `/src/routes/api/legacy/` and include field mappi
 - Available commit scopes: deps, api, ui, db, auth, export, admin, report, map, config, build, ci, docs, test, types, style, perf, security, a11y, release, media
 - Prüfe nach Änderungen immer auf notwendige Aktualisierungen der Dokumentationen, also aller *.md Dateien
 - Aktuallisiere nach Änderungen an der API immer auch die OpenAPI Spec
-- Benutze context7 mcp server
+- **IMPORTANT**: Always use context7 MCP server for retrieving current documentation and best practices
 - Nutze die lokale DB aus .env für lokale Ausführung mit npm run dev und für tools / scripte
+
+## Technology Stack Documentation and Best Practices
+
+### Always Use context7 MCP Server
+**CRITICAL**: When working with any external libraries or frameworks, ALWAYS use the context7 MCP server to retrieve the most current documentation, patterns, and best practices. This ensures you're working with up-to-date information and following current conventions.
+
+```bash
+# Example: Get current DaisyUI documentation
+Use Task tool with context7 to get latest DaisyUI patterns
+Use Task tool with context7 to get latest Svelte 5 best practices
+Use Task tool with context7 to get latest SvelteKit patterns
+```
+
+### DaisyUI v5 (2025) - Modern Component Framework
+
+#### Current Version Features
+- **DaisyUI v5** with 61% smaller bundle size and zero dependencies
+- **ESM compatible** with native CSS nesting support
+- **Tailwind CSS 4 compatibility** and CSS-based configuration
+- **35+ built-in themes** with advanced customization options
+
+#### Component Patterns (Always Use context7 for Latest)
+```css
+/* Modern CSS-based configuration */
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark, cupcake;
+  include: button, input, select, card;
+  exclude: checkbox, footer;
+  prefix: "";
+  root: ":root";
+  logs: true;
+}
+```
+
+#### Best Practices for Component Development
+- Use semantic component classes: `btn btn-primary`, `input input-bordered`
+- Leverage size variants: `btn-xs`, `btn-sm`, `btn-md`, `btn-lg`, `btn-xl`
+- Apply color system: `btn-neutral`, `btn-primary`, `btn-secondary`, `btn-accent`
+- Follow accessibility patterns with proper ARIA attributes
+- Use theme switching via `data-theme` attribute
+- Combine DaisyUI with Tailwind utilities for custom styling
+
+#### Current Component Availability (Use context7 for Complete List)
+- **Forms**: Enhanced input, button, select, textarea with validation
+- **Layout**: Card, modal, drawer, divider, hero
+- **Navigation**: Navbar, menu, breadcrumbs, tabs, pagination
+- **Data Display**: Table, badge, alert, progress, stats
+- **New in v5**: List, Status, Fieldset, Label, Filter, Calendar, Validator, Dock
+
+### Svelte 5 Runes System - Modern Reactivity
+
+#### Core Runes (Always Verify Latest Syntax with context7)
+```typescript
+// $state - Reactive state management
+let count = $state(0);
+let user = $state({ name: 'John', age: 30 });
+let todos = $state([{ done: false, text: 'add todos' }]);
+
+// $derived - Computed values with automatic dependency tracking  
+let doubled = $derived(count * 2);
+let total = $derived.by(() => {
+    return items.reduce((sum, item) => sum + item.value, 0);
+});
+
+// $effect - Side effects with automatic cleanup
+$effect(() => {
+    document.title = `Count: ${count}`;
+});
+
+$effect(() => {
+    const interval = setInterval(() => tick(), 1000);
+    return () => clearInterval(interval); // Cleanup
+});
+
+// $props - Component properties with destructuring
+let { name = 'Anonymous', age, onSelect }: Props = $props();
+```
+
+#### Modern Component Patterns
+```svelte
+<!-- Component.svelte -->
+<script lang="ts">
+    interface Props {
+        items: string[];
+        onSelect?: (item: string) => void;
+    }
+    
+    let { items, onSelect }: Props = $props();
+    let selectedItem = $state<string | null>(null);
+    let hasSelection = $derived(selectedItem !== null);
+    
+    $effect(() => {
+        if (selectedItem && onSelect) {
+            onSelect(selectedItem);
+        }
+    });
+</script>
+
+<!-- Event handling without on: prefix -->
+<button onclick={() => handleClick()}>Click</button>
+```
+
+#### Migration Best Practices
+- Replace `let variable` with `$state(initial)`
+- Replace `$: derived = expression` with `$derived(expression)`
+- Replace `export let prop` with `let { prop } = $props()`
+- Replace `on:event` with `onevent` function calls
+- Use `mount()` instead of `new Component()` for instantiation
+
+### SvelteKit 2025 - Full-Stack Framework
+
+#### File-Based Routing (Always Check Latest Patterns with context7)
+```
+src/routes/
+├── +page.svelte              # Home page (/)
+├── +layout.svelte            # Root layout
+├── +error.svelte            # Error boundary
+├── blog/
+│   ├── +page.svelte         # Blog index (/blog)
+│   ├── +page.server.ts      # Server-side load & actions
+│   ├── [slug]/
+│   │   └── +page.svelte     # Dynamic route (/blog/hello)
+│   └── [...rest]/
+│       └── +page.svelte     # Catch-all (/blog/a/b/c)
+└── api/
+    └── +server.ts           # API endpoint (/api)
+```
+
+#### Load Functions and Data Fetching
+```typescript
+// Universal load (+page.ts) - runs on server and client
+export const load: PageLoad = async ({ fetch, params }) => {
+    const response = await fetch(`/api/posts/${params.slug}`);
+    return { post: await response.json() };
+};
+
+// Server-only load (+page.server.ts) - sensitive data
+export const load: PageServerLoad = async ({ params, cookies }) => {
+    const user = await db.getUser(cookies.get('sessionid'));
+    return { user, privateData: await db.getPrivate(user.id) };
+};
+```
+
+#### Form Actions and Progressive Enhancement
+```typescript
+// +page.server.ts - Form actions
+export const actions: Actions = {
+    default: async ({ request }) => {
+        const data = await request.formData();
+        const email = data.get('email');
+        if (!email) return fail(400, { email, missing: true });
+        // Process form...
+        return { success: true };
+    }
+};
+```
+
+```svelte
+<!-- Progressive enhancement -->
+<form method="POST" use:enhance>
+    <input name="email" value={form?.email ?? ''} />
+    {#if form?.missing}<p>Email required</p>{/if}
+    <button type="submit">Submit</button>
+</form>
+```
+
+#### Production Deployment Patterns (Use context7 for Latest Adapter Options)
+```javascript
+// Vercel adapter with latest features
+import adapter from '@sveltejs/adapter-vercel';
+
+export default {
+    kit: {
+        adapter: adapter({
+            edge: true,      // Edge runtime
+            isr: true,       // Incremental Static Regeneration  
+            split: true      // Function per route
+        })
+    }
+};
+```
+
+### Development Workflow with Context7
+
+#### Always Start with Documentation Lookup
+1. **Before implementing features**: Use context7 to get latest patterns
+2. **Before using new APIs**: Verify current syntax and best practices  
+3. **Before deployment**: Check latest adapter and configuration options
+4. **Before optimization**: Get current performance recommendations
+
+#### Example Usage Pattern
+```bash
+# Before working on forms
+Use Task + context7: "Get latest DaisyUI form component patterns and accessibility requirements"
+
+# Before state management
+Use Task + context7: "Get current Svelte 5 runes best practices and performance patterns"  
+
+# Before deployment
+Use Task + context7: "Get latest SvelteKit deployment options and optimization techniques"
+```
+
+### Integration Best Practices
+
+#### Combining DaisyUI + Svelte 5 + SvelteKit
+```svelte
+<script lang="ts">
+    // Svelte 5 runes for state
+    let formData = $state({ email: '', password: '' });
+    let isSubmitting = $state(false);
+    let errors = $state<Record<string, string>>({});
+    
+    // Derived validation state
+    let isValid = $derived(formData.email && formData.password && !isSubmitting);
+    
+    async function handleSubmit() {
+        isSubmitting = true;
+        try {
+            const response = await fetch('/api/auth', {
+                method: 'POST',
+                body: JSON.stringify(formData)
+            });
+            // Handle response...
+        } finally {
+            isSubmitting = false;
+        }
+    }
+</script>
+
+<!-- DaisyUI components with Svelte 5 event handling -->
+<form onsubmit={handleSubmit}>
+    <div class="form-control w-full max-w-xs">
+        <label class="label">
+            <span class="label-text">Email</span>
+        </label>
+        <input 
+            type="email" 
+            bind:value={formData.email}
+            class="input input-bordered {errors.email ? 'input-error' : ''}"
+            class:input-success={formData.email && !errors.email}
+        />
+    </div>
+    
+    <button 
+        type="submit" 
+        class="btn btn-primary"
+        class:loading={isSubmitting}
+        disabled={!isValid}
+    >
+        {isSubmitting ? 'Submitting...' : 'Submit'}
+    </button>
+</form>
+```
+
+**Remember**: Always use context7 MCP server to get the most current documentation and patterns for these technologies, as they evolve rapidly and best practices change frequently.
