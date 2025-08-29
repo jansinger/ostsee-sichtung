@@ -43,5 +43,15 @@
 </script>
 
 <form onsubmit={context.handleSubmit} {...restProps}>
+	<!-- Honeypot field for spam protection - must be invisible to users -->
+	<input 
+		type="text" 
+		name="_honeypot" 
+		value=""
+		style="position: absolute; left: -9999px; opacity: 0; height: 0; width: 0;"
+		tabindex="-1"
+		autocomplete="off"
+		aria-hidden="true"
+	>
 	{@render children()}
 </form>

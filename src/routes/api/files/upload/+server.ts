@@ -6,6 +6,12 @@ import { getStorageProvider } from '$lib/server/storage/factory';
 import { isDangerousFileType, validateMagicBytes } from '$lib/server/validation/magicBytes';
 import { validateFile } from '$lib/utils/validation/fileValidation';
 import { ServerConfigService } from '$lib/services/configService';
+import { 
+	RATE_LIMITS, 
+	enforceRateLimit, 
+	createRateLimitIdentifier,
+	getRateLimitHeaders 
+} from '$lib/server/middleware/rateLimit';
 import { isCuid } from '@paralleldrive/cuid2';
 import { error, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
@@ -15,7 +21,12 @@ const logger = createLogger('FileUploadAPI');
 // Get storage provider and upload file
 const storage = getStorageProvider();
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+	// Security: Track authentication status
+	const isAuthenticated = !!locals.user;
+	const userIdentifier = locals.user?.sub || 'anonymous';
+	const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+	
 	try {
 		const contentType = request.headers.get('content-type') || '';
 
@@ -38,6 +49,57 @@ export const POST: RequestHandler = async ({ request }) => {
 		if (!uid || !isCuid(uid)) {
 			throw error(400, 'Upload ID ist erforderlich');
 		}
+
+		// Security: Stricter limits for unauthenticated users
+		const MAX_SIZE_ANONYMOUS = 5 * 1024 * 1024; // 5MB for anonymous users
+		const MAX_SIZE_AUTHENTICATED = 50 * 1024 * 1024; // 50MB for authenticated users
+		
+		if (!isAuthenticated && file.size > MAX_SIZE_ANONYMOUS) {
+			logger.warn({
+				action: 'file_upload_rejected',
+				reason: 'size_limit_exceeded',
+				user: userIdentifier,
+				clientIp,
+				fileName: file.name,
+				fileSize: file.size,
+				maxAllowed: MAX_SIZE_ANONYMOUS
+			}, 'Anonymous upload rejected - file too large');
+			throw error(413, 'Datei zu groß. Für größere Dateien bitte anmelden.');
+		}
+
+		if (isAuthenticated && file.size > MAX_SIZE_AUTHENTICATED) {
+			logger.warn({
+				action: 'file_upload_rejected',
+				reason: 'size_limit_exceeded',
+				user: userIdentifier,
+				fileName: file.name,
+				fileSize: file.size,
+				maxAllowed: MAX_SIZE_AUTHENTICATED
+			}, 'Authenticated upload rejected - file too large');
+			throw error(413, `Datei zu groß. Maximale Größe: ${MAX_SIZE_AUTHENTICATED / 1024 / 1024}MB`);
+		}
+
+		// Security audit logging
+		logger.info({
+			action: 'file_upload_attempt',
+			user: userIdentifier,
+			authenticated: isAuthenticated,
+			clientIp,
+			fileName: file.name,
+			fileSize: file.size,
+			fileType: file.type,
+			referenceId,
+			uid
+		}, 'File upload initiated');
+
+		// Rate limiting based on authentication status
+		const rateLimitConfig = isAuthenticated 
+			? RATE_LIMITS.FILE_UPLOAD_AUTHENTICATED 
+			: RATE_LIMITS.FILE_UPLOAD_ANONYMOUS;
+		
+		const rateLimitIdentifier = createRateLimitIdentifier(userIdentifier, clientIp, isAuthenticated);
+		
+		enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'file_upload');
 
 		// Get upload configuration from database
 		const uploadConfig = await ServerConfigService.getUploadConfig();
@@ -106,6 +168,10 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		logger.info(
 			{
+				action: 'file_upload_success',
+				user: userIdentifier,
+				authenticated: isAuthenticated,
+				clientIp,
 				fileInfo: uploadedFile,
 				referenceId,
 				uid,
@@ -119,7 +185,12 @@ export const POST: RequestHandler = async ({ request }) => {
 		// Speichere die hochgeladene Datei in der Datenbank
 		await saveUploadedFile(uploadedFile, referenceId);
 
-		return json(uploadedFile);
+		// Add rate limit headers to response
+		const rateLimitHeaders = getRateLimitHeaders(rateLimitIdentifier, rateLimitConfig, 'file_upload');
+
+		return json(uploadedFile, { 
+			headers: rateLimitHeaders 
+		});
 	} catch (err) {
 		if (err instanceof Response) {
 			throw err; // Re-throw SvelteKit errors

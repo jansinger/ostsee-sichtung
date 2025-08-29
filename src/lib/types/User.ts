@@ -4,7 +4,7 @@
 
 import type { SightingFormData } from './Form';
 
-// Base user type for the application
+// Base user type for the application (server-side only)
 export interface User {
 	nickname: string;
 	name: string;
@@ -19,6 +19,15 @@ export interface User {
 	sub: string;
 	sid: string;
 	roles: string[];
+}
+
+// Public user type for frontend (security-filtered)
+export interface PublicUser {
+	sub: string;
+	email: string;
+	name: string;
+	picture: string;
+	nickname?: string;
 }
 
 /**

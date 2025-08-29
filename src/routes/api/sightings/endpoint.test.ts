@@ -30,7 +30,17 @@ describe('/api/sightings POST endpoint', () => {
 	const createMockRequestEvent = (body: unknown) => {
 		return {
 			request: {
-				json: async () => body
+				json: async () => body,
+				headers: {
+					get: vi.fn((name: string) => {
+						const headerMap: Record<string, string> = {
+							'x-forwarded-for': '127.0.0.1',
+							'x-real-ip': '127.0.0.1',
+							'user-agent': 'vitest-test-agent'
+						};
+						return headerMap[name] || null;
+					})
+				}
 			} as Request,
 			cookies: {} as any,
 			fetch: fetch,

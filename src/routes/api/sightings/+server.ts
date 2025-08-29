@@ -75,10 +75,33 @@ export async function GET(event: RequestEvent) {
 	}
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+	const userIdentifier = locals.user?.sub || 'anonymous';
+	const isAuthenticated = !!locals.user;
+	const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+	
+	// Security audit logging
+	logger.info({
+		action: 'sighting_submission',
+		user: userIdentifier,
+		authenticated: isAuthenticated,
+		clientIp,
+		userAgent: request.headers.get('user-agent') || 'unknown'
+	}, 'Sighting submission attempt');
+	
 	try {
 		// Daten aus dem Request-Body extrahieren
 		const requestBody = await request.json();
+
+		// Security: Check for honeypot field
+		if (requestBody._honeypot) {
+			logger.warn({
+				action: 'sighting_honeypot_triggered',
+				clientIp,
+				user: userIdentifier
+			}, 'Honeypot field detected - likely spam');
+			throw new ValidationError('Invalid form submission');
+		}
 
 		logger.debug({ requestBody }, 'Sichtung speichern - Request empfangen');
 

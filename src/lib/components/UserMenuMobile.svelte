@@ -1,15 +1,14 @@
 <script lang="ts">
-	import type { User } from '$lib/types';
-	import { isAdminUser } from '$lib/utils/auth';
+	import type { PublicUser } from '$lib/types/User';
 	import { LogOut, Settings, User as UserIcon } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
 	let {
 		user,
-		showAdminLink = false
+		isAdmin = false
 	}: {
-		user: User | null;
-		showAdminLink?: boolean;
+		user: PublicUser | null;
+		isAdmin?: boolean;
 	} = $props();
 </script>
 
@@ -42,7 +41,7 @@
 	</div>
 
 	<!-- User Menu Items for Mobile -->
-	{#if isAdminUser(user) && showAdminLink}
+	{#if isAdmin}
 		<li>
 			<a href="/admin" class="flex items-center gap-2">
 				<Icon src={Settings} class="h-4 w-4" />

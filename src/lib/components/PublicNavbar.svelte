@@ -3,13 +3,13 @@
 	import { List } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
-	import type { User } from '$lib/types';
+	import type { PublicUser } from '$lib/types/User';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 	import OstseeTiereLogo from './OstseeTiereLogo.svelte';
 	import UserMenu from './UserMenu.svelte';
 	import UserMenuMobile from './UserMenuMobile.svelte';
 
-	let { user, isAdmin = false }: { user: User | null; isAdmin: boolean } = $props();
+	let { user, isAdmin = false }: { user: PublicUser | null; isAdmin: boolean } = $props();
 
 	const currentPath = $derived(page.url.pathname);
 </script>
@@ -68,7 +68,7 @@
 						</ul>
 
 						<!-- User Menu - Desktop -->
-						<UserMenu user={user || null} position="right" />
+						<UserMenu user={user || null} position="right" isAdmin={isAdmin} />
 					</div>
 
 					<!-- Mobile menu -->
@@ -83,7 +83,7 @@
 
 							<!-- User Menu - Mobile -->
 							<div class="divider my-2"></div>
-							<UserMenuMobile user={user || null} />
+							<UserMenuMobile user={user || null} isAdmin={isAdmin} />
 						</ul>
 					</div>
 				</div>

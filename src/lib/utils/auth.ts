@@ -1,23 +1,30 @@
-import type { User } from '$lib/types';
+/**
+ * @deprecated Client-side auth functions have been moved to server-only.
+ * 
+ * SECURITY NOTICE: Client-side role checking has been disabled to prevent
+ * browser manipulation. All role checks now happen server-side only.
+ * 
+ * Use server-side functions from $lib/server/auth/auth.ts instead:
+ * - isUserInRole()
+ * - isAdminUser() 
+ * - isSuperAdminUser()
+ * 
+ * This file is kept as a placeholder to prevent import errors,
+ * but these functions should not be used in client code.
+ */
 
-export const isUserInRole = (user: User | null | undefined, requiredRoles?: string[]): boolean => {
-	// If no roles are required, any authenticated user has access
-	if (!requiredRoles || requiredRoles.length === 0) {
-		return !!user;
-	}
-	
-	// Check if user has at least one of the required roles
-	if (user && requiredRoles.length > 0) {
-		return requiredRoles.some((role) => user.roles?.includes(role));
-	}
-	
+// These functions are intentionally left empty to prevent client-side role checking
+export const isUserInRole = (): boolean => {
+	console.warn('⚠️  Client-side role checking is disabled for security. Use server-side checks instead.');
 	return false;
 };
 
-export const isAdminUser = (user: User | null | undefined): boolean => {
-	return isUserInRole(user, ['admin']);
+export const isAdminUser = (): boolean => {
+	console.warn('⚠️  Client-side admin checking is disabled for security. Use server-side checks instead.');
+	return false;
 };
 
-export const isSuperAdminUser = (user: User | null | undefined): boolean => {
-	return isUserInRole(user, ['superadmin']);
+export const isSuperAdminUser = (): boolean => {
+	console.warn('⚠️  Client-side superadmin checking is disabled for security. Use server-side checks instead.');
+	return false;
 };

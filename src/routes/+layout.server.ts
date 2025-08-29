@@ -1,5 +1,6 @@
 import { ServerConfigService } from '$lib/services/configService';
-import { isAdminUser } from '$lib/utils/auth';
+import { isAdminUser } from '$lib/server/auth/auth';
+import type { PublicUser } from '$lib/types/User';
 import type { LayoutServerLoad } from './$types';
 
 export const load = (async ({ locals }) => {
@@ -18,9 +19,21 @@ export const load = (async ({ locals }) => {
 		}
 	}
 
+	// Security: Only send minimal user data to frontend
+	// Remove sensitive role information
+	const publicUser: PublicUser | null = locals.user ? {
+		sub: locals.user.sub,
+		email: locals.user.email,
+		name: locals.user.name,
+		picture: locals.user.picture,
+		nickname: locals.user.nickname,
+		// REMOVED: roles - this prevents frontend manipulation
+	} : null;
+
 	return {
-		user: locals.user || null,
-		isAdmin,
+		user: publicUser,
+		// Server-side computed admin status for UI rendering
+		showAdminMenu: isAdmin,
 		maintenanceConfig
 	};
 }) satisfies LayoutServerLoad;
