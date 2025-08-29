@@ -45,7 +45,7 @@ Administration and data management are supported through user-friendly interface
 - `npm run test:unit:watch` - Run unit tests in watch mode  
 - `npm run test:e2e` - Run end-to-end tests with Playwright
 - `npm run test` - Run quick test suite (lint + unit tests)
-- `npm run test:production` - Run complete production test suite (type-check + lint + unit + e2e)
+- `npm run test:quick` - Run quick test suite (lint + type-check + check + unit tests)
 
 ## Architecture Overview
 

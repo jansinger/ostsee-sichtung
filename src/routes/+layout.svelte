@@ -10,10 +10,10 @@
 </script>
 
 <div class:iframe-mode={!isNotIFrame}>
-	<PublicNavbar user={data.user} isAdmin={data.isAdmin} />
+	<PublicNavbar user={data.user} isAdmin={data.showAdminMenu} />
 
 	<!-- Maintenance Mode Banner for Admins -->
-	{#if data.maintenanceConfig?.enabled && data.isAdmin && isNotIFrame}
+	{#if data.maintenanceConfig?.enabled && data.showAdminMenu && isNotIFrame}
 		<div class="container mx-auto px-4 py-2">
 			<MaintenanceBanner 
 				isAdmin={true} 

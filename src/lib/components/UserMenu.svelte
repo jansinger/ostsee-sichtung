@@ -1,15 +1,16 @@
 <script lang="ts">
-	import type { User } from '$lib/types';
-	import { isAdminUser } from '$lib/utils/auth';
+	import type { PublicUser } from '$lib/types/User';
 	import { LogOut, Settings, User as UserIcon } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
 	let {
 		user,
-		position = 'right'
+		position = 'right',
+		isAdmin = false
 	}: {
-		user: User | null;
+		user: PublicUser | null;
 		position?: 'left' | 'right';
+		isAdmin?: boolean;
 	} = $props();
 
 	let isOpen = $state(false);
@@ -84,7 +85,7 @@
 
 				<!-- Menu Items -->
 				<div class="py-2">
-					{#if isAdminUser(user)}
+					{#if isAdmin}
 						<a
 							href="/admin"
 							class="hover:bg-base-200 flex items-center gap-2 rounded px-4 py-2"

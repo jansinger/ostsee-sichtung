@@ -8,7 +8,6 @@ vi.mock('$lib/server/services/emailService', () => ({
 	EmailService: {
 		sendNewSightingNotification: vi.fn().mockResolvedValue(true),
 		sendTestEmail: vi.fn().mockResolvedValue(true),
-		sendTestSightingEmail: vi.fn().mockResolvedValue(true),
 		initialize: vi.fn().mockResolvedValue(undefined),
 		clearTemplateCache: vi.fn(),
 		// Static methods that might be called

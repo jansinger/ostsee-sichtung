@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { createLogger } from '$lib/logger';
 	import type { SightingStatistics } from '$lib/server/db/sightingRepository';
-	import { onMount } from 'svelte';
-
 	const logger = createLogger('components:FormHelp');
 	import SpeciesIdentificationHelp from './form/fields/SpeciesIdentificationHelp.svelte';
 
@@ -19,19 +17,21 @@
 
 	let loading = $state(true);
 
-	// Lade Statistiken beim Komponenten-Mount
-	onMount(async () => {
-		try {
-			const response = await fetch('/api/statistics');
-			if (response.ok) {
-				const data = await response.json();
-				statistics = data;
+	// Modern $effect for loading statistics
+	$effect(() => {
+		(async () => {
+			try {
+				const response = await fetch('/api/statistics');
+				if (response.ok) {
+					const data = await response.json();
+					statistics = data;
+				}
+			} catch (error) {
+				logger.warn({ error: error instanceof Error ? error.message : error }, 'Could not load statistics, using fallback values');
+			} finally {
+				loading = false;
 			}
-		} catch (error) {
-			logger.warn({ error: error instanceof Error ? error.message : error }, 'Could not load statistics, using fallback values');
-		} finally {
-			loading = false;
-		}
+		})();
 	});
 </script>
 

@@ -11,12 +11,38 @@ import {
 import { PUBLIC_SITE_URL } from '$env/static/public';
 
 import type { User } from '$lib/types/index';
-import { isUserInRole } from '$lib/utils/auth';
 import { error, redirect, type Cookies } from '@sveltejs/kit';
 import type { JwtHeader, SigningKeyCallback } from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';
 import { JwksClient } from 'jwks-rsa';
 import { decrypt, encrypt, getPKCEChallengeData } from './crypto.js';
+
+/**
+ * Server-side role checking functions
+ * These should ONLY be used on the server - never in client-side code
+ */
+
+export const isUserInRole = (user: User | null | undefined, requiredRoles?: string[]): boolean => {
+	// If no roles are required, any authenticated user has access
+	if (!requiredRoles || requiredRoles.length === 0) {
+		return !!user;
+	}
+	
+	// Check if user has at least one of the required roles
+	if (user && requiredRoles.length > 0) {
+		return requiredRoles.some((role) => user.roles?.includes(role));
+	}
+	
+	return false;
+};
+
+export const isAdminUser = (user: User | null | undefined): boolean => {
+	return isUserInRole(user, ['admin']);
+};
+
+export const isSuperAdminUser = (user: User | null | undefined): boolean => {
+	return isUserInRole(user, ['superadmin']);
+};
 
 /**
  * Cache für den öffentlichen Schlüssel von Auth0's JWT-Signierung.

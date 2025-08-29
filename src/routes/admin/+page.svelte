@@ -13,7 +13,7 @@
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
 	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
-	import { toastStore } from '$lib/stores/toastStore';
+	import { toast } from '$lib/stores/toastState';
 	import type { FrontendSighting, PageData } from '$lib/types';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import {
@@ -206,7 +206,7 @@
 	async function sendTestEmail(sightingId: number) {
 		try {
 			// Show loading toast
-			const loadingToastId = toastStore.info('E-Mail wird gesendet...', { duration: 0 });
+			const loadingToastId = toast.info('E-Mail wird gesendet...', { duration: 0 });
 			
 			const response = await fetch('/api/admin/test-email', {
 				method: 'POST',
@@ -220,24 +220,24 @@
 			});
 
 			// Remove loading toast
-			toastStore.removeToast(loadingToastId);
+			toast.remove(loadingToastId);
 
 			const result = await response.json();
 
 			if (result.success) {
-				toastStore.success(result.message || 'Test-E-Mail wurde erfolgreich gesendet', {
+				toast.success(result.message || 'Test-E-Mail wurde erfolgreich gesendet', {
 					title: 'E-Mail gesendet',
 					duration: 5000
 				});
 			} else {
-				toastStore.error(result.error || 'Fehler beim Senden der Test-E-Mail', {
+				toast.error(result.error || 'Fehler beim Senden der Test-E-Mail', {
 					title: 'Fehler',
 					dismissible: true
 				});
 			}
 		} catch (error) {
 			logger.error({ error }, 'Error sending test email');
-			toastStore.error('Netzwerkfehler beim Senden der Test-E-Mail', {
+			toast.error('Netzwerkfehler beim Senden der Test-E-Mail', {
 				title: 'Verbindungsfehler',
 				dismissible: true
 			});

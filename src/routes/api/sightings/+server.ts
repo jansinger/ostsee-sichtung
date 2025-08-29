@@ -1,4 +1,3 @@
-import { PUBLIC_SITE_URL } from '$env/static/public';
 import { NODE_ENV } from '$env/static/private';
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger';
@@ -75,10 +74,33 @@ export async function GET(event: RequestEvent) {
 	}
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+	const userIdentifier = locals.user?.sub || 'anonymous';
+	const isAuthenticated = !!locals.user;
+	const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+	
+	// Security audit logging
+	logger.info({
+		action: 'sighting_submission',
+		user: userIdentifier,
+		authenticated: isAuthenticated,
+		clientIp,
+		userAgent: request.headers.get('user-agent') || 'unknown'
+	}, 'Sighting submission attempt');
+	
 	try {
 		// Daten aus dem Request-Body extrahieren
 		const requestBody = await request.json();
+
+		// Security: Check for honeypot field
+		if (requestBody._honeypot) {
+			logger.warn({
+				action: 'sighting_honeypot_triggered',
+				clientIp,
+				user: userIdentifier
+			}, 'Honeypot field detected - likely spam');
+			throw new ValidationError('Invalid form submission');
+		}
 
 		logger.debug({ requestBody }, 'Sichtung speichern - Request empfangen');
 
@@ -145,15 +167,10 @@ export const POST: RequestHandler = async ({ request }) => {
 		// Send email notification if enabled
 		try {
 			const emailConfig = await ServerConfigService.getEmailConfig();
-			if (emailConfig.enabled && emailConfig.recipient) {
-				// Create admin URL for the sighting
-				const adminUrl = `${PUBLIC_SITE_URL || 'https://ostsee-tiere.de'}/admin/${id}`;
-
-				await EmailService.sendNewSightingNotification({
-					sighting: formDataWithDefaults as SightingFormValues, // Type conversion for email service
-					referenceId,
-					adminUrl
-				});
+			if (emailConfig.enabled && emailConfig.recipient && id) {
+				// Use new ID-based email service that reads from database
+				// This ensures correct Baltic Sea validation data is used
+				await EmailService.sendNewSightingNotification(id);
 
 				logger.info({ id, referenceId }, 'Email notification sent successfully');
 			}

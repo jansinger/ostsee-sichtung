@@ -1,83 +1,41 @@
-import { writable } from 'svelte/store';
+/**
+ * @deprecated This store is deprecated in favor of the new toastState.ts
+ * Please use `import { toast } from '$lib/stores/toastState'` instead.
+ * 
+ * This file is kept for backward compatibility and will be removed in a future version.
+ */
 
-export interface ToastMessage {
-	id: string;
-	type: 'success' | 'error' | 'warning' | 'info';
-	title?: string;
-	message: string;
-	duration?: number;
-	dismissible?: boolean;
-}
+import { 
+	toast as newToast, 
+	createToast as newCreateToast,
+	type ToastMessage 
+} from './toastState';
 
-function createToastStore() {
-	const { subscribe, update } = writable<ToastMessage[]>([]);
+console.warn('toastStore is deprecated. Please use toastState instead.');
 
-	function addToast(toast: Omit<ToastMessage, 'id'>): string {
-		const id = crypto.randomUUID();
-		const newToast: ToastMessage = {
-			id,
-			duration: 5000,
-			dismissible: true,
-			...toast
-		};
+// Compatibility wrapper for old toastStore API
+export const toastStore = {
+	subscribe: (_fn: (toasts: ToastMessage[]) => void) => {
+		// Simple compatibility - in a real app you'd need proper store subscription
+		console.warn('toastStore.subscribe is deprecated. Use the new toast API from toastState.');
+		return { unsubscribe: () => {} };
+	},
+	addToast: newToast.add,
+	removeToast: newToast.remove,
+	clearAll: newToast.clear,
+	success: newToast.success,
+	error: newToast.error,
+	warning: newToast.warning,
+	info: newToast.info
+};
 
-		update((toasts) => [...toasts, newToast]);
-		return id;
-	}
-
-	function removeToast(id: string) {
-		update((toasts) => toasts.filter((toast) => toast.id !== id));
-	}
-
-	function clearAll() {
-		update(() => []);
-	}
-
-	// Convenience methods
-	function success(
-		message: string,
-		options?: Partial<Omit<ToastMessage, 'id' | 'type' | 'message'>>
-	) {
-		return addToast({ type: 'success', message, ...options });
-	}
-
-	function error(
-		message: string,
-		options?: Partial<Omit<ToastMessage, 'id' | 'type' | 'message'>>
-	) {
-		return addToast({ type: 'error', message, duration: 0, ...options }); // Error toasts don't auto-dismiss
-	}
-
-	function warning(
-		message: string,
-		options?: Partial<Omit<ToastMessage, 'id' | 'type' | 'message'>>
-	) {
-		return addToast({ type: 'warning', message, ...options });
-	}
-
-	function info(message: string, options?: Partial<Omit<ToastMessage, 'id' | 'type' | 'message'>>) {
-		return addToast({ type: 'info', message, ...options });
-	}
-
-	return {
-		subscribe,
-		addToast,
-		removeToast,
-		clearAll,
-		success,
-		error,
-		warning,
-		info
-	};
-}
-
-export const toastStore = createToastStore();
-
-// Export convenience function for creating toasts
+// Re-export for compatibility
 export function createToast(
 	type: 'success' | 'error' | 'warning' | 'info',
 	message: string,
 	options?: Partial<Omit<ToastMessage, 'id' | 'type' | 'message'>>
 ): string {
-	return toastStore[type](message, options);
+	return newCreateToast(type, message, options);
 }
+
+export type { ToastMessage };

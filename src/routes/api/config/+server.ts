@@ -9,10 +9,8 @@ const logger = createLogger('api:config');
 
 export const GET: RequestHandler = async ({ url, locals }: RequestEvent) => {
 	try {
-		// Check if user is authenticated and has admin or superadmin role
-		if (!locals.user || !(locals.user.roles?.includes('admin') || locals.user.roles?.includes('superadmin'))) {
-			return json({ error: 'Unauthorized' }, { status: 401 });
-		}
+		// Security: Require admin or superadmin role
+		requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 		const category = url.searchParams.get('category');
 

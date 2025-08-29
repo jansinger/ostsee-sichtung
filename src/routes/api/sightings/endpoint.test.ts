@@ -20,7 +20,6 @@ vi.mock('$lib/server/services/emailService', () => ({
 	EmailService: {
 		sendNewSightingNotification: vi.fn().mockResolvedValue(true),
 		sendTestEmail: vi.fn().mockResolvedValue(true),
-		sendTestSightingEmail: vi.fn().mockResolvedValue(true),
 		initialize: vi.fn().mockResolvedValue(undefined),
 		clearTemplateCache: vi.fn()
 	}
@@ -30,8 +29,18 @@ describe('/api/sightings POST endpoint', () => {
 	const createMockRequestEvent = (body: unknown) => {
 		return {
 			request: {
-				json: async () => body
-			} as Request,
+				json: async () => body,
+				headers: {
+					get: vi.fn((name: string) => {
+						const headerMap: Record<string, string> = {
+							'x-forwarded-for': '127.0.0.1',
+							'x-real-ip': '127.0.0.1',
+							'user-agent': 'vitest-test-agent'
+						};
+						return headerMap[name] || null;
+					})
+				}
+			} as unknown as Request,
 			cookies: {} as any,
 			fetch: fetch,
 			getClientAddress: () => '127.0.0.1',

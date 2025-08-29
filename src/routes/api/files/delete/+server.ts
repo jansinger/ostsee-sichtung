@@ -3,6 +3,7 @@ import { db } from '$lib/server/db';
 import { sightingFiles } from '$lib/server/db/schema';
 import { deleteFileByPath } from '$lib/server/db/sightingFilesRepository';
 import { getStorageProvider } from '$lib/server/storage/factory';
+import { isAdminUser } from '$lib/server/auth/auth';
 import { error, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
@@ -10,6 +11,10 @@ import type { RequestHandler } from './$types';
 const logger = createLogger('FileDeleteAPI');
 
 export const DELETE: RequestHandler = async ({ request, locals }) => {
+	const userIdentifier = locals.user?.sub || 'anonymous';
+	const isAuthenticated = !!locals.user;
+	const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+	
 	try {
 		const { filePath } = await request.json();
 
@@ -18,7 +23,17 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 		}
 
 		// Check if user is admin or if file is deletable by regular users
-		const isAdmin = locals.user?.roles?.includes('admin') || false;
+		const isAdmin = isAdminUser(locals.user);
+		
+		// Security audit logging
+		logger.info({
+			action: 'file_delete_attempt',
+			user: userIdentifier,
+			authenticated: isAuthenticated,
+			isAdmin,
+			clientIp,
+			filePath
+		}, 'File deletion requested');
 
 		if (!isAdmin) {
 			// For non-admin users, check if file exists and has no sightingId assigned
@@ -37,9 +52,13 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 			if (file.sightingId !== null) {
 				logger.warn(
 					{
+						action: 'file_delete_blocked',
+						reason: 'file_assigned_to_sighting',
 						filePath,
 						sightingId: file.sightingId,
-						user: locals.user?.sub || 'anonymous'
+						user: userIdentifier,
+						authenticated: isAuthenticated,
+						clientIp
 					},
 					'Non-admin user attempted to delete file assigned to sighting'
 				);
@@ -50,11 +69,22 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 			}
 
 			logger.info(
-				{ filePath, user: locals.user?.sub || 'anonymous' },
-				'Regular user deleting unassigned file'
+				{ 
+					action: 'file_delete_allowed',
+					filePath, 
+					user: userIdentifier,
+					authenticated: isAuthenticated,
+					clientIp
+				},
+				'User deleting unassigned file'
 			);
 		} else {
-			logger.info({ filePath, user: locals.user?.sub }, 'Admin user deleting file');
+			logger.info({ 
+				action: 'file_delete_admin',
+				filePath, 
+				user: userIdentifier,
+				clientIp 
+			}, 'Admin user deleting file');
 		}
 
 		// Basic security check - no path traversal

@@ -2,7 +2,7 @@ import { createLogger } from '$lib/logger';
 import { ConfigRepository, type ConfigItem } from '$lib/server/db/configRepository';
 import { filterConfigsByUserAccess } from '$lib/server/config/accessControl';
 import { getDefaultConfigurationsByCategory, initializeDefaultConfigurations } from '$lib/server/services/configInitializer';
-import { isSuperAdminUser } from '$lib/utils/auth';
+import { isSuperAdminUser } from '$lib/server/auth/auth';
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 

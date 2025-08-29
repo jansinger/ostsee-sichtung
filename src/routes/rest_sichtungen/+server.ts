@@ -27,7 +27,6 @@ import { saveSighting } from '$lib/server/db/sightingRepository';
 import { EmailService } from '$lib/server/services/emailService';
 import { ServerConfigService } from '$lib/services/configService';
 import { json, type RequestEvent } from '@sveltejs/kit';
-import { PUBLIC_SITE_URL } from '$env/static/public';
 
 const logger = createLogger('api:legacy:rest_sichtungen:pdf-compliant');
 
@@ -167,15 +166,10 @@ export async function POST(event: RequestEvent): Promise<Response> {
 			// Send email notification if enabled
 			try {
 				const emailConfig = await ServerConfigService.getEmailConfig();
-				if (emailConfig.enabled && emailConfig.recipient) {
-					// Create admin URL for the sighting
-					const adminUrl = `${PUBLIC_SITE_URL || 'https://ostsee-tiere.de'}/admin/${savedSighting.id}`;
-					
-					await EmailService.sendNewSightingNotification({
-						referenceId: transformedData.referenceId,
-						sighting: transformedData,
-						adminUrl
-					});
+				if (emailConfig.enabled && emailConfig.recipient && savedSighting.id) {
+					// Use new ID-based email service that reads from database
+					// This ensures correct Baltic Sea validation data is used
+					await EmailService.sendNewSightingNotification(savedSighting.id);
 					
 					logger.info({ sightingId: savedSighting.id, referenceId: transformedData.referenceId }, 'Legacy API email notification sent successfully');
 				}

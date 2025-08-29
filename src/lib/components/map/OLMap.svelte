@@ -7,7 +7,6 @@
 	import type Feature from 'ol/Feature';
 	import type { Point } from 'ol/geom';
 	import { fromLonLat } from 'ol/proj';
-	import { onDestroy, onMount } from 'svelte';
 
 	let {
 		latitude = $bindable(54.5),
@@ -62,27 +61,6 @@
 		}
 	}
 
-	onMount(() => {
-		// Erstelle die Karte
-		map = createMap(
-			mapElement,
-			coordinates,
-			zoom,
-			!readonly && enableGPS, // GPS nur wenn nicht readonly und explizit aktiviert
-			readonly ? undefined : handleGPSPosition // GPS-Callback nur wenn nicht readonly
-		);
-
-		// Füge den initialen Marker hinzu
-		const marker = addMarker(
-			map,
-			coordinates,
-			!readonly, // Marker ist verschiebbar, wenn die Karte nicht schreibgeschützt ist
-			readonly ? undefined : updateMarkerPosition
-		);
-
-		markerFeature = marker.feature;
-	});
-
 	function updateMarker(coords: Coordinate) {
 		if (map && coords) {
 			// Rufe setMapCenter als Async-Funktion auf
@@ -96,18 +74,48 @@
 		}
 	}
 
+	// Modern $effect for map initialization and cleanup
+	$effect(() => {
+		if (mapElement) {
+			// Erstelle die Karte
+			map = createMap(
+				mapElement,
+				coordinates,
+				zoom,
+				!readonly && enableGPS, // GPS nur wenn nicht readonly und explizit aktiviert
+				readonly ? undefined : handleGPSPosition // GPS-Callback nur wenn nicht readonly
+			);
+
+			// Füge den initialen Marker hinzu
+			const marker = addMarker(
+				map,
+				coordinates,
+				!readonly, // Marker ist verschiebbar, wenn die Karte nicht schreibgeschützt ist
+				readonly ? undefined : updateMarkerPosition
+			);
+
+			markerFeature = marker.feature;
+
+			// Cleanup function (replaces onDestroy)
+			return () => {
+				if (map) {
+					map.setTarget(undefined);
+					map = null;
+					markerFeature = null;
+				}
+			};
+		}
+		
+		// Return undefined if mapElement is not available yet
+		return;
+	});
+
+	// Reactive effect for coordinate updates
 	$effect(() => {
 		if (!markerMoved) {
 			updateMarker(coordinates);
 		}
 		markerMoved = false;
-	});
-
-	onDestroy(() => {
-		// Bereinige die Karte beim Entfernen der Komponente
-		if (map) {
-			map.setTarget(undefined);
-		}
 	});
 </script>
 

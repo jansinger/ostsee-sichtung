@@ -3,7 +3,7 @@
 	import { isStepValid, validateStep } from '$lib/form/validation/stepValidation';
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
-	import { toastStore } from '$lib/stores/toastStore';
+	import { toast } from '$lib/stores/toastState';
 	import { getErrorCount, scrollToElement, scrollToFirstError } from '$lib/utils/fieldNavigation';
 	import { formStepsConfig } from '../../formConfig';
 
@@ -77,7 +77,7 @@
 			logger.info('Form submitted successfully');
 		} catch (error) {
 			logger.error({ error }, 'Error during form submission');
-			toastStore.error('Fehler beim Absenden des Formulars. Bitte versuchen Sie es erneut.');
+			toast.error('Fehler beim Absenden des Formulars. Bitte versuchen Sie es erneut.');
 			// Navigate to first error field if validation failed
 			await showValidationError();
 		}
@@ -107,7 +107,7 @@
 		}
 
 		// Show toast notification
-		toastStore.error(errorMessage, {
+		toast.error(errorMessage, {
 			title: 'Validierungsfehler',
 			duration: 5000
 		});

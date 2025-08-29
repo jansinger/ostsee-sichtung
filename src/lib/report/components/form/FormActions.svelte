@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getFormContext } from '$lib/report/formContext';
 	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
-	import { createToast } from '$lib/stores/toastStore';
+	import { createToast } from '$lib/stores/toastState';
 	import { Trash2 } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
