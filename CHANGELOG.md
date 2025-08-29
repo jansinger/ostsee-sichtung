@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.24.0 (2025-08-29)
+
+* Merge pull request #91 from jansinger/feat/admin-config ([78b098a](https://github.com/jansinger/ostsee-sichtung/commit/78b098a)), closes [#91](https://github.com/jansinger/ostsee-sichtung/issues/91)
+* test: enhance mock return values for geo validation and sighting save ([d952abf](https://github.com/jansinger/ostsee-sichtung/commit/d952abf))
+* test: increase timeout for REST API tests to prevent CI failures ([002c654](https://github.com/jansinger/ostsee-sichtung/commit/002c654))
+* test: optimize Playwright browser caching and installation conditions ([bdf2a1b](https://github.com/jansinger/ostsee-sichtung/commit/bdf2a1b))
+* test: prevent email sending during test execution ([d65416e](https://github.com/jansinger/ostsee-sichtung/commit/d65416e))
+* test: refactor REST API tests ([c0e4d11](https://github.com/jansinger/ostsee-sichtung/commit/c0e4d11))
+* test: refactor wind direction test for better reliability ([6e5fea8](https://github.com/jansinger/ostsee-sichtung/commit/6e5fea8))
+* test: reorganize imports and improve code ([066aeb5](https://github.com/jansinger/ostsee-sichtung/commit/066aeb5))
+* test: reorganize Playwright installation steps in CI workflows ([89bca3e](https://github.com/jansinger/ostsee-sichtung/commit/89bca3e))
+* test: simplify wind direction tests to fix CI issues ([0e23b78](https://github.com/jansinger/ostsee-sichtung/commit/0e23b78))
+* test: update daisyui dependency to version 5.0.54 ([ee21eec](https://github.com/jansinger/ostsee-sichtung/commit/ee21eec))
+* fix: resolve CI test failures and improve TypeScript type safety ([71a2d79](https://github.com/jansinger/ostsee-sichtung/commit/71a2d79))
+* fix(deps): add html-to-text type definitions ([a551e82](https://github.com/jansinger/ostsee-sichtung/commit/a551e82))
+* fix(security): resolve incomplete multi-character sanitization ([98e02d6](https://github.com/jansinger/ostsee-sichtung/commit/98e02d6))
+* fix(types): resolve all CI pipeline errors and warnings ([bd6aa49](https://github.com/jansinger/ostsee-sichtung/commit/bd6aa49))
+* fix(types): resolve TypeScript compilation errors ([cb69842](https://github.com/jansinger/ostsee-sichtung/commit/cb69842))
+* feat: Implement admin settings ([45c64cf](https://github.com/jansinger/ostsee-sichtung/commit/45c64cf))
+
 ## 1.23.0 (2025-08-28)
 
 * Merge pull request #90 from jansinger/fix/cleanup-iframe ([1e9b406](https://github.com/jansinger/ostsee-sichtung/commit/1e9b406)), closes [#90](https://github.com/jansinger/ostsee-sichtung/issues/90)
