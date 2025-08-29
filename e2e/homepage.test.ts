@@ -7,13 +7,21 @@ test.describe('Homepage', () => {
 		// Warte darauf, dass die Seite vollständig geladen ist
 		await page.waitForLoadState('networkidle');
 
-		// Check that the main title is visible - flexiblerer Selektor
-		const heading = page.locator('h1, h2, [role="heading"]').first();
-		await expect(heading).toBeVisible({ timeout: 10000 });
-		await expect(heading).toContainText(/Meerestier|Sichtung|melden/i);
+		// Prüfe iframe vs nicht-iframe Modus durch Überprüfung des h1
+		const mainHeading = page.locator('h1').first();
+		const mainHeadingCount = await mainHeading.count();
+		
+		if (mainHeadingCount > 0) {
+			// Nicht-iframe Modus: Das Haupt-h1 sollte sichtbar sein
+			await expect(mainHeading).toBeVisible({ timeout: 10000 });
+			await expect(mainHeading).toContainText(/Meerestier.*Sichtung.*melden/i);
+		} else {
+			// iframe Modus: Prüfe dass Form-Inhalte korrekt geladen sind
+			const formContent = page.locator('h2, .step, [data-testid]').first();
+			await expect(formContent).toBeVisible({ timeout: 10000 });
+		}
 
-		// Check for the presence of the main form (not modal forms)
-		// Look specifically for the form that's not a modal-backdrop
+		// Check for the presence of the main form (not modal forms) - funktioniert in beiden Modi
 		const mainForm = page.locator('form:not(.modal-backdrop)').first();
 		await expect(mainForm).toBeVisible({ timeout: 10000 });
 	});
@@ -38,6 +46,7 @@ test.describe('Homepage', () => {
 		// Warte auf das vollständige Laden
 		await page.waitForLoadState('networkidle');
 
+
 		// Prüfe grundlegende Seitenstruktur
 		const body = page.locator('body');
 		await expect(body).toBeVisible();
@@ -55,6 +64,10 @@ test.describe('Homepage', () => {
 		const interactiveElements = page.locator('button, input, select, textarea, a[href], [role="button"]');
 		const interactiveCount = await interactiveElements.count();
 		expect(interactiveCount).toBeGreaterThan(0);
+
+		// Prüfe dass die App funktional ist - unabhängig vom iframe-Modus
+		const appContent = page.locator('form, .form-container, main, [data-app]');
+		await expect(appContent.first()).toBeVisible();
 	});
 
 	test.skip('should navigate to map view', async ({ page }) => {
@@ -101,18 +114,17 @@ test.describe('Form Navigation', () => {
 		// Warte darauf, dass die Seite vollständig geladen ist
 		await page.waitForLoadState('networkidle');
 
-		// Check if the Ostsee-Tiere logo is visible - erweiterte Selektoren
-		// Das Logo ist nur sichtbar wenn nicht im iframe-Modus
-		const logo = page.locator('img[alt*="Ostsee-Tiere"], img[src*="ostsee-tiere"], img[alt*="Logo"], [aria-label*="logo"]').first();
+		// Prüfe iframe vs nicht-iframe Modus
+		const mainHeading = page.locator('h1').first();
+		const mainHeadingCount = await mainHeading.count();
 		
-		// Versuche das Logo zu finden, aber erwarte es möglicherweise nur bedingt
-		const logoCount = await logo.count();
-		if (logoCount > 0) {
+		if (mainHeadingCount > 0) {
+			// Nicht-iframe Modus: Logo sollte sichtbar sein
+			const logo = page.locator('img[alt*="Ostsee-Tiere"], img[src*="ostsee-tiere"], img[alt*="Logo"]').first();
 			await expect(logo).toBeVisible({ timeout: 10000 });
 		} else {
-			// Fallback: Prüfe ob wir im iframe-Modus sind, dann ist das Logo erwartungsgemäß nicht da
-			// In diesem Fall suchen wir nach anderen Identifikatoren für die korrekte Seitendarstellung
-			const pageContent = page.locator('form, h1, h2, main, [role="main"]').first();
+			// iframe Modus: Logo ist erwartungsgemäß nicht sichtbar, aber Seite sollte funktional sein
+			const pageContent = page.locator('form, h2, main, [role="main"]').first();
 			await expect(pageContent).toBeVisible({ timeout: 10000 });
 		}
 	});
