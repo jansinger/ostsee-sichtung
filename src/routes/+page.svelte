@@ -78,7 +78,6 @@
 >
 	<div class="mb-8">
 		<!-- Form Content -->
-
 		{#if submissionSuccess && submittedData}
 			<SubmissionSuccess {submittedData} {handleNewReport} />
 		{:else}

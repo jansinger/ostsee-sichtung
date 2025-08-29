@@ -1,13 +1,11 @@
 /**
- * Modern Toast State Management using Svelte 5 Runes
+ * Modern Toast State Management using Svelte 5 Compatible Stores
  * 
- * This replaces the old writable store pattern with modern $state runes
+ * Uses writable stores which work perfectly with Svelte 5 and $derived
  * for better performance and developer experience.
- * 
- * Uses hybrid approach: runes in components, simple state in tests.
  */
 
-import { browser } from '$app/environment';
+import { writable } from 'svelte/store';
 
 export interface ToastMessage {
 	id: string;
@@ -18,13 +16,8 @@ export interface ToastMessage {
 	dismissible?: boolean;
 }
 
-// Simple fallback state for non-component contexts (tests, server)
-const fallbackState: ToastMessage[] = [];
-
-// Hybrid state management
-let toastState: ToastMessage[] = browser && typeof $state !== 'undefined' 
-	? $state<ToastMessage[]>([]) 
-	: fallbackState;
+// Create reactive writable store
+const toastStore = writable<ToastMessage[]>([]);
 
 /**
  * Add a new toast notification
@@ -38,7 +31,7 @@ export function addToast(toast: Omit<ToastMessage, 'id'>): string {
 		...toast
 	};
 
-	toastState = [...toastState, newToast];
+	toastStore.update(toasts => [...toasts, newToast]);
 	return id;
 }
 
@@ -46,21 +39,30 @@ export function addToast(toast: Omit<ToastMessage, 'id'>): string {
  * Remove a specific toast by ID
  */
 export function removeToast(id: string): void {
-	toastState = toastState.filter((toast) => toast.id !== id);
+	toastStore.update(toasts => toasts.filter(toast => toast.id !== id));
 }
 
 /**
  * Clear all toast notifications
  */
 export function clearAllToasts(): void {
-	toastState = [];
+	toastStore.set([]);
 }
 
 /**
- * Get current toasts (reactive getter)
+ * Get the reactive toast store (for use with $derived)
+ */
+export function getToastStore() {
+	return toastStore;
+}
+
+/**
+ * Get current toasts (for compatibility)
  */
 export function getToasts() {
-	return toastState;
+	let currentToasts: ToastMessage[] = [];
+	toastStore.subscribe(toasts => currentToasts = toasts)();
+	return currentToasts;
 }
 
 // Convenience methods for different toast types
@@ -108,9 +110,14 @@ export function createToast(
  * Modern toast API object (replaces old store pattern)
  */
 export const toast = {
-	// Reactive getter for current toasts
+	// Reactive store for current toasts
+	get store() {
+		return toastStore;
+	},
+	
+	// Current toasts (non-reactive, for immediate access)
 	get current() {
-		return toastState;
+		return getToasts();
 	},
 	
 	// Core methods

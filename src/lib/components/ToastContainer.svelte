@@ -4,11 +4,14 @@
   Modernized with Svelte 5 runes
 -->
 <script lang="ts">
-	import { getToasts, removeToast } from '$lib/stores/toastState';
+	import { getToastStore, removeToast } from '$lib/stores/toastState';
 	import Toast from './Toast.svelte';
 
-	// Reactive getter for toasts using modern runes
-	const toasts = $derived(getToasts());
+	// Get the reactive store
+	const toastStore = getToastStore();
+	
+	// Reactive getter for toasts using store subscription
+	const toasts = $derived($toastStore);
 </script>
 
 <!-- Toast Container positioned at top right -->
