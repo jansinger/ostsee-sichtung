@@ -1,4 +1,3 @@
-import { PUBLIC_SITE_URL } from '$env/static/public';
 import { NODE_ENV } from '$env/static/private';
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger';
@@ -168,15 +167,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		// Send email notification if enabled
 		try {
 			const emailConfig = await ServerConfigService.getEmailConfig();
-			if (emailConfig.enabled && emailConfig.recipient) {
-				// Create admin URL for the sighting
-				const adminUrl = `${PUBLIC_SITE_URL || 'https://ostsee-tiere.de'}/admin/${id}`;
-
-				await EmailService.sendNewSightingNotification({
-					sighting: formDataWithDefaults as SightingFormValues, // Type conversion for email service
-					referenceId,
-					adminUrl
-				});
+			if (emailConfig.enabled && emailConfig.recipient && id) {
+				// Use new ID-based email service that reads from database
+				// This ensures correct Baltic Sea validation data is used
+				await EmailService.sendNewSightingNotification(id);
 
 				logger.info({ id, referenceId }, 'Email notification sent successfully');
 			}

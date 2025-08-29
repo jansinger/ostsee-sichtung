@@ -28,15 +28,13 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 				);
 			}
 
-			// Send test email with sighting data
-			const success = await EmailService.sendTestSightingEmail(
-				sightingId,
-				recipient
-			);
+			// Send test email with sighting data using existing notification method
+			// Note: recipient override is not supported by sendNewSightingNotification
+			const success = await EmailService.sendNewSightingNotification(sightingId);
 
 			if (success) {
 				logger.info(
-					{ sightingId, recipient: recipient || 'configured' },
+					{ sightingId },
 					'Test sighting email sent successfully'
 				);
 				return json({
