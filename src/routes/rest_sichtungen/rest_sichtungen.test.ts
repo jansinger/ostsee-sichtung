@@ -11,9 +11,9 @@
 import type { LegacySightingRequest } from '$lib/legacy-api/types';
 import type { RequestEvent } from '@sveltejs/kit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { POST } from './+server';
+import { DELETE, GET, POST, PUT } from './+server';
 
-// Mock dependencies
+// Mock dependencies - these need to be hoisted before any imports
 vi.mock('$lib/server/db/sightingRepository', () => ({
 	saveSighting: vi.fn()
 }));
@@ -31,16 +31,24 @@ vi.mock('$lib/logger', () => ({
 	})
 }));
 
-// Mock EmailService to prevent sending real emails
-vi.mock('$lib/server/services/emailService', () => ({
-	EmailService: {
-		sendNewSightingNotification: vi.fn().mockResolvedValue(true),
-		sendTestEmail: vi.fn().mockResolvedValue(true),
-		sendTestSightingEmail: vi.fn().mockResolvedValue(true),
-		initialize: vi.fn().mockResolvedValue(undefined),
-		clearTemplateCache: vi.fn()
+// Mock ServerConfigService to prevent real config loading
+vi.mock('$lib/services/configService', () => ({
+	ServerConfigService: {
+		getEmailConfig: vi.fn().mockResolvedValue({
+			enabled: false,
+			recipient: '',
+			sender: 'noreply@test.com',
+			senderName: 'Test'
+		})
 	}
 }));
+
+// Note: EmailService is already mocked in vitest-setup-server.ts
+// No need to mock it again here
+
+// Import mocked modules statically to avoid race conditions
+import { saveSighting } from '$lib/server/db/sightingRepository';
+import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 
 // Helper to create mock request event
 function createMockRequestEvent(body: LegacySightingRequest): RequestEvent {
@@ -55,22 +63,14 @@ function createMockRequestEvent(body: LegacySightingRequest): RequestEvent {
 	} as any;
 }
 
-// Get mocked functions
-let mockSave: any;
-let mockCheckBalticSea: any;
-let _mockLogger: any;
+// Get mocked functions with proper typing
+const mockSave = vi.mocked(saveSighting);
+const mockCheckBalticSea = vi.mocked(checkBalticSeaFile);
 
 describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
-	beforeEach(async () => {
-		vi.resetAllMocks();
-		// Get the mocked functions
-		const sightingRepository = await import('$lib/server/db/sightingRepository');
-		const geoModule = await import('$lib/server/geo/checkBalticSeaFile');
-		const loggerModule = await import('$lib/logger');
-
-		mockSave = vi.mocked(sightingRepository.saveSighting);
-		mockCheckBalticSea = vi.mocked(geoModule.checkBalticSeaFile);
-		_mockLogger = vi.mocked(loggerModule.createLogger).mock.results[0]?.value;
+	beforeEach(() => {
+		// Clear all mocks but don't reset implementations
+		vi.clearAllMocks();
 
 		// Default geo validation to return valid Baltic Sea location
 		mockCheckBalticSea.mockReturnValue({
@@ -88,7 +88,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 	});
 
 	afterEach(() => {
-		vi.restoreAllMocks();
+		vi.clearAllMocks();
 	});
 
 	describe('PDF Compliance - Basic Functionality', () => {
@@ -185,7 +185,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 					windDirection: 'SO' // Critical: Must support 'SO'
 				})
 			);
-		}, 25000);
+		});
 
 		it('should handle death finding (anzahl_gesamt = 0) as per PDF', async () => {
 			const deathRequest: LegacySightingRequest = {
@@ -212,7 +212,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 					deadSex: 1
 				})
 			);
-		}, 5000);
+		});
 	});
 
 	describe('PDF Compliance - Validation Errors', () => {
@@ -295,43 +295,26 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 
 			// Should accept all valid ranges
 			expect(response.status).toBe(201);
-		}, 5000);
-
-		// Test wind directions individually to avoid potential issues in CI
-		it('should support wind direction N', async () => {
-			const event = createMockRequestEvent({
-				sichtungsdatum: '2024-03-15 12:00',
-				anzahl_gesamt: 1,
-				vorname: 'Wind',
-				name: 'Test',
-				email: 'wind@example.com',
-				windrichtung: 'N'
-			});
-			const response = await POST(event);
-			expect(response.status).toBe(201);
 		});
 
-		it('should support wind direction SO (German South-East)', async () => {
+		// Test wind directions - consolidated for better performance
+		it.each([
+			['N', 'North'],
+			['NW', 'North-West'],
+			['W', 'West'],
+			['SW', 'South-West'],
+			['S', 'South'],
+			['SO', 'South-East (German)'],
+			['O', 'East (German)'],
+			['NO', 'North-East (German)']
+		])('should support wind direction %s (%s)', async (direction) => {
 			const event = createMockRequestEvent({
 				sichtungsdatum: '2024-03-15 12:00',
 				anzahl_gesamt: 1,
 				vorname: 'Wind',
 				name: 'Test',
 				email: 'wind@example.com',
-				windrichtung: 'SO'
-			});
-			const response = await POST(event);
-			expect(response.status).toBe(201);
-		});
-
-		it('should support wind direction O (German East)', async () => {
-			const event = createMockRequestEvent({
-				sichtungsdatum: '2024-03-15 12:00',
-				anzahl_gesamt: 1,
-				vorname: 'Wind',
-				name: 'Test',
-				email: 'wind@example.com',
-				windrichtung: 'O'
+				windrichtung: direction
 			});
 			const response = await POST(event);
 			expect(response.status).toBe(201);
@@ -340,7 +323,6 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 
 	describe('PDF Compliance - HTTP Methods', () => {
 		it('should reject GET requests with 405', async () => {
-			const { GET } = await import('./+server');
 			const response = await GET();
 
 			expect(response.status).toBe(405);
@@ -352,14 +334,12 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 		});
 
 		it('should reject PUT requests with 405', async () => {
-			const { PUT } = await import('./+server');
 			const response = await PUT();
 
 			expect(response.status).toBe(405);
 		});
 
 		it('should reject DELETE requests with 405', async () => {
-			const { DELETE } = await import('./+server');
 			const response = await DELETE();
 
 			expect(response.status).toBe(405);
