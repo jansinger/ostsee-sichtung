@@ -41,7 +41,7 @@ describe('/api/sightings POST endpoint', () => {
 						return headerMap[name] || null;
 					})
 				}
-			} as Request,
+			} as unknown as Request,
 			cookies: {} as any,
 			fetch: fetch,
 			getClientAddress: () => '127.0.0.1',
