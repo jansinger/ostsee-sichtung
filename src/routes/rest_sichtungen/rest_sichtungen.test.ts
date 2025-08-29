@@ -75,15 +75,14 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 		// Default geo validation to return valid Baltic Sea location
 		mockCheckBalticSea.mockReturnValue({
 			inBaltic: true,
-			inChartArea: true
+			inChartArea: true,
+			longitude: 10.1367,
+			latitude: 54.3233
 		});
 
 		// Default save to return successful result
 		mockSave.mockResolvedValue({
-			id: 12345,
-			sightingDate: new Date('2024-03-15T14:30:00.000Z'),
-			latitude: '54.3233',
-			longitude: '10.1367'
+			id: 12345
 		});
 	});
 
