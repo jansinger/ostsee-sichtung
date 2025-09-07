@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CloudIcon } from '@steeze-ui/lucide-icons';
+	import { Cloud } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import type { WeatherData } from '$lib/services/weatherService';
 
@@ -94,7 +94,7 @@
 			class="btn btn-sm btn-outline btn-primary gap-2"
 			title="Wetterdaten für den angegebenen Zeitpunkt und Ort abrufen"
 		>
-			<Icon src={CloudIcon} class="h-4 w-4" />
+			<Icon src={Cloud} class="h-4 w-4" />
 			{isLoading ? 'Lade...' : 'Wetterdaten abrufen'}
 		</button>
 	{/if}
