@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { createLogger } from '$lib/logger';
 	import { browser } from '$app/environment';
+	import { createLogger } from '$lib/logger';
 
 	const logger = createLogger('docs:api:direct');
 
-	let scalarContainer: HTMLDivElement | undefined;
+	let scalarContainer: HTMLDivElement | undefined = $state();
 	let isLoading = $state(true);
 	let hasError = $state(false);
 	let errorMessage = $state('');
@@ -16,7 +16,7 @@
 				try {
 					// Import Scalar dynamically to avoid SSR issues
 					const { ApiReference } = await import('@scalar/api-reference');
-					
+
 					// Initialize Scalar directly without iframe
 					const configuration = {
 						spec: {
@@ -38,11 +38,15 @@
 					// Mount Scalar API Reference - use new operator
 					new ApiReference(scalarContainer, configuration);
 					isLoading = false;
-
 				} catch (error: unknown) {
-					logger.error({ error: error instanceof Error ? error.message : error }, 'Failed to load Scalar API Reference');
+					logger.error(
+						{ error: error instanceof Error ? error.message : error },
+						'Failed to load Scalar API Reference'
+					);
 					hasError = true;
-					errorMessage = (error instanceof Error ? error.message : 'Unknown error') || 'Scalar API-Dokumentation konnte nicht geladen werden';
+					errorMessage =
+						(error instanceof Error ? error.message : 'Unknown error') ||
+						'Scalar API-Dokumentation konnte nicht geladen werden';
 					isLoading = false;
 				}
 			})();
@@ -58,10 +62,10 @@
 <div class="container mx-auto px-4 py-8">
 	<div class="mb-8 text-center">
 		<h1 class="mb-4 text-4xl font-bold">API-Dokumentation (Direkt)</h1>
-		<p class="text-lg text-gray-600 max-w-3xl mx-auto">
+		<p class="mx-auto max-w-3xl text-lg text-gray-600">
 			Direkte Integration der Scalar API-Dokumentation ohne iframe
 		</p>
-		
+
 		<div class="mt-6 flex justify-center gap-4">
 			<a href="/docs/api" class="btn btn-ghost">← Zurück zur Standard-Dokumentation</a>
 			<a href="/openapi.yml" download="ostsee-tiere-api.yml" class="btn btn-outline btn-primary">
@@ -71,7 +75,7 @@
 	</div>
 
 	{#if isLoading}
-		<div class="text-center py-8">
+		<div class="py-8 text-center">
 			<div class="loading loading-spinner loading-lg"></div>
 			<p class="mt-4 text-gray-500">Scalar API-Dokumentation wird geladen...</p>
 		</div>
@@ -83,10 +87,7 @@
 					<a href="/docs/api/fallback" class="btn btn-sm btn-primary">
 						📄 Fallback-Dokumentation
 					</a>
-					<button 
-						class="btn btn-sm btn-ghost" 
-						onclick={() => window.location.reload()}
-					>
+					<button class="btn btn-sm btn-ghost" onclick={() => window.location.reload()}>
 						🔄 Neu laden
 					</button>
 				</div>
@@ -94,9 +95,6 @@
 		</div>
 	{:else}
 		<!-- Scalar API Reference Container -->
-		<div 
-			bind:this={scalarContainer} 
-			class="w-full min-h-screen border-0"
-		></div>
+		<div bind:this={scalarContainer} class="min-h-screen w-full border-0"></div>
 	{/if}
 </div>

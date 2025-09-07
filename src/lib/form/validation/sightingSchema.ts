@@ -210,7 +210,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'z.B. Kieler Bucht, Fehmarnbelt, Greifswalder Bodden',
 			helpText: 'In welchem Gewässer oder Gebiet befanden Sie sich?',
-			valueText: 'Gewässerbezeichnungen helfen bei der regionalen Populationsverteilung - auch ungefähre Angaben sind wissenschaftlich wertvoll',
+			valueText:
+				'Gewässerbezeichnungen helfen bei der regionalen Populationsverteilung - auch ungefähre Angaben sind wissenschaftlich wertvoll',
 			icon: Waves
 		})
 		.notRequired(),
@@ -226,7 +227,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'z.B. Leuchtturm Dahmeshöved, Tonne 14, Ansteuerungstonne',
 			helpText: 'Gab es markante Orientierungspunkte in der Nähe?',
-			valueText: 'Seezeichen helfen Wissenschaftlern bei der Positionsverifizierung und schaffen Vertrauen in die Datenqualität',
+			valueText:
+				'Seezeichen helfen Wissenschaftlern bei der Positionsverifizierung und schaffen Vertrauen in die Datenqualität',
 			icon: Anchor
 		})
 		.notRequired(),
@@ -269,7 +271,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'z.B. 14:30 oder 09:15',
 			helpText: 'Zu welchem Zeitpunkt ungefähr? (optional)',
-			valueText: 'Uhrzeitangaben decken Tagesrhythmen auf - 73% der Schweinswalsichtungen erfolgen morgens zwischen 6-10 Uhr',
+			valueText:
+				'Uhrzeitangaben decken Tagesrhythmen auf - 73% der Schweinswalsichtungen erfolgen morgens zwischen 6-10 Uhr',
 			type: 'time',
 			icon: Clock
 		})
@@ -460,7 +463,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Von wo aus wurde die Sichtung gemacht?')
 		.meta({
 			helpText: 'Wählen Sie Ihre Beobachtungsposition',
-			valueText: 'Boot-Beobachtungen haben 3x höhere Entdeckungsrate als Landbeobachtungen - Ihr Standort hilft bei Populationsschätzungen',
+			valueText:
+				'Boot-Beobachtungen haben 3x höhere Entdeckungsrate als Landbeobachtungen - Ihr Standort hilft bei Populationsschätzungen',
 			type: 'select',
 			options: getSightingFromOptions(),
 			icon: MapPin
@@ -499,8 +503,10 @@ export const sightingSchemaBase = yup.object().shape({
 		)
 		.label('Entfernung zum Tier')
 		.meta({
-			helpText: 'Wie weit waren die Tiere entfernt? (Schätzung) - Tipp: Größe einer Münze = 50m, Streichholz = 200m',
-			valueText: 'Entfernungsangaben helfen Forschern, Beobachtungen zu gewichten - Nahsichtungen unter 100m haben höchste wissenschaftliche Aussagekraft',
+			helpText:
+				'Wie weit waren die Tiere entfernt? (Schätzung) - Tipp: Größe einer Münze = 50m, Streichholz = 200m',
+			valueText:
+				'Entfernungsangaben helfen Forschern, Beobachtungen zu gewichten - Nahsichtungen unter 100m haben höchste wissenschaftliche Aussagekraft',
 			type: 'select',
 			options: getDistanceOptions(),
 			icon: Eye
@@ -520,7 +526,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Verteilung der Tiere')
 		.meta({
 			helpText: 'Wie waren die Tiere räumlich angeordnet?',
-			valueText: 'Gruppenformationen verraten Familienstrukturen - Mutter-Kalb-Paare schwimmen dicht beieinander, Männchen oft einzeln',
+			valueText:
+				'Gruppenformationen verraten Familienstrukturen - Mutter-Kalb-Paare schwimmen dicht beieinander, Männchen oft einzeln',
 			type: 'select',
 			options: getDistributionOptions(),
 			icon: Users
@@ -561,8 +568,10 @@ export const sightingSchemaBase = yup.object().shape({
 		)
 		.label('Verhalten der Tiere')
 		.meta({
-			helpText: 'Beschreiben Sie das Verhalten der Tiere - Tipp: "Schwimmen in eine Richtung" = konstanter Kurs',
-			valueText: 'Verhaltensbeobachtungen zeigen Stresslevel und Nahrungssuche - entscheidend für Schutzgebietsplanung',
+			helpText:
+				'Beschreiben Sie das Verhalten der Tiere - Tipp: "Schwimmen in eine Richtung" = konstanter Kurs',
+			valueText:
+				'Verhaltensbeobachtungen zeigen Stresslevel und Nahrungssuche - entscheidend für Schutzgebietsplanung',
 			type: 'select',
 			options: getAnimalBehaviorOptions(),
 			icon: Activity
@@ -600,7 +609,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'z.B. neugierig genähert, geflohen, ignoriert...',
 			helpText: 'Wie haben die Tiere auf Ihre Anwesenheit reagiert?',
-			valueText: 'Reaktionen auf Boote zeigen Störungsgrad - "Flucht" deutet auf Stress hin und beeinflusst Schutzgebietsgrößen',
+			valueText:
+				'Reaktionen auf Boote zeigen Störungsgrad - "Flucht" deutet auf Stress hin und beeinflusst Schutzgebietsgrößen',
 			icon: MousePointer
 		})
 		.notRequired(),
@@ -624,7 +634,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Seegang')
 		.meta({
 			helpText: 'Wie war die Beschaffenheit der Meeresoberfläche?',
-			valueText: 'Bei ruhiger See werden 5x mehr Tiere entdeckt - Ihre Seegangsangabe hilft bei der korrekten Populationsschätzung. 89% erfahrener Beobachter geben diese Information an',
+			valueText:
+				'Bei ruhiger See werden 5x mehr Tiere entdeckt - Ihre Seegangsangabe hilft bei der korrekten Populationsschätzung. 89% erfahrener Beobachter geben diese Information an',
 			type: 'select',
 			options: getSeaStateOptions(),
 			icon: Waves
@@ -646,7 +657,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Sichtweite')
 		.meta({
 			helpText: 'Wie weit konnten Sie sehen?',
-			valueText: 'Sichtweitenangaben ermöglichen "Distance Sampling" - die präziseste Methode für Populationsschätzungen. Auch Schätzungen sind wertvoll',
+			valueText:
+				'Sichtweitenangaben ermöglichen "Distance Sampling" - die präziseste Methode für Populationsschätzungen. Auch Schätzungen sind wertvoll',
 			type: 'select',
 			options: getVisibilityOptions(),
 			icon: Eye
@@ -666,7 +678,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Windrichtung')
 		.meta({
 			helpText: 'Aus welcher Richtung kam der Wind?',
-			valueText: 'Windrichtung korreliert mit Walwanderungen - Nordwinde erhöhen Sichtungswahrscheinlichkeit um 40%. Ihre Wetterangaben vervollständigen das ökologische Bild',
+			valueText:
+				'Windrichtung korreliert mit Walwanderungen - Nordwinde erhöhen Sichtungswahrscheinlichkeit um 40%. Ihre Wetterangaben vervollständigen das ökologische Bild',
 			type: 'select',
 			options: getWindDirectionOptions(),
 			icon: Wind
@@ -685,8 +698,9 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Windstärke (Beaufort)')
 		.meta({
 			placeholder: 'z.B. 3',
-			helpText: 'Windstärke (0=Windstille, 3=leichte Brise, 6=starker Wind)',
-			valueText: 'Windstärke korreliert mit Tauchverhalten - bei starkem Wind tauchen Wale länger und seltener auf',
+			helpText: 'Welche Windstärke wurde beobachtet?',
+			valueText:
+				'Windstärke korreliert mit Tauchverhalten - bei starkem Wind tauchen Wale länger und seltener auf',
 			type: 'select',
 			options: getWindStrengthOptions(),
 			icon: CloudRain
@@ -708,7 +722,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'z.B. 3 Fotos Schweinswal-Gruppe, 1 Video springender Wal',
 			helpText: 'Jedes Foto ist wertvoll - auch unscharfe Aufnahmen helfen bei der Identifikation',
-			valueText: 'Sichtungsfotos haben bereits 47 neue Verhaltensweisen dokumentiert und fließen in internationale Datenbanken ein',
+			valueText:
+				'Sichtungsfotos haben bereits 47 neue Verhaltensweisen dokumentiert und fließen in internationale Datenbanken ein',
 			icon: Camera
 		})
 		.notRequired(),
@@ -736,7 +751,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Einverständnis zur Mediennutzung')
 		.meta({
 			helpText: 'Stimmen Sie der wissenschaftlichen Nutzung der Aufnahmen zu?',
-			valueText: 'Ihre Fotos werden in wissenschaftlichen Publikationen verwendet und helfen bei der Öffentlichkeitsarbeit für den Meeresschutz - Sichtungsphotos überzeugen Politik und Gesellschaft',
+			valueText:
+				'Ihre Fotos werden in wissenschaftlichen Publikationen verwendet und helfen bei der Öffentlichkeitsarbeit für den Meeresschutz - Sichtungsphotos überzeugen Politik und Gesellschaft',
 			icon: Check
 		})
 		.default(false),
@@ -756,7 +772,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'z.B. MS Seelöwe, SY Nordwind, FFK Seeadler',
 			helpText: 'Name Ihres Bootes/Schiffes (optional)',
-			valueText: 'Schiffsnamen ermöglichen Langzeitstudien - einige Schiffe melden seit 15 Jahren regelmäßig Sichtungen',
+			valueText:
+				'Schiffsnamen ermöglichen Langzeitstudien - einige Schiffe melden seit 15 Jahren regelmäßig Sichtungen',
 			icon: Ship
 		})
 		.notRequired(),
@@ -788,7 +805,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'z.B. Segelboot, Motoryacht, Kajak, Fischkutter',
 			helpText: 'Art Ihres Wasserfahrzeugs (optional)',
-			valueText: 'Segelboote ermöglichen leiseste Annäherung - Kajaks erreichen flachste Gewässer für einzigartige Beobachtungen',
+			valueText:
+				'Segelboote ermöglichen leiseste Annäherung - Kajaks erreichen flachste Gewässer für einzigartige Beobachtungen',
 			icon: Anchor
 		})
 		.notRequired(),
@@ -807,7 +825,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'z.B. 2',
 			helpText: 'Wie viele andere Boote waren in der Nähe?',
-			valueText: 'Schiffsverkehr-Daten sind Gold wert - sie zeigen Lärmeinfluss auf Meerestiere. Auch "0 Schiffe" ist eine wichtige Information',
+			valueText:
+				'Schiffsverkehr-Daten sind Gold wert - sie zeigen Lärmeinfluss auf Meerestiere. Auch "0 Schiffe" ist eine wichtige Information',
 			icon: CountIcon
 		})
 		.notRequired(),
@@ -826,7 +845,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Bootsantrieb')
 		.meta({
 			helpText: 'Welcher Antrieb wurde während der Sichtung verwendet?',
-			valueText: 'Motor-Typ bestimmt Unterwasserlärm - Elektromotoren ermöglichen 60% mehr Sichtungen durch geringere Störung',
+			valueText:
+				'Motor-Typ bestimmt Unterwasserlärm - Elektromotoren ermöglichen 60% mehr Sichtungen durch geringere Störung',
 			type: 'select',
 			options: getBoatDriveOptions(),
 			icon: Zap
@@ -1019,7 +1039,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'Zusätzliche Beobachtungen, Besonderheiten...',
 			helpText: 'Was möchten Sie noch mitteilen?',
-			valueText: 'Diese Daten fließen in EU-Meeresschutzrichtlinien ein - Ihre Beobachtungen beeinflussen maritime Politikentscheidungen',
+			valueText:
+				'Diese Daten fließen in EU-Meeresschutzrichtlinien ein - Ihre Beobachtungen beeinflussen maritime Politikentscheidungen',
 			type: 'textarea',
 			icon: FileText
 		})

@@ -51,7 +51,7 @@
 		</p>
 		<div class="flex justify-center">
 			<div
-				class="badge badge-outline badge-success h-auto min-h-fit max-w-xs px-3 py-2 text-center text-xs whitespace-normal sm:max-w-none sm:text-sm sm:whitespace-nowrap"
+				class="badge badge-outline badge-primary h-auto min-h-fit max-w-xs px-3 py-2 text-center text-xs whitespace-normal sm:max-w-none sm:text-sm sm:whitespace-nowrap"
 			>
 				Schritt 4 von 4 - Fast geschafft!
 			</div>
