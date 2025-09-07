@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { Component } from 'svelte';
+	
 	// Props
 	let {
 		mapContainerId = 'map',
@@ -16,7 +18,7 @@
 		titleClass?: string;
 	}>();
 
-	let MapComponent: any = $state(null);
+	let MapComponent: Component | null = $state(null);
 	let isLoading = $state(true);
 
 	// Use $effect for lazy loading the map component
@@ -38,8 +40,7 @@
 		</div>
 	</div>
 {:else if MapComponent}
-	<svelte:component 
-		this={MapComponent}
+	<MapComponent
 		{mapContainerId}
 		{showTitle}
 		{title}
