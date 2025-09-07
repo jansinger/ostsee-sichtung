@@ -3,15 +3,19 @@ import { createLogger } from '$lib/logger';
 const logger = createLogger('services:weather');
 
 /**
- * Weather data from Open-Meteo API
+ * Weather data from OpenWeatherMap API
  */
 export interface WeatherData {
 	windSpeed: number; // km/h
 	windDirection: number; // degrees
 	windDirectionCardinal: string; // N, NO, O, SO, S, SW, W, NW
 	temperature: number; // °C
-	weatherCode: number; // WMO weather code
+	weatherCode: number; // OpenWeatherMap weather code
+	weatherDescription: string; // Weather description in German
+	visibility: number; // meters
 	seaState?: number; // Beaufort scale (calculated from wind speed)
+	pressure?: number; // hPa
+	humidity?: number; // %
 }
 
 /**
@@ -50,7 +54,87 @@ function degreesToCardinal(degrees: number): string {
 }
 
 /**
- * Fetch historical weather data from Open-Meteo API
+ * Map OpenWeatherMap weather codes to German descriptions
+ */
+function getWeatherDescription(weatherCode: number): string {
+	const weatherMap: Record<number, string> = {
+		200: 'Gewitter mit leichtem Regen',
+		201: 'Gewitter mit Regen',
+		202: 'Gewitter mit starkem Regen',
+		210: 'Leichtes Gewitter',
+		211: 'Gewitter',
+		212: 'Starkes Gewitter',
+		221: 'Heftiges Gewitter',
+		230: 'Gewitter mit leichtem Nieselregen',
+		231: 'Gewitter mit Nieselregen',
+		232: 'Gewitter mit starkem Nieselregen',
+		300: 'Leichter Nieselregen',
+		301: 'Nieselregen',
+		302: 'Starker Nieselregen',
+		310: 'Leichter Nieselregen mit Regen',
+		311: 'Nieselregen mit Regen',
+		312: 'Starker Nieselregen mit Regen',
+		313: 'Regenschauer mit Nieselregen',
+		314: 'Starke Regenschauer mit Nieselregen',
+		321: 'Schauerregen',
+		500: 'Leichter Regen',
+		501: 'Mäßiger Regen',
+		502: 'Starker Regen',
+		503: 'Sehr starker Regen',
+		504: 'Extremer Regen',
+		511: 'Eisregen',
+		520: 'Leichte Regenschauer',
+		521: 'Regenschauer',
+		522: 'Starke Regenschauer',
+		531: 'Heftiger Schauerregen',
+		600: 'Leichter Schnee',
+		601: 'Schnee',
+		602: 'Starker Schnee',
+		611: 'Schneebrei',
+		612: 'Leichter Schneebrei',
+		613: 'Schneebrei',
+		615: 'Leichter Regen mit Schnee',
+		616: 'Regen mit Schnee',
+		620: 'Leichte Schneeschauer',
+		621: 'Schneeschauer',
+		622: 'Starke Schneeschauer',
+		701: 'Nebel',
+		711: 'Rauch',
+		721: 'Dunst',
+		731: 'Staubwirbel',
+		741: 'Nebel',
+		751: 'Sand',
+		761: 'Staub',
+		762: 'Vulkanasche',
+		771: 'Böen',
+		781: 'Tornado',
+		800: 'Klar',
+		801: 'Leicht bewölkt',
+		802: 'Wolkig',
+		803: 'Stark bewölkt',
+		804: 'Bedeckt'
+	};
+	return weatherMap[weatherCode] || `Unbekannt (${weatherCode})`;
+}
+
+/**
+ * Calculate sea state from wind speed (Douglas scale approximation)
+ */
+function calculateSeaState(windSpeedKmh: number): number {
+	if (windSpeedKmh < 2) return 0; // Calm
+	if (windSpeedKmh < 12) return 1; // Smooth
+	if (windSpeedKmh < 20) return 2; // Slight
+	if (windSpeedKmh < 29) return 3; // Moderate
+	if (windSpeedKmh < 50) return 4; // Rough
+	if (windSpeedKmh < 62) return 5; // Very rough
+	if (windSpeedKmh < 75) return 6; // High
+	if (windSpeedKmh < 89) return 7; // Very high
+	return 8; // Phenomenal
+}
+
+/**
+ * This function is now handled entirely by the server endpoint.
+ * Client-side weather service should call /api/weather/historical instead.
  */
 export async function fetchHistoricalWeather(
 	latitude: number,
@@ -58,77 +142,8 @@ export async function fetchHistoricalWeather(
 	date: string, // YYYY-MM-DD
 	hour?: number // 0-23
 ): Promise<WeatherData | null> {
-	try {
-		// Validate inputs
-		if (!latitude || !longitude || !date) {
-			logger.warn('Missing required parameters for weather fetch');
-			return null;
-		}
-
-		// Format date for API
-		const dateObj = new Date(date);
-		if (isNaN(dateObj.getTime())) {
-			logger.warn({ date }, 'Invalid date format');
-			return null;
-		}
-
-		const startDate = date;
-		const endDate = date;
-
-		// Build API URL
-		const params = new URLSearchParams({
-			latitude: latitude.toString(),
-			longitude: longitude.toString(),
-			start_date: startDate,
-			end_date: endDate,
-			hourly: 'temperature_2m,wind_speed_10m,wind_direction_10m,weather_code',
-			timezone: 'Europe/Berlin'
-		});
-
-		const url = `https://archive-api.open-meteo.com/v1/archive?${params}`;
-		
-		logger.info({ url, latitude, longitude, date }, 'Fetching weather data');
-
-		// Fetch data
-		const response = await fetch(url);
-		
-		if (!response.ok) {
-			logger.error({ status: response.status }, 'Weather API request failed');
-			return null;
-		}
-
-		const data = await response.json();
-
-		// Extract hourly data
-		const hourly = data.hourly;
-		if (!hourly || !hourly.time || hourly.time.length === 0) {
-			logger.warn('No weather data available for the specified date');
-			return null;
-		}
-
-		// Find the closest hour index
-		let targetIndex = hour ?? 12; // Default to noon if no hour specified
-		if (hour !== undefined && hour >= 0 && hour < hourly.time.length) {
-			targetIndex = hour;
-		}
-
-		// Extract weather data for the target hour
-		const weatherData: WeatherData = {
-			windSpeed: Math.round(hourly.wind_speed_10m[targetIndex] || 0),
-			windDirection: Math.round(hourly.wind_direction_10m[targetIndex] || 0),
-			windDirectionCardinal: degreesToCardinal(hourly.wind_direction_10m[targetIndex] || 0),
-			temperature: Math.round(hourly.temperature_2m[targetIndex] || 0),
-			weatherCode: hourly.weather_code[targetIndex] || 0,
-			seaState: windSpeedToBeaufort(hourly.wind_speed_10m[targetIndex] || 0)
-		};
-
-		logger.info({ weatherData }, 'Weather data fetched successfully');
-		return weatherData;
-
-	} catch (error) {
-		logger.error({ error }, 'Failed to fetch weather data');
-		return null;
-	}
+	logger.warn('fetchHistoricalWeather should not be called from client side - use server endpoint instead');
+	return null;
 }
 
 /**
@@ -136,10 +151,24 @@ export async function fetchHistoricalWeather(
  */
 export function mapWeatherToFormFields(weather: WeatherData) {
 	return {
-		windForce: weather.seaState?.toString() || '',
+		windForce: windSpeedToBeaufort(weather.windSpeed).toString(),
 		windDirection: weather.windDirectionCardinal,
-		// Optional: Map weather code to visibility/conditions if needed
-		// visibility: mapWeatherCodeToVisibility(weather.weatherCode),
-		// seaState: weather.seaState?.toString() || ''
+		seaState: weather.seaState?.toString() || '',
+		visibility: mapVisibilityToFormValue(weather.visibility)
 	};
+}
+
+/**
+ * Map visibility in meters to form dropdown value
+ */
+function mapVisibilityToFormValue(visibilityMeters: number): string {
+	// Convert to km and map to common visibility categories
+	const visibilityKm = visibilityMeters / 1000;
+	
+	if (visibilityKm >= 50) return '5'; // Sehr gut > 50 km
+	if (visibilityKm >= 20) return '4'; // Gut 20-50 km  
+	if (visibilityKm >= 10) return '3'; // Mäßig 10-20 km
+	if (visibilityKm >= 5) return '2';  // Schlecht 5-10 km
+	if (visibilityKm >= 1) return '1';  // Sehr schlecht 1-5 km
+	return '0'; // Nebel < 1 km
 }
