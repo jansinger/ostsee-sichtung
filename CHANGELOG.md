@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.25.1 (2025-09-07)</small>
+
+* Merge pull request #93 from jansinger/perf/optimize-dev-startup ([f166a52](https://github.com/jansinger/ostsee-sichtung/commit/f166a52)), closes [#93](https://github.com/jansinger/ostsee-sichtung/issues/93)
+* refactor: improve Step components for better readability ([b71d910](https://github.com/jansinger/ostsee-sichtung/commit/b71d910))
+* fix: replace deprecated svelte:component with dynamic component in Svelte 5 ([b2024ad](https://github.com/jansinger/ostsee-sichtung/commit/b2024ad))
+* perf: optimize dev server startup performance ([3b25a2c](https://github.com/jansinger/ostsee-sichtung/commit/3b25a2c))
+
 ## 1.25.0 (2025-08-29)
 
 * Merge pull request #92 from jansinger/fix/secure-role-management ([702cae0](https://github.com/jansinger/ostsee-sichtung/commit/702cae0)), closes [#92](https://github.com/jansinger/ostsee-sichtung/issues/92)
