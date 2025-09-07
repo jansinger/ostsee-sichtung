@@ -4,7 +4,6 @@
 	import type { ValidationPreset } from '$lib/types';
 	import { Calendar, Camera, MapPin, SquarePen } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
-	import WeatherDataFetcher from '$lib/components/weather/WeatherDataFetcher.svelte';
 	import DropzoneEnhanced from '../form/fields/DropzoneEnhanced.svelte';
 	import FormField from '../form/fields/FormField.svelte';
 	import LocationInput from '../form/LocationInput.svelte';
@@ -53,15 +52,6 @@
 		console.log($errors);
 	});
 
-	// Handle weather data
-	function handleWeatherData(weatherFields: Record<string, string>) {
-		// Update form fields with weather data
-		Object.entries(weatherFields).forEach(([field, value]) => {
-			handleChange({
-				target: { name: field, value }
-			} as unknown as Event);
-		});
-	}
 </script>
 
 <!-- Position & Time Section -->
@@ -228,18 +218,5 @@
 			<FormField name="sightingDate" />
 			<FormField name="sightingTime" />
 		</div>
-		
-		<!-- Weather Data Fetcher - only show when we have position and date -->
-		{#if $form.latitude && $form.longitude && $form.sightingDate}
-			<div class="mt-4 pt-4 border-t border-base-300">
-				<WeatherDataFetcher
-					latitude={$form.latitude}
-					longitude={$form.longitude}
-					date={$form.sightingDate}
-					time={$form.sightingTime || null}
-					onWeatherFetched={handleWeatherData}
-				/>
-			</div>
-		{/if}
 	</div>
 </div>

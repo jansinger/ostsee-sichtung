@@ -1,7 +1,21 @@
 <script lang="ts">
+	import { getFormContext } from '$lib/report/formContext';
+	import WeatherDataFetcher from '$lib/components/weather/WeatherDataFetcher.svelte';
 	import { Waves } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import FormField from '../form/fields/FormField.svelte';
+
+	const { form, handleChange } = getFormContext();
+
+	// Handle weather data
+	function handleWeatherData(weatherFields: Record<string, string>) {
+		// Update form fields with weather data
+		Object.entries(weatherFields).forEach(([field, value]) => {
+			handleChange({
+				target: { name: field, value }
+			} as unknown as Event);
+		});
+	}
 </script>
 
 <!-- Environmental Conditions Section -->
@@ -30,6 +44,22 @@
 			<!-- Wind Force -->
 			<FormField name="windForce" />
 		</div>
+
+		<!-- Weather Data Fetcher - Auto-fetch when environment section is visible -->
+		{#if $form.latitude && $form.longitude && $form.sightingDate}
+			<div class="mt-6 pt-4 border-t border-base-300">
+				<WeatherDataFetcher
+					latitude={$form.latitude}
+					longitude={$form.longitude}
+					date={$form.sightingDate}
+					time={$form.sightingTime || null}
+					onWeatherFetched={handleWeatherData}
+					autoFetch={true}
+					buttonText="Wetterdaten aktualisieren"
+					showInCard={false}
+				/>
+			</div>
+		{/if}
 	</div>
 </div>
 

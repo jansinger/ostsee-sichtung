@@ -2,6 +2,7 @@
 	import { Cloud } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import type { WeatherData } from '$lib/services/weatherService';
+	import { kmhToMs } from '$lib/services/weatherService';
 
 	interface Props {
 		latitude: number | null;
@@ -9,6 +10,9 @@
 		date: string | null;
 		time: string | null;
 		onWeatherFetched: (formFields: Record<string, string>) => void;
+		autoFetch?: boolean;
+		buttonText?: string;
+		showInCard?: boolean;
 	}
 
 	let {
@@ -16,13 +20,17 @@
 		longitude,
 		date,
 		time,
-		onWeatherFetched
+		onWeatherFetched,
+		autoFetch = false,
+		buttonText = 'Wetterdaten abrufen',
+		showInCard = true
 	}: Props = $props();
 
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 	let weatherData = $state<WeatherData | null>(null);
 	let showSuggestions = $state(false);
+	let lastFetchKey = $state<string>('');
 
 	// Check if we can fetch weather
 	const canFetch = $derived(
@@ -32,6 +40,18 @@
 		date !== ''
 	);
 
+	// Create a key for current fetch params
+	const fetchKey = $derived(
+		`${latitude}-${longitude}-${date}-${time || ''}`
+	);
+
+	// Auto-fetch when params change
+	$effect(() => {
+		if (autoFetch && canFetch && fetchKey !== lastFetchKey) {
+			fetchWeather();
+		}
+	});
+
 	async function fetchWeather() {
 		if (!canFetch) return;
 
@@ -39,6 +59,7 @@
 		error = null;
 		weatherData = null;
 		showSuggestions = false;
+		lastFetchKey = fetchKey;
 
 		try {
 			const params = new URLSearchParams({
@@ -71,7 +92,7 @@
 		if (!weatherData) return;
 
 		const formFields: Record<string, string> = {
-			windStrength: weatherData.seaState?.toString() || '',
+			windForce: weatherData.seaState?.toString() || '',
 			windDirection: weatherData.windDirectionCardinal
 		};
 
@@ -95,7 +116,7 @@
 			title="Wetterdaten für den angegebenen Zeitpunkt und Ort abrufen"
 		>
 			<Icon src={Cloud} class="h-4 w-4" />
-			{isLoading ? 'Lade...' : 'Wetterdaten abrufen'}
+			{isLoading ? 'Lade...' : buttonText}
 		</button>
 	{/if}
 
@@ -106,12 +127,21 @@
 	{/if}
 
 	{#if showSuggestions && weatherData}
-		<div class="card bg-base-200 mt-3 p-4">
-			<h4 class="font-semibold mb-2">Wetterdaten-Vorschlag</h4>
-			<div class="text-sm space-y-1">
-				<p>🌡️ Temperatur: {weatherData.temperature}°C</p>
-				<p>💨 Wind: {weatherData.windSpeed} km/h aus {weatherData.windDirectionCardinal}</p>
-				<p>🌊 Seegang: Beaufort {weatherData.seaState}</p>
+		<div class="{showInCard ? 'card bg-base-200 mt-3 p-4' : 'mt-3'}">
+			<h4 class="font-semibold mb-2 text-base">Historische Wetterdaten</h4>
+			<div class="text-sm space-y-1.5">
+				<p class="flex items-center gap-2">
+					<span class="text-lg">🌡️</span> 
+					<span>Temperatur: <strong>{weatherData.temperature}°C</strong></span>
+				</p>
+				<p class="flex items-center gap-2">
+					<span class="text-lg">💨</span> 
+					<span>Wind: <strong>Stärke {weatherData.seaState}</strong> (Beaufort) = <strong>{kmhToMs(weatherData.windSpeed)} m/s</strong> aus <strong>{weatherData.windDirectionCardinal}</strong></span>
+				</p>
+				<p class="flex items-center gap-2">
+					<span class="text-lg">🌊</span> 
+					<span>Seegang: <strong>Stärke {weatherData.seaState}</strong> (berechnet aus Windstärke)</span>
+				</p>
 			</div>
 			
 			<div class="flex gap-2 mt-3">

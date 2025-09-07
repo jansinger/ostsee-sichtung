@@ -34,6 +34,13 @@ function windSpeedToBeaufort(speedKmh: number): number {
 }
 
 /**
+ * Convert km/h to m/s
+ */
+export function kmhToMs(speedKmh: number): number {
+	return Math.round((speedKmh / 3.6) * 10) / 10; // Round to 1 decimal
+}
+
+/**
  * Convert degrees to cardinal direction
  */
 function degreesToCardinal(degrees: number): string {
@@ -129,7 +136,7 @@ export async function fetchHistoricalWeather(
  */
 export function mapWeatherToFormFields(weather: WeatherData) {
 	return {
-		windStrength: weather.seaState?.toString() || '',
+		windForce: weather.seaState?.toString() || '',
 		windDirection: weather.windDirectionCardinal,
 		// Optional: Map weather code to visibility/conditions if needed
 		// visibility: mapWeatherCodeToVisibility(weather.weatherCode),
