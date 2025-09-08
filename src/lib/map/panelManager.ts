@@ -13,11 +13,6 @@ export class MapPanelManager implements PanelManager {
 	 * Die meiste Logik ist jetzt in den Svelte-Komponenten selbst
 	 */
 	initializePanels(): void {
-		// Da die Panels jetzt Svelte 5 runes verwenden und sich selbst verwalten,
-		// ist hier nur noch minimale Konfiguration nötig
-		
-		console.log('Panel-Manager initialisiert - Panels verwenden jetzt Svelte 5 runes für State-Management');
-		
 		// Optional: Schließe alle Panels bei Klick auf die Karte
 		// Dies ist jetzt optional, da die Panels ihre eigene Logik haben
 		const mapElement = document.getElementById('map');

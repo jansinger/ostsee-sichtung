@@ -45,21 +45,6 @@
 	const otherFiles = $derived(
 		files.filter((file) => !isImage(file.mimeType) && !isVideo(file.mimeType))
 	);
-
-	// Debug: Log EXIF data
-	$effect(() => {
-		if (files.length > 0) {
-			console.log(
-				'MediaGallery: Files with EXIF data:',
-				files.map((f) => ({
-					name: f.originalName,
-					mimeType: f.mimeType,
-					hasExif: !!f.exifData,
-					exifData: f.exifData
-				}))
-			);
-		}
-	});
 </script>
 
 {#if files.length > 0}
