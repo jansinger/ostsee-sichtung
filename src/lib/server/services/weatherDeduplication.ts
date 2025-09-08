@@ -1,29 +1,23 @@
 /**
  * Weather data deduplication service for Issue #110
- * 
+ *
  * Implements single fetch per position/day logic to minimize API calls
  * and reuse existing weather data for nearby sightings.
  */
 
 import { createLogger } from '$lib/logger';
-import type { StoredWeatherData } from '$lib/services/weatherService';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
-import { and, between, eq, isNotNull, sql } from 'drizzle-orm';
+import type { StoredWeatherData } from '$lib/services/weatherService';
+import { and, eq, isNotNull, sql } from 'drizzle-orm';
 
 const logger = createLogger('server:weatherDeduplication');
 
 /**
- * Position tolerance for deduplication (in degrees)
- * ±0.01 degrees ≈ ±1km tolerance for similar positions
- */
-const POSITION_TOLERANCE = 0.01;
-
-/**
  * Check if weather data already exists for similar position and date
- * 
+ *
  * @param latitude Sighting latitude
- * @param longitude Sighting longitude  
+ * @param longitude Sighting longitude
  * @param date Sighting date (YYYY-MM-DD format)
  * @returns Existing weather data or null
  */
@@ -46,33 +40,35 @@ export async function checkExistingWeatherData(
 				weatherProvider: sightings.weatherProvider,
 				weatherDataType: sightings.weatherDataType,
 				distance: sql<number>`ST_Distance(
-					ST_Point(${sightings.longitude}, ${sightings.latitude}), 
-					ST_Point(${longitude}, ${latitude})
+					ST_SetSRID(ST_Point(${sightings.longitude}, ${sightings.latitude}), 4326)::geography, 
+					ST_SetSRID(ST_Point(${longitude}, ${latitude}), 4326)::geography
 				)`.as('distance')
 			})
 			.from(sightings)
 			.where(
 				and(
-					// Position tolerance (±0.01 degrees ≈ ±1km)
-					between(sightings.latitude, String(latitude - POSITION_TOLERANCE), String(latitude + POSITION_TOLERANCE)),
-					between(sightings.longitude, String(longitude - POSITION_TOLERANCE), String(longitude + POSITION_TOLERANCE)),
+					// Use ST_DWithin for efficient proximity search (1km ≈ 1000m)
+					sql`ST_DWithin(
+						ST_SetSRID(ST_Point(${sightings.longitude}, ${sightings.latitude}), 4326)::geography,
+						ST_SetSRID(ST_Point(${longitude}, ${latitude}), 4326)::geography,
+						1000
+					)`,
 					// Same date
 					eq(sql`DATE(${sightings.sightingDate})`, date),
 					// Has weather data
 					isNotNull(sightings.weatherData)
 				)
 			)
-			.orderBy(sql`ST_Distance(
-				ST_Point(${sightings.longitude}, ${sightings.latitude}), 
-				ST_Point(${longitude}, ${latitude})
-			) ASC`)
+			.orderBy(
+				sql`ST_Distance(
+				ST_SetSRID(ST_Point(${sightings.longitude}, ${sightings.latitude}), 4326)::geography, 
+				ST_SetSRID(ST_Point(${longitude}, ${latitude}), 4326)::geography
+			) ASC`
+			)
 			.limit(1);
 
 		if (existingData.length === 0) {
-			logger.info(
-				{ latitude, longitude, date },
-				'No existing weather data found within tolerance'
-			);
+			logger.info({ latitude, longitude, date }, 'No existing weather data found within tolerance');
 			return null;
 		}
 
@@ -94,17 +90,14 @@ export async function checkExistingWeatherData(
 
 		return storedWeatherData;
 	} catch (error) {
-		logger.error(
-			{ error, latitude, longitude, date },
-			'Error checking for existing weather data'
-		);
+		logger.error({ error, latitude, longitude, date }, 'Error checking for existing weather data');
 		return null;
 	}
 }
 
 /**
  * Check if weather data is still fresh enough to reuse
- * 
+ *
  * @param weatherData Stored weather data
  * @param maxAgeHours Maximum age in hours (default: 24)
  * @returns True if data is fresh enough
@@ -139,10 +132,10 @@ export function isWeatherDataFresh(
 
 /**
  * Get cached weather data if available and fresh, otherwise return null
- * 
+ *
  * @param latitude Sighting latitude
  * @param longitude Sighting longitude
- * @param date Sighting date (YYYY-MM-DD format)  
+ * @param date Sighting date (YYYY-MM-DD format)
  * @param maxAgeHours Maximum cache age in hours
  * @returns Cached weather data or null if not available/fresh
  */
@@ -192,24 +185,26 @@ export async function getWeatherCacheStatistics(): Promise<{
 
 		// Unique position+date combinations
 		const [uniqueResult] = await db
-			.select({ count: sql<number>`COUNT(DISTINCT (ROUND(gps_breite::numeric, 2), ROUND(gps_laenge::numeric, 2), DATE(sichtungsdatum)))` })
+			.select({
+				count: sql<number>`COUNT(DISTINCT (ROUND(gps_breite::numeric, 2), ROUND(gps_laenge::numeric, 2), DATE(sichtungsdatum)))`
+			})
 			.from(sightings)
 			.where(isNotNull(sightings.weatherData));
 
 		const totalSightingsWithWeather = totalResult?.count || 0;
 		const totalUniquePositionDates = uniqueResult?.count || 0;
 
-		const averageReuseRate = totalUniquePositionDates > 0 
-			? totalSightingsWithWeather / totalUniquePositionDates 
-			: 0;
+		const averageReuseRate =
+			totalUniquePositionDates > 0 ? totalSightingsWithWeather / totalUniquePositionDates : 0;
 
-		const cacheEfficiency = totalSightingsWithWeather > 0
-			? ((totalSightingsWithWeather - totalUniquePositionDates) / totalSightingsWithWeather) * 100
-			: 0;
+		const cacheEfficiency =
+			totalSightingsWithWeather > 0
+				? ((totalSightingsWithWeather - totalUniquePositionDates) / totalSightingsWithWeather) * 100
+				: 0;
 
 		return {
 			totalSightingsWithWeather,
-			totalUniquePositionDates, 
+			totalUniquePositionDates,
 			averageReuseRate: Math.round(averageReuseRate * 100) / 100,
 			cacheEfficiency: Math.round(cacheEfficiency * 100) / 100
 		};

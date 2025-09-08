@@ -42,7 +42,7 @@ export function formatSightingForDisplay(sighting: SightingFormValues): Formatte
 
 		// Format coordinates for display
 		coordinatesFormatted:
-			sighting.latitude && sighting.longitude
+			sighting.longitude && sighting.latitude
 				? formatLocation(sighting.longitude, sighting.latitude)
 				: null
 	};

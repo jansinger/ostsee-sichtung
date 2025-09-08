@@ -1,21 +1,23 @@
+import {
+	calculateSeaState,
+	degreesToCardinal,
+	getWeatherDescription
+} from '$lib/constants/weather';
 import { createLogger } from '$lib/logger';
-import { degreesToCardinal, calculateSeaState, getWeatherDescription } from '$lib/constants/weather';
-import { 
-	convertToStoredWeatherData,
-	mapWeatherToFormFields, 
-	type OpenMeteoRawData,
-	type WeatherData 
-} from '$lib/services/weatherService';
-import { getCachedWeatherForSighting } from '$lib/server/db/sightingRepository';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
+import { getCachedWeatherForSighting } from '$lib/server/db/sightingRepository';
+import {
+	convertToStoredWeatherData,
+	mapWeatherToFormFields,
+	type OpenMeteoRawData,
+	type WeatherData
+} from '$lib/services/weatherService';
 import { combineToDate, formatISOLikeDatetime } from '$lib/utils/format/dateTime';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:weather:historical');
-
-
 
 /**
  * Determine if sighting date is today (Issue #110)
@@ -46,7 +48,8 @@ async function fetchForecastData(
 		const params = new URLSearchParams({
 			latitude: latitude.toString(),
 			longitude: longitude.toString(),
-			hourly: 'temperature_2m,wind_speed_10m,wind_direction_10m,weather_code,visibility,surface_pressure,relative_humidity_2m',
+			hourly:
+				'temperature_2m,wind_speed_10m,wind_direction_10m,weather_code,visibility,surface_pressure,relative_humidity_2m',
 			timezone: 'Europe/Berlin',
 			forecast_days: '1'
 		});
@@ -63,7 +66,10 @@ async function fetchForecastData(
 		});
 		const marineUrl = `https://marine-api.open-meteo.com/v1/marine?${marineParams}`;
 
-		logger.info({ latitude, longitude, date, time }, 'Fetching current day forecast data from Open-Meteo');
+		logger.info(
+			{ latitude, longitude, date, time },
+			'Fetching current day forecast data from Open-Meteo'
+		);
 
 		// Fetch both weather and marine data in parallel
 		const [weatherResponse, marineResponse] = await Promise.allSettled([
@@ -73,16 +79,18 @@ async function fetchForecastData(
 
 		if (weatherResponse.status === 'rejected' || !weatherResponse.value.ok) {
 			logger.error(
-				{ status: weatherResponse.status === 'fulfilled' ? weatherResponse.value.status : 'rejected' },
+				{
+					status: weatherResponse.status === 'fulfilled' ? weatherResponse.value.status : 'rejected'
+				},
 				'Open-Meteo Forecast API request failed'
 			);
 			return null;
 		}
 
 		const forecastData = await weatherResponse.value.json();
-		
+
 		// Try to get marine data
-		let marineData: any = null;
+		let marineData: OpenMeteoRawData | null = null;
 		if (marineResponse.status === 'fulfilled' && marineResponse.value.ok) {
 			try {
 				marineData = await marineResponse.value.json();
@@ -140,8 +148,11 @@ async function fetchForecastData(
 			})
 		};
 
-		logger.info({ weatherData, hasMarineData: !!marineData }, 'Forecast data fetched successfully from Open-Meteo');
-		
+		logger.info(
+			{ weatherData, hasMarineData: !!marineData },
+			'Forecast data fetched successfully from Open-Meteo'
+		);
+
 		return {
 			weatherData,
 			rawData,
@@ -197,7 +208,10 @@ async function fetchHistoricalData(
 		});
 		const marineUrl = `https://marine-api.open-meteo.com/v1/marine?${marineParams}`;
 
-		logger.info({ latitude, longitude, date, time }, 'Fetching historical weather and marine data from Open-Meteo');
+		logger.info(
+			{ latitude, longitude, date, time },
+			'Fetching historical weather and marine data from Open-Meteo'
+		);
 
 		// Fetch both weather and marine data in parallel
 		const [weatherResponse, marineResponse] = await Promise.allSettled([
@@ -207,7 +221,9 @@ async function fetchHistoricalData(
 
 		if (weatherResponse.status === 'rejected' || !weatherResponse.value.ok) {
 			logger.error(
-				{ status: weatherResponse.status === 'fulfilled' ? weatherResponse.value.status : 'rejected' },
+				{
+					status: weatherResponse.status === 'fulfilled' ? weatherResponse.value.status : 'rejected'
+				},
 				'Open-Meteo Archive API request failed'
 			);
 			return null;
@@ -224,7 +240,7 @@ async function fetchHistoricalData(
 		}
 
 		const data = await response.json();
-		
+
 		// Try to get marine data
 		let marineData: any = null;
 		if (marineResponse.status === 'fulfilled' && marineResponse.value.ok) {
@@ -246,7 +262,9 @@ async function fetchHistoricalData(
 			!Array.isArray(hourly.temperature_2m) ||
 			!Array.isArray(hourly.weather_code)
 		) {
-			logger.warn('No historical weather data available or unexpected format for the specified date');
+			logger.warn(
+				'No historical weather data available or unexpected format for the specified date'
+			);
 			return null;
 		}
 
@@ -295,8 +313,11 @@ async function fetchHistoricalData(
 			})
 		};
 
-		logger.info({ weatherData, hasMarineData: !!marineData }, 'Historical weather data fetched successfully from Open-Meteo Archive');
-		
+		logger.info(
+			{ weatherData, hasMarineData: !!marineData },
+			'Historical weather data fetched successfully from Open-Meteo Archive'
+		);
+
 		return {
 			weatherData,
 			rawData,
@@ -331,12 +352,16 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Check for cached weather data first
 		const cachedWeather = await getCachedWeatherForSighting(latitude, longitude, date);
-		
-		let weatherResult: { weatherData: WeatherData; rawData: OpenMeteoRawData; dataType: 'forecast' | 'historical' } | null = null;
-		
+
+		let weatherResult: {
+			weatherData: WeatherData;
+			rawData: OpenMeteoRawData;
+			dataType: 'forecast' | 'historical';
+		} | null = null;
+
 		if (cachedWeather) {
 			logger.info({ latitude, longitude, date }, 'Using cached weather data from database');
-			
+
 			// Use cached data - convert from StoredWeatherData to WeatherData format
 			const weatherData: WeatherData = {
 				time: cachedWeather.observation_time,
@@ -348,22 +373,32 @@ export const GET: RequestHandler = async ({ url }) => {
 				weatherDescription: cachedWeather.processed.weatherDescription,
 				visibility: cachedWeather.processed.visibility,
 				seaState: cachedWeather.processed.seaState,
-				...(cachedWeather.processed.pressure !== undefined && { pressure: cachedWeather.processed.pressure }),
-				...(cachedWeather.processed.humidity !== undefined && { humidity: cachedWeather.processed.humidity })
+				...(cachedWeather.processed.pressure !== undefined && {
+					pressure: cachedWeather.processed.pressure
+				}),
+				...(cachedWeather.processed.humidity !== undefined && {
+					humidity: cachedWeather.processed.humidity
+				})
 			};
-			
+
 			// Create raw data object for consistency
 			const rawData: OpenMeteoRawData = {
-				...(cachedWeather.location.elevation !== undefined && { elevation: cachedWeather.location.elevation }),
+				...(cachedWeather.location.elevation !== undefined && {
+					elevation: cachedWeather.location.elevation
+				}),
 				temperature_2m: cachedWeather.raw_data.temperature_2m,
 				wind_speed_10m: cachedWeather.raw_data.wind_speed_10m,
 				wind_direction_10m: cachedWeather.raw_data.wind_direction_10m,
 				weather_code: cachedWeather.raw_data.weather_code,
 				visibility: cachedWeather.raw_data.visibility,
-				...(cachedWeather.raw_data.surface_pressure !== undefined && { surface_pressure: cachedWeather.raw_data.surface_pressure }),
-				...(cachedWeather.raw_data.relative_humidity_2m !== undefined && { relative_humidity_2m: cachedWeather.raw_data.relative_humidity_2m })
+				...(cachedWeather.raw_data.surface_pressure !== undefined && {
+					surface_pressure: cachedWeather.raw_data.surface_pressure
+				}),
+				...(cachedWeather.raw_data.relative_humidity_2m !== undefined && {
+					relative_humidity_2m: cachedWeather.raw_data.relative_humidity_2m
+				})
 			};
-			
+
 			weatherResult = {
 				weatherData,
 				rawData,
@@ -371,8 +406,11 @@ export const GET: RequestHandler = async ({ url }) => {
 			};
 		} else {
 			// No cached data - fetch from API
-			logger.info({ latitude, longitude, date }, 'No cached data found, fetching from Open-Meteo API');
-			
+			logger.info(
+				{ latitude, longitude, date },
+				'No cached data found, fetching from Open-Meteo API'
+			);
+
 			// Determine if we need forecast or historical data
 			if (isTodayDate(date)) {
 				weatherResult = await fetchForecastData(latitude, longitude, date, time);
@@ -423,9 +461,15 @@ export const GET: RequestHandler = async ({ url }) => {
 						weatherDataType: weatherResult.dataType
 					});
 
-					logger.info({ latitude, longitude, date, dataType: weatherResult.dataType }, 'Weather data stored in database for caching');
+					logger.info(
+						{ latitude, longitude, date, dataType: weatherResult.dataType },
+						'Weather data stored in database for caching'
+					);
 				} catch (error) {
-					logger.error({ error, latitude, longitude, date }, 'Failed to store weather data for caching');
+					logger.error(
+						{ error, latitude, longitude, date },
+						'Failed to store weather data for caching'
+					);
 				}
 			}
 		}
@@ -446,9 +490,10 @@ export const GET: RequestHandler = async ({ url }) => {
 			weather: weatherResult.weatherData,
 			formFields,
 			metadata: {
-				source: weatherResult.dataType === 'forecast' 
-					? 'Open-Meteo Forecast API' 
-					: 'Open-Meteo Historical Weather API',
+				source:
+					weatherResult.dataType === 'forecast'
+						? 'Open-Meteo Forecast API'
+						: 'Open-Meteo Historical Weather API',
 				dataType: weatherResult.dataType,
 				cached: !!cachedWeather,
 				latitude,
