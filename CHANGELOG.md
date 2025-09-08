@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.26.1 (2025-09-08)</small>
+
+* Merge pull request #107 from jansinger/fix/cors-map-data-fetch ([6e78d71](https://github.com/jansinger/ostsee-sichtung/commit/6e78d71)), closes [#107](https://github.com/jansinger/ostsee-sichtung/issues/107)
+* fix: better loading indication ([c7c0692](https://github.com/jansinger/ostsee-sichtung/commit/c7c0692))
+* fix: debounce filter listener ([7a7d895](https://github.com/jansinger/ostsee-sichtung/commit/7a7d895))
+* fix: implement LoadingOverlay for improved UX during map loading and filtering ([7140b85](https://github.com/jansinger/ostsee-sichtung/commit/7140b85))
+* fix: improve loading handling and error display in LazyMapWrapper ([8b6f91f](https://github.com/jansinger/ostsee-sichtung/commit/8b6f91f))
+* fix: improve loading handling and error display in LazyMapWrapper and add tests for map loading ([a99f5d8](https://github.com/jansinger/ostsee-sichtung/commit/a99f5d8))
+* fix: optimize imports, enhance security headers, and clean up debug logs across components ([b4ac676](https://github.com/jansinger/ostsee-sichtung/commit/b4ac676))
+* fix: optimize LoadingOverlay usage and improve loading message handling ([0fb4948](https://github.com/jansinger/ostsee-sichtung/commit/0fb4948))
+
 ## 1.26.0 (2025-09-08)
 
 * Merge pull request #94 from jansinger/feat/weather-api-integration ([b8a3d0f](https://github.com/jansinger/ostsee-sichtung/commit/b8a3d0f)), closes [#94](https://github.com/jansinger/ostsee-sichtung/issues/94)
