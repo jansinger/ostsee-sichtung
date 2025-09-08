@@ -237,7 +237,7 @@ jobs:
 
       - name: Label Dependabot PR
         if: github.actor == 'dependabot[bot]'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const updateType = '${{ steps.dependabot-metadata.outputs.update-type }}';
@@ -270,7 +270,7 @@ jobs:
 
       - name: Add Dependabot status comment
         if: github.actor == 'dependabot[bot]'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const updateType = '${{ steps.dependabot-metadata.outputs.update-type }}';
@@ -294,7 +294,7 @@ jobs:
       # Normale PR Labeling (nicht Dependabot)
       - name: Label PR based on commit types
         if: github.actor != 'dependabot[bot]'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             try {
