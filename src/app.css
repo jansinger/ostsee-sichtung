@@ -7,6 +7,9 @@
 @import '@fontsource/roboto/500.css';  /* Medium - Headings */
 @import '@fontsource/roboto/700.css';  /* Bold - Emphasis */
 
+@import './css/weather-icons.css';
+@import './css/weather-icons-wind.css';
+
 /* Add font-display: swap for better perceived performance */
 @layer base {
   @font-face {

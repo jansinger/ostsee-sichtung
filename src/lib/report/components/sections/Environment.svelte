@@ -1,14 +1,20 @@
 <script lang="ts">
-	import { getFormContext } from '$lib/report/formContext';
 	import WeatherDataFetcher from '$lib/components/weather/WeatherDataFetcher.svelte';
+	import { getFormContext } from '$lib/report/formContext';
+	import type { WeatherFormFields } from '$lib/services/weatherService';
 	import { Waves } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import FormField from '../form/fields/FormField.svelte';
 
 	const { form, handleChange } = getFormContext();
 
+	let latitude: number | null = $derived($form.latitude);
+	let longitude: number | null = $derived($form.longitude);
+	let sightingDate: string | null = $derived($form.sightingDate);
+	let sightingTime: string | undefined | null = $derived($form.sightingTime);
+
 	// Handle weather data
-	function handleWeatherData(weatherFields: Record<string, string>) {
+	function handleWeatherData(weatherFields: WeatherFormFields) {
 		// Update form fields with weather data
 		Object.entries(weatherFields).forEach(([field, value]) => {
 			handleChange({
@@ -29,6 +35,11 @@
 			Wetter- und Seebedingungen beeinflussen sowohl die Sichtbarkeit als auch das Tierverhalten
 		</p>
 
+		<!-- Optionaler Hinweis für User Experience -->
+		<p class="text-base-content/60 mb-2 text-xs">
+			Sobald Position und Datum gesetzt sind, werden Wetterdaten automatisch vorgeschlagen.
+		</p>
+
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 			<!-- Sea State -->
 			<FormField name="seaState" />
@@ -46,16 +57,15 @@
 		</div>
 
 		<!-- Weather Data Fetcher - Auto-fetch when environment section is visible -->
-		{#if $form.latitude && $form.longitude && $form.sightingDate}
-			<div class="mt-6 pt-4 border-t border-base-300">
+		{#if latitude && longitude && sightingDate}
+			<div class="border-base-300 mt-6 border-t pt-4">
 				<WeatherDataFetcher
-					latitude={$form.latitude}
-					longitude={$form.longitude}
-					date={$form.sightingDate}
-					time={$form.sightingTime || null}
+					{latitude}
+					{longitude}
+					date={sightingDate}
+					time={sightingTime ?? null}
 					onWeatherFetched={handleWeatherData}
 					autoFetch={true}
-					buttonText="Wetterdaten aktualisieren"
 					showInCard={false}
 				/>
 			</div>
