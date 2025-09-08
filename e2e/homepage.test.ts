@@ -10,7 +10,7 @@ test.describe('Homepage', () => {
 		// Prüfe iframe vs nicht-iframe Modus durch Überprüfung des h1
 		const mainHeading = page.locator('h1').first();
 		const mainHeadingCount = await mainHeading.count();
-		
+
 		if (mainHeadingCount > 0) {
 			// Nicht-iframe Modus: Das Haupt-h1 sollte sichtbar sein
 			await expect(mainHeading).toBeVisible({ timeout: 10000 });
@@ -28,7 +28,7 @@ test.describe('Homepage', () => {
 
 	test('should have proper meta tags', async ({ page }) => {
 		await page.goto('/');
-		
+
 		// Warte darauf, dass die Seite vollständig geladen ist
 		await page.waitForLoadState('domcontentloaded');
 
@@ -37,15 +37,16 @@ test.describe('Homepage', () => {
 
 		// Check meta description (use first match to avoid duplicates)
 		const metaDescription = page.locator('meta[name="description"]').first();
-		await expect(metaDescription).toHaveAttribute('content', /Ostsee.*[MmTt]ier|[MmTt]eerestier/, { timeout: 5000 });
+		await expect(metaDescription).toHaveAttribute('content', /Ostsee.*[MmTt]ier|[MmTt]eerestier/, {
+			timeout: 5000
+		});
 	});
 
 	test('should render page content properly', async ({ page }) => {
 		await page.goto('/');
-		
+
 		// Warte auf das vollständige Laden
 		await page.waitForLoadState('networkidle');
-
 
 		// Prüfe grundlegende Seitenstruktur
 		const body = page.locator('body');
@@ -54,14 +55,16 @@ test.describe('Homepage', () => {
 		// Prüfe ob die Seite interaktiv ist (keine Ladescreen mehr)
 		const loadingIndicators = page.locator('.loading, [data-loading], .spinner');
 		const loadingCount = await loadingIndicators.count();
-		
+
 		// Falls Loading-Indikatoren vorhanden sind, warte darauf dass sie verschwinden
 		if (loadingCount > 0) {
 			await expect(loadingIndicators.first()).not.toBeVisible({ timeout: 15000 });
 		}
 
 		// Prüfe ob grundlegende interaktive Elemente da sind
-		const interactiveElements = page.locator('button, input, select, textarea, a[href], [role="button"]');
+		const interactiveElements = page.locator(
+			'button, input, select, textarea, a[href], [role="button"]'
+		);
 		const interactiveCount = await interactiveElements.count();
 		expect(interactiveCount).toBeGreaterThan(0);
 
@@ -70,8 +73,8 @@ test.describe('Homepage', () => {
 		await expect(appContent.first()).toBeVisible();
 	});
 
-	test.skip('should navigate to map view', async ({ page }) => {
-		await page.goto('/');
+	test('should navigate to map view', async ({ page }) => {
+		await page.goto('/map');
 
 		// Look for map link/button and click it - könnte in Navigation sein
 		const mapLink = page.locator('a[href="/map"]').first();
@@ -94,12 +97,14 @@ test.describe('Homepage', () => {
 test.describe('Form Navigation', () => {
 	test('should show form steps', async ({ page }) => {
 		await page.goto('/');
-		
+
 		// Warte darauf, dass die Seite vollständig geladen ist
 		await page.waitForLoadState('networkidle');
 
 		// Check if step indicators are present - looking for steps container
-		const stepsContainer = page.locator('.steps, [role="navigation"], .step-container, [data-testid*="step"]').first();
+		const stepsContainer = page
+			.locator('.steps, [role="navigation"], .step-container, [data-testid*="step"]')
+			.first();
 		await expect(stepsContainer).toBeVisible({ timeout: 10000 });
 
 		// Check for individual step items
@@ -110,17 +115,19 @@ test.describe('Form Navigation', () => {
 
 	test('should show logo', async ({ page }) => {
 		await page.goto('/');
-		
+
 		// Warte darauf, dass die Seite vollständig geladen ist
 		await page.waitForLoadState('networkidle');
 
 		// Prüfe iframe vs nicht-iframe Modus
 		const mainHeading = page.locator('h1').first();
 		const mainHeadingCount = await mainHeading.count();
-		
+
 		if (mainHeadingCount > 0) {
 			// Nicht-iframe Modus: Logo sollte sichtbar sein
-			const logo = page.locator('img[alt*="Ostsee-Tiere"], img[src*="ostsee-tiere"], img[alt*="Logo"]').first();
+			const logo = page
+				.locator('img[alt*="Ostsee-Tiere"], img[src*="ostsee-tiere"], img[alt*="Logo"]')
+				.first();
 			await expect(logo).toBeVisible({ timeout: 10000 });
 		} else {
 			// iframe Modus: Logo ist erwartungsgemäß nicht sichtbar, aber Seite sollte funktional sein
@@ -140,7 +147,11 @@ test.describe('Form Navigation', () => {
 
 		// Prüfe ob Formularfelder vorhanden sind (ohne Honeypot und versteckte Felder)
 		// Erweiterte Selektor-Logik für bessere Kompatibilität
-		const formFields = page.locator('input:not([name="_honeypot"]):not([aria-hidden="true"]):not([type="hidden"]), select:not([aria-hidden="true"]), textarea:not([aria-hidden="true"])').first();
+		const formFields = page
+			.locator(
+				'input:not([name="_honeypot"]):not([aria-hidden="true"]):not([type="hidden"]), select:not([aria-hidden="true"]), textarea:not([aria-hidden="true"])'
+			)
+			.first();
 		await expect(formFields).toBeVisible({ timeout: 10000 });
 	});
 });

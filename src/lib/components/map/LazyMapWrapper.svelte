@@ -56,17 +56,7 @@
 <!-- Use LoadingOverlay for better UX -->
 <LoadingOverlay isVisible={isLoading} type="initial" />
 
-{#if isLoading}
-	<div class={containerClass}>
-		<div class="flex h-full items-center justify-center">
-			<div
-				class="loading loading-spinner loading-lg"
-				role="status"
-				aria-label="Karte wird geladen"
-			></div>
-		</div>
-	</div>
-{:else if loadError}
+{#if loadError}
 	<div class={containerClass}>
 		<div class="flex h-full flex-col items-center justify-center gap-4">
 			<div class="alert alert-error" role="alert">{loadError}</div>
