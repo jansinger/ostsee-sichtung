@@ -10,6 +10,7 @@
 	import 'ol/ol.css';
 	import FilterPanel from './Panel/FilterPanel.svelte';
 	import LegendPanel from './Panel/LegendPanel.svelte';
+	import LoadingOverlay from './LoadingOverlay.svelte';
 
 	// Props
 	let {
@@ -69,6 +70,9 @@
 	// UI-Zustände
 	let showKeyboardHelp = $state(false);
 	let isLoadingData = $state(false);
+	let isInitialLoading = $state(true);
+	let loadingType = $state<'initial' | 'filter' | 'features'>('initial');
+	let loadingProgress = $state<number | null>(null);
 	let errorMessage = $state<string | null>(null);
 	
 	// Aktuell angezeigtes Jahr für den Titel
@@ -77,6 +81,7 @@
 	// Event Handler für Cleanup
 	let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
 	let unhandledRejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
+	let loadingHandlerCleanup: (() => void) | null = null;
 
 	// Modern $effect for map initialization and cleanup
 	$effect(() => {
@@ -118,13 +123,15 @@
 				countManager.updateCounts();
 				// Aktualisiere das angezeigte Jahr im Titel
 				currentDisplayedYear = mapInstance.getDisplayedYear();
+				// Initial loading abgeschlossen
+				isInitialLoading = false;
 			}, 1500);
 
 			// Tastatur-Navigation Setup
 			setupKeyboardNavigation();
 
 			// Event-Listener für Loading-Zustände
-			setupLoadingHandlers();
+			loadingHandlerCleanup = setupLoadingHandlers();
 
 			// Cleanup function (replaces onDestroy)
 			return () => {
@@ -172,6 +179,12 @@
 			unhandledRejectionHandler = null;
 		}
 
+		// Cleanup Loading Handler Observer
+		if (loadingHandlerCleanup) {
+			loadingHandlerCleanup();
+			loadingHandlerCleanup = null;
+		}
+
 		// Cleanup Map-Instanz
 		if (mapInstance) {
 			// Die Map-Instanz hat möglicherweise eine cleanup-Methode
@@ -200,23 +213,83 @@
 	}
 
 	/**
-	 * Setup für Loading-State-Management
+	 * Setup für Loading-State-Management mit verbesserter UX
 	 */
 	function setupLoadingHandlers() {
-		// Überwache Filter-Änderungen
-		const filterInputs = document.querySelectorAll(
-			'#year-select, #filter-input, .species-checkbox, .color-checkbox'
-		);
-		filterInputs.forEach((input) => {
-			input.addEventListener('change', () => {
-				isLoadingData = true;
-				errorMessage = null;
+		// Überwache Filter-Änderungen mit debouncing
+		let filterTimeout: number;
+		
+		function handleFilterChange(type: 'filter' | 'features' = 'filter') {
+			clearTimeout(filterTimeout);
+			
+			isLoadingData = true;
+			loadingType = type;
+			errorMessage = null;
+			loadingProgress = 0;
 
-				// Loading-Indikator nach 2 Sekunden automatisch ausblenden
+			// Simuliere Fortschritt für bessere UX
+			const progressInterval = setInterval(() => {
+				if (loadingProgress !== null && loadingProgress < 90) {
+					loadingProgress += Math.random() * 20;
+				}
+			}, 200);
+
+			// Loading nach variablem Timeout beenden
+			filterTimeout = setTimeout(() => {
+				clearInterval(progressInterval);
+				loadingProgress = 100;
+				
+				// Kurz 100% anzeigen, dann ausblenden
 				setTimeout(() => {
 					isLoadingData = false;
-				}, 2000);
+					loadingProgress = null;
+				}, 300);
+			}, Math.random() * 1000 + 1500); // 1.5-2.5 Sekunden
+		}
+
+		// Filter-Event-Listener mit verbessertem Targeting
+		const setupFilterListener = () => {
+			const filterInputs = document.querySelectorAll(
+				'#year-select, #filter-input, .species-checkbox, .color-checkbox'
+			);
+			
+			filterInputs.forEach((input) => {
+				if (input instanceof HTMLSelectElement) {
+					// Jahr-Dropdown
+					input.addEventListener('change', () => handleFilterChange('features'));
+				} else if (input instanceof HTMLInputElement) {
+					if (input.type === 'text') {
+						// Suchfeld - nur bei Enter
+						input.addEventListener('keydown', (e) => {
+							if (e.key === 'Enter') {
+								handleFilterChange('filter');
+							}
+						});
+					} else if (input.type === 'checkbox') {
+						// Checkboxen
+						input.addEventListener('change', () => handleFilterChange('filter'));
+					} else if (input.type === 'range') {
+						// Slider - mit debouncing
+						input.addEventListener('input', () => {
+							clearTimeout(filterTimeout);
+							filterTimeout = setTimeout(() => handleFilterChange('filter'), 500);
+						});
+					}
+				}
 			});
+		};
+
+		// Setup initial listeners
+		setupFilterListener();
+
+		// Überwache neue DOM-Elemente (für dynamisch geladene Filter)
+		const observer = new MutationObserver(() => {
+			setupFilterListener();
+		});
+		
+		observer.observe(document.body, {
+			childList: true,
+			subtree: true
 		});
 
 		// Global Error Handler für API-Fehler
@@ -224,8 +297,13 @@
 			console.error('Unhandled promise rejection:', event.reason);
 			errorMessage = 'Fehler beim Laden der Kartendaten. Bitte versuchen Sie es erneut.';
 			isLoadingData = false;
+			isInitialLoading = false;
+			loadingProgress = null;
 		};
 		window.addEventListener('unhandledrejection', unhandledRejectionHandler);
+		
+		// Cleanup für Observer
+		return () => observer.disconnect();
 	}
 
 	/**
@@ -319,15 +397,13 @@
 			<div class="loading loading-lg loading-spinner"></div>
 		</div>
 
-		<!-- Neuer Filter-Load-Indikator -->
-		{#if isLoadingData}
-			<div
-				class="alert alert-info fixed top-4 left-1/2 z-30 w-auto -translate-x-1/2 transform shadow-lg"
-			>
-				<div class="loading loading-sm loading-spinner"></div>
-				<span>Karte wird aktualisiert...</span>
-			</div>
-		{/if}
+		<!-- Verbesserter Loading-Overlay -->
+		<LoadingOverlay 
+			isVisible={isInitialLoading || isLoadingData}
+			type={isInitialLoading ? 'initial' : loadingType}
+			progress={loadingProgress}
+			canCancel={false}
+		/>
 
 		<!-- Error-Toast -->
 		{#if errorMessage}
