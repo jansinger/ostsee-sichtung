@@ -129,6 +129,9 @@ export const sightings = pgTable(
 	]
 );
 
+// Type for selecting from sightings table
+export type SightingSelect = typeof sightings.$inferSelect;
+
 // Table for storing file references linked to sightings
 export const sightingFiles = pgTable(
 	'sichtungen_dateien',

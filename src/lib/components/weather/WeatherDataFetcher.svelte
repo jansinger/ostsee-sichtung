@@ -30,7 +30,19 @@
 	}: Props = $props();
 
 	let error = $state<string | null>(null);
-	let weatherData = $state<WeatherData | null>(null);
+	interface WeatherDataWithMetadata extends WeatherData {
+		_metadata?: {
+			source?: string;
+			dataType?: 'forecast' | 'historical';
+			cached?: boolean;
+			latitude?: number;
+			longitude?: number;
+			date?: string;
+			time?: string;
+		};
+	}
+
+	let weatherData = $state<WeatherDataWithMetadata | null>(null);
 	let formFields = $state<WeatherFormFields>({} as WeatherFormFields);
 	let showSuggestions = $state(false);
 	let lastFetchKey = $state<string>('');
@@ -101,6 +113,11 @@
 			weatherData = data.weather;
 			formFields = data.formFields;
 			showSuggestions = true;
+
+			// Store metadata about the weather data source
+			if (weatherData) {
+				weatherData._metadata = data.metadata;
+			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Unbekannter Fehler';
 		} finally {
@@ -206,7 +223,19 @@
 				</button>
 			</div>
 
-			<p class="text-base-content/60 mt-2 text-xs">Quelle: Open-Meteo Historical Weather API</p>
+			<div class="text-base-content/60 mt-2 text-xs space-y-1">
+				<p>
+					Quelle: {weatherData._metadata?.source || 'Open-Meteo Weather API'}
+					{#if weatherData._metadata?.cached}
+						<span class="badge badge-xs badge-info ml-2">aus Cache</span>
+					{/if}
+				</p>
+				{#if weatherData._metadata?.dataType === 'forecast'}
+					<p class="text-warning">
+						⚠️ Prognosedaten für heutige Sichtung (aktualisiert sich mehrmals täglich)
+					</p>
+				{/if}
+			</div>
 		</div>
 	{/if}
 </div>

@@ -1,5 +1,13 @@
 import { createLogger } from '$lib/logger';
-import { mapWeatherToFormFields, type WeatherData } from '$lib/services/weatherService';
+import { 
+	convertToStoredWeatherData,
+	mapWeatherToFormFields, 
+	type OpenMeteoRawData,
+	type WeatherData 
+} from '$lib/services/weatherService';
+import { getCachedWeatherForSighting } from '$lib/server/db/sightingRepository';
+import { db } from '$lib/server/db';
+import { sightings } from '$lib/server/db/schema';
 import { combineToDate } from '$lib/utils/format/dateTime';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
@@ -68,14 +76,122 @@ function getWeatherDescription(weatherCode: number): string {
 }
 
 /**
- * Fetch weather data from Open-Meteo API (free alternative)
+ * Determine if sighting date is today (Issue #110)
  */
-async function fetchOpenWeatherMapData(
+function isTodayDate(date: string): boolean {
+	const sightingDate = new Date(date);
+	const today = new Date();
+	return sightingDate.toDateString() === today.toDateString();
+}
+
+/**
+ * Fetch weather data from Open-Meteo Forecast API for current day
+ */
+async function fetchForecastData(
 	latitude: number,
 	longitude: number,
 	date: string,
 	time: string
-): Promise<WeatherData | null> {
+): Promise<{ weatherData: WeatherData; rawData: OpenMeteoRawData; dataType: 'forecast' } | null> {
+	try {
+		const dateObj = combineToDate(date, time);
+		if (isNaN(dateObj.getTime())) {
+			logger.warn({ date }, 'Invalid date format for forecast');
+			return null;
+		}
+
+		// Build API URL for Open-Meteo Forecast API
+		const params = new URLSearchParams({
+			latitude: latitude.toString(),
+			longitude: longitude.toString(),
+			hourly: 'temperature_2m,wind_speed_10m,wind_direction_10m,weather_code,visibility,surface_pressure,relative_humidity_2m',
+			timezone: 'Europe/Berlin',
+			forecast_days: '1'
+		});
+
+		const url = `https://api.open-meteo.com/v1/forecast?${params}`;
+
+		logger.info({ latitude, longitude, date, time }, 'Fetching current day forecast data from Open-Meteo');
+
+		const response = await fetch(url);
+
+		if (!response.ok) {
+			logger.error(
+				{ status: response.status, statusText: response.statusText },
+				'Open-Meteo Forecast API request failed'
+			);
+			return null;
+		}
+
+		const data = await response.json();
+		
+		// Find the closest hour index for today
+		const hourly = data.hourly;
+		if (!hourly || !Array.isArray(hourly.time) || hourly.time.length === 0) {
+			logger.warn('No forecast data available for current day');
+			return null;
+		}
+
+		let targetIndex = dateObj.getHours() + Math.round(dateObj.getMinutes() / 60);
+		if (isNaN(targetIndex) || targetIndex < 0 || targetIndex >= hourly.time.length) {
+			targetIndex = 12; // Default to noon
+		}
+
+		const windSpeedKmh = Math.round(hourly.wind_speed_10m[targetIndex] ?? 0);
+
+		const weatherData: WeatherData = {
+			time: new Date(hourly.time[targetIndex]).toLocaleDateString('sv-SE', {
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit',
+				hour: '2-digit',
+				minute: '2-digit'
+			}),
+			windSpeed: windSpeedKmh,
+			windDirection: Math.round(hourly.wind_direction_10m[targetIndex] ?? 0),
+			windDirectionCardinal: degreesToCardinal(hourly.wind_direction_10m[targetIndex] ?? 0),
+			temperature: Math.round(hourly.temperature_2m[targetIndex] ?? 0),
+			weatherCode: hourly.weather_code[targetIndex] ?? 0,
+			weatherDescription: getWeatherDescription(hourly.weather_code[targetIndex] ?? 0),
+			visibility: Math.round(hourly.visibility?.[targetIndex] ?? 10000),
+			seaState: calculateSeaState(windSpeedKmh),
+			pressure: Math.round(hourly.surface_pressure?.[targetIndex] ?? 0),
+			humidity: Math.round(hourly.relative_humidity_2m?.[targetIndex] ?? 0)
+		};
+
+		const rawData: OpenMeteoRawData = {
+			elevation: data.elevation,
+			temperature_2m: hourly.temperature_2m[targetIndex],
+			wind_speed_10m: hourly.wind_speed_10m[targetIndex],
+			wind_direction_10m: hourly.wind_direction_10m[targetIndex],
+			weather_code: hourly.weather_code[targetIndex],
+			visibility: hourly.visibility?.[targetIndex],
+			surface_pressure: hourly.surface_pressure?.[targetIndex],
+			relative_humidity_2m: hourly.relative_humidity_2m?.[targetIndex]
+		};
+
+		logger.info({ weatherData }, 'Forecast data fetched successfully from Open-Meteo');
+		
+		return {
+			weatherData,
+			rawData,
+			dataType: 'forecast'
+		};
+	} catch (error) {
+		logger.error({ error }, 'Failed to fetch forecast data from Open-Meteo');
+		return null;
+	}
+}
+
+/**
+ * Fetch historical weather data from Open-Meteo Archive API
+ */
+async function fetchHistoricalData(
+	latitude: number,
+	longitude: number,
+	date: string,
+	time: string
+): Promise<{ weatherData: WeatherData; rawData: OpenMeteoRawData; dataType: 'historical' } | null> {
 	try {
 		// Format date for API
 		const dateObj = combineToDate(date, time);
@@ -100,14 +216,14 @@ async function fetchOpenWeatherMapData(
 
 		const url = `https://archive-api.open-meteo.com/v1/archive?${params}`;
 
-		logger.info({ latitude, longitude, date, time }, 'Fetching weather data from Open-Meteo');
+		logger.info({ latitude, longitude, date, time }, 'Fetching historical weather data from Open-Meteo Archive');
 
 		const response = await fetch(url);
 
 		if (!response.ok) {
 			logger.error(
 				{ status: response.status, statusText: response.statusText },
-				'Open-Meteo API request failed'
+				'Open-Meteo Archive API request failed'
 			);
 			return null;
 		}
@@ -125,7 +241,7 @@ async function fetchOpenWeatherMapData(
 			!Array.isArray(hourly.temperature_2m) ||
 			!Array.isArray(hourly.weather_code)
 		) {
-			logger.warn('No weather data available or unexpected format for the specified date');
+			logger.warn('No historical weather data available or unexpected format for the specified date');
 			return null;
 		}
 
@@ -159,8 +275,24 @@ async function fetchOpenWeatherMapData(
 			humidity: Math.round(hourly.relative_humidity_2m?.[targetIndex] ?? 0)
 		};
 
-		logger.info({ weatherData }, 'Weather data fetched successfully from Open-Meteo');
-		return weatherData;
+		const rawData: OpenMeteoRawData = {
+			elevation: data.elevation,
+			temperature_2m: hourly.temperature_2m[targetIndex],
+			wind_speed_10m: hourly.wind_speed_10m[targetIndex],
+			wind_direction_10m: hourly.wind_direction_10m[targetIndex],
+			weather_code: hourly.weather_code[targetIndex],
+			visibility: hourly.visibility?.[targetIndex],
+			surface_pressure: hourly.surface_pressure?.[targetIndex],
+			relative_humidity_2m: hourly.relative_humidity_2m?.[targetIndex]
+		};
+
+		logger.info({ weatherData }, 'Historical weather data fetched successfully from Open-Meteo Archive');
+		
+		return {
+			weatherData,
+			rawData,
+			dataType: 'historical'
+		};
 	} catch (error) {
 		logger.error({ error }, 'Failed to fetch weather data from Open-Meteo');
 		return null;
@@ -188,9 +320,108 @@ export const GET: RequestHandler = async ({ url }) => {
 			logger.warn({ latitude, longitude }, 'Coordinates outside Baltic Sea region');
 		}
 
-		// Fetch weather data from Open-Meteo
-		const weatherData = await fetchOpenWeatherMapData(latitude, longitude, date, time);
-		if (!weatherData) {
+		// Check for cached weather data first
+		const cachedWeather = await getCachedWeatherForSighting(latitude, longitude, date);
+		
+		let weatherResult: { weatherData: WeatherData; rawData: OpenMeteoRawData; dataType: 'forecast' | 'historical' } | null = null;
+		
+		if (cachedWeather) {
+			logger.info({ latitude, longitude, date }, 'Using cached weather data from database');
+			
+			// Use cached data - convert from StoredWeatherData to WeatherData format
+			const weatherData: WeatherData = {
+				time: cachedWeather.observation_time,
+				windSpeed: cachedWeather.processed.windSpeed,
+				windDirection: cachedWeather.processed.windDirection,
+				windDirectionCardinal: cachedWeather.processed.windDirectionCardinal,
+				temperature: cachedWeather.processed.temperature,
+				weatherCode: cachedWeather.processed.weatherCode,
+				weatherDescription: cachedWeather.processed.weatherDescription,
+				visibility: cachedWeather.processed.visibility,
+				seaState: cachedWeather.processed.seaState,
+				...(cachedWeather.processed.pressure !== undefined && { pressure: cachedWeather.processed.pressure }),
+				...(cachedWeather.processed.humidity !== undefined && { humidity: cachedWeather.processed.humidity })
+			};
+			
+			// Create raw data object for consistency
+			const rawData: OpenMeteoRawData = {
+				...(cachedWeather.location.elevation !== undefined && { elevation: cachedWeather.location.elevation }),
+				temperature_2m: cachedWeather.raw_data.temperature_2m,
+				wind_speed_10m: cachedWeather.raw_data.wind_speed_10m,
+				wind_direction_10m: cachedWeather.raw_data.wind_direction_10m,
+				weather_code: cachedWeather.raw_data.weather_code,
+				visibility: cachedWeather.raw_data.visibility,
+				...(cachedWeather.raw_data.surface_pressure !== undefined && { surface_pressure: cachedWeather.raw_data.surface_pressure }),
+				...(cachedWeather.raw_data.relative_humidity_2m !== undefined && { relative_humidity_2m: cachedWeather.raw_data.relative_humidity_2m })
+			};
+			
+			weatherResult = {
+				weatherData,
+				rawData,
+				dataType: cachedWeather.data_type
+			};
+		} else {
+			// No cached data - fetch from API
+			logger.info({ latitude, longitude, date }, 'No cached data found, fetching from Open-Meteo API');
+			
+			// Determine if we need forecast or historical data
+			if (isTodayDate(date)) {
+				weatherResult = await fetchForecastData(latitude, longitude, date, time);
+			} else {
+				weatherResult = await fetchHistoricalData(latitude, longitude, date, time);
+			}
+
+			// Store weather data in database for caching
+			if (weatherResult) {
+				try {
+					const storedWeatherData = convertToStoredWeatherData(
+						weatherResult.weatherData,
+						weatherResult.rawData,
+						weatherResult.dataType,
+						latitude,
+						longitude
+					);
+
+					// Create a temporary sighting entry to store weather data
+					await db.insert(sightings).values({
+						sightingDate: new Date(date + 'T' + (time || '12:00:00') + ':00'),
+						latitude: String(latitude),
+						longitude: String(longitude),
+						species: 0, // 0 = temp-weather-cache
+						totalCount: 0,
+						juvenileCount: 0,
+						distribution: 0,
+						seaState: 0,
+						visibility: 0,
+						mediaUpload: 0,
+						behavior: 0,
+						boatDrive: 0,
+						nameConsent: 0,
+						shipNameConsent: 0,
+						entryChannel: 0,
+						verified: 0,
+						inBalticSeaGeo: 0,
+						isDead: 0,
+						deadCondition: 0,
+						deadSex: 0,
+						deadPhoneContact: 0,
+						privacyConsent: 0,
+						created: new Date(),
+						weatherData: storedWeatherData,
+						weatherFetchedAt: new Date(),
+						weatherProvider: 'open-meteo',
+						weatherApiVersion: 'v1',
+						weatherDataType: weatherResult.dataType
+					});
+
+					logger.info({ latitude, longitude, date, dataType: weatherResult.dataType }, 'Weather data stored in database for caching');
+				} catch (error) {
+					logger.error({ error, latitude, longitude, date }, 'Failed to store weather data for caching');
+				}
+			}
+		}
+
+		if (!weatherResult) {
 			return json(
 				{ error: 'Could not fetch weather data for the specified location and date' },
 				{ status: 404 }
@@ -198,15 +429,19 @@ export const GET: RequestHandler = async ({ url }) => {
 		}
 
 		// Map to form fields (see $lib/services/weatherService for mapping details)
-		const formFields = mapWeatherToFormFields(weatherData);
+		const formFields = mapWeatherToFormFields(weatherResult.weatherData);
 
-		// Return combined response
+		// Return combined response with enhanced metadata
 		return json({
 			success: true,
-			weather: weatherData,
+			weather: weatherResult.weatherData,
 			formFields,
 			metadata: {
-				source: 'Open-Meteo Historical Weather API',
+				source: weatherResult.dataType === 'forecast' 
+					? 'Open-Meteo Forecast API' 
+					: 'Open-Meteo Historical Weather API',
+				dataType: weatherResult.dataType,
+				cached: !!cachedWeather,
 				latitude,
 				longitude,
 				date,

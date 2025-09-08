@@ -15,8 +15,10 @@
 
 import { createLogger } from '$lib/logger';
 import type { SightingFormData } from '$lib/report/types';
+import type { StoredWeatherData } from '$lib/services/weatherService';
 import { db } from '$lib/server/db';
-import { sightingFiles, sightings } from '$lib/server/db/schema';
+import { sightingFiles, sightings, type SightingSelect } from '$lib/server/db/schema';
+import { getCachedWeatherData } from '$lib/server/services/weatherDeduplication';
 import { getUploadPath } from '$lib/server/uploads';
 import type { ExifData, UploadedFileInfo } from '$lib/types';
 import type { SightingFormValues } from '$lib/types/Form';
@@ -32,28 +34,49 @@ import { setSightingIdForReferenceId } from './sightingFilesRepository';
 const logger = createLogger('db:sightingRepository');
 
 /**
- * Speichert eine neue Sichtung mit verknüpften Mediendateien in der Datenbank
+ * Speichert eine neue Sichtung mit verknüpften Mediendateien und Wetterdaten in der Datenbank
  *
  * Diese Funktion führt eine transaktionale Operation durch, bei der sowohl
  * die Sichtungsdaten als auch alle hochgeladenen Mediendateien mit ihren
- * EXIF-Metadaten persistent gespeichert werden.
+ * EXIF-Metadaten und verfügbare Wetterdaten persistent gespeichert werden.
  *
  * @param formData Validierte Formulardaten aus dem Sichtungs-Formular
+ * @param weatherData Optional: Wetterdaten für diese Sichtung (Issue #110)
  * @returns Objekt mit der generierten Sichtungs-ID
  *
  * @example
- * const result = await saveSighting(formData);
+ * const result = await saveSighting(formData, weatherData);
  * console.log(`Neue Sichtung gespeichert mit ID: ${result.id}`);
  *
  * @throws {Error} Bei Datenbankfehlern oder Validierungsfehlern
  */
 export const saveSighting = async (
-	formData: SightingFormValues
+	formData: SightingFormValues,
+	weatherData?: StoredWeatherData
 ): Promise<{ id: number | undefined }> => {
 	// Konvertiere Formulardaten in das normalisierte Datenbankschema
 	const sightingData: NewSighting = mapFormToSighting(formData);
 
-	logger.info({ sightingData }, 'Speichere neue Sichtung');
+	// Add weather data fields if provided (Issue #110)
+	if (weatherData) {
+		sightingData.weatherData = weatherData;
+		sightingData.weatherFetchedAt = new Date(weatherData.fetched_at);
+		sightingData.weatherProvider = weatherData.provider;
+		sightingData.weatherApiVersion = weatherData.api_version;
+		sightingData.weatherDataType = weatherData.data_type;
+
+		logger.info(
+			{ 
+				sightingData: { ...sightingData, weatherData: undefined }, // Don't log full weather data
+				hasWeatherData: true,
+				weatherProvider: weatherData.provider,
+				weatherDataType: weatherData.data_type
+			}, 
+			'Speichere neue Sichtung mit Wetterdaten'
+		);
+	} else {
+		logger.info({ sightingData }, 'Speichere neue Sichtung ohne Wetterdaten');
+	}
 
 	// Führe Hauptinsert-Operation mit automatischer ID-Generierung aus
 	const [result] = await db.insert(sightings).values(sightingData).returning({ id: sightings.id });
@@ -66,7 +89,7 @@ export const saveSighting = async (
 	} else {
 		// Update referenced media files
 		await setSightingIdForReferenceId(formData.referenceId, sightingId);
-		logger.info({ sightingId }, 'Sichtung erfolgreich gespeichert');
+		logger.info({ sightingId, hasWeatherData: !!weatherData }, 'Sichtung erfolgreich gespeichert');
 	}
 
 	return { id: sightingId };
@@ -494,5 +517,123 @@ export const getSightingByReferenceId = async (referenceId: string) => {
 	} catch (error) {
 		logger.error({ error, referenceId }, 'Fehler beim Suchen der Sichtung anhand ReferenzID');
 		throw error;
+	}
+};
+
+/**
+ * Lädt eine Sichtung mit Wetterdaten anhand der ID (Issue #110)
+ *
+ * @param sightingId ID der zu ladenden Sichtung
+ * @returns Sichtung mit Wetterdaten oder null wenn nicht gefunden
+ */
+export const getSightingWithWeatherData = async (
+	sightingId: number
+): Promise<{ sighting: SightingSelect; weatherData: StoredWeatherData | null } | null> => {
+	try {
+		logger.info({ sightingId }, 'Lade Sichtung mit Wetterdaten');
+
+		const result = await db
+			.select()
+			.from(sightings)
+			.where(eq(sightings.id, sightingId))
+			.limit(1);
+
+		if (result.length === 0) {
+			logger.warn({ sightingId }, 'Sichtung nicht gefunden');
+			return null;
+		}
+
+		const sighting = result[0]!;
+		const weatherData = sighting.weatherData as StoredWeatherData | null;
+
+		logger.info(
+			{ sightingId, hasWeatherData: !!weatherData },
+			'Sichtung mit Wetterdaten geladen'
+		);
+
+		return {
+			sighting,
+			weatherData
+		};
+	} catch (error) {
+		logger.error({ error, sightingId }, 'Fehler beim Laden der Sichtung mit Wetterdaten');
+		throw error;
+	}
+};
+
+/**
+ * Aktualisiert die Wetterdaten einer bestehenden Sichtung (Issue #110)
+ *
+ * @param sightingId ID der zu aktualisierenden Sichtung
+ * @param weatherData Neue Wetterdaten
+ * @returns True wenn erfolgreich aktualisiert
+ */
+export const updateSightingWeatherData = async (
+	sightingId: number,
+	weatherData: StoredWeatherData
+): Promise<boolean> => {
+	try {
+		logger.info(
+			{ sightingId, weatherProvider: weatherData.provider, weatherDataType: weatherData.data_type },
+			'Aktualisiere Wetterdaten für Sichtung'
+		);
+
+		const result = await db
+			.update(sightings)
+			.set({
+				weatherData,
+				weatherFetchedAt: new Date(weatherData.fetched_at),
+				weatherProvider: weatherData.provider,
+				weatherApiVersion: weatherData.api_version,
+				weatherDataType: weatherData.data_type
+			})
+			.where(eq(sightings.id, sightingId))
+			.returning({ id: sightings.id });
+
+		const success = result.length > 0;
+
+		logger.info(
+			{ sightingId, success },
+			'Wetterdaten-Update abgeschlossen'
+		);
+
+		return success;
+	} catch (error) {
+		logger.error({ error, sightingId }, 'Fehler beim Aktualisieren der Wetterdaten');
+		throw error;
+	}
+};
+
+/**
+ * Prüft und lädt cached Wetterdaten für eine Position/Datum-Kombination (Issue #110)
+ *
+ * @param latitude Breitengrad der Sichtung
+ * @param longitude Längengrad der Sichtung  
+ * @param date Datum der Sichtung (YYYY-MM-DD)
+ * @returns Cached Wetterdaten oder null
+ */
+export const getCachedWeatherForSighting = async (
+	latitude: number,
+	longitude: number,
+	date: string
+): Promise<StoredWeatherData | null> => {
+	try {
+		logger.debug({ latitude, longitude, date }, 'Prüfe cached Wetterdaten');
+
+		const cachedData = await getCachedWeatherData(latitude, longitude, date);
+
+		if (cachedData) {
+			logger.info(
+				{ latitude, longitude, date, fetchedAt: cachedData.fetched_at },
+				'Cached Wetterdaten gefunden'
+			);
+		} else {
+			logger.debug({ latitude, longitude, date }, 'Keine cached Wetterdaten verfügbar');
+		}
+
+		return cachedData;
+	} catch (error) {
+		logger.error({ error, latitude, longitude, date }, 'Fehler beim Laden cached Wetterdaten');
+		return null;
 	}
 };

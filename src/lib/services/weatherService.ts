@@ -139,11 +139,31 @@ export function mapWeatherToFormFields(weather: WeatherData): WeatherFormFields 
 }
 
 /**
+ * Raw API data structure from Open-Meteo
+ */
+export interface OpenMeteoRawData {
+	elevation?: number;
+	temperature_2m?: number;
+	wind_speed_10m?: number;
+	wind_direction_10m?: number;
+	weather_code?: number;
+	visibility?: number;
+	surface_pressure?: number;
+	relative_humidity_2m?: number;
+	precipitation?: number;
+	cloud_cover?: number;
+	wave_height?: number;
+	wave_direction?: number;
+	wave_period?: number;
+	sea_surface_temperature?: number;
+}
+
+/**
  * Convert WeatherData to StoredWeatherData for database storage (Issue #110)
  */
 export function convertToStoredWeatherData(
 	weather: WeatherData,
-	rawApiData: any,
+	rawApiData: OpenMeteoRawData,
 	dataType: 'historical' | 'forecast',
 	latitude: number,
 	longitude: number
@@ -158,7 +178,7 @@ export function convertToStoredWeatherData(
 		location: {
 			latitude,
 			longitude,
-			elevation: rawApiData.elevation
+			...(rawApiData.elevation !== undefined && { elevation: rawApiData.elevation })
 		},
 		observation_time: weather.time,
 		
@@ -168,14 +188,16 @@ export function convertToStoredWeatherData(
 			wind_direction_10m: rawApiData.wind_direction_10m || weather.windDirection,
 			weather_code: rawApiData.weather_code || weather.weatherCode,
 			visibility: rawApiData.visibility || weather.visibility,
-			surface_pressure: rawApiData.surface_pressure || weather.pressure,
-			relative_humidity_2m: rawApiData.relative_humidity_2m || weather.humidity,
-			precipitation: rawApiData.precipitation,
-			cloud_cover: rawApiData.cloud_cover,
-			wave_height: rawApiData.wave_height,
-			wave_direction: rawApiData.wave_direction,
-			wave_period: rawApiData.wave_period,
-			sea_surface_temperature: rawApiData.sea_surface_temperature
+			...(rawApiData.surface_pressure !== undefined && { surface_pressure: rawApiData.surface_pressure }),
+			...(weather.pressure !== undefined && !rawApiData.surface_pressure && { surface_pressure: weather.pressure }),
+			...(rawApiData.relative_humidity_2m !== undefined && { relative_humidity_2m: rawApiData.relative_humidity_2m }),
+			...(weather.humidity !== undefined && !rawApiData.relative_humidity_2m && { relative_humidity_2m: weather.humidity }),
+			...(rawApiData.precipitation !== undefined && { precipitation: rawApiData.precipitation }),
+			...(rawApiData.cloud_cover !== undefined && { cloud_cover: rawApiData.cloud_cover }),
+			...(rawApiData.wave_height !== undefined && { wave_height: rawApiData.wave_height }),
+			...(rawApiData.wave_direction !== undefined && { wave_direction: rawApiData.wave_direction }),
+			...(rawApiData.wave_period !== undefined && { wave_period: rawApiData.wave_period }),
+			...(rawApiData.sea_surface_temperature !== undefined && { sea_surface_temperature: rawApiData.sea_surface_temperature })
 		},
 		
 		processed: {
@@ -187,14 +209,14 @@ export function convertToStoredWeatherData(
 			weatherDescription: weather.weatherDescription,
 			visibility: weather.visibility,
 			seaState: weather.seaState || calculateSeaState(weather.windSpeed),
-			pressure: weather.pressure,
-			humidity: weather.humidity
+			...(weather.pressure !== undefined && { pressure: weather.pressure }),
+			...(weather.humidity !== undefined && { humidity: weather.humidity })
 		},
 		
 		quality: {
 			confidence: dataType === 'historical' ? 0.95 : 0.85, // Historical data more reliable
 			data_source: dataType === 'historical' ? 'era5_reanalysis' : 'gfs_forecast',
-			notes: dataType === 'forecast' ? 'Forecast data for current day sighting' : undefined
+			...(dataType === 'forecast' && { notes: 'Forecast data for current day sighting' })
 		}
 	};
 }
