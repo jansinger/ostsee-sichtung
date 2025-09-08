@@ -137,7 +137,7 @@ export async function fetchWeatherData(
 		if (marineResponse.status === 'fulfilled' && marineResponse.value.ok) {
 			try {
 				marineData = await marineResponse.value.json();
-				logger.info({ hasMarineData: true, marineDataKeys: Object.keys(marineData) }, 'Marine data successfully fetched');
+				logger.info({ hasMarineData: true, marineDataKeys: marineData ? Object.keys(marineData) : [] }, 'Marine data successfully fetched');
 			} catch (error) {
 				logger.error({ error }, 'Failed to parse marine data response');
 			}
