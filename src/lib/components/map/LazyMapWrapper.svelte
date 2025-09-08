@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Component } from 'svelte';
-	
+
 	// Props
 	let {
 		mapContainerId = 'map',
@@ -20,32 +20,46 @@
 
 	let MapComponent: Component | null = $state(null);
 	let isLoading = $state(true);
+	let loadError = $state<string | null>(null);
 
 	// Use $effect for lazy loading the map component
 	$effect(() => {
 		// Only load once when component mounts
 		if (MapComponent === null && isLoading) {
-			import('./SightingsMapView.svelte').then((module) => {
-				MapComponent = module.default;
+			// SSR-Schutz: nur im Browser laden
+			if (typeof window !== 'undefined') {
+				import('./SightingsMapView.svelte')
+					.then((module) => {
+						MapComponent = module.default;
+						isLoading = false;
+					})
+					.catch((_err) => {
+						loadError = 'Karte konnte nicht geladen werden.';
+						isLoading = false;
+					});
+			} else {
 				isLoading = false;
-			});
+			}
 		}
 	});
 </script>
 
 {#if isLoading}
 	<div class={containerClass}>
-		<div class="flex items-center justify-center h-full">
-			<div class="loading loading-spinner loading-lg"></div>
+		<div class="flex h-full items-center justify-center">
+			<div
+				class="loading loading-spinner loading-lg"
+				role="status"
+				aria-label="Karte wird geladen"
+			></div>
+		</div>
+	</div>
+{:else if loadError}
+	<div class={containerClass}>
+		<div class="flex h-full items-center justify-center">
+			<div class="alert alert-error" role="alert">{loadError}</div>
 		</div>
 	</div>
 {:else if MapComponent}
-	<MapComponent
-		{mapContainerId}
-		{showTitle}
-		{title}
-		{showLogo}
-		{containerClass}
-		{titleClass}
-	/>
+	<MapComponent {mapContainerId} {showTitle} {title} {showLogo} {containerClass} {titleClass} />
 {/if}

@@ -588,9 +588,14 @@
 	</div>
 
 	<!-- Backdrop - click to close -->
-	<form method="dialog" class="modal-backdrop">
-		<button onclick={closeImageModal} aria-label="Modal schließen">close</button>
-	</form>
+	<div 
+		class="modal-backdrop cursor-pointer" 
+		onclick={closeImageModal} 
+		onkeydown={(e) => e.key === 'Escape' && closeImageModal()}
+		role="button" 
+		tabindex="0"
+		aria-label="Modal schließen"
+	></div>
 </dialog>
 
 <style>

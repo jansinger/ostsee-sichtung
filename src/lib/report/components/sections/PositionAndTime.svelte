@@ -51,6 +51,7 @@
 	$effect(() => {
 		console.log($errors);
 	});
+
 </script>
 
 <!-- Position & Time Section -->
