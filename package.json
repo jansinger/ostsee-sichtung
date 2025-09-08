@@ -73,7 +73,7 @@
 		"@vitest/coverage-v8": "^3.2.4",
 		"commitizen": "^4.3.1",
 		"cz-conventional-changelog": "^3.3.0",
-		"daisyui": "^5.0.54",
+		"daisyui": "^5.1.8",
 		"dotenv": "^17.2.1",
 		"drizzle-kit": "^0.31.4",
 		"eslint": "^9.34.0",
