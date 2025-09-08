@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.26.0 (2025-09-08)
+
+* Merge pull request #94 from jansinger/feat/weather-api-integration ([b8a3d0f](https://github.com/jansinger/ostsee-sichtung/commit/b8a3d0f)), closes [#94](https://github.com/jansinger/ostsee-sichtung/issues/94)
+* Merge remote-tracking branch 'origin/main' into feat/weather-api-integration ([4c0abbd](https://github.com/jansinger/ostsee-sichtung/commit/4c0abbd))
+* fix: correct icon import name from CloudIcon to Cloud ([4f20713](https://github.com/jansinger/ostsee-sichtung/commit/4f20713))
+* fix: improve error handling and loading logic in LazyMapWrapper component ([8e278b1](https://github.com/jansinger/ostsee-sichtung/commit/8e278b1))
+* fix: update comments and references to use Open-Meteo API instead of OpenWeatherMap ([b25b58d](https://github.com/jansinger/ostsee-sichtung/commit/b25b58d))
+* feat: add weather data integration with Open-Meteo API ([d5c186d](https://github.com/jansinger/ostsee-sichtung/commit/d5c186d))
+* feat: Add weather icons and improve weather data fetching component ([97a5776](https://github.com/jansinger/ostsee-sichtung/commit/97a5776))
+* feat: enhance weather integration with extended data ([dc91bf3](https://github.com/jansinger/ostsee-sichtung/commit/dc91bf3))
+* feat: move weather integration to Step 3 with auto-fetch ([a6a2dc7](https://github.com/jansinger/ostsee-sichtung/commit/a6a2dc7))
+
 ## <small>1.25.1 (2025-09-07)</small>
 
 * Merge pull request #93 from jansinger/perf/optimize-dev-startup ([f166a52](https://github.com/jansinger/ostsee-sichtung/commit/f166a52)), closes [#93](https://github.com/jansinger/ostsee-sichtung/issues/93)
