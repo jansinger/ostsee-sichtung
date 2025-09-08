@@ -16,6 +16,64 @@ export interface WeatherData {
 }
 
 /**
+ * Extended weather data structure for database storage (Issue #110)
+ * Includes all metadata, raw data, processed values, and quality information
+ */
+export interface StoredWeatherData {
+	// Metadata for database storage
+	provider: 'open-meteo';
+	fetched_at: string; // ISO timestamp
+	api_version: string;
+	data_type: 'historical' | 'forecast'; // NEW: Distinguish data source
+	location: {
+		latitude: number;
+		longitude: number;
+		elevation?: number;
+	};
+	observation_time: string; // ISO timestamp of sighting
+	
+	// Complete raw data from Open-Meteo API
+	raw_data: {
+		temperature_2m: number;
+		wind_speed_10m: number; 
+		wind_direction_10m: number;
+		weather_code: number;
+		visibility: number;
+		surface_pressure?: number;
+		relative_humidity_2m?: number;
+		precipitation?: number;
+		cloud_cover?: number;
+		
+		// Additional parameters for Marine API (if available)
+		wave_height?: number;
+		wave_direction?: number; 
+		wave_period?: number;
+		sea_surface_temperature?: number;
+	};
+	
+	// Processed/calculated values (as currently implemented)
+	processed: {
+		temperature: number; // °C
+		windSpeed: number; // km/h
+		windDirection: number; // degrees
+		windDirectionCardinal: string; // N, NO, O, SO, S, SW, W, NW
+		weatherCode: number;
+		weatherDescription: string; // German description
+		visibility: number; // meters
+		seaState: number; // calculated from wind speed
+		pressure?: number; // hPa
+		humidity?: number; // %
+	};
+	
+	// Quality information
+	quality: {
+		confidence: number; // 0.0 - 1.0
+		data_source: string; // 'era5_reanalysis' or 'gfs_forecast' 
+		notes?: string;
+	};
+}
+
+/**
  * Form fields mapped from weather data
  */
 export interface WeatherFormFields {
@@ -78,4 +136,80 @@ export function mapWeatherToFormFields(weather: WeatherData): WeatherFormFields 
 		seaState: weather.seaState?.toString() || '',
 		visibility: getVisibilityFormValue(weather.visibility)
 	};
+}
+
+/**
+ * Convert WeatherData to StoredWeatherData for database storage (Issue #110)
+ */
+export function convertToStoredWeatherData(
+	weather: WeatherData,
+	rawApiData: any,
+	dataType: 'historical' | 'forecast',
+	latitude: number,
+	longitude: number
+): StoredWeatherData {
+	const now = new Date().toISOString();
+	
+	return {
+		provider: 'open-meteo',
+		fetched_at: now,
+		api_version: 'v1',
+		data_type: dataType,
+		location: {
+			latitude,
+			longitude,
+			elevation: rawApiData.elevation
+		},
+		observation_time: weather.time,
+		
+		raw_data: {
+			temperature_2m: rawApiData.temperature_2m || weather.temperature,
+			wind_speed_10m: rawApiData.wind_speed_10m || weather.windSpeed,
+			wind_direction_10m: rawApiData.wind_direction_10m || weather.windDirection,
+			weather_code: rawApiData.weather_code || weather.weatherCode,
+			visibility: rawApiData.visibility || weather.visibility,
+			surface_pressure: rawApiData.surface_pressure || weather.pressure,
+			relative_humidity_2m: rawApiData.relative_humidity_2m || weather.humidity,
+			precipitation: rawApiData.precipitation,
+			cloud_cover: rawApiData.cloud_cover,
+			wave_height: rawApiData.wave_height,
+			wave_direction: rawApiData.wave_direction,
+			wave_period: rawApiData.wave_period,
+			sea_surface_temperature: rawApiData.sea_surface_temperature
+		},
+		
+		processed: {
+			temperature: weather.temperature,
+			windSpeed: weather.windSpeed,
+			windDirection: weather.windDirection,
+			windDirectionCardinal: weather.windDirectionCardinal,
+			weatherCode: weather.weatherCode,
+			weatherDescription: weather.weatherDescription,
+			visibility: weather.visibility,
+			seaState: weather.seaState || calculateSeaState(weather.windSpeed),
+			pressure: weather.pressure,
+			humidity: weather.humidity
+		},
+		
+		quality: {
+			confidence: dataType === 'historical' ? 0.95 : 0.85, // Historical data more reliable
+			data_source: dataType === 'historical' ? 'era5_reanalysis' : 'gfs_forecast',
+			notes: dataType === 'forecast' ? 'Forecast data for current day sighting' : undefined
+		}
+	};
+}
+
+/**
+ * Calculate sea state from wind speed (Douglas scale approximation)
+ */
+function calculateSeaState(windSpeedKmh: number): number {
+	if (windSpeedKmh < 2) return 0; // Calm
+	if (windSpeedKmh < 12) return 1; // Smooth
+	if (windSpeedKmh < 20) return 2; // Slight
+	if (windSpeedKmh < 29) return 3; // Moderate
+	if (windSpeedKmh < 50) return 4; // Rough
+	if (windSpeedKmh < 62) return 5; // Very rough
+	if (windSpeedKmh < 75) return 6; // High
+	if (windSpeedKmh < 89) return 7; // Very high
+	return 8; // Phenomenal
 }
