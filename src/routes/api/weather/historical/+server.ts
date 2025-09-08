@@ -19,6 +19,15 @@ import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:weather:historical');
 
+interface MarineResponse {
+	hourly?: {
+		time: string[];
+		wave_height?: number[];
+		wave_direction?: number[];
+		wave_period?: number[];
+	};
+}
+
 /**
  * Determine if sighting date is today (Issue #110)
  */
@@ -90,7 +99,7 @@ async function fetchForecastData(
 		const forecastData = await weatherResponse.value.json();
 
 		// Try to get marine data
-		let marineData: OpenMeteoRawData | null = null;
+		let marineData: MarineResponse | null = null;
 		if (marineResponse.status === 'fulfilled' && marineResponse.value.ok) {
 			try {
 				marineData = await marineResponse.value.json();
@@ -242,7 +251,7 @@ async function fetchHistoricalData(
 		const data = await response.json();
 
 		// Try to get marine data
-		let marineData: any = null;
+		let marineData: MarineResponse | null = null;
 		if (marineResponse.status === 'fulfilled' && marineResponse.value.ok) {
 			try {
 				marineData = await marineResponse.value.json();
