@@ -1,12 +1,22 @@
 /* ===== Tailwind CSS 4 ===== */
 @import 'tailwindcss';
 
-/* ===== Local Fonts ===== */
-@import '@fontsource/roboto/300.css';  /* Light */
-@import '@fontsource/roboto/400.css';  /* Regular */
-@import '@fontsource/roboto/500.css';  /* Medium */
-@import '@fontsource/roboto/600.css';  /* Semi-Bold */
-@import '@fontsource/roboto/700.css';  /* Bold */
+/* ===== Local Fonts - Optimized with font-display ===== */
+/* Only load essential weights initially, others on-demand */
+@import '@fontsource/roboto/400.css';  /* Regular - Primary text */
+@import '@fontsource/roboto/500.css';  /* Medium - Headings */
+@import '@fontsource/roboto/700.css';  /* Bold - Emphasis */
+
+@import './css/weather-icons.css';
+@import './css/weather-icons-wind.css';
+
+/* Add font-display: swap for better perceived performance */
+@layer base {
+  @font-face {
+    font-family: 'Roboto';
+    font-display: swap;
+  }
+}
 
 /* ===== DaisyUI Plugin mit Theme ===== */
 @plugin 'daisyui';

@@ -1,7 +1,27 @@
 <script lang="ts">
+	import WeatherDataFetcher from '$lib/components/weather/WeatherDataFetcher.svelte';
+	import { getFormContext } from '$lib/report/formContext';
+	import type { WeatherFormFields } from '$lib/services/weatherService';
 	import { Waves } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import FormField from '../form/fields/FormField.svelte';
+
+	const { form, handleChange } = getFormContext();
+
+	let latitude: number | null = $derived($form.latitude);
+	let longitude: number | null = $derived($form.longitude);
+	let sightingDate: string | null = $derived($form.sightingDate);
+	let sightingTime: string | undefined | null = $derived($form.sightingTime);
+
+	// Handle weather data
+	function handleWeatherData(weatherFields: WeatherFormFields) {
+		// Update form fields with weather data
+		Object.entries(weatherFields).forEach(([field, value]) => {
+			handleChange({
+				target: { name: field, value }
+			} as unknown as Event);
+		});
+	}
 </script>
 
 <!-- Environmental Conditions Section -->
@@ -13,6 +33,11 @@
 		</h3>
 		<p class="text-base-content/70 mb-4 text-sm">
 			Wetter- und Seebedingungen beeinflussen sowohl die Sichtbarkeit als auch das Tierverhalten
+		</p>
+
+		<!-- Optionaler Hinweis für User Experience -->
+		<p class="text-base-content/60 mb-2 text-xs">
+			Sobald Position und Datum gesetzt sind, werden Wetterdaten automatisch vorgeschlagen.
 		</p>
 
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -30,6 +55,21 @@
 			<!-- Wind Force -->
 			<FormField name="windForce" />
 		</div>
+
+		<!-- Weather Data Fetcher - Auto-fetch when environment section is visible -->
+		{#if latitude && longitude && sightingDate}
+			<div class="border-base-300 mt-6 border-t pt-4">
+				<WeatherDataFetcher
+					{latitude}
+					{longitude}
+					date={sightingDate}
+					time={sightingTime ?? null}
+					onWeatherFetched={handleWeatherData}
+					autoFetch={true}
+					showInCard={false}
+				/>
+			</div>
+		{/if}
 	</div>
 </div>
 

@@ -20,6 +20,15 @@ export default defineConfig({
 		port: 4000,
 		hmr: {
 			overlay: true
+		},
+		// Warmup critical modules for faster initial page load
+		warmup: {
+			clientFiles: [
+				'./src/routes/+layout.svelte',
+				'./src/routes/+page.svelte',
+				'./src/app.css',
+				'./src/lib/report/components/ModernReportForm.svelte'
+			]
 		}
 	},
 	build: {
@@ -36,8 +45,25 @@ export default defineConfig({
 		}
 	},
 	optimizeDeps: {
-		// Pre-bundle these dependencies to avoid CommonJS issues
-		include: ['flowbite-svelte-icons', '@fontsource/inter', '@fontsource/roboto']
+		// Pre-bundle these dependencies to avoid CommonJS issues and improve startup performance
+		include: [
+			'flowbite-svelte-icons',
+			'@fontsource/inter',
+			'@fontsource/roboto',
+			'svelte-forms-lib',
+			'yup',
+			'ol',
+			'@turf/boolean-point-in-polygon',
+			'@turf/helpers',
+			'drizzle-orm',
+			'exifr',
+			'@steeze-ui/lucide-icons',
+			'@steeze-ui/svelte-icon',
+			'tailwind-variants',
+			'rbush'
+		],
+		// Exclude large packages that are only used in specific routes
+		exclude: ['@scalar/sveltekit', 'handlebars']
 	},
 	resolve: {
 		// Ensure consistent module resolution

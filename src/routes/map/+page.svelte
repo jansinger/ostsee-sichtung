@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SightingsMapView from '$lib/components/map/SightingsMapView.svelte';
+	import LazyMapWrapper from '$lib/components/map/LazyMapWrapper.svelte';
 </script>
 
 <svelte:head>
@@ -7,4 +7,4 @@
 	<meta name="description" content="Interaktive Karte der Meerestier-Sichtungen" />
 </svelte:head>
 
-<SightingsMapView mapContainerId="map" title="Sichtungskarte" showTitle={true} showLogo={true} />
+<LazyMapWrapper mapContainerId="map" title="Sichtungskarte" showTitle={true} showLogo={true} />

@@ -1,4 +1,4 @@
-import { COOKIE_NAME, SESSION_SECRET, NODE_ENV } from '$env/static/private';
+import { COOKIE_NAME, NODE_ENV, SESSION_SECRET } from '$env/static/private';
 import { createLogger } from '$lib/logger';
 import { clearAuthCookie, setAuthCookie } from '$lib/server/auth/auth';
 import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';
@@ -30,6 +30,7 @@ const setAdditionalHeaders: Handle = async ({ event, resolve }) => {
 		response.headers.set('Access-Control-Allow-Origin', '*');
 		response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
 		response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+		response.headers.set('Access-Control-Allow-Credentials', 'true');
 	}
 
 	// Cookie-Sicherheit für iframe-Kontext
@@ -51,7 +52,10 @@ const setAdditionalHeaders: Handle = async ({ event, resolve }) => {
 const authentication: Handle = async ({ event, resolve }) => {
 	// Disable CSRF protection for legacy REST API endpoints (mobile app compatibility)
 	if (event.url.pathname.startsWith('/rest_sichtungen')) {
-		logger.debug({ pathname: event.url.pathname }, 'Processing legacy API endpoint - CSRF bypass needed');
+		logger.debug(
+			{ pathname: event.url.pathname },
+			'Processing legacy API endpoint - CSRF bypass needed'
+		);
 		// SvelteKit's CSRF protection can be bypassed by handling in the route itself
 	}
 
@@ -92,7 +96,7 @@ const authentication: Handle = async ({ event, resolve }) => {
  * Hier werden Middleware in der richtigen Reihenfolge ausgeführt
  */
 export const handle: Handle = sequence(
-	maintenanceMode,    // First: Check maintenance mode
-	authentication,     // Second: Handle authentication
+	maintenanceMode, // First: Check maintenance mode
+	authentication, // Second: Handle authentication
 	setAdditionalHeaders // Third: Set security headers
 );

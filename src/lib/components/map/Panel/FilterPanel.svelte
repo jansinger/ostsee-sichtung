@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Filter, SquareX } from '@steeze-ui/lucide-icons';
+	import { Filter, Loader, SquareX } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 
 	let { years = [], defaultYear } = $props<{
@@ -9,6 +9,7 @@
 
 	// Reactive state für Panel-Sichtbarkeit (Svelte 5 runes)
 	let isOpen = $state(false);
+	let isApplyingFilter = $state(false);
 
 	// Toggle-Funktion für das Panel
 	function togglePanel() {
@@ -19,6 +20,16 @@
 	function closePanel() {
 		isOpen = false;
 	}
+
+	// Funktion für Filter-Anwendung mit visueller Rückmeldung
+	function handleFilterApply() {
+		isApplyingFilter = true;
+
+		// Simuliere Filterzeit (wird durch den echten Filter-Prozess ersetzt)
+		setTimeout(() => {
+			isApplyingFilter = false;
+		}, 1500);
+	}
 </script>
 
 <!-- Toggle Button (always visible) -->
@@ -28,7 +39,10 @@
 	style="transform: translateX({isOpen ? '-400px' : '0px'});"
 	aria-label="Filter {isOpen ? 'schließen' : 'öffnen'}"
 >
-	<Icon src={Filter} class="mb-1 h-4 w-4" />
+	<Icon
+		src={isApplyingFilter ? Loader : Filter}
+		class="mb-1 h-4 w-4 {isApplyingFilter ? 'animate-spin' : ''}"
+	/>
 	<div
 		class="text-xs whitespace-nowrap"
 		style="writing-mode: vertical-rl; text-orientation: mixed;"
@@ -63,11 +77,18 @@
 				<div class="form-control w-full">
 					<label for="year-select" class="label py-1">
 						<span class="label-text text-sm font-medium">Jahr</span>
+						{#if isApplyingFilter}
+							<Icon src={Loader} class="text-primary ml-2 h-3 w-3 animate-spin" />
+						{/if}
 					</label>
 					<select
 						id="year-select"
-						class="select select-bordered select-sm focus:select-primary w-full text-sm"
+						class="select select-bordered select-sm focus:select-primary w-full text-sm {isApplyingFilter
+							? 'loading'
+							: ''}"
 						title="Wählen Sie das Jahr aus, für das Sichtungen angezeigt werden sollen"
+						onchange={handleFilterApply}
+						disabled={isApplyingFilter}
 					>
 						{#each years.toReversed() as year (year)}
 							<option value={year} selected={year === defaultYear}>{year}</option>
@@ -79,17 +100,29 @@
 					<label for="filter-input" class="label py-1">
 						<span class="label-text text-sm font-medium">Suchen</span>
 					</label>
-					<input
-						id="filter-input"
-						type="text"
-						placeholder="E-Mail, Name, Schiff..."
-						class="input input-bordered input-sm focus:input-primary w-full"
-						title="Nach E-Mail, Schiffsname, Name oder Vorname filtern (Return zum filtern)."
-						aria-describedby="filter-help"
-					/>
+					<div class="relative">
+						<input
+							id="filter-input"
+							type="text"
+							placeholder="E-Mail, Name, Schiff..."
+							class="input input-bordered input-sm focus:input-primary w-full pr-10"
+							title="Nach E-Mail, Schiffsname, Name oder Vorname filtern (Return zum filtern)."
+							aria-describedby="filter-help"
+							onkeydown={(e) => {
+								if (e.key === 'Enter') {
+									handleFilterApply();
+								}
+							}}
+						/>
+						{#if isApplyingFilter}
+							<div class="absolute top-1/2 right-3 -translate-y-1/2 transform">
+								<Icon src={Loader} class="text-primary h-4 w-4 animate-spin" />
+							</div>
+						{/if}
+					</div>
 					<label class="label py-0" for="filter-input">
 						<span id="filter-help" class="label-text-alt text-base-content/60 text-xs">
-							Enter-Taste zum Filtern drücken
+							{isApplyingFilter ? 'Filter wird angewendet...' : 'Enter-Taste zum Filtern drücken'}
 						</span>
 					</label>
 				</div>

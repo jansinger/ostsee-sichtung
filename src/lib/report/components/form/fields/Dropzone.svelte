@@ -4,19 +4,16 @@
 	let filesInDropzone: FileList | null = $state(null);
 
 	function handleOnChange(event: Event) {
-		console.log('handleOnChange fired.');
 		const target = event.target as HTMLInputElement;
 		filesInDropzone = target.files;
 	}
 
 	function handleOnDrop(event: DragEvent) {
-		console.log('handleOnDrop fired.');
 		event.preventDefault();
 		filesInDropzone = event.dataTransfer?.files ?? null;
 	}
 
 	function showFiles(files: FileList | null): string {
-		console.log('showFiles fired.');
 		if (!files || files.length === 0) return 'No files selected.';
 		return Array.from(files)
 			.map((file) => file.name)

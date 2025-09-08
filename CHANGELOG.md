@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.26.1 (2025-09-08)</small>
+
+* Merge pull request #107 from jansinger/fix/cors-map-data-fetch ([6e78d71](https://github.com/jansinger/ostsee-sichtung/commit/6e78d71)), closes [#107](https://github.com/jansinger/ostsee-sichtung/issues/107)
+* fix: better loading indication ([c7c0692](https://github.com/jansinger/ostsee-sichtung/commit/c7c0692))
+* fix: debounce filter listener ([7a7d895](https://github.com/jansinger/ostsee-sichtung/commit/7a7d895))
+* fix: implement LoadingOverlay for improved UX during map loading and filtering ([7140b85](https://github.com/jansinger/ostsee-sichtung/commit/7140b85))
+* fix: improve loading handling and error display in LazyMapWrapper ([8b6f91f](https://github.com/jansinger/ostsee-sichtung/commit/8b6f91f))
+* fix: improve loading handling and error display in LazyMapWrapper and add tests for map loading ([a99f5d8](https://github.com/jansinger/ostsee-sichtung/commit/a99f5d8))
+* fix: optimize imports, enhance security headers, and clean up debug logs across components ([b4ac676](https://github.com/jansinger/ostsee-sichtung/commit/b4ac676))
+* fix: optimize LoadingOverlay usage and improve loading message handling ([0fb4948](https://github.com/jansinger/ostsee-sichtung/commit/0fb4948))
+
+## 1.26.0 (2025-09-08)
+
+* Merge pull request #94 from jansinger/feat/weather-api-integration ([b8a3d0f](https://github.com/jansinger/ostsee-sichtung/commit/b8a3d0f)), closes [#94](https://github.com/jansinger/ostsee-sichtung/issues/94)
+* Merge remote-tracking branch 'origin/main' into feat/weather-api-integration ([4c0abbd](https://github.com/jansinger/ostsee-sichtung/commit/4c0abbd))
+* fix: correct icon import name from CloudIcon to Cloud ([4f20713](https://github.com/jansinger/ostsee-sichtung/commit/4f20713))
+* fix: improve error handling and loading logic in LazyMapWrapper component ([8e278b1](https://github.com/jansinger/ostsee-sichtung/commit/8e278b1))
+* fix: update comments and references to use Open-Meteo API instead of OpenWeatherMap ([b25b58d](https://github.com/jansinger/ostsee-sichtung/commit/b25b58d))
+* feat: add weather data integration with Open-Meteo API ([d5c186d](https://github.com/jansinger/ostsee-sichtung/commit/d5c186d))
+* feat: Add weather icons and improve weather data fetching component ([97a5776](https://github.com/jansinger/ostsee-sichtung/commit/97a5776))
+* feat: enhance weather integration with extended data ([dc91bf3](https://github.com/jansinger/ostsee-sichtung/commit/dc91bf3))
+* feat: move weather integration to Step 3 with auto-fetch ([a6a2dc7](https://github.com/jansinger/ostsee-sichtung/commit/a6a2dc7))
+
+## <small>1.25.1 (2025-09-07)</small>
+
+* Merge pull request #93 from jansinger/perf/optimize-dev-startup ([f166a52](https://github.com/jansinger/ostsee-sichtung/commit/f166a52)), closes [#93](https://github.com/jansinger/ostsee-sichtung/issues/93)
+* refactor: improve Step components for better readability ([b71d910](https://github.com/jansinger/ostsee-sichtung/commit/b71d910))
+* fix: replace deprecated svelte:component with dynamic component in Svelte 5 ([b2024ad](https://github.com/jansinger/ostsee-sichtung/commit/b2024ad))
+* perf: optimize dev server startup performance ([3b25a2c](https://github.com/jansinger/ostsee-sichtung/commit/3b25a2c))
+
 ## 1.25.0 (2025-08-29)
 
 * Merge pull request #92 from jansinger/fix/secure-role-management ([702cae0](https://github.com/jansinger/ostsee-sichtung/commit/702cae0)), closes [#92](https://github.com/jansinger/ostsee-sichtung/issues/92)

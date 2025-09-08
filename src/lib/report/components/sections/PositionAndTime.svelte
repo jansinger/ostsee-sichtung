@@ -9,7 +9,7 @@
 	import LocationInput from '../form/LocationInput.svelte';
 	import VerifyLocation from '../form/VerifyLocation.svelte';
 
-	const { form, errors, handleChange } = getFormContext();
+	const { form, handleChange } = getFormContext();
 
 	// Position input method: 'photo', 'map', 'manual'
 	let positionMethod = $state<'photo' | 'map' | 'manual'>('photo');
@@ -22,14 +22,14 @@
 
 	// Dynamic GPS photo configuration
 	let gpsPhotoConfig = $state<ValidationPreset | null>(null);
-	
+
 	// Load upload configuration and create GPS photo preset
 	$effect(() => {
-		getUploadConfig().then(config => {
+		getUploadConfig().then((config) => {
 			// Create GPS photo config based on server configuration
 			// but restrict to images only and single file
 			gpsPhotoConfig = {
-				allowedTypes: config.allowedTypes.filter(type => type.startsWith('image/')),
+				allowedTypes: config.allowedTypes.filter((type) => type.startsWith('image/')),
 				maxFileSize: Math.min(config.maxFileSize, 30 * 1024 * 1024), // Use server config or 30MB, whichever is smaller
 				maxFiles: 1, // GPS photos are always single file
 				accept: 'image/*'
@@ -47,10 +47,6 @@
 			} as unknown as Event);
 		}
 	}
-
-	$effect(() => {
-		console.log($errors);
-	});
 </script>
 
 <!-- Position & Time Section -->

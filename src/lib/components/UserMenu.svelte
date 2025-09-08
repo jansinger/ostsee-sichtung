@@ -17,7 +17,6 @@
 
 	function toggleMenu() {
 		isOpen = !isOpen;
-		console.log('Menu toggled:', isOpen);
 	}
 
 	function closeMenu() {
