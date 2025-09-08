@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.27.0 (2025-09-08)
+
+* Merge branch 'main' into chore/context7 ([3e8369c](https://github.com/jansinger/ostsee-sichtung/commit/3e8369c))
+* Merge pull request #111 from jansinger/feat/weather-api-database-integration ([35eb6b9](https://github.com/jansinger/ostsee-sichtung/commit/35eb6b9)), closes [#111](https://github.com/jansinger/ostsee-sichtung/issues/111)
+* fix: correct latitude and longitude order in formatLocation calls for better accuracy ([1fa9654](https://github.com/jansinger/ostsee-sichtung/commit/1fa9654))
+* fix: improve CI handling in map loading tests and enhance visibility checks ([fe76514](https://github.com/jansinger/ostsee-sichtung/commit/fe76514))
+* fix: replace any types with proper MarineResponse interface ([910be6d](https://github.com/jansinger/ostsee-sichtung/commit/910be6d))
+* fix: resolve e2e test port configuration issues ([39d710d](https://github.com/jansinger/ostsee-sichtung/commit/39d710d))
+* refactor: improve code readability and structure in weather deduplication ([2694a4d](https://github.com/jansinger/ostsee-sichtung/commit/2694a4d))
+* refactor: move WeatherDataWithMetadata type to centralized types structure ([1cb8f05](https://github.com/jansinger/ostsee-sichtung/commit/1cb8f05))
+* feat: add marine data integration for wave height, direction, and period in weather API calls ([ee30f0d](https://github.com/jansinger/ostsee-sichtung/commit/ee30f0d))
+* feat: add optional weather data handling in WeatherDataFetcher and update sighting schema ([52c449c](https://github.com/jansinger/ostsee-sichtung/commit/52c449c))
+* feat: complete Marine API integration with historical data support ([c4a397a](https://github.com/jansinger/ostsee-sichtung/commit/c4a397a))
+* feat: extend weather data structure and storage functionality ([1ad67dd](https://github.com/jansinger/ostsee-sichtung/commit/1ad67dd))
+* feat: implement weather data caching and deduplication logic ([2d6c342](https://github.com/jansinger/ostsee-sichtung/commit/2d6c342))
+* feat: Integrate weather data functionality into admin sighting view ([c5de3df](https://github.com/jansinger/ostsee-sichtung/commit/c5de3df))
+* docs: add weather api implementation plan and extend claude.md ([13b4aa5](https://github.com/jansinger/ostsee-sichtung/commit/13b4aa5)), closes [#110](https://github.com/jansinger/ostsee-sichtung/issues/110) [#110](https://github.com/jansinger/ostsee-sichtung/issues/110)
+* chore: use better context7 instructions ([45ace9b](https://github.com/jansinger/ostsee-sichtung/commit/45ace9b))
+
 ## <small>1.26.1 (2025-09-08)</small>
 
 * Merge pull request #107 from jansinger/fix/cors-map-data-fetch ([6e78d71](https://github.com/jansinger/ostsee-sichtung/commit/6e78d71)), closes [#107](https://github.com/jansinger/ostsee-sichtung/issues/107)
