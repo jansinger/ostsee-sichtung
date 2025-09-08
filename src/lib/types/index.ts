@@ -119,3 +119,6 @@ export type {
 	MediaType,
 	MediaUploadResult
 } from './media.js';
+
+// Weather types
+export type { WeatherDataWithMetadata } from './weather.js';

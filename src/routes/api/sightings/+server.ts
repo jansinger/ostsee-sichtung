@@ -6,6 +6,7 @@ import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { saveSighting } from '$lib/server/db/sightingRepository';
 import { EmailService } from '$lib/server/services/emailService';
+import type { StoredWeatherData } from '$lib/services/weatherService';
 import {
 	checkForbiddenAdminFields,
 	validateSightingFormData
@@ -159,7 +160,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 		await sightingSchema.validate(formDataWithDefaults, { abortEarly: false });
 
-		const { id } = await saveSighting(formDataWithDefaults);
+		// Extract weather data from form if available
+		const weatherData = formDataWithDefaults.weatherData as StoredWeatherData | undefined;
+		
+		if (weatherData) {
+			logger.info({ sightingRef: formDataWithDefaults.referenceId, weatherDataType: weatherData.data_type }, 'Saving sighting with client-provided weather data');
+		} else {
+			logger.debug({ sightingRef: formDataWithDefaults.referenceId }, 'No weather data provided with sighting');
+		}
+
+		const { id } = await saveSighting(formDataWithDefaults, weatherData);
 		const referenceId = formDataWithDefaults.referenceId || `REF-${id}`;
 
 		logger.info({ id, referenceId }, 'Sichtung erfolgreich gespeichert');

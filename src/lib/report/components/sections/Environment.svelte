@@ -1,7 +1,8 @@
 <script lang="ts">
 	import WeatherDataFetcher from '$lib/components/weather/WeatherDataFetcher.svelte';
 	import { getFormContext } from '$lib/report/formContext';
-	import type { WeatherFormFields } from '$lib/services/weatherService';
+	import type { WeatherData, WeatherFormFields, OpenMeteoRawData } from '$lib/services/weatherService';
+	import { convertToStoredWeatherData } from '$lib/services/weatherService';
 	import { Waves } from '@steeze-ui/lucide-icons';
 	import { Icon } from '@steeze-ui/svelte-icon';
 	import FormField from '../form/fields/FormField.svelte';
@@ -21,6 +22,28 @@
 				target: { name: field, value }
 			} as unknown as Event);
 		});
+	}
+
+	// Handle full weather data storage
+	function handleFullWeatherData(weatherData: WeatherData) {
+		// Bestimme automatisch den data_type basierend auf dem Sichtungsdatum
+		const today = new Date().toISOString().split('T')[0] || '';
+		const sightingDateStr = sightingDate || '';
+		const dataType = sightingDateStr >= today ? 'forecast' : 'historical';
+		
+		// Convert to StoredWeatherData format for database storage
+		const storedWeatherData = convertToStoredWeatherData(
+			weatherData,
+			weatherData as OpenMeteoRawData, // Use weatherData as rawData fallback
+			dataType, // Automatische Erkennung: forecast für heutige/zukünftige, historical für vergangene Daten
+			Number(latitude) || 0,
+			Number(longitude) || 0
+		);
+
+		// Store in form
+		handleChange({
+			target: { name: 'weatherData', value: storedWeatherData }
+		} as unknown as Event);
 	}
 </script>
 
@@ -65,6 +88,7 @@
 					date={sightingDate}
 					time={sightingTime ?? null}
 					onWeatherFetched={handleWeatherData}
+					onWeatherDataFetched={handleFullWeatherData}
 					autoFetch={true}
 					showInCard={false}
 				/>

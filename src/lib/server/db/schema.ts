@@ -102,16 +102,35 @@ export const sightings = pgTable(
 		deadPhoneContact: smallint('totfund_telefon').default(0).notNull(),
 		species: smallint('tierart').default(0).notNull(),
 		privacyConsent: smallint('datenschutz_einverstaendnis').default(0).notNull(),
-		referenceId: varchar('referenz_id', { length: 64 })
+		referenceId: varchar('referenz_id', { length: 64 }),
+		// Weather data fields for Issue #110
+		weatherData: jsonb('weather_data'),
+		weatherFetchedAt: timestamp('weather_fetched_at', { mode: 'date' }),
+		weatherProvider: varchar('weather_provider', { length: 50 }).default('open-meteo'),
+		weatherApiVersion: varchar('weather_api_version', { length: 20 }),
+		weatherDataType: varchar('weather_data_type', { length: 20 }).default('historical')
 	},
 	(table) => [
 		index('geom_sichtungen').using(
 			'gist',
 			table.location.asc().nullsLast().op('gist_geometry_ops_2d')
 		),
-		index('idx_year_sichtungen').using('btree', sql`date_part('year'::text`)
+		index('idx_year_sichtungen').using('btree', sql`date_part('year'::text`),
+		// Weather data indexes for Issue #110
+		index('idx_weather_data_gin').using('gin', table.weatherData),
+		index('idx_weather_fetched').on(table.weatherFetchedAt),
+		index('idx_weather_provider').on(table.weatherProvider),
+		// Compound index for position+date lookup (deduplication)
+		index('idx_position_date_weather').on(
+			sql`ROUND(${table.latitude}::numeric, 2)`,
+			sql`ROUND(${table.longitude}::numeric, 2)`, 
+			sql`DATE(${table.sightingDate})`
+		).where(sql`${table.weatherData} IS NOT NULL`)
 	]
 );
+
+// Type for selecting from sightings table
+export type SightingSelect = typeof sightings.$inferSelect;
 
 // Table for storing file references linked to sightings
 export const sightingFiles = pgTable(

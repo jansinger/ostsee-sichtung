@@ -413,8 +413,8 @@
 						</div>
 						<div class="badge badge-success badge-sm text-nowrap">
 							{formatLocation(
-								positionMediafileMetadata.exifData?.latitude,
-								positionMediafileMetadata.exifData?.longitude
+								positionMediafileMetadata.exifData?.longitude,
+								positionMediafileMetadata.exifData?.latitude
 							)}
 						</div>
 						{#await positionMediaFile.uploadedFile}

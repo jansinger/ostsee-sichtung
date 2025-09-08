@@ -272,6 +272,27 @@ export function getCurrentLocalTime(): Date {
 }
 
 /**
+ * Format datetime in ISO-like format (YYYY-MM-DD HH:MM)
+ * Used for weather data timestamps and API responses
+ * @param dateTime Date object or ISO datetime string  
+ * @returns Formatted datetime as "YYYY-MM-DD HH:MM"
+ */
+export function formatISOLikeDatetime(dateTime: string | Date | null | undefined): string {
+	if (!dateTime) return '';
+	
+	const date = new Date(dateTime);
+	if (isNaN(date.getTime())) return '';
+	
+	return date.toLocaleDateString('sv-SE', {
+		year: 'numeric',
+		month: '2-digit', 
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit'
+	});
+}
+
+/**
  * Hilfsfunktion: Formatiert ein Datum/Zeit-Objekt in einer bestimmten
  * Format zur Nutzung in Eingabefeldern
  *

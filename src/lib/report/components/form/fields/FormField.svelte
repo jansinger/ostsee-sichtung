@@ -44,7 +44,14 @@
 		);
 	}
 	let error = $derived($errors[name]);
-	let value: Omit<SightingFormData, 'uploadedFiles'>[typeof name] = $derived($form[name]);
+	// Extract the value and ensure it's a compatible type for FieldRenderer
+	let formValue = $derived($form[name]);
+	let value: string | number | boolean | undefined | null = $derived(
+		// Convert any complex types to their primitive representation
+		typeof formValue === 'object' && formValue !== null ? 
+			JSON.stringify(formValue) : 
+			formValue as string | number | boolean | undefined | null
+	);
 
 	// Only log during development
 	logger.debug({ form: $form, config: fieldConfig }, `FormField "${name}" rendered`);

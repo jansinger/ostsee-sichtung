@@ -3,6 +3,7 @@
 	import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
 	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
 	import type { WeatherData, WeatherFormFields } from '$lib/services/weatherService';
+	import type { WeatherDataWithMetadata } from '$lib/types';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { Calendar, Eye, Gauge, MapPin, Thermometer, Waves, Wind } from '@steeze-ui/lucide-icons';
@@ -15,6 +16,7 @@
 		date: string | null;
 		time: string | null;
 		onWeatherFetched: (formFields: WeatherFormFields) => void;
+		onWeatherDataFetched?: (weatherData: WeatherData) => void;
 		autoFetch?: boolean;
 		showInCard?: boolean;
 	}
@@ -25,12 +27,13 @@
 		date,
 		time,
 		onWeatherFetched,
+		onWeatherDataFetched,
 		autoFetch = false,
 		showInCard = true
 	}: Props = $props();
 
 	let error = $state<string | null>(null);
-	let weatherData = $state<WeatherData | null>(null);
+	let weatherData = $state<WeatherDataWithMetadata | null>(null);
 	let formFields = $state<WeatherFormFields>({} as WeatherFormFields);
 	let showSuggestions = $state(false);
 	let lastFetchKey = $state<string>('');
@@ -101,6 +104,16 @@
 			weatherData = data.weather;
 			formFields = data.formFields;
 			showSuggestions = true;
+
+			// Store metadata about the weather data source
+			if (weatherData) {
+				weatherData._metadata = data.metadata;
+			}
+
+			// Automatically store full weather data in form if callback provided
+			if (weatherData && onWeatherDataFetched) {
+				onWeatherDataFetched(weatherData);
+			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Unbekannter Fehler';
 		} finally {
@@ -111,6 +124,11 @@
 	function applyWeatherData() {
 		if (!formFields) return;
 		onWeatherFetched(formFields as WeatherFormFields);
+		
+		// Also store the full weather data when applying manually
+		if (weatherData && onWeatherDataFetched) {
+			onWeatherDataFetched(weatherData);
+		}
 	}
 </script>
 
@@ -206,7 +224,19 @@
 				</button>
 			</div>
 
-			<p class="text-base-content/60 mt-2 text-xs">Quelle: Open-Meteo Historical Weather API</p>
+			<div class="text-base-content/60 mt-2 text-xs space-y-1">
+				<p>
+					Quelle: {weatherData._metadata?.source || 'Open-Meteo Weather API'}
+					{#if weatherData._metadata?.cached}
+						<span class="badge badge-xs badge-info ml-2">aus Cache</span>
+					{/if}
+				</p>
+				{#if weatherData._metadata?.dataType === 'forecast'}
+					<p class="text-warning">
+						⚠️ Prognosedaten für heutige Sichtung (aktualisiert sich mehrmals täglich)
+					</p>
+				{/if}
+			</div>
 		</div>
 	{/if}
 </div>
