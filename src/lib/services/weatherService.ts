@@ -1,5 +1,5 @@
 /**
- * Weather data from OpenWeatherMap API
+ * Weather data from Open-Meteo API
  */
 export interface WeatherData {
 	time: string; // ISO date-time string

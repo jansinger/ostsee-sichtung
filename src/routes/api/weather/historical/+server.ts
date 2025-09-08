@@ -188,7 +188,7 @@ export const GET: RequestHandler = async ({ url }) => {
 			logger.warn({ latitude, longitude }, 'Coordinates outside Baltic Sea region');
 		}
 
-		// Fetch weather data from OpenWeatherMap
+		// Fetch weather data from Open-Meteo
 		const weatherData = await fetchOpenWeatherMapData(latitude, longitude, date, time);
 		if (!weatherData) {
 			return json(

@@ -51,6 +51,18 @@
 		}
 	});
 
+	// Returns a valid weather icon class or a fallback if unsupported
+	function getWeatherIconClass(code: number | undefined): string {
+		const supportedCodes = [
+			0, 1, 2, 3, 45, 48, 51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85,
+			86, 95, 96, 99
+		];
+		if (typeof code === 'number' && supportedCodes.includes(code)) {
+			return `wi-wmo4680-${code}`;
+		}
+		return 'wi-na'; // fallback icon class
+	}
+
 	async function fetchWeather() {
 		if (!canFetch) return;
 
@@ -137,7 +149,9 @@
 					<span>Temperatur: <strong>{weatherData.temperature}°C</strong></span>
 				</p>
 				<p class="flex items-center gap-2">
-					<i class="wi wi-wmo4680-{weatherData.weatherCode} text-primary" style="font-size: 18px;"
+					<i
+						class="wi {getWeatherIconClass(weatherData.weatherCode)} text-primary"
+						style="font-size: 18px;"
 					></i>
 					<span>Wetter: <strong>{weatherData.weatherDescription}</strong></span>
 				</p>
