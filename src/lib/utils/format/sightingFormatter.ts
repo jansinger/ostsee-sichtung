@@ -1,6 +1,9 @@
-import { getSpeciesLabel, isValidSpecies, type SpeciesEnum } from '$lib/report/formOptions/species';
-import { getAnimalBehaviorLabel, type AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
+import {
+	getAnimalBehaviorLabel,
+	type AnimalBehaviorEnum
+} from '$lib/report/formOptions/animalBehavior';
 import { getDistanceLabel, type DistanceEnum } from '$lib/report/formOptions/distance';
+import { getSpeciesLabel, isValidSpecies, type SpeciesEnum } from '$lib/report/formOptions/species';
 import type { SightingFormValues } from '$lib/types/Form';
 import { formatLocalDateTime } from './dateTime';
 import { formatLocation } from './formatLocation';
@@ -8,7 +11,8 @@ import { formatLocation } from './formatLocation';
 /**
  * Enhanced sighting data with translated enum values for display
  */
-export interface FormattedSightingData extends Omit<SightingFormValues, 'species' | 'behavior' | 'distance'> {
+export interface FormattedSightingData
+	extends Omit<SightingFormValues, 'species' | 'behavior' | 'distance'> {
 	species: string;
 	speciesRaw?: SpeciesEnum | number;
 	behavior?: string;
@@ -26,20 +30,21 @@ export interface FormattedSightingData extends Omit<SightingFormValues, 'species
 export function formatSightingForDisplay(sighting: SightingFormValues): FormattedSightingData {
 	// Destructure and omit the properties we'll replace
 	const { species, behavior, distance, ...restSighting } = sighting;
-	
+
 	const formatted: FormattedSightingData = {
 		...restSighting,
 		// Translate species enum to German label
 		species: getSpeciesLabel(species as SpeciesEnum),
 		speciesRaw: species as SpeciesEnum,
-		
+
 		// Format date for display
 		sightingDate: sighting.sightingDatetime ? formatLocalDateTime(sighting.sightingDatetime) : '',
-		
+
 		// Format coordinates for display
-		coordinatesFormatted: sighting.latitude && sighting.longitude 
-			? formatLocation(sighting.latitude, sighting.longitude)
-			: null
+		coordinatesFormatted:
+			sighting.latitude && sighting.longitude
+				? formatLocation(sighting.longitude, sighting.latitude)
+				: null
 	};
 
 	// Translate behavior enum to German label if present
@@ -47,7 +52,7 @@ export function formatSightingForDisplay(sighting: SightingFormValues): Formatte
 		formatted.behavior = getAnimalBehaviorLabel(behavior as AnimalBehaviorEnum);
 		formatted.behaviorRaw = behavior as AnimalBehaviorEnum;
 	}
-	
+
 	// Translate distance enum to German label if present
 	if (distance) {
 		formatted.distance = getDistanceLabel(distance as DistanceEnum);
@@ -62,12 +67,12 @@ export function formatSightingForDisplay(sighting: SightingFormValues): Formatte
  */
 export function isUnknownOrMissingSpecies(species: unknown): boolean {
 	if (!species && species !== 0) return true;
-	
+
 	const numericValue = typeof species === 'string' ? parseInt(species, 10) : species;
-	
+
 	// Check if it's a valid species enum
 	if (!isValidSpecies(numericValue)) return true;
-	
+
 	// Check if it's one of the "unknown" species values
 	const unknownSpeciesValues = [8, 10]; // UNKNOWN_WHALE, UNKNOWN_SEAL
 	return unknownSpeciesValues.includes(numericValue as number);
@@ -78,7 +83,7 @@ export function isUnknownOrMissingSpecies(species: unknown): boolean {
  */
 export function getSpeciesForSpamCheck(species: unknown): string {
 	if (!species && species !== 0) return '';
-	
+
 	const numericValue = typeof species === 'string' ? parseInt(species, 10) : species;
 	return getSpeciesLabel(numericValue as SpeciesEnum);
 }
