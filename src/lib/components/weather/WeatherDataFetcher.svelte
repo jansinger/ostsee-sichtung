@@ -3,6 +3,7 @@
 	import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
 	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
 	import type { WeatherData, WeatherFormFields } from '$lib/services/weatherService';
+	import type { WeatherDataWithMetadata } from '$lib/types';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { Calendar, Eye, Gauge, MapPin, Thermometer, Waves, Wind } from '@steeze-ui/lucide-icons';
@@ -32,18 +33,6 @@
 	}: Props = $props();
 
 	let error = $state<string | null>(null);
-	interface WeatherDataWithMetadata extends WeatherData {
-		_metadata?: {
-			source?: string;
-			dataType?: 'forecast' | 'historical';
-			cached?: boolean;
-			latitude?: number;
-			longitude?: number;
-			date?: string;
-			time?: string;
-		};
-	}
-
 	let weatherData = $state<WeatherDataWithMetadata | null>(null);
 	let formFields = $state<WeatherFormFields>({} as WeatherFormFields);
 	let showSuggestions = $state(false);
