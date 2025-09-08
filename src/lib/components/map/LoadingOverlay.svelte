@@ -3,17 +3,17 @@
 	import { Icon } from '@steeze-ui/svelte-icon';
 
 	// Props
+	type LoadingType = 'default' | 'filter' | 'features' | 'initial';
+
 	let {
 		isVisible = false,
-		message = 'Laden...',
-		type = 'default',
+		type = 'default' as LoadingType,
 		progress = null,
 		canCancel = false,
 		onCancel = null
 	} = $props<{
 		isVisible?: boolean;
-		message?: string;
-		type?: 'default' | 'filter' | 'features' | 'initial';
+		type?: LoadingType;
 		progress?: number | null;
 		canCancel?: boolean;
 		onCancel?: (() => void) | null;
@@ -36,11 +36,8 @@
 	};
 
 	// Compute message based on type if not provided
-	const displayMessage = $derived(() => {
-		if (message && message !== 'Laden...') {
-			return message;
-		}
-		return messageMap[type];
+	const displayMessage = $derived.by(() => {
+		return messageMap[type as keyof typeof messageMap];
 	});
 </script>
 
@@ -63,10 +60,10 @@
 				<div
 					class="bg-primary/10 mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full"
 				>
-					<Icon src={iconMap[type]} class="text-primary h-8 w-8 animate-spin" />
+					<Icon src={iconMap[type as LoadingType]} class="text-primary h-8 w-8 animate-spin" />
 				</div>
 				<h3 id="loading-title" class="text-base-content text-lg font-semibold">
-					{displayMessage()}
+					{displayMessage}
 				</h3>
 			</div>
 

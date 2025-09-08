@@ -8,9 +8,9 @@
 	import { speciesLabels } from '$lib/report/formOptions/species';
 	import { getAvailableYears, getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 	import 'ol/ol.css';
+	import LoadingOverlay from './LoadingOverlay.svelte';
 	import FilterPanel from './Panel/FilterPanel.svelte';
 	import LegendPanel from './Panel/LegendPanel.svelte';
-	import LoadingOverlay from './LoadingOverlay.svelte';
 
 	// Props
 	let {
@@ -74,7 +74,7 @@
 	let loadingType = $state<'initial' | 'filter' | 'features'>('initial');
 	let loadingProgress = $state<number | null>(null);
 	let errorMessage = $state<string | null>(null);
-	
+
 	// Aktuell angezeigtes Jahr für den Titel
 	let currentDisplayedYear = $state(defaultYear);
 
@@ -112,7 +112,8 @@
 			});
 
 			// Mache den CountManager global verfügbar für die Panel-Komponenten
-			(window as unknown as { mapCountManager: typeof countManager }).mapCountManager = countManager;
+			(window as unknown as { mapCountManager: typeof countManager }).mapCountManager =
+				countManager;
 
 			// Initialisiere andere Manager
 			panelManager.initializePanels();
@@ -138,7 +139,7 @@
 				cleanup();
 			};
 		}
-		
+
 		// Return undefined if mapElement is not available yet
 		return;
 	});
@@ -154,12 +155,12 @@
 					currentDisplayedYear = newYear;
 				}
 			}, 500); // Alle 500ms überprüfen
-			
+
 			return () => {
 				clearInterval(yearCheckInterval);
 			};
 		}
-		
+
 		// Return void if map is not available
 		return;
 	});
@@ -217,11 +218,11 @@
 	 */
 	function setupLoadingHandlers() {
 		// Überwache Filter-Änderungen mit debouncing
-		let filterTimeout: number;
-		
+		let filterTimeout: number | NodeJS.Timeout;
+
 		function handleFilterChange(type: 'filter' | 'features' = 'filter') {
 			clearTimeout(filterTimeout);
-			
+
 			isLoadingData = true;
 			loadingType = type;
 			errorMessage = null;
@@ -235,16 +236,19 @@
 			}, 200);
 
 			// Loading nach variablem Timeout beenden
-			filterTimeout = setTimeout(() => {
-				clearInterval(progressInterval);
-				loadingProgress = 100;
-				
-				// Kurz 100% anzeigen, dann ausblenden
-				setTimeout(() => {
-					isLoadingData = false;
-					loadingProgress = null;
-				}, 300);
-			}, Math.random() * 1000 + 1500); // 1.5-2.5 Sekunden
+			filterTimeout = setTimeout(
+				() => {
+					clearInterval(progressInterval);
+					loadingProgress = 100;
+
+					// Kurz 100% anzeigen, dann ausblenden
+					setTimeout(() => {
+						isLoadingData = false;
+						loadingProgress = null;
+					}, 300);
+				},
+				Math.random() * 1000 + 1500
+			); // 1.5-2.5 Sekunden
 		}
 
 		// Filter-Event-Listener mit verbessertem Targeting
@@ -252,7 +256,7 @@
 			const filterInputs = document.querySelectorAll(
 				'#year-select, #filter-input, .species-checkbox, .color-checkbox'
 			);
-			
+
 			filterInputs.forEach((input) => {
 				if (input instanceof HTMLSelectElement) {
 					// Jahr-Dropdown
@@ -286,7 +290,7 @@
 		const observer = new MutationObserver(() => {
 			setupFilterListener();
 		});
-		
+
 		observer.observe(document.body, {
 			childList: true,
 			subtree: true
@@ -301,7 +305,7 @@
 			loadingProgress = null;
 		};
 		window.addEventListener('unhandledrejection', unhandledRejectionHandler);
-		
+
 		// Cleanup für Observer
 		return () => observer.disconnect();
 	}
@@ -398,7 +402,7 @@
 		</div>
 
 		<!-- Verbesserter Loading-Overlay -->
-		<LoadingOverlay 
+		<LoadingOverlay
 			isVisible={isInitialLoading || isLoadingData}
 			type={isInitialLoading ? 'initial' : loadingType}
 			progress={loadingProgress}

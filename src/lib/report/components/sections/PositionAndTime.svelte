@@ -9,7 +9,7 @@
 	import LocationInput from '../form/LocationInput.svelte';
 	import VerifyLocation from '../form/VerifyLocation.svelte';
 
-	const { form, errors, handleChange } = getFormContext();
+	const { form, handleChange } = getFormContext();
 
 	// Position input method: 'photo', 'map', 'manual'
 	let positionMethod = $state<'photo' | 'map' | 'manual'>('photo');
