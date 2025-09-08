@@ -65,7 +65,7 @@
 			className: weatherData.data_type === 'forecast' ? 'forecast-data' : 'historical-data',
 			warning:
 				weatherData.data_type === 'forecast' && isToday()
-					? 'Die Wetterdaten basieren auf Vorhersagen, da die Sichtung am Tag der Meldung stattfand.'
+					? 'Die Wetterdaten basieren auf Vorhersagen, da die Meldung am Tag der Sichtung stattfand.'
 					: null
 		};
 	});
@@ -204,69 +204,79 @@
 			</div>
 		</div>
 
-		<!-- Erweiterte Details Toggle -->
-		<div class="border-base-300 border-t pt-3">
+		<!-- Zusätzliche Wetterdaten -->
+		<div class="mt-4 border-t border-base-300 pt-3">
+			<h5 class="mb-2 flex items-center gap-2 font-medium text-sm">
+				<Icon src={Cloud} size="16" class="text-info" />
+				Erweiterte Wetterdaten
+			</h5>
+			<div class="grid grid-cols-2 gap-3 text-sm md:grid-cols-3">
+				{#if weatherData.processed.humidity}
+					<div class="flex items-center gap-2">
+						<Icon src={Cloud} size="14" class="text-blue-400" />
+						<span>Luftfeuchtigkeit: {weatherData.processed.humidity}%</span>
+					</div>
+				{/if}
+				{#if weatherData.raw_data.precipitation}
+					<div class="flex items-center gap-2">
+						<Icon src={CloudRain} size="14" class="text-blue-500" />
+						<span>Niederschlag: {weatherData.raw_data.precipitation}mm</span>
+					</div>
+				{/if}
+				{#if weatherData.raw_data.cloud_cover}
+					<div class="flex items-center gap-2">
+						<Icon src={Cloud} size="14" />
+						<span>Bewölkung: {weatherData.raw_data.cloud_cover}%</span>
+					</div>
+				{/if}
+				{#if weatherData.raw_data.wave_height}
+					<div class="flex items-center gap-2">
+						<Icon src={Waves} size="14" class="text-blue-600" />
+						<span>Wellenhöhe: {weatherData.raw_data.wave_height.toFixed(2)}m</span>
+					</div>
+				{/if}
+				{#if weatherData.raw_data.wave_direction}
+					<div class="flex items-center gap-2">
+						<i class="wi {getWindIconClass(weatherData.raw_data.wave_direction)} text-lg text-blue-600"></i>
+						<span>Wellenrichtung: {Math.round(weatherData.raw_data.wave_direction)}°</span>
+					</div>
+				{/if}
+				{#if weatherData.raw_data.wave_period}
+					<div class="flex items-center gap-2">
+						<Icon src={Gem} size="14" class="text-cyan-600" />
+						<span>Wellenperiode: {weatherData.raw_data.wave_period.toFixed(1)}s</span>
+					</div>
+				{/if}
+				{#if weatherData.raw_data.sea_surface_temperature}
+					<div class="flex items-center gap-2">
+						<Icon src={Thermometer} size="14" class="text-blue-500" />
+						<span>Wassertemp: {weatherData.raw_data.sea_surface_temperature}°C</span>
+					</div>
+				{/if}
+			</div>
+		</div>
+
+		<!-- Qualitäts- und Quellinfos Toggle -->
+		<div class="border-base-300 border-t pt-3 mt-4">
 			<button onclick={() => (isExpanded = !isExpanded)} class="btn btn-xs btn-ghost gap-1">
 				<Icon src={isExpanded ? ChevronDown : ChevronRight} size="12" />
-				{isExpanded ? 'Weniger Details' : 'Alle API-Details anzeigen'}
+				{isExpanded ? 'Qualitätsinfos ausblenden' : 'Qualitäts- und Quellinfos anzeigen'}
 			</button>
 
 			{#if isExpanded}
 				<div class="expanded-weather-data bg-base-50 mt-3 rounded border p-3">
-					<div class="grid grid-cols-2 gap-3 text-sm md:grid-cols-3">
-						{#if weatherData.processed.humidity}
-							<div class="flex items-center gap-2">
-								<Icon src={Cloud} size="14" class="text-blue-400" />
-								<span>Luftfeuchtigkeit: {weatherData.processed.humidity}%</span>
-							</div>
-						{/if}
-						{#if weatherData.raw_data.precipitation}
-							<div class="flex items-center gap-2">
-								<Icon src={CloudRain} size="14" class="text-blue-500" />
-								<span>Niederschlag: {weatherData.raw_data.precipitation}mm</span>
-							</div>
-						{/if}
-						{#if weatherData.raw_data.cloud_cover}
-							<div class="flex items-center gap-2">
-								<Icon src={Cloud} size="14" />
-								<span>Bewölkung: {weatherData.raw_data.cloud_cover}%</span>
-							</div>
-						{/if}
-						{#if weatherData.raw_data.wave_height}
-							<div class="flex items-center gap-2">
-								<Icon src={Waves} size="14" class="text-blue-600" />
-								<span>Wellenhöhe: {weatherData.raw_data.wave_height}m</span>
-							</div>
-						{/if}
-						{#if weatherData.raw_data.wave_period}
-							<div class="flex items-center gap-2">
-								<Icon src={Gem} size="14" class="text-cyan-600" />
-								<span>Wellenperiode: {weatherData.raw_data.wave_period}s</span>
-							</div>
-						{/if}
-						{#if weatherData.raw_data.sea_surface_temperature}
-							<div class="flex items-center gap-2">
-								<Icon src={Thermometer} size="14" class="text-blue-500" />
-								<span>Wassertemp: {weatherData.raw_data.sea_surface_temperature}°C</span>
-							</div>
-						{/if}
+					<h6 class="text-base-content/70 mb-2 text-xs font-medium">QUALITÄTS- UND QUELLINFO</h6>
+					<div class="text-base-content/60 grid grid-cols-1 gap-2 text-xs md:grid-cols-2">
+						<div>Abgerufen: {formatLocalDateTime(weatherData.fetched_at, 'datetime')}</div>
+						<div>Datenquelle: {weatherData.quality.data_source}</div>
+						<div>API-Version: {weatherData.provider} {weatherData.api_version}</div>
+						<div>Konfidenz: {Math.round(weatherData.quality.confidence * 100)}%</div>
 					</div>
-
-					<!-- Qualitätsinformationen -->
-					<div class="border-base-300 mt-4 border-t pt-3">
-						<h6 class="text-base-content/70 mb-2 text-xs font-medium">QUALITÄTS- UND QUELLINFO</h6>
-						<div class="text-base-content/60 grid grid-cols-1 gap-2 text-xs md:grid-cols-2">
-							<div>Abgerufen: {formatLocalDateTime(weatherData.fetched_at, 'datetime')}</div>
-							<div>Datenquelle: {weatherData.quality.data_source}</div>
-							<div>API-Version: {weatherData.provider} {weatherData.api_version}</div>
-							<div>Konfidenz: {Math.round(weatherData.quality.confidence * 100)}%</div>
+					{#if weatherData.quality.notes}
+						<div class="text-base-content/50 mt-2 text-xs">
+							Hinweis: {weatherData.quality.notes}
 						</div>
-						{#if weatherData.quality.notes}
-							<div class="text-base-content/50 mt-2 text-xs">
-								Hinweis: {weatherData.quality.notes}
-							</div>
-						{/if}
-					</div>
+					{/if}
 				</div>
 			{/if}
 

@@ -16,9 +16,6 @@ interface OpenMeteoResponse {
 		surface_pressure?: number[];
 		precipitation?: number[];
 		cloud_cover?: number[];
-		wave_height?: number[];
-		wave_period?: number[];
-		sea_surface_temperature?: number[];
 	};
 	hourly_units?: {
 		temperature_2m: string;
@@ -26,6 +23,15 @@ interface OpenMeteoResponse {
 		wind_direction_10m: string;
 		weather_code: string;
 		visibility: string;
+	};
+}
+
+interface MarineResponse {
+	hourly?: {
+		time: string[];
+		wave_height?: number[];
+		wave_direction?: number[];
+		wave_period?: number[];
 	};
 }
 
@@ -88,16 +94,60 @@ export async function fetchWeatherData(
 		logger.debug({ date, isToday, apiType: 'archive' }, 'Using Archive API for historical date');
 	}
 	
-	logger.debug({ url, latitude, longitude, date, time }, 'Fetching weather data from Open-Meteo');
+	// Build Marine API URL for wave data
+	const marineParams = new URLSearchParams({
+		latitude: latitude.toString(),
+		longitude: longitude.toString(),
+		timezone: 'Europe/Berlin'
+	});
+	
+	let marineUrl: string;
+	if (isToday) {
+		marineParams.append('hourly', 'wave_height,wave_direction,wave_period');
+		marineParams.append('forecast_days', '1');
+		marineUrl = `https://marine-api.open-meteo.com/v1/marine?${marineParams}`;
+	} else {
+		marineParams.append('start_date', startDate);
+		marineParams.append('end_date', endDate);
+		marineParams.append('hourly', 'wave_height,wave_direction,wave_period');
+		marineUrl = `https://marine-api.open-meteo.com/v1/marine?${marineParams}`;
+	}
+	
+	logger.info({ url, marineUrl, latitude, longitude, date, time }, 'Fetching weather and marine data from Open-Meteo');
 
 	try {
-		const response = await fetch(url);
+		// Fetch both weather and marine data in parallel
+		const [weatherResponse, marineResponse] = await Promise.allSettled([
+			fetch(url),
+			fetch(marineUrl)
+		]);
 		
-		if (!response.ok) {
-			throw new Error(`Open-Meteo API error: ${response.status} ${response.statusText}`);
+		if (weatherResponse.status === 'rejected') {
+			throw new Error(`Open-Meteo Weather API error: ${weatherResponse.reason}`);
+		}
+		
+		if (!weatherResponse.value.ok) {
+			throw new Error(`Open-Meteo Weather API error: ${weatherResponse.value.status} ${weatherResponse.value.statusText}`);
 		}
 
-		const data: OpenMeteoResponse = await response.json();
+		const data: OpenMeteoResponse = await weatherResponse.value.json();
+		
+		// Try to get marine data, but don't fail if it's not available
+		let marineData: MarineResponse | null = null;
+		if (marineResponse.status === 'fulfilled' && marineResponse.value.ok) {
+			try {
+				marineData = await marineResponse.value.json();
+				logger.info({ hasMarineData: true, marineDataKeys: Object.keys(marineData) }, 'Marine data successfully fetched');
+			} catch (error) {
+				logger.error({ error }, 'Failed to parse marine data response');
+			}
+		} else {
+			logger.error({ 
+				status: marineResponse.status,
+				statusText: marineResponse.status === 'fulfilled' ? marineResponse.value.statusText : 'rejected',
+				statusCode: marineResponse.status === 'fulfilled' ? marineResponse.value.status : 'N/A'
+			}, 'Marine API request failed or rejected');
+		}
 
 		if (!data.hourly?.time || data.hourly.time.length === 0) {
 			logger.error({ latitude, longitude, date, time, apiResponse: data }, 'No weather data available from Open-Meteo API');
@@ -168,7 +218,7 @@ export async function fetchWeatherData(
 			})
 		};
 
-		// Build raw data object
+		// Build raw data object with marine data if available
 		const rawData = {
 			temperature_2m: hourly.temperature_2m[bestIndex] ?? 0,
 			wind_speed_10m: hourly.wind_speed_10m[bestIndex] ?? 0,
@@ -186,6 +236,16 @@ export async function fetchWeatherData(
 			}),
 			...(hourly.cloud_cover?.[bestIndex] !== undefined && {
 				cloud_cover: hourly.cloud_cover[bestIndex]
+			}),
+			// Add marine data if available
+			...(marineData?.hourly?.wave_height?.[bestIndex] !== undefined && {
+				wave_height: marineData.hourly.wave_height[bestIndex]
+			}),
+			...(marineData?.hourly?.wave_direction?.[bestIndex] !== undefined && {
+				wave_direction: marineData.hourly.wave_direction[bestIndex]
+			}),
+			...(marineData?.hourly?.wave_period?.[bestIndex] !== undefined && {
+				wave_period: marineData.hourly.wave_period[bestIndex]
 			})
 		};
 
@@ -206,7 +266,12 @@ export async function fetchWeatherData(
 			time, 
 			observationTime,
 			temperature: weatherData.temperature,
-			weatherCode: weatherData.weatherCode 
+			weatherCode: weatherData.weatherCode,
+			hasMarineData: !!marineData,
+			marineDataSample: marineData?.hourly ? {
+				waveHeightCount: marineData.hourly.wave_height?.length || 0,
+				firstWaveHeight: marineData.hourly.wave_height?.[bestIndex]
+			} : null
 		}, 'Weather data successfully fetched from Open-Meteo');
 
 		return storedWeatherData;

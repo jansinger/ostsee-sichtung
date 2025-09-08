@@ -581,3 +581,4 @@ export const weatherAPI = {
 - PostGIS spatial function updates and performance patterns
 - Auth0 security updates and SvelteKit integration changes
 - Yup validation patterns and schema composition techniques
+- Bitte nutze bei lokaler Entwicklung immer die in .env Konfigurierte DB, starte nicht die Entwicklungs DB!
