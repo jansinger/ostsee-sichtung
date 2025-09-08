@@ -23,8 +23,9 @@
 	let isLoading = $state(true);
 	let loadError = $state<string | null>(null);
 
-	// Use $effect for lazy loading the map component
-	$effect(() => {
+	function loadMapComponent() {
+		isLoading = true;
+		loadError = null;
 		// Only load once when component mounts
 		if (MapComponent === null && isLoading) {
 			// SSR-Schutz: nur im Browser laden
@@ -34,14 +35,20 @@
 						MapComponent = module.default;
 						isLoading = false;
 					})
-					.catch((err) => {
-						console.error('Failed to load map component:', err);
-						loadError = `Karte konnte nicht geladen werden: ${err.message || 'Unbekannter Fehler'}`;
+					.catch(() => {
+						loadError = 'Karte konnte nicht geladen werden. Bitte versuchen Sie es erneut.';
 						isLoading = false;
 					});
 			} else {
 				isLoading = false;
 			}
+		}
+	}
+
+	// Use $effect for lazy loading the map component
+	$effect(() => {
+		if (MapComponent === null && isLoading) {
+			loadMapComponent();
 		}
 	});
 </script>
@@ -49,29 +56,28 @@
 <!-- Use LoadingOverlay for better UX -->
 <LoadingOverlay isVisible={isLoading} type="initial" />
 
-{#if loadError}
+{#if isLoading}
 	<div class={containerClass}>
 		<div class="flex h-full items-center justify-center">
-			<div class="alert alert-error max-w-md" role="alert">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-6 w-6 shrink-0 stroke-current"
-					fill="none"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-					/>
-				</svg>
-				<div>
-					<h3 class="font-bold">Karte nicht verfügbar</h3>
-					<div class="text-xs">{loadError}</div>
-				</div>
-				<button class="btn btn-sm" onclick={() => window.location.reload()}> Neu laden </button>
-			</div>
+			<div
+				class="loading loading-spinner loading-lg"
+				role="status"
+				aria-label="Karte wird geladen"
+			></div>
+		</div>
+	</div>
+{:else if loadError}
+	<div class={containerClass}>
+		<div class="flex h-full flex-col items-center justify-center gap-4">
+			<div class="alert alert-error" role="alert">{loadError}</div>
+			<button
+				type="button"
+				class="btn btn-primary"
+				onclick={loadMapComponent}
+				aria-label="Karte neu laden"
+			>
+				Neu laden
+			</button>
 		</div>
 	</div>
 {:else if MapComponent}
