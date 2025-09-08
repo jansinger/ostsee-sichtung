@@ -469,4 +469,115 @@ Use Task + context7: "Get latest SvelteKit deployment options and optimization t
 </form>
 ```
 
-**Remember**: Always use context7 MCP server to get the most current documentation and patterns for these technologies, as they evolve rapidly and best practices change frequently.
+### Additional Core Technologies - Always Use Context7
+
+#### Weather & Geographic APIs
+- **Open-Meteo API**: Free weather data service with historical and forecast endpoints
+- **OpenLayers**: Modern web mapping library for interactive geographic data visualization
+- **PostGIS**: Spatial database extension for PostgreSQL with geographic queries
+
+#### Database & ORM Technologies
+- **Drizzle ORM**: Type-safe SQL ORM with excellent PostgreSQL and PostGIS integration
+- **PostgreSQL**: Advanced relational database with JSONB support and spatial extensions
+- **PostGIS**: Spatial database capabilities for geographic data storage and queries
+
+#### API Documentation & Validation
+- **Scalar OpenAPI**: Modern API documentation and client generation from OpenAPI specs
+- **Yup**: Schema validation library for form data and API validation
+
+#### UI & Authentication
+- **Lucide Icons**: Beautiful, customizable SVG icon library with React/Svelte components
+- **Auth0**: Identity and access management platform with OAuth2/OIDC support
+
+#### Context7 Usage for These Technologies
+
+```bash
+# Weather & Maps
+Use Task + context7: "Get latest Open-Meteo API endpoints and best practices for historical weather data"
+Use Task + context7: "Get current OpenLayers v10+ patterns for web mapping with PostGIS integration"
+
+# Database & ORM
+Use Task + context7: "Get latest Drizzle ORM patterns for PostgreSQL with PostGIS spatial queries"
+Use Task + context7: "Get current PostgreSQL 16+ features and JSONB best practices"
+Use Task + context7: "Get PostGIS 3+ spatial query patterns and geographic data handling"
+
+# API & Validation
+Use Task + context7: "Get latest Scalar OpenAPI documentation patterns and client generation"
+Use Task + context7: "Get current Yup v1+ validation patterns for complex form schemas"
+
+# UI & Auth
+Use Task + context7: "Get latest Lucide Icons integration patterns for Svelte components"
+Use Task + context7: "Get current Auth0 SPA integration with SvelteKit and security best practices"
+```
+
+#### Integration Best Practices for Full Stack
+
+```typescript
+// Weather API with Drizzle ORM + PostGIS
+import { db } from '$lib/server/db';
+import { sightings } from '$lib/server/db/schema';
+
+// Fetch weather data and store with geographic queries
+const nearbyWeather = await db
+  .select()
+  .from(sightings)
+  .where(
+    sql`ST_DWithin(${sightings.location}, ST_Point(${lng}, ${lat}), 1000)`
+  );
+
+// OpenLayers with PostGIS data
+const map = new Map({
+  layers: [
+    new VectorLayer({
+      source: new VectorSource({
+        url: '/api/sightings/geojson',
+        format: new GeoJSON()
+      })
+    })
+  ]
+});
+
+// Auth0 + SvelteKit integration
+export const handle: Handle = Auth0Handle({
+  clientID: env.AUTH0_CLIENT_ID,
+  domain: env.AUTH0_DOMAIN,
+  clientSecret: env.AUTH0_CLIENT_SECRET
+});
+
+// Yup + Lucide Icons in forms
+import { MapPin, Calendar } from '@steeze-ui/lucide-icons';
+
+const schema = yup.object({
+  position: yup.object({
+    lat: yup.number().min(-90).max(90).required(),
+    lng: yup.number().min(-180).max(180).required()
+  }),
+  date: yup.date().max(new Date()).required()
+});
+```
+
+#### OpenAPI + Scalar Documentation Pattern
+
+```typescript
+// Use Scalar for API documentation generation
+import { generateOpenAPI } from '$lib/server/openapi';
+
+// Auto-generate from Yup schemas
+export const weatherAPI = {
+  '/api/weather/historical': {
+    get: {
+      parameters: weatherParamsSchema,
+      responses: weatherResponseSchema
+    }
+  }
+};
+```
+
+**Critical Reminder**: Always use context7 MCP server to get the most current documentation, API changes, breaking updates, and integration patterns for ALL these technologies, as they evolve rapidly and best practices change frequently. This is especially important for:
+
+- Open-Meteo API endpoint changes and new parameters
+- OpenLayers version updates and mapping patterns  
+- Drizzle ORM schema evolution and PostgreSQL integration
+- PostGIS spatial function updates and performance patterns
+- Auth0 security updates and SvelteKit integration changes
+- Yup validation patterns and schema composition techniques
