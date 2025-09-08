@@ -2,6 +2,8 @@
 	import DataTableRow from '$lib/components/admin/DataTableRow.svelte';
 	import OLMap from '$lib/components/map/OLMap.svelte';
 	import MediaGallery from '$lib/components/media/MediaGallery.svelte';
+	import WeatherDataDisplay from '$lib/components/admin/weather/WeatherDataDisplay.svelte';
+	import type { StoredWeatherData } from '$lib/services/weatherService';
 	import { getAnimalBehaviorLabel } from '$lib/report/formOptions/animalBehavior';
 	import { getAnimalConditionLabel } from '$lib/report/formOptions/animalCondition';
 	import { getBoatDriveLabel } from '$lib/report/formOptions/boatDrive';
@@ -47,6 +49,23 @@
 		sighting: FrontendSighting;
 		loading?: boolean;
 	}>();
+
+	// State für die aktuellen Sichtungsdaten mit reaktiver Wetterdaten-Aktualisierung
+	// eslint-disable-next-line svelte/prefer-writable-derived
+	let currentSighting = $state(sighting);
+	
+	// Sync currentSighting when sighting prop changes
+	$effect(() => {
+		currentSighting = sighting;
+	});
+
+	// Callback zum Aktualisieren der Wetterdaten
+	function handleWeatherRefresh(weatherData: StoredWeatherData) {
+		currentSighting = {
+			...currentSighting,
+			weatherData
+		};
+	}
 
 	/**
 	 * Hilfsfunktion, um zu prüfen, ob ein Wert existiert
@@ -100,11 +119,11 @@
 	}
 
 	// Datum & Zeit
-	const dateTimeRows: DataRowType[] = [
-		DataRow('Sichtung', formatLocalDateTime(sighting.sightingDate, 'datetime')),
-		DataRow('Gemeldet', formatLocalDateTime(sighting.created, 'datetime')),
-		DataRow('Freigegeben am', formatLocalDateTime(sighting.approvedAt, 'datetime'), hasValue(sighting.approvedAt))
-	].filter((row): row is DataRowType => row !== undefined);
+	const dateTimeRows = $derived([
+		DataRow('Sichtung', formatLocalDateTime(currentSighting.sightingDate, 'datetime')),
+		DataRow('Gemeldet', formatLocalDateTime(currentSighting.created, 'datetime')),
+		DataRow('Freigegeben am', formatLocalDateTime(currentSighting.approvedAt, 'datetime'), hasValue(currentSighting.approvedAt))
+	].filter((row): row is DataRowType => row !== undefined));
 
 	// Tierinformationen
 	const animalRows: DataRowType[] = [
@@ -346,22 +365,35 @@
 			{/if}
 
 			<!-- Umweltbedingungen -->
-			{#if environmentRows.length > 0}
+			{#if environmentRows.length > 0 || currentSighting.weatherData}
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon src={Waves} size="20" class="text-primary" />
 							Umweltbedingungen
 						</h3>
-						<div class="overflow-x-auto">
-							<table class="table-zebra table-sm table w-full">
-								<tbody>
-									{#each environmentRows as row (row.label)}
-										<DataTableRow {...row} />
-									{/each}
-								</tbody>
-							</table>
-						</div>
+						{#if environmentRows.length > 0}
+							<div class="overflow-x-auto">
+								<table class="table-zebra table-sm table w-full">
+									<tbody>
+										{#each environmentRows as row (row.label)}
+											<DataTableRow {...row} />
+										{/each}
+									</tbody>
+								</table>
+							</div>
+						{/if}
+						
+						<!-- Weather API Data Display -->
+						<WeatherDataDisplay
+							weatherData={currentSighting.weatherData as StoredWeatherData}
+							sightingId={currentSighting.id}
+							sightingDate={currentSighting.sightingDate}
+							latitude={currentSighting.latitude}
+							longitude={currentSighting.longitude}
+							canRefresh={true}
+							onWeatherRefresh={handleWeatherRefresh}
+						/>
 					</div>
 				</div>
 			{/if}

@@ -1,4 +1,5 @@
 import { createLogger } from '$lib/logger';
+import { degreesToCardinal, calculateSeaState, getWeatherDescription } from '$lib/constants/weather';
 import { 
 	convertToStoredWeatherData,
 	mapWeatherToFormFields, 
@@ -8,72 +9,13 @@ import {
 import { getCachedWeatherForSighting } from '$lib/server/db/sightingRepository';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
-import { combineToDate } from '$lib/utils/format/dateTime';
+import { combineToDate, formatISOLikeDatetime } from '$lib/utils/format/dateTime';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:weather:historical');
 
-/**
- * Convert degrees to cardinal direction
- */
-function degreesToCardinal(degrees: number): string {
-	const directions = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'];
-	const index = Math.round((degrees % 360) / 45) % 8;
-	return directions[index]!;
-}
 
-/**
- * Calculate sea state from wind speed (Douglas scale approximation)
- */
-function calculateSeaState(windSpeedKmh: number): number {
-	if (windSpeedKmh < 2) return 0; // Calm
-	if (windSpeedKmh < 12) return 1; // Smooth
-	if (windSpeedKmh < 20) return 2; // Slight
-	if (windSpeedKmh < 29) return 3; // Moderate
-	if (windSpeedKmh < 50) return 4; // Rough
-	if (windSpeedKmh < 62) return 5; // Very rough
-	if (windSpeedKmh < 75) return 6; // High
-	if (windSpeedKmh < 89) return 7; // Very high
-	return 8; // Phenomenal
-}
-
-/**
- * Map Open-Meteo weather codes to German descriptions
- */
-function getWeatherDescription(weatherCode: number): string {
-	const weatherMap: Record<number, string> = {
-		0: 'Klar',
-		1: 'Größtenteils klar',
-		2: 'Teilweise bewölkt',
-		3: 'Bedeckt',
-		45: 'Nebel',
-		48: 'Reifnebel',
-		51: 'Leichter Nieselregen',
-		53: 'Mäßiger Nieselregen',
-		55: 'Dichter Nieselregen',
-		56: 'Leichter gefrierender Nieselregen',
-		57: 'Dichter gefrierender Nieselregen',
-		61: 'Leichter Regen',
-		63: 'Mäßiger Regen',
-		65: 'Starker Regen',
-		66: 'Leichter gefrierender Regen',
-		67: 'Starker gefrierender Regen',
-		71: 'Leichter Schneefall',
-		73: 'Mäßiger Schneefall',
-		75: 'Starker Schneefall',
-		77: 'Schneekörner',
-		80: 'Leichte Regenschauer',
-		81: 'Mäßige Regenschauer',
-		82: 'Heftige Regenschauer',
-		85: 'Leichte Schneeschauer',
-		86: 'Starke Schneeschauer',
-		95: 'Leichtes bis mäßiges Gewitter',
-		96: 'Gewitter mit leichtem Hagel',
-		99: 'Gewitter mit starkem Hagel'
-	};
-	return weatherMap[weatherCode] || `Wetter Code ${weatherCode}`;
-}
 
 /**
  * Determine if sighting date is today (Issue #110)
@@ -140,13 +82,7 @@ async function fetchForecastData(
 		const windSpeedKmh = Math.round(hourly.wind_speed_10m[targetIndex] ?? 0);
 
 		const weatherData: WeatherData = {
-			time: new Date(hourly.time[targetIndex]).toLocaleDateString('sv-SE', {
-				year: 'numeric',
-				month: '2-digit',
-				day: '2-digit',
-				hour: '2-digit',
-				minute: '2-digit'
-			}),
+			time: formatISOLikeDatetime(hourly.time[targetIndex]),
 			windSpeed: windSpeedKmh,
 			windDirection: Math.round(hourly.wind_direction_10m[targetIndex] ?? 0),
 			windDirectionCardinal: degreesToCardinal(hourly.wind_direction_10m[targetIndex] ?? 0),
@@ -256,13 +192,7 @@ async function fetchHistoricalData(
 
 		// Extract weather data
 		const weatherData: WeatherData = {
-			time: new Date(hourly.time[targetIndex]).toLocaleDateString('sv-SE', {
-				year: 'numeric',
-				month: '2-digit',
-				day: '2-digit',
-				hour: '2-digit',
-				minute: '2-digit'
-			}),
+			time: formatISOLikeDatetime(hourly.time[targetIndex]),
 			windSpeed: windSpeedKmh,
 			windDirection: Math.round(hourly.wind_direction_10m[targetIndex] ?? 0),
 			windDirectionCardinal: degreesToCardinal(hourly.wind_direction_10m[targetIndex] ?? 0),

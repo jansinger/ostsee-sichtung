@@ -637,3 +637,32 @@ export const getCachedWeatherForSighting = async (
 		return null;
 	}
 };
+
+/**
+ * Loads a single sighting by its ID from the database
+ *
+ * @param sightingId ID of the sighting
+ * @returns Sighting data or null if not found
+ */
+export const getSightingById = async (sightingId: number): Promise<SightingSelect | null> => {
+	try {
+		logger.debug({ sightingId }, 'Loading sighting by ID');
+
+		const [sighting] = await db
+			.select()
+			.from(sightings)
+			.where(eq(sightings.id, sightingId))
+			.limit(1);
+
+		if (sighting) {
+			logger.debug({ sightingId, hasWeatherData: !!sighting.weatherData }, 'Sighting found');
+		} else {
+			logger.warn({ sightingId }, 'Sighting not found');
+		}
+
+		return sighting || null;
+	} catch (error) {
+		logger.error({ error, sightingId }, 'Error loading sighting');
+		throw error;
+	}
+};

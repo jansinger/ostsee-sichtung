@@ -1,3 +1,5 @@
+import { calculateSeaState } from '$lib/constants/weather';
+
 /**
  * Weather data from Open-Meteo API
  */
@@ -221,17 +223,3 @@ export function convertToStoredWeatherData(
 	};
 }
 
-/**
- * Calculate sea state from wind speed (Douglas scale approximation)
- */
-function calculateSeaState(windSpeedKmh: number): number {
-	if (windSpeedKmh < 2) return 0; // Calm
-	if (windSpeedKmh < 12) return 1; // Smooth
-	if (windSpeedKmh < 20) return 2; // Slight
-	if (windSpeedKmh < 29) return 3; // Moderate
-	if (windSpeedKmh < 50) return 4; // Rough
-	if (windSpeedKmh < 62) return 5; // Very rough
-	if (windSpeedKmh < 75) return 6; // High
-	if (windSpeedKmh < 89) return 7; // Very high
-	return 8; // Phenomenal
-}
