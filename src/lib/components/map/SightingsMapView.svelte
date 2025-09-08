@@ -231,7 +231,7 @@
 			// Simuliere Fortschritt für bessere UX
 			const progressInterval = setInterval(() => {
 				if (loadingProgress !== null && loadingProgress < 90) {
-					loadingProgress += Math.random() * 20;
+					loadingProgress = Math.min(loadingProgress + 10, 90);
 				}
 			}, 200);
 
