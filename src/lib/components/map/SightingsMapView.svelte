@@ -283,12 +283,23 @@
 			});
 		};
 
+		// Debounce utility for setupFilterListener
+		function debounce(fn: () => void, delay: number) {
+			let timeoutId: number | NodeJS.Timeout;
+			return function () {
+				clearTimeout(timeoutId);
+				timeoutId = setTimeout(fn, delay);
+			};
+		}
+
+		const debouncedSetupFilterListener = debounce(setupFilterListener, 100);
+
 		// Setup initial listeners
 		setupFilterListener();
 
 		// Überwache neue DOM-Elemente (für dynamisch geladene Filter)
 		const observer = new MutationObserver(() => {
-			setupFilterListener();
+			debouncedSetupFilterListener();
 		});
 
 		observer.observe(document.body, {
