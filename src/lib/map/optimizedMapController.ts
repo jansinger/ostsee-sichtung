@@ -1,5 +1,5 @@
 import { createLogger } from '$lib/logger';
-import { Feature, Geolocation, Map, View, Overlay } from 'ol';
+import { Feature, Geolocation, Map, Overlay, View } from 'ol';
 import type { Control } from 'ol/control';
 import { defaults as defaultControls } from 'ol/control';
 import * as olExtent from 'ol/extent';
@@ -15,9 +15,9 @@ import VectorSource from 'ol/source/Vector';
 import { Circle, Fill, Stroke, Style, Text } from 'ol/style';
 // import type { LocationControl } from './controls/LocationControl.js';
 // import type { ZoomAllControl } from './controls/ZoomAllControl.js';
+import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 import type { MapTranslations } from './mapUtils';
 import { createFeatureStyle, getFeatureColorGroup } from './styleUtils';
-import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 
 const logger = createLogger('map:optimized-controller');
 
@@ -66,7 +66,7 @@ export class SichtungenMap {
 	private displayedYear: number;
 	private legendUpdateCallback?: () => void;
 	private clusterDistance: number = 40; // Reduziert für bessere Performance
-	
+
 	// Popup-related
 	private popup!: Overlay;
 	private popupElement!: HTMLDivElement;
@@ -128,7 +128,10 @@ export class SichtungenMap {
 			style: (feature) => {
 				const features = feature.get('features');
 				if (features && features.length > 1) {
-					const clusterStyle = this.createFilteredClusterStyle(feature as Feature<Geometry>, features);
+					const clusterStyle = this.createFilteredClusterStyle(
+						feature as Feature<Geometry>,
+						features
+					);
 					return clusterStyle || [];
 				} else {
 					const singleFeature = features ? features[0] : feature;
@@ -169,7 +172,8 @@ export class SichtungenMap {
 				// Basis-Karte (OSM)
 				new TileLayer({
 					source: new OSM({
-						attributions: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+						attributions:
+							'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 					})
 				}),
 				// OpenSeaMap-Layer für maritime Informationen
@@ -183,10 +187,6 @@ export class SichtungenMap {
 						// Handle tile loading errors gracefully
 						tileLoadFunction: (tile, src) => {
 							const img = (tile as unknown as { getImage(): HTMLImageElement }).getImage();
-							img.onload = () => {
-								// Tile loaded successfully - for debugging
-								// console.log('OpenSeaMap tile loaded:', src);
-							};
 							img.onerror = () => {
 								// If tile fails to load, log for debugging and hide it
 								logger.warn({ tileUrl: src }, 'OpenSeaMap tile failed to load');
@@ -224,7 +224,7 @@ export class SichtungenMap {
 
 		// Lade Daten für das aktuelle Jahr
 		this.setYear(this.displayedYear);
-		
+
 		// Initialisiere Zeitraum-Anzeige
 		this.updateTimeRange();
 	}
@@ -333,11 +333,11 @@ export class SichtungenMap {
 		// Click-Event für Popup
 		this.map.on('click', (event) => {
 			const feature = this.map.forEachFeatureAtPixel(event.pixel, (feature) => feature);
-			
+
 			if (feature) {
 				const features = feature.get('features');
 				const zoom = this.map.getView().getZoom() || 7;
-				
+
 				if (features && features.length > 1 && zoom < 12) {
 					// Zoom zu Cluster bei niedrigem Zoom
 					this.zoomToCluster(features);
@@ -359,7 +359,7 @@ export class SichtungenMap {
 	private showPopup(coordinate: number[], feature: Feature<Geometry>): void {
 		const contentDiv = this.popupElement.querySelector('.popup-body') as HTMLDivElement;
 		const features = feature.get('features');
-		
+
 		if (features && features.length > 1) {
 			// Cluster
 			contentDiv.innerHTML = this.createClusterPopupContent(features);
@@ -377,7 +377,7 @@ export class SichtungenMap {
 		const speciesMap = this.translations.speciesMap;
 		const speciesName = speciesMap[props.ta.toString()] || `Unbekannte Art (${props.ta})`;
 		const date = props.ts ? new Date(props.ts * 1000).toLocaleDateString('de-DE') : 'Unbekannt';
-		
+
 		let content = `
 			<div class="sighting-popup">
 				<h3 style="margin: 0 0 10px 0; color: #333;">${speciesName}</h3>
@@ -440,8 +440,8 @@ export class SichtungenMap {
 	private createClusterPopupContent(features: Feature<Geometry>[]): string {
 		const count = features.length;
 		const speciesCount: Record<string, number> = {};
-		
-		features.forEach(feature => {
+
+		features.forEach((feature) => {
 			const props = feature.getProperties() as SightingProperties;
 			const species = props.ta.toString();
 			speciesCount[species] = (speciesCount[species] || 0) + 1;
@@ -474,8 +474,8 @@ export class SichtungenMap {
 	private zoomToCluster(features: Feature<Geometry>[]): void {
 		const view = this.map.getView();
 		const extent = olExtent.createEmpty();
-		
-		features.forEach(feature => {
+
+		features.forEach((feature) => {
 			const geom = feature.getGeometry();
 			if (geom) {
 				olExtent.extend(extent, geom.getExtent());
@@ -491,7 +491,7 @@ export class SichtungenMap {
 
 	private updateClusterDistance(): void {
 		const zoom = this.map.getView().getZoom() || 7;
-		
+
 		let distance: number;
 		if (zoom < 8) {
 			distance = 50;
@@ -509,7 +509,7 @@ export class SichtungenMap {
 	// Behalte alle bestehenden Public-Methoden für Kompatibilität
 	public async setYear(year: number): Promise<void> {
 		this.displayedYear = year;
-		
+
 		// Update timeFilter für das neue Jahr
 		const yearStart = new Date(year, 0, 1).getTime();
 		const yearEnd = new Date(year, 11, 31, 23, 59, 59).getTime();
@@ -517,11 +517,11 @@ export class SichtungenMap {
 			lower: yearStart,
 			upper: yearEnd
 		};
-		
+
 		try {
 			const response = await fetch(`/api/map/sightings?year=${year}`);
 			const geoJsonData = await response.json();
-			
+
 			const format = new GeoJSON();
 			const features = format.readFeatures(geoJsonData, {
 				featureProjection: 'EPSG:3857'
@@ -529,7 +529,7 @@ export class SichtungenMap {
 
 			this.reportsSource.clear();
 			this.reportsSource.addFeatures(features);
-			
+
 			// Update legend callback
 			if (this.legendUpdateCallback) {
 				this.legendUpdateCallback();
@@ -555,7 +555,7 @@ export class SichtungenMap {
 
 	public zoomToFeatures(): void {
 		const extent = this.reportsSource.getExtent();
-		if (extent && extent.some(val => isFinite(val))) {
+		if (extent && extent.some((val) => isFinite(val))) {
 			this.map.getView().fit(extent, {
 				duration: 1000,
 				padding: [50, 50, 50, 50],
@@ -587,7 +587,7 @@ export class SichtungenMap {
 			if (yearSelect) {
 				// Setze das Default-Jahr im Dropdown
 				yearSelect.value = this.displayedYear.toString();
-				
+
 				yearSelect.addEventListener('change', (event) => {
 					const target = event.target as HTMLSelectElement;
 					this.setYear(parseInt(target.value));
@@ -612,12 +612,12 @@ export class SichtungenMap {
 		// Time-Slider (Start und Ende)
 		const startSlider = document.getElementById('time-range-start') as HTMLInputElement;
 		const endSlider = document.getElementById('time-range-end') as HTMLInputElement;
-		
+
 		if (startSlider && endSlider) {
 			startSlider.addEventListener('input', () => {
 				this.updateTimeSlider(startSlider, endSlider);
 			});
-			
+
 			endSlider.addEventListener('input', () => {
 				this.updateTimeSlider(startSlider, endSlider);
 			});
@@ -719,7 +719,7 @@ export class SichtungenMap {
 
 	public getExtent(): number[] | null {
 		const extent = this.reportsSource.getExtent();
-		return extent && extent.some(val => isFinite(val)) ? extent : null;
+		return extent && extent.some((val) => isFinite(val)) ? extent : null;
 	}
 
 	public toggleGeolocation(): boolean {
@@ -784,14 +784,14 @@ export class SichtungenMap {
 	private updateTimeRange(): void {
 		const timeStartElement = document.getElementById('time-start');
 		const timeEndElement = document.getElementById('time-end');
-		
+
 		if (timeStartElement) {
 			timeStartElement.innerText = new Date(this.timeFilter.lower).toLocaleDateString('de-DE', {
 				day: '2-digit',
 				month: '2-digit'
 			});
 		}
-		
+
 		if (timeEndElement) {
 			timeEndElement.innerText = new Date(this.timeFilter.upper).toLocaleDateString('de-DE', {
 				day: '2-digit',
@@ -799,7 +799,6 @@ export class SichtungenMap {
 			});
 		}
 	}
-
 
 	private createInfoText(properties: SightingProperties): string {
 		const species = this.translations.speciesMap[properties.ta] || 'Unbekannte Art';
@@ -845,16 +844,20 @@ export class SichtungenMap {
 		`;
 	}
 
-	private positionInfoElement(mapContainer: HTMLElement, pixel: number[], infoElement: HTMLElement): void {
+	private positionInfoElement(
+		mapContainer: HTMLElement,
+		pixel: number[],
+		infoElement: HTMLElement
+	): void {
 		const mapRect = mapContainer.getBoundingClientRect();
 		const infoRect = infoElement.getBoundingClientRect();
-		
+
 		if (!mapRect || !infoRect || !pixel || pixel.length < 2) return;
-		
+
 		// Use destructuring to satisfy TypeScript's null checks
 		const [pixelX, pixelY] = pixel;
 		if (pixelX === undefined || pixelY === undefined) return;
-		
+
 		let left = pixelX + 10;
 		let top = pixelY - infoRect.height - 10;
 
@@ -872,28 +875,31 @@ export class SichtungenMap {
 		infoElement.style.top = Math.max(0, top) + 'px';
 	}
 
-	private createFilteredClusterStyle(_clusterFeature: Feature<Geometry>, features: Feature<Geometry>[]): Style | null {
+	private createFilteredClusterStyle(
+		_clusterFeature: Feature<Geometry>,
+		features: Feature<Geometry>[]
+	): Style | null {
 		// Zähle nur die sichtbaren Features im Cluster
 		let visibleCount = 0;
-		
-		features.forEach(feature => {
+
+		features.forEach((feature) => {
 			const properties = feature.getProperties() as SightingProperties;
 			const speciesId = properties.ta?.toString() || '0';
 			// Convert ta to number for getFeatureColorGroup
 			const colorGroupProperties = {
 				...properties,
-				ta: typeof properties.ta === 'string' ? parseInt(properties.ta) : (properties.ta || 0),
+				ta: typeof properties.ta === 'string' ? parseInt(properties.ta) : properties.ta || 0,
 				tf: properties.tf || false, // Provide default value for required tf property
 				ts: properties.ts || 0 // Provide default value for required ts property
 			};
 			const colorGroup = getFeatureColorGroup(colorGroupProperties);
 			const timestamp = (properties.ts || 0) * 1000;
-			
+
 			// Prüfe Sichtbarkeit basierend auf aktuellen Filtern
 			const isHiddenBySpecies = this.hiddenSpecies[speciesId];
 			const isHiddenByColor = this.hiddenColors[colorGroup];
 			const isHiddenByTime = timestamp < this.timeFilter.lower || timestamp > this.timeFilter.upper;
-			
+
 			if (!isHiddenBySpecies && !isHiddenByColor && !isHiddenByTime) {
 				visibleCount++;
 			}
@@ -906,12 +912,12 @@ export class SichtungenMap {
 
 		// Erstelle Cluster-Style basierend auf der Anzahl sichtbarer Features
 		const size = visibleCount;
-		
+
 		// Bestimme Cluster-Größe und Farbe basierend auf Anzahl der sichtbaren Features
 		let radius = 15;
 		let fontSize = 12;
 		let color = '#3399CC';
-		
+
 		if (size < 5) {
 			radius = 18;
 			fontSize = 12;

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Component } from 'svelte';
+	import LoadingOverlay from './LoadingOverlay.svelte';
 
 	// Props
 	let {
@@ -22,8 +23,9 @@
 	let isLoading = $state(true);
 	let loadError = $state<string | null>(null);
 
-	// Use $effect for lazy loading the map component
-	$effect(() => {
+	function loadMapComponent() {
+		isLoading = true;
+		loadError = null;
 		// Only load once when component mounts
 		if (MapComponent === null && isLoading) {
 			// SSR-Schutz: nur im Browser laden
@@ -33,31 +35,39 @@
 						MapComponent = module.default;
 						isLoading = false;
 					})
-					.catch((_err) => {
-						loadError = 'Karte konnte nicht geladen werden.';
+					.catch(() => {
+						loadError = 'Karte konnte nicht geladen werden. Bitte versuchen Sie es erneut.';
 						isLoading = false;
 					});
 			} else {
 				isLoading = false;
 			}
 		}
+	}
+
+	// Use $effect for lazy loading the map component
+	$effect(() => {
+		if (MapComponent === null && isLoading) {
+			loadMapComponent();
+		}
 	});
 </script>
 
-{#if isLoading}
+<!-- Use LoadingOverlay for better UX -->
+<LoadingOverlay isVisible={isLoading} type="initial" />
+
+{#if loadError}
 	<div class={containerClass}>
-		<div class="flex h-full items-center justify-center">
-			<div
-				class="loading loading-spinner loading-lg"
-				role="status"
-				aria-label="Karte wird geladen"
-			></div>
-		</div>
-	</div>
-{:else if loadError}
-	<div class={containerClass}>
-		<div class="flex h-full items-center justify-center">
+		<div class="flex h-full flex-col items-center justify-center gap-4">
 			<div class="alert alert-error" role="alert">{loadError}</div>
+			<button
+				type="button"
+				class="btn btn-primary"
+				onclick={loadMapComponent}
+				aria-label="Karte neu laden"
+			>
+				Neu laden
+			</button>
 		</div>
 	</div>
 {:else if MapComponent}

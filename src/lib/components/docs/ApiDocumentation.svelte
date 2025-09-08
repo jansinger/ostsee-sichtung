@@ -35,11 +35,13 @@
 
 					// Set loading to false after verification
 					isLoading = false;
-
 				} catch (error) {
 					console.error('Failed to load API documentation:', error);
 					hasError = true;
-					errorMessage = error instanceof Error ? error.message : 'API-Dokumentation konnte nicht geladen werden';
+					errorMessage =
+						error instanceof Error
+							? error.message
+							: 'API-Dokumentation konnte nicht geladen werden';
 					isLoading = false;
 				}
 			})();
@@ -51,62 +53,63 @@
 	<!-- Header Section -->
 	<div class="mb-8 text-center">
 		<h1 class="mb-4 text-4xl font-bold text-gray-900">{title}</h1>
-		<p class="text-lg text-gray-600 max-w-3xl mx-auto">
+		<p class="mx-auto max-w-3xl text-lg text-gray-600">
 			{description}
 		</p>
-		
+
 		{#if showNavButtons}
 			<div class="mt-6 flex flex-wrap justify-center gap-4">
 				{#if showDownloadButton}
-					<a 
-						href="/openapi.yml" 
+					<a
+						href="/openapi.yml"
 						download="ostsee-tiere-api.yml"
 						class="btn btn-outline btn-primary"
 					>
 						📄 OpenAPI Spec herunterladen
 					</a>
 				{/if}
-				<a 
-					href="#authentication" 
-					class="btn btn-ghost"
-				>
-					🔐 Authentifizierung
-				</a>
-				<a 
-					href="#getting-started" 
-					class="btn btn-ghost"
-				>
-					🚀 Erste Schritte
-				</a>
+				<a href="#authentication" class="btn btn-ghost"> 🔐 Authentifizierung </a>
+				<a href="#getting-started" class="btn btn-ghost"> 🚀 Erste Schritte </a>
 			</div>
 		{/if}
 	</div>
 
 	<!-- Quick Start Guide -->
 	{#if showQuickStart}
-		<div class="mb-8 bg-base-200 rounded-lg p-6">
-			<h2 id="getting-started" class="text-2xl font-semibold mb-4">🚀 Erste Schritte</h2>
-			<div class="grid md:grid-cols-2 gap-6">
+		<div class="bg-base-200 mb-8 rounded-lg p-6">
+			<h2 id="getting-started" class="mb-4 text-2xl font-semibold">🚀 Erste Schritte</h2>
+			<div class="grid gap-6 md:grid-cols-2">
 				<div>
-					<h3 class="text-lg font-medium mb-2">Öffentliche Endpunkte</h3>
-					<p class="text-sm text-gray-600 mb-3">
+					<h3 class="mb-2 text-lg font-medium">Öffentliche Endpunkte</h3>
+					<p class="mb-3 text-sm text-gray-600">
 						Einige Endpunkte sind öffentlich verfügbar und benötigen keine Authentifizierung:
 					</p>
-					<ul class="text-sm space-y-1">
-						<li>• <code class="bg-gray-100 px-1 rounded">GET /sightings</code> - Öffentliche Sichtungen</li>
-						<li>• <code class="bg-gray-100 px-1 rounded">POST /sightings</code> - Neue Sichtung melden</li>
-						<li>• <code class="bg-gray-100 px-1 rounded">GET /geo/inBaltic</code> - Koordinaten prüfen</li>
-						<li>• <code class="bg-gray-100 px-1 rounded">POST /files/upload</code> - Dateien hochladen</li>
-						<li>• <code class="bg-gray-100 px-1 rounded">GET /media/{'{path}'}</code> - Sichere Medien abrufen</li>
+					<ul class="space-y-1 text-sm">
+						<li>
+							• <code class="rounded bg-gray-100 px-1">GET /sightings</code> - Öffentliche Sichtungen
+						</li>
+						<li>
+							• <code class="rounded bg-gray-100 px-1">POST /sightings</code> - Neue Sichtung melden
+						</li>
+						<li>
+							• <code class="rounded bg-gray-100 px-1">GET /geo/inBaltic</code> - Koordinaten prüfen
+						</li>
+						<li>
+							• <code class="rounded bg-gray-100 px-1">POST /files/upload</code> - Dateien hochladen
+						</li>
+						<li>
+							• <code class="rounded bg-gray-100 px-1">GET /media/{'{path}'}</code> - Sichere Medien
+							abrufen
+						</li>
 					</ul>
 				</div>
 				<div>
-					<h3 id="authentication" class="text-lg font-medium mb-2">🔐 Admin-Authentifizierung</h3>
-					<p class="text-sm text-gray-600 mb-3">
+					<h3 id="authentication" class="mb-2 text-lg font-medium">🔐 Admin-Authentifizierung</h3>
+					<p class="mb-3 text-sm text-gray-600">
 						Für Admin-Funktionen ist eine Anmeldung erforderlich:
 					</p>
-					<ol class="text-sm space-y-1">
-						<li>1. <code class="bg-gray-100 px-1 rounded">GET /auth/login</code> aufrufen</li>
+					<ol class="space-y-1 text-sm">
+						<li>1. <code class="rounded bg-gray-100 px-1">GET /auth/login</code> aufrufen</li>
 						<li>2. Auth0-Login-Flow durchlaufen</li>
 						<li>3. Session-Cookie wird automatisch gesetzt</li>
 						<li>4. Admin-Endpunkte sind nun verfügbar</li>
@@ -118,10 +121,12 @@
 
 	<!-- API Reference Container -->
 	{#if isLoading}
-		<div class="text-center py-8 text-gray-500">
+		<div class="py-8 text-center text-gray-500">
 			<div class="loading loading-spinner loading-lg"></div>
 			<p class="mt-4">API-Dokumentation wird geladen...</p>
-			<p class="text-sm mt-2">Falls die Dokumentation nicht lädt, versuchen Sie die Seite neu zu laden.</p>
+			<p class="mt-2 text-sm">
+				Falls die Dokumentation nicht lädt, versuchen Sie die Seite neu zu laden.
+			</p>
 		</div>
 	{:else if hasError}
 		<div class="alert alert-error">
@@ -134,10 +139,7 @@
 					<a href="/openapi.yml" download="ostsee-tiere-api.yml" class="btn btn-sm btn-outline">
 						📥 OpenAPI Spec herunterladen
 					</a>
-					<button 
-						class="btn btn-sm btn-ghost" 
-						onclick={() => window.location.reload()}
-					>
+					<button class="btn btn-sm btn-ghost" onclick={() => window.location.reload()}>
 						🔄 Neu laden
 					</button>
 				</div>
@@ -146,31 +148,31 @@
 	{:else}
 		<!-- Scalar API Reference iframe -->
 		<div class="scalar-container">
-			<iframe 
-				src="/docs/api/scalar" 
+			<iframe
+				src="/docs/api/scalar"
 				title="Scalar API Documentation"
-				class="w-full h-full border-0"
+				class="h-full w-full border-0"
 				style="min-height: 100vh;"
 				loading="lazy"
 				sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation allow-pointer-lock"
 				allow="fullscreen"
-				onload={() => console.log('Scalar API documentation loaded successfully')}
 				onerror={() => {
-					console.error('Failed to load Scalar API documentation');
 					hasError = true;
 					errorMessage = 'Scalar API-Dokumentation konnte nicht geladen werden';
 				}}
 			></iframe>
 		</div>
-		
+
 		<!-- Fallback notice -->
 		<div class="mt-4 text-center">
 			<p class="text-sm text-gray-500">
-				Falls die interaktive Dokumentation nicht funktioniert, nutzen Sie die 
-				<a href="/docs/api/direct" class="link link-primary">Direkte Dokumentation</a>, 
+				Falls die interaktive Dokumentation nicht funktioniert, nutzen Sie die
+				<a href="/docs/api/direct" class="link link-primary">Direkte Dokumentation</a>,
 				<a href="/docs/api/fallback" class="link link-primary">Fallback-Dokumentation</a>
-				oder laden Sie die 
-				<a href="/openapi.yml" download="ostsee-tiere-api.yml" class="link link-primary">OpenAPI-Spec</a> 
+				oder laden Sie die
+				<a href="/openapi.yml" download="ostsee-tiere-api.yml" class="link link-primary"
+					>OpenAPI-Spec</a
+				>
 				direkt herunter.
 			</p>
 		</div>
@@ -184,23 +186,23 @@
 		min-height: 100vh;
 		position: relative;
 	}
-	
+
 	/* Custom scrollbar for better UX */
 	:global(*::-webkit-scrollbar) {
 		width: 8px;
 		height: 8px;
 	}
-	
+
 	:global(*::-webkit-scrollbar-track) {
 		background: #f1f1f1;
 		border-radius: 4px;
 	}
-	
+
 	:global(*::-webkit-scrollbar-thumb) {
 		background: #c1c1c1;
 		border-radius: 4px;
 	}
-	
+
 	:global(*::-webkit-scrollbar-thumb:hover) {
 		background: #a8a8a8;
 	}

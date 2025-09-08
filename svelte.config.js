@@ -13,6 +13,11 @@ const config = {
 	kit: {
 		adapter: adapter(),
 
+		// Development-spezifische Konfigurationen
+		version: {
+			pollInterval: process.env.NODE_ENV === 'development' ? 0 : 5000
+		},
+
 		// CSP-Konfiguration
 		csp: {
 			mode: 'auto',
@@ -43,7 +48,15 @@ const config = {
 					'https://*.tile.openstreetmap.org',
 					'https://api.openstreetmap.org',
 					'https://4i7mo0wwc3lp8d1e.public.blob.vercel-storage.com',
-					'https://blob.vercel-storage.com'
+					'https://blob.vercel-storage.com',
+					'https://ostsee-tiere.de',
+					'https://*.ostsee-tiere.de',
+					'https://archive-api.open-meteo.com',
+					// Development origins
+					'http://localhost:*',
+					'https://localhost:*',
+					'http://127.0.0.1:*',
+					'https://127.0.0.1:*'
 				],
 				'worker-src': ["'self'", 'blob:'],
 				'frame-src': ["'self'"],

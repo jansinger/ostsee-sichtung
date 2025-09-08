@@ -11,16 +11,24 @@ import RBush from 'rbush';
  * Calculate bounding box for a polygon coordinate array
  */
 function getBoundingBox(coordinates, geometryType) {
-	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-	
+	let minX = Infinity,
+		minY = Infinity,
+		maxX = -Infinity,
+		maxY = -Infinity;
+
 	function processRing(ring) {
 		if (!Array.isArray(ring)) {
 			console.warn('Ring is not an array:', typeof ring);
 			return;
 		}
-		
+
 		for (const coord of ring) {
-			if (Array.isArray(coord) && coord.length >= 2 && typeof coord[0] === 'number' && typeof coord[1] === 'number') {
+			if (
+				Array.isArray(coord) &&
+				coord.length >= 2 &&
+				typeof coord[0] === 'number' &&
+				typeof coord[1] === 'number'
+			) {
 				const [x, y] = coord;
 				minX = Math.min(minX, x);
 				minY = Math.min(minY, y);
@@ -29,7 +37,7 @@ function getBoundingBox(coordinates, geometryType) {
 			}
 		}
 	}
-	
+
 	if (geometryType === 'Polygon') {
 		// Polygon: coordinates is an array of linear rings
 		if (Array.isArray(coordinates) && coordinates.length > 0) {
@@ -45,17 +53,19 @@ function getBoundingBox(coordinates, geometryType) {
 			}
 		}
 	}
-	
+
 	const result = {
 		minX: isFinite(minX) ? minX : 0,
 		minY: isFinite(minY) ? minY : 0,
 		maxX: isFinite(maxX) ? maxX : 0,
 		maxY: isFinite(maxY) ? maxY : 0
 	};
-	
+
 	// Debug logging
-	console.log(`   Geometry type: ${geometryType}, bbox calculated: [${result.minX}, ${result.minY}, ${result.maxX}, ${result.maxY}]`);
-	
+	console.log(
+		`   Geometry type: ${geometryType}, bbox calculated: [${result.minX}, ${result.minY}, ${result.maxX}, ${result.maxY}]`
+	);
+
 	return result;
 }
 
@@ -66,38 +76,38 @@ export async function createRBushIndex(inputFile, outputFile) {
 	try {
 		console.log('Loading GeoJSON data from:', inputFile);
 		const geojsonData = JSON.parse(readFileSync(inputFile, 'utf8'));
-		
+
 		if (!geojsonData.features || !Array.isArray(geojsonData.features)) {
 			throw new Error('Invalid GeoJSON: missing features array');
 		}
-		
+
 		console.log(`Found ${geojsonData.features.length} features`);
-		
+
 		// Create rbush index
 		const tree = new RBush();
 		const indexItems = [];
-		
+
 		// Process each feature
 		for (let i = 0; i < geojsonData.features.length; i++) {
 			const feature = geojsonData.features[i];
-			
+
 			if (!feature.geometry || !feature.geometry.coordinates) {
 				console.warn(`Feature ${i} missing geometry, skipping`);
 				continue;
 			}
-			
+
 			const { geometry } = feature;
-			
+
 			// Only process Polygon and MultiPolygon
 			if (!['Polygon', 'MultiPolygon'].includes(geometry.type)) {
 				console.warn(`Feature ${i} has unsupported geometry type: ${geometry.type}`);
 				continue;
 			}
-			
+
 			try {
 				// Calculate bounding box
 				const bbox = getBoundingBox(geometry.coordinates, geometry.type);
-				
+
 				// Create index item with bounding box and original feature data
 				const item = {
 					minX: bbox.minX,
@@ -112,21 +122,22 @@ export async function createRBushIndex(inputFile, outputFile) {
 						coordinates: geometry.coordinates
 					}
 				};
-				
+
 				indexItems.push(item);
-				console.log(`Processed feature ${i} (${feature.id}): bbox [${bbox.minX.toFixed(3)}, ${bbox.minY.toFixed(3)}, ${bbox.maxX.toFixed(3)}, ${bbox.maxY.toFixed(3)}]`);
-				
+				console.log(
+					`Processed feature ${i} (${feature.id}): bbox [${bbox.minX.toFixed(3)}, ${bbox.minY.toFixed(3)}, ${bbox.maxX.toFixed(3)}, ${bbox.maxY.toFixed(3)}]`
+				);
 			} catch (error) {
 				console.warn(`Error processing feature ${i}:`, error.message);
 				continue;
 			}
 		}
-		
+
 		console.log(`Created ${indexItems.length} spatial index items`);
-		
+
 		// Bulk load into rbush
 		tree.load(indexItems);
-		
+
 		// Convert to JSON for serialization
 		const indexData = {
 			type: 'RBushIndex',
@@ -135,23 +146,22 @@ export async function createRBushIndex(inputFile, outputFile) {
 			itemCount: indexItems.length,
 			tree: tree.toJSON()
 		};
-		
+
 		// Save index
 		writeFileSync(outputFile, JSON.stringify(indexData, null, 2));
 		console.log(`Spatial index saved to: ${outputFile}`);
 		console.log(`Index contains ${indexItems.length} items`);
-		
+
 		// Verify the index works
 		console.log('\nVerifying index...');
 		const testTree = new RBush();
 		testTree.fromJSON(indexData.tree);
-		
+
 		// Test search
 		const testResults = testTree.search({ minX: 14, minY: 54, maxX: 15, maxY: 55 });
 		console.log(`Test search found ${testResults.length} candidates`);
-		
+
 		console.log('\n✅ RBush index created successfully!');
-		
 	} catch (error) {
 		console.error('Error creating RBush index:', error.message);
 		console.error('Stack:', error.stack);
