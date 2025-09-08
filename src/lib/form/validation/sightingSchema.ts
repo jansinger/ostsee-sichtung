@@ -707,6 +707,21 @@ export const sightingSchemaBase = yup.object().shape({
 		})
 		.notRequired(),
 
+	/**
+	 * Wetterdaten von der Weather API (Issue #110)
+	 * Optional, enthält die vollständigen Wetterdaten als JSON
+	 */
+	weatherData: yup
+		.mixed()
+		.nullable()
+		.label('API-Wetterdaten')
+		.meta({
+			helpText: 'Automatisch geladene Wetterdaten von Open-Meteo API',
+			valueText: 'Ergänzt manuelle Wetterangaben mit präzisen API-Daten',
+			type: 'hidden'
+		})
+		.notRequired(),
+
 	//----------------------------------------------------------------------
 	// Media (Medien)
 	//----------------------------------------------------------------------

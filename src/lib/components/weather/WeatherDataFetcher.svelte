@@ -15,6 +15,7 @@
 		date: string | null;
 		time: string | null;
 		onWeatherFetched: (formFields: WeatherFormFields) => void;
+		onWeatherDataFetched?: (weatherData: WeatherData) => void;
 		autoFetch?: boolean;
 		showInCard?: boolean;
 	}
@@ -25,6 +26,7 @@
 		date,
 		time,
 		onWeatherFetched,
+		onWeatherDataFetched,
 		autoFetch = false,
 		showInCard = true
 	}: Props = $props();
@@ -118,6 +120,11 @@
 			if (weatherData) {
 				weatherData._metadata = data.metadata;
 			}
+
+			// Automatically store full weather data in form if callback provided
+			if (weatherData && onWeatherDataFetched) {
+				onWeatherDataFetched(weatherData);
+			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Unbekannter Fehler';
 		} finally {
@@ -128,6 +135,11 @@
 	function applyWeatherData() {
 		if (!formFields) return;
 		onWeatherFetched(formFields as WeatherFormFields);
+		
+		// Also store the full weather data when applying manually
+		if (weatherData && onWeatherDataFetched) {
+			onWeatherDataFetched(weatherData);
+		}
 	}
 </script>
 
