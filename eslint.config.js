@@ -29,6 +29,7 @@ export default ts.config(
 			// Svelte-spezifische Regeln
 			'svelte/no-unused-svelte-ignore': 'error',
 			'svelte/no-reactive-literals': 'warn',
+			'svelte/no-navigation-without-resolve': 'off', // Allow external links and navigation
 
 			// TypeScript-spezifische Regeln
 			'@typescript-eslint/no-unused-vars': [
