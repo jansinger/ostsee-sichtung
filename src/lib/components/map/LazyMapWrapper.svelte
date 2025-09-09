@@ -24,30 +24,31 @@
 	let loadError = $state<string | null>(null);
 
 	function loadMapComponent() {
+		if (MapComponent !== null) return; // Already loaded
+		
 		isLoading = true;
 		loadError = null;
-		// Only load once when component mounts
-		if (MapComponent === null && isLoading) {
-			// SSR-Schutz: nur im Browser laden
-			if (typeof window !== 'undefined') {
-				import('./SightingsMapView.svelte')
-					.then((module) => {
-						MapComponent = module.default;
-						isLoading = false;
-					})
-					.catch(() => {
-						loadError = 'Karte konnte nicht geladen werden. Bitte versuchen Sie es erneut.';
-						isLoading = false;
-					});
-			} else {
-				isLoading = false;
-			}
+		
+		// SSR-Schutz: nur im Browser laden
+		if (typeof window !== 'undefined') {
+			import('./SightingsMapView.svelte')
+				.then((module) => {
+					MapComponent = module.default;
+					isLoading = false;
+				})
+				.catch(() => {
+					loadError = 'Karte konnte nicht geladen werden. Bitte versuchen Sie es erneut.';
+					isLoading = false;
+				});
+		} else {
+			// In SSR, keep loading state until we're in the browser
+			// This will be fixed when the effect runs in the browser
 		}
 	}
 
 	// Use $effect for lazy loading the map component
 	$effect(() => {
-		if (MapComponent === null && isLoading) {
+		if (MapComponent === null) {
 			loadMapComponent();
 		}
 	});
@@ -72,4 +73,21 @@
 	</div>
 {:else if MapComponent}
 	<MapComponent {mapContainerId} {showTitle} {title} {showLogo} {containerClass} {titleClass} />
+{:else if !isLoading}
+	<!-- Fallback wenn kein MapComponent aber auch nicht loading -->
+	<div class={containerClass}>
+		<div class="flex h-full flex-col items-center justify-center gap-4">
+			<div class="alert alert-warning" role="alert">
+				Karte konnte nicht geladen werden.
+			</div>
+			<button
+				type="button"
+				class="btn btn-primary"
+				onclick={loadMapComponent}
+				aria-label="Karte neu laden"
+			>
+				Neu laden
+			</button>
+		</div>
+	</div>
 {/if}

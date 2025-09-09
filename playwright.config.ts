@@ -42,7 +42,11 @@ export default defineConfig({
 	projects: [
 		{
 			name: 'chromium',
-			use: { ...devices['Desktop Chrome'] }
+			use: { 
+				...devices['Desktop Chrome'],
+				// Use system browser if available
+				channel: process.env.CI ? undefined : 'chromium'
+			}
 		}
 	]
 });

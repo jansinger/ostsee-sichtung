@@ -38,6 +38,7 @@
 	class="glass text-base-content hover:bg-base-200 border-primary/20 fixed top-20 right-0 z-50 flex h-32 w-8 cursor-pointer flex-col items-center justify-center rounded-l-lg border-2 border-r-0 shadow-xl backdrop-blur-sm transition-all duration-300 sm:w-12 md:w-8"
 	style="transform: translateX({isOpen ? '-400px' : '0px'});"
 	aria-label="Filter {isOpen ? 'schließen' : 'öffnen'}"
+	data-testid="filter-toggle-button"
 >
 	<Icon
 		src={isApplyingFilter ? Loader : Filter}
