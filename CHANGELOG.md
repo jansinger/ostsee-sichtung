@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.27.1 (2025-09-10)</small>
+
+* Merge pull request #112 from jansinger/fix/dependabot-workflow-repair ([ec6b75d](https://github.com/jansinger/ostsee-sichtung/commit/ec6b75d)), closes [#112](https://github.com/jansinger/ostsee-sichtung/issues/112)
+* fix: improve E2E test robustness for CI environment ([48c40df](https://github.com/jansinger/ostsee-sichtung/commit/48c40df))
+* fix: repair dependabot workflow and update dependencies ([f67db0a](https://github.com/jansinger/ostsee-sichtung/commit/f67db0a))
+
 ## 1.27.0 (2025-09-08)
 
 * Merge branch 'main' into chore/context7 ([3e8369c](https://github.com/jansinger/ostsee-sichtung/commit/3e8369c))
