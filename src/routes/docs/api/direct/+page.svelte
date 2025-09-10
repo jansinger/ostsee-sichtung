@@ -15,7 +15,7 @@
 			(async () => {
 				try {
 					// Import Scalar dynamically to avoid SSR issues
-					const { ApiReference } = await import('@scalar/api-reference');
+					const { createApiReference } = await import('@scalar/api-reference');
 
 					// Initialize Scalar directly without iframe
 					const configuration = {
@@ -35,8 +35,8 @@
 						`
 					};
 
-					// Mount Scalar API Reference - use new operator
-					new ApiReference(scalarContainer, configuration);
+					// Mount Scalar API Reference
+					createApiReference(scalarContainer, configuration);
 					isLoading = false;
 				} catch (error: unknown) {
 					logger.error(
