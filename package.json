@@ -78,7 +78,7 @@
 		"drizzle-kit": "^0.31.4",
 		"eslint": "^9.35.0",
 		"eslint-config-prettier": "^10.1.8",
-		"eslint-plugin-svelte": "^3.12.2",
+		"eslint-plugin-svelte": "^3.12.3",
 		"globals": "^16.4.0",
 		"husky": "^9.1.7",
 		"license-checker": "^25.0.1",
