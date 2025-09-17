@@ -24,7 +24,7 @@ async function checkSBOMVulnerabilities() {
 			const sbomContent = readFileSync(sbomPath, 'utf8');
 			sbom = JSON.parse(sbomContent);
 			console.log('✅ SBOM found and valid JSON');
-		} catch (error) {
+		} catch (_error) {
 			console.error('❌ SBOM not found or invalid. Run "npm run sbom:generate" first.');
 			process.exit(1);
 		}
