@@ -1,0 +1,127 @@
+name: SBOM Generation
+
+on:
+  workflow_dispatch:
+    inputs:
+      format:
+        description: 'SBOM output format'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - json
+          - xml
+          - prod
+  schedule:
+    # Run weekly on Mondays at 3 AM UTC
+    - cron: '0 3 * * 1'
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  security-events: write
+
+jobs:
+  generate-sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate SBOM
+        run: |
+          if [ "${{ github.event.inputs.format }}" == "json" ]; then
+            npm run sbom:json
+          elif [ "${{ github.event.inputs.format }}" == "xml" ]; then
+            npm run sbom:xml
+          elif [ "${{ github.event.inputs.format }}" == "prod" ]; then
+            npm run sbom:prod
+          else
+            npm run sbom:generate
+            npm run sbom:prod
+          fi
+
+      - name: Check SBOM for vulnerabilities
+        run: npm run sbom:check
+        continue-on-error: true
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: |
+            sbom/*.json
+            sbom/*.xml
+          retention-days: 90
+
+      - name: Upload SBOM to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            sbom/sbom.json
+            sbom/sbom.xml
+            sbom/sbom-prod.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Optional: Upload to dependency tracking system
+      # - name: Upload to Dependency-Track
+      #   if: github.event_name == 'release' || github.ref == 'refs/heads/main'
+      #   run: |
+      #     curl -X POST https://your-dependency-track.com/api/v1/bom \
+      #       -H "X-Api-Key: ${{ secrets.DEPENDENCY_TRACK_API_KEY }}" \
+      #       -H "Content-Type: application/json" \
+      #       -d @sbom/sbom.json
+
+  scan-with-grype:
+    name: Scan SBOM with Grype
+    runs-on: ubuntu-latest
+    needs: generate-sbom
+
+    steps:
+      - name: Download SBOM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom
+
+      - name: Install Grype
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Scan SBOM with Grype
+        run: |
+          grype sbom:sbom/sbom.json -o sarif > grype-results.sarif
+          grype sbom:sbom/sbom.json -o table
+        continue-on-error: true
+
+      - name: Upload Grype results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: grype-results.sarif
+          category: grype-sbom-scan
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grype-scan-results-${{ github.sha }}
+          path: grype-results.sarif
+          retention-days: 30
