@@ -17,7 +17,7 @@ export default defineConfig({
 	],
 	server: {
 		host: 'localhost',
-		port: 4000,
+		port: parseInt(process.env.VITE_DEV_PORT || '4000'),
 		hmr: {
 			overlay: true
 		},
