@@ -79,6 +79,16 @@
 	import UserCheck from '~icons/lucide/user-check';
 	import Zap from '~icons/lucide/zap';
 	import Mountain from '~icons/lucide/mountain';
+import BookOpen from '~icons/lucide/book-open';
+import Map from '~icons/lucide/map';
+import Heart from '~icons/lucide/heart';
+import Scale from '~icons/lucide/scale';
+import Send from '~icons/lucide/send';
+import Smartphone from '~icons/lucide/smartphone';
+import Gem from '~icons/lucide/gem';
+import LoaderPinwheel from '~icons/lucide/loader-pinwheel';
+import FileType from '~icons/lucide/file-type';
+import HardDrive from '~icons/lucide/hard-drive';
 
 	// Icon map for dynamic icon lookup
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -161,7 +171,17 @@
 		'lucide:toggle-left': ToggleLeft,
 		'lucide:user-check': UserCheck,
 		'lucide:zap': Zap,
-		'lucide:mountain': Mountain
+		'lucide:mountain': Mountain,
+		'lucide:book-open': BookOpen,
+		'lucide:map': Map,
+		'lucide:heart': Heart,
+		'lucide:scale': Scale,
+		'lucide:send': Send,
+		'lucide:smartphone': Smartphone,
+		'lucide:gem': Gem,
+		'lucide:loader-pinwheel': LoaderPinwheel,
+		'lucide:file-type': FileType,
+		'lucide:hard-drive': HardDrive
 	};
 
 	interface Props {
