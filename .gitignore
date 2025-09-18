@@ -54,3 +54,10 @@ playwright-report/
 
 data/iframe
 
+# SBOM files (generated)
+sbom/*.json
+sbom/*.xml
+# Keep SBOM documentation
+!sbom/README.md
+!sbom/.gitkeep
+

@@ -3,9 +3,9 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
 	globalSetup: './e2e/global-setup.ts',
 	webServer: {
-		command: process.env.CI ? 'npx vite preview --config vite.config.preview.ts' : 'npm run dev',
+		command: process.env.CI ? 'npx vite dev --config vite.config.ci.ts' : 'npm run dev',
 		// Use URL-based detection instead of port-only
-		url: process.env.CI ? 'http://localhost:4173' : 'https://localhost:4001',
+		url: process.env.CI ? 'http://localhost:4000' : 'https://localhost:4001',
 		reuseExistingServer: !process.env.CI,
 		timeout: 120000,
 		ignoreHTTPSErrors: true
@@ -26,7 +26,7 @@ export default defineConfig({
 	/* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
 	use: {
 		/* Base URL to use in actions like `await page.goto('/')`. */
-		baseURL: process.env.CI ? 'http://localhost:4173' : 'https://localhost:4001',
+		baseURL: process.env.CI ? 'http://localhost:4000' : 'https://localhost:4001',
 		/* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
 		trace: 'on-first-retry',
 		/* Screenshot on failure */
