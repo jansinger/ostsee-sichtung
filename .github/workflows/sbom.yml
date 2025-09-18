@@ -43,18 +43,39 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Create SBOM directory
+        run: mkdir -p sbom
+
       - name: Generate SBOM
         run: |
-          if [ "${{ github.event.inputs.format }}" == "json" ]; then
+          # Set default format if not provided or empty
+          FORMAT="${{ github.event.inputs.format }}"
+          if [ -z "$FORMAT" ] || [ "$FORMAT" == "all" ]; then
+            echo "Generating all SBOM formats..."
+            npm run sbom:generate
+            npm run sbom:prod
+          elif [ "$FORMAT" == "json" ]; then
+            echo "Generating JSON SBOM..."
             npm run sbom:json
-          elif [ "${{ github.event.inputs.format }}" == "xml" ]; then
+          elif [ "$FORMAT" == "xml" ]; then
+            echo "Generating XML SBOM..."
             npm run sbom:xml
-          elif [ "${{ github.event.inputs.format }}" == "prod" ]; then
+          elif [ "$FORMAT" == "prod" ]; then
+            echo "Generating production-only SBOM..."
             npm run sbom:prod
           else
+            echo "Unknown format '$FORMAT', generating all formats..."
             npm run sbom:generate
             npm run sbom:prod
           fi
+
+      - name: Verify SBOM files
+        run: |
+          echo "Checking generated SBOM files..."
+          ls -la sbom/
+          echo ""
+          echo "SBOM file sizes:"
+          du -h sbom/*.json sbom/*.xml 2>/dev/null || echo "Some SBOM files not found"
 
       - name: Check SBOM for vulnerabilities
         run: npm run sbom:check
@@ -62,11 +83,10 @@ jobs:
 
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: sbom-${{ github.sha }}
-          path: |
-            sbom/*.json
-            sbom/*.xml
+          path: sbom/
           retention-days: 90
 
       - name: Upload SBOM to release
@@ -107,8 +127,18 @@ jobs:
 
       - name: Scan SBOM with Grype
         run: |
-          grype sbom:sbom/sbom.json -o sarif > grype-results.sarif
-          grype sbom:sbom/sbom.json -o table
+          echo "Verifying SBOM file for Grype scan..."
+          if [ -f "sbom/sbom.json" ]; then
+            echo "✅ SBOM file found, running scan..."
+            grype sbom:sbom/sbom.json -o sarif > grype-results.sarif
+            echo ""
+            echo "📊 Grype scan results (table format):"
+            grype sbom:sbom/sbom.json -o table
+          else
+            echo "❌ SBOM file not found, cannot run Grype scan"
+            touch grype-results.sarif  # Create empty file to avoid upload errors
+            exit 1
+          fi
         continue-on-error: true
 
       - name: Upload Grype results to GitHub Security
