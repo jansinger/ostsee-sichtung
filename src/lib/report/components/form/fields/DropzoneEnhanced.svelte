@@ -388,8 +388,9 @@
 									<!-- Additional EXIF Info -->
 									{#if mediaFile.timestamp}
 										<div class="mt-1">
-											<p class="text-base-content/60 text-xs">
-												📅 {mediaFile.timestamp.toLocaleString('de-DE')}
+											<p class="text-base-content/60 text-xs flex items-center gap-1">
+												<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
+												{mediaFile.timestamp.toLocaleString('de-DE')}
 											</p>
 										</div>
 									{/if}
@@ -449,8 +450,9 @@
 
 					{#if positionMediaFile.timestamp}
 						<div class="mt-3 text-center">
-							<p class="text-base-content/60 text-xs">
-								📅 Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE')}
+							<p class="text-base-content/60 text-xs flex items-center justify-center gap-1">
+								<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
+								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE')}
 							</p>
 						</div>
 					{/if}

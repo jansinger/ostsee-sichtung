@@ -29,25 +29,25 @@
 			name: 'CSV',
 			description: 'Comma-separated values für Excel, Google Sheets',
 			mimeType: 'text/csv',
-			icon: '📊'
+			icon: 'lucide:bar-chart'
 		},
 		json: {
-			name: 'JSON', 
+			name: 'JSON',
 			description: 'JavaScript Object Notation für Entwicklungszwecke',
 			mimeType: 'application/json',
-			icon: '🔧'
+			icon: 'lucide:braces'
 		},
 		xml: {
 			name: 'XML',
 			description: 'Extensible Markup Language für Datenauswertungen',
 			mimeType: 'application/xml',
-			icon: '📋'
+			icon: 'lucide:file-code'
 		},
 		kml: {
 			name: 'KML',
 			description: 'Keyhole Markup Language für Google Earth, Kartenprogramme',
 			mimeType: 'application/vnd.google-earth.kml+xml',
-			icon: '🗺️'
+			icon: 'lucide:map'
 		}
 	};
 
@@ -233,7 +233,7 @@
 								>
 								<div class="border-2 border-base-300 rounded-lg p-4 peer-checked:border-primary peer-checked:bg-primary/5 hover:border-primary/50 transition-colors">
 									<div class="flex items-start gap-3">
-										<span class="text-2xl">{info.icon}</span>
+										<Icon icon={info.icon} width="24" height="24" class="text-primary mt-1" />
 										<div class="flex-1 min-w-0">
 											<div class="font-medium">{info.name}</div>
 											<div class="text-xs text-base-content/70 mt-1">{info.description}</div>

@@ -89,6 +89,9 @@ import Gem from '~icons/lucide/gem';
 import LoaderPinwheel from '~icons/lucide/loader-pinwheel';
 import FileType from '~icons/lucide/file-type';
 import HardDrive from '~icons/lucide/hard-drive';
+import BarChart from '~icons/lucide/bar-chart';
+import Braces from '~icons/lucide/braces';
+import FileCode from '~icons/lucide/file-code';
 
 	// Icon map for dynamic icon lookup
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -181,7 +184,10 @@ import HardDrive from '~icons/lucide/hard-drive';
 		'lucide:gem': Gem,
 		'lucide:loader-pinwheel': LoaderPinwheel,
 		'lucide:file-type': FileType,
-		'lucide:hard-drive': HardDrive
+		'lucide:hard-drive': HardDrive,
+		'lucide:bar-chart': BarChart,
+		'lucide:braces': Braces,
+		'lucide:file-code': FileCode
 	};
 
 	interface Props {

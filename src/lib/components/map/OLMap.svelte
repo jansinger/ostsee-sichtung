@@ -123,7 +123,7 @@
 {#if !readonly}
 	<div class="alert mt-2 mb-0">
 		<Icon icon="lucide:info" class="h-6 w-6 shrink-0" />
-		<span>Marker verschieben oder GPS-Button (📍) für aktuelle Position nutzen.</span>
+		<span>Marker verschieben oder GPS-Button für aktuelle Position nutzen.</span>
 	</div>
 {/if}
 

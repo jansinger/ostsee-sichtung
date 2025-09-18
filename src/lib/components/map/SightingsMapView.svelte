@@ -524,9 +524,15 @@
 					</div>
 				</div>
 
-				<div class="text-base-content/60 mt-6 text-xs">
-					<p>🧭 Verwenden Sie die Maus oder Touch-Gesten zum Navigieren der Karte</p>
-					<p>🔍 Klicken Sie auf Marker für Details</p>
+				<div class="text-base-content/60 mt-6 text-xs space-y-1">
+					<p class="flex items-center gap-2">
+						<Icon icon="lucide:navigation" width="14" height="14" class="text-primary" />
+						Verwenden Sie die Maus oder Touch-Gesten zum Navigieren der Karte
+					</p>
+					<p class="flex items-center gap-2">
+						<Icon icon="lucide:mouse-pointer" width="14" height="14" class="text-primary" />
+						Klicken Sie auf Marker für Details
+					</p>
 				</div>
 			</div>
 		</div>

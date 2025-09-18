@@ -63,7 +63,10 @@
 				Ihre Kontaktdaten
 			</h3>
 			<div class="text-base-content/70 mb-4 text-left text-sm">
-				<p class="mb-1 text-left font-medium">📧 Ihre E-Mail-Adresse ist erforderlich für:</p>
+				<p class="mb-1 text-left font-medium flex items-center gap-2">
+					<Icon icon="lucide:mail" width="16" class="text-primary" />
+					Ihre E-Mail-Adresse ist erforderlich für:
+				</p>
 				<ul class="list-inside list-disc space-y-1 text-left text-xs">
 					<li>Bestätigung Ihrer Sichtungsmeldung</li>
 					<li>Wichtige Rückfragen zur Datenqualität</li>
@@ -72,7 +75,10 @@
 
 				<div class="alert alert-info mt-4">
 					<div class="text-xs">
-						<p class="mb-2 font-medium">💾 Automatische Speicherung für Komfort</p>
+						<p class="mb-2 font-medium flex items-center gap-2">
+							<Icon icon="lucide:save" width="16" class="text-info" />
+							Automatische Speicherung für Komfort
+						</p>
 						<p>
 							Ihre Kontaktdaten werden nach erfolgreicher Übermittlung lokal gespeichert und bei der
 							nächsten Sichtungsmeldung automatisch ausgefüllt.
@@ -108,8 +114,9 @@
 
 			<!-- Address (optional) -->
 			<details class="bg-base-100 collapse mt-4">
-				<summary class="collapse-title text-sm font-medium">
-					📍 Adresse (optional, für postalische Zusendungen)
+				<summary class="collapse-title text-sm font-medium flex items-center gap-2">
+					<Icon icon="lucide:map-pin" width="16" class="text-primary" />
+					Adresse (optional, für postalische Zusendungen)
 				</summary>
 				<div class="collapse-content space-y-4 pt-4">
 					<FormField name="street" />
@@ -154,13 +161,15 @@
 		<!-- Privacy and Consent Section -->
 		<div class="border-primary/20 bg-base-200/50 rounded-lg border p-3 sm:p-4">
 			<h3 class="mb-3 flex gap-2 text-base font-semibold sm:text-lg">
-				🔒 Datenschutz und Einverständnis
+				<Icon icon="lucide:lock" width="20" class="text-primary" />
+				Datenschutz und Einverständnis
 			</h3>
 
 			<!-- Optional Consents für Namensnennung -->
 			<div class="mt-6 space-y-4">
-				<h4 class="text-left text-base font-semibold">
-					📝 Optionale Veröffentlichung Ihres Namens
+				<h4 class="text-left text-base font-semibold flex items-center gap-2">
+					<Icon icon="lucide:pen-line" width="16" class="text-primary" />
+					Optionale Veröffentlichung Ihres Namens
 				</h4>
 				<p class="text-base-content/70 mb-4 text-left text-sm">
 					Diese Einverständniserklärungen sind <strong>optional</strong>. Ihre Sichtung wird auch

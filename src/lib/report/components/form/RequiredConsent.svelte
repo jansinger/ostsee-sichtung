@@ -31,7 +31,7 @@
 		<div class="bg-base-100 mb-4 rounded-lg p-4">
 			<div class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
 				<div class="flex items-start gap-3">
-					<span class="text-success text-lg">✅</span>
+					<Icon icon="lucide:check-circle" width="20" height="20" class="text-success mt-0.5" />
 					<div>
 						<p class="font-medium">Öffentliche Wissenschaftsdaten</p>
 						<p class="text-base-content/70 text-xs">
@@ -40,7 +40,7 @@
 					</div>
 				</div>
 				<div class="flex items-start gap-3">
-					<span class="text-info text-lg">🔒</span>
+					<Icon icon="lucide:lock" width="20" height="20" class="text-info mt-0.5" />
 					<div>
 						<p class="font-medium">Private Kontaktdaten</p>
 						<p class="text-base-content/70 text-xs">
