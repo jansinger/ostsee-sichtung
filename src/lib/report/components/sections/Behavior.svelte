@@ -22,7 +22,7 @@
 		<!-- Behavior with select -->
 		<FormField name="behavior" />
 
-		{#if $form.behavior === AnimalBehaviorEnum.OTHER}
+		{#if $form.behavior === AnimalBehaviorEnum.OTHER || $form.behavior === String(AnimalBehaviorEnum.OTHER)}
 			<!-- Additional field for custom behavior -->
 			<div transition:slide>
 				<FormField name="behaviorText" />
