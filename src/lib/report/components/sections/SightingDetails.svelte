@@ -19,7 +19,7 @@
 
 		<div class="mt-2 grid grid-cols-1 gap-4 md:grid-cols-1">
 			<FormField name="sightingFrom" />
-			{#if $form.sightingFrom === SightingFromEnum.OTHER || $form.sightingFrom === String(SightingFromEnum.OTHER)}
+			{#if String($form.sightingFrom) === String(SightingFromEnum.OTHER)}
 				<div transition:slide>
 					<FormField name="sightingFromText" />
 				</div>
@@ -27,7 +27,7 @@
 		</div>
 		<div class="mt-2 grid grid-cols-1 gap-4 md:grid-cols-1">
 			<FormField name="boatDrive" />
-			{#if $form.boatDrive === BoatDriveEnum.OTHER || $form.boatDrive === String(BoatDriveEnum.OTHER)}
+			{#if String($form.boatDrive) === String(BoatDriveEnum.OTHER)}
 				<div transition:slide>
 					<FormField name="boatDriveText" />
 				</div>
