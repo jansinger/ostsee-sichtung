@@ -8,6 +8,7 @@ export { formatFileSize, formatFileSizeDE, parseFileSize } from './file/fileSize
 export {
 	getFileExtension,
 	getFileIcon,
+	getFileIconName,
 	getMimeTypeFromExtension,
 	isImageFile,
 	isMediaFile,

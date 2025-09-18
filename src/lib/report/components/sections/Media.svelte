@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { getUploadConfig } from '$lib/stores/configStore';
 	import { getFormContext } from '$lib/report/formContext';
-	import { Camera } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import DropzoneEnhanced from '../form/fields/DropzoneEnhanced.svelte';
 	import FormField from '../form/fields/FormField.svelte';
 	import type { ValidationPreset } from '$lib/types';
@@ -47,11 +46,14 @@
 <div class="card bg-base-200 shadow-sm">
 	<div class="card-body">
 		<h3 class="card-title flex items-center gap-2 text-lg">
-			<Icon src={Camera} size="20" class="text-primary" />
+			<Icon icon="lucide:camera" width="20" class="text-primary" />
 			Foto- oder Videoaufnahmen
 		</h3>
 		<div class="text-base-content/70 mb-4 text-sm">
-			<p class="mb-2 font-medium">📸 Fotos und Videos sind extrem wertvoll für die Forschung!</p>
+			<p class="mb-2 font-medium flex items-center gap-2">
+				<Icon icon="lucide:camera" width="16" class="text-primary" />
+				Fotos und Videos sind extrem wertvoll für die Forschung!
+			</p>
 			<ul class="list-inside list-disc space-y-1 text-xs">
 				<li><strong>Artbestimmung:</strong> Auch unscharfe Bilder können helfen</li>
 				<li><strong>Verhaltensanalyse:</strong> Videos zeigen wichtige Verhaltensmuster</li>
@@ -71,7 +73,7 @@
 			<div class="skeleton h-32 w-full"></div>
 		{/if}
 		<div class="alert alert-info mt-4">
-			<Icon src={Camera} size="20" />
+			<Icon icon="lucide:camera" width="20" />
 			<span class="text-sm">
 				Falls Sie uns Ihre Medien auf einem anderen Weg zukommen lassen möchten, erhalten Sie
 				Instruktionen nach dem Absenden des Formulars.

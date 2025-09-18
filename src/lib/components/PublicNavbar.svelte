@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { List } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	import type { PublicUser } from '$lib/types/User';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
@@ -74,7 +73,7 @@
 					<!-- Mobile menu -->
 					<div class="dropdown dropdown-end lg:hidden">
 						<button tabindex="0" aria-label="Menü" class="btn btn-ghost">
-							<Icon src={List} class="h-6 w-6 shrink-0" />
+							<Icon icon="lucide:list" width="24" class="h-6 w-6 shrink-0" />
 						</button>
 						<ul
 							class="dropdown-content menu menu-sm rounded-box bg-base-100 absolute right-0 z-50 mt-3 w-52 p-2 shadow"

@@ -216,6 +216,48 @@ The legacy APIs are located in `/src/routes/api/legacy/` and include field mappi
 - **IMPORTANT**: Always use context7 MCP server for retrieving current documentation and best practices
 - Nutze die lokale DB aus .env für lokale Ausführung mit npm run dev und für tools / scripte
 
+### Icon Strategy
+
+**Primary Icon System: unplugin-icons with Compile-Time Optimization**
+- All UI icons use unplugin-icons for zero-runtime overhead and optimal performance
+- Icons are imported as Svelte components at build time - no runtime loading
+- Provides access to 200,000+ icons from 150+ icon sets via @iconify/json
+- Primary collection: `lucide:` for UI icons (buttons, navigation, form elements)
+- Icons are tree-shaken: only used icons are included in the final bundle
+
+**Usage Pattern:**
+```svelte
+// Direct import (best for static icons)
+import MapPin from '~icons/lucide/map-pin';
+import Calendar from '~icons/lucide/calendar';
+
+<MapPin width="20" height="20" class="text-primary" />
+<Calendar width="16" height="16" />
+
+// Via Icon wrapper component (for dynamic icons)
+import Icon from '$lib/components/Icon.svelte';
+
+<Icon icon="lucide:map-pin" width="20" />
+<Icon icon="lucide:calendar" width="16" class="text-primary" />
+```
+
+**Configuration:**
+- Configured in `vite.config.ts` with unplugin-icons/vite
+- Auto-installs missing icon collections during development
+- Default sizes: 20x20 (configurable per icon)
+- TypeScript support via `src/unplugin-icons.d.ts`
+
+**Weather Icons: CSS-Based System (KEEP AS-IS)**
+- Weather-specific icons continue to use CSS-based weather-icons library
+- Located in `/src/css/weather-icons.css` and `/src/css/weather-icons-wind.css`
+- Uses `wi` classes for weather conditions and wind directions
+- **DO NOT replace with unplugin-icons** - weather icons require specialized WMO code mapping
+
+**File Type Icons:**
+- Use `getFileIconName()` utility for icon names compatible with Icon wrapper
+- Use `getFileIcon()` utility for emoji fallbacks (existing compatibility)
+- Both functions available from `$lib/utils/file/fileType`
+
 ## Technology Stack Documentation and Best Practices
 
 ### Always Use context7 MCP Server
@@ -486,7 +528,7 @@ Use Task + context7: "Get latest SvelteKit deployment options and optimization t
 - **Yup**: Schema validation library for form data and API validation
 
 #### UI & Authentication
-- **Lucide Icons**: Beautiful, customizable SVG icon library with React/Svelte components
+- **unplugin-icons**: Compile-time icon optimization providing access to 200,000+ icons with zero runtime overhead
 - **Auth0**: Identity and access management platform with OAuth2/OIDC support
 
 #### Context7 Usage for These Technologies
@@ -506,7 +548,7 @@ Use Task + context7: "Get latest Scalar OpenAPI documentation patterns and clien
 Use Task + context7: "Get current Yup v1+ validation patterns for complex form schemas"
 
 # UI & Auth
-Use Task + context7: "Get latest Lucide Icons integration patterns for Svelte components"
+Use Task + context7: "Get latest unplugin-icons integration patterns and available icon collections"
 Use Task + context7: "Get current Auth0 SPA integration with SvelteKit and security best practices"
 ```
 
@@ -544,8 +586,8 @@ export const handle: Handle = Auth0Handle({
   clientSecret: env.AUTH0_CLIENT_SECRET
 });
 
-// Yup + Lucide Icons in forms
-import { MapPin, Calendar } from '@steeze-ui/lucide-icons';
+// Yup + unplugin-icons in forms
+import Icon from '$lib/components/Icon.svelte';
 
 const schema = yup.object({
   position: yup.object({

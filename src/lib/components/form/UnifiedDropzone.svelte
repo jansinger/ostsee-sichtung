@@ -4,8 +4,7 @@
 	import { validateFiles } from '$lib/utils';
 	import { getFileTypeDescription } from '$lib/utils/validation/fileValidation';
 
-	import { Upload } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let {
 		config,
@@ -230,9 +229,8 @@
 		{:else}
 			<div class="flex flex-col items-center">
 				<Icon
-					src={Upload}
-					size="32"
-					class="mb-2 transition-colors {isDragOver ? 'text-primary' : 'text-base-content/40'}"
+					icon="lucide:upload"
+					class="mb-2 h-8 w-8 transition-colors {isDragOver ? 'text-primary' : 'text-base-content/40'}"
 				/>
 				<p class="text-sm font-medium {isDragOver ? 'text-primary' : ''}">
 					{isDragOver ? `${multiple ? 'Dateien' : 'Datei'} hier ablegen!` : title}

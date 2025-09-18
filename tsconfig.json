@@ -13,8 +13,15 @@
 		"noImplicitReturns": true,
 		"noImplicitOverride": true,
 		"noUncheckedIndexedAccess": true,
-		"exactOptionalPropertyTypes": true
+		"exactOptionalPropertyTypes": true,
+		"types": ["unplugin-icons/types/svelte"]
 	},
+	"include": [
+		"src/**/*.d.ts",
+		"src/**/*.js",
+		"src/**/*.ts",
+		"src/**/*.svelte"
+	],
 	"exclude": [
 		"src/tools/**/*.js",
 		"*.js",

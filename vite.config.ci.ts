@@ -2,10 +2,20 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 import devtoolsJson from 'vite-plugin-devtools-json';
+import Icons from 'unplugin-icons/vite';
 
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
+		Icons({
+			compiler: 'svelte',
+			autoInstall: true,
+			iconCustomizer(_collection, _icon, props) {
+				// Set default width and height
+				props.width = props.width || '20';
+				props.height = props.height || '20';
+			}
+		}),
 		sveltekit(),
 		devtoolsJson()
 		// No basicSsl plugin for CI to avoid HTTPS certificate issues
@@ -33,7 +43,6 @@ export default defineConfig({
 	optimizeDeps: {
 		// Pre-bundle these dependencies to avoid CommonJS issues
 		include: [
-			'flowbite-svelte-icons',
 			'@fontsource/inter',
 			'@fontsource/roboto',
 			'svelte-forms-lib',
@@ -43,8 +52,6 @@ export default defineConfig({
 			'@turf/helpers',
 			'drizzle-orm',
 			'exifr',
-			'@steeze-ui/lucide-icons',
-			'@steeze-ui/svelte-icon',
 			'tailwind-variants',
 			'rbush'
 		],

@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { Filter, Loader, SquareX } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { years = [], defaultYear } = $props<{
 		years?: number[];
@@ -40,7 +39,7 @@
 	aria-label="Filter {isOpen ? 'schließen' : 'öffnen'}"
 >
 	<Icon
-		src={isApplyingFilter ? Loader : Filter}
+		icon={isApplyingFilter ? 'lucide:loader-2' : 'lucide:filter'}
 		class="mb-1 h-4 w-4 {isApplyingFilter ? 'animate-spin' : ''}"
 	/>
 	<div
@@ -69,7 +68,7 @@
 					class="btn btn-ghost btn-xs hover:bg-base-200"
 					aria-label="Filter schließen"
 				>
-					<Icon src={SquareX} class="h-4 w-4" />
+					<Icon icon="lucide:square-x" class="h-4 w-4" />
 				</button>
 			</div>
 
@@ -78,7 +77,7 @@
 					<label for="year-select" class="label py-1">
 						<span class="label-text text-sm font-medium">Jahr</span>
 						{#if isApplyingFilter}
-							<Icon src={Loader} class="text-primary ml-2 h-3 w-3 animate-spin" />
+							<Icon icon="lucide:loader-2" class="text-primary ml-2 h-3 w-3 animate-spin" />
 						{/if}
 					</label>
 					<select
@@ -116,7 +115,7 @@
 						/>
 						{#if isApplyingFilter}
 							<div class="absolute top-1/2 right-3 -translate-y-1/2 transform">
-								<Icon src={Loader} class="text-primary h-4 w-4 animate-spin" />
+								<Icon icon="lucide:loader-2" class="text-primary h-4 w-4 animate-spin" />
 							</div>
 						{/if}
 					</div>

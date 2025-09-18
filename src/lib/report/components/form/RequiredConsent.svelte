@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { getFormContext } from '$lib/report/formContext';
-	import { ShieldAlert } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import FormField from './fields/FormField.svelte';
 
 	const { form: _form } = getFormContext();
@@ -19,7 +18,7 @@
 	<div class="bg-primary/5 border-primary/20 mb-6 rounded-lg border-2 p-4">
 		<div class="mb-4">
 			<h4 class="text-primary mb-2 flex items-center gap-2 text-lg font-bold">
-				<Icon src={ShieldAlert} size="20" class="text-primary" />
+				<Icon icon="lucide:shield-alert" class="h-5 w-5 text-primary" />
 				Erforderliche Zustimmung zur Datenverwendung
 			</h4>
 			<p class="text-base-content/80 text-sm">

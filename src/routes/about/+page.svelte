@@ -1,5 +1,6 @@
 <script lang="ts">
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	// About page for Ostsee-Tiere platform
 </script>
@@ -56,7 +57,10 @@
 	<div class="mb-20">
 		<div class="grid items-center gap-12 md:grid-cols-2">
 			<div>
-				<h2 class="text-primary mb-6 text-4xl font-bold">🎯 Unsere Mission</h2>
+				<h2 class="text-primary mb-6 text-4xl font-bold flex items-center gap-3">
+					<Icon icon="lucide:zap" width="36" class="text-primary" />
+					Unsere Mission
+				</h2>
 				<div class="space-y-4">
 					<p class="text-base-content/80 text-lg leading-relaxed">
 						Wir glauben, dass <strong>jeder einen Beitrag</strong> zum Schutz der Meeresumwelt leisten
@@ -76,7 +80,9 @@
 				class="card from-primary/5 via-secondary/5 to-accent/5 border-primary/20 bg-gradient-to-br shadow-xl"
 			>
 				<div class="card-body p-10 text-center">
-					<div class="mb-6 text-6xl opacity-80">🔬</div>
+					<div class="mb-6 flex justify-center">
+						<Icon icon="lucide:activity" width="60" class="text-primary opacity-80" />
+					</div>
 					<h3 class="text-primary mb-4 text-2xl font-bold">Citizen Science</h3>
 					<p class="text-base-content/70 text-lg leading-relaxed">
 						Bürgerwissenschaft macht <strong>jeden zum Forscher</strong> und trägt zu wichtigen wissenschaftlichen
@@ -97,7 +103,10 @@
 	<!-- Features Section -->
 	<div class="mb-20">
 		<div class="mb-12 text-center">
-			<h2 class="text-primary mb-4 text-4xl font-bold">🚀 Unsere Plattform</h2>
+			<h2 class="text-primary mb-4 text-4xl font-bold flex items-center justify-center gap-3">
+				<Icon icon="lucide:zap" width="36" class="text-primary" />
+				Unsere Plattform
+			</h2>
 			<p class="text-base-content/70 mx-auto max-w-2xl text-lg">
 				Modernste Technologie für einfache Bedienung und maximale wissenschaftliche Relevanz
 			</p>
@@ -106,8 +115,8 @@
 		<div class="grid gap-8 md:grid-cols-3">
 			<div class="card bg-base-100 group shadow-xl transition-all duration-300 hover:shadow-2xl">
 				<div class="card-body p-8 text-center">
-					<div class="mb-6 text-5xl transition-transform duration-300 group-hover:scale-110">
-						📝
+					<div class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110">
+						<Icon icon="lucide:pen-line" width="48" class="text-primary" />
 					</div>
 					<h3 class="card-title text-primary mb-4 justify-center text-xl">Einfaches Melden</h3>
 					<p class="text-base-content/80 text-base leading-relaxed">
@@ -122,8 +131,8 @@
 
 			<div class="card bg-base-100 group shadow-xl transition-all duration-300 hover:shadow-2xl">
 				<div class="card-body p-8 text-center">
-					<div class="mb-6 text-5xl transition-transform duration-300 group-hover:scale-110">
-						🗺️
+					<div class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110">
+						<Icon icon="lucide:map" width="48" class="text-secondary" />
 					</div>
 					<h3 class="card-title text-secondary mb-4 justify-center text-xl">Interaktive Karte</h3>
 					<p class="text-base-content/80 text-base leading-relaxed">
@@ -138,8 +147,8 @@
 
 			<div class="card bg-base-100 group shadow-xl transition-all duration-300 hover:shadow-2xl">
 				<div class="card-body p-8 text-center">
-					<div class="mb-6 text-5xl transition-transform duration-300 group-hover:scale-110">
-						📊
+					<div class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110">
+						<Icon icon="lucide:chart-pie" width="48" class="text-accent" />
 					</div>
 					<h3 class="card-title text-accent mb-4 justify-center text-xl">Offene Daten</h3>
 					<p class="text-base-content/80 text-base leading-relaxed">
@@ -174,7 +183,8 @@
 					rel="noopener noreferrer"
 					class="btn btn-outline btn-sm"
 				>
-					🌐 Meeresmuseum.de
+					<Icon icon="lucide:globe" width="16" class="mr-1" />
+					Meeresmuseum.de
 				</a>
 				<a
 					href="https://www.deutsches-meeresmuseum.de/wissenschaft/sichtungen"
@@ -182,7 +192,8 @@
 					rel="noopener noreferrer"
 					class="btn btn-outline btn-sm"
 				>
-					📚 Mehr über Sichtungen
+					<Icon icon="lucide:file-text" width="16" class="mr-1" />
+					Mehr über Sichtungen
 				</a>
 			</div>
 		</div>
@@ -190,14 +201,17 @@
 
 	<!-- Data Protection & Security Section -->
 	<div class="mb-16">
-		<h2 class="mb-8 text-center text-3xl font-bold">🔒 Datenschutz & Sicherheit</h2>
+		<h2 class="mb-8 text-center text-3xl font-bold flex items-center justify-center gap-3">
+			<Icon icon="lucide:shield-check" width="30" class="text-success" />
+			Datenschutz & Sicherheit
+		</h2>
 
 		<div class="grid gap-8 md:grid-cols-2">
 			<!-- Data Protection Card -->
 			<div class="card bg-base-100 border-success/20 border shadow-xl">
 				<div class="card-body">
 					<div class="mb-4 flex items-center gap-2">
-						<div class="text-3xl">🛡️</div>
+						<Icon icon="lucide:shield-check" width="30" class="text-success" />
 						<h3 class="card-title">Datenschutz</h3>
 					</div>
 					<p class="mb-4 text-sm text-gray-700">
@@ -206,19 +220,19 @@
 					</p>
 					<ul class="space-y-2 text-sm">
 						<li class="flex items-start gap-2">
-							<span class="text-success mt-1">✓</span>
+							<Icon icon="lucide:check" width="16" class="text-success mt-1" />
 							<span>Freiwillige Angabe personenbezogener Daten</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<span class="text-success mt-1">✓</span>
+							<Icon icon="lucide:check" width="16" class="text-success mt-1" />
 							<span>Verschlüsselte Übertragung aller Daten</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<span class="text-success mt-1">✓</span>
+							<Icon icon="lucide:check" width="16" class="text-success mt-1" />
 							<span>Keine Weitergabe an unbefugte Dritte</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<span class="text-success mt-1">✓</span>
+							<Icon icon="lucide:check" width="16" class="text-success mt-1" />
 							<span>Anonymisierte öffentliche Darstellung</span>
 						</li>
 					</ul>
@@ -239,7 +253,7 @@
 			<div class="card bg-base-100 border-info/20 border shadow-xl">
 				<div class="card-body">
 					<div class="mb-4 flex items-center gap-2">
-						<div class="text-3xl">🔐</div>
+						<Icon icon="lucide:lock" width="30" class="text-info" />
 						<h3 class="card-title">Technische Sicherheit</h3>
 					</div>
 					<p class="mb-4 text-sm text-gray-700">
@@ -248,19 +262,19 @@
 					</p>
 					<ul class="space-y-2 text-sm">
 						<li class="flex items-start gap-2">
-							<span class="text-info mt-1">✓</span>
+							<Icon icon="lucide:check" width="16" class="text-info mt-1" />
 							<span>HTTPS/SSL-Verschlüsselung für alle Verbindungen</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<span class="text-info mt-1">✓</span>
+							<Icon icon="lucide:check" width="16" class="text-info mt-1" />
 							<span>Sichere Authentifizierung mit Auth0</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<span class="text-info mt-1">✓</span>
+							<Icon icon="lucide:check" width="16" class="text-info mt-1" />
 							<span>Regelmäßige Sicherheitsupdates</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<span class="text-info mt-1">✓</span>
+							<Icon icon="lucide:check" width="16" class="text-info mt-1" />
 							<span>Gehostete Infrastruktur in Deutschland/EU</span>
 						</li>
 					</ul>
@@ -287,7 +301,7 @@
 			class="border-success/10 mt-8 rounded-lg border bg-gradient-to-r from-green-50 to-emerald-50 p-6"
 		>
 			<div class="flex items-start gap-4">
-				<div class="text-2xl">📋</div>
+				<Icon icon="lucide:file-text" width="24" class="text-success" />
 				<div class="flex-1">
 					<h4 class="mb-2 font-semibold">DSGVO-Konformität</h4>
 					<p class="mb-3 text-sm text-gray-700">
@@ -296,19 +310,19 @@
 					</p>
 					<div class="grid gap-3 text-sm md:grid-cols-2">
 						<div class="flex items-center gap-2">
-							<span class="text-success">✓</span>
+							<Icon icon="lucide:check" width="16" class="text-success" />
 							<span>Recht auf Auskunft</span>
 						</div>
 						<div class="flex items-center gap-2">
-							<span class="text-success">✓</span>
+							<Icon icon="lucide:check" width="16" class="text-success" />
 							<span>Recht auf Berichtigung</span>
 						</div>
 						<div class="flex items-center gap-2">
-							<span class="text-success">✓</span>
+							<Icon icon="lucide:check" width="16" class="text-success" />
 							<span>Recht auf Löschung</span>
 						</div>
 						<div class="flex items-center gap-2">
-							<span class="text-success">✓</span>
+							<Icon icon="lucide:check" width="16" class="text-success" />
 							<span>Recht auf Datenübertragbarkeit</span>
 						</div>
 					</div>
@@ -343,7 +357,10 @@
 
 	<!-- Technology Section -->
 	<div class="bg-base-200 mb-16 rounded-lg p-8">
-		<h2 class="mb-6 text-center text-3xl font-bold">⚡ Technologie</h2>
+		<h2 class="mb-6 text-center text-3xl font-bold flex items-center justify-center gap-3">
+			<Icon icon="lucide:zap" width="30" class="text-warning" />
+			Technologie
+		</h2>
 		<p class="mx-auto mb-8 max-w-3xl text-center text-gray-700">
 			Unsere Plattform nutzt moderne Web-Technologien für eine optimale Benutzererfahrung und
 			zuverlässige Datenverarbeitung.

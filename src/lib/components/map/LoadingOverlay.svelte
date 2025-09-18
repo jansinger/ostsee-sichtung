@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { Filter, Loader, MapPin } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	// Props
 	type LoadingType = 'default' | 'filter' | 'features' | 'initial';
@@ -21,10 +20,10 @@
 
 	// Icon basierend auf Typ
 	const iconMap = {
-		default: Loader,
-		filter: Filter,
-		features: MapPin,
-		initial: Loader
+		default: 'lucide:loader-2',
+		filter: 'lucide:filter',
+		features: 'lucide:map-pin',
+		initial: 'lucide:loader-2'
 	};
 
 	// Nachrichten basierend auf Typ
@@ -60,7 +59,7 @@
 				<div
 					class="bg-primary/10 mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full"
 				>
-					<Icon src={iconMap[type as LoadingType]} class="text-primary h-8 w-8 animate-spin" />
+					<Icon icon={iconMap[type as LoadingType]} class="text-primary h-8 w-8 animate-spin" />
 				</div>
 				<h3 id="loading-title" class="text-base-content text-lg font-semibold">
 					{displayMessage}

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { ArrowLeftOutline, ExclamationCircleOutline } from 'flowbite-svelte-icons';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { children, data } = $props();
 
@@ -38,7 +38,7 @@
 <div class="container mx-auto p-4">
 	<div class="mb-2 flex justify-end">
 		<button class="btn btn-ghost btn-sm" onclick={handleClose}>
-			<ArrowLeftOutline class="mr-2 h-4 w-4" />
+			<Icon icon="lucide:arrow-left" class="mr-2 h-4 w-4" />
 			Zurück zur Tabelle
 		</button>
 	</div>
@@ -55,7 +55,7 @@
 		</div>
 	{:catch error}
 		<div class="alert alert-error">
-			<ExclamationCircleOutline class="h-6 w-6 shrink-0" />
+			<Icon icon="lucide:alert-circle" class="h-6 w-6 shrink-0" />
 			<span>{error}</span>
 		</div>
 	{/await}

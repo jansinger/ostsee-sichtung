@@ -2,8 +2,7 @@
 	import { getFormContext } from '$lib/report/formContext';
 	import { getUploadConfig } from '$lib/stores/configStore';
 	import type { ValidationPreset } from '$lib/types';
-	import { Calendar, Camera, MapPin, SquarePen } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import DropzoneEnhanced from '../form/fields/DropzoneEnhanced.svelte';
 	import FormField from '../form/fields/FormField.svelte';
 	import LocationInput from '../form/LocationInput.svelte';
@@ -54,7 +53,7 @@
 	<!-- Position Input Method Selection -->
 	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
 		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
-			<Icon src={MapPin} size="20" class="text-primary" />
+			<Icon icon="lucide:map-pin" width="20" class="text-primary" />
 			Positionsangabe
 		</h3>
 		<p class="text-base-content/70 mb-6 text-sm">
@@ -82,8 +81,8 @@
 				>
 					<div class="flex flex-col items-center text-center">
 						<Icon
-							src={Camera}
-							size="24"
+							icon="lucide:camera"
+							width="24"
 							class="mb-2 {positionMethod === 'photo' ? 'text-primary' : 'text-base-content/60'}"
 						/>
 						<h4 class="text-sm font-semibold">Foto mit GPS</h4>
@@ -112,8 +111,8 @@
 				>
 					<div class="flex flex-col items-center text-center">
 						<Icon
-							src={MapPin}
-							size="24"
+							icon="lucide:map-pin"
+							width="24"
 							class="mb-2 {positionMethod === 'map' ? 'text-primary' : 'text-base-content/60'}"
 						/>
 						<h4 class="text-sm font-semibold">Karte / GPS Position</h4>
@@ -142,8 +141,8 @@
 				>
 					<div class="flex flex-col items-center text-center">
 						<Icon
-							src={SquarePen}
-							size="24"
+							icon="lucide:square-pen"
+							width="24"
 							class="mb-2 {positionMethod === 'manual' ? 'text-primary' : 'text-base-content/60'}"
 						/>
 						<h4 class="text-sm font-semibold">Beschreibung</h4>
@@ -157,7 +156,7 @@
 			<!-- Photo Upload Section -->
 			{#if positionMethod === 'photo'}
 				<h4 class="mb-3 flex items-center gap-2 font-semibold">
-					<Icon src={Camera} size="18" />
+					<Icon icon="lucide:camera" width="18" />
 					Foto mit GPS-Daten hochladen
 				</h4>
 
@@ -178,7 +177,7 @@
 			<!-- Map/GPS Input Section -->
 			{#if positionMethod === 'map'}
 				<h4 class="mb-3 flex items-center gap-2 font-semibold">
-					<Icon src={MapPin} size="18" />
+					<Icon icon="lucide:map-pin" width="18" />
 					Position auf Karte wählen
 				</h4>
 				<LocationInput {latitude} {longitude} onchange={handleChange} />
@@ -193,7 +192,7 @@
 			<!-- Manual Input Section -->
 			{#if positionMethod === 'manual'}
 				<h4 class="mb-3 flex items-center gap-2 font-semibold">
-					<Icon src={SquarePen} size="18" />
+					<Icon icon="lucide:square-pen" width="18" />
 					Beschreibung der Position
 				</h4>
 
@@ -206,7 +205,7 @@
 	<!-- Date and Time Section (always visible) -->
 	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
 		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
-			<Icon src={Calendar} size="20" class="text-primary" />
+			<Icon icon="lucide:calendar" width="20" class="text-primary" />
 			Datum und Uhrzeit
 		</h3>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">

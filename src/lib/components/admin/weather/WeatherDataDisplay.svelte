@@ -1,28 +1,9 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
+	import WeatherDisplay from '$lib/components/weather/WeatherDisplay.svelte';
 	import type { StoredWeatherData } from '$lib/services/weatherService';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
-	import {
-		Archive,
-		Calendar,
-		ChevronDown,
-		ChevronRight,
-		CircleAlert,
-		Cloud,
-		CloudRain,
-		Eye,
-		Gauge,
-		Gem,
-		Info,
-		MapPin,
-		Mountain,
-		RefreshCw,
-		Thermometer,
-		Waves,
-		Wind,
-		Zap
-	} from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
 
 	interface Props {
 		weatherData: StoredWeatherData | null;
@@ -56,12 +37,14 @@
 
 	// Bestimme Datenquelle und passende Hinweise
 	const sourceInfo = $derived.by(() => {
-		if (!weatherData) return null;
+		if (!weatherData) {
+			return null;
+		}
 
 		return {
 			type: weatherData.data_type,
 			label: weatherData.data_type === 'forecast' ? 'Vorhersagedaten (heute)' : 'Historische Daten',
-			icon: weatherData.data_type === 'forecast' ? Zap : Archive,
+			icon: weatherData.data_type === 'forecast' ? 'lucide:zap' : 'lucide:archive',
 			className: weatherData.data_type === 'forecast' ? 'forecast-data' : 'historical-data',
 			warning:
 				weatherData.data_type === 'forecast' && isToday()
@@ -102,15 +85,7 @@
 		}
 	}
 
-	// Wetter-Icon basierend auf WMO Code
-	function getWeatherIconClass(code: number): string {
-		return `wi-wmo4680-${code}`;
-	}
 
-	// Wind-Icon basierend auf Windrichtung in Grad
-	function getWindIconClass(windDirection: number): string {
-		return `wi-wind from-${Math.round(windDirection)}-deg`;
-	}
 </script>
 
 {#if weatherData && sourceInfo}
@@ -119,7 +94,7 @@
 	>
 		<h4 class="mb-3 flex items-center gap-2 font-semibold">
 			{#if sourceInfo?.icon}
-				<Icon src={sourceInfo.icon} size="18" class="text-primary" />
+				<Icon icon={sourceInfo.icon} width="18" class="text-primary" />
 			{/if}
 			<span>API-Wetterdaten ({sourceInfo?.label})</span>
 			<span class="badge badge-sm badge-primary">Open-Meteo</span>
@@ -127,76 +102,47 @@
 
 		{#if sourceInfo?.warning}
 			<div class="alert alert-info alert-sm mb-3">
-				<Icon src={CircleAlert} size="16" />
+				<Icon icon="lucide:circle-alert" width="16" />
 				<span class="text-xs">{sourceInfo.warning}</span>
 			</div>
 		{/if}
 
-		<!-- Manuelle vs API Daten Vergleich -->
+		<!-- API Wetterdaten mit gemeinsamer WeatherDisplay Komponente -->
 		<div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
 			<div class="bg-base-100 rounded-lg p-3">
 				<h5 class="mb-2 flex items-center gap-2 font-medium">
-					<Icon src={Info} size="16" class="text-info" />
+					<Icon icon="lucide:info" width="16" class="text-info" />
 					API-Wetterdaten
 				</h5>
 
-				<div class="grid grid-cols-2 gap-2 text-sm">
-					<div class="flex items-center gap-2">
-						<Icon src={Thermometer} size="14" class="text-orange-500" />
-						<span>{weatherData.processed.temperature}°C</span>
-					</div>
-					<div class="flex items-center gap-2">
-						<i class="wi {getWeatherIconClass(weatherData.processed.weatherCode)} text-lg"></i>
-						<span class="truncate">{weatherData.processed.weatherDescription}</span>
-					</div>
-					<div class="flex items-center gap-2">
-						<Icon src={Wind} size="14" class="text-blue-500" />
-						<span>{weatherData.processed.windSpeed} km/h</span>
-					</div>
-					<div class="flex items-center gap-2">
-						<i class="wi {getWindIconClass(weatherData.processed.windDirection)} text-lg"></i>
-						<span
-							>{weatherData.processed.windDirection}° {weatherData.processed
-								.windDirectionCardinal}</span
-						>
-					</div>
-					<div class="flex items-center gap-2">
-						<Icon src={Waves} size="14" class="text-cyan-500" />
-						<span>Seegang {weatherData.processed.seaState}</span>
-					</div>
-					<div class="flex items-center gap-2">
-						<Icon src={Eye} size="14" class="text-green-500" />
-						<span>{Math.round(weatherData.processed.visibility / 1000)} km</span>
-					</div>
-					{#if weatherData.processed.pressure}
-						<div class="flex items-center gap-2">
-							<Icon src={Gauge} size="14" class="text-purple-500" />
-							<span>{weatherData.processed.pressure} hPa</span>
-						</div>
-					{/if}
-				</div>
+				<WeatherDisplay
+					{weatherData}
+					showLocation={false}
+					showTime={false}
+					compact={true}
+				/>
 			</div>
 
 			<div class="bg-base-100 rounded-lg p-3">
 				<h5 class="mb-2 flex items-center gap-2 font-medium">
-					<Icon src={MapPin} size="16" class="text-secondary" />
+					<Icon icon="lucide:map-pin" width="16" class="text-secondary" />
 					Position & Zeit
 				</h5>
 
 				<div class="space-y-1 text-sm">
 					<div class="flex items-center gap-2">
-						<Icon src={MapPin} size="12" />
+						<Icon icon="lucide:map-pin" width="12" />
 						<span
 							>{formatLocation(weatherData.location.longitude, weatherData.location.latitude)}</span
 						>
 					</div>
 					<div class="flex items-center gap-2">
-						<Icon src={Calendar} size="12" />
+						<Icon icon="lucide:calendar" width="12" />
 						<span>{formatLocalDateTime(weatherData.observation_time, 'datetime')}</span>
 					</div>
 					{#if weatherData.location.elevation}
 						<div class="flex items-center gap-2">
-							<Icon src={Mountain} size="12" class="text-gray-600" />
+							<Icon icon="lucide:mountain" width="12" class="text-gray-600" />
 							<span>{weatherData.location.elevation}m ü.NN</span>
 						</div>
 					{/if}
@@ -205,51 +151,51 @@
 		</div>
 
 		<!-- Zusätzliche Wetterdaten -->
-		<div class="mt-4 border-t border-base-300 pt-3">
-			<h5 class="mb-2 flex items-center gap-2 font-medium text-sm">
-				<Icon src={Cloud} size="16" class="text-info" />
+		<div class="border-base-300 mt-4 border-t pt-3">
+			<h5 class="mb-2 flex items-center gap-2 text-sm font-medium">
+				<Icon icon="lucide:cloud" width="16" class="text-info" />
 				Erweiterte Wetterdaten
 			</h5>
 			<div class="grid grid-cols-2 gap-3 text-sm md:grid-cols-3">
 				{#if weatherData.processed.humidity}
 					<div class="flex items-center gap-2">
-						<Icon src={Cloud} size="14" class="text-blue-400" />
+						<Icon icon="lucide:cloud" width="14" class="text-blue-400" />
 						<span>Luftfeuchtigkeit: {weatherData.processed.humidity}%</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.precipitation}
 					<div class="flex items-center gap-2">
-						<Icon src={CloudRain} size="14" class="text-blue-500" />
+						<Icon icon="lucide:cloud-rain" width="14" class="text-blue-500" />
 						<span>Niederschlag: {weatherData.raw_data.precipitation}mm</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.cloud_cover}
 					<div class="flex items-center gap-2">
-						<Icon src={Cloud} size="14" />
+						<Icon icon="lucide:cloud" width="14" />
 						<span>Bewölkung: {weatherData.raw_data.cloud_cover}%</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.wave_height}
 					<div class="flex items-center gap-2">
-						<Icon src={Waves} size="14" class="text-blue-600" />
+						<Icon icon="lucide:waves" width="14" class="text-blue-600" />
 						<span>Wellenhöhe: {weatherData.raw_data.wave_height.toFixed(2)}m</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.wave_direction}
 					<div class="flex items-center gap-2">
-						<i class="wi {getWindIconClass(weatherData.raw_data.wave_direction)} text-lg text-blue-600"></i>
+						<Icon icon="lucide:wind" width="14" class="text-blue-600" />
 						<span>Wellenrichtung: {Math.round(weatherData.raw_data.wave_direction)}°</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.wave_period}
 					<div class="flex items-center gap-2">
-						<Icon src={Gem} size="14" class="text-cyan-600" />
+						<Icon icon="lucide:gem" width="14" class="text-cyan-600" />
 						<span>Wellenperiode: {weatherData.raw_data.wave_period.toFixed(1)}s</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.sea_surface_temperature}
 					<div class="flex items-center gap-2">
-						<Icon src={Thermometer} size="14" class="text-blue-500" />
+						<Icon icon="lucide:thermometer" width="14" class="text-blue-500" />
 						<span>Wassertemp: {weatherData.raw_data.sea_surface_temperature}°C</span>
 					</div>
 				{/if}
@@ -257,9 +203,9 @@
 		</div>
 
 		<!-- Qualitäts- und Quellinfos Toggle -->
-		<div class="border-base-300 border-t pt-3 mt-4">
+		<div class="border-base-300 mt-4 border-t pt-3">
 			<button onclick={() => (isExpanded = !isExpanded)} class="btn btn-xs btn-ghost gap-1">
-				<Icon src={isExpanded ? ChevronDown : ChevronRight} size="12" />
+				<Icon icon={isExpanded ? 'lucide:chevron-down' : 'lucide:chevron-right'} width="12" />
 				{isExpanded ? 'Qualitätsinfos ausblenden' : 'Qualitäts- und Quellinfos anzeigen'}
 			</button>
 
@@ -286,7 +232,7 @@
 					disabled={isRefreshing}
 					class="btn btn-xs btn-secondary mt-3 gap-1"
 				>
-					<Icon src={RefreshCw} size="12" class={isRefreshing ? 'animate-spin' : ''} />
+					<Icon icon="lucide:refresh-cw" width="12" class={isRefreshing ? 'animate-spin' : ''} />
 					{isRefreshing ? 'Lade...' : 'Wetterdaten aktualisieren'}
 				</button>
 			{/if}
@@ -295,7 +241,7 @@
 {:else}
 	<div class="no-weather-data border-base-300 bg-base-50 mt-4 rounded-lg border p-4">
 		<div class="text-base-content/70 text-center">
-			<Icon src={Cloud} size="24" class="mx-auto mb-2 opacity-50" />
+			<Icon icon="lucide:cloud" width="24" class="mx-auto mb-2 opacity-50" />
 			<p class="font-medium">Keine API-Wetterdaten verfügbar</p>
 			<p class="mt-1 text-sm">Diese Sichtung wurde vor der Weather-API-Integration erstellt.</p>
 
@@ -305,7 +251,7 @@
 					disabled={isRefreshing}
 					class="btn btn-xs btn-primary mt-3 gap-1"
 				>
-					<Icon src={RefreshCw} size="12" class={isRefreshing ? 'animate-spin' : ''} />
+					<Icon icon="lucide:refresh-cw" width="12" class={isRefreshing ? 'animate-spin' : ''} />
 					{isRefreshing ? 'Lade...' : 'Wetterdaten nachträglich laden'}
 				</button>
 			{/if}

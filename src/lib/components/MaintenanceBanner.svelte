@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CogOutline, ExclamationCircleOutline } from 'flowbite-svelte-icons';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { isAdmin = false, maintenanceMessage = '' } = $props();
 </script>
@@ -8,8 +8,8 @@
 {#if isAdmin}
 	<div class="alert alert-warning shadow-lg">
 		<div class="flex items-center gap-2">
-			<CogOutline class="size-5 animate-spin" />
-			<ExclamationCircleOutline class="size-5" />
+			<Icon icon="lucide:settings" class="size-5 animate-spin" />
+			<Icon icon="lucide:alert-circle" class="size-5" />
 		</div>
 		<div class="flex-1">
 			<h3 class="font-bold">⚠️ Wartungsmodus ist aktiv</h3>

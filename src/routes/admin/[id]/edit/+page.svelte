@@ -3,8 +3,7 @@
 	import AdminSightingEditForm from '$lib/components/admin/AdminSightingEditForm.svelte';
 	import { createLogger } from '$lib/logger';
 	import type { FrontendSighting } from '$lib/types/FrontendSighting.js';
-	import { PenOff } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('AdminSightingEditPage');
 
@@ -61,7 +60,7 @@
 			title="Abbrechen"
 			aria-label="Sichtungsbearbeitung abbrechen"
 		>
-			<Icon src={PenOff} class="mr-1 h-4 w-4" />
+			<Icon icon="lucide:pen-off" class="mr-1 h-4 w-4" />
 			Abbrechen
 		</button>
 	</div>

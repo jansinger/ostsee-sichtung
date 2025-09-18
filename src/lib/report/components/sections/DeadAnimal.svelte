@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { TriangleAlert } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import FormField from '../form/fields/FormField.svelte';
 </script>
 
 <div class="bg-warning/10 border-warning/20 mt-6 rounded-lg border p-4">
 	<h4 class="text-warning-content mb-3 flex items-center gap-2 font-semibold md:whitespace-nowrap">
-		<Icon src={TriangleAlert} size="16" class="text-warning-content shrink-0" />
+		<Icon icon="lucide:triangle-alert" width="16" class="text-warning-content shrink-0" />
 		<span>Zusätzliche Informationen für Totfund</span>
 	</h4>
 	<div class="text-warning-content/80 mb-4 text-sm">

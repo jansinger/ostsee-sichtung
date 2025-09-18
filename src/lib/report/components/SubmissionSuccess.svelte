@@ -4,8 +4,7 @@
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { maskEmail } from '$lib/utils/privacy/emailMask';
-	import { ArrowLeft, Check } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	// Success state management
 	let { submittedData, handleNewReport } = $props<{
@@ -28,7 +27,7 @@
 		<div class="mb-8 space-y-6 text-center">
 			<div class="flex justify-center">
 				<div class="bg-success/20 flex h-20 w-20 items-center justify-center rounded-full">
-					<Icon src={Check} size="40" class="text-success" />
+					<Icon icon="lucide:check" width="40" class="text-success" />
 				</div>
 			</div>
 
@@ -155,7 +154,7 @@
 			</button>
 
 			<button onclick={handleReturnHome} class="btn btn-outline btn-lg">
-				<Icon src={ArrowLeft} size="20" />
+				<Icon icon="lucide:arrow-left" width="20" />
 				Zur Startseite
 			</button>
 		</div>

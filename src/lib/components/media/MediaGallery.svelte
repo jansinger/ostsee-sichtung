@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { UploadedFileInfo } from '$lib/types';
-	import { FileText, Images, Video } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import MediaModal from './MediaModal.svelte';
 	import MediaThumbnail from './MediaThumbnail.svelte';
 
@@ -34,9 +33,9 @@
 	}
 
 	function getFileTypeIcon(mimeType: string) {
-		if (isImage(mimeType)) return Images;
-		if (isVideo(mimeType)) return Video;
-		return FileText;
+		if (isImage(mimeType)) return 'lucide:images';
+		if (isVideo(mimeType)) return 'lucide:video';
+		return 'lucide:file-text';
 	}
 
 	// Gruppiere Dateien nach Typ
@@ -51,7 +50,7 @@
 	<div class={`media-gallery ${className}`}>
 		{#if showTitle}
 			<div class="mb-4 flex items-center gap-2">
-				<Icon src={Images} size="20" class="text-primary" />
+				<Icon icon="lucide:images" width="20" class="text-primary" />
 				<h4 class="text-lg font-semibold">Medien ({files.length})</h4>
 			</div>
 		{/if}
@@ -60,7 +59,7 @@
 		{#if imageFiles.length > 0}
 			<div class="mb-6">
 				<div class="mb-2 flex items-center gap-2">
-					<Icon src={Images} size="16" class="text-secondary" />
+					<Icon icon="lucide:images" width="16" class="text-secondary" />
 					<h5 class="text-base-content/70 text-sm font-medium">
 						Bilder ({imageFiles.length})
 					</h5>
@@ -77,7 +76,7 @@
 		{#if videoFiles.length > 0}
 			<div class="mb-6">
 				<div class="mb-2 flex items-center gap-2">
-					<Icon src={Video} size="16" class="text-secondary" />
+					<Icon icon="lucide:video" width="16" class="text-secondary" />
 					<h5 class="text-base-content/70 text-sm font-medium">
 						Videos ({videoFiles.length})
 					</h5>
@@ -94,7 +93,7 @@
 		{#if otherFiles.length > 0}
 			<div class="mb-6">
 				<div class="mb-2 flex items-center gap-2">
-					<Icon src={FileText} size="16" class="text-secondary" />
+					<Icon icon="lucide:file-text" width="16" class="text-secondary" />
 					<h5 class="text-base-content/70 text-sm font-medium">
 						Andere Dateien ({otherFiles.length})
 					</h5>
@@ -102,7 +101,7 @@
 				<div class="space-y-2">
 					{#each otherFiles as file (file.id)}
 						<div class="bg-base-100 flex items-center gap-3 rounded-lg p-3 shadow-sm">
-							<Icon src={getFileTypeIcon(file.mimeType)} size="20" class="text-base-content/60" />
+							<Icon icon={getFileTypeIcon(file.mimeType)} width="20" class="text-base-content/60" />
 							<div class="min-w-0 flex-1">
 								<p class="text-base-content truncate text-sm font-medium">
 									{file.originalName}
@@ -133,7 +132,7 @@
 {:else}
 	<div class="bg-base-100 flex items-center justify-center rounded-lg p-8 text-center">
 		<div class="space-y-3">
-			<Icon src={Images} size="32" class="text-base-content/40 mx-auto" />
+			<Icon icon="lucide:images" width="32" class="text-base-content/40 mx-auto" />
 			<p class="text-base-content/60 text-sm">Keine Medien vorhanden</p>
 		</div>
 	</div>

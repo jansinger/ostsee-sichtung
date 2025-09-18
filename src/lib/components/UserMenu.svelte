@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { PublicUser } from '$lib/types/User';
-	import { LogOut, Settings, User as UserIcon } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let {
 		user,
@@ -42,7 +41,7 @@
 			{:else}
 				<div class="avatar placeholder">
 					<div class="bg-neutral text-neutral-content h-8 w-8 rounded-full">
-						<Icon src={UserIcon} class="h-4 w-4" />
+						<Icon icon="lucide:user" width="16" class="h-4 w-4" />
 					</div>
 				</div>
 			{/if}
@@ -67,7 +66,7 @@
 						{:else}
 							<div class="avatar placeholder">
 								<div class="bg-neutral text-neutral-content h-8 w-8 rounded-full">
-									<Icon src={UserIcon} class="h-4 w-4" />
+									<Icon icon="lucide:user" width="16" class="h-4 w-4" />
 								</div>
 							</div>
 						{/if}
@@ -90,7 +89,7 @@
 							class="hover:bg-base-200 flex items-center gap-2 rounded px-4 py-2"
 							onclick={closeMenu}
 						>
-							<Icon src={Settings} class="h-4 w-4" />
+							<Icon icon="lucide:settings" width="16" class="h-4 w-4" />
 							Admin-Bereich
 						</a>
 					{/if}
@@ -100,7 +99,7 @@
 						class="text-error hover:bg-error/10 flex items-center gap-2 rounded px-4 py-2"
 						onclick={closeMenu}
 					>
-						<Icon src={LogOut} class="h-4 w-4" />
+						<Icon icon="lucide:log-out" width="16" class="h-4 w-4" />
 						Abmelden
 					</a>
 				</div>

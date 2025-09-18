@@ -2,8 +2,7 @@
 	import type { UploadedFileInfo } from '$lib/types';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
 	import { isImageFile, isVideoFile } from '$lib/utils/file/fileType';
-	import { Download, Eye, FileText, MapPin, Play } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let {
 		file,
@@ -66,7 +65,7 @@
 			<div
 				class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
 			>
-				<Icon src={Eye} size="24" class="text-white" />
+				<Icon icon="lucide:eye" width="24" class="text-white" />
 			</div>
 
 			<!-- GPS Badge für Bilder -->
@@ -74,7 +73,7 @@
 				<div
 					class="bg-success text-success-content absolute top-2 right-2 rounded-full p-1 shadow-md"
 				>
-					<Icon src={MapPin} size="12" />
+					<Icon icon="lucide:map-pin" width="12" />
 				</div>
 			{/if}
 		</div>
@@ -102,7 +101,7 @@
 				<div
 					class="rounded-full bg-black/60 p-3 transition-all group-hover:scale-110 group-hover:bg-black/80"
 				>
-					<Icon src={Play} size="24" class="text-white" />
+					<Icon icon="lucide:play" width="24" class="text-white" />
 				</div>
 			</div>
 
@@ -117,7 +116,7 @@
 			class="bg-base-200 relative flex aspect-square items-center justify-center overflow-hidden"
 		>
 			<div class="p-4 text-center">
-				<Icon src={FileText} size="32" class="text-base-content/60 mx-auto mb-2" />
+				<Icon icon="lucide:file-text" width="32" class="text-base-content/60 mx-auto mb-2" />
 				<p class="text-base-content/60 max-w-full truncate text-xs">
 					{file.originalName}
 				</p>
@@ -127,7 +126,7 @@
 			<div
 				class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100"
 			>
-				<Icon src={Download} size="20" class="text-white" />
+				<Icon icon="lucide:download" width="20" class="text-white" />
 			</div>
 		</div>
 	{/if}

@@ -4,7 +4,7 @@
 	import { downloadHandlers, createTimestampedFilename } from '$lib/utils/download';
 	import type { FrontendSighting } from '$lib/types';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
-	import { CheckCircleOutline, ExclamationCircleOutline, DownloadOutline, CloseOutline } from 'flowbite-svelte-icons';
+	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('ExportModal');
 
@@ -201,7 +201,7 @@
 				onclick={closeModal}
 				aria-label="Modal schließen"
 			>
-				<CloseOutline class="h-5 w-5" />
+				<Icon icon="lucide:x" class="h-5 w-5" />
 			</button>
 		</div>
 
@@ -256,12 +256,12 @@
 					</div>
 				{:else if error}
 					<div class="alert alert-error">
-						<ExclamationCircleOutline class="h-6 w-6 shrink-0" />
+						<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
 						<span>{error}</span>
 					</div>
 				{:else if loadedSightings.length > 0}
 					<div class="alert alert-success">
-						<CheckCircleOutline class="h-6 w-6 shrink-0" />
+						<Icon icon="lucide:circle-check" class="h-6 w-6 shrink-0" />
 						<span>{loadedSightings.length} Datensätze bereit zum Export</span>
 					</div>
 			{/if}
@@ -277,7 +277,7 @@
 				onclick={performDownload}
 				disabled={isLoading || loadedSightings.length === 0}
 			>
-				<DownloadOutline class="h-4 w-4 mr-2" />
+				<Icon icon="lucide:download" class="h-4 w-4 mr-2" />
 				{formatInfo[selectedFormat as keyof typeof formatInfo].name} herunterladen
 			</button>
 		</div>

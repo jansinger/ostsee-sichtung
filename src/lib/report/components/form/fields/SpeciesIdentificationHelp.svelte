@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { SpeciesEnum, speciesGroups } from '$lib/report/formOptions/species';
 	import type { SightingFormData } from '$lib/types';
-	import { ChevronDown, ChevronRight, CircleHelp } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let {
 		currentValue = undefined
@@ -327,8 +326,8 @@
 		aria-expanded={isExpanded}
 		aria-controls="species-help-content"
 	>
-		<Icon src={isExpanded ? ChevronDown : ChevronRight} size="16" />
-		<Icon src={CircleHelp} size="16" class="text-black" />
+		<Icon icon={isExpanded ? 'lucide:chevron-down' : 'lucide:chevron-right'} width="16" />
+		<Icon icon="lucide:circle-help" width="16" class="text-black" />
 		<span class="text-black">Hilfe bei der Tiererkennung</span>
 	</button>
 
@@ -523,7 +522,7 @@
 			<!-- Zusätzliche Hinweise -->
 			<div class="bg-info/10 rounded-lg p-3">
 				<h6 class="text-info mb-1 flex items-center gap-1 text-xs font-medium">
-					<Icon src={CircleHelp} size="14" />
+					<Icon icon="lucide:circle-help" width="14" />
 					Wichtige Unterscheidungshilfe für Robben:
 				</h6>
 				<div class="text-base-content/80 space-y-1 text-xs">

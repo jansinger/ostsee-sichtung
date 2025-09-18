@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { CircleCheck, CircleX } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	interface Props {
 		value: boolean | null | undefined | number;
@@ -50,9 +49,9 @@
 <div class={badgeClasses}>
 	{#if showIcon}
 		{#if isTrue}
-			<Icon src={CircleCheck} size={iconSize} class="flex-shrink-0" />
+			<Icon icon="lucide:circle-check" class="flex-shrink-0" style="width: {iconSize}px; height: {iconSize}px;" />
 		{:else}
-			<Icon src={CircleX} size={iconSize} class="flex-shrink-0" />
+			<Icon icon="lucide:circle-x" class="flex-shrink-0" style="width: {iconSize}px; height: {iconSize}px;" />
 		{/if}
 	{/if}
 	<span>{isTrue ? trueLabel : falseLabel}</span>

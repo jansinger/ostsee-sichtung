@@ -5,8 +5,7 @@
 <script lang="ts">
 	import { createLogger } from '$lib/logger';
 	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
-	import { Anchor, MessageSquare, Save, Trash2, User } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import FormField from '../form/fields/FormField.svelte';
 
 	const logger = createLogger('report:step4-contact');
@@ -40,7 +39,7 @@
 			<div
 				class="bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full sm:h-12 sm:w-12"
 			>
-				<Icon src={User} size="20" class="text-primary sm:size-24" />
+				<Icon icon="lucide:user" width="20" class="text-primary sm:w-6 sm:h-6" />
 			</div>
 		</div>
 		<h2 class="text-base-content text-xl font-bold sm:text-2xl">Kontaktdaten & Abschluss</h2>
@@ -60,7 +59,7 @@
 		<!-- Personal Contact Information -->
 		<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
 			<h3 class="mb-3 flex gap-2 text-left text-base font-semibold sm:text-lg">
-				<Icon src={User} size="20" class="text-primary" />
+				<Icon icon="lucide:user" width="20" class="text-primary" />
 				Ihre Kontaktdaten
 			</h3>
 			<div class="text-base-content/70 mb-4 text-left text-sm">
@@ -87,7 +86,7 @@
 									class="btn btn-ghost btn-xs text-error hover:bg-error/10"
 									onclick={clearContactData}
 								>
-									<Icon src={Trash2} size="14" />
+									<Icon icon="lucide:trash-2" width="14" />
 									Kontaktdaten löschen
 								</button>
 							</div>
@@ -127,7 +126,7 @@
 		<!-- Boat Information Section -->
 		<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
 			<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
-				<Icon src={Anchor} size="20" class="text-primary" />
+				<Icon icon="lucide:anchor" width="20" class="text-primary" />
 				Boot-/Schiffsinformationen
 			</h3>
 
@@ -145,7 +144,7 @@
 		<!-- Additional Information Section -->
 		<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
 			<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
-				<Icon src={MessageSquare} size="20" class="text-primary" />
+				<Icon icon="lucide:message-square" width="20" class="text-primary" />
 				Zusätzliche Informationen
 			</h3>
 
@@ -177,7 +176,7 @@
 			<!-- Persistent Data Storage Consent -->
 			<div class="mt-6 space-y-4">
 				<h4 class="text-left text-base font-semibold">
-					<Icon src={Save} size="16" class="inline" /> Dauerhafte Speicherung der Kontaktdaten
+					<Icon icon="lucide:save" width="16" class="inline" /> Dauerhafte Speicherung der Kontaktdaten
 				</h4>
 				<p class="text-base-content/70 mb-4 text-left text-sm">
 					Möchten Sie, dass Ihre Kontaktdaten auch nach dem Schließen des Browser-Fensters erhalten

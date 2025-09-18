@@ -2,8 +2,7 @@
 	import type { CountData } from '$lib/map/countManager';
 	import type { MapTranslations } from '$lib/map/mapUtils';
 	import { backgroundColors, speciesSymbols } from '$lib/map/styleUtils';
-	import { List, SquareX } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { translations, counts } = $props<{
 		translations: MapTranslations;
@@ -76,7 +75,7 @@
 	style="transform: translateX({isOpen ? '-400px' : '0px'});"
 	aria-label="Legende {isOpen ? 'schließen' : 'öffnen'}"
 >
-	<Icon src={List} class="mb-1 h-4 w-4" />
+	<Icon icon="lucide:list" class="mb-1 h-4 w-4" />
 	<div
 		class="text-xs whitespace-nowrap"
 		style="writing-mode: vertical-rl; text-orientation: mixed;"
@@ -103,7 +102,7 @@
 					class="btn btn-ghost btn-sm hover:bg-base-200"
 					aria-label="Legende schließen"
 				>
-					<Icon src={SquareX} class="h-4 w-4" />
+					<Icon icon="lucide:square-x" class="h-4 w-4" />
 				</button>
 			</div>
 

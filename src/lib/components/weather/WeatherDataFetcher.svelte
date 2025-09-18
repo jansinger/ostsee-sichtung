@@ -1,14 +1,8 @@
 <script lang="ts">
-	import { getSeaStateLabel } from '$lib/report/formOptions/seaState';
-	import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
-	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
 	import type { WeatherData, WeatherFormFields } from '$lib/services/weatherService';
 	import type { WeatherDataWithMetadata } from '$lib/types';
-	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
-	import { formatLocation } from '$lib/utils/format/formatLocation';
-	import { Calendar, Eye, Gauge, MapPin, Thermometer, Waves, Wind } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import WeatherDisplay from './WeatherDisplay.svelte';
 
 	interface Props {
 		latitude: number | null;
@@ -53,18 +47,6 @@
 			fetchWeather();
 		}
 	});
-
-	// Returns a valid weather icon class or a fallback if unsupported
-	function getWeatherIconClass(code: number | undefined): string {
-		const supportedCodes = [
-			0, 1, 2, 3, 45, 48, 51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85,
-			86, 95, 96, 99
-		];
-		if (typeof code === 'number' && supportedCodes.includes(code)) {
-			return `wi-wmo4680-${code}`;
-		}
-		return 'wi-na'; // fallback icon class
-	}
 
 	async function fetchWeather() {
 		if (!canFetch) return;
@@ -124,12 +106,13 @@
 	function applyWeatherData() {
 		if (!formFields) return;
 		onWeatherFetched(formFields as WeatherFormFields);
-		
+
 		// Also store the full weather data when applying manually
 		if (weatherData && onWeatherDataFetched) {
 			onWeatherDataFetched(weatherData);
 		}
 	}
+
 </script>
 
 <div class="weather-fetcher">
@@ -151,80 +134,17 @@
 			<h4 class="mb-2 text-base font-semibold">
 				Vorgeschlagene Wetterdaten für die angegebene Position
 			</h4>
-			<div class="text-base-content/70 mb-3 flex items-center gap-4 text-sm">
-				<span class="flex items-center gap-1">
-					<Icon src={MapPin} size="16" class="text-primary" />
-					{formatLocation(longitude, latitude)}
-				</span>
-				<span class="flex items-center gap-1">
-					<Icon src={Calendar} size="16" class="text-primary" />
-					{formatLocalDateTime(weatherData.time)}
-				</span>
-			</div>
-			<div class="space-y-2 text-sm">
-				<p class="flex items-center gap-2">
-					<Icon src={Thermometer} size="18" class="text-primary" />
-					<span>Temperatur: <strong>{weatherData.temperature}°C</strong></span>
-				</p>
-				<p class="flex items-center gap-2">
-					<i
-						class="wi {getWeatherIconClass(weatherData.weatherCode)} text-primary"
-						style="font-size: 18px;"
-					></i>
-					<span>Wetter: <strong>{weatherData.weatherDescription}</strong></span>
-				</p>
-				<p class="flex items-center gap-2">
-					<Icon src={Wind} size="18" class="text-primary" />
-					<span
-						>Wind: <strong>Beaufort {getWindStrengthLabel(Number(formFields.windForce))}</strong>
-						- {weatherData.windSpeed} km/h</span
-					>
-				</p>
-				<p class="flex items-center gap-2">
-					<i
-						class="wi wi-wind wi-from-{formFields.windDirection
-							? String(formFields.windDirection).toLowerCase()
-							: ''} text-primary"
-						style="font-size: 18px;"
-					></i>
-					<span
-						>Windrichtung: <strong>{formFields.windDirection}</strong> - {weatherData.windDirection}°</span
-					>
-				</p>
 
-				<p class="flex items-center gap-2">
-					<Icon src={Waves} size="18" class="text-primary" />
-					<span
-						>Seegang: <strong>{getSeaStateLabel(Number(formFields.seaState))}</strong> - Stufe {weatherData.seaState}</span
-					>
-				</p>
-				<p class="flex items-center gap-2">
-					<Icon src={Eye} size="18" class="text-primary" />
-					<span
-						>Sichtweite: <strong>{getVisibilityLabel(Number(formFields.visibility))}</strong>
-						- {Math.round(weatherData.visibility / 1000)} km</span
-					>
-				</p>
-				{#if weatherData.pressure}
-					<p class="flex items-center gap-2">
-						<Icon src={Gauge} size="18" class="text-primary" />
-						<span>Luftdruck: <strong>{weatherData.pressure} hPa</strong></span>
-					</p>
-				{/if}
-			</div>
+			<WeatherDisplay
+				{weatherData}
+				{formFields}
+				{latitude}
+				{longitude}
+				showActions={true}
+				onApplyData={applyWeatherData}
+			/>
 
-			<div class="mt-3 flex gap-2">
-				<button
-					type="button"
-					onclick={applyWeatherData}
-					class="btn btn-sm btn-primary"
-					aria-label="Wetterdaten ins Formular übernehmen"
-				>
-					Daten übernehmen
-				</button>
-			</div>
-
-			<div class="text-base-content/60 mt-2 text-xs space-y-1">
+			<div class="text-base-content/60 mt-2 space-y-1 text-xs">
 				<p>
 					Quelle: {weatherData._metadata?.source || 'Open-Meteo Weather API'}
 					{#if weatherData._metadata?.cached}

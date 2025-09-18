@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { addMarker, createMap, setMapCenter } from '$lib/utils/map/openLayersHelpers';
-	import { Info } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import type { Map } from 'ol';
 	import type { Coordinate } from 'ol/coordinate';
 	import type Feature from 'ol/Feature';
@@ -123,7 +122,7 @@
 
 {#if !readonly}
 	<div class="alert mt-2 mb-0">
-		<Icon src={Info} class="h-6 w-6 shrink-0" />
+		<Icon icon="lucide:info" class="h-6 w-6 shrink-0" />
 		<span>Marker verschieben oder GPS-Button (📍) für aktuelle Position nutzen.</span>
 	</div>
 {/if}

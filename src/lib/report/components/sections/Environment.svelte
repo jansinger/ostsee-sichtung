@@ -3,8 +3,7 @@
 	import { getFormContext } from '$lib/report/formContext';
 	import type { WeatherData, WeatherFormFields, OpenMeteoRawData } from '$lib/services/weatherService';
 	import { convertToStoredWeatherData } from '$lib/services/weatherService';
-	import { Waves } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import FormField from '../form/fields/FormField.svelte';
 
 	const { form, handleChange } = getFormContext();
@@ -51,7 +50,7 @@
 <div class="card bg-base-200 shadow-sm">
 	<div class="card-body">
 		<h3 class="card-title flex items-center gap-2 text-lg">
-			<Icon src={Waves} size="20" class="text-primary" />
+			<Icon icon="lucide:waves" width="20" class="text-primary" />
 			Umweltbedingungen
 		</h3>
 		<p class="text-base-content/70 mb-4 text-sm">

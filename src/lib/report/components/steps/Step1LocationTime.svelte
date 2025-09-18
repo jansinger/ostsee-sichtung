@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { MapPin } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import PositionAndTime from '../sections/PositionAndTime.svelte';
 </script>
 
@@ -9,7 +8,7 @@
 	<div class="space-y-2 text-center px-2 sm:px-0">
 		<div class="flex justify-center">
 			<div class="bg-primary/20 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full">
-				<Icon src={MapPin} size="20" class="text-primary sm:size-24" />
+				<Icon icon="lucide:map-pin" width="20" class="text-primary sm:w-6 sm:h-6" />
 			</div>
 		</div>
 		<h2 class="text-base-content text-xl sm:text-2xl font-bold">Position & Zeit</h2>

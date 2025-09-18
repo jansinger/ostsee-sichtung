@@ -2,8 +2,7 @@
 	import DeadAnimal from './DeadAnimal.svelte';
 
 	import { getFormContext } from '$lib/report/formContext';
-	import { Eye } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import FormField from '../form/fields/FormField.svelte';
 
 	const { form } = getFormContext();
@@ -13,7 +12,7 @@
 <div class="card bg-base-200 shadow-sm">
 	<div class="card-body">
 		<h3 class="card-title flex items-center gap-2 text-lg">
-			<Icon src={Eye} size="20" class="text-primary" />
+			<Icon icon="lucide:eye" class="h-5 w-5 text-primary" />
 			Tierinformationen
 		</h3>
 

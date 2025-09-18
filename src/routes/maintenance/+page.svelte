@@ -1,6 +1,6 @@
 <script lang="ts">
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
-	import { CogOutline, RefreshOutline } from 'flowbite-svelte-icons';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { data } = $props();
 	
@@ -25,13 +25,14 @@
 			<!-- Maintenance Icon -->
 			<div class="mb-6 flex justify-center">
 				<div class="rounded-full bg-warning/20 p-6">
-					<CogOutline class="size-16 animate-spin text-warning" />
+					<Icon icon="lucide:settings" class="size-16 animate-spin text-warning" />
 				</div>
 			</div>
 
 			<!-- Title -->
-			<h1 class="text-2xl font-bold text-base-content">
-				🔧 Wartungsmodus
+			<h1 class="text-2xl font-bold text-base-content flex items-center justify-center gap-2">
+				<Icon icon="lucide:settings" width="24" />
+				Wartungsmodus
 			</h1>
 
 			<!-- Message -->
@@ -44,7 +45,7 @@
 			<!-- Refresh Button -->
 			<div class="mt-8">
 				<button onclick={refreshPage} class="btn btn-primary gap-2">
-					<RefreshOutline class="size-5" />
+					<Icon icon="lucide:refresh-cw" class="size-5" />
 					Seite aktualisieren
 				</button>
 			</div>

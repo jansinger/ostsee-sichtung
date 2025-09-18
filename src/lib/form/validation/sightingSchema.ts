@@ -34,9 +34,52 @@ import { getVisibilityOptions, isValidVisibility } from '$lib/report/formOptions
 import { getWindDirectionOptions } from '$lib/report/formOptions/windDirection';
 import { getWindStrengthOptions } from '$lib/report/formOptions/windStrength';
 import { BALTIC_SEA_BBOX } from '$lib/utils/geo/checkBalticSea';
-import {
+
+// Icon names for the schema - using unplugin-icons format with lucide: prefix
+// These will be mapped to actual icon components in the UI layer
+const icons = {
+	Activity: 'lucide:activity',
+	AddressIcon: 'lucide:map-pin',
+	Anchor: 'lucide:anchor',
+	Archive: 'lucide:archive',
+	Baby: 'lucide:baby',
+	Calendar: 'lucide:calendar',
+	Camera: 'lucide:camera',
+	Car: 'lucide:car',
+	Check: 'lucide:check',
+	Clock: 'lucide:clock',
+	CloudRain: 'lucide:cloud-rain',
+	CountIcon: 'lucide:hash',
+	Eye: 'lucide:eye',
+	FileText: 'lucide:file-text',
+	Fish: 'lucide:fish',
+	Globe: 'lucide:globe',
+	Hash: 'lucide:hash',
+	Mail: 'lucide:mail',
+	MapPin: 'lucide:map-pin',
+	MessageCircle: 'lucide:message-circle',
+	MousePointer: 'lucide:mouse-pointer',
+	Move: 'lucide:move',
+	Navigation: 'lucide:navigation',
+	Navigation2: 'lucide:navigation-2',
+	Phone: 'lucide:phone',
+	ShieldCheck: 'lucide:shield-check',
+	Ship: 'lucide:ship',
+	Skull: 'lucide:skull',
+	ToggleLeft: 'lucide:toggle-left',
+	Upload: 'lucide:upload',
+	User: 'lucide:user',
+	UserCheck: 'lucide:user-check',
+	Users: 'lucide:users',
+	Waves: 'lucide:waves',
+	Wind: 'lucide:wind',
+	Zap: 'lucide:zap'
+};
+
+// Extract icon constants for use in the schema
+const {
 	Activity,
-	MapPin as AddressIcon,
+	AddressIcon,
 	Anchor,
 	Archive,
 	Baby,
@@ -46,7 +89,7 @@ import {
 	Check,
 	Clock,
 	CloudRain,
-	Hash as CountIcon,
+	CountIcon,
 	Eye,
 	FileText,
 	Fish,
@@ -71,7 +114,7 @@ import {
 	Waves,
 	Wind,
 	Zap
-} from '@steeze-ui/lucide-icons';
+} = icons;
 import * as yup from 'yup';
 
 /**
@@ -82,7 +125,7 @@ import * as yup from 'yup';
  * und Kontaktinformationen. Jedes Feld enthält Metadaten für automatische
  * UI-Generierung und mehrsprachige Fehlermeldungen.
  *
- * @type {yup.ObjectSchema} Yup-Schema mit allen Sichtungsfeldern
+ * Yup-Schema mit allen Sichtungsfeldern
  */
 export const sightingSchemaBase = yup.object().shape({
 	/**

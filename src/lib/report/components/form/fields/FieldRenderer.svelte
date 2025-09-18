@@ -4,8 +4,7 @@
 -->
 <script lang="ts">
 	import type { FieldSize, FieldVariant } from '$lib/types';
-	import { Check, Info, TriangleAlert, X } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import * as yup from 'yup';
 	import BaseCheckbox from './BaseCheckbox.svelte';
 	import BaseInput from './BaseInput.svelte';
@@ -240,9 +239,9 @@
 			{#if hasValue}
 				<span class="ml-2 inline-block" aria-hidden="true">
 					{#if hasError}
-						<Icon src={X} size="14" class="text-error inline" />
+						<Icon icon="lucide:x" width="14" class="text-error inline" />
 					{:else if isValid}
-						<Icon src={Check} size="14" class="text-success inline" />
+						<Icon icon="lucide:check" width="14" class="text-success inline" />
 					{/if}
 				</span>
 			{/if}
@@ -256,7 +255,7 @@
 						aria-label="Warum ist diese Information wichtig?"
 						tabindex="-1"
 					>
-						<Icon src={Info} size="14" class="text-base-content/60" />
+						<Icon icon="lucide:info" width="14" class="text-base-content/60" />
 					</button>
 				</span>
 			{/if}
@@ -303,7 +302,7 @@
 			aria-live="polite"
 		>
 			<span class="text-error flex items-center gap-1 text-xs font-medium">
-				<Icon src={TriangleAlert} size="14" class="text-error flex-shrink-0" />
+				<Icon icon="lucide:triangle-alert" width="14" class="text-error flex-shrink-0" />
 				{error}
 			</span>
 		</div>
