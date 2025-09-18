@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.28.1 (2025-09-18)</small>
+
+* Merge pull request #129 from jansinger/chore/new-package-versions ([f6a33a7](https://github.com/jansinger/ostsee-sichtung/commit/f6a33a7)), closes [#129](https://github.com/jansinger/ostsee-sichtung/issues/129)
+* fix: enhance SBOM generation workflow with format handling and verification steps ([ba59c9c](https://github.com/jansinger/ostsee-sichtung/commit/ba59c9c))
+* fix: resolve GitHub Code Scanning SARIF upload compatibility issue ([34bfa2e](https://github.com/jansinger/ostsee-sichtung/commit/34bfa2e))
+
 ## 1.28.0 (2025-09-18)
 
 * Merge pull request #115 from jansinger/fix/npm-updates ([1f81853](https://github.com/jansinger/ostsee-sichtung/commit/1f81853)), closes [#115](https://github.com/jansinger/ostsee-sichtung/issues/115)
