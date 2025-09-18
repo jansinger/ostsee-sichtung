@@ -31,7 +31,10 @@
 				</div>
 			</div>
 
-			<h1 class="text-base-content text-3xl font-bold lg:text-4xl">Vielen Dank! 🐋</h1>
+			<h1 class="text-base-content text-3xl font-bold lg:text-4xl flex items-center justify-center gap-3">
+				Vielen Dank!
+				<Icon icon="lucide:fish" width="32" height="32" class="text-primary" />
+			</h1>
 
 			<p class="text-base-content/80 text-xl">Ihre Sichtung wurde erfolgreich gemeldet</p>
 		</div>
@@ -43,7 +46,7 @@
 
 				<div class="space-y-4">
 					<div class="flex items-start gap-3">
-						<span class="text-2xl">✅</span>
+						<Icon icon="lucide:check-circle" width="24" height="24" class="text-success mt-1" />
 						<div>
 							<h3 class="font-semibold">Bestätigung per E-Mail</h3>
 							<p class="text-base-content/70 text-sm">
@@ -55,7 +58,7 @@
 					</div>
 
 					<div class="flex items-start gap-3">
-						<span class="text-2xl">🔬</span>
+						<Icon icon="lucide:activity" width="24" height="24" class="text-info mt-1" />
 						<div>
 							<h3 class="font-semibold">Wissenschaftliche Auswertung</h3>
 							<p class="text-base-content/70 text-sm">
@@ -66,7 +69,7 @@
 
 					{#if submittedData?.mediaUpload}
 						<div class="flex items-start gap-3">
-							<span class="text-2xl">📷</span>
+							<Icon icon="lucide:camera" width="24" height="24" class="text-accent mt-1" />
 							<div>
 								<h3 class="font-semibold">Medien-Upload</h3>
 								<p class="text-base-content/70 text-sm">
@@ -78,7 +81,7 @@
 
 					{#if submittedData?.isDead}
 						<div class="flex items-start gap-3">
-							<span class="text-2xl">⚠️</span>
+							<Icon icon="lucide:triangle-alert" width="24" height="24" class="text-warning mt-1" />
 							<div>
 								<h3 class="font-semibold">Totfund gemeldet</h3>
 								<p class="text-base-content/70 text-sm">
@@ -89,7 +92,7 @@
 					{/if}
 
 					<div class="flex items-start gap-3">
-						<span class="text-2xl">📊</span>
+						<Icon icon="lucide:chart-pie" width="24" height="24" class="text-primary mt-1" />
 						<div>
 							<h3 class="font-semibold">Daten einsehen</h3>
 							<p class="text-base-content/70 text-sm">
@@ -166,14 +169,18 @@
 					<h3 class="mb-4 text-lg font-semibold">Interessiert an mehr?</h3>
 
 					<div class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
-						<a href="/map" class="btn btn-outline btn-sm"> 🗺️ Alle Sichtungen auf der Karte </a>
+						<a href="/map" class="btn btn-outline btn-sm flex items-center gap-2">
+							<Icon icon="lucide:map" width="16" height="16" />
+							Alle Sichtungen auf der Karte
+						</a>
 						<a
 							href="https://www.meeresmuseum.de"
 							target="_blank"
 							rel="noopener"
-							class="btn btn-outline btn-sm"
+							class="btn btn-outline btn-sm flex items-center gap-2"
 						>
-							🏛️ Deutsches Meeresmuseum
+							<Icon icon="lucide:shield-check" width="16" height="16" />
+							Deutsches Meeresmuseum
 						</a>
 					</div>
 

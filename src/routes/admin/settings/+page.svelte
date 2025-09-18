@@ -25,12 +25,12 @@
 	};
 
 	const categoryLabels: Record<string, string> = {
-		email: '📧 E-Mail Einstellungen',
-		display: '🎨 Anzeige-Einstellungen',
-		security: '🔒 Sicherheit & Validierung',
-		data: '📊 Datenverarbeitung',
-		integration: '🌐 Integration',
-		mobile: '📱 Mobile App'
+		email: 'E-Mail Einstellungen',
+		display: 'Anzeige-Einstellungen',
+		security: 'Sicherheit & Validierung',
+		data: 'Datenverarbeitung',
+		integration: 'Integration',
+		mobile: 'Mobile App'
 	};
 
 	const categoryDescriptions: Record<string, string> = {
@@ -312,7 +312,10 @@
 	<!-- Header -->
 	<div class="mb-8 flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold text-gray-900">⚙️ Anwendungseinstellungen</h1>
+			<h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+				<Icon icon="lucide:settings" width="32" height="32" class="text-primary" />
+				Anwendungseinstellungen
+			</h1>
 			<p class="mt-2 text-gray-600">
 				Konfigurieren Sie alle Aspekte der Ostsee-Tiere Anwendung über diese zentrale Oberfläche.
 			</p>

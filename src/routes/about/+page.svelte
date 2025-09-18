@@ -1,6 +1,6 @@
 <script lang="ts">
-	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 
 	// About page for Ostsee-Tiere platform
 </script>
@@ -387,14 +387,17 @@
 
 	<!-- Open Source & Licensing Section -->
 	<div class="mb-16">
-		<h2 class="mb-8 text-center text-3xl font-bold">⚖️ Open Source & Lizenzen</h2>
+		<h2 class="mb-8 text-center text-3xl font-bold flex items-center justify-center gap-3">
+			<Icon icon="lucide:scale" width="32" height="32" class="text-primary" />
+			Open Source & Lizenzen
+		</h2>
 
 		<div class="grid gap-8 md:grid-cols-2">
 			<!-- Project License -->
 			<div class="card bg-base-100 shadow-xl">
 				<div class="card-body">
 					<div class="mb-4 flex items-center gap-2">
-						<div class="text-3xl">📜</div>
+						<Icon icon="lucide:file-text" width="32" height="32" class="text-primary" />
 						<h3 class="card-title">Projekt-Lizenz</h3>
 					</div>
 					<p class="mb-4 text-sm text-gray-700">
@@ -449,7 +452,7 @@ SOFTWARE.</pre>
 			<div class="card bg-base-100 shadow-xl">
 				<div class="card-body">
 					<div class="mb-4 flex items-center gap-2">
-						<div class="text-3xl">📦</div>
+						<Icon icon="lucide:archive" width="32" height="32" class="text-primary" />
 						<h3 class="card-title">Verwendete Technologien</h3>
 					</div>
 					<p class="mb-4 text-sm text-gray-700">
@@ -493,7 +496,7 @@ SOFTWARE.</pre>
 			class="border-purple/10 mt-8 rounded-lg border bg-gradient-to-r from-purple-50 to-indigo-50 p-6"
 		>
 			<div class="flex items-start gap-4">
-				<div class="text-2xl">🐛</div>
+				<Icon icon="lucide:circle-alert" width="32" height="32" class="text-warning mt-1" />
 				<div class="flex-1">
 					<h4 class="mb-2 font-semibold">Fehler gefunden oder Verbesserungsvorschlag?</h4>
 					<p class="mb-3 text-sm text-gray-700">
@@ -532,7 +535,10 @@ SOFTWARE.</pre>
 
 		<!-- Attribution -->
 		<div class="bg-base-200 mt-8 rounded-lg p-6 text-center">
-			<h4 class="mb-3 font-semibold">🙏 Danksagung</h4>
+			<h4 class="mb-3 font-semibold flex items-center justify-center gap-2">
+				<Icon icon="lucide:heart" width="20" height="20" class="text-primary" />
+				Danksagung
+			</h4>
 			<p class="mb-4 text-sm text-gray-700">
 				Wir danken allen Entwicklern und Organisationen, die durch ihre Open Source Projekte diese
 				Plattform ermöglichen. Besonderer Dank gilt:
@@ -622,19 +628,22 @@ SOFTWARE.</pre>
 						href="/"
 						class="btn btn-primary btn-lg px-8 py-4 text-lg shadow-lg transition-all duration-300 hover:shadow-xl"
 					>
-						🐋 Sichtung melden
+						<Icon icon="lucide:fish" width="20" height="20" class="mr-2" />
+						Sichtung melden
 					</a>
 					<a
 						href="/map"
 						class="btn btn-secondary btn-outline btn-lg px-8 py-4 text-lg shadow-lg transition-all duration-300 hover:shadow-xl"
 					>
-						🗺️ Karte erkunden
+						<Icon icon="lucide:map" width="20" height="20" class="mr-2" />
+						Karte erkunden
 					</a>
 					<a
 						href="/docs"
 						class="btn btn-accent btn-outline btn-lg px-8 py-4 text-lg shadow-lg transition-all duration-300 hover:shadow-xl"
 					>
-						📚 Mehr erfahren
+						<Icon icon="lucide:book-open" width="20" height="20" class="mr-2" />
+						Mehr erfahren
 					</a>
 				</div>
 			</div>

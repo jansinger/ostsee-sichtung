@@ -119,10 +119,10 @@
 		}
 	}
 
-	function getFileIcon(type: string): string {
-		if (type.startsWith('image/')) return '🖼️';
-		if (type.startsWith('video/')) return '🎥';
-		return '📄';
+	function getFileIconName(type: string): string {
+		if (type.startsWith('image/')) return 'lucide:images';
+		if (type.startsWith('video/')) return 'lucide:video';
+		return 'lucide:file';
 	}
 </script>
 
@@ -154,9 +154,9 @@
 								<!-- File Icon/Thumbnail -->
 								<div class="flex-shrink-0">
 									<div
-										class="bg-base-200 flex h-12 w-12 items-center justify-center rounded text-xl"
+										class="bg-base-200 flex h-12 w-12 items-center justify-center rounded"
 									>
-										{getFileIcon(file.type)}
+										<Icon icon={getFileIconName(file.type)} width="24" height="24" class="text-primary" />
 									</div>
 								</div>
 

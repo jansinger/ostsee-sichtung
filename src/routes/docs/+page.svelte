@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	// Documentation overview page
 </script>
 
@@ -32,7 +33,10 @@
 
 <div class="mx-auto max-w-4xl">
 	<div class="mb-8 text-center">
-		<h1 class="mb-4 text-4xl font-bold">📚 Dokumentation</h1>
+		<h1 class="mb-4 text-4xl font-bold flex items-center justify-center gap-3">
+			<Icon icon="lucide:book-open" width="40" height="40" class="text-primary" />
+			Dokumentation
+		</h1>
 		<p class="text-lg text-gray-600">Willkommen zur Dokumentation der Ostsee-Tiere Plattform</p>
 	</div>
 
@@ -41,7 +45,8 @@
 		<div class="card bg-base-100 shadow-xl">
 			<div class="card-body">
 				<h2 class="card-title">
-					🔌 API-Dokumentation
+					<Icon icon="lucide:zap" width="24" height="24" class="text-primary" />
+					API-Dokumentation
 					<div class="badge badge-primary">Interactive</div>
 				</h2>
 				<p class="text-sm text-gray-600">
@@ -69,7 +74,8 @@
 		<div class="card bg-base-100 shadow-xl">
 			<div class="card-body">
 				<h2 class="card-title">
-					🚀 Erste Schritte
+					<Icon icon="lucide:play" width="24" height="24" class="text-primary" />
+					Erste Schritte
 					<div class="badge badge-secondary">Guide</div>
 				</h2>
 				<p class="text-sm text-gray-600">Schnelleinstieg für Entwickler und API-Nutzer.</p>
@@ -100,7 +106,8 @@
 		<div class="card bg-base-100 shadow-xl">
 			<div class="card-body">
 				<h2 class="card-title">
-					📄 OpenAPI Spezifikation
+					<Icon icon="lucide:file-text" width="24" height="24" class="text-primary" />
+					OpenAPI Spezifikation
 					<div class="badge badge-accent">Download</div>
 				</h2>
 				<p class="text-sm text-gray-600">
@@ -127,7 +134,8 @@
 		<div class="card bg-base-100 shadow-xl">
 			<div class="card-body">
 				<h2 class="card-title">
-					🔐 Authentifizierung
+					<Icon icon="lucide:lock" width="24" height="24" class="text-primary" />
+					Authentifizierung
 					<div class="badge badge-warning">Admin</div>
 				</h2>
 				<p class="text-sm text-gray-600">
@@ -153,23 +161,26 @@
 
 	<!-- Quick Links Section -->
 	<div class="bg-base-200 mt-12 rounded-lg p-6">
-		<h2 class="mb-4 text-2xl font-semibold">🔗 Schnellzugriff</h2>
+		<h2 class="mb-4 text-2xl font-semibold flex items-center gap-2">
+			<Icon icon="lucide:zap" width="24" height="24" class="text-primary" />
+			Schnellzugriff
+		</h2>
 		<div class="grid gap-4 md:grid-cols-3">
 			<div class="text-center">
-				<a href="/map" class="btn btn-ghost btn-lg w-full">
-					🗺️<br />
+				<a href="/map" class="btn btn-ghost btn-lg w-full flex flex-col items-center">
+					<Icon icon="lucide:map" width="32" height="32" class="text-primary mb-2" />
 					<span class="text-sm">Karte anzeigen</span>
 				</a>
 			</div>
 			<div class="text-center">
-				<a href="/" class="btn btn-ghost btn-lg w-full">
-					📝<br />
+				<a href="/" class="btn btn-ghost btn-lg w-full flex flex-col items-center">
+					<Icon icon="lucide:pen-line" width="32" height="32" class="text-primary mb-2" />
 					<span class="text-sm">Sichtung melden</span>
 				</a>
 			</div>
 			<div class="text-center">
-				<a href="/about" class="btn btn-ghost btn-lg w-full">
-					🏛️<br />
+				<a href="/about" class="btn btn-ghost btn-lg w-full flex flex-col items-center">
+					<Icon icon="lucide:shield-check" width="32" height="32" class="text-primary mb-2" />
 					<span class="text-sm">Über uns</span>
 				</a>
 			</div>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	/* eslint-disable @typescript-eslint/no-explicit-any */
+	import Icon from '$lib/components/Icon.svelte';
 	import { MapCountManager, type CountData } from '$lib/map/countManager';
 	import type { MapTranslations } from '$lib/map/mapUtils';
 	import { SichtungenMap } from '$lib/map/optimizedMapController';
@@ -387,7 +388,7 @@
 <div class="{containerClass} map-container-wrapper">
 	{#if showTitle}
 		<h1 class={titleClass}>
-			<span class="text-lg">🗺️</span>
+			<Icon icon="lucide:map" width="24" height="24" class="text-primary" />
 			<span>{title} {currentDisplayedYear}</span>
 		</h1>
 	{/if}

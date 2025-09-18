@@ -12,7 +12,10 @@
 			<Icon icon="lucide:alert-circle" class="size-5" />
 		</div>
 		<div class="flex-1">
-			<h3 class="font-bold">⚠️ Wartungsmodus ist aktiv</h3>
+			<h3 class="font-bold flex items-center gap-2">
+				<Icon icon="lucide:triangle-alert" width="20" height="20" class="text-warning" />
+				Wartungsmodus ist aktiv
+			</h3>
 			<div class="text-sm">
 				Normale Benutzer sehen die Wartungsseite. Als Admin haben Sie weiterhin Zugriff.
 			</div>
