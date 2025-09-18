@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.28.0 (2025-09-18)
+
+* Merge pull request #115 from jansinger/fix/npm-updates ([1f81853](https://github.com/jansinger/ostsee-sichtung/commit/1f81853)), closes [#115](https://github.com/jansinger/ostsee-sichtung/issues/115)
+* Merge pull request #128 from jansinger/chore/new-package-versions ([672cce0](https://github.com/jansinger/ostsee-sichtung/commit/672cce0)), closes [#128](https://github.com/jansinger/ostsee-sichtung/issues/128)
+* feat: implement Software Bill of Materials (SBOM) generation and vulnerability checks ([e3e26a6](https://github.com/jansinger/ostsee-sichtung/commit/e3e26a6))
+* feat: update Vite configuration for CI and local development ([dc12025](https://github.com/jansinger/ostsee-sichtung/commit/dc12025))
+* fix: update error handling for SBOM validation ([95de46c](https://github.com/jansinger/ostsee-sichtung/commit/95de46c))
+* chore: update dependencies to latest versions ([914838c](https://github.com/jansinger/ostsee-sichtung/commit/914838c))
+* chore: update package versions ([0a4c0c1](https://github.com/jansinger/ostsee-sichtung/commit/0a4c0c1))
+* chore(deps-dev): bump @scalar/api-reference from 1.35.2 to 1.35.5 (#122) ([4c134ec](https://github.com/jansinger/ostsee-sichtung/commit/4c134ec)), closes [#122](https://github.com/jansinger/ostsee-sichtung/issues/122)
+* chore(deps-dev): bump @semantic-release/github from 11.0.5 to 11.0.6 (#118) ([73152e8](https://github.com/jansinger/ostsee-sichtung/commit/73152e8)), closes [#118](https://github.com/jansinger/ostsee-sichtung/issues/118)
+* chore(deps-dev): bump @sveltejs/kit from 2.37.1 to 2.39.1 (#121) ([8b891d6](https://github.com/jansinger/ostsee-sichtung/commit/8b891d6)), closes [#121](https://github.com/jansinger/ostsee-sichtung/issues/121)
+* chore(deps-dev): bump @types/node from 22.18.1 to 22.18.3 (#125) ([e770f22](https://github.com/jansinger/ostsee-sichtung/commit/e770f22)), closes [#125](https://github.com/jansinger/ostsee-sichtung/issues/125)
+* chore(deps-dev): bump daisyui from 5.1.10 to 5.1.12 (#117) ([171c37c](https://github.com/jansinger/ostsee-sichtung/commit/171c37c)), closes [#117](https://github.com/jansinger/ostsee-sichtung/issues/117)
+* chore(deps-dev): bump eslint-plugin-svelte from 3.12.2 to 3.12.3 (#127) ([df11a7a](https://github.com/jansinger/ostsee-sichtung/commit/df11a7a)), closes [#127](https://github.com/jansinger/ostsee-sichtung/issues/127)
+* chore(deps-dev): bump semantic-release from 24.2.7 to 24.2.8 (#123) ([af52022](https://github.com/jansinger/ostsee-sichtung/commit/af52022)), closes [#123](https://github.com/jansinger/ostsee-sichtung/issues/123)
+* chore(deps-dev): bump svelte from 5.38.8 to 5.38.10 (#119) ([0895743](https://github.com/jansinger/ostsee-sichtung/commit/0895743)), closes [#119](https://github.com/jansinger/ostsee-sichtung/issues/119)
+* chore(deps): bump @fontsource/inter from 5.2.6 to 5.2.7 (#126) ([1e8d2e3](https://github.com/jansinger/ostsee-sichtung/commit/1e8d2e3)), closes [#126](https://github.com/jansinger/ostsee-sichtung/issues/126)
+* chore(deps): bump @fontsource/roboto from 5.2.6 to 5.2.7 (#120) ([494c0bc](https://github.com/jansinger/ostsee-sichtung/commit/494c0bc)), closes [#120](https://github.com/jansinger/ostsee-sichtung/issues/120)
+* chore(deps): bump @rollup/rollup-linux-x64-gnu from 4.48.1 to 4.50.2 (#124) ([6a3c2c9](https://github.com/jansinger/ostsee-sichtung/commit/6a3c2c9)), closes [#124](https://github.com/jansinger/ostsee-sichtung/issues/124)
+* chore(deps): bump pino from 9.9.4 to 9.9.5 (#116) ([cba1768](https://github.com/jansinger/ostsee-sichtung/commit/cba1768)), closes [#116](https://github.com/jansinger/ostsee-sichtung/issues/116)
+
 ## <small>1.27.1 (2025-09-10)</small>
 
 * Merge pull request #112 from jansinger/fix/dependabot-workflow-repair ([ec6b75d](https://github.com/jansinger/ostsee-sichtung/commit/ec6b75d)), closes [#112](https://github.com/jansinger/ostsee-sichtung/issues/112)
