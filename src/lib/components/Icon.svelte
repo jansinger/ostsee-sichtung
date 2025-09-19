@@ -1,101 +1,102 @@
 <script lang="ts">
 	// Import all icons we use in the project
-	import MapPin from '~icons/lucide/map-pin';
-	import Calendar from '~icons/lucide/calendar';
-	import Wind from '~icons/lucide/wind';
-	import Cloud from '~icons/lucide/cloud';
-	import Mail from '~icons/lucide/mail';
-	import Eye from '~icons/lucide/eye';
-	import Trash2 from '~icons/lucide/trash-2';
-	import Settings from '~icons/lucide/settings';
+	import type { Component } from 'svelte';
+	import Activity from '~icons/lucide/activity';
 	import AlertCircle from '~icons/lucide/alert-circle';
+	import Anchor from '~icons/lucide/anchor';
+	import Archive from '~icons/lucide/archive';
+	import ArrowLeft from '~icons/lucide/arrow-left';
+	import Baby from '~icons/lucide/baby';
+	import BarChart from '~icons/lucide/bar-chart';
+	import Binoculars from '~icons/lucide/binoculars';
+	import BookOpen from '~icons/lucide/book-open';
+	import Braces from '~icons/lucide/braces';
+	import Calendar from '~icons/lucide/calendar';
+	import Camera from '~icons/lucide/camera';
+	import Car from '~icons/lucide/car';
+	import ChartPie from '~icons/lucide/chart-pie';
 	import Check from '~icons/lucide/check';
-	import X from '~icons/lucide/x';
+	import CheckCircle from '~icons/lucide/check-circle';
 	import ChevronDown from '~icons/lucide/chevron-down';
 	import ChevronRight from '~icons/lucide/chevron-right';
-	import Filter from '~icons/lucide/filter';
-	import Download from '~icons/lucide/download';
-	import Columns from '~icons/lucide/columns';
-	import User from '~icons/lucide/user';
-	import LogOut from '~icons/lucide/log-out';
-	import Github from '~icons/lucide/github';
-	import Upload from '~icons/lucide/upload';
-	import Loader2 from '~icons/lucide/loader-2';
-	import Info from '~icons/lucide/info';
-	import ShieldAlert from '~icons/lucide/shield-alert';
-	import Waves from '~icons/lucide/waves';
-	import Activity from '~icons/lucide/activity';
-	import Camera from '~icons/lucide/camera';
-	import Thermometer from '~icons/lucide/thermometer';
-	import Gauge from '~icons/lucide/gauge';
-	import Binoculars from '~icons/lucide/binoculars';
-	import SkipForward from '~icons/lucide/skip-forward';
-	import Anchor from '~icons/lucide/anchor';
-	import MessageSquare from '~icons/lucide/message-square';
-	import Save from '~icons/lucide/save';
-	import ArrowLeft from '~icons/lucide/arrow-left';
-	import Play from '~icons/lucide/play';
-	import FileText from '~icons/lucide/file-text';
-	import Images from '~icons/lucide/images';
-	import Video from '~icons/lucide/video';
 	import CircleAlert from '~icons/lucide/circle-alert';
 	import CircleCheck from '~icons/lucide/circle-check';
-	import CircleX from '~icons/lucide/circle-x';
-	import SquareX from '~icons/lucide/square-x';
-	import List from '~icons/lucide/list';
-	import TriangleAlert from '~icons/lucide/triangle-alert';
-	import SquarePen from '~icons/lucide/square-pen';
-	import PenLine from '~icons/lucide/pen-line';
-	import PenOff from '~icons/lucide/pen-off';
-	import ChartPie from '~icons/lucide/chart-pie';
-	import TrendingUp from '~icons/lucide/trending-up';
-	import Users from '~icons/lucide/users';
 	import CircleHelp from '~icons/lucide/circle-help';
-	import Music from '~icons/lucide/music';
-	import Archive from '~icons/lucide/archive';
-	import File from '~icons/lucide/file';
-	import RefreshCw from '~icons/lucide/refresh-cw';
-	import Home from '~icons/lucide/home';
-	import FileSearch from '~icons/lucide/file-search';
-	import Lock from '~icons/lucide/lock';
-	import CheckCircle from '~icons/lucide/check-circle';
-	import Baby from '~icons/lucide/baby';
-	import Car from '~icons/lucide/car';
+	import CircleX from '~icons/lucide/circle-x';
 	import Clock from '~icons/lucide/clock';
+	import Cloud from '~icons/lucide/cloud';
 	import CloudRain from '~icons/lucide/cloud-rain';
-	import Hash from '~icons/lucide/hash';
+	import Columns from '~icons/lucide/columns';
+	import Download from '~icons/lucide/download';
+	import Eye from '~icons/lucide/eye';
+	import File from '~icons/lucide/file';
+	import FileCode from '~icons/lucide/file-code';
+	import FileSearch from '~icons/lucide/file-search';
+	import FileText from '~icons/lucide/file-text';
+	import FileType from '~icons/lucide/file-type';
+	import Filter from '~icons/lucide/filter';
 	import Fish from '~icons/lucide/fish';
+	import Gauge from '~icons/lucide/gauge';
+	import Gem from '~icons/lucide/gem';
+	import Github from '~icons/lucide/github';
 	import Globe from '~icons/lucide/globe';
+	import HardDrive from '~icons/lucide/hard-drive';
+	import Hash from '~icons/lucide/hash';
+	import Heart from '~icons/lucide/heart';
+	import Home from '~icons/lucide/home';
+	import Images from '~icons/lucide/images';
+	import Info from '~icons/lucide/info';
+	import List from '~icons/lucide/list';
+	import Loader2 from '~icons/lucide/loader-2';
+	import LoaderPinwheel from '~icons/lucide/loader-pinwheel';
+	import Lock from '~icons/lucide/lock';
+	import LogOut from '~icons/lucide/log-out';
+	import Mail from '~icons/lucide/mail';
+	import Map from '~icons/lucide/map';
+	import MapPin from '~icons/lucide/map-pin';
 	import MessageCircle from '~icons/lucide/message-circle';
+	import MessageSquare from '~icons/lucide/message-square';
+	import Mountain from '~icons/lucide/mountain';
 	import MousePointer from '~icons/lucide/mouse-pointer';
 	import Move from '~icons/lucide/move';
+	import Music from '~icons/lucide/music';
 	import Navigation from '~icons/lucide/navigation';
 	import Navigation2 from '~icons/lucide/navigation-2';
+	import PenLine from '~icons/lucide/pen-line';
+	import PenOff from '~icons/lucide/pen-off';
 	import Phone from '~icons/lucide/phone';
+	import Play from '~icons/lucide/play';
+	import RefreshCw from '~icons/lucide/refresh-cw';
+	import Save from '~icons/lucide/save';
+	import Scale from '~icons/lucide/scale';
+	import Send from '~icons/lucide/send';
+	import Settings from '~icons/lucide/settings';
+	import ShieldAlert from '~icons/lucide/shield-alert';
 	import ShieldCheck from '~icons/lucide/shield-check';
 	import Ship from '~icons/lucide/ship';
+	import SkipForward from '~icons/lucide/skip-forward';
 	import Skull from '~icons/lucide/skull';
+	import Smartphone from '~icons/lucide/smartphone';
+	import SquarePen from '~icons/lucide/square-pen';
+	import SquareX from '~icons/lucide/square-x';
+	import Thermometer from '~icons/lucide/thermometer';
 	import ToggleLeft from '~icons/lucide/toggle-left';
+	import Trash2 from '~icons/lucide/trash-2';
+	import TrendingUp from '~icons/lucide/trending-up';
+	import TriangleAlert from '~icons/lucide/triangle-alert';
+	import Upload from '~icons/lucide/upload';
+	import User from '~icons/lucide/user';
 	import UserCheck from '~icons/lucide/user-check';
+	import Users from '~icons/lucide/users';
+	import Video from '~icons/lucide/video';
+	import Waves from '~icons/lucide/waves';
+	import Wind from '~icons/lucide/wind';
+	import X from '~icons/lucide/x';
 	import Zap from '~icons/lucide/zap';
-	import Mountain from '~icons/lucide/mountain';
-import BookOpen from '~icons/lucide/book-open';
-import Map from '~icons/lucide/map';
-import Heart from '~icons/lucide/heart';
-import Scale from '~icons/lucide/scale';
-import Send from '~icons/lucide/send';
-import Smartphone from '~icons/lucide/smartphone';
-import Gem from '~icons/lucide/gem';
-import LoaderPinwheel from '~icons/lucide/loader-pinwheel';
-import FileType from '~icons/lucide/file-type';
-import HardDrive from '~icons/lucide/hard-drive';
-import BarChart from '~icons/lucide/bar-chart';
-import Braces from '~icons/lucide/braces';
-import FileCode from '~icons/lucide/file-code';
 
 	// Icon map for dynamic icon lookup
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const iconMap: Record<string, any> = {
+
+	const iconMap: Record<string, Component> = {
 		'lucide:map-pin': MapPin,
 		'lucide:calendar': Calendar,
 		'lucide:wind': Wind,
@@ -208,5 +209,9 @@ import FileCode from '~icons/lucide/file-code';
 	<IconComponent {width} {height} class={className} {...rest} />
 {:else}
 	<!-- Debug info for missing icons -->
-	<span class="inline-block {className}" style="width: {width}px; height: {height}px;" title="Missing icon: {icon}">?</span>
+	<span
+		class="inline-block {className}"
+		style="width: {width}px; height: {height}px;"
+		title="Missing icon: {icon}">?</span
+	>
 {/if}
