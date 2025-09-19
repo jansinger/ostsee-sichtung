@@ -28,10 +28,6 @@ export default defineConfig({
 			}
 		}
 	},
-	optimizeDeps: {
-		// Pre-bundle these dependencies to avoid CommonJS issues
-		include: ['flowbite-svelte-icons', '@fontsource/inter', '@fontsource/roboto']
-	},
 	resolve: {
 		// Ensure consistent module resolution
 		conditions: ['browser', 'import', 'module', 'default']

@@ -1,9 +1,9 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
 import devtoolsJson from 'vite-plugin-devtools-json';
-import Icons from 'unplugin-icons/vite';
 
 export default defineConfig({
 	plugins: [
@@ -57,8 +57,6 @@ export default defineConfig({
 	optimizeDeps: {
 		// Pre-bundle these dependencies to avoid CommonJS issues and improve startup performance
 		include: [
-			'@fontsource/inter',
-			'@fontsource/roboto',
 			'svelte-forms-lib',
 			'yup',
 			'ol',

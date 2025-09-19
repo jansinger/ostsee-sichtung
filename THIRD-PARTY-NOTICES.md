@@ -12,7 +12,7 @@ Generated on: 08/28/2025
 | Apache-2.0 | 8 | ✅ Fully Compatible |
 | ISC | 8 | ✅ Fully Compatible |
 | BSD-3-Clause | 3 | ✅ Fully Compatible |
-| OFL-1.1 | 2 | ✅ Compatible (Fonts) |
+| OFL-1.1 | 1 | ✅ Compatible (Fonts) |
 | MPL-2.0 | 2 | ⚠️ Weak Copyleft |
 | Unlicense | 2 | ✅ Fully Compatible |
 | BSD-2-Clause | 1 | ✅ Fully Compatible |
@@ -23,7 +23,7 @@ Generated on: 08/28/2025
 | CC0-1.0 | 1 | ✅ Fully Compatible |
 | MIT AND BSD-3-Clause | 1 | ⚠️ Multiple Licenses |
 
-**Total Dependencies**: 163
+**Total Dependencies**: 162
 
 ## Detailed License Information
 
@@ -639,13 +639,10 @@ Generated on: 08/28/2025
   - Repository: https://github.com/DanielJDufour/xml-utils
   - Publisher: Daniel J. Dufour
 
-### OFL-1.1 (2 packages)
+### OFL-1.1 (1 packages)
 
 **Compatibility**: ✅ Compatible (Fonts)
 
-- **@fontsource/inter@5.2.6**
-  - Repository: https://github.com/fontsource/font-files
-  - Publisher: Google Inc.
 
 - **@fontsource/roboto@5.2.6**
   - Repository: https://github.com/fontsource/font-files
