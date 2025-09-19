@@ -3,9 +3,9 @@
   Personal information, boat details, and additional observations
 -->
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import { createLogger } from '$lib/logger';
 	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
-	import Icon from '$lib/components/Icon.svelte';
 	import FormField from '../form/fields/FormField.svelte';
 
 	const logger = createLogger('report:step4-contact');
@@ -39,7 +39,7 @@
 			<div
 				class="bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full sm:h-12 sm:w-12"
 			>
-				<Icon icon="lucide:user" width="20" class="text-primary sm:w-6 sm:h-6" />
+				<Icon icon="lucide:user" width="20" class="text-primary sm:h-6 sm:w-6" />
 			</div>
 		</div>
 		<h2 class="text-base-content text-xl font-bold sm:text-2xl">Kontaktdaten & Abschluss</h2>
@@ -63,7 +63,7 @@
 				Ihre Kontaktdaten
 			</h3>
 			<div class="text-base-content/70 mb-4 text-left text-sm">
-				<p class="mb-1 text-left font-medium flex items-center gap-2">
+				<p class="mb-1 flex items-center gap-2 text-left font-medium">
 					<Icon icon="lucide:mail" width="16" class="text-primary" />
 					Ihre E-Mail-Adresse ist erforderlich für:
 				</p>
@@ -75,7 +75,7 @@
 
 				<div class="alert alert-info mt-4">
 					<div class="text-xs">
-						<p class="mb-2 font-medium flex items-center gap-2">
+						<p class="mb-2 flex items-center gap-2 font-medium">
 							<Icon icon="lucide:save" width="16" class="text-info" />
 							Automatische Speicherung für Komfort
 						</p>
@@ -114,9 +114,11 @@
 
 			<!-- Address (optional) -->
 			<details class="bg-base-100 collapse mt-4">
-				<summary class="collapse-title text-sm font-medium flex items-center gap-2">
-					<Icon icon="lucide:map-pin" width="16" class="text-primary" />
-					Adresse (optional, für postalische Zusendungen)
+				<summary class="collapse-title min-h-0 py-2 text-sm font-medium">
+					<span class="inline-flex items-center gap-1.5">
+						<Icon icon="lucide:map-pin" width="14" class="text-primary" />
+						Adresse (optional)
+					</span>
 				</summary>
 				<div class="collapse-content space-y-4 pt-4">
 					<FormField name="street" />
@@ -167,7 +169,7 @@
 
 			<!-- Optional Consents für Namensnennung -->
 			<div class="mt-6 space-y-4">
-				<h4 class="text-left text-base font-semibold flex items-center gap-2">
+				<h4 class="flex items-center gap-2 text-left text-base font-semibold">
 					<Icon icon="lucide:pen-line" width="16" class="text-primary" />
 					Optionale Veröffentlichung Ihres Namens
 				</h4>
@@ -199,35 +201,3 @@
 		</div>
 	</div>
 </div>
-
-<style>
-	/* Special styling for privacy section */
-	.border-primary\/20 {
-		border-color: oklch(var(--p) / 0.2);
-	}
-
-	/* Collapse styling */
-	.collapse {
-		border: 1px solid oklch(var(--b3));
-		border-radius: 0.75rem;
-	}
-
-	.collapse-title {
-		padding: 1rem;
-	}
-
-	.collapse[open] .collapse-title {
-		border-bottom: 1px solid oklch(var(--b3));
-	}
-
-	/* Alert styling */
-	.alert {
-		border-radius: 0.75rem;
-		border: 1px solid oklch(var(--in) / 0.2);
-	}
-
-	/* Form field styling */
-	:global(.form-control .label-text) {
-		align-items: center;
-	}
-</style>

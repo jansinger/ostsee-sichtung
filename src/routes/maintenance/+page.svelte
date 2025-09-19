@@ -1,9 +1,9 @@
 <script lang="ts">
-	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 
 	let { data } = $props();
-	
+
 	function refreshPage() {
 		window.location.reload();
 	}
@@ -14,8 +14,8 @@
 	<meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
-<div class="flex min-h-screen items-center justify-center bg-base-200">
-	<div class="card w-full max-w-md bg-base-100 shadow-xl">
+<div class="bg-base-200 flex min-h-screen items-center justify-center">
+	<div class="card bg-base-100 w-full max-w-md shadow-xl">
 		<div class="card-body text-center">
 			<!-- Logo -->
 			<div class="mb-6 flex justify-center">
@@ -24,21 +24,22 @@
 
 			<!-- Maintenance Icon -->
 			<div class="mb-6 flex justify-center">
-				<div class="rounded-full bg-warning/20 p-6">
-					<Icon icon="lucide:settings" class="size-16 animate-spin text-warning" />
+				<div class="bg-warning/20 rounded-full p-6">
+					<Icon icon="lucide:settings" class="text-warning size-16 animate-spin" />
 				</div>
 			</div>
 
 			<!-- Title -->
-			<h1 class="text-2xl font-bold text-base-content flex items-center justify-center gap-2">
+			<h1 class="text-base-content flex items-center justify-center gap-2 text-2xl font-bold">
 				<Icon icon="lucide:settings" width="24" />
 				Wartungsmodus
 			</h1>
 
 			<!-- Message -->
-			<div class="mt-4 text-base-content/80">
+			<div class="text-base-content/80 mt-4">
 				<p class="text-lg leading-relaxed">
-					{data.maintenanceMessage || 'Die Anwendung wird gewartet. Bitte versuchen Sie es später erneut.'}
+					{data.maintenanceMessage ||
+						'Die Anwendung wird gewartet. Bitte versuchen Sie es später erneut.'}
 				</p>
 			</div>
 
@@ -51,26 +52,10 @@
 			</div>
 
 			<!-- Info -->
-			<div class="mt-6 text-sm text-base-content/60">
+			<div class="text-base-content/60 mt-6 text-sm">
 				<p>Wir arbeiten daran, die Anwendung zu verbessern.</p>
 				<p class="mt-1">Vielen Dank für Ihr Verständnis!</p>
 			</div>
 		</div>
 	</div>
 </div>
-
-<style>
-	/* Custom animation for the maintenance icon */
-	:global(.animate-spin) {
-		animation: spin 3s linear infinite;
-	}
-	
-	@keyframes spin {
-		from {
-			transform: rotate(0deg);
-		}
-		to {
-			transform: rotate(360deg);
-		}
-	}
-</style>

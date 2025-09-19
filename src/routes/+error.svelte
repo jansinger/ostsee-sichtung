@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { browser as isBrowser } from '$app/environment';
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import Icon from '$lib/components/Icon.svelte';
@@ -19,7 +19,7 @@
 	 * Navigiert zur vorherigen Seite oder zur Startseite
 	 */
 	const goBack = (): void => {
-		if (isBrowser && window.history.length > 1) {
+		if (browser && window.history.length > 1) {
 			window.history.back();
 		} else {
 			goHome();
@@ -30,7 +30,7 @@
 	 * Lädt die aktuelle Seite neu
 	 */
 	const reloadPage = (): void => {
-		if (isBrowser) {
+		if (browser) {
 			window.location.reload();
 		}
 	};

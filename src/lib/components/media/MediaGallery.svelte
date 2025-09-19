@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { UploadedFileInfo } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
+	import type { UploadedFileInfo } from '$lib/types';
 	import MediaModal from './MediaModal.svelte';
 	import MediaThumbnail from './MediaThumbnail.svelte';
 
@@ -145,27 +145,8 @@
 		gap: 1rem;
 	}
 
-	/* Responsive grid improvements */
-	@media (max-width: 640px) {
-		:global(.grid-cols-2) {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	@media (min-width: 640px) {
-		:global(.sm\:grid-cols-3) {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
-	}
-
-	@media (min-width: 1024px) {
-		:global(.lg\:grid-cols-4) {
-			grid-template-columns: repeat(4, minmax(0, 1fr));
-		}
-	}
-
 	/* Animation for grid items */
-	:global(.media-gallery .grid > *) {
+	.grid > * {
 		animation: fadeInUp 0.3s ease-out forwards;
 	}
 
@@ -182,7 +163,7 @@
 
 	/* Accessibility improvements */
 	@media (prefers-reduced-motion: reduce) {
-		:global(.media-gallery .grid > *) {
+		.grid > * {
 			animation: none;
 		}
 	}

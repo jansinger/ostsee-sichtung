@@ -10,6 +10,9 @@
 @import './css/weather-icons.css';
 @import './css/weather-icons-wind.css';
 
+/* ===== OpenLayers Map Styles ===== */
+@import './lib/map/mapStyles.css';
+
 /* Add font-display: swap for better perceived performance */
 @layer base {
   @font-face {

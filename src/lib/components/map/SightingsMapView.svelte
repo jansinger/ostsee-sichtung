@@ -539,12 +539,4 @@
 	{/if}
 </div>
 
-<style>
-	@import '$lib/map/mapStyles.css';
-
-	/* Map-spezifische Styles - nicht global! */
-	.map-container-wrapper {
-		position: relative;
-		overflow: hidden;
-	}
-</style>
+<!-- Map styles sind jetzt global in app.css importiert -->

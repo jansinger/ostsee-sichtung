@@ -34,7 +34,7 @@
 
 	const alertClasses = {
 		success: 'alert alert-success',
-		error: 'alert alert-error', 
+		error: 'alert alert-error',
 		warning: 'alert alert-warning',
 		info: 'alert alert-info'
 	};
@@ -88,6 +88,8 @@
 <style>
 	.alert {
 		animation: slideIn 0.3s ease-out;
+		pointer-events: all;
+		max-width: 400px;
 	}
 
 	@keyframes slideIn {

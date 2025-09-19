@@ -1,7 +1,7 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import { SpeciesEnum, speciesGroups } from '$lib/report/formOptions/species';
 	import type { SightingFormData } from '$lib/types';
-	import Icon from '$lib/components/Icon.svelte';
 
 	let {
 		currentValue = undefined
@@ -587,11 +587,11 @@
 	</div>
 
 	<!-- Backdrop - click to close -->
-	<div 
-		class="modal-backdrop cursor-pointer" 
-		onclick={closeImageModal} 
+	<div
+		class="modal-backdrop cursor-pointer"
+		onclick={closeImageModal}
 		onkeydown={(e) => e.key === 'Escape' && closeImageModal()}
-		role="button" 
+		role="button"
 		tabindex="0"
 		aria-label="Modal schließen"
 	></div>
@@ -613,25 +613,25 @@
 	}
 
 	/* Clickable image button styling */
-	:global(.group button) {
+	.group button {
 		border: none;
 		background: none;
 		padding: 0;
 		cursor: pointer;
 	}
 
-	:global(.group:hover img) {
+	.group:hover img {
 		transform: scale(1.02);
 	}
 
 	/* Modal styling improvements */
-	:global(.modal-box) {
+	.modal-box {
 		box-shadow:
 			0 20px 25px -5px rgb(0 0 0 / 0.1),
 			0 10px 10px -5px rgb(0 0 0 / 0.04);
 	}
 
-	:global(.modal-backdrop) {
+	.modal-backdrop {
 		backdrop-filter: blur(4px);
 		background-color: rgba(0, 0, 0, 0.6);
 	}
@@ -642,15 +642,16 @@
 		box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 	}
 
-	/* Copyright link styling */
-	:global(.text-base-content\/50 a, .text-base-content\/60 a) {
+	/* Copyright link styling (bleibt global wegen {@html}) */
+	:global(.text-base-content\/50 a),
+	:global(.text-base-content\/60 a) {
 		color: inherit;
 		text-decoration: underline;
 		text-underline-offset: 2px;
 		transition: opacity 0.2s ease;
 	}
-
-	:global(.text-base-content\/50 a:hover, .text-base-content\/60 a:hover) {
+	:global(.text-base-content\/50 a:hover),
+	:global(.text-base-content\/60 a:hover) {
 		opacity: 0.8;
 	}
 
@@ -666,7 +667,7 @@
 		}
 
 		/* Mobile modal adjustments */
-		:global(.modal-box) {
+		.modal-box {
 			width: 95%;
 			max-width: 95%;
 		}
@@ -692,7 +693,7 @@
 			outline: 2px solid;
 		}
 
-		:global(.modal-box) {
+		.modal-box {
 			border: 2px solid;
 		}
 	}
