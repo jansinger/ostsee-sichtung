@@ -63,7 +63,7 @@
 </script>
 
 {#if visible}
-	<div class="{alertClasses[type]} mb-4 shadow-lg" role="alert" aria-live="polite">
+	<div class="{alertClasses[type]} mb-4 shadow-lg max-w-sm pointer-events-auto" style="animation: slideIn 0.3s ease-out" role="alert" aria-live="polite">
 		<Icon icon={iconMap[type]} width="20" />
 		<div class="flex-1">
 			{#if title}
@@ -85,21 +85,4 @@
 	</div>
 {/if}
 
-<style>
-	.alert {
-		animation: slideIn 0.3s ease-out;
-		pointer-events: all;
-		max-width: 400px;
-	}
-
-	@keyframes slideIn {
-		from {
-			transform: translateX(100%);
-			opacity: 0;
-		}
-		to {
-			transform: translateX(0);
-			opacity: 1;
-		}
-	}
-</style>
+<!-- Animation und Styling ist jetzt global über app.css und Utility-Klassen definiert -->

@@ -294,7 +294,7 @@
 												<img
 													src={mediaFile.thumbnail}
 													alt={mediaFile.fileName}
-													class="h-full object-cover"
+													class="h-full w-full object-contain"
 												/>
 											{:else}
 												<span class="text-xl" role="img" aria-label="File type icon">

@@ -93,7 +93,7 @@
 	aria-labelledby="legend-title"
 	aria-hidden={!isOpen}
 >
-	<div class="h-full overflow-y-auto">
+	<div class="h-full overflow-y-auto scroll-styled">
 		<div class="p-6">
 			<div class="mb-4 flex items-center justify-between">
 				<h2 id="legend-title" class="text-xl font-bold">Legende</h2>
@@ -272,27 +272,4 @@
 	</div>
 </div>
 
-<style>
-	/* Smooth scrolling für das Panel */
-	.overflow-y-auto {
-		scrollbar-width: thin;
-		scrollbar-color: oklch(var(--b3)) oklch(var(--b1));
-	}
-
-	.overflow-y-auto::-webkit-scrollbar {
-		width: 6px;
-	}
-
-	.overflow-y-auto::-webkit-scrollbar-track {
-		background: oklch(var(--b1));
-	}
-
-	.overflow-y-auto::-webkit-scrollbar-thumb {
-		background: oklch(var(--b3));
-		border-radius: 3px;
-	}
-
-	.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-		background: oklch(var(--bc) / 0.2);
-	}
-</style>
+<!-- Scrollbar styles sind jetzt global in app.css definiert -->

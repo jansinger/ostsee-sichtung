@@ -50,7 +50,7 @@
 			<img
 				src={`/api/media/${file.filePath}`}
 				alt={file.originalName}
-				class="h-full w-full object-cover transition-all group-hover:scale-110"
+				class="h-full w-full object-contain transition-all group-hover:scale-110"
 				loading="lazy"
 				onerror={(e) => {
 					console.error('Image loading failed:', `/api/media/${file.filePath}`, e);
@@ -85,7 +85,7 @@
 			<!-- Video Preview (falls Browser unterstützt) -->
 			<video
 				src={`/api/media/${file.filePath}`}
-				class="h-full w-full object-cover"
+				class="h-full w-full object-contain"
 				muted
 				preload="metadata"
 				poster=""
@@ -227,7 +227,7 @@
 		}
 	}
 
-	/* Loading state for images */
+	/* Loading state für Bilder - zeigt Pattern bis Bild geladen ist */
 	img {
 		background-color: oklch(var(--b2));
 		background-image: linear-gradient(
@@ -240,20 +240,12 @@
 			oklch(var(--b3)) 75%
 		);
 		background-size: 20px 20px;
-		animation: loading 1s linear infinite;
+		animation: loadingPattern 1s linear infinite;
 	}
 
-	img[src] {
-		background: none;
-		animation: none;
-	}
-
-	@keyframes loading {
-		0% {
-			background-position: 0 0;
-		}
-		100% {
-			background-position: 20px 20px;
-		}
+	/* Deaktiviert Loading-Pattern wenn Bild erfolgreich geladen wurde */
+	.media-thumbnail img[src] {
+		background: none !important;
+		animation: none !important;
 	}
 </style>
