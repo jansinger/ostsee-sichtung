@@ -9,7 +9,7 @@
 
 	// Get the reactive store
 	const toastStore = getToastStore();
-	
+
 	// Reactive getter for toasts using store subscription
 	const toasts = $derived($toastStore);
 </script>
@@ -32,10 +32,5 @@
 	.toast {
 		position: fixed;
 		pointer-events: none;
-	}
-
-	.toast :global(.alert) {
-		pointer-events: all;
-		max-width: 400px;
 	}
 </style>

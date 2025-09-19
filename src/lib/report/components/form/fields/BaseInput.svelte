@@ -4,8 +4,7 @@
 -->
 <script lang="ts">
 	import type { FieldOption, FieldSize } from '$lib/types';
-	import { ChevronDown, type IconSource } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import type { HTMLInputAttributes } from 'svelte/elements';
 
 	type InputType = 'text' | 'email' | 'tel' | 'number' | 'url' | 'password' | 'date' | 'time';
@@ -16,7 +15,7 @@
 		size?: FieldSize;
 		hasError?: boolean;
 		isValid?: boolean;
-		icon?: IconSource;
+		icon?: string;
 		options?: FieldOption[];
 		onchange?: (event: Event) => void;
 	}
@@ -77,7 +76,7 @@
 		<div
 			class="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center"
 		>
-			<Icon src={icon} size="16" class="text-base-content/60" />
+			<Icon icon={icon} width="16" class="text-base-content/60" />
 		</div>
 	{/if}
 
@@ -93,7 +92,7 @@
 	{#if hasOptions}
 		<!-- Dropdown icon -->
 		<div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-			<Icon src={ChevronDown} size="16" class="text-base-content/60" />
+			<Icon icon="lucide:chevron-down" width="16" class="text-base-content/60" />
 		</div>
 
 		<datalist id={datalistId}>

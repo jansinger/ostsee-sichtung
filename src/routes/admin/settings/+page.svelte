@@ -1,19 +1,7 @@
 <script lang="ts">
 	import { createLogger } from '$lib/logger';
 	import type { ConfigItem, ConfigValue } from '$lib/server/db/configRepository';
-	import {
-		Check,
-		CircleAlert,
-		Cog,
-		Globe,
-		Lock,
-		Mail,
-		RefreshCw,
-		Save,
-		Send,
-		Smartphone
-	} from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	const logger = createLogger('admin:settings');
@@ -27,22 +15,22 @@
 	let showAllSettings = $state(false);
 	let isSuperAdmin = $state(data.isSuperAdmin || false);
 
-	const categoryIcons: Record<string, typeof Mail> = {
-		email: Mail,
-		display: Globe,
-		security: Lock,
-		data: Cog,
-		integration: Globe,
-		mobile: Smartphone
+	const categoryIcons: Record<string, string> = {
+		email: 'lucide:mail',
+		display: 'lucide:globe',
+		security: 'lucide:lock',
+		data: 'lucide:settings',
+		integration: 'lucide:globe',
+		mobile: 'lucide:smartphone'
 	};
 
 	const categoryLabels: Record<string, string> = {
-		email: '📧 E-Mail Einstellungen',
-		display: '🎨 Anzeige-Einstellungen',
-		security: '🔒 Sicherheit & Validierung',
-		data: '📊 Datenverarbeitung',
-		integration: '🌐 Integration',
-		mobile: '📱 Mobile App'
+		email: 'E-Mail Einstellungen',
+		display: 'Anzeige-Einstellungen',
+		security: 'Sicherheit & Validierung',
+		data: 'Datenverarbeitung',
+		integration: 'Integration',
+		mobile: 'Mobile App'
 	};
 
 	const categoryDescriptions: Record<string, string> = {
@@ -324,7 +312,10 @@
 	<!-- Header -->
 	<div class="mb-8 flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold text-gray-900">⚙️ Anwendungseinstellungen</h1>
+			<h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+				<Icon icon="lucide:settings" width="32" height="32" class="text-primary" />
+				Anwendungseinstellungen
+			</h1>
 			<p class="mt-2 text-gray-600">
 				Konfigurieren Sie alle Aspekte der Ostsee-Tiere Anwendung über diese zentrale Oberfläche.
 			</p>
@@ -350,13 +341,13 @@
 
 			{#if changedConfigs.size > 0}
 				<button onclick={saveAllChanges} class="btn btn-success gap-2">
-					<Icon src={Save} class="size-5" />
+					<Icon icon="lucide:save" class="size-5" />
 					Alle Änderungen speichern ({changedConfigs.size})
 				</button>
 			{/if}
 
 			<button onclick={resetToDefaults} class="btn btn-warning gap-2">
-				<Icon src={RefreshCw} class="size-5" />
+				<Icon icon="lucide:refresh-cw" class="size-5" />
 				Zurücksetzen
 			</button>
 		</div>
@@ -371,7 +362,7 @@
 
 	{#if errorMessage}
 		<div class="alert alert-error mb-6">
-			<Icon src={CircleAlert} class="size-5" />
+			<Icon icon="lucide:circle-alert" class="size-5" />
 			<span>{errorMessage}</span>
 		</div>
 	{/if}
@@ -386,7 +377,7 @@
 		<div class="alert alert-info mb-6">
 			<div>
 				<div class="flex items-center gap-2">
-					<Icon src={Cog} class="size-5" />
+					<Icon icon="lucide:settings" class="size-5" />
 					<span class="font-semibold">Nur aktiv genutzte Einstellungen werden angezeigt</span>
 				</div>
 				<p class="mt-1 text-sm">
@@ -400,11 +391,11 @@
 	<!-- Configuration Categories -->
 	<div class="grid gap-8 lg:grid-cols-2">
 		{#each Object.entries(groupedConfigs) as [category, configs] (category)}
-			{@const IconComponent = categoryIcons[category] || Cog}
+			{@const iconName = categoryIcons[category] || 'lucide:settings'}
 			<div class="card bg-base-100 shadow-lg">
 				<div class="card-body">
 					<h2 class="card-title mb-4 flex items-center gap-3">
-						<Icon src={IconComponent} class="text-primary size-7" />
+						<Icon icon={iconName} class="text-primary size-7" />
 						<div class="flex-1">
 							<div class="text-xl">{categoryLabels[category] || category}</div>
 							<div class="text-sm font-normal text-gray-500">
@@ -419,7 +410,7 @@
 								class="btn btn-outline btn-sm gap-1"
 								title="Test-E-Mail senden"
 							>
-								<Icon src={Send} class="size-4" />
+								<Icon icon="lucide:send" class="size-4" />
 								Test-E-Mail
 							</button>
 						{/if}
@@ -431,7 +422,7 @@
 								class="btn btn-outline btn-sm gap-1"
 								title="Wartungsmodus-Status testen"
 							>
-								<Icon src={RefreshCw} class="size-4" />
+								<Icon icon="lucide:refresh-cw" class="size-4" />
 								Status testen
 							</button>
 						{/if}
@@ -475,7 +466,7 @@
 											{#if savingStates[config.key]}
 												<span class="loading loading-spinner loading-xs"></span>
 											{:else}
-												<Icon src={Check} class="size-4" />
+												<Icon icon="lucide:check" class="size-4" />
 											{/if}
 											Speichern
 										</button>

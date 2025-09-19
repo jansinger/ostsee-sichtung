@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 	import type { FieldSize } from '$lib/types';
-	import { Icon, type IconSource } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import type { HTMLTextareaAttributes } from 'svelte/elements';
 
 	interface Props extends HTMLTextareaAttributes {
@@ -12,7 +12,7 @@
 		size?: FieldSize;
 		hasError?: boolean;
 		isValid?: boolean;
-		icon?: IconSource;
+		icon?: string;
 		onchange?: (event: Event) => void;
 	}
 
@@ -55,7 +55,7 @@
 	<!-- Icon (if available) -->
 	{#if icon !== undefined}
 		<div class="pointer-events-none absolute top-3 left-3 z-10">
-			<Icon src={icon} size="16" class="text-base-content/60" />
+			<Icon icon={icon} width="16" class="text-base-content/60" />
 		</div>
 	{/if}
 

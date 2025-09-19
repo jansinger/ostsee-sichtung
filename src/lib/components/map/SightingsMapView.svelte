@@ -1,5 +1,6 @@
 <script lang="ts">
 	/* eslint-disable @typescript-eslint/no-explicit-any */
+	import Icon from '$lib/components/Icon.svelte';
 	import { MapCountManager, type CountData } from '$lib/map/countManager';
 	import type { MapTranslations } from '$lib/map/mapUtils';
 	import { SichtungenMap } from '$lib/map/optimizedMapController';
@@ -387,7 +388,7 @@
 <div class="{containerClass} map-container-wrapper">
 	{#if showTitle}
 		<h1 class={titleClass}>
-			<span class="text-lg">🗺️</span>
+			<Icon icon="lucide:map" width="24" height="24" class="text-primary" />
 			<span>{title} {currentDisplayedYear}</span>
 		</h1>
 	{/if}
@@ -523,21 +524,19 @@
 					</div>
 				</div>
 
-				<div class="text-base-content/60 mt-6 text-xs">
-					<p>🧭 Verwenden Sie die Maus oder Touch-Gesten zum Navigieren der Karte</p>
-					<p>🔍 Klicken Sie auf Marker für Details</p>
+				<div class="text-base-content/60 mt-6 text-xs space-y-1">
+					<p class="flex items-center gap-2">
+						<Icon icon="lucide:navigation" width="14" height="14" class="text-primary" />
+						Verwenden Sie die Maus oder Touch-Gesten zum Navigieren der Karte
+					</p>
+					<p class="flex items-center gap-2">
+						<Icon icon="lucide:mouse-pointer" width="14" height="14" class="text-primary" />
+						Klicken Sie auf Marker für Details
+					</p>
 				</div>
 			</div>
 		</div>
 	{/if}
 </div>
 
-<style>
-	@import '$lib/map/mapStyles.css';
-
-	/* Map-spezifische Styles - nicht global! */
-	.map-container-wrapper {
-		position: relative;
-		overflow: hidden;
-	}
-</style>
+<!-- Map styles sind jetzt global in app.css importiert -->

@@ -20,22 +20,7 @@
 	import type { FrontendSighting } from '$lib/types';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
-	import {
-		Activity,
-		Anchor,
-		Calendar,
-		Camera,
-		Eye,
-		FileText,
-		LoaderPinwheel,
-		MapPin,
-		MessageSquare,
-		Settings,
-		TriangleAlert,
-		User,
-		Waves
-	} from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	// Definiere die Struktur einer Datenzeile
 	interface DataRowType {
@@ -276,7 +261,7 @@
 	<!-- Loading Animation -->
 	<div class="flex min-h-[50vh] items-center justify-center">
 		<div class="text-center">
-			<Icon src={LoaderPinwheel} size="48" class="text-primary mx-auto mb-4 animate-spin" />
+			<Icon icon="lucide:loader-pinwheel" width="48" class="text-primary mx-auto mb-4 animate-spin" />
 			<p class="text-base-content/70 text-lg">Daten werden geladen...</p>
 			<p class="text-base-content/50 text-sm">Bitte warten Sie einen Moment</p>
 		</div>
@@ -288,7 +273,7 @@
 			<div class="card bg-base-200 shadow-sm">
 				<div class="card-body">
 					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={Calendar} size="20" class="text-primary" />
+						<Icon icon="lucide:calendar" width="20" class="text-primary" />
 						Datum & Zeit
 					</h3>
 					<div class="overflow-x-auto">
@@ -307,7 +292,7 @@
 			<div class="card bg-base-200 shadow-sm">
 				<div class="card-body">
 					<h3 class="card-title flex items-center gap-2 text-lg">
-						<Icon src={Eye} size="20" class="text-primary" />
+						<Icon icon="lucide:eye" width="20" class="text-primary" />
 						Tierinformationen
 					</h3>
 					<div class="overflow-x-auto">
@@ -327,7 +312,7 @@
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={TriangleAlert} size="20" class="text-primary" />
+							<Icon icon="lucide:triangle-alert" width="20" class="text-primary" />
 							Totfund
 						</h3>
 						<div class="overflow-x-auto">
@@ -348,7 +333,7 @@
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={Activity} size="20" class="text-primary" />
+							<Icon icon="lucide:activity" width="20" class="text-primary" />
 							Sichtungsdetails
 						</h3>
 						<div class="overflow-x-auto">
@@ -369,7 +354,7 @@
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={Waves} size="20" class="text-primary" />
+							<Icon icon="lucide:waves" width="20" class="text-primary" />
 							Umweltbedingungen
 						</h3>
 						{#if environmentRows.length > 0}
@@ -403,7 +388,7 @@
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={User} size="20" class="text-primary" />
+							<Icon icon="lucide:user" width="20" class="text-primary" />
 							Kontakt
 						</h3>
 						<div class="overflow-x-auto">
@@ -426,7 +411,7 @@
 				<div class="card bg-base-200 overflow-hidden shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={MapPin} size="20" class="text-primary" />
+							<Icon icon="lucide:map-pin" width="20" class="text-primary" />
 							Karte
 						</h3>
 						<div class="relative mt-2 h-[400px] w-full">
@@ -447,7 +432,7 @@
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={MapPin} size="20" class="text-primary" />
+							<Icon icon="lucide:map-pin" width="20" class="text-primary" />
 							Ortsangaben
 						</h3>
 						<div class="overflow-x-auto">
@@ -468,7 +453,7 @@
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={Anchor} size="20" class="text-primary" />
+							<Icon icon="lucide:anchor" width="20" class="text-primary" />
 							Schiffs-/Bootsangaben
 						</h3>
 						<div class="overflow-x-auto">
@@ -489,7 +474,7 @@
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={Settings} size="20" class="text-primary" />
+							<Icon icon="lucide:settings" width="20" class="text-primary" />
 							Status
 						</h3>
 						<div class="overflow-x-auto">
@@ -510,7 +495,7 @@
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={Camera} size="20" class="text-primary" />
+							<Icon icon="lucide:camera" width="20" class="text-primary" />
 							Medien-Gallerie
 						</h3>
 
@@ -521,7 +506,7 @@
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={Camera} size="20" class="text-primary" />
+							<Icon icon="lucide:camera" width="20" class="text-primary" />
 							Medien (Legacy)
 						</h3>
 						<div class="overflow-x-auto">
@@ -542,7 +527,7 @@
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={MessageSquare} size="20" class="text-primary" />
+							<Icon icon="lucide:message-square" width="20" class="text-primary" />
 							Bemerkungen
 						</h3>
 						<div class="overflow-x-auto">
@@ -563,7 +548,7 @@
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={Settings} size="20" class="text-primary" />
+							<Icon icon="lucide:settings" width="20" class="text-primary" />
 							Interner Kommentar
 						</h3>
 						<div class="overflow-x-auto">
@@ -586,7 +571,7 @@
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon src={FileText} size="20" class="text-primary" />
+							<Icon icon="lucide:file-text" width="20" class="text-primary" />
 							Technische Informationen
 						</h3>
 						<div class="overflow-x-auto">

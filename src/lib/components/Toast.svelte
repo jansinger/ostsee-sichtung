@@ -4,8 +4,7 @@
   Modernized with Svelte 5 $effect rune
 -->
 <script lang="ts">
-	import { CircleAlert, CircleCheck, CircleX, Info, X } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let {
 		type = 'info',
@@ -27,15 +26,15 @@
 	let timeout: NodeJS.Timeout | null = null;
 
 	const iconMap = {
-		success: CircleCheck,
-		error: CircleX,
-		warning: CircleAlert,
-		info: Info
+		success: 'lucide:circle-check',
+		error: 'lucide:circle-x',
+		warning: 'lucide:circle-alert',
+		info: 'lucide:info'
 	};
 
 	const alertClasses = {
 		success: 'alert alert-success',
-		error: 'alert alert-error', 
+		error: 'alert alert-error',
 		warning: 'alert alert-warning',
 		info: 'alert alert-info'
 	};
@@ -64,8 +63,8 @@
 </script>
 
 {#if visible}
-	<div class="{alertClasses[type]} mb-4 shadow-lg" role="alert" aria-live="polite">
-		<Icon src={iconMap[type]} size="20" />
+	<div class="{alertClasses[type]} mb-4 shadow-lg max-w-sm pointer-events-auto" style="animation: slideIn 0.3s ease-out" role="alert" aria-live="polite">
+		<Icon icon={iconMap[type]} width="20" />
 		<div class="flex-1">
 			{#if title}
 				<h3 class="font-bold">{title}</h3>
@@ -80,25 +79,10 @@
 				class="btn btn-ghost btn-xs"
 				aria-label="Toast schließen"
 			>
-				<Icon src={X} size="16" />
+				<Icon icon="lucide:x" width="16" />
 			</button>
 		{/if}
 	</div>
 {/if}
 
-<style>
-	.alert {
-		animation: slideIn 0.3s ease-out;
-	}
-
-	@keyframes slideIn {
-		from {
-			transform: translateX(100%);
-			opacity: 0;
-		}
-		to {
-			transform: translateX(0);
-			opacity: 1;
-		}
-	}
-</style>
+<!-- Animation und Styling ist jetzt global über app.css und Utility-Klassen definiert -->

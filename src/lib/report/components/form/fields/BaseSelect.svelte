@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 	import type { FieldOption, FieldSize } from '$lib/types';
-	import { Icon, type IconSource } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import type { HTMLSelectAttributes } from 'svelte/elements';
 
 	interface Props extends Omit<HTMLSelectAttributes, 'size'> {
@@ -14,7 +14,7 @@
 		size?: FieldSize;
 		hasError?: boolean;
 		isValid?: boolean;
-		icon?: IconSource;
+		icon?: string;
 		onchange?: (event: Event) => void;
 	}
 
@@ -61,7 +61,7 @@
 		<div
 			class="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center"
 		>
-			<Icon src={icon} size="16" class="text-base-content/60" />
+			<Icon icon={icon} width="16" class="text-base-content/60" />
 		</div>
 	{/if}
 

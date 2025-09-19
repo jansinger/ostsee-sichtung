@@ -2,8 +2,7 @@
 	import { getFormContext } from '$lib/report/formContext';
 	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
 	import { createToast } from '$lib/stores/toastState';
-	import { Trash2 } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let {
 		onCancel = () => {},
@@ -60,7 +59,7 @@
 					disabled={$isSubmitting}
 					title="Löscht gespeicherte Kontaktdaten permanent"
 				>
-					<Icon src={Trash2} size="14" /> Kontaktdaten löschen
+					<Icon icon="lucide:trash-2" class="h-[14px] w-[14px]" /> Kontaktdaten löschen
 				</button>
 			{:else}
 				<!-- Empty space to maintain grid layout -->

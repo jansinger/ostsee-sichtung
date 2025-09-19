@@ -35,18 +35,28 @@ export function isMediaFile(fileOrMimeType: File | string): boolean {
 }
 
 /**
- * Gets an appropriate emoji icon for a file type
+ * Gets an appropriate icon name for a file type
  * @param mimeType - The file's mime type
- * @returns Emoji string representing the file type
+ * @returns Lucide icon name representing the file type
+ * @deprecated Use getFileIconName instead for better icon support
  */
 export function getFileIcon(mimeType: string): string {
-	if (isImageFile(mimeType)) return '🖼️';
-	if (isVideoFile(mimeType)) return '🎥';
-	if (mimeType.includes('pdf')) return '📄';
-	if (mimeType.includes('audio')) return '🎵';
-	if (mimeType.includes('text')) return '📝';
-	if (mimeType.includes('zip') || mimeType.includes('archive')) return '📦';
-	return '📄';
+	return getFileIconName(mimeType);
+}
+
+/**
+ * Gets an appropriate @iconify/svelte icon name for a file type
+ * @param mimeType - The file's mime type
+ * @returns Iconify icon name string for use with @iconify/svelte
+ */
+export function getFileIconName(mimeType: string): string {
+	if (isImageFile(mimeType)) return 'lucide:images';
+	if (isVideoFile(mimeType)) return 'lucide:video';
+	if (mimeType.includes('pdf')) return 'lucide:file-text';
+	if (mimeType.includes('audio')) return 'lucide:music';
+	if (mimeType.includes('text')) return 'lucide:file-text';
+	if (mimeType.includes('zip') || mimeType.includes('archive')) return 'lucide:archive';
+	return 'lucide:file';
 }
 
 /**

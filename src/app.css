@@ -10,6 +10,9 @@
 @import './css/weather-icons.css';
 @import './css/weather-icons-wind.css';
 
+/* ===== OpenLayers Map Styles ===== */
+@import './lib/map/mapStyles.css';
+
 /* Add font-display: swap for better perceived performance */
 @layer base {
   @font-face {
@@ -240,6 +243,97 @@ h1, h2, h3, h4, h5, h6 {
 .alert-success { border-left-width: 4px; }
 .alert-warning { border-left-width: 4px; }
 .alert-error { border-left-width: 4px; }
+
+/* ===== Component Animations ===== */
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes bounceIn {
+	0% {
+		opacity: 0;
+		transform: scale(0.3);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.05);
+	}
+	70% {
+		transform: scale(0.9);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes loadingPattern {
+	0% {
+		background-position: 0 0;
+	}
+	100% {
+		background-position: 20px 20px;
+	}
+}
+
+@keyframes spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes slideIn {
+	from {
+		transform: translateX(100%);
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+/* ===== Global Scrollbar Styling ===== */
+.scroll-styled::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+.scroll-styled::-webkit-scrollbar-track {
+	background: oklch(var(--b1));
+	border-radius: 3px;
+}
+
+.scroll-styled::-webkit-scrollbar-thumb {
+	background: oklch(var(--b3));
+	border-radius: 3px;
+}
+
+.scroll-styled::-webkit-scrollbar-thumb:hover {
+	background: oklch(var(--b3) / 0.8);
+}
+
+/* ===== Media Loading States ===== */
+/* .loading-image Klasse entfernt - wird komponentenspezifisch in MediaThumbnail.svelte gehandhabt */
+
+/* ===== Global Panel Styles ===== */
+.panel-transition {
+	transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.panel-shadow {
+	box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+}
 
 /* ===== Accessibility ===== */
 :focus-visible {

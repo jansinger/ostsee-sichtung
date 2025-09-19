@@ -1,10 +1,33 @@
-/* Anpassungen für OpenLayers Kontrollen in Vollbild */
-:global(.ol-zoom) {
+/* ===========================
+   OpenLayers Map Styles
+   Konsolidierte Styles für alle Map-Komponenten
+   =========================== */
+
+/* OpenLayers Container Grundeinstellungen */
+.ol-map-container {
+	position: relative;
+	display: block;
+	width: 100%;
+	height: var(--map-height, 400px);
+	border: 1px solid #ccc;
+}
+
+.ol-map {
+	width: 100%;
+	height: 100%;
+}
+
+.ol-viewport {
+	border-radius: 4px;
+}
+
+/* OpenLayers Zoom Controls */
+.ol-zoom {
 	top: 4.5rem;
 	left: 0.5rem;
 }
 
-:global(.ol-zoom button) {
+.ol-zoom button {
 	background-color: rgba(255, 255, 255, 0.9) !important;
 	border: none !important;
 	border-radius: 4px !important;
@@ -17,16 +40,43 @@
 	font-size: 14px !important;
 }
 
-:global(.ol-zoom button:hover) {
+.ol-zoom button:hover {
 	background-color: rgba(255, 255, 255, 1) !important;
 }
 
-:global(.zoom-all-control) {
+/* OpenLayers Control Grundeinstellungen */
+.ol-control {
+	background-color: rgba(255, 255, 255, 0.4);
+	border-radius: 4px;
+	padding: 2px;
+}
+
+.ol-control button {
+	background-color: rgba(0, 60, 136, 0.5);
+	color: white;
+	border: none;
+	display: inline-block;
+	font-size: 14px;
+	line-height: 1.375em;
+	text-align: center;
+	cursor: pointer;
+	padding: 0;
+	width: 1.375em;
+	height: 1.375em;
+	border-radius: 2px;
+}
+
+.ol-control button:hover {
+	background-color: rgba(0, 60, 136, 0.7);
+}
+
+/* Zoom All Control */
+.zoom-all-control {
 	top: 8.5rem;
 	left: 0.5rem;
 }
 
-:global(.zoom-all-control button) {
+.zoom-all-control button {
 	background-color: rgba(255, 255, 255, 0.9) !important;
 	border: none !important;
 	border-radius: 4px !important;
@@ -40,16 +90,17 @@
 	margin: 2px !important;
 }
 
-:global(.zoom-all-control button:hover) {
+.zoom-all-control button:hover {
 	background-color: rgba(255, 255, 255, 1) !important;
 }
 
-:global(.location-control) {
+/* Location Control */
+.location-control {
 	top: 12.5rem;
 	left: 0.5rem;
 }
 
-:global(.location-control button) {
+.location-control button {
 	background-color: rgba(255, 255, 255, 0.9) !important;
 	border: none !important;
 	border-radius: 4px !important;
@@ -64,12 +115,55 @@
 	transition: all 0.2s ease;
 }
 
-:global(.location-control button:hover) {
+.location-control button:hover {
 	background-color: rgba(255, 255, 255, 1) !important;
 }
 
-/* Attribution Kontrolle anpassen */
-:global(.ol-attribution) {
+/* GPS Control */
+.gps-control {
+	position: absolute;
+	top: 0.5em;
+	right: 0.5em;
+}
+
+.gps-control .gps-button {
+	background-color: rgba(255, 255, 255, 0.8);
+	border: 2px solid #ccc;
+	border-radius: 4px;
+	width: 32px;
+	height: 32px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.3s ease;
+}
+
+.gps-control .gps-button:hover {
+	background-color: rgba(255, 255, 255, 1);
+	border-color: #3b82f6;
+}
+
+.gps-control .gps-button[style*="background-color: rgb(59, 130, 246)"] {
+	border-color: #3b82f6;
+}
+
+.gps-control .gps-button svg {
+	width: 20px;
+	height: 20px;
+}
+
+.gps-control .gps-button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.gps-control .gps-button.loading {
+	animation: pulse 1.5s infinite;
+}
+
+/* Attribution Control */
+.ol-attribution {
 	bottom: 0.5rem;
 	right: 0.5rem;
 	background-color: rgba(255, 255, 255, 0.8) !important;
@@ -77,62 +171,29 @@
 	font-size: 0.75rem !important;
 }
 
-:global {
-
-/* Die Panel-Styles sind jetzt in den Svelte-Komponenten selbst definiert */
-
-/* ENTFERNT: Globale body/html overflow-hidden Styles, die das Scrolling blockieren */
-/* Diese sollten nur lokal in den Map-Komponenten angewendet werden */
-
-/* Responsive Anpassungen für kleinere Bildschirme */
-@media (max-width: 768px) {
-	h1 {
-		font-size: 1.25rem !important;
-		padding: 0.5rem !important;
-	}
-	
-	/* Panel-Breite auf mobilen Geräten anpassen */
-	:global(.w-90) {
-		width: 100vw !important;
-	}
-	
-	/* OpenLayers Zoom-Buttons größer auf Touch-Geräten */
-	:global(.ol-zoom button) {
-		height: 2.2em !important;
-		width: 2.2em !important;
-		font-size: 16px !important;
-	}
-	
-	:global(.zoom-all-control button) {
-		height: 2.2em !important;
-		width: 2.2em !important;
-		font-size: 16px !important;
-	}
-	
-	:global(.location-control button) {
-		height: 2.2em !important;
-		width: 2.2em !important;
-		font-size: 16px !important;
-	}
-	
-	/* Hilfe-Button größer auf mobilen Geräten */
-	.fixed.bottom-4.left-4 {
-		height: 3.5rem !important;
-		width: 3.5rem !important;
-		font-size: 1.5rem !important;
-	}
+/* Cursor Styles für verschiebbare Marker */
+.ol-viewport .ol-selectable {
+	cursor: move;
+	cursor: grab;
 }
 
-/* Info-Popup Styling */
-#info {
-	background: white;
+.ol-viewport .ol-selectable:active {
+	cursor: grabbing;
+}
+
+/* Drag Hint */
+.drag-hint {
+	font-size: 0.85rem;
+	color: #666;
+	background-color: #f9f9f9;
 	border-radius: 4px;
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-	border: 1px solid #e5e7eb;
-	font-size: 0.875rem;
-	line-height: 1.25rem;
-	min-width: 200px;
-	z-index: 1000;
+	padding: 2px 8px;
+	display: inline-block;
+	white-space: nowrap;
+}
+
+/* Info Popup Styling */
+#info {
 	position: absolute;
 	background: white;
 	border-radius: 4px;
@@ -142,7 +203,9 @@
 	font-size: 12px;
 	line-height: 1.4;
 	max-width: 250px;
+	min-width: 200px;
 	word-wrap: break-word;
+	z-index: 1000;
 }
 
 #info strong {
@@ -159,5 +222,75 @@
 	padding: 8px;
 }
 
-/* Alle Panel-Styles sind jetzt in den Svelte-Komponenten selbst */
+/* Map Container Wrapper */
+.map-container-wrapper {
+	position: relative;
+	overflow: hidden;
+}
+
+/* ===========================
+   Responsive Anpassungen
+   =========================== */
+@media (max-width: 768px) {
+	h1 {
+		font-size: 1.25rem !important;
+		padding: 0.5rem !important;
+	}
+
+	/* Panel-Breite auf mobilen Geräten anpassen */
+	.w-90 {
+		width: 100vw !important;
+	}
+
+	/* OpenLayers Zoom-Buttons größer auf Touch-Geräten */
+	.ol-zoom button {
+		height: 2.2em !important;
+		width: 2.2em !important;
+		font-size: 16px !important;
+	}
+
+	.zoom-all-control button {
+		height: 2.2em !important;
+		width: 2.2em !important;
+		font-size: 16px !important;
+	}
+
+	.location-control button {
+		height: 2.2em !important;
+		width: 2.2em !important;
+		font-size: 16px !important;
+	}
+
+	/* GPS Control größer auf mobilen Geräten */
+	.gps-control .gps-button {
+		width: 44px;
+		height: 44px;
+	}
+
+	.gps-control .gps-button svg {
+		width: 24px;
+		height: 24px;
+	}
+
+	/* Hilfe-Button größer auf mobilen Geräten */
+	.fixed.bottom-4.left-4 {
+		height: 3.5rem !important;
+		width: 3.5rem !important;
+		font-size: 1.5rem !important;
+	}
+}
+
+/* ===========================
+   Animationen
+   =========================== */
+@keyframes pulse {
+	0% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.6;
+	}
+	100% {
+		opacity: 1;
+	}
 }

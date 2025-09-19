@@ -1,7 +1,6 @@
 <script>
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
-	import { Github } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 </script>
 
 <!-- Footer with navigation (versteckt in iFrame) -->
@@ -24,7 +23,7 @@
 					class="btn btn-ghost btn-xs sm:btn-sm text-xs sm:text-sm"
 					aria-label="GitHub Repository"
 				>
-					<Icon src={Github} class="h-3 w-3 sm:h-5 sm:w-5" />
+					<Icon icon="lucide:github" width="16" height="16" class="h-3 w-3 sm:h-5 sm:w-5" />
 					<span class="hidden xs:inline">GitHub</span>
 					<span class="xs:hidden">Code</span>
 				</a>

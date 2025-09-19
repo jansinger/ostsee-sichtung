@@ -2,8 +2,7 @@
 	import type { CountData } from '$lib/map/countManager';
 	import type { MapTranslations } from '$lib/map/mapUtils';
 	import { backgroundColors, speciesSymbols } from '$lib/map/styleUtils';
-	import { List, SquareX } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { translations, counts } = $props<{
 		translations: MapTranslations;
@@ -76,7 +75,7 @@
 	style="transform: translateX({isOpen ? '-400px' : '0px'});"
 	aria-label="Legende {isOpen ? 'schließen' : 'öffnen'}"
 >
-	<Icon src={List} class="mb-1 h-4 w-4" />
+	<Icon icon="lucide:list" class="mb-1 h-4 w-4" />
 	<div
 		class="text-xs whitespace-nowrap"
 		style="writing-mode: vertical-rl; text-orientation: mixed;"
@@ -94,7 +93,7 @@
 	aria-labelledby="legend-title"
 	aria-hidden={!isOpen}
 >
-	<div class="h-full overflow-y-auto">
+	<div class="h-full overflow-y-auto scroll-styled">
 		<div class="p-6">
 			<div class="mb-4 flex items-center justify-between">
 				<h2 id="legend-title" class="text-xl font-bold">Legende</h2>
@@ -103,7 +102,7 @@
 					class="btn btn-ghost btn-sm hover:bg-base-200"
 					aria-label="Legende schließen"
 				>
-					<Icon src={SquareX} class="h-4 w-4" />
+					<Icon icon="lucide:square-x" class="h-4 w-4" />
 				</button>
 			</div>
 
@@ -273,27 +272,4 @@
 	</div>
 </div>
 
-<style>
-	/* Smooth scrolling für das Panel */
-	.overflow-y-auto {
-		scrollbar-width: thin;
-		scrollbar-color: oklch(var(--b3)) oklch(var(--b1));
-	}
-
-	.overflow-y-auto::-webkit-scrollbar {
-		width: 6px;
-	}
-
-	.overflow-y-auto::-webkit-scrollbar-track {
-		background: oklch(var(--b1));
-	}
-
-	.overflow-y-auto::-webkit-scrollbar-thumb {
-		background: oklch(var(--b3));
-		border-radius: 3px;
-	}
-
-	.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-		background: oklch(var(--bc) / 0.2);
-	}
-</style>
+<!-- Scrollbar styles sind jetzt global in app.css definiert -->

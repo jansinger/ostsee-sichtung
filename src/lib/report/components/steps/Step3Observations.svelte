@@ -11,8 +11,7 @@
 	import { getFormContext } from '$lib/report/formContext';
 	import { scrollToElement } from '$lib/utils/fieldNavigation';
 
-	import { Activity, SkipForward } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import OptionalSightingDetails from '../sections/OptionalSightingDetails.svelte';
 
 	const logger = createLogger('report:Step3Observations');
@@ -42,7 +41,7 @@
 			<div
 				class="bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full sm:h-12 sm:w-12"
 			>
-				<Icon src={Activity} size="20" class="text-primary sm:size-24" />
+				<Icon icon="lucide:activity" width="20" class="text-primary sm:w-6 sm:h-6" />
 			</div>
 		</div>
 		<h2 class="text-base-content text-xl font-bold sm:text-2xl">Zusätzliche Beobachtungen</h2>
@@ -68,7 +67,7 @@
 				class="btn btn-outline btn-secondary gap-2"
 				aria-label="Diesen optionalen Schritt überspringen"
 			>
-				<Icon src={SkipForward} size="16" />
+				<Icon icon="lucide:skip-forward" width="16" />
 				Schritt überspringen
 			</button>
 		</div>

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
-	import { Activity, Calendar, ChartPie, TrendingUp, Users } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -139,7 +138,7 @@
 		<!-- Scientific Insights Alert Box -->
 		{#if scientificInsights().length > 0}
 			<div class="alert alert-info">
-				<Icon src={TrendingUp} class="h-6 w-6" />
+				<Icon icon="lucide:trending-up" class="h-6 w-6" />
 				<div class="flex-1">
 					<h3 class="font-bold">Wissenschaftliche Erkenntnisse</h3>
 					<div class="mt-2 space-y-2">
@@ -167,7 +166,7 @@
 			<div class="stats shadow">
 				<div class="stat">
 					<div class="stat-figure text-primary">
-						<Icon src={Users} class="h-8 w-8" />
+						<Icon icon="lucide:users" class="h-8 w-8" />
 					</div>
 					<div class="stat-title">Gesamtsichtungen</div>
 					<div class="stat-value text-primary">
@@ -185,7 +184,7 @@
 			<div class="stats shadow">
 				<div class="stat">
 					<div class="stat-figure text-secondary">
-						<Icon src={Activity} class="h-8 w-8" />
+						<Icon icon="lucide:activity" class="h-8 w-8" />
 					</div>
 					<div class="stat-title">Ø Gruppengröße</div>
 					<div class="stat-value text-secondary">
@@ -198,7 +197,7 @@
 			<div class="stats shadow">
 				<div class="stat">
 					<div class="stat-figure text-warning">
-						<Icon src={TrendingUp} class="h-8 w-8" />
+						<Icon icon="lucide:trending-up" class="h-8 w-8" />
 					</div>
 					<div class="stat-title">Totfunde</div>
 					<div class="stat-value text-warning">
@@ -215,7 +214,7 @@
 			<div class="stats shadow">
 				<div class="stat">
 					<div class="stat-figure text-accent">
-						<Icon src={Calendar} class="h-8 w-8" />
+						<Icon icon="lucide:calendar" class="h-8 w-8" />
 					</div>
 					<div class="stat-title">Mit Medien</div>
 					<div class="stat-value text-accent">{formatNumber(data.basicStats?.withMedia || 0)}</div>
@@ -230,7 +229,7 @@
 			<div class="stats shadow">
 				<div class="stat">
 					<div class="stat-figure text-info">
-						<Icon src={Users} class="h-8 w-8" />
+						<Icon icon="lucide:users" class="h-8 w-8" />
 					</div>
 					<div class="stat-title">Unique Nutzer</div>
 					<div class="stat-value text-info">{formatNumber(data.userStats?.uniqueUsers || 0)}</div>
@@ -248,7 +247,7 @@
 			<div class="card bg-base-100 shadow-xl">
 				<div class="card-body">
 					<h2 class="card-title">
-						<Icon src={ChartPie} class="h-6 w-6" />
+						<Icon icon="lucide:chart-pie" class="h-6 w-6" />
 						Artenverteilung (verifizierte Sichtungen)
 					</h2>
 					<div class="overflow-x-auto">
@@ -295,7 +294,7 @@
 			<div class="card bg-base-100 shadow-xl">
 				<div class="card-body">
 					<h2 class="card-title">
-						<Icon src={Calendar} class="h-6 w-6" />
+						<Icon icon="lucide:calendar" class="h-6 w-6" />
 						Saisonalität (verifizierte Sichtungen)
 					</h2>
 					<div class="space-y-2">
@@ -323,7 +322,7 @@
 			<div class="card bg-base-100 shadow-xl">
 				<div class="card-body">
 					<h2 class="card-title">
-						<Icon src={Users} class="h-6 w-6" />
+						<Icon icon="lucide:users" class="h-6 w-6" />
 						Nutzerengagement & Datenqualität (verifizierte Sichtungen)
 					</h2>
 
@@ -397,7 +396,7 @@
 			<div class="card bg-base-100 shadow-xl">
 				<div class="card-body">
 					<h2 class="card-title">
-						<Icon src={TrendingUp} class="h-6 w-6" />
+						<Icon icon="lucide:trending-up" class="h-6 w-6" />
 						Top Beobachter (verifizierte Sichtungen, ohne meeresmuseum.de)
 					</h2>
 					<div class="overflow-x-auto">
@@ -450,7 +449,7 @@
 		<div class="card bg-base-100 shadow-xl">
 			<div class="card-body">
 				<h2 class="card-title">
-					<Icon src={TrendingUp} class="h-6 w-6" />
+					<Icon icon="lucide:trending-up" class="h-6 w-6" />
 					Jahrestrends (verifizierte Sichtungen)
 				</h2>
 				<div class="overflow-x-auto">
@@ -514,7 +513,7 @@
 			<div class="card bg-base-100 shadow-xl">
 				<div class="card-body">
 					<h2 class="card-title">
-						<Icon src={Calendar} class="h-6 w-6" />
+						<Icon icon="lucide:calendar" class="h-6 w-6" />
 						Aktivität der letzten 30 Tage (alle Sichtungen)
 					</h2>
 

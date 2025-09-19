@@ -16,15 +16,7 @@
 	import { toast } from '$lib/stores/toastState';
 	import type { FrontendSighting, PageData } from '$lib/types';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
-	import {
-		CloseOutline,
-		DownloadOutline,
-		EnvelopeOutline,
-		EyeOutline,
-		FilterOutline,
-		TableColumnOutline,
-		TrashBinOutline
-	} from 'flowbite-svelte-icons';
+	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('SichtungenPage');
 
@@ -354,7 +346,7 @@
 						onclick={() => (isFilterPanelOpen = !isFilterPanelOpen)}
 						title="Filter ein-/ausblenden"
 					>
-						<FilterOutline class="mr-1 h-4 w-4" />
+						<Icon icon="lucide:filter" class="mr-1 h-4 w-4" />
 						Filter
 						{#if hasActiveFilters()}
 							<span class="badge badge-accent badge-sm ml-1">•</span>
@@ -366,7 +358,7 @@
 						title="Sichtungen exportieren"
 						disabled={!data.pagination?.total}
 					>
-						<DownloadOutline class="mr-1 h-4 w-4" />
+						<Icon icon="lucide:download" class="mr-1 h-4 w-4" />
 						Export
 					</button>
 				</div>
@@ -388,7 +380,7 @@
 						onclick={() => (showColumnDropdown = !showColumnDropdown)}
 						title="Spalten ein-/ausblenden"
 					>
-						<TableColumnOutline class="mr-1 h-4 w-4" />
+						<Icon icon="lucide:columns" class="mr-1 h-4 w-4" />
 						Spalten
 					</button>
 					{#if showColumnDropdown}
@@ -404,7 +396,7 @@
 									class="btn btn-ghost btn-xs"
 									onclick={() => (showColumnDropdown = false)}
 								>
-									<CloseOutline class="h-3 w-3" />
+									<Icon icon="lucide:x" class="h-3 w-3" />
 								</button>
 							</div>
 							<div class="max-h-80 overflow-y-auto">
@@ -437,7 +429,7 @@
 					onclick={() => (isFilterPanelOpen = !isFilterPanelOpen)}
 					title="Filter ein-/ausblenden"
 				>
-					<FilterOutline class="mr-1 h-4 w-4" />
+					<Icon icon="lucide:filter" class="mr-1 h-4 w-4" />
 					Filter
 					{#if hasActiveFilters()}
 						<span class="badge badge-accent badge-sm ml-1">•</span>
@@ -449,7 +441,7 @@
 					title="Sichtungen exportieren"
 					disabled={!data.pagination?.total}
 				>
-					<DownloadOutline class="mr-1 h-4 w-4" />
+					<Icon icon="lucide:download" class="mr-1 h-4 w-4" />
 					Export
 				</button>
 				{#if data.pagination && data.pagination.total}
@@ -472,7 +464,7 @@
 					title="Filter ausblenden"
 					aria-label="Filter ausblenden"
 				>
-					<CloseOutline class="h-4 w-4" />
+					<Icon icon="lucide:x" class="h-4 w-4" />
 				</button>
 			</div>
 			<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
@@ -580,7 +572,7 @@
 							title="Details anzeigen"
 							aria-label="Details anzeigen"
 						>
-							<EyeOutline class="h-4 w-4" />
+							<Icon icon="lucide:eye" class="h-4 w-4" />
 						</button>
 						<button
 							class="btn btn-ghost btn-sm"
@@ -588,7 +580,7 @@
 							title="Test-E-Mail senden"
 							aria-label="Test-E-Mail senden"
 						>
-							<EnvelopeOutline class="h-4 w-4" />
+							<Icon icon="lucide:mail" class="h-4 w-4" />
 						</button>
 						<button
 							class="btn text-error btn-ghost btn-sm"
@@ -599,7 +591,7 @@
 							title="Eintrag löschen"
 							aria-label="Eintrag löschen"
 						>
-							<TrashBinOutline class="h-4 w-4" />
+							<Icon icon="lucide:trash-2" class="h-4 w-4" />
 						</button>
 					</div>
 				</div>
@@ -912,7 +904,7 @@
 										title="Details anzeigen"
 										aria-label="Details anzeigen"
 									>
-										<EyeOutline class="h-4 w-4" />
+										<Icon icon="lucide:eye" class="h-4 w-4" />
 									</button>
 									<button
 										class="btn btn-ghost btn-xs"
@@ -920,7 +912,7 @@
 										title="Test-E-Mail senden"
 										aria-label="Test-E-Mail senden"
 									>
-										<EnvelopeOutline class="h-4 w-4" />
+										<Icon icon="lucide:mail" class="h-4 w-4" />
 									</button>
 									<button
 										class="btn text-error btn-ghost btn-xs"
@@ -931,7 +923,7 @@
 										title="Eintrag löschen"
 										aria-label="Eintrag löschen"
 									>
-										<TrashBinOutline class="h-4 w-4" />
+										<Icon icon="lucide:trash-2" class="h-4 w-4" />
 									</button>
 								</td>
 							{/if}

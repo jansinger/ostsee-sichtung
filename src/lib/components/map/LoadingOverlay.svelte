@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { Filter, Loader, MapPin } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	// Props
 	type LoadingType = 'default' | 'filter' | 'features' | 'initial';
@@ -21,10 +20,10 @@
 
 	// Icon basierend auf Typ
 	const iconMap = {
-		default: Loader,
-		filter: Filter,
-		features: MapPin,
-		initial: Loader
+		default: 'lucide:loader-2',
+		filter: 'lucide:filter',
+		features: 'lucide:map-pin',
+		initial: 'lucide:loader-2'
 	};
 
 	// Nachrichten basierend auf Typ
@@ -45,6 +44,7 @@
 	<!-- Backdrop -->
 	<div
 		class="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-all duration-300"
+		style="animation: fadeIn 0.3s ease-out"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="loading-title"
@@ -54,13 +54,14 @@
 	<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
 		<div
 			class="bg-base-100 mx-auto w-full max-w-sm scale-100 transform rounded-2xl p-8 shadow-2xl transition-all duration-300"
+			style="animation: bounceIn 0.4s ease-out"
 		>
 			<!-- Header -->
 			<div class="mb-6 text-center">
 				<div
 					class="bg-primary/10 mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full"
 				>
-					<Icon src={iconMap[type as LoadingType]} class="text-primary h-8 w-8 animate-spin" />
+					<Icon icon={iconMap[type as LoadingType]} class="text-primary h-8 w-8 animate-spin" />
 				</div>
 				<h3 id="loading-title" class="text-base-content text-lg font-semibold">
 					{displayMessage}
@@ -121,43 +122,4 @@
 	</div>
 {/if}
 
-<style>
-	/* Smooth animations */
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-			transform: scale(0.95);
-		}
-		to {
-			opacity: 1;
-			transform: scale(1);
-		}
-	}
-
-	@keyframes bounceIn {
-		0% {
-			opacity: 0;
-			transform: scale(0.3);
-		}
-		50% {
-			opacity: 1;
-			transform: scale(1.05);
-		}
-		70% {
-			transform: scale(0.9);
-		}
-		100% {
-			opacity: 1;
-			transform: scale(1);
-		}
-	}
-
-	/* Apply animations when visible */
-	.fixed.inset-0.z-40 {
-		animation: fadeIn 0.3s ease-out;
-	}
-
-	.fixed.inset-0.z-50 > div {
-		animation: bounceIn 0.4s ease-out;
-	}
-</style>
+<!-- Animations sind jetzt global in app.css definiert -->

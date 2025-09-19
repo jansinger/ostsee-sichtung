@@ -1,17 +1,8 @@
 <script lang="ts">
-	import { browser as isBrowser } from '$app/environment';
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import {
-		ArrowLeftOutline,
-		ExclamationCircleOutline,
-		FileSearchOutline,
-		HomeOutline,
-		InfoCircleOutline,
-		LockOutline,
-		MailBoxOutline,
-		RefreshOutline
-	} from 'flowbite-svelte-icons';
+	import Icon from '$lib/components/Icon.svelte';
 
 	// Error-Informationen aus der page store (Runes Mode)
 	const error = $derived(page.error);
@@ -28,7 +19,7 @@
 	 * Navigiert zur vorherigen Seite oder zur Startseite
 	 */
 	const goBack = (): void => {
-		if (isBrowser && window.history.length > 1) {
+		if (browser && window.history.length > 1) {
 			window.history.back();
 		} else {
 			goHome();
@@ -39,24 +30,24 @@
 	 * Lädt die aktuelle Seite neu
 	 */
 	const reloadPage = (): void => {
-		if (isBrowser) {
+		if (browser) {
 			window.location.reload();
 		}
 	};
 
 	/**
-	 * Bestimmt das passende Icon-Component basierend auf dem HTTP-Status
+	 * Bestimmt das passende Icon basierend auf dem HTTP-Status
 	 */
-	const getErrorIconComponent = (statusCode: number) => {
+	const getErrorIcon = (statusCode: number) => {
 		switch (statusCode) {
 			case 404:
-				return FileSearchOutline;
+				return 'lucide:file-search';
 			case 403:
-				return LockOutline;
+				return 'lucide:lock';
 			case 500:
-				return ExclamationCircleOutline;
+				return 'lucide:circle-alert';
 			default:
-				return ExclamationCircleOutline;
+				return 'lucide:circle-alert';
 		}
 	};
 
@@ -90,7 +81,7 @@
 	};
 
 	let errorMessage = $derived(getErrorMessage(status));
-	let ErrorIconComponent = $derived(getErrorIconComponent(status));
+	let errorIcon = $derived(getErrorIcon(status));
 </script>
 
 <svelte:head>
@@ -106,7 +97,7 @@
 				<!-- Fehler-Icon -->
 				<div class="avatar placeholder mb-4">
 					<div class="bg-error text-error-content h-20 w-20 rounded-full">
-						<ErrorIconComponent class="h-10 w-10" />
+						<Icon icon={errorIcon} class="h-10 w-10" />
 					</div>
 				</div>
 
@@ -142,18 +133,18 @@
 				<div class="card-actions w-full justify-center">
 					<div class="btn-group btn-group-vertical sm:btn-group-horizontal">
 						<button class="btn btn-primary" onclick={goHome} aria-label="Zur Startseite">
-							<HomeOutline class="mr-2 h-4 w-4" />
+							<Icon icon="lucide:home" class="mr-2 h-4 w-4" />
 							Startseite
 						</button>
 
 						<button class="btn btn-ghost" onclick={goBack} aria-label="Zurück">
-							<ArrowLeftOutline class="mr-2 h-4 w-4" />
+							<Icon icon="lucide:arrow-left" class="mr-2 h-4 w-4" />
 							Zurück
 						</button>
 
 						{#if status >= 500}
 							<button class="btn btn-outline" onclick={reloadPage} aria-label="Seite neu laden">
-								<RefreshOutline class="mr-2 h-4 w-4" />
+								<Icon icon="lucide:refresh-cw" class="mr-2 h-4 w-4" />
 								Neu laden
 							</button>
 						{/if}
@@ -166,7 +157,7 @@
 		<div class="card bg-base-100 mt-4 shadow-lg">
 			<div class="card-body">
 				<h2 class="card-title text-lg">
-					<InfoCircleOutline class="mr-2 h-5 w-5" />
+					<Icon icon="lucide:info" class="mr-2 h-5 w-5" />
 					Hilfe & Kontakt
 				</h2>
 
@@ -186,7 +177,7 @@
 						class="btn btn-sm btn-ghost"
 						aria-label="Support kontaktieren"
 					>
-						<MailBoxOutline class="mr-1 h-4 w-4" />
+						<Icon icon="lucide:mail" class="mr-1 h-4 w-4" />
 						Support
 					</a>
 				</div>

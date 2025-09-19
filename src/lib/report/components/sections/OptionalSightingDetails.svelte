@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { Activity } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 	import FormField from '../form/fields/FormField.svelte';
 </script>
 
@@ -8,7 +7,7 @@
 <div class="card bg-base-200 shadow-sm">
 	<div class="card-body">
 		<h3 class="card-title flex items-center gap-2 text-lg">
-			<Icon src={Activity} size="20" class="text-primary" />
+			<Icon icon="lucide:activity" width="20" class="text-primary" />
 			Weitere Sichtungsdetails
 		</h3>
 

@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import AdminSightingView from '$lib/components/admin/AdminSightingView.svelte';
-	import { PenLine } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { data } = $props();
 
@@ -51,7 +50,7 @@
 			title="Bearbeiten"
 			aria-label="Sichtung bearbeiten"
 		>
-			<Icon src={PenLine} class="mr-1 h-4 w-4" />
+			<Icon icon="lucide:pen-line" class="mr-1 h-4 w-4" />
 			Bearbeiten
 		</button>
 	</div>

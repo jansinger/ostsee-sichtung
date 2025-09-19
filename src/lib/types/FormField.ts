@@ -2,8 +2,8 @@
  * Form field component types
  */
 
-// Icon type from Steeze UI
-export type IconType = Record<string, unknown>; // Lucide icons from @steeze-ui/lucide-icons
+// Icon type from Iconify
+export type IconType = string; // Iconify icon names like 'lucide:calendar'
 
 // Option type for selects and radios
 export interface FieldOption {

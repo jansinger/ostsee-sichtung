@@ -2,8 +2,7 @@
 	import type { UploadedFileInfo } from '$lib/types';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
 	import { isImageFile, isVideoFile } from '$lib/utils/file/fileType';
-	import { Download, Eye, FileText, MapPin, Play } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let {
 		file,
@@ -51,7 +50,7 @@
 			<img
 				src={`/api/media/${file.filePath}`}
 				alt={file.originalName}
-				class="h-full w-full object-cover transition-all group-hover:scale-110"
+				class="h-full w-full object-contain transition-all group-hover:scale-110"
 				loading="lazy"
 				onerror={(e) => {
 					console.error('Image loading failed:', `/api/media/${file.filePath}`, e);
@@ -66,7 +65,7 @@
 			<div
 				class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
 			>
-				<Icon src={Eye} size="24" class="text-white" />
+				<Icon icon="lucide:eye" width="24" class="text-white" />
 			</div>
 
 			<!-- GPS Badge für Bilder -->
@@ -74,7 +73,7 @@
 				<div
 					class="bg-success text-success-content absolute top-2 right-2 rounded-full p-1 shadow-md"
 				>
-					<Icon src={MapPin} size="12" />
+					<Icon icon="lucide:map-pin" width="12" />
 				</div>
 			{/if}
 		</div>
@@ -86,7 +85,7 @@
 			<!-- Video Preview (falls Browser unterstützt) -->
 			<video
 				src={`/api/media/${file.filePath}`}
-				class="h-full w-full object-cover"
+				class="h-full w-full object-contain"
 				muted
 				preload="metadata"
 				poster=""
@@ -102,7 +101,7 @@
 				<div
 					class="rounded-full bg-black/60 p-3 transition-all group-hover:scale-110 group-hover:bg-black/80"
 				>
-					<Icon src={Play} size="24" class="text-white" />
+					<Icon icon="lucide:play" width="24" class="text-white" />
 				</div>
 			</div>
 
@@ -117,7 +116,7 @@
 			class="bg-base-200 relative flex aspect-square items-center justify-center overflow-hidden"
 		>
 			<div class="p-4 text-center">
-				<Icon src={FileText} size="32" class="text-base-content/60 mx-auto mb-2" />
+				<Icon icon="lucide:file-text" width="32" class="text-base-content/60 mx-auto mb-2" />
 				<p class="text-base-content/60 max-w-full truncate text-xs">
 					{file.originalName}
 				</p>
@@ -127,7 +126,7 @@
 			<div
 				class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100"
 			>
-				<Icon src={Download} size="20" class="text-white" />
+				<Icon icon="lucide:download" width="20" class="text-white" />
 			</div>
 		</div>
 	{/if}
@@ -228,7 +227,7 @@
 		}
 	}
 
-	/* Loading state for images */
+	/* Loading state für Bilder - zeigt Pattern bis Bild geladen ist */
 	img {
 		background-color: oklch(var(--b2));
 		background-image: linear-gradient(
@@ -241,20 +240,12 @@
 			oklch(var(--b3)) 75%
 		);
 		background-size: 20px 20px;
-		animation: loading 1s linear infinite;
+		animation: loadingPattern 1s linear infinite;
 	}
 
-	img[src] {
-		background: none;
-		animation: none;
-	}
-
-	@keyframes loading {
-		0% {
-			background-position: 0 0;
-		}
-		100% {
-			background-position: 20px 20px;
-		}
+	/* Deaktiviert Loading-Pattern wenn Bild erfolgreich geladen wurde */
+	.media-thumbnail img[src] {
+		background: none !important;
+		animation: none !important;
 	}
 </style>

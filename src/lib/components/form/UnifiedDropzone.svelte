@@ -4,8 +4,7 @@
 	import { validateFiles } from '$lib/utils';
 	import { getFileTypeDescription } from '$lib/utils/validation/fileValidation';
 
-	import { Upload } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let {
 		config,
@@ -120,10 +119,10 @@
 		}
 	}
 
-	function getFileIcon(type: string): string {
-		if (type.startsWith('image/')) return '🖼️';
-		if (type.startsWith('video/')) return '🎥';
-		return '📄';
+	function getFileIconName(type: string): string {
+		if (type.startsWith('image/')) return 'lucide:images';
+		if (type.startsWith('video/')) return 'lucide:video';
+		return 'lucide:file';
 	}
 </script>
 
@@ -155,9 +154,9 @@
 								<!-- File Icon/Thumbnail -->
 								<div class="flex-shrink-0">
 									<div
-										class="bg-base-200 flex h-12 w-12 items-center justify-center rounded text-xl"
+										class="bg-base-200 flex h-12 w-12 items-center justify-center rounded"
 									>
-										{getFileIcon(file.type)}
+										<Icon icon={getFileIconName(file.type)} width="24" height="24" class="text-primary" />
 									</div>
 								</div>
 
@@ -230,9 +229,8 @@
 		{:else}
 			<div class="flex flex-col items-center">
 				<Icon
-					src={Upload}
-					size="32"
-					class="mb-2 transition-colors {isDragOver ? 'text-primary' : 'text-base-content/40'}"
+					icon="lucide:upload"
+					class="mb-2 h-8 w-8 transition-colors {isDragOver ? 'text-primary' : 'text-base-content/40'}"
 				/>
 				<p class="text-sm font-medium {isDragOver ? 'text-primary' : ''}">
 					{isDragOver ? `${multiple ? 'Dateien' : 'Datei'} hier ablegen!` : title}

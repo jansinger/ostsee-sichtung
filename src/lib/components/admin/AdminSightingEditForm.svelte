@@ -14,6 +14,7 @@
 	// Note: mediaStore and onMount not needed for admin edit form
 	import { createLogger } from '$lib/logger';
 	import Media from '$lib/report/components/sections/Media.svelte';
+	import SightingDetails from '$lib/report/components/sections/SightingDetails.svelte';
 	import type { FrontendSighting } from '$lib/types';
 	import { formatLocalDateTime, splitDateTime } from '$lib/utils/format/dateTime';
 
@@ -101,6 +102,7 @@
 			<Location />
 			<DateTime />
 			<AnimalInfo />
+			<SightingDetails />
 		</div>
 
 		<!-- Rechte Spalte - Zusatzinformationen -->

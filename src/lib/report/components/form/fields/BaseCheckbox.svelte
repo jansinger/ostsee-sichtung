@@ -4,13 +4,13 @@
 -->
 <script lang="ts">
 	import type { FieldSize } from '$lib/types';
-	import { Icon, type IconSource } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	interface Props {
 		checked?: boolean;
 		label?: string;
 		size?: FieldSize;
-		icon?: IconSource;
+		icon?: string;
 		onchange?: (event: Event) => void;
 		// Common input attributes
 		id?: string;
@@ -52,7 +52,7 @@
 <div class="form-control w-full items-start">
 	<label class="label w-full cursor-pointer justify-start gap-3 py-2">
 		{#if icon !== undefined}
-			<Icon src={icon} size="16" class="text-base-content/60 flex-shrink-0" />
+			<Icon icon={icon} width="16" class="text-base-content/60 flex-shrink-0" />
 		{/if}
 		<input
 			type="checkbox"

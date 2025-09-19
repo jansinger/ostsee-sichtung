@@ -22,21 +22,77 @@ import {
 	getAnimalConditionOptions,
 	isValidAnimalCondition
 } from '$lib/report/formOptions/animalCondition';
-import { getBoatDriveOptions, isValidBoatDrive } from '$lib/report/formOptions/boatDrive';
+import {
+	BoatDriveEnum,
+	getBoatDriveOptions,
+	isValidBoatDrive
+} from '$lib/report/formOptions/boatDrive';
 import { getDistanceOptions, isValidDistance } from '$lib/report/formOptions/distance';
-import { getDistributionOptions, isValidDistribution } from '$lib/report/formOptions/distribution';
+import {
+	DistributionEnum,
+	getDistributionOptions,
+	isValidDistribution
+} from '$lib/report/formOptions/distribution';
 import { getEntryChannelOptions, isValidEntryChannel } from '$lib/report/formOptions/entryChannel';
 import { getSeaStateOptions, isValidSeaState } from '$lib/report/formOptions/seaState';
 import { getSexOptions, isValidSex } from '$lib/report/formOptions/sex';
-import { getSightingFromOptions, isValidSightingFrom } from '$lib/report/formOptions/sightingFrom';
+import {
+	getSightingFromOptions,
+	isValidSightingFrom,
+	SightingFromEnum
+} from '$lib/report/formOptions/sightingFrom';
 import { getSpeciesOptions, isValidSpecies } from '$lib/report/formOptions/species';
 import { getVisibilityOptions, isValidVisibility } from '$lib/report/formOptions/visibility';
 import { getWindDirectionOptions } from '$lib/report/formOptions/windDirection';
 import { getWindStrengthOptions } from '$lib/report/formOptions/windStrength';
 import { BALTIC_SEA_BBOX } from '$lib/utils/geo/checkBalticSea';
-import {
+import * as yup from 'yup';
+
+// Icon names for the schema - using unplugin-icons format with lucide: prefix
+// These will be mapped to actual icon components in the UI layer
+const icons = {
+	Activity: 'lucide:activity',
+	AddressIcon: 'lucide:map-pin',
+	Anchor: 'lucide:anchor',
+	Archive: 'lucide:archive',
+	Baby: 'lucide:baby',
+	Calendar: 'lucide:calendar',
+	Camera: 'lucide:camera',
+	Car: 'lucide:car',
+	Check: 'lucide:check',
+	Clock: 'lucide:clock',
+	CloudRain: 'lucide:cloud-rain',
+	CountIcon: 'lucide:hash',
+	Eye: 'lucide:eye',
+	FileText: 'lucide:file-text',
+	Fish: 'lucide:fish',
+	Globe: 'lucide:globe',
+	Hash: 'lucide:hash',
+	Mail: 'lucide:mail',
+	MapPin: 'lucide:map-pin',
+	MessageCircle: 'lucide:message-circle',
+	MousePointer: 'lucide:mouse-pointer',
+	Move: 'lucide:move',
+	Navigation: 'lucide:navigation',
+	Navigation2: 'lucide:navigation-2',
+	Phone: 'lucide:phone',
+	ShieldCheck: 'lucide:shield-check',
+	Ship: 'lucide:ship',
+	Skull: 'lucide:skull',
+	ToggleLeft: 'lucide:toggle-left',
+	Upload: 'lucide:upload',
+	User: 'lucide:user',
+	UserCheck: 'lucide:user-check',
+	Users: 'lucide:users',
+	Waves: 'lucide:waves',
+	Wind: 'lucide:wind',
+	Zap: 'lucide:zap'
+};
+
+// Extract icon constants for use in the schema
+const {
 	Activity,
-	MapPin as AddressIcon,
+	AddressIcon,
 	Anchor,
 	Archive,
 	Baby,
@@ -46,7 +102,7 @@ import {
 	Check,
 	Clock,
 	CloudRain,
-	Hash as CountIcon,
+	CountIcon,
 	Eye,
 	FileText,
 	Fish,
@@ -71,8 +127,7 @@ import {
 	Waves,
 	Wind,
 	Zap
-} from '@steeze-ui/lucide-icons';
-import * as yup from 'yup';
+} = icons;
 
 /**
  * Basis-Validierungsschema für Sichtungsformulare
@@ -82,7 +137,7 @@ import * as yup from 'yup';
  * und Kontaktinformationen. Jedes Feld enthält Metadaten für automatische
  * UI-Generierung und mehrsprachige Fehlermeldungen.
  *
- * @type {yup.ObjectSchema} Yup-Schema mit allen Sichtungsfeldern
+ * Yup-Schema mit allen Sichtungsfeldern
  */
 export const sightingSchemaBase = yup.object().shape({
 	/**
@@ -478,7 +533,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.string()
 		.max(255, 'Die Angabe darf nicht länger als 255 Zeichen sein.')
 		.when('sightingFrom', {
-			is: '5', // Annahme: 5 = "Sonstiges"
+			is: String(SightingFromEnum.OTHER) || SightingFromEnum.OTHER,
 			then: (schema) => schema.required('Bitte geben Sie an, von wo die Sichtung erfolgte.'),
 			otherwise: (schema) => schema.notRequired()
 		})
@@ -542,7 +597,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.string()
 		.max(255, 'Die Beschreibung darf nicht länger als 255 Zeichen sein.')
 		.when('distribution', {
-			is: '3', // Annahme: 3 = "Sonstiges"
+			is: String(DistributionEnum.OTHER) || DistributionEnum.OTHER,
 			then: (schema) => schema.required('Bitte beschreiben Sie die Verteilung.'),
 			otherwise: (schema) => schema.notRequired()
 		})
@@ -586,7 +641,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.string()
 		.max(255, 'Die Beschreibung darf nicht länger als 255 Zeichen sein.')
 		.when('behavior', {
-			is: String(AnimalBehaviorEnum.OTHER),
+			is: String(AnimalBehaviorEnum.OTHER) || AnimalBehaviorEnum.OTHER,
 			then: (schema) => schema.required('Bitte beschreiben Sie das Verhalten.'),
 			otherwise: (schema) => schema.notRequired()
 		})
@@ -876,7 +931,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.string()
 		.max(255, 'Die Beschreibung darf nicht länger als 255 Zeichen sein.')
 		.when('boatDrive', {
-			is: '4', // Annahme: 4 = "Sonstiges"
+			is: String(BoatDriveEnum.OTHER) || BoatDriveEnum.OTHER,
 			then: (schema) => schema.required('Bitte beschreiben Sie den Bootsantrieb.'),
 			otherwise: (schema) => schema.notRequired()
 		})

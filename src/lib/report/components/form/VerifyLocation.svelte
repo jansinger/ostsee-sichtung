@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { CircleAlert, CircleCheck } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	import { SvelteMap } from 'svelte/reactivity';
 	import { slide } from 'svelte/transition';
@@ -109,7 +108,7 @@
 		{:else if error}
 			<!-- Error state -->
 			<div class="alert alert-error mt-0 mb-4" transition:slide>
-				<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
+				<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
 				<span>Fehler beim Prüfen der Position: {error}</span>
 			</div>
 		{:else if currentResult}
@@ -118,13 +117,13 @@
 				{#if currentResult.inBaltic}
 					<!-- In Baltic Sea -->
 					<div class="alert alert-success mt-0 mb-4">
-						<Icon src={CircleCheck} class="h-6 w-6 shrink-0" />
+						<Icon icon="lucide:circle-check" class="h-6 w-6 shrink-0" />
 						<span>Die Koordinaten liegen innerhalb der Ostsee.</span>
 					</div>
 				{:else if currentResult.inChartArea}
 					<!-- Outside Baltic Sea (only show in browser) -->
 					<div class="alert alert-warning mt-0 mb-4">
-						<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
+						<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
 						<span>
 							Die Koordinaten liegen scheinbar außerhalb der Ostsee. Bitte prüfen Sie die Position.
 							Bei Sichtungen von Land und küstennahen Sichtungen kann dieser Hinweis erscheinen, die
@@ -134,7 +133,7 @@
 				{:else}
 					<!-- Invalid coordinates -->
 					<div class="alert alert-error mt-0 mb-4">
-						<Icon src={CircleAlert} class="h-6 w-6 shrink-0" />
+						<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
 						<span
 							>Die Koordinaten liegen außerhalb des gültigen Bereichs oder sind ungültig. Bitte
 							überprüfen Sie die Eingabe.</span

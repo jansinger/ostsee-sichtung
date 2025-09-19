@@ -30,8 +30,7 @@
 	import { MediaFile } from '$lib/utils/media/MediaFile';
 	import { deleteMultipleFiles } from '$lib/utils/upload/fileProcessing';
 
-	import { MapPin } from '@steeze-ui/lucide-icons';
-	import { Icon } from '@steeze-ui/svelte-icon';
+	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('DropzoneEnhanced');
 	let { form, handleChange, mediaStore } = getFormContext();
@@ -295,7 +294,7 @@
 												<img
 													src={mediaFile.thumbnail}
 													alt={mediaFile.fileName}
-													class="h-full object-cover"
+													class="h-full w-full object-contain"
 												/>
 											{:else}
 												<span class="text-xl" role="img" aria-label="File type icon">
@@ -362,7 +361,7 @@
 									{#if fileMetadata.exifData?.latitude && fileMetadata.exifData?.longitude}
 										<div class="bg-success/10 mt-1 rounded p-1.5">
 											<div class="flex items-center gap-1">
-												<span class="text-xs">📍</span>
+												<Icon icon="lucide:map-pin" width="12" class="text-success" />
 												<span class="text-success text-xs font-medium">GPS</span>
 												{#if isInBalticArea(fileMetadata.exifData.longitude, fileMetadata.exifData.latitude)}
 													<span class="badge badge-success badge-xs">Ostsee</span>
@@ -379,15 +378,19 @@
 										</div>
 									{:else if fileMetadata.mimeType.startsWith('image/')}
 										<div class="bg-base-300/50 mt-1 rounded p-1.5">
-											<p class="text-base-content/60 text-xs">📍 Keine GPS-Daten</p>
+											<p class="text-base-content/60 text-xs flex items-center gap-1">
+										<Icon icon="lucide:map-pin" width="12" class="text-base-content/60" />
+										Keine GPS-Daten
+									</p>
 										</div>
 									{/if}
 
 									<!-- Additional EXIF Info -->
 									{#if mediaFile.timestamp}
 										<div class="mt-1">
-											<p class="text-base-content/60 text-xs">
-												📅 {mediaFile.timestamp.toLocaleString('de-DE')}
+											<p class="text-base-content/60 text-xs flex items-center gap-1">
+												<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
+												{mediaFile.timestamp.toLocaleString('de-DE')}
 											</p>
 										</div>
 									{/if}
@@ -408,7 +411,7 @@
 				<div class="bg-base-100 border-base-300 rounded-lg border p-4">
 					<div class="mb-3 flex items-center justify-between">
 						<div class="flex items-center gap-2">
-							<Icon src={MapPin} size="18" class="text-success" />
+							<Icon icon="lucide:map-pin" class="h-[18px] w-[18px] text-success" />
 							<h4 class="text-sm font-semibold">GPS-Position</h4>
 						</div>
 						<div class="badge badge-success badge-sm text-nowrap">
@@ -447,8 +450,9 @@
 
 					{#if positionMediaFile.timestamp}
 						<div class="mt-3 text-center">
-							<p class="text-base-content/60 text-xs">
-								📅 Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE')}
+							<p class="text-base-content/60 text-xs flex items-center justify-center gap-1">
+								<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
+								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE')}
 							</p>
 						</div>
 					{/if}
