@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.29.0 (2025-09-19)
+
+* Merge pull request #130 from jansinger/chore/consolidate ([1b1b9b2](https://github.com/jansinger/ostsee-sichtung/commit/1b1b9b2)), closes [#130](https://github.com/jansinger/ostsee-sichtung/issues/130)
+* Merge remote-tracking branch 'origin/main' into chore/consolidate ([9ef466f](https://github.com/jansinger/ostsee-sichtung/commit/9ef466f))
+* fix: add missing icons to Icon component to resolve fallback displays ([071ff36](https://github.com/jansinger/ostsee-sichtung/commit/071ff36))
+* fix: aktualisiere Bedingungen für benutzerdefinierte Eingabefelder in Behavior und SightingDetails ([692ab68](https://github.com/jansinger/ostsee-sichtung/commit/692ab68))
+* fix: bereinige und reorganisiere Icon-Importe in Icon-Komponente ([08eb9de](https://github.com/jansinger/ostsee-sichtung/commit/08eb9de))
+* fix: entferne die Schriftart 'Inter' aus den Abhängigkeiten und passe die Konfiguration an ([be1c0e9](https://github.com/jansinger/ostsee-sichtung/commit/be1c0e9))
+* fix: entferne überflüssige Include-Anweisungen aus tsconfig und korrigiere Reihenfolge der Plugins ([0b4a8b4](https://github.com/jansinger/ostsee-sichtung/commit/0b4a8b4))
+* fix: korrigiere die CSS-Klasse für den klickbaren Bildbutton ([cea50b8](https://github.com/jansinger/ostsee-sichtung/commit/cea50b8))
+* fix: remove unused dependencies from package.json ([9eb8e91](https://github.com/jansinger/ostsee-sichtung/commit/9eb8e91))
+* fix: verbessere Sichtbarkeitsprüfungen für das Lade-Overlay in den Karten-Tests ([de3abb0](https://github.com/jansinger/ostsee-sichtung/commit/de3abb0))
+* fix: vereinfache Bedingungen für benutzerdefinierte Eingabefelder in Behavior und SightingDetails ([81976a2](https://github.com/jansinger/ostsee-sichtung/commit/81976a2))
+* feat: erweitere Icon-Komponente mit neuen Lucide-Icons und aktualisiere Referenzen in der Anwendung ([7ab6800](https://github.com/jansinger/ostsee-sichtung/commit/7ab6800))
+* feat: Füge globale Animationen und Scrollbar-Stile hinzu, um die Benutzeroberfläche zu verbessern ([f564a0a](https://github.com/jansinger/ostsee-sichtung/commit/f564a0a))
+* feat: implement comprehensive icon system consolidation with unplugin-icons integration ([be996bc](https://github.com/jansinger/ostsee-sichtung/commit/be996bc))
+* feat: Refactor styles and components for improved organization and accessibility ([106b239](https://github.com/jansinger/ostsee-sichtung/commit/106b239))
+* refactor: replace emojis with Lucide icons throughout UI components ([8dcaf1e](https://github.com/jansinger/ostsee-sichtung/commit/8dcaf1e))
+
 ## <small>1.28.1 (2025-09-18)</small>
 
 * Merge pull request #129 from jansinger/chore/new-package-versions ([f6a33a7](https://github.com/jansinger/ostsee-sichtung/commit/f6a33a7)), closes [#129](https://github.com/jansinger/ostsee-sichtung/issues/129)
