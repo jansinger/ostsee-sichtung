@@ -613,7 +613,7 @@
 	}
 
 	/* Clickable image button styling */
-	.group button {
+	button.group {
 		border: none;
 		background: none;
 		padding: 0;
