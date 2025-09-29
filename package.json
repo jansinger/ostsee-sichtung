@@ -61,7 +61,7 @@
 		"@fontsource/roboto": "^5.2.8",
 		"@iconify/json": "^2.2.386",
 		"@playwright/test": "^1.55.1",
-		"@scalar/api-reference": "^1.35.6",
+		"@scalar/api-reference": "^1.36.1",
 		"@scalar/sveltekit": "^0.1.23",
 		"@semantic-release/changelog": "^6.0.3",
 		"@semantic-release/exec": "^7.1.0",
