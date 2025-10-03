@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.30.1 (2025-10-03)</small>
+
+* Merge pull request #131 from jansinger/dependabot/github_actions/actions/download-artifact-5 ([0d99a19](https://github.com/jansinger/ostsee-sichtung/commit/0d99a19)), closes [#131](https://github.com/jansinger/ostsee-sichtung/issues/131)
+* Merge pull request #165 from jansinger/chore/update-dependencies ([e4371d6](https://github.com/jansinger/ostsee-sichtung/commit/e4371d6)), closes [#165](https://github.com/jansinger/ostsee-sichtung/issues/165)
+* fix(test): improve map lazy loading test reliability in CI ([f20d2fb](https://github.com/jansinger/ostsee-sichtung/commit/f20d2fb))
+* chore(deps): bump actions/download-artifact from 4 to 5 ([dbc33ad](https://github.com/jansinger/ostsee-sichtung/commit/dbc33ad))
+* chore(deps): update all npm dependencies to latest versions ([7f2d484](https://github.com/jansinger/ostsee-sichtung/commit/7f2d484))
+
 ## 1.30.0 (2025-10-03)
 
 * Merge pull request #164 from jansinger/feat/improved-dependabot-workflow ([7431db4](https://github.com/jansinger/ostsee-sichtung/commit/7431db4)), closes [#164](https://github.com/jansinger/ostsee-sichtung/issues/164)
