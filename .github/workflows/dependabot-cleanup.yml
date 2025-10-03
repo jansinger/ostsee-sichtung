@@ -1,0 +1,106 @@
+name: Dependabot Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  cleanup-dependabot-prs:
+    runs-on: ubuntu-latest
+    if: |
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'dependabot-combined'
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get all Dependabot PRs that were included
+        id: get-prs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get all open Dependabot PRs
+            const { data: allPRs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            const dependabotPRs = allPRs.filter(pr =>
+              pr.user.login === 'dependabot[bot]' &&
+              pr.head.ref.startsWith('dependabot/')
+            );
+
+            console.log(`Found ${dependabotPRs.length} open Dependabot PRs to close`);
+
+            core.setOutput('prs', JSON.stringify(dependabotPRs));
+            core.setOutput('count', dependabotPRs.length);
+
+            return { prs: dependabotPRs, count: dependabotPRs.length };
+
+      - name: Close Dependabot PRs
+        if: steps.get-prs.outputs.count != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = JSON.parse('${{ steps.get-prs.outputs.prs }}');
+            const mergedPrNumber = context.payload.pull_request.number;
+            const mergedPrUrl = context.payload.pull_request.html_url;
+
+            for (const pr of prs) {
+              console.log(`Closing PR #${pr.number}: ${pr.title}`);
+
+              // Add comment explaining closure
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `✅ **This dependency update has been merged to main!**\n\n` +
+                      `This PR was included in the combined Dependabot PR #${mergedPrNumber} which has been merged.\n\n` +
+                      `🔗 See merged PR: ${mergedPrUrl}`
+              });
+
+              // Close the PR
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                state: 'closed'
+              });
+
+              console.log(`✓ Closed PR #${pr.number}`);
+            }
+
+            console.log(`Successfully closed ${prs.length} Dependabot PRs`);
+
+      - name: Delete combined branch
+        run: |
+          # Delete the combined branch now that it's merged
+          git push origin --delete dependabot-combined || true
+          echo "✓ Deleted dependabot-combined branch"
+
+      - name: Summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const count = parseInt('${{ steps.get-prs.outputs.count }}');
+
+            core.summary
+              .addHeading('🧹 Dependabot Cleanup Complete')
+              .addRaw(`Successfully processed combined Dependabot PR merge:`, true)
+              .addList([
+                `Closed ${count} individual Dependabot PR${count === 1 ? '' : 's'}`,
+                'Deleted `dependabot-combined` branch',
+                'Ready for next Dependabot update cycle'
+              ])
+              .write();
+
+            console.log(`Cleanup complete: ${count} PRs closed, branch deleted`);
