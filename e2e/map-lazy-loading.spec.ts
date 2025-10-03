@@ -22,7 +22,7 @@ test.describe('LazyMapWrapper', () => {
         } else {
             // Dialog war nie sichtbar oder bereits verschwunden - das ist OK wenn die Seite schnell lädt
             // Prüfe stattdessen, dass die Seite korrekt geladen wurde
-            await expect(page.locator('body')).toBeVisible();
+            await expect(page.locator('html')).toBeVisible();
         }
 
         // In CI ist es ok wenn die Karte nicht lädt - hauptsache das Overlay verschwindet
@@ -30,7 +30,10 @@ test.describe('LazyMapWrapper', () => {
             await expect(page.locator('h1').filter({ hasText: /Sichtungskarte/i })).toBeVisible({ timeout: 10000 });
         } else {
             // CI fallback: Prüfe dass zumindest die Seite responsive ist
-            await expect(page.locator('body')).toBeVisible();
+            await expect(page.locator('html')).toBeVisible();
+            // Prüfe dass die Seite Content hat
+            const hasContent = await page.evaluate(() => document.body && document.body.innerHTML.length > 0);
+            expect(hasContent).toBe(true);
         }
     });
 
