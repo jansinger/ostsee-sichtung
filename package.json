@@ -59,7 +59,7 @@
 		"@eslint/compat": "^1.4.0",
 		"@eslint/js": "^9.37.0",
 		"@fontsource/roboto": "^5.2.8",
-		"@iconify/json": "^2.2.391",
+		"@iconify/json": "^2.2.392",
 		"@playwright/test": "^1.55.1",
 		"@scalar/api-reference": "^1.37.0",
 		"@scalar/sveltekit": "^0.1.24",
