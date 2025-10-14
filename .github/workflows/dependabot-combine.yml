@@ -1,0 +1,467 @@
+name: Combine Dependabot PRs
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  combine-dependabot-prs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Find open Dependabot PRs
+        id: find-prs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: allPRs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            const dependabotPRs = allPRs.filter(pr =>
+              pr.user.login === 'dependabot[bot]' &&
+              pr.head.ref.startsWith('dependabot/')
+            );
+
+            if (dependabotPRs.length === 0) {
+              console.log('No open Dependabot PRs found');
+              core.setOutput('has-prs', 'false');
+              core.setOutput('count', '0');
+              return { hasPRs: false, count: 0 };
+            }
+
+            console.log(`Found ${dependabotPRs.length} open Dependabot PRs`);
+
+            const prData = dependabotPRs.map(pr => ({
+              number: pr.number,
+              title: pr.title,
+              branch: pr.head.ref,
+              url: pr.html_url,
+              labels: pr.labels.map(l => l.name)
+            }));
+
+            core.setOutput('has-prs', 'true');
+            core.setOutput('count', dependabotPRs.length);
+            core.setOutput('prs', JSON.stringify(prData));
+
+            return { hasPRs: true, count: dependabotPRs.length, prs: prData };
+
+      - name: Exit if no PRs to combine
+        if: steps.find-prs.outputs.has-prs != 'true'
+        run: |
+          echo "✓ No Dependabot PRs to combine. Exiting successfully."
+          exit 0
+
+      - name: Create or update combined branch
+        if: steps.find-prs.outputs.has-prs == 'true'
+        run: |
+          # Check if combined branch exists on remote
+          if git ls-remote --heads origin dependabot-combined | grep -q dependabot-combined; then
+            echo "Combined branch exists, fetching and resetting to main"
+            git fetch origin dependabot-combined
+            git fetch origin main
+            git checkout -B dependabot-combined origin/main
+          else
+            echo "Creating new combined branch from main"
+            git fetch origin main
+            git checkout -b dependabot-combined origin/main
+          fi
+
+      - name: Merge Dependabot PRs into combined branch
+        if: steps.find-prs.outputs.has-prs == 'true'
+        run: |
+          prs='${{ steps.find-prs.outputs.prs }}'
+
+          echo "$prs" | jq -r '.[] | .branch' | while read branch; do
+            echo "Fetching and merging $branch..."
+            git fetch origin "$branch"
+
+            # Use merge with squash-like behavior to keep history clean
+            if git merge "origin/$branch" --no-ff --no-edit -m "merge: dependabot/$branch"; then
+              echo "✓ Successfully merged $branch"
+            else
+              echo "✗ Failed to merge $branch - this may require manual intervention"
+              git merge --abort
+              exit 1
+            fi
+          done
+
+      - name: Push combined branch
+        if: steps.find-prs.outputs.has-prs == 'true'
+        run: |
+          git push origin dependabot-combined --force
+
+      - name: Setup Node.js
+        if: steps.find-prs.outputs.has-prs == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Setup environment
+        if: steps.find-prs.outputs.has-prs == 'true'
+        run: cp .env.example .env
+
+      - name: Install dependencies
+        if: steps.find-prs.outputs.has-prs == 'true'
+        run: npm ci
+
+      - name: Run validation tests
+        if: steps.find-prs.outputs.has-prs == 'true'
+        run: |
+          echo "🔍 Running linting..."
+          npm run lint
+
+          echo "🔍 Running type checking..."
+          npm run type-check
+
+          echo "🔍 Running svelte-check..."
+          npm run check
+
+          echo "🧪 Running unit tests..."
+          npm run test:unit
+
+          echo "🏗️ Running build..."
+          npm run build
+
+          echo "✅ All validation checks passed!"
+
+      - name: Analyze updates and generate PR content
+        if: steps.find-prs.outputs.has-prs == 'true'
+        id: pr-content
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = JSON.parse('${{ steps.find-prs.outputs.prs }}');
+
+            // Parse dependency updates
+            const updates = {
+              major: [],
+              minor: [],
+              patch: [],
+              actions: [],
+              other: []
+            };
+
+            let hasMajor = false;
+            let hasActions = false;
+
+            for (const pr of prs) {
+              const title = pr.title;
+
+              // Check if it's a GitHub Actions update
+              if (title.includes('github-actions') || pr.labels.includes('github_actions')) {
+                hasActions = true;
+                const match = title.match(/bump (.+) from (.+) to (.+)/i);
+                if (match) {
+                  const [, actionName, fromVersion, toVersion] = match;
+                  updates.actions.push({
+                    name: actionName,
+                    from: fromVersion,
+                    to: toVersion,
+                    prNumber: pr.number,
+                    url: pr.url
+                  });
+                } else {
+                  updates.actions.push({
+                    title: title,
+                    prNumber: pr.number,
+                    url: pr.url
+                  });
+                }
+                continue;
+              }
+
+              // Parse npm package updates
+              const match = title.match(/bump (.+) from (.+) to (.+)/i);
+              if (match) {
+                const [, packageName, fromVersion, toVersion] = match;
+                const versionType = getVersionType(fromVersion, toVersion);
+
+                if (versionType === 'major') hasMajor = true;
+
+                updates[versionType].push({
+                  name: packageName,
+                  from: fromVersion,
+                  to: toVersion,
+                  prNumber: pr.number,
+                  url: pr.url
+                });
+              } else {
+                updates.other.push({
+                  title: title,
+                  prNumber: pr.number,
+                  url: pr.url
+                });
+              }
+            }
+
+            function getVersionType(from, to) {
+              // Remove any 'v' prefix and clean version strings
+              const cleanFrom = from.replace(/^v/, '').split('.').map(n => parseInt(n.replace(/\D/g, '')) || 0);
+              const cleanTo = to.replace(/^v/, '').split('.').map(n => parseInt(n.replace(/\D/g, '')) || 0);
+
+              if (cleanTo[0] > cleanFrom[0]) return 'major';
+              if (cleanTo[1] > cleanFrom[1]) return 'minor';
+              if (cleanTo[2] > cleanFrom[2]) return 'patch';
+              return 'patch'; // Default to patch for unclear cases
+            }
+
+            // Generate conventional commit title
+            const count = prs.length;
+            const title = `chore(deps): update ${count} ${count === 1 ? 'dependency' : 'dependencies'}${hasMajor ? ' ⚠️' : ''}`;
+
+            // Generate PR body
+            let body = '## 🤖 Combined Dependabot Updates\n\n';
+            body += `This PR combines **${count}** Dependabot update${count === 1 ? '' : 's'} into a single changeset.\n\n`;
+
+            if (hasMajor) {
+              body += '> ⚠️ **Warning:** This PR contains major version updates that may include breaking changes.\n\n';
+            }
+
+            body += '### Summary\n\n';
+            const summary = [];
+            if (updates.major.length > 0) summary.push(`${updates.major.length} major update${updates.major.length === 1 ? '' : 's'}`);
+            if (updates.minor.length > 0) summary.push(`${updates.minor.length} minor update${updates.minor.length === 1 ? '' : 's'}`);
+            if (updates.patch.length > 0) summary.push(`${updates.patch.length} patch update${updates.patch.length === 1 ? '' : 's'}`);
+            if (updates.actions.length > 0) summary.push(`${updates.actions.length} GitHub Actions update${updates.actions.length === 1 ? '' : 's'}`);
+            body += `- ${summary.join('\n- ')}\n\n`;
+            body += '---\n\n';
+
+            // Major Updates
+            if (updates.major.length > 0) {
+              body += '### ⚠️ Major Updates (Breaking Changes)\n\n';
+              updates.major.forEach(u => {
+                body += `- **${u.name}**: ${u.from} → ${u.to} ([#${u.prNumber}](${u.url}))\n`;
+              });
+              body += '\n';
+            }
+
+            // Minor Updates
+            if (updates.minor.length > 0) {
+              body += '### ✨ Minor Updates (New Features)\n\n';
+              updates.minor.forEach(u => {
+                body += `- **${u.name}**: ${u.from} → ${u.to} ([#${u.prNumber}](${u.url}))\n`;
+              });
+              body += '\n';
+            }
+
+            // Patch Updates
+            if (updates.patch.length > 0) {
+              body += '### 🐛 Patch Updates (Bug Fixes)\n\n';
+              updates.patch.forEach(u => {
+                body += `- **${u.name}**: ${u.from} → ${u.to} ([#${u.prNumber}](${u.url}))\n`;
+              });
+              body += '\n';
+            }
+
+            // GitHub Actions Updates
+            if (updates.actions.length > 0) {
+              body += '### 🔧 GitHub Actions Updates\n\n';
+              updates.actions.forEach(u => {
+                if (u.name) {
+                  body += `- **${u.name}**: ${u.from} → ${u.to} ([#${u.prNumber}](${u.url}))\n`;
+                } else {
+                  body += `- ${u.title} ([#${u.prNumber}](${u.url}))\n`;
+                }
+              });
+              body += '\n';
+            }
+
+            // Other Updates
+            if (updates.other.length > 0) {
+              body += '### 📦 Other Updates\n\n';
+              updates.other.forEach(u => {
+                body += `- ${u.title} ([#${u.prNumber}](${u.url}))\n`;
+              });
+              body += '\n';
+            }
+
+            body += '---\n\n';
+            body += '### ✅ Validation Status\n\n';
+            body += '- ✓ Linting passed\n';
+            body += '- ✓ Type checking passed\n';
+            body += '- ✓ Unit tests passed\n';
+            body += '- ✓ Build succeeded\n\n';
+            body += '**PR validation will run automatically when this PR is updated.**\n\n';
+            body += '---\n\n';
+            body += '*After merging this PR, all individual Dependabot PRs will be automatically closed.*\n';
+
+            core.setOutput('title', title);
+            core.setOutput('body', body);
+            core.setOutput('has-major', hasMajor.toString());
+
+            return { title, body, hasMajor };
+
+      - name: Check for existing combined PR
+        if: steps.find-prs.outputs.has-prs == 'true'
+        id: check-existing-pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:dependabot-combined`,
+              base: 'main'
+            });
+
+            if (prs.length > 0) {
+              console.log(`Found existing combined PR #${prs[0].number}`);
+              core.setOutput('exists', 'true');
+              core.setOutput('pr-number', prs[0].number);
+              return { exists: true, prNumber: prs[0].number };
+            }
+
+            console.log('No existing combined PR found');
+            core.setOutput('exists', 'false');
+            return { exists: false };
+
+      - name: Create or update combined PR
+        if: steps.find-prs.outputs.has-prs == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `${{ steps.pr-content.outputs.title }}`;
+            const body = `${{ steps.pr-content.outputs.body }}`;
+            const exists = '${{ steps.check-existing-pr.outputs.exists }}' === 'true';
+            const hasMajor = '${{ steps.pr-content.outputs.has-major }}' === 'true';
+
+            let labels = ['dependencies', 'automated'];
+            if (hasMajor) {
+              labels.push('breaking-change');
+            }
+
+            if (exists) {
+              const prNumber = parseInt('${{ steps.check-existing-pr.outputs.pr-number }}');
+
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                title: title,
+                body: body
+              });
+
+              await github.rest.issues.setLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                labels: labels
+              });
+
+              console.log(`✓ Updated existing PR #${prNumber}`);
+              core.setOutput('pr-number', prNumber);
+            } else {
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                head: 'dependabot-combined',
+                base: 'main',
+                body: body
+              });
+
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: labels
+              });
+
+              console.log(`✓ Created new combined PR #${pr.number}: ${pr.html_url}`);
+              core.setOutput('pr-number', pr.number);
+            }
+
+      - name: Comment on individual Dependabot PRs
+        if: steps.find-prs.outputs.has-prs == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = JSON.parse('${{ steps.find-prs.outputs.prs }}');
+            const combinedPrNumber = '${{ steps.check-existing-pr.outputs.pr-number }}';
+
+            for (const pr of prs) {
+              const message = `🤖 **This update has been combined with other Dependabot updates**\n\n` +
+                `➡️ See combined PR: #${combinedPrNumber}\n\n` +
+                `This PR will remain open until the combined PR is merged, then it will be automatically closed.\n\n` +
+                `---\n` +
+                `*Individual Dependabot PRs are no longer merged separately to maintain a clean commit history.*`;
+
+              // Check if we already commented
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number
+              });
+
+              const botComment = comments.find(c =>
+                c.user.login === 'github-actions[bot]' &&
+                c.body.includes('This update has been combined')
+              );
+
+              if (botComment) {
+                // Update existing comment
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body: message
+                });
+                console.log(`✓ Updated comment on PR #${pr.number}`);
+              } else {
+                // Create new comment
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  body: message
+                });
+                console.log(`✓ Commented on PR #${pr.number}`);
+              }
+            }
+
+      - name: Generate summary
+        if: steps.find-prs.outputs.has-prs == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const count = parseInt('${{ steps.find-prs.outputs.count }}');
+            const prNumber = '${{ steps.check-existing-pr.outputs.pr-number }}';
+            const hasMajor = '${{ steps.pr-content.outputs.has-major }}' === 'true';
+
+            core.summary
+              .addHeading('🤖 Dependabot PRs Combined')
+              .addRaw(`Successfully combined ${count} Dependabot update${count === 1 ? '' : 's'}`, true)
+              .addBreak()
+              .addRaw(`📦 Combined PR: #${prNumber}`, true);
+
+            if (hasMajor) {
+              core.summary
+                .addBreak()
+                .addRaw('⚠️ **Contains major version updates**', true);
+            }
+
+            core.summary.write();

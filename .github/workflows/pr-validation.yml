@@ -13,7 +13,13 @@ jobs:
   validate:
     name: Validate Pull Request
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    # Skip individual Dependabot PRs, but run on combined PR and all other PRs
+    if: |
+      github.event.pull_request.draft == false &&
+      (
+        github.actor != 'dependabot[bot]' ||
+        github.head_ref == 'dependabot-combined'
+      )
 
     permissions:
       contents: read
@@ -269,26 +275,26 @@ jobs:
             });
 
       - name: Add Dependabot status comment
-        if: github.actor == 'dependabot[bot]'
+        if: github.actor == 'dependabot[bot]' && github.head_ref == 'dependabot-combined'
         uses: actions/github-script@v7
         with:
           script: |
             const updateType = '${{ steps.dependabot-metadata.outputs.update-type }}';
             let emoji = '✅';
-            let status = 'ready for combination';
+            let status = 'All validations passed';
 
             if (updateType.includes('major')) {
               emoji = '⚠️';
-              status = 'contains major updates - needs review';
+              status = 'Validation passed - contains major updates requiring review';
             }
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `${emoji} **Tests passed!** This PR is ${status}.\n\n` +
-                    `This PR will be automatically combined with other Dependabot updates in a daily batch. ` +
-                    `Individual Dependabot PRs are no longer auto-merged to maintain a cleaner commit history.`
+              body: `${emoji} **${status}**\n\n` +
+                    `This combined PR has passed all validation checks and is ready for review.\n\n` +
+                    `After merging, all individual Dependabot PRs will be automatically closed.`
             });
 
       # Normale PR Labeling (nicht Dependabot)
