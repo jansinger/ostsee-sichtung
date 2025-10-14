@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.30.4 (2025-10-14)</small>
+
+* fix(ci): add pull_request_target trigger for bot-created prs (#191) ([43b5cbe](https://github.com/jansinger/ostsee-sichtung/commit/43b5cbe)), closes [#191](https://github.com/jansinger/ostsee-sichtung/issues/191)
+* chore(deps): update 2 dependencies (#188) ([3948474](https://github.com/jansinger/ostsee-sichtung/commit/3948474)), closes [#188](https://github.com/jansinger/ostsee-sichtung/issues/188)
+
 ## <small>1.30.3 (2025-10-14)</small>
 
 * fix(ci): enable pr validation for combined dependabot pr (#189) ([28f43a2](https://github.com/jansinger/ostsee-sichtung/commit/28f43a2)), closes [#189](https://github.com/jansinger/ostsee-sichtung/issues/189)
