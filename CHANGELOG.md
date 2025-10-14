@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.30.3 (2025-10-14)</small>
+
+* fix(ci): enable pr validation for combined dependabot pr (#189) ([28f43a2](https://github.com/jansinger/ostsee-sichtung/commit/28f43a2)), closes [#189](https://github.com/jansinger/ostsee-sichtung/issues/189)
+
 ## <small>1.30.2 (2025-10-14)</small>
 
 * fix(ci): add missing svelte-kit sync step to dependabot-combine workflow (#187) ([a4d09d2](https://github.com/jansinger/ostsee-sichtung/commit/a4d09d2)), closes [#187](https://github.com/jansinger/ostsee-sichtung/issues/187)
