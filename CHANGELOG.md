@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.30.2 (2025-10-14)</small>
+
+* fix(ci): add missing svelte-kit sync step to dependabot-combine workflow (#187) ([a4d09d2](https://github.com/jansinger/ostsee-sichtung/commit/a4d09d2)), closes [#187](https://github.com/jansinger/ostsee-sichtung/issues/187)
+* Merge pull request #174 from jansinger/dependabot/github_actions/github/codeql-action-4 ([476a81d](https://github.com/jansinger/ostsee-sichtung/commit/476a81d)), closes [#174](https://github.com/jansinger/ostsee-sichtung/issues/174)
+* Merge pull request #186 from jansinger/feature/improved-dependabot-workflow ([038e7bc](https://github.com/jansinger/ostsee-sichtung/commit/038e7bc)), closes [#186](https://github.com/jansinger/ostsee-sichtung/issues/186)
+* ci(deps): improve dependabot workflow with scheduled batch processing ([51a790d](https://github.com/jansinger/ostsee-sichtung/commit/51a790d))
+* chore(deps-dev): bump @eslint/js from 9.36.0 to 9.37.0 (#166) ([320df13](https://github.com/jansinger/ostsee-sichtung/commit/320df13)), closes [#166](https://github.com/jansinger/ostsee-sichtung/issues/166)
+* chore(deps-dev): bump @iconify/json from 2.2.391 to 2.2.392 (#169) ([50d48fc](https://github.com/jansinger/ostsee-sichtung/commit/50d48fc)), closes [#169](https://github.com/jansinger/ostsee-sichtung/issues/169)
+* chore(deps-dev): bump @iconify/json from 2.2.392 to 2.2.395 (#181) ([ebaee94](https://github.com/jansinger/ostsee-sichtung/commit/ebaee94)), closes [#181](https://github.com/jansinger/ostsee-sichtung/issues/181)
+* chore(deps-dev): bump @playwright/test from 1.55.1 to 1.56.0 (#175) ([3b7088e](https://github.com/jansinger/ostsee-sichtung/commit/3b7088e)), closes [#175](https://github.com/jansinger/ostsee-sichtung/issues/175)
+* chore(deps-dev): bump @scalar/api-reference from 1.37.0 to 1.38.0 (#176) ([fbca936](https://github.com/jansinger/ostsee-sichtung/commit/fbca936)), closes [#176](https://github.com/jansinger/ostsee-sichtung/issues/176)
+* chore(deps-dev): bump @scalar/sveltekit from 0.1.24 to 0.1.25 (#179) ([4ed7053](https://github.com/jansinger/ostsee-sichtung/commit/4ed7053)), closes [#179](https://github.com/jansinger/ostsee-sichtung/issues/179)
+* chore(deps-dev): bump @sveltejs/kit from 2.43.7 to 2.44.0 (#170) ([81053cc](https://github.com/jansinger/ostsee-sichtung/commit/81053cc)), closes [#170](https://github.com/jansinger/ostsee-sichtung/issues/170)
+* chore(deps-dev): bump @sveltejs/kit from 2.44.0 to 2.46.5 (#177) ([c93ef0c](https://github.com/jansinger/ostsee-sichtung/commit/c93ef0c)), closes [#177](https://github.com/jansinger/ostsee-sichtung/issues/177)
+* chore(deps-dev): bump @types/node from 24.6.2 to 24.7.0 (#173) ([08b7b25](https://github.com/jansinger/ostsee-sichtung/commit/08b7b25)), closes [#173](https://github.com/jansinger/ostsee-sichtung/issues/173)
+* chore(deps-dev): bump @types/node from 24.7.0 to 24.7.2 (#182) ([db5e08e](https://github.com/jansinger/ostsee-sichtung/commit/db5e08e)), closes [#182](https://github.com/jansinger/ostsee-sichtung/issues/182)
+* chore(deps-dev): bump daisyui from 5.1.26 to 5.1.27 (#172) ([afb157a](https://github.com/jansinger/ostsee-sichtung/commit/afb157a)), closes [#172](https://github.com/jansinger/ostsee-sichtung/issues/172)
+* chore(deps-dev): bump daisyui from 5.1.27 to 5.2.3 (#183) ([748b627](https://github.com/jansinger/ostsee-sichtung/commit/748b627)), closes [#183](https://github.com/jansinger/ostsee-sichtung/issues/183)
+* chore(deps-dev): bump eslint from 9.36.0 to 9.37.0 (#168) ([fb1d614](https://github.com/jansinger/ostsee-sichtung/commit/fb1d614)), closes [#168](https://github.com/jansinger/ostsee-sichtung/issues/168)
+* chore(deps-dev): bump playwright from 1.55.1 to 1.56.0 (#184) ([6b29167](https://github.com/jansinger/ostsee-sichtung/commit/6b29167)), closes [#184](https://github.com/jansinger/ostsee-sichtung/issues/184)
+* chore(deps-dev): bump svelte from 5.39.8 to 5.39.9 (#167) ([009956b](https://github.com/jansinger/ostsee-sichtung/commit/009956b)), closes [#167](https://github.com/jansinger/ostsee-sichtung/issues/167)
+* chore(deps-dev): bump svelte-check from 4.3.2 to 4.3.3 (#178) ([4cae765](https://github.com/jansinger/ostsee-sichtung/commit/4cae765)), closes [#178](https://github.com/jansinger/ostsee-sichtung/issues/178)
+* chore(deps): bump github/codeql-action from 3 to 4 ([be05b2b](https://github.com/jansinger/ostsee-sichtung/commit/be05b2b))
+* chore(deps): bump nodemailer from 7.0.6 to 7.0.7 (#171) ([07d018f](https://github.com/jansinger/ostsee-sichtung/commit/07d018f)), closes [#171](https://github.com/jansinger/ostsee-sichtung/issues/171)
+
 ## <small>1.30.1 (2025-10-03)</small>
 
 * Merge pull request #131 from jansinger/dependabot/github_actions/actions/download-artifact-5 ([0d99a19](https://github.com/jansinger/ostsee-sichtung/commit/0d99a19)), closes [#131](https://github.com/jansinger/ostsee-sichtung/issues/131)
