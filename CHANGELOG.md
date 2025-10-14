@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.30.5 (2025-10-14)</small>
+
+* fix(ci): use conventional commit format for merge commits (#192) ([a732d0a](https://github.com/jansinger/ostsee-sichtung/commit/a732d0a)), closes [#192](https://github.com/jansinger/ostsee-sichtung/issues/192)
+
 ## <small>1.30.4 (2025-10-14)</small>
 
 * fix(ci): add pull_request_target trigger for bot-created prs (#191) ([43b5cbe](https://github.com/jansinger/ostsee-sichtung/commit/43b5cbe)), closes [#191](https://github.com/jansinger/ostsee-sichtung/issues/191)
