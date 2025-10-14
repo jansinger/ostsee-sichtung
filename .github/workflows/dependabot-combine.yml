@@ -97,8 +97,8 @@ jobs:
             echo "Fetching and merging $branch..."
             git fetch origin "$branch"
 
-            # Use merge with squash-like behavior to keep history clean
-            if git merge "origin/$branch" --no-ff --no-edit -m "merge: dependabot/$branch"; then
+            # Use merge with conventional commit format
+            if git merge "origin/$branch" --no-ff --no-edit -m "chore(deps): merge $branch"; then
               echo "✓ Successfully merged $branch"
             else
               echo "✗ Failed to merge $branch - this may require manual intervention"
