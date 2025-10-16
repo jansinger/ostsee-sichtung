@@ -1,5 +1,26 @@
-import adapter from '@sveltejs/adapter-vercel';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+
+// Dynamically select adapter based on build target
+const USE_NODE_ADAPTER = process.env.USE_NODE_ADAPTER === 'true';
+
+let adapter;
+if (USE_NODE_ADAPTER) {
+	// Node adapter for Docker deployment
+	const nodeAdapter = (await import('@sveltejs/adapter-node')).default;
+	adapter = nodeAdapter({
+		out: 'build',
+		precompress: {
+			brotli: true,
+			gzip: true
+		},
+		envPrefix: '',
+		polyfill: true
+	});
+} else {
+	// Vercel adapter for cloud deployment (default)
+	const vercelAdapter = (await import('@sveltejs/adapter-vercel')).default;
+	adapter = vercelAdapter();
+}
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -11,7 +32,7 @@ const config = {
 		dev: process.env.NODE_ENV === 'development'
 	},
 	kit: {
-		adapter: adapter(),
+		adapter: adapter,
 
 		// Development-spezifische Konfigurationen
 		version: {

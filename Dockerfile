@@ -48,9 +48,10 @@ COPY . .
 # Create .env from example for build-time configuration
 RUN cp .env.example .env
 
-# Build the application with Docker-specific config
+# Build the application with Node adapter for Docker
 ENV NODE_ENV=production
-RUN npm run build:docker
+ENV USE_NODE_ADAPTER=true
+RUN npm run build
 
 # Generate SBOM for security compliance
 RUN npm run sbom:prod || true

@@ -8,7 +8,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "svelte-kit sync && vite build",
-		"build:docker": "SVELTE_CONFIG=svelte.config.docker.js svelte-kit sync && vite build",
+		"build:docker": "USE_NODE_ADAPTER=true svelte-kit sync && vite build",
 		"preview": "vite preview",
 		"docker:build": "docker build -t ostsee-tiere:latest .",
 		"docker:run": "docker run -p 3000:3000 --env-file .env ostsee-tiere:latest",
