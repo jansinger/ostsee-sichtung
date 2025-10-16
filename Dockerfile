@@ -45,8 +45,8 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy application source
 COPY . .
 
-# Create .env from example for build-time configuration
-RUN cp .env.example .env
+# Create .env from Docker template for build-time configuration
+RUN cp .env.docker .env
 
 # Build the application with Node adapter for Docker
 ENV NODE_ENV=production

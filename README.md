@@ -55,7 +55,7 @@ tar -xzf ostsee-tiere-docker-latest.tar.gz
 cd ostsee-tiere-docker
 
 # Konfigurieren
-cp .env.example .env
+cp .env.docker .env
 nano .env  # Umgebungsvariablen anpassen
 
 # Starten (mit Monitoring)

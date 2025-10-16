@@ -72,7 +72,8 @@ log_success "Environment validation passed"
 # ============================================
 log_info "Configuring storage..."
 
-STORAGE_PROVIDER=${STORAGE_PROVIDER:-local}
+# Strip comments from environment variables (handle .env files with inline comments)
+STORAGE_PROVIDER=$(echo "${STORAGE_PROVIDER:-local}" | cut -d'#' -f1 | xargs)
 log_info "Storage provider: $STORAGE_PROVIDER"
 
 if [ "$STORAGE_PROVIDER" = "local" ]; then

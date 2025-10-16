@@ -27,7 +27,7 @@ Get Ostsee-Tiere running in 3 steps:
 wget https://github.com/your-org/ostsee-tiere/releases/latest/download/docker-compose.production.yml
 
 # 2. Configure environment
-cp .env.example .env
+cp .env.docker .env
 nano .env  # Edit with your settings
 
 # 3. Start services
@@ -76,7 +76,7 @@ tar -xzf ostsee-tiere-docker-vX.X.X.tar.gz
 cd ostsee-tiere-docker-vX.X.X
 
 # Configure
-cp .env.example .env
+cp .env.docker .env
 nano .env
 
 # Start all services
