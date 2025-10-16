@@ -57,6 +57,20 @@ jobs:
             sbom/*.xml
           retention-days: 90
 
+      - name: Prepare Docker deployment assets
+        run: |
+          mkdir -p docker-release
+          cp docker-compose.production.yml docker-release/
+          cp .env.example docker-release/
+          cp -r monitoring docker-release/ || true
+
+      - name: Upload Docker deployment assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-deployment-${{ github.sha }}
+          path: docker-release/
+          retention-days: 90
+
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

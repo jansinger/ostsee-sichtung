@@ -40,7 +40,36 @@ Ostsee-Tiere bietet eine benutzerfreundliche Plattform zur wissenschaftlichen Er
 - **ORM**: Drizzle
 - **Karten**: OpenLayers
 - **Build Tool**: Vite
-- **Deployment**: Vercel
+- **Deployment**: Vercel (Cloud) oder Docker (Self-Hosted)
+
+## 🚀 Quick Start
+
+### Option 1: Docker (Empfohlen für Production)
+
+```bash
+# Deployment-Package herunterladen
+wget https://github.com/jansinger/ostsee-sichtung/releases/latest/download/ostsee-tiere-docker-latest.tar.gz
+
+# Entpacken
+tar -xzf ostsee-tiere-docker-latest.tar.gz
+cd ostsee-tiere-docker
+
+# Konfigurieren
+cp .env.example .env
+nano .env  # Umgebungsvariablen anpassen
+
+# Starten (mit Monitoring)
+docker compose -f docker-compose.production.yml --profile monitoring up -d
+```
+
+**Zugriff:**
+- Anwendung: http://localhost:3000
+- Grafana: http://localhost:3001
+- Prometheus: http://localhost:9090
+
+📖 **Vollständige Dokumentation**: [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md)
+
+### Option 2: Lokale Entwicklung
 
 ## Installation und Entwicklung
 
@@ -190,6 +219,59 @@ Detaillierte Erfassung von Meerestier-Sichtungen:
 - Tierverhalten und -zustand
 - Totfund-spezifische Datenfelder
 - Administrative Freigabe- und Verifizierungsprozesse
+
+## 🐳 Docker Deployment
+
+### Verfügbare Deployment-Optionen
+
+Das Projekt unterstützt zwei Deployment-Modelle:
+
+1. **Vercel (Cloud-Native)**: Automatisches Deployment via GitHub Actions
+2. **Docker (Self-Hosted)**: Vollständige Kontrolle über Infrastruktur und Daten
+
+### Docker-Features
+
+- ✅ **Multi-Stage Build** für optimierte Image-Größe (~150-200 MB)
+- ✅ **ARM64-Architektur** (Raspberry Pi 4/5, AWS Graviton, Apple Silicon)
+- ✅ **Integriertes Monitoring** (Prometheus + Grafana)
+- ✅ **Multi-Storage Support** (Local, Vercel Blob, AWS S3, Google Cloud Storage)
+- ✅ **Production-Ready** mit Health Checks und Auto-Restart
+- ✅ **Security-Hardened** (Non-root user, read-only filesystem)
+
+### Docker Commands
+
+```bash
+# Lokalen Build testen
+npm run docker:build
+
+# Container lokal ausführen
+npm run docker:run
+
+# Mit Docker Compose starten
+npm run docker:compose
+
+# Monitoring aktivieren
+docker compose -f docker-compose.production.yml --profile monitoring up -d
+```
+
+### Images auf GitHub Container Registry
+
+```bash
+# Neueste Version ziehen
+docker pull ghcr.io/jansinger/ostsee-sichtung:latest
+
+# Spezifische Version
+docker pull ghcr.io/jansinger/ostsee-sichtung:v1.30.5
+
+# Mit Tag ausführen
+docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-sichtung:latest
+```
+
+### Dokumentation
+
+- 📘 [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md) - Vollständige Deployment-Anleitung
+- 📗 [Environment Variables Reference](docs/ENVIRONMENT.md) - Alle Umgebungsvariablen
+- 📙 [Design Guide](docs/DESIGN_GUIDE.md) - UI/UX Best Practices
 
 ## Beitragen
 
