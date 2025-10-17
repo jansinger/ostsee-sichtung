@@ -131,21 +131,15 @@ MAX_RETRIES=30
 RETRY_COUNT=0
 DB_READY=0
 
+# Extract host, port, user, and dbname from DATABASE_POSTGRES_URL
+# Example: postgres://user:password@host:port/dbname
+PGHOST=$(echo "$DATABASE_POSTGRES_URL" | sed -n 's#postgres://[^@]*@\([^:/]*\).*#\1#p')
+PGPORT=$(echo "$DATABASE_POSTGRES_URL" | sed -n 's#postgres://[^@]*@[^:/]*:\([0-9]*\).*#\1#p')
+PGUSER=$(echo "$DATABASE_POSTGRES_URL" | sed -n 's#postgres://\([^:]*\).*#\1#p')
+PGDATABASE=$(echo "$DATABASE_POSTGRES_URL" | sed -n 's#postgres://[^@]*@[^:/]*[:0-9]*/\([^?]*\).*#\1#p')
+
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if node -e "
-        const postgres = require('postgres');
-        const sql = postgres('$DATABASE_POSTGRES_URL', {
-            max: 1,
-            connect_timeout: 5
-        });
-        sql\`SELECT 1\`.then(() => {
-            sql.end();
-            process.exit(0);
-        }).catch(() => {
-            sql.end();
-            process.exit(1);
-        });
-    " 2>/dev/null; then
+    if pg_isready -h "$PGHOST" -p "${PGPORT:-5432}" -U "$PGUSER" -d "$PGDATABASE" >/dev/null 2>&1; then
         DB_READY=1
         break
     fi
