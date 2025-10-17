@@ -33,6 +33,15 @@ Administration and data management are supported through user-friendly interface
 - `npm run db:migrate` - Run database migrations
 - `npm run db:studio` - Open Drizzle Studio (database management UI)
 
+### Docker Operations
+- `npm run docker:build` - Build production Docker image locally
+- `npm run docker:run` - Run Docker container with mounted uploads folder (./uploads → /app/uploads)
+  - **Note**: Automatically creates `./uploads` directory if it doesn't exist
+  - **Linux**: May require `sudo chown -R 1001:1001 ./uploads` for correct permissions
+  - **macOS/Windows**: Docker Desktop handles permissions automatically
+- `npm run docker:compose` - Start production setup with Docker Compose
+- `npm run docker:stop` - Stop Docker Compose services
+
 ### Code Quality
 - `npm run lint` - Run ESLint
 - `npm run lint:fix` - Fix ESLint issues automatically

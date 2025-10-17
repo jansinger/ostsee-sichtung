@@ -78,16 +78,22 @@ log_info "Storage provider: $STORAGE_PROVIDER"
 
 if [ "$STORAGE_PROVIDER" = "local" ]; then
     UPLOAD_PATH=${UPLOAD_PATH:-/app/uploads}
-    log_info "Local storage path: $UPLOAD_PATH"
+    log_info "Local storage path: ${UPLOAD_PATH}"
 
-    # Ensure upload directory exists and is writable
-    if [ ! -d "$UPLOAD_PATH" ]; then
-        log_warning "Upload directory does not exist, creating: $UPLOAD_PATH"
-        mkdir -p "$UPLOAD_PATH"
+    # Verify upload directory exists (must be mounted as volume)
+    if [ ! -d "${UPLOAD_PATH}" ]; then
+        log_error "Upload directory does not exist: ${UPLOAD_PATH}"
+        log_error "Please mount a volume for uploads:"
+        log_error "  docker run -v ./uploads:/app/uploads ..."
+        log_error "  Or use docker-compose with volume configuration"
+        exit 1
     fi
 
-    if [ ! -w "$UPLOAD_PATH" ]; then
-        log_error "Upload directory is not writable: $UPLOAD_PATH"
+    # Verify upload directory is writable
+    if [ ! -w "${UPLOAD_PATH}" ]; then
+        log_error "Upload directory is not writable: ${UPLOAD_PATH}"
+        log_error "Please ensure correct permissions for user ID 1001:"
+        log_error "  mkdir -p ./uploads && chown -R 1001:1001 ./uploads"
         exit 1
     fi
 

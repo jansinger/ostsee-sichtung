@@ -98,7 +98,7 @@ docker pull ghcr.io/your-org/ostsee-tiere:latest
 docker run -d \
   --name ostsee-tiere \
   -p 3000:3000 \
-  -v ostsee-uploads:/app/uploads \
+  -v ./uploads:/app/uploads \
   -e DATABASE_POSTGRES_URL="postgresql://user:pass@host:5432/dbname" \
   -e SESSION_SECRET="your-secret-key-here" \
   -e ENCRYPTION_KEY="your-64-char-hex-key" \
@@ -107,6 +107,9 @@ docker run -d \
   -e AUTH0_DOMAIN="your-tenant.auth0.com" \
   -e PUBLIC_SITE_URL="https://your-domain.com" \
   ghcr.io/your-org/ostsee-tiere:latest
+
+# Alternative: Mit named volume statt lokalem Verzeichnis
+# -v ostsee-uploads:/app/uploads
 ```
 
 ### Option 3: Cloud Deployment
@@ -169,21 +172,57 @@ STORAGE_PROVIDER=local
 UPLOAD_PATH=/app/uploads
 ```
 
-**Docker Volume:**
+**Docker Volume Options:**
+
+**Option 1: Named Volume (Recommended for Production)**
 ```yaml
 volumes:
   - uploads:/app/uploads
 ```
 
+**Option 2: Bind Mount (Recommended for Development)**
+```bash
+# Using npm script (development) - automatically creates ./uploads directory
+npm run docker:run
+
+# Manual docker command
+mkdir -p ./uploads
+docker run -p 3000:3000 -v ./uploads:/app/uploads --env-file .env ostsee-tiere:latest
+```
+
+**Benefits of Bind Mount:**
+- Direct access to files on host system
+- Easy backup and inspection
+- Simpler file management
+- Ideal for development and testing
+
+**Permission Requirements for Bind Mount:**
+- **Container User ID**: 1001 (nodejs user)
+- **Linux**: `sudo chown -R 1001:1001 ./uploads` (or use your user: `sudo chown -R $USER:$USER ./uploads`)
+- **macOS/Windows**: Docker Desktop handles permissions automatically
+- **Alternative**: Run container as your user: `docker run --user $(id -u):$(id -g) ...`
+
+**Benefits of Named Volume:**
+- Better performance on Docker Desktop
+- Managed by Docker
+- Easier migration between hosts
+- No permission issues across platforms
+
 **Backup:**
 ```bash
-# Backup uploads
+# Backup uploads (Named Volume)
 docker run --rm -v ostsee-tiere_uploads:/data -v $(pwd):/backup \
   alpine tar czf /backup/uploads-backup-$(date +%Y%m%d).tar.gz /data
 
-# Restore uploads
+# Restore uploads (Named Volume)
 docker run --rm -v ostsee-tiere_uploads:/data -v $(pwd):/backup \
   alpine tar xzf /backup/uploads-backup-20250116.tar.gz -C /
+
+# Backup uploads (Bind Mount)
+tar czf uploads-backup-$(date +%Y%m%d).tar.gz ./uploads
+
+# Restore uploads (Bind Mount)
+tar xzf uploads-backup-20250116.tar.gz
 ```
 
 ### Vercel Blob Storage

@@ -5,7 +5,11 @@
 # Ostsee-Tiere marine animal sighting reporting platform.
 #
 # Build: docker build -t ostsee-tiere:latest .
-# Run: docker run -p 3000:3000 --env-file .env ostsee-tiere:latest
+# Run: mkdir -p ./uploads && docker run -p 3000:3000 -v ./uploads:/app/uploads --env-file .env ostsee-tiere:latest
+#
+# Note: The -v ./uploads:/app/uploads mount ensures uploaded files persist
+# across container restarts and are accessible on the host system.
+# Linux users may need: sudo chown -R 1001:1001 ./uploads (container runs as user ID 1001)
 
 # ============================================
 # Stage 1: Dependencies

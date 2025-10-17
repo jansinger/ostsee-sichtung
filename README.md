@@ -244,7 +244,7 @@ Das Projekt unterstützt zwei Deployment-Modelle:
 # Lokalen Build testen
 npm run docker:build
 
-# Container lokal ausführen
+# Container lokal ausführen (mit gemounteten Uploads)
 npm run docker:run
 
 # Mit Docker Compose starten
@@ -253,6 +253,12 @@ npm run docker:compose
 # Monitoring aktivieren
 docker compose -f docker-compose.production.yml --profile monitoring up -d
 ```
+
+**Hinweis zu `docker:run`:**
+- Das npm-Skript erstellt automatisch `./uploads` und mountet es nach `/app/uploads`
+- Hochgeladene Dateien bleiben nach Container-Neustarts erhalten
+- **Linux**: Bei Permission-Problemen: `sudo chown -R 1001:1001 ./uploads`
+- **macOS/Windows**: Docker Desktop handhabt Berechtigungen automatisch
 
 ### Images auf GitHub Container Registry
 
