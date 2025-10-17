@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.31.1 (2025-10-17)</small>
+
+* fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
+
 ## 1.31.0 (2025-10-17)
 
 * feat(build): add Docker containerization with volume mount support (#194) ([8a7e5b4](https://github.com/jansinger/ostsee-sichtung/commit/8a7e5b4)), closes [#194](https://github.com/jansinger/ostsee-sichtung/issues/194)
