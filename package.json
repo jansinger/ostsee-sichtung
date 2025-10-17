@@ -11,7 +11,7 @@
 		"build:docker": "USE_NODE_ADAPTER=true svelte-kit sync && vite build",
 		"preview": "vite preview",
 		"docker:build": "docker build -t ostsee-tiere:latest .",
-		"docker:run": "mkdir -p ./uploads && docker run -p 3000:3000 -v ./uploads:/app/uploads --env-file .env.docker ostsee-tiere:latest",
+		"docker:run": "mkdir -p ./uploads && if [ ! -f .env.docker ]; then echo '# .env.docker not found. Creating empty file. Add environment variables as needed.' > .env.docker; fi && docker run -p 3000:3000 -v ./uploads:/app/uploads --env-file .env.docker ostsee-tiere:latest",
 		"docker:compose": "docker compose -f docker-compose.production.yml up -d",
 		"docker:stop": "docker compose -f docker-compose.production.yml down",
 		"prepare": "husky",
