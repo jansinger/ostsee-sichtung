@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.31.0 (2025-10-17)
+
+* feat(build): add Docker containerization with volume mount support (#194) ([8a7e5b4](https://github.com/jansinger/ostsee-sichtung/commit/8a7e5b4)), closes [#194](https://github.com/jansinger/ostsee-sichtung/issues/194)
+* chore(deps): update 1 dependency (#193) ([d05ef1d](https://github.com/jansinger/ostsee-sichtung/commit/d05ef1d)), closes [#193](https://github.com/jansinger/ostsee-sichtung/issues/193)
+
 ## <small>1.30.5 (2025-10-14)</small>
 
 * fix(ci): use conventional commit format for merge commits (#192) ([a732d0a](https://github.com/jansinger/ostsee-sichtung/commit/a732d0a)), closes [#192](https://github.com/jansinger/ostsee-sichtung/issues/192)
