@@ -53,7 +53,48 @@ jobs:
 
             console.log(`Found ${dependabotPRs.length} open Dependabot PRs`);
 
-            const prData = dependabotPRs.map(pr => ({
+            // Filter out GitHub Actions PRs (workflow updates cannot be pushed with GITHUB_TOKEN)
+            const nonWorkflowPRs = [];
+            const skippedWorkflowPRs = [];
+
+            for (const pr of dependabotPRs) {
+              // Check if PR updates workflow files
+              const { data: files } = await github.rest.pulls.listFiles({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              const hasWorkflowChanges = files.some(file =>
+                file.filename.startsWith('.github/workflows/')
+              );
+
+              if (hasWorkflowChanges) {
+                console.log(`⚠️ Skipping PR #${pr.number} - contains workflow file changes`);
+                skippedWorkflowPRs.push(pr);
+              } else {
+                nonWorkflowPRs.push(pr);
+              }
+            }
+
+            if (skippedWorkflowPRs.length > 0) {
+              console.log(`\n⚠️ Skipped ${skippedWorkflowPRs.length} PR(s) with workflow changes:`);
+              skippedWorkflowPRs.forEach(pr => {
+                console.log(`  - #${pr.number}: ${pr.title}`);
+              });
+              console.log('\nNote: Workflow file updates require manual merge or a PAT with workflow permissions.');
+            }
+
+            if (nonWorkflowPRs.length === 0) {
+              console.log('\n✓ No combinable Dependabot PRs found (all contain workflow changes)');
+              core.setOutput('has-prs', 'false');
+              core.setOutput('count', '0');
+              return { hasPRs: false, count: 0 };
+            }
+
+            console.log(`\n✓ Found ${nonWorkflowPRs.length} combinable Dependabot PRs (excluding workflow updates)`);
+
+            const prData = nonWorkflowPRs.map(pr => ({
               number: pr.number,
               title: pr.title,
               branch: pr.head.ref,
@@ -62,10 +103,11 @@ jobs:
             }));
 
             core.setOutput('has-prs', 'true');
-            core.setOutput('count', dependabotPRs.length);
+            core.setOutput('count', nonWorkflowPRs.length);
             core.setOutput('prs', JSON.stringify(prData));
+            core.setOutput('skipped-workflow-prs', skippedWorkflowPRs.length);
 
-            return { hasPRs: true, count: dependabotPRs.length, prs: prData };
+            return { hasPRs: true, count: nonWorkflowPRs.length, prs: prData, skipped: skippedWorkflowPRs.length };
 
       - name: Exit if no PRs to combine
         if: steps.find-prs.outputs.has-prs != 'true'
@@ -92,20 +134,34 @@ jobs:
         if: steps.find-prs.outputs.has-prs == 'true'
         run: |
           prs='${{ steps.find-prs.outputs.prs }}'
+          conflict_branches=""
 
           echo "$prs" | jq -r '.[] | .branch' | while read branch; do
             echo "Fetching and merging $branch..."
-            git fetch origin "$branch"
+
+            # Verify branch exists before attempting merge
+            if ! git fetch origin "$branch"; then
+              echo "⚠️ Warning: Could not fetch $branch, skipping..."
+              continue
+            fi
 
             # Use merge with conventional commit format
             if git merge "origin/$branch" --no-ff --no-edit -m "chore(deps): merge $branch"; then
               echo "✓ Successfully merged $branch"
             else
-              echo "✗ Failed to merge $branch - this may require manual intervention"
+              echo "✗ Merge conflict detected in $branch"
               git merge --abort
-              exit 1
+              conflict_branches="$conflict_branches $branch"
+              echo "⚠️ Continuing with remaining branches..."
             fi
           done
+
+          # Report conflicts at the end if any occurred
+          if [ -n "$conflict_branches" ]; then
+            echo "⚠️ The following branches had merge conflicts:$conflict_branches"
+            echo "CONFLICT_BRANCHES=$conflict_branches" >> $GITHUB_ENV
+            echo "Some branches could not be merged automatically. Manual intervention may be required."
+          fi
 
       - name: Push combined branch
         if: steps.find-prs.outputs.has-prs == 'true'
@@ -133,22 +189,44 @@ jobs:
 
       - name: Run validation tests
         if: steps.find-prs.outputs.has-prs == 'true'
+        id: validation
         run: |
           echo "🔍 Running linting..."
-          npm run lint
+          if ! npm run lint; then
+            echo "VALIDATION_FAILED=lint" >> $GITHUB_ENV
+            echo "❌ Linting failed"
+            exit 1
+          fi
 
           echo "🔍 Running type checking..."
-          npm run type-check
+          if ! npm run type-check; then
+            echo "VALIDATION_FAILED=type-check" >> $GITHUB_ENV
+            echo "❌ Type checking failed"
+            exit 1
+          fi
 
           echo "🔍 Running svelte-check..."
-          npm run check
+          if ! npm run check; then
+            echo "VALIDATION_FAILED=svelte-check" >> $GITHUB_ENV
+            echo "❌ Svelte check failed"
+            exit 1
+          fi
 
           echo "🧪 Running unit tests..."
-          npm run test:unit
+          if ! npm run test:unit; then
+            echo "VALIDATION_FAILED=tests" >> $GITHUB_ENV
+            echo "❌ Unit tests failed"
+            exit 1
+          fi
 
           echo "🏗️ Running build..."
-          npm run build
+          if ! npm run build; then
+            echo "VALIDATION_FAILED=build" >> $GITHUB_ENV
+            echo "❌ Build failed"
+            exit 1
+          fi
 
+          echo "VALIDATION_PASSED=true" >> $GITHUB_ENV
           echo "✅ All validation checks passed!"
 
       - name: Analyze updates and generate PR content
@@ -345,11 +423,15 @@ jobs:
 
       - name: Create or update combined PR
         if: steps.find-prs.outputs.has-prs == 'true'
+        id: combined-pr
+        env:
+          PR_TITLE: ${{ steps.pr-content.outputs.title }}
+          PR_BODY: ${{ steps.pr-content.outputs.body }}
         uses: actions/github-script@v7
         with:
           script: |
-            const title = `${{ steps.pr-content.outputs.title }}`;
-            const body = `${{ steps.pr-content.outputs.body }}`;
+            const title = process.env.PR_TITLE;
+            const body = process.env.PR_BODY;
             const exists = '${{ steps.check-existing-pr.outputs.exists }}' === 'true';
             const hasMajor = '${{ steps.pr-content.outputs.has-major }}' === 'true';
 
@@ -405,7 +487,13 @@ jobs:
         with:
           script: |
             const prs = JSON.parse('${{ steps.find-prs.outputs.prs }}');
-            const combinedPrNumber = '${{ steps.check-existing-pr.outputs.pr-number }}';
+            const combinedPrNumber = '${{ steps.combined-pr.outputs.pr-number }}';
+
+            // Validate we have a PR number before commenting
+            if (!combinedPrNumber) {
+              console.log('⚠️ No combined PR number available, skipping comments');
+              return;
+            }
 
             for (const pr of prs) {
               const message = `🤖 **This update has been combined with other Dependabot updates**\n\n` +
@@ -414,36 +502,41 @@ jobs:
                 `---\n` +
                 `*Individual Dependabot PRs are no longer merged separately to maintain a clean commit history.*`;
 
-              // Check if we already commented
-              const { data: comments } = await github.rest.issues.listComments({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pr.number
-              });
-
-              const botComment = comments.find(c =>
-                c.user.login === 'github-actions[bot]' &&
-                c.body.includes('This update has been combined')
-              );
-
-              if (botComment) {
-                // Update existing comment
-                await github.rest.issues.updateComment({
+              try {
+                // Check if we already commented
+                const { data: comments } = await github.rest.issues.listComments({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  comment_id: botComment.id,
-                  body: message
+                  issue_number: pr.number
                 });
-                console.log(`✓ Updated comment on PR #${pr.number}`);
-              } else {
-                // Create new comment
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: pr.number,
-                  body: message
-                });
-                console.log(`✓ Commented on PR #${pr.number}`);
+
+                const botComment = comments.find(c =>
+                  c.user.login === 'github-actions[bot]' &&
+                  c.body.includes('This update has been combined')
+                );
+
+                if (botComment) {
+                  // Update existing comment
+                  await github.rest.issues.updateComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: botComment.id,
+                    body: message
+                  });
+                  console.log(`✓ Updated comment on PR #${pr.number}`);
+                } else {
+                  // Create new comment
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: pr.number,
+                    body: message
+                  });
+                  console.log(`✓ Commented on PR #${pr.number}`);
+                }
+              } catch (error) {
+                console.log(`⚠️ Failed to comment on PR #${pr.number}: ${error.message}`);
+                // Continue with other PRs even if one fails
               }
             }
 
@@ -453,19 +546,40 @@ jobs:
         with:
           script: |
             const count = parseInt('${{ steps.find-prs.outputs.count }}');
-            const prNumber = '${{ steps.check-existing-pr.outputs.pr-number }}';
+            const prNumber = '${{ steps.combined-pr.outputs.pr-number }}';
             const hasMajor = '${{ steps.pr-content.outputs.has-major }}' === 'true';
+            const conflictBranches = process.env.CONFLICT_BRANCHES || '';
+            const skippedWorkflowPRs = parseInt('${{ steps.find-prs.outputs.skipped-workflow-prs }}') || 0;
 
             core.summary
               .addHeading('🤖 Dependabot PRs Combined')
               .addRaw(`Successfully combined ${count} Dependabot update${count === 1 ? '' : 's'}`, true)
-              .addBreak()
-              .addRaw(`📦 Combined PR: #${prNumber}`, true);
+              .addBreak();
+
+            if (prNumber) {
+              core.summary.addRaw(`📦 Combined PR: #${prNumber}`, true);
+            } else {
+              core.summary.addRaw('⚠️ Combined PR creation may have failed', true);
+            }
 
             if (hasMajor) {
               core.summary
                 .addBreak()
                 .addRaw('⚠️ **Contains major version updates**', true);
+            }
+
+            if (conflictBranches) {
+              core.summary
+                .addBreak()
+                .addRaw(`⚠️ **Merge conflicts detected in:** ${conflictBranches}`, true)
+                .addRaw('These branches were skipped and may need manual intervention.', true);
+            }
+
+            if (skippedWorkflowPRs > 0) {
+              core.summary
+                .addBreak()
+                .addRaw(`ℹ️ **Skipped ${skippedWorkflowPRs} PR(s) with workflow file changes**`, true)
+                .addRaw('Workflow file updates require manual merge or a PAT with workflow permissions.', true);
             }
 
             core.summary.write();
