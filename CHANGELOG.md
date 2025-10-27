@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.31.2 (2025-10-27)</small>
+
+* chore(deps): bump actions/download-artifact from 4 to 6 (#211) ([e0de9ef](https://github.com/jansinger/ostsee-sichtung/commit/e0de9ef)), closes [#211](https://github.com/jansinger/ostsee-sichtung/issues/211)
+* chore(deps): bump actions/setup-node from 4 to 6 (#206) ([e527857](https://github.com/jansinger/ostsee-sichtung/commit/e527857)), closes [#206](https://github.com/jansinger/ostsee-sichtung/issues/206)
+* chore(deps): bump actions/upload-artifact from 4 to 5 (#213) ([b74a5f0](https://github.com/jansinger/ostsee-sichtung/commit/b74a5f0)), closes [#213](https://github.com/jansinger/ostsee-sichtung/issues/213)
+* chore(deps): bump github/codeql-action from 3 to 4 (#207) ([87fd981](https://github.com/jansinger/ostsee-sichtung/commit/87fd981)), closes [#207](https://github.com/jansinger/ostsee-sichtung/issues/207)
+* chore(deps): update 12 dependencies (#217) ([4fbb1f5](https://github.com/jansinger/ostsee-sichtung/commit/4fbb1f5)), closes [#217](https://github.com/jansinger/ostsee-sichtung/issues/217)
+* fix(ci): resolve dependabot-combine workflow and docker release issues (#218) ([1b923e7](https://github.com/jansinger/ostsee-sichtung/commit/1b923e7)), closes [#218](https://github.com/jansinger/ostsee-sichtung/issues/218) [#123](https://github.com/jansinger/ostsee-sichtung/issues/123) [#124](https://github.com/jansinger/ostsee-sichtung/issues/124)
+
 ## <small>1.31.1 (2025-10-17)</small>
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
