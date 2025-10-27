@@ -10,8 +10,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  actions: read
-  workflows: write
 
 jobs:
   combine-dependabot-prs:
@@ -55,7 +53,48 @@ jobs:
 
             console.log(`Found ${dependabotPRs.length} open Dependabot PRs`);
 
-            const prData = dependabotPRs.map(pr => ({
+            // Filter out GitHub Actions PRs (workflow updates cannot be pushed with GITHUB_TOKEN)
+            const nonWorkflowPRs = [];
+            const skippedWorkflowPRs = [];
+
+            for (const pr of dependabotPRs) {
+              // Check if PR updates workflow files
+              const { data: files } = await github.rest.pulls.listFiles({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number
+              });
+
+              const hasWorkflowChanges = files.some(file =>
+                file.filename.startsWith('.github/workflows/')
+              );
+
+              if (hasWorkflowChanges) {
+                console.log(`⚠️ Skipping PR #${pr.number} - contains workflow file changes`);
+                skippedWorkflowPRs.push(pr);
+              } else {
+                nonWorkflowPRs.push(pr);
+              }
+            }
+
+            if (skippedWorkflowPRs.length > 0) {
+              console.log(`\n⚠️ Skipped ${skippedWorkflowPRs.length} PR(s) with workflow changes:`);
+              skippedWorkflowPRs.forEach(pr => {
+                console.log(`  - #${pr.number}: ${pr.title}`);
+              });
+              console.log('\nNote: Workflow file updates require manual merge or a PAT with workflow permissions.');
+            }
+
+            if (nonWorkflowPRs.length === 0) {
+              console.log('\n✓ No combinable Dependabot PRs found (all contain workflow changes)');
+              core.setOutput('has-prs', 'false');
+              core.setOutput('count', '0');
+              return { hasPRs: false, count: 0 };
+            }
+
+            console.log(`\n✓ Found ${nonWorkflowPRs.length} combinable Dependabot PRs (excluding workflow updates)`);
+
+            const prData = nonWorkflowPRs.map(pr => ({
               number: pr.number,
               title: pr.title,
               branch: pr.head.ref,
@@ -64,10 +103,11 @@ jobs:
             }));
 
             core.setOutput('has-prs', 'true');
-            core.setOutput('count', dependabotPRs.length);
+            core.setOutput('count', nonWorkflowPRs.length);
             core.setOutput('prs', JSON.stringify(prData));
+            core.setOutput('skipped-workflow-prs', skippedWorkflowPRs.length);
 
-            return { hasPRs: true, count: dependabotPRs.length, prs: prData };
+            return { hasPRs: true, count: nonWorkflowPRs.length, prs: prData, skipped: skippedWorkflowPRs.length };
 
       - name: Exit if no PRs to combine
         if: steps.find-prs.outputs.has-prs != 'true'
@@ -509,6 +549,7 @@ jobs:
             const prNumber = '${{ steps.combined-pr.outputs.pr-number }}';
             const hasMajor = '${{ steps.pr-content.outputs.has-major }}' === 'true';
             const conflictBranches = process.env.CONFLICT_BRANCHES || '';
+            const skippedWorkflowPRs = parseInt('${{ steps.find-prs.outputs.skipped-workflow-prs }}') || 0;
 
             core.summary
               .addHeading('🤖 Dependabot PRs Combined')
@@ -532,6 +573,13 @@ jobs:
                 .addBreak()
                 .addRaw(`⚠️ **Merge conflicts detected in:** ${conflictBranches}`, true)
                 .addRaw('These branches were skipped and may need manual intervention.', true);
+            }
+
+            if (skippedWorkflowPRs > 0) {
+              core.summary
+                .addBreak()
+                .addRaw(`ℹ️ **Skipped ${skippedWorkflowPRs} PR(s) with workflow file changes**`, true)
+                .addRaw('Workflow file updates require manual merge or a PAT with workflow permissions.', true);
             }
 
             core.summary.write();
