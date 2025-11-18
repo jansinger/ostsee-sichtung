@@ -104,7 +104,7 @@
 		"semantic-release": "^24.2.9",
 		"svelte": "^5.43.5",
 		"svelte-check": "^4.3.3",
-		"tailwindcss": "^4.1.14",
+		"tailwindcss": "^4.1.17",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.46.1",
 		"unplugin-icons": "^22.4.2",
