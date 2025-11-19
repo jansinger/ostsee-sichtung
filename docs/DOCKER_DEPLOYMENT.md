@@ -12,6 +12,7 @@ This comprehensive guide covers deploying the Ostsee-Tiere marine animal sightin
 - [Database Configuration](#database-configuration)
 - [Monitoring Setup](#monitoring-setup)
 - [Production Deployment](#production-deployment)
+- [CI/CD and Release Process](#cicd-and-release-process)
 - [Backup & Restore](#backup--restore)
 - [Troubleshooting](#troubleshooting)
 - [Security Best Practices](#security-best-practices)
@@ -465,6 +466,56 @@ services:
           memory: 1G
     restart: unless-stopped
 ```
+
+---
+
+## CI/CD and Release Process
+
+### Automated Docker Image Publishing
+
+Docker images are automatically built and published to GitHub Container Registry (GHCR) via GitHub Actions when:
+- A new version tag is pushed (e.g., `v1.31.2`)
+- A release is published
+- The workflow is manually triggered
+
+**Image Repository:** `ghcr.io/jansinger/ostsee-sichtung`
+
+### Retry Mechanism for Transient Errors
+
+The Docker Release workflow includes automatic retry logic to handle transient registry errors (such as 502 Bad Gateway):
+
+**Retry Strategy:**
+- **Maximum Attempts**: 3
+- **Wait Between Retries**: 
+  - First retry: 60 seconds
+  - Second retry: 120 seconds (exponential backoff)
+- **Behavior**: Each failed push attempt is automatically retried with increasing wait times
+
+**Why This Matters:**
+GitHub Container Registry (GHCR) may occasionally experience temporary unavailability or rate limiting, especially during:
+- Multi-platform builds (linux/amd64, linux/arm64)
+- Large layer uploads
+- High GitHub Actions usage periods
+
+The retry mechanism ensures that transient infrastructure issues don't block your releases. The workflow will:
+1. ✅ Succeed on first attempt (most common case)
+2. ⚠️ Retry after 60 seconds if first attempt fails
+3. ⚠️ Retry after 120 seconds if second attempt fails
+4. ❌ Only fail permanently after all 3 attempts are exhausted
+
+**Monitoring:**
+Check the workflow logs at: https://github.com/jansinger/ostsee-sichtung/actions/workflows/docker-release.yml
+
+Each retry attempt is clearly logged with attempt numbers and wait times.
+
+### Image Verification
+
+After a successful push, the workflow generates:
+- **Image Digest**: Cryptographic hash of the image
+- **Image Tags**: All applied tags (version, latest, etc.)
+- **Pull Command**: Ready-to-use command with digest for verification
+
+Download these details from GitHub Actions artifacts (retention: 90 days).
 
 ---
 
