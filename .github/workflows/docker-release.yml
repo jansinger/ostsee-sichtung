@@ -42,7 +42,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
     outputs:
       image-tags: ${{ steps.meta.outputs.tags }}
-      image-digest: ${{ steps.build-and-push.outputs.digest }}
+      image-digest: ${{ steps.set-outputs.outputs.digest }}
 
     steps:
       - name: Checkout repository
@@ -76,8 +76,56 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix={{branch}}-
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image (attempt 1)
         id: build-and-push
+        uses: docker/build-push-action@v6
+        continue-on-error: true
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            VCS_REF=${{ github.sha }}
+
+      - name: Wait before retry
+        if: steps.build-and-push.outcome == 'failure'
+        run: |
+          echo "⚠️ First attempt failed. Waiting 60 seconds before retry..."
+          sleep 60
+
+      - name: Build and push Docker image (attempt 2)
+        id: build-and-push-retry
+        if: steps.build-and-push.outcome == 'failure'
+        uses: docker/build-push-action@v6
+        continue-on-error: true
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            VCS_REF=${{ github.sha }}
+
+      - name: Wait before final retry
+        if: steps.build-and-push.outcome == 'failure' && steps.build-and-push-retry.outcome == 'failure'
+        run: |
+          echo "⚠️ Second attempt failed. Waiting 120 seconds before final retry..."
+          sleep 120
+
+      - name: Build and push Docker image (attempt 3 - final)
+        id: build-and-push-final
+        if: steps.build-and-push.outcome == 'failure' && steps.build-and-push-retry.outcome == 'failure'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -92,16 +140,37 @@ jobs:
             BUILD_DATE=${{ github.event.repository.updated_at }}
             VCS_REF=${{ github.sha }}
 
-      - name: Generate image digest file
+      - name: Set final outputs
+        id: set-outputs
+        if: always()
         run: |
-          echo "Image Digest: ${{ steps.build-and-push.outputs.digest }}" > image-digest.txt
+          # Determine which attempt succeeded and use its outputs
+          if [ "${{ steps.build-and-push.outcome }}" == "success" ]; then
+            echo "digest=${{ steps.build-and-push.outputs.digest }}" >> $GITHUB_OUTPUT
+            echo "✅ Build succeeded on first attempt"
+          elif [ "${{ steps.build-and-push-retry.outcome }}" == "success" ]; then
+            echo "digest=${{ steps.build-and-push-retry.outputs.digest }}" >> $GITHUB_OUTPUT
+            echo "✅ Build succeeded on second attempt (retry)"
+          elif [ "${{ steps.build-and-push-final.outcome }}" == "success" ]; then
+            echo "digest=${{ steps.build-and-push-final.outputs.digest }}" >> $GITHUB_OUTPUT
+            echo "✅ Build succeeded on third attempt (final retry)"
+          else
+            echo "❌ All build attempts failed"
+            exit 1
+          fi
+
+      - name: Generate image digest file
+        if: steps.set-outputs.outputs.digest != ''
+        run: |
+          echo "Image Digest: ${{ steps.set-outputs.outputs.digest }}" > image-digest.txt
           echo "Image Tags:" >> image-digest.txt
           echo "${{ steps.meta.outputs.tags }}" >> image-digest.txt
           echo "" >> image-digest.txt
           echo "Pull Command:" >> image-digest.txt
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}" >> image-digest.txt
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.set-outputs.outputs.digest }}" >> image-digest.txt
 
       - name: Upload image digest as artifact
+        if: steps.set-outputs.outputs.digest != ''
         uses: actions/upload-artifact@v5
         with:
           name: docker-image-digest
