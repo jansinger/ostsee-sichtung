@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.31.3 (2025-11-20)</small>
+
+* chore(deps): bump glob in the npm_and_yarn group across 1 directory (#235) ([0515658](https://github.com/jansinger/ostsee-sichtung/commit/0515658)), closes [#235](https://github.com/jansinger/ostsee-sichtung/issues/235)
+* chore(deps): update 10 dependencies (#221) ([224914e](https://github.com/jansinger/ostsee-sichtung/commit/224914e)), closes [#221](https://github.com/jansinger/ostsee-sichtung/issues/221)
+* chore(deps): update 2 dependencies (#219) ([efb3914](https://github.com/jansinger/ostsee-sichtung/commit/efb3914)), closes [#219](https://github.com/jansinger/ostsee-sichtung/issues/219)
+* chore(deps): update 3 dependencies (#231) ([da43495](https://github.com/jansinger/ostsee-sichtung/commit/da43495)), closes [#231](https://github.com/jansinger/ostsee-sichtung/issues/231)
+* fix(ci): add retry logic for transient GHCR errors in Docker Release workflow (#234) ([7b9a745](https://github.com/jansinger/ostsee-sichtung/commit/7b9a745)), closes [#234](https://github.com/jansinger/ostsee-sichtung/issues/234)
+
 ## <small>1.31.2 (2025-10-27)</small>
 
 * chore(deps): bump actions/download-artifact from 4 to 6 (#211) ([e0de9ef](https://github.com/jansinger/ostsee-sichtung/commit/e0de9ef)), closes [#211](https://github.com/jansinger/ostsee-sichtung/issues/211)
