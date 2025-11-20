@@ -160,6 +160,7 @@ jobs:
           fi
 
       - name: Generate image digest file
+        if: steps.set-outputs.outputs.digest != ''
         run: |
           echo "Image Digest: ${{ steps.set-outputs.outputs.digest }}" > image-digest.txt
           echo "Image Tags:" >> image-digest.txt
@@ -169,6 +170,7 @@ jobs:
           echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.set-outputs.outputs.digest }}" >> image-digest.txt
 
       - name: Upload image digest as artifact
+        if: steps.set-outputs.outputs.digest != ''
         uses: actions/upload-artifact@v5
         with:
           name: docker-image-digest
