@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.31.4 (2025-11-20)</small>
+
+* fix(deps): synchronize package-lock.json with package.json (#237) ([1a08c96](https://github.com/jansinger/ostsee-sichtung/commit/1a08c96)), closes [#237](https://github.com/jansinger/ostsee-sichtung/issues/237)
+
 ## <small>1.31.3 (2025-11-20)</small>
 
 * chore(deps): bump glob in the npm_and_yarn group across 1 directory (#235) ([0515658](https://github.com/jansinger/ostsee-sichtung/commit/0515658)), closes [#235](https://github.com/jansinger/ostsee-sichtung/issues/235)
