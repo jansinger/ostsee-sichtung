@@ -67,7 +67,7 @@
 		"@iconify/json": "^2.2.400",
 		"@playwright/test": "^1.56.1",
 		"@scalar/api-reference": "^1.38.1",
-		"@scalar/sveltekit": "^0.1.25",
+		"@scalar/sveltekit": "^0.1.29",
 		"@semantic-release/changelog": "^6.0.3",
 		"@semantic-release/exec": "^7.1.0",
 		"@semantic-release/git": "^10.0.1",
