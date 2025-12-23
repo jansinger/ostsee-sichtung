@@ -307,7 +307,6 @@ jobs:
           # license-checker has known issues with Node 22
           # We attempt the check but don't fail on tool errors
           npm run license:audit 2>&1 || {
-            EXIT_CODE=$?
             # Check if it's a tool crash vs actual license issue
             if npm run license:audit 2>&1 | grep -q "TypeError"; then
               echo "⚠️ License checker tool error (Node 22 compatibility issue)"
