@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.31.5 (2025-12-23)</small>
+
+* fix(ci): synchronize package-lock.json in dependabot combine workflow (#251) ([b48fbc5](https://github.com/jansinger/ostsee-sichtung/commit/b48fbc5)), closes [#251](https://github.com/jansinger/ostsee-sichtung/issues/251)
+
 ## <small>1.31.4 (2025-11-20)</small>
 
 * fix(deps): synchronize package-lock.json with package.json (#237) ([1a08c96](https://github.com/jansinger/ostsee-sichtung/commit/1a08c96)), closes [#237](https://github.com/jansinger/ostsee-sichtung/issues/237)
