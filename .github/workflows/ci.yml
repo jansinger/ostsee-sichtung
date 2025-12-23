@@ -143,6 +143,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run SvelteKit sync
+        run: npx svelte-kit sync
+
       - name: Get Playwright version
         id: playwright-version
         run: |
