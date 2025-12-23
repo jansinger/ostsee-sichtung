@@ -215,13 +215,83 @@ jobs:
             echo "⚠️ License checker encountered an error (known Node 22 compatibility issue)"
             echo "Falling back to package.json license validation..."
 
-            # Basic check: ensure our package and key deps have valid licenses
+            # Basic check: ensure our package has a valid license
             if grep -q '"license": "MIT"' package.json; then
               echo "✅ Project license is MIT"
             else
               echo "❌ Project license is not MIT"
               exit 1
             fi
+
+            echo "Performing fallback license check on direct dependencies..."
+            node - <<'EOF'
+            const fs = require('fs');
+            const path = require('path');
+
+            function getLicenseInfo(pkgJson) {
+              if (typeof pkgJson.license === 'string') {
+                return pkgJson.license;
+              }
+              if (Array.isArray(pkgJson.licenses)) {
+                return pkgJson.licenses.map(l => (typeof l === 'string' ? l : l.type || '')).join(', ');
+              }
+              if (pkgJson.licenses && typeof pkgJson.licenses === 'object') {
+                return pkgJson.licenses.type || '';
+              }
+              return '';
+            }
+
+            const projectPkgPath = path.join(process.cwd(), 'package.json');
+            let projectPkg;
+            try {
+              projectPkg = JSON.parse(fs.readFileSync(projectPkgPath, 'utf8'));
+            } catch (e) {
+              console.error('::warning::Fallback license check: unable to read project package.json:', e.message);
+              process.exit(0);
+            }
+
+            const deps = projectPkg.dependencies || {};
+            const depNames = Object.keys(deps);
+            if (depNames.length === 0) {
+              console.log('No direct dependencies declared; fallback dependency license check skipped.');
+              process.exit(0);
+            }
+
+            let hadError = false;
+            let foundCopyleft = false;
+
+            for (const dep of depNames) {
+              const depPkgPath = path.join(process.cwd(), 'node_modules', dep, 'package.json');
+              let depPkg;
+              try {
+                depPkg = JSON.parse(fs.readFileSync(depPkgPath, 'utf8'));
+              } catch (e) {
+                console.error(`::warning::Fallback license check: unable to read package.json for dependency "${dep}": ${e.message}`);
+                hadError = true;
+                continue;
+              }
+
+              const licenseInfo = getLicenseInfo(depPkg) || '';
+              const licenseStr = String(licenseInfo).toUpperCase();
+
+              if (licenseStr.includes('GPL') || licenseStr.includes('AGPL')) {
+                console.error(`Dependency "${dep}" appears to use a copyleft license: "${licenseInfo}"`);
+                foundCopyleft = true;
+              }
+            }
+
+            if (foundCopyleft) {
+              console.error('❌ Fallback dependency license check detected potential GPL/AGPL licenses in direct dependencies.');
+              process.exit(1);
+            }
+
+            if (hadError) {
+              console.error('::warning::Fallback dependency license check could not inspect all direct dependencies. Full license validation may not have been performed.');
+            } else {
+              console.log('✅ Fallback dependency license check found no copyleft licenses in direct dependencies.');
+            }
+            process.exit(0);
+            EOF
           elif echo "$LICENSE_OUTPUT" | grep -E "(GPL|AGPL)" | grep -v "MIT"; then
             echo "Found GPL/AGPL/LGPL licenses - these may be incompatible"
             npx license-checker 2>/dev/null | grep -E "(GPL|AGPL)" || true
