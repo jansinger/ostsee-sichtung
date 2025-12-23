@@ -78,7 +78,7 @@ The main entity is `sichtungen` (sightings) table with comprehensive fields for 
 
 Supporting tables:
 - `sichtungen_dateien` - File attachments with metadata (JSONB for EXIF data, URLs, file information)
-- `ne_10m_ocean` - Geographic ocean boundaries for validation
+- `app_config` - Application configuration key-value store
 
 Key sequences: `sichtungen_seq`
 
@@ -128,10 +128,24 @@ src/
 
 
 ### Database Connection
-Local development uses Docker PostgreSQL on port 5433 (not default 5432) with credentials:
+
+**Option 1: Local PostgreSQL (Recommended for macOS)**
+
+Native PostgreSQL installation on port 5432:
+- User: ostsee_app (or your macOS username)
+- Password: ostsee_dev_password
+- Database: ostsee
+- Connection: `postgresql://ostsee_app:ostsee_dev_password@localhost:5432/ostsee`
+
+**Option 2: Docker PostgreSQL**
+
+Docker-based development on port 5433:
 - User: root
-- Password: mysecretpassword  
+- Password: mysecretpassword
 - Database: local
+- Connection: `postgresql://root:mysecretpassword@localhost:5433/local`
+
+To switch between configurations, update the `DATABASE_POSTGRES_URL` in `.env`.
 
 Always check Baltic Sea geographic bounds using the `checkBalticSeaFile` utility before saving sightings.
 

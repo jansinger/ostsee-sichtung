@@ -122,6 +122,45 @@ CREATE EXTENSION IF NOT EXISTS postgis_topology;
 # Create application user (optional but recommended)
 CREATE USER ostsee_app WITH PASSWORD 'your-secure-password';
 GRANT ALL PRIVILEGES ON DATABASE ostsee TO ostsee_app;
+
+# IMPORTANT: Grant schema-level privileges for the app user
+# Without these, the user cannot create tables or access sequences
+GRANT ALL ON SCHEMA public TO ostsee_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ostsee_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ostsee_app;
+
+# If using PostGIS topology, also grant access to topology schema
+GRANT USAGE ON SCHEMA topology TO ostsee_app;
+```
+
+**Option C: Local PostgreSQL (macOS with Homebrew)**
+
+For local development with a native PostgreSQL installation:
+
+```bash
+# Connect to local PostgreSQL (default user is your macOS username)
+psql -h localhost -p 5432 -d postgres
+
+# Create the database
+CREATE DATABASE ostsee;
+
+# Connect to the new database
+\c ostsee
+
+# Enable PostGIS extension (requires postgis to be installed via Homebrew)
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;
+
+# Optional: Create a dedicated app user
+CREATE USER ostsee_app WITH PASSWORD 'ostsee_dev_password';
+GRANT ALL PRIVILEGES ON DATABASE ostsee TO ostsee_app;
+GRANT ALL ON SCHEMA public TO ostsee_app;
+GRANT USAGE ON SCHEMA topology TO ostsee_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ostsee_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ostsee_app;
+
+# Update .env to use local PostgreSQL
+# DATABASE_POSTGRES_URL="postgresql://ostsee_app:ostsee_dev_password@localhost:5432/ostsee"
 ```
 
 **Push the schema to the target database:**
@@ -380,6 +419,15 @@ Install PostGIS in the database:
 ```sql
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
+```
+
+**"permission denied for schema public"**
+
+Grant schema-level privileges to the app user:
+```sql
+GRANT ALL ON SCHEMA public TO ostsee_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ostsee_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ostsee_app;
 ```
 
 **Migration script hangs**
