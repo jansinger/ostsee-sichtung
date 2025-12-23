@@ -116,7 +116,7 @@
 	"dependencies": {
 		"@paralleldrive/cuid2": "^2.2.2",
 		"@turf/boolean-point-in-polygon": "^7.2.0",
-		"@turf/helpers": "^7.2.0",
+		"@turf/helpers": "^7.3.0",
 		"@vercel/blob": "^2.0.0",
 		"drizzle-orm": "^0.44.6",
 		"exifr": "^7.1.3",
