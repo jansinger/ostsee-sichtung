@@ -77,8 +77,11 @@ describe('auth.ts', () => {
 			decode: vi.fn(),
 			sign: vi.fn()
 		};
+		// @ts-expect-error - Vitest mock type incompatibility
 		vi.mocked(jwt).verify = mockJwt.verify;
+		// @ts-expect-error - Vitest mock type incompatibility
 		vi.mocked(jwt).decode = mockJwt.decode;
+		// @ts-expect-error - Vitest mock type incompatibility
 		vi.mocked(jwt).sign = mockJwt.sign;
 
 		// Setup JWKS client mock
@@ -87,7 +90,9 @@ describe('auth.ts', () => {
 			getKeys: vi.fn(),
 			getSigningKeys: vi.fn()
 		};
-		vi.mocked(JwksClient).mockImplementation(() => mockJwksClient as unknown as JwksClient);
+		vi.mocked(JwksClient).mockImplementation(function() {
+			return mockJwksClient as unknown as JwksClient;
+		});
 
 		// Setup cookies mock
 		mockCookies = {
