@@ -129,6 +129,13 @@ src/
 
 ### Database Connection
 
+**Lazy Database Initialization**
+
+The database connection uses lazy initialization via a Proxy pattern (`src/lib/server/db/index.ts`). This provides:
+- **CI/CD Compatibility**: E2E tests can run without database access
+- **Race Condition Protection**: Safe initialization in concurrent environments
+- **Deferred Connection**: Database connection only established when first accessed
+
 **Option 1: Local PostgreSQL (Recommended for macOS)**
 
 Native PostgreSQL installation on port 5432:

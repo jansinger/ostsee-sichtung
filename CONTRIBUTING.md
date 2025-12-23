@@ -167,18 +167,37 @@ npm run build        # Build check
 
 ## 📦 Release Process
 
-This project uses [semantic-release](https://semantic-release.gitbook.io/) for automated versioning and releases:
+This project uses [release-please](https://github.com/googleapis/release-please) for automated versioning and releases:
 
-1. **Automatic versioning** based on conventional commit messages
-2. **Changelog generation** from commit history
-3. **GitHub releases** with release notes
-4. **Version bumping** in package.json
+### How It Works
+
+1. **Commit Analysis**: Every commit to `main` is analyzed by release-please
+2. **Release PR**: release-please creates and maintains a "Release PR" that accumulates all changes
+3. **Changelog Generation**: Automatic changelog updates based on conventional commits
+4. **Version Bumping**: Semantic versioning based on commit types
+
+### Release Workflow
+
+1. **Development**: Merge feature PRs into `main` as usual
+2. **Release PR**: release-please automatically creates/updates a Release PR
+3. **Review**: Review the accumulated changes in the Release PR
+4. **Merge**: When ready, merge the Release PR to trigger:
+   - New version tag (e.g., `v2.0.4`)
+   - GitHub Release with changelog
+   - Docker image build and publication
+   - Update of `release` branch to latest version
 
 ### Release Types
 
-- **Patch** (1.0.1): `fix`, `docs`, `perf` commits
-- **Minor** (1.1.0): `feat` commits  
-- **Major** (2.0.0): commits with `BREAKING CHANGE` or `!` in type
+- **Patch** (1.0.1): `fix`, `docs`, `perf`, `refactor` commits
+- **Minor** (1.1.0): `feat` commits
+- **Major** (2.0.0): commits with `BREAKING CHANGE` footer or `!` in type (e.g., `feat!:`)
+
+### Important Notes
+
+- **Do NOT manually create releases or tags** - this is handled by release-please
+- **Do NOT push directly to the `release` branch** - it's auto-maintained
+- The Release PR title follows conventional commit format and should not be modified
 
 ## 🚦 Pull Request Guidelines
 
