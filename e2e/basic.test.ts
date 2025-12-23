@@ -1,31 +1,37 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Basic Tests', () => {
-	test('server is running', async ({ page }) => {
-		// Use baseURL from config
+test.describe('Basic Application Tests', () => {
+	test('server responds with 200', async ({ page }) => {
 		const response = await page.goto('/');
 		expect(response?.status()).toBe(200);
 	});
 
-	test('page has title', async ({ page }) => {
+	test('page has correct title', async ({ page }) => {
 		await page.goto('/');
 		await expect(page).toHaveTitle(/Ostsee/);
 	});
 
-	test('page loads basic elements', async ({ page }) => {
+	test('page has visible content', async ({ page }) => {
 		await page.goto('/');
-		
-		// Wait for page to be interactive
-		await page.waitForLoadState('networkidle');
-		
-		// Check if page has some content
-		const body = page.locator('body');
-		await expect(body).toBeVisible();
-		
-		// Check for main content container
-		const main = page.locator('main, [role="main"], .container, #app, .app').first();
-		if (await main.count() > 0) {
-			await expect(main).toBeVisible();
-		}
+
+		// Body should be visible
+		await expect(page.locator('body')).toBeVisible();
+
+		// Should have at least one interactive element
+		const buttons = page.getByRole('button');
+		await expect(buttons.first()).toBeVisible();
+	});
+
+	test('form is accessible', async ({ page }) => {
+		await page.goto('/');
+
+		// Main form should be present
+		const form = page.locator('form').first();
+		await expect(form).toBeVisible();
+
+		// Form should have labeled inputs
+		const inputs = page.getByRole('textbox').or(page.getByRole('combobox'));
+		const inputCount = await inputs.count();
+		expect(inputCount).toBeGreaterThan(0);
 	});
 });
