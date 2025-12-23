@@ -23,9 +23,9 @@ test.describe('Homepage', () => {
 		// Check title
 		await expect(page).toHaveTitle(/Ostsee-Tiere/);
 
-		// Check meta description exists and has relevant content
+		// Check meta description exists and has relevant content about marine animals
 		const metaDescription = page.locator('meta[name="description"]').first();
-		await expect(metaDescription).toHaveAttribute('content', /.+/);
+		await expect(metaDescription).toHaveAttribute('content', /Meerestier.*Ostsee|Ostsee.*Meerestier/i);
 	});
 
 	test('should render page content properly', async ({ page }) => {
@@ -47,13 +47,13 @@ test.describe('Form Navigation', () => {
 	test('should show form step indicators', async ({ page }) => {
 		await page.goto('/');
 
-		// Step indicators should be visible (buttons with step-related aria-labels)
-		const stepButtons = page.locator('.steps button, [aria-current="step"]');
-		await expect(stepButtons.first()).toBeVisible();
+		// All step buttons should be accessible via aria-label
+		const positionButton = page.getByRole('button', { name: /Position & Zeit/i });
+		await expect(positionButton).toBeVisible();
 
-		// Should have multiple step indicators
-		const stepCount = await stepButtons.count();
-		expect(stepCount).toBeGreaterThan(0);
+		// Current step should have aria-current="step" attribute
+		const currentStepButton = page.locator('button[aria-current="step"]');
+		await expect(currentStepButton).toBeVisible();
 	});
 
 	test('should have working form elements', async ({ page }) => {
@@ -76,20 +76,22 @@ test.describe('Form Navigation', () => {
 		// Wait for form to be fully loaded
 		await expect(page.locator('form').first()).toBeVisible();
 
-		// Find step buttons
-		const stepButtons = page.locator('.steps button');
-		await expect(stepButtons.first()).toBeVisible();
-		const stepCount = await stepButtons.count();
+		// Get step buttons by their aria-labels (semantic approach)
+		const stepButtons = [
+			page.getByRole('button', { name: /Position & Zeit/i }),
+			page.getByRole('button', { name: /Sichtungsdetails/i }),
+			page.getByRole('button', { name: /Beobachtungen/i }),
+			page.getByRole('button', { name: /Kontaktdaten/i })
+		];
 
-		// Should have multiple step buttons
-		expect(stepCount).toBeGreaterThan(1);
-
-		// Each step button should be clickable (enabled)
-		for (let i = 0; i < stepCount; i++) {
-			await expect(stepButtons.nth(i)).toBeEnabled();
+		// Each step button should be visible and clickable
+		for (const button of stepButtons) {
+			await expect(button).toBeVisible();
+			await expect(button).toBeEnabled();
 		}
 
-		// Step buttons should have proper accessibility attributes
-		await expect(stepButtons.first()).toHaveAttribute('aria-label', /.+/);
+		// Step buttons should have proper accessibility attributes with meaningful labels
+		const firstStepButton = stepButtons[0];
+		await expect(firstStepButton).toHaveAttribute('aria-label', /Position & Zeit/i);
 	});
 });
