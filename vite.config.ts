@@ -64,7 +64,8 @@ export default defineConfig({
 			'@turf/helpers',
 			'drizzle-orm',
 			'exifr',
-			'rbush'
+			'rbush',
+			'tailwind-variants'
 		],
 		// Exclude large packages that are only used in specific routes
 		exclude: ['@scalar/sveltekit', 'handlebars']
