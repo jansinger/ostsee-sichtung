@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.31.6 (2025-12-23)</small>
+
+* docs: improve docker deployment documentation and add migration guide (#252) ([e44ee9c](https://github.com/jansinger/ostsee-sichtung/commit/e44ee9c)), closes [#252](https://github.com/jansinger/ostsee-sichtung/issues/252)
+
 ## <small>1.31.5 (2025-12-23)</small>
 
 * fix(ci): synchronize package-lock.json in dependabot combine workflow (#251) ([b48fbc5](https://github.com/jansinger/ostsee-sichtung/commit/b48fbc5)), closes [#251](https://github.com/jansinger/ostsee-sichtung/issues/251)
