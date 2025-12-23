@@ -116,7 +116,7 @@ jobs:
 
     steps:
       - name: Download SBOM artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: sbom-${{ github.sha }}
           path: sbom
