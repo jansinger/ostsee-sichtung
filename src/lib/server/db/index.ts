@@ -6,6 +6,9 @@ import * as schema from './schema';
 // Check if database is configured - don't throw immediately to allow app startup
 const DATABASE_URL = env.DATABASE_POSTGRES_URL;
 
+// Error message constant for consistency
+const DB_NOT_CONFIGURED_ERROR = 'Database is not configured. Set DATABASE_POSTGRES_URL environment variable.';
+
 // Track database connection state
 let _realDb: PostgresJsDatabase<typeof schema> | null = null;
 let _initError: string | null = null;
@@ -23,7 +26,7 @@ function initializeDb(): void {
 
 	try {
 		if (!DATABASE_URL) {
-			_initError = 'Database is not configured. Set DATABASE_POSTGRES_URL environment variable.';
+			_initError = DB_NOT_CONFIGURED_ERROR;
 			return;
 		}
 
@@ -35,20 +38,28 @@ function initializeDb(): void {
 	}
 }
 
+/**
+ * Ensures database is initialized before use.
+ * Called by all public APIs that need database access.
+ */
+function ensureInitialized(): void {
+	if (_realDb === null && _initError === null) {
+		initializeDb();
+	}
+}
+
 // Create a proxy that lazily initializes the database connection on first access
 // This allows TypeScript to treat db as non-null while still handling missing DB gracefully
 export const db = new Proxy({} as PostgresJsDatabase<typeof schema>, {
 	get(_target, prop) {
 		// Initialize database on first access if not already done
-		if (_realDb === null && _initError === null) {
-			initializeDb();
-		}
+		ensureInitialized();
 
 		// Check if initialization succeeded
 		if (!_realDb) {
 			const errorMsg = _initError
 				? `Database connection failed: ${_initError}`
-				: 'Database is not configured. Set DATABASE_POSTGRES_URL environment variable.';
+				: DB_NOT_CONFIGURED_ERROR;
 			throw new Error(errorMsg);
 		}
 
@@ -63,24 +74,18 @@ export const db = new Proxy({} as PostgresJsDatabase<typeof schema>, {
 
 // Helper function to check if database is available (for graceful degradation)
 export function isDatabaseAvailable(): boolean {
-	// Trigger lazy initialization if not already done
-	if (_realDb === null && _initError === null) {
-		initializeDb();
-	}
+	ensureInitialized();
 	return _realDb !== null;
 }
 
 // Helper function to get db with proper error if not available
 export function getDb(): PostgresJsDatabase<typeof schema> {
-	// Trigger lazy initialization if not already done
-	if (_realDb === null && _initError === null) {
-		initializeDb();
-	}
+	ensureInitialized();
 
 	if (!_realDb) {
 		const errorMsg = _initError
 			? `Database connection failed: ${_initError}`
-			: 'Database is not configured. Set DATABASE_POSTGRES_URL environment variable.';
+			: DB_NOT_CONFIGURED_ERROR;
 		throw new Error(errorMsg);
 	}
 	return _realDb;
