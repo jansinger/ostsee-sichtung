@@ -186,7 +186,9 @@ jobs:
           # Use npm install to regenerate package-lock.json
           # This is necessary because merging multiple Dependabot PRs can cause
           # the lock file to become out of sync with package.json
-          npm install --package-lock-only
+          # Use --ignore-scripts to avoid running the prepare script (husky)
+          # which fails because dependencies are not yet installed
+          npm install --package-lock-only --ignore-scripts
 
           # Check if package-lock.json changed
           if git diff --quiet package-lock.json; then
