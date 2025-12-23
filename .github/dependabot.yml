@@ -1,19 +1,90 @@
 version: 2
 updates:
+  # NPM dependencies - grouped by type
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
       interval: 'weekly'
       day: 'monday'
       time: '09:00'
-    open-pull-requests-limit: 10
+      timezone: 'Europe/Berlin'
+    open-pull-requests-limit: 5
+    groups:
+      # Production dependencies (minor/patch only)
+      production-dependencies:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        exclude-patterns:
+          - '@types/*'
+          - '*eslint*'
+          - '*prettier*'
+          - '*vitest*'
+          - '*playwright*'
+          - '*svelte-check*'
+          - '*typescript*'
+          - '@sveltejs/*'
+          - 'svelte'
+          - 'vite'
+        dependency-type: 'production'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # Development tooling (linting, testing, types)
+      dev-tooling:
+        applies-to: version-updates
+        patterns:
+          - '@types/*'
+          - '*eslint*'
+          - '*prettier*'
+          - '*vitest*'
+          - '*playwright*'
+          - '*svelte-check*'
+          - '*typescript*'
+          - '*commitlint*'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # Framework updates (may require attention)
+      svelte-framework:
+        applies-to: version-updates
+        patterns:
+          - '@sveltejs/*'
+          - 'svelte'
+          - 'vite'
+          - 'vite-*'
+          - '@vitejs/*'
+        update-types:
+          - 'minor'
+          - 'patch'
     ignore:
+      # Ignore major updates to prevent breaking changes
       - dependency-name: '*'
         update-types: ['version-update:semver-major']
+    labels:
+      - 'dependencies'
+      - 'automated'
+    commit-message:
+      prefix: 'chore(deps)'
+
+  # GitHub Actions - grouped together
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
       interval: 'weekly'
       day: 'monday'
       time: '09:00'
-    open-pull-requests-limit: 10
+      timezone: 'Europe/Berlin'
+    open-pull-requests-limit: 3
+    groups:
+      # Group all GitHub Actions together
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - '*'
+    labels:
+      - 'dependencies'
+      - 'github-actions'
+      - 'automated'
+    commit-message:
+      prefix: 'chore(deps)'

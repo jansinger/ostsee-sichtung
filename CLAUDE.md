@@ -234,6 +234,34 @@ The legacy APIs are located in `/src/routes/api/legacy/` and include field mappi
 - Commits are validated with commitlint - follow rules in `commitlint.config.mjs`
 - **IMPORTANT**: Use English for commit messages with lowercase subject lines
 - Available commit scopes: deps, api, ui, db, auth, export, admin, report, map, config, build, ci, docs, test, types, style, perf, security, a11y, release, media
+
+### Release Process (release-please)
+
+The project uses **release-please** for automated releases. The workflow is:
+
+1. **Commits on main**: Every commit to `main` is analyzed by release-please
+2. **Release PR**: release-please creates/updates a "Release PR" that accumulates all changes
+3. **Merge to release**: When the Release PR is merged:
+   - A new version tag is created (e.g., `v1.32.0`)
+   - GitHub Release is created with changelog
+   - The `release` branch is updated to point to the new release
+   - Docker image build is triggered automatically
+
+**Key files:**
+- `release-please-config.json` - Configuration for version bumping and changelog
+- `.release-please-manifest.json` - Current version tracking
+- `.github/workflows/release-please.yml` - Release automation workflow
+- `.github/workflows/docker-publish.yml` - Multi-platform Docker builds
+
+**Branches:**
+- `main` - Development branch, receives all feature PRs
+- `release` - Always points to the latest released version (auto-updated)
+
+**Important:**
+- Do NOT manually create releases or tags
+- Do NOT push directly to the `release` branch
+- The Release PR title should not be modified (it follows conventional commit format)
+
 - Prüfe nach Änderungen immer auf notwendige Aktualisierungen der Dokumentationen, also aller *.md Dateien
 - Aktuallisiere nach Änderungen an der API immer auch die OpenAPI Spec
 - **IMPORTANT**: Always use context7 MCP server for retrieving current documentation and best practices
