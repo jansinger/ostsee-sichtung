@@ -1,23 +1,19 @@
-name: Docker Release
+name: Docker Publish
 
 on:
-  push:
-    tags:
-      - 'v*'
-  release:
-    types: [published]
+  # Triggered by release-please after release creation
+  repository_dispatch:
+    types: [release-created]
+  # Manual trigger with version input
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to build and push'
+        description: 'Tag to build (e.g., v1.31.6)'
         required: true
-        default: 'latest'
-  workflow_run:
-    workflows: ["Release"]
-    types:
-      - completed
-    branches:
-      - main
+  # Also trigger on tags for backwards compatibility
+  push:
+    tags:
+      - 'v*'
 
 env:
   REGISTRY: ghcr.io
@@ -26,22 +22,42 @@ env:
 permissions:
   contents: write
   packages: write
-  id-token: write
   security-events: write
 
 jobs:
-  # ============================================
-  # Build Docker Images (Matrix Strategy)
-  # ============================================
+  prepare:
+    name: Prepare Build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha: ${{ steps.version.outputs.sha }}
+
+    steps:
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            echo "version=${{ github.event.client_payload.tag }}" >> $GITHUB_OUTPUT
+            echo "sha=${{ github.event.client_payload.sha }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+            echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log build info
+        run: |
+          echo "Building Docker image for version: ${{ steps.version.outputs.version }}"
+          echo "Using commit SHA: ${{ steps.version.outputs.sha }}"
+
   build:
     name: Build ${{ matrix.platform }}
     runs-on: ${{ matrix.runner }}
-    # Only run if workflow_run was successful or for other trigger types
-    if: |
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
+    needs: prepare
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - platform: linux/amd64
@@ -50,14 +66,12 @@ jobs:
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
             suffix: arm64
-    outputs:
-      image-name: ${{ steps.meta.outputs.tags }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -69,20 +83,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix={{branch}}-
-
       - name: Build and push by digest
         id: build
         uses: docker/build-push-action@v6
@@ -90,13 +90,12 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           push: true
-          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.suffix }}
           cache-to: type=gha,mode=max,scope=${{ matrix.suffix }}
           build-args: |
-            VERSION=${{ github.ref_name }}
+            VERSION=${{ needs.prepare.outputs.version }}
             BUILD_DATE=${{ github.event.repository.updated_at }}
-            VCS_REF=${{ github.sha }}
+            VCS_REF=${{ needs.prepare.outputs.sha }}
           outputs: type=image,name=${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
@@ -107,22 +106,18 @@ jobs:
           echo "Digest: $digest"
 
       - name: Upload digest
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: digests-${{ matrix.suffix }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
 
-  # ============================================
-  # Merge Multi-Platform Images
-  # ============================================
   merge:
     name: Create Multi-Platform Manifest
     runs-on: ubuntu-latest
-    needs: build
+    needs: [prepare, build]
     outputs:
-      image-tags: ${{ steps.meta.outputs.tags }}
       image-digest: ${{ steps.inspect.outputs.digest }}
 
     steps:
@@ -143,66 +138,64 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix={{branch}}-
-
       - name: Create manifest list and push
         working-directory: /tmp/digests
         run: |
-          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+          VERSION="${{ needs.prepare.outputs.version }}"
+          # Remove 'v' prefix for semver tags
+          SEMVER="${VERSION#v}"
+          MAJOR="${SEMVER%%.*}"
+          MINOR="${SEMVER%.*}"
+
+          echo "Creating manifest for version: $VERSION"
+          echo "Tags: $VERSION, $SEMVER, $MINOR, $MAJOR, latest"
+
+          # Create all tags
+          docker buildx imagetools create \
+            -t ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${VERSION} \
+            -t ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${SEMVER} \
+            -t ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${MINOR} \
+            -t ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${MAJOR} \
+            -t ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest \
             $(printf '${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
 
       - name: Inspect image
         id: inspect
         run: |
-          FIRST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
-          docker buildx imagetools inspect "$FIRST_TAG"
-          DIGEST=$(docker buildx imagetools inspect "$FIRST_TAG" --format '{{json .Manifest}}' | jq -r '.digest')
+          VERSION="${{ needs.prepare.outputs.version }}"
+          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${VERSION}
+          DIGEST=$(docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${VERSION} --format '{{json .Manifest}}' | jq -r '.digest')
           echo "digest=$DIGEST" >> $GITHUB_OUTPUT
           echo "Image digest: $DIGEST"
 
       - name: Generate image digest file
         run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
           echo "Image Digest: ${{ steps.inspect.outputs.digest }}" > image-digest.txt
-          echo "Image Tags:" >> image-digest.txt
-          echo "${{ steps.meta.outputs.tags }}" >> image-digest.txt
-          echo "" >> image-digest.txt
+          echo "Version: ${VERSION}" >> image-digest.txt
           echo "Platforms: linux/amd64, linux/arm64" >> image-digest.txt
           echo "" >> image-digest.txt
           echo "Pull Command:" >> image-digest.txt
-          FIRST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
-          echo "docker pull $FIRST_TAG" >> image-digest.txt
+          echo "docker pull ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${VERSION}" >> image-digest.txt
 
       - name: Upload image digest as artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: docker-image-digest
           path: image-digest.txt
           retention-days: 90
 
-  # ============================================
-  # Create Release Assets
-  # ============================================
   create-release-assets:
     name: Create Release Assets
     runs-on: ubuntu-latest
-    needs: merge
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [prepare, merge]
+    if: startsWith(needs.prepare.outputs.version, 'v')
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - name: Download image digest
         uses: actions/download-artifact@v4
@@ -220,11 +213,11 @@ jobs:
           cp .env.example release-assets/.env.example
 
           # Copy monitoring configuration
-          cp -r monitoring release-assets/
+          cp -r monitoring release-assets/ 2>/dev/null || true
 
           # Copy deployment documentation
-          cp docs/DOCKER_DEPLOYMENT.md release-assets/ || true
-          cp docs/ENVIRONMENT.md release-assets/ || true
+          cp docs/DOCKER_DEPLOYMENT.md release-assets/ 2>/dev/null || true
+          cp docs/ENVIRONMENT.md release-assets/ 2>/dev/null || true
 
           # Copy image digest
           cp image-digest.txt release-assets/
@@ -259,50 +252,37 @@ jobs:
           ## Support
 
           For issues and questions, visit:
-          https://github.com/${{ github.repository }}/issues
+          https://github.com/jansinger/ostsee-sichtung/issues
           EOF
 
           # Create tarball
-          tar -czf ostsee-tiere-docker-${{ github.ref_name }}.tar.gz -C release-assets .
+          VERSION="${{ needs.prepare.outputs.version }}"
+          tar -czf ostsee-tiere-docker-${VERSION}.tar.gz -C release-assets .
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/v')
         with:
+          tag_name: ${{ needs.prepare.outputs.version }}
           files: |
-            ostsee-tiere-docker-${{ github.ref_name }}.tar.gz
+            ostsee-tiere-docker-${{ needs.prepare.outputs.version }}.tar.gz
             release-assets/docker-compose.production.yml
             release-assets/.env.example
             release-assets/image-digest.txt
           fail_on_unmatched_files: false
 
-  # ============================================
-  # Security Scan
-  # ============================================
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    needs: merge
+    needs: [prepare, merge]
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Extract first pushed tag for scanning
-        id: extract-tag
-        run: |
-          # Get the first tag from the merge job output
-          TAGS="${{ needs.merge.outputs.image-tags }}"
-          # Extract first tag (first line)
-          FIRST_TAG=$(echo "$TAGS" | head -n1)
-
-          echo "tag=${FIRST_TAG}" >> $GITHUB_OUTPUT
-          echo "Scanning image: ${FIRST_TAG}"
+        uses: actions/checkout@v4
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.extract-tag.outputs.tag }}
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}
           format: 'sarif'
           output: 'trivy-results.sarif'
 
@@ -315,41 +295,14 @@ jobs:
       - name: Run Trivy vulnerability scanner (JSON)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.extract-tag.outputs.tag }}
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}
           format: 'json'
           output: 'trivy-results.json'
 
       - name: Upload Trivy results as artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: trivy-scan-results
           path: trivy-results.json
           retention-days: 90
-
-  # ============================================
-  # Notification
-  # ============================================
-  notify:
-    name: Notify on Completion
-    runs-on: ubuntu-latest
-    needs: [merge, create-release-assets, security-scan]
-    if: always()
-
-    steps:
-      - name: Report workflow status
-        run: |
-          if [ "${{ needs.merge.result }}" == "success" ]; then
-            echo "✅ Docker image built and pushed successfully (multi-platform: amd64, arm64)"
-          else
-            echo "❌ Docker image build failed"
-            exit 1
-          fi
-
-          if [ "${{ needs.create-release-assets.result }}" == "success" ]; then
-            echo "✅ Release assets created successfully"
-          fi
-
-          if [ "${{ needs.security-scan.result }}" == "success" ]; then
-            echo "✅ Security scan completed"
-          fi
