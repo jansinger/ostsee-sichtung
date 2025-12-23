@@ -9,12 +9,11 @@ const DATABASE_URL = env.DATABASE_POSTGRES_URL;
 // Track database connection state
 let _realDb: PostgresJsDatabase<typeof schema> | null = null;
 let _initError: string | null = null;
-let _isInitializing = false;
 
 /**
- * Lazy initialization of database connection with race condition protection.
- * This function ensures that only one initialization attempt happens even if
- * called concurrently from multiple requests.
+ * Lazy initialization of database connection.
+ * Since postgres.js creates connections lazily, this function completes synchronously.
+ * The actual database connection will be established when the first query is executed.
  */
 function initializeDb(): void {
 	// If already initialized (success or failure), return immediately
@@ -22,28 +21,17 @@ function initializeDb(): void {
 		return;
 	}
 
-	// If another thread/request is currently initializing, wait for it
-	// by throwing an error that will be retried
-	if (_isInitializing) {
-		throw new Error('Database initialization in progress, please retry');
-	}
-
-	// Mark that we're initializing to prevent concurrent attempts
-	_isInitializing = true;
-
 	try {
 		if (!DATABASE_URL) {
 			_initError = 'Database is not configured. Set DATABASE_POSTGRES_URL environment variable.';
 			return;
 		}
 
+		// postgres() returns immediately - actual connection is lazy
 		const client = postgres(DATABASE_URL);
 		_realDb = drizzle(client, { schema });
 	} catch (error) {
 		_initError = error instanceof Error ? error.message : String(error);
-	} finally {
-		// Clear the initializing flag
-		_isInitializing = false;
 	}
 }
 
@@ -75,20 +63,16 @@ export const db = new Proxy({} as PostgresJsDatabase<typeof schema>, {
 
 // Helper function to check if database is available (for graceful degradation)
 export function isDatabaseAvailable(): boolean {
-	// Attempt lazy initialization if not already done
+	// Trigger lazy initialization if not already done
 	if (_realDb === null && _initError === null) {
-		try {
-			initializeDb();
-		} catch {
-			// Initialization failed, _initError will be set
-		}
+		initializeDb();
 	}
 	return _realDb !== null;
 }
 
 // Helper function to get db with proper error if not available
 export function getDb(): PostgresJsDatabase<typeof schema> {
-	// Attempt lazy initialization if not already done
+	// Trigger lazy initialization if not already done
 	if (_realDb === null && _initError === null) {
 		initializeDb();
 	}
