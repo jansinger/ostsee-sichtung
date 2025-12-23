@@ -29,22 +29,28 @@ vi.mock('$lib/logger', () => ({
 	})
 }));
 
-// Mock the storage providers
-vi.mock('./local', () => ({
-	LocalStorageProvider: vi.fn().mockImplementation(() => ({
-		uploadFile: vi.fn(),
-		deleteFile: vi.fn(),
-		getFileUrl: vi.fn()
-	}))
-}));
+// Mock the storage providers with class constructors
+vi.mock('./local', () => {
+	const MockLocalStorageProvider = vi.fn().mockImplementation(function() {
+		return {
+			uploadFile: vi.fn(),
+			deleteFile: vi.fn(),
+			getFileUrl: vi.fn()
+		};
+	});
+	return { LocalStorageProvider: MockLocalStorageProvider };
+});
 
-vi.mock('./vercel-blob', () => ({
-	VercelBlobStorageProvider: vi.fn().mockImplementation(() => ({
-		uploadFile: vi.fn(),
-		deleteFile: vi.fn(),
-		getFileUrl: vi.fn()
-	}))
-}));
+vi.mock('./vercel-blob', () => {
+	const MockVercelBlobStorageProvider = vi.fn().mockImplementation(function() {
+		return {
+			uploadFile: vi.fn(),
+			deleteFile: vi.fn(),
+			getFileUrl: vi.fn()
+		};
+	});
+	return { VercelBlobStorageProvider: MockVercelBlobStorageProvider };
+});
 
 describe('Storage Factory', () => {
 	// Save original environment
