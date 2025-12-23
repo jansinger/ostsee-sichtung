@@ -305,18 +305,22 @@ jobs:
           echo "Running license audit..."
 
           # license-checker has known issues with Node 22
-          # We attempt the check but don't fail on tool errors
-          npm run license:audit 2>&1 || {
+          # Capture output once to avoid running the command twice
+          AUDIT_OUTPUT=$(npm run license:audit 2>&1 || true)
+          AUDIT_EXIT_CODE=$?
+
+          if [ $AUDIT_EXIT_CODE -ne 0 ]; then
             # Check if it's a tool crash vs actual license issue
-            if npm run license:audit 2>&1 | grep -q "TypeError"; then
+            if echo "$AUDIT_OUTPUT" | grep -q "TypeError"; then
               echo "⚠️ License checker tool error (Node 22 compatibility issue)"
               echo "Skipping detailed license audit - SBOM will still be generated"
             else
               echo "License audit found issues"
+              echo "$AUDIT_OUTPUT"
               npm run license:check 2>&1 || true
               exit 1
             fi
-          }
+          fi
           echo "License check completed"
 
       - name: Generate SBOM
