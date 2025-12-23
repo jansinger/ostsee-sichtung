@@ -16,7 +16,7 @@ services:
   # Application Service
   # ============================================
   app:
-    image: ghcr.io/your-org/ostsee-tiere:latest
+    image: ghcr.io/jansinger/ostsee-sichtung:latest
     container_name: ostsee-tiere-app
     restart: unless-stopped
     ports:

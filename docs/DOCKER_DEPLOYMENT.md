@@ -1,6 +1,6 @@
 # Docker Deployment Guide for Ostsee-Tiere
 
-This comprehensive guide covers deploying the Ostsee-Tiere marine animal sighting platform using Docker containers.
+This comprehensive guide covers deploying the Ostsee-Tiere marine animal sighting platform using Docker containers. Docker is the **primary deployment method** for self-hosted installations.
 
 ## Table of Contents
 
@@ -10,6 +10,7 @@ This comprehensive guide covers deploying the Ostsee-Tiere marine animal sightin
 - [Configuration](#configuration)
 - [Storage Setup](#storage-setup)
 - [Database Configuration](#database-configuration)
+- [Database Migration](#database-migration)
 - [Monitoring Setup](#monitoring-setup)
 - [Production Deployment](#production-deployment)
 - [CI/CD and Release Process](#cicd-and-release-process)
@@ -21,18 +22,22 @@ This comprehensive guide covers deploying the Ostsee-Tiere marine animal sightin
 
 ## Quick Start
 
-Get Ostsee-Tiere running in 3 steps:
+Get Ostsee-Tiere running in 4 steps:
 
 ```bash
-# 1. Download the latest release
-wget https://github.com/your-org/ostsee-tiere/releases/latest/download/docker-compose.production.yml
+# 1. Clone the repository or download release files
+git clone https://github.com/jansinger/ostsee-sichtung.git
+cd ostsee-sichtung
 
 # 2. Configure environment
 cp .env.docker .env
-nano .env  # Edit with your settings
+nano .env  # Edit with your settings (see Configuration section)
 
 # 3. Start services
 docker compose -f docker-compose.production.yml up -d
+
+# 4. (Optional) Enable monitoring
+docker compose -f docker-compose.production.yml --profile monitoring up -d
 ```
 
 Access the application at: http://localhost:3000
@@ -42,7 +47,7 @@ Access the application at: http://localhost:3000
 ## System Requirements
 
 ### Minimum Requirements
-- **OS**: Linux (ARM64 architecture)
+- **OS**: Linux, macOS, or Windows with Docker
 - **CPU**: 2 cores
 - **RAM**: 4 GB
 - **Storage**: 20 GB available space
@@ -53,12 +58,15 @@ Access the application at: http://localhost:3000
 - **CPU**: 4+ cores
 - **RAM**: 8+ GB
 - **Storage**: 50+ GB SSD
-- **Network**: Reverse proxy (Nginx/Traefik)
+- **Network**: Reverse proxy (Nginx/Traefik) with SSL
 
 ### Supported Platforms
+- ✅ **Linux AMD64** (x86_64 servers, VPS, cloud instances)
 - ✅ **Linux ARM64** (Raspberry Pi 4/5, AWS Graviton, Apple Silicon servers)
 - ✅ **Docker** 24.0 or later
 - ✅ **Docker Compose** V2 (plugin version)
+
+**Multi-Architecture Support**: Docker images are built for both `linux/amd64` and `linux/arm64` platforms.
 
 ---
 
@@ -69,22 +77,22 @@ Access the application at: http://localhost:3000
 **Best for**: Production deployments with database, monitoring included.
 
 ```bash
-# Download deployment package
-wget https://github.com/your-org/ostsee-tiere/releases/latest/download/ostsee-tiere-docker-vX.X.X.tar.gz
-
-# Extract
-tar -xzf ostsee-tiere-docker-vX.X.X.tar.gz
-cd ostsee-tiere-docker-vX.X.X
+# Clone repository
+git clone https://github.com/jansinger/ostsee-sichtung.git
+cd ostsee-sichtung
 
 # Configure
 cp .env.docker .env
-nano .env
+nano .env  # Set your passwords, Auth0 credentials, etc.
 
-# Start all services
+# Start all services (app + database)
 docker compose -f docker-compose.production.yml up -d
 
 # With monitoring (Prometheus + Grafana)
 docker compose -f docker-compose.production.yml --profile monitoring up -d
+
+# View logs
+docker compose -f docker-compose.production.yml logs -f
 ```
 
 ### Option 2: Standalone Container
@@ -93,7 +101,10 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 
 ```bash
 # Pull image
-docker pull ghcr.io/your-org/ostsee-tiere:latest
+docker pull ghcr.io/jansinger/ostsee-sichtung:latest
+
+# Create uploads directory
+mkdir -p ./uploads
 
 # Run with external database
 docker run -d \
@@ -106,10 +117,12 @@ docker run -d \
   -e AUTH0_CLIENT_ID="your-auth0-client-id" \
   -e AUTH0_CLIENT_SECRET="your-auth0-secret" \
   -e AUTH0_DOMAIN="your-tenant.auth0.com" \
+  -e JWKS_URL="https://your-tenant.auth0.com/.well-known/jwks.json" \
+  -e API_AUDIENCE="your-api-audience" \
   -e PUBLIC_SITE_URL="https://your-domain.com" \
-  ghcr.io/your-org/ostsee-tiere:latest
+  ghcr.io/jansinger/ostsee-sichtung:latest
 
-# Alternative: Mit named volume statt lokalem Verzeichnis
+# Alternative: Use named volume instead of bind mount
 # -v ostsee-uploads:/app/uploads
 ```
 
@@ -279,9 +292,69 @@ GOOGLE_CLOUD_KEY_FILE=/app/config/gcs-key.json
 
 ## Database Configuration
 
-### Included PostgreSQL (Docker Compose)
+### Recommended: External PostgreSQL Database (Production)
 
-The `docker-compose.production.yml` includes PostgreSQL 16 with PostGIS 3.4.
+For production deployments, we **strongly recommend using an external PostgreSQL database** rather than the included Docker container. This provides:
+
+- **Data persistence** independent of container lifecycle
+- **Professional backup solutions** (managed services, point-in-time recovery)
+- **High availability** options (replicas, failover)
+- **Better performance** with dedicated resources
+- **Easier scaling** and maintenance
+
+**Requirements:**
+- PostgreSQL 14+ (PostgreSQL 16 recommended)
+- PostGIS 3.4+ extension installed
+- Minimum 2 GB RAM dedicated to PostgreSQL
+
+**Setup External Database:**
+
+```sql
+-- Connect as superuser
+psql -h YOUR_DB_HOST -U postgres
+
+-- Create database
+CREATE DATABASE ostsee;
+
+-- Connect to the new database
+\c ostsee
+
+-- Enable PostGIS extensions
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;
+
+-- Create application user (recommended)
+CREATE USER ostsee_app WITH PASSWORD 'your-secure-password';
+GRANT ALL PRIVILEGES ON DATABASE ostsee TO ostsee_app;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ostsee_app;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ostsee_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ostsee_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ostsee_app;
+```
+
+**Configure Connection:**
+
+Update your `.env` file:
+```bash
+DATABASE_POSTGRES_URL=postgresql://ostsee_app:your-secure-password@db.example.com:5432/ostsee
+```
+
+**Managed Database Services:**
+
+| Provider | Service | PostGIS Support |
+|----------|---------|-----------------|
+| AWS | RDS for PostgreSQL | Yes (enable extension) |
+| Google Cloud | Cloud SQL for PostgreSQL | Yes (enable extension) |
+| Azure | Azure Database for PostgreSQL | Yes (enable extension) |
+| DigitalOcean | Managed Databases | Yes (enable extension) |
+| Supabase | PostgreSQL | Yes (built-in) |
+| Neon | Serverless Postgres | Yes (built-in) |
+
+### Alternative: Included PostgreSQL (Development/Testing)
+
+The `docker-compose.production.yml` includes PostgreSQL 16 with PostGIS 3.4 for development and testing purposes.
+
+> **Note:** For production use, we recommend an external database (see above).
 
 **Access Database:**
 ```bash
@@ -302,31 +375,33 @@ POSTGRES_MAINTENANCE_WORK_MEM=64MB
 POSTGRES_WORK_MEM=16MB
 ```
 
-### External PostgreSQL Database
+---
 
-**Requirements:**
-- PostgreSQL 14+
-- PostGIS extension installed
+## Database Migration
 
-**Setup:**
-```sql
--- Create database
-CREATE DATABASE ostsee;
+If you're migrating from an existing schweinswalsichtung.de installation or another database, follow the comprehensive migration guide:
 
--- Enable PostGIS
-\c ostsee
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS postgis_topology;
+**[Database Migration Guide](./DATABASE_MIGRATION.md)**
 
--- Create user
-CREATE USER ostsee_user WITH PASSWORD 'secure-password';
-GRANT ALL PRIVILEGES ON DATABASE ostsee TO ostsee_user;
-```
+The migration process includes:
+1. **Export** data from the source database
+2. **Import** into the new PostgreSQL instance
+3. **Run migration scripts** to:
+   - Generate reference IDs for all sightings
+   - Migrate uploaded files to the new structure
+   - Extract EXIF metadata from images
 
-**Connection String:**
+**Quick Migration Commands:**
+
 ```bash
-DATABASE_POSTGRES_URL=postgresql://ostsee_user:secure-password@external-db.example.com:5432/ostsee
+# 1. Generate reference IDs for all sightings
+npx tsx --env-file=.env src/tools/generate-reference-ids.ts
+
+# 2. Migrate old uploads (after placing files in uploads/_old_uploads/)
+npx tsx --env-file=.env src/tools/migrate-old-uploads.ts
 ```
+
+See [DATABASE_MIGRATION.md](./DATABASE_MIGRATION.md) for complete step-by-step instructions.
 
 ---
 
@@ -478,7 +553,12 @@ Docker images are automatically built and published to GitHub Container Registry
 - A release is published
 - The workflow is manually triggered
 
-**Image Repository:** `ghcr.io/jansinger/ostsee-sichtung`
+**Image Repository:** [`ghcr.io/jansinger/ostsee-sichtung`](https://github.com/jansinger/ostsee-sichtung/pkgs/container/ostsee-sichtung)
+
+**Available Tags:**
+- `latest` - Latest stable release
+- `vX.Y.Z` - Specific version (e.g., `v1.31.3`)
+- `main` - Latest build from main branch
 
 ### Retry Mechanism for Transient Errors
 
@@ -677,7 +757,7 @@ services:
 
 ```bash
 # Pull latest image
-docker pull ghcr.io/your-org/ostsee-tiere:latest
+docker pull ghcr.io/jansinger/ostsee-sichtung:latest
 
 # Recreate containers
 docker compose -f docker-compose.production.yml up -d
@@ -688,12 +768,12 @@ docker compose -f docker-compose.production.yml up -d
 Images are automatically scanned with Trivy during CI/CD. Check results:
 
 ```bash
-# Download scan results from GitHub Actions artifacts
-wget https://github.com/your-org/ostsee-tiere/actions/...
+# View scan results in GitHub Actions
+# https://github.com/jansinger/ostsee-sichtung/actions
 
 # Or scan locally
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-  aquasec/trivy image ghcr.io/your-org/ostsee-tiere:latest
+  aquasec/trivy image ghcr.io/jansinger/ostsee-sichtung:latest
 ```
 
 ---
@@ -713,7 +793,7 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
   "containerDefinitions": [
     {
       "name": "app",
-      "image": "ghcr.io/your-org/ostsee-tiere:latest",
+      "image": "ghcr.io/jansinger/ostsee-sichtung:latest",
       "portMappings": [{"containerPort": 3000, "protocol": "tcp"}],
       "environment": [...],
       "secrets": [
@@ -728,7 +808,7 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
 
 ```bash
 gcloud run deploy ostsee-tiere \
-  --image ghcr.io/your-org/ostsee-tiere:latest \
+  --image ghcr.io/jansinger/ostsee-sichtung:latest \
   --platform managed \
   --region europe-west1 \
   --allow-unauthenticated \
@@ -742,7 +822,7 @@ gcloud run deploy ostsee-tiere \
 az container create \
   --resource-group ostsee-tiere-rg \
   --name ostsee-tiere-app \
-  --image ghcr.io/your-org/ostsee-tiere:latest \
+  --image ghcr.io/jansinger/ostsee-sichtung:latest \
   --cpu 2 --memory 4 \
   --ports 3000 \
   --environment-variables \
@@ -802,13 +882,14 @@ docker volume prune -f
 
 ### Getting Help
 
-- **Issues**: https://github.com/your-org/ostsee-tiere/issues
-- **Discussions**: https://github.com//your-org/ostsee-tiere/discussions
-- **Documentation**: https://github.com/your-org/ostsee-tiere/tree/main/docs
+- **Issues**: https://github.com/jansinger/ostsee-sichtung/issues
+- **Discussions**: https://github.com/jansinger/ostsee-sichtung/discussions
+- **Documentation**: https://github.com/jansinger/ostsee-sichtung/tree/main/docs
 
 ### Reporting Security Issues
 
-Please report security vulnerabilities via email: security@your-org.com
+Please report security vulnerabilities via GitHub Security Advisories:
+https://github.com/jansinger/ostsee-sichtung/security/advisories
 
 **Do NOT create public GitHub issues for security vulnerabilities.**
 
@@ -820,4 +901,4 @@ MIT License - See [LICENSE](../LICENSE) for details.
 
 ---
 
-*Last Updated: January 2025*
+*Last Updated: December 2025*
