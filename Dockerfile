@@ -18,7 +18,7 @@ FROM node:22-alpine AS deps
 
 LABEL org.opencontainers.image.title="Ostsee-Tiere"
 LABEL org.opencontainers.image.description="Marine animal sighting reporting platform for the Baltic Sea"
-LABEL org.opencontainers.image.source="https://github.com/your-org/ostsee-tiere"
+LABEL org.opencontainers.image.source="https://github.com/jansinger/ostsee-sichtung"
 LABEL org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app

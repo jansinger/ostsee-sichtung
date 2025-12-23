@@ -674,9 +674,9 @@ Before deploying, verify:
 For questions about environment configuration:
 
 - **Documentation**: [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md)
-- **Issues**: https://github.com/your-org/ostsee-tiere/issues
+- **Issues**: https://github.com/jansinger/ostsee-sichtung/issues
 - **Example File**: [.env.example](../.env.example)
 
 ---
 
-*Last Updated: January 2025*
+*Last Updated: December 2025*

@@ -47,25 +47,25 @@ Ostsee-Tiere bietet eine benutzerfreundliche Plattform zur wissenschaftlichen Er
 ### Option 1: Docker (Empfohlen für Production)
 
 ```bash
-# Deployment-Package herunterladen
-wget https://github.com/jansinger/ostsee-sichtung/releases/latest/download/ostsee-tiere-docker-latest.tar.gz
-
-# Entpacken
-tar -xzf ostsee-tiere-docker-latest.tar.gz
-cd ostsee-tiere-docker
+# Repository klonen
+git clone https://github.com/jansinger/ostsee-sichtung.git
+cd ostsee-sichtung
 
 # Konfigurieren
 cp .env.docker .env
-nano .env  # Umgebungsvariablen anpassen
+nano .env  # Passwörter und Auth0-Credentials anpassen
 
-# Starten (mit Monitoring)
+# Starten
+docker compose -f docker-compose.production.yml up -d
+
+# Optional: Mit Monitoring (Prometheus + Grafana)
 docker compose -f docker-compose.production.yml --profile monitoring up -d
 ```
 
 **Zugriff:**
 - Anwendung: http://localhost:3000
-- Grafana: http://localhost:3001
-- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3001 (mit `--profile monitoring`)
+- Prometheus: http://localhost:9090 (mit `--profile monitoring`)
 
 📖 **Vollständige Dokumentation**: [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md)
 
@@ -222,21 +222,21 @@ Detaillierte Erfassung von Meerestier-Sichtungen:
 
 ## 🐳 Docker Deployment
 
+Docker ist die **primäre Deployment-Methode** für Self-Hosted-Installationen.
+
 ### Verfügbare Deployment-Optionen
 
-Das Projekt unterstützt zwei Deployment-Modelle:
-
-1. **Vercel (Cloud-Native)**: Automatisches Deployment via GitHub Actions
-2. **Docker (Self-Hosted)**: Vollständige Kontrolle über Infrastruktur und Daten
+1. **Docker (Self-Hosted)**: Vollständige Kontrolle über Infrastruktur und Daten (empfohlen)
+2. **Vercel (Cloud-Native)**: Automatisches Deployment via GitHub Actions
 
 ### Docker-Features
 
 - ✅ **Multi-Stage Build** für optimierte Image-Größe (~150-200 MB)
-- ✅ **ARM64-Architektur** (Raspberry Pi 4/5, AWS Graviton, Apple Silicon)
+- ✅ **Multi-Architektur** (AMD64 + ARM64: Raspberry Pi 4/5, AWS Graviton, Apple Silicon)
 - ✅ **Integriertes Monitoring** (Prometheus + Grafana)
 - ✅ **Multi-Storage Support** (Local, Vercel Blob, AWS S3, Google Cloud Storage)
 - ✅ **Production-Ready** mit Health Checks und Auto-Restart
-- ✅ **Security-Hardened** (Non-root user, read-only filesystem)
+- ✅ **Security-Hardened** (Non-root user, read-only filesystem möglich)
 
 ### Docker Commands
 
@@ -247,7 +247,7 @@ npm run docker:build
 # Container lokal ausführen (mit gemounteten Uploads)
 npm run docker:run
 
-# Mit Docker Compose starten
+# Mit Docker Compose starten (inkl. Datenbank)
 npm run docker:compose
 
 # Monitoring aktivieren
@@ -266,8 +266,8 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 # Neueste Version ziehen
 docker pull ghcr.io/jansinger/ostsee-sichtung:latest
 
-# Spezifische Version
-docker pull ghcr.io/jansinger/ostsee-sichtung:v1.30.5
+# Spezifische Version ziehen
+docker pull ghcr.io/jansinger/ostsee-sichtung:v1.31.3
 
 # Mit Tag ausführen
 docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-sichtung:latest
@@ -277,6 +277,7 @@ docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-sichtung:latest
 
 - 📘 [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md) - Vollständige Deployment-Anleitung
 - 📗 [Environment Variables Reference](docs/ENVIRONMENT.md) - Alle Umgebungsvariablen
+- 📕 [Database Migration Guide](docs/DATABASE_MIGRATION.md) - Migration von bestehenden Installationen
 - 📙 [Design Guide](docs/DESIGN_GUIDE.md) - UI/UX Best Practices
 
 ## Beitragen
