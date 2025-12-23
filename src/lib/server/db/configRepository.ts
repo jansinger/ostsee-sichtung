@@ -1,6 +1,6 @@
 import { createLogger } from '$lib/logger';
 import { eq } from 'drizzle-orm';
-import { db } from './index';
+import { db, getDb, isDatabaseAvailable } from './index';
 import { appConfig } from './schema';
 
 const logger = createLogger('configRepository');
@@ -27,6 +27,12 @@ export class ConfigRepository {
 	 * Get a configuration value by key
 	 */
 	static async get(key: string): Promise<ConfigValue | null> {
+		// If database is not configured, return null (caller should use defaults)
+		if (!isDatabaseAvailable()) {
+			logger.debug({ key }, 'Database not configured, returning null for config key');
+			return null;
+		}
+
 		try {
 			// Check cache first
 			const cached = configCache.get(key);
@@ -47,10 +53,10 @@ export class ConfigRepository {
 			}
 
 			const value = result[0]?.value as ConfigValue;
-			
+
 			// Update cache
 			configCache.set(key, { value, timestamp: Date.now() });
-			
+
 			return value;
 		} catch (error) {
 			logger.error({ error, key }, 'Failed to get configuration');
@@ -62,8 +68,9 @@ export class ConfigRepository {
 	 * Get multiple configuration values by category
 	 */
 	static async getByCategory(category: ConfigCategory): Promise<ConfigItem[]> {
+		const database = getDb();
 		try {
-			const result = await db
+			const result = await database
 				.select({
 					id: appConfig.id,
 					key: appConfig.key,
@@ -76,7 +83,7 @@ export class ConfigRepository {
 				.from(appConfig)
 				.where(eq(appConfig.category, category));
 
-			return result.map(row => ({
+			return result.map((row) => ({
 				...row,
 				value: row.value as ConfigValue
 			}));
@@ -90,8 +97,9 @@ export class ConfigRepository {
 	 * Get all configuration values
 	 */
 	static async getAll(): Promise<ConfigItem[]> {
+		const database = getDb();
 		try {
-			const result = await db
+			const result = await database
 				.select({
 					id: appConfig.id,
 					key: appConfig.key,
@@ -104,7 +112,7 @@ export class ConfigRepository {
 				.from(appConfig)
 				.orderBy(appConfig.category, appConfig.key);
 
-			return result.map(row => ({
+			return result.map((row) => ({
 				...row,
 				value: row.value as ConfigValue
 			}));
@@ -118,8 +126,9 @@ export class ConfigRepository {
 	 * Set a configuration value
 	 */
 	static async set(key: string, value: ConfigValue, userId?: string): Promise<void> {
+		const database = getDb();
 		try {
-			const existing = await db
+			const existing = await database
 				.select({ id: appConfig.id })
 				.from(appConfig)
 				.where(eq(appConfig.key, key))
@@ -127,7 +136,7 @@ export class ConfigRepository {
 
 			if (existing.length > 0) {
 				// Update existing
-				await db
+				await database
 					.update(appConfig)
 					.set({
 						value: JSON.parse(JSON.stringify(value)) as unknown,
@@ -137,12 +146,14 @@ export class ConfigRepository {
 					.where(eq(appConfig.key, key));
 			} else {
 				// Insert new - requires category
-				throw new Error(`Configuration key '${key}' does not exist. Use upsert() to create new configurations.`);
+				throw new Error(
+					`Configuration key '${key}' does not exist. Use upsert() to create new configurations.`
+				);
 			}
 
 			// Clear cache
 			configCache.delete(key);
-			
+
 			logger.info({ key, userId }, 'Configuration updated');
 		} catch (error) {
 			logger.error({ error, key }, 'Failed to set configuration');
@@ -154,9 +165,9 @@ export class ConfigRepository {
 	 * Upsert a configuration value (insert or update)
 	 */
 	static async upsert(item: ConfigItem, userId?: string): Promise<void> {
+		const database = getDb();
 		try {
-
-			const existing = await db
+			const existing = await database
 				.select({ id: appConfig.id })
 				.from(appConfig)
 				.where(eq(appConfig.key, item.key))
@@ -164,7 +175,7 @@ export class ConfigRepository {
 
 			if (existing.length > 0) {
 				// Update existing
-				await db
+				await database
 					.update(appConfig)
 					.set({
 						value: JSON.parse(JSON.stringify(item.value)) as unknown,
@@ -176,7 +187,7 @@ export class ConfigRepository {
 					.where(eq(appConfig.key, item.key));
 			} else {
 				// Insert new
-				await db.insert(appConfig).values({
+				await database.insert(appConfig).values({
 					key: item.key,
 					value: JSON.parse(JSON.stringify(item.value)) as unknown,
 					description: item.description,
@@ -188,7 +199,7 @@ export class ConfigRepository {
 
 			// Clear cache
 			configCache.delete(item.key);
-			
+
 			logger.info({ key: item.key, userId }, 'Configuration upserted');
 		} catch (error) {
 			logger.error({ error, item }, 'Failed to upsert configuration');
@@ -200,12 +211,13 @@ export class ConfigRepository {
 	 * Delete a configuration
 	 */
 	static async delete(key: string): Promise<void> {
+		const database = getDb();
 		try {
-			await db.delete(appConfig).where(eq(appConfig.key, key));
-			
+			await database.delete(appConfig).where(eq(appConfig.key, key));
+
 			// Clear cache
 			configCache.delete(key);
-			
+
 			logger.info({ key }, 'Configuration deleted');
 		} catch (error) {
 			logger.error({ error, key }, 'Failed to delete configuration');
