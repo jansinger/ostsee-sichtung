@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { dropzone } from '$lib/form/fields/dropzone';
+	import { dropzoneBaseClass } from '$lib/form/fields/dropzone';
 	import type { DropzoneProps } from '$lib/types';
-	import clsx from 'clsx';
 	import type { ChangeEventHandler, DragEventHandler } from 'svelte/elements';
 
 	type HTMLInputElementWithFiles = HTMLInputElement & { files: FileList | null };
@@ -53,7 +52,7 @@
 </script>
 
 <label
-	class={dropzone({ class: clsx(theme, className) })}
+	class={`${dropzoneBaseClass} ${theme} ${className ?? ''}`}
 	ondrop={handleDrop}
 	ondragover={handleDragOver}
 >
