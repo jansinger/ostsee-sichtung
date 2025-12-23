@@ -39,6 +39,13 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.1](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.0...v2.0.1) (2025-12-23)
+
+
+### Bug Fixes
+
+* **ci:** add node 22 compatibility workaround for license-checker ([#267](https://github.com/jansinger/ostsee-sichtung/issues/267)) ([5dd263e](https://github.com/jansinger/ostsee-sichtung/commit/5dd263e841e1492f1c5e194a0e039176c82a62ef))
+
 ## [2.0.0](https://github.com/jansinger/ostsee-sichtung/compare/v1.31.7...v2.0.0) (2025-12-23)
 
 
