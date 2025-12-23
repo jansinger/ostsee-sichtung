@@ -179,6 +179,26 @@ jobs:
         if: steps.find-prs.outputs.has-prs == 'true'
         run: cp .env.example .env
 
+      - name: Synchronize package-lock.json
+        if: steps.find-prs.outputs.has-prs == 'true'
+        run: |
+          echo "🔄 Regenerating package-lock.json to ensure sync with package.json..."
+          # Use npm install to regenerate package-lock.json
+          # This is necessary because merging multiple Dependabot PRs can cause
+          # the lock file to become out of sync with package.json
+          npm install --package-lock-only
+
+          # Check if package-lock.json changed
+          if git diff --quiet package-lock.json; then
+            echo "✓ package-lock.json is already in sync"
+          else
+            echo "📝 package-lock.json was updated, committing changes..."
+            git add package-lock.json
+            git commit -m "chore(deps): synchronize package-lock.json after merge"
+            git push origin dependabot-combined
+            echo "✓ package-lock.json synchronized and pushed"
+          fi
+
       - name: Install dependencies
         if: steps.find-prs.outputs.has-prs == 'true'
         run: npm ci
