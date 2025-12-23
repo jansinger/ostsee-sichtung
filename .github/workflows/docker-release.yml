@@ -107,7 +107,7 @@ jobs:
           echo "Digest: $digest"
 
       - name: Upload digest
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: digests-${{ matrix.suffix }}
           path: /tmp/digests/*
@@ -185,7 +185,7 @@ jobs:
           echo "docker pull $FIRST_TAG" >> image-digest.txt
 
       - name: Upload image digest as artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: docker-image-digest
           path: image-digest.txt
@@ -320,7 +320,7 @@ jobs:
           output: 'trivy-results.json'
 
       - name: Upload Trivy results as artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: trivy-scan-results
