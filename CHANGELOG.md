@@ -39,6 +39,22 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.0](https://github.com/jansinger/ostsee-sichtung/compare/v1.31.7...v2.0.0) (2025-12-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ci:** Release workflow changed from automatic on push to explicit PR merge. The `release` branch is now auto-maintained.
+
+### Performance Improvements
+
+* **ci:** use matrix strategy for multi-arch Docker builds ([#255](https://github.com/jansinger/ostsee-sichtung/issues/255)) ([9422c22](https://github.com/jansinger/ostsee-sichtung/commit/9422c22d61f55caac78561b43f0e33152fa8afaa))
+
+
+### Code Refactoring
+
+* **ci:** migrate from semantic-release to release-please ([#257](https://github.com/jansinger/ostsee-sichtung/issues/257)) ([ff02679](https://github.com/jansinger/ostsee-sichtung/commit/ff026799dcb7a711960b494e4a312cd0356cf6a0))
+
 ## 1.31.0 (2025-10-17)
 
 * feat(build): add Docker containerization with volume mount support (#194) ([8a7e5b4](https://github.com/jansinger/ostsee-sichtung/commit/8a7e5b4)), closes [#194](https://github.com/jansinger/ostsee-sichtung/issues/194)
