@@ -267,7 +267,7 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 docker pull ghcr.io/jansinger/ostsee-sichtung:latest
 
 # Spezifische Version ziehen
-docker pull ghcr.io/jansinger/ostsee-sichtung:v1.31.3
+docker pull ghcr.io/jansinger/ostsee-sichtung:v2.0.3
 
 # Mit Tag ausführen
 docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-sichtung:latest

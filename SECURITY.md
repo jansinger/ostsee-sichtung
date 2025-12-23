@@ -4,8 +4,8 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.20.x  | :white_check_mark: |
-| < 1.20  | :x:                |
+| 2.0.x   | :white_check_mark: |
+| < 2.0   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -22,7 +22,7 @@ Please report security vulnerabilities to the maintainers via:
 
 ## Current Security Status
 
-### Vulnerability Assessment (as of 2025-08-28)
+### Vulnerability Assessment (as of 2025-12-23)
 - **Critical**: 0 ✅
 - **High**: 0 ✅  
 - **Moderate**: 0 ✅
@@ -138,16 +138,41 @@ We maintain a proactive approach to dependency security:
 
 ## Security Roadmap
 
+### Recently Implemented ✅
+
+The following security features have been implemented:
+
+- [x] **Rate Limiting**: API endpoint protection with configurable limits
+  - File Upload: 20 uploads/hour (anonymous), 50 uploads/hour (authenticated)
+  - Media Access: 30 requests/minute (anonymous), 100 requests/minute (authenticated)
+  - Sighting Submission: 20 sightings/hour
+  - Implementation: `src/lib/server/middleware/rateLimit.ts`
+
+- [x] **File Upload Hardening**: Magic bytes validation and MIME-type verification
+  - Validates file content against declared MIME type
+  - Supports images (JPEG, PNG, GIF, WebP, BMP) and videos (MP4, AVI, MOV, WebM, MKV)
+  - Detects and blocks dangerous file types (executables, scripts)
+  - Implementation: `src/lib/server/validation/magicBytes.ts`
+
+- [x] **Directory Traversal Protection**: Path normalization and validation
+  - Blocks `../` sequences and absolute paths
+  - Logs blocked attempts for security monitoring
+  - Implementation: `src/lib/server/uploads.ts`
+
+- [x] **Lazy Database Initialization**: CI/CD security compatibility
+  - Proxy pattern for deferred database connections
+  - Enables E2E tests without database access
+  - Race condition protection implemented
+  - Implementation: `src/lib/server/db/index.ts`
+
 ### Immediate Priorities (High Impact)
 - [ ] **CodeQL Integration**: Advanced SAST scanning in GitHub workflows
-- [ ] **Enhanced Rate Limiting**: API endpoint protection with configurable limits
 - [ ] **Input Sanitization**: DOMPurify integration for HTML content
 - [ ] **Security Headers**: Add missing Cross-Origin policies
 
 ### Medium-Term Goals (Weeks)
 - [ ] **Security Monitoring**: Implement security event logging and alerting
-- [ ] **File Upload Hardening**: Magic bytes validation, malware scanning
-- [ ] **API Security**: Enhanced request validation and sanitization
+- [ ] **Malware Scanning**: Integrate malware scanning for file uploads
 - [ ] **Audit Logging**: Comprehensive user action tracking
 
 ### Long-Term Enhancements (Months)
@@ -211,6 +236,6 @@ We maintain a proactive approach to dependency security:
 
 ---
 
-*Last Updated: 2025-08-28*  
-*Security Assessment: 7.5/10 - Strong foundational security with enhancement opportunities*  
-*Next Security Review: 2025-12-28*
+*Last Updated: 2025-12-23*
+*Security Assessment: 8.0/10 - Strong foundational security with recent enhancements*
+*Next Security Review: 2026-03-23*
