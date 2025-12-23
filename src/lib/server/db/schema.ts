@@ -24,23 +24,6 @@ export const sichtungenSeq = pgSequence('sichtungen_seq', {
 	cycle: false
 });
 
-export const ne10MOcean = pgTable(
-	'ne_10m_ocean',
-	{
-		id0: serial('id_0').primaryKey().notNull(),
-		geom: geometry({ type: 'multipolygon', srid: 4326 }),
-		id: integer(),
-		featurecla: varchar({ length: 32 }),
-		scalerank: integer()
-	},
-	(table) => [
-		index('sidx_ne_10m_ocean_geom').using(
-			'gist',
-			table.geom.asc().nullsLast().op('gist_geometry_ops_2d')
-		)
-	]
-);
-
 export const sightings = pgTable(
 	'sichtungen',
 	{
@@ -115,7 +98,7 @@ export const sightings = pgTable(
 			'gist',
 			table.location.asc().nullsLast().op('gist_geometry_ops_2d')
 		),
-		index('idx_year_sichtungen').using('btree', sql`date_part('year'::text`),
+		index('idx_year_sichtungen').using('btree', sql`date_part('year'::text, ${table.sightingDate})`),
 		// Weather data indexes for Issue #110
 		index('idx_weather_data_gin').using('gin', table.weatherData),
 		index('idx_weather_fetched').on(table.weatherFetchedAt),

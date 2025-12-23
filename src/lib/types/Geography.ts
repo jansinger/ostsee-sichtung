@@ -95,23 +95,17 @@ export interface BoundingBox {
 
 /**
  * Ostsee-spezifische geografische Konstanten
- * 
+ *
  * Enthält vordefinierte Werte für die Ostsee-Region basierend auf
  * Natural Earth Daten und wissenschaftlichen Referenzen.
  */
 export interface BalticSeaConstants {
-	/** 
-	 * Natural Earth Datenbank-ID für die Ostsee
-	 * Referenziert den spezifischen Polygondatensatz in der ne_10m_ocean Tabelle
-	 */
-	NATURAL_EARTH_BALTIC_ID: 2;
-	
 	/**
 	 * Erweiterter Kartenbereich für Ostsee-Darstellung
 	 * Umfasst auch angrenzende Küstenbereiche für bessere Navigation
 	 */
 	CHART_AREA_BOUNDS: BoundingBox;
-	
+
 	/**
 	 * SRID (Spatial Reference System Identifier) für WGS84
 	 * PostGIS-Standard für geografische Koordinaten
