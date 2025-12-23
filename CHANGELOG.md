@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## <small>1.31.7 (2025-12-23)</small>
+
+* fix(ci): add --ignore-scripts flag to package-lock sync step (#253) ([ea060a7](https://github.com/jansinger/ostsee-sichtung/commit/ea060a7)), closes [#253](https://github.com/jansinger/ostsee-sichtung/issues/253)
+
 ## <small>1.31.6 (2025-12-23)</small>
 
 * docs: improve docker deployment documentation and add migration guide (#252) ([e44ee9c](https://github.com/jansinger/ostsee-sichtung/commit/e44ee9c)), closes [#252](https://github.com/jansinger/ostsee-sichtung/issues/252)
