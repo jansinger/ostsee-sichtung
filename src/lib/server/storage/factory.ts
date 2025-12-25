@@ -20,10 +20,6 @@ import { env } from '$env/dynamic/private';
 import { LocalStorageProvider } from './local';
 import { VercelBlobStorageProvider } from './vercel-blob';
 
-// Dynamic environment variables for Docker runtime
-const STORAGE_PROVIDER = env.STORAGE_PROVIDER ?? '';
-const VERCEL = env.VERCEL ?? '';
-
 const logger = createLogger('storage:factory');
 
 /**
@@ -126,16 +122,19 @@ export function getStorageProvider(): StorageProvider {
  * ```
  */
 function getStorageProviderType(): StorageProviderType {
+	// Read environment variables dynamically (for Docker runtime and test mocking)
+	const storageProviderEnv = env.STORAGE_PROVIDER ?? '';
+	const vercelEnv = env.VERCEL ?? '';
+
 	// SCHRITT 1: Explizite Konfiguration über Umgebungsvariable
-	const envProvider = STORAGE_PROVIDER as StorageProviderType;
-	if (envProvider) {
-		logger.debug({ provider: envProvider }, 'Storage provider from environment');
-		return envProvider;
+	if (storageProviderEnv) {
+		logger.debug({ provider: storageProviderEnv }, 'Storage provider from environment');
+		return storageProviderEnv as StorageProviderType;
 	}
 
 	// SCHRITT 2: Automatische Vercel-Erkennung
 	// Vercel setzt automatisch die VERCEL Umgebungsvariable
-	if (VERCEL) {
+	if (vercelEnv) {
 		logger.debug('Detected Vercel environment, using vercel-blob');
 		return 'vercel-blob';
 	}

@@ -1,12 +1,20 @@
 import type { UploadOptions } from '$lib/types';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { VercelBlobStorageProvider } from './vercel-blob';
 
-// Mock environment variables (dynamic env)
+// Mutable mock environment object
+const mockEnv: Record<string, string> = {
+	BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_abc123_test_xyz789'
+};
+
+// Mock environment variables (dynamic env) with Proxy for runtime changes
 vi.mock('$env/dynamic/private', () => ({
-	env: {
-		BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_abc123_test_xyz789'
-	}
+	env: new Proxy({} as Record<string, string>, {
+		get: (_target, prop: string) => mockEnv[prop] ?? '',
+		set: (_target, prop: string, value: string) => {
+			mockEnv[prop] = value;
+			return true;
+		}
+	})
 }));
 
 // Mock the logger
@@ -32,6 +40,9 @@ vi.mock('@vercel/blob', () => ({
 	list: vi.fn()
 }));
 
+// Import after mocks are set up
+import { VercelBlobStorageProvider } from './vercel-blob';
+
 // Mock global fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -41,21 +52,24 @@ describe('VercelBlobStorageProvider', () => {
 	let provider: VercelBlobStorageProvider;
 
 	// Import the mocked functions
-	let mockPut: any;
-	let mockDel: any;
-	let mockHead: any;
-	let mockList: any;
+	let mockPut: ReturnType<typeof vi.fn>;
+	let mockDel: ReturnType<typeof vi.fn>;
+	let mockHead: ReturnType<typeof vi.fn>;
+	let mockList: ReturnType<typeof vi.fn>;
 
 	// Save original environment
 	const originalEnv = { ...process.env };
 
 	beforeEach(async () => {
+		// Reset mock environment
+		mockEnv.BLOB_READ_WRITE_TOKEN = mockToken;
+
 		// Import the mocked modules to get access to the mock functions
 		const blobModule = await import('@vercel/blob');
-		mockPut = blobModule.put;
-		mockDel = blobModule.del;
-		mockHead = blobModule.head;
-		mockList = blobModule.list;
+		mockPut = blobModule.put as ReturnType<typeof vi.fn>;
+		mockDel = blobModule.del as ReturnType<typeof vi.fn>;
+		mockHead = blobModule.head as ReturnType<typeof vi.fn>;
+		mockList = blobModule.list as ReturnType<typeof vi.fn>;
 
 		// Clear all mocks
 		vi.clearAllMocks();
@@ -82,23 +96,17 @@ describe('VercelBlobStorageProvider', () => {
 			expect(provider).toBeDefined();
 		});
 
-		test('should throw error when no token is available', async () => {
-			// Reset module to test without token
-			vi.doUnmock('$env/dynamic/private');
-			vi.mock('$env/dynamic/private', () => ({
-				env: { BLOB_READ_WRITE_TOKEN: '' }
-			}));
+		test('should throw error when no token is available', () => {
+			// Clear the token in mock environment
+			mockEnv.BLOB_READ_WRITE_TOKEN = '';
 
-			// Re-import with new mock - token is empty, and no parameter provided
+			// Token is empty, and no parameter provided - should throw
 			expect(() => new VercelBlobStorageProvider()).toThrow(
 				'BLOB_READ_WRITE_TOKEN environment variable is required for Vercel Blob storage'
 			);
 
-			// Restore the original mock
-			vi.doUnmock('$env/dynamic/private');
-			vi.mock('$env/dynamic/private', () => ({
-				env: { BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_abc123_test_xyz789' }
-			}));
+			// Restore the token for other tests
+			mockEnv.BLOB_READ_WRITE_TOKEN = mockToken;
 		});
 
 		test('should prioritize constructor parameter over environment', () => {

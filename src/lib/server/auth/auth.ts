@@ -1,17 +1,17 @@
-import * as dynamicEnv from '$env/dynamic/private';
+import { env } from '$env/dynamic/private';
 import { PUBLIC_SITE_URL } from '$env/static/public';
-
-// Use dynamic environment variables for Docker runtime configuration
-const AUTH0_CLIENT_ID = dynamicEnv.env.AUTH0_CLIENT_ID ?? '';
-const AUTH0_CLIENT_SECRET = dynamicEnv.env.AUTH0_CLIENT_SECRET ?? '';
-const AUTH0_DOMAIN = dynamicEnv.env.AUTH0_DOMAIN ?? '';
-const COOKIE_NAME = dynamicEnv.env.COOKIE_NAME ?? 'auth-cookie';
-const ENCRYPTION_KEY = dynamicEnv.env.ENCRYPTION_KEY ?? '';
-const JWKS_URL = dynamicEnv.env.JWKS_URL ?? '';
-const SESSION_SECRET = dynamicEnv.env.SESSION_SECRET ?? '';
-const NODE_ENV = dynamicEnv.env.NODE_ENV ?? 'development';
-
 import type { User } from '$lib/types/index';
+
+// Helper functions to get environment variables dynamically
+// This allows tests to mock the values and Docker to provide runtime configuration
+const getAuth0ClientId = () => env.AUTH0_CLIENT_ID ?? '';
+const getAuth0ClientSecret = () => env.AUTH0_CLIENT_SECRET ?? '';
+const getAuth0Domain = () => env.AUTH0_DOMAIN ?? '';
+const getCookieName = () => env.COOKIE_NAME ?? 'auth-cookie';
+const getEncryptionKey = () => env.ENCRYPTION_KEY ?? '';
+const getJwksUrl = () => env.JWKS_URL ?? '';
+const getSessionSecret = () => env.SESSION_SECRET ?? '';
+const getNodeEnv = () => env.NODE_ENV ?? 'development';
 import { error, redirect, type Cookies } from '@sveltejs/kit';
 import type { JwtHeader, SigningKeyCallback } from 'jsonwebtoken';
 import jwt from 'jsonwebtoken';
@@ -74,7 +74,7 @@ const COOKIE_AUTHORIZE_DURATION_SECONDS = 60 * 10; // 10 Minuten
  * @param callback - Callback-Funktion, die mit dem Schlüssel oder Fehler aufgerufen wird
  */
 function getKey(header: JwtHeader, callback: SigningKeyCallback) {
-	const client = new JwksClient({ jwksUri: JWKS_URL });
+	const client = new JwksClient({ jwksUri: getJwksUrl() });
 
 	client.getSigningKey(header.kid, function (err, key) {
 		if (err) {
@@ -181,12 +181,12 @@ export async function getTokenClaims<T>(token: string): Promise<T> {
  * ```
  */
 export async function getToken({ code, pkceVerifier }: { code: string; pkceVerifier: string }) {
-	const resp = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
+	const resp = await fetch(`https://${getAuth0Domain()}/oauth/token`, {
 		method: 'POST',
 		body: JSON.stringify({
 			code,
-			client_id: AUTH0_CLIENT_ID,
-			client_secret: AUTH0_CLIENT_SECRET,
+			client_id: getAuth0ClientId(),
+			client_secret: getAuth0ClientSecret(),
 			redirect_uri: `${PUBLIC_SITE_URL}/api/auth/callback`,
 			grant_type: 'authorization_code',
 			code_verifier: pkceVerifier
@@ -225,7 +225,7 @@ export async function getToken({ code, pkceVerifier }: { code: string; pkceVerif
  * ```
  */
 export const getAuthUser = (cookies: Cookies) => {
-	const jwtToken = cookies.get(COOKIE_NAME);
+	const jwtToken = cookies.get(getCookieName());
 
 	if (!jwtToken) {
 		return null;
@@ -260,13 +260,13 @@ export const getAuthUser = (cookies: Cookies) => {
  * ```
  */
 export const setAuthCookie = (cookies: Cookies, user: User) => {
-	const cookieValue = jwt.sign(user, SESSION_SECRET);
-	cookies.set(COOKIE_NAME, cookieValue, {
+	const cookieValue = jwt.sign(user, getSessionSecret());
+	cookies.set(getCookieName(), cookieValue, {
 		httpOnly: true,
 		sameSite: 'lax',
 		maxAge: COOKIE_DURATION_SECONDS,
 		path: '/',
-		secure: NODE_ENV === 'production'
+		secure: getNodeEnv() === 'production'
 	});
 };
 
@@ -289,7 +289,7 @@ export const setAuthCookie = (cookies: Cookies, user: User) => {
  * ```
  */
 export const clearAuthCookie = (cookies: Cookies) => {
-	cookies.delete(COOKIE_NAME, { path: '/' });
+	cookies.delete(getCookieName(), { path: '/' });
 };
 
 /**
@@ -358,7 +358,7 @@ export const setCsrfCookie = (cookies: Cookies) => {
 		sameSite: 'lax',
 		maxAge: COOKIE_AUTHORIZE_DURATION_SECONDS,
 		path: '/api/auth',
-		secure: NODE_ENV === 'production'
+		secure: getNodeEnv() === 'production'
 	});
 	return csrfState;
 };
@@ -393,14 +393,14 @@ export const setCsrfCookie = (cookies: Cookies) => {
  */
 export const setPKCECookie = (cookies: Cookies) => {
 	const { verifier, challenge } = getPKCEChallengeData();
-	const encryptedVerifier = encrypt(verifier, Buffer.from(ENCRYPTION_KEY, 'hex'));
+	const encryptedVerifier = encrypt(verifier, Buffer.from(getEncryptionKey(), 'hex'));
 	const cookieValue = `${encryptedVerifier.iv.toString('hex')}:${encryptedVerifier.encryptedData.toString('hex')}:${encryptedVerifier.tag.toString('hex')}`;
 	cookies.set('extendedState', cookieValue, {
 		httpOnly: true,
 		sameSite: 'lax',
 		maxAge: COOKIE_AUTHORIZE_DURATION_SECONDS,
 		path: '/api/auth',
-		secure: NODE_ENV === 'production'
+		secure: getNodeEnv() === 'production'
 	});
 	return challenge;
 };
@@ -443,6 +443,6 @@ export const getPKCEVerifierFromCookie = (cookies: Cookies): string | null => {
 	const encryptedData = Buffer.from(encryptedDataHex, 'hex');
 	const tag = Buffer.from(tagHex, 'hex');
 
-	const decryptedVerifier = decrypt(encryptedData, Buffer.from(ENCRYPTION_KEY, 'hex'), iv, tag);
+	const decryptedVerifier = decrypt(encryptedData, Buffer.from(getEncryptionKey(), 'hex'), iv, tag);
 	return decryptedVerifier;
 };

@@ -26,9 +26,6 @@ import { env } from '$env/dynamic/private';
 import { del, head, list, put } from '@vercel/blob';
 import { basename, extname } from 'path';
 
-// Dynamic environment variable for Docker runtime
-const BLOB_READ_WRITE_TOKEN = env.BLOB_READ_WRITE_TOKEN ?? '';
-
 const logger = createLogger('storage:vercel-blob');
 
 /**
@@ -66,7 +63,8 @@ export class VercelBlobStorageProvider implements StorageProvider {
 	 * ```
 	 */
 	constructor(token?: string) {
-		this.token = token || BLOB_READ_WRITE_TOKEN || '';
+		// Read environment variable dynamically (for Docker runtime and test mocking)
+		this.token = token || env.BLOB_READ_WRITE_TOKEN || '';
 		if (!this.token) {
 			throw new Error(
 				'BLOB_READ_WRITE_TOKEN environment variable is required for Vercel Blob storage'
