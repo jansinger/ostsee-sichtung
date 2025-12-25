@@ -1,4 +1,4 @@
-import { API_AUDIENCE } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { createLogger } from '$lib/logger';
 import {
 	getPKCEVerifierFromCookie,
@@ -11,7 +11,6 @@ import type { User } from '$lib/types';
 import { error, redirect, type Cookies } from '@sveltejs/kit';
 
 const logger = createLogger('auth:auth0');
-const rolesClaim = `${API_AUDIENCE}/roles`;
 
 export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 	const code = url.searchParams.get('code');
@@ -39,7 +38,8 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 		const authUser = (await verifyToken(token.id_token)) as User;
 		logger.debug({ authUser }, 'authUser');
 
-		const claims = await getTokenClaims<{ [rolesClaim]: string[] }>(token.access_token);
+		const rolesClaim = `${env.API_AUDIENCE}/roles`;
+		const claims = await getTokenClaims<Record<string, string[]>>(token.access_token);
 		logger.debug({ claims }, 'claims');
 
 		authUser.roles = claims[rolesClaim] || [];

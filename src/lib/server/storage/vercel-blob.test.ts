@@ -1,11 +1,12 @@
 import type { UploadOptions } from '$lib/types';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { VercelBlobStorageProvider } from './vercel-blob';
-import * as envModule from '$env/static/private';
 
-// Mock environment variables
-vi.mock('$env/static/private', () => ({
-	BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_abc123_test_xyz789'
+// Mock environment variables (dynamic env)
+vi.mock('$env/dynamic/private', () => ({
+	env: {
+		BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_abc123_test_xyz789'
+	}
 }));
 
 // Mock the logger
@@ -59,9 +60,6 @@ describe('VercelBlobStorageProvider', () => {
 		// Clear all mocks
 		vi.clearAllMocks();
 
-		// Set up default environment
-		vi.mocked(envModule).BLOB_READ_WRITE_TOKEN = mockToken;
-
 		// Create fresh provider instance
 		provider = new VercelBlobStorageProvider();
 	});
@@ -73,39 +71,38 @@ describe('VercelBlobStorageProvider', () => {
 
 	describe('constructor', () => {
 		test('should use token from environment variable', () => {
-			vi.mocked(envModule).BLOB_READ_WRITE_TOKEN = 'env_token_123';
+			// Token is provided by the mock
 			const provider = new VercelBlobStorageProvider();
-
 			expect(provider).toBeDefined();
 		});
 
 		test('should use provided token parameter', () => {
 			const customToken = 'custom_token_456';
 			const provider = new VercelBlobStorageProvider(customToken);
-
 			expect(provider).toBeDefined();
 		});
 
-		test('should throw error when no token is available', () => {
-			vi.mocked(envModule).BLOB_READ_WRITE_TOKEN = "";
+		test('should throw error when no token is available', async () => {
+			// Reset module to test without token
+			vi.doUnmock('$env/dynamic/private');
+			vi.mock('$env/dynamic/private', () => ({
+				env: { BLOB_READ_WRITE_TOKEN: '' }
+			}));
 
+			// Re-import with new mock - token is empty, and no parameter provided
 			expect(() => new VercelBlobStorageProvider()).toThrow(
 				'BLOB_READ_WRITE_TOKEN environment variable is required for Vercel Blob storage'
 			);
-		});
 
-		test('should throw error when token is empty string', () => {
-			vi.mocked(envModule).BLOB_READ_WRITE_TOKEN = '';
-
-			expect(() => new VercelBlobStorageProvider()).toThrow(
-				'BLOB_READ_WRITE_TOKEN environment variable is required for Vercel Blob storage'
-			);
+			// Restore the original mock
+			vi.doUnmock('$env/dynamic/private');
+			vi.mock('$env/dynamic/private', () => ({
+				env: { BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_abc123_test_xyz789' }
+			}));
 		});
 
 		test('should prioritize constructor parameter over environment', () => {
-			vi.mocked(envModule).BLOB_READ_WRITE_TOKEN = 'env_token';
 			const customToken = 'constructor_token';
-
 			const provider = new VercelBlobStorageProvider(customToken);
 			expect(provider).toBeDefined();
 		});

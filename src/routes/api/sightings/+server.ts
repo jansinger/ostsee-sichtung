@@ -1,5 +1,8 @@
-import { NODE_ENV } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
+
+// Dynamic environment variable for Docker runtime
+const NODE_ENV = env.NODE_ENV ?? 'development';
 import { createLogger } from '$lib/logger';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { db } from '$lib/server/db';

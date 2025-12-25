@@ -16,9 +16,13 @@
 import { dev } from '$app/environment';
 import { createLogger } from '$lib/logger';
 import type { StorageProvider, StorageProviderType } from '$lib/types';
-import { STORAGE_PROVIDER, VERCEL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { LocalStorageProvider } from './local';
 import { VercelBlobStorageProvider } from './vercel-blob';
+
+// Dynamic environment variables for Docker runtime
+const STORAGE_PROVIDER = env.STORAGE_PROVIDER ?? '';
+const VERCEL = env.VERCEL ?? '';
 
 const logger = createLogger('storage:factory');
 

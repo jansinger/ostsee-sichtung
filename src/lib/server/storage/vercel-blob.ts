@@ -22,9 +22,12 @@
  */
 import { createLogger } from '$lib/logger';
 import type { FileMetadata, StorageProvider, UploadedFileInfo, UploadOptions } from '$lib/types';
-import { BLOB_READ_WRITE_TOKEN } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { del, head, list, put } from '@vercel/blob';
 import { basename, extname } from 'path';
+
+// Dynamic environment variable for Docker runtime
+const BLOB_READ_WRITE_TOKEN = env.BLOB_READ_WRITE_TOKEN ?? '';
 
 const logger = createLogger('storage:vercel-blob');
 

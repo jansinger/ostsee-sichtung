@@ -1,14 +1,15 @@
-import {
-	AUTH0_CLIENT_ID,
-	AUTH0_CLIENT_SECRET,
-	AUTH0_DOMAIN,
-	COOKIE_NAME,
-	ENCRYPTION_KEY,
-	JWKS_URL,
-	SESSION_SECRET,
-	NODE_ENV
-} from '$env/static/private';
+import * as dynamicEnv from '$env/dynamic/private';
 import { PUBLIC_SITE_URL } from '$env/static/public';
+
+// Use dynamic environment variables for Docker runtime configuration
+const AUTH0_CLIENT_ID = dynamicEnv.env.AUTH0_CLIENT_ID ?? '';
+const AUTH0_CLIENT_SECRET = dynamicEnv.env.AUTH0_CLIENT_SECRET ?? '';
+const AUTH0_DOMAIN = dynamicEnv.env.AUTH0_DOMAIN ?? '';
+const COOKIE_NAME = dynamicEnv.env.COOKIE_NAME ?? 'auth-cookie';
+const ENCRYPTION_KEY = dynamicEnv.env.ENCRYPTION_KEY ?? '';
+const JWKS_URL = dynamicEnv.env.JWKS_URL ?? '';
+const SESSION_SECRET = dynamicEnv.env.SESSION_SECRET ?? '';
+const NODE_ENV = dynamicEnv.env.NODE_ENV ?? 'development';
 
 import type { User } from '$lib/types/index';
 import { error, redirect, type Cookies } from '@sveltejs/kit';

@@ -1,5 +1,12 @@
-import { NODE_ENV, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USER } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { PUBLIC_SITE_URL } from '$env/static/public';
+
+// Dynamic environment variables for Docker runtime
+const NODE_ENV = env.NODE_ENV ?? 'development';
+const SMTP_HOST = env.SMTP_HOST ?? '';
+const SMTP_PORT = env.SMTP_PORT ?? '587';
+const SMTP_USER = env.SMTP_USER ?? '';
+const SMTP_PASSWORD = env.SMTP_PASSWORD ?? '';
 import { createLogger } from '$lib/logger';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
