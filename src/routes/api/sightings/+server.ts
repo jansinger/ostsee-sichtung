@@ -1,8 +1,5 @@
 import { env } from '$env/dynamic/private';
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
-
-// Dynamic environment variable for Docker runtime
-const NODE_ENV = env.NODE_ENV ?? 'development';
 import { createLogger } from '$lib/logger';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { db } from '$lib/server/db';
@@ -20,6 +17,9 @@ import { json, type RequestEvent } from '@sveltejs/kit';
 import { and, gte, lt, sql } from 'drizzle-orm';
 import { ValidationError } from 'yup';
 import type { RequestHandler } from './$types';
+
+// Dynamic environment variable for Docker runtime
+const NODE_ENV = env.NODE_ENV ?? 'development';
 
 // Logger für diesen API-Endpunkt erstellen
 const logger = createLogger('api:sightings');
