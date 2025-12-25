@@ -39,6 +39,18 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.4](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.3...v2.0.4) (2025-12-25)
+
+
+### Bug Fixes
+
+* **build:** use dynamic environment variables for Docker runtime ([#281](https://github.com/jansinger/ostsee-sichtung/issues/281)) ([3dce0d8](https://github.com/jansinger/ostsee-sichtung/commit/3dce0d878ec9b63999a6e59e49d8c65746b60c07))
+
+
+### Documentation
+
+* update documentation after v2.0.3 release ([#279](https://github.com/jansinger/ostsee-sichtung/issues/279)) ([1bd86f0](https://github.com/jansinger/ostsee-sichtung/commit/1bd86f073c4bf8f8b1641b8c22abf63e6bd9ca05))
+
 ## [2.0.3](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.2...v2.0.3) (2025-12-23)
 
 
