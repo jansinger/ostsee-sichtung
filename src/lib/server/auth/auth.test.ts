@@ -17,16 +17,18 @@ vi.mock('@sveltejs/kit', async () => {
 	};
 });
 
-// Mock environment variables
-vi.mock('$env/static/private', () => ({
-	AUTH0_CLIENT_ID: 'test-client-id',
-	AUTH0_CLIENT_SECRET: 'test-client-secret',
-	AUTH0_DOMAIN: 'test-domain.auth0.com',
-	COOKIE_NAME: 'test-auth-cookie',
-	JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
-	SESSION_SECRET: 'test-session-secret',
-	ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-	NODE_ENV: 'test'
+// Mock environment variables (dynamic env for Docker runtime)
+vi.mock('$env/dynamic/private', () => ({
+	env: {
+		AUTH0_CLIENT_ID: 'test-client-id',
+		AUTH0_CLIENT_SECRET: 'test-client-secret',
+		AUTH0_DOMAIN: 'test-domain.auth0.com',
+		COOKIE_NAME: 'test-auth-cookie',
+		JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
+		SESSION_SECRET: 'test-session-secret',
+		ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+		NODE_ENV: 'test'
+	}
 }));
 
 vi.mock('$env/static/public', () => ({

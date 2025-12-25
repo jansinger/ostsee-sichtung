@@ -1,4 +1,4 @@
-import { COOKIE_NAME, NODE_ENV, SESSION_SECRET } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { createLogger } from '$lib/logger';
 import { clearAuthCookie, setAuthCookie } from '$lib/server/auth/auth';
 import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';
@@ -7,6 +7,11 @@ import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { randomBytes } from 'crypto';
 import jwt from 'jsonwebtoken';
+
+// Dynamic environment variables for Docker runtime
+const COOKIE_NAME = env.COOKIE_NAME ?? 'auth-cookie';
+const NODE_ENV = env.NODE_ENV ?? 'development';
+const SESSION_SECRET = env.SESSION_SECRET ?? '';
 
 const logger = createLogger('hooks:server');
 

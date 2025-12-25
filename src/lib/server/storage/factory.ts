@@ -16,7 +16,7 @@
 import { dev } from '$app/environment';
 import { createLogger } from '$lib/logger';
 import type { StorageProvider, StorageProviderType } from '$lib/types';
-import { STORAGE_PROVIDER, VERCEL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { LocalStorageProvider } from './local';
 import { VercelBlobStorageProvider } from './vercel-blob';
 
@@ -122,16 +122,19 @@ export function getStorageProvider(): StorageProvider {
  * ```
  */
 function getStorageProviderType(): StorageProviderType {
+	// Read environment variables dynamically (for Docker runtime and test mocking)
+	const storageProviderEnv = env.STORAGE_PROVIDER ?? '';
+	const vercelEnv = env.VERCEL ?? '';
+
 	// SCHRITT 1: Explizite Konfiguration über Umgebungsvariable
-	const envProvider = STORAGE_PROVIDER as StorageProviderType;
-	if (envProvider) {
-		logger.debug({ provider: envProvider }, 'Storage provider from environment');
-		return envProvider;
+	if (storageProviderEnv) {
+		logger.debug({ provider: storageProviderEnv }, 'Storage provider from environment');
+		return storageProviderEnv as StorageProviderType;
 	}
 
 	// SCHRITT 2: Automatische Vercel-Erkennung
 	// Vercel setzt automatisch die VERCEL Umgebungsvariable
-	if (VERCEL) {
+	if (vercelEnv) {
 		logger.debug('Detected Vercel environment, using vercel-blob');
 		return 'vercel-blob';
 	}

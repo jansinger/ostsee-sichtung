@@ -1,22 +1,26 @@
 import { describe, test, expect, beforeEach, vi, afterEach } from 'vitest';
-import {
-	getStorageProvider,
-	resetStorageProvider,
-	isCloudStorage,
-	getCurrentStorageProvider
-} from './factory';
 import type { StorageProviderType } from '$lib/types';
-import * as envModule from '$env/static/private';
+
+// Mutable mock environment object
+const mockEnv: Record<string, string> = {
+	STORAGE_PROVIDER: '',
+	VERCEL: ''
+};
 
 // Mock the app environment
 vi.mock('$app/environment', () => ({
 	dev: false
 }));
 
-// Mock environment variables - use vi.mocked to change values in tests
-vi.mock('$env/static/private', () => ({
-	STORAGE_PROVIDER: '',
-	VERCEL: ''
+// Mock environment variables (dynamic env) with getter to allow runtime changes
+vi.mock('$env/dynamic/private', () => ({
+	env: new Proxy({} as Record<string, string>, {
+		get: (_target, prop: string) => mockEnv[prop] ?? '',
+		set: (_target, prop: string, value: string) => {
+			mockEnv[prop] = value;
+			return true;
+		}
+	})
 }));
 
 // Mock the logger
@@ -31,7 +35,7 @@ vi.mock('$lib/logger', () => ({
 
 // Mock the storage providers with class constructors
 vi.mock('./local', () => {
-	const MockLocalStorageProvider = vi.fn().mockImplementation(function() {
+	const MockLocalStorageProvider = vi.fn().mockImplementation(function () {
 		return {
 			uploadFile: vi.fn(),
 			deleteFile: vi.fn(),
@@ -42,7 +46,7 @@ vi.mock('./local', () => {
 });
 
 vi.mock('./vercel-blob', () => {
-	const MockVercelBlobStorageProvider = vi.fn().mockImplementation(function() {
+	const MockVercelBlobStorageProvider = vi.fn().mockImplementation(function () {
 		return {
 			uploadFile: vi.fn(),
 			deleteFile: vi.fn(),
@@ -52,6 +56,14 @@ vi.mock('./vercel-blob', () => {
 	return { VercelBlobStorageProvider: MockVercelBlobStorageProvider };
 });
 
+// Import after mocks are set up
+import {
+	getStorageProvider,
+	resetStorageProvider,
+	isCloudStorage,
+	getCurrentStorageProvider
+} from './factory';
+
 describe('Storage Factory', () => {
 	// Save original environment
 	const originalEnv = { ...process.env };
@@ -59,11 +71,11 @@ describe('Storage Factory', () => {
 	beforeEach(() => {
 		// Reset storage provider before each test
 		resetStorageProvider();
-		
+
 		// Reset mock environment variables
-		vi.mocked(envModule).STORAGE_PROVIDER = '';
-		vi.mocked(envModule).VERCEL = '';
-		
+		mockEnv.STORAGE_PROVIDER = '';
+		mockEnv.VERCEL = '';
+
 		// Clear all mocks
 		vi.clearAllMocks();
 	});
@@ -89,54 +101,54 @@ describe('Storage Factory', () => {
 
 			// Reset to pick up new environment
 			resetStorageProvider();
-			
+
 			const provider = getStorageProvider();
 			expect(provider).toBeDefined();
 		});
 
 		test('should create VercelBlobStorageProvider when VERCEL env is set', () => {
-			vi.mocked(envModule).VERCEL = '1';
-			
+			mockEnv.VERCEL = '1';
+
 			const provider = getStorageProvider();
 			expect(provider).toBeDefined();
 		});
 
 		test('should respect STORAGE_PROVIDER environment variable', () => {
-			vi.mocked(envModule).STORAGE_PROVIDER = 'vercel-blob';
-			
+			mockEnv.STORAGE_PROVIDER = 'vercel-blob';
+
 			const provider = getStorageProvider();
 			expect(provider).toBeDefined();
 		});
 
 		test('should throw error for unimplemented S3 provider', () => {
 			// Set the mock environment variable
-			vi.mocked(envModule).STORAGE_PROVIDER = 's3';
-			vi.mocked(envModule).VERCEL = '';
-			
+			mockEnv.STORAGE_PROVIDER = 's3';
+			mockEnv.VERCEL = '';
+
 			expect(() => getStorageProvider()).toThrow('S3 storage provider not implemented yet');
 		});
 
 		test('should throw error for unimplemented GCS provider', () => {
 			// Set the mock environment variable
-			vi.mocked(envModule).STORAGE_PROVIDER = 'gcs';
-			vi.mocked(envModule).VERCEL = '';
-			
+			mockEnv.STORAGE_PROVIDER = 'gcs';
+			mockEnv.VERCEL = '';
+
 			expect(() => getStorageProvider()).toThrow('Google Cloud Storage provider not implemented yet');
 		});
 
 		test('should throw error for unknown provider', () => {
 			// Set the mock environment variable
-			vi.mocked(envModule).STORAGE_PROVIDER = 'unknown-provider';
-			vi.mocked(envModule).VERCEL = '';
-			
+			mockEnv.STORAGE_PROVIDER = 'unknown-provider';
+			mockEnv.VERCEL = '';
+
 			expect(() => getStorageProvider()).toThrow('Unknown storage provider: unknown-provider');
 		});
 
 		test('should default to local storage for unknown environments', () => {
 			// No special environment variables set
-			vi.mocked(envModule).VERCEL = "";
-			vi.mocked(envModule).STORAGE_PROVIDER = "";
-			
+			mockEnv.VERCEL = "";
+			mockEnv.STORAGE_PROVIDER = "";
+
 			const provider = getStorageProvider();
 			expect(provider).toBeDefined();
 		});
@@ -145,12 +157,12 @@ describe('Storage Factory', () => {
 	describe('resetStorageProvider', () => {
 		test('should allow creating different providers after reset', () => {
 			// First provider
-			vi.mocked(envModule).STORAGE_PROVIDER = 'local';
+			mockEnv.STORAGE_PROVIDER = 'local';
 			const provider1 = getStorageProvider();
 
 			// Reset and change environment
 			resetStorageProvider();
-			vi.mocked(envModule).STORAGE_PROVIDER = 'vercel-blob';
+			mockEnv.STORAGE_PROVIDER = 'vercel-blob';
 			const provider2 = getStorageProvider();
 
 			// Should be different instances
@@ -158,11 +170,11 @@ describe('Storage Factory', () => {
 		});
 
 		test('should not affect subsequent calls to the same configuration', () => {
-			vi.mocked(envModule).STORAGE_PROVIDER = 'local';
-			
+			mockEnv.STORAGE_PROVIDER = 'local';
+
 			// Get initial provider
 			const provider1 = getStorageProvider();
-			
+
 			// Reset but keep same configuration
 			resetStorageProvider();
 			const provider2 = getStorageProvider();
@@ -175,48 +187,48 @@ describe('Storage Factory', () => {
 
 	describe('isCloudStorage', () => {
 		test('should return false for local storage', () => {
-			vi.mocked(envModule).STORAGE_PROVIDER = 'local';
-			
+			mockEnv.STORAGE_PROVIDER = 'local';
+
 			expect(isCloudStorage()).toBe(false);
 		});
 
 		test('should return true for vercel-blob storage', () => {
 			// Set the mock environment variable
-			vi.mocked(envModule).STORAGE_PROVIDER = 'vercel-blob';
-			vi.mocked(envModule).VERCEL = '';
-			
+			mockEnv.STORAGE_PROVIDER = 'vercel-blob';
+			mockEnv.VERCEL = '';
+
 			expect(isCloudStorage()).toBe(true);
 		});
 
 		test('should return true for S3 storage (even though not implemented)', () => {
 			// Set the mock environment variable
-			vi.mocked(envModule).STORAGE_PROVIDER = 's3';
-			vi.mocked(envModule).VERCEL = '';
-			
+			mockEnv.STORAGE_PROVIDER = 's3';
+			mockEnv.VERCEL = '';
+
 			expect(isCloudStorage()).toBe(true);
 		});
 
 		test('should return true for GCS storage (even though not implemented)', () => {
 			// Set the mock environment variable
-			vi.mocked(envModule).STORAGE_PROVIDER = 'gcs';
-			vi.mocked(envModule).VERCEL = '';
-			
+			mockEnv.STORAGE_PROVIDER = 'gcs';
+			mockEnv.VERCEL = '';
+
 			expect(isCloudStorage()).toBe(true);
 		});
 
-		test('should return false for local storage', () => {
+		test('should return false for local storage explicit', () => {
 			// Set the mock environment variable
-			vi.mocked(envModule).STORAGE_PROVIDER = 'local';
-			vi.mocked(envModule).VERCEL = '';
-			
+			mockEnv.STORAGE_PROVIDER = 'local';
+			mockEnv.VERCEL = '';
+
 			expect(isCloudStorage()).toBe(false);
 		});
 
 		test('should return false for empty storage provider (defaults to local)', () => {
 			// Set the mock environment variables to empty values
-			vi.mocked(envModule).STORAGE_PROVIDER = '';
-			vi.mocked(envModule).VERCEL = '';
-			
+			mockEnv.STORAGE_PROVIDER = '';
+			mockEnv.VERCEL = '';
+
 			expect(isCloudStorage()).toBe(false);
 		});
 	});
@@ -227,21 +239,21 @@ describe('Storage Factory', () => {
 		});
 
 		test('should return vercel-blob when explicitly configured', () => {
-			vi.mocked(envModule).STORAGE_PROVIDER = 'vercel-blob';
-			
+			mockEnv.STORAGE_PROVIDER = 'vercel-blob';
+
 			expect(getCurrentStorageProvider()).toBe('vercel-blob');
 		});
 
 		test('should return vercel-blob when VERCEL environment is detected', () => {
-			vi.mocked(envModule).VERCEL = '1';
-			
+			mockEnv.VERCEL = '1';
+
 			expect(getCurrentStorageProvider()).toBe('vercel-blob');
 		});
 
 		test('should prioritize explicit STORAGE_PROVIDER over VERCEL detection', () => {
-			vi.mocked(envModule).VERCEL = '1';
-			vi.mocked(envModule).STORAGE_PROVIDER = 'local';
-			
+			mockEnv.VERCEL = '1';
+			mockEnv.STORAGE_PROVIDER = 'local';
+
 			expect(getCurrentStorageProvider()).toBe('local');
 		});
 
@@ -253,7 +265,7 @@ describe('Storage Factory', () => {
 
 			// Dynamically import to get updated environment
 			const { getCurrentStorageProvider: getCurrentProvider } = await import('./factory');
-			
+
 			expect(getCurrentProvider()).toBe('local');
 		});
 	});
@@ -266,80 +278,80 @@ describe('Storage Factory', () => {
 			expect(getCurrentStorageProvider()).toBe('local');
 
 			// 2. Vercel environment
-			vi.mocked(envModule).VERCEL = '1';
+			mockEnv.VERCEL = '1';
 			expect(getCurrentStorageProvider()).toBe('vercel-blob');
 
 			// 3. Explicit storage provider overrides Vercel
-			vi.mocked(envModule).STORAGE_PROVIDER = 'local';
+			mockEnv.STORAGE_PROVIDER = 'local';
 			expect(getCurrentStorageProvider()).toBe('local');
 
 			// 4. Different explicit provider
-			vi.mocked(envModule).STORAGE_PROVIDER = 'vercel-blob';
+			mockEnv.STORAGE_PROVIDER = 'vercel-blob';
 			expect(getCurrentStorageProvider()).toBe('vercel-blob');
 		});
 
 		test('should handle edge cases in environment variables', () => {
 			// Empty string should be falsy
-			vi.mocked(envModule).STORAGE_PROVIDER = '';
-			vi.mocked(envModule).VERCEL = '1';
+			mockEnv.STORAGE_PROVIDER = '';
+			mockEnv.VERCEL = '1';
 			expect(getCurrentStorageProvider()).toBe('vercel-blob');
 
 			// Undefined should be falsy
-			vi.mocked(envModule).STORAGE_PROVIDER = "";
-			vi.mocked(envModule).VERCEL = '1';
+			mockEnv.STORAGE_PROVIDER = "";
+			mockEnv.VERCEL = '1';
 			expect(getCurrentStorageProvider()).toBe('vercel-blob');
 
 			// Any truthy value for VERCEL should work
-			vi.mocked(envModule).VERCEL = "";
-			vi.mocked(envModule).VERCEL = 'true';
+			mockEnv.VERCEL = "";
+			mockEnv.VERCEL = 'true';
 			expect(getCurrentStorageProvider()).toBe('vercel-blob');
 		});
 	});
 
 	describe('provider instantiation', () => {
 		test('should create LocalStorageProvider with correct parameters', async () => {
-			vi.mocked(envModule).STORAGE_PROVIDER = 'local';
-			
+			mockEnv.STORAGE_PROVIDER = 'local';
+
 			getStorageProvider();
-			
+
 			// Access the mocked module
 			const localModule = await import('./local');
 			expect(localModule.LocalStorageProvider).toHaveBeenCalledWith('uploads', '/uploads');
 		});
 
 		test('should create VercelBlobStorageProvider with no parameters', async () => {
-			vi.mocked(envModule).STORAGE_PROVIDER = 'vercel-blob';
-			
+			mockEnv.STORAGE_PROVIDER = 'vercel-blob';
+
 			getStorageProvider();
-			
+
 			// Access the mocked module
 			const vercelModule = await import('./vercel-blob');
 			expect(vercelModule.VercelBlobStorageProvider).toHaveBeenCalledWith();
 		});
 
 		test('should only instantiate provider once per configuration', async () => {
-			vi.mocked(envModule).STORAGE_PROVIDER = 'local';
-			
+			mockEnv.STORAGE_PROVIDER = 'local';
+
 			// Call multiple times
 			getStorageProvider();
 			getStorageProvider();
 			getStorageProvider();
-			
+
 			// Access the mocked module
 			const localModule = await import('./local');
 			expect(localModule.LocalStorageProvider).toHaveBeenCalledTimes(1);
 		});
 
 		test('should create new instance after reset', async () => {
-			vi.mocked(envModule).STORAGE_PROVIDER = 'local';
-			
+			mockEnv.STORAGE_PROVIDER = 'local';
+
 			// First call
 			getStorageProvider();
-			
+
 			// Reset and call again
 			resetStorageProvider();
 			getStorageProvider();
-			
+
 			// Access the mocked module
 			const localModule = await import('./local');
 			expect(localModule.LocalStorageProvider).toHaveBeenCalledTimes(2);
@@ -355,26 +367,26 @@ describe('Storage Factory', () => {
 
 			testCases.forEach(([provider, expectedMessage]) => {
 				resetStorageProvider();
-				vi.mocked(envModule).STORAGE_PROVIDER = provider;
-				
+				mockEnv.STORAGE_PROVIDER = provider;
+
 				expect(() => getStorageProvider()).toThrow(expectedMessage);
 			});
 		});
 
 		test('should provide clear error message for unknown providers', () => {
 			resetStorageProvider();
-			vi.mocked(envModule).STORAGE_PROVIDER = 'invalid-provider' as StorageProviderType;
-			
+			mockEnv.STORAGE_PROVIDER = 'invalid-provider' as StorageProviderType;
+
 			expect(() => getStorageProvider()).toThrow('Unknown storage provider: invalid-provider');
 		});
 
 		test('should not throw when checking provider type for unimplemented providers', () => {
-			vi.mocked(envModule).STORAGE_PROVIDER = 's3';
-			
+			mockEnv.STORAGE_PROVIDER = 's3';
+
 			// These should not throw
 			expect(() => getCurrentStorageProvider()).not.toThrow();
 			expect(() => isCloudStorage()).not.toThrow();
-			
+
 			// But getStorageProvider should throw
 			expect(() => getStorageProvider()).toThrow();
 		});
@@ -384,12 +396,12 @@ describe('Storage Factory', () => {
 		test('should work correctly in simulated production environment', () => {
 			// Simulate production deployment on Vercel
 			process.env.NODE_ENV = 'production';
-			vi.mocked(envModule).VERCEL = '1';
-			vi.mocked(envModule).STORAGE_PROVIDER = "";
-			
+			mockEnv.VERCEL = '1';
+			mockEnv.STORAGE_PROVIDER = "";
+
 			expect(getCurrentStorageProvider()).toBe('vercel-blob');
 			expect(isCloudStorage()).toBe(true);
-			
+
 			const provider = getStorageProvider();
 			expect(provider).toBeDefined();
 		});
@@ -400,28 +412,28 @@ describe('Storage Factory', () => {
 				dev: true
 			}));
 
-			vi.mocked(envModule).VERCEL = "";
-			vi.mocked(envModule).STORAGE_PROVIDER = "";
-			
+			mockEnv.VERCEL = "";
+			mockEnv.STORAGE_PROVIDER = "";
+
 			// Dynamically import to get updated environment
 			const factory = await import('./factory');
-			
+
 			expect(factory.getCurrentStorageProvider()).toBe('local');
 			expect(factory.isCloudStorage()).toBe(false);
 		});
 
 		test('should handle configuration changes during runtime', () => {
 			// Start with one configuration
-			vi.mocked(envModule).STORAGE_PROVIDER = 'local';
+			mockEnv.STORAGE_PROVIDER = 'local';
 			const provider1 = getStorageProvider();
 			expect(getCurrentStorageProvider()).toBe('local');
 
 			// Change configuration (requires reset to take effect)
-			vi.mocked(envModule).STORAGE_PROVIDER = 'vercel-blob';
+			mockEnv.STORAGE_PROVIDER = 'vercel-blob';
 			// Without reset, should still return the same provider
 			const provider2 = getStorageProvider();
 			expect(provider1).toBe(provider2);
-			
+
 			// After reset, should use new configuration
 			resetStorageProvider();
 			const provider3 = getStorageProvider();

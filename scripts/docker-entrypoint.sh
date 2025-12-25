@@ -7,28 +7,36 @@
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Colors for output (only if terminal is attached)
+if [ -t 1 ]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m'
+else
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    NC=''
+fi
 
 # Logging functions
 log_info() {
-    echo "${BLUE}[INFO]${NC} $1"
+    printf "%b[INFO]%b %s\n" "$BLUE" "$NC" "$1"
 }
 
 log_success() {
-    echo "${GREEN}[SUCCESS]${NC} $1"
+    printf "%b[SUCCESS]%b %s\n" "$GREEN" "$NC" "$1"
 }
 
 log_warning() {
-    echo "${YELLOW}[WARNING]${NC} $1"
+    printf "%b[WARNING]%b %s\n" "$YELLOW" "$NC" "$1"
 }
 
 log_error() {
-    echo "${RED}[ERROR]${NC} $1"
+    printf "%b[ERROR]%b %s\n" "$RED" "$NC" "$1"
 }
 
 # ============================================

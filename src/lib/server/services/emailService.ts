@@ -1,4 +1,4 @@
-import { NODE_ENV, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USER } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { PUBLIC_SITE_URL } from '$env/static/public';
 import { createLogger } from '$lib/logger';
 import { db } from '$lib/server/db';
@@ -17,6 +17,13 @@ import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { ConfigRepository } from '../db/configRepository';
+
+// Dynamic environment variables for Docker runtime
+const NODE_ENV = env.NODE_ENV ?? 'development';
+const SMTP_HOST = env.SMTP_HOST ?? '';
+const SMTP_PORT = env.SMTP_PORT ?? '587';
+const SMTP_USER = env.SMTP_USER ?? '';
+const SMTP_PASSWORD = env.SMTP_PASSWORD ?? '';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
