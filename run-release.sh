@@ -193,12 +193,8 @@ docker pull "$IMAGE"
 # Ensure uploads directory exists
 mkdir -p "$SCRIPT_DIR/uploads"
 
-# Determine public URL based on Caddy availability
-if has_caddy; then
-    EFFECTIVE_PUBLIC_URL="https://localhost:$SSL_PORT"
-else
-    EFFECTIVE_PUBLIC_URL="${PUBLIC_SITE_URL:-http://localhost:$PORT}"
-fi
+# Application always uses HTTP internally, Caddy handles HTTPS termination
+APP_PUBLIC_URL="${PUBLIC_SITE_URL:-http://localhost:$PORT}"
 
 echo ""
 echo -e "${GREEN}Starting Ostsee-Tiere Release${NC}"
@@ -209,7 +205,7 @@ echo "App Port:  http://localhost:$PORT"
 if has_caddy; then
     echo "SSL Port:  https://localhost:$SSL_PORT (Caddy)"
 fi
-echo "Public:    $EFFECTIVE_PUBLIC_URL"
+echo "Public:    $APP_PUBLIC_URL"
 echo "Uploads:   $SCRIPT_DIR/uploads"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
@@ -225,7 +221,7 @@ docker run -d \
     -e DATABASE_POSTGRES_URL="$DOCKER_DATABASE_URL" \
     -e STORAGE_PROVIDER="${STORAGE_PROVIDER:-local}" \
     -e NODE_ENV="production" \
-    -e PUBLIC_SITE_URL="$EFFECTIVE_PUBLIC_URL" \
+    -e PUBLIC_SITE_URL="$APP_PUBLIC_URL" \
     -e SESSION_SECRET="${SESSION_SECRET}" \
     -e ENCRYPTION_KEY="${ENCRYPTION_KEY}" \
     -e COOKIE_NAME="${COOKIE_NAME:-auth-cookie}" \
