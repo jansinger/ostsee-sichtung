@@ -14,12 +14,9 @@
 # ============================================
 # Stage 1: Dependencies
 # ============================================
-FROM node:22-alpine AS deps
-
-LABEL org.opencontainers.image.title="Ostsee-Tiere"
-LABEL org.opencontainers.image.description="Marine animal sighting reporting platform for the Baltic Sea"
-LABEL org.opencontainers.image.source="https://github.com/jansinger/ostsee-sichtung"
-LABEL org.opencontainers.image.licenses="MIT"
+# Pin to specific Node.js LTS version for reproducible builds
+# Update periodically: https://nodejs.org/en/download/
+FROM node:22.16-alpine AS deps
 
 WORKDIR /app
 
@@ -39,7 +36,7 @@ RUN npm ci --include=dev
 # ============================================
 # Stage 2: Builder
 # ============================================
-FROM node:22-alpine AS builder
+FROM node:22.16-alpine AS builder
 
 WORKDIR /app
 
@@ -66,13 +63,21 @@ RUN npm prune --omit=dev
 # ============================================
 # Stage 3: Runtime
 # ============================================
-FROM node:22-alpine AS runtime
+FROM node:22.16-alpine AS runtime
+
+# OCI Image Labels (placed in final stage for proper metadata)
+LABEL org.opencontainers.image.title="Ostsee-Tiere"
+LABEL org.opencontainers.image.description="Marine animal sighting reporting platform for the Baltic Sea"
+LABEL org.opencontainers.image.source="https://github.com/jansinger/ostsee-sichtung"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.vendor="Ostsee-Tiere Project"
 
 # Install runtime dependencies
 RUN apk add --no-cache \
     dumb-init \
     curl \
-    tzdata
+    tzdata \
+    postgresql-client
 
 WORKDIR /app
 
