@@ -4,6 +4,8 @@ Schnellanleitung für das Deployment von Ostsee-Tiere in einer Produktionsumgebu
 
 > **Hinweis:** Diese Anleitung ist für erfahrene Administratoren gedacht, die Docker und Linux-Server verwalten. Für detaillierte Hintergrundinformationen siehe [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md).
 
+> **Neu in v2.0.8:** PostgreSQL 18 mit PostGIS 3.6 Support, Security Hardening (no-new-privileges, Logging-Limits), verbesserte Dokumentation.
+
 ---
 
 ## Inhaltsverzeichnis
