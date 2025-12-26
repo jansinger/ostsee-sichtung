@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { createLogger } from '$lib/logger';
 import { clearAuthCookie, setAuthCookie } from '$lib/server/auth/auth';
+import { databaseCheck } from '$lib/server/middleware/databaseCheck';
 import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';
 import type { User } from '$lib/types/index';
 import type { Handle } from '@sveltejs/kit';
@@ -101,7 +102,8 @@ const authentication: Handle = async ({ event, resolve }) => {
  * Hier werden Middleware in der richtigen Reihenfolge ausgeführt
  */
 export const handle: Handle = sequence(
-	maintenanceMode, // First: Check maintenance mode
-	authentication, // Second: Handle authentication
-	setAdditionalHeaders // Third: Set security headers
+	databaseCheck, // First: Check database availability
+	maintenanceMode, // Second: Check maintenance mode
+	authentication, // Third: Handle authentication
+	setAdditionalHeaders // Fourth: Set security headers
 );

@@ -98,3 +98,48 @@ export function getDb(): PostgresJsDatabase<typeof schema> {
 	}
 	return _realDb;
 }
+
+// Helper function to get the initialization error message
+export function getDatabaseError(): string | null {
+	ensureInitialized();
+	return _initError;
+}
+
+/**
+ * Test if the database connection is actually working.
+ * This performs a real query to verify connectivity.
+ * Results are cached to avoid excessive connection attempts.
+ */
+let _lastConnectionTest: { time: number; result: boolean } | null = null;
+const CONNECTION_TEST_CACHE_MS = 10000; // Cache result for 10 seconds
+
+export async function testDatabaseConnection(): Promise<boolean> {
+	// Check cache first
+	if (_lastConnectionTest && Date.now() - _lastConnectionTest.time < CONNECTION_TEST_CACHE_MS) {
+		return _lastConnectionTest.result;
+	}
+
+	// If DB is not configured, return false immediately
+	if (!isDatabaseAvailable()) {
+		_lastConnectionTest = { time: Date.now(), result: false };
+		return false;
+	}
+
+	try {
+		// Perform a simple query to test connectivity
+		const { sql } = await import('drizzle-orm');
+		await db.execute(sql`SELECT 1`);
+		_lastConnectionTest = { time: Date.now(), result: true };
+		return true;
+	} catch {
+		_lastConnectionTest = { time: Date.now(), result: false };
+		return false;
+	}
+}
+
+/**
+ * Reset the connection test cache (useful for testing or reconnection attempts)
+ */
+export function resetConnectionTestCache(): void {
+	_lastConnectionTest = null;
+}

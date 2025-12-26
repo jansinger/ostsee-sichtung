@@ -46,6 +46,8 @@
 				return 'lucide:lock';
 			case 500:
 				return 'lucide:circle-alert';
+			case 503:
+				return 'lucide:database';
 			default:
 				return 'lucide:circle-alert';
 		}
@@ -71,6 +73,12 @@
 					title: 'Serverfehler',
 					description:
 						'Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.'
+				};
+			case 503:
+				return {
+					title: 'Dienst nicht verfügbar',
+					description:
+						'Die Datenbank ist derzeit nicht erreichbar. Bitte versuchen Sie es in einigen Minuten erneut.'
 				};
 			default:
 				return {
