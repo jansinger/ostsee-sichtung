@@ -1,7 +1,10 @@
 import { env } from '$env/dynamic/private';
-import { PUBLIC_SITE_URL } from '$env/static/public';
+import { env as publicEnv } from '$env/dynamic/public';
 import { createLogger } from '$lib/logger';
 import { db } from '$lib/server/db';
+
+// Helper to get PUBLIC_SITE_URL dynamically (runtime, not build-time)
+const getPublicSiteUrl = () => publicEnv.PUBLIC_SITE_URL ?? 'http://localhost:3000';
 import { sightings } from '$lib/server/db/schema';
 import type { SightingFormValues } from '$lib/types/Form';
 import { formatLocalDateTime } from '$lib/utils/format/dateTime';
@@ -211,7 +214,7 @@ export class EmailService {
 			} as SightingFormValues;
 
 			// Build admin URL and reference ID
-			const adminUrl = `${PUBLIC_SITE_URL}/admin/${sightingId}`;
+			const adminUrl = `${getPublicSiteUrl()}/admin/${sightingId}`;
 			const referenceId = sighting.referenceId || `REF-${sightingId}`;
 
 			return {

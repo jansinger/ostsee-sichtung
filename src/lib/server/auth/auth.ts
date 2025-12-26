@@ -1,6 +1,9 @@
 import { env } from '$env/dynamic/private';
-import { PUBLIC_SITE_URL } from '$env/static/public';
+import { env as publicEnv } from '$env/dynamic/public';
 import type { User } from '$lib/types/index';
+
+// Helper to get PUBLIC_SITE_URL dynamically (runtime, not build-time)
+const getPublicSiteUrl = () => publicEnv.PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
 // Helper functions to get environment variables dynamically
 // This allows tests to mock the values and Docker to provide runtime configuration
@@ -187,7 +190,7 @@ export async function getToken({ code, pkceVerifier }: { code: string; pkceVerif
 			code,
 			client_id: getAuth0ClientId(),
 			client_secret: getAuth0ClientSecret(),
-			redirect_uri: `${PUBLIC_SITE_URL}/api/auth/callback`,
+			redirect_uri: `${getPublicSiteUrl()}/api/auth/callback`,
 			grant_type: 'authorization_code',
 			code_verifier: pkceVerifier
 		}),
