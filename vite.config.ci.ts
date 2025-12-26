@@ -5,6 +5,10 @@ import { defineConfig } from 'vite';
 import devtoolsJson from 'vite-plugin-devtools-json';
 
 export default defineConfig({
+	// Set environment variable to skip database check in CI/E2E tests
+	define: {
+		'process.env.SKIP_DB_CHECK': JSON.stringify('true')
+	},
 	plugins: [
 		tailwindcss(),
 		Icons({

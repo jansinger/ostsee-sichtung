@@ -193,8 +193,14 @@ docker pull "$IMAGE"
 # Ensure uploads directory exists
 mkdir -p "$SCRIPT_DIR/uploads"
 
-# Application always uses HTTP internally, Caddy handles HTTPS termination
-APP_PUBLIC_URL="${PUBLIC_SITE_URL:-http://localhost:$PORT}"
+# Determine public URL: prefer explicitly configured PUBLIC_SITE_URL, otherwise use Caddy HTTPS URL if available, otherwise default to localhost
+if [ -n "${PUBLIC_SITE_URL:-}" ]; then
+    APP_PUBLIC_URL="$PUBLIC_SITE_URL"
+elif has_caddy; then
+    APP_PUBLIC_URL="https://localhost:$SSL_PORT"
+else
+    APP_PUBLIC_URL="http://localhost:$PORT"
+fi
 
 echo ""
 echo -e "${GREEN}Starting Ostsee-Tiere Release${NC}"
