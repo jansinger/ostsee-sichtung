@@ -186,11 +186,11 @@
 					createToast('error', 'Fehler beim Hochladen der Datei');
 				});
 			// Capture current positionMediaFile state to avoid timing-dependent behavior
-			const hadPositionMediaFileAtCreation = !!positionMediaFile;
+			const hadPositionMediaFileBeforeMetadata = !!positionMediaFile;
 			// Trigger positionMediaFile update when metadata is ready
 			mediaFile.metadata.then(() => {
 				// Trigger store update to refresh derived values
-				if (!hadPositionMediaFileAtCreation && mediaFile.hasPosition()) {
+				if (!hadPositionMediaFileBeforeMetadata && mediaFile.hasPosition()) {
 					updateMediaFiles([...mediaStore.mediaFiles]);
 				}
 			});
