@@ -76,11 +76,11 @@ src/
 let count = $state(0);
 let user = $state({ name: 'Max' });
 
-// Derived
+// Derived - für berechnete Werte (pure, returns value)
 let doubled = $derived(count * 2);
 let fullName = $derived.by(() => `${user.firstName} ${user.lastName}`);
 
-// Effects
+// Effects - für Side Effects (impure, no return value)
 $effect(() => {
     console.log('Count changed:', count);
     return () => cleanup();
@@ -97,6 +97,62 @@ let { items, onSelect }: Props = $props();
 
 <!-- NICHT Svelte 4 -->
 <button on:click={handleClick}>Klick</button>
+```
+
+### SSR-sicheres State Management
+
+**KRITISCH:** Globaler `$state` auf dem Server führt zu Datenlecks zwischen Usern!
+
+```typescript
+// ❌ FALSCH - Shared State auf Server
+// globals.svelte.ts
+export const userState = $state({ name: '' }); // Leakt zwischen Requests!
+
+// ✅ RICHTIG - Context API für SSR
+// +layout.svelte
+import { setContext } from 'svelte';
+const state = $state({ name: '' });
+setContext('app-state', state);
+
+// Komponente
+import { getContext } from 'svelte';
+const state = getContext('app-state');
+```
+
+### `.svelte.ts` Dateien für Shared State
+
+```typescript
+// stores/counter.svelte.ts - Reaktiver State außerhalb von Komponenten
+export function createCounter(initial = 0) {
+    let count = $state(initial);
+    return {
+        get value() { return count; },
+        increment() { count++; },
+        decrement() { count--; }
+    };
+}
+```
+
+### $effect Best Practices
+
+```typescript
+// ✅ GUT - Ein Effect, eine Aufgabe
+$effect(() => {
+    localStorage.setItem('count', count.toString());
+});
+
+// ✅ Browser-only Code absichern
+$effect(() => {
+    if (typeof window === 'undefined') return;
+    // Browser-only logic
+});
+
+// ❌ SCHLECHT - Zu viel in einem Effect
+$effect(() => {
+    fetchData();
+    updateDOM();
+    saveToStorage();
+});
 ```
 
 ---

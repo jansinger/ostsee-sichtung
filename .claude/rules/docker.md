@@ -1,0 +1,237 @@
+# Docker Deployment
+
+Regeln für Docker-Builds und Container-Deployment.
+
+---
+
+## Befehle
+
+```bash
+npm run docker:build    # Production Image bauen
+npm run docker:run      # Container mit ./uploads Mount starten
+npm run docker:compose  # Docker Compose starten
+npm run docker:stop     # Docker Compose stoppen
+```
+
+---
+
+## Multi-Stage Build
+
+Das Projekt nutzt **Multi-Stage Builds** für optimierte Images:
+
+```dockerfile
+# Stage 1: Dependencies
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+
+# Stage 2: Build
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
+
+# Stage 3: Production (minimal)
+FROM node:22-alpine AS runner
+WORKDIR /app
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/package.json ./
+ENV NODE_ENV=production
+CMD ["node", "build"]
+```
+
+**Vorteile:**
+- Image-Größe: ~50MB statt >1GB
+- Kein Source Code im finalen Image
+- Keine Build-Tools im Production Container
+
+---
+
+## adapter-node Konfiguration
+
+```javascript
+// svelte.config.js
+import adapter from '@sveltejs/adapter-node';
+
+export default {
+    kit: {
+        adapter: adapter({
+            out: 'build',
+            precompress: true,
+            envPrefix: ''
+        })
+    }
+};
+```
+
+---
+
+## Environment Variables
+
+### Runtime (Dynamic)
+```typescript
+// Zur Laufzeit verfügbar, nicht im Build eingebacken
+import { env } from '$env/dynamic/private';
+const dbUrl = env.DATABASE_POSTGRES_URL;
+```
+
+### Build-time (Static)
+```typescript
+// Wird beim Build eingebacken - VORSICHT!
+import { DATABASE_URL } from '$env/static/private';
+```
+
+### Docker Run mit Env Vars
+```bash
+docker run -p 3000:3000 \
+  -e ORIGIN=https://example.com \
+  -e DATABASE_POSTGRES_URL="..." \
+  -e NODE_ENV=production \
+  ostsee-tiere:latest
+```
+
+---
+
+## ORIGIN für Form Actions
+
+**WICHTIG:** SvelteKit Form Actions benötigen ORIGIN:
+
+```bash
+# Ohne ORIGIN schlagen Form Submissions fehl!
+docker run -p 3000:3000 -e ORIGIN=http://localhost:3000 my-app
+```
+
+---
+
+## Volume Mounts
+
+### Uploads Verzeichnis
+```bash
+# Bind Mount (Entwicklung)
+docker run -v ./uploads:/app/uploads ostsee-tiere
+
+# Named Volume (Production)
+docker run -v ostsee-uploads:/app/uploads ostsee-tiere
+```
+
+### Permissions (Linux)
+```bash
+# Container läuft als User 1001 (nodejs)
+sudo chown -R 1001:1001 ./uploads
+```
+
+---
+
+## Docker Compose Production
+
+```yaml
+services:
+  app:
+    image: ghcr.io/jansinger/ostsee-sichtung:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - ORIGIN=https://ostsee-tiere.example.com
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+```
+
+---
+
+## Alpine Base Image
+
+Das Projekt nutzt `node:22-alpine`:
+
+```dockerfile
+FROM node:22-alpine AS base
+
+# Für native Dependencies (falls nötig)
+RUN apk add --no-cache libc6-compat
+```
+
+**Vorteile:**
+- Minimale Größe (~50MB Base)
+- Sicherheit: Weniger Angriffsfläche
+- Schnellere Pulls und Deployments
+
+---
+
+## Layer Caching
+
+```dockerfile
+# 1. Package Files zuerst (ändert sich selten)
+COPY package*.json ./
+RUN npm ci
+
+# 2. Source Code danach (ändert sich oft)
+COPY . .
+RUN npm run build
+```
+
+**Warum:** Docker cached Layers. Package-Installation wird nur bei package.json-Änderung wiederholt.
+
+---
+
+## Health Checks
+
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+```
+
+```yaml
+# docker-compose.yml
+services:
+  app:
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+```
+
+---
+
+## Nginx Reverse Proxy
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name ostsee-tiere.example.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+---
+
+## Best Practices
+
+### Do's
+- Multi-Stage Builds verwenden
+- `$env/dynamic/private` für Runtime-Config
+- ORIGIN Environment Variable setzen
+- Health Checks implementieren
+- Logging-Limits konfigurieren
+
+### Don'ts
+- Keine Secrets in Dockerfile
+- Keine Build-Args für Secrets
+- Kein `latest` Tag in Production
+- Keine Root-User im Container

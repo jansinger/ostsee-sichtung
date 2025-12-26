@@ -130,6 +130,7 @@ Detaillierte Regeln in `.claude/rules/`:
 | @.claude/rules/maps.md | OpenLayers |
 | @.claude/rules/security.md | Auth, GDPR |
 | @.claude/rules/api.md | REST API |
+| @.claude/rules/docker.md | Docker Deployment |
 
 ### Agents (Aufgabenspezifisch)
 
