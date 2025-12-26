@@ -31,8 +31,10 @@ vi.mock('$env/dynamic/private', () => ({
 	}
 }));
 
-vi.mock('$env/static/public', () => ({
-	PUBLIC_SITE_URL: 'https://test-site.com'
+vi.mock('$env/dynamic/public', () => ({
+	env: {
+		PUBLIC_SITE_URL: 'https://test-site.com'
+	}
 }));
 
 // Mock crypto functions

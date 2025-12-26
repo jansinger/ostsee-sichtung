@@ -1,12 +1,18 @@
 #!/bin/bash
 #
-# Run the latest release Docker image with local PostgreSQL and uploads directory
+# Run the latest release Docker image with local PostgreSQL and optional Caddy SSL proxy
 #
 # Usage:
-#   ./run-release.sh           # Run latest release
+#   ./run-release.sh           # Run latest release (with Caddy if available)
 #   ./run-release.sh v2.0.2    # Run specific version
-#   ./run-release.sh stop      # Stop running container
-#   ./run-release.sh logs      # View logs
+#   ./run-release.sh stop      # Stop running container and Caddy
+#   ./run-release.sh logs      # View container logs
+#   ./run-release.sh status    # Show status of container and Caddy
+#
+# Environment variables:
+#   PORT=3000          # Application port (default: 3000)
+#   SSL_PORT=3443      # Caddy SSL port (default: 3443)
+#   NO_CADDY=1         # Disable Caddy even if installed
 #
 # Supports Docker Desktop and Rancher Desktop on macOS
 # Note: For Rancher Desktop, PostgreSQL must listen on all interfaces
@@ -18,6 +24,8 @@ CONTAINER_NAME="ostsee-tiere-release"
 IMAGE_BASE="ghcr.io/jansinger/ostsee-sichtung"
 VERSION="${1:-latest}"
 PORT="${PORT:-3000}"
+SSL_PORT="${SSL_PORT:-3443}"
+CADDY_PID_FILE="/tmp/ostsee-caddy.pid"
 
 # Colors for output
 RED='\033[0;31m'
@@ -28,6 +36,59 @@ NC='\033[0m' # No Color
 
 # Script directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Check if Caddy is available
+has_caddy() {
+    [ -z "$NO_CADDY" ] && command -v caddy >/dev/null 2>&1
+}
+
+# Stop Caddy if running
+stop_caddy() {
+    if [ -f "$CADDY_PID_FILE" ]; then
+        local pid
+        pid=$(cat "$CADDY_PID_FILE" 2>/dev/null)
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            echo -e "${YELLOW}Stopping Caddy (PID: $pid)...${NC}"
+            kill "$pid" 2>/dev/null || true
+            sleep 1
+        fi
+        rm -f "$CADDY_PID_FILE"
+    fi
+    # Also kill any orphaned caddy processes for this port
+    pkill -f "caddy reverse-proxy.*:$SSL_PORT" 2>/dev/null || true
+}
+
+# Start Caddy as reverse proxy with automatic HTTPS
+start_caddy() {
+    if ! has_caddy; then
+        return 1
+    fi
+
+    stop_caddy
+
+    echo -e "${BLUE}Starting Caddy reverse proxy on https://localhost:$SSL_PORT${NC}"
+
+    # Start Caddy in background with reverse proxy to app
+    caddy reverse-proxy \
+        --from "localhost:$SSL_PORT" \
+        --to "localhost:$PORT" \
+        --internal-certs \
+        >/dev/null 2>&1 &
+
+    local caddy_pid=$!
+    echo "$caddy_pid" > "$CADDY_PID_FILE"
+
+    # Wait a moment and verify Caddy started
+    sleep 1
+    if kill -0 "$caddy_pid" 2>/dev/null; then
+        echo -e "${GREEN}✓ Caddy started (PID: $caddy_pid)${NC}"
+        return 0
+    else
+        echo -e "${YELLOW}⚠ Caddy failed to start${NC}"
+        rm -f "$CADDY_PID_FILE"
+        return 1
+    fi
+}
 
 # Detect Docker runtime (Docker Desktop vs Rancher Desktop)
 detect_docker_runtime() {
@@ -42,7 +103,6 @@ detect_docker_runtime() {
 
 # Get host IP for database connection (needed for Rancher Desktop)
 get_host_ip() {
-    # Try to get the primary network interface IP
     if command -v ifconfig >/dev/null 2>&1; then
         ifconfig en0 2>/dev/null | grep "inet " | awk '{print $2}' | head -1
     elif command -v ip >/dev/null 2>&1; then
@@ -55,10 +115,11 @@ get_host_ip() {
 # Handle commands
 case "$VERSION" in
     stop)
-        echo -e "${YELLOW}Stopping container...${NC}"
+        echo -e "${YELLOW}Stopping services...${NC}"
+        stop_caddy
         docker stop "$CONTAINER_NAME" 2>/dev/null || true
         docker rm "$CONTAINER_NAME" 2>/dev/null || true
-        echo -e "${GREEN}Container stopped and removed.${NC}"
+        echo -e "${GREEN}All services stopped.${NC}"
         exit 0
         ;;
     logs)
@@ -66,7 +127,20 @@ case "$VERSION" in
         exit 0
         ;;
     status)
+        echo -e "${BLUE}Container status:${NC}"
         docker ps -f "name=$CONTAINER_NAME" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+        echo ""
+        echo -e "${BLUE}Caddy status:${NC}"
+        if [ -f "$CADDY_PID_FILE" ]; then
+            CADDY_PID=$(cat "$CADDY_PID_FILE" 2>/dev/null)
+            if [ -n "$CADDY_PID" ] && kill -0 "$CADDY_PID" 2>/dev/null; then
+                echo -e "  ${GREEN}Running${NC} (PID: $CADDY_PID) on https://localhost:$SSL_PORT"
+            else
+                echo -e "  ${RED}Not running${NC}"
+            fi
+        else
+            echo -e "  ${YELLOW}Not configured${NC}"
+        fi
         exit 0
         ;;
 esac
@@ -84,7 +158,7 @@ source "$SCRIPT_DIR/.env"
 set +a
 
 # Check required environment variables
-if [ -z "$AUTH0_CLIENT_ID" ] || [ "$AUTH0_CLIENT_ID" = "client-id" ]; then
+if [ -z "$AUTH0_CLIENT_ID" ] || [ "$AUTH0_CLIENT_ID" = "your-auth0-client-id" ]; then
     echo -e "${YELLOW}Warning: AUTH0_CLIENT_ID not configured - authentication will not work${NC}"
 fi
 
@@ -94,16 +168,12 @@ HOST_IP=$(get_host_ip)
 
 echo -e "${BLUE}Detected Docker runtime: $DOCKER_RUNTIME${NC}"
 
-# For Rancher Desktop, we need to replace localhost with host IP in DATABASE_POSTGRES_URL
+# For Rancher Desktop, replace localhost with host IP in DATABASE_POSTGRES_URL
 if [ "$DOCKER_RUNTIME" = "rancher" ]; then
     echo -e "${YELLOW}Rancher Desktop detected - adjusting database connection${NC}"
-
-    # Replace localhost with host IP in the database URL
     DOCKER_DATABASE_URL=$(echo "$DATABASE_POSTGRES_URL" | sed "s/@localhost:/@$HOST_IP:/g" | sed "s/@127\.0\.0\.1:/@$HOST_IP:/g")
-
     echo -e "${BLUE}Host IP: $HOST_IP${NC}"
     echo -e "${YELLOW}Note: PostgreSQL must be configured to accept connections from Docker${NC}"
-    echo -e "${YELLOW}      Add '$HOST_IP/32' to pg_hba.conf if connection fails${NC}"
 else
     DOCKER_DATABASE_URL="$DATABASE_POSTGRES_URL"
 fi
@@ -123,21 +193,28 @@ docker pull "$IMAGE"
 # Ensure uploads directory exists
 mkdir -p "$SCRIPT_DIR/uploads"
 
+# Determine public URL based on Caddy availability
+if has_caddy; then
+    EFFECTIVE_PUBLIC_URL="https://localhost:$SSL_PORT"
+else
+    EFFECTIVE_PUBLIC_URL="${PUBLIC_SITE_URL:-http://localhost:$PORT}"
+fi
+
 echo ""
-echo -e "${GREEN}Starting Ostsee-Tiere Release Container${NC}"
+echo -e "${GREEN}Starting Ostsee-Tiere Release${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "Runtime:   $DOCKER_RUNTIME"
 echo "Image:     $IMAGE"
-echo "Port:      http://localhost:$PORT"
-echo "Database:  $DOCKER_DATABASE_URL"
+echo "App Port:  http://localhost:$PORT"
+if has_caddy; then
+    echo "SSL Port:  https://localhost:$SSL_PORT (Caddy)"
+fi
+echo "Public:    $EFFECTIVE_PUBLIC_URL"
 echo "Uploads:   $SCRIPT_DIR/uploads"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
 # Run the container
-# - Port mapping for application access
-# - Run as current user to avoid permission issues with bind mounts
-# - Override entrypoint to skip storage check (Rancher Desktop compatibility)
 docker run -d \
     --name "$CONTAINER_NAME" \
     -p "$PORT:$PORT" \
@@ -148,47 +225,68 @@ docker run -d \
     -e DATABASE_POSTGRES_URL="$DOCKER_DATABASE_URL" \
     -e STORAGE_PROVIDER="${STORAGE_PROVIDER:-local}" \
     -e NODE_ENV="production" \
-    -e PUBLIC_SITE_URL="${PUBLIC_SITE_URL:-http://localhost:$PORT}" \
+    -e PUBLIC_SITE_URL="$EFFECTIVE_PUBLIC_URL" \
     -e SESSION_SECRET="${SESSION_SECRET}" \
     -e ENCRYPTION_KEY="${ENCRYPTION_KEY}" \
+    -e COOKIE_NAME="${COOKIE_NAME:-auth-cookie}" \
     -e AUTH0_CLIENT_ID="${AUTH0_CLIENT_ID}" \
     -e AUTH0_CLIENT_SECRET="${AUTH0_CLIENT_SECRET}" \
     -e AUTH0_DOMAIN="${AUTH0_DOMAIN}" \
     -e JWKS_URL="${JWKS_URL}" \
     -e API_AUDIENCE="${API_AUDIENCE}" \
-    -e LOG_LEVEL="${LOG_LEVEL:-info}" \
-    -e SKIP_STORAGE_CHECK="${SKIP_STORAGE_CHECK:-true}" \
+    -e SKIP_STORAGE_CHECK="true" \
     "$IMAGE" \
     node build/index.js
 
 echo -e "${GREEN}Container started!${NC}"
+
+# Wait for application to be healthy
+echo "Waiting for application to start..."
+sleep 2
+
+APP_HEALTHY=false
+for i in {1..30}; do
+    if curl -s -f "http://localhost:$PORT/health" >/dev/null 2>&1; then
+        APP_HEALTHY=true
+        echo -e "${GREEN}✓ Application is healthy${NC}"
+        break
+    fi
+    sleep 1
+done
+
+if [ "$APP_HEALTHY" = false ]; then
+    if docker ps -q -f "name=$CONTAINER_NAME" | grep -q .; then
+        echo -e "${YELLOW}Application may still be starting. Check logs with: ./run-release.sh logs${NC}"
+    else
+        echo -e "${RED}✗ Container failed to start. Check logs:${NC}"
+        docker logs "$CONTAINER_NAME"
+        exit 1
+    fi
+fi
+
+# Start Caddy if available
+CADDY_STARTED=false
+if has_caddy; then
+    if start_caddy; then
+        CADDY_STARTED=true
+    fi
+fi
+
+echo ""
+echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+if [ "$CADDY_STARTED" = true ]; then
+    echo -e "${GREEN}Application available at: https://localhost:$SSL_PORT${NC}"
+    echo -e "${BLUE}  (also http://localhost:$PORT without SSL)${NC}"
+else
+    echo -e "${GREEN}Application available at: http://localhost:$PORT${NC}"
+    if [ -z "$NO_CADDY" ]; then
+        echo -e "${YELLOW}  Tip: Install Caddy for automatic HTTPS: brew install caddy${NC}"
+    fi
+fi
+echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo "Commands:"
 echo "  ./run-release.sh logs    - View logs"
-echo "  ./run-release.sh stop    - Stop container"
+echo "  ./run-release.sh stop    - Stop all services"
 echo "  ./run-release.sh status  - Check status"
 echo ""
-echo -e "${GREEN}Application available at: http://localhost:$PORT${NC}"
-echo ""
-
-# Wait a moment and check health
-sleep 3
-if docker ps -q -f "name=$CONTAINER_NAME" | grep -q .; then
-    echo -e "${GREEN}✓ Container is running${NC}"
-
-    # Wait for health check
-    echo "Waiting for application to start..."
-    for i in {1..30}; do
-        if curl -s -f "http://localhost:$PORT/health" >/dev/null 2>&1; then
-            echo -e "${GREEN}✓ Application is healthy${NC}"
-            exit 0
-        fi
-        sleep 1
-    done
-
-    echo -e "${YELLOW}Application may still be starting. Check logs with: ./run-release.sh logs${NC}"
-else
-    echo -e "${RED}✗ Container failed to start. Check logs:${NC}"
-    docker logs "$CONTAINER_NAME"
-    exit 1
-fi
