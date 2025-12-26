@@ -2,11 +2,14 @@
 
 This comprehensive guide covers deploying the Ostsee-Tiere marine animal sighting platform using Docker containers. Docker is the **primary deployment method** for self-hosted installations.
 
+> **Für Produktions-Deployments:** Siehe die fokussierte Anleitung [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md) für einen schnellen, klaren Installationspfad.
+
 ## Table of Contents
 
-- [Quick Start](#quick-start)
+- [Production Quick Start (5 Minuten)](#production-quick-start-5-minuten)
 - [System Requirements](#system-requirements)
 - [Installation Options](#installation-options)
+- [Dedicated Server with Native PostgreSQL](#dedicated-server-with-native-postgresql)
 - [Configuration](#configuration)
 - [Storage Setup](#storage-setup)
 - [Database Configuration](#database-configuration)
@@ -22,23 +25,154 @@ This comprehensive guide covers deploying the Ostsee-Tiere marine animal sightin
 
 ---
 
-## Quick Start
+## Production Quick Start (5 Minuten)
 
-Get Ostsee-Tiere running in 4 steps:
+**Fastest path to a running production instance on a dedicated Linux server with native PostgreSQL.**
+
+> **Note:** You don't need to clone the repository! The Docker image contains everything. You only need to create a `.env` file and an `uploads` directory.
+
+### Prerequisites
+
+- Debian 12 / Ubuntu 22.04+ Server
+- Docker 24+ installed (`curl -fsSL https://get.docker.com | sh`)
+- PostgreSQL 18 with PostGIS installed (see [PostGIS Installation](#postgis-installation))
+- Domain with DNS pointing to server (optional, for SSL)
+
+### Step-by-Step Installation
 
 ```bash
-# 1. Clone the repository or download release files
-git clone https://github.com/jansinger/ostsee-sichtung.git
-cd ostsee-sichtung
+# 1. Create deployment directory
+sudo mkdir -p /opt/ostsee-tiere
+cd /opt/ostsee-tiere
 
-# 2. Configure environment
+# 2. Install PostgreSQL with PostGIS (if not already installed)
+sudo apt update
+sudo apt install -y postgresql-18 postgresql-18-postgis-3
+
+# 3. Create database and user
+sudo -u postgres psql << 'EOF'
+CREATE DATABASE ostsee;
+\c ostsee
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;
+CREATE USER ostsee_app WITH PASSWORD 'YOUR_SECURE_PASSWORD';
+GRANT ALL PRIVILEGES ON DATABASE ostsee TO ostsee_app;
+GRANT ALL ON SCHEMA public TO ostsee_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ostsee_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ostsee_app;
+EOF
+
+# 4. Configure PostgreSQL for Docker access
+DOCKER_GATEWAY=$(docker network inspect bridge -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}')
+echo "Docker Gateway IP: $DOCKER_GATEWAY"
+
+echo "host    ostsee    ostsee_app    ${DOCKER_GATEWAY}/16    scram-sha-256" | \
+  sudo tee -a /etc/postgresql/18/main/pg_hba.conf
+
+sudo sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost,${DOCKER_GATEWAY}'/" \
+  /etc/postgresql/18/main/postgresql.conf
+
+sudo systemctl restart postgresql
+
+# 5. Create .env file (no repository clone needed!)
+cat > .env << 'EOF'
+# Database - use Docker gateway IP (typically 172.17.0.1)
+DATABASE_POSTGRES_URL="postgresql://ostsee_app:YOUR_SECURE_PASSWORD@172.17.0.1:5432/ostsee"
+
+# Storage
+STORAGE_PROVIDER=local
+UPLOAD_PATH=/app/uploads
+
+# Application
+NODE_ENV=production
+PUBLIC_SITE_URL=https://your-domain.com
+PORT=3000
+
+# Security - GENERATE THESE:
+# SESSION_SECRET: openssl rand -base64 32
+# ENCRYPTION_KEY: openssl rand -hex 32
+SESSION_SECRET=REPLACE_WITH_GENERATED_VALUE
+ENCRYPTION_KEY=REPLACE_WITH_GENERATED_VALUE
+
+# Auth0 - get these from your Auth0 dashboard
+AUTH0_CLIENT_ID=your-auth0-client-id
+AUTH0_CLIENT_SECRET=your-auth0-client-secret
+AUTH0_DOMAIN=your-tenant.auth0.com
+JWKS_URL=https://your-tenant.auth0.com/.well-known/jwks.json
+API_AUDIENCE=your-api-audience
+EOF
+
+# Edit .env with your actual values
+nano .env
+
+# 6. Create uploads directory
+mkdir -p uploads
+sudo chown 1001:1001 uploads
+
+# 7. Secure .env file
+chmod 600 .env
+
+# 8. Pull and start container
+docker pull ghcr.io/jansinger/ostsee-sichtung:latest
+
+docker run -d \
+  --name ostsee-tiere \
+  --restart unless-stopped \
+  -p 127.0.0.1:3000:3000 \
+  -v /opt/ostsee-tiere/uploads:/app/uploads \
+  --env-file /opt/ostsee-tiere/.env \
+  ghcr.io/jansinger/ostsee-sichtung:latest
+
+# 9. Initialize database schema
+docker exec ostsee-tiere npx drizzle-kit push
+
+# 10. Verify installation
+curl -f http://localhost:3000/health && echo "Success!"
+
+# 11. Setup reverse proxy with SSL (Caddy example - auto-HTTPS)
+sudo apt install -y caddy
+echo "your-domain.com {
+    reverse_proxy localhost:3000
+}" | sudo tee /etc/caddy/Caddyfile
+sudo systemctl restart caddy
+```
+
+**Done!** Access your installation at `https://your-domain.com`
+
+---
+
+## Quick Start (Docker Compose - All-in-One)
+
+For development or testing with PostgreSQL running inside Docker.
+
+> **Note:** Docker Compose requires downloading `docker-compose.production.yml` and optionally the monitoring configuration.
+
+```bash
+# 1. Create deployment directory
+mkdir -p ostsee-tiere && cd ostsee-tiere
+
+# 2. Download required files
+curl -O https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/docker-compose.production.yml
+curl -O https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/.env.docker
+
+# 3. (Optional) Download monitoring config
+mkdir -p monitoring/grafana/provisioning/datasources monitoring/grafana/provisioning/dashboards monitoring/grafana/dashboards
+curl -o monitoring/prometheus.yml https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/monitoring/prometheus.yml
+curl -o monitoring/grafana/provisioning/datasources/prometheus.yml https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/monitoring/grafana/provisioning/datasources/prometheus.yml
+curl -o monitoring/grafana/provisioning/dashboards/default.yml https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/monitoring/grafana/provisioning/dashboards/default.yml
+curl -o monitoring/grafana/dashboards/ostsee-tiere-overview.json https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/monitoring/grafana/dashboards/ostsee-tiere-overview.json
+
+# 4. Configure environment
 cp .env.docker .env
-nano .env  # Edit with your settings (see Configuration section)
+nano .env  # Edit: Auth0 credentials, SESSION_SECRET, ENCRYPTION_KEY
 
-# 3. Start services
+# 5. Start all services (app + database)
 docker compose -f docker-compose.production.yml up -d
 
-# 4. (Optional) Enable monitoring
+# 6. Initialize database schema
+docker exec ostsee-tiere-app npx drizzle-kit push
+
+# 7. (Optional) Enable monitoring
 docker compose -f docker-compose.production.yml --profile monitoring up -d
 ```
 
@@ -166,6 +300,369 @@ docker run -d \
 **Best for**: AWS ECS, Azure Container Instances, Google Cloud Run.
 
 See [Cloud Deployment Guide](#cloud-deployment-patterns) below.
+
+---
+
+## Dedicated Server with Native PostgreSQL
+
+This section provides complete instructions for deploying on a dedicated Linux server where PostgreSQL runs natively (not in Docker). This is the **recommended production setup**.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Dedicated Server                          │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │ Reverse Proxy (Caddy/Nginx)                             ││
+│  │ Port 443 (HTTPS) → localhost:3000                       ││
+│  └─────────────────────────────────────────────────────────┘│
+│                              ↓                               │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │ Docker Container: ostsee-tiere                          ││
+│  │ Port 3000 (internal)                                    ││
+│  │ Volume: ./uploads → /app/uploads                        ││
+│  └─────────────────────────────────────────────────────────┘│
+│                              ↓                               │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │ Native PostgreSQL + PostGIS                             ││
+│  │ Port 5432 (localhost + Docker bridge: 172.17.0.1)       ││
+│  └─────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
+```
+
+### PostGIS Installation
+
+PostgreSQL with PostGIS must be installed natively on your server.
+
+**Debian 12 / Ubuntu 22.04+:**
+
+```bash
+# Add PostgreSQL repository for latest version
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+
+# Install PostgreSQL 18 with PostGIS
+sudo apt update
+sudo apt install -y postgresql-18 postgresql-18-postgis-3 postgresql-18-postgis-3-scripts
+
+# Verify installation
+sudo -u postgres psql -c "SELECT version();"
+sudo -u postgres psql -c "SELECT PostGIS_Version();"
+```
+
+**RHEL/CentOS/Rocky Linux 9:**
+
+```bash
+# Install PostgreSQL repository
+sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+
+# Install PostgreSQL 18 with PostGIS
+sudo dnf install -y postgresql18-server postgresql18-contrib postgis35_18
+
+# Initialize and start
+sudo /usr/pgsql-18/bin/postgresql-18-setup initdb
+sudo systemctl enable --now postgresql-18
+```
+
+### Database Setup
+
+```bash
+# Create database and enable PostGIS
+sudo -u postgres psql << 'EOF'
+-- Create database
+CREATE DATABASE ostsee;
+
+-- Connect and enable extensions
+\c ostsee
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE EXTENSION IF NOT EXISTS postgis_topology;
+
+-- Create application user with secure password
+CREATE USER ostsee_app WITH PASSWORD 'GENERATE_SECURE_PASSWORD_HERE';
+
+-- Grant privileges
+GRANT ALL PRIVILEGES ON DATABASE ostsee TO ostsee_app;
+GRANT ALL ON SCHEMA public TO ostsee_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ostsee_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ostsee_app;
+
+-- Verify
+\dx
+EOF
+```
+
+**Generate a secure password:**
+```bash
+openssl rand -base64 24
+```
+
+### Docker-to-Host Network Configuration
+
+Docker containers cannot access `localhost` directly. They must connect via the Docker bridge network.
+
+**Step 1: Find Docker Bridge Gateway IP**
+
+```bash
+# Get the gateway IP (typically 172.17.0.1)
+DOCKER_GATEWAY=$(docker network inspect bridge -f '{{range .IPAM.Config}}{{.Gateway}}{{end}}')
+echo "Docker Gateway: $DOCKER_GATEWAY"
+```
+
+**Step 2: Configure PostgreSQL to Listen on Docker Bridge**
+
+Edit `/etc/postgresql/18/main/postgresql.conf`:
+
+```bash
+# Find current setting
+sudo grep listen_addresses /etc/postgresql/18/main/postgresql.conf
+
+# Update to include Docker gateway
+sudo sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost,172.17.0.1'/" \
+  /etc/postgresql/18/main/postgresql.conf
+
+# Or manually edit
+sudo nano /etc/postgresql/18/main/postgresql.conf
+# Change: listen_addresses = 'localhost,172.17.0.1'
+```
+
+**Step 3: Configure pg_hba.conf for Docker Access**
+
+Edit `/etc/postgresql/18/main/pg_hba.conf`:
+
+```bash
+# Add Docker network access (add before other host entries)
+echo "# Docker container access
+host    ostsee    ostsee_app    172.17.0.0/16    scram-sha-256" | \
+  sudo tee -a /etc/postgresql/18/main/pg_hba.conf
+```
+
+**Step 4: Restart PostgreSQL**
+
+```bash
+sudo systemctl restart postgresql
+sudo systemctl status postgresql
+
+# Verify PostgreSQL is listening on Docker gateway
+ss -tlnp | grep 5432
+# Should show: *:5432 or 0.0.0.0:5432 or specific IPs
+```
+
+**Step 5: Test Connection from Docker**
+
+```bash
+# Test with a temporary container
+docker run --rm postgres:18 \
+  psql "postgresql://ostsee_app:YOUR_PASSWORD@172.17.0.1:5432/ostsee" \
+  -c "SELECT 1 AS test;"
+```
+
+### Environment Configuration
+
+Create `.env` file:
+
+```bash
+# Database - use Docker gateway IP, NOT localhost
+DATABASE_POSTGRES_URL="postgresql://ostsee_app:YOUR_SECURE_PASSWORD@172.17.0.1:5432/ostsee"
+
+# Storage
+STORAGE_PROVIDER=local
+UPLOAD_PATH=/app/uploads
+
+# Application
+NODE_ENV=production
+PUBLIC_SITE_URL=https://your-domain.com
+PORT=3000
+
+# Security (GENERATE THESE!)
+# openssl rand -base64 32
+SESSION_SECRET=your-generated-session-secret-here
+# openssl rand -hex 32
+ENCRYPTION_KEY=your-generated-64-char-hex-key-here
+
+# Auth0
+AUTH0_CLIENT_ID=your-auth0-client-id
+AUTH0_CLIENT_SECRET=your-auth0-client-secret
+AUTH0_DOMAIN=your-tenant.auth0.com
+JWKS_URL=https://your-tenant.auth0.com/.well-known/jwks.json
+API_AUDIENCE=your-api-audience
+```
+
+### Container Deployment
+
+```bash
+# Create uploads directory with correct permissions
+mkdir -p /opt/ostsee-tiere/uploads
+sudo chown 1001:1001 /opt/ostsee-tiere/uploads
+
+# Copy .env to deployment directory
+cp .env /opt/ostsee-tiere/.env
+chmod 600 /opt/ostsee-tiere/.env
+
+# Pull latest image
+docker pull ghcr.io/jansinger/ostsee-sichtung:latest
+
+# Run container (bind to localhost only - use reverse proxy for external access)
+docker run -d \
+  --name ostsee-tiere \
+  --restart unless-stopped \
+  -p 127.0.0.1:3000:3000 \
+  -v /opt/ostsee-tiere/uploads:/app/uploads \
+  --env-file /opt/ostsee-tiere/.env \
+  ghcr.io/jansinger/ostsee-sichtung:latest
+
+# Initialize database schema (first time only)
+docker exec ostsee-tiere npx drizzle-kit push
+
+# Verify
+docker logs ostsee-tiere
+curl -f http://localhost:3000/health
+```
+
+### Firewall Configuration
+
+```bash
+# UFW (Ubuntu/Debian)
+sudo ufw allow 22/tcp      # SSH
+sudo ufw allow 80/tcp      # HTTP (redirect to HTTPS)
+sudo ufw allow 443/tcp     # HTTPS
+sudo ufw enable
+
+# Note: Do NOT open port 3000 - only accessible via reverse proxy
+
+# firewalld (RHEL/CentOS)
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-service=https
+sudo firewall-cmd --reload
+```
+
+### Reverse Proxy Setup
+
+**Option A: Caddy (Recommended - Auto-HTTPS)**
+
+```bash
+# Install Caddy
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install caddy
+
+# Configure
+sudo tee /etc/caddy/Caddyfile << 'EOF'
+your-domain.com {
+    reverse_proxy localhost:3000
+
+    # Recommended headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+    }
+}
+EOF
+
+# Start
+sudo systemctl enable --now caddy
+```
+
+**Option B: Nginx with Let's Encrypt**
+
+```bash
+# Install Nginx and Certbot
+sudo apt install -y nginx certbot python3-certbot-nginx
+
+# Get SSL certificate
+sudo certbot --nginx -d your-domain.com
+
+# Configure (certbot modifies this automatically)
+sudo tee /etc/nginx/sites-available/ostsee-tiere << 'EOF'
+server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+
+    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+
+    client_max_body_size 50M;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOF
+
+sudo ln -sf /etc/nginx/sites-available/ostsee-tiere /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### Systemd Service (Optional)
+
+For automatic container management:
+
+```bash
+sudo tee /etc/systemd/system/ostsee-tiere.service << 'EOF'
+[Unit]
+Description=Ostsee-Tiere Marine Sighting Platform
+After=docker.service postgresql.service
+Requires=docker.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+ExecStartPre=-/usr/bin/docker stop ostsee-tiere
+ExecStartPre=-/usr/bin/docker rm ostsee-tiere
+ExecStart=/usr/bin/docker run --rm \
+  --name ostsee-tiere \
+  -p 127.0.0.1:3000:3000 \
+  -v /opt/ostsee-tiere/uploads:/app/uploads \
+  --env-file /opt/ostsee-tiere/.env \
+  ghcr.io/jansinger/ostsee-sichtung:latest
+ExecStop=/usr/bin/docker stop ostsee-tiere
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable ostsee-tiere
+sudo systemctl start ostsee-tiere
+```
+
+### Update Process
+
+```bash
+# Pull new image
+docker pull ghcr.io/jansinger/ostsee-sichtung:latest
+
+# Restart (with systemd)
+sudo systemctl restart ostsee-tiere
+
+# Or manually
+docker stop ostsee-tiere
+docker rm ostsee-tiere
+docker run -d \
+  --name ostsee-tiere \
+  --restart unless-stopped \
+  -p 127.0.0.1:3000:3000 \
+  -v /opt/ostsee-tiere/uploads:/app/uploads \
+  --env-file /opt/ostsee-tiere/.env \
+  ghcr.io/jansinger/ostsee-sichtung:latest
+
+# Clean up old images
+docker image prune -f
+```
 
 ---
 
@@ -338,7 +835,7 @@ For production deployments, we **strongly recommend using an external PostgreSQL
 - **Easier scaling** and maintenance
 
 **Requirements:**
-- PostgreSQL 14+ (PostgreSQL 16 recommended)
+- PostgreSQL 16+ (PostgreSQL 18 recommended)
 - PostGIS 3.4+ extension installed
 - Minimum 2 GB RAM dedicated to PostgreSQL
 
@@ -387,7 +884,7 @@ DATABASE_POSTGRES_URL=postgresql://ostsee_app:your-secure-password@db.example.co
 
 ### Alternative: Included PostgreSQL (Development/Testing)
 
-The `docker-compose.production.yml` includes PostgreSQL 16 with PostGIS 3.4 for development and testing purposes.
+The `docker-compose.production.yml` includes PostgreSQL 18 with PostGIS 3.6 for development and testing purposes.
 
 > **Note:** For production use, we recommend an external database (see above).
 
@@ -845,229 +1342,67 @@ caddy reverse-proxy --from localhost:3443 --to localhost:3000
 
 ## Production with External PostgreSQL
 
-This section covers deploying Docker in production using an existing PostgreSQL server (not in Docker).
+> **Note:** For complete instructions on deploying with a PostgreSQL server (on the same host or a separate server), see the comprehensive [Dedicated Server with Native PostgreSQL](#dedicated-server-with-native-postgresql) section above.
 
-### Architecture
+**Quick Summary for External Database Server:**
 
-```
-┌──────────────────┐     ┌─────────────────────┐
-│  Docker Host     │     │  Database Server    │
-│  ┌────────────┐  │     │  ┌───────────────┐  │
-│  │ ostsee-    │  │────▶│  │ PostgreSQL    │  │
-│  │ tiere-app  │  │     │  │ + PostGIS     │  │
-│  └────────────┘  │     │  └───────────────┘  │
-│  ┌────────────┐  │     └─────────────────────┘
-│  │ ./uploads  │  │
-│  └────────────┘  │
-│  ┌────────────┐  │
-│  │ nginx/     │  │
-│  │ caddy      │  │
-│  └────────────┘  │
-└──────────────────┘
-```
+If your PostgreSQL runs on a **separate server** (not the same host as Docker):
 
-### Prerequisites
+1. **Database URL**: Use the server's hostname/IP directly
+   ```bash
+   DATABASE_POSTGRES_URL=postgresql://ostsee_app:password@db.example.com:5432/ostsee
+   ```
 
-1. **PostgreSQL Server** with PostGIS extension (can be on same or different host)
-2. **Docker** installed on application server
-3. **Reverse Proxy** (Nginx, Caddy, or Traefik) for SSL termination
+2. **PostgreSQL Configuration**: Ensure `listen_addresses = '*'` and add the Docker host's IP to `pg_hba.conf`
 
-### Step 1: Configure PostgreSQL Server
+3. **Network**: Ensure port 5432 is accessible between servers (firewall rules)
 
-On your PostgreSQL server:
-
-```sql
--- Create database
-CREATE DATABASE ostsee;
-\c ostsee
-
--- Enable PostGIS
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE EXTENSION IF NOT EXISTS postgis_topology;
-
--- Create application user
-CREATE USER ostsee_app WITH PASSWORD 'secure-password-here';
-GRANT ALL PRIVILEGES ON DATABASE ostsee TO ostsee_app;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ostsee_app;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ostsee_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ostsee_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ostsee_app;
-```
-
-**Configure pg_hba.conf to allow Docker connections:**
-```
-# Allow connections from Docker host
-host    ostsee    ostsee_app    DOCKER_HOST_IP/32    scram-sha-256
-
-# Or allow from entire subnet
-host    ostsee    ostsee_app    10.0.0.0/8    scram-sha-256
-```
-
-**Configure postgresql.conf:**
-```
-listen_addresses = '*'
-```
-
-### Step 2: Create Environment File
-
-On your Docker host, create `.env`:
-
-```bash
-# Database - use the PostgreSQL server's hostname/IP
-DATABASE_POSTGRES_URL=postgresql://ostsee_app:secure-password@db.example.com:5432/ostsee
-
-# Storage
-STORAGE_PROVIDER=local
-
-# Application
-NODE_ENV=production
-PUBLIC_SITE_URL=https://ostsee-tiere.example.com
-PORT=3000
-
-# Security (generate with: openssl rand -base64 32 / openssl rand -hex 32)
-SESSION_SECRET=your-secure-random-string-min-32-chars
-ENCRYPTION_KEY=your-64-character-hexadecimal-encryption-key
-
-# Auth0
-AUTH0_CLIENT_ID=your-auth0-client-id
-AUTH0_CLIENT_SECRET=your-auth0-client-secret
-AUTH0_DOMAIN=your-tenant.auth0.com
-JWKS_URL=https://your-tenant.auth0.com/.well-known/jwks.json
-API_AUDIENCE=your-api-audience
-```
-
-### Step 3: Run Docker Container
-
-```bash
-# Create uploads directory
-mkdir -p /opt/ostsee-tiere/uploads
-chown 1001:1001 /opt/ostsee-tiere/uploads
-
-# Pull and run
-docker pull ghcr.io/jansinger/ostsee-sichtung:latest
-
-docker run -d \
-  --name ostsee-tiere \
-  --restart unless-stopped \
-  -p 127.0.0.1:3000:3000 \
-  -v /opt/ostsee-tiere/uploads:/app/uploads \
-  --env-file /opt/ostsee-tiere/.env \
-  ghcr.io/jansinger/ostsee-sichtung:latest
-```
-
-> **Note:** We bind to `127.0.0.1:3000` so the app is only accessible via the reverse proxy.
-
-### Step 4: Configure Reverse Proxy
-
-**Nginx example:**
-```nginx
-server {
-    listen 80;
-    server_name ostsee-tiere.example.com;
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name ostsee-tiere.example.com;
-
-    ssl_certificate /etc/letsencrypt/live/ostsee-tiere.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/ostsee-tiere.example.com/privkey.pem;
-
-    client_max_body_size 50M;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-**Caddy example (auto-SSL):**
-```
-ostsee-tiere.example.com {
-    reverse_proxy localhost:3000
-}
-```
-
-### Step 5: Systemd Service (Optional)
-
-Create `/etc/systemd/system/ostsee-tiere.service`:
-
-```ini
-[Unit]
-Description=Ostsee-Tiere Marine Sighting Platform
-After=docker.service
-Requires=docker.service
-
-[Service]
-Type=simple
-Restart=always
-RestartSec=5
-ExecStartPre=-/usr/bin/docker stop ostsee-tiere
-ExecStartPre=-/usr/bin/docker rm ostsee-tiere
-ExecStart=/usr/bin/docker run --rm \
-  --name ostsee-tiere \
-  -p 127.0.0.1:3000:3000 \
-  -v /opt/ostsee-tiere/uploads:/app/uploads \
-  --env-file /opt/ostsee-tiere/.env \
-  ghcr.io/jansinger/ostsee-sichtung:latest
-ExecStop=/usr/bin/docker stop ostsee-tiere
-
-[Install]
-WantedBy=multi-user.target
-```
-
-**Enable and start:**
-```bash
-sudo systemctl enable ostsee-tiere
-sudo systemctl start ostsee-tiere
-sudo systemctl status ostsee-tiere
-```
-
-### Update Process
-
-```bash
-# Pull new image
-docker pull ghcr.io/jansinger/ostsee-sichtung:latest
-
-# Restart container
-docker stop ostsee-tiere
-docker rm ostsee-tiere
-docker run -d \
-  --name ostsee-tiere \
-  --restart unless-stopped \
-  -p 127.0.0.1:3000:3000 \
-  -v /opt/ostsee-tiere/uploads:/app/uploads \
-  --env-file /opt/ostsee-tiere/.env \
-  ghcr.io/jansinger/ostsee-sichtung:latest
-
-# Or with systemd
-sudo systemctl restart ostsee-tiere
-```
+All other steps (container deployment, reverse proxy, systemd) are identical to the [Dedicated Server](#dedicated-server-with-native-postgresql) section.
 
 ---
 
 ## Troubleshooting
 
+### Quick Diagnostic Commands
+
+```bash
+# Check all container status
+docker ps -a
+
+# View application logs
+docker logs ostsee-tiere       # or ostsee-tiere-app for Docker Compose
+
+# Check container health
+docker inspect ostsee-tiere --format='{{.State.Health.Status}}'
+
+# Test health endpoint
+curl -f http://localhost:3000/health
+
+# Test database connection from container
+docker exec ostsee-tiere npx drizzle-kit check
+```
+
 ### Application Won't Start
 
 **Check logs:**
 ```bash
-docker logs ostsee-tiere-app
+docker logs ostsee-tiere
 ```
 
-**Common issues:**
-- Missing environment variables → Check `.env` file
-- Database not ready → Wait for `db` health check
-- Port already in use → Change `APP_PORT` in `.env`
+**Common issues and solutions:**
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `DATABASE_POSTGRES_URL is not set` | Missing env var | Check `.env` file exists and is loaded |
+| `ECONNREFUSED 127.0.0.1:5432` | Wrong DB host | Use Docker gateway IP (172.17.0.1), not localhost |
+| `password authentication failed` | Wrong credentials | Verify user/password in DATABASE_POSTGRES_URL |
+| `database "ostsee" does not exist` | DB not created | Run: `sudo -u postgres createdb ostsee` |
+| `relation "sichtungen" does not exist` | Schema not pushed | Run: `docker exec ostsee-tiere npx drizzle-kit push` |
+| `Port 3000 already in use` | Port conflict | Change APP_PORT in .env or stop conflicting service |
 
 ### Database Connection Errors
 
+**For Docker Compose (PostgreSQL in container):**
 ```bash
 # Test database connectivity
 docker exec ostsee-tiere-db pg_isready -U postgres
@@ -1075,38 +1410,104 @@ docker exec ostsee-tiere-db pg_isready -U postgres
 # Check database logs
 docker logs ostsee-tiere-db
 
-# Verify connection string
-docker exec ostsee-tiere-app env | grep DATABASE_POSTGRES_URL
+# Connect to database
+docker exec -it ostsee-tiere-db psql -U postgres -d ostsee
 ```
 
-### Upload Issues
+**For Native PostgreSQL (on host):**
+```bash
+# Check PostgreSQL is running
+sudo systemctl status postgresql
+
+# Check PostgreSQL is listening on Docker gateway
+ss -tlnp | grep 5432
+
+# Test connection from Docker container
+docker run --rm postgres:18 \
+  psql "postgresql://ostsee_app:PASSWORD@172.17.0.1:5432/ostsee" -c "SELECT 1;"
+
+# Check pg_hba.conf has Docker network
+sudo grep 172.17 /etc/postgresql/18/main/pg_hba.conf
+```
+
+**Common database issues:**
+
+| Symptom | Cause | Solution |
+|---------|-------|----------|
+| Connection refused | PostgreSQL not listening on Docker bridge | Add Docker gateway to `listen_addresses` |
+| No pg_hba.conf entry | Missing authentication rule | Add Docker network to `pg_hba.conf` |
+| PostGIS not found | Extension not installed | `CREATE EXTENSION postgis;` |
+| Permission denied for schema | Missing grants | Run GRANT commands from setup |
+
+### Upload/Storage Issues
 
 ```bash
-# Check volume permissions
-docker exec ostsee-tiere-app ls -la /app/uploads
+# Check volume is mounted correctly
+docker exec ostsee-tiere ls -la /app/uploads
 
 # Check storage configuration
-docker exec ostsee-tiere-app env | grep STORAGE
+docker exec ostsee-tiere printenv | grep STORAGE
+
+# Fix permissions (bind mount)
+sudo chown -R 1001:1001 /opt/ostsee-tiere/uploads
+
+# Test file creation
+docker exec ostsee-tiere touch /app/uploads/test.txt && echo "OK"
+```
+
+### Schema/Migration Issues
+
+```bash
+# Check current schema status
+docker exec ostsee-tiere npx drizzle-kit check
+
+# Push schema to database
+docker exec ostsee-tiere npx drizzle-kit push
+
+# View pending changes
+docker exec ostsee-tiere npx drizzle-kit generate
 ```
 
 ### Performance Issues
 
 ```bash
 # Check resource usage
-docker stats ostsee-tiere-app ostsee-tiere-db
+docker stats ostsee-tiere
 
-# View application metrics
-curl http://localhost:3000/metrics
+# Check container processes
+docker top ostsee-tiere
+
+# View Node.js memory usage
+docker exec ostsee-tiere node -e "console.log(process.memoryUsage())"
 ```
 
 ### Health Check Failures
 
 ```bash
 # Manual health check
-curl -f http://localhost:3000/health
+curl -v http://localhost:3000/health
 
-# Check container health status
-docker inspect ostsee-tiere-app | grep -A 10 Health
+# Check what health endpoint returns
+docker exec ostsee-tiere curl -s http://localhost:3000/health | jq
+
+# View health check history
+docker inspect ostsee-tiere --format='{{json .State.Health}}' | jq
+```
+
+### SSL/HTTPS Issues
+
+```bash
+# Check if Caddy is running
+sudo systemctl status caddy
+
+# Check Caddy logs
+sudo journalctl -u caddy -f
+
+# Test HTTPS certificate
+curl -vI https://your-domain.com 2>&1 | grep -A5 "Server certificate"
+
+# Renew Let's Encrypt certificate (Nginx)
+sudo certbot renew --dry-run
 ```
 
 ---

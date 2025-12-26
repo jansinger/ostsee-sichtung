@@ -41,7 +41,7 @@ The migration process involves:
 - Read permissions on the `sichtungen` table
 
 ### Target System
-- PostgreSQL 14+ with PostGIS extension
+- PostgreSQL 16+ with PostGIS extension (PostgreSQL 18 recommended)
 - Node.js 20+ (for running migration scripts)
 - Sufficient disk space for data and uploads
 - Database credentials with write access

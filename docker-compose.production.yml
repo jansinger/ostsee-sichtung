@@ -7,20 +7,22 @@
 # Quick Start:
 #   1. Copy .env.docker to .env and configure
 #   2. docker compose -f docker-compose.production.yml up -d
-#   3. Access app at http://localhost:3000
-
-version: '3.9'
+#   3. Initialize schema: docker exec ostsee-tiere-app npx drizzle-kit push
+#   4. Access app at http://localhost:3000
 
 services:
   # ============================================
   # Application Service
   # ============================================
   app:
-    image: ghcr.io/jansinger/ostsee-sichtung:latest
+    # Pin to specific version in production! Use :latest only for testing
+    # Example: ghcr.io/jansinger/ostsee-sichtung:v2.1.0
+    image: ghcr.io/jansinger/ostsee-sichtung:${IMAGE_TAG:-latest}
     container_name: ostsee-tiere-app
     restart: unless-stopped
+    # SECURITY: Bind to localhost only if using reverse proxy
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "${APP_HOST:-0.0.0.0}:${APP_PORT:-3000}:3000"
     environment:
       # Node.js Configuration
       NODE_ENV: production
@@ -105,15 +107,43 @@ services:
       - "com.ostsee-tiere.service=app"
       - "com.ostsee-tiere.version=${VERSION:-latest}"
 
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    # Note: read_only:true would require tmpfs for /tmp - enable if needed
+    # read_only: true
+    # tmpfs:
+    #   - /tmp
+
+    # Logging configuration (prevent disk space issues)
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    # Resource limits (adjust based on server capacity)
+    deploy:
+      resources:
+        limits:
+          cpus: "${APP_CPU_LIMIT:-2}"
+          memory: "${APP_MEMORY_LIMIT:-2G}"
+        reservations:
+          cpus: "0.5"
+          memory: "512M"
+
   # ============================================
   # PostgreSQL with PostGIS
   # ============================================
   db:
-    image: postgis/postgis:16-3.4
+    # PostgreSQL 18 with PostGIS 3.6 (released Nov 2025)
+    image: postgis/postgis:${POSTGRES_IMAGE_TAG:-18-3.6}
     container_name: ostsee-tiere-db
     restart: unless-stopped
+    # SECURITY: Only expose to localhost, not publicly!
+    # For external access, use SSH tunnel or reverse proxy
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: ${PGUSER:-postgres}
       POSTGRES_PASSWORD: ${PGPASSWORD}
@@ -126,8 +156,8 @@ services:
       POSTGRES_WORK_MEM: ${POSTGRES_WORK_MEM:-16MB}
 
     volumes:
-      # Persistent database storage
-      - pgdata:/var/lib/postgresql/data
+      # Persistent database storage (PostgreSQL 18+ uses version-specific path)
+      - pgdata:/var/lib/postgresql
       # Backup directory
       - db-backups:/backups
 
@@ -144,6 +174,13 @@ services:
     labels:
       - "com.ostsee-tiere.service=database"
 
+    # Logging configuration
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   # ============================================
   # Prometheus (Monitoring)
   # ============================================
@@ -152,7 +189,7 @@ services:
     container_name: ostsee-tiere-prometheus
     restart: unless-stopped
     ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -166,6 +203,11 @@ services:
       - ostsee-network
     labels:
       - "com.ostsee-tiere.service=monitoring"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
     profiles:
       - monitoring
 
@@ -177,7 +219,7 @@ services:
     container_name: ostsee-tiere-grafana
     restart: unless-stopped
     ports:
-      - "${GRAFANA_PORT:-3001}:3000"
+      - "127.0.0.1:${GRAFANA_PORT:-3001}:3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
@@ -193,6 +235,11 @@ services:
       - ostsee-network
     labels:
       - "com.ostsee-tiere.service=visualization"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
     profiles:
       - monitoring
 
@@ -204,7 +251,7 @@ services:
     container_name: ostsee-tiere-node-exporter
     restart: unless-stopped
     ports:
-      - "${NODE_EXPORTER_PORT:-9100}:9100"
+      - "127.0.0.1:${NODE_EXPORTER_PORT:-9100}:9100"
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
@@ -217,6 +264,11 @@ services:
       - ostsee-network
     labels:
       - "com.ostsee-tiere.service=metrics"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
     profiles:
       - monitoring
 
