@@ -2,7 +2,7 @@
 
 # Ostsee-Tiere 
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/jansinger/ostsee-sichtung/release.yml?style=flat-square&logo=github&label=Build)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/jansinger/ostsee-sichtung/ci.yml?style=flat-square&logo=github&label=CI)
 ![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=flat-square&logo=vercel)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/jansinger/ostsee-sichtung?style=flat-square&logo=github)
 ![GitHub last commit](https://img.shields.io/github/last-commit/jansinger/ostsee-sichtung?style=flat-square&logo=github)
@@ -75,7 +75,7 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 
 ### Voraussetzungen
 
-- Node.js (Version 18 oder höher)
+- Node.js 20+ (LTS empfohlen, Docker verwendet Node.js 22)
 - Docker und Docker Compose (für die Datenbank)
 
 ### Setup
@@ -130,14 +130,11 @@ npm run test:unit
 # Unit-Tests im Watch-Modus
 npm run test:unit:watch
 
-# E2E-Tests ausführen
+# E2E-Tests ausführen (Playwright)
 npm run test:e2e
 
-# Schnelle Tests (Lint + Unit-Tests)
-npm run test
-
-# Vollständige Produktions-Tests
-npm run test:production
+# Schnelle Tests (Lint + Type-Check + Unit-Tests)
+npm run test:quick
 
 # Code-Qualität
 npm run lint
@@ -156,6 +153,7 @@ ostsee-sichtung/
 │   │   ├── constants/      # Konstanten und Enumerationen
 │   │   ├── form/           # Formular-Logik und Validierung
 │   │   ├── legacy-api/     # Legacy REST API Kompatibilität
+│   │   ├── logger/         # Pino Logging
 │   │   ├── map/            # OpenLayers Karten-Funktionalitäten
 │   │   ├── report/         # Sichtungsmeldung-Komponenten und -Logik
 │   │   ├── server/         # Server-seitige Logik
@@ -164,6 +162,8 @@ ostsee-sichtung/
 │   │   │   ├── export/     # Datenexport (CSV, JSON, KML, XML)
 │   │   │   ├── storage/    # Datei-Speicher Abstraktion
 │   │   │   └── validation/ # Server-seitige Validierung
+│   │   ├── services/       # Externe Services
+│   │   ├── storage/        # Storage Provider
 │   │   ├── stores/         # Svelte Stores
 │   │   ├── types/          # TypeScript Typen
 │   │   └── utils/          # Hilfsfunktionen
@@ -175,7 +175,7 @@ ostsee-sichtung/
 │       └── sichtungen/     # Sichtungsformular und -verwaltung
 ├── static/                 # Statische Assets
 ├── docs/                   # Dokumentation
-└── e2e/                    # End-to-End Tests
+└── e2e/                    # End-to-End Tests (Playwright)
 ```
 
 ## Hauptfunktionen
@@ -266,8 +266,8 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 # Neueste Version ziehen
 docker pull ghcr.io/jansinger/ostsee-sichtung:latest
 
-# Spezifische Version ziehen
-docker pull ghcr.io/jansinger/ostsee-sichtung:v2.0.3
+# Oder spezifische Version (siehe GitHub Releases)
+docker pull ghcr.io/jansinger/ostsee-sichtung:v1.0.0
 
 # Mit Tag ausführen
 docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-sichtung:latest
@@ -276,9 +276,10 @@ docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-sichtung:latest
 ### Dokumentation
 
 - 📘 [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md) - Vollständige Deployment-Anleitung
-- 📗 [Environment Variables Reference](docs/ENVIRONMENT.md) - Alle Umgebungsvariablen
+- 📗 [Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT.md) - Schnellanleitung für Production
+- 📙 [Environment Variables Reference](docs/ENVIRONMENT.md) - Alle Umgebungsvariablen
 - 📕 [Database Migration Guide](docs/DATABASE_MIGRATION.md) - Migration von bestehenden Installationen
-- 📙 [Design Guide](docs/DESIGN_GUIDE.md) - UI/UX Best Practices
+- 📒 [Design Guide](docs/DESIGN_GUIDE.md) - UI/UX Best Practices
 
 ## Beitragen
 
