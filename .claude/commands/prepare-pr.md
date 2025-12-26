@@ -14,7 +14,38 @@ Bereitet einen Pull Request vor.
 
 ## Workflow
 
-### Schritt 1: Tests ausführen
+### Schritt 1: Branch prüfen
+
+**WICHTIG:** Der `main` Branch ist geschützt. Änderungen müssen über Pull Requests erfolgen.
+
+```bash
+# Aktuellen Branch prüfen
+CURRENT_BRANCH=$(git branch --show-current)
+
+if [ "$CURRENT_BRANCH" = "main" ]; then
+    echo "❌ Fehler: Du bist auf dem main Branch!"
+    echo "Erstelle einen neuen Branch mit: git checkout -b <branch-name>"
+    exit 1
+fi
+```
+
+**Falls auf `main`:** Neuen Branch erstellen basierend auf den Änderungen:
+
+```bash
+# Branch-Name nach Konvention: <type>/<kurze-beschreibung>
+# Beispiele: feat/add-export, fix/login-bug, docs/update-readme
+git checkout -b <type>/<kurze-beschreibung>
+```
+
+**Branch-Typen:**
+- `feat/` - Neue Features
+- `fix/` - Bugfixes
+- `docs/` - Dokumentation
+- `refactor/` - Code-Umstrukturierung
+- `test/` - Tests
+- `chore/` - Wartung
+
+### Schritt 2: Tests ausführen
 
 ```bash
 npm run test:quick
@@ -28,14 +59,14 @@ Enthält:
 
 **Bei Fehler:** Stoppen und Fehler beheben lassen.
 
-### Schritt 2: Git Status prüfen
+### Schritt 3: Git Status prüfen
 
 ```bash
 git status
 git diff --stat
 ```
 
-### Schritt 3: Änderungen analysieren
+### Schritt 4: Änderungen analysieren
 
 Analysiere welche Dateien geändert wurden:
 - Neue Features?
@@ -43,7 +74,7 @@ Analysiere welche Dateien geändert wurden:
 - Refactoring?
 - Dokumentation?
 
-### Schritt 4: Commit erstellen
+### Schritt 5: Commit erstellen
 
 Nutze Conventional Commits Format:
 
@@ -72,14 +103,14 @@ EOF
 **Scopes:**
 `deps`, `api`, `ui`, `db`, `auth`, `export`, `admin`, `report`, `map`, `config`, `build`, `ci`, `docs`, `test`, `types`, `style`, `perf`, `security`, `a11y`, `release`, `media`
 
-### Schritt 5: Push und PR erstellen
+### Schritt 6: Push und PR erstellen
 
 ```bash
-# Push
+# Push (mit Upstream-Tracking)
 git push -u origin $(git branch --show-current)
 
-# PR erstellen
-gh pr create --title "<type>(<scope>): <beschreibung>" --body "$(cat <<'EOF'
+# PR erstellen gegen main
+gh pr create --base main --title "<type>(<scope>): <beschreibung>" --body "$(cat <<'EOF'
 ## Zusammenfassung
 
 <1-3 Bullet Points>
@@ -119,8 +150,15 @@ Nächste Schritte:
 
 ## Checkliste
 
+- [ ] Nicht auf main Branch
 - [ ] Alle Tests bestanden
 - [ ] Keine Linting-Fehler
 - [ ] Commit Message folgt Conventional Commits
 - [ ] PR-Beschreibung aussagekräftig
 - [ ] Dokumentation aktualisiert (falls nötig)
+
+## Hinweise
+
+- **Protected Branch:** Der `main` Branch ist geschützt und akzeptiert keine direkten Pushes
+- **Branch-Konvention:** Nutze `<type>/<beschreibung>` für Branch-Namen
+- **PR-Basis:** PRs werden immer gegen `main` erstellt
