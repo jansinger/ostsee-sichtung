@@ -50,6 +50,16 @@ Die Legacy REST API (`/api/legacy/`) MUSS 100% kompatibel bleiben.
 
 **Referenz:** @docs/DESIGN_GUIDE.md
 
+### Test-First Entwicklung - PFLICHT
+
+Bei **allen** Code-Änderungen gilt:
+
+1. **Neues Feature:** Test schreiben → Test schlägt fehl → Code implementieren → Test grün
+2. **Bugfix:** Reproduzierenden Test schreiben → Bug beheben → Test grün
+3. **Änderung:** Bestehende Tests anpassen → Code ändern → Alle Tests grün
+
+**Keine Ausnahmen** für Features und Bugfixes. Details: @.claude/rules/testing.md
+
 ---
 
 ## Development Commands
