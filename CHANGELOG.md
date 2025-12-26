@@ -39,6 +39,18 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.7](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.6...v2.0.7) (2025-12-26)
+
+
+### Bug Fixes
+
+* enhance media file management in DropzoneEnhanced component ([#290](https://github.com/jansinger/ostsee-sichtung/issues/290)) ([421f653](https://github.com/jansinger/ostsee-sichtung/commit/421f653c03da908589c99f507d449c7aaa955b8b))
+
+
+### Documentation
+
+* refactor CLAUDE.md into modular structure with agents and rules ([#288](https://github.com/jansinger/ostsee-sichtung/issues/288)) ([5876523](https://github.com/jansinger/ostsee-sichtung/commit/5876523a3db127dfda60ca9f7c988f4f751cca7b))
+
 ## [2.0.6](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.5...v2.0.6) (2025-12-26)
 
 
