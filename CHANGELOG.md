@@ -39,6 +39,18 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.8](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.7...v2.0.8) (2025-12-26)
+
+
+### Documentation
+
+* add v2.0.8 release highlights to production deployment guide ([#295](https://github.com/jansinger/ostsee-sichtung/issues/295)) ([3a1104f](https://github.com/jansinger/ostsee-sichtung/commit/3a1104f59530cf21fc3e933fb13e074ea2978f20))
+
+
+### Code Refactoring
+
+* **media:** address Copilot review feedback for DropzoneEnhanced ([#291](https://github.com/jansinger/ostsee-sichtung/issues/291)) ([1a62ff2](https://github.com/jansinger/ostsee-sichtung/commit/1a62ff22db040c84110e9ca617ba9fcd66ad94be))
+
 ## [2.0.7](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.6...v2.0.7) (2025-12-26)
 
 
