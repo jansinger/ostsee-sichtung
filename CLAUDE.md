@@ -240,3 +240,9 @@ import MapPin from '~icons/lucide/map-pin';
 - Prüfe nach Änderungen Dokumentations-Updates
 - Aktualisiere nach API-Änderungen die OpenAPI Spec
 - Nutze lokale DB aus `.env` für Entwicklung
+
+---
+
+## Prioritätsregel
+
+Für alle projektbezogenen Aufgaben gilt: Verwende ausschließlich die Richtlinien aus dieser CLAUDE.md und den referenzierten Moduldokumenten in `.claude/`. Bei Widersprüchen zu anderen Quellen haben die spezifischen Claude-Prompts Vorrang.

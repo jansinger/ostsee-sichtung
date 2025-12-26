@@ -19,9 +19,11 @@ Diese Dokumentation ist modular aufgebaut für optimale Navigation und Wartbarke
 ## Struktur
 
 ```
+/CLAUDE.md              # Haupt-Konfiguration (im Repository-Root)
 .claude/
-├── CLAUDE.md           # Haupt-Index (Einstiegspunkt)
 ├── README.md           # Diese Datei
+├── settings.json       # Projekt-Einstellungen
+├── settings.local.json # Lokale Einstellungen (nicht committen)
 ├── rules/              # Themenspezifische Regeln
 │   ├── architecture.md # Architektur & Clean Code
 │   ├── testing.md      # Test-Patterns
@@ -29,7 +31,8 @@ Diese Dokumentation ist modular aufgebaut für optimale Navigation und Wartbarke
 │   ├── forms.md        # Multi-Step Forms
 │   ├── maps.md         # OpenLayers
 │   ├── security.md     # Auth & GDPR
-│   └── api.md          # REST API
+│   ├── api.md          # REST API
+│   └── docker.md       # Docker Deployment
 ├── agents/             # Spezialisierte Agents
 │   ├── form-development.md
 │   ├── testing.md
