@@ -9,6 +9,7 @@
  * - HTTP 503: Service is unhealthy (database down, etc.)
  */
 
+import { env } from '$env/dynamic/private';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
@@ -20,8 +21,8 @@ export const GET: RequestHandler = async () => {
 		status: 'healthy',
 		timestamp: new Date().toISOString(),
 		uptime: process.uptime(),
-		environment: process.env.NODE_ENV || 'unknown',
-		version: process.env.npm_package_version || 'unknown'
+		environment: env.NODE_ENV ?? process.env.NODE_ENV ?? 'unknown',
+		version: env.npm_package_version ?? process.env.npm_package_version ?? 'unknown'
 	};
 
 	// Optional: Check database connectivity

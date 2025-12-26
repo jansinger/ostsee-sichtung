@@ -1,3 +1,4 @@
+import { env } from '$env/dynamic/private';
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
@@ -12,11 +13,11 @@ let _initError: string | null = null;
 
 /**
  * Gets the database URL from environment variables.
- * Uses process.env directly to avoid SvelteKit's $env module-level evaluation issues.
- * This is safe because this module is server-only.
+ * Uses SvelteKit's $env/dynamic/private to properly load .env values during development.
+ * Falls back to process.env for non-SvelteKit contexts (scripts, tools).
  */
 function getDatabaseUrl(): string | undefined {
-	return process.env.DATABASE_POSTGRES_URL;
+	return env.DATABASE_POSTGRES_URL ?? process.env.DATABASE_POSTGRES_URL;
 }
 
 /**
