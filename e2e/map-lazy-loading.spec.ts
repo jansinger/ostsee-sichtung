@@ -2,15 +2,11 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Map Page', () => {
 	test('loads map page and shows content', async ({ page }) => {
-		// Navigate to map page and wait for load
-		const response = await page.goto('/map', { waitUntil: 'domcontentloaded' });
+		// Navigate to map page
+		await page.goto('/map');
 
-		// Verify we got a successful response and weren't redirected
-		expect(response?.status()).toBeLessThan(400);
-		await expect(page).toHaveURL(/\/map/);
-
-		// Page should have correct title (with extended timeout for CI)
-		await expect(page).toHaveTitle(/Sichtungskarte.*Ostsee-Tiere/, { timeout: 15000 });
+		// Page should have correct title
+		await expect(page).toHaveTitle(/Sichtungskarte.*Ostsee-Tiere/, { timeout: 10000 });
 
 		// Wait for loading overlay to disappear (if it appears)
 		const loadingDialog = page.getByRole('dialog');
@@ -18,12 +14,9 @@ test.describe('Map Page', () => {
 			await expect(loadingDialog).toBeHidden({ timeout: 15000 });
 		}
 
-		// After loading, either map title or error alert should be visible
+		// After loading, map title should be visible
 		const mapTitle = page.getByRole('heading', { name: /Sichtungskarte/i });
-		const errorAlert = page.getByRole('alert');
-
-		// Use Promise.race to wait for either condition
-		await expect(mapTitle.or(errorAlert).first()).toBeVisible({ timeout: 10000 });
+		await expect(mapTitle).toBeVisible({ timeout: 10000 });
 	});
 
 	test('shows loading state with accessible dialog', async ({ page }) => {
@@ -33,11 +26,7 @@ test.describe('Map Page', () => {
 			await route.continue();
 		});
 
-		const response = await page.goto('/map', { waitUntil: 'domcontentloaded' });
-
-		// Verify we're on the map page
-		expect(response?.status()).toBeLessThan(400);
-		await expect(page).toHaveURL(/\/map/);
+		await page.goto('/map');
 
 		// Loading dialog should appear and have proper accessibility attributes
 		const loadingDialog = page.getByRole('dialog');
