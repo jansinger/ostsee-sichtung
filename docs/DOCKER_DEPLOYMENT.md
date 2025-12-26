@@ -47,7 +47,7 @@ cd /opt/ostsee-tiere
 
 # 2. Install PostgreSQL with PostGIS (if not already installed)
 sudo apt update
-sudo apt install -y postgresql-18 postgresql-18-postgis-3
+sudo apt install -y postgresql-18 postgresql-18-postgis-3 postgresql-18-postgis-3-scripts
 
 # 3. Create database and user
 sudo -u postgres psql << 'EOF'
@@ -58,6 +58,8 @@ CREATE EXTENSION IF NOT EXISTS postgis_topology;
 CREATE USER ostsee_app WITH PASSWORD 'YOUR_SECURE_PASSWORD';
 GRANT ALL PRIVILEGES ON DATABASE ostsee TO ostsee_app;
 GRANT ALL ON SCHEMA public TO ostsee_app;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ostsee_app;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ostsee_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ostsee_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ostsee_app;
 EOF
@@ -69,9 +71,8 @@ echo "Docker Gateway IP: $DOCKER_GATEWAY"
 echo "host    ostsee    ostsee_app    ${DOCKER_GATEWAY}/16    scram-sha-256" | \
   sudo tee -a /etc/postgresql/18/main/pg_hba.conf
 
-sudo sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost,${DOCKER_GATEWAY}'/" \
-  /etc/postgresql/18/main/postgresql.conf
-
+# Configure PostgreSQL to listen on Docker gateway (more robust than editing config file)
+sudo -u postgres psql -c "ALTER SYSTEM SET listen_addresses = 'localhost,${DOCKER_GATEWAY}';"
 sudo systemctl restart postgresql
 
 # 5. Create .env file (no repository clone needed!)
@@ -383,6 +384,8 @@ CREATE USER ostsee_app WITH PASSWORD 'GENERATE_SECURE_PASSWORD_HERE';
 -- Grant privileges
 GRANT ALL PRIVILEGES ON DATABASE ostsee TO ostsee_app;
 GRANT ALL ON SCHEMA public TO ostsee_app;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ostsee_app;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ostsee_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ostsee_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ostsee_app;
 
@@ -410,19 +413,18 @@ echo "Docker Gateway: $DOCKER_GATEWAY"
 
 **Step 2: Configure PostgreSQL to Listen on Docker Bridge**
 
-Edit `/etc/postgresql/18/main/postgresql.conf`:
+Configure PostgreSQL to listen on Docker gateway:
 
 ```bash
-# Find current setting
-sudo grep listen_addresses /etc/postgresql/18/main/postgresql.conf
+# Option 1: Use ALTER SYSTEM (recommended - more robust)
+sudo -u postgres psql -c "ALTER SYSTEM SET listen_addresses = 'localhost,172.17.0.1';"
 
-# Update to include Docker gateway
-sudo sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost,172.17.0.1'/" \
-  /etc/postgresql/18/main/postgresql.conf
-
-# Or manually edit
+# Option 2: Manually edit postgresql.conf
 sudo nano /etc/postgresql/18/main/postgresql.conf
 # Change: listen_addresses = 'localhost,172.17.0.1'
+
+# Restart to apply changes
+sudo systemctl restart postgresql
 ```
 
 **Step 3: Configure pg_hba.conf for Docker Access**
@@ -836,7 +838,7 @@ For production deployments, we **strongly recommend using an external PostgreSQL
 
 **Requirements:**
 - PostgreSQL 16+ (PostgreSQL 18 recommended)
-- PostGIS 3.4+ extension installed
+- PostGIS 3.6+ extension installed
 - Minimum 2 GB RAM dedicated to PostgreSQL
 
 **Setup External Database:**

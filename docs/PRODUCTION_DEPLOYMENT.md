@@ -104,9 +104,9 @@ PGPASSWORD="DEIN_SICHERES_PASSWORT"
 # Datenbank (Option B: Externe PostgreSQL - EMPFOHLEN)
 # DATABASE_POSTGRES_URL="postgresql://user:pass@db.example.com:5432/ostsee"
 
-# Security Keys generieren
-SESSION_SECRET="$(openssl rand -base64 32)"
-ENCRYPTION_KEY="$(openssl rand -hex 32)"
+# Security Keys (WICHTIG: Generiere diese mit den Befehlen unten!)
+SESSION_SECRET="HIER_GENERIERTEN_WERT_EINFÜGEN"
+ENCRYPTION_KEY="HIER_GENERIERTEN_WERT_EINFÜGEN"
 
 # Auth0 Konfiguration
 AUTH0_CLIENT_ID="deine-client-id"
@@ -299,8 +299,9 @@ DATE=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p "$BACKUP_DIR"
 
-# Datenbank-Backup
-docker compose exec -T db pg_dump -U postgres ostsee | \
+# Datenbank-Backup (im Verzeichnis /opt/ostsee-tiere ausführen)
+cd /opt/ostsee-tiere
+docker compose -f docker-compose.production.yml exec -T db pg_dump -U postgres ostsee | \
   gzip > "$BACKUP_DIR/db-$DATE.sql.gz"
 
 # Alte Backups löschen (älter als 30 Tage)
@@ -390,8 +391,9 @@ Requires=docker.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/opt/ostsee-tiere
-ExecStart=/usr/bin/docker compose up -d
-ExecStop=/usr/bin/docker compose down
+# Note: Adjust path if docker compose is installed differently
+ExecStart=/usr/bin/docker compose -f docker-compose.production.yml up -d
+ExecStop=/usr/bin/docker compose -f docker-compose.production.yml down
 TimeoutStartSec=300
 
 [Install]

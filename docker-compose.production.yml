@@ -123,6 +123,8 @@ services:
         max-file: "5"
 
     # Resource limits (adjust based on server capacity)
+    # Note: Requires Docker Compose with --compatibility flag or Docker Swarm mode
+    # For standard docker compose, these limits are advisory only
     deploy:
       resources:
         limits:
@@ -136,7 +138,7 @@ services:
   # PostgreSQL with PostGIS
   # ============================================
   db:
-    # PostgreSQL 18 with PostGIS 3.6 (released Nov 2025)
+    # PostgreSQL with PostGIS - override via POSTGRES_IMAGE_TAG if needed
     image: postgis/postgis:${POSTGRES_IMAGE_TAG:-18-3.6}
     container_name: ostsee-tiere-db
     restart: unless-stopped
