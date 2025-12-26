@@ -11,7 +11,8 @@ let lastCheckResult = false;
 const CHECK_INTERVAL = 30000; // 30 seconds
 
 /**
- * Paths that should work without database access
+ * Paths that should work without database access.
+ * These pages have their own error handling or fallback values.
  */
 const DB_OPTIONAL_PATHS = [
 	'/health',
@@ -20,14 +21,48 @@ const DB_OPTIONAL_PATHS = [
 	'/maintenance',
 	'/_app',
 	'/favicon',
-	'/.well-known'
+	'/.well-known',
+	// Map page has default config fallback
+	'/map',
+	// Main form page works without DB for initial display
+	// (submission will fail gracefully with proper error)
+	'/'
 ];
 
 /**
- * Check if the current path requires database access
+ * Paths that REQUIRE database access.
+ * If DB is unavailable, these will show a 503 error.
+ */
+const DB_REQUIRED_PATHS = [
+	'/admin',
+	'/api/upload',
+	'/api/sightings',
+	'/api/map/sightings',
+	'/sichtungen'
+];
+
+/**
+ * Check if the current path strictly requires database access.
+ * Uses a whitelist approach: only specified paths require DB.
  */
 function requiresDatabase(pathname: string): boolean {
-	return !DB_OPTIONAL_PATHS.some((path) => pathname.startsWith(path));
+	// First check if it's explicitly optional
+	if (DB_OPTIONAL_PATHS.some((path) => pathname === path || pathname.startsWith(path + '/'))) {
+		return false;
+	}
+
+	// Then check if it's explicitly required
+	if (DB_REQUIRED_PATHS.some((path) => pathname === path || pathname.startsWith(path + '/'))) {
+		return true;
+	}
+
+	// For API endpoints not in the optional list, require DB
+	if (pathname.startsWith('/api/')) {
+		return true;
+	}
+
+	// Default: don't require DB (let page handle errors gracefully)
+	return false;
 }
 
 /**
