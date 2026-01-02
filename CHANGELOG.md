@@ -39,6 +39,13 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.12](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.11...v2.0.12) (2026-01-02)
+
+
+### Bug Fixes
+
+* **api:** remove phantom sighting creation from weather cache ([#303](https://github.com/jansinger/ostsee-sichtung/issues/303)) ([837b570](https://github.com/jansinger/ostsee-sichtung/commit/837b5706395296808a504fff56fca9cbc1bbe552))
+
 ## [2.0.11](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.10...v2.0.11) (2026-01-02)
 
 
