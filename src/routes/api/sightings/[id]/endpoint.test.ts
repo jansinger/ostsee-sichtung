@@ -1,13 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DELETE } from './+server';
 
-// Mock dependencies
-const mockDelete = vi.fn();
-const mockSelect = vi.fn();
-const mockFrom = vi.fn();
-const mockWhere = vi.fn();
-const mockLimit = vi.fn();
-
 vi.mock('$lib/server/db', () => ({
 	db: {
 		select: () => ({
