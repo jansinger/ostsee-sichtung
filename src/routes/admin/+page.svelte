@@ -23,10 +23,7 @@
 	let { data }: { data: PageData } = $props();
 
 	// Reaktive States mit Runes
-	let sightings = $derived.by(() => {
-		let sightings = $state(data.sightings);
-		return sightings;
-	});
+	let sightings = $derived(data.sightings);
 	let dateFrom = $state($page.url.searchParams.get('dateFrom') || '');
 	let dateTo = $state($page.url.searchParams.get('dateTo') || '');
 	let verified = $state($page.url.searchParams.get('verified') || '');
@@ -284,11 +281,8 @@
 				const result = await response.json();
 				logger.info({ id, result }, 'Verifizierungsstatus erfolgreich geändert');
 
-				// Lokalen State aktualisieren
-				const sightingIndex = sightings.findIndex((s) => s.id === id);
-				if (sightingIndex >= 0 && sightings[sightingIndex]) {
-					sightings[sightingIndex].verified = newState;
-				}
+				// Daten vom Server neu laden
+				await invalidateAll();
 			} else {
 				const error = await response.json();
 				logger.error({ id, error }, 'Fehler beim Ändern des Verifizierungsstatus');
