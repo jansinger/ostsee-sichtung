@@ -4,11 +4,8 @@ import {
 	getWeatherDescription
 } from '$lib/constants/weather';
 import { createLogger } from '$lib/logger';
-import { db } from '$lib/server/db';
-import { sightings } from '$lib/server/db/schema';
 import { getCachedWeatherForSighting } from '$lib/server/db/sightingRepository';
 import {
-	convertToStoredWeatherData,
 	mapWeatherToFormFields,
 	type OpenMeteoRawData,
 	type WeatherData
@@ -427,60 +424,9 @@ export const GET: RequestHandler = async ({ url }) => {
 				weatherResult = await fetchHistoricalData(latitude, longitude, date, time);
 			}
 
-			// Store weather data in database for caching
-			if (weatherResult) {
-				try {
-					const storedWeatherData = convertToStoredWeatherData(
-						weatherResult.weatherData,
-						weatherResult.rawData,
-						weatherResult.dataType,
-						latitude,
-						longitude
-					);
-
-					// Create a temporary sighting entry to store weather data
-					await db.insert(sightings).values({
-						sightingDate: new Date(date + 'T' + (time || '12:00:00') + ':00'),
-						latitude: String(latitude),
-						longitude: String(longitude),
-						species: 0, // 0 = temp-weather-cache
-						totalCount: 0,
-						juvenileCount: 0,
-						distribution: 0,
-						seaState: 0,
-						visibility: 0,
-						mediaUpload: 0,
-						behavior: 0,
-						boatDrive: 0,
-						nameConsent: 0,
-						shipNameConsent: 0,
-						entryChannel: 0,
-						verified: 0,
-						inBalticSeaGeo: 0,
-						isDead: 0,
-						deadCondition: 0,
-						deadSex: 0,
-						deadPhoneContact: 0,
-						privacyConsent: 0,
-						created: new Date(),
-						weatherData: storedWeatherData,
-						weatherFetchedAt: new Date(),
-						weatherProvider: 'open-meteo',
-						weatherApiVersion: 'v1',
-						weatherDataType: weatherResult.dataType
-					});
-
-					logger.info(
-						{ latitude, longitude, date, dataType: weatherResult.dataType },
-						'Weather data stored in database for caching'
-					);
-				} catch (error) {
-					logger.error(
-						{ error, latitude, longitude, date },
-						'Failed to store weather data for caching'
-					);
-				}
-			}
+			// Note: Weather data is NOT cached separately in the database.
+			// It will be stored with the actual sighting when the form is submitted.
+			// This prevents creating phantom sighting entries just for weather caching.
 		}
 
 		if (!weatherResult) {
