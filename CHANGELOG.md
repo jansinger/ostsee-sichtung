@@ -39,6 +39,13 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.11](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.10...v2.0.11) (2026-01-02)
+
+
+### Bug Fixes
+
+* **admin:** fix delete button not updating sightings list ([#301](https://github.com/jansinger/ostsee-sichtung/issues/301)) ([4742cfa](https://github.com/jansinger/ostsee-sichtung/commit/4742cfa68379256ed6275b7534196449312a59cf))
+
 ## [2.0.10](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.9...v2.0.10) (2026-01-02)
 
 
