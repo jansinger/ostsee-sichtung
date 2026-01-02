@@ -285,6 +285,7 @@ jobs:
           image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}
           format: 'sarif'
           output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
@@ -298,6 +299,7 @@ jobs:
           image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}
           format: 'json'
           output: 'trivy-results.json'
+          severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results as artifact
         uses: actions/upload-artifact@v6
