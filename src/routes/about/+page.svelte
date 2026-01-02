@@ -608,7 +608,7 @@ SOFTWARE.</pre>
 					</p>
 				</div>
 
-				<div class="stats bg-base-100/50 mb-8 shadow-xl">
+				<div class="stats stats-vertical sm:stats-horizontal bg-base-100/50 mb-8 w-full shadow-xl">
 					<div class="stat">
 						<div class="stat-title">Bereits erfasst</div>
 						<div class="stat-value text-primary">1.800+</div>
