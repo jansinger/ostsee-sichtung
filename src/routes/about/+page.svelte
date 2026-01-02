@@ -2,7 +2,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import OstseeTiereLogo from '$lib/components/OstseeTiereLogo.svelte';
 
-	// About page for Ostsee-Tiere platform
+	let { data } = $props();
 </script>
 
 <svelte:head>
@@ -357,10 +357,13 @@
 
 	<!-- Technology Section -->
 	<div class="bg-base-200 mb-16 rounded-lg p-8">
-		<h2 class="mb-6 text-center text-3xl font-bold flex items-center justify-center gap-3">
-			<Icon icon="lucide:zap" width="30" class="text-warning" />
-			Technologie
-		</h2>
+		<div class="mb-6 flex flex-col items-center justify-center gap-2">
+			<h2 class="text-center text-3xl font-bold flex items-center gap-3">
+				<Icon icon="lucide:zap" width="30" class="text-warning" />
+				Technologie
+			</h2>
+			<div class="badge badge-neutral badge-lg font-mono">Version {data.version}</div>
+		</div>
 		<p class="mx-auto mb-8 max-w-3xl text-center text-gray-700">
 			Unsere Plattform nutzt moderne Web-Technologien für eine optimale Benutzererfahrung und
 			zuverlässige Datenverarbeitung.
