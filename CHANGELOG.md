@@ -39,6 +39,14 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.14](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.13...v2.0.14) (2026-01-08)
+
+
+### Dependencies
+
+* **deps:** bump the production-dependencies group across 1 directory with 2 updates ([#311](https://github.com/jansinger/ostsee-sichtung/issues/311)) ([3fb0f12](https://github.com/jansinger/ostsee-sichtung/commit/3fb0f125c1391ea860dbf8bbfa427d11b37d440c))
+* **deps:** bump the svelte-framework group across 1 directory with 5 updates ([#312](https://github.com/jansinger/ostsee-sichtung/issues/312)) ([49785f7](https://github.com/jansinger/ostsee-sichtung/commit/49785f7f65fa5a7e5509eaa9639fe780d77bd5f0))
+
 ## [2.0.13](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.12...v2.0.13) (2026-01-08)
 
 
