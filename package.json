@@ -105,7 +105,7 @@
 		"vitest-browser-svelte": "^2.0.1"
 	},
 	"dependencies": {
-		"@paralleldrive/cuid2": "^3.0.4",
+		"@paralleldrive/cuid2": "^3.0.6",
 		"@turf/boolean-point-in-polygon": "^7.3.1",
 		"@turf/helpers": "^7.3.0",
 		"@vercel/blob": "^2.0.0",
