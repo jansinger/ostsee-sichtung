@@ -39,6 +39,16 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.13](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.12...v2.0.13) (2026-01-08)
+
+
+### Dependencies
+
+* **deps:** bump @iconify/json from 2.2.422 to 2.2.425 ([#309](https://github.com/jansinger/ostsee-sichtung/issues/309)) ([58770da](https://github.com/jansinger/ostsee-sichtung/commit/58770da9261e677db52376769c41e9267831470d))
+* **deps:** bump @paralleldrive/cuid2 ([#306](https://github.com/jansinger/ostsee-sichtung/issues/306)) ([46b5754](https://github.com/jansinger/ostsee-sichtung/commit/46b575414dfc2bb53a0ac74b8f830a515e8a4725))
+* **deps:** bump svelte in the svelte-framework group ([#308](https://github.com/jansinger/ostsee-sichtung/issues/308)) ([9a69d69](https://github.com/jansinger/ostsee-sichtung/commit/9a69d694155d375e9bb524a3942d19a9529d20d8))
+* **deps:** bump the dev-tooling group with 3 updates ([#307](https://github.com/jansinger/ostsee-sichtung/issues/307)) ([6a0f0d4](https://github.com/jansinger/ostsee-sichtung/commit/6a0f0d4afc0f5fd6b25979ce32000038b82eff52))
+
 ## [2.0.12](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.11...v2.0.12) (2026-01-02)
 
 
