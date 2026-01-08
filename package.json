@@ -118,13 +118,13 @@
 		"nodemailer": "^7.0.12",
 		"ol": "^10.7.0",
 		"pino": "^10.1.0",
-		"postgres": "^3.4.7",
+		"postgres": "^3.4.8",
 		"rbush": "^4.0.1",
 		"svelte-forms-lib": "^2.0.1",
 		"yup": "^1.7.1"
 	},
 	"optionalDependencies": {
-		"@rollup/rollup-linux-x64-gnu": "4.54.0"
+		"@rollup/rollup-linux-x64-gnu": "4.55.1"
 	},
 	"overrides": {
 		"cookie": "^0.7.2",
