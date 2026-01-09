@@ -29,13 +29,8 @@ services:
       PORT: 3000
       HOST: 0.0.0.0
 
-      # Database Connection
+      # Database Connection (only DATABASE_POSTGRES_URL is used by the application)
       DATABASE_POSTGRES_URL: ${DATABASE_POSTGRES_URL}
-      PGUSER: ${PGUSER:-postgres}
-      PGPASSWORD: ${PGPASSWORD}
-      PGDATABASE: ${PGDATABASE:-ostsee}
-      PGHOST: ${PGHOST:-db}
-      PGPORT: ${PGPORT:-5432}
 
       # Storage Configuration
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
@@ -147,18 +142,19 @@ services:
     ports:
       - "127.0.0.1:${DB_PORT:-5432}:5432"
     environment:
-      POSTGRES_USER: ${PGUSER:-postgres}
+      # Database initialization (must match DATABASE_POSTGRES_URL in app)
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${PGPASSWORD}
-      POSTGRES_DB: ${PGDATABASE:-ostsee}
+      POSTGRES_DB: ostsee
       POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
-      # Performance tuning
+      # Performance tuning (optional overrides)
       POSTGRES_SHARED_BUFFERS: ${POSTGRES_SHARED_BUFFERS:-256MB}
       POSTGRES_EFFECTIVE_CACHE_SIZE: ${POSTGRES_EFFECTIVE_CACHE_SIZE:-1GB}
       POSTGRES_MAINTENANCE_WORK_MEM: ${POSTGRES_MAINTENANCE_WORK_MEM:-64MB}
       POSTGRES_WORK_MEM: ${POSTGRES_WORK_MEM:-16MB}
 
     volumes:
-      # Persistent database storage (PostgreSQL 18+ uses version-specific path)
+      # Persistent database storage (aligned with development compose configuration)
       - pgdata:/var/lib/postgresql
       # Backup directory
       - db-backups:/backups
@@ -167,7 +163,7 @@ services:
       - ostsee-network
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-postgres} -d ${PGDATABASE:-ostsee}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ostsee"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -175,6 +171,10 @@ services:
 
     labels:
       - "com.ostsee-tiere.service=database"
+
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
 
     # Logging configuration
     logging:
