@@ -39,6 +39,18 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.15](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.14...v2.0.15) (2026-01-09)
+
+
+### Bug Fixes
+
+* **config:** simplify docker-compose config and align env vars ([#315](https://github.com/jansinger/ostsee-sichtung/issues/315)) ([1f3a3fe](https://github.com/jansinger/ostsee-sichtung/commit/1f3a3fe5194ea845dee588c643163d44be955c71))
+
+
+### Dependencies
+
+* **deps:** bump @smithy/config-resolver from 4.2.2 to 4.4.5 ([#314](https://github.com/jansinger/ostsee-sichtung/issues/314)) ([7f05398](https://github.com/jansinger/ostsee-sichtung/commit/7f0539897c3259ea4670bb828c5d6100fa53d2b9))
+
 ## [2.0.14](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.13...v2.0.14) (2026-01-08)
 
 
