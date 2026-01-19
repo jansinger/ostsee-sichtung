@@ -39,6 +39,17 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.17](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.16...v2.0.17) (2026-01-19)
+
+
+### Dependencies
+
+* **deps:** bump @iconify/json from 2.2.429 to 2.2.430 ([#333](https://github.com/jansinger/ostsee-sichtung/issues/333)) ([343eb2b](https://github.com/jansinger/ostsee-sichtung/commit/343eb2bdd37f586c60537f2c7070fde9d0556f8a))
+* **deps:** bump @scalar/api-reference from 1.43.1 to 1.43.8 ([#332](https://github.com/jansinger/ostsee-sichtung/issues/332)) ([3c67c19](https://github.com/jansinger/ostsee-sichtung/commit/3c67c191f6ab11ffcd4849b6993266defcc142d1))
+* **deps:** bump @scalar/sveltekit from 0.1.34 to 0.1.38 ([#331](https://github.com/jansinger/ostsee-sichtung/issues/331)) ([b3d31bf](https://github.com/jansinger/ostsee-sichtung/commit/b3d31bf81ab3c22cc083bddccd4bf52304886087))
+* **deps:** bump the production-dependencies group with 4 updates ([#329](https://github.com/jansinger/ostsee-sichtung/issues/329)) ([e5035ab](https://github.com/jansinger/ostsee-sichtung/commit/e5035ab06ec8dda856976c19cf28c9c92e9e1d7a))
+* **deps:** bump the svelte-framework group with 2 updates ([#330](https://github.com/jansinger/ostsee-sichtung/issues/330)) ([1a30164](https://github.com/jansinger/ostsee-sichtung/commit/1a3016486577d5983e195dec8b2f694971e0bb6e))
+
 ## [2.0.16](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.15...v2.0.16) (2026-01-18)
 
 
