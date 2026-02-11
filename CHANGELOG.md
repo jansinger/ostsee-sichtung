@@ -39,6 +39,17 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.18](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.17...v2.0.18) (2026-02-09)
+
+
+### Dependencies
+
+* **deps:** bump lodash-es from 4.17.22 to 4.17.23 ([#336](https://github.com/jansinger/ostsee-sichtung/issues/336)) ([05681fe](https://github.com/jansinger/ostsee-sichtung/commit/05681fe9f69a550d1685d693fda6c771e6e58ca1))
+* **deps:** bump tar from 7.5.3 to 7.5.7 ([#340](https://github.com/jansinger/ostsee-sichtung/issues/340)) ([9840713](https://github.com/jansinger/ostsee-sichtung/commit/9840713f39e22f8c0387f1266b0d1750b1f7bffd))
+* **deps:** bump the dev-tooling group across 1 directory with 14 updates ([#343](https://github.com/jansinger/ostsee-sichtung/issues/343)) ([faec65e](https://github.com/jansinger/ostsee-sichtung/commit/faec65efd51b4fffb388b0c1d0ab033ddead4678))
+* **deps:** bump the production-dependencies group across 1 directory with 8 updates ([#341](https://github.com/jansinger/ostsee-sichtung/issues/341)) ([64981ed](https://github.com/jansinger/ostsee-sichtung/commit/64981eded2da35085b14b9ab69a5e465c72a01c5))
+* **deps:** bump the svelte-framework group with 5 updates ([#339](https://github.com/jansinger/ostsee-sichtung/issues/339)) ([01b4355](https://github.com/jansinger/ostsee-sichtung/commit/01b435538632112fece9c3eccf54b0337fd81fe8))
+
 ## [2.0.17](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.16...v2.0.17) (2026-01-19)
 
 
