@@ -39,6 +39,22 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.19](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.18...v2.0.19) (2026-02-20)
+
+
+### Dependencies
+
+* **deps:** bump @iconify/json from 2.2.430 to 2.2.439 ([#349](https://github.com/jansinger/ostsee-sichtung/issues/349)) ([c7dfdb8](https://github.com/jansinger/ostsee-sichtung/commit/c7dfdb8924dff44d68f84906d4ba12c8eb1e37e1))
+* **deps:** bump @sveltejs/adapter-vercel from 6.3.1 to 6.3.2 ([#355](https://github.com/jansinger/ostsee-sichtung/issues/355)) ([8c1fbbf](https://github.com/jansinger/ostsee-sichtung/commit/8c1fbbfc7cda9600b446642f8a1834e30ab47cb0))
+* **deps:** bump @sveltejs/kit from 2.52.0 to 2.52.2 ([#353](https://github.com/jansinger/ostsee-sichtung/issues/353)) ([c833124](https://github.com/jansinger/ostsee-sichtung/commit/c83312464a7a52f2645d47f2d58f86953dca5aad))
+* **deps:** bump devalue from 5.6.2 to 5.6.3 ([#352](https://github.com/jansinger/ostsee-sichtung/issues/352)) ([bbd9b98](https://github.com/jansinger/ostsee-sichtung/commit/bbd9b9847a85b785014a87ba43a6de1904a22043))
+* **deps:** bump dotenv from 17.2.3 to 17.3.1 ([#348](https://github.com/jansinger/ostsee-sichtung/issues/348)) ([667411b](https://github.com/jansinger/ostsee-sichtung/commit/667411b179099f01ebc597ff7bbe1f6f295e6213))
+* **deps:** bump ol in the production-dependencies group ([#345](https://github.com/jansinger/ostsee-sichtung/issues/345)) ([44db673](https://github.com/jansinger/ostsee-sichtung/commit/44db673d86ed83df23bad858175d0c87a3cfdad8))
+* **deps:** bump svelte from 5.51.2 to 5.53.0 ([#354](https://github.com/jansinger/ostsee-sichtung/issues/354)) ([32b8de2](https://github.com/jansinger/ostsee-sichtung/commit/32b8de21fef778efe330a3a527e7357a99fc9bbf))
+* **deps:** bump tar from 7.5.7 to 7.5.9 ([#350](https://github.com/jansinger/ostsee-sichtung/issues/350)) ([5d3d84b](https://github.com/jansinger/ostsee-sichtung/commit/5d3d84bcc19054e94b262e0429931897cf2ff978))
+* **deps:** bump the dev-tooling group across 1 directory with 7 updates ([#356](https://github.com/jansinger/ostsee-sichtung/issues/356)) ([ed59a0f](https://github.com/jansinger/ostsee-sichtung/commit/ed59a0f5199d1a75ca35482a132bfd89a0b5979a))
+* **deps:** bump the svelte-framework group with 3 updates ([#347](https://github.com/jansinger/ostsee-sichtung/issues/347)) ([c94637c](https://github.com/jansinger/ostsee-sichtung/commit/c94637c397b65c7e6028b853ae216874c40b3e56))
+
 ## [2.0.18](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.17...v2.0.18) (2026-02-09)
 
 
