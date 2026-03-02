@@ -106,7 +106,7 @@ jobs:
           echo "Digest: $digest"
 
       - name: Upload digest
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: digests-${{ matrix.suffix }}
           path: /tmp/digests/*
@@ -122,7 +122,7 @@ jobs:
 
     steps:
       - name: Download digests
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: /tmp/digests
           pattern: digests-*
@@ -179,7 +179,7 @@ jobs:
           echo "docker pull ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${VERSION}" >> image-digest.txt
 
       - name: Upload image digest as artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: docker-image-digest
           path: image-digest.txt
@@ -198,7 +198,7 @@ jobs:
           ref: ${{ needs.prepare.outputs.sha }}
 
       - name: Download image digest
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: docker-image-digest
 
@@ -302,7 +302,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results as artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: trivy-scan-results
