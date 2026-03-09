@@ -39,6 +39,19 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.20](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.19...v2.0.20) (2026-03-09)
+
+
+### Dependencies
+
+* **deps:** bump @fontsource/roboto from 5.2.9 to 5.2.10 ([#361](https://github.com/jansinger/ostsee-sichtung/issues/361)) ([ff04e97](https://github.com/jansinger/ostsee-sichtung/commit/ff04e97631507e588eda0967c1d13e0356edcf16))
+* **deps:** bump @scalar/api-reference from 1.43.8 to 1.44.25 ([#360](https://github.com/jansinger/ostsee-sichtung/issues/360)) ([a992758](https://github.com/jansinger/ostsee-sichtung/commit/a992758d5949598c1022961c7f1739714b347c59))
+* **deps:** bump tar from 7.5.9 to 7.5.11 ([#375](https://github.com/jansinger/ostsee-sichtung/issues/375)) ([ace4380](https://github.com/jansinger/ostsee-sichtung/commit/ace438005421cbbb9a70bdb50d305ff63760d73e))
+* **deps:** bump the dev-tooling group across 1 directory with 10 updates ([#373](https://github.com/jansinger/ostsee-sichtung/issues/373)) ([5d974b0](https://github.com/jansinger/ostsee-sichtung/commit/5d974b02ae43b655e094694a2d47897889281e1b))
+* **deps:** bump the github-actions group across 1 directory with 5 updates ([#372](https://github.com/jansinger/ostsee-sichtung/issues/372)) ([bc4f4bf](https://github.com/jansinger/ostsee-sichtung/commit/bc4f4bfd04e99bf81cc93cf7ef7638a303b3b9b3))
+* **deps:** bump the production-dependencies group with 2 updates ([#357](https://github.com/jansinger/ostsee-sichtung/issues/357)) ([7add951](https://github.com/jansinger/ostsee-sichtung/commit/7add95170dad2bb80c3c139b4dc6663841da455e))
+* **deps:** bump the svelte-framework group across 1 directory with 4 updates ([#367](https://github.com/jansinger/ostsee-sichtung/issues/367)) ([6b47d50](https://github.com/jansinger/ostsee-sichtung/commit/6b47d50e2b7c143da4a0490c5552542c4b92590e))
+
 ## [2.0.19](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.18...v2.0.19) (2026-02-20)
 
 
