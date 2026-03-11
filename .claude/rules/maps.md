@@ -1,3 +1,12 @@
+---
+paths:
+  - "src/lib/map/**"
+  - "src/lib/components/map/**"
+  - "src/routes/map/**"
+  - "src/routes/api/map/**"
+  - "src/routes/api/geo/**"
+---
+
 # Karten & OpenLayers
 
 Regeln für Karten-Integration mit OpenLayers und PostGIS.

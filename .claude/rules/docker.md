@@ -1,10 +1,21 @@
+---
+paths:
+  - "Dockerfile"
+  - "docker-compose*.yml"
+  - ".env.docker"
+  - "run-release.sh"
+  - "docs/DOCKER_DEPLOYMENT.md"
+  - "docs/PRODUCTION_DEPLOYMENT.md"
+  - ".github/workflows/docker-release.yml"
+---
+
 # Docker Deployment
 
 Regeln für Docker-Builds und Container-Deployment.
 
 **Dokumentation:**
-- **Production:** @docs/PRODUCTION_DEPLOYMENT.md (Schnellanleitung)
-- **Vollständig:** @docs/DOCKER_DEPLOYMENT.md (Referenz)
+- **Production:** docs/PRODUCTION_DEPLOYMENT.md (Schnellanleitung)
+- **Vollständig:** docs/DOCKER_DEPLOYMENT.md (Referenz)
 
 ---
 

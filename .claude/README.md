@@ -25,36 +25,55 @@ Diese Dokumentation ist modular aufgebaut für optimale Navigation und Wartbarke
 ├── settings.json       # Projekt-Einstellungen
 ├── settings.local.json # Lokale Einstellungen (nicht committen)
 ├── rules/              # Themenspezifische Regeln
-│   ├── architecture.md # Architektur & Clean Code
-│   ├── testing.md      # Test-Patterns
-│   ├── database.md     # Drizzle & PostGIS
-│   ├── forms.md        # Multi-Step Forms
-│   ├── maps.md         # OpenLayers
-│   ├── security.md     # Auth & GDPR
-│   ├── api.md          # REST API
-│   └── docker.md       # Docker Deployment
+│   ├── architecture.md # Architektur & Clean Code (immer geladen)
+│   ├── testing.md      # Test-Patterns (immer geladen)
+│   ├── database.md     # Drizzle & PostGIS (immer geladen)
+│   ├── forms.md        # Multi-Step Forms (conditional: Form-Dateien)
+│   ├── maps.md         # OpenLayers (conditional: Map-Dateien)
+│   ├── security.md     # Auth & GDPR (conditional: Auth/Security-Dateien)
+│   ├── api.md          # REST API (conditional: API-Dateien)
+│   └── docker.md       # Docker Deployment (conditional: Docker-Dateien)
 ├── agents/             # Spezialisierte Agents
 │   ├── form-development.md
 │   ├── testing.md
 │   └── map-features.md
 └── commands/           # Slash Commands
-    ├── local-dev.md
-    └── prepare-pr.md
+    ├── local-dev.md    # Lokale Entwicklungsumgebung
+    ├── prepare-pr.md   # Pull Request vorbereiten
+    ├── deploy.md       # Docker Deployment Referenz (on-demand)
+    └── db-migrate.md   # Datenbank-Migration Referenz (on-demand)
 ```
 
 ---
 
-## Wann welches Dokument lesen?
+## Conditional Loading
 
-| Dokument | Lesen bei... |
-|----------|--------------|
-| `rules/architecture.md` | **Jeder** Code-Änderung |
-| `rules/testing.md` | Test-Entwicklung |
-| `rules/database.md` | Schema-Änderungen, Queries |
-| `rules/forms.md` | Formular-Arbeit |
-| `rules/maps.md` | Karten-Features |
-| `rules/security.md` | Auth, File Upload, User Data |
-| `rules/api.md` | **KRITISCH** bei Legacy API Änderungen |
+Rules mit `paths` Frontmatter werden nur geladen wenn passende Dateien bearbeitet werden:
+
+| Rule | Geladen bei Dateien in... |
+|------|--------------------------|
+| forms.md | `src/lib/form/`, `src/lib/report/`, `src/lib/components/form/`, `src/routes/+page.svelte` |
+| maps.md | `src/lib/map/`, `src/routes/map/` |
+| security.md | `src/lib/server/auth/`, `src/hooks.server.ts`, `src/routes/api/files/` |
+| api.md | `src/routes/api/`, `src/routes/rest_sichtungen/`, `src/routes/sichtungen/` |
+| docker.md | `Dockerfile`, `docker-compose*.yml`, `.github/workflows/docker-release.yml` |
+
+Rules **ohne** `paths` (immer geladen): architecture.md, testing.md, database.md
+
+---
+
+## On-Demand Dokumentation
+
+Große Referenz-Dokumente werden nicht automatisch geladen, sondern on-demand via Skills:
+
+| Skill | Lädt... |
+|-------|---------|
+| `/deploy` | docs/DOCKER_DEPLOYMENT.md, docs/PRODUCTION_DEPLOYMENT.md, docs/ENVIRONMENT.md |
+| `/db-migrate` | docs/DATABASE_MIGRATION.md, docs/ENVIRONMENT.md |
+
+Weitere Dokumente können jederzeit per `Read`-Tool gelesen werden:
+- `docs/DESIGN_GUIDE.md` — Design-Richtlinien & UX
+- `docs/LEGACY_API_SPECIFICATION.md` — Legacy API (wird via CLAUDE.md `@` immer geladen)
 
 ---
 
@@ -79,24 +98,3 @@ Spezialisierte Agents für komplexe Aufgaben:
 - OpenLayers Patterns
 - PostGIS Integration
 - Coordinate Handling
-
----
-
-## Commands
-
-| Command | Beschreibung |
-|---------|--------------|
-| `/local-dev` | Lokale Entwicklungsumgebung starten |
-| `/prepare-pr` | Pull Request vorbereiten |
-
----
-
-## Externe Dokumentation
-
-| Dokument | Inhalt |
-|----------|--------|
-| `docs/DESIGN_GUIDE.md` | Design-Richtlinien & UX |
-| `docs/LEGACY_API_SPECIFICATION.md` | Legacy API (KRITISCH) |
-| `docs/DOCKER_DEPLOYMENT.md` | Docker Setup |
-| `docs/ENVIRONMENT.md` | Umgebungsvariablen |
-| `docs/DATABASE_MIGRATION.md` | DB Migrationen |

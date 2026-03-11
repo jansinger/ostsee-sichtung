@@ -1,3 +1,11 @@
+---
+paths:
+  - "src/lib/form/**"
+  - "src/lib/report/**"
+  - "src/lib/components/form/**"
+  - "src/routes/+page.svelte"
+---
+
 # Multi-Step Forms
 
 Regeln für Formular-Entwicklung mit svelte-forms-lib und Yup.
