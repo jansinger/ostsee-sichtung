@@ -39,6 +39,13 @@ All notable changes to this project will be documented in this file. See [Conven
 
 * fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
+## [2.0.21](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.20...v2.0.21) (2026-03-11)
+
+
+### Dependencies
+
+* **deps:** update major dependencies ([#377](https://github.com/jansinger/ostsee-sichtung/issues/377)) ([ca27579](https://github.com/jansinger/ostsee-sichtung/commit/ca275799ae1bcaa28726b2a06e3af013b2335ee4))
+
 ## [2.0.20](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.19...v2.0.20) (2026-03-09)
 
 
