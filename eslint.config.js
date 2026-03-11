@@ -25,6 +25,7 @@ export default ts.config(
 			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
 			'no-undef': 'off',
 			'no-unused-vars': 'off',
+			// Disabled globally: false positives in Svelte runes and default-value-then-override patterns in .ts files
 			'no-useless-assignment': 'off',
 
 			// Svelte-spezifische Regeln
@@ -56,7 +57,7 @@ export default ts.config(
 				parser: ts.parser,
 				svelteConfig
 			}
-		}
+		},
 	},
 	{
 		files: ['**/*.test.ts', '**/*.test.js', '**/*.spec.ts', '**/*.spec.js'],

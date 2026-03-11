@@ -2,12 +2,8 @@
 paths:
   - "src/lib/form/**"
   - "src/lib/report/**"
-  - "src/lib/sightingSchema.ts"
-  - "src/lib/formState.ts"
   - "src/lib/components/form/**"
   - "src/routes/+page.svelte"
-  - "src/routes/components/steps/**"
-  - "src/routes/components/conditional/**"
 ---
 
 # Multi-Step Forms

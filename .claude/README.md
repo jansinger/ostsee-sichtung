@@ -52,7 +52,7 @@ Rules mit `paths` Frontmatter werden nur geladen wenn passende Dateien bearbeite
 
 | Rule | Geladen bei Dateien in... |
 |------|--------------------------|
-| forms.md | `src/lib/form/`, `src/lib/sightingSchema.ts`, `src/routes/+page.svelte`, `src/routes/components/steps/` |
+| forms.md | `src/lib/form/`, `src/lib/report/`, `src/lib/components/form/`, `src/routes/+page.svelte` |
 | maps.md | `src/lib/map/`, `src/routes/map/` |
 | security.md | `src/lib/server/auth/`, `src/hooks.server.ts`, `src/routes/api/files/` |
 | api.md | `src/routes/api/`, `src/routes/rest_sichtungen/`, `src/routes/sichtungen/` |
