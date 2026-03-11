@@ -25,6 +25,7 @@ export default ts.config(
 			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
 			'no-undef': 'off',
 			'no-unused-vars': 'off',
+			'no-useless-assignment': 'off',
 
 			// Svelte-spezifische Regeln
 			'svelte/no-unused-svelte-ignore': 'error',
