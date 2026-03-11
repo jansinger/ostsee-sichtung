@@ -1,3 +1,12 @@
+---
+paths:
+  - "src/lib/server/auth/**"
+  - "src/lib/server/storage/**"
+  - "src/hooks.server.ts"
+  - "src/routes/api/auth/**"
+  - "src/routes/api/files/**"
+---
+
 # Sicherheit & GDPR
 
 Regeln für Authentifizierung, Datenschutz und Sicherheit.

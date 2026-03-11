@@ -1,3 +1,11 @@
+---
+paths:
+  - "src/routes/api/**"
+  - "src/routes/rest_sichtungen/**"
+  - "src/routes/sichtungen/**"
+  - "docs/LEGACY_API_SPECIFICATION.md"
+---
+
 # REST API & Legacy Kompatibilität
 
 Regeln für API-Entwicklung, insbesondere Legacy API.
@@ -25,7 +33,7 @@ src/routes/api/
 Die Legacy API MUSS exakt mit der Original-Spezifikation übereinstimmen.
 Mobile Apps hängen davon ab!
 
-**Referenz:** @docs/LEGACY_API_SPECIFICATION.md
+**Referenz:** docs/LEGACY_API_SPECIFICATION.md
 
 ### Kritische Anforderungen
 

@@ -48,7 +48,7 @@ Die Legacy REST API (`/api/legacy/`) MUSS 100% kompatibel bleiben.
 
 ### Design Guide
 
-**Referenz:** @docs/DESIGN_GUIDE.md
+**Referenz:** docs/DESIGN_GUIDE.md
 
 ### Test-First Entwicklung - PFLICHT
 
@@ -58,7 +58,7 @@ Bei **allen** Code-Änderungen gilt:
 2. **Bugfix:** Reproduzierenden Test schreiben → Bug beheben → Test grün
 3. **Änderung:** Bestehende Tests anpassen → Code ändern → Alle Tests grün
 
-**Keine Ausnahmen** für Features und Bugfixes. Details: @.claude/rules/testing.md
+**Keine Ausnahmen** für Features und Bugfixes. Details: .claude/rules/testing.md
 
 ---
 
@@ -90,31 +90,10 @@ npm run test:quick   # Schnell-Test
 ## Architektur
 
 ### Tech Stack
-
-| Bereich | Technologie |
-|---------|-------------|
-| Framework | SvelteKit 5 + TypeScript |
-| Datenbank | PostgreSQL + PostGIS |
-| ORM | Drizzle |
-| Styling | TailwindCSS + DaisyUI |
-| Karten | OpenLayers |
-| Forms | svelte-forms-lib + Yup |
+SvelteKit 5 + TypeScript, PostgreSQL/PostGIS, Drizzle ORM, TailwindCSS/DaisyUI, OpenLayers, svelte-forms-lib + Yup. Details: .claude/rules/architecture.md
 
 ### Projektstruktur
-
-```
-src/
-├── lib/
-│   ├── components/      # UI-Komponenten
-│   ├── constants/       # Konstanten
-│   ├── map/             # OpenLayers
-│   ├── server/db/       # Schema, Repository
-│   └── sightingSchema.ts
-└── routes/
-    ├── api/             # API Endpoints
-    ├── map/             # Kartenansicht
-    └── components/steps/ # Form Steps
-```
+Siehe .claude/rules/architecture.md für vollständige Struktur.
 
 ### Schlüsseldateien
 
@@ -133,14 +112,14 @@ Detaillierte Regeln in `.claude/rules/`:
 
 | Datei | Inhalt |
 |-------|--------|
-| @.claude/rules/architecture.md | Architektur, Clean Code |
-| @.claude/rules/testing.md | Vitest, Playwright |
-| @.claude/rules/database.md | Drizzle, PostGIS |
-| @.claude/rules/forms.md | Multi-Step Forms |
-| @.claude/rules/maps.md | OpenLayers |
-| @.claude/rules/security.md | Auth, GDPR |
-| @.claude/rules/api.md | REST API |
-| @.claude/rules/docker.md | Docker Deployment |
+| .claude/rules/architecture.md | Architektur, Clean Code (immer geladen) |
+| .claude/rules/testing.md | Vitest, Playwright (immer geladen) |
+| .claude/rules/database.md | Drizzle, PostGIS (immer geladen) |
+| .claude/rules/forms.md | Multi-Step Forms (bei Form-Dateien) |
+| .claude/rules/maps.md | OpenLayers (bei Map-Dateien) |
+| .claude/rules/security.md | Auth, GDPR (bei Auth/Security-Dateien) |
+| .claude/rules/api.md | REST API (bei API-Dateien) |
+| .claude/rules/docker.md | Docker Deployment (bei Docker-Dateien) |
 
 ### Agents (Aufgabenspezifisch)
 
@@ -148,9 +127,9 @@ Spezialisierte Agents in `.claude/agents/`:
 
 | Agent | Trigger |
 |-------|---------|
-| @.claude/agents/form-development.md | "Formular erstellen" |
-| @.claude/agents/testing.md | "Tests schreiben" |
-| @.claude/agents/map-features.md | "Karte", "Map" |
+| .claude/agents/form-development.md | "Formular erstellen" |
+| .claude/agents/testing.md | "Tests schreiben" |
+| .claude/agents/map-features.md | "Karte", "Map" |
 
 ### Commands (Workflows)
 
@@ -158,6 +137,8 @@ Spezialisierte Agents in `.claude/agents/`:
 |---------|--------------|
 | `/local-dev` | Entwicklungsumgebung starten |
 | `/prepare-pr` | Pull Request vorbereiten |
+| `/deploy` | Docker Deployment Referenz |
+| `/db-migrate` | Datenbank-Migration Referenz |
 
 ---
 
@@ -227,12 +208,12 @@ import MapPin from '~icons/lucide/map-pin';
 
 | Dokument | Inhalt |
 |----------|--------|
-| @docs/DESIGN_GUIDE.md | UX/Design-Richtlinien |
+| docs/DESIGN_GUIDE.md | UX/Design-Richtlinien |
 | @docs/LEGACY_API_SPECIFICATION.md | Legacy API (KRITISCH) |
-| @docs/PRODUCTION_DEPLOYMENT.md | Production Deployment (Schnellanleitung) |
-| @docs/DOCKER_DEPLOYMENT.md | Docker Setup (Vollständige Referenz) |
-| @docs/ENVIRONMENT.md | Umgebungsvariablen |
-| @docs/DATABASE_MIGRATION.md | DB Migrationen |
+| docs/PRODUCTION_DEPLOYMENT.md | Production Deployment (Schnellanleitung) |
+| docs/DOCKER_DEPLOYMENT.md | Docker Setup (Vollständige Referenz) |
+| docs/ENVIRONMENT.md | Umgebungsvariablen |
+| docs/DATABASE_MIGRATION.md | DB Migrationen |
 
 ---
 
