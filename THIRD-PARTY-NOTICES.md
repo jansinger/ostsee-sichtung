@@ -479,6 +479,20 @@ Generated on: [AUTO-GENERATED]
 - **zarrita@0.6.1**
   - Repository: https://github.com/manzt/zarrita.js
 
+### MIT-0 (3 packages)
+
+**Compatibility**: ✅ Fully Compatible
+
+- **@csstools/color-helpers@6.0.2**
+  - Repository: https://github.com/csstools/postcss-plugins
+
+- **@csstools/css-syntax-patches-for-csstree@1.1.0**
+  - Repository: https://github.com/csstools/postcss-plugins
+
+- **nodemailer@8.0.2**
+  - Repository: https://github.com/nodemailer/nodemailer
+  - Publisher: Andris Reinman
+
 ### ISC (5 packages)
 
 **Compatibility**: ✅ Fully Compatible
@@ -631,20 +645,6 @@ Generated on: [AUTO-GENERATED]
 - **tslib@2.8.1**
   - Repository: https://github.com/Microsoft/tslib
   - Publisher: Microsoft Corp.
-
-### MIT-0 (3 packages)
-
-**Compatibility**: ✅ Fully Compatible
-
-- **@csstools/color-helpers@6.0.2**
-  - Repository: https://github.com/csstools/postcss-plugins
-
-- **@csstools/css-syntax-patches-for-csstree@1.1.0**
-  - Repository: https://github.com/csstools/postcss-plugins
-
-- **nodemailer@8.0.2**
-  - Repository: https://github.com/nodemailer/nodemailer
-  - Publisher: Andris Reinman
 
 ### (MPL-2.0 OR Apache-2.0) (1 package)
 

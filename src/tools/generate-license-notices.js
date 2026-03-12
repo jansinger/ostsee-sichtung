@@ -18,7 +18,7 @@ async function generateLicenseNotices() {
 	try {
 		// Generate JSON output of all licenses
 		const { stdout } = await execAsync(
-			'npx license-checker --production --excludePrivatePackages --json'
+			'npx --no-install license-checker --production --excludePrivatePackages --json'
 		);
 		const licenses = JSON.parse(stdout);
 
@@ -183,6 +183,7 @@ function getLicenseOrder(license) {
 	// Order licenses by preference/compatibility
 	const order = {
 		MIT: 1,
+		'MIT-0': 1,
 		ISC: 2,
 		BSD: 3,
 		'BSD-2-Clause': 3,
