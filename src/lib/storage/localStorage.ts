@@ -218,17 +218,30 @@ export function clearAllStorage(): void {
 }
 
 /**
+ * Speichert Benutzer-Kontaktdaten nur für die aktuelle Session (sessionStorage)
+ *
+ * Wird bei fehlendem DSGVO-Einverständnis verwendet. Daten werden automatisch
+ * beim Schließen des Browsers / Tabs gelöscht.
+ *
+ * @param contactData Vollständige Kontaktdaten des Benutzers
+ */
+export function saveUserContactDataToSession(contactData: UserContactData): void {
+	if (!browser) return;
+	sessionStorage.setItem(STORAGE_KEYS.USER_CONTACT_DATA, JSON.stringify(contactData));
+}
+
+/**
  * DSGVO-konforme Kontaktdaten-Speicherung basierend auf Einwilligung
- * 
+ *
  * Respektiert die Benutzer-Einwilligung zur persistenten Datenspeicherung:
  * - Mit Einwilligung: Persistente Speicherung in localStorage
- * - Ohne Einwilligung: Nur Session-Speicherung (automatische Löschung)
- * 
+ * - Ohne Einwilligung: Nur Session-Speicherung (automatische Löschung beim Tab-Schließen)
+ *
  * @param contactData Kontaktdaten inklusive Einwilligungsstatus
- * 
+ *
  * @example
  * saveUserContactDataWithConsent(contactDataWithConsent);
- * 
+ *
  * @note Implementiert DSGVO-Anforderungen zur expliziten Einwilligung
  */
 export function saveUserContactDataWithConsent(contactData: UserContactData): void {
@@ -236,8 +249,7 @@ export function saveUserContactDataWithConsent(contactData: UserContactData): vo
 		// Mit Einwilligung: Persistente Speicherung für zukünftige Besuche
 		saveUserContactData(contactData);
 	} else {
-		// Ohne Einwilligung: Trotzdem speichern für aktuelle Session
-		// (wird beim Browser-Schließen automatisch gelöscht)
-		saveUserContactData(contactData);
+		// Ohne Einwilligung: Nur Session-Speicherung (automatische Löschung)
+		saveUserContactDataToSession(contactData);
 	}
 }

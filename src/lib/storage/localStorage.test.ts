@@ -6,6 +6,8 @@ import {
 	loadUserContactData,
 	saveToStorage,
 	saveUserContactData,
+	saveUserContactDataToSession,
+	saveUserContactDataWithConsent,
 	STORAGE_KEYS
 } from './localStorage';
 
@@ -122,6 +124,42 @@ describe('localStorage utilities', () => {
 		it('should return empty object for no contact data', () => {
 			const result = loadUserContactData();
 			expect(result).toEqual({});
+		});
+	});
+
+	describe('saveUserContactDataWithConsent (GDPR)', () => {
+		const contactBase = {
+			firstName: 'Max',
+			lastName: 'Mustermann',
+			email: 'max@example.com'
+		} as UserContactData;
+
+		it('stores in localStorage when consent is given', () => {
+			saveUserContactDataWithConsent({ ...contactBase, persistentDataConsent: true });
+			expect(localStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).not.toBeNull();
+			expect(sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).toBeNull();
+		});
+
+		it('stores in sessionStorage when consent is NOT given', () => {
+			saveUserContactDataWithConsent({ ...contactBase, persistentDataConsent: false });
+			expect(sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).not.toBeNull();
+			expect(localStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).toBeNull();
+		});
+
+		it('sessionStorage data is correct JSON when consent is NOT given', () => {
+			const data = { ...contactBase, persistentDataConsent: false };
+			saveUserContactDataWithConsent(data);
+			const raw = sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA);
+			expect(JSON.parse(raw!)).toEqual(data);
+		});
+	});
+
+	describe('saveUserContactDataToSession', () => {
+		it('writes only to sessionStorage, not localStorage', () => {
+			const data = { firstName: 'Anna', email: 'anna@example.com' } as UserContactData;
+			saveUserContactDataToSession(data);
+			expect(sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).not.toBeNull();
+			expect(localStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).toBeNull();
 		});
 	});
 
