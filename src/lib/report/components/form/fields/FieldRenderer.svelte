@@ -98,21 +98,24 @@
 		}
 	}
 
-	// Extract field configuration
-	const required = fieldConfig.optional === false;
-	const {
-		options,
-		helpText,
-		valueText,
-		type = fieldConfig.type,
-		icon,
-		rows,
-		placeholder,
-		selectPlaceholder,
-		description
-	} = fieldConfig.meta || {};
-	const hasOptions = options && options.length > 0;
-	const { label } = fieldConfig;
+	// Extract field configuration (reactive to prop changes)
+	let required = $derived(fieldConfig.optional === false);
+	let metaValues = $derived.by(() => {
+		const meta = fieldConfig.meta || {};
+		return {
+			options: meta.options,
+			helpText: meta.helpText,
+			valueText: meta.valueText,
+			type: meta.type || fieldConfig.type,
+			icon: meta.icon,
+			rows: meta.rows,
+			placeholder: meta.placeholder,
+			selectPlaceholder: meta.selectPlaceholder,
+			description: meta.description
+		};
+	});
+	let hasOptions = $derived(metaValues.options && metaValues.options.length > 0);
+	let label = $derived(fieldConfig.label);
 
 	// State computations
 	let hasError = $derived(!!error && error.length > 0);
@@ -120,7 +123,7 @@
 	let isValid = $derived(hasValue && !hasError);
 
 	// Type normalization
-	let normalizedType = $derived(type === 'string' ? 'text' : type === 'boolean' ? 'toggle' : type);
+	let normalizedType = $derived(metaValues.type === 'string' ? 'text' : metaValues.type === 'boolean' ? 'toggle' : metaValues.type);
 
 	// Dynamic CSS classes
 	let containerClasses = $derived.by(() => {
@@ -131,16 +134,16 @@
 	});
 
 	// Field IDs for accessibility
-	let fieldId = `field-${name}`;
-	let helpId = `${fieldId}-help`;
-	let errorId = `${fieldId}-error`;
-	let descriptionId = `${fieldId}-desc`;
+	let fieldId = $derived(`field-${name}`);
+	let helpId = $derived(`${fieldId}-help`);
+	let errorId = $derived(`${fieldId}-error`);
+	let descriptionId = $derived(`${fieldId}-desc`);
 
 	// ARIA attributes
 	let ariaDescribedBy = $derived.by(() => {
 		const ids = [];
-		if (helpText) ids.push(helpId);
-		if (description && description !== helpText) ids.push(descriptionId);
+		if (metaValues.helpText) ids.push(helpId);
+		if (metaValues.description && metaValues.description !== metaValues.helpText) ids.push(descriptionId);
 		if (error) ids.push(errorId);
 		return ids.length > 0 ? ids.join(' ') : undefined;
 	});
@@ -154,7 +157,7 @@
 		size,
 		hasError,
 		isValid,
-		icon,
+		icon: metaValues.icon,
 		...(ariaDescribedBy && { 'aria-describedby': ariaDescribedBy }),
 		'aria-invalid': hasError,
 		'aria-required': required,
@@ -174,8 +177,8 @@
 				| 'password'
 				| 'date'
 				| 'time',
-			placeholder: placeholder || '',
-			options: hasOptions ? options : []
+			placeholder: metaValues.placeholder || '',
+			options: metaValues.options ?? []
 		};
 		return props;
 	});
@@ -183,8 +186,8 @@
 	let selectProps = $derived.by(() => {
 		const props = {
 			...commonFieldProps,
-			options: hasOptions ? options : [],
-			placeholder: selectPlaceholder || 'Bitte wählen...'
+			options: metaValues.options ?? [],
+			placeholder: metaValues.selectPlaceholder || 'Bitte wählen...'
 		};
 		return props;
 	});
@@ -192,8 +195,8 @@
 	let textareaProps = $derived.by(() => {
 		const props = {
 			...commonFieldProps,
-			placeholder: placeholder || '',
-			rows: rows || 4
+			placeholder: metaValues.placeholder || '',
+			rows: metaValues.rows || 4
 		};
 		return props;
 	});
@@ -201,7 +204,7 @@
 	let radioProps = $derived.by(() => {
 		const props = {
 			...commonFieldProps,
-			options: hasOptions ? options : []
+			options: metaValues.options ?? []
 		};
 		return props;
 	});
@@ -247,8 +250,8 @@
 			{/if}
 
 			<!-- Value Information Tooltip -->
-			{#if valueText}
-				<span class="tooltip tooltip-left ml-2 inline-block" data-tip={valueText}>
+			{#if metaValues.valueText}
+				<span class="tooltip tooltip-left ml-2 inline-block" data-tip={metaValues.valueText}>
 					<button
 						type="button"
 						class="btn btn-ghost btn-xs btn-circle"
@@ -263,9 +266,9 @@
 	</label>
 
 	<!-- Field Description (if different from help text) -->
-	{#if description && description !== helpText}
+	{#if metaValues.description && metaValues.description !== metaValues.helpText}
 		<div id={descriptionId} class="text-base-content/70 mb-2 text-left text-sm">
-			{description}
+			{metaValues.description}
 		</div>
 	{/if}
 
@@ -285,10 +288,10 @@
 	{/if}
 
 	<!-- Help Text -->
-	{#if helpText}
+	{#if metaValues.helpText}
 		<div id={helpId} class="mt-1 text-left">
 			<span class="text-base-content/60 text-xs leading-relaxed">
-				{helpText}
+				{metaValues.helpText}
 			</span>
 		</div>
 	{/if}

@@ -3,17 +3,18 @@
 	import type { ConfigItem, ConfigValue } from '$lib/server/db/configRepository';
 	import Icon from '$lib/components/Icon.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
+	import { untrack } from 'svelte';
 
 	const logger = createLogger('admin:settings');
 
 	let { data } = $props();
-	let groupedConfigs = $state(data.groupedConfigs);
+	let groupedConfigs = $state(untrack(() => data.groupedConfigs));
 	let saveMessage = $state('');
-	let errorMessage = $state(data.error || '');
+	let errorMessage = $state(untrack(() => data.error || ''));
 	let savingStates = $state<Record<string, boolean>>({});
 	let changedConfigs = $state<Set<string>>(new Set());
 	let showAllSettings = $state(false);
-	let isSuperAdmin = $state(data.isSuperAdmin || false);
+	let isSuperAdmin = $derived(data.isSuperAdmin || false);
 
 	const categoryIcons: Record<string, string> = {
 		email: 'lucide:mail',

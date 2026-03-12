@@ -2,7 +2,7 @@
 	import { setFormContext } from '$lib/report/formContext';
 	import type { FormContext } from '$lib/report/types';
 	import type { MediaStore } from '$lib/utils/media/MediaFile';
-	import { type Snippet } from 'svelte';
+	import { type Snippet, untrack } from 'svelte';
 
 	import { createForm, type FormProps } from 'svelte-forms-lib';
 	import type { HTMLFormAttributes } from 'svelte/elements';
@@ -12,13 +12,9 @@
 	};
 
 	let {
-		initialValues = {},
-		validate = null,
-		validationSchema = null,
-		onSubmit = onSubmitDefault,
 		children,
 		context = $bindable({}),
-		...restProps
+		...formAndRestProps
 	} = $props<
 		FormProps & {
 			children: Snippet;
@@ -26,6 +22,9 @@
 			restProps?: HTMLFormAttributes;
 		}
 	>();
+
+	// Plain destructuring via untrack - avoids state_referenced_locally warnings
+	const { initialValues = {}, onSubmit = onSubmitDefault, validate = null, validationSchema = null, ...restProps } = untrack(() => formAndRestProps);
 
 	// Create form context
 	context = createForm({

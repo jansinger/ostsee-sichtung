@@ -56,8 +56,8 @@
 	let dropzoneFiles = $state<File[]>([]);
 
 	// Modus-Bestimmung basierend auf maxFiles
-	const isSingleFileMode = maxFiles === 1;
-	const isPositionStep = enableGPSExtraction && isSingleFileMode;
+	let isSingleFileMode = $derived(maxFiles === 1);
+	let isPositionStep = $derived(enableGPSExtraction && isSingleFileMode);
 
 	// Initialisierung der Upload-Map mit bestehenden Formulardaten
 	let uploadedFiles = $derived($form.uploadedFiles);

@@ -17,6 +17,7 @@
 	import SightingDetails from '$lib/report/components/sections/SightingDetails.svelte';
 	import type { FrontendSighting } from '$lib/types';
 	import { formatLocalDateTime, splitDateTime } from '$lib/utils/format/dateTime';
+	import { untrack } from 'svelte';
 
 	const logger = createLogger('AdminEditForm');
 
@@ -59,20 +60,22 @@
 		}
 	}
 
-	// Initialisiere das Formular mit den vorhandenen Daten
-	const { date, time } = splitDateTime(sighting.sightingDate);
-	const initProps = {
-		initialValues: {
-			...sighting,
-			sightingDate: date,
-			sightingTime: time,
-			longitude: Number(sighting.longitude)?.toFixed(4) || 0,
-			latitude: Number(sighting.latitude)?.toFixed(4) || 0,
-			hasPosition: Boolean(sighting.longitude && sighting.latitude)
-		},
-		validationSchema: sightingSchema,
-		onSubmit: submitForm
-	};
+	// Initialisiere das Formular mit den vorhandenen Daten (one-time, untracked)
+	const initProps = untrack(() => {
+		const { date, time } = splitDateTime(sighting.sightingDate);
+		return {
+			initialValues: {
+				...sighting,
+				sightingDate: date,
+				sightingTime: time,
+				longitude: Number(sighting.longitude)?.toFixed(4) || 0,
+				latitude: Number(sighting.latitude)?.toFixed(4) || 0,
+				hasPosition: Boolean(sighting.longitude && sighting.latitude)
+			},
+			validationSchema: sightingSchema,
+			onSubmit: submitForm
+		};
+	});
 	let isValid: Readable<boolean> = $derived(formContext.isValid);
 	let isSubmitting: Readable<boolean> = $derived(formContext.isSubmitting);
 	let errors: Writable<Record<string, string>> = $derived(formContext.errors);
