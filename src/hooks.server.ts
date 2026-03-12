@@ -17,6 +17,14 @@ const SESSION_SECRET = env.SESSION_SECRET ?? '';
 
 const logger = createLogger('hooks:server');
 
+// Guard: fail fast if SESSION_SECRET is missing in production
+if (NODE_ENV === 'production' && !SESSION_SECRET) {
+	throw new Error(
+		'SESSION_SECRET environment variable is required in production. ' +
+			'Set it to a strong random secret before starting the server.'
+	);
+}
+
 const setAdditionalHeaders: Handle = createSecurityHeadersHandler(NODE_ENV);
 
 /**
