@@ -726,6 +726,16 @@ export class SichtungenMap {
 		return extent && extent.some((val) => isFinite(val)) ? extent : null;
 	}
 
+	public zoomAllFeatures(): void {
+		const extent = this.reportsSource.getExtent();
+		if (extent && extent.every((val) => isFinite(val))) {
+			this.map.getView().fit(extent, {
+				padding: [50, 50, 50, 50],
+				duration: 1000
+			});
+		}
+	}
+
 	public toggleGeolocation(): boolean {
 		if (this.isTracking) {
 			this.stopTracking();
