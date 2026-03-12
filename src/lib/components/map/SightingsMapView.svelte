@@ -145,20 +145,15 @@
 		return;
 	});
 
-	// Effect zum Überwachen von Jahr-Änderungen
+	// Effect zum Registrieren des Jahr-Änderungs-Callbacks
 	$effect(() => {
-		if (mapInstance && mapInstance.getDisplayedYear) {
-			// Setze einen Interval, um das Jahr regelmäßig zu überprüfen
-			// (da wir keinen direkten Event-Listener für Jahr-Änderungen haben)
-			const yearCheckInterval = setInterval(() => {
-				const newYear = mapInstance.getDisplayedYear();
-				if (newYear !== currentDisplayedYear) {
-					currentDisplayedYear = newYear;
-				}
-			}, 500); // Alle 500ms überprüfen
+		if (mapInstance) {
+			mapInstance.setYearChangeCallback((newYear: number) => {
+				currentDisplayedYear = newYear;
+			});
 
 			return () => {
-				clearInterval(yearCheckInterval);
+				mapInstance.setYearChangeCallback(() => {});
 			};
 		}
 

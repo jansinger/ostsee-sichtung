@@ -66,6 +66,7 @@ export class SichtungenMap {
 	private hiddenColors: Record<string, boolean> = {};
 	private displayedYear: number;
 	private legendUpdateCallback?: () => void;
+	private yearChangeCallback?: (year: number) => void;
 	private clusterDistance: number = 40; // Reduziert für bessere Performance
 
 	// Popup-related
@@ -510,9 +511,14 @@ export class SichtungenMap {
 		this.clusterSource.setDistance(distance);
 	}
 
+	public setYearChangeCallback(callback: (year: number) => void): void {
+		this.yearChangeCallback = callback;
+	}
+
 	// Behalte alle bestehenden Public-Methoden für Kompatibilität
 	public async setYear(year: number): Promise<void> {
 		this.displayedYear = year;
+		this.yearChangeCallback?.(year);
 
 		// Update timeFilter für das neue Jahr
 		const yearStart = new Date(year, 0, 1).getTime();
