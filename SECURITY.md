@@ -51,9 +51,10 @@ Please report security vulnerabilities to the maintainers via:
 ### Security Headers ✅
 - **Strict-Transport-Security**: HTTPS enforcement in production
 - **X-Content-Type-Options**: nosniff
-- **X-Frame-Options**: SAMEORIGIN  
 - **Referrer-Policy**: strict-origin-when-cross-origin
 - **Permissions-Policy**: Camera, microphone, geolocation controls
+- **Cross-Origin-Opener-Policy**: same-origin-allow-popups (iframe-compatible)
+- **Cross-Origin-Resource-Policy**: cross-origin (allows museum iframe embedding)
 - **Cache-Control**: Proper caching policies with security considerations
 
 ### Database Security ✅
@@ -176,10 +177,10 @@ The following security features have been implemented:
   - Race condition protection implemented
   - Implementation: `src/lib/server/db/index.ts`
 
-### Immediate Priorities (High Impact)
-- [ ] **CodeQL Integration**: Advanced SAST scanning in GitHub workflows
-- [ ] **Input Sanitization**: DOMPurify integration for HTML content
-- [ ] **Security Headers**: Add missing Cross-Origin policies
+### Immediate Priorities (High Impact) ✅
+- [x] **CodeQL Integration**: SAST scanning enabled via GitHub default setup
+- [x] **Input Sanitization**: DOMPurify integration for HTML content (`src/lib/utils/sanitize.ts`)
+- [x] **Security Headers**: Cross-Origin-Opener-Policy and Cross-Origin-Resource-Policy (`src/lib/server/middleware/securityHeaders.ts`)
 
 ### Medium-Term Goals (Weeks)
 - [ ] **Security Monitoring**: Implement security event logging and alerting
