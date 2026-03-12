@@ -8,28 +8,64 @@ Generated on: [AUTO-GENERATED]
 
 | License Type | Count | Compatibility |
 |-------------|-------|---------------|
-| MIT | 84 | ✅ Fully Compatible |
-| Apache-2.0 | 6 | ✅ Fully Compatible |
-| BSD-2-Clause | 6 | ✅ Fully Compatible |
-| ISC | 4 | ✅ Fully Compatible |
-| BSD-3-Clause | 3 | ✅ Fully Compatible |
+| MIT | 119 | ✅ Fully Compatible |
+| BSD-2-Clause | 8 | ✅ Fully Compatible |
+| Apache-2.0 | 7 | ✅ Fully Compatible |
+| BSD-3-Clause | 5 | ✅ Fully Compatible |
+| ISC | 5 | ✅ Fully Compatible |
+| MIT-0 | 3 | ✅ Fully Compatible |
+| CC0-1.0 | 2 | ✅ Fully Compatible |
 | Unlicense | 2 | ✅ Fully Compatible |
+| (MPL-2.0 OR Apache-2.0) | 1 | ✅ Dual Licensed |
 | BlueOak-1.0.0 | 1 | ✅ Fully Compatible |
-| MIT-0 | 1 | ❓ Review Needed |
-| UNLICENSED | 1 | ❓ Review Needed |
 | (MIT AND Zlib) | 1 | ⚠️ Multiple Licenses |
 | 0BSD | 1 | ✅ Fully Compatible |
 | (MIT OR CC0-1.0) | 1 | ✅ Dual Licensed |
-| CC0-1.0 | 1 | ✅ Fully Compatible |
 | MIT AND BSD-3-Clause | 1 | ⚠️ Multiple Licenses |
 
-**Total Dependencies**: 113
+**Total Dependencies**: 157
 
 ## Detailed License Information
 
-### MIT (84 packages)
+### MIT (119 packages)
 
 **Compatibility**: ✅ Fully Compatible
+
+- **@acemir/cssom@0.9.31**
+  - Repository: https://github.com/acemir/CSSOM
+  - Publisher: Nikita Vasilyev
+
+- **@asamuzakjp/css-color@5.0.1**
+  - Repository: https://github.com/asamuzaK/cssColor
+  - Publisher: asamuzaK
+
+- **@asamuzakjp/dom-selector@6.8.1**
+  - Repository: https://github.com/asamuzaK/domSelector
+  - Publisher: asamuzaK
+
+- **@asamuzakjp/nwsapi@2.3.9**
+  - Repository: https://github.com/dperini/nwsapi
+  - Publisher: Diego Perini
+
+- **@bramus/specificity@2.4.2**
+  - Repository: https://github.com/bramus/specificity
+  - Publisher: Bramus Van Damme
+
+- **@csstools/css-calc@3.1.1**
+  - Repository: https://github.com/csstools/postcss-plugins
+
+- **@csstools/css-color-parser@4.0.2**
+  - Repository: https://github.com/csstools/postcss-plugins
+
+- **@csstools/css-parser-algorithms@4.0.0**
+  - Repository: https://github.com/csstools/postcss-plugins
+
+- **@csstools/css-tokenizer@4.0.0**
+  - Repository: https://github.com/csstools/postcss-plugins
+
+- **@exodus/bytes@1.15.0**
+  - Repository: https://github.com/ExodusOSS/bytes
+  - Publisher: Exodus Movement, Inc.
 
 - **@noble/hashes@2.0.1**
   - Repository: https://github.com/paulmillr/noble-hashes
@@ -78,8 +114,15 @@ Generated on: [AUTO-GENERATED]
 - **@types/rbush@4.0.0**
   - Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
 
+- **@types/trusted-types@2.0.7**
+  - Repository: https://github.com/DefinitelyTyped/DefinitelyTyped
+
 - **@zarrita/storage@0.1.4**
   - Repository: https://github.com/manzt/zarrita.js
+
+- **agent-base@7.1.4**
+  - Repository: https://github.com/TooTallNate/proxy-agents
+  - Publisher: Nathan Rajlich
 
 - **async-retry@1.3.3**
   - Repository: https://github.com/vercel/async-retry
@@ -88,13 +131,32 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/davidmarkclements/atomic-sleep
   - Publisher: David Mark Clements
 
+- **bidi-js@1.0.3**
+  - Repository: https://github.com/lojjic/bidi-js
+  - Publisher: Jason Johnston
+
 - **bignumber.js@9.3.1**
   - Repository: https://github.com/MikeMcl/bignumber.js
   - Publisher: Michael Mclaughlin
 
+- **css-tree@3.2.1**
+  - Repository: https://github.com/csstree/csstree
+  - Publisher: Roman Dvornov
+
+- **cssstyle@6.2.0**
+  - Repository: https://github.com/jsdom/cssstyle
+
+- **data-urls@7.0.0**
+  - Repository: https://github.com/jsdom/data-urls
+  - Publisher: Domenic Denicola
+
 - **debug@4.4.3**
   - Repository: https://github.com/debug-js/debug
   - Publisher: Josh Junon
+
+- **decimal.js@10.6.0**
+  - Repository: https://github.com/MikeMcl/decimal.js
+  - Publisher: Michael Mclaughlin
 
 - **deepmerge@4.3.1**
   - Repository: https://github.com/TehShrike/deepmerge
@@ -127,6 +189,10 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/handlebars-lang/handlebars.js
   - Publisher: Yehuda Katz
 
+- **html-encoding-sniffer@6.0.0**
+  - Repository: https://github.com/jsdom/html-encoding-sniffer
+  - Publisher: Domenic Denicola
+
 - **html-to-text@9.0.5**
   - Repository: https://github.com/html-to-text/node-html-to-text
   - Publisher: Malte Legenhausen
@@ -135,6 +201,14 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/fb55/htmlparser2
   - Publisher: Felix Boehm
 
+- **http-proxy-agent@7.0.2**
+  - Repository: https://github.com/TooTallNate/proxy-agents
+  - Publisher: Nathan Rajlich
+
+- **https-proxy-agent@7.0.6**
+  - Repository: https://github.com/TooTallNate/proxy-agents
+  - Publisher: Nathan Rajlich
+
 - **is-buffer@2.0.5**
   - Repository: https://github.com/feross/is-buffer
   - Publisher: Feross Aboukhadijeh
@@ -142,9 +216,19 @@ Generated on: [AUTO-GENERATED]
 - **is-node-process@1.2.0**
   - Repository: https://github.com/mswjs/is-node-process
 
+- **is-potential-custom-element-name@1.0.1**
+  - Repository: https://github.com/mathiasbynens/is-potential-custom-element-name
+  - Publisher: Mathias Bynens
+
+- **isomorphic-dompurify@3.1.0**
+  - Repository: https://github.com/kkomelin/isomorphic-dompurify
+
 - **jose@6.2.1**
   - Repository: https://github.com/panva/jose
   - Publisher: Filip Skokan
+
+- **jsdom@28.1.0**
+  - Repository: https://github.com/jsdom/jsdom
 
 - **jsonwebtoken@9.0.3**
   - Repository: https://github.com/auth0/node-jsonwebtoken
@@ -228,6 +312,10 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/kesla/parse-headers
   - Publisher: David Björklund
 
+- **parse5@8.0.0**
+  - Repository: https://github.com/inikulin/parse5
+  - Publisher: Ivan Nikulin
+
 - **parseley@0.12.1**
   - Repository: https://github.com/mxxii/parseley
   - Publisher: KillyMXI
@@ -264,6 +352,10 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/mafintosh/protocol-buffers-schema
   - Publisher: Mathias Buus
 
+- **punycode@2.3.1**
+  - Repository: https://github.com/mathiasbynens/punycode.js
+  - Publisher: Mathias Bynens
+
 - **quick-format-unescaped@4.0.4**
   - Repository: https://github.com/davidmarkclements/quick-format
   - Publisher: David Mark Clements
@@ -282,6 +374,10 @@ Generated on: [AUTO-GENERATED]
 
 - **reference-spec-reader@0.2.0**
   - Publisher: manzt
+
+- **require-from-string@2.0.2**
+  - Repository: https://github.com/floatdrop/require-from-string
+  - Publisher: Vsevolod Strukchinsky
 
 - **resolve-protobuf-schema@2.1.0**
   - Repository: https://github.com/mafintosh/resolve-protobuf-schema
@@ -311,6 +407,10 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/tjinauyeung/svelte-forms-lib
   - Publisher: Tjin Au Yeung
 
+- **symbol-tree@3.2.4**
+  - Repository: https://github.com/jsdom/js-symbol-tree
+  - Publisher: Joris van der Wel
+
 - **thread-stream@4.0.0**
   - Repository: https://github.com/mcollina/thread-stream
   - Publisher: Matteo Collina
@@ -322,14 +422,29 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/jquense/tiny-case
   - Publisher: Jason Quense
 
+- **tldts-core@7.0.25**
+  - Repository: https://github.com/remusao/tldts
+  - Publisher: Rémi Berson
+
+- **tldts@7.0.25**
+  - Repository: https://github.com/remusao/tldts
+  - Publisher: Rémi Berson
+
 - **toposort@2.0.2**
   - Repository: https://github.com/marcelklehr/toposort
   - Publisher: Marcel Klehr
+
+- **tr46@6.0.0**
+  - Repository: https://github.com/jsdom/tr46
+  - Publisher: Sebastian Mayr
 
 - **undici-types@7.18.2**
   - Repository: https://github.com/nodejs/undici
 
 - **undici@6.23.0**
+  - Repository: https://github.com/nodejs/undici
+
+- **undici@7.22.0**
   - Repository: https://github.com/nodejs/undici
 
 - **unzipit@1.4.3**
@@ -338,9 +453,24 @@ Generated on: [AUTO-GENERATED]
 - **uzip-module@1.0.3**
   - Repository: https://github.com/greggman/uzip-module
 
+- **w3c-xmlserializer@5.0.0**
+  - Repository: https://github.com/jsdom/w3c-xmlserializer
+
+- **whatwg-mimetype@5.0.0**
+  - Repository: https://github.com/jsdom/whatwg-mimetype
+  - Publisher: Domenic Denicola
+
+- **whatwg-url@16.0.1**
+  - Repository: https://github.com/jsdom/whatwg-url
+  - Publisher: Sebastian Mayr
+
 - **wordwrap@1.0.0**
   - Repository: https://github.com/substack/node-wordwrap
   - Publisher: James Halliday
+
+- **xmlchars@2.2.0**
+  - Repository: https://github.com/lddubeau/xmlchars
+  - Publisher: Louis-Dominique Dubeau
 
 - **yup@1.7.1**
   - Repository: https://github.com/jquense/yup
@@ -349,7 +479,21 @@ Generated on: [AUTO-GENERATED]
 - **zarrita@0.6.1**
   - Repository: https://github.com/manzt/zarrita.js
 
-### ISC (4 packages)
+### MIT-0 (3 packages)
+
+**Compatibility**: ✅ Fully Compatible
+
+- **@csstools/color-helpers@6.0.2**
+  - Repository: https://github.com/csstools/postcss-plugins
+
+- **@csstools/css-syntax-patches-for-csstree@1.1.0**
+  - Repository: https://github.com/csstools/postcss-plugins
+
+- **nodemailer@8.0.2**
+  - Repository: https://github.com/nodemailer/nodemailer
+  - Publisher: Andris Reinman
+
+### ISC (5 packages)
 
 **Compatibility**: ✅ Fully Compatible
 
@@ -361,6 +505,10 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/mourner/quickselect
   - Publisher: Vladimir Agafonkin
 
+- **saxes@6.0.0**
+  - Repository: https://github.com/lddubeau/saxes
+  - Publisher: Louis-Dominique Dubeau
+
 - **semver@7.7.4**
   - Repository: https://github.com/npm/node-semver
   - Publisher: GitHub Inc.
@@ -369,7 +517,7 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/mcollina/split2
   - Publisher: Matteo Collina
 
-### BSD-3-Clause (3 packages)
+### BSD-3-Clause (5 packages)
 
 **Compatibility**: ✅ Fully Compatible
 
@@ -381,11 +529,19 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/mapbox/pbf
   - Publisher: Konstantin Kaefer
 
+- **source-map-js@1.2.1**
+  - Repository: https://github.com/7rulnik/source-map-js
+  - Publisher: Valentin 7rulnik Semirulnik
+
 - **source-map@0.6.1**
   - Repository: https://github.com/mozilla/source-map
   - Publisher: Nick Fitzgerald
 
-### BSD-2-Clause (6 packages)
+- **tough-cookie@6.0.0**
+  - Repository: https://github.com/salesforce/tough-cookie
+  - Publisher: Jeremy Stashewsky
+
+### BSD-2-Clause (8 packages)
 
 **Compatibility**: ✅ Fully Compatible
 
@@ -405,6 +561,10 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/fb55/entities
   - Publisher: Felix Boehm
 
+- **entities@6.0.1**
+  - Repository: https://github.com/fb55/entities
+  - Publisher: Felix Boehm
+
 - **ol@10.8.0**
   - Repository: https://github.com/openlayers/openlayers
 
@@ -412,7 +572,11 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/mishoo/UglifyJS
   - Publisher: Mihai Bazon
 
-### Apache-2.0 (6 packages)
+- **webidl-conversions@8.0.1**
+  - Repository: https://github.com/jsdom/webidl-conversions
+  - Publisher: Domenic Denicola
+
+### Apache-2.0 (7 packages)
 
 **Compatibility**: ✅ Fully Compatible
 
@@ -438,6 +602,10 @@ Generated on: [AUTO-GENERATED]
 - **web-worker@1.5.0**
   - Repository: https://github.com/developit/web-worker
 
+- **xml-name-validator@5.0.0**
+  - Repository: https://github.com/jsdom/xml-name-validator
+  - Publisher: Domenic Denicola
+
 ### BlueOak-1.0.0 (1 package)
 
 **Compatibility**: ✅ Fully Compatible
@@ -445,6 +613,18 @@ Generated on: [AUTO-GENERATED]
 - **lru-cache@11.2.6**
   - Repository: https://github.com/isaacs/node-lru-cache
   - Publisher: Isaac Z. Schlueter
+
+### CC0-1.0 (2 packages)
+
+**Compatibility**: ✅ Fully Compatible
+
+- **mdn-data@2.27.1**
+  - Repository: https://github.com/mdn/data
+  - Publisher: Mozilla Developer Network
+
+- **xml-utils@1.10.2**
+  - Repository: https://github.com/DanielJDufour/xml-utils
+  - Publisher: Daniel J. Dufour
 
 ### Unlicense (2 packages)
 
@@ -466,27 +646,13 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/Microsoft/tslib
   - Publisher: Microsoft Corp.
 
-### CC0-1.0 (1 package)
+### (MPL-2.0 OR Apache-2.0) (1 package)
 
-**Compatibility**: ✅ Fully Compatible
+**Compatibility**: ✅ Dual Licensed
 
-- **xml-utils@1.10.2**
-  - Repository: https://github.com/DanielJDufour/xml-utils
-  - Publisher: Daniel J. Dufour
-
-### MIT-0 (1 package)
-
-**Compatibility**: ❓ Review Needed
-
-- **nodemailer@8.0.2**
-  - Repository: https://github.com/nodemailer/nodemailer
-  - Publisher: Andris Reinman
-
-### UNLICENSED (1 package)
-
-**Compatibility**: ❓ Review Needed
-
-- **ostsee-tiere@2.0.22**
+- **dompurify@3.3.3**
+  - Repository: https://github.com/cure53/DOMPurify
+  - Publisher: Dr.-Ing. Mario Heiderich, Cure53
 
 ### (MIT AND Zlib) (1 package)
 

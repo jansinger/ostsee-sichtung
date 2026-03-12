@@ -17,7 +17,9 @@ async function generateLicenseNotices() {
 
 	try {
 		// Generate JSON output of all licenses
-		const { stdout } = await execAsync('npx license-checker --production --json');
+		const { stdout } = await execAsync(
+			'npx --no-install license-checker --production --excludePrivatePackages --json'
+		);
 		const licenses = JSON.parse(stdout);
 
 		// Group licenses by type
@@ -155,6 +157,7 @@ function getCompatibility(license) {
 		'0BSD': '✅ Fully Compatible',
 		WTFPL: '✅ Fully Compatible',
 		'BlueOak-1.0.0': '✅ Fully Compatible',
+		'MIT-0': '✅ Fully Compatible',
 		'OFL-1.1': '✅ Compatible (Fonts)',
 		'CC-BY-3.0': '⚠️ Attribution Required',
 		'CC-BY-4.0': '⚠️ Attribution Required',
@@ -180,6 +183,7 @@ function getLicenseOrder(license) {
 	// Order licenses by preference/compatibility
 	const order = {
 		MIT: 1,
+		'MIT-0': 1,
 		ISC: 2,
 		BSD: 3,
 		'BSD-2-Clause': 3,
