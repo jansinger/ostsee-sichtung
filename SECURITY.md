@@ -22,14 +22,14 @@ Please report security vulnerabilities to the maintainers via:
 
 ## Current Security Status
 
-### Vulnerability Assessment (as of 2025-12-23)
+### Vulnerability Assessment (as of 2026-03-12)
 - **Critical**: 0 ✅
-- **High**: 0 ✅  
-- **Moderate**: 0 ✅
-- **Low**: 5 (development dependencies only)
+- **High**: 0 ✅
+- **Moderate**: 7 (development dependencies only)
+- **Low**: 3 (development dependencies only)
 
 ### Overall Security Rating: 7.5/10
-**Status**: GOOD - Strong foundational security with room for enhancement
+**Status**: GOOD - All vulnerabilities are in dev-only dependencies with no production impact
 
 ## Security Architecture
 
@@ -71,19 +71,30 @@ Please report security vulnerabilities to the maintainers via:
 
 ## Known Vulnerabilities & Mitigations
 
-### Current Low-Risk Issues (Development Only)
-#### 1. tmp <= 0.2.3 (Low Severity)
-- **Affected**: commitizen/cz-conventional-changelog development tools
+### Current Issues (Development Dependencies Only)
+
+#### 1. dompurify <= 3.3.1 (Moderate Severity, 3 CVEs)
+- **CVEs**: GHSA-vhxf-7vqr-mrjg, GHSA-v8jm-5vwx-cfxm, GHSA-v2wj-7wpq-c8vv
+- **Affected**: @scalar/api-reference → monaco-editor → dompurify
+- **Risk Level**: Moderate - Development/documentation tooling only
+- **Impact**: No production exposure; dompurify is only used in Scalar API docs viewer
+- **Mitigation**: API reference is dev-only tooling, not exposed to end users
+- **Resolution Path**: Requires @scalar/api-reference update (breaking change)
+
+#### 2. lodash 4.0.0 - 4.17.21 (Moderate Severity)
+- **CVE**: GHSA-xxjr-mmjv-4gpg (Prototype Pollution in `_.unset` and `_.omit`)
+- **Affected**: commitizen → lodash
+- **Risk Level**: Moderate - Development commit tooling only
+- **Impact**: No runtime or production impact
+- **Mitigation**: Isolated to commit message tooling
+- **Resolution Path**: Requires major commitizen update (breaking change)
+
+#### 3. tmp <= 0.2.3 (Low Severity)
+- **CVE**: GHSA-52f5-9888-hmc6
+- **Affected**: commitizen → inquirer → external-editor → tmp
 - **Risk Level**: Low - Development environment only
 - **Impact**: No production exposure, safe development environment
 - **Mitigation**: Isolated to commit tooling, no user input to tmp functions
-- **Tracking**: Monitoring for commitizen upstream fix
-
-#### 2. Development Dependency Chain (5 related vulnerabilities)
-- **Affected**: commitizen → inquirer → external-editor → tmp
-- **Risk Level**: Low - Build/development tools only
-- **Impact**: No runtime or production impact
-- **Mitigation**: Tools run in secure development environment
 - **Resolution Path**: Will resolve with major commitizen update when available
 
 ## Security Measures in Production
@@ -131,7 +142,7 @@ We maintain a proactive approach to dependency security:
 ```
 
 ### Production Dependencies Security Status
-- **Total production dependencies**: 22 packages
+- **Total production dependencies**: 18 packages
 - **Security-clean dependencies**: 100%
 - **License-compliant dependencies**: 100% (MIT, Apache-2.0, ISC, BSD)
 - **No transitive vulnerabilities**: Verified clean dependency tree
@@ -236,6 +247,6 @@ The following security features have been implemented:
 
 ---
 
-*Last Updated: 2025-12-23*
-*Security Assessment: 8.0/10 - Strong foundational security with recent enhancements*
-*Next Security Review: 2026-03-23*
+*Last Updated: 2026-03-12*
+*Security Assessment: 7.5/10 - Strong foundational security, all vulnerabilities dev-only*
+*Next Security Review: 2026-06-12*
