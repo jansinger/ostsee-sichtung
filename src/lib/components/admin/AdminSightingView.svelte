@@ -21,6 +21,7 @@
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import Icon from '$lib/components/Icon.svelte';
+	import { untrack } from 'svelte';
 
 	// Definiere die Struktur einer Datenzeile
 	interface DataRowType {
@@ -37,7 +38,7 @@
 
 	// State für die aktuellen Sichtungsdaten mit reaktiver Wetterdaten-Aktualisierung
 	// eslint-disable-next-line svelte/prefer-writable-derived
-	let currentSighting = $state(sighting);
+	let currentSighting = $state(untrack(() => sighting));
 	
 	// Sync currentSighting when sighting prop changes
 	$effect(() => {
@@ -111,150 +112,151 @@
 	].filter((row): row is DataRowType => row !== undefined));
 
 	// Tierinformationen
-	const animalRows: DataRowType[] = [
-		DataRow('Tierart', getSpeciesLabel(sighting.species)),
-		DataRow('Anzahl Gesamt', sighting.totalCount),
-		DataRow('Anzahl Jungtiere', sighting.juvenileCount, hasValue(sighting.juvenileCount)),
+	const animalRows = $derived([
+		DataRow('Tierart', getSpeciesLabel(currentSighting.species)),
+		DataRow('Anzahl Gesamt', currentSighting.totalCount),
+		DataRow('Anzahl Jungtiere', currentSighting.juvenileCount, hasValue(currentSighting.juvenileCount)),
 		DataRow(
 			'Verteilung',
-			getDistributionLabel(sighting.distribution),
-			hasValue(sighting.distribution)
+			getDistributionLabel(currentSighting.distribution),
+			hasValue(currentSighting.distribution)
 		),
 		DataRow(
 			'Verteilung (Details)',
-			sighting.distributionText,
-			hasValue(sighting.distributionText) && hasValue(sighting.distribution)
+			currentSighting.distributionText,
+			hasValue(currentSighting.distributionText) && hasValue(currentSighting.distribution)
 		)
-	].filter((row): row is DataRowType => row !== undefined);
+	].filter((row): row is DataRowType => row !== undefined));
 
 	// Totfund
-	const deadAnimalRows: DataRowType[] = [
-		BooleanDataRow('Totfund', sighting.isDead),
-		...(sighting.isDead
+	const deadAnimalRows = $derived([
+		BooleanDataRow('Totfund', currentSighting.isDead),
+		...(currentSighting.isDead
 			? [
 					DataRow(
 						'Zustand',
-						getAnimalConditionLabel(sighting.deadCondition),
-						hasValue(sighting.deadCondition)
+						getAnimalConditionLabel(currentSighting.deadCondition),
+						hasValue(currentSighting.deadCondition)
 					),
-					DataRow('Geschlecht', getSexLabel(sighting.deadSex), hasValue(sighting.deadSex)),
-					DataRow('Größe', `${sighting.deadSize} cm`, hasValue(sighting.deadSize)),
-					BooleanDataRow('Telefonischer Kontakt', sighting.deadPhoneContact)
+					DataRow('Geschlecht', getSexLabel(currentSighting.deadSex), hasValue(currentSighting.deadSex)),
+					DataRow('Größe', `${currentSighting.deadSize} cm`, hasValue(currentSighting.deadSize)),
+					BooleanDataRow('Telefonischer Kontakt', currentSighting.deadPhoneContact)
 				]
 			: [])
-	].filter((row): row is DataRowType => row !== undefined);
+	].filter((row): row is DataRowType => row !== undefined));
 
 	// Sichtungsdetails
-	const sightingDetailRows: DataRowType[] = [
+	const sightingDetailRows = $derived([
 		DataRow(
 			'Sichtung von',
-			getSightingFromLabel(sighting.sightingFrom),
-			hasValue(sighting.sightingFrom)
+			getSightingFromLabel(currentSighting.sightingFrom),
+			hasValue(currentSighting.sightingFrom)
 		),
 		DataRow(
 			'Sichtung von (Details)',
-			sighting.sightingFromText,
-			hasValue(sighting.sightingFromText) && sighting.sightingFrom === 4
+			currentSighting.sightingFromText,
+			hasValue(currentSighting.sightingFromText) && currentSighting.sightingFrom === 4
 		),
-		DataRow('Entfernung', getDistanceLabel(sighting.distance), hasValue(sighting.distance)),
-		DataRow('Verhalten', getAnimalBehaviorLabel(sighting.behavior), hasValue(sighting.behavior)),
+		DataRow('Entfernung', getDistanceLabel(currentSighting.distance), hasValue(currentSighting.distance)),
+		DataRow('Verhalten', getAnimalBehaviorLabel(currentSighting.behavior), hasValue(currentSighting.behavior)),
 		DataRow(
 			'Verhalten (Details)',
-			sighting.behaviorText,
-			hasValue(sighting.behaviorText) && sighting.behavior === 3
+			currentSighting.behaviorText,
+			hasValue(currentSighting.behaviorText) && currentSighting.behavior === 3
 		),
-		DataRow('Reaktion auf Boot', sighting.reaction, hasValue(sighting.reaction))
-	].filter((row): row is DataRowType => row !== undefined);
+		DataRow('Reaktion auf Boot', currentSighting.reaction, hasValue(currentSighting.reaction))
+	].filter((row): row is DataRowType => row !== undefined));
 
 	// Umweltbedingungen
-	const environmentRows: DataRowType[] = [
-		DataRow('Seegang', getSeaStateLabel(sighting.seaState), hasValue(sighting.seaState)),
-		DataRow('Sichtweite', getVisibilityLabel(sighting.visibility), hasValue(sighting.visibility)),
+	const environmentRows = $derived([
+		DataRow('Seegang', getSeaStateLabel(currentSighting.seaState), hasValue(currentSighting.seaState)),
+		DataRow('Sichtweite', getVisibilityLabel(currentSighting.visibility), hasValue(currentSighting.visibility)),
 		DataRow(
 			'Windrichtung',
-			getWindDirectionLabel(sighting.windDirection),
-			hasValue(sighting.windDirection)
+			getWindDirectionLabel(currentSighting.windDirection),
+			hasValue(currentSighting.windDirection)
 		),
-		DataRow('Windstärke', getWindStrengthLabel(sighting.windForce), hasValue(sighting.windForce))
-	].filter((row): row is DataRowType => row !== undefined);
+		DataRow('Windstärke', getWindStrengthLabel(currentSighting.windForce), hasValue(currentSighting.windForce))
+	].filter((row): row is DataRowType => row !== undefined));
 
 	// Schiffs-/Bootsangaben
-	const shipRows: DataRowType[] = [
-		DataRow('Schiffsname', sighting.shipName, hasValue(sighting.shipName)),
-		DataRow('Heimathafen', sighting.homePort, hasValue(sighting.homePort)),
-		DataRow('Bootstyp', sighting.boatType, hasValue(sighting.boatType)),
-		DataRow('Bootsantrieb', getBoatDriveLabel(sighting.boatDrive), hasValue(sighting.boatDrive)),
+	const shipRows = $derived([
+		DataRow('Schiffsname', currentSighting.shipName, hasValue(currentSighting.shipName)),
+		DataRow('Heimathafen', currentSighting.homePort, hasValue(currentSighting.homePort)),
+		DataRow('Bootstyp', currentSighting.boatType, hasValue(currentSighting.boatType)),
+		DataRow('Bootsantrieb', getBoatDriveLabel(currentSighting.boatDrive), hasValue(currentSighting.boatDrive)),
 		DataRow(
 			'Bootsantrieb (Details)',
-			sighting.boatDriveText,
-			hasValue(sighting.boatDriveText) && sighting.boatDrive === 4
+			currentSighting.boatDriveText,
+			hasValue(currentSighting.boatDriveText) && currentSighting.boatDrive === 4
 		),
-		DataRow('Anzahl Schiffe', sighting.shipCount, hasValue(sighting.shipCount))
-	].filter((row): row is DataRowType => row !== undefined);
+		DataRow('Anzahl Schiffe', currentSighting.shipCount, hasValue(currentSighting.shipCount))
+	].filter((row): row is DataRowType => row !== undefined));
 
 	// Kontakt
-	const contactName =
-		sighting.firstName || sighting.lastName
-			? `${sighting.firstName ?? ''} ${sighting.lastName ?? ''}`.trim()
-			: 'Nicht angegeben';
+	let contactName = $derived(
+		currentSighting.firstName || currentSighting.lastName
+			? `${currentSighting.firstName ?? ''} ${currentSighting.lastName ?? ''}`.trim()
+			: 'Nicht angegeben'
+	);
 
-	const addressParts = [
-		sighting.street,
-		hasValue(sighting.zipCode) || hasValue(sighting.city)
-			? `${sighting.zipCode || ''} ${sighting.city || ''}`.trim()
+	let addressParts = $derived([
+		currentSighting.street,
+		hasValue(currentSighting.zipCode) || hasValue(currentSighting.city)
+			? `${currentSighting.zipCode || ''} ${currentSighting.city || ''}`.trim()
 			: null
 	]
 		.filter(Boolean)
-		.join(', ');
+		.join(', '));
 
-	const contactRows: DataRowType[] = [
-		DataRow('Email', sighting.email, hasValue(sighting.email)),
+	const contactRows = $derived([
+		DataRow('Email', currentSighting.email, hasValue(currentSighting.email)),
 		DataRow('Name', contactName),
-		DataRow('Telefon', sighting.phone, hasValue(sighting.phone)),
-		DataRow('Fax', sighting.fax, hasValue(sighting.fax)),
+		DataRow('Telefon', currentSighting.phone, hasValue(currentSighting.phone)),
+		DataRow('Fax', currentSighting.fax, hasValue(currentSighting.fax)),
 		DataRow('Adresse', addressParts || 'Nicht angegeben', Boolean(addressParts))
-	].filter((row): row is DataRowType => row !== undefined);
+	].filter((row): row is DataRowType => row !== undefined));
 
 	// Status
-	const statusRows: DataRowType[] = [
-		BooleanDataRow('Namensnennung', sighting.nameConsent),
-		BooleanDataRow('Schiffsnennung', sighting.shipNameConsent),
-		BooleanDataRow('Geprüft', sighting.verified),
-		DataRow('Eingangskanal', getEntryChannelLabel(sighting.entryChannel))
-	].filter((row): row is DataRowType => row !== undefined);
+	const statusRows = $derived([
+		BooleanDataRow('Namensnennung', currentSighting.nameConsent),
+		BooleanDataRow('Schiffsnennung', currentSighting.shipNameConsent),
+		BooleanDataRow('Geprüft', currentSighting.verified),
+		DataRow('Eingangskanal', getEntryChannelLabel(currentSighting.entryChannel))
+	].filter((row): row is DataRowType => row !== undefined));
 
 	// Medien
-	const mediaRows: DataRowType[] = [
-		DataRow('Aufnahme', sighting.mediaFile, hasValue(sighting.mediaFile)),
-		BooleanDataRow('Upload', sighting.mediaUpload, hasValue(sighting.mediaUpload))
-	].filter((row): row is DataRowType => row !== undefined);
+	const mediaRows = $derived([
+		DataRow('Aufnahme', currentSighting.mediaFile, hasValue(currentSighting.mediaFile)),
+		BooleanDataRow('Upload', currentSighting.mediaUpload, hasValue(currentSighting.mediaUpload))
+	].filter((row): row is DataRowType => row !== undefined));
 
 	// Bemerkungen
-	const noteRows: DataRowType[] = [
-		DataRow('Bemerkungen', sighting.notes, hasValue(sighting.notes)),
+	const noteRows = $derived([
+		DataRow('Bemerkungen', currentSighting.notes, hasValue(currentSighting.notes)),
 		DataRow(
 			'Sonstige Auffälligkeiten',
-			sighting.otherObservations,
-			hasValue(sighting.otherObservations)
+			currentSighting.otherObservations,
+			hasValue(currentSighting.otherObservations)
 		)
-	].filter((row): row is DataRowType => row !== undefined);
+	].filter((row): row is DataRowType => row !== undefined));
 
 	// Ortsangaben
-	const locationRows: DataRowType[] = [
-		DataRow('Position', formatLocation(sighting.longitude, sighting.latitude)),
-		DataRow('Fahrwasser', sighting.waterway, hasValue(sighting.waterway)),
-		DataRow('Seezeichen', sighting.seaMark, hasValue(sighting.seaMark)),
-		BooleanDataRow('In der Ostsee', sighting.inBalticSea),
-		BooleanDataRow('In der Ostsee (geo)', sighting.inBalticSeaGeo)
-	].filter((row): row is DataRowType => row !== undefined);
+	const locationRows = $derived([
+		DataRow('Position', formatLocation(currentSighting.longitude, currentSighting.latitude)),
+		DataRow('Fahrwasser', currentSighting.waterway, hasValue(currentSighting.waterway)),
+		DataRow('Seezeichen', currentSighting.seaMark, hasValue(currentSighting.seaMark)),
+		BooleanDataRow('In der Ostsee', currentSighting.inBalticSea),
+		BooleanDataRow('In der Ostsee (geo)', currentSighting.inBalticSeaGeo)
+	].filter((row): row is DataRowType => row !== undefined));
 
 	// Technische Informationen
-	const techRows: DataRowType[] = [DataRow('Datensatz ID', sighting.id)].filter(
+	const techRows = $derived([DataRow('Datensatz ID', currentSighting.id)].filter(
 		(row): row is DataRowType => row !== undefined
-	);
+	));
 
 	// Prüfen, ob Koordinaten für die Karte vorhanden sind
-	const hasCoordinates = hasValue(sighting.latitude) && hasValue(sighting.longitude);
+	let hasCoordinates = $derived(hasValue(currentSighting.latitude) && hasValue(currentSighting.longitude));
 </script>
 
 {#if loading}
@@ -417,8 +419,8 @@
 						<div class="relative mt-2 h-[400px] w-full">
 							<div class="absolute inset-0">
 								<OLMap
-									latitude={sighting.latitude}
-									longitude={sighting.longitude}
+									latitude={currentSighting.latitude}
+									longitude={currentSighting.longitude}
 									readonly={true}
 								/>
 							</div>
@@ -491,7 +493,7 @@
 			{/if}
 
 			<!-- Medien-Gallerie -->
-			{#if sighting.uploadedFiles && sighting.uploadedFiles.length > 0}
+			{#if currentSighting.uploadedFiles && currentSighting.uploadedFiles.length > 0}
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
@@ -499,7 +501,7 @@
 							Medien-Gallerie
 						</h3>
 
-						<MediaGallery files={sighting.uploadedFiles} showTitle={false} />
+						<MediaGallery files={currentSighting.uploadedFiles} showTitle={false} />
 					</div>
 				</div>
 			{:else if mediaRows.length > 0}
@@ -544,7 +546,7 @@
 			{/if}
 
 			<!-- Interner Kommentar, falls vorhanden -->
-			{#if hasValue(sighting.internalComment)}
+			{#if hasValue(currentSighting.internalComment)}
 				<div class="card bg-base-200 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
@@ -556,7 +558,7 @@
 								<tbody>
 									<DataTableRow
 										label="Kommentar"
-										value={sighting.internalComment}
+										value={currentSighting.internalComment}
 										isPreformatted={true}
 									/>
 								</tbody>
