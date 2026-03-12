@@ -7,4 +7,10 @@
 	<meta name="description" content="Interaktive Karte der Meerestier-Sichtungen" />
 </svelte:head>
 
-<LazyMapWrapper mapContainerId="map" title="Sichtungskarte" showTitle={true} showLogo={true} />
+<LazyMapWrapper
+	mapContainerId="map"
+	title="Sichtungskarte"
+	showTitle={true}
+	showLogo={true}
+	containerClass="relative h-[calc(100dvh-4rem)] w-screen overflow-hidden"
+/>
