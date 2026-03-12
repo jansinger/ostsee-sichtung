@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.23](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.22...v2.0.23) (2026-03-12)
+
+
+### Documentation
+
+* update documentation for accuracy and currency ([#381](https://github.com/jansinger/ostsee-sichtung/issues/381)) ([3c36744](https://github.com/jansinger/ostsee-sichtung/commit/3c36744f16b781f1512f5dbd987167b86fd0683a))
+
 ## [2.0.22](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.21...v2.0.22) (2026-03-12)
 
 
