@@ -18,7 +18,8 @@ import { validateFiles } from '$lib/utils';
 const mockConfig: ValidationPreset = {
 	allowedTypes: ['image/jpeg', 'image/png'],
 	maxFileSize: 10 * 1024 * 1024,
-	maxFiles: 5
+	maxFiles: 5,
+	accept: 'image/jpeg,image/png'
 };
 
 function makeFile(name = 'test.jpg', type = 'image/jpeg', size = 1024): File {
@@ -28,6 +29,7 @@ function makeFile(name = 'test.jpg', type = 'image/jpeg', size = 1024): File {
 beforeEach(() => {
 	vi.clearAllMocks();
 	vi.mocked(validateFiles).mockImplementation((files) => ({
+		isValid: true,
 		validFiles: files,
 		errors: []
 	}));
@@ -111,7 +113,7 @@ describe('UnifiedDropzone', () => {
 		it('ruft onFilesAdded mit validen Dateien auf', async () => {
 			const onFilesAdded = vi.fn();
 			const file = makeFile('foto.jpg');
-			vi.mocked(validateFiles).mockReturnValueOnce({ validFiles: [file], errors: [] });
+			vi.mocked(validateFiles).mockReturnValueOnce({ isValid: true, validFiles: [file], errors: [] });
 
 			render(UnifiedDropzone, { config: mockConfig, onFilesAdded });
 
@@ -129,6 +131,7 @@ describe('UnifiedDropzone', () => {
 		it('zeigt Toast bei Validierungsfehlern', async () => {
 			const badFile = makeFile('bad.exe', 'application/x-msdownload');
 			vi.mocked(validateFiles).mockReturnValueOnce({
+				isValid: false,
 				validFiles: [],
 				errors: ['Ungültiger Dateityp: bad.exe']
 			});
@@ -146,7 +149,7 @@ describe('UnifiedDropzone', () => {
 
 		it('ruft onFilesAdded nicht auf wenn alle Dateien ungültig sind', async () => {
 			const onFilesAdded = vi.fn();
-			vi.mocked(validateFiles).mockReturnValueOnce({ validFiles: [], errors: ['Fehler'] });
+			vi.mocked(validateFiles).mockReturnValueOnce({ isValid: false, validFiles: [], errors: ['Fehler'] });
 
 			render(UnifiedDropzone, { config: mockConfig, onFilesAdded });
 
@@ -319,7 +322,7 @@ describe('UnifiedDropzone', () => {
 		it('akzeptiert Dateien per Drop', async () => {
 			const onFilesAdded = vi.fn();
 			const file = makeFile('dropped.jpg');
-			vi.mocked(validateFiles).mockReturnValueOnce({ validFiles: [file], errors: [] });
+			vi.mocked(validateFiles).mockReturnValueOnce({ isValid: true, validFiles: [file], errors: [] });
 
 			render(UnifiedDropzone, { config: mockConfig, onFilesAdded });
 

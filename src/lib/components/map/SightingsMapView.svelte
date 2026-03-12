@@ -213,6 +213,8 @@
 	 * Setup für Loading-State-Management mit verbesserter UX
 	 */
 	function setupLoadingHandlers() {
+		let filterTimeout: ReturnType<typeof setTimeout>;
+
 		function handleFilterChange(type: 'filter' | 'features' = 'filter') {
 			clearTimeout(filterTimeout);
 
