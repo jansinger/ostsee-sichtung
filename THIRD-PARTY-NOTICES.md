@@ -15,8 +15,8 @@ Generated on: [AUTO-GENERATED]
 | BSD-3-Clause | 3 | ✅ Fully Compatible |
 | Unlicense | 2 | ✅ Fully Compatible |
 | BlueOak-1.0.0 | 1 | ✅ Fully Compatible |
-| MIT-0 | 1 | ❓ Review Needed |
-| UNLICENSED | 1 | ❓ Review Needed |
+| MIT-0 | 1 | ✅ Fully Compatible |
+| UNLICENSED | 1 | ✅ Own Project |
 | (MIT AND Zlib) | 1 | ⚠️ Multiple Licenses |
 | 0BSD | 1 | ✅ Fully Compatible |
 | (MIT OR CC0-1.0) | 1 | ✅ Dual Licensed |
@@ -476,7 +476,7 @@ Generated on: [AUTO-GENERATED]
 
 ### MIT-0 (1 package)
 
-**Compatibility**: ❓ Review Needed
+**Compatibility**: ✅ Fully Compatible — MIT-0 is a permissive license even more liberal than MIT (no attribution requirement)
 
 - **nodemailer@8.0.2**
   - Repository: https://github.com/nodemailer/nodemailer
@@ -484,9 +484,9 @@ Generated on: [AUTO-GENERATED]
 
 ### UNLICENSED (1 package)
 
-**Compatibility**: ❓ Review Needed
+**Compatibility**: ✅ Own Project — this is the ostsee-tiere project itself (MIT licensed)
 
-- **ostsee-tiere@2.0.22**
+- **ostsee-tiere@2.0.23**
 
 ### (MIT AND Zlib) (1 package)
 
