@@ -26,7 +26,8 @@ import { createLogger } from '$lib/logger';
 import { saveSighting } from '$lib/server/db/sightingRepository';
 import { EmailService } from '$lib/server/services/emailService';
 import { ServerConfigService } from '$lib/services/configService';
-import { json, type RequestEvent } from '@sveltejs/kit';
+import { json, isHttpError, type RequestEvent } from '@sveltejs/kit';
+import { enforceRateLimit, RATE_LIMITS } from '$lib/server/middleware/rateLimit';
 
 const logger = createLogger('api:legacy:rest_sichtungen:pdf-compliant');
 
@@ -35,6 +36,9 @@ const logger = createLogger('api:legacy:rest_sichtungen:pdf-compliant');
  */
 export async function POST(event: RequestEvent): Promise<Response> {
 	const clientIp = event.getClientAddress();
+
+	// Rate limiting: 20 submissions per hour per IP (legacy endpoint has no auth)
+	enforceRateLimit(`ip:${clientIp}`, RATE_LIMITS.SIGHTING_SUBMISSION, 'legacy:rest_sichtungen:post');
 
 	try {
 		// Handle different request types for mobile app compatibility
@@ -220,6 +224,9 @@ export async function POST(event: RequestEvent): Promise<Response> {
 			}
 		});
 	} catch (unexpectedError: unknown) {
+		// Re-throw SvelteKit HTTP errors (e.g. 429 rate limit) so they propagate correctly
+		if (isHttpError(unexpectedError)) throw unexpectedError;
+
 		const isError = unexpectedError instanceof Error;
 		logger.error(
 			{

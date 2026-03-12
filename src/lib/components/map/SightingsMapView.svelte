@@ -145,20 +145,15 @@
 		return;
 	});
 
-	// Effect zum Überwachen von Jahr-Änderungen
+	// Effect zum Registrieren des Jahr-Änderungs-Callbacks
 	$effect(() => {
-		if (mapInstance && mapInstance.getDisplayedYear) {
-			// Setze einen Interval, um das Jahr regelmäßig zu überprüfen
-			// (da wir keinen direkten Event-Listener für Jahr-Änderungen haben)
-			const yearCheckInterval = setInterval(() => {
-				const newYear = mapInstance.getDisplayedYear();
-				if (newYear !== currentDisplayedYear) {
-					currentDisplayedYear = newYear;
-				}
-			}, 500); // Alle 500ms überprüfen
+		if (mapInstance) {
+			mapInstance.setYearChangeCallback((newYear: number) => {
+				currentDisplayedYear = newYear;
+			});
 
 			return () => {
-				clearInterval(yearCheckInterval);
+				mapInstance.setYearChangeCallback(() => {});
 			};
 		}
 
@@ -218,8 +213,7 @@
 	 * Setup für Loading-State-Management mit verbesserter UX
 	 */
 	function setupLoadingHandlers() {
-		// Überwache Filter-Änderungen mit debouncing
-		let filterTimeout: number | NodeJS.Timeout;
+		let filterTimeout: ReturnType<typeof setTimeout>;
 
 		function handleFilterChange(type: 'filter' | 'features' = 'filter') {
 			clearTimeout(filterTimeout);
@@ -252,61 +246,26 @@
 			); // 1.5-2.5 Sekunden
 		}
 
-		// Filter-Event-Listener mit verbessertem Targeting
-		const setupFilterListener = () => {
-			const filterInputs = document.querySelectorAll(
-				'#year-select, #filter-input, .species-checkbox, .color-checkbox'
-			);
-
-			filterInputs.forEach((input) => {
-				if (input instanceof HTMLSelectElement) {
-					// Jahr-Dropdown
-					input.addEventListener('change', () => handleFilterChange('features'));
-				} else if (input instanceof HTMLInputElement) {
-					if (input.type === 'text') {
-						// Suchfeld - nur bei Enter
-						input.addEventListener('keydown', (e) => {
-							if (e.key === 'Enter') {
-								handleFilterChange('filter');
-							}
-						});
-					} else if (input.type === 'checkbox') {
-						// Checkboxen
-						input.addEventListener('change', () => handleFilterChange('filter'));
-					} else if (input.type === 'range') {
-						// Slider - mit debouncing
-						input.addEventListener('input', () => {
-							clearTimeout(filterTimeout);
-							filterTimeout = setTimeout(() => handleFilterChange('filter'), 500);
-						});
-					}
-				}
-			});
+		// Delegated change handler — works for dynamically added inputs without MutationObserver
+		const handleChange = (e: Event) => {
+			const target = e.target as HTMLElement;
+			if (target.matches('#year-select')) {
+				handleFilterChange('features');
+			} else if (target.matches('.species-checkbox, .color-checkbox')) {
+				handleFilterChange('filter');
+			}
 		};
 
-		// Debounce utility for setupFilterListener
-		function debounce(fn: () => void, delay: number) {
-			let timeoutId: number | NodeJS.Timeout;
-			return function () {
-				clearTimeout(timeoutId);
-				timeoutId = setTimeout(fn, delay);
-			};
-		}
+		// Delegated keydown handler for search field
+		const handleKeydown = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement;
+			if (target.matches('#filter-input') && e.key === 'Enter') {
+				handleFilterChange('filter');
+			}
+		};
 
-		const debouncedSetupFilterListener = debounce(setupFilterListener, 100);
-
-		// Setup initial listeners
-		setupFilterListener();
-
-		// Überwache neue DOM-Elemente (für dynamisch geladene Filter)
-		const observer = new MutationObserver(() => {
-			debouncedSetupFilterListener();
-		});
-
-		observer.observe(document.body, {
-			childList: true,
-			subtree: true
-		});
+		document.addEventListener('change', handleChange);
+		document.addEventListener('keydown', handleKeydown);
 
 		// Global Error Handler für API-Fehler
 		unhandledRejectionHandler = (event) => {
@@ -318,8 +277,10 @@
 		};
 		window.addEventListener('unhandledrejection', unhandledRejectionHandler);
 
-		// Cleanup für Observer
-		return () => observer.disconnect();
+		return () => {
+			document.removeEventListener('change', handleChange);
+			document.removeEventListener('keydown', handleKeydown);
+		};
 	}
 
 	/**

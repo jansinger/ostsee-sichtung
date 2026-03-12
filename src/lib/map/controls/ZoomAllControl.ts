@@ -1,5 +1,5 @@
 import { Control } from 'ol/control';
-import type { SichtungenMap } from '../mapController.js';
+import type { SichtungenMap } from '../optimizedMapController.js';
 
 /**
  * Control zum Zoomen auf alle Features

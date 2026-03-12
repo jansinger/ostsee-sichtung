@@ -13,10 +13,15 @@ import {
 } from '$lib/server/validation/requestValidation';
 import { ServerConfigService } from '$lib/services/configService';
 import type { SightingFormValues } from '$lib/types/Form';
-import { json, type RequestEvent } from '@sveltejs/kit';
+import { json, isHttpError, type RequestEvent } from '@sveltejs/kit';
 import { and, gte, lt, sql } from 'drizzle-orm';
 import { ValidationError } from 'yup';
 import type { RequestHandler } from './$types';
+import {
+	enforceRateLimit,
+	RATE_LIMITS,
+	createRateLimitIdentifier
+} from '$lib/server/middleware/rateLimit';
 
 // Dynamic environment variable for Docker runtime
 const NODE_ENV = env.NODE_ENV ?? 'development';
@@ -91,7 +96,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		clientIp,
 		userAgent: request.headers.get('user-agent') || 'unknown'
 	}, 'Sighting submission attempt');
-	
+
+	// Rate limiting: 20 submissions per hour per user/IP
+	enforceRateLimit(
+		createRateLimitIdentifier(locals.user?.sub, clientIp, isAuthenticated),
+		RATE_LIMITS.SIGHTING_SUBMISSION,
+		'api:sightings:post'
+	);
+
 	try {
 		// Daten aus dem Request-Body extrahieren
 		const requestBody = await request.json();
@@ -195,6 +207,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		// Erfolgreiche Antwort
 		return json({ success: true, id, referenceId }, { status: 201 });
 	} catch (error: unknown) {
+		// Re-throw SvelteKit HTTP errors (e.g. 429 rate limit) so they propagate correctly
+		if (isHttpError(error)) throw error;
+
 		// Prüfen, ob es sich um einen Yup-Validierungsfehler handelt
 		if (
 			(typeof error === 'object' &&

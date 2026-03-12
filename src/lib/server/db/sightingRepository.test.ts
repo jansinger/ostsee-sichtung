@@ -16,17 +16,20 @@ import {
 } from './sightingRepository';
 
 // Mock dependencies
-vi.mock('$lib/server/db', () => ({
-	db: {
+vi.mock('$lib/server/db', () => {
+	const db: Record<string, any> = {
 		insert: vi.fn(),
 		update: vi.fn(),
 		select: vi.fn(),
 		execute: vi.fn(),
 		delete: vi.fn(() => ({
 			where: vi.fn().mockResolvedValue(undefined)
-		}))
-	}
-}));
+		})),
+		// transaction runs the callback with the same mock so existing assertions work
+		transaction: vi.fn(async (callback: (tx: typeof db) => Promise<unknown>) => callback(db))
+	};
+	return { db };
+});
 
 vi.mock('./mapFormToSighting', () => ({
 	mapFormToSighting: vi.fn((formData) => ({

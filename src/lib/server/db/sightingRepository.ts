@@ -294,11 +294,11 @@ export const saveSightingFiles = async (
 		exifData: file.exifData || null
 	}));
 
-	// Lösche zuerst alle bestehenden Datei-Referenzen für diese Sichtung
-	await db.delete(sightingFiles).where(eq(sightingFiles.sightingId, sightingId));
-
-	// Batch-Insert aller neuen Datei-Referenzen
-	await db.insert(sightingFiles).values(fileData);
+	// Delete existing and insert new file references atomically
+	await db.transaction(async (tx) => {
+		await tx.delete(sightingFiles).where(eq(sightingFiles.sightingId, sightingId));
+		await tx.insert(sightingFiles).values(fileData);
+	});
 
 	logger.info(
 		{

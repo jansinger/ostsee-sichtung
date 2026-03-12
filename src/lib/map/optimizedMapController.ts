@@ -18,6 +18,7 @@ import { Circle, Fill, Stroke, Style, Text } from 'ol/style';
 import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 import type { MapTranslations } from './mapUtils';
 import { createFeatureStyle, getFeatureColorGroup } from './styleUtils';
+import { sanitizeText } from '$lib/utils/sanitize';
 
 const logger = createLogger('map:optimized-controller');
 
@@ -65,6 +66,7 @@ export class SichtungenMap {
 	private hiddenColors: Record<string, boolean> = {};
 	private displayedYear: number;
 	private legendUpdateCallback?: () => void;
+	private yearChangeCallback?: (year: number) => void;
 	private clusterDistance: number = 40; // Reduziert für bessere Performance
 
 	// Popup-related
@@ -411,13 +413,16 @@ export class SichtungenMap {
 		if (props.waterway) {
 			content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.area}:</strong> ${props.waterway}
+					<strong>${this.translations.area}:</strong> ${sanitizeText(props.waterway)}
 				</div>
 			`;
 		}
 
 		if (props.name || props.firstname) {
-			const fullName = [props.firstname, props.name].filter(Boolean).join(' ');
+			const fullName = [props.firstname, props.name]
+				.filter(Boolean)
+				.map((v) => sanitizeText(v!))
+				.join(' ');
 			content += `
 				<div style="margin-bottom: 8px;">
 					<strong>${this.translations.name}:</strong> ${fullName}
@@ -428,7 +433,7 @@ export class SichtungenMap {
 		if (props.shipname) {
 			content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.ship}:</strong> ${props.shipname}
+					<strong>${this.translations.ship}:</strong> ${sanitizeText(props.shipname)}
 				</div>
 			`;
 		}
@@ -506,9 +511,14 @@ export class SichtungenMap {
 		this.clusterSource.setDistance(distance);
 	}
 
+	public setYearChangeCallback(callback: (year: number) => void): void {
+		this.yearChangeCallback = callback;
+	}
+
 	// Behalte alle bestehenden Public-Methoden für Kompatibilität
 	public async setYear(year: number): Promise<void> {
 		this.displayedYear = year;
+		this.yearChangeCallback?.(year);
 
 		// Update timeFilter für das neue Jahr
 		const yearStart = new Date(year, 0, 1).getTime();
@@ -720,6 +730,16 @@ export class SichtungenMap {
 	public getExtent(): number[] | null {
 		const extent = this.reportsSource.getExtent();
 		return extent && extent.some((val) => isFinite(val)) ? extent : null;
+	}
+
+	public zoomAllFeatures(): void {
+		const extent = this.reportsSource.getExtent();
+		if (extent && extent.every((val) => isFinite(val))) {
+			this.map.getView().fit(extent, {
+				padding: [50, 50, 50, 50],
+				duration: 1000
+			});
+		}
 	}
 
 	public toggleGeolocation(): boolean {

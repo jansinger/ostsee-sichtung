@@ -193,6 +193,16 @@ export function saveUserContactData(contactData: UserContactData): void {
  * if (contacts.email) setFormField('email', contacts.email);
  */
 export function loadUserContactData(): UserContactData {
+	if (!browser) return {} as UserContactData;
+	// Check sessionStorage first (consent-free session data), then fall back to localStorage
+	const sessionRaw = sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA);
+	if (sessionRaw) {
+		try {
+			return JSON.parse(sessionRaw) as UserContactData;
+		} catch {
+			// ignore parse errors, fall through to localStorage
+		}
+	}
 	return loadFromStorage(STORAGE_KEYS.USER_CONTACT_DATA, {} as UserContactData);
 }
 
@@ -218,26 +228,42 @@ export function clearAllStorage(): void {
 }
 
 /**
+ * Speichert Benutzer-Kontaktdaten nur für die aktuelle Session (sessionStorage)
+ *
+ * Wird bei fehlendem DSGVO-Einverständnis verwendet. Daten werden automatisch
+ * beim Schließen des Browsers / Tabs gelöscht.
+ *
+ * @param contactData Vollständige Kontaktdaten des Benutzers
+ */
+export function saveUserContactDataToSession(contactData: UserContactData): void {
+	if (!browser) return;
+	sessionStorage.setItem(STORAGE_KEYS.USER_CONTACT_DATA, JSON.stringify(contactData));
+}
+
+/**
  * DSGVO-konforme Kontaktdaten-Speicherung basierend auf Einwilligung
- * 
+ *
  * Respektiert die Benutzer-Einwilligung zur persistenten Datenspeicherung:
  * - Mit Einwilligung: Persistente Speicherung in localStorage
- * - Ohne Einwilligung: Nur Session-Speicherung (automatische Löschung)
- * 
+ * - Ohne Einwilligung: Nur Session-Speicherung (automatische Löschung beim Tab-Schließen)
+ *
  * @param contactData Kontaktdaten inklusive Einwilligungsstatus
- * 
+ *
  * @example
  * saveUserContactDataWithConsent(contactDataWithConsent);
- * 
+ *
  * @note Implementiert DSGVO-Anforderungen zur expliziten Einwilligung
  */
 export function saveUserContactDataWithConsent(contactData: UserContactData): void {
 	if (contactData.persistentDataConsent) {
 		// Mit Einwilligung: Persistente Speicherung für zukünftige Besuche
+		// Clear session copy to avoid stale duplicates
+		if (browser) sessionStorage.removeItem(STORAGE_KEYS.USER_CONTACT_DATA);
 		saveUserContactData(contactData);
 	} else {
-		// Ohne Einwilligung: Trotzdem speichern für aktuelle Session
-		// (wird beim Browser-Schließen automatisch gelöscht)
-		saveUserContactData(contactData);
+		// Ohne Einwilligung: Nur Session-Speicherung (automatische Löschung)
+		// Clear any previously persisted localStorage data when consent is revoked
+		if (browser) localStorage.removeItem(STORAGE_KEYS.USER_CONTACT_DATA);
+		saveUserContactDataToSession(contactData);
 	}
 }
