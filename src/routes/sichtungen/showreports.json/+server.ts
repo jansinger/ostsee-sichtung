@@ -346,12 +346,6 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			return response;
 		});
 
-		// Convert array to object with string keys (as per original API format)
-		const responseObject: Record<string, PDFCompliantSightingResponse> = {};
-		pdfCompliantSightings.forEach((sighting, index) => {
-			responseObject[index.toString()] = sighting;
-		});
-
 		logger.info(
 			{
 				totalResults: pdfCompliantSightings.length,
@@ -364,10 +358,10 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				},
 				ip: clientIp
 			},
-			'PDF-compliant legacy sightings retrieval completed'
+			'Legacy sightings retrieval completed'
 		);
 
-		return json(responseObject, {
+		return json(pdfCompliantSightings, {
 			headers: {
 				'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
 				'Content-Type': 'application/json'
