@@ -2,6 +2,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { SpeciesEnum, speciesGroups } from '$lib/report/formOptions/species';
 	import type { SightingFormData } from '$lib/types';
+	import { sanitizeHtml } from '$lib/utils/sanitize';
 
 	let {
 		currentValue = undefined
@@ -420,7 +421,7 @@
 															{#if species.images?.[0]?.copyright}
 																<p class="text-base-content/50 mt-1 text-xs">
 																	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-																	{@html species.images[0].copyright}
+																	{@html sanitizeHtml(species.images[0].copyright)}
 																</p>
 															{/if}
 														</div>
@@ -466,7 +467,7 @@
 																{#if image.copyright}
 																	<p class="text-base-content/50 mt-1 text-xs">
 																		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-																		{@html image.copyright}
+																		{@html sanitizeHtml(image.copyright)}
 																	</p>
 																{/if}
 															</div>
