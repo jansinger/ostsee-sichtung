@@ -18,6 +18,7 @@ import { Circle, Fill, Stroke, Style, Text } from 'ol/style';
 import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 import type { MapTranslations } from './mapUtils';
 import { createFeatureStyle, getFeatureColorGroup } from './styleUtils';
+import { sanitizeText } from '$lib/utils/sanitize';
 
 const logger = createLogger('map:optimized-controller');
 
@@ -411,13 +412,16 @@ export class SichtungenMap {
 		if (props.waterway) {
 			content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.area}:</strong> ${props.waterway}
+					<strong>${this.translations.area}:</strong> ${sanitizeText(props.waterway)}
 				</div>
 			`;
 		}
 
 		if (props.name || props.firstname) {
-			const fullName = [props.firstname, props.name].filter(Boolean).join(' ');
+			const fullName = [props.firstname, props.name]
+				.filter(Boolean)
+				.map((v) => sanitizeText(v!))
+				.join(' ');
 			content += `
 				<div style="margin-bottom: 8px;">
 					<strong>${this.translations.name}:</strong> ${fullName}
@@ -428,7 +432,7 @@ export class SichtungenMap {
 		if (props.shipname) {
 			content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.ship}:</strong> ${props.shipname}
+					<strong>${this.translations.ship}:</strong> ${sanitizeText(props.shipname)}
 				</div>
 			`;
 		}

@@ -17,6 +17,7 @@ import { LocationControl } from './controls/LocationControl.js';
 import { ZoomAllControl } from './controls/ZoomAllControl.js';
 import type { MapTranslations } from './mapUtils';
 import { createClusterStyle, createFeatureStyle } from './styleUtils';
+import { sanitizeText } from '$lib/utils/sanitize';
 
 /**
  * Interface für die Eigenschaften einer Sichtung
@@ -413,13 +414,13 @@ export class SichtungenMap {
 			: 'Unbekanntes Datum';
 		const isDead = properties.tf ? ` (${this.translations.found_dead})` : '';
 		const shipName = properties.shipname
-			? `<br>${this.translations.ship}: ${properties.shipname}`
+			? `<br>${this.translations.ship}: ${sanitizeText(properties.shipname)}`
 			: '';
 		const waterway = properties.waterway
-			? `<br>${this.translations.area}: ${properties.waterway}`
+			? `<br>${this.translations.area}: ${sanitizeText(properties.waterway)}`
 			: '';
 		const name = properties.name
-			? `<br>${this.translations.name}: ${properties.firstname || ''} ${properties.name}`
+			? `<br>${this.translations.name}: ${sanitizeText(properties.firstname || '')} ${sanitizeText(properties.name)}`
 			: '';
 
 		return `

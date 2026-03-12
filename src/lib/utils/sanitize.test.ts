@@ -86,3 +86,37 @@ describe('sanitizeText', () => {
 		expect(result).toContain('Safe');
 	});
 });
+
+describe('sanitizeText - map popup XSS scenarios', () => {
+	it('removes script injection from shipname field', () => {
+		const result = sanitizeText('<script>alert("xss")</script>MS Stralsund');
+		expect(result).not.toContain('<script>');
+		expect(result).not.toContain('alert');
+		expect(result).toContain('MS Stralsund');
+	});
+
+	it('removes img onerror payload from waterway field', () => {
+		const result = sanitizeText('<img src=x onerror=alert(1)>Kieler Förde');
+		expect(result).not.toContain('<img');
+		expect(result).not.toContain('onerror');
+		expect(result).toContain('Kieler Förde');
+	});
+
+	it('removes svg onload payload entirely', () => {
+		// DOMPurify strips SVG elements and their text content in text-only mode
+		const result = sanitizeText('<svg onload=alert(1)>evil</svg>Klaus');
+		expect(result).not.toContain('<svg');
+		expect(result).not.toContain('onload');
+		expect(result).not.toContain('evil');
+	});
+
+	it('preserves normal Unicode names', () => {
+		expect(sanitizeText('Jörg Müller-Ström')).toBe('Jörg Müller-Ström');
+	});
+
+	it('handles empty shipname gracefully', () => {
+		expect(sanitizeText('')).toBe('');
+		expect(sanitizeText(null)).toBe('');
+		expect(sanitizeText(undefined)).toBe('');
+	});
+});
