@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.0](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.23...v2.1.0) (2026-03-12)
+
+
+### Features
+
+* **security:** add DOMPurify sanitization, cross-origin headers, and map fixes ([#383](https://github.com/jansinger/ostsee-sichtung/issues/383)) ([5c8abbe](https://github.com/jansinger/ostsee-sichtung/commit/5c8abbec7fba39e12f7e6a6eee71324760548909))
+
 ## [2.0.23](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.22...v2.0.23) (2026-03-12)
 
 
