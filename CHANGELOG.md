@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.1](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.0...v2.1.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* architecture review — 10 fixes across security, db, map and tests ([#386](https://github.com/jansinger/ostsee-sichtung/issues/386)) ([2305b1e](https://github.com/jansinger/ostsee-sichtung/commit/2305b1ef1b74f93c585a53354d3c5c0e8ecd6f40))
+
 ## [2.1.0](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.23...v2.1.0) (2026-03-12)
 
 
