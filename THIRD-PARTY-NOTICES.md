@@ -438,7 +438,7 @@ Generated on: [AUTO-GENERATED]
 - **web-worker@1.5.0**
   - Repository: https://github.com/developit/web-worker
 
-### BlueOak-1.0.0 (1 packages)
+### BlueOak-1.0.0 (1 package)
 
 **Compatibility**: ✅ Fully Compatible
 
@@ -458,7 +458,7 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/mourner/robust-predicates
   - Publisher: Vladimir Agafonkin
 
-### 0BSD (1 packages)
+### 0BSD (1 package)
 
 **Compatibility**: ✅ Fully Compatible
 
@@ -466,7 +466,7 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/Microsoft/tslib
   - Publisher: Microsoft Corp.
 
-### CC0-1.0 (1 packages)
+### CC0-1.0 (1 package)
 
 **Compatibility**: ✅ Fully Compatible
 
@@ -474,7 +474,7 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/DanielJDufour/xml-utils
   - Publisher: Daniel J. Dufour
 
-### MIT-0 (1 packages)
+### MIT-0 (1 package)
 
 **Compatibility**: ❓ Review Needed
 
@@ -482,20 +482,20 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/nodemailer/nodemailer
   - Publisher: Andris Reinman
 
-### UNLICENSED (1 packages)
+### UNLICENSED (1 package)
 
 **Compatibility**: ❓ Review Needed
 
-- **ostsee-tiere@2.0.21**
+- **ostsee-tiere@2.0.22**
 
-### (MIT AND Zlib) (1 packages)
+### (MIT AND Zlib) (1 package)
 
 **Compatibility**: ⚠️ Multiple Licenses
 
 - **pako@2.1.0**
   - Repository: https://github.com/nodeca/pako
 
-### (MIT OR CC0-1.0) (1 packages)
+### (MIT OR CC0-1.0) (1 package)
 
 **Compatibility**: ✅ Dual Licensed
 
@@ -503,7 +503,7 @@ Generated on: [AUTO-GENERATED]
   - Repository: https://github.com/sindresorhus/type-fest
   - Publisher: Sindre Sorhus
 
-### MIT AND BSD-3-Clause (1 packages)
+### MIT AND BSD-3-Clause (1 package)
 
 **Compatibility**: ⚠️ Multiple Licenses
 

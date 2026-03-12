@@ -8,15 +8,15 @@ Apache-2.0: 6 packages
 BSD-3-Clause: 3 packages
 BSD-2-Clause: 6 packages
 ISC: 4 packages
-BlueOak-1.0.0: 1 packages
-MIT-0: 1 packages
-UNLICENSED: 1 packages
-(MIT AND Zlib): 1 packages
+BlueOak-1.0.0: 1 package
+MIT-0: 1 package
+UNLICENSED: 1 package
+(MIT AND Zlib): 1 package
 Unlicense: 2 packages
-0BSD: 1 packages
-(MIT OR CC0-1.0): 1 packages
-CC0-1.0: 1 packages
-MIT AND BSD-3-Clause: 1 packages
+0BSD: 1 package
+(MIT OR CC0-1.0): 1 package
+CC0-1.0: 1 package
+MIT AND BSD-3-Clause: 1 package
 
 Total Dependencies: 113
 

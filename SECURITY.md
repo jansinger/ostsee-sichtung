@@ -76,9 +76,9 @@ Please report security vulnerabilities to the maintainers via:
 #### 1. dompurify <= 3.3.1 (Moderate Severity, 3 CVEs)
 - **CVEs**: GHSA-vhxf-7vqr-mrjg, GHSA-v8jm-5vwx-cfxm, GHSA-v2wj-7wpq-c8vv
 - **Affected**: @scalar/api-reference → monaco-editor → dompurify
-- **Risk Level**: Moderate - Development/documentation tooling only
-- **Impact**: No production exposure; dompurify is only used in Scalar API docs viewer
-- **Mitigation**: API reference is dev-only tooling, not exposed to end users
+- **Risk Level**: Moderate - Used in `/docs/api` routes (Scalar API reference viewer)
+- **Impact**: Limited production exposure; only affects the API documentation pages, not core application functionality. Exploitation requires crafted input to the docs viewer.
+- **Mitigation**: API docs routes serve read-only documentation with no user-generated content. Attack surface is minimal as DOMPurify is used internally by monaco-editor within the Scalar viewer.
 - **Resolution Path**: Requires @scalar/api-reference update (breaking change)
 
 #### 2. lodash 4.0.0 - 4.17.21 (Moderate Severity)
@@ -144,7 +144,7 @@ We maintain a proactive approach to dependency security:
 ### Production Dependencies Security Status
 - **Total production dependencies**: 18 packages
 - **Security-clean dependencies**: 100%
-- **License-compliant dependencies**: 100% (MIT, Apache-2.0, ISC, BSD)
+- **License-compliant dependencies**: 100% (permissive, non-copyleft licenses only; see THIRD-PARTY-NOTICES.md for the full list)
 - **No transitive vulnerabilities**: Verified clean dependency tree
 
 ## Security Roadmap
