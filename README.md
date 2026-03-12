@@ -75,7 +75,7 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 
 ### Voraussetzungen
 
-- Node.js 20+ (LTS empfohlen, Docker verwendet Node.js 22)
+- Node.js 20.19+, 22.12+ oder 23+ (LTS-Versionen empfohlen, Docker verwendet Node.js 22)
 - Docker und Docker Compose (für die Datenbank)
 
 ### Setup

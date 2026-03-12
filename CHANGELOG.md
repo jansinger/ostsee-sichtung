@@ -2,43 +2,6 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-## <small>1.31.7 (2025-12-23)</small>
-
-* fix(ci): add --ignore-scripts flag to package-lock sync step (#253) ([ea060a7](https://github.com/jansinger/ostsee-sichtung/commit/ea060a7)), closes [#253](https://github.com/jansinger/ostsee-sichtung/issues/253)
-
-## <small>1.31.6 (2025-12-23)</small>
-
-* docs: improve docker deployment documentation and add migration guide (#252) ([e44ee9c](https://github.com/jansinger/ostsee-sichtung/commit/e44ee9c)), closes [#252](https://github.com/jansinger/ostsee-sichtung/issues/252)
-
-## <small>1.31.5 (2025-12-23)</small>
-
-* fix(ci): synchronize package-lock.json in dependabot combine workflow (#251) ([b48fbc5](https://github.com/jansinger/ostsee-sichtung/commit/b48fbc5)), closes [#251](https://github.com/jansinger/ostsee-sichtung/issues/251)
-
-## <small>1.31.4 (2025-11-20)</small>
-
-* fix(deps): synchronize package-lock.json with package.json (#237) ([1a08c96](https://github.com/jansinger/ostsee-sichtung/commit/1a08c96)), closes [#237](https://github.com/jansinger/ostsee-sichtung/issues/237)
-
-## <small>1.31.3 (2025-11-20)</small>
-
-* chore(deps): bump glob in the npm_and_yarn group across 1 directory (#235) ([0515658](https://github.com/jansinger/ostsee-sichtung/commit/0515658)), closes [#235](https://github.com/jansinger/ostsee-sichtung/issues/235)
-* chore(deps): update 10 dependencies (#221) ([224914e](https://github.com/jansinger/ostsee-sichtung/commit/224914e)), closes [#221](https://github.com/jansinger/ostsee-sichtung/issues/221)
-* chore(deps): update 2 dependencies (#219) ([efb3914](https://github.com/jansinger/ostsee-sichtung/commit/efb3914)), closes [#219](https://github.com/jansinger/ostsee-sichtung/issues/219)
-* chore(deps): update 3 dependencies (#231) ([da43495](https://github.com/jansinger/ostsee-sichtung/commit/da43495)), closes [#231](https://github.com/jansinger/ostsee-sichtung/issues/231)
-* fix(ci): add retry logic for transient GHCR errors in Docker Release workflow (#234) ([7b9a745](https://github.com/jansinger/ostsee-sichtung/commit/7b9a745)), closes [#234](https://github.com/jansinger/ostsee-sichtung/issues/234)
-
-## <small>1.31.2 (2025-10-27)</small>
-
-* chore(deps): bump actions/download-artifact from 4 to 6 (#211) ([e0de9ef](https://github.com/jansinger/ostsee-sichtung/commit/e0de9ef)), closes [#211](https://github.com/jansinger/ostsee-sichtung/issues/211)
-* chore(deps): bump actions/setup-node from 4 to 6 (#206) ([e527857](https://github.com/jansinger/ostsee-sichtung/commit/e527857)), closes [#206](https://github.com/jansinger/ostsee-sichtung/issues/206)
-* chore(deps): bump actions/upload-artifact from 4 to 5 (#213) ([b74a5f0](https://github.com/jansinger/ostsee-sichtung/commit/b74a5f0)), closes [#213](https://github.com/jansinger/ostsee-sichtung/issues/213)
-* chore(deps): bump github/codeql-action from 3 to 4 (#207) ([87fd981](https://github.com/jansinger/ostsee-sichtung/commit/87fd981)), closes [#207](https://github.com/jansinger/ostsee-sichtung/issues/207)
-* chore(deps): update 12 dependencies (#217) ([4fbb1f5](https://github.com/jansinger/ostsee-sichtung/commit/4fbb1f5)), closes [#217](https://github.com/jansinger/ostsee-sichtung/issues/217)
-* fix(ci): resolve dependabot-combine workflow and docker release issues (#218) ([1b923e7](https://github.com/jansinger/ostsee-sichtung/commit/1b923e7)), closes [#218](https://github.com/jansinger/ostsee-sichtung/issues/218) [#123](https://github.com/jansinger/ostsee-sichtung/issues/123) [#124](https://github.com/jansinger/ostsee-sichtung/issues/124)
-
-## <small>1.31.1 (2025-10-17)</small>
-
-* fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
-
 ## [2.0.22](https://github.com/jansinger/ostsee-sichtung/compare/v2.0.21...v2.0.22) (2026-03-12)
 
 
@@ -270,6 +233,43 @@ All notable changes to this project will be documented in this file. See [Conven
 ### Code Refactoring
 
 * **ci:** migrate from semantic-release to release-please ([#257](https://github.com/jansinger/ostsee-sichtung/issues/257)) ([ff02679](https://github.com/jansinger/ostsee-sichtung/commit/ff026799dcb7a711960b494e4a312cd0356cf6a0))
+
+## <small>1.31.7 (2025-12-23)</small>
+
+* fix(ci): add --ignore-scripts flag to package-lock sync step (#253) ([ea060a7](https://github.com/jansinger/ostsee-sichtung/commit/ea060a7)), closes [#253](https://github.com/jansinger/ostsee-sichtung/issues/253)
+
+## <small>1.31.6 (2025-12-23)</small>
+
+* docs: improve docker deployment documentation and add migration guide (#252) ([e44ee9c](https://github.com/jansinger/ostsee-sichtung/commit/e44ee9c)), closes [#252](https://github.com/jansinger/ostsee-sichtung/issues/252)
+
+## <small>1.31.5 (2025-12-23)</small>
+
+* fix(ci): synchronize package-lock.json in dependabot combine workflow (#251) ([b48fbc5](https://github.com/jansinger/ostsee-sichtung/commit/b48fbc5)), closes [#251](https://github.com/jansinger/ostsee-sichtung/issues/251)
+
+## <small>1.31.4 (2025-11-20)</small>
+
+* fix(deps): synchronize package-lock.json with package.json (#237) ([1a08c96](https://github.com/jansinger/ostsee-sichtung/commit/1a08c96)), closes [#237](https://github.com/jansinger/ostsee-sichtung/issues/237)
+
+## <small>1.31.3 (2025-11-20)</small>
+
+* chore(deps): bump glob in the npm_and_yarn group across 1 directory (#235) ([0515658](https://github.com/jansinger/ostsee-sichtung/commit/0515658)), closes [#235](https://github.com/jansinger/ostsee-sichtung/issues/235)
+* chore(deps): update 10 dependencies (#221) ([224914e](https://github.com/jansinger/ostsee-sichtung/commit/224914e)), closes [#221](https://github.com/jansinger/ostsee-sichtung/issues/221)
+* chore(deps): update 2 dependencies (#219) ([efb3914](https://github.com/jansinger/ostsee-sichtung/commit/efb3914)), closes [#219](https://github.com/jansinger/ostsee-sichtung/issues/219)
+* chore(deps): update 3 dependencies (#231) ([da43495](https://github.com/jansinger/ostsee-sichtung/commit/da43495)), closes [#231](https://github.com/jansinger/ostsee-sichtung/issues/231)
+* fix(ci): add retry logic for transient GHCR errors in Docker Release workflow (#234) ([7b9a745](https://github.com/jansinger/ostsee-sichtung/commit/7b9a745)), closes [#234](https://github.com/jansinger/ostsee-sichtung/issues/234)
+
+## <small>1.31.2 (2025-10-27)</small>
+
+* chore(deps): bump actions/download-artifact from 4 to 6 (#211) ([e0de9ef](https://github.com/jansinger/ostsee-sichtung/commit/e0de9ef)), closes [#211](https://github.com/jansinger/ostsee-sichtung/issues/211)
+* chore(deps): bump actions/setup-node from 4 to 6 (#206) ([e527857](https://github.com/jansinger/ostsee-sichtung/commit/e527857)), closes [#206](https://github.com/jansinger/ostsee-sichtung/issues/206)
+* chore(deps): bump actions/upload-artifact from 4 to 5 (#213) ([b74a5f0](https://github.com/jansinger/ostsee-sichtung/commit/b74a5f0)), closes [#213](https://github.com/jansinger/ostsee-sichtung/issues/213)
+* chore(deps): bump github/codeql-action from 3 to 4 (#207) ([87fd981](https://github.com/jansinger/ostsee-sichtung/commit/87fd981)), closes [#207](https://github.com/jansinger/ostsee-sichtung/issues/207)
+* chore(deps): update 12 dependencies (#217) ([4fbb1f5](https://github.com/jansinger/ostsee-sichtung/commit/4fbb1f5)), closes [#217](https://github.com/jansinger/ostsee-sichtung/issues/217)
+* fix(ci): resolve dependabot-combine workflow and docker release issues (#218) ([1b923e7](https://github.com/jansinger/ostsee-sichtung/commit/1b923e7)), closes [#218](https://github.com/jansinger/ostsee-sichtung/issues/218) [#123](https://github.com/jansinger/ostsee-sichtung/issues/123) [#124](https://github.com/jansinger/ostsee-sichtung/issues/124)
+
+## <small>1.31.1 (2025-10-17)</small>
+
+* fix(ci): resolve Docker workflow build and security scan failures (#195) ([c41f8b5](https://github.com/jansinger/ostsee-sichtung/commit/c41f8b5)), closes [#195](https://github.com/jansinger/ostsee-sichtung/issues/195)
 
 ## 1.31.0 (2025-10-17)
 

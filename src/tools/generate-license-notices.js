@@ -76,7 +76,7 @@ Generated on: [AUTO-GENERATED]
 		});
 
 		for (const [licenseType, packages] of orderedGroups) {
-			content += `### ${licenseType} (${packages.length} packages)\n\n`;
+			content += `### ${licenseType} (${packages.length} ${packages.length === 1 ? 'package' : 'packages'})\n\n`;
 			content += `**Compatibility**: ${getCompatibility(licenseType)}\n\n`;
 
 			// Sort packages alphabetically
@@ -212,7 +212,7 @@ This project uses the following third-party software components:
 `;
 
 	for (const [license, count] of Object.entries(licenseCounts)) {
-		text += `${license}: ${count} packages\n`;
+		text += `${license}: ${count} ${count === 1 ? 'package' : 'packages'}\n`;
 	}
 
 	text += `\nTotal Dependencies: ${Object.values(licenseCounts).reduce((a, b) => a + b, 0)}\n`;

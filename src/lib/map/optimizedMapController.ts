@@ -207,7 +207,7 @@ export class SichtungenMap {
 				zoom: defaultZoom,
 				projection: 'EPSG:3857'
 			}),
-			controls: defaultControls().extend(this.createCustomControls())
+			controls: defaultControls({ rotate: false }).extend(this.createCustomControls())
 		});
 
 		// Popup hinzufügen
