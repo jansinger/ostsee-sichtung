@@ -152,6 +152,36 @@ describe('localStorage utilities', () => {
 			const raw = sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA);
 			expect(JSON.parse(raw!)).toEqual(data);
 		});
+
+		it('loadUserContactData reads back session-only contact data when consent is NOT given', () => {
+			const data = { ...contactBase, persistentDataConsent: false };
+			saveUserContactDataWithConsent(data);
+
+			expect(sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).not.toBeNull();
+			expect(localStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).toBeNull();
+
+			const loaded = loadUserContactData();
+			expect(loaded).toEqual(data);
+		});
+
+		it('revoking consent clears persisted localStorage user contact data', () => {
+			const withConsent = { ...contactBase, persistentDataConsent: true };
+			const withoutConsent = { ...contactBase, persistentDataConsent: false };
+
+			// Save with consent → data persisted in localStorage
+			saveUserContactDataWithConsent(withConsent);
+			expect(localStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).not.toBeNull();
+			expect(sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).toBeNull();
+
+			// User revokes consent → data should move to sessionStorage and be cleared from localStorage
+			saveUserContactDataWithConsent(withoutConsent);
+
+			expect(localStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).toBeNull();
+			expect(sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).not.toBeNull();
+
+			const loadedAfterRevocation = loadUserContactData();
+			expect(loadedAfterRevocation).toEqual(withoutConsent);
+		});
 	});
 
 	describe('saveUserContactDataToSession', () => {

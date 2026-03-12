@@ -193,6 +193,16 @@ export function saveUserContactData(contactData: UserContactData): void {
  * if (contacts.email) setFormField('email', contacts.email);
  */
 export function loadUserContactData(): UserContactData {
+	if (!browser) return {} as UserContactData;
+	// Check sessionStorage first (consent-free session data), then fall back to localStorage
+	const sessionRaw = sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA);
+	if (sessionRaw) {
+		try {
+			return JSON.parse(sessionRaw) as UserContactData;
+		} catch {
+			// ignore parse errors, fall through to localStorage
+		}
+	}
 	return loadFromStorage(STORAGE_KEYS.USER_CONTACT_DATA, {} as UserContactData);
 }
 
@@ -247,9 +257,13 @@ export function saveUserContactDataToSession(contactData: UserContactData): void
 export function saveUserContactDataWithConsent(contactData: UserContactData): void {
 	if (contactData.persistentDataConsent) {
 		// Mit Einwilligung: Persistente Speicherung für zukünftige Besuche
+		// Clear session copy to avoid stale duplicates
+		if (browser) sessionStorage.removeItem(STORAGE_KEYS.USER_CONTACT_DATA);
 		saveUserContactData(contactData);
 	} else {
 		// Ohne Einwilligung: Nur Session-Speicherung (automatische Löschung)
+		// Clear any previously persisted localStorage data when consent is revoked
+		if (browser) localStorage.removeItem(STORAGE_KEYS.USER_CONTACT_DATA);
 		saveUserContactDataToSession(contactData);
 	}
 }
