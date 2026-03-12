@@ -118,6 +118,8 @@ paths:
                 $ref: '#/components/schemas/SightingResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -879,6 +881,8 @@ paths:
                   message:
                     type: string
                     example: "Only POST method is supported for this endpoint"
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -1936,15 +1940,88 @@ components:
         - totfund_geschlecht
       properties:
         tierart:
-          type: array
-          description: Verfügbare Tierarten
-          items:
-            type: object
-            properties:
-              value:
-                type: integer
-              label:
-                type: string
+          type: object
+          description: 'Verfügbare Tierarten. Schlüssel: numerischer String, Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+          example:
+            "0": "Schweinswal"
+            "1": "Kegelrobbe"
+            "2": "Seehund"
+        vonwo:
+          type: object
+          description: 'Sichtungsort-Optionen. Schlüssel: numerischer String, Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+          example:
+            "0": "Sonstiges"
+            "1": "Segelschiff"
+            "3": "Land"
+        entfernung:
+          type: object
+          description: 'Entfernungs-Optionen. Schlüssel: numerischer String, Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+          example:
+            "1": "weniger als 10 Meter"
+            "5": "mehr als 500 Meter"
+        verteilung:
+          type: object
+          description: 'Verteilungs-Optionen. Schlüssel: numerischer String, Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+        verhalten:
+          type: object
+          description: 'Verhaltens-Optionen. Schlüssel: numerischer String, Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+        seegang:
+          type: object
+          description: 'Seegang-Optionen. Schlüssel: numerischer String (0–5), Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+        windrichtung:
+          type: object
+          description: 'Windrichtungs-Optionen. Schlüssel: Kürzel (N/NW/W/…), Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+        windstaerke:
+          type: object
+          description: 'Windstärke-Optionen (Beaufort). Schlüssel: numerischer String, Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+        sichtweite:
+          type: object
+          description: 'Sichtweiten-Optionen. Schlüssel: numerischer String (1–4), Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+        bootsantrieb:
+          type: object
+          description: 'Bootsantriebs-Optionen. Schlüssel: numerischer String, Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+        eingangskanal:
+          type: object
+          description: 'Eingangskanal-Optionen. Schlüssel: numerischer String (0–5), Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+          example:
+            "0": "Web"
+            "4": "App"
+        totfund_zustand:
+          type: object
+          description: 'Totfund-Zustand-Optionen. Schlüssel: numerischer String, Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+        totfund_geschlecht:
+          type: object
+          description: 'Totfund-Geschlecht-Optionen. Schlüssel: numerischer String, Wert: Bezeichnung'
+          additionalProperties:
+            type: string
+          example:
+            "0": "unbekannt"
+            "1": "weiblich"
+            "2": "männlich"
 
     PDFCompliantSightingResponse:
       type: object
@@ -2062,6 +2139,23 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ValidationErrorResponse'
+
+    RateLimitExceeded:
+      description: Rate Limit überschritten (20 Anfragen pro Stunde)
+      headers:
+        Retry-After:
+          description: Sekunden bis das Rate Limit zurückgesetzt wird
+          schema:
+            type: integer
+            example: 3600
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Too Many Requests"
+            message: "Rate limit exceeded. Try again later."
 
     InternalServerError:
       description: Interner Serverfehler
