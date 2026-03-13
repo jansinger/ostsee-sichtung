@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.2](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.1...v2.1.2) (2026-03-13)
+
+
+### Bug Fixes
+
+* **deps:** replace jwks-rsa + jsonwebtoken with jose for Vercel ESM compatibility ([#388](https://github.com/jansinger/ostsee-sichtung/issues/388)) ([37bff92](https://github.com/jansinger/ostsee-sichtung/commit/37bff92410e4e8d3cbec58327b04a0b116ed91d5))
+
 ## [2.1.1](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.0...v2.1.1) (2026-03-12)
 
 
