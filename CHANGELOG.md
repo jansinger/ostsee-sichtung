@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.3](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.2...v2.1.3) (2026-03-13)
+
+
+### Bug Fixes
+
+* **deps:** replace isomorphic-dompurify with dompurify for Vercel ESM compatibility ([#390](https://github.com/jansinger/ostsee-sichtung/issues/390)) ([8e0e1de](https://github.com/jansinger/ostsee-sichtung/commit/8e0e1de835b2844ca30ef0f6390e19251c247de4))
+
 ## [2.1.2](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.1...v2.1.2) (2026-03-13)
 
 
