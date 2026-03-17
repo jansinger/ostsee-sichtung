@@ -65,7 +65,7 @@
 		"@eslint/compat": "^2.0.3",
 		"@eslint/js": "^10.0.1",
 		"@fontsource/roboto": "^5.2.10",
-		"@iconify/json": "^2.2.448",
+		"@iconify/json": "^2.2.450",
 		"@playwright/test": "^1.58.2",
 		"@scalar/api-reference": "^1.48.5",
 		"@scalar/sveltekit": "^0.2.3",
