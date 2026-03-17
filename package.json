@@ -68,7 +68,7 @@
 		"@iconify/json": "^2.2.448",
 		"@playwright/test": "^1.58.2",
 		"@scalar/api-reference": "^1.48.5",
-		"@scalar/sveltekit": "^0.2.2",
+		"@scalar/sveltekit": "^0.2.3",
 		"@sveltejs/adapter-node": "^5.5.4",
 		"@sveltejs/adapter-vercel": "^6.3.3",
 		"@sveltejs/kit": "^2.55.0",
