@@ -59,8 +59,8 @@
 	},
 	"devDependencies": {
 		"@apidevtools/swagger-parser": "^12.1.0",
-		"@commitlint/cli": "^20.4.3",
-		"@commitlint/config-conventional": "^20.4.3",
+		"@commitlint/cli": "^20.5.0",
+		"@commitlint/config-conventional": "^20.5.0",
 		"@cyclonedx/cyclonedx-npm": "^4.2.1",
 		"@eslint/compat": "^2.0.3",
 		"@eslint/js": "^10.0.1",
@@ -75,12 +75,12 @@
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
 		"@tailwindcss/vite": "^4.2.1",
 		"@types/html-to-text": "^9.0.4",
-		"@types/node": "^25.4.0",
+		"@types/node": "^25.5.0",
 		"@types/nodemailer": "^7.0.11",
 		"@vitejs/plugin-basic-ssl": "^2.1.4",
-		"@vitest/browser": "^4.0.18",
-		"@vitest/browser-playwright": "^4.0.18",
-		"@vitest/coverage-v8": "^4.0.18",
+		"@vitest/browser": "^4.1.0",
+		"@vitest/browser-playwright": "^4.1.0",
+		"@vitest/coverage-v8": "^4.1.0",
 		"commitizen": "^4.3.1",
 		"cz-conventional-changelog": "^3.3.0",
 		"daisyui": "^5.5.19",
@@ -105,7 +105,7 @@
 		"vite": "^7.3.1",
 		"vite-plugin-devtools-json": "^1.0.0",
 		"vitest": "^4.0.18",
-		"vitest-browser-svelte": "^2.0.2"
+		"vitest-browser-svelte": "^2.1.0"
 	},
 	"dependencies": {
 		"@paralleldrive/cuid2": "^3.3.0",
