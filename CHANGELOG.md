@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.5](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.4...v2.1.5) (2026-03-23)
+
+
+### Dependencies
+
+* **deps:** bump @tailwindcss/vite from 4.2.1 to 4.2.2 ([#405](https://github.com/jansinger/ostsee-sichtung/issues/405)) ([ee52955](https://github.com/jansinger/ostsee-sichtung/commit/ee52955d6f5ad4cd877a2f0f8f10bf85e976fec0))
+* **deps:** bump flatted from 3.4.1 to 3.4.2 ([#401](https://github.com/jansinger/ostsee-sichtung/issues/401)) ([36a6be5](https://github.com/jansinger/ostsee-sichtung/commit/36a6be5c25416c039bf45f6c6f7451ba8b6b465e))
+* **deps:** bump svelte in the svelte-framework group ([#404](https://github.com/jansinger/ostsee-sichtung/issues/404)) ([aac4f22](https://github.com/jansinger/ostsee-sichtung/commit/aac4f222f915ef42101563133e1af04a2e78c6c3))
+* **deps:** bump the dev-tooling group with 3 updates ([#403](https://github.com/jansinger/ostsee-sichtung/issues/403)) ([07263b0](https://github.com/jansinger/ostsee-sichtung/commit/07263b0aed9b52c993419e802042e8c77aaabe6d))
+* **deps:** bump the production-dependencies group with 3 updates ([#402](https://github.com/jansinger/ostsee-sichtung/issues/402)) ([c21e59d](https://github.com/jansinger/ostsee-sichtung/commit/c21e59d4913e82e532cbd3897f8d5610b5442dad))
+
 ## [2.1.4](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.3...v2.1.4) (2026-03-17)
 
 
