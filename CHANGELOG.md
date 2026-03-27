@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.6](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.5...v2.1.6) (2026-03-27)
+
+
+### Dependencies
+
+* **deps:** bump handlebars from 4.7.8 to 4.7.9 ([#408](https://github.com/jansinger/ostsee-sichtung/issues/408)) ([9b586f4](https://github.com/jansinger/ostsee-sichtung/commit/9b586f4572283d57f8ee67f7de40de7006d557b8))
+* **deps:** bump nodemailer from 8.0.3 to 8.0.4 ([#410](https://github.com/jansinger/ostsee-sichtung/issues/410)) ([aa7745c](https://github.com/jansinger/ostsee-sichtung/commit/aa7745c09991a155a062a9f40d756dec931e3863))
+* **deps:** bump picomatch from 2.3.1 to 2.3.2 ([#407](https://github.com/jansinger/ostsee-sichtung/issues/407)) ([0f0026c](https://github.com/jansinger/ostsee-sichtung/commit/0f0026c61b2664f277a489a6fae53410ccf68097))
+
 ## [2.1.5](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.4...v2.1.5) (2026-03-23)
 
 
