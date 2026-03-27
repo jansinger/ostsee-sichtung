@@ -118,7 +118,7 @@
 		"html-to-text": "^9.0.5",
 		"dompurify": "^3.2.6",
 		"jose": "^6.2.2",
-		"nodemailer": "^8.0.3",
+		"nodemailer": "^8.0.4",
 		"ol": "^10.8.0",
 		"pino": "^10.3.1",
 		"postgres": "^3.4.8",
