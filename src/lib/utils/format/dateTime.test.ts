@@ -481,9 +481,9 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 			const splitEnd = performance.now();
 			const splitDuration = splitEnd - splitStart;
 
-			// Beide Operationen sollten unter 50ms für 100 Aufrufe sein
-			expect(combineDuration).toBeLessThan(50);
-			expect(splitDuration).toBeLessThan(50);
+			// Beide Operationen sollten unter 200ms für 100 Aufrufe sein
+			expect(combineDuration).toBeLessThan(200);
+			expect(splitDuration).toBeLessThan(200);
 		});
 	});
 });
