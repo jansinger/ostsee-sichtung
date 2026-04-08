@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.1.8](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.7...v2.1.8) (2026-04-08)
+
+
+### Bug Fixes
+
+* **test:** increase performance test threshold to prevent CI flakiness ([#426](https://github.com/jansinger/ostsee-sichtung/issues/426)) ([f193586](https://github.com/jansinger/ostsee-sichtung/commit/f1935862d779ea21523a1b921970f1daf9b4f05f))
+
+
+### Dependencies
+
+* **deps:** bump @iconify/json from 2.2.450 to 2.2.459 ([#422](https://github.com/jansinger/ostsee-sichtung/issues/422)) ([f065407](https://github.com/jansinger/ostsee-sichtung/commit/f06540750b5a4b2f0d2d09235dff760fa219c1e8))
+* **deps:** bump @sveltejs/kit in the svelte-framework group ([#421](https://github.com/jansinger/ostsee-sichtung/issues/421)) ([0ae54e3](https://github.com/jansinger/ostsee-sichtung/commit/0ae54e32d246603efa82de03e23a2aac6d648e09))
+* **deps:** bump defu from 6.1.4 to 6.1.7 ([#425](https://github.com/jansinger/ostsee-sichtung/issues/425)) ([6be6301](https://github.com/jansinger/ostsee-sichtung/commit/6be63012b670038b9316dc99431d916fe0ab429c))
+* **deps:** bump the dev-tooling group with 4 updates ([#420](https://github.com/jansinger/ostsee-sichtung/issues/420)) ([43d6bf9](https://github.com/jansinger/ostsee-sichtung/commit/43d6bf9eb01e1dd1e47c614076c8df0442ffdd60))
+* **deps:** bump the production-dependencies group with 2 updates ([#419](https://github.com/jansinger/ostsee-sichtung/issues/419)) ([d4e6b3c](https://github.com/jansinger/ostsee-sichtung/commit/d4e6b3c4a7ff028c8bfba68292dfdf50f0ad693e))
+* **deps:** bump vite from 7.3.1 to 7.3.2 ([#423](https://github.com/jansinger/ostsee-sichtung/issues/423)) ([1eabb70](https://github.com/jansinger/ostsee-sichtung/commit/1eabb70893f94166fd12322f523808852885c6d3))
+
 ## [2.1.7](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.6...v2.1.7) (2026-04-02)
 
 
