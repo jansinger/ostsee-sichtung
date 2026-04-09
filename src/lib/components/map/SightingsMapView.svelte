@@ -385,7 +385,7 @@
 		<!-- Error-Toast -->
 		{#if errorMessage}
 			<div
-				class="alert alert-error fixed top-4 left-1/2 z-30 max-w-md -translate-x-1/2 transform shadow-lg"
+				class="alert alert-error fixed top-20 left-1/2 z-[60] max-w-md -translate-x-1/2 transform shadow-lg"
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
