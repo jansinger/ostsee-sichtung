@@ -521,16 +521,17 @@ export class SichtungenMap {
 		this.displayedYear = year;
 		this.yearChangeCallback?.(year);
 
-		// Update timeFilter für das neue Jahr
-		const yearStart = new Date(year, 0, 1).getTime();
-		const yearEnd = new Date(year, 11, 31, 23, 59, 59).getTime();
-		this.timeFilter = {
-			lower: yearStart,
-			upper: yearEnd
-		};
-
 		try {
 			await this.loadSightings(year, this.searchTerm);
+
+			// timeFilter erst nach erfolgreichem Fetch setzen, damit während des Ladens
+			// keine alten Features mit dem neuen Jahres-Zeitraum gefiltert werden
+			const yearStart = new Date(year, 0, 1).getTime();
+			const yearEnd = new Date(year, 11, 31, 23, 59, 59).getTime();
+			this.timeFilter = {
+				lower: yearStart,
+				upper: yearEnd
+			};
 		} catch (error) {
 			console.error('Error loading sightings:', error);
 			throw error;
@@ -666,10 +667,9 @@ export class SichtungenMap {
 
 	private applyFilter(searchTerm: string): void {
 		this.searchTerm = searchTerm;
-		this.loadSightings(this.displayedYear, searchTerm).catch((error) => {
-			console.error('Error applying search filter:', error);
-			throw error;
-		});
+		// fire-and-forget: unhandled rejection propagiert als window.unhandledrejection
+		// und wird vom Error-Handler in SightingsMapView aufgefangen
+		void this.loadSightings(this.displayedYear, searchTerm);
 	}
 
 	private updateTimeFilter(): void {
