@@ -57,15 +57,15 @@ test.describe('Map Filter Panel', () => {
 		}
 	});
 
-	test('Suchtext in Eingabefeld löst API-Call aus', async () => {
+	test('Suchtext in Eingabefeld löst API-Call mit search-Parameter aus', async () => {
 		await mapPage.openFilter();
 
 		// Typing in the search field triggers a debounced API call (300ms)
-		const responsePromise = mapPage.waitForSightingsResponse();
+		const responsePromise = mapPage.waitForSightingsResponse('search=Schweinswal');
 		await mapPage.fillSearch('Schweinswal');
 		const response = await responsePromise;
 
-		expect(response.url()).toContain('/api/map/sightings');
+		expect(response.url()).toContain('search=Schweinswal');
 	});
 
 	test('Filter-Panel zeigt Jahres-Optionen in Auswahl', async () => {

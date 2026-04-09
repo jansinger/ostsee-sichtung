@@ -35,6 +35,18 @@ test.describe('Map Error State', () => {
 		await expect(mapPage.getErrorAlert()).toBeHidden();
 	});
 
+	test('HTTP 500 Antwort zeigt Fehlermeldung', async ({ page }) => {
+		await page.route('**/api/map/sightings**', (route) =>
+			route.fulfill({ status: 500, body: '{"error":"Server error"}' })
+		);
+
+		await page.goto('/map');
+
+		const mapPage = new MapPage(page);
+		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 15000 });
+		await expect(mapPage.getErrorAlert()).toContainText('Fehler');
+	});
+
 	test('API-Fehler beim Jahreswechsel zeigt Fehlermeldung', async ({ page }) => {
 		const mapPage = new MapPage(page);
 		await mapPage.goto();
