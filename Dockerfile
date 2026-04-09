@@ -14,9 +14,9 @@
 # ============================================
 # Stage 1: Dependencies
 # ============================================
-# Pin to specific Node.js LTS version for reproducible builds
-# Update periodically: https://nodejs.org/en/download/
-FROM node:22.16-alpine AS deps
+# Floating Node.js 24 Alpine tag — tracks latest patch release.
+# Review periodically: https://nodejs.org/en/download/
+FROM node:24-alpine AS deps
 
 WORKDIR /app
 
@@ -36,7 +36,7 @@ RUN npm ci --include=dev
 # ============================================
 # Stage 2: Builder
 # ============================================
-FROM node:22.16-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -63,7 +63,7 @@ RUN npm prune --omit=dev
 # ============================================
 # Stage 3: Runtime
 # ============================================
-FROM node:22.16-alpine AS runtime
+FROM node:24-alpine AS runtime
 
 # OCI Image Labels (placed in final stage for proper metadata)
 LABEL org.opencontainers.image.title="Ostsee-Tiere"
