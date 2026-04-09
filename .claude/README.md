@@ -59,7 +59,7 @@ Rules mit `paths` Frontmatter werden nur geladen wenn passende Dateien bearbeite
 | security.md | `src/lib/server/auth/`, `src/hooks.server.ts`, `src/routes/api/files/`                    |
 | api.md      | `src/routes/api/`, `src/routes/rest_sichtungen/`, `src/routes/sichtungen/`                |
 | database.md | `src/lib/server/db/**`, `drizzle.config.ts`, `src/routes/api/**`                          |
-| docker.md   | `Dockerfile`, `docker-compose*.yml`, `.github/workflows/docker-release.yml`               |
+| docker.md   | `Dockerfile`, `docker-compose*.yml`, `.github/workflows/docker-publish.yml`               |
 
 Rules **ohne** `paths` (immer geladen): architecture.md, testing.md
 

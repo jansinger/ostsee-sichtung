@@ -6,16 +6,16 @@ Diese Regeln gelten für **jede** Code-Änderung im Projekt.
 
 ## Technology Stack
 
-| Bereich | Technologie |
-|---------|-------------|
-| Framework | SvelteKit 5 mit TypeScript |
-| Datenbank | PostgreSQL + PostGIS |
-| ORM | Drizzle (type-safe) |
-| Styling | TailwindCSS + DaisyUI (Theme: `meeresmuseum`) |
-| Karten | OpenLayers |
-| Forms | svelte-forms-lib + Yup |
-| Logging | Pino |
-| Icons | unplugin-icons (lucide) |
+| Bereich   | Technologie                                   |
+| --------- | --------------------------------------------- |
+| Framework | SvelteKit 5 mit TypeScript                    |
+| Datenbank | PostgreSQL + PostGIS                          |
+| ORM       | Drizzle (type-safe)                           |
+| Styling   | TailwindCSS + DaisyUI (Theme: `meeresmuseum`) |
+| Karten    | OpenLayers                                    |
+| Forms     | svelte-forms-lib + Yup                        |
+| Logging   | Pino                                          |
+| Icons     | unplugin-icons (lucide)                       |
 
 ---
 
@@ -24,22 +24,33 @@ Diese Regeln gelten für **jede** Code-Änderung im Projekt.
 ```
 src/
 ├── lib/
-│   ├── components/      # Wiederverwendbare UI-Komponenten
-│   ├── constants/       # Enums, Konstanten (Tierarten, etc.)
-│   ├── map/             # OpenLayers Funktionalität
-│   ├── server/db/       # Schema, Repository Layer
-│   ├── types/           # TypeScript Definitionen
-│   ├── form/            # Form Utilities
-│   ├── export/          # Daten-Export
-│   ├── formState.ts     # Form State Management
-│   └── sightingSchema.ts # Yup Validation Schema
-└── routes/
-    ├── api/             # Backend API Endpoints
-    ├── map/             # Karten-Visualisierung
-    ├── sichtungen/      # Sichtungs-Management
-    └── components/      # Route-spezifische Komponenten
-        ├── steps/       # Form Step Components
-        └── conditional/ # Conditional Form Components
+│   ├── components/          # Wiederverwendbare UI-Komponenten
+│   │   └── map/             # Karten-Komponenten (OLMap.svelte etc.)
+│   ├── constants/           # Enums, Konstanten
+│   ├── form/validation/     # Yup Validation Schema
+│   ├── legacy-api/          # Legacy API Utilities (Field Mapping, Validation)
+│   ├── map/                 # OpenLayers Controller & Utilities
+│   ├── report/              # Sichtungsmeldung
+│   │   ├── components/      # Form Steps, Sections, Fields
+│   │   └── formOptions/     # Enum/Option Definitionen (16 Dateien)
+│   ├── server/
+│   │   ├── auth/            # JWT/Auth0 Authentication
+│   │   ├── db/              # Schema, Repository Layer
+│   │   ├── export/          # CSV, JSON, KML, XML Export
+│   │   ├── geo/             # Baltic Sea Validation
+│   │   ├── middleware/       # Security Headers, Rate Limit, Maintenance
+│   │   ├── services/        # Email, Weather Services
+│   │   └── storage/         # File Storage (Local, Vercel Blob)
+│   ├── storage/             # Browser Storage (GDPR-aware)
+│   └── types/               # TypeScript Definitionen
+├── routes/
+│   ├── admin/               # Admin-Interface
+│   ├── api/                 # Backend API Endpoints
+│   ├── map/                 # Karten-Visualisierung
+│   ├── rest_sichtungen/     # Legacy REST API
+│   └── sichtungen/          # Legacy Sichtungs-API
+└── hooks.server.ts          # Middleware Chain (sequence)
+e2e/                         # E2E Tests (Root-Level)
 ```
 
 ---
@@ -47,12 +58,14 @@ src/
 ## Clean Code Prinzipien
 
 ### SOLID Grundlagen
+
 - **DRY**: Wiederverwendbare Logik in Utility-Funktionen extrahieren
 - **Single Responsibility**: Eine Funktion = ein Zweck
 - **KISS**: Einfache Lösungen bevorzugen
 - **YAGNI**: Keine Funktionen "auf Vorrat"
 
 ### TypeScript Standards
+
 - **Keine `any` Typen** - immer typisieren
 - **Explizite Return Types** für Funktionen
 - **Type Guards** für Runtime-Sicherheit
@@ -60,12 +73,12 @@ src/
 
 ### Namenskonventionen
 
-| Element | Konvention | Beispiel |
-|---------|------------|----------|
-| Components | PascalCase | `MediaGallery.svelte` |
-| Funktionen | camelCase | `loadSightingFiles` |
-| Konstanten | UPPER_SNAKE_CASE | `MAX_FILE_SIZE` |
-| Types/Interfaces | PascalCase | `SightingFormData` |
+| Element          | Konvention       | Beispiel              |
+| ---------------- | ---------------- | --------------------- |
+| Components       | PascalCase       | `MediaGallery.svelte` |
+| Funktionen       | camelCase        | `loadSightingFiles`   |
+| Konstanten       | UPPER_SNAKE_CASE | `MAX_FILE_SIZE`       |
+| Types/Interfaces | PascalCase       | `SightingFormData`    |
 
 ---
 
@@ -82,8 +95,8 @@ let fullName = $derived.by(() => `${user.firstName} ${user.lastName}`);
 
 // Effects - für Side Effects (impure, no return value)
 $effect(() => {
-    console.log('Count changed:', count);
-    return () => cleanup();
+	console.log('Count changed:', count);
+	return () => cleanup();
 });
 
 // Props
@@ -91,6 +104,7 @@ let { items, onSelect }: Props = $props();
 ```
 
 ### Event Handling
+
 ```svelte
 <!-- Svelte 5 -->
 <button onclick={handleClick}>Klick</button>
@@ -124,12 +138,18 @@ const state = getContext('app-state');
 ```typescript
 // stores/counter.svelte.ts - Reaktiver State außerhalb von Komponenten
 export function createCounter(initial = 0) {
-    let count = $state(initial);
-    return {
-        get value() { return count; },
-        increment() { count++; },
-        decrement() { count--; }
-    };
+	let count = $state(initial);
+	return {
+		get value() {
+			return count;
+		},
+		increment() {
+			count++;
+		},
+		decrement() {
+			count--;
+		}
+	};
 }
 ```
 
@@ -138,20 +158,20 @@ export function createCounter(initial = 0) {
 ```typescript
 // ✅ GUT - Ein Effect, eine Aufgabe
 $effect(() => {
-    localStorage.setItem('count', count.toString());
+	localStorage.setItem('count', count.toString());
 });
 
 // ✅ Browser-only Code absichern
 $effect(() => {
-    if (typeof window === 'undefined') return;
-    // Browser-only logic
+	if (typeof window === 'undefined') return;
+	// Browser-only logic
 });
 
 // ❌ SCHLECHT - Zu viel in einem Effect
 $effect(() => {
-    fetchData();
-    updateDOM();
-    saveToStorage();
+	fetchData();
+	updateDOM();
+	saveToStorage();
 });
 ```
 
@@ -185,19 +205,20 @@ import { formatDate } from '../../../lib/utils/date';
 ## Icons
 
 ### unplugin-icons (Standard)
+
 ```svelte
 <script>
-import MapPin from '~icons/lucide/map-pin';
-import Calendar from '~icons/lucide/calendar';
+	import MapPin from '~icons/lucide/map-pin';
+	import Calendar from '~icons/lucide/calendar';
 </script>
 
 <MapPin width="20" height="20" class="text-primary" />
 ```
 
 ### Weather Icons (CSS-basiert)
+
 ```html
-<i class="wi wi-day-sunny"></i>
-<i class="wi wi-wind towards-n"></i>
+<i class="wi wi-day-sunny"></i> <i class="wi wi-wind towards-n"></i>
 ```
 
 ---
@@ -205,6 +226,7 @@ import Calendar from '~icons/lucide/calendar';
 ## Context7 - IMMER verwenden
 
 Vor der Arbeit mit Libraries context7 MCP Server nutzen für:
+
 - DaisyUI v5 Patterns
 - Svelte 5 Best Practices
 - SvelteKit Routing

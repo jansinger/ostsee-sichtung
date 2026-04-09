@@ -37,9 +37,8 @@ model: inherit
 
 | Datei                  | Zweck                    |
 | ---------------------- | ------------------------ |
-| `tests/unit/`          | Unit Tests               |
-| `tests/e2e/`           | E2E Tests                |
-| `tests/mocks/`         | Shared Mocks             |
+| `src/**/*.test.ts`     | Unit Tests (co-located)  |
+| `e2e/`                 | E2E Tests (Root-Level)   |
 | `vitest.config.ts`     | Vitest Konfiguration     |
 | `playwright.config.ts` | Playwright Konfiguration |
 
@@ -115,11 +114,11 @@ Siehe `.claude/rules/testing.md` für vollständige Mocking-Patterns (Drizzle DB
 ### Schritt 2: Test-Datei erstellen
 
 ```bash
-# Unit Test
-tests/unit/lib/utils/[name].test.ts
+# Unit Test (co-located neben Source-Datei)
+src/lib/utils/[name].test.ts
 
-# E2E Test
-tests/e2e/[feature].spec.ts
+# E2E Test (Root-Level e2e/ Verzeichnis)
+e2e/[feature].spec.ts
 ```
 
 ### Schritt 3: Tests implementieren
@@ -163,7 +162,7 @@ npm run test:unit:watch  # Watch Mode
 npm run test:unit
 
 # Spezifischer Test
-npm run test:unit -- tests/unit/lib/utils/date.test.ts
+npm run test:unit -- src/lib/utils/date/defaultYear.test.ts
 
 # Watch Mode
 npm run test:unit:watch

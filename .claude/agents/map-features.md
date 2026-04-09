@@ -35,14 +35,14 @@ model: inherit
 
 ## Relevante Dateien
 
-| Datei                               | Zweck                   |
-| ----------------------------------- | ----------------------- |
-| `src/lib/map/`                      | OpenLayers Komponenten  |
-| `src/lib/map/Map.svelte`            | Haupt-Karten-Komponente |
-| `src/routes/map/`                   | Karten-Seite            |
-| `src/routes/api/sightings/geojson/` | GeoJSON API             |
-| `src/lib/server/db/schema.ts`       | PostGIS Schema          |
-| `src/lib/utils/geo/`                | Geo-Utilities           |
+| Datei                                 | Zweck                   |
+| ------------------------------------- | ----------------------- |
+| `src/lib/map/`                        | OpenLayers Komponenten  |
+| `src/lib/components/map/OLMap.svelte` | Haupt-Karten-Komponente |
+| `src/routes/map/`                     | Karten-Seite            |
+| `src/routes/api/map/sightings/`       | GeoJSON API             |
+| `src/lib/server/db/schema.ts`         | PostGIS Schema          |
+| `src/lib/utils/geo/`                  | Geo-Utilities           |
 
 ---
 

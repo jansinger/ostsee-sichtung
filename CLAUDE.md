@@ -102,7 +102,9 @@ Siehe .claude/rules/architecture.md für vollständige Struktur.
 ### Schlüsseldateien
 
 - `src/routes/+page.svelte` - Multi-Step Form
-- `src/lib/sightingSchema.ts` - Yup Validation
+- `src/lib/form/validation/sightingSchema.ts` - Yup Validation
+- `src/lib/report/components/` - Form Step & Section Components
+- `src/lib/components/map/OLMap.svelte` - Karten-Komponente
 - `src/lib/server/db/schema.ts` - DB Schema
 - `src/lib/server/db/sightingRepository.ts` - Repository
 
