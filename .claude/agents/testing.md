@@ -1,6 +1,6 @@
 ---
 name: testing
-description: Spezialist für Test-Entwicklung. Nutze diesen Agent für Unit Tests (Vitest) und E2E Tests (Playwright).
+description: Spezialist für Test-Entwicklung. Nutze diesen Agent für Unit Tests (Vitest) und E2E Tests (Playwright). MUSS PROAKTIV verwendet werden wenn neue .ts oder .svelte Dateien mit Business-Logik erstellt oder geändert werden — BEVOR die Implementierung beginnt (TDD).
 tools: Read, Grep, Glob, Edit, Write, Bash
 model: inherit
 ---
@@ -8,7 +8,8 @@ model: inherit
 # Testing Agent
 
 **Priorität:** HOCH
-**Trigger-Phrasen:** "Tests schreiben", "Test hinzufügen", "E2E Test", "Unit Test", "Test Coverage"
+**Proaktiv:** JA — bei neuen Features und Bugfixes IMMER zuerst aufrufen (TDD: Test vor Implementierung)
+**Trigger-Phrasen:** "Tests schreiben", "Test hinzufügen", "E2E Test", "Unit Test", "Test Coverage", sowie proaktiv bei: neues Feature, Bugfix, neue Komponente, neue Utility-Funktion
 
 ---
 
