@@ -24,10 +24,18 @@ test.describe('Authentifizierung — Geschützte Routen', () => {
 		// Der User landet entweder auf /api/auth/login oder direkt auf Auth0
 		// In beiden Fällen: nicht mehr auf /admin
 		const url = adminPage.getCurrentUrl();
+		const isAuth0 = (() => {
+			try {
+				const parsed = new URL(url);
+				return parsed.hostname === 'auth0.com' || parsed.hostname.endsWith('.auth0.com');
+			} catch {
+				return false;
+			}
+		})();
 		const isOnLoginFlow =
 			url.includes('/api/auth/login') ||
 			url.includes('/auth/login') ||
-			url.includes('auth0.com') ||
+			isAuth0 ||
 			url.includes('ostsee-tiere.de/u/login'); // Auth0 Custom Domain
 		expect(isOnLoginFlow).toBe(true);
 	});

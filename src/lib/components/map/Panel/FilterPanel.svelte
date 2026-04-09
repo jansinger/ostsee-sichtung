@@ -105,7 +105,7 @@
 						disabled={isApplyingFilter}
 					>
 						{#each years.toReversed() as year (year)}
-							<option value={year} selected={year === defaultYear}>{year}</option>
+							<option value={year} selected={year === selectedYear}>{year}</option>
 						{/each}
 					</select>
 				</div>
@@ -157,7 +157,7 @@
 								id="time-range-start"
 								class="range range-primary range-xs"
 								min="0"
-								max={daysInYear}
+								max={daysInYear - 1}
 								value="0"
 							/>
 							<div class="mt-1">
@@ -177,8 +177,8 @@
 								id="time-range-end"
 								class="range range-primary range-xs"
 								min="0"
-								max={daysInYear}
-								value={daysInYear}
+								max={daysInYear - 1}
+								value={daysInYear - 1}
 							/>
 							<div class="mt-1">
 								<div

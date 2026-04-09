@@ -34,9 +34,7 @@ export default defineConfig({
 				'src/lib/utils/client/**',
 				'src/lib/utils/media/**',
 				'src/lib/utils/upload/**',
-				'src/lib/utils/uploadUtils.ts',
-				// Server infrastructure — Svelte context wiring, no testable logic
-				'src/lib/report/formContext.ts'
+				'src/lib/utils/uploadUtils.ts'
 			],
 			thresholds: {
 				statements: 70,

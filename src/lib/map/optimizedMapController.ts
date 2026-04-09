@@ -532,6 +532,9 @@ export class SichtungenMap {
 				lower: yearStart,
 				upper: yearEnd
 			};
+			// Redraw und Zeitraum-Anzeige aktualisieren nachdem timeFilter gesetzt wurde
+			this.reportsLayer.changed();
+			this.updateTimeRange();
 		} catch (error) {
 			console.error('Error loading sightings:', error);
 			throw error;
