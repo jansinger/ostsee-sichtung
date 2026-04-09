@@ -18,6 +18,7 @@ Anleitungen für Claude Code bei der Arbeit mit diesem Repository.
 **Ostsee-Tiere** ist eine SvelteKit 5 Anwendung zur Erfassung von Meeressäuger-Sichtungen in der Ostsee. Bürger und Forscher können Wal-, Robben- und andere Meerestier-Sichtungen melden.
 
 Kernfunktionen:
+
 - Multi-Step Formular für Sichtungsmeldungen
 - Interaktive Kartenvisualisierung mit OpenLayers
 - PostGIS für geografische Datenverarbeitung
@@ -30,6 +31,7 @@ Kernfunktionen:
 ### Context7 MCP Server - IMMER verwenden
 
 Vor der Arbeit mit externen Libraries IMMER context7 MCP Server für aktuelle Dokumentation nutzen:
+
 - DaisyUI v5, Svelte 5, SvelteKit, Drizzle ORM, OpenLayers
 
 ### Svelte 5 Runes - PFLICHT
@@ -90,9 +92,11 @@ npm run test:quick   # Schnell-Test
 ## Architektur
 
 ### Tech Stack
+
 SvelteKit 5 + TypeScript, PostgreSQL/PostGIS, Drizzle ORM, TailwindCSS/DaisyUI, OpenLayers, svelte-forms-lib + Yup. Details: .claude/rules/architecture.md
 
 ### Projektstruktur
+
 Siehe .claude/rules/architecture.md für vollständige Struktur.
 
 ### Schlüsseldateien
@@ -110,35 +114,37 @@ Siehe .claude/rules/architecture.md für vollständige Struktur.
 
 Detaillierte Regeln in `.claude/rules/`:
 
-| Datei | Inhalt |
-|-------|--------|
+| Datei                         | Inhalt                                  |
+| ----------------------------- | --------------------------------------- |
 | .claude/rules/architecture.md | Architektur, Clean Code (immer geladen) |
-| .claude/rules/testing.md | Vitest, Playwright (immer geladen) |
-| .claude/rules/database.md | Drizzle, PostGIS (immer geladen) |
-| .claude/rules/forms.md | Multi-Step Forms (bei Form-Dateien) |
-| .claude/rules/maps.md | OpenLayers (bei Map-Dateien) |
-| .claude/rules/security.md | Auth, GDPR (bei Auth/Security-Dateien) |
-| .claude/rules/api.md | REST API (bei API-Dateien) |
-| .claude/rules/docker.md | Docker Deployment (bei Docker-Dateien) |
+| .claude/rules/testing.md      | Vitest, Playwright (immer geladen)      |
+| .claude/rules/database.md     | Drizzle, PostGIS (immer geladen)        |
+| .claude/rules/forms.md        | Multi-Step Forms (bei Form-Dateien)     |
+| .claude/rules/maps.md         | OpenLayers (bei Map-Dateien)            |
+| .claude/rules/security.md     | Auth, GDPR (bei Auth/Security-Dateien)  |
+| .claude/rules/api.md          | REST API (bei API-Dateien)              |
+| .claude/rules/docker.md       | Docker Deployment (bei Docker-Dateien)  |
 
 ### Agents (Aufgabenspezifisch)
 
 Spezialisierte Agents in `.claude/agents/`:
 
-| Agent | Trigger |
-|-------|---------|
-| .claude/agents/form-development.md | "Formular erstellen" |
-| .claude/agents/testing.md | "Tests schreiben" |
-| .claude/agents/map-features.md | "Karte", "Map" |
+| Agent                                 | Trigger                                |
+| ------------------------------------- | -------------------------------------- |
+| .claude/agents/form-development.md    | "Formular erstellen"                   |
+| .claude/agents/testing.md             | "Tests schreiben"                      |
+| .claude/agents/map-features.md        | "Karte", "Map"                         |
+| .claude/agents/architecture-review.md | "Architecture Review", "Anti-Patterns" |
 
 ### Commands (Workflows)
 
-| Command | Beschreibung |
-|---------|--------------|
-| `/local-dev` | Entwicklungsumgebung starten |
-| `/prepare-pr` | Pull Request vorbereiten |
-| `/deploy` | Docker Deployment Referenz |
-| `/db-migrate` | Datenbank-Migration Referenz |
+| Command       | Beschreibung                               |
+| ------------- | ------------------------------------------ |
+| `/local-dev`  | Entwicklungsumgebung starten               |
+| `/prepare-pr` | Pull Request vorbereiten (inkl. /simplify) |
+| `/review`     | Code-Review mit Anti-Pattern Checks        |
+| `/deploy`     | Docker Deployment Referenz                 |
+| `/db-migrate` | Datenbank-Migration Referenz               |
 
 ---
 
@@ -166,10 +172,10 @@ Spezialisierte Agents in `.claude/agents/`:
 
 **Entwicklung:** Nutze lokale DB aus `.env`
 
-| Option | Port | URL |
-|--------|------|-----|
+| Option            | Port | URL                                                 |
+| ----------------- | ---- | --------------------------------------------------- |
 | Native PostgreSQL | 5432 | `postgresql://ostsee_app:...@localhost:5432/ostsee` |
-| Docker PostgreSQL | 5433 | `postgresql://root:...@localhost:5433/local` |
+| Docker PostgreSQL | 5433 | `postgresql://root:...@localhost:5433/local`        |
 
 **Lazy Initialization:** DB-Verbindung via Proxy in `src/lib/server/db/index.ts`
 
@@ -184,6 +190,7 @@ Nutzt **release-please** für automatisierte Releases:
 3. Bei Merge: Tag, GitHub Release, Docker Build
 
 **Wichtig:**
+
 - KEINE manuellen Releases/Tags
 - NICHT auf `release` Branch pushen
 
@@ -192,12 +199,14 @@ Nutzt **release-please** für automatisierte Releases:
 ## Icon Strategy
 
 **unplugin-icons** für UI-Icons (lucide):
+
 ```svelte
 import MapPin from '~icons/lucide/map-pin';
 <MapPin width="20" height="20" />
 ```
 
 **Weather Icons** (CSS-basiert) für Wetter:
+
 ```html
 <i class="wi wi-day-sunny"></i>
 ```
@@ -206,14 +215,14 @@ import MapPin from '~icons/lucide/map-pin';
 
 ## Weitere Dokumentation
 
-| Dokument | Inhalt |
-|----------|--------|
-| docs/DESIGN_GUIDE.md | UX/Design-Richtlinien |
-| @docs/LEGACY_API_SPECIFICATION.md | Legacy API (KRITISCH) |
-| docs/PRODUCTION_DEPLOYMENT.md | Production Deployment (Schnellanleitung) |
-| docs/DOCKER_DEPLOYMENT.md | Docker Setup (Vollständige Referenz) |
-| docs/ENVIRONMENT.md | Umgebungsvariablen |
-| docs/DATABASE_MIGRATION.md | DB Migrationen |
+| Dokument                          | Inhalt                                   |
+| --------------------------------- | ---------------------------------------- |
+| docs/DESIGN_GUIDE.md              | UX/Design-Richtlinien                    |
+| @docs/LEGACY_API_SPECIFICATION.md | Legacy API (KRITISCH)                    |
+| docs/PRODUCTION_DEPLOYMENT.md     | Production Deployment (Schnellanleitung) |
+| docs/DOCKER_DEPLOYMENT.md         | Docker Setup (Vollständige Referenz)     |
+| docs/ENVIRONMENT.md               | Umgebungsvariablen                       |
+| docs/DATABASE_MIGRATION.md        | DB Migrationen                           |
 
 ---
 

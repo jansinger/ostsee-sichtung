@@ -59,14 +59,18 @@ Enthält:
 
 **Bei Fehler:** Stoppen und Fehler beheben lassen.
 
-### Schritt 3: Git Status prüfen
+### Schritt 3: Code-Qualität prüfen
+
+Führe `/simplify` auf den geänderten Dateien aus, um Code-Qualität, Wiederverwendung und Effizienz zu prüfen. Behebe gefundene Probleme bevor du fortfährst.
+
+### Schritt 4: Git Status prüfen
 
 ```bash
 git status
 git diff --stat
 ```
 
-### Schritt 4: Änderungen analysieren
+### Schritt 5: Änderungen analysieren
 
 Analysiere welche Dateien geändert wurden:
 - Neue Features?
@@ -74,7 +78,7 @@ Analysiere welche Dateien geändert wurden:
 - Refactoring?
 - Dokumentation?
 
-### Schritt 5: Commit erstellen
+### Schritt 6: Commit erstellen
 
 Nutze Conventional Commits Format:
 
@@ -103,7 +107,7 @@ EOF
 **Scopes:**
 `deps`, `api`, `ui`, `db`, `auth`, `export`, `admin`, `report`, `map`, `config`, `build`, `ci`, `docs`, `test`, `types`, `style`, `perf`, `security`, `a11y`, `release`, `media`
 
-### Schritt 6: Push und PR erstellen
+### Schritt 7: Push und PR erstellen
 
 ```bash
 # Push (mit Upstream-Tracking)

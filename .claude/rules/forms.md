@@ -110,11 +110,11 @@ const { form, errors, touched, handleSubmit, validateField } = createForm({
 });
 </script>
 
-<form on:submit={handleSubmit}>
+<form onsubmit={handleSubmit}>
     <input
         name="species"
         bind:value={$form.species}
-        on:blur={() => validateField('species')}
+        onblur={() => validateField('species')}
         class="input input-bordered"
         class:input-error={$errors.species && $touched.species}
     />
