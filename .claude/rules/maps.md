@@ -202,25 +202,23 @@ export async function GET() {
 }
 ```
 
-### Nearby Query
+### Nearby Query (Pattern)
 
 ```typescript
-export async function findNearby(lat: number, lng: number, radiusKm: number) {
-	return await db.execute(sql`
-        SELECT *,
-            ST_Distance(
-                location::geography,
-                ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
-            ) / 1000 as distance_km
-        FROM sichtungen
-        WHERE ST_DWithin(
-            location::geography,
-            ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
-            ${radiusKm * 1000}
-        )
-        ORDER BY distance_km
-    `);
-}
+// Beispiel-Pattern für Umkreissuche (nicht als fertige Funktion im Projekt vorhanden)
+const nearby = await db.execute(sql`
+    SELECT *, ST_Distance(
+        location::geography,
+        ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+    ) / 1000 as distance_km
+    FROM sichtungen
+    WHERE ST_DWithin(
+        location::geography,
+        ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
+        ${radiusMeters}
+    )
+    ORDER BY distance_km
+`);
 ```
 
 ---
