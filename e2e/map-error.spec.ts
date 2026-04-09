@@ -1,77 +1,96 @@
 import { expect, test } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
 
-/**
- * The map controller (optimizedMapController.ts) catches API errors internally
- * and logs them — they do NOT propagate as unhandled rejections.
- * The error UI in SightingsMapView is triggered by window.unhandledrejection,
- * so we dispatch that event manually to test the UI behaviour.
- */
-async function triggerErrorUI(page: import('@playwright/test').Page) {
-	await page.evaluate(() => {
-		const err = new Error('Simulierter Kartenfehler für E2E-Test');
-		window.dispatchEvent(
-			new PromiseRejectionEvent('unhandledrejection', {
-				promise: Promise.reject(err),
-				reason: err,
-				cancelable: true,
-				bubbles: false
-			})
-		);
-	});
-}
-
 test.describe('Map Error State', () => {
-	test('Fehlermeldung erscheint nach unbehandeltem Fehler', async ({ page }) => {
+	test('API-Fehler beim initialen Laden zeigt Fehlermeldung', async ({ page }) => {
+		await page.route('**/api/map/sightings**', (route) => route.abort());
+
+		await page.goto('/map');
+
 		const mapPage = new MapPage(page);
-		await mapPage.goto();
-		await mapPage.waitForLoad();
-
-		await triggerErrorUI(page);
-
-		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 3000 });
+		const errorAlert = mapPage.getErrorAlert();
+		await expect(errorAlert).toBeVisible({ timeout: 15000 });
+		await expect(errorAlert).toContainText('Fehler');
 	});
 
 	test('Fehlermeldung enthält hilfreichen Text', async ({ page }) => {
+		await page.route('**/api/map/sightings**', (route) => route.abort());
+
+		await page.goto('/map');
+
 		const mapPage = new MapPage(page);
-		await mapPage.goto();
-		await mapPage.waitForLoad();
-
-		await triggerErrorUI(page);
-
-		const alert = mapPage.getErrorAlert();
-		await expect(alert).toBeVisible({ timeout: 3000 });
-		await expect(alert).toContainText('Fehler');
-		await expect(alert).toContainText('Kartendaten');
+		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 15000 });
+		await expect(mapPage.getErrorAlert()).toContainText('Kartendaten');
 	});
 
 	test('Fehlermeldung kann über Schließen-Button geschlossen werden', async ({ page }) => {
-		const mapPage = new MapPage(page);
-		await mapPage.goto();
-		await mapPage.waitForLoad();
+		await page.route('**/api/map/sightings**', (route) => route.abort());
 
-		await triggerErrorUI(page);
-		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 3000 });
+		await page.goto('/map');
+
+		const mapPage = new MapPage(page);
+		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 15000 });
 
 		await mapPage.getDismissErrorButton().click();
 		await expect(mapPage.getErrorAlert()).toBeHidden();
 	});
 
-	test('Zweiter Fehler überschreibt erste Fehlermeldung nicht (Dismiss zuerst)', async ({
-		page
-	}) => {
+	test('API-Fehler beim Jahreswechsel zeigt Fehlermeldung', async ({ page }) => {
 		const mapPage = new MapPage(page);
 		await mapPage.goto();
 		await mapPage.waitForLoad();
 
-		await triggerErrorUI(page);
-		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 3000 });
+		// Set up failure only for future requests (initial load already succeeded)
+		await page.route('**/api/map/sightings**', (route) => route.abort());
 
-		// Dismiss and trigger again — error should reappear
-		await mapPage.getDismissErrorButton().evaluate((btn) => (btn as HTMLButtonElement).click());
+		await mapPage.openFilter();
+
+		const yearSelect = mapPage.getYearSelect();
+		const options = yearSelect.locator('option');
+		const count = await options.count();
+
+		if (count > 1) {
+			const targetYear = await options.nth(1).getAttribute('value');
+			if (targetYear) {
+				await mapPage.selectYear(targetYear);
+				await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 10000 });
+			} else {
+				test.skip();
+			}
+		} else {
+			test.skip();
+		}
+	});
+
+	test('Fehlermeldung erscheint erneut nach erneutem Fehler', async ({ page }) => {
+		await page.route('**/api/map/sightings**', (route) => route.abort());
+
+		await page.goto('/map');
+
+		const mapPage = new MapPage(page);
+		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 15000 });
+
+		await mapPage.getDismissErrorButton().click();
 		await expect(mapPage.getErrorAlert()).toBeHidden();
 
-		await triggerErrorUI(page);
+		// Remove route interception and set up a new one to trigger a second error
+		await page.unroute('**/api/map/sightings**');
+		await page.route('**/api/map/sightings**', (route) => route.abort());
+
+		// Trigger a new API call via keyboard shortcut Z (zoom-to-all)
+		// or by simulating an unhandled rejection
+		await page.evaluate(() => {
+			const err = new Error('Zweiter Fehler');
+			window.dispatchEvent(
+				new PromiseRejectionEvent('unhandledrejection', {
+					promise: Promise.reject(err),
+					reason: err,
+					cancelable: true,
+					bubbles: false
+				})
+			);
+		});
+
 		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 3000 });
 	});
 });
