@@ -12,7 +12,7 @@ vi.mock('$lib/utils', () => ({
 	validateFiles: vi.fn()
 }));
 
-import { createToast } from '$lib/stores/toastState';
+import { createToast } from '$lib/stores/toastState.svelte';
 import { validateFiles } from '$lib/utils';
 
 const mockConfig: ValidationPreset = {

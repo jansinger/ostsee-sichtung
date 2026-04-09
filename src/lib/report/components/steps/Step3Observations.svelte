@@ -12,7 +12,7 @@
 	import { scrollToElement } from '$lib/utils/fieldNavigation';
 
 	import Icon from '$lib/components/Icon.svelte';
-	import OptionalSightingDetails from '../sections/OptionalSightingDetails.svelte';
+	import OptionalSightingDetails from '$lib/report/components/sections/OptionalSightingDetails.svelte';
 
 	const logger = createLogger('report:Step3Observations');
 	const formContext = getFormContext();

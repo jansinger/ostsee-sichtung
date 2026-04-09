@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getFormContext } from '$lib/report/formContext';
 	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
-	import { createToast } from '$lib/stores/toastState';
+	import { createToast } from '$lib/stores/toastState.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 
 	let {

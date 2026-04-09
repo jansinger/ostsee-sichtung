@@ -3,7 +3,7 @@
 	import { getFormContext } from '$lib/report/formContext';
 	import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
 	import { slide } from 'svelte/transition';
-	import FormField from '../form/fields/FormField.svelte';
+	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 
 	const { form } = getFormContext();
 </script>

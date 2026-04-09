@@ -1,5 +1,5 @@
 import { createLogger } from '$lib/logger';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db, getDb, isDatabaseAvailable } from './index';
 import { appConfig } from './schema';
 
@@ -203,6 +203,85 @@ export class ConfigRepository {
 			logger.info({ key: item.key, userId }, 'Configuration upserted');
 		} catch (error) {
 			logger.error({ error, item }, 'Failed to upsert configuration');
+			throw error;
+		}
+	}
+
+	/**
+	 * Bulk upsert multiple configurations in a single query.
+	 * Uses ON CONFLICT DO UPDATE to insert new and update existing entries.
+	 */
+	static async upsertMany(items: ConfigItem[], userId?: string): Promise<void> {
+		if (items.length === 0) return;
+		const database = getDb();
+		try {
+			const now = new Date();
+			await database
+				.insert(appConfig)
+				.values(
+					items.map((item) => ({
+						key: item.key,
+						value: JSON.parse(JSON.stringify(item.value)) as unknown,
+						description: item.description,
+						category: item.category,
+						updatedAt: now,
+						updatedBy: userId
+					}))
+				)
+				.onConflictDoUpdate({
+					target: appConfig.key,
+					set: {
+						value: sql`excluded.value`,
+						description: sql`excluded.description`,
+						category: sql`excluded.category`,
+						updatedAt: sql`excluded.updated_at`,
+						updatedBy: sql`excluded.updated_by`
+					}
+				});
+
+			// Clear affected cache entries
+			for (const item of items) {
+				configCache.delete(item.key);
+			}
+
+			logger.info({ count: items.length, userId }, 'Bulk upserted configurations');
+		} catch (error) {
+			logger.error({ error, count: items.length }, 'Failed to bulk upsert configurations');
+			throw error;
+		}
+	}
+
+	/**
+	 * Bulk insert configurations, skipping those that already exist.
+	 * Uses ON CONFLICT DO NOTHING — existing entries are not modified.
+	 */
+	static async insertManyIfAbsent(items: ConfigItem[], userId?: string): Promise<number> {
+		if (items.length === 0) return 0;
+		const database = getDb();
+		try {
+			const now = new Date();
+			const result = await database
+				.insert(appConfig)
+				.values(
+					items.map((item) => ({
+						key: item.key,
+						value: JSON.parse(JSON.stringify(item.value)) as unknown,
+						description: item.description,
+						category: item.category,
+						updatedAt: now,
+						updatedBy: userId
+					}))
+				)
+				.onConflictDoNothing()
+				.returning({ key: appConfig.key });
+
+			logger.info(
+				{ inserted: result.length, skipped: items.length - result.length, userId },
+				'Bulk inserted configurations (skipped existing)'
+			);
+			return result.length;
+		} catch (error) {
+			logger.error({ error, count: items.length }, 'Failed to bulk insert configurations');
 			throw error;
 		}
 	}

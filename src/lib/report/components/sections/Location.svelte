@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import { getFormContext } from '$lib/report/formContext';
-	import FormField from '../form/fields/FormField.svelte';
-	import LocationInput from '../form/LocationInput.svelte';
-	import VerifyLocation from '../form/VerifyLocation.svelte';
+	import FormField from '$lib/report/components/form/fields/FormField.svelte';
+	import LocationInput from '$lib/report/components/form/LocationInput.svelte';
+	import VerifyLocation from '$lib/report/components/form/VerifyLocation.svelte';
 
 	const { form, handleChange } = getFormContext();
 

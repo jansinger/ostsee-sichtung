@@ -57,7 +57,14 @@ export default ts.config(
 				parser: ts.parser,
 				svelteConfig
 			}
-		},
+		}
+	},
+	{
+		// .svelte.ts modules are processed by the Svelte compiler but parsed as TypeScript by ESLint
+		files: ['**/*.svelte.ts', '**/*.svelte.js'],
+		languageOptions: {
+			parser: ts.parser
+		}
 	},
 	{
 		files: ['**/*.test.ts', '**/*.test.js', '**/*.spec.ts', '**/*.spec.js'],

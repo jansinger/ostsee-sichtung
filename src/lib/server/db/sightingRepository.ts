@@ -26,9 +26,9 @@ import type { NewSighting, UpdateSighting } from '$lib/types/sighting';
 import type { SightingFileInsert } from '$lib/types/sightingFile';
 import { isImageFile } from '$lib/utils';
 import { count, eq, isNotNull, not, sql } from 'drizzle-orm';
-import { readImageExifData } from '../media/exifUtils';
-import { mapFormToSighting } from './mapFormToSighting';
-import { setSightingIdForReferenceId } from './sightingFilesRepository';
+import { readImageExifData } from '$lib/server/media/exifUtils';
+import { mapFormToSighting } from '$lib/server/db/mapFormToSighting';
+import { setSightingIdForReferenceId } from '$lib/server/db/sightingFilesRepository';
 
 // Logger für Repository-Operationen
 const logger = createLogger('db:sightingRepository');
@@ -66,12 +66,12 @@ export const saveSighting = async (
 		sightingData.weatherDataType = weatherData.data_type;
 
 		logger.info(
-			{ 
+			{
 				sightingData: { ...sightingData, weatherData: undefined }, // Don't log full weather data
 				hasWeatherData: true,
 				weatherProvider: weatherData.provider,
 				weatherDataType: weatherData.data_type
-			}, 
+			},
 			'Speichere neue Sichtung mit Wetterdaten'
 		);
 	} else {
@@ -532,11 +532,7 @@ export const getSightingWithWeatherData = async (
 	try {
 		logger.info({ sightingId }, 'Lade Sichtung mit Wetterdaten');
 
-		const result = await db
-			.select()
-			.from(sightings)
-			.where(eq(sightings.id, sightingId))
-			.limit(1);
+		const result = await db.select().from(sightings).where(eq(sightings.id, sightingId)).limit(1);
 
 		if (result.length === 0) {
 			logger.warn({ sightingId }, 'Sichtung nicht gefunden');
@@ -546,10 +542,7 @@ export const getSightingWithWeatherData = async (
 		const sighting = result[0]!;
 		const weatherData = sighting.weatherData as StoredWeatherData | null;
 
-		logger.info(
-			{ sightingId, hasWeatherData: !!weatherData },
-			'Sichtung mit Wetterdaten geladen'
-		);
+		logger.info({ sightingId, hasWeatherData: !!weatherData }, 'Sichtung mit Wetterdaten geladen');
 
 		return {
 			sighting,
@@ -592,10 +585,7 @@ export const updateSightingWeatherData = async (
 
 		const success = result.length > 0;
 
-		logger.info(
-			{ sightingId, success },
-			'Wetterdaten-Update abgeschlossen'
-		);
+		logger.info({ sightingId, success }, 'Wetterdaten-Update abgeschlossen');
 
 		return success;
 	} catch (error) {
@@ -608,7 +598,7 @@ export const updateSightingWeatherData = async (
  * Prüft und lädt cached Wetterdaten für eine Position/Datum-Kombination (Issue #110)
  *
  * @param latitude Breitengrad der Sichtung
- * @param longitude Längengrad der Sichtung  
+ * @param longitude Längengrad der Sichtung
  * @param date Datum der Sichtung (YYYY-MM-DD)
  * @returns Cached Wetterdaten oder null
  */

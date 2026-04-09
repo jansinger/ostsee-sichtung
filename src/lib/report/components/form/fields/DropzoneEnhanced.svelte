@@ -19,7 +19,7 @@
 	import OLMap from '$lib/components/map/OLMap.svelte';
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
-	import { createToast } from '$lib/stores/toastState';
+	import { createToast } from '$lib/stores/toastState.svelte';
 	import type { UploadedFileInfo, ValidationPreset } from '$lib/types';
 	import { deleteFileDirect } from '$lib/utils';
 	import { formatFileSize } from '$lib/utils/file/fileSize';

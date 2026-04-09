@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
-	import FormField from '../form/fields/FormField.svelte';
+	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 </script>
 
 <!-- Administrative Section -->

@@ -19,7 +19,7 @@ import { htmlToText as htmlToPlainText } from 'html-to-text';
 import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { ConfigRepository } from '../db/configRepository';
+import { ConfigRepository } from '$lib/server/db/configRepository';
 
 // Dynamic environment variables for Docker runtime
 const NODE_ENV = env.NODE_ENV ?? 'development';
@@ -228,7 +228,6 @@ export class EmailService {
 		}
 	}
 
-
 	/**
 	 * Consolidated email sending logic
 	 */
@@ -304,7 +303,6 @@ export class EmailService {
 		}
 	}
 
-
 	/**
 	 * Send simple test email to verify configuration
 	 */
@@ -363,9 +361,9 @@ export class EmailService {
 	 */
 	private static async getEmailConfig(): Promise<EmailConfig> {
 		const now = Date.now();
-		
+
 		// Return cached config if still valid
-		if (this.configCache && (now - this.configCache.timestamp) < this.CONFIG_CACHE_TTL) {
+		if (this.configCache && now - this.configCache.timestamp < this.CONFIG_CACHE_TTL) {
 			return this.configCache.config;
 		}
 
@@ -422,7 +420,7 @@ export class EmailService {
 		let hash = 0;
 		for (let i = 0; i < str.length; i++) {
 			const char = str.charCodeAt(i);
-			hash = ((hash << 5) - hash) + char;
+			hash = (hash << 5) - hash + char;
 			hash = hash & hash; // Convert to 32-bit integer
 		}
 		return hash.toString(36);
