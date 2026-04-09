@@ -14,8 +14,8 @@
 # ============================================
 # Stage 1: Dependencies
 # ============================================
-# Pin to specific Node.js LTS version for reproducible builds
-# Update periodically: https://nodejs.org/en/download/
+# Floating Node.js 24 Alpine tag — tracks latest patch release.
+# Review periodically: https://nodejs.org/en/download/
 FROM node:24-alpine AS deps
 
 WORKDIR /app
