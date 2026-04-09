@@ -94,7 +94,7 @@ describe('csvExport', () => {
 		it('should generate CSV data for single sighting', () => {
 			const result = generateCsvData([mockSighting]);
 			const lines = result.split('\n');
-			
+
 			expect(lines).toHaveLength(3); // Header + 1 data row + empty line
 			expect(lines[1]).toContain('"test-123"');
 			expect(lines[1]).toContain('"15.03.2024"');
@@ -106,7 +106,7 @@ describe('csvExport', () => {
 			const result = generateCsvData([mockSighting]);
 			const lines = result.split('\n');
 			const dataRow = lines[1];
-			
+
 			expect(dataRow).toContain('"15.03.2024"'); // DD.MM.YYYY format
 			// Time will vary based on timezone, but should be in HH:MM format
 			expect(dataRow).toMatch(/"[0-2][0-9]:[0-5][0-9]"/);
@@ -115,10 +115,10 @@ describe('csvExport', () => {
 		it('should handle name consent correctly', () => {
 			const sightingWithNameConsent = { ...mockSighting, nameConsent: true };
 			const sightingWithoutNameConsent = { ...mockSighting, nameConsent: false };
-			
+
 			const resultWith = generateCsvData([sightingWithNameConsent]);
 			const resultWithout = generateCsvData([sightingWithoutNameConsent]);
-			
+
 			expect(resultWith).toContain('"John Doe"');
 			expect(resultWithout).toContain('""'); // Empty string for name
 		});
@@ -126,10 +126,10 @@ describe('csvExport', () => {
 		it('should handle ship name consent correctly', () => {
 			const sightingWithShipConsent = { ...mockSighting, shipNameConsent: true };
 			const sightingWithoutShipConsent = { ...mockSighting, shipNameConsent: false };
-			
+
 			const resultWith = generateCsvData([sightingWithShipConsent]);
 			const resultWithout = generateCsvData([sightingWithoutShipConsent]);
-			
+
 			expect(resultWith).toContain('"Test Ship"');
 			expect(resultWithout).toContain('""'); // Empty string for ship name
 		});
@@ -142,9 +142,9 @@ describe('csvExport', () => {
 				deadSex: 'Male',
 				deadSize: '2.5m'
 			};
-			
+
 			const result = generateCsvData([deadSighting]);
-			
+
 			expect(result).toContain('"Ja"'); // isDead = true
 			expect(result).toContain('"Fresh"');
 			expect(result).toContain('"Male"');
@@ -160,11 +160,11 @@ describe('csvExport', () => {
 				notes: null,
 				phone: null
 			};
-			
+
 			const result = generateCsvData([minimalSighting]);
 			const lines = result.split('\n');
 			const dataRow = lines[1];
-			
+
 			// Should contain empty strings for null values
 			expect(dataRow.split(';')).toContain('""');
 		});
@@ -176,10 +176,10 @@ describe('csvExport', () => {
 				species: 1,
 				totalCount: 5
 			};
-			
+
 			const result = generateCsvData([mockSighting, sighting2]);
 			const lines = result.split('\n');
-			
+
 			expect(lines).toHaveLength(4); // Header + 2 data rows + empty line
 			expect(lines[1]).toContain('"test-123"');
 			expect(lines[2]).toContain('"test-456"');
@@ -190,10 +190,10 @@ describe('csvExport', () => {
 		it('should handle media upload flag', () => {
 			const sightingWithMedia = { ...mockSighting, mediaUpload: true };
 			const sightingWithoutMedia = { ...mockSighting, mediaUpload: false };
-			
+
 			const resultWith = generateCsvData([sightingWithMedia]);
 			const resultWithout = generateCsvData([sightingWithoutMedia]);
-			
+
 			expect(resultWith).toContain('"Ja"'); // Has media
 			expect(resultWithout).toContain('"Nein"'); // No media
 		});
@@ -204,9 +204,9 @@ describe('csvExport', () => {
 				notes: 'Notes with "quotes" inside',
 				waterway: 'Area "North"'
 			};
-			
+
 			const result = generateCsvData([sightingWithQuotes]);
-			
+
 			// Values should be wrapped in quotes
 			expect(result).toContain('"Notes with "quotes" inside"');
 			expect(result).toContain('"Area "North""');
@@ -215,17 +215,17 @@ describe('csvExport', () => {
 		it('should format verified status correctly', () => {
 			const verifiedSighting = { ...mockSighting, verified: true };
 			const unverifiedSighting = { ...mockSighting, verified: false };
-			
+
 			const resultVerified = generateCsvData([verifiedSighting]);
 			const resultUnverified = generateCsvData([unverifiedSighting]);
-			
+
 			expect(resultVerified).toContain('"Ja"'); // verified
 			expect(resultUnverified).toContain('"Nein"'); // not verified
 		});
 
 		it('should format created date correctly', () => {
 			const result = generateCsvData([mockSighting]);
-			
+
 			// Should contain German locale formatted date (allowing for different formats)
 			expect(result).toMatch(/"\d{1,2}\.\d{1,2}\.\d{4}, \d{2}:\d{2}:\d{2}"/);
 		});
@@ -233,7 +233,7 @@ describe('csvExport', () => {
 		it('should use semicolon as delimiter', () => {
 			const result = generateCsvData([mockSighting]);
 			const lines = result.split('\n');
-			
+
 			// Header should use semicolons
 			expect(lines[0].split(';').length).toBeGreaterThan(10);
 			// Data row should use semicolons
@@ -242,10 +242,42 @@ describe('csvExport', () => {
 
 		it('should call form option label functions', () => {
 			generateCsvData([mockSighting]);
-			
+
 			// The functions are mocked at the top level, just verify they work
 			expect(generateCsvData([mockSighting])).toContain('species-0');
 			expect(generateCsvData([mockSighting])).toContain('distance-2');
+		});
+
+		it('should have equal column count in header and data rows', () => {
+			const result = generateCsvData([mockSighting]);
+			const lines = result.trim().split('\n');
+			const headerColumns = lines[0].split(';');
+			const dataColumns = lines[1].split(';');
+
+			expect(dataColumns.length).toBe(headerColumns.length);
+		});
+
+		it('should place verified status under the Verifiziert header', () => {
+			const verifiedSighting = { ...mockSighting, verified: true };
+			const result = generateCsvData([verifiedSighting]);
+			const lines = result.trim().split('\n');
+			const headers = lines[0].split(';');
+			const dataRow = lines[1].split(';');
+
+			const idx = headers.indexOf('Verifiziert');
+			expect(idx).toBeGreaterThan(-1);
+			expect(dataRow[idx]).toBe('"Ja"');
+		});
+
+		it('should place created date under Erstellt am header', () => {
+			const result = generateCsvData([mockSighting]);
+			const lines = result.trim().split('\n');
+			const headers = lines[0].split(';');
+			const dataRow = lines[1].split(';');
+
+			const idx = headers.indexOf('Erstellt am');
+			expect(idx).toBeGreaterThan(-1);
+			expect(dataRow[idx]).toMatch(/"\d{1,2}\.\d{1,2}\.\d{4}/);
 		});
 	});
 });

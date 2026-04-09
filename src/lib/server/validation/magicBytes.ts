@@ -8,70 +8,80 @@ import { createLogger } from '$lib/logger';
 const logger = createLogger('MagicBytesValidator');
 
 /**
- * Magic byte signatures for common file types
- * Each entry contains the byte signature and offset where it should appear
+ * Magic byte signatures for common file types.
+ *
+ * Structure: outer array = variants (OR logic, any one valid variant accepts the file).
+ *            inner array = required signatures for a single variant (AND logic, all must match).
+ *
+ * Examples:
+ *  - GIF has two variants (GIF87a OR GIF89a), each with one signature.
+ *  - WebP has one variant that requires two signatures (RIFF AND WEBP).
  */
-const MAGIC_BYTES: Record<string, Array<{ bytes: number[]; offset: number }>> = {
+const MAGIC_BYTES: Record<string, Array<Array<{ bytes: number[]; offset: number }>>> = {
 	// Image formats
 	'image/jpeg': [
-		{ bytes: [0xff, 0xd8, 0xff], offset: 0 } // JPEG/JPG
+		[{ bytes: [0xff, 0xd8, 0xff], offset: 0 }] // JPEG/JPG
 	],
 	'image/jpg': [
-		{ bytes: [0xff, 0xd8, 0xff], offset: 0 } // Same as JPEG
+		[{ bytes: [0xff, 0xd8, 0xff], offset: 0 }] // Same as JPEG
 	],
 	'image/png': [
-		{ bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], offset: 0 } // PNG
+		[{ bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], offset: 0 }] // PNG
 	],
 	'image/gif': [
-		{ bytes: [0x47, 0x49, 0x46, 0x38, 0x37, 0x61], offset: 0 }, // GIF87a
-		{ bytes: [0x47, 0x49, 0x46, 0x38, 0x39, 0x61], offset: 0 } // GIF89a
+		[{ bytes: [0x47, 0x49, 0x46, 0x38, 0x37, 0x61], offset: 0 }], // GIF87a
+		[{ bytes: [0x47, 0x49, 0x46, 0x38, 0x39, 0x61], offset: 0 }] // GIF89a
 	],
 	'image/webp': [
-		{ bytes: [0x52, 0x49, 0x46, 0x46], offset: 0 }, // RIFF
-		{ bytes: [0x57, 0x45, 0x42, 0x50], offset: 8 } // WEBP
+		[
+			{ bytes: [0x52, 0x49, 0x46, 0x46], offset: 0 }, // RIFF (required)
+			{ bytes: [0x57, 0x45, 0x42, 0x50], offset: 8 } // WEBP (required)
+		]
 	],
 	'image/bmp': [
-		{ bytes: [0x42, 0x4d], offset: 0 } // BM
+		[{ bytes: [0x42, 0x4d], offset: 0 }] // BM
 	],
 
 	// Video formats
 	'video/mp4': [
-		{ bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 }, // ftyp
-		{ bytes: [0x6d, 0x64, 0x61, 0x74], offset: 4 } // mdat (alternative)
+		[{ bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 }], // ftyp
+		[{ bytes: [0x6d, 0x64, 0x61, 0x74], offset: 4 }] // mdat (alternative)
 	],
 	'video/avi': [
-		{ bytes: [0x52, 0x49, 0x46, 0x46], offset: 0 }, // RIFF
-		{ bytes: [0x41, 0x56, 0x49, 0x20], offset: 8 } // AVI
+		[
+			{ bytes: [0x52, 0x49, 0x46, 0x46], offset: 0 }, // RIFF (required)
+			{ bytes: [0x41, 0x56, 0x49, 0x20], offset: 8 } // AVI  (required)
+		]
 	],
 	'video/mov': [
-		{ bytes: [0x66, 0x74, 0x79, 0x70, 0x71, 0x74], offset: 4 } // ftypqt
+		[{ bytes: [0x66, 0x74, 0x79, 0x70, 0x71, 0x74], offset: 4 }] // ftypqt
 	],
 	'video/quicktime': [
-		{ bytes: [0x66, 0x74, 0x79, 0x70, 0x71, 0x74], offset: 4 } // ftypqt
+		[{ bytes: [0x66, 0x74, 0x79, 0x70, 0x71, 0x74], offset: 4 }] // ftypqt
 	],
 	'video/webm': [
-		{ bytes: [0x1a, 0x45, 0xdf, 0xa3], offset: 0 } // EBML header
+		[{ bytes: [0x1a, 0x45, 0xdf, 0xa3], offset: 0 }] // EBML header
 	],
 	'video/mkv': [
-		{ bytes: [0x1a, 0x45, 0xdf, 0xa3], offset: 0 } // EBML header (same as WebM)
+		[{ bytes: [0x1a, 0x45, 0xdf, 0xa3], offset: 0 }] // EBML header (same as WebM)
 	],
 	'video/x-matroska': [
-		{ bytes: [0x1a, 0x45, 0xdf, 0xa3], offset: 0 } // EBML header
+		[{ bytes: [0x1a, 0x45, 0xdf, 0xa3], offset: 0 }] // EBML header
 	],
 	'video/wmv': [
-		{ bytes: [0x30, 0x26, 0xb2, 0x75, 0x8e, 0x66, 0xcf, 0x11], offset: 0 } // ASF
+		[{ bytes: [0x30, 0x26, 0xb2, 0x75, 0x8e, 0x66, 0xcf, 0x11], offset: 0 }] // ASF
 	],
 	'video/x-ms-wmv': [
-		{ bytes: [0x30, 0x26, 0xb2, 0x75, 0x8e, 0x66, 0xcf, 0x11], offset: 0 } // ASF
+		[{ bytes: [0x30, 0x26, 0xb2, 0x75, 0x8e, 0x66, 0xcf, 0x11], offset: 0 }] // ASF
 	],
 	'video/flv': [
-		{ bytes: [0x46, 0x4c, 0x56, 0x01], offset: 0 } // FLV
+		[{ bytes: [0x46, 0x4c, 0x56, 0x01], offset: 0 }] // FLV
 	],
 	'video/x-flv': [
-		{ bytes: [0x46, 0x4c, 0x56, 0x01], offset: 0 } // FLV
+		[{ bytes: [0x46, 0x4c, 0x56, 0x01], offset: 0 }] // FLV
 	],
 	'video/m4v': [
-		{ bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 } // ftyp (same as MP4)
+		[{ bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 }] // ftyp (same as MP4)
 	]
 };
 
@@ -97,16 +107,18 @@ export function validateMagicBytes(
 		return { isValid: true, message: 'No signature validation available for this type' };
 	}
 
-	// Check if any of the expected signatures match
-	const matches = expectedSignatures.some((signature) => {
-		// Check if buffer is large enough
-		if (buffer.length < signature.offset + signature.bytes.length) {
-			return false;
-		}
+	// Check if any variant matches (OR across variants, AND within each variant)
+	const matches = expectedSignatures.some((variant) =>
+		variant.every((signature) => {
+			// Check if buffer is large enough
+			if (buffer.length < signature.offset + signature.bytes.length) {
+				return false;
+			}
 
-		// Check if bytes match at the specified offset
-		return signature.bytes.every((byte, index) => buffer[signature.offset + index] === byte);
-	});
+			// Check if bytes match at the specified offset
+			return signature.bytes.every((byte, index) => buffer[signature.offset + index] === byte);
+		})
+	);
 
 	if (matches) {
 		logger.debug({ mimeType: declaredMimeType }, 'File signature matches declared MIME type');
@@ -138,14 +150,16 @@ export function validateMagicBytes(
  * @returns The detected MIME type or undefined
  */
 function detectFileType(buffer: Buffer): string | undefined {
-	// Check against all known signatures
-	for (const [mimeType, signatures] of Object.entries(MAGIC_BYTES)) {
-		const matches = signatures.some((signature) => {
-			if (buffer.length < signature.offset + signature.bytes.length) {
-				return false;
-			}
-			return signature.bytes.every((byte, index) => buffer[signature.offset + index] === byte);
-		});
+	// Check against all known signatures (same OR/AND logic as validateMagicBytes)
+	for (const [mimeType, variants] of Object.entries(MAGIC_BYTES)) {
+		const matches = variants.some((variant) =>
+			variant.every((signature) => {
+				if (buffer.length < signature.offset + signature.bytes.length) {
+					return false;
+				}
+				return signature.bytes.every((byte, index) => buffer[signature.offset + index] === byte);
+			})
+		);
 
 		if (matches) {
 			return mimeType;
