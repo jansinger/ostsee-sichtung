@@ -37,21 +37,17 @@
 	function updateFromFields() {
 		try {
 			if (mode === 'dms') {
-				latitude = dmsToDd(
-					dms.latitude.deg,
-					dms.latitude.min,
-					dms.latitude.sec,
-					dms.latitude.deg >= 0 ? 1 : -1
-				);
-				longitude = dmsToDd(
-					dms.longitude.deg,
-					dms.longitude.min,
-					dms.longitude.sec,
-					dms.longitude.deg >= 0 ? 1 : -1
-				);
+				// NaN-Guard: NaN >= 0 ist false → würde fälschlicherweise sign = -1 liefern.
+				// Standard-Vorzeichen 1 (Nord/Ost) wenn Grad-Feld noch nicht ausgefüllt.
+				const latSign = isNaN(dms.latitude.deg) ? 1 : dms.latitude.deg >= 0 ? 1 : -1;
+				const lonSign = isNaN(dms.longitude.deg) ? 1 : dms.longitude.deg >= 0 ? 1 : -1;
+				latitude = dmsToDd(dms.latitude.deg, dms.latitude.min, dms.latitude.sec, latSign);
+				longitude = dmsToDd(dms.longitude.deg, dms.longitude.min, dms.longitude.sec, lonSign);
 			} else if (mode === 'dm') {
-				latitude = dmToDd(dm.latitude.deg, dm.latitude.min, dm.latitude.deg >= 0 ? 1 : -1);
-				longitude = dmToDd(dm.longitude.deg, dm.longitude.min, dm.longitude.deg >= 0 ? 1 : -1);
+				const latSign = isNaN(dm.latitude.deg) ? 1 : dm.latitude.deg >= 0 ? 1 : -1;
+				const lonSign = isNaN(dm.longitude.deg) ? 1 : dm.longitude.deg >= 0 ? 1 : -1;
+				latitude = dmToDd(dm.latitude.deg, dm.latitude.min, latSign);
+				longitude = dmToDd(dm.longitude.deg, dm.longitude.min, lonSign);
 			}
 		} catch (error) {
 			console.error('Fehler beim Aktualisieren der Felder:', error);

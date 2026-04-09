@@ -65,6 +65,7 @@ export class SichtungenMap {
 	private hiddenSpecies: Record<string, boolean> = {};
 	private hiddenColors: Record<string, boolean> = {};
 	private displayedYear: number;
+	private searchTerm: string = '';
 	private legendUpdateCallback?: () => void;
 	private yearChangeCallback?: (year: number) => void;
 	private clusterDistance: number = 40; // Reduziert für bessere Performance
@@ -520,32 +521,46 @@ export class SichtungenMap {
 		this.displayedYear = year;
 		this.yearChangeCallback?.(year);
 
-		// Update timeFilter für das neue Jahr
-		const yearStart = new Date(year, 0, 1).getTime();
-		const yearEnd = new Date(year, 11, 31, 23, 59, 59).getTime();
-		this.timeFilter = {
-			lower: yearStart,
-			upper: yearEnd
-		};
-
 		try {
-			const response = await fetch(`/api/map/sightings?year=${year}`);
-			const geoJsonData = await response.json();
+			await this.loadSightings(year, this.searchTerm);
 
-			const format = new GeoJSON();
-			const features = format.readFeatures(geoJsonData, {
-				featureProjection: 'EPSG:3857'
-			});
-
-			this.reportsSource.clear();
-			this.reportsSource.addFeatures(features);
-
-			// Update legend callback
-			if (this.legendUpdateCallback) {
-				this.legendUpdateCallback();
-			}
+			// timeFilter erst nach erfolgreichem Fetch setzen, damit während des Ladens
+			// keine alten Features mit dem neuen Jahres-Zeitraum gefiltert werden
+			const yearStart = new Date(year, 0, 1).getTime();
+			const yearEnd = new Date(year, 11, 31, 23, 59, 59).getTime();
+			this.timeFilter = {
+				lower: yearStart,
+				upper: yearEnd
+			};
+			// Redraw und Zeitraum-Anzeige aktualisieren nachdem timeFilter gesetzt wurde
+			this.reportsLayer.changed();
+			this.updateTimeRange();
 		} catch (error) {
 			console.error('Error loading sightings:', error);
+			throw error;
+		}
+	}
+
+	private async loadSightings(year: number, searchTerm?: string): Promise<void> {
+		const params = new URLSearchParams({ year: year.toString() });
+		if (searchTerm) params.set('search', searchTerm);
+
+		const response = await fetch(`/api/map/sightings?${params}`);
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status}: Fehler beim Laden der Sichtungen`);
+		}
+		const geoJsonData = await response.json();
+
+		const format = new GeoJSON();
+		const features = format.readFeatures(geoJsonData, {
+			featureProjection: 'EPSG:3857'
+		});
+
+		this.reportsSource.clear();
+		this.reportsSource.addFeatures(features);
+
+		if (this.legendUpdateCallback) {
+			this.legendUpdateCallback();
 		}
 	}
 
@@ -618,20 +633,6 @@ export class SichtungenMap {
 				});
 			}
 		}
-
-		// Time-Slider (Start und Ende)
-		const startSlider = document.getElementById('time-range-start') as HTMLInputElement;
-		const endSlider = document.getElementById('time-range-end') as HTMLInputElement;
-
-		if (startSlider && endSlider) {
-			startSlider.addEventListener('input', () => {
-				this.updateTimeSlider(startSlider, endSlider);
-			});
-
-			endSlider.addEventListener('input', () => {
-				this.updateTimeSlider(startSlider, endSlider);
-			});
-		}
 	}
 
 	private initializeGeolocation(): void {
@@ -667,9 +668,11 @@ export class SichtungenMap {
 		});
 	}
 
-	private applyFilter(_searchTerm: string): void {
-		// Filter implementation - reload data with search
-		this.setYear(this.displayedYear);
+	private applyFilter(searchTerm: string): void {
+		this.searchTerm = searchTerm;
+		// fire-and-forget: unhandled rejection propagiert als window.unhandledrejection
+		// und wird vom Error-Handler in SightingsMapView aufgefangen
+		void this.loadSightings(this.displayedYear, searchTerm);
 	}
 
 	private updateTimeFilter(): void {
@@ -678,31 +681,6 @@ export class SichtungenMap {
 		if (this.legendUpdateCallback) {
 			this.legendUpdateCallback();
 		}
-	}
-
-	private updateTimeSlider(startSlider: HTMLInputElement, endSlider: HTMLInputElement): void {
-		const startDay = parseInt(startSlider.value);
-		const endDay = parseInt(endSlider.value);
-
-		// Stelle sicher, dass Start nicht größer als End ist
-		if (startDay >= endDay) {
-			if (startSlider === document.activeElement) {
-				startSlider.value = (endDay - 1).toString();
-			} else {
-				endSlider.value = (startDay + 1).toString();
-			}
-		}
-
-		// Berechne Timestamps für Start und Ende
-		const startDate = new Date(this.displayedYear, 0, 1);
-		startDate.setDate(startDate.getDate() + parseInt(startSlider.value));
-
-		const endDate = new Date(this.displayedYear, 0, 1);
-		endDate.setDate(endDate.getDate() + parseInt(endSlider.value));
-		endDate.setHours(23, 59, 59, 999); // Ende des Tages
-
-		// Setze den Filter
-		this.setFilter(startDate.getTime(), endDate.getTime());
 	}
 
 	public startTracking(): void {

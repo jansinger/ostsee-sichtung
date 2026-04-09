@@ -28,6 +28,15 @@ describe('coordinateConversion', () => {
 			expect(result).toBe(0.51);
 		});
 
+		it('should treat NaN deg as 0 — sign derivation is caller responsibility', () => {
+			// dmsToDd ersetzt NaN-Grad durch 0 und wendet das vom Aufrufer gelieferte Vorzeichen an.
+			// Der Aufrufer (z.B. LocationInput.svelte) darf das Vorzeichen NICHT aus einem NaN-Grad-Wert
+			// ableiten, da NaN >= 0 false ergibt und fälschlicherweise sign = -1 produzieren würde.
+			// Korrekte Aufrufer-Logik: isNaN(deg) ? 1 : deg >= 0 ? 1 : -1
+			expect(dmsToDd(NaN, 30, 36, 1)).toBe(0.51); // NaN → 0; 0 + 30/60 + 36/3600 = 0.51
+			expect(dmsToDd(NaN, 30, 36, -1)).toBe(-0.51); // gleiche Formel, negatives Vorzeichen
+		});
+
 		it('should handle complex coordinates', () => {
 			const result = dmsToDd(13, 24, 36, 1);
 			expect(result).toBe(13.41);

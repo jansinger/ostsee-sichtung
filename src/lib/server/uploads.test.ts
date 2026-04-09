@@ -85,20 +85,18 @@ describe('uploads utilities', () => {
 			});
 
 			test('should block Windows absolute paths', () => {
-				// Current implementation may not detect all Windows paths
-				// These tests reflect the current behavior
-				expect(isValidUploadPath('C:\\Windows\\System32\\file.exe')).toBe(true); // Not currently blocked
-				expect(isValidUploadPath('D:\\secrets\\file.txt')).toBe(true); // Not currently blocked
+				expect(isValidUploadPath('C:\\Windows\\System32\\file.exe')).toBe(false);
+				expect(isValidUploadPath('D:\\secrets\\file.txt')).toBe(false);
 			});
 
-			test('should handle UNC paths', () => {
-				// Current implementation doesn't specifically block UNC paths
-				expect(isValidUploadPath('\\\\server\\share\\file.txt')).toBe(true); // Not currently blocked
+			test('should block UNC paths', () => {
+				expect(isValidUploadPath('\\\\server\\share\\file.txt')).toBe(false);
+				expect(isValidUploadPath('//server/share/file.txt')).toBe(false);
 			});
 
-			test('should handle null byte injection attempts', () => {
-				// Current implementation doesn't check for null bytes
-				expect(isValidUploadPath('file.jpg\0.exe')).toBe(true); // Not currently blocked
+			test('should block null byte injection attempts', () => {
+				expect(isValidUploadPath('file.jpg\0.exe')).toBe(false);
+				expect(isValidUploadPath('\0')).toBe(false);
 			});
 		});
 
@@ -122,14 +120,15 @@ describe('uploads utilities', () => {
 		});
 
 		describe('sophisticated attack attempts', () => {
-			test('should handle URL-encoded traversal', () => {
-				// Current implementation doesn't decode URLs
-				expect(isValidUploadPath('%2e%2e%2f%2e%2e%2fpasswd')).toBe(true); // Not currently decoded/blocked
+			test('should block URL-encoded traversal', () => {
+				// %2e%2e%2f decodes to "../" — must be blocked
+				expect(isValidUploadPath('%2e%2e%2f%2e%2e%2fpasswd')).toBe(false);
 			});
 
-			test('should handle double URL-encoded traversal', () => {
-				// Current implementation doesn't decode URLs
-				expect(isValidUploadPath('%252e%252e%252fpasswd')).toBe(true); // Not currently decoded/blocked
+			test('should block double URL-encoded traversal', () => {
+				// %252e decodes to %2e, which then decodes to "." — recursive decoding catches it
+				// The implementation decodes recursively until stable, so this is correctly blocked
+				expect(isValidUploadPath('%252e%252e%252fpasswd')).toBe(false);
 			});
 
 			test('should handle Unicode normalization attacks', () => {
@@ -535,29 +534,20 @@ describe('uploads utilities', () => {
 				'/etc/shadow' // Blocked by absolute path detection
 			];
 
-			const notCurrentlyBlocked = [
-				'C:\\Windows\\System32\\drivers\\etc\\hosts', // Windows paths not detected
-				'file.jpg\0.exe', // Null bytes not checked
-				'%2e%2e%2f%2e%2e%2fpasswd' // URL encoding not decoded
+			const additionallyBlocked = [
+				'C:\\Windows\\System32\\drivers\\etc\\hosts', // Windows absolute path
+				'file.jpg\0.exe', // Null byte injection
+				'%2e%2e%2f%2e%2e%2fpasswd', // URL-encoded traversal
+				'..%c0%af..%c0%afetc%c0%afpasswd' // Contains ".." so also blocked
 			];
 
-			const alsoBlocked = [
-				'..%c0%af..%c0%afetc%c0%afpasswd' // Contains ".." so gets blocked
-			];
-
-			// These should be blocked by current implementation
+			// All attacks must be blocked
 			blockedAttacks.forEach((attack) => {
 				expect(isValidUploadPath(attack)).toBe(false);
 			});
 
-			// These are also blocked due to containing ".."
-			alsoBlocked.forEach((attack) => {
+			additionallyBlocked.forEach((attack) => {
 				expect(isValidUploadPath(attack)).toBe(false);
-			});
-
-			// These are not currently blocked (could be security improvements)
-			notCurrentlyBlocked.forEach((attack) => {
-				expect(isValidUploadPath(attack)).toBe(true);
 			});
 		});
 	});

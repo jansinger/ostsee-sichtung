@@ -46,17 +46,20 @@ vi.mock('$lib/server/storage/factory', () => ({
 		getUrl: vi.fn((path) => `/uploads/${path}`)
 	}))
 }));
-const readImageExifDataMock = vi.fn(() =>
-	Promise.resolve({
-		latitude: 54.123,
-		longitude: 12.456,
-		make: 'TestCamera',
-		model: 'Model X'
-	})
-);
+// vi.hoisted ensures this runs before the hoisted vi.mock factory
+const { readImageExifDataMock } = vi.hoisted(() => ({
+	readImageExifDataMock: vi.fn(() =>
+		Promise.resolve({
+			latitude: 54.123,
+			longitude: 12.456,
+			make: 'TestCamera',
+			model: 'Model X'
+		})
+	)
+}));
 
-vi.mock('$lib/server/exifUtils', () => ({
-	isImageFile: vi.fn((mimeType) => mimeType?.startsWith('image/')),
+vi.mock('$lib/server/media/exifUtils', () => ({
+	isImageFile: vi.fn((mimeType: string | undefined) => mimeType?.startsWith('image/')),
 	readImageExifData: readImageExifDataMock
 }));
 

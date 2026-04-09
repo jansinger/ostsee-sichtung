@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import { getDaysInYear } from '$lib/map/dateUtils';
 
 	let { years = [], defaultYear } = $props<{
 		years?: number[];
@@ -9,6 +10,15 @@
 	// Reactive state für Panel-Sichtbarkeit (Svelte 5 runes)
 	let isOpen = $state(false);
 	let isApplyingFilter = $state(false);
+	// Explizite User-Auswahl (undefined = noch keine manuelle Wahl getroffen)
+	let userSelectedYear: number | undefined = $state(undefined);
+	// Effektiv gewähltes Jahr: User-Auswahl hat Vorrang, sonst Prop-Default
+	let selectedYear = $derived(
+		userSelectedYear ?? defaultYear ?? years.at(-1) ?? new Date().getFullYear()
+	);
+	let searchValue = $state('');
+
+	let daysInYear = $derived(getDaysInYear(selectedYear));
 
 	// Toggle-Funktion für das Panel
 	function togglePanel() {
@@ -28,6 +38,11 @@
 		setTimeout(() => {
 			isApplyingFilter = false;
 		}, 1500);
+	}
+
+	function handleYearChange(e: Event) {
+		userSelectedYear = parseInt((e.target as HTMLSelectElement).value);
+		handleFilterApply();
 	}
 </script>
 
@@ -59,7 +74,7 @@
 	aria-labelledby="filter-title"
 	aria-hidden={!isOpen}
 >
-	<div class="h-full overflow-y-auto scroll-styled">
+	<div class="scroll-styled h-full overflow-y-auto">
 		<div class="p-4">
 			<div class="mb-3 flex items-center justify-between">
 				<h2 id="filter-title" class="text-lg font-bold">Filter</h2>
@@ -86,11 +101,11 @@
 							? 'loading'
 							: ''}"
 						title="Wählen Sie das Jahr aus, für das Sichtungen angezeigt werden sollen"
-						onchange={handleFilterApply}
+						onchange={handleYearChange}
 						disabled={isApplyingFilter}
 					>
 						{#each years.toReversed() as year (year)}
-							<option value={year} selected={year === defaultYear}>{year}</option>
+							<option value={year} selected={year === selectedYear}>{year}</option>
 						{/each}
 					</select>
 				</div>
@@ -103,6 +118,7 @@
 						<input
 							id="filter-input"
 							type="text"
+							bind:value={searchValue}
 							placeholder="E-Mail, Name, Schiff..."
 							class="input input-bordered input-sm focus:input-primary w-full pr-10"
 							title="Nach E-Mail, Schiffsname, Name oder Vorname filtern (Return zum filtern)."
@@ -141,7 +157,7 @@
 								id="time-range-start"
 								class="range range-primary range-xs"
 								min="0"
-								max="365"
+								max={daysInYear - 1}
 								value="0"
 							/>
 							<div class="mt-1">
@@ -161,8 +177,8 @@
 								id="time-range-end"
 								class="range range-primary range-xs"
 								min="0"
-								max="365"
-								value="365"
+								max={daysInYear - 1}
+								value={daysInYear - 1}
 							/>
 							<div class="mt-1">
 								<div

@@ -330,12 +330,15 @@ describe('mapFormToSighting', () => {
 			const result = mapFormToSighting(formData);
 			const parsedDate = new Date(result.sightingDate);
 
-			expect(parsedDate.getFullYear()).toBe(2024);
-			expect(parsedDate.getMonth()).toBe(0); // Januar = 0
-			expect(parsedDate.getDate()).toBe(15);
-			expect(parsedDate.getHours()).toBe(13);
-			expect(parsedDate.getMinutes()).toBe(30);
-			expect(parsedDate.getSeconds()).toBe(0);
+			// correctCestOffsetUTC zieht 1h ab (Januar = CET = UTC+1),
+			// sodass 14:30 Ortszeit als 13:30 UTC gespeichert wird.
+			// UTC-Accessor verwenden, damit der Test timezone-unabhängig läuft.
+			expect(parsedDate.getUTCFullYear()).toBe(2024);
+			expect(parsedDate.getUTCMonth()).toBe(0); // Januar = 0
+			expect(parsedDate.getUTCDate()).toBe(15);
+			expect(parsedDate.getUTCHours()).toBe(13);
+			expect(parsedDate.getUTCMinutes()).toBe(30);
+			expect(parsedDate.getUTCSeconds()).toBe(0);
 		});
 
 		it('sollte nur Datum verwenden wenn Zeit fehlt', () => {
@@ -373,11 +376,14 @@ describe('mapFormToSighting', () => {
 
 			const result = mapFormToSighting(formData);
 
-			// Bei ungültigem Zeitformat: 'invalid-time'.split(':') -> ['invalid-time']
-			// Number('invalid-time') -> NaN, timeParts[0] || 0 -> 0
+			// Ungültiges Zeitformat passt nicht auf /^\d{2}:\d{2}$/ →
+			// combineToDate gibt midnight UTC zurück (new Date('2024-01-15') = 2024-01-15T00:00:00Z).
+			// correctCestOffsetUTC zieht 1h ab (Januar = CET) → 2024-01-14T23:00:00Z.
+			// UTC-Accessor verwenden für timezone-unabhängige Prüfung.
 			const parsedDate = new Date(result.sightingDate);
-			expect(parsedDate.getHours()).toBe(23); // NaN || 0 -> 0
-			expect(parsedDate.getMinutes()).toBe(0); // undefined || 0 -> 0
+			expect(parsedDate.getUTCDate()).toBe(14); // Überlauf auf Vortag durch CET-Korrektur
+			expect(parsedDate.getUTCHours()).toBe(23); // midnight - 1h = 23:00 UTC
+			expect(parsedDate.getUTCMinutes()).toBe(0);
 		});
 	});
 

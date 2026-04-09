@@ -578,10 +578,10 @@ describe('magicBytes validation', () => {
 				expect(result.isValid).toBe(true);
 			});
 
-			it('should accept WebP with only RIFF signature (current implementation behavior)', () => {
-				// NOTE: Current implementation uses OR logic, so RIFF alone is sufficient
-				// This is a limitation that could be improved in the future
-				const fakeWebpBuffer = Buffer.from([
+			it('should reject RIFF-only buffer as WebP (requires both RIFF and WEBP markers)', () => {
+				// WebP requires BOTH: RIFF at offset 0 AND WEBP at offset 8.
+				// A WAV or other RIFF-container file must not pass WebP validation.
+				const riffOnlyBuffer = Buffer.from([
 					0x52,
 					0x49,
 					0x46,
@@ -600,10 +600,37 @@ describe('magicBytes validation', () => {
 					0x20
 				]);
 
-				const result = validateMagicBytes(fakeWebpBuffer, 'image/webp');
+				const result = validateMagicBytes(riffOnlyBuffer, 'image/webp');
 
-				// Current implementation accepts this (could be improved)
-				expect(result.isValid).toBe(true);
+				// RIFF alone is insufficient — the WEBP marker at offset 8 is also required
+				expect(result.isValid).toBe(false);
+			});
+
+			it('should reject RIFF-only buffer as AVI (requires both RIFF and AVI markers)', () => {
+				// AVI requires BOTH: RIFF at offset 0 AND 'AVI ' at offset 8.
+				const riffOnlyBuffer = Buffer.from([
+					0x52,
+					0x49,
+					0x46,
+					0x46, // RIFF at offset 0
+					0x24,
+					0x01,
+					0x00,
+					0x00, // File size
+					0x00,
+					0x00,
+					0x00,
+					0x00, // NOT 'AVI ' at offset 8
+					0x4c,
+					0x49,
+					0x53,
+					0x54
+				]);
+
+				const result = validateMagicBytes(riffOnlyBuffer, 'video/avi');
+
+				// RIFF alone is insufficient — the AVI marker at offset 8 is also required
+				expect(result.isValid).toBe(false);
 			});
 
 			it('should reject buffer without any WebP signatures', () => {

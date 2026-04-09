@@ -338,7 +338,22 @@
 					break;
 				}
 				case 'Escape':
-					showKeyboardHelp = false;
+					if (showKeyboardHelp) {
+						showKeyboardHelp = false;
+					} else {
+						// Schließe offene Panels in der Priorität: Filter → Legende
+						const filterPanel = document.querySelector('[aria-labelledby="filter-title"]');
+						const legendPanel = document.querySelector('[aria-labelledby="legend-title"]');
+						if (filterPanel?.getAttribute('aria-hidden') === 'false') {
+							filterPanel
+								.querySelector<HTMLButtonElement>('[aria-label="Filter schließen"]')
+								?.click();
+						} else if (legendPanel?.getAttribute('aria-hidden') === 'false') {
+							legendPanel
+								.querySelector<HTMLButtonElement>('[aria-label="Legende schließen"]')
+								?.click();
+						}
+					}
 					break;
 			}
 		};
@@ -385,7 +400,8 @@
 		<!-- Error-Toast -->
 		{#if errorMessage}
 			<div
-				class="alert alert-error fixed top-4 left-1/2 z-30 max-w-md -translate-x-1/2 transform shadow-lg"
+				role="alert"
+				class="alert alert-error fixed top-20 left-1/2 z-[60] max-w-md -translate-x-1/2 transform shadow-lg"
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -450,9 +466,14 @@
 	<!-- Tastatur-Hilfe Modal -->
 	{#if showKeyboardHelp}
 		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-			<div class="bg-base-100 max-h-[80vh] max-w-md rounded-lg p-6 shadow-xl">
+			<div
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="help-modal-title"
+				class="bg-base-100 max-h-[80vh] max-w-md rounded-lg p-6 shadow-xl"
+			>
 				<div class="mb-4 flex items-center justify-between">
-					<h3 class="text-lg font-bold">Tastaturkürzel</h3>
+					<h3 id="help-modal-title" class="text-lg font-bold">Tastaturkürzel</h3>
 					<button
 						onclick={() => (showKeyboardHelp = false)}
 						class="btn btn-ghost btn-sm"
