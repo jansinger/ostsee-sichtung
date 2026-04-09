@@ -24,23 +24,22 @@ model: inherit
 
 ## Benötigte Informationen
 
-| # | Information | Beispiel |
-|---|-------------|----------|
-| 1 | Test-Typ | "Unit Test" oder "E2E Test" |
-| 2 | Zu testende Funktion/Komponente | "formatDate Utility" |
-| 3 | Erwartetes Verhalten | "Gibt DD.MM.YYYY zurück" |
-| 4 | Edge Cases | "Null, undefined, ungültiges Datum" |
+| #   | Information                     | Beispiel                            |
+| --- | ------------------------------- | ----------------------------------- |
+| 1   | Test-Typ                        | "Unit Test" oder "E2E Test"         |
+| 2   | Zu testende Funktion/Komponente | "formatDate Utility"                |
+| 3   | Erwartetes Verhalten            | "Gibt DD.MM.YYYY zurück"            |
+| 4   | Edge Cases                      | "Null, undefined, ungültiges Datum" |
 
 ---
 
 ## Relevante Dateien
 
-| Datei | Zweck |
-|-------|-------|
-| `tests/unit/` | Unit Tests |
-| `tests/e2e/` | E2E Tests |
-| `tests/mocks/` | Shared Mocks |
-| `vitest.config.ts` | Vitest Konfiguration |
+| Datei                  | Zweck                    |
+| ---------------------- | ------------------------ |
+| `src/**/*.test.ts`     | Unit Tests (co-located)  |
+| `e2e/`                 | E2E Tests (Root-Level)   |
+| `vitest.config.ts`     | Vitest Konfiguration     |
 | `playwright.config.ts` | Playwright Konfiguration |
 
 ---
@@ -54,22 +53,22 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { functionToTest } from '$lib/utils/module';
 
 describe('functionToTest', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
 
-    it('gibt korrektes Ergebnis für Standard-Input', () => {
-        const result = functionToTest('input');
-        expect(result).toBe('expected');
-    });
+	it('gibt korrektes Ergebnis für Standard-Input', () => {
+		const result = functionToTest('input');
+		expect(result).toBe('expected');
+	});
 
-    it('behandelt null korrekt', () => {
-        expect(functionToTest(null)).toBeNull();
-    });
+	it('behandelt null korrekt', () => {
+		expect(functionToTest(null)).toBeNull();
+	});
 
-    it('wirft Fehler bei ungültigem Input', () => {
-        expect(() => functionToTest(-1)).toThrow('Ungültiger Wert');
-    });
+	it('wirft Fehler bei ungültigem Input', () => {
+		expect(() => functionToTest(-1)).toThrow('Ungültiger Wert');
+	});
 });
 ```
 
@@ -79,21 +78,20 @@ describe('functionToTest', () => {
 import { test, expect } from '@playwright/test';
 
 test.describe('Feature Name', () => {
-    test.beforeEach(async ({ page }) => {
-        await page.goto('/');
-    });
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/');
+	});
 
-    test('zeigt erwartetes Element', async ({ page }) => {
-        await expect(page.getByRole('heading', { name: /Titel/i }))
-            .toBeVisible();
-    });
+	test('zeigt erwartetes Element', async ({ page }) => {
+		await expect(page.getByRole('heading', { name: /Titel/i })).toBeVisible();
+	});
 
-    test('führt Aktion korrekt aus', async ({ page }) => {
-        await page.fill('[name="field"]', 'Wert');
-        await page.click('button:has-text("Absenden")');
+	test('führt Aktion korrekt aus', async ({ page }) => {
+		await page.fill('[name="field"]', 'Wert');
+		await page.click('button:has-text("Absenden")');
 
-        await expect(page.getByText('Erfolg')).toBeVisible();
-    });
+		await expect(page.getByText('Erfolg')).toBeVisible();
+	});
 });
 ```
 
@@ -101,69 +99,43 @@ test.describe('Feature Name', () => {
 
 ## Mocking Patterns
 
-### Drizzle DB Mock
-```typescript
-vi.mock('$lib/server/db', () => ({
-    db: {
-        select: vi.fn().mockReturnValue({
-            from: vi.fn().mockReturnValue({
-                where: vi.fn().mockResolvedValue([
-                    { id: 1, species: 'Schweinswal' }
-                ])
-            })
-        }),
-        insert: vi.fn().mockReturnValue({
-            values: vi.fn().mockReturnValue({
-                returning: vi.fn().mockResolvedValue([{ id: 1 }])
-            })
-        })
-    }
-}));
-```
-
-### Fetch Mock
-```typescript
-global.fetch = vi.fn().mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve({ data: [] })
-});
-```
-
-### Environment Variables
-```typescript
-vi.stubEnv('DATABASE_URL', 'mock://db');
-```
+Siehe `.claude/rules/testing.md` für vollständige Mocking-Patterns (Drizzle DB, fetch).
 
 ---
 
 ## Schritt-für-Schritt Workflow
 
 ### Schritt 1: Test-Typ bestimmen
+
 - Unit Test: Einzelne Funktion/Utility
 - Integration Test: Mehrere Module zusammen
 - E2E Test: Vollständiger User Flow
 
 ### Schritt 2: Test-Datei erstellen
-```bash
-# Unit Test
-tests/unit/lib/utils/[name].test.ts
 
-# E2E Test
-tests/e2e/[feature].spec.ts
+```bash
+# Unit Test (co-located neben Source-Datei)
+src/lib/utils/[name].test.ts
+
+# E2E Test (Root-Level e2e/ Verzeichnis)
+e2e/[feature].spec.ts
 ```
 
 ### Schritt 3: Tests implementieren
+
 - Arrange: Setup
 - Act: Aktion ausführen
 - Assert: Ergebnis prüfen
 
 ### Schritt 4: Edge Cases abdecken
+
 - Null/undefined
 - Leere Strings/Arrays
 - Grenzwerte
 - Fehlerhafte Inputs
 
 ### Schritt 5: Tests ausführen
+
 ```bash
 npm run test:unit        # Unit Tests
 npm run test:e2e         # E2E Tests
@@ -190,7 +162,7 @@ npm run test:unit:watch  # Watch Mode
 npm run test:unit
 
 # Spezifischer Test
-npm run test:unit -- tests/unit/lib/utils/date.test.ts
+npm run test:unit -- src/lib/utils/date/defaultYear.test.ts
 
 # Watch Mode
 npm run test:unit:watch
@@ -209,14 +181,4 @@ npm run test:quick
 
 ## Best Practices
 
-### Do's
-- Tests vor Commit ausführen
-- Arrange-Act-Assert Pattern
-- Mocking für externe Dependencies
-- Aussagekräftige Assertions
-
-### Don'ts
-- Keine `sleep()` - nutze `waitFor`
-- Keine Tests die externe APIs aufrufen
-- Keine Test-Daten in Prod-DB
-- Keine Magic Numbers ohne Erklärung
+Siehe `.claude/rules/testing.md` für vollständige Best Practices.

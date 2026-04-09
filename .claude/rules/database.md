@@ -1,3 +1,11 @@
+---
+paths:
+  - 'src/lib/server/db/**'
+  - 'drizzle.config.ts'
+  - 'src/routes/api/**'
+  - 'drizzle/**'
+---
+
 # Datenbank & Drizzle ORM
 
 Regeln für PostgreSQL, PostGIS und Drizzle ORM.
@@ -20,10 +28,10 @@ npm run db:studio  # Drizzle Studio öffnen
 
 **Entwicklung:** Nutze lokale DB aus `.env`
 
-| Option | Port | Verbindung |
-|--------|------|------------|
+| Option            | Port | Verbindung                                                          |
+| ----------------- | ---- | ------------------------------------------------------------------- |
 | Native PostgreSQL | 5432 | `postgresql://ostsee_app:ostsee_dev_password@localhost:5432/ostsee` |
-| Docker PostgreSQL | 5433 | `postgresql://root:mysecretpassword@localhost:5433/local` |
+| Docker PostgreSQL | 5433 | `postgresql://root:mysecretpassword@localhost:5433/local`           |
 
 ---
 
@@ -46,40 +54,53 @@ import { db } from '$lib/server/db';
 ## Schema
 
 ### Haupt-Tabelle: sichtungen
+
 ```typescript
-export const sichtungen = pgTable('sichtungen', {
-    id: serial('id').primaryKey(),
+export const sightings = pgTable('sichtungen', {
+	id: bigint({ mode: 'number' }).primaryKey().notNull(),
 
-    // Geografische Daten (PostGIS)
-    lat: doublePrecision('lat').notNull(),
-    lng: doublePrecision('lng').notNull(),
-    location: geometry('location', { type: 'point', srid: 4326 }),
+	// Geografische Daten (PostGIS)
+	latitude: numeric('gps_breite', { precision: 8, scale: 6 }),
+	longitude: numeric('gps_laenge', { precision: 8, scale: 6 }),
+	location: geometry('location', { type: 'point', srid: 4326 }),
 
-    // Metadaten
-    date: date('date').notNull(),
-    time: time('time'),
-    species: varchar('species', { length: 100 }),
-    count: integer('count'),
+	// Metadaten
+	sightingDate: timestamp('sichtungsdatum', { mode: 'date' }).notNull(),
+	species: smallint('tierart').default(0).notNull(),
+	totalCount: integer('anzahl_gesamt').default(0).notNull(),
+	juvenileCount: integer('anzahl_jung').default(0).notNull(),
 
-    // Status
-    approved: boolean('approved').default(false),
-    createdAt: timestamp('created_at').defaultNow()
+	// Status
+	approvedAt: timestamp('freigegeben_am', { mode: 'date' }),
+	verified: integer('geprueft').default(0).notNull(),
+	created: timestamp('created', { mode: 'date' }).notNull(),
+
+	// Wetterdaten (JSONB)
+	weatherData: jsonb('weather_data')
+	// ... 50+ weitere Felder (siehe schema.ts)
 });
 ```
 
-### Datei-Tabelle mit JSONB
-```typescript
-export const sichtungenDateien = pgTable('sichtungen_dateien', {
-    id: serial('id').primaryKey(),
-    sichtungId: integer('sichtung_id').references(() => sichtungen.id),
-    url: varchar('url', { length: 500 }),
+**Hinweis:** DB-Spalten nutzen deutsche Legacy-Namen (`gps_breite`, `sichtungsdatum`, `anzahl_gesamt`). Drizzle mappt diese auf englische TypeScript-Properties.
 
-    // JSONB für flexible Metadaten
-    metadata: jsonb('metadata').$type<{
-        exif?: ExifData;
-        mimeType?: string;
-        size?: number;
-    }>()
+### Datei-Tabelle mit JSONB
+
+```typescript
+export const sightingFiles = pgTable('sichtungen_dateien', {
+	id: serial().primaryKey().notNull(),
+	uid: varchar('uid', { length: 64 }).notNull(),
+	sightingId: bigint('sichtung_id', { mode: 'number' }).references(() => sightings.id, {
+		onDelete: 'cascade'
+	}),
+	referenceId: varchar('referenz_id', { length: 64 }).notNull(),
+	originalName: varchar('original_name', { length: 255 }).notNull(),
+	fileName: varchar('datei_name', { length: 255 }).notNull(),
+	filePath: varchar('datei_pfad', { length: 500 }).notNull(),
+	mimeType: varchar('mime_typ', { length: 100 }).notNull(),
+	size: bigint({ mode: 'number' }).notNull(),
+	url: varchar('url', { length: 1000 }),
+	exifData: jsonb('exif_daten') // EXIF-Metadaten als JSONB
+	// ...
 });
 ```
 
@@ -90,57 +111,51 @@ export const sichtungenDateien = pgTable('sichtungen_dateien', {
 Alle DB-Operationen via Repository (`src/lib/server/db/sightingRepository.ts`):
 
 ```typescript
-// Beispiel: Sichtung erstellen
-export async function createSighting(data: NewSighting) {
-    return await db.insert(sichtungen).values({
-        ...data,
-        location: sql`ST_SetSRID(ST_Point(${data.lng}, ${data.lat}), 4326)`
-    }).returning();
-}
-
-// Beispiel: Sichtungen in Umkreis
-export async function findNearby(lat: number, lng: number, radiusKm: number) {
-    return await db.select()
-        .from(sichtungen)
-        .where(
-            sql`ST_DWithin(
-                location::geography,
-                ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)::geography,
-                ${radiusKm * 1000}
-            )`
-        );
-}
+// Sichtung speichern (Hauptfunktion)
+export const saveSighting = async (
+	formData: SightingFormValues,
+	weatherData?: StoredWeatherData
+): Promise<{ id: number | undefined }> => {
+	const sightingData: NewSighting = mapFormToSighting(formData);
+	// ... transaktionale Speicherung mit Mediendateien
+};
 ```
+
+**Hinweis:** `mapFormToSighting()` in `mapFormToSighting.ts` konvertiert Formulardaten → DB-Schema (PostGIS Point, Datum-Kombination, Ostsee-Validierung).
 
 ---
 
 ## PostGIS Patterns
 
 ### Point erstellen
+
 ```typescript
-sql`ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)`
+sql`ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`;
 ```
 
 ### Distanz berechnen
+
 ```typescript
 sql`ST_Distance(
     location::geography,
-    ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)::geography
-)`
+    ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+)`;
 ```
 
 ### GeoJSON exportieren
+
 ```typescript
-sql`ST_AsGeoJSON(location)`
+sql`ST_AsGeoJSON(location)`;
 ```
 
 ### Ostsee-Bounding-Box prüfen
+
 ```typescript
 // Vor dem Speichern Baltic Sea Grenzen validieren
-import { checkBalticSeaFile } from '$lib/utils/geo';
+import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 
-if (!checkBalticSeaFile(lat, lng)) {
-    throw new Error('Position außerhalb der Ostsee');
+if (!checkBalticSeaFile(lng, lat).inBaltic) {
+	throw new Error('Position außerhalb der Ostsee');
 }
 ```
 
@@ -149,17 +164,18 @@ if (!checkBalticSeaFile(lat, lng)) {
 ## JSONB Best Practices
 
 ```typescript
-// Typisiertes JSONB
-metadata: jsonb('metadata').$type<MetadataType>()
+// Typisiertes JSONB (Beispiel: weatherData in sightings)
+weatherData: jsonb('weather_data')
+	// Query in JSONB
+	.where(sql`weather_data->>'provider' = 'open-meteo'`)
 
-// Query in JSONB
-.where(sql`metadata->>'mimeType' = 'image/jpeg'`)
-
-// Update in JSONB
-.set({
-    metadata: sql`metadata || ${JSON.stringify({ processed: true })}`
-})
+	// JSONB Merge-Update
+	.set({
+		weatherData: sql`weather_data || ${JSON.stringify({ refreshed: true })}`
+	});
 ```
+
+**Vorhandene JSONB-Felder:** `sightings.weatherData`, `sightingFiles.exifData`, `appConfig.value`
 
 ---
 
@@ -167,12 +183,9 @@ metadata: jsonb('metadata').$type<MetadataType>()
 
 ```typescript
 await db.transaction(async (tx) => {
-    const [sighting] = await tx.insert(sichtungen)
-        .values(sightingData)
-        .returning();
+	const [sighting] = await tx.insert(sightings).values(sightingData).returning();
 
-    await tx.insert(sichtungenDateien)
-        .values(files.map(f => ({ sichtungId: sighting.id, ...f })));
+	await tx.insert(sightingFiles).values(files.map((f) => ({ sightingId: sighting.id, ...f })));
 });
 ```
 
@@ -181,12 +194,14 @@ await db.transaction(async (tx) => {
 ## Best Practices
 
 ### Do's
+
 - Repository Pattern für alle DB-Operationen
 - Transaktionen für Multi-Table Operations
 - Indexes für häufig abgefragte Felder
 - Schema-Änderungen versioniert halten
 
 ### Don'ts
+
 - Keine Raw SQL ohne Parametrisierung
 - Keine DB-Operationen in Komponenten
 - Keine Secrets in Code committen
