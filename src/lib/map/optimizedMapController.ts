@@ -546,6 +546,7 @@ export class SichtungenMap {
 			}
 		} catch (error) {
 			console.error('Error loading sightings:', error);
+			throw error;
 		}
 	}
 
@@ -684,21 +685,12 @@ export class SichtungenMap {
 		const startDay = parseInt(startSlider.value);
 		const endDay = parseInt(endSlider.value);
 
-		// Stelle sicher, dass Start nicht größer als End ist
-		if (startDay >= endDay) {
-			if (startSlider === document.activeElement) {
-				startSlider.value = (endDay - 1).toString();
-			} else {
-				endSlider.value = (startDay + 1).toString();
-			}
-		}
-
 		// Berechne Timestamps für Start und Ende
 		const startDate = new Date(this.displayedYear, 0, 1);
-		startDate.setDate(startDate.getDate() + parseInt(startSlider.value));
+		startDate.setDate(startDate.getDate() + startDay);
 
 		const endDate = new Date(this.displayedYear, 0, 1);
-		endDate.setDate(endDate.getDate() + parseInt(endSlider.value));
+		endDate.setDate(endDate.getDate() + endDay);
 		endDate.setHours(23, 59, 59, 999); // Ende des Tages
 
 		// Setze den Filter
