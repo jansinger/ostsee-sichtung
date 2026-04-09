@@ -53,6 +53,13 @@ const MAGIC_BYTES: Record<string, Array<Array<{ bytes: number[]; offset: number 
 			{ bytes: [0x41, 0x56, 0x49, 0x20], offset: 8 } // AVI  (required)
 		]
 	],
+	// Browsers report AVI files as video/x-msvideo — map to same signature
+	'video/x-msvideo': [
+		[
+			{ bytes: [0x52, 0x49, 0x46, 0x46], offset: 0 }, // RIFF (required)
+			{ bytes: [0x41, 0x56, 0x49, 0x20], offset: 8 } // AVI  (required)
+		]
+	],
 	'video/mov': [
 		[{ bytes: [0x66, 0x74, 0x79, 0x70, 0x71, 0x74], offset: 4 }] // ftypqt
 	],

@@ -76,12 +76,31 @@ export function isValidUploadPath(filePath: string): boolean {
 	}
 
 	// SCHRITT 4: URL-encoded Traversal blockieren (%2e%2e = "..")
-	// Rekursive Prüfung: Wenn der dekodierte Pfad ungültig wäre, ist auch der kodierte ungültig
+	// Iterativ dekodieren bis stabil (max. 5 Runden genügen für legitime Pfade).
+	// Nach dem Dekodieren auch den normalisierten Pfad prüfen, damit "%2e%2e%2f"
+	// genauso blockiert wird wie "../".
 	try {
-		const decoded = decodeURIComponent(filePath);
-		if (decoded !== filePath && !isValidUploadPath(decoded)) {
-			logger.warn({ filePath, decoded }, 'URL-enkodierter Traversal-Versuch blockiert');
-			return false;
+		let current = filePath;
+		for (let i = 0; i < 5; i++) {
+			const decoded = decodeURIComponent(current);
+			if (decoded === current) break; // stabil — keine weiteren Encoding-Schichten
+			// Basisprüfungen am dekodiertem String
+			if (
+				decoded.includes('\0') ||
+				/^[a-zA-Z]:[/\\]/.test(decoded) ||
+				decoded.startsWith('\\\\') ||
+				decoded.startsWith('//')
+			) {
+				logger.warn({ filePath, decoded }, 'URL-enkodierter Traversal-Versuch blockiert');
+				return false;
+			}
+			// Pfad-Traversal im dekodiertem Wert prüfen (z.B. %2e%2e%2f → ../)
+			const normalizedDecoded = path.normalize(decoded);
+			if (normalizedDecoded.startsWith('..') || normalizedDecoded.includes(`${path.sep}..`)) {
+				logger.warn({ filePath, decoded }, 'URL-enkodierter Traversal-Versuch blockiert');
+				return false;
+			}
+			current = decoded;
 		}
 	} catch {
 		// Ungültige URL-Enkodierung (z.B. allein stehendes %) → blockieren

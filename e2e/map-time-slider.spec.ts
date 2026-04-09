@@ -28,9 +28,9 @@ test.describe('Map Time Slider', () => {
 
 		await expect(endSlider).toHaveAttribute('min', '0');
 
-		// max ist 365 oder 366 (Schaltjahr) — dynamisch basierend auf gewähltem Jahr
+		// max ist 364 oder 365 (Schaltjahr) — 0-basierte Day-Offsets: 0..daysInYear-1
 		const maxAttr = await endSlider.getAttribute('max');
-		expect(['365', '366']).toContain(maxAttr);
+		expect(['364', '365']).toContain(maxAttr);
 
 		// End-Slider startet bei max (ganzes Jahr ausgewählt) — via DOM property, nicht HTML-Attribut
 		await expect(endSlider).toHaveValue(maxAttr!);
@@ -38,10 +38,10 @@ test.describe('Map Time Slider', () => {
 		// Start- und End-Slider haben den gleichen max-Wert
 		await expect(startSlider).toHaveAttribute('max', maxAttr!);
 
-		// Schaltjahr-Test: 2024 muss 366 liefern
+		// Schaltjahr-Test: 2024 hat 366 Tage → max-Index = 365
 		await page.locator('#year-select').selectOption('2024');
-		await expect(endSlider).toHaveAttribute('max', '366');
-		await expect(startSlider).toHaveAttribute('max', '366');
+		await expect(endSlider).toHaveAttribute('max', '365');
+		await expect(startSlider).toHaveAttribute('max', '365');
 	});
 
 	test('Start-Slider lässt sich verschieben', async () => {
