@@ -102,24 +102,27 @@ describe('formatDate', () => {
 ### Svelte Component Tests
 
 ```typescript
-import { render, screen, fireEvent } from '@testing-library/svelte';
+import { render } from 'vitest-browser-svelte';
+import { page } from 'vitest/browser';
 import Button from '$lib/components/Button.svelte';
 
 describe('Button', () => {
-	it('zeigt Label an', () => {
+	it('zeigt Label an', async () => {
 		render(Button, { props: { label: 'Absenden' } });
-		expect(screen.getByText('Absenden')).toBeInTheDocument();
+		await expect.element(page.getByText('Absenden')).toBeVisible();
 	});
 
 	it('ruft onClick auf', async () => {
 		const onClick = vi.fn();
 		render(Button, { props: { label: 'Klick', onClick } });
 
-		await fireEvent.click(screen.getByRole('button'));
+		await page.getByRole('button').click();
 		expect(onClick).toHaveBeenCalled();
 	});
 });
 ```
+
+**Hinweis:** Projekt nutzt `vitest-browser-svelte` + `page` API, NICHT `@testing-library/svelte`.
 
 ### Mocking
 
@@ -234,17 +237,6 @@ export const mockDb = {
 };
 
 vi.mock('$lib/server/db', () => ({ db: mockDb }));
-```
-
-### PostGIS Mock
-
-```typescript
-// Für geografische Funktionen
-export const mockPostGIS = {
-	ST_Point: (lng: number, lat: number) => `POINT(${lng} ${lat})`,
-	ST_DWithin: () => true,
-	ST_AsGeoJSON: () => '{"type":"Point","coordinates":[10.5,54.3]}'
-};
 ```
 
 ---

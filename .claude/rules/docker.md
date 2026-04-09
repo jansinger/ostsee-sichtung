@@ -207,20 +207,11 @@ RUN npm run build
 ## Health Checks
 
 ```dockerfile
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD /usr/local/bin/docker-healthcheck.sh
 ```
 
-```yaml
-# docker-compose.yml
-services:
-  app:
-    healthcheck:
-      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/health']
-      interval: 30s
-      timeout: 3s
-      retries: 3
-```
+**Hinweis:** Nutzt ein Custom-Script (`docker-healthcheck.sh`), nicht `wget`.
 
 ---
 

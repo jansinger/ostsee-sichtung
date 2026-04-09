@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read -r f; [[ \"$f\" == *.svelte || \"$f\" == *.ts || \"$f\" == *.js || \"$f\" == *.json || \"$f\" == *.css || \"$f\" == *.html || \"$f\" == *.md ]] && npx prettier --write \"$f\"; } 2>/dev/null || true",
+            "command": "jq -r '.tool_input.file_path' | while IFS= read -r f; do case \"$f\" in *.svelte|*.ts|*.js|*.json|*.css|*.html|*.md) npx prettier --write \"$f\" ;; esac; done 2>/dev/null || true",
             "statusMessage": "Formatting..."
           }
         ]

@@ -99,7 +99,7 @@ test.describe('Feature Name', () => {
 
 ## Mocking Patterns
 
-Siehe `.claude/rules/testing.md` für vollständige Mocking-Patterns (Drizzle DB, PostGIS, fetch).
+Siehe `.claude/rules/testing.md` für vollständige Mocking-Patterns (Drizzle DB, fetch).
 
 ---
 

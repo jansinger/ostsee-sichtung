@@ -230,19 +230,21 @@ function prevStep() {
 ## Auto-Save
 
 ```typescript
+import { saveToStorage, loadFromStorage, STORAGE_KEYS } from '$lib/storage/localStorage';
+
+// Auto-Save via $effect (reaktiv)
 $effect(() => {
-	// Speichere Form-State in localStorage
-	localStorage.setItem('sighting_draft', JSON.stringify($form));
+	saveToStorage(STORAGE_KEYS.FORM_DATA, $form);
 });
 
 // Beim Laden wiederherstellen
-onMount(() => {
-	const draft = localStorage.getItem('sighting_draft');
-	if (draft) {
-		Object.assign($form, JSON.parse(draft));
-	}
-});
+const savedData = loadFromStorage(STORAGE_KEYS.FORM_DATA, null);
+if (savedData) {
+	Object.assign($form, savedData);
+}
 ```
+
+**Hinweis:** Nutze immer `saveToStorage`/`loadFromStorage` aus `$lib/storage/localStorage` statt direktem `localStorage`-Zugriff. Siehe `.claude/rules/browser-storage.md` für GDPR-Details.
 
 ---
 

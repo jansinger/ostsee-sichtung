@@ -38,8 +38,10 @@ src/lib/
     ├── OLMap.svelte                  # Haupt-Karten-Komponente
     ├── SightingsMapView.svelte       # Sichtungs-Kartenansicht
     ├── LazyMapWrapper.svelte         # Lazy Loading Wrapper
-    ├── FilterPanel.svelte            # Filter-Panel
-    └── LegendPanel.svelte            # Legenden-Panel
+    ├── LoadingOverlay.svelte         # Lade-Overlay
+    └── Panel/
+        ├── FilterPanel.svelte        # Filter-Panel
+        └── LegendPanel.svelte        # Legenden-Panel
 ```
 
 ---
@@ -91,17 +93,7 @@ function setupClickHandler(map: Map, onSelect: (coords: [number, number]) => voi
 }
 ```
 
-### Reverse Geocoding
-
-```typescript
-async function reverseGeocode(lat: number, lng: number): Promise<string> {
-	const response = await fetch(
-		`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
-	);
-	const data = await response.json();
-	return data.display_name;
-}
-```
+**Hinweis:** Kein Reverse Geocoding implementiert. Positionen werden nur als Koordinaten gespeichert.
 
 ---
 
@@ -144,19 +136,20 @@ const sightingStyle = new Style({
 ### Bounding Box
 
 ```typescript
-const BALTIC_SEA_BOUNDS = {
-	minLat: 53.5,
-	maxLat: 66.0,
-	minLng: 9.0,
-	maxLng: 30.0
+// src/lib/utils/geo/checkBalticSea.ts
+export const BALTIC_SEA_BBOX: BoundingBox = {
+	minLongitude: 9.4,
+	maxLongitude: 30.2,
+	minLatitude: 53.0,
+	maxLatitude: 66.0
 };
 
-function isInBalticSea(lat: number, lng: number): boolean {
+export function isInBalticArea(longitude: number, latitude: number): boolean {
 	return (
-		lat >= BALTIC_SEA_BOUNDS.minLat &&
-		lat <= BALTIC_SEA_BOUNDS.maxLat &&
-		lng >= BALTIC_SEA_BOUNDS.minLng &&
-		lng <= BALTIC_SEA_BOUNDS.maxLng
+		longitude >= BALTIC_SEA_BBOX.minLongitude &&
+		longitude <= BALTIC_SEA_BBOX.maxLongitude &&
+		latitude >= BALTIC_SEA_BBOX.minLatitude &&
+		latitude <= BALTIC_SEA_BBOX.maxLatitude
 	);
 }
 ```
@@ -167,7 +160,7 @@ function isInBalticSea(lat: number, lng: number): boolean {
 import { boundingExtent } from 'ol/extent';
 import { fromLonLat } from 'ol/proj';
 
-const balticExtent = boundingExtent([fromLonLat([9.0, 53.5]), fromLonLat([30.0, 66.0])]);
+const balticExtent = boundingExtent([fromLonLat([9.4, 53.0]), fromLonLat([30.2, 66.0])]);
 
 new View({
 	extent: balticExtent,
@@ -220,12 +213,12 @@ export async function findNearby(lat: number, lng: number, radiusKm: number) {
         SELECT *,
             ST_Distance(
                 location::geography,
-                ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)::geography
+                ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
             ) / 1000 as distance_km
         FROM sichtungen
         WHERE ST_DWithin(
             location::geography,
-            ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
             ${radiusKm * 1000}
         )
         ORDER BY distance_km
@@ -242,11 +235,13 @@ In `svelte.config.js`:
 ```javascript
 csp: {
     directives: {
-        'img-src': ["'self'", 'https://*.tile.openstreetmap.org'],
-        'connect-src': ["'self'", 'https://nominatim.openstreetmap.org']
+        'img-src': ["'self'", 'data:', 'blob:', 'https://*.tile.openstreetmap.org', '*.blob.vercel-storage.com'],
+        'connect-src': ["'self'", 'https://api.open-meteo.com', 'https://marine-api.open-meteo.com']
     }
 }
 ```
+
+**Hinweis:** Vollständige CSP-Konfiguration in `svelte.config.js` -- obiges ist ein Auszug der kartenrelevanten Einträge.
 
 ---
 

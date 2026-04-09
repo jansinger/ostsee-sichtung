@@ -170,7 +170,7 @@ const customSchema = yup.object({
 			lng: yup.number().min(-180).max(180).required()
 		})
 		.test('is-baltic-sea', 'Position muss in der Ostsee liegen', (value) =>
-			isInBalticSea(value.lat, value.lng)
+			isInBalticArea(value.lng, value.lat)
 		)
 });
 ```

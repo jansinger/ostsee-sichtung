@@ -56,25 +56,32 @@ import { db } from '$lib/server/db';
 ### Haupt-Tabelle: sichtungen
 
 ```typescript
-export const sichtungen = pgTable('sichtungen', {
-	id: serial('id').primaryKey(),
+export const sightings = pgTable('sichtungen', {
+	id: bigint({ mode: 'number' }).primaryKey().notNull(),
 
 	// Geografische Daten (PostGIS)
-	lat: doublePrecision('lat').notNull(),
-	lng: doublePrecision('lng').notNull(),
+	latitude: numeric('gps_breite', { precision: 8, scale: 6 }),
+	longitude: numeric('gps_laenge', { precision: 8, scale: 6 }),
 	location: geometry('location', { type: 'point', srid: 4326 }),
 
 	// Metadaten
-	date: date('date').notNull(),
-	time: time('time'),
-	species: varchar('species', { length: 100 }),
-	count: integer('count'),
+	sightingDate: timestamp('sichtungsdatum', { mode: 'date' }).notNull(),
+	species: smallint('tierart').default(0).notNull(),
+	totalCount: integer('anzahl_gesamt').default(0).notNull(),
+	juvenileCount: integer('anzahl_jung').default(0).notNull(),
 
 	// Status
-	approved: boolean('approved').default(false),
-	createdAt: timestamp('created_at').defaultNow()
+	approvedAt: timestamp('freigegeben_am', { mode: 'date' }),
+	verified: integer('geprueft').default(0).notNull(),
+	created: timestamp('created', { mode: 'date' }).notNull(),
+
+	// Wetterdaten (JSONB)
+	weatherData: jsonb('weather_data')
+	// ... 50+ weitere Felder (siehe schema.ts)
 });
 ```
+
+**Hinweis:** DB-Spalten nutzen deutsche Legacy-Namen (`gps_breite`, `sichtungsdatum`, `anzahl_gesamt`). Drizzle mappt diese auf englische TypeScript-Properties.
 
 ### Datei-Tabelle mit JSONB
 
@@ -100,31 +107,17 @@ export const sichtungenDateien = pgTable('sichtungen_dateien', {
 Alle DB-Operationen via Repository (`src/lib/server/db/sightingRepository.ts`):
 
 ```typescript
-// Beispiel: Sichtung erstellen
-export async function createSighting(data: NewSighting) {
-	return await db
-		.insert(sichtungen)
-		.values({
-			...data,
-			location: sql`ST_SetSRID(ST_Point(${data.lng}, ${data.lat}), 4326)`
-		})
-		.returning();
-}
-
-// Beispiel: Sichtungen in Umkreis
-export async function findNearby(lat: number, lng: number, radiusKm: number) {
-	return await db
-		.select()
-		.from(sichtungen)
-		.where(
-			sql`ST_DWithin(
-                location::geography,
-                ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)::geography,
-                ${radiusKm * 1000}
-            )`
-		);
-}
+// Sichtung speichern (Hauptfunktion)
+export const saveSighting = async (
+	formData: SightingFormValues,
+	weatherData?: StoredWeatherData
+): Promise<{ id: number | undefined }> => {
+	const sightingData: NewSighting = mapFormToSighting(formData);
+	// ... transaktionale Speicherung mit Mediendateien
+};
 ```
+
+**Hinweis:** `mapFormToSighting()` in `mapFormToSighting.ts` konvertiert Formulardaten → DB-Schema (PostGIS Point, Datum-Kombination, Ostsee-Validierung).
 
 ---
 
@@ -133,7 +126,7 @@ export async function findNearby(lat: number, lng: number, radiusKm: number) {
 ### Point erstellen
 
 ```typescript
-sql`ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)`;
+sql`ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`;
 ```
 
 ### Distanz berechnen
@@ -141,7 +134,7 @@ sql`ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)`;
 ```typescript
 sql`ST_Distance(
     location::geography,
-    ST_SetSRID(ST_Point(${lng}, ${lat}), 4326)::geography
+    ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
 )`;
 ```
 
@@ -155,9 +148,9 @@ sql`ST_AsGeoJSON(location)`;
 
 ```typescript
 // Vor dem Speichern Baltic Sea Grenzen validieren
-import { checkBalticSeaFile } from '$lib/utils/geo';
+import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 
-if (!checkBalticSeaFile(lat, lng)) {
+if (!checkBalticSeaFile(lng, lat).inBaltic) {
 	throw new Error('Position außerhalb der Ostsee');
 }
 ```
