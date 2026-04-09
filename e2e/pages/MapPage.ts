@@ -88,6 +88,35 @@ export class MapPage {
 		return this.page.locator('#map');
 	}
 
+	// ─── Time Slider ───────────────────────────────────────────────────────────
+
+	getStartSlider(): Locator {
+		return this.page.locator('#time-range-start');
+	}
+
+	getEndSlider(): Locator {
+		return this.page.locator('#time-range-end');
+	}
+
+	getTimeStartDisplay(): Locator {
+		return this.page.locator('#time-start');
+	}
+
+	getTimeEndDisplay(): Locator {
+		return this.page.locator('#time-end');
+	}
+
+	/**
+	 * Sets a range slider value and fires the input event so event handlers run.
+	 * Playwright's fill() does not reliably fire input events on range inputs.
+	 */
+	async setSliderValue(id: string, value: number) {
+		await this.page.locator(`#${id}`).evaluate((el, val) => {
+			(el as HTMLInputElement).value = val.toString();
+			el.dispatchEvent(new Event('input', { bubbles: true }));
+		}, value);
+	}
+
 	// ─── Loading & Errors ──────────────────────────────────────────────────────
 
 	getLoadingOverlay(): Locator {
@@ -95,7 +124,11 @@ export class MapPage {
 	}
 
 	getErrorAlert(): Locator {
-		return this.page.getByRole('alert');
+		return this.page.locator('.alert-error');
+	}
+
+	getDismissErrorButton(): Locator {
+		return this.page.getByRole('button', { name: /fehlermeldung schließen/i });
 	}
 
 	getRetryButton(): Locator {
