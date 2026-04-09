@@ -68,6 +68,17 @@ test.describe('Map Filter Panel', () => {
 		expect(response.url()).toContain('search=Schweinswal');
 	});
 
+	test('Suchtext bleibt nach Panel-Schließen erhalten', async () => {
+		await mapPage.openFilter();
+		await mapPage.fillSearch('Seehund');
+
+		await mapPage.closeFilter();
+		await mapPage.openFilter();
+
+		// Input muss den gesuchten Term noch anzeigen — kein hidden state
+		await expect(mapPage.getFilterInput()).toHaveValue('Seehund');
+	});
+
 	test('Filter-Panel zeigt Jahres-Optionen in Auswahl', async () => {
 		await mapPage.openFilter();
 

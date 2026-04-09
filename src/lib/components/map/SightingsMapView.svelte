@@ -338,7 +338,22 @@
 					break;
 				}
 				case 'Escape':
-					showKeyboardHelp = false;
+					if (showKeyboardHelp) {
+						showKeyboardHelp = false;
+					} else {
+						// Schließe offene Panels in der Priorität: Filter → Legende
+						const filterPanel = document.querySelector('[aria-labelledby="filter-title"]');
+						const legendPanel = document.querySelector('[aria-labelledby="legend-title"]');
+						if (filterPanel?.getAttribute('aria-hidden') === 'false') {
+							filterPanel
+								.querySelector<HTMLButtonElement>('[aria-label="Filter schließen"]')
+								?.click();
+						} else if (legendPanel?.getAttribute('aria-hidden') === 'false') {
+							legendPanel
+								.querySelector<HTMLButtonElement>('[aria-label="Legende schließen"]')
+								?.click();
+						}
+					}
 					break;
 			}
 		};

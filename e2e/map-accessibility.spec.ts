@@ -53,6 +53,24 @@ test.describe('Map Accessibility', () => {
 		await expect(dialog).toBeHidden({ timeout: 3000 });
 	});
 
+	test('ESC schließt offenes Filter-Panel', async ({ page }) => {
+		await mapPage.openFilter();
+		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'false');
+
+		await page.locator('body').click();
+		await page.keyboard.press('Escape');
+		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'true');
+	});
+
+	test('ESC schließt offene Legende', async ({ page }) => {
+		await mapPage.openLegend();
+		await expect(mapPage.getLegendPanel()).toHaveAttribute('aria-hidden', 'false');
+
+		await page.locator('body').click();
+		await page.keyboard.press('Escape');
+		await expect(mapPage.getLegendPanel()).toHaveAttribute('aria-hidden', 'true');
+	});
+
 	test('Filter-Panel hat korrekte ARIA-Attribute', async () => {
 		await mapPage.openFilter();
 
