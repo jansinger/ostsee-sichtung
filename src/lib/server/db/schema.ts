@@ -98,17 +98,23 @@ export const sightings = pgTable(
 			'gist',
 			table.location.asc().nullsLast().op('gist_geometry_ops_2d')
 		),
-		index('idx_year_sichtungen').using('btree', sql`date_part('year'::text, ${table.sightingDate})`),
+		index('idx_sichtungsdatum').on(table.sightingDate),
+		index('idx_year_sichtungen').using(
+			'btree',
+			sql`date_part('year'::text, ${table.sightingDate})`
+		),
 		// Weather data indexes for Issue #110
 		index('idx_weather_data_gin').using('gin', table.weatherData),
 		index('idx_weather_fetched').on(table.weatherFetchedAt),
 		index('idx_weather_provider').on(table.weatherProvider),
 		// Compound index for position+date lookup (deduplication)
-		index('idx_position_date_weather').on(
-			sql`ROUND(${table.latitude}::numeric, 2)`,
-			sql`ROUND(${table.longitude}::numeric, 2)`, 
-			sql`DATE(${table.sightingDate})`
-		).where(sql`${table.weatherData} IS NOT NULL`)
+		index('idx_position_date_weather')
+			.on(
+				sql`ROUND(${table.latitude}::numeric, 2)`,
+				sql`ROUND(${table.longitude}::numeric, 2)`,
+				sql`DATE(${table.sightingDate})`
+			)
+			.where(sql`${table.weatherData} IS NOT NULL`)
 	]
 );
 

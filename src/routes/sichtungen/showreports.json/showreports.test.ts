@@ -1,9 +1,9 @@
 /**
  * @fileoverview Tests for PDF-compliant Legacy REST API sighting retrieval
- * 
+ *
  * Tests the GET /sichtungen/showreports.json endpoint for 100% PDF specification compliance.
  * This endpoint MUST return data in EXACT format specified in PDF documentation.
- * 
+ *
  * @author Ostsee-Tiere Team
  * @since 1.10.0
  */
@@ -29,7 +29,7 @@ const mockSightingData = [
 		shipNameConsent: true,
 		approvedAt: new Date('2012-01-26T10:00:00.000Z'),
 		species: 0, // Schweinswal
-		isDead: 0   // Not a death finding
+		isDead: 0 // Not a death finding
 	},
 	{
 		id: 826,
@@ -46,7 +46,7 @@ const mockSightingData = [
 		shipNameConsent: false,
 		approvedAt: new Date('2012-03-31T09:00:00.000Z'),
 		species: 1, // Kegelrobbe
-		isDead: 0   // Not a death finding
+		isDead: 0 // Not a death finding
 	},
 	{
 		id: 827,
@@ -63,7 +63,7 @@ const mockSightingData = [
 		shipNameConsent: false, // No consent - should not show ship name
 		approvedAt: new Date('2012-04-16T08:00:00.000Z'),
 		species: 2, // Seehund
-		isDead: 1   // Death finding
+		isDead: 1 // Death finding
 	}
 ];
 
@@ -135,7 +135,7 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			expect(firstSighting).toHaveProperty('yo'); // Young count
 			expect(firstSighting).toHaveProperty('ta'); // Tierart (species)
 			expect(firstSighting).toHaveProperty('tf'); // Totfund (death finding)
-			
+
 			// Optional fields (consent-dependent)
 			expect(firstSighting).toHaveProperty('sh'); // Ship name
 			expect(firstSighting).toHaveProperty('na'); // Name
@@ -160,7 +160,7 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			const responseData = await response.json();
 
 			const firstSighting = responseData[0];
-			
+
 			// PDF format: DD.MM.YY (2-digit year!)
 			expect(firstSighting.dt).toBe('25.01.12');
 			expect(firstSighting.ti).toBe('14:50'); // UTC time (consistent across all timezones)
@@ -175,7 +175,7 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			const responseData = await response.json();
 
 			const firstSighting = responseData[0];
-			
+
 			// PDF requirement: Coordinates must be strings, not numbers
 			expect(firstSighting.lat).toBe('54.646667');
 			expect(firstSighting.lon).toBe('11.333333');
@@ -188,7 +188,7 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 
 			// First sighting: has name consent
 			expect(responseData[0].na).toBe('Jörg Schneider');
-			
+
 			// Third sighting: no name consent (nameConsent: false)
 			expect(responseData[2].na).toBeUndefined();
 		});
@@ -200,10 +200,10 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 
 			// First sighting: has ship name consent
 			expect(responseData[0].sh).toBe('Fährschiff "Deutschland"');
-			
+
 			// Second sighting: no ship name consent
 			expect(responseData[1].sh).toBeUndefined();
-			
+
 			// Third sighting: no ship name consent
 			expect(responseData[2].sh).toBeUndefined();
 		});
@@ -215,10 +215,10 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 
 			// First sighting: has waterway
 			expect(responseData[0].ar).toBe('Kieler Förde');
-			
+
 			// Second sighting: no waterway (null in database)
 			expect(responseData[1].ar).toBeUndefined();
-			
+
 			// Third sighting: has waterway
 			expect(responseData[2].ar).toBe('Fehmarnbelt');
 		});
@@ -317,13 +317,49 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 		});
 
 		it('should handle distance parameter with location', async () => {
-			const event = createMockRequestEvent({ 
-				location: '54.5,11.2', 
+			const event = createMockRequestEvent({
+				location: '54.5,11.2',
 				distance: '50000' // 50km in meters
 			});
 			const response = await GET(event);
 
 			expect(response.status).toBe(200);
+		});
+
+		it('should reject invalid distance parameter', async () => {
+			const event = createMockRequestEvent({ distance: '-100' });
+			const response = await GET(event);
+
+			expect(response.status).toBe(400);
+			const responseData = await response.json();
+			expect(responseData.error).toBe('InvalidDistance');
+		});
+
+		it('should reject non-numeric distance parameter', async () => {
+			const event = createMockRequestEvent({ distance: 'abc' });
+			const response = await GET(event);
+
+			expect(response.status).toBe(400);
+			const responseData = await response.json();
+			expect(responseData.error).toBe('InvalidDistance');
+		});
+
+		it('should reject partially-numeric distance parameter like "50000abc"', async () => {
+			const event = createMockRequestEvent({ distance: '50000abc' });
+			const response = await GET(event);
+
+			expect(response.status).toBe(400);
+			const responseData = await response.json();
+			expect(responseData.error).toBe('InvalidDistance');
+		});
+
+		it('should reject decimal distance parameter', async () => {
+			const event = createMockRequestEvent({ distance: '500.5' });
+			const response = await GET(event);
+
+			expect(response.status).toBe(400);
+			const responseData = await response.json();
+			expect(responseData.error).toBe('InvalidDistance');
 		});
 	});
 

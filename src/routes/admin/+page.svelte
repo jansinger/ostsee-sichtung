@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import ExportModal from '$lib/components/admin/ExportModal.svelte';
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
 	import { createLogger } from '$lib/logger';
@@ -13,7 +13,7 @@
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
 	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
-	import { toast } from '$lib/stores/toastState';
+	import { toast } from '$lib/stores/toastState.svelte';
 	import type { FrontendSighting, PageData } from '$lib/types';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import Icon from '$lib/components/Icon.svelte';
@@ -24,11 +24,11 @@
 
 	// Reaktive States mit Runes
 	let sightings = $derived(data.sightings);
-	let dateFrom = $state($page.url.searchParams.get('dateFrom') || '');
-	let dateTo = $state($page.url.searchParams.get('dateTo') || '');
-	let verified = $state($page.url.searchParams.get('verified') || '');
-	let selectedChannel = $state($page.url.searchParams.get('entryChannel') || 'all');
-	let mediaUpload = $state($page.url.searchParams.get('mediaUpload') || '');
+	let dateFrom = $state(page.url.searchParams.get('dateFrom') || '');
+	let dateTo = $state(page.url.searchParams.get('dateTo') || '');
+	let verified = $state(page.url.searchParams.get('verified') || '');
+	let selectedChannel = $state(page.url.searchParams.get('entryChannel') || 'all');
+	let mediaUpload = $state(page.url.searchParams.get('mediaUpload') || '');
 	let showDeleteDialog = $state(false);
 	let sightingToDelete = $state<FrontendSighting | null>(null);
 	let isFilterPanelOpen = $state(false);
@@ -102,19 +102,19 @@
 	});
 
 	function updateSort(column: string): void {
-		const currentSort = $page.url.searchParams.get('sort');
-		const currentOrder = $page.url.searchParams.get('order');
+		const currentSort = page.url.searchParams.get('sort');
+		const currentOrder = page.url.searchParams.get('order');
 
 		const newOrder = currentSort === column && currentOrder === 'asc' ? 'desc' : 'asc';
 
-		const url = new URL($page.url);
+		const url = new URL(page.url);
 		url.searchParams.set('sort', column);
 		url.searchParams.set('order', newOrder);
 		goto(url);
 	}
 
 	function applyFilters(): void {
-		const url = new URL($page.url);
+		const url = new URL(page.url);
 
 		// Datum-Filter
 		if (dateFrom) url.searchParams.set('dateFrom', dateFrom);
@@ -149,7 +149,7 @@
 		selectedChannel = 'all';
 		mediaUpload = '';
 
-		const url = new URL($page.url);
+		const url = new URL(page.url);
 		url.searchParams.delete('dateFrom');
 		url.searchParams.delete('dateTo');
 		url.searchParams.delete('verified');
@@ -167,13 +167,13 @@
 	}
 
 	function changePage(newPage: number): void {
-		const url = new URL($page.url);
+		const url = new URL(page.url);
 		url.searchParams.set('page', newPage.toString());
 		goto(url);
 	}
 
 	function changeItemsPerPage(newPerPage: number): void {
-		const url = new URL($page.url);
+		const url = new URL(page.url);
 		url.searchParams.set('perPage', newPerPage.toString());
 		url.searchParams.set('page', '1');
 		goto(url);
@@ -181,8 +181,8 @@
 
 	function viewSightingDetails(sighting: FrontendSighting): void {
 		// Preserve current filter parameters when navigating to detail view
-		const currentParams = $page.url.searchParams;
-		const detailUrl = new URL(`/admin/${sighting.id}`, $page.url.origin);
+		const currentParams = page.url.searchParams;
+		const detailUrl = new URL(`/admin/${sighting.id}`, page.url.origin);
 
 		// Copy current search parameters to maintain filters
 		for (const [key, value] of currentParams.entries()) {
@@ -196,7 +196,7 @@
 		try {
 			// Show loading toast
 			const loadingToastId = toast.info('E-Mail wird gesendet...', { duration: 0 });
-			
+
 			const response = await fetch('/api/admin/test-email', {
 				method: 'POST',
 				headers: {
@@ -325,7 +325,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="pt-6" onclick={handleClickOutside}>
 	<!-- Page Header -->
-	<div class="mb-6 container mx-auto px-4 sm:px-6">
+	<div class="container mx-auto mb-6 px-4 sm:px-6">
 		<!-- Mobile Layout -->
 		<div class="block space-y-3 sm:hidden">
 			<h1 class="text-2xl font-bold">Sichtungen</h1>
@@ -384,12 +384,9 @@
 							class="dropdown-content menu bg-base-100 rounded-box border-base-300 z-[1] mt-1 w-64 border p-2 shadow-lg"
 							onclick={(e) => e.stopPropagation()}
 						>
-							<div class="menu-title pb-2 flex items-center justify-between">
+							<div class="menu-title flex items-center justify-between pb-2">
 								<span class="text-sm font-semibold">Spalten anzeigen</span>
-								<button
-									class="btn btn-ghost btn-xs"
-									onclick={() => (showColumnDropdown = false)}
-								>
+								<button class="btn btn-ghost btn-xs" onclick={() => (showColumnDropdown = false)}>
 									<Icon icon="lucide:x" class="h-3 w-3" />
 								</button>
 							</div>
@@ -449,7 +446,9 @@
 
 	<!-- Filter Panel -->
 	{#if isFilterPanelOpen}
-		<div class="bg-base-200 mb-4 rounded-lg p-3 shadow-sm transition-all duration-300 container mx-auto px-4 sm:px-6">
+		<div
+			class="bg-base-200 container mx-auto mb-4 rounded-lg p-3 px-4 shadow-sm transition-all duration-300 sm:px-6"
+		>
 			<div class="mb-2 flex items-center justify-between">
 				<h2 class="text-base font-semibold">Filter</h2>
 				<button
@@ -542,7 +541,7 @@
 	{/if}
 
 	<!-- Mobile Card Layout -->
-	<div class="block space-y-3 md:hidden container mx-auto px-4 sm:px-6">
+	<div class="container mx-auto block space-y-3 px-4 sm:px-6 md:hidden">
 		{#each sightings as sighting (sighting.id)}
 			<div class="bg-base-100 border-base-300 rounded-lg border p-4 shadow-sm">
 				<div class="mb-3 flex items-start justify-between">
@@ -637,8 +636,8 @@
 	</div>
 
 	<!-- Desktop Table Layout -->
-	<div class="hidden md:block px-2 sm:px-4">
-		<div class="border-base-300 bg-base-100 overflow-x-auto rounded-lg border shadow-sm w-full">
+	<div class="hidden px-2 sm:px-4 md:block">
+		<div class="border-base-300 bg-base-100 w-full overflow-x-auto rounded-lg border shadow-sm">
 			<table class="table-zebra table w-full">
 				<thead class="bg-base-200 text-base-content">
 					<tr>
@@ -651,9 +650,9 @@
 								onclick={() => updateSort('sightingDate')}
 							>
 								Sichtungsdatum
-								{#if $page.url.searchParams.get('sort') === 'sightingDate'}
+								{#if page.url.searchParams.get('sort') === 'sightingDate'}
 									<span class="ml-1"
-										>{$page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
+										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
 									>
 								{/if}
 							</th>
@@ -661,9 +660,9 @@
 						{#if columnVisibility.created}
 							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('created')}>
 								Meldedatum
-								{#if $page.url.searchParams.get('sort') === 'created'}
+								{#if page.url.searchParams.get('sort') === 'created'}
 									<span class="ml-1"
-										>{$page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
+										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
 									>
 								{/if}
 							</th>
@@ -671,9 +670,9 @@
 						{#if columnVisibility.email}
 							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('email')}>
 								Email
-								{#if $page.url.searchParams.get('sort') === 'email'}
+								{#if page.url.searchParams.get('sort') === 'email'}
 									<span class="ml-1"
-										>{$page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
+										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
 									>
 								{/if}
 							</th>
@@ -681,9 +680,9 @@
 						{#if columnVisibility.species}
 							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('species')}>
 								Tierart
-								{#if $page.url.searchParams.get('sort') === 'species'}
+								{#if page.url.searchParams.get('sort') === 'species'}
 									<span class="ml-1"
-										>{$page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
+										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
 									>
 								{/if}
 							</th>
@@ -691,9 +690,9 @@
 						{#if columnVisibility.distance}
 							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('distance')}>
 								Entfernung
-								{#if $page.url.searchParams.get('sort') === 'distance'}
+								{#if page.url.searchParams.get('sort') === 'distance'}
 									<span class="ml-1"
-										>{$page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
+										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
 									>
 								{/if}
 							</th>
@@ -701,9 +700,9 @@
 						{#if columnVisibility.totalCount}
 							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('totalCount')}>
 								Anzahl
-								{#if $page.url.searchParams.get('sort') === 'totalCount'}
+								{#if page.url.searchParams.get('sort') === 'totalCount'}
 									<span class="ml-1"
-										>{$page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
+										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
 									>
 								{/if}
 							</th>
@@ -714,9 +713,9 @@
 								onclick={() => updateSort('juvenileCount')}
 							>
 								Jung
-								{#if $page.url.searchParams.get('sort') === 'juvenileCount'}
+								{#if page.url.searchParams.get('sort') === 'juvenileCount'}
 									<span class="ml-1"
-										>{$page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
+										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
 									>
 								{/if}
 							</th>
@@ -727,9 +726,9 @@
 								onclick={() => updateSort('distribution')}
 							>
 								Verteilung
-								{#if $page.url.searchParams.get('sort') === 'distribution'}
+								{#if page.url.searchParams.get('sort') === 'distribution'}
 									<span class="ml-1"
-										>{$page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
+										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
 									>
 								{/if}
 							</th>
@@ -737,9 +736,9 @@
 						{#if columnVisibility.behavior}
 							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('behavior')}>
 								Verhalten
-								{#if $page.url.searchParams.get('sort') === 'behavior'}
+								{#if page.url.searchParams.get('sort') === 'behavior'}
 									<span class="ml-1"
-										>{$page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
+										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
 									>
 								{/if}
 							</th>
@@ -747,9 +746,9 @@
 						{#if columnVisibility.seaState}
 							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('seaState')}>
 								Seegang
-								{#if $page.url.searchParams.get('sort') === 'seaState'}
+								{#if page.url.searchParams.get('sort') === 'seaState'}
 									<span class="ml-1"
-										>{$page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
+										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
 									>
 								{/if}
 							</th>
@@ -757,9 +756,9 @@
 						{#if columnVisibility.wind}
 							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('wind')}>
 								Wind
-								{#if $page.url.searchParams.get('sort') === 'wind'}
+								{#if page.url.searchParams.get('sort') === 'wind'}
 									<span class="ml-1"
-										>{$page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
+										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
 									>
 								{/if}
 							</th>
@@ -767,9 +766,9 @@
 						{#if columnVisibility.visibility}
 							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('visibility')}>
 								Sichtweite
-								{#if $page.url.searchParams.get('sort') === 'visibility'}
+								{#if page.url.searchParams.get('sort') === 'visibility'}
 									<span class="ml-1"
-										>{$page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
+										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
 									>
 								{/if}
 							</th>
@@ -846,7 +845,11 @@
 								<td>{getSeaStateLabel(sighting.seaState) || '—'}</td>
 							{/if}
 							{#if columnVisibility.wind}
-								<td>{getWindStrengthLabel(sighting.windForce ? Number(sighting.windForce) : undefined) || '—'}</td>
+								<td
+									>{getWindStrengthLabel(
+										sighting.windForce ? Number(sighting.windForce) : undefined
+									) || '—'}</td
+								>
 							{/if}
 							{#if columnVisibility.visibility}
 								<td>{getVisibilityLabel(sighting.visibility) || '—'}</td>
@@ -928,14 +931,16 @@
 		</div>
 	</div>
 
-	<div class="mt-6 flex flex-col items-center justify-between gap-4 sm:flex-row container mx-auto px-4 sm:px-6">
+	<div
+		class="container mx-auto mt-6 flex flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6"
+	>
 		<div class="flex items-center gap-2 text-center sm:text-left">
 			<span class="text-sm font-medium">Einträge pro Seite:</span>
 			<select
 				class="select-bordered select select-sm min-h-8 text-sm"
 				onchange={(e) => changeItemsPerPage(Number(e.currentTarget.value))}
 			>
-				{#each [10, 20, 50, 100].filter(size => size <= (data.pagination?.maxPerPage || 50)) as size (size)}
+				{#each [10, 20, 50, 100].filter((size) => size <= (data.pagination?.maxPerPage || 50)) as size (size)}
 					<option value={size} selected={data.pagination.perPage === size}>{size}</option>
 				{/each}
 			</select>

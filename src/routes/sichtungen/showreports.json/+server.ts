@@ -116,7 +116,23 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			}
 		}
 
-		// Location filter (point-based search with radius) - PDF specification
+		// Distance validation (only used together with location) - PDF specification
+		// Strict integer validation: reject partial numbers like "50000abc"
+		let distanceMeters = 100000; // default 100km in meters
+		if (distance) {
+			if (!/^\d+$/.test(distance) || parseInt(distance, 10) <= 0) {
+				return json(
+					{
+						error: 'InvalidDistance',
+						message: 'Distance must be a positive integer in meters'
+					},
+					{ status: 400 }
+				);
+			}
+			distanceMeters = parseInt(distance, 10);
+		}
+
+		// Location filter using ST_DWithin for accurate meter-based radius - PDF specification
 		if (location) {
 			const coords = location.split(',');
 			if (coords.length === 2) {
@@ -124,14 +140,15 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				const lon = parseFloat(coords[1]!.trim());
 
 				if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-					// PDF: "Standardumkreis 100 km" - use reasonable search radius
-					const radius = 0.9; // degrees (approximately 100km)
-
 					whereConditions.push(
-						and(
-							between(sightings.latitude, (lat - radius).toString(), (lat + radius).toString()),
-							between(sightings.longitude, (lon - radius).toString(), (lon + radius).toString())
-						)
+						sql`ST_DWithin(
+							ST_SetSRID(ST_MakePoint(
+								CAST(${sightings.longitude} AS double precision),
+								CAST(${sightings.latitude} AS double precision)
+							), 4326)::geography,
+							ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)::geography,
+							${distanceMeters}
+						)`
 					);
 
 					logger.debug(
@@ -139,7 +156,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
 							location,
 							lat,
 							lon,
-							radius,
+							distanceMeters,
 							ip: clientIp
 						},
 						'Applied location filter (PDF compliant)'
@@ -158,34 +175,6 @@ export async function GET(event: RequestEvent): Promise<Response> {
 					{
 						error: 'InvalidLocationFormat',
 						message: 'Location must be in format "latitude,longitude"'
-					},
-					{ status: 400 }
-				);
-			}
-		}
-
-		// Distance filter (for radius search with location) - PDF specification
-		if (distance) {
-			const distanceNum = parseInt(distance);
-			if (!isNaN(distanceNum) && distanceNum > 0) {
-				// Distance is in meters - convert to degrees approximation
-				const radiusInDegrees = distanceNum / 111000; // Rough conversion
-
-				// This would modify the location search radius if location is also provided
-				// For now, we'll log the distance parameter but maintain standard behavior
-				logger.debug(
-					{
-						distance: distanceNum,
-						radiusInDegrees,
-						ip: clientIp
-					},
-					'Distance parameter provided (PDF compliant)'
-				);
-			} else {
-				return json(
-					{
-						error: 'InvalidDistance',
-						message: 'Distance must be a positive number in meters'
 					},
 					{ status: 400 }
 				);

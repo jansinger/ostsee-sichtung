@@ -3,9 +3,9 @@
 	import { isStepValid, validateStep } from '$lib/form/validation/stepValidation';
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
-	import { toast } from '$lib/stores/toastState';
+	import { toast } from '$lib/stores/toastState.svelte';
 	import { getErrorCount, scrollToElement, scrollToFirstError } from '$lib/utils/fieldNavigation';
-	import { formStepsConfig } from '../../formConfig';
+	import { formStepsConfig } from '$lib/report/formConfig';
 
 	const logger = createLogger('report:StepNavigation');
 

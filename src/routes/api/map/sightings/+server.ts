@@ -23,7 +23,6 @@ export const GET: RequestHandler = async ({ url }) => {
 		if (year) {
 			const yearStart = new Date(`${year}-01-01`);
 			const yearEnd = new Date(`${year}-12-31`);
-			// @TODO: use Postgres index!
 			conditions.push(between(sightingsTable.sightingDate, yearStart, yearEnd));
 		}
 
@@ -76,7 +75,10 @@ export const GET: RequestHandler = async ({ url }) => {
 		// Erfolgreiche Antwort zurückgeben
 		return json(geoJson);
 	} catch (error) {
-		logger.error({ error: error instanceof Error ? error.message : error }, 'Fehler beim Abrufen der Sichtungen für die Karte');
+		logger.error(
+			{ error: error instanceof Error ? error.message : error },
+			'Fehler beim Abrufen der Sichtungen für die Karte'
+		);
 
 		// Fehlerantwort zurückgeben
 		return json(

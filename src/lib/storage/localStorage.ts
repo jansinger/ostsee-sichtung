@@ -1,14 +1,14 @@
 /**
  * @fileoverview Browser-Storage-Management für Formulardaten
- * 
+ *
  * Dieses Modul implementiert ein intelligentes Storage-System für die
  * Sichtungsformulare, das zwischen sessionStorage und localStorage
  * unterscheidet basierend auf Datentyp und Benutzer-Einwilligung.
- * 
+ *
  * Es bietet DSGVO-konforme Speicherung mit automatischer Bereinigung
  * und unterstützt sowohl temporäre (Session) als auch persistente
  * Datenspeicherung je nach Nutzer-Präferenzen.
- * 
+ *
  * @author Ostsee-Tiere Team
  * @since 1.0.0
  */
@@ -21,9 +21,9 @@ import type { UserContactData } from '$lib/types';
  * Verhindert Konflikte mit anderen Anwendungen im gleichen Domain
  */
 export const STORAGE_KEYS = {
-	CURRENT_STEP: 'sichtungen_current_step',           // Aktueller Formular-Schritt
-	FORM_DATA: 'sichtungen_form_data',                 // Hauptformulardaten
-	USER_CONTACT_DATA: 'sichtungen_user_contact_data'  // Benutzer-Kontaktdaten
+	CURRENT_STEP: 'sichtungen_current_step', // Aktueller Formular-Schritt
+	FORM_DATA: 'sichtungen_form_data', // Hauptformulardaten
+	USER_CONTACT_DATA: 'sichtungen_user_contact_data' // Benutzer-Kontaktdaten
 };
 
 /**
@@ -43,9 +43,9 @@ function getItem(key: string): string | null {
 
 	let stored;
 	if (sessionKeys.includes(key)) {
-		stored = sessionStorage.getItem(key);    // Temporäre Session-Daten
+		stored = sessionStorage.getItem(key); // Temporäre Session-Daten
 	} else {
-		stored = localStorage.getItem(key);      // Persistente Daten
+		stored = localStorage.getItem(key); // Persistente Daten
 	}
 	return stored;
 }
@@ -59,25 +59,25 @@ function setItem(key: string, value: string): void {
 	if (!browser) return;
 
 	if (sessionKeys.includes(key)) {
-		sessionStorage.setItem(key, value);      // Session-spezifische Daten
+		sessionStorage.setItem(key, value); // Session-spezifische Daten
 	} else {
-		localStorage.setItem(key, value);        // Browser-übergreifende Persistenz
+		localStorage.setItem(key, value); // Browser-übergreifende Persistenz
 	}
 }
 
 /**
  * Lädt typsichere Daten aus dem Browser-Storage
- * 
+ *
  * Diese Funktion entscheidet automatisch zwischen sessionStorage und
  * localStorage und parsed JSON-Daten sicher mit Fallback-Behandlung.
- * 
+ *
  * @param key Storage-Schlüssel aus STORAGE_KEYS
- * @param defaultValue Fallback-Wert bei fehlenden oder korrupten Daten  
+ * @param defaultValue Fallback-Wert bei fehlenden oder korrupten Daten
  * @returns Geladene und geparste Daten oder Standardwert
- * 
+ *
  * @example
  * const userData = loadFromStorage(STORAGE_KEYS.USER_CONTACT_DATA, {});
- * 
+ *
  * @note Automatische Fehlerbehandlung bei korrupten JSON-Daten
  */
 export function loadFromStorage<T>(key: string, defaultValue: T): T {
@@ -87,10 +87,10 @@ export function loadFromStorage<T>(key: string, defaultValue: T): T {
 	const stored = getItem(key);
 	if (stored) {
 		try {
-			return JSON.parse(stored);                // Sichere JSON-Deserialisierung
+			return JSON.parse(stored); // Sichere JSON-Deserialisierung
 		} catch (e) {
 			console.error(`JSON-Parse-Fehler für ${key} aus Storage:`, e);
-			return defaultValue;                      // Fallback bei korrupten Daten
+			return defaultValue; // Fallback bei korrupten Daten
 		}
 	}
 	return defaultValue;
@@ -98,35 +98,35 @@ export function loadFromStorage<T>(key: string, defaultValue: T): T {
 
 /**
  * Speichert typsichere Daten im Browser-Storage
- * 
+ *
  * Serialisiert JavaScript-Objekte automatisch zu JSON und speichert
  * sie im passenden Storage-Typ (session oder local) basierend auf dem Schlüssel.
- * 
+ *
  * @param key Storage-Schlüssel aus STORAGE_KEYS
  * @param value Zu speicherndes JavaScript-Objekt (wird JSON-serialisiert)
- * 
+ *
  * @example
  * saveToStorage(STORAGE_KEYS.FORM_DATA, formState);
- * 
+ *
  * @note Verwendet automatisch sessionStorage für temporäre Daten
  */
 export function saveToStorage<T>(key: string, value: T): void {
 	// Server-side Rendering Schutz
 	if (!browser) return;
 
-	setItem(key, JSON.stringify(value));             // JSON-Serialisierung für komplexe Objekte
+	setItem(key, JSON.stringify(value)); // JSON-Serialisierung für komplexe Objekte
 }
 
 /**
  * Bereinigt formular-relevante Daten bei Formular-Abschluss
- * 
+ *
  * Löscht alle temporären Formulardaten aber behält Benutzer-Kontaktdaten
  * für zukünftige Formulare (außer bei expliziter Widerspruch).
  * Respektiert DSGVO-Anforderungen zur Datenlöschung.
- * 
+ *
  * @example
  * clearStorage(); // Nach erfolgreicher Formular-Übermittlung
- * 
+ *
  * @note Erhält USER_CONTACT_DATA für Benutzerfreundlichkeit
  */
 export function clearStorage(): void {
@@ -137,28 +137,28 @@ export function clearStorage(): void {
 	const keysToClear = Object.values(STORAGE_KEYS).filter(
 		(key) => key !== STORAGE_KEYS.USER_CONTACT_DATA
 	);
-	
+
 	keysToClear.forEach((key) => {
 		// Storage-Typ-spezifische Löschung
 		if (sessionKeys.includes(key)) {
-			sessionStorage.removeItem(key);          // Session-Daten löschen
+			sessionStorage.removeItem(key); // Session-Daten löschen
 		} else {
-			localStorage.removeItem(key);            // Persistente Daten löschen
+			localStorage.removeItem(key); // Persistente Daten löschen
 		}
 	});
 }
 
 /**
  * Teilweise Datenbereinigung - behält Navigation und Kontakte
- * 
+ *
  * Löscht nur die eigentlichen Formulardaten aber erhält den aktuellen
  * Schritt und Benutzer-Kontaktdaten für bessere User Experience.
- * 
+ *
  * @example
  * clearFormDataOnly(); // Beim Formular-Reset ohne Navigation-Verlust
  */
 export function clearFormDataOnly(): void {
-	// Server-side Rendering Schutz  
+	// Server-side Rendering Schutz
 	if (!browser) return;
 
 	// Nur Hauptformulardaten löschen (liegt in sessionStorage)
@@ -167,12 +167,12 @@ export function clearFormDataOnly(): void {
 
 /**
  * Speichert Benutzer-Kontaktdaten persistent im localStorage
- * 
+ *
  * Diese Daten überleben Formular-Resets und Browser-Sessions um
  * das Ausfüllen zukünftiger Formulare zu vereinfachen.
- * 
+ *
  * @param contactData Vollständige Kontaktdaten des Benutzers
- * 
+ *
  * @example
  * saveUserContactData({ firstName: 'Max', lastName: 'Mustermann', ... });
  */
@@ -182,12 +182,12 @@ export function saveUserContactData(contactData: UserContactData): void {
 
 /**
  * Lädt gespeicherte Benutzer-Kontaktdaten aus localStorage
- * 
+ *
  * Ermöglicht automatisches Vorausfüllen von Kontaktfeldern
  * in neuen Formularen für verbesserte Benutzerfreundlichkeit.
- * 
+ *
  * @returns Gespeicherte Kontaktdaten oder leeres Objekt
- * 
+ *
  * @example
  * const contacts = loadUserContactData();
  * if (contacts.email) setFormField('email', contacts.email);
@@ -208,22 +208,21 @@ export function loadUserContactData(): UserContactData {
 
 /**
  * Vollständige Storage-Bereinigung inklusive aller Benutzerdaten
- * 
+ *
  * Löscht alle gespeicherten Daten inklusive der normalerweise
  * persistenten Benutzer-Kontaktdaten. Für DSGVO-Löschungsanfragen.
- * 
+ *
  * @example
  * clearAllStorage(); // Bei Datenschutz-Löschungsanfrage
- * 
+ *
  * @note Löscht auch die User-Kontaktdaten - Benutzer muss alles neu eingeben
  */
 export function clearAllStorage(): void {
-	// Server-side Rendering Schutz
-	if (typeof window === 'undefined') return;
+	if (!browser) return;
 
 	// Vollständige Bereinigung aller namespaced Keys
 	Object.values(STORAGE_KEYS).forEach((key) => {
-		localStorage.removeItem(key);           // Nur localStorage (sessionStorage wird automatisch bereinigt)
+		localStorage.removeItem(key); // Nur localStorage (sessionStorage wird automatisch bereinigt)
 	});
 }
 

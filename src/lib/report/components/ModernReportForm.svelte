@@ -22,7 +22,7 @@
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 	import { combineToDate } from '$lib/utils/format/dateTime';
 	import { createId } from '@paralleldrive/cuid2';
-	import { formStepsConfig } from '../formConfig';
+	import { formStepsConfig } from '$lib/report/formConfig';
 	import Form from './form/Form.svelte';
 	import FormSteps from './form/FormSteps.svelte';
 	import FormHelp from './FormHelp.svelte';
