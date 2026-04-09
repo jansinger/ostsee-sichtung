@@ -46,13 +46,22 @@ git checkout -b <type>/<kurze-beschreibung>
 - `test/` - Tests
 - `chore/` - Wartung
 
-### Schritt 2: TDD-Coverage prüfen
+### Schritt 2: TDD-Coverage-Hinweis (nicht blockierend)
 
-Prüfe ob neue/geänderte Quelldateien ohne Test-Gegenstück existieren:
+Prüfe ob neue/geänderte Quelldateien ohne Test-Gegenstück existieren. Diese Prüfung ist ein **Hinweis**, kein harter Gate — die Entscheidung ob Tests nachgezogen werden liegt beim User.
 
 ```bash
-# Geänderte Source-Dateien (keine Tests, keine Config)
-git diff --name-only main...HEAD | grep -E '\.(ts|svelte)$' | grep -v '\.test\.' | grep -v '\.spec\.' | grep -v '\.config\.' | grep -v 'd\.ts$'
+# Geänderte Source-Dateien (ohne Tests, Config, Typen, Routing-Files)
+git diff --name-only main...HEAD \
+  | grep -E '\.(ts|svelte)$' \
+  | grep -v '\.test\.' \
+  | grep -v '\.spec\.' \
+  | grep -v '\.config\.' \
+  | grep -v '\.d\.ts$' \
+  | grep -v 'types\.ts$' \
+  | grep -v '+page\.svelte$' \
+  | grep -v '+layout\.svelte$' \
+  | grep -v '+error\.svelte$'
 ```
 
 Für jede gefundene Datei prüfen ob eine entsprechende `.test.ts` Datei existiert:
@@ -61,15 +70,12 @@ Für jede gefundene Datei prüfen ob eine entsprechende `.test.ts` Datei existie
 - `src/lib/components/Bar.svelte` → `src/lib/components/Bar.svelte.test.ts`
 - `src/routes/api/*/+server.ts` → daneben als `+server.test.ts`
 
-**Ausnahmen** (kein Test erforderlich):
+**Verbleibende Ausnahmen** (manuell prüfen, kein Test erforderlich):
 
-- Reine Typ-Definitionen (`types.ts`, `*.d.ts`)
-- Konfigurationsdateien (`*.config.ts`)
-- Reine Re-Exports / Barrel-Files (nur `export * from ...`)
-- Svelte-Routing-Files (`+layout.svelte`, `+page.svelte` ohne komplexe Logik)
+- Reine Re-Exports / Barrel-Files (nur `export * from ...` — lässt sich nicht per grep filtern)
 - Reine Styling-Änderungen
 
-**Bei fehlenden Tests:** Hinweis ausgeben und fragen ob Tests nachgezogen werden sollen (via `/tdd`). Nicht blockieren — Entscheidung liegt beim User.
+**Wenn Dateien ohne Tests gefunden:** Hinweis ausgeben, `/tdd` als Option anbieten. **Nicht blockieren.**
 
 ### Schritt 3: Tests ausführen
 

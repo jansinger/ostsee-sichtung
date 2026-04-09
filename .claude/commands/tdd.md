@@ -56,13 +56,14 @@ describe('functionName', () => {
 
 ```typescript
 // Browser Test für Svelte-Komponente
+import { describe, it, expect, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import { page } from 'vitest/browser';
 import MyComponent from './MyComponent.svelte';
 
 describe('MyComponent', () => {
 	it('zeigt erwarteten Inhalt an', async () => {
-		render(MyComponent, { props: { label: 'Test' } });
+		render(MyComponent, { label: 'Test' });
 		await expect.element(page.getByText('Test')).toBeVisible();
 	});
 });
