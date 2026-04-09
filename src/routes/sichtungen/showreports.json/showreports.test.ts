@@ -343,6 +343,24 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			const responseData = await response.json();
 			expect(responseData.error).toBe('InvalidDistance');
 		});
+
+		it('should reject partially-numeric distance parameter like "50000abc"', async () => {
+			const event = createMockRequestEvent({ distance: '50000abc' });
+			const response = await GET(event);
+
+			expect(response.status).toBe(400);
+			const responseData = await response.json();
+			expect(responseData.error).toBe('InvalidDistance');
+		});
+
+		it('should reject decimal distance parameter', async () => {
+			const event = createMockRequestEvent({ distance: '500.5' });
+			const response = await GET(event);
+
+			expect(response.status).toBe(400);
+			const responseData = await response.json();
+			expect(responseData.error).toBe('InvalidDistance');
+		});
 	});
 
 	describe('PDF Compliance - Cache and Headers', () => {

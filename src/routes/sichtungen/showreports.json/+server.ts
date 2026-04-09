@@ -117,23 +117,22 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		}
 
 		// Distance validation (only used together with location) - PDF specification
-		let distanceRadius = 0.9; // default ~100km in degrees
+		// Strict integer validation: reject partial numbers like "50000abc"
+		let distanceMeters = 100000; // default 100km in meters
 		if (distance) {
-			const distanceNum = parseInt(distance);
-			if (!isNaN(distanceNum) && distanceNum > 0) {
-				distanceRadius = distanceNum / 111000; // meters to degrees (~111km per degree)
-			} else {
+			if (!/^\d+$/.test(distance) || parseInt(distance, 10) <= 0) {
 				return json(
 					{
 						error: 'InvalidDistance',
-						message: 'Distance must be a positive number in meters'
+						message: 'Distance must be a positive integer in meters'
 					},
 					{ status: 400 }
 				);
 			}
+			distanceMeters = parseInt(distance, 10);
 		}
 
-		// Location filter (point-based search with radius) - PDF specification
+		// Location filter using ST_DWithin for accurate meter-based radius - PDF specification
 		if (location) {
 			const coords = location.split(',');
 			if (coords.length === 2) {
@@ -142,18 +141,14 @@ export async function GET(event: RequestEvent): Promise<Response> {
 
 				if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
 					whereConditions.push(
-						and(
-							between(
-								sightings.latitude,
-								(lat - distanceRadius).toString(),
-								(lat + distanceRadius).toString()
-							),
-							between(
-								sightings.longitude,
-								(lon - distanceRadius).toString(),
-								(lon + distanceRadius).toString()
-							)
-						)
+						sql`ST_DWithin(
+							ST_SetSRID(ST_MakePoint(
+								CAST(${sightings.longitude} AS double precision),
+								CAST(${sightings.latitude} AS double precision)
+							), 4326)::geography,
+							ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)::geography,
+							${distanceMeters}
+						)`
 					);
 
 					logger.debug(
@@ -161,8 +156,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
 							location,
 							lat,
 							lon,
-							radius: distanceRadius,
-							distanceMeters: distance ? parseInt(distance) : null,
+							distanceMeters,
 							ip: clientIp
 						},
 						'Applied location filter (PDF compliant)'
