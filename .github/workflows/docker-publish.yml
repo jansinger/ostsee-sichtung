@@ -279,12 +279,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+      - name: Run Trivy vulnerability scanner (SARIF)
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}
           format: 'sarif'
           output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Run Trivy vulnerability scanner (JSON)
+        uses: aquasecurity/trivy-action@v0.35.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}
+          format: 'json'
+          output: 'trivy-results.json'
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results to GitHub Security
@@ -292,14 +300,6 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
-
-      - name: Run Trivy vulnerability scanner (JSON)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}
-          format: 'json'
-          output: 'trivy-results.json'
-          severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results as artifact
         uses: actions/upload-artifact@v7
