@@ -114,7 +114,7 @@ import GeoJSON from 'ol/format/GeoJSON';
 
 const sightingsLayer = new VectorLayer({
 	source: new VectorSource({
-		url: '/api/sightings/geojson',
+		url: '/api/map/sightings',
 		format: new GeoJSON()
 	}),
 	style: sightingStyle
@@ -182,7 +182,7 @@ new View({
 ### API Endpoint für GeoJSON
 
 ```typescript
-// src/routes/api/sightings/geojson/+server.ts
+// src/routes/api/map/sightings/+server.ts
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { sql } from 'drizzle-orm';

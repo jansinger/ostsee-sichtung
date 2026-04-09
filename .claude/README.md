@@ -32,7 +32,15 @@ Diese Dokumentation ist modular aufgebaut für optimale Navigation und Wartbarke
 │   ├── maps.md         # OpenLayers (conditional: Map-Dateien)
 │   ├── security.md     # Auth & GDPR (conditional: Auth/Security-Dateien)
 │   ├── api.md          # REST API (conditional: API-Dateien)
-│   └── docker.md       # Docker Deployment (conditional: Docker-Dateien)
+│   ├── docker.md       # Docker Deployment (conditional: Docker-Dateien)
+│   ├── admin.md        # Admin Panel (conditional: Admin-Dateien)
+│   ├── email.md        # Email Service (conditional: Email-Dateien)
+│   ├── upload.md       # File Upload & Storage (conditional: Upload-Dateien)
+│   ├── export.md       # Daten-Export (conditional: Export-Dateien)
+│   ├── weather.md      # Weather System (conditional: Weather-Dateien)
+│   ├── middleware.md    # Server Middleware (conditional: Hooks/Middleware)
+│   ├── geo.md          # Geographic Validation (conditional: Geo-Dateien)
+│   └── browser-storage.md # Browser Storage GDPR (conditional: Storage-Dateien)
 ├── agents/             # Spezialisierte Agents
 │   ├── form-development.md
 │   ├── testing.md
@@ -52,14 +60,22 @@ Diese Dokumentation ist modular aufgebaut für optimale Navigation und Wartbarke
 
 Rules mit `paths` Frontmatter werden nur geladen wenn passende Dateien bearbeitet werden:
 
-| Rule        | Geladen bei Dateien in...                                                                 |
-| ----------- | ----------------------------------------------------------------------------------------- |
-| forms.md    | `src/lib/form/`, `src/lib/report/`, `src/lib/components/form/`, `src/routes/+page.svelte` |
-| maps.md     | `src/lib/map/`, `src/routes/map/`                                                         |
-| security.md | `src/lib/server/auth/`, `src/hooks.server.ts`, `src/routes/api/files/`                    |
-| api.md      | `src/routes/api/`, `src/routes/rest_sichtungen/`, `src/routes/sichtungen/`                |
-| database.md | `src/lib/server/db/**`, `drizzle.config.ts`, `src/routes/api/**`                          |
-| docker.md   | `Dockerfile`, `docker-compose*.yml`, `.github/workflows/docker-publish.yml`               |
+| Rule               | Geladen bei Dateien in...                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| forms.md           | `src/lib/form/`, `src/lib/report/`, `src/lib/components/form/`, `src/routes/+page.svelte`         |
+| maps.md            | `src/lib/map/`, `src/lib/components/map/`, `src/routes/map/`, `src/routes/api/map/`               |
+| security.md        | `src/lib/server/auth/`, `src/lib/server/storage/`, `src/hooks.server.ts`, `src/routes/api/files/` |
+| api.md             | `src/routes/api/`, `src/routes/rest_sichtungen/`, `src/routes/sichtungen/`                        |
+| database.md        | `src/lib/server/db/**`, `drizzle.config.ts`, `src/routes/api/**`                                  |
+| docker.md          | `Dockerfile`, `docker-compose*.yml`, `.github/workflows/docker-publish.yml`                       |
+| admin.md           | `src/routes/admin/`, `src/lib/components/admin/`                                                  |
+| email.md           | `src/lib/server/services/emailService.ts`, `src/lib/server/templates/`                            |
+| upload.md          | `src/lib/server/storage/`, `src/lib/server/media/`, `src/routes/api/files/`                       |
+| export.md          | `src/lib/server/export/`, `src/routes/api/sightings/export/`, `ExportModal.svelte`                |
+| weather.md         | `src/lib/components/weather/`, `src/lib/server/services/weather*`                                 |
+| middleware.md      | `src/lib/server/middleware/`, `src/hooks.server.ts`                                               |
+| geo.md             | `src/lib/server/geo/`, `src/lib/utils/geo/`, `src/routes/api/geo/`                                |
+| browser-storage.md | `src/lib/storage/`                                                                                |
 
 Rules **ohne** `paths` (immer geladen): architecture.md, testing.md
 

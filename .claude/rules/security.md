@@ -24,10 +24,10 @@ Auth0 als Identity Provider via PKCE Flow, JWT-Verifizierung mit `jose`, Cookie-
 import { sequence } from '@sveltejs/kit/hooks';
 
 export const handle = sequence(
-	setAdditionalHeaders, // Security Headers
-	maintenanceMode, // Wartungsmodus
-	databaseCheck, // DB-Verfügbarkeit
-	authHandler // JWT-Verifizierung + Cookie-Session
+	databaseCheck, // 1. DB-Verfügbarkeit
+	maintenanceMode, // 2. Wartungsmodus
+	authHandler, // 3. JWT-Verifizierung + Cookie-Session
+	setAdditionalHeaders // 4. Security Headers
 );
 ```
 

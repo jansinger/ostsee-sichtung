@@ -116,16 +116,24 @@ Siehe .claude/rules/architecture.md für vollständige Struktur.
 
 Detaillierte Regeln in `.claude/rules/`:
 
-| Datei                         | Inhalt                                  |
-| ----------------------------- | --------------------------------------- |
-| .claude/rules/architecture.md | Architektur, Clean Code (immer geladen) |
-| .claude/rules/testing.md      | Vitest, Playwright (immer geladen)      |
-| .claude/rules/database.md     | Drizzle, PostGIS (immer geladen)        |
-| .claude/rules/forms.md        | Multi-Step Forms (bei Form-Dateien)     |
-| .claude/rules/maps.md         | OpenLayers (bei Map-Dateien)            |
-| .claude/rules/security.md     | Auth, GDPR (bei Auth/Security-Dateien)  |
-| .claude/rules/api.md          | REST API (bei API-Dateien)              |
-| .claude/rules/docker.md       | Docker Deployment (bei Docker-Dateien)  |
+| Datei                            | Inhalt                                     |
+| -------------------------------- | ------------------------------------------ |
+| .claude/rules/architecture.md    | Architektur, Clean Code (immer geladen)    |
+| .claude/rules/testing.md         | Vitest, Playwright (immer geladen)         |
+| .claude/rules/database.md        | Drizzle, PostGIS (bei DB/API-Dateien)      |
+| .claude/rules/forms.md           | Multi-Step Forms (bei Form-Dateien)        |
+| .claude/rules/maps.md            | OpenLayers (bei Map-Dateien)               |
+| .claude/rules/security.md        | Auth, GDPR (bei Auth/Security-Dateien)     |
+| .claude/rules/api.md             | REST API (bei API-Dateien)                 |
+| .claude/rules/docker.md          | Docker Deployment (bei Docker-Dateien)     |
+| .claude/rules/admin.md           | Admin Panel (bei Admin-Dateien)            |
+| .claude/rules/email.md           | Email Service (bei Email/Template-Dateien) |
+| .claude/rules/upload.md          | File Upload & Storage (bei Upload-Dateien) |
+| .claude/rules/export.md          | Daten-Export CSV/JSON/KML/XML              |
+| .claude/rules/weather.md         | Weather System (bei Weather-Dateien)       |
+| .claude/rules/middleware.md      | Server Middleware (bei Middleware/Hooks)   |
+| .claude/rules/geo.md             | Geographic Validation (bei Geo-Dateien)    |
+| .claude/rules/browser-storage.md | Browser Storage GDPR (bei Storage-Dateien) |
 
 ### Agents (Aufgabenspezifisch)
 
