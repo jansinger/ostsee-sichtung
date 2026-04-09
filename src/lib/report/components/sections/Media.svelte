@@ -2,8 +2,8 @@
 	import { getUploadConfig } from '$lib/stores/configStore';
 	import { getFormContext } from '$lib/report/formContext';
 	import Icon from '$lib/components/Icon.svelte';
-	import DropzoneEnhanced from '../form/fields/DropzoneEnhanced.svelte';
-	import FormField from '../form/fields/FormField.svelte';
+	import DropzoneEnhanced from '$lib/report/components/form/fields/DropzoneEnhanced.svelte';
+	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import type { ValidationPreset } from '$lib/types';
 
 	// Generiere eine einfache referenceId für Upload (temporäre Lösung)

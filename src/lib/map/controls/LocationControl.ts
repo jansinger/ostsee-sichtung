@@ -1,5 +1,5 @@
 import { Control } from 'ol/control';
-import type { SichtungenMap } from '../optimizedMapController.js';
+import type { SichtungenMap } from '$lib/map/optimizedMapController';
 
 /**
  * Control für GPS-Standortbestimmung
@@ -31,7 +31,7 @@ export class LocationControl extends Control {
 
 	private toggleLocation(): void {
 		const isTracking = this.mapInstance.toggleGeolocation();
-		
+
 		// Aktualisiere Button-Erscheinungsbild
 		if (isTracking) {
 			this.button.style.backgroundColor = '#3b82f6';

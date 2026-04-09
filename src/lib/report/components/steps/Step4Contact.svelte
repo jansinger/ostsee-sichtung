@@ -6,7 +6,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { createLogger } from '$lib/logger';
 	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
-	import FormField from '../form/fields/FormField.svelte';
+	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 
 	const logger = createLogger('report:step4-contact');
 

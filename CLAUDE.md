@@ -62,6 +62,10 @@ Bei **allen** Code-Änderungen gilt:
 
 **Keine Ausnahmen** für Features und Bugfixes. Details: .claude/rules/testing.md
 
+**TDD Workflow:** Nutze `/tdd <beschreibung>` für geführten RED→GREEN→REFACTOR Zyklus.
+
+**Proaktiver Testing Agent:** Beim Erstellen oder Ändern von `.ts`/`.svelte` Dateien mit Business-Logik MUSS der `testing` Agent ZUERST aufgerufen werden (vor der Implementierung), um den Test zu schreiben.
+
 ---
 
 ## Development Commands
@@ -139,22 +143,23 @@ Detaillierte Regeln in `.claude/rules/`:
 
 Spezialisierte Agents in `.claude/agents/`:
 
-| Agent                                 | Trigger                                |
-| ------------------------------------- | -------------------------------------- |
-| .claude/agents/form-development.md    | "Formular erstellen"                   |
-| .claude/agents/testing.md             | "Tests schreiben"                      |
-| .claude/agents/map-features.md        | "Karte", "Map"                         |
-| .claude/agents/architecture-review.md | "Architecture Review", "Anti-Patterns" |
+| Agent                                 | Trigger                                                              |
+| ------------------------------------- | -------------------------------------------------------------------- |
+| .claude/agents/form-development.md    | "Formular erstellen"                                                 |
+| .claude/agents/testing.md             | **PROAKTIV** bei neuem Feature/Bugfix; reaktiv bei "Tests schreiben" |
+| .claude/agents/map-features.md        | "Karte", "Map"                                                       |
+| .claude/agents/architecture-review.md | "Architecture Review", "Anti-Patterns"                               |
 
 ### Commands (Workflows)
 
-| Command       | Beschreibung                               |
-| ------------- | ------------------------------------------ |
-| `/local-dev`  | Entwicklungsumgebung starten               |
-| `/prepare-pr` | Pull Request vorbereiten (inkl. /simplify) |
-| `/review`     | Code-Review mit Anti-Pattern Checks        |
-| `/deploy`     | Docker Deployment Referenz                 |
-| `/db-migrate` | Datenbank-Migration Referenz               |
+| Command       | Beschreibung                                           |
+| ------------- | ------------------------------------------------------ |
+| `/local-dev`  | Entwicklungsumgebung starten                           |
+| `/tdd`        | TDD-Zyklus: RED → GREEN → REFACTOR geführt durchführen |
+| `/prepare-pr` | Pull Request vorbereiten (inkl. /simplify)             |
+| `/review`     | Code-Review mit Anti-Pattern Checks                    |
+| `/deploy`     | Docker Deployment Referenz                             |
+| `/db-migrate` | Datenbank-Migration Referenz                           |
 
 ---
 

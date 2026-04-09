@@ -3,7 +3,7 @@
  */
 import { createLogger } from '$lib/logger';
 import type { ExifData } from '$lib/types';
-import { correctCestOffsetUTC } from '../datetime/correctCestOffsetUTC';
+import { correctCestOffsetUTC } from '$lib/server/datetime/correctCestOffsetUTC';
 const logger = createLogger('server:exifUtils');
 
 /**

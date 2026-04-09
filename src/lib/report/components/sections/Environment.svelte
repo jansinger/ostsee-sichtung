@@ -4,7 +4,7 @@
 	import type { WeatherData, WeatherFormFields, OpenMeteoRawData } from '$lib/services/weatherService';
 	import { convertToStoredWeatherData } from '$lib/services/weatherService';
 	import Icon from '$lib/components/Icon.svelte';
-	import FormField from '../form/fields/FormField.svelte';
+	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 
 	const { form, handleChange } = getFormContext();
 

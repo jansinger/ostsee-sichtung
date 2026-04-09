@@ -4,7 +4,7 @@ import { page } from 'vitest/browser';
 import UnifiedDropzone from './UnifiedDropzone.svelte';
 import type { ValidationPreset } from '$lib/types';
 
-vi.mock('$lib/stores/toastState', () => ({
+vi.mock('$lib/stores/toastState.svelte', () => ({
 	createToast: vi.fn()
 }));
 
@@ -12,7 +12,7 @@ vi.mock('$lib/utils', () => ({
 	validateFiles: vi.fn()
 }));
 
-import { createToast } from '$lib/stores/toastState';
+import { createToast } from '$lib/stores/toastState.svelte';
 import { validateFiles } from '$lib/utils';
 
 const mockConfig: ValidationPreset = {
@@ -113,7 +113,11 @@ describe('UnifiedDropzone', () => {
 		it('ruft onFilesAdded mit validen Dateien auf', async () => {
 			const onFilesAdded = vi.fn();
 			const file = makeFile('foto.jpg');
-			vi.mocked(validateFiles).mockReturnValueOnce({ isValid: true, validFiles: [file], errors: [] });
+			vi.mocked(validateFiles).mockReturnValueOnce({
+				isValid: true,
+				validFiles: [file],
+				errors: []
+			});
 
 			render(UnifiedDropzone, { config: mockConfig, onFilesAdded });
 
@@ -149,7 +153,11 @@ describe('UnifiedDropzone', () => {
 
 		it('ruft onFilesAdded nicht auf wenn alle Dateien ungültig sind', async () => {
 			const onFilesAdded = vi.fn();
-			vi.mocked(validateFiles).mockReturnValueOnce({ isValid: false, validFiles: [], errors: ['Fehler'] });
+			vi.mocked(validateFiles).mockReturnValueOnce({
+				isValid: false,
+				validFiles: [],
+				errors: ['Fehler']
+			});
 
 			render(UnifiedDropzone, { config: mockConfig, onFilesAdded });
 
@@ -205,9 +213,7 @@ describe('UnifiedDropzone', () => {
 				showPreview: false
 			});
 
-			await expect
-				.element(page.getByText('1 Datei hochgeladen'))
-				.not.toBeInTheDocument();
+			await expect.element(page.getByText('1 Datei hochgeladen')).not.toBeInTheDocument();
 		});
 
 		it('zeigt Dateinamen in der Vorschau', async () => {
@@ -322,7 +328,11 @@ describe('UnifiedDropzone', () => {
 		it('akzeptiert Dateien per Drop', async () => {
 			const onFilesAdded = vi.fn();
 			const file = makeFile('dropped.jpg');
-			vi.mocked(validateFiles).mockReturnValueOnce({ isValid: true, validFiles: [file], errors: [] });
+			vi.mocked(validateFiles).mockReturnValueOnce({
+				isValid: true,
+				validFiles: [file],
+				errors: []
+			});
 
 			render(UnifiedDropzone, { config: mockConfig, onFilesAdded });
 

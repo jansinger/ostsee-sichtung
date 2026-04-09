@@ -3,8 +3,8 @@ import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting } from '$lib/types/sighting';
 import { combineToDate } from '$lib/utils/format/dateTime';
 import { sql } from 'drizzle-orm';
-import { correctCestOffsetUTC } from '../datetime/correctCestOffsetUTC';
-import { checkBalticSeaFile } from '../geo/checkBalticSeaFile';
+import { correctCestOffsetUTC } from '$lib/server/datetime/correctCestOffsetUTC';
+import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 
 /**
  * Konvertiert Formulardaten in das Datenbankschema für Meeressäuger-Sichtungen.

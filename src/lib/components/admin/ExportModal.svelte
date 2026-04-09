@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createToast } from '$lib/stores/toastState';
+	import { createToast } from '$lib/stores/toastState.svelte';
 	import { createLogger } from '$lib/logger';
 	import { downloadHandlers, createTimestampedFilename } from '$lib/utils/download';
 	import type { FrontendSighting } from '$lib/types';

@@ -1,5 +1,5 @@
 import { createLogger } from '$lib/logger';
-import { ConfigRepository, type ConfigItem } from '../db/configRepository';
+import { ConfigRepository, type ConfigItem } from '$lib/server/db/configRepository';
 
 const logger = createLogger('configInitializer');
 
@@ -370,7 +370,8 @@ const defaultConfigurations: ConfigItem[] = [
 	},
 	{
 		key: 'mobile.updateMessage',
-		value: 'Eine neue Version der App ist verfügbar. Bitte aktualisieren Sie für die beste Erfahrung.',
+		value:
+			'Eine neue Version der App ist verfügbar. Bitte aktualisieren Sie für die beste Erfahrung.',
 		description: 'Nachricht für App-Updates',
 		category: 'mobile'
 	},
@@ -389,39 +390,20 @@ export async function initializeDefaultConfigurations(): Promise<void> {
 	try {
 		logger.info('Initializing default configurations...');
 
-		let insertedCount = 0;
-		let skippedCount = 0;
-
-		for (const config of defaultConfigurations) {
-			try {
-				// Check if configuration already exists
-				const existing = await ConfigRepository.get(config.key);
-				
-				if (existing !== null) {
-					skippedCount++;
-					logger.debug({ key: config.key }, 'Configuration already exists, skipping');
-					continue;
-				}
-
-				// Insert new configuration
-				await ConfigRepository.upsert(config, 'system');
-				insertedCount++;
-				logger.debug({ key: config.key }, 'Default configuration inserted');
-
-			} catch (error) {
-				logger.error({ error, key: config.key }, 'Failed to insert default configuration');
-			}
-		}
+		const insertedCount = await ConfigRepository.insertManyIfAbsent(
+			defaultConfigurations,
+			'system'
+		);
+		const skippedCount = defaultConfigurations.length - insertedCount;
 
 		logger.info(
-			{ 
+			{
 				total: defaultConfigurations.length,
 				inserted: insertedCount,
-				skipped: skippedCount 
+				skipped: skippedCount
 			},
 			'Default configurations initialization completed'
 		);
-
 	} catch (error) {
 		logger.error({ error }, 'Failed to initialize default configurations');
 		throw error;
@@ -436,15 +418,12 @@ export async function resetToDefaultConfigurations(): Promise<void> {
 	try {
 		logger.warn('Resetting all configurations to defaults...');
 
-		for (const config of defaultConfigurations) {
-			await ConfigRepository.upsert(config, 'system');
-		}
+		await ConfigRepository.upsertMany(defaultConfigurations, 'system');
 
 		// Clear cache
 		ConfigRepository.clearCache();
 
 		logger.warn('All configurations have been reset to defaults');
-
 	} catch (error) {
 		logger.error({ error }, 'Failed to reset configurations to defaults');
 		throw error;
@@ -455,14 +434,14 @@ export async function resetToDefaultConfigurations(): Promise<void> {
  * Get list of all available configuration keys
  */
 export function getAvailableConfigurationKeys(): string[] {
-	return defaultConfigurations.map(config => config.key);
+	return defaultConfigurations.map((config) => config.key);
 }
 
 /**
  * Get configuration categories
  */
 export function getConfigurationCategories(): string[] {
-	const categories = new Set(defaultConfigurations.map(config => config.category));
+	const categories = new Set(defaultConfigurations.map((config) => config.category));
 	return Array.from(categories).sort();
 }
 

@@ -1,5 +1,4 @@
 <script lang="ts">
-	/* eslint-disable @typescript-eslint/no-explicit-any */
 	import Icon from '$lib/components/Icon.svelte';
 	import { MapCountManager, type CountData } from '$lib/map/countManager';
 	import type { MapTranslations } from '$lib/map/mapUtils';
@@ -53,10 +52,10 @@
 	};
 
 	// Manager-Instanzen
-	let mapInstance: SichtungenMap;
-	let panelManager: MapPanelManager;
-	let timeSliderManager: MapTimeSliderManager;
-	let countManager: MapCountManager;
+	let mapInstance: SichtungenMap | null = null;
+	let panelManager: MapPanelManager | null = null;
+	let timeSliderManager: MapTimeSliderManager | null = null;
+	let countManager: MapCountManager | null = null;
 
 	// Reaktive Variablen
 	let counts = $state<CountData>({
@@ -83,6 +82,7 @@
 	let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
 	let unhandledRejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
 	let loadingHandlerCleanup: (() => void) | null = null;
+	let initTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 	// Modern $effect for map initialization and cleanup
 	$effect(() => {
@@ -121,12 +121,15 @@
 			timeSliderManager.initialize(mapInstance);
 
 			// Erste Aktualisierung nach kurzer Verzögerung
-			setTimeout(() => {
-				countManager.updateCounts();
+			const initialCountManager = countManager;
+			const initialMapInstance = mapInstance;
+			initTimeoutId = setTimeout(() => {
+				initialCountManager.updateCounts();
 				// Aktualisiere das angezeigte Jahr im Titel
-				currentDisplayedYear = mapInstance.getDisplayedYear();
+				currentDisplayedYear = initialMapInstance.getDisplayedYear();
 				// Initial loading abgeschlossen
 				isInitialLoading = false;
+				initTimeoutId = null;
 			}, 1500);
 
 			// Tastatur-Navigation Setup
@@ -148,12 +151,13 @@
 	// Effect zum Registrieren des Jahr-Änderungs-Callbacks
 	$effect(() => {
 		if (mapInstance) {
-			mapInstance.setYearChangeCallback((newYear: number) => {
+			const instance = mapInstance;
+			instance.setYearChangeCallback((newYear: number) => {
 				currentDisplayedYear = newYear;
 			});
 
 			return () => {
-				mapInstance.setYearChangeCallback(() => {});
+				instance.setYearChangeCallback(() => {});
 			};
 		}
 
@@ -182,24 +186,20 @@
 			loadingHandlerCleanup = null;
 		}
 
-		// Cleanup Map-Instanz
-		if (mapInstance) {
-			// Die Map-Instanz hat möglicherweise eine cleanup-Methode
-			if (typeof (mapInstance as any).cleanup === 'function') {
-				(mapInstance as any).cleanup();
-			}
+		// Ausstehenden Init-Timeout abbrechen, falls Komponente vor Ablauf unmountet
+		if (initTimeoutId !== null) {
+			clearTimeout(initTimeoutId);
+			initTimeoutId = null;
 		}
 
-		// Reset Manager (sie haben möglicherweise keine explizite cleanup-Methode)
-		countManager = null as any;
-		panelManager = null as any;
-		timeSliderManager = null as any;
-		mapInstance = null as any;
+		// Globale Referenz bereinigen, damit GC die Objekte freigeben kann
+		delete (window as unknown as { mapCountManager?: unknown }).mapCountManager;
 
-		// Entferne globale Referenz
-		if ((window as any).mapCountManager) {
-			delete (window as any).mapCountManager;
-		}
+		// Reset Manager
+		countManager = null;
+		panelManager = null;
+		timeSliderManager = null;
+		mapInstance = null;
 
 		// WICHTIG: Stelle sicher, dass body/html wieder scrollbar sind
 		// Falls irgendeine Library diese verändert hat
@@ -485,7 +485,7 @@
 					</div>
 				</div>
 
-				<div class="text-base-content/60 mt-6 text-xs space-y-1">
+				<div class="text-base-content/60 mt-6 space-y-1 text-xs">
 					<p class="flex items-center gap-2">
 						<Icon icon="lucide:navigation" width="14" height="14" class="text-primary" />
 						Verwenden Sie die Maus oder Touch-Gesten zum Navigieren der Karte

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { 
-	addToast, 
-	removeToast, 
-	clearAllToasts, 
+import {
+	addToast,
+	removeToast,
+	clearAllToasts,
 	getToasts,
 	successToast,
 	errorToast,
@@ -10,7 +10,7 @@ import {
 	infoToast,
 	createToast,
 	toast
-} from './toastState';
+} from './toastState.svelte';
 
 describe('Toast State Management (Svelte 5 Runes)', () => {
 	beforeEach(() => {
@@ -27,7 +27,7 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 
 			const toasts = getToasts();
 			expect(toasts).toHaveLength(1);
-			
+
 			const toast = toasts[0];
 			expect(toast).toBeDefined();
 			expect(toast!.id).toBe(id);
@@ -48,7 +48,7 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 
 			const toasts = getToasts();
 			expect(toasts).toHaveLength(1);
-			
+
 			const toast = toasts[0];
 			expect(toast).toBeDefined();
 			expect(toast!.id).toBe(id);
@@ -62,7 +62,7 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 			const id2 = addToast({ type: 'info', message: 'Second' });
 
 			expect(id1).not.toBe(id2);
-			
+
 			const toasts = getToasts();
 			expect(toasts).toHaveLength(2);
 		});
@@ -83,9 +83,9 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 
 		it('should handle removing non-existent toast gracefully', () => {
 			addToast({ type: 'info', message: 'Test' });
-			
+
 			removeToast('non-existent-id');
-			
+
 			const toasts = getToasts();
 			expect(toasts).toHaveLength(1);
 		});
@@ -108,7 +108,7 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 	describe('convenience methods', () => {
 		it('should create success toast', () => {
 			successToast('Success message');
-			
+
 			const toasts = getToasts();
 			expect(toasts).toHaveLength(1);
 			expect(toasts[0]!.type).toBe('success');
@@ -117,7 +117,7 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 
 		it('should create error toast with no auto-dismiss', () => {
 			errorToast('Error message');
-			
+
 			const toasts = getToasts();
 			expect(toasts).toHaveLength(1);
 			expect(toasts[0]!.type).toBe('error');
@@ -127,7 +127,7 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 
 		it('should create warning toast', () => {
 			warningToast('Warning message');
-			
+
 			const toasts = getToasts();
 			expect(toasts).toHaveLength(1);
 			expect(toasts[0]!.type).toBe('warning');
@@ -136,7 +136,7 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 
 		it('should create info toast', () => {
 			infoToast('Info message');
-			
+
 			const toasts = getToasts();
 			expect(toasts).toHaveLength(1);
 			expect(toasts[0]!.type).toBe('info');
@@ -153,8 +153,8 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 
 			const toasts = getToasts();
 			expect(toasts).toHaveLength(4);
-			
-			const types = toasts.map(t => t.type);
+
+			const types = toasts.map((t) => t.type);
 			expect(types).toContain('success');
 			expect(types).toContain('error');
 			expect(types).toContain('warning');
@@ -165,7 +165,7 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 	describe('toast API object', () => {
 		it('should provide access to current toasts', () => {
 			addToast({ type: 'info', message: 'Test' });
-			
+
 			expect(toast.current).toHaveLength(1);
 			expect(toast.current[0]!.message).toBe('Test');
 		});
@@ -190,9 +190,9 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 		it('should allow clearing all toasts', () => {
 			toast.add({ type: 'info', message: 'Test 1' });
 			toast.add({ type: 'info', message: 'Test 2' });
-			
+
 			expect(toast.current).toHaveLength(2);
-			
+
 			toast.clear();
 			expect(toast.current).toHaveLength(0);
 		});
@@ -204,10 +204,10 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 			expect(initialToasts).toHaveLength(0);
 
 			addToast({ type: 'info', message: 'Test' });
-			
+
 			const updatedToasts = getToasts();
 			expect(updatedToasts).toHaveLength(1);
-			
+
 			// The array reference should be the same for reactive tracking
 			expect(updatedToasts).toBe(toast.current);
 		});

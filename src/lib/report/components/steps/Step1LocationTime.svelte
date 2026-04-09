@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
-	import PositionAndTime from '../sections/PositionAndTime.svelte';
+	import PositionAndTime from '$lib/report/components/sections/PositionAndTime.svelte';
 </script>
 
 <div class="space-y-8">

@@ -9,7 +9,7 @@
 	import Location from '$lib/report/components/sections/Location.svelte';
 	import OptionalSightingDetails from '$lib/report/components/sections/OptionalSightingDetails.svelte';
 	import type { FormContext } from '$lib/report/types';
-	import type { Readable, Writable } from 'svelte/store';
+
 	import BooleanStatus from './BooleanStatus.svelte';
 	// Note: mediaStore and onMount not needed for admin edit form
 	import { createLogger } from '$lib/logger';
@@ -76,9 +76,9 @@
 			onSubmit: submitForm
 		};
 	});
-	let isValid: Readable<boolean> = $derived(formContext.isValid);
-	let isSubmitting: Readable<boolean> = $derived(formContext.isSubmitting);
-	let errors: Writable<Record<string, string>> = $derived(formContext.errors);
+	let isValid = $derived(formContext.isValid);
+	let isSubmitting = $derived(formContext.isSubmitting);
+	let errors = $derived(formContext.errors);
 
 	const form = $derived(formContext.form);
 

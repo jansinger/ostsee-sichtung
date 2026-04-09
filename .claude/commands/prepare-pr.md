@@ -38,6 +38,7 @@ git checkout -b <type>/<kurze-beschreibung>
 ```
 
 **Branch-Typen:**
+
 - `feat/` - Neue Features
 - `fix/` - Bugfixes
 - `docs/` - Dokumentation
@@ -45,13 +46,45 @@ git checkout -b <type>/<kurze-beschreibung>
 - `test/` - Tests
 - `chore/` - Wartung
 
-### Schritt 2: Tests ausführen
+### Schritt 2: TDD-Coverage-Hinweis (nicht blockierend)
+
+Prüfe ob neue/geänderte Quelldateien ohne Test-Gegenstück existieren. Diese Prüfung ist ein **Hinweis**, kein harter Gate — die Entscheidung ob Tests nachgezogen werden liegt beim User.
+
+```bash
+# Geänderte Source-Dateien (ohne Tests, Config, Typen, Routing-Files)
+git diff --name-only main...HEAD \
+  | grep -E '\.(ts|svelte)$' \
+  | grep -v '\.test\.' \
+  | grep -v '\.spec\.' \
+  | grep -v '\.config\.' \
+  | grep -v '\.d\.ts$' \
+  | grep -v 'types\.ts$' \
+  | grep -v '+page\.svelte$' \
+  | grep -v '+layout\.svelte$' \
+  | grep -v '+error\.svelte$'
+```
+
+Für jede gefundene Datei prüfen ob eine entsprechende `.test.ts` Datei existiert:
+
+- `src/lib/utils/foo.ts` → `src/lib/utils/foo.test.ts`
+- `src/lib/components/Bar.svelte` → `src/lib/components/Bar.svelte.test.ts`
+- `src/routes/api/*/+server.ts` → daneben als `+server.test.ts`
+
+**Verbleibende Ausnahmen** (manuell prüfen, kein Test erforderlich):
+
+- Reine Re-Exports / Barrel-Files (nur `export * from ...` — lässt sich nicht per grep filtern)
+- Reine Styling-Änderungen
+
+**Wenn Dateien ohne Tests gefunden:** Hinweis ausgeben, `/tdd` als Option anbieten. **Nicht blockieren.**
+
+### Schritt 3: Tests ausführen
 
 ```bash
 npm run test:quick
 ```
 
 Enthält:
+
 - ESLint
 - TypeScript Type-Check
 - Svelte-Check
@@ -59,26 +92,27 @@ Enthält:
 
 **Bei Fehler:** Stoppen und Fehler beheben lassen.
 
-### Schritt 3: Code-Qualität prüfen
+### Schritt 4: Code-Qualität prüfen
 
 Führe `/simplify` auf den geänderten Dateien aus, um Code-Qualität, Wiederverwendung und Effizienz zu prüfen. Behebe gefundene Probleme bevor du fortfährst.
 
-### Schritt 4: Git Status prüfen
+### Schritt 5: Git Status prüfen
 
 ```bash
 git status
 git diff --stat
 ```
 
-### Schritt 5: Änderungen analysieren
+### Schritt 6: Änderungen analysieren
 
 Analysiere welche Dateien geändert wurden:
+
 - Neue Features?
 - Bug Fixes?
 - Refactoring?
 - Dokumentation?
 
-### Schritt 6: Commit erstellen
+### Schritt 7: Commit erstellen
 
 Nutze Conventional Commits Format:
 
@@ -97,6 +131,7 @@ EOF
 ```
 
 **Typen:**
+
 - `feat` - Neue Funktion
 - `fix` - Bugfix
 - `docs` - Dokumentation
@@ -107,7 +142,7 @@ EOF
 **Scopes:**
 `deps`, `api`, `ui`, `db`, `auth`, `export`, `admin`, `report`, `map`, `config`, `build`, `ci`, `docs`, `test`, `types`, `style`, `perf`, `security`, `a11y`, `release`, `media`
 
-### Schritt 7: Push und PR erstellen
+### Schritt 8: Push und PR erstellen
 
 ```bash
 # Push (mit Upstream-Tracking)
