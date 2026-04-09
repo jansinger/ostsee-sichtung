@@ -5,6 +5,15 @@ test.describe('Authentifizierung — Geschützte Routen', () => {
 	test.beforeEach(async ({ page }) => {
 		// Sicherstellen dass kein Auth-Cookie gesetzt ist
 		await page.context().clearCookies();
+		// Intercept Auth0 authorization URL — CI has no valid Auth0 credentials,
+		// so the redirect would fail DNS. Return a fake login page instead.
+		await page.route('**/authorize**', (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'text/html',
+				body: '<html><body>Auth0 Login</body></html>'
+			})
+		);
 	});
 
 	test('Unauthentifizierter Zugriff auf /admin → Redirect weg von /admin', async ({ page }) => {

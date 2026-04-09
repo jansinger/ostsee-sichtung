@@ -5,6 +5,14 @@ test.describe('Map Accessibility', () => {
 	let mapPage: MapPage;
 
 	test.beforeEach(async ({ page }) => {
+		// Mock the sightings API so tests don't require a real database
+		await page.route('**/api/map/sightings**', (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({ type: 'FeatureCollection', features: [] })
+			})
+		);
 		mapPage = new MapPage(page);
 		await mapPage.goto();
 		await mapPage.waitForLoad();

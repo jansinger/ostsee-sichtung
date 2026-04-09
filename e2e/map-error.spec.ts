@@ -48,11 +48,20 @@ test.describe('Map Error State', () => {
 	});
 
 	test('API-Fehler beim Jahreswechsel zeigt Fehlermeldung', async ({ page }) => {
+		// Mock initial load so map loads cleanly without a real database
+		await page.route('**/api/map/sightings**', (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({ type: 'FeatureCollection', features: [] })
+			})
+		);
 		const mapPage = new MapPage(page);
 		await mapPage.goto();
 		await mapPage.waitForLoad();
 
-		// Set up failure only for future requests (initial load already succeeded)
+		// Override to abort for future requests (year-change triggers the error)
+		await page.unroute('**/api/map/sightings**');
 		await page.route('**/api/map/sightings**', (route) => route.abort());
 
 		await mapPage.openFilter();
