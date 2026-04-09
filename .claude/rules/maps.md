@@ -178,30 +178,27 @@ new View({
 // src/routes/api/map/sightings/+server.ts
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { sql } from 'drizzle-orm';
+import { sightings as sightingsTable } from '$lib/server/db/schema';
+import { sightingsToGeoJSON } from '$lib/map/mapUtils';
+import { eq } from 'drizzle-orm';
 
 export async function GET() {
-	const result = await db.execute(sql`
-        SELECT json_build_object(
-            'type', 'FeatureCollection',
-            'features', COALESCE(json_agg(
-                json_build_object(
-                    'type', 'Feature',
-                    'geometry', ST_AsGeoJSON(location)::json,
-                    'properties', json_build_object(
-                        'id', id,
-                        'tierart', tierart,
-                        'anzahl_gesamt', anzahl_gesamt,
-                        'sichtungsdatum', sichtungsdatum
-                    )
-                )
-            ), '[]'::json)
-        ) as geojson
-        FROM sichtungen
-        WHERE geprueft = 1
-    `);
+	const sightingsFromDB = await db
+		.select({
+			id: sightingsTable.id,
+			sightingDate: sightingsTable.sightingDate,
+			longitude: sightingsTable.longitude,
+			latitude: sightingsTable.latitude,
+			species: sightingsTable.species,
+			totalCount: sightingsTable.totalCount,
+			juvenileCount: sightingsTable.juvenileCount,
+			isDead: sightingsTable.isDead
+		})
+		.from(sightingsTable)
+		.where(eq(sightingsTable.verified, 1))
+		.orderBy(sightingsTable.sightingDate);
 
-	return json(result[0].geojson);
+	return json(sightingsToGeoJSON(sightingsFromDB));
 }
 ```
 
@@ -237,10 +234,14 @@ csp: {
     directives: {
         'img-src': ["'self'", 'data:', 'blob:',
             'https://tile.openstreetmap.org', 'https://*.tile.openstreetmap.org',
-            'https://tiles.openseamap.org', '*.blob.vercel-storage.com'],
+            'https://tiles.openseamap.org',
+            'https://4i7mo0wwc3lp8d1e.public.blob.vercel-storage.com',
+            'https://blob.vercel-storage.com'],
         'connect-src': ["'self'",
             'https://tile.openstreetmap.org', 'https://*.tile.openstreetmap.org',
-            'https://api.openstreetmap.org', 'https://archive-api.open-meteo.com']
+            'https://api.openstreetmap.org', 'https://archive-api.open-meteo.com',
+            'https://4i7mo0wwc3lp8d1e.public.blob.vercel-storage.com',
+            'https://blob.vercel-storage.com']
     }
 }
 ```
