@@ -11,8 +11,10 @@ import { formatLocation } from './formatLocation';
 /**
  * Enhanced sighting data with translated enum values for display
  */
-export interface FormattedSightingData
-	extends Omit<SightingFormValues, 'species' | 'behavior' | 'distance'> {
+export interface FormattedSightingData extends Omit<
+	SightingFormValues,
+	'species' | 'behavior' | 'distance'
+> {
 	species: string;
 	speciesRaw?: SpeciesEnum | number;
 	behavior?: string;
@@ -76,14 +78,4 @@ export function isUnknownOrMissingSpecies(species: unknown): boolean {
 	// Check if it's one of the "unknown" species values
 	const unknownSpeciesValues = [8, 10]; // UNKNOWN_WHALE, UNKNOWN_SEAL
 	return unknownSpeciesValues.includes(numericValue as number);
-}
-
-/**
- * Gets the species label for spam detection (uses enum values correctly)
- */
-export function getSpeciesForSpamCheck(species: unknown): string {
-	if (!species && species !== 0) return '';
-
-	const numericValue = typeof species === 'string' ? parseInt(species, 10) : species;
-	return getSpeciesLabel(numericValue as SpeciesEnum);
 }
