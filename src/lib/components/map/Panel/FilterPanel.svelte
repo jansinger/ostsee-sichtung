@@ -10,7 +10,12 @@
 	// Reactive state für Panel-Sichtbarkeit (Svelte 5 runes)
 	let isOpen = $state(false);
 	let isApplyingFilter = $state(false);
-	let selectedYear = $state(defaultYear ?? years[years.length - 1] ?? new Date().getFullYear());
+	// Explizite User-Auswahl (undefined = noch keine manuelle Wahl getroffen)
+	let userSelectedYear: number | undefined = $state(undefined);
+	// Effektiv gewähltes Jahr: User-Auswahl hat Vorrang, sonst Prop-Default
+	let selectedYear = $derived(
+		userSelectedYear ?? defaultYear ?? years.at(-1) ?? new Date().getFullYear()
+	);
 	let searchValue = $state('');
 
 	let daysInYear = $derived(getDaysInYear(selectedYear));
@@ -36,7 +41,7 @@
 	}
 
 	function handleYearChange(e: Event) {
-		selectedYear = parseInt((e.target as HTMLSelectElement).value);
+		userSelectedYear = parseInt((e.target as HTMLSelectElement).value);
 		handleFilterApply();
 	}
 </script>
