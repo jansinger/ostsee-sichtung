@@ -15,7 +15,7 @@ Regeln für CSV, JSON, KML und XML Export.
 
 | Datei           | Funktion                      | Format-Details                                       |
 | --------------- | ----------------------------- | ---------------------------------------------------- |
-| `csvExport.ts`  | `generateCsvData(sightings)`  | Semikolon-getrennt, 43 Spalten, deutsche Labels      |
+| `csvExport.ts`  | `generateCsvData(sightings)`  | Semikolon-getrennt, deutsche Labels                  |
 | `jsonExport.ts` | `generateJsonData(sightings)` | Pretty-Print mit Metadaten                           |
 | `kmlExport.ts`  | `generateKmlData(sightings)`  | Farbcodierte Marker nach Tieranzahl, DMS-Koordinaten |
 | `xmlExport.ts`  | `generateXmlData(sightings)`  | Legacy-Format mit Mercator-Projektion                |
@@ -24,7 +24,7 @@ Regeln für CSV, JSON, KML und XML Export.
 
 ## API-Endpoints (`GET /api/sightings/export/{format}`)
 
-**Auth:** Alle Endpoints erfordern `requireUserRole(['admin'])`
+**Auth:** Alle Endpoints erfordern `requireUserRole(url, locals.user, ['admin'])`
 
 **Query-Parameter:** `dateFrom`, `dateTo`, `verified`, `entryChannel`, `mediaUpload`
 

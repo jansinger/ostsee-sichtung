@@ -26,7 +26,7 @@ import { sequence } from '@sveltejs/kit/hooks';
 export const handle = sequence(
 	databaseCheck, // 1. DB-Verfügbarkeit
 	maintenanceMode, // 2. Wartungsmodus
-	authHandler, // 3. JWT-Verifizierung + Cookie-Session
+	authentication, // 3. JWT-Verifizierung + Cookie-Session
 	setAdditionalHeaders // 4. Security Headers
 );
 ```
