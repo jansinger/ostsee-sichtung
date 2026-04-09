@@ -86,17 +86,21 @@ export const sightings = pgTable('sichtungen', {
 ### Datei-Tabelle mit JSONB
 
 ```typescript
-export const sichtungenDateien = pgTable('sichtungen_dateien', {
-	id: serial('id').primaryKey(),
-	sichtungId: integer('sichtung_id').references(() => sichtungen.id),
-	url: varchar('url', { length: 500 }),
-
-	// JSONB für flexible Metadaten
-	metadata: jsonb('metadata').$type<{
-		exif?: ExifData;
-		mimeType?: string;
-		size?: number;
-	}>()
+export const sightingFiles = pgTable('sichtungen_dateien', {
+	id: serial().primaryKey().notNull(),
+	uid: varchar('uid', { length: 64 }).notNull(),
+	sightingId: bigint('sichtung_id', { mode: 'number' }).references(() => sightings.id, {
+		onDelete: 'cascade'
+	}),
+	referenceId: varchar('referenz_id', { length: 64 }).notNull(),
+	originalName: varchar('original_name', { length: 255 }).notNull(),
+	fileName: varchar('datei_name', { length: 255 }).notNull(),
+	filePath: varchar('datei_pfad', { length: 500 }).notNull(),
+	mimeType: varchar('mime_typ', { length: 100 }).notNull(),
+	size: bigint({ mode: 'number' }).notNull(),
+	url: varchar('url', { length: 1000 }),
+	exifData: jsonb('exif_daten') // EXIF-Metadaten als JSONB
+	// ...
 });
 ```
 
@@ -160,18 +164,18 @@ if (!checkBalticSeaFile(lng, lat).inBaltic) {
 ## JSONB Best Practices
 
 ```typescript
-// Typisiertes JSONB
-metadata: jsonb('metadata')
-	.$type<MetadataType>()
-
+// Typisiertes JSONB (Beispiel: weatherData in sightings)
+weatherData: jsonb('weather_data')
 	// Query in JSONB
-	.where(sql`metadata->>'mimeType' = 'image/jpeg'`)
+	.where(sql`weather_data->>'provider' = 'open-meteo'`)
 
-	// Update in JSONB
+	// JSONB Merge-Update
 	.set({
-		metadata: sql`metadata || ${JSON.stringify({ processed: true })}`
+		weatherData: sql`weather_data || ${JSON.stringify({ refreshed: true })}`
 	});
 ```
+
+**Vorhandene JSONB-Felder:** `sightings.weatherData`, `sightingFiles.exifData`, `appConfig.value`
 
 ---
 
@@ -179,9 +183,9 @@ metadata: jsonb('metadata')
 
 ```typescript
 await db.transaction(async (tx) => {
-	const [sighting] = await tx.insert(sichtungen).values(sightingData).returning();
+	const [sighting] = await tx.insert(sightings).values(sightingData).returning();
 
-	await tx.insert(sichtungenDateien).values(files.map((f) => ({ sichtungId: sighting.id, ...f })));
+	await tx.insert(sightingFiles).values(files.map((f) => ({ sightingId: sighting.id, ...f })));
 });
 ```
 

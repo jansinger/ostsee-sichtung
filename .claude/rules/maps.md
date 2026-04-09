@@ -190,15 +190,15 @@ export async function GET() {
                     'geometry', ST_AsGeoJSON(location)::json,
                     'properties', json_build_object(
                         'id', id,
-                        'species', species,
-                        'count', count,
-                        'date', date
+                        'tierart', tierart,
+                        'anzahl_gesamt', anzahl_gesamt,
+                        'sichtungsdatum', sichtungsdatum
                     )
                 )
             ), '[]'::json)
         ) as geojson
         FROM sichtungen
-        WHERE approved = true
+        WHERE geprueft = 1
     `);
 
 	return json(result[0].geojson);
@@ -235,13 +235,17 @@ In `svelte.config.js`:
 ```javascript
 csp: {
     directives: {
-        'img-src': ["'self'", 'data:', 'blob:', 'https://*.tile.openstreetmap.org', '*.blob.vercel-storage.com'],
-        'connect-src': ["'self'", 'https://api.open-meteo.com', 'https://marine-api.open-meteo.com']
+        'img-src': ["'self'", 'data:', 'blob:',
+            'https://tile.openstreetmap.org', 'https://*.tile.openstreetmap.org',
+            'https://tiles.openseamap.org', '*.blob.vercel-storage.com'],
+        'connect-src': ["'self'",
+            'https://tile.openstreetmap.org', 'https://*.tile.openstreetmap.org',
+            'https://api.openstreetmap.org', 'https://archive-api.open-meteo.com']
     }
 }
 ```
 
-**Hinweis:** Vollständige CSP-Konfiguration in `svelte.config.js` -- obiges ist ein Auszug der kartenrelevanten Einträge.
+**Hinweis:** Auszug der kartenrelevanten CSP-Einträge. Vollständige Konfiguration in `svelte.config.js`.
 
 ---
 

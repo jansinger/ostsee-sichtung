@@ -147,7 +147,7 @@ const plain = sanitizeText('<b>bold</b> text');
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
-function validateFile(file: File): void {
+async function validateFile(file: File): Promise<void> {
 	if (!ALLOWED_TYPES.includes(file.type)) {
 		throw new Error('Ungültiger Dateityp');
 	}
@@ -167,29 +167,12 @@ function validateFile(file: File): void {
 ### EXIF Metadata
 
 ```typescript
-import ExifReader from 'exifreader';
+// Projekt nutzt `exifr` (nicht `exifreader`) via readImageExifData()
+import { readImageExifData } from '$lib/server/media/exifUtils';
 
-async function extractExif(file: File): Promise<ExifData | null> {
-	try {
-		const buffer = await file.arrayBuffer();
-		const tags = ExifReader.load(buffer);
-
-		return {
-			make: tags.Make?.description,
-			model: tags.Model?.description,
-			dateTime: tags.DateTime?.description,
-			gps:
-				tags.GPSLatitude && tags.GPSLongitude
-					? {
-							lat: parseGpsCoord(tags.GPSLatitude, tags.GPSLatitudeRef),
-							lng: parseGpsCoord(tags.GPSLongitude, tags.GPSLongitudeRef)
-						}
-					: null
-		};
-	} catch {
-		return null;
-	}
-}
+const exifData: ExifData | null = await readImageExifData(buffer);
+// Extrahiert: GPS, Kamera, Datum, Belichtung, ISO, Focal Length
+// Korrigiert CEST-Zeitzone via correctCestOffsetUTC()
 ```
 
 ### Sichere Speicherung
