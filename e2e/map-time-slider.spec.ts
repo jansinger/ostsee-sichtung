@@ -11,17 +11,29 @@ test.describe('Map Time Slider', () => {
 		await mapPage.openFilter();
 	});
 
-	test('Zeitraum-Slider haben korrekte Standard-Attribute', async () => {
+	test('Zeitraum-Slider haben korrekte Standard-Attribute', async ({ page }) => {
 		const startSlider = mapPage.getStartSlider();
 		const endSlider = mapPage.getEndSlider();
 
 		await expect(startSlider).toHaveAttribute('min', '0');
-		await expect(startSlider).toHaveAttribute('max', '365');
 		await expect(startSlider).toHaveAttribute('value', '0');
 
 		await expect(endSlider).toHaveAttribute('min', '0');
-		await expect(endSlider).toHaveAttribute('max', '365');
-		await expect(endSlider).toHaveAttribute('value', '365');
+
+		// max ist 365 oder 366 (Schaltjahr) — dynamisch basierend auf gewähltem Jahr
+		const maxAttr = await endSlider.getAttribute('max');
+		expect(['365', '366']).toContain(maxAttr);
+
+		// End-Slider startet bei max (ganzes Jahr ausgewählt) — via DOM property, nicht HTML-Attribut
+		await expect(endSlider).toHaveValue(maxAttr!);
+
+		// Start- und End-Slider haben den gleichen max-Wert
+		await expect(startSlider).toHaveAttribute('max', maxAttr!);
+
+		// Schaltjahr-Test: 2024 muss 366 liefern
+		await page.locator('#year-select').selectOption('2024');
+		await expect(endSlider).toHaveAttribute('max', '366');
+		await expect(startSlider).toHaveAttribute('max', '366');
 	});
 
 	test('Start-Slider lässt sich verschieben', async () => {
