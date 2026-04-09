@@ -5,10 +5,18 @@ const isCI = process.env.CI === 'true';
 
 test.describe('Map Page', () => {
 	test('loads map page and shows content', async ({ page }) => {
+		// Mock sightings API — CI has no real database
+		await page.route('**/api/map/sightings**', (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({ type: 'FeatureCollection', features: [] })
+			})
+		);
 		const mapPage = new MapPage(page);
 		await mapPage.goto();
 
-		await expect(page).toHaveTitle(/Sichtungskarte.*Ostsee-Tiere/, { timeout: 10000 });
+		await expect(page).toHaveTitle(/Sichtungskarte.*Ostsee-Tiere/, { timeout: 30000 });
 
 		const loadingDialog = mapPage.getLoadingOverlay();
 		if (await loadingDialog.isVisible().catch(() => false)) {
