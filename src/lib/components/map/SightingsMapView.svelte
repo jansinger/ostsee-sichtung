@@ -385,6 +385,7 @@
 		<!-- Error-Toast -->
 		{#if errorMessage}
 			<div
+				role="alert"
 				class="alert alert-error fixed top-20 left-1/2 z-[60] max-w-md -translate-x-1/2 transform shadow-lg"
 			>
 				<svg
@@ -450,9 +451,14 @@
 	<!-- Tastatur-Hilfe Modal -->
 	{#if showKeyboardHelp}
 		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-			<div class="bg-base-100 max-h-[80vh] max-w-md rounded-lg p-6 shadow-xl">
+			<div
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="help-modal-title"
+				class="bg-base-100 max-h-[80vh] max-w-md rounded-lg p-6 shadow-xl"
+			>
 				<div class="mb-4 flex items-center justify-between">
-					<h3 class="text-lg font-bold">Tastaturkürzel</h3>
+					<h3 id="help-modal-title" class="text-lg font-bold">Tastaturkürzel</h3>
 					<button
 						onclick={() => (showKeyboardHelp = false)}
 						class="btn btn-ghost btn-sm"

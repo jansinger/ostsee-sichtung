@@ -19,31 +19,38 @@ test.describe('Map Accessibility', () => {
 		expect(label).toMatch(/Sichtungskarte/i);
 	});
 
+	test('Fehlermeldung hat role="alert" für Screen Reader', async ({ page }) => {
+		await page.route('**/api/map/sightings**', (route) => route.abort());
+		await page.goto('/map');
+		const errorAlert = page.locator('.alert-error');
+		await expect(errorAlert).toBeVisible({ timeout: 15000 });
+		await expect(errorAlert).toHaveAttribute('role', 'alert');
+	});
+
 	test('Tastatur-Shortcut H öffnet Hilfe-Modal', async ({ page }) => {
 		await page.locator('body').click();
 		await page.keyboard.press('h');
 
-		// Help modal shows a heading "Tastaturkürzel"
-		const helpHeading = page.getByRole('heading', { name: /tastaturkürzel/i });
-		await expect(helpHeading).toBeVisible({ timeout: 3000 });
+		const dialog = page.getByRole('dialog', { name: /tastaturkürzel/i });
+		await expect(dialog).toBeVisible({ timeout: 3000 });
 	});
 
 	test('Tastatur-Shortcut ? öffnet Hilfe-Modal', async ({ page }) => {
 		await page.locator('body').click();
 		await page.keyboard.press('?');
 
-		const helpHeading = page.getByRole('heading', { name: /tastaturkürzel/i });
-		await expect(helpHeading).toBeVisible({ timeout: 3000 });
+		const dialog = page.getByRole('dialog', { name: /tastaturkürzel/i });
+		await expect(dialog).toBeVisible({ timeout: 3000 });
 	});
 
 	test('Escape schließt Hilfe-Modal', async ({ page }) => {
 		await page.locator('body').click();
 		await page.keyboard.press('h');
-		const helpHeading = page.getByRole('heading', { name: /tastaturkürzel/i });
-		await expect(helpHeading).toBeVisible({ timeout: 3000 });
+		const dialog = page.getByRole('dialog', { name: /tastaturkürzel/i });
+		await expect(dialog).toBeVisible({ timeout: 3000 });
 
 		await page.keyboard.press('Escape');
-		await expect(helpHeading).toBeHidden({ timeout: 3000 });
+		await expect(dialog).toBeHidden({ timeout: 3000 });
 	});
 
 	test('Filter-Panel hat korrekte ARIA-Attribute', async () => {
