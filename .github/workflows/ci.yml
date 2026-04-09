@@ -108,6 +108,7 @@ jobs:
         run: npm run check
 
       - name: Run unit tests
+        if: steps.changes.outputs.frontend != 'true' && steps.changes.outputs.backend != 'true'
         run: npm run test:unit -- --run
 
       - name: Run unit tests with coverage
