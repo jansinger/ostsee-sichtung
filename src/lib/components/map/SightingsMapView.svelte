@@ -201,6 +201,16 @@
 			mapInstance.dispose();
 		}
 
+		// CountManager-Ressourcen aufräumen (Event-Listener)
+		if (countManager) {
+			countManager.dispose();
+		}
+
+		// Map-Ressourcen aufräumen (Geolocation, Overlay, Event-Listener)
+		if (mapInstance) {
+			mapInstance.dispose();
+		}
+
 		// Reset Manager
 		panelManager = null;
 		timeSliderManager = null;
