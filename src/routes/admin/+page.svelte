@@ -159,13 +159,6 @@
 		goto(url);
 	}
 
-	// Close dropdown when clicking outside
-	function handleClickOutside(event: MouseEvent) {
-		if (showColumnDropdown && !(event.target as Element).closest('.dropdown')) {
-			showColumnDropdown = false;
-		}
-	}
-
 	function changePage(newPage: number): void {
 		const url = new URL(page.url);
 		url.searchParams.set('page', newPage.toString());
@@ -321,9 +314,7 @@
 	/>
 </svelte:head>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="pt-6" onclick={handleClickOutside}>
+<div class="pt-6">
 	<!-- Page Header -->
 	<div class="container mx-auto mb-6 px-4 sm:px-6">
 		<!-- Mobile Layout -->
@@ -368,49 +359,49 @@
 		<div class="hidden items-center justify-between sm:flex">
 			<h1 class="text-2xl font-bold">Sichtungen</h1>
 			<div class="flex items-center gap-2">
-				<div class="dropdown dropdown-end">
-					<button
-						class="btn btn-sm btn-outline"
-						onclick={() => (showColumnDropdown = !showColumnDropdown)}
-						title="Spalten ein-/ausblenden"
-					>
+				<details
+					class="dropdown dropdown-end"
+					bind:open={showColumnDropdown}
+					onblur={(e) => {
+						// Close when focus leaves the details element entirely
+						const related = (e as FocusEvent).relatedTarget as Element | null;
+						if (related && !(e.currentTarget as Element).contains(related)) {
+							showColumnDropdown = false;
+						}
+					}}
+				>
+					<summary class="btn btn-sm btn-outline" title="Spalten ein-/ausblenden">
 						<Icon icon="lucide:columns" class="mr-1 h-4 w-4" />
 						Spalten
-					</button>
-					{#if showColumnDropdown}
-						<!-- svelte-ignore a11y_click_events_have_key_events -->
-						<!-- svelte-ignore a11y_no_static_element_interactions -->
-						<div
-							class="dropdown-content menu bg-base-100 rounded-box border-base-300 z-[1] mt-1 w-64 border p-2 shadow-lg"
-							onclick={(e) => e.stopPropagation()}
-						>
-							<div class="menu-title flex items-center justify-between pb-2">
-								<span class="text-sm font-semibold">Spalten anzeigen</span>
-								<button class="btn btn-ghost btn-xs" onclick={() => (showColumnDropdown = false)}>
-									<Icon icon="lucide:x" class="h-3 w-3" />
-								</button>
-							</div>
-							<div class="max-h-80 overflow-y-auto">
-								{#each availableColumns as column (column.key)}
-									<!-- svelte-ignore a11y_click_events_have_key_events -->
-									<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-									<label
-										class="hover:bg-base-200 flex cursor-pointer items-center gap-2 rounded p-1"
-										onclick={(e) => e.stopPropagation()}
-									>
-										<input
-											type="checkbox"
-											class="checkbox checkbox-sm"
-											bind:checked={columnVisibility[column.key as keyof typeof columnVisibility]}
-											onclick={(e) => e.stopPropagation()}
-										/>
-										<span class="flex-1 text-sm">{column.label}</span>
-									</label>
-								{/each}
-							</div>
+					</summary>
+					<div
+						class="dropdown-content menu bg-base-100 rounded-box border-base-300 z-[1] mt-1 w-64 border p-2 shadow-lg"
+					>
+						<div class="menu-title flex items-center justify-between pb-2">
+							<span class="text-sm font-semibold">Spalten anzeigen</span>
+							<button
+								class="btn btn-ghost btn-xs"
+								onclick={() => (showColumnDropdown = false)}
+								aria-label="Spalten-Dropdown schließen"
+								title="Schließen"
+							>
+								<Icon icon="lucide:x" class="h-3 w-3" />
+							</button>
 						</div>
-					{/if}
-				</div>
+						<div class="max-h-80 overflow-y-auto">
+							{#each availableColumns as column (column.key)}
+								<label class="hover:bg-base-200 flex cursor-pointer items-center gap-2 rounded p-1">
+									<input
+										type="checkbox"
+										class="checkbox checkbox-sm"
+										bind:checked={columnVisibility[column.key as keyof typeof columnVisibility]}
+									/>
+									<span class="flex-1 text-sm">{column.label}</span>
+								</label>
+							{/each}
+						</div>
+					</div>
+				</details>
 				<button
 					class="btn btn-sm {isFilterPanelOpen
 						? 'btn-accent'
@@ -496,8 +487,8 @@
 						bind:value={verified}
 					>
 						<option value="">Alle</option>
-						<option value="1">Geprüft</option>
-						<option value="0">Ungeprüft</option>
+						<option value="1">Verifiziert</option>
+						<option value="0">Nicht verifiziert</option>
 					</select>
 				</div>
 				<div class="form-control w-full">
