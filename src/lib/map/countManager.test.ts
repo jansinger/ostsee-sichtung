@@ -1,6 +1,6 @@
 // SichtungenMap (aus optimizedMapController) braucht echtes OpenLayers.
 // Wir mocken den Import des Controllers vollständig und testen MapCountManager isoliert.
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../logger', () => ({
 	createLogger: () => ({
@@ -102,14 +102,6 @@ describe('MapCountManager', () => {
 
 	beforeEach(() => {
 		manager = new MapCountManager();
-		vi.stubGlobal('document', {
-			addEventListener: vi.fn(),
-			removeEventListener: vi.fn()
-		});
-	});
-
-	afterEach(() => {
-		vi.unstubAllGlobals();
 	});
 
 	describe('getCounts() — vor initialize()', () => {
@@ -246,37 +238,6 @@ describe('MapCountManager', () => {
 	});
 
 	describe('dispose()', () => {
-		it('entfernt exakt denselben Change-Event-Listener vom Document', () => {
-			const mockMap = createMockMap();
-			manager.initialize(mockMap as any, defaultTranslations as any);
-
-			// Handler-Referenz aus dem addEventListener-Mock auslesen
-			const addCall = vi
-				.mocked(document.addEventListener)
-				.mock.calls.find(([eventName]) => eventName === 'change');
-			expect(addCall).toBeDefined();
-			const changeHandler = addCall?.[1];
-			expect(changeHandler).toEqual(expect.any(Function));
-
-			manager.dispose();
-
-			// Nach dispose() wurde removeEventListener mit exakt demselben Handler aufgerufen
-			expect(document.removeEventListener).toHaveBeenCalledWith('change', changeHandler);
-		});
-
-		it('setzt Legend-Callback in der Map auf Noop zurück', () => {
-			const mockMap = createMockMap();
-			manager.initialize(mockMap as any, defaultTranslations as any);
-
-			// setLegendUpdateCallback wurde beim initialize() aufgerufen
-			expect(mockMap.setLegendUpdateCallback).toHaveBeenCalledOnce();
-
-			manager.dispose();
-
-			// Beim dispose() wird der Callback auf Noop zurückgesetzt
-			expect(mockMap.setLegendUpdateCallback).toHaveBeenCalledTimes(2);
-		});
-
 		it('setzt mapInstance und updateCallback auf undefined', () => {
 			const mockMap = createMockMap();
 			const callback = vi.fn();

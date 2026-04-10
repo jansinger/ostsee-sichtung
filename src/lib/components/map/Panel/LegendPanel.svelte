@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { CountData } from '$lib/map/countManager';
+	import { getMapCountManager } from '$lib/map/mapContext';
 	import type { MapTranslations } from '$lib/map/mapUtils';
 	import { backgroundColors, speciesSymbols } from '$lib/map/styleUtils';
 	import Icon from '$lib/components/Icon.svelte';
@@ -8,6 +9,9 @@
 		translations: MapTranslations;
 		counts: CountData;
 	}>();
+
+	// CountManager via typisiertem Svelte Context (Symbol-Key, siehe mapContext.ts)
+	const countManager = getMapCountManager();
 
 	// Reactive state für Panel-Sichtbarkeit (Svelte 5 runes)
 	let isOpen = $state(false);
@@ -44,27 +48,13 @@
 	// Event Handler für Species-Checkboxes
 	function handleSpeciesToggle(speciesId: string, visible: boolean) {
 		speciesVisibility[speciesId] = visible;
-		const countManager = (
-			window as unknown as {
-				mapCountManager?: { setSpeciesVisibility: (id: string, visible: boolean) => void };
-			}
-		).mapCountManager;
-		if (countManager) {
-			countManager.setSpeciesVisibility(speciesId, visible);
-		}
+		countManager.setSpeciesVisibility(speciesId, visible);
 	}
 
 	// Event Handler für Color-Checkboxes
 	function handleColorToggle(colorGroup: string, visible: boolean) {
 		colorVisibility[colorGroup] = visible;
-		const countManager = (
-			window as unknown as {
-				mapCountManager?: { setColorVisibility: (group: string, visible: boolean) => void };
-			}
-		).mapCountManager;
-		if (countManager) {
-			countManager.setColorVisibility(colorGroup, visible);
-		}
+		countManager.setColorVisibility(colorGroup, visible);
 	}
 </script>
 
@@ -93,7 +83,7 @@
 	aria-labelledby="legend-title"
 	aria-hidden={!isOpen}
 >
-	<div class="h-full overflow-y-auto scroll-styled">
+	<div class="scroll-styled h-full overflow-y-auto">
 		<div class="p-6">
 			<div class="mb-4 flex items-center justify-between">
 				<h2 id="legend-title" class="text-xl font-bold">Legende</h2>

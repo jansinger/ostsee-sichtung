@@ -154,10 +154,14 @@ export class SichtungenMap {
 		// Erstelle Popup
 		this.createPopup();
 
-		// Standard-Koordinaten für die Ostsee
+		// Standard-Koordinaten und Extent für die Ostsee
 		const defaultLat = 54.5;
 		const defaultLon = 12.0;
 		const defaultZoom = 7;
+		const balticExtent = olExtent.boundingExtent([
+			fromLonLat([9.4, 53.0]),
+			fromLonLat([30.2, 66.0])
+		]);
 
 		// Initialize the timeFilter with sensible defaults (zeige das ganze Jahr)
 		this.displayedYear = getDefaultSightingYear();
@@ -208,7 +212,10 @@ export class SichtungenMap {
 			view: new View({
 				center: fromLonLat([defaultLon, defaultLat]),
 				zoom: defaultZoom,
-				projection: 'EPSG:3857'
+				projection: 'EPSG:3857',
+				extent: balticExtent,
+				minZoom: 5,
+				maxZoom: 18
 			}),
 			controls: defaultControls({ rotate: false }).extend(this.createCustomControls())
 		});
@@ -378,21 +385,23 @@ export class SichtungenMap {
 
 	private createSightingPopupContent(props: SightingProperties): string {
 		const speciesMap = this.translations.speciesMap;
-		const speciesName = speciesMap[props.ta.toString()] || `Unbekannte Art (${props.ta})`;
+		const speciesName = sanitizeText(
+			speciesMap[props.ta.toString()] || `Unbekannte Art (${props.ta})`
+		);
 		const date = props.ts ? new Date(props.ts * 1000).toLocaleDateString('de-DE') : 'Unbekannt';
 
 		let content = `
 			<div class="sighting-popup">
 				<h3 style="margin: 0 0 10px 0; color: #333;">${speciesName}</h3>
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.count}:</strong> ${props.ct} Tier${props.ct > 1 ? 'e' : ''}
+					<strong>${sanitizeText(this.translations.count)}:</strong> ${props.ct} Tier${props.ct > 1 ? 'e' : ''}
 				</div>
 		`;
 
 		if (props.jt && props.jt > 0) {
 			content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.young}:</strong> ${props.jt}
+					<strong>${sanitizeText(this.translations.young)}:</strong> ${props.jt}
 				</div>
 			`;
 		}
@@ -400,21 +409,21 @@ export class SichtungenMap {
 		if (props.tf) {
 			content += `
 				<div style="margin-bottom: 8px; color: #dc2626;">
-					<strong>${this.translations.found_dead}:</strong> Ja
+					<strong>${sanitizeText(this.translations.found_dead)}:</strong> Ja
 				</div>
 			`;
 		}
 
 		content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.report_date}:</strong> ${date}
+					<strong>${sanitizeText(this.translations.report_date)}:</strong> ${date}
 				</div>
 		`;
 
 		if (props.waterway) {
 			content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.area}:</strong> ${sanitizeText(props.waterway)}
+					<strong>${sanitizeText(this.translations.area)}:</strong> ${sanitizeText(props.waterway)}
 				</div>
 			`;
 		}
@@ -426,7 +435,7 @@ export class SichtungenMap {
 				.join(' ');
 			content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.name}:</strong> ${fullName}
+					<strong>${sanitizeText(this.translations.name)}:</strong> ${fullName}
 				</div>
 			`;
 		}
@@ -434,7 +443,7 @@ export class SichtungenMap {
 		if (props.shipname) {
 			content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.ship}:</strong> ${sanitizeText(props.shipname)}
+					<strong>${sanitizeText(this.translations.ship)}:</strong> ${sanitizeText(props.shipname)}
 				</div>
 			`;
 		}
@@ -459,7 +468,7 @@ export class SichtungenMap {
 		`;
 
 		Object.entries(speciesCount).forEach(([species, count]) => {
-			const speciesName = this.translations.speciesMap[species] || `Art ${species}`;
+			const speciesName = sanitizeText(this.translations.speciesMap[species] || `Art ${species}`);
 			content += `
 				<div style="margin-bottom: 4px;">
 					${speciesName}: ${count}
@@ -572,21 +581,6 @@ export class SichtungenMap {
 	public setHiddenColors(colors: Record<string, boolean>): void {
 		this.hiddenColors = colors;
 		this.reportsLayer.changed();
-	}
-
-	public onLegendUpdate(callback: () => void): void {
-		this.legendUpdateCallback = callback;
-	}
-
-	public zoomToFeatures(): void {
-		const extent = this.reportsSource.getExtent();
-		if (extent && extent.some((val) => isFinite(val))) {
-			this.map.getView().fit(extent, {
-				duration: 1000,
-				padding: [50, 50, 50, 50],
-				maxZoom: 12
-			});
-		}
 	}
 
 	public getMap(): Map {
@@ -715,7 +709,8 @@ export class SichtungenMap {
 		if (extent && extent.every((val) => isFinite(val))) {
 			this.map.getView().fit(extent, {
 				padding: [50, 50, 50, 50],
-				duration: 1000
+				duration: 1000,
+				maxZoom: 12
 			});
 		}
 	}
@@ -735,8 +730,8 @@ export class SichtungenMap {
 	 * MUSS beim Unmount der Komponente aufgerufen werden.
 	 */
 	public dispose(): void {
-		// Geolocation stoppen und internen Tracking-Status zurücksetzen
-		this.stopTracking();
+		// Geolocation stoppen
+		this.geolocation.setTracking(false);
 
 		// Popup entfernen
 		this.popup.setPosition(undefined);
@@ -815,17 +810,17 @@ export class SichtungenMap {
 	}
 
 	private createInfoText(properties: SightingProperties): string {
-		const species = this.translations.speciesMap[properties.ta] || 'Unbekannte Art';
+		const species = sanitizeText(this.translations.speciesMap[properties.ta] || 'Unbekannte Art');
 		const count = properties.ct || 0;
 		const date = properties.ts
 			? new Date(properties.ts * 1000).toLocaleDateString('de-DE')
 			: 'Unbekanntes Datum';
-		const isDead = properties.tf ? ` (${this.translations.found_dead})` : '';
+		const isDead = properties.tf ? ` (${sanitizeText(this.translations.found_dead)})` : '';
 		return `
 			<div class="p-2 text-sm">
 				<strong>${species}</strong><br>
-				${this.translations.count}: ${count}${isDead}<br>
-				${this.translations.report_date}${date}
+				${sanitizeText(this.translations.count)}: ${count}${isDead}<br>
+				${sanitizeText(this.translations.report_date)}${date}
 			</div>
 		`;
 	}
@@ -846,7 +841,9 @@ export class SichtungenMap {
 			.sort(([, a], [, b]) => b - a)
 			.slice(0, 3) // Zeige nur die 3 häufigsten Arten
 			.map(([speciesId, count]) => {
-				const speciesName = this.translations.speciesMap[speciesId] || 'Unbekannte Art';
+				const speciesName = sanitizeText(
+					this.translations.speciesMap[speciesId] || 'Unbekannte Art'
+				);
 				return `${speciesName}: ${count}`;
 			});
 

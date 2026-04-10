@@ -27,7 +27,6 @@ export class MapCountManager implements CountManager {
 	private speciesCounts: Record<string, { visible: number; total: number }> = {};
 	private colorCounts: Record<string, number> = {};
 	private updateCallback: ((counts: CountData) => void) | undefined;
-	private changeHandler: ((event: Event) => void) | undefined;
 
 	private readonly colorGroups = ['ct0', 'ct1', 'ct2', 'ct6', 'ct11', 'ct15'];
 
@@ -49,9 +48,6 @@ export class MapCountManager implements CountManager {
 
 		// Setze die Update-Funktion für die Karte
 		mapInstance.setLegendUpdateCallback(() => this.updateCounts());
-
-		// Initialisiere die Ereignisbehandler für die Legende
-		this.initializeEventHandlers();
 	}
 
 	/**
@@ -147,30 +143,6 @@ export class MapCountManager implements CountManager {
 	}
 
 	/**
-	 * Initialisiert die Event Handler für Checkboxes (modernisiert für Svelte-Komponenten)
-	 */
-	private initializeEventHandlers(): void {
-		if (!this.mapInstance) return;
-
-		// Bestehenden Handler entfernen (idempotent bei Re-Init / HMR)
-		if (this.changeHandler) {
-			document.removeEventListener('change', this.changeHandler);
-		}
-
-		// Event-Delegation für dynamisch hinzugefügte Checkboxen
-		this.changeHandler = (event: Event) => {
-			const target = event.target as HTMLInputElement;
-
-			if (target.classList.contains('species-checkbox')) {
-				this.mapInstance!.setSpeciesVisibility(target.value, target.checked);
-			} else if (target.classList.contains('color-checkbox')) {
-				this.mapInstance!.setColorVisibility(target.value, target.checked);
-			}
-		};
-		document.addEventListener('change', this.changeHandler);
-	}
-
-	/**
 	 * Räumt alle Ressourcen auf. MUSS beim Unmount aufgerufen werden.
 	 */
 	public dispose(): void {
@@ -179,11 +151,6 @@ export class MapCountManager implements CountManager {
 			this.mapInstance.setLegendUpdateCallback(() => {});
 		}
 
-		if (this.changeHandler) {
-			document.removeEventListener('change', this.changeHandler);
-		}
-
-		this.changeHandler = undefined;
 		this.updateCallback = undefined;
 		this.mapInstance = undefined;
 		this.translations = undefined;

@@ -7,6 +7,7 @@
 	import { MapTimeSliderManager } from '$lib/map/timeSliderManager';
 	import { speciesLabels } from '$lib/report/formOptions/species';
 	import { getAvailableYears, getDefaultSightingYear } from '$lib/utils/date/defaultYear';
+	import { setMapCountManager } from '$lib/map/mapContext';
 	import 'ol/ol.css';
 	import LoadingOverlay from './LoadingOverlay.svelte';
 	import FilterPanel from './Panel/FilterPanel.svelte';
@@ -55,7 +56,12 @@
 	let mapInstance: SichtungenMap | null = null;
 	let panelManager: MapPanelManager | null = null;
 	let timeSliderManager: MapTimeSliderManager | null = null;
-	let countManager: MapCountManager | null = null;
+
+	// CountManager wird auf Top-Level erstellt und via Context bereitgestellt,
+	// damit Child-Komponenten (LegendPanel) ihn bei ihrer Initialisierung finden.
+	// setContext MUSS synchron während der Komponenteninitialisierung aufgerufen werden.
+	const countManager = new MapCountManager();
+	setMapCountManager(countManager);
 
 	// Reaktive Variablen
 	let counts = $state<CountData>({
@@ -92,7 +98,6 @@
 			// Initialisiere Manager
 			panelManager = new MapPanelManager();
 			timeSliderManager = new MapTimeSliderManager();
-			countManager = new MapCountManager();
 
 			// Initialisiere Karte
 			mapInstance = new SichtungenMap({
@@ -111,10 +116,6 @@
 			countManager.onCountsUpdated((newCounts) => {
 				counts = newCounts;
 			});
-
-			// Mache den CountManager global verfügbar für die Panel-Komponenten
-			(window as unknown as { mapCountManager: typeof countManager }).mapCountManager =
-				countManager;
 
 			// Initialisiere andere Manager
 			panelManager.initializePanels();
@@ -192,13 +193,8 @@
 			initTimeoutId = null;
 		}
 
-		// Globale Referenz bereinigen, damit GC die Objekte freigeben kann
-		delete (window as unknown as { mapCountManager?: unknown }).mapCountManager;
-
-		// CountManager-Ressourcen aufräumen (Event-Listener)
-		if (countManager) {
-			countManager.dispose();
-		}
+		// CountManager-Ressourcen aufräumen
+		countManager.dispose();
 
 		// Map-Ressourcen aufräumen (Geolocation, Overlay, Event-Listener)
 		if (mapInstance) {
@@ -206,7 +202,6 @@
 		}
 
 		// Reset Manager
-		countManager = null;
 		panelManager = null;
 		timeSliderManager = null;
 		mapInstance = null;
