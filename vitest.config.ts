@@ -17,8 +17,6 @@ export default defineConfig({
 				'src/**/*.d.ts',
 				// OpenLayers map controllers — instantiate OL Map/View/Layer/Canvas, need real DOM+WebGL
 				'src/lib/map/optimizedMapController.ts',
-				'src/lib/map/simpleMapController.ts',
-				'src/lib/map/popup.ts',
 				'src/lib/map/controls/**',
 				// OpenLayers helper utilities — import OL modules, require real DOM+WebGL
 				'src/lib/utils/map/**',

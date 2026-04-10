@@ -7,6 +7,7 @@
 	import { MapTimeSliderManager } from '$lib/map/timeSliderManager';
 	import { speciesLabels } from '$lib/report/formOptions/species';
 	import { getAvailableYears, getDefaultSightingYear } from '$lib/utils/date/defaultYear';
+	import { setContext } from 'svelte';
 	import 'ol/ol.css';
 	import LoadingOverlay from './LoadingOverlay.svelte';
 	import FilterPanel from './Panel/FilterPanel.svelte';
@@ -112,9 +113,8 @@
 				counts = newCounts;
 			});
 
-			// Mache den CountManager global verfügbar für die Panel-Komponenten
-			(window as unknown as { mapCountManager: typeof countManager }).mapCountManager =
-				countManager;
+			// CountManager via Svelte Context API für Panel-Komponenten verfügbar machen
+			setContext('mapCountManager', countManager);
 
 			// Initialisiere andere Manager
 			panelManager.initializePanels();
@@ -191,9 +191,6 @@
 			clearTimeout(initTimeoutId);
 			initTimeoutId = null;
 		}
-
-		// Globale Referenz bereinigen, damit GC die Objekte freigeben kann
-		delete (window as unknown as { mapCountManager?: unknown }).mapCountManager;
 
 		// CountManager-Ressourcen aufräumen (Event-Listener)
 		if (countManager) {

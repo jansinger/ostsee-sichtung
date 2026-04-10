@@ -29,11 +29,11 @@ Regeln für Karten-Integration mit OpenLayers und PostGIS.
 src/lib/
 ├── map/                              # Map Utilities & Controller
 │   ├── optimizedMapController.ts     # Performance-optimierter Controller
-│   ├── simpleMapController.ts        # Einfacher Controller
-│   ├── mapStyles.ts                  # Style-Definitionen
+│   ├── styleUtils.ts                 # Style-Definitionen & Legenden
 │   ├── dataLoader.ts                 # Daten-Laden
-│   ├── popup.ts                      # Popup-Handling
-│   └── mapUtils.ts                   # Koordinaten-Utilities
+│   ├── countManager.ts              # Species/Color Count Management
+│   ├── timeSliderManager.ts         # Zeitfilterung
+│   └── mapUtils.ts                   # GeoJSON-Konvertierung & Typen
 └── components/map/
     ├── OLMap.svelte                  # Haupt-Karten-Komponente
     ├── SightingsMapView.svelte       # Sichtungs-Kartenansicht
