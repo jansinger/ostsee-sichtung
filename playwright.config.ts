@@ -16,8 +16,8 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	/* Retry on CI only */
 	retries: process.env.CI ? 1 : 0,
-	/* Use multiple workers on CI for parallel execution */
-	workers: process.env.CI ? 4 : undefined,
+	/* Use 2 workers on CI — more causes timeouts with the Vite dev server */
+	workers: process.env.CI ? 2 : undefined,
 	/* Global test timeout - increased for CI */
 	timeout: process.env.CI ? 60000 : 30000,
 	/* Reporter to use. See https://playwright.dev/docs/test-reporters */
