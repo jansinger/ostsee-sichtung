@@ -13,8 +13,8 @@ import { OSM, XYZ } from 'ol/source';
 import Cluster from 'ol/source/Cluster';
 import VectorSource from 'ol/source/Vector';
 import { Circle, Fill, Stroke, Style, Text } from 'ol/style';
-// import type { LocationControl } from './controls/LocationControl.js';
-// import type { ZoomAllControl } from './controls/ZoomAllControl.js';
+import { LocationControl } from './controls/LocationControl.js';
+import { ZoomAllControl } from './controls/ZoomAllControl.js';
 import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 import type { MapTranslations } from './mapUtils';
 import { createFeatureStyle, getFeatureColorGroup } from './styleUtils';
@@ -49,6 +49,15 @@ export interface MapOptions {
 	timeStartId?: string;
 	timeEndId?: string;
 	enableLocationControl?: boolean;
+}
+
+/**
+ * Interface für Custom Controls, um zirkuläre Type-Dependencies zu vermeiden.
+ * Controls nutzen dieses Interface statt des konkreten SichtungenMap-Typs.
+ */
+export interface MapController {
+	toggleGeolocation(): boolean;
+	zoomAllFeatures(): void;
 }
 
 /**
@@ -176,11 +185,18 @@ export class SichtungenMap {
 		this.map = new Map({
 			target: options.target,
 			layers: [
-				// Basis-Karte (OSM)
+				// Basis-Karte (OSM) mit Error-Handling
 				new TileLayer({
 					source: new OSM({
 						attributions:
-							'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+							'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+						tileLoadFunction: (tile, src) => {
+							const img = (tile as unknown as { getImage(): HTMLImageElement }).getImage();
+							img.onerror = () => {
+								logger.warn({ tileUrl: src }, 'OSM tile failed to load');
+							};
+							img.src = src;
+						}
 					})
 				}),
 				// OpenSeaMap-Layer für maritime Informationen
@@ -590,12 +606,11 @@ export class SichtungenMap {
 	private createCustomControls(): Control[] {
 		const controls: Control[] = [];
 
-		// TODO: Fix type compatibility between optimized and original map controller
-		// if (this.options.enableLocationControl) {
-		// 	controls.push(new LocationControl(this as SichtungenMap));
-		// }
+		if (this.options.enableLocationControl) {
+			controls.push(new LocationControl(this));
+		}
 
-		// controls.push(new ZoomAllControl(this as SichtungenMap));
+		controls.push(new ZoomAllControl(this));
 		return controls;
 	}
 

@@ -28,17 +28,19 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Suchfilter hinzufügen, wenn vorhanden
 		if (search) {
+			// LIKE-Wildcards im Suchbegriff escapen, damit % und _ literal gesucht werden
+			const escapedSearch = search.replace(/[%_\\]/g, '\\$&');
 			// Suche nur in nicht-personenbezogenen Feldern oder mit Consent
 			conditions.push(
 				sql`(
-          ${sightingsTable.waterway} LIKE ${`%${search}%`} OR
-          ${sightingsTable.seaMark} LIKE ${`%${search}%`} OR
+          ${sightingsTable.waterway} LIKE ${`%${escapedSearch}%`} ESCAPE '\\' OR
+          ${sightingsTable.seaMark} LIKE ${`%${escapedSearch}%`} ESCAPE '\\' OR
           (${sightingsTable.nameConsent} = 1 AND (
-            ${sightingsTable.firstName} LIKE ${`%${search}%`} OR
-            ${sightingsTable.lastName} LIKE ${`%${search}%`}
+            ${sightingsTable.firstName} LIKE ${`%${escapedSearch}%`} ESCAPE '\\' OR
+            ${sightingsTable.lastName} LIKE ${`%${escapedSearch}%`} ESCAPE '\\'
           )) OR
-          (${sightingsTable.shipNameConsent} = 1 AND 
-            ${sightingsTable.shipName} LIKE ${`%${search}%`}
+          (${sightingsTable.shipNameConsent} = 1 AND
+            ${sightingsTable.shipName} LIKE ${`%${escapedSearch}%`} ESCAPE '\\'
           )
         )`
 			);

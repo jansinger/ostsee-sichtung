@@ -78,7 +78,6 @@
 	let isLoadingData = $state(false);
 	let isInitialLoading = $state(true);
 	let loadingType = $state<'initial' | 'filter' | 'features'>('initial');
-	let loadingProgress = $state<number | null>(null);
 	let errorMessage = $state<string | null>(null);
 
 	// Aktuell angezeigtes Jahr für den Titel
@@ -236,29 +235,12 @@
 			isLoadingData = true;
 			loadingType = type;
 			errorMessage = null;
-			loadingProgress = 0;
 
-			// Simuliere Fortschritt für bessere UX
-			const progressInterval = setInterval(() => {
-				if (loadingProgress !== null && loadingProgress < 90) {
-					loadingProgress = Math.min(loadingProgress + 10, 90);
-				}
-			}, 200);
-
-			// Loading nach variablem Timeout beenden
-			filterTimeout = setTimeout(
-				() => {
-					clearInterval(progressInterval);
-					loadingProgress = 100;
-
-					// Kurz 100% anzeigen, dann ausblenden
-					setTimeout(() => {
-						isLoadingData = false;
-						loadingProgress = null;
-					}, 300);
-				},
-				Math.random() * 1000 + 1500
-			); // 1.5-2.5 Sekunden
+			// Loading nach kurzer Verzögerung beenden (echtes API-Laden
+			// wird vom Controller gesteuert; hier nur visuelles Feedback)
+			filterTimeout = setTimeout(() => {
+				isLoadingData = false;
+			}, 2000);
 		}
 
 		// Delegated change handler — works for dynamically added inputs without MutationObserver
@@ -288,7 +270,6 @@
 			errorMessage = 'Fehler beim Laden der Kartendaten. Bitte versuchen Sie es erneut.';
 			isLoadingData = false;
 			isInitialLoading = false;
-			loadingProgress = null;
 		};
 		window.addEventListener('unhandledrejection', unhandledRejectionHandler);
 
@@ -408,8 +389,6 @@
 		<LoadingOverlay
 			isVisible={isInitialLoading || isLoadingData}
 			type={isInitialLoading ? 'initial' : loadingType}
-			progress={loadingProgress}
-			canCancel={false}
 		/>
 
 		<!-- Error-Toast -->

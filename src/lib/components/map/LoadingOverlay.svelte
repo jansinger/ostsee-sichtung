@@ -4,22 +4,13 @@
 	// Props
 	type LoadingType = 'default' | 'filter' | 'features' | 'initial';
 
-	let {
-		isVisible = false,
-		type = 'default' as LoadingType,
-		progress = null,
-		canCancel = false,
-		onCancel = null
-	} = $props<{
+	let { isVisible = false, type = 'default' as LoadingType } = $props<{
 		isVisible?: boolean;
 		type?: LoadingType;
-		progress?: number | null;
-		canCancel?: boolean;
-		onCancel?: (() => void) | null;
 	}>();
 
 	// Icon basierend auf Typ
-	const iconMap = {
+	const iconMap: Record<LoadingType, string> = {
 		default: 'lucide:loader-2',
 		filter: 'lucide:filter',
 		features: 'lucide:map-pin',
@@ -27,17 +18,14 @@
 	};
 
 	// Nachrichten basierend auf Typ
-	const messageMap = {
+	const messageMap: Record<LoadingType, string> = {
 		default: 'Daten werden geladen...',
 		filter: 'Filter werden angewendet...',
 		features: 'Kartenfeatures werden geladen...',
 		initial: 'Karte wird initialisiert...'
 	};
 
-	// Compute message based on type if not provided
-	const displayMessage = $derived.by(() => {
-		return messageMap[type as keyof typeof messageMap];
-	});
+	const displayMessage = $derived(messageMap[type]);
 </script>
 
 {#if isVisible}
@@ -68,24 +56,8 @@
 				</h3>
 			</div>
 
-			<!-- Progress Bar (if applicable) -->
-			{#if progress !== null && progress >= 0}
-				<div class="mb-6">
-					<div class="text-base-content/70 mb-2 flex justify-between text-sm">
-						<span>Fortschritt</span>
-						<span>{Math.round(progress)}%</span>
-					</div>
-					<div class="bg-base-200 h-2 w-full rounded-full">
-						<div
-							class="bg-primary h-2 rounded-full transition-all duration-300 ease-out"
-							style="width: {Math.min(progress, 100)}%"
-						></div>
-					</div>
-				</div>
-			{/if}
-
-			<!-- Loading Dots Animation -->
-			<div class="mb-6 flex items-center justify-center space-x-2">
+			<!-- Indeterminate Loading Dots -->
+			<div class="mb-2 flex items-center justify-center space-x-2">
 				<div class="bg-primary h-2 w-2 animate-bounce rounded-full"></div>
 				<div
 					class="bg-primary h-2 w-2 animate-bounce rounded-full"
@@ -97,25 +69,9 @@
 				></div>
 			</div>
 
-			<!-- Cancel Button (if allowed) -->
-			{#if canCancel && onCancel}
-				<div class="text-center">
-					<button onclick={onCancel} class="btn btn-ghost btn-sm" aria-label="Laden abbrechen">
-						Abbrechen
-					</button>
-				</div>
-			{/if}
-
-			<!-- Loading Tips -->
 			{#if type === 'initial'}
 				<div class="text-base-content/60 mt-4 text-center text-sm">
-					<p>💡 Tipp: Verwenden Sie <kbd class="kbd kbd-xs">H</kbd> für Tastaturkürzel</p>
-				</div>
-			{:else if type === 'filter'}
-				<div class="text-base-content/60 mt-4 text-center text-sm">
-					<p>
-						🔍 Filter werden auf {progress !== null ? Math.round(progress / 10) : '...'} Datensätze angewendet
-					</p>
+					<p>Verwenden Sie <kbd class="kbd kbd-xs">H</kbd> für Tastaturkürzel</p>
 				</div>
 			{/if}
 		</div>
