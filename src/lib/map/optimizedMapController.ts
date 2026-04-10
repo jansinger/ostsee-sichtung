@@ -735,8 +735,8 @@ export class SichtungenMap {
 	 * MUSS beim Unmount der Komponente aufgerufen werden.
 	 */
 	public dispose(): void {
-		// Geolocation stoppen und internen Tracking-Status zurücksetzen
-		this.stopTracking();
+		// Geolocation stoppen
+		this.geolocation.setTracking(false);
 
 		// Popup entfernen
 		this.popup.setPosition(undefined);
