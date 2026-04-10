@@ -195,6 +195,16 @@
 		// Globale Referenz bereinigen, damit GC die Objekte freigeben kann
 		delete (window as unknown as { mapCountManager?: unknown }).mapCountManager;
 
+		// CountManager-Ressourcen aufräumen (Event-Listener)
+		if (countManager) {
+			countManager.dispose();
+		}
+
+		// Map-Ressourcen aufräumen (Geolocation, Overlay, Event-Listener)
+		if (mapInstance) {
+			mapInstance.dispose();
+		}
+
 		// Reset Manager
 		countManager = null;
 		panelManager = null;

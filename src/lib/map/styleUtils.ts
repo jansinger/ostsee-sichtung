@@ -2,18 +2,12 @@ import { Stroke, Fill, Style, Circle, RegularShape, Text } from 'ol/style';
 import type { Feature } from 'ol';
 import type { Geometry } from 'ol/geom';
 
-// Erweiterung von Number für die between-Methode
-declare global {
-	interface Number {
-		between(this: number, first: number, last: number): boolean;
-	}
-}
-
-// Hilfsfunktion, falls between noch nicht existiert
-if (!Number.prototype.between) {
-	Number.prototype.between = function (this: number, first: number, last: number): boolean {
-		return first < last ? this >= first && this <= last : this >= last && this <= first;
-	};
+/**
+ * Prüft ob ein Wert zwischen zwei Grenzen liegt (inklusiv).
+ * Ersetzt die vorherige Number.prototype.between Prototype-Extension.
+ */
+export function isBetween(value: number, lower: number, upper: number): boolean {
+	return lower < upper ? value >= lower && value <= upper : value >= upper && value <= lower;
 }
 
 /**
@@ -61,67 +55,78 @@ export interface SpeciesSymbol {
  * Mapping von Tierarten zu verbesserten Symbolen
  */
 export const speciesSymbols: Record<string, SpeciesSymbol> = {
-	'0': { // Schweinswal
+	'0': {
+		// Schweinswal
 		symbol: '🐋',
 		baseColor: '#4A90E2', // Blau für Kleinwale
 		size: 1.0,
 		category: 'kleinwal'
 	},
-	'1': { // Kegelrobbe
+	'1': {
+		// Kegelrobbe
 		symbol: '🦭',
 		baseColor: '#8B4513', // Braun für Robben
 		size: 1.1,
 		category: 'robbe'
 	},
-	'2': { // Seehund
+	'2': {
+		// Seehund
 		symbol: '🦭',
 		baseColor: '#CD853F', // Helles Braun für Seehunde
 		size: 1.0,
 		category: 'robbe'
 	},
-	'3': { // Delphin
+	'3': {
+		// Delphin
 		symbol: '🐬',
 		baseColor: '#00CED1', // Türkis für Delphine
 		size: 1.0,
 		category: 'kleinwal'
 	},
-	'4': { // Beluga
+	'4': {
+		// Beluga
 		symbol: '🐋',
 		baseColor: '#F0F8FF', // Weiß für Beluga
 		size: 1.2,
 		category: 'kleinwal'
 	},
-	'5': { // Zwergwal
+	'5': {
+		// Zwergwal
 		symbol: '🐳',
 		baseColor: '#2F4F4F', // Dunkelgrau für Großwale
 		size: 1.3,
 		category: 'grosswal'
 	},
-	'6': { // Finnwal
+	'6': {
+		// Finnwal
 		symbol: '🐋',
 		baseColor: '#1C1C1C', // Schwarz für Finnwal
 		size: 1.5,
 		category: 'grosswal'
 	},
-	'7': { // Buckelwal
+	'7': {
+		// Buckelwal
 		symbol: '🐳',
 		baseColor: '#36454F', // Charcoal für Buckelwal
 		size: 1.4,
 		category: 'grosswal'
 	},
-	'8': { // Unbekannte Walart
+	'8': {
+		// Unbekannte Walart
 		symbol: '❓',
 		baseColor: '#696969', // Grau für unbekannt
 		size: 1.2,
 		category: 'grosswal'
 	},
-	'9': { // Ringelrobbe
+	'9': {
+		// Ringelrobbe
 		symbol: '🦭',
 		baseColor: '#A0522D', // Sienna für Ringelrobbe
 		size: 0.9,
 		category: 'robbe'
 	},
-	'10': { // Unbekannte Robbenart
+	'10': {
+		// Unbekannte Robbenart
 		symbol: '❓',
 		baseColor: '#8B4513', // Braun für unbekannte Robbe
 		size: 1.0,
@@ -133,9 +138,9 @@ export const speciesSymbols: Record<string, SpeciesSymbol> = {
  * Hintergrundfarben für bessere Sichtbarkeit der Symbole
  */
 export const backgroundColors: Record<string, string> = {
-	'kleinwal': '#E6F3FF', // Helles Blau
-	'grosswal': '#F0F0F0', // Hellgrau
-	'robbe': '#F5E6D3' // Beige
+	kleinwal: '#E6F3FF', // Helles Blau
+	grosswal: '#F0F0F0', // Hellgrau
+	robbe: '#F5E6D3' // Beige
 };
 
 /**
@@ -192,10 +197,7 @@ export function getFeatureColorGroup(properties: SightingProperties): string {
 /**
  * Erstellt einen verbesserten Unicode-basierten Style für ein Feature
  */
-function createUnicodeSymbolStyle(
-	speciesId: string,
-	colorGroup: string
-): Style {
+function createUnicodeSymbolStyle(speciesId: string, colorGroup: string): Style {
 	const speciesSymbol = speciesSymbols[speciesId];
 	if (!speciesSymbol) {
 		// Fallback für unbekannte Arten
@@ -204,21 +206,21 @@ function createUnicodeSymbolStyle(
 
 	// Berechne die finale Größe basierend auf der Tierart
 	const fontSize = Math.round(defaultRadius * 2.5 * speciesSymbol.size);
-	
+
 	// Bestimme die Farbe basierend auf der Count-Gruppe
-	const countColor = legendGroups[colorGroup]?.fill.getColor() as string || '#333333';
-	
+	const countColor = (legendGroups[colorGroup]?.fill.getColor() as string) || '#333333';
+
 	// Erstelle Hintergrund-Style für bessere Sichtbarkeit
 	const backgroundColor = backgroundColors[speciesSymbol.category] || '#FFFFFF';
-	
+
 	return new Style({
 		// Hintergrundkreis für bessere Sichtbarkeit
 		image: new Circle({
 			radius: fontSize / 2 + 4,
 			fill: new Fill({ color: backgroundColor + 'CC' }), // 80% Transparenz
-			stroke: new Stroke({ 
+			stroke: new Stroke({
 				color: countColor,
-				width: 2 
+				width: 2
 			})
 		}),
 		// Unicode-Text-Symbol
@@ -240,10 +242,7 @@ function createUnicodeSymbolStyle(
 /**
  * Fallback: Erstellt geometrische Formen für Browser ohne Unicode-Support
  */
-function createFallbackGeometricStyle(
-	speciesId: string,
-	colorGroup: string
-): Style {
+function createFallbackGeometricStyle(speciesId: string, colorGroup: string): Style {
 	// Verwende die ursprüngliche geometrische Form-Logik als Fallback
 	let points = 4;
 	let angle = Math.PI / 4;
@@ -340,7 +339,7 @@ export function createFeatureStyle(
 	if (
 		hiddenSpecies[speciesId] ||
 		hiddenColors[colorGroup] ||
-		!(properties.ts * 1000).between(timeFilter.lower, timeFilter.upper)
+		!isBetween(properties.ts * 1000, timeFilter.lower, timeFilter.upper)
 	) {
 		feature.set('stcVisibility', false);
 		return null;
@@ -359,7 +358,7 @@ export function createFeatureStyle(
 
 	// Versuche zuerst Unicode-Symbole zu verwenden
 	let style: Style;
-	
+
 	try {
 		style = createUnicodeSymbolStyle(speciesId, colorGroup);
 	} catch (error) {
@@ -380,10 +379,10 @@ export function createFeatureStyle(
 export function createClusterStyle(feature: Feature<Geometry>): Style {
 	const features = feature.get('features');
 	const size = features ? features.length : 0;
-	
+
 	// Cache-Key für Cluster-Styles
 	const clusterKey = `cluster_${size}`;
-	
+
 	if (styleCache[clusterKey]) {
 		return styleCache[clusterKey];
 	}
@@ -392,7 +391,7 @@ export function createClusterStyle(feature: Feature<Geometry>): Style {
 	let radius = 15;
 	let fontSize = 12;
 	let color = '#3399CC';
-	
+
 	if (size < 5) {
 		radius = 18;
 		fontSize = 12;
