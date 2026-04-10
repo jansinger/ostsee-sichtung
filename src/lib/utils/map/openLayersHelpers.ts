@@ -85,7 +85,10 @@ export class FormLocationControl extends Control {
 				}
 			},
 			(error) => {
-				logger.warn({ error: error instanceof Error ? error.message : error }, 'GPS-Positionierung fehlgeschlagen');
+				logger.warn(
+					{ error: error instanceof Error ? error.message : error },
+					'GPS-Positionierung fehlgeschlagen'
+				);
 				this.stopTracking();
 			},
 			{
@@ -109,6 +112,15 @@ export class FormLocationControl extends Control {
 		this.button.style.backgroundColor = 'rgba(0, 60, 136, 0.5)';
 		this.button.style.color = 'white';
 		this.button.title = 'GPS-Position anzeigen';
+	}
+
+	/**
+	 * OpenLayers ruft disposeInternal() auf Controls auf wenn die Map disposed wird.
+	 * Stoppt laufendes GPS-Tracking damit keine verwaisten watchPosition-Callbacks bleiben.
+	 */
+	override disposeInternal() {
+		this.stopTracking();
+		super.disposeInternal();
 	}
 }
 

@@ -1,6 +1,6 @@
 // SichtungenMap (aus optimizedMapController) braucht echtes OpenLayers.
 // Wir mocken den Import des Controllers vollständig und testen MapCountManager isoliert.
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../logger', () => ({
 	createLogger: () => ({
@@ -106,6 +106,10 @@ describe('MapCountManager', () => {
 			addEventListener: vi.fn(),
 			removeEventListener: vi.fn()
 		});
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
 	});
 
 	describe('getCounts() — vor initialize()', () => {

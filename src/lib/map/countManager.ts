@@ -186,6 +186,11 @@ export class MapCountManager implements CountManager {
 		this.changeHandler = undefined;
 		this.updateCallback = undefined;
 		this.mapInstance = undefined;
+		this.translations = undefined;
+
+		// Count-Objekte leeren um Referenzen freizugeben
+		this.speciesCounts = {};
+		this.colorCounts = {};
 	}
 
 	/**
