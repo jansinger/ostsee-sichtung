@@ -57,7 +57,7 @@
 	<div class="mb-20">
 		<div class="grid items-center gap-12 md:grid-cols-2">
 			<div>
-				<h2 class="text-primary mb-6 text-4xl font-bold flex items-center gap-3">
+				<h2 class="text-primary mb-6 flex items-center gap-3 text-4xl font-bold">
 					<Icon icon="lucide:zap" width="36" class="text-primary" />
 					Unsere Mission
 				</h2>
@@ -103,7 +103,7 @@
 	<!-- Features Section -->
 	<div class="mb-20">
 		<div class="mb-12 text-center">
-			<h2 class="text-primary mb-4 text-4xl font-bold flex items-center justify-center gap-3">
+			<h2 class="text-primary mb-4 flex items-center justify-center gap-3 text-4xl font-bold">
 				<Icon icon="lucide:zap" width="36" class="text-primary" />
 				Unsere Plattform
 			</h2>
@@ -115,7 +115,9 @@
 		<div class="grid gap-8 md:grid-cols-3">
 			<div class="card bg-base-100 group shadow-xl transition-all duration-300 hover:shadow-2xl">
 				<div class="card-body p-8 text-center">
-					<div class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110">
+					<div
+						class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110"
+					>
 						<Icon icon="lucide:pen-line" width="48" class="text-primary" />
 					</div>
 					<h3 class="card-title text-primary mb-4 justify-center text-xl">Einfaches Melden</h3>
@@ -131,7 +133,9 @@
 
 			<div class="card bg-base-100 group shadow-xl transition-all duration-300 hover:shadow-2xl">
 				<div class="card-body p-8 text-center">
-					<div class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110">
+					<div
+						class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110"
+					>
 						<Icon icon="lucide:map" width="48" class="text-secondary" />
 					</div>
 					<h3 class="card-title text-secondary mb-4 justify-center text-xl">Interaktive Karte</h3>
@@ -147,7 +151,9 @@
 
 			<div class="card bg-base-100 group shadow-xl transition-all duration-300 hover:shadow-2xl">
 				<div class="card-body p-8 text-center">
-					<div class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110">
+					<div
+						class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110"
+					>
 						<Icon icon="lucide:chart-pie" width="48" class="text-accent" />
 					</div>
 					<h3 class="card-title text-accent mb-4 justify-center text-xl">Offene Daten</h3>
@@ -201,7 +207,7 @@
 
 	<!-- Data Protection & Security Section -->
 	<div class="mb-16">
-		<h2 class="mb-8 text-center text-3xl font-bold flex items-center justify-center gap-3">
+		<h2 class="mb-8 flex items-center justify-center gap-3 text-center text-3xl font-bold">
 			<Icon icon="lucide:shield-check" width="30" class="text-success" />
 			Datenschutz & Sicherheit
 		</h2>
@@ -358,7 +364,7 @@
 	<!-- Technology Section -->
 	<div class="bg-base-200 mb-16 rounded-lg p-8">
 		<div class="mb-6 flex flex-col items-center justify-center gap-2">
-			<h2 class="text-center text-3xl font-bold flex items-center gap-3">
+			<h2 class="flex items-center gap-3 text-center text-3xl font-bold">
 				<Icon icon="lucide:zap" width="30" class="text-warning" />
 				Technologie
 			</h2>
@@ -390,7 +396,7 @@
 
 	<!-- Open Source & Licensing Section -->
 	<div class="mb-16">
-		<h2 class="mb-8 text-center text-3xl font-bold flex items-center justify-center gap-3">
+		<h2 class="mb-8 flex items-center justify-center gap-3 text-center text-3xl font-bold">
 			<Icon icon="lucide:scale" width="32" height="32" class="text-primary" />
 			Open Source & Lizenzen
 		</h2>
@@ -412,7 +418,7 @@
 						<div class="mb-2 font-mono text-xs font-semibold">MIT License</div>
 						<div class="max-h-48 overflow-y-auto rounded border border-gray-200 bg-white p-3">
 							<pre
-								class="font-mono text-xs whitespace-pre-wrap text-gray-600">Copyright (c) 2025 Ostsee-Tiere WebApp Contributors
+								class="font-mono text-xs whitespace-pre-wrap text-gray-600">Copyright (c) 2025-2026 Ostsee-Tiere WebApp Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -538,7 +544,7 @@ SOFTWARE.</pre>
 
 		<!-- Attribution -->
 		<div class="bg-base-200 mt-8 rounded-lg p-6 text-center">
-			<h4 class="mb-3 font-semibold flex items-center justify-center gap-2">
+			<h4 class="mb-3 flex items-center justify-center gap-2 font-semibold">
 				<Icon icon="lucide:heart" width="20" height="20" class="text-primary" />
 				Danksagung
 			</h4>

@@ -184,6 +184,7 @@ Access the application at: http://localhost:3000
 ## System Requirements
 
 ### Minimum Requirements
+
 - **OS**: Linux, macOS, or Windows with Docker
 - **CPU**: 2 cores
 - **RAM**: 4 GB
@@ -192,12 +193,14 @@ Access the application at: http://localhost:3000
 - **Network**: Ports 3000, 5432 available
 
 ### Recommended Requirements
+
 - **CPU**: 4+ cores
 - **RAM**: 8+ GB
 - **Storage**: 50+ GB SSD
 - **Network**: Reverse proxy (Nginx/Traefik) with SSL
 
 ### Supported Platforms
+
 - ✅ **Linux AMD64** (x86_64 servers, VPS, cloud instances)
 - ✅ **Linux ARM64** (Raspberry Pi 4/5, AWS Graviton, Apple Silicon servers)
 - ✅ **Docker** 24.0 or later
@@ -259,6 +262,7 @@ PORT=3001 ./run-release.sh
 ```
 
 **Prerequisites:**
+
 - Local PostgreSQL with PostGIS extension
 - `.env` file with database connection and Auth0 credentials
 - `uploads/` directory for file storage
@@ -395,6 +399,7 @@ EOF
 ```
 
 **Generate a secure password:**
+
 ```bash
 openssl rand -base64 24
 ```
@@ -715,6 +720,7 @@ Ostsee-Tiere supports multiple storage backends for uploaded media files.
 ### Local Storage (Default)
 
 **Configuration:**
+
 ```bash
 STORAGE_PROVIDER=local
 UPLOAD_PATH=/app/uploads
@@ -723,12 +729,14 @@ UPLOAD_PATH=/app/uploads
 **Docker Volume Options:**
 
 **Option 1: Named Volume (Recommended for Production)**
+
 ```yaml
 volumes:
   - uploads:/app/uploads
 ```
 
 **Option 2: Bind Mount (Recommended for Development)**
+
 ```bash
 # Using npm script (development) - automatically creates ./uploads directory
 npm run docker:run
@@ -739,24 +747,28 @@ docker run -p 3000:3000 -v ./uploads:/app/uploads --env-file .env ostsee-tiere:l
 ```
 
 **Benefits of Bind Mount:**
+
 - Direct access to files on host system
 - Easy backup and inspection
 - Simpler file management
 - Ideal for development and testing
 
 **Permission Requirements for Bind Mount:**
+
 - **Container User ID**: 1001 (nodejs user)
 - **Linux**: `sudo chown -R 1001:1001 ./uploads` (or use your user: `sudo chown -R $USER:$USER ./uploads`)
 - **macOS/Windows**: Docker Desktop handles permissions automatically
 - **Alternative**: Run container as your user: `docker run --user $(id -u):$(id -g) ...`
 
 **Benefits of Named Volume:**
+
 - Better performance on Docker Desktop
 - Managed by Docker
 - Easier migration between hosts
 - No permission issues across platforms
 
 **Backup:**
+
 ```bash
 # Backup uploads (Named Volume)
 docker run --rm -v ostsee-tiere_uploads:/data -v $(pwd):/backup \
@@ -776,6 +788,7 @@ tar xzf uploads-backup-20250116.tar.gz
 ### Vercel Blob Storage
 
 **Configuration:**
+
 ```bash
 STORAGE_PROVIDER=vercel-blob
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxxxxxxxxxx
@@ -786,6 +799,7 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxxxxxxxxxx
 ### AWS S3 Storage
 
 **Configuration:**
+
 ```bash
 STORAGE_PROVIDER=s3
 AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
@@ -795,26 +809,24 @@ AWS_S3_BUCKET=ostsee-tiere-uploads
 ```
 
 **S3 Bucket Policy:**
+
 ```json
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:DeleteObject"
-      ],
-      "Resource": "arn:aws:s3:::ostsee-tiere-uploads/*"
-    }
-  ]
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+			"Resource": "arn:aws:s3:::ostsee-tiere-uploads/*"
+		}
+	]
 }
 ```
 
 ### Google Cloud Storage
 
 **Configuration:**
+
 ```bash
 STORAGE_PROVIDER=gcs
 GOOGLE_CLOUD_PROJECT_ID=ostsee-tiere-project
@@ -837,6 +849,7 @@ For production deployments, we **strongly recommend using an external PostgreSQL
 - **Easier scaling** and maintenance
 
 **Requirements:**
+
 - PostgreSQL 16+ (PostgreSQL 18 recommended)
 - PostGIS 3.6+ extension installed
 - Minimum 2 GB RAM dedicated to PostgreSQL
@@ -869,20 +882,21 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ostsee_app;
 **Configure Connection:**
 
 Update your `.env` file:
+
 ```bash
 DATABASE_POSTGRES_URL=postgresql://ostsee_app:your-secure-password@db.example.com:5432/ostsee
 ```
 
 **Managed Database Services:**
 
-| Provider | Service | PostGIS Support |
-|----------|---------|-----------------|
-| AWS | RDS for PostgreSQL | Yes (enable extension) |
-| Google Cloud | Cloud SQL for PostgreSQL | Yes (enable extension) |
-| Azure | Azure Database for PostgreSQL | Yes (enable extension) |
-| DigitalOcean | Managed Databases | Yes (enable extension) |
-| Supabase | PostgreSQL | Yes (built-in) |
-| Neon | Serverless Postgres | Yes (built-in) |
+| Provider     | Service                       | PostGIS Support        |
+| ------------ | ----------------------------- | ---------------------- |
+| AWS          | RDS for PostgreSQL            | Yes (enable extension) |
+| Google Cloud | Cloud SQL for PostgreSQL      | Yes (enable extension) |
+| Azure        | Azure Database for PostgreSQL | Yes (enable extension) |
+| DigitalOcean | Managed Databases             | Yes (enable extension) |
+| Supabase     | PostgreSQL                    | Yes (built-in)         |
+| Neon         | Serverless Postgres           | Yes (built-in)         |
 
 ### Alternative: Included PostgreSQL (Development/Testing)
 
@@ -891,6 +905,7 @@ The `docker-compose.production.yml` includes PostgreSQL 18 with PostGIS 3.6 for 
 > **Note:** For production use, we recommend an external database (see above).
 
 **Access Database:**
+
 ```bash
 # Connect to database
 docker exec -it ostsee-tiere-db psql -U postgres -d ostsee
@@ -902,6 +917,7 @@ docker logs ostsee-tiere-db
 **Performance Tuning:**
 
 Edit `.env` to adjust PostgreSQL settings:
+
 ```bash
 POSTGRES_SHARED_BUFFERS=256MB
 POSTGRES_EFFECTIVE_CACHE_SIZE=1GB
@@ -918,6 +934,7 @@ If you're migrating from an existing schweinswalsichtung.de installation or anot
 **[Database Migration Guide](./DATABASE_MIGRATION.md)**
 
 The migration process includes:
+
 1. **Export** data from the source database
 2. **Import** into the new PostgreSQL instance
 3. **Run migration scripts** to:
@@ -951,6 +968,7 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 ```
 
 **Access Points:**
+
 - **Application**: http://localhost:3000
 - **Grafana**: http://localhost:3001 (default: admin/admin)
 - **Prometheus**: http://localhost:9090
@@ -962,6 +980,7 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 3. **View Dashboards**: Navigate to "Dashboards" → "Ostsee-Tiere Overview"
 
 **Pre-configured Metrics:**
+
 - Application uptime and health
 - CPU usage
 - Memory consumption
@@ -975,7 +994,7 @@ Edit `monitoring/prometheus.yml` to add alerting rules:
 
 ```yaml
 rule_files:
-  - "alerts/*.yml"
+  - 'alerts/*.yml'
 ```
 
 Create `monitoring/alerts/app-alerts.yml`:
@@ -990,7 +1009,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Application is down"
+          summary: 'Application is down'
 ```
 
 ---
@@ -1083,6 +1102,7 @@ services:
 ### Automated Docker Image Publishing
 
 Docker images are automatically built and published to GitHub Container Registry (GHCR) via GitHub Actions when:
+
 - A new version tag is pushed (e.g., `v1.31.2`)
 - A release is published
 - The workflow is manually triggered
@@ -1090,6 +1110,7 @@ Docker images are automatically built and published to GitHub Container Registry
 **Image Repository:** [`ghcr.io/jansinger/ostsee-sichtung`](https://github.com/jansinger/ostsee-sichtung/pkgs/container/ostsee-sichtung)
 
 **Available Tags:**
+
 - `latest` - Latest stable release
 - `vX.Y.Z` - Specific version (e.g., `v1.31.3`)
 - `main` - Latest build from main branch
@@ -1099,19 +1120,22 @@ Docker images are automatically built and published to GitHub Container Registry
 The Docker Release workflow includes automatic retry logic to handle transient registry errors (such as 502 Bad Gateway):
 
 **Retry Strategy:**
+
 - **Maximum Attempts**: 3
-- **Wait Between Retries**: 
+- **Wait Between Retries**:
   - First retry: 60 seconds
   - Second retry: 120 seconds (exponential backoff)
 - **Behavior**: Each failed push attempt is automatically retried with increasing wait times
 
 **Why This Matters:**
 GitHub Container Registry (GHCR) may occasionally experience temporary unavailability or rate limiting, especially during:
+
 - Multi-platform builds (linux/amd64, linux/arm64)
 - Large layer uploads
 - High GitHub Actions usage periods
 
 The retry mechanism ensures that transient infrastructure issues don't block your releases. The workflow will:
+
 1. ✅ Succeed on first attempt (most common case)
 2. ⚠️ Retry after 60 seconds if first attempt fails
 3. ⚠️ Retry after 120 seconds if second attempt fails
@@ -1125,6 +1149,7 @@ Each retry attempt is clearly logged with attempt numbers and wait times.
 ### Image Verification
 
 After a successful push, the workflow generates:
+
 - **Image Digest**: Cryptographic hash of the image
 - **Image Tags**: All applied tags (version, latest, etc.)
 - **Pull Command**: Ready-to-use command with digest for verification
@@ -1140,6 +1165,7 @@ Download these details from GitHub Actions artifacts (retention: 90 days).
 **Automated Backup Script:**
 
 Create `backup-db.sh`:
+
 ```bash
 #!/bin/bash
 BACKUP_DIR="/backups/postgres"
@@ -1158,11 +1184,13 @@ echo "Backup completed: ostsee-backup-$DATE.sql.gz"
 ```
 
 **Cron Job (Daily 2 AM):**
+
 ```bash
 0 2 * * * /usr/local/bin/backup-db.sh >> /var/log/ostsee-backup.log 2>&1
 ```
 
 **Restore Database:**
+
 ```bash
 # Stop application
 docker compose -f docker-compose.production.yml stop app
@@ -1203,6 +1231,7 @@ This section covers running Docker releases locally for testing with Rancher Des
 Rancher Desktop uses a Lima VM, so containers cannot access `localhost` directly. PostgreSQL must listen on all interfaces:
 
 **Edit postgresql.conf:**
+
 ```bash
 # Find your PostgreSQL config
 psql -c "SHOW config_file;"
@@ -1215,12 +1244,14 @@ listen_addresses = '*'    # Was: #listen_addresses = 'localhost'
 ```
 
 **Edit pg_hba.conf to allow network connections:**
+
 ```bash
 # Add this line to pg_hba.conf (same directory as postgresql.conf)
 echo "host    all    all    192.168.0.0/16    scram-sha-256" >> /opt/homebrew/var/postgresql@18/pg_hba.conf
 ```
 
 **Restart PostgreSQL:**
+
 ```bash
 brew services restart postgresql@18
 ```
@@ -1228,6 +1259,7 @@ brew services restart postgresql@18
 ### Step 2: Configure Environment
 
 Create or update your `.env` file:
+
 ```bash
 # Database (use localhost - the script will auto-detect and adjust for Rancher)
 DATABASE_POSTGRES_URL="postgresql://ostsee_app:your-password@localhost:5432/ostsee"
@@ -1261,6 +1293,7 @@ API_AUDIENCE=your-api-audience
 ```
 
 **Output example:**
+
 ```
 Detected Docker runtime: rancher
 Rancher Desktop detected - adjusting database connection
@@ -1282,6 +1315,7 @@ Uploads:   /path/to/project/uploads
 The production Docker image includes `upgrade-insecure-requests` in its Content Security Policy, which forces browsers to use HTTPS. You need a local HTTPS proxy:
 
 **Install and run Caddy:**
+
 ```bash
 # Install Caddy
 brew install caddy
@@ -1294,6 +1328,7 @@ caddy reverse-proxy --from localhost:3443 --to localhost:3000 &
 ```
 
 **Access the application:**
+
 ```
 https://localhost:3443
 ```
@@ -1315,6 +1350,7 @@ PORT=3001 ./run-release.sh    # Use different port
 ### Troubleshooting Rancher Desktop
 
 **Database connection refused:**
+
 ```bash
 # Verify PostgreSQL is listening on all interfaces
 lsof -i :5432
@@ -1326,11 +1362,13 @@ cat /opt/homebrew/var/postgresql@18/pg_hba.conf | grep 192.168
 
 **CSS/Assets not loading:**
 This is caused by `upgrade-insecure-requests` CSP. Use the HTTPS proxy:
+
 ```bash
 caddy reverse-proxy --from localhost:3443 --to localhost:3000
 ```
 
 **Container starts but health check fails:**
+
 ```bash
 # Check container logs
 ./run-release.sh logs
@@ -1351,6 +1389,7 @@ caddy reverse-proxy --from localhost:3443 --to localhost:3000
 If your PostgreSQL runs on a **separate server** (not the same host as Docker):
 
 1. **Database URL**: Use the server's hostname/IP directly
+
    ```bash
    DATABASE_POSTGRES_URL=postgresql://ostsee_app:password@db.example.com:5432/ostsee
    ```
@@ -1387,24 +1426,26 @@ docker exec ostsee-tiere npx drizzle-kit check
 ### Application Won't Start
 
 **Check logs:**
+
 ```bash
 docker logs ostsee-tiere
 ```
 
 **Common issues and solutions:**
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `DATABASE_POSTGRES_URL is not set` | Missing env var | Check `.env` file exists and is loaded |
-| `ECONNREFUSED 127.0.0.1:5432` | Wrong DB host | Use Docker gateway IP (172.17.0.1), not localhost |
-| `password authentication failed` | Wrong credentials | Verify user/password in DATABASE_POSTGRES_URL |
-| `database "ostsee" does not exist` | DB not created | Run: `sudo -u postgres createdb ostsee` |
+| Error                                  | Cause             | Solution                                             |
+| -------------------------------------- | ----------------- | ---------------------------------------------------- |
+| `DATABASE_POSTGRES_URL is not set`     | Missing env var   | Check `.env` file exists and is loaded               |
+| `ECONNREFUSED 127.0.0.1:5432`          | Wrong DB host     | Use Docker gateway IP (172.17.0.1), not localhost    |
+| `password authentication failed`       | Wrong credentials | Verify user/password in DATABASE_POSTGRES_URL        |
+| `database "ostsee" does not exist`     | DB not created    | Run: `sudo -u postgres createdb ostsee`              |
 | `relation "sichtungen" does not exist` | Schema not pushed | Run: `docker exec ostsee-tiere npx drizzle-kit push` |
-| `Port 3000 already in use` | Port conflict | Change APP_PORT in .env or stop conflicting service |
+| `Port 3000 already in use`             | Port conflict     | Change APP_PORT in .env or stop conflicting service  |
 
 ### Database Connection Errors
 
 **For Docker Compose (PostgreSQL in container):**
+
 ```bash
 # Test database connectivity
 docker exec ostsee-tiere-db pg_isready -U postgres
@@ -1417,6 +1458,7 @@ docker exec -it ostsee-tiere-db psql -U postgres -d ostsee
 ```
 
 **For Native PostgreSQL (on host):**
+
 ```bash
 # Check PostgreSQL is running
 sudo systemctl status postgresql
@@ -1434,12 +1476,12 @@ sudo grep 172.17 /etc/postgresql/18/main/pg_hba.conf
 
 **Common database issues:**
 
-| Symptom | Cause | Solution |
-|---------|-------|----------|
-| Connection refused | PostgreSQL not listening on Docker bridge | Add Docker gateway to `listen_addresses` |
-| No pg_hba.conf entry | Missing authentication rule | Add Docker network to `pg_hba.conf` |
-| PostGIS not found | Extension not installed | `CREATE EXTENSION postgis;` |
-| Permission denied for schema | Missing grants | Run GRANT commands from setup |
+| Symptom                      | Cause                                     | Solution                                 |
+| ---------------------------- | ----------------------------------------- | ---------------------------------------- |
+| Connection refused           | PostgreSQL not listening on Docker bridge | Add Docker gateway to `listen_addresses` |
+| No pg_hba.conf entry         | Missing authentication rule               | Add Docker network to `pg_hba.conf`      |
+| PostGIS not found            | Extension not installed                   | `CREATE EXTENSION postgis;`              |
+| Permission denied for schema | Missing grants                            | Run GRANT commands from setup            |
 
 ### Upload/Storage Issues
 
@@ -1538,7 +1580,7 @@ The container already runs as non-root user `nodejs` (UID 1001).
 networks:
   ostsee-network:
     driver: bridge
-    internal: false  # Set to true for complete isolation
+    internal: false # Set to true for complete isolation
 ```
 
 ### 4. Read-Only Filesystem
@@ -1584,6 +1626,7 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
 ### AWS ECS with Fargate
 
 **Task Definition:**
+
 ```json
 {
   "family": "ostsee-tiere",
@@ -1702,4 +1745,4 @@ MIT License - See [LICENSE](../LICENSE) for details.
 
 ---
 
-*Last Updated: December 2025*
+_Last Updated: April 2026_

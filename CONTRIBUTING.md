@@ -46,26 +46,26 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/) s
 
 ### Types
 
-| Type | Description | Release |
-|------|-------------|---------|
-| `feat` | ✨ A new feature | Minor |
-| `fix` | 🐛 A bug fix | Patch |
-| `docs` | 📚 Documentation only changes | Patch |
-| `style` | 💄 Changes that do not affect code meaning | No release |
-| `refactor` | ♻️ Code change that neither fixes a bug nor adds a feature | Patch |
-| `perf` | ⚡ Performance improvements | Patch |
-| `test` | ✅ Adding missing tests or correcting existing tests | No release |
-| `build` | 🏗️ Changes affecting build system or external dependencies | Patch |
-| `ci` | 🔧 Changes to CI configuration files and scripts | No release |
-| `chore` | 🔨 Other changes that don't modify src or test files | No release |
-| `revert` | ⏪ Reverts a previous commit | Varies |
+| Type       | Description                                                | Release    |
+| ---------- | ---------------------------------------------------------- | ---------- |
+| `feat`     | ✨ A new feature                                           | Minor      |
+| `fix`      | 🐛 A bug fix                                               | Patch      |
+| `docs`     | 📚 Documentation only changes                              | Patch      |
+| `style`    | 💄 Changes that do not affect code meaning                 | No release |
+| `refactor` | ♻️ Code change that neither fixes a bug nor adds a feature | Patch      |
+| `perf`     | ⚡ Performance improvements                                | Patch      |
+| `test`     | ✅ Adding missing tests or correcting existing tests       | No release |
+| `build`    | 🏗️ Changes affecting build system or external dependencies | Patch      |
+| `ci`       | 🔧 Changes to CI configuration files and scripts           | No release |
+| `chore`    | 🔨 Other changes that don't modify src or test files       | No release |
+| `revert`   | ⏪ Reverts a previous commit                               | Varies     |
 
 ### Scopes
 
 Common scopes used in this project:
 
 - `api` - API endpoints
-- `ui` - User interface components  
+- `ui` - User interface components
 - `db` - Database related
 - `auth` - Authentication
 - `export` - Export functionality
@@ -112,24 +112,27 @@ This will guide you through creating a conventional commit message step by step.
 
 ### Prerequisites
 
-- Node.js 20 or later
+- Node.js 20.19+, 22.12+ or 24+
 - Docker (for database)
 - Git
 
 ### Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd ostsee-sichtung
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Start the database**
+
    ```bash
    npm run db:start
    ```
@@ -153,16 +156,16 @@ These hooks are automatically installed when you run `npm install`.
 Before submitting a PR, ensure all checks pass:
 
 ```bash
-# Run all checks
-npm run test
+# Run quick checks (lint + type-check + svelte-check + unit tests)
+npm run test:quick
 
 # Individual checks
 npm run lint          # ESLint
 npm run type-check    # TypeScript
 npm run check         # Svelte check
-npm test             # Unit tests
-npm run test:e2e     # E2E tests
-npm run build        # Build check
+npm run test:unit     # Unit tests
+npm run test:e2e      # E2E tests
+npm run build         # Build check
 ```
 
 ## 📦 Release Process
@@ -202,13 +205,17 @@ This project uses [release-please](https://github.com/googleapis/release-please)
 ## 🚦 Pull Request Guidelines
 
 ### PR Title
+
 Use conventional commit format for PR titles:
+
 ```
 feat(auth): add OAuth login support
 ```
 
 ### PR Description
+
 Include:
+
 - **What** changed
 - **Why** it was changed
 - **How** to test it

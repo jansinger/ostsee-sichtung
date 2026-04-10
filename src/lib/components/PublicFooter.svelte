@@ -15,7 +15,7 @@
 
 		<!-- External Links - Stack on Mobile, Inline on Desktop -->
 		<nav>
-			<div class="flex flex-col sm:flex-row gap-2 sm:gap-4">
+			<div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
 				<a
 					href="https://github.com/jansinger/ostsee-sichtung"
 					target="_blank"
@@ -24,7 +24,7 @@
 					aria-label="GitHub Repository"
 				>
 					<Icon icon="lucide:github" width="16" height="16" class="h-3 w-3 sm:h-5 sm:w-5" />
-					<span class="hidden xs:inline">GitHub</span>
+					<span class="xs:inline hidden">GitHub</span>
 					<span class="xs:hidden">Code</span>
 				</a>
 				<a
@@ -41,8 +41,8 @@
 
 		<!-- Copyright - Mobile Optimized -->
 		<aside class="text-center">
-			<p class="text-xs sm:text-sm opacity-70">
-				© 2025 
+			<p class="text-xs opacity-70 sm:text-sm">
+				© 2025–2026
 				<span class="hidden sm:inline">Deutsches Meeresmuseum, Stralsund, Deutschland</span>
 				<span class="sm:hidden">Deutsches Meeresmuseum</span>
 			</p>
