@@ -77,6 +77,7 @@ export class SichtungenMap {
 	private searchTerm: string = '';
 	private legendUpdateCallback?: () => void;
 	private yearChangeCallback?: (year: number) => void;
+	private loadingCallback?: (isLoading: boolean) => void;
 	private clusterDistance: number = 40; // Reduziert für bessere Performance
 
 	// Popup-related
@@ -541,10 +542,15 @@ export class SichtungenMap {
 		this.yearChangeCallback = callback;
 	}
 
+	public setLoadingCallback(callback: (isLoading: boolean) => void): void {
+		this.loadingCallback = callback;
+	}
+
 	// Behalte alle bestehenden Public-Methoden für Kompatibilität
 	public async setYear(year: number): Promise<void> {
 		this.displayedYear = year;
 		this.yearChangeCallback?.(year);
+		this.loadingCallback?.(true);
 
 		try {
 			await this.loadSightings(year, this.searchTerm);
@@ -563,6 +569,8 @@ export class SichtungenMap {
 		} catch (error) {
 			console.error('Error loading sightings:', error);
 			throw error;
+		} finally {
+			this.loadingCallback?.(false);
 		}
 	}
 
@@ -679,9 +687,12 @@ export class SichtungenMap {
 
 	private applyFilter(searchTerm: string): void {
 		this.searchTerm = searchTerm;
+		this.loadingCallback?.(true);
 		// fire-and-forget: unhandled rejection propagiert als window.unhandledrejection
 		// und wird vom Error-Handler in SightingsMapView aufgefangen
-		void this.loadSightings(this.displayedYear, searchTerm);
+		void this.loadSightings(this.displayedYear, searchTerm).finally(() => {
+			this.loadingCallback?.(false);
+		});
 	}
 
 	private updateTimeFilter(): void {

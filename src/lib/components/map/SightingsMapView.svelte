@@ -116,6 +116,15 @@
 				counts = newCounts;
 			});
 
+			// Loading-State an echte API-Requests koppeln
+			mapInstance.setLoadingCallback((loading) => {
+				isLoadingData = loading;
+				if (loading) {
+					loadingType = 'features';
+					errorMessage = null;
+				}
+			});
+
 			// Initialisiere andere Manager
 			panelManager.initializePanels();
 			timeSliderManager.initialize(mapInstance);
@@ -227,42 +236,8 @@
 	 * Setup für Loading-State-Management mit verbesserter UX
 	 */
 	function setupLoadingHandlers() {
-		let filterTimeout: ReturnType<typeof setTimeout>;
-
-		function handleFilterChange(type: 'filter' | 'features' = 'filter') {
-			clearTimeout(filterTimeout);
-
-			isLoadingData = true;
-			loadingType = type;
-			errorMessage = null;
-
-			// Loading nach kurzer Verzögerung beenden (echtes API-Laden
-			// wird vom Controller gesteuert; hier nur visuelles Feedback)
-			filterTimeout = setTimeout(() => {
-				isLoadingData = false;
-			}, 2000);
-		}
-
-		// Delegated change handler — works for dynamically added inputs without MutationObserver
-		const handleChange = (e: Event) => {
-			const target = e.target as HTMLElement;
-			if (target.matches('#year-select')) {
-				handleFilterChange('features');
-			} else if (target.matches('.species-checkbox, .color-checkbox')) {
-				handleFilterChange('filter');
-			}
-		};
-
-		// Delegated keydown handler for search field
-		const handleKeydown = (e: KeyboardEvent) => {
-			const target = e.target as HTMLElement;
-			if (target.matches('#filter-input') && e.key === 'Enter') {
-				handleFilterChange('filter');
-			}
-		};
-
-		document.addEventListener('change', handleChange);
-		document.addEventListener('keydown', handleKeydown);
+		// Loading-State wird jetzt direkt vom Controller-Callback (setLoadingCallback)
+		// gesteuert — kein fake Timeout mehr nötig. Hier nur noch Error-Handler.
 
 		// Global Error Handler für API-Fehler
 		unhandledRejectionHandler = (event) => {
@@ -273,10 +248,7 @@
 		};
 		window.addEventListener('unhandledrejection', unhandledRejectionHandler);
 
-		return () => {
-			document.removeEventListener('change', handleChange);
-			document.removeEventListener('keydown', handleKeydown);
-		};
+		return () => {};
 	}
 
 	/**
