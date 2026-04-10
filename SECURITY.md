@@ -81,7 +81,7 @@ Please report security vulnerabilities to the maintainers via:
 
 ## Known Vulnerabilities & Mitigations
 
-### Current Issues (Development Dependencies Only)
+### Current Issues
 
 #### 1. lodash 4.0.0 - 4.17.21 (High Severity)
 
@@ -299,5 +299,5 @@ The following security features have been implemented:
 ---
 
 _Last Updated: 2026-04-10_
-_Security Assessment: 7/10 - Strong foundational security, all vulnerabilities dev-only_
+_Security Assessment: 7/10 - Strong foundational security, one production dependency (dompurify) under review_
 _Next Security Review: 2026-07-10_

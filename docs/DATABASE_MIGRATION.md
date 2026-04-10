@@ -43,7 +43,7 @@ The migration process involves:
 
 ### Target System
 
-- PostgreSQL 17+ with PostGIS extension (PostgreSQL 18 recommended)
+- PostgreSQL 16+ with PostGIS extension (PostgreSQL 17 or 18 recommended)
 - Node.js 20.19+, 22.12+ or 24+ (for running migration scripts)
 - Sufficient disk space for data and uploads
 - Database credentials with write access

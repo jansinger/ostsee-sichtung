@@ -502,7 +502,7 @@ Aktuell gibt es bereits eine funktionierende Weather-Integration in Step 3. Das 
 {/if}
 ```
 
-## 6. Implementation Roadmap (abgeschlossen)
+## 6. Implementation Roadmap (weitgehend abgeschlossen)
 
 **Basis**: Erweiterte bestehende Weather API Integration aus Schritt 3
 
