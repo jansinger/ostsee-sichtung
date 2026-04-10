@@ -34,7 +34,7 @@
 	}
 
 	$effect(() => {
-		if (typeof window === 'undefined') return;
+		if (!detailsElement) return;
 		document.addEventListener('click', handleClickOutside);
 		document.addEventListener('keydown', handleKeydown);
 		return () => {
