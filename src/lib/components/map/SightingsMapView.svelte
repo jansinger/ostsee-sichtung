@@ -269,7 +269,12 @@
 	function setupKeyboardNavigation() {
 		keyboardHandler = (event) => {
 			// Nur aktiv wenn kein Input-Element fokussiert ist
-			if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) {
+			if (
+				event.target instanceof HTMLInputElement ||
+				event.target instanceof HTMLSelectElement ||
+				event.target instanceof HTMLTextAreaElement ||
+				(event.target instanceof HTMLElement && event.target.isContentEditable)
+			) {
 				return;
 			}
 
