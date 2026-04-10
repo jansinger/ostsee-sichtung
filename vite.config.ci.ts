@@ -1,3 +1,7 @@
+/**
+ * Vite config for CI/E2E tests (no HTTPS, SKIP_DB_CHECK, no HMR).
+ * See also: vite.config.ts (development), vite.config.preview.ts (preview server)
+ */
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import Icons from 'unplugin-icons/vite';

@@ -1,0 +1,122 @@
+name: Label PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  label:
+    name: Label PR
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Get Dependabot metadata
+        if: github.actor == 'dependabot[bot]'
+        uses: dependabot/fetch-metadata@v2
+        id: dependabot-metadata
+
+      - name: Label Dependabot PR
+        if: github.actor == 'dependabot[bot]'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const updateType = '${{ steps.dependabot-metadata.outputs.update-type }}';
+            const dependencyType = '${{ steps.dependabot-metadata.outputs.dependency-type }}';
+
+            let labels = ['dependencies', 'automated'];
+
+            if (updateType.includes('major')) {
+              labels.push('major-update');
+            } else if (updateType.includes('minor')) {
+              labels.push('minor-update');
+            } else if (updateType.includes('patch')) {
+              labels.push('patch-update');
+            }
+
+            if (dependencyType === 'direct:development') {
+              labels.push('dev-dependency');
+            } else if (dependencyType === 'direct:production') {
+              labels.push('production-dependency');
+            }
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: labels
+            });
+
+      - name: Label PR based on commit types
+        if: github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'release-please')
+        uses: actions/github-script@v8
+        with:
+          script: |
+            try {
+              const { data: commits } = await github.rest.pulls.listCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+              });
+
+              const { data: repoLabels } = await github.rest.issues.listLabelsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+
+              const existingLabelNames = repoLabels.map(label => label.name);
+
+              let labels = [];
+
+              for (const commit of commits) {
+                const message = commit.commit.message;
+
+                if (message.includes('BREAKING CHANGE') || message.includes('!:')) {
+                  if (existingLabelNames.includes('breaking-change')) {
+                    labels.push('breaking-change');
+                  }
+                }
+
+                const match = message.match(/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)/);
+                if (match) {
+                  const type = match[1];
+                  const labelMap = {
+                    'feat': 'feature',
+                    'fix': 'bugfix',
+                    'docs': 'documentation',
+                    'refactor': 'refactor',
+                    'perf': 'performance',
+                    'test': 'test',
+                    'build': 'build',
+                    'ci': 'build',
+                    'chore': 'maintenance'
+                  };
+
+                  const labelName = labelMap[type];
+                  if (labelName && existingLabelNames.includes(labelName)) {
+                    labels.push(labelName);
+                  }
+                }
+              }
+
+              labels = [...new Set(labels)];
+
+              if (labels.length > 0) {
+                console.log(`Adding labels: ${labels.join(', ')}`);
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  labels: labels
+                });
+              }
+            } catch (error) {
+              console.log(`Failed to add labels: ${error.message}`);
+            }

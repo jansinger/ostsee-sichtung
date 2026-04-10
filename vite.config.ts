@@ -1,3 +1,7 @@
+/**
+ * Vite config for local development (HTTPS, HMR, warmup).
+ * See also: vite.config.ci.ts (CI/E2E), vite.config.preview.ts (preview server)
+ */
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';

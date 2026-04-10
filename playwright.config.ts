@@ -4,7 +4,6 @@ export default defineConfig({
 	globalSetup: './e2e/global-setup.ts',
 	webServer: {
 		command: process.env.CI ? 'npx vite dev --config vite.config.ci.ts' : 'npm run dev',
-		// Use URL-based detection instead of port-only
 		url: process.env.CI ? 'http://localhost:4000' : 'https://localhost:4001',
 		reuseExistingServer: !process.env.CI,
 		timeout: 120000,
@@ -16,8 +15,8 @@ export default defineConfig({
 	/* Fail the build on CI if you accidentally left test.only in the source code. */
 	forbidOnly: !!process.env.CI,
 	/* Retry on CI only */
-	retries: process.env.CI ? 2 : 0,
-	/* Opt out of parallel tests on CI. */
+	retries: process.env.CI ? 1 : 0,
+	/* Vite dev server can't handle parallel page compilation reliably */
 	workers: process.env.CI ? 1 : undefined,
 	/* Global test timeout - increased for CI */
 	timeout: process.env.CI ? 60000 : 30000,
