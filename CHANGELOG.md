@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.1](https://github.com/jansinger/ostsee-sichtung/compare/v2.2.0...v2.2.1) (2026-04-10)
+
+
+### Bug Fixes
+
+* **admin:** fix broken Spalten column dropdown ([#442](https://github.com/jansinger/ostsee-sichtung/issues/442)) ([32b6a9d](https://github.com/jansinger/ostsee-sichtung/commit/32b6a9dca9fd00329860cf1a6ff61252125963d0))
+* **config:** auto-rewrite database URL to host.docker.internal in run-release.sh ([#440](https://github.com/jansinger/ostsee-sichtung/issues/440)) ([9dfc76c](https://github.com/jansinger/ostsee-sichtung/commit/9dfc76cb8554e8da97bfc51d49c91373a335777c))
+
+
+### Code Refactoring
+
+* **ui:** migrate to DaisyUI v5 component patterns ([#443](https://github.com/jansinger/ostsee-sichtung/issues/443)) ([418f484](https://github.com/jansinger/ostsee-sichtung/commit/418f4845f744cc98f1c54d9e8c32cb4de4a38467))
+
 ## [2.2.0](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.8...v2.2.0) (2026-04-10)
 
 
