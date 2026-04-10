@@ -170,10 +170,6 @@ export class SichtungenMap {
 		const defaultLat = 54.5;
 		const defaultLon = 12.0;
 		const defaultZoom = 7;
-		const balticExtent = olExtent.boundingExtent([
-			fromLonLat([9.4, 53.0]),
-			fromLonLat([30.2, 66.0])
-		]);
 
 		// Initialize the timeFilter with sensible defaults (zeige das ganze Jahr)
 		this.displayedYear = getDefaultSightingYear();
@@ -232,8 +228,7 @@ export class SichtungenMap {
 				center: fromLonLat([defaultLon, defaultLat]),
 				zoom: defaultZoom,
 				projection: 'EPSG:3857',
-				extent: balticExtent,
-				minZoom: 5,
+				minZoom: 2,
 				maxZoom: 18
 			}),
 			controls: defaultControls({ rotate: false }).extend(this.createCustomControls())
@@ -318,6 +313,13 @@ export class SichtungenMap {
 		if (!isTouchDevice) {
 			this.map.on('pointermove', (event) => {
 				const infoElement = document.getElementById('info');
+
+				// Hover ausblenden wenn ein Popup offen ist
+				if (this.popup.getPosition()) {
+					if (infoElement) infoElement.style.display = 'none';
+					return;
+				}
+
 				const feature = this.map.forEachFeatureAtPixel(event.pixel, (feature) => feature);
 
 				if (feature && infoElement) {
@@ -368,15 +370,19 @@ export class SichtungenMap {
 		this.map.on('click', (event) => {
 			const feature = this.map.forEachFeatureAtPixel(event.pixel, (feature) => feature);
 
+			// Hover sofort ausblenden bei Klick
+			const infoElement = document.getElementById('info');
+			if (infoElement) infoElement.style.display = 'none';
+
 			if (feature) {
 				const features = feature.get('features');
 				const zoom = this.map.getView().getZoom() || 7;
 
-				if (features && features.length > 1 && zoom < 12) {
-					// Zoom zu Cluster bei niedrigem Zoom
+				if (features && features.length > 1 && zoom < 12 && !this.hasColocatedFeatures(features)) {
+					// Zoom zu Cluster bei niedrigem Zoom (nur wenn Features an verschiedenen Positionen)
 					this.zoomToCluster(features);
 				} else {
-					// Zeige Popup
+					// Zeige Popup (Einzelfeature oder Liste bei co-located Features)
 					this.showPopup(event.coordinate, feature as Feature<Geometry>);
 				}
 			} else {
@@ -395,8 +401,9 @@ export class SichtungenMap {
 		const features = feature.get('features');
 
 		if (features && features.length > 1) {
-			// Cluster
-			contentDiv.innerHTML = this.createClusterPopupContent(features);
+			// Cluster - zeige Liste aller Sichtungen
+			contentDiv.innerHTML = this.createClusterListContent(features);
+			this.attachClusterListHandlers(contentDiv, features, coordinate);
 		} else {
 			// Einzelfeature
 			const singleFeature = features ? features[0] : feature;
@@ -476,38 +483,123 @@ export class SichtungenMap {
 		return content;
 	}
 
-	private createClusterPopupContent(features: Feature<Geometry>[]): string {
-		const count = features.length;
-		const speciesCount: Record<string, number> = {};
+	/**
+	 * Prüft ob alle Features im Cluster identische oder sehr nahe Koordinaten haben.
+	 * In dem Fall hilft Zoomen nicht weiter.
+	 */
+	private hasColocatedFeatures(features: Feature<Geometry>[]): boolean {
+		if (features.length <= 1) return false;
+		const firstFeature = features[0];
+		if (!firstFeature) return false;
+		const firstGeom = firstFeature.getGeometry();
+		if (!firstGeom) return false;
+		const firstExtent = firstGeom.getExtent() as [number, number, number, number];
+		const threshold = 100; // ~100m in EPSG:3857
+		return features.every((f) => {
+			const geom = f.getGeometry();
+			if (!geom) return true;
+			const ext = geom.getExtent() as [number, number, number, number];
+			return (
+				Math.abs(ext[0] - firstExtent[0]) < threshold &&
+				Math.abs(ext[1] - firstExtent[1]) < threshold
+			);
+		});
+	}
 
-		features.forEach((feature) => {
-			const props = feature.getProperties() as SightingProperties;
-			const species = props.ta.toString();
-			speciesCount[species] = (speciesCount[species] || 0) + 1;
+	/**
+	 * Erstellt eine scrollbare Liste aller Sichtungen im Cluster.
+	 * Jeder Eintrag ist klickbar und zeigt dann die Detailansicht.
+	 */
+	private createClusterListContent(features: Feature<Geometry>[]): string {
+		const count = features.length;
+
+		// Sortiere nach Datum (neueste zuerst)
+		const sorted = [...features].sort((a, b) => {
+			const tsA = (a.getProperties() as SightingProperties).ts || 0;
+			const tsB = (b.getProperties() as SightingProperties).ts || 0;
+			return tsB - tsA;
 		});
 
-		let content = `
-			<div class="cluster-popup">
-				<h3 style="margin: 0 0 10px 0; color: #333;">${count} Sichtungen</h3>
-		`;
+		let items = '';
+		sorted.forEach((feature, index) => {
+			const props = feature.getProperties() as SightingProperties;
+			const speciesName = sanitizeText(
+				this.translations.speciesMap[props.ta.toString()] || `Art ${props.ta}`
+			);
+			const date = props.ts ? new Date(props.ts * 1000).toLocaleDateString('de-DE') : 'Unbekannt';
+			const deadBadge = props.tf
+				? '<span style="color: #dc2626; font-weight: 600; margin-left: 4px;">&#x2020;</span>'
+				: '';
 
-		Object.entries(speciesCount).forEach(([species, count]) => {
-			const speciesName = sanitizeText(this.translations.speciesMap[species] || `Art ${species}`);
-			content += `
-				<div style="margin-bottom: 4px;">
-					${speciesName}: ${count}
-				</div>
+			items += `
+				<button
+					type="button"
+					data-cluster-index="${index}"
+					style="display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px; margin-bottom: 4px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb; cursor: pointer; text-align: left; font-size: 13px; transition: background 0.15s;"
+					onmouseover="this.style.background='#e0f2fe'"
+					onmouseout="this.style.background='#f9fafb'"
+				>
+					<span style="flex: 1; font-weight: 500;">${speciesName}${deadBadge}</span>
+					<span style="color: #6b7280; white-space: nowrap;">${props.ct}&nbsp;Tier${props.ct > 1 ? 'e' : ''}</span>
+					<span style="color: #9ca3af; font-size: 11px; white-space: nowrap;">${date}</span>
+				</button>
 			`;
 		});
 
-		content += `
-				<div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #eee; font-size: 12px; color: #666;">
-					Zoomen Sie hinein für Details
+		return `
+			<div class="cluster-popup">
+				<h3 style="margin: 0 0 8px 0; color: #333; font-size: 14px;">${count} Sichtungen an diesem Ort</h3>
+				<div style="max-height: 240px; overflow-y: auto; padding-right: 4px;">
+					${items}
 				</div>
 			</div>
 		`;
+	}
 
-		return content;
+	/**
+	 * Fügt Click-Handler für die Cluster-Listeneinträge hinzu.
+	 * Klick auf einen Eintrag zeigt die Detail-Popup-Ansicht mit Zurück-Button.
+	 */
+	private attachClusterListHandlers(
+		contentDiv: HTMLDivElement,
+		features: Feature<Geometry>[],
+		coordinate: number[]
+	): void {
+		const sorted = [...features].sort((a, b) => {
+			const tsA = (a.getProperties() as SightingProperties).ts || 0;
+			const tsB = (b.getProperties() as SightingProperties).ts || 0;
+			return tsB - tsA;
+		});
+
+		contentDiv.querySelectorAll<HTMLButtonElement>('[data-cluster-index]').forEach((btn) => {
+			btn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const index = parseInt(btn.dataset.clusterIndex || '0');
+				const feature = sorted[index];
+				if (!feature) return;
+				const props = feature.getProperties() as SightingProperties;
+
+				// Zeige Detail-Ansicht mit Zurück-Button
+				contentDiv.innerHTML = `
+					<div>
+						<button type="button" class="cluster-back-btn" style="display: inline-flex; align-items: center; gap: 4px; border: none; background: none; cursor: pointer; color: #2563eb; font-size: 12px; padding: 0 0 8px 0; font-weight: 500;">
+							&#8592; Alle ${features.length} Sichtungen
+						</button>
+						${this.createSightingPopupContent(props)}
+					</div>
+				`;
+				this.popup.setPosition(coordinate);
+
+				// Zurück-Button Handler
+				const backBtn = contentDiv.querySelector('.cluster-back-btn');
+				backBtn?.addEventListener('click', (e) => {
+					e.stopPropagation();
+					contentDiv.innerHTML = this.createClusterListContent(features);
+					this.attachClusterListHandlers(contentDiv, features, coordinate);
+					this.popup.setPosition(coordinate);
+				});
+			});
+		});
 	}
 
 	private zoomToCluster(features: Feature<Geometry>[]): void {
@@ -573,6 +665,8 @@ export class SichtungenMap {
 			// Redraw und Zeitraum-Anzeige aktualisieren nachdem timeFilter gesetzt wurde
 			this.reportsLayer.changed();
 			this.updateTimeRange();
+			// Counts mit korrektem timeFilter neu berechnen (loadSightings hat sie mit dem alten berechnet)
+			this.legendUpdateCallback?.();
 			this.loadingCallback?.(false);
 		} catch (error) {
 			// Abgebrochene Requests nicht als Fehler behandeln — ein neuerer Request übernimmt

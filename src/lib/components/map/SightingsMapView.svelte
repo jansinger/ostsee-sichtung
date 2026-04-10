@@ -83,6 +83,21 @@
 	// Aktuell angezeigtes Jahr für den Titel
 	let currentDisplayedYear = $state(defaultYear);
 
+	// Feature-Anzahl direkt vom Map-Controller abfragen (robuster als counts-basiert)
+	let featureCount = $state(0);
+	let totalFeatures = $derived(
+		Object.values(counts.speciesCounts).reduce((sum, c) => sum + c.total, 0)
+	);
+	let visibleFeatures = $derived(
+		Object.values(counts.speciesCounts).reduce((sum, c) => sum + c.visible, 0)
+	);
+	let showNoResults = $derived(
+		!isInitialLoading && !isLoadingData && featureCount === 0 && totalFeatures === 0
+	);
+	let showNoVisibleResults = $derived(
+		!isInitialLoading && !isLoadingData && featureCount > 0 && visibleFeatures === 0
+	);
+
 	// Event Handler für Cleanup
 	let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
 	let unhandledRejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
@@ -119,8 +134,10 @@
 
 			// Initialisiere Count Manager und setze Callback
 			countManager.initialize(mapInstance, translations);
+			const countMapInstance = mapInstance;
 			countManager.onCountsUpdated((newCounts) => {
 				counts = newCounts;
+				featureCount = countMapInstance.getFeatures().length;
 			});
 
 			// Initialisiere andere Manager
@@ -350,6 +367,33 @@
 			isVisible={isInitialLoading || isLoadingData}
 			type={isInitialLoading ? 'initial' : loadingType}
 		/>
+
+		<!-- Keine Sichtungen für das gewählte Jahr -->
+		{#if showNoResults}
+			<div
+				role="status"
+				class="glass absolute top-1/2 left-1/2 z-30 -translate-x-1/2 -translate-y-1/2 rounded-lg px-5 py-3 text-center shadow-lg backdrop-blur-md"
+			>
+				<p class="text-base-content text-sm font-medium">
+					Keine Sichtungen für {currentDisplayedYear} vorhanden.
+				</p>
+			</div>
+		{/if}
+
+		<!-- Alle Sichtungen durch Filter ausgeblendet -->
+		{#if showNoVisibleResults}
+			<div
+				role="status"
+				class="glass absolute top-1/2 left-1/2 z-30 -translate-x-1/2 -translate-y-1/2 rounded-lg px-5 py-3 text-center shadow-lg backdrop-blur-md"
+			>
+				<p class="text-base-content text-sm font-medium">
+					Keine Sichtungen für den aktuellen Filter sichtbar.
+				</p>
+				<p class="text-base-content/60 mt-1 text-xs">
+					Passen Sie den Zeitraum oder die Tierart-Filter an.
+				</p>
+			</div>
+		{/if}
 
 		<!-- Error-Toast -->
 		{#if errorMessage}
