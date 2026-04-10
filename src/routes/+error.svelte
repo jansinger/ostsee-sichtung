@@ -139,19 +139,23 @@
 
 				<!-- Aktions-Buttons -->
 				<div class="card-actions w-full justify-center">
-					<div class="btn-group btn-group-vertical sm:btn-group-horizontal">
-						<button class="btn btn-primary" onclick={goHome} aria-label="Zur Startseite">
+					<div class="join join-vertical sm:join-horizontal">
+						<button class="btn btn-primary join-item" onclick={goHome} aria-label="Zur Startseite">
 							<Icon icon="lucide:home" class="mr-2 h-4 w-4" />
 							Startseite
 						</button>
 
-						<button class="btn btn-ghost" onclick={goBack} aria-label="Zurück">
+						<button class="btn btn-ghost join-item" onclick={goBack} aria-label="Zurück">
 							<Icon icon="lucide:arrow-left" class="mr-2 h-4 w-4" />
 							Zurück
 						</button>
 
 						{#if status >= 500}
-							<button class="btn btn-outline" onclick={reloadPage} aria-label="Seite neu laden">
+							<button
+								class="btn btn-outline join-item"
+								onclick={reloadPage}
+								aria-label="Seite neu laden"
+							>
 								<Icon icon="lucide:refresh-cw" class="mr-2 h-4 w-4" />
 								Neu laden
 							</button>

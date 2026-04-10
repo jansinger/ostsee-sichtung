@@ -54,10 +54,10 @@
 	// Geschätzte Dateigröße berechnen (grober Richtwert)
 	function estimateFileSize(format: string, recordCount: number): number {
 		const bytesPerRecord = {
-			csv: 300,    // ~300 bytes pro Zeile CSV
-			json: 800,   // ~800 bytes pro JSON-Objekt (mehr Metadaten)
-			xml: 1200,   // ~1.2KB pro XML-Element (viele Tags)
-			kml: 600     // ~600 bytes pro KML-Placemark
+			csv: 300, // ~300 bytes pro Zeile CSV
+			json: 800, // ~800 bytes pro JSON-Objekt (mehr Metadaten)
+			xml: 1200, // ~1.2KB pro XML-Element (viele Tags)
+			kml: 600 // ~600 bytes pro KML-Placemark
 		};
 
 		return recordCount * (bytesPerRecord[format as keyof typeof bytesPerRecord] || 500);
@@ -68,10 +68,14 @@
 		const filterDisplays: string[] = [];
 
 		if (currentFilters.dateFrom) {
-			filterDisplays.push(`Von: ${new Date(currentFilters.dateFrom as string).toLocaleDateString('de-DE')}`);
+			filterDisplays.push(
+				`Von: ${new Date(currentFilters.dateFrom as string).toLocaleDateString('de-DE')}`
+			);
 		}
 		if (currentFilters.dateTo) {
-			filterDisplays.push(`Bis: ${new Date(currentFilters.dateTo as string).toLocaleDateString('de-DE')}`);
+			filterDisplays.push(
+				`Bis: ${new Date(currentFilters.dateTo as string).toLocaleDateString('de-DE')}`
+			);
 		}
 		if (currentFilters.verified === '1') {
 			filterDisplays.push('Nur geprüfte Sichtungen');
@@ -115,11 +119,13 @@
 			const data = await response.json();
 			loadedSightings = data.sightings;
 
-			logger.info({ 
-				recordCount: loadedSightings.length, 
-				filters: currentFilters 
-			}, 'Export data loaded successfully');
-
+			logger.info(
+				{
+					recordCount: loadedSightings.length,
+					filters: currentFilters
+				},
+				'Export data loaded successfully'
+			);
 		} catch (err) {
 			logger.error(err, 'Failed to load export data');
 			error = err instanceof Error ? err.message : 'Unbekannter Fehler beim Laden der Export-Daten';
@@ -158,17 +164,22 @@
 			// Download mit den entsprechenden Handlers ausführen
 			downloadHandlers[selectedFormat as keyof typeof downloadHandlers](exportData, filename);
 
-			createToast('success', `${formatInfo[selectedFormat as keyof typeof formatInfo].name}-Export erfolgreich heruntergeladen!`);
+			createToast(
+				'success',
+				`${formatInfo[selectedFormat as keyof typeof formatInfo].name}-Export erfolgreich heruntergeladen!`
+			);
 
 			// Modal schließen nach erfolgreichem Download
 			show = false;
 
-			logger.info({ 
-				format: selectedFormat, 
-				filename, 
-				recordCount: loadedSightings.length 
-			}, 'Export download completed');
-
+			logger.info(
+				{
+					format: selectedFormat,
+					filename,
+					recordCount: loadedSightings.length
+				},
+				'Export download completed'
+			);
 		} catch (err) {
 			logger.error(err, 'Export download failed');
 			error = err instanceof Error ? err.message : 'Fehler beim Download';
@@ -182,6 +193,18 @@
 		}
 	});
 
+	let dialogElement = $state<HTMLDialogElement | null>(null);
+
+	// Sync dialog open/close with show prop
+	$effect(() => {
+		if (!dialogElement) return;
+		if (show && !dialogElement.open) {
+			dialogElement.showModal();
+		} else if (!show && dialogElement.open) {
+			dialogElement.close();
+		}
+	});
+
 	function closeModal() {
 		show = false;
 		error = null;
@@ -189,12 +212,11 @@
 	}
 </script>
 
-<!-- Native DaisyUI Modal -->
-<input type="checkbox" bind:checked={show} id="export-modal" class="modal-toggle" />
-<div class="modal" role="dialog">
+<!-- DaisyUI v5 Modal using native dialog element -->
+<dialog bind:this={dialogElement} class="modal" onclose={closeModal}>
 	<div class="modal-box max-w-2xl">
 		<!-- Modal Header -->
-		<div class="flex items-center justify-between mb-6">
+		<div class="mb-6 flex items-center justify-between">
 			<h3 class="text-lg font-semibold">Sichtungen exportieren</h3>
 			<button
 				class="btn btn-ghost btn-sm btn-circle"
@@ -206,81 +228,76 @@
 		</div>
 
 		<div class="space-y-6">
-				<!-- Filter-Info -->
-				<div class="bg-base-200 rounded-lg p-4">
-					<h4 class="text-sm font-medium mb-2">Aktuelle Filter:</h4>
-					<div class="flex flex-wrap gap-2">
-						{#each getActiveFiltersDisplay() as filter, index (index)}
-							<span class="badge badge-outline badge-sm">{filter}</span>
-						{/each}
-					</div>
-					<div class="text-sm text-base-content/70 mt-2">
-						{totalRecords} Datensatz{totalRecords !== 1 ? 'e' : ''} gefunden
-					</div>
+			<!-- Filter-Info -->
+			<div class="bg-base-200 rounded-lg p-4">
+				<h4 class="mb-2 text-sm font-medium">Aktuelle Filter:</h4>
+				<div class="flex flex-wrap gap-2">
+					{#each getActiveFiltersDisplay() as filter, index (index)}
+						<span class="badge badge-outline badge-sm">{filter}</span>
+					{/each}
 				</div>
+				<div class="text-base-content/70 mt-2 text-sm">
+					{totalRecords} Datensatz{totalRecords !== 1 ? 'e' : ''} gefunden
+				</div>
+			</div>
 
-				<!-- Format-Auswahl -->
-				<div>
-					<h4 class="text-sm font-medium mb-3">Export-Format wählen:</h4>
-					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-						{#each Object.entries(formatInfo) as [format, info] (format)}
-							<label class="cursor-pointer">
-								<input 
-									type="radio" 
-									bind:group={selectedFormat} 
-									value={format}
-									class="sr-only peer"
-								>
-								<div class="border-2 border-base-300 rounded-lg p-4 peer-checked:border-primary peer-checked:bg-primary/5 hover:border-primary/50 transition-colors">
-									<div class="flex items-start gap-3">
-										<Icon icon={info.icon} width="24" height="24" class="text-primary mt-1" />
-										<div class="flex-1 min-w-0">
-											<div class="font-medium">{info.name}</div>
-											<div class="text-xs text-base-content/70 mt-1">{info.description}</div>
-											<div class="text-xs text-base-content/50 mt-1">
-												~{formatFileSize(estimateFileSize(format, totalRecords))}
-											</div>
+			<!-- Format-Auswahl -->
+			<div>
+				<h4 class="mb-3 text-sm font-medium">Export-Format wählen:</h4>
+				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+					{#each Object.entries(formatInfo) as [format, info] (format)}
+						<label class="cursor-pointer">
+							<input type="radio" bind:group={selectedFormat} value={format} class="peer sr-only" />
+							<div
+								class="border-base-300 peer-checked:border-primary peer-checked:bg-primary/5 hover:border-primary/50 rounded-lg border-2 p-4 transition-colors"
+							>
+								<div class="flex items-start gap-3">
+									<Icon icon={info.icon} width="24" height="24" class="text-primary mt-1" />
+									<div class="min-w-0 flex-1">
+										<div class="font-medium">{info.name}</div>
+										<div class="text-base-content/70 mt-1 text-xs">{info.description}</div>
+										<div class="text-base-content/50 mt-1 text-xs">
+											~{formatFileSize(estimateFileSize(format, totalRecords))}
 										</div>
 									</div>
 								</div>
-							</label>
-						{/each}
-					</div>
+							</div>
+						</label>
+					{/each}
 				</div>
+			</div>
 
-				<!-- Loading/Status -->
-				{#if isLoading}
-					<div class="flex items-center justify-center py-8">
-						<div class="loading loading-spinner loading-lg"></div>
-						<span class="ml-3">Lade Export-Daten...</span>
-					</div>
-				{:else if error}
-					<div class="alert alert-error">
-						<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
-						<span>{error}</span>
-					</div>
-				{:else if loadedSightings.length > 0}
-					<div class="alert alert-success">
-						<Icon icon="lucide:circle-check" class="h-6 w-6 shrink-0" />
-						<span>{loadedSightings.length} Datensätze bereit zum Export</span>
-					</div>
+			<!-- Loading/Status -->
+			{#if isLoading}
+				<div class="flex items-center justify-center py-8">
+					<div class="loading loading-spinner loading-lg"></div>
+					<span class="ml-3">Lade Export-Daten...</span>
+				</div>
+			{:else if error}
+				<div class="alert alert-error">
+					<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
+					<span>{error}</span>
+				</div>
+			{:else if loadedSightings.length > 0}
+				<div class="alert alert-success">
+					<Icon icon="lucide:circle-check" class="h-6 w-6 shrink-0" />
+					<span>{loadedSightings.length} Datensätze bereit zum Export</span>
+				</div>
 			{/if}
 		</div>
 
 		<!-- Modal Footer -->
 		<div class="modal-action">
-			<button class="btn btn-ghost" onclick={closeModal}>
-				Abbrechen
-			</button>
-			<button 
+			<button class="btn btn-ghost" onclick={closeModal}> Abbrechen </button>
+			<button
 				class="btn btn-primary"
 				onclick={performDownload}
 				disabled={isLoading || loadedSightings.length === 0}
 			>
-				<Icon icon="lucide:download" class="h-4 w-4 mr-2" />
+				<Icon icon="lucide:download" class="mr-2 h-4 w-4" />
 				{formatInfo[selectedFormat as keyof typeof formatInfo].name} herunterladen
 			</button>
 		</div>
 	</div>
-	<label class="modal-backdrop" for="export-modal">Close</label>
-</div>
+	<form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
