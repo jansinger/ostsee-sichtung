@@ -11,6 +11,16 @@
 	let { user, isAdmin = false }: { user: PublicUser | null; isAdmin: boolean } = $props();
 
 	const currentPath = $derived(page.url.pathname);
+
+	let mobileMenuElement = $state<HTMLDetailsElement | null>(null);
+
+	// Close mobile menu when navigating (SvelteKit client-side navigation keeps component mounted)
+	$effect(() => {
+		void currentPath; // track path changes
+		if (mobileMenuElement?.open) {
+			mobileMenuElement.open = false;
+		}
+	});
 </script>
 
 {#snippet menuitems()}
@@ -71,7 +81,7 @@
 					</div>
 
 					<!-- Mobile menu -->
-					<details class="dropdown dropdown-end lg:hidden">
+					<details bind:this={mobileMenuElement} class="dropdown dropdown-end lg:hidden">
 						<summary aria-label="Menü" class="btn btn-ghost">
 							<Icon icon="lucide:list" width="24" class="h-6 w-6 shrink-0" />
 						</summary>

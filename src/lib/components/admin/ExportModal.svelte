@@ -213,11 +213,16 @@
 </script>
 
 <!-- DaisyUI v5 Modal using native dialog element -->
-<dialog bind:this={dialogElement} class="modal" onclose={closeModal}>
+<dialog
+	bind:this={dialogElement}
+	class="modal"
+	onclose={closeModal}
+	aria-labelledby="export-modal-title"
+>
 	<div class="modal-box max-w-2xl">
 		<!-- Modal Header -->
 		<div class="mb-6 flex items-center justify-between">
-			<h3 class="text-lg font-semibold">Sichtungen exportieren</h3>
+			<h3 id="export-modal-title" class="text-lg font-semibold">Sichtungen exportieren</h3>
 			<button
 				class="btn btn-ghost btn-sm btn-circle"
 				onclick={closeModal}
@@ -288,7 +293,7 @@
 
 		<!-- Modal Footer -->
 		<div class="modal-action">
-			<button class="btn btn-ghost" onclick={closeModal}> Abbrechen </button>
+			<button class="btn btn-ghost" onclick={closeModal}>Abbrechen</button>
 			<button
 				class="btn btn-primary"
 				onclick={performDownload}
@@ -299,5 +304,7 @@
 			</button>
 		</div>
 	</div>
-	<form method="dialog" class="modal-backdrop"><button>close</button></form>
+	<form method="dialog" class="modal-backdrop">
+		<button aria-label="Modal schließen"><span class="sr-only">Modal schließen</span></button>
+	</form>
 </dialog>

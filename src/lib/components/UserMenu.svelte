@@ -19,6 +19,29 @@
 			detailsElement.open = false;
 		}
 	}
+
+	// Close on Escape key and click outside
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape' && detailsElement?.open) {
+			closeMenu();
+		}
+	}
+
+	function handleClickOutside(e: MouseEvent) {
+		if (detailsElement?.open && !detailsElement.contains(e.target as Node)) {
+			closeMenu();
+		}
+	}
+
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		document.addEventListener('click', handleClickOutside);
+		document.addEventListener('keydown', handleKeydown);
+		return () => {
+			document.removeEventListener('click', handleClickOutside);
+			document.removeEventListener('keydown', handleKeydown);
+		};
+	});
 </script>
 
 {#if user}
