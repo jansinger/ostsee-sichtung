@@ -36,7 +36,13 @@ vi.mock('ol/style', () => {
 	return { Stroke, Fill, Style, Circle, RegularShape, Text };
 });
 
-import { backgroundColors, getFeatureColorGroup, legendGroups, speciesSymbols } from './styleUtils';
+import {
+	backgroundColors,
+	getFeatureColorGroup,
+	isBetween,
+	legendGroups,
+	speciesSymbols
+} from './styleUtils';
 import type { SightingProperties } from './styleUtils';
 
 describe('styleUtils', () => {
@@ -175,16 +181,21 @@ describe('styleUtils', () => {
 		});
 	});
 
-	describe('Number.prototype.between', () => {
-		it('ist nach Import verfügbar', () => {
-			expect((5 as number).between(1, 10)).toBe(true);
-			expect((0 as number).between(1, 10)).toBe(false);
-			expect((10 as number).between(1, 10)).toBe(true);
+	describe('isBetween', () => {
+		it('gibt true zurück für Wert innerhalb des Bereichs', () => {
+			expect(isBetween(5, 1, 10)).toBe(true);
+			expect(isBetween(1, 1, 10)).toBe(true);
+			expect(isBetween(10, 1, 10)).toBe(true);
 		});
 
-		it('funktioniert auch wenn first > last', () => {
-			expect((5 as number).between(10, 1)).toBe(true);
-			expect((0 as number).between(10, 1)).toBe(false);
+		it('gibt false zurück für Wert außerhalb des Bereichs', () => {
+			expect(isBetween(0, 1, 10)).toBe(false);
+			expect(isBetween(11, 1, 10)).toBe(false);
+		});
+
+		it('funktioniert auch wenn lower > upper', () => {
+			expect(isBetween(5, 10, 1)).toBe(true);
+			expect(isBetween(0, 10, 1)).toBe(false);
 		});
 	});
 });

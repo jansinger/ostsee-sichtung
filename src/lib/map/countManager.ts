@@ -27,6 +27,7 @@ export class MapCountManager implements CountManager {
 	private speciesCounts: Record<string, { visible: number; total: number }> = {};
 	private colorCounts: Record<string, number> = {};
 	private updateCallback?: (counts: CountData) => void;
+	private changeHandler?: (event: Event) => void;
 
 	private readonly colorGroups = ['ct0', 'ct1', 'ct2', 'ct6', 'ct11', 'ct15'];
 
@@ -152,7 +153,7 @@ export class MapCountManager implements CountManager {
 		if (!this.mapInstance) return;
 
 		// Event-Delegation für dynamisch hinzugefügte Checkboxen
-		document.addEventListener('change', (event) => {
+		this.changeHandler = (event: Event) => {
 			const target = event.target as HTMLInputElement;
 
 			if (target.classList.contains('species-checkbox')) {
@@ -160,7 +161,20 @@ export class MapCountManager implements CountManager {
 			} else if (target.classList.contains('color-checkbox')) {
 				this.mapInstance!.setColorVisibility(target.value, target.checked);
 			}
-		});
+		};
+		document.addEventListener('change', this.changeHandler);
+	}
+
+	/**
+	 * Räumt alle Ressourcen auf. MUSS beim Unmount aufgerufen werden.
+	 */
+	public dispose(): void {
+		if (this.changeHandler) {
+			document.removeEventListener('change', this.changeHandler);
+			delete this.changeHandler;
+		}
+		delete this.mapInstance;
+		delete this.updateCallback;
 	}
 
 	/**

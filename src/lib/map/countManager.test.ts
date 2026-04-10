@@ -102,7 +102,10 @@ describe('MapCountManager', () => {
 
 	beforeEach(() => {
 		manager = new MapCountManager();
-		vi.stubGlobal('document', { addEventListener: vi.fn() });
+		vi.stubGlobal('document', {
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn()
+		});
 	});
 
 	describe('getCounts() — vor initialize()', () => {
@@ -235,6 +238,38 @@ describe('MapCountManager', () => {
 			manager.updateCounts();
 			// Zähler dürfen nicht akkumulieren
 			expect(manager.getCounts().speciesCounts['0']!.total).toBe(1);
+		});
+	});
+
+	describe('dispose()', () => {
+		it('entfernt den Change-Event-Listener vom Document', () => {
+			const mockMap = createMockMap();
+			manager.initialize(mockMap as any, defaultTranslations as any);
+
+			// Nach initialize() wurde addEventListener aufgerufen
+			expect(document.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+
+			manager.dispose();
+
+			// Nach dispose() wurde removeEventListener mit demselben Handler aufgerufen
+			expect(document.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+		});
+
+		it('setzt mapInstance und updateCallback auf undefined', () => {
+			const mockMap = createMockMap();
+			const callback = vi.fn();
+			manager.initialize(mockMap as any, defaultTranslations as any);
+			manager.onCountsUpdated(callback);
+
+			manager.dispose();
+
+			// updateCounts() sollte den Callback nicht mehr aufrufen
+			manager.updateCounts();
+			expect(callback).not.toHaveBeenCalled();
+		});
+
+		it('wirft keinen Fehler wenn ohne initialize() aufgerufen', () => {
+			expect(() => manager.dispose()).not.toThrow();
 		});
 	});
 

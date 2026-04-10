@@ -730,6 +730,22 @@ export class SichtungenMap {
 		}
 	}
 
+	/**
+	 * Räumt alle Map-Ressourcen auf: Geolocation, Overlay, Event-Listener, Map.
+	 * MUSS beim Unmount der Komponente aufgerufen werden.
+	 */
+	public dispose(): void {
+		// Geolocation stoppen
+		this.geolocation.setTracking(false);
+
+		// Popup entfernen
+		this.popup.setPosition(undefined);
+		this.map.removeOverlay(this.popup);
+
+		// Map disposen (entfernt alle Layer, Controls, Event-Listener)
+		this.map.dispose();
+	}
+
 	public getHidden(): { species: Record<string, boolean>; colors: Record<string, boolean> } {
 		return {
 			species: this.hiddenSpecies,

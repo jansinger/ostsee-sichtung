@@ -98,13 +98,13 @@
 			// Cleanup function (replaces onDestroy)
 			return () => {
 				if (map) {
-					map.setTarget(undefined);
+					map.dispose();
 					map = null;
 					markerFeature = null;
 				}
 			};
 		}
-		
+
 		// Return undefined if mapElement is not available yet
 		return;
 	});
