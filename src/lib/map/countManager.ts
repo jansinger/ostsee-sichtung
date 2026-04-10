@@ -22,11 +22,11 @@ export interface CountManager {
 }
 
 export class MapCountManager implements CountManager {
-	private mapInstance?: SichtungenMap;
-	private translations?: MapTranslations;
+	private mapInstance: SichtungenMap | undefined;
+	private translations: MapTranslations | undefined;
 	private speciesCounts: Record<string, { visible: number; total: number }> = {};
 	private colorCounts: Record<string, number> = {};
-	private updateCallback?: (counts: CountData) => void;
+	private updateCallback: ((counts: CountData) => void) | undefined;
 
 	private readonly colorGroups = ['ct0', 'ct1', 'ct2', 'ct6', 'ct11', 'ct15'];
 
@@ -146,8 +146,18 @@ export class MapCountManager implements CountManager {
 	 * Räumt alle Ressourcen auf. MUSS beim Unmount aufgerufen werden.
 	 */
 	public dispose(): void {
-		delete this.mapInstance;
-		delete this.updateCallback;
+		// Legend-Callback in der Map zurücksetzen, um Closure-Referenz auf diesen Manager freizugeben
+		if (this.mapInstance) {
+			this.mapInstance.setLegendUpdateCallback(() => {});
+		}
+
+		this.updateCallback = undefined;
+		this.mapInstance = undefined;
+		this.translations = undefined;
+
+		// Count-Objekte leeren um Referenzen freizugeben
+		this.speciesCounts = {};
+		this.colorCounts = {};
 	}
 
 	/**

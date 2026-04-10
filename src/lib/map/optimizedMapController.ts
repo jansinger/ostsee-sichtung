@@ -394,14 +394,14 @@ export class SichtungenMap {
 			<div class="sighting-popup">
 				<h3 style="margin: 0 0 10px 0; color: #333;">${speciesName}</h3>
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.count}:</strong> ${props.ct} Tier${props.ct > 1 ? 'e' : ''}
+					<strong>${sanitizeText(this.translations.count)}:</strong> ${props.ct} Tier${props.ct > 1 ? 'e' : ''}
 				</div>
 		`;
 
 		if (props.jt && props.jt > 0) {
 			content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.young}:</strong> ${props.jt}
+					<strong>${sanitizeText(this.translations.young)}:</strong> ${props.jt}
 				</div>
 			`;
 		}
@@ -409,21 +409,21 @@ export class SichtungenMap {
 		if (props.tf) {
 			content += `
 				<div style="margin-bottom: 8px; color: #dc2626;">
-					<strong>${this.translations.found_dead}:</strong> Ja
+					<strong>${sanitizeText(this.translations.found_dead)}:</strong> Ja
 				</div>
 			`;
 		}
 
 		content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.report_date}:</strong> ${date}
+					<strong>${sanitizeText(this.translations.report_date)}:</strong> ${date}
 				</div>
 		`;
 
 		if (props.waterway) {
 			content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.area}:</strong> ${sanitizeText(props.waterway)}
+					<strong>${sanitizeText(this.translations.area)}:</strong> ${sanitizeText(props.waterway)}
 				</div>
 			`;
 		}
@@ -435,7 +435,7 @@ export class SichtungenMap {
 				.join(' ');
 			content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.name}:</strong> ${fullName}
+					<strong>${sanitizeText(this.translations.name)}:</strong> ${fullName}
 				</div>
 			`;
 		}
@@ -443,7 +443,7 @@ export class SichtungenMap {
 		if (props.shipname) {
 			content += `
 				<div style="margin-bottom: 8px;">
-					<strong>${this.translations.ship}:</strong> ${sanitizeText(props.shipname)}
+					<strong>${sanitizeText(this.translations.ship)}:</strong> ${sanitizeText(props.shipname)}
 				</div>
 			`;
 		}

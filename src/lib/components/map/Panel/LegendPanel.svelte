@@ -48,13 +48,13 @@
 	// Event Handler für Species-Checkboxes
 	function handleSpeciesToggle(speciesId: string, visible: boolean) {
 		speciesVisibility[speciesId] = visible;
-		countManager?.setSpeciesVisibility(speciesId, visible);
+		countManager.setSpeciesVisibility(speciesId, visible);
 	}
 
 	// Event Handler für Color-Checkboxes
 	function handleColorToggle(colorGroup: string, visible: boolean) {
 		colorVisibility[colorGroup] = visible;
-		countManager?.setColorVisibility(colorGroup, visible);
+		countManager.setColorVisibility(colorGroup, visible);
 	}
 </script>
 
