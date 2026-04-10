@@ -11,7 +11,7 @@ export default defineConfig({
 		// No basicSsl plugin for preview in CI to avoid HTTPS certificate issues
 	],
 	preview: {
-		port: 4173,
+		port: 4000,
 		host: true,
 		strictPort: true
 	},
