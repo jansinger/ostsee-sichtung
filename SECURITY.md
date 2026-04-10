@@ -28,12 +28,12 @@ Please report security vulnerabilities to the maintainers via:
 
 - **Critical**: 0 ✅
 - **High**: 1 (development dependency only - lodash prototype pollution)
-- **Moderate**: 10 (development dependencies only)
+- **Moderate**: 10 (mostly development dependencies; dompurify is also a direct production dependency with limited exposure)
 - **Low**: 3 (development dependencies only)
 
 ### Overall Security Rating: 7/10
 
-**Status**: GOOD - All vulnerabilities are in dev-only dependencies with no production impact
+**Status**: GOOD - Most vulnerabilities are in dev-only dependencies. The dompurify vulnerability affects a direct production dependency used for HTML sanitization, but exploitation requires crafted input and the attack surface is limited.
 
 ## Security Architecture
 
@@ -95,11 +95,11 @@ Please report security vulnerabilities to the maintainers via:
 #### 2. dompurify <= 3.3.1 (Moderate Severity, 3 CVEs)
 
 - **CVEs**: GHSA-vhxf-7vqr-mrjg, GHSA-v8jm-5vwx-cfxm, GHSA-v2wj-7wpq-c8vv
-- **Affected**: @scalar/api-reference → monaco-editor → dompurify
-- **Risk Level**: Moderate - Used in `/docs/api` routes (Scalar API reference viewer)
-- **Impact**: Limited production exposure; only affects the API documentation pages, not core application functionality. Exploitation requires crafted input to the docs viewer.
-- **Mitigation**: API docs routes serve read-only documentation with no user-generated content. Attack surface is minimal as DOMPurify is used internally by monaco-editor within the Scalar viewer.
-- **Resolution Path**: Requires @scalar/api-reference update (breaking change)
+- **Affected**: Direct production dependency (`dompurify` in `src/lib/utils/sanitize.ts`) and transitive via @scalar/api-reference → monaco-editor → dompurify
+- **Risk Level**: Moderate - Used for HTML sanitization in production and in API docs viewer
+- **Impact**: DOMPurify is used in production for `sanitizeHtml()` and `sanitizeText()` functions. However, exploitation requires specifically crafted malicious input that bypasses the sanitizer. The allowed tags/attributes are restricted to a safe subset.
+- **Mitigation**: Sanitization functions use a strict allowlist of tags (`a`, `em`, `strong`, `br`, `span`, `p`, `i`, `b`) and attributes (`href`, `class`, `target`, `rel`). User input is validated server-side before reaching the sanitizer.
+- **Resolution Path**: Awaiting dompurify upstream fix; monitor for patch releases
 
 #### 3. unhead / @unhead/vue (Moderate Severity)
 
@@ -172,7 +172,7 @@ We maintain a proactive approach to dependency security:
 
 ### Current Overrides (Security-Related)
 
-```json
+```jsonc
 {
 	"overrides": {
 		"cookie": "^0.7.2", // Fixed moderate XSS vulnerability

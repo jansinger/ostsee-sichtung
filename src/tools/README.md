@@ -7,14 +7,17 @@ This directory contains maintenance and utility scripts for the Ostsee-Tiere app
 ### 1. License Management
 
 #### `generate-license-notices.js`
+
 Generates third-party license notices and attribution files.
 
 **Usage:**
+
 ```bash
 npm run generate:licenses
 ```
 
 **Output Files:**
+
 - `THIRD-PARTY-NOTICES.md` - Detailed license information with compatibility analysis
 - `THIRD-PARTY-NOTICES.txt` - Summary text file
 - `third-party-licenses.csv` - Machine-readable CSV format
@@ -22,14 +25,17 @@ npm run generate:licenses
 ### 2. Database Maintenance
 
 #### `fix-media-upload-flags.js`
+
 Corrects the `aufnahmeHochladen` (media upload) flags in the `sichtungen` table based on actual file existence in `sichtungen_dateien`.
 
 **Purpose:**
+
 - Ensures data consistency between sighting records and their associated media files
 - Sets flag to `1` when files exist, `0` when no files are present
 - Useful after data migrations or file cleanup operations
 
 **Usage:**
+
 ```bash
 # Live update (makes actual changes)
 npm run db:fix-media-flags
@@ -45,16 +51,19 @@ node src/tools/fix-media-upload-flags.js --dry-run --verbose
 ```
 
 **Parameters:**
+
 - `--dry-run`: Simulates changes without writing to database
 - `--verbose`: Provides detailed output for each processed record
 
 **Output:**
+
 - Summary of total sightings checked
 - Count of correct vs incorrect flags
 - List of records that need/have been updated
 - Validation results (for live updates)
 
 **Safety Features:**
+
 - Dry run mode for safe testing
 - Detailed logging of all changes
 - Post-update validation
@@ -79,12 +88,12 @@ node src/tools/fix-media-upload-flags.js --dry-run --verbose
 
 /**
  * @fileoverview Brief description of what the script does
- * 
+ *
  * Detailed explanation of the script's purpose and functionality.
- * 
+ *
  * Usage:
  *   node src/tools/script-name.js [--options]
- * 
+ *
  * @author Ostsee-Tiere Team
  * @since version
  */
@@ -120,13 +129,15 @@ For scripts that interact with the database:
 ### Prerequisites
 
 1. **Database Connection**: Ensure PostgreSQL is running
+
    ```bash
    npm run db:start
    ```
 
-2. **Environment Variables**: Set `DATABASE_URL` if using non-default connection
+2. **Environment Variables**: Set `DATABASE_POSTGRES_URL` if using non-default connection
+
    ```bash
-   export DATABASE_URL="postgresql://user:password@host:port/database"
+   export DATABASE_POSTGRES_URL="postgresql://user:password@host:port/database"
    ```
 
 3. **Dependencies**: Install all project dependencies
@@ -150,6 +161,7 @@ npm run generate:licenses
 ### Monitoring
 
 Tools provide structured output suitable for:
+
 - **Manual review** during development
 - **CI/CD integration** for automated maintenance
 - **Logging systems** for production monitoring

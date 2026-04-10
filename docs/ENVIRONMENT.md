@@ -260,7 +260,7 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 **Required**: No
 **Default**: `local`
 **Options**: `local` | `vercel-blob`
-**Description**: Storage backend for uploaded media files.
+**Description**: Storage backend for uploaded media files. Currently, only `local` and `vercel-blob` are supported for production use. The values `s3` and `gcs` may appear in code and types as reserved providers, but they are not implemented yet and must not be used in configuration.
 
 ---
 

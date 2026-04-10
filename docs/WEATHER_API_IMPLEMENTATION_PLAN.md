@@ -22,7 +22,7 @@
 - ✅ **Admin Interface**: `WeatherDataDisplay.svelte` Komponente, Weather-Refresh per Sighting via `/api/admin/weather/[id]/refresh`
 - ✅ **Weather Refresh Service**: `weatherRefreshService.ts` für On-Demand-Aktualisierung
 
-## 2. Erweiterte API Integration 🔄
+## 2. Erweiterte API Integration ✅
 
 ### Aktuelle Implementation: Open-Meteo Archive API ✅
 
@@ -61,7 +61,7 @@ async function fetchWeatherData(lat: number, lng: number, date: string, time: st
 }
 ```
 
-## 3. Datenbank-Schema Erweiterung 🔄
+## 3. Datenbank-Schema Erweiterung ✅
 
 ### Migration Script - Optimiert für Single Fetch per Position/Tag
 
@@ -258,7 +258,7 @@ export class OpenMeteoProvider implements WeatherProvider {
 
 		// Historical Weather API
 		const weatherUrl =
-			`https://archive-api.open-meteo.com/v1/era5?` +
+			`https://archive-api.open-meteo.com/v1/archive?` +
 			`latitude=${latitude}&longitude=${longitude}` +
 			`&start_date=${dateStr}&end_date=${dateStr}` +
 			`&hourly=temperature_2m,windspeed_10m,winddirection_10m,` +
@@ -284,7 +284,7 @@ export class OpenMeteoProvider implements WeatherProvider {
 }
 ```
 
-## 5. Admin Interface Erweiterung 🔄
+## 5. Admin Interface Erweiterung ✅
 
 ### Bestehende Struktur erweitern
 
@@ -502,40 +502,38 @@ Aktuell gibt es bereits eine funktionierende Weather-Integration in Step 3. Das 
 {/if}
 ```
 
-## 6. Angepasste Implementation Roadmap
+## 6. Implementation Roadmap (abgeschlossen)
 
-**Basis**: Erweitere bestehende Weather API Integration aus Schritt 3
+**Basis**: Erweiterte bestehende Weather API Integration aus Schritt 3
 
-### Phase 1: API & Database Integration (Woche 1)
+### Phase 1: API & Database Integration ✅
 
-- [ ] ✅ **API bereits vorhanden** - Erweitere `/api/weather/historical` für Forecast-Support
-- [ ] Database-Migration für Weather-Storage-Felder
-- [ ] Erweitere weatherService.ts um StoredWeatherData Interface
-- [ ] Deduplication-Logik für Position/Datum-Caching
-- [ ] Integration in sightingRepository.ts für automatisches Speichern
+- [x] **API bereits vorhanden** - `/api/weather/historical` mit Forecast-Support
+- [x] Database-Migration für Weather-Storage-Felder (`weather_data` JSONB, `weather_fetched_at`, `weather_provider`, `weather_api_version`, `weather_data_type`)
+- [x] weatherService.ts mit StoredWeatherData Interface
+- [x] Deduplication-Logik für Position/Datum-Caching (`weatherDeduplication.ts`)
+- [x] Integration in sightingRepository.ts für automatisches Speichern
 
-### Phase 2: Enhanced API Logic (Woche 2)
+### Phase 2: Enhanced API Logic ✅
 
-- [ ] Forecast vs Historical API Logic implementieren
-- [ ] Erweitere WeatherDataFetcher.svelte um Data-Source-Hinweise
-- [ ] Admin-API-Endpoint für Wetterdaten-Nachladen
-- [ ] Batch-Update für bestehende Sichtungen ohne Wetterdaten
+- [x] Forecast vs Historical API Logic implementieren (`weather_data_type` Feld)
+- [x] WeatherDataFetcher.svelte mit Data-Source-Hinweisen
+- [x] Admin-API-Endpoint für Wetterdaten-Nachladen (`/api/admin/weather/[id]/refresh`)
+- [ ] Batch-Update für bestehende Sichtungen ohne Wetterdaten (offen)
 
-### Phase 3: Admin Interface Enhancement (Woche 3)
+### Phase 3: Admin Interface Enhancement ✅
 
-- [ ] WeatherDataDisplay Component für Admin-Interface
-- [ ] Integration in bestehende Sichtungs-Detailansicht
-- [ ] Data-Source-Indikatoren (Historical vs Forecast)
-- [ ] Export-Funktionalität erweitern um Wetterdaten
+- [x] WeatherDataDisplay Component für Admin-Interface
+- [x] Integration in bestehende Sichtungs-Detailansicht
+- [x] Data-Source-Indikatoren (Historical vs Forecast)
+- [ ] Export-Funktionalität erweitern um Wetterdaten (offen)
 
-### Phase 4: Optimization & Polish (Woche 4)
+### Phase 4: Optimization & Polish (teilweise offen)
 
-- [ ] Performance-Tests mit Deduplication-Logic
+- [x] Deduplication-Logic mit Tests
 - [ ] UI/UX Polish für Data-Source-Indicators
-- [ ] Integration Tests mit realen Sichtungen
-- [ ] Dokumentation und Logging verbessern
-
-**Reduzierte Zeitschätzung**: 4 Wochen (statt 5), da Grundfunktionalität bereits vorhanden
+- [x] Integration Tests (`weatherRefreshService.test.ts`, `weatherDeduplication.test.ts`)
+- [x] Logging implementiert
 
 ## 7. Teststrategien
 
