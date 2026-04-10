@@ -22,12 +22,12 @@ export interface CountManager {
 }
 
 export class MapCountManager implements CountManager {
-	private mapInstance?: SichtungenMap;
-	private translations?: MapTranslations;
+	private mapInstance: SichtungenMap | undefined;
+	private translations: MapTranslations | undefined;
 	private speciesCounts: Record<string, { visible: number; total: number }> = {};
 	private colorCounts: Record<string, number> = {};
-	private updateCallback?: (counts: CountData) => void;
-	private changeHandler?: (event: Event) => void;
+	private updateCallback: ((counts: CountData) => void) | undefined;
+	private changeHandler: ((event: Event) => void) | undefined;
 
 	private readonly colorGroups = ['ct0', 'ct1', 'ct2', 'ct6', 'ct11', 'ct15'];
 
@@ -152,6 +152,11 @@ export class MapCountManager implements CountManager {
 	private initializeEventHandlers(): void {
 		if (!this.mapInstance) return;
 
+		// Bestehenden Handler entfernen (idempotent bei Re-Init / HMR)
+		if (this.changeHandler) {
+			document.removeEventListener('change', this.changeHandler);
+		}
+
 		// Event-Delegation für dynamisch hinzugefügte Checkboxen
 		this.changeHandler = (event: Event) => {
 			const target = event.target as HTMLInputElement;
@@ -169,12 +174,18 @@ export class MapCountManager implements CountManager {
 	 * Räumt alle Ressourcen auf. MUSS beim Unmount aufgerufen werden.
 	 */
 	public dispose(): void {
+		// Legend-Callback in der Map zurücksetzen, um Closure-Referenz auf diesen Manager freizugeben
+		if (this.mapInstance) {
+			this.mapInstance.setLegendUpdateCallback(() => {});
+		}
+
 		if (this.changeHandler) {
 			document.removeEventListener('change', this.changeHandler);
-			delete this.changeHandler;
 		}
-		delete this.mapInstance;
-		delete this.updateCallback;
+
+		this.changeHandler = undefined;
+		this.updateCallback = undefined;
+		this.mapInstance = undefined;
 	}
 
 	/**

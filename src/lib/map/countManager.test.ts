@@ -242,17 +242,35 @@ describe('MapCountManager', () => {
 	});
 
 	describe('dispose()', () => {
-		it('entfernt den Change-Event-Listener vom Document', () => {
+		it('entfernt exakt denselben Change-Event-Listener vom Document', () => {
 			const mockMap = createMockMap();
 			manager.initialize(mockMap as any, defaultTranslations as any);
 
-			// Nach initialize() wurde addEventListener aufgerufen
-			expect(document.addEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+			// Handler-Referenz aus dem addEventListener-Mock auslesen
+			const addCall = vi
+				.mocked(document.addEventListener)
+				.mock.calls.find(([eventName]) => eventName === 'change');
+			expect(addCall).toBeDefined();
+			const changeHandler = addCall?.[1];
+			expect(changeHandler).toEqual(expect.any(Function));
 
 			manager.dispose();
 
-			// Nach dispose() wurde removeEventListener mit demselben Handler aufgerufen
-			expect(document.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+			// Nach dispose() wurde removeEventListener mit exakt demselben Handler aufgerufen
+			expect(document.removeEventListener).toHaveBeenCalledWith('change', changeHandler);
+		});
+
+		it('setzt Legend-Callback in der Map auf Noop zurück', () => {
+			const mockMap = createMockMap();
+			manager.initialize(mockMap as any, defaultTranslations as any);
+
+			// setLegendUpdateCallback wurde beim initialize() aufgerufen
+			expect(mockMap.setLegendUpdateCallback).toHaveBeenCalledOnce();
+
+			manager.dispose();
+
+			// Beim dispose() wird der Callback auf Noop zurückgesetzt
+			expect(mockMap.setLegendUpdateCallback).toHaveBeenCalledTimes(2);
 		});
 
 		it('setzt mapInstance und updateCallback auf undefined', () => {
