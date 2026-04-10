@@ -1,14 +1,14 @@
 import { Control } from 'ol/control';
-import type { SichtungenMap } from '$lib/map/optimizedMapController';
+import type { MapController } from '$lib/map/optimizedMapController';
 
 /**
  * Control für GPS-Standortbestimmung
  */
 export class LocationControl extends Control {
-	private mapInstance: SichtungenMap;
+	private mapInstance: MapController;
 	private button: HTMLButtonElement;
 
-	constructor(mapInstance: SichtungenMap) {
+	constructor(mapInstance: MapController) {
 		const button = document.createElement('button');
 		button.innerHTML = '📍';
 		button.title = 'GPS-Position anzeigen';

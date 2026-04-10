@@ -13,8 +13,8 @@ import { OSM, XYZ } from 'ol/source';
 import Cluster from 'ol/source/Cluster';
 import VectorSource from 'ol/source/Vector';
 import { Circle, Fill, Stroke, Style, Text } from 'ol/style';
-// import type { LocationControl } from './controls/LocationControl.js';
-// import type { ZoomAllControl } from './controls/ZoomAllControl.js';
+import { LocationControl } from './controls/LocationControl.js';
+import { ZoomAllControl } from './controls/ZoomAllControl.js';
 import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 import type { MapTranslations } from './mapUtils';
 import { createFeatureStyle, getFeatureColorGroup } from './styleUtils';
@@ -49,6 +49,16 @@ export interface MapOptions {
 	timeStartId?: string;
 	timeEndId?: string;
 	enableLocationControl?: boolean;
+	onLoading?: (isLoading: boolean) => void;
+}
+
+/**
+ * Interface für Custom Controls, um zirkuläre Type-Dependencies zu vermeiden.
+ * Controls nutzen dieses Interface statt des konkreten SichtungenMap-Typs.
+ */
+export interface MapController {
+	toggleGeolocation(): boolean;
+	zoomAllFeatures(): void;
 }
 
 /**
@@ -68,6 +78,8 @@ export class SichtungenMap {
 	private searchTerm: string = '';
 	private legendUpdateCallback?: () => void;
 	private yearChangeCallback?: (year: number) => void;
+	private loadingCallback?: (isLoading: boolean) => void;
+	private activeAbortController: AbortController | null = null;
 	private clusterDistance: number = 40; // Reduziert für bessere Performance
 
 	// Popup-related
@@ -176,11 +188,18 @@ export class SichtungenMap {
 		this.map = new Map({
 			target: options.target,
 			layers: [
-				// Basis-Karte (OSM)
+				// Basis-Karte (OSM) mit Error-Handling
 				new TileLayer({
 					source: new OSM({
 						attributions:
-							'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+							'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+						tileLoadFunction: (tile, src) => {
+							const img = (tile as unknown as { getImage(): HTMLImageElement }).getImage();
+							img.onerror = () => {
+								logger.warn({ tileUrl: src }, 'OSM tile failed to load');
+							};
+							img.src = src;
+						}
 					})
 				}),
 				// OpenSeaMap-Layer für maritime Informationen
@@ -231,6 +250,11 @@ export class SichtungenMap {
 
 		// Optimierte Event-Handler
 		this.initializeOptimizedEvents();
+
+		// Loading-Callback vor initialem setYear setzen, damit der erste Load gemeldet wird
+		if (options.onLoading) {
+			this.loadingCallback = options.onLoading;
+		}
 
 		// Lade Daten für das aktuelle Jahr
 		this.setYear(this.displayedYear);
@@ -525,10 +549,15 @@ export class SichtungenMap {
 		this.yearChangeCallback = callback;
 	}
 
+	public setLoadingCallback(callback: (isLoading: boolean) => void): void {
+		this.loadingCallback = callback;
+	}
+
 	// Behalte alle bestehenden Public-Methoden für Kompatibilität
 	public async setYear(year: number): Promise<void> {
 		this.displayedYear = year;
 		this.yearChangeCallback?.(year);
+		this.loadingCallback?.(true);
 
 		try {
 			await this.loadSightings(year, this.searchTerm);
@@ -544,21 +573,37 @@ export class SichtungenMap {
 			// Redraw und Zeitraum-Anzeige aktualisieren nachdem timeFilter gesetzt wurde
 			this.reportsLayer.changed();
 			this.updateTimeRange();
+			this.loadingCallback?.(false);
 		} catch (error) {
+			// Abgebrochene Requests nicht als Fehler behandeln — ein neuerer Request übernimmt
+			if (error instanceof DOMException && error.name === 'AbortError') return;
+			this.loadingCallback?.(false);
 			console.error('Error loading sightings:', error);
 			throw error;
 		}
 	}
 
 	private async loadSightings(year: number, searchTerm?: string): Promise<void> {
+		// Vorherigen laufenden Request abbrechen (verhindert Race Conditions bei schnellem Wechsel)
+		if (this.activeAbortController) {
+			this.activeAbortController.abort();
+		}
+		const abortController = new AbortController();
+		this.activeAbortController = abortController;
+
 		const params = new URLSearchParams({ year: year.toString() });
 		if (searchTerm) params.set('search', searchTerm);
 
-		const response = await fetch(`/api/map/sightings?${params}`);
+		const response = await fetch(`/api/map/sightings?${params}`, {
+			signal: abortController.signal
+		});
 		if (!response.ok) {
 			throw new Error(`HTTP ${response.status}: Fehler beim Laden der Sichtungen`);
 		}
 		const geoJsonData = await response.json();
+
+		// Nur verarbeiten wenn dieser Request noch der aktive ist (nicht abgebrochen)
+		if (abortController.signal.aborted) return;
 
 		const format = new GeoJSON();
 		const features = format.readFeatures(geoJsonData, {
@@ -570,6 +615,11 @@ export class SichtungenMap {
 
 		if (this.legendUpdateCallback) {
 			this.legendUpdateCallback();
+		}
+
+		// Aktiven Controller aufräumen
+		if (this.activeAbortController === abortController) {
+			this.activeAbortController = null;
 		}
 	}
 
@@ -590,12 +640,11 @@ export class SichtungenMap {
 	private createCustomControls(): Control[] {
 		const controls: Control[] = [];
 
-		// TODO: Fix type compatibility between optimized and original map controller
-		// if (this.options.enableLocationControl) {
-		// 	controls.push(new LocationControl(this as SichtungenMap));
-		// }
+		if (this.options.enableLocationControl) {
+			controls.push(new LocationControl(this));
+		}
 
-		// controls.push(new ZoomAllControl(this as SichtungenMap));
+		controls.push(new ZoomAllControl(this));
 		return controls;
 	}
 
@@ -664,9 +713,19 @@ export class SichtungenMap {
 
 	private applyFilter(searchTerm: string): void {
 		this.searchTerm = searchTerm;
+		this.loadingCallback?.(true);
 		// fire-and-forget: unhandled rejection propagiert als window.unhandledrejection
 		// und wird vom Error-Handler in SightingsMapView aufgefangen
-		void this.loadSightings(this.displayedYear, searchTerm);
+		void this.loadSightings(this.displayedYear, searchTerm)
+			.then(() => {
+				this.loadingCallback?.(false);
+			})
+			.catch((error) => {
+				// Abgebrochene Requests nicht als Fehler behandeln
+				if (error instanceof DOMException && error.name === 'AbortError') return;
+				this.loadingCallback?.(false);
+				throw error;
+			});
 	}
 
 	private updateTimeFilter(): void {
@@ -730,8 +789,14 @@ export class SichtungenMap {
 	 * MUSS beim Unmount der Komponente aufgerufen werden.
 	 */
 	public dispose(): void {
-		// Geolocation stoppen
-		this.geolocation.setTracking(false);
+		// Laufende Requests abbrechen
+		if (this.activeAbortController) {
+			this.activeAbortController.abort();
+			this.activeAbortController = null;
+		}
+
+		// Geolocation stoppen und internen Tracking-Status zurücksetzen
+		this.stopTracking();
 
 		// Popup entfernen
 		this.popup.setPosition(undefined);

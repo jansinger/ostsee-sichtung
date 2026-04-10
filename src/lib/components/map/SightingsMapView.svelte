@@ -78,7 +78,6 @@
 	let isLoadingData = $state(false);
 	let isInitialLoading = $state(true);
 	let loadingType = $state<'initial' | 'filter' | 'features'>('initial');
-	let loadingProgress = $state<number | null>(null);
 	let errorMessage = $state<string | null>(null);
 
 	// Aktuell angezeigtes Jahr für den Titel
@@ -99,7 +98,7 @@
 			panelManager = new MapPanelManager();
 			timeSliderManager = new MapTimeSliderManager();
 
-			// Initialisiere Karte
+			// Initialisiere Karte mit Loading-Callback (muss vor initialem setYear gesetzt sein)
 			mapInstance = new SichtungenMap({
 				translations,
 				target: mapContainerId,
@@ -108,7 +107,14 @@
 				sliderRangeId: 'slider-range',
 				timeStartId: 'time-start',
 				timeEndId: 'time-end',
-				enableLocationControl: false // Kein LocationControl für normale Karten-Views
+				enableLocationControl: false,
+				onLoading: (loading) => {
+					isLoadingData = loading;
+					if (loading) {
+						loadingType = 'features';
+						errorMessage = null;
+					}
+				}
 			});
 
 			// Initialisiere Count Manager und setze Callback
@@ -218,59 +224,8 @@
 	 * Setup für Loading-State-Management mit verbesserter UX
 	 */
 	function setupLoadingHandlers() {
-		let filterTimeout: ReturnType<typeof setTimeout>;
-
-		function handleFilterChange(type: 'filter' | 'features' = 'filter') {
-			clearTimeout(filterTimeout);
-
-			isLoadingData = true;
-			loadingType = type;
-			errorMessage = null;
-			loadingProgress = 0;
-
-			// Simuliere Fortschritt für bessere UX
-			const progressInterval = setInterval(() => {
-				if (loadingProgress !== null && loadingProgress < 90) {
-					loadingProgress = Math.min(loadingProgress + 10, 90);
-				}
-			}, 200);
-
-			// Loading nach variablem Timeout beenden
-			filterTimeout = setTimeout(
-				() => {
-					clearInterval(progressInterval);
-					loadingProgress = 100;
-
-					// Kurz 100% anzeigen, dann ausblenden
-					setTimeout(() => {
-						isLoadingData = false;
-						loadingProgress = null;
-					}, 300);
-				},
-				Math.random() * 1000 + 1500
-			); // 1.5-2.5 Sekunden
-		}
-
-		// Delegated change handler — works for dynamically added inputs without MutationObserver
-		const handleChange = (e: Event) => {
-			const target = e.target as HTMLElement;
-			if (target.matches('#year-select')) {
-				handleFilterChange('features');
-			} else if (target.matches('.species-checkbox, .color-checkbox')) {
-				handleFilterChange('filter');
-			}
-		};
-
-		// Delegated keydown handler for search field
-		const handleKeydown = (e: KeyboardEvent) => {
-			const target = e.target as HTMLElement;
-			if (target.matches('#filter-input') && e.key === 'Enter') {
-				handleFilterChange('filter');
-			}
-		};
-
-		document.addEventListener('change', handleChange);
-		document.addEventListener('keydown', handleKeydown);
+		// Loading-State wird jetzt direkt vom Controller-Callback (setLoadingCallback)
+		// gesteuert — kein fake Timeout mehr nötig. Hier nur noch Error-Handler.
 
 		// Global Error Handler für API-Fehler
 		unhandledRejectionHandler = (event) => {
@@ -278,14 +233,10 @@
 			errorMessage = 'Fehler beim Laden der Kartendaten. Bitte versuchen Sie es erneut.';
 			isLoadingData = false;
 			isInitialLoading = false;
-			loadingProgress = null;
 		};
 		window.addEventListener('unhandledrejection', unhandledRejectionHandler);
 
-		return () => {
-			document.removeEventListener('change', handleChange);
-			document.removeEventListener('keydown', handleKeydown);
-		};
+		return () => {};
 	}
 
 	/**
@@ -398,8 +349,6 @@
 		<LoadingOverlay
 			isVisible={isInitialLoading || isLoadingData}
 			type={isInitialLoading ? 'initial' : loadingType}
-			progress={loadingProgress}
-			canCancel={false}
 		/>
 
 		<!-- Error-Toast -->
