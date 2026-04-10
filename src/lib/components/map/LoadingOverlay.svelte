@@ -4,12 +4,10 @@
 	// Props
 	type LoadingType = 'default' | 'filter' | 'features' | 'initial';
 
-	let { isVisible = false, type = 'default' as LoadingType } = $props<{
-		isVisible?: boolean;
-		type?: LoadingType;
-	}>();
+	let { isVisible = false, type = 'default' }: { isVisible?: boolean; type?: LoadingType } =
+		$props();
 
-	// Icon basierend auf Typ
+	// Typ-sichere Zuordnungen
 	const iconMap: Record<LoadingType, string> = {
 		default: 'lucide:loader-2',
 		filter: 'lucide:filter',
@@ -17,7 +15,6 @@
 		initial: 'lucide:loader-2'
 	};
 
-	// Nachrichten basierend auf Typ
 	const messageMap: Record<LoadingType, string> = {
 		default: 'Daten werden geladen...',
 		filter: 'Filter werden angewendet...',
@@ -25,7 +22,8 @@
 		initial: 'Karte wird initialisiert...'
 	};
 
-	const displayMessage = $derived(messageMap[type]);
+	const loadingType = $derived(type as LoadingType);
+	const displayMessage = $derived(messageMap[loadingType]);
 </script>
 
 {#if isVisible}
@@ -49,7 +47,7 @@
 				<div
 					class="bg-primary/10 mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full"
 				>
-					<Icon icon={iconMap[type as LoadingType]} class="text-primary h-8 w-8 animate-spin" />
+					<Icon icon={iconMap[loadingType]} class="text-primary h-8 w-8 animate-spin" />
 				</div>
 				<h3 id="loading-title" class="text-base-content text-lg font-semibold">
 					{displayMessage}
