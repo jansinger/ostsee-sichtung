@@ -3,10 +3,12 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
 	globalSetup: './e2e/global-setup.ts',
 	webServer: {
-		command: process.env.CI ? 'SKIP_DB_CHECK=true npx vite preview --port 4000' : 'npm run dev',
+		command: process.env.CI
+			? 'SKIP_DB_CHECK=true npm run build && SKIP_DB_CHECK=true npx vite preview --port 4000'
+			: 'npm run dev',
 		url: process.env.CI ? 'http://localhost:4000' : 'https://localhost:4001',
 		reuseExistingServer: !process.env.CI,
-		timeout: 30000,
+		timeout: 120000,
 		ignoreHTTPSErrors: true
 	},
 	testDir: 'e2e',
