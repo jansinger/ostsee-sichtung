@@ -183,6 +183,9 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
+      - name: Build application for preview
+        run: SKIP_DB_CHECK=true npm run build
+
       - name: Run E2E tests
         run: npm run test:e2e
 
