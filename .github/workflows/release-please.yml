@@ -46,7 +46,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # Force push the release tag commit to the release branch
-          git push origin HEAD:release --force
+          git push origin HEAD:release --force-with-lease
 
           echo "Updated release branch to ${{ needs.release-please.outputs.tag_name }}"
 

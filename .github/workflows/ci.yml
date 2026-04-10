@@ -46,27 +46,6 @@ jobs:
       - name: Ensure Svelte Kit is in sync
         run: npx svelte-kit sync
 
-      - name: Get Playwright version
-        id: playwright-version
-        run: |
-          PLAYWRIGHT_VERSION=$(npm ls @playwright/test --json | jq -r '.dependencies["@playwright/test"].version')
-          echo "version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v5
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
-
-      - name: Install Playwright Browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Install Playwright dependencies only
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
-
       # Detect changes for conditional testing
       - name: Detect changed files
         id: changes
@@ -117,7 +96,6 @@ jobs:
       - name: Run unit tests with coverage
         if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true'
         run: npm run test:unit -- --coverage --run
-        continue-on-error: true
 
       - name: Upload coverage reports
         if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.backend == 'true'
@@ -129,6 +107,10 @@ jobs:
 
       - name: Build application
         run: npm run build
+
+      - name: Security audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
 
   # E2E tests — skipped for doc-only changes
   e2e:
@@ -173,7 +155,7 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+          key: playwright-${{ runner.os }}-node24-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright Browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
@@ -188,11 +170,11 @@ jobs:
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v7
-        if: failure()
+        if: always()
         with:
           name: playwright-report-${{ github.sha }}
           path: playwright-report/
-          retention-days: 7
+          retention-days: 14
 
   # Compliance checks for dependency updates
   compliance:
@@ -226,12 +208,12 @@ jobs:
         run: |
           echo "Checking for copyleft licenses (GPL/AGPL)..."
 
-          # license-checker has a bug with Node 22 where it crashes on some packages
+          # license-checker has a bug with Node 24 where it crashes on some packages
           # We use error suppression and validate what we can
           LICENSE_OUTPUT=$(npx license-checker --summary 2>&1 || echo "LICENSE_CHECK_FAILED")
 
           if echo "$LICENSE_OUTPUT" | grep -q "LICENSE_CHECK_FAILED"; then
-            echo "⚠️ License checker encountered an error (known Node 22 compatibility issue)"
+            echo "⚠️ License checker encountered an error (known Node 24 compatibility issue)"
             echo "Falling back to package.json license validation..."
 
             # Basic check: ensure our package and key deps have valid licenses
@@ -253,13 +235,13 @@ jobs:
         run: |
           echo "Running license audit..."
 
-          # license-checker has known issues with Node 22
+          # license-checker has known issues with Node 24
           # We attempt the check but don't fail on tool errors
           npm run license:audit 2>&1 || {
             EXIT_CODE=$?
             # Check if it's a tool crash vs actual license issue
             if npm run license:audit 2>&1 | grep -q "TypeError"; then
-              echo "⚠️ License checker tool error (Node 22 compatibility issue)"
+              echo "⚠️ License checker tool error (Node 24 compatibility issue)"
               echo "Skipping detailed license audit - SBOM will still be generated"
             else
               echo "License audit found issues"
@@ -282,120 +264,3 @@ jobs:
           name: sbom-${{ github.sha }}
           path: sbom/
           retention-days: 90
-
-  # Label PRs based on changes
-  label:
-    name: Label PR
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    permissions:
-      contents: read
-      pull-requests: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Get Dependabot metadata
-        if: github.actor == 'dependabot[bot]'
-        uses: dependabot/fetch-metadata@v2
-        id: dependabot-metadata
-
-      - name: Label Dependabot PR
-        if: github.actor == 'dependabot[bot]'
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const updateType = '${{ steps.dependabot-metadata.outputs.update-type }}';
-            const dependencyType = '${{ steps.dependabot-metadata.outputs.dependency-type }}';
-
-            let labels = ['dependencies', 'automated'];
-
-            if (updateType.includes('major')) {
-              labels.push('major-update');
-            } else if (updateType.includes('minor')) {
-              labels.push('minor-update');
-            } else if (updateType.includes('patch')) {
-              labels.push('patch-update');
-            }
-
-            if (dependencyType === 'direct:development') {
-              labels.push('dev-dependency');
-            } else if (dependencyType === 'direct:production') {
-              labels.push('production-dependency');
-            }
-
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              labels: labels
-            });
-
-      - name: Label PR based on commit types
-        if: github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'release-please')
-        uses: actions/github-script@v8
-        with:
-          script: |
-            try {
-              const { data: commits } = await github.rest.pulls.listCommits({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: context.issue.number,
-              });
-
-              const { data: repoLabels } = await github.rest.issues.listLabelsForRepo({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-              });
-
-              const existingLabelNames = repoLabels.map(label => label.name);
-
-              let labels = [];
-
-              for (const commit of commits) {
-                const message = commit.commit.message;
-
-                if (message.includes('BREAKING CHANGE') || message.includes('!:')) {
-                  if (existingLabelNames.includes('breaking-change')) {
-                    labels.push('breaking-change');
-                  }
-                }
-
-                const match = message.match(/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)/);
-                if (match) {
-                  const type = match[1];
-                  const labelMap = {
-                    'feat': 'feature',
-                    'fix': 'bugfix',
-                    'docs': 'documentation',
-                    'refactor': 'refactor',
-                    'perf': 'performance',
-                    'test': 'test',
-                    'build': 'build',
-                    'ci': 'build',
-                    'chore': 'maintenance'
-                  };
-
-                  const labelName = labelMap[type];
-                  if (labelName && existingLabelNames.includes(labelName)) {
-                    labels.push(labelName);
-                  }
-                }
-              }
-
-              labels = [...new Set(labels)];
-
-              if (labels.length > 0) {
-                console.log(`Adding labels: ${labels.join(', ')}`);
-                await github.rest.issues.addLabels({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: context.issue.number,
-                  labels: labels
-                });
-              }
-            } catch (error) {
-              console.log(`Failed to add labels: ${error.message}`);
-            }

@@ -1,3 +1,7 @@
+/**
+ * Vite config for preview server (no HTTPS, port 4000).
+ * See also: vite.config.ts (development), vite.config.ci.ts (CI/E2E)
+ */
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
