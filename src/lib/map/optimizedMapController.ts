@@ -214,7 +214,6 @@ export class SichtungenMap {
 				zoom: defaultZoom,
 				projection: 'EPSG:3857',
 				extent: balticExtent,
-				constrainOnlyCenter: true,
 				minZoom: 5,
 				maxZoom: 18
 			}),

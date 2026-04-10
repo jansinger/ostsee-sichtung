@@ -1,17 +1,17 @@
 <script lang="ts">
-	import type { CountData, MapCountManager } from '$lib/map/countManager';
+	import type { CountData } from '$lib/map/countManager';
+	import { getMapCountManager } from '$lib/map/mapContext';
 	import type { MapTranslations } from '$lib/map/mapUtils';
 	import { backgroundColors, speciesSymbols } from '$lib/map/styleUtils';
 	import Icon from '$lib/components/Icon.svelte';
-	import { getContext } from 'svelte';
 
 	let { translations, counts } = $props<{
 		translations: MapTranslations;
 		counts: CountData;
 	}>();
 
-	// CountManager via Svelte Context API statt Window Global
-	const countManager = getContext<MapCountManager>('mapCountManager');
+	// CountManager via typisiertem Svelte Context (Symbol-Key, siehe mapContext.ts)
+	const countManager = getMapCountManager();
 
 	// Reactive state für Panel-Sichtbarkeit (Svelte 5 runes)
 	let isOpen = $state(false);
