@@ -14,8 +14,8 @@
 #   SSL_PORT=3443      # Caddy SSL port (default: 3443)
 #   NO_CADDY=1         # Disable Caddy even if installed
 #
-# Supports Docker Desktop and Rancher Desktop on macOS
-# Note: For Rancher Desktop, PostgreSQL must listen on all interfaces
+# Supports Docker Desktop and Rancher Desktop on macOS/Linux
+# Automatically rewrites localhost/LAN-IP database URLs to host.docker.internal
 #
 
 set -e
@@ -101,16 +101,6 @@ detect_docker_runtime() {
     fi
 }
 
-# Get host IP for database connection (needed for Rancher Desktop)
-get_host_ip() {
-    if command -v ifconfig >/dev/null 2>&1; then
-        ifconfig en0 2>/dev/null | grep "inet " | awk '{print $2}' | head -1
-    elif command -v ip >/dev/null 2>&1; then
-        ip route get 1 2>/dev/null | awk '{print $7}' | head -1
-    else
-        echo "127.0.0.1"
-    fi
-}
 
 # Handle commands
 case "$VERSION" in
@@ -164,16 +154,16 @@ fi
 
 # Detect Docker runtime
 DOCKER_RUNTIME=$(detect_docker_runtime)
-HOST_IP=$(get_host_ip)
 
 echo -e "${BLUE}Detected Docker runtime: $DOCKER_RUNTIME${NC}"
 
-# For Rancher Desktop, replace localhost with host IP in DATABASE_POSTGRES_URL
-if [ "$DOCKER_RUNTIME" = "rancher" ]; then
-    echo -e "${YELLOW}Rancher Desktop detected - adjusting database connection${NC}"
-    DOCKER_DATABASE_URL=$(echo "$DATABASE_POSTGRES_URL" | sed "s/@localhost:/@$HOST_IP:/g" | sed "s/@127\.0\.0\.1:/@$HOST_IP:/g")
-    echo -e "${BLUE}Host IP: $HOST_IP${NC}"
-    echo -e "${YELLOW}Note: PostgreSQL must be configured to accept connections from Docker${NC}"
+# Replace localhost/127.0.0.1/LAN-IP with host.docker.internal for database access
+# Docker containers cannot reach the host via localhost or LAN IPs reliably.
+# host.docker.internal resolves to the host on both Docker Desktop and Rancher Desktop.
+if echo "$DATABASE_POSTGRES_URL" | grep -qE '@(localhost|127\.0\.0\.1|192\.168\.[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+):'; then
+    DOCKER_DATABASE_URL=$(echo "$DATABASE_POSTGRES_URL" | sed -E "s/@(localhost|127\.[0-9]+\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+):/@host.docker.internal:/g")
+    echo -e "${YELLOW}Adjusted database URL to use host.docker.internal${NC}"
+    echo -e "${YELLOW}Note: PostgreSQL must listen on 0.0.0.0 and accept connections from Docker${NC}"
 else
     DOCKER_DATABASE_URL="$DATABASE_POSTGRES_URL"
 fi
@@ -217,8 +207,10 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Run the container
+# --add-host ensures host.docker.internal works on Linux Docker Engine too
 docker run -d \
     --name "$CONTAINER_NAME" \
+    --add-host=host.docker.internal:host-gateway \
     -p "$PORT:$PORT" \
     --user "$(id -u):$(id -g)" \
     -v "$SCRIPT_DIR/uploads:/app/uploads" \
