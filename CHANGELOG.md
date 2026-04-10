@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.0](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.8...v2.2.0) (2026-04-10)
+
+
+### Features
+
+* **map:** improve architecture with Context API, view constraints, and cleanup ([#435](https://github.com/jansinger/ostsee-sichtung/issues/435)) ([00a6612](https://github.com/jansinger/ostsee-sichtung/commit/00a6612a18cbc53f7ff70658154565dd5c3bbd0f))
+* **map:** improve map UX and production readiness ([#437](https://github.com/jansinger/ostsee-sichtung/issues/437)) ([34e8179](https://github.com/jansinger/ostsee-sichtung/commit/34e81799ef1b3d58e5c8fd51cf51836c7be072e4))
+* **map:** improve UX with real loading states, custom controls, and error handling ([#436](https://github.com/jansinger/ostsee-sichtung/issues/436)) ([8628e7f](https://github.com/jansinger/ostsee-sichtung/commit/8628e7f6f182f6a6c1d0f5598cc1f27b9308dacd))
+
+
+### Bug Fixes
+
+* **map:** resolve critical memory leaks and prototype pollution ([#434](https://github.com/jansinger/ostsee-sichtung/issues/434)) ([e64ca1d](https://github.com/jansinger/ostsee-sichtung/commit/e64ca1d1132d7476edfb33eeac35fbc2defbb140))
+* resolve all architecture review findings (P0-P2) ([#430](https://github.com/jansinger/ostsee-sichtung/issues/430)) ([2d86039](https://github.com/jansinger/ostsee-sichtung/commit/2d86039e96cd56eb0fc5540b06fe5c50b71fed11))
+* **test:** resolve bugs found through unit test analysis ([#433](https://github.com/jansinger/ostsee-sichtung/issues/433)) ([6f866de](https://github.com/jansinger/ostsee-sichtung/commit/6f866de324d2cb64aea37a88cdc38fb6c4b3b41a))
+
+
+### Documentation
+
+* update documentation to match current implementation ([#439](https://github.com/jansinger/ostsee-sichtung/issues/439)) ([6c713bd](https://github.com/jansinger/ostsee-sichtung/commit/6c713bdc6686fd74f31f898d39fa10be30b03c1a))
+
+
+### Dependencies
+
+* **deps:** bump nodemailer from 8.0.4 to 8.0.5 ([#427](https://github.com/jansinger/ostsee-sichtung/issues/427)) ([e4db0dd](https://github.com/jansinger/ostsee-sichtung/commit/e4db0dd3bc53f8458e6c9aa760a85a07d8476f53))
+
 ## [2.1.8](https://github.com/jansinger/ostsee-sichtung/compare/v2.1.7...v2.1.8) (2026-04-08)
 
 
