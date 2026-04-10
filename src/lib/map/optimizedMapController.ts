@@ -16,7 +16,7 @@ import { Circle, Fill, Stroke, Style, Text } from 'ol/style';
 import { LocationControl } from './controls/LocationControl.js';
 import { ZoomAllControl } from './controls/ZoomAllControl.js';
 import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
-import type { MapTranslations } from './mapUtils';
+import { areExtentsColocated, type MapTranslations } from './mapUtils';
 import { createFeatureStyle, getFeatureColorGroup } from './styleUtils';
 import { sanitizeText } from '$lib/utils/sanitize';
 
@@ -500,22 +500,10 @@ export class SichtungenMap {
 	 * In dem Fall hilft Zoomen nicht weiter.
 	 */
 	private hasColocatedFeatures(features: Feature<Geometry>[]): boolean {
-		if (features.length <= 1) return false;
-		const firstFeature = features[0];
-		if (!firstFeature) return false;
-		const firstGeom = firstFeature.getGeometry();
-		if (!firstGeom) return false;
-		const firstExtent = firstGeom.getExtent() as [number, number, number, number];
-		const threshold = 100; // ~100m in EPSG:3857
-		return features.every((f) => {
-			const geom = f.getGeometry();
-			if (!geom) return true;
-			const ext = geom.getExtent() as [number, number, number, number];
-			return (
-				Math.abs(ext[0] - firstExtent[0]) < threshold &&
-				Math.abs(ext[1] - firstExtent[1]) < threshold
-			);
-		});
+		const extents = features
+			.map((f) => f.getGeometry()?.getExtent() as [number, number, number, number] | undefined)
+			.filter((ext): ext is [number, number, number, number] => ext !== undefined);
+		return areExtentsColocated(extents);
 	}
 
 	/**
@@ -544,25 +532,27 @@ export class SichtungenMap {
 				: '';
 
 			items += `
-				<button
-					type="button"
-					data-cluster-index="${index}"
-					class="cluster-list-item"
-					aria-label="${speciesName}, ${props.ct} Tier${props.ct > 1 ? 'e' : ''}, ${date}"
-				>
-					<span style="flex: 1; font-weight: 500;">${speciesName}${deadBadge}</span>
-					<span style="color: #6b7280; white-space: nowrap;">${props.ct}&nbsp;Tier${props.ct > 1 ? 'e' : ''}</span>
-					<span style="color: #9ca3af; font-size: 11px; white-space: nowrap;">${date}</span>
-				</button>
+				<li>
+					<button
+						type="button"
+						data-cluster-index="${index}"
+						class="cluster-list-item"
+						aria-label="${speciesName}, ${props.ct} Tier${props.ct > 1 ? 'e' : ''}, ${date}"
+					>
+						<span style="flex: 1; font-weight: 500;">${speciesName}${deadBadge}</span>
+						<span style="color: #6b7280; white-space: nowrap;">${props.ct}&nbsp;Tier${props.ct > 1 ? 'e' : ''}</span>
+						<span style="color: #9ca3af; font-size: 11px; white-space: nowrap;">${date}</span>
+					</button>
+				</li>
 			`;
 		});
 
 		return `
-			<div class="cluster-popup" role="list" aria-label="${count} Sichtungen an diesem Ort">
+			<div class="cluster-popup">
 				<h3 style="margin: 0 0 8px 0; color: #333; font-size: 14px;">${count} Sichtungen an diesem Ort</h3>
-				<div style="max-height: 240px; overflow-y: auto; padding-right: 4px;">
+				<ul aria-label="${count} Sichtungen" style="list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; padding-right: 4px;">
 					${items}
-				</div>
+				</ul>
 			</div>
 		`;
 	}
@@ -718,9 +708,8 @@ export class SichtungenMap {
 		this.reportsSource.clear();
 		this.reportsSource.addFeatures(features);
 
-		if (this.legendUpdateCallback) {
-			this.legendUpdateCallback();
-		}
+		// Kein legendUpdateCallback hier — Caller (setYear, applyFilter) sind dafür zuständig,
+		// damit Counts erst nach korrektem timeFilter-Update berechnet werden.
 
 		// Aktiven Controller aufräumen
 		if (this.activeAbortController === abortController) {

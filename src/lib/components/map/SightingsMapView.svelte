@@ -92,10 +92,18 @@
 		Object.values(counts.speciesCounts).reduce((sum, c) => sum + c.visible, 0)
 	);
 	let showNoResults = $derived(
-		!isInitialLoading && !isLoadingData && featureCount === 0 && totalFeatures === 0
+		!isInitialLoading &&
+			!isLoadingData &&
+			!errorMessage &&
+			featureCount === 0 &&
+			totalFeatures === 0
 	);
 	let showNoVisibleResults = $derived(
-		!isInitialLoading && !isLoadingData && featureCount > 0 && visibleFeatures === 0
+		!isInitialLoading &&
+			!isLoadingData &&
+			!errorMessage &&
+			featureCount > 0 &&
+			visibleFeatures === 0
 	);
 
 	// Event Handler für Cleanup
