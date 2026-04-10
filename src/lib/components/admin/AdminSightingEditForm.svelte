@@ -95,7 +95,7 @@
 				<div class="text-sm text-gray-600">
 					<p>Datensatz ID: {sighting.id}</p>
 					<p>Gemeldet: {formatLocalDateTime(sighting.created)}</p>
-					<p>Geprüft: <BooleanStatus value={sighting.verified} /></p>
+					<p>Verifiziert: <BooleanStatus value={sighting.verified} /></p>
 					{#if sighting.approvedAt}
 						<p>Freigegeben am: {formatLocalDateTime(sighting.approvedAt)}</p>
 					{/if}

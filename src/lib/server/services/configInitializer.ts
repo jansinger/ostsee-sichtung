@@ -249,7 +249,7 @@ const defaultConfigurations: ConfigItem[] = [
 	{
 		key: 'display.showUnapprovedOnMap',
 		value: false,
-		description: 'Ungeprüfte Sichtungen auf öffentlicher Karte anzeigen',
+		description: 'Nicht verifizierte Sichtungen auf öffentlicher Karte anzeigen',
 		category: 'display'
 	},
 	{

@@ -472,8 +472,8 @@
 						bind:value={verified}
 					>
 						<option value="">Alle</option>
-						<option value="1">Geprüft</option>
-						<option value="0">Ungeprüft</option>
+						<option value="1">Verifiziert</option>
+						<option value="0">Nicht verifiziert</option>
 					</select>
 				</div>
 				<div class="form-control w-full">
