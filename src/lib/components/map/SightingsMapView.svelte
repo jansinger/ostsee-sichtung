@@ -98,7 +98,7 @@
 			panelManager = new MapPanelManager();
 			timeSliderManager = new MapTimeSliderManager();
 
-			// Initialisiere Karte
+			// Initialisiere Karte mit Loading-Callback (muss vor initialem setYear gesetzt sein)
 			mapInstance = new SichtungenMap({
 				translations,
 				target: mapContainerId,
@@ -107,22 +107,20 @@
 				sliderRangeId: 'slider-range',
 				timeStartId: 'time-start',
 				timeEndId: 'time-end',
-				enableLocationControl: false // Kein LocationControl für normale Karten-Views
+				enableLocationControl: false,
+				onLoading: (loading) => {
+					isLoadingData = loading;
+					if (loading) {
+						loadingType = 'features';
+						errorMessage = null;
+					}
+				}
 			});
 
 			// Initialisiere Count Manager und setze Callback
 			countManager.initialize(mapInstance, translations);
 			countManager.onCountsUpdated((newCounts) => {
 				counts = newCounts;
-			});
-
-			// Loading-State an echte API-Requests koppeln
-			mapInstance.setLoadingCallback((loading) => {
-				isLoadingData = loading;
-				if (loading) {
-					loadingType = 'features';
-					errorMessage = null;
-				}
 			});
 
 			// Initialisiere andere Manager
@@ -203,16 +201,6 @@
 
 		// CountManager-Ressourcen aufräumen
 		countManager.dispose();
-
-		// Map-Ressourcen aufräumen (Geolocation, Overlay, Event-Listener)
-		if (mapInstance) {
-			mapInstance.dispose();
-		}
-
-		// CountManager-Ressourcen aufräumen (Event-Listener)
-		if (countManager) {
-			countManager.dispose();
-		}
 
 		// Map-Ressourcen aufräumen (Geolocation, Overlay, Event-Listener)
 		if (mapInstance) {
