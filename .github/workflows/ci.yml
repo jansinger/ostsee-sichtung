@@ -46,6 +46,9 @@ jobs:
       - name: Ensure Svelte Kit is in sync
         run: npx svelte-kit sync
 
+      - name: Install Playwright browsers (needed for vitest-browser)
+        run: npx playwright install --with-deps chromium
+
       # Detect changes for conditional testing
       - name: Detect changed files
         id: changes
