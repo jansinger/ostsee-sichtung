@@ -3,11 +3,10 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
 	globalSetup: './e2e/global-setup.ts',
 	webServer: {
-		command: process.env.CI ? 'npx vite dev --config vite.config.ci.ts' : 'npm run dev',
-		// Use URL-based detection instead of port-only
+		command: process.env.CI ? 'SKIP_DB_CHECK=true npx vite preview --port 4000' : 'npm run dev',
 		url: process.env.CI ? 'http://localhost:4000' : 'https://localhost:4001',
 		reuseExistingServer: !process.env.CI,
-		timeout: 120000,
+		timeout: 30000,
 		ignoreHTTPSErrors: true
 	},
 	testDir: 'e2e',
@@ -16,9 +15,9 @@ export default defineConfig({
 	/* Fail the build on CI if you accidentally left test.only in the source code. */
 	forbidOnly: !!process.env.CI,
 	/* Retry on CI only */
-	retries: process.env.CI ? 2 : 0,
-	/* Opt out of parallel tests on CI. */
-	workers: process.env.CI ? 1 : undefined,
+	retries: process.env.CI ? 1 : 0,
+	/* Use multiple workers on CI for parallel execution */
+	workers: process.env.CI ? 4 : undefined,
 	/* Global test timeout - increased for CI */
 	timeout: process.env.CI ? 60000 : 30000,
 	/* Reporter to use. See https://playwright.dev/docs/test-reporters */
