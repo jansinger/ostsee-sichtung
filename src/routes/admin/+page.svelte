@@ -359,7 +359,17 @@
 		<div class="hidden items-center justify-between sm:flex">
 			<h1 class="text-2xl font-bold">Sichtungen</h1>
 			<div class="flex items-center gap-2">
-				<details class="dropdown dropdown-end" bind:open={showColumnDropdown}>
+				<details
+					class="dropdown dropdown-end"
+					bind:open={showColumnDropdown}
+					onblur={(e) => {
+						// Close when focus leaves the details element entirely
+						const related = (e as FocusEvent).relatedTarget as Element | null;
+						if (related && !(e.currentTarget as Element).contains(related)) {
+							showColumnDropdown = false;
+						}
+					}}
+				>
 					<summary class="btn btn-sm btn-outline" title="Spalten ein-/ausblenden">
 						<Icon icon="lucide:columns" class="mr-1 h-4 w-4" />
 						Spalten
@@ -369,7 +379,12 @@
 					>
 						<div class="menu-title flex items-center justify-between pb-2">
 							<span class="text-sm font-semibold">Spalten anzeigen</span>
-							<button class="btn btn-ghost btn-xs" onclick={() => (showColumnDropdown = false)}>
+							<button
+								class="btn btn-ghost btn-xs"
+								onclick={() => (showColumnDropdown = false)}
+								aria-label="Spalten-Dropdown schließen"
+								title="Schließen"
+							>
 								<Icon icon="lucide:x" class="h-3 w-3" />
 							</button>
 						</div>
