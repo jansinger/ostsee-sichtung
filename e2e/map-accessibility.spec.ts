@@ -31,7 +31,7 @@ test.describe('Map Accessibility', () => {
 		await page.route('**/api/map/sightings**', (route) => route.abort());
 		await page.goto('/map');
 		const errorAlert = page.locator('.alert-error');
-		await expect(errorAlert).toBeVisible({ timeout: 15000 });
+		await expect(errorAlert).toBeVisible({ timeout: 30000 });
 		await expect(errorAlert).toHaveAttribute('role', 'alert');
 	});
 

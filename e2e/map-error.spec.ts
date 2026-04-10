@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
 
+// Error tests need generous timeouts because the map component must lazy-load
+// OpenLayers before the API error can be displayed. In CI this can take 20s+.
+const ERROR_TIMEOUT = 30000;
+
 test.describe('Map Error State', () => {
 	test('API-Fehler beim initialen Laden zeigt Fehlermeldung', async ({ page }) => {
 		await page.route('**/api/map/sightings**', (route) => route.abort());
@@ -9,7 +13,7 @@ test.describe('Map Error State', () => {
 
 		const mapPage = new MapPage(page);
 		const errorAlert = mapPage.getErrorAlert();
-		await expect(errorAlert).toBeVisible({ timeout: 15000 });
+		await expect(errorAlert).toBeVisible({ timeout: ERROR_TIMEOUT });
 		await expect(errorAlert).toContainText('Fehler');
 	});
 
@@ -19,7 +23,7 @@ test.describe('Map Error State', () => {
 		await page.goto('/map');
 
 		const mapPage = new MapPage(page);
-		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 15000 });
+		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: ERROR_TIMEOUT });
 		await expect(mapPage.getErrorAlert()).toContainText('Kartendaten');
 	});
 
@@ -29,7 +33,7 @@ test.describe('Map Error State', () => {
 		await page.goto('/map');
 
 		const mapPage = new MapPage(page);
-		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 15000 });
+		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: ERROR_TIMEOUT });
 
 		await mapPage.getDismissErrorButton().click();
 		await expect(mapPage.getErrorAlert()).toBeHidden();
@@ -43,7 +47,7 @@ test.describe('Map Error State', () => {
 		await page.goto('/map');
 
 		const mapPage = new MapPage(page);
-		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 15000 });
+		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: ERROR_TIMEOUT });
 		await expect(mapPage.getErrorAlert()).toContainText('Fehler');
 	});
 
@@ -89,7 +93,7 @@ test.describe('Map Error State', () => {
 		await page.goto('/map');
 
 		const mapPage = new MapPage(page);
-		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 15000 });
+		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: ERROR_TIMEOUT });
 
 		await mapPage.getDismissErrorButton().click();
 		await expect(mapPage.getErrorAlert()).toBeHidden();

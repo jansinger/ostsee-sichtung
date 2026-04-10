@@ -11,6 +11,16 @@
 	let { user, isAdmin = false }: { user: PublicUser | null; isAdmin: boolean } = $props();
 
 	const currentPath = $derived(page.url.pathname);
+
+	let mobileMenuElement = $state<HTMLDetailsElement | null>(null);
+
+	// Close mobile menu when navigating (SvelteKit client-side navigation keeps component mounted)
+	$effect(() => {
+		void currentPath; // track path changes
+		if (mobileMenuElement?.open) {
+			mobileMenuElement.open = false;
+		}
+	});
 </script>
 
 {#snippet menuitems()}
@@ -67,14 +77,14 @@
 						</ul>
 
 						<!-- User Menu - Desktop -->
-						<UserMenu user={user || null} position="right" isAdmin={isAdmin} />
+						<UserMenu user={user || null} position="right" {isAdmin} />
 					</div>
 
 					<!-- Mobile menu -->
-					<div class="dropdown dropdown-end lg:hidden">
-						<button tabindex="0" aria-label="Menü" class="btn btn-ghost">
+					<details bind:this={mobileMenuElement} class="dropdown dropdown-end lg:hidden">
+						<summary aria-label="Menü" class="btn btn-ghost">
 							<Icon icon="lucide:list" width="24" class="h-6 w-6 shrink-0" />
-						</button>
+						</summary>
 						<ul
 							class="dropdown-content menu menu-sm rounded-box bg-base-100 absolute right-0 z-50 mt-3 w-52 p-2 shadow"
 						>
@@ -82,9 +92,9 @@
 
 							<!-- User Menu - Mobile -->
 							<div class="divider my-2"></div>
-							<UserMenuMobile user={user || null} isAdmin={isAdmin} />
+							<UserMenuMobile user={user || null} {isAdmin} />
 						</ul>
-					</div>
+					</details>
 				</div>
 			</div>
 		</div>

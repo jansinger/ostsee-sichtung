@@ -12,26 +12,45 @@
 		isAdmin?: boolean;
 	} = $props();
 
-	let isOpen = $state(false);
-
-	function toggleMenu() {
-		isOpen = !isOpen;
-	}
+	let detailsElement = $state<HTMLDetailsElement | null>(null);
 
 	function closeMenu() {
-		isOpen = false;
+		if (detailsElement) {
+			detailsElement.open = false;
+		}
 	}
+
+	// Close on Escape key and click outside
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape' && detailsElement?.open) {
+			closeMenu();
+		}
+	}
+
+	function handleClickOutside(e: MouseEvent) {
+		if (detailsElement?.open && !detailsElement.contains(e.target as Node)) {
+			closeMenu();
+		}
+	}
+
+	$effect(() => {
+		if (!detailsElement) return;
+		document.addEventListener('click', handleClickOutside);
+		document.addEventListener('keydown', handleKeydown);
+		return () => {
+			document.removeEventListener('click', handleClickOutside);
+			document.removeEventListener('keydown', handleKeydown);
+		};
+	});
 </script>
 
 {#if user}
-	<div class="relative">
+	<details
+		bind:this={detailsElement}
+		class="dropdown {position === 'right' ? 'dropdown-end' : 'dropdown-start'}"
+	>
 		<!-- User Picture Button -->
-		<button
-			type="button"
-			class="btn btn-ghost btn-circle"
-			aria-label="Benutzer-Menü"
-			onclick={toggleMenu}
-		>
+		<summary class="btn btn-ghost btn-circle" aria-label="Benutzer-Menü">
 			{#if user.picture}
 				<div class="avatar">
 					<div class="h-8 w-8 rounded-full">
@@ -45,71 +64,61 @@
 					</div>
 				</div>
 			{/if}
-		</button>
+		</summary>
 
 		<!-- Dropdown Menu -->
-		{#if isOpen}
-			<div
-				class="absolute {position === 'right'
-					? 'right-0'
-					: 'left-0'} bg-base-100 rounded-box border-base-300 top-full z-[100] mt-2 w-64 border p-2 shadow-xl"
-			>
-				<!-- User Info Header -->
-				<div class="border-base-200 border-b px-4 py-2">
-					<div class="flex items-center gap-3">
-						{#if user.picture}
-							<div class="avatar">
-								<div class="h-8 w-8 rounded-full">
-									<img src={user.picture} alt="Profilbild" />
-								</div>
+		<div
+			class="dropdown-content bg-base-100 rounded-box border-base-300 z-[100] mt-2 w-64 border p-2 shadow-xl"
+		>
+			<!-- User Info Header -->
+			<div class="border-base-200 border-b px-4 py-2">
+				<div class="flex items-center gap-3">
+					{#if user.picture}
+						<div class="avatar">
+							<div class="h-8 w-8 rounded-full">
+								<img src={user.picture} alt="Profilbild" />
 							</div>
-						{:else}
-							<div class="avatar placeholder">
-								<div class="bg-neutral text-neutral-content h-8 w-8 rounded-full">
-									<Icon icon="lucide:user" width="16" class="h-4 w-4" />
-								</div>
+						</div>
+					{:else}
+						<div class="avatar placeholder">
+							<div class="bg-neutral text-neutral-content h-8 w-8 rounded-full">
+								<Icon icon="lucide:user" width="16" class="h-4 w-4" />
 							</div>
-						{/if}
-						<div class="min-w-0 flex-1">
-							<div class="truncate text-sm font-medium">
-								{user.nickname || user.name || 'Benutzer'}
-							</div>
-							<div class="text-base-content/60 truncate text-xs">
-								{user.email || ''}
-							</div>
+						</div>
+					{/if}
+					<div class="min-w-0 flex-1">
+						<div class="truncate text-sm font-medium">
+							{user.nickname || user.name || 'Benutzer'}
+						</div>
+						<div class="text-base-content/60 truncate text-xs">
+							{user.email || ''}
 						</div>
 					</div>
 				</div>
+			</div>
 
-				<!-- Menu Items -->
-				<div class="py-2">
-					{#if isAdmin}
-						<a
-							href="/admin"
-							class="hover:bg-base-200 flex items-center gap-2 rounded px-4 py-2"
-							onclick={closeMenu}
-						>
-							<Icon icon="lucide:settings" width="16" class="h-4 w-4" />
-							Admin-Bereich
-						</a>
-					{/if}
-
+			<!-- Menu Items -->
+			<div class="py-2">
+				{#if isAdmin}
 					<a
-						href="/api/auth/logout"
-						class="text-error hover:bg-error/10 flex items-center gap-2 rounded px-4 py-2"
+						href="/admin"
+						class="hover:bg-base-200 flex items-center gap-2 rounded px-4 py-2"
 						onclick={closeMenu}
 					>
-						<Icon icon="lucide:log-out" width="16" class="h-4 w-4" />
-						Abmelden
+						<Icon icon="lucide:settings" width="16" class="h-4 w-4" />
+						Admin-Bereich
 					</a>
-				</div>
-			</div>
-		{/if}
-	</div>
+				{/if}
 
-	<!-- Click outside to close -->
-	{#if isOpen}
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<div class="fixed inset-0 z-[90]" onclick={closeMenu} role="button" tabindex="-1"></div>
-	{/if}
+				<a
+					href="/api/auth/logout"
+					class="text-error hover:bg-error/10 flex items-center gap-2 rounded px-4 py-2"
+					onclick={closeMenu}
+				>
+					<Icon icon="lucide:log-out" width="16" class="h-4 w-4" />
+					Abmelden
+				</a>
+			</div>
+		</div>
+	</details>
 {/if}
