@@ -1,6 +1,6 @@
 ![Ostsee-Tiere](https://ostsee-tiere.de/ostsee-tiere-192.png)
 
-# Ostsee-Tiere 
+# Ostsee-Tiere
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/jansinger/ostsee-sichtung/ci.yml?style=flat-square&logo=github&label=CI)
 ![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=flat-square&logo=vercel)
@@ -63,6 +63,7 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 ```
 
 **Zugriff:**
+
 - Anwendung: http://localhost:3000
 - Grafana: http://localhost:3001 (mit `--profile monitoring`)
 - Prometheus: http://localhost:9090 (mit `--profile monitoring`)
@@ -75,7 +76,7 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 
 ### Voraussetzungen
 
-- Node.js 20.19+, 22.12+ oder 23+ (LTS-Versionen empfohlen, Docker verwendet Node.js 22)
+- Node.js 20.19+, 22.12+ oder 24+ (LTS-Versionen empfohlen, Docker verwendet Node.js 24)
 - Docker und Docker Compose (für die Datenbank)
 
 ### Setup
@@ -98,6 +99,7 @@ npm run dev
 Die Anwendung ist dann unter https://localhost:4000 verfügbar.
 
 **HTTPS Development Server:**
+
 - Automatische SSL-Zertifikatsgenerierung
 - Sichere iframe-Einbettung möglich
 - Unterstützt moderne Web-APIs
@@ -149,30 +151,36 @@ npm run check
 ostsee-sichtung/
 ├── src/
 │   ├── lib/
-│   │   ├── components/     # UI-Komponenten (Form, Map, Media, Admin)
+│   │   ├── components/     # UI-Komponenten (Form, Map, Media, Admin, Weather)
 │   │   ├── constants/      # Konstanten und Enumerationen
 │   │   ├── form/           # Formular-Logik und Validierung
 │   │   ├── legacy-api/     # Legacy REST API Kompatibilität
-│   │   ├── logger/         # Pino Logging
+│   │   ├── logger/         # Pino Logging (Client + Server)
 │   │   ├── map/            # OpenLayers Karten-Funktionalitäten
 │   │   ├── report/         # Sichtungsmeldung-Komponenten und -Logik
 │   │   ├── server/         # Server-seitige Logik
-│   │   │   ├── auth/       # Authentifizierung
+│   │   │   ├── auth/       # Auth0 + JWT Authentifizierung
+│   │   │   ├── config/     # Access Control Konfiguration
 │   │   │   ├── db/         # Datenbankzugriff und Schema
 │   │   │   ├── export/     # Datenexport (CSV, JSON, KML, XML)
-│   │   │   ├── storage/    # Datei-Speicher Abstraktion
-│   │   │   └── validation/ # Server-seitige Validierung
-│   │   ├── services/       # Externe Services
-│   │   ├── storage/        # Storage Provider
+│   │   │   ├── geo/        # PostGIS / Baltic Sea Validation
+│   │   │   ├── media/      # EXIF-Metadaten-Extraktion
+│   │   │   ├── middleware/  # DB-Check, Maintenance, Rate Limit, Security Headers
+│   │   │   ├── services/   # Email, Config Init, Weather
+│   │   │   ├── storage/    # Datei-Speicher (Local, Vercel Blob)
+│   │   │   ├── templates/  # E-Mail HTML-Templates
+│   │   │   └── validation/ # Magic Bytes, Request Validation
+│   │   ├── services/       # Client/Server Services (Config, Weather)
+│   │   ├── storage/        # Browser Storage (GDPR-aware)
 │   │   ├── stores/         # Svelte Stores
 │   │   ├── types/          # TypeScript Typen
 │   │   └── utils/          # Hilfsfunktionen
 │   └── routes/             # SvelteKit-Routen
 │       ├── api/            # API-Endpunkte
-│       │   └── legacy/     # Legacy REST API
 │       ├── admin/          # Admin-Interface
 │       ├── map/            # Karten-Visualisierung
-│       └── sichtungen/     # Sichtungsformular und -verwaltung
+│       ├── rest_sichtungen/ # Legacy REST API (POST, antworten, inBaltic)
+│       └── sichtungen/     # Legacy Sichtungs-API (showreports)
 ├── static/                 # Statische Assets
 ├── docs/                   # Dokumentation
 └── e2e/                    # End-to-End Tests (Playwright)
@@ -183,6 +191,7 @@ ostsee-sichtung/
 ### Multi-Step-Formular mit progressiver Offenlegung
 
 Das Herzstück der Anwendung ist ein mehrstufiges Formular mit intelligenter Navigation:
+
 - Dynamische Schritte basierend auf Benutzereingaben
 - Conditional Logic und progressive Offenlegung
 - Yup-basierte Validierung mit svelte-forms-lib
@@ -191,6 +200,7 @@ Das Herzstück der Anwendung ist ein mehrstufiges Formular mit intelligenter Nav
 ### Interaktive Kartenvisualisierung
 
 Moderne OpenLayers-Integration mit erweiterten Features:
+
 - Präzise Koordinaten-Erfassung durch Klick
 - Filterbare Sichtungsanzeige
 - PostGIS-basierte geografische Validierung (Ostsee-Grenzen)
@@ -200,6 +210,7 @@ Moderne OpenLayers-Integration mit erweiterten Features:
 ### Legacy REST API Kompatibilität
 
 100% kompatible REST API für bestehende mobile Apps:
+
 - Exakte Feld-Mappings der Original-API
 - Backward-kompatible Antwortformate
 - Unterstützung aller ursprünglichen Endpunkte
@@ -214,6 +225,7 @@ Moderne OpenLayers-Integration mit erweiterten Features:
 ### Umfassendes Datenmodell
 
 Detaillierte Erfassung von Meerestier-Sichtungen:
+
 - PostGIS Point-Geometrie für präzise Lokalisierung
 - Umweltbedingungen (Seegang, Wind, Sichtweite)
 - Tierverhalten und -zustand
@@ -234,7 +246,7 @@ Docker ist die **primäre Deployment-Methode** für Self-Hosted-Installationen.
 - ✅ **Multi-Stage Build** für optimierte Image-Größe (~150-200 MB)
 - ✅ **Multi-Architektur** (AMD64 + ARM64: Raspberry Pi 4/5, AWS Graviton, Apple Silicon)
 - ✅ **Integriertes Monitoring** (Prometheus + Grafana)
-- ✅ **Multi-Storage Support** (Local, Vercel Blob, AWS S3, Google Cloud Storage)
+- ✅ **Multi-Storage Support** (Local, Vercel Blob)
 - ✅ **Production-Ready** mit Health Checks und Auto-Restart
 - ✅ **Security-Hardened** (Non-root user, read-only filesystem möglich)
 
@@ -255,6 +267,7 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 ```
 
 **Hinweis zu `docker:run`:**
+
 - Das npm-Skript erstellt automatisch `./uploads` und mountet es nach `/app/uploads`
 - Hochgeladene Dateien bleiben nach Container-Neustarts erhalten
 - **Linux**: Bei Permission-Problemen: `sudo chown -R 1001:1001 ./uploads`

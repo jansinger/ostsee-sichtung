@@ -23,17 +23,20 @@ Complete reference for all environment variables used in the Ostsee-Tiere platfo
 These variables **MUST** be set for the application to function:
 
 ### `DATABASE_POSTGRES_URL`
+
 **Type**: `string` (Connection String)
 **Required**: Yes
 **Default**: None
 **Description**: PostgreSQL connection string with PostGIS support.
 
 **Format**:
+
 ```
 postgresql://[user]:[password]@[host]:[port]/[database]
 ```
 
 **Examples**:
+
 ```bash
 # Docker Compose (internal network)
 DATABASE_POSTGRES_URL=postgresql://postgres:mysecretpassword@db:5432/ostsee
@@ -51,6 +54,7 @@ DATABASE_POSTGRES_URL=postgresql://user:pass@pgbouncer:6432/ostsee
 ---
 
 ### `SESSION_SECRET`
+
 **Type**: `string`
 **Required**: Yes
 **Default**: None
@@ -58,11 +62,13 @@ DATABASE_POSTGRES_URL=postgresql://user:pass@pgbouncer:6432/ostsee
 **Description**: Secret key for encrypting session data.
 
 **Generate**:
+
 ```bash
 openssl rand -base64 32
 ```
 
 **Example**:
+
 ```bash
 SESSION_SECRET=8K7h3L9mN2pQ4rS6tU8vW0xY2zA4bC6dE
 ```
@@ -70,6 +76,7 @@ SESSION_SECRET=8K7h3L9mN2pQ4rS6tU8vW0xY2zA4bC6dE
 ---
 
 ### `ENCRYPTION_KEY`
+
 **Type**: `string` (Hexadecimal)
 **Required**: Yes
 **Default**: None
@@ -77,11 +84,13 @@ SESSION_SECRET=8K7h3L9mN2pQ4rS6tU8vW0xY2zA4bC6dE
 **Description**: Encryption key for sensitive data.
 
 **Generate**:
+
 ```bash
 openssl rand -hex 32
 ```
 
 **Example**:
+
 ```bash
 ENCRYPTION_KEY=f5fcd0aaabcc4bdd0a87d4b2c03203e5863c0459f89fe99dab1fe8dde1cdf181
 ```
@@ -89,12 +98,14 @@ ENCRYPTION_KEY=f5fcd0aaabcc4bdd0a87d4b2c03203e5863c0459f89fe99dab1fe8dde1cdf181
 ---
 
 ### `AUTH0_CLIENT_ID`
+
 **Type**: `string`
 **Required**: Yes
 **Default**: None
 **Description**: Auth0 application client ID.
 
 **Example**:
+
 ```bash
 AUTH0_CLIENT_ID=AbCdEfGhIjKlMnOpQrStUvWx
 ```
@@ -104,12 +115,14 @@ AUTH0_CLIENT_ID=AbCdEfGhIjKlMnOpQrStUvWx
 ---
 
 ### `AUTH0_CLIENT_SECRET`
+
 **Type**: `string`
 **Required**: Yes
 **Default**: None
 **Description**: Auth0 application client secret.
 
 **Example**:
+
 ```bash
 AUTH0_CLIENT_SECRET=1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnop
 ```
@@ -119,12 +132,14 @@ AUTH0_CLIENT_SECRET=1234567890abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmn
 ---
 
 ### `AUTH0_DOMAIN`
+
 **Type**: `string`
 **Required**: Yes
 **Default**: None
 **Description**: Auth0 tenant domain.
 
 **Format**:
+
 ```
 [your-tenant].auth0.com
 OR
@@ -132,6 +147,7 @@ OR
 ```
 
 **Examples**:
+
 ```bash
 AUTH0_DOMAIN=ostsee-tiere.eu.auth0.com
 AUTH0_DOMAIN=my-company.auth0.com
@@ -140,12 +156,14 @@ AUTH0_DOMAIN=my-company.auth0.com
 ---
 
 ### `PUBLIC_SITE_URL`
+
 **Type**: `string` (URL)
 **Required**: Yes
 **Default**: None
 **Description**: Public URL where the application is accessible.
 
 **Examples**:
+
 ```bash
 # Development
 PUBLIC_SITE_URL=http://localhost:3000
@@ -164,6 +182,7 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 ## Database Configuration
 
 ### `PGUSER`
+
 **Type**: `string`
 **Required**: No
 **Default**: `postgres`
@@ -172,6 +191,7 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 ---
 
 ### `PGPASSWORD`
+
 **Type**: `string`
 **Required**: No
 **Default**: None
@@ -180,6 +200,7 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 ---
 
 ### `PGDATABASE`
+
 **Type**: `string`
 **Required**: No
 **Default**: `ostsee`
@@ -188,6 +209,7 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 ---
 
 ### `PGHOST`
+
 **Type**: `string`
 **Required**: No
 **Default**: `localhost`
@@ -196,6 +218,7 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 ---
 
 ### `PGPORT`
+
 **Type**: `number`
 **Required**: No
 **Default**: `5432`
@@ -204,12 +227,14 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 ---
 
 ### `POSTGRES_SHARED_BUFFERS`
+
 **Type**: `string`
 **Required**: No
 **Default**: `256MB`
 **Description**: PostgreSQL shared_buffers setting (Docker Compose only).
 
 **Recommended Values**:
+
 - Small server (4GB RAM): `256MB`
 - Medium server (8GB RAM): `512MB`
 - Large server (16GB+ RAM): `1GB` - `4GB`
@@ -217,6 +242,7 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 ---
 
 ### `POSTGRES_EFFECTIVE_CACHE_SIZE`
+
 **Type**: `string`
 **Required**: No
 **Default**: `1GB`
@@ -229,10 +255,11 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 ## Storage Configuration
 
 ### `STORAGE_PROVIDER`
+
 **Type**: `enum`
 **Required**: No
 **Default**: `local`
-**Options**: `local` | `vercel-blob` | `s3` | `gcs`
+**Options**: `local` | `vercel-blob`
 **Description**: Storage backend for uploaded media files.
 
 ---
@@ -240,12 +267,14 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 ### Local Storage
 
 #### `UPLOAD_PATH`
+
 **Type**: `string` (Path)
 **Required**: When `STORAGE_PROVIDER=local`
 **Default**: `/app/uploads` (Docker), `uploads` (non-Docker)
 **Description**: Directory path for uploaded files.
 
 **Example**:
+
 ```bash
 UPLOAD_PATH=/app/uploads
 ```
@@ -255,12 +284,14 @@ UPLOAD_PATH=/app/uploads
 ### Vercel Blob Storage
 
 #### `BLOB_READ_WRITE_TOKEN`
+
 **Type**: `string`
 **Required**: When `STORAGE_PROVIDER=vercel-blob`
 **Default**: None
 **Description**: Vercel Blob storage API token.
 
 **Example**:
+
 ```bash
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ```
@@ -269,71 +300,10 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ---
 
-### AWS S3 Storage
-
-#### `AWS_ACCESS_KEY_ID`
-**Type**: `string`
-**Required**: When `STORAGE_PROVIDER=s3`
-**Default**: None
-**Description**: AWS IAM access key ID.
-
----
-
-#### `AWS_SECRET_ACCESS_KEY`
-**Type**: `string`
-**Required**: When `STORAGE_PROVIDER=s3`
-**Default**: None
-**Description**: AWS IAM secret access key.
-
----
-
-#### `AWS_REGION`
-**Type**: `string`
-**Required**: When `STORAGE_PROVIDER=s3`
-**Default**: None
-**Description**: AWS region where S3 bucket is located.
-
-**Examples**: `us-east-1`, `eu-central-1`, `ap-southeast-1`
-
----
-
-#### `AWS_S3_BUCKET`
-**Type**: `string`
-**Required**: When `STORAGE_PROVIDER=s3`
-**Default**: None
-**Description**: S3 bucket name for uploads.
-
----
-
-### Google Cloud Storage
-
-#### `GOOGLE_CLOUD_PROJECT_ID`
-**Type**: `string`
-**Required**: When `STORAGE_PROVIDER=gcs`
-**Default**: None
-**Description**: Google Cloud project ID.
-
----
-
-#### `GOOGLE_CLOUD_STORAGE_BUCKET`
-**Type**: `string`
-**Required**: When `STORAGE_PROVIDER=gcs`
-**Default**: None
-**Description**: GCS bucket name for uploads.
-
----
-
-#### `GOOGLE_CLOUD_KEY_FILE`
-**Type**: `string` (Path)
-**Required**: When `STORAGE_PROVIDER=gcs`
-**Default**: None
-**Description**: Path to GCS service account key JSON file.
-
----
-
 ## Application Settings
 
 ### `NODE_ENV`
+
 **Type**: `enum`
 **Required**: No
 **Default**: `production`
@@ -341,6 +311,7 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 **Description**: Node.js environment mode.
 
 **Effects**:
+
 - `development`: Debug logging, hot reload, detailed errors
 - `production`: Optimized builds, error suppression, caching
 - `test`: Test configurations, mock data
@@ -348,12 +319,14 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ---
 
 ### `PORT`
+
 **Type**: `number`
 **Required**: No
 **Default**: `3000`
 **Description**: Port number for the application server.
 
 **Example**:
+
 ```bash
 PORT=3000
 ```
@@ -361,12 +334,14 @@ PORT=3000
 ---
 
 ### `HOST`
+
 **Type**: `string`
 **Required**: No
 **Default**: `0.0.0.0`
 **Description**: Host address to bind the server.
 
 **Options**:
+
 - `0.0.0.0`: Listen on all interfaces (Docker default)
 - `localhost`: Listen only on localhost
 - Specific IP: Bind to specific network interface
@@ -374,12 +349,14 @@ PORT=3000
 ---
 
 ### `BODY_SIZE_LIMIT`
+
 **Type**: `number` (bytes)
 **Required**: No
 **Default**: `52428800` (50MB)
 **Description**: Maximum size for request body (file uploads).
 
 **Examples**:
+
 ```bash
 # 50 MB (default)
 BODY_SIZE_LIMIT=52428800
@@ -394,6 +371,7 @@ BODY_SIZE_LIMIT=10485760
 ---
 
 ### `COOKIE_NAME`
+
 **Type**: `string`
 **Required**: No
 **Default**: `auth-cookie`
@@ -404,17 +382,20 @@ BODY_SIZE_LIMIT=10485760
 ## Security Configuration
 
 ### `JWKS_URL`
+
 **Type**: `string` (URL)
 **Required**: Yes (for Auth0)
 **Default**: None
 **Description**: JSON Web Key Set URL for Auth0 token verification.
 
 **Format**:
+
 ```
 https://[AUTH0_DOMAIN]/.well-known/jwks.json
 ```
 
 **Example**:
+
 ```bash
 JWKS_URL=https://ostsee-tiere.eu.auth0.com/.well-known/jwks.json
 ```
@@ -422,12 +403,14 @@ JWKS_URL=https://ostsee-tiere.eu.auth0.com/.well-known/jwks.json
 ---
 
 ### `API_AUDIENCE`
+
 **Type**: `string`
 **Required**: Yes (for Auth0 API)
 **Default**: None
 **Description**: Auth0 API identifier/audience.
 
 **Example**:
+
 ```bash
 API_AUDIENCE=https://api.ostsee-tiere.example.com
 ```
@@ -439,12 +422,14 @@ API_AUDIENCE=https://api.ostsee-tiere.example.com
 ## Email Configuration
 
 ### `SMTP_HOST`
+
 **Type**: `string`
 **Required**: No (if email features disabled)
 **Default**: None
 **Description**: SMTP server hostname.
 
 **Examples**:
+
 ```bash
 # Gmail
 SMTP_HOST=smtp.gmail.com
@@ -462,12 +447,14 @@ SMTP_HOST=mail.example.com
 ---
 
 ### `SMTP_PORT`
+
 **Type**: `number`
 **Required**: No
 **Default**: `587`
 **Description**: SMTP server port.
 
 **Common Ports**:
+
 - `587`: TLS (recommended)
 - `465`: SSL
 - `25`: Unencrypted (not recommended)
@@ -475,6 +462,7 @@ SMTP_HOST=mail.example.com
 ---
 
 ### `SMTP_USER`
+
 **Type**: `string`
 **Required**: No
 **Default**: None
@@ -483,6 +471,7 @@ SMTP_HOST=mail.example.com
 ---
 
 ### `SMTP_PASSWORD`
+
 **Type**: `string`
 **Required**: No
 **Default**: None
@@ -493,6 +482,7 @@ SMTP_HOST=mail.example.com
 ## Logging & Debugging
 
 ### `LOG_LEVEL`
+
 **Type**: `enum`
 **Required**: No
 **Default**: `info`
@@ -500,6 +490,7 @@ SMTP_HOST=mail.example.com
 **Description**: Minimum log level to output.
 
 **Levels Explained**:
+
 - `trace`: Most verbose, all details
 - `debug`: Development debugging information
 - `info`: General informational messages (default)
@@ -508,6 +499,7 @@ SMTP_HOST=mail.example.com
 - `fatal`: Only fatal errors
 
 **Example**:
+
 ```bash
 # Production
 LOG_LEVEL=info
@@ -522,6 +514,7 @@ LOG_LEVEL=trace
 ---
 
 ### `ENABLE_DEBUG_LOGGING`
+
 **Type**: `boolean`
 **Required**: No
 **Default**: `false`
@@ -534,6 +527,7 @@ LOG_LEVEL=trace
 ## Feature Flags
 
 ### `ENABLE_ANALYTICS`
+
 **Type**: `boolean`
 **Required**: No
 **Default**: `false`
@@ -542,12 +536,14 @@ LOG_LEVEL=trace
 ---
 
 ### `RUN_MIGRATIONS`
+
 **Type**: `boolean`
 **Required**: No
 **Default**: `false`
 **Description**: Run database migrations on container startup.
 
 **Example**:
+
 ```bash
 RUN_MIGRATIONS=true
 ```
@@ -557,6 +553,7 @@ RUN_MIGRATIONS=true
 ## Docker-Specific Variables
 
 ### `APP_PORT`
+
 **Type**: `number`
 **Required**: No (Docker Compose)
 **Default**: `3000`
@@ -565,6 +562,7 @@ RUN_MIGRATIONS=true
 ---
 
 ### `DB_PORT`
+
 **Type**: `number`
 **Required**: No (Docker Compose)
 **Default**: `5432`
@@ -573,6 +571,7 @@ RUN_MIGRATIONS=true
 ---
 
 ### `PROMETHEUS_PORT`
+
 **Type**: `number`
 **Required**: No (Docker Compose)
 **Default**: `9090`
@@ -581,6 +580,7 @@ RUN_MIGRATIONS=true
 ---
 
 ### `GRAFANA_PORT`
+
 **Type**: `number`
 **Required**: No (Docker Compose)
 **Default**: `3001`
@@ -589,6 +589,7 @@ RUN_MIGRATIONS=true
 ---
 
 ### `GRAFANA_ADMIN_USER`
+
 **Type**: `string`
 **Required**: No (Docker Compose)
 **Default**: `admin`
@@ -597,6 +598,7 @@ RUN_MIGRATIONS=true
 ---
 
 ### `GRAFANA_ADMIN_PASSWORD`
+
 **Type**: `string`
 **Required**: No (Docker Compose)
 **Default**: `admin`
@@ -679,4 +681,4 @@ For questions about environment configuration:
 
 ---
 
-*Last Updated: December 2025*
+_Last Updated: April 2026_

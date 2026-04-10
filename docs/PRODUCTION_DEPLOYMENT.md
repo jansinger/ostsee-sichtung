@@ -4,7 +4,7 @@ Schnellanleitung für das Deployment von Ostsee-Tiere in einer Produktionsumgebu
 
 > **Hinweis:** Diese Anleitung ist für erfahrene Administratoren gedacht, die Docker und Linux-Server verwalten. Für detaillierte Hintergrundinformationen siehe [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md).
 
-> **Neu in v2.0.8:** PostgreSQL 18 mit PostGIS 3.6 Support, Security Hardening (no-new-privileges, Logging-Limits), verbesserte Dokumentation.
+> **Neu in v2.1.8:** PostgreSQL 18 mit PostGIS 3.6 Support, Node.js 24, Security Hardening (no-new-privileges, Logging-Limits), verbesserte Dokumentation.
 
 ---
 
@@ -26,12 +26,12 @@ Schnellanleitung für das Deployment von Ostsee-Tiere in einer Produktionsumgebu
 
 ### Server-Anforderungen
 
-| Komponente | Minimum | Empfohlen |
-|------------|---------|-----------|
-| CPU | 2 Cores | 4+ Cores |
-| RAM | 4 GB | 8+ GB |
-| Storage | 20 GB SSD | 50+ GB SSD |
-| OS | Ubuntu 22.04 LTS | Ubuntu 24.04 LTS |
+| Komponente | Minimum          | Empfohlen        |
+| ---------- | ---------------- | ---------------- |
+| CPU        | 2 Cores          | 4+ Cores         |
+| RAM        | 4 GB             | 8+ GB            |
+| Storage    | 20 GB SSD        | 50+ GB SSD       |
+| OS         | Ubuntu 22.04 LTS | Ubuntu 24.04 LTS |
 
 ### Software
 
@@ -456,4 +456,4 @@ sudo certbot renew --dry-run
 
 ---
 
-*Letzte Aktualisierung: Dezember 2025*
+_Letzte Aktualisierung: April 2026_

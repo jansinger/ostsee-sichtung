@@ -12,17 +12,20 @@
 Set the following environment variables in your Vercel project:
 
 ### Database
+
 ```bash
-DATABASE_URL="postgresql://username:password@hostname:port/database"
+DATABASE_POSTGRES_URL="postgresql://username:password@hostname:port/database"
 ```
 
 ### Storage (Vercel Blob)
+
 ```bash
 STORAGE_PROVIDER="vercel-blob"
 BLOB_READ_WRITE_TOKEN="your-blob-token-here"
 ```
 
 ### Optional
+
 ```bash
 NODE_ENV="production"
 LOG_LEVEL="info"
@@ -31,6 +34,7 @@ LOG_LEVEL="info"
 ## Deployment Steps
 
 ### 1. Local Setup
+
 ```bash
 # Clone and install dependencies
 git clone your-repo
@@ -62,7 +66,7 @@ The project includes a `vercel.json` file with optimized settings:
 vercel link
 
 # Set environment variables
-vercel env add DATABASE_URL
+vercel env add DATABASE_POSTGRES_URL
 vercel env add STORAGE_PROVIDER
 vercel env add BLOB_READ_WRITE_TOKEN
 
@@ -80,6 +84,7 @@ vercel --prod
 4. Set `BLOB_READ_WRITE_TOKEN="your-token"`
 
 ### Benefits:
+
 - ✅ Seamless integration with Vercel
 - ✅ Global CDN distribution
 - ✅ Automatic scaling
@@ -88,22 +93,26 @@ vercel --prod
 ### Local Development
 
 For local development, the app automatically uses local file storage:
+
 - Files stored in `./uploads/` directory
 - Served via SvelteKit static file handling
 
 ## Performance Optimizations
 
 ### 1. Static Assets
+
 - Self-hosted fonts (no Google Fonts dependency)
 - Optimized TailwindCSS bundle
 - Image optimization for species photos
 
 ### 2. Caching
+
 - Static assets: 1 year cache
 - Upload files: Immutable caching
 - API responses: Appropriate cache headers
 
 ### 3. Bundle Size
+
 - Tree-shaken dependencies
 - Minimal JavaScript bundle
 - CSS-in-JS avoided where possible
@@ -111,6 +120,7 @@ For local development, the app automatically uses local file storage:
 ## Monitoring & Logging
 
 The app uses structured logging with Pino:
+
 - Production: JSON logs for better processing
 - Development: Pretty-printed logs
 - Configurable log levels via `LOG_LEVEL`
@@ -118,17 +128,20 @@ The app uses structured logging with Pino:
 ## Security Considerations
 
 ### Headers
+
 - CSP configured for iframe embedding
 - HSTS, XSS protection, MIME sniffing protection
 - Frame ancestors allow specific domains
 
 ### File Uploads
+
 - Type validation (images/videos only)
-- Size limits (100MB max)
+- Size limits (50MB max)
 - Virus scanning (recommended to add)
 - Secure filename sanitization
 
 ### Database
+
 - Parameterized queries (SQL injection protection)
 - Connection pooling
 - SSL required in production
@@ -138,12 +151,14 @@ The app uses structured logging with Pino:
 ### Common Issues
 
 1. **Database Connection**
+
    ```bash
    # Test database connection
    npm run db:studio
    ```
 
 2. **Build Errors**
+
    ```bash
    # Clear build cache
    rm -rf .svelte-kit node_modules
@@ -160,6 +175,7 @@ The app uses structured logging with Pino:
 ### Performance Monitoring
 
 Monitor your deployment:
+
 - Vercel Analytics dashboard
 - Function execution times
 - Database query performance
@@ -168,16 +184,19 @@ Monitor your deployment:
 ## Scaling Considerations
 
 ### Database
+
 - Connection pooling (already configured)
 - Read replicas for heavy read workloads
 - Query optimization
 
 ### Storage
+
 - Vercel Blob automatically scales
 - Consider CDN for global distribution
 - Image optimization pipeline
 
 ### Compute
+
 - Function regions close to users
 - Edge functions for static content
 - Database region matching
@@ -185,16 +204,19 @@ Monitor your deployment:
 ## Cost Optimization
 
 ### Vercel
+
 - Optimize function execution time
 - Use edge functions where possible
 - Monitor bandwidth usage
 
 ### Database
+
 - Regular query optimization
 - Proper indexing
 - Archive old data
 
 ### Storage
+
 - Cleanup unused files
 - Image compression
 - CDN usage optimization

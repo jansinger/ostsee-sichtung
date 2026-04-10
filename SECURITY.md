@@ -10,11 +10,13 @@
 ## Reporting a Vulnerability
 
 Please report security vulnerabilities to the maintainers via:
+
 1. **GitHub Security Advisory** (preferred) - Use the "Security" tab in this repository
 2. **Private issue** with security label for non-critical issues
 3. **Direct contact** to maintainers for urgent matters
 
 **Response Commitments:**
+
 - **Initial Response**: Within 48 hours
 - **Critical Issues**: Patches within 7 days
 - **High/Medium Issues**: Patches within 14 days
@@ -22,18 +24,21 @@ Please report security vulnerabilities to the maintainers via:
 
 ## Current Security Status
 
-### Vulnerability Assessment (as of 2026-03-12)
+### Vulnerability Assessment (as of 2026-04-10)
+
 - **Critical**: 0 ✅
-- **High**: 0 ✅
-- **Moderate**: 7 (development dependencies only)
+- **High**: 1 (development dependency only - lodash prototype pollution)
+- **Moderate**: 10 (development dependencies only)
 - **Low**: 3 (development dependencies only)
 
-### Overall Security Rating: 7.5/10
+### Overall Security Rating: 7/10
+
 **Status**: GOOD - All vulnerabilities are in dev-only dependencies with no production impact
 
 ## Security Architecture
 
 ### Authentication & Authorization ✅
+
 - **OAuth 2.0 with PKCE flow** via Auth0 integration
 - **JWT token verification** with JWKS (JSON Web Key Set)
 - **AES-256-GCM encryption** for sensitive session data
@@ -42,6 +47,7 @@ Please report security vulnerabilities to the maintainers via:
 - **Role-based access control** for admin features
 
 ### Content Security Policy (CSP) ✅
+
 - **Comprehensive CSP headers** with nonce-based script execution
 - **CSP violation reporting** endpoint at `/api/csp-report`
 - **Iframe embedding support** for museum integrations
@@ -49,6 +55,7 @@ Please report security vulnerabilities to the maintainers via:
 - **Frame-ancestors** properly configured for trusted domains
 
 ### Security Headers ✅
+
 - **Strict-Transport-Security**: HTTPS enforcement in production
 - **X-Content-Type-Options**: nosniff
 - **Referrer-Policy**: strict-origin-when-cross-origin
@@ -58,6 +65,7 @@ Please report security vulnerabilities to the maintainers via:
 - **Cache-Control**: Proper caching policies with security considerations
 
 ### Database Security ✅
+
 - **Parameterized queries** via Drizzle ORM (SQL injection protection)
 - **Environment-based configuration** for connection strings
 - **PostGIS integration** with geographic data validation
@@ -65,6 +73,7 @@ Please report security vulnerabilities to the maintainers via:
 - **Baltic Sea boundary validation** for geographic data integrity
 
 ### Development Security ✅
+
 - **HTTPS development server** with auto-generated certificates
 - **Environment variable management** with `.env.example` template
 - **Pre-commit hooks** for code quality and security checks
@@ -74,7 +83,17 @@ Please report security vulnerabilities to the maintainers via:
 
 ### Current Issues (Development Dependencies Only)
 
-#### 1. dompurify <= 3.3.1 (Moderate Severity, 3 CVEs)
+#### 1. lodash 4.0.0 - 4.17.21 (High Severity)
+
+- **CVE**: GHSA-xxjr-mmjv-4gpg (Prototype Pollution in `_.unset` and `_.omit`)
+- **Affected**: commitizen → lodash
+- **Risk Level**: High severity, but development commit tooling only
+- **Impact**: No runtime or production impact
+- **Mitigation**: Isolated to commit message tooling
+- **Resolution Path**: Requires major commitizen update (breaking change)
+
+#### 2. dompurify <= 3.3.1 (Moderate Severity, 3 CVEs)
+
 - **CVEs**: GHSA-vhxf-7vqr-mrjg, GHSA-v8jm-5vwx-cfxm, GHSA-v2wj-7wpq-c8vv
 - **Affected**: @scalar/api-reference → monaco-editor → dompurify
 - **Risk Level**: Moderate - Used in `/docs/api` routes (Scalar API reference viewer)
@@ -82,15 +101,30 @@ Please report security vulnerabilities to the maintainers via:
 - **Mitigation**: API docs routes serve read-only documentation with no user-generated content. Attack surface is minimal as DOMPurify is used internally by monaco-editor within the Scalar viewer.
 - **Resolution Path**: Requires @scalar/api-reference update (breaking change)
 
-#### 2. lodash 4.0.0 - 4.17.21 (Moderate Severity)
-- **CVE**: GHSA-xxjr-mmjv-4gpg (Prototype Pollution in `_.unset` and `_.omit`)
-- **Affected**: commitizen → lodash
-- **Risk Level**: Moderate - Development commit tooling only
-- **Impact**: No runtime or production impact
-- **Mitigation**: Isolated to commit message tooling
-- **Resolution Path**: Requires major commitizen update (breaking change)
+#### 3. unhead / @unhead/vue (Moderate Severity)
 
-#### 3. tmp <= 0.2.3 (Low Severity)
+- **Affected**: @unhead/vue → unhead (development dependency)
+- **Risk Level**: Moderate - Development dependency only
+- **Impact**: No production exposure
+- **Resolution Path**: Awaiting upstream fix
+
+#### 4. yaml 1.x - 2.8.x (Moderate Severity)
+
+- **CVE**: GHSA-48c2-rrv3-qjmp (Stack Overflow via deeply nested YAML)
+- **Affected**: postcss-load-config → yaml
+- **Risk Level**: Moderate - Build tooling only
+- **Impact**: No runtime or production impact
+- **Mitigation**: Used only during build process for config loading
+- **Resolution Path**: Fix available via `npm audit fix`
+
+#### 5. brace-expansion (Moderate Severity)
+
+- **Affected**: Development dependency chain
+- **Risk Level**: Moderate - Development environment only
+- **Impact**: No production exposure
+
+#### 6. tmp <= 0.2.3 (Low Severity)
+
 - **CVE**: GHSA-52f5-9888-hmc6
 - **Affected**: commitizen → inquirer → external-editor → tmp
 - **Risk Level**: Low - Development environment only
@@ -101,6 +135,7 @@ Please report security vulnerabilities to the maintainers via:
 ## Security Measures in Production
 
 ### Automated Security ✅
+
 1. **Dependabot**: Weekly automated dependency updates
 2. **GitHub Actions**: Security checks on every PR
 3. **npm audit**: Moderate+ vulnerability scanning
@@ -108,7 +143,8 @@ Please report security vulnerabilities to the maintainers via:
 5. **CSP violation monitoring**: Real-time policy violation detection
 
 ### Application Security ✅
-- **Input validation**: Comprehensive form validation with Yup schemas  
+
+- **Input validation**: Comprehensive form validation with Yup schemas
 - **Output encoding**: Proper HTML entity encoding
 - **File upload security**: EXIF metadata validation, file type restrictions
 - **Geographic validation**: Baltic Sea boundary checking
@@ -116,6 +152,7 @@ Please report security vulnerabilities to the maintainers via:
 - **Error handling**: Sanitized error messages, no sensitive data leakage
 
 ### Infrastructure Security ✅
+
 - **HTTPS everywhere**: TLS 1.2+ enforcement
 - **Security headers**: Multi-layered header protection
 - **Environment isolation**: Separate dev/staging/production environments
@@ -125,6 +162,7 @@ Please report security vulnerabilities to the maintainers via:
 ## Dependency Management
 
 ### Security-First Approach
+
 We maintain a proactive approach to dependency security:
 
 1. **Automated Updates**: Dependabot reviews and updates dependencies weekly
@@ -133,16 +171,18 @@ We maintain a proactive approach to dependency security:
 4. **Vulnerability Monitoring**: Daily security advisory monitoring
 
 ### Current Overrides (Security-Related)
+
 ```json
 {
-  "overrides": {
-    "cookie": "^0.7.2",    // Fixed moderate XSS vulnerability
-    "esbuild": "^0.25.0"   // Fixed path traversal vulnerability  
-  }
+	"overrides": {
+		"cookie": "^0.7.2", // Fixed moderate XSS vulnerability
+		"esbuild": "^0.25.0" // Fixed path traversal vulnerability
+	}
 }
 ```
 
 ### Production Dependencies Security Status
+
 - **Total production dependencies**: 18 packages
 - **Security-clean dependencies**: 100%
 - **License-compliant dependencies**: 100% (permissive, non-copyleft licenses only; see THIRD-PARTY-NOTICES.md for the full list)
@@ -178,16 +218,19 @@ The following security features have been implemented:
   - Implementation: `src/lib/server/db/index.ts`
 
 ### Immediate Priorities (High Impact) ✅
+
 - [x] **CodeQL Integration**: SAST scanning enabled via GitHub default setup
 - [x] **Input Sanitization**: DOMPurify integration for HTML content (`src/lib/utils/sanitize.ts`)
 - [x] **Security Headers**: Cross-Origin-Opener-Policy and Cross-Origin-Resource-Policy (`src/lib/server/middleware/securityHeaders.ts`)
 
 ### Medium-Term Goals (Weeks)
+
 - [ ] **Security Monitoring**: Implement security event logging and alerting
 - [ ] **Malware Scanning**: Integrate malware scanning for file uploads
 - [ ] **Audit Logging**: Comprehensive user action tracking
 
 ### Long-Term Enhancements (Months)
+
 - [ ] **WAF Integration**: Web Application Firewall rules
 - [ ] **Security Testing**: Automated penetration testing
 - [ ] **Compliance**: GDPR compliance audit and documentation
@@ -196,6 +239,7 @@ The following security features have been implemented:
 ## Security Best Practices for Contributors
 
 ### Code Security Checklist
+
 - [ ] **Run security audit**: `npm audit --audit-level=moderate` before committing
 - [ ] **No hardcoded secrets**: All sensitive data in environment variables
 - [ ] **Input validation**: Validate and sanitize all user inputs
@@ -206,13 +250,15 @@ The following security features have been implemented:
 - [ ] **HTTPS enforcement**: All external requests over secure connections
 
 ### Database Security Guidelines
+
 - [ ] **Use Drizzle ORM**: Parameterized queries prevent SQL injection
 - [ ] **Validate geography**: Check Baltic Sea boundaries for coordinates
 - [ ] **Sanitize uploads**: Validate file types and extract safe metadata
 - [ ] **Environment variables**: Database credentials never in source code
 - [ ] **Connection limits**: Appropriate database connection pooling
 
-### Frontend Security Guidelines  
+### Frontend Security Guidelines
+
 - [ ] **CSP compliance**: Ensure no inline scripts violate Content Security Policy
 - [ ] **XSS prevention**: Properly escape all dynamic content
 - [ ] **CSRF protection**: Verify authenticity tokens for state changes
@@ -222,12 +268,14 @@ The following security features have been implemented:
 ## Compliance & Standards
 
 ### Industry Standards Alignment
+
 - **OWASP Top 10**: Mitigation strategies for all current top vulnerabilities
 - **NIST Cybersecurity Framework**: Identify, Protect, Detect, Respond, Recover
 - **ISO 27001 Principles**: Information security management best practices
 - **GDPR**: Privacy by design, data minimization, user rights
 
 ### Open Source Security
+
 - **FOSS License Compliance**: 100% license-compatible dependencies
 - **Supply Chain Security**: Dependency provenance and integrity verification
 - **Vulnerability Disclosure**: Coordinated disclosure following security.txt
@@ -236,18 +284,20 @@ The following security features have been implemented:
 ## Emergency Contacts
 
 **For Critical Security Issues:**
+
 - **GitHub Security Advisory**: Use repository "Security" tab
 - **Email**: [Maintainer contact through GitHub profile]
 - **Response Time**: Critical issues acknowledged within 4 hours
 
 **Security Incident Response:**
+
 1. **Immediate**: Issue acknowledgment and initial assessment
 2. **Within 24h**: Impact analysis and temporary mitigations
-3. **Within 72h**: Permanent fix development and testing  
+3. **Within 72h**: Permanent fix development and testing
 4. **Within 7 days**: Security patch release and disclosure
 
 ---
 
-*Last Updated: 2026-03-12*
-*Security Assessment: 7.5/10 - Strong foundational security, all vulnerabilities dev-only*
-*Next Security Review: 2026-06-12*
+_Last Updated: 2026-04-10_
+_Security Assessment: 7/10 - Strong foundational security, all vulnerabilities dev-only_
+_Next Security Review: 2026-07-10_

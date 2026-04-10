@@ -36,17 +36,20 @@ The migration process involves:
 ## Prerequisites
 
 ### Source System
+
 - Access to the source PostgreSQL database
 - `pg_dump` utility installed
 - Read permissions on the `sichtungen` table
 
 ### Target System
-- PostgreSQL 16+ with PostGIS extension (PostgreSQL 18 recommended)
-- Node.js 20+ (for running migration scripts)
+
+- PostgreSQL 17+ with PostGIS extension (PostgreSQL 18 recommended)
+- Node.js 20.19+, 22.12+ or 24+ (for running migration scripts)
 - Sufficient disk space for data and uploads
 - Database credentials with write access
 
 ### Environment Setup
+
 ```bash
 # Clone the repository (if not already done)
 git clone https://github.com/jansinger/ostsee-sichtung.git
@@ -218,12 +221,14 @@ npx tsx --env-file=.env src/tools/generate-reference-ids.ts
 ```
 
 **What this script does:**
+
 - Finds all sightings without a `referenceId`
 - Checks if associated files already have a reference ID (reuses if found)
 - Generates new CUID2 IDs for remaining sightings
 - Updates the `sichtungen.referenz_id` column
 
 **Expected output:**
+
 ```
 🔄 Starting reference ID generation...
 
@@ -253,6 +258,7 @@ npx tsx --env-file=.env src/tools/migrate-old-uploads.ts
 ```
 
 **What this script does:**
+
 - Reads all sightings with `aufnahme` field populated
 - Sets `aufnahmeHochladen = 1` for records with uploads
 - Creates entries in the new `sichtungen_dateien` table
@@ -261,6 +267,7 @@ npx tsx --env-file=.env src/tools/migrate-old-uploads.ts
 - Preserves original files in `_old_uploads` for safety
 
 **Expected output:**
+
 ```
 [INFO] Starting migration of old uploads...
 [INFO] Fetching sightings with uploads...
@@ -305,10 +312,10 @@ rm -rf uploads/_old_uploads
 
 ## Migration Scripts Reference
 
-| Script | Purpose | Command |
-|--------|---------|---------|
-| `generate-reference-ids.ts` | Generate CUID2 reference IDs for all sightings | `npx tsx --env-file=.env src/tools/generate-reference-ids.ts` |
-| `migrate-old-uploads.ts` | Migrate files and create `sichtungen_dateien` entries | `npx tsx --env-file=.env src/tools/migrate-old-uploads.ts` |
+| Script                      | Purpose                                               | Command                                                       |
+| --------------------------- | ----------------------------------------------------- | ------------------------------------------------------------- |
+| `generate-reference-ids.ts` | Generate CUID2 reference IDs for all sightings        | `npx tsx --env-file=.env src/tools/generate-reference-ids.ts` |
+| `migrate-old-uploads.ts`    | Migrate files and create `sichtungen_dateien` entries | `npx tsx --env-file=.env src/tools/migrate-old-uploads.ts`    |
 
 ---
 
@@ -355,6 +362,7 @@ docker compose -f docker-compose.production.yml up -d
 ```
 
 **Manual checks:**
+
 1. Open http://localhost:3000/map and verify sightings appear
 2. Check that images load correctly for existing sightings
 3. Test the admin interface at /admin
@@ -392,6 +400,7 @@ cp -r ./uploads_backup/* uploads/
 **"DATABASE_POSTGRES_URL environment variable is not set"**
 
 Ensure your `.env` file contains the correct database URL:
+
 ```bash
 DATABASE_POSTGRES_URL=postgresql://user:password@host:5432/ostsee
 ```
@@ -399,6 +408,7 @@ DATABASE_POSTGRES_URL=postgresql://user:password@host:5432/ostsee
 **"Old uploads directory not found"**
 
 Create the directory and copy files:
+
 ```bash
 mkdir -p uploads/_old_uploads
 cp -r /path/to/old/uploads/* uploads/_old_uploads/
@@ -407,6 +417,7 @@ cp -r /path/to/old/uploads/* uploads/_old_uploads/
 **"Permission denied" on uploads directory**
 
 Fix permissions (Linux):
+
 ```bash
 sudo chown -R 1001:1001 uploads/
 # Or use your user
@@ -416,6 +427,7 @@ sudo chown -R $USER:$USER uploads/
 **PostGIS extension missing**
 
 Install PostGIS in the database:
+
 ```sql
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
@@ -424,6 +436,7 @@ CREATE EXTENSION IF NOT EXISTS postgis_topology;
 **"permission denied for schema public"**
 
 Grant schema-level privileges to the app user:
+
 ```sql
 GRANT ALL ON SCHEMA public TO ostsee_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ostsee_app;
@@ -433,6 +446,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ostsee_app;
 **Migration script hangs**
 
 Check database connectivity:
+
 ```bash
 # Test connection
 psql $DATABASE_POSTGRES_URL -c "SELECT 1;"
@@ -452,4 +466,4 @@ psql $DATABASE_POSTGRES_URL -c "SELECT 1;"
 
 ---
 
-*Last Updated: December 2025*
+_Last Updated: April 2026_
