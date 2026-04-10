@@ -160,7 +160,7 @@ echo -e "${BLUE}Detected Docker runtime: $DOCKER_RUNTIME${NC}"
 # Replace localhost/127.0.0.1/LAN-IP with host.docker.internal for database access
 # Docker containers cannot reach the host via localhost or LAN IPs reliably.
 # host.docker.internal resolves to the host on both Docker Desktop and Rancher Desktop.
-if echo "$DATABASE_POSTGRES_URL" | grep -qE '@(localhost|127\.0\.0\.1|192\.168\.[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+):'; then
+if echo "$DATABASE_POSTGRES_URL" | grep -qE '@(localhost|127\.[0-9]+\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+):'; then
     DOCKER_DATABASE_URL=$(echo "$DATABASE_POSTGRES_URL" | sed -E "s/@(localhost|127\.[0-9]+\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+):/@host.docker.internal:/g")
     echo -e "${YELLOW}Adjusted database URL to use host.docker.internal${NC}"
     echo -e "${YELLOW}Note: PostgreSQL must listen on 0.0.0.0 and accept connections from Docker${NC}"
