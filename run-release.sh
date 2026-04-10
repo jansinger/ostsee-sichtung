@@ -103,6 +103,17 @@ detect_docker_runtime() {
     fi
 }
 
+# Get host LAN IP (needed for Rancher Desktop where host.docker.internal doesn't work)
+get_host_ip() {
+    if command -v ifconfig >/dev/null 2>&1; then
+        ifconfig en0 2>/dev/null | grep "inet " | awk '{print $2}' | head -1
+    elif command -v ip >/dev/null 2>&1; then
+        ip route get 1 2>/dev/null | awk '{print $7}' | head -1
+    else
+        echo ""
+    fi
+}
+
 
 # Handle commands
 case "$VERSION" in
@@ -178,12 +189,27 @@ DOCKER_RUNTIME=$(detect_docker_runtime)
 
 echo -e "${BLUE}Detected Docker runtime: $DOCKER_RUNTIME${NC}"
 
-# Replace localhost/127.0.0.1/LAN-IP with host.docker.internal for database access
-# Docker containers cannot reach the host via localhost or LAN IPs reliably.
-# host.docker.internal resolves to the host on both Docker Desktop and Rancher Desktop.
-if echo "$DATABASE_POSTGRES_URL" | grep -qE '@(localhost|127\.[0-9]+\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+):'; then
-    DOCKER_DATABASE_URL=$(echo "$DATABASE_POSTGRES_URL" | sed -E "s/@(localhost|127\.[0-9]+\.[0-9]+\.[0-9]+|192\.168\.[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+):/@host.docker.internal:/g")
-    echo -e "${YELLOW}Adjusted database URL to use host.docker.internal${NC}"
+# Rewrite database URL so the container can reach the host's PostgreSQL.
+#
+# - Docker Desktop: host.docker.internal works reliably via --add-host
+# - Rancher Desktop: host.docker.internal resolves to the Docker bridge IP (172.17.0.1)
+#   which is inside the VM and does NOT reach the macOS host. We must use the
+#   host's actual LAN IP instead (e.g. 192.168.x.x from en0).
+#
+if echo "$DATABASE_POSTGRES_URL" | grep -qE '@(localhost|127\.[0-9]+\.[0-9]+\.[0-9]+):'; then
+    if [ "$DOCKER_RUNTIME" = "rancher" ]; then
+        HOST_IP=$(get_host_ip)
+        if [ -n "$HOST_IP" ]; then
+            DOCKER_DATABASE_URL=$(echo "$DATABASE_POSTGRES_URL" | sed -E "s/@(localhost|127\.[0-9]+\.[0-9]+\.[0-9]+):/@$HOST_IP:/g")
+            echo -e "${YELLOW}Rancher Desktop: adjusted database URL to use host IP $HOST_IP${NC}"
+        else
+            echo -e "${RED}Could not detect host IP — set DATABASE_POSTGRES_URL to your LAN IP manually${NC}"
+            DOCKER_DATABASE_URL="$DATABASE_POSTGRES_URL"
+        fi
+    else
+        DOCKER_DATABASE_URL=$(echo "$DATABASE_POSTGRES_URL" | sed -E "s/@(localhost|127\.[0-9]+\.[0-9]+\.[0-9]+):/@host.docker.internal:/g")
+        echo -e "${YELLOW}Adjusted database URL to use host.docker.internal${NC}"
+    fi
     echo -e "${YELLOW}Note: PostgreSQL must listen on 0.0.0.0 and accept connections from Docker${NC}"
 else
     DOCKER_DATABASE_URL="$DATABASE_POSTGRES_URL"
@@ -227,11 +253,18 @@ echo "Uploads:   $SCRIPT_DIR/uploads"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
+# Build extra docker run flags
+EXTRA_DOCKER_FLAGS=""
+if [ "$DOCKER_RUNTIME" != "rancher" ]; then
+    # --add-host ensures host.docker.internal works on Linux Docker Engine
+    # Not needed for Rancher Desktop (uses host LAN IP directly)
+    EXTRA_DOCKER_FLAGS="--add-host=host.docker.internal:host-gateway"
+fi
+
 # Run the container
-# --add-host ensures host.docker.internal works on Linux Docker Engine too
 docker run -d \
     --name "$CONTAINER_NAME" \
-    --add-host=host.docker.internal:host-gateway \
+    $EXTRA_DOCKER_FLAGS \
     -p "$PORT:$PORT" \
     --user "$(id -u):$(id -g)" \
     -v "$SCRIPT_DIR/uploads:/app/uploads" \
