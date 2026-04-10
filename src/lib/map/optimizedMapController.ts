@@ -275,7 +275,7 @@ export class SichtungenMap {
 				}
 			</style>
 			<div class="ol-popup-content">
-				<button class="ol-popup-closer" type="button">×</button>
+				<button class="ol-popup-closer" type="button" aria-label="Popup schließen">×</button>
 				<div class="popup-body"></div>
 			</div>
 		`;
@@ -329,6 +329,7 @@ export class SichtungenMap {
 				// Hover ausblenden wenn ein Popup offen ist
 				if (this.popup.getPosition()) {
 					if (infoElement) infoElement.style.display = 'none';
+					this.map.getTargetElement().style.cursor = '';
 					return;
 				}
 
@@ -408,14 +409,23 @@ export class SichtungenMap {
 		});
 	}
 
+	private sortFeaturesByDate(features: Feature<Geometry>[]): Feature<Geometry>[] {
+		return [...features].sort((a, b) => {
+			const tsA = (a.getProperties() as SightingProperties).ts || 0;
+			const tsB = (b.getProperties() as SightingProperties).ts || 0;
+			return tsB - tsA;
+		});
+	}
+
 	private showPopup(coordinate: number[], feature: Feature<Geometry>): void {
 		const contentDiv = this.popupElement.querySelector('.popup-body') as HTMLDivElement;
 		const features = feature.get('features');
 
 		if (features && features.length > 1) {
 			// Cluster - zeige Liste aller Sichtungen
-			contentDiv.innerHTML = this.createClusterListContent(features);
-			this.attachClusterListHandlers(contentDiv, features, coordinate);
+			const sorted = this.sortFeaturesByDate(features);
+			contentDiv.innerHTML = this.createClusterListContent(sorted);
+			this.attachClusterListHandlers(contentDiv, sorted, coordinate);
 		} else {
 			// Einzelfeature
 			const singleFeature = features ? features[0] : feature;
@@ -508,20 +518,13 @@ export class SichtungenMap {
 
 	/**
 	 * Erstellt eine scrollbare Liste aller Sichtungen im Cluster.
-	 * Jeder Eintrag ist klickbar und zeigt dann die Detailansicht.
+	 * Erwartet bereits sortierte Features (via sortFeaturesByDate).
 	 */
 	private createClusterListContent(features: Feature<Geometry>[]): string {
 		const count = features.length;
 
-		// Sortiere nach Datum (neueste zuerst)
-		const sorted = [...features].sort((a, b) => {
-			const tsA = (a.getProperties() as SightingProperties).ts || 0;
-			const tsB = (b.getProperties() as SightingProperties).ts || 0;
-			return tsB - tsA;
-		});
-
 		let items = '';
-		sorted.forEach((feature, index) => {
+		features.forEach((feature, index) => {
 			const props = feature.getProperties() as SightingProperties;
 			const speciesName = sanitizeText(
 				this.translations.speciesMap[props.ta.toString()] || `Art ${props.ta}`
@@ -559,24 +562,18 @@ export class SichtungenMap {
 
 	/**
 	 * Fügt Click-Handler für die Cluster-Listeneinträge hinzu.
-	 * Klick auf einen Eintrag zeigt die Detail-Popup-Ansicht mit Zurück-Button.
+	 * Erwartet bereits sortierte Features (via sortFeaturesByDate).
 	 */
 	private attachClusterListHandlers(
 		contentDiv: HTMLDivElement,
-		features: Feature<Geometry>[],
+		sortedFeatures: Feature<Geometry>[],
 		coordinate: number[]
 	): void {
-		const sorted = [...features].sort((a, b) => {
-			const tsA = (a.getProperties() as SightingProperties).ts || 0;
-			const tsB = (b.getProperties() as SightingProperties).ts || 0;
-			return tsB - tsA;
-		});
-
 		contentDiv.querySelectorAll<HTMLButtonElement>('[data-cluster-index]').forEach((btn) => {
 			btn.addEventListener('click', (e) => {
 				e.stopPropagation();
 				const index = parseInt(btn.dataset.clusterIndex || '0', 10);
-				const feature = sorted[index];
+				const feature = sortedFeatures[index];
 				if (!feature) return;
 				const props = feature.getProperties() as SightingProperties;
 
@@ -584,7 +581,7 @@ export class SichtungenMap {
 				contentDiv.innerHTML = `
 					<div>
 						<button type="button" class="cluster-back-btn" style="display: inline-flex; align-items: center; gap: 4px; border: none; background: none; cursor: pointer; color: #2563eb; font-size: 12px; padding: 0 0 8px 0; font-weight: 500;">
-							&#8592; Alle ${features.length} Sichtungen
+							&#8592; Alle ${sortedFeatures.length} Sichtungen
 						</button>
 						${this.createSightingPopupContent(props)}
 					</div>
@@ -595,8 +592,8 @@ export class SichtungenMap {
 				const backBtn = contentDiv.querySelector('.cluster-back-btn');
 				backBtn?.addEventListener('click', (e) => {
 					e.stopPropagation();
-					contentDiv.innerHTML = this.createClusterListContent(features);
-					this.attachClusterListHandlers(contentDiv, features, coordinate);
+					contentDiv.innerHTML = this.createClusterListContent(sortedFeatures);
+					this.attachClusterListHandlers(contentDiv, sortedFeatures, coordinate);
 					this.popup.setPosition(coordinate);
 				});
 			});

@@ -41,6 +41,13 @@
 		}, 800);
 	}
 
+	// Cleanup bei Unmount
+	$effect(() => {
+		return () => {
+			if (filterFeedbackTimeout) clearTimeout(filterFeedbackTimeout);
+		};
+	});
+
 	function handleYearChange(e: Event) {
 		const year = parseInt((e.target as HTMLSelectElement).value, 10);
 		if (!isNaN(year)) userSelectedYear = year;
