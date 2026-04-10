@@ -24,8 +24,8 @@ export class MapTimeSliderManager implements TimeSliderManager {
 
 		// Event-Handler für Start-Slider
 		startSlider.addEventListener('input', () => {
-			const startValue = parseInt(startSlider.value);
-			const endValue = parseInt(endSlider.value);
+			const startValue = parseInt(startSlider.value, 10);
+			const endValue = parseInt(endSlider.value, 10);
 
 			// Stelle sicher, dass Start nicht größer als End ist
 			if (startValue >= endValue) {
@@ -37,8 +37,8 @@ export class MapTimeSliderManager implements TimeSliderManager {
 
 		// Event-Handler für End-Slider
 		endSlider.addEventListener('input', () => {
-			const startValue = parseInt(startSlider.value);
-			const endValue = parseInt(endSlider.value);
+			const startValue = parseInt(startSlider.value, 10);
+			const endValue = parseInt(endSlider.value, 10);
 
 			// Stelle sicher, dass End nicht kleiner als Start ist
 			if (endValue <= startValue) {
@@ -58,8 +58,8 @@ export class MapTimeSliderManager implements TimeSliderManager {
 		const currentYear = new Date().getFullYear();
 		const yearToUse = this.mapInstance.getDisplayedYear() || currentYear;
 
-		const startDay = parseInt(startSlider.value);
-		const endDay = parseInt(endSlider.value);
+		const startDay = parseInt(startSlider.value, 10);
+		const endDay = parseInt(endSlider.value, 10);
 
 		// Berechne Timestamps für Start und Ende
 		const startDate = new Date(yearToUse, 0, 1);

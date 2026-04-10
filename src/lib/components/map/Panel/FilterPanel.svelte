@@ -30,18 +30,27 @@
 		isOpen = false;
 	}
 
-	// Funktion für Filter-Anwendung mit visueller Rückmeldung
+	// Kurze visuelle Rückmeldung bei Filter-Änderung
+	let filterFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
 	function handleFilterApply() {
 		isApplyingFilter = true;
-
-		// Simuliere Filterzeit (wird durch den echten Filter-Prozess ersetzt)
-		setTimeout(() => {
+		if (filterFeedbackTimeout) clearTimeout(filterFeedbackTimeout);
+		filterFeedbackTimeout = setTimeout(() => {
 			isApplyingFilter = false;
-		}, 1500);
+			filterFeedbackTimeout = null;
+		}, 800);
 	}
 
+	// Cleanup bei Unmount
+	$effect(() => {
+		return () => {
+			if (filterFeedbackTimeout) clearTimeout(filterFeedbackTimeout);
+		};
+	});
+
 	function handleYearChange(e: Event) {
-		userSelectedYear = parseInt((e.target as HTMLSelectElement).value);
+		const year = parseInt((e.target as HTMLSelectElement).value, 10);
+		if (!isNaN(year)) userSelectedYear = year;
 		handleFilterApply();
 	}
 </script>

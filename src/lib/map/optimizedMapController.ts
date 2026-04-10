@@ -16,7 +16,7 @@ import { Circle, Fill, Stroke, Style, Text } from 'ol/style';
 import { LocationControl } from './controls/LocationControl.js';
 import { ZoomAllControl } from './controls/ZoomAllControl.js';
 import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
-import type { MapTranslations } from './mapUtils';
+import { areExtentsColocated, type MapTranslations } from './mapUtils';
 import { createFeatureStyle, getFeatureColorGroup } from './styleUtils';
 import { sanitizeText } from '$lib/utils/sanitize';
 
@@ -80,6 +80,7 @@ export class SichtungenMap {
 	private yearChangeCallback?: (year: number) => void;
 	private loadingCallback?: (isLoading: boolean) => void;
 	private activeAbortController: AbortController | null = null;
+	private filterDebounceTimeout: number | null = null;
 	private clusterDistance: number = 40; // Reduziert für bessere Performance
 
 	// Popup-related
@@ -170,10 +171,6 @@ export class SichtungenMap {
 		const defaultLat = 54.5;
 		const defaultLon = 12.0;
 		const defaultZoom = 7;
-		const balticExtent = olExtent.boundingExtent([
-			fromLonLat([9.4, 53.0]),
-			fromLonLat([30.2, 66.0])
-		]);
 
 		// Initialize the timeFilter with sensible defaults (zeige das ganze Jahr)
 		this.displayedYear = getDefaultSightingYear();
@@ -232,8 +229,7 @@ export class SichtungenMap {
 				center: fromLonLat([defaultLon, defaultLat]),
 				zoom: defaultZoom,
 				projection: 'EPSG:3857',
-				extent: balticExtent,
-				minZoom: 5,
+				minZoom: 2,
 				maxZoom: 18
 			}),
 			controls: defaultControls({ rotate: false }).extend(this.createCustomControls())
@@ -267,8 +263,19 @@ export class SichtungenMap {
 		this.popupElement = document.createElement('div');
 		this.popupElement.className = 'ol-popup';
 		this.popupElement.innerHTML = `
+			<style>
+				.cluster-list-item {
+					display: flex; align-items: center; gap: 8px; width: 100%;
+					padding: 8px; margin-bottom: 4px; border: 1px solid #e5e7eb;
+					border-radius: 6px; background: #f9fafb; cursor: pointer;
+					text-align: left; font-size: 13px; transition: background 0.15s;
+				}
+				.cluster-list-item:hover, .cluster-list-item:focus-visible {
+					background: #e0f2fe; outline: 2px solid #2563eb; outline-offset: -2px;
+				}
+			</style>
 			<div class="ol-popup-content">
-				<button class="ol-popup-closer" type="button">×</button>
+				<button class="ol-popup-closer" type="button" aria-label="Popup schließen">×</button>
 				<div class="popup-body"></div>
 			</div>
 		`;
@@ -318,6 +325,14 @@ export class SichtungenMap {
 		if (!isTouchDevice) {
 			this.map.on('pointermove', (event) => {
 				const infoElement = document.getElementById('info');
+
+				// Hover ausblenden wenn ein Popup offen ist
+				if (this.popup.getPosition()) {
+					if (infoElement) infoElement.style.display = 'none';
+					this.map.getTargetElement().style.cursor = '';
+					return;
+				}
+
 				const feature = this.map.forEachFeatureAtPixel(event.pixel, (feature) => feature);
 
 				if (feature && infoElement) {
@@ -368,15 +383,19 @@ export class SichtungenMap {
 		this.map.on('click', (event) => {
 			const feature = this.map.forEachFeatureAtPixel(event.pixel, (feature) => feature);
 
+			// Hover sofort ausblenden bei Klick
+			const infoElement = document.getElementById('info');
+			if (infoElement) infoElement.style.display = 'none';
+
 			if (feature) {
 				const features = feature.get('features');
 				const zoom = this.map.getView().getZoom() || 7;
 
-				if (features && features.length > 1 && zoom < 12) {
-					// Zoom zu Cluster bei niedrigem Zoom
+				if (features && features.length > 1 && zoom < 12 && !this.hasColocatedFeatures(features)) {
+					// Zoom zu Cluster bei niedrigem Zoom (nur wenn Features an verschiedenen Positionen)
 					this.zoomToCluster(features);
 				} else {
-					// Zeige Popup
+					// Zeige Popup (Einzelfeature oder Liste bei co-located Features)
 					this.showPopup(event.coordinate, feature as Feature<Geometry>);
 				}
 			} else {
@@ -390,13 +409,23 @@ export class SichtungenMap {
 		});
 	}
 
+	private sortFeaturesByDate(features: Feature<Geometry>[]): Feature<Geometry>[] {
+		return [...features].sort((a, b) => {
+			const tsA = (a.getProperties() as SightingProperties).ts || 0;
+			const tsB = (b.getProperties() as SightingProperties).ts || 0;
+			return tsB - tsA;
+		});
+	}
+
 	private showPopup(coordinate: number[], feature: Feature<Geometry>): void {
 		const contentDiv = this.popupElement.querySelector('.popup-body') as HTMLDivElement;
 		const features = feature.get('features');
 
 		if (features && features.length > 1) {
-			// Cluster
-			contentDiv.innerHTML = this.createClusterPopupContent(features);
+			// Cluster - zeige Liste aller Sichtungen
+			const sorted = this.sortFeaturesByDate(features);
+			contentDiv.innerHTML = this.createClusterListContent(sorted);
+			this.attachClusterListHandlers(contentDiv, sorted, coordinate);
 		} else {
 			// Einzelfeature
 			const singleFeature = features ? features[0] : feature;
@@ -476,38 +505,99 @@ export class SichtungenMap {
 		return content;
 	}
 
-	private createClusterPopupContent(features: Feature<Geometry>[]): string {
+	/**
+	 * Prüft ob alle Features im Cluster identische oder sehr nahe Koordinaten haben.
+	 * In dem Fall hilft Zoomen nicht weiter.
+	 */
+	private hasColocatedFeatures(features: Feature<Geometry>[]): boolean {
+		const extents = features
+			.map((f) => f.getGeometry()?.getExtent() as [number, number, number, number] | undefined)
+			.filter((ext): ext is [number, number, number, number] => ext !== undefined);
+		return areExtentsColocated(extents);
+	}
+
+	/**
+	 * Erstellt eine scrollbare Liste aller Sichtungen im Cluster.
+	 * Erwartet bereits sortierte Features (via sortFeaturesByDate).
+	 */
+	private createClusterListContent(features: Feature<Geometry>[]): string {
 		const count = features.length;
-		const speciesCount: Record<string, number> = {};
 
-		features.forEach((feature) => {
+		let items = '';
+		features.forEach((feature, index) => {
 			const props = feature.getProperties() as SightingProperties;
-			const species = props.ta.toString();
-			speciesCount[species] = (speciesCount[species] || 0) + 1;
-		});
+			const speciesName = sanitizeText(
+				this.translations.speciesMap[props.ta.toString()] || `Art ${props.ta}`
+			);
+			const date = props.ts ? new Date(props.ts * 1000).toLocaleDateString('de-DE') : 'Unbekannt';
+			const deadBadge = props.tf
+				? '<span style="color: #dc2626; font-weight: 600; margin-left: 4px;">&#x2020;</span>'
+				: '';
 
-		let content = `
-			<div class="cluster-popup">
-				<h3 style="margin: 0 0 10px 0; color: #333;">${count} Sichtungen</h3>
-		`;
-
-		Object.entries(speciesCount).forEach(([species, count]) => {
-			const speciesName = sanitizeText(this.translations.speciesMap[species] || `Art ${species}`);
-			content += `
-				<div style="margin-bottom: 4px;">
-					${speciesName}: ${count}
-				</div>
+			items += `
+				<li>
+					<button
+						type="button"
+						data-cluster-index="${index}"
+						class="cluster-list-item"
+						aria-label="${speciesName}, ${props.ct} Tier${props.ct > 1 ? 'e' : ''}, ${date}"
+					>
+						<span style="flex: 1; font-weight: 500;">${speciesName}${deadBadge}</span>
+						<span style="color: #6b7280; white-space: nowrap;">${props.ct}&nbsp;Tier${props.ct > 1 ? 'e' : ''}</span>
+						<span style="color: #9ca3af; font-size: 11px; white-space: nowrap;">${date}</span>
+					</button>
+				</li>
 			`;
 		});
 
-		content += `
-				<div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #eee; font-size: 12px; color: #666;">
-					Zoomen Sie hinein für Details
-				</div>
+		return `
+			<div class="cluster-popup">
+				<h3 style="margin: 0 0 8px 0; color: #333; font-size: 14px;">${count} Sichtungen an diesem Ort</h3>
+				<ul aria-label="${count} Sichtungen" style="list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; padding-right: 4px;">
+					${items}
+				</ul>
 			</div>
 		`;
+	}
 
-		return content;
+	/**
+	 * Fügt Click-Handler für die Cluster-Listeneinträge hinzu.
+	 * Erwartet bereits sortierte Features (via sortFeaturesByDate).
+	 */
+	private attachClusterListHandlers(
+		contentDiv: HTMLDivElement,
+		sortedFeatures: Feature<Geometry>[],
+		coordinate: number[]
+	): void {
+		contentDiv.querySelectorAll<HTMLButtonElement>('[data-cluster-index]').forEach((btn) => {
+			btn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const index = parseInt(btn.dataset.clusterIndex || '0', 10);
+				const feature = sortedFeatures[index];
+				if (!feature) return;
+				const props = feature.getProperties() as SightingProperties;
+
+				// Zeige Detail-Ansicht mit Zurück-Button
+				contentDiv.innerHTML = `
+					<div>
+						<button type="button" class="cluster-back-btn" style="display: inline-flex; align-items: center; gap: 4px; border: none; background: none; cursor: pointer; color: #2563eb; font-size: 12px; padding: 0 0 8px 0; font-weight: 500;">
+							&#8592; Alle ${sortedFeatures.length} Sichtungen
+						</button>
+						${this.createSightingPopupContent(props)}
+					</div>
+				`;
+				this.popup.setPosition(coordinate);
+
+				// Zurück-Button Handler
+				const backBtn = contentDiv.querySelector('.cluster-back-btn');
+				backBtn?.addEventListener('click', (e) => {
+					e.stopPropagation();
+					contentDiv.innerHTML = this.createClusterListContent(sortedFeatures);
+					this.attachClusterListHandlers(contentDiv, sortedFeatures, coordinate);
+					this.popup.setPosition(coordinate);
+				});
+			});
+		});
 	}
 
 	private zoomToCluster(features: Feature<Geometry>[]): void {
@@ -573,6 +663,8 @@ export class SichtungenMap {
 			// Redraw und Zeitraum-Anzeige aktualisieren nachdem timeFilter gesetzt wurde
 			this.reportsLayer.changed();
 			this.updateTimeRange();
+			// Counts mit korrektem timeFilter neu berechnen (loadSightings hat sie mit dem alten berechnet)
+			this.legendUpdateCallback?.();
 			this.loadingCallback?.(false);
 		} catch (error) {
 			// Abgebrochene Requests nicht als Fehler behandeln — ein neuerer Request übernimmt
@@ -613,9 +705,8 @@ export class SichtungenMap {
 		this.reportsSource.clear();
 		this.reportsSource.addFeatures(features);
 
-		if (this.legendUpdateCallback) {
-			this.legendUpdateCallback();
-		}
+		// Kein legendUpdateCallback hier — Caller (setYear, applyFilter) sind dafür zuständig,
+		// damit Counts erst nach korrektem timeFilter-Update berechnet werden.
 
 		// Aktiven Controller aufräumen
 		if (this.activeAbortController === abortController) {
@@ -658,7 +749,8 @@ export class SichtungenMap {
 
 				yearSelect.addEventListener('change', (event) => {
 					const target = event.target as HTMLSelectElement;
-					this.setYear(parseInt(target.value));
+					const year = parseInt(target.value, 10);
+					if (!isNaN(year)) this.setYear(year);
 				});
 			}
 		}
@@ -667,10 +759,10 @@ export class SichtungenMap {
 		if (options.filterInputId) {
 			const filterInput = document.getElementById(options.filterInputId) as HTMLInputElement;
 			if (filterInput) {
-				let timeout: number;
 				filterInput.addEventListener('input', () => {
-					clearTimeout(timeout);
-					timeout = window.setTimeout(() => {
+					if (this.filterDebounceTimeout !== null) clearTimeout(this.filterDebounceTimeout);
+					this.filterDebounceTimeout = window.setTimeout(() => {
+						this.filterDebounceTimeout = null;
 						this.applyFilter(filterInput.value);
 					}, 300);
 				});
@@ -714,10 +806,10 @@ export class SichtungenMap {
 	private applyFilter(searchTerm: string): void {
 		this.searchTerm = searchTerm;
 		this.loadingCallback?.(true);
-		// fire-and-forget: unhandled rejection propagiert als window.unhandledrejection
-		// und wird vom Error-Handler in SightingsMapView aufgefangen
 		void this.loadSightings(this.displayedYear, searchTerm)
 			.then(() => {
+				this.reportsLayer.changed();
+				this.legendUpdateCallback?.();
 				this.loadingCallback?.(false);
 			})
 			.catch((error) => {
@@ -789,6 +881,12 @@ export class SichtungenMap {
 	 * MUSS beim Unmount der Komponente aufgerufen werden.
 	 */
 	public dispose(): void {
+		// Ausstehenden Filter-Debounce abbrechen
+		if (this.filterDebounceTimeout !== null) {
+			clearTimeout(this.filterDebounceTimeout);
+			this.filterDebounceTimeout = null;
+		}
+
 		// Laufende Requests abbrechen
 		if (this.activeAbortController) {
 			this.activeAbortController.abort();
@@ -964,7 +1062,7 @@ export class SichtungenMap {
 			// Convert ta to number for getFeatureColorGroup
 			const colorGroupProperties = {
 				...properties,
-				ta: typeof properties.ta === 'string' ? parseInt(properties.ta) : properties.ta || 0,
+				ta: typeof properties.ta === 'string' ? parseInt(properties.ta, 10) : properties.ta || 0,
 				tf: properties.tf || false, // Provide default value for required tf property
 				ts: properties.ts || 0 // Provide default value for required ts property
 			};

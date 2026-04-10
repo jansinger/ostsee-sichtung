@@ -1,6 +1,6 @@
 // @ts-nocheck - Test file with mock data that may not match exact types
 import { describe, it, expect } from 'vitest';
-import { sightingsToGeoJSON } from './mapUtils';
+import { areExtentsColocated, sightingsToGeoJSON } from './mapUtils';
 import type { DBSighting } from './mapUtils';
 
 describe('mapUtils', () => {
@@ -28,7 +28,7 @@ describe('mapUtils', () => {
 
 			expect(result.type).toBe('FeatureCollection');
 			expect(result.features).toHaveLength(1);
-			
+
 			const feature = result.features[0]!;
 			expect(feature.type).toBe('Feature');
 			expect(feature.id).toBe(123);
@@ -277,5 +277,67 @@ describe('mapUtils', () => {
 				expect(timestamp).toBeGreaterThan(0);
 			});
 		});
+	});
+});
+
+describe('areExtentsColocated', () => {
+	it('gibt false zurück bei weniger als 2 Extents', () => {
+		expect(areExtentsColocated([])).toBe(false);
+		expect(areExtentsColocated([[0, 0, 0, 0]])).toBe(false);
+	});
+
+	it('erkennt identische Koordinaten als colocated', () => {
+		const extent: [number, number, number, number] = [1000, 2000, 1000, 2000];
+		expect(areExtentsColocated([extent, extent, extent])).toBe(true);
+	});
+
+	it('erkennt nahe Koordinaten innerhalb des Thresholds als colocated', () => {
+		const extents: [number, number, number, number][] = [
+			[1000, 2000, 1000, 2000],
+			[1050, 2050, 1050, 2050],
+			[1099, 2099, 1099, 2099]
+		];
+		expect(areExtentsColocated(extents, 100)).toBe(true);
+	});
+
+	it('erkennt entfernte Koordinaten als nicht colocated', () => {
+		const extents: [number, number, number, number][] = [
+			[1000, 2000, 1000, 2000],
+			[1200, 2000, 1200, 2000]
+		];
+		expect(areExtentsColocated(extents, 100)).toBe(false);
+	});
+
+	it('erkennt Abweichung nur in Y-Achse als nicht colocated', () => {
+		const extents: [number, number, number, number][] = [
+			[1000, 2000, 1000, 2000],
+			[1000, 2150, 1000, 2150]
+		];
+		expect(areExtentsColocated(extents, 100)).toBe(false);
+	});
+
+	it('verwendet Standard-Threshold von 100', () => {
+		expect(
+			areExtentsColocated([
+				[1000, 2000, 1000, 2000],
+				[1099, 2099, 1099, 2099]
+			])
+		).toBe(true);
+
+		expect(
+			areExtentsColocated([
+				[1000, 2000, 1000, 2000],
+				[1101, 2000, 1101, 2000]
+			])
+		).toBe(false);
+	});
+
+	it('erkennt gemischte Entfernungen korrekt (ein Outlier reicht)', () => {
+		const extents: [number, number, number, number][] = [
+			[1000, 2000, 1000, 2000],
+			[1010, 2010, 1010, 2010],
+			[5000, 6000, 5000, 6000]
+		];
+		expect(areExtentsColocated(extents, 100)).toBe(false);
 	});
 });
