@@ -4,10 +4,12 @@
 #
 # Usage:
 #   ./run-release.sh           # Run latest release (with Caddy if available)
-#   ./run-release.sh v2.0.2    # Run specific version
+#   ./run-release.sh start     # Same as above
+#   ./run-release.sh v2.1.0    # Run specific version
 #   ./run-release.sh stop      # Stop running container and Caddy
 #   ./run-release.sh logs      # View container logs
 #   ./run-release.sh status    # Show status of container and Caddy
+#   ./run-release.sh help      # Show usage help
 #
 # Environment variables:
 #   PORT=3000          # Application port (default: 3000)
@@ -131,6 +133,25 @@ case "$VERSION" in
         else
             echo -e "  ${YELLOW}Not configured${NC}"
         fi
+        exit 0
+        ;;
+    start)
+        # "start" is the default action — treat it as "latest"
+        VERSION="latest"
+        ;;
+    help|--help|-h)
+        echo "Usage: ./run-release.sh [command|version]"
+        echo ""
+        echo "Commands:"
+        echo "  start          Start with latest release (default)"
+        echo "  stop           Stop running container and Caddy"
+        echo "  logs           View container logs"
+        echo "  status         Show status of container and Caddy"
+        echo "  help           Show this help"
+        echo ""
+        echo "Version:"
+        echo "  v2.1.0         Start specific version"
+        echo "  latest         Start latest release (default)"
         exit 0
         ;;
 esac
