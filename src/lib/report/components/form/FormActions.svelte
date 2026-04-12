@@ -13,7 +13,7 @@
 		onReset?: () => void;
 	} = $props();
 
-	const { isSubmitting, form, handleChange } = getFormContext();
+	const { isSubmitting, form, updateField } = getFormContext();
 
 	// Check if user has saved contact data
 	const hasSavedContactData = $derived.by(() => {
@@ -32,7 +32,7 @@
 			// Clear contact fields in form state without page reload
 			for (const field of USER_CONTACT_FIELDS) {
 				const defaultValue = typeof $form[field] === 'boolean' ? false : '';
-				handleChange({ target: { name: field, value: defaultValue } } as unknown as Event);
+				updateField(field, defaultValue);
 			}
 
 			createToast('success', 'Gespeicherte Kontaktdaten wurden gelöscht');

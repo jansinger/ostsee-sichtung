@@ -1,9 +1,6 @@
 <script lang="ts">
-	import { getFormContext } from '$lib/report/formContext';
 	import Icon from '$lib/components/Icon.svelte';
 	import FormField from './fields/FormField.svelte';
-
-	const { form: _form } = getFormContext();
 
 	let { currentStep } = $props<{
 		currentStep: number;

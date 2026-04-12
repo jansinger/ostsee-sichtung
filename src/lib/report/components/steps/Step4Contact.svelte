@@ -11,7 +11,7 @@
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 
 	const logger = createLogger('report:step4-contact');
-	const { form, handleChange } = getFormContext();
+	const { form, updateField } = getFormContext();
 
 	// Check if user has saved contact data
 	let hasSavedContactData = $state(false);
@@ -29,7 +29,7 @@
 			// Clear contact fields in form state without page reload
 			for (const field of USER_CONTACT_FIELDS) {
 				const defaultValue = typeof $form[field] === 'boolean' ? false : '';
-				handleChange({ target: { name: field, value: defaultValue } } as unknown as Event);
+				updateField(field, defaultValue);
 			}
 
 			logger.info('User contact data cleared by user request');
