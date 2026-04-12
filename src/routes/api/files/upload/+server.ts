@@ -9,8 +9,7 @@ import { ServerConfigService } from '$lib/services/configService';
 import {
 	RATE_LIMITS,
 	enforceRateLimit,
-	createRateLimitIdentifier,
-	getRateLimitHeaders
+	createRateLimitIdentifier
 } from '$lib/server/middleware/rateLimit';
 import { isCuid } from '@paralleldrive/cuid2';
 import { error, isHttpError, json } from '@sveltejs/kit';
@@ -113,7 +112,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			isAuthenticated
 		);
 
-		enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'file_upload');
+		const rateLimitResult = enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'file_upload');
 
 		// Get upload configuration from database
 		const uploadConfig = await ServerConfigService.getUploadConfig();
@@ -200,15 +199,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		// Speichere die hochgeladene Datei in der Datenbank
 		await saveUploadedFile(uploadedFile, referenceId);
 
-		// Add rate limit headers to response
-		const rateLimitHeaders = getRateLimitHeaders(
-			rateLimitIdentifier,
-			rateLimitConfig,
-			'file_upload'
-		);
-
+		// Add rate limit headers from the already-computed result (no second counter increment)
 		return json(uploadedFile, {
-			headers: rateLimitHeaders
+			headers: {
+				'X-RateLimit-Limit': rateLimitConfig.maxRequests.toString(),
+				'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+				'X-RateLimit-Reset': Math.ceil(rateLimitResult.resetTime / 1000).toString(),
+				'X-RateLimit-Window': Math.ceil(rateLimitConfig.windowMs / 1000).toString()
+			}
 		});
 	} catch (err) {
 		// Re-throw SvelteKit HttpErrors (from error() helper) and Responses

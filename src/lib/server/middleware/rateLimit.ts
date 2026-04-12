@@ -183,7 +183,7 @@ export function enforceRateLimit(
 	identifier: string,
 	config: RateLimitConfig,
 	endpoint: string
-): void {
+): { remaining: number; resetTime: number } {
 	const result = checkRateLimit(identifier, config, endpoint);
 
 	if (!result.allowed) {
@@ -191,8 +191,13 @@ export function enforceRateLimit(
 		const resetTimeFormatted = resetDate.toLocaleTimeString('de-DE');
 		const retryAfterSeconds = Math.ceil((result.resetTime - Date.now()) / 1000);
 
-		throw error(429, `Rate limit exceeded. Try again after ${resetTimeFormatted} (${retryAfterSeconds}s)`);
+		throw error(
+			429,
+			`Rate limit exceeded. Try again after ${resetTimeFormatted} (${retryAfterSeconds}s)`
+		);
 	}
+
+	return { remaining: result.remaining, resetTime: result.resetTime };
 }
 
 /**

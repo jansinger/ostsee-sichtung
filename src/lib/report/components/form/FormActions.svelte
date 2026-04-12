@@ -15,10 +15,12 @@
 
 	const { isSubmitting, form, updateField } = getFormContext();
 
-	// Check if user has saved contact data
-	const hasSavedContactData = $derived.by(() => {
-		const contactData = loadUserContactData();
-		return Object.keys(contactData).length > 0;
+	// Check if user has saved contact data (reactive $state, updated after clear)
+	let hasSavedContactData = $state(false);
+
+	$effect(() => {
+		const savedData = loadUserContactData();
+		hasSavedContactData = Object.keys(savedData).length > 0;
 	});
 
 	function clearContactData() {
@@ -28,6 +30,7 @@
 			)
 		) {
 			clearAllStorage();
+			hasSavedContactData = false;
 
 			// Clear contact fields in form state without page reload
 			for (const field of USER_CONTACT_FIELDS) {

@@ -159,7 +159,7 @@
 		logger.debug({ currentStep }, 'Step persisted');
 	});
 
-	// Speichere Formulardaten (untrack currentStep to avoid double-trigger on step change)
+	// Speichere Formulardaten (trackt nur $form, nicht currentStep — verhindert doppelten Trigger)
 	$effect(() => {
 		const formData = $form;
 		saveToStorage(STORAGE_KEYS.FORM_DATA, formData);

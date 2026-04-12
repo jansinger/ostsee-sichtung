@@ -246,9 +246,10 @@ export function loadUserContactData(): UserContactData {
 export function clearAllStorage(): void {
 	if (!browser) return;
 
-	// Vollständige Bereinigung aller namespaced Keys
+	// Vollständige Bereinigung aller namespaced Keys aus BEIDEN Storage-Typen
 	Object.values(STORAGE_KEYS).forEach((key) => {
-		localStorage.removeItem(key); // Nur localStorage (sessionStorage wird automatisch bereinigt)
+		localStorage.removeItem(key);
+		sessionStorage.removeItem(key);
 	});
 }
 
