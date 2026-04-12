@@ -30,6 +30,19 @@
 	const isLastStep = $derived(currentStep >= totalSteps - 1);
 	const isFirstStep = $derived(currentStep <= 0);
 
+	/** Scroll to form and focus the step header for screen reader announcement */
+	function scrollAndFocusStep(): void {
+		scrollToElement(document.getElementById('form-content'));
+		// Defer focus to after Svelte re-renders the new step content
+		requestAnimationFrame(() => {
+			const stepHeader = document.querySelector('#form-content h2');
+			if (stepHeader instanceof HTMLElement) {
+				stepHeader.setAttribute('tabindex', '-1');
+				stepHeader.focus({ preventScroll: true });
+			}
+		});
+	}
+
 	// Navigation functions
 	async function nextStep(): Promise<void> {
 		try {
@@ -43,7 +56,7 @@
 				await handleFormSubmission();
 			} else {
 				currentStep += 1;
-				scrollToElement(document.getElementById('form-content'));
+				scrollAndFocusStep();
 			}
 		} catch (error) {
 			logger.error({ error }, 'Error in nextStep navigation');
@@ -54,7 +67,7 @@
 		try {
 			if (!isFirstStep) {
 				currentStep -= 1;
-				scrollToElement(document.getElementById('form-content'));
+				scrollAndFocusStep();
 			}
 		} catch (error) {
 			logger.error({ error }, 'Error in previousStep navigation');

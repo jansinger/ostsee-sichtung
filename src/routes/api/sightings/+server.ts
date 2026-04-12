@@ -86,16 +86,20 @@ export async function GET(event: RequestEvent) {
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const userIdentifier = locals.user?.sub || 'anonymous';
 	const isAuthenticated = !!locals.user;
-	const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
-	
+	const clientIp =
+		request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+
 	// Security audit logging
-	logger.info({
-		action: 'sighting_submission',
-		user: userIdentifier,
-		authenticated: isAuthenticated,
-		clientIp,
-		userAgent: request.headers.get('user-agent') || 'unknown'
-	}, 'Sighting submission attempt');
+	logger.info(
+		{
+			action: 'sighting_submission',
+			user: userIdentifier,
+			authenticated: isAuthenticated,
+			clientIp,
+			userAgent: request.headers.get('user-agent') || 'unknown'
+		},
+		'Sighting submission attempt'
+	);
 
 	// Rate limiting: 20 submissions per hour per user/IP
 	enforceRateLimit(
@@ -110,11 +114,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 		// Security: Check for honeypot field
 		if (requestBody._honeypot) {
-			logger.warn({
-				action: 'sighting_honeypot_triggered',
-				clientIp,
-				user: userIdentifier
-			}, 'Honeypot field detected - likely spam');
+			logger.warn(
+				{
+					action: 'sighting_honeypot_triggered',
+					clientIp,
+					user: userIdentifier
+				},
+				'Honeypot field detected - likely spam'
+			);
 			throw new ValidationError('Invalid form submission');
 		}
 
@@ -175,13 +182,28 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 		await sightingSchema.validate(formDataWithDefaults, { abortEarly: false });
 
-		// Extract weather data from form if available
-		const weatherData = formDataWithDefaults.weatherData as StoredWeatherData | undefined;
-		
-		if (weatherData) {
-			logger.info({ sightingRef: formDataWithDefaults.referenceId, weatherDataType: weatherData.data_type }, 'Saving sighting with client-provided weather data');
+		// Extract and validate weather data from form if available
+		let weatherData: StoredWeatherData | undefined;
+		if (formDataWithDefaults.weatherData) {
+			const { validateWeatherData } = await import('$lib/server/validation/weatherDataValidation');
+			const weatherResult = validateWeatherData(formDataWithDefaults.weatherData);
+			if (weatherResult.valid) {
+				weatherData = formDataWithDefaults.weatherData as StoredWeatherData;
+				logger.info(
+					{ sightingRef: formDataWithDefaults.referenceId, weatherDataType: weatherData.data_type },
+					'Saving sighting with validated weather data'
+				);
+			} else {
+				logger.warn(
+					{ sightingRef: formDataWithDefaults.referenceId, reason: weatherResult.reason },
+					'Client weather data rejected - saving sighting without weather'
+				);
+			}
 		} else {
-			logger.debug({ sightingRef: formDataWithDefaults.referenceId }, 'No weather data provided with sighting');
+			logger.debug(
+				{ sightingRef: formDataWithDefaults.referenceId },
+				'No weather data provided with sighting'
+			);
 		}
 
 		const { id } = await saveSighting(formDataWithDefaults, weatherData);
