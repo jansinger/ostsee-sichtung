@@ -203,8 +203,8 @@ test.describe('Sichtung melden — Formular absenden', () => {
 	});
 
 	// This test requires a running database — skip in CI (no DB service configured)
-	test.skip(!process.env.DATABASE_POSTGRES_URL, 'Requires database connection (skipped in CI)');
 	test('Submit sendet Formular und zeigt Erfolgsseite', async ({ page }) => {
+		test.skip(!process.env.DATABASE_POSTGRES_URL, 'Requires database connection (skipped in CI)');
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
