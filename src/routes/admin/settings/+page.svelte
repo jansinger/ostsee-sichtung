@@ -313,7 +313,7 @@
 	<!-- Header -->
 	<div class="mb-8 flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
+			<h1 class="flex items-center gap-3 text-3xl font-bold text-gray-900">
 				<Icon icon="lucide:settings" width="32" height="32" class="text-primary" />
 				Anwendungseinstellungen
 			</h1>
@@ -325,9 +325,9 @@
 		<div class="flex gap-3">
 			<!-- Toggle for showing all/active settings - only visible to superadmins -->
 			{#if isSuperAdmin}
-				<div class="form-control">
-					<label class="label cursor-pointer gap-2">
-						<span class="label-text text-sm">Alle Einstellungen anzeigen</span>
+				<div class="fieldset">
+					<label class="flex cursor-pointer items-center gap-2">
+						<span class="text-sm">Alle Einstellungen anzeigen</span>
 						<input
 							type="checkbox"
 							class="toggle toggle-primary toggle-sm"
@@ -399,7 +399,7 @@
 						<Icon icon={iconName} class="text-primary size-7" />
 						<div class="flex-1">
 							<div class="text-xl">{categoryLabels[category] || category}</div>
-							<div class="text-sm font-normal text-gray-500">
+							<div class="text-base-content/60 text-sm font-normal">
 								{categoryDescriptions[category] || ''}
 							</div>
 						</div>
@@ -450,7 +450,9 @@
 											{#if changedConfigs.has(config.key)}
 												<span class="badge badge-warning badge-sm">Geändert</span>
 											{:else if showAllSettings && !activeConfigKeys.has(config.key)}
-												<span class="badge badge-outline badge-sm text-gray-500">Geplant</span>
+												<span class="badge badge-outline badge-sm text-base-content/60"
+													>Geplant</span
+												>
 											{/if}
 										</div>
 										{#if config.description}
@@ -475,9 +477,9 @@
 								</div>
 
 								<!-- Config Input -->
-								<div class="form-control w-full">
+								<div class="fieldset w-full">
 									{#if inputType === 'checkbox'}
-										<label class="label cursor-pointer justify-start gap-3">
+										<label class="flex cursor-pointer items-center justify-start gap-3">
 											<input
 												type="checkbox"
 												class="checkbox checkbox-primary"
@@ -485,14 +487,14 @@
 												onchange={(e) =>
 													handleInputChange(config, (e.target as HTMLInputElement).checked)}
 											/>
-											<span class="label-text">
+											<span>
 												{config.value ? 'Aktiviert' : 'Deaktiviert'}
 											</span>
 										</label>
 									{:else if inputType === 'number'}
 										<input
 											type="number"
-											class="input input-bordered w-full"
+											class="input w-full"
 											value={Number(config.value)}
 											oninput={(e) =>
 												handleInputChange(config, Number((e.target as HTMLInputElement).value))}
@@ -502,20 +504,20 @@
 										<div>
 											<input
 												type="text"
-												class="input input-bordered w-full"
+												class="input w-full"
 												value={Array.isArray(config.value) ? config.value.join(', ') : ''}
 												oninput={(e) => handleArrayChange(config, e)}
 												placeholder="Werte durch Komma getrennt"
 											/>
 											<div class="label">
-												<span class="label-text-alt text-gray-500">
+												<span class="text-base-content/60">
 													Aktuelle Werte: {getValueDisplay(config.value) || 'Keine'}
 												</span>
 											</div>
 										</div>
 									{:else if inputType === 'json'}
 										<textarea
-											class="textarea textarea-bordered h-24 font-mono text-sm"
+											class="textarea h-24 font-mono text-sm"
 											value={typeof config.value === 'object'
 												? JSON.stringify(config.value, null, 2)
 												: String(config.value)}
@@ -524,7 +526,7 @@
 										></textarea>
 									{:else if inputType === 'textarea'}
 										<textarea
-											class="textarea textarea-bordered h-32"
+											class="textarea h-32"
 											value={String(config.value)}
 											oninput={(e) =>
 												handleInputChange(config, (e.target as HTMLTextAreaElement).value)}
@@ -533,7 +535,7 @@
 									{:else}
 										<input
 											type="text"
-											class="input input-bordered w-full"
+											class="input w-full"
 											value={String(config.value)}
 											oninput={(e) =>
 												handleInputChange(config, (e.target as HTMLTextAreaElement).value)}

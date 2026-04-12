@@ -97,16 +97,16 @@
 			</div>
 
 			<div class="space-y-4">
-				<div class="form-control w-full">
+				<div class="fieldset w-full">
 					<label for="year-select" class="label py-1">
-						<span class="label-text text-sm font-medium">Jahr</span>
+						<span class="text-sm font-medium">Jahr</span>
 						{#if isApplyingFilter}
 							<Icon icon="lucide:loader-2" class="text-primary ml-2 h-3 w-3 animate-spin" />
 						{/if}
 					</label>
 					<select
 						id="year-select"
-						class="select select-bordered select-sm focus:select-primary w-full text-sm {isApplyingFilter
+						class="select select-sm focus:select-primary w-full text-sm {isApplyingFilter
 							? 'loading'
 							: ''}"
 						title="Wählen Sie das Jahr aus, für das Sichtungen angezeigt werden sollen"
@@ -119,9 +119,9 @@
 					</select>
 				</div>
 
-				<div class="form-control w-full">
+				<div class="fieldset w-full">
 					<label for="filter-input" class="label py-1">
-						<span class="label-text text-sm font-medium">Suchen</span>
+						<span class="text-sm font-medium">Suchen</span>
 					</label>
 					<div class="relative">
 						<input
@@ -129,7 +129,7 @@
 							type="text"
 							bind:value={searchValue}
 							placeholder="E-Mail, Name, Schiff..."
-							class="input input-bordered input-sm focus:input-primary w-full pr-10"
+							class="input input-sm focus:input-primary w-full pr-10"
 							title="Nach E-Mail, Schiffsname, Name oder Vorname filtern (Return zum filtern)."
 							aria-describedby="filter-help"
 							onkeydown={(e) => {
@@ -145,7 +145,7 @@
 						{/if}
 					</div>
 					<label class="label py-0" for="filter-input">
-						<span id="filter-help" class="label-text-alt text-base-content/60 text-xs">
+						<span id="filter-help" class="text-base-content/60 text-xs">
 							{isApplyingFilter ? 'Filter wird angewendet...' : 'Enter-Taste zum Filtern drücken'}
 						</span>
 					</label>
@@ -153,13 +153,13 @@
 
 				<div class="space-y-3">
 					<div class="label py-1">
-						<span class="label-text text-sm font-medium">Zeitraum</span>
+						<span class="text-sm font-medium">Zeitraum</span>
 					</div>
 
 					<div class="space-y-3">
 						<div>
 							<label class="label py-0" for="time-range-start">
-								<span class="label-text-alt text-xs">Start</span>
+								<span class="text-xs">Start</span>
 							</label>
 							<input
 								type="range"
@@ -179,7 +179,7 @@
 
 						<div>
 							<label class="label py-0" for="time-range-end">
-								<span class="label-text-alt text-xs">Ende</span>
+								<span class="text-xs">Ende</span>
 							</label>
 							<input
 								type="range"
