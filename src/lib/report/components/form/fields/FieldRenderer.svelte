@@ -123,14 +123,19 @@
 	let isValid = $derived(hasValue && !hasError);
 
 	// Type normalization
-	let normalizedType = $derived(metaValues.type === 'string' ? 'text' : metaValues.type === 'boolean' ? 'toggle' : metaValues.type);
+	let normalizedType = $derived(
+		metaValues.type === 'string'
+			? 'text'
+			: metaValues.type === 'boolean'
+				? 'toggle'
+				: metaValues.type
+	);
 
 	// Dynamic CSS classes
 	let containerClasses = $derived.by(() => {
-		const base = 'form-control w-full';
-		const sizeClass = size === 'sm' ? 'form-control-sm' : size === 'lg' ? 'form-control-lg' : '';
+		const base = 'fieldset w-full';
 		const variantClass = variant === 'compact' ? 'compact' : variant === 'full' ? 'full-width' : '';
-		return [base, sizeClass, variantClass].filter(Boolean).join(' ');
+		return [base, variantClass].filter(Boolean).join(' ');
 	});
 
 	// Field IDs for accessibility
@@ -143,7 +148,8 @@
 	let ariaDescribedBy = $derived.by(() => {
 		const ids = [];
 		if (metaValues.helpText) ids.push(helpId);
-		if (metaValues.description && metaValues.description !== metaValues.helpText) ids.push(descriptionId);
+		if (metaValues.description && metaValues.description !== metaValues.helpText)
+			ids.push(descriptionId);
 		if (error) ids.push(errorId);
 		return ids.length > 0 ? ids.join(' ') : undefined;
 	});
@@ -230,7 +236,7 @@
 	<!-- Enhanced Label with Status Indicators -->
 	<label for={fieldId} class="label w-full overflow-hidden pb-1">
 		<span
-			class="label-text text-base-content block font-medium"
+			class="text-base-content block font-medium"
 			style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
 		>
 			{label}

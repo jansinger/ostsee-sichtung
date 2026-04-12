@@ -112,7 +112,7 @@ body {
 }
 
 /* Kompaktere Form-Elemente */
-.iframe-mode .form-control {
+.iframe-mode .fieldset {
 	margin-bottom: 1rem;
 }
 

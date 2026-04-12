@@ -40,7 +40,7 @@
 
 	// Dynamic CSS classes - using pure DaisyUI
 	let inputClasses = $derived.by(() => {
-		const base = 'input input-bordered w-full';
+		const base = 'input w-full';
 		const stateClass = hasError ? 'input-error' : isValid ? 'input-success' : '';
 		const sizeClass = size === 'sm' ? 'input-sm' : size === 'lg' ? 'input-lg' : '';
 		const iconPadding = icon !== undefined ? 'pl-10' : '';
@@ -76,7 +76,7 @@
 		<div
 			class="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center"
 		>
-			<Icon icon={icon} width="16" class="text-base-content/60" />
+			<Icon {icon} width="16" class="text-base-content/60" />
 		</div>
 	{/if}
 
