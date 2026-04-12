@@ -201,15 +201,13 @@ export function enforceRateLimit(
 }
 
 /**
- * Hilfsfunktion für Rate Limit Headers
+ * Builds rate limit headers from an already-computed result.
+ * Pure function — no side effects, no counter increment.
  */
-export function getRateLimitHeaders(
-	identifier: string,
+export function buildRateLimitHeaders(
 	config: RateLimitConfig,
-	endpoint: string
+	result: { remaining: number; resetTime: number }
 ): Record<string, string> {
-	const result = checkRateLimit(identifier, config, endpoint);
-
 	return {
 		'X-RateLimit-Limit': config.maxRequests.toString(),
 		'X-RateLimit-Remaining': result.remaining.toString(),

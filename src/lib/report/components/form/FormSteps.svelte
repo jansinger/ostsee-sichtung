@@ -30,19 +30,23 @@
 	<ul class="steps steps-horizontal w-full">
 		{#each steps as step, index (step.id)}
 			{@const navigable = canNavigateTo(index)}
-			<button
-				type="button"
-				class="step {currentStep >= index ? 'step-primary' : ''} step-button"
-				class:cursor-pointer={navigable}
-				class:cursor-not-allowed={!navigable}
-				class:opacity-50={!navigable && index > currentStep}
-				onclick={() => handleStepClick(index)}
-				disabled={!navigable}
-				aria-current={currentStep === index ? 'step' : undefined}
-				title={navigable ? step.description : 'Bitte füllen Sie zuerst die vorherigen Schritte aus'}
-				aria-label={step.title}
-			>
-			</button>
+			<li class="step {currentStep >= index ? 'step-primary' : ''}">
+				<button
+					type="button"
+					class="step-button"
+					class:cursor-pointer={navigable}
+					class:cursor-not-allowed={!navigable}
+					class:opacity-50={!navigable && index > currentStep}
+					onclick={() => handleStepClick(index)}
+					disabled={!navigable}
+					aria-current={currentStep === index ? 'step' : undefined}
+					title={navigable
+						? step.description
+						: 'Bitte füllen Sie zuerst die vorherigen Schritte aus'}
+					aria-label={step.title}
+				>
+				</button>
+			</li>
 		{/each}
 	</ul>
 </div>

@@ -7,7 +7,7 @@
 	import { createLogger } from '$lib/logger';
 	import { USER_CONTACT_FIELDS } from '$lib/report/formConfig';
 	import { getFormContext } from '$lib/report/formContext';
-	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
+	import { clearUserContactData, loadUserContactData } from '$lib/storage/localStorage';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 
 	const logger = createLogger('report:step4-contact');
@@ -23,7 +23,7 @@
 
 	function clearContactData() {
 		if (confirm('Sind Sie sicher, dass Sie alle gespeicherten Kontaktdaten löschen möchten?')) {
-			clearAllStorage();
+			clearUserContactData();
 			hasSavedContactData = false;
 
 			// Clear contact fields in form state without page reload

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { USER_CONTACT_FIELDS } from '$lib/report/formConfig';
 	import { getFormContext } from '$lib/report/formContext';
-	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
+	import { clearUserContactData, loadUserContactData } from '$lib/storage/localStorage';
 	import { createToast } from '$lib/stores/toastState.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 
@@ -29,7 +29,7 @@
 				'Möchten Sie wirklich alle gespeicherten Kontaktdaten löschen? Diese müssen dann bei der nächsten Sichtung erneut eingegeben werden.'
 			)
 		) {
-			clearAllStorage();
+			clearUserContactData();
 			hasSavedContactData = false;
 
 			// Clear contact fields in form state without page reload

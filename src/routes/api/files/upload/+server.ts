@@ -9,7 +9,8 @@ import { ServerConfigService } from '$lib/services/configService';
 import {
 	RATE_LIMITS,
 	enforceRateLimit,
-	createRateLimitIdentifier
+	createRateLimitIdentifier,
+	buildRateLimitHeaders
 } from '$lib/server/middleware/rateLimit';
 import { isCuid } from '@paralleldrive/cuid2';
 import { error, isHttpError, json } from '@sveltejs/kit';
@@ -201,12 +202,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 		// Add rate limit headers from the already-computed result (no second counter increment)
 		return json(uploadedFile, {
-			headers: {
-				'X-RateLimit-Limit': rateLimitConfig.maxRequests.toString(),
-				'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
-				'X-RateLimit-Reset': Math.ceil(rateLimitResult.resetTime / 1000).toString(),
-				'X-RateLimit-Window': Math.ceil(rateLimitConfig.windowMs / 1000).toString()
-			}
+			headers: buildRateLimitHeaders(rateLimitConfig, rateLimitResult)
 		});
 	} catch (err) {
 		// Re-throw SvelteKit HttpErrors (from error() helper) and Responses

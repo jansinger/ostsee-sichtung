@@ -9,7 +9,7 @@ const logger = createLogger('validation:weatherData');
 
 /**
  * Validates that weather data from the client has the expected structure.
- * Returns the validated data or null if invalid.
+ * Returns `{ valid: true, data }` on success or `{ valid: false, reason }` on failure.
  */
 export function validateWeatherData(
 	data: unknown

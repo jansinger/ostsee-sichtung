@@ -243,6 +243,17 @@ export function loadUserContactData(): UserContactData {
  *
  * @note Löscht auch die User-Kontaktdaten - Benutzer muss alles neu eingeben
  */
+/**
+ * Löscht ausschließlich Benutzer-Kontaktdaten aus beiden Storage-Typen.
+ * Formulardaten und Navigations-State bleiben erhalten.
+ * Für den "Kontaktdaten löschen"-Button in FormActions und Step4Contact.
+ */
+export function clearUserContactData(): void {
+	if (!browser) return;
+	localStorage.removeItem(STORAGE_KEYS.USER_CONTACT_DATA);
+	sessionStorage.removeItem(STORAGE_KEYS.USER_CONTACT_DATA);
+}
+
 export function clearAllStorage(): void {
 	if (!browser) return;
 
