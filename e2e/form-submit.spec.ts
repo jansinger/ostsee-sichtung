@@ -90,14 +90,23 @@ test.describe('Sichtung melden — Formular Navigation', () => {
 // ── Step Validation Tests ───────────────────────────────────────────────────
 
 test.describe('Sichtung melden — Step-Validierung', () => {
-	test('Step-Buttons vorwärts sind disabled wenn aktuelle Felder leer', async ({ page }) => {
+	test('Step-Buttons vorwärts sind disabled wenn Zwischen-Steps nicht valid', async ({ page }) => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		// Step 2/3/4 Buttons sollten disabled sein (Step 1 nicht ausgefüllt)
+		// Step 1 hat Schema-Defaults (sightingDate=today) und ist daher valid.
+		// Step 2 hat required fields (species, distance, sightingFrom, boatDrive) ohne Defaults.
+		// Also: Step 1→2 erlaubt, aber Step 2→3 und Step 2→4 blockiert.
+		await fillStep1(formPage);
+		await waitForNextEnabled(page);
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Sichtungsdetails/i);
+
 		const stepButtons = page.locator('.step-button');
-		// Button 1 (index 1 = Step 2) sollte disabled sein
-		await expect(stepButtons.nth(1)).toBeDisabled();
+		// Step 1 (rückwärts) = enabled, Step 2 (aktuell) = enabled
+		await expect(stepButtons.nth(0)).toBeEnabled();
+		await expect(stepButtons.nth(1)).toBeEnabled();
+		// Step 3/4 (vorwärts, Step 2 nicht valid) = disabled
 		await expect(stepButtons.nth(2)).toBeDisabled();
 		await expect(stepButtons.nth(3)).toBeDisabled();
 	});
@@ -121,7 +130,13 @@ test.describe('Sichtung melden — Step-Validierung', () => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		// Versuche ohne Daten zum nächsten Step zu navigieren
+		// Step 1 hat Schema-Defaults → ist valid. Navigiere zu Step 2.
+		await fillStep1(formPage);
+		await waitForNextEnabled(page);
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Sichtungsdetails/i);
+
+		// Versuche ohne ausgefüllte Step-2-Felder weiter zu navigieren
 		await formPage.clickNext();
 
 		// Toast-Notification mit Validierungsfehler sollte erscheinen
@@ -188,7 +203,7 @@ test.describe('Sichtung melden — Formular absenden', () => {
 		await formPage.clickSubmit();
 
 		// Erfolgsmeldung sollte erscheinen (SubmissionSuccess Komponente)
-		await expect(page.getByText(/Bestätigung|erfolgreich|Vielen Dank/i)).toBeVisible({
+		await expect(page.getByRole('heading', { name: /Vielen Dank/i })).toBeVisible({
 			timeout: 10000
 		});
 	});

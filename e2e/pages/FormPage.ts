@@ -8,9 +8,9 @@ import type { Page, Locator } from '@playwright/test';
  * elements by FieldRenderer.svelte (not on a wrapper div). Use `[data-testid="field-X"]`
  * directly to target the field.
  *
- * Note on navigation: Step indicator buttons do NOT navigate directly. Navigation
- * only works via clickNext() / clickPrevious(). Forward navigation requires the
- * current step to be valid.
+ * Note on navigation: Step indicator buttons allow direct navigation.
+ * Backward: always allowed. Forward: only if all intermediate steps are valid.
+ * Steps with unmet validation are disabled. Primary navigation via clickNext() / clickPrevious().
  */
 export class FormPage {
 	constructor(private page: Page) {}
