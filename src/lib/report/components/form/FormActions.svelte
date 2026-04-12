@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { USER_CONTACT_FIELDS } from '$lib/report/formConfig';
 	import { getFormContext } from '$lib/report/formContext';
 	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
 	import { createToast } from '$lib/stores/toastState.svelte';
@@ -12,10 +13,10 @@
 		onReset?: () => void;
 	} = $props();
 
-	const { isSubmitting } = getFormContext();
+	const { isSubmitting, form, handleChange } = getFormContext();
 
 	// Check if user has saved contact data
-	const hasSavedContactData = $derived(() => {
+	const hasSavedContactData = $derived.by(() => {
 		const contactData = loadUserContactData();
 		return Object.keys(contactData).length > 0;
 	});
@@ -27,9 +28,14 @@
 			)
 		) {
 			clearAllStorage();
+
+			// Clear contact fields in form state without page reload
+			for (const field of USER_CONTACT_FIELDS) {
+				const defaultValue = typeof $form[field] === 'boolean' ? false : '';
+				handleChange({ target: { name: field, value: defaultValue } } as unknown as Event);
+			}
+
 			createToast('success', 'Gespeicherte Kontaktdaten wurden gelöscht');
-			// Reload the page to reset the form with empty contact data
-			window.location.reload();
 		}
 	}
 </script>
@@ -51,7 +57,7 @@
 
 		<!-- Middle Column: Clear Contact Data or Empty -->
 		<div class="flex justify-center">
-			{#if hasSavedContactData()}
+			{#if hasSavedContactData}
 				<button
 					type="button"
 					class="btn btn-warning btn-sm w-full sm:w-auto"

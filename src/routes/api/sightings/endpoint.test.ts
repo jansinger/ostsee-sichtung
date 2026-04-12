@@ -145,6 +145,24 @@ describe('/api/sightings POST endpoint', () => {
 		expect(result.errors).toBeDefined();
 	});
 
+	it('should reject requests with honeypot field (spam protection)', async () => {
+		const spamRequest = createMockRequestEvent({
+			firstName: 'Spammer',
+			lastName: 'Bot',
+			email: 'spam@example.com',
+			species: 0,
+			totalCount: 1,
+			privacyConsent: true,
+			_honeypot: 'i-am-a-bot' // Honeypot field filled = spam
+		});
+
+		const response = await POST(spamRequest);
+		const result = await response.json();
+
+		expect(response.status).toBe(400);
+		expect(result.success).toBe(false);
+	});
+
 	it('should reject non-object request bodies', async () => {
 		const invalidRequest = createMockRequestEvent('not an object');
 

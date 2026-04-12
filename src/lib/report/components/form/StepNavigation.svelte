@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
 	import { isStepValid, validateStep } from '$lib/form/validation/stepValidation';
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
@@ -31,8 +30,6 @@
 	const isLastStep = $derived(currentStep >= totalSteps - 1);
 	const isFirstStep = $derived(currentStep <= 0);
 
-	const formContent = browser ? (document.getElementById('form-content') as HTMLElement) : null;
-
 	// Navigation functions
 	async function nextStep(): Promise<void> {
 		try {
@@ -46,7 +43,7 @@
 				await handleFormSubmission();
 			} else {
 				currentStep += 1;
-				scrollToElement(formContent);
+				scrollToElement(document.getElementById('form-content'));
 			}
 		} catch (error) {
 			logger.error({ error }, 'Error in nextStep navigation');
@@ -57,7 +54,7 @@
 		try {
 			if (!isFirstStep) {
 				currentStep -= 1;
-				scrollToElement(formContent);
+				scrollToElement(document.getElementById('form-content'));
 			}
 		} catch (error) {
 			logger.error({ error }, 'Error in previousStep navigation');
@@ -144,7 +141,6 @@
 		onclick={nextStep}
 		disabled={$isSubmitting || !canGoNext}
 		class="btn btn-primary"
-		class:loading={$isSubmitting}
 		aria-label={isLastStep ? 'Formular absenden' : 'Nächster Schritt'}
 	>
 		{#if $isSubmitting}

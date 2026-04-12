@@ -3,9 +3,9 @@
 
 /* ===== Local Fonts - Optimized with font-display ===== */
 /* Only load essential weights initially, others on-demand */
-@import '@fontsource/roboto/400.css';  /* Regular - Primary text */
-@import '@fontsource/roboto/500.css';  /* Medium - Headings */
-@import '@fontsource/roboto/700.css';  /* Bold - Emphasis */
+@import '@fontsource/roboto/400.css'; /* Regular - Primary text */
+@import '@fontsource/roboto/500.css'; /* Medium - Headings */
+@import '@fontsource/roboto/700.css'; /* Bold - Emphasis */
 
 @import './css/weather-icons.css';
 @import './css/weather-icons-wind.css';
@@ -15,50 +15,53 @@
 
 /* Add font-display: swap for better perceived performance */
 @layer base {
-  @font-face {
-    font-family: 'Roboto';
-    font-display: swap;
-  }
+	@font-face {
+		font-family: 'Roboto';
+		font-display: swap;
+	}
 }
 
 /* ===== DaisyUI Plugin mit Theme ===== */
 @plugin 'daisyui';
-@plugin "daisyui/theme" {
-  name: "meeresmuseum";
-  color-scheme: light;
-  default: true; /* set as default */
-  prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
+@plugin 'daisyui/theme' {
+	name: 'meeresmuseum';
+	color-scheme: light;
+	default: true; /* set as default */
+	prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
 
-  --color-primary: oklch(0.35 0.089 235.3);       /* Aufgehellt für WCAG AA mit weißem Text */
-  --color-primary-content: oklch(1 0 0);
-  --color-secondary: oklch(0.65 0.040 215.2);     /* Aufgehellt für besseren Kontrast */
-  --color-secondary-content: oklch(1 0 0);
-  --color-accent: oklch(0.80 0.047 215.0);
-  --color-accent-content: oklch(0.25 0.089 235.3);
-  --color-neutral: oklch(0.37 0.016 251.8);
-  --color-neutral-content: oklch(1 0 0);
-  --color-base-100: oklch(0.9403 0.0104 247.9);  /* Beibehalten wie gewünscht */
-  --color-base-200: oklch(0.88 0.012 247.9);      /* Etwas dunkler als base-100 */
-  --color-base-300: oklch(0.82 0.015 247.9);      /* Noch dunkler für Borders */
-  --color-base-content: oklch(0.15 0.022 251.8);  /* Dunkler für WCAG AA Kontrast (>4.5:1) */
-  --color-info: oklch(0.91 0.05 230);      /* Sehr heller Hintergrund für Alerts */
-  --color-info-content: oklch(0.25 0.089 235.3);  /* Dunkles Blau für WCAG AA Kontrast */      
-  --color-success: oklch(0.91 0.06 145);   /* Sehr heller grüner Hintergrund */
-  --color-success-content: oklch(0.25 0.12 145);  /* Dunkles Grün für WCAG AA Kontrast */      
-  --color-warning: oklch(0.92 0.08 85);    /* Sehr heller gelber Hintergrund */
-  --color-warning-content: oklch(0.35 0.10 85);   /* Dunkles Gelb-Orange für Kontrast */
-  --color-error: oklch(0.91 0.06 25);      /* Sehr heller roter Hintergrund */
-  --color-error-content: oklch(0.35 0.14 25);     /* Dunkles Rot für WCAG AA Kontrast */
+	--color-primary: oklch(0.35 0.089 235.3); /* Aufgehellt für WCAG AA mit weißem Text */
+	--color-primary-content: oklch(1 0 0);
+	--color-secondary: oklch(0.65 0.04 215.2); /* Aufgehellt für besseren Kontrast */
+	--color-secondary-content: oklch(1 0 0);
+	--color-accent: oklch(0.8 0.047 215);
+	--color-accent-content: oklch(0.25 0.089 235.3);
+	--color-neutral: oklch(0.37 0.016 251.8);
+	--color-neutral-content: oklch(1 0 0);
+	--color-base-100: oklch(0.9403 0.0104 247.9); /* Beibehalten wie gewünscht */
+	--color-base-200: oklch(0.88 0.012 247.9); /* Etwas dunkler als base-100 */
+	--color-base-300: oklch(0.82 0.015 247.9); /* Noch dunkler für Borders */
+	--color-base-content: oklch(0.15 0.022 251.8); /* Dunkler für WCAG AA Kontrast (>4.5:1) */
+	/* Status colors: DaisyUI v5 convention — base color is the "main" color
+     used for buttons, text, badges. Content is text ON that color.
+     DaisyUI v5 alerts automatically lighten the base color for backgrounds. */
+	--color-info: oklch(0.55 0.12 230); /* Blau für Buttons/Text */
+	--color-info-content: oklch(1 0 0); /* Weiß auf Info */
+	--color-success: oklch(0.55 0.16 145); /* Grün für Buttons/Text */
+	--color-success-content: oklch(1 0 0); /* Weiß auf Success */
+	--color-warning: oklch(0.65 0.16 85); /* Gelb-Orange für Buttons/Text */
+	--color-warning-content: oklch(1 0 0); /* Weiß auf Warning */
+	--color-error: oklch(0.55 0.18 25); /* Rot für Buttons/Text */
+	--color-error-content: oklch(1 0 0); /* Weiß auf Error */
 
-  --rounded-box: 0.5rem;
-  --rounded-btn: 0.375rem;
-  --rounded-badge: 1rem;
-  --animation-btn: 0.25s;
-  --animation-input: 0.2s;
-  --btn-focus-scale: 0.98;
-  --border-btn: 1px;
-  --tab-border: 1px;
-};
+	--rounded-box: 0.5rem;
+	--rounded-btn: 0.375rem;
+	--rounded-badge: 1rem;
+	--animation-btn: 0.25s;
+	--animation-input: 0.2s;
+	--btn-focus-scale: 0.98;
+	--border-btn: 1px;
+	--tab-border: 1px;
+}
 
 /* ===== OpenLayers Map ===== */
 @import 'ol/ol.css';
@@ -68,7 +71,7 @@ body {
 	font-family: 'Roboto', 'system-ui', 'sans-serif';
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-  background-color: oklch(var(--base-100));
+	background-color: oklch(var(--base-100));
 }
 
 /* ===== iframe Integration Styles ===== */
@@ -110,7 +113,7 @@ body {
 .iframe-mode .input,
 .iframe-mode .select,
 .iframe-mode .textarea {
-	font-size: 1rem;  /* WCAG AA: Mindestens 16px für Formulare */
+	font-size: 1rem; /* WCAG AA: Mindestens 16px für Formulare */
 }
 
 /* Navigation für iframe anpassen */
@@ -123,102 +126,49 @@ body {
 }
 
 /* ===== Typography ===== */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
 	font-family: 'Roboto', 'system-ui', 'sans-serif';
 	font-weight: 600;
 	line-height: 1.2;
 }
 
 /* ===== Component Refinements ===== */
+/* Status colors are now set correctly in the theme (dark base, white content).
+   DaisyUI v5 handles button/text/alert styling automatically via theme variables.
+   No !important overrides needed for buttons or text utilities. */
 
-/* Button-spezifische Farben für bessere Sichtbarkeit */
-.btn-error {
-	background-color: oklch(0.55 0.18 25) !important;  /* Dunkleres Rot für Buttons */
-	border-color: oklch(0.55 0.18 25) !important;
-	color: oklch(1 0 0) !important;  /* Weißer Text */
-}
-
-.btn-error:hover {
-	background-color: oklch(0.45 0.18 25) !important;  /* Noch dunkler beim Hover */
-	border-color: oklch(0.45 0.18 25) !important;
-}
-
-.btn-success {
-	background-color: oklch(0.55 0.16 145) !important;  /* Dunkleres Grün für Buttons */
-	border-color: oklch(0.55 0.16 145) !important;
-	color: oklch(1 0 0) !important;
-}
-
-.btn-success:hover {
-	background-color: oklch(0.45 0.16 145) !important;
-	border-color: oklch(0.45 0.16 145) !important;
-}
-
-.btn-warning {
-	background-color: oklch(0.65 0.16 85) !important;  /* Dunkleres Gelb für Buttons */
-	border-color: oklch(0.65 0.16 85) !important;
-	color: oklch(1 0 0) !important;
-}
-
-.btn-warning:hover {
-	background-color: oklch(0.55 0.16 85) !important;
-	border-color: oklch(0.55 0.16 85) !important;
-}
-
-.btn-info {
-	background-color: oklch(0.55 0.12 230) !important;  /* Dunkleres Blau für Buttons */
-	border-color: oklch(0.55 0.12 230) !important;
-	color: oklch(1 0 0) !important;
-}
-
-.btn-info:hover {
-	background-color: oklch(0.45 0.12 230) !important;
-	border-color: oklch(0.45 0.12 230) !important;
-}
-
-/* Text-Farben für bessere Lesbarkeit auf hellen Hintergründen */
-.text-success {
-	color: oklch(0.35 0.16 145) !important;  /* Dunkleres Grün für besseren Kontrast */
-}
-
-.text-error {
-	color: oklch(0.40 0.18 25) !important;   /* Dunkleres Rot für besseren Kontrast */
-}
-
-.text-warning {
-	color: oklch(0.45 0.16 85) !important;   /* Dunkleres Gelb-Orange */
-}
-
-.text-info {
-	color: oklch(0.35 0.12 230) !important;  /* Dunkleres Blau */
-}
-
-/* Alert-spezifische Text-Farben */
-.alert-success .text-success,
-.alert-success {
-	color: oklch(0.25 0.12 145);  /* Nutzt success-content Farbe */
-}
-
-.alert-error .text-error,
+/* Alerts: Use soft style by default (light background, dark text).
+   DaisyUI v5 default alerts use the base color as background (too dark for our theme).
+   The alert-soft variant gives color-mix(8% color, base-100) — perfect for readable alerts. */
+.alert-info,
+.alert-success,
+.alert-warning,
 .alert-error {
-	color: oklch(0.35 0.14 25);   /* Nutzt error-content Farbe */
-}
-
-.alert-warning .text-warning,
-.alert-warning {
-	color: oklch(0.35 0.10 85);   /* Nutzt warning-content Farbe */
-}
-
-.alert-info .text-info,
-.alert-info {
-	color: oklch(0.25 0.089 235.3);  /* Nutzt info-content Farbe */
+	color: var(--alert-color, var(--color-base-content));
+	background: color-mix(
+		in oklab,
+		var(--alert-color, var(--color-base-content)) 12%,
+		var(--color-base-100)
+	);
+	--alert-border-color: color-mix(
+		in oklab,
+		var(--alert-color, var(--color-base-content)) 20%,
+		var(--color-base-100)
+	);
+	box-shadow: none;
+	background-image: none;
 }
 
 /* Enhanced form focus - WCAG AA konform */
 .input:focus,
-.select:focus, 
+.select:focus,
 .textarea:focus {
-	outline: 3px solid oklch(var(--color-primary));  /* Deutlicher Focus-Indikator */
+	outline: 3px solid oklch(var(--color-primary)); /* Deutlicher Focus-Indikator */
 	outline-offset: 2px;
 	box-shadow: 0 0 0 4px oklch(var(--color-primary) / 0.2);
 }
@@ -239,10 +189,18 @@ h1, h2, h3, h4, h5, h6 {
 	border-style: solid;
 }
 
-.alert-info { border-left-width: 4px; }
-.alert-success { border-left-width: 4px; }
-.alert-warning { border-left-width: 4px; }
-.alert-error { border-left-width: 4px; }
+.alert-info {
+	border-left-width: 4px;
+}
+.alert-success {
+	border-left-width: 4px;
+}
+.alert-warning {
+	border-left-width: 4px;
+}
+.alert-error {
+	border-left-width: 4px;
+}
 
 /* ===== Component Animations ===== */
 @keyframes fadeIn {
@@ -328,7 +286,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ===== Global Panel Styles ===== */
 .panel-transition {
-	transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+	transition:
+		transform 0.3s ease-in-out,
+		opacity 0.3s ease-in-out;
 }
 
 .panel-shadow {
@@ -357,7 +317,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ===== Motion ===== */
 @media (prefers-reduced-motion: reduce) {
-	*, *::before, *::after {
+	*,
+	*::before,
+	*::after {
 		animation-duration: 0.01ms !important;
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;

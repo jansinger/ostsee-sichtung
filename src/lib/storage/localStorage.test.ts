@@ -30,7 +30,7 @@ const localStorageMock = (() => {
 	};
 })();
 
-// Mock sessionStorage für Node.js Tests  
+// Mock sessionStorage für Node.js Tests
 const sessionStorageMock = (() => {
 	let store: Record<string, string> = {};
 	return {
@@ -85,6 +85,48 @@ describe('localStorage utilities', () => {
 
 			const result = loadFromStorage('corrupted-key', defaultValue);
 			expect(result).toEqual(defaultValue);
+		});
+	});
+
+	describe('loadFromStorage — sanitization (SEC-1)', () => {
+		it('should reject non-object data when object is expected', () => {
+			sessionStorage.setItem(STORAGE_KEYS.FORM_DATA, '"string-instead-of-object"');
+			const result = loadFromStorage(STORAGE_KEYS.FORM_DATA, { species: 0 });
+			expect(result).toEqual({ species: 0 });
+		});
+
+		it('should reject array data when object is expected', () => {
+			sessionStorage.setItem(STORAGE_KEYS.FORM_DATA, '[1,2,3]');
+			const result = loadFromStorage(STORAGE_KEYS.FORM_DATA, { species: 0 });
+			expect(result).toEqual({ species: 0 });
+		});
+
+		it('should filter out unknown fields (whitelist based on default)', () => {
+			sessionStorage.setItem(
+				STORAGE_KEYS.FORM_DATA,
+				JSON.stringify({ species: 0, totalCount: 2, malicious: '<script>alert(1)</script>' })
+			);
+			const result = loadFromStorage(STORAGE_KEYS.FORM_DATA, {
+				species: -1,
+				totalCount: 0
+			});
+			expect(result).toEqual({ species: 0, totalCount: 2 });
+			expect((result as Record<string, unknown>)['malicious']).toBeUndefined();
+		});
+
+		it('should fill missing fields with defaults', () => {
+			sessionStorage.setItem(STORAGE_KEYS.FORM_DATA, JSON.stringify({ species: 0 }));
+			const result = loadFromStorage(STORAGE_KEYS.FORM_DATA, {
+				species: -1,
+				totalCount: 0
+			});
+			expect(result).toEqual({ species: 0, totalCount: 0 });
+		});
+
+		it('should pass through primitive defaults without sanitization', () => {
+			sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, '2');
+			const result = loadFromStorage(STORAGE_KEYS.CURRENT_STEP, 0);
+			expect(result).toBe(2);
 		});
 	});
 

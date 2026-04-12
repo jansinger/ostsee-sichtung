@@ -86,9 +86,11 @@ npm run type-check   # TypeScript
 npm run check        # Svelte-Check
 
 # Tests
-npm run test:unit    # Unit Tests
-npm run test:e2e     # E2E Tests
-npm run test:quick   # Schnell-Test
+npm run test:unit         # Server Unit Tests (schnell, kein Browser)
+npm run test:unit:client  # Browser-Komponenten-Tests (Playwright)
+npm run test:unit:all     # Alle Unit Tests (Server + Browser)
+npm run test:e2e          # E2E Tests
+npm run test:quick        # Schnell-Test (lint + types + check + unit)
 ```
 
 ---

@@ -87,7 +87,33 @@ export function loadFromStorage<T>(key: string, defaultValue: T): T {
 	const stored = getItem(key);
 	if (stored) {
 		try {
-			return JSON.parse(stored); // Sichere JSON-Deserialisierung
+			const parsed = JSON.parse(stored);
+
+			// Sanitize: only accept objects when default is an object,
+			// reject arrays/primitives that don't match the expected type
+			if (typeof defaultValue === 'object' && defaultValue !== null) {
+				if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+					console.warn(`Storage-Typfehler für ${key}: erwartet Objekt, erhalten ${typeof parsed}`);
+					return defaultValue;
+				}
+				// Whitelist: only keep keys that exist in the default value
+				// Skip filtering if default is empty (e.g. {} as UserContactData)
+				const defaultKeys = Object.keys(defaultValue);
+				if (defaultKeys.length > 0) {
+					const sanitized: Record<string, unknown> = {};
+					for (const k of defaultKeys) {
+						if (k in parsed) {
+							sanitized[k] = parsed[k];
+						} else {
+							sanitized[k] = (defaultValue as Record<string, unknown>)[k];
+						}
+					}
+					return sanitized as T;
+				}
+				return parsed as T;
+			}
+
+			return parsed as T;
 		} catch (e) {
 			console.error(`JSON-Parse-Fehler für ${key} aus Storage:`, e);
 			return defaultValue; // Fallback bei korrupten Daten

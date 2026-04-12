@@ -55,7 +55,6 @@ export class FormPage {
 	// ── Step 2: Sichtungsdetails ─────────────────────────────────────────────
 
 	async selectSpecies(index: number) {
-		// For select fields, data-testid may be on the select element or a wrapper
 		await this.page.locator('[data-testid="field-species"]').selectOption(String(index));
 	}
 
@@ -65,6 +64,18 @@ export class FormPage {
 
 	async fillJuvenileCount(value: number) {
 		await this.page.locator('[data-testid="field-juvenileCount"]').fill(String(value));
+	}
+
+	async selectDistance(index: number) {
+		await this.page.locator('[data-testid="field-distance"]').selectOption(String(index));
+	}
+
+	async selectSightingFrom(index: number) {
+		await this.page.locator('[data-testid="field-sightingFrom"]').selectOption(String(index));
+	}
+
+	async selectBoatDrive(index: number) {
+		await this.page.locator('[data-testid="field-boatDrive"]').selectOption(String(index));
 	}
 
 	// ── Step 4: Kontaktdaten ─────────────────────────────────────────────────
