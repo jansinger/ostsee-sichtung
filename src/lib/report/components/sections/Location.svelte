@@ -50,6 +50,6 @@
 
 	.card:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 8px 25px -8px oklch(var(--b3));
+		box-shadow: 0 8px 25px -8px var(--color-base-300);
 	}
 </style>

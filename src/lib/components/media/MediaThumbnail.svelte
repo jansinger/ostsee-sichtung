@@ -158,7 +158,7 @@
 
 	/* Enhanced focus styles for accessibility */
 	.media-thumbnail:focus-visible {
-		outline: 2px solid oklch(var(--p));
+		outline: 2px solid var(--color-primary);
 		outline-offset: 2px;
 	}
 
@@ -229,15 +229,15 @@
 
 	/* Loading state für Bilder - zeigt Pattern bis Bild geladen ist */
 	img {
-		background-color: oklch(var(--b2));
+		background-color: var(--color-base-200);
 		background-image: linear-gradient(
 			45deg,
 			transparent 25%,
-			oklch(var(--b3)) 25%,
-			oklch(var(--b3)) 50%,
+			var(--color-base-300) 25%,
+			var(--color-base-300) 50%,
 			transparent 50%,
 			transparent 75%,
-			oklch(var(--b3)) 75%
+			var(--color-base-300) 75%
 		);
 		background-size: 20px 20px;
 		animation: loadingPattern 1s linear infinite;

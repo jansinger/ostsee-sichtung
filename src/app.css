@@ -26,41 +26,47 @@
 @plugin 'daisyui/theme' {
 	name: 'meeresmuseum';
 	color-scheme: light;
-	default: true; /* set as default */
-	prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
+	default: true;
+	prefersdark: false;
 
-	--color-primary: oklch(0.35 0.089 235.3); /* Aufgehellt für WCAG AA mit weißem Text */
+	/* ── Brand Colors ──────────────────────────────────────────────── */
+	--color-primary: oklch(0.35 0.089 235.3); /* Meeresmuseum-Blau, WCAG AA mit weißem Text */
 	--color-primary-content: oklch(1 0 0);
-	--color-secondary: oklch(0.65 0.04 215.2); /* Aufgehellt für besseren Kontrast */
+	--color-secondary: oklch(0.65 0.04 215.2);
 	--color-secondary-content: oklch(1 0 0);
 	--color-accent: oklch(0.8 0.047 215);
 	--color-accent-content: oklch(0.25 0.089 235.3);
 	--color-neutral: oklch(0.37 0.016 251.8);
 	--color-neutral-content: oklch(1 0 0);
-	--color-base-100: oklch(0.9403 0.0104 247.9); /* Beibehalten wie gewünscht */
-	--color-base-200: oklch(0.88 0.012 247.9); /* Etwas dunkler als base-100 */
-	--color-base-300: oklch(0.82 0.015 247.9); /* Noch dunkler für Borders */
-	--color-base-content: oklch(0.15 0.022 251.8); /* Dunkler für WCAG AA Kontrast (>4.5:1) */
-	/* Status colors: DaisyUI v5 convention — base color is the "main" color
-     used for buttons, text, badges. Content is text ON that color.
-     DaisyUI v5 alerts automatically lighten the base color for backgrounds. */
-	--color-info: oklch(0.55 0.12 230); /* Blau für Buttons/Text */
-	--color-info-content: oklch(1 0 0); /* Weiß auf Info */
-	--color-success: oklch(0.55 0.16 145); /* Grün für Buttons/Text */
-	--color-success-content: oklch(1 0 0); /* Weiß auf Success */
-	--color-warning: oklch(0.65 0.16 85); /* Gelb-Orange für Buttons/Text */
-	--color-warning-content: oklch(1 0 0); /* Weiß auf Warning */
-	--color-error: oklch(0.55 0.18 25); /* Rot für Buttons/Text */
-	--color-error-content: oklch(1 0 0); /* Weiß auf Error */
 
-	--rounded-box: 0.5rem;
-	--rounded-btn: 0.375rem;
-	--rounded-badge: 1rem;
-	--animation-btn: 0.25s;
-	--animation-input: 0.2s;
-	--btn-focus-scale: 0.98;
-	--border-btn: 1px;
-	--tab-border: 1px;
+	/* ── Base Colors (Hintergründe & Text) ─────────────────────────── */
+	--color-base-100: oklch(0.9403 0.0104 247.9); /* Leicht bläulicher Hintergrund */
+	--color-base-200: oklch(0.88 0.012 247.9);
+	--color-base-300: oklch(0.82 0.015 247.9);
+	--color-base-content: oklch(0.15 0.022 251.8); /* WCAG AA >4.5:1 auf base-100 */
+
+	/* ── Status Colors ─────────────────────────────────────────────── */
+	/* Base color = Hauptfarbe für Buttons, Text, Badges.
+	   Content = Text AUF dieser Farbe (für btn-info, badge-info etc.).
+	   Alerts werden per Override in app.css auf soft-Style gesetzt. */
+	--color-info: oklch(0.55 0.12 230);
+	--color-info-content: oklch(1 0 0);
+	--color-success: oklch(0.55 0.16 145);
+	--color-success-content: oklch(1 0 0);
+	--color-warning: oklch(0.65 0.16 85);
+	--color-warning-content: oklch(1 0 0);
+	--color-error: oklch(0.55 0.18 25);
+	--color-error-content: oklch(1 0 0);
+
+	/* ── DaisyUI v5 Layout Variablen ──────────────────────────────── */
+	--radius-selector: 0.5rem; /* Checkboxes, Radios, Toggles */
+	--radius-field: 0.25rem; /* Inputs, Selects, Textareas */
+	--radius-box: 0.5rem; /* Cards, Alerts, Modals */
+	--size-selector: 0.25rem; /* Checkbox/Radio Größe */
+	--size-field: 0.25rem; /* Input-Feld Größe */
+	--border: 1px; /* Globale Border-Dicke */
+	--depth: 1; /* 3D-Tiefe (0=flach, 1=normal) */
+	--noise: 0; /* Textur-Rauschen (0=keine) */
 }
 
 /* ===== OpenLayers Map ===== */
@@ -71,7 +77,7 @@ body {
 	font-family: 'Roboto', 'system-ui', 'sans-serif';
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	background-color: oklch(var(--base-100));
+	background-color: var(--color-base-100);
 }
 
 /* ===== iframe Integration Styles ===== */
@@ -168,9 +174,9 @@ h6 {
 .input:focus,
 .select:focus,
 .textarea:focus {
-	outline: 3px solid oklch(var(--color-primary)); /* Deutlicher Focus-Indikator */
+	outline: 3px solid var(--color-primary); /* Deutlicher Focus-Indikator */
 	outline-offset: 2px;
-	box-shadow: 0 0 0 4px oklch(var(--color-primary) / 0.2);
+	box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-primary) 20%, transparent);
 }
 
 /* Subtle button hover */
@@ -180,7 +186,7 @@ h6 {
 
 /* Card hover effect */
 .card:hover {
-	box-shadow: 0 4px 12px hsl(var(--neutral) / 0.1);
+	box-shadow: 0 4px 12px color-mix(in oklab, var(--color-neutral) 10%, transparent);
 }
 
 /* Alert refinements */
@@ -268,17 +274,17 @@ h6 {
 }
 
 .scroll-styled::-webkit-scrollbar-track {
-	background: oklch(var(--b1));
+	background: var(--color-base-100);
 	border-radius: 3px;
 }
 
 .scroll-styled::-webkit-scrollbar-thumb {
-	background: oklch(var(--b3));
+	background: var(--color-base-300);
 	border-radius: 3px;
 }
 
 .scroll-styled::-webkit-scrollbar-thumb:hover {
-	background: oklch(var(--b3) / 0.8);
+	background: color-mix(in oklab, var(--color-base-300) 80%, transparent);
 }
 
 /* ===== Media Loading States ===== */
@@ -292,12 +298,12 @@ h6 {
 }
 
 .panel-shadow {
-	box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+	box-shadow: -4px 0 24px oklch(0% 0 0 / 0.1);
 }
 
 /* ===== Accessibility ===== */
 :focus-visible {
-	outline: 2px solid hsl(var(--p));
+	outline: 2px solid var(--color-primary);
 	outline-offset: 2px;
 }
 
