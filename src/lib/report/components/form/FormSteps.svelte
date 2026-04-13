@@ -27,7 +27,7 @@
 </script>
 
 <div class="mb-8">
-	<ul class="steps steps-horizontal w-full" role="list">
+	<ul class="steps steps-horizontal w-full" role="tablist">
 		{#each steps as step, index (step.id)}
 			{@const navigable = canNavigateTo(index)}
 			<li
@@ -35,9 +35,10 @@
 				class:cursor-pointer={navigable}
 				class:cursor-not-allowed={!navigable}
 				class:opacity-50={!navigable && index > currentStep}
-				role="button"
+				role="tab"
 				tabindex={navigable ? 0 : -1}
 				aria-disabled={!navigable}
+				aria-selected={currentStep === index}
 				aria-current={currentStep === index ? 'step' : undefined}
 				aria-label={step.title}
 				title={navigable ? step.description : 'Bitte füllen Sie zuerst die vorherigen Schritte aus'}
