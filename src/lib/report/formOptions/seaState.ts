@@ -29,12 +29,10 @@ export type SeaState = SeaStateEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getSeaStateOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(seaStateLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const seaStateOptions: Array<{ value: number; label: string }> = Object.entries(seaStateLabels).map(
+	([value, label]) => ({ value: Number(value), label })
+);
+export const getSeaStateOptions = (): Array<{ value: number; label: string }> => seaStateOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

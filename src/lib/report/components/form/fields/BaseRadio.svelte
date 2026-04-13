@@ -52,7 +52,7 @@
 				class="hover:bg-base-200/50 flex cursor-pointer justify-start gap-3 rounded-lg py-2 transition-colors"
 			>
 				{#if icon !== undefined}
-					<Icon {icon} width="16" class="text-base-content/60 flex-shrink-0" />
+					<Icon aria-hidden="true" {icon} width="16" class="text-base-content/60 flex-shrink-0" />
 				{/if}
 				<input
 					type="radio"

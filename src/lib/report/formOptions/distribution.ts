@@ -25,12 +25,11 @@ export type Distribution = DistributionEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getDistributionOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(distributionLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const distributionOptions: Array<{ value: number; label: string }> = Object.entries(
+	distributionLabels
+).map(([value, label]) => ({ value: Number(value), label }));
+export const getDistributionOptions = (): Array<{ value: number; label: string }> =>
+	distributionOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

@@ -39,12 +39,10 @@ export type BoatType = BoatTypeEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getBoatTypeOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(boatTypeLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const boatTypeOptions: Array<{ value: number; label: string }> = Object.entries(boatTypeLabels).map(
+	([value, label]) => ({ value: Number(value), label })
+);
+export const getBoatTypeOptions = (): Array<{ value: number; label: string }> => boatTypeOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

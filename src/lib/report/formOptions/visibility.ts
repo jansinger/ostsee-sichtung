@@ -27,12 +27,11 @@ export type Visibility = VisibilityEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getVisibilityOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(visibilityLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const visibilityOptions: Array<{ value: number; label: string }> = Object.entries(
+	visibilityLabels
+).map(([value, label]) => ({ value: Number(value), label }));
+export const getVisibilityOptions = (): Array<{ value: number; label: string }> =>
+	visibilityOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

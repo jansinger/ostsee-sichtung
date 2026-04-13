@@ -1,13 +1,14 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import FormField from './fields/FormField.svelte';
+	import { formStepsConfig } from '$lib/report/formConfig';
 
 	let { currentStep } = $props<{
 		currentStep: number;
 	}>();
 
-	// Only show on the last step (step 3, 0-indexed)
-	const isLastStep = $derived(currentStep === 3);
+	// Only show on the last step (0-indexed)
+	const isLastStep = $derived(currentStep === formStepsConfig.length - 1);
 </script>
 
 {#if isLastStep}

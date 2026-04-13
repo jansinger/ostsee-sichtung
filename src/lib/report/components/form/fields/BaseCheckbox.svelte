@@ -52,7 +52,7 @@
 <div class="w-full items-start">
 	<label class="flex w-full cursor-pointer justify-start gap-3 py-2">
 		{#if icon !== undefined}
-			<Icon {icon} width="16" class="text-base-content/60 flex-shrink-0" />
+			<Icon aria-hidden="true" {icon} width="16" class="text-base-content/60 flex-shrink-0" />
 		{/if}
 		<input
 			type="checkbox"

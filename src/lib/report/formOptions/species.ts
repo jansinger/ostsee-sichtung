@@ -64,27 +64,21 @@ export type Species = SpeciesEnum;
  * @param grouped - Ob die Optionen nach Gruppen gruppiert werden sollen
  * @returns Array von Objekten mit value und label (und optional group)
  */
-export function getSpeciesOptions(grouped = false): Array<{
-	value: string;
-	label: string;
-	group?: string;
-}> {
-	if (!grouped) {
-		return Object.entries(speciesLabels).map(([value, label]) => ({
-			value: String(value),
-			label
-		}));
-	}
-
-	// Gruppierte Optionen zurückgeben
-	return Object.entries(speciesGroups).flatMap(([groupName, species]) =>
+const speciesOptions: Array<{ value: string; label: string }> = Object.entries(speciesLabels).map(
+	([value, label]) => ({ value: String(value), label })
+);
+const speciesOptionsGrouped: Array<{ value: string; label: string; group?: string }> =
+	Object.entries(speciesGroups).flatMap(([groupName, species]) =>
 		species.map((speciesValue) => ({
 			value: String(speciesValue),
 			label: speciesLabels[speciesValue],
 			group: groupName
 		}))
 	);
-}
+export const getSpeciesOptions = (
+	grouped = false
+): Array<{ value: string; label: string; group?: string }> =>
+	grouped ? speciesOptionsGrouped : speciesOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

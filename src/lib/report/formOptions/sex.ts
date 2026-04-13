@@ -23,12 +23,10 @@ export type Sex = SexEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getSexOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(sexLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const sexOptions: Array<{ value: number; label: string }> = Object.entries(sexLabels).map(
+	([value, label]) => ({ value: Number(value), label })
+);
+export const getSexOptions = (): Array<{ value: number; label: string }> => sexOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

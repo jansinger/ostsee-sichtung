@@ -27,12 +27,11 @@ export type SightingFrom = SightingFromEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getSightingFromOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(sightingFromLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const sightingFromOptions: Array<{ value: number; label: string }> = Object.entries(
+	sightingFromLabels
+).map(([value, label]) => ({ value: Number(value), label }));
+export const getSightingFromOptions = (): Array<{ value: number; label: string }> =>
+	sightingFromOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

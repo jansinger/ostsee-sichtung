@@ -29,12 +29,11 @@ export type AnimalCondition = AnimalConditionEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getAnimalConditionOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(animalConditionLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const animalConditionOptions: Array<{ value: number; label: string }> = Object.entries(
+	animalConditionLabels
+).map(([value, label]) => ({ value: Number(value), label }));
+export const getAnimalConditionOptions = (): Array<{ value: number; label: string }> =>
+	animalConditionOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

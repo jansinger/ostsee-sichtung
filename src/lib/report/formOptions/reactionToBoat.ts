@@ -31,12 +31,11 @@ export type ReactionToBoat = ReactionToBoatEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getReactionToBoatOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(reactionToBoatLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const reactionToBoatOptions: Array<{ value: number; label: string }> = Object.entries(
+	reactionToBoatLabels
+).map(([value, label]) => ({ value: Number(value), label }));
+export const getReactionToBoatOptions = (): Array<{ value: number; label: string }> =>
+	reactionToBoatOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert
