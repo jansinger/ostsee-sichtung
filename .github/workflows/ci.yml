@@ -130,13 +130,20 @@ jobs:
 
   # E2E tests — runs in parallel with validate, skipped for doc-only changes
   e2e:
-    name: E2E Tests
+    name: E2E Tests (${{ matrix.shard }})
     runs-on: ubuntu-latest
     needs: changes
     if: |
       (github.event_name == 'push' || github.event.pull_request.draft == false) &&
       !startsWith(github.head_ref || '', 'release-please') &&
       needs.changes.outputs.needs-e2e == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: form
+          - shard: map
+          - shard: smoke
 
     permissions:
       contents: read
@@ -184,16 +191,41 @@ jobs:
       # Component tests run in the E2E job (not Validate) because they require
       # a running Vite dev server (vitest-browser-svelte spins up a real browser).
       - name: Run component tests (client/browser)
+        if: matrix.shard == 'smoke'
         run: npm run test:unit:client
 
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: |
+          case "${{ matrix.shard }}" in
+            form)
+              npm run test:e2e -- \
+                e2e/form-submit.spec.ts \
+                e2e/form-ux.spec.ts \
+                e2e/form-a11y.spec.ts \
+                e2e/form-position.spec.ts \
+                e2e/form-autosave.spec.ts
+              ;;
+            map)
+              npm run test:e2e -- e2e/map-*.spec.ts
+              ;;
+            smoke)
+              npm run test:e2e -- \
+                e2e/basic.test.ts \
+                e2e/homepage.test.ts \
+                e2e/about-page.spec.ts \
+                e2e/auth.spec.ts
+              ;;
+            *)
+              echo "Unknown shard: ${{ matrix.shard }}"
+              exit 1
+              ;;
+          esac
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: playwright-report-${{ github.sha }}
+          name: playwright-report-${{ matrix.shard }}-${{ github.sha }}
           path: playwright-report/
           retention-days: 14
 
