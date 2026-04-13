@@ -334,7 +334,7 @@ describe('FieldRenderer', () => {
 			});
 
 			await expect.element(page.getByRole('checkbox')).toBeVisible();
-			await expect.element(page.getByText('Totfund bestätigt')).toBeVisible();
+			await expect.element(page.getByText('Totfund bestätigt').first()).toBeVisible();
 		});
 	});
 });
