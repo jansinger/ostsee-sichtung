@@ -51,7 +51,7 @@
 <SectionCard title="Foto- oder Videoaufnahmen" icon="lucide:camera">
 	<div class="text-base-content/70 mb-4 text-sm">
 		<p class="mb-2 flex items-center gap-2 font-medium">
-			<Icon icon="lucide:camera" width="16" class="text-primary" />
+			<Icon icon="lucide:camera" width="16" class="text-primary" aria-hidden="true" />
 			Fotos und Videos sind extrem wertvoll für die Forschung!
 		</p>
 		<ul class="list-inside list-disc space-y-1 text-xs">
@@ -76,7 +76,7 @@
 		<div class="skeleton h-32 w-full"></div>
 	{/if}
 	<div class="alert alert-info mt-4">
-		<Icon icon="lucide:camera" width="20" />
+		<Icon icon="lucide:camera" width="20" aria-hidden="true" />
 		<span class="text-sm">
 			Falls Sie uns Ihre Medien auf einem anderen Weg zukommen lassen möchten, erhalten Sie
 			Instruktionen nach dem Absenden des Formulars.

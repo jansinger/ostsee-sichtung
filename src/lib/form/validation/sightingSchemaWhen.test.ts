@@ -12,49 +12,14 @@
  * immer Strings zurückgibt (z.B. "0" statt 0).
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { sightingSchema } from './sightingSchema';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import { DistributionEnum } from '$lib/report/formOptions/distribution';
 import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
 import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
 
-// Logger-Mock um Test-Output sauber zu halten
-vi.mock('$lib/logger', () => ({
-	createLogger: () => ({
-		debug: vi.fn(),
-		info: vi.fn(),
-		warn: vi.fn(),
-		error: vi.fn()
-	})
-}));
-
-// formConfig-Mock um Abhängigkeit von Laufzeit-Konfiguration zu entkoppeln
-vi.mock('$lib/report/formConfig', () => ({
-	formStepsConfig: [
-		{
-			id: 'location-time',
-			title: 'Position & Zeit',
-			fields: ['hasPosition', 'latitude', 'longitude', 'sightingDate']
-		},
-		{
-			id: 'sighting-details',
-			title: 'Sichtungsdetails',
-			fields: ['species', 'totalCount', 'distance']
-		},
-		{
-			id: 'observations',
-			title: 'Beobachtungen',
-			fields: ['behavior'],
-			isOptional: true
-		},
-		{
-			id: 'contact',
-			title: 'Kontaktdaten',
-			fields: ['firstName', 'lastName', 'email', 'privacyConsent']
-		}
-	]
-}));
+// Kein Mock nötig — sightingSchema importiert weder $lib/logger noch $lib/report/formConfig
 
 // ── Hilfsfunktion ─────────────────────────────────────────────────────────────
 
