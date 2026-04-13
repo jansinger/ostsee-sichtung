@@ -39,14 +39,11 @@ export class MapPage {
 		const filterToggle = this.page.getByRole('button', { name: /filter öffnen/i });
 		await filterToggle.waitFor({ state: 'visible', timeout: MAP_TEST_TIMEOUTS.componentMount });
 
-		// Phase 2: Wait for SightingsMapView's own loading overlay to clear (1.5s init timeout)
+		// Phase 2: Wait for SichtungsMapView's own loading overlay to clear (1.5s init timeout).
+		// Use count() for an instant DOM check rather than a timed probe — if the overlay is
+		// already gone (Svelte {#if} removed it), count() returns 0 immediately with no delay.
 		const loadingOverlay = this.page.locator('[aria-labelledby="loading-title"]');
-		const overlayVisible = await loadingOverlay
-			.waitFor({ state: 'visible', timeout: MAP_TEST_TIMEOUTS.overlayProbe })
-			.then(() => true)
-			.catch(() => false);
-
-		if (overlayVisible) {
+		if ((await loadingOverlay.count()) > 0) {
 			await loadingOverlay.waitFor({ state: 'hidden', timeout: MAP_TEST_TIMEOUTS.overlayHide });
 		}
 	}

@@ -62,8 +62,8 @@ test.describe('Map Error State', () => {
 		await mapPage.goto();
 		await mapPage.waitForLoad();
 
-		// Override to abort for future requests (year-change triggers the error)
-		await page.unroute('**/api/map/sightings**');
+		// Override to abort for future requests (year-change triggers the error).
+		// mockMapSightingsAbort already calls unroute internally via replaceMapSightingsRoute.
 		await mockMapSightingsAbort(page);
 
 		await mapPage.openFilter();
