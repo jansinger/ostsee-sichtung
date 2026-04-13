@@ -2,6 +2,7 @@ import { render } from 'vitest-browser-svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import type { CountData } from '$lib/map/countManager';
+import type { MapTranslations } from '$lib/map/mapUtils';
 import LegendPanel from './LegendPanel.svelte';
 
 const mockCountManager = {
@@ -13,9 +14,22 @@ vi.mock('$lib/map/mapContext', () => ({
 	getMapCountManager: () => mockCountManager
 }));
 
-const translations = {
+const translations: MapTranslations = {
+	overview: 'Uebersicht',
+	zoom_title: 'Zoom',
+	zoom: 'Zoom',
+	report_date: 'Meldedatum',
+	language: 'Sprache',
+	species: 'Tierart',
 	species_legend: 'Arten',
+	position: 'Position',
 	count: 'Anzahl',
+	young: 'Jungtiere',
+	ship: 'Schiff',
+	name: 'Name',
+	area: 'Gebiet',
+	latitude: 'Breitengrad',
+	longitude: 'Laengengrad',
 	found_dead: 'Totfund',
 	speciesMap: {
 		'0': 'Schweinswal',
