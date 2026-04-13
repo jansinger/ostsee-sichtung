@@ -26,6 +26,18 @@ vi.mock('$lib/server/services/emailService', () => ({
 	}
 }));
 
+// Mock ServerConfigService to prevent DB access for email config
+vi.mock('$lib/services/configService', () => ({
+	ServerConfigService: {
+		getEmailConfig: vi.fn().mockResolvedValue({
+			enabled: false,
+			recipient: '',
+			sender: 'noreply@test.com',
+			senderName: 'Test'
+		})
+	}
+}));
+
 const mockedSaveSighting = vi.mocked(saveSighting);
 
 describe('/api/sightings POST endpoint', () => {
@@ -183,8 +195,6 @@ describe('/api/sightings POST endpoint', () => {
 	});
 
 	it('should call saveSighting on successful submission', async () => {
-		const { saveSighting } = await import('$lib/server/db/sightingRepository');
-
 		const validRequest = createMockRequestEvent({
 			referenceId: 'save-ref-123',
 			firstName: 'Test',

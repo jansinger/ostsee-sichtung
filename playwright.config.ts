@@ -16,8 +16,8 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	/* Retry on CI only */
 	retries: process.env.CI ? 1 : 0,
-	/* CI: 2 workers — only 3 routes (/,/map,/about), Vite caches after first compile */
-	workers: process.env.CI ? 2 : undefined,
+	/* CI: 1 worker — Vite dev server can't handle parallel page compilation reliably */
+	workers: process.env.CI ? 1 : undefined,
 	/* Global test timeout */
 	timeout: 30000,
 	/* Reporter to use. See https://playwright.dev/docs/test-reporters */
