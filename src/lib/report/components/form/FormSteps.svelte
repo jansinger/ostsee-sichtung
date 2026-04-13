@@ -26,8 +26,15 @@
 	}
 </script>
 
-<div class="mb-8">
-	<ul class="steps steps-horizontal w-full" role="tablist">
+<!--
+  DaisyUI steps component styles the <li> directly via .step class.
+  We can't nest a <button> inside without breaking the grid layout.
+  Using role="navigation" + aria-label on the wrapper, and keeping
+  the <li> interactive via tabindex/onclick with aria-current="step"
+  for the active step indicator (WAI stepper pattern).
+-->
+<nav class="mb-8" aria-label="Formular-Schritte">
+	<ul class="steps steps-horizontal w-full">
 		{#each steps as step, index (step.id)}
 			{@const navigable = canNavigateTo(index)}
 			<li
@@ -35,10 +42,8 @@
 				class:cursor-pointer={navigable}
 				class:cursor-not-allowed={!navigable}
 				class:opacity-50={!navigable && index > currentStep}
-				role="tab"
 				tabindex={navigable ? 0 : -1}
 				aria-disabled={!navigable}
-				aria-selected={currentStep === index}
 				aria-current={currentStep === index ? 'step' : undefined}
 				aria-label={step.title}
 				title={navigable ? step.description : 'Bitte füllen Sie zuerst die vorherigen Schritte aus'}
@@ -52,4 +57,4 @@
 			></li>
 		{/each}
 	</ul>
-</div>
+</nav>

@@ -40,7 +40,7 @@ test.describe('Form Navigation', () => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		await expect(page.getByRole('tab', { name: /Position & Zeit/i })).toBeVisible();
+		await expect(page.locator('.step-button[aria-label="Position & Zeit"]')).toBeVisible();
 		await expect(formPage.getActiveStepButton()).toBeVisible();
 	});
 
@@ -70,16 +70,16 @@ test.describe('Form Navigation', () => {
 			'Kontaktdaten'
 		] as const;
 		for (const name of stepNames) {
-			await expect(page.getByRole('tab', { name })).toBeVisible();
+			await expect(page.locator(`.step-button[aria-label="${name}"]`)).toBeVisible();
 		}
 
 		// On Step 1: current step should be navigable
-		await expect(page.getByRole('tab', { name: 'Position & Zeit' })).toHaveAttribute(
+		await expect(page.locator('.step-button[aria-label="Position & Zeit"]')).toHaveAttribute(
 			'aria-disabled',
 			'false'
 		);
 
-		await expect(page.getByRole('tab', { name: /Position & Zeit/i })).toHaveAttribute(
+		await expect(page.locator('.step-button[aria-label="Position & Zeit"]')).toHaveAttribute(
 			'aria-label',
 			/Position & Zeit/i
 		);
