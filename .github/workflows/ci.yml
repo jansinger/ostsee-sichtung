@@ -105,11 +105,11 @@ jobs:
       - name: Run Svelte check
         run: npm run check
 
-      - name: Run unit tests
+      - name: Run unit tests (server)
         if: needs.changes.outputs.has-code-changes != 'true'
         run: npm run test:unit
 
-      - name: Run unit tests with coverage
+      - name: Run unit tests (server) with coverage
         if: needs.changes.outputs.has-code-changes == 'true'
         run: npm run test:unit -- --coverage
 
@@ -180,6 +180,11 @@ jobs:
       - name: Install Playwright dependencies only
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
+
+      # Component tests run in the E2E job (not Validate) because they require
+      # a running Vite dev server (vitest-browser-svelte spins up a real browser).
+      - name: Run component tests (client/browser)
+        run: npm run test:unit:client
 
       - name: Run E2E tests
         run: npm run test:e2e

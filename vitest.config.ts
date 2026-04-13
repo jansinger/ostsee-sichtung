@@ -26,6 +26,17 @@ export default defineConfig({
 				'src/lib/report/formContext.ts',
 				// CLI tools — not unit-testable
 				'src/tools/**',
+				// Svelte stores/context — require Svelte runtime
+				'src/lib/stores/**',
+				// Map state management — requires OpenLayers runtime
+				'src/lib/map/mapContext.ts',
+				'src/lib/map/panelManager.ts',
+				'src/lib/map/layerManager.ts',
+				// Form field config — pure re-exports, tested via integration
+				'src/lib/form/fields/**',
+				// Server config — requires DB connection
+				'src/lib/server/config/**',
+				'src/lib/services/configService.ts',
 				// Browser-only utilities — require browser APIs (Blob, URL, DOM, File, FormData)
 				'src/lib/utils/download.ts',
 				'src/lib/utils/fieldNavigation.ts',
@@ -43,17 +54,20 @@ export default defineConfig({
 		},
 		projects: [
 			{
-				extends: './vite.config.ts',
+				// Client browser tests use vite.config.ci.ts (no basicSsl/HTTPS)
+				// vite.config.ts includes basicSsl which breaks headless Chromium
+				extends: './vite.config.ci.ts',
 				test: {
 					name: 'client',
 					browser: {
 						enabled: true,
+						headless: true,
 						provider: playwright(),
 						instances: [{ browser: 'chromium' }]
 					},
 					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
 					exclude: ['src/lib/server/**'],
-					setupFiles: ['./vitest-setup-client.ts']
+					setupFiles: ['vitest-browser-svelte', './vitest-setup-client.ts']
 				}
 			},
 			{

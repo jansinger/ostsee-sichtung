@@ -42,6 +42,8 @@ dev.log
 # Test files
 test-results/
 coverage/
+.vitest-attachments/
+**/__screenshots__/
 
 # Archive (for reference only)
 archive/
