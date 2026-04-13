@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { StoredWeatherData } from '$lib/services/weatherService';
 
 vi.mock('$lib/logger', () => ({
@@ -87,6 +87,15 @@ function setupDbMock(resolvedValue: StoredWeatherData[] | null[]) {
 }
 
 describe('isWeatherDataFresh', () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2026-01-01T12:00:00.000Z'));
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
 	it('gibt true zurück für Daten von vor 1 Stunde bei maxAge 24h', () => {
 		const data = makeWeatherData(hoursAgo(1));
 		expect(isWeatherDataFresh(data, 24)).toBe(true);
