@@ -85,6 +85,15 @@ test.describe('Map Error State', () => {
 		}
 	});
 
+	test('Fehlermeldung hat role="alert" für Screen Reader', async ({ page }) => {
+		await mockMapSightingsAbort(page);
+		await page.goto('/map');
+
+		const errorAlert = page.locator('.alert-error');
+		await expect(errorAlert).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.errorDisplay });
+		await expect(errorAlert).toHaveAttribute('role', 'alert');
+	});
+
 	test('Fehlermeldung erscheint erneut nach erneutem Fehler', async ({ page }) => {
 		// Initial load with abort → first error appears
 		await mockMapSightingsAbort(page);

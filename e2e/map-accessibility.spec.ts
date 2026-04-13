@@ -2,18 +2,8 @@ import { expect, test } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
 import { MAP_TEST_TIMEOUTS } from './config/testTimeouts';
 import { setupMapPage } from './fixtures/mapSetup';
-import { mockMapSightingsAbort } from './fixtures/mockApi';
 
 test.describe('Map Accessibility', () => {
-	test('Fehlermeldung hat role="alert" für Screen Reader', async ({ page }) => {
-		await mockMapSightingsAbort(page);
-		await page.goto('/map');
-
-		const errorAlert = page.locator('.alert-error');
-		await expect(errorAlert).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.errorDisplay });
-		await expect(errorAlert).toHaveAttribute('role', 'alert');
-	});
-
 	test.describe('interaktive Zustände', () => {
 		let mapPage: MapPage;
 
@@ -73,6 +63,5 @@ test.describe('Map Accessibility', () => {
 			await page.keyboard.press('Escape');
 			await expect(mapPage.getLegendPanel()).toHaveAttribute('aria-hidden', 'true');
 		});
-
 	});
 });

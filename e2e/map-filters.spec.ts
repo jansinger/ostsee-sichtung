@@ -23,7 +23,7 @@ test.describe('Map Filter Panel', () => {
 		const yearSelect = mapPage.getYearSelect();
 		const options = yearSelect.locator('option');
 		const count = await options.count();
-		// Zweite Option wählen (erste ist oft "Alle Jahre")
+		// Zweite Option wählen (neuestes Jahr)
 		const targetOption = options.nth(count > 1 ? 1 : 0);
 		const targetYear = await targetOption.getAttribute('value');
 
