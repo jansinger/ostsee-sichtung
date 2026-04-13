@@ -74,8 +74,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - name: Setup environment
         run: cp .env.example .env
@@ -128,9 +128,9 @@ jobs:
         run: npm audit --audit-level=high
         continue-on-error: true
 
-  # E2E tests — runs in parallel with validate, skipped for doc-only changes
-  e2e:
-    name: E2E Tests
+  # Component browser tests — runs in parallel with validate, skipped for doc-only changes
+  component-tests:
+    name: Component Tests
     runs-on: ubuntu-latest
     needs: changes
     if: |
@@ -148,8 +148,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - name: Setup environment
         run: cp .env.example .env
@@ -181,19 +181,97 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
-      # Component tests run in the E2E job (not Validate) because they require
-      # a running Vite dev server (vitest-browser-svelte spins up a real browser).
       - name: Run component tests (client/browser)
         run: npm run test:unit:client
 
+  # E2E tests — runs in parallel with validate and component tests, skipped for doc-only changes
+  e2e:
+    name: E2E Tests (${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    needs: changes
+    if: |
+      (github.event_name == 'push' || github.event.pull_request.draft == false) &&
+      !startsWith(github.head_ref || '', 'release-please') &&
+      needs.changes.outputs.needs-e2e == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: form
+          - shard: map
+          - shard: smoke
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Setup environment
+        run: cp .env.example .env
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run SvelteKit sync
+        run: npx svelte-kit sync
+
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          PLAYWRIGHT_VERSION=$(npm ls @playwright/test --json | jq -r '.dependencies["@playwright/test"].version')
+          echo "version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-node24-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: |
+          case "${{ matrix.shard }}" in
+            form)
+              npm run test:e2e -- \
+                e2e/form-submit.spec.ts \
+                e2e/form-ux.spec.ts \
+                e2e/form-a11y.spec.ts \
+                e2e/form-position.spec.ts \
+                e2e/form-autosave.spec.ts
+              ;;
+            map)
+              npm run test:e2e -- e2e/map-*.spec.ts
+              ;;
+            smoke)
+              npm run test:e2e -- \
+                e2e/basic.test.ts \
+                e2e/homepage.test.ts \
+                e2e/about-page.spec.ts \
+                e2e/auth.spec.ts
+              ;;
+            *)
+              echo "Unknown shard: ${{ matrix.shard }}"
+              exit 1
+              ;;
+          esac
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: playwright-report-${{ github.sha }}
+          name: playwright-report-${{ matrix.shard }}-${{ github.sha }}
           path: playwright-report/
           retention-days: 14
 
@@ -219,8 +297,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci

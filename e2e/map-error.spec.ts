@@ -1,13 +1,19 @@
 import { expect, test } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
+import { MAP_TEST_TIMEOUTS } from './config/testTimeouts';
+import {
+	mockMapSightingsAbort,
+	mockMapSightingsHttp500,
+	mockMapSightingsSuccess
+} from './fixtures/mockApi';
 
 // Error tests need generous timeouts because the map component must lazy-load
 // OpenLayers before the API error can be displayed. In CI this can take 20s+.
-const ERROR_TIMEOUT = 30000;
+const ERROR_TIMEOUT = MAP_TEST_TIMEOUTS.errorDisplay;
 
 test.describe('Map Error State', () => {
 	test('API-Fehler beim initialen Laden zeigt Fehlermeldung', async ({ page }) => {
-		await page.route('**/api/map/sightings**', (route) => route.abort());
+		await mockMapSightingsAbort(page);
 
 		await page.goto('/map');
 
@@ -18,7 +24,7 @@ test.describe('Map Error State', () => {
 	});
 
 	test('Fehlermeldung enthält hilfreichen Text', async ({ page }) => {
-		await page.route('**/api/map/sightings**', (route) => route.abort());
+		await mockMapSightingsAbort(page);
 
 		await page.goto('/map');
 
@@ -28,7 +34,7 @@ test.describe('Map Error State', () => {
 	});
 
 	test('Fehlermeldung kann über Schließen-Button geschlossen werden', async ({ page }) => {
-		await page.route('**/api/map/sightings**', (route) => route.abort());
+		await mockMapSightingsAbort(page);
 
 		await page.goto('/map');
 
@@ -40,9 +46,7 @@ test.describe('Map Error State', () => {
 	});
 
 	test('HTTP 500 Antwort zeigt Fehlermeldung', async ({ page }) => {
-		await page.route('**/api/map/sightings**', (route) =>
-			route.fulfill({ status: 500, body: '{"error":"Server error"}' })
-		);
+		await mockMapSightingsHttp500(page);
 
 		await page.goto('/map');
 
@@ -53,20 +57,14 @@ test.describe('Map Error State', () => {
 
 	test('API-Fehler beim Jahreswechsel zeigt Fehlermeldung', async ({ page }) => {
 		// Mock initial load so map loads cleanly without a real database
-		await page.route('**/api/map/sightings**', (route) =>
-			route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({ type: 'FeatureCollection', features: [] })
-			})
-		);
+		await mockMapSightingsSuccess(page);
 		const mapPage = new MapPage(page);
 		await mapPage.goto();
 		await mapPage.waitForLoad();
 
-		// Override to abort for future requests (year-change triggers the error)
-		await page.unroute('**/api/map/sightings**');
-		await page.route('**/api/map/sightings**', (route) => route.abort());
+		// Override to abort for future requests (year-change triggers the error).
+		// mockMapSightingsAbort already calls unroute internally via replaceMapSightingsRoute.
+		await mockMapSightingsAbort(page);
 
 		await mapPage.openFilter();
 
@@ -78,7 +76,7 @@ test.describe('Map Error State', () => {
 			const targetYear = await options.nth(1).getAttribute('value');
 			if (targetYear) {
 				await mapPage.selectYear(targetYear);
-				await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 10000 });
+				await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.defaultUi });
 			} else {
 				test.skip();
 			}
@@ -87,35 +85,45 @@ test.describe('Map Error State', () => {
 		}
 	});
 
-	test('Fehlermeldung erscheint erneut nach erneutem Fehler', async ({ page }) => {
-		await page.route('**/api/map/sightings**', (route) => route.abort());
-
+	test('Fehlermeldung hat role="alert" für Screen Reader', async ({ page }) => {
+		await mockMapSightingsAbort(page);
 		await page.goto('/map');
 
+		const errorAlert = page.locator('.alert-error');
+		await expect(errorAlert).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.errorDisplay });
+		await expect(errorAlert).toHaveAttribute('role', 'alert');
+	});
+
+	test('Fehlermeldung erscheint erneut nach erneutem Fehler', async ({ page }) => {
+		// Initial load with abort → first error appears
+		await mockMapSightingsAbort(page);
+		await page.goto('/map');
 		const mapPage = new MapPage(page);
 		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: ERROR_TIMEOUT });
 
+		// Dismiss first error
 		await mapPage.getDismissErrorButton().click();
 		await expect(mapPage.getErrorAlert()).toBeHidden();
 
-		// Remove route interception and set up a new one to trigger a second error
-		await page.unroute('**/api/map/sightings**');
-		await page.route('**/api/map/sightings**', (route) => route.abort());
+		// Switch to success for map to load cleanly, then abort for second error
+		await mockMapSightingsSuccess(page);
+		await mapPage.waitForLoad();
 
-		// Trigger a new API call via keyboard shortcut Z (zoom-to-all)
-		// or by simulating an unhandled rejection
-		await page.evaluate(() => {
-			const err = new Error('Zweiter Fehler');
-			window.dispatchEvent(
-				new PromiseRejectionEvent('unhandledrejection', {
-					promise: Promise.reject(err),
-					reason: err,
-					cancelable: true,
-					bubbles: false
-				})
-			);
-		});
+		await mockMapSightingsAbort(page);
+		await mapPage.openFilter();
 
-		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 3000 });
+		const options = mapPage.getYearSelect().locator('option');
+		const count = await options.count();
+		if (count > 1) {
+			const targetYear = await options.nth(1).getAttribute('value');
+			if (targetYear) {
+				await mapPage.selectYear(targetYear);
+				await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.defaultUi });
+			} else {
+				test.skip();
+			}
+		} else {
+			test.skip();
+		}
 	});
 });

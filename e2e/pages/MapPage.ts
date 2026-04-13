@@ -1,4 +1,5 @@
 import type { Locator, Page, Response } from '@playwright/test';
+import { MAP_TEST_TIMEOUTS } from '../config/testTimeouts';
 
 /**
  * Page Object for the sightings map view (/map).
@@ -12,10 +13,39 @@ export class MapPage {
 
 	/** Wait until map is fully initialized (both loading phases complete) */
 	async waitForLoad() {
+		const maxRetries = MAP_TEST_TIMEOUTS.mapReadyRetries;
+
+		for (let attempt = 0; attempt <= maxRetries; attempt++) {
+			try {
+				await this.waitForLoadOnce();
+				return;
+			} catch (error) {
+				if (attempt === maxRetries) {
+					throw error;
+				}
+				// Log the error so it appears in CI output even when retry succeeds
+				console.warn(
+					`[MapPage] waitForLoad attempt ${attempt + 1} failed, reloading page:`,
+					(error as Error).message
+				);
+				// Recover from transient CI startup races by refreshing the page once.
+				await this.page.reload({ waitUntil: 'domcontentloaded' });
+			}
+		}
+	}
+
+	private async waitForLoadOnce() {
 		// Phase 1: Wait for the filter toggle button to appear — proves SightingsMapView is mounted
-		await this.page.getByRole('button', { name: /filter öffnen/i }).waitFor({ state: 'visible' });
-		// Phase 2: Wait for SightingsMapView's own loading overlay to clear (1.5s init timeout)
-		await this.page.locator('[aria-labelledby="loading-title"]').waitFor({ state: 'hidden' });
+		const filterToggle = this.page.getByRole('button', { name: /filter öffnen/i });
+		await filterToggle.waitFor({ state: 'visible', timeout: MAP_TEST_TIMEOUTS.componentMount });
+
+		// Phase 2: Wait for SichtungsMapView's own loading overlay to clear (1.5s init timeout).
+		// Use count() for an instant DOM check rather than a timed probe — if the overlay is
+		// already gone (Svelte {#if} removed it), count() returns 0 immediately with no delay.
+		const loadingOverlay = this.page.locator('[aria-labelledby="loading-title"]');
+		if ((await loadingOverlay.count()) > 0) {
+			await loadingOverlay.waitFor({ state: 'hidden', timeout: MAP_TEST_TIMEOUTS.overlayHide });
+		}
 	}
 
 	// ─── Filter Panel ──────────────────────────────────────────────────────────
@@ -154,7 +184,7 @@ export class MapPage {
 				r.url().includes('/api/map/sightings') &&
 				r.status() === 200 &&
 				(urlMatcher === undefined || r.url().includes(urlMatcher)),
-			{ timeout: 8000 }
+			{ timeout: MAP_TEST_TIMEOUTS.apiResponse }
 		);
 	}
 }

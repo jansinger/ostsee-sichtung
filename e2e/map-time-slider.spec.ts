@@ -1,25 +1,22 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
+import { setupMapPage } from './fixtures/mapSetup';
 
-test.describe('Map Time Slider', () => {
+test.describe.serial('Map Time Slider', () => {
 	let mapPage: MapPage;
+	let sharedPage: Page;
 
-	test.beforeEach(async ({ page }) => {
-		// Mock the sightings API so tests don't require a real database
-		await page.route('**/api/map/sightings**', (route) =>
-			route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({ type: 'FeatureCollection', features: [] })
-			})
-		);
-		mapPage = new MapPage(page);
-		await mapPage.goto();
-		await mapPage.waitForLoad();
+	test.beforeAll(async ({ browser }) => {
+		sharedPage = await browser.newPage();
+		mapPage = await setupMapPage(sharedPage);
 		await mapPage.openFilter();
 	});
 
-	test('Zeitraum-Slider haben korrekte Standard-Attribute', async ({ page }) => {
+	test.afterAll(async () => {
+		await sharedPage.close();
+	});
+
+	test('Zeitraum-Slider haben korrekte Standard-Attribute', async () => {
 		const startSlider = mapPage.getStartSlider();
 		const endSlider = mapPage.getEndSlider();
 
@@ -39,7 +36,7 @@ test.describe('Map Time Slider', () => {
 		await expect(startSlider).toHaveAttribute('max', maxAttr!);
 
 		// Schaltjahr-Test: 2024 hat 366 Tage → max-Index = 365
-		await page.locator('#year-select').selectOption('2024');
+		await sharedPage.locator('#year-select').selectOption('2024');
 		await expect(endSlider).toHaveAttribute('max', '365');
 		await expect(startSlider).toHaveAttribute('max', '365');
 	});
@@ -54,10 +51,14 @@ test.describe('Map Time Slider', () => {
 		await expect(mapPage.getEndSlider()).toHaveValue('270');
 	});
 
-	test('Start-Slider wird auf Ende-1 geclampt wenn er Ende überschreitet', async ({ page }) => {
-		const result = await page.evaluate(() => {
+	test('Start-Slider wird auf Ende-1 geclampt wenn er Ende überschreitet', async () => {
+		const result = await sharedPage.evaluate(() => {
 			const start = document.getElementById('time-range-start') as HTMLInputElement;
 			const end = document.getElementById('time-range-end') as HTMLInputElement;
+
+			// Reset to neutral state first
+			start.value = '0';
+			start.dispatchEvent(new Event('input', { bubbles: true }));
 
 			end.value = '100';
 			end.dispatchEvent(new Event('input', { bubbles: true }));
@@ -72,10 +73,14 @@ test.describe('Map Time Slider', () => {
 		expect(result.startValue).toBe('99');
 	});
 
-	test('Ende-Slider wird auf Start+1 geclampt wenn er Start unterschreitet', async ({ page }) => {
-		const result = await page.evaluate(() => {
+	test('Ende-Slider wird auf Start+1 geclampt wenn er Start unterschreitet', async () => {
+		const result = await sharedPage.evaluate(() => {
 			const start = document.getElementById('time-range-start') as HTMLInputElement;
 			const end = document.getElementById('time-range-end') as HTMLInputElement;
+
+			// Reset to neutral state first
+			end.value = String(parseInt(end.max));
+			end.dispatchEvent(new Event('input', { bubbles: true }));
 
 			start.value = '200';
 			start.dispatchEvent(new Event('input', { bubbles: true }));

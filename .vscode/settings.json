@@ -19,5 +19,6 @@
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
 	"svelte.enable-ts-plugin": true,
-	"eslint.useFlatConfig": true
+	"eslint.useFlatConfig": true,
+	"codeQL.githubDatabase.update": "never"
 }

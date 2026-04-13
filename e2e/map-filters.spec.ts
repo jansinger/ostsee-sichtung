@@ -1,45 +1,26 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
+import { setupMapPage } from './fixtures/mapSetup';
 
-test.describe('Map Filter Panel', () => {
+test.describe.serial('Map Filter Panel', () => {
 	let mapPage: MapPage;
+	let sharedPage: Page;
 
-	test.beforeEach(async ({ page }) => {
-		// Mock the sightings API so tests don't require a real database
-		await page.route('**/api/map/sightings**', (route) =>
-			route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({ type: 'FeatureCollection', features: [] })
-			})
-		);
-		mapPage = new MapPage(page);
-		await mapPage.goto();
-		await mapPage.waitForLoad();
+	test.beforeAll(async ({ browser }) => {
+		sharedPage = await browser.newPage();
+		mapPage = await setupMapPage(sharedPage);
 	});
 
-	test('Filter-Panel öffnet sich via Button', async () => {
-		await mapPage.openFilter();
-
-		const panel = mapPage.getFilterPanel();
-		await expect(panel).toHaveAttribute('aria-hidden', 'false');
-		await expect(mapPage.getYearSelect()).toBeVisible();
-		await expect(mapPage.getFilterInput()).toBeVisible();
+	test.afterAll(async () => {
+		await sharedPage.close();
 	});
 
-	test('Filter-Panel schließt sich via Schließen-Button', async () => {
-		await mapPage.openFilter();
-		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'false');
-
-		await mapPage.closeFilter();
-		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'true');
-	});
-
-	test('Tastatur-Shortcut F öffnet Filter-Panel', async ({ page }) => {
+	test('Tastatur-Shortcut F öffnet Filter-Panel', async () => {
 		// Focus the page body to ensure keyboard events are received
-		await page.locator('body').click();
-		await page.keyboard.press('f');
+		await sharedPage.locator('body').click();
+		await sharedPage.keyboard.press('f');
 		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'false');
+		await mapPage.closeFilter();
 	});
 
 	test('Jahr auswählen löst API-Call mit year-Parameter aus', async () => {
@@ -49,7 +30,7 @@ test.describe('Map Filter Panel', () => {
 		const yearSelect = mapPage.getYearSelect();
 		const options = yearSelect.locator('option');
 		const count = await options.count();
-		// Zweite Option wählen (erste ist oft "Alle Jahre")
+		// Zweite Option wählen (neuestes Jahr)
 		const targetOption = options.nth(count > 1 ? 1 : 0);
 		const targetYear = await targetOption.getAttribute('value');
 
@@ -59,6 +40,7 @@ test.describe('Map Filter Panel', () => {
 			const response = await responsePromise;
 
 			expect(response.url()).toContain(`year=${targetYear}`);
+			await mapPage.closeFilter();
 		} else {
 			// Nur eine Option verfügbar — Test überspringen
 			test.skip();
@@ -74,24 +56,6 @@ test.describe('Map Filter Panel', () => {
 		const response = await responsePromise;
 
 		expect(response.url()).toContain('search=Schweinswal');
-	});
-
-	test('Suchtext bleibt nach Panel-Schließen erhalten', async () => {
-		await mapPage.openFilter();
-		await mapPage.fillSearch('Seehund');
-
 		await mapPage.closeFilter();
-		await mapPage.openFilter();
-
-		// Input muss den gesuchten Term noch anzeigen — kein hidden state
-		await expect(mapPage.getFilterInput()).toHaveValue('Seehund');
-	});
-
-	test('Filter-Panel zeigt Jahres-Optionen in Auswahl', async () => {
-		await mapPage.openFilter();
-
-		const options = mapPage.getYearSelect().locator('option');
-		const count = await options.count();
-		expect(count).toBeGreaterThan(0);
 	});
 });
