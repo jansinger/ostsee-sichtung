@@ -35,7 +35,6 @@
 		"test:unit:watch": "vitest --project server",
 		"test": "npm run test:quick",
 		"test:quick": "npm run lint && npm run type-check && npm run check && npm run test:unit",
-		"test:pr": "npm run lint && npm run type-check && npm run check && npm run test:unit",
 		"test:coverage": "vitest run --coverage --project server",
 		"test:e2e": "VITE_DEV_PORT=4001 playwright test",
 		"db:start": "docker compose up -d",
