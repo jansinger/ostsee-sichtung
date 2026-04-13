@@ -35,11 +35,15 @@ describe('getWindDirectionIconName', () => {
 		expect(getWindDirectionIconName('N')).toBe('wi:wind from-n');
 	});
 
-	it('unterstützt deutsche Notation SO für Südost', () => {
+	it('unterstützt Legacy-API deutsche Notation SO für Südost (SE)', () => {
 		expect(getWindDirectionIconName('SO')).toBe('wi:wind from-se');
 	});
 
-	it('unterstützt deutsche Notation O für Ost', () => {
+	it('unterstützt Legacy-API deutsche Notation NO für Nordost (NE)', () => {
+		expect(getWindDirectionIconName('NO')).toBe('wi:wind from-ne');
+	});
+
+	it('unterstützt Legacy-API deutsche Notation O für Ost (E)', () => {
 		expect(getWindDirectionIconName('O')).toBe('wi:wind from-e');
 	});
 
@@ -67,6 +71,10 @@ describe('getWindDirectionClass', () => {
 
 	it('gibt leeren String für null', () => {
 		expect(getWindDirectionClass(null)).toBe('');
+	});
+
+	it('gibt korrekte Rotation für NO (Nordost = NE, rotate-45)', () => {
+		expect(getWindDirectionClass('NO')).toBe('transform rotate-45');
 	});
 
 	it('gibt leeren String für unbekannte Richtung', () => {

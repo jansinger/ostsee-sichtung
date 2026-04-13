@@ -34,8 +34,8 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		await formPage.fillDate(today);
 		await formPage.fillTime('14:30');
 
-		// Give auto-save time to persist
-		await page.waitForTimeout(500);
+		// Wait for auto-save to persist to sessionStorage
+		await page.waitForFunction(() => !!sessionStorage.getItem('sichtungen_form_data'));
 
 		// Reload
 		await page.reload();
@@ -54,8 +54,8 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		// Fill some data
 		await formPage.fillDate(today);
 
-		// Give auto-save time
-		await page.waitForTimeout(500);
+		// Wait for auto-save to persist to sessionStorage
+		await page.waitForFunction(() => !!sessionStorage.getItem('sichtungen_form_data'));
 
 		// Reload — should show restore toast
 		await page.reload();
@@ -95,7 +95,8 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		await page.waitForLoadState('networkidle');
 		await page.locator('[aria-current="step"]').waitFor({ state: 'visible' });
 
-		// Should start fresh on Step 1 (no restore toast)
+		// Should start fresh on Step 1 with no restore toast
 		await expectCurrentStep(page, /Position & Zeit/i);
+		await expect(page.getByText(/vorherigen Eingaben.*wiederhergestellt/i)).not.toBeVisible();
 	});
 });

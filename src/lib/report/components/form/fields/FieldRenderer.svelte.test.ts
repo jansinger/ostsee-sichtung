@@ -85,6 +85,27 @@ const dateFieldConfig = makeFieldConfig({
 	meta: { type: 'date' }
 });
 
+const distributionFieldConfig = makeFieldConfig({
+	label: 'Verteilung',
+	optional: true,
+	type: 'number',
+	meta: {
+		type: 'radio',
+		options: [
+			{ value: 1, label: 'einzeln' },
+			{ value: 2, label: 'Mutter mit Jungtier' },
+			{ value: 3, label: 'deutliche Schulen' }
+		]
+	}
+});
+
+const deadConfirmedFieldConfig = makeFieldConfig({
+	label: 'Totfund bestätigt',
+	optional: true,
+	type: 'boolean',
+	meta: { type: 'checkbox' }
+});
+
 describe('FieldRenderer', () => {
 	describe('Pflichtfeld-Anzeige', () => {
 		it('zeigt Pflichtfeld-Stern (*) für required Fields', async () => {
@@ -291,6 +312,29 @@ describe('FieldRenderer', () => {
 
 			const input = page.getByTestId('field-sightingDate');
 			await expect.element(input).toBeVisible();
+		});
+
+		it('rendert Radio-Optionen mit allen Auswahlmöglichkeiten', async () => {
+			render(FieldRenderer, {
+				fieldConfig: distributionFieldConfig,
+				name: 'distribution',
+				value: null
+			});
+
+			await expect.element(page.getByText('einzeln')).toBeVisible();
+			await expect.element(page.getByText('Mutter mit Jungtier')).toBeVisible();
+			await expect.element(page.getByText('deutliche Schulen')).toBeVisible();
+		});
+
+		it('rendert Checkbox mit Label', async () => {
+			render(FieldRenderer, {
+				fieldConfig: deadConfirmedFieldConfig,
+				name: 'deadConfirmed',
+				value: false
+			});
+
+			await expect.element(page.getByRole('checkbox')).toBeVisible();
+			await expect.element(page.getByText('Totfund bestätigt')).toBeVisible();
 		});
 	});
 });

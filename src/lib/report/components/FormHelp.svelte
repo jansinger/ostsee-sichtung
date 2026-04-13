@@ -18,6 +18,7 @@
 	});
 
 	let loading = $state(true);
+	let fetchFailed = $state(false);
 
 	// Load statistics only in browser (avoid SSR fetch warning)
 	$effect(() => {
@@ -34,6 +35,7 @@
 					{ error: error instanceof Error ? error.message : error },
 					'Could not load statistics, using fallback values'
 				);
+				fetchFailed = true;
 			} finally {
 				loading = false;
 			}
@@ -63,28 +65,34 @@
 								Artenschutz bei!
 							</p>
 							<div class="bg-base-100 mt-3 rounded-lg p-3">
-								<div class="grid grid-cols-2 gap-4 text-center text-sm">
-									<div>
-										<div class="text-primary font-bold">
-											{#if loading}
-												<span class="loading loading-dots loading-sm"></span>
-											{:else}
-												{statistics.totalSightings.toLocaleString('de-DE')}
-											{/if}
+								{#if !loading && fetchFailed}
+									<p class="text-base-content/50 text-center text-xs">
+										Statistiken konnten nicht geladen werden
+									</p>
+								{:else}
+									<div class="grid grid-cols-2 gap-4 text-center text-sm">
+										<div>
+											<div class="text-primary font-bold">
+												{#if loading}
+													<span class="loading loading-dots loading-sm"></span>
+												{:else}
+													{statistics.totalSightings.toLocaleString('de-DE')}
+												{/if}
+											</div>
+											<div class="text-xs">Sichtungen gemeldet</div>
 										</div>
-										<div class="text-xs">Sichtungen gemeldet</div>
-									</div>
-									<div>
-										<div class="text-primary font-bold">
-											{#if loading}
-												<span class="loading loading-dots loading-sm"></span>
-											{:else}
-												{statistics.completionRate}%
-											{/if}
+										<div>
+											<div class="text-primary font-bold">
+												{#if loading}
+													<span class="loading loading-dots loading-sm"></span>
+												{:else}
+													{statistics.completionRate}%
+												{/if}
+											</div>
+											<div class="text-xs">Beobachter füllen Zusatzfelder aus</div>
 										</div>
-										<div class="text-xs">Beobachter füllen Zusatzfelder aus</div>
 									</div>
-								</div>
+								{/if}
 							</div>
 						</div>
 					</div>

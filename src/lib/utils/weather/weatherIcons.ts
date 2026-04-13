@@ -67,9 +67,9 @@ export function getWindDirectionIconName(direction: string | null): string {
 		SW: 'wi:wind from-sw',
 		W: 'wi:wind from-w',
 		NW: 'wi:wind from-nw',
-		NO: 'wi:wind from-nw', // Alternative notation for NW
-		SO: 'wi:wind from-se', // Alternative notation for SE
-		O: 'wi:wind from-e' // Alternative notation for E
+		NO: 'wi:wind from-ne', // German Nordost = NE
+		SO: 'wi:wind from-se', // German Südost = SE
+		O: 'wi:wind from-e' // German Ost = E
 	};
 
 	return directionMap[direction.toUpperCase()] || 'wi:wind';
@@ -94,9 +94,9 @@ export function getWindDirectionClass(direction: string | null): string {
 		SW: 'transform rotate-225',
 		W: 'transform rotate-270',
 		NW: 'transform rotate-315',
-		NO: 'transform rotate-315', // Alternative notation for NW
-		SO: 'transform rotate-135', // Alternative notation for SE
-		O: 'transform rotate-90' // Alternative notation for E
+		NO: 'transform rotate-45', // German Nordost = NE
+		SO: 'transform rotate-135', // German Südost = SE
+		O: 'transform rotate-90' // German Ost = E
 	};
 
 	return directionClasses[direction.toUpperCase()] || '';
@@ -109,8 +109,8 @@ export function getWindDirectionClass(direction: string | null): string {
  */
 export function getWeatherIconClass(code: number | undefined): string {
 	const supportedCodes = [
-		0, 1, 2, 3, 45, 48, 51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85,
-		86, 95, 96, 99
+		0, 1, 2, 3, 45, 48, 51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 71, 73, 75, 77, 80, 81, 82, 85, 86,
+		95, 96, 99
 	];
 	if (typeof code === 'number' && supportedCodes.includes(code)) {
 		return `wi-wmo4680-${code}`;

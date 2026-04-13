@@ -61,7 +61,7 @@ describe('/api/sightings POST endpoint', () => {
 					})
 				}
 			} as unknown as Request,
-			cookies: {} as any,
+			cookies: {} as unknown as Parameters<typeof POST>[0]['cookies'],
 			fetch: fetch,
 			getClientAddress: () => '127.0.0.1',
 			locals: {},
@@ -73,7 +73,7 @@ describe('/api/sightings POST endpoint', () => {
 			isDataRequest: false,
 			isSubRequest: false,
 			isRemoteRequest: false
-		} as any; // Use any to bypass strict type checking for test mocks
+		} as unknown as Parameters<typeof POST>[0];
 	};
 
 	it('should reject requests with admin fields', async () => {

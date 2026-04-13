@@ -34,10 +34,11 @@
   for the active step indicator (WAI stepper pattern).
 -->
 <nav class="mb-8" aria-label="Formular-Schritte">
-	<ul class="steps steps-horizontal w-full">
+	<ul class="steps steps-horizontal w-full" role="tablist">
 		{#each steps as step, index (step.id)}
 			{@const navigable = canNavigateTo(index)}
 			<li
+				role="tab"
 				class="step step-button {currentStep >= index ? 'step-primary' : ''}"
 				class:cursor-pointer={navigable}
 				class:cursor-not-allowed={!navigable}

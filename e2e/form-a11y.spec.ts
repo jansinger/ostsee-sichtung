@@ -114,13 +114,11 @@ test.describe('Accessibility — Keyboard Navigation', () => {
 		await formPage.clickNext();
 		await formPage.clickNext(); // Trigger validation errors
 
-		// Wait for validation errors
-		await page.waitForTimeout(500);
+		// Wait for validation error to appear
+		await page.locator('[role="alert"]').first().waitFor({ state: 'visible' });
 
 		// Check role="alert" elements exist
-		const alerts = page.locator('[role="alert"]');
-		const count = await alerts.count();
-		expect(count).toBeGreaterThanOrEqual(1);
+		await expect(page.locator('[role="alert"]').first()).toBeVisible();
 	});
 
 	test('Formular hat korrekte aria-labels auf Navigation', async ({ page }) => {
@@ -128,7 +126,7 @@ test.describe('Accessibility — Keyboard Navigation', () => {
 		await formPage.goto();
 
 		// Navigation should have aria-label
-		const nav = page.locator('nav[aria-label="Formular Navigation"]');
+		const nav = page.locator('nav[aria-label="Formular-Schritte"]');
 		await expect(nav).toBeVisible();
 
 		// Buttons should have aria-labels
