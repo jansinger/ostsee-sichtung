@@ -3,7 +3,7 @@ import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import type { RequestHandler } from '@sveltejs/kit';
-import { error, json } from '@sveltejs/kit';
+import { error, isHttpError, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 
 // Logger für diesen API-Endpunkt erstellen
@@ -48,8 +48,11 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url }) =>
 		}
 
 		// Update-Objekt vorbereiten
-		const updateData: Record<string, unknown> = {
-			approvedAt: approve ? new Date().toISOString() : null
+		const updateData: {
+			approvedAt: Date | null;
+			internalComment?: string;
+		} = {
+			approvedAt: approve ? new Date() : null
 		};
 
 		// Optionalen internen Kommentar hinzufügen
@@ -85,7 +88,7 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url }) =>
 			message: `Sichtung wurde ${approve ? 'genehmigt' : 'abgelehnt'}`
 		});
 	} catch (err) {
-		if (err instanceof Error && 'status' in err) {
+		if (isHttpError(err)) {
 			throw err;
 		}
 		logger.error({ err, id }, 'Fehler beim Ändern des Genehmigungsstatus');

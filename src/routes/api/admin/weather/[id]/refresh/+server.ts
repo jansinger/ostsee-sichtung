@@ -1,4 +1,5 @@
 import { createLogger } from '$lib/logger';
+import { requireUserRole } from '$lib/server/auth/auth';
 import { getSightingById, updateSightingWeatherData } from '$lib/server/db/sightingRepository';
 import { fetchWeatherData } from '$lib/server/services/weatherRefreshService';
 import { json, type RequestEvent } from '@sveltejs/kit';
@@ -10,7 +11,8 @@ const logger = createLogger('api:admin:weather:refresh');
  * Admin API endpoint to refresh weather data for a specific sighting
  * Requires authentication for admin access
  */
-export const POST: RequestHandler = async ({ params }: RequestEvent) => {
+export const POST: RequestHandler = async ({ params, locals, url }: RequestEvent) => {
+	requireUserRole(url, locals.user, ['admin']);
 	const sightingId = parseInt(params.id || '');
 
 	if (isNaN(sightingId)) {
@@ -39,7 +41,8 @@ export const POST: RequestHandler = async ({ params }: RequestEvent) => {
 
 		// Format date for weather API
 		const sightingDateStr = sighting.sightingDate.toISOString().split('T')[0] || '';
-		const sightingTimeStr = sighting.sightingDate.toISOString().split('T')[1]?.split(':').slice(0, 2).join(':') || '';
+		const sightingTimeStr =
+			sighting.sightingDate.toISOString().split('T')[1]?.split(':').slice(0, 2).join(':') || '';
 
 		logger.debug(
 			{
@@ -95,7 +98,14 @@ export const POST: RequestHandler = async ({ params }: RequestEvent) => {
 			message: 'Weather data refreshed successfully'
 		});
 	} catch (error) {
-		logger.error({ error: error instanceof Error ? error.message : error, stack: error instanceof Error ? error.stack : undefined, sightingId }, 'Error refreshing weather data');
+		logger.error(
+			{
+				error: error instanceof Error ? error.message : error,
+				stack: error instanceof Error ? error.stack : undefined,
+				sightingId
+			},
+			'Error refreshing weather data'
+		);
 		return json(
 			{
 				success: false,
