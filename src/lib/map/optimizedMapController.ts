@@ -52,6 +52,7 @@ export interface MapOptions {
 	timeEndId?: string;
 	enableLocationControl?: boolean;
 	onLoading?: (isLoading: boolean) => void;
+	onError?: (error: Error) => void;
 }
 
 /**
@@ -81,6 +82,7 @@ export class SichtungenMap {
 	private legendUpdateCallback?: () => void;
 	private yearChangeCallback?: (year: number) => void;
 	private loadingCallback?: (isLoading: boolean) => void;
+	private errorCallback?: (error: Error) => void;
 	private activeAbortController: AbortController | null = null;
 	private filterDebounceTimeout: number | null = null;
 	private clusterDistance: number = 40; // Reduziert für bessere Performance
@@ -251,15 +253,19 @@ export class SichtungenMap {
 		// Optimierte Event-Handler
 		this.initializeOptimizedEvents();
 
-		// Loading-Callback vor initialem setYear setzen, damit der erste Load gemeldet wird
+		// Loading- und Error-Callbacks vor initialem setYear setzen
 		if (options.onLoading) {
 			this.loadingCallback = options.onLoading;
+		}
+		if (options.onError) {
+			this.errorCallback = options.onError;
 		}
 
 		// Lade Daten für das aktuelle Jahr
 		void this.setYear(this.displayedYear).catch((err) => {
 			logger.error({ err }, 'Initial sightings load failed');
 			this.loadingCallback?.(false);
+			this.errorCallback?.(err instanceof Error ? err : new Error(String(err)));
 		});
 
 		// Initialisiere Zeitraum-Anzeige
@@ -761,6 +767,7 @@ export class SichtungenMap {
 						void this.setYear(year).catch((err) => {
 							logger.error({ err }, 'Year change load failed');
 							this.loadingCallback?.(false);
+							this.errorCallback?.(err instanceof Error ? err : new Error(String(err)));
 						});
 					}
 				});
@@ -832,7 +839,7 @@ export class SichtungenMap {
 				// Abgebrochene Requests nicht als Fehler behandeln
 				if (error instanceof DOMException && error.name === 'AbortError') return;
 				this.loadingCallback?.(false);
-				throw error;
+				this.errorCallback?.(error instanceof Error ? error : new Error(String(error)));
 			});
 	}
 

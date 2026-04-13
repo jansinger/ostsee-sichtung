@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ url }) => {
 
 	// Datums-Filter (nur mit validiertem YYYY-MM-DD Format)
 	if (isValidDateParam(dateFrom) && isValidDateParam(dateTo)) {
-		conditions.push(sql`${sightings.sightingDate} BETWEEN ${dateFrom} AND ${dateTo}`);
+		conditions.push(sql`DATE(${sightings.sightingDate}) BETWEEN ${dateFrom} AND ${dateTo}`);
 	}
 
 	// Verifizierungs-Filter (als Integer 0/1)

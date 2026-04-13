@@ -140,6 +140,12 @@
 						currentDisplayedYear = mapInstance!.getDisplayedYear();
 						isInitialLoading = false;
 					}
+				},
+				onError: (err) => {
+					console.error('Map data load failed:', err);
+					errorMessage = 'Fehler beim Laden der Kartendaten. Bitte versuchen Sie es erneut.';
+					isLoadingData = false;
+					isInitialLoading = false;
 				}
 			});
 
