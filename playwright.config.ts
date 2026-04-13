@@ -16,10 +16,10 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	/* Retry on CI only */
 	retries: process.env.CI ? 1 : 0,
-	/* Vite dev server can't handle parallel page compilation reliably */
-	workers: process.env.CI ? 1 : undefined,
-	/* Global test timeout - increased for CI */
-	timeout: process.env.CI ? 60000 : 30000,
+	/* CI: 2 workers — only 3 routes (/,/map,/about), Vite caches after first compile */
+	workers: process.env.CI ? 2 : undefined,
+	/* Global test timeout */
+	timeout: 30000,
 	/* Reporter to use. See https://playwright.dev/docs/test-reporters */
 	reporter: process.env.CI ? 'github' : 'html',
 	/* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -32,9 +32,8 @@ export default defineConfig({
 		screenshot: 'only-on-failure',
 		/* Ignore HTTPS errors for local development */
 		ignoreHTTPSErrors: !process.env.CI,
-		/* Increase timeout for CI environment */
-		actionTimeout: process.env.CI ? 30000 : 15000,
-		navigationTimeout: process.env.CI ? 30000 : 15000
+		actionTimeout: 15000,
+		navigationTimeout: 15000
 	},
 
 	/* Configure projects for major browsers */
