@@ -70,7 +70,7 @@
 		"@fontsource/roboto": "^5.2.10",
 		"@iconify/json": "^2.2.459",
 		"@playwright/test": "^1.59.1",
-		"@scalar/api-reference": "^1.49.7",
+		"@scalar/api-reference": "^1.52.1",
 		"@scalar/sveltekit": "^0.2.3",
 		"@sveltejs/adapter-node": "^5.5.4",
 		"@sveltejs/adapter-vercel": "^6.3.3",
