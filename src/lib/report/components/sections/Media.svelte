@@ -5,6 +5,7 @@
 	import DropzoneEnhanced from '$lib/report/components/form/fields/DropzoneEnhanced.svelte';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import type { ValidationPreset } from '$lib/types';
+	import SectionCard from './SectionCard.svelte';
 
 	// Generiere eine einfache referenceId für Upload (temporäre Lösung)
 	const { form } = getFormContext();
@@ -14,7 +15,7 @@
 	let uploadConfig = $state<ValidationPreset | null>(null);
 
 	// Generate dynamic format description
-	let formatDescription = $derived(() => {
+	let formatDescription = $derived.by(() => {
 		if (!uploadConfig) return 'JPG, PNG, MP4, MOV, AVI';
 
 		const imageTypes = uploadConfig.allowedTypes.filter((type) => type.startsWith('image/'));
@@ -32,7 +33,7 @@
 	});
 
 	// Generate file size description
-	let maxSizeDescription = $derived(() => {
+	let maxSizeDescription = $derived.by(() => {
 		if (!uploadConfig) return 'max 50MB';
 		const sizeMB = Math.round(uploadConfig.maxFileSize / (1024 * 1024));
 		return `max ${sizeMB}MB`;
@@ -47,56 +48,38 @@
 </script>
 
 <!-- Media Section -->
-<div class="card bg-base-200 shadow-sm">
-	<div class="card-body">
-		<h3 class="card-title flex items-center gap-2 text-lg">
-			<Icon icon="lucide:camera" width="20" class="text-primary" />
-			Foto- oder Videoaufnahmen
-		</h3>
-		<div class="text-base-content/70 mb-4 text-sm">
-			<p class="mb-2 flex items-center gap-2 font-medium">
-				<Icon icon="lucide:camera" width="16" class="text-primary" />
-				Fotos und Videos sind extrem wertvoll für die Forschung!
-			</p>
-			<ul class="list-inside list-disc space-y-1 text-xs">
-				<li><strong>Artbestimmung:</strong> Auch unscharfe Bilder können helfen</li>
-				<li><strong>Verhaltensanalyse:</strong> Videos zeigen wichtige Verhaltensmuster</li>
-				<li><strong>GPS-Daten:</strong> Automatische Positionserkennung aus Bildern</li>
-				<li>
-					<strong>Formatunterstützung:</strong>
-					{formatDescription()} ({maxSizeDescription()})
-				</li>
-			</ul>
-		</div>
-		<FormField name="mediaConsent" />
-		{#if uploadConfig}
-			<DropzoneEnhanced
-				{referenceId}
-				maxFiles={10}
-				config={uploadConfig}
-				enableGPSExtraction={false}
-			/>
-		{:else}
-			<div class="skeleton h-32 w-full"></div>
-		{/if}
-		<div class="alert alert-info mt-4">
-			<Icon icon="lucide:camera" width="20" />
-			<span class="text-sm">
-				Falls Sie uns Ihre Medien auf einem anderen Weg zukommen lassen möchten, erhalten Sie
-				Instruktionen nach dem Absenden des Formulars.
-			</span>
-		</div>
+<SectionCard title="Foto- oder Videoaufnahmen" icon="lucide:camera">
+	<div class="text-base-content/70 mb-4 text-sm">
+		<p class="mb-2 flex items-center gap-2 font-medium">
+			<Icon icon="lucide:camera" width="16" class="text-primary" />
+			Fotos und Videos sind extrem wertvoll für die Forschung!
+		</p>
+		<ul class="list-inside list-disc space-y-1 text-xs">
+			<li><strong>Artbestimmung:</strong> Auch unscharfe Bilder können helfen</li>
+			<li><strong>Verhaltensanalyse:</strong> Videos zeigen wichtige Verhaltensmuster</li>
+			<li><strong>GPS-Daten:</strong> Automatische Positionserkennung aus Bildern</li>
+			<li>
+				<strong>Formatunterstützung:</strong>
+				{formatDescription} ({maxSizeDescription})
+			</li>
+		</ul>
 	</div>
-</div>
-
-<style>
-	/* Card hover effects */
-	.card {
-		transition: all 0.2s ease;
-	}
-
-	.card:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 8px 25px -8px var(--color-base-300);
-	}
-</style>
+	<FormField name="mediaConsent" />
+	{#if uploadConfig}
+		<DropzoneEnhanced
+			{referenceId}
+			maxFiles={10}
+			config={uploadConfig}
+			enableGPSExtraction={false}
+		/>
+	{:else}
+		<div class="skeleton h-32 w-full"></div>
+	{/if}
+	<div class="alert alert-info mt-4">
+		<Icon icon="lucide:camera" width="20" />
+		<span class="text-sm">
+			Falls Sie uns Ihre Medien auf einem anderen Weg zukommen lassen möchten, erhalten Sie
+			Instruktionen nach dem Absenden des Formulars.
+		</span>
+	</div>
+</SectionCard>

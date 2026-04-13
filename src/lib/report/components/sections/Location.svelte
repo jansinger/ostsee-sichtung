@@ -1,9 +1,9 @@
 <script lang="ts">
-	import Icon from '$lib/components/Icon.svelte';
 	import { getFormContext } from '$lib/report/formContext';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import LocationInput from '$lib/report/components/form/LocationInput.svelte';
 	import VerifyLocation from '$lib/report/components/form/VerifyLocation.svelte';
+	import SectionCard from './SectionCard.svelte';
 
 	const { form, handleChange } = getFormContext();
 
@@ -12,44 +12,25 @@
 </script>
 
 <!-- Location Section -->
-<div class="card bg-base-200 shadow-sm">
-	<div class="card-body">
-		<h3 class="card-title flex items-center gap-2 text-lg">
-			<Icon icon="lucide:map-pin" width="20" class="text-primary" />
-			Standort der Sichtung
-		</h3>
+<SectionCard title="Standort der Sichtung" icon="lucide:map-pin">
+	<!-- Position Type Selection -->
+	<FormField name="hasPosition" />
 
-		<!-- Position Type Selection -->
-		<FormField name="hasPosition" />
+	<!-- GPS Coordinates (shown when hasPosition = true) -->
+	{#if hasPosition}
+		<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-1">
+			<LocationInput
+				latitude={$form.latitude}
+				longitude={$form.longitude}
+				onchange={handleChange}
+			/>
 
-		<!-- GPS Coordinates (shown when hasPosition = true) -->
-		{#if hasPosition}
-			<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-1">
-				<LocationInput
-					latitude={$form.latitude}
-					longitude={$form.longitude}
-					onchange={handleChange}
-				/>
-
-				<VerifyLocation longitude={$form.longitude} latitude={$form.latitude} />
-			</div>
-		{:else}
-			<!-- Waterway Input (shown when hasPosition = false) -->
-			<FormField name="waterway" />
-			<!-- Sea Mark (always optional) -->
-			<FormField name="seaMark" />
-		{/if}
-	</div>
-</div>
-
-<style>
-	/* Card hover effects for better interactivity */
-	.card {
-		transition: all 0.2s ease;
-	}
-
-	.card:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 8px 25px -8px var(--color-base-300);
-	}
-</style>
+			<VerifyLocation longitude={$form.longitude} latitude={$form.latitude} />
+		</div>
+	{:else}
+		<!-- Waterway Input (shown when hasPosition = false) -->
+		<FormField name="waterway" />
+		<!-- Sea Mark (always optional) -->
+		<FormField name="seaMark" />
+	{/if}
+</SectionCard>

@@ -337,4 +337,102 @@ describe('FieldRenderer', () => {
 			await expect.element(page.getByText('Totfund bestätigt').first()).toBeVisible();
 		});
 	});
+
+	describe('value synchronisation — incoming prop → internal state', () => {
+		const numberFieldConfig = makeFieldConfig({
+			label: 'Anzahl',
+			optional: true,
+			meta: { type: 'number', placeholder: '' }
+		});
+
+		it('zeigt numerischen Wert 42 korrekt im Number-Input', async () => {
+			render(FieldRenderer, {
+				fieldConfig: numberFieldConfig,
+				name: 'count',
+				value: 42
+			});
+
+			const input = page.getByTestId('field-count');
+			// toHaveValue on <input type="number"> returns a number, not a string
+			await expect.element(input).toHaveValue(42);
+		});
+
+		it('zeigt String-Wert "5" korrekt im Number-Input ohne Verfälschung', async () => {
+			render(FieldRenderer, {
+				fieldConfig: numberFieldConfig,
+				name: 'count',
+				value: '5'
+			});
+
+			const input = page.getByTestId('field-count');
+			// toHaveValue on <input type="number"> returns a number, not a string
+			await expect.element(input).toHaveValue(5);
+		});
+
+		it('zeigt Datums-String "2024-01-15" korrekt im Date-Input (kein NaN)', async () => {
+			render(FieldRenderer, {
+				fieldConfig: dateFieldConfig,
+				name: 'sightingDate',
+				value: '2024-01-15'
+			});
+
+			const input = page.getByTestId('field-sightingDate');
+			await expect.element(input).toHaveValue('2024-01-15');
+		});
+
+		it('setzt Checkbox als aktiviert wenn value=true', async () => {
+			render(FieldRenderer, {
+				fieldConfig: deadConfirmedFieldConfig,
+				name: 'deadConfirmed',
+				value: true
+			});
+
+			await expect.element(page.getByRole('checkbox')).toBeChecked();
+		});
+
+		it('setzt Checkbox als deaktiviert wenn value=false', async () => {
+			render(FieldRenderer, {
+				fieldConfig: deadConfirmedFieldConfig,
+				name: 'deadConfirmed',
+				value: false
+			});
+
+			await expect.element(page.getByRole('checkbox')).not.toBeChecked();
+		});
+
+		it('zeigt Textarea-Inhalt "Hallo Welt" korrekt', async () => {
+			render(FieldRenderer, {
+				fieldConfig: otherObsFieldConfig,
+				name: 'otherObservations',
+				value: 'Hallo Welt'
+			});
+
+			const textarea = page.getByTestId('field-otherObservations');
+			await expect.element(textarea).toHaveValue('Hallo Welt');
+		});
+
+		it('selektiert Option mit Wert 0 im Select korrekt', async () => {
+			const selectWithZero = makeFieldConfig({
+				label: 'Bootsantrieb',
+				optional: true,
+				meta: {
+					type: 'select',
+					selectPlaceholder: 'Bitte wählen...',
+					options: [
+						{ value: 0, label: 'Sonstiges' },
+						{ value: 1, label: 'Motor' }
+					]
+				}
+			});
+
+			render(FieldRenderer, {
+				fieldConfig: selectWithZero,
+				name: 'boatDrive',
+				value: 0
+			});
+
+			const select = page.getByTestId('field-boatDrive');
+			await expect.element(select).toHaveValue('0');
+		});
+	});
 });

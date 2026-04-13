@@ -7,8 +7,8 @@
 		OpenMeteoRawData
 	} from '$lib/services/weatherService';
 	import { convertToStoredWeatherData } from '$lib/services/weatherService';
-	import Icon from '$lib/components/Icon.svelte';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
+	import SectionCard from './SectionCard.svelte';
 
 	const { form, handleChange } = getFormContext();
 
@@ -51,63 +51,45 @@
 </script>
 
 <!-- Environmental Conditions Section -->
-<div class="card bg-base-200 shadow-sm">
-	<div class="card-body">
-		<h3 class="card-title flex items-center gap-2 text-lg">
-			<Icon icon="lucide:waves" width="20" class="text-primary" />
-			Umweltbedingungen
-		</h3>
-		<p class="text-base-content/70 mb-4 text-sm">
-			Wetter- und Seebedingungen beeinflussen sowohl die Sichtbarkeit als auch das Tierverhalten
-		</p>
+<SectionCard title="Umweltbedingungen" icon="lucide:waves">
+	<p class="text-base-content/70 mb-4 text-sm">
+		Wetter- und Seebedingungen beeinflussen sowohl die Sichtbarkeit als auch das Tierverhalten
+	</p>
 
-		<!-- Optionaler Hinweis für User Experience -->
-		<p class="text-base-content/60 mb-2 text-xs">
-			Sobald Position und Datum gesetzt sind, werden Wetterdaten automatisch vorgeschlagen.
-		</p>
+	<!-- Optionaler Hinweis für User Experience -->
+	<p class="text-base-content/60 mb-2 text-xs">
+		Sobald Position und Datum gesetzt sind, werden Wetterdaten automatisch vorgeschlagen.
+	</p>
 
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<!-- Sea State -->
-			<FormField name="seaState" />
+	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+		<!-- Sea State -->
+		<FormField name="seaState" />
 
-			<!-- Visibility -->
-			<FormField name="visibility" />
-		</div>
-
-		<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-			<!-- Wind Direction -->
-			<FormField name="windDirection" />
-
-			<!-- Wind Force -->
-			<FormField name="windForce" />
-		</div>
-
-		<!-- Weather Data Fetcher - Auto-fetch when environment section is visible -->
-		{#if latitude && longitude && sightingDate}
-			<div class="border-base-300 mt-6 border-t pt-4">
-				<WeatherDataFetcher
-					{latitude}
-					{longitude}
-					date={sightingDate}
-					time={sightingTime ?? null}
-					onWeatherFetched={handleWeatherData}
-					onWeatherDataFetched={handleFullWeatherData}
-					autoFetch={true}
-					showInCard={false}
-				/>
-			</div>
-		{/if}
+		<!-- Visibility -->
+		<FormField name="visibility" />
 	</div>
-</div>
 
-<style>
-	/* Card hover effects */
-	.card {
-		transition: all 0.2s ease;
-	}
+	<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+		<!-- Wind Direction -->
+		<FormField name="windDirection" />
 
-	.card:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 8px 25px -8px var(--color-base-300);
-	}
-</style>
+		<!-- Wind Force -->
+		<FormField name="windForce" />
+	</div>
+
+	<!-- Weather Data Fetcher - Auto-fetch when environment section is visible -->
+	{#if latitude && longitude && sightingDate}
+		<div class="border-base-300 mt-6 border-t pt-4">
+			<WeatherDataFetcher
+				{latitude}
+				{longitude}
+				date={sightingDate}
+				time={sightingTime ?? null}
+				onWeatherFetched={handleWeatherData}
+				onWeatherDataFetched={handleFullWeatherData}
+				autoFetch={true}
+				showInCard={false}
+			/>
+		</div>
+	{/if}
+</SectionCard>
