@@ -5,7 +5,7 @@ const today = new Date().toISOString().substring(0, 10);
 
 /** Wait for the active step indicator to show a specific step name */
 async function expectCurrentStep(page: ReturnType<typeof test.extend>, pattern: RegExp) {
-	await expect(page.locator('button[aria-current="step"]')).toHaveAttribute('aria-label', pattern, {
+	await expect(page.locator('[aria-current="step"]')).toHaveAttribute('aria-label', pattern, {
 		timeout: 5000
 	});
 }
@@ -103,12 +103,12 @@ test.describe('Sichtung melden — Step-Validierung', () => {
 		await expectCurrentStep(page, /Sichtungsdetails/i);
 
 		const stepButtons = page.locator('.step-button');
-		// Step 1 (rückwärts) = enabled, Step 2 (aktuell) = enabled
-		await expect(stepButtons.nth(0)).toBeEnabled();
-		await expect(stepButtons.nth(1)).toBeEnabled();
+		// Step 1 (rückwärts) = navigable, Step 2 (aktuell) = navigable
+		await expect(stepButtons.nth(0)).toHaveAttribute('aria-disabled', 'false');
+		await expect(stepButtons.nth(1)).toHaveAttribute('aria-disabled', 'false');
 		// Step 3/4 (vorwärts, Step 2 nicht valid) = disabled
-		await expect(stepButtons.nth(2)).toBeDisabled();
-		await expect(stepButtons.nth(3)).toBeDisabled();
+		await expect(stepButtons.nth(2)).toHaveAttribute('aria-disabled', 'true');
+		await expect(stepButtons.nth(3)).toHaveAttribute('aria-disabled', 'true');
 	});
 
 	test('Step-Buttons rückwärts sind nach Navigation immer enabled', async ({ page }) => {
@@ -121,9 +121,9 @@ test.describe('Sichtung melden — Step-Validierung', () => {
 		await formPage.clickNext();
 		await expectCurrentStep(page, /Sichtungsdetails/i);
 
-		// Step 1 Button (index 0) sollte enabled sein (rückwärts erlaubt)
+		// Step 1 (index 0) sollte navigierbar sein (rückwärts erlaubt)
 		const stepButtons = page.locator('.step-button');
-		await expect(stepButtons.nth(0)).toBeEnabled();
+		await expect(stepButtons.nth(0)).toHaveAttribute('aria-disabled', 'false');
 	});
 
 	test('Validierungsfehler zeigt Toast-Notification', async ({ page }) => {

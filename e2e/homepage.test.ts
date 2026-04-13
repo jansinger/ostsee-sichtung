@@ -73,9 +73,11 @@ test.describe('Form Navigation', () => {
 			await expect(page.getByRole('button', { name })).toBeVisible();
 		}
 
-		// On Step 1: current step enabled, forward steps may be disabled
-		// (depends on validation state — Step 1 has defaults so Step 2 may be enabled)
-		await expect(page.getByRole('button', { name: 'Position & Zeit' })).toBeEnabled();
+		// On Step 1: current step should be navigable
+		await expect(page.getByRole('button', { name: 'Position & Zeit' })).toHaveAttribute(
+			'aria-disabled',
+			'false'
+		);
 
 		await expect(page.getByRole('button', { name: /Position & Zeit/i })).toHaveAttribute(
 			'aria-label',

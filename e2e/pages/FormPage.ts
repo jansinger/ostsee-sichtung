@@ -20,7 +20,7 @@ export class FormPage {
 		// Wait for Svelte to fully hydrate before interacting with form elements
 		await this.page.waitForLoadState('networkidle');
 		// Ensure the step indicator (Svelte component) is rendered and interactive
-		await this.page.locator('button[aria-current="step"]').waitFor({ state: 'visible' });
+		await this.page.locator('[aria-current="step"]').waitFor({ state: 'visible' });
 	}
 
 	// ── Step Navigation ──────────────────────────────────────────────────────
@@ -104,9 +104,7 @@ export class FormPage {
 	// ── Status Queries ────────────────────────────────────────────────────────
 
 	async getCurrentStep(): Promise<string> {
-		return (
-			(await this.page.locator('button[aria-current="step"]').getAttribute('aria-label')) ?? ''
-		);
+		return (await this.page.locator('[aria-current="step"]').getAttribute('aria-label')) ?? '';
 	}
 
 	async isNextDisabled(): Promise<boolean> {
@@ -127,6 +125,6 @@ export class FormPage {
 	}
 
 	getActiveStepButton(): Locator {
-		return this.page.locator('button[aria-current="step"]');
+		return this.page.locator('[aria-current="step"]');
 	}
 }
