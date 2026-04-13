@@ -223,6 +223,15 @@ describe('/api/sightings POST endpoint', () => {
 				wind_direction_10m: 270,
 				weather_code: 3,
 				visibility: 10000
+			},
+			processed: {
+				beaufort: 4,
+				seaState: 3,
+				visibilityCategory: 'clear'
+			},
+			quality: {
+				confidence: 0.85,
+				source: 'historical'
 			}
 		};
 
@@ -249,8 +258,13 @@ describe('/api/sightings POST endpoint', () => {
 		const response = await POST(requestWithWeather);
 		expect(response.status).toBe(201);
 
-		// saveSighting should have been called — weather data doesn't break submission
+		// saveSighting should have been called with weather data as second argument
 		expect(saveSighting).toHaveBeenCalledOnce();
+		const weatherArg = vi.mocked(saveSighting).mock.calls[0]?.[1];
+		expect(weatherArg).toBeDefined();
+		expect(weatherArg).toHaveProperty('provider', 'open-meteo');
+		expect(weatherArg).toHaveProperty('data_type', 'historical');
+		expect(weatherArg).toHaveProperty('quality.confidence', 0.85);
 	}, 15000);
 
 	it('should include referenceId in valid submission', async () => {
