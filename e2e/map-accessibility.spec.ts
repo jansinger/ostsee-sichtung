@@ -1,21 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
+import { MAP_TEST_TIMEOUTS } from './config/testTimeouts';
+import { setupMapPage } from './fixtures/mapSetup';
+import { mockMapSightingsAbort } from './fixtures/mockApi';
 
 test.describe('Map Accessibility', () => {
 	let mapPage: MapPage;
 
 	test.beforeEach(async ({ page }) => {
-		// Mock the sightings API so tests don't require a real database
-		await page.route('**/api/map/sightings**', (route) =>
-			route.fulfill({
-				status: 200,
-				contentType: 'application/json',
-				body: JSON.stringify({ type: 'FeatureCollection', features: [] })
-			})
-		);
-		mapPage = new MapPage(page);
-		await mapPage.goto();
-		await mapPage.waitForLoad();
+		mapPage = await setupMapPage(page);
 	});
 
 	test('Karten-Container hat role="application"', async () => {
@@ -28,10 +21,10 @@ test.describe('Map Accessibility', () => {
 	});
 
 	test('Fehlermeldung hat role="alert" für Screen Reader', async ({ page }) => {
-		await page.route('**/api/map/sightings**', (route) => route.abort());
+		await mockMapSightingsAbort(page);
 		await page.goto('/map');
 		const errorAlert = page.locator('.alert-error');
-		await expect(errorAlert).toBeVisible({ timeout: 30000 });
+		await expect(errorAlert).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.errorDisplay });
 		await expect(errorAlert).toHaveAttribute('role', 'alert');
 	});
 
@@ -40,7 +33,7 @@ test.describe('Map Accessibility', () => {
 		await page.keyboard.press('h');
 
 		const dialog = page.getByRole('dialog', { name: /tastaturkürzel/i });
-		await expect(dialog).toBeVisible({ timeout: 3000 });
+		await expect(dialog).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
 	});
 
 	test('Tastatur-Shortcut ? öffnet Hilfe-Modal', async ({ page }) => {
@@ -48,17 +41,17 @@ test.describe('Map Accessibility', () => {
 		await page.keyboard.press('?');
 
 		const dialog = page.getByRole('dialog', { name: /tastaturkürzel/i });
-		await expect(dialog).toBeVisible({ timeout: 3000 });
+		await expect(dialog).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
 	});
 
 	test('Escape schließt Hilfe-Modal', async ({ page }) => {
 		await page.locator('body').click();
 		await page.keyboard.press('h');
 		const dialog = page.getByRole('dialog', { name: /tastaturkürzel/i });
-		await expect(dialog).toBeVisible({ timeout: 3000 });
+		await expect(dialog).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
 
 		await page.keyboard.press('Escape');
-		await expect(dialog).toBeHidden({ timeout: 3000 });
+		await expect(dialog).toBeHidden({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
 	});
 
 	test('ESC schließt offenes Filter-Panel', async ({ page }) => {
@@ -99,7 +92,7 @@ test.describe('Map Accessibility', () => {
 		// Neu laden um den Loading-State zu erwischen
 		const overlayPromise = page
 			.locator('[aria-labelledby="loading-title"]')
-			.waitFor({ state: 'visible', timeout: 3000 })
+			.waitFor({ state: 'visible', timeout: MAP_TEST_TIMEOUTS.overlayVisible })
 			.catch(() => null);
 
 		await page.reload();
