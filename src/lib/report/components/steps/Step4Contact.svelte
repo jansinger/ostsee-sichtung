@@ -18,7 +18,7 @@
 
 	$effect(() => {
 		const savedData = loadUserContactData();
-		hasSavedContactData = Object.keys(savedData).length > 0;
+		hasSavedContactData = !!(savedData.firstName || savedData.lastName || savedData.email);
 	});
 
 	function clearContactData() {

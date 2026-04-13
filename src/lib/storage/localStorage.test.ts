@@ -160,12 +160,15 @@ describe('localStorage utilities', () => {
 			await new Promise((resolve) => setTimeout(resolve, 10));
 			const loaded = loadUserContactData();
 
-			expect(loaded).toEqual(contactData);
+			expect(loaded).toMatchObject(contactData);
 		});
 
-		it('should return empty object for no contact data', () => {
+		it('should return defaults with empty values for no contact data', () => {
 			const result = loadUserContactData();
-			expect(result).toEqual({});
+			expect(result.firstName).toBe('');
+			expect(result.lastName).toBe('');
+			expect(result.email).toBe('');
+			expect(result.persistentDataConsent).toBe(false);
 		});
 	});
 
@@ -203,7 +206,9 @@ describe('localStorage utilities', () => {
 			expect(localStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).toBeNull();
 
 			const loaded = loadUserContactData();
-			expect(loaded).toEqual(data);
+			// Sanitization adds missing fields with defaults, so use toMatchObject
+			expect(loaded).toMatchObject(data);
+			expect(loaded.firstName).toBe('Max');
 		});
 
 		it('revoking consent clears persisted localStorage user contact data', () => {
@@ -222,7 +227,7 @@ describe('localStorage utilities', () => {
 			expect(sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).not.toBeNull();
 
 			const loadedAfterRevocation = loadUserContactData();
-			expect(loadedAfterRevocation).toEqual(withoutConsent);
+			expect(loadedAfterRevocation).toMatchObject(withoutConsent);
 		});
 	});
 

@@ -17,6 +17,27 @@ import { browser } from '$app/environment';
 import type { UserContactData } from '$lib/types';
 
 /**
+ * Default-Objekt für UserContactData — dient als Whitelist-Template
+ * für loadFromStorage-Sanitization. Nur diese Felder werden beim
+ * Laden aus Storage akzeptiert, alle anderen verworfen.
+ */
+const USER_CONTACT_DEFAULTS: UserContactData = {
+	firstName: '',
+	lastName: '',
+	email: '',
+	phone: '',
+	street: '',
+	zipCode: '',
+	city: '',
+	shipName: '',
+	homePort: '',
+	boatType: '',
+	nameConsent: false,
+	shipNameConsent: false,
+	persistentDataConsent: false
+};
+
+/**
  * Konstanten für Storage-Schlüssel mit Namespace-Präfix
  * Verhindert Konflikte mit anderen Anwendungen im gleichen Domain
  */
@@ -224,12 +245,23 @@ export function loadUserContactData(): UserContactData {
 	const sessionRaw = sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA);
 	if (sessionRaw) {
 		try {
-			return JSON.parse(sessionRaw) as UserContactData;
+			const parsed = JSON.parse(sessionRaw);
+			// Apply same whitelist sanitization as loadFromStorage
+			if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+				// Corrupt data — fall through to localStorage
+			} else {
+				const sanitized: Record<string, unknown> = {};
+				for (const k of Object.keys(USER_CONTACT_DEFAULTS)) {
+					sanitized[k] =
+						k in parsed ? parsed[k] : (USER_CONTACT_DEFAULTS as Record<string, unknown>)[k];
+				}
+				return sanitized as UserContactData;
+			}
 		} catch {
 			// ignore parse errors, fall through to localStorage
 		}
 	}
-	return loadFromStorage(STORAGE_KEYS.USER_CONTACT_DATA, {} as UserContactData);
+	return loadFromStorage(STORAGE_KEYS.USER_CONTACT_DATA, USER_CONTACT_DEFAULTS);
 }
 
 /**
