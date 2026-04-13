@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.2](https://github.com/jansinger/ostsee-sichtung/compare/v2.2.1...v2.2.2) (2026-04-13)
+
+
+### Bug Fixes
+
+* **report:** sighting form code review + DaisyUI v5 theme migration ([#444](https://github.com/jansinger/ostsee-sichtung/issues/444)) ([8e60b35](https://github.com/jansinger/ostsee-sichtung/commit/8e60b35a83b989cf1557f063fdf614f8135147a7))
+
+
+### Dependencies
+
+* **deps:** bump @scalar/api-reference from 1.49.7 to 1.52.1 ([#450](https://github.com/jansinger/ostsee-sichtung/issues/450)) ([5109519](https://github.com/jansinger/ostsee-sichtung/commit/5109519dd7147f1c93a5efd72bd5fc995e0223a9))
+* **deps:** bump dotenv from 17.3.1 to 17.4.2 ([#449](https://github.com/jansinger/ostsee-sichtung/issues/449)) ([676f488](https://github.com/jansinger/ostsee-sichtung/commit/676f488a80ffdf9f8fcefe1b4c3113f3a52a9bf4))
+* **deps:** bump globals from 17.4.0 to 17.5.0 ([#451](https://github.com/jansinger/ostsee-sichtung/issues/451)) ([2178d0b](https://github.com/jansinger/ostsee-sichtung/commit/2178d0b57f593715ec707d49c18cafb13aa84e1d))
+* **deps:** bump the dev-tooling group with 9 updates ([#447](https://github.com/jansinger/ostsee-sichtung/issues/447)) ([ae87225](https://github.com/jansinger/ostsee-sichtung/commit/ae872256805848672b0e43c8479bae71bbbc81d2))
+* **deps:** bump the github-actions group with 3 updates ([#446](https://github.com/jansinger/ostsee-sichtung/issues/446)) ([285c409](https://github.com/jansinger/ostsee-sichtung/commit/285c4099bf66ed2b739b8d2fa15e44989585863e))
+* **deps:** bump the svelte-framework group with 2 updates ([#448](https://github.com/jansinger/ostsee-sichtung/issues/448)) ([98bfa90](https://github.com/jansinger/ostsee-sichtung/commit/98bfa901c2aa797075eb62820a9a78cd5a9a08e3))
+
 ## [2.2.1](https://github.com/jansinger/ostsee-sichtung/compare/v2.2.0...v2.2.1) (2026-04-10)
 
 
