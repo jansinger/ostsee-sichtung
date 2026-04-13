@@ -5,7 +5,6 @@ export const MAP_TEST_TIMEOUTS = {
 	apiResponse: 8000,
 	errorDisplay: 30000,
 	keyboardModal: 3000,
-	overlayVisible: 3000,
 	shortUi: 5000,
 	defaultUi: 10000,
 	mapReadyRetries: 1
