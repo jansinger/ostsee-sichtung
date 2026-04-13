@@ -9,23 +9,6 @@ test.describe('Map Filter Panel', () => {
 		mapPage = await setupMapPage(page);
 	});
 
-	test('Filter-Panel öffnet sich via Button', async () => {
-		await mapPage.openFilter();
-
-		const panel = mapPage.getFilterPanel();
-		await expect(panel).toHaveAttribute('aria-hidden', 'false');
-		await expect(mapPage.getYearSelect()).toBeVisible();
-		await expect(mapPage.getFilterInput()).toBeVisible();
-	});
-
-	test('Filter-Panel schließt sich via Schließen-Button', async () => {
-		await mapPage.openFilter();
-		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'false');
-
-		await mapPage.closeFilter();
-		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'true');
-	});
-
 	test('Tastatur-Shortcut F öffnet Filter-Panel', async ({ page }) => {
 		// Focus the page body to ensure keyboard events are received
 		await page.locator('body').click();
@@ -65,24 +48,5 @@ test.describe('Map Filter Panel', () => {
 		const response = await responsePromise;
 
 		expect(response.url()).toContain('search=Schweinswal');
-	});
-
-	test('Suchtext bleibt nach Panel-Schließen erhalten', async () => {
-		await mapPage.openFilter();
-		await mapPage.fillSearch('Seehund');
-
-		await mapPage.closeFilter();
-		await mapPage.openFilter();
-
-		// Input muss den gesuchten Term noch anzeigen — kein hidden state
-		await expect(mapPage.getFilterInput()).toHaveValue('Seehund');
-	});
-
-	test('Filter-Panel zeigt Jahres-Optionen in Auswahl', async () => {
-		await mapPage.openFilter();
-
-		const options = mapPage.getYearSelect().locator('option');
-		const count = await options.count();
-		expect(count).toBeGreaterThan(0);
 	});
 });

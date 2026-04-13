@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
 import { MAP_TEST_TIMEOUTS } from './config/testTimeouts';
 import { mockMapSightingsSuccess } from './fixtures/mockApi';
+import { setupMapPage } from './fixtures/mapSetup';
 
 const isCI = process.env.CI === 'true';
 
@@ -71,14 +72,7 @@ test.describe('Map Page', () => {
 	);
 
 	test('filter panel can be opened when map loads successfully', async ({ page }) => {
-		await mockMapSightingsSuccess(page);
-		const mapPage = new MapPage(page);
-		await mapPage.goto();
-
-		const loadingDialog = mapPage.getLoadingOverlay();
-		if (await loadingDialog.isVisible().catch(() => false)) {
-			await expect(loadingDialog).toBeHidden({ timeout: MAP_TEST_TIMEOUTS.overlayHide });
-		}
+		const mapPage = await setupMapPage(page);
 
 		const filterButton = page.getByRole('button', { name: /filter/i }).first();
 		await expect(filterButton).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.defaultUi });
