@@ -177,6 +177,10 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
+      - name: Install Playwright dependencies only
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
       - name: Run component tests (client/browser)
         run: npm run test:unit:client
 
