@@ -43,12 +43,11 @@ export type WindStrength = WindStrengthEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getWindStrengthOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(windStrengthLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const windStrengthOptions: Array<{ value: number; label: string }> = Object.entries(
+	windStrengthLabels
+).map(([value, label]) => ({ value: Number(value), label }));
+export const getWindStrengthOptions = (): Array<{ value: number; label: string }> =>
+	windStrengthOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

@@ -27,12 +27,10 @@ export type Distance = DistanceEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getDistanceOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(distanceLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const distanceOptions: Array<{ value: number; label: string }> = Object.entries(distanceLabels).map(
+	([value, label]) => ({ value: Number(value), label })
+);
+export const getDistanceOptions = (): Array<{ value: number; label: string }> => distanceOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

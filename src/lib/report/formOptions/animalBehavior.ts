@@ -27,12 +27,11 @@ export type AnimalBehavior = AnimalBehaviorEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getAnimalBehaviorOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(animalBehaviorLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const animalBehaviorOptions: Array<{ value: number; label: string }> = Object.entries(
+	animalBehaviorLabels
+).map(([value, label]) => ({ value: Number(value), label }));
+export const getAnimalBehaviorOptions = (): Array<{ value: number; label: string }> =>
+	animalBehaviorOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

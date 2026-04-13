@@ -53,110 +53,116 @@
 	<!-- Position Input Method Selection -->
 	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
 		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
-			<Icon icon="lucide:map-pin" width="20" class="text-primary" />
+			<Icon aria-hidden="true" icon="lucide:map-pin" width="20" class="text-primary" />
 			Positionsangabe
 		</h3>
 		<p class="text-base-content/70 mb-6 text-sm">
 			Wählen Sie die für Sie einfachste Methode zur Positionsangabe
 		</p>
 
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-			<!-- Photo Method -->
-			<div class="relative">
-				<input
-					type="radio"
-					id="method-photo"
-					name="position-method"
-					value="photo"
-					bind:group={positionMethod}
-					onchange={() => selectMethod('photo')}
-					class="sr-only"
-				/>
-				<label
-					for="method-photo"
-					class="block cursor-pointer rounded-lg border-2 p-4 transition-all md:h-28
-						{positionMethod === 'photo'
-						? 'border-primary bg-primary/10'
-						: 'border-base-300 hover:border-primary/50'}"
-				>
-					<div class="flex flex-col items-center text-center">
-						<Icon
-							icon="lucide:camera"
-							width="24"
-							class="mb-2 {positionMethod === 'photo' ? 'text-primary' : 'text-base-content/60'}"
-						/>
-						<h4 class="text-sm font-semibold">Foto mit GPS</h4>
-						<p class="text-base-content/60 mt-1 text-xs">Bevorzugt - GPS und Datum automatisch</p>
-					</div>
-				</label>
-			</div>
+		<fieldset class="fieldset m-0 min-w-0 border-0 p-0">
+			<legend class="sr-only">Wie möchten Sie den Standort angeben?</legend>
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+				<!-- Photo Method -->
+				<div class="relative">
+					<input
+						type="radio"
+						id="method-photo"
+						name="position-method"
+						value="photo"
+						bind:group={positionMethod}
+						onchange={() => selectMethod('photo')}
+						class="sr-only"
+					/>
+					<label
+						for="method-photo"
+						class="block cursor-pointer rounded-lg border-2 p-4 transition-all md:h-28
+							{positionMethod === 'photo'
+							? 'border-primary bg-primary/10'
+							: 'border-base-300 hover:border-primary/50'}"
+					>
+						<div class="flex flex-col items-center text-center">
+							<Icon
+								aria-hidden="true"
+								icon="lucide:camera"
+								width="24"
+								class="mb-2 {positionMethod === 'photo' ? 'text-primary' : 'text-base-content/60'}"
+							/>
+							<h4 class="text-sm font-semibold">Foto mit GPS</h4>
+							<p class="text-base-content/60 mt-1 text-xs">Bevorzugt - GPS und Datum automatisch</p>
+						</div>
+					</label>
+				</div>
 
-			<!-- Map Method -->
-			<div class="relative">
-				<input
-					type="radio"
-					id="method-map"
-					name="position-method"
-					value="map"
-					bind:group={positionMethod}
-					onchange={() => selectMethod('map')}
-					class="sr-only"
-				/>
-				<label
-					for="method-map"
-					class="block cursor-pointer rounded-lg border-2 p-4 transition-all md:h-28
-						{positionMethod === 'map'
-						? 'border-primary bg-primary/10'
-						: 'border-base-300 hover:border-primary/50'}"
-				>
-					<div class="flex flex-col items-center text-center">
-						<Icon
-							icon="lucide:map-pin"
-							width="24"
-							class="mb-2 {positionMethod === 'map' ? 'text-primary' : 'text-base-content/60'}"
-						/>
-						<h4 class="text-sm font-semibold">Karte / GPS Position</h4>
-						<p class="text-base-content/60 mt-1 text-xs">Position auf Karte wählen</p>
-					</div>
-				</label>
-			</div>
+				<!-- Map Method -->
+				<div class="relative">
+					<input
+						type="radio"
+						id="method-map"
+						name="position-method"
+						value="map"
+						bind:group={positionMethod}
+						onchange={() => selectMethod('map')}
+						class="sr-only"
+					/>
+					<label
+						for="method-map"
+						class="block cursor-pointer rounded-lg border-2 p-4 transition-all md:h-28
+							{positionMethod === 'map'
+							? 'border-primary bg-primary/10'
+							: 'border-base-300 hover:border-primary/50'}"
+					>
+						<div class="flex flex-col items-center text-center">
+							<Icon
+								aria-hidden="true"
+								icon="lucide:map-pin"
+								width="24"
+								class="mb-2 {positionMethod === 'map' ? 'text-primary' : 'text-base-content/60'}"
+							/>
+							<h4 class="text-sm font-semibold">Karte / GPS Position</h4>
+							<p class="text-base-content/60 mt-1 text-xs">Position auf Karte wählen</p>
+						</div>
+					</label>
+				</div>
 
-			<!-- Manual Method -->
-			<div class="relative">
-				<input
-					type="radio"
-					id="method-manual"
-					name="position-method"
-					value="manual"
-					bind:group={positionMethod}
-					onchange={() => selectMethod('manual')}
-					class="sr-only"
-				/>
-				<label
-					for="method-manual"
-					class="block cursor-pointer rounded-lg border-2 p-4 transition-all md:h-28
-						{positionMethod === 'manual'
-						? 'border-primary bg-primary/10'
-						: 'border-base-300 hover:border-primary/50'}"
-				>
-					<div class="flex flex-col items-center text-center">
-						<Icon
-							icon="lucide:square-pen"
-							width="24"
-							class="mb-2 {positionMethod === 'manual' ? 'text-primary' : 'text-base-content/60'}"
-						/>
-						<h4 class="text-sm font-semibold">Beschreibung</h4>
-						<p class="text-base-content/60 mt-1 text-xs">Beschreibung der Position</p>
-					</div>
-				</label>
+				<!-- Manual Method -->
+				<div class="relative">
+					<input
+						type="radio"
+						id="method-manual"
+						name="position-method"
+						value="manual"
+						bind:group={positionMethod}
+						onchange={() => selectMethod('manual')}
+						class="sr-only"
+					/>
+					<label
+						for="method-manual"
+						class="block cursor-pointer rounded-lg border-2 p-4 transition-all md:h-28
+							{positionMethod === 'manual'
+							? 'border-primary bg-primary/10'
+							: 'border-base-300 hover:border-primary/50'}"
+					>
+						<div class="flex flex-col items-center text-center">
+							<Icon
+								aria-hidden="true"
+								icon="lucide:square-pen"
+								width="24"
+								class="mb-2 {positionMethod === 'manual' ? 'text-primary' : 'text-base-content/60'}"
+							/>
+							<h4 class="text-sm font-semibold">Beschreibung</h4>
+							<p class="text-base-content/60 mt-1 text-xs">Beschreibung der Position</p>
+						</div>
+					</label>
+				</div>
 			</div>
-		</div>
+		</fieldset>
 
 		<div class="bg-base-100 mt-4 rounded-lg p-4">
 			<!-- Photo Upload Section -->
 			{#if positionMethod === 'photo'}
 				<h4 class="mb-3 flex items-center gap-2 font-semibold">
-					<Icon icon="lucide:camera" width="18" />
+					<Icon aria-hidden="true" icon="lucide:camera" width="18" />
 					Foto mit GPS-Daten hochladen
 				</h4>
 
@@ -177,7 +183,7 @@
 			<!-- Map/GPS Input Section -->
 			{#if positionMethod === 'map'}
 				<h4 class="mb-3 flex items-center gap-2 font-semibold">
-					<Icon icon="lucide:map-pin" width="18" />
+					<Icon aria-hidden="true" icon="lucide:map-pin" width="18" />
 					Position auf Karte wählen
 				</h4>
 				<LocationInput {latitude} {longitude} onchange={handleChange} />
@@ -192,7 +198,7 @@
 			<!-- Manual Input Section -->
 			{#if positionMethod === 'manual'}
 				<h4 class="mb-3 flex items-center gap-2 font-semibold">
-					<Icon icon="lucide:square-pen" width="18" />
+					<Icon aria-hidden="true" icon="lucide:square-pen" width="18" />
 					Beschreibung der Position
 				</h4>
 
@@ -205,7 +211,7 @@
 	<!-- Date and Time Section (always visible) -->
 	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
 		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
-			<Icon icon="lucide:calendar" width="20" class="text-primary" />
+			<Icon aria-hidden="true" icon="lucide:calendar" width="20" class="text-primary" />
 			Datum und Uhrzeit
 		</h3>
 		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">

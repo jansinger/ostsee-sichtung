@@ -1,31 +1,12 @@
 <script lang="ts">
-	import Icon from '$lib/components/Icon.svelte';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
+	import SectionCard from './SectionCard.svelte';
 </script>
 
 <!-- Date & Time Section -->
-<div class="card bg-base-200 shadow-sm">
-	<div class="card-body">
-		<h3 class="card-title flex items-center gap-2 text-lg">
-			<Icon icon="lucide:calendar" width="20" class="text-primary" />
-			Zeitpunkt der Sichtung
-		</h3>
-
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<FormField name="sightingDate" />
-			<FormField name="sightingTime" />
-		</div>
+<SectionCard title="Zeitpunkt der Sichtung" icon="lucide:calendar">
+	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+		<FormField name="sightingDate" />
+		<FormField name="sightingTime" />
 	</div>
-</div>
-
-<style>
-	/* Card hover effects for better interactivity */
-	.card {
-		transition: all 0.2s ease;
-	}
-
-	.card:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 8px 25px -8px var(--color-base-300);
-	}
-</style>
+</SectionCard>

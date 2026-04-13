@@ -533,7 +533,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.string()
 		.max(255, 'Die Angabe darf nicht länger als 255 Zeichen sein.')
 		.when('sightingFrom', {
-			is: String(SightingFromEnum.OTHER) || SightingFromEnum.OTHER,
+			is: (v: unknown) => v === SightingFromEnum.OTHER || v === String(SightingFromEnum.OTHER),
 			then: (schema) => schema.required('Bitte geben Sie an, von wo die Sichtung erfolgte.'),
 			otherwise: (schema) => schema.notRequired()
 		})
@@ -597,7 +597,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.string()
 		.max(255, 'Die Beschreibung darf nicht länger als 255 Zeichen sein.')
 		.when('distribution', {
-			is: String(DistributionEnum.OTHER) || DistributionEnum.OTHER,
+			is: (v: unknown) => v === DistributionEnum.OTHER || v === String(DistributionEnum.OTHER),
 			then: (schema) => schema.required('Bitte beschreiben Sie die Verteilung.'),
 			otherwise: (schema) => schema.notRequired()
 		})
@@ -641,7 +641,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.string()
 		.max(255, 'Die Beschreibung darf nicht länger als 255 Zeichen sein.')
 		.when('behavior', {
-			is: String(AnimalBehaviorEnum.OTHER) || AnimalBehaviorEnum.OTHER,
+			is: (v: unknown) => v === AnimalBehaviorEnum.OTHER || v === String(AnimalBehaviorEnum.OTHER),
 			then: (schema) => schema.required('Bitte beschreiben Sie das Verhalten.'),
 			otherwise: (schema) => schema.notRequired()
 		})
@@ -931,7 +931,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.string()
 		.max(255, 'Die Beschreibung darf nicht länger als 255 Zeichen sein.')
 		.when('boatDrive', {
-			is: String(BoatDriveEnum.OTHER) || BoatDriveEnum.OTHER,
+			is: (v: unknown) => v === BoatDriveEnum.OTHER || v === String(BoatDriveEnum.OTHER),
 			then: (schema) => schema.required('Bitte beschreiben Sie den Bootsantrieb.'),
 			otherwise: (schema) => schema.notRequired()
 		})

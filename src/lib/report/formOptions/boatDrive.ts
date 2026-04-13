@@ -27,12 +27,10 @@ export type BoatDrive = BoatDriveEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getBoatDriveOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(boatDriveLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const boatDriveOptions: Array<{ value: number; label: string }> = Object.entries(
+	boatDriveLabels
+).map(([value, label]) => ({ value: Number(value), label }));
+export const getBoatDriveOptions = (): Array<{ value: number; label: string }> => boatDriveOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

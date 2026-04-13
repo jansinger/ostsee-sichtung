@@ -35,12 +35,11 @@ export type WindDirection = WindDirectionEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getWindDirectionOptions(): Array<{ value: string; label: string }> {
-	return Object.entries(windDirectionLabels).map(([value, label]) => ({
-		value,
-		label
-	}));
-}
+const windDirectionOptions: Array<{ value: string; label: string }> = Object.entries(
+	windDirectionLabels
+).map(([value, label]) => ({ value, label }));
+export const getWindDirectionOptions = (): Array<{ value: string; label: string }> =>
+	windDirectionOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

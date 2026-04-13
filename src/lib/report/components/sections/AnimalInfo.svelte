@@ -2,37 +2,30 @@
 	import DeadAnimal from './DeadAnimal.svelte';
 
 	import { getFormContext } from '$lib/report/formContext';
-	import Icon from '$lib/components/Icon.svelte';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
+	import SectionCard from './SectionCard.svelte';
 
 	const { form } = getFormContext();
 </script>
 
 <!-- Animal Information Section -->
-<div class="card bg-base-200 shadow-sm">
-	<div class="card-body">
-		<h3 class="card-title flex items-center gap-2 text-lg">
-			<Icon icon="lucide:eye" class="text-primary h-5 w-5" />
-			Tierinformationen
-		</h3>
+<SectionCard title="Tierinformationen" icon="lucide:eye">
+	<!-- Species Selection -->
+	<FormField name="species" />
 
-		<!-- Species Selection -->
-		<FormField name="species" />
-
-		<!-- Animal Count -->
-		<div class="mt-2 grid grid-cols-1 gap-4 md:grid-cols-2">
-			<FormField name="totalCount" />
-			<FormField name="juvenileCount" />
-		</div>
-
-		<!-- Dead/Alive Status -->
-		<div class="mt-4">
-			<FormField name="isDead" />
-		</div>
-
-		<!-- Dead Animal Additional Fields -->
-		{#if $form.isDead}
-			<DeadAnimal></DeadAnimal>
-		{/if}
+	<!-- Animal Count -->
+	<div class="mt-2 grid grid-cols-1 gap-4 md:grid-cols-2">
+		<FormField name="totalCount" />
+		<FormField name="juvenileCount" />
 	</div>
-</div>
+
+	<!-- Dead/Alive Status -->
+	<div class="mt-4">
+		<FormField name="isDead" />
+	</div>
+
+	<!-- Dead Animal Additional Fields -->
+	{#if $form.isDead}
+		<DeadAnimal></DeadAnimal>
+	{/if}
+</SectionCard>

@@ -74,6 +74,7 @@
 	<!-- Icon (if available) -->
 	{#if icon !== undefined}
 		<div
+			aria-hidden="true"
 			class="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center"
 		>
 			<Icon {icon} width="16" class="text-base-content/60" />
@@ -91,7 +92,10 @@
 
 	{#if hasOptions}
 		<!-- Dropdown icon -->
-		<div class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+		<div
+			aria-hidden="true"
+			class="pointer-events-none absolute inset-y-0 right-3 flex items-center"
+		>
 			<Icon icon="lucide:chevron-down" width="16" class="text-base-content/60" />
 		</div>
 

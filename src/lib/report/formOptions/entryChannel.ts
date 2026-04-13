@@ -29,12 +29,11 @@ export type EntryChannel = EntryChannelEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getEntryChannelOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(entryChannelLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const entryChannelOptions: Array<{ value: number; label: string }> = Object.entries(
+	entryChannelLabels
+).map(([value, label]) => ({ value: Number(value), label }));
+export const getEntryChannelOptions = (): Array<{ value: number; label: string }> =>
+	entryChannelOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

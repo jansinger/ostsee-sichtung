@@ -33,12 +33,10 @@ export type MediaType = MediaTypeEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-export function getMediaTypeOptions(): Array<{ value: number; label: string }> {
-	return Object.entries(mediaTypeLabels).map(([value, label]) => ({
-		value: Number(value),
-		label
-	}));
-}
+const mediaTypeOptions: Array<{ value: number; label: string }> = Object.entries(
+	mediaTypeLabels
+).map(([value, label]) => ({ value: Number(value), label }));
+export const getMediaTypeOptions = (): Array<{ value: number; label: string }> => mediaTypeOptions;
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

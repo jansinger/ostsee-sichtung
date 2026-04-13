@@ -116,11 +116,13 @@
 					);
 				}
 
+				submissionError = null;
+				const submitResult = await onSubmit(submitValues);
+				// Reset nur nach erfolgreichem Submit (Fehler in onSubmit soll Formular erhalten)
 				clearFormDataOnly(); // Clears only form data, keeps currentStep and user contact data
-				// Nach erfolgreichem Submit auf ersten Schritt zurücksetzen
 				currentStep = 0;
 				saveToStorage(STORAGE_KEYS.CURRENT_STEP, 0);
-				return onSubmit(submitValues);
+				return submitResult;
 			} catch (error: unknown) {
 				submissionError = (error as Error)?.message || 'Unbekannter Fehler bei der Übermittlung';
 				logger.error(error, submissionError);
