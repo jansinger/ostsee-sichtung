@@ -1,67 +1,74 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
 import { MAP_TEST_TIMEOUTS } from './config/testTimeouts';
 import { setupMapPage } from './fixtures/mapSetup';
 
-test.describe('Map Accessibility', () => {
-	test.describe('interaktive Zustände', () => {
-		let mapPage: MapPage;
+test.describe.serial('Map Accessibility', () => {
+	let mapPage: MapPage;
+	let sharedPage: Page;
 
-		test.beforeEach(async ({ page }) => {
-			mapPage = await setupMapPage(page);
-		});
+	test.beforeAll(async ({ browser }) => {
+		const context = await browser.newContext();
+		sharedPage = await context.newPage();
+		mapPage = await setupMapPage(sharedPage);
+	});
 
-		test('Karten-Container hat role="application"', async () => {
-			await expect(mapPage.getMapContainer()).toHaveAttribute('role', 'application');
-		});
+	test.afterAll(async () => {
+		await sharedPage.context().close();
+	});
 
-		test('Karten-Container hat aria-label mit Sichtungskarte', async () => {
-			const label = await mapPage.getMapContainer().getAttribute('aria-label');
-			expect(label).toMatch(/Sichtungskarte/i);
-		});
+	test('Karten-Container hat role="application"', async () => {
+		await expect(mapPage.getMapContainer()).toHaveAttribute('role', 'application');
+	});
 
-		test('Tastatur-Shortcut H öffnet Hilfe-Modal', async ({ page }) => {
-			await page.locator('body').click();
-			await page.keyboard.press('h');
+	test('Karten-Container hat aria-label mit Sichtungskarte', async () => {
+		const label = await mapPage.getMapContainer().getAttribute('aria-label');
+		expect(label).toMatch(/Sichtungskarte/i);
+	});
 
-			const dialog = page.getByRole('dialog', { name: /tastaturkürzel/i });
-			await expect(dialog).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
-		});
+	test('Tastatur-Shortcut H öffnet Hilfe-Modal', async () => {
+		await sharedPage.locator('body').click();
+		await sharedPage.keyboard.press('h');
 
-		test('Tastatur-Shortcut ? öffnet Hilfe-Modal', async ({ page }) => {
-			await page.locator('body').click();
-			await page.keyboard.press('?');
+		const dialog = sharedPage.getByRole('dialog', { name: /tastaturkürzel/i });
+		await expect(dialog).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
+		await sharedPage.keyboard.press('Escape');
+	});
 
-			const dialog = page.getByRole('dialog', { name: /tastaturkürzel/i });
-			await expect(dialog).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
-		});
+	test('Tastatur-Shortcut ? öffnet Hilfe-Modal', async () => {
+		await sharedPage.locator('body').click();
+		await sharedPage.keyboard.press('?');
 
-		test('Escape schließt Hilfe-Modal', async ({ page }) => {
-			await page.locator('body').click();
-			await page.keyboard.press('h');
-			const dialog = page.getByRole('dialog', { name: /tastaturkürzel/i });
-			await expect(dialog).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
+		const dialog = sharedPage.getByRole('dialog', { name: /tastaturkürzel/i });
+		await expect(dialog).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
+		await sharedPage.keyboard.press('Escape');
+	});
 
-			await page.keyboard.press('Escape');
-			await expect(dialog).toBeHidden({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
-		});
+	test('Escape schließt Hilfe-Modal', async () => {
+		await sharedPage.locator('body').click();
+		await sharedPage.keyboard.press('h');
+		const dialog = sharedPage.getByRole('dialog', { name: /tastaturkürzel/i });
+		await expect(dialog).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
 
-		test('ESC schließt offenes Filter-Panel', async ({ page }) => {
-			await mapPage.openFilter();
-			await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'false');
+		await sharedPage.keyboard.press('Escape');
+		await expect(dialog).toBeHidden({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
+	});
 
-			await page.locator('body').click();
-			await page.keyboard.press('Escape');
-			await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'true');
-		});
+	test('ESC schließt offenes Filter-Panel', async () => {
+		await mapPage.openFilter();
+		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'false');
 
-		test('ESC schließt offene Legende', async ({ page }) => {
-			await mapPage.openLegend();
-			await expect(mapPage.getLegendPanel()).toHaveAttribute('aria-hidden', 'false');
+		await sharedPage.locator('body').click();
+		await sharedPage.keyboard.press('Escape');
+		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'true');
+	});
 
-			await page.locator('body').click();
-			await page.keyboard.press('Escape');
-			await expect(mapPage.getLegendPanel()).toHaveAttribute('aria-hidden', 'true');
-		});
+	test('ESC schließt offene Legende', async () => {
+		await mapPage.openLegend();
+		await expect(mapPage.getLegendPanel()).toHaveAttribute('aria-hidden', 'false');
+
+		await sharedPage.locator('body').click();
+		await sharedPage.keyboard.press('Escape');
+		await expect(mapPage.getLegendPanel()).toHaveAttribute('aria-hidden', 'true');
 	});
 });

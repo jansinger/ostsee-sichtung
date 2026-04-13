@@ -1,19 +1,27 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
 import { setupMapPage } from './fixtures/mapSetup';
 
-test.describe('Map Filter Panel', () => {
+test.describe.serial('Map Filter Panel', () => {
 	let mapPage: MapPage;
+	let sharedPage: Page;
 
-	test.beforeEach(async ({ page }) => {
-		mapPage = await setupMapPage(page);
+	test.beforeAll(async ({ browser }) => {
+		const context = await browser.newContext();
+		sharedPage = await context.newPage();
+		mapPage = await setupMapPage(sharedPage);
 	});
 
-	test('Tastatur-Shortcut F öffnet Filter-Panel', async ({ page }) => {
+	test.afterAll(async () => {
+		await sharedPage.context().close();
+	});
+
+	test('Tastatur-Shortcut F öffnet Filter-Panel', async () => {
 		// Focus the page body to ensure keyboard events are received
-		await page.locator('body').click();
-		await page.keyboard.press('f');
+		await sharedPage.locator('body').click();
+		await sharedPage.keyboard.press('f');
 		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'false');
+		await mapPage.closeFilter();
 	});
 
 	test('Jahr auswählen löst API-Call mit year-Parameter aus', async () => {
@@ -37,6 +45,7 @@ test.describe('Map Filter Panel', () => {
 			// Nur eine Option verfügbar — Test überspringen
 			test.skip();
 		}
+		await mapPage.closeFilter();
 	});
 
 	test('Suchtext in Eingabefeld löst API-Call mit search-Parameter aus', async () => {
