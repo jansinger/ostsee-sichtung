@@ -41,11 +41,11 @@ test.describe.serial('Map Filter Panel', () => {
 			const response = await responsePromise;
 
 			expect(response.url()).toContain(`year=${targetYear}`);
+			await mapPage.closeFilter();
 		} else {
 			// Nur eine Option verfügbar — Test überspringen
 			test.skip();
 		}
-		await mapPage.closeFilter();
 	});
 
 	test('Suchtext in Eingabefeld löst API-Call mit search-Parameter aus', async () => {
