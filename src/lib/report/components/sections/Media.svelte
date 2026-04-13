@@ -9,34 +9,38 @@
 	// Generiere eine einfache referenceId für Upload (temporäre Lösung)
 	const { form } = getFormContext();
 	let referenceId = $derived($form.referenceId);
-	
+
 	// Dynamic upload configuration
 	let uploadConfig = $state<ValidationPreset | null>(null);
-	
+
 	// Generate dynamic format description
 	let formatDescription = $derived(() => {
 		if (!uploadConfig) return 'JPG, PNG, MP4, MOV, AVI';
-		
-		const imageTypes = uploadConfig.allowedTypes.filter(type => type.startsWith('image/'));
-		const videoTypes = uploadConfig.allowedTypes.filter(type => type.startsWith('video/'));
-		
-		const imageFormats = imageTypes.map(type => type.split('/')[1]?.toUpperCase()).filter(Boolean);
-		const videoFormats = videoTypes.map(type => type.split('/')[1]?.toUpperCase()).filter(Boolean);
-		
+
+		const imageTypes = uploadConfig.allowedTypes.filter((type) => type.startsWith('image/'));
+		const videoTypes = uploadConfig.allowedTypes.filter((type) => type.startsWith('video/'));
+
+		const imageFormats = imageTypes
+			.map((type) => type.split('/')[1]?.toUpperCase())
+			.filter(Boolean);
+		const videoFormats = videoTypes
+			.map((type) => type.split('/')[1]?.toUpperCase())
+			.filter(Boolean);
+
 		const allFormats = [...imageFormats, ...videoFormats];
 		return allFormats.join(', ');
 	});
-	
+
 	// Generate file size description
 	let maxSizeDescription = $derived(() => {
 		if (!uploadConfig) return 'max 50MB';
 		const sizeMB = Math.round(uploadConfig.maxFileSize / (1024 * 1024));
 		return `max ${sizeMB}MB`;
 	});
-	
+
 	// Load upload configuration on component mount
 	$effect(() => {
-		getUploadConfig().then(config => {
+		getUploadConfig().then((config) => {
 			uploadConfig = config;
 		});
 	});
@@ -50,7 +54,7 @@
 			Foto- oder Videoaufnahmen
 		</h3>
 		<div class="text-base-content/70 mb-4 text-sm">
-			<p class="mb-2 font-medium flex items-center gap-2">
+			<p class="mb-2 flex items-center gap-2 font-medium">
 				<Icon icon="lucide:camera" width="16" class="text-primary" />
 				Fotos und Videos sind extrem wertvoll für die Forschung!
 			</p>
@@ -58,7 +62,10 @@
 				<li><strong>Artbestimmung:</strong> Auch unscharfe Bilder können helfen</li>
 				<li><strong>Verhaltensanalyse:</strong> Videos zeigen wichtige Verhaltensmuster</li>
 				<li><strong>GPS-Daten:</strong> Automatische Positionserkennung aus Bildern</li>
-				<li><strong>Formatunterstützung:</strong> {formatDescription()} ({maxSizeDescription()})</li>
+				<li>
+					<strong>Formatunterstützung:</strong>
+					{formatDescription()} ({maxSizeDescription()})
+				</li>
 			</ul>
 		</div>
 		<FormField name="mediaConsent" />
@@ -90,6 +97,6 @@
 
 	.card:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 8px 25px -8px oklch(var(--b3));
+		box-shadow: 0 8px 25px -8px var(--color-base-300);
 	}
 </style>

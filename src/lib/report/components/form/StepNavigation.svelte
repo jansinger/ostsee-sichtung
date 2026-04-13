@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
 	import { isStepValid, validateStep } from '$lib/form/validation/stepValidation';
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
@@ -31,7 +30,18 @@
 	const isLastStep = $derived(currentStep >= totalSteps - 1);
 	const isFirstStep = $derived(currentStep <= 0);
 
-	const formContent = browser ? (document.getElementById('form-content') as HTMLElement) : null;
+	/** Scroll to form and focus the step header for screen reader announcement */
+	function scrollAndFocusStep(): void {
+		scrollToElement(document.getElementById('form-content'));
+		// Defer focus to after Svelte re-renders the new step content
+		requestAnimationFrame(() => {
+			const stepHeader = document.querySelector('#form-content h2');
+			if (stepHeader instanceof HTMLElement) {
+				stepHeader.setAttribute('tabindex', '-1');
+				stepHeader.focus({ preventScroll: true });
+			}
+		});
+	}
 
 	// Navigation functions
 	async function nextStep(): Promise<void> {
@@ -46,7 +56,7 @@
 				await handleFormSubmission();
 			} else {
 				currentStep += 1;
-				scrollToElement(formContent);
+				scrollAndFocusStep();
 			}
 		} catch (error) {
 			logger.error({ error }, 'Error in nextStep navigation');
@@ -57,7 +67,7 @@
 		try {
 			if (!isFirstStep) {
 				currentStep -= 1;
-				scrollToElement(formContent);
+				scrollAndFocusStep();
 			}
 		} catch (error) {
 			logger.error({ error }, 'Error in previousStep navigation');
@@ -142,9 +152,8 @@
 	<button
 		type="button"
 		onclick={nextStep}
-		disabled={$isSubmitting || !canGoNext}
+		disabled={$isSubmitting}
 		class="btn btn-primary"
-		class:loading={$isSubmitting}
 		aria-label={isLastStep ? 'Formular absenden' : 'Nächster Schritt'}
 	>
 		{#if $isSubmitting}

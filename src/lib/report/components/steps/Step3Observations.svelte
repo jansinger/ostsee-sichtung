@@ -3,7 +3,6 @@
   Optional detailed information that enhances research value
 -->
 <script lang="ts">
-	import { browser } from '$app/environment';
 	import { createLogger } from '$lib/logger';
 	import Behavior from '$lib/report/components/sections/Behavior.svelte';
 	import Environment from '$lib/report/components/sections/Environment.svelte';
@@ -21,12 +20,10 @@
 	// Props für currentStep - wird vom Parent (ModernReportForm) übergeben
 	let { currentStep = $bindable(2) }: { currentStep?: number } = $props();
 
-	const formContent = browser ? (document.getElementById('form-content') as HTMLElement) : null;
-
 	async function skipToNextStep(): Promise<void> {
 		try {
 			currentStep += 1;
-			scrollToElement(formContent);
+			scrollToElement(document.getElementById('form-content'));
 			logger.info('Step 3 skipped by user');
 		} catch (error) {
 			logger.error({ error }, 'Error skipping step 3');
@@ -41,7 +38,7 @@
 			<div
 				class="bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full sm:h-12 sm:w-12"
 			>
-				<Icon icon="lucide:activity" width="20" class="text-primary sm:w-6 sm:h-6" />
+				<Icon icon="lucide:activity" width="20" class="text-primary sm:h-6 sm:w-6" />
 			</div>
 		</div>
 		<h2 class="text-base-content text-xl font-bold sm:text-2xl">Zusätzliche Beobachtungen</h2>

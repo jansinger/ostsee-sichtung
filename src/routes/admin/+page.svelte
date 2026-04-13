@@ -452,38 +452,38 @@
 				</button>
 			</div>
 			<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-				<div class="form-control w-full">
+				<div class="fieldset w-full">
 					<label for="dateFrom" class="label py-0">
-						<span class="label-text text-xs">Von</span>
+						<span class="text-xs">Von</span>
 					</label>
 					<input
 						type="date"
 						id="dateFrom"
 						name="dateFrom"
-						class="input-bordered input input-sm w-full"
+						class="input input-sm w-full"
 						bind:value={dateFrom}
 					/>
 				</div>
-				<div class="form-control w-full">
+				<div class="fieldset w-full">
 					<label for="dateTo" class="label py-0">
-						<span class="label-text text-xs">Bis</span>
+						<span class="text-xs">Bis</span>
 					</label>
 					<input
 						type="date"
 						id="dateTo"
 						name="dateTo"
-						class="input-bordered input input-sm w-full"
+						class="input input-sm w-full"
 						bind:value={dateTo}
 					/>
 				</div>
-				<div class="form-control w-full">
+				<div class="fieldset w-full">
 					<label for="verified" class="label py-0">
-						<span class="label-text text-xs">Status</span>
+						<span class="text-xs">Status</span>
 					</label>
 					<select
 						id="verified"
 						name="verified"
-						class="select-bordered select select-sm w-full text-sm"
+						class="select select-sm w-full text-sm"
 						bind:value={verified}
 					>
 						<option value="">Alle</option>
@@ -491,14 +491,14 @@
 						<option value="0">Nicht verifiziert</option>
 					</select>
 				</div>
-				<div class="form-control w-full">
+				<div class="fieldset w-full">
 					<label for="entryChannel" class="label py-0">
-						<span class="label-text text-xs">Kanal</span>
+						<span class="text-xs">Kanal</span>
 					</label>
 					<select
 						id="entryChannel"
 						name="entryChannel"
-						class="select-bordered select select-sm w-full text-sm"
+						class="select select-sm w-full text-sm"
 						bind:value={selectedChannel}
 					>
 						<option value="all">Alle</option>
@@ -507,14 +507,14 @@
 						{/each}
 					</select>
 				</div>
-				<div class="form-control w-full">
+				<div class="fieldset w-full">
 					<label for="mediaUpload" class="label py-0">
-						<span class="label-text text-xs">Aufnahme</span>
+						<span class="text-xs">Aufnahme</span>
 					</label>
 					<select
 						id="mediaUpload"
 						name="mediaUpload"
-						class="select-bordered select select-sm w-full text-sm"
+						class="select select-sm w-full text-sm"
 						bind:value={mediaUpload}
 					>
 						<option value="">Alle</option>
@@ -928,7 +928,7 @@
 		<div class="flex items-center gap-2 text-center sm:text-left">
 			<span class="text-sm font-medium">Einträge pro Seite:</span>
 			<select
-				class="select-bordered select select-sm min-h-8 text-sm"
+				class="select select-sm min-h-8 text-sm"
 				onchange={(e) => changeItemsPerPage(Number(e.currentTarget.value))}
 			>
 				{#each [10, 20, 50, 100].filter((size) => size <= (data.pagination?.maxPerPage || 50)) as size (size)}

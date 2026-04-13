@@ -30,7 +30,7 @@ const localStorageMock = (() => {
 	};
 })();
 
-// Mock sessionStorage für Node.js Tests  
+// Mock sessionStorage für Node.js Tests
 const sessionStorageMock = (() => {
 	let store: Record<string, string> = {};
 	return {
@@ -88,6 +88,48 @@ describe('localStorage utilities', () => {
 		});
 	});
 
+	describe('loadFromStorage — sanitization (SEC-1)', () => {
+		it('should reject non-object data when object is expected', () => {
+			sessionStorage.setItem(STORAGE_KEYS.FORM_DATA, '"string-instead-of-object"');
+			const result = loadFromStorage(STORAGE_KEYS.FORM_DATA, { species: 0 });
+			expect(result).toEqual({ species: 0 });
+		});
+
+		it('should reject array data when object is expected', () => {
+			sessionStorage.setItem(STORAGE_KEYS.FORM_DATA, '[1,2,3]');
+			const result = loadFromStorage(STORAGE_KEYS.FORM_DATA, { species: 0 });
+			expect(result).toEqual({ species: 0 });
+		});
+
+		it('should filter out unknown fields (whitelist based on default)', () => {
+			sessionStorage.setItem(
+				STORAGE_KEYS.FORM_DATA,
+				JSON.stringify({ species: 0, totalCount: 2, malicious: '<script>alert(1)</script>' })
+			);
+			const result = loadFromStorage(STORAGE_KEYS.FORM_DATA, {
+				species: -1,
+				totalCount: 0
+			});
+			expect(result).toEqual({ species: 0, totalCount: 2 });
+			expect((result as Record<string, unknown>)['malicious']).toBeUndefined();
+		});
+
+		it('should fill missing fields with defaults', () => {
+			sessionStorage.setItem(STORAGE_KEYS.FORM_DATA, JSON.stringify({ species: 0 }));
+			const result = loadFromStorage(STORAGE_KEYS.FORM_DATA, {
+				species: -1,
+				totalCount: 0
+			});
+			expect(result).toEqual({ species: 0, totalCount: 0 });
+		});
+
+		it('should pass through primitive defaults without sanitization', () => {
+			sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, '2');
+			const result = loadFromStorage(STORAGE_KEYS.CURRENT_STEP, 0);
+			expect(result).toBe(2);
+		});
+	});
+
 	describe('clearStorage', () => {
 		it('should clear all storage except user contact data', () => {
 			saveToStorage(STORAGE_KEYS.FORM_DATA, { test: 'data' });
@@ -118,12 +160,15 @@ describe('localStorage utilities', () => {
 			await new Promise((resolve) => setTimeout(resolve, 10));
 			const loaded = loadUserContactData();
 
-			expect(loaded).toEqual(contactData);
+			expect(loaded).toMatchObject(contactData);
 		});
 
-		it('should return empty object for no contact data', () => {
+		it('should return defaults with empty values for no contact data', () => {
 			const result = loadUserContactData();
-			expect(result).toEqual({});
+			expect(result.firstName).toBe('');
+			expect(result.lastName).toBe('');
+			expect(result.email).toBe('');
+			expect(result.persistentDataConsent).toBe(false);
 		});
 	});
 
@@ -161,7 +206,9 @@ describe('localStorage utilities', () => {
 			expect(localStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).toBeNull();
 
 			const loaded = loadUserContactData();
-			expect(loaded).toEqual(data);
+			// Sanitization adds missing fields with defaults, so use toMatchObject
+			expect(loaded).toMatchObject(data);
+			expect(loaded.firstName).toBe('Max');
 		});
 
 		it('revoking consent clears persisted localStorage user contact data', () => {
@@ -180,7 +227,7 @@ describe('localStorage utilities', () => {
 			expect(sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA)).not.toBeNull();
 
 			const loadedAfterRevocation = loadUserContactData();
-			expect(loadedAfterRevocation).toEqual(withoutConsent);
+			expect(loadedAfterRevocation).toMatchObject(withoutConsent);
 		});
 	});
 

@@ -56,10 +56,12 @@ Regeln für Unit Tests (Vitest) und E2E Tests (Playwright).
 ## Test-Befehle
 
 ```bash
-npm run test:unit        # Unit Tests ausführen
-npm run test:unit:watch  # Unit Tests im Watch-Modus
-npm run test:e2e         # E2E Tests (Playwright)
-npm run test:quick       # Schnell-Test (lint + type-check + unit)
+npm run test:unit         # Server Unit Tests (schnell, kein Browser)
+npm run test:unit:client  # Browser-Komponenten-Tests (Playwright)
+npm run test:unit:all     # Alle Unit Tests (Server + Browser)
+npm run test:unit:watch   # Server Unit Tests im Watch-Modus
+npm run test:e2e          # E2E Tests (Playwright)
+npm run test:quick        # Schnell-Test (lint + type-check + unit)
 ```
 
 ---

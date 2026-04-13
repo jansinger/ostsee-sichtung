@@ -4,10 +4,12 @@
 	import FormActions from './form/FormActions.svelte';
 	import RequiredConsent from './form/RequiredConsent.svelte';
 
+	import { browser } from '$app/environment';
 	import { submitSightingForm } from '$lib/form/submitSightingForm';
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
 	import { initialFormState } from '$lib/report/formConfig';
+	import { toast } from '$lib/stores/toastState.svelte';
 	import {
 		clearFormDataOnly,
 		clearStorage,
@@ -54,13 +56,20 @@
 	};
 
 	// Gespeicherte Formulardaten oder Initialwerte laden
+	const hadSavedFormData = browser && !!sessionStorage.getItem(STORAGE_KEYS.FORM_DATA);
 	const savedFormData: SightingFormData = loadFromStorage(STORAGE_KEYS.FORM_DATA, {
 		...initialFormData
 	});
 
-	// Status für erfolgreiche Übermittlung
-	let submissionSuccess = $state(false);
-	let submissionId = $state<number | null>(null);
+	// Zeige Feedback wenn vorherige Eingaben wiederhergestellt wurden
+	if (hadSavedFormData) {
+		// Defer toast to after Svelte hydration
+		queueMicrotask(() => {
+			toast.info('Ihre vorherigen Eingaben wurden wiederhergestellt.', { duration: 4000 });
+		});
+	}
+
+	// Status für Fehleranzeige
 	let submissionError = $state<string | null>(null);
 
 	// Formular initialisieren
@@ -82,8 +91,6 @@
 				submitValues.mediaUpload = uploadedFiles ? uploadedFiles.length > 0 : false;
 
 				const result = await submitSightingForm(submitValues);
-				submissionId = result.id;
-				submissionSuccess = result.success;
 
 				// Speichere Benutzer-Kontaktdaten für zukünftige Formulare basierend auf Zustimmung
 				if (result.success) {
@@ -148,17 +155,15 @@
 
 	// Speichere currentStep direkt bei Änderungen
 	$effect(() => {
-		logger.info(`Effect triggered with currentStep: ${currentStep}`);
 		saveToStorage(STORAGE_KEYS.CURRENT_STEP, currentStep);
+		logger.debug({ currentStep }, 'Step persisted');
 	});
 
-	// Speichere Formulardaten
+	// Speichere Formulardaten (trackt nur $form, nicht currentStep — verhindert doppelten Trigger)
 	$effect(() => {
-		logger.info(
-			{ form: $form, uploaded: $form.uploadedFiles },
-			`Aktueller Schritt: ${currentStep}`
-		);
-		saveToStorage(STORAGE_KEYS.FORM_DATA, $form);
+		const formData = $form;
+		saveToStorage(STORAGE_KEYS.FORM_DATA, formData);
+		logger.debug({ uploaded: formData.uploadedFiles }, 'Form data persisted');
 	});
 </script>
 
@@ -172,13 +177,6 @@
 			<p class="text-base-content/70 px-2 text-sm sm:text-lg">
 				Helfen Sie der Forschung mit Ihrer Wal- oder Robbensichtung
 			</p>
-		</div>
-	{/if}
-
-	<!-- Success Message -->
-	{#if submissionSuccess}
-		<div class="alert alert-success mb-6" role="alert">
-			<span>Erfolgreich gesendet: {submissionId}</span>
 		</div>
 	{/if}
 

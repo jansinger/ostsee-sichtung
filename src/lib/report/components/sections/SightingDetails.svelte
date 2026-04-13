@@ -37,15 +37,3 @@
 		<FormField name="distance" />
 	</div>
 </div>
-
-<style>
-	/* Card hover effects */
-	.card {
-		transition: all 0.2s ease;
-	}
-
-	.card:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 8px 25px -8px oklch(var(--b3));
-	}
-</style>

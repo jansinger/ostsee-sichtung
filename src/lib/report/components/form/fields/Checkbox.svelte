@@ -11,8 +11,8 @@
 	} = $props();
 </script>
 
-<div class="form-control w-full">
-	<label class="label cursor-pointer items-start gap-2 {labelClass}">
+<div class="w-full">
+	<label class="flex cursor-pointer items-start gap-2 {labelClass}">
 		<input
 			id={name}
 			type="checkbox"
@@ -22,12 +22,18 @@
 			class="toggle toggle-success mt-1"
 			{...props}
 		/>
-		<div class="flex-1 min-w-0 text-left">
-			<span class="font-medium" style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;">
+		<div class="min-w-0 flex-1 text-left">
+			<span
+				class="font-medium"
+				style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+			>
 				{label}
 			</span>
 			{#if helpText}
-				<p class="mt-1 text-xs text-gray-600 text-left" style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;">
+				<p
+					class="text-base-content/60 mt-1 text-left text-xs"
+					style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+				>
 					{helpText}
 				</p>
 			{/if}

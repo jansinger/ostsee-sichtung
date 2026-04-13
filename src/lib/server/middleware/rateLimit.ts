@@ -183,7 +183,7 @@ export function enforceRateLimit(
 	identifier: string,
 	config: RateLimitConfig,
 	endpoint: string
-): void {
+): { remaining: number; resetTime: number } {
 	const result = checkRateLimit(identifier, config, endpoint);
 
 	if (!result.allowed) {
@@ -191,20 +191,23 @@ export function enforceRateLimit(
 		const resetTimeFormatted = resetDate.toLocaleTimeString('de-DE');
 		const retryAfterSeconds = Math.ceil((result.resetTime - Date.now()) / 1000);
 
-		throw error(429, `Rate limit exceeded. Try again after ${resetTimeFormatted} (${retryAfterSeconds}s)`);
+		throw error(
+			429,
+			`Rate limit exceeded. Try again after ${resetTimeFormatted} (${retryAfterSeconds}s)`
+		);
 	}
+
+	return { remaining: result.remaining, resetTime: result.resetTime };
 }
 
 /**
- * Hilfsfunktion für Rate Limit Headers
+ * Builds rate limit headers from an already-computed result.
+ * Pure function — no side effects, no counter increment.
  */
-export function getRateLimitHeaders(
-	identifier: string,
+export function buildRateLimitHeaders(
 	config: RateLimitConfig,
-	endpoint: string
+	result: { remaining: number; resetTime: number }
 ): Record<string, string> {
-	const result = checkRateLimit(identifier, config, endpoint);
-
 	return {
 		'X-RateLimit-Limit': config.maxRequests.toString(),
 		'X-RateLimit-Remaining': result.remaining.toString(),

@@ -19,6 +19,27 @@ export const sightingSchemaFields = sightingSchemaDescription.fields;
  * Step 3: Behavioral observations (optional details)
  * Step 4: Observer information (contact data)
  */
+/**
+ * Contact field names that are persisted/restored between sessions.
+ * Used by FormActions and Step4Contact to clear saved contact data
+ * without a page reload.
+ */
+export const USER_CONTACT_FIELDS = [
+	'firstName',
+	'lastName',
+	'email',
+	'phone',
+	'street',
+	'zipCode',
+	'city',
+	'shipName',
+	'homePort',
+	'boatType',
+	'nameConsent',
+	'shipNameConsent',
+	'persistentDataConsent'
+] as const;
+
 export const formStepsConfig: FormStep[] = [
 	{
 		id: 'location-time',

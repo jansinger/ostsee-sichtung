@@ -49,10 +49,10 @@
 	<div class="mt-2 space-y-2">
 		{#each options as option, index (option.value)}
 			<label
-				class="label hover:bg-base-200/50 cursor-pointer justify-start gap-3 rounded-lg py-2 transition-colors"
+				class="hover:bg-base-200/50 flex cursor-pointer justify-start gap-3 rounded-lg py-2 transition-colors"
 			>
 				{#if icon !== undefined}
-					<Icon icon={icon} width="16" class="text-base-content/60 flex-shrink-0" />
+					<Icon {icon} width="16" class="text-base-content/60 flex-shrink-0" />
 				{/if}
 				<input
 					type="radio"
@@ -66,7 +66,7 @@
 					aria-describedby={ariaDescribedBy}
 					data-testid={dataTestId ? `${dataTestId}-${option.value}` : undefined}
 				/>
-				<span class="label-text font-medium">{option.label}</span>
+				<span class="font-medium">{option.label}</span>
 				{#if option?.description}
 					<span class="text-base-content/60 ml-auto text-sm">{option.description}</span>
 				{/if}

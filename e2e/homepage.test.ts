@@ -56,12 +56,13 @@ test.describe('Form Navigation', () => {
 		await expect(formInputs.first()).toBeVisible();
 	});
 
-	test('should have clickable step buttons', async ({ page }) => {
+	test('should have visible step buttons with correct disabled state', async ({ page }) => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
 		await expect(formPage.getForm()).toBeVisible();
 
+		// All step buttons should be visible
 		const stepNames = [
 			'Position & Zeit',
 			'Sichtungsdetails',
@@ -69,10 +70,14 @@ test.describe('Form Navigation', () => {
 			'Kontaktdaten'
 		] as const;
 		for (const name of stepNames) {
-			const button = page.getByRole('button', { name });
-			await expect(button).toBeVisible();
-			await expect(button).toBeEnabled();
+			await expect(page.getByRole('button', { name })).toBeVisible();
 		}
+
+		// On Step 1: current step should be navigable
+		await expect(page.getByRole('button', { name: 'Position & Zeit' })).toHaveAttribute(
+			'aria-disabled',
+			'false'
+		);
 
 		await expect(page.getByRole('button', { name: /Position & Zeit/i })).toHaveAttribute(
 			'aria-label',

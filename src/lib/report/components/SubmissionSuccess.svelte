@@ -31,7 +31,9 @@
 				</div>
 			</div>
 
-			<h1 class="text-base-content text-3xl font-bold lg:text-4xl flex items-center justify-center gap-3">
+			<h1
+				class="text-base-content flex items-center justify-center gap-3 text-3xl font-bold lg:text-4xl"
+			>
 				Vielen Dank!
 				<Icon icon="lucide:fish" width="32" height="32" class="text-primary" />
 			</h1>
@@ -205,7 +207,7 @@
 
 	.card:hover {
 		transform: translateY(-2px);
-		box-shadow: 0 12px 28px -8px oklch(var(--b3));
+		box-shadow: 0 12px 28px -8px var(--color-base-300);
 	}
 
 	/* Link styling */

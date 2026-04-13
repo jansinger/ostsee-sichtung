@@ -3,11 +3,11 @@ import { isAdminUser } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightingFiles, sightings } from '$lib/server/db/schema';
 import { getStorageProvider } from '$lib/server/storage/factory';
-import { 
-	RATE_LIMITS, 
-	enforceRateLimit, 
+import {
+	RATE_LIMITS,
+	enforceRateLimit,
 	createRateLimitIdentifier,
-	getRateLimitHeaders 
+	buildRateLimitHeaders
 } from '$lib/server/middleware/rateLimit';
 import { error, type RequestHandler } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
@@ -24,37 +24,44 @@ const logger = createLogger('MediaAPI');
  */
 export const GET: RequestHandler = async ({ params, url, request, locals }) => {
 	const filePath = params.path;
-	const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+	const clientIp =
+		request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
 	const isAuthenticated = !!locals.user;
 	const userIdentifier = locals.user?.sub || 'anonymous';
 
 	if (!filePath) {
-		logger.warn({ 
-			action: 'media_access_invalid',
-			clientIp,
-			error: 'no_file_path'
-		}, 'Media request without file path');
+		logger.warn(
+			{
+				action: 'media_access_invalid',
+				clientIp,
+				error: 'no_file_path'
+			},
+			'Media request without file path'
+		);
 		throw error(400, 'File path is required');
 	}
-	
+
 	// Rate limiting based on authentication status
-	const rateLimitConfig = isAuthenticated 
-		? RATE_LIMITS.MEDIA_ACCESS_AUTHENTICATED 
+	const rateLimitConfig = isAuthenticated
+		? RATE_LIMITS.MEDIA_ACCESS_AUTHENTICATED
 		: RATE_LIMITS.MEDIA_ACCESS_ANONYMOUS;
-	
+
 	const rateLimitIdentifier = createRateLimitIdentifier(userIdentifier, clientIp, isAuthenticated);
-	
-	enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'media_access');
-	
+
+	const rateLimitResult = enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'media_access');
+
 	// Security audit log for all media access attempts
-	logger.info({
-		action: 'media_access_attempt',
-		filePath,
-		clientIp,
-		authenticated: isAuthenticated,
-		user: userIdentifier,
-		userAgent: request.headers.get('user-agent') || 'unknown'
-	}, 'Media file access requested');
+	logger.info(
+		{
+			action: 'media_access_attempt',
+			filePath,
+			clientIp,
+			authenticated: isAuthenticated,
+			user: userIdentifier,
+			userAgent: request.headers.get('user-agent') || 'unknown'
+		},
+		'Media file access requested'
+	);
 
 	try {
 		// Get the file record from database to check access permissions
@@ -77,11 +84,14 @@ export const GET: RequestHandler = async ({ params, url, request, locals }) => {
 			.limit(1);
 
 		if (fileRecord.length === 0) {
-			logger.warn({ 
-				action: 'media_access_not_found',
-				filePath,
-				clientIp 
-			}, 'File not found in database');
+			logger.warn(
+				{
+					action: 'media_access_not_found',
+					filePath,
+					clientIp
+				},
+				'File not found in database'
+			);
 			throw error(404, 'File not found');
 		}
 
@@ -134,7 +144,7 @@ export const GET: RequestHandler = async ({ params, url, request, locals }) => {
 		}
 
 		// Set appropriate headers including rate limiting
-		const rateLimitHeaders = getRateLimitHeaders(rateLimitIdentifier, rateLimitConfig, 'media_access');
+		const rateLimitHeaders = buildRateLimitHeaders(rateLimitConfig, rateLimitResult);
 		const headers = new Headers({
 			'Content-Type': file.mimeType,
 			'Content-Length': content.length.toString(),

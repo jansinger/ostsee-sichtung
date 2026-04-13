@@ -628,19 +628,19 @@
 	/* Modal styling improvements */
 	.modal-box {
 		box-shadow:
-			0 20px 25px -5px rgb(0 0 0 / 0.1),
-			0 10px 10px -5px rgb(0 0 0 / 0.04);
+			0 20px 25px -5px oklch(0% 0 0 / 0.1),
+			0 10px 10px -5px oklch(0% 0 0 / 0.04);
 	}
 
 	.modal-backdrop {
 		backdrop-filter: blur(4px);
-		background-color: rgba(0, 0, 0, 0.6);
+		background-color: oklch(0% 0 0 / 0.6);
 	}
 
 	/* Image modal specific styling */
 	.modal img {
 		border-radius: 0.5rem;
-		box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+		box-shadow: 0 4px 6px -1px oklch(0% 0 0 / 0.1);
 	}
 
 	/* Copyright link styling (bleibt global wegen {@html}) */

@@ -5,29 +5,34 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import { createLogger } from '$lib/logger';
-	import { clearAllStorage, loadUserContactData } from '$lib/storage/localStorage';
+	import { USER_CONTACT_FIELDS } from '$lib/report/formConfig';
+	import { getFormContext } from '$lib/report/formContext';
+	import { clearUserContactData, loadUserContactData } from '$lib/storage/localStorage';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 
 	const logger = createLogger('report:step4-contact');
+	const { form, updateField } = getFormContext();
 
 	// Check if user has saved contact data
 	let hasSavedContactData = $state(false);
 
 	$effect(() => {
 		const savedData = loadUserContactData();
-		hasSavedContactData = Object.keys(savedData).length > 0;
+		hasSavedContactData = !!(savedData.firstName || savedData.lastName || savedData.email);
 	});
 
 	function clearContactData() {
 		if (confirm('Sind Sie sicher, dass Sie alle gespeicherten Kontaktdaten löschen möchten?')) {
-			clearAllStorage();
+			clearUserContactData();
 			hasSavedContactData = false;
-			logger.info('User contact data cleared by user request');
 
-			// Reload page to clear form data
-			if (typeof window !== 'undefined') {
-				window.location.reload();
+			// Clear contact fields in form state without page reload
+			for (const field of USER_CONTACT_FIELDS) {
+				const defaultValue = typeof $form[field] === 'boolean' ? false : '';
+				updateField(field, defaultValue);
 			}
+
+			logger.info('User contact data cleared by user request');
 		}
 	}
 </script>

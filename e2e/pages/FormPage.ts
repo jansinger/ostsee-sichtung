@@ -8,9 +8,9 @@ import type { Page, Locator } from '@playwright/test';
  * elements by FieldRenderer.svelte (not on a wrapper div). Use `[data-testid="field-X"]`
  * directly to target the field.
  *
- * Note on navigation: Step indicator buttons do NOT navigate directly. Navigation
- * only works via clickNext() / clickPrevious(). Forward navigation requires the
- * current step to be valid.
+ * Note on navigation: Step indicator buttons allow direct navigation.
+ * Backward: always allowed. Forward: only if all intermediate steps are valid.
+ * Steps with unmet validation are disabled. Primary navigation via clickNext() / clickPrevious().
  */
 export class FormPage {
 	constructor(private page: Page) {}
@@ -20,7 +20,7 @@ export class FormPage {
 		// Wait for Svelte to fully hydrate before interacting with form elements
 		await this.page.waitForLoadState('networkidle');
 		// Ensure the step indicator (Svelte component) is rendered and interactive
-		await this.page.locator('button[aria-current="step"]').waitFor({ state: 'visible' });
+		await this.page.locator('[aria-current="step"]').waitFor({ state: 'visible' });
 	}
 
 	// ── Step Navigation ──────────────────────────────────────────────────────
@@ -55,7 +55,6 @@ export class FormPage {
 	// ── Step 2: Sichtungsdetails ─────────────────────────────────────────────
 
 	async selectSpecies(index: number) {
-		// For select fields, data-testid may be on the select element or a wrapper
 		await this.page.locator('[data-testid="field-species"]').selectOption(String(index));
 	}
 
@@ -65,6 +64,18 @@ export class FormPage {
 
 	async fillJuvenileCount(value: number) {
 		await this.page.locator('[data-testid="field-juvenileCount"]').fill(String(value));
+	}
+
+	async selectDistance(index: number) {
+		await this.page.locator('[data-testid="field-distance"]').selectOption(String(index));
+	}
+
+	async selectSightingFrom(index: number) {
+		await this.page.locator('[data-testid="field-sightingFrom"]').selectOption(String(index));
+	}
+
+	async selectBoatDrive(index: number) {
+		await this.page.locator('[data-testid="field-boatDrive"]').selectOption(String(index));
 	}
 
 	// ── Step 4: Kontaktdaten ─────────────────────────────────────────────────
@@ -93,9 +104,7 @@ export class FormPage {
 	// ── Status Queries ────────────────────────────────────────────────────────
 
 	async getCurrentStep(): Promise<string> {
-		return (
-			(await this.page.locator('button[aria-current="step"]').getAttribute('aria-label')) ?? ''
-		);
+		return (await this.page.locator('[aria-current="step"]').getAttribute('aria-label')) ?? '';
 	}
 
 	async isNextDisabled(): Promise<boolean> {
@@ -116,6 +125,6 @@ export class FormPage {
 	}
 
 	getActiveStepButton(): Locator {
-		return this.page.locator('button[aria-current="step"]');
+		return this.page.locator('[aria-current="step"]');
 	}
 }

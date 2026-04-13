@@ -12,7 +12,7 @@
 <div class="card bg-base-200 shadow-sm">
 	<div class="card-body">
 		<h3 class="card-title flex items-center gap-2 text-lg">
-			<Icon icon="lucide:eye" class="h-5 w-5 text-primary" />
+			<Icon icon="lucide:eye" class="text-primary h-5 w-5" />
 			Tierinformationen
 		</h3>
 
@@ -36,15 +36,3 @@
 		{/if}
 	</div>
 </div>
-
-<style>
-	/* Card hover effects for better interactivity */
-	.card {
-		transition: all 0.2s ease;
-	}
-
-	.card:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 8px 25px -8px oklch(var(--b3));
-	}
-</style>

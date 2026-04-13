@@ -1,7 +1,11 @@
 <script lang="ts">
 	import WeatherDataFetcher from '$lib/components/weather/WeatherDataFetcher.svelte';
 	import { getFormContext } from '$lib/report/formContext';
-	import type { WeatherData, WeatherFormFields, OpenMeteoRawData } from '$lib/services/weatherService';
+	import type {
+		WeatherData,
+		WeatherFormFields,
+		OpenMeteoRawData
+	} from '$lib/services/weatherService';
 	import { convertToStoredWeatherData } from '$lib/services/weatherService';
 	import Icon from '$lib/components/Icon.svelte';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
@@ -29,7 +33,7 @@
 		const today = new Date().toISOString().split('T')[0] || '';
 		const sightingDateStr = sightingDate || '';
 		const dataType = sightingDateStr >= today ? 'forecast' : 'historical';
-		
+
 		// Convert to StoredWeatherData format for database storage
 		const storedWeatherData = convertToStoredWeatherData(
 			weatherData,
@@ -104,6 +108,6 @@
 
 	.card:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 8px 25px -8px oklch(var(--b3));
+		box-shadow: 0 8px 25px -8px var(--color-base-300);
 	}
 </style>

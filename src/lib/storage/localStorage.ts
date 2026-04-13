@@ -17,6 +17,27 @@ import { browser } from '$app/environment';
 import type { UserContactData } from '$lib/types';
 
 /**
+ * Default-Objekt für UserContactData — dient als Whitelist-Template
+ * für loadFromStorage-Sanitization. Nur diese Felder werden beim
+ * Laden aus Storage akzeptiert, alle anderen verworfen.
+ */
+const USER_CONTACT_DEFAULTS: UserContactData = {
+	firstName: '',
+	lastName: '',
+	email: '',
+	phone: '',
+	street: '',
+	zipCode: '',
+	city: '',
+	shipName: '',
+	homePort: '',
+	boatType: '',
+	nameConsent: false,
+	shipNameConsent: false,
+	persistentDataConsent: false
+};
+
+/**
  * Konstanten für Storage-Schlüssel mit Namespace-Präfix
  * Verhindert Konflikte mit anderen Anwendungen im gleichen Domain
  */
@@ -87,7 +108,33 @@ export function loadFromStorage<T>(key: string, defaultValue: T): T {
 	const stored = getItem(key);
 	if (stored) {
 		try {
-			return JSON.parse(stored); // Sichere JSON-Deserialisierung
+			const parsed = JSON.parse(stored);
+
+			// Sanitize: only accept objects when default is an object,
+			// reject arrays/primitives that don't match the expected type
+			if (typeof defaultValue === 'object' && defaultValue !== null) {
+				if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+					console.warn(`Storage-Typfehler für ${key}: erwartet Objekt, erhalten ${typeof parsed}`);
+					return defaultValue;
+				}
+				// Whitelist: only keep keys that exist in the default value
+				// Skip filtering if default is empty (e.g. {} as UserContactData)
+				const defaultKeys = Object.keys(defaultValue);
+				if (defaultKeys.length > 0) {
+					const sanitized: Record<string, unknown> = {};
+					for (const k of defaultKeys) {
+						if (k in parsed) {
+							sanitized[k] = parsed[k];
+						} else {
+							sanitized[k] = (defaultValue as Record<string, unknown>)[k];
+						}
+					}
+					return sanitized as T;
+				}
+				return parsed as T;
+			}
+
+			return parsed as T;
 		} catch (e) {
 			console.error(`JSON-Parse-Fehler für ${key} aus Storage:`, e);
 			return defaultValue; // Fallback bei korrupten Daten
@@ -198,12 +245,23 @@ export function loadUserContactData(): UserContactData {
 	const sessionRaw = sessionStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA);
 	if (sessionRaw) {
 		try {
-			return JSON.parse(sessionRaw) as UserContactData;
+			const parsed = JSON.parse(sessionRaw);
+			// Apply same whitelist sanitization as loadFromStorage
+			if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+				// Corrupt data — fall through to localStorage
+			} else {
+				const sanitized: Record<string, unknown> = {};
+				for (const k of Object.keys(USER_CONTACT_DEFAULTS)) {
+					sanitized[k] =
+						k in parsed ? parsed[k] : (USER_CONTACT_DEFAULTS as Record<string, unknown>)[k];
+				}
+				return sanitized as UserContactData;
+			}
 		} catch {
 			// ignore parse errors, fall through to localStorage
 		}
 	}
-	return loadFromStorage(STORAGE_KEYS.USER_CONTACT_DATA, {} as UserContactData);
+	return loadFromStorage(STORAGE_KEYS.USER_CONTACT_DATA, USER_CONTACT_DEFAULTS);
 }
 
 /**
@@ -217,12 +275,24 @@ export function loadUserContactData(): UserContactData {
  *
  * @note Löscht auch die User-Kontaktdaten - Benutzer muss alles neu eingeben
  */
+/**
+ * Löscht ausschließlich Benutzer-Kontaktdaten aus beiden Storage-Typen.
+ * Formulardaten und Navigations-State bleiben erhalten.
+ * Für den "Kontaktdaten löschen"-Button in FormActions und Step4Contact.
+ */
+export function clearUserContactData(): void {
+	if (!browser) return;
+	localStorage.removeItem(STORAGE_KEYS.USER_CONTACT_DATA);
+	sessionStorage.removeItem(STORAGE_KEYS.USER_CONTACT_DATA);
+}
+
 export function clearAllStorage(): void {
 	if (!browser) return;
 
-	// Vollständige Bereinigung aller namespaced Keys
+	// Vollständige Bereinigung aller namespaced Keys aus BEIDEN Storage-Typen
 	Object.values(STORAGE_KEYS).forEach((key) => {
-		localStorage.removeItem(key); // Nur localStorage (sessionStorage wird automatisch bereinigt)
+		localStorage.removeItem(key);
+		sessionStorage.removeItem(key);
 	});
 }
 

@@ -375,7 +375,7 @@
 	/* Focus styles */
 	button:focus-visible,
 	a:focus-visible {
-		outline: 2px solid oklch(var(--p));
+		outline: 2px solid var(--color-primary);
 		outline-offset: 2px;
 	}
 </style>

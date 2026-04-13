@@ -49,10 +49,10 @@
 	});
 </script>
 
-<div class="form-control w-full items-start">
-	<label class="label w-full cursor-pointer justify-start gap-3 py-2">
+<div class="w-full items-start">
+	<label class="flex w-full cursor-pointer justify-start gap-3 py-2">
 		{#if icon !== undefined}
-			<Icon icon={icon} width="16" class="text-base-content/60 flex-shrink-0" />
+			<Icon {icon} width="16" class="text-base-content/60 flex-shrink-0" />
 		{/if}
 		<input
 			type="checkbox"
@@ -70,7 +70,7 @@
 			data-testid={dataTestId}
 		/>
 		<span
-			class="label-text min-w-0 flex-1 text-left font-medium"
+			class="min-w-0 flex-1 text-left font-medium"
 			style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
 		>
 			{label}
