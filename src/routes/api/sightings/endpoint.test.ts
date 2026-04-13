@@ -3,7 +3,7 @@ import { POST } from './+server';
 
 // Mock dependencies
 vi.mock('$lib/server/db/sightingRepository', () => ({
-	saveSighting: vi.fn().mockResolvedValue({ id: 'test-id-123' })
+	saveSighting: vi.fn().mockResolvedValue({ id: 123 })
 }));
 
 vi.mock('$lib/logger', () => ({
@@ -26,8 +26,11 @@ vi.mock('$lib/server/services/emailService', () => ({
 }));
 
 describe('/api/sightings POST endpoint', () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		vi.clearAllMocks();
+		// Re-set mock return value after clearAllMocks resets it
+		const { saveSighting } = await import('$lib/server/db/sightingRepository');
+		vi.mocked(saveSighting).mockResolvedValue({ id: 123 });
 	});
 
 	const createMockRequestEvent = (body: unknown) => {
@@ -129,7 +132,7 @@ describe('/api/sightings POST endpoint', () => {
 
 		expect(response.status).toBe(201);
 		expect(result.success).toBe(true);
-		expect(result.id).toBe('test-id-123');
+		expect(result.id).toBe(123);
 	}, 15000);
 
 	it('should handle validation errors properly', async () => {
