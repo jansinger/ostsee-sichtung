@@ -86,9 +86,6 @@ jobs:
       - name: Ensure Svelte Kit is in sync
         run: npx svelte-kit sync
 
-      - name: Install Playwright for component tests
-        run: npx playwright install --with-deps chromium
-
       # Commit message validation (skip for release-please and dependabot)
       - name: Validate commit messages
         if: |
@@ -115,9 +112,6 @@ jobs:
       - name: Run unit tests (server) with coverage
         if: needs.changes.outputs.has-code-changes == 'true'
         run: npm run test:unit -- --coverage
-
-      - name: Run component tests (client/browser)
-        run: npm run test:unit:client
 
       - name: Upload coverage reports
         if: needs.changes.outputs.has-code-changes == 'true'
@@ -186,6 +180,9 @@ jobs:
       - name: Install Playwright dependencies only
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
+
+      - name: Run component tests (client/browser)
+        run: npm run test:unit:client
 
       - name: Run E2E tests
         run: npm run test:e2e
