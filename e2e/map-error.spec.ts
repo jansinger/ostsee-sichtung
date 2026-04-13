@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
 import { MAP_TEST_TIMEOUTS } from './config/testTimeouts';
-import { mockMapSightingsAbort, mockMapSightingsHttp500, mockMapSightingsSuccess } from './fixtures/mockApi';
+import {
+	mockMapSightingsAbort,
+	mockMapSightingsHttp500,
+	mockMapSightingsSuccess
+} from './fixtures/mockApi';
 
 // Error tests need generous timeouts because the map component must lazy-load
 // OpenLayers before the API error can be displayed. In CI this can take 20s+.
@@ -72,7 +76,7 @@ test.describe('Map Error State', () => {
 			const targetYear = await options.nth(1).getAttribute('value');
 			if (targetYear) {
 				await mapPage.selectYear(targetYear);
-				await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 10000 });
+				await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.defaultUi });
 			} else {
 				test.skip();
 			}
@@ -82,34 +86,35 @@ test.describe('Map Error State', () => {
 	});
 
 	test('Fehlermeldung erscheint erneut nach erneutem Fehler', async ({ page }) => {
+		// Initial load with abort → first error appears
 		await mockMapSightingsAbort(page);
-
 		await page.goto('/map');
-
 		const mapPage = new MapPage(page);
 		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: ERROR_TIMEOUT });
 
+		// Dismiss first error
 		await mapPage.getDismissErrorButton().click();
 		await expect(mapPage.getErrorAlert()).toBeHidden();
 
-		// Remove route interception and set up a new one to trigger a second error
-		await page.unroute('**/api/map/sightings**');
+		// Switch to success for map to load cleanly, then abort for second error
+		await mockMapSightingsSuccess(page);
+		await mapPage.waitForLoad();
+
 		await mockMapSightingsAbort(page);
+		await mapPage.openFilter();
 
-		// Trigger a new API call via keyboard shortcut Z (zoom-to-all)
-		// or by simulating an unhandled rejection
-		await page.evaluate(() => {
-			const err = new Error('Zweiter Fehler');
-			window.dispatchEvent(
-				new PromiseRejectionEvent('unhandledrejection', {
-					promise: Promise.reject(err),
-					reason: err,
-					cancelable: true,
-					bubbles: false
-				})
-			);
-		});
-
-		await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: 3000 });
+		const options = mapPage.getYearSelect().locator('option');
+		const count = await options.count();
+		if (count > 1) {
+			const targetYear = await options.nth(1).getAttribute('value');
+			if (targetYear) {
+				await mapPage.selectYear(targetYear);
+				await expect(mapPage.getErrorAlert()).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.defaultUi });
+			} else {
+				test.skip();
+			}
+		} else {
+			test.skip();
+		}
 	});
 });
