@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from './+server';
+import { saveSighting } from '$lib/server/db/sightingRepository';
 
 // Mock dependencies
 vi.mock('$lib/server/db/sightingRepository', () => ({
@@ -25,12 +26,12 @@ vi.mock('$lib/server/services/emailService', () => ({
 	}
 }));
 
+const mockedSaveSighting = vi.mocked(saveSighting);
+
 describe('/api/sightings POST endpoint', () => {
-	beforeEach(async () => {
+	beforeEach(() => {
 		vi.clearAllMocks();
-		// Re-set mock return value after clearAllMocks resets it
-		const { saveSighting } = await import('$lib/server/db/sightingRepository');
-		vi.mocked(saveSighting).mockResolvedValue({ id: 123 });
+		mockedSaveSighting.mockResolvedValue({ id: 123 });
 	});
 
 	const createMockRequestEvent = (body: unknown) => {
@@ -211,8 +212,6 @@ describe('/api/sightings POST endpoint', () => {
 	}, 15000);
 
 	it('should accept requests with valid weather data', async () => {
-		const { saveSighting } = await import('$lib/server/db/sightingRepository');
-
 		const validWeatherData = {
 			provider: 'open-meteo',
 			fetched_at: new Date().toISOString(),
@@ -271,8 +270,6 @@ describe('/api/sightings POST endpoint', () => {
 	}, 15000);
 
 	it('should include referenceId in valid submission', async () => {
-		const { saveSighting } = await import('$lib/server/db/sightingRepository');
-
 		const validRequest = createMockRequestEvent({
 			referenceId: 'ref-test-456',
 			firstName: 'Test',
