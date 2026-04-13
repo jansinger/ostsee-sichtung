@@ -224,3 +224,105 @@ test.describe('Sichtung melden — Formular absenden', () => {
 		});
 	});
 });
+
+// ── Submit mit API-Mock (CI-tauglich) ──────────────────────────────────────
+
+test.describe('Sichtung melden — Submit mit API-Mock', () => {
+	/** Fill all steps and navigate to submit-ready state */
+	async function fillAllSteps(formPage: FormPage, page: ReturnType<typeof test.extend>) {
+		await fillStep1(formPage);
+		await waitForNextEnabled(page);
+		await formPage.clickNext();
+		await fillStep2(formPage);
+		await waitForNextEnabled(page);
+		await formPage.clickNext();
+		await formPage.skipStep();
+		await fillStep4(formPage);
+	}
+
+	test('Happy Path: Erfolgreiche Submission zeigt Erfolgsseite', async ({ page }) => {
+		// Mock API endpoint
+		await page.route('**/api/sightings', (route) => {
+			route.fulfill({
+				status: 201,
+				contentType: 'application/json',
+				body: JSON.stringify({ success: true, id: 42, referenceId: 'REF-42' })
+			});
+		});
+
+		const formPage = new FormPage(page);
+		await formPage.goto();
+		await fillAllSteps(formPage, page);
+		await formPage.clickSubmit();
+
+		await expect(page.getByRole('heading', { name: /Vielen Dank/i })).toBeVisible({
+			timeout: 10000
+		});
+		await expect(page.getByText(/erfolgreich gemeldet/i)).toBeVisible();
+	});
+
+	test('API-Fehler: Server gibt 500 zurück — Formular bleibt auf Step 4', async ({ page }) => {
+		await page.route('**/api/sightings', (route) => {
+			route.fulfill({
+				status: 500,
+				contentType: 'application/json',
+				body: JSON.stringify({ success: false, message: 'Interner Serverfehler' })
+			});
+		});
+
+		const formPage = new FormPage(page);
+		await formPage.goto();
+		await fillAllSteps(formPage, page);
+		await formPage.clickSubmit();
+
+		// Formular sollte auf Step 4 bleiben (kein Wechsel zur Erfolgsseite)
+		await expectCurrentStep(page, /Kontaktdaten/i);
+		// Error-Toast sollte die Server-Fehlermeldung anzeigen
+		await expect(page.getByText('Interner Serverfehler')).toBeVisible({
+			timeout: 5000
+		});
+	});
+
+	test('Validation-Rejection: Server gibt 400 zurück — Fehlermeldung sichtbar', async ({
+		page
+	}) => {
+		await page.route('**/api/sightings', (route) => {
+			route.fulfill({
+				status: 400,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					success: false,
+					message: 'Validierung fehlgeschlagen: E-Mail ungültig'
+				})
+			});
+		});
+
+		const formPage = new FormPage(page);
+		await formPage.goto();
+		await fillAllSteps(formPage, page);
+		await formPage.clickSubmit();
+
+		// Formular bleibt auf Step 4
+		await expectCurrentStep(page, /Kontaktdaten/i);
+		// Fehlermeldung sichtbar
+		await expect(page.getByText(/Validierung|ungültig|Fehler/i)).toBeVisible({ timeout: 5000 });
+	});
+
+	test('Netzwerkfehler: Route abgebrochen — Error-Handling greift', async ({ page }) => {
+		await page.route('**/api/sightings', (route) => {
+			route.abort('connectionrefused');
+		});
+
+		const formPage = new FormPage(page);
+		await formPage.goto();
+		await fillAllSteps(formPage, page);
+		await formPage.clickSubmit();
+
+		// Formular bleibt auf Step 4
+		await expectCurrentStep(page, /Kontaktdaten/i);
+		// Fehlermeldung sichtbar
+		await expect(page.getByText(/nicht gespeichert|Fehler|Netzwerk|Verbindung/i)).toBeVisible({
+			timeout: 5000
+		});
+	});
+});

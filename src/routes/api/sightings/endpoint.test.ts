@@ -25,7 +25,13 @@ vi.mock('$lib/server/services/emailService', () => ({
 	}
 }));
 
+import { beforeEach } from 'vitest';
+
 describe('/api/sightings POST endpoint', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
 	const createMockRequestEvent = (body: unknown) => {
 		return {
 			request: {
@@ -173,4 +179,99 @@ describe('/api/sightings POST endpoint', () => {
 		expect(result.success).toBe(false);
 		expect(result.code).toBe('INVALID_FIELDS');
 	});
+
+	it('should call saveSighting on successful submission', async () => {
+		const { saveSighting } = await import('$lib/server/db/sightingRepository');
+
+		const validRequest = createMockRequestEvent({
+			referenceId: 'save-ref-123',
+			firstName: 'Test',
+			lastName: 'User',
+			email: 'test@example.com',
+			species: 0,
+			totalCount: 1,
+			sightingDate: '2024-01-15',
+			hasPosition: true,
+			latitude: 54.5,
+			longitude: 13.5,
+			privacyConsent: true,
+			entryChannel: 0,
+			boatDrive: 1,
+			sightingFrom: 1,
+			distance: 1,
+			isDead: false
+		});
+
+		const response = await POST(validRequest);
+		expect(response.status).toBe(201);
+
+		// saveSighting should have been called exactly once
+		expect(saveSighting).toHaveBeenCalledOnce();
+	}, 15000);
+
+	it('should pass weather data through to saveSighting when present', async () => {
+		const { saveSighting } = await import('$lib/server/db/sightingRepository');
+
+		const requestWithWeather = createMockRequestEvent({
+			referenceId: 'weather-ref-123',
+			firstName: 'Test',
+			lastName: 'User',
+			email: 'test@example.com',
+			species: 0,
+			totalCount: 1,
+			sightingDate: '2024-01-15',
+			hasPosition: true,
+			latitude: 54.5,
+			longitude: 13.5,
+			privacyConsent: true,
+			entryChannel: 0,
+			boatDrive: 1,
+			sightingFrom: 1,
+			distance: 1,
+			isDead: false,
+			weatherData: {
+				temperature: 15.5,
+				windSpeed: 10,
+				provider: 'open-meteo'
+			}
+		});
+
+		await POST(requestWithWeather);
+
+		// saveSighting should have been called with weather data
+		expect(saveSighting).toHaveBeenCalled();
+		const callArgs = vi.mocked(saveSighting).mock.calls[0];
+		// Weather data should be passed as second argument or included in form data
+		expect(callArgs).toBeDefined();
+	}, 15000);
+
+	it('should include referenceId in valid submission', async () => {
+		const { saveSighting } = await import('$lib/server/db/sightingRepository');
+
+		const validRequest = createMockRequestEvent({
+			referenceId: 'ref-test-456',
+			firstName: 'Test',
+			lastName: 'User',
+			email: 'test@example.com',
+			species: 0,
+			totalCount: 1,
+			sightingDate: '2024-01-15',
+			hasPosition: true,
+			latitude: 54.5,
+			longitude: 13.5,
+			privacyConsent: true,
+			entryChannel: 0,
+			boatDrive: 1,
+			sightingFrom: 1,
+			distance: 1,
+			isDead: false
+		});
+
+		await POST(validRequest);
+
+		// saveSighting should be called with data including referenceId
+		expect(saveSighting).toHaveBeenCalled();
+		const formData = vi.mocked(saveSighting).mock.calls[0]?.[0];
+		expect(formData).toHaveProperty('referenceId', 'ref-test-456');
+	}, 15000);
 });

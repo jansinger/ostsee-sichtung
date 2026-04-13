@@ -43,17 +43,20 @@ export default defineConfig({
 		},
 		projects: [
 			{
-				extends: './vite.config.ts',
+				// Client browser tests use vite.config.ci.ts (no basicSsl/HTTPS)
+				// vite.config.ts includes basicSsl which breaks headless Chromium
+				extends: './vite.config.ci.ts',
 				test: {
 					name: 'client',
 					browser: {
 						enabled: true,
+						headless: true,
 						provider: playwright(),
 						instances: [{ browser: 'chromium' }]
 					},
 					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
 					exclude: ['src/lib/server/**'],
-					setupFiles: ['./vitest-setup-client.ts']
+					setupFiles: ['vitest-browser-svelte', './vitest-setup-client.ts']
 				}
 			},
 			{
