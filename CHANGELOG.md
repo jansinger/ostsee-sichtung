@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.3](https://github.com/jansinger/ostsee-sichtung/compare/v2.2.2...v2.2.3) (2026-04-13)
+
+
+### Bug Fixes
+
+* **report:** form review fixes — yup conditions, a11y, performance ([#454](https://github.com/jansinger/ostsee-sichtung/issues/454)) ([41d6838](https://github.com/jansinger/ostsee-sichtung/commit/41d6838fa1307e27413fbfec55debd09105ee96d))
+
 ## [2.2.2](https://github.com/jansinger/ostsee-sichtung/compare/v2.2.1...v2.2.2) (2026-04-13)
 
 
