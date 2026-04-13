@@ -2,12 +2,14 @@ import { createLogger } from '$lib/logger';
 import { Feature, Geolocation, Map, Overlay, View } from 'ol';
 import type { Control } from 'ol/control';
 import { defaults as defaultControls } from 'ol/control';
+import type { EventsKey } from 'ol/events';
 import * as olExtent from 'ol/extent';
 import GeoJSON from 'ol/format/GeoJSON';
 import type { Geometry } from 'ol/geom';
 import { Point as OlPoint } from 'ol/geom';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
+import { unByKey } from 'ol/Observable';
 import { fromLonLat } from 'ol/proj';
 import { OSM, XYZ } from 'ol/source';
 import Cluster from 'ol/source/Cluster';
@@ -17,7 +19,7 @@ import { LocationControl } from './controls/LocationControl.js';
 import { ZoomAllControl } from './controls/ZoomAllControl.js';
 import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 import { areExtentsColocated, type MapTranslations } from './mapUtils';
-import { createFeatureStyle, getFeatureColorGroup } from './styleUtils';
+import { clearStyleCache, createFeatureStyle, getFeatureColorGroup } from './styleUtils';
 import { sanitizeText } from '$lib/utils/sanitize';
 
 const logger = createLogger('map:optimized-controller');
@@ -89,6 +91,8 @@ export class SichtungenMap {
 
 	// Geolocation-related properties
 	private geolocation!: Geolocation;
+	private geolocationKeys: EventsKey[] = [];
+	private viewResolutionKey: EventsKey | null = null;
 	private locationSource!: VectorSource<Feature<Geometry>>;
 	private locationLayer!: VectorLayer<VectorSource<Feature<Geometry>>>;
 	private isTracking: boolean = false;
@@ -253,7 +257,10 @@ export class SichtungenMap {
 		}
 
 		// Lade Daten für das aktuelle Jahr
-		this.setYear(this.displayedYear);
+		void this.setYear(this.displayedYear).catch((err) => {
+			logger.error({ err }, 'Initial sightings load failed');
+			this.loadingCallback?.(false);
+		});
 
 		// Initialisiere Zeitraum-Anzeige
 		this.updateTimeRange();
@@ -404,9 +411,9 @@ export class SichtungenMap {
 		});
 
 		// Zoom-optimierte Cluster-Distanz
-		this.map.getView().on('change:resolution', () => {
+		this.viewResolutionKey = this.map.getView().on('change:resolution', () => {
 			this.updateClusterDistance();
-		});
+		}) as EventsKey;
 	}
 
 	private sortFeaturesByDate(features: Feature<Geometry>[]): Feature<Geometry>[] {
@@ -750,7 +757,12 @@ export class SichtungenMap {
 				yearSelect.addEventListener('change', (event) => {
 					const target = event.target as HTMLSelectElement;
 					const year = parseInt(target.value, 10);
-					if (!isNaN(year)) this.setYear(year);
+					if (!isNaN(year)) {
+						void this.setYear(year).catch((err) => {
+							logger.error({ err }, 'Year change load failed');
+							this.loadingCallback?.(false);
+						});
+					}
 				});
 			}
 		}
@@ -778,29 +790,33 @@ export class SichtungenMap {
 			projection: this.map.getView().getProjection()
 		});
 
-		this.geolocation.on('change:position', () => {
-			const coordinates = this.geolocation.getPosition();
-			if (coordinates) {
-				this.locationSource.clear();
-				const positionFeature = new Feature({
-					geometry: new OlPoint(coordinates),
-					type: 'location'
-				});
-				this.locationSource.addFeature(positionFeature);
-			}
-		});
+		this.geolocationKeys.push(
+			this.geolocation.on('change:position', () => {
+				const coordinates = this.geolocation.getPosition();
+				if (coordinates) {
+					this.locationSource.clear();
+					const positionFeature = new Feature({
+						geometry: new OlPoint(coordinates),
+						type: 'location'
+					});
+					this.locationSource.addFeature(positionFeature);
+				}
+			}) as EventsKey
+		);
 
-		this.geolocation.on('change:accuracyGeometry', () => {
-			const accuracy = this.geolocation.getAccuracyGeometry();
-			if (accuracy) {
-				this.locationSource.clear();
-				const accuracyFeature = new Feature({
-					geometry: accuracy,
-					type: 'accuracy'
-				});
-				this.locationSource.addFeature(accuracyFeature);
-			}
-		});
+		this.geolocationKeys.push(
+			this.geolocation.on('change:accuracyGeometry', () => {
+				const accuracy = this.geolocation.getAccuracyGeometry();
+				if (accuracy) {
+					this.locationSource.clear();
+					const accuracyFeature = new Feature({
+						geometry: accuracy,
+						type: 'accuracy'
+					});
+					this.locationSource.addFeature(accuracyFeature);
+				}
+			}) as EventsKey
+		);
 	}
 
 	private applyFilter(searchTerm: string): void {
@@ -841,13 +857,6 @@ export class SichtungenMap {
 
 	public isCurrentlyTracking(): boolean {
 		return this.isTracking;
-	}
-
-	public addFeatureFromCoordinate(coordinate: number[]): void {
-		const feature = new Feature({
-			geometry: new OlPoint(coordinate)
-		});
-		this.reportsSource.addFeature(feature);
 	}
 
 	public getExtent(): number[] | null {
@@ -895,6 +904,20 @@ export class SichtungenMap {
 
 		// Geolocation stoppen und internen Tracking-Status zurücksetzen
 		this.stopTracking();
+
+		// Geolocation Event-Listener entfernen und Geolocation disposen
+		this.geolocationKeys.forEach((k) => unByKey(k));
+		this.geolocationKeys = [];
+		this.geolocation.dispose();
+
+		// View resolution listener entfernen
+		if (this.viewResolutionKey) {
+			unByKey(this.viewResolutionKey);
+			this.viewResolutionKey = null;
+		}
+
+		// Style-Cache leeren
+		clearStyleCache();
 
 		// Popup entfernen
 		this.popup.setPosition(undefined);

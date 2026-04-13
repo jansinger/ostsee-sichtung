@@ -9,6 +9,7 @@ export class ZoomAllControl extends Control {
 		const button = document.createElement('button');
 		button.innerHTML = 'Z';
 		button.title = 'Auf alle Sichtungen zoomen';
+		button.setAttribute('aria-label', 'Auf alle Sichtungen zoomen');
 
 		const element = document.createElement('div');
 		element.className = 'zoom-all-control ol-unselectable ol-control';

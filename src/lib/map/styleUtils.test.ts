@@ -38,12 +38,16 @@ vi.mock('ol/style', () => {
 
 import {
 	backgroundColors,
+	clearStyleCache,
+	createClusterStyle,
 	getFeatureColorGroup,
 	isBetween,
 	legendGroups,
 	speciesSymbols
 } from './styleUtils';
 import type { SightingProperties } from './styleUtils';
+import type { Feature } from 'ol';
+import type { Geometry } from 'ol/geom';
 
 describe('styleUtils', () => {
 	describe('speciesSymbols', () => {
@@ -196,6 +200,35 @@ describe('styleUtils', () => {
 		it('funktioniert auch wenn lower > upper', () => {
 			expect(isBetween(5, 10, 1)).toBe(true);
 			expect(isBetween(0, 10, 1)).toBe(false);
+		});
+	});
+
+	describe('clearStyleCache', () => {
+		it('leert den Style-Cache — createClusterStyle erstellt danach neues Objekt', () => {
+			// Minimaler Mock für ein Cluster-Feature (2 Features → Schlüssel "cluster_2")
+			const mockFeature = {
+				get: (key: string) => (key === 'features' ? [{}, {}] : undefined)
+			} as unknown as Feature<Geometry>;
+
+			// Ersten Style erzeugen und cachen
+			const style1 = createClusterStyle(mockFeature);
+			// Zweiter Aufruf: kommt aus dem Cache (gleiches Objekt)
+			const style1Cached = createClusterStyle(mockFeature);
+			expect(style1).toBe(style1Cached);
+
+			// Cache leeren
+			clearStyleCache();
+
+			// Dritter Aufruf: Cache ist leer → neues Objekt
+			const style2 = createClusterStyle(mockFeature);
+			expect(style2).not.toBe(style1);
+		});
+
+		it('kann mehrfach aufgerufen werden ohne Fehler', () => {
+			expect(() => {
+				clearStyleCache();
+				clearStyleCache();
+			}).not.toThrow();
 		});
 	});
 });

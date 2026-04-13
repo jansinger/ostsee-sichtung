@@ -36,6 +36,13 @@ export interface LegendGroup {
 const styleCache: Record<string, Style> = {};
 
 /**
+ * Leert den Style-Cache (für dispose/cleanup)
+ */
+export function clearStyleCache(): void {
+	Object.keys(styleCache).forEach((k) => delete styleCache[k]);
+}
+
+/**
  * Grundeinstellungen für alle Stile
  */
 const defaultStroke = new Stroke({ color: 'black', width: 2 });
