@@ -23,7 +23,11 @@ export class MapPage {
 				if (attempt === maxRetries) {
 					throw error;
 				}
-
+				// Log the error so it appears in CI output even when retry succeeds
+				console.warn(
+					`[MapPage] waitForLoad attempt ${attempt + 1} failed, reloading page:`,
+					(error as Error).message
+				);
 				// Recover from transient CI startup races by refreshing the page once.
 				await this.page.reload({ waitUntil: 'domcontentloaded' });
 			}
@@ -38,7 +42,8 @@ export class MapPage {
 		// Phase 2: Wait for SightingsMapView's own loading overlay to clear (1.5s init timeout)
 		const loadingOverlay = this.page.locator('[aria-labelledby="loading-title"]');
 		const overlayVisible = await loadingOverlay
-			.isVisible({ timeout: MAP_TEST_TIMEOUTS.overlayProbe })
+			.waitFor({ state: 'visible', timeout: MAP_TEST_TIMEOUTS.overlayProbe })
+			.then(() => true)
 			.catch(() => false);
 
 		if (overlayVisible) {
