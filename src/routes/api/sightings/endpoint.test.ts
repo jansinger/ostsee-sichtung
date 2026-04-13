@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from './+server';
 
 // Mock dependencies
@@ -24,8 +24,6 @@ vi.mock('$lib/server/services/emailService', () => ({
 		clearTemplateCache: vi.fn()
 	}
 }));
-
-import { beforeEach } from 'vitest';
 
 describe('/api/sightings POST endpoint', () => {
 	beforeEach(() => {
@@ -209,8 +207,24 @@ describe('/api/sightings POST endpoint', () => {
 		expect(saveSighting).toHaveBeenCalledOnce();
 	}, 15000);
 
-	it('should pass weather data through to saveSighting when present', async () => {
+	it('should accept requests with valid weather data', async () => {
 		const { saveSighting } = await import('$lib/server/db/sightingRepository');
+
+		const validWeatherData = {
+			provider: 'open-meteo',
+			fetched_at: new Date().toISOString(),
+			api_version: '1.0',
+			data_type: 'historical',
+			location: { latitude: 54.5, longitude: 13.5 },
+			observation_time: '2024-01-15T12:00:00Z',
+			raw_data: {
+				temperature_2m: 8.5,
+				wind_speed_10m: 15,
+				wind_direction_10m: 270,
+				weather_code: 3,
+				visibility: 10000
+			}
+		};
 
 		const requestWithWeather = createMockRequestEvent({
 			referenceId: 'weather-ref-123',
@@ -229,20 +243,14 @@ describe('/api/sightings POST endpoint', () => {
 			sightingFrom: 1,
 			distance: 1,
 			isDead: false,
-			weatherData: {
-				temperature: 15.5,
-				windSpeed: 10,
-				provider: 'open-meteo'
-			}
+			weatherData: validWeatherData
 		});
 
-		await POST(requestWithWeather);
+		const response = await POST(requestWithWeather);
+		expect(response.status).toBe(201);
 
-		// saveSighting should have been called with weather data
-		expect(saveSighting).toHaveBeenCalled();
-		const callArgs = vi.mocked(saveSighting).mock.calls[0];
-		// Weather data should be passed as second argument or included in form data
-		expect(callArgs).toBeDefined();
+		// saveSighting should have been called — weather data doesn't break submission
+		expect(saveSighting).toHaveBeenCalledOnce();
 	}, 15000);
 
 	it('should include referenceId in valid submission', async () => {

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { FormPage } from './pages/FormPage';
 
 const today = new Date().toISOString().substring(0, 10);
@@ -19,14 +19,14 @@ async function fillStep2(formPage: FormPage) {
 }
 
 /** Wait for the Next button to become enabled */
-async function waitForNextEnabled(page: ReturnType<typeof test.extend>) {
+async function waitForNextEnabled(page: Page) {
 	await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeEnabled({
 		timeout: 3000
 	});
 }
 
 /** Wait for the active step indicator to show a specific step name */
-async function expectCurrentStep(page: ReturnType<typeof test.extend>, pattern: RegExp) {
+async function expectCurrentStep(page: Page, pattern: RegExp) {
 	await expect(page.locator('[aria-current="step"]')).toHaveAttribute('aria-label', pattern, {
 		timeout: 5000
 	});

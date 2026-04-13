@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { FormPage } from './pages/FormPage';
 
 const today = new Date().toISOString().substring(0, 10);
@@ -10,7 +10,7 @@ async function fillStep1(formPage: FormPage) {
 }
 
 /** Wait for the active step indicator */
-async function expectCurrentStep(page: ReturnType<typeof test.extend>, pattern: RegExp) {
+async function expectCurrentStep(page: Page, pattern: RegExp) {
 	await expect(page.locator('[aria-current="step"]')).toHaveAttribute('aria-label', pattern, {
 		timeout: 5000
 	});
