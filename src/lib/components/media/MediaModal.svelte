@@ -76,7 +76,7 @@
 <!-- Modal -->
 <dialog
 	bind:this={modalElement}
-	class="modal modal-open"
+	class="modal"
 	onclick={handleModalClick}
 	aria-labelledby="modal-title"
 	aria-describedby="modal-description"

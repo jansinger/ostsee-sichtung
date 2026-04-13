@@ -108,9 +108,6 @@
 
 	// Event Handler für Cleanup
 	let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
-	let unhandledRejectionHandler: ((event: PromiseRejectionEvent) => void) | null = null;
-	let loadingHandlerCleanup: (() => void) | null = null;
-	let initTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 	// Modern $effect for map initialization and cleanup
 	$effect(() => {
@@ -122,6 +119,7 @@
 			timeSliderManager = new MapTimeSliderManager();
 
 			// Initialisiere Karte mit Loading-Callback (muss vor initialem setYear gesetzt sein)
+			let firstLoadComplete = false;
 			mapInstance = new SichtungenMap({
 				translations,
 				target: mapContainerId,
@@ -136,7 +134,18 @@
 					if (loading) {
 						loadingType = 'features';
 						errorMessage = null;
+					} else if (!firstLoadComplete) {
+						firstLoadComplete = true;
+						countManager.updateCounts();
+						currentDisplayedYear = mapInstance!.getDisplayedYear();
+						isInitialLoading = false;
 					}
+				},
+				onError: (err) => {
+					console.error('Map data load failed:', err);
+					errorMessage = 'Fehler beim Laden der Kartendaten. Bitte versuchen Sie es erneut.';
+					isLoadingData = false;
+					isInitialLoading = false;
 				}
 			});
 
@@ -152,23 +161,8 @@
 			panelManager.initializePanels();
 			timeSliderManager.initialize(mapInstance);
 
-			// Erste Aktualisierung nach kurzer Verzögerung
-			const initialCountManager = countManager;
-			const initialMapInstance = mapInstance;
-			initTimeoutId = setTimeout(() => {
-				initialCountManager.updateCounts();
-				// Aktualisiere das angezeigte Jahr im Titel
-				currentDisplayedYear = initialMapInstance.getDisplayedYear();
-				// Initial loading abgeschlossen
-				isInitialLoading = false;
-				initTimeoutId = null;
-			}, 1500);
-
 			// Tastatur-Navigation Setup
 			setupKeyboardNavigation();
-
-			// Event-Listener für Loading-Zustände
-			loadingHandlerCleanup = setupLoadingHandlers();
 
 			// Cleanup function (replaces onDestroy)
 			return () => {
@@ -207,23 +201,6 @@
 			keyboardHandler = null;
 		}
 
-		if (unhandledRejectionHandler) {
-			window.removeEventListener('unhandledrejection', unhandledRejectionHandler);
-			unhandledRejectionHandler = null;
-		}
-
-		// Cleanup Loading Handler Observer
-		if (loadingHandlerCleanup) {
-			loadingHandlerCleanup();
-			loadingHandlerCleanup = null;
-		}
-
-		// Ausstehenden Init-Timeout abbrechen, falls Komponente vor Ablauf unmountet
-		if (initTimeoutId !== null) {
-			clearTimeout(initTimeoutId);
-			initTimeoutId = null;
-		}
-
 		// CountManager-Ressourcen aufräumen
 		countManager.dispose();
 
@@ -243,25 +220,6 @@
 			document.body.style.overflow = '';
 			document.documentElement.style.overflow = '';
 		}
-	}
-
-	/**
-	 * Setup für Loading-State-Management mit verbesserter UX
-	 */
-	function setupLoadingHandlers() {
-		// Loading-State wird jetzt direkt vom Controller-Callback (setLoadingCallback)
-		// gesteuert — kein fake Timeout mehr nötig. Hier nur noch Error-Handler.
-
-		// Global Error Handler für API-Fehler
-		unhandledRejectionHandler = (event) => {
-			console.error('Unhandled promise rejection:', event.reason);
-			errorMessage = 'Fehler beim Laden der Kartendaten. Bitte versuchen Sie es erneut.';
-			isLoadingData = false;
-			isInitialLoading = false;
-		};
-		window.addEventListener('unhandledrejection', unhandledRejectionHandler);
-
-		return () => {};
 	}
 
 	/**

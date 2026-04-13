@@ -4,11 +4,13 @@ import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 import { ServerConfigService } from '$lib/services/configService';
+import { isValidDateParam } from './dateParam';
 
 export const load: PageServerLoad = async ({ url }) => {
 	const page = Number(url.searchParams.get('page')) || 1;
 	const paginationConfig = await ServerConfigService.getPaginationConfig();
-	const requestedPerPage = Number(url.searchParams.get('perPage')) || paginationConfig.defaultPageSize;
+	const requestedPerPage =
+		Number(url.searchParams.get('perPage')) || paginationConfig.defaultPageSize;
 	// Enforce the maximum configured per page limit
 	const perPage = Math.min(requestedPerPage, paginationConfig.maxSightingsPerPage);
 	const sortBy = url.searchParams.get('sort') || 'sightingDate';
@@ -22,9 +24,9 @@ export const load: PageServerLoad = async ({ url }) => {
 	// Bedingungen für die SQL-Abfrage sammeln
 	const conditions = [];
 
-	// Datums-Filter
-	if (dateFrom && dateTo) {
-		conditions.push(sql`${sightings.sightingDate} BETWEEN ${dateFrom} AND ${dateTo}`);
+	// Datums-Filter (nur mit validiertem YYYY-MM-DD Format)
+	if (isValidDateParam(dateFrom) && isValidDateParam(dateTo)) {
+		conditions.push(sql`DATE(${sightings.sightingDate}) BETWEEN ${dateFrom} AND ${dateTo}`);
 	}
 
 	// Verifizierungs-Filter (als Integer 0/1)
