@@ -121,7 +121,7 @@
 				currentStep = 0;
 				saveToStorage(STORAGE_KEYS.CURRENT_STEP, 0);
 				submissionError = null;
-				return onSubmit(submitValues);
+				return await onSubmit(submitValues);
 			} catch (error: unknown) {
 				submissionError = (error as Error)?.message || 'Unbekannter Fehler bei der Übermittlung';
 				logger.error(error, submissionError);

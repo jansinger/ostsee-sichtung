@@ -60,7 +60,7 @@
 			Wählen Sie die für Sie einfachste Methode zur Positionsangabe
 		</p>
 
-		<fieldset>
+		<fieldset class="fieldset m-0 min-w-0 border-0 p-0">
 			<legend class="sr-only">Wie möchten Sie den Standort angeben?</legend>
 			<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 				<!-- Photo Method -->
