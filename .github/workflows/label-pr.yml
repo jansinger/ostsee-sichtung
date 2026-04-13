@@ -20,12 +20,12 @@ jobs:
 
       - name: Get Dependabot metadata
         if: github.actor == 'dependabot[bot]'
-        uses: dependabot/fetch-metadata@v2
+        uses: dependabot/fetch-metadata@v3
         id: dependabot-metadata
 
       - name: Label Dependabot PR
         if: github.actor == 'dependabot[bot]'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const updateType = '${{ steps.dependabot-metadata.outputs.update-type }}';
@@ -56,7 +56,7 @@ jobs:
 
       - name: Label PR based on commit types
         if: github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'release-please')
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             try {

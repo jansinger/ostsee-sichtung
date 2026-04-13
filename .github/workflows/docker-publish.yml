@@ -267,7 +267,7 @@ jobs:
           tar -czf ostsee-tiere-docker-${VERSION}.tar.gz -C release-assets .
 
       - name: Upload release assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.prepare.outputs.version }}
           files: |
