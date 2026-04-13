@@ -120,6 +120,7 @@
 				// Nach erfolgreichem Submit auf ersten Schritt zurücksetzen
 				currentStep = 0;
 				saveToStorage(STORAGE_KEYS.CURRENT_STEP, 0);
+				submissionError = null;
 				return onSubmit(submitValues);
 			} catch (error: unknown) {
 				submissionError = (error as Error)?.message || 'Unbekannter Fehler bei der Übermittlung';
