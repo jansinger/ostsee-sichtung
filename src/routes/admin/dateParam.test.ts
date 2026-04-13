@@ -22,4 +22,18 @@ describe('isValidDateParam', () => {
 		expect(isValidDateParam('2024-01-01; DROP TABLE sichtungen')).toBe(false);
 		expect(isValidDateParam("' OR '1'='1")).toBe(false);
 	});
+
+	it('lehnt nicht-existente Kalenderdaten ab', () => {
+		expect(isValidDateParam('2024-02-31')).toBe(false); // Feb hat max 29 Tage
+		expect(isValidDateParam('2024-02-30')).toBe(false);
+		expect(isValidDateParam('2024-04-31')).toBe(false); // April hat 30 Tage
+		expect(isValidDateParam('2024-13-01')).toBe(false); // Monat 13 existiert nicht
+		expect(isValidDateParam('2024-00-01')).toBe(false); // Monat 0 existiert nicht
+		expect(isValidDateParam('2024-01-00')).toBe(false); // Tag 0 existiert nicht
+	});
+
+	it('akzeptiert Schaltjahr-Datum korrekt', () => {
+		expect(isValidDateParam('2024-02-29')).toBe(true); // 2024 ist Schaltjahr
+		expect(isValidDateParam('2023-02-29')).toBe(false); // 2023 ist kein Schaltjahr
+	});
 });

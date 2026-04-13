@@ -109,7 +109,7 @@ export const POST: RequestHandler = async ({ params, locals, url }: RequestEvent
 		return json(
 			{
 				success: false,
-				error: `Internal server error while refreshing weather data: ${error instanceof Error ? error.message : 'Unknown error'}`
+				error: 'Internal server error while refreshing weather data'
 			},
 			{ status: 500 }
 		);

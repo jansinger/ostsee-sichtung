@@ -65,4 +65,20 @@ describe('/api/admin/weather/[id]/refresh POST endpoint', () => {
 		expect(response.status).toBe(404);
 		expect(body.success).toBe(false);
 	});
+
+	it('500-Antwort enthält keine internen Fehlerdetails', async () => {
+		const { getSightingById } = await import('$lib/server/db/sightingRepository');
+		vi.mocked(getSightingById).mockRejectedValue(
+			new Error('DB connection failed: postgresql://secret@host/db')
+		);
+
+		const event = createMockEvent('1', { email: 'admin@test.com', roles: ['admin'] });
+		const response = await POST(event as Parameters<typeof POST>[0]);
+		const body = await response.json();
+
+		expect(response.status).toBe(500);
+		expect(body.success).toBe(false);
+		expect(body.error).not.toContain('postgresql://');
+		expect(body.error).not.toContain('DB connection failed');
+	});
 });

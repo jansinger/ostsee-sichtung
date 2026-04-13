@@ -129,7 +129,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 			internalComment: sighting[0]?.internalComment
 		});
 	} catch (err) {
-		if (err instanceof Error && 'status' in err) {
+		if (isHttpError(err)) {
 			throw err;
 		}
 		logger.error({ err, id }, 'Fehler beim Abrufen des Genehmigungsstatus');
