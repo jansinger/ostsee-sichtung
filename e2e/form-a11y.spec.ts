@@ -1,20 +1,6 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { FormPage } from './pages/FormPage';
-
-const today = new Date().toISOString().substring(0, 10);
-
-/** Fill Step 1 with valid data */
-async function fillStep1(formPage: FormPage) {
-	await formPage.fillDate(today);
-	await formPage.fillTime('14:30');
-}
-
-/** Wait for the active step indicator */
-async function expectCurrentStep(page: Page, pattern: RegExp) {
-	await expect(page.locator('[aria-current="step"]')).toHaveAttribute('aria-label', pattern, {
-		timeout: 5000
-	});
-}
+import { fillStep1, expectCurrentStep } from './helpers/form-helpers';
 
 // ── Phase 5A: FormSteps Indicator ──────────────────────────────────────────
 

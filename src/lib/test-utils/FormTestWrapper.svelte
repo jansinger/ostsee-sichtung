@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import Form from '$lib/report/components/form/Form.svelte';
 	import type { FormContext } from '$lib/report/types';
-	import type { ObjectSchema } from 'yup';
+	import type { ObjectSchema, AnyObject } from 'yup';
 
 	let {
 		initialValues = {},
@@ -11,8 +11,8 @@
 		children
 	}: {
 		initialValues?: Record<string, unknown>;
-		validationSchema?: ObjectSchema<any> | undefined;
-		onSubmit?: (values: any) => Promise<void> | void;
+		validationSchema?: ObjectSchema<AnyObject> | undefined;
+		onSubmit?: (values: Record<string, unknown>) => Promise<void> | void;
 		children: Snippet;
 	} = $props();
 
