@@ -7,14 +7,13 @@ test.describe.serial('Map Time Slider', () => {
 	let sharedPage: Page;
 
 	test.beforeAll(async ({ browser }) => {
-		const context = await browser.newContext();
-		sharedPage = await context.newPage();
+		sharedPage = await browser.newPage();
 		mapPage = await setupMapPage(sharedPage);
 		await mapPage.openFilter();
 	});
 
 	test.afterAll(async () => {
-		await sharedPage.context().close();
+		await sharedPage.close();
 	});
 
 	test('Zeitraum-Slider haben korrekte Standard-Attribute', async () => {

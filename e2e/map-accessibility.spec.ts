@@ -8,13 +8,12 @@ test.describe.serial('Map Accessibility', () => {
 	let sharedPage: Page;
 
 	test.beforeAll(async ({ browser }) => {
-		const context = await browser.newContext();
-		sharedPage = await context.newPage();
+		sharedPage = await browser.newPage();
 		mapPage = await setupMapPage(sharedPage);
 	});
 
 	test.afterAll(async () => {
-		await sharedPage.context().close();
+		await sharedPage.close();
 	});
 
 	test('Karten-Container hat role="application"', async () => {
@@ -33,6 +32,7 @@ test.describe.serial('Map Accessibility', () => {
 		const dialog = sharedPage.getByRole('dialog', { name: /tastaturkürzel/i });
 		await expect(dialog).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
 		await sharedPage.keyboard.press('Escape');
+		await expect(dialog).toBeHidden({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
 	});
 
 	test('Tastatur-Shortcut ? öffnet Hilfe-Modal', async () => {
@@ -42,6 +42,7 @@ test.describe.serial('Map Accessibility', () => {
 		const dialog = sharedPage.getByRole('dialog', { name: /tastaturkürzel/i });
 		await expect(dialog).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
 		await sharedPage.keyboard.press('Escape');
+		await expect(dialog).toBeHidden({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
 	});
 
 	test('Escape schließt Hilfe-Modal', async () => {

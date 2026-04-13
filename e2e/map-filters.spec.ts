@@ -7,13 +7,12 @@ test.describe.serial('Map Filter Panel', () => {
 	let sharedPage: Page;
 
 	test.beforeAll(async ({ browser }) => {
-		const context = await browser.newContext();
-		sharedPage = await context.newPage();
+		sharedPage = await browser.newPage();
 		mapPage = await setupMapPage(sharedPage);
 	});
 
 	test.afterAll(async () => {
-		await sharedPage.context().close();
+		await sharedPage.close();
 	});
 
 	test('Tastatur-Shortcut F öffnet Filter-Panel', async () => {
@@ -57,5 +56,6 @@ test.describe.serial('Map Filter Panel', () => {
 		const response = await responsePromise;
 
 		expect(response.url()).toContain('search=Schweinswal');
+		await mapPage.closeFilter();
 	});
 });
