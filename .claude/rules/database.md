@@ -3,7 +3,6 @@ paths:
   - 'src/lib/server/db/**'
   - 'drizzle.config.ts'
   - 'src/routes/api/**'
-  - 'drizzle/**'
 ---
 
 # Datenbank & Drizzle ORM
@@ -17,10 +16,11 @@ Regeln für PostgreSQL, PostGIS und Drizzle ORM.
 ```bash
 npm run db:start   # PostgreSQL starten (Docker, Port 5433)
 npm run db:stop    # Datenbank stoppen
-npm run db:push    # Schema pushen
-npm run db:migrate # Migrationen ausführen
+npm run db:push    # Schema direkt auf DB pushen (kein drizzle/-Verzeichnis nötig)
 npm run db:studio  # Drizzle Studio öffnen
 ```
+
+> **Migrations-Strategie:** Dieses Projekt nutzt `db:push` (Drizzle Kit Push) statt file-basierter Migrationen. Es gibt kein `drizzle/` Migrations-Verzeichnis im Repository. Schemaänderungen werden direkt via `npm run db:push` auf die Datenbank angewendet.
 
 ---
 

@@ -2,6 +2,9 @@ test-results
 node_modules
 .worktrees
 
+# AI planning artifacts (Claude Code superpowers plans)
+docs/superpowers/
+
 # Output
 .output
 .vercel
