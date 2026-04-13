@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { createLogger } from '$lib/logger';
 	import type { SightingStatistics } from '$lib/server/db/sightingRepository';
 	const logger = createLogger('components:FormHelp');
@@ -18,8 +19,9 @@
 
 	let loading = $state(true);
 
-	// Modern $effect for loading statistics
+	// Load statistics only in browser (avoid SSR fetch warning)
 	$effect(() => {
+		if (!browser) return;
 		(async () => {
 			try {
 				const response = await fetch('/api/statistics');
@@ -28,7 +30,10 @@
 					statistics = data;
 				}
 			} catch (error) {
-				logger.warn({ error: error instanceof Error ? error.message : error }, 'Could not load statistics, using fallback values');
+				logger.warn(
+					{ error: error instanceof Error ? error.message : error },
+					'Could not load statistics, using fallback values'
+				);
 			} finally {
 				loading = false;
 			}
@@ -40,7 +45,7 @@
 <div class="card bg-base-200/50 border-base-300 mt-8 border">
 	<div class="card-body p-2">
 		<details class="collapse">
-			<summary class="collapse-title cursor-pointer text-sm font-medium flex items-center gap-2">
+			<summary class="collapse-title flex cursor-pointer items-center gap-2 text-sm font-medium">
 				<Icon icon="lucide:circle-help" width="16" class="text-info" />
 				Hilfe & Tipps für eine wertvolle Sichtungsmeldung
 			</summary>
@@ -48,7 +53,7 @@
 				<div class="space-y-4 pt-4">
 					<div class="alert alert-info">
 						<div>
-							<h4 class="font-semibold flex items-center gap-2">
+							<h4 class="flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:zap" width="16" class="text-primary" />
 								Warum ist Ihre Meldung wichtig?
 							</h4>
@@ -86,10 +91,10 @@
 
 					<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 						<div class="card bg-base-100 p-4">
-							<h4 class="mb-2 font-semibold flex items-center gap-2">
-						<Icon icon="lucide:map-pin" width="16" class="text-primary" />
-						Schritt 1: Position & Zeit
-					</h4>
+							<h4 class="mb-2 flex items-center gap-2 font-semibold">
+								<Icon icon="lucide:map-pin" width="16" class="text-primary" />
+								Schritt 1: Position & Zeit
+							</h4>
 							<ul class="space-y-1 text-xs">
 								<li><strong>GPS-Koordinaten:</strong> Am wertvollsten für die Forschung</li>
 								<li><strong>Gewässername:</strong> Falls keine GPS-Daten verfügbar</li>
@@ -101,10 +106,10 @@
 						</div>
 
 						<div class="card bg-base-100 p-4">
-							<h4 class="mb-2 font-semibold flex items-center gap-2">
-						<Icon icon="lucide:binoculars" width="16" class="text-primary" />
-						Schritt 2: Sichtungsdetails
-					</h4>
+							<h4 class="mb-2 flex items-center gap-2 font-semibold">
+								<Icon icon="lucide:binoculars" width="16" class="text-primary" />
+								Schritt 2: Sichtungsdetails
+							</h4>
 							<ul class="space-y-1 text-xs">
 								<li>
 									<strong>Tierart:</strong> Bei Unsicherheit "Unbekannt" wählen <SpeciesIdentificationHelp
@@ -120,10 +125,10 @@
 						</div>
 
 						<div class="card bg-base-100 p-4">
-							<h4 class="mb-2 font-semibold flex items-center gap-2">
-						<Icon icon="lucide:eye" width="16" class="text-primary" />
-						Schritt 3: Beobachtungen
-					</h4>
+							<h4 class="mb-2 flex items-center gap-2 font-semibold">
+								<Icon icon="lucide:eye" width="16" class="text-primary" />
+								Schritt 3: Beobachtungen
+							</h4>
 							<ul class="space-y-1 text-xs">
 								<li><strong>Verhalten:</strong> Fütterung, Ruhen, Springen, etc.</li>
 								<li>
@@ -146,10 +151,10 @@
 						</div>
 
 						<div class="card bg-base-100 p-4">
-							<h4 class="mb-2 font-semibold flex items-center gap-2">
-						<Icon icon="lucide:mail" width="16" class="text-primary" />
-						Schritt 4: Kontaktdaten
-					</h4>
+							<h4 class="mb-2 flex items-center gap-2 font-semibold">
+								<Icon icon="lucide:mail" width="16" class="text-primary" />
+								Schritt 4: Kontaktdaten
+							</h4>
 							<ul class="space-y-1 text-xs">
 								<li><strong>E-Mail:</strong> Für Bestätigung und Rückfragen</li>
 								<li><strong>Boot-Info:</strong> Hilft bei Störungsanalysen</li>
@@ -163,10 +168,10 @@
 
 					<div class="alert alert-success">
 						<div>
-							<h4 class="mb-4 text-center font-semibold flex items-center justify-center gap-2">
-					<Icon icon="lucide:chart-pie" width="16" class="text-success" />
-					Ihre Daten machen den Unterschied
-				</h4>
+							<h4 class="mb-4 flex items-center justify-center gap-2 text-center font-semibold">
+								<Icon icon="lucide:chart-pie" width="16" class="text-success" />
+								Ihre Daten machen den Unterschied
+							</h4>
 							<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
 								<div class="bg-success/10 border-success/20 rounded-lg border p-4 text-center">
 									<div class="text-success mb-2 text-2xl font-bold">
@@ -225,7 +230,7 @@
 
 					<div class="alert alert-warning">
 						<div>
-							<h4 class="font-semibold flex items-center gap-2">
+							<h4 class="flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:triangle-alert" width="16" class="text-warning" />
 								Totfunde - Besonders wichtig!
 							</h4>
