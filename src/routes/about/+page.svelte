@@ -171,13 +171,13 @@
 
 	<!-- Partnership Section -->
 	<div class="mb-16">
-		<div class="rounded-lg p-8 text-center text-white" style="background-color: rgb(0, 60, 100)">
+		<div class="bg-primary text-primary-content rounded-lg p-8 text-center">
 			<img
 				src="/logo_dmm_negativ.svg"
 				alt="Deutsches Meeresmuseum Logo"
 				class="mx-auto mb-4 w-64 p-4"
 			/>
-			<p class="mx-auto mb-4 max-w-2xl leading-relaxed text-white">
+			<p class="text-primary-content mx-auto mb-4 max-w-2xl leading-relaxed">
 				Diese Plattform wird vom Deutschen Meeresmuseum in Stralsund betrieben, einem der führenden
 				Zentren für Meeresforschung und -bildung in Deutschland. Seit über 50 Jahren widmen wir uns
 				der Erforschung und dem Schutz der marinen Lebensräume.

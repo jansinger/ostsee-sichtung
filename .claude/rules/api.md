@@ -15,13 +15,13 @@ Regeln für API-Entwicklung, insbesondere Legacy API.
 ## API Struktur
 
 ```
-src/routes/api/
-├── legacy/              # Legacy REST API (KRITISCH)
-│   ├── rest_sichtungen/
-│   └── sichtungen/
-├── sightings/           # Moderne API
-├── files/               # Datei-Upload
-└── admin/               # Admin API
+src/routes/
+├── rest_sichtungen/     # Legacy REST API (KRITISCH) — /rest_sichtungen
+├── sichtungen/          # Legacy Sichtungs-API — /sichtungen
+└── api/
+    ├── sightings/       # Moderne API
+    ├── files/           # Datei-Upload
+    └── admin/           # Admin API
 ```
 
 ---

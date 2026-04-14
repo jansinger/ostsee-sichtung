@@ -117,17 +117,99 @@ map.addLayer(sightingsLayer);
 
 ### Styling
 
+**Wichtig:** OpenLayers rendert über Canvas — CSS Custom Properties (`var(--color-info)`) werden dort **nicht** aufgelöst. Farben müssen als konkrete Werte übergeben werden. Hilfsfunktion zum Auslesen von DaisyUI-Theme-Farben:
+
+```typescript
+// Diese Hilfsfunktion zu src/lib/map/styleUtils.ts hinzufügen (existiert noch nicht dort):
+export function getThemeColor(variable: string): string {
+	if (typeof window === 'undefined') return '#000000';
+	return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+}
+```
+
 ```typescript
 import { Style, Circle, Fill, Stroke } from 'ol/style';
+import { getThemeColor } from '$lib/map/styleUtils';
 
+// Farben beim Initialisieren auslesen (nach DOM-Mount in $effect)
 const sightingStyle = new Style({
 	image: new Circle({
 		radius: 8,
-		fill: new Fill({ color: '#3b82f6' }),
-		stroke: new Stroke({ color: '#1d4ed8', width: 2 })
+		fill: new Fill({ color: getThemeColor('--color-info') }),
+		stroke: new Stroke({ color: getThemeColor('--color-primary'), width: 2 })
 	})
 });
+// Hinweis: Bei Theme-Wechsel muss der Style neu erstellt werden
 ```
+
+---
+
+## Performance: Viele Features (>500 Punkte)
+
+### WebGLPointsLayer (GPU-beschleunigt)
+
+Für große Datensätze `WebGLPointsLayer` statt `VectorLayer` verwenden:
+
+```typescript
+import WebGLPointsLayer from 'ol/layer/WebGLPoints';
+import VectorSource from 'ol/source/Vector';
+import GeoJSON from 'ol/format/GeoJSON';
+import { getThemeColor } from '$lib/map/styleUtils';
+
+// CSS vars via getThemeColor auflösen — WebGL akzeptiert keine var(...)
+const pointsLayer = new WebGLPointsLayer({
+	source: new VectorSource({
+		url: '/api/map/sightings',
+		format: new GeoJSON()
+	}),
+	style: {
+		'circle-radius': 6,
+		'circle-fill-color': getThemeColor('--color-info'),
+		'circle-stroke-color': getThemeColor('--color-primary'),
+		'circle-stroke-width': 1.5
+	}
+});
+```
+
+### Cluster Source (Gruppen nahestehender Features)
+
+```typescript
+import Cluster from 'ol/source/Cluster';
+import VectorSource from 'ol/source/Vector';
+import VectorLayer from 'ol/layer/Vector';
+import GeoJSON from 'ol/format/GeoJSON';
+import { Style, Circle, Fill, Text, Stroke } from 'ol/style';
+import { getThemeColor } from '$lib/map/styleUtils';
+
+const clusterSource = new Cluster({
+	distance: 40, // Pixel-Abstand für Clustering
+	source: new VectorSource({ url: '/api/map/sightings', format: new GeoJSON() })
+});
+
+// Farben einmalig auflösen (in $effect nach DOM-Mount)
+const primary = getThemeColor('--color-primary');
+const primaryContent = getThemeColor('--color-primary-content');
+
+const clusterLayer = new VectorLayer({
+	source: clusterSource,
+	style: (feature) => {
+		const size = feature.get('features').length;
+		return new Style({
+			image: new Circle({
+				radius: size > 1 ? 14 : 8,
+				fill: new Fill({ color: primary }),
+				stroke: new Stroke({ color: primaryContent, width: 1 })
+			}),
+			text:
+				size > 1
+					? new Text({ text: String(size), fill: new Fill({ color: primaryContent }) })
+					: undefined
+		});
+	}
+});
+```
+
+**Faustregel:** `VectorLayer` bis ~500 Features, `Cluster` oder `WebGLPointsLayer` darüber.
 
 ---
 
