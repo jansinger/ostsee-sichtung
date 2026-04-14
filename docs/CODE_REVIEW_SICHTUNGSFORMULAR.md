@@ -11,12 +11,17 @@
 
 Von ursprünglich 25 Findings wurden **22 vollständig behoben**. 3 Findings sind noch offen:
 
-| Finding        | Beschreibung                                                            | Prio         | Aufwand     |
-| -------------- | ----------------------------------------------------------------------- | ------------ | ----------- |
-| **T-2** (Rest) | Komponenten-Tests: FormField, BaseInput/Select/Checkbox, StepNavigation | High         | ~2h         |
-| **T-5** (Rest) | `clearFormDataOnly()` und `clearAllStorage()` ohne Tests                | Medium       | ~30min      |
-| **T-7**        | Upload-Endpoint `/api/files/upload` ohne Endpoint-Test                  | Low          | ~1h         |
-| **SEC-3**      | In-Memory Rate Limiting — kein Redis, nicht persistent                  | Low (Future) | Architektur |
+| Finding        | Beschreibung                                                                       | Prio   | Aufwand |
+| -------------- | ---------------------------------------------------------------------------------- | ------ | ------- |
+| **T-2** (Rest) | Komponenten-Tests: FormField, BaseInput/Select/Checkbox, StepNavigation, FormSteps | High   | ~2h     |
+| **T-5** (Rest) | `clearFormDataOnly()` und `clearAllStorage()` ohne Tests                           | Medium | ~30min  |
+| **T-7**        | Upload-Endpoint `/api/files/upload` — Basis-Tests vorhanden, Happy Path fehlt      | Low    | ~1h     |
+
+**Architektur-Backlog (kein aktiver Handlungsbedarf):**
+
+| Finding   | Beschreibung                                           | Prio         | Aufwand     |
+| --------- | ------------------------------------------------------ | ------------ | ----------- |
+| **SEC-3** | In-Memory Rate Limiting — kein Redis, nicht persistent | Low (Future) | Architektur |
 
 ---
 
@@ -67,21 +72,22 @@ Noch nicht getestet:
 
 `src/lib/storage/localStorage.ts` enthält zwei ungetestete Export-Funktionen:
 
-- `clearFormDataOnly()` (Zeile 207) — löscht FORM_DATA und CURRENT_STEP, behält Kontaktdaten
+- `clearFormDataOnly()` (Zeile 207) — löscht nur FORM_DATA, behält Kontaktdaten
 - `clearAllStorage()` (Zeile 289) — DSGVO-Löschung aller Storage-Einträge aus beiden Storages
 
 **Fix:** Tests an `localStorage.test.ts` anhängen (analog zu bestehenden Patterns im selben File).
 
 ---
 
-### T-7: Upload-Endpoint ohne Endpoint-Test
+### T-7: Upload-Endpoint — Happy Path ohne Test
 
-`/api/files/upload` hat keine Endpoint-Integrationstests. Die Validierungs-Utilities sind getestet:
+`src/routes/api/files/upload/endpoint.test.ts` existiert mit 5 Validierungs-Tests (non-multipart, kein File, ungültige IDs). Folgendes ist getestet:
 
 - `magicBytes.test.ts` ✅
 - `requestValidation.test.ts` ✅
+- `endpoint.test.ts` — Validierungsfehler (400-Responses) ✅
 
-Fehlend: Test des Endpoints selbst (Rate Limiting, Auth-Prüfung, Fehlerresponses).
+Fehlend: Erfolgreicher Upload-Flow (Happy Path), Rate-Limiting-Verhalten.
 
 ---
 
