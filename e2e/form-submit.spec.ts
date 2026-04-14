@@ -275,7 +275,9 @@ test.describe('Sichtung melden — Submit mit API-Mock', () => {
 		// Formular bleibt auf Step 4
 		await expectCurrentStep(page, /Kontaktdaten/i);
 		// Fehlermeldung sichtbar
-		await expect(page.getByText(/Validierung|ungültig|Fehler/i)).toBeVisible({ timeout: 5000 });
+		await expect(page.getByText('Validierung fehlgeschlagen: E-Mail ungültig')).toBeVisible({
+			timeout: 5000
+		});
 	});
 
 	test('Netzwerkfehler: Route abgebrochen — Error-Handling greift', async ({ page }) => {
