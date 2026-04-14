@@ -189,6 +189,22 @@
 			const hadPositionMediaFileBeforeMetadata = !!positionMediaFile;
 			// Trigger positionMediaFile update when metadata is ready
 			mediaFile.metadata.then(() => {
+				// Directly update form GPS data here — the $effect that reads positionMediaFile.exifData
+				// runs before EXIF extraction completes (async), and won't re-run afterwards because
+				// positionMediaFile stays the same object reference (plain class property, not $state).
+				if (isPositionStep && mediaFile.hasPosition()) {
+					triggerChange('latitude', mediaFile.exifData!.latitude!.toFixed(4));
+					triggerChange('longitude', mediaFile.exifData!.longitude!.toFixed(4));
+					if (mediaFile.timestamp) {
+						const { date: sightingDate, time: sightingTime } = splitDateTime(mediaFile.timestamp);
+						logger.info(
+							{ sightingDate, sightingTime },
+							'New sighting data extracted from metadata'
+						);
+						triggerChange('sightingDate', sightingDate);
+						triggerChange('sightingTime', sightingTime);
+					}
+				}
 				// Trigger store update to refresh derived values
 				if (!hadPositionMediaFileBeforeMetadata && mediaFile.hasPosition()) {
 					updateMediaFiles([...mediaStore.mediaFiles]);
@@ -391,17 +407,17 @@
 										</div>
 									{:else if fileMetadata.mimeType.startsWith('image/')}
 										<div class="bg-base-300/50 mt-1 rounded p-1.5">
-											<p class="text-base-content/60 text-xs flex items-center gap-1">
-										<Icon icon="lucide:map-pin" width="12" class="text-base-content/60" />
-										Keine GPS-Daten
-									</p>
+											<p class="text-base-content/60 flex items-center gap-1 text-xs">
+												<Icon icon="lucide:map-pin" width="12" class="text-base-content/60" />
+												Keine GPS-Daten
+											</p>
 										</div>
 									{/if}
 
 									<!-- Additional EXIF Info -->
 									{#if mediaFile.timestamp}
 										<div class="mt-1">
-											<p class="text-base-content/60 text-xs flex items-center gap-1">
+											<p class="text-base-content/60 flex items-center gap-1 text-xs">
 												<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
 												{mediaFile.timestamp.toLocaleString('de-DE')}
 											</p>
@@ -421,7 +437,11 @@
 		{#await positionMediaFile.metadata}
 			<!-- Loading state while metadata is being extracted -->
 			<div class="bg-base-100 border-base-300 rounded-lg border p-4">
-				<div class="flex items-center justify-center gap-2 py-8" role="status" aria-label="Analysiere Bilddaten">
+				<div
+					class="flex items-center justify-center gap-2 py-8"
+					role="status"
+					aria-label="Analysiere Bilddaten"
+				>
 					<div class="loading loading-spinner loading-md text-primary"></div>
 					<span class="text-base-content/60 text-sm">Analysiere Bilddaten...</span>
 				</div>
@@ -432,7 +452,7 @@
 				<div class="bg-base-100 border-base-300 rounded-lg border p-4">
 					<div class="mb-3 flex items-center justify-between">
 						<div class="flex items-center gap-2">
-							<Icon icon="lucide:map-pin" class="h-[18px] w-[18px] text-success" />
+							<Icon icon="lucide:map-pin" class="text-success h-[18px] w-[18px]" />
 							<h4 class="text-sm font-semibold">GPS-Position</h4>
 						</div>
 						<div class="badge badge-success badge-sm text-nowrap">
@@ -471,7 +491,7 @@
 
 					{#if positionMediaFile.timestamp}
 						<div class="mt-3 text-center">
-							<p class="text-base-content/60 text-xs flex items-center justify-center gap-1">
+							<p class="text-base-content/60 flex items-center justify-center gap-1 text-xs">
 								<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
 								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE')}
 							</p>
@@ -480,7 +500,11 @@
 
 					<!-- Show upload progress if still uploading -->
 					{#await positionMediaFile.uploadedFile}
-						<div class="mt-3 flex items-center justify-center gap-2" role="status" aria-label="Upload läuft">
+						<div
+							class="mt-3 flex items-center justify-center gap-2"
+							role="status"
+							aria-label="Upload läuft"
+						>
 							<div class="loading loading-spinner loading-sm"></div>
 							<span class="text-base-content/60 text-sm">Upload läuft im Hintergrund...</span>
 						</div>
@@ -491,7 +515,7 @@
 				<div class="bg-base-100 border-base-300 rounded-lg border p-4">
 					<div class="mb-3 flex items-center justify-between">
 						<div class="flex items-center gap-2">
-							<Icon icon="lucide:image" class="h-[18px] w-[18px] text-primary" />
+							<Icon icon="lucide:image" class="text-primary h-[18px] w-[18px]" />
 							<h4 class="text-sm font-semibold">Foto hochgeladen</h4>
 						</div>
 						{#await positionMediaFile.uploadedFile}
@@ -509,7 +533,9 @@
 
 					<!-- Thumbnail preview -->
 					{#if positionMediaFile.thumbnail}
-						<div class="bg-base-200 flex h-40 items-center justify-center overflow-hidden rounded-lg">
+						<div
+							class="bg-base-200 flex h-40 items-center justify-center overflow-hidden rounded-lg"
+						>
 							<img
 								src={positionMediaFile.thumbnail}
 								alt={positionMediaFile.fileName}
@@ -524,14 +550,15 @@
 						<div>
 							<h4 class="font-medium">Keine GPS-Daten im Foto</h4>
 							<p class="text-sm">
-								Bitte wählen Sie die Position manuell auf der Karte oder laden Sie ein Foto mit GPS-Daten hoch.
+								Bitte wählen Sie die Position manuell auf der Karte oder laden Sie ein Foto mit
+								GPS-Daten hoch.
 							</p>
 						</div>
 					</div>
 
 					{#if positionMediaFile.timestamp}
 						<div class="mt-3 text-center">
-							<p class="text-base-content/60 text-xs flex items-center justify-center gap-1">
+							<p class="text-base-content/60 flex items-center justify-center gap-1 text-xs">
 								<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
 								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE')}
 							</p>
@@ -540,7 +567,11 @@
 
 					<!-- Show upload progress if still uploading -->
 					{#await positionMediaFile.uploadedFile}
-						<div class="mt-3 flex items-center justify-center gap-2" role="status" aria-label="Upload läuft">
+						<div
+							class="mt-3 flex items-center justify-center gap-2"
+							role="status"
+							aria-label="Upload läuft"
+						>
 							<div class="loading loading-spinner loading-sm"></div>
 							<span class="text-base-content/60 text-sm">Upload läuft im Hintergrund...</span>
 						</div>

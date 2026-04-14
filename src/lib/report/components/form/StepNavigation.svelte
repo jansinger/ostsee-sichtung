@@ -27,6 +27,13 @@
 	// Reactive validation using safe validation function
 	const canGoNext = $derived(isStepValid(currentStep, $form));
 
+	// Step error messages for inline display (only when step is invalid)
+	const stepErrorMessages = $derived.by(() => {
+		if (canGoNext) return [];
+		const { errors: errs } = validateStep(currentStep, $form);
+		return Object.values(errs).filter(Boolean);
+	});
+
 	const isLastStep = $derived(currentStep >= totalSteps - 1);
 	const isFirstStep = $derived(currentStep <= 0);
 
@@ -134,6 +141,13 @@
 	}
 </script>
 
+<!-- Inline validation error above navigation -->
+{#if stepErrorMessages.length > 0}
+	<div class="alert alert-warning mb-2" role="alert">
+		<span>{stepErrorMessages[0]}</span>
+	</div>
+{/if}
+
 <!-- Navigation UI -->
 <nav
 	class="bg-base-200 flex items-center justify-between rounded-lg p-4"
@@ -152,7 +166,7 @@
 	<button
 		type="button"
 		onclick={nextStep}
-		disabled={$isSubmitting}
+		disabled={!canGoNext || $isSubmitting}
 		class="btn btn-primary"
 		aria-label={isLastStep ? 'Formular absenden' : 'Nächster Schritt'}
 	>

@@ -51,6 +51,14 @@
 
 		// Check if we already have this request cached
 		if (requestCache.has(cacheKey)) {
+			// Resolve cached promise to update currentResult (coordinates may have changed back)
+			requestCache.get(cacheKey)!.then((result) => {
+				if (coordinates === cacheKey) {
+					currentResult = result;
+					isLoading = false;
+					error = undefined;
+				}
+			});
 			return;
 		}
 
