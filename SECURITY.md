@@ -28,7 +28,7 @@ Please report security vulnerabilities to the maintainers via:
 
 - **Critical**: 0 ✅
 - **High**: 1 (development dependency only - lodash prototype pollution)
-- **Moderate**: 10 (mostly development dependencies; dompurify is a direct production dependency with limited exposure)
+- **Moderate**: 10 (mostly development dependencies; dompurify is a direct production dependency with limited exposure — see advisory list below)
 - **Low**: 3 (development dependencies only)
 
 ### Overall Security Rating: 7/10
@@ -92,9 +92,9 @@ Please report security vulnerabilities to the maintainers via:
 - **Mitigation**: Isolated to commit message tooling
 - **Resolution Path**: Requires major commitizen update (breaking change)
 
-#### 2. dompurify 3.3.3 (Moderate Severity, 6 CVEs)
+#### 2. dompurify 3.3.3 (Moderate Severity, 6 advisories)
 
-- **CVEs**: GHSA-vhxf-7vqr-mrjg, GHSA-v8jm-5vwx-cfxm, GHSA-v2wj-7wpq-c8vv, XSS via mutation re-contextualization, ADD_ATTR URI validation bypass, USE_PROFILES prototype pollution via event handlers
+- **Advisories**: GHSA-vhxf-7vqr-mrjg, GHSA-v8jm-5vwx-cfxm, GHSA-v2wj-7wpq-c8vv (3 confirmed GHSA IDs); plus 3 additional issues tracked upstream: XSS via mutation re-contextualization, ADD_ATTR URI validation bypass, USE_PROFILES prototype pollution via event handlers
 - **Affected**: Direct production dependency (`dompurify` in `src/lib/utils/sanitize.ts`) and transitive via @scalar/api-reference → monaco-editor → dompurify
 - **Risk Level**: Moderate - Used for HTML sanitization in production and in API docs viewer
 - **Impact**: DOMPurify is used in production for `sanitizeHtml()` and `sanitizeText()` functions. However, exploitation requires specifically crafted malicious input that bypasses the sanitizer. The allowed tags/attributes are restricted to a safe subset.
