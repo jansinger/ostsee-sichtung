@@ -3,7 +3,7 @@ import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import type { RequestHandler } from '@sveltejs/kit';
-import { error, json } from '@sveltejs/kit';
+import { error, isHttpError, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 
 // Logger für diesen API-Endpunkt erstellen
@@ -68,7 +68,7 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url }) =>
 			message: `Sichtung wurde ${verified === 1 ? 'verifiziert' : 'als nicht verifiziert markiert'}`
 		});
 	} catch (err) {
-		if (err instanceof Error && 'status' in err) {
+		if (isHttpError(err)) {
 			throw err;
 		}
 		logger.error({ err, id }, 'Fehler beim Ändern des Verifizierungsstatus');
@@ -103,7 +103,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 			verified: sighting[0]?.verified
 		});
 	} catch (err) {
-		if (err instanceof Error && 'status' in err) {
+		if (isHttpError(err)) {
 			throw err;
 		}
 		logger.error({ err, id }, 'Fehler beim Abrufen des Verifizierungsstatus');

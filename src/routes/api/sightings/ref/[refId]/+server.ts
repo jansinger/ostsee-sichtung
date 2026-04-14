@@ -1,7 +1,7 @@
 import { createLogger } from '$lib/logger';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { getSightingByReferenceId } from '$lib/server/db/sightingRepository';
-import { error, json } from '@sveltejs/kit';
+import { error, isHttpError, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('SightingByRefIdAPI');
@@ -29,6 +29,9 @@ export const GET: RequestHandler = async ({ params, url, locals }) => {
 		logger.info(`Successfully retrieved sighting ${sighting.id} for reference ID: ${refId}`);
 		return json(sighting);
 	} catch (err) {
+		if (isHttpError(err)) {
+			throw err;
+		}
 		logger.error(`Error retrieving sighting by reference ID ${refId}: ${String(err)}`);
 		return error(500, { message: 'Internal server error' });
 	}
