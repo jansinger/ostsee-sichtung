@@ -62,6 +62,7 @@ npm run test:unit:all     # Alle Unit Tests (Server + Browser)
 npm run test:unit:watch   # Server Unit Tests im Watch-Modus
 npm run test:e2e          # E2E Tests (Playwright)
 npm run test:quick        # Schnell-Test (lint + type-check + unit)
+npm run test:coverage     # Coverage-Report (Server-Tests + v8)
 ```
 
 ---
@@ -69,7 +70,8 @@ npm run test:quick        # Schnell-Test (lint + type-check + unit)
 ## Dateistruktur
 
 ```
-src/**/*.test.ts             # Unit Tests (co-located mit Source)
+src/**/*.test.ts             # Server Unit Tests (co-located mit Source)
+src/**/*.svelte.test.ts      # Browser-Komponenten-Tests (vitest-browser-svelte)
 e2e/                         # Playwright E2E Tests (Root-Level)
 ├── *.spec.ts
 └── *.test.ts
@@ -77,7 +79,10 @@ vitest-setup-client.ts       # Client Test Setup
 vitest-setup-server.ts       # Server Test Setup
 ```
 
-**Hinweis:** Unit Tests liegen direkt neben den Source-Dateien, nicht in einem separaten `tests/` Verzeichnis.
+**Wichtig:** Das Datei-Suffix entscheidet über die Ausführungsumgebung:
+
+- `*.test.ts` → Node-Umgebung (Server-Tests, kein DOM)
+- `*.svelte.test.ts` → Browser-Umgebung via Playwright (für Svelte-Komponenten)
 
 ---
 
@@ -101,7 +106,9 @@ describe('formatDate', () => {
 });
 ```
 
-### Svelte Component Tests
+### Svelte Component Tests (vitest-browser-svelte v2)
+
+**Datei-Suffix:** `*.svelte.test.ts` (nicht `*.test.ts`!)
 
 ```typescript
 import { render } from 'vitest-browser-svelte';
@@ -110,13 +117,14 @@ import Button from '$lib/components/Button.svelte';
 
 describe('Button', () => {
 	it('zeigt Label an', async () => {
-		render(Button, { props: { label: 'Absenden' } });
+		// v2: Props direkt übergeben (KEIN { props: {...} } Wrapper!)
+		render(Button, { label: 'Absenden' });
 		await expect.element(page.getByText('Absenden')).toBeVisible();
 	});
 
 	it('ruft onClick auf', async () => {
 		const onClick = vi.fn();
-		render(Button, { props: { label: 'Klick', onClick } });
+		render(Button, { label: 'Klick', onClick });
 
 		await page.getByRole('button').click();
 		expect(onClick).toHaveBeenCalled();
@@ -124,7 +132,8 @@ describe('Button', () => {
 });
 ```
 
-**Hinweis:** Projekt nutzt `vitest-browser-svelte` + `page` API, NICHT `@testing-library/svelte`.
+**Hinweis:** Projekt nutzt `vitest-browser-svelte` v2 + `page` API, NICHT `@testing-library/svelte`.
+In v2 werden Props direkt als zweites Argument übergeben — **kein `{ props: {...} }` Wrapper** (v1-Syntax).
 
 ### Mocking
 
@@ -137,6 +146,10 @@ vi.mock('$lib/server/db', () => ({
 		})
 	}
 }));
+
+// Mock einer einzelnen Funktion (vi.spyOn)
+import * as emailService from '$lib/server/services/emailService';
+vi.spyOn(emailService, 'sendNotification').mockResolvedValue(undefined);
 
 // Mock von fetch
 global.fetch = vi.fn().mockResolvedValue({

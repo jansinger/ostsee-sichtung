@@ -89,6 +89,8 @@ export const sightingSchema = yup.object({
 
 ## svelte-forms-lib Pattern
 
+**Hinweis:** `svelte-forms-lib` basiert auf Svelte 4 Stores (`writable`). In Svelte 5 funktioniert es über den Legacy-Kompatibilitätsmodus — `$form`, `$errors`, `$touched` sind Svelte-Stores, die mit `$` abonniert werden. Das ist korrekt und funktioniert stabil.
+
 ```svelte
 <script lang="ts">
 	import { createForm } from 'svelte-forms-lib';
@@ -112,16 +114,20 @@ export const sightingSchema = yup.object({
 </script>
 
 <form onsubmit={handleSubmit}>
-	<input
-		name="species"
-		bind:value={$form.species}
-		onblur={() => validateField('species')}
-		class="input input-bordered"
-		class:input-error={$errors.species && $touched.species}
-	/>
-	{#if $errors.species && $touched.species}
-		<span class="text-error text-sm">{$errors.species}</span>
-	{/if}
+	<fieldset class="fieldset">
+		<label class="label" for="species">Tierart</label>
+		<input
+			id="species"
+			name="species"
+			bind:value={$form.species}
+			onblur={() => validateField('species')}
+			class="input w-full"
+			class:input-error={$errors.species && $touched.species}
+		/>
+		{#if $errors.species && $touched.species}
+			<p class="label text-error">{$errors.species}</p>
+		{/if}
+	</fieldset>
 </form>
 ```
 
@@ -177,22 +183,25 @@ function prevStep() {
 ### Labels
 
 ```svelte
-<label for="species" class="label">
-	<span class="label-text">Tierart *</span>
-</label>
-<input
-	id="species"
-	name="species"
-	aria-describedby="species-help species-error"
-	aria-required="true"
-	aria-invalid={$errors.species && $touched.species}
-/>
-<div id="species-help" class="text-base-content/70 text-sm">Wähle die beobachtete Tierart</div>
-{#if $errors.species && $touched.species}
-	<div id="species-error" role="alert" aria-live="polite" class="text-error">
-		{$errors.species}
-	</div>
-{/if}
+<fieldset class="fieldset">
+	<label class="label" for="species">
+		Tierart *
+		<span class="text-base-content/70 text-sm font-normal">Wähle die beobachtete Tierart</span>
+	</label>
+	<input
+		id="species"
+		name="species"
+		class="input w-full"
+		aria-describedby="species-error"
+		aria-required="true"
+		aria-invalid={$errors.species && $touched.species}
+	/>
+	{#if $errors.species && $touched.species}
+		<p id="species-error" class="label text-error" role="alert" aria-live="polite">
+			{$errors.species}
+		</p>
+	{/if}
+</fieldset>
 ```
 
 ### Keyboard Navigation

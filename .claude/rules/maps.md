@@ -123,11 +123,75 @@ import { Style, Circle, Fill, Stroke } from 'ol/style';
 const sightingStyle = new Style({
 	image: new Circle({
 		radius: 8,
-		fill: new Fill({ color: '#3b82f6' }),
-		stroke: new Stroke({ color: '#1d4ed8', width: 2 })
+		fill: new Fill({ color: 'var(--color-info)' }),
+		stroke: new Stroke({ color: 'var(--color-primary)', width: 2 })
 	})
 });
 ```
+
+---
+
+## Performance: Viele Features (>500 Punkte)
+
+### WebGLPointsLayer (GPU-beschleunigt)
+
+Für große Datensätze `WebGLPointsLayer` statt `VectorLayer` verwenden:
+
+```typescript
+import WebGLPointsLayer from 'ol/layer/WebGLPoints.js';
+import VectorSource from 'ol/source/Vector.js';
+import GeoJSON from 'ol/format/GeoJSON.js';
+
+const pointsLayer = new WebGLPointsLayer({
+	source: new VectorSource({
+		url: '/api/map/sightings',
+		format: new GeoJSON()
+	}),
+	style: {
+		'circle-radius': 6,
+		'circle-fill-color': 'var(--color-info)',
+		'circle-stroke-color': 'var(--color-primary)',
+		'circle-stroke-width': 1.5
+	}
+});
+```
+
+### Cluster Source (Gruppen nahestehender Features)
+
+```typescript
+import Cluster from 'ol/source/Cluster.js';
+import VectorSource from 'ol/source/Vector.js';
+import VectorLayer from 'ol/layer/Vector.js';
+import { Style, Circle, Fill, Text, Stroke } from 'ol/style.js';
+
+const clusterSource = new Cluster({
+	distance: 40, // Pixel-Abstand für Clustering
+	source: new VectorSource({ url: '/api/map/sightings', format: new GeoJSON() })
+});
+
+const clusterLayer = new VectorLayer({
+	source: clusterSource,
+	style: (feature) => {
+		const size = feature.get('features').length;
+		return new Style({
+			image: new Circle({
+				radius: size > 1 ? 14 : 8,
+				fill: new Fill({ color: 'var(--color-primary)' }),
+				stroke: new Stroke({ color: 'var(--color-primary-content)', width: 1 })
+			}),
+			text:
+				size > 1
+					? new Text({
+							text: String(size),
+							fill: new Fill({ color: 'var(--color-primary-content)' })
+						})
+					: undefined
+		});
+	}
+});
+```
+
+**Faustregel:** `VectorLayer` bis ~500 Features, `Cluster` oder `WebGLPointsLayer` darüber.
 
 ---
 
