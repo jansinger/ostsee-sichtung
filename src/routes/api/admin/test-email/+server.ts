@@ -25,7 +25,7 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 		// Validate input
 		if (testType === 'sighting') {
 			if (!sightingId || typeof sightingId !== 'number') {
-				return json({ error: 'Invalid sighting ID' }, { status: 400 });
+				return json({ success: false, error: 'Invalid sighting ID' }, { status: 400 });
 			}
 
 			// Send test email with sighting data using existing notification method
