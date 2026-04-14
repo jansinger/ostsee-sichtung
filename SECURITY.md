@@ -28,12 +28,14 @@ Please report security vulnerabilities to the maintainers via:
 
 - **Critical**: 0 ✅
 - **High**: 1 (development dependency only - lodash prototype pollution)
-- **Moderate**: 10 (mostly development dependencies; dompurify is a transitive dependency via isomorphic-dompurify with limited exposure — see advisory list below)
+- **Moderate**: 7 (development dependencies only)
 - **Low**: 3 (development dependencies only)
 
-### Overall Security Rating: 7/10
+`npm audit --omit=dev` reports **0 production vulnerabilities**.
 
-**Status**: GOOD - Most vulnerabilities are in dev-only dependencies. The dompurify vulnerability affects a transitive production dependency (via isomorphic-dompurify) used for HTML sanitization, but exploitation requires crafted input and the attack surface is limited.
+### Overall Security Rating: 8/10
+
+**Status**: EXCELLENT - All 11 vulnerabilities are in dev-only dependencies. The production dependency tree is fully clean.
 
 ## Security Architecture
 
@@ -92,23 +94,15 @@ Please report security vulnerabilities to the maintainers via:
 - **Mitigation**: Isolated to commit message tooling
 - **Resolution Path**: Requires major commitizen update (breaking change)
 
-#### 2. dompurify 3.3.3 (Moderate Severity, 6 advisories)
+#### 2. esbuild ≤ 0.24.2 (Moderate Severity)
 
-- **Advisories**: GHSA-vhxf-7vqr-mrjg, GHSA-v8jm-5vwx-cfxm, GHSA-v2wj-7wpq-c8vv (3 confirmed GHSA IDs); plus 3 additional issues tracked upstream: XSS via mutation re-contextualization, ADD_ATTR URI validation bypass, USE_PROFILES prototype pollution via event handlers
-- **Affected**: Transitive production dependency via `isomorphic-dompurify@3.8.0 → dompurify@3.3.3` (used in `src/lib/utils/sanitize.ts`). The former direct `dompurify` dep and the transitive path via `@scalar/api-reference → monaco-editor → dompurify` have both been removed.
-- **Risk Level**: Moderate - DOMPurify is the engine behind isomorphic-dompurify's sanitization
-- **Impact**: DOMPurify is used in production for `sanitizeHtml()` and `sanitizeText()` functions. However, exploitation requires specifically crafted malicious input that bypasses the sanitizer. The allowed tags/attributes are restricted to a safe subset.
-- **Mitigation**: Sanitization functions use a strict allowlist of tags (`a`, `em`, `strong`, `br`, `span`, `p`, `i`, `b`) and attributes (`href`, `class`, `target`, `rel`). User input is validated server-side before reaching the sanitizer.
-- **Resolution Path**: Upgrade isomorphic-dompurify when it pins dompurify 3.4.0+; monitor advisory feed
-
-#### 3. unhead / @unhead/vue (Moderate Severity)
-
-- **Affected**: @unhead/vue → unhead (development dependency)
-- **Risk Level**: Moderate - Development dependency only
+- **CVE**: GHSA-67mh-4wv8-2f99 (dev server accepts cross-origin requests)
+- **Affected**: `@esbuild-kit/core-utils → @esbuild-kit/esm-loader` (development dependency chain). The main vite esbuild instance is protected by the `"esbuild": "^0.25.0"` override, but this transitive path pins its own older version.
+- **Risk Level**: Moderate - Development tooling only, not reachable in production
 - **Impact**: No production exposure
-- **Resolution Path**: Awaiting upstream fix
+- **Resolution Path**: Awaiting `@esbuild-kit` upstream update or replacement
 
-#### 4. yaml 1.x - 2.8.x (Moderate Severity)
+#### 3. yaml 1.x - 2.8.x (Moderate Severity)
 
 - **CVE**: GHSA-48c2-rrv3-qjmp (Stack Overflow via deeply nested YAML)
 - **Affected**: postcss-load-config → yaml
@@ -117,13 +111,13 @@ Please report security vulnerabilities to the maintainers via:
 - **Mitigation**: Used only during build process for config loading
 - **Resolution Path**: Fix available via `npm audit fix`
 
-#### 5. brace-expansion (Moderate Severity)
+#### 4. brace-expansion (Moderate Severity)
 
 - **Affected**: Development dependency chain
 - **Risk Level**: Moderate - Development environment only
 - **Impact**: No production exposure
 
-#### 6. tmp <= 0.2.3 (Low Severity)
+#### 5. tmp <= 0.2.3 (Low Severity)
 
 - **CVE**: GHSA-52f5-9888-hmc6
 - **Affected**: commitizen → inquirer → external-editor → tmp
@@ -183,7 +177,7 @@ We maintain a proactive approach to dependency security:
 
 ### Production Dependencies Security Status
 
-- **Total production dependencies**: 18 packages
+- **Total production dependencies**: 16 packages
 - **Security-clean dependencies**: 100%
 - **License-compliant dependencies**: 100% (permissive, non-copyleft licenses only; see THIRD-PARTY-NOTICES.md for the full list)
 - **No transitive vulnerabilities**: Verified clean dependency tree
@@ -299,5 +293,5 @@ The following security features have been implemented:
 ---
 
 _Last Updated: 2026-04-14_
-_Security Assessment: 7/10 - Strong foundational security, one transitive production dependency (dompurify via isomorphic-dompurify) under review_
+_Security Assessment: 8/10 - Strong foundational security, production dependency tree fully clean (0 vulnerabilities)_
 _Next Security Review: 2026-07-14_
