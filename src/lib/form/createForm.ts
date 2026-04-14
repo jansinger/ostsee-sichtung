@@ -1,9 +1,10 @@
-import { get, writable } from 'svelte/store';
+import { derived, get, writable } from 'svelte/store';
 import type { AnyObjectSchema, ValidationError } from 'yup';
 
 export interface FormProps<T extends Record<string, unknown> = Record<string, unknown>> {
 	initialValues: T;
-	onSubmit: (values: T) => Promise<void> | void;
+	// Return type is unknown — callers may return values (e.g. admin form returns FrontendSighting)
+	onSubmit: (values: T) => unknown;
 	validationSchema?: AnyObjectSchema | null;
 	validate?: ((values: T) => Record<string, string> | Promise<Record<string, string>>) | null;
 }
@@ -14,9 +15,15 @@ export function createForm<T extends Record<string, unknown>>(options: FormProps
 	const form = writable<T>({ ...initialValues });
 	const errors = writable<Record<string, string>>({});
 	const isSubmitting = writable(false);
+	const isValid = derived(errors, ($errors) => Object.keys($errors).length === 0);
 
 	function updateField(field: keyof T, value: unknown): void {
 		form.update((current) => ({ ...current, [field]: value }));
+	}
+
+	function updateInitialValues(values: T): void {
+		form.set({ ...values });
+		errors.set({});
 	}
 
 	function handleChange(event: Event): void {
@@ -72,5 +79,14 @@ export function createForm<T extends Record<string, unknown>>(options: FormProps
 		}
 	}
 
-	return { form, errors, isSubmitting, handleSubmit, handleChange, updateField };
+	return {
+		form,
+		errors,
+		isSubmitting,
+		isValid,
+		handleSubmit,
+		handleChange,
+		updateField,
+		updateInitialValues
+	};
 }

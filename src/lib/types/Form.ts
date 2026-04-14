@@ -2,6 +2,7 @@
  * Form-related type definitions
  */
 
+import type { createForm } from '$lib/form/createForm';
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
 import type { MediaStore } from '$lib/utils/media/MediaFile';
 import * as yup from 'yup';
@@ -29,9 +30,8 @@ export type SightingFormValues = Omit<SightingFormData, 'uploadedFiles'> & {
 	inBalticSeaGeo?: boolean;
 };
 
-// Import the actual FormAPI type from svelte-forms-lib
-export type FormContext = ReturnType<
-	typeof import('svelte-forms-lib').createForm<SightingFormData>
-> & { mediaStore: MediaStore };
+export type FormContext = ReturnType<typeof createForm<SightingFormData>> & {
+	mediaStore: MediaStore;
+};
 
 export type FormContextKey = symbol;
