@@ -97,7 +97,7 @@ Please report security vulnerabilities to the maintainers via:
 #### 2. esbuild ≤ 0.24.2 (Moderate Severity)
 
 - **CVE**: GHSA-67mh-4wv8-2f99 (dev server accepts cross-origin requests)
-- **Affected**: `@esbuild-kit/core-utils → @esbuild-kit/esm-loader` (development dependency chain). The main vite esbuild instance is protected by the `"esbuild": "^0.25.0"` override, but this transitive path pins its own older version.
+- **Affected**: `@esbuild-kit/core-utils → @esbuild-kit/esm-loader` (development dependency chain). This transitive path pins its own older version and is not covered by any current override.
 - **Risk Level**: Moderate - Development tooling only, not reachable in production
 - **Impact**: No production exposure
 - **Resolution Path**: Awaiting `@esbuild-kit` upstream update or replacement
@@ -113,14 +113,15 @@ Please report security vulnerabilities to the maintainers via:
 
 #### 4. brace-expansion (Moderate Severity)
 
-- **Affected**: Development dependency chain
+- **CVE**: GHSA-f886-m6hf-6m8v (Zero-step sequence causes process hang and memory exhaustion)
+- **Affected**: 4 independent development dependency chains (node_modules/brace-expansion, cacache, eslint, glob) — each counted separately by `npm audit`, accounting for 4 of the 7 reported moderate vulnerabilities
 - **Risk Level**: Moderate - Development environment only
 - **Impact**: No production exposure
 
 #### 5. tmp <= 0.2.3 (Low Severity)
 
 - **CVE**: GHSA-52f5-9888-hmc6
-- **Affected**: commitizen → inquirer → external-editor → tmp
+- **Affected**: commitizen → inquirer → external-editor → tmp (3 dependency paths each counted separately by `npm audit`, accounting for all 3 reported low vulnerabilities)
 - **Risk Level**: Low - Development environment only
 - **Impact**: No production exposure, safe development environment
 - **Mitigation**: Isolated to commit tooling, no user input to tmp functions
@@ -170,7 +171,7 @@ We maintain a proactive approach to dependency security:
 {
 	"overrides": {
 		"cookie": "^0.7.2", // Fixed moderate XSS vulnerability
-		"esbuild": "^0.25.0" // Fixed path traversal vulnerability
+		"axios": "^1.15.0" // Fixed CSRF vulnerability
 	}
 }
 ```
@@ -293,5 +294,5 @@ The following security features have been implemented:
 ---
 
 _Last Updated: 2026-04-14_
-_Security Assessment: 8/10 - Strong foundational security, production dependency tree fully clean (0 vulnerabilities)_
+_Security Assessment: 8/10 - Strong foundational security, production dependency tree fully clean (0 production vulnerabilities)_
 _Next Security Review: 2026-07-14_
