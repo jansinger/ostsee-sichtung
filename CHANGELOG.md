@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.3.0](https://github.com/jansinger/ostsee-sichtung/compare/v2.2.3...v2.3.0) (2026-04-14)
+
+
+### Features
+
+* **deps:** upgrade vite 7→8, vite-plugin-svelte 6→7, @types/nodemailer 7→8 ([#463](https://github.com/jansinger/ostsee-sichtung/issues/463)) ([4842e5d](https://github.com/jansinger/ostsee-sichtung/commit/4842e5d56e2e0ae73451ef68a5f38592e8d2594e))
+
+
+### Bug Fixes
+
+* **map,security:** admin + map code review fixes ([#456](https://github.com/jansinger/ostsee-sichtung/issues/456)) ([71f0934](https://github.com/jansinger/ostsee-sichtung/commit/71f0934615c7365ed2aad083c6a4d23aeae9b1dd))
+
+
+### Documentation
+
+* **api:** complete openapi spec audit — 13 missing endpoints, 2 fixes ([#460](https://github.com/jansinger/ostsee-sichtung/issues/460)) ([d4ac41a](https://github.com/jansinger/ostsee-sichtung/commit/d4ac41a2e69dc2fdafc1269601a11ca7aef0fc9b))
+* docs audit + .claude rules refresh (Svelte 5, DaisyUI v5, OL10) ([#461](https://github.com/jansinger/ostsee-sichtung/issues/461)) ([4320374](https://github.com/jansinger/ostsee-sichtung/commit/43203745310d6e470f382861c7d1829c57ed62b4))
+* **docs:** update form code review — 22/25 findings resolved ([#459](https://github.com/jansinger/ostsee-sichtung/issues/459)) ([436346a](https://github.com/jansinger/ostsee-sichtung/commit/436346a6ce310069559b7f65305bcfdbadc3a2ff))
+* **security:** update vulnerability assessment after deps cleanup ([#465](https://github.com/jansinger/ostsee-sichtung/issues/465)) ([ce7ea9c](https://github.com/jansinger/ostsee-sichtung/commit/ce7ea9c3f280fb307c9f3c29330c61c4c4aa34fd))
+* sync documentation after form and map/security review fixes ([#454](https://github.com/jansinger/ostsee-sichtung/issues/454), [#456](https://github.com/jansinger/ostsee-sichtung/issues/456)) ([#458](https://github.com/jansinger/ostsee-sichtung/issues/458)) ([6d7ffa1](https://github.com/jansinger/ostsee-sichtung/commit/6d7ffa1bb161082e7bc5fbe97cc3301716b5228f))
+
+
+### Code Refactoring
+
+* **deps:** replace svelte-forms-lib with custom createForm ([#464](https://github.com/jansinger/ostsee-sichtung/issues/464)) ([9a4e25e](https://github.com/jansinger/ostsee-sichtung/commit/9a4e25e581ddfca7d5cc4652ead96826128fbd72))
+
 ## [2.2.3](https://github.com/jansinger/ostsee-sichtung/compare/v2.2.2...v2.2.3) (2026-04-13)
 
 
