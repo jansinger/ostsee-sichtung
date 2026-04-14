@@ -7,7 +7,6 @@ import tailwindcss from '@tailwindcss/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
-import devtoolsJson from 'vite-plugin-devtools-json';
 
 export default defineConfig({
 	plugins: [
@@ -22,7 +21,6 @@ export default defineConfig({
 				props.height = props.height || '20';
 			}
 		}),
-		devtoolsJson(),
 		basicSsl({
 			name: 'localhost',
 			domains: ['localhost', '*.local.dev'],
