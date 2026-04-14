@@ -40,9 +40,8 @@ export const GET: RequestHandler = async ({ setHeaders }) => {
 		});
 
 		return json(publicConfigs);
-
 	} catch (error) {
 		logger.error({ error }, 'Failed to get public configurations');
-		return json({ error: 'Internal server error' }, { status: 500 });
+		return json({ success: false, error: 'Internal server error' }, { status: 500 });
 	}
 };

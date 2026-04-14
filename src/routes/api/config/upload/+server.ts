@@ -16,38 +16,45 @@ const PUBLIC_UPLOAD_CONFIG = {
 export const GET: RequestHandler = async ({ setHeaders, locals, request }) => {
 	const isAuthenticated = !!locals.user;
 	const userIdentifier = locals.user?.sub || 'anonymous';
-	const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
-	
+	const clientIp =
+		request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+
 	try {
 		// Security: Return limited config for unauthenticated users
 		if (!isAuthenticated) {
-			logger.info({
-				action: 'config_upload_request',
-				user: userIdentifier,
-				authenticated: false,
-				clientIp,
-				configType: 'public'
-			}, 'Public upload configuration requested');
-			
+			logger.info(
+				{
+					action: 'config_upload_request',
+					user: userIdentifier,
+					authenticated: false,
+					clientIp,
+					configType: 'public'
+				},
+				'Public upload configuration requested'
+			);
+
 			// Set cache headers (5 minutes)
 			setHeaders({
 				'Cache-Control': 'public, max-age=300',
 				'Content-Type': 'application/json'
 			});
-			
+
 			return json(PUBLIC_UPLOAD_CONFIG);
 		}
-		
+
 		// Get full upload configuration for authenticated users
 		const uploadConfig = await ServerConfigService.getUploadConfig();
-		
-		logger.info({
-			action: 'config_upload_request',
-			user: userIdentifier,
-			authenticated: true,
-			clientIp,
-			configType: 'full'
-		}, 'Full upload configuration requested');
+
+		logger.info(
+			{
+				action: 'config_upload_request',
+				user: userIdentifier,
+				authenticated: true,
+				clientIp,
+				configType: 'full'
+			},
+			'Full upload configuration requested'
+		);
 
 		// Set cache headers (5 minutes)
 		setHeaders({
@@ -61,19 +68,20 @@ export const GET: RequestHandler = async ({ setHeaders, locals, request }) => {
 			allowedTypes: uploadConfig.allowedTypes,
 			// Generate accept attribute for HTML inputs
 			accept: uploadConfig.allowedTypes
-				.map(type => 
-					type.startsWith('image/') ? 'image/*' : 
-					type.startsWith('video/') ? 'video/*' : type
+				.map((type) =>
+					type.startsWith('image/') ? 'image/*' : type.startsWith('video/') ? 'video/*' : type
 				)
 				.join(',')
 		});
-
 	} catch (error) {
-		logger.error({ 
-			error,
-			user: userIdentifier,
-			clientIp 
-		}, 'Failed to get upload configuration');
-		return json({ error: 'Internal server error' }, { status: 500 });
+		logger.error(
+			{
+				error,
+				user: userIdentifier,
+				clientIp
+			},
+			'Failed to get upload configuration'
+		);
+		return json({ success: false, error: 'Internal server error' }, { status: 500 });
 	}
 };

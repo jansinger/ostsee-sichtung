@@ -23,6 +23,6 @@ export const GET: RequestHandler = async ({ locals, url }: RequestEvent) => {
 		});
 	} catch (error) {
 		logger.error({ error }, 'Failed to get maintenance status');
-		return json({ error: 'Internal server error' }, { status: 500 });
+		return json({ success: false, error: 'Internal server error' }, { status: 500 });
 	}
 };

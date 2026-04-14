@@ -926,12 +926,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
-        '503':
-          description: System ist nicht gesund
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
     head:
       tags:
         - health
@@ -940,8 +934,6 @@ paths:
       responses:
         '200':
           description: System ist gesund
-        '503':
-          description: System ist nicht gesund
 
   /api/media/{path}:
     get:

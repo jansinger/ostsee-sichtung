@@ -21,6 +21,6 @@ export const POST: RequestHandler = async ({ locals, url }: RequestEvent) => {
 		});
 	} catch (error) {
 		logger.error({ error }, 'Failed to initialize default configurations');
-		return json({ error: 'Internal server error' }, { status: 500 });
+		return json({ success: false, error: 'Internal server error' }, { status: 500 });
 	}
 };

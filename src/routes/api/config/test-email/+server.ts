@@ -27,7 +27,7 @@ export const POST: RequestHandler = async ({ locals, request, url }: RequestEven
 			return json(
 				{
 					success: false,
-					message: 'Test-E-Mail konnte nicht gesendet werden. Prüfen Sie die SMTP-Konfiguration.'
+					error: 'Test-E-Mail konnte nicht gesendet werden. Prüfen Sie die SMTP-Konfiguration.'
 				},
 				{ status: 500 }
 			);
@@ -37,7 +37,7 @@ export const POST: RequestHandler = async ({ locals, request, url }: RequestEven
 		return json(
 			{
 				success: false,
-				message: 'Fehler beim Senden der Test-E-Mail'
+				error: 'Fehler beim Senden der Test-E-Mail'
 			},
 			{ status: 500 }
 		);

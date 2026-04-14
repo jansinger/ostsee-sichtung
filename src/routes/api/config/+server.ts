@@ -32,7 +32,7 @@ export const GET: RequestHandler = async ({ url, locals }: RequestEvent) => {
 		return json(accessibleConfigs);
 	} catch (error) {
 		logger.error({ error }, 'Failed to get configurations');
-		return json({ error: 'Internal server error' }, { status: 500 });
+		return json({ success: false, error: 'Internal server error' }, { status: 500 });
 	}
 };
 
@@ -46,7 +46,7 @@ export const PUT: RequestHandler = async ({ request, locals, url }: RequestEvent
 
 		if (!key || value === undefined || !category) {
 			return json(
-				{ error: 'Missing required fields: key, value, and category are required' },
+				{ success: false, error: 'Missing required fields: key, value, and category are required' },
 				{ status: 400 }
 			);
 		}
@@ -54,7 +54,10 @@ export const PUT: RequestHandler = async ({ request, locals, url }: RequestEvent
 		// SECURITY: Check if user has access to this specific configuration key
 		if (!canUserAccessConfigKey(locals.user, key)) {
 			return json(
-				{ error: 'Forbidden: You do not have permission to modify this configuration' },
+				{
+					success: false,
+					error: 'Forbidden: You do not have permission to modify this configuration'
+				},
 				{ status: 403 }
 			);
 		}
@@ -77,7 +80,7 @@ export const PUT: RequestHandler = async ({ request, locals, url }: RequestEvent
 		return json({ success: true });
 	} catch (error) {
 		logger.error({ error }, 'Failed to update configuration');
-		return json({ error: 'Internal server error' }, { status: 500 });
+		return json({ success: false, error: 'Internal server error' }, { status: 500 });
 	}
 };
 
@@ -89,13 +92,16 @@ export const DELETE: RequestHandler = async ({ url, locals }: RequestEvent) => {
 		const key = url.searchParams.get('key');
 
 		if (!key) {
-			return json({ error: 'Missing required parameter: key' }, { status: 400 });
+			return json({ success: false, error: 'Missing required parameter: key' }, { status: 400 });
 		}
 
 		// SECURITY: Check if user has access to this specific configuration key
 		if (!canUserAccessConfigKey(locals.user, key)) {
 			return json(
-				{ error: 'Forbidden: You do not have permission to delete this configuration' },
+				{
+					success: false,
+					error: 'Forbidden: You do not have permission to delete this configuration'
+				},
 				{ status: 403 }
 			);
 		}
@@ -107,6 +113,6 @@ export const DELETE: RequestHandler = async ({ url, locals }: RequestEvent) => {
 		return json({ success: true });
 	} catch (error) {
 		logger.error({ error }, 'Failed to delete configuration');
-		return json({ error: 'Internal server error' }, { status: 500 });
+		return json({ success: false, error: 'Internal server error' }, { status: 500 });
 	}
 };
