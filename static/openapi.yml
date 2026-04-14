@@ -616,7 +616,7 @@ paths:
                   sichtungen:
                     type: array
                     items:
-                      type: object
+                      $ref: '#/components/schemas/DetailedSighting'
         '302':
           $ref: '#/components/responses/LoginRedirect'
         '500':
