@@ -121,11 +121,13 @@ API_AUDIENCE="deine-api-audience"
 PUBLIC_SITE_URL="https://deine-domain.de"
 
 # WICHTIG: Für Production spezifische Version pinnen!
-IMAGE_TAG="v2.1.0"  # Nicht "latest" in Production!
+IMAGE_TAG="v2.2.3"  # Nicht "latest" in Production!
 
 # App nur über Reverse Proxy erreichbar machen
 APP_HOST="127.0.0.1"
 ```
+
+> **Vollständige Variablenreferenz:** Alle optionalen Einstellungen (E-Mail, Storage, Rate-Limiting etc.) siehe [ENVIRONMENT.md](./ENVIRONMENT.md).
 
 ### Security Keys generieren
 
@@ -257,6 +259,8 @@ psql -h db.example.com -U dein_user -d ostsee
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
 ```
+
+> **Migration von schweinswalsichtung.de** oder komplexe DB-Operationen (Permissions, Reference-IDs, Upload-Migration): Siehe [DATABASE_MIGRATION.md](./DATABASE_MIGRATION.md).
 
 ---
 
