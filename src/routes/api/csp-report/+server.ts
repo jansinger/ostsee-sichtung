@@ -34,6 +34,6 @@ export async function POST({ request }: RequestEvent) {
 		logger.error({ error }, 'Fehler bei der Verarbeitung eines CSP-Verstoßes');
 
 		// 400 Bad Request zurückgeben, wenn der Request nicht verarbeitet werden konnte
-		return json({ error: 'Ungültiges CSP-Verstoßformat' }, { status: 400 });
+		return json({ success: false, error: 'Ungültiges CSP-Verstoßformat' }, { status: 400 });
 	}
 }

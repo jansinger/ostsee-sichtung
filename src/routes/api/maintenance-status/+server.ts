@@ -7,13 +7,13 @@ import type { RequestHandler } from './$types';
 const logger = createLogger('api:maintenance-status');
 
 export const GET: RequestHandler = async ({ locals, url }: RequestEvent) => {
-	try {
-		// SECURITY: Require admin role to check maintenance status
-		requireUserRole(url, locals.user, ['admin']);
+	// SECURITY: Require admin role — must be outside try/catch so redirect(302) propagates
+	requireUserRole(url, locals.user, ['admin']);
 
+	try {
 		const isEnabled = await ServerConfigService.isMaintenanceModeEnabled();
 		const message = await ServerConfigService.getString('display.maintenanceMessage');
-		
+
 		logger.info({ isEnabled }, 'Maintenance mode status checked');
 
 		return json({
@@ -23,6 +23,6 @@ export const GET: RequestHandler = async ({ locals, url }: RequestEvent) => {
 		});
 	} catch (error) {
 		logger.error({ error }, 'Failed to get maintenance status');
-		return json({ error: 'Internal server error' }, { status: 500 });
+		return json({ success: false, error: 'Internal server error' }, { status: 500 });
 	}
 };

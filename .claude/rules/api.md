@@ -3,7 +3,9 @@ paths:
   - 'src/routes/api/**'
   - 'src/routes/rest_sichtungen/**'
   - 'src/routes/sichtungen/**'
+  - 'src/routes/health/**'
   - 'docs/LEGACY_API_SPECIFICATION.md'
+  - 'static/openapi.yml'
 ---
 
 # REST API & Legacy Kompatibilität
@@ -155,30 +157,25 @@ export async function GET({ params }) {
 
 ---
 
-## OpenAPI Dokumentation
+## OpenAPI Dokumentation — PFLICHT
 
-Nach API-Änderungen OpenAPI Spec aktualisieren:
+**Bei jeder Änderung an einer API-Route MUSS `static/openapi.yml` aktualisiert werden.**
 
-```yaml
-# openapi.yaml
-paths:
-  /api/sightings:
-    get:
-      summary: Liste aller Sichtungen
-      parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 1
-      responses:
-        '200':
-          description: Erfolg
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SightingListResponse'
+Checkliste (vor jedem Commit mit API-Änderungen):
+
+- Neuer Endpoint → Eintrag in `paths` hinzufügen (inkl. Tags, Parameter, Request Body, Responses)
+- Neues Schema → Eintrag in `components/schemas` hinzufügen
+- Parameter geändert → Spec-Parameter aktualisieren
+- Response-Struktur geändert → Schema aktualisieren
+- Endpoint entfernt → Aus Spec löschen
+
+YAML-Syntax nach Änderungen immer validieren:
+
+```bash
+node --input-type=commonjs -e "const yaml = require('js-yaml'); const fs = require('fs'); yaml.load(fs.readFileSync('static/openapi.yml', 'utf8')); console.log('OK')"
 ```
+
+Ergebnis in der Scalar UI prüfen: `https://localhost:4000/docs/api/scalar`
 
 ---
 
@@ -196,7 +193,7 @@ Legacy API Routes (`/rest_sichtungen`, `/sichtungen`) haben **kein** separates C
 ### Do's
 
 - Legacy API NIEMALS ändern ohne Spec-Prüfung
-- OpenAPI Spec aktuell halten
+- **OpenAPI Spec bei jeder API-Änderung aktualisieren** (siehe Abschnitt oben)
 - Konsistente Response-Formate
 - Pagination für Listen
 
