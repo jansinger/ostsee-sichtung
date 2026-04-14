@@ -28,10 +28,12 @@ export function createForm<T extends Record<string, unknown>>(options: FormProps
 
 	function handleChange(event: Event): void {
 		const target = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-		const { name } = target;
+		// Fall back to id when name is absent (e.g. LocationInput latitude/longitude inputs)
+		const field = target.name || (target as HTMLElement).id;
+		if (!field) return;
 		const isCheckbox = (target as HTMLInputElement).type === 'checkbox';
 		const value = isCheckbox ? (target as HTMLInputElement).checked : target.value;
-		updateField(name as keyof T, value);
+		updateField(field as keyof T, value);
 	}
 
 	async function handleSubmit(event: Event): Promise<void> {
@@ -72,8 +74,10 @@ export function createForm<T extends Record<string, unknown>>(options: FormProps
 					newErrors[yupErr.path] = yupErr.message;
 				}
 				errors.set(newErrors);
+			} else {
+				// Non-Yup errors (e.g. rejected onSubmit): rethrow so callers can show error feedback
+				throw err;
 			}
-			// Non-Yup errors (e.g. onSubmit rejected): swallow, isSubmitting still resets in finally
 		} finally {
 			isSubmitting.set(false);
 		}

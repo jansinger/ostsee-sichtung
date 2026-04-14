@@ -58,14 +58,15 @@ describe('createForm — updateField', () => {
 });
 
 describe('createForm — handleChange', () => {
-	function makeInputEvent(name: string, value: string, type = 'text'): Event {
-		const target = { name, value, type, tagName: 'INPUT' };
+	function makeInputEvent(name: string, value: string, type = 'text', id = ''): Event {
+		const target = { name, id, value, type, tagName: 'INPUT' };
 		return { target } as unknown as Event;
 	}
 
 	function makeCheckboxEvent(name: string, checked: boolean): Event {
 		const target = {
 			name,
+			id: '',
 			value: checked ? 'on' : '',
 			type: 'checkbox',
 			checked,
@@ -75,7 +76,13 @@ describe('createForm — handleChange', () => {
 	}
 
 	function makeSelectEvent(name: string, value: string): Event {
-		const target = { name, value, tagName: 'SELECT' };
+		const target = { name, id: '', value, tagName: 'SELECT' };
+		return { target } as unknown as Event;
+	}
+
+	function makeIdOnlyEvent(id: string, value: string): Event {
+		// Simulates LocationInput latitude/longitude: id present, name absent
+		const target = { name: '', id, value, type: 'number', tagName: 'INPUT' };
 		return { target } as unknown as Event;
 	}
 
@@ -104,6 +111,27 @@ describe('createForm — handleChange', () => {
 		});
 		handleChange(makeSelectEvent('species', '2'));
 		expect(get(form).species).toBe('2');
+	});
+
+	it('falls back to id when name is absent (LocationInput latitude/longitude pattern)', () => {
+		const { form, handleChange } = createForm({
+			initialValues: { latitude: 0, longitude: 0 },
+			onSubmit: vi.fn()
+		});
+		handleChange(makeIdOnlyEvent('latitude', '54.5'));
+		handleChange(makeIdOnlyEvent('longitude', '13.5'));
+		expect(get(form).latitude).toBe('54.5');
+		expect(get(form).longitude).toBe('13.5');
+	});
+
+	it('ignores events with neither name nor id', () => {
+		const { form, handleChange } = createForm({
+			initialValues: { count: 0 },
+			onSubmit: vi.fn()
+		});
+		const emptyTarget = { name: '', id: '', value: '99', type: 'number', tagName: 'INPUT' };
+		handleChange({ target: emptyTarget } as unknown as Event);
+		expect(get(form).count).toBe(0); // unchanged
 	});
 });
 
@@ -222,13 +250,13 @@ describe('createForm — handleSubmit (validation failure)', () => {
 });
 
 describe('createForm — handleSubmit (onSubmit throws)', () => {
-	it('sets isSubmitting back to false when onSubmit rejects', async () => {
+	it('rejects and resets isSubmitting when onSubmit rejects', async () => {
 		const { isSubmitting, handleSubmit } = createForm({
 			initialValues: { name: 'Max', count: null },
 			validationSchema: testSchema,
 			onSubmit: vi.fn().mockRejectedValue(new Error('Server error'))
 		});
-		await handleSubmit(new Event('submit'));
+		await expect(handleSubmit(new Event('submit'))).rejects.toThrow('Server error');
 		expect(get(isSubmitting)).toBe(false);
 	});
 });
