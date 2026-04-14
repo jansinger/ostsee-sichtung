@@ -513,8 +513,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DetailedSighting'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -544,7 +544,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/StatisticsResponse'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Fallback-Statistiken bei internem Fehler
+          headers:
+            Cache-Control:
+              description: Kürzeres Caching bei Fehlern
+              schema:
+                type: string
+                example: "public, max-age=300"
+            X-Cache-Status:
+              description: Kennzeichnet Fallback-Daten
+              schema:
+                type: string
+                example: "ERROR"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatisticsResponse'
 
   /api/maintenance-status:
     get:
@@ -561,8 +576,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MaintenanceStatus'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
@@ -592,8 +607,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ConfigEntry'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
@@ -614,15 +629,15 @@ paths:
               required:
                 - key
                 - value
+                - category
               properties:
                 key:
                   type: string
                   description: Konfigurationsschlüssel
                   example: "display.maxSightings"
                 value:
-                  type: string
-                  description: Konfigurationswert
-                  example: "100"
+                  description: Konfigurationswert (beliebiger JSON-Wert)
+                  example: 100
                 description:
                   type: string
                   description: Beschreibung des Eintrags
@@ -637,11 +652,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                type: object
+                required:
+                  - success
+                properties:
+                  success:
+                    type: boolean
+                    example: true
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
@@ -667,15 +688,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                type: object
+                required:
+                  - success
+                properties:
+                  success:
+                    type: boolean
+                    example: true
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -726,8 +751,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
@@ -748,8 +773,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
@@ -760,22 +785,22 @@ paths:
       tags:
         - config
       summary: Test-E-Mail senden
-      description: Sendet eine Test-E-Mail zur Überprüfung der E-Mail-Konfiguration (Admin-Berechtigung erforderlich)
+      description: |
+        Sendet eine Test-E-Mail zur Überprüfung der E-Mail-Konfiguration (Admin-Berechtigung erforderlich).
+        Wenn kein `recipient` angegeben wird, wird der konfigurierte Standard-Empfänger verwendet.
       security:
         - adminAuth: []
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
               type: object
-              required:
-                - recipient
               properties:
                 recipient:
                   type: string
                   format: email
-                  description: E-Mail-Adresse des Empfängers
+                  description: E-Mail-Adresse des Empfängers; falls nicht angegeben, wird der konfigurierte Standard-Empfänger verwendet
                   example: "admin@ostsee-tiere.de"
       responses:
         '200':
@@ -784,10 +809,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
@@ -802,7 +825,7 @@ paths:
       security:
         - adminAuth: []
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
@@ -831,8 +854,8 @@ paths:
                 $ref: '#/components/schemas/SuccessResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
@@ -860,9 +883,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      weatherData:
+                        type: object
+                        description: Aktualisierte Wetterdaten der Sichtung
+                        additionalProperties: true
+                    required:
+                      - weatherData
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -889,7 +921,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
-        '500':
+        '503':
           description: System ist nicht gesund
           content:
             application/json:
@@ -903,7 +935,7 @@ paths:
       responses:
         '200':
           description: System ist gesund
-        '500':
+        '503':
           description: System ist nicht gesund
 
   /api/media/{path}:
@@ -2632,15 +2664,15 @@ components:
       required:
         - key
         - value
+        - category
       properties:
         key:
           type: string
           description: Konfigurationsschlüssel
           example: "display.maxSightings"
         value:
-          type: string
-          description: Konfigurationswert
-          example: "100"
+          description: Konfigurationswert (beliebiger JSON-Wert — JSONB in der DB)
+          example: 100
         description:
           type: string
           nullable: true
@@ -2648,19 +2680,21 @@ components:
           example: "Maximale Anzahl Sichtungen auf Startseite"
         category:
           type: string
-          nullable: true
-          description: Kategorie des Eintrags
+          description: Kategorie des Eintrags (NOT NULL in DB)
           example: "display"
 
     PublicConfig:
       type: object
-      description: Öffentlich verfügbare Konfigurationswerte
-      additionalProperties:
-        type: string
+      description: Öffentlich verfügbare Konfigurationswerte (Werte können beliebige JSON-Typen sein)
+      additionalProperties: {}
       example:
-        "display.maxSightings": "100"
-        "mobile.apiEnabled": "true"
+        "display.maxSightings": 100
+        "mobile.apiEnabled": true
         "integration.mapTileUrl": "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        "display.defaultMapCenter":
+          lat: 54.3233
+          lng: 10.1228
+        "upload.allowedTypes": ["image/jpeg", "image/png"]
 
     UploadConfig:
       type: object
@@ -2672,9 +2706,9 @@ components:
         - accept
       properties:
         maxFileSize:
-          type: string
-          description: Maximale Dateigröße als lesbarer Text
-          example: "10 MB"
+          type: integer
+          description: Maximale Dateigröße in MB
+          example: 10
         maxFileSizeBytes:
           type: integer
           description: Maximale Dateigröße in Bytes
@@ -2684,13 +2718,22 @@ components:
           items:
             type: string
           description: Erlaubte MIME-Types
-          example: ["image/jpeg", "image/png", "video/mp4"]
+          example: ["image/jpeg", "image/png", "image/gif", "image/webp"]
         accept:
           type: string
           description: Accept-Attribut für HTML file input
-          example: "image/*,video/*"
+          example: "image/*"
 
   responses:
+    LoginRedirect:
+      description: Nicht authentifiziert – Weiterleitung zum Login (SvelteKit session-cookie auth)
+      headers:
+        Location:
+          description: Login-URL mit returnUrl-Parameter
+          schema:
+            type: string
+            example: "/api/auth/login?returnUrl=/api/config"
+
     BadRequest:
       description: Ungültige Anfrage
       content:
