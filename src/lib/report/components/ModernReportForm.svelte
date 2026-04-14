@@ -136,6 +136,28 @@
 	// Formularstatus
 	async function handleFinalSubmit(e: Event): Promise<void> {
 		logger.info('Final submission:');
+
+		// Pre-submit: validate and log any failing fields so bugs are visible in the console
+		const formValues = await new Promise<unknown>((resolve) => {
+			const unsub = formContext.form.subscribe((v) => resolve(v));
+			unsub();
+		});
+		await sightingSchema
+			.validate(formValues, { abortEarly: false })
+			.then(() => logger.info('Pre-submit validation: all fields OK'))
+			.catch((yupError) => {
+				const errors: { field: string; error: string }[] = yupError.inner?.map(
+					(e: { path: string; message: string }) => ({
+						field: e.path,
+						error: e.message
+					})
+				) ?? [{ field: 'unknown', error: yupError.message }];
+				logger.error(
+					{ validationErrors: errors },
+					'Pre-submit validation FAILED — submission blocked'
+				);
+			});
+
 		return formContext.handleSubmit(e);
 	}
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { isStepValid, validateStep } from '$lib/form/validation/stepValidation';
+	import { validateStep } from '$lib/form/validation/stepValidation';
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
 	import { toast } from '$lib/stores/toastState.svelte';
@@ -24,8 +24,15 @@
 	// Get field orders from form configuration
 	const stepFieldOrders = formStepsConfig.map((step) => step.fields);
 
-	// Reactive validation using safe validation function
-	const canGoNext = $derived(isStepValid(currentStep, $form));
+	// Single validation pass — used for both canGoNext and stepErrorMessages
+	const stepValidation = $derived.by(() => validateStep(currentStep, $form));
+
+	const canGoNext = $derived(stepValidation.isValid);
+
+	// Step error messages for inline display (only when step is invalid)
+	const stepErrorMessages = $derived(
+		canGoNext ? [] : (Object.values(stepValidation.errors).filter(Boolean) as string[])
+	);
 
 	const isLastStep = $derived(currentStep >= totalSteps - 1);
 	const isFirstStep = $derived(currentStep <= 0);
@@ -134,6 +141,13 @@
 	}
 </script>
 
+<!-- Inline validation error above navigation -->
+{#if stepErrorMessages.length > 0}
+	<div class="alert alert-warning mb-2" role="alert">
+		<span>{stepErrorMessages[0]}</span>
+	</div>
+{/if}
+
 <!-- Navigation UI -->
 <nav
 	class="bg-base-200 flex items-center justify-between rounded-lg p-4"
@@ -152,7 +166,7 @@
 	<button
 		type="button"
 		onclick={nextStep}
-		disabled={$isSubmitting}
+		disabled={!canGoNext || $isSubmitting}
 		class="btn btn-primary"
 		aria-label={isLastStep ? 'Formular absenden' : 'Nächster Schritt'}
 	>

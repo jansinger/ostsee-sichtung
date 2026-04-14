@@ -126,6 +126,25 @@ paths:
                 $ref: '#/components/schemas/SightingResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '422':
+          description: Datenbank-Integritätsfehler (z.B. doppelter Eintrag)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, code, message]
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  code:
+                    type: string
+                    enum: [DATABASE_ERROR]
+                  message:
+                    type: string
+                  detail:
+                    type: string
+                    description: Nur in Development-Umgebung
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
         '500':
@@ -157,8 +176,8 @@ paths:
                 $ref: '#/components/schemas/DetailedSighting'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -194,18 +213,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SightingResponse'
+                $ref: '#/components/schemas/DetailedSighting'
         '400':
           $ref: '#/components/responses/ValidationError'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    
+
     delete:
       tags:
         - sightings
@@ -229,8 +248,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -303,8 +322,8 @@ paths:
                     example: "Sichtung wurde genehmigt"
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -355,8 +374,8 @@ paths:
                     example: "Koordinaten geprüft"
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -423,8 +442,8 @@ paths:
                     example: "Sichtung wurde verifiziert"
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -467,8 +486,8 @@ paths:
                     example: 1
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -507,13 +526,6 @@ paths:
             type: string
             format: date
             example: "2024-12-31"
-        - name: species
-          in: query
-          description: Tierart filtern
-          schema:
-            type: integer
-            minimum: 1
-            example: 1
         - name: verified
           in: query
           description: Nur verifizierte Sichtungen
@@ -536,10 +548,10 @@ paths:
             application/vnd.google-earth.kml+xml:
               schema:
                 type: string
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
@@ -556,17 +568,63 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExportDateFrom'
         - $ref: '#/components/parameters/ExportDateTo'
-        - $ref: '#/components/parameters/ExportSpecies'
         - $ref: '#/components/parameters/ExportVerified'
+        - $ref: '#/components/parameters/ExportEntryChannel'
+        - $ref: '#/components/parameters/ExportMediaUpload'
       responses:
         '200':
           description: JSON-Datei mit Sichtungen
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DetailedSighting'
+                type: object
+                required: [metadata, sichtungen]
+                properties:
+                  metadata:
+                    type: object
+                    required: [exportDate, recordCount, filters]
+                    properties:
+                      exportDate:
+                        type: string
+                        format: date-time
+                      recordCount:
+                        type: integer
+                      filters:
+                        type: object
+                        properties:
+                          dateFrom:
+                            type: string
+                            nullable: true
+                          dateTo:
+                            type: string
+                            nullable: true
+                          verified:
+                            type: string
+                            nullable: true
+                          entryChannel:
+                            type: string
+                            nullable: true
+                          mediaUpload:
+                            type: string
+                            nullable: true
+                  sichtungen:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DetailedSighting'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          description: Interner Serverfehler beim JSON-Export
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [error]
+                properties:
+                  error:
+                    type: string
 
   /api/sightings/export/csv:
     get:
@@ -579,13 +637,24 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExportDateFrom'
         - $ref: '#/components/parameters/ExportDateTo'
-        - $ref: '#/components/parameters/ExportSpecies'
         - $ref: '#/components/parameters/ExportVerified'
+        - $ref: '#/components/parameters/ExportEntryChannel'
+        - $ref: '#/components/parameters/ExportMediaUpload'
       responses:
         '200':
           description: CSV-Datei mit Sichtungen
           content:
             text/csv:
+              schema:
+                type: string
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          description: Interner Serverfehler beim CSV-Export
+          content:
+            text/plain:
               schema:
                 type: string
 
@@ -600,11 +669,22 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExportDateFrom'
         - $ref: '#/components/parameters/ExportDateTo'
-        - $ref: '#/components/parameters/ExportSpecies'
         - $ref: '#/components/parameters/ExportVerified'
+        - $ref: '#/components/parameters/ExportEntryChannel'
+        - $ref: '#/components/parameters/ExportMediaUpload'
       responses:
         '200':
           description: XML-Datei mit Sichtungen
+          content:
+            application/xml:
+              schema:
+                type: string
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          description: Interner Serverfehler beim XML-Export
           content:
             application/xml:
               schema:
@@ -621,13 +701,24 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExportDateFrom'
         - $ref: '#/components/parameters/ExportDateTo'
-        - $ref: '#/components/parameters/ExportSpecies'
         - $ref: '#/components/parameters/ExportVerified'
+        - $ref: '#/components/parameters/ExportEntryChannel'
+        - $ref: '#/components/parameters/ExportMediaUpload'
       responses:
         '200':
           description: KML-Datei mit Sichtungen
           content:
             application/vnd.google-earth.kml+xml:
+              schema:
+                type: string
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          description: Interner Serverfehler beim KML-Export
+          content:
+            application/xml:
               schema:
                 type: string
 
@@ -1311,13 +1402,12 @@ paths:
             schema:
               type: object
               required:
-                - url
+                - filePath
               properties:
-                url:
+                filePath:
                   type: string
-                  format: uri
-                  description: URL der zu löschenden Datei
-                  example: "/uploads/2024/01/image_123.jpg"
+                  description: Pfad der zu löschenden Datei
+                  example: "uploads/2024/01/image_123.jpg"
       responses:
         '200':
           description: Datei erfolgreich gelöscht
@@ -1327,6 +1417,8 @@ paths:
                 $ref: '#/components/schemas/SuccessResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1629,7 +1721,7 @@ paths:
         
         **WICHTIG: PDF-konforme abgekürzte Feldnamen**
         - ts: Unix Timestamp
-        - id: Sichtungs-ID  
+        - id: Sichtungs-ID
         - dt: Datum (DD.MM.YY)
         - ti: Zeit (HH:MI)
         - lat, lon: Koordinaten als STRINGS
@@ -1638,6 +1730,8 @@ paths:
         - sh: Schiffsname (nur bei Einverständnis)
         - na: Name (nur bei Einverständnis)
         - ar: Gebiet/Gewässer
+        - ta: Tierart als deutsches Label (Erweiterung über Original-PDF hinaus)
+        - tf: Totfund-Flag 0/1 (Erweiterung über Original-PDF hinaus)
       parameters:
         - name: year
           in: query
@@ -1874,15 +1968,23 @@ components:
         format: date
         example: "2024-12-31"
     
-    ExportSpecies:
-      name: species
+    ExportEntryChannel:
+      name: entryChannel
       in: query
-      description: Tierart filtern
+      description: Eingangskanal filtern (0=Web, 1=E-Mail, 2=Post, 3=Fax, 4=App, 5=Telefon, 'all' oder leer = kein Filter)
       schema:
-        type: integer
-        minimum: 1
-        example: 1
-    
+        type: string
+        example: "0"
+
+    ExportMediaUpload:
+      name: mediaUpload
+      in: query
+      description: Medienupload-Filter (1=mit Aufnahme, 0=ohne Aufnahme)
+      schema:
+        type: string
+        enum: ["0", "1"]
+        example: "1"
+
     ExportVerified:
       name: verified
       in: query
@@ -2008,8 +2110,8 @@ components:
         species:
           type: integer
           description: Tierart
-          minimum: 1
-          example: 1
+          minimum: 0
+          example: 0
         totalCount:
           type: integer
           description: Gesamtanzahl der Tiere
@@ -2722,6 +2824,16 @@ components:
           nullable: true
           description: 'Gebiet/Gewässer - Area'
           example: "Kieler Förde"
+        ta:
+          type: string
+          nullable: true
+          description: 'Tierart als deutsches Label (nicht im Original-PDF, aber von dieser Implementierung zurückgegeben)'
+          example: "Schweinswal"
+        tf:
+          type: integer
+          description: 'Totfund-Flag (0=keine Totfund, 1=Totfund) - nicht im Original-PDF, aber von dieser Implementierung zurückgegeben'
+          enum: [0, 1]
+          example: 0
 
     StatisticsResponse:
       type: object

@@ -24,8 +24,8 @@
 
 	// Reaktive States mit Runes
 	let sightings = $derived(data.sightings);
-	let dateFrom = $state(page.url.searchParams.get('dateFrom') || '');
-	let dateTo = $state(page.url.searchParams.get('dateTo') || '');
+	let fromDate = $state(page.url.searchParams.get('fromDate') || '');
+	let toDate = $state(page.url.searchParams.get('toDate') || '');
 	let verified = $state(page.url.searchParams.get('verified') || '');
 	let selectedChannel = $state(page.url.searchParams.get('entryChannel') || 'all');
 	let mediaUpload = $state(page.url.searchParams.get('mediaUpload') || '');
@@ -82,8 +82,8 @@
 	// Prüft ob irgendwelche Filter aktiv sind
 	let hasActiveFilters = $derived(() => {
 		return !!(
-			dateFrom ||
-			dateTo ||
+			fromDate ||
+			toDate ||
 			verified ||
 			(selectedChannel && selectedChannel !== 'all') ||
 			mediaUpload
@@ -93,8 +93,8 @@
 	// Aktuelle Filter für Export-Modal
 	let currentFilters = $derived(() => {
 		return {
-			dateFrom: dateFrom || '',
-			dateTo: dateTo || '',
+			fromDate: fromDate || '',
+			toDate: toDate || '',
 			verified: verified || '',
 			entryChannel: selectedChannel !== 'all' ? selectedChannel : '',
 			mediaUpload: mediaUpload || ''
@@ -117,11 +117,11 @@
 		const url = new URL(page.url);
 
 		// Datum-Filter
-		if (dateFrom) url.searchParams.set('dateFrom', dateFrom);
-		else url.searchParams.delete('dateFrom');
+		if (fromDate) url.searchParams.set('fromDate', fromDate);
+		else url.searchParams.delete('fromDate');
 
-		if (dateTo) url.searchParams.set('dateTo', dateTo);
-		else url.searchParams.delete('dateTo');
+		if (toDate) url.searchParams.set('toDate', toDate);
+		else url.searchParams.delete('toDate');
 
 		// Verified-Filter
 		if (verified) url.searchParams.set('verified', verified);
@@ -143,15 +143,15 @@
 	}
 
 	function resetFilters(): void {
-		dateFrom = '';
-		dateTo = '';
+		fromDate = '';
+		toDate = '';
 		verified = '';
 		selectedChannel = 'all';
 		mediaUpload = '';
 
 		const url = new URL(page.url);
-		url.searchParams.delete('dateFrom');
-		url.searchParams.delete('dateTo');
+		url.searchParams.delete('fromDate');
+		url.searchParams.delete('toDate');
 		url.searchParams.delete('verified');
 		url.searchParams.delete('entryChannel');
 		url.searchParams.delete('mediaUpload');
@@ -453,27 +453,27 @@
 			</div>
 			<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
 				<div class="fieldset w-full">
-					<label for="dateFrom" class="label py-0">
+					<label for="fromDate" class="label py-0">
 						<span class="text-xs">Von</span>
 					</label>
 					<input
 						type="date"
-						id="dateFrom"
-						name="dateFrom"
+						id="fromDate"
+						name="fromDate"
 						class="input input-sm w-full"
-						bind:value={dateFrom}
+						bind:value={fromDate}
 					/>
 				</div>
 				<div class="fieldset w-full">
-					<label for="dateTo" class="label py-0">
+					<label for="toDate" class="label py-0">
 						<span class="text-xs">Bis</span>
 					</label>
 					<input
 						type="date"
-						id="dateTo"
-						name="dateTo"
+						id="toDate"
+						name="toDate"
 						class="input input-sm w-full"
-						bind:value={dateTo}
+						bind:value={toDate}
 					/>
 				</div>
 				<div class="fieldset w-full">

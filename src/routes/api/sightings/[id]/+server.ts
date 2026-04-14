@@ -11,7 +11,7 @@ import {
 } from '$lib/server/db/sightingRepository';
 import type { ExifData } from '$lib/types';
 import { createId } from '@paralleldrive/cuid2';
-import { error, json } from '@sveltejs/kit';
+import { error, isHttpError, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -49,6 +49,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 			uploadedFiles
 		});
 	} catch (err) {
+		if (isHttpError(err)) throw err;
 		logger.error(err, 'Fehler beim Laden der Sichtung:');
 		throw error(500, 'Interner Serverfehler');
 	}
@@ -155,6 +156,7 @@ export const DELETE: RequestHandler = async ({ params, locals, url }) => {
 
 		return json({ success: true, message: 'Sichtung erfolgreich gelöscht' });
 	} catch (err) {
+		if (isHttpError(err)) throw err;
 		logger.error({ err, id }, 'Fehler beim Löschen der Sichtung');
 		throw error(500, 'Interner Serverfehler beim Löschen der Sichtung');
 	}

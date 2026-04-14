@@ -106,15 +106,14 @@ test.describe('Accessibility — Keyboard Navigation', () => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		// Navigate to Step 2 and trigger validation
+		// Navigate to Step 2 — inline error appears automatically for invalid step
 		await fillStep1(formPage);
 		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeEnabled({
 			timeout: 3000
 		});
 		await formPage.clickNext();
-		await formPage.clickNext(); // Trigger validation errors
 
-		// Wait for validation error to appear
+		// Inline validation error is shown above the disabled Next button
 		await page.locator('[role="alert"]').first().waitFor({ state: 'visible' });
 
 		// Check role="alert" elements exist

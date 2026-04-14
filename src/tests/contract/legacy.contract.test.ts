@@ -1,0 +1,330 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createEvent } from './helpers/createEvent';
+import { asApiResponse } from './helpers/asApiResponse';
+
+// ─── Shared hoisted mocks ───────────────────────────────────────────────────
+
+const { mockSaveSighting, mockValidate, mockCreateError, mockSelectLimit } = vi.hoisted(() => {
+	const mockSaveSighting = vi.fn().mockResolvedValue({ id: 1234 });
+	const mockValidate = vi.fn().mockResolvedValue({ isValid: true, errors: {} });
+	const mockCreateError = vi
+		.fn()
+		.mockReturnValue({ message: 'Validation failed.', errors: { anzahl_gesamt: ['Required'] } });
+	const mockSelectLimit = vi.fn().mockResolvedValue([]);
+	return { mockSaveSighting, mockValidate, mockCreateError, mockSelectLimit };
+});
+
+// ─── POST /rest_sichtungen mocks ────────────────────────────────────────────
+
+vi.mock('$lib/server/db/sightingRepository', () => ({
+	saveSighting: mockSaveSighting
+}));
+
+vi.mock('$lib/server/services/emailService', () => ({
+	EmailService: {
+		sendNewSightingNotification: vi.fn().mockResolvedValue(undefined)
+	}
+}));
+
+vi.mock('$lib/services/configService', () => ({
+	ServerConfigService: {
+		getEmailConfig: vi.fn().mockResolvedValue({ enabled: false, recipient: null })
+	}
+}));
+
+vi.mock('$lib/legacy-api/yup-validation.js', () => ({
+	validateLegacySightingWithYup: mockValidate,
+	createLegacyErrorFromYup: mockCreateError
+}));
+
+vi.mock('$lib/legacy-api/validation.js', () => ({
+	validateDeathFinding: vi.fn()
+}));
+
+vi.mock('$lib/legacy-api/field-mapping.js', () => ({
+	mapLegacyToCurrentSchema: vi.fn().mockReturnValue({
+		sightingDate: '2024-01-15',
+		time: '14:30',
+		firstName: 'Max',
+		lastName: 'Mustermann',
+		email: 'max@example.com',
+		totalCount: 2,
+		species: 0
+	})
+}));
+
+vi.mock('$lib/legacy-api/error-messages.js', () => ({
+	GERMAN_ERROR_MESSAGES: { NO_DATA_SEND: 'Keine Daten gesendet' },
+	createOriginalApiErrorResponse: vi.fn().mockReturnValue({ error: 'Error', message: 'Error' }),
+	createSimpleErrorResponse: vi.fn().mockReturnValue({ error: 'Error', message: 'Error' })
+}));
+
+vi.mock('$lib/server/middleware/rateLimit', () => ({
+	enforceRateLimit: vi.fn(),
+	RATE_LIMITS: { SIGHTING_SUBMISSION: { limit: 20, window: 3600 } }
+}));
+
+// ─── GET /rest_sichtungen/inBaltic.json mocks ───────────────────────────────
+
+vi.mock('$lib/server/geo/checkBalticSeaFile', () => ({
+	checkBalticSeaFile: vi.fn().mockReturnValue({ inBaltic: true, inChartArea: true })
+}));
+
+// ─── GET /sichtungen/showreports.json mocks ─────────────────────────────────
+
+vi.mock('$lib/server/db', () => ({
+	db: {
+		select: vi.fn().mockReturnValue({
+			from: vi.fn().mockReturnValue({
+				where: vi.fn().mockReturnValue({
+					orderBy: vi.fn().mockReturnValue({
+						limit: mockSelectLimit
+					})
+				})
+			})
+		})
+	}
+}));
+
+vi.mock('$lib/server/db/schema', () => ({
+	sightings: {
+		id: 'id',
+		sightingDate: 'sightingDate',
+		latitude: 'latitude',
+		longitude: 'longitude',
+		totalCount: 'totalCount',
+		juvenileCount: 'juvenileCount',
+		firstName: 'firstName',
+		lastName: 'lastName',
+		nameConsent: 'nameConsent',
+		waterway: 'waterway',
+		shipName: 'shipName',
+		shipNameConsent: 'shipNameConsent',
+		approvedAt: 'approvedAt',
+		species: 'species',
+		isDead: 'isDead',
+		email: 'email'
+	}
+}));
+
+vi.mock('drizzle-orm', () => ({
+	and: vi.fn((...args) => args),
+	between: vi.fn((a, b, c) => ({ a, b, c })),
+	sql: Object.assign(
+		vi.fn((strings: TemplateStringsArray) => String(strings.raw[0])),
+		{
+			raw: vi.fn((s: string) => s)
+		}
+	)
+}));
+
+vi.mock('$lib/logger', () => ({
+	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
+}));
+
+// ─── Tests ──────────────────────────────────────────────────────────────────
+
+describe('Contract: POST /rest_sichtungen', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockValidate.mockResolvedValue({ isValid: true, errors: {} });
+		mockSaveSighting.mockResolvedValue({ id: 1234 });
+	});
+
+	it('returns 201 and satisfies the OpenAPI spec', async () => {
+		const { POST } = await import('../../routes/rest_sichtungen/+server');
+		const event = createEvent('/rest_sichtungen', {
+			method: 'POST',
+			body: {
+				sichtungsdatum: '2024-01-15 14:30',
+				anzahl_gesamt: 2,
+				vorname: 'Max',
+				name: 'Mustermann',
+				email: 'max@example.com'
+			}
+		});
+		const res = await POST(event);
+		const apiRes = await asApiResponse(res, event);
+
+		expect(apiRes.status).toBe(201);
+		expect(apiRes).toSatisfyApiSpec();
+	});
+
+	it('returns 400 for validation errors', async () => {
+		mockValidate.mockResolvedValueOnce({ isValid: false, errors: { anzahl_gesamt: ['Required'] } });
+		mockCreateError.mockReturnValueOnce({
+			message: 'Validation failed.',
+			errors: { anzahl_gesamt: ['Dieses Feld kann nicht leer gelassen werden.'] }
+		});
+
+		const { POST } = await import('../../routes/rest_sichtungen/+server');
+		const event = createEvent('/rest_sichtungen', {
+			method: 'POST',
+			body: {}
+		});
+		const res = await POST(event);
+
+		expect(res.status).toBe(400);
+	});
+
+	it('throws 429 when rate limit is exceeded', async () => {
+		const { enforceRateLimit } = vi.mocked(await import('$lib/server/middleware/rateLimit'));
+		enforceRateLimit.mockImplementationOnce(() => {
+			throw { status: 429, body: { message: 'Too many requests' } };
+		});
+		const { POST } = await import('../../routes/rest_sichtungen/+server');
+		const event = createEvent('/rest_sichtungen', {
+			method: 'POST',
+			body: {
+				sichtungsdatum: '2024-01-15 14:30',
+				anzahl_gesamt: 2,
+				vorname: 'Max',
+				name: 'Mustermann',
+				email: 'max@example.com'
+			}
+		});
+		try {
+			await POST(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(429);
+		}
+	});
+});
+
+describe('Contract: GET /rest_sichtungen/antworten.json', () => {
+	it('returns 200 and satisfies the OpenAPI spec', async () => {
+		const { GET } = await import('../../routes/rest_sichtungen/antworten.json/+server');
+		const event = createEvent('/rest_sichtungen/antworten.json');
+		const res = await GET(event);
+		const apiRes = await asApiResponse(res, event);
+
+		expect(apiRes.status).toBe(200);
+		expect(apiRes).toSatisfyApiSpec();
+	});
+
+	it('returns all required option groups', async () => {
+		const { GET } = await import('../../routes/rest_sichtungen/antworten.json/+server');
+		const event = createEvent('/rest_sichtungen/antworten.json');
+		const res = await GET(event);
+		const body = await res.json();
+
+		const required = [
+			'tierart',
+			'vonwo',
+			'entfernung',
+			'verteilung',
+			'verhalten',
+			'seegang',
+			'windrichtung',
+			'windstaerke',
+			'sichtweite',
+			'bootsantrieb',
+			'eingangskanal',
+			'totfund_zustand',
+			'totfund_geschlecht'
+		];
+		for (const key of required) {
+			expect(body).toHaveProperty(key);
+		}
+	});
+});
+
+describe('Contract: GET /rest_sichtungen/inBaltic.json', () => {
+	it('returns 200 with valid location and satisfies the OpenAPI spec', async () => {
+		const { GET } = await import('../../routes/rest_sichtungen/inBaltic.json/+server');
+		const event = createEvent('/rest_sichtungen/inBaltic.json', {
+			searchParams: { location: '54.3233,13.0814' }
+		});
+		const res = await GET(event);
+		const apiRes = await asApiResponse(res, event);
+
+		expect(apiRes.status).toBe(200);
+		expect(apiRes).toSatisfyApiSpec();
+	});
+
+	it('returns 400 when location parameter is missing', async () => {
+		const { GET } = await import('../../routes/rest_sichtungen/inBaltic.json/+server');
+		const event = createEvent('/rest_sichtungen/inBaltic.json');
+		const res = await GET(event);
+
+		expect(res.status).toBe(400);
+	});
+});
+
+describe('Contract: GET /sichtungen/showreports.json', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockSelectLimit.mockResolvedValue([]);
+	});
+
+	it('returns 200 empty array and satisfies the OpenAPI spec', async () => {
+		const { GET } = await import('../../routes/sichtungen/showreports.json/+server');
+		const event = createEvent('/sichtungen/showreports.json');
+		const res = await GET(event);
+		const apiRes = await asApiResponse(res, event);
+
+		expect(apiRes.status).toBe(200);
+		expect(apiRes).toSatisfyApiSpec();
+	});
+
+	it('returns 200 with sighting data and satisfies the OpenAPI spec', async () => {
+		mockSelectLimit.mockResolvedValueOnce([
+			{
+				id: 817,
+				sichtungsdatum: new Date('2024-01-25T14:50:00Z'),
+				latitude: '54.646667',
+				longitude: '11.333333',
+				totalCount: 1,
+				juvenileCount: 0,
+				firstName: 'Max',
+				lastName: 'Mustermann',
+				nameConsent: false,
+				waterway: 'Fehmarnbelt',
+				shipName: null,
+				shipNameConsent: false,
+				approvedAt: new Date(),
+				species: 0,
+				isDead: false
+			}
+		]);
+
+		const { GET } = await import('../../routes/sichtungen/showreports.json/+server');
+		const event = createEvent('/sichtungen/showreports.json');
+		const res = await GET(event);
+		const apiRes = await asApiResponse(res, event);
+
+		expect(apiRes.status).toBe(200);
+		expect(apiRes).toSatisfyApiSpec();
+	});
+
+	it('lat/lon fields are strings (critical legacy requirement)', async () => {
+		mockSelectLimit.mockResolvedValueOnce([
+			{
+				id: 817,
+				sichtungsdatum: new Date('2024-01-25T14:50:00Z'),
+				latitude: '54.646667',
+				longitude: '11.333333',
+				totalCount: 1,
+				juvenileCount: 0,
+				firstName: null,
+				lastName: null,
+				nameConsent: false,
+				waterway: null,
+				shipName: null,
+				shipNameConsent: false,
+				approvedAt: new Date(),
+				species: 0,
+				isDead: false
+			}
+		]);
+
+		const { GET } = await import('../../routes/sichtungen/showreports.json/+server');
+		const event = createEvent('/sichtungen/showreports.json');
+		const res = await GET(event);
+		const body = await res.json();
+
+		expect(typeof body[0].lat).toBe('string');
+		expect(typeof body[0].lon).toBe('string');
+	});
+});

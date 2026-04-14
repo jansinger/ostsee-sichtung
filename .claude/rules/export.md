@@ -26,7 +26,7 @@ Regeln für CSV, JSON, KML und XML Export.
 
 **Auth:** Alle Endpoints erfordern `requireUserRole(url, locals.user, ['admin'])`
 
-**Query-Parameter:** `dateFrom`, `dateTo`, `verified`, `entryChannel`, `mediaUpload`
+**Query-Parameter:** `fromDate`, `toDate`, `verified`, `entryChannel`, `mediaUpload`
 
 ---
 

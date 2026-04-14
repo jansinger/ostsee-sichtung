@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import './src/tests/contract/helpers/specSetup';
 
 // Set NODE_ENV to test to prevent automatic service initialization
 process.env.NODE_ENV = 'test';

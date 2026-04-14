@@ -49,7 +49,9 @@ test.describe('StepNavigation — Error-UX', () => {
 		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).not.toBeVisible();
 	});
 
-	test('Validierungsfehler auf Step 2 zeigt Toast mit Fehleranzahl', async ({ page }) => {
+	test('Validierungsfehler auf Step 2 zeigt Inline-Fehlermeldung und deaktiviert Weiter-Button', async ({
+		page
+	}) => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
@@ -58,12 +60,11 @@ test.describe('StepNavigation — Error-UX', () => {
 		await formPage.clickNext();
 		await expectCurrentStep(page, /Sichtungsdetails/i);
 
-		// Try to advance without filling required fields
-		await formPage.clickNext();
+		// Step 2 Pflichtfelder leer → Weiter-Button direkt deaktiviert
+		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeDisabled();
 
-		// Toast should appear with validation error message
-		await expect(page.getByText(/Validierungsfehler/i)).toBeVisible({ timeout: 3000 });
-		await expect(page.getByText(/beheben Sie/i)).toBeVisible({ timeout: 3000 });
+		// Inline-Fehlermeldung über dem Weiter-Button erscheint automatisch
+		await expect(page.locator('[role="alert"]').first()).toBeVisible({ timeout: 3000 });
 	});
 
 	test('Fehler-Felder zeigen rote Markierungen nach Validierung', async ({ page }) => {
@@ -75,10 +76,7 @@ test.describe('StepNavigation — Error-UX', () => {
 		await formPage.clickNext();
 		await expectCurrentStep(page, /Sichtungsdetails/i);
 
-		// Trigger validation by trying to go next
-		await formPage.clickNext();
-
-		// Error messages should be visible (role="alert" elements)
+		// Inline error appears automatically for invalid step (no click needed)
 		const alerts = page.locator('[role="alert"]');
 		await expect(alerts.first()).toBeVisible({ timeout: 3000 });
 	});

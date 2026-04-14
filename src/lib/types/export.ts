@@ -47,7 +47,6 @@ export interface ExportOptions {
 	format: ExportFormat;
 	includeMedia?: boolean;
 	includePersonalData?: boolean;
-	dateFrom?: string;
-	dateTo?: string;
-	species?: number[];
+	fromDate?: string;
+	toDate?: string;
 }

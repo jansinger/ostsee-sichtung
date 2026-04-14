@@ -15,8 +15,8 @@ export const load: PageServerLoad = async ({ url }) => {
 	const perPage = Math.min(requestedPerPage, paginationConfig.maxSightingsPerPage);
 	const sortBy = url.searchParams.get('sort') || 'sightingDate';
 	const sortOrder = url.searchParams.get('order') || 'desc';
-	const dateFrom = url.searchParams.get('dateFrom');
-	const dateTo = url.searchParams.get('dateTo');
+	const fromDate = url.searchParams.get('fromDate');
+	const toDate = url.searchParams.get('toDate');
 	const verified = url.searchParams.get('verified');
 	const entryChannel = url.searchParams.get('entryChannel');
 	const mediaUpload = url.searchParams.get('mediaUpload');
@@ -25,8 +25,8 @@ export const load: PageServerLoad = async ({ url }) => {
 	const conditions = [];
 
 	// Datums-Filter (nur mit validiertem YYYY-MM-DD Format)
-	if (isValidDateParam(dateFrom) && isValidDateParam(dateTo)) {
-		conditions.push(sql`DATE(${sightings.sightingDate}) BETWEEN ${dateFrom} AND ${dateTo}`);
+	if (isValidDateParam(fromDate) && isValidDateParam(toDate)) {
+		conditions.push(sql`DATE(${sightings.sightingDate}) BETWEEN ${fromDate} AND ${toDate}`);
 	}
 
 	// Verifizierungs-Filter (als Integer 0/1)

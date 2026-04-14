@@ -16,8 +16,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	requireUserRole(url, locals.user, ['admin']);
 
 	// Filter-Parameter aus der URL extrahieren
-	const fromDate = url.searchParams.get('dateFrom') || '';
-	const toDate = url.searchParams.get('dateTo') || '';
+	const fromDate = url.searchParams.get('fromDate') || '';
+	const toDate = url.searchParams.get('toDate') || '';
 	const verified = url.searchParams.get('verified');
 	const entryChannel = url.searchParams.get('entryChannel');
 	const mediaUpload = url.searchParams.get('mediaUpload');

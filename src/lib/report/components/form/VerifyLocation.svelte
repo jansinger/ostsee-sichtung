@@ -51,6 +51,32 @@
 
 		// Check if we already have this request cached
 		if (requestCache.has(cacheKey)) {
+			// Resolve cached promise to update currentResult (coordinates may have changed back)
+			requestCache.get(cacheKey)!.then(
+				(result) => {
+					if (coordinates === cacheKey) {
+						currentResult = result;
+						isLoading = false;
+						error = undefined;
+					}
+				},
+				(checkError) => {
+					if (coordinates === cacheKey) {
+						const errorMessage =
+							checkError instanceof Error ? checkError.message : 'Ein Fehler ist aufgetreten.';
+						error = errorMessage;
+						isLoading = false;
+
+						const fallbackResult: BalticSeaResult = {
+							inBaltic: false,
+							inChartArea: false,
+							longitude: lon,
+							latitude: lat
+						};
+						currentResult = fallbackResult;
+					}
+				}
+			);
 			return;
 		}
 

@@ -4,7 +4,7 @@ import { sightingFiles } from '$lib/server/db/schema';
 import { deleteFileByPath } from '$lib/server/db/sightingFilesRepository';
 import { getStorageProvider } from '$lib/server/storage/factory';
 import { isAdminUser } from '$lib/server/auth/auth';
-import { error, json } from '@sveltejs/kit';
+import { error, isHttpError, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -13,8 +13,9 @@ const logger = createLogger('FileDeleteAPI');
 export const DELETE: RequestHandler = async ({ request, locals }) => {
 	const userIdentifier = locals.user?.sub || 'anonymous';
 	const isAuthenticated = !!locals.user;
-	const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
-	
+	const clientIp =
+		request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+
 	try {
 		const { filePath } = await request.json();
 
@@ -24,16 +25,19 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 
 		// Check if user is admin or if file is deletable by regular users
 		const isAdmin = isAdminUser(locals.user);
-		
+
 		// Security audit logging
-		logger.info({
-			action: 'file_delete_attempt',
-			user: userIdentifier,
-			authenticated: isAuthenticated,
-			isAdmin,
-			clientIp,
-			filePath
-		}, 'File deletion requested');
+		logger.info(
+			{
+				action: 'file_delete_attempt',
+				user: userIdentifier,
+				authenticated: isAuthenticated,
+				isAdmin,
+				clientIp,
+				filePath
+			},
+			'File deletion requested'
+		);
 
 		if (!isAdmin) {
 			// For non-admin users, check if file exists and has no sightingId assigned
@@ -69,9 +73,9 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 			}
 
 			logger.info(
-				{ 
+				{
 					action: 'file_delete_allowed',
-					filePath, 
+					filePath,
 					user: userIdentifier,
 					authenticated: isAuthenticated,
 					clientIp
@@ -79,12 +83,15 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 				'User deleting unassigned file'
 			);
 		} else {
-			logger.info({ 
-				action: 'file_delete_admin',
-				filePath, 
-				user: userIdentifier,
-				clientIp 
-			}, 'Admin user deleting file');
+			logger.info(
+				{
+					action: 'file_delete_admin',
+					filePath,
+					user: userIdentifier,
+					clientIp
+				},
+				'Admin user deleting file'
+			);
 		}
 
 		// Basic security check - no path traversal
@@ -118,7 +125,7 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 			});
 		}
 	} catch (err) {
-		if (err instanceof Response) {
+		if (isHttpError(err)) {
 			throw err; // Re-throw SvelteKit errors
 		}
 
