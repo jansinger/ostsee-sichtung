@@ -192,7 +192,7 @@ function prevStep() {
 		id="species"
 		name="species"
 		class="input w-full"
-		aria-describedby="species-error"
+		aria-describedby={$errors.species && $touched.species ? 'species-error' : undefined}
 		aria-required="true"
 		aria-invalid={$errors.species && $touched.species}
 	/>
@@ -201,6 +201,7 @@ function prevStep() {
 			{$errors.species}
 		</p>
 	{/if}
+	<!-- Hinweis: aria-describedby nur setzen wenn das referenzierte Element auch existiert -->
 </fieldset>
 ```
 

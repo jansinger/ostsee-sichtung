@@ -117,16 +117,29 @@ map.addLayer(sightingsLayer);
 
 ### Styling
 
+**Wichtig:** OpenLayers rendert über Canvas — CSS Custom Properties (`var(--color-info)`) werden dort **nicht** aufgelöst. Farben müssen als konkrete Werte übergeben werden. Hilfsfunktion zum Auslesen von DaisyUI-Theme-Farben:
+
+```typescript
+// src/lib/map/styleUtils.ts
+export function getThemeColor(variable: string): string {
+	if (typeof window === 'undefined') return '#000000';
+	return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+}
+```
+
 ```typescript
 import { Style, Circle, Fill, Stroke } from 'ol/style';
+import { getThemeColor } from '$lib/map/styleUtils';
 
+// Farben beim Initialisieren auslesen (nach DOM-Mount in $effect)
 const sightingStyle = new Style({
 	image: new Circle({
 		radius: 8,
-		fill: new Fill({ color: 'var(--color-info)' }),
-		stroke: new Stroke({ color: 'var(--color-primary)', width: 2 })
+		fill: new Fill({ color: getThemeColor('--color-info') }),
+		stroke: new Stroke({ color: getThemeColor('--color-primary'), width: 2 })
 	})
 });
+// Hinweis: Bei Theme-Wechsel muss der Style neu erstellt werden
 ```
 
 ---
@@ -141,7 +154,9 @@ Für große Datensätze `WebGLPointsLayer` statt `VectorLayer` verwenden:
 import WebGLPointsLayer from 'ol/layer/WebGLPoints.js';
 import VectorSource from 'ol/source/Vector.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
+import { getThemeColor } from '$lib/map/styleUtils';
 
+// CSS vars via getThemeColor auflösen — WebGL akzeptiert keine var(...)
 const pointsLayer = new WebGLPointsLayer({
 	source: new VectorSource({
 		url: '/api/map/sightings',
@@ -149,8 +164,8 @@ const pointsLayer = new WebGLPointsLayer({
 	}),
 	style: {
 		'circle-radius': 6,
-		'circle-fill-color': 'var(--color-info)',
-		'circle-stroke-color': 'var(--color-primary)',
+		'circle-fill-color': getThemeColor('--color-info'),
+		'circle-stroke-color': getThemeColor('--color-primary'),
 		'circle-stroke-width': 1.5
 	}
 });
@@ -163,11 +178,16 @@ import Cluster from 'ol/source/Cluster.js';
 import VectorSource from 'ol/source/Vector.js';
 import VectorLayer from 'ol/layer/Vector.js';
 import { Style, Circle, Fill, Text, Stroke } from 'ol/style.js';
+import { getThemeColor } from '$lib/map/styleUtils';
 
 const clusterSource = new Cluster({
 	distance: 40, // Pixel-Abstand für Clustering
 	source: new VectorSource({ url: '/api/map/sightings', format: new GeoJSON() })
 });
+
+// Farben einmalig auflösen (in $effect nach DOM-Mount)
+const primary = getThemeColor('--color-primary');
+const primaryContent = getThemeColor('--color-primary-content');
 
 const clusterLayer = new VectorLayer({
 	source: clusterSource,
@@ -176,15 +196,12 @@ const clusterLayer = new VectorLayer({
 		return new Style({
 			image: new Circle({
 				radius: size > 1 ? 14 : 8,
-				fill: new Fill({ color: 'var(--color-primary)' }),
-				stroke: new Stroke({ color: 'var(--color-primary-content)', width: 1 })
+				fill: new Fill({ color: primary }),
+				stroke: new Stroke({ color: primaryContent, width: 1 })
 			}),
 			text:
 				size > 1
-					? new Text({
-							text: String(size),
-							fill: new Fill({ color: 'var(--color-primary-content)' })
-						})
+					? new Text({ text: String(size), fill: new Fill({ color: primaryContent }) })
 					: undefined
 		});
 	}

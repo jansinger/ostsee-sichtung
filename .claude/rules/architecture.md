@@ -152,9 +152,9 @@ let { value = $bindable(''), oninput }: Props = $props();
 
 ---
 
-### Snippets — Svelte 5 Ersatz für Slots
+### Snippets — bevorzugtes Muster für neue Komponenten
 
-`<slot />` ist in Svelte 5 deprecated. Ersatz: `{#snippet}` + `{@render}`.
+`<slot />` funktioniert in Svelte 5 weiterhin (Compatibility Mode). Für **neue Komponenten** sind `{#snippet}` + `{@render}` das native Svelte-5-Muster und werden empfohlen. Bestehende Slot-Komponenten müssen nicht migriert werden.
 
 ```svelte
 <!-- Button.svelte: children-Prop für Standard-Content -->
