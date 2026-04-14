@@ -239,7 +239,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
   /api/sightings/{id}/approve:
-    post:
+    patch:
       tags:
         - sightings
       summary: Sichtung genehmigen
@@ -262,19 +262,97 @@ paths:
             schema:
               type: object
               required:
-                - approved
+                - approve
               properties:
-                approved:
+                approve:
                   type: boolean
                   description: true für Genehmigung, false für Widerruf
                   example: true
+                internalComment:
+                  type: string
+                  description: Optionaler interner Kommentar (nur für Admins sichtbar)
+                  example: "Koordinaten geprüft, Sichtung plausibel"
       responses:
         '200':
           description: Genehmigungsstatus erfolgreich aktualisiert
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                type: object
+                required:
+                  - success
+                  - id
+                  - approved
+                  - message
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  id:
+                    type: integer
+                    example: 1840
+                  approved:
+                    type: boolean
+                    example: true
+                  internalComment:
+                    type: string
+                    nullable: true
+                    example: "Koordinaten geprüft"
+                  message:
+                    type: string
+                    example: "Sichtung wurde genehmigt"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags:
+        - sightings
+      summary: Genehmigungsstatus abrufen
+      description: Gibt den aktuellen Genehmigungsstatus einer Sichtung zurück (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Sichtung
+          schema:
+            type: integer
+            minimum: 1
+            example: 1840
+      responses:
+        '200':
+          description: Aktueller Genehmigungsstatus
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - approved
+                properties:
+                  id:
+                    type: integer
+                    example: 1840
+                  approved:
+                    type: boolean
+                    example: true
+                  approvedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: "2024-03-15T10:30:00.000Z"
+                  internalComment:
+                    type: string
+                    nullable: true
+                    example: "Koordinaten geprüft"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -287,7 +365,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
   /api/sightings/{id}/verify:
-    post:
+    patch:
       tags:
         - sightings
       summary: Sichtung verifizieren
@@ -323,7 +401,70 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                type: object
+                required:
+                  - success
+                  - id
+                  - verified
+                  - message
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  id:
+                    type: integer
+                    example: 1840
+                  verified:
+                    type: integer
+                    enum: [0, 1]
+                    example: 1
+                  message:
+                    type: string
+                    example: "Sichtung wurde verifiziert"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    get:
+      tags:
+        - sightings
+      summary: Verifizierungsstatus abrufen
+      description: Gibt den aktuellen Verifizierungsstatus einer Sichtung zurück (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Sichtung
+          schema:
+            type: integer
+            minimum: 1
+            example: 1840
+      responses:
+        '200':
+          description: Aktueller Verifizierungsstatus
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - verified
+                properties:
+                  id:
+                    type: integer
+                    example: 1840
+                  verified:
+                    type: integer
+                    enum: [0, 1]
+                    example: 1
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -352,14 +493,14 @@ paths:
             type: string
             enum: [json, csv, xml, kml]
             example: json
-        - name: dateFrom
+        - name: fromDate
           in: query
           description: Startdatum (YYYY-MM-DD)
           schema:
             type: string
             format: date
             example: "2024-01-01"
-        - name: dateTo
+        - name: toDate
           in: query
           description: Enddatum (YYYY-MM-DD)
           schema:
@@ -1716,16 +1857,16 @@ components:
 
   parameters:
     ExportDateFrom:
-      name: dateFrom
+      name: fromDate
       in: query
       description: Startdatum (YYYY-MM-DD)
       schema:
         type: string
         format: date
         example: "2024-01-01"
-    
+
     ExportDateTo:
-      name: dateTo
+      name: toDate
       in: query
       description: Enddatum (YYYY-MM-DD)
       schema:
