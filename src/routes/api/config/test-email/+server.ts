@@ -11,8 +11,13 @@ export const POST: RequestHandler = async ({ locals, request, url }: RequestEven
 	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	try {
-		const body = await request.json();
-		const { recipient } = body;
+		let recipient: string | undefined;
+		try {
+			const body = await request.json();
+			recipient = body?.recipient;
+		} catch {
+			// Empty or missing request body — use default recipient
+		}
 
 		// Send test email
 		const success = await EmailService.sendTestEmail(recipient);
