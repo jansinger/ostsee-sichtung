@@ -12,8 +12,8 @@
 
 		// List of filter parameters to preserve
 		const filterParams = [
-			'dateFrom',
-			'dateTo',
+			'fromDate',
+			'toDate',
 			'verified',
 			'entryChannel',
 			'mediaUpload',

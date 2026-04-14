@@ -67,14 +67,14 @@
 	function getActiveFiltersDisplay(): string[] {
 		const filterDisplays: string[] = [];
 
-		if (currentFilters.dateFrom) {
+		if (currentFilters.fromDate) {
 			filterDisplays.push(
-				`Von: ${new Date(currentFilters.dateFrom as string).toLocaleDateString('de-DE')}`
+				`Von: ${new Date(currentFilters.fromDate as string).toLocaleDateString('de-DE')}`
 			);
 		}
-		if (currentFilters.dateTo) {
+		if (currentFilters.toDate) {
 			filterDisplays.push(
-				`Bis: ${new Date(currentFilters.dateTo as string).toLocaleDateString('de-DE')}`
+				`Bis: ${new Date(currentFilters.toDate as string).toLocaleDateString('de-DE')}`
 			);
 		}
 		if (currentFilters.verified === '1') {
