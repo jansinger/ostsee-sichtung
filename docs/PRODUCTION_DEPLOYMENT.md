@@ -4,7 +4,7 @@ Schnellanleitung für das Deployment von Ostsee-Tiere in einer Produktionsumgebu
 
 > **Hinweis:** Diese Anleitung ist für erfahrene Administratoren gedacht, die Docker und Linux-Server verwalten. Für detaillierte Hintergrundinformationen siehe [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md).
 
-> **Neu in v2.1.8:** PostgreSQL 18 mit PostGIS 3.6 Support, Node.js 24, Security Hardening (no-new-privileges, Logging-Limits), verbesserte Dokumentation.
+> **Neu in v2.3.0:** Vite 8 mit Rolldown-Engine (10–30× schnellere Builds), @sveltejs/vite-plugin-svelte 7. Vorherige: PostgreSQL 18 mit PostGIS 3.6 Support, Node.js 24, Security Hardening.
 
 ---
 

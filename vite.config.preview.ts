@@ -19,19 +19,6 @@ export default defineConfig({
 		host: true,
 		strictPort: true
 	},
-	build: {
-		rollupOptions: {
-			// Suppresses some warnings for better build logs
-			onwarn(warning, warn) {
-				// Ignore CommonJS plugin warnings
-				if (warning.code === 'PLUGIN_WARNING' && warning.plugin === 'commonjs--resolver') {
-					return;
-				}
-				// Keep other warnings
-				warn(warning);
-			}
-		}
-	},
 	resolve: {
 		// Ensure consistent module resolution
 		conditions: ['browser', 'import', 'module', 'default']

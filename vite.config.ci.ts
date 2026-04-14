@@ -35,19 +35,6 @@ export default defineConfig({
 		// Disable HMR overlay for CI
 		hmr: false
 	},
-	build: {
-		rollupOptions: {
-			// Suppresses some warnings for better build logs
-			onwarn(warning, warn) {
-				// Ignore CommonJS plugin warnings
-				if (warning.code === 'PLUGIN_WARNING' && warning.plugin === 'commonjs--resolver') {
-					return;
-				}
-				// Keep other warnings
-				warn(warning);
-			}
-		}
-	},
 	optimizeDeps: {
 		// Pre-bundle these dependencies to avoid CommonJS issues
 		include: [
