@@ -145,6 +145,40 @@ describe('Contract: GET /api/sightings/{id}', () => {
 			expect(e.status).toBe(404);
 		}
 	});
+
+	it('throws 302 when unauthenticated', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 302, location: '/api/auth/login' };
+		});
+		const event = createEvent('/api/sightings/123', {
+			params: { id: '123' },
+			locals: { user: mockAdminUser }
+		});
+		try {
+			await GET(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(302);
+		}
+	});
+
+	it('throws 403 when role is insufficient', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 403, body: { message: 'Forbidden' } };
+		});
+		const event = createEvent('/api/sightings/123', {
+			params: { id: '123' },
+			locals: { user: mockAdminUser }
+		});
+		try {
+			await GET(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(403);
+		}
+	});
 });
 
 describe('Contract: DELETE /api/sightings/{id}', () => {
@@ -197,6 +231,42 @@ describe('Contract: DELETE /api/sightings/{id}', () => {
 			expect(e.status).toBe(404);
 		}
 	});
+
+	it('throws 302 when unauthenticated', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 302, location: '/api/auth/login' };
+		});
+		const event = createEvent('/api/sightings/123', {
+			method: 'DELETE',
+			params: { id: '123' },
+			locals: { user: mockAdminUser }
+		});
+		try {
+			await DELETE(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(302);
+		}
+	});
+
+	it('throws 403 when role is insufficient', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 403, body: { message: 'Forbidden' } };
+		});
+		const event = createEvent('/api/sightings/123', {
+			method: 'DELETE',
+			params: { id: '123' },
+			locals: { user: mockAdminUser }
+		});
+		try {
+			await DELETE(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(403);
+		}
+	});
 });
 
 describe('Contract: PUT /api/sightings/{id}', () => {
@@ -233,6 +303,44 @@ describe('Contract: PUT /api/sightings/{id}', () => {
 			expect.fail('should have thrown');
 		} catch (e: any) {
 			expect(e.status).toBe(400);
+		}
+	});
+
+	it('throws 302 when unauthenticated', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 302, location: '/api/auth/login' };
+		});
+		const event = createEvent('/api/sightings/123', {
+			method: 'PUT',
+			params: { id: '123' },
+			locals: { user: mockAdminUser },
+			body: validSightingBody
+		});
+		try {
+			await PUT(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(302);
+		}
+	});
+
+	it('throws 403 when role is insufficient', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 403, body: { message: 'Forbidden' } };
+		});
+		const event = createEvent('/api/sightings/123', {
+			method: 'PUT',
+			params: { id: '123' },
+			locals: { user: mockAdminUser },
+			body: validSightingBody
+		});
+		try {
+			await PUT(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(403);
 		}
 	});
 });

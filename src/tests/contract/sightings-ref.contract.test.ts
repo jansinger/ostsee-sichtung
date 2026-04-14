@@ -78,4 +78,38 @@ describe('Contract: GET /api/sightings/ref/{refId}', () => {
 			expect(e.body.message).toBeDefined();
 		}
 	});
+
+	it('throws 302 when unauthenticated', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 302, location: '/api/auth/login' };
+		});
+		const event = createEvent('/api/sightings/ref/ref-test-123', {
+			params: { refId: 'ref-test-123' },
+			locals: { user: mockAdminUser }
+		});
+		try {
+			await GET(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(302);
+		}
+	});
+
+	it('throws 403 when role is insufficient', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 403, body: { message: 'Forbidden' } };
+		});
+		const event = createEvent('/api/sightings/ref/ref-test-123', {
+			params: { refId: 'ref-test-123' },
+			locals: { user: mockAdminUser }
+		});
+		try {
+			await GET(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(403);
+		}
+	});
 });

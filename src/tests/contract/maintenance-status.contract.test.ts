@@ -50,4 +50,32 @@ describe('Contract: GET /api/maintenance-status', () => {
 		expect(body.enabled).toBe(true);
 		expect(body.timestamp).toBeDefined();
 	});
+
+	it('throws 302 when unauthenticated', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 302, location: '/api/auth/login' };
+		});
+		const event = createEvent('/api/maintenance-status', { locals: { user: mockAdminUser } });
+		try {
+			await GET(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(302);
+		}
+	});
+
+	it('throws 403 when role is insufficient', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 403, body: { message: 'Forbidden' } };
+		});
+		const event = createEvent('/api/maintenance-status', { locals: { user: mockAdminUser } });
+		try {
+			await GET(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(403);
+		}
+	});
 });

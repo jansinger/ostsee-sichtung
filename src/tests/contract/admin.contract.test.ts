@@ -76,6 +76,42 @@ describe('Contract: POST /api/admin/test-email', () => {
 		expect(apiRes.status).toBe(400);
 		expect(apiRes).toSatisfyApiSpec();
 	});
+
+	it('throws 302 when unauthenticated', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 302, location: '/api/auth/login' };
+		});
+		const event = createEvent('/api/admin/test-email', {
+			method: 'POST',
+			locals: { user: mockAdminUser },
+			body: { testType: 'simple' }
+		});
+		try {
+			await testEmailPOST(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(302);
+		}
+	});
+
+	it('throws 403 when role is insufficient', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 403, body: { message: 'Forbidden' } };
+		});
+		const event = createEvent('/api/admin/test-email', {
+			method: 'POST',
+			locals: { user: mockAdminUser },
+			body: { testType: 'simple' }
+		});
+		try {
+			await testEmailPOST(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(403);
+		}
+	});
 });
 
 describe('Contract: POST /api/admin/weather/{id}/refresh', () => {
@@ -119,5 +155,41 @@ describe('Contract: POST /api/admin/weather/{id}/refresh', () => {
 		const res = await weatherRefreshPOST(event);
 
 		expect(res.status).toBe(404);
+	});
+
+	it('throws 302 when unauthenticated', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 302, location: '/api/auth/login' };
+		});
+		const event = createEvent('/api/admin/weather/42/refresh', {
+			method: 'POST',
+			params: { id: '42' },
+			locals: { user: mockAdminUser }
+		});
+		try {
+			await weatherRefreshPOST(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(302);
+		}
+	});
+
+	it('throws 403 when role is insufficient', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 403, body: { message: 'Forbidden' } };
+		});
+		const event = createEvent('/api/admin/weather/42/refresh', {
+			method: 'POST',
+			params: { id: '42' },
+			locals: { user: mockAdminUser }
+		});
+		try {
+			await weatherRefreshPOST(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(403);
+		}
 	});
 });

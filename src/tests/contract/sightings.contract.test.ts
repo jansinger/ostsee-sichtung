@@ -199,4 +199,18 @@ describe('Contract: POST /api/sightings', () => {
 		expect(body.success).toBe(false);
 		expect(body.code).toBe('DATABASE_ERROR');
 	}, 15000);
+
+	it('throws 429 when rate limit is exceeded', async () => {
+		const { enforceRateLimit } = vi.mocked(await import('$lib/server/middleware/rateLimit'));
+		enforceRateLimit.mockImplementationOnce(() => {
+			throw { status: 429, body: { message: 'Too many requests' } };
+		});
+		const event = createEvent('/api/sightings', { method: 'POST', body: validSightingBody });
+		try {
+			await POST(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(429);
+		}
+	});
 });

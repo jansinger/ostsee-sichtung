@@ -166,6 +166,30 @@ describe('Contract: POST /rest_sichtungen', () => {
 
 		expect(res.status).toBe(400);
 	});
+
+	it('throws 429 when rate limit is exceeded', async () => {
+		const { enforceRateLimit } = vi.mocked(await import('$lib/server/middleware/rateLimit'));
+		enforceRateLimit.mockImplementationOnce(() => {
+			throw { status: 429, body: { message: 'Too many requests' } };
+		});
+		const { POST } = await import('../../routes/rest_sichtungen/+server');
+		const event = createEvent('/rest_sichtungen', {
+			method: 'POST',
+			body: {
+				sichtungsdatum: '2024-01-15 14:30',
+				anzahl_gesamt: 2,
+				vorname: 'Max',
+				name: 'Mustermann',
+				email: 'max@example.com'
+			}
+		});
+		try {
+			await POST(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(429);
+		}
+	});
 });
 
 describe('Contract: GET /rest_sichtungen/antworten.json', () => {

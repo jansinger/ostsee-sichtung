@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { GET as exportBaseGET } from '../../routes/api/sightings/export/+server';
 import { GET as jsonGET } from '../../routes/api/sightings/export/json/+server';
 import { GET as csvGET } from '../../routes/api/sightings/export/csv/+server';
 import { GET as xmlGET } from '../../routes/api/sightings/export/xml/+server';
@@ -231,5 +232,67 @@ describe('Contract: GET /api/sightings/export/kml', () => {
 
 		expect(body).toContain('<Placemark>');
 		expect(body).toContain('13.5,54.5,0');
+	});
+});
+
+describe('Contract: GET /api/sightings/export (base)', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('returns 200 and satisfies the OpenAPI spec', async () => {
+		const event = createEvent('/api/sightings/export', {
+			searchParams: { format: 'json' },
+			locals: { user: mockAdminUser }
+		});
+		const res = await exportBaseGET(event);
+		const apiRes = await asApiResponse(res, event);
+
+		expect(apiRes.status).toBe(200);
+		expect(apiRes).toSatisfyApiSpec();
+	});
+
+	it('returns 200 with date filter applied', async () => {
+		const event = createEvent('/api/sightings/export', {
+			searchParams: { format: 'json', fromDate: '2024-01-01', toDate: '2024-12-31' },
+			locals: { user: mockAdminUser }
+		});
+		const res = await exportBaseGET(event);
+
+		expect(res.status).toBe(200);
+	});
+
+	it('throws 302 when unauthenticated', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 302, location: '/api/auth/login' };
+		});
+		const event = createEvent('/api/sightings/export', {
+			searchParams: { format: 'json' },
+			locals: { user: mockAdminUser }
+		});
+		try {
+			await exportBaseGET(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(302);
+		}
+	});
+
+	it('throws 403 when role is insufficient', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		requireUserRole.mockImplementationOnce(() => {
+			throw { status: 403, body: { message: 'Forbidden' } };
+		});
+		const event = createEvent('/api/sightings/export', {
+			searchParams: { format: 'json' },
+			locals: { user: mockAdminUser }
+		});
+		try {
+			await exportBaseGET(event);
+			expect.fail('should have thrown');
+		} catch (e: any) {
+			expect(e.status).toBe(403);
+		}
 	});
 });
