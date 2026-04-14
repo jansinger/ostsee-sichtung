@@ -100,5 +100,5 @@ export function createForm<T extends Record<string, unknown>>(options: FormProps
 	};
 }
 
-/** Type of the object returned by `createForm<T>` — use this instead of `ReturnType<typeof createForm<T>>`. */
+/** Type of the object returned by `createForm<T>`. */
 export type FormApi<T extends Record<string, unknown>> = ReturnType<typeof createForm<T>>;
