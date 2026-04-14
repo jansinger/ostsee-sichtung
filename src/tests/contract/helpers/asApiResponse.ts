@@ -16,9 +16,15 @@ export async function asApiResponse(
 	let body: unknown = null;
 	let text = '';
 
-	if (res.status !== 204 && contentType.includes('application/json')) {
-		body = await res.json();
-		text = JSON.stringify(body);
+	if (res.status !== 204) {
+		text = await res.clone().text();
+		if (contentType.includes('application/json')) {
+			try {
+				body = JSON.parse(text);
+			} catch {
+				body = null;
+			}
+		}
 	}
 
 	return {

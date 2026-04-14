@@ -176,8 +176,8 @@ paths:
                 $ref: '#/components/schemas/DetailedSighting'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -216,8 +216,8 @@ paths:
                 $ref: '#/components/schemas/DetailedSighting'
         '400':
           $ref: '#/components/responses/ValidationError'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -248,8 +248,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -322,8 +322,8 @@ paths:
                     example: "Sichtung wurde genehmigt"
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -374,8 +374,8 @@ paths:
                     example: "Koordinaten geprüft"
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -442,8 +442,8 @@ paths:
                     example: "Sichtung wurde verifiziert"
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -486,8 +486,8 @@ paths:
                     example: 1
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -555,10 +555,10 @@ paths:
             application/vnd.google-earth.kml+xml:
               schema:
                 type: string
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
@@ -583,9 +583,40 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DetailedSighting'
+                type: object
+                required: [metadata, sichtungen]
+                properties:
+                  metadata:
+                    type: object
+                    required: [exportDate, recordCount, filters]
+                    properties:
+                      exportDate:
+                        type: string
+                        format: date-time
+                      recordCount:
+                        type: integer
+                      filters:
+                        type: object
+                        properties:
+                          dateFrom:
+                            type: string
+                            nullable: true
+                          dateTo:
+                            type: string
+                            nullable: true
+                          verified:
+                            type: string
+                            nullable: true
+                          entryChannel:
+                            type: string
+                            nullable: true
+                          mediaUpload:
+                            type: string
+                            nullable: true
+                  sichtungen:
+                    type: array
+                    items:
+                      type: object
         '302':
           $ref: '#/components/responses/LoginRedirect'
         '500':
@@ -593,7 +624,11 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                type: object
+                required: [error]
+                properties:
+                  error:
+                    type: string
 
   /api/sightings/export/csv:
     get:
@@ -649,7 +684,7 @@ paths:
         '500':
           description: Interner Serverfehler beim XML-Export
           content:
-            text/plain:
+            application/xml:
               schema:
                 type: string
 
@@ -678,7 +713,7 @@ paths:
         '500':
           description: Interner Serverfehler beim KML-Export
           content:
-            text/plain:
+            application/vnd.google-earth.kml+xml:
               schema:
                 type: string
 
