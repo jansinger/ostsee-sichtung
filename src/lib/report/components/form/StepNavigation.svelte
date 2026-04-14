@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { isStepValid, validateStep } from '$lib/form/validation/stepValidation';
+	import { validateStep } from '$lib/form/validation/stepValidation';
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
 	import { toast } from '$lib/stores/toastState.svelte';
@@ -24,15 +24,15 @@
 	// Get field orders from form configuration
 	const stepFieldOrders = formStepsConfig.map((step) => step.fields);
 
-	// Reactive validation using safe validation function
-	const canGoNext = $derived(isStepValid(currentStep, $form));
+	// Single validation pass — used for both canGoNext and stepErrorMessages
+	const stepValidation = $derived.by(() => validateStep(currentStep, $form));
+
+	const canGoNext = $derived(stepValidation.isValid);
 
 	// Step error messages for inline display (only when step is invalid)
-	const stepErrorMessages = $derived.by(() => {
-		if (canGoNext) return [];
-		const { errors: errs } = validateStep(currentStep, $form);
-		return Object.values(errs).filter(Boolean);
-	});
+	const stepErrorMessages = $derived(
+		canGoNext ? [] : (Object.values(stepValidation.errors).filter(Boolean) as string[])
+	);
 
 	const isLastStep = $derived(currentStep >= totalSteps - 1);
 	const isFirstStep = $derived(currentStep <= 0);

@@ -613,6 +613,8 @@ paths:
                       $ref: '#/components/schemas/DetailedSighting'
         '302':
           $ref: '#/components/responses/LoginRedirect'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           description: Interner Serverfehler beim JSON-Export
           content:
@@ -647,6 +649,8 @@ paths:
                 type: string
         '302':
           $ref: '#/components/responses/LoginRedirect'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           description: Interner Serverfehler beim CSV-Export
           content:
@@ -677,6 +681,8 @@ paths:
                 type: string
         '302':
           $ref: '#/components/responses/LoginRedirect'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           description: Interner Serverfehler beim XML-Export
           content:
@@ -707,6 +713,8 @@ paths:
                 type: string
         '302':
           $ref: '#/components/responses/LoginRedirect'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           description: Interner Serverfehler beim KML-Export
           content:
