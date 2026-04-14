@@ -46,7 +46,6 @@ export default defineConfig({
 	optimizeDeps: {
 		// Pre-bundle these dependencies to avoid CommonJS issues and improve startup performance
 		include: [
-			'svelte-forms-lib',
 			'yup',
 			'ol',
 			'@turf/boolean-point-in-polygon',
