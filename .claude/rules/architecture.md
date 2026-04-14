@@ -247,7 +247,7 @@ Ab SvelteKit 2.12 ist `$app/stores` **deprecated**. Stattdessen `$app/state` ver
 </script>
 
 <!-- Zugriff ohne $-Prefix (kein Svelte-Store, sondern reaktives Objekt) -->
-<title>{page.data.title}</title>
+<svelte:head><title>{page.data.title}</title></svelte:head>
 {#if navigating.to}<span>Lade...</span>{/if}
 ```
 

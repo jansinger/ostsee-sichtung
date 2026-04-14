@@ -194,7 +194,7 @@ function prevStep() {
 		class="input w-full"
 		aria-describedby={$errors.species && $touched.species ? 'species-error' : undefined}
 		aria-required="true"
-		aria-invalid={$errors.species && $touched.species}
+		aria-invalid={!!($errors.species && $touched.species)}
 	/>
 	{#if $errors.species && $touched.species}
 		<p id="species-error" class="label text-error" role="alert" aria-live="polite">
