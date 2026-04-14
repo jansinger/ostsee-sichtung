@@ -126,6 +126,25 @@ paths:
                 $ref: '#/components/schemas/SightingResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '422':
+          description: Datenbank-Integritätsfehler (z.B. doppelter Eintrag)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, code, message]
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  code:
+                    type: string
+                    enum: [DATABASE_ERROR]
+                  message:
+                    type: string
+                  detail:
+                    type: string
+                    description: Nur in Development-Umgebung
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
         '500':
@@ -194,7 +213,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SightingResponse'
+                $ref: '#/components/schemas/DetailedSighting'
         '400':
           $ref: '#/components/responses/ValidationError'
         '401':
@@ -205,7 +224,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    
+
     delete:
       tags:
         - sightings
@@ -567,6 +586,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/DetailedSighting'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
+        '500':
+          description: Interner Serverfehler beim JSON-Export
+          content:
+            application/json:
+              schema:
+                type: string
 
   /api/sightings/export/csv:
     get:
@@ -586,6 +613,14 @@ paths:
           description: CSV-Datei mit Sichtungen
           content:
             text/csv:
+              schema:
+                type: string
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
+        '500':
+          description: Interner Serverfehler beim CSV-Export
+          content:
+            text/plain:
               schema:
                 type: string
 
@@ -609,6 +644,14 @@ paths:
             application/xml:
               schema:
                 type: string
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
+        '500':
+          description: Interner Serverfehler beim XML-Export
+          content:
+            text/plain:
+              schema:
+                type: string
 
   /api/sightings/export/kml:
     get:
@@ -628,6 +671,14 @@ paths:
           description: KML-Datei mit Sichtungen
           content:
             application/vnd.google-earth.kml+xml:
+              schema:
+                type: string
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
+        '500':
+          description: Interner Serverfehler beim KML-Export
+          content:
+            text/plain:
               schema:
                 type: string
 
@@ -1311,13 +1362,12 @@ paths:
             schema:
               type: object
               required:
-                - url
+                - filePath
               properties:
-                url:
+                filePath:
                   type: string
-                  format: uri
-                  description: URL der zu löschenden Datei
-                  example: "/uploads/2024/01/image_123.jpg"
+                  description: Pfad der zu löschenden Datei
+                  example: "uploads/2024/01/image_123.jpg"
       responses:
         '200':
           description: Datei erfolgreich gelöscht
@@ -1327,6 +1377,8 @@ paths:
                 $ref: '#/components/schemas/SuccessResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
