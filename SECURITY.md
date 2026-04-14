@@ -24,16 +24,16 @@ Please report security vulnerabilities to the maintainers via:
 
 ## Current Security Status
 
-### Vulnerability Assessment (as of 2026-04-10)
+### Vulnerability Assessment (as of 2026-04-14)
 
 - **Critical**: 0 ✅
 - **High**: 1 (development dependency only - lodash prototype pollution)
-- **Moderate**: 10 (mostly development dependencies; dompurify is also a direct production dependency with limited exposure)
+- **Moderate**: 10 (mostly development dependencies; dompurify is a transitive dependency via isomorphic-dompurify with limited exposure — see advisory list below)
 - **Low**: 3 (development dependencies only)
 
 ### Overall Security Rating: 7/10
 
-**Status**: GOOD - Most vulnerabilities are in dev-only dependencies. The dompurify vulnerability affects a direct production dependency used for HTML sanitization, but exploitation requires crafted input and the attack surface is limited.
+**Status**: GOOD - Most vulnerabilities are in dev-only dependencies. The dompurify vulnerability affects a transitive production dependency (via isomorphic-dompurify) used for HTML sanitization, but exploitation requires crafted input and the attack surface is limited.
 
 ## Security Architecture
 
@@ -92,14 +92,14 @@ Please report security vulnerabilities to the maintainers via:
 - **Mitigation**: Isolated to commit message tooling
 - **Resolution Path**: Requires major commitizen update (breaking change)
 
-#### 2. dompurify <= 3.3.1 (Moderate Severity, 3 CVEs)
+#### 2. dompurify 3.3.3 (Moderate Severity, 6 advisories)
 
-- **CVEs**: GHSA-vhxf-7vqr-mrjg, GHSA-v8jm-5vwx-cfxm, GHSA-v2wj-7wpq-c8vv
-- **Affected**: Direct production dependency (`dompurify` in `src/lib/utils/sanitize.ts`) and transitive via @scalar/api-reference → monaco-editor → dompurify
-- **Risk Level**: Moderate - Used for HTML sanitization in production and in API docs viewer
+- **Advisories**: GHSA-vhxf-7vqr-mrjg, GHSA-v8jm-5vwx-cfxm, GHSA-v2wj-7wpq-c8vv (3 confirmed GHSA IDs); plus 3 additional issues tracked upstream: XSS via mutation re-contextualization, ADD_ATTR URI validation bypass, USE_PROFILES prototype pollution via event handlers
+- **Affected**: Transitive production dependency via `isomorphic-dompurify@3.8.0 → dompurify@3.3.3` (used in `src/lib/utils/sanitize.ts`). The former direct `dompurify` dep and the transitive path via `@scalar/api-reference → monaco-editor → dompurify` have both been removed.
+- **Risk Level**: Moderate - DOMPurify is the engine behind isomorphic-dompurify's sanitization
 - **Impact**: DOMPurify is used in production for `sanitizeHtml()` and `sanitizeText()` functions. However, exploitation requires specifically crafted malicious input that bypasses the sanitizer. The allowed tags/attributes are restricted to a safe subset.
 - **Mitigation**: Sanitization functions use a strict allowlist of tags (`a`, `em`, `strong`, `br`, `span`, `p`, `i`, `b`) and attributes (`href`, `class`, `target`, `rel`). User input is validated server-side before reaching the sanitizer.
-- **Resolution Path**: Awaiting dompurify upstream fix; monitor for patch releases
+- **Resolution Path**: Upgrade isomorphic-dompurify when it pins dompurify 3.4.0+; monitor advisory feed
 
 #### 3. unhead / @unhead/vue (Moderate Severity)
 
@@ -298,6 +298,6 @@ The following security features have been implemented:
 
 ---
 
-_Last Updated: 2026-04-10_
-_Security Assessment: 7/10 - Strong foundational security, one production dependency (dompurify) under review_
-_Next Security Review: 2026-07-10_
+_Last Updated: 2026-04-14_
+_Security Assessment: 7/10 - Strong foundational security, one transitive production dependency (dompurify via isomorphic-dompurify) under review_
+_Next Security Review: 2026-07-14_

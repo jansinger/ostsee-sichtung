@@ -3,19 +3,28 @@ import { sanitizeHtml, sanitizeText } from '$lib/utils/sanitize';
 
 /**
  * Tests run in a server environment (no window/DOM).
- * sanitizeHtml returns empty string on server (avoids {@html} hydration mismatch).
- * sanitizeText uses HTML entity encoding on server.
- * Client-side DOMPurify behavior is not covered here (would require browser environment).
+ * isomorphic-dompurify provides real DOMPurify sanitization on both server and client,
+ * so both environments produce identical output.
  */
 
-describe('sanitizeHtml (server fallback — empty string for SSR)', () => {
-	it('returns empty string on server to avoid hydration mismatch', () => {
+describe('sanitizeHtml', () => {
+	it('preserves allowed tags', () => {
 		const input = '<a href="https://example.com">link</a> <em>emphasis</em>';
-		expect(sanitizeHtml(input)).toBe('');
+		const result = sanitizeHtml(input);
+		expect(result).toContain('<a href="https://example.com">link</a>');
+		expect(result).toContain('<em>emphasis</em>');
 	});
 
-	it('returns empty string for script tags on server', () => {
-		expect(sanitizeHtml('<script>alert("xss")</script>Safe text')).toBe('');
+	it('strips script tags, keeps text content', () => {
+		const result = sanitizeHtml('<script>alert("xss")</script>Safe text');
+		expect(result).not.toContain('<script>');
+		expect(result).toContain('Safe text');
+	});
+
+	it('strips disallowed tags like div', () => {
+		const result = sanitizeHtml('<div class="evil">text</div>');
+		expect(result).not.toContain('<div');
+		expect(result).toContain('text');
 	});
 
 	it('returns empty string for null', () => {
@@ -31,8 +40,8 @@ describe('sanitizeHtml (server fallback — empty string for SSR)', () => {
 	});
 });
 
-describe('sanitizeText (server fallback — HTML entity encoding)', () => {
-	it('encodes ALL HTML tags', () => {
+describe('sanitizeText', () => {
+	it('strips ALL HTML tags, returning plain text', () => {
 		const result = sanitizeText('<b>bold</b> and <a href="#">link</a>');
 		expect(result).not.toContain('<b>');
 		expect(result).not.toContain('<a');
@@ -52,31 +61,29 @@ describe('sanitizeText (server fallback — HTML entity encoding)', () => {
 		expect(sanitizeText(undefined)).toBe('');
 	});
 
-	it('encodes script tags making them harmless', () => {
+	it('strips script tags, keeps safe text', () => {
 		const result = sanitizeText('<script>alert("xss")</script>Safe');
 		expect(result).not.toContain('<script>');
 		expect(result).toContain('Safe');
 	});
 });
 
-describe('sanitizeText - map popup XSS scenarios (server fallback)', () => {
-	it('encodes script injection from shipname field', () => {
+describe('sanitizeText - XSS scenarios', () => {
+	it('strips script injection, keeps ship name', () => {
 		const result = sanitizeText('<script>alert("xss")</script>MS Stralsund');
 		expect(result).not.toContain('<script>');
 		expect(result).toContain('MS Stralsund');
 	});
 
-	it('encodes img onerror payload from waterway field', () => {
+	it('strips img onerror payload, keeps waterway text', () => {
 		const result = sanitizeText('<img src=x onerror=alert(1)>Kieler Förde');
 		expect(result).not.toContain('<img');
-		expect(result).toContain('&lt;img');
 		expect(result).toContain('Kieler Förde');
 	});
 
-	it('encodes svg onload payload', () => {
+	it('strips svg onload payload, keeps plain text', () => {
 		const result = sanitizeText('<svg onload=alert(1)>evil</svg>Klaus');
 		expect(result).not.toContain('<svg');
-		expect(result).toContain('&lt;svg');
 		expect(result).toContain('Klaus');
 	});
 
@@ -84,7 +91,7 @@ describe('sanitizeText - map popup XSS scenarios (server fallback)', () => {
 		expect(sanitizeText('Jörg Müller-Ström')).toBe('Jörg Müller-Ström');
 	});
 
-	it('handles empty shipname gracefully', () => {
+	it('handles empty input gracefully', () => {
 		expect(sanitizeText('')).toBe('');
 		expect(sanitizeText(null)).toBe('');
 		expect(sanitizeText(undefined)).toBe('');

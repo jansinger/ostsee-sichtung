@@ -7,7 +7,6 @@ import tailwindcss from '@tailwindcss/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
-import devtoolsJson from 'vite-plugin-devtools-json';
 
 export default defineConfig({
 	plugins: [
@@ -22,7 +21,6 @@ export default defineConfig({
 				props.height = props.height || '20';
 			}
 		}),
-		devtoolsJson(),
 		basicSsl({
 			name: 'localhost',
 			domains: ['localhost', '*.local.dev'],
@@ -43,19 +41,6 @@ export default defineConfig({
 				'./src/app.css',
 				'./src/lib/report/components/ModernReportForm.svelte'
 			]
-		}
-	},
-	build: {
-		rollupOptions: {
-			// Suppresses some warnings for better build logs
-			onwarn(warning, warn) {
-				// Ignore CommonJS plugin warnings
-				if (warning.code === 'PLUGIN_WARNING' && warning.plugin === 'commonjs--resolver') {
-					return;
-				}
-				// Keep other warnings
-				warn(warning);
-			}
 		}
 	},
 	optimizeDeps: {

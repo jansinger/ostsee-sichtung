@@ -166,7 +166,6 @@
 		<div class="mt-4 text-center">
 			<p class="text-sm text-gray-500">
 				Falls die interaktive Dokumentation nicht funktioniert, nutzen Sie die
-				<a href="/docs/api/direct" class="link link-primary">Direkte Dokumentation</a>,
 				<a href="/docs/api/fallback" class="link link-primary">Fallback-Dokumentation</a>
 				oder laden Sie die
 				<a href="/openapi.yml" download="ostsee-tiere-api.yml" class="link link-primary"

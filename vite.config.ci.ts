@@ -6,7 +6,6 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
-import devtoolsJson from 'vite-plugin-devtools-json';
 
 export default defineConfig({
 	// Set environment variable to skip database check in CI/E2E tests
@@ -24,8 +23,7 @@ export default defineConfig({
 				props.height = props.height || '20';
 			}
 		}),
-		sveltekit(),
-		devtoolsJson()
+		sveltekit()
 		// No basicSsl plugin for CI to avoid HTTPS certificate issues
 	],
 	server: {
@@ -34,19 +32,6 @@ export default defineConfig({
 		strictPort: true,
 		// Disable HMR overlay for CI
 		hmr: false
-	},
-	build: {
-		rollupOptions: {
-			// Suppresses some warnings for better build logs
-			onwarn(warning, warn) {
-				// Ignore CommonJS plugin warnings
-				if (warning.code === 'PLUGIN_WARNING' && warning.plugin === 'commonjs--resolver') {
-					return;
-				}
-				// Keep other warnings
-				warn(warning);
-			}
-		}
 	},
 	optimizeDeps: {
 		// Pre-bundle these dependencies to avoid CommonJS issues
