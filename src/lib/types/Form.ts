@@ -2,7 +2,7 @@
  * Form-related type definitions
  */
 
-import type { createForm } from '$lib/form/createForm';
+import type { FormApi } from '$lib/form/createForm';
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
 import type { MediaStore } from '$lib/utils/media/MediaFile';
 import * as yup from 'yup';
@@ -30,7 +30,7 @@ export type SightingFormValues = Omit<SightingFormData, 'uploadedFiles'> & {
 	inBalticSeaGeo?: boolean;
 };
 
-export type FormContext = ReturnType<typeof createForm<SightingFormData>> & {
+export type FormContext = FormApi<SightingFormData> & {
 	mediaStore: MediaStore;
 };
 

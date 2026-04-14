@@ -52,7 +52,7 @@
 	setFormContext({ ...context, mediaStore });
 </script>
 
-<form onsubmit={context.handleSubmit} {...restProps}>
+<form {...restProps} onsubmit={context.handleSubmit}>
 	<!-- Honeypot field for spam protection - must be invisible to users -->
 	<input
 		type="text"
