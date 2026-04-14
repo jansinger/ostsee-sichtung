@@ -6,6 +6,24 @@
 
 ---
 
+## Status-Update nach Commits #454 & #456 (2026-04-13)
+
+Folgende Findings wurden behoben:
+
+| Finding  | Beschreibung                         | Commit | Details                                                     |
+| -------- | ------------------------------------ | ------ | ----------------------------------------------------------- |
+| **T-2**  | Browser-Tests für FieldRenderer      | #454   | 7 Vitest-Browser-Tests für FieldRenderer.svelte hinzugefügt |
+| _(a11y)_ | `aria-hidden` auf dekorativen Icons  | #454   | `aria-hidden="true"` auf dekorative Icons ergänzt           |
+| _(a11y)_ | `fieldset`/`legend` für Radio-Gruppe | #454   | Position-Methode-Gruppe korrekt strukturiert                |
+| _(fix)_  | Yup `when()` Conditions (4 Stellen)  | #454   | OR-Pattern durch explizite Function-Predicates ersetzt      |
+| _(fix)_  | `$derived.by()` in Media.svelte      | #454   | formatDescription/maxSizeDescription korrekt abgeleitet     |
+| _(fix)_  | Floating Promise bei onSubmit        | #454   | `.catch()` auf Submit-Promise ergänzt                       |
+| _(fix)_  | submissionError nicht gecleart       | #454   | Fehler-State nach erfolgreichem Submit zurückgesetzt        |
+
+**Verbleibende offene Findings:** UX-1, D5-1, T-1 (High); S5-1, D5-2, D5-3, D5-4, D5-5, UX-2, UX-3, UX-4, SEC-1, T-3, T-4, T-5 (Medium/Low)
+
+---
+
 ## Zusammenfassung
 
 | Kategorie              | Bewertung       | Findings                             |
@@ -381,11 +399,12 @@ Die E2E-Tests decken nur die Navigation (Step 1→2, Zurück) ab. Es fehlt:
 
 ---
 
-#### T-2: Keine Komponenten-Tests für Svelte-Formular-Komponenten (High)
+#### T-2: Keine Komponenten-Tests für Svelte-Formular-Komponenten (High) — ✅ Teilweise behoben (#454)
 
-Keine Unit Tests für:
+**Behoben:** 7 Vitest-Browser-Tests für `FieldRenderer.svelte` in Commit #454 hinzugefügt.
 
-- `FieldRenderer.svelte` (318 Zeilen, komplexe Routing-Logik)
+**Noch offen:**
+
 - `FormField.svelte` (Schema-Integration)
 - `BaseInput/BaseSelect/BaseCheckbox` (State-Handling)
 - `StepNavigation.svelte` (Navigation + Validierung)
@@ -441,12 +460,12 @@ Der File-Upload-Endpoint (`/api/files/upload`) hat keine Endpoint-Tests (nur die
 
 ### Prio 1 (High) — Zeitnah beheben
 
-| #    | Finding                                            | Aufwand | Dateien                 |
-| ---- | -------------------------------------------------- | ------- | ----------------------- |
-| UX-1 | FormSteps erlaubt unvalidiertes Step-Springen      | ~1h     | FormSteps.svelte        |
-| D5-1 | !important CSS-Overrides refactoren                | ~2h     | app.css                 |
-| T-1  | E2E Submit-Flow Test                               | ~2h     | e2e/form-submit.spec.ts |
-| T-2  | Komponenten-Tests für FieldRenderer/StepNavigation | ~3h     | neue Test-Dateien       |
+| #    | Finding                                                                        | Aufwand | Dateien                 |
+| ---- | ------------------------------------------------------------------------------ | ------- | ----------------------- |
+| UX-1 | FormSteps erlaubt unvalidiertes Step-Springen                                  | ~1h     | FormSteps.svelte        |
+| D5-1 | !important CSS-Overrides refactoren                                            | ~2h     | app.css                 |
+| T-1  | E2E Submit-Flow Test                                                           | ~2h     | e2e/form-submit.spec.ts |
+| T-2  | ~~FieldRenderer-Tests~~ ✅ (#454) — Rest: FormField, BaseInput, StepNavigation | ~2h     | neue Test-Dateien       |
 
 ### Prio 2 (Medium) — Nächste Iteration
 
