@@ -269,3 +269,52 @@ describe('createForm — errors store compatibility', () => {
 		expect(get(errors)).toEqual({ name: 'Existing error', count: 'Step error' });
 	});
 });
+
+describe('createForm — field-level error clearing', () => {
+	it('clears the error for a field when updateField is called', async () => {
+		const { errors, handleSubmit, updateField } = createForm({
+			initialValues: defaultValues,
+			validationSchema: testSchema,
+			onSubmit: vi.fn()
+		});
+		// Trigger validation failure to populate errors
+		await handleSubmit(new Event('submit'));
+		expect(get(errors)['name']).toBe('Name ist erforderlich');
+
+		// Editing the field should clear its error
+		updateField('name', 'Elke');
+		expect(get(errors)['name']).toBeUndefined();
+		// Other field errors remain untouched
+		expect(get(errors)['count']).toBeUndefined();
+	});
+
+	it('clears the error for a field when handleChange is called', async () => {
+		const { errors, handleSubmit, handleChange } = createForm({
+			initialValues: defaultValues,
+			validationSchema: testSchema,
+			onSubmit: vi.fn()
+		});
+		await handleSubmit(new Event('submit'));
+		expect(get(errors)['name']).toBe('Name ist erforderlich');
+
+		const event = {
+			target: { name: 'name', id: '', value: 'Moritz', type: 'text', tagName: 'INPUT' }
+		} as unknown as Event;
+		handleChange(event);
+		expect(get(errors)['name']).toBeUndefined();
+	});
+
+	it('isValid becomes true once all field errors are cleared', async () => {
+		const { isValid, handleSubmit, updateField } = createForm({
+			initialValues: defaultValues,
+			validationSchema: testSchema,
+			onSubmit: vi.fn()
+		});
+		await handleSubmit(new Event('submit'));
+		expect(get(isValid)).toBe(false);
+
+		updateField('name', 'Elke');
+		// name error cleared; count has no error (null passes nullable schema)
+		expect(get(isValid)).toBe(true);
+	});
+});

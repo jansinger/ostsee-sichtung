@@ -19,6 +19,11 @@ export function createForm<T extends Record<string, unknown>>(options: FormProps
 
 	function updateField(field: keyof T, value: unknown): void {
 		form.update((current) => ({ ...current, [field]: value }));
+		errors.update((current) => {
+			const next = { ...current };
+			delete next[field as string];
+			return next;
+		});
 	}
 
 	function updateInitialValues(values: T): void {
