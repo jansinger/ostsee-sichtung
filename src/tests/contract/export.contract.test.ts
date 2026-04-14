@@ -4,6 +4,7 @@ import { GET as csvGET } from '../../routes/api/sightings/export/csv/+server';
 import { GET as xmlGET } from '../../routes/api/sightings/export/xml/+server';
 import { GET as kmlGET } from '../../routes/api/sightings/export/kml/+server';
 import { createEvent, mockAdminUser } from './helpers/createEvent';
+import { asApiResponse } from './helpers/asApiResponse';
 
 vi.mock('$lib/server/db', () => ({
 	db: {
@@ -87,7 +88,7 @@ describe('Contract: GET /api/sightings/export/json', () => {
 		vi.clearAllMocks();
 	});
 
-	it('returns 200 with application/json content-type', async () => {
+	it('returns 200 with application/json content-type and satisfies spec', async () => {
 		const event = createEvent('/api/sightings/export/json', {
 			locals: { user: mockAdminUser }
 		});
@@ -95,6 +96,8 @@ describe('Contract: GET /api/sightings/export/json', () => {
 
 		expect(res.status).toBe(200);
 		expect(res.headers.get('content-type')).toContain('application/json');
+		const apiRes = await asApiResponse(res, event);
+		expect(apiRes).toSatisfyApiSpec();
 	});
 
 	it('returns 200 with fromDate/toDate filter applied', async () => {
