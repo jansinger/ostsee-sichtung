@@ -94,7 +94,9 @@ test.describe('Sichtung melden — Step-Validierung', () => {
 		await expect(stepButtons.nth(0)).toHaveAttribute('aria-disabled', 'false');
 	});
 
-	test('Validierungsfehler zeigt Toast-Notification', async ({ page }) => {
+	test('Validierungsfehler zeigt Inline-Fehlermeldung und deaktiviert Weiter-Button', async ({
+		page
+	}) => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
@@ -104,11 +106,11 @@ test.describe('Sichtung melden — Step-Validierung', () => {
 		await formPage.clickNext();
 		await expectCurrentStep(page, /Sichtungsdetails/i);
 
-		// Versuche ohne ausgefüllte Step-2-Felder weiter zu navigieren
-		await formPage.clickNext();
+		// Step 2 hat keine Defaults für Pflichtfelder → Weiter-Button ist deaktiviert
+		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeDisabled();
 
-		// Toast-Notification mit Validierungsfehler sollte erscheinen
-		await expect(page.getByText(/Validierungsfehler/i)).toBeVisible({ timeout: 3000 });
+		// Inline-Fehlermeldung erscheint direkt über dem Weiter-Button
+		await expect(page.locator('[role="alert"]').first()).toBeVisible({ timeout: 3000 });
 	});
 });
 
