@@ -1,5 +1,6 @@
 import { derived, get, writable } from 'svelte/store';
-import type { AnyObjectSchema, ValidationError } from 'yup';
+import { ValidationError } from 'yup';
+import type { AnyObjectSchema } from 'yup';
 
 export interface FormProps<T extends Record<string, unknown> = Record<string, unknown>> {
 	initialValues: T;
@@ -66,17 +67,16 @@ export function createForm<T extends Record<string, unknown>>(options: FormProps
 				await onSubmit(values);
 			}
 		} catch (err) {
-			const yupErr = err as ValidationError;
-			if (yupErr.name === 'ValidationError') {
+			if (err instanceof ValidationError) {
 				const newErrors: Record<string, string> = {};
-				if (yupErr.inner && yupErr.inner.length > 0) {
+				if (err.inner && err.inner.length > 0) {
 					// Multiple errors (abortEarly: false)
-					for (const ve of yupErr.inner) {
+					for (const ve of err.inner) {
 						if (ve.path) newErrors[ve.path] = ve.message;
 					}
-				} else if (yupErr.path) {
+				} else if (err.path) {
 					// Single error (only one field invalid)
-					newErrors[yupErr.path] = yupErr.message;
+					newErrors[err.path] = err.message;
 				}
 				errors.set(newErrors);
 			} else {
