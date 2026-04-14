@@ -1713,7 +1713,7 @@ paths:
         
         **WICHTIG: PDF-konforme abgekürzte Feldnamen**
         - ts: Unix Timestamp
-        - id: Sichtungs-ID  
+        - id: Sichtungs-ID
         - dt: Datum (DD.MM.YY)
         - ti: Zeit (HH:MI)
         - lat, lon: Koordinaten als STRINGS
@@ -1722,6 +1722,8 @@ paths:
         - sh: Schiffsname (nur bei Einverständnis)
         - na: Name (nur bei Einverständnis)
         - ar: Gebiet/Gewässer
+        - ta: Tierart als deutsches Label (Erweiterung über Original-PDF hinaus)
+        - tf: Totfund-Flag 0/1 (Erweiterung über Original-PDF hinaus)
       parameters:
         - name: year
           in: query
@@ -2814,6 +2816,16 @@ components:
           nullable: true
           description: 'Gebiet/Gewässer - Area'
           example: "Kieler Förde"
+        ta:
+          type: string
+          nullable: true
+          description: 'Tierart als deutsches Label (nicht im Original-PDF, aber von dieser Implementierung zurückgegeben)'
+          example: "Schweinswal"
+        tf:
+          type: integer
+          description: 'Totfund-Flag (0=keine Totfund, 1=Totfund) - nicht im Original-PDF, aber von dieser Implementierung zurückgegeben'
+          enum: [0, 1]
+          example: 0
 
     StatisticsResponse:
       type: object
