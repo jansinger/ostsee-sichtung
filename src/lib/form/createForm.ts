@@ -42,7 +42,7 @@ export function createForm<T extends Record<string, unknown>>(options: FormProps
 		try {
 			const values = get(form);
 
-			// Optional custom validate function (same API as svelte-forms-lib)
+			// Optional custom validate function
 			if (validate) {
 				const customErrors = await validate(values);
 				if (Object.keys(customErrors).length > 0) {
