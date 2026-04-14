@@ -539,6 +539,11 @@ paths:
               schema:
                 type: string
                 example: "public, max-age=3600"
+            X-Cache-Status:
+              description: Kennzeichnet den Cache-Status der Antwort
+              schema:
+                type: string
+                example: "HIT"
           content:
             application/json:
               schema:
@@ -1685,8 +1690,11 @@ components:
     adminAuth:
       type: apiKey
       in: cookie
-      name: auth-session
-      description: Session-Cookie für Admin-Authentifizierung
+      name: auth-cookie
+      description: >
+        Session-Cookie für Admin-Authentifizierung.
+        Der Cookie-Name ist der Default-Wert (`auth-cookie`) und kann per
+        `COOKIE_NAME` Umgebungsvariable überschrieben werden.
 
   parameters:
     ExportDateFrom:

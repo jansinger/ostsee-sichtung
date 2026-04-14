@@ -7,19 +7,18 @@ import type { RequestHandler } from './$types';
 const logger = createLogger('api:config:init');
 
 export const POST: RequestHandler = async ({ locals, url }: RequestEvent) => {
-	try {
-		// SECURITY: Require superadmin role to initialize configurations (system-critical operation)
-		requireUserRole(url, locals.user, ['superadmin']);
+	// SECURITY: Must be outside try/catch so redirect(302) propagates correctly
+	requireUserRole(url, locals.user, ['superadmin']);
 
+	try {
 		await initializeDefaultConfigurations();
 
 		logger.info({ userId: locals.user!.sub }, 'Default configurations initialized'); // Safe after requireUserRole check
 
-		return json({ 
-			success: true, 
-			message: 'Default configurations have been initialized' 
+		return json({
+			success: true,
+			message: 'Default configurations have been initialized'
 		});
-
 	} catch (error) {
 		logger.error({ error }, 'Failed to initialize default configurations');
 		return json({ error: 'Internal server error' }, { status: 500 });

@@ -172,7 +172,7 @@ Checkliste (vor jedem Commit mit API-Änderungen):
 YAML-Syntax nach Änderungen immer validieren:
 
 ```bash
-node -e "const yaml = require('js-yaml'); const fs = require('fs'); yaml.load(fs.readFileSync('static/openapi.yml', 'utf8')); console.log('OK')"
+node --input-type=commonjs -e "const yaml = require('js-yaml'); const fs = require('fs'); yaml.load(fs.readFileSync('static/openapi.yml', 'utf8')); console.log('OK')"
 ```
 
 Ergebnis in der Scalar UI prüfen: `https://localhost:4000/docs/api/scalar`
