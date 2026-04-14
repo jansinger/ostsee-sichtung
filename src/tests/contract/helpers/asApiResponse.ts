@@ -24,6 +24,10 @@ export async function asApiResponse(
 			} catch {
 				body = null;
 			}
+		} else {
+			// For non-JSON responses (CSV, XML, KML, …) vitest-openapi validates against
+			// `body`, not `text`. Set body to the raw string so `type: string` schemas pass.
+			body = text;
 		}
 	}
 

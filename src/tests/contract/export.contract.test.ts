@@ -145,24 +145,16 @@ describe('Contract: GET /api/sightings/export/csv', () => {
 		vi.clearAllMocks();
 	});
 
-	it('returns 200 with text/csv content-type', async () => {
+	it('returns 200 with text/csv content-type and satisfies spec', async () => {
 		const event = createEvent('/api/sightings/export/csv', {
 			locals: { user: mockAdminUser }
 		});
 		const res = await csvGET(event);
+		const apiRes = await asApiResponse(res, event);
 
-		expect(res.status).toBe(200);
-		expect(res.headers.get('content-type')).toContain('text/csv');
-	});
-
-	it('returns non-empty CSV body', async () => {
-		const event = createEvent('/api/sightings/export/csv', {
-			locals: { user: mockAdminUser }
-		});
-		const res = await csvGET(event);
-		const body = await res.text();
-
-		expect(body.length).toBeGreaterThan(0);
+		expect(apiRes.status).toBe(200);
+		expect(apiRes).toSatisfyApiSpec();
+		expect(apiRes.text.length).toBeGreaterThan(0);
 	});
 
 	it('CSV body contains data row when DB has records', async () => {
@@ -184,14 +176,16 @@ describe('Contract: GET /api/sightings/export/xml', () => {
 		vi.clearAllMocks();
 	});
 
-	it('returns 200 with application/xml content-type', async () => {
+	it('returns 200 with application/xml content-type and satisfies spec', async () => {
 		const event = createEvent('/api/sightings/export/xml', {
 			locals: { user: mockAdminUser }
 		});
 		const res = await xmlGET(event);
+		const apiRes = await asApiResponse(res, event);
 
-		expect(res.status).toBe(200);
-		expect(res.headers.get('content-type')).toContain('application/xml');
+		expect(apiRes.status).toBe(200);
+		expect(apiRes).toSatisfyApiSpec();
+		expect(apiRes.text.length).toBeGreaterThan(0);
 	});
 
 	it('XML body contains sichtung element when DB has records', async () => {
@@ -213,14 +207,16 @@ describe('Contract: GET /api/sightings/export/kml', () => {
 		vi.clearAllMocks();
 	});
 
-	it('returns 200 with kml content-type', async () => {
+	it('returns 200 with kml content-type and satisfies spec', async () => {
 		const event = createEvent('/api/sightings/export/kml', {
 			locals: { user: mockAdminUser }
 		});
 		const res = await kmlGET(event);
+		const apiRes = await asApiResponse(res, event);
 
-		expect(res.status).toBe(200);
-		expect(res.headers.get('content-type')).toContain('kml');
+		expect(apiRes.status).toBe(200);
+		expect(apiRes).toSatisfyApiSpec();
+		expect(apiRes.text.length).toBeGreaterThan(0);
 	});
 
 	it('KML body contains Placemark when DB has records', async () => {
