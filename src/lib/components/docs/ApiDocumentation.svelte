@@ -98,8 +98,7 @@
 							• <code class="rounded bg-gray-100 px-1">POST /files/upload</code> - Dateien hochladen
 						</li>
 						<li>
-							• <code class="rounded bg-gray-100 px-1">GET /media/{'{path}'}</code> - Sichere Medien
-							abrufen
+							• <code class="rounded bg-gray-100 px-1">GET /media/{'{path}'}</code> - Sichere Medien abrufen
 						</li>
 					</ul>
 				</div>
@@ -194,16 +193,16 @@
 	}
 
 	:global(*::-webkit-scrollbar-track) {
-		background: #f1f1f1;
+		background: var(--color-base-200);
 		border-radius: 4px;
 	}
 
 	:global(*::-webkit-scrollbar-thumb) {
-		background: #c1c1c1;
+		background: var(--color-base-300);
 		border-radius: 4px;
 	}
 
 	:global(*::-webkit-scrollbar-thumb:hover) {
-		background: #a8a8a8;
+		background: color-mix(in oklab, var(--color-base-300) 80%, var(--color-base-content));
 	}
 </style>
