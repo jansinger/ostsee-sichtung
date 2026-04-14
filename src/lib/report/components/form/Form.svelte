@@ -37,19 +37,20 @@
 		...restProps
 	} = untrack(() => formAndRestProps);
 
-	// Create form context
-	context = createForm({
-		initialValues,
-		onSubmit: onSubmit as FormProps['onSubmit'],
-		validate,
-		validationSchema
-	}) as unknown as FormContext;
-
 	const mediaStore = $state<MediaStore>({ mediaFiles: [] });
-	// Set form context on the parent component
-	// This allows the form context to be accessed by child components within the same component tree
-	// without passing props down manually.
-	setFormContext({ ...context, mediaStore });
+
+	// Build a single object so the bound `context` and the Svelte context both include mediaStore.
+	context = {
+		...createForm({
+			initialValues,
+			onSubmit: onSubmit as FormProps['onSubmit'],
+			validate,
+			validationSchema
+		}),
+		mediaStore
+	} as unknown as FormContext;
+
+	setFormContext(context);
 </script>
 
 <form {...restProps} onsubmit={context.handleSubmit}>
