@@ -235,6 +235,7 @@ import MapPin from '~icons/lucide/map-pin';
 | Dokument                          | Inhalt                                   |
 | --------------------------------- | ---------------------------------------- |
 | docs/DESIGN_GUIDE.md              | UX/Design-Richtlinien                    |
+| docs/CONFIGURATION_USAGE.md       | ConfigService (Laufzeit-Konfiguration)   |
 | @docs/LEGACY_API_SPECIFICATION.md | Legacy API (KRITISCH)                    |
 | docs/PRODUCTION_DEPLOYMENT.md     | Production Deployment (Schnellanleitung) |
 | docs/DOCKER_DEPLOYMENT.md         | Docker Setup (Vollständige Referenz)     |

@@ -37,20 +37,20 @@ Das Projekt nutzt **Multi-Stage Builds** für optimierte Images:
 
 ```dockerfile
 # Stage 1: Dependencies
-FROM node:22-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
 # Stage 2: Build
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
 # Stage 3: Production (minimal)
-FROM node:22-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/package.json ./
@@ -171,10 +171,10 @@ services:
 
 ## Alpine Base Image
 
-Das Projekt nutzt `node:22-alpine`:
+Das Projekt nutzt `node:24-alpine`:
 
 ```dockerfile
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
 
 # Für native Dependencies (falls nötig)
 RUN apk add --no-cache libc6-compat

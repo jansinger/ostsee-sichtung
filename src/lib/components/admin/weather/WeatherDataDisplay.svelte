@@ -84,8 +84,6 @@
 			isRefreshing = false;
 		}
 	}
-
-
 </script>
 
 {#if weatherData && sourceInfo}
@@ -115,12 +113,7 @@
 					API-Wetterdaten
 				</h5>
 
-				<WeatherDisplay
-					{weatherData}
-					showLocation={false}
-					showTime={false}
-					compact={true}
-				/>
+				<WeatherDisplay {weatherData} showLocation={false} showTime={false} compact={true} />
 			</div>
 
 			<div class="bg-base-100 rounded-lg p-3">
@@ -261,13 +254,21 @@
 
 <style>
 	.forecast-data {
-		border-left: 4px solid #3b82f6;
-		background: linear-gradient(135deg, #dbeafe 0%, #f8fafc 100%);
+		border-left: 4px solid var(--color-info);
+		background: linear-gradient(
+			135deg,
+			color-mix(in oklab, var(--color-info) 15%, var(--color-base-100)) 0%,
+			var(--color-base-100) 100%
+		);
 	}
 
 	.historical-data {
-		border-left: 4px solid #10b981;
-		background: linear-gradient(135deg, #d1fae5 0%, #f8fafc 100%);
+		border-left: 4px solid var(--color-success);
+		background: linear-gradient(
+			135deg,
+			color-mix(in oklab, var(--color-success) 15%, var(--color-base-100)) 0%,
+			var(--color-base-100) 100%
+		);
 	}
 
 	.expanded-weather-data {
