@@ -159,6 +159,7 @@ let { value = $bindable(''), oninput }: Props = $props();
 ```svelte
 <!-- Button.svelte: children-Prop für Standard-Content -->
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	let { children, onclick }: { children: Snippet; onclick?: () => void } = $props();
 </script>
 

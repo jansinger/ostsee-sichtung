@@ -120,7 +120,7 @@ map.addLayer(sightingsLayer);
 **Wichtig:** OpenLayers rendert über Canvas — CSS Custom Properties (`var(--color-info)`) werden dort **nicht** aufgelöst. Farben müssen als konkrete Werte übergeben werden. Hilfsfunktion zum Auslesen von DaisyUI-Theme-Farben:
 
 ```typescript
-// src/lib/map/styleUtils.ts
+// Diese Hilfsfunktion zu src/lib/map/styleUtils.ts hinzufügen (existiert noch nicht dort):
 export function getThemeColor(variable: string): string {
 	if (typeof window === 'undefined') return '#000000';
 	return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
@@ -151,9 +151,9 @@ const sightingStyle = new Style({
 Für große Datensätze `WebGLPointsLayer` statt `VectorLayer` verwenden:
 
 ```typescript
-import WebGLPointsLayer from 'ol/layer/WebGLPoints.js';
-import VectorSource from 'ol/source/Vector.js';
-import GeoJSON from 'ol/format/GeoJSON.js';
+import WebGLPointsLayer from 'ol/layer/WebGLPoints';
+import VectorSource from 'ol/source/Vector';
+import GeoJSON from 'ol/format/GeoJSON';
 import { getThemeColor } from '$lib/map/styleUtils';
 
 // CSS vars via getThemeColor auflösen — WebGL akzeptiert keine var(...)
@@ -174,10 +174,11 @@ const pointsLayer = new WebGLPointsLayer({
 ### Cluster Source (Gruppen nahestehender Features)
 
 ```typescript
-import Cluster from 'ol/source/Cluster.js';
-import VectorSource from 'ol/source/Vector.js';
-import VectorLayer from 'ol/layer/Vector.js';
-import { Style, Circle, Fill, Text, Stroke } from 'ol/style.js';
+import Cluster from 'ol/source/Cluster';
+import VectorSource from 'ol/source/Vector';
+import VectorLayer from 'ol/layer/Vector';
+import GeoJSON from 'ol/format/GeoJSON';
+import { Style, Circle, Fill, Text, Stroke } from 'ol/style';
 import { getThemeColor } from '$lib/map/styleUtils';
 
 const clusterSource = new Cluster({
