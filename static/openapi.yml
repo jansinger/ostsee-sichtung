@@ -49,6 +49,14 @@ tags:
     description: Sichere Medien-Bereitstellung
   - name: security
     description: Sicherheit und CSP Reports
+  - name: config
+    description: Konfigurationsverwaltung (Admin)
+  - name: admin
+    description: Admin-spezifische Operationen
+  - name: health
+    description: Systemgesundheit und Monitoring
+  - name: statistics
+    description: Statistiken und Metriken
 
 paths:
   /api/sightings:
@@ -482,6 +490,422 @@ paths:
               schema:
                 type: string
 
+  /api/sightings/ref/{refId}:
+    get:
+      tags:
+        - sightings
+      summary: Sichtung nach Referenz-ID abrufen
+      description: Ruft eine Sichtung anhand ihrer Referenz-ID ab (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - name: refId
+          in: path
+          required: true
+          description: Referenz-ID der Sichtung
+          schema:
+            type: string
+            example: "abc123def456"
+      responses:
+        '200':
+          description: Sichtungsdetails
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminSighting'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/statistics:
+    get:
+      tags:
+        - statistics
+      summary: Sichtungsstatistiken abrufen
+      description: |
+        Gibt aggregierte Statistiken über alle Sichtungen zurück.
+        Ergebnis wird für 1 Stunde gecacht.
+      responses:
+        '200':
+          description: Statistiken
+          headers:
+            Cache-Control:
+              description: Cache-Einstellungen
+              schema:
+                type: string
+                example: "public, max-age=3600"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatisticsResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/maintenance-status:
+    get:
+      tags:
+        - admin
+      summary: Wartungsmodus-Status abrufen
+      description: Gibt den aktuellen Status des Wartungsmodus zurück (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Wartungsmodus-Status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/config:
+    get:
+      tags:
+        - config
+      summary: Konfiguration abrufen
+      description: Gibt Konfigurationseinträge zurück, optional gefiltert nach Kategorie (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - name: category
+          in: query
+          description: Kategorie filtern
+          schema:
+            type: string
+            example: "display"
+      responses:
+        '200':
+          description: Liste der Konfigurationseinträge
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConfigEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+        - config
+      summary: Konfigurationseintrag aktualisieren
+      description: Aktualisiert oder erstellt einen Konfigurationseintrag (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - key
+                - value
+              properties:
+                key:
+                  type: string
+                  description: Konfigurationsschlüssel
+                  example: "display.maxSightings"
+                value:
+                  type: string
+                  description: Konfigurationswert
+                  example: "100"
+                description:
+                  type: string
+                  description: Beschreibung des Eintrags
+                  example: "Maximale Anzahl Sichtungen auf Startseite"
+                category:
+                  type: string
+                  description: Kategorie des Eintrags
+                  example: "display"
+      responses:
+        '200':
+          description: Konfiguration aktualisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - config
+      summary: Konfigurationseintrag löschen
+      description: Löscht einen Konfigurationseintrag (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - name: key
+          in: query
+          required: true
+          description: Konfigurationsschlüssel
+          schema:
+            type: string
+            example: "display.maxSightings"
+      responses:
+        '200':
+          description: Konfiguration gelöscht
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/config/public:
+    get:
+      tags:
+        - config
+      summary: Öffentliche Konfiguration abrufen
+      description: Gibt öffentlich sichtbare Konfigurationswerte zurück (kein Auth erforderlich)
+      responses:
+        '200':
+          description: Öffentliche Konfiguration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicConfig'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/config/upload:
+    get:
+      tags:
+        - config
+      summary: Upload-Konfiguration abrufen
+      description: Gibt Upload-Konfiguration zurück (max. Dateigröße, erlaubte Dateitypen)
+      responses:
+        '200':
+          description: Upload-Konfiguration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadConfig'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/config/init:
+    post:
+      tags:
+        - config
+      summary: Standardkonfiguration initialisieren
+      description: Initialisiert die Standardkonfiguration (Superadmin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Konfiguration initialisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/config/reset:
+    post:
+      tags:
+        - config
+      summary: Konfiguration zurücksetzen
+      description: Setzt alle Konfigurationseinträge auf Standardwerte zurück (Superadmin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      responses:
+        '200':
+          description: Konfiguration zurückgesetzt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/config/test-email:
+    post:
+      tags:
+        - config
+      summary: Test-E-Mail senden
+      description: Sendet eine Test-E-Mail zur Überprüfung der E-Mail-Konfiguration (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - recipient
+              properties:
+                recipient:
+                  type: string
+                  format: email
+                  description: E-Mail-Adresse des Empfängers
+                  example: "admin@ostsee-tiere.de"
+      responses:
+        '200':
+          description: E-Mail erfolgreich gesendet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/admin/test-email:
+    post:
+      tags:
+        - admin
+      summary: Admin Test-E-Mail senden
+      description: Sendet eine Test-E-Mail für eine Sichtung oder eine einfache Test-E-Mail (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sightingId:
+                  type: integer
+                  description: ID der Sichtung für eine Sichtungs-E-Mail
+                  example: 42
+                recipient:
+                  type: string
+                  format: email
+                  description: Optionale Empfänger-E-Mail-Adresse
+                  example: "test@example.com"
+                testType:
+                  type: string
+                  enum: [sighting, simple]
+                  description: Art der Test-E-Mail
+                  example: "simple"
+      responses:
+        '200':
+          description: E-Mail erfolgreich gesendet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/admin/weather/{id}/refresh:
+    post:
+      tags:
+        - admin
+      summary: Wetterdaten einer Sichtung aktualisieren
+      description: Aktualisiert die Wetterdaten für eine bestimmte Sichtung (Admin-Berechtigung erforderlich)
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Sichtung
+          schema:
+            type: integer
+            example: 42
+      responses:
+        '200':
+          description: Wetterdaten aktualisiert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /health:
+    get:
+      tags:
+        - health
+      summary: Health Check
+      description: Gibt den aktuellen Systemstatus zurück. Wird von Docker und Load Balancer genutzt.
+      responses:
+        '200':
+          description: System ist gesund
+          headers:
+            Cache-Control:
+              description: Kein Caching
+              schema:
+                type: string
+                example: "no-cache, no-store, must-revalidate"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          description: System ist nicht gesund
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+    head:
+      tags:
+        - health
+      summary: Health Check (HEAD)
+      description: Schneller Health Check ohne Response Body
+      responses:
+        '200':
+          description: System ist gesund
+        '500':
+          description: System ist nicht gesund
+
   /api/media/{path}:
     get:
       tags:
@@ -719,7 +1143,7 @@ paths:
       summary: Ostsee-Koordinaten prüfen
       description: Überprüft, ob gegebene Koordinaten in der Ostsee liegen
       parameters:
-        - name: lat
+        - name: latitude
           in: query
           required: true
           description: Breitengrad
@@ -729,7 +1153,7 @@ paths:
             minimum: -90
             maximum: 90
             example: 54.3233
-        - name: lon
+        - name: longitude
           in: query
           required: true
           description: Längengrad
@@ -748,10 +1172,15 @@ paths:
                 type: object
                 required:
                   - inBaltic
+                  - inChartArea
                 properties:
                   inBaltic:
                     type: boolean
                     description: true wenn Koordinaten in der Ostsee liegen
+                    example: true
+                  inChartArea:
+                    type: boolean
+                    description: true wenn Koordinaten im angezeigten Kartenbereich liegen
                     example: true
                   message:
                     type: string
@@ -1197,7 +1626,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /csp-report:
+  /api/csp-report:
     post:
       tags:
         - security
@@ -2094,6 +2523,172 @@ components:
           nullable: true
           description: 'Gebiet/Gewässer - Area'
           example: "Kieler Förde"
+
+    StatisticsResponse:
+      type: object
+      description: Aggregierte Statistiken über alle Sichtungen
+      required:
+        - totalSightings
+        - completionRate
+        - averageOptionalFields
+        - yearsOfService
+        - uniqueUsers
+        - sightingsWithMedia
+        - deadAnimalsFound
+      properties:
+        totalSightings:
+          type: integer
+          description: Gesamtanzahl der Sichtungen
+          example: 4821
+        completionRate:
+          type: number
+          format: float
+          description: Durchschnittliche Ausfüllrate des Formulars (0-100%)
+          example: 72.5
+        averageOptionalFields:
+          type: number
+          format: float
+          description: Durchschnittliche Anzahl ausgefüllter optionaler Felder
+          example: 8.3
+        yearsOfService:
+          type: integer
+          description: Jahre seit Projektbeginn
+          example: 12
+        uniqueUsers:
+          type: integer
+          description: Anzahl eindeutiger Melder
+          example: 1523
+        sightingsWithMedia:
+          type: integer
+          description: Anzahl Sichtungen mit Medien
+          example: 1204
+        deadAnimalsFound:
+          type: integer
+          description: Anzahl Totfunde
+          example: 87
+
+    MaintenanceStatus:
+      type: object
+      description: Aktueller Status des Wartungsmodus
+      required:
+        - enabled
+        - message
+        - timestamp
+      properties:
+        enabled:
+          type: boolean
+          description: true wenn Wartungsmodus aktiv
+          example: false
+        message:
+          type: string
+          description: Anzeigetext im Wartungsmodus
+          example: "Wir sind gleich wieder da."
+        timestamp:
+          type: string
+          format: date-time
+          description: Zeitpunkt der letzten Statusänderung
+          example: "2024-06-01T10:00:00Z"
+
+    HealthResponse:
+      type: object
+      description: Systemgesundheitsstatus
+      required:
+        - status
+        - timestamp
+        - uptime
+        - environment
+        - version
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          description: Systemstatus
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          description: Zeitpunkt des Health Checks
+          example: "2024-01-01T14:30:00Z"
+        uptime:
+          type: number
+          description: Betriebszeit in Sekunden
+          example: 86400.5
+        environment:
+          type: string
+          description: Laufzeitumgebung
+          example: "production"
+        version:
+          type: string
+          description: Anwendungsversion
+          example: "2.2.3"
+        responseTime:
+          type: string
+          description: Antwortzeit des letzten Checks
+          example: "12ms"
+
+    ConfigEntry:
+      type: object
+      description: Konfigurationseintrag
+      required:
+        - key
+        - value
+      properties:
+        key:
+          type: string
+          description: Konfigurationsschlüssel
+          example: "display.maxSightings"
+        value:
+          type: string
+          description: Konfigurationswert
+          example: "100"
+        description:
+          type: string
+          nullable: true
+          description: Beschreibung des Eintrags
+          example: "Maximale Anzahl Sichtungen auf Startseite"
+        category:
+          type: string
+          nullable: true
+          description: Kategorie des Eintrags
+          example: "display"
+
+    PublicConfig:
+      type: object
+      description: Öffentlich verfügbare Konfigurationswerte
+      additionalProperties:
+        type: string
+      example:
+        "display.maxSightings": "100"
+        "mobile.apiEnabled": "true"
+        "integration.mapTileUrl": "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+
+    UploadConfig:
+      type: object
+      description: Konfiguration für Datei-Uploads
+      required:
+        - maxFileSize
+        - maxFileSizeBytes
+        - allowedTypes
+        - accept
+      properties:
+        maxFileSize:
+          type: string
+          description: Maximale Dateigröße als lesbarer Text
+          example: "10 MB"
+        maxFileSizeBytes:
+          type: integer
+          description: Maximale Dateigröße in Bytes
+          example: 10485760
+        allowedTypes:
+          type: array
+          items:
+            type: string
+          description: Erlaubte MIME-Types
+          example: ["image/jpeg", "image/png", "video/mp4"]
+        accept:
+          type: string
+          description: Accept-Attribut für HTML file input
+          example: "image/*,video/*"
 
   responses:
     BadRequest:
