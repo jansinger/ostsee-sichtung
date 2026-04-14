@@ -526,13 +526,6 @@ paths:
             type: string
             format: date
             example: "2024-12-31"
-        - name: species
-          in: query
-          description: Tierart filtern
-          schema:
-            type: integer
-            minimum: 1
-            example: 1
         - name: verified
           in: query
           description: Nur verifizierte Sichtungen
@@ -575,8 +568,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExportDateFrom'
         - $ref: '#/components/parameters/ExportDateTo'
-        - $ref: '#/components/parameters/ExportSpecies'
         - $ref: '#/components/parameters/ExportVerified'
+        - $ref: '#/components/parameters/ExportEntryChannel'
+        - $ref: '#/components/parameters/ExportMediaUpload'
       responses:
         '200':
           description: JSON-Datei mit Sichtungen
@@ -641,8 +635,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExportDateFrom'
         - $ref: '#/components/parameters/ExportDateTo'
-        - $ref: '#/components/parameters/ExportSpecies'
         - $ref: '#/components/parameters/ExportVerified'
+        - $ref: '#/components/parameters/ExportEntryChannel'
+        - $ref: '#/components/parameters/ExportMediaUpload'
       responses:
         '200':
           description: CSV-Datei mit Sichtungen
@@ -670,8 +665,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExportDateFrom'
         - $ref: '#/components/parameters/ExportDateTo'
-        - $ref: '#/components/parameters/ExportSpecies'
         - $ref: '#/components/parameters/ExportVerified'
+        - $ref: '#/components/parameters/ExportEntryChannel'
+        - $ref: '#/components/parameters/ExportMediaUpload'
       responses:
         '200':
           description: XML-Datei mit Sichtungen
@@ -699,8 +695,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExportDateFrom'
         - $ref: '#/components/parameters/ExportDateTo'
-        - $ref: '#/components/parameters/ExportSpecies'
         - $ref: '#/components/parameters/ExportVerified'
+        - $ref: '#/components/parameters/ExportEntryChannel'
+        - $ref: '#/components/parameters/ExportMediaUpload'
       responses:
         '200':
           description: KML-Datei mit Sichtungen
@@ -1961,15 +1958,23 @@ components:
         format: date
         example: "2024-12-31"
     
-    ExportSpecies:
-      name: species
+    ExportEntryChannel:
+      name: entryChannel
       in: query
-      description: Tierart filtern
+      description: Eingangskanal filtern (0=Web, 1=E-Mail, 2=Post, 3=Fax, 4=App, 5=Telefon, 'all' oder leer = kein Filter)
       schema:
-        type: integer
-        minimum: 1
-        example: 1
-    
+        type: string
+        example: "0"
+
+    ExportMediaUpload:
+      name: mediaUpload
+      in: query
+      description: Medienupload-Filter (1=mit Aufnahme, 0=ohne Aufnahme)
+      schema:
+        type: string
+        enum: ["0", "1"]
+        example: "1"
+
     ExportVerified:
       name: verified
       in: query
@@ -2095,8 +2100,8 @@ components:
         species:
           type: integer
           description: Tierart
-          minimum: 1
-          example: 1
+          minimum: 0
+          example: 0
         totalCount:
           type: integer
           description: Gesamtanzahl der Tiere

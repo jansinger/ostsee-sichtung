@@ -53,9 +53,9 @@ const mockSighting = {
 	species: 0,
 	totalCount: 2,
 	juvenileCount: 0,
-	latitude: '54.5',
-	longitude: '13.5',
-	isDead: false,
+	latitude: 54.5,
+	longitude: 13.5,
+	isDead: 0,
 	email: 'max@example.com',
 	lastName: 'Muster',
 	phone: null,
@@ -124,17 +124,19 @@ describe('Contract: GET /api/sightings/export/json', () => {
 		expect(Array.isArray(body.sichtungen)).toBe(true);
 	});
 
-	it('sichtungen array contains records when DB has data', async () => {
+	it('sichtungen array contains records when DB has data and satisfies spec', async () => {
 		await mockDbWithSighting(mockSighting);
 
 		const event = createEvent('/api/sightings/export/json', {
 			locals: { user: mockAdminUser }
 		});
 		const res = await jsonGET(event);
-		const body = JSON.parse(await res.text());
+		const apiRes = await asApiResponse(res, event);
 
-		expect(body.sichtungen).toHaveLength(1);
-		expect(body.metadata.recordCount).toBe(1);
+		expect(apiRes.status).toBe(200);
+		expect(apiRes).toSatisfyApiSpec();
+		expect((apiRes.body as any).sichtungen).toHaveLength(1);
+		expect((apiRes.body as any).metadata.recordCount).toBe(1);
 	});
 });
 
