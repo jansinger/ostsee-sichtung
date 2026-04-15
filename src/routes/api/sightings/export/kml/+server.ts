@@ -1,6 +1,7 @@
 import { createLogger } from '$lib/logger';
 import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { requireUserRole } from '$lib/server/auth/auth';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { text } from '@sveltejs/kit';
@@ -117,6 +118,18 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	</Document>
 </kml>`;
 
+		// Audit-Log schreiben
+		await logAuditEvent({
+			action: 'export.download',
+			resourceType: 'export',
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			details: {
+				format: 'kml',
+				fromDate: fromDate || null,
+				toDate: toDate || null
+			}
+		});
+
 		// KML-Datei zurückgeben
 		return text(kmlContent, {
 			headers: {
@@ -125,7 +138,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			}
 		});
 	} catch (error) {
-		logger.error({ error: error instanceof Error ? error.message : error }, 'Fehler beim KML-Export');
+		logger.error(
+			{ error: error instanceof Error ? error.message : error },
+			'Fehler beim KML-Export'
+		);
 
 		return text('<?xml version="1.0" encoding="UTF-8"?><error>Fehler beim KML-Export</error>', {
 			status: 500,

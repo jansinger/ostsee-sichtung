@@ -3,6 +3,7 @@ import { getDistanceLabel } from '$lib/report/formOptions/distance';
 import { getDistributionLabel } from '$lib/report/formOptions/distribution';
 import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { requireUserRole } from '$lib/server/auth/auth';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { text } from '@sveltejs/kit';
@@ -126,6 +127,18 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	</sichtungen>
 </ostsee-sichtungen>`;
 
+		// Audit-Log schreiben
+		await logAuditEvent({
+			action: 'export.download',
+			resourceType: 'export',
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			details: {
+				format: 'xml',
+				fromDate: fromDate || null,
+				toDate: toDate || null
+			}
+		});
+
 		// XML-Datei zurückgeben
 		return text(xmlContent, {
 			headers: {
@@ -134,7 +147,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			}
 		});
 	} catch (error) {
-		logger.error({ error: error instanceof Error ? error.message : error }, 'Fehler beim XML-Export');
+		logger.error(
+			{ error: error instanceof Error ? error.message : error },
+			'Fehler beim XML-Export'
+		);
 
 		return text(`<?xml version="1.0" encoding="UTF-8"?><error>Fehler beim XML-Export</error>`, {
 			status: 500,
