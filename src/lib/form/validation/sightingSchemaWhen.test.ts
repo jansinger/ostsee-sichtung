@@ -1,11 +1,10 @@
 /**
- * @fileoverview Tests für die bedingten `.when()`-Validierungen im sightingSchema
+ * @fileoverview Tests für die Validierungen von "Sonstiges"-Textfeldern im sightingSchema
  *
- * Ein Feld wird getestet, das required wird wenn sein Elternfeld den OTHER-Wert (0) hat:
- *   - sightingFromText  (wenn sightingFrom === 0)
+ * sightingFromText: required wenn sightingFrom === 0 (OTHER)
  *
- * Die Felder distributionText, behaviorText und boatDriveText sind generell optional
- * (kein required, auch bei OTHER-Selektion), da Altdaten keinen Text enthalten können.
+ * distributionText, behaviorText, boatDriveText: generell optional (auch bei OTHER),
+ * akzeptieren null und leeren String — Altdaten aus der DB können NULL enthalten.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -122,6 +121,14 @@ describe('sightingSchema - bedingte when()-Validierung', () => {
 			});
 			expect(hatFehler).toBe(false);
 		});
+
+		it('akzeptiert null (Legacy-DB-Wert)', async () => {
+			const hatFehler = await fieldHasError('distributionText', {
+				distribution: DistributionEnum.OTHER,
+				distributionText: null
+			});
+			expect(hatFehler).toBe(false);
+		});
 	});
 
 	// ── behaviorText ───────────────────────────────────────────────────────────
@@ -166,6 +173,14 @@ describe('sightingSchema - bedingte when()-Validierung', () => {
 			});
 			expect(hatFehler).toBe(false);
 		});
+
+		it('akzeptiert null (Legacy-DB-Wert)', async () => {
+			const hatFehler = await fieldHasError('behaviorText', {
+				behavior: AnimalBehaviorEnum.OTHER,
+				behaviorText: null
+			});
+			expect(hatFehler).toBe(false);
+		});
 	});
 
 	// ── boatDriveText ──────────────────────────────────────────────────────────
@@ -207,6 +222,14 @@ describe('sightingSchema - bedingte when()-Validierung', () => {
 			const hatFehler = await fieldHasError('boatDriveText', {
 				boatDrive: '0',
 				boatDriveText: 'Hybridantrieb Solar-Elektrisch'
+			});
+			expect(hatFehler).toBe(false);
+		});
+
+		it('akzeptiert null (Legacy-DB-Wert)', async () => {
+			const hatFehler = await fieldHasError('boatDriveText', {
+				boatDrive: BoatDriveEnum.OTHER,
+				boatDriveText: null
 			});
 			expect(hatFehler).toBe(false);
 		});

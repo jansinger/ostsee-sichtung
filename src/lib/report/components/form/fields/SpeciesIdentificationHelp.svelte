@@ -28,6 +28,10 @@
 	}
 
 	function openImageModal(src: string, alt: string, copyright: string | null = null) {
+		if (modalCloseTimer !== null) {
+			clearTimeout(modalCloseTimer);
+			modalCloseTimer = null;
+		}
 		modalImageSrc = src;
 		modalImageAlt = alt;
 		modalImageCopyright = copyright;

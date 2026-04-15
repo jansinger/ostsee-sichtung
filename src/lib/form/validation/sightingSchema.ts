@@ -581,12 +581,12 @@ export const sightingSchemaBase = yup.object().shape({
 		.notRequired(),
 
 	/**
-	 * Genauere Beschreibung der Verteilung
-	 * Erforderlich, wenn distribution = 3 (Sonstiges)
+	 * Genauere Beschreibung der Verteilung (optional, auch bei Sonstiges)
 	 */
 	distributionText: yup
 		.string()
 		.max(255, 'Die Beschreibung darf nicht länger als 255 Zeichen sein.')
+		.nullable()
 		.notRequired()
 		.label('Sonstige Verteilung')
 		.meta({
@@ -621,12 +621,12 @@ export const sightingSchemaBase = yup.object().shape({
 		.notRequired(),
 
 	/**
-	 * Genauere Beschreibung des Verhaltens
-	 * Erforderlich, wenn behavior = 3 (Sonstiges)
+	 * Genauere Beschreibung des Verhaltens (optional, auch bei Sonstiges)
 	 */
 	behaviorText: yup
 		.string()
 		.max(255, 'Die Beschreibung darf nicht länger als 255 Zeichen sein.')
+		.nullable()
 		.notRequired()
 		.label('Sonstiges Verhalten')
 		.meta({
@@ -907,12 +907,12 @@ export const sightingSchemaBase = yup.object().shape({
 		.required(),
 
 	/**
-	 * Genauere Beschreibung des Bootsantriebs
-	 * Erforderlich, wenn boatDrive = 4 (Sonstiges)
+	 * Genauere Beschreibung des Bootsantriebs (optional, auch bei Sonstiges)
 	 */
 	boatDriveText: yup
 		.string()
 		.max(255, 'Die Beschreibung darf nicht länger als 255 Zeichen sein.')
+		.nullable()
 		.notRequired()
 		.label('Sonstiger Antrieb')
 		.meta({

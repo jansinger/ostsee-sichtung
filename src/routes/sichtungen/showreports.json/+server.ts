@@ -51,7 +51,7 @@ interface PDFCompliantSightingResponse {
  * Returns sightings in EXACT PDF format with abbreviated field names
  */
 export async function GET(event: RequestEvent): Promise<Response> {
-	const clientIp = getClientIp(event.getClientAddress);
+	const clientIp = getClientIp(() => event.getClientAddress());
 
 	try {
 		// Parse query parameters exactly as specified in PDF

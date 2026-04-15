@@ -24,7 +24,7 @@ const logger = createLogger('api:legacy:inBaltic:pdf-compliant');
  * Response format exactly as specified in PDF: { "inbaltic": boolean, "inchartarea": boolean }
  */
 export async function GET(event: RequestEvent): Promise<Response> {
-	const clientIp = getClientIp(event.getClientAddress);
+	const clientIp = getClientIp(() => event.getClientAddress());
 	const locationParam = event.url.searchParams.get('location');
 
 	try {

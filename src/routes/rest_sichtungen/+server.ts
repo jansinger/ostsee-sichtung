@@ -36,7 +36,7 @@ const logger = createLogger('api:legacy:rest_sichtungen:pdf-compliant');
  * POST handler - PDF specification compliant endpoint
  */
 export async function POST(event: RequestEvent): Promise<Response> {
-	const clientIp = getClientIp(event.getClientAddress);
+	const clientIp = getClientIp(() => event.getClientAddress());
 
 	// Rate limiting: 20 submissions per hour per IP (legacy endpoint has no auth)
 	enforceRateLimit(

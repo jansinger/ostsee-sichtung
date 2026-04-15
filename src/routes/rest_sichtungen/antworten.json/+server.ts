@@ -39,7 +39,7 @@ const logger = createLogger('api:legacy:antworten:pdf-compliant');
  * Format: { "fieldname": { "value": "label" } } NOT array format!
  */
 export async function GET(event: RequestEvent): Promise<Response> {
-	const clientIp = getClientIp(event.getClientAddress);
+	const clientIp = getClientIp(() => event.getClientAddress());
 
 	logger.debug({ ip: clientIp }, 'PDF-compliant legacy response options requested');
 
