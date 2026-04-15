@@ -18,7 +18,7 @@ const logger = createLogger('api:geo:inBaltic');
  * - inChartArea: Boolean, ob der Punkt im Chart-Bereich liegt
  */
 export async function GET(event: RequestEvent) {
-	const clientIp = getClientIp(() => event.getClientAddress());
+	const clientIp = getClientIp(() => event.getClientAddress(), event.request);
 
 	// Parameter aus der URL extrahieren
 	const longitudeParam = event.url.searchParams.get('longitude');

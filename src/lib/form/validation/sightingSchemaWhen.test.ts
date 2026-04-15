@@ -36,7 +36,7 @@ async function fieldHasError(
 
 // ── sightingFromText ──────────────────────────────────────────────────────────
 
-describe('sightingSchema - bedingte when()-Validierung', () => {
+describe('sightingSchema - Sonstiges-Textfeld-Validierung', () => {
 	describe('sightingFromText', () => {
 		it('ist required wenn sightingFrom die Zahl 0 (OTHER) ist und Text leer', async () => {
 			const hatFehler = await fieldHasError('sightingFromText', {
