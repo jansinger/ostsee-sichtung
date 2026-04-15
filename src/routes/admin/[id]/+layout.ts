@@ -15,7 +15,8 @@ export const load: LayoutLoad = async ({ params, fetch }) => {
 		response = await fetch(`/api/sightings/${id}`);
 		sighting = await response.json();
 	} catch (err) {
-		throw error(500, 'Fehler beim Laden der Sichtung: ' + err);
+		console.error('Fehler beim Laden der Sichtung', err);
+		throw error(500, 'Fehler beim Laden der Sichtung');
 	}
 	if (!response.ok) {
 		throw error(404, 'Sichtung nicht gefunden');

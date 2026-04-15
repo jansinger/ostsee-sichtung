@@ -21,9 +21,15 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const entryChannel = url.searchParams.get('entryChannel');
 	const mediaUpload = url.searchParams.get('mediaUpload');
 
-	// Datum-Parameter validieren
-	if ((fromDate || toDate) && !(isValidDateParam(fromDate) && isValidDateParam(toDate))) {
-		return text(JSON.stringify({ error: 'Ungültiges Datumsformat. Erwartet: YYYY-MM-DD' }), {
+	// Datum-Parameter einzeln validieren (nur wenn gesetzt)
+	if (fromDate && !isValidDateParam(fromDate)) {
+		return text(JSON.stringify({ error: 'Ungültiges fromDate-Format. Erwartet: YYYY-MM-DD' }), {
+			status: 400,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
+	if (toDate && !isValidDateParam(toDate)) {
+		return text(JSON.stringify({ error: 'Ungültiges toDate-Format. Erwartet: YYYY-MM-DD' }), {
 			status: 400,
 			headers: { 'Content-Type': 'application/json' }
 		});
@@ -47,7 +53,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 		// Eingangskanal-Filter
 		if (entryChannel && entryChannel !== 'all') {
-			conditions.push(eq(sightingsTable.entryChannel, parseInt(entryChannel)));
+			const channelId = parseInt(entryChannel, 10);
+			if (!isNaN(channelId)) {
+				conditions.push(eq(sightingsTable.entryChannel, channelId));
+			}
 		}
 
 		// Aufnahme-Filter

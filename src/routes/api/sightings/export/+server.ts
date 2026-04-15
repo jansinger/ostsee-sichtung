@@ -17,32 +17,40 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	// Filter-Parameter aus der URL extrahieren
 	const fromDate = url.searchParams.get('fromDate') || '';
 	const toDate = url.searchParams.get('toDate') || '';
-	const verified = url.searchParams.get('verified') === '1';
+	const verified = url.searchParams.get('verified');
 	const entryChannel = url.searchParams.get('entryChannel');
 	const mediaUpload = url.searchParams.get('mediaUpload');
 
-	// Datum-Parameter validieren
-	if ((fromDate || toDate) && !(isValidDateParam(fromDate) && isValidDateParam(toDate))) {
-		return json({ error: 'Ungültiges Datumsformat. Erwartet: YYYY-MM-DD' }, { status: 400 });
+	// Datum-Parameter einzeln validieren (nur wenn gesetzt)
+	if (fromDate && !isValidDateParam(fromDate)) {
+		return json({ error: 'Ungültiges fromDate-Format. Erwartet: YYYY-MM-DD' }, { status: 400 });
+	}
+	if (toDate && !isValidDateParam(toDate)) {
+		return json({ error: 'Ungültiges toDate-Format. Erwartet: YYYY-MM-DD' }, { status: 400 });
 	}
 
 	try {
 		// Erstellen der Abfrage-Bedingungen
 		const conditions = [];
 
-		// Datumsbereich hinzufügen, wenn vorhanden
+		// Datumsbereich nur wenn beide Werte gültig sind
 		if (isValidDateParam(fromDate) && isValidDateParam(toDate)) {
 			conditions.push(between(sightingsTable.sightingDate, new Date(fromDate), new Date(toDate)));
 		}
 
 		// Verifizierungsstatus hinzufügen, wenn erforderlich
-		if (verified) {
+		if (verified === '1') {
 			conditions.push(eq(sightingsTable.verified, 1));
+		} else if (verified === '0') {
+			conditions.push(eq(sightingsTable.verified, 0));
 		}
 
 		// Eingangskanal-Filter
 		if (entryChannel && entryChannel !== 'all') {
-			conditions.push(eq(sightingsTable.entryChannel, parseInt(entryChannel)));
+			const channelId = parseInt(entryChannel, 10);
+			if (!isNaN(channelId)) {
+				conditions.push(eq(sightingsTable.entryChannel, channelId));
+			}
 		}
 
 		// Aufnahme-Filter
