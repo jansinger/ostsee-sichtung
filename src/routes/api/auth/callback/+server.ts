@@ -47,8 +47,13 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 			userEmail: authUser.email
 		});
 		cookies.delete('csrfState', { path: '/' });
+		redirect(302, returnUrl);
 	} catch (err) {
-		logger.info({ err }, 'Failed to get token');
+		// SvelteKit redirect() throws internally — re-throw without treating as error
+		if (err instanceof Response || (err as { status?: number })?.status === 302) {
+			throw err;
+		}
+		logger.warn({ event: 'security.auth_error', err }, 'Failed to get token');
 		await logAuditEvent({
 			action: 'auth.login_failure',
 			resourceType: 'auth',
@@ -56,5 +61,4 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 		});
 		return error(500, `Failed to get token. Err: ${err}`);
 	}
-	return redirect(302, returnUrl);
 }

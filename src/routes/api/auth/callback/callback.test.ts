@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockLogAuditEvent, mockGetToken, mockVerifyToken, mockGetTokenClaims, mockSetAuthCookie, mockGetPKCEVerifier } = vi.hoisted(() => ({
+const {
+	mockLogAuditEvent,
+	mockGetToken,
+	mockVerifyToken,
+	mockGetTokenClaims,
+	mockSetAuthCookie,
+	mockGetPKCEVerifier
+} = vi.hoisted(() => ({
 	mockLogAuditEvent: vi.fn().mockResolvedValue(undefined),
 	mockGetToken: vi.fn(),
 	mockVerifyToken: vi.fn(),
@@ -81,5 +88,21 @@ describe('GET /api/auth/callback — Audit Logging', () => {
 				status: 'failure'
 			})
 		);
+	});
+
+	it('loggt KEIN auth.login_failure bei erfolgreichem Login (redirect wird nicht als Fehler behandelt)', async () => {
+		mockGetToken.mockResolvedValue({ id_token: 'id-tok', access_token: 'access-tok' });
+		mockVerifyToken.mockResolvedValue({ email: 'user@test.com', sub: 'auth0|123' });
+		mockGetTokenClaims.mockResolvedValue({ 'https://api.test/roles': ['admin'] });
+
+		await GET({
+			url: new URL('http://localhost/api/auth/callback?code=auth-code&state=valid-csrf'),
+			cookies: makeCookies()
+		} as never).catch(() => {});
+
+		const loginFailureCalls = mockLogAuditEvent.mock.calls.filter(
+			(call) => call[0]?.action === 'auth.login_failure'
+		);
+		expect(loginFailureCalls).toHaveLength(0);
 	});
 });
