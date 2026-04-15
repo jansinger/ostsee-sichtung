@@ -165,3 +165,19 @@ export const appConfig = pgTable(
 		index('idx_app_config_category').on(table.category)
 	]
 );
+
+export const auditLogs = pgTable(
+	'audit_logs',
+	{
+		id: serial().primaryKey().notNull(),
+		timestamp: timestamp({ withTimezone: true }).notNull().defaultNow(),
+		userEmail: varchar('user_email', { length: 255 }),
+		action: varchar({ length: 100 }).notNull(),
+		resourceType: varchar('resource_type', { length: 50 }),
+		resourceId: varchar('resource_id', { length: 100 }),
+		details: jsonb(),
+		ipAddress: varchar('ip_address', { length: 45 }),
+		status: varchar({ length: 20 }).notNull().default('success')
+	},
+	(table) => [index('idx_audit_logs_timestamp').on(table.timestamp)]
+);
