@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.1](https://github.com/jansinger/ostsee-sichtung/compare/v2.4.0...v2.4.1) (2026-04-15)
+
+
+### Bug Fixes
+
+* **admin,ui:** correct outdated docs and about page content ([#470](https://github.com/jansinger/ostsee-sichtung/issues/470)) ([af077c9](https://github.com/jansinger/ostsee-sichtung/commit/af077c9b0d7e7968faa866e60f25252a9508eaac))
+
 ## [2.4.0](https://github.com/jansinger/ostsee-sichtung/compare/v2.3.1...v2.4.0) (2026-04-15)
 
 
