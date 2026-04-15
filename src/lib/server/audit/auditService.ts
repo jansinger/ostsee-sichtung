@@ -9,8 +9,10 @@ export type AuditAction =
 	| 'sighting.reject'
 	| 'sighting.edit'
 	| 'sighting.delete'
+	| 'sighting.verify'
 	| 'file.delete'
 	| 'config.update'
+	| 'config.delete'
 	| 'auth.login_success'
 	| 'auth.login_failure'
 	| 'export.download';

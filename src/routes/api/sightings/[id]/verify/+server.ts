@@ -1,4 +1,5 @@
 import { createLogger } from '$lib/logger';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
@@ -50,6 +51,17 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url }) =>
 				verified
 			})
 			.where(eq(sightings.id, Number(id)));
+
+		const ipAddress =
+			request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? undefined;
+		await logAuditEvent({
+			action: 'sighting.verify',
+			resourceType: 'sighting',
+			resourceId: String(id),
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			...(ipAddress ? { ipAddress } : {}),
+			details: { verified }
+		});
 
 		logger.info(
 			{
