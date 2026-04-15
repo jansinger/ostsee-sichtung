@@ -1,7 +1,7 @@
 import { createLogger } from '$lib/logger';
 import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 import { getClientIp } from '$lib/server/utils/getClientIp';
-import { error, json } from '@sveltejs/kit';
+import { error, json, type RequestEvent } from '@sveltejs/kit';
 
 const logger = createLogger('api:geo:inBaltic');
 
@@ -17,12 +17,12 @@ const logger = createLogger('api:geo:inBaltic');
  * - inBaltic: Boolean, ob der Punkt in der Ostsee liegt
  * - inChartArea: Boolean, ob der Punkt im Chart-Bereich liegt
  */
-export async function GET({ url, getClientAddress }: { url: URL; getClientAddress: () => string }) {
-	const clientIp = getClientIp(getClientAddress);
+export async function GET(event: RequestEvent) {
+	const clientIp = getClientIp(() => event.getClientAddress());
 
 	// Parameter aus der URL extrahieren
-	const longitudeParam = url.searchParams.get('longitude');
-	const latitudeParam = url.searchParams.get('latitude');
+	const longitudeParam = event.url.searchParams.get('longitude');
+	const latitudeParam = event.url.searchParams.get('latitude');
 
 	logger.debug(
 		{
