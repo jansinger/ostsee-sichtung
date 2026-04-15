@@ -64,7 +64,7 @@ const authentication: Handle = async ({ event, resolve }) => {
 			// Set admin flag for easier access
 			event.locals.isAdmin = user?.roles?.includes('admin') || false;
 		} catch (error) {
-			logger.error({ error }, 'Failed to verify cookie, deleting it');
+			logger.error({ event: 'security.auth_error', error }, 'Failed to verify cookie, deleting it');
 			clearAuthCookie(event.cookies);
 		}
 	}
