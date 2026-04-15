@@ -62,12 +62,27 @@
 						• <code class="rounded bg-gray-100 px-1">PUT /api/sightings/{'{id}'}</code> - Sichtung bearbeiten
 					</li>
 					<li>
-						• <code class="rounded bg-gray-100 px-1">POST /api/sightings/{'{id}'}/approve</code> - Sichtung
+						• <code class="rounded bg-gray-100 px-1">DELETE /api/sightings/{'{id}'}</code> - Sichtung
+						löschen
+					</li>
+					<li>
+						• <code class="rounded bg-gray-100 px-1">PATCH /api/sightings/{'{id}'}/approve</code> - Sichtung
 						genehmigen
 					</li>
 					<li>
-						• <code class="rounded bg-gray-100 px-1">GET /api/sightings/export</code> - Datenexport (CSV,
-						JSON, KML, XML)
+						• <code class="rounded bg-gray-100 px-1">GET /api/sightings/export</code> - Datenexport (JSON)
+					</li>
+					<li>
+						• <code class="rounded bg-gray-100 px-1">GET /api/sightings/export/csv</code> - Datenexport
+						(CSV)
+					</li>
+					<li>
+						• <code class="rounded bg-gray-100 px-1">GET /api/sightings/export/kml</code> - Datenexport
+						(KML)
+					</li>
+					<li>
+						• <code class="rounded bg-gray-100 px-1">GET /api/sightings/export/xml</code> - Datenexport
+						(XML)
 					</li>
 					<li>
 						• <code class="rounded bg-gray-100 px-1">GET /api/statistics</code> - Detaillierte Statistiken
