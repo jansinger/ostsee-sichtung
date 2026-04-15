@@ -30,18 +30,13 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 	}
 
 	try {
-		logger.debug({ code }, 'code');
-
 		// Token-Austausch mit Auth0
 		const token = await getToken({ code, pkceVerifier });
-		logger.debug({ token }, 'token');
 
 		const authUser = (await verifyToken(token.id_token)) as User;
-		logger.debug({ authUser }, 'authUser');
 
 		const rolesClaim = `${env.API_AUDIENCE}/roles`;
 		const claims = await getTokenClaims<Record<string, string[]>>(token.access_token);
-		logger.debug({ claims }, 'claims');
 
 		authUser.roles = claims[rolesClaim] || [];
 
