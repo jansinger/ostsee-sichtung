@@ -40,8 +40,13 @@
 
 	function closeImageModal() {
 		modalElement?.close();
-		// Clear content after DaisyUI close animation to avoid flicker
-		// (close event fires synchronously, state must be deferred)
+		// deferred state reset is handled by handleDialogClose (onclose event)
+	}
+
+	function handleDialogClose() {
+		// Fires for ALL close paths: button, backdrop click, and native Escape key.
+		// State is cleared after the DaisyUI animation completes to avoid flicker
+		// (the close event fires synchronously, before the animation ends).
 		if (modalCloseTimer !== null) clearTimeout(modalCloseTimer);
 		modalCloseTimer = setTimeout(() => {
 			modalImageSrc = null;
@@ -548,7 +553,7 @@
 </div>
 
 <!-- Image Modal für Vollbildansicht -->
-<dialog bind:this={modalElement} class="modal">
+<dialog bind:this={modalElement} class="modal" onclose={handleDialogClose}>
 	<div class="modal-box w-11/12 max-w-5xl p-0">
 		{#if modalImageSrc}
 			<div class="relative">
