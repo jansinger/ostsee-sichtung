@@ -99,10 +99,10 @@ export const PUT: RequestHandler = async ({ params, request, locals, url }) => {
 			uploadedFiles: uploadedFiles || []
 		});
 
-		if (currentRecords.length > 0) {
+		if (currentRecords.length > 0 && updatedSighting) {
 			const changedFields = getChangedFields(
 				currentRecords[0] as Record<string, unknown>,
-				formData as unknown as Record<string, unknown>
+				updatedSighting as unknown as Record<string, unknown>
 			);
 			const ipAddress =
 				request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? undefined;

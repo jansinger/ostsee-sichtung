@@ -41,6 +41,7 @@ vi.mock('drizzle-orm', () => ({
 }));
 
 import { PUT, DELETE } from './+server';
+import * as sightingRepository from '$lib/server/db/sightingRepository';
 
 function makeSelectChain(records: unknown[]) {
 	const mockLimit = vi.fn().mockResolvedValue(records);
@@ -65,6 +66,13 @@ describe('PUT /api/sightings/[id] — Audit Logging', () => {
 
 	it('loggt sighting.edit mit changedFields wenn Felder geändert wurden', async () => {
 		makeSelectChain([{ id: 42, species: 0, totalCount: 1 }]);
+		// updateSighting gibt den aktualisierten Drizzle-Record zurück (species: 1 = geändert)
+		vi.mocked(sightingRepository.updateSighting).mockResolvedValueOnce({
+			id: 42,
+			species: 1,
+			totalCount: 1,
+			referenceId: 'ref-42'
+		} as ReturnType<typeof sightingRepository.updateSighting> extends Promise<infer T> ? T : never);
 
 		const event = {
 			params: { id: '42' },
@@ -94,6 +102,12 @@ describe('PUT /api/sightings/[id] — Audit Logging', () => {
 
 	it('loggt leere changedFields wenn keine Felder geändert wurden', async () => {
 		makeSelectChain([{ id: 42, species: 0 }]);
+		// updateSighting gibt denselben Drizzle-Record zurück (keine Änderung)
+		// Muss exakt dieselben Keys wie currentRecord haben damit changedFields leer bleibt
+		vi.mocked(sightingRepository.updateSighting).mockResolvedValueOnce({
+			id: 42,
+			species: 0
+		} as ReturnType<typeof sightingRepository.updateSighting> extends Promise<infer T> ? T : never);
 
 		const event = {
 			params: { id: '42' },
