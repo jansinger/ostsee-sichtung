@@ -26,6 +26,15 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 	const pkceVerifier = getPKCEVerifierFromCookie(cookies);
 
 	if (state !== csrfState || !code || !pkceVerifier) {
+		logger.warn(
+			{
+				event: 'security.csrf_mismatch',
+				stateMatch: state === csrfState,
+				hasCode: !!code,
+				hasPkce: !!pkceVerifier
+			},
+			'Auth callback: CSRF state mismatch or missing parameters'
+		);
 		throw error(403, 'Invalid state');
 	}
 

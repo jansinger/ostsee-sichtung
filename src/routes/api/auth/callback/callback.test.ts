@@ -6,14 +6,16 @@ const {
 	mockVerifyToken,
 	mockGetTokenClaims,
 	mockSetAuthCookie,
-	mockGetPKCEVerifier
+	mockGetPKCEVerifier,
+	mockLoggerWarn
 } = vi.hoisted(() => ({
 	mockLogAuditEvent: vi.fn().mockResolvedValue(undefined),
 	mockGetToken: vi.fn(),
 	mockVerifyToken: vi.fn(),
 	mockGetTokenClaims: vi.fn(),
 	mockSetAuthCookie: vi.fn().mockResolvedValue(undefined),
-	mockGetPKCEVerifier: vi.fn().mockReturnValue('pkce-verifier')
+	mockGetPKCEVerifier: vi.fn().mockReturnValue('pkce-verifier'),
+	mockLoggerWarn: vi.fn()
 }));
 
 vi.mock('$lib/server/audit/auditService', () => ({
@@ -21,7 +23,7 @@ vi.mock('$lib/server/audit/auditService', () => ({
 }));
 
 vi.mock('$lib/logger', () => ({
-	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
+	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: mockLoggerWarn, error: vi.fn() })
 }));
 
 vi.mock('$env/dynamic/private', () => ({
@@ -104,5 +106,25 @@ describe('GET /api/auth/callback — Audit Logging', () => {
 			(call) => call[0]?.action === 'auth.login_failure'
 		);
 		expect(loginFailureCalls).toHaveLength(0);
+	});
+
+	it('loggt security.csrf_mismatch warn bei ungültigem State', async () => {
+		const cookiesWithMismatch = {
+			get: vi.fn().mockImplementation((name: string) => {
+				if (name === 'csrfState') return 'expected-csrf';
+				return undefined;
+			}),
+			delete: vi.fn()
+		};
+
+		await GET({
+			url: new URL('http://localhost/api/auth/callback?code=auth-code&state=wrong-csrf'),
+			cookies: cookiesWithMismatch
+		} as never).catch(() => {});
+
+		expect(mockLoggerWarn).toHaveBeenCalledWith(
+			expect.objectContaining({ event: 'security.csrf_mismatch' }),
+			expect.any(String)
+		);
 	});
 });
