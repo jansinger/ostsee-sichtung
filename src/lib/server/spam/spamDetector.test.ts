@@ -319,19 +319,19 @@ describe('detectSpamIndicators', () => {
 			expect(Array.isArray(result.indicators)).toBe(true);
 		});
 
-		it('setzt scannerScore auf 100 wenn SpamScanner isSpam meldet', async () => {
-			mockScan.mockResolvedValue(SPAM_RESULT);
+		it('setzt scannerScore auf probability*100 wenn SpamScanner isSpam meldet', async () => {
+			mockScan.mockResolvedValue(SPAM_RESULT); // probability: 0.9
 
 			const sighting = buildSighting({ notes: 'this is a test sighting note' });
 			const result = await detectSpamIndicators(sighting);
-			expect(result.scannerScore).toBe(100);
+			expect(result.scannerScore).toBe(90); // Math.round(0.9 * 100)
 			expect(result.isSpam).toBe(true);
 		});
 
 		it('setzt scannerScore auf 0 wenn SpamScanner kein Spam meldet', async () => {
 			const sighting = buildSighting({ notes: 'this is a test sighting note' });
 			const result = await detectSpamIndicators(sighting);
-			expect(result.scannerScore).toBe(0);
+			expect(result.scannerScore).toBe(0); // ham → always 0
 			expect(result.isSpam).toBe(false);
 		});
 

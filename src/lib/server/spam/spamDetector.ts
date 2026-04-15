@@ -62,21 +62,26 @@ const DISPOSABLE_EMAIL_DOMAINS = [
 	'10minutemail.com'
 ];
 
+// Single-pass HTML entity decoding to avoid double-unescaping (e.g. &amp;gt; → &gt; → >)
+const HTML_ENTITIES: Record<string, string> = {
+	'&amp;': '&',
+	'&lt;': '<',
+	'&gt;': '>',
+	'&quot;': '"',
+	'&#39;': "'"
+};
+
 /**
  * Decodes common HTML entities in text before analysis.
+ * Uses a single-pass replacement to prevent double-unescaping.
  */
 function decodeHtmlEntities(text: string): string {
-	return text
-		.replace(/&amp;/g, '&')
-		.replace(/&lt;/g, '<')
-		.replace(/&gt;/g, '>')
-		.replace(/&quot;/g, '"')
-		.replace(/&#39;/g, "'");
+	return text.replace(/&amp;|&lt;|&gt;|&quot;|&#39;/g, (match) => HTML_ENTITIES[match] ?? match);
 }
 
 /**
  * Runs SpamScanner on the sighting's text content.
- * Returns isSpam and a normalized 0–100 score.
+ * scannerScore is probability-based (0–100) when spam is detected, 0 for ham.
  * Falls back gracefully on errors or missing text.
  */
 async function runSpamScanner(
@@ -89,11 +94,14 @@ async function runSpamScanner(
 	try {
 		const result = await getScanner().scan(text);
 		const isSpam = Boolean(result.isSpam);
-		const scannerScore = isSpam ? 100 : 0;
+		// probability represents confidence in the classified category;
+		// only expose a non-zero score when classified as spam
+		const probability: number = result.results?.classification?.probability ?? 1;
+		const scannerScore = isSpam ? Math.round(probability * 100) : 0;
 		const indicator = isSpam && result.message ? `SpamScanner: ${result.message}` : null;
 		return { isSpam, scannerScore, indicator };
 	} catch (error: unknown) {
-		logger.warn({ error }, 'SpamScanner fehler, verwende Fallback');
+		logger.warn({ error }, 'SpamScanner Fehler, verwende Fallback');
 		return { isSpam: false, scannerScore: 0, indicator: null };
 	}
 }
@@ -107,7 +115,18 @@ export async function detectSpamIndicators(sighting: SightingFormValues): Promis
 		const indicators: string[] = [];
 		let score = 0;
 
-		// All text fields combined for keyword checks (HTML-decoded)
+		// Raw (non-lowercased) text fields needed for capital-letter heuristic
+		const rawTextFields = [
+			sighting.notes || '',
+			sighting.firstName || '',
+			sighting.lastName || '',
+			sighting.waterway || '',
+			sighting.seaMark || ''
+		]
+			.map(decodeHtmlEntities)
+			.join(' ');
+
+		// All text fields combined for keyword checks (HTML-decoded, lowercased)
 		const textFields = [
 			sighting.notes || '',
 			sighting.firstName || '',
@@ -121,16 +140,7 @@ export async function detectSpamIndicators(sighting: SightingFormValues): Promis
 			.toLowerCase();
 
 		// Non-email text fields for URL detection (email addresses contain .com by design)
-		const nonEmailTextFields = [
-			sighting.notes || '',
-			sighting.firstName || '',
-			sighting.lastName || '',
-			sighting.waterway || '',
-			sighting.seaMark || ''
-		]
-			.map(decodeHtmlEntities)
-			.join(' ')
-			.toLowerCase();
+		const nonEmailTextFields = rawTextFields.toLowerCase();
 
 		// --- Heuristic checks ---
 
@@ -161,8 +171,8 @@ export async function detectSpamIndicators(sighting: SightingFormValues): Promis
 				score += foundGerman.length * 2;
 			}
 
-			// Excessive punctuation or capitals
-			if (/[!]{3,}|[?]{3,}|[A-Z]{10,}/.test(textFields)) {
+			// Excessive punctuation (lowercased text) or excessive capitals (raw text)
+			if (/[!]{3,}|[?]{3,}/.test(textFields) || /[A-Z]{10,}/.test(rawTextFields)) {
 				indicators.push('Übermäßige Satzzeichen oder Großbuchstaben');
 				score += 2;
 			}
@@ -199,7 +209,8 @@ export async function detectSpamIndicators(sighting: SightingFormValues): Promis
 		}
 
 		// Position outside Baltic Sea bounding box
-		if (sighting.latitude && sighting.longitude) {
+		// Explicit null check: latitude/longitude of 0 is a valid (if unlikely) coordinate
+		if (sighting.latitude != null && sighting.longitude != null) {
 			const lat = Number(sighting.latitude);
 			const lng = Number(sighting.longitude);
 			if (lat < 53.0 || lat > 66.0 || lng < 9.0 || lng > 31.0) {

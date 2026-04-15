@@ -32,7 +32,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 
 		const sighting = sightingResult[0]!;
 
-		// Convert DB row to SightingFormValues (same mapping as emailService)
+		// Convert DB row to SightingFormValues (fields relevant for spam detection)
 		const sightingFormValues = {
 			latitude: sighting.latitude ? parseFloat(sighting.latitude) : 0,
 			longitude: sighting.longitude ? parseFloat(sighting.longitude) : 0,

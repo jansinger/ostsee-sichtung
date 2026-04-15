@@ -263,6 +263,17 @@
 		error: null as string | null
 	});
 
+	let spamCheckDialogElement = $state<HTMLDialogElement | null>(null);
+
+	$effect(() => {
+		if (!spamCheckDialogElement) return;
+		if (spamCheckModal.open && !spamCheckDialogElement.open) {
+			spamCheckDialogElement.showModal();
+		} else if (!spamCheckModal.open && spamCheckDialogElement.open) {
+			spamCheckDialogElement.close();
+		}
+	});
+
 	async function checkSpam(sightingId: number): Promise<void> {
 		spamCheckModal.open = true;
 		spamCheckModal.loading = true;
@@ -1050,66 +1061,65 @@
 	/>
 </div>
 
-{#if spamCheckModal.open}
-	<dialog class="modal modal-open">
-		<div class="modal-box max-w-lg">
-			<h3 class="text-lg font-bold">Spam-Analyse</h3>
+<!-- Native dialog element with showModal()/close() for proper focus management and ESC handling -->
+<dialog
+	bind:this={spamCheckDialogElement}
+	class="modal"
+	aria-labelledby="spam-check-modal-title"
+	onclose={() => (spamCheckModal.open = false)}
+>
+	<div class="modal-box max-w-lg">
+		<h3 id="spam-check-modal-title" class="text-lg font-bold">Spam-Analyse</h3>
 
-			{#if spamCheckModal.loading}
-				<div class="flex justify-center py-8">
-					<span class="loading loading-spinner loading-md"></span>
-				</div>
-			{:else if spamCheckModal.error}
-				<div class="alert alert-error mt-4">
-					<span>{spamCheckModal.error}</span>
-				</div>
-			{:else if spamCheckModal.result}
-				<!-- Score badges -->
-				<div class="mt-4 flex flex-wrap gap-2">
-					<span
-						class="badge {spamCheckModal.result.score >= 5
-							? 'badge-error'
-							: spamCheckModal.result.score >= 2
-								? 'badge-warning'
-								: 'badge-success'}"
-					>
-						Heuristik: {spamCheckModal.result.score}/10
-					</span>
-					<span class="badge {spamCheckModal.result.isSpam ? 'badge-error' : 'badge-success'}">
-						SpamScanner: {spamCheckModal.result.scannerScore}/100
-					</span>
-					{#if spamCheckModal.result.isHighRisk}
-						<span class="badge badge-error">Hochrisiko</span>
-					{:else}
-						<span class="badge badge-success">Kein Hochrisiko</span>
-					{/if}
-				</div>
-				<!-- Indicators list -->
-				{#if spamCheckModal.result.indicators.length > 0}
-					<p class="mt-4 font-semibold">Indikatoren:</p>
-					<ul class="mt-1 list-inside list-disc text-sm">
-						{#each spamCheckModal.result.indicators as indicator (indicator)}
-							<li>{indicator}</li>
-						{/each}
-					</ul>
-				{:else}
-					<p class="text-success mt-4 text-sm">Keine Indikatoren gefunden.</p>
-				{/if}
-			{/if}
-
-			<div class="modal-action">
-				<button class="btn" onclick={() => (spamCheckModal.open = false)}> Schließen </button>
+		{#if spamCheckModal.loading}
+			<div class="flex justify-center py-8">
+				<span class="loading loading-spinner loading-md"></span>
 			</div>
+		{:else if spamCheckModal.error}
+			<div class="alert alert-error mt-4">
+				<span>{spamCheckModal.error}</span>
+			</div>
+		{:else if spamCheckModal.result}
+			<!-- Score badges -->
+			<div class="mt-4 flex flex-wrap gap-2">
+				<span
+					class="badge {spamCheckModal.result.score >= 5
+						? 'badge-error'
+						: spamCheckModal.result.score >= 2
+							? 'badge-warning'
+							: 'badge-success'}"
+				>
+					Heuristik: {spamCheckModal.result.score}/10
+				</span>
+				<span class="badge {spamCheckModal.result.isSpam ? 'badge-error' : 'badge-success'}">
+					SpamScanner: {spamCheckModal.result.scannerScore}/100
+				</span>
+				{#if spamCheckModal.result.isHighRisk}
+					<span class="badge badge-error">Hochrisiko</span>
+				{:else}
+					<span class="badge badge-success">Kein Hochrisiko</span>
+				{/if}
+			</div>
+			<!-- Indicators list -->
+			{#if spamCheckModal.result.indicators.length > 0}
+				<p class="mt-4 font-semibold">Indikatoren:</p>
+				<ul class="mt-1 list-inside list-disc text-sm">
+					{#each spamCheckModal.result.indicators as indicator (indicator)}
+						<li>{indicator}</li>
+					{/each}
+				</ul>
+			{:else}
+				<p class="text-success mt-4 text-sm">Keine Indikatoren gefunden.</p>
+			{/if}
+		{/if}
+
+		<div class="modal-action">
+			<button class="btn" onclick={() => (spamCheckModal.open = false)}>Schließen</button>
 		</div>
-		<div
-			class="modal-backdrop"
-			onclick={() => (spamCheckModal.open = false)}
-			role="button"
-			tabindex="-1"
-			aria-label="Modal schließen"
-			onkeydown={(e) => {
-				if (e.key === 'Escape') spamCheckModal.open = false;
-			}}
-		></div>
-	</dialog>
-{/if}
+	</div>
+	<form method="dialog" class="modal-backdrop">
+		<button aria-label="Modal schließen" onclick={() => (spamCheckModal.open = false)}>
+			<span class="sr-only">Modal schließen</span>
+		</button>
+	</form>
+</dialog>
