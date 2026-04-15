@@ -86,19 +86,20 @@
 					</p>
 					<ul class="space-y-1 text-sm">
 						<li>
-							• <code class="rounded bg-gray-100 px-1">GET /sightings</code> - Öffentliche Sichtungen
+							• <code class="rounded bg-gray-100 px-1">GET /api/sightings</code> - Öffentliche Sichtungen
 						</li>
 						<li>
-							• <code class="rounded bg-gray-100 px-1">POST /sightings</code> - Neue Sichtung melden
+							• <code class="rounded bg-gray-100 px-1">POST /api/sightings</code> - Neue Sichtung melden
 						</li>
 						<li>
-							• <code class="rounded bg-gray-100 px-1">GET /geo/inBaltic</code> - Koordinaten prüfen
+							• <code class="rounded bg-gray-100 px-1">GET /api/geo/inBaltic</code> - Koordinaten prüfen
 						</li>
 						<li>
-							• <code class="rounded bg-gray-100 px-1">POST /files/upload</code> - Dateien hochladen
+							• <code class="rounded bg-gray-100 px-1">POST /api/files/upload</code> - Dateien hochladen
 						</li>
 						<li>
-							• <code class="rounded bg-gray-100 px-1">GET /media/{'{path}'}</code> - Sichere Medien abrufen
+							• <code class="rounded bg-gray-100 px-1">GET /api/media/{'{path}'}</code> - Sichere Medien
+							abrufen
 						</li>
 					</ul>
 				</div>
@@ -108,7 +109,7 @@
 						Für Admin-Funktionen ist eine Anmeldung erforderlich:
 					</p>
 					<ol class="space-y-1 text-sm">
-						<li>1. <code class="rounded bg-gray-100 px-1">GET /auth/login</code> aufrufen</li>
+						<li>1. <code class="rounded bg-gray-100 px-1">GET /api/auth/login</code> aufrufen</li>
 						<li>2. Auth0-Login-Flow durchlaufen</li>
 						<li>3. Session-Cookie wird automatisch gesetzt</li>
 						<li>4. Admin-Endpunkte sind nun verfügbar</li>

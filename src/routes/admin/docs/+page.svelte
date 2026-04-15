@@ -55,22 +55,22 @@
 				</p>
 				<ul class="space-y-1 text-sm">
 					<li>
-						• <code class="rounded bg-gray-100 px-1">GET /admin/sightings</code> - Alle Sichtungen verwalten
+						• <code class="rounded bg-gray-100 px-1">GET /api/sightings</code> - Alle Sichtungen abrufen
+						(mit Filtern)
 					</li>
 					<li>
-						• <code class="rounded bg-gray-100 px-1">PUT /admin/sightings/{'{id}'}</code> - Sichtungen
-						bearbeiten
+						• <code class="rounded bg-gray-100 px-1">PUT /api/sightings/{'{id}'}</code> - Sichtung bearbeiten
 					</li>
 					<li>
-						• <code class="rounded bg-gray-100 px-1">DELETE /admin/sightings/{'{id}'}</code> - Sichtungen
-						löschen
+						• <code class="rounded bg-gray-100 px-1">POST /api/sightings/{'{id}'}/approve</code> - Sichtung
+						genehmigen
 					</li>
 					<li>
-						• <code class="rounded bg-gray-100 px-1">GET /admin/export</code> - Datenexport (CSV, XML,
-						KML)
+						• <code class="rounded bg-gray-100 px-1">GET /api/sightings/export</code> - Datenexport (CSV,
+						JSON, KML, XML)
 					</li>
 					<li>
-						• <code class="rounded bg-gray-100 px-1">GET /admin/statistics</code> - Detaillierte Statistiken
+						• <code class="rounded bg-gray-100 px-1">GET /api/statistics</code> - Detaillierte Statistiken
 					</li>
 				</ul>
 			</div>
@@ -112,11 +112,11 @@
 				<p class="mt-2 text-xs text-gray-500">Übersicht und Statistiken</p>
 			</div>
 			<div class="text-center">
-				<a href="/admin/map" class="btn btn-secondary btn-wide">
+				<a href="/map" class="btn btn-secondary btn-wide">
 					🗺️<br />
-					<span class="text-sm">Admin-Karte</span>
+					<span class="text-sm">Sichtungs-Karte</span>
 				</a>
-				<p class="mt-2 text-xs text-gray-500">Geografische Verwaltung</p>
+				<p class="mt-2 text-xs text-gray-500">Alle Sichtungen auf der Karte</p>
 			</div>
 			<div class="text-center">
 				<a href="/docs/api" class="btn btn-outline btn-wide">
