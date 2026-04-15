@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { db } from '$lib/server/db';
 
 // Helper to get PUBLIC_SITE_URL dynamically (runtime, not build-time)

@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';

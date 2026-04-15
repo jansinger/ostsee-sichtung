@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { ServerConfigService } from '$lib/services/configService';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';

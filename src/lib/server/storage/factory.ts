@@ -14,7 +14,7 @@
  * Die Auswahl erfolgt automatisch oder über Umgebungsvariablen.
  */
 import { dev } from '$app/environment';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import type { StorageProvider, StorageProviderType } from '$lib/types';
 import { env } from '$env/dynamic/private';
 import { LocalStorageProvider } from './local';

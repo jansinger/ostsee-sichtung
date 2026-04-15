@@ -28,6 +28,15 @@ vi.mock('$lib/form/validation/sightingSchema', () => ({
 	}
 }));
 
+vi.mock('$lib/logger.server', () => ({
+	createLogger: vi.fn(() => ({
+		debug: vi.fn(),
+		info: vi.fn(),
+		warn: vi.fn(),
+		error: vi.fn()
+	}))
+}));
+
 vi.mock('$lib/logger', () => ({
 	createLogger: vi.fn(() => ({
 		debug: vi.fn(),

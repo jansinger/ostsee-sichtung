@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { EmailService } from '$lib/server/services/emailService';
 import { json, type RequestEvent } from '@sveltejs/kit';

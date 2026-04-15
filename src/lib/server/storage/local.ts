@@ -3,7 +3,7 @@
  *
  * Implements path normalization and validation to prevent directory traversal attacks
  */
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import type { FileMetadata, StorageProvider, UploadedFileInfo, UploadOptions } from '$lib/types';
 import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'fs';
 import { basename, extname, join, normalize, relative, resolve } from 'path';

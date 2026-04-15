@@ -1,5 +1,5 @@
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import type { SightingFormData } from '$lib/report/types';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { requireUserRole } from '$lib/server/auth/auth';

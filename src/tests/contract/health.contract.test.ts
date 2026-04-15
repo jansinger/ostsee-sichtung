@@ -3,6 +3,10 @@ import { GET, HEAD } from '../../routes/health/+server';
 import { createEvent } from './helpers/createEvent';
 import { asApiResponse } from './helpers/asApiResponse';
 
+vi.mock('$lib/logger.server', () => ({
+	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
+}));
+
 vi.mock('$lib/logger', () => ({
 	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 }));

@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { getSightingById, updateSightingWeatherData } from '$lib/server/db/sightingRepository';
 import { fetchWeatherData } from '$lib/server/services/weatherRefreshService';

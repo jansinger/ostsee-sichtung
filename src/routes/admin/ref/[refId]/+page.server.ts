@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { error, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 

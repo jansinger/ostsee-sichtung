@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mocks müssen vor dem Import der zu testenden Datei stehen
+vi.mock('$lib/logger.server', () => ({
+	createLogger: () => ({
+		info: vi.fn(),
+		warn: vi.fn(),
+		error: vi.fn()
+	})
+}));
+
 vi.mock('$lib/logger', () => ({
 	createLogger: () => ({
 		info: vi.fn(),

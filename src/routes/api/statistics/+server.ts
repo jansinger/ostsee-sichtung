@@ -6,7 +6,7 @@
  * Implementiert server-seitiges In-Memory-Caching für 1 Stunde.
  */
 
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { getSightingStatistics } from '$lib/server/db/sightingRepository';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';

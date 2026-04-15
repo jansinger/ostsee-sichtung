@@ -1,6 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import type { User } from '$lib/types/index';
 
 const logger = createLogger('auth');

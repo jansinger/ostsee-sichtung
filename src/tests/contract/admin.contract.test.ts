@@ -24,6 +24,10 @@ vi.mock('$lib/server/auth/auth', () => ({
 	requireUserRole: vi.fn()
 }));
 
+vi.mock('$lib/logger.server', () => ({
+	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
+}));
+
 vi.mock('$lib/logger', () => ({
 	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 }));

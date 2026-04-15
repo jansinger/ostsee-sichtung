@@ -45,7 +45,7 @@
  * @version 2.0.0 - Erweitert um typisierte Interfaces und Performance-Metriken
  */
 
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import type {
 	BalticSeaFileResult,
 	RBushIndexJson,

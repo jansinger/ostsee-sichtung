@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { clearAuthCookie, setAuthCookie } from '$lib/server/auth/auth';
 import { databaseCheck } from '$lib/server/middleware/databaseCheck';
 import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';

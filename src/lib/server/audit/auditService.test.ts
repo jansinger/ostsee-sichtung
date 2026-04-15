@@ -12,6 +12,15 @@ vi.mock('$lib/server/db/schema', () => ({
 
 let mockLoggerError = vi.fn();
 
+vi.mock('$lib/logger.server', () => ({
+	createLogger: () => ({
+		debug: vi.fn(),
+		info: vi.fn(),
+		warn: vi.fn(),
+		error: (...args: unknown[]) => mockLoggerError(...args)
+	})
+}));
+
 vi.mock('$lib/logger', () => ({
 	createLogger: () => ({
 		debug: vi.fn(),

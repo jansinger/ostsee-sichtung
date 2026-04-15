@@ -20,7 +20,7 @@
  * - Upload-Pfad: `${referenceId}/${filename}`
  * - Öffentliche URLs: `https://[prefix].public.blob.vercel-storage.com/[path]`
  */
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import type { FileMetadata, StorageProvider, UploadedFileInfo, UploadOptions } from '$lib/types';
 import { env } from '$env/dynamic/private';
 import { del, head, list, put } from '@vercel/blob';

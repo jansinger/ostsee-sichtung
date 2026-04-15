@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { getFileInfo, getUploadPath, isValidUploadPath } from '$lib/server/uploads';
 import { error } from '@sveltejs/kit';
 import { createReadStream } from 'fs';

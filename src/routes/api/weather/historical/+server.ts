@@ -3,7 +3,7 @@ import {
 	degreesToCardinal,
 	getWeatherDescription
 } from '$lib/constants/weather';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { getCachedWeatherForSighting } from '$lib/server/db/sightingRepository';
 import {
 	mapWeatherToFormFields,

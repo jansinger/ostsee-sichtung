@@ -22,6 +22,10 @@ vi.mock('$lib/server/audit/auditService', () => ({
 	logAuditEvent: mockLogAuditEvent
 }));
 
+vi.mock('$lib/logger.server', () => ({
+	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: mockLoggerWarn, error: vi.fn() })
+}));
+
 vi.mock('$lib/logger', () => ({
 	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: mockLoggerWarn, error: vi.fn() })
 }));

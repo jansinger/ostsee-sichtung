@@ -5,6 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockWarn } = vi.hoisted(() => ({ mockWarn: vi.fn() }));
 
+vi.mock('$lib/logger.server', () => ({
+	createLogger: () => ({
+		debug: vi.fn(),
+		info: vi.fn(),
+		warn: mockWarn,
+		error: vi.fn()
+	})
+}));
+
 vi.mock('$lib/logger', () => ({
 	createLogger: () => ({
 		debug: vi.fn(),

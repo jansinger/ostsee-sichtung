@@ -1,5 +1,5 @@
 import { FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { saveUploadedFile } from '$lib/server/db/sightingFilesRepository';
 import { readImageExifData } from '$lib/server/media/exifUtils';
 import { getStorageProvider } from '$lib/server/storage/factory';

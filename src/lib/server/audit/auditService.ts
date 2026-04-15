@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { db } from '$lib/server/db';
 import { auditLogs } from '$lib/server/db/schema';
 

@@ -10,7 +10,7 @@
  * @since 1.10.0
  */
 
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { json, type RequestEvent } from '@sveltejs/kit';

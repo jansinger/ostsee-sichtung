@@ -5,7 +5,7 @@
  * Nutzt In-Memory-Storage mit automatischer Cleanup-Funktionalität.
  */
 
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { error } from '@sveltejs/kit';
 
 const logger = createLogger('middleware:rateLimit');

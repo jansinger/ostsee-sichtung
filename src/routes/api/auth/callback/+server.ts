@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import {
 	getPKCEVerifierFromCookie,

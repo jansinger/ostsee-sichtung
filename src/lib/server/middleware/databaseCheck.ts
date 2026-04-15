@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { isDatabaseAvailable, testDatabaseConnection } from '$lib/server/db';
 import type { Handle } from '@sveltejs/kit';
 import { error } from '@sveltejs/kit';

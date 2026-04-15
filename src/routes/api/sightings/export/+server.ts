@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { db } from '$lib/server/db';

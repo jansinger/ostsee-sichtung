@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { ConfigRepository } from '$lib/server/db/configRepository';
