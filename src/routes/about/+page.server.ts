@@ -23,8 +23,8 @@ export const load: PageServerLoad = async () => {
 
 		return {
 			version,
-			totalSightings: totalResult?.count ?? null,
-			totalObservers: observersResult?.count ?? null
+			totalSightings: totalResult?.count != null ? Number(totalResult.count) : null,
+			totalObservers: observersResult?.count != null ? Number(observersResult.count) : null
 		};
 	} catch (err) {
 		logger.error({ err }, 'Fehler beim Laden der About-Statistiken');
