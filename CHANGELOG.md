@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.4.0](https://github.com/jansinger/ostsee-sichtung/compare/v2.3.1...v2.4.0) (2026-04-15)
+
+
+### Features
+
+* **security:** hybrid audit logging for admin actions ([#468](https://github.com/jansinger/ostsee-sichtung/issues/468)) ([6ad53f4](https://github.com/jansinger/ostsee-sichtung/commit/6ad53f4d2b1f51c95f40834331d47e3afd1b3d33))
+
 ## [2.3.1](https://github.com/jansinger/ostsee-sichtung/compare/v2.3.0...v2.3.1) (2026-04-15)
 
 
