@@ -8,7 +8,7 @@ const logger = createLogger('api:maintenance-status');
 
 export const GET: RequestHandler = async ({ locals, url }: RequestEvent) => {
 	// SECURITY: Require admin role — must be outside try/catch so redirect(302) propagates
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	try {
 		const isEnabled = await ServerConfigService.isMaintenanceModeEnabled();

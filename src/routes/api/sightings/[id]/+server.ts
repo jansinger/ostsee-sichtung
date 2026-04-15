@@ -39,7 +39,7 @@ const logger = createLogger('api:sightings');
 
 export const GET: RequestHandler = async ({ params, locals, url }) => {
 	// Authorization check
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	// Extrahiere die Sichtungs-ID aus den URL-Parametern
 	const { id } = params;
@@ -76,7 +76,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 
 export const PUT: RequestHandler = async ({ params, request, locals, url, getClientAddress }) => {
 	// Authorization check
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	const { id } = params;
 
@@ -202,7 +202,7 @@ export const DELETE: RequestHandler = async ({
 	getClientAddress
 }) => {
 	// Authorization check - only admins can delete
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	const { id } = params;
 
