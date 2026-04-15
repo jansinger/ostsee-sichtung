@@ -179,7 +179,7 @@
 			/>
 			<p class="text-primary-content mx-auto mb-4 max-w-2xl leading-relaxed">
 				Diese Plattform wird vom Deutschen Meeresmuseum in Stralsund betrieben, einem der führenden
-				Zentren für Meeresforschung und -bildung in Deutschland. Seit über 50 Jahren widmen wir uns
+				Zentren für Meeresforschung und -bildung in Deutschland. Seit über 70 Jahren widmen wir uns
 				der Erforschung und dem Schutz der marinen Lebensräume.
 			</p>
 			<div class="flex justify-center gap-4">
@@ -617,12 +617,20 @@ SOFTWARE.</pre>
 				<div class="stats stats-vertical sm:stats-horizontal bg-base-100/50 mb-8 w-full shadow-xl">
 					<div class="stat">
 						<div class="stat-title">Bereits erfasst</div>
-						<div class="stat-value text-primary">1.800+</div>
+						<div class="stat-value text-primary">
+							{data.totalSightings != null
+								? new Intl.NumberFormat('de-DE').format(data.totalSightings)
+								: '1.800+'}
+						</div>
 						<div class="stat-desc">Sichtungen</div>
 					</div>
 					<div class="stat">
 						<div class="stat-title">Aktive</div>
-						<div class="stat-value text-secondary">500+</div>
+						<div class="stat-value text-secondary">
+							{data.totalObservers != null
+								? new Intl.NumberFormat('de-DE').format(data.totalObservers)
+								: '500+'}
+						</div>
 						<div class="stat-desc">Beobachter</div>
 					</div>
 					<div class="stat">
