@@ -14,6 +14,14 @@
 	let modalImageSrc = $state<string | null>(null);
 	let modalImageAlt = $state<string>('');
 	let modalImageCopyright = $state<string | null>(null);
+	let modalElement = $state<HTMLDialogElement | null>(null);
+	let modalCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+	$effect(() => {
+		return () => {
+			if (modalCloseTimer !== null) clearTimeout(modalCloseTimer);
+		};
+	});
 
 	function toggleExpanded() {
 		isExpanded = !isExpanded;
@@ -23,21 +31,20 @@
 		modalImageSrc = src;
 		modalImageAlt = alt;
 		modalImageCopyright = copyright;
-		// Show DaisyUI modal
-		const modal = document.getElementById('species-image-modal') as HTMLDialogElement;
-		if (modal) {
-			modal.showModal();
-		}
+		modalElement?.showModal();
 	}
 
 	function closeImageModal() {
-		modalImageSrc = null;
-		modalImageAlt = '';
-		modalImageCopyright = null;
-		const modal = document.getElementById('species-image-modal') as HTMLDialogElement;
-		if (modal) {
-			modal.close();
-		}
+		modalElement?.close();
+		// Clear content after DaisyUI close animation to avoid flicker
+		// (close event fires synchronously, state must be deferred)
+		if (modalCloseTimer !== null) clearTimeout(modalCloseTimer);
+		modalCloseTimer = setTimeout(() => {
+			modalImageSrc = null;
+			modalImageAlt = '';
+			modalImageCopyright = null;
+			modalCloseTimer = null;
+		}, 250);
 	}
 
 	// Identifikationsdaten für jede Tierart
@@ -537,7 +544,7 @@
 </div>
 
 <!-- Image Modal für Vollbildansicht -->
-<dialog id="species-image-modal" class="modal">
+<dialog bind:this={modalElement} class="modal">
 	<div class="modal-box w-11/12 max-w-5xl p-0">
 		{#if modalImageSrc}
 			<div class="relative">
@@ -572,7 +579,8 @@
 					<!-- Copyright unter dem vergrößerten Bild -->
 					{#if modalImageCopyright}
 						<p class="text-base-content/60 mt-3 text-sm">
-							{modalImageCopyright}
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+							{@html sanitizeHtml(modalImageCopyright)}
 						</p>
 					{/if}
 				</div>

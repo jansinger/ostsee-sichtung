@@ -27,6 +27,7 @@ import { saveSighting } from '$lib/server/db/sightingRepository';
 import { EmailService } from '$lib/server/services/emailService';
 import { ServerConfigService } from '$lib/services/configService';
 import { json, isHttpError, type RequestEvent } from '@sveltejs/kit';
+import { getClientIp } from '$lib/server/utils/getClientIp';
 import { enforceRateLimit, RATE_LIMITS } from '$lib/server/middleware/rateLimit';
 
 const logger = createLogger('api:legacy:rest_sichtungen:pdf-compliant');
@@ -35,10 +36,14 @@ const logger = createLogger('api:legacy:rest_sichtungen:pdf-compliant');
  * POST handler - PDF specification compliant endpoint
  */
 export async function POST(event: RequestEvent): Promise<Response> {
-	const clientIp = event.getClientAddress();
+	const clientIp = getClientIp(event.getClientAddress);
 
 	// Rate limiting: 20 submissions per hour per IP (legacy endpoint has no auth)
-	enforceRateLimit(`ip:${clientIp}`, RATE_LIMITS.SIGHTING_SUBMISSION, 'legacy:rest_sichtungen:post');
+	enforceRateLimit(
+		`ip:${clientIp}`,
+		RATE_LIMITS.SIGHTING_SUBMISSION,
+		'legacy:rest_sichtungen:post'
+	);
 
 	try {
 		// Handle different request types for mobile app compatibility
@@ -174,12 +179,18 @@ export async function POST(event: RequestEvent): Promise<Response> {
 					// Use new ID-based email service that reads from database
 					// This ensures correct Baltic Sea validation data is used
 					await EmailService.sendNewSightingNotification(savedSighting.id);
-					
-					logger.info({ sightingId: savedSighting.id, referenceId: transformedData.referenceId }, 'Legacy API email notification sent successfully');
+
+					logger.info(
+						{ sightingId: savedSighting.id, referenceId: transformedData.referenceId },
+						'Legacy API email notification sent successfully'
+					);
 				}
 			} catch (emailError) {
 				// Don't fail the request if email fails
-				logger.warn({ sightingId: savedSighting.id, emailError }, 'Failed to send email notification for legacy sighting');
+				logger.warn(
+					{ sightingId: savedSighting.id, emailError },
+					'Failed to send email notification for legacy sighting'
+				);
 			}
 		} catch (saveError: unknown) {
 			const isError = saveError instanceof Error;
