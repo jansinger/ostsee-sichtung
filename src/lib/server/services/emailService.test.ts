@@ -26,6 +26,15 @@ vi.mock('$env/dynamic/public', () => ({
 	}
 }));
 
+vi.mock('$lib/logger.server', () => ({
+	createLogger: () => ({
+		info: vi.fn(),
+		debug: vi.fn(),
+		warn: vi.fn(),
+		error: vi.fn()
+	})
+}));
+
 vi.mock('$lib/logger', () => ({
 	createLogger: () => ({
 		info: vi.fn(),

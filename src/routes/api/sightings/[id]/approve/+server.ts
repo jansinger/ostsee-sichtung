@@ -1,5 +1,7 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import { requireUserRole } from '$lib/server/auth/auth';
+import { getClientIp } from '$lib/server/utils/getClientIp';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import type { RequestHandler } from '@sveltejs/kit';
@@ -9,7 +11,7 @@ import { eq } from 'drizzle-orm';
 // Logger für diesen API-Endpunkt erstellen
 const logger = createLogger('api:sightings:approve');
 
-export const PATCH: RequestHandler = async ({ params, request, locals, url }) => {
+export const PATCH: RequestHandler = async ({ params, request, locals, url, getClientAddress }) => {
 	// Authorization check - only admins can approve
 	requireUserRole(url, locals.user, ['admin']);
 
@@ -68,6 +70,16 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url }) =>
 			.update(sightings)
 			.set(updateData)
 			.where(eq(sightings.id, Number(id)));
+
+		const ipAddress = getClientIp(getClientAddress, request);
+		await logAuditEvent({
+			action: approve ? 'sighting.approve' : 'sighting.reject',
+			resourceType: 'sighting',
+			resourceId: String(id),
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			...(ipAddress ? { ipAddress } : {}),
+			details: { previousStatus: !!existingSighting[0]?.approvedAt }
+		});
 
 		logger.info(
 			{

@@ -63,6 +63,15 @@ vi.mock('$lib/server/media/exifUtils', () => ({
 	readImageExifData: readImageExifDataMock
 }));
 
+vi.mock('$lib/logger.server', () => ({
+	createLogger: vi.fn(() => ({
+		info: vi.fn(),
+		debug: vi.fn(),
+		warn: vi.fn(),
+		error: vi.fn()
+	}))
+}));
+
 vi.mock('$lib/logger', () => ({
 	createLogger: vi.fn(() => ({
 		info: vi.fn(),

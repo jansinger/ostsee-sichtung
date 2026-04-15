@@ -1,4 +1,5 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
+import { getClientIp } from '$lib/server/utils/getClientIp';
 import { isAdminUser } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightingFiles, sightings } from '$lib/server/db/schema';
@@ -22,10 +23,9 @@ const logger = createLogger('MediaAPI');
  * - Admin-only access for unapproved sightings
  * - File not found for invalid/missing files
  */
-export const GET: RequestHandler = async ({ params, url, request, locals }) => {
+export const GET: RequestHandler = async ({ params, url, request, locals, getClientAddress }) => {
 	const filePath = params.path;
-	const clientIp =
-		request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+	const clientIp = getClientIp(getClientAddress, request) ?? 'unknown';
 	const isAuthenticated = !!locals.user;
 	const userIdentifier = locals.user?.sub || 'anonymous';
 

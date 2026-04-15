@@ -3,7 +3,7 @@
  * Validates StoredWeatherData structure before persisting to DB as JSONB.
  */
 
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 
 const logger = createLogger('validation:weatherData');
 

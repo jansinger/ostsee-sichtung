@@ -1,6 +1,9 @@
 import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
+import { createLogger } from '$lib/logger.server';
 import type { User } from '$lib/types/index';
+
+const logger = createLogger('auth');
 
 // Helper to get PUBLIC_SITE_URL dynamically (runtime, not build-time)
 const getPublicSiteUrl = () => publicEnv.PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -29,12 +32,12 @@ export const isUserInRole = (user: User | null | undefined, requiredRoles?: stri
 	if (!requiredRoles || requiredRoles.length === 0) {
 		return !!user;
 	}
-	
+
 	// Check if user has at least one of the required roles
 	if (user && requiredRoles.length > 0) {
 		return requiredRoles.some((role) => user.roles?.includes(role));
 	}
-	
+
 	return false;
 };
 
@@ -58,7 +61,7 @@ function getJWKS(): ReturnType<typeof createRemoteJWKSet> {
 		if (!jwksUrl) {
 			throw new Error(
 				'Configuration error: JWKS_URL environment variable is not set. ' +
-				'Please configure the JWKS endpoint URL for Auth0 token verification.'
+					'Please configure the JWKS endpoint URL for Auth0 token verification.'
 			);
 		}
 
@@ -68,7 +71,7 @@ function getJWKS(): ReturnType<typeof createRemoteJWKSet> {
 		} catch (_e) {
 			throw new Error(
 				`Configuration error: JWKS_URL environment variable is invalid ("${jwksUrl}"). ` +
-				'It must be a valid absolute URL (e.g. "https://example.auth0.com/.well-known/jwks.json").',
+					'It must be a valid absolute URL (e.g. "https://example.auth0.com/.well-known/jwks.json").',
 				{ cause: _e }
 			);
 		}
@@ -258,9 +261,7 @@ export const getAuthUser = async (cookies: Cookies) => {
  */
 export const setAuthCookie = async (cookies: Cookies, user: User) => {
 	const secret = new TextEncoder().encode(getSessionSecret());
-	const token = await new SignJWT({ ...user })
-		.setProtectedHeader({ alg: 'HS256' })
-		.sign(secret);
+	const token = await new SignJWT({ ...user }).setProtectedHeader({ alg: 'HS256' }).sign(secret);
 	cookies.set(getCookieName(), token, {
 		httpOnly: true,
 		sameSite: 'lax',
@@ -326,6 +327,16 @@ export const requireUserRole = (
 		return redirect(302, `/api/auth/login?returnUrl=${url?.pathname}`);
 	}
 	if (!isUserInRole(user, requiredRoles)) {
+		logger.warn(
+			{
+				event: 'security.auth_error',
+				userSub: user?.sub,
+				userRoles: user?.roles ?? [],
+				requiredRoles,
+				path: url?.pathname
+			},
+			'Forbidden: insufficient permissions'
+		);
 		throw error(403, 'Forbidden: Insufficient permissions');
 	}
 };

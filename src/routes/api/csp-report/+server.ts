@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 
 const logger = createLogger('csp-report');
 

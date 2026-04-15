@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import type { UploadedFileInfo } from '$lib/types';
 import { eq } from 'drizzle-orm';
 import { db } from '.';

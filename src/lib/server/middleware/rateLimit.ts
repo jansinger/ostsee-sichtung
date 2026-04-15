@@ -5,7 +5,7 @@
  * Nutzt In-Memory-Storage mit automatischer Cleanup-Funktionalität.
  */
 
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { error } from '@sveltejs/kit';
 
 const logger = createLogger('middleware:rateLimit');
@@ -118,6 +118,7 @@ export function checkRateLimit(
 	if (entry.count >= config.maxRequests) {
 		logger.warn(
 			{
+				event: 'security.rate_limit_hit',
 				action: 'rate_limit_exceeded',
 				identifier,
 				endpoint,

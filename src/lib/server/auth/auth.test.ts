@@ -3,6 +3,26 @@ import type { Cookies } from '@sveltejs/kit';
 import { error, redirect } from '@sveltejs/kit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { mockWarn } = vi.hoisted(() => ({ mockWarn: vi.fn() }));
+
+vi.mock('$lib/logger.server', () => ({
+	createLogger: () => ({
+		debug: vi.fn(),
+		info: vi.fn(),
+		warn: mockWarn,
+		error: vi.fn()
+	})
+}));
+
+vi.mock('$lib/logger', () => ({
+	createLogger: () => ({
+		debug: vi.fn(),
+		info: vi.fn(),
+		warn: mockWarn,
+		error: vi.fn()
+	})
+}));
+
 // Mock all external dependencies
 vi.mock('jose', () => ({
 	createRemoteJWKSet: vi.fn(),
@@ -522,6 +542,93 @@ describe('auth.ts', () => {
 				'Redirect 302: /api/auth/login?returnUrl=/'
 			);
 			expect(redirect).toHaveBeenCalledWith(302, '/api/auth/login?returnUrl=/');
+		});
+
+		it('loggt security.auth_error warn wenn User unzureichende Berechtigungen hat', () => {
+			const testUser: User = {
+				nickname: 'user',
+				name: 'Regular User',
+				picture: 'https://example.com/avatar.jpg',
+				updated_at: '2023-01-01T00:00:00.000Z',
+				email: 'user@example.com',
+				email_verified: true,
+				iss: 'https://test-domain.auth0.com/',
+				aud: 'test-client-id',
+				iat: 1672531200,
+				exp: 1672617600,
+				sub: 'auth0|123456789',
+				sid: 'session-id',
+				roles: ['viewer']
+			};
+
+			vi.mocked(error).mockImplementation((status: number, body?: any) => {
+				throw new Error(`${status}: ${body}`);
+			});
+
+			try {
+				requireUserRole(testUrl, testUser, ['admin']);
+			} catch {
+				// erwartet
+			}
+
+			expect(mockWarn).toHaveBeenCalledOnce();
+			const [logObject, message] = mockWarn.mock.calls[0]!;
+			expect(logObject).toMatchObject({
+				event: 'security.auth_error',
+				userSub: 'auth0|123456789',
+				userRoles: ['viewer'],
+				requiredRoles: ['admin'],
+				path: '/admin'
+			});
+			expect(message).toBe('Forbidden: insufficient permissions');
+		});
+
+		it('loggt security.auth_error mit leeren Rollen wenn User keine Rollen hat', () => {
+			const testUser: Partial<User> = {
+				sub: 'auth0|noRoles',
+				email: 'noroles@example.com'
+			};
+
+			vi.mocked(error).mockImplementation((status: number, body?: any) => {
+				throw new Error(`${status}: ${body}`);
+			});
+
+			try {
+				requireUserRole(testUrl, testUser as User, ['admin']);
+			} catch {
+				// erwartet
+			}
+
+			expect(mockWarn).toHaveBeenCalledOnce();
+			const [logObject] = mockWarn.mock.calls[0]!;
+			expect(logObject).toMatchObject({
+				event: 'security.auth_error',
+				userSub: 'auth0|noRoles',
+				userRoles: [],
+				requiredRoles: ['admin']
+			});
+		});
+
+		it('loggt keinen warn wenn User die erforderliche Rolle hat', () => {
+			const testUser: User = {
+				nickname: 'admin',
+				name: 'Admin User',
+				picture: 'https://example.com/avatar.jpg',
+				updated_at: '2023-01-01T00:00:00.000Z',
+				email: 'admin@example.com',
+				email_verified: true,
+				iss: 'https://test-domain.auth0.com/',
+				aud: 'test-client-id',
+				iat: 1672531200,
+				exp: 1672617600,
+				sub: 'auth0|admin123',
+				sid: 'session-id',
+				roles: ['admin']
+			};
+
+			requireUserRole(testUrl, testUser, ['admin']);
+
+			expect(mockWarn).not.toHaveBeenCalled();
 		});
 	});
 

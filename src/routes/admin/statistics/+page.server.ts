@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { and, eq, isNotNull, ne, sql } from 'drizzle-orm';

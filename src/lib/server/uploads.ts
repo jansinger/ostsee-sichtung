@@ -20,7 +20,7 @@
  * Diese Funktionen sind sicherheitskritisch und sollten bei Änderungen
  * ausführlich getestet werden. Jeder Fehler kann zu Sicherheitslücken führen.
  */
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { existsSync, statSync } from 'fs';
 import path from 'path';
 

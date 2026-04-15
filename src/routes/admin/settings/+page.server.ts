@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { ConfigRepository, type ConfigItem } from '$lib/server/db/configRepository';
 import { filterConfigsByUserAccess } from '$lib/server/config/accessControl';
 import { getDefaultConfigurationsByCategory, initializeDefaultConfigurations } from '$lib/server/services/configInitializer';

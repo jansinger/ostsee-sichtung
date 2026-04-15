@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/private';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import {
 	getPKCEVerifierFromCookie,
 	getToken,
@@ -25,30 +26,49 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 	const pkceVerifier = getPKCEVerifierFromCookie(cookies);
 
 	if (state !== csrfState || !code || !pkceVerifier) {
+		logger.warn(
+			{
+				event: 'security.csrf_mismatch',
+				stateMatch: state === csrfState,
+				hasCode: !!code,
+				hasPkce: !!pkceVerifier
+			},
+			'Auth callback: CSRF state mismatch or missing parameters'
+		);
 		throw error(403, 'Invalid state');
 	}
 
 	try {
-		logger.debug({ code }, 'code');
-
 		// Token-Austausch mit Auth0
 		const token = await getToken({ code, pkceVerifier });
-		logger.debug({ token }, 'token');
 
 		const authUser = (await verifyToken(token.id_token)) as User;
-		logger.debug({ authUser }, 'authUser');
 
 		const rolesClaim = `${env.API_AUDIENCE}/roles`;
 		const claims = await getTokenClaims<Record<string, string[]>>(token.access_token);
-		logger.debug({ claims }, 'claims');
 
 		authUser.roles = claims[rolesClaim] || [];
 
 		await setAuthCookie(cookies, authUser);
+		// Fire-and-forget: audit write must not delay the redirect (login latency)
+		void logAuditEvent({
+			action: 'auth.login_success',
+			resourceType: 'auth',
+			userEmail: authUser.email
+		});
 		cookies.delete('csrfState', { path: '/' });
+		redirect(302, returnUrl);
 	} catch (err) {
-		logger.info({ err }, 'Failed to get token');
-		return error(500, `Failed to get token. Err: ${err}`);
+		// SvelteKit redirect() throws internally — re-throw without treating as error
+		if (err instanceof Response || (err as { status?: number })?.status === 302) {
+			throw err;
+		}
+		logger.warn({ event: 'security.auth_error', err }, 'Failed to get token');
+		await logAuditEvent({
+			action: 'auth.login_failure',
+			resourceType: 'auth',
+			status: 'failure'
+		});
+		return error(500, 'Authentication failed');
 	}
-	return redirect(302, returnUrl);
 }

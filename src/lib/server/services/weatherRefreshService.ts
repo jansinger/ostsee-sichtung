@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { convertToStoredWeatherData, type StoredWeatherData, type WeatherData } from '$lib/services/weatherService';
 import { degreesToCardinal, getWeatherDescription, calculateSeaState } from '$lib/constants/weather';
 

@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { ConfigRepository, type ConfigItem } from '$lib/server/db/configRepository';
 
 const logger = createLogger('configInitializer');

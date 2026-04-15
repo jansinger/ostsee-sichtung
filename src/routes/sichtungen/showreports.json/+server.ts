@@ -13,7 +13,7 @@
  */
 
 import { formatDateDDMMYY, formatTimeHHMI, toUnixTimestamp } from '$lib/legacy-api/date-utils.js';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { getSpeciesLabel } from '$lib/report/formOptions/species.js';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';

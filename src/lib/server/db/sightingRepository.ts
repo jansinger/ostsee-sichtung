@@ -13,7 +13,7 @@
  * @since 1.0.0
  */
 
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import type { SightingFormData } from '$lib/report/types';
 import type { StoredWeatherData } from '$lib/services/weatherService';
 import { db } from '$lib/server/db';

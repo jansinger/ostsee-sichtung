@@ -274,6 +274,7 @@ CREATE EXTENSION IF NOT EXISTS postgis_topology;
 - [ ] Login über Auth0 funktioniert
 - [ ] Karte wird geladen
 - [ ] Datei-Upload funktioniert
+- [ ] Audit-Log-Eintrag nach erstem Admin-Login vorhanden: `SELECT * FROM audit_logs WHERE action = 'auth.login_success' LIMIT 1`
 
 ### Logs prüfen
 
@@ -286,6 +287,9 @@ docker compose logs -f app
 
 # Nur Fehler
 docker compose logs app 2>&1 | grep -i error
+
+# Security-Events (Rate Limit, Auth-Fehler)
+docker compose logs app 2>&1 | grep '"event":"security.'
 ```
 
 ---
@@ -340,7 +344,61 @@ tar czf /opt/ostsee-tiere/backups/uploads-$(date +%Y%m%d).tar.gz \
 
 ---
 
-## 9. Updates durchführen
+## 9. Audit Logging
+
+Das System protokolliert kritische Admin-Aktionen in der `audit_logs` Tabelle und Security-Events als strukturierte JSON-Logs in stdout.
+
+### Audit-Tabelle abfragen
+
+**Drizzle Studio:**
+
+```bash
+npm run db:studio
+# → Tabelle "audit_logs" öffnen
+```
+
+**Direkte SQL-Abfragen:**
+
+```sql
+-- Letzte 50 Admin-Aktionen
+SELECT timestamp, user_email, action, resource_type, resource_id, details, status
+FROM audit_logs
+ORDER BY timestamp DESC
+LIMIT 50;
+
+-- Alle Aktionen eines bestimmten Admins
+SELECT * FROM audit_logs WHERE user_email = 'admin@example.com' ORDER BY timestamp DESC;
+
+-- Fehlgeschlagene Logins
+SELECT * FROM audit_logs WHERE action = 'auth.login_failure' ORDER BY timestamp DESC;
+
+-- Gelöschte Sichtungen
+SELECT * FROM audit_logs WHERE action = 'sighting.delete' ORDER BY timestamp DESC;
+
+-- Manuelles Aufräumen (kein automatisches Löschen konfiguriert)
+DELETE FROM audit_logs WHERE timestamp < now() - interval '2 years';
+```
+
+### Security-Events aus Docker-Logs lesen
+
+```bash
+# Alle Security-Events
+docker compose logs app 2>&1 | grep '"event":"security.'
+
+# Nur Rate Limit Überschreitungen
+docker compose logs app 2>&1 | grep '"event":"security.rate_limit_hit"'
+
+# Auth-Fehler (ungültige Cookies)
+docker compose logs app 2>&1 | grep '"event":"security.auth_error"'
+```
+
+### Aufbewahrung
+
+Unbegrenzt — kein automatisches Löschen. Manuelles Löschen via SQL wenn nötig (s.o.).
+
+---
+
+## 10. Updates durchführen
 
 ### Standard-Update
 

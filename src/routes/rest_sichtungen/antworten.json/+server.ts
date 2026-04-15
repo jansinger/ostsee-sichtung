@@ -10,7 +10,7 @@
  * @since 1.10.0
  */
 
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { AnimalBehaviorEnum, animalBehaviorLabels } from '$lib/report/formOptions/animalBehavior';
 import {
 	AnimalConditionEnum,

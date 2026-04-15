@@ -3,7 +3,7 @@ import { GET, PUT, DELETE } from '../../routes/api/sightings/[id]/+server';
 import { createEvent, mockAdminUser } from './helpers/createEvent';
 import { asApiResponse } from './helpers/asApiResponse';
 
-const { mockSelectLimit, mockDeleteWhere, mockSighting } = vi.hoisted(() => {
+const { mockSelectLimit, mockDeleteWhere, mockSighting, mockUpdateSighting } = vi.hoisted(() => {
 	const mockSighting = {
 		id: 123,
 		sightingDate: new Date('2024-06-15T14:30:00Z'),
@@ -24,7 +24,8 @@ const { mockSelectLimit, mockDeleteWhere, mockSighting } = vi.hoisted(() => {
 	};
 	const mockSelectLimit = vi.fn().mockResolvedValue([{ ...mockSighting }]);
 	const mockDeleteWhere = vi.fn().mockResolvedValue(undefined);
-	return { mockSelectLimit, mockDeleteWhere, mockSighting };
+	const mockUpdateSighting = vi.fn().mockResolvedValue({ ...mockSighting });
+	return { mockSelectLimit, mockDeleteWhere, mockSighting, mockUpdateSighting };
 });
 
 vi.mock('$lib/server/db', () => ({
@@ -65,7 +66,7 @@ vi.mock('drizzle-orm', () => ({
 vi.mock('$lib/server/db/sightingRepository', () => ({
 	loadSightingFiles: vi.fn().mockResolvedValue([]),
 	saveSightingFiles: vi.fn().mockResolvedValue(undefined),
-	updateSighting: vi.fn().mockResolvedValue({ ...mockSighting })
+	updateSighting: mockUpdateSighting
 }));
 
 vi.mock('$lib/form/validation/sightingSchema', () => ({
@@ -74,6 +75,10 @@ vi.mock('$lib/form/validation/sightingSchema', () => ({
 
 vi.mock('$lib/server/auth/auth', () => ({
 	requireUserRole: vi.fn()
+}));
+
+vi.mock('$lib/logger.server', () => ({
+	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 }));
 
 vi.mock('$lib/logger', () => ({
@@ -270,10 +275,26 @@ describe('Contract: DELETE /api/sightings/{id}', () => {
 });
 
 describe('Contract: PUT /api/sightings/{id}', () => {
-	beforeEach(async () => {
+	beforeEach(() => {
 		vi.clearAllMocks();
-		const { updateSighting } = vi.mocked(await import('$lib/server/db/sightingRepository'));
-		updateSighting.mockResolvedValue({ ...mockSighting } as any);
+		mockSelectLimit.mockResolvedValue([{ ...mockSighting }]);
+		mockUpdateSighting.mockResolvedValue({ ...mockSighting });
+	});
+
+	it('re-throws HttpError vom updateSighting direkt (nicht als 500 wrappen)', async () => {
+		const { error } = await import('@sveltejs/kit');
+		mockUpdateSighting.mockImplementationOnce(() => {
+			throw error(400, 'Validation failed');
+		});
+
+		const event = createEvent('/api/sightings/123', {
+			method: 'PUT',
+			params: { id: '123' },
+			locals: { user: mockAdminUser },
+			body: validSightingBody
+		});
+
+		await expect(PUT(event)).rejects.toMatchObject({ status: 400 });
 	});
 
 	it('returns 200 and satisfies the OpenAPI spec', async () => {

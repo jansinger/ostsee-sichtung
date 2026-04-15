@@ -1,5 +1,6 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { requireUserRole } from '$lib/server/auth/auth';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { text } from '@sveltejs/kit';
@@ -70,6 +71,18 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			sichtungen: sightings
 		};
 
+		// Audit-Log schreiben
+		await logAuditEvent({
+			action: 'export.download',
+			resourceType: 'export',
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			details: {
+				format: 'json',
+				fromDate: fromDate || null,
+				toDate: toDate || null
+			}
+		});
+
 		// JSON-String erstellen (schön formatiert)
 		const jsonContent = JSON.stringify(exportData, null, 2);
 
@@ -81,7 +94,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			}
 		});
 	} catch (error) {
-		logger.error({ error: error instanceof Error ? error.message : error }, 'Fehler beim JSON-Export');
+		logger.error(
+			{ error: error instanceof Error ? error.message : error },
+			'Fehler beim JSON-Export'
+		);
 
 		return text(JSON.stringify({ error: 'Fehler beim JSON-Export' }), {
 			status: 500,

@@ -1,8 +1,9 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { getDistanceLabel } from '$lib/report/formOptions/distance';
 import { getDistributionLabel } from '$lib/report/formOptions/distribution';
 import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { requireUserRole } from '$lib/server/auth/auth';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { text } from '@sveltejs/kit';
@@ -119,6 +120,18 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			...csvRows.map((row) => row.map((cell) => `"${cell}"`).join(','))
 		].join('\n');
 
+		// Audit-Log schreiben
+		await logAuditEvent({
+			action: 'export.download',
+			resourceType: 'export',
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			details: {
+				format: 'csv',
+				fromDate: fromDate || null,
+				toDate: toDate || null
+			}
+		});
+
 		// CSV-Datei zurückgeben
 		return text(csvContent, {
 			headers: {
@@ -127,7 +140,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			}
 		});
 	} catch (error) {
-		logger.error({ error: error instanceof Error ? error.message : error }, 'Fehler beim CSV-Export');
+		logger.error(
+			{ error: error instanceof Error ? error.message : error },
+			'Fehler beim CSV-Export'
+		);
 
 		return text('Fehler beim CSV-Export', {
 			status: 500,

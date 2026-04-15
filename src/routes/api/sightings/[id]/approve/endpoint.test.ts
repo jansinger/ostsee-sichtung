@@ -9,6 +9,19 @@ const { mockWhere, mockSet, mockUpdate, mockLimit } = vi.hoisted(() => {
 	return { mockWhere, mockSet, mockUpdate, mockLimit };
 });
 
+vi.mock('$lib/server/audit/auditService', () => ({
+	logAuditEvent: vi.fn().mockResolvedValue(undefined)
+}));
+
+vi.mock('$lib/logger.server', () => ({
+	createLogger: () => ({
+		debug: vi.fn(),
+		info: vi.fn(),
+		warn: vi.fn(),
+		error: vi.fn()
+	})
+}));
+
 vi.mock('$lib/logger', () => ({
 	createLogger: () => ({
 		debug: vi.fn(),
@@ -47,7 +60,11 @@ const createMockEvent = (id: string, body: Record<string, unknown>) => ({
 	params: { id },
 	locals: { user: { email: 'admin@test.com', roles: ['admin'] } },
 	url: new URL(`http://localhost/api/sightings/${id}/approve`),
-	request: { json: () => Promise.resolve(body) } as Request
+	getClientAddress: () => '127.0.0.1',
+	request: {
+		json: () => Promise.resolve(body),
+		headers: { get: () => null }
+	} as unknown as Request
 });
 
 describe('/api/sightings/[id]/approve PATCH endpoint', () => {

@@ -1,5 +1,6 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { requireUserRole } from '$lib/server/auth/auth';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { json } from '@sveltejs/kit';
@@ -38,13 +39,28 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			.where(conditions.length > 0 ? and(...conditions) : undefined)
 			.orderBy(sightingsTable.sightingDate);
 
+		// Audit-Log schreiben
+		await logAuditEvent({
+			action: 'export.download',
+			resourceType: 'export',
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			details: {
+				format: 'json',
+				fromDate: fromDate || null,
+				toDate: toDate || null
+			}
+		});
+
 		// Erfolgreiche Antwort zurückgeben
 		return json({
 			sightings,
 			count: sightings.length
 		});
 	} catch (error) {
-		logger.error({ error: error instanceof Error ? error.message : error }, 'Fehler beim Abrufen der Sichtungen für den Export');
+		logger.error(
+			{ error: error instanceof Error ? error.message : error },
+			'Fehler beim Abrufen der Sichtungen für den Export'
+		);
 
 		// Fehlerantwort zurückgeben
 		return json(

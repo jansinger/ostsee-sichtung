@@ -1,4 +1,4 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { sightingsToGeoJSON, type DBSighting } from '$lib/map/mapUtils';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';

@@ -1,4 +1,6 @@
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
+import { logAuditEvent } from '$lib/server/audit/auditService';
+import { getClientIp } from '$lib/server/utils/getClientIp';
 import { ConfigRepository } from '$lib/server/db/configRepository';
 import {
 	filterConfigsByUserAccess,
@@ -36,7 +38,12 @@ export const GET: RequestHandler = async ({ url, locals }: RequestEvent) => {
 	}
 };
 
-export const PUT: RequestHandler = async ({ request, locals, url }: RequestEvent) => {
+export const PUT: RequestHandler = async ({
+	request,
+	locals,
+	url,
+	getClientAddress
+}: RequestEvent) => {
 	// SECURITY: Must be outside try/catch so redirect(302) propagates correctly
 	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
@@ -75,6 +82,16 @@ export const PUT: RequestHandler = async ({ request, locals, url }: RequestEvent
 		// Clear entire cache for configuration changes
 		ConfigRepository.clearCache();
 
+		const clientIp = getClientIp(getClientAddress, request);
+		await logAuditEvent({
+			action: 'config.update',
+			resourceType: 'config',
+			resourceId: key,
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			...(clientIp ? { ipAddress: clientIp } : {}),
+			details: { key, category }
+		});
+
 		logger.info({ key, userId: locals.user!.sub }, 'Configuration updated'); // Safe after requireUserRole check
 
 		return json({ success: true });
@@ -84,7 +101,12 @@ export const PUT: RequestHandler = async ({ request, locals, url }: RequestEvent
 	}
 };
 
-export const DELETE: RequestHandler = async ({ url, locals }: RequestEvent) => {
+export const DELETE: RequestHandler = async ({
+	url,
+	locals,
+	request,
+	getClientAddress
+}: RequestEvent) => {
 	// SECURITY: Must be outside try/catch so redirect(302) propagates correctly
 	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
@@ -107,6 +129,19 @@ export const DELETE: RequestHandler = async ({ url, locals }: RequestEvent) => {
 		}
 
 		await ConfigRepository.delete(key);
+
+		// Clear entire cache for configuration changes
+		ConfigRepository.clearCache();
+
+		const clientIp = getClientIp(getClientAddress, request);
+		await logAuditEvent({
+			action: 'config.delete',
+			resourceType: 'config',
+			resourceId: key,
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			...(clientIp ? { ipAddress: clientIp } : {}),
+			details: { key }
+		});
 
 		logger.info({ key, userId: locals.user!.sub }, 'Configuration deleted'); // Safe after requireUserRole check
 

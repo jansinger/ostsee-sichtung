@@ -27,18 +27,18 @@ describe('getClientIp', () => {
 		expect(result).toBe('10.0.0.1');
 	});
 
-	it('returns unknown when getClientAddress throws and no request is provided', () => {
+	it('returns null when getClientAddress throws and no request is provided', () => {
 		const result = getClientIp(() => {
 			throw new Error('Could not determine clientAddress');
 		});
-		expect(result).toBe('unknown');
+		expect(result).toBeNull();
 	});
 
-	it('returns unknown when getClientAddress throws and X-Forwarded-For header is absent', () => {
+	it('returns null when getClientAddress throws and X-Forwarded-For header is absent', () => {
 		const request = new Request('https://example.com');
 		const result = getClientIp(() => {
 			throw new Error();
 		}, request);
-		expect(result).toBe('unknown');
+		expect(result).toBeNull();
 	});
 });

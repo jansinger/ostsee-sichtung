@@ -7,6 +7,10 @@ import { GET as kmlGET } from '../../routes/api/sightings/export/kml/+server';
 import { createEvent, mockAdminUser } from './helpers/createEvent';
 import { asApiResponse } from './helpers/asApiResponse';
 
+vi.mock('$lib/server/audit/auditService', () => ({
+	logAuditEvent: vi.fn().mockResolvedValue(undefined)
+}));
+
 vi.mock('$lib/server/db', () => ({
 	db: {
 		select: vi.fn().mockReturnValue({
@@ -39,6 +43,10 @@ vi.mock('drizzle-orm', () => ({
 
 vi.mock('$lib/server/auth/auth', () => ({
 	requireUserRole: vi.fn()
+}));
+
+vi.mock('$lib/logger.server', () => ({
+	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 }));
 
 vi.mock('$lib/logger', () => ({
@@ -292,5 +300,133 @@ describe('Contract: GET /api/sightings/export (base)', () => {
 		} catch (e: any) {
 			expect(e.status).toBe(403);
 		}
+	});
+});
+
+describe('Audit: export.download wird geloggt', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('logAuditEvent wird mit action export.download für JSON-Export aufgerufen', async () => {
+		const { logAuditEvent } = vi.mocked(await import('$lib/server/audit/auditService'));
+		const event = createEvent('/api/sightings/export/json', {
+			searchParams: { fromDate: '2024-01-01', toDate: '2024-12-31' },
+			locals: { user: mockAdminUser }
+		});
+
+		await jsonGET(event);
+
+		expect(logAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				action: 'export.download',
+				resourceType: 'export',
+				details: expect.objectContaining({ format: 'json' })
+			})
+		);
+	});
+
+	it('logAuditEvent wird mit action export.download für CSV-Export aufgerufen', async () => {
+		const { logAuditEvent } = vi.mocked(await import('$lib/server/audit/auditService'));
+		const event = createEvent('/api/sightings/export/csv', {
+			locals: { user: mockAdminUser }
+		});
+
+		await csvGET(event);
+
+		expect(logAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				action: 'export.download',
+				resourceType: 'export',
+				details: expect.objectContaining({ format: 'csv' })
+			})
+		);
+	});
+
+	it('logAuditEvent wird mit action export.download für XML-Export aufgerufen', async () => {
+		const { logAuditEvent } = vi.mocked(await import('$lib/server/audit/auditService'));
+		const event = createEvent('/api/sightings/export/xml', {
+			locals: { user: mockAdminUser }
+		});
+
+		await xmlGET(event);
+
+		expect(logAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				action: 'export.download',
+				resourceType: 'export',
+				details: expect.objectContaining({ format: 'xml' })
+			})
+		);
+	});
+
+	it('logAuditEvent wird mit action export.download für KML-Export aufgerufen', async () => {
+		const { logAuditEvent } = vi.mocked(await import('$lib/server/audit/auditService'));
+		const event = createEvent('/api/sightings/export/kml', {
+			locals: { user: mockAdminUser }
+		});
+
+		await kmlGET(event);
+
+		expect(logAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				action: 'export.download',
+				resourceType: 'export',
+				details: expect.objectContaining({ format: 'kml' })
+			})
+		);
+	});
+
+	it('logAuditEvent wird mit action export.download für Basis-Export aufgerufen', async () => {
+		const { logAuditEvent } = vi.mocked(await import('$lib/server/audit/auditService'));
+		const event = createEvent('/api/sightings/export', {
+			searchParams: { fromDate: '2024-01-01', toDate: '2024-12-31' },
+			locals: { user: mockAdminUser }
+		});
+
+		await exportBaseGET(event);
+
+		expect(logAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				action: 'export.download',
+				resourceType: 'export',
+				details: expect.objectContaining({ format: 'json' })
+			})
+		);
+	});
+
+	it('logAuditEvent enthält userEmail wenn admin eingeloggt', async () => {
+		const { logAuditEvent } = vi.mocked(await import('$lib/server/audit/auditService'));
+		const event = createEvent('/api/sightings/export/json', {
+			locals: { user: mockAdminUser }
+		});
+
+		await jsonGET(event);
+
+		expect(logAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				action: 'export.download',
+				userEmail: 'admin@test.de'
+			})
+		);
+	});
+
+	it('logAuditEvent enthält fromDate und toDate in details', async () => {
+		const { logAuditEvent } = vi.mocked(await import('$lib/server/audit/auditService'));
+		const event = createEvent('/api/sightings/export/csv', {
+			searchParams: { fromDate: '2024-01-01', toDate: '2024-12-31' },
+			locals: { user: mockAdminUser }
+		});
+
+		await csvGET(event);
+
+		expect(logAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				details: expect.objectContaining({
+					fromDate: '2024-01-01',
+					toDate: '2024-12-31'
+				})
+			})
+		);
 	});
 });

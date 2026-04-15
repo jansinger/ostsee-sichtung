@@ -22,7 +22,7 @@ import {
 	createLegacyErrorFromYup,
 	validateLegacySightingWithYup
 } from '$lib/legacy-api/yup-validation.js';
-import { createLogger } from '$lib/logger';
+import { createLogger } from '$lib/logger.server';
 import { saveSighting } from '$lib/server/db/sightingRepository';
 import { EmailService } from '$lib/server/services/emailService';
 import { ServerConfigService } from '$lib/services/configService';
