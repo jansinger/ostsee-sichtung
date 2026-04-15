@@ -10,12 +10,14 @@ vi.mock('$lib/server/db/schema', () => ({
 	auditLogs: {}
 }));
 
+let mockLoggerError = vi.fn();
+
 vi.mock('$lib/logger', () => ({
 	createLogger: () => ({
 		debug: vi.fn(),
 		info: vi.fn(),
 		warn: vi.fn(),
-		error: vi.fn()
+		error: (...args: unknown[]) => mockLoggerError(...args)
 	})
 }));
 
@@ -27,6 +29,7 @@ const mockInsert = vi.mocked(db.insert);
 describe('logAuditEvent', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockLoggerError = vi.fn(); // reset logger mock
 		const mockValues = vi.fn().mockResolvedValue(undefined);
 		mockInsert.mockReturnValue({ values: mockValues } as unknown as ReturnType<typeof db.insert>);
 	});
@@ -82,14 +85,21 @@ describe('logAuditEvent', () => {
 		);
 	});
 
-	it('wirft NICHT wenn die DB einen Fehler wirft', async () => {
+	it('wirft NICHT wenn die DB einen Fehler wirft, loggt aber den Fehler', async () => {
+		const dbError = new Error('DB connection lost');
 		mockInsert.mockReturnValue({
-			values: vi.fn().mockRejectedValue(new Error('DB connection lost'))
+			values: vi.fn().mockRejectedValue(dbError)
 		} as unknown as ReturnType<typeof db.insert>);
 
 		await expect(
 			logAuditEvent({ action: 'sighting.approve', resourceType: 'sighting' })
 		).resolves.toBeUndefined();
+
+		expect(mockLoggerError).toHaveBeenCalledOnce();
+		expect(mockLoggerError).toHaveBeenCalledWith(
+			expect.objectContaining({ err: dbError }),
+			'audit_log_write_failed'
+		);
 	});
 
 	it('wirft NICHT wenn db.insert selbst eine Exception wirft', async () => {
