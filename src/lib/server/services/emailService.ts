@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
 import { createLogger } from '$lib/logger.server';
+import { detectSpamIndicators } from '$lib/server/spam/spamDetector';
 import { db } from '$lib/server/db';
 
 // Helper to get PUBLIC_SITE_URL dynamically (runtime, not build-time)
@@ -8,10 +9,7 @@ const getPublicSiteUrl = () => publicEnv.PUBLIC_SITE_URL ?? 'http://localhost:30
 import { sightings } from '$lib/server/db/schema';
 import type { SightingFormValues } from '$lib/types/Form';
 import { formatLocalDateTime } from '$lib/utils/format/dateTime';
-import {
-	formatSightingForDisplay,
-	isUnknownOrMissingSpecies
-} from '$lib/utils/format/sightingFormatter';
+import { formatSightingForDisplay } from '$lib/utils/format/sightingFormatter';
 import { eq } from 'drizzle-orm';
 import { readFileSync } from 'fs';
 import Handlebars from 'handlebars';
@@ -252,8 +250,8 @@ export class EmailService {
 				return false;
 			}
 
-			// Simple spam detection heuristics
-			const spamIndicators = this.detectSpamIndicators(sightingFormValues);
+			// Spam detection (SpamScanner + heuristics)
+			const spamIndicators = await detectSpamIndicators(sightingFormValues);
 
 			// Prepare template data with formatted enum values
 			const formattedSighting = formatSightingForDisplay(sightingFormValues);
@@ -464,107 +462,6 @@ export class EmailService {
 	 */
 	static clearTemplateCache(): void {
 		this.clearCaches();
-	}
-
-	/**
-	 * Simple spam detection heuristics
-	 */
-	private static detectSpamIndicators(sighting: SightingFormValues): {
-		score: number;
-		indicators: string[];
-		isHighRisk: boolean;
-	} {
-		try {
-			const indicators: string[] = [];
-			let score = 0;
-
-			// Check for suspicious patterns
-			const textFields = [
-				sighting.notes || '',
-				sighting.firstName || '',
-				sighting.lastName || '',
-				sighting.email || '',
-				sighting.waterway || '',
-				sighting.seaMark || ''
-			]
-				.join(' ')
-				.toLowerCase();
-
-			// Skip spam detection if no meaningful text content
-			if (!textFields || textFields.length < 3) {
-				return { score: 0, indicators: [], isHighRisk: false };
-			}
-
-			// Suspicious URLs or links
-			if (/(https?:\/\/|www\.|\.com|\.org|\.de\/|\[url\]|\[link\])/i.test(textFields)) {
-				indicators.push('Enthält verdächtige URLs oder Links');
-				score += 3;
-			}
-
-			// Promotional/spam keywords
-			const spamKeywords = [
-				'sale',
-				'discount',
-				'free',
-				'win',
-				'prize',
-				'money',
-				'cash',
-				'deal',
-				'offer',
-				'viagra',
-				'casino',
-				'loan'
-			];
-			const foundKeywords = spamKeywords.filter((keyword) => textFields.includes(keyword));
-			if (foundKeywords.length > 0) {
-				indicators.push(`Spam-Keywords gefunden: ${foundKeywords.join(', ')}`);
-				score += foundKeywords.length * 2;
-			}
-
-			// Excessive punctuation or capitals
-			if (/[!]{3,}|[?]{3,}|[A-Z]{10,}/.test(textFields)) {
-				indicators.push('Übermäßige Satzzeichen oder Großbuchstaben');
-				score += 2;
-			}
-
-			// Very short or missing essential data - use enum-aware check
-			if (isUnknownOrMissingSpecies(sighting.species)) {
-				indicators.push('Keine oder unbekannte Tierart angegeben');
-				score += 1;
-			}
-
-			// Suspicious email patterns
-			if (sighting.email) {
-				if (sighting.email.includes('noreply') || sighting.email.includes('donotreply')) {
-					indicators.push('Verdächtige E-Mail-Adresse (noreply)');
-					score += 2;
-				}
-				if (/\d{5,}@/.test(sighting.email)) {
-					indicators.push('E-Mail mit vielen Zahlen (verdächtig)');
-					score += 1;
-				}
-			}
-
-			// Position outside reasonable Baltic Sea area
-			if (sighting.latitude && sighting.longitude) {
-				const lat = Number(sighting.latitude);
-				const lng = Number(sighting.longitude);
-				if (lat < 53.0 || lat > 66.0 || lng < 9.0 || lng > 31.0) {
-					indicators.push('Position weit außerhalb der Ostsee');
-					score += 2;
-				}
-			}
-
-			return {
-				score,
-				indicators,
-				isHighRisk: score >= 5
-			};
-		} catch (error: unknown) {
-			logger.warn({ error }, 'Error in spam detection, skipping');
-			return { score: 0, indicators: ['Spam-Prüfung fehlgeschlagen'], isHighRisk: false };
-		}
 	}
 }
 
