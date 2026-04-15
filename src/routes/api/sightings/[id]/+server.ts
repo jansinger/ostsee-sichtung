@@ -154,6 +154,7 @@ export const PUT: RequestHandler = async ({ params, request, locals, url }) => {
 
 		return json(updatedSighting);
 	} catch (err) {
+		if (isHttpError(err)) throw err;
 		logger.error({ err }, 'Fehler beim Aktualisieren der Sichtung:');
 		throw error(500, 'Interner Serverfehler');
 	}
