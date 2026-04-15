@@ -158,7 +158,8 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 				}
 				const normalizedPath = posix.normalize(decodedPath);
 				if (
-					normalizedPath.startsWith('..') ||
+					normalizedPath === '..' ||
+					normalizedPath.startsWith('../') ||
 					normalizedPath.startsWith('/') ||
 					normalizedPath.includes('\\') ||
 					// Catch double-encoded sequences (%252e, %252f, %255c)
