@@ -167,8 +167,8 @@ export class EmailService {
 			// This ensures consistent data structure and includes processed inBalticSea values
 			const sightingFormValues = {
 				// Required core fields
-				latitude: sighting.latitude ? parseFloat(sighting.latitude) : 0,
-				longitude: sighting.longitude ? parseFloat(sighting.longitude) : 0,
+				latitude: sighting.latitude != null ? parseFloat(sighting.latitude) : null,
+				longitude: sighting.longitude != null ? parseFloat(sighting.longitude) : null,
 				sightingDate: (sighting.sightingDate || new Date()).toISOString().split('T')[0] as string,
 				sightingDatetime: sighting.sightingDate || undefined,
 				species: sighting.species || 0,

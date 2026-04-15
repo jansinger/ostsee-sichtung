@@ -15,6 +15,7 @@
 	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
 	import { toast } from '$lib/stores/toastState.svelte';
 	import type { FrontendSighting, PageData } from '$lib/types';
+	import type { SpamCheckResult } from '$lib/types/spam';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import Icon from '$lib/components/Icon.svelte';
 
@@ -245,14 +246,6 @@
 		} catch (error) {
 			logger.error({ id, error }, 'Netzwerkfehler beim Löschen');
 		}
-	}
-
-	interface SpamCheckResult {
-		score: number;
-		scannerScore: number;
-		isSpam: boolean;
-		isHighRisk: boolean;
-		indicators: string[];
 	}
 
 	let spamCheckModal = $state({

@@ -1,7 +1,9 @@
 import { createLogger } from '$lib/logger.server';
-import type { SightingFormValues } from '$lib/types/Form';
+import type { SpamCheckResult, SpamDetectionInput } from '$lib/types/spam';
 import { isUnknownOrMissingSpecies } from '$lib/utils/format/sightingFormatter';
 import SpamScanner from 'spamscanner';
+
+export type { SpamCheckResult, SpamDetectionInput };
 
 const logger = createLogger('spamDetector');
 
@@ -12,14 +14,6 @@ function getScanner(): InstanceType<typeof SpamScanner> {
 		scannerInstance = new SpamScanner();
 	}
 	return scannerInstance;
-}
-
-export interface SpamCheckResult {
-	score: number;
-	scannerScore: number;
-	isSpam: boolean;
-	isHighRisk: boolean;
-	indicators: string[];
 }
 
 const ENGLISH_SPAM_KEYWORDS = [
@@ -110,7 +104,7 @@ async function runSpamScanner(
  * Detects spam indicators in a sighting form submission.
  * Combines heuristic checks with SpamScanner analysis.
  */
-export async function detectSpamIndicators(sighting: SightingFormValues): Promise<SpamCheckResult> {
+export async function detectSpamIndicators(sighting: SpamDetectionInput): Promise<SpamCheckResult> {
 	try {
 		const indicators: string[] = [];
 		let score = 0;

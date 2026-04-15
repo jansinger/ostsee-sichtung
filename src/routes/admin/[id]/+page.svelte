@@ -2,14 +2,7 @@
 	import { goto } from '$app/navigation';
 	import AdminSightingView from '$lib/components/admin/AdminSightingView.svelte';
 	import Icon from '$lib/components/Icon.svelte';
-
-	interface SpamCheckResult {
-		score: number;
-		scannerScore: number;
-		isSpam: boolean;
-		isHighRisk: boolean;
-		indicators: string[];
-	}
+	import type { SpamCheckResult } from '$lib/types/spam';
 
 	let { data } = $props();
 

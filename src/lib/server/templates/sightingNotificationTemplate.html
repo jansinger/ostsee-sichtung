@@ -41,7 +41,7 @@
 					{{#if spamCheck.isSpam}} Spam erkannt (Score: {{spamCheck.scannerScore}}/100) {{else}}
 					Kein Spam (Score: {{spamCheck.scannerScore}}/100) {{/if}}
 				</p>
-				{{#if spamCheck.indicators}}
+				{{#if spamCheck.indicators.length}}
 				<p style="color: #991b1b; margin: 5px 0"><strong>Indikatoren:</strong></p>
 				<ul style="color: #991b1b; margin: 5px 0">
 					{{#each spamCheck.indicators}}
@@ -69,7 +69,7 @@
 					{{#if spamCheck.isSpam}} Spam erkannt (Score: {{spamCheck.scannerScore}}/100) {{else}}
 					Kein Spam (Score: {{spamCheck.scannerScore}}/100) {{/if}}
 				</p>
-				{{#if spamCheck.indicators}}
+				{{#if spamCheck.indicators.length}}
 				<p style="color: #78350f; margin: 5px 0"><strong>Indikatoren:</strong></p>
 				<ul style="color: #78350f; margin: 5px 0">
 					{{#each spamCheck.indicators}}
