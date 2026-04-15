@@ -3,7 +3,7 @@ import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { detectSpamIndicators } from '$lib/server/spam/spamDetector';
-import type { SightingFormValues } from '$lib/types/Form';
+import type { SpamDetectionInput } from '$lib/types/spam';
 import { error, isHttpError, json, type RequestHandler } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 
@@ -31,30 +31,25 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 
 		const sighting = sightingResult[0]!;
 
-		// Convert DB row to SightingFormValues (fields relevant for spam detection).
-		// Use ?? (nullish coalescing) to preserve valid 0 values (e.g. totalCount: 0 = dead find).
+		// Map only the fields used by detectSpamIndicators.
+		// Use ?? (nullish coalescing) to preserve valid 0 values (e.g. species: 0 = Schweinswal).
 		// Pass null for missing coordinates so the position heuristic is skipped rather than
 		// evaluating (0, 0) as "outside the Baltic Sea".
-		const sightingFormValues = {
-			latitude: sighting.latitude != null ? parseFloat(sighting.latitude) : null,
-			longitude: sighting.longitude != null ? parseFloat(sighting.longitude) : null,
-			sightingDate: (sighting.sightingDate ?? new Date()).toISOString().split('T')[0] as string,
+		const parsedLatitude = sighting.latitude != null ? parseFloat(sighting.latitude) : null;
+		const parsedLongitude = sighting.longitude != null ? parseFloat(sighting.longitude) : null;
+		const spamInput: SpamDetectionInput = {
+			latitude: parsedLatitude,
+			longitude: parsedLongitude,
 			species: sighting.species ?? 0,
-			totalCount: sighting.totalCount ?? 0,
-			firstName: sighting.firstName ?? '',
-			lastName: sighting.lastName ?? '',
-			email: sighting.email ?? '',
-			privacyConsent: true,
-			juvenileCount: sighting.juvenileCount ?? 0,
+			firstName: sighting.firstName ?? undefined,
+			lastName: sighting.lastName ?? undefined,
+			email: sighting.email ?? undefined,
 			waterway: sighting.waterway ?? undefined,
 			seaMark: sighting.seaMark ?? undefined,
-			notes: sighting.notes ?? undefined,
-			isDead: !!sighting.isDead,
-			distribution: sighting.distribution ?? 0,
-			hasPosition: !!(sighting.latitude && sighting.longitude)
-		} as SightingFormValues;
+			notes: sighting.notes ?? undefined
+		};
 
-		const result = await detectSpamIndicators(sightingFormValues);
+		const result = await detectSpamIndicators(spamInput);
 
 		logger.info(
 			{ id, score: result.score, isHighRisk: result.isHighRisk },
