@@ -169,13 +169,13 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 					throw error(400, 'Ungültiger Dateipfad');
 				}
 
-				const fileUrl = storageProvider.getUrl(filePath);
+				const fileUrl = storageProvider.getUrl(normalizedPath);
 
 				return {
 					uid: (fileObj.uid as string) || createId(),
 					originalName: fileObj.originalName as string,
-					fileName: (fileObj.fileName as string) || filePath,
-					filePath,
+					fileName: (fileObj.fileName as string) || normalizedPath,
+					filePath: normalizedPath,
 					url: fileUrl,
 					size: fileObj.size as number,
 					mimeType: fileObj.mimeType as string,
