@@ -14,7 +14,6 @@
  */
 
 import {
-	AnimalBehaviorEnum,
 	getAnimalBehaviorOptions,
 	isValidAnimalBehavior
 } from '$lib/report/formOptions/animalBehavior';
@@ -22,17 +21,9 @@ import {
 	getAnimalConditionOptions,
 	isValidAnimalCondition
 } from '$lib/report/formOptions/animalCondition';
-import {
-	BoatDriveEnum,
-	getBoatDriveOptions,
-	isValidBoatDrive
-} from '$lib/report/formOptions/boatDrive';
+import { getBoatDriveOptions, isValidBoatDrive } from '$lib/report/formOptions/boatDrive';
 import { getDistanceOptions, isValidDistance } from '$lib/report/formOptions/distance';
-import {
-	DistributionEnum,
-	getDistributionOptions,
-	isValidDistribution
-} from '$lib/report/formOptions/distribution';
+import { getDistributionOptions, isValidDistribution } from '$lib/report/formOptions/distribution';
 import { getEntryChannelOptions, isValidEntryChannel } from '$lib/report/formOptions/entryChannel';
 import { getSeaStateOptions, isValidSeaState } from '$lib/report/formOptions/seaState';
 import { getSexOptions, isValidSex } from '$lib/report/formOptions/sex';
@@ -590,17 +581,13 @@ export const sightingSchemaBase = yup.object().shape({
 		.notRequired(),
 
 	/**
-	 * Genauere Beschreibung der Verteilung
-	 * Erforderlich, wenn distribution = 3 (Sonstiges)
+	 * Genauere Beschreibung der Verteilung (optional, auch bei Sonstiges)
 	 */
 	distributionText: yup
 		.string()
 		.max(255, 'Die Beschreibung darf nicht länger als 255 Zeichen sein.')
-		.when('distribution', {
-			is: (v: unknown) => v === DistributionEnum.OTHER || v === String(DistributionEnum.OTHER),
-			then: (schema) => schema.required('Bitte beschreiben Sie die Verteilung.'),
-			otherwise: (schema) => schema.notRequired()
-		})
+		.nullable()
+		.notRequired()
 		.label('Sonstige Verteilung')
 		.meta({
 			placeholder: 'z.B. V-Formation, kreisförmig, entlang der Küstenlinie',
@@ -634,17 +621,13 @@ export const sightingSchemaBase = yup.object().shape({
 		.notRequired(),
 
 	/**
-	 * Genauere Beschreibung des Verhaltens
-	 * Erforderlich, wenn behavior = 3 (Sonstiges)
+	 * Genauere Beschreibung des Verhaltens (optional, auch bei Sonstiges)
 	 */
 	behaviorText: yup
 		.string()
 		.max(255, 'Die Beschreibung darf nicht länger als 255 Zeichen sein.')
-		.when('behavior', {
-			is: (v: unknown) => v === AnimalBehaviorEnum.OTHER || v === String(AnimalBehaviorEnum.OTHER),
-			then: (schema) => schema.required('Bitte beschreiben Sie das Verhalten.'),
-			otherwise: (schema) => schema.notRequired()
-		})
+		.nullable()
+		.notRequired()
 		.label('Sonstiges Verhalten')
 		.meta({
 			placeholder: 'z.B. Spielverhalten, Jagd, Paarung, Interaktion mit Booten',
@@ -924,17 +907,13 @@ export const sightingSchemaBase = yup.object().shape({
 		.required(),
 
 	/**
-	 * Genauere Beschreibung des Bootsantriebs
-	 * Erforderlich, wenn boatDrive = 4 (Sonstiges)
+	 * Genauere Beschreibung des Bootsantriebs (optional, auch bei Sonstiges)
 	 */
 	boatDriveText: yup
 		.string()
 		.max(255, 'Die Beschreibung darf nicht länger als 255 Zeichen sein.')
-		.when('boatDrive', {
-			is: (v: unknown) => v === BoatDriveEnum.OTHER || v === String(BoatDriveEnum.OTHER),
-			then: (schema) => schema.required('Bitte beschreiben Sie den Bootsantrieb.'),
-			otherwise: (schema) => schema.notRequired()
-		})
+		.nullable()
+		.notRequired()
 		.label('Sonstiger Antrieb')
 		.meta({
 			placeholder: 'z.B. Hybridantrieb, Wasserstoff, Solar-Elektro',

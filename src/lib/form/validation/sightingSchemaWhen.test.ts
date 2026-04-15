@@ -1,15 +1,10 @@
 /**
- * @fileoverview Tests für die bedingten `.when()`-Validierungen im sightingSchema
+ * @fileoverview Tests für die Validierungen von "Sonstiges"-Textfeldern im sightingSchema
  *
- * Vier Felder werden getestet, die required werden wenn ihr Elternfeld den
- * OTHER-Wert (0) hat:
- *   - sightingFromText  (wenn sightingFrom  === 0)
- *   - distributionText  (wenn distribution  === 0)
- *   - behaviorText      (wenn behavior      === 0)
- *   - boatDriveText     (wenn boatDrive     === 0)
+ * sightingFromText: required wenn sightingFrom === 0 (OTHER)
  *
- * Besonderes Augenmerk liegt auf dem HTML-<select>-Fall, bei dem der Browser
- * immer Strings zurückgibt (z.B. "0" statt 0).
+ * distributionText, behaviorText, boatDriveText: generell optional (auch bei OTHER),
+ * akzeptieren null und leeren String — Altdaten aus der DB können NULL enthalten.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -41,7 +36,7 @@ async function fieldHasError(
 
 // ── sightingFromText ──────────────────────────────────────────────────────────
 
-describe('sightingSchema - bedingte when()-Validierung', () => {
+describe('sightingSchema - Sonstiges-Textfeld-Validierung', () => {
 	describe('sightingFromText', () => {
 		it('ist required wenn sightingFrom die Zahl 0 (OTHER) ist und Text leer', async () => {
 			const hatFehler = await fieldHasError('sightingFromText', {
@@ -87,20 +82,20 @@ describe('sightingSchema - bedingte when()-Validierung', () => {
 	// ── distributionText ───────────────────────────────────────────────────────
 
 	describe('distributionText', () => {
-		it('ist required wenn distribution die Zahl 0 (OTHER) ist und Text leer', async () => {
+		it('ist optional wenn distribution die Zahl 0 (OTHER) ist und Text leer (Altdaten)', async () => {
 			const hatFehler = await fieldHasError('distributionText', {
 				distribution: DistributionEnum.OTHER, // 0 als Zahl
 				distributionText: ''
 			});
-			expect(hatFehler).toBe(true);
+			expect(hatFehler).toBe(false);
 		});
 
-		it('ist required wenn distribution der String "0" (OTHER aus HTML-Select) ist und Text leer', async () => {
+		it('ist optional wenn distribution der String "0" (OTHER aus HTML-Select) ist und Text leer', async () => {
 			const hatFehler = await fieldHasError('distributionText', {
 				distribution: '0', // "0" als String (HTML <select>-Verhalten)
 				distributionText: ''
 			});
-			expect(hatFehler).toBe(true);
+			expect(hatFehler).toBe(false);
 		});
 
 		it('ist NOT required wenn distribution ein anderer Wert ist (z.B. 1 = Einzeln)', async () => {
@@ -126,25 +121,33 @@ describe('sightingSchema - bedingte when()-Validierung', () => {
 			});
 			expect(hatFehler).toBe(false);
 		});
+
+		it('akzeptiert null (Legacy-DB-Wert)', async () => {
+			const hatFehler = await fieldHasError('distributionText', {
+				distribution: DistributionEnum.OTHER,
+				distributionText: null
+			});
+			expect(hatFehler).toBe(false);
+		});
 	});
 
 	// ── behaviorText ───────────────────────────────────────────────────────────
 
 	describe('behaviorText', () => {
-		it('ist required wenn behavior die Zahl 0 (OTHER) ist und Text leer', async () => {
+		it('ist optional wenn behavior die Zahl 0 (OTHER) ist und Text leer (Altdaten)', async () => {
 			const hatFehler = await fieldHasError('behaviorText', {
 				behavior: AnimalBehaviorEnum.OTHER, // 0 als Zahl
 				behaviorText: ''
 			});
-			expect(hatFehler).toBe(true);
+			expect(hatFehler).toBe(false);
 		});
 
-		it('ist required wenn behavior der String "0" (OTHER aus HTML-Select) ist und Text leer', async () => {
+		it('ist optional wenn behavior der String "0" (OTHER aus HTML-Select) ist und Text leer', async () => {
 			const hatFehler = await fieldHasError('behaviorText', {
 				behavior: '0', // "0" als String (HTML <select>-Verhalten)
 				behaviorText: ''
 			});
-			expect(hatFehler).toBe(true);
+			expect(hatFehler).toBe(false);
 		});
 
 		it('ist NOT required wenn behavior ein anderer Wert ist (z.B. 1 = Konstanter Kurs)', async () => {
@@ -170,25 +173,33 @@ describe('sightingSchema - bedingte when()-Validierung', () => {
 			});
 			expect(hatFehler).toBe(false);
 		});
+
+		it('akzeptiert null (Legacy-DB-Wert)', async () => {
+			const hatFehler = await fieldHasError('behaviorText', {
+				behavior: AnimalBehaviorEnum.OTHER,
+				behaviorText: null
+			});
+			expect(hatFehler).toBe(false);
+		});
 	});
 
 	// ── boatDriveText ──────────────────────────────────────────────────────────
 
 	describe('boatDriveText', () => {
-		it('ist required wenn boatDrive die Zahl 0 (OTHER) ist und Text leer', async () => {
+		it('ist optional wenn boatDrive die Zahl 0 (OTHER) ist und Text leer (Altdaten)', async () => {
 			const hatFehler = await fieldHasError('boatDriveText', {
 				boatDrive: BoatDriveEnum.OTHER, // 0 als Zahl
 				boatDriveText: ''
 			});
-			expect(hatFehler).toBe(true);
+			expect(hatFehler).toBe(false);
 		});
 
-		it('ist required wenn boatDrive der String "0" (OTHER aus HTML-Select) ist und Text leer', async () => {
+		it('ist optional wenn boatDrive der String "0" (OTHER aus HTML-Select) ist und Text leer', async () => {
 			const hatFehler = await fieldHasError('boatDriveText', {
 				boatDrive: '0', // "0" als String (HTML <select>-Verhalten)
 				boatDriveText: ''
 			});
-			expect(hatFehler).toBe(true);
+			expect(hatFehler).toBe(false);
 		});
 
 		it('ist NOT required wenn boatDrive ein anderer Wert ist (z.B. 1 = Motor)', async () => {
@@ -211,6 +222,14 @@ describe('sightingSchema - bedingte when()-Validierung', () => {
 			const hatFehler = await fieldHasError('boatDriveText', {
 				boatDrive: '0',
 				boatDriveText: 'Hybridantrieb Solar-Elektrisch'
+			});
+			expect(hatFehler).toBe(false);
+		});
+
+		it('akzeptiert null (Legacy-DB-Wert)', async () => {
+			const hatFehler = await fieldHasError('boatDriveText', {
+				boatDrive: BoatDriveEnum.OTHER,
+				boatDriveText: null
 			});
 			expect(hatFehler).toBe(false);
 		});

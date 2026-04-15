@@ -14,30 +14,46 @@
 	let modalImageSrc = $state<string | null>(null);
 	let modalImageAlt = $state<string>('');
 	let modalImageCopyright = $state<string | null>(null);
+	let modalElement = $state<HTMLDialogElement | null>(null);
+	let modalCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+	$effect(() => {
+		return () => {
+			if (modalCloseTimer !== null) clearTimeout(modalCloseTimer);
+		};
+	});
 
 	function toggleExpanded() {
 		isExpanded = !isExpanded;
 	}
 
 	function openImageModal(src: string, alt: string, copyright: string | null = null) {
+		if (modalCloseTimer !== null) {
+			clearTimeout(modalCloseTimer);
+			modalCloseTimer = null;
+		}
 		modalImageSrc = src;
 		modalImageAlt = alt;
 		modalImageCopyright = copyright;
-		// Show DaisyUI modal
-		const modal = document.getElementById('species-image-modal') as HTMLDialogElement;
-		if (modal) {
-			modal.showModal();
-		}
+		modalElement?.showModal();
 	}
 
 	function closeImageModal() {
-		modalImageSrc = null;
-		modalImageAlt = '';
-		modalImageCopyright = null;
-		const modal = document.getElementById('species-image-modal') as HTMLDialogElement;
-		if (modal) {
-			modal.close();
-		}
+		modalElement?.close();
+		// deferred state reset is handled by handleDialogClose (onclose event)
+	}
+
+	function handleDialogClose() {
+		// Fires for ALL close paths: button, backdrop click, and native Escape key.
+		// State is cleared after the DaisyUI animation completes to avoid flicker
+		// (the close event fires synchronously, before the animation ends).
+		if (modalCloseTimer !== null) clearTimeout(modalCloseTimer);
+		modalCloseTimer = setTimeout(() => {
+			modalImageSrc = null;
+			modalImageAlt = '';
+			modalImageCopyright = null;
+			modalCloseTimer = null;
+		}, 250);
 	}
 
 	// Identifikationsdaten für jede Tierart
@@ -537,7 +553,7 @@
 </div>
 
 <!-- Image Modal für Vollbildansicht -->
-<dialog id="species-image-modal" class="modal">
+<dialog bind:this={modalElement} class="modal" onclose={handleDialogClose}>
 	<div class="modal-box w-11/12 max-w-5xl p-0">
 		{#if modalImageSrc}
 			<div class="relative">
@@ -572,7 +588,8 @@
 					<!-- Copyright unter dem vergrößerten Bild -->
 					{#if modalImageCopyright}
 						<p class="text-base-content/60 mt-3 text-sm">
-							{modalImageCopyright}
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+							{@html sanitizeHtml(modalImageCopyright)}
 						</p>
 					{/if}
 				</div>

@@ -17,6 +17,7 @@ import { createLogger } from '$lib/logger';
 import { getSpeciesLabel } from '$lib/report/formOptions/species.js';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
+import { getClientIp } from '$lib/server/utils/getClientIp';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { and, between, sql } from 'drizzle-orm';
 
@@ -50,7 +51,7 @@ interface PDFCompliantSightingResponse {
  * Returns sightings in EXACT PDF format with abbreviated field names
  */
 export async function GET(event: RequestEvent): Promise<Response> {
-	const clientIp = event.getClientAddress();
+	const clientIp = getClientIp(() => event.getClientAddress());
 
 	try {
 		// Parse query parameters exactly as specified in PDF
