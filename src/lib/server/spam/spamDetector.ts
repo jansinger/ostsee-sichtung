@@ -5,6 +5,15 @@ import SpamScanner from 'spamscanner';
 
 const logger = createLogger('spamDetector');
 
+// Singleton: model is loaded once on first use and reused for all subsequent calls
+let scannerInstance: InstanceType<typeof SpamScanner> | null = null;
+function getScanner(): InstanceType<typeof SpamScanner> {
+	if (!scannerInstance) {
+		scannerInstance = new SpamScanner();
+	}
+	return scannerInstance;
+}
+
 export interface SpamCheckResult {
 	score: number;
 	scannerScore: number;
@@ -78,8 +87,7 @@ async function runSpamScanner(
 	}
 
 	try {
-		const scanner = new SpamScanner();
-		const result = await scanner.scan(text);
+		const result = await getScanner().scan(text);
 		const isSpam = Boolean(result.isSpam);
 		const scannerScore = isSpam ? 100 : 0;
 		const indicator = isSpam && result.message ? `SpamScanner: ${result.message}` : null;
