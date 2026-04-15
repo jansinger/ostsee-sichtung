@@ -349,20 +349,21 @@ Kritische Admin-Aktionen werden in der `audit_logs` PostgreSQL-Tabelle gespeiche
 
 **Events in der DB:**
 
-| Action | Wann | Details |
-|---|---|---|
-| `sighting.approve` | Admin genehmigt Sichtung | `{ previousStatus }` |
-| `sighting.reject` | Admin lehnt Sichtung ab | `{ previousStatus }` |
-| `sighting.edit` | Admin bearbeitet Sichtung | `{ changedFields: string[] }` |
-| `sighting.delete` | Admin löscht Sichtung | — |
-| `file.delete` | Admin löscht Datei | — |
-| `config.update` | Einstellung geändert | `{ key, category }` |
-| `auth.login_success` | Erfolgreicher Admin-Login | — |
-| `auth.login_failure` | Fehlgeschlagener Login | status: 'failure' |
-| `export.download` | Daten-Export | Integration beim Export-Endpoint ergänzen |
+| Action               | Wann                                                    | Details                       |
+| -------------------- | ------------------------------------------------------- | ----------------------------- |
+| `sighting.approve`   | Admin genehmigt Sichtung                                | `{ previousStatus }`          |
+| `sighting.reject`    | Admin lehnt Sichtung ab                                 | `{ previousStatus }`          |
+| `sighting.edit`      | Admin bearbeitet Sichtung                               | `{ changedFields: string[] }` |
+| `sighting.delete`    | Admin löscht Sichtung                                   | —                             |
+| `file.delete`        | Admin löscht Datei                                      | —                             |
+| `config.update`      | Einstellung geändert                                    | `{ key, category }`           |
+| `auth.login_success` | Erfolgreicher Admin-Login                               | —                             |
+| `auth.login_failure` | Fehlgeschlagener Login                                  | status: 'failure'             |
+| `export.download`    | Admin startet Daten-Export über `/api/sightings/export` | `{ format }`                  |
 
 **Pino stdout (nicht in DB):**
+
 - `security.rate_limit_hit` — Rate Limit überschritten (`rateLimit.ts`)
-- `security.auth_error` — Ungültiges Auth-Cookie (`hooks.server.ts`)
+- `security.auth_error` — Authentifizierungs-/Autorisierungsfehler, z. B. ungültiges Auth-Cookie (`hooks.server.ts`), fehlende Berechtigung (`requireUserRole`) oder Auth0-Callback-Fehler
 
 **Auswertung:** Drizzle Studio oder `docker compose logs app | grep '"event":"security.'`
