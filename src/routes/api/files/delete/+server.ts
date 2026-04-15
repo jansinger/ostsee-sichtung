@@ -5,17 +5,17 @@ import { deleteFileByPath } from '$lib/server/db/sightingFilesRepository';
 import { getStorageProvider } from '$lib/server/storage/factory';
 import { isAdminUser } from '$lib/server/auth/auth';
 import { logAuditEvent } from '$lib/server/audit/auditService';
+import { getClientIp } from '$lib/server/utils/getClientIp';
 import { error, isHttpError, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('FileDeleteAPI');
 
-export const DELETE: RequestHandler = async ({ request, locals }) => {
+export const DELETE: RequestHandler = async ({ request, locals, getClientAddress }) => {
 	const userIdentifier = locals.user?.sub || 'anonymous';
 	const isAuthenticated = !!locals.user;
-	const clientIp =
-		request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+	const clientIp = getClientIp(getClientAddress, request);
 
 	try {
 		const { filePath } = await request.json();
@@ -116,7 +116,7 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 					resourceType: 'file',
 					resourceId: filePath,
 					...(locals.user?.email ? { userEmail: locals.user.email } : {}),
-					...(clientIp !== 'unknown' ? { ipAddress: clientIp } : {})
+					ipAddress: clientIp
 				});
 			}
 

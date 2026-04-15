@@ -173,13 +173,17 @@ export const auditLogs = pgTable(
 		timestamp: timestamp({ withTimezone: true }).notNull().defaultNow(),
 		userEmail: varchar('user_email', { length: 255 }),
 		action: varchar('action', { length: 100 }).notNull(),
-		resourceType: varchar('resource_type', { length: 50 }),
+		resourceType: varchar('resource_type', { length: 50 }).notNull(),
 		resourceId: varchar('resource_id', { length: 100 }),
 		details: jsonb('details'),
 		ipAddress: varchar('ip_address', { length: 45 }),
 		status: varchar('status', { length: 20 }).notNull().default('success')
 	},
-	(table) => [index('idx_audit_logs_timestamp').on(table.timestamp)]
+	(table) => [
+		index('idx_audit_logs_timestamp').on(table.timestamp),
+		index('idx_audit_logs_action_timestamp').on(table.action, table.timestamp),
+		index('idx_audit_logs_user_email_timestamp').on(table.userEmail, table.timestamp)
+	]
 );
 
 export type AuditLogSelect = typeof auditLogs.$inferSelect;

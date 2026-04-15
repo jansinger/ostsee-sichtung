@@ -1,5 +1,6 @@
 import { createLogger } from '$lib/logger';
 import { logAuditEvent } from '$lib/server/audit/auditService';
+import { getClientIp } from '$lib/server/utils/getClientIp';
 import { ConfigRepository } from '$lib/server/db/configRepository';
 import {
 	filterConfigsByUserAccess,
@@ -37,7 +38,12 @@ export const GET: RequestHandler = async ({ url, locals }: RequestEvent) => {
 	}
 };
 
-export const PUT: RequestHandler = async ({ request, locals, url }: RequestEvent) => {
+export const PUT: RequestHandler = async ({
+	request,
+	locals,
+	url,
+	getClientAddress
+}: RequestEvent) => {
 	// SECURITY: Must be outside try/catch so redirect(302) propagates correctly
 	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
@@ -81,11 +87,7 @@ export const PUT: RequestHandler = async ({ request, locals, url }: RequestEvent
 			resourceType: 'config',
 			resourceId: key,
 			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
-			...((request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip'))
-				? {
-						ipAddress: (request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip'))!
-					}
-				: {}),
+			ipAddress: getClientIp(getClientAddress, request),
 			details: { key, category }
 		});
 
@@ -98,7 +100,12 @@ export const PUT: RequestHandler = async ({ request, locals, url }: RequestEvent
 	}
 };
 
-export const DELETE: RequestHandler = async ({ url, locals, request }: RequestEvent) => {
+export const DELETE: RequestHandler = async ({
+	url,
+	locals,
+	request,
+	getClientAddress
+}: RequestEvent) => {
 	// SECURITY: Must be outside try/catch so redirect(302) propagates correctly
 	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
@@ -130,11 +137,7 @@ export const DELETE: RequestHandler = async ({ url, locals, request }: RequestEv
 			resourceType: 'config',
 			resourceId: key,
 			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
-			...((request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip'))
-				? {
-						ipAddress: (request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip'))!
-					}
-				: {}),
+			ipAddress: getClientIp(getClientAddress, request),
 			details: { key }
 		});
 

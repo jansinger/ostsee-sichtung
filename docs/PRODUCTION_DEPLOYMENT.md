@@ -344,19 +344,21 @@ tar czf /opt/ostsee-tiere/backups/uploads-$(date +%Y%m%d).tar.gz \
 
 ---
 
-## 10. Audit Logging
+## 9. Audit Logging
 
 Das System protokolliert kritische Admin-Aktionen in der `audit_logs` Tabelle und Security-Events als strukturierte JSON-Logs in stdout.
 
 ### Audit-Tabelle abfragen
 
 **Drizzle Studio:**
+
 ```bash
 npm run db:studio
 # → Tabelle "audit_logs" öffnen
 ```
 
 **Direkte SQL-Abfragen:**
+
 ```sql
 -- Letzte 50 Admin-Aktionen
 SELECT timestamp, user_email, action, resource_type, resource_id, details, status
@@ -396,7 +398,7 @@ Unbegrenzt — kein automatisches Löschen. Manuelles Löschen via SQL wenn nöt
 
 ---
 
-## 9. Updates durchführen
+## 10. Updates durchführen
 
 ### Standard-Update
 

@@ -68,6 +68,6 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 			resourceType: 'auth',
 			status: 'failure'
 		});
-		return error(500, `Failed to get token. Err: ${err}`);
+		return error(500, 'Authentication failed');
 	}
 }

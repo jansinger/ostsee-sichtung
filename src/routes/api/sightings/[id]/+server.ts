@@ -3,6 +3,7 @@ import { createLogger } from '$lib/logger';
 import type { SightingFormData } from '$lib/report/types';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { requireUserRole } from '$lib/server/auth/auth';
+import { getClientIp } from '$lib/server/utils/getClientIp';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import {
@@ -16,12 +17,19 @@ import { error, isHttpError, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
+function normalizeValue(value: unknown): unknown {
+	if (value === undefined) return null;
+	if (typeof value === 'number' && !Number.isNaN(value)) return String(value);
+	return value;
+}
+
 function getChangedFields(
 	current: Record<string, unknown>,
 	next: Record<string, unknown>
 ): string[] {
 	return Object.keys(next).filter(
-		(key) => JSON.stringify(current[key]) !== JSON.stringify(next[key])
+		(key) =>
+			JSON.stringify(normalizeValue(current[key])) !== JSON.stringify(normalizeValue(next[key]))
 	);
 }
 
@@ -65,7 +73,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 	}
 };
 
-export const PUT: RequestHandler = async ({ params, request, locals, url }) => {
+export const PUT: RequestHandler = async ({ params, request, locals, url, getClientAddress }) => {
 	// Authorization check
 	requireUserRole(url, locals.user, ['admin']);
 
@@ -104,8 +112,7 @@ export const PUT: RequestHandler = async ({ params, request, locals, url }) => {
 				currentRecords[0] as Record<string, unknown>,
 				updatedSighting as unknown as Record<string, unknown>
 			);
-			const ipAddress =
-				request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? undefined;
+			const ipAddress = getClientIp(getClientAddress, request);
 			await logAuditEvent({
 				action: 'sighting.edit',
 				resourceType: 'sighting',
@@ -160,7 +167,13 @@ export const PUT: RequestHandler = async ({ params, request, locals, url }) => {
 	}
 };
 
-export const DELETE: RequestHandler = async ({ params, request, locals, url }) => {
+export const DELETE: RequestHandler = async ({
+	params,
+	request,
+	locals,
+	url,
+	getClientAddress
+}) => {
 	// Authorization check - only admins can delete
 	requireUserRole(url, locals.user, ['admin']);
 
@@ -187,8 +200,7 @@ export const DELETE: RequestHandler = async ({ params, request, locals, url }) =
 		// Sichtung löschen (cascade delete für zugehörige Dateien)
 		await db.delete(sightings).where(eq(sightings.id, Number(id)));
 
-		const ipAddress =
-			request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? undefined;
+		const ipAddress = getClientIp(getClientAddress, request);
 		await logAuditEvent({
 			action: 'sighting.delete',
 			resourceType: 'sighting',
