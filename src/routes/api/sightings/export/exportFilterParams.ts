@@ -2,6 +2,16 @@ import { isValidDateParam } from '../../../admin/dateParam';
 import { between, eq } from 'drizzle-orm';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 
+export function xmlEscape(str: string | null | undefined): string {
+	if (!str) return '';
+	return String(str)
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
+}
+
 export type ExportFilterParams = {
 	fromDate: string;
 	toDate: string;

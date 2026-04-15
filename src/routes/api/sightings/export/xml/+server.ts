@@ -8,20 +8,10 @@ import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { text } from '@sveltejs/kit';
 import { and } from 'drizzle-orm';
-import { buildExportConditions, parseExportFilterParams } from '../exportFilterParams';
+import { buildExportConditions, parseExportFilterParams, xmlEscape } from '../exportFilterParams';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:sightings:export:xml');
-
-function xmlEscape(str: string | null | undefined): string {
-	if (!str) return '';
-	return String(str)
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&#39;');
-}
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	// Authorization check
@@ -30,7 +20,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const filterResult = parseExportFilterParams(url);
 	if ('error' in filterResult) {
 		return text(
-			'<?xml version="1.0" encoding="UTF-8"?><error>' + filterResult.error.message + '</error>',
+			`<?xml version="1.0" encoding="UTF-8"?><error>${xmlEscape(filterResult.error.message)}</error>`,
 			{ status: 400, headers: { 'Content-Type': 'application/xml' } }
 		);
 	}
