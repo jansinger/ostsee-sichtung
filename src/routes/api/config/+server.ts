@@ -1,4 +1,5 @@
 import { createLogger } from '$lib/logger';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import { ConfigRepository } from '$lib/server/db/configRepository';
 import {
 	filterConfigsByUserAccess,
@@ -74,6 +75,17 @@ export const PUT: RequestHandler = async ({ request, locals, url }: RequestEvent
 
 		// Clear entire cache for configuration changes
 		ConfigRepository.clearCache();
+
+		await logAuditEvent({
+			action: 'config.update',
+			resourceType: 'config',
+			resourceId: key,
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			...(request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip')
+				? { ipAddress: (request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip'))! }
+				: {}),
+			details: { key, category }
+		});
 
 		logger.info({ key, userId: locals.user!.sub }, 'Configuration updated'); // Safe after requireUserRole check
 
