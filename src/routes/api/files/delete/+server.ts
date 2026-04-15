@@ -4,6 +4,7 @@ import { sightingFiles } from '$lib/server/db/schema';
 import { deleteFileByPath } from '$lib/server/db/sightingFilesRepository';
 import { getStorageProvider } from '$lib/server/storage/factory';
 import { isAdminUser } from '$lib/server/auth/auth';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import { error, isHttpError, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
@@ -108,6 +109,16 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 			logger.info({ filePath }, 'Datei erfolgreich gelöscht');
 
 			await deleteFileByPath(filePath);
+
+			if (isAdmin) {
+				await logAuditEvent({
+					action: 'file.delete',
+					resourceType: 'file',
+					resourceId: filePath,
+					...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+					...(clientIp !== 'unknown' ? { ipAddress: clientIp } : {})
+				});
+			}
 
 			return json({
 				success: true,
