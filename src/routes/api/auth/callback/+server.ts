@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/private';
 import { createLogger } from '$lib/logger';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import {
 	getPKCEVerifierFromCookie,
 	getToken,
@@ -45,9 +46,19 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 		authUser.roles = claims[rolesClaim] || [];
 
 		await setAuthCookie(cookies, authUser);
+		await logAuditEvent({
+			action: 'auth.login_success',
+			resourceType: 'auth',
+			userEmail: authUser.email
+		});
 		cookies.delete('csrfState', { path: '/' });
 	} catch (err) {
 		logger.info({ err }, 'Failed to get token');
+		await logAuditEvent({
+			action: 'auth.login_failure',
+			resourceType: 'auth',
+			status: 'failure'
+		});
 		return error(500, `Failed to get token. Err: ${err}`);
 	}
 	return redirect(302, returnUrl);
