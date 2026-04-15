@@ -241,7 +241,7 @@ export async function detectSpamIndicators(sighting: SightingFormValues): Promis
 		}
 
 		return {
-			score,
+			score: Math.min(score, 10), // clamp to 0–10 scale; ≥5 = high risk
 			scannerScore,
 			isSpam,
 			isHighRisk: score >= 5 || isSpam,

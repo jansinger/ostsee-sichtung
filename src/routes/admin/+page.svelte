@@ -283,12 +283,17 @@
 		try {
 			const response = await fetch(`/api/sightings/${sightingId}/spam-check`);
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+			// Guard against race: discard response if user switched to a different sighting
+			if (spamCheckModal.sightingId !== sightingId) return;
 			spamCheckModal.result = await response.json();
 		} catch (err) {
+			if (spamCheckModal.sightingId !== sightingId) return;
 			logger.error({ err, sightingId }, 'Spam-Check fehlgeschlagen');
 			spamCheckModal.error = 'Spam-Check fehlgeschlagen';
 		} finally {
-			spamCheckModal.loading = false;
+			if (spamCheckModal.sightingId === sightingId) {
+				spamCheckModal.loading = false;
+			}
 		}
 	}
 
@@ -1089,7 +1094,7 @@
 							? 'badge-warning'
 							: 'badge-success'}"
 				>
-					Heuristik: {spamCheckModal.result.score}/10
+					Heuristik-Score: {spamCheckModal.result.score}
 				</span>
 				<span class="badge {spamCheckModal.result.isSpam ? 'badge-error' : 'badge-success'}">
 					SpamScanner: {spamCheckModal.result.scannerScore}/100

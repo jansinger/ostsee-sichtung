@@ -153,7 +153,7 @@
 								? 'badge-warning'
 								: 'badge-success'}"
 					>
-						Score: {result.score}/10
+						Score: {result.score}
 					</span>
 					{#if result.isSpam}
 						<span class="badge badge-error">SpamScanner: Spam</span>
