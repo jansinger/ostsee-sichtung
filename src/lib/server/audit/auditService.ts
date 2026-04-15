@@ -41,7 +41,7 @@ export async function logAuditEvent(event: AuditEvent): Promise<void> {
 			status: event.status ?? 'success'
 		});
 	} catch (err) {
-		// Audit failures must never block the main operation
+		// Audit errors must never propagate to callers — log and continue
 		logger.error({ err, event }, 'audit_log_write_failed');
 	}
 }
