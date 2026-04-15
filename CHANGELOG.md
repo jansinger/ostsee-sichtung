@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.3.1](https://github.com/jansinger/ostsee-sichtung/compare/v2.3.0...v2.3.1) (2026-04-15)
+
+
+### Bug Fixes
+
+* **api,ui:** safe getClientAddress, optional other-text fields, lightbox fixes ([#466](https://github.com/jansinger/ostsee-sichtung/issues/466)) ([229813c](https://github.com/jansinger/ostsee-sichtung/commit/229813cb329af83d1f84b3f76178427849b6c2d6))
+
 ## [2.3.0](https://github.com/jansinger/ostsee-sichtung/compare/v2.2.3...v2.3.0) (2026-04-14)
 
 
