@@ -15,7 +15,7 @@ const logger = createLogger('api:sightings:export:csv');
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	// Authorization check
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	// Filter-Parameter aus der URL extrahieren
 	const fromDate = url.searchParams.get('fromDate') || '';
