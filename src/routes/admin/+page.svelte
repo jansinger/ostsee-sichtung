@@ -247,6 +247,35 @@
 		}
 	}
 
+	interface SpamCheckResult {
+		score: number;
+		scannerScore: number;
+		isSpam: boolean;
+		isHighRisk: boolean;
+		indicators: string[];
+	}
+
+	let spamCheckModal = $state({
+		open: false,
+		loading: false,
+		sightingId: null as number | null,
+		result: null as SpamCheckResult | null,
+		error: null as string | null
+	});
+
+	async function checkSpam(sightingId: number): Promise<void> {
+		spamCheckModal = { open: true, loading: true, sightingId, result: null, error: null };
+		try {
+			const response = await fetch(`/api/sightings/${sightingId}/spam-check`);
+			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+			const result: SpamCheckResult = await response.json();
+			spamCheckModal = { ...spamCheckModal, loading: false, result };
+		} catch (err) {
+			logger.error({ err, sightingId }, 'Spam-Check fehlgeschlagen');
+			spamCheckModal = { ...spamCheckModal, loading: false, error: 'Spam-Check fehlgeschlagen' };
+		}
+	}
+
 	async function toggleVerifiedStatus(id: number, currentState: boolean): Promise<void> {
 		const newState = currentState ? 0 : 1; // Toggle the state
 
@@ -563,6 +592,14 @@
 							aria-label="Test-E-Mail senden"
 						>
 							<Icon icon="lucide:mail" class="h-4 w-4" />
+						</button>
+						<button
+							class="btn btn-ghost btn-sm"
+							onclick={() => checkSpam(sighting.id)}
+							title="Spam-Check"
+							aria-label="Spam-Check durchführen"
+						>
+							<Icon icon="lucide:shield-alert" class="h-4 w-4" />
 						</button>
 						<button
 							class="btn text-error btn-ghost btn-sm"
@@ -901,6 +938,14 @@
 										<Icon icon="lucide:mail" class="h-4 w-4" />
 									</button>
 									<button
+										class="btn btn-ghost btn-xs"
+										onclick={() => checkSpam(sighting.id)}
+										title="Spam-Check"
+										aria-label="Spam-Check durchführen"
+									>
+										<Icon icon="lucide:shield-alert" class="h-4 w-4" />
+									</button>
+									<button
 										class="btn text-error btn-ghost btn-xs"
 										onclick={() => {
 											sightingToDelete = sighting;
@@ -999,3 +1044,69 @@
 		totalRecords={data.pagination?.total || 0}
 	/>
 </div>
+
+{#if spamCheckModal.open}
+	<dialog class="modal modal-open">
+		<div class="modal-box max-w-lg">
+			<h3 class="text-lg font-bold">Spam-Analyse</h3>
+
+			{#if spamCheckModal.loading}
+				<div class="flex justify-center py-8">
+					<span class="loading loading-spinner loading-md"></span>
+				</div>
+			{:else if spamCheckModal.error}
+				<div class="alert alert-error mt-4">
+					<span>{spamCheckModal.error}</span>
+				</div>
+			{:else if spamCheckModal.result}
+				<!-- Score badges -->
+				<div class="mt-4 flex flex-wrap gap-2">
+					<span
+						class="badge {spamCheckModal.result.score >= 5
+							? 'badge-error'
+							: spamCheckModal.result.score >= 2
+								? 'badge-warning'
+								: 'badge-success'}"
+					>
+						Heuristik: {spamCheckModal.result.score}/10
+					</span>
+					<span class="badge {spamCheckModal.result.isSpam ? 'badge-error' : 'badge-success'}">
+						SpamScanner: {spamCheckModal.result.scannerScore}/100
+					</span>
+					{#if spamCheckModal.result.isHighRisk}
+						<span class="badge badge-error">Hochrisiko</span>
+					{:else}
+						<span class="badge badge-success">Kein Hochrisiko</span>
+					{/if}
+				</div>
+				<!-- Indicators list -->
+				{#if spamCheckModal.result.indicators.length > 0}
+					<p class="mt-4 font-semibold">Indikatoren:</p>
+					<ul class="mt-1 list-inside list-disc text-sm">
+						{#each spamCheckModal.result.indicators as indicator (indicator)}
+							<li>{indicator}</li>
+						{/each}
+					</ul>
+				{:else}
+					<p class="text-success mt-4 text-sm">Keine Indikatoren gefunden.</p>
+				{/if}
+			{/if}
+
+			<div class="modal-action">
+				<button class="btn" onclick={() => (spamCheckModal = { ...spamCheckModal, open: false })}>
+					Schließen
+				</button>
+			</div>
+		</div>
+		<div
+			class="modal-backdrop"
+			onclick={() => (spamCheckModal = { ...spamCheckModal, open: false })}
+			role="button"
+			tabindex="-1"
+			aria-label="Modal schließen"
+			onkeydown={(e) => {
+				if (e.key === 'Escape') spamCheckModal = { ...spamCheckModal, open: false };
+			}}
+		></div>
+	</dialog>
+{/if}
