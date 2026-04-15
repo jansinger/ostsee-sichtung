@@ -11,7 +11,7 @@ import type { PageServerLoad } from './$types';
 const logger = createLogger('admin:settings:page');
 
 export const load: PageServerLoad = async ({ locals, url }) => {
-	// Layout guard already checks ['admin'], but settings also allows superadmin
+	// Layout guard allows ['admin', 'superadmin']; settings requires at least one of these
 	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	try {

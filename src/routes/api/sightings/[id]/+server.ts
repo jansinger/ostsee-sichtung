@@ -6,6 +6,7 @@ import { requireUserRole } from '$lib/server/auth/auth';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
+import { posix } from 'path';
 import {
 	loadSightingFiles,
 	saveSightingFiles,
@@ -139,16 +140,31 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 
 			const fileInfos = uploadedFiles.map((file: unknown) => {
 				const fileObj = file as Record<string, unknown>;
-				const filePath = fileObj.filePath as string;
 
-				// Prevent path traversal attacks
+				// Validate filePath is actually a string before any operations
+				if (typeof fileObj.filePath !== 'string' || !fileObj.filePath) {
+					logger.warn({ filePath: fileObj.filePath }, 'Ungültiger Dateipfad erkannt');
+					throw error(400, 'Ungültiger Dateipfad');
+				}
+				const filePath = fileObj.filePath;
+
+				// Prevent path traversal: decode URL-encoded sequences, then normalize
+				let decodedPath: string;
+				try {
+					decodedPath = decodeURIComponent(filePath);
+				} catch {
+					logger.warn({ filePath }, 'Nicht dekodierbarer Dateipfad erkannt');
+					throw error(400, 'Ungültiger Dateipfad');
+				}
+				const normalizedPath = posix.normalize(decodedPath);
 				if (
-					!filePath ||
-					filePath.includes('..') ||
-					filePath.includes('\\') ||
-					filePath.startsWith('/')
+					normalizedPath.startsWith('..') ||
+					normalizedPath.startsWith('/') ||
+					normalizedPath.includes('\\') ||
+					// Catch double-encoded sequences (%252e, %252f, %255c)
+					filePath.toLowerCase().includes('%25')
 				) {
-					logger.warn({ filePath }, 'Ungültiger Dateipfad erkannt');
+					logger.warn({ filePath, normalizedPath }, 'Pfad-Traversal erkannt');
 					throw error(400, 'Ungültiger Dateipfad');
 				}
 

@@ -8,7 +8,7 @@ const logger = createLogger('api:test-email');
 
 export const POST: RequestHandler = async ({ request, locals, url }) => {
 	// SECURITY: Must be outside try/catch so redirect(302) propagates correctly
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	try {
 		logger.debug(

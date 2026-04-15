@@ -13,7 +13,7 @@ const logger = createLogger('api:admin:weather:refresh');
  * Requires authentication for admin access
  */
 export const POST: RequestHandler = async ({ params, locals, url }: RequestEvent) => {
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 	const sightingId = parseInt(params.id || '');
 
 	if (isNaN(sightingId)) {

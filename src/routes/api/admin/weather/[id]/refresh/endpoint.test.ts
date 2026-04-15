@@ -51,7 +51,10 @@ describe('/api/admin/weather/[id]/refresh POST endpoint', () => {
 		const event = createMockEvent('123', { email: 'admin@test.com', roles: ['admin'] });
 		await POST(event as Parameters<typeof POST>[0]);
 
-		expect(requireUserRole).toHaveBeenCalledWith(event.url, event.locals.user, ['admin']);
+		expect(requireUserRole).toHaveBeenCalledWith(event.url, event.locals.user, [
+			'admin',
+			'superadmin'
+		]);
 	});
 
 	it('lehnt ungültige Sichtungs-ID ab', async () => {
