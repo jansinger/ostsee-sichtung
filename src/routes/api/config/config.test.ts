@@ -50,7 +50,8 @@ describe('PUT /api/config — Audit Logging', () => {
 				body: JSON.stringify({ key: 'maintenance_mode', value: true, category: 'system' })
 			}),
 			locals: { user: { email: 'admin@test.com', sub: 'auth0|admin', roles: ['admin'] } },
-			url: new URL('http://localhost/api/config')
+			url: new URL('http://localhost/api/config'),
+			getClientAddress: () => '127.0.0.1'
 		};
 
 		await PUT(event as never);
@@ -78,7 +79,8 @@ describe('DELETE /api/config — Audit Logging', () => {
 			locals: { user: { email: 'admin@test.com', sub: 'auth0|admin', roles: ['admin'] } },
 			request: new Request('http://localhost/api/config?key=maintenance_mode', {
 				method: 'DELETE'
-			})
+			}),
+			getClientAddress: () => '127.0.0.1'
 		};
 
 		await DELETE(event as never);

@@ -48,7 +48,8 @@ function makeEvent(id: string, approve: boolean, userEmail = 'admin@test.com') {
 			body: JSON.stringify({ approve })
 		}),
 		locals: { user: { email: userEmail, roles: ['admin'], sub: 'auth0|test' } },
-		url: new URL(`http://localhost/api/sightings/${id}/approve`)
+		url: new URL(`http://localhost/api/sightings/${id}/approve`),
+		getClientAddress: () => '127.0.0.1'
 	};
 }
 
@@ -56,7 +57,9 @@ describe('PATCH /api/sightings/[id]/approve — Audit Logging', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 
-		const mockLimit = vi.fn().mockResolvedValue([{ id: 42, approvedAt: null, internalComment: null }]);
+		const mockLimit = vi
+			.fn()
+			.mockResolvedValue([{ id: 42, approvedAt: null, internalComment: null }]);
 		const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit });
 		const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
 		mockSelect.mockReturnValue({ from: mockFrom });
@@ -92,7 +95,9 @@ describe('PATCH /api/sightings/[id]/approve — Audit Logging', () => {
 	});
 
 	it('loggt previousStatus aus dem DB-Eintrag', async () => {
-		const mockLimit = vi.fn().mockResolvedValue([{ id: 42, approvedAt: new Date(), internalComment: null }]);
+		const mockLimit = vi
+			.fn()
+			.mockResolvedValue([{ id: 42, approvedAt: new Date(), internalComment: null }]);
 		const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit });
 		const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
 		mockSelect.mockReturnValue({ from: mockFrom });

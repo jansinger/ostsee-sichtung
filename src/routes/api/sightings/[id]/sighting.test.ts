@@ -86,7 +86,8 @@ describe('PUT /api/sightings/[id] — Audit Logging', () => {
 				body: JSON.stringify({ species: 1, totalCount: 1 })
 			}),
 			locals: makeAdminLocals(),
-			url: new URL('http://localhost/api/sightings/42')
+			url: new URL('http://localhost/api/sightings/42'),
+			getClientAddress: () => '127.0.0.1'
 		};
 
 		await PUT(event as never);
@@ -121,7 +122,8 @@ describe('PUT /api/sightings/[id] — Audit Logging', () => {
 				body: JSON.stringify({ species: 0 })
 			}),
 			locals: makeAdminLocals(),
-			url: new URL('http://localhost/api/sightings/42')
+			url: new URL('http://localhost/api/sightings/42'),
+			getClientAddress: () => '127.0.0.1'
 		};
 
 		await PUT(event as never);
@@ -147,7 +149,8 @@ describe('DELETE /api/sightings/[id] — Audit Logging', () => {
 			params: { id: '42' },
 			request: new Request('http://localhost/api/sightings/42', { method: 'DELETE' }),
 			locals: makeAdminLocals(),
-			url: new URL('http://localhost/api/sightings/42')
+			url: new URL('http://localhost/api/sightings/42'),
+			getClientAddress: () => '127.0.0.1'
 		};
 
 		await DELETE(event as never);

@@ -66,6 +66,7 @@ const createMockEvent = (
 		user: { email: options?.userEmail ?? 'admin@test.com', roles: ['admin'] }
 	},
 	url: new URL(`http://localhost/api/sightings/${id}/verify`),
+	getClientAddress: () => options?.ip ?? '127.0.0.1',
 	request: {
 		json: () => Promise.resolve(body),
 		headers: {

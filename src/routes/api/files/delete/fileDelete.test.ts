@@ -55,7 +55,8 @@ function makeEvent(filePath: string) {
 			},
 			body: JSON.stringify({ filePath })
 		}),
-		locals: { user: { email: 'admin@test.com', sub: 'auth0|admin', roles: ['admin'] } }
+		locals: { user: { email: 'admin@test.com', sub: 'auth0|admin', roles: ['admin'] } },
+		getClientAddress: () => '10.0.0.1'
 	};
 }
 

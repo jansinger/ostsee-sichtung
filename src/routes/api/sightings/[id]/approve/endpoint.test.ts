@@ -60,6 +60,7 @@ const createMockEvent = (id: string, body: Record<string, unknown>) => ({
 	params: { id },
 	locals: { user: { email: 'admin@test.com', roles: ['admin'] } },
 	url: new URL(`http://localhost/api/sightings/${id}/approve`),
+	getClientAddress: () => '127.0.0.1',
 	request: {
 		json: () => Promise.resolve(body),
 		headers: { get: () => null }
