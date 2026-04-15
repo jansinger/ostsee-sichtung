@@ -54,6 +54,18 @@ const DISPOSABLE_EMAIL_DOMAINS = [
 ];
 
 /**
+ * Decodes common HTML entities in text before analysis.
+ */
+function decodeHtmlEntities(text: string): string {
+	return text
+		.replace(/&amp;/g, '&')
+		.replace(/&lt;/g, '<')
+		.replace(/&gt;/g, '>')
+		.replace(/&quot;/g, '"')
+		.replace(/&#39;/g, "'");
+}
+
+/**
  * Runs SpamScanner on the sighting's text content.
  * Returns isSpam and a normalized 0–100 score.
  * Falls back gracefully on errors or missing text.
@@ -87,7 +99,7 @@ export async function detectSpamIndicators(sighting: SightingFormValues): Promis
 		const indicators: string[] = [];
 		let score = 0;
 
-		// All text fields combined for keyword checks
+		// All text fields combined for keyword checks (HTML-decoded)
 		const textFields = [
 			sighting.notes || '',
 			sighting.firstName || '',
@@ -96,6 +108,7 @@ export async function detectSpamIndicators(sighting: SightingFormValues): Promis
 			sighting.waterway || '',
 			sighting.seaMark || ''
 		]
+			.map(decodeHtmlEntities)
 			.join(' ')
 			.toLowerCase();
 
@@ -107,6 +120,7 @@ export async function detectSpamIndicators(sighting: SightingFormValues): Promis
 			sighting.waterway || '',
 			sighting.seaMark || ''
 		]
+			.map(decodeHtmlEntities)
 			.join(' ')
 			.toLowerCase();
 
@@ -114,7 +128,11 @@ export async function detectSpamIndicators(sighting: SightingFormValues): Promis
 
 		if (nonEmailTextFields && nonEmailTextFields.length >= 3) {
 			// URLs or links in text fields (excluding email to avoid false positives)
-			if (/(https?:\/\/|www\.|\.com|\.org|\.de\/|\[url\]|\[link\])/i.test(nonEmailTextFields)) {
+			if (
+				/(https?:\/\/|www\.|\.com|\.org|\.de\/|\[url\]|\[link\]|[a-z0-9-]{2,}\.[a-z]{2,4}\/[^\s]{3,})/i.test(
+					nonEmailTextFields
+				)
+			) {
 				indicators.push('Enthält verdächtige URLs oder Links');
 				score += 3;
 			}
@@ -182,9 +200,18 @@ export async function detectSpamIndicators(sighting: SightingFormValues): Promis
 			}
 		}
 
-		// --- SpamScanner analysis ---
-		const notesText = sighting.notes || '';
-		const { isSpam, scannerScore, indicator } = await runSpamScanner(notesText);
+		// --- SpamScanner analysis (all text fields combined) ---
+		const allTextForScanner = [
+			sighting.notes || '',
+			sighting.waterway || '',
+			sighting.seaMark || '',
+			sighting.firstName || '',
+			sighting.lastName || ''
+		]
+			.map(decodeHtmlEntities)
+			.join(' ')
+			.trim();
+		const { isSpam, scannerScore, indicator } = await runSpamScanner(allTextForScanner);
 
 		if (indicator) {
 			indicators.push(indicator);

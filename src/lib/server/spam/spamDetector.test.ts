@@ -91,6 +91,29 @@ describe('detectSpamIndicators', () => {
 			const result = await detectSpamIndicators(sighting);
 			expect(result.score).toBeGreaterThanOrEqual(3);
 		});
+
+		it('erkennt URL-Shortener ohne https:// (z.B. rb.gy/abc123)', async () => {
+			const sighting = buildSighting({ notes: 'Hier klicken > rb.gy/34p7i3' });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBeGreaterThanOrEqual(3);
+			expect(result.indicators).toContain('Enthält verdächtige URLs oder Links');
+		});
+
+		it('erkennt URL in HTML-kodiertem Text (&gt; statt >)', async () => {
+			const sighting = buildSighting({
+				notes: 'Hier klicken &gt; rb.gy/34p7i3',
+				waterway: 'Hier klicken &gt; rb.gy/34p7i3'
+			});
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBeGreaterThanOrEqual(3);
+			expect(result.indicators).toContain('Enthält verdächtige URLs oder Links');
+		});
+
+		it('erkennt URL in seaMark-Feld', async () => {
+			const sighting = buildSighting({ seaMark: 'Klicken Sie hier rb.gy/spam123' });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBeGreaterThanOrEqual(3);
+		});
 	});
 
 	describe('Englische Spam-Keywords', () => {
