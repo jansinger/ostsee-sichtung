@@ -116,7 +116,7 @@ export const DELETE: RequestHandler = async ({ request, locals, getClientAddress
 					resourceType: 'file',
 					resourceId: filePath,
 					...(locals.user?.email ? { userEmail: locals.user.email } : {}),
-					ipAddress: clientIp
+					...(clientIp ? { ipAddress: clientIp } : {})
 				});
 			}
 

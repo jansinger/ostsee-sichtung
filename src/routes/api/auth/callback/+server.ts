@@ -50,7 +50,8 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 		authUser.roles = claims[rolesClaim] || [];
 
 		await setAuthCookie(cookies, authUser);
-		await logAuditEvent({
+		// Fire-and-forget: audit write must not delay the redirect (login latency)
+		void logAuditEvent({
 			action: 'auth.login_success',
 			resourceType: 'auth',
 			userEmail: authUser.email

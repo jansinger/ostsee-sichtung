@@ -82,12 +82,13 @@ export const PUT: RequestHandler = async ({
 		// Clear entire cache for configuration changes
 		ConfigRepository.clearCache();
 
+		const clientIp = getClientIp(getClientAddress, request);
 		await logAuditEvent({
 			action: 'config.update',
 			resourceType: 'config',
 			resourceId: key,
 			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
-			ipAddress: getClientIp(getClientAddress, request),
+			...(clientIp ? { ipAddress: clientIp } : {}),
 			details: { key, category }
 		});
 
@@ -132,12 +133,13 @@ export const DELETE: RequestHandler = async ({
 		// Clear entire cache for configuration changes
 		ConfigRepository.clearCache();
 
+		const clientIp = getClientIp(getClientAddress, request);
 		await logAuditEvent({
 			action: 'config.delete',
 			resourceType: 'config',
 			resourceId: key,
 			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
-			ipAddress: getClientIp(getClientAddress, request),
+			...(clientIp ? { ipAddress: clientIp } : {}),
 			details: { key }
 		});
 
