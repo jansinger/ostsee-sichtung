@@ -63,6 +63,8 @@ function createPutRequest(body: Record<string, unknown>) {
 	};
 }
 
+const mockGetClientAddress = vi.fn().mockReturnValue('1.2.3.4') as unknown as () => string;
+
 /**
  * Erstellt ein minimales Drizzle-förmiges Sichtungs-Objekt (DB-Shape)
  * mit Feldern im englischen Drizzle-Mapping-Format
@@ -180,7 +182,8 @@ describe('PUT /api/sightings/[id] - changedFields Audit-Diff', () => {
 			params: { id: '42' },
 			request: mockRequest as unknown as Request,
 			locals: mockLocals as unknown as App.Locals,
-			url: mockUrl
+			url: mockUrl,
+			getClientAddress: mockGetClientAddress
 		} as Parameters<typeof PUT>[0]);
 
 		// Assert: logAuditEvent wurde aufgerufen
@@ -198,6 +201,7 @@ describe('PUT /api/sightings/[id] - changedFields Audit-Diff', () => {
 		expect(changedFields).not.toContain('lastName');
 		expect(changedFields).not.toContain('email');
 		expect(changedFields.length).toBe(1);
+		expect(auditCall?.ipAddress).toBe('1.2.3.4');
 	});
 
 	it('meldet keine geänderten Felder wenn sich nichts ändert', async () => {
@@ -236,7 +240,8 @@ describe('PUT /api/sightings/[id] - changedFields Audit-Diff', () => {
 			params: { id: '42' },
 			request: mockRequest as unknown as Request,
 			locals: mockLocals as unknown as App.Locals,
-			url: mockUrl
+			url: mockUrl,
+			getClientAddress: mockGetClientAddress
 		} as Parameters<typeof PUT>[0]);
 
 		// Assert: changedFields ist leer

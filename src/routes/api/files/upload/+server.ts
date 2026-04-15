@@ -1,5 +1,6 @@
 import { FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
 import { createLogger } from '$lib/logger.server';
+import { getClientIp } from '$lib/server/utils/getClientIp';
 import { saveUploadedFile } from '$lib/server/db/sightingFilesRepository';
 import { readImageExifData } from '$lib/server/media/exifUtils';
 import { getStorageProvider } from '$lib/server/storage/factory';
@@ -21,12 +22,11 @@ const logger = createLogger('FileUploadAPI');
 // Get storage provider and upload file
 const storage = getStorageProvider();
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request, locals, getClientAddress }) => {
 	// Security: Track authentication status
 	const isAuthenticated = !!locals.user;
 	const userIdentifier = locals.user?.sub || 'anonymous';
-	const clientIp =
-		request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+	const clientIp = getClientIp(getClientAddress, request) ?? 'unknown';
 
 	try {
 		const contentType = request.headers.get('content-type') || '';

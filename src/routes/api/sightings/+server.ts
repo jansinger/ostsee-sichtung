@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger.server';
+import { getClientIp } from '$lib/server/utils/getClientIp';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
@@ -83,11 +84,10 @@ export async function GET(event: RequestEvent) {
 	}
 }
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request, locals, getClientAddress }) => {
 	const userIdentifier = locals.user?.sub || 'anonymous';
 	const isAuthenticated = !!locals.user;
-	const clientIp =
-		request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+	const clientIp = getClientIp(getClientAddress, request) ?? 'unknown';
 
 	// Security audit logging
 	logger.info(

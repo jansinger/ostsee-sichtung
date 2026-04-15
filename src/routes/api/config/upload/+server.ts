@@ -1,4 +1,5 @@
 import { createLogger } from '$lib/logger.server';
+import { getClientIp } from '$lib/server/utils/getClientIp';
 import { ServerConfigService } from '$lib/services/configService';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
@@ -13,11 +14,10 @@ const PUBLIC_UPLOAD_CONFIG = {
 	accept: 'image/jpeg,image/png,image/gif,image/webp'
 };
 
-export const GET: RequestHandler = async ({ setHeaders, locals, request }) => {
+export const GET: RequestHandler = async ({ setHeaders, locals, request, getClientAddress }) => {
 	const isAuthenticated = !!locals.user;
 	const userIdentifier = locals.user?.sub || 'anonymous';
-	const clientIp =
-		request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+	const clientIp = getClientIp(getClientAddress, request) ?? 'unknown';
 
 	try {
 		// Security: Return limited config for unauthenticated users
