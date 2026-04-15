@@ -172,12 +172,15 @@ export const auditLogs = pgTable(
 		id: serial().primaryKey().notNull(),
 		timestamp: timestamp({ withTimezone: true }).notNull().defaultNow(),
 		userEmail: varchar('user_email', { length: 255 }),
-		action: varchar({ length: 100 }).notNull(),
+		action: varchar('action', { length: 100 }).notNull(),
 		resourceType: varchar('resource_type', { length: 50 }),
 		resourceId: varchar('resource_id', { length: 100 }),
-		details: jsonb(),
+		details: jsonb('details'),
 		ipAddress: varchar('ip_address', { length: 45 }),
-		status: varchar({ length: 20 }).notNull().default('success')
+		status: varchar('status', { length: 20 }).notNull().default('success')
 	},
 	(table) => [index('idx_audit_logs_timestamp').on(table.timestamp)]
 );
+
+export type AuditLogSelect = typeof auditLogs.$inferSelect;
+export type AuditLogInsert = typeof auditLogs.$inferInsert;
