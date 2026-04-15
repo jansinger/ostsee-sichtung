@@ -80,26 +80,24 @@
 	];
 
 	// Prüft ob irgendwelche Filter aktiv sind
-	let hasActiveFilters = $derived(() => {
-		return !!(
+	let hasActiveFilters = $derived(
+		!!(
 			fromDate ||
 			toDate ||
 			verified ||
 			(selectedChannel && selectedChannel !== 'all') ||
 			mediaUpload
-		);
-	});
+		)
+	);
 
 	// Aktuelle Filter für Export-Modal
-	let currentFilters = $derived(() => {
-		return {
-			fromDate: fromDate || '',
-			toDate: toDate || '',
-			verified: verified || '',
-			entryChannel: selectedChannel !== 'all' ? selectedChannel : '',
-			mediaUpload: mediaUpload || ''
-		};
-	});
+	let currentFilters = $derived.by(() => ({
+		fromDate: fromDate || '',
+		toDate: toDate || '',
+		verified: verified || '',
+		entryChannel: selectedChannel !== 'all' ? selectedChannel : '',
+		mediaUpload: mediaUpload || ''
+	}));
 
 	function updateSort(column: string): void {
 		const currentSort = page.url.searchParams.get('sort');
@@ -325,7 +323,7 @@
 					<button
 						class="btn btn-sm flex-1 {isFilterPanelOpen
 							? 'btn-accent'
-							: hasActiveFilters()
+							: hasActiveFilters
 								? 'btn-primary'
 								: 'btn-outline'}"
 						onclick={() => (isFilterPanelOpen = !isFilterPanelOpen)}
@@ -333,7 +331,7 @@
 					>
 						<Icon icon="lucide:filter" class="mr-1 h-4 w-4" />
 						Filter
-						{#if hasActiveFilters()}
+						{#if hasActiveFilters}
 							<span class="badge badge-accent badge-sm ml-1">•</span>
 						{/if}
 					</button>
@@ -405,7 +403,7 @@
 				<button
 					class="btn btn-sm {isFilterPanelOpen
 						? 'btn-accent'
-						: hasActiveFilters()
+						: hasActiveFilters
 							? 'btn-primary'
 							: 'btn-outline'}"
 					onclick={() => (isFilterPanelOpen = !isFilterPanelOpen)}
@@ -413,7 +411,7 @@
 				>
 					<Icon icon="lucide:filter" class="mr-1 h-4 w-4" />
 					Filter
-					{#if hasActiveFilters()}
+					{#if hasActiveFilters}
 						<span class="badge badge-accent badge-sm ml-1">•</span>
 					{/if}
 				</button>
@@ -997,7 +995,7 @@
 
 	<ExportModal
 		bind:show={showExportModal}
-		currentFilters={currentFilters()}
+		{currentFilters}
 		totalRecords={data.pagination?.total || 0}
 	/>
 </div>

@@ -11,15 +11,11 @@
 	import type { FormContext } from '$lib/report/types';
 
 	import BooleanStatus from './BooleanStatus.svelte';
-	// Note: mediaStore and onMount not needed for admin edit form
-	import { createLogger } from '$lib/logger';
 	import Media from '$lib/report/components/sections/Media.svelte';
 	import SightingDetails from '$lib/report/components/sections/SightingDetails.svelte';
 	import type { FrontendSighting } from '$lib/types';
 	import { formatLocalDateTime, splitDateTime } from '$lib/utils/format/dateTime';
 	import { untrack } from 'svelte';
-
-	const logger = createLogger('AdminEditForm');
 
 	let {
 		sighting = {} as FrontendSighting,
@@ -79,12 +75,6 @@
 	let isValid = $derived(formContext.isValid);
 	let isSubmitting = $derived(formContext.isSubmitting);
 	let errors = $derived(formContext.errors);
-
-	const form = $derived(formContext.form);
-
-	$effect(() => {
-		logger.info({ $form }, 'Formulardaten geändert');
-	});
 </script>
 
 <Form class="space-y-6" {...initProps} bind:context={formContext}>

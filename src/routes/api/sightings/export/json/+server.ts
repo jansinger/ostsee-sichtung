@@ -5,6 +5,7 @@ import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { text } from '@sveltejs/kit';
 import { and, between, eq } from 'drizzle-orm';
+import { isValidDateParam } from '../../../../admin/dateParam';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:sightings:export:json');
@@ -20,12 +21,20 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const entryChannel = url.searchParams.get('entryChannel');
 	const mediaUpload = url.searchParams.get('mediaUpload');
 
+	// Datum-Parameter validieren
+	if ((fromDate || toDate) && !(isValidDateParam(fromDate) && isValidDateParam(toDate))) {
+		return text(JSON.stringify({ error: 'Ungültiges Datumsformat. Erwartet: YYYY-MM-DD' }), {
+			status: 400,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
+
 	try {
 		// Erstellen der Abfrage-Bedingungen
 		const conditions = [];
 
 		// Datumsbereich hinzufügen, wenn vorhanden
-		if (fromDate && toDate) {
+		if (isValidDateParam(fromDate) && isValidDateParam(toDate)) {
 			conditions.push(between(sightingsTable.sightingDate, new Date(fromDate), new Date(toDate)));
 		}
 

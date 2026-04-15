@@ -131,7 +131,7 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 		// Speichere Datei-Referenzen falls vorhanden
 		if (uploadedFiles && uploadedFiles.length > 0) {
 			// Verwende eine existierende referenceId oder generiere eine neue
-			const referenceId = updatedSighting.referenceId || `ref-${Date.now()}-admin`;
+			const referenceId = updatedSighting.referenceId || createId();
 
 			// Transform uploadedFiles to match UploadedFileInfo interface
 			const { getStorageProvider } = await import('$lib/server/storage/factory');
@@ -139,15 +139,26 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 
 			const fileInfos = uploadedFiles.map((file: unknown) => {
 				const fileObj = file as Record<string, unknown>;
-				// Generate URL using storage provider
-				const fileUrl = storageProvider.getUrl(fileObj.filePath as string);
+				const filePath = fileObj.filePath as string;
+
+				// Prevent path traversal attacks
+				if (
+					!filePath ||
+					filePath.includes('..') ||
+					filePath.includes('\\') ||
+					filePath.startsWith('/')
+				) {
+					logger.warn({ filePath }, 'Ungültiger Dateipfad erkannt');
+					throw error(400, 'Ungültiger Dateipfad');
+				}
+
+				const fileUrl = storageProvider.getUrl(filePath);
 
 				return {
-					id: (fileObj.id as number) || Math.random(),
 					uid: (fileObj.uid as string) || createId(),
 					originalName: fileObj.originalName as string,
-					fileName: (fileObj.fileName as string) || (fileObj.filePath as string),
-					filePath: fileObj.filePath as string,
+					fileName: (fileObj.fileName as string) || filePath,
+					filePath,
 					url: fileUrl,
 					size: fileObj.size as number,
 					mimeType: fileObj.mimeType as string,

@@ -1,5 +1,6 @@
 import { createLogger } from '$lib/logger.server';
 import { requireUserRole } from '$lib/server/auth/auth';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import { getSightingById, updateSightingWeatherData } from '$lib/server/db/sightingRepository';
 import { fetchWeatherData } from '$lib/server/services/weatherRefreshService';
 import { json, type RequestEvent } from '@sveltejs/kit';
@@ -91,6 +92,14 @@ export const POST: RequestHandler = async ({ params, locals, url }: RequestEvent
 			},
 			'Weather data successfully refreshed for sighting'
 		);
+
+		void logAuditEvent({
+			action: 'sighting.weather.refresh',
+			resourceType: 'sighting',
+			resourceId: String(sightingId),
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			details: { provider: storedWeatherData.provider, dataType: storedWeatherData.data_type }
+		});
 
 		return json({
 			success: true,
