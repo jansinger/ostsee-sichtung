@@ -264,15 +264,20 @@
 	});
 
 	async function checkSpam(sightingId: number): Promise<void> {
-		spamCheckModal = { open: true, loading: true, sightingId, result: null, error: null };
+		spamCheckModal.open = true;
+		spamCheckModal.loading = true;
+		spamCheckModal.sightingId = sightingId;
+		spamCheckModal.result = null;
+		spamCheckModal.error = null;
 		try {
 			const response = await fetch(`/api/sightings/${sightingId}/spam-check`);
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
-			const result: SpamCheckResult = await response.json();
-			spamCheckModal = { ...spamCheckModal, loading: false, result };
+			spamCheckModal.result = await response.json();
 		} catch (err) {
 			logger.error({ err, sightingId }, 'Spam-Check fehlgeschlagen');
-			spamCheckModal = { ...spamCheckModal, loading: false, error: 'Spam-Check fehlgeschlagen' };
+			spamCheckModal.error = 'Spam-Check fehlgeschlagen';
+		} finally {
+			spamCheckModal.loading = false;
 		}
 	}
 
@@ -1093,19 +1098,17 @@
 			{/if}
 
 			<div class="modal-action">
-				<button class="btn" onclick={() => (spamCheckModal = { ...spamCheckModal, open: false })}>
-					Schließen
-				</button>
+				<button class="btn" onclick={() => (spamCheckModal.open = false)}> Schließen </button>
 			</div>
 		</div>
 		<div
 			class="modal-backdrop"
-			onclick={() => (spamCheckModal = { ...spamCheckModal, open: false })}
+			onclick={() => (spamCheckModal.open = false)}
 			role="button"
 			tabindex="-1"
 			aria-label="Modal schließen"
 			onkeydown={(e) => {
-				if (e.key === 'Escape') spamCheckModal = { ...spamCheckModal, open: false };
+				if (e.key === 'Escape') spamCheckModal.open = false;
 			}}
 		></div>
 	</dialog>
