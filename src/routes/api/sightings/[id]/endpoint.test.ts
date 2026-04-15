@@ -37,6 +37,10 @@ vi.mock('$lib/server/auth/auth', () => ({
 	requireUserRole: vi.fn()
 }));
 
+vi.mock('$lib/server/audit/auditService', () => ({
+	logAuditEvent: vi.fn().mockResolvedValue(undefined)
+}));
+
 describe('/api/sightings/[id] DELETE endpoint', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -47,7 +51,7 @@ describe('/api/sightings/[id] DELETE endpoint', () => {
 			params: { id },
 			locals: { user },
 			url: new URL(`http://localhost/api/sightings/${id}`),
-			request: {} as Request,
+			request: new Request(`http://localhost/api/sightings/${id}`, { method: 'DELETE' }),
 			cookies: {} as any,
 			fetch: fetch,
 			getClientAddress: () => '127.0.0.1',

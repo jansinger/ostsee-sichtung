@@ -1,0 +1,146 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const { mockLogAuditEvent, mockSelect, mockDelete } = vi.hoisted(() => ({
+	mockLogAuditEvent: vi.fn().mockResolvedValue(undefined),
+	mockSelect: vi.fn(),
+	mockDelete: vi.fn()
+}));
+
+vi.mock('$lib/server/audit/auditService', () => ({
+	logAuditEvent: mockLogAuditEvent
+}));
+
+vi.mock('$lib/server/auth/auth', () => ({
+	requireUserRole: vi.fn()
+}));
+
+vi.mock('$lib/logger', () => ({
+	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
+}));
+
+vi.mock('$lib/form/validation/sightingSchema', () => ({
+	sightingSchema: { validate: vi.fn().mockResolvedValue(true) }
+}));
+
+vi.mock('$lib/server/db', () => ({
+	db: { select: mockSelect, delete: mockDelete }
+}));
+
+vi.mock('$lib/server/db/schema', () => ({
+	sightings: {}
+}));
+
+vi.mock('$lib/server/db/sightingRepository', () => ({
+	loadSightingFiles: vi.fn().mockResolvedValue([]),
+	saveSightingFiles: vi.fn().mockResolvedValue(undefined),
+	updateSighting: vi.fn().mockResolvedValue({ id: 42, referenceId: 'ref-42' })
+}));
+
+vi.mock('drizzle-orm', () => ({
+	eq: vi.fn()
+}));
+
+import { PUT, DELETE } from './+server';
+
+function makeSelectChain(records: unknown[]) {
+	const mockLimit = vi.fn().mockResolvedValue(records);
+	const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit });
+	const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+	mockSelect.mockReturnValue({ from: mockFrom });
+}
+
+function makeDeleteChain() {
+	const mockWhere = vi.fn().mockResolvedValue(undefined);
+	mockDelete.mockReturnValue({ where: mockWhere });
+}
+
+function makeAdminLocals() {
+	return { user: { email: 'admin@test.com', roles: ['admin'], sub: 'auth0|test' } };
+}
+
+describe('PUT /api/sightings/[id] — Audit Logging', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('loggt sighting.edit mit changedFields wenn Felder geändert wurden', async () => {
+		makeSelectChain([{ id: 42, species: 0, totalCount: 1 }]);
+
+		const event = {
+			params: { id: '42' },
+			request: new Request('http://localhost/api/sightings/42', {
+				method: 'PUT',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ species: 1, totalCount: 1 })
+			}),
+			locals: makeAdminLocals(),
+			url: new URL('http://localhost/api/sightings/42')
+		};
+
+		await PUT(event as never);
+
+		expect(mockLogAuditEvent).toHaveBeenCalledOnce();
+		expect(mockLogAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				action: 'sighting.edit',
+				resourceType: 'sighting',
+				resourceId: '42',
+				details: expect.objectContaining({
+					changedFields: expect.arrayContaining(['species'])
+				})
+			})
+		);
+	});
+
+	it('loggt leere changedFields wenn keine Felder geändert wurden', async () => {
+		makeSelectChain([{ id: 42, species: 0 }]);
+
+		const event = {
+			params: { id: '42' },
+			request: new Request('http://localhost/api/sightings/42', {
+				method: 'PUT',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ species: 0 })
+			}),
+			locals: makeAdminLocals(),
+			url: new URL('http://localhost/api/sightings/42')
+		};
+
+		await PUT(event as never);
+
+		expect(mockLogAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				details: expect.objectContaining({ changedFields: [] })
+			})
+		);
+	});
+});
+
+describe('DELETE /api/sightings/[id] — Audit Logging', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('loggt sighting.delete nach erfolgreichem Löschen', async () => {
+		makeSelectChain([{ id: 42 }]);
+		makeDeleteChain();
+
+		const event = {
+			params: { id: '42' },
+			request: new Request('http://localhost/api/sightings/42', { method: 'DELETE' }),
+			locals: makeAdminLocals(),
+			url: new URL('http://localhost/api/sightings/42')
+		};
+
+		await DELETE(event as never);
+
+		expect(mockLogAuditEvent).toHaveBeenCalledOnce();
+		expect(mockLogAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				action: 'sighting.delete',
+				resourceType: 'sighting',
+				resourceId: '42'
+			})
+		);
+	});
+});

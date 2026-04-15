@@ -1,6 +1,7 @@
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger';
 import type { SightingFormData } from '$lib/report/types';
+import { logAuditEvent } from '$lib/server/audit/auditService';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
@@ -14,6 +15,15 @@ import { createId } from '@paralleldrive/cuid2';
 import { error, isHttpError, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
+
+function getChangedFields(
+	current: Record<string, unknown>,
+	next: Record<string, unknown>
+): string[] {
+	return Object.keys(next).filter(
+		(key) => JSON.stringify(current[key]) !== JSON.stringify(next[key])
+	);
+}
 
 // Logger für diesen API-Endpunkt erstellen
 const logger = createLogger('api:sightings');
@@ -77,10 +87,34 @@ export const PUT: RequestHandler = async ({ params, request, locals, url }) => {
 		// Validierung der Formulardaten
 		await sightingSchema.validate(formData, { abortEarly: false });
 
+		// Load current state for changedFields diff
+		const currentRecords = await db
+			.select()
+			.from(sightings)
+			.where(eq(sightings.id, Number(id)))
+			.limit(1);
+
 		const updatedSighting = await updateSighting(Number(id), {
 			...formData,
 			uploadedFiles: uploadedFiles || []
 		});
+
+		if (currentRecords.length > 0) {
+			const changedFields = getChangedFields(
+				currentRecords[0] as Record<string, unknown>,
+				formData as unknown as Record<string, unknown>
+			);
+			const ipAddress =
+				request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? undefined;
+			await logAuditEvent({
+				action: 'sighting.edit',
+				resourceType: 'sighting',
+				resourceId: String(id),
+				...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+				...(ipAddress ? { ipAddress } : {}),
+				details: { changedFields }
+			});
+		}
 
 		if (!updatedSighting) {
 			logger.warn({ id }, 'Sichtung nicht gefunden oder konnte nicht aktualisiert werden');
@@ -125,7 +159,7 @@ export const PUT: RequestHandler = async ({ params, request, locals, url }) => {
 	}
 };
 
-export const DELETE: RequestHandler = async ({ params, locals, url }) => {
+export const DELETE: RequestHandler = async ({ params, request, locals, url }) => {
 	// Authorization check - only admins can delete
 	requireUserRole(url, locals.user, ['admin']);
 
@@ -151,6 +185,16 @@ export const DELETE: RequestHandler = async ({ params, locals, url }) => {
 
 		// Sichtung löschen (cascade delete für zugehörige Dateien)
 		await db.delete(sightings).where(eq(sightings.id, Number(id)));
+
+		const ipAddress =
+			request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? undefined;
+		await logAuditEvent({
+			action: 'sighting.delete',
+			resourceType: 'sighting',
+			resourceId: String(id),
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			...(ipAddress ? { ipAddress } : {})
+		});
 
 		logger.info({ id, deletedBy: locals.user?.email }, 'Sichtung erfolgreich gelöscht');
 
