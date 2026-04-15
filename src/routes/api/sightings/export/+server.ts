@@ -4,33 +4,25 @@ import { logAuditEvent } from '$lib/server/audit/auditService';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { json } from '@sveltejs/kit';
-import { and, between, eq } from 'drizzle-orm';
+import { and } from 'drizzle-orm';
+import { buildExportConditions, parseExportFilterParams } from './exportFilterParams';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:sightings:export');
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	// Authorization check
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
-	// Filter-Parameter aus der URL extrahieren
-	const fromDate = url.searchParams.get('fromDate') || '';
-	const toDate = url.searchParams.get('toDate') || '';
-	const verified = url.searchParams.get('verified') === '1';
+	const filterResult = parseExportFilterParams(url);
+	if ('error' in filterResult) {
+		return json({ error: filterResult.error.message }, { status: 400 });
+	}
+	const { fromDate, toDate } = filterResult.params;
 
 	try {
 		// Erstellen der Abfrage-Bedingungen
-		const conditions = [];
-
-		// Datumsbereich hinzufügen, wenn vorhanden
-		if (fromDate && toDate) {
-			conditions.push(between(sightingsTable.sightingDate, new Date(fromDate), new Date(toDate)));
-		}
-
-		// Verifizierungsstatus hinzufügen, wenn erforderlich
-		if (verified) {
-			conditions.push(eq(sightingsTable.verified, 1));
-		}
+		const conditions = buildExportConditions(filterResult.params);
 
 		// Sichtungen aus der Datenbank abrufen
 		const sightings = await db
@@ -63,12 +55,6 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		);
 
 		// Fehlerantwort zurückgeben
-		return json(
-			{
-				error: 'Fehler beim Abrufen der Sichtungen',
-				details: error instanceof Error ? error.message : 'Unbekannter Fehler'
-			},
-			{ status: 500 }
-		);
+		return json({ error: 'Fehler beim Abrufen der Sichtungen' }, { status: 500 });
 	}
 };

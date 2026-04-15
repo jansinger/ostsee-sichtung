@@ -7,10 +7,12 @@ import { ServerConfigService } from '$lib/services/configService';
 import { isValidDateParam } from './dateParam';
 
 export const load: PageServerLoad = async ({ url }) => {
-	const page = Number(url.searchParams.get('page')) || 1;
+	const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
 	const paginationConfig = await ServerConfigService.getPaginationConfig();
-	const requestedPerPage =
-		Number(url.searchParams.get('perPage')) || paginationConfig.defaultPageSize;
+	const requestedPerPage = Math.max(
+		1,
+		Number(url.searchParams.get('perPage')) || paginationConfig.defaultPageSize
+	);
 	// Enforce the maximum configured per page limit
 	const perPage = Math.min(requestedPerPage, paginationConfig.maxSightingsPerPage);
 	const sortBy = url.searchParams.get('sort') || 'sightingDate';

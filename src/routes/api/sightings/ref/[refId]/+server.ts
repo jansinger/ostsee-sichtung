@@ -8,7 +8,7 @@ const logger = createLogger('SightingByRefIdAPI');
 
 export const GET: RequestHandler = async ({ params, url, locals }) => {
 	// Authorization check
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	const { refId } = params;
 

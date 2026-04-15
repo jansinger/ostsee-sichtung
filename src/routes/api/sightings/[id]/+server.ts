@@ -6,6 +6,7 @@ import { requireUserRole } from '$lib/server/auth/auth';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
+import { posix } from 'path';
 import {
 	loadSightingFiles,
 	saveSightingFiles,
@@ -38,7 +39,7 @@ const logger = createLogger('api:sightings');
 
 export const GET: RequestHandler = async ({ params, locals, url }) => {
 	// Authorization check
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	// Extrahiere die Sichtungs-ID aus den URL-Parametern
 	const { id } = params;
@@ -75,7 +76,7 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 
 export const PUT: RequestHandler = async ({ params, request, locals, url, getClientAddress }) => {
 	// Authorization check
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	const { id } = params;
 
@@ -131,7 +132,7 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 		// Speichere Datei-Referenzen falls vorhanden
 		if (uploadedFiles && uploadedFiles.length > 0) {
 			// Verwende eine existierende referenceId oder generiere eine neue
-			const referenceId = updatedSighting.referenceId || `ref-${Date.now()}-admin`;
+			const referenceId = updatedSighting.referenceId || createId();
 
 			// Transform uploadedFiles to match UploadedFileInfo interface
 			const { getStorageProvider } = await import('$lib/server/storage/factory');
@@ -139,15 +140,42 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 
 			const fileInfos = uploadedFiles.map((file: unknown) => {
 				const fileObj = file as Record<string, unknown>;
-				// Generate URL using storage provider
-				const fileUrl = storageProvider.getUrl(fileObj.filePath as string);
+
+				// Validate filePath is actually a string before any operations
+				if (typeof fileObj.filePath !== 'string' || !fileObj.filePath) {
+					logger.warn({ filePath: fileObj.filePath }, 'Ungültiger Dateipfad erkannt');
+					throw error(400, 'Ungültiger Dateipfad');
+				}
+				const filePath = fileObj.filePath;
+
+				// Prevent path traversal: decode URL-encoded sequences, then normalize
+				let decodedPath: string;
+				try {
+					decodedPath = decodeURIComponent(filePath);
+				} catch {
+					logger.warn({ filePath }, 'Nicht dekodierbarer Dateipfad erkannt');
+					throw error(400, 'Ungültiger Dateipfad');
+				}
+				const normalizedPath = posix.normalize(decodedPath);
+				if (
+					normalizedPath === '..' ||
+					normalizedPath.startsWith('../') ||
+					normalizedPath.startsWith('/') ||
+					normalizedPath.includes('\\') ||
+					// Catch double-encoded sequences (%252e, %252f, %255c)
+					filePath.toLowerCase().includes('%25')
+				) {
+					logger.warn({ filePath, normalizedPath }, 'Pfad-Traversal erkannt');
+					throw error(400, 'Ungültiger Dateipfad');
+				}
+
+				const fileUrl = storageProvider.getUrl(normalizedPath);
 
 				return {
-					id: (fileObj.id as number) || Math.random(),
 					uid: (fileObj.uid as string) || createId(),
 					originalName: fileObj.originalName as string,
-					fileName: (fileObj.fileName as string) || (fileObj.filePath as string),
-					filePath: fileObj.filePath as string,
+					fileName: (fileObj.fileName as string) || normalizedPath,
+					filePath: normalizedPath,
 					url: fileUrl,
 					size: fileObj.size as number,
 					mimeType: fileObj.mimeType as string,
@@ -175,7 +203,7 @@ export const DELETE: RequestHandler = async ({
 	getClientAddress
 }) => {
 	// Authorization check - only admins can delete
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	const { id } = params;
 

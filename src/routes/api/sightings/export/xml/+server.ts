@@ -7,59 +7,28 @@ import { logAuditEvent } from '$lib/server/audit/auditService';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { text } from '@sveltejs/kit';
-import { and, between, eq } from 'drizzle-orm';
+import { and } from 'drizzle-orm';
+import { buildExportConditions, parseExportFilterParams, xmlEscape } from '../exportFilterParams';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:sightings:export:xml');
 
-function xmlEscape(str: string | null | undefined): string {
-	if (!str) return '';
-	return String(str)
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&#39;');
-}
-
 export const GET: RequestHandler = async ({ url, locals }) => {
 	// Authorization check
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
-	// Filter-Parameter aus der URL extrahieren
-	const fromDate = url.searchParams.get('fromDate') || '';
-	const toDate = url.searchParams.get('toDate') || '';
-	const verified = url.searchParams.get('verified');
-	const entryChannel = url.searchParams.get('entryChannel');
-	const mediaUpload = url.searchParams.get('mediaUpload');
+	const filterResult = parseExportFilterParams(url);
+	if ('error' in filterResult) {
+		return text(
+			`<?xml version="1.0" encoding="UTF-8"?><error>${xmlEscape(filterResult.error.message)}</error>`,
+			{ status: 400, headers: { 'Content-Type': 'application/xml' } }
+		);
+	}
+	const { fromDate, toDate, verified, entryChannel, mediaUpload } = filterResult.params;
 
 	try {
 		// Erstellen der Abfrage-Bedingungen
-		const conditions = [];
-
-		// Datumsbereich hinzufügen, wenn vorhanden
-		if (fromDate && toDate) {
-			conditions.push(between(sightingsTable.sightingDate, new Date(fromDate), new Date(toDate)));
-		}
-
-		// Verifizierungsstatus hinzufügen, wenn erforderlich
-		if (verified === '1') {
-			conditions.push(eq(sightingsTable.verified, 1));
-		} else if (verified === '0') {
-			conditions.push(eq(sightingsTable.verified, 0));
-		}
-
-		// Eingangskanal-Filter
-		if (entryChannel && entryChannel !== 'all') {
-			conditions.push(eq(sightingsTable.entryChannel, parseInt(entryChannel)));
-		}
-
-		// Aufnahme-Filter
-		if (mediaUpload === '1') {
-			conditions.push(eq(sightingsTable.mediaUpload, 1));
-		} else if (mediaUpload === '0') {
-			conditions.push(eq(sightingsTable.mediaUpload, 0));
-		}
+		const conditions = buildExportConditions(filterResult.params);
 
 		// Sichtungen aus der Datenbank abrufen
 		const sightings = await db

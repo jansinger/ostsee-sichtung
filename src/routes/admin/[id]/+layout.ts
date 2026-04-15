@@ -7,7 +7,7 @@ export const load: LayoutLoad = async ({ params, fetch }) => {
 	const { id } = params;
 	let sighting = null;
 	if (!id || isNaN(Number(id))) {
-		return error(400, 'Keine valide Sichtungs-ID angegeben');
+		throw error(400, 'Keine valide Sichtungs-ID angegeben');
 	}
 
 	let response;
@@ -15,10 +15,11 @@ export const load: LayoutLoad = async ({ params, fetch }) => {
 		response = await fetch(`/api/sightings/${id}`);
 		sighting = await response.json();
 	} catch (err) {
-		return error(500, 'Fehler beim Laden der Sichtung: ' + err);
+		console.error('Fehler beim Laden der Sichtung', err);
+		throw error(500, 'Fehler beim Laden der Sichtung');
 	}
 	if (!response.ok) {
-		return error(404, 'Sichtung nicht gefunden');
+		throw error(404, 'Sichtung nicht gefunden');
 	}
 
 	return { sighting };

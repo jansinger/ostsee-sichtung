@@ -8,7 +8,7 @@ const logger = createLogger('api:test-email');
 
 export const POST: RequestHandler = async ({ request, locals, url }) => {
 	// SECURITY: Must be outside try/catch so redirect(302) propagates correctly
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	try {
 		logger.debug(
@@ -48,6 +48,20 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 				);
 			}
 		} else {
+			// Validate recipient email format
+			if (recipient != null) {
+				const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+				if (
+					typeof recipient !== 'string' ||
+					recipient.length > 254 ||
+					!emailRegex.test(recipient)
+				) {
+					return json(
+						{ success: false, error: 'Invalid recipient email address' },
+						{ status: 400 }
+					);
+				}
+			}
 			// Send simple test email
 			const success = await EmailService.sendTestEmail(recipient);
 

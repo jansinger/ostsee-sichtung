@@ -5,53 +5,32 @@ import { logAuditEvent } from '$lib/server/audit/auditService';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { text } from '@sveltejs/kit';
-import { and, between, eq, isNotNull } from 'drizzle-orm';
+import { and, isNotNull } from 'drizzle-orm';
+import { buildExportConditions, parseExportFilterParams, xmlEscape } from '../exportFilterParams';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:sightings:export:kml');
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	// Authorization check
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
-	// Filter-Parameter aus der URL extrahieren
-	const fromDate = url.searchParams.get('fromDate') || '';
-	const toDate = url.searchParams.get('toDate') || '';
-	const verified = url.searchParams.get('verified');
-	const entryChannel = url.searchParams.get('entryChannel');
-	const mediaUpload = url.searchParams.get('mediaUpload');
+	const filterResult = parseExportFilterParams(url);
+	if ('error' in filterResult) {
+		return text(
+			`<?xml version="1.0" encoding="UTF-8"?><error>${xmlEscape(filterResult.error.message)}</error>`,
+			{ status: 400, headers: { 'Content-Type': 'application/xml' } }
+		);
+	}
+	const { fromDate, toDate } = filterResult.params;
 
 	try {
-		// Erstellen der Abfrage-Bedingungen
+		// Erstellen der Abfrage-Bedingungen (KML benötigt immer Koordinaten)
 		const conditions = [
-			// Nur Sichtungen mit Koordinaten für KML
 			isNotNull(sightingsTable.latitude),
-			isNotNull(sightingsTable.longitude)
+			isNotNull(sightingsTable.longitude),
+			...buildExportConditions(filterResult.params)
 		];
-
-		// Datumsbereich hinzufügen, wenn vorhanden
-		if (fromDate && toDate) {
-			conditions.push(between(sightingsTable.sightingDate, new Date(fromDate), new Date(toDate)));
-		}
-
-		// Verifizierungsstatus hinzufügen, wenn erforderlich
-		if (verified === '1') {
-			conditions.push(eq(sightingsTable.verified, 1));
-		} else if (verified === '0') {
-			conditions.push(eq(sightingsTable.verified, 0));
-		}
-
-		// Eingangskanal-Filter
-		if (entryChannel && entryChannel !== 'all') {
-			conditions.push(eq(sightingsTable.entryChannel, parseInt(entryChannel)));
-		}
-
-		// Aufnahme-Filter
-		if (mediaUpload === '1') {
-			conditions.push(eq(sightingsTable.mediaUpload, 1));
-		} else if (mediaUpload === '0') {
-			conditions.push(eq(sightingsTable.mediaUpload, 0));
-		}
 
 		// Sichtungen aus der Datenbank abrufen
 		const sightings = await db

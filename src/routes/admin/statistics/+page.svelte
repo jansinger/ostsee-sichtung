@@ -40,7 +40,7 @@
 	};
 
 	// Calculate scientific insights
-	let scientificInsights = $derived(() => {
+	let scientificInsights = $derived.by(() => {
 		if (!data.basicStats) return [];
 
 		const insights: Insight[] = [];
@@ -136,13 +136,13 @@
 		</div>
 
 		<!-- Scientific Insights Alert Box -->
-		{#if scientificInsights().length > 0}
+		{#if scientificInsights.length > 0}
 			<div class="alert alert-info">
 				<Icon icon="lucide:trending-up" class="h-6 w-6" />
 				<div class="flex-1">
 					<h3 class="font-bold">Wissenschaftliche Erkenntnisse</h3>
 					<div class="mt-2 space-y-2">
-						{#each scientificInsights() as insight (insight.title)}
+						{#each scientificInsights as insight (insight.title)}
 							{@const alertClass =
 								insight.type === 'critical'
 									? 'alert-error'

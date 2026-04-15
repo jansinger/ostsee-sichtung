@@ -10,6 +10,7 @@ export type AuditAction =
 	| 'sighting.edit'
 	| 'sighting.delete'
 	| 'sighting.verify'
+	| 'sighting.weather.refresh'
 	| 'file.delete'
 	| 'config.update'
 	| 'config.delete'

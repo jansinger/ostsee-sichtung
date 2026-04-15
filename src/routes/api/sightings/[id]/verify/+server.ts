@@ -13,7 +13,7 @@ const logger = createLogger('api:sightings:verify');
 
 export const PATCH: RequestHandler = async ({ params, request, locals, url, getClientAddress }) => {
 	// Authorization check - only admins can verify
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	const { id } = params;
 
@@ -90,7 +90,7 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url, getC
 
 export const GET: RequestHandler = async ({ params, locals, url }) => {
 	// Authorization check
-	requireUserRole(url, locals.user, ['admin']);
+	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	const { id } = params;
 
