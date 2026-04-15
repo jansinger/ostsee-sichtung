@@ -31,7 +31,7 @@ vi.mock('$lib/server/config/accessControl', () => ({
 	canUserAccessConfigKey: vi.fn().mockReturnValue(true)
 }));
 
-import { PUT } from './+server';
+import { PUT, DELETE } from './+server';
 
 describe('PUT /api/config — Audit Logging', () => {
 	beforeEach(() => {
@@ -58,6 +58,34 @@ describe('PUT /api/config — Audit Logging', () => {
 				resourceType: 'config',
 				resourceId: 'maintenance_mode',
 				details: expect.objectContaining({ key: 'maintenance_mode', category: 'system' })
+			})
+		);
+	});
+});
+
+describe('DELETE /api/config — Audit Logging', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('loggt config.delete beim Löschen einer Einstellung', async () => {
+		const event = {
+			url: new URL('http://localhost/api/config?key=maintenance_mode'),
+			locals: { user: { email: 'admin@test.com', sub: 'auth0|admin', roles: ['admin'] } },
+			request: new Request('http://localhost/api/config?key=maintenance_mode', {
+				method: 'DELETE'
+			})
+		};
+
+		await DELETE(event as never);
+
+		expect(mockLogAuditEvent).toHaveBeenCalledOnce();
+		expect(mockLogAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				action: 'config.delete',
+				resourceType: 'config',
+				resourceId: 'maintenance_mode',
+				details: expect.objectContaining({ key: 'maintenance_mode' })
 			})
 		);
 	});

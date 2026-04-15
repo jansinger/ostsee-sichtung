@@ -81,8 +81,10 @@ export const PUT: RequestHandler = async ({ request, locals, url }: RequestEvent
 			resourceType: 'config',
 			resourceId: key,
 			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
-			...(request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip')
-				? { ipAddress: (request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip'))! }
+			...((request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip'))
+				? {
+						ipAddress: (request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip'))!
+					}
 				: {}),
 			details: { key, category }
 		});
@@ -96,7 +98,7 @@ export const PUT: RequestHandler = async ({ request, locals, url }: RequestEvent
 	}
 };
 
-export const DELETE: RequestHandler = async ({ url, locals }: RequestEvent) => {
+export const DELETE: RequestHandler = async ({ url, locals, request }: RequestEvent) => {
 	// SECURITY: Must be outside try/catch so redirect(302) propagates correctly
 	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
@@ -119,6 +121,22 @@ export const DELETE: RequestHandler = async ({ url, locals }: RequestEvent) => {
 		}
 
 		await ConfigRepository.delete(key);
+
+		// Clear entire cache for configuration changes
+		ConfigRepository.clearCache();
+
+		await logAuditEvent({
+			action: 'config.delete',
+			resourceType: 'config',
+			resourceId: key,
+			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
+			...((request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip'))
+				? {
+						ipAddress: (request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip'))!
+					}
+				: {}),
+			details: { key }
+		});
 
 		logger.info({ key, userId: locals.user!.sub }, 'Configuration deleted'); // Safe after requireUserRole check
 
