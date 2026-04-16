@@ -250,8 +250,19 @@ export class EmailService {
 				return false;
 			}
 
-			// Spam detection (SpamScanner + heuristics)
-			const spamIndicators = await detectSpamIndicators(sightingFormValues);
+			// Spam detection (heuristics)
+			const spamInput = {
+				latitude: sightingFormValues.latitude ?? undefined,
+				longitude: sightingFormValues.longitude ?? undefined,
+				species: sightingFormValues.species,
+				firstName: sightingFormValues.firstName || undefined,
+				lastName: sightingFormValues.lastName || undefined,
+				email: sightingFormValues.email || undefined,
+				waterway: sightingFormValues.waterway || undefined,
+				seaMark: sightingFormValues.seaMark || undefined,
+				notes: sightingFormValues.notes || undefined
+			};
+			const spamIndicators = await detectSpamIndicators(spamInput);
 
 			// Prepare template data with formatted enum values
 			const formattedSighting = formatSightingForDisplay(sightingFormValues);

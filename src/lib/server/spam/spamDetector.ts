@@ -181,7 +181,7 @@ export async function detectSpamIndicators(sighting: SpamDetectionInput): Promis
 			indicators
 		};
 	} catch (error: unknown) {
-		logger.warn({ error }, 'Fehler bei Spam-Erkennung, überspringe');
+		logger.warn({ error }, 'Fehler bei Spam-Erkennung – markiere als Hochrisiko (Fail-Safe)');
 		// Mark as high risk on failure: an inconclusive check should not be shown as "no spam"
 		return {
 			score: 0,
