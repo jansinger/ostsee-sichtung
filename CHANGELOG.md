@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.5.0](https://github.com/jansinger/ostsee-sichtung/compare/v2.4.1...v2.5.0) (2026-04-16)
+
+
+### Features
+
+* **security:** spam-check improvements with admin UI and SpamScanner integration ([#474](https://github.com/jansinger/ostsee-sichtung/issues/474)) ([490021f](https://github.com/jansinger/ostsee-sichtung/commit/490021f730fc9c68173c98b5c714e17a69b651e8))
+
+
+### Bug Fixes
+
+* **admin,security:** harden admin area against security and reactivity issues ([#472](https://github.com/jansinger/ostsee-sichtung/issues/472)) ([6068484](https://github.com/jansinger/ostsee-sichtung/commit/6068484f22218ece367f8cffaf299edbedde286f))
+
 ## [2.4.1](https://github.com/jansinger/ostsee-sichtung/compare/v2.4.0...v2.4.1) (2026-04-15)
 
 
