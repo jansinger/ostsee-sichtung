@@ -74,6 +74,14 @@ vi.mock('$lib/utils/format/sightingFormatter', () => ({
 	isUnknownOrMissingSpecies: vi.fn()
 }));
 
+vi.mock('$lib/server/spam/spamDetector', () => ({
+	detectSpamIndicators: vi.fn().mockResolvedValue({
+		score: 0,
+		isHighRisk: false,
+		indicators: []
+	})
+}));
+
 vi.mock('$lib/utils/format/dateTime', () => ({
 	formatLocalDateTime: vi.fn()
 }));
