@@ -177,8 +177,6 @@ export async function detectSpamIndicators(sighting: SpamDetectionInput): Promis
 
 		return {
 			score: Math.min(score, 10), // clamp to 0–10 scale; ≥5 = high risk
-			scannerScore: 0,
-			isSpam: false,
 			isHighRisk: score >= 5,
 			indicators
 		};
@@ -186,8 +184,6 @@ export async function detectSpamIndicators(sighting: SpamDetectionInput): Promis
 		logger.warn({ error }, 'Fehler bei Spam-Erkennung, überspringe');
 		return {
 			score: 0,
-			scannerScore: 0,
-			isSpam: false,
 			isHighRisk: false,
 			indicators: ['Spam-Prüfung fehlgeschlagen']
 		};

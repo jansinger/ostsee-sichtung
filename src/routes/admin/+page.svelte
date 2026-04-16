@@ -1089,9 +1089,6 @@
 				>
 					Heuristik-Score: {spamCheckModal.result.score}
 				</span>
-				<span class="badge {spamCheckModal.result.isSpam ? 'badge-error' : 'badge-success'}">
-					SpamScanner: {spamCheckModal.result.scannerScore}/100
-				</span>
 				{#if spamCheckModal.result.isHighRisk}
 					<span class="badge badge-error">Hochrisiko</span>
 				{:else}

@@ -148,9 +148,6 @@
 					>
 						Score: {result.score}
 					</span>
-					{#if result.isSpam}
-						<span class="badge badge-error">SpamScanner: Spam</span>
-					{/if}
 				</div>
 			</div>
 			{#if result.indicators.length > 0}

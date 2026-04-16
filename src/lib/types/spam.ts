@@ -1,7 +1,5 @@
 export interface SpamCheckResult {
 	score: number;
-	scannerScore: number;
-	isSpam: boolean;
 	isHighRisk: boolean;
 	indicators: string[];
 }

@@ -57,8 +57,6 @@ vi.mock('$lib/server/auth/auth', () => ({
 vi.mock('$lib/server/spam/spamDetector', () => ({
 	detectSpamIndicators: vi.fn().mockResolvedValue({
 		score: 0,
-		scannerScore: 0,
-		isSpam: false,
 		isHighRisk: false,
 		indicators: []
 	})
@@ -87,8 +85,6 @@ describe('GET /api/sightings/[id]/spam-check', () => {
 		mockDbResult = [mockSighting];
 		mockDetectSpamIndicators.mockResolvedValue({
 			score: 0,
-			scannerScore: 0,
-			isSpam: false,
 			isHighRisk: false,
 			indicators: []
 		});
@@ -117,8 +113,6 @@ describe('GET /api/sightings/[id]/spam-check', () => {
 		expect(response.status).toBe(200);
 		const body = await response.json();
 		expect(body).toHaveProperty('score');
-		expect(body).toHaveProperty('scannerScore');
-		expect(body).toHaveProperty('isSpam');
 		expect(body).toHaveProperty('isHighRisk');
 		expect(body).toHaveProperty('indicators');
 	});

@@ -270,22 +270,11 @@ describe('detectSpamIndicators', () => {
 			const sighting = buildSighting({});
 			const result = await detectSpamIndicators(sighting);
 			expect(result).toHaveProperty('score');
-			expect(result).toHaveProperty('scannerScore');
-			expect(result).toHaveProperty('isSpam');
 			expect(result).toHaveProperty('isHighRisk');
 			expect(result).toHaveProperty('indicators');
 			expect(typeof result.score).toBe('number');
-			expect(typeof result.scannerScore).toBe('number');
-			expect(typeof result.isSpam).toBe('boolean');
 			expect(typeof result.isHighRisk).toBe('boolean');
 			expect(Array.isArray(result.indicators)).toBe(true);
-		});
-
-		it('setzt scannerScore und isSpam immer auf 0/false (keine ML-Analyse)', async () => {
-			const sighting = buildSighting({ notes: 'this is a test sighting note' });
-			const result = await detectSpamIndicators(sighting);
-			expect(result.scannerScore).toBe(0);
-			expect(result.isSpam).toBe(false);
 		});
 	});
 });
