@@ -77,8 +77,6 @@ vi.mock('$lib/utils/format/sightingFormatter', () => ({
 vi.mock('$lib/server/spam/spamDetector', () => ({
 	detectSpamIndicators: vi.fn().mockResolvedValue({
 		score: 0,
-		scannerScore: 0,
-		isSpam: false,
 		isHighRisk: false,
 		indicators: []
 	})
