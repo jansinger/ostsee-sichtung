@@ -1,20 +1,10 @@
 import { createLogger } from '$lib/logger.server';
 import type { SpamCheckResult, SpamDetectionInput } from '$lib/types/spam';
 import { isUnknownOrMissingSpecies } from '$lib/utils/format/sightingFormatter';
-import SpamScanner from 'spamscanner';
 
 export type { SpamCheckResult, SpamDetectionInput };
 
 const logger = createLogger('spamDetector');
-
-// Singleton: model is loaded once on first use and reused for all subsequent calls
-let scannerInstance: InstanceType<typeof SpamScanner> | null = null;
-function getScanner(): InstanceType<typeof SpamScanner> {
-	if (!scannerInstance) {
-		scannerInstance = new SpamScanner();
-	}
-	return scannerInstance;
-}
 
 const ENGLISH_SPAM_KEYWORDS = [
 	'sale',
@@ -74,35 +64,7 @@ function decodeHtmlEntities(text: string): string {
 }
 
 /**
- * Runs SpamScanner on the sighting's text content.
- * scannerScore is probability-based (0–100) when spam is detected, 0 for ham.
- * Falls back gracefully on errors or missing text.
- */
-async function runSpamScanner(
-	text: string
-): Promise<{ isSpam: boolean; scannerScore: number; indicator: string | null }> {
-	if (!text || text.trim().length < 10) {
-		return { isSpam: false, scannerScore: 0, indicator: null };
-	}
-
-	try {
-		const result = await getScanner().scan(text);
-		const isSpam = Boolean(result.isSpam);
-		// probability represents confidence in the classified category;
-		// only expose a non-zero score when classified as spam
-		const probability: number = result.results?.classification?.probability ?? 1;
-		const scannerScore = isSpam ? Math.round(probability * 100) : 0;
-		const indicator = isSpam && result.message ? `SpamScanner: ${result.message}` : null;
-		return { isSpam, scannerScore, indicator };
-	} catch (error: unknown) {
-		logger.warn({ error }, 'SpamScanner Fehler, verwende Fallback');
-		return { isSpam: false, scannerScore: 0, indicator: null };
-	}
-}
-
-/**
- * Detects spam indicators in a sighting form submission.
- * Combines heuristic checks with SpamScanner analysis.
+ * Detects spam indicators in a sighting submission using heuristic checks.
  */
 export async function detectSpamIndicators(sighting: SpamDetectionInput): Promise<SpamCheckResult> {
 	try {
@@ -213,32 +175,11 @@ export async function detectSpamIndicators(sighting: SpamDetectionInput): Promis
 			}
 		}
 
-		// --- SpamScanner analysis (all text fields combined) ---
-		const allTextForScanner = [
-			sighting.notes || '',
-			sighting.waterway || '',
-			sighting.seaMark || '',
-			sighting.firstName || '',
-			sighting.lastName || ''
-		]
-			.map(decodeHtmlEntities)
-			.join(' ')
-			.trim();
-		const { isSpam, scannerScore, indicator } = await runSpamScanner(allTextForScanner);
-
-		if (indicator) {
-			indicators.push(indicator);
-		}
-
-		if (scannerScore >= 50) {
-			indicators.push(`SpamScanner-Score: ${scannerScore}/100`);
-		}
-
 		return {
 			score: Math.min(score, 10), // clamp to 0–10 scale; ≥5 = high risk
-			scannerScore,
-			isSpam,
-			isHighRisk: score >= 5 || isSpam,
+			scannerScore: 0,
+			isSpam: false,
+			isHighRisk: score >= 5,
 			indicators
 		};
 	} catch (error: unknown) {

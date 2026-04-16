@@ -10,7 +10,10 @@ export interface SpamCheckResult {
  * Minimal input type for spam detection.
  * Accepts only the fields actually used by detectSpamIndicators,
  * so callers don't need to pass a full SightingFormValues.
- * Fields explicitly include undefined to be compatible with Yup's Maybe<T> types.
+ *
+ * Note: `| undefined` is required (not redundant) because this project uses
+ * `exactOptionalPropertyTypes: true`. Without it, callers passing Yup's `Maybe<T>`
+ * values (which include explicit `undefined`) would fail type-checking.
  */
 export interface SpamDetectionInput {
 	notes?: string | null | undefined;

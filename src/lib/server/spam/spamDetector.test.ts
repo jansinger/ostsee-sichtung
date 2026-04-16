@@ -1,17 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { SightingFormValues } from '$lib/types/Form';
-
-// Shared mockScan function — controlled per-test via mockResolvedValue
-const mockScan = vi.fn();
-
-// Mock spamscanner before importing spamDetector
-vi.mock('spamscanner', () => {
-	return {
-		default: vi.fn().mockImplementation(function () {
-			return { scan: mockScan };
-		})
-	};
-});
+import type { SpamDetectionInput } from '$lib/types/spam';
 
 // Mock logger
 vi.mock('$lib/logger.server', () => ({
@@ -33,42 +21,25 @@ import { isUnknownOrMissingSpecies } from '$lib/utils/format/sightingFormatter';
 
 const mockIsUnknownOrMissingSpecies = vi.mocked(isUnknownOrMissingSpecies);
 
-const HAM_RESULT = {
-	isSpam: false,
-	message: 'Not spam',
-	results: { classification: { category: 'ham', probability: 0.5 } }
-};
-
-const SPAM_RESULT = {
-	isSpam: true,
-	message: 'Classified as spam',
-	results: { classification: { category: 'spam', probability: 0.9 } }
-};
-
-function buildSighting(overrides: Partial<SightingFormValues> = {}): SightingFormValues {
+function buildSighting(overrides: Partial<SpamDetectionInput> = {}): SpamDetectionInput {
 	return {
 		firstName: 'Max',
 		lastName: 'Muster',
 		email: 'max@example.com',
 		species: 0,
-		totalCount: 1,
-		sightingDate: '2024-01-15',
-		sightingTime: '14:30',
 		notes: '',
 		waterway: '',
 		seaMark: '',
 		latitude: undefined,
 		longitude: undefined,
 		...overrides
-	} as unknown as SightingFormValues;
+	};
 }
 
 describe('detectSpamIndicators', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockIsUnknownOrMissingSpecies.mockReturnValue(false);
-		// Default: SpamScanner reports ham
-		mockScan.mockResolvedValue(HAM_RESULT);
 	});
 
 	describe('URL-Erkennung', () => {
@@ -292,15 +263,6 @@ describe('detectSpamIndicators', () => {
 			expect(result.score).toBeLessThan(5);
 			expect(result.isHighRisk).toBe(false);
 		});
-
-		it('ist true wenn SpamScanner isSpam meldet (auch bei niedrigem Heuristik-Score)', async () => {
-			mockScan.mockResolvedValue(SPAM_RESULT);
-
-			const sighting = buildSighting({ notes: 'completely normal text for testing' });
-			const result = await detectSpamIndicators(sighting);
-			expect(result.isSpam).toBe(true);
-			expect(result.isHighRisk).toBe(true);
-		});
 	});
 
 	describe('SpamCheckResult Interface', () => {
@@ -319,31 +281,11 @@ describe('detectSpamIndicators', () => {
 			expect(Array.isArray(result.indicators)).toBe(true);
 		});
 
-		it('setzt scannerScore auf probability*100 wenn SpamScanner isSpam meldet', async () => {
-			mockScan.mockResolvedValue(SPAM_RESULT); // probability: 0.9
-
-			const sighting = buildSighting({ notes: 'this is a test sighting note' });
-			const result = await detectSpamIndicators(sighting);
-			expect(result.scannerScore).toBe(90); // Math.round(0.9 * 100)
-			expect(result.isSpam).toBe(true);
-		});
-
-		it('setzt scannerScore auf 0 wenn SpamScanner kein Spam meldet', async () => {
-			const sighting = buildSighting({ notes: 'this is a test sighting note' });
-			const result = await detectSpamIndicators(sighting);
-			expect(result.scannerScore).toBe(0); // ham → always 0
-			expect(result.isSpam).toBe(false);
-		});
-
-		it('graceful fallback wenn SpamScanner fehlschlägt', async () => {
-			mockScan.mockRejectedValue(new Error('SpamScanner failed'));
-
+		it('setzt scannerScore und isSpam immer auf 0/false (keine ML-Analyse)', async () => {
 			const sighting = buildSighting({ notes: 'this is a test sighting note' });
 			const result = await detectSpamIndicators(sighting);
 			expect(result.scannerScore).toBe(0);
 			expect(result.isSpam).toBe(false);
-			// isHighRisk only from heuristics
-			expect(result.isHighRisk).toBe(false);
 		});
 	});
 });
