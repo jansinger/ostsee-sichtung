@@ -278,7 +278,10 @@
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
 			// Guard against race: discard response if user switched to a different sighting
 			if (spamCheckModal.sightingId !== sightingId) return;
-			spamCheckModal.result = await response.json();
+			const result = await response.json();
+			// Second check: another switch may have occurred during json() parsing
+			if (spamCheckModal.sightingId !== sightingId) return;
+			spamCheckModal.result = result;
 		} catch (err) {
 			if (spamCheckModal.sightingId !== sightingId) return;
 			logger.error({ err, sightingId }, 'Spam-Check fehlgeschlagen');

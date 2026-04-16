@@ -51,7 +51,7 @@
 	/>
 	<meta
 		name="keywords"
-		content="Sichtung, Details, Admin, {data.sighting?.species || 'Meerestier'}, Ostsee, Verwaltung"
+		content="Sichtung, Details, Admin, {data.sighting?.species ?? 'Meerestier'}, Ostsee, Verwaltung"
 	/>
 
 	<!-- Open Graph -->
