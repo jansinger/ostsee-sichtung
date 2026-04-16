@@ -1081,7 +1081,7 @@
 			<!-- Score badges -->
 			<div class="mt-4 flex flex-wrap gap-2">
 				<span
-					class="badge {spamCheckModal.result.score >= 5
+					class="badge {spamCheckModal.result.isHighRisk
 						? 'badge-error'
 						: spamCheckModal.result.score >= 2
 							? 'badge-warning'

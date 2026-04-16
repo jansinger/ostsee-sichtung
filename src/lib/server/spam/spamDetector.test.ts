@@ -265,6 +265,18 @@ describe('detectSpamIndicators', () => {
 		});
 	});
 
+	describe('Fail-Safe bei interner Exception', () => {
+		it('gibt isHighRisk: true und Fehler-Indikator zurück wenn isUnknownOrMissingSpecies wirft', async () => {
+			mockIsUnknownOrMissingSpecies.mockImplementation(() => {
+				throw new Error('Interner Fehler');
+			});
+			const sighting = buildSighting({});
+			const result = await detectSpamIndicators(sighting);
+			expect(result.isHighRisk).toBe(true);
+			expect(result.indicators).toContain('Spam-Prüfung fehlgeschlagen');
+		});
+	});
+
 	describe('SpamCheckResult Interface', () => {
 		it('gibt alle Pflichtfelder zurück', async () => {
 			const sighting = buildSighting({});
