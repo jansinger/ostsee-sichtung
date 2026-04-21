@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.5.1](https://github.com/jansinger/ostsee-sichtung/compare/v2.5.0...v2.5.1) (2026-04-21)
+
+
+### Dependencies
+
+* **deps:** bump protocol-buffers-schema from 3.6.0 to 3.6.1 ([#476](https://github.com/jansinger/ostsee-sichtung/issues/476)) ([80f996d](https://github.com/jansinger/ostsee-sichtung/commit/80f996d1409abc4a220d7631090587c0e96715b7))
+* **deps:** bump sanitize-html from 2.17.2 to 2.17.3 ([#475](https://github.com/jansinger/ostsee-sichtung/issues/475)) ([b0ebccb](https://github.com/jansinger/ostsee-sichtung/commit/b0ebccbd4f4e7264af20c5baa629574831b90e01))
+* **deps:** bump the dev-tooling group with 3 updates ([#478](https://github.com/jansinger/ostsee-sichtung/issues/478)) ([67f6b56](https://github.com/jansinger/ostsee-sichtung/commit/67f6b56150aa2b27da3cf45d689394e4ac463c65))
+* **deps:** bump the production-dependencies group with 5 updates ([#477](https://github.com/jansinger/ostsee-sichtung/issues/477)) ([f2e3071](https://github.com/jansinger/ostsee-sichtung/commit/f2e3071e729844d166c6db8ffb3ea0fb2242022a))
+* **deps:** bump the svelte-framework group with 2 updates ([#479](https://github.com/jansinger/ostsee-sichtung/issues/479)) ([70ab518](https://github.com/jansinger/ostsee-sichtung/commit/70ab51870ebf3670b45aa85ab8ab2a0ff80f52fa))
+
 ## [2.5.0](https://github.com/jansinger/ostsee-sichtung/compare/v2.4.1...v2.5.0) (2026-04-16)
 
 
