@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.5.2](https://github.com/jansinger/ostsee-sichtung/compare/v2.5.1...v2.5.2) (2026-05-17)
+
+
+### Dependencies
+
+* **deps:** bump @tailwindcss/vite from 4.2.2 to 4.3.0 ([#487](https://github.com/jansinger/ostsee-sichtung/issues/487)) ([c7d37d6](https://github.com/jansinger/ostsee-sichtung/commit/c7d37d60fa66336b2a44611fe313bf830a3ad7b0))
+* **deps:** bump axios from 1.15.0 to 1.16.1 ([#499](https://github.com/jansinger/ostsee-sichtung/issues/499)) ([e1b0506](https://github.com/jansinger/ostsee-sichtung/commit/e1b05060f5541a0ab0e46193d654fd3f83e3bfe7))
+* **deps:** bump fast-uri from 3.1.0 to 3.1.2 ([#493](https://github.com/jansinger/ostsee-sichtung/issues/493)) ([59ec464](https://github.com/jansinger/ostsee-sichtung/commit/59ec464ddf9b7a8bac7cd0c0a9ad024218deb0e0))
+* **deps:** bump ip-address from 10.1.0 to 10.2.0 ([#491](https://github.com/jansinger/ostsee-sichtung/issues/491)) ([b707960](https://github.com/jansinger/ostsee-sichtung/commit/b70796028293404f66463400b9c1df4465354ce1))
+* **deps:** bump sanitize-html from 2.17.3 to 2.17.4 ([#498](https://github.com/jansinger/ostsee-sichtung/issues/498)) ([caeb99c](https://github.com/jansinger/ostsee-sichtung/commit/caeb99cc9b80d1297656113436fda6c7230634d6))
+* **deps:** bump svelte from 5.55.5 to 5.55.7 ([#497](https://github.com/jansinger/ostsee-sichtung/issues/497)) ([cabb3c5](https://github.com/jansinger/ostsee-sichtung/commit/cabb3c538d5c0d6d65dbb28b205e33e8d61aed6a))
+* **deps:** bump tailwindcss from 4.2.2 to 4.3.0 ([#488](https://github.com/jansinger/ostsee-sichtung/issues/488)) ([8bf2502](https://github.com/jansinger/ostsee-sichtung/commit/8bf25029bf3ebe044175420441c41ce7b71274c4))
+* **deps:** bump the dev-tooling group across 1 directory with 16 updates ([#500](https://github.com/jansinger/ostsee-sichtung/issues/500)) ([e1136eb](https://github.com/jansinger/ostsee-sichtung/commit/e1136eb41661b12a2cd7e1b25674327001d53483))
+* **deps:** bump the github-actions group with 2 updates ([#484](https://github.com/jansinger/ostsee-sichtung/issues/484)) ([d671e4d](https://github.com/jansinger/ostsee-sichtung/commit/d671e4d003bdc0052c758a86804610b40b445b32))
+* **deps:** bump the production-dependencies group across 1 directory with 3 updates ([#495](https://github.com/jansinger/ostsee-sichtung/issues/495)) ([54845fb](https://github.com/jansinger/ostsee-sichtung/commit/54845fb34d296d83ae83ef925920f84b647e6a25))
+* **deps:** bump the svelte-framework group across 1 directory with 4 updates ([#494](https://github.com/jansinger/ostsee-sichtung/issues/494)) ([15aef6b](https://github.com/jansinger/ostsee-sichtung/commit/15aef6b0a62677d5c9fc6db2cc5f11859ecdead4))
+* **deps:** bump typescript-eslint ([#481](https://github.com/jansinger/ostsee-sichtung/issues/481)) ([86a9b9e](https://github.com/jansinger/ostsee-sichtung/commit/86a9b9ee903edc34a95af81d6e4315a0be281115))
+
 ## [2.5.1](https://github.com/jansinger/ostsee-sichtung/compare/v2.5.0...v2.5.1) (2026-04-21)
 
 
