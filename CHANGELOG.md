@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.5.3](https://github.com/jansinger/ostsee-sichtung/compare/v2.5.2...v2.5.3) (2026-06-01)
+
+
+### Dependencies
+
+* **deps:** bump @iconify/json from 2.2.459 to 2.2.481 ([#503](https://github.com/jansinger/ostsee-sichtung/issues/503)) ([0726ed0](https://github.com/jansinger/ostsee-sichtung/commit/0726ed0f8e61b5733c059e17a00fa79fddc10a8c))
+* **deps:** bump @scalar/sveltekit from 0.2.3 to 0.2.19 ([#504](https://github.com/jansinger/ostsee-sichtung/issues/504)) ([444137f](https://github.com/jansinger/ostsee-sichtung/commit/444137f49025fbdb70c80ecf020297ae695f8c04))
+* **deps:** bump globals from 17.5.0 to 17.6.0 ([#505](https://github.com/jansinger/ostsee-sichtung/issues/505)) ([35cb9c0](https://github.com/jansinger/ostsee-sichtung/commit/35cb9c0104a294212befb81c1dc3bbd72879c0f9))
+* **deps:** bump the production-dependencies group across 1 directory with 3 updates ([#508](https://github.com/jansinger/ostsee-sichtung/issues/508)) ([0b51e9d](https://github.com/jansinger/ostsee-sichtung/commit/0b51e9dc65d5abd07105d09eb1de606d2a546df3))
+* **deps:** bump the svelte-framework group across 1 directory with 3 updates ([#507](https://github.com/jansinger/ostsee-sichtung/issues/507)) ([f005bab](https://github.com/jansinger/ostsee-sichtung/commit/f005bab36b1aea8b4292170a2a4b48a13fde2e9b))
+
 ## [2.5.2](https://github.com/jansinger/ostsee-sichtung/compare/v2.5.1...v2.5.2) (2026-05-17)
 
 
