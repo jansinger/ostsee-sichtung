@@ -76,7 +76,7 @@
 		"@tailwindcss/vite": "^4.3.0",
 		"@types/html-to-text": "^9.0.4",
 		"@types/node": "^25.8.0",
-		"@types/nodemailer": "^8.0.0",
+		"@types/nodemailer": "^8.0.1",
 		"@types/sanitize-html": "^2.16.1",
 		"@vitejs/plugin-basic-ssl": "^2.3.0",
 		"@vitest/browser": "^4.1.6",
@@ -118,16 +118,16 @@
 		"handlebars": "^4.7.9",
 		"html-to-text": "^9.0.5",
 		"jose": "^6.2.3",
-		"nodemailer": "^8.0.8",
+		"nodemailer": "^8.0.11",
 		"ol": "^10.9.0",
 		"pino": "^10.3.1",
 		"postgres": "^3.4.9",
 		"rbush": "^4.0.1",
-		"sanitize-html": "^2.17.4",
+		"sanitize-html": "^2.17.5",
 		"yup": "^1.7.1"
 	},
 	"optionalDependencies": {
-		"@rollup/rollup-linux-x64-gnu": "4.60.4"
+		"@rollup/rollup-linux-x64-gnu": "4.62.0"
 	},
 	"overrides": {
 		"cookie": "^0.7.2",
