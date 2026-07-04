@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.5.4](https://github.com/jansinger/ostsee-sichtung/compare/v2.5.3...v2.5.4) (2026-07-04)
+
+
+### Dependencies
+
+* **deps:** bump @cyclonedx/cyclonedx-npm from 4.2.1 to 5.0.0 ([#529](https://github.com/jansinger/ostsee-sichtung/issues/529)) ([f07d987](https://github.com/jansinger/ostsee-sichtung/commit/f07d9879300a1353d7d715763b20dc848fbe20ff))
+* **deps:** bump @scalar/sveltekit from 0.2.19 to 0.3.8 ([#515](https://github.com/jansinger/ostsee-sichtung/issues/515)) ([39cfc55](https://github.com/jansinger/ostsee-sichtung/commit/39cfc557392fec6700bcbbcdb496519eeebf0746))
+* **deps:** bump @vitest/browser from 4.1.6 to 4.1.8 ([#520](https://github.com/jansinger/ostsee-sichtung/issues/520)) ([2aeec8f](https://github.com/jansinger/ostsee-sichtung/commit/2aeec8f054640a5327a1571fb1e06e7d57d582bc))
+* **deps:** bump @vitest/browser from 4.1.8 to 4.1.9 ([#537](https://github.com/jansinger/ostsee-sichtung/issues/537)) ([a6e17e3](https://github.com/jansinger/ostsee-sichtung/commit/a6e17e39111a60c177ecfe6e812eb27c30c31faa))
+* **deps:** bump daisyui from 5.5.19 to 5.5.23 ([#516](https://github.com/jansinger/ostsee-sichtung/issues/516)) ([a26fa36](https://github.com/jansinger/ostsee-sichtung/commit/a26fa36452a3c7e11966ca345a2b704b5d9da846))
+* **deps:** bump form-data ([#523](https://github.com/jansinger/ostsee-sichtung/issues/523)) ([b209eb8](https://github.com/jansinger/ostsee-sichtung/commit/b209eb8eecc300d45c1a405c53e4a2ccb5c4df66))
+* **deps:** bump js-yaml from 4.1.1 to 4.3.0 ([#533](https://github.com/jansinger/ostsee-sichtung/issues/533)) ([91ef63c](https://github.com/jansinger/ostsee-sichtung/commit/91ef63cc8be418a9b710d982545a49c7b6dbfc9d))
+* **deps:** bump nodemailer from 8.0.11 to 9.0.1 ([#522](https://github.com/jansinger/ostsee-sichtung/issues/522)) ([c231fef](https://github.com/jansinger/ostsee-sichtung/commit/c231fef5486bc7086f0de64555b40f5eb0dffa43))
+* **deps:** bump nodemailer from 9.0.1 to 9.0.3 ([#539](https://github.com/jansinger/ostsee-sichtung/issues/539)) ([500a541](https://github.com/jansinger/ostsee-sichtung/commit/500a54121860f239d0a52d567dc4da6323e05b89))
+* **deps:** bump tar from 7.5.11 to 7.5.19 ([#532](https://github.com/jansinger/ostsee-sichtung/issues/532)) ([d5a2fb6](https://github.com/jansinger/ostsee-sichtung/commit/d5a2fb6aa54d76aac543b552127a6c809b2bc2c6))
+* **deps:** bump the dev-tooling group across 1 directory with 13 updates ([#538](https://github.com/jansinger/ostsee-sichtung/issues/538)) ([d0a0a8e](https://github.com/jansinger/ostsee-sichtung/commit/d0a0a8ec07b756e8dda9a18cca4abbaf3231466e))
+* **deps:** bump the github-actions group across 1 directory with 2 updates ([#534](https://github.com/jansinger/ostsee-sichtung/issues/534)) ([aabbc6b](https://github.com/jansinger/ostsee-sichtung/commit/aabbc6baa083e99dc288b61b0b80ec2082bee612))
+* **deps:** bump the production-dependencies group across 1 directory with 4 updates ([#526](https://github.com/jansinger/ostsee-sichtung/issues/526)) ([12a7aaf](https://github.com/jansinger/ostsee-sichtung/commit/12a7aaf541c03a60a458b4804da1eec95e573929))
+* **deps:** bump the svelte-framework group across 1 directory with 5 updates ([#535](https://github.com/jansinger/ostsee-sichtung/issues/535)) ([99e0b1a](https://github.com/jansinger/ostsee-sichtung/commit/99e0b1a150ea326033273629a7f709155e1da966))
+* **deps:** bump undici from 6.24.1 to 6.27.0 ([#531](https://github.com/jansinger/ostsee-sichtung/issues/531)) ([8c6978c](https://github.com/jansinger/ostsee-sichtung/commit/8c6978ca6f9810dbc78481ee1001715f7905f2db))
+
 ## [2.5.3](https://github.com/jansinger/ostsee-sichtung/compare/v2.5.2...v2.5.3) (2026-06-01)
 
 
