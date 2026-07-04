@@ -68,7 +68,7 @@
 		"@fontsource/roboto": "^5.2.10",
 		"@iconify/json": "^2.2.481",
 		"@playwright/test": "^1.61.1",
-		"@scalar/sveltekit": "^0.2.19",
+		"@scalar/sveltekit": "^0.3.8",
 		"@sveltejs/adapter-node": "^5.5.7",
 		"@sveltejs/adapter-vercel": "^6.3.4",
 		"@sveltejs/kit": "^2.68.0",
