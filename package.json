@@ -65,7 +65,7 @@
 		"@cyclonedx/cyclonedx-npm": "^5.0.0",
 		"@eslint/compat": "^2.1.0",
 		"@eslint/js": "^10.0.1",
-		"@fontsource/roboto": "^5.2.10",
+		"@fontsource/roboto": "^5.3.0",
 		"@iconify/json": "^2.2.481",
 		"@playwright/test": "^1.61.1",
 		"@scalar/sveltekit": "^0.3.8",
