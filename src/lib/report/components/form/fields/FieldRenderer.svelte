@@ -218,7 +218,8 @@
 	let checkboxProps = $derived.by(() => {
 		const props = {
 			...commonFieldProps,
-			label: label || ''
+			label: label || '',
+			...(metaValues.valueText && { valueText: metaValues.valueText })
 		};
 		return props;
 	});
@@ -226,7 +227,8 @@
 	let toggleProps = $derived.by(() => {
 		const props = {
 			...commonFieldProps,
-			label: label || ''
+			label: label || '',
+			...(metaValues.valueText && { valueText: metaValues.valueText })
 		};
 		return props;
 	});

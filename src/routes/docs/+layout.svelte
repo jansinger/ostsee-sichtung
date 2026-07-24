@@ -7,6 +7,6 @@
 	<meta name="description" content="API-Dokumentation für die Ostsee-Tiere Plattform" />
 </svelte:head>
 
-<main class="container mx-auto p-4">
+<div class="container mx-auto p-4">
 	<slot />
-</main>
+</div>
