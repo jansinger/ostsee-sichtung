@@ -30,10 +30,14 @@ src/lib/
 ├── map/                              # Map Utilities & Controller
 │   ├── optimizedMapController.ts     # Performance-optimierter Controller
 │   ├── styleUtils.ts                 # Style-Definitionen & Legenden
-│   ├── dataLoader.ts                 # Daten-Laden
-│   ├── countManager.ts              # Species/Color Count Management
-│   ├── timeSliderManager.ts         # Zeitfilterung
-│   └── mapUtils.ts                   # GeoJSON-Konvertierung & Typen
+│   ├── countManager.ts               # Species/Color Count Management
+│   ├── timeSliderManager.ts          # Zeitfilterung
+│   ├── mapUtils.ts                   # GeoJSON-Konvertierung & Typen
+│   ├── mapContext.ts                 # Svelte Context für Map-Instanz
+│   ├── panelManager.ts               # Panel-Zustand (Filter/Legende)
+│   ├── dateUtils.ts                  # Datums-Hilfen für Zeitfilter
+│   ├── mapStyles.css                 # Karten-CSS
+│   └── controls/                     # Custom OL-Controls (LocationControl, ZoomAllControl)
 └── components/map/
     ├── OLMap.svelte                  # Haupt-Karten-Komponente
     ├── SightingsMapView.svelte       # Sichtungs-Kartenansicht

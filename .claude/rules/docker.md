@@ -66,22 +66,18 @@ CMD ["node", "build"]
 
 ---
 
-## adapter-node Konfiguration
+## Adapter-Konfiguration (Dual: Vercel / Node)
 
-```javascript
-// svelte.config.js
-import adapter from '@sveltejs/adapter-node';
+`svelte.config.js` wählt den Adapter **dynamisch**: Default ist `@sveltejs/adapter-vercel`; nur wenn `USE_NODE_ADAPTER=true` gesetzt ist, wird `@sveltejs/adapter-node` verwendet.
 
-export default {
-	kit: {
-		adapter: adapter({
-			out: 'build',
-			precompress: true,
-			envPrefix: ''
-		})
-	}
-};
+Für Docker-Builds wird deshalb das Script `npm run build:docker` genutzt:
+
+```bash
+# package.json
+"build:docker": "USE_NODE_ADAPTER=true svelte-kit sync && vite build"
 ```
+
+Der Node-Adapter erzeugt `build/index.js` (Server startet via `node build`, siehe Dockerfile-`runtime`-Stage). Ohne `USE_NODE_ADAPTER=true` würde stattdessen für Vercel gebaut — im Docker-Kontext also immer `build:docker` verwenden.
 
 ---
 

@@ -54,6 +54,12 @@ In-Memory Rate Limiting mit automatischem Cleanup (10min).
 **Identifier:** `user:{sub}` oder `ip:{clientIp}`
 **Headers:** `X-RateLimit-{Limit,Remaining,Reset,Window}`
 
+**Deployment-Kontext:** Der Zähler liegt im Prozess-Speicher. Das ist für das
+**Single-Container-Docker-Deployment** (Prod) korrekt und wirksam. Voraussetzung: Der
+adapter-node muss hinter dem Reverse Proxy die echte Client-IP kennen — dafür sind
+`ADDRESS_HEADER`/`XFF_DEPTH` gesetzt (siehe docs/ENVIRONMENT.md). Bei horizontaler Skalierung
+(mehrere Replicas) wäre ein gemeinsamer Store (Redis/Postgres) nötig — aktuell nicht der Fall.
+
 ---
 
 ## securityHeaders.ts

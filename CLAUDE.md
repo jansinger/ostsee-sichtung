@@ -99,7 +99,7 @@ npm run test:quick        # Schnell-Test (lint + types + check + unit)
 
 ### Tech Stack
 
-SvelteKit 5 + TypeScript, PostgreSQL/PostGIS, Drizzle ORM, TailwindCSS/DaisyUI, OpenLayers, svelte-forms-lib + Yup. Details: .claude/rules/architecture.md
+SvelteKit 5 + TypeScript, PostgreSQL/PostGIS, Drizzle ORM, TailwindCSS/DaisyUI, OpenLayers, eigene `createForm`-Implementierung (`src/lib/form/createForm.ts`) + Yup. Details: .claude/rules/architecture.md
 
 ### Projektstruktur
 

@@ -1394,7 +1394,11 @@ paths:
       tags:
         - files
       summary: Datei löschen
-      description: Löscht eine hochgeladene Datei
+      description: |
+        Löscht eine hochgeladene Datei.
+
+        Rate-Limiting je nach Authentifizierungsstatus (anonym / authentifiziert)
+        verhindert massenhaftes anonymes Löschen.
       requestBody:
         required: true
         content:
@@ -1421,6 +1425,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -1540,7 +1546,22 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: >-
+            Interner Serverfehler. Es wird ausschließlich eine generische
+            Fehlermeldung zurückgegeben; interne Fehlerdetails (`details`,
+            Exception-Message) werden aus Sicherheitsgründen NICHT an den Client
+            geleakt (der konkrete Fehler wird nur serverseitig geloggt).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Generische Fehlermeldung ohne interne Details
+                    example: "Fehler beim Abrufen der Sichtungen"
+              example:
+                error: "Fehler beim Abrufen der Sichtungen"
 
   /rest_sichtungen:
     post:
@@ -1834,9 +1855,14 @@ paths:
       description: |
         Stellt hochgeladene Dateien bereit. Für lokalen Storage werden Dateien direkt ausgeliefert,
         für Cloud Storage erfolgt eine Weiterleitung zur Cloud-URL.
-        
+
         **Zugriffskontrolle:**
         - Validierung des Dateipfads
+        - Öffentlicher Zugriff nur für freigegebene Sichtungen; nicht freigegebene
+          Medien sind ausschließlich für Admins zugänglich.
+        - Für nicht gefundene ODER nicht freigegebene Dateien wird 404 zurückgegeben
+          (die Existenz wird nicht preisgegeben).
+        - Rate-Limiting je nach Authentifizierungsstatus (anonym / authentifiziert).
         - Cache-Optimierung für statische Inhalte
         - Support für lokalen und Cloud-Storage
       parameters:
@@ -1905,14 +1931,26 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 message: "Ungültiger Dateipfad"
-        '404':
-          description: Datei nicht gefunden
+        '403':
+          description: Dateityp nicht erlaubt
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                message: "File not found"
+                message: "Dateityp nicht erlaubt"
+        '404':
+          description: >-
+            Datei nicht gefunden oder nicht freigegeben (nicht freigegebene Dateien
+            liefern für nicht-Admins 404, um die Existenz nicht preiszugeben).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: "Datei nicht gefunden"
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -1921,7 +1959,15 @@ paths:
       tags:
         - security
       summary: CSP Violation Report
-      description: Endpunkt für Content Security Policy Violation Reports
+      description: |
+        Endpunkt für Content Security Policy Violation Reports.
+
+        **Sicherheit:**
+        - Rate-Limiting gegen Log-Flooding (unauthentifizierter Endpunkt): 60 Reports
+          pro Minute und IP.
+        - Übergroße Payloads (Content-Length > 8 KB) werden verworfen und mit
+          204 No Content beantwortet (kein Ressourcen-/Log-Missbrauch).
+        - Es werden ausschließlich bekannte CSP-Felder geloggt.
       requestBody:
         required: true
         content:
@@ -1934,9 +1980,13 @@ paths:
                   description: CSP Violation Report Objekt
       responses:
         '204':
-          description: Report erfolgreich empfangen
+          description: >-
+            Report erfolgreich empfangen. Wird auch zurückgegeben, wenn die Payload
+            die maximale Größe (8 KB) überschreitet und verworfen wird.
         '400':
           $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
 
 components:
   securitySchemes:
@@ -2915,6 +2965,13 @@ components:
           enum: [healthy, unhealthy]
           description: Systemstatus
           example: "healthy"
+        database:
+          type: string
+          enum: [connected, disconnected]
+          description: >-
+            Status der Datenbankverbindung. `connected` bei erfolgreicher
+            Konnektivitätsprüfung (HTTP 200), `disconnected` bei Ausfall (HTTP 503).
+          example: "connected"
         timestamp:
           type: string
           format: date-time
