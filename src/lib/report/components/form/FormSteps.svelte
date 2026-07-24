@@ -39,12 +39,13 @@
 			<li
 				class="step {currentStep >= index ? 'step-primary' : ''}"
 				class:opacity-50={!navigable && index > currentStep}
-				aria-current={currentStep === index ? 'step' : undefined}
 			>
 				<button
 					type="button"
 					class="step-button px-1 text-xs sm:text-sm"
 					disabled={!navigable}
+					aria-label={step.title}
+					aria-current={currentStep === index ? 'step' : undefined}
 					title={navigable
 						? step.description
 						: 'Bitte füllen Sie zuerst die vorherigen Schritte aus'}

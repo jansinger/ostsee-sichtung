@@ -42,7 +42,8 @@ vi.mock('$lib/server/auth/auth.js', () => ({
 	setAuthCookie: mockSetAuthCookie
 }));
 
-import { GET, sanitizeReturnUrl } from './+server';
+import { GET } from './+server';
+import { sanitizeReturnUrl } from '$lib/server/auth/returnUrl';
 
 function makeCookies() {
 	return {

@@ -8,37 +8,11 @@ import {
 	setAuthCookie,
 	verifyToken
 } from '$lib/server/auth/auth.js';
+import { sanitizeReturnUrl } from '$lib/server/auth/returnUrl';
 import type { User } from '$lib/types';
 import { error, redirect, type Cookies } from '@sveltejs/kit';
 
 const logger = createLogger('auth:auth0');
-
-/**
- * Validiert eine returnUrl gegen Open-Redirect-Angriffe.
- *
- * Erlaubt ausschließlich relative Same-Origin-Pfade, die mit genau einem `/`
- * beginnen. Externe URLs (`https://evil.com`), protokoll-relative Pfade
- * (`//evil.com`) und Backslash-Tricks (`/\evil.com`) werden auf `/` normalisiert.
- */
-export function sanitizeReturnUrl(returnUrl: string | null | undefined): string {
-	if (typeof returnUrl !== 'string' || returnUrl.length === 0) {
-		return '/';
-	}
-	// Whitespace-Zeichen ablehnen. Der WHATWG-URL-Parser entfernt
-	// Tab/CR/LF VOR der Auflösung, sodass z.B. '/\t/evil.com' zu
-	// 'http://evil.com/' würde und die startsWith-Prüfung unten umginge.
-	// Legitime relative Pfade enthalten keine rohen Whitespace/Control-Zeichen
-	// (Leerzeichen wären %20-kodiert).
-	if (/\s/.test(returnUrl)) {
-		return '/';
-	}
-	// Muss mit genau einem '/' beginnen — keine protokoll-relativen ('//')
-	// und keine Backslash-Pfade ('/\'), die Browser als externe URL interpretieren.
-	if (!returnUrl.startsWith('/') || returnUrl.startsWith('//') || returnUrl.startsWith('/\\')) {
-		return '/';
-	}
-	return returnUrl;
-}
 
 export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 	const code = url.searchParams.get('code');

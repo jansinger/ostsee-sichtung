@@ -57,8 +57,11 @@ export async function POST({ request, getClientAddress }: RequestEvent) {
 		return json({ success: false, error: 'Ungültiges CSP-Verstoßformat' }, { status: 400 });
 	}
 
-	if (bodyText.length > MAX_CSP_REPORT_BYTES) {
-		logger.warn({ byteLength: bodyText.length }, 'CSP-Report verworfen — Payload zu groß');
+	// Echte UTF-8-Bytelänge prüfen (nicht String-Länge/UTF-16-Code-Units),
+	// damit das Limit bei Nicht-ASCII-Payloads korrekt greift.
+	const byteLength = Buffer.byteLength(bodyText, 'utf8');
+	if (byteLength > MAX_CSP_REPORT_BYTES) {
+		logger.warn({ byteLength }, 'CSP-Report verworfen — Payload zu groß');
 		return new Response(null, { status: 204 });
 	}
 
