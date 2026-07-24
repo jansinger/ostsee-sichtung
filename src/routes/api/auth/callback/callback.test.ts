@@ -178,6 +178,15 @@ describe('sanitizeReturnUrl', () => {
 		expect(sanitizeReturnUrl('http://evil.com/pfad')).toBe('/');
 	});
 
+	it('blockt Whitespace-Bypässe (Tab/CR/LF werden vom URL-Parser gestrippt)', () => {
+		// '/\t/evil.com' würde sonst zu 'http://evil.com/' auflösen
+		expect(sanitizeReturnUrl('/\t/evil.com')).toBe('/');
+		expect(sanitizeReturnUrl('/\tevil.com')).toBe('/');
+		expect(sanitizeReturnUrl('/\n/evil.com')).toBe('/');
+		expect(sanitizeReturnUrl('/\r/evil.com')).toBe('/');
+		expect(sanitizeReturnUrl('/ /evil.com')).toBe('/');
+	});
+
 	it('normalisiert leere/ungültige Werte auf /', () => {
 		expect(sanitizeReturnUrl(null)).toBe('/');
 		expect(sanitizeReturnUrl(undefined)).toBe('/');

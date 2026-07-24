@@ -24,6 +24,14 @@ export function sanitizeReturnUrl(returnUrl: string | null | undefined): string 
 	if (typeof returnUrl !== 'string' || returnUrl.length === 0) {
 		return '/';
 	}
+	// Whitespace-Zeichen ablehnen. Der WHATWG-URL-Parser entfernt
+	// Tab/CR/LF VOR der Auflösung, sodass z.B. '/\t/evil.com' zu
+	// 'http://evil.com/' würde und die startsWith-Prüfung unten umginge.
+	// Legitime relative Pfade enthalten keine rohen Whitespace/Control-Zeichen
+	// (Leerzeichen wären %20-kodiert).
+	if (/\s/.test(returnUrl)) {
+		return '/';
+	}
 	// Muss mit genau einem '/' beginnen — keine protokoll-relativen ('//')
 	// und keine Backslash-Pfade ('/\'), die Browser als externe URL interpretieren.
 	if (!returnUrl.startsWith('/') || returnUrl.startsWith('//') || returnUrl.startsWith('/\\')) {
