@@ -244,8 +244,9 @@ export const getAuthUser = async (cookies: Cookies) => {
  *
  * Sicherheitsmerkmale:
  * - httpOnly: Verhindert JavaScript-Zugriff (XSS-Schutz)
- * - sameSite: 'lax' - CSRF-Schutz
- * - secure: HTTPS-only in Produktion
+ * - sameSite: 'none' - Der Cookie muss im iframe-Kontext (meeresmuseum.de)
+ *   cross-site mitgeschickt werden. SameSite=None erfordert zwingend Secure=true.
+ * - secure: immer true (Prod und Dev laufen über HTTPS) — Browser-Pflicht bei SameSite=None
  * - Signiert mit eigenem Secret (nicht Auth0's)
  *
  * @param cookies - SvelteKit's Cookies-Objekt
@@ -264,10 +265,12 @@ export const setAuthCookie = async (cookies: Cookies, user: User) => {
 	const token = await new SignJWT({ ...user }).setProtectedHeader({ alg: 'HS256' }).sign(secret);
 	cookies.set(getCookieName(), token, {
 		httpOnly: true,
-		sameSite: 'lax',
+		// SameSite=None + Secure: Session-Cookie muss im cross-site iframe
+		// (meeresmuseum.de) mitgesendet werden. Secure ist bei None Browser-Pflicht.
+		sameSite: 'none',
+		secure: true,
 		maxAge: COOKIE_DURATION_SECONDS,
-		path: '/',
-		secure: getNodeEnv() === 'production'
+		path: '/'
 	});
 };
 
@@ -290,7 +293,14 @@ export const setAuthCookie = async (cookies: Cookies, user: User) => {
  * ```
  */
 export const clearAuthCookie = (cookies: Cookies) => {
-	cookies.delete(getCookieName(), { path: '/' });
+	// Attribute müssen mit setAuthCookie übereinstimmen (SameSite=None; Secure),
+	// sonst wird der Cookie vom Browser nicht korrekt überschrieben/gelöscht.
+	cookies.delete(getCookieName(), {
+		path: '/',
+		httpOnly: true,
+		sameSite: 'none',
+		secure: true
+	});
 };
 
 /**

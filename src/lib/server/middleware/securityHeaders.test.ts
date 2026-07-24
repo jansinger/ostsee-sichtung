@@ -102,30 +102,14 @@ describe('securityHeaders', () => {
 		expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
 	});
 
-	it('rewrites SameSite=Strict to SameSite=None; Secure for the session cookie', async () => {
+	it('leaves Set-Cookie headers unveraendert (kein SameSite-Rewrite mehr)', async () => {
+		// Der Session-Cookie wird jetzt direkt in auth.ts mit SameSite=None; Secure gesetzt.
+		// Die Middleware darf Set-Cookie-Header nicht mehr umschreiben.
 		const response = await runHandler(
 			'production',
 			{},
-			{ 'Set-Cookie': 'auth-cookie=abc; SameSite=Strict' }
+			{ 'Set-Cookie': 'auth-cookie=abc; SameSite=None; Secure' }
 		);
 		expect(response.headers.get('Set-Cookie')).toBe('auth-cookie=abc; SameSite=None; Secure');
-	});
-
-	it('does not modify the session cookie without SameSite=Strict', async () => {
-		const response = await runHandler(
-			'production',
-			{},
-			{ 'Set-Cookie': 'auth-cookie=abc; SameSite=Lax' }
-		);
-		expect(response.headers.get('Set-Cookie')).toBe('auth-cookie=abc; SameSite=Lax');
-	});
-
-	it('does NOT rewrite SameSite=Strict for non-session cookies', async () => {
-		const response = await runHandler(
-			'production',
-			{},
-			{ 'Set-Cookie': 'other=abc; SameSite=Strict' }
-		);
-		expect(response.headers.get('Set-Cookie')).toBe('other=abc; SameSite=Strict');
 	});
 });

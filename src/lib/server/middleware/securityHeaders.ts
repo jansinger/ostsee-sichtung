@@ -1,9 +1,4 @@
-import { env } from '$env/dynamic/private';
 import type { Handle } from '@sveltejs/kit';
-
-// Name des Session-Cookies (identisch zu auth.ts / hooks.server.ts).
-// Nur dieser Cookie wird für die iframe-Einbettung auf SameSite=None umgeschrieben.
-const COOKIE_NAME = env.COOKIE_NAME ?? 'auth-cookie';
 
 export function createSecurityHeadersHandler(nodeEnv: string): Handle {
 	return async ({ event, resolve }) => {
@@ -32,25 +27,9 @@ export function createSecurityHeadersHandler(nodeEnv: string): Handle {
 			response.headers.set('Access-Control-Allow-Credentials', 'true');
 		}
 
-		// Cookie security for iframe context:
-		// Nur der Session-Cookie (COOKIE_NAME) wird für die meeresmuseum.de-iframe-
-		// Einbettung von SameSite=Strict auf SameSite=None; Secure umgeschrieben.
-		// Ein globaler Rewrite über ALLE Set-Cookie-Header wäre zu breit und würde
-		// auch fremde/kurzlebige Cookies unnötig cross-site freigeben.
-		const setCookies = response.headers.getSetCookie?.() ?? [];
-		if (setCookies.length > 0) {
-			response.headers.delete('Set-Cookie');
-			for (const cookie of setCookies) {
-				if (cookie.startsWith(`${COOKIE_NAME}=`)) {
-					response.headers.append(
-						'Set-Cookie',
-						cookie.replace(/SameSite=Strict/g, 'SameSite=None; Secure')
-					);
-				} else {
-					response.headers.append('Set-Cookie', cookie);
-				}
-			}
-		}
+		// Hinweis: Der Session-Cookie wird direkt in auth.ts mit SameSite=None; Secure
+		// gesetzt (nötig für die iframe-Einbettung auf meeresmuseum.de). Ein nachträglicher
+		// Header-Rewrite ist daher nicht mehr erforderlich.
 
 		return response;
 	};
