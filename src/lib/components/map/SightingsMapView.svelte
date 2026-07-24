@@ -20,7 +20,7 @@
 		title = 'Sichtungskarte',
 		showLogo = true,
 		containerClass = 'relative h-screen w-screen overflow-hidden',
-		titleClass = 'glass text-black text-sm absolute top-4 left-12 z-30 rounded-lg px-3 py-1.5 font-bold shadow-xl backdrop-blur-md flex items-center gap-2'
+		titleClass = 'glass text-base-content text-sm absolute top-4 left-12 z-30 rounded-lg px-3 py-1.5 font-bold shadow-xl backdrop-blur-md flex items-center gap-2'
 	} = $props<{
 		mapContainerId?: string;
 		showTitle?: boolean;
@@ -323,12 +323,12 @@
 		></div>
 		<div
 			id="info"
-			class="pointer-events-none absolute z-10 hidden max-w-sm rounded border border-gray-300 bg-white p-2 shadow-lg"
+			class="border-base-300 bg-base-100 pointer-events-none absolute z-10 hidden max-w-sm rounded border p-2 shadow-lg"
 		></div>
 		<!-- Bestehender Load-Overlay -->
 		<div
 			id="overlay-load"
-			class="bg-opacity-70 absolute top-0 left-0 z-20 flex hidden h-full w-full items-center justify-center bg-white"
+			class="bg-base-100/70 absolute top-0 left-0 z-20 flex hidden h-full w-full items-center justify-center"
 		>
 			<div class="loading loading-lg loading-spinner"></div>
 		</div>
@@ -406,7 +406,7 @@
 	<!-- Tastatur-Hilfe Button -->
 	<button
 		onclick={() => (showKeyboardHelp = true)}
-		class="bg-info text-info-content hover:bg-info-focus fixed bottom-4 left-4 z-30 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full shadow-lg transition-colors duration-300"
+		class="bg-info text-info-content hover:bg-info/80 fixed bottom-4 left-4 z-30 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full shadow-lg transition-colors duration-300"
 		aria-label="Tastatur-Hilfe anzeigen"
 		title="Tastaturkürzel anzeigen (H oder ?)"
 	>

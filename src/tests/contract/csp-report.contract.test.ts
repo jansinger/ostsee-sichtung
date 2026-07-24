@@ -33,6 +33,7 @@ describe('Contract: POST /api/csp-report', () => {
 		const event = {
 			...createEvent('/api/csp-report', { method: 'POST' }),
 			request: {
+				headers: new Headers({ 'content-type': 'application/json' }),
 				json: async () => {
 					throw new SyntaxError('Unexpected token');
 				}

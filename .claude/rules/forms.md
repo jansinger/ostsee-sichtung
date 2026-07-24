@@ -8,17 +8,17 @@ paths:
 
 # Multi-Step Forms
 
-Regeln für Formular-Entwicklung mit svelte-forms-lib und Yup.
+Regeln für Formular-Entwicklung mit der projekteigenen `createForm`-Implementierung und Yup.
 
 ---
 
 ## Tech Stack
 
-| Bibliothek       | Zweck                 |
-| ---------------- | --------------------- |
-| svelte-forms-lib | Form State Management |
-| Yup              | Schema Validation     |
-| DaisyUI          | Form Components       |
+| Bibliothek                                  | Zweck                                      |
+| ------------------------------------------- | ------------------------------------------ |
+| `createForm` (`src/lib/form/createForm.ts`) | Form State Management (svelte/store + Yup) |
+| Yup                                         | Schema Validation                          |
+| DaisyUI                                     | Form Components                            |
 
 ---
 
@@ -87,16 +87,18 @@ export const sightingSchema = yup.object({
 
 ---
 
-## svelte-forms-lib Pattern
+## createForm Pattern (projekteigene Implementierung)
 
-**Hinweis:** `svelte-forms-lib` basiert auf Svelte 4 Stores (`writable`). In Svelte 5 funktioniert es über den Legacy-Kompatibilitätsmodus — `$form`, `$errors`, `$touched` sind Svelte-Stores, die mit `$` abonniert werden. Das ist korrekt und funktioniert stabil.
+**Hinweis:** Das Projekt nutzt KEINE externe Form-Library. `src/lib/form/createForm.ts` ist eine eigene, schlanke Implementierung auf Basis von Svelte-Stores (`writable`/`derived`) + Yup. `$form`, `$errors`, `$isSubmitting`, `$isValid` sind Svelte-Stores und werden mit `$` abonniert. Es gibt KEIN `touched` und KEIN `validateField` — validiert wird beim Submit (`abortEarly: false`, sammelt alle Fehler); `updateField` löscht den Fehler des geänderten Feldes.
+
+API: `{ form, errors, isSubmitting, isValid, handleSubmit, handleChange, updateField, updateInitialValues }`
 
 ```svelte
 <script lang="ts">
-	import { createForm } from 'svelte-forms-lib';
+	import { createForm } from '$lib/form/createForm';
 	import * as yup from 'yup';
 
-	const { form, errors, touched, handleSubmit, validateField } = createForm({
+	const { form, errors, isSubmitting, handleSubmit, updateField } = createForm({
 		initialValues: {
 			species: '',
 			count: 1,
@@ -120,14 +122,14 @@ export const sightingSchema = yup.object({
 			id="species"
 			name="species"
 			bind:value={$form.species}
-			onblur={() => validateField('species')}
 			class="input w-full"
-			class:input-error={$errors.species && $touched.species}
+			class:input-error={$errors.species}
 		/>
-		{#if $errors.species && $touched.species}
+		{#if $errors.species}
 			<p class="label text-error">{$errors.species}</p>
 		{/if}
 	</fieldset>
+	<button class="btn btn-primary" disabled={$isSubmitting}>Absenden</button>
 </form>
 ```
 

@@ -16,33 +16,20 @@ export function createSecurityHeadersHandler(nodeEnv: string): Handle {
 
 		// HSTS for production (HTTPS only)
 		if (event.url.protocol === 'https:') {
-			response.headers.set(
-				'Strict-Transport-Security',
-				'max-age=31536000; includeSubDomains'
-			);
+			response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 		}
 
 		// Development-specific CORS headers
 		if (nodeEnv === 'development') {
 			response.headers.set('Access-Control-Allow-Origin', '*');
-			response.headers.set(
-				'Access-Control-Allow-Methods',
-				'GET, POST, PUT, DELETE, OPTIONS'
-			);
+			response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
 			response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 			response.headers.set('Access-Control-Allow-Credentials', 'true');
 		}
 
-		// Cookie security for iframe context
-		const existingCookies = response.headers.get('Set-Cookie');
-		if (existingCookies) {
-			// SameSite=None for iframe functionality (only with Secure)
-			const iframeFriendlyCookies = existingCookies.replace(
-				/SameSite=Strict/g,
-				'SameSite=None; Secure'
-			);
-			response.headers.set('Set-Cookie', iframeFriendlyCookies);
-		}
+		// Hinweis: Der Session-Cookie wird direkt in auth.ts mit SameSite=None; Secure
+		// gesetzt (nötig für die iframe-Einbettung auf meeresmuseum.de). Ein nachträglicher
+		// Header-Rewrite ist daher nicht mehr erforderlich.
 
 		return response;
 	};

@@ -2,6 +2,7 @@ import { FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
 import { createLogger } from '$lib/logger.server';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { saveUploadedFile } from '$lib/server/db/sightingFilesRepository';
+import { getOrCreateUploadUid } from '$lib/server/auth/uploadOwnership';
 import { readImageExifData } from '$lib/server/media/exifUtils';
 import { getStorageProvider } from '$lib/server/storage/factory';
 import { isDangerousFileType, validateMagicBytes } from '$lib/server/validation/magicBytes';
@@ -22,7 +23,7 @@ const logger = createLogger('FileUploadAPI');
 // Get storage provider and upload file
 const storage = getStorageProvider();
 
-export const POST: RequestHandler = async ({ request, locals, getClientAddress }) => {
+export const POST: RequestHandler = async ({ request, locals, getClientAddress, cookies }) => {
 	// Security: Track authentication status
 	const isAuthenticated = !!locals.user;
 	const userIdentifier = locals.user?.sub || 'anonymous';
@@ -197,8 +198,13 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 
 		uploadedFile.exifData = metadata;
 
-		// Speichere die hochgeladene Datei in der Datenbank
-		await saveUploadedFile(uploadedFile, referenceId);
+		// Ownership-Binding: Serverseitig generierter, cookie-gebundener Owner-UID.
+		// Wird MIT der Datei gespeichert (überschreibt den nicht vertrauenswürdigen
+		// client-gelieferten FormData-uid in der DB) und beim Löschen als Nachweis geprüft.
+		// Wichtig: Dateiname auf der Platte und die JSON-Response behalten den per-Datei-uid
+		// (Frontend-Key); nur der DB-Datensatz erhält den Owner-UID.
+		const ownerUid = getOrCreateUploadUid(cookies);
+		await saveUploadedFile({ ...uploadedFile, uid: ownerUid }, referenceId);
 
 		// Add rate limit headers from the already-computed result (no second counter increment)
 		return json(uploadedFile, {

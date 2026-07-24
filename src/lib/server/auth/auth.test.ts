@@ -322,12 +322,13 @@ describe('auth.ts', () => {
 			await setAuthCookie(mockCookies, testUser);
 
 			expect(SignJWT).toHaveBeenCalledWith({ ...testUser });
+			// Session-Cookie muss SameSite=None; Secure sein (iframe-Einbettung meeresmuseum.de)
 			expect(mockCookies.set).toHaveBeenCalledWith('test-auth-cookie', 'signed-jwt-token', {
 				httpOnly: true,
-				sameSite: 'lax',
+				sameSite: 'none',
+				secure: true,
 				maxAge: 60 * 60 * 24 * 1, // 1 Tag
-				path: '/',
-				secure: process.env.NODE_ENV === 'production'
+				path: '/'
 			});
 		});
 	});
@@ -336,7 +337,13 @@ describe('auth.ts', () => {
 		it('should delete auth cookie', () => {
 			clearAuthCookie(mockCookies);
 
-			expect(mockCookies.delete).toHaveBeenCalledWith('test-auth-cookie', { path: '/' });
+			// Attribute müssen mit setAuthCookie übereinstimmen, sonst wird der Cookie nicht gelöscht
+			expect(mockCookies.delete).toHaveBeenCalledWith('test-auth-cookie', {
+				path: '/',
+				httpOnly: true,
+				sameSite: 'none',
+				secure: true
+			});
 		});
 	});
 

@@ -1,33 +1,67 @@
 <script lang="ts">
-	let { show = $bindable(false), onConfirm, onCancel } = $props<{
+	let {
+		show = $bindable(false),
+		onConfirm,
+		onCancel
+	} = $props<{
 		show?: boolean;
 		onConfirm?: () => void;
 		onCancel?: () => void;
 	}>();
 
+	let dialogElement = $state<HTMLDialogElement | null>(null);
+	let confirmed = false;
+
+	// Native <dialog> mit showModal()/close() für Fokus-Trap und ESC-Handling
+	$effect(() => {
+		if (!dialogElement) return;
+		if (show && !dialogElement.open) {
+			confirmed = false;
+			dialogElement.showModal();
+		} else if (!show && dialogElement.open) {
+			dialogElement.close();
+		}
+	});
+
 	function confirm() {
+		confirmed = true;
 		onConfirm?.();
 		show = false;
 	}
 
 	function cancel() {
-		onCancel?.();
+		show = false;
+	}
+
+	// Wird bei ESC, Backdrop-Klick und close() ausgelöst
+	function handleClose() {
+		if (!confirmed) {
+			onCancel?.();
+		}
 		show = false;
 	}
 </script>
 
-{#if show}
-	<div class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
-		<div class="bg-base-100 w-96 rounded-lg p-6">
-			<h3 class="mb-4 text-lg font-bold">Sichtung löschen</h3>
-			<p class="mb-4">
-				Sind Sie sicher, dass Sie diese Sichtung löschen möchten? Diese Aktion kann nicht rückgängig
-				gemacht werden.
-			</p>
-			<div class="flex justify-end gap-2">
-				<button class="btn" onclick={cancel}>Abbrechen</button>
-				<button class="btn btn-error" onclick={confirm}>Löschen</button>
-			</div>
+<dialog
+	bind:this={dialogElement}
+	class="modal"
+	aria-labelledby="delete-dialog-title"
+	onclose={handleClose}
+>
+	<div class="modal-box w-96">
+		<h3 id="delete-dialog-title" class="mb-4 text-lg font-bold">Sichtung löschen</h3>
+		<p class="mb-4">
+			Sind Sie sicher, dass Sie diese Sichtung löschen möchten? Diese Aktion kann nicht rückgängig
+			gemacht werden.
+		</p>
+		<div class="modal-action">
+			<button class="btn" onclick={cancel}>Abbrechen</button>
+			<button class="btn btn-error" onclick={confirm}>Löschen</button>
 		</div>
 	</div>
-{/if}
+	<form method="dialog" class="modal-backdrop bg-black/50">
+		<button aria-label="Dialog schließen" onclick={cancel}>
+			<span class="sr-only">Dialog schließen</span>
+		</button>
+	</form>
+</dialog>

@@ -3,25 +3,105 @@ import { getFileInfo, getUploadPath, isValidUploadPath } from '$lib/server/uploa
 import { error } from '@sveltejs/kit';
 import { createReadStream } from 'fs';
 import { getStorageProvider, isCloudStorage } from '$lib/server/storage/factory';
+import { isAdminUser } from '$lib/server/auth/auth';
+import { db } from '$lib/server/db';
+import { sightingFiles, sightings } from '$lib/server/db/schema';
+import { getClientIp } from '$lib/server/utils/getClientIp';
+import {
+	RATE_LIMITS,
+	enforceRateLimit,
+	createRateLimitIdentifier
+} from '$lib/server/middleware/rateLimit';
+import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:uploads');
 
-export const GET: RequestHandler = async ({ params }) => {
+/**
+ * Prüft anhand der Datenbank, ob der Zugriff auf eine Datei erlaubt ist.
+ *
+ * Regeln (analog zu /api/media):
+ * - Öffentlicher Zugriff nur für freigegebene Sichtungen (`approvedAt` gesetzt).
+ * - Unfreigegebene Medien nur für Admins.
+ * - Unbekannte Dateien werden als 404 behandelt (Existenz wird nicht verraten).
+ */
+async function assertFileAccessAllowed(
+	filePath: string,
+	locals: App.Locals,
+	clientIp: string
+): Promise<void> {
+	const fileRecord = await db
+		.select({
+			sightingId: sightingFiles.sightingId,
+			approvedAt: sightings.approvedAt
+		})
+		.from(sightingFiles)
+		.innerJoin(sightings, eq(sightingFiles.sightingId, sightings.id))
+		.where(eq(sightingFiles.filePath, filePath))
+		.limit(1);
+
+	const file = fileRecord[0];
+	if (!file) {
+		logger.warn({ filePath, clientIp }, 'Datei nicht in Datenbank gefunden');
+		throw error(404, 'Datei nicht gefunden');
+	}
+
+	const isApproved = !!file.approvedAt;
+	if (!isApproved) {
+		const user = locals.user;
+		if (!isAdminUser(user)) {
+			logger.warn(
+				{
+					action: 'upload_access_unauthorized',
+					filePath,
+					sightingId: file.sightingId,
+					hasUser: !!user,
+					clientIp
+				},
+				'Nicht autorisierter Zugriff auf unfreigegebene Datei'
+			);
+			// Existenz nicht verraten
+			throw error(404, 'Datei nicht gefunden');
+		}
+
+		logger.info(
+			{ filePath, sightingId: file.sightingId, userId: user?.sub },
+			'Admin greift auf unfreigegebene Datei zu'
+		);
+	}
+}
+
+export const GET: RequestHandler = async ({ params, request, locals, getClientAddress }) => {
 	const filePath = params.path;
-	
+	const clientIp = getClientIp(getClientAddress, request) ?? 'unknown';
+
 	// Pfad-Validierung
 	if (!filePath || !isValidUploadPath(filePath)) {
 		logger.warn({ filePath }, 'Ungültiger Dateipfad angefordert');
 		throw error(400, 'Ungültiger Dateipfad');
 	}
 
+	// Rate Limiting basierend auf Authentifizierungsstatus
+	const isAuthenticated = !!locals.user;
+	const rateLimitConfig = isAuthenticated
+		? RATE_LIMITS.MEDIA_ACCESS_AUTHENTICATED
+		: RATE_LIMITS.MEDIA_ACCESS_ANONYMOUS;
+	const rateLimitIdentifier = createRateLimitIdentifier(
+		locals.user?.sub,
+		clientIp,
+		isAuthenticated
+	);
+	enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'upload_access');
+
+	// Freigabe-/Admin-Prüfung (analog zu /api/media)
+	await assertFileAccessAllowed(filePath, locals, clientIp);
+
 	// For cloud storage, redirect to the actual URL
 	if (isCloudStorage()) {
 		try {
 			const storage = getStorageProvider();
 			const url = storage.getUrl(filePath);
-			
+
 			// For Vercel Blob and other cloud providers, redirect to their URL
 			return new Response(null, {
 				status: 302,
@@ -38,10 +118,10 @@ export const GET: RequestHandler = async ({ params }) => {
 
 	// Local storage - serve directly
 	const fullPath = getUploadPath(filePath);
-	
+
 	// Datei-Informationen abrufen
 	const fileInfo = getFileInfo(fullPath);
-	
+
 	if (!fileInfo) {
 		logger.info({ filePath }, 'Datei nicht gefunden');
 		throw error(404, 'Datei nicht gefunden');
@@ -53,11 +133,14 @@ export const GET: RequestHandler = async ({ params }) => {
 		throw error(403, 'Dateityp nicht erlaubt');
 	}
 
-	logger.debug({ filePath, size: fileInfo.size, mimeType: fileInfo.mimeType }, 'Upload-Datei serviert');
+	logger.debug(
+		{ filePath, size: fileInfo.size, mimeType: fileInfo.mimeType },
+		'Upload-Datei serviert'
+	);
 
 	// Datei-Stream erstellen
 	const stream = createReadStream(fullPath);
-	
+
 	// Node.js ReadStream in Web ReadableStream konvertieren
 	const readableStream = new ReadableStream({
 		start(controller) {
@@ -72,7 +155,7 @@ export const GET: RequestHandler = async ({ params }) => {
 			stream.on('error', (err) => controller.error(err));
 		}
 	});
-	
+
 	// Response mit Security-Headers
 	return new Response(readableStream, {
 		status: 200,
@@ -84,11 +167,7 @@ export const GET: RequestHandler = async ({ params }) => {
 			// Security Headers
 			'X-Content-Type-Options': 'nosniff',
 			'Content-Security-Policy': "default-src 'none'",
-			'X-Frame-Options': 'DENY',
-			// CORS für lokale Entwicklung
-			'Access-Control-Allow-Origin': '*',
-			'Access-Control-Allow-Methods': 'GET',
-			'Access-Control-Allow-Headers': 'Content-Type'
+			'X-Frame-Options': 'DENY'
 		}
 	});
 };

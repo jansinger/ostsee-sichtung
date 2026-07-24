@@ -15,7 +15,7 @@ model: inherit
 ## Fähigkeiten
 
 - Multi-Step Formular-Architektur
-- svelte-forms-lib + Yup Integration
+- Projekteigene `createForm`-Implementierung (`src/lib/form/createForm.ts`) + Yup Integration
 - Conditional Logic / Progressive Disclosure
 - Accessibility (WCAG 2.1 AA)
 - Mobile-First Form Design
@@ -60,7 +60,7 @@ export const sightingSchema = yup.object({
 });
 ```
 
-2. **FormState erweitern** (`formState.ts`):
+2. **FormState erweitern** (`src/lib/report/formConfig.ts`):
 
 ```typescript
 export const initialFormState = {
@@ -110,7 +110,7 @@ neuesFeld: yup.string().when('bedingung', {
 
 ### Schritt 3: FormState erweitern
 
-- `formState.ts` mit Initialwerten
+- `initialFormState` in `src/lib/report/formConfig.ts` mit Initialwerten
 - Type-Definition aktualisieren
 
 ### Schritt 4: UI implementieren
@@ -135,7 +135,7 @@ neuesFeld: yup.string().when('bedingung', {
 ## Erfolgs-Kriterien
 
 - [ ] Schema in `sightingSchema.ts` erweitert
-- [ ] FormState in `formState.ts` aktualisiert
+- [ ] FormState in `src/lib/report/formConfig.ts` aktualisiert
 - [ ] UI-Komponente erstellt/erweitert
 - [ ] Deutsche Fehlermeldungen
 - [ ] Accessibility-Labels vorhanden

@@ -28,34 +28,33 @@
 
 <!--
   DaisyUI steps component styles the <li> directly via .step class.
-  We can't nest a <button> inside without breaking the grid layout.
-  Using role="navigation" + aria-label on the wrapper, and keeping
-  the <li> interactive via tabindex/onclick with aria-current="step"
-  for the active step indicator (WAI stepper pattern).
+  The step title is rendered as visible <li> content (shown below the
+  circle). Navigation is a real <button> for proper keyboard/AT support;
+  aria-current marks the active step (WAI stepper pattern).
 -->
 <nav class="mb-8" aria-label="Formular-Schritte">
-	<ul class="steps steps-horizontal w-full" role="tablist">
+	<ul class="steps steps-horizontal w-full">
 		{#each steps as step, index (step.id)}
 			{@const navigable = canNavigateTo(index)}
 			<li
-				role="tab"
-				class="step step-button {currentStep >= index ? 'step-primary' : ''}"
-				class:cursor-pointer={navigable}
-				class:cursor-not-allowed={!navigable}
+				class="step {currentStep >= index ? 'step-primary' : ''}"
 				class:opacity-50={!navigable && index > currentStep}
-				tabindex={navigable ? 0 : -1}
-				aria-disabled={!navigable}
-				aria-current={currentStep === index ? 'step' : undefined}
-				aria-label={step.title}
-				title={navigable ? step.description : 'Bitte füllen Sie zuerst die vorherigen Schritte aus'}
-				onclick={() => handleStepClick(index)}
-				onkeydown={(e) => {
-					if (e.key === 'Enter' || e.key === ' ') {
-						e.preventDefault();
-						handleStepClick(index);
-					}
-				}}
-			></li>
+			>
+				<button
+					type="button"
+					class="step-button px-1 text-xs sm:text-sm"
+					class:cursor-not-allowed={!navigable}
+					aria-disabled={!navigable ? 'true' : 'false'}
+					aria-label={step.title}
+					aria-current={currentStep === index ? 'step' : undefined}
+					title={navigable
+						? step.description
+						: 'Bitte füllen Sie zuerst die vorherigen Schritte aus'}
+					onclick={() => handleStepClick(index)}
+				>
+					{step.title}
+				</button>
+			</li>
 		{/each}
 	</ul>
 </nav>

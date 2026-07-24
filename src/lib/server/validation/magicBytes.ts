@@ -42,6 +42,11 @@ const MAGIC_BYTES: Record<string, Array<Array<{ bytes: number[]; offset: number 
 		[{ bytes: [0x42, 0x4d], offset: 0 }] // BM
 	],
 
+	// Document formats
+	'application/pdf': [
+		[{ bytes: [0x25, 0x50, 0x44, 0x46, 0x2d], offset: 0 }] // %PDF-
+	],
+
 	// Video formats
 	'video/mp4': [
 		[{ bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 }], // ftyp

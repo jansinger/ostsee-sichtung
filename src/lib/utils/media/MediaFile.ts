@@ -77,7 +77,8 @@ export class MediaFile {
 		mediaFile.file = mockFile;
 		mediaFile.size = fileInfo.size;
 		mediaFile.exifData = fileInfo.exifData as ExifData | null | undefined;
-		mediaFile.thumbnail = `/uploads/${fileInfo.filePath}`;
+		// Abgesicherte Media-Route statt direktem /uploads-Zugriff (Freigabe-/Admin-Prüfung)
+		mediaFile.thumbnail = `/api/media/${fileInfo.filePath}`;
 		mediaFile.timestamp = mediaFile.exifData?.dateTimeOriginal
 			? new Date(mediaFile.exifData.dateTimeOriginal)
 			: null;

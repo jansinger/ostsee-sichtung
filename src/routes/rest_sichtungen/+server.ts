@@ -172,21 +172,30 @@ export async function POST(event: RequestEvent): Promise<Response> {
 				'Legacy sighting created successfully (PDF compliant)'
 			);
 
-			// Send email notification if enabled
+			// Send email notification if enabled — fire-and-forget, damit der SMTP-Versand
+			// die HTTP-Response nicht blockiert. Fehler werden geloggt, nicht geworfen.
 			try {
 				const emailConfig = await ServerConfigService.getEmailConfig();
 				if (emailConfig.enabled && emailConfig.recipient && savedSighting.id) {
 					// Use new ID-based email service that reads from database
 					// This ensures correct Baltic Sea validation data is used
-					await EmailService.sendNewSightingNotification(savedSighting.id);
-
-					logger.info(
-						{ sightingId: savedSighting.id, referenceId: transformedData.referenceId },
-						'Legacy API email notification sent successfully'
-					);
+					const emailSightingId = savedSighting.id;
+					void EmailService.sendNewSightingNotification(emailSightingId)
+						.then(() => {
+							logger.info(
+								{ sightingId: emailSightingId, referenceId: transformedData.referenceId },
+								'Legacy API email notification sent successfully'
+							);
+						})
+						.catch((emailError) => {
+							logger.warn(
+								{ sightingId: emailSightingId, emailError },
+								'Failed to send email notification for legacy sighting'
+							);
+						});
 				}
 			} catch (emailError) {
-				// Don't fail the request if email fails
+				// Don't fail the request if the email config lookup fails
 				logger.warn(
 					{ sightingId: savedSighting.id, emailError },
 					'Failed to send email notification for legacy sighting'

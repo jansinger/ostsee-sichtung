@@ -113,14 +113,14 @@ await db.execute(`SELECT * FROM sichtungen WHERE id = ${id}`);
 {@html userInput}
 <!-- GEFÄHRLICH -->
 
-<!-- Korrekt: DOMPurify verwenden -->
+<!-- Korrekt: sanitizeHtml verwenden -->
 {@html sanitizeHtml(userInput)}
 <!-- Erlaubt nur sichere Tags -->
 ```
 
-### DOMPurify Sanitization
+### HTML-Sanitization mit sanitize-html
 
-`isomorphic-dompurify` wird für HTML-Sanitization verwendet (SSR + Client):
+`sanitize-html` wird für HTML-Sanitization verwendet (Wrapper in `src/lib/utils/sanitize.ts`):
 
 ```typescript
 import { sanitizeHtml, sanitizeText } from '$lib/utils/sanitize';
@@ -263,35 +263,37 @@ CSP wird separat in `svelte.config.js` konfiguriert.
 
 ## SAST Scanning
 
-**CodeQL** läuft automatisch via `.github/workflows/codeql.yml`:
-
-- Push/PR auf `main` + wöchentlich (Sonntag 03:00 UTC)
-- Query Suite: `security-extended`
-- Ergebnisse unter GitHub Security → Code scanning alerts
+Kein dediziertes CodeQL-Workflow. Container-Image-Scan mit SARIF-Upload läuft in `.github/workflows/docker-publish.yml` (Ergebnisse unter GitHub Security → Code scanning alerts).
 
 ---
 
 ## Rate Limiting
 
+Implementierung: `src/lib/server/middleware/rateLimit.ts` (In-Memory, mit automatischem Cleanup).
+
 ```typescript
-import { rateLimit } from '$lib/server/rateLimit';
+import {
+	RATE_LIMITS,
+	checkRateLimit,
+	createRateLimitIdentifier,
+	enforceRateLimit,
+	buildRateLimitHeaders
+} from '$lib/server/middleware/rateLimit';
 
-export async function POST({ request, getClientAddress }) {
-	const ip = getClientAddress();
+export async function POST({ locals, getClientAddress }) {
+	// Identifier: `user:{sub}` (authentifiziert) oder `ip:{clientIp}`
+	const identifier = createRateLimitIdentifier(locals.user?.sub, getClientAddress(), !!locals.user);
 
-	// 10 Anfragen pro Minute
-	const allowed = await rateLimit(ip, {
-		limit: 10,
-		window: 60
-	});
+	// wirft SvelteKit error(429) bei Überschreitung
+	const result = enforceRateLimit(identifier, RATE_LIMITS.SIGHTING_SUBMISSION, 'sightings');
 
-	if (!allowed) {
-		return new Response('Zu viele Anfragen', { status: 429 });
-	}
-
+	// Response-Headers: X-RateLimit-{Limit,Remaining,Reset,Window}
+	const headers = buildRateLimitHeaders(RATE_LIMITS.SIGHTING_SUBMISSION, result);
 	// ...
 }
 ```
+
+Vordefinierte Limits in `RATE_LIMITS`: File Upload 20/h (anonym) bzw. 50/h (auth), Media Access 30/min bzw. 100/min, Sighting Submission 20/h.
 
 ---
 

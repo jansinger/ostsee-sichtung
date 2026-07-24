@@ -59,7 +59,7 @@
 
 {#if isNotIFrame}
 	<!-- Fixed Navbar -->
-	<header class="bg-base-200 bg-opacity-95 sticky top-0 z-50 shadow-md backdrop-blur-lg">
+	<header class="bg-base-200/95 sticky top-0 z-50 shadow-md backdrop-blur-lg">
 		<div class="container mx-auto">
 			<div class="navbar">
 				<div class="navbar-start">

@@ -124,7 +124,7 @@
 									{symbol.symbol}
 								</span>
 							{:else}
-								<div class="h-4 w-4 rounded-full bg-gray-400"></div>
+								<div class="h-4 w-4 rounded-full bg-base-content/40"></div>
 							{/if}
 						</div>
 

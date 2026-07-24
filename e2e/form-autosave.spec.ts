@@ -81,9 +81,10 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		await formPage.clickNext();
 		await expectCurrentStep(page, /Sichtungsdetails/i);
 
-		// Click reset button
+		// Click reset button — a confirm() dialog now guards the reset, accept it
 		const resetBtn = page.getByRole('button', { name: /zurücksetzen/i });
 		await expect(resetBtn).toBeVisible();
+		page.once('dialog', (dialog) => dialog.accept());
 		await resetBtn.click();
 
 		// After reset, should be back on Step 1

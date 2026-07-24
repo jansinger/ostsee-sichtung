@@ -10,19 +10,26 @@
 </script>
 
 <div class:iframe-mode={!isNotIFrame}>
+	<!-- Skip-Link: erster fokussierbarer Inhalt vor der Navigation -->
+	<a
+		href="#main-content"
+		class="btn btn-primary sr-only z-[100] focus:not-sr-only focus:absolute focus:top-2 focus:left-2"
+	>
+		Zum Hauptinhalt springen
+	</a>
+
 	<PublicNavbar user={data.user} isAdmin={data.showAdminMenu} />
 
 	<!-- Maintenance Mode Banner for Admins -->
 	{#if data.maintenanceConfig?.enabled && data.showAdminMenu && isNotIFrame}
 		<div class="container mx-auto px-4 py-2">
-			<MaintenanceBanner 
-				isAdmin={true} 
-				maintenanceMessage={data.maintenanceConfig.message} 
-			/>
+			<MaintenanceBanner isAdmin={true} maintenanceMessage={data.maintenanceConfig.message} />
 		</div>
 	{/if}
 
-	{@render children()}
+	<main id="main-content">
+		{@render children()}
+	</main>
 
 	<PublicFooter />
 

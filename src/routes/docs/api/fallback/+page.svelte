@@ -59,7 +59,7 @@
 <div class="mx-auto max-w-6xl p-4">
 	<div class="mb-8">
 		<h1 class="mb-4 text-3xl font-bold">📄 API-Dokumentation (Fallback)</h1>
-		<p class="mb-4 text-gray-600">
+		<p class="mb-4 text-base-content/70">
 			Diese vereinfachte Ansicht zeigt die OpenAPI-Spezifikation an, falls die interaktive
 			Scalar-Dokumentation nicht geladen werden kann.
 		</p>
@@ -89,16 +89,16 @@
 				<div class="card-body">
 					<h2 class="card-title text-lg">🔍 Sichtungen</h2>
 					<div class="space-y-1 text-sm">
-						<div><code class="text-green-600">GET</code> /sightings - Öffentliche Sichtungen</div>
-						<div><code class="text-blue-600">POST</code> /sightings - Neue Sichtung</div>
+						<div><code class="text-success">GET</code> /sightings - Öffentliche Sichtungen</div>
+						<div><code class="text-info">POST</code> /sightings - Neue Sichtung</div>
 						<div>
-							<code class="text-green-600">GET</code> /sightings/{'{id}'} - Einzelne Sichtung
+							<code class="text-success">GET</code> /sightings/{'{id}'} - Einzelne Sichtung
 						</div>
 						<div>
 							<code class="text-orange-600">PUT</code> /sightings/{'{id}'} - Sichtung ändern
 						</div>
 						<div>
-							<code class="text-red-600">DELETE</code> /sightings/{'{id}'} - Sichtung löschen
+							<code class="text-error">DELETE</code> /sightings/{'{id}'} - Sichtung löschen
 						</div>
 					</div>
 				</div>
@@ -108,9 +108,9 @@
 				<div class="card-body">
 					<h2 class="card-title text-lg">🔐 Authentifizierung</h2>
 					<div class="space-y-1 text-sm">
-						<div><code class="text-green-600">GET</code> /auth/login - Login starten</div>
-						<div><code class="text-green-600">GET</code> /auth/logout - Logout</div>
-						<div><code class="text-green-600">GET</code> /auth/callback - Auth0 Callback</div>
+						<div><code class="text-success">GET</code> /auth/login - Login starten</div>
+						<div><code class="text-success">GET</code> /auth/logout - Logout</div>
+						<div><code class="text-success">GET</code> /auth/callback - Auth0 Callback</div>
 					</div>
 				</div>
 			</div>
@@ -119,8 +119,8 @@
 				<div class="card-body">
 					<h2 class="card-title text-lg">📁 Dateien</h2>
 					<div class="space-y-1 text-sm">
-						<div><code class="text-blue-600">POST</code> /files/upload - Datei hochladen</div>
-						<div><code class="text-red-600">DELETE</code> /files/delete - Datei löschen</div>
+						<div><code class="text-info">POST</code> /files/upload - Datei hochladen</div>
+						<div><code class="text-error">DELETE</code> /files/delete - Datei löschen</div>
 					</div>
 				</div>
 			</div>
@@ -129,10 +129,10 @@
 				<div class="card-body">
 					<h2 class="card-title text-lg">📊 Export</h2>
 					<div class="space-y-1 text-sm">
-						<div><code class="text-green-600">GET</code> /sightings/export/json - JSON Export</div>
-						<div><code class="text-green-600">GET</code> /sightings/export/csv - CSV Export</div>
-						<div><code class="text-green-600">GET</code> /sightings/export/xml - XML Export</div>
-						<div><code class="text-green-600">GET</code> /sightings/export/kml - KML Export</div>
+						<div><code class="text-success">GET</code> /sightings/export/json - JSON Export</div>
+						<div><code class="text-success">GET</code> /sightings/export/csv - CSV Export</div>
+						<div><code class="text-success">GET</code> /sightings/export/xml - XML Export</div>
+						<div><code class="text-success">GET</code> /sightings/export/kml - KML Export</div>
 					</div>
 				</div>
 			</div>
@@ -142,10 +142,10 @@
 					<h2 class="card-title text-lg">⚙️ Admin</h2>
 					<div class="space-y-1 text-sm">
 						<div>
-							<code class="text-blue-600">POST</code> /sightings/{'{id}'}/approve - Genehmigen
+							<code class="text-info">POST</code> /sightings/{'{id}'}/approve - Genehmigen
 						</div>
 						<div>
-							<code class="text-blue-600">POST</code> /sightings/{'{id}'}/verify - Verifizieren
+							<code class="text-info">POST</code> /sightings/{'{id}'}/verify - Verifizieren
 						</div>
 					</div>
 				</div>
@@ -155,15 +155,15 @@
 				<div class="card-body">
 					<h2 class="card-title text-lg">🌍 Geo</h2>
 					<div class="space-y-1 text-sm">
-						<div><code class="text-green-600">GET</code> /geo/inBaltic - Ostsee-Prüfung</div>
-						<div><code class="text-green-600">GET</code> /map/sightings - Kartendaten</div>
+						<div><code class="text-success">GET</code> /geo/inBaltic - Ostsee-Prüfung</div>
+						<div><code class="text-success">GET</code> /map/sightings - Kartendaten</div>
 					</div>
 				</div>
 			</div>
 		</div>
 
 		<!-- Authentication Info -->
-		<div class="mb-8 rounded-lg border border-yellow-200 bg-yellow-50 p-6">
+		<div class="mb-8 rounded-lg border border-warning/30 bg-warning/10 p-6">
 			<h2 class="mb-4 text-xl font-semibold">🔐 Authentifizierung</h2>
 			<div class="grid gap-6 md:grid-cols-2">
 				<div>
@@ -195,7 +195,7 @@
 					YAML-Inhalt anzeigen
 				</summary>
 				<div class="collapse-content">
-					<pre class="max-h-96 overflow-auto rounded border bg-gray-50 p-4 text-xs"><code
+					<pre class="max-h-96 overflow-auto rounded border bg-base-200 p-4 text-xs"><code
 							>{openApiSpec}</code
 						></pre>
 				</div>
@@ -203,23 +203,23 @@
 		</div>
 
 		<!-- Alternative Tools -->
-		<div class="rounded-lg border border-blue-200 bg-blue-50 p-6">
+		<div class="rounded-lg border border-info/30 bg-info/10 p-6">
 			<h2 class="mb-4 text-xl font-semibold">🔧 Alternative Tools</h2>
-			<p class="mb-4 text-sm text-gray-600">
+			<p class="mb-4 text-sm text-base-content/70">
 				Sie können die OpenAPI-Spezifikation in diesen Tools verwenden:
 			</p>
 			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 				<div class="rounded border bg-white p-4">
 					<h3 class="mb-2 font-medium">Postman</h3>
-					<p class="text-xs text-gray-600">Importieren Sie die YAML-Datei für API-Tests</p>
+					<p class="text-xs text-base-content/70">Importieren Sie die YAML-Datei für API-Tests</p>
 				</div>
 				<div class="rounded border bg-white p-4">
 					<h3 class="mb-2 font-medium">Insomnia</h3>
-					<p class="text-xs text-gray-600">Laden Sie die Spezifikation für REST-Tests</p>
+					<p class="text-xs text-base-content/70">Laden Sie die Spezifikation für REST-Tests</p>
 				</div>
 				<div class="rounded border bg-white p-4">
 					<h3 class="mb-2 font-medium">Swagger Editor</h3>
-					<p class="text-xs text-gray-600">Online-Editor für OpenAPI-Specs</p>
+					<p class="text-xs text-base-content/70">Online-Editor für OpenAPI-Specs</p>
 				</div>
 			</div>
 		</div>

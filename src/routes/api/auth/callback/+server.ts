@@ -8,6 +8,7 @@ import {
 	setAuthCookie,
 	verifyToken
 } from '$lib/server/auth/auth.js';
+import { sanitizeReturnUrl } from '$lib/server/auth/returnUrl';
 import type { User } from '$lib/types';
 import { error, redirect, type Cookies } from '@sveltejs/kit';
 
@@ -57,7 +58,8 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 			userEmail: authUser.email
 		});
 		cookies.delete('csrfState', { path: '/' });
-		redirect(302, returnUrl);
+		// Open-Redirect-Schutz: nur relative Same-Origin-Pfade zulassen
+		redirect(302, sanitizeReturnUrl(returnUrl));
 	} catch (err) {
 		// SvelteKit redirect() throws internally — re-throw without treating as error
 		if (err instanceof Response || (err as { status?: number })?.status === 302) {

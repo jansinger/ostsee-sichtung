@@ -24,6 +24,14 @@
 		try {
 			currentStep += 1;
 			scrollToElement(document.getElementById('form-content'));
+			// Fokus auf den Header des neuen Schritts setzen (Screenreader-Ansage), analog StepNavigation
+			requestAnimationFrame(() => {
+				const stepHeader = document.querySelector('#form-content h2');
+				if (stepHeader instanceof HTMLElement) {
+					stepHeader.setAttribute('tabindex', '-1');
+					stepHeader.focus({ preventScroll: true });
+				}
+			});
 			logger.info('Step 3 skipped by user');
 		} catch (error) {
 			logger.error({ error }, 'Error skipping step 3');

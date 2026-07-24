@@ -1,31 +1,85 @@
 import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 import { createLogger } from '$lib/logger.server';
+import { enforceRateLimit, createRateLimitIdentifier } from '$lib/server/middleware/rateLimit';
 
 const logger = createLogger('csp-report');
 
+/** Rate-Limit für CSP-Reports: 60 Reports pro Minute und IP */
+const CSP_REPORT_RATE_LIMIT = { windowMs: 60 * 1000, maxRequests: 60 };
+
+/** Maximale akzeptierte Body-Größe eines CSP-Reports (8 KB) */
+const MAX_CSP_REPORT_BYTES = 8 * 1024;
+
+/** Bekannte, unbedenkliche CSP-Report-Felder, die geloggt werden dürfen */
+type CspReportPayload = Record<string, unknown>;
+
+function extractKnownFields(cspReport: CspReportPayload) {
+	return {
+		blockedUri: cspReport['blocked-uri'],
+		violatedDirective: cspReport['violated-directive'],
+		documentUri: cspReport['document-uri'],
+		sourceFile: cspReport['source-file'],
+		lineNumber: cspReport['line-number']
+	};
+}
+
 /**
  * POST-Handler für /api/csp-report
- * Empfängt und verarbeitet CSP-Verstoßberichte, die vom Browser gesendet werden
+ * Empfängt und verarbeitet CSP-Verstoßberichte, die vom Browser gesendet werden.
  *
- * @param request - Die eingehende Anfrage mit dem CSP-Verstoßbericht
- * @returns Eine leere JSON-Antwort mit 204 Status (No Content)
+ * Sicherheit:
+ * - Rate-Limit gegen Log-Flooding (unauthentifizierter Endpunkt)
+ * - Übergroße Payloads werden verworfen (kein Ressourcen-/Log-Missbrauch)
+ * - Es werden ausschließlich bekannte CSP-Felder geloggt (kein ungefilterter `fullReport`)
  */
-export async function POST({ request }: RequestEvent) {
+export async function POST({ request, getClientAddress }: RequestEvent) {
+	// Rate Limiting (immer anonym — CSP-Reports tragen keine Auth)
+	const clientIp = getClientAddress?.() ?? 'unknown';
+	const identifier = createRateLimitIdentifier(undefined, clientIp, false);
+	enforceRateLimit(identifier, CSP_REPORT_RATE_LIMIT, 'csp_report');
+
+	// Schnelle Vorabprüfung anhand des content-length-Headers (kann fehlen/gefälscht sein).
+	const contentLength = Number(request.headers.get('content-length') ?? '0');
+	if (Number.isFinite(contentLength) && contentLength > MAX_CSP_REPORT_BYTES) {
+		logger.warn({ contentLength }, 'CSP-Report verworfen — Payload zu groß (Header)');
+		return new Response(null, { status: 204 });
+	}
+
+	// Tatsächliche Body-Größe begrenzen: Body als Text lesen und VOR dem Parsen prüfen.
+	// So greift das Limit auch bei chunked Transfer oder fehlendem content-length-Header,
+	// bevor die (globale) BODY_SIZE_LIMIT-Grenze relevant würde.
+	let bodyText: string;
 	try {
-		// CSP-Verstoß aus dem Request-Body extrahieren
-		const report = await request.json();
+		bodyText = await request.text();
+	} catch (error) {
+		logger.error({ error }, 'Fehler beim Lesen des CSP-Report-Bodys');
+		return json({ success: false, error: 'Ungültiges CSP-Verstoßformat' }, { status: 400 });
+	}
 
-		// CSP-Verstoß loggen
-		logger.warn('CSP-Verstoß erkannt', {
-			// Bei neueren Browsern ist der Report im 'csp-report' Feld
-			...report['csp-report'],
-			// Bei älteren Browsern kann der Report direkt im Objekt sein
-			fullReport: report,
-			timestamp: new Date().toISOString()
-		});
+	// Echte UTF-8-Bytelänge prüfen (nicht String-Länge/UTF-16-Code-Units),
+	// damit das Limit bei Nicht-ASCII-Payloads korrekt greift.
+	const byteLength = Buffer.byteLength(bodyText, 'utf8');
+	if (byteLength > MAX_CSP_REPORT_BYTES) {
+		logger.warn({ byteLength }, 'CSP-Report verworfen — Payload zu groß');
+		return new Response(null, { status: 204 });
+	}
 
-		// Optional: Hier könntest du den Verstoß in eine Datenbank oder einen externen Logging-Dienst schreiben
+	try {
+		// CSP-Verstoß aus dem bereits gelesenen Body-Text parsen
+		const report = JSON.parse(bodyText) as CspReportPayload;
+
+		// Bei neueren Browsern ist der Report im 'csp-report' Feld, sonst direkt im Objekt
+		const cspReport = (report['csp-report'] as CspReportPayload) ?? report ?? {};
+
+		// Nur bekannte Felder loggen — kein ungefilterter fullReport
+		logger.warn(
+			{
+				...extractKnownFields(cspReport),
+				timestamp: new Date().toISOString()
+			},
+			'CSP-Verstoß erkannt'
+		);
 
 		// 204 No Content zurückgeben, da keine Antwort erforderlich ist
 		return new Response(null, { status: 204 });

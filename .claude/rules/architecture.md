@@ -6,16 +6,16 @@ Diese Regeln gelten für **jede** Code-Änderung im Projekt.
 
 ## Technology Stack
 
-| Bereich   | Technologie                                   |
-| --------- | --------------------------------------------- |
-| Framework | SvelteKit 5 mit TypeScript                    |
-| Datenbank | PostgreSQL + PostGIS                          |
-| ORM       | Drizzle (type-safe)                           |
-| Styling   | TailwindCSS + DaisyUI (Theme: `meeresmuseum`) |
-| Karten    | OpenLayers                                    |
-| Forms     | svelte-forms-lib + Yup                        |
-| Logging   | Pino                                          |
-| Icons     | unplugin-icons (lucide)                       |
+| Bereich   | Technologie                                                    |
+| --------- | -------------------------------------------------------------- |
+| Framework | SvelteKit 5 mit TypeScript                                     |
+| Datenbank | PostgreSQL + PostGIS                                           |
+| ORM       | Drizzle (type-safe)                                            |
+| Styling   | TailwindCSS + DaisyUI (Theme: `meeresmuseum`)                  |
+| Karten    | OpenLayers                                                     |
+| Forms     | Eigene `createForm`-Impl. (`src/lib/form/createForm.ts`) + Yup |
+| Logging   | Pino                                                           |
+| Icons     | unplugin-icons (lucide)                                        |
 
 ---
 
@@ -25,32 +25,56 @@ Diese Regeln gelten für **jede** Code-Änderung im Projekt.
 src/
 ├── lib/
 │   ├── components/          # Wiederverwendbare UI-Komponenten
-│   │   └── map/             # Karten-Komponenten (OLMap.svelte etc.)
+│   │   ├── admin/           # Admin-UI-Komponenten
+│   │   ├── docs/            # API-Doku-Komponenten
+│   │   ├── form/            # Generische Form-Komponenten
+│   │   ├── map/             # Karten-Komponenten (OLMap.svelte etc.)
+│   │   ├── media/           # Medien-Anzeige (Galerie etc.)
+│   │   ├── ui/              # Basis-UI (Dialog, Toast etc.)
+│   │   └── weather/         # Wetter-Anzeige
 │   ├── constants/           # Enums, Konstanten
-│   ├── form/validation/     # Yup Validation Schema
+│   ├── form/                # createForm.ts + validation/ (Yup Schema)
 │   ├── legacy-api/          # Legacy API Utilities (Field Mapping, Validation)
+│   ├── logger/              # Pino Logger (Server + Client)
 │   ├── map/                 # OpenLayers Controller & Utilities
 │   ├── report/              # Sichtungsmeldung
 │   │   ├── components/      # Form Steps, Sections, Fields
 │   │   └── formOptions/     # Enum/Option Definitionen (16 Dateien)
 │   ├── server/
+│   │   ├── audit/           # Audit-Logging
 │   │   ├── auth/            # JWT/Auth0 Authentication
+│   │   ├── config/          # ConfigService, Access Control
+│   │   ├── datetime/        # Server-Datums-Utilities
 │   │   ├── db/              # Schema, Repository Layer
 │   │   ├── export/          # CSV, JSON, KML, XML Export
 │   │   ├── geo/             # Baltic Sea Validation
-│   │   ├── middleware/       # Security Headers, Rate Limit, Maintenance
+│   │   ├── media/           # Medien-Verarbeitung
+│   │   ├── middleware/      # Security Headers, Rate Limit, Maintenance, DB-Check
 │   │   ├── services/        # Email, Weather Services
-│   │   └── storage/         # File Storage (Local, Vercel Blob)
+│   │   ├── spam/            # Spam-Erkennung
+│   │   ├── storage/         # File Storage (Local, Vercel Blob)
+│   │   ├── templates/       # Email-Templates (Handlebars)
+│   │   ├── utils/           # Server-Utilities (z.B. getClientIp)
+│   │   └── validation/      # Request-Validierung, Magic Bytes
+│   ├── services/            # Client-Services (configService, weatherService)
 │   ├── storage/             # Browser Storage (GDPR-aware)
-│   └── types/               # TypeScript Definitionen
+│   ├── stores/              # Svelte Stores (Toast, Config)
+│   ├── types/               # TypeScript Definitionen
+│   └── utils/               # Client/Shared Utilities (date, geo, media, upload, ...)
 ├── routes/
+│   ├── about/               # Über-Seite
 │   ├── admin/               # Admin-Interface
 │   ├── api/                 # Backend API Endpoints
+│   ├── docs/                # API-Dokumentation (Scalar)
+│   ├── health/              # Health-Check-Endpoint
+│   ├── maintenance/         # Wartungsmodus-Seite
 │   ├── map/                 # Karten-Visualisierung
 │   ├── rest_sichtungen/     # Legacy REST API
-│   └── sichtungen/          # Legacy Sichtungs-API
+│   ├── sichtungen/          # Legacy Sichtungs-API
+│   └── uploads/             # Ausgelieferte Uploads (Local Storage)
 └── hooks.server.ts          # Middleware Chain (sequence)
 e2e/                         # E2E Tests (Root-Level)
+monitoring/                  # Prometheus + Grafana Konfiguration
 ```
 
 ---
@@ -288,7 +312,7 @@ Immer `$lib` mit vollständigen Pfaden verwenden:
 ```typescript
 // Korrekt
 import { formatDate } from '$lib/utils/date';
-import { sightingSchema } from '$lib/sightingSchema';
+import { sightingSchema } from '$lib/form/validation/sightingSchema';
 
 // Falsch
 import { formatDate } from '../../../lib/utils/date';

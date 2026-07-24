@@ -17,6 +17,7 @@ Regeln für PostgreSQL, PostGIS und Drizzle ORM.
 npm run db:start   # PostgreSQL starten (Docker, Port 5433)
 npm run db:stop    # Datenbank stoppen
 npm run db:push    # Schema direkt auf DB pushen (kein drizzle/-Verzeichnis nötig)
+npm run db:migrate # drizzle-kit migrate — läuft mangels drizzle/-Verzeichnis derzeit ins Leere
 npm run db:studio  # Drizzle Studio öffnen
 ```
 

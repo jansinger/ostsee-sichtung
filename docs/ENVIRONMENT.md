@@ -671,6 +671,49 @@ Before deploying, verify:
 
 ---
 
+## Reverse Proxy & Client IP (Production / Docker)
+
+Die Produktion läuft als **adapter-node im Docker-Container hinter einem Reverse Proxy**
+(Nginx/Caddy). Damit `getClientAddress()` die echte Client-IP liefert (statt der internen
+Proxy-IP) — Voraussetzung dafür, dass das **IP-basierte Rate-Limiting pro Client** greift —
+müssen die Forwarded-Header ausgewertet werden. Diese Variablen sind in
+`docker-compose.production.yml` / `.env.docker` bereits gesetzt:
+
+| Variable          | Empfohlen           | Beschreibung                                                    |
+| ----------------- | ------------------- | --------------------------------------------------------------- |
+| `ADDRESS_HEADER`  | `x-forwarded-for`   | Header, aus dem der adapter-node die Client-IP liest            |
+| `XFF_DEPTH`       | `1`                 | Anzahl vertrauenswürdiger Proxies vor der App (bei 1 Proxy = 1) |
+| `PROTOCOL_HEADER` | `x-forwarded-proto` | Header für das Original-Protokoll (http/https)                  |
+| `HOST_HEADER`     | `x-forwarded-host`  | Header für den Original-Host                                    |
+
+> **Sicherheitshinweis:** `ADDRESS_HEADER` darf nur gesetzt sein, wenn tatsächlich ein
+> vertrauenswürdiger Reverse Proxy davorsteht, der `X-Forwarded-For` **überschreibt** (nicht
+> nur anhängt). Der Nginx-/Caddy-Beispiel-Config in DOCKER_DEPLOYMENT.md setzt
+> `X-Forwarded-For $proxy_add_x_forwarded_for`. Ohne echten Proxy davor wäre der Header
+> client-spoofbar (Rate-Limit-Bypass). `XFF_DEPTH` muss exakt zur Proxy-Anzahl passen.
+
+### Rate-Limiting-Hinweis
+
+Das Rate-Limiting (`src/lib/server/middleware/rateLimit.ts`) hält seinen Zähler **im
+Prozess-Speicher**. Das ist für das dokumentierte **Single-Container-Deployment korrekt und
+wirksam**. Bei einer künftigen **horizontalen Skalierung** (mehrere App-Container/Replicas
+hinter einem Load Balancer) würde jeder Container getrennt zählen — dann ist ein **gemeinsamer
+Store** (Redis/Postgres) erforderlich.
+
+---
+
+## `SKIP_DB_CHECK`
+
+- **Type**: Boolean (`"true"` / unset)
+- **Required**: No
+- **Default**: unset (DB-Check aktiv)
+
+Überspringt die DB-Verfügbarkeitsprüfung der `databaseCheck`-Middleware
+(`src/lib/server/middleware/databaseCheck.ts`). **Nur für CI/Tests** gedacht — in Produktion
+niemals setzen, sonst laufen Requests bei DB-Ausfall in Fehler statt in einen sauberen 503.
+
+---
+
 ## Support
 
 For questions about environment configuration:

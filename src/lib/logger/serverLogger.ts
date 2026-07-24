@@ -13,6 +13,45 @@ function resolveLogLevel(value: string | undefined): pino.Level {
 export const createServerLogger = (context: string) => {
 	return pino({
 		level: resolveLogLevel(env.LOG_LEVEL),
-		base: { pid: process.pid, context }
+		base: { pid: process.pid, context },
+		// Globale Redaction: personenbezogene/geheime Felder werden aus allen Logs
+		// entfernt (Defense-in-Depth gegen versehentliches Loggen von PII/Secrets).
+		// `*.<feld>` deckt jeweils eine Verschachtelungsebene ab (z.B. { data: { email } }).
+		// Die PII-Felder (name, vorname, strasse, plz, ort, ...) stammen aus der
+		// Legacy-API-Spezifikation (docs/LEGACY_API_SPECIFICATION.md) und dürfen niemals
+		// in Logs erscheinen.
+		redact: {
+			paths: [
+				'email',
+				'*.email',
+				'phone',
+				'*.phone',
+				'telefon',
+				'*.telefon',
+				'password',
+				'*.password',
+				'token',
+				'*.token',
+				// Personenbezogene Namensfelder (Legacy-API + moderne Form)
+				'name',
+				'*.name',
+				'vorname',
+				'*.vorname',
+				'firstName',
+				'*.firstName',
+				'lastName',
+				'*.lastName',
+				// Anschrift
+				'strasse',
+				'*.strasse',
+				'plz',
+				'*.plz',
+				'ort',
+				'*.ort',
+				'address',
+				'*.address'
+			],
+			remove: true
+		}
 	});
 };

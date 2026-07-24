@@ -11,6 +11,7 @@
 		label?: string;
 		size?: FieldSize;
 		icon?: string;
+		valueText?: string;
 		onchange?: (event: Event) => void;
 		// Common input attributes
 		id?: string;
@@ -29,6 +30,7 @@
 		label = '',
 		size = 'md',
 		icon = undefined,
+		valueText = undefined,
 		onchange = undefined,
 		id,
 		name,
@@ -49,7 +51,7 @@
 	});
 </script>
 
-<div class="w-full items-start">
+<div class="flex w-full items-start justify-between gap-2">
 	<label class="flex w-full cursor-pointer justify-start gap-3 py-2">
 		{#if icon !== undefined}
 			<Icon aria-hidden="true" {icon} width="16" class="text-base-content/60 flex-shrink-0" />
@@ -74,6 +76,22 @@
 			style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
 		>
 			{label}
+			{#if required}
+				<span class="text-error ml-1 text-sm" aria-label="Pflichtfeld">*</span>
+			{/if}
 		</span>
 	</label>
+
+	<!-- Value Information Tooltip (fokussierbar für Tastatur/Touch), außerhalb des Labels -->
+	{#if valueText}
+		<span class="tooltip tooltip-left flex-shrink-0" data-tip={valueText}>
+			<button
+				type="button"
+				class="btn btn-ghost btn-xs btn-circle"
+				aria-label={`Hinweis: ${valueText}`}
+			>
+				<Icon icon="lucide:info" width="14" class="text-base-content/60" />
+			</button>
+		</span>
+	{/if}
 </div>
