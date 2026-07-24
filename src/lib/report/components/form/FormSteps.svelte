@@ -43,7 +43,8 @@
 				<button
 					type="button"
 					class="step-button px-1 text-xs sm:text-sm"
-					disabled={!navigable}
+					class:cursor-not-allowed={!navigable}
+					aria-disabled={!navigable ? 'true' : 'false'}
 					aria-label={step.title}
 					aria-current={currentStep === index ? 'step' : undefined}
 					title={navigable
