@@ -435,12 +435,16 @@ describe('checkBalticSeaFile', () => {
 
 	describe('Performance and Reliability', () => {
 		it('should execute quickly for valid coordinates', () => {
+			// Warmup: first call lazily initialises the ~32MB RBush singleton index,
+			// which must not be measured as query time (caused CI flakiness).
+			checkBalticSeaFile(10.1367, 54.3233);
+
 			const start = performance.now();
 			const result = checkBalticSeaFile(10.1367, 54.3233);
 			const duration = performance.now() - start;
 
 			expect(result).toBeDefined();
-			// Should complete within reasonable time (20ms allows for CI variability)
+			// Warm query should be well under 20ms (per-query cost is ~0.5-2ms).
 			expect(duration).toBeLessThan(20);
 		});
 
