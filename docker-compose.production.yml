@@ -53,6 +53,17 @@ services:
       PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3000}
       BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-52428800}
 
+      # Reverse-Proxy / Client-IP-Auflösung (adapter-node)
+      # WICHTIG: Die App läuft hinter einem Reverse Proxy (Nginx/Caddy). Damit
+      # getClientAddress() die echte Client-IP liefert (statt der Proxy-IP) und
+      # das IP-basierte Rate-Limiting pro Client greift, MUSS der adapter-node
+      # die Forwarded-Header auswerten. XFF_DEPTH = Anzahl vertrauenswürdiger
+      # Proxies vor der App (bei genau einem Reverse Proxy: 1).
+      ADDRESS_HEADER: ${ADDRESS_HEADER:-x-forwarded-for}
+      XFF_DEPTH: ${XFF_DEPTH:-1}
+      PROTOCOL_HEADER: ${PROTOCOL_HEADER:-x-forwarded-proto}
+      HOST_HEADER: ${HOST_HEADER:-x-forwarded-host}
+
       # Security Settings
       SESSION_SECRET: ${SESSION_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
