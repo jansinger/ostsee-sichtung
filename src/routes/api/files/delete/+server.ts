@@ -6,6 +6,11 @@ import { getStorageProvider } from '$lib/server/storage/factory';
 import { isAdminUser } from '$lib/server/auth/auth';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { getClientIp } from '$lib/server/utils/getClientIp';
+import {
+	RATE_LIMITS,
+	enforceRateLimit,
+	createRateLimitIdentifier
+} from '$lib/server/middleware/rateLimit';
 import { error, isHttpError, json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
@@ -18,6 +23,17 @@ export const DELETE: RequestHandler = async ({ request, locals, getClientAddress
 	const clientIp = getClientIp(getClientAddress, request);
 
 	try {
+		// Rate Limiting (analog zum Upload) — verhindert massenhaftes anonymes Löschen
+		const rateLimitConfig = isAuthenticated
+			? RATE_LIMITS.FILE_UPLOAD_AUTHENTICATED
+			: RATE_LIMITS.FILE_UPLOAD_ANONYMOUS;
+		const rateLimitIdentifier = createRateLimitIdentifier(
+			locals.user?.sub,
+			clientIp ?? 'unknown',
+			isAuthenticated
+		);
+		enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'file_delete');
+
 		const { filePath } = await request.json();
 
 		if (!filePath) {

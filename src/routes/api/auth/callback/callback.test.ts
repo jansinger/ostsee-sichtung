@@ -42,7 +42,7 @@ vi.mock('$lib/server/auth/auth.js', () => ({
 	setAuthCookie: mockSetAuthCookie
 }));
 
-import { GET } from './+server';
+import { GET, sanitizeReturnUrl } from './+server';
 
 function makeCookies() {
 	return {
@@ -112,6 +112,43 @@ describe('GET /api/auth/callback — Audit Logging', () => {
 		expect(loginFailureCalls).toHaveLength(0);
 	});
 
+	it('normalisiert eine externe returnUrl auf / (Open-Redirect-Schutz)', async () => {
+		mockGetToken.mockResolvedValue({ id_token: 'id-tok', access_token: 'access-tok' });
+		mockVerifyToken.mockResolvedValue({ email: 'user@test.com', sub: 'auth0|123' });
+		mockGetTokenClaims.mockResolvedValue({ 'https://api.test/roles': ['admin'] });
+
+		let thrown: unknown;
+		await GET({
+			url: new URL(
+				'http://localhost/api/auth/callback?code=auth-code&state=valid-csrf&returnUrl=https://evil.com'
+			),
+			cookies: makeCookies()
+		} as never).catch((e) => {
+			thrown = e;
+		});
+
+		expect((thrown as { status?: number; location?: string })?.status).toBe(302);
+		expect((thrown as { location?: string })?.location).toBe('/');
+	});
+
+	it('lässt einen legitimen relativen Pfad durch (/admin)', async () => {
+		mockGetToken.mockResolvedValue({ id_token: 'id-tok', access_token: 'access-tok' });
+		mockVerifyToken.mockResolvedValue({ email: 'user@test.com', sub: 'auth0|123' });
+		mockGetTokenClaims.mockResolvedValue({ 'https://api.test/roles': ['admin'] });
+
+		let thrown: unknown;
+		await GET({
+			url: new URL(
+				'http://localhost/api/auth/callback?code=auth-code&state=valid-csrf&returnUrl=/admin'
+			),
+			cookies: makeCookies()
+		} as never).catch((e) => {
+			thrown = e;
+		});
+
+		expect((thrown as { location?: string })?.location).toBe('/admin');
+	});
+
 	it('loggt security.csrf_mismatch warn bei ungültigem State', async () => {
 		const cookiesWithMismatch = {
 			get: vi.fn().mockImplementation((name: string) => {
@@ -130,5 +167,28 @@ describe('GET /api/auth/callback — Audit Logging', () => {
 			expect.objectContaining({ event: 'security.csrf_mismatch' }),
 			expect.any(String)
 		);
+	});
+});
+
+describe('sanitizeReturnUrl', () => {
+	it('normalisiert externe und protokoll-relative URLs auf /', () => {
+		expect(sanitizeReturnUrl('https://evil.com')).toBe('/');
+		expect(sanitizeReturnUrl('//evil.com')).toBe('/');
+		expect(sanitizeReturnUrl('/\\evil.com')).toBe('/');
+		expect(sanitizeReturnUrl('http://evil.com/pfad')).toBe('/');
+	});
+
+	it('normalisiert leere/ungültige Werte auf /', () => {
+		expect(sanitizeReturnUrl(null)).toBe('/');
+		expect(sanitizeReturnUrl(undefined)).toBe('/');
+		expect(sanitizeReturnUrl('')).toBe('/');
+		expect(sanitizeReturnUrl('admin')).toBe('/');
+	});
+
+	it('lässt legitime relative Pfade durch', () => {
+		expect(sanitizeReturnUrl('/admin')).toBe('/admin');
+		expect(sanitizeReturnUrl('/map')).toBe('/map');
+		expect(sanitizeReturnUrl('/')).toBe('/');
+		expect(sanitizeReturnUrl('/admin/sightings?year=2024')).toBe('/admin/sightings?year=2024');
 	});
 });

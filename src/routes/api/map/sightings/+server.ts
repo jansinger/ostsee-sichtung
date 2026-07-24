@@ -82,13 +82,8 @@ export const GET: RequestHandler = async ({ url }) => {
 			'Fehler beim Abrufen der Sichtungen für die Karte'
 		);
 
-		// Fehlerantwort zurückgeben
-		return json(
-			{
-				error: 'Fehler beim Abrufen der Sichtungen',
-				details: error instanceof Error ? error.message : 'Unbekannter Fehler'
-			},
-			{ status: 500 }
-		);
+		// Fehlerantwort zurückgeben — keine internen Fehlerdetails an den Client leaken
+		// (der konkrete Fehler wurde oben serverseitig geloggt).
+		return json({ error: 'Fehler beim Abrufen der Sichtungen' }, { status: 500 });
 	}
 };

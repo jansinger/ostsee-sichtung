@@ -1,10 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockLogAuditEvent, mockIsAdminUser, mockSelect, mockStorage } = vi.hoisted(() => ({
-	mockLogAuditEvent: vi.fn().mockResolvedValue(undefined),
-	mockIsAdminUser: vi.fn().mockReturnValue(true),
-	mockSelect: vi.fn(),
-	mockStorage: { delete: vi.fn().mockResolvedValue(undefined) }
+const { mockLogAuditEvent, mockIsAdminUser, mockSelect, mockStorage, mockEnforceRateLimit } =
+	vi.hoisted(() => ({
+		mockLogAuditEvent: vi.fn().mockResolvedValue(undefined),
+		mockIsAdminUser: vi.fn().mockReturnValue(true),
+		mockSelect: vi.fn(),
+		mockStorage: { delete: vi.fn().mockResolvedValue(undefined) },
+		mockEnforceRateLimit: vi.fn().mockReturnValue({ remaining: 10, resetTime: Date.now() + 1000 })
+	}));
+
+vi.mock('$lib/server/middleware/rateLimit', () => ({
+	RATE_LIMITS: {
+		FILE_UPLOAD_ANONYMOUS: { windowMs: 3600000, maxRequests: 20 },
+		FILE_UPLOAD_AUTHENTICATED: { windowMs: 3600000, maxRequests: 50 }
+	},
+	enforceRateLimit: mockEnforceRateLimit,
+	createRateLimitIdentifier: vi.fn().mockReturnValue('ip:10.0.0.1')
 }));
 
 vi.mock('$lib/server/audit/auditService', () => ({
@@ -65,6 +76,30 @@ describe('DELETE /api/files/delete — Audit Logging', () => {
 		vi.clearAllMocks();
 		mockStorage.delete.mockResolvedValue(undefined);
 		mockIsAdminUser.mockReturnValue(true);
+		mockEnforceRateLimit.mockReturnValue({ remaining: 10, resetTime: Date.now() + 1000 });
+	});
+
+	it('erzwingt Rate-Limiting vor dem Löschen', async () => {
+		const event = makeEvent('uploads/test-image.jpg');
+		await DELETE(event as never);
+
+		expect(mockEnforceRateLimit).toHaveBeenCalledOnce();
+		expect(mockEnforceRateLimit).toHaveBeenCalledWith(
+			expect.any(String),
+			expect.objectContaining({ maxRequests: 50 }),
+			'file_delete'
+		);
+	});
+
+	it('bricht mit 429 ab, wenn das Rate-Limit überschritten ist', async () => {
+		const { error } = await import('@sveltejs/kit');
+		mockEnforceRateLimit.mockImplementation(() => {
+			throw error(429, 'Rate limit exceeded');
+		});
+
+		const event = makeEvent('uploads/test-image.jpg');
+		await expect(DELETE(event as never)).rejects.toMatchObject({ status: 429 });
+		expect(mockStorage.delete).not.toHaveBeenCalled();
 	});
 
 	it('loggt file.delete für Admin-Löschungen', async () => {

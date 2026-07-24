@@ -111,7 +111,7 @@
 								</p>
 							</div>
 							<a
-								href={`/uploads/${file.filePath}`}
+								href={`/api/media/${file.filePath}`}
 								download={file.originalName}
 								class="btn btn-ghost btn-sm"
 								aria-label="Datei herunterladen"

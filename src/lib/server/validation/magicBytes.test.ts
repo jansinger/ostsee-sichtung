@@ -502,6 +502,30 @@ describe('magicBytes validation', () => {
 			});
 		});
 
+		describe('PDF files', () => {
+			it('should accept a valid PDF with %PDF- prefix', () => {
+				const pdfBuffer = Buffer.concat([
+					Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]), // %PDF-1.4
+					Buffer.from('\nrest of pdf content', 'utf8')
+				]);
+
+				const result = validateMagicBytes(pdfBuffer, 'application/pdf');
+
+				expect(result.isValid).toBe(true);
+			});
+
+			it('should reject a fake PDF with wrong prefix', () => {
+				const fakePdf = Buffer.from('NOT-A-PDF file content', 'utf8');
+
+				const result = validateMagicBytes(fakePdf, 'application/pdf');
+
+				expect(result.isValid).toBe(false);
+				expect(result.message).toContain(
+					'Dateiinhalt stimmt nicht mit dem angegebenen Typ überein'
+				);
+			});
+		});
+
 		describe('Edge cases', () => {
 			it('should handle empty buffers', () => {
 				const emptyBuffer = Buffer.alloc(0);

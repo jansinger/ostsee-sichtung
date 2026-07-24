@@ -13,6 +13,25 @@ import { error, redirect, type Cookies } from '@sveltejs/kit';
 
 const logger = createLogger('auth:auth0');
 
+/**
+ * Validiert eine returnUrl gegen Open-Redirect-Angriffe.
+ *
+ * Erlaubt ausschließlich relative Same-Origin-Pfade, die mit genau einem `/`
+ * beginnen. Externe URLs (`https://evil.com`), protokoll-relative Pfade
+ * (`//evil.com`) und Backslash-Tricks (`/\evil.com`) werden auf `/` normalisiert.
+ */
+export function sanitizeReturnUrl(returnUrl: string | null | undefined): string {
+	if (typeof returnUrl !== 'string' || returnUrl.length === 0) {
+		return '/';
+	}
+	// Muss mit genau einem '/' beginnen — keine protokoll-relativen ('//')
+	// und keine Backslash-Pfade ('/\'), die Browser als externe URL interpretieren.
+	if (!returnUrl.startsWith('/') || returnUrl.startsWith('//') || returnUrl.startsWith('/\\')) {
+		return '/';
+	}
+	return returnUrl;
+}
+
 export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 	const code = url.searchParams.get('code');
 	const state = url.searchParams.get('state');
@@ -57,7 +76,8 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 			userEmail: authUser.email
 		});
 		cookies.delete('csrfState', { path: '/' });
-		redirect(302, returnUrl);
+		// Open-Redirect-Schutz: nur relative Same-Origin-Pfade zulassen
+		redirect(302, sanitizeReturnUrl(returnUrl));
 	} catch (err) {
 		// SvelteKit redirect() throws internally — re-throw without treating as error
 		if (err instanceof Response || (err as { status?: number })?.status === 302) {
