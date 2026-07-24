@@ -1,13 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockLogAuditEvent, mockIsAdminUser, mockSelect, mockStorage, mockEnforceRateLimit } =
-	vi.hoisted(() => ({
-		mockLogAuditEvent: vi.fn().mockResolvedValue(undefined),
-		mockIsAdminUser: vi.fn().mockReturnValue(true),
-		mockSelect: vi.fn(),
-		mockStorage: { delete: vi.fn().mockResolvedValue(undefined) },
-		mockEnforceRateLimit: vi.fn().mockReturnValue({ remaining: 10, resetTime: Date.now() + 1000 })
-	}));
+const {
+	mockLogAuditEvent,
+	mockIsAdminUser,
+	mockSelect,
+	mockStorage,
+	mockEnforceRateLimit,
+	mockGetUploadUid
+} = vi.hoisted(() => ({
+	mockLogAuditEvent: vi.fn().mockResolvedValue(undefined),
+	mockIsAdminUser: vi.fn().mockReturnValue(true),
+	mockSelect: vi.fn(),
+	mockStorage: { delete: vi.fn().mockResolvedValue(undefined) },
+	mockEnforceRateLimit: vi.fn().mockReturnValue({ remaining: 10, resetTime: Date.now() + 1000 }),
+	mockGetUploadUid: vi.fn().mockReturnValue('owner-uid-match')
+}));
 
 vi.mock('$lib/server/middleware/rateLimit', () => ({
 	RATE_LIMITS: {
@@ -24,6 +31,10 @@ vi.mock('$lib/server/audit/auditService', () => ({
 
 vi.mock('$lib/server/auth/auth', () => ({
 	isAdminUser: mockIsAdminUser
+}));
+
+vi.mock('$lib/server/auth/uploadOwnership', () => ({
+	getUploadUid: mockGetUploadUid
 }));
 
 vi.mock('$lib/logger.server', () => ({
@@ -56,7 +67,12 @@ vi.mock('drizzle-orm', () => ({
 
 import { DELETE } from './+server';
 
-function makeEvent(filePath: string) {
+function makeEvent(
+	filePath: string,
+	locals: Record<string, unknown> = {
+		user: { email: 'admin@test.com', sub: 'auth0|admin', roles: ['admin'] }
+	}
+) {
 	return {
 		request: new Request('http://localhost/api/files/delete', {
 			method: 'DELETE',
@@ -66,10 +82,15 @@ function makeEvent(filePath: string) {
 			},
 			body: JSON.stringify({ filePath })
 		}),
-		locals: { user: { email: 'admin@test.com', sub: 'auth0|admin', roles: ['admin'] } },
-		getClientAddress: () => '10.0.0.1'
+		locals,
+		getClientAddress: () => '10.0.0.1',
+		// Cookies werden im Handler nur an das (gemockte) getUploadUid übergeben.
+		cookies: { get: vi.fn() }
 	};
 }
+
+/** Locals eines anonymen (nicht angemeldeten) Nutzers. */
+const ANON_LOCALS = { user: null };
 
 describe('DELETE /api/files/delete — Audit Logging', () => {
 	beforeEach(() => {
@@ -77,7 +98,16 @@ describe('DELETE /api/files/delete — Audit Logging', () => {
 		mockStorage.delete.mockResolvedValue(undefined);
 		mockIsAdminUser.mockReturnValue(true);
 		mockEnforceRateLimit.mockReturnValue({ remaining: 10, resetTime: Date.now() + 1000 });
+		mockGetUploadUid.mockReturnValue('owner-uid-match');
 	});
+
+	/** Setzt den Select-Mock so, dass eine nicht zugeordnete Datei mit gegebenem uid gefunden wird. */
+	function mockFileRecord(uid: string | null, sightingId: number | null = null) {
+		const mockLimit = vi.fn().mockResolvedValue([{ id: 1, sightingId, uid }]);
+		const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit });
+		const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+		mockSelect.mockReturnValue({ from: mockFrom });
+	}
 
 	it('erzwingt Rate-Limiting vor dem Löschen', async () => {
 		const event = makeEvent('uploads/test-image.jpg');
@@ -118,15 +148,56 @@ describe('DELETE /api/files/delete — Audit Logging', () => {
 
 	it('loggt KEIN file.delete für nicht-Admin-Löschungen', async () => {
 		mockIsAdminUser.mockReturnValue(false);
+		mockFileRecord('owner-uid-match');
+		mockGetUploadUid.mockReturnValue('owner-uid-match');
 
-		const mockLimit = vi.fn().mockResolvedValue([{ id: 1, sightingId: null }]);
-		const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit });
-		const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
-		mockSelect.mockReturnValue({ from: mockFrom });
-
-		const event = makeEvent('uploads/unassigned.jpg');
+		const event = makeEvent('uploads/unassigned.jpg', ANON_LOCALS);
 		await DELETE(event as never);
 
 		expect(mockLogAuditEvent).not.toHaveBeenCalled();
+	});
+
+	it('erlaubt Löschen einer nicht zugeordneten Datei mit passendem upload-uid-Cookie', async () => {
+		mockIsAdminUser.mockReturnValue(false);
+		mockFileRecord('owner-uid-match');
+		mockGetUploadUid.mockReturnValue('owner-uid-match');
+
+		const event = makeEvent('uploads/unassigned.jpg', ANON_LOCALS);
+		const res = await DELETE(event as never);
+
+		expect(mockStorage.delete).toHaveBeenCalledWith('uploads/unassigned.jpg');
+		expect((res as Response).status).toBe(200);
+	});
+
+	it('blockiert Löschen mit fremdem upload-uid-Cookie (403)', async () => {
+		mockIsAdminUser.mockReturnValue(false);
+		mockFileRecord('owner-uid-match');
+		mockGetUploadUid.mockReturnValue('someone-else');
+
+		const event = makeEvent('uploads/unassigned.jpg', ANON_LOCALS);
+		await expect(DELETE(event as never)).rejects.toMatchObject({ status: 403 });
+		expect(mockStorage.delete).not.toHaveBeenCalled();
+	});
+
+	it('blockiert Löschen ohne upload-uid-Cookie (403)', async () => {
+		mockIsAdminUser.mockReturnValue(false);
+		mockFileRecord('owner-uid-match');
+		mockGetUploadUid.mockReturnValue(undefined);
+
+		const event = makeEvent('uploads/unassigned.jpg', ANON_LOCALS);
+		await expect(DELETE(event as never)).rejects.toMatchObject({ status: 403 });
+		expect(mockStorage.delete).not.toHaveBeenCalled();
+	});
+
+	it('erlaubt Admin das Löschen unabhängig vom upload-uid-Cookie', async () => {
+		mockIsAdminUser.mockReturnValue(true);
+		mockGetUploadUid.mockReturnValue(undefined); // Admin braucht keinen Cookie
+
+		const event = makeEvent('uploads/admin-delete.jpg');
+		const res = await DELETE(event as never);
+
+		expect(mockStorage.delete).toHaveBeenCalledWith('uploads/admin-delete.jpg');
+		expect((res as Response).status).toBe(200);
+		expect(mockLogAuditEvent).toHaveBeenCalledOnce();
 	});
 });

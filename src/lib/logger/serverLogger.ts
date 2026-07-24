@@ -16,7 +16,10 @@ export const createServerLogger = (context: string) => {
 		base: { pid: process.pid, context },
 		// Globale Redaction: personenbezogene/geheime Felder werden aus allen Logs
 		// entfernt (Defense-in-Depth gegen versehentliches Loggen von PII/Secrets).
-		// `*.email` deckt eine Verschachtelungsebene ab (z.B. { data: { email } }).
+		// `*.<feld>` deckt jeweils eine Verschachtelungsebene ab (z.B. { data: { email } }).
+		// Die PII-Felder (name, vorname, strasse, plz, ort, ...) stammen aus der
+		// Legacy-API-Spezifikation (docs/LEGACY_API_SPECIFICATION.md) und dürfen niemals
+		// in Logs erscheinen.
 		redact: {
 			paths: [
 				'email',
@@ -27,8 +30,26 @@ export const createServerLogger = (context: string) => {
 				'*.telefon',
 				'password',
 				'*.password',
+				'token',
 				'*.token',
-				'token'
+				// Personenbezogene Namensfelder (Legacy-API + moderne Form)
+				'name',
+				'*.name',
+				'vorname',
+				'*.vorname',
+				'firstName',
+				'*.firstName',
+				'lastName',
+				'*.lastName',
+				// Anschrift
+				'strasse',
+				'*.strasse',
+				'plz',
+				'*.plz',
+				'ort',
+				'*.ort',
+				'address',
+				'*.address'
 			],
 			remove: true
 		}

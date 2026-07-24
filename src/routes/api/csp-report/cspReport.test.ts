@@ -71,7 +71,7 @@ describe('POST /api/csp-report', () => {
 		expect(logged).not.toHaveProperty('secret-field');
 	});
 
-	it('verwirft übergroße Payloads mit 204 ohne zu loggen', async () => {
+	it('verwirft übergroße Payloads mit 204 ohne zu loggen (content-length-Header)', async () => {
 		const res = await POST(
 			makeEvent({ 'csp-report': {} }, { 'content-length': String(9 * 1024) }) as never
 		);
@@ -81,6 +81,32 @@ describe('POST /api/csp-report', () => {
 			(call) => call[1] === 'CSP-Verstoß erkannt'
 		);
 		expect(cspViolationLogs).toHaveLength(0);
+	});
+
+	it('verwirft übergroßen Body trotz kleinem/gefälschtem content-length-Header', async () => {
+		// Tatsächlicher Body > 8 KB, aber content-length-Header gibt fälschlich 10 Bytes an.
+		// Der Header-Check greift NICHT — die tatsächliche Body-Größe muss die Grenze setzen.
+		const hugeReport = { 'csp-report': { 'blocked-uri': 'x'.repeat(9 * 1024) } };
+		const res = await POST(makeEvent(hugeReport, { 'content-length': '10' }) as never);
+
+		expect(res.status).toBe(204);
+		const cspViolationLogs = mockLoggerWarn.mock.calls.filter(
+			(call) => call[1] === 'CSP-Verstoß erkannt'
+		);
+		expect(cspViolationLogs).toHaveLength(0);
+	});
+
+	it('gibt 400 bei ungültigem JSON zurück', async () => {
+		const event = {
+			request: new Request('http://localhost/api/csp-report', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: '{ not valid json'
+			}),
+			getClientAddress: () => '10.0.0.1'
+		};
+		const res = await POST(event as never);
+		expect(res.status).toBe(400);
 	});
 
 	it('gibt 429 zurück, wenn das Rate-Limit greift', async () => {

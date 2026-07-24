@@ -39,16 +39,32 @@ export async function POST({ request, getClientAddress }: RequestEvent) {
 	const identifier = createRateLimitIdentifier(undefined, clientIp, false);
 	enforceRateLimit(identifier, CSP_REPORT_RATE_LIMIT, 'csp_report');
 
-	// Übergroße Payloads ignorieren
+	// Schnelle Vorabprüfung anhand des content-length-Headers (kann fehlen/gefälscht sein).
 	const contentLength = Number(request.headers.get('content-length') ?? '0');
 	if (Number.isFinite(contentLength) && contentLength > MAX_CSP_REPORT_BYTES) {
-		logger.warn({ contentLength }, 'CSP-Report verworfen — Payload zu groß');
+		logger.warn({ contentLength }, 'CSP-Report verworfen — Payload zu groß (Header)');
+		return new Response(null, { status: 204 });
+	}
+
+	// Tatsächliche Body-Größe begrenzen: Body als Text lesen und VOR dem Parsen prüfen.
+	// So greift das Limit auch bei chunked Transfer oder fehlendem content-length-Header,
+	// bevor die (globale) BODY_SIZE_LIMIT-Grenze relevant würde.
+	let bodyText: string;
+	try {
+		bodyText = await request.text();
+	} catch (error) {
+		logger.error({ error }, 'Fehler beim Lesen des CSP-Report-Bodys');
+		return json({ success: false, error: 'Ungültiges CSP-Verstoßformat' }, { status: 400 });
+	}
+
+	if (bodyText.length > MAX_CSP_REPORT_BYTES) {
+		logger.warn({ byteLength: bodyText.length }, 'CSP-Report verworfen — Payload zu groß');
 		return new Response(null, { status: 204 });
 	}
 
 	try {
-		// CSP-Verstoß aus dem Request-Body extrahieren
-		const report = (await request.json()) as CspReportPayload;
+		// CSP-Verstoß aus dem bereits gelesenen Body-Text parsen
+		const report = JSON.parse(bodyText) as CspReportPayload;
 
 		// Bei neueren Browsern ist der Report im 'csp-report' Feld, sonst direkt im Objekt
 		const cspReport = (report['csp-report'] as CspReportPayload) ?? report ?? {};

@@ -4,6 +4,7 @@ import { sightingFiles } from '$lib/server/db/schema';
 import { deleteFileByPath } from '$lib/server/db/sightingFilesRepository';
 import { getStorageProvider } from '$lib/server/storage/factory';
 import { isAdminUser } from '$lib/server/auth/auth';
+import { getUploadUid } from '$lib/server/auth/uploadOwnership';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import {
@@ -17,7 +18,7 @@ import type { RequestHandler } from './$types';
 
 const logger = createLogger('FileDeleteAPI');
 
-export const DELETE: RequestHandler = async ({ request, locals, getClientAddress }) => {
+export const DELETE: RequestHandler = async ({ request, locals, getClientAddress, cookies }) => {
 	const userIdentifier = locals.user?.sub || 'anonymous';
 	const isAuthenticated = !!locals.user;
 	const clientIp = getClientIp(getClientAddress, request);
@@ -59,7 +60,11 @@ export const DELETE: RequestHandler = async ({ request, locals, getClientAddress
 		if (!isAdmin) {
 			// For non-admin users, check if file exists and has no sightingId assigned
 			const fileRecord = await db
-				.select({ id: sightingFiles.id, sightingId: sightingFiles.sightingId })
+				.select({
+					id: sightingFiles.id,
+					sightingId: sightingFiles.sightingId,
+					uid: sightingFiles.uid
+				})
 				.from(sightingFiles)
 				.where(eq(sightingFiles.filePath, filePath))
 				.limit(1);
@@ -87,6 +92,26 @@ export const DELETE: RequestHandler = async ({ request, locals, getClientAddress
 					403,
 					'Datei kann nicht gelöscht werden - sie ist bereits einer Sichtung zugeordnet'
 				);
+			}
+
+			// Ownership-Binding: Anonyme, noch nicht zugeordnete Uploads dürfen nur von DEM
+			// Client gelöscht werden, der sie hochgeladen hat. Der beim Upload gesetzte,
+			// cookie-gebundene Owner-UID muss mit dem gespeicherten uid der Datei übereinstimmen.
+			const requesterUid = getUploadUid(cookies);
+			if (!requesterUid || requesterUid !== file.uid) {
+				logger.warn(
+					{
+						action: 'file_delete_blocked',
+						reason: 'upload_uid_mismatch',
+						filePath,
+						user: userIdentifier,
+						authenticated: isAuthenticated,
+						hasCookie: !!requesterUid,
+						clientIp
+					},
+					'Non-admin user attempted to delete file without matching upload-uid cookie'
+				);
+				throw error(403, 'Datei kann nicht gelöscht werden - keine Berechtigung');
 			}
 
 			logger.info(
