@@ -36,7 +36,7 @@ declare module 'yup' {
 		step?: number;
 		selectPlaceholder?: string;
 		rows?: number;
-		description?: string;
+		autocomplete?: AutoFill;
 		icon?: string | IconSource;
 	}
 }

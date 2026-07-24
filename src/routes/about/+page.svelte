@@ -220,7 +220,7 @@
 						<Icon icon="lucide:shield-check" width="30" class="text-success" />
 						<h3 class="card-title">Datenschutz</h3>
 					</div>
-					<p class="mb-4 text-sm text-gray-700">
+					<p class="mb-4 text-sm text-base-content/80">
 						Ihre Daten sind bei uns sicher. Wir verarbeiten alle personenbezogenen Daten gemäß der
 						EU-Datenschutz-Grundverordnung (DSGVO) und dem Bundesdatenschutzgesetz (BDSG).
 					</p>
@@ -262,7 +262,7 @@
 						<Icon icon="lucide:lock" width="30" class="text-info" />
 						<h3 class="card-title">Technische Sicherheit</h3>
 					</div>
-					<p class="mb-4 text-sm text-gray-700">
+					<p class="mb-4 text-sm text-base-content/80">
 						Wir nutzen modernste Sicherheitstechnologien, um Ihre Daten und unsere Plattform zu
 						schützen.
 					</p>
@@ -310,7 +310,7 @@
 				<Icon icon="lucide:file-text" width="24" class="text-success" />
 				<div class="flex-1">
 					<h4 class="mb-2 font-semibold">DSGVO-Konformität</h4>
-					<p class="mb-3 text-sm text-gray-700">
+					<p class="mb-3 text-sm text-base-content/80">
 						Als öffentliche Einrichtung nehmen wir den Datenschutz besonders ernst. Unsere Plattform
 						erfüllt alle Anforderungen der europäischen Datenschutz-Grundverordnung:
 					</p>
@@ -339,7 +339,7 @@
 		<!-- Contact for Data Protection -->
 		<div class="bg-base-200 mt-8 rounded-lg p-6 text-center">
 			<h4 class="mb-3 font-semibold">Fragen zum Datenschutz?</h4>
-			<p class="mb-4 text-sm text-gray-700">
+			<p class="mb-4 text-sm text-base-content/80">
 				Bei Fragen zum Datenschutz oder zur Verarbeitung Ihrer Daten können Sie sich jederzeit an
 				uns wenden:
 			</p>
@@ -370,26 +370,26 @@
 			</h2>
 			<div class="badge badge-neutral badge-lg font-mono">Version {data.version}</div>
 		</div>
-		<p class="mx-auto mb-8 max-w-3xl text-center text-gray-700">
+		<p class="mx-auto mb-8 max-w-3xl text-center text-base-content/80">
 			Unsere Plattform nutzt moderne Web-Technologien für eine optimale Benutzererfahrung und
 			zuverlässige Datenverarbeitung.
 		</p>
 		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 			<div class="text-center">
 				<div class="badge badge-primary badge-lg">SvelteKit</div>
-				<p class="mt-2 text-xs text-gray-600">Modern Web Framework</p>
+				<p class="mt-2 text-xs text-base-content/70">Modern Web Framework</p>
 			</div>
 			<div class="text-center">
 				<div class="badge badge-secondary badge-lg">PostGIS</div>
-				<p class="mt-2 text-xs text-gray-600">Geografische Datenbank</p>
+				<p class="mt-2 text-xs text-base-content/70">Geografische Datenbank</p>
 			</div>
 			<div class="text-center">
 				<div class="badge badge-accent badge-lg">OpenAPI</div>
-				<p class="mt-2 text-xs text-gray-600">Standardisierte API</p>
+				<p class="mt-2 text-xs text-base-content/70">Standardisierte API</p>
 			</div>
 			<div class="text-center">
 				<div class="badge badge-info badge-lg">OpenLayers</div>
-				<p class="mt-2 text-xs text-gray-600">Interaktive Karten</p>
+				<p class="mt-2 text-xs text-base-content/70">Interaktive Karten</p>
 			</div>
 		</div>
 	</div>
@@ -409,16 +409,16 @@
 						<Icon icon="lucide:file-text" width="32" height="32" class="text-primary" />
 						<h3 class="card-title">Projekt-Lizenz</h3>
 					</div>
-					<p class="mb-4 text-sm text-gray-700">
+					<p class="mb-4 text-sm text-base-content/80">
 						Die Ostsee-Tiere Plattform ist Open Source Software und steht unter der MIT-Lizenz. Dies
 						bedeutet, dass der Quellcode frei verfügbar ist und für eigene Projekte genutzt werden
 						kann.
 					</p>
-					<div class="rounded-lg bg-gray-50 p-4">
+					<div class="rounded-lg bg-base-200 p-4">
 						<div class="mb-2 font-mono text-xs font-semibold">MIT License</div>
-						<div class="max-h-48 overflow-y-auto rounded border border-gray-200 bg-white p-3">
+						<div class="max-h-48 overflow-y-auto rounded border border-base-300 bg-white p-3">
 							<pre
-								class="font-mono text-xs whitespace-pre-wrap text-gray-600">Copyright (c) 2025-2026 Ostsee-Tiere WebApp Contributors
+								class="font-mono text-xs whitespace-pre-wrap text-base-content/70">Copyright (c) 2025-2026 Ostsee-Tiere WebApp Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -464,36 +464,36 @@ SOFTWARE.</pre>
 						<Icon icon="lucide:archive" width="32" height="32" class="text-primary" />
 						<h3 class="card-title">Verwendete Technologien</h3>
 					</div>
-					<p class="mb-4 text-sm text-gray-700">
+					<p class="mb-4 text-sm text-base-content/80">
 						Diese Plattform baut auf bewährten Open Source Technologien auf:
 					</p>
 					<div class="space-y-2 text-xs">
-						<div class="flex items-center justify-between rounded bg-gray-50 p-2">
+						<div class="flex items-center justify-between rounded bg-base-200 p-2">
 							<span class="font-medium">SvelteKit</span>
 							<span class="badge badge-sm">MIT</span>
 						</div>
-						<div class="flex items-center justify-between rounded bg-gray-50 p-2">
+						<div class="flex items-center justify-between rounded bg-base-200 p-2">
 							<span class="font-medium">TailwindCSS</span>
 							<span class="badge badge-sm">MIT</span>
 						</div>
-						<div class="flex items-center justify-between rounded bg-gray-50 p-2">
+						<div class="flex items-center justify-between rounded bg-base-200 p-2">
 							<span class="font-medium">DaisyUI</span>
 							<span class="badge badge-sm">MIT</span>
 						</div>
-						<div class="flex items-center justify-between rounded bg-gray-50 p-2">
+						<div class="flex items-center justify-between rounded bg-base-200 p-2">
 							<span class="font-medium">OpenLayers</span>
 							<span class="badge badge-sm">BSD-2</span>
 						</div>
-						<div class="flex items-center justify-between rounded bg-gray-50 p-2">
+						<div class="flex items-center justify-between rounded bg-base-200 p-2">
 							<span class="font-medium">PostgreSQL</span>
 							<span class="badge badge-sm">PostgreSQL</span>
 						</div>
-						<div class="flex items-center justify-between rounded bg-gray-50 p-2">
+						<div class="flex items-center justify-between rounded bg-base-200 p-2">
 							<span class="font-medium">Drizzle ORM</span>
 							<span class="badge badge-sm">Apache-2.0</span>
 						</div>
 					</div>
-					<p class="mt-3 text-xs text-gray-500">
+					<p class="mt-3 text-xs text-base-content/60">
 						Alle verwendeten Bibliotheken sind sorgfältig ausgewählt und lizenzkonform eingesetzt.
 					</p>
 				</div>
@@ -508,7 +508,7 @@ SOFTWARE.</pre>
 				<Icon icon="lucide:circle-alert" width="32" height="32" class="text-warning mt-1" />
 				<div class="flex-1">
 					<h4 class="mb-2 font-semibold">Fehler gefunden oder Verbesserungsvorschlag?</h4>
-					<p class="mb-3 text-sm text-gray-700">
+					<p class="mb-3 text-sm text-base-content/80">
 						Wir freuen uns über Ihr Feedback! Die Ostsee-Tiere Plattform wird kontinuierlich
 						weiterentwickelt. Ihre Hinweise helfen uns dabei, die Plattform zu verbessern.
 					</p>
@@ -548,7 +548,7 @@ SOFTWARE.</pre>
 				<Icon icon="lucide:heart" width="20" height="20" class="text-primary" />
 				Danksagung
 			</h4>
-			<p class="mb-4 text-sm text-gray-700">
+			<p class="mb-4 text-sm text-base-content/80">
 				Wir danken allen Entwicklern und Organisationen, die durch ihre Open Source Projekte diese
 				Plattform ermöglichen. Besonderer Dank gilt:
 			</p>

@@ -118,7 +118,17 @@
 	});
 </script>
 
-<div bind:this={mapElement} class="ol-map-container z-10 h-full w-full overflow-hidden"></div>
+<!-- Karte ist ein interaktives Application-Widget (OpenLayers-Tastatursteuerung); tabindex bewusst gesetzt -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<div
+	bind:this={mapElement}
+	class="ol-map-container z-10 h-full w-full overflow-hidden"
+	role="application"
+	aria-label={readonly
+		? 'Interaktive Karte der Sichtungen'
+		: 'Interaktive Karte zur Positionsauswahl. Pfeiltasten zum Verschieben, Plus/Minus zum Zoomen.'}
+	tabindex="0"
+></div>
 
 {#if !readonly}
 	<div class="alert mt-2 mb-0">

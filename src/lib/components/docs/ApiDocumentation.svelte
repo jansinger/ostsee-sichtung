@@ -52,8 +52,8 @@
 <div class={containerClass}>
 	<!-- Header Section -->
 	<div class="mb-8 text-center">
-		<h1 class="mb-4 text-4xl font-bold text-gray-900">{title}</h1>
-		<p class="mx-auto max-w-3xl text-lg text-gray-600">
+		<h1 class="mb-4 text-4xl font-bold text-base-content">{title}</h1>
+		<p class="mx-auto max-w-3xl text-lg text-base-content/70">
 			{description}
 		</p>
 
@@ -81,35 +81,35 @@
 			<div class="grid gap-6 md:grid-cols-2">
 				<div>
 					<h3 class="mb-2 text-lg font-medium">Öffentliche Endpunkte</h3>
-					<p class="mb-3 text-sm text-gray-600">
+					<p class="mb-3 text-sm text-base-content/70">
 						Einige Endpunkte sind öffentlich verfügbar und benötigen keine Authentifizierung:
 					</p>
 					<ul class="space-y-1 text-sm">
 						<li>
-							• <code class="rounded bg-gray-100 px-1">GET /api/sightings</code> - Öffentliche Sichtungen
+							• <code class="rounded bg-base-200 px-1">GET /api/sightings</code> - Öffentliche Sichtungen
 						</li>
 						<li>
-							• <code class="rounded bg-gray-100 px-1">POST /api/sightings</code> - Neue Sichtung melden
+							• <code class="rounded bg-base-200 px-1">POST /api/sightings</code> - Neue Sichtung melden
 						</li>
 						<li>
-							• <code class="rounded bg-gray-100 px-1">GET /api/geo/inBaltic</code> - Koordinaten prüfen
+							• <code class="rounded bg-base-200 px-1">GET /api/geo/inBaltic</code> - Koordinaten prüfen
 						</li>
 						<li>
-							• <code class="rounded bg-gray-100 px-1">POST /api/files/upload</code> - Dateien hochladen
+							• <code class="rounded bg-base-200 px-1">POST /api/files/upload</code> - Dateien hochladen
 						</li>
 						<li>
-							• <code class="rounded bg-gray-100 px-1">GET /api/media/{'{path}'}</code> - Sichere Medien
+							• <code class="rounded bg-base-200 px-1">GET /api/media/{'{path}'}</code> - Sichere Medien
 							abrufen
 						</li>
 					</ul>
 				</div>
 				<div>
 					<h3 id="authentication" class="mb-2 text-lg font-medium">🔐 Admin-Authentifizierung</h3>
-					<p class="mb-3 text-sm text-gray-600">
+					<p class="mb-3 text-sm text-base-content/70">
 						Für Admin-Funktionen ist eine Anmeldung erforderlich:
 					</p>
 					<ol class="space-y-1 text-sm">
-						<li>1. <code class="rounded bg-gray-100 px-1">GET /api/auth/login</code> aufrufen</li>
+						<li>1. <code class="rounded bg-base-200 px-1">GET /api/auth/login</code> aufrufen</li>
 						<li>2. Auth0-Login-Flow durchlaufen</li>
 						<li>3. Session-Cookie wird automatisch gesetzt</li>
 						<li>4. Admin-Endpunkte sind nun verfügbar</li>
@@ -121,7 +121,7 @@
 
 	<!-- API Reference Container -->
 	{#if isLoading}
-		<div class="py-8 text-center text-gray-500">
+		<div class="py-8 text-center text-base-content/60">
 			<div class="loading loading-spinner loading-lg"></div>
 			<p class="mt-4">API-Dokumentation wird geladen...</p>
 			<p class="mt-2 text-sm">
@@ -165,7 +165,7 @@
 
 		<!-- Fallback notice -->
 		<div class="mt-4 text-center">
-			<p class="text-sm text-gray-500">
+			<p class="text-sm text-base-content/60">
 				Falls die interaktive Dokumentation nicht funktioniert, nutzen Sie die
 				<a href="/docs/api/fallback" class="link link-primary">Fallback-Dokumentation</a>
 				oder laden Sie die

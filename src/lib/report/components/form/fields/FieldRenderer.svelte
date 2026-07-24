@@ -111,7 +111,8 @@
 			rows: meta.rows,
 			placeholder: meta.placeholder,
 			selectPlaceholder: meta.selectPlaceholder,
-			description: meta.description
+			description: meta.description,
+			autocomplete: meta.autocomplete
 		};
 	});
 	let hasOptions = $derived(metaValues.options && metaValues.options.length > 0);
@@ -130,6 +131,11 @@
 				? 'toggle'
 				: metaValues.type
 	);
+
+	// Gruppenfelder: Radio hat mehrere Inputs (kein einzelnes label-Ziel) → fieldset/legend.
+	// Checkbox/Toggle rendern ihr eigenes <label> mit dem Control → kein doppeltes Caption-Label.
+	let isRadioGroup = $derived(normalizedType === 'radio' && hasOptions);
+	let isSingleControl = $derived(normalizedType === 'checkbox' || normalizedType === 'toggle');
 
 	// Dynamic CSS classes
 	let containerClasses = $derived.by(() => {
@@ -175,16 +181,10 @@
 		const props = {
 			...commonFieldProps,
 			type: normalizedType as
-				| 'text'
-				| 'email'
-				| 'tel'
-				| 'number'
-				| 'url'
-				| 'password'
-				| 'date'
-				| 'time',
+				'text' | 'email' | 'tel' | 'number' | 'url' | 'password' | 'date' | 'time',
 			placeholder: metaValues.placeholder || '',
-			options: metaValues.options ?? []
+			options: metaValues.options ?? [],
+			...(metaValues.autocomplete && { autocomplete: metaValues.autocomplete })
 		};
 		return props;
 	});
@@ -232,53 +232,54 @@
 	});
 </script>
 
-<div class={containerClasses}>
-	<!-- Enhanced Label with Status Indicators -->
-	<label for={fieldId} class="label w-full overflow-hidden pb-1">
-		<span
-			class="text-base-content block font-medium"
-			style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
-		>
-			{label}
-			{#if required}
-				<span class="text-error ml-1 text-sm" aria-label="Pflichtfeld">*</span>
-			{/if}
+<!-- Caption-Inhalt (Label-Text, Pflichtfeld-Markierung, Status, Info-Tooltip) -->
+{#snippet caption()}
+	<span
+		class="text-base-content block font-medium"
+		style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+	>
+		{label}
+		{#if required}
+			<span class="text-error ml-1 text-sm" aria-label="Pflichtfeld">*</span>
+		{/if}
 
-			<!-- Status Indicator -->
-			{#if hasValue}
-				<span class="ml-2 inline-block" aria-hidden="true">
-					{#if hasError}
-						<Icon icon="lucide:x" width="14" class="text-error inline" />
-					{:else if isValid}
-						<Icon icon="lucide:check" width="14" class="text-success inline" />
-					{/if}
-				</span>
-			{/if}
+		<!-- Status Indicator -->
+		{#if hasValue}
+			<span class="ml-2 inline-block" aria-hidden="true">
+				{#if hasError}
+					<Icon icon="lucide:x" width="14" class="text-error inline" />
+				{:else if isValid}
+					<Icon icon="lucide:check" width="14" class="text-success inline" />
+				{/if}
+			</span>
+		{/if}
 
-			<!-- Value Information Tooltip -->
-			{#if metaValues.valueText}
-				<span class="tooltip tooltip-left ml-2 inline-block" data-tip={metaValues.valueText}>
-					<button
-						type="button"
-						class="btn btn-ghost btn-xs btn-circle"
-						aria-label="Warum ist diese Information wichtig?"
-						tabindex="-1"
-					>
-						<Icon icon="lucide:info" width="14" class="text-base-content/60" />
-					</button>
-				</span>
-			{/if}
-		</span>
-	</label>
+		<!-- Value Information Tooltip (fokussierbar für Tastatur/Touch) -->
+		{#if metaValues.valueText}
+			<span class="tooltip tooltip-left ml-2 inline-block" data-tip={metaValues.valueText}>
+				<button
+					type="button"
+					class="btn btn-ghost btn-xs btn-circle"
+					aria-label={`Hinweis: ${metaValues.valueText}`}
+				>
+					<Icon icon="lucide:info" width="14" class="text-base-content/60" />
+				</button>
+			</span>
+		{/if}
+	</span>
+{/snippet}
 
-	<!-- Field Description (if different from help text) -->
+<!-- Field-Description (falls abweichend vom Hilfetext) -->
+{#snippet description()}
 	{#if metaValues.description && metaValues.description !== metaValues.helpText}
 		<div id={descriptionId} class="text-base-content/70 mb-2 text-left text-sm">
 			{metaValues.description}
 		</div>
 	{/if}
+{/snippet}
 
-	<!-- Field Components -->
+<!-- Field-Component-Auswahl -->
+{#snippet fieldControl()}
 	{#if ['text', 'email', 'tel', 'number', 'url', 'password', 'date', 'time'].includes(normalizedType)}
 		<BaseInput {...inputProps} bind:value={numberValue} onchange={handleNumberChange} />
 	{:else if normalizedType === 'textarea'}
@@ -291,6 +292,25 @@
 		<BaseCheckbox {...checkboxProps} bind:checked={booleanValue} onchange={handleBooleanChange} />
 	{:else if normalizedType === 'toggle'}
 		<BaseToggle {...toggleProps} bind:checked={booleanValue} onchange={handleBooleanChange} />
+	{/if}
+{/snippet}
+
+<div class={containerClasses}>
+	{#if isRadioGroup}
+		<!-- Radiogruppe: fieldset+legend statt label[for], das ins Leere zeigen würde -->
+		<fieldset class="w-full">
+			<legend class="label w-full overflow-hidden pb-1">{@render caption()}</legend>
+			{@render description()}
+			{@render fieldControl()}
+		</fieldset>
+	{:else if isSingleControl}
+		<!-- Checkbox/Toggle rendern eigenes Label mit dem Control → kein doppeltes Caption-Label -->
+		{@render description()}
+		{@render fieldControl()}
+	{:else}
+		<label for={fieldId} class="label w-full overflow-hidden pb-1">{@render caption()}</label>
+		{@render description()}
+		{@render fieldControl()}
 	{/if}
 
 	<!-- Help Text -->

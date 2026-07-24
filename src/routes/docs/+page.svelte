@@ -37,7 +37,7 @@
 			<Icon icon="lucide:book-open" width="40" height="40" class="text-primary" />
 			Dokumentation
 		</h1>
-		<p class="text-lg text-gray-600">Willkommen zur Dokumentation der Ostsee-Tiere Plattform</p>
+		<p class="text-lg text-base-content/70">Willkommen zur Dokumentation der Ostsee-Tiere Plattform</p>
 	</div>
 
 	<div class="grid gap-6 md:grid-cols-2">
@@ -49,13 +49,13 @@
 					API-Dokumentation
 					<div class="badge badge-primary">Interactive</div>
 				</h2>
-				<p class="text-sm text-gray-600">
+				<p class="text-sm text-base-content/70">
 					Umfassende OpenAPI-Dokumentation mit interaktiver Schnittstelle. Testen Sie alle Endpunkte
 					direkt im Browser.
 				</p>
 				<div class="mt-4">
 					<h3 class="mb-2 text-sm font-semibold">Verfügbare APIs:</h3>
-					<ul class="space-y-1 text-xs text-gray-600">
+					<ul class="space-y-1 text-xs text-base-content/70">
 						<li>• Sichtungen verwalten</li>
 						<li>• Dateien hochladen</li>
 						<li>• Datenexport (CSV, JSON, XML, KML)</li>
@@ -78,21 +78,21 @@
 					Erste Schritte
 					<div class="badge badge-secondary">Guide</div>
 				</h2>
-				<p class="text-sm text-gray-600">Schnelleinstieg für Entwickler und API-Nutzer.</p>
+				<p class="text-sm text-base-content/70">Schnelleinstieg für Entwickler und API-Nutzer.</p>
 				<div class="mt-4">
 					<h3 class="mb-2 text-sm font-semibold">Öffentliche Endpunkte:</h3>
 					<div class="space-y-2">
-						<div class="rounded bg-gray-50 p-2 text-xs">
-							<code class="text-blue-600">GET /api/sightings</code>
-							<span class="ml-2 text-gray-500">Öffentliche Sichtungen</span>
+						<div class="rounded bg-base-200 p-2 text-xs">
+							<code class="text-info">GET /api/sightings</code>
+							<span class="ml-2 text-base-content/60">Öffentliche Sichtungen</span>
 						</div>
-						<div class="rounded bg-gray-50 p-2 text-xs">
-							<code class="text-blue-600">POST /api/sightings</code>
-							<span class="ml-2 text-gray-500">Neue Sichtung melden</span>
+						<div class="rounded bg-base-200 p-2 text-xs">
+							<code class="text-info">POST /api/sightings</code>
+							<span class="ml-2 text-base-content/60">Neue Sichtung melden</span>
 						</div>
-						<div class="rounded bg-gray-50 p-2 text-xs">
-							<code class="text-blue-600">POST /api/files/upload</code>
-							<span class="ml-2 text-gray-500">Dateien hochladen</span>
+						<div class="rounded bg-base-200 p-2 text-xs">
+							<code class="text-info">POST /api/files/upload</code>
+							<span class="ml-2 text-base-content/60">Dateien hochladen</span>
 						</div>
 					</div>
 				</div>
@@ -110,13 +110,13 @@
 					OpenAPI Spezifikation
 					<div class="badge badge-accent">Download</div>
 				</h2>
-				<p class="text-sm text-gray-600">
+				<p class="text-sm text-base-content/70">
 					Laden Sie die vollständige OpenAPI-Spezifikation herunter für die Verwendung in Tools wie
 					Postman, Insomnia oder zur Code-Generierung.
 				</p>
 				<div class="mt-4">
 					<h3 class="mb-2 text-sm font-semibold">Formate:</h3>
-					<ul class="space-y-1 text-xs text-gray-600">
+					<ul class="space-y-1 text-xs text-base-content/70">
 						<li>• YAML (empfohlen)</li>
 						<li>• JSON (über API)</li>
 						<li>• Code-Generierung unterstützt</li>
@@ -138,12 +138,12 @@
 					Authentifizierung
 					<div class="badge badge-warning">Admin</div>
 				</h2>
-				<p class="text-sm text-gray-600">
+				<p class="text-sm text-base-content/70">
 					Für Admin-Funktionen ist eine Authentifizierung über Auth0 erforderlich.
 				</p>
 				<div class="mt-4">
 					<h3 class="mb-2 text-sm font-semibold">Authentifizierungs-Flow:</h3>
-					<ol class="list-inside list-decimal space-y-1 text-xs text-gray-600">
+					<ol class="list-inside list-decimal space-y-1 text-xs text-base-content/70">
 						<li>Login-Endpunkt aufrufen</li>
 						<li>Auth0-Flow durchlaufen</li>
 						<li>Session-Cookie wird gesetzt</li>
@@ -188,7 +188,7 @@
 	</div>
 
 	<!-- Project Information -->
-	<div class="mt-8 text-center text-sm text-gray-500">
+	<div class="mt-8 text-center text-sm text-base-content/60">
 		<p>
 			Die Ostsee-Tiere Plattform ermöglicht es Bürgern, Forschern und Naturbeobachtern, ihre
 			Sichtungen von Walen, Robben und anderen Meerestieren zu melden.

@@ -4,6 +4,7 @@
 	import type { StoredWeatherData } from '$lib/services/weatherService';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
+	import { toast } from '$lib/stores/toastState.svelte';
 
 	interface Props {
 		weatherData: StoredWeatherData | null;
@@ -55,7 +56,7 @@
 
 	async function refreshWeatherData() {
 		if (!latitude || !longitude) {
-			alert('Keine GPS-Koordinaten für Wetter-Update verfügbar');
+			toast.warning('Keine GPS-Koordinaten für Wetter-Update verfügbar');
 			return;
 		}
 
@@ -76,10 +77,10 @@
 				}
 			} else {
 				const error = await response.json();
-				alert(`Fehler beim Aktualisieren der Wetterdaten: ${error.error}`);
+				toast.error(`Fehler beim Aktualisieren der Wetterdaten: ${error.error}`);
 			}
 		} catch (error) {
-			alert(`Netzwerkfehler: ${error}`);
+			toast.error(`Netzwerkfehler: ${error}`);
 		} finally {
 			isRefreshing = false;
 		}
@@ -135,7 +136,7 @@
 					</div>
 					{#if weatherData.location.elevation}
 						<div class="flex items-center gap-2">
-							<Icon icon="lucide:mountain" width="12" class="text-gray-600" />
+							<Icon icon="lucide:mountain" width="12" class="text-base-content/70" />
 							<span>{weatherData.location.elevation}m ü.NN</span>
 						</div>
 					{/if}
@@ -152,13 +153,13 @@
 			<div class="grid grid-cols-2 gap-3 text-sm md:grid-cols-3">
 				{#if weatherData.processed.humidity}
 					<div class="flex items-center gap-2">
-						<Icon icon="lucide:cloud" width="14" class="text-blue-400" />
+						<Icon icon="lucide:cloud" width="14" class="text-info" />
 						<span>Luftfeuchtigkeit: {weatherData.processed.humidity}%</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.precipitation}
 					<div class="flex items-center gap-2">
-						<Icon icon="lucide:cloud-rain" width="14" class="text-blue-500" />
+						<Icon icon="lucide:cloud-rain" width="14" class="text-info" />
 						<span>Niederschlag: {weatherData.raw_data.precipitation}mm</span>
 					</div>
 				{/if}
@@ -170,25 +171,25 @@
 				{/if}
 				{#if weatherData.raw_data.wave_height}
 					<div class="flex items-center gap-2">
-						<Icon icon="lucide:waves" width="14" class="text-blue-600" />
+						<Icon icon="lucide:waves" width="14" class="text-info" />
 						<span>Wellenhöhe: {weatherData.raw_data.wave_height.toFixed(2)}m</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.wave_direction}
 					<div class="flex items-center gap-2">
-						<Icon icon="lucide:wind" width="14" class="text-blue-600" />
+						<Icon icon="lucide:wind" width="14" class="text-info" />
 						<span>Wellenrichtung: {Math.round(weatherData.raw_data.wave_direction)}°</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.wave_period}
 					<div class="flex items-center gap-2">
-						<Icon icon="lucide:gem" width="14" class="text-cyan-600" />
+						<Icon icon="lucide:gem" width="14" class="text-info" />
 						<span>Wellenperiode: {weatherData.raw_data.wave_period.toFixed(1)}s</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.sea_surface_temperature}
 					<div class="flex items-center gap-2">
-						<Icon icon="lucide:thermometer" width="14" class="text-blue-500" />
+						<Icon icon="lucide:thermometer" width="14" class="text-info" />
 						<span>Wassertemp: {weatherData.raw_data.sea_surface_temperature}°C</span>
 					</div>
 				{/if}
@@ -203,7 +204,7 @@
 			</button>
 
 			{#if isExpanded}
-				<div class="expanded-weather-data bg-base-50 mt-3 rounded border p-3">
+				<div class="expanded-weather-data bg-base-200 mt-3 rounded border p-3">
 					<h6 class="text-base-content/70 mb-2 text-xs font-medium">QUALITÄTS- UND QUELLINFO</h6>
 					<div class="text-base-content/60 grid grid-cols-1 gap-2 text-xs md:grid-cols-2">
 						<div>Abgerufen: {formatLocalDateTime(weatherData.fetched_at, 'datetime')}</div>

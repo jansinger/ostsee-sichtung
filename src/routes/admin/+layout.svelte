@@ -2,11 +2,12 @@
 	let { children }: { children: import('svelte').Snippet } = $props();
 </script>
 
-<main class="w-full">
+<!-- Kein eigenes <main>: Root-Layout stellt bereits <main id="main-content"> bereit -->
+<div class="w-full">
 	<div class="flex min-h-screen flex-col">
 		<!-- Page content with top padding for fixed navbar -->
-		<main class="w-full">
+		<div class="w-full">
 			{@render children()}
-		</main>
+		</div>
 	</div>
-</main>
+</div>

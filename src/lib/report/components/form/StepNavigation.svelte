@@ -29,10 +29,17 @@
 
 	const canGoNext = $derived(stepValidation.isValid);
 
+	// Inline-Warnung erst nach erstem "Weiter"-Versuch auf einem ungültigen Schritt zeigen.
+	// Speichert den Schritt-Index des letzten Versuchs; bei Schrittwechsel greift die Warnung
+	// nicht mehr (unberührter Schritt = keine Warnung).
+	let attemptedStep = $state<number | null>(null);
+
 	// Step error messages for inline display (only when step is invalid)
 	const stepErrorMessages = $derived(
 		canGoNext ? [] : (Object.values(stepValidation.errors).filter(Boolean) as string[])
 	);
+
+	const showInlineError = $derived(attemptedStep === currentStep && stepErrorMessages.length > 0);
 
 	const isLastStep = $derived(currentStep >= totalSteps - 1);
 	const isFirstStep = $derived(currentStep <= 0);
@@ -55,6 +62,7 @@
 		try {
 			if (!canGoNext) {
 				logger.warn({ currentStep }, 'Validation failed for current step');
+				attemptedStep = currentStep;
 				await showValidationError();
 				return;
 			}
@@ -141,8 +149,8 @@
 	}
 </script>
 
-<!-- Inline validation error above navigation -->
-{#if stepErrorMessages.length > 0}
+<!-- Inline validation error above navigation (erst nach erstem Versuch) -->
+{#if showInlineError}
 	<div class="alert alert-warning mb-2" role="alert">
 		<span>{stepErrorMessages[0]}</span>
 	</div>
@@ -166,7 +174,7 @@
 	<button
 		type="button"
 		onclick={nextStep}
-		disabled={!canGoNext || $isSubmitting}
+		disabled={$isSubmitting}
 		class="btn btn-primary"
 		aria-label={isLastStep ? 'Formular absenden' : 'Nächster Schritt'}
 	>

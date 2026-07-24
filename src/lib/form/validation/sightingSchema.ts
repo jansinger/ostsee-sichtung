@@ -240,7 +240,7 @@ export const sightingSchemaBase = yup.object().shape({
 			type: 'number',
 			placeholder: 'z.B. 13.456789',
 			helpText: 'Östliche Position (E) - je mehr Nachkommastellen, desto genauer',
-			valueText: 'Ihre GPS-Koordinaten werden mit 2.847 anderen Sichtungen verglichen',
+			valueText: 'Ihre GPS-Koordinaten werden mit anderen Sichtungen verglichen',
 			icon: Navigation2
 		})
 		.default(13.5),
@@ -382,7 +382,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Davon Jungtiere')
 		.meta({
 			placeholder: '0',
-			helpText: 'Waren Junge Tiere dabei? Bitte geben Sie die Anzahl ein.',
+			helpText: 'Waren junge Tiere dabei? Bitte geben Sie die Anzahl ein.',
 			valueText: 'Nachwuchsrate zeigt Gesundheit der Population',
 			icon: Baby
 		})
@@ -397,7 +397,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.boolean()
 		.label('Handelt es sich um einen Totfund?')
 		.meta({
-			helpText: 'Handeltete es sich um Lebende Tiere oder einen Totfund?',
+			helpText: 'Handelte es sich um lebende Tiere oder einen Totfund?',
 			valueText: 'Totfunde liefern wichtige Informationen über Todesursachen',
 			icon: Skull
 		})
@@ -955,6 +955,7 @@ export const sightingSchemaBase = yup.object().shape({
 			placeholder: 'Max',
 			helpText: 'Wie dürfen wir Sie ansprechen?',
 			valueText: 'Für die persönliche Kontaktaufnahme',
+			autocomplete: 'given-name',
 			icon: User
 		}),
 
@@ -971,6 +972,7 @@ export const sightingSchemaBase = yup.object().shape({
 			placeholder: 'Mustermann',
 			helpText: 'Ihr Familienname',
 			valueText: 'Zur eindeutigen Zuordnung der Meldung',
+			autocomplete: 'family-name',
 			icon: User
 		}),
 
@@ -989,6 +991,7 @@ export const sightingSchemaBase = yup.object().shape({
 			helpText: 'Wie können wir Sie erreichen?',
 			valueText: 'Für Rückfragen und zur Bestätigung der Sichtung',
 			type: 'email',
+			autocomplete: 'email',
 			icon: Mail
 		}),
 
@@ -1005,6 +1008,7 @@ export const sightingSchemaBase = yup.object().shape({
 			helpText: 'Falls wir Sie anrufen dürfen (optional)',
 			valueText: 'Für schnelle Klärung bei unklaren Angaben',
 			type: 'tel',
+			autocomplete: 'tel',
 			icon: Phone
 		})
 		.notRequired(),
@@ -1021,6 +1025,7 @@ export const sightingSchemaBase = yup.object().shape({
 			placeholder: 'Musterstraße 123',
 			helpText: 'Ihre Adresse (optional)',
 			valueText: 'Ermöglicht lokale Zuordnung der Beobachter',
+			autocomplete: 'street-address',
 			icon: AddressIcon
 		})
 		.notRequired(),
@@ -1037,6 +1042,7 @@ export const sightingSchemaBase = yup.object().shape({
 			placeholder: '12345',
 			helpText: 'Ihre PLZ (optional)',
 			valueText: 'Geografische Zuordnung der Beobachter',
+			autocomplete: 'postal-code',
 			icon: Hash
 		})
 		.notRequired(),
@@ -1053,6 +1059,7 @@ export const sightingSchemaBase = yup.object().shape({
 			placeholder: 'Musterstadt',
 			helpText: 'Ihr Wohnort (optional)',
 			valueText: 'Regionale Verteilung der Beobachter',
+			autocomplete: 'address-level2',
 			icon: MapPin
 		})
 		.notRequired(),

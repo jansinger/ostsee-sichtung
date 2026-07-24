@@ -63,7 +63,7 @@
 		{ key: 'referenceId', label: 'Referenz-ID', sortKey: null },
 		{ key: 'sightingDate', label: 'Sichtungsdatum', sortKey: 'sightingDate' },
 		{ key: 'created', label: 'Meldedatum', sortKey: 'created' },
-		{ key: 'email', label: 'Email', sortKey: 'email' },
+		{ key: 'email', label: 'E-Mail', sortKey: 'email' },
 		{ key: 'species', label: 'Tierart', sortKey: 'species' },
 		{ key: 'distance', label: 'Entfernung', sortKey: 'distance' },
 		{ key: 'totalCount', label: 'Anzahl', sortKey: 'totalCount' },
@@ -237,14 +237,23 @@
 			if (response.ok) {
 				const result = await response.json();
 				logger.info({ id, result }, 'Sichtung erfolgreich gelöscht');
+				toast.success('Sichtung wurde gelöscht', { duration: 5000 });
 				// Reload data via SvelteKit's invalidation instead of full page reload
 				await invalidateAll();
 			} else {
 				const error = await response.json();
 				logger.error({ id, error }, 'Fehler beim Löschen der Sichtung');
+				toast.error(error.error || 'Sichtung konnte nicht gelöscht werden', {
+					title: 'Fehler',
+					dismissible: true
+				});
 			}
 		} catch (error) {
 			logger.error({ id, error }, 'Netzwerkfehler beim Löschen');
+			toast.error('Netzwerkfehler beim Löschen der Sichtung', {
+				title: 'Verbindungsfehler',
+				dismissible: true
+			});
 		}
 	}
 
@@ -323,9 +332,20 @@
 			} else {
 				const error = await response.json();
 				logger.error({ id, error }, 'Fehler beim Ändern des Verifizierungsstatus');
+				toast.error(error.error || 'Verifizierungsstatus konnte nicht geändert werden', {
+					title: 'Fehler',
+					dismissible: true
+				});
+				// Toggle springt zurück: Daten neu laden, damit UI den echten Serverzustand zeigt
+				await invalidateAll();
 			}
 		} catch (error) {
 			logger.error({ id, error }, 'Netzwerkfehler beim Ändern des Verifizierungsstatus');
+			toast.error('Netzwerkfehler beim Ändern des Verifizierungsstatus', {
+				title: 'Verbindungsfehler',
+				dismissible: true
+			});
+			await invalidateAll();
 		}
 	}
 </script>
@@ -678,6 +698,24 @@
 		{/each}
 	</div>
 
+	<!-- Sortierbarer Spaltenkopf: <button> im <th> mit aria-sort für Screenreader -->
+	{#snippet sortableTh(label: string, key: string)}
+		{@const isActive = page.url.searchParams.get('sort') === key}
+		{@const isDesc = page.url.searchParams.get('order') === 'desc'}
+		<th class="p-0" aria-sort={isActive ? (isDesc ? 'descending' : 'ascending') : 'none'}>
+			<button
+				type="button"
+				class="hover:bg-base-300 flex w-full items-center gap-1 px-4 py-3 text-left font-semibold"
+				onclick={() => updateSort(key)}
+			>
+				{label}
+				{#if isActive}
+					<span aria-hidden="true">{isDesc ? '↓' : '↑'}</span>
+				{/if}
+			</button>
+		</th>
+	{/snippet}
+
 	<!-- Desktop Table Layout -->
 	<div class="hidden px-2 sm:px-4 md:block">
 		<div class="border-base-300 bg-base-100 w-full overflow-x-auto rounded-lg border shadow-sm">
@@ -688,133 +726,40 @@
 							<th class="hover:bg-base-300">Referenz-ID</th>
 						{/if}
 						{#if columnVisibility.sightingDate}
-							<th
-								class="hover:bg-base-300 cursor-pointer"
-								onclick={() => updateSort('sightingDate')}
-							>
-								Sichtungsdatum
-								{#if page.url.searchParams.get('sort') === 'sightingDate'}
-									<span class="ml-1"
-										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
-									>
-								{/if}
-							</th>
+							{@render sortableTh('Sichtungsdatum', 'sightingDate')}
 						{/if}
 						{#if columnVisibility.created}
-							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('created')}>
-								Meldedatum
-								{#if page.url.searchParams.get('sort') === 'created'}
-									<span class="ml-1"
-										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
-									>
-								{/if}
-							</th>
+							{@render sortableTh('Meldedatum', 'created')}
 						{/if}
 						{#if columnVisibility.email}
-							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('email')}>
-								Email
-								{#if page.url.searchParams.get('sort') === 'email'}
-									<span class="ml-1"
-										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
-									>
-								{/if}
-							</th>
+							{@render sortableTh('E-Mail', 'email')}
 						{/if}
 						{#if columnVisibility.species}
-							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('species')}>
-								Tierart
-								{#if page.url.searchParams.get('sort') === 'species'}
-									<span class="ml-1"
-										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
-									>
-								{/if}
-							</th>
+							{@render sortableTh('Tierart', 'species')}
 						{/if}
 						{#if columnVisibility.distance}
-							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('distance')}>
-								Entfernung
-								{#if page.url.searchParams.get('sort') === 'distance'}
-									<span class="ml-1"
-										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
-									>
-								{/if}
-							</th>
+							{@render sortableTh('Entfernung', 'distance')}
 						{/if}
 						{#if columnVisibility.totalCount}
-							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('totalCount')}>
-								Anzahl
-								{#if page.url.searchParams.get('sort') === 'totalCount'}
-									<span class="ml-1"
-										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
-									>
-								{/if}
-							</th>
+							{@render sortableTh('Anzahl', 'totalCount')}
 						{/if}
 						{#if columnVisibility.juvenileCount}
-							<th
-								class="hover:bg-base-300 cursor-pointer"
-								onclick={() => updateSort('juvenileCount')}
-							>
-								Jung
-								{#if page.url.searchParams.get('sort') === 'juvenileCount'}
-									<span class="ml-1"
-										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
-									>
-								{/if}
-							</th>
+							{@render sortableTh('Jung', 'juvenileCount')}
 						{/if}
 						{#if columnVisibility.distribution}
-							<th
-								class="hover:bg-base-300 cursor-pointer"
-								onclick={() => updateSort('distribution')}
-							>
-								Verteilung
-								{#if page.url.searchParams.get('sort') === 'distribution'}
-									<span class="ml-1"
-										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
-									>
-								{/if}
-							</th>
+							{@render sortableTh('Verteilung', 'distribution')}
 						{/if}
 						{#if columnVisibility.behavior}
-							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('behavior')}>
-								Verhalten
-								{#if page.url.searchParams.get('sort') === 'behavior'}
-									<span class="ml-1"
-										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
-									>
-								{/if}
-							</th>
+							{@render sortableTh('Verhalten', 'behavior')}
 						{/if}
 						{#if columnVisibility.seaState}
-							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('seaState')}>
-								Seegang
-								{#if page.url.searchParams.get('sort') === 'seaState'}
-									<span class="ml-1"
-										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
-									>
-								{/if}
-							</th>
+							{@render sortableTh('Seegang', 'seaState')}
 						{/if}
 						{#if columnVisibility.wind}
-							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('wind')}>
-								Wind
-								{#if page.url.searchParams.get('sort') === 'wind'}
-									<span class="ml-1"
-										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
-									>
-								{/if}
-							</th>
+							{@render sortableTh('Wind', 'wind')}
 						{/if}
 						{#if columnVisibility.visibility}
-							<th class="hover:bg-base-300 cursor-pointer" onclick={() => updateSort('visibility')}>
-								Sichtweite
-								{#if page.url.searchParams.get('sort') === 'visibility'}
-									<span class="ml-1"
-										>{page.url.searchParams.get('order') === 'desc' ? '↓' : '↑'}</span
-									>
-								{/if}
-							</th>
+							{@render sortableTh('Sichtweite', 'visibility')}
 						{/if}
 						{#if columnVisibility.mediaUpload}
 							<th class="hover:bg-base-300">Aufnahme</th>

@@ -5,8 +5,8 @@
 
 	let {
 		mode = 'dd',
-		latitude = $bindable(13.5),
-		longitude = $bindable(54.5),
+		latitude = $bindable(54.5),
+		longitude = $bindable(13.5),
 		onchange = () => {}
 	} = $props<{
 		mode?: 'dms' | 'dm' | 'dd';
@@ -100,6 +100,7 @@
 						min="0"
 						max="59"
 						placeholder="Min"
+						aria-label="Breite Minuten"
 						bind:value={dms.latitude.min}
 						onchange={updateFromFields}
 					/>
@@ -109,6 +110,7 @@
 						min="0"
 						max="59"
 						placeholder="Sek"
+						aria-label="Breite Sekunden"
 						bind:value={dms.latitude.sec}
 						onchange={updateFromFields}
 					/>
@@ -135,6 +137,7 @@
 						min="0"
 						max="59"
 						placeholder="Min"
+						aria-label="Länge Minuten"
 						bind:value={dms.longitude.min}
 						onchange={updateFromFields}
 					/>
@@ -144,6 +147,7 @@
 						min="0"
 						max="59"
 						placeholder="Sek"
+						aria-label="Länge Sekunden"
 						bind:value={dms.longitude.sec}
 						onchange={updateFromFields}
 					/>
@@ -174,6 +178,7 @@
 						max="59.9999"
 						step="0.01"
 						placeholder="Dezimalmin"
+						aria-label="Breite Dezimalminuten"
 						bind:value={dm.latitude.min}
 						onchange={updateFromFields}
 					/>
@@ -201,6 +206,7 @@
 						max="59.9999"
 						step="0.01"
 						placeholder="Dezimalmin"
+						aria-label="Länge Dezimalminuten"
 						bind:value={dm.longitude.min}
 						onchange={updateFromFields}
 					/>
@@ -210,7 +216,7 @@
 	{:else}
 		<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 			<div>
-				<label class="label" for="dd-latitude">Breite (N)</label>
+				<label class="label" for="latitude">Breite (N)</label>
 				<input
 					id="latitude"
 					class="input w-full"

@@ -23,6 +23,16 @@
 		hasSavedContactData = !!(savedData.firstName || savedData.lastName || savedData.email);
 	});
 
+	function handleReset() {
+		if (
+			confirm(
+				'Möchten Sie das Formular wirklich zurücksetzen? Alle bisher eingegebenen Daten gehen verloren.'
+			)
+		) {
+			onReset();
+		}
+	}
+
 	function clearContactData() {
 		if (
 			confirm(
@@ -51,7 +61,7 @@
 			<button
 				type="button"
 				class="btn btn-outline btn-sm w-full sm:w-auto"
-				onclick={onReset}
+				onclick={handleReset}
 				disabled={$isSubmitting}
 			>
 				Formular zurücksetzen

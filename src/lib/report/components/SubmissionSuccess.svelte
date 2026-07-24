@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import type { SightingFormValues } from '$lib/types/Form';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
@@ -75,7 +76,8 @@
 							<div>
 								<h3 class="font-semibold">Medien-Upload</h3>
 								<p class="text-base-content/70 text-sm">
-									Sie erhalten Anweisungen zum Upload Ihrer Fotos/Videos per E-Mail
+									Ihre hochgeladenen Fotos und Videos wurden übermittelt und werden gemeinsam mit
+									Ihrer Sichtung geprüft
 								</p>
 							</div>
 						</div>
@@ -118,20 +120,14 @@
 							{submittedData.referenceId}
 						</div>
 						<span class="text-base-content/70 text-xs">
-							(Bitte gehen Sie die ID bei Rückfragen an unser Team an. Die ID hilft bei der
+							(Bitte geben Sie die ID bei Rückfragen an unser Team an. Die ID hilft bei der
 							Zuordnung Ihrer Sichtung)
 						</span>
 					</div>
 					<div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
 						<div>
 							<span class="font-medium">Tierart:</span>
-							{submittedData.species === 0
-								? 'Schweinswal'
-								: submittedData.species === 1
-									? 'Kegelrobbe'
-									: submittedData.species === 2
-										? 'Seehund'
-										: 'Andere Art'}
+							{getSpeciesLabel(submittedData.species)}
 						</div>
 						<div>
 							<span class="font-medium">Anzahl:</span>

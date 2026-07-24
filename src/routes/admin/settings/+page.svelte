@@ -313,11 +313,11 @@
 	<!-- Header -->
 	<div class="mb-8 flex items-center justify-between">
 		<div>
-			<h1 class="flex items-center gap-3 text-3xl font-bold text-gray-900">
+			<h1 class="flex items-center gap-3 text-3xl font-bold text-base-content">
 				<Icon icon="lucide:settings" width="32" height="32" class="text-primary" />
 				Anwendungseinstellungen
 			</h1>
-			<p class="mt-2 text-gray-600">
+			<p class="mt-2 text-base-content/70">
 				Konfigurieren Sie alle Aspekte der Ostsee-Tiere Anwendung über diese zentrale Oberfläche.
 			</p>
 		</div>
@@ -438,13 +438,13 @@
 									? 'border-warning bg-warning/5'
 									: activeConfigKeys.has(config.key)
 										? 'border-base-300'
-										: 'border-gray-200 bg-gray-50'}"
+										: 'border-base-300 bg-base-200'}"
 							>
 								<!-- Config Header -->
 								<div class="mb-3 flex items-start justify-between">
 									<div class="flex-1">
 										<div class="flex items-center gap-2">
-											<div class="text-sm font-semibold text-gray-900">
+											<div class="text-sm font-semibold text-base-content">
 												{config.key}
 											</div>
 											{#if changedConfigs.has(config.key)}
@@ -456,7 +456,7 @@
 											{/if}
 										</div>
 										{#if config.description}
-											<p class="mt-1 text-sm text-gray-600">{config.description}</p>
+											<p class="mt-1 text-sm text-base-content/70">{config.description}</p>
 										{/if}
 									</div>
 

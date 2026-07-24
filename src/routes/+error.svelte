@@ -93,7 +93,7 @@
 </script>
 
 <svelte:head>
-	<title>Fehler {status} - Sichtungen WebApp</title>
+	<title>Fehler {status} - Ostsee-Tiere</title>
 	<meta name="description" content="Ein Fehler ist aufgetreten - {errorMessage.title}" />
 </svelte:head>
 
@@ -180,18 +180,15 @@
 						<li>Versuchen Sie es in ein paar Minuten erneut</li>
 						<li>Leeren Sie den Browser-Cache</li>
 					</ul>
+					<p>Andernfalls versuchen Sie es später erneut oder kehren Sie zur Startseite zurück.</p>
 				</div>
 
-				<!-- Kontakt-Info (optional) -->
+				<!-- Zur Startseite -->
 				<div class="card-actions mt-4 justify-end">
-					<a
-						href="mailto:support@example.com"
-						class="btn btn-sm btn-ghost"
-						aria-label="Support kontaktieren"
-					>
-						<Icon icon="lucide:mail" class="mr-1 h-4 w-4" />
-						Support
-					</a>
+					<button class="btn btn-sm btn-ghost" onclick={goHome} aria-label="Zur Startseite">
+						<Icon icon="lucide:home" class="mr-1 h-4 w-4" />
+						Zur Startseite
+					</button>
 				</div>
 			</div>
 		</div>
@@ -213,9 +210,5 @@
 			opacity: 1;
 			transform: translateY(0);
 		}
-	}
-
-	.avatar.placeholder {
-		animation: pulse 2s infinite;
 	}
 </style>
