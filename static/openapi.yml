@@ -1399,6 +1399,12 @@ paths:
 
         Rate-Limiting je nach Authentifizierungsstatus (anonym / authentifiziert)
         verhindert massenhaftes anonymes Löschen.
+
+        Ownership: Anonyme Nutzer können nur noch nicht zugeordnete Dateien
+        (ohne Sichtungs-Zuordnung) löschen, die sie selbst hochgeladen haben
+        (Nachweis über ein serverseitig gesetztes `upload-uid`-Cookie). Fehlt
+        das Cookie oder gehört die Datei einem anderen Uploader, wird 403
+        zurückgegeben. Admins dürfen jede Datei löschen.
       requestBody:
         required: true
         content:
