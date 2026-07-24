@@ -13,6 +13,24 @@ function resolveLogLevel(value: string | undefined): pino.Level {
 export const createServerLogger = (context: string) => {
 	return pino({
 		level: resolveLogLevel(env.LOG_LEVEL),
-		base: { pid: process.pid, context }
+		base: { pid: process.pid, context },
+		// Globale Redaction: personenbezogene/geheime Felder werden aus allen Logs
+		// entfernt (Defense-in-Depth gegen versehentliches Loggen von PII/Secrets).
+		// `*.email` deckt eine Verschachtelungsebene ab (z.B. { data: { email } }).
+		redact: {
+			paths: [
+				'email',
+				'*.email',
+				'phone',
+				'*.phone',
+				'telefon',
+				'*.telefon',
+				'password',
+				'*.password',
+				'*.token',
+				'token'
+			],
+			remove: true
+		}
 	});
 };

@@ -9,6 +9,7 @@ const DB_NOT_CONFIGURED_ERROR =
 
 // Track database connection state
 let _realDb: PostgresJsDatabase<typeof schema> | null = null;
+let _client: ReturnType<typeof postgres> | null = null;
 let _initError: string | null = null;
 
 /**
@@ -39,7 +40,16 @@ function initializeDb(): void {
 		}
 
 		// postgres() returns immediately - actual connection is lazy
-		const client = postgres(databaseUrl);
+		// Pool-/Timeout-Optionen für den Single-Container-Docker-Betrieb:
+		// - max: Verbindungspool-Obergrenze (eine Instanz, kein Fan-out nötig)
+		// - idle_timeout: Leerlaufverbindungen nach 20s schließen
+		// - connect_timeout: Verbindungsaufbau nach 10s abbrechen
+		const client = postgres(databaseUrl, {
+			max: 10,
+			idle_timeout: 20,
+			connect_timeout: 10
+		});
+		_client = client;
 		_realDb = drizzle(client, { schema });
 	} catch (error) {
 		_initError = error instanceof Error ? error.message : String(error);
@@ -142,4 +152,25 @@ export async function testDatabaseConnection(): Promise<boolean> {
  */
 export function resetConnectionTestCache(): void {
 	_lastConnectionTest = null;
+}
+
+/**
+ * Schließt die postgres.js-Verbindung sauber (für Graceful Shutdown).
+ *
+ * Idempotent: mehrfache Aufrufe sind unschädlich. Wird beim Empfang von
+ * SIGTERM/SIGINT (z.B. `docker stop`) aufgerufen, damit offene Verbindungen
+ * kontrolliert beendet werden statt hart abzubrechen.
+ */
+export async function closeDb(): Promise<void> {
+	if (!_client) {
+		return;
+	}
+
+	const client = _client;
+	// Referenzen sofort zurücksetzen, damit parallele Aufrufe nicht doppelt schließen
+	_client = null;
+	_realDb = null;
+	_lastConnectionTest = null;
+
+	await client.end({ timeout: 5 });
 }

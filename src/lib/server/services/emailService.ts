@@ -98,7 +98,8 @@ export class EmailService {
 				return;
 			}
 
-			// Create transporter
+			// Create transporter mit expliziten Timeouts, damit ein hängender SMTP-Server
+			// den Request/Prozess nicht blockiert (Single-Container-Docker-Betrieb).
 			this.transporter = nodemailer.createTransport({
 				host: smtpHost,
 				port: smtpPort,
@@ -106,7 +107,10 @@ export class EmailService {
 				auth: {
 					user: smtpUser,
 					pass: smtpPassword
-				}
+				},
+				connectionTimeout: 5000, // max. 5s für den Verbindungsaufbau
+				greetingTimeout: 5000, // max. 5s auf das SMTP-Greeting warten
+				socketTimeout: 10000 // max. 10s Inaktivität auf dem Socket
 			});
 
 			// Verify connection

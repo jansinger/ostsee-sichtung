@@ -211,18 +211,26 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 
 		logger.info({ id, referenceId }, 'Sichtung erfolgreich gespeichert');
 
-		// Send email notification if enabled
+		// Send email notification if enabled — fire-and-forget, damit der SMTP-Versand
+		// die HTTP-Response nicht blockiert. Fehler werden geloggt, nicht geworfen.
 		try {
 			const emailConfig = await ServerConfigService.getEmailConfig();
 			if (emailConfig.enabled && emailConfig.recipient && id) {
 				// Use new ID-based email service that reads from database
 				// This ensures correct Baltic Sea validation data is used
-				await EmailService.sendNewSightingNotification(id);
-
-				logger.info({ id, referenceId }, 'Email notification sent successfully');
+				void EmailService.sendNewSightingNotification(id)
+					.then(() => {
+						logger.info({ id, referenceId }, 'Email notification sent successfully');
+					})
+					.catch((emailError) => {
+						logger.error(
+							{ emailError, id },
+							'Failed to send email notification, but sighting was saved'
+						);
+					});
 			}
 		} catch (emailError) {
-			// Don't fail the request if email sending fails
+			// Don't fail the request if the email config lookup fails
 			logger.error({ emailError, id }, 'Failed to send email notification, but sighting was saved');
 		}
 

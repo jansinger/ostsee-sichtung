@@ -1,10 +1,19 @@
 import { createLogger } from '$lib/logger.server';
 import type { UploadedFileInfo } from '$lib/types';
 import { eq } from 'drizzle-orm';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { db } from '.';
 import { sightingFiles } from './schema';
+import type * as schema from './schema';
 
 const logger = createLogger('repository:sightingFiles');
+
+/**
+ * Ausführungskontext für DB-Operationen: entweder die reguläre `db`-Instanz
+ * oder eine Transaktion (`tx`). Beide teilen die verwendete `update`-API,
+ * sodass Aufrufer optional innerhalb einer Transaktion arbeiten können.
+ */
+type DbExecutor = Pick<PostgresJsDatabase<typeof schema>, 'update'>;
 
 export async function saveUploadedFile(
 	uploadedFile: UploadedFileInfo,
@@ -43,10 +52,14 @@ export async function deleteFileByPath(filePath: string) {
 	logger.info({ filePath, count: result.length }, 'Mediendatei erfolgreich gelöscht');
 }
 
-export async function setSightingIdForReferenceId(referenceId: string, sightingId: number) {
+export async function setSightingIdForReferenceId(
+	referenceId: string,
+	sightingId: number,
+	executor: DbExecutor = db
+) {
 	logger.info({ referenceId, sightingId }, 'Aktualisiere Mediendatein');
 
-	const result = await db
+	const result = await executor
 		.update(sightingFiles)
 		.set({ sightingId })
 		.where(eq(sightingFiles.referenceId, referenceId))

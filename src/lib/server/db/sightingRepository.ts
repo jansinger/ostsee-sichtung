@@ -78,19 +78,28 @@ export const saveSighting = async (
 		logger.info({ sightingData }, 'Speichere neue Sichtung ohne Wetterdaten');
 	}
 
-	// Führe Hauptinsert-Operation mit automatischer ID-Generierung aus
-	const [result] = await db.insert(sightings).values(sightingData).returning({ id: sightings.id });
+	// Insert der Sichtung UND das Verknüpfen der Mediendateien laufen in einer
+	// Transaktion: Schlägt einer der Schritte fehl, wird nichts gespeichert und
+	// es bleiben keine verwaisten Datei-Referenzen zurück.
+	const sightingId = await db.transaction(async (tx) => {
+		const [result] = await tx
+			.insert(sightings)
+			.values(sightingData)
+			.returning({ id: sightings.id });
 
-	const sightingId = result?.id;
+		const id = result?.id;
 
-	if (!sightingId) {
-		logger.error({ sightingData }, 'Fehler beim Speichern der Sichtung');
-		throw new Error('Fehler beim Speichern der Sichtung');
-	} else {
-		// Update referenced media files
-		await setSightingIdForReferenceId(formData.referenceId, sightingId);
-		logger.info({ sightingId, hasWeatherData: !!weatherData }, 'Sichtung erfolgreich gespeichert');
-	}
+		if (!id) {
+			logger.error({ sightingData }, 'Fehler beim Speichern der Sichtung');
+			throw new Error('Fehler beim Speichern der Sichtung');
+		}
+
+		// Update referenced media files innerhalb derselben Transaktion
+		await setSightingIdForReferenceId(formData.referenceId, id, tx);
+		return id;
+	});
+
+	logger.info({ sightingId, hasWeatherData: !!weatherData }, 'Sichtung erfolgreich gespeichert');
 
 	return { id: sightingId };
 };

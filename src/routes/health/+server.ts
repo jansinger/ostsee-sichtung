@@ -10,14 +10,20 @@
  */
 
 import { env } from '$env/dynamic/private';
+import { testDatabaseConnection } from '$lib/server/db';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+
+const NO_CACHE_HEADERS = {
+	'Cache-Control': 'no-cache, no-store, must-revalidate',
+	'Content-Type': 'application/json'
+} as const;
 
 export const GET: RequestHandler = async () => {
 	const startTime = Date.now();
 
-	// Basic health status
-	const health = {
+	// Basis-Status
+	const health: Record<string, unknown> = {
 		status: 'healthy',
 		timestamp: new Date().toISOString(),
 		uptime: process.uptime(),
@@ -25,42 +31,34 @@ export const GET: RequestHandler = async () => {
 		version: env.npm_package_version ?? process.env.npm_package_version ?? 'unknown'
 	};
 
-	// Optional: Check database connectivity
-	// Uncomment if you want database health checks
-	/*
+	// Readiness: echte DB-Konnektivität prüfen. Docker/compose fragt nur `/health`
+	// ab, daher prüft dieser Endpoint die Datenbank und liefert 503 bei Ausfall.
+	// testDatabaseConnection() fängt Fehler bereits intern ab und cached das
+	// Ergebnis kurz, um die DB nicht zu überlasten.
+	let databaseHealthy = false;
 	try {
-		const { db } = await import('$lib/server/db');
-		const { sql } = await import('drizzle-orm');
+		databaseHealthy = await testDatabaseConnection();
+	} catch {
+		databaseHealthy = false;
+	}
 
-		await db.execute(sql`SELECT 1`);
-		health.database = 'connected';
-	} catch (error) {
+	if (!databaseHealthy) {
 		health.status = 'unhealthy';
 		health.database = 'disconnected';
-		health.error = error instanceof Error ? error.message : 'Unknown database error';
 
 		const responseTime = Date.now() - startTime;
 		return json(
 			{ ...health, responseTime: `${responseTime}ms` },
-			{ status: 503 }
+			{ status: 503, headers: NO_CACHE_HEADERS }
 		);
 	}
-	*/
 
+	health.database = 'connected';
 	const responseTime = Date.now() - startTime;
 
 	return json(
-		{
-			...health,
-			responseTime: `${responseTime}ms`
-		},
-		{
-			status: 200,
-			headers: {
-				'Cache-Control': 'no-cache, no-store, must-revalidate',
-				'Content-Type': 'application/json'
-			}
-		}
+		{ ...health, responseTime: `${responseTime}ms` },
+		{ status: 200, headers: NO_CACHE_HEADERS }
 	);
 };
 

@@ -15,6 +15,11 @@ vi.mock('$env/dynamic/private', () => ({
 	env: { NODE_ENV: 'test', npm_package_version: '0.0.0' }
 }));
 
+// DB-Konnektivität mocken: gesund (true), damit der Contract-Test 200 erhält
+vi.mock('$lib/server/db', () => ({
+	testDatabaseConnection: vi.fn().mockResolvedValue(true)
+}));
+
 describe('Contract: GET /health', () => {
 	it('returns 200 and satisfies the OpenAPI spec', async () => {
 		const event = createEvent('/health');

@@ -272,6 +272,57 @@ describe('sightingRepository', () => {
 			// Drizzle ORM sollte parametrisierte Queries verwenden
 			expect(mockDb.insert).toHaveBeenCalled();
 		});
+
+		/**
+		 * Test: Insert + Datei-Verknüpfung laufen in einer Transaktion
+		 */
+		it('sollte Insert und Datei-Verknüpfung in einer Transaktion kapseln', async () => {
+			// Arrange
+			const mockDb = db as any;
+			mockDb.insert.mockReturnValue({
+				values: vi.fn().mockReturnValue({
+					returning: vi.fn().mockResolvedValue([{ id: 77 }])
+				})
+			});
+			mockDb.update.mockReturnValue({
+				set: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						returning: vi.fn().mockResolvedValue([{ uid: 'file-1' }])
+					})
+				})
+			});
+
+			// Act
+			const result = await saveSighting(mockFormData);
+
+			// Assert
+			expect(result).toEqual({ id: 77 });
+			expect(mockDb.transaction).toHaveBeenCalledTimes(1);
+		});
+
+		/**
+		 * Test: Fehler bei der Datei-Verknüpfung propagiert (Rollback-Semantik)
+		 */
+		it('sollte Fehler propagieren wenn die Datei-Verknüpfung fehlschlägt', async () => {
+			// Arrange
+			const mockDb = db as any;
+			mockDb.insert.mockReturnValue({
+				values: vi.fn().mockReturnValue({
+					returning: vi.fn().mockResolvedValue([{ id: 88 }])
+				})
+			});
+			// Die Datei-Verknüpfung (update) wirft -> gesamte Transaktion muss scheitern
+			mockDb.update.mockReturnValue({
+				set: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						returning: vi.fn().mockRejectedValue(new Error('Update failed'))
+					})
+				})
+			});
+
+			// Act & Assert
+			await expect(saveSighting(mockFormData)).rejects.toThrow('Update failed');
+		});
 	});
 
 	describe('updateSighting', () => {

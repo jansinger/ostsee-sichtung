@@ -47,7 +47,11 @@ const config = {
 				'script-src': [
 					"'self'",
 					"'wasm-unsafe-eval'",
-					"'unsafe-inline'", // Required for Scalar API documentation
+					// 'unsafe-inline' ist für die Scalar-API-Dokumentation (/docs/api/scalar)
+					// nötig, die Inline-Scripts injiziert. Ein Nonce-basiertes CSP ist damit
+					// nicht umsetzbar (Nonces und 'unsafe-inline' schließen sich für script-src
+					// gegenseitig aus), daher wird auch KEIN cspNonce in hooks.server.ts erzeugt.
+					"'unsafe-inline'",
 					...(process.env.NODE_ENV === 'development' ? ["'unsafe-eval'"] : [])
 				],
 				'style-src': ["'self'", "'unsafe-inline'", 'https://openlayers.org'],
