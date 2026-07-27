@@ -19,19 +19,29 @@
 		name = '',
 		value = $bindable(),
 		error = undefined,
+		touched = false,
 		disabled = false,
 		size = 'md',
 		variant = 'default',
-		onchange = undefined
+		onchange = undefined,
+		required: requiredOverride = undefined
 	}: {
 		fieldConfig: yup.SchemaDescription;
 		name?: string;
 		value?: string | number | boolean | undefined | null;
 		error?: string | undefined;
+		touched?: boolean;
 		disabled?: boolean;
 		size?: FieldSize;
 		variant?: FieldVariant;
 		onchange?: (event: Event) => void;
+		/**
+		 * Überschreibt die aus dem Yup-Schema abgeleitete Pflichtfeld-Markierung.
+		 * Nötig für konditionale `when()`-Regeln, die in `fieldConfig.optional`
+		 * nicht sichtbar sind (z.B. `waterway` ohne GPS-Position).
+		 * `undefined` = Ableitung aus dem Schema (Default).
+		 */
+		required?: boolean | undefined;
 	} = $props();
 
 	// Bindable values for different component types
@@ -99,7 +109,8 @@
 	}
 
 	// Extract field configuration (reactive to prop changes)
-	let required = $derived(fieldConfig.optional === false);
+	// Einzige Quelle für Sternchen UND aria-required: expliziter Override, sonst Schema.
+	let required = $derived(requiredOverride ?? fieldConfig.optional === false);
 	let metaValues = $derived.by(() => {
 		const meta = fieldConfig.meta || {};
 		return {
@@ -121,7 +132,8 @@
 	// State computations
 	let hasError = $derived(!!error && error.length > 0);
 	let hasValue = $derived(value !== undefined && value !== '' && value !== null);
-	let isValid = $derived(hasValue && !hasError);
+	// Grünes Häkchen nur für vom Nutzer berührte Felder — Default-Werte gelten nicht als bestätigt
+	let isValid = $derived(touched && hasValue && !hasError);
 
 	// Type normalization
 	let normalizedType = $derived(
@@ -245,8 +257,8 @@
 			<span class="text-error ml-1 text-sm" aria-label="Pflichtfeld">*</span>
 		{/if}
 
-		<!-- Status Indicator -->
-		{#if hasValue}
+		<!-- Status Indicator (Häkchen nur bei berührten, gültigen Feldern) -->
+		{#if hasError || isValid}
 			<span class="ml-2 inline-block" aria-hidden="true">
 				{#if hasError}
 					<Icon icon="lucide:x" width="14" class="text-error inline" />
@@ -324,14 +336,9 @@
 		</div>
 	{/if}
 
-	<!-- Error Message with Animation -->
+	<!-- Error Message -->
 	{#if error}
-		<div
-			id={errorId}
-			class="animate-in slide-in-from-top-1 mt-1 text-left duration-200"
-			role="alert"
-			aria-live="polite"
-		>
+		<div id={errorId} class="mt-1 text-left" role="alert" aria-live="polite">
 			<span class="text-error flex items-center gap-1 text-xs font-medium">
 				<Icon icon="lucide:triangle-alert" width="14" class="text-error flex-shrink-0" />
 				{error}

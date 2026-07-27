@@ -89,7 +89,11 @@ export const sightingSchema = yup.object({
 
 ## createForm Pattern (projekteigene Implementierung)
 
-**Hinweis:** Das Projekt nutzt KEINE externe Form-Library. `src/lib/form/createForm.ts` ist eine eigene, schlanke Implementierung auf Basis von Svelte-Stores (`writable`/`derived`) + Yup. `$form`, `$errors`, `$isSubmitting`, `$isValid` sind Svelte-Stores und werden mit `$` abonniert. Es gibt KEIN `touched` und KEIN `validateField` — validiert wird beim Submit (`abortEarly: false`, sammelt alle Fehler); `updateField` löscht den Fehler des geänderten Feldes.
+**Hinweis:** Das Projekt nutzt KEINE externe Form-Library. `src/lib/form/createForm.ts` ist eine eigene, schlanke Implementierung auf Basis von Svelte-Stores (`writable`/`derived`) + Yup. `$form`, `$errors`, `$touched`, `$isSubmitting`, `$isValid` sind Svelte-Stores und werden mit `$` abonniert.
+
+- **`touched`** (`Record<string, boolean>`) wird von `handleChange`/`updateField` gesetzt und von `updateInitialValues` zurückgesetzt. Es steuert ausschließlich die Anzeige (grünes Häkchen nur an Feldern, die der Nutzer wirklich berührt hat) — nicht die Validierung.
+- **Kein `validateField`**: Validiert wird beim Submit (`abortEarly: false`, sammelt alle Fehler) sowie schrittweise über `validateStep` (`src/lib/form/validation/stepValidation.ts`, nutzt `sightingSchema.pick(...)`). `updateField` löscht den Fehler des geänderten Feldes.
+- **Fehler-Timing**: Fehler erscheinen erst nach einem gescheiterten „Weiter"-Versuch, nie beim Betreten eines Schritts (siehe `stepNavigationState.ts`).
 
 API: `{ form, errors, isSubmitting, isValid, handleSubmit, handleChange, updateField, updateInitialValues }`
 
@@ -182,29 +186,27 @@ function prevStep() {
 
 ## Accessibility
 
-### Labels
+### Labels und ARIA kommen aus der Feld-Pipeline
+
+**Kein handgeschriebenes ARIA in Formular-Sections.** Felder laufen über `FormField` → `FieldRenderer`
+(`src/lib/report/components/form/fields/`). Diese Pipeline erzeugt zentral: Label, Pflicht-Sternchen,
+`aria-required`, `aria-describedby` (Hilfetext/Beschreibung/Fehler), `aria-invalid`, `role="alert"` an der
+Fehlermeldung und `data-testid="field-<name>"` für E2E-Tests.
 
 ```svelte
-<fieldset class="fieldset">
-	<label class="label" for="species">
-		Tierart *
-		<span class="text-base-content/70 text-sm font-normal">Wähle die beobachtete Tierart</span>
-	</label>
-	<input
-		id="species"
-		name="species"
-		class="input w-full"
-		aria-describedby={$errors.species && $touched.species ? 'species-error' : undefined}
-		aria-required="true"
-		aria-invalid={!!($errors.species && $touched.species)}
-	/>
-	{#if $errors.species && $touched.species}
-		<p id="species-error" class="label text-error" role="alert" aria-live="polite">
-			{$errors.species}
-		</p>
-	{/if}
-	<!-- Hinweis: aria-describedby nur setzen wenn das referenzierte Element auch existiert -->
-</fieldset>
+<!-- Richtig: Label, Hilfetext, Fehler und ARIA kommen aus dem Schema-`meta` -->
+<FormField name="species" />
+```
+
+Beschriftung, Hilfetext, Platzhalter, Icon und Feldtyp werden im Yup-Schema unter `.meta({...})` gepflegt,
+nicht in der Komponente.
+
+**Konditionale Pflichtfelder:** `FieldRenderer` leitet `required` aus der statischen Schema-Beschreibung ab —
+ein Yup-`when()` ist dort nicht sichtbar. Für Felder, die nur unter Bedingungen Pflicht sind, den
+`required`-Override setzen, damit Sternchen und `aria-required` mit der Validierung übereinstimmen:
+
+```svelte
+<FormField name="waterway" required={$form.hasPosition !== true} />
 ```
 
 ### Keyboard Navigation

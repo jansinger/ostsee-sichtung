@@ -1,6 +1,6 @@
 /**
  * Modern whale sighting form configuration
- * Based on form-design.md recommendations for optimal user experience
+ * Richtlinien: docs/DESIGN_GUIDE.md, verbindliche Regeln: .claude/rules/design-system.md
  */
 
 import { sightingSchema } from '$lib/form/validation/sightingSchema';

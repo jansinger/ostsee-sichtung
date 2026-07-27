@@ -30,16 +30,23 @@ test.describe('PositionAndTime — Methoden-Switching', () => {
 		await expect(page.locator('[data-testid="field-seaMark"]')).toBeVisible({ timeout: 3000 });
 	});
 
-	test('Methoden-Wechsel versteckt vorherige Eingabefelder', async ({ page }) => {
-		// Switch to manual method
+	// Fahrwasser ist Pflicht solange keine GPS-Position vorliegt und wird deshalb
+	// inzwischen in ALLEN drei Positionsmethoden angezeigt (Foto/Karte: Fallback-
+	// Bereich "Kein GPS? Beschreiben Sie das Seegebiet"; Beschreibung: direkt).
+	// Was sich beim Methoden-Wechsel tatsächlich ändert, ist der Foto-Upload-Bereich.
+	test('Methoden-Wechsel: Foto-Upload erscheint/verschwindet, Fahrwasser bleibt erreichbar', async ({
+		page
+	}) => {
+		// Switch to manual method — Fahrwasser sichtbar, kein Foto-Upload
 		await page.locator('label[for="method-manual"]').click();
 		await expect(page.locator('[data-testid="field-waterway"]')).toBeVisible({ timeout: 3000 });
+		await expect(page.getByText(/Foto per Drag & Drop oder Klick hochladen/i)).not.toBeVisible();
 
-		// Switch back to photo method
+		// Switch back to photo method — Foto-Upload erscheint wieder, Fahrwasser bleibt sichtbar
 		await page.locator('label[for="method-photo"]').click();
-		// Manual fields should be hidden
-		await expect(page.locator('[data-testid="field-waterway"]')).not.toBeVisible({
+		await expect(page.getByText(/Foto per Drag & Drop oder Klick hochladen/i)).toBeVisible({
 			timeout: 3000
 		});
+		await expect(page.locator('[data-testid="field-waterway"]')).toBeVisible();
 	});
 });

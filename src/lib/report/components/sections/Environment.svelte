@@ -12,8 +12,8 @@
 
 	const { form, handleChange } = getFormContext();
 
-	let latitude: number | null = $derived($form.latitude);
-	let longitude: number | null = $derived($form.longitude);
+	let latitude: number | null | undefined = $derived($form.latitude);
+	let longitude: number | null | undefined = $derived($form.longitude);
 	let sightingDate: string | null = $derived($form.sightingDate);
 	let sightingTime: string | undefined | null = $derived($form.sightingTime);
 

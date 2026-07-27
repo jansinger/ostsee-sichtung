@@ -1,314 +1,161 @@
-# Modern Long Form Design Guide for Whale Sighting Systems
+# Design Guide — Ostsee-Tiere
 
-Current research reveals that **multi-step forms achieve 86% higher conversion rates** than single-page equivalents, while forms following modern usability guidelines see **78% one-try submission rates versus 42% for non-compliant forms**. For whale sighting reporting systems, this translates to significantly higher data collection success when design principles are properly implemented.
+Dieses Dokument beschreibt die **Design- und UX-Leitlinien** des Projekts und den **tatsächlichen Ist-Zustand** der Umsetzung. Beides ist bewusst getrennt: Leitlinien sagen, was gelten soll; der Ist-Zustand ist am Code überprüfbar und enthält keine Wunschvorstellungen.
 
-## Current Implementation Status
+**Verbindliche Kurzform:** `.claude/rules/design-system.md` — die dort formulierten Regeln sind bei jeder UI-Änderung einzuhalten. Dieses Dokument liefert die Begründung und den Kontext.
 
-**The Ostsee-Tiere application demonstrates exceptional adherence to modern form design principles**, achieving an **A- grade** in implementation quality. The current form successfully implements multi-step architecture, comprehensive accessibility, mobile-first design, and progressive disclosure patterns.
+**Verwandte Dokumente:** `.claude/rules/forms.md` (Form-State-Pattern), `.claude/rules/architecture.md` (Svelte-5-Runes, A11y-Grundsätze), `docs/UX_DESIGN_REVIEW_SICHTUNGSFORMULAR_2026-07-24.md` (Review-Befunde mit Status).
 
-### Implementation Achievement Summary
+---
 
-- ✅ **Multi-step architecture** with 4-step logical progression
-- ✅ **WCAG 2.2 accessibility compliance** with comprehensive ARIA implementation  
-- ✅ **Mobile-first responsive design** with proper touch targets (48x48 DP)
-- ✅ **Progressive disclosure** with smart conditional logic
-- ✅ **Optimal validation timing** without premature error states
-- ✅ **Advanced state management** with auto-save and persistence
-- ✅ **Comprehensive help systems** with contextual guidance
+## Inhalt
 
-## Multi-step Architecture - Successfully Implemented ✅
+- [Leitprinzipien](#leitprinzipien)
+- [Ist-Zustand (am Code verifiziert)](#ist-zustand-am-code-verifiziert)
+- [Bekannte Einschränkungen / offene Punkte](#bekannte-einschränkungen--offene-punkte)
+- [Checkliste vor einem UI-PR](#checkliste-vor-einem-ui-pr)
 
-**The evidence strongly favors multi-step over single-page approaches** for whale sighting forms. Recent 2024-2025 data shows multi-step forms not only improve completion rates but also enhance data quality through reduced cognitive load and better error handling.
+---
 
-### Current Implementation Structure
+## Leitprinzipien
 
-**Our 4-step structure perfectly aligns with research recommendations:**
-- **Step 1: Position & Time** (location, temporal data) - 4 fields maximum
-- **Step 2: Sighting Details** (species, count, distance) - 5-6 fields  
-- **Step 3: Behavioral Observations** (optional details) - 3-4 fields
-- **Step 4: Contact Information** (observer data) - 3 fields
+### 1. Ein Thema pro Schritt
 
-This approach follows the **GOV.UK "One Thing Per Page" pattern**, endorsed by Nielsen Norman Group. Our implementation includes:
+Das Sichtungsformular ist lang. Statt einer Endlosseite wird es in thematisch geschlossene Schritte zerlegt (GOV.UK-Muster „One Thing Per Page"). Der Nutzen ist konkret und nicht statistisch begründet: Ein Schritt lässt sich für sich validieren, Fehler bleiben lokal, und ein Abbruch verliert weniger Kontext.
 
-```typescript
-// Step validation without premature errors
-const canGoNext = $derived(isStepValid(currentStep, $form));
+**Konsequenz für neuen Code:** Ein neues Feld gehört in genau einen Schritt und muss dort in `formStepsConfig` (`src/lib/report/formConfig.ts`) eingetragen werden — sonst wird es weder von der Schritt-Validierung noch von der Fehler-Navigation gefunden.
 
-// Progressive step navigation with proper state management
-const steps = [
-  { id: 1, name: 'Position & Time', isOptional: false },
-  { id: 2, name: 'Sighting Details', isOptional: false },
-  { id: 3, name: 'Behavioral Observations', isOptional: true },
-  { id: 4, name: 'Contact Information', isOptional: false }
-];
-```
+### 2. Fehler erst nach einem Versuch
 
-**Progressive disclosure techniques** are implemented through conditional rendering. Research shows forms with conditional logic see **14% improvement in conversions** and **42% reduction in completion time** when properly implemented.
+Ein Formularschritt darf beim Betreten **nie** rot sein. Fehler erscheinen erst, wenn der Nutzer aktiv „Weiter"/„Absenden" gedrückt hat und die Validierung fehlschlägt. Begründung: Ein Feld, das der Nutzer noch nicht gesehen hat, kann er nicht falsch ausgefüllt haben; eine Vorab-Fehlermeldung ist reines Rauschen.
 
-### Successful Conditional Logic Implementation
+### 3. Optionale Felder sind sichtbar optional
 
-```svelte
-{#if $form.isDead}
-  <FormField name="deadCondition" label="Zustand des Tieres" />
-  <FormField name="deadSex" label="Geschlecht" />
-  <FormField name="deadSize" label="Größe" />
-{/if}
-```
+Pflichtfelder werden markiert, optionale nicht (Markieren beider Sorten verdoppelt nur das visuelle Rauschen). Ein ganzer Schritt darf optional sein und muss dann überspringbar sein.
 
-## Effective Communication - Enhanced Implementation Needed 🔄
+### 4. Progressive Disclosure statt Dauer-Sichtbarkeit
 
-**The key insight from behavioral research**: users need clear value propositions for optional fields, not just labels. Analysis of successful form optimization shows that **adding explanatory microcopy can triple completion rates**.
+Felder, die nur in einem bestimmten Kontext sinnvoll sind (Bootsantrieb nur bei Boots-Sichtung, Totfund-Details nur bei Totfund), werden erst eingeblendet, wenn der Kontext eintritt. Wird der Kontext zurückgenommen, muss der Formular-State mit aufgeräumt werden — sonst würden unsichtbare Werte mit abgeschickt.
 
-### Current State and Improvement Opportunities
+### 5. Ein Theme, eine Quelle für Farben
 
-**Current Implementation:**
-- Clear field labels with basic help text
-- Comprehensive FormHelp.svelte component with detailed guidance
-- Species identification assistance
-
-**Enhancement Opportunities - Benefit-Focused Messaging:**
-
-**Instead of generic labels, use benefit-focused messaging:**
-- Current: "Schwimmrichtung" 
-- **Recommended**: "Schwimmrichtung (hilft bei Wanderungsanalysen)" 
-- Current: "Verhalten"
-- **Recommended**: "Verhalten (verbessert Schutzforschung)"
-- Current: "Anzahl Tiere"
-- **Recommended**: "Anzahl Tiere (hilft bei Populationsanalysen)"
-
-**Effective tooltip patterns that work:**
-- **Format guidance**: "Gruppengröße: Zähle alle sichtbaren Wale (gib 'ca. 15' ein bei Unsicherheit)"
-- **Value explanation**: "Verhaltensnotizen helfen Forschern bei der Analyse von Futter- und Lebensraumnutzung"
-- **Context setting**: "Fotos erhöhen den Forschungswert deiner Sichtung erheblich"
+Alle Farben, Radien und Border-Stärken kommen aus dem DaisyUI-Theme in `src/app.css`. Hardcodierte Hex-Werte oder Tailwind-Graustufen in Komponenten hebeln das Theme aus und werden bei Theme-Änderungen nicht mitgezogen.
 
-**Language that encourages without overwhelming:**
-- Use conversational tone: "Hilf uns zu verstehen, was du gesehen hast"
-- Provide social proof: "Die meisten Walbeobachter finden diese Informationen einfach bereitzustellen"
-- Explain impact: "Deine Details tragen zu Schutzmaßnahmen bei"
+### 6. Barrierefreiheit ist Teil der Definition of Done
 
-Research shows **marking only required fields** with asterisks is more effective than labeling optional ones. Our current implementation successfully follows this pattern.
-
-## Mobile-first Design Principles - Excellent Implementation ✅
-
-**Critical insight**: **42.95% of form completions happen on mobile devices**, and whale sighting reporting occurs in challenging field conditions requiring specialized mobile optimization.
-
-### Current Mobile Implementation Excellence
-
-Our implementation successfully addresses all essential mobile requirements:
-
-```css
-/* Excellent mobile-first patterns in app.css */
-.form-field input, .form-field select, .form-field textarea {
-  min-height: 48px; /* Meets 48×48 DP requirement */
-  font-size: 16px; /* Prevents iOS zoom */
-}
-
-/* Responsive touch targets */
-@media (max-width: 640px) {
-  .form-navigation button {
-    min-height: 48px;
-    padding: 12px 24px;
-  }
-}
-```
-
-**Successfully implemented features:**
-- ✅ **48×48 DP minimum touch targets** with proper spacing
-- ✅ **Single-column layouts** on mobile with responsive grid adaptations  
-- ✅ **Auto-focus management** with `focusElement()` utility
-- ✅ **Appropriate input types** (tel, email, date, time, number)
-
-### Mobile Enhancement Opportunities
-
-**Currently Missing - Recommended Additions:**
-- Voice-to-text capability for behavioral descriptions
-- Enhanced GPS integration with better offline fallbacks
-- Camera integration with GPS metadata embedding (partially implemented)
-- More robust offline data storage indicators
-
-**Performance benchmarks show** our current implementation successfully avoids problematic patterns like dropdown overuse and premature password requirements.
-
-## Domain-specific Scientific Data Patterns - Well Implemented ✅
-
-**Analysis of successful wildlife reporting platforms** reveals consistent patterns that balance scientific rigor with user accessibility. Our implementation successfully incorporates these patterns.
-
-### Current Scientific Data Implementation
-
-**Successfully implemented patterns:**
-
-**Hierarchical species validation:**
-- ✅ Species options filtered by geographic region (Baltic Sea focus)
-- ✅ "Unknown species" options with photo upload capability
-- ✅ Visual identification guides integrated in FormHelp component
-
-**Data quality assurance layers:**
-- ✅ **Level 1**: Automated validation (GPS coordinates, date/time validation)
-- ✅ **Level 2**: Form validation with comprehensive Yup schema
-- ✅ **Level 3**: Admin review workflow in place
-
-**Current scientific data structure accommodates:**
-```typescript
-// From sightingSchema.ts - excellent comprehensive validation
-export const sightingSchema = yup.object({
-  // Mandatory core fields
-  lat: yup.number().required(),
-  lng: yup.number().required(),
-  date: yup.string().required(),
-  time: yup.string().required(),
-  species: yup.string().required(),
-  count: yup.number().positive().integer().required(),
-  
-  // Contextual details with proper validation
-  behavior: yup.string().nullable(),
-  conditions: yup.string().nullable(),
-  
-  // Evidence and observer metadata
-  images: yup.array().of(yup.string()),
-  observerExperience: yup.string().nullable()
-});
-```
-
-## Modern Technical Implementation - Excellence Achieved ✅
-
-### Current Technical Stack Assessment
-
-**Our current implementation uses an optimal modern stack:**
-- ✅ **SvelteKit 5** with modern runes (`$state`, `$derived`, `$effect`)
-- ✅ **Yup schema validation** for unified client/server validation  
-- ✅ **Progressive web app architecture** capabilities
-- ✅ **WCAG 2.2 compliance** through comprehensive ARIA implementation
-
-### Accessibility Implementation Excellence
-
-**Current accessibility implementation exceeds requirements:**
-
-```svelte
-<!-- Proper labeling for screen readers - current implementation -->
-<label for="species-id">Tierart</label>
-<input 
-  type="text" 
-  id="species-id"
-  name="species"
-  aria-describedby="species-help species-error"
-  aria-required="true"
-  aria-invalid={hasError}
-  bind:value={$form.species}
->
-<div id="species-help">Verwende den deutschen Namen oder wähle "unbekannt"</div>
-{#if hasError}
-  <div id="species-error" role="alert" aria-live="polite">{errorMessage}</div>
-{/if}
-```
-
-### Performance Optimization - Successfully Implemented
-
-**Current performance optimizations:**
-- ✅ **Lazy loading** of form sections with conditional rendering
-- ✅ **Debounced validation** with proper timing (no premature errors)
-- ✅ **Auto-save functionality** with localStorage backup
-- ✅ **Service worker** implementation for offline capability
-
-**Field validation timing based on research:**
-- ✅ Avoids validation on field focus (prevents premature errors)
-- ✅ Validates on step navigation with `isStepValid()`
-- ✅ Error messages positioned adjacent to problematic fields
-- ✅ Constructive language: "Tierart nicht erkannt - verwende deutschen Namen oder wähle aus der Liste"
-
-## Implementation Roadmap - Current Status and Next Steps
-
-### Phase 1 Priorities - COMPLETED ✅
-
-**Successfully implemented based on highest-impact research findings:**
-1. ✅ **Multi-step form structure** with comprehensive progress indicators
-2. ✅ **Mobile-optimized touch interface** with appropriate input types  
-3. ✅ **WCAG 2.2 compliance** for keyboard navigation and screen readers
-4. ✅ **GPS integration** with manual coordinate override
-
-### Phase 2 Enhancements - PARTIALLY IMPLEMENTED 🔄
-
-**Current status and recommendations:**
-1. ✅ **Visual species identification aids** embedded in FormHelp component
-2. 🔄 **Photo upload with GPS metadata** (implemented, could be enhanced)
-3. ✅ **Offline data persistence** with localStorage and service worker
-4. ✅ **Admin review workflow** integrated in backend
-
-### Phase 3 Recommendations - FUTURE ENHANCEMENTS 🚀
-
-**Recommended next improvements:**
-1. **Enhanced benefit-focused messaging** in field help text
-2. **Voice-to-text capability** for mobile behavioral descriptions  
-3. **Social proof integration** in help text and guidance
-4. **Advanced analytics dashboard** for form performance tracking
-
-### Current Performance Metrics
-
-**Excellent metrics to continue tracking:**
-- **View-to-start rate**: Monitor form initiation success
-- **Field-level abandonment**: Current implementation minimizes this
-- **Completion by device type**: Mobile-first design shows strong results
-- **Error recovery rates**: Comprehensive validation shows excellent rates
-- **Time to completion**: Multi-step architecture optimizes this
-
-## Critical Success Factors - Achievement Status
-
-**The research reveals four fundamental principles** for successful long-form design:
-
-### 1. Cognitive Load Reduction - EXCELLENT ✅
-**Successfully implemented** through progressive disclosure and logical grouping. Our 4-step architecture prevents the overwhelming feeling that causes 18% of users to abandon forms immediately.
-
-### 2. Value Communication - GOOD (Enhancement Needed) 🔄
-Current implementation has solid foundations but could benefit from more behavioral psychology principles in help text to further increase completion rates.
-
-### 3. Mobile-First Responsive Design - EXCELLENT ✅
-**Fully achieved** - acknowledges that nearly half of interactions occur on mobile devices, with comprehensive optimization for challenging field conditions.
-
-### 4. Accessibility Integration - EXCELLENT ✅
-**Comprehensively implemented** from the foundation, ensuring forms work for all users while improving usability for everyone through clearer navigation and better error handling.
-
-## Current Performance Assessment
-
-**Modern whale sighting reporting forms succeeding with these principles** see completion rates approaching 65-75% compared to industry averages of 44.96%. 
-
-**Our current implementation status:**
-- ✅ **Multi-step architecture**: Fully implemented
-- ✅ **Mobile optimization**: Exceeds requirements  
-- ✅ **Accessibility compliance**: WCAG 2.2 compliant
-- 🔄 **Value communication**: Good foundation, enhancement opportunities exist
-
-The combination of our excellent technical implementation with minor enhancements to value communication messaging will ensure we achieve the highest possible completion rates while maximizing valuable data collection for marine conservation efforts.
-
-## Technical Implementation Notes
-
-### SvelteKit 5 Patterns
-
-**Current implementation leverages modern SvelteKit 5 features:**
-
-```typescript
-// Reactive state management with runes
-const form = $state(initialFormState);
-const currentStep = $state(1);
-const canGoNext = $derived(isStepValid(currentStep, form));
-
-// Reactive effects for auto-save
-$effect(() => {
-  saveToStorage(form);
-});
-```
-
-### Form Context Pattern
-
-**Successfully implemented centralized form context:**
-```typescript
-// FormContext.svelte - excellent state management
-export const formContext = {
-  form: $state(initialState),
-  errors: $state({}),
-  touched: $state({}),
-  validateStep,
-  isStepValid,
-  goToNextStep,
-  goToPrevStep
-};
-```
-
-This design guide reflects our current high-quality implementation while identifying specific areas for continued enhancement. The foundation is excellent, requiring only refinements to achieve optimal performance.
+Zielniveau ist **WCAG 2.1 AA**. Das ist kein Nachrüst-Thema: Label-Zuordnung, Kontrast, Fokus-Sichtbarkeit und Fehler-Ansage entstehen an derselben Stelle wie das Feld selbst — in der zentralen Feld-Pipeline, nicht in jedem Aufrufer einzeln.
+
+### 7. Keine Utility-Klasse ohne Deckung im Setup
+
+Tailwind-Utilities, die im Projekt-Setup nicht existieren, sehen im Code aus wie Design und sind wirkungslos. Vor der Nutzung einer unbekannten Klasse prüfen, ob das zugehörige Plugin installiert ist (`package.json`).
+
+---
+
+## Ist-Zustand (am Code verifiziert)
+
+Stand: Juli 2026. Jede Aussage ist mit Datei belegt. Code wird bewusst **nicht** dupliziert — die Datei ist die Wahrheit.
+
+### Theme und globale Styles
+
+**`src/app.css`** enthält alles Globale:
+
+| Bereich           | Inhalt                                                                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Theme             | DaisyUI-v5-Theme `meeresmuseum` via `@plugin 'daisyui/theme'`, `color-scheme: light`, `default: true`, `prefersdark: false`                            |
+| Farben            | `--color-primary`/`-secondary`/`-accent`/`-neutral`, `--color-base-100/200/300`, `--color-base-content`, Status: `info`/`success`/`warning`/`error`    |
+| Layout-Tokens     | `--radius-selector`, `--radius-field`, `--radius-box`, `--size-selector`, `--size-field`, `--border`, `--depth`, `--noise`                             |
+| Alert-Override    | `.alert-info/-success/-warning/-error` werden auf ein Soft-Muster gesetzt (Text in Statusfarbe, Hintergrund als 12-%-Mix in `base-100`, kein Schatten) |
+| Fokus             | `.input:focus`/`.select:focus`/`.textarea:focus` → 3px `--color-primary`-Outline plus Ring; global `:focus-visible` → 2px Outline                      |
+| Motion            | `@media (prefers-reduced-motion: reduce)` reduziert Animationen und Transitions global                                                                 |
+| iframe-Modus      | `.iframe-mode` blendet Navbar/Footer aus und setzt Formularfelder auf `font-size: 1rem`                                                                |
+| Weitere Utilities | `.scroll-styled` (Scrollbar), `.panel-transition`/`.panel-shadow`, `.no-print`                                                                         |
+
+Sämtliche `*-content`-Farben des Themes (`--color-primary-content`, `--color-warning-content`, …) sind auf reines Weiß (`oklch(1 0 0)`) gesetzt — mit Ausnahme von `--color-accent-content`. Daraus folgt die `*-content`-Regel in `.claude/rules/design-system.md`.
+
+### Formular-Architektur
+
+| Ebene           | Datei                                                                      |
+| --------------- | -------------------------------------------------------------------------- |
+| Container       | `src/routes/+page.svelte`                                                  |
+| Formular-Root   | `src/lib/report/components/ModernReportForm.svelte`                        |
+| Schritt-Anzeige | `src/lib/report/components/form/FormSteps.svelte`                          |
+| Schritt-Navi    | `src/lib/report/components/form/StepNavigation.svelte`                     |
+| Schritte        | `src/lib/report/components/steps/Step1…Step4*.svelte`                      |
+| Sections        | `src/lib/report/components/sections/` (`SectionCard.svelte` als Rahmen)    |
+| Schritt-Konfig  | `src/lib/report/formConfig.ts` (`formStepsConfig`, `initialFormState`)     |
+| Schema          | `src/lib/form/validation/sightingSchema.ts`                                |
+| Form-State      | `src/lib/form/createForm.ts` (eigene Implementierung, keine Fremd-Library) |
+
+Vier Schritte, `currentStep` ist **0-basiert**: Position & Zeit, Sichtungsdetails, Beobachtungen (`isOptional: true`), Kontaktdaten. Schritt 3 hat einen expliziten Überspringen-Button in `Step3Observations.svelte`.
+
+### Feld-Pipeline
+
+Jedes Formularfeld läuft über `FormField` → `FieldRenderer` (beide in `src/lib/report/components/form/fields/`):
+
+- `FormField` holt den Form-Context (`getFormContext()`), zieht die Feld-Beschreibung aus `sightingSchemaFields` (das ist `sightingSchema.describe().fields`) und reicht Wert, Fehler und `touched` weiter.
+- `FieldRenderer` erzeugt Label, Pflicht-Markierung, Hilfetext, Beschreibung, Statusicon, Fehlerblock und wählt die passende `Base*`-Komponente (Input/Select/Textarea/Radio/Checkbox/Toggle).
+- Label, Hilfetext, Icon, Platzhalter, Optionen und Feldtyp kommen aus dem Yup-Schema (`.label()` und `.meta({...})`) — **nicht** aus dem Aufrufer. Ein neues Feld wird daher im Schema konfiguriert, nicht im Template.
+
+Barrierefreiheits-Details, die dort zentral entstehen:
+
+- `required` ist **eine** Variable und speist sowohl das Sternchen als auch `aria-required` (`requiredOverride ?? fieldConfig.optional === false`).
+- Der `required`-Prop von `FormField` ist der Override für konditionale `when()`-Regeln, die aus `describe()` nicht ableitbar sind.
+- IDs nach festem Muster: `field-<name>`, `-help`, `-error`, `-desc`; `aria-describedby` wird nur aus tatsächlich gerenderten Elementen zusammengesetzt.
+- Fehlerblock mit `role="alert"` und `aria-live="polite"`.
+- Radiogruppen werden als `fieldset`/`legend` gerendert (ein `label[for]` würde ins Leere zeigen), Checkbox/Toggle rendern ihr eigenes Label.
+- Jedes Feld erhält `data-testid="field-<name>"`; der Wrapper trägt `data-field="<name>"`.
+- Dekoratives (Statusicon, Feld-Icons, Dropdown-Chevron) ist `aria-hidden`.
+
+Testabdeckung dieser Pipeline: `src/lib/report/components/form/fields/FieldRenderer.svelte.test.ts`.
+
+### Validierungs-Zeitpunkt
+
+- `StepNavigation.svelte` hält `attemptedStep`. Der Inline-Alert und die Fehlermarkierung erscheinen erst nach einem gescheiterten „Weiter"-Versuch; ein Schrittwechsel setzt den Marker zurück (Logik ausgelagert in `form/stepNavigationState.ts`).
+- Schritt-Validierung: `isStepValid`/`validateStep` in `src/lib/form/validation/stepValidation.ts` validieren per `sightingSchema.pick(...)` nur die Felder des aktuellen Schritts.
+- Vor dem endgültigen Absenden validiert `ModernReportForm.handleFinalSubmit` das **vollständige** Schema, schreibt alle Fehler in den Store und springt via `findStepForErrors` zum frühesten betroffenen Schritt. Ein Submit scheitert damit nie unsichtbar.
+- `createForm` löscht den Fehler eines Feldes, sobald es geändert wird, und markiert es als `touched`. Das grüne Häkchen im Label erscheint nur für berührte, gültige Felder.
+
+### Persistenz
+
+`ModernReportForm` speichert über `$lib/storage/localStorage` (`saveToStorage`/`loadFromStorage`). Formulardaten und aktueller Schritt liegen in `sessionStorage`; Kontaktdaten landen nur bei erteilter Einwilligung (`persistentDataConsent`) in `localStorage`, sonst ebenfalls in `sessionStorage`. Wiederhergestellte Eingaben werden per Toast angekündigt. Details: `.claude/rules/browser-storage.md`.
+
+### Progressive Disclosure im Bestand
+
+- Totfund-Felder: `sections/AnimalInfo.svelte` blendet `DeadAnimal.svelte` bei `$form.isDead` ein.
+- Bootsantrieb: `sections/SightingDetails.svelte` zeigt `boatDrive`/`boatDriveText` nur bei Segelschiff/Motorboot und setzt die Werte beim Wechsel zurück — die Reset-Bedingung ist in `sections/boatDriveReset.ts` isoliert und getestet, damit ein initialer Mount (Admin-Edit) keinen gespeicherten Wert löscht.
+- Ein-/Ausblenden nutzt `transition:slide` aus `svelte/transition`, nicht CSS-Utility-Klassen.
+
+### Icons
+
+- UI-Icons: `src/lib/components/Icon.svelte` als zentraler Wrapper über unplugin-icons (lucide). Aufruf über den String-Namen, z.B. `<Icon icon="lucide:map-pin" width="20" />`.
+- Wetter-Icons: CSS-basiert (`src/css/weather-icons.css`, `weather-icons-wind.css`, in `app.css` importiert), Nutzung als `<i class="wi wi-…">`.
+
+---
+
+## Bekannte Einschränkungen / offene Punkte
+
+Ehrliche Liste. Wer hier etwas behebt, streicht den Punkt.
+
+| Punkt                            | Beschreibung                                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Nur Light-Theme**              | `meeresmuseum` ist mit `color-scheme: light` und `prefersdark: false` definiert. Es gibt kein Dark-Theme; `dark:`-Varianten in Komponenten sind wirkungslos.                                                                                                                                                                                                                                                           |
+| **Kein Service Worker**          | Es existiert keine Service-Worker-Datei und keine PWA-Konfiguration. Offline-Fähigkeit beschränkt sich auf Session-/LocalStorage-Persistenz des Formulars.                                                                                                                                                                                                                                                             |
+| **`boatDrive` ohne „k. A."**     | Die DB-Spalte `bootsantrieb` ist `integer default(0) notNull` und `0` bedeutet „Sonstiger Bootsantrieb". Ein leeres Feld wird dadurch beim Speichern nicht von einer aktiven Auswahl „Sonstiges" unterschieden.                                                                                                                                                                                                        |
+| **Kein Animations-Plugin**       | Weder `tailwindcss-animate` noch `tw-animate-css` sind installiert. Klassen wie `animate-in` oder `slide-in-from-top-*` haben keine Wirkung.                                                                                                                                                                                                                                                                           |
+| **Admin-UI nicht theme-rein**    | Zwei Stellen nutzen noch Tailwind-Graustufen statt Theme-Tokens: der Admin-Bereich (`AdminSightingEditForm.svelte`, `BooleanStatus.svelte`, `routes/admin/[id]/**`) und `src/lib/form/fields/dropzone.ts` (genutzt von `DropzoneBase.svelte`, enthält zusätzlich wirkungslose `dark:`-Klassen und einen Klassen-Typo `bg-bray-800`). Die Step- und Section-Komponenten des Sichtungsformulars sind bereits theme-rein. |
+| **Kontrast nicht automatisiert** | Es gibt keinen automatischen Kontrast-Check in CI. Der `*-content`-Fehler in `DeadAnimal.svelte` wurde manuell im Review gefunden — die Regel dazu steht in `.claude/rules/design-system.md`, die Prüfung bleibt Handarbeit.                                                                                                                                                                                           |
+| **Fokus nach Schrittwechsel**    | `scrollToElement('#form-content')` scrollt unter Badge und Überschrift; der Fokus wird zwar auf den Step-Header gesetzt, die Scroll-Position lässt den Header aber teilweise oberhalb des Viewports.                                                                                                                                                                                                                   |
+| **Sonstige Review-Befunde**      | Offene UX-Punkte werden in `docs/UX_DESIGN_REVIEW_SICHTUNGSFORMULAR_2026-07-24.md` mit Status geführt, nicht hier dupliziert.                                                                                                                                                                                                                                                                                          |
+
+---
+
+## Checkliste vor einem UI-PR
+
+1. Farben, Radien, Borders ausschließlich über Theme-Tokens / DaisyUI-Utilities.
+2. Kein `*-content` auf Tint-Flächen (`bg-…/10` o.ä.) — siehe Regel.
+3. Neues Feld: im Schema mit `.label()`/`.meta()` konfiguriert **und** in `formStepsConfig` eingetragen.
+4. Konditionale Pflicht? Dann `required`-Override an `FormField` setzen.
+5. Kein neuer Fehlerzustand, der schon beim Betreten eines Schritts sichtbar ist.
+6. Verwendete Utility-Klassen existieren im Setup (kein Animations-Plugin!).
+7. Tastaturbedienung und sichtbarer Fokus geprüft; dekorative Icons `aria-hidden`.
+8. `npm run test:quick` ist grün.

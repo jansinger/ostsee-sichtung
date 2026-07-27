@@ -4,11 +4,16 @@
 </script>
 
 <div class="bg-warning/10 border-warning/20 mt-6 rounded-lg border p-4">
-	<h4 class="text-warning-content mb-3 flex items-center gap-2 font-semibold md:whitespace-nowrap">
-		<Icon icon="lucide:triangle-alert" width="16" class="text-warning-content shrink-0" />
+	<h4 class="text-base-content mb-3 flex items-center gap-2 font-semibold md:whitespace-nowrap">
+		<Icon
+			aria-hidden="true"
+			icon="lucide:triangle-alert"
+			width="16"
+			class="text-warning shrink-0"
+		/>
 		<span>Zusätzliche Informationen für Totfund</span>
 	</h4>
-	<div class="text-warning-content/80 mb-4 text-sm">
+	<div class="text-base-content/80 mb-4 text-sm">
 		<p class="mb-2 font-medium">Totfunde sind besonders wertvoll für die Wissenschaft!</p>
 		<ul class="list-inside list-disc space-y-1 text-xs">
 			<li><strong>Todesursachen:</strong> Helfen bei der Identifikation von Bedrohungen</li>

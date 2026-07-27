@@ -66,26 +66,27 @@ paths:
 Rules **ohne** `paths` werden immer geladen: `architecture.md`, `testing.md`.
 Beide sind bewusst kurz — neue Inhalte gehören in eine der path-scoped Rules.
 
-| Rule                  | Lädt bei Dateien in …                                                             |
-| --------------------- | --------------------------------------------------------------------------------- |
-| `admin.md`            | `src/routes/admin/`, `src/lib/components/admin/`                                  |
-| `api.md`              | `src/routes/api/`, `rest_sichtungen/`, `sichtungen/`, `health/`                   |
-| `browser-storage.md`  | `src/lib/storage/`                                                                |
-| `daisyui.md`          | `**/*.svelte`, `src/app.css`, `src/css/`                                          |
-| `database.md`         | `src/lib/server/db/`, `drizzle.config.ts`, `src/lib/server/geo/`, `routes/api/`   |
-| `docker.md`           | `Dockerfile`, `docker-compose*.yml`, `.env.docker`, `run-release.sh`              |
-| `email.md`            | `emailService.ts`, `src/lib/server/templates/`, `api/admin/test-email/`           |
-| `export.md`           | `src/lib/server/export/`, `api/sightings/export/`, `ExportModal.svelte`           |
-| `forms.md`            | `src/lib/form/`, `src/lib/report/`, `components/form/`, `routes/+page.svelte`     |
-| `geo.md`              | `src/lib/server/geo/`, `src/lib/utils/geo/`, `api/geo/`                           |
-| `legacy-api.md`       | `routes/rest_sichtungen/`, `routes/sichtungen/`, `src/lib/legacy-api/`            |
-| `maps.md`             | `src/lib/map/`, `components/map/`, `routes/map/`, `api/map/`                      |
-| `middleware.md`       | `src/lib/server/middleware/`, `src/hooks.server.ts`                               |
-| `security.md`         | `src/lib/server/auth/`, `src/lib/server/storage/`, `hooks.server.ts`, `api/auth/` |
-| `svelte-patterns.md`  | `**/*.svelte`, `**/*.svelte.ts`                                                   |
-| `testing-patterns.md` | `**/*.test.ts`, `**/*.svelte.test.ts`, `e2e/`, `vitest*`, `playwright.config.ts`  |
-| `upload.md`           | `src/lib/server/storage/`, `src/lib/server/media/`, `uploads.ts`, `api/files/`    |
-| `weather.md`          | `components/weather/`, `services/weather*.ts`, `utils/weather/`, `api/weather/`   |
+| Rule                  | Lädt bei Dateien in …                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------- |
+| `admin.md`            | `src/routes/admin/`, `src/lib/components/admin/`                                      |
+| `api.md`              | `src/routes/api/`, `rest_sichtungen/`, `sichtungen/`, `health/`                       |
+| `browser-storage.md`  | `src/lib/storage/`                                                                    |
+| `daisyui.md`          | `**/*.svelte`, `src/app.css`, `src/css/`                                              |
+| `design-system.md`    | `src/app.css`, `src/lib/components/`, `src/lib/report/components/`, `routes/*.svelte` |
+| `database.md`         | `src/lib/server/db/`, `drizzle.config.ts`, `src/lib/server/geo/`, `routes/api/`       |
+| `docker.md`           | `Dockerfile`, `docker-compose*.yml`, `.env.docker`, `run-release.sh`                  |
+| `email.md`            | `emailService.ts`, `src/lib/server/templates/`, `api/admin/test-email/`               |
+| `export.md`           | `src/lib/server/export/`, `api/sightings/export/`, `ExportModal.svelte`               |
+| `forms.md`            | `src/lib/form/`, `src/lib/report/`, `components/form/`, `routes/+page.svelte`         |
+| `geo.md`              | `src/lib/server/geo/`, `src/lib/utils/geo/`, `api/geo/`                               |
+| `legacy-api.md`       | `routes/rest_sichtungen/`, `routes/sichtungen/`, `src/lib/legacy-api/`                |
+| `maps.md`             | `src/lib/map/`, `components/map/`, `routes/map/`, `api/map/`                          |
+| `middleware.md`       | `src/lib/server/middleware/`, `src/hooks.server.ts`                                   |
+| `security.md`         | `src/lib/server/auth/`, `src/lib/server/storage/`, `hooks.server.ts`, `api/auth/`     |
+| `svelte-patterns.md`  | `**/*.svelte`, `**/*.svelte.ts`                                                       |
+| `testing-patterns.md` | `**/*.test.ts`, `**/*.svelte.test.ts`, `e2e/`, `vitest*`, `playwright.config.ts`      |
+| `upload.md`           | `src/lib/server/storage/`, `src/lib/server/media/`, `uploads.ts`, `api/files/`        |
+| `weather.md`          | `components/weather/`, `services/weather*.ts`, `utils/weather/`, `api/weather/`       |
 
 Die Tabelle ist Doku für Menschen — die Wahrheit steht im Frontmatter der Datei.
 

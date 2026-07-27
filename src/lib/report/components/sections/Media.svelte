@@ -16,7 +16,7 @@
 
 	// Generate dynamic format description
 	let formatDescription = $derived.by(() => {
-		if (!uploadConfig) return 'JPG, PNG, MP4, MOV, AVI';
+		if (!uploadConfig) return 'JPG, PNG, GIF, WEBP';
 
 		const imageTypes = uploadConfig.allowedTypes.filter((type) => type.startsWith('image/'));
 		const videoTypes = uploadConfig.allowedTypes.filter((type) => type.startsWith('video/'));
@@ -34,7 +34,7 @@
 
 	// Generate file size description
 	let maxSizeDescription = $derived.by(() => {
-		if (!uploadConfig) return 'max 50MB';
+		if (!uploadConfig) return 'max 10MB';
 		const sizeMB = Math.round(uploadConfig.maxFileSize / (1024 * 1024));
 		return `max ${sizeMB}MB`;
 	});
@@ -48,15 +48,14 @@
 </script>
 
 <!-- Media Section -->
-<SectionCard title="Foto- oder Videoaufnahmen" icon="lucide:camera">
+<SectionCard title="Fotoaufnahmen" icon="lucide:camera">
 	<div class="text-base-content/70 mb-4 text-sm">
 		<p class="mb-2 flex items-center gap-2 font-medium">
 			<Icon icon="lucide:camera" width="16" class="text-primary" aria-hidden="true" />
-			Fotos und Videos sind extrem wertvoll für die Forschung!
+			Fotos sind extrem wertvoll für die Forschung!
 		</p>
 		<ul class="list-inside list-disc space-y-1 text-xs">
 			<li><strong>Artbestimmung:</strong> Auch unscharfe Bilder können helfen</li>
-			<li><strong>Verhaltensanalyse:</strong> Videos zeigen wichtige Verhaltensmuster</li>
 			<li><strong>GPS-Daten:</strong> Automatische Positionserkennung aus Bildern</li>
 			<li>
 				<strong>Formatunterstützung:</strong>
