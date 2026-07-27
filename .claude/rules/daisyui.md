@@ -116,6 +116,21 @@ Komponenten gegen-patchen:
 Ein `alert-soft` zusätzlich zu setzen ist überflüssig; die Klassen `alert-info`,
 `alert-success`, `alert-warning`, `alert-error` liefern den Soft-Look bereits.
 
+> **Zum Fokus-Override:** DaisyUI setzt für dieselben Felder ein eigenes
+> `outline: 2px solid var(--input-color)` (= `--color-base-content`) innerhalb von
+> `@layer utilities`. Der projekteigene Block in `app.css` steht ungelayert und
+> gewinnt deshalb die Kaskade — unabhängig davon, dass die globale
+> `:focus-visible`-Regel weiter unten in der Datei steht (die ist mit `(0,1,0)`
+> weniger spezifisch als `.input:focus` mit `(0,2,0)`). Abgesichert ist das durch
+> `e2e/form-a11y.spec.ts` → „Accessibility — Fokus-Indikator"; ein reiner Test über
+> die CSS-Quelle würde eine Regression hier nicht bemerken.
+>
+> **Fallstrick beim Nachmessen:** `:focus` greift nur, wenn das Browserfenster den
+> Fokus hat. Ein `getComputedStyle`-Sample aus einem unfokussierten Fenster (z. B.
+> Browser-Automation ohne echten Klick) liefert stattdessen DaisyUIs 2px und
+> `currentColor` (= `--color-base-content`) und sieht fälschlich nach einem Bug aus.
+> Vor dem Messen `document.hasFocus() === true` prüfen.
+
 > **Zum Alert-Override:** DaisyUI 5 kennt `alert-soft` nur als Modifier-Klasse pro
 > Element. Einen offiziellen Weg, den Soft-Look global zum Default zu machen — etwa
 > eine Theme-Variable oder Plugin-Option — gibt es bis einschließlich **5.7.4**
