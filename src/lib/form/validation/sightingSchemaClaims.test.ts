@@ -40,6 +40,11 @@ const REVIEWED_NUMERIC_TEXTS: ReadonlyArray<{ text: string; quelle: string }> = 
 		text: 'Schiffsnamen ermöglichen Langzeitauswertungen - einzelne Schiffe melden laut unserer Sichtungsdatenbank seit über 20 Jahren immer wieder Sichtungen',
 		quelle:
 			'Eigene Sichtungsdatenbank, Abfrage vom 2026-07-27: Gruppierung nach schiffsname (>5 Meldungen, sichtungsdatum > 1990 wegen 1970-Platzhaltern) ergibt u.a. "PENNY LANE" 95 Meldungen über 22,8 Jahre (2002-2025) und "SY Julka" 36 Meldungen über 21,2 Jahre. Die Aussage "über 20 Jahre" ist damit belegt und konservativ.'
+	},
+	{
+		text: 'Bei unruhiger See schrumpft der Streifen Meer, den Beobachter verlässlich absuchen können, um rund ein Drittel (Ostsee-Erfassung SCANS 2023) - deshalb hilft Ihre Angabe, Sichtungszahlen richtig einzuordnen',
+		quelle:
+			'Gilles et al. (2023), SCANS-IV Final Report, Tab. 5: effektive Suchbreite (ESW) für Schweinswal 167 m bei guten, 114 m bei mäßigen Bedingungen — Rückgang 31,7 %, im Text laienverständlich als "rund ein Drittel". Ergänzend Teilmann (2003), JCRM 5(1), DOI 10.47536/jcrm.v5i1.830 (signifikanter Seegangseffekt bereits zwischen Seastate 0-3). Hinweis: SCANS bündelt unter "gut/mäßig" Seegang, Trübung und Blendung, deshalb im Text bewusst keine Beaufort-Zahl.'
 	}
 ];
 
@@ -76,16 +81,16 @@ const INSTITUTIONAL_CLAIM_PATTERNS: ReadonlyArray<RegExp> = [
  * Geprüfte Institutions- und Verwertungsaussagen.
  *
  * Institutionen dürfen genannt werden — aber nur, wenn das Haus die Angabe
- * bestätigt hat. Absichtlich noch leer: Ob Meldungen aus diesem Portal
- * tatsächlich an ASCOBANS/HELCOM weitergegeben werden (Jastarnia-Projekt,
- * FTZ Büsum), ist bislang nur über eine Sekundärquelle belegt und liegt dem
- * Fachteam zur Klärung vor — siehe
- * `docs/FAKTENCHECK_FORMULARTEXTE_2026-07-27.md`, Abschnitt 5, Punkt 2.
- *
- * Sobald das bestätigt ist: Text hier eintragen, `quelle` mit der Bestätigung
- * füllen, dann ist die Nennung im Formular wieder erlaubt.
+ * bestätigt hat. Wer eine weitere Nennung einbauen will, trägt sie hier mit
+ * Bestätigung ein; ohne Eintrag schlägt der Guard fehl.
  */
-const REVIEWED_INSTITUTIONAL_TEXTS: ReadonlyArray<{ text: string; quelle: string }> = [];
+const REVIEWED_INSTITUTIONAL_TEXTS: ReadonlyArray<{ text: string; quelle: string }> = [
+	{
+		text: 'Das Deutsche Meeresmuseum gibt die Sichtungsdaten direkt an die internationalen Gremien für den Schutz der Ostsee-Schweinswale weiter (HELCOM und ASCOBANS)',
+		quelle:
+			'Bestätigt durch das Deutsche Meeresmuseum am 2026-07-27 auf ausdrückliche Rückfrage: Die Weitergabe an HELCOM und ASCOBANS erfolgt direkt durch das DMM. Fachlicher Rahmen: Gilles et al. (2023), SCANS-IV, S. 30 f. zu den Berichtspflichten unter MSRL, FFH-Richtlinie, HELCOM HOLAS und ASCOBANS.'
+	}
+];
 
 /** Zitierte Feldwerte wie "0 Schiffe" sind Bedienhinweise, keine Statistik. */
 const stripQuotedValues = (text: string): string =>

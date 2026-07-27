@@ -680,7 +680,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			helpText: 'Wie war die Beschaffenheit der Meeresoberfläche?',
 			valueText:
-				'Bei ruhiger See sind Tiere deutlich leichter zu entdecken - Ihre Seegangsangabe hilft, Sichtungszahlen richtig einzuordnen',
+				'Bei unruhiger See schrumpft der Streifen Meer, den Beobachter verlässlich absuchen können, um rund ein Drittel (Ostsee-Erfassung SCANS 2023) - deshalb hilft Ihre Angabe, Sichtungszahlen richtig einzuordnen',
 			type: 'select',
 			options: getSeaStateOptions(),
 			icon: Waves
@@ -1114,7 +1114,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'Zusätzliche Beobachtungen, Besonderheiten...',
 			helpText: 'Was möchten Sie noch mitteilen?',
-			valueText: 'Ergänzende Hinweise helfen dabei, ungewöhnliche Meldungen richtig zu verstehen',
+			valueText:
+				'Das Deutsche Meeresmuseum gibt die Sichtungsdaten direkt an die internationalen Gremien für den Schutz der Ostsee-Schweinswale weiter (HELCOM und ASCOBANS)',
 			type: 'textarea',
 			icon: FileText
 		})

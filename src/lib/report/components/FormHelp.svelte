@@ -255,10 +255,11 @@
 						<div>
 							<h4 class="font-semibold">Wofür die Daten gebraucht werden</h4>
 							<p class="mt-1 text-xs">
-								Ihre Meldung wird wissenschaftlich ausgewertet und trägt zum Bild von Verbreitung
-								und Vorkommen der Schweinswale in der Ostsee bei. Solche Beobachtungen ergänzen die
-								standardisierten Bestandserfassungen, die wiederum Grundlage für den Meeresschutz
-								sind.
+								Ihre Meldung wird vom Deutschen Meeresmuseum wissenschaftlich ausgewertet und direkt
+								an die internationalen Gremien für den Schutz der Ostsee-Schweinswale weitergegeben:
+								an <strong>HELCOM</strong>, die Helsinki-Kommission zum Schutz der Ostsee, und an
+								<strong>ASCOBANS</strong>, das internationale Abkommen zum Schutz der Kleinwale. So
+								trägt Ihre Beobachtung zum Bild von Verbreitung und Vorkommen der Tiere bei.
 							</p>
 						</div>
 					</div>

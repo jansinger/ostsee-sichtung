@@ -137,20 +137,68 @@ Negativbeispiele, Format für belegte Zahlen und die methodische Grenze der Date
 
 ---
 
-## 5. Offene Punkte für das Fachteam
+## 5. Rückmeldung des Fachteams (2026-07-27) — erledigt
 
-Diese Fragen kann nur das Haus selbst beantworten:
+Alle vier Punkte sind geklärt und umgesetzt.
 
-1. **Seegang-Zahlen aufnehmen?** Für Aussage 2 gibt es zitierfähige Zahlen (SCANS-IV:
-   167 m → 114 m effektive Suchbreite). Fachlich korrekt, aber für ein Bürgerformular
-   womöglich zu technisch. Derzeit steht dort die qualitative Fassung. → Entscheidung nötig.
-2. **Datenweitergabe:** Gehen Meldungen aus diesem Portal tatsächlich an ASCOBANS/HELCOM
-   (Jastarnia-Projekt, FTZ Büsum)? Falls ja, kann die EU-Aussage konkreter und mit
-   Nennung der Gremien formuliert werden — bitte dann als belegte Aussage eintragen.
-3. **`shipName`-Text:** Enthält jetzt „seit über 20 Jahren" aus der eigenen DB. Bitte
-   gegenprüfen, ob die Formulierung so gewünscht ist.
-4. **Datenqualität:** 365 Datensätze haben exakt `00:00:00` als Uhrzeit und einige
-   `sichtungsdatum = 1970-01-01` (Epoch-Platzhalter). Für Auswertungen relevant.
+**1. Seegang-Zahlen aufnehmen? → Ja, laienverständlich.**
+Die SCANS-IV-Werte (effektive Suchbreite 167 m bei guten, 114 m bei mäßigen Bedingungen,
+also −31,7 %) stehen jetzt als „rund ein Drittel" im Text — ohne Fachbegriffe, mit
+erkennbarer Quelle:
+
+> „Bei unruhiger See schrumpft der Streifen Meer, den Beobachter verlässlich absuchen
+> können, um rund ein Drittel (Ostsee-Erfassung SCANS 2023) …"
+
+Bewusst **ohne Beaufort-Zahl**, weil SCANS unter „gut/mäßig" Seegang, Trübung und
+Blendung zusammenfasst — eine konkrete Windstärke wäre schon wieder eine Überpräzisierung.
+
+**2. Datenweitergabe → bestätigt, Weitergabe erfolgt direkt vom DMM.**
+Damit ist die Aussage wieder konkret formulierbar und nennt die Gremien. Im Formular
+(`notes`) und in der Hilfe-Sektion, dort mit kurzer Erklärung, was HELCOM und ASCOBANS
+überhaupt sind — die Abkürzungen allein sagen Bürger:innen nichts.
+
+**3. `shipName`-Text → unverändert übernommen.**
+
+**4. Epoch-Ausschluss → festgehalten, siehe unten.**
+
+---
+
+## 6. Epoch-Platzhalter zählen nicht mit
+
+**Festgehalten als verbindliche Regel:** Datensätze mit dem Platzhalterdatum
+`1970-01-01` sind fehlerhafte Importe und fließen **nicht** in Statistiken ein.
+
+Datenlage: 280 Datensätze liegen auf exakt `1970-01-01 01:00:00`. Zwischen 1970 und 2002
+existiert kein einziger Datensatz — die älteste echte Sichtung stammt vom 08.07.2002.
+
+Umgesetzt in `sightingRepository.ts` über eine benannte Konstante:
+
+```ts
+export const EARLIEST_PLAUSIBLE_SIGHTING_DATE = new Date('1990-01-01T00:00:00Z');
+```
+
+Die Grenze liegt bewusst in der Lücke zwischen Epoch und der ältesten echten Sichtung.
+
+### Dabei gefundener Fehler
+
+Die vorherige Implementierung verglich auf **Gleichheit** mit `new Date(0)` + `setHours(2)`.
+`setHours` arbeitet in der lokalen Zeitzone:
+
+| Umgebung                | Ergebnis          | Trifft die Daten? |
+| ----------------------- | ----------------- | ----------------- |
+| Europe/Berlin (lokal)   | 1970-01-01T01:00Z | ja                |
+| UTC (Docker/Produktion) | 1970-01-01T02:00Z | **nein**          |
+
+Im Docker-Setup ist kein `TZ` gesetzt, der Container läuft also UTC. In Produktion wurden
+die 280 Epoch-Datensätze damit **mitgezählt** und `yearsOfService` sprang von 24 auf ~56
+Jahre. Die feste UTC-Grenze ist zeitzonenunabhängig; abgesichert durch
+`statisticsEpochExclusion.test.ts`, der alle 24 Stundenvarianten des 01.01.1970 prüft.
+
+### Offen geblieben
+
+365 Datensätze haben exakt `00:00:00` als Uhrzeit. Anders als die Epoch-Datensätze sind
+das plausible Sichtungen mit fehlender Uhrzeitangabe — sie werden **nicht** ausgeschlossen,
+sollten bei tageszeitlichen Auswertungen aber gefiltert werden (wie in Abschnitt 1 geschehen).
 
 ---
 
