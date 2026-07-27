@@ -208,14 +208,19 @@ Architektur (`formStore.ts`, `CombinedField.svelte`, `combinedFields`, 3 statt 4
 Im selben Zug korrigiert, weil identisch veraltet:
 
 - `.claude/rules/forms.md` — Feldnamen (`latitude`/`sightingDate`/`totalCount` statt
-  `lat`/`date`/`count`), Validierung in drei Ebenen, `isStepValid`-Signatur, 0-basierter
-  `currentStep`, nicht existierende `.form-field`-CSS, ARIA über `FieldRenderer`.
-- `docs/DESIGN_GUIDE.md` — dieselben Punkte plus: kein Service Worker / PWA vorhanden,
-  kein Debouncing, Formulardaten in `sessionStorage` (nicht `localStorage`, kein Ablauf),
-  kein `FormContext.svelte`, kein `touched`.
+  `lat`/`date`/`count`), `touched` in der API-Liste ergänzt, 0-basierter `currentStep`,
+  zwei- statt dreiargumentige `validateStep`/`isStepValid`, nicht existierende
+  `.form-field`-CSS entfernt, handgeschriebenes Formular-Beispiel durch den Context-Weg
+  (`Form.svelte` → `setFormContext` → `FormField`) ersetzt.
 
-Nicht angetastet: die Forschungs-Prozentzahlen im Design Guide stammen aus dem nicht mehr
-vorhandenen `form-design.md` und sind jetzt als unbelegt gekennzeichnet.
+`docs/DESIGN_GUIDE.md` war ebenfalls betroffen, ist aber unabhängig davon mit **#567**
+komplett neu geschrieben worden (419 → 161 Zeilen, deutsch, Leitlinien und verifizierter
+Ist-Zustand getrennt). Diese Fassung deckt alle Punkte ab; eine parallele Korrektur wurde
+verworfen. Ebenfalls mit #567: die verbindliche Kurzform `.claude/rules/design-system.md`.
+
+Anmerkung zum Zeitpunkt: #567 hat `createForm` um einen `touched`-Store erweitert, der das
+grüne Häkchen steuert (`touched && hasValue && !hasError` in `FieldRenderer`). Doku-Aussagen
+über ein „fehlendes `touched`" beziehen sich auf den Stand **vor** #567.
 
 ---
 

@@ -58,32 +58,35 @@ src/
 
 ## Validation mit Yup
 
-Schema in `src/lib/form/validation/sightingSchema.ts`:
+**Single Source of Truth: `src/lib/form/validation/sightingSchema.ts`.** Das Schema ist
+nicht nur Validierung — es trägt über `.label()` und `.meta({ type, options, helpText,
+icon, … })` auch die komplette Feld-Darstellung. `formConfig.ts` liest es per
+`sightingSchema.describe()` aus und leitet daraus `initialFormState` und
+`sightingSchemaFields` ab.
 
-```typescript
-import * as yup from 'yup';
+Konsequenz: **Ein neues Feld entsteht im Schema, nicht in einer Komponente.** Label,
+Typ, Options und Hilfetext gehören in `.meta()`, nicht ins Markup. Ein Typ ist nicht zu
+pflegen — `SightingFormData` ist `yup.InferType<typeof sightingSchema>` (`$lib/types/Form.ts`).
 
-export const sightingSchema = yup.object({
-	// Pflichtfelder
-	lat: yup.number().required('Position erforderlich').min(-90).max(90),
-	lng: yup.number().required('Position erforderlich').min(-180).max(180),
-	date: yup.string().required('Datum erforderlich'),
-	species: yup.string().required('Tierart erforderlich'),
-	count: yup.number().positive('Mindestens 1').integer().required(),
+### Feldnamen — keine Abkürzungen
 
-	// Optionale Felder
-	behavior: yup.string().nullable(),
-	notes: yup.string().nullable(),
+Die Schema-Feldnamen sind ausgeschrieben und wandern unverändert durch
+`formStepsConfig`, `FormField name={…}` und `data-testid="field-<name>"`. Verwechslungen
+sind die häufigste Fehlerquelle:
 
-	// Bedingte Felder
-	isDead: yup.boolean(),
-	deadCondition: yup.string().when('isDead', {
-		is: true,
-		then: (schema) => schema.required('Zustand erforderlich'),
-		otherwise: (schema) => schema.nullable()
-	})
-});
-```
+| Richtig                         | Falsch (existiert nicht) |
+| ------------------------------- | ------------------------ |
+| `latitude` / `longitude`        | `lat` / `lng`            |
+| `sightingDate` / `sightingTime` | `date` / `time`          |
+| `totalCount`                    | `count`                  |
+
+`species` ist eine **Zahl** (Artcode, `.default(0)`), kein String — siehe
+`isValidSpecies` und `getSpeciesOptions` in `src/lib/report/formOptions/`.
+
+Bedingte Pflichtfelder über `yup.when(...)` — Beispiel `deadCondition` abhängig von
+`isDead` im Schema. **Achtung:** `FieldRenderer` liest `required` aus der statischen
+Schema-Beschreibung, in der ein `when()` nicht sichtbar ist — siehe den
+`required`-Override im Accessibility-Abschnitt.
 
 ---
 
@@ -95,47 +98,38 @@ export const sightingSchema = yup.object({
 - **Kein `validateField`**: Validiert wird beim Submit (`abortEarly: false`, sammelt alle Fehler) sowie schrittweise über `validateStep` (`src/lib/form/validation/stepValidation.ts`, nutzt `sightingSchema.pick(...)`). `updateField` löscht den Fehler des geänderten Feldes.
 - **Fehler-Timing**: Fehler erscheinen erst nach einem gescheiterten „Weiter"-Versuch, nie beim Betreten eines Schritts (siehe `stepNavigationState.ts`).
 
-API: `{ form, errors, isSubmitting, isValid, handleSubmit, handleChange, updateField, updateInitialValues }`
+API — vollständig, das ist alles was `createForm` zurückgibt:
 
-```svelte
-<script lang="ts">
-	import { createForm } from '$lib/form/createForm';
-	import * as yup from 'yup';
+`{ form, errors, touched, isSubmitting, isValid, handleSubmit, handleChange, updateField, updateInitialValues }`
 
-	const { form, errors, isSubmitting, handleSubmit, updateField } = createForm({
-		initialValues: {
-			species: '',
-			count: 1,
-			date: ''
-		},
-		validationSchema: yup.object({
-			species: yup.string().required(),
-			count: yup.number().positive().required(),
-			date: yup.string().required()
-		}),
-		onSubmit: async (values) => {
-			await saveSighting(values);
-		}
-	});
-</script>
+Nicht vorhanden: `validateField` (siehe oben) und `reset` — Zurücksetzen läuft über
+`updateInitialValues(...)`, das auch `touched` leert.
 
-<form onsubmit={handleSubmit}>
-	<fieldset class="fieldset">
-		<label class="label" for="species">Tierart</label>
-		<input
-			id="species"
-			name="species"
-			bind:value={$form.species}
-			class="input w-full"
-			class:input-error={$errors.species}
-		/>
-		{#if $errors.species}
-			<p class="label text-error">{$errors.species}</p>
-		{/if}
-	</fieldset>
-	<button class="btn btn-primary" disabled={$isSubmitting}>Absenden</button>
-</form>
-```
+`handleChange` fällt auf `target.id` zurück, wenn kein `name` gesetzt ist (nötig für die
+Lat/Lon-Inputs in `LocationInput`).
+
+`isValid` ist `Object.keys($errors).length === 0` — also **„keine Fehler bekannt"**, nicht
+„Schema erfüllt". Direkt nach dem Laden ist `$errors` leer und `$isValid` damit `true`,
+obwohl noch nichts ausgefüllt wurde. Für Navigations-Gates deshalb `validateStep` /
+`isStepValid` verwenden, nie `$isValid`.
+
+### Nicht direkt aufrufen — der Context-Weg
+
+Im Sichtungsformular ruft **keine** Komponente `createForm` selbst auf. Das macht genau
+eine Stelle:
+
+`Form.svelte` → `createForm(...)` + `mediaStore` → `setFormContext(...)`
+→ `FormField` liest per `getFormContext()`
+
+| Datei                                                    | Rolle                                                                    |
+| -------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `src/lib/report/components/form/Form.svelte`             | Einziger `createForm`-Aufruf; setzt Context, rendert `<form>` + Honeypot |
+| `src/lib/report/formContext.ts`                          | `setFormContext` / `getFormContext` (Symbol-Key)                         |
+| `src/lib/report/components/form/fields/FormField.svelte` | Holt `form`, `errors`, `touched`, `handleChange` aus dem Context         |
+
+Eine Feld-Komponente braucht deshalb nur `<FormField name="species" />` — Wert, Fehler,
+`touched` und `onchange` kommen aus dem Context. `FormField` **wirft**, wenn es außerhalb
+von `<Form>` verwendet wird.
 
 ---
 
@@ -161,26 +155,23 @@ Zeige Felder nur wenn relevant:
 
 ## Step Navigation
 
-```typescript
-let currentStep = $state(1);
+**`currentStep` ist 0-basiert.** Schritt 1 der UI ist Index `0`; `formStepsConfig` wird
+direkt damit indiziert. Die Navigation ist fertig implementiert in
+`src/lib/report/components/form/StepNavigation.svelte` — nicht nachbauen:
 
-function canGoNext(): boolean {
-	return isStepValid(currentStep, $form, $errors);
-}
+| Ausdruck                                     | Bedeutung                                  |
+| -------------------------------------------- | ------------------------------------------ |
+| `currentStep = $bindable(0)`                 | Startwert, per `bind:` vom Parent gehalten |
+| `isFirstStep = currentStep <= 0`             | „Zurück" deaktiviert                       |
+| `isLastStep = currentStep >= totalSteps - 1` | „Weiter" wird zu „Absenden"                |
+| `formStepsConfig[currentStep]`               | Direkter Index — **kein** `- 1`            |
+| `Schritt ${currentStep + 1}`                 | Nur für die **Anzeige** wird +1 gerechnet  |
 
-function nextStep() {
-	if (canGoNext()) {
-		currentStep++;
-		focusFirstField();
-	}
-}
+`ModernReportForm.svelte` hält den State (`$state(loadFromStorage(STORAGE_KEYS.CURRENT_STEP, 0))`),
+persistiert ihn per `$effect` und setzt bei Reset auf `0` zurück.
 
-function prevStep() {
-	if (currentStep > 1) {
-		currentStep--;
-	}
-}
-```
+`validateStep(currentStep, formData)` und `isStepValid(currentStep, formData)` nehmen
+**zwei** Argumente — nicht `$errors` als drittes.
 
 ---
 
@@ -219,15 +210,20 @@ ein Yup-`when()` ist dort nicht sichtbar. Für Felder, die nur unter Bedingungen
 
 ## Mobile-First
 
-### Touch Targets
+### Touch Targets & Schriftgröße
 
-```css
-.form-field input,
-.form-field select {
-	min-height: 48px;
-	font-size: 16px; /* Verhindert iOS Zoom */
-}
-```
+Größen kommen aus den DaisyUI-Komponentenklassen (`input`, `select`, `textarea`) und dem
+Theme in `src/app.css` — **es gibt keine projekteigene Feld-Wrapper-Klasse.**
+
+> **Achtung:** Eine Klasse `.form-field` existiert im Projekt nicht. Ältere Anleitungen mit
+> `.form-field input { min-height: 48px }` beschreiben Code, den es nie gab — solche Regeln
+> nicht „wiederherstellen". Der Wrapper, den `FieldRenderer` rendert, heißt `fieldset`
+> (DaisyUI), das Feld selbst trägt `data-field="<name>"` über `FormField`.
+
+Das einzige feldbezogene Größen-Override in `app.css` betrifft den iframe-Modus
+(`.iframe-mode .input/.select/.textarea { font-size: 1rem }`) und hält dort die 16px-Grenze
+gegen iOS-Auto-Zoom. Details und die übrigen bewussten Overrides:
+`.claude/rules/daisyui.md`.
 
 ### Input Types
 

@@ -90,9 +90,14 @@ Three distinct layers — see `.claude/rules/forms.md` for the full table:
 `isStepValid(currentStep, formData)` and `validateStep(currentStep, formData)` take **two**
 arguments and validate `sightingSchema.pick(formStepsConfig[currentStep].fields)`.
 
-There is no debouncing and no `touched`/blur tracking: `createForm` exposes
-`{ form, errors, isSubmitting, isValid, handleSubmit, handleChange, updateField, updateInitialValues }`
-and nothing else. Errors appear when a layer sets them and clear when the field changes.
+There is no debouncing. `createForm` exposes
+`{ form, errors, touched, isSubmitting, isValid, handleSubmit, handleChange, updateField, updateInitialValues }`
+and nothing else — no `validateField`, no `reset`.
+
+`touched` (`Record<string, boolean>`) is set by `handleChange` / `updateField` and cleared by
+`updateInitialValues`. It drives **display only**, never validation. Errors appear only after
+a failed "Next"/"Submit" attempt — never on entering a step (see `stepNavigationState.ts`) —
+and clear when the field changes.
 
 ## Conditional fields
 
@@ -135,9 +140,18 @@ error output with `role="alert"` + `aria-live="polite"`, and `data-testid="field
 It picks one of three markup shapes so no `label[for]` dangles: `<fieldset>`/`<legend>` for
 radio groups, control-owned labels for checkbox/toggle, and `<label for>` otherwise.
 
-The status indicator next to the label derives from value + error (`hasValue`, `hasError`),
-not from blur state, and is `aria-hidden` — the accessible signal is `aria-invalid` plus the
-error text.
+The green status checkmark is gated on `touched && hasValue && !hasError`, so it only appears
+on fields the user actually interacted with. `FormField` reads `$touched[name]` from the
+context and passes it down. The indicator is `aria-hidden` — the accessible signal is
+`aria-invalid` plus the error text.
+
+`FieldRenderer` derives `required` from the **static** schema description, where a Yup
+`when()` is invisible. For conditionally-required fields, pass the `required` override so the
+asterisk and `aria-required` match the actual validation:
+
+```svelte
+<FormField name="waterway" required={$form.hasPosition !== true} />
+```
 
 Step changes move focus to the step heading (`scrollAndFocusStep` in
 `StepNavigation.svelte`) so screen readers announce the new step.
