@@ -71,7 +71,7 @@ Beide sind bewusst kurz — neue Inhalte gehören in eine der path-scoped Rules.
 | `admin.md`            | `src/routes/admin/`, `src/lib/components/admin/`                                  |
 | `api.md`              | `src/routes/api/`, `rest_sichtungen/`, `sichtungen/`, `health/`                   |
 | `browser-storage.md`  | `src/lib/storage/`                                                                |
-| `daisyui.md`          | `**/*.svelte`, `src/app.css`, `src/css/`, `tailwind.config.js`                    |
+| `daisyui.md`          | `**/*.svelte`, `src/app.css`, `src/css/`                                          |
 | `database.md`         | `src/lib/server/db/`, `drizzle.config.ts`, `src/lib/server/geo/`, `routes/api/`   |
 | `docker.md`           | `Dockerfile`, `docker-compose*.yml`, `.env.docker`, `run-release.sh`              |
 | `email.md`            | `emailService.ts`, `src/lib/server/templates/`, `api/admin/test-email/`           |

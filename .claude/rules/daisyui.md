@@ -3,7 +3,6 @@ paths:
   - '**/*.svelte'
   - 'src/app.css'
   - 'src/css/**'
-  - 'tailwind.config.js'
 ---
 
 # DaisyUI v5 & Theme `meeresmuseum`
@@ -32,15 +31,32 @@ Anleitungen, die `plugins: [require('daisyui')]` oder eine `daisyui: { themes: [
 -Sektion in `tailwind.config.js` zeigen, beziehen sich auf DaisyUI v4.
 **`src/app.css` ist die alleinige Source of Truth** für DaisyUI und das Theme.
 
-> **Achtung — `tailwind.config.js` im Repo ist Altlast und wirkungslos.**
-> Die Datei existiert noch und enthält genau das v4-Setup (`plugins: [daisyui]`
-> plus einen `daisyui: { darkTheme: false, … }`-Block). Unter Tailwind 4 wird sie
-> aber **nicht geladen**: es gibt weder eine `@config`-Direktive in `src/app.css`
-> noch eine Referenz in `vite.config.ts` oder `svelte.config.js`.
+> **Es gibt bewusst keine `tailwind.config.js` mehr.**
+> Die Datei war ein Rest aus der DaisyUI-v4-Zeit und wurde entfernt, nachdem
+> nachgewiesen war, dass sie wirkungslos ist: Unter Tailwind 4 wird eine JS-Config
+> nur noch über eine `@config`-Direktive geladen — die gibt es hier nicht, und
+> auch `vite.config*.ts`, `svelte.config.js` und `.prettierrc` referenzieren sie
+> nicht. Der Produktions-Build liefert vor und nach dem Löschen **byte-identisches
+> CSS** (alle 17 Assets, gleiche Content-Hashes).
 >
-> Konsequenz: Änderungen dort haben **keine Wirkung**. Wer am Theme arbeitet,
-> editiert `src/app.css`. Das Entfernen der Datei ist als Follow-up vorgemerkt und
-> nicht Teil dieser Rule — bis dahin gilt sie als tot, nicht als Vorbild.
+> Keine neue `tailwind.config.js` anlegen. Theme, Plugins und Utilities gehören
+> nach `src/app.css`.
+
+### Content-Detection läuft automatisch — kein `@source` nötig
+
+Tailwind 4 scannt das Projekt selbstständig und überspringt dabei nur
+`node_modules`, Binärdateien, CSS und alles, was in `.gitignore` steht. Da unter
+`src/` nichts ignoriert wird, greift die Erkennung für **alle** Svelte- und
+TS-Dateien inklusive `src/lib/` zuverlässig.
+
+Explizite `@source`-Direktiven werden deshalb **nicht** gebraucht — und sollten
+auch nicht „vorsorglich" ergänzt werden. Relevant wären sie nur, um eine
+Tailwind-nutzende Abhängigkeit aus `node_modules` nachzuziehen oder um Klassen zu
+safelisten, die nirgends als vollständiger String im Code stehen.
+
+Praktische Konsequenz: Klassennamen müssen **vollständig im Quelltext** stehen.
+`class={`btn-${variant}`}` wird nicht erkannt — stattdessen die kompletten Namen
+in ein Mapping schreiben.
 
 ---
 
@@ -99,6 +115,13 @@ Komponenten gegen-patchen:
 
 Ein `alert-soft` zusätzlich zu setzen ist überflüssig; die Klassen `alert-info`,
 `alert-success`, `alert-warning`, `alert-error` liefern den Soft-Look bereits.
+
+> **Zum Alert-Override:** DaisyUI 5 kennt `alert-soft` nur als Modifier-Klasse pro
+> Element. Einen offiziellen Weg, den Soft-Look global zum Default zu machen — etwa
+> eine Theme-Variable oder Plugin-Option — gibt es bis einschließlich **5.7.4**
+> nicht. Der `color-mix`-Override in `app.css` bleibt daher die richtige Lösung und
+> ist kein Workaround, den man bei einem Update „endlich aufräumen" könnte. Erst
+> wenn DaisyUI eine solche Option nachliefert, lohnt ein erneuter Blick.
 
 ---
 
