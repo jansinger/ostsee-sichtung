@@ -15,11 +15,19 @@ export function createForm<T extends Record<string, unknown>>(options: FormProps
 
 	const form = writable<T>({ ...initialValues });
 	const errors = writable<Record<string, string>>({});
+	const touched = writable<Record<string, boolean>>({});
 	const isSubmitting = writable(false);
 	const isValid = derived(errors, ($errors) => Object.keys($errors).length === 0);
 
+	function markTouched(field: keyof T): void {
+		touched.update((current) =>
+			current[field as string] ? current : { ...current, [field as string]: true }
+		);
+	}
+
 	function updateField(field: keyof T, value: unknown): void {
 		form.update((current) => ({ ...current, [field]: value }));
+		markTouched(field);
 		errors.update((current) => {
 			const next = { ...current };
 			delete next[field as string];
@@ -30,6 +38,7 @@ export function createForm<T extends Record<string, unknown>>(options: FormProps
 	function updateInitialValues(values: T): void {
 		form.set({ ...values });
 		errors.set({});
+		touched.set({});
 	}
 
 	function handleChange(event: Event): void {
@@ -91,6 +100,7 @@ export function createForm<T extends Record<string, unknown>>(options: FormProps
 	return {
 		form,
 		errors,
+		touched,
 		isSubmitting,
 		isValid,
 		handleSubmit,

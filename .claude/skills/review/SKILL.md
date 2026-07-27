@@ -72,6 +72,67 @@ grep -n '`SELECT.*\${' <file>
 
 **Fix:** Drizzle `sql` Tagged Template oder Repository Pattern verwenden.
 
+#### Accessibility & Design-System (WCAG 2.1 AA)
+
+Verbindliche Regeln: `.claude/rules/design-system.md`. Hier nur die praktikablen Checks für geänderte `.svelte`-Dateien.
+
+**1. Kontrast bei `*-content` auf Tint-Hintergrund**
+
+```bash
+# *-content Text auf bg-*/10, /20 ... ist im Theme "meeresmuseum" (src/app.css)
+# fast immer reines Weiß -> auf hellem Tint unlesbar (Praxisfall: gemessen 1,3:1)
+grep -n 'text-[a-z]*-content' <file>
+```
+
+Bei Treffer: zugehörige `bg-*/NN`-Klasse suchen und Kontrast messen. Richtwerte: Text ≥ 4.5:1, große Schrift (≥ 24px bzw. 19px bold) ≥ 3:1, Icons/grafische Objekte ≥ 3:1.
+
+**Messmethode im laufenden Dev-Server:** Theme-Farben sind in `oklch()` notiert, `getComputedStyle` gibt diese Notation unverändert zurück. In der Browser-Konsole:
+
+```js
+getComputedStyle(el).color; // "oklch(...)"
+getComputedStyle(el.closest('[class*="bg-"]')).backgroundColor;
+```
+
+Zur Umrechnung `oklch → sRGB` einen Canvas-2D-Context nutzen (`ctx.fillStyle = wert`, dann `ctx.getImageData` auslesen) statt manueller Formel, danach WCAG-Kontrastformel auf die RGB-Werte anwenden.
+
+**2. Formularfelder**
+
+- Pflicht-Sternchen und `aria-required` müssen aus derselben Quelle stammen (z.B. `required`-Prop), nicht getrennt gepflegt werden.
+- Fehlermeldung: `role="alert"` + Verknüpfung per `aria-describedby` mit der Feld-ID.
+- Sichtbares `<label>` vorhanden — `placeholder` allein ersetzt kein Label.
+
+```bash
+grep -n 'placeholder=' <file>
+```
+
+**3. Interaktive Elemente**
+
+```bash
+# Klickbare div/li/span statt button/a
+grep -n 'onclick' <file>
+```
+
+- Echte `<button>`/`<a>` statt klickbarer `<div>`/`<li>`/`<span>` verwenden.
+- ARIA-Rollen nur vollständig: `role="tab"` ohne zugehöriges `role="tabpanel"` (+ `aria-controls`/`aria-selected`) ist ein Fail.
+- Tastaturbedienbarkeit und sichtbarer Fokus (`:focus-visible`) prüfen; Touch-Targets ≥ 44×44px.
+
+**4. Dekorative Icons**
+
+```bash
+grep -n "~icons/" <file>
+```
+
+Icon ohne eigene Bedeutung (rein dekorativ, Text daneben vorhanden) → `aria-hidden="true"`.
+
+**5. Tote Utility-Klassen**
+
+```bash
+# Kein Animations-Plugin installiert - diese Klassen greifen nicht
+grep -n 'animate-in\|slide-in-from-top\|slide-in-from-bottom\|fade-in\|zoom-in' <file>
+```
+
+Bei Treffer: prüfen ob die Utility im Setup (`tailwind.config`, installierte Plugins) überhaupt existiert, sonst entfernen oder durch eine funktionierende Animation ersetzen.
+
 ### Schritt 3: /simplify ausführen
 
 Führe `/simplify` auf den geänderten Dateien aus für allgemeine Code-Qualität:
@@ -100,6 +161,9 @@ WARNUNG:
 HINWEIS:
 - [datei:zeile] Globaler $state in .ts Datei
 
+A11Y:
+- [datei:zeile] Kontrast text-warning-content auf bg-warning/10 (gemessen 1,3:1, Ziel ≥ 4.5:1)
+
 /simplify Ergebnis:
 - [Zusammenfassung der Findings]
 ```
@@ -111,4 +175,9 @@ HINWEIS:
 - [ ] Kein `{@html}` ohne Sanitisierung
 - [ ] Kein globaler `$state` in `.ts` Dateien
 - [ ] Keine nicht-parametrisierte SQL
+- [ ] Kontrast `*-content` auf Tint-Hintergrund ≥ 4.5:1 (groß/Icons ≥ 3:1)
+- [ ] Formularfelder: Pflicht-Markierung = `aria-required`, Fehler mit `role="alert"` + `aria-describedby`, sichtbares Label
+- [ ] Echte `<button>`/`<a>` statt klickbarer `<div>`/`<li>`, ARIA-Rollen vollständig, Fokus sichtbar, Touch-Target ≥ 44px
+- [ ] Dekorative Icons mit `aria-hidden="true"`
+- [ ] Keine toten Utility-Klassen (z.B. `animate-in` ohne Plugin)
 - [ ] Code-Qualität durch /simplify geprüft

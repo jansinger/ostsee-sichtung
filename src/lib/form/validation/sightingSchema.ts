@@ -175,7 +175,7 @@ export const sightingSchemaBase = yup.object().shape({
 			valueText: 'Falls nein, können Sie das Gebiet beschreiben',
 			icon: ToggleLeft
 		})
-		.default(true),
+		.default(false),
 
 	//----------------------------------------------------------------------
 	// Location (Standort)
@@ -210,8 +210,7 @@ export const sightingSchemaBase = yup.object().shape({
 			helpText: 'Nördliche Position (N) - je mehr Nachkommastellen, desto genauer',
 			valueText: 'GPS-Präzision: 6 Nachkommastellen = 11cm Genauigkeit',
 			icon: Navigation
-		})
-		.default(54.5),
+		}),
 
 	/**
 	 * Längengrad der Sichtung (GPS-Koordinate)
@@ -242,12 +241,12 @@ export const sightingSchemaBase = yup.object().shape({
 			helpText: 'Östliche Position (E) - je mehr Nachkommastellen, desto genauer',
 			valueText: 'Ihre GPS-Koordinaten werden mit anderen Sichtungen verglichen',
 			icon: Navigation2
-		})
-		.default(13.5),
+		}),
 
 	/**
 	 * Fahrwasser oder Meeresgebiet, in dem die Sichtung erfolgte
-	 * Alternative zur GPS-Position
+	 * Alternative zur GPS-Position: erforderlich, wenn keine GPS-Position vorliegt
+	 * (hasPosition !== true), damit ein leeres Formular Schritt 1 nicht passieren kann.
 	 */
 	waterway: yup
 		.string()
@@ -260,7 +259,14 @@ export const sightingSchemaBase = yup.object().shape({
 				'Gewässerbezeichnungen helfen bei der regionalen Populationsverteilung - auch ungefähre Angaben sind wissenschaftlich wertvoll',
 			icon: Waves
 		})
-		.notRequired(),
+		.when('hasPosition', {
+			is: (value: unknown) => value !== true,
+			then: (schema) =>
+				schema.required(
+					'Bitte beschreiben Sie das Fahrwasser/Seegebiet oder wählen Sie eine GPS-Position'
+				),
+			otherwise: (schema) => schema.notRequired()
+		}),
 
 	/**
 	 * Seezeichen in der Nähe der Sichtung
@@ -318,7 +324,7 @@ export const sightingSchemaBase = yup.object().shape({
 			placeholder: 'z.B. 14:30 oder 09:15',
 			helpText: 'Zu welchem Zeitpunkt ungefähr? (optional)',
 			valueText:
-				'Uhrzeitangaben decken Tagesrhythmen auf - 73% der Schweinswalsichtungen erfolgen morgens zwischen 6-10 Uhr',
+				'Uhrzeitangaben helfen dabei, Tagesrhythmen der Tiere zu erkennen - auch eine grobe Schätzung ist wertvoll',
 			type: 'time',
 			icon: Clock
 		})
@@ -334,6 +340,7 @@ export const sightingSchemaBase = yup.object().shape({
 	 */
 	species: yup
 		.number()
+		.transform((value) => (isNaN(value) ? undefined : value))
 		.required('Bitte wählen Sie eine Tierart aus')
 		.test('is-valid-species', 'Diese Tierart ist nicht verfügbar', (value) =>
 			isValidSpecies(String(value))
@@ -345,8 +352,7 @@ export const sightingSchemaBase = yup.object().shape({
 			type: 'select',
 			options: getSpeciesOptions(true),
 			icon: Fish
-		})
-		.default(0),
+		}),
 
 	/**
 	 * Gesamtanzahl der gesichteten Tiere
@@ -673,7 +679,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			helpText: 'Wie war die Beschaffenheit der Meeresoberfläche?',
 			valueText:
-				'Bei ruhiger See werden 5x mehr Tiere entdeckt - Ihre Seegangsangabe hilft bei der korrekten Populationsschätzung. 89% erfahrener Beobachter geben diese Information an',
+				'Bei ruhiger See sind Tiere deutlich leichter zu entdecken - Ihre Seegangsangabe hilft, Sichtungszahlen richtig einzuordnen',
 			type: 'select',
 			options: getSeaStateOptions(),
 			icon: Waves
@@ -717,7 +723,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			helpText: 'Aus welcher Richtung kam der Wind?',
 			valueText:
-				'Windrichtung korreliert mit Walwanderungen - Nordwinde erhöhen Sichtungswahrscheinlichkeit um 40%. Ihre Wetterangaben vervollständigen das ökologische Bild',
+				'Wind beeinflusst Seegang und Sichtbedingungen - Ihre Wetterangaben vervollständigen das ökologische Bild',
 			type: 'select',
 			options: getWindDirectionOptions(),
 			icon: Wind
@@ -886,25 +892,37 @@ export const sightingSchemaBase = yup.object().shape({
 
 	/**
 	 * Art des Bootsantriebs
-	 * Optional, muss einer gültigen Antriebskategorie entsprechen
+	 * Nur erforderlich, wenn die Sichtung von einem Segelschiff oder Motorboot
+	 * aus gemacht wurde (sightingFrom). Bei Land, Fähre, Sonstiges oder nicht
+	 * gesetztem sightingFrom ist das Feld optional/nullable — wer kein Boot hat,
+	 * kann keinen Bootsantrieb angeben.
 	 */
 	boatDrive: yup
 		.number()
+		.nullable()
 		.test(
 			'is-valid-boat-drive',
 			'Bitte wählen Sie einen gültigen Bootsantrieb aus.',
-			(value) => value === undefined || isValidBoatDrive(value)
+			(value) => value === undefined || value === null || isValidBoatDrive(value)
 		)
 		.label('Bootsantrieb')
 		.meta({
 			helpText: 'Welcher Antrieb wurde während der Sichtung verwendet?',
 			valueText:
-				'Motor-Typ bestimmt Unterwasserlärm - Elektromotoren ermöglichen 60% mehr Sichtungen durch geringere Störung',
+				'Die Antriebsart bestimmt den Unterwasserlärm und damit, wie stark Tiere gestört werden',
 			type: 'select',
 			options: getBoatDriveOptions(),
 			icon: Zap
 		})
-		.required(),
+		.when('sightingFrom', {
+			is: (v: unknown) =>
+				v === SightingFromEnum.SAILBOAT ||
+				v === String(SightingFromEnum.SAILBOAT) ||
+				v === SightingFromEnum.MOTORBOAT ||
+				v === String(SightingFromEnum.MOTORBOAT),
+			then: (schema) => schema.required('Bitte wählen Sie den Bootsantrieb aus.'),
+			otherwise: (schema) => schema.notRequired()
+		}),
 
 	/**
 	 * Genauere Beschreibung des Bootsantriebs (optional, auch bei Sonstiges)

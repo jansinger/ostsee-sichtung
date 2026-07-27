@@ -70,9 +70,10 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		// Fill data
+		// Fill data (waterway required, da hasPosition standardmäßig false ist)
 		await formPage.fillDate(today);
 		await formPage.fillTime('14:30');
+		await formPage.fillWaterway('Kieler Bucht');
 
 		// Navigate to Step 2 so we're not on Step 1
 		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeEnabled({

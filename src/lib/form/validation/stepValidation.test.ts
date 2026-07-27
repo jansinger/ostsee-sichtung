@@ -19,7 +19,7 @@ vi.mock('$lib/report/formConfig', () => ({
 		{
 			id: 'location-time',
 			title: 'Position & Zeit',
-			fields: ['hasPosition', 'latitude', 'longitude', 'sightingDate']
+			fields: ['hasPosition', 'latitude', 'longitude', 'waterway', 'sightingDate']
 		},
 		{
 			id: 'sighting-details',
@@ -72,16 +72,26 @@ describe('isStepValid', () => {
 			expect(isStepValid(0, validLocationData)).toBe(true);
 		});
 
-		it('returns true when hasPosition is false (position is optional, defaults fill coords)', () => {
-			// latitude/longitude have defaults (54.5 / 13.5) and are only required when hasPosition=true
-			// sightingDate has a default (today)
-			expect(isStepValid(0, { hasPosition: false })).toBe(true);
+		it('returns true when hasPosition is false but a waterway description is provided', () => {
+			// Ohne GPS-Position ist waterway erforderlich (Alternative "Beschreibung")
+			expect(
+				isStepValid(0, { hasPosition: false, waterway: 'Kieler Bucht', sightingDate: today })
+			).toBe(true);
 		});
 
-		it('returns true when hasPosition is true and coords use schema defaults', () => {
-			// Schema defaults: latitude=54.5, longitude=13.5, sightingDate=today
-			// Yup applies defaults during validation, so missing fields get filled
-			expect(isStepValid(0, { hasPosition: true })).toBe(true);
+		it('returns false for an empty form (no coords, no waterway)', () => {
+			// Nach Entfernen der Defaults: hasPosition=false, keine Koordinaten, kein waterway
+			// → waterway ist erforderlich → Schritt 1 blockiert
+			expect(isStepValid(0, {})).toBe(false);
+		});
+
+		it('returns false when hasPosition=false and waterway is missing', () => {
+			expect(isStepValid(0, { hasPosition: false, sightingDate: today })).toBe(false);
+		});
+
+		it('returns false when hasPosition is true but coordinates are missing (no defaults)', () => {
+			// latitude/longitude haben keine Defaults mehr und sind bei hasPosition=true erforderlich
+			expect(isStepValid(0, { hasPosition: true, sightingDate: today })).toBe(false);
 		});
 
 		it('returns false for latitude out of Baltic Sea bounds', () => {
@@ -112,6 +122,7 @@ describe('isStepValid', () => {
 			expect(
 				isStepValid(0, {
 					hasPosition: false,
+					waterway: 'Kieler Bucht',
 					sightingDate: future.toISOString().substring(0, 10)
 				})
 			).toBe(false);
@@ -123,9 +134,9 @@ describe('isStepValid', () => {
 			expect(isStepValid(1, validSightingData)).toBe(true);
 		});
 
-		it('returns true when species is missing (schema default is 0 = Schweinswal)', () => {
-			// species has .default(0) in sightingSchema — omitting it is valid
-			expect(isStepValid(1, { totalCount: 2, distance: 1 })).toBe(true);
+		it('returns false when species is missing (no default — user must actively choose)', () => {
+			// species hat keinen Default mehr → fehlende Tierart blockiert Schritt 2
+			expect(isStepValid(1, { totalCount: 2, distance: 1 })).toBe(false);
 		});
 
 		it('returns false for species value -1 (below valid range)', () => {
@@ -184,11 +195,18 @@ describe('validateStep', () => {
 			expect(result.errors).toEqual({});
 		});
 
-		it('returns isValid=true when hasPosition=true and coords use schema defaults', () => {
-			// Schema defaults fill in latitude, longitude and sightingDate
-			const result = validateStep(0, { hasPosition: true });
-			expect(result.isValid).toBe(true);
-			expect(result.errors).toEqual({});
+		it('returns errors for an empty form (waterway required without coords)', () => {
+			// Kein GPS, kein waterway → waterway-Fehler; sightingDate hat noch einen Default
+			const result = validateStep(0, {});
+			expect(result.isValid).toBe(false);
+			expect(result.errors).toHaveProperty('waterway');
+		});
+
+		it('returns coordinate errors when hasPosition=true but coords are missing', () => {
+			const result = validateStep(0, { hasPosition: true, sightingDate: today });
+			expect(result.isValid).toBe(false);
+			expect(result.errors).toHaveProperty('latitude');
+			expect(result.errors).toHaveProperty('longitude');
 		});
 
 		it('returns errors for both out-of-bounds coordinates', () => {
@@ -208,6 +226,7 @@ describe('validateStep', () => {
 			future.setFullYear(future.getFullYear() + 1);
 			const result = validateStep(0, {
 				hasPosition: false,
+				waterway: 'Kieler Bucht',
 				sightingDate: future.toISOString().substring(0, 10)
 			});
 			expect(result.isValid).toBe(false);

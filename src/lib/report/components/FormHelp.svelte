@@ -146,7 +146,7 @@
 								<li><strong>Tipp:</strong> Auch unscharfe Bilder können nützlich sein</li>
 							</ul>
 							<div class="bg-success/10 mt-2 rounded p-2">
-								<div class="text-success-content/70 text-xs">
+								<div class="text-base-content/70 text-xs">
 									✅ <strong>
 										{#if loading}
 											<span class="loading loading-dots loading-xs"></span>
@@ -189,8 +189,8 @@
 											3x
 										{/if}
 									</div>
-									<div class="text-success-content text-sm font-medium">häufiger zitiert</div>
-									<div class="text-success-content/70 mt-1 text-xs">
+									<div class="text-base-content text-sm font-medium">häufiger zitiert</div>
+									<div class="text-base-content/70 mt-1 text-xs">
 										werden komplette Meldungen in Studien verwendet
 									</div>
 								</div>
@@ -202,8 +202,8 @@
 											{statistics.yearsOfService}
 										{/if}
 									</div>
-									<div class="text-success-content text-sm font-medium">Jahre Treue</div>
-									<div class="text-success-content/70 mt-1 text-xs">
+									<div class="text-base-content text-sm font-medium">Jahre Treue</div>
+									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics.uniqueUsers > 0}
 											{statistics.uniqueUsers} verschiedene Nutzer melden bereits regelmäßig
 										{:else}
@@ -223,8 +223,8 @@
 											)}%
 										{/if}
 									</div>
-									<div class="text-success-content text-sm font-medium">mit Fotos/Videos</div>
-									<div class="text-success-content/70 mt-1 text-xs">
+									<div class="text-base-content text-sm font-medium">mit Fotos/Videos</div>
+									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading}
 											{statistics.sightingsWithMedia.toLocaleString('de-DE')} Sichtungen mit Medien dokumentiert
 										{:else}
@@ -257,7 +257,7 @@
 											{statistics.deadAnimalsFound}
 										{/if}
 									</div>
-									<div class="text-warning-content text-xs">
+									<div class="text-base-content text-xs">
 										Totfunde bereits für die Wissenschaft dokumentiert
 									</div>
 								</div>

@@ -94,22 +94,25 @@ test.describe('Sichtung melden — Step-Validierung', () => {
 		await expect(stepButtons.nth(0)).toHaveAttribute('aria-disabled', 'false');
 	});
 
-	test('Validierungsfehler zeigt Inline-Fehlermeldung und deaktiviert Weiter-Button', async ({
+	test('Validierungsfehler auf Step 2 zeigt Inline-Fehlermeldung erst nach Klick auf Weiter', async ({
 		page
 	}) => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		// Step 1 hat Schema-Defaults → ist valid. Navigiere zu Step 2.
+		// Step 1 mit gültigem Fahrwasser (fillStep1) → valid. Navigiere zu Step 2.
 		await fillStep1(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
 		await expectCurrentStep(page, /Sichtungsdetails/i);
 
-		// Step 2 hat keine Defaults für Pflichtfelder → Weiter-Button ist deaktiviert
-		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeDisabled();
+		// Step 2 hat keine Defaults für Pflichtfelder, der Weiter-Button bleibt aber
+		// klickbar — er wird nur noch beim Absenden ($isSubmitting) deaktiviert.
+		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeEnabled();
 
-		// Inline-Fehlermeldung erscheint direkt über dem Weiter-Button
+		// Erst der Klick auf "Weiter" löst die Validierung aus und zeigt die
+		// Inline-Fehlermeldung über dem Button.
+		await formPage.clickNext();
 		await expect(page.locator('[role="alert"]').first()).toBeVisible({ timeout: 3000 });
 	});
 });

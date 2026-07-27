@@ -1,71 +1,145 @@
 <script lang="ts">
 	import { ddToDm, ddToDms, dmsToDd, dmToDd } from '$lib/utils/geo/coordinateConversion';
+	import { untrack } from 'svelte';
 
 	import OLMap from '$lib/components/map/OLMap.svelte';
 
+	type DmsParts = { deg: number | null; min: number | null; sec: number | null };
+	type DmParts = { deg: number | null; min: number | null };
+
 	let {
 		mode = 'dd',
-		latitude = $bindable(54.5),
-		longitude = $bindable(13.5),
+		latitude = $bindable(),
+		longitude = $bindable(),
+		defaultCenter = { latitude: 54.5, longitude: 13.5 },
 		onchange = () => {}
 	} = $props<{
 		mode?: 'dms' | 'dm' | 'dd';
-		latitude: number;
-		longitude: number;
+		/** Echter Formularwert — bleibt undefined, solange keine Position gewählt wurde. */
+		latitude?: number | undefined;
+		/** Echter Formularwert — bleibt undefined, solange keine Position gewählt wurde. */
+		longitude?: number | undefined;
+		/** Nur für die Kartenansicht: Startpunkt, solange keine echte Position vorliegt. */
+		defaultCenter?: { latitude: number; longitude: number };
 		onchange?: EventListener | null;
 	}>();
 
-	let dms: {
-		latitude: { deg: number; min: number; sec: number };
-		longitude: { deg: number; min: number; sec: number };
-	} = $state({ latitude: { deg: 0, min: 0, sec: 0 }, longitude: { deg: 0, min: 0, sec: 0 } });
-	let dm: { latitude: { deg: number; min: number }; longitude: { deg: number; min: number } } =
-		$state({ latitude: { deg: 0, min: 0 }, longitude: { deg: 0, min: 0 } });
+	// Kartenansicht ist von den Eingabefeldern getrennt: Die Karte braucht immer
+	// konkrete Zahlen (sonst startet sie im Nullmeridian), die Zahlenfelder bleiben
+	// leer, solange der Nutzer keine Position gewählt hat.
+	let mapLatitude = $state(untrack(() => latitude ?? defaultCenter.latitude));
+	let mapLongitude = $state(untrack(() => longitude ?? defaultCenter.longitude));
 
+	// Echte Position von außen (EXIF-GPS, Formular-Restore) auf die Karte spiegeln.
 	$effect(() => {
-		dms.longitude = ddToDms(longitude);
-		dms.latitude = ddToDms(latitude);
-		dm.longitude = ddToDm(longitude);
-		dm.latitude = ddToDm(latitude);
+		if (latitude === undefined) return;
+		if (untrack(() => mapLatitude) !== latitude) mapLatitude = latitude;
+	});
+	$effect(() => {
+		if (longitude === undefined) return;
+		if (untrack(() => mapLongitude) !== longitude) mapLongitude = longitude;
 	});
 
-	// svelte-ignore non_reactive_update
-	let latitudeInput: HTMLInputElement;
-	// svelte-ignore non_reactive_update
-	let longitudeInput: HTMLInputElement;
+	let dms: { latitude: DmsParts; longitude: DmsParts } = $state({
+		latitude: { deg: null, min: null, sec: null },
+		longitude: { deg: null, min: null, sec: null }
+	});
+	let dm: { latitude: DmParts; longitude: DmParts } = $state({
+		latitude: { deg: null, min: null },
+		longitude: { deg: null, min: null }
+	});
+
+	// Dezimalgrad-Felder: schreibbares $derived, damit ein geleertes Feld (null) nicht
+	// als Koordinate durchgereicht wird und externe Änderungen trotzdem ankommen.
+	let ddLatitude: number | null = $derived(latitude ?? null);
+	let ddLongitude: number | null = $derived(longitude ?? null);
+
+	const EMPTY_DMS: DmsParts = { deg: null, min: null, sec: null };
+	const EMPTY_DM: DmParts = { deg: null, min: null };
+
+	$effect(() => {
+		dms.longitude = longitude === undefined ? { ...EMPTY_DMS } : ddToDms(longitude);
+		dms.latitude = latitude === undefined ? { ...EMPTY_DMS } : ddToDms(latitude);
+		dm.longitude = longitude === undefined ? { ...EMPTY_DM } : ddToDm(longitude);
+		dm.latitude = latitude === undefined ? { ...EMPTY_DM } : ddToDm(latitude);
+	});
+
+	/** Leere Eingabefelder als NaN weiterreichen — die Konverter behandeln NaN bereits als 0. */
+	function part(value: number | null): number {
+		return value ?? Number.NaN;
+	}
+
+	/** Vorzeichen aus dem Grad-Feld; NaN (leeres Feld) bedeutet Nord/Ost. */
+	function signOf(deg: number): 1 | -1 {
+		return isNaN(deg) || deg >= 0 ? 1 : -1;
+	}
+
+	/**
+	 * Meldet eine Koordinatenänderung an das Formular. Bewusst über synthetische
+	 * Events statt über DOM-Referenzen: Die Dezimalgrad-Felder existieren in den
+	 * Modi "dm"/"dms" gar nicht, ein Marker-Verschieben würde dort sonst nie im
+	 * Formular ankommen.
+	 */
+	function notifyChange() {
+		if (!onchange) return;
+		emitField('latitude', latitude);
+		emitField('longitude', longitude);
+	}
+
+	function emitField(name: 'latitude' | 'longitude', value: number | undefined) {
+		onchange?.({
+			target: { id: name, name, value: value === undefined ? '' : String(value) }
+		} as unknown as Event);
+	}
 
 	function updateFromFields() {
 		try {
 			if (mode === 'dms') {
-				// NaN-Guard: NaN >= 0 ist false → würde fälschlicherweise sign = -1 liefern.
-				// Standard-Vorzeichen 1 (Nord/Ost) wenn Grad-Feld noch nicht ausgefüllt.
-				const latSign = isNaN(dms.latitude.deg) ? 1 : dms.latitude.deg >= 0 ? 1 : -1;
-				const lonSign = isNaN(dms.longitude.deg) ? 1 : dms.longitude.deg >= 0 ? 1 : -1;
-				latitude = dmsToDd(dms.latitude.deg, dms.latitude.min, dms.latitude.sec, latSign);
-				longitude = dmsToDd(dms.longitude.deg, dms.longitude.min, dms.longitude.sec, lonSign);
+				const latDeg = part(dms.latitude.deg);
+				const lonDeg = part(dms.longitude.deg);
+				latitude = dmsToDd(latDeg, part(dms.latitude.min), part(dms.latitude.sec), signOf(latDeg));
+				longitude = dmsToDd(
+					lonDeg,
+					part(dms.longitude.min),
+					part(dms.longitude.sec),
+					signOf(lonDeg)
+				);
 			} else if (mode === 'dm') {
-				const latSign = isNaN(dm.latitude.deg) ? 1 : dm.latitude.deg >= 0 ? 1 : -1;
-				const lonSign = isNaN(dm.longitude.deg) ? 1 : dm.longitude.deg >= 0 ? 1 : -1;
-				latitude = dmToDd(dm.latitude.deg, dm.latitude.min, latSign);
-				longitude = dmToDd(dm.longitude.deg, dm.longitude.min, lonSign);
+				const latDeg = part(dm.latitude.deg);
+				const lonDeg = part(dm.longitude.deg);
+				latitude = dmToDd(latDeg, part(dm.latitude.min), signOf(latDeg));
+				longitude = dmToDd(lonDeg, part(dm.longitude.min), signOf(lonDeg));
 			}
 		} catch (error) {
 			console.error('Fehler beim Aktualisieren der Felder:', error);
 		}
-		onMapChange();
+		notifyChange();
 	}
 
+	/** Marker verschoben oder GPS-Button genutzt → Kartenposition wird zur echten Position. */
 	function onMapChange() {
-		setTimeout(() => {
-			longitudeInput?.dispatchEvent(new Event('change', { bubbles: true }));
-			latitudeInput?.dispatchEvent(new Event('change', { bubbles: true }));
-		}, 0);
+		latitude = mapLatitude;
+		longitude = mapLongitude;
+		notifyChange();
+	}
+
+	/** Direkte Eingabe in die Dezimalgrad-Felder: leeres Feld ⇒ keine Position. */
+	function onDecimalChange(event: Event) {
+		latitude = ddLatitude ?? undefined;
+		longitude = ddLongitude ?? undefined;
+		onchange?.(event);
 	}
 </script>
 
 <div class="w-full">
 	<div class="border-base-300 mb-4 overflow-hidden rounded-lg border">
-		<OLMap bind:latitude bind:longitude readonly={false} enableGPS={true} onchange={onMapChange} />
+		<OLMap
+			bind:latitude={mapLatitude}
+			bind:longitude={mapLongitude}
+			readonly={false}
+			enableGPS={true}
+			onchange={onMapChange}
+		/>
 	</div>
 
 	<div class="mb-4 flex items-center justify-between">
@@ -225,9 +299,8 @@
 					max="90"
 					step="0.0001"
 					placeholder="Dezimalgrad"
-					bind:value={latitude}
-					{onchange}
-					bind:this={latitudeInput}
+					bind:value={ddLatitude}
+					onchange={onDecimalChange}
 				/>
 			</div>
 			<div>
@@ -240,9 +313,8 @@
 					max="180"
 					step="0.0001"
 					placeholder="Dezimalgrad"
-					bind:value={longitude}
-					{onchange}
-					bind:this={longitudeInput}
+					bind:value={ddLongitude}
+					onchange={onDecimalChange}
 				/>
 			</div>
 		</div>

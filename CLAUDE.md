@@ -30,9 +30,9 @@ Beim Erstellen oder Ändern von `.ts`/`.svelte`-Dateien mit Business-Logik MUSS 
 
 Die Legacy-Endpunkte (`/rest_sichtungen`, `/sichtungen/showreports.json`) bedienen produktive Mobile Apps und MÜSSEN exakt kompatibel bleiben. Details laden automatisch beim Bearbeiten der betroffenen Routen (`.claude/rules/legacy-api.md`); verbindliche Referenz ist `docs/LEGACY_API_SPECIFICATION.md`.
 
-### Design Guide
+### Design System — PFLICHT bei UI-Änderungen
 
-UX- und Design-Richtlinien: `docs/DESIGN_GUIDE.md`
+Theme-Tokens statt hardcodierter Farben, `*-content` ausschließlich auf Vollton-Flächen (auf Tints wie `bg-warning/10` gehört `text-base-content` — sonst weiß auf hell), WCAG 2.1 AA. Regeln laden automatisch bei UI-Dateien: `.claude/rules/design-system.md` (Feld-Pipeline, Button-Hierarchie, A11y-Minima) und `.claude/rules/daisyui.md` (Theme, DaisyUI-Overrides). Hintergrund und verifizierter Ist-Zustand: `docs/DESIGN_GUIDE.md`
 
 ---
 
@@ -113,7 +113,7 @@ Automatisiert über **release-please**: Commits auf `main` werden analysiert, ei
 | Dokument                           | Inhalt                                   |
 | ---------------------------------- | ---------------------------------------- |
 | `.claude/README.md`                | Aufbau der Claude-Konfiguration          |
-| `docs/DESIGN_GUIDE.md`             | UX/Design-Richtlinien                    |
+| `docs/DESIGN_GUIDE.md`             | Design-Prinzipien, Ist-Zustand, Grenzen  |
 | `docs/CONFIGURATION_USAGE.md`      | ConfigService (Laufzeit-Konfiguration)   |
 | `docs/LEGACY_API_SPECIFICATION.md` | Legacy API (KRITISCH)                    |
 | `docs/PRODUCTION_DEPLOYMENT.md`    | Production Deployment (Schnellanleitung) |

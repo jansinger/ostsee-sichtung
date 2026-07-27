@@ -37,6 +37,53 @@ describe('createForm — initial state', () => {
 	});
 });
 
+describe('createForm — touched state', () => {
+	it('touched store starts as empty object', () => {
+		const { touched } = createForm({ initialValues: defaultValues, onSubmit: vi.fn() });
+		expect(get(touched)).toEqual({});
+	});
+
+	it('markiert ein Feld als touched bei updateField', () => {
+		const { touched, updateField } = createForm({
+			initialValues: { name: 'Max', count: 1 },
+			onSubmit: vi.fn()
+		});
+		updateField('name', 'Moritz');
+		expect(get(touched)).toEqual({ name: true });
+	});
+
+	it('markiert ein Feld als touched bei handleChange', () => {
+		const { touched, handleChange } = createForm({
+			initialValues: { name: '' },
+			onSubmit: vi.fn()
+		});
+		handleChange({
+			target: { name: 'name', id: '', value: 'Elke', type: 'text', tagName: 'INPUT' }
+		} as unknown as Event);
+		expect(get(touched).name).toBe(true);
+	});
+
+	it('markiert nur berührte Felder, unberührte bleiben ungesetzt', () => {
+		const { touched, updateField } = createForm({
+			initialValues: { name: 'Max', count: 1 },
+			onSubmit: vi.fn()
+		});
+		updateField('name', 'Moritz');
+		expect(get(touched).count).toBeUndefined();
+	});
+
+	it('setzt touched bei updateInitialValues zurück', () => {
+		const { touched, updateField, updateInitialValues } = createForm({
+			initialValues: { name: 'Max', count: 1 },
+			onSubmit: vi.fn()
+		});
+		updateField('name', 'Moritz');
+		expect(get(touched).name).toBe(true);
+		updateInitialValues({ name: 'Neu', count: 2 });
+		expect(get(touched)).toEqual({});
+	});
+});
+
 describe('createForm — updateField', () => {
 	it('updates the specified field without affecting other fields', () => {
 		const { form, updateField } = createForm({
