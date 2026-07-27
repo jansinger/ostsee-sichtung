@@ -340,7 +340,8 @@ export const sightingSchemaBase = yup.object().shape({
 		)
 		.label('Welche Tierart haben Sie gesehen?')
 		.meta({
-			helpText: 'Bei Unsicherheit wählen Sie "Unbekannte Wal- oder Robbenart"',
+			helpText:
+				'Bei Unsicherheit wählen Sie "Unbekannte Walart" bzw. "Unbekannte Robbenart" statt zu raten',
 			valueText: 'Artbestimmung hilft beim Populationsmonitoring',
 			type: 'select',
 			options: getSpeciesOptions(true),
