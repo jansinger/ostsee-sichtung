@@ -60,3 +60,15 @@ describe('hasCoordinates', () => {
 		expect(hasCoordinates(0, 0)).toBe(true);
 	});
 });
+
+describe('Koordinaten-Emission an das Formular (Regression)', () => {
+	it('leeres Koordinatenfeld darf keinen leeren String im Formular hinterlassen', () => {
+		// Regression: emitField schrieb '' statt undefined. Da createForm.handleChange
+		// target.value unverändert speichert, landete '' im State — yup castet das zu
+		// NaN und meldet "Breitengrad must be a `number` type", obwohl die Koordinate
+		// ohne GPS-Position optional ist.
+		expect(toCoordinate('')).toBeUndefined();
+		expect(toCoordinate(undefined)).toBeUndefined();
+		expect(hasCoordinates('', '')).toBe(false);
+	});
+});

@@ -55,7 +55,14 @@ describe('sightingSchema — entfernte Defaults', () => {
 	});
 
 	it('behält einen Default für sightingDate (heute)', () => {
-		expect(defaults.sightingDate).toBe(new Date().toISOString().split('T')[0]);
+		// Der Schema-Default wird beim Modul-Load berechnet, der Vergleichswert erst
+		// zur Testlaufzeit. Läuft der Test über Mitternacht, liegen beide einen Tag
+		// auseinander — deshalb gilt "heute oder gestern" als korrekt.
+		const heute = new Date();
+		const gestern = new Date(heute.getTime() - 24 * 60 * 60 * 1000);
+		const alsDatum = (d: Date) => d.toISOString().split('T')[0];
+
+		expect([alsDatum(heute), alsDatum(gestern)]).toContain(defaults.sightingDate);
 	});
 });
 

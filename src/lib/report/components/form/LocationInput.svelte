@@ -86,9 +86,17 @@
 		emitField('longitude', longitude);
 	}
 
+	/**
+	 * `createForm.handleChange` übernimmt `target.value` unverändert in den
+	 * Formular-State. Ein leerer String würde dort als Koordinate liegen bleiben
+	 * und beim Validieren zu `NaN` casten ("Breitengrad must be a number type"),
+	 * obwohl die Koordinate ohne GPS-Position optional ist. Deshalb wird eine
+	 * fehlende Koordinate als `undefined` und eine vorhandene als `number`
+	 * gemeldet — nie als String.
+	 */
 	function emitField(name: 'latitude' | 'longitude', value: number | undefined) {
 		onchange?.({
-			target: { id: name, name, value: value === undefined ? '' : String(value) }
+			target: { id: name, name, value }
 		} as unknown as Event);
 	}
 
@@ -123,11 +131,18 @@
 		notifyChange();
 	}
 
-	/** Direkte Eingabe in die Dezimalgrad-Felder: leeres Feld ⇒ keine Position. */
-	function onDecimalChange(event: Event) {
+	/**
+	 * Direkte Eingabe in die Dezimalgrad-Felder: leeres Feld ⇒ keine Position.
+	 *
+	 * Meldet bewusst über `notifyChange()` statt das DOM-Event weiterzureichen:
+	 * Das Original-Event trägt nur das gerade bearbeitete Feld und dessen
+	 * String-Wert (leer beim Löschen) — die andere Koordinate bliebe im Formular
+	 * stehen. `notifyChange()` meldet beide normalisiert aus dem Komponenten-State.
+	 */
+	function onDecimalChange() {
 		latitude = ddLatitude ?? undefined;
 		longitude = ddLongitude ?? undefined;
-		onchange?.(event);
+		notifyChange();
 	}
 </script>
 
