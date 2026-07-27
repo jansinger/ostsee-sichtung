@@ -159,9 +159,12 @@ async function readFocusIndicator(field: Locator) {
 	return field.evaluate((el) => {
 		// `--color-primary` über ein Probe-Element auflösen, damit Soll- und
 		// Ist-Farbe durch dieselbe Browser-Serialisierung laufen (oklch(...)).
+		// Das Element hängt an `document.body` (die Variable kommt vom Theme-Root)
+		// und ist layout-neutral — es darf das Formular-DOM nicht beeinflussen.
 		const probe = document.createElement('span');
-		probe.style.color = 'var(--color-primary)';
-		(el.parentElement ?? document.body).appendChild(probe);
+		probe.style.cssText =
+			'position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;color:var(--color-primary)';
+		document.body.appendChild(probe);
 		const primary = getComputedStyle(probe).color;
 		probe.remove();
 

@@ -122,7 +122,7 @@ Ein `alert-soft` zusätzlich zu setzen ist überflüssig; die Klassen `alert-inf
 > gewinnt deshalb die Kaskade — unabhängig davon, dass die globale
 > `:focus-visible`-Regel weiter unten in der Datei steht (die ist mit `(0,1,0)`
 > weniger spezifisch als `.input:focus` mit `(0,2,0)`). Abgesichert ist das durch
-> `e2e/form-a11y.spec.ts` → „Accessibility — Fokus-Indikator"; ein reiner Test über
+> `e2e/form-a11y.spec.ts` → „Accessibility — Fokus-Indikator“; ein reiner Test über
 > die CSS-Quelle würde eine Regression hier nicht bemerken.
 >
 > **Fallstrick beim Nachmessen:** `:focus` greift nur, wenn das Browserfenster den
