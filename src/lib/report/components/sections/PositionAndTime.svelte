@@ -1,23 +1,40 @@
 <script lang="ts">
 	import { getFormContext } from '$lib/report/formContext';
 	import { getUploadConfig } from '$lib/stores/configStore';
+	import { get } from 'svelte/store';
 	import type { ValidationPreset } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import DropzoneEnhanced from '$lib/report/components/form/fields/DropzoneEnhanced.svelte';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import LocationInput from '$lib/report/components/form/LocationInput.svelte';
 	import VerifyLocation from '$lib/report/components/form/VerifyLocation.svelte';
+	import { hasCoordinates, toCoordinate } from '$lib/report/components/form/coordinateValue';
+	import { derivePositionMethod } from './positionMethod';
 
 	const { form, handleChange } = getFormContext();
 
 	// Position input method: 'photo', 'map', 'manual'
-	let positionMethod = $state<'photo' | 'map' | 'manual'>('photo');
+	//
+	// U10: Die initiale Methode wird EINMALIG beim Mount aus dem bereits
+	// vorhandenen Formularzustand abgeleitet (z.B. nach Wiederherstellung aus
+	// der Session) — siehe `derivePositionMethod` in `./positionMethod.ts`.
+	// Der Aufruf von `get(form)` hier im $state-Initializer läuft nur einmal
+	// bei der Komponenten-Erstellung, NICHT reaktiv — eine spätere manuelle
+	// Auswahl des Nutzers (siehe `selectMethod`) wird dadurch nie überschrieben.
+	let positionMethod = $state<'photo' | 'map' | 'manual'>(derivePositionMethod(get(form)));
 
 	// Generiere eine einfache referenceId für Upload (temporäre Lösung)
 	const referenceId = $derived($form.referenceId);
 
-	const longitude = $derived($form.longitude);
-	const latitude = $derived($form.latitude);
+	// Echte Koordinaten aus dem Formular — bleiben undefined, solange keine Position
+	// gewählt wurde. Die Karte startet über einen separaten Anzeige-Mittelpunkt
+	// (defaultCenter) über der Ostsee, ohne die Eingabefelder zu füllen.
+	const longitude = $derived(toCoordinate($form.longitude));
+	const latitude = $derived(toCoordinate($form.latitude));
+
+	// Fahrwasser ist laut Schema Pflicht, solange keine GPS-Position vorliegt
+	// (`waterway.when('hasPosition', { is: (v) => v !== true, ... })`).
+	const waterwayRequired = $derived($form.hasPosition !== true);
 
 	// Dynamic GPS photo configuration
 	let gpsPhotoConfig = $state<ValidationPreset | null>(null);
@@ -36,15 +53,31 @@
 		});
 	});
 
+	/** Setzt ein Formularfeld über den synthetischen handleChange-Event-Pfad. */
+	function setField(name: string, value: unknown) {
+		handleChange({ target: { name, value } } as unknown as Event);
+	}
+
 	function selectMethod(method: 'photo' | 'map' | 'manual') {
 		positionMethod = method;
 
-		// Reset position data when switching methods
-		if (method !== 'photo') {
-			handleChange({
-				target: { name: 'hasPosition', value: method !== 'manual' }
-			} as unknown as Event);
+		// Beim Wechsel zur Beschreibung: echte Koordinaten und hasPosition zurücksetzen,
+		// damit keine Phantom-Position (leere/alte GPS-Daten) bestehen bleibt.
+		if (method === 'manual') {
+			setField('latitude', undefined);
+			setField('longitude', undefined);
+			setField('hasPosition', false);
 		}
+	}
+
+	/**
+	 * Koordinaten-Änderung aus der Karte / den GPS-Eingabefeldern.
+	 * hasPosition ist genau dann true, wenn echte Breiten- UND Längengrade gesetzt sind.
+	 */
+	function handleLocationChange(event: Event) {
+		handleChange(event);
+		const values = get(form);
+		setField('hasPosition', hasCoordinates(values.latitude, values.longitude));
 	}
 </script>
 
@@ -186,13 +219,35 @@
 					<Icon aria-hidden="true" icon="lucide:map-pin" width="18" />
 					Position auf Karte wählen
 				</h4>
-				<LocationInput {latitude} {longitude} onchange={handleChange} />
+				<LocationInput {latitude} {longitude} onchange={handleLocationChange} />
 			{/if}
 
 			{#if positionMethod !== 'manual'}
-				{#if $form.latitude && $form.longitude}
+				{#if latitude !== undefined && longitude !== undefined}
 					<VerifyLocation {longitude} {latitude} />
 				{/if}
+
+				<!--
+					Fallback-Bereich: Das Fahrwasser ist ohne GPS-Position Pflicht und muss
+					deshalb in JEDER Methode erreichbar sein — sonst landet der Nutzer beim
+					Klick auf "Weiter" in einer Sackgasse (Fehler ohne zugehöriges Feld).
+				-->
+				<div class="divider text-base-content/60 mt-6 mb-3 text-xs">oder</div>
+
+				<div class="border-base-300 bg-base-200/40 rounded-lg border p-3 sm:p-4">
+					<h5 class="mb-1 flex items-center gap-2 text-sm font-semibold">
+						<Icon aria-hidden="true" icon="lucide:waves" width="16" class="text-primary" />
+						Kein GPS? Beschreiben Sie das Seegebiet
+					</h5>
+					<p class="text-base-content/70 mb-3 text-xs">
+						Viele Fotos enthalten keine GPS-Daten, und nicht jede Position lässt sich auf der Karte
+						wiederfinden — das ist kein Problem. Eine kurze Beschreibung des Fahrwassers genügt uns,
+						auch ungefähre Angaben sind wertvoll.
+					</p>
+
+					<FormField name="waterway" required={waterwayRequired} />
+					<FormField name="seaMark" />
+				</div>
 			{/if}
 
 			<!-- Manual Input Section -->
@@ -202,7 +257,7 @@
 					Beschreibung der Position
 				</h4>
 
-				<FormField name="waterway" />
+				<FormField name="waterway" required={waterwayRequired} />
 				<FormField name="seaMark" />
 			{/if}
 		</div>

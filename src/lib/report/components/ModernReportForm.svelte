@@ -8,6 +8,7 @@
 	import { submitSightingForm } from '$lib/form/submitSightingForm';
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
+	import { findStepForErrors } from '$lib/report/findStepForErrors';
 	import { initialFormState } from '$lib/report/formConfig';
 	import { toast } from '$lib/stores/toastState.svelte';
 	import {
@@ -25,6 +26,7 @@
 	import { combineToDate } from '$lib/utils/format/dateTime';
 	import { createId } from '@paralleldrive/cuid2';
 	import { formStepsConfig } from '$lib/report/formConfig';
+	import { ValidationError } from 'yup';
 	import Form from './form/Form.svelte';
 	import FormSteps from './form/FormSteps.svelte';
 	import FormHelp from './FormHelp.svelte';
@@ -137,26 +139,57 @@
 	async function handleFinalSubmit(e: Event): Promise<void> {
 		logger.info('Final submission:');
 
-		// Pre-submit: validate and log any failing fields so bugs are visible in the console
+		// Pre-submit: validate against the FULL Schema. A step's own
+		// validation only covers ITS OWN fields — a field can become invalid
+		// after its step was already left (e.g. a value depends on another
+		// step). Submitting despite that must never look like "nothing
+		// happened", so on failure we:
+		// 1. write the resulting errors into the errors store (so the
+		//    affected fields render as invalid wherever they are shown),
+		// 2. jump to the earliest affected step,
+		// 3. abort BEFORE calling formContext.handleSubmit — and rethrow so
+		//    StepNavigation's existing submit-catch (toast + showValidationError)
+		//    takes over, exactly like it already does for real submit errors.
 		const formValues = await new Promise<unknown>((resolve) => {
 			const unsub = formContext.form.subscribe((v) => resolve(v));
 			unsub();
 		});
-		await sightingSchema
-			.validate(formValues, { abortEarly: false })
-			.then(() => logger.info('Pre-submit validation: all fields OK'))
-			.catch((yupError) => {
-				const errors: { field: string; error: string }[] = yupError.inner?.map(
-					(e: { path: string; message: string }) => ({
-						field: e.path,
-						error: e.message
-					})
-				) ?? [{ field: 'unknown', error: yupError.message }];
-				logger.error(
-					{ validationErrors: errors },
-					'Pre-submit validation FAILED — submission blocked'
-				);
+
+		try {
+			await sightingSchema.validate(formValues, { abortEarly: false });
+			logger.info('Pre-submit validation: all fields OK');
+		} catch (yupError) {
+			if (!(yupError instanceof ValidationError)) {
+				throw yupError;
+			}
+
+			const validationErrors: Record<string, string> = {};
+			for (const innerError of yupError.inner) {
+				if (innerError.path && innerError.message) {
+					validationErrors[innerError.path] = innerError.message;
+				}
+			}
+
+			logger.error({ validationErrors }, 'Pre-submit validation FAILED — submission blocked');
+
+			// Mark all currently invalid fields, wherever their step is
+			formContext.errors.set(validationErrors);
+
+			// Jump to the earliest step that actually contains an error —
+			// no-op if the errors are already visible on the current step
+			const targetStep = findStepForErrors(
+				Object.keys(validationErrors),
+				formStepsConfig,
+				currentStep
+			);
+			if (targetStep !== null) {
+				currentStep = targetStep;
+			}
+
+			throw new Error('Formularvalidierung fehlgeschlagen. Bitte prüfen Sie Ihre Eingaben.', {
+				cause: yupError
 			});
+		}
 
 		return formContext.handleSubmit(e);
 	}

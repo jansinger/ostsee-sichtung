@@ -66,26 +66,27 @@ paths:
 Rules **ohne** `paths` werden immer geladen: `architecture.md`, `testing.md`.
 Beide sind bewusst kurz — neue Inhalte gehören in eine der path-scoped Rules.
 
-| Rule                  | Lädt bei Dateien in …                                                             |
-| --------------------- | --------------------------------------------------------------------------------- |
-| `admin.md`            | `src/routes/admin/`, `src/lib/components/admin/`                                  |
-| `api.md`              | `src/routes/api/`, `rest_sichtungen/`, `sichtungen/`, `health/`                   |
-| `browser-storage.md`  | `src/lib/storage/`                                                                |
-| `daisyui.md`          | `**/*.svelte`, `src/app.css`, `src/css/`, `tailwind.config.js`                    |
-| `database.md`         | `src/lib/server/db/`, `drizzle.config.ts`, `src/lib/server/geo/`, `routes/api/`   |
-| `docker.md`           | `Dockerfile`, `docker-compose*.yml`, `.env.docker`, `run-release.sh`              |
-| `email.md`            | `emailService.ts`, `src/lib/server/templates/`, `api/admin/test-email/`           |
-| `export.md`           | `src/lib/server/export/`, `api/sightings/export/`, `ExportModal.svelte`           |
-| `forms.md`            | `src/lib/form/`, `src/lib/report/`, `components/form/`, `routes/+page.svelte`     |
-| `geo.md`              | `src/lib/server/geo/`, `src/lib/utils/geo/`, `api/geo/`                           |
-| `legacy-api.md`       | `routes/rest_sichtungen/`, `routes/sichtungen/`, `src/lib/legacy-api/`            |
-| `maps.md`             | `src/lib/map/`, `components/map/`, `routes/map/`, `api/map/`                      |
-| `middleware.md`       | `src/lib/server/middleware/`, `src/hooks.server.ts`                               |
-| `security.md`         | `src/lib/server/auth/`, `src/lib/server/storage/`, `hooks.server.ts`, `api/auth/` |
-| `svelte-patterns.md`  | `**/*.svelte`, `**/*.svelte.ts`                                                   |
-| `testing-patterns.md` | `**/*.test.ts`, `**/*.svelte.test.ts`, `e2e/`, `vitest*`, `playwright.config.ts`  |
-| `upload.md`           | `src/lib/server/storage/`, `src/lib/server/media/`, `uploads.ts`, `api/files/`    |
-| `weather.md`          | `components/weather/`, `services/weather*.ts`, `utils/weather/`, `api/weather/`   |
+| Rule                  | Lädt bei Dateien in …                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------- |
+| `admin.md`            | `src/routes/admin/`, `src/lib/components/admin/`                                      |
+| `api.md`              | `src/routes/api/`, `rest_sichtungen/`, `sichtungen/`, `health/`                       |
+| `browser-storage.md`  | `src/lib/storage/`                                                                    |
+| `daisyui.md`          | `**/*.svelte`, `src/app.css`, `src/css/`                                              |
+| `design-system.md`    | `src/app.css`, `src/lib/components/`, `src/lib/report/components/`, `routes/*.svelte` |
+| `database.md`         | `src/lib/server/db/`, `drizzle.config.ts`, `src/lib/server/geo/`, `routes/api/`       |
+| `docker.md`           | `Dockerfile`, `docker-compose*.yml`, `.env.docker`, `run-release.sh`                  |
+| `email.md`            | `emailService.ts`, `src/lib/server/templates/`, `api/admin/test-email/`               |
+| `export.md`           | `src/lib/server/export/`, `api/sightings/export/`, `ExportModal.svelte`               |
+| `forms.md`            | `src/lib/form/`, `src/lib/report/`, `components/form/`, `routes/+page.svelte`         |
+| `geo.md`              | `src/lib/server/geo/`, `src/lib/utils/geo/`, `api/geo/`                               |
+| `legacy-api.md`       | `routes/rest_sichtungen/`, `routes/sichtungen/`, `src/lib/legacy-api/`                |
+| `maps.md`             | `src/lib/map/`, `components/map/`, `routes/map/`, `api/map/`                          |
+| `middleware.md`       | `src/lib/server/middleware/`, `src/hooks.server.ts`                                   |
+| `security.md`         | `src/lib/server/auth/`, `src/lib/server/storage/`, `hooks.server.ts`, `api/auth/`     |
+| `svelte-patterns.md`  | `**/*.svelte`, `**/*.svelte.ts`                                                       |
+| `testing-patterns.md` | `**/*.test.ts`, `**/*.svelte.test.ts`, `e2e/`, `vitest*`, `playwright.config.ts`      |
+| `upload.md`           | `src/lib/server/storage/`, `src/lib/server/media/`, `uploads.ts`, `api/files/`        |
+| `weather.md`          | `components/weather/`, `services/weather*.ts`, `utils/weather/`, `api/weather/`       |
 
 Die Tabelle ist Doku für Menschen — die Wahrheit steht im Frontmatter der Datei.
 
@@ -129,10 +130,11 @@ Subagents in `agents/` werden über ihre `description` automatisch delegiert.
 Projekt-Server stehen in [`../.mcp.json`](../.mcp.json) und werden **mitcommittet**,
 damit das Team und neue Worktrees sie automatisch erben.
 
-| Server        | Zweck                     | Credentials        |
-| ------------- | ------------------------- | ------------------ |
-| `drizzle-orm` | Drizzle ORM Docs (GitMCP) | keine              |
-| `github`      | PR-/Issue-Management      | `GITHUB_MCP_TOKEN` |
+| Server        | Zweck                                     | Credentials        |
+| ------------- | ----------------------------------------- | ------------------ |
+| `pg-aiguide`  | PostgreSQL-/PostGIS-Doku + Spatial-Skills | keine              |
+| `drizzle-orm` | Drizzle ORM Docs (GitMCP)                 | keine              |
+| `github`      | PR-/Issue-Management                      | `GITHUB_MCP_TOKEN` |
 
 **Secrets gehören nicht in `.mcp.json`.** Der GitHub-Server liest sein Token aus der
 Umgebungsvariablen `GITHUB_MCP_TOKEN`; wer sie nicht gesetzt hat, verliert nur diesen
@@ -156,23 +158,22 @@ aus `docs/*.md` und `llms.txt` im Repo. Die Abdeckung ist allerdings schmal
 (Custom Types, Joins, Table-Introspect); die Haupt-Doku liegt auf orm.drizzle.team.
 Für breitere Fragen bleibt Context7 die bessere Quelle.
 
-### Kandidat: PostgreSQL / PostGIS
+### PostgreSQL / PostGIS
 
-Aktuell ist **kein** Postgres-MCP konfiguriert, obwohl PostGIS Kerntechnologie ist.
-Geprüfte Option: [`pg-aiguide`](https://github.com/timescale/pg-aiguide) von TigerData —
-semantische Suche über PostgreSQL- **und PostGIS**-Doku, bringt eine
-`design-postgis-tables`-Skill mit (SRID, GiST-Indizes, `ST_DWithin`,
-GEOMETRY-vs-GEOGRAPHY). Verbindet sich **nie** mit einer Datenbank, braucht keine
-Credentials:
+`pg-aiguide` von TigerData deckt PostgreSQL- **und PostGIS**-Doku per semantischer
+Suche ab und bringt eine `design-postgis-tables`-Skill mit (SRID, GiST-Indizes,
+`ST_DWithin`, GEOMETRY-vs-GEOGRAPHY) — relevant, weil PostGIS hier Kerntechnologie ist.
 
-```bash
-claude mcp add --transport http --scope project pg-aiguide https://mcp.tigerdata.com/docs
-```
+Er verbindet sich **nie** mit einer Datenbank und braucht keine Credentials. Genau
+deshalb steht er in der committeten `.mcp.json` und nicht user-scoped.
 
-Für Query-Tuning gegen die lokale DB gäbe es zusätzlich `crystaldba/postgres-mcp`
-(EXPLAIN, hypothetische Indizes) — der braucht aber volle DB-Credentials und müsste
-für PostGIS-Queries im `unrestricted`-Modus laufen (Schreibrechte). Nur mit
-`--scope local` und ausschließlich gegen die Dev-DB sinnvoll.
+**Nicht konfiguriert:** Für Query-Tuning gegen die lokale DB gäbe es zusätzlich
+[`crystaldba/postgres-mcp`](https://github.com/crystaldba/postgres-mcp) (EXPLAIN,
+hypothetische Indizes). Der braucht aber volle DB-Credentials und müsste für
+PostGIS-Queries im `unrestricted`-Modus laufen, also mit Schreib- und DDL-Rechten —
+seine Query-Allowlist enthält keine einzige `ST_*`-Funktion. Bei den GDPR-relevanten
+Melderdaten nur mit `claude mcp add --scope local` und ausschließlich gegen die
+Dev-DB vertretbar.
 
 ---
 

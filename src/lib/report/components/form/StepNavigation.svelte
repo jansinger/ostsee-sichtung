@@ -3,8 +3,17 @@
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
 	import { toast } from '$lib/stores/toastState.svelte';
-	import { getErrorCount, scrollToElement, scrollToFirstError } from '$lib/utils/fieldNavigation';
+	import {
+		getErrorCount,
+		scrollToFirstError,
+		scrollToStepHeader
+	} from '$lib/utils/fieldNavigation';
 	import { formStepsConfig } from '$lib/report/formConfig';
+	import {
+		getStepAlertMessages,
+		shouldShowStepAlert,
+		type StepAttemptMarker
+	} from './stepNavigationState';
 
 	const logger = createLogger('report:StepNavigation');
 
@@ -29,23 +38,49 @@
 
 	const canGoNext = $derived(stepValidation.isValid);
 
-	// Step error messages for inline display (only when step is invalid)
-	const stepErrorMessages = $derived(
-		canGoNext ? [] : (Object.values(stepValidation.errors).filter(Boolean) as string[])
-	);
+	// Tracks whether the user already attempted "Weiter"/"Absenden" on the
+	// CURRENT step. Errors must never appear just from entering a step —
+	// only after a failed navigation attempt (see stepNavigationState.ts).
+	let attemptedStep = $state<StepAttemptMarker>(null);
+
+	// Reset the attempt marker whenever currentStep changes — this covers
+	// both our own next/previousStep() calls AND external changes via the
+	// stepper in FormSteps.svelte (currentStep is a shared $bindable prop),
+	// so a freshly (re-)entered step never shows a stale alert.
+	$effect(() => {
+		if (attemptedStep !== null && attemptedStep !== currentStep) {
+			attemptedStep = null;
+		}
+	});
+
+	// Whether the inline alert above the navigation should be visible
+	const showStepAlert = $derived(shouldShowStepAlert(attemptedStep, currentStep, canGoNext));
+
+	// All error messages of the current step, for inline display
+	const stepErrorMessages = $derived(getStepAlertMessages(stepValidation.errors));
 
 	const isLastStep = $derived(currentStep >= totalSteps - 1);
 	const isFirstStep = $derived(currentStep <= 0);
 
-	/** Scroll to form and focus the step header for screen reader announcement */
+	/**
+	 * Scrollt zum Kopf des neuen Schritts (Icon/Überschrift/Badge) und fokussiert
+	 * die Überschrift für die Screenreader-Ansage.
+	 *
+	 * U9: `#form-content` bleibt über den Schrittwechsel hinweg dasselbe Element,
+	 * enthält aber auch den bisherigen Schritt-Inhalt — Scrollen direkt dorthin
+	 * kann den Kopf des NEUEN Schritts (Badge/Überschrift) außerhalb des sichtbaren
+	 * Bereichs lassen. `scrollToStepHeader` findet daher gezielt den Kopfbereich
+	 * (Elternelement der `h2`, das laut Step-Konvention Icon+Badge umschließt).
+	 *
+	 * Suche UND Scroll werden verzögert, bis Svelte den neuen Schritt gerendert
+	 * hat — sonst würden wir noch den Kopf des VORHERIGEN Schritts finden.
+	 */
 	function scrollAndFocusStep(): void {
-		scrollToElement(document.getElementById('form-content'));
-		// Defer focus to after Svelte re-renders the new step content
 		requestAnimationFrame(() => {
-			const stepHeader = document.querySelector('#form-content h2');
-			if (stepHeader instanceof HTMLElement) {
-				stepHeader.setAttribute('tabindex', '-1');
-				stepHeader.focus({ preventScroll: true });
+			const stepHeading = scrollToStepHeader('form-content');
+			if (stepHeading) {
+				stepHeading.setAttribute('tabindex', '-1');
+				stepHeading.focus({ preventScroll: true });
 			}
 		});
 	}
@@ -55,6 +90,7 @@
 		try {
 			if (!canGoNext) {
 				logger.warn({ currentStep }, 'Validation failed for current step');
+				attemptedStep = currentStep;
 				await showValidationError();
 				return;
 			}
@@ -141,10 +177,18 @@
 	}
 </script>
 
-<!-- Inline validation error above navigation -->
-{#if stepErrorMessages.length > 0}
+<!-- Inline validation error above navigation — only after a failed "Weiter"-attempt -->
+{#if showStepAlert && stepErrorMessages.length > 0}
 	<div class="alert alert-warning mb-2" role="alert">
-		<span>{stepErrorMessages[0]}</span>
+		{#if stepErrorMessages.length === 1}
+			<span>{stepErrorMessages[0]?.message}</span>
+		{:else}
+			<ul class="list-inside list-disc">
+				{#each stepErrorMessages as { field, message } (field)}
+					<li>{message}</li>
+				{/each}
+			</ul>
+		{/if}
 	</div>
 {/if}
 
@@ -157,7 +201,7 @@
 		type="button"
 		onclick={previousStep}
 		disabled={isFirstStep || $isSubmitting}
-		class="btn btn-secondary"
+		class="btn btn-outline"
 		aria-label="Vorheriger Schritt"
 	>
 		← Zurück
@@ -166,7 +210,7 @@
 	<button
 		type="button"
 		onclick={nextStep}
-		disabled={!canGoNext || $isSubmitting}
+		disabled={$isSubmitting}
 		class="btn btn-primary"
 		aria-label={isLastStep ? 'Formular absenden' : 'Nächster Schritt'}
 	>

@@ -17,7 +17,7 @@ vi.mock('$lib/report/formConfig', () => ({
 		{
 			id: 'location-time',
 			title: 'Position & Zeit',
-			fields: ['hasPosition', 'latitude', 'longitude', 'sightingDate']
+			fields: ['hasPosition', 'latitude', 'longitude', 'waterway', 'sightingDate']
 		},
 		{
 			id: 'sighting-details',

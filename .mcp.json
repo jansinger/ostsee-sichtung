@@ -1,5 +1,9 @@
 {
 	"mcpServers": {
+		"pg-aiguide": {
+			"type": "http",
+			"url": "https://mcp.tigerdata.com/docs"
+		},
 		"drizzle-orm": {
 			"type": "http",
 			"url": "https://gitmcp.io/drizzle-team/drizzle-orm"

@@ -130,6 +130,118 @@ describe('FieldRenderer', () => {
 		});
 	});
 
+	describe('Pflichtfeld-Override (konditionale Schema-Regeln)', () => {
+		// waterway ist im Schema `optional`, wird aber über `when('hasPosition')`
+		// zur Pflicht, sobald keine GPS-Position vorliegt.
+		const waterwayFieldConfig = makeFieldConfig({
+			label: 'Fahrwasser/Seegebiet',
+			optional: true,
+			meta: { type: 'text', placeholder: 'z.B. Kieler Bucht' }
+		});
+
+		it('zeigt Stern für ein schema-optionales Feld mit required={true}', async () => {
+			render(FieldRenderer, {
+				fieldConfig: waterwayFieldConfig,
+				name: 'waterway',
+				value: '',
+				required: true
+			});
+
+			await expect.element(page.getByLabelText('Pflichtfeld')).toBeVisible();
+		});
+
+		it('setzt aria-required=true bei required={true} trotz optionalem Schema', async () => {
+			render(FieldRenderer, {
+				fieldConfig: waterwayFieldConfig,
+				name: 'waterway',
+				value: '',
+				required: true
+			});
+
+			await expect
+				.element(page.getByTestId('field-waterway'))
+				.toHaveAttribute('aria-required', 'true');
+		});
+
+		it('entfernt Stern und aria-required bei required={false}', async () => {
+			render(FieldRenderer, {
+				fieldConfig: waterwayFieldConfig,
+				name: 'waterway',
+				value: '',
+				required: false
+			});
+
+			await expect.element(page.getByLabelText('Pflichtfeld')).not.toBeInTheDocument();
+			await expect
+				.element(page.getByTestId('field-waterway'))
+				.not.toHaveAttribute('aria-required', 'true');
+		});
+
+		it('unterdrückt die Schema-Pflicht, wenn required={false} übergeben wird', async () => {
+			render(FieldRenderer, {
+				fieldConfig: emailFieldConfig,
+				name: 'email',
+				value: '',
+				required: false
+			});
+
+			await expect.element(page.getByLabelText('Pflichtfeld')).not.toBeInTheDocument();
+			await expect
+				.element(page.getByTestId('field-email'))
+				.not.toHaveAttribute('aria-required', 'true');
+		});
+
+		it('nutzt ohne Override weiterhin die Schema-Ableitung', async () => {
+			render(FieldRenderer, {
+				fieldConfig: waterwayFieldConfig,
+				name: 'waterway',
+				value: ''
+			});
+
+			await expect.element(page.getByLabelText('Pflichtfeld')).not.toBeInTheDocument();
+		});
+	});
+
+	describe('Häkchen nur bei berührten Feldern', () => {
+		it('zeigt KEIN grünes Häkchen für ein Feld mit Wert, das nicht berührt wurde', async () => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: emailFieldConfig,
+				name: 'email',
+				value: 'test@test.de',
+				touched: false
+			});
+
+			// Erfolgs-Icon (lucide:check) darf nicht gerendert sein
+			const check = screen.container.querySelector('.text-success');
+			expect(check).toBeNull();
+		});
+
+		it('zeigt grünes Häkchen für ein berührtes Feld mit Wert und ohne Fehler', async () => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: emailFieldConfig,
+				name: 'email',
+				value: 'test@test.de',
+				touched: true
+			});
+
+			const check = screen.container.querySelector('.text-success');
+			expect(check).not.toBeNull();
+		});
+
+		it('zeigt kein Häkchen für ein berührtes Feld mit Fehler', async () => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: emailFieldConfig,
+				name: 'email',
+				value: 'test@test.de',
+				touched: true,
+				error: 'Fehler'
+			});
+
+			const check = screen.container.querySelector('.text-success');
+			expect(check).toBeNull();
+		});
+	});
+
 	describe('Error-Anzeige', () => {
 		it('zeigt Fehlermeldung mit role="alert"', async () => {
 			render(FieldRenderer, {

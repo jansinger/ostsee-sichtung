@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+	PUBLIC_UPLOAD_ALLOWED_TYPES,
+	PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES
+} from '$lib/constants/uploadDefaults';
 
 vi.mock('$lib/logger', () => ({
 	createLogger: () => ({
@@ -78,14 +82,17 @@ describe('configStore', () => {
 			expect(config.accept).toBe('image/jpeg');
 		});
 
-		it('gibt Fallback zurück wenn fetch fehlschlägt', async () => {
+		it('gibt den restriktiven öffentlichen Fallback zurück wenn fetch fehlschlägt', async () => {
 			vi.mocked(fetch).mockRejectedValueOnce(new Error('Network error'));
 
 			const { getUploadConfig } = await import('./configStore');
 			const config = await getUploadConfig();
 
-			expect(config.allowedTypes).toContain('image/jpeg');
-			expect(config.maxFileSize).toBe(50 * 1024 * 1024);
+			// Der Fallback muss der öffentlichen Server-Konfiguration entsprechen,
+			// sonst nimmt die Dropzone Dateien an, die der Server ablehnt.
+			expect(config.allowedTypes).toEqual([...PUBLIC_UPLOAD_ALLOWED_TYPES]);
+			expect(config.maxFileSize).toBe(PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES);
+			expect(config.allowedTypes.some((type) => type.startsWith('video/'))).toBe(false);
 		});
 
 		it('gibt Fallback zurück bei HTTP-Fehler-Status', async () => {

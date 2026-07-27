@@ -2280,13 +2280,17 @@ components:
 
     SightingFormData:
       type: object
-      description: Formulardaten für neue oder geänderte Sichtung
+      description: >
+        Formulardaten für neue oder geänderte Sichtung.
+
+
+        Ortsangabe: Entweder GPS-Koordinaten (`latitude` + `longitude`, dann
+        `hasPosition: true`) ODER eine Beschreibung des Seegebiets (`waterway`).
+        Fehlen beide, wird die Sichtung mit VALIDATION_ERROR abgelehnt.
       required:
         - sightingDate
         - species
         - totalCount
-        - latitude
-        - longitude
         - email
       properties:
         sightingDate:
@@ -2296,9 +2300,9 @@ components:
           example: "2024-01-01T14:30:00Z"
         species:
           type: integer
-          description: Tierart
-          minimum: 1
-          example: 1
+          description: "Tierart (0 = Schweinswal, siehe /rest_sichtungen/antworten.json)"
+          minimum: 0
+          example: 0
         totalCount:
           type: integer
           description: Gesamtanzahl der Tiere
@@ -2316,17 +2320,24 @@ components:
           enum: [0, 1]
           default: 0
           example: 0
+        hasPosition:
+          type: boolean
+          description: >
+            Gibt an, ob GPS-Koordinaten vorliegen. Bei `true` sind `latitude`
+            und `longitude` Pflicht, bei `false` stattdessen `waterway`.
+          default: false
+          example: true
         latitude:
           type: number
           format: float
-          description: Breitengrad
+          description: "Breitengrad (Pflicht, wenn hasPosition = true)"
           minimum: -90
           maximum: 90
           example: 54.3233
         longitude:
           type: number
           format: float
-          description: Längengrad
+          description: "Längengrad (Pflicht, wenn hasPosition = true)"
           minimum: -180
           maximum: 180
           example: 13.0814
@@ -2344,7 +2355,7 @@ components:
         waterway:
           type: string
           nullable: true
-          description: Gewässer
+          description: "Gewässer/Seegebiet (Pflicht, wenn keine GPS-Position vorliegt)"
           maxLength: 255
           example: "Greifswalder Bodden"
         firstName:
