@@ -1,10 +1,11 @@
 ---
-name: prepare-pr
-description: Bereitet einen Pull Request vor mit Tests, Linting und Commit-Erstellung.
+description: Bereitet einen Pull Request vor — Branch-Prüfung, Tests, Code-Qualität, Conventional Commit, Push und PR-Erstellung. Nur auf ausdrückliche Anfrage des Users verwenden.
+argument-hint: '[optionale Beschreibung der Änderungen]'
 allowed-tools: Bash, Read, Grep
+disable-model-invocation: true
 ---
 
-# /prepare-pr
+# Pull Request vorbereiten
 
 Bereitet einen Pull Request vor.
 
@@ -96,14 +97,34 @@ Enthält:
 
 Führe `/simplify` auf den geänderten Dateien aus, um Code-Qualität, Wiederverwendung und Effizienz zu prüfen. Behebe gefundene Probleme bevor du fortfährst.
 
-### Schritt 5: Git Status prüfen
+### Schritt 5: A11y- und Design-System-Prüfung
+
+Verbindliche Regeln: `.claude/rules/design-system.md`. Geänderte `.svelte`-Dateien auf verdächtige Muster durchsuchen:
+
+```bash
+git diff --name-only main...HEAD \
+  | grep '\.svelte$' \
+  | xargs grep -ln 'text-[a-z]*-content\|placeholder=\|onclick\|~icons/\|animate-in\|slide-in-from' 2>/dev/null
+```
+
+Für jeden Treffer prüfen:
+
+1. **Kontrast:** `*-content`-Text auf `bg-*/10`/`/20`-Tint? Im Theme `meeresmuseum` (`src/app.css`) sind `*-content`-Farben fast durchgängig Weiß — auf hellem Tint unlesbar (Praxisfall: gemessen 1,3:1). Messen im Dev-Server: `getComputedStyle` liefert `oklch(...)`-Strings; per Canvas-2D (`ctx.fillStyle = wert`, dann `ctx.getImageData`) nach sRGB konvertieren und die WCAG-Kontrastformel anwenden. Ziel: Text ≥ 4.5:1, große Schrift/Icons ≥ 3:1.
+2. **Formularfelder:** Pflicht-Sternchen und `aria-required` aus derselben Quelle, Fehler mit `role="alert"` + `aria-describedby`, sichtbares Label statt reinem `placeholder`.
+3. **Interaktive Elemente:** echte `<button>`/`<a>` statt klickbarer `<div>`/`<li>`; unvollständige ARIA-Rollen (z.B. `role="tab"` ohne `tabpanel`) sind ein Fail; Tastaturbedienbarkeit und sichtbarer Fokus; Touch-Target ≥ 44px.
+4. **Dekorative Icons:** ohne eigene Bedeutung → `aria-hidden="true"`.
+5. **Tote Utilities:** `animate-in`/`slide-in-from-*` etc. greifen hier nicht (kein Animations-Plugin installiert) — entfernen oder ersetzen.
+
+**Bei eindeutigem Kontrast-Fail oder fehlendem `aria-required`/`role="alert"`:** beheben, bevor fortgefahren wird. Bei Grenzfällen: unter "Testplan" im PR-Body vermerken statt zu blockieren.
+
+### Schritt 6: Git Status prüfen
 
 ```bash
 git status
 git diff --stat
 ```
 
-### Schritt 6: Änderungen analysieren
+### Schritt 7: Änderungen analysieren
 
 Analysiere welche Dateien geändert wurden:
 
@@ -112,7 +133,7 @@ Analysiere welche Dateien geändert wurden:
 - Refactoring?
 - Dokumentation?
 
-### Schritt 7: Commit erstellen
+### Schritt 8: Commit erstellen
 
 Nutze Conventional Commits Format:
 
@@ -142,7 +163,7 @@ EOF
 **Scopes:**
 `deps`, `api`, `ui`, `db`, `auth`, `export`, `admin`, `report`, `map`, `config`, `build`, `ci`, `docs`, `test`, `types`, `style`, `perf`, `security`, `a11y`, `release`, `media`
 
-### Schritt 8: Push und PR erstellen
+### Schritt 9: Push und PR erstellen
 
 ```bash
 # Push (mit Upstream-Tracking)
@@ -192,6 +213,7 @@ Nächste Schritte:
 - [ ] Nicht auf main Branch
 - [ ] Alle Tests bestanden
 - [ ] Keine Linting-Fehler
+- [ ] A11y-/Design-System-Prüfung durchgeführt (Kontrast, Formularfelder, ARIA) — siehe `.claude/rules/design-system.md`
 - [ ] Commit Message folgt Conventional Commits
 - [ ] PR-Beschreibung aussagekräftig
 - [ ] Dokumentation aktualisiert (falls nötig)

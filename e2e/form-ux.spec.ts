@@ -49,7 +49,7 @@ test.describe('StepNavigation — Error-UX', () => {
 		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).not.toBeVisible();
 	});
 
-	test('Validierungsfehler auf Step 2 zeigt Inline-Fehlermeldung und deaktiviert Weiter-Button', async ({
+	test('Step 2 ohne Eingabe: kein Fehler-Alert beim Betreten, Weiter-Button bleibt klickbar', async ({
 		page
 	}) => {
 		const formPage = new FormPage(page);
@@ -60,14 +60,16 @@ test.describe('StepNavigation — Error-UX', () => {
 		await formPage.clickNext();
 		await expectCurrentStep(page, /Sichtungsdetails/i);
 
-		// Step 2 Pflichtfelder leer → Weiter-Button direkt deaktiviert
-		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeDisabled();
+		// Kein Fehler-Alert direkt beim Betreten des Schritts (keine premature errors)
+		await expect(page.locator('[role="alert"]')).toHaveCount(0);
 
-		// Inline-Fehlermeldung über dem Weiter-Button erscheint automatisch
-		await expect(page.locator('[role="alert"]').first()).toBeVisible({ timeout: 3000 });
+		// Weiter-Button bleibt klickbar, auch wenn der Schritt (noch) invalide ist
+		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeEnabled();
 	});
 
-	test('Fehler-Felder zeigen rote Markierungen nach Validierung', async ({ page }) => {
+	test('Validierungsfehler auf Step 2 zeigt Inline-Fehlermeldung erst nach Klick auf Weiter', async ({
+		page
+	}) => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
@@ -76,9 +78,32 @@ test.describe('StepNavigation — Error-UX', () => {
 		await formPage.clickNext();
 		await expectCurrentStep(page, /Sichtungsdetails/i);
 
-		// Inline error appears automatically for invalid step (no click needed)
-		const alerts = page.locator('[role="alert"]');
-		await expect(alerts.first()).toBeVisible({ timeout: 3000 });
+		// Step 2 Pflichtfelder leer → Klick auf "Weiter" löst Validierung aus
+		await formPage.clickNext();
+
+		// Inline-Fehlermeldung über dem Weiter-Button erscheint nach dem fehlgeschlagenen Versuch
+		await expect(page.locator('[role="alert"]').first()).toBeVisible({ timeout: 3000 });
+	});
+
+	test('Inline-Fehlermeldung verschwindet wieder, wenn zurück zu Step 1 navigiert wird', async ({
+		page
+	}) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		await fillStep1(formPage);
+		await waitForNextEnabled(page);
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Sichtungsdetails/i);
+
+		// Fehlgeschlagener Weiter-Versuch zeigt den Alert
+		await formPage.clickNext();
+		await expect(page.locator('[role="alert"]').first()).toBeVisible({ timeout: 3000 });
+
+		// Zurück zu Step 1 navigieren → Anzeige-Zustand wird zurückgesetzt
+		await formPage.clickPrevious();
+		await expectCurrentStep(page, /Position/i);
+		await expect(page.locator('[role="alert"]')).toHaveCount(0);
 	});
 });
 

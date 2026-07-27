@@ -1,16 +1,14 @@
 ---
-name: deploy
-description: Docker Deployment Referenz laden. Nutze diesen Befehl für Docker-Builds, Container-Management und Production Deployment.
+description: Lädt die Docker- und Production-Deployment-Referenz. Nutze dies bei Fragen zu Docker-Builds, Container-Management, Production-Deployment, docker-compose oder Deployment-Umgebungsvariablen.
 allowed-tools: Bash, Read
 ---
 
 # Docker Deployment
 
-Lade die Deployment-Dokumentation und unterstütze beim Deployment.
-
 ## Schritt 1: Dokumentation laden
 
 Lies die relevanten Deployment-Dokumente:
+
 - `docs/DOCKER_DEPLOYMENT.md` — Vollständige Docker-Referenz
 - `docs/PRODUCTION_DEPLOYMENT.md` — Schnellanleitung
 - `docs/ENVIRONMENT.md` — Umgebungsvariablen

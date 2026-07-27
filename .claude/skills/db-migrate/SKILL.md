@@ -1,16 +1,14 @@
 ---
-name: db-migrate
-description: Datenbank-Migration Referenz laden. Nutze diesen Befehl für Schema-Migrationen und Datenbank-Setup.
+description: Lädt die Datenbank-Migrations-Referenz. Nutze dies bei Schema-Migrationen, Drizzle-Migrations-Fragen, DB-Setup oder wenn ausstehende Migrationen geprüft werden sollen.
 allowed-tools: Bash, Read
 ---
 
 # Datenbank Migration
 
-Lade die Migrations-Dokumentation.
-
 ## Schritt 1: Dokumentation laden
 
 Lies die relevanten Dokumente:
+
 - `docs/DATABASE_MIGRATION.md` — Migrations-Anleitung
 - `docs/ENVIRONMENT.md` — Umgebungsvariablen (DB-Konfiguration)
 

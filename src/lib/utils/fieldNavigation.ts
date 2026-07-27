@@ -78,18 +78,62 @@ function findFieldElement(fieldName: string): HTMLElement | null {
 
 /**
  * Smoothly scrolls to an element with some offset for better UX
+ * @param element - Element to scroll into view, no-op if `null`
+ * @param yOffset - Offset in px added to the scroll target (negative = leave
+ * room above the element, e.g. for a fixed/sticky header). Defaults to -80.
  */
-export function scrollToElement(element: HTMLElement | null): void {
+export function scrollToElement(element: HTMLElement | null, yOffset = -80): void {
 	if (!element) {
 		return;
 	}
-	const yOffset = -80; // Offset to account for fixed headers
 	const elementTop = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
 
 	window.scrollTo({
 		top: elementTop,
 		behavior: 'smooth'
 	});
+}
+
+/**
+ * Findet den "Kopf" eines Formular-Schritts (Icon + Überschrift + Badge)
+ * innerhalb des übergebenen Containers und scrollt gezielt dorthin — statt nur
+ * zum Container selbst.
+ *
+ * Hintergrund (U9): `#form-content` bleibt über einen Schrittwechsel hinweg
+ * dasselbe Element und enthält den kompletten neuen Schritt inklusive seines
+ * Kopfbereichs. Scrollen direkt zum Container ist daher zeitkritisch — läuft
+ * es VOR dem Re-Render des neuen Schritts, landet man mitten im (noch alten
+ * oder frisch angehängten, aber ungünstig hohen) Inhalt, statt am Kopf des
+ * neuen Schritts. Diese Funktion kapselt deshalb Suche UND Scroll in einem
+ * Aufruf, den der Aufrufer sicher NACH dem Re-Render (z.B. in
+ * `requestAnimationFrame`) ausführen kann.
+ *
+ * Sucht die `h2`-Überschrift im Container und nimmt deren Elternelement als
+ * Scrollziel — laut Konvention der Step-Komponenten (`Step1LocationTime.svelte`,
+ * `Step2SightingDetails.svelte`, ...) umschließt dieses Icon, Überschrift UND
+ * Badge gemeinsam. Fällt auf die `h2` selbst zurück, falls keine solche
+ * Eltern-Struktur existiert.
+ *
+ * @returns die gefundene Überschrift (`h2`), damit der Aufrufer sie z.B. für
+ * eine Screenreader-Ansage fokussieren kann, oder `null` wenn der Container
+ * nicht existiert.
+ */
+export function scrollToStepHeader(containerId: string, yOffset = -80): HTMLElement | null {
+	const container = document.getElementById(containerId);
+	if (!container) {
+		return null;
+	}
+
+	const heading = container.querySelector('h2');
+	if (!heading) {
+		scrollToElement(container, yOffset);
+		return null;
+	}
+
+	const headerBlock = (heading.parentElement as HTMLElement | null) ?? heading;
+	scrollToElement(headerBlock, yOffset);
+
+	return heading;
 }
 
 /**
@@ -112,10 +156,7 @@ function focusElement(element: HTMLElement): void {
 /**
  * Gets a user-friendly error message from field errors (internal use only)
  */
-function _getErrorMessage(
-	errors: Record<string, string | string[]>,
-	fieldName: string
-): string {
+function _getErrorMessage(errors: Record<string, string | string[]>, fieldName: string): string {
 	const error = errors[fieldName];
 
 	// Handle array of errors (multiple validation rules failed)

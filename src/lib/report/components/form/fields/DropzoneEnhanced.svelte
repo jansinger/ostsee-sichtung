@@ -20,7 +20,7 @@
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
 	import { createToast } from '$lib/stores/toastState.svelte';
-	import type { UploadedFileInfo, ValidationPreset } from '$lib/types';
+	import type { ExifData, UploadedFileInfo, ValidationPreset } from '$lib/types';
 	import { deleteFileDirect } from '$lib/utils';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
 	import { getFileIcon } from '$lib/utils/file/fileType';
@@ -29,11 +29,23 @@
 	import { isInBalticArea } from '$lib/utils/geo/checkBalticSea';
 	import { MediaFile } from '$lib/utils/media/MediaFile';
 	import { deleteMultipleFiles } from '$lib/utils/upload/fileProcessing';
+	import {
+		shouldResetExifPosition,
+		type AppliedExifPosition
+	} from '$lib/report/components/form/fields/exifPositionReset';
+	import { get } from 'svelte/store';
 
 	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('DropzoneEnhanced');
 	let { form, handleChange, mediaStore } = getFormContext();
+
+	// Merkt sich die zuletzt aus EXIF in den Formularzustand übernommene
+	// Position (siehe `applyExifPosition`). Wird beim Entfernen des Fotos
+	// (`handleClear`/`handleFileRemoved`) genutzt, um `latitude`/`longitude`/
+	// `hasPosition` NUR dann zurückzunehmen, wenn der Nutzer sie seither nicht
+	// manuell überschrieben hat (siehe `exifPositionReset.ts`).
+	let appliedExifPosition = $state<AppliedExifPosition | null>(null);
 
 	// Component Props
 	let {
@@ -121,11 +133,40 @@
 		triggerChange('uploadedFiles', uploadedFiles);
 	}
 
+	/**
+	 * Übernimmt eine aus EXIF gelesene GPS-Position in den Formularzustand und
+	 * merkt sich die geschriebenen Rohwerte in `appliedExifPosition`, damit ein
+	 * späteres Entfernen des Fotos diese (und nur diese) wieder zurücknehmen kann.
+	 */
+	function applyExifPosition(exifData: ExifData): void {
+		const latitude = exifData.latitude!.toFixed(4);
+		const longitude = exifData.longitude!.toFixed(4);
+		triggerChange('latitude', latitude);
+		triggerChange('longitude', longitude);
+		// Echte Koordinaten vorhanden → Position ist gesetzt
+		triggerChange('hasPosition', true);
+		appliedExifPosition = { latitude, longitude };
+	}
+
+	/**
+	 * Nimmt eine zuvor aus EXIF übernommene Position wieder zurück — aber NUR,
+	 * wenn die aktuellen Formular-Koordinaten noch exakt diesem Wert entsprechen
+	 * (siehe `shouldResetExifPosition` in `exifPositionReset.ts`). Hat der Nutzer
+	 * die Position inzwischen manuell überschrieben, bleibt sie erhalten.
+	 */
+	function resetExifPositionIfUnchanged(): void {
+		if (shouldResetExifPosition(get(form), appliedExifPosition)) {
+			triggerChange('latitude', undefined);
+			triggerChange('longitude', undefined);
+			triggerChange('hasPosition', false);
+		}
+		appliedExifPosition = null;
+	}
+
 	$effect(() => {
 		if (positionMediaFile) {
 			if (positionMediaFile.exifData?.latitude && positionMediaFile.exifData?.longitude) {
-				triggerChange('latitude', positionMediaFile.exifData.latitude.toFixed(4));
-				triggerChange('longitude', positionMediaFile.exifData.longitude.toFixed(4));
+				applyExifPosition(positionMediaFile.exifData);
 			}
 			const timestamp = positionMediaFile.timestamp;
 			if (timestamp) {
@@ -193,8 +234,7 @@
 				// runs before EXIF extraction completes (async), and won't re-run afterwards because
 				// positionMediaFile stays the same object reference (plain class property, not $state).
 				if (isPositionStep && mediaFile.hasPosition()) {
-					triggerChange('latitude', mediaFile.exifData!.latitude!.toFixed(4));
-					triggerChange('longitude', mediaFile.exifData!.longitude!.toFixed(4));
+					applyExifPosition(mediaFile.exifData!);
 					if (mediaFile.timestamp) {
 						const { date: sightingDate, time: sightingTime } = splitDateTime(mediaFile.timestamp);
 						logger.info(
@@ -222,7 +262,10 @@
 	 * 1. Löschung vom Server (falls hochgeladen)
 	 * 2. Entfernung aus Upload-Map
 	 * 3. Entfernung aus Media Store
-	 * 4. User-Feedback
+	 * 4. GPS-Formulardaten zurücknehmen — aber NUR, wenn sie noch dem zuletzt
+	 *    aus diesem Foto übernommenen EXIF-Wert entsprechen und der Nutzer sie
+	 *    nicht inzwischen manuell überschrieben hat (siehe `resetExifPositionIfUnchanged`)
+	 * 5. User-Feedback
 	 *
 	 * @param index - Index der zu löschenden Datei im gefilterten Array
 	 */
@@ -250,6 +293,7 @@
 				await deleteFileDirect(fileInfo.filePath);
 				// Aus lokalen Stores entfernen
 				deleteFile(mediaFile.uid);
+				resetExifPositionIfUnchanged();
 				createToast('success', 'Datei erfolgreich gelöscht.');
 			}
 		} catch (error) {
@@ -265,7 +309,9 @@
 	 * 1. Object URLs freigeben (Memory Leaks vermeiden)
 	 * 2. Alle Dateien vom Server löschen
 	 * 3. UI-State komplett zurücksetzen
-	 * 4. GPS-Formulardaten löschen (im GPS-Modus)
+	 * 4. GPS-Formulardaten zurücknehmen — aber NUR, wenn sie noch dem zuletzt aus
+	 *    EXIF übernommenen Wert entsprechen und der Nutzer sie nicht inzwischen
+	 *    manuell überschrieben hat (siehe `resetExifPositionIfUnchanged`)
 	 */
 	function handleClear() {
 		try {
@@ -279,6 +325,7 @@
 
 			// Clear uploaded files
 			uploadedFiles = [];
+			resetExifPositionIfUnchanged();
 
 			triggerChange('uploadedFiles', uploadedFiles);
 			createToast('success', 'Alle Dateien erfolgreich gelöscht.');

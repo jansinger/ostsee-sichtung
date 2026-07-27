@@ -3,7 +3,6 @@
   Meldeformular für Meerestier-Sichtungen in der Ostsee
 -->
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { createLogger } from '$lib/logger';
 	import ModernReportForm from '$lib/report/components/ModernReportForm.svelte';
 	import SubmissionSuccess from '$lib/report/components/SubmissionSuccess.svelte';
@@ -24,14 +23,6 @@
 		// Simulate successful submission
 		submissionSuccess = true;
 		submittedData = formData;
-	}
-
-	/**
-	 * Handle form cancellation
-	 */
-	function handleCancel() {
-		logger.info('Form cancelled');
-		goto('/');
 	}
 
 	/**
@@ -81,7 +72,7 @@
 		{#if submissionSuccess && submittedData}
 			<SubmissionSuccess {submittedData} {handleNewReport} />
 		{:else}
-			<ModernReportForm onSubmit={handleSubmit} onCancel={handleCancel} />
+			<ModernReportForm onSubmit={handleSubmit} />
 		{/if}
 	</div>
 </div>

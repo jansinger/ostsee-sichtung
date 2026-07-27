@@ -55,12 +55,11 @@ test.describe('RequiredConsent — Datenschutz', () => {
 		});
 		await formPage.clickNext();
 
-		// Fill Step 2
+		// Fill Step 2 (sightingFrom = Land → boatDrive bleibt ausgeblendet, keine Pflicht)
 		await formPage.selectSpecies(0);
 		await formPage.fillTotalCount(2);
 		await formPage.selectDistance(1);
 		await formPage.selectSightingFrom(3);
-		await formPage.selectBoatDrive(1);
 		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeEnabled({
 			timeout: 3000
 		});
@@ -106,14 +105,19 @@ test.describe('Accessibility — Keyboard Navigation', () => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		// Navigate to Step 2 — inline error appears automatically for invalid step
+		// Step 1 ist mit fillStep1() valide → Navigation zu Step 2 gelingt ohne Fehler
 		await fillStep1(formPage);
 		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeEnabled({
 			timeout: 3000
 		});
 		await formPage.clickNext();
+		await expectCurrentStep(page, /Sichtungsdetails/i);
 
-		// Inline validation error is shown above the disabled Next button
+		// Step 2 hat leere Pflichtfelder → erst der Klick auf "Weiter" löst die
+		// Inline-Fehlermeldung aus (kein automatisches Erscheinen beim Betreten)
+		await formPage.clickNext();
+
+		// Inline validation error is shown above the Next button
 		await page.locator('[role="alert"]').first().waitFor({ state: 'visible' });
 
 		// Check role="alert" elements exist

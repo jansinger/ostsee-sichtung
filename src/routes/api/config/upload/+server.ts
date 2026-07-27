@@ -1,3 +1,9 @@
+import {
+	PUBLIC_UPLOAD_ACCEPT,
+	PUBLIC_UPLOAD_ALLOWED_TYPES,
+	PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES,
+	PUBLIC_UPLOAD_MAX_FILE_SIZE_MB
+} from '$lib/constants/uploadDefaults';
 import { createLogger } from '$lib/logger.server';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { ServerConfigService } from '$lib/services/configService';
@@ -6,12 +12,13 @@ import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:config:upload');
 
-// Public configuration for anonymous users
+// Public configuration for anonymous users — shared with the client fallbacks
+// in $lib/stores/configStore so both sides can never drift apart.
 const PUBLIC_UPLOAD_CONFIG = {
-	maxFileSize: 10, // 10 MB
-	maxFileSizeBytes: 10 * 1024 * 1024,
-	allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-	accept: 'image/jpeg,image/png,image/gif,image/webp'
+	maxFileSize: PUBLIC_UPLOAD_MAX_FILE_SIZE_MB,
+	maxFileSizeBytes: PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES,
+	allowedTypes: [...PUBLIC_UPLOAD_ALLOWED_TYPES],
+	accept: PUBLIC_UPLOAD_ACCEPT
 };
 
 export const GET: RequestHandler = async ({ setHeaders, locals, request, getClientAddress }) => {

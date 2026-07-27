@@ -108,10 +108,7 @@
 
 	<!-- Expandable Content -->
 	{#if isExpanded}
-		<div
-			id="species-help-content"
-			class="animate-in slide-in-from-top-2 bg-base-100 border-base-300 mt-2 rounded-lg border p-4 duration-200"
-		>
+		<div id="species-help-content" class="bg-base-100 border-base-300 mt-2 rounded-lg border p-4">
 			<div class="mb-4">
 				<h4 class="text-base-content mb-2 text-sm font-semibold">
 					Bestimmungshilfe für Meerestiere
