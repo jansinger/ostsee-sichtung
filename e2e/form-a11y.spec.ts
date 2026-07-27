@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Locator } from '@playwright/test';
 import { FormPage } from './pages/FormPage';
-import { fillStep1, expectCurrentStep } from './helpers/form-helpers';
+import { fillStep1, fillStep2, expectCurrentStep } from './helpers/form-helpers';
 
 // ── Phase 5A: FormSteps Indicator ──────────────────────────────────────────
 
@@ -135,5 +135,134 @@ test.describe('Accessibility — Keyboard Navigation', () => {
 		// Buttons should have aria-labels
 		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeVisible();
 		await expect(page.getByRole('button', { name: /Vorheriger Schritt/i })).toBeVisible();
+	});
+});
+
+// ── Phase 5D: Fokus-Indikator auf Formularfeldern ──────────────────────────
+
+/**
+ * Schützt den Override `.input/.select/.textarea:focus` aus `src/app.css`
+ * (3px-Outline in `--color-primary`, siehe `.claude/rules/daisyui.md`).
+ *
+ * Der Test muss im echten Browser laufen: DaisyUI setzt für dieselben Felder
+ * ein eigenes `outline: 2px solid var(--input-color)` (= `--color-base-content`)
+ * innerhalb von `@layer utilities`. Dass der projekteigene, ungelayerte Override
+ * gewinnt, ergibt sich erst aus der vollständigen Kaskade des gebauten CSS —
+ * ein Unit-Test über die CSS-Quelle würde eine Regression hier nicht bemerken.
+ *
+ * Achtung bei manueller Nachprüfung: `:focus` greift nur, wenn das Browser-
+ * fenster den Fokus hat. Ein `getComputedStyle`-Sample aus einem unfokussierten
+ * Fenster liefert stattdessen DaisyUIs 2px und `currentColor`
+ * (= `--color-base-content`) und sieht fälschlich nach einem Bug aus.
+ */
+async function readFocusIndicator(field: Locator) {
+	return field.evaluate((el) => {
+		// `--color-primary` über ein Probe-Element auflösen, damit Soll- und
+		// Ist-Farbe durch dieselbe Browser-Serialisierung laufen (oklch(...)).
+		// Das Element hängt an `document.body` (die Variable kommt vom Theme-Root)
+		// und ist layout-neutral — es darf das Formular-DOM nicht beeinflussen.
+		const probe = document.createElement('span');
+		probe.style.cssText =
+			'position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;color:var(--color-primary)';
+		document.body.appendChild(probe);
+		const primary = getComputedStyle(probe).color;
+		probe.remove();
+
+		const style = getComputedStyle(el);
+		return {
+			width: style.outlineWidth,
+			style: style.outlineStyle,
+			color: style.outlineColor,
+			offset: style.outlineOffset,
+			boxShadow: style.boxShadow,
+			primary,
+			focusVisible: el.matches(':focus-visible')
+		};
+	});
+}
+
+/**
+ * Gepollt, weil `BaseSelect` und `BaseTextarea` `transition-all duration-200`
+ * setzen: `outline-offset` wird dadurch mit-animiert und ist unmittelbar nach
+ * dem Fokussieren noch `0px`. Ein einmaliges `getComputedStyle` würde je nach
+ * Timing den Zwischenwert sehen.
+ */
+async function expectPrimaryFocusRing(field: Locator) {
+	await expect
+		.poll(async () => {
+			const indicator = await readFocusIndicator(field);
+			return {
+				style: indicator.style,
+				width: indicator.width,
+				offset: indicator.offset,
+				// Farbe muss `--color-primary` sein — nicht DaisyUIs `--color-base-content`
+				colorIsPrimary: indicator.color === indicator.primary,
+				// Zusätzlicher 4px-Ring aus demselben Regelblock; DaisyUIs
+				// Fokus-Regel setzt an dieser Stelle einen 1px-Inset-Schatten.
+				hasOuterRing: indicator.boxShadow.includes('0px 0px 0px 4px')
+			};
+		})
+		.toEqual({
+			style: 'solid',
+			width: '3px',
+			offset: '2px',
+			colorIsPrimary: true,
+			hasOuterRing: true
+		});
+}
+
+test.describe('Accessibility — Fokus-Indikator', () => {
+	test('Text-Input zeigt bei Tastatur-Fokus den 3px-Primary-Ring', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		const field = page.locator('[data-testid="field-waterway"]');
+		// Shift+Tab und zurück → echter Tastatur-Fokus (setzt :focus-visible),
+		// ohne die Tab-Stopps ab Seitenanfang abzählen zu müssen.
+		await field.focus();
+		await page.keyboard.press('Shift+Tab');
+		await page.keyboard.press('Tab');
+		await expect(field).toBeFocused();
+
+		expect((await readFocusIndicator(field)).focusVisible).toBe(true);
+		await expectPrimaryFocusRing(field);
+	});
+
+	test('Select zeigt denselben Fokus-Ring', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		await fillStep1(formPage);
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Sichtungsdetails/i);
+
+		const field = page.locator('[data-testid="field-species"]');
+		await field.focus();
+		await expect(field).toBeFocused();
+
+		await expectPrimaryFocusRing(field);
+	});
+
+	test('Textarea zeigt denselben Fokus-Ring', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		// `notes` steht auf Schritt 4 (Kontaktdaten), nicht auf "Beobachtungen".
+		await fillStep1(formPage);
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Sichtungsdetails/i);
+
+		await fillStep2(formPage);
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Beobachtungen/i);
+
+		await formPage.skipStep();
+		await expectCurrentStep(page, /Kontaktdaten/i);
+
+		const field = page.locator('[data-testid="field-notes"]');
+		await field.focus();
+		await expect(field).toBeFocused();
+
+		await expectPrimaryFocusRing(field);
 	});
 });
