@@ -202,6 +202,120 @@ sollten bei tageszeitlichen Auswertungen aber gefiltert werden (wie in Abschnitt
 
 ---
 
+## Nachtrag: Öffentliche Statistiken zählten nicht freigegebene Sichtungen mit
+
+### Befund
+
+`getSightingStatistics()` filterte in **keiner** Abfrage nach `freigegeben_am`. Die
+öffentliche Legacy-Karte (`/sichtungen/showreports.json`) tut das seit jeher.
+
+| Kennzahl (Produktionsstand 2026-07-27) | Anzahl      |
+| -------------------------------------- | ----------- |
+| Sichtungen gesamt                      | 19.877      |
+| davon freigegeben                      | 19.262      |
+| nicht freigegeben                      | 615 (3,1 %) |
+
+Folge: Der Hilfetext im Formular nannte 19.877, die Karte zeigte 19.262 Marker. Wer
+nachzählt, bekommt eine andere Zahl als der Text daneben behauptet.
+
+### Vorgabe des Deutschen Meeresmuseums (2026-07-27)
+
+1. Im öffentlichen Bereich zählen ausschließlich freigegebene Sichtungen.
+2. In der Admin-Statistik dürfen nicht freigegebene vorkommen, aber niemals mit
+   freigegebenen zu **einer** Zahl vermischt — getrennt ausweisen
+   („19.262 freigegeben / 615 offen"), nicht als Summe.
+3. Eine Statistikzahl ohne erkennbaren Freigabebezug soll es nicht mehr geben.
+
+### Umsetzung
+
+| Stelle                                      | Änderung                                                                           |
+| ------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `src/lib/server/db/approvalFilter.ts` (neu) | `approvedOnly()` / `pendingOnly()` — Freigabefilter an einer Stelle definiert      |
+| `getSightingStatistics(scope)`              | Freigabestatus ist Teil der Signatur, Default `'approved'`                         |
+| `scope: 'both'`                             | liefert `{ approved, pending }` — getrennt, nie als Summe                          |
+| `sightingsWithMedia`                        | joint jetzt auf `sichtungen` (Datei-Tabelle kennt `freigegeben_am` nicht)          |
+| `/api/statistics`                           | ruft explizit `'approved'`                                                         |
+| `/admin/statistics`                         | Basis-Kennzahlen je Freigabestatus getrennt, Quoten beziehen sich auf freigegebene |
+| `FormHelp.svelte`                           | Beschriftungen sagen „freigegebene Sichtungen"                                     |
+
+Der Epoch-Ausschluss (`EARLIEST_PLAUSIBLE_SIGHTING_DATE`, siehe oben) bleibt bestehen und
+gilt **zusätzlich** zum Freigabefilter. Die 365 Datensätze mit `00:00:00` zählen laut
+Museumsentscheidung weiterhin mit.
+
+### Zwei Korrekturen, die dabei aufgefallen sind
+
+- **`sightingsWithMedia` zählte Dateien statt Sichtungen.** `count(sightingFiles.sightingId)`
+  ohne `DISTINCT` zählt jede hochgeladene Datei einzeln; das `selectDistinct` davor wirkt
+  auf ein Aggregat nicht. Bei Mehrfach-Uploads konnte der im Formular angezeigte Medienanteil
+  dadurch über 100 % steigen. Jetzt `countDistinct`.
+- **Der Fallback erfand Zahlen und lieferte sie als Erfolg aus.** Bei Datenbankfehlern gab
+  `getSightingStatistics()` „2.847 Sichtungen / 89 % / 15 Jahre" zurück; der API-Endpunkt
+  verpackte das in HTTP 200 und `FormHelp` zeigte es als echte Museumszahlen an. Der dafür
+  gebaute Fehlerzweig („Statistiken konnten nicht geladen werden") war unerreichbar. Die
+  Funktion wirft jetzt weiter.
+
+### Bewusst nicht geändert
+
+- **Der Legacy-Endpunkt `/sichtungen/showreports.json`** behält seinen inline formulierten
+  Filter. Ein Umbau auf den gemeinsamen Helper ließ dort drei Contract-Tests fehlschlagen
+  (das Schema ist in den Tests durch Strings gemockt, `isNotNull()` wirft darauf). Der
+  Endpunkt bedient produktive Mobile Apps — statt ihn anzufassen, hält
+  `statisticsApprovalScope.test.ts` fest, dass beide Ausdrücke dasselbe SQL erzeugen.
+- **Die moderne Karte `/api/map/sightings`** filtert auf `geprueft = 1`, **nicht** auf den
+  Freigabestatus (`src/routes/api/map/sightings/+server.ts:19`). Sie wird vom
+  `optimizedMapController` genutzt, ist also die Karte, die Bürger:innen sehen. Damit
+  bleibt eine Restdivergenz:
+
+  | Quelle                                      | Datensätze |
+  | ------------------------------------------- | ---------- |
+  | Legacy-Karte + neue Statistik (freigegeben) | 19.262     |
+  | Moderne Karte (`geprueft = 1`)              | 19.253     |
+  | davon geprüft **und nicht** freigegeben     | 0          |
+  | freigegeben, aber nicht geprüft             | 9          |
+
+  Aktuell wird also **keine** nicht freigegebene Sichtung öffentlich angezeigt — das ist
+  aber Zufall der Daten, keine erzwungene Invariante: Wer eine Sichtung prüft, ohne sie
+  freizugeben, veröffentlicht sie auf der modernen Karte. Ob dort `geprueft` oder
+  `freigegeben_am` die richtige Bezugsgröße ist, ist eine Entscheidung des Museums und
+  wurde deshalb **nicht** eigenmächtig geändert.
+
+  Passend dazu existiert die Konfiguration `display.showUnapprovedOnMap` (Default `false`,
+  registriert in `configInitializer.ts:250`, öffentlich exponiert über
+  `/api/config/public`) — **kein einziger Kartenquery liest sie aus**. Der Schalter tut
+  heute nichts; würde er verdrahtet, bräche er die hier hergestellte Parität.
+
+- **Die übrigen Admin-Auswertungen** (Arten-, Jahres-, Monatsverteilung, Nutzer, Schiffe,
+  Datenqualität, Geografie) filtern weiterhin auf `geprueft = 1` statt auf den
+  Freigabestatus. Das ist ein **anderes Merkmal**, kein vergessener Filter.
+
+  Ein Review wies darauf hin, dass diese Abschnitte damit freigegebene und offene
+  Sichtungen vermischen könnten. Die Gegenprobe an den Daten (2026-07-27):
+
+  ```sql
+  SELECT COUNT(*) FROM sichtungen WHERE geprueft = 1 AND freigegeben_am IS NULL;  -- 0
+  ```
+
+  Es gibt derzeit **keine** geprüfte, nicht freigegebene Sichtung — die `verified`-Sektionen
+  enthalten also faktisch ausschließlich freigegebene Daten (19.253 von 19.262; die 9
+  fehlenden sind freigegeben, aber ungeprüft). Die Vermischung ist damit **latent, nicht
+  real**: Sie entstünde erst, wenn jemand eine Sichtung prüft, ohne sie freizugeben.
+
+  Nicht geändert, weil ein Wechsel von `geprueft` auf `freigegeben_am` die **Bedeutung**
+  dieser Auswertungen verschiebt (Datenqualität und Artbestimmung hängen an der fachlichen
+  Prüfung, nicht an der Veröffentlichung). Das ist eine Entscheidung des Museums.
+
+### Tests
+
+`src/lib/server/db/statisticsApprovalScope.test.ts` — führt die Drizzle-Abfragen gegen einen
+aufzeichnenden Mock aus und kompiliert jede `where`-Klausel über den echten `PgDialect`:
+
+- Jede Statistikabfrage trägt den Freigabefilter der öffentlichen Karte.
+- `approvedOnly()` und der Legacy-Kartenfilter erzeugen dasselbe Prädikat.
+- `'both'` liefert getrennte Werte; die Summe 19.877 taucht in keinem Ergebnis auf.
+- Bei Datenbankfehlern werden keine Zahlen erfunden.
+
+---
+
 ## Quellen
 
 Osiecka et al. 2020, _Sci. Rep._ 10:14876 · Amundin et al. 2022 (SAMBAH), _Ecol. Evol._ 12:e8554 ·

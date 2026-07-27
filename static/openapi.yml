@@ -780,7 +780,11 @@ paths:
         - statistics
       summary: Sichtungsstatistiken abrufen
       description: |
-        Gibt aggregierte Statistiken über alle Sichtungen zurück.
+        Gibt aggregierte Statistiken über **freigegebene** Sichtungen zurück
+        (`freigegeben_am IS NOT NULL`) — dieselbe Grundmenge wie die öffentliche
+        Karte unter `/sichtungen/showreports.json`. Nicht freigegebene Meldungen
+        zählen nicht mit.
+
         Ergebnis wird für 1 Stunde gecacht.
       responses:
         '200':
@@ -2904,7 +2908,9 @@ components:
 
     StatisticsResponse:
       type: object
-      description: Aggregierte Statistiken über alle Sichtungen
+      description: >-
+        Aggregierte Statistiken über freigegebene Sichtungen
+        (`freigegeben_am IS NOT NULL`). Nicht freigegebene Meldungen zählen nicht mit.
       required:
         - totalSightings
         - completionRate

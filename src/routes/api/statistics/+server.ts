@@ -4,6 +4,11 @@
  * Dieser Endpunkt stellt statistische Daten über Sichtungen bereit,
  * die in der FormHelp-Komponente angezeigt werden.
  * Implementiert server-seitiges In-Memory-Caching für 1 Stunde.
+ *
+ * ÖFFENTLICHER BEREICH: Es zählen ausschließlich **freigegebene** Sichtungen
+ * (`scope: 'approved'`) — dieselbe Grundmenge wie die öffentliche Karte unter
+ * `/sichtungen/showreports.json`. Ohne diesen Filter nannte der Hilfetext im
+ * Formular mehr Sichtungen, als die Karte Marker zeigt.
  */
 
 import { createLogger } from '$lib/logger.server';
@@ -25,6 +30,11 @@ const CACHE_DURATION = 3600000; // 1 Stunde in Millisekunden
 
 /**
  * Fallback-Statistiken für Fehlerfälle
+ *
+ * Werden ausschließlich zusammen mit HTTP 500 ausgeliefert, damit die
+ * dokumentierte Response-Form erhalten bleibt. Die Anzeige (`FormHelp.svelte`)
+ * wertet nur `response.ok` aus und zeigt bei 500 „Statistiken konnten nicht
+ * geladen werden" — diese Platzhalterzahlen erreichen also keine Bürger:innen.
  */
 const FALLBACK_STATISTICS: SightingStatistics = {
 	totalSightings: 2847,
@@ -62,8 +72,11 @@ export const GET: RequestHandler = async () => {
 			});
 		}
 
-		// Cache abgelaufen oder nicht vorhanden - neue Daten laden
-		const statistics = await getSightingStatistics();
+		// Cache abgelaufen oder nicht vorhanden - neue Daten laden.
+		// `'approved'` ist explizit gesetzt, obwohl es der Default ist: Dieser
+		// Endpunkt ist öffentlich, der Freigabebezug soll an der Aufrufstelle
+		// sichtbar sein.
+		const statistics = await getSightingStatistics('approved');
 
 		// Cache aktualisieren
 		cachedStatistics = {
@@ -78,7 +91,10 @@ export const GET: RequestHandler = async () => {
 			}
 		});
 	} catch (error) {
-		logger.error({ error: error instanceof Error ? error.message : error }, 'Error fetching statistics');
+		logger.error(
+			{ error: error instanceof Error ? error.message : error },
+			'Error fetching statistics'
+		);
 
 		// Bei Fehlern: Fallback-Statistiken zurückgeben
 		return json(FALLBACK_STATISTICS, {

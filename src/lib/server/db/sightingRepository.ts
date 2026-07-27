@@ -25,7 +25,12 @@ import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting, UpdateSighting } from '$lib/types/sighting';
 import type { SightingFileInsert } from '$lib/types/sightingFile';
 import { isImageFile } from '$lib/utils';
-import { count, eq, gte, isNotNull, sql } from 'drizzle-orm';
+import { and, count, countDistinct, eq, gte, isNotNull, sql, type SQL } from 'drizzle-orm';
+import {
+	approvalFilter,
+	type ResolvedSightingScope,
+	type SightingScope
+} from '$lib/server/db/approvalFilter';
 import { readImageExifData } from '$lib/server/media/exifUtils';
 import { mapFormToSighting } from '$lib/server/db/mapFormToSighting';
 import { setSightingIdForReferenceId } from '$lib/server/db/sightingFilesRepository';
@@ -321,6 +326,10 @@ export const saveSightingFiles = async (
 
 /**
  * Interface für Statistik-Daten der FormHelp-Komponente
+ *
+ * Alle Werte beziehen sich auf **einen** Freigabestatus — siehe `scope` in
+ * `getSightingStatistics`. Eine Instanz vermischt nie freigegebene und offene
+ * Sichtungen.
  */
 export interface SightingStatistics {
 	totalSightings: number;
@@ -330,6 +339,17 @@ export interface SightingStatistics {
 	uniqueUsers: number;
 	sightingsWithMedia: number;
 	deadAnimalsFound: number;
+}
+
+/**
+ * Nach Freigabestatus getrennte Statistiken (`scope: 'both'`).
+ *
+ * Bewusst **ohne** aggregierte Gesamtwerte: Eine Summe aus beiden Töpfen wäre
+ * genau die Zahl, die das Meeresmuseum nicht mehr sehen will.
+ */
+export interface SightingStatisticsByScope {
+	approved: SightingStatistics;
+	pending: SightingStatistics;
 }
 
 /**
@@ -350,29 +370,84 @@ export interface SightingStatistics {
 export const EARLIEST_PLAUSIBLE_SIGHTING_DATE = new Date('1990-01-01T00:00:00Z');
 
 /**
- * Ermittelt statistische Daten über Sichtungen für die FormHelp-Komponente
+ * Ermittelt statistische Daten über Sichtungen — getrennt nach Freigabestatus
  *
- * Diese Funktion berechnet verschiedene Metriken, die in der Hilfe-Sektion
- * angezeigt werden, um Benutzern den Wert ihrer Eingaben zu demonstrieren.
+ * Der Freigabestatus ist **Teil der Signatur**, damit ein Aufrufer sich nicht
+ * versehentlich ungefiltert bedienen kann. Der Default ist die sichere
+ * Variante: nur freigegebene Sichtungen, also dieselbe Grundmenge wie die
+ * öffentliche Karte (`/sichtungen/showreports.json`).
  *
+ * @param scope `'approved'` (Default, öffentlich) | `'pending'` (offene
+ *   Meldungen, nur Admin) | `'both'` (beide Werte **getrennt**, nie als Summe)
  * @returns Promise mit statistischen Daten
+ * @throws {Error} Bei Datenbankfehlern — bewusst kein Fallback mit erfundenen
+ *   Zahlen, siehe `collectStatisticsForScope`.
  *
  * @example
- * const stats = await getSightingStatistics();
- * console.log(`Insgesamt ${stats.totalSightings} Sichtungen`);
+ * const stats = await getSightingStatistics(); // nur freigegebene
+ * const beide = await getSightingStatistics('both');
+ * console.log(`${beide.approved.totalSightings} freigegeben / ${beide.pending.totalSightings} offen`);
  */
-export const getSightingStatistics = async (): Promise<SightingStatistics> => {
+// Reihenfolge beachten: Die `'both'`-Überladung steht zuerst, damit sie für das
+// Literal greift. Die Einzel-Status-Überladung steht zuletzt und ist damit die,
+// die `vi.mocked(...)` in Tests sieht — dort wird der öffentliche Fall gemockt.
+export async function getSightingStatistics(scope: 'both'): Promise<SightingStatisticsByScope>;
+export async function getSightingStatistics(
+	scope?: ResolvedSightingScope
+): Promise<SightingStatistics>;
+export async function getSightingStatistics(
+	scope: SightingScope = 'approved'
+): Promise<SightingStatistics | SightingStatisticsByScope> {
+	if (scope === 'both') {
+		// Zwei getrennte Läufe statt einer Abfrage mit CASE-Aggregaten: So kann
+		// per Konstruktion keine vermischte Summe entstehen.
+		const [approved, pending] = await Promise.all([
+			collectStatisticsForScope('approved'),
+			collectStatisticsForScope('pending')
+		]);
+		return { approved, pending };
+	}
+
+	return collectStatisticsForScope(scope);
+}
+
+/**
+ * Führt alle Statistik-Abfragen für **einen** Freigabestatus aus
+ *
+ * Jede einzelne Abfrage trägt den Freigabefilter — auch die Medien-Abfrage,
+ * die dafür über `sichtungen` joinen muss (`sichtungen_dateien` kennt
+ * `freigegeben_am` nicht).
+ *
+ * Wirft bei Datenbankfehlern weiter, statt Platzhalterzahlen zurückzugeben:
+ * Ein Fallback wie „2.847 Sichtungen" landete sonst mit HTTP 200 im
+ * Bürgerformular und wäre dort von echten Museumszahlen nicht zu
+ * unterscheiden. Die Anzeige hat für diesen Fall einen eigenen Zweig
+ * („Statistiken konnten nicht geladen werden").
+ */
+async function collectStatisticsForScope(
+	scope: ResolvedSightingScope
+): Promise<SightingStatistics> {
+	const approval = approvalFilter(scope);
+
+	/** Verknüpft den Freigabefilter mit der abfragespezifischen Bedingung. */
+	const withApproval = (condition: SQL): SQL => and(approval, condition) as SQL;
+
 	try {
-		logger.info('Ermittle Sichtungs-Statistiken');
+		logger.info({ scope }, 'Ermittle Sichtungs-Statistiken');
 
 		// Gesamtanzahl Sichtungen
-		const [totalResult] = await db.select({ count: count() }).from(sightings);
+		const [totalResult] = await db.select({ count: count() }).from(sightings).where(approval);
 
 		const totalSightings = totalResult?.count || 0;
 
+		// Sichtungen mit Medien: über `sichtungen` joinen, weil die Datei-Tabelle
+		// den Freigabestatus nicht kennt. `countDistinct` zählt Sichtungen, nicht
+		// Dateien — sonst überstiege der Medienanteil bei Mehrfach-Uploads 100 %.
 		const [mediaResult] = await db
-			.selectDistinct({ count: count(sightingFiles.sightingId) })
-			.from(sightingFiles);
+			.select({ count: countDistinct(sightingFiles.sightingId) })
+			.from(sightingFiles)
+			.innerJoin(sightings, eq(sightingFiles.sightingId, sightings.id))
+			.where(approval);
 
 		const sightingsWithMedia = mediaResult?.count || 0;
 
@@ -381,7 +456,8 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 			.select({ count: count() })
 			.from(sightings)
 			.where(
-				sql`(
+				withApproval(
+					sql`(
 					CASE WHEN ${sightings.seaState} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.visibility} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.windDirection} IS NOT NULL THEN 1 ELSE 0 END +
@@ -395,6 +471,7 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 					CASE WHEN ${sightings.sightingDate} IS NOT NULL THEN 1 ELSE 0 END +
 					CASE WHEN ${sightings.notes} IS NOT NULL THEN 1 ELSE 0 END
 				) >= 8`
+				)
 			);
 
 		const completeSightings = completionRateQuery[0]?.count || 0;
@@ -419,17 +496,24 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 					CASE WHEN ${sightings.notes} IS NOT NULL THEN 1 ELSE 0 END
 				))`
 			})
-			.from(sightings);
+			.from(sightings)
+			.where(approval);
 
-		const averageOptionalFields = avgOptionalQuery[0]?.avg || 0;
+		// `ROUND(AVG(...))` liefert Postgres-`numeric`, der Treiber gibt das als
+		// String zurück — die `sql<number>`-Annotation ist an dieser Stelle also
+		// unzutreffend. Ohne die Konvertierung stünde im JSON `"8"` statt `8`,
+		// was die OpenAPI-Spec (`type: number`) verletzt. Der Contract-Test merkt
+		// das nicht, weil er das Repository mit Zahlen mockt.
+		const averageOptionalFields = Number(avgOptionalQuery[0]?.avg ?? 0);
 
-		// Jahre seit der ersten Sichtung
+		// Jahre seit der ersten Sichtung. Der Epoch-Ausschluss gilt zusätzlich zum
+		// Freigabefilter — die 1970er-Platzhalter sind fehlerhafte Importe.
 		const firstSightingQuery = await db
 			.select({
 				minDate: sql<string>`MIN(${sightings.sightingDate})`
 			})
 			.from(sightings)
-			.where(gte(sightings.sightingDate, EARLIEST_PLAUSIBLE_SIGHTING_DATE));
+			.where(withApproval(gte(sightings.sightingDate, EARLIEST_PLAUSIBLE_SIGHTING_DATE)));
 
 		const firstSighting = firstSightingQuery[0]?.minDate;
 		const yearsOfService = firstSighting
@@ -437,15 +521,13 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 			: 0;
 
 		// Anzahl einzigartige Schiffe
-		const uniqueUsersQuery = await db
-			.select({ count: count() })
-			.from(
-				db
-					.selectDistinct({ email: sightings.email })
-					.from(sightings)
-					.where(isNotNull(sightings.email))
-					.as('unique_ships')
-			);
+		const uniqueUsersQuery = await db.select({ count: count() }).from(
+			db
+				.selectDistinct({ email: sightings.email })
+				.from(sightings)
+				.where(withApproval(isNotNull(sightings.email)))
+				.as('unique_ships')
+		);
 
 		const uniqueUsers = uniqueUsersQuery[0]?.count || 0;
 
@@ -453,7 +535,7 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 		const deadAnimalsQuery = await db
 			.select({ count: count() })
 			.from(sightings)
-			.where(eq(sightings.isDead, 1));
+			.where(withApproval(eq(sightings.isDead, 1)));
 
 		const deadAnimalsFound = deadAnimalsQuery[0]?.count || 0;
 
@@ -469,6 +551,7 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 
 		logger.info(
 			{
+				scope,
 				totalSightings,
 				completionRate,
 				averageOptionalFields,
@@ -482,20 +565,16 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 
 		return statistics;
 	} catch (error) {
-		logger.error({ error }, 'Fehler beim Ermitteln der Sichtungs-Statistiken');
+		logger.error({ error, scope }, 'Fehler beim Ermitteln der Sichtungs-Statistiken');
 
-		// Fallback-Statistiken bei Datenbankfehlern
-		return {
-			totalSightings: 2847, // Fallback-Wert aus der ursprünglichen Implementierung
-			completionRate: 89,
-			averageOptionalFields: 8,
-			yearsOfService: 15,
-			uniqueUsers: 150,
-			sightingsWithMedia: 1200,
-			deadAnimalsFound: 25
-		};
+		// Bewusst kein Fallback mit erfundenen Zahlen: Die frühere Variante gab
+		// „2.847 Sichtungen / 89 % / 15 Jahre" zurück, was der API-Endpunkt mit
+		// HTTP 200 auslieferte — im Bürgerformular nicht von echten Zahlen des
+		// Meeresmuseums zu unterscheiden. Der Aufrufer entscheidet, was er bei
+		// einem Ausfall anzeigt.
+		throw error;
 	}
-};
+}
 
 /**
  * Ruft eine Sichtung anhand der ReferenzID ab

@@ -129,6 +129,33 @@ export const saveSighting = async (
 
 ---
 
+## Freigabestatus — bei jeder Auswertung mitdenken
+
+`sichtungen.freigegeben_am` (`approvedAt`) entscheidet, ob eine Meldung öffentlich ist.
+Die öffentliche Karte filtert danach; die Statistiken taten es lange **nicht** — Karte und
+Zahlentext widersprachen sich dadurch sichtbar (19.262 vs. 19.877).
+
+Vorgabe des Meeresmuseums: Im öffentlichen Bereich zählen nur freigegebene Sichtungen. In
+der Admin-Statistik dürfen offene Meldungen vorkommen, aber **niemals mit freigegebenen zu
+einer Zahl vermischt** — getrennt ausweisen („19.262 freigegeben / 615 offen").
+
+```typescript
+import { approvedOnly, pendingOnly, approvalFilter } from '$lib/server/db/approvalFilter';
+
+// Öffentlich: nur freigegebene
+.where(approvedOnly())
+
+// Admin: getrennte Läufe statt CASE-Aggregaten — so kann keine Summe entstehen
+const [approved, pending] = await Promise.all([load('approved'), load('pending')]);
+```
+
+Wer eine neue Statistikabfrage ergänzt, muss den Status explizit setzen. `sichtungen_dateien`
+kennt die Spalte nicht — dort ist ein Join auf `sichtungen` nötig. Der Epoch-Ausschluss
+(`EARLIEST_PLAUSIBLE_SIGHTING_DATE`) gilt zusätzlich, nicht statt dessen.
+Abgesichert durch `src/lib/server/db/statisticsApprovalScope.test.ts`.
+
+---
+
 ## PostGIS Patterns
 
 ### Point erstellen

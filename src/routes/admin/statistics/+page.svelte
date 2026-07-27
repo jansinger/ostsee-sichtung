@@ -45,10 +45,11 @@
 
 		const insights: Insight[] = [];
 
-		// Mortality rate analysis
-		const totalDeadAnimals = data.basicStats.deadAnimals;
-		const totalSightings = data.basicStats.totalSightings;
-		const overallMortalityRate = (totalDeadAnimals / totalSightings) * 100;
+		// Mortality rate analysis — Bezugsgröße sind ausschließlich freigegebene
+		// Sichtungen, damit die Quote nicht zwischen den Freigabestatus mischt.
+		const totalDeadAnimals = data.basicStats.approved.deadAnimals;
+		const totalSightings = data.basicStats.approved.totalSightings;
+		const overallMortalityRate = totalSightings > 0 ? (totalDeadAnimals / totalSightings) * 100 : 0;
 
 		if (overallMortalityRate > 10) {
 			insights.push({
@@ -63,7 +64,11 @@
 			.filter((m) => m.month >= 6 && m.month <= 8)
 			.reduce((sum, m) => sum + m.sightings, 0);
 		const totalYearSightings = data.monthlyStats.reduce((sum, m) => sum + m.sightings, 0);
-		const summerPercentage = (summerSightings / totalYearSightings) * 100;
+		// Ohne Guard liefert eine leere Monatsstatistik NaN, und `NaN > 60` ist zwar
+		// false — die Erkenntnis bliebe also aus —, aber der Wert wanderte bei jeder
+		// künftigen Umformulierung ungeprüft in den Text.
+		const summerPercentage =
+			totalYearSightings > 0 ? (summerSightings / totalYearSightings) * 100 : 0;
 
 		if (summerPercentage > 60) {
 			insights.push({
@@ -127,11 +132,14 @@
 			<div>
 				<h1 class="text-base-content text-3xl font-bold">Statistiken</h1>
 				<p class="text-base-content/70 mt-2">
-					Analyse von {formatNumber(data.basicStats?.totalSightings || 0)} Meerestier-Sichtungen
+					Analyse von {formatNumber(data.basicStats?.approved.totalSightings || 0)} freigegebenen Meerestier-Sichtungen
+					<span class="text-base-content/50">
+						· {formatNumber(data.basicStats?.pending.totalSightings || 0)} noch nicht freigegeben
+					</span>
 				</p>
 			</div>
 			<div class="badge badge-primary badge-lg">
-				{formatNumber(data.basicStats?.verifiedSightings || 0)} verifiziert
+				{formatNumber(data.basicStats?.approved.verifiedSightings || 0)} verifiziert
 			</div>
 		</div>
 
@@ -168,15 +176,20 @@
 					<div class="stat-figure text-primary">
 						<Icon icon="lucide:users" class="h-8 w-8" />
 					</div>
-					<div class="stat-title">Gesamtsichtungen</div>
+					<div class="stat-title">Freigegebene Sichtungen</div>
 					<div class="stat-value text-primary">
-						{formatNumber(data.basicStats?.totalSightings || 0)}
+						{formatNumber(data.basicStats?.approved.totalSightings || 0)}
 					</div>
 					<div class="stat-desc">
-						{formatNumber(data.basicStats?.verifiedSightings || 0)} verifiziert ({formatPercentage(
-							((data.basicStats?.verifiedSightings || 0) / (data.basicStats?.totalSightings || 1)) *
+						{formatNumber(data.basicStats?.approved.verifiedSightings || 0)} verifiziert ({formatPercentage(
+							((data.basicStats?.approved.verifiedSightings || 0) /
+								(data.basicStats?.approved.totalSightings || 1)) *
 								100
 						)})
+						<br />
+						<span class="text-warning"
+							>{formatNumber(data.basicStats?.pending.totalSightings || 0)} noch offen</span
+						>
 					</div>
 				</div>
 			</div>
@@ -188,9 +201,13 @@
 					</div>
 					<div class="stat-title">Ø Gruppengröße</div>
 					<div class="stat-value text-secondary">
-						{formatNumber(parseFloat(String(data.basicStats?.avgGroupSize || 0)).toFixed(1))}
+						{formatNumber(
+							parseFloat(String(data.basicStats?.approved.avgGroupSize || 0)).toFixed(1)
+						)}
 					</div>
-					<div class="stat-desc">Max: {data.basicStats?.maxGroupSize || 0} Tiere</div>
+					<div class="stat-desc">
+						Max: {data.basicStats?.approved.maxGroupSize || 0} Tiere · freigegeben
+					</div>
 				</div>
 			</div>
 
@@ -201,12 +218,18 @@
 					</div>
 					<div class="stat-title">Totfunde</div>
 					<div class="stat-value text-warning">
-						{formatNumber(data.basicStats?.deadAnimals || 0)}
+						{formatNumber(data.basicStats?.approved.deadAnimals || 0)}
 					</div>
 					<div class="stat-desc">
 						{formatPercentage(
-							((data.basicStats?.deadAnimals || 0) / (data.basicStats?.totalSightings || 1)) * 100
-						)} der Sichtungen
+							((data.basicStats?.approved.deadAnimals || 0) /
+								(data.basicStats?.approved.totalSightings || 1)) *
+								100
+						)} der freigegebenen
+						<br />
+						<span class="text-warning"
+							>{formatNumber(data.basicStats?.pending.deadAnimals || 0)} noch offen</span
+						>
 					</div>
 				</div>
 			</div>
@@ -217,11 +240,15 @@
 						<Icon icon="lucide:calendar" class="h-8 w-8" />
 					</div>
 					<div class="stat-title">Mit Medien</div>
-					<div class="stat-value text-accent">{formatNumber(data.basicStats?.withMedia || 0)}</div>
+					<div class="stat-value text-accent">
+						{formatNumber(data.basicStats?.approved.withMedia || 0)}
+					</div>
 					<div class="stat-desc">
 						{formatPercentage(
-							((data.basicStats?.withMedia || 0) / (data.basicStats?.totalSightings || 1)) * 100
-						)} aller Sichtungen
+							((data.basicStats?.approved.withMedia || 0) /
+								(data.basicStats?.approved.totalSightings || 1)) *
+								100
+						)} der freigegebenen
 					</div>
 				</div>
 			</div>
@@ -514,8 +541,12 @@
 				<div class="card-body">
 					<h2 class="card-title">
 						<Icon icon="lucide:calendar" class="h-6 w-6" />
-						Aktivität der letzten 30 Tage (alle Sichtungen)
+						Eingang der letzten 30 Tage — unabhängig vom Freigabestatus
 					</h2>
+					<!-- Bewusst ohne Freigabefilter: Dieser Abschnitt zeigt den Posteingang,
+					     also gerade auch die noch offenen Meldungen. Der Freigabebezug steht
+					     deshalb in der Überschrift statt in einer Filterbedingung — eine Zahl
+					     ohne erkennbaren Freigabebezug soll es laut Museumsvorgabe nicht geben. -->
 
 					<!-- Activity Heatmap -->
 					<div class="mb-4">
