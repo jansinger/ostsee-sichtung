@@ -1,10 +1,11 @@
 ---
-name: review
-description: Code-Review mit projektspezifischen Anti-Pattern Checks und /simplify.
+description: Code-Review der geänderten Dateien mit projektspezifischen Anti-Pattern-Checks (Svelte-4-Syntax, any-Typen, unsanitisiertes HTML, globaler $state in .ts, nicht-parametrisierte SQL) plus /simplify. Nutze dies wenn der User ein Review, eine Qualitätsprüfung oder Anti-Pattern-Analyse der Änderungen möchte.
+argument-hint: "[optionaler Scope, z.B. 'nur staged' oder ein Dateipfad]"
 allowed-tools: Bash, Read, Grep, Glob
+context: fork
 ---
 
-# /review
+# Code Review
 
 Führt eine Code-Qualitätsprüfung auf geänderten Dateien durch.
 

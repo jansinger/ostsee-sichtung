@@ -2,6 +2,9 @@
 paths:
   - 'src/lib/server/db/**'
   - 'drizzle.config.ts'
+  - 'src/lib/server/geo/**'
+  # API-Routen bleiben bewusst drin: 14 Endpunkte importieren den `db`-Client
+  # direkt und 23 das Schema, schreiben dort also echte Drizzle-Queries.
   - 'src/routes/api/**'
 ---
 
