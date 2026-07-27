@@ -29,8 +29,18 @@ DaisyUI wird über CSS eingebunden, **nicht** über ein Plugin-Array in
 ```
 
 Anleitungen, die `plugins: [require('daisyui')]` oder eine `daisyui: { themes: [...] }`
--Sektion in `tailwind.config.js` zeigen, beziehen sich auf DaisyUI v4 und sind hier
-**falsch**. Theme-Änderungen gehören ausschließlich in `src/app.css`.
+-Sektion in `tailwind.config.js` zeigen, beziehen sich auf DaisyUI v4.
+**`src/app.css` ist die alleinige Source of Truth** für DaisyUI und das Theme.
+
+> **Achtung — `tailwind.config.js` im Repo ist Altlast und wirkungslos.**
+> Die Datei existiert noch und enthält genau das v4-Setup (`plugins: [daisyui]`
+> plus einen `daisyui: { darkTheme: false, … }`-Block). Unter Tailwind 4 wird sie
+> aber **nicht geladen**: es gibt weder eine `@config`-Direktive in `src/app.css`
+> noch eine Referenz in `vite.config.ts` oder `svelte.config.js`.
+>
+> Konsequenz: Änderungen dort haben **keine Wirkung**. Wer am Theme arbeitet,
+> editiert `src/app.css`. Das Entfernen der Datei ist als Follow-up vorgemerkt und
+> nicht Teil dieser Rule — bis dahin gilt sie als tot, nicht als Vorbild.
 
 ---
 
