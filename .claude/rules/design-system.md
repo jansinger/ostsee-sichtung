@@ -103,3 +103,28 @@ Vor der Nutzung einer Utility prüfen, ob sie im Setup überhaupt existiert.
 ## Zahlen in Nutzertexten nur mit Quelle
 
 Hilfetexte und Tooltips (`meta.helpText` / `meta.valueText` im Yup-Schema) werden Bürgern als Aussage eines Forschungsmuseums präsentiert. Statistische Behauptungen ohne belegte Quelle gehören dort nicht hinein — im Zweifel die Aussage qualitativ formulieren („Bei ruhiger See sind Tiere leichter zu entdecken") statt eine Zahl zu erfinden.
+
+**Durchgesetzt durch `src/lib/form/validation/sightingSchemaClaims.test.ts`.** Der Test schlägt fehl, sobald ein `valueText` eine Zahl enthält, die nicht in `REVIEWED_NUMERIC_TEXTS` mit Quelle hinterlegt ist. Eine neue Zahl einzubauen erzwingt also, die Herkunft zu dokumentieren.
+
+### Was konkret nicht geht
+
+| Muster              | Beispiel (entfernt)                                 | Problem                                         |
+| ------------------- | --------------------------------------------------- | ----------------------------------------------- |
+| Erfundene Statistik | „73% der Sichtungen erfolgen morgens"               | Eigene DB sagt 10,6 % — widerlegt               |
+| Erfundene Stückzahl | „47 neue Verhaltensweisen dokumentiert"             | Nicht belegbar                                  |
+| Fremde Institution  | „für den IPCC-Meeresspiegel-Report verwendet"       | Frei erfunden, beschädigt fremden Ruf mit       |
+| Verwertungszusage   | „Ihre Fotos werden in Publikationen verwendet"      | Kann die Plattform nicht garantieren → „können" |
+| Superlativ          | „die präziseste Methode für Populationsschätzungen" | Nicht belegbar                                  |
+
+### Wenn eine Zahl belegt ist
+
+Quelle im Text erkennbar machen, nicht als nackte Prozentzahl:
+
+```ts
+// gut — Herkunft steht im Satz, Eintrag in REVIEWED_NUMERIC_TEXTS begründet ihn
+valueText: 'einzelne Schiffe melden laut unserer Sichtungsdatenbank seit über 20 Jahren immer wieder Sichtungen';
+```
+
+### Grenze der eigenen Datenbasis
+
+Die Tabelle `sichtungen` enthält **nur positive Meldungen, keinen Beobachtungsaufwand und keine Nullbeobachtungen**. Aussagen der Form „bei Bedingung X werden N-mal mehr Tiere entdeckt" lassen sich daraus grundsätzlich nicht ableiten — dafür wäre bekannter Suchaufwand nötig. Auch die zeitliche Verteilung der Meldungen bildet primär den Rhythmus der Beobachtenden ab (Mittagsgipfel 11–14 Uhr), nicht den der Tiere.

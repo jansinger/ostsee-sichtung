@@ -517,7 +517,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			helpText: 'Wählen Sie Ihre Beobachtungsposition',
 			valueText:
-				'Boot-Beobachtungen haben 3x höhere Entdeckungsrate als Landbeobachtungen - Ihr Standort hilft bei Populationsschätzungen',
+				'Ob vom Boot oder von Land aus beobachtet wurde, bestimmt mit, welcher Bereich überhaupt einsehbar war - das ist für die Einordnung der Meldung wichtig',
 			type: 'select',
 			options: getSightingFromOptions(),
 			icon: MapPin
@@ -559,7 +559,7 @@ export const sightingSchemaBase = yup.object().shape({
 			helpText:
 				'Wie weit waren die Tiere entfernt? (Schätzung) - Tipp: Größe einer Münze = 50m, Streichholz = 200m',
 			valueText:
-				'Entfernungsangaben helfen Forschern, Beobachtungen zu gewichten - Nahsichtungen unter 100m haben höchste wissenschaftliche Aussagekraft',
+				'Je geringer die Entfernung, desto verlässlicher lassen sich Art und Anzahl bestimmen - die Angabe hilft, Beobachtungen zu gewichten',
 			type: 'select',
 			options: getDistanceOptions(),
 			icon: Eye
@@ -638,8 +638,9 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Sonstiges Verhalten')
 		.meta({
 			placeholder: 'z.B. Spielverhalten, Jagd, Paarung, Interaktion mit Booten',
-			helpText: 'Ihre Beobachtung könnte eine noch unbekannte Verhaltensweise dokumentieren',
-			valueText: 'Neue Verhaltensbeobachtungen werden in wissenschaftlichen Journalen publiziert',
+			helpText: 'Beschreiben Sie das Verhalten in eigenen Worten',
+			valueText:
+				'Freitext erfasst auch Verhalten, für das es in der Auswahlliste keine Kategorie gibt',
 			icon: MessageCircle
 		}),
 
@@ -680,7 +681,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			helpText: 'Wie war die Beschaffenheit der Meeresoberfläche?',
 			valueText:
-				'Bei ruhiger See sind Tiere deutlich leichter zu entdecken - Ihre Seegangsangabe hilft, Sichtungszahlen richtig einzuordnen',
+				'Bei unruhiger See schrumpft der Streifen Meer, den Beobachter verlässlich absuchen können, um rund ein Drittel (Ostsee-Erfassung SCANS 2023) - deshalb hilft Ihre Angabe, Sichtungszahlen richtig einzuordnen',
 			type: 'select',
 			options: getSeaStateOptions(),
 			icon: Waves
@@ -703,7 +704,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			helpText: 'Wie weit konnten Sie sehen?',
 			valueText:
-				'Sichtweitenangaben ermöglichen "Distance Sampling" - die präziseste Methode für Populationsschätzungen. Auch Schätzungen sind wertvoll',
+				'Die Sichtweite bestimmt mit, welcher Bereich überhaupt einsehbar war - auch eine grobe Schätzung hilft bei der Auswertung',
 			type: 'select',
 			options: getVisibilityOptions(),
 			icon: Eye
@@ -745,7 +746,7 @@ export const sightingSchemaBase = yup.object().shape({
 			placeholder: 'z.B. 3',
 			helpText: 'Welche Windstärke wurde beobachtet?',
 			valueText:
-				'Windstärke korreliert mit Tauchverhalten - bei starkem Wind tauchen Wale länger und seltener auf',
+				'Bei höherer Windstärke sind auftauchende Tiere zwischen den Wellen schwerer zu erkennen - das hilft, Sichtungszahlen einzuordnen',
 			type: 'select',
 			options: getWindStrengthOptions(),
 			icon: CloudRain
@@ -783,7 +784,7 @@ export const sightingSchemaBase = yup.object().shape({
 			placeholder: 'z.B. 3 Fotos Schweinswal-Gruppe, 1 Video springender Wal',
 			helpText: 'Jedes Foto ist wertvoll - auch unscharfe Aufnahmen helfen bei der Identifikation',
 			valueText:
-				'Sichtungsfotos haben bereits 47 neue Verhaltensweisen dokumentiert und fließen in internationale Datenbanken ein',
+				'Aufnahmen machen Artbestimmung und Verhalten nachträglich überprüfbar - das erhöht den Wert Ihrer Meldung erheblich',
 			icon: Camera
 		})
 		.notRequired(),
@@ -812,7 +813,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			helpText: 'Stimmen Sie der wissenschaftlichen Nutzung der Aufnahmen zu?',
 			valueText:
-				'Ihre Fotos werden in wissenschaftlichen Publikationen verwendet und helfen bei der Öffentlichkeitsarbeit für den Meeresschutz - Sichtungsphotos überzeugen Politik und Gesellschaft',
+				'Mit Ihrer Zustimmung können die Aufnahmen für wissenschaftliche Auswertung und die Öffentlichkeitsarbeit des Meeresmuseums genutzt werden',
 			icon: Check
 		})
 		.default(false),
@@ -833,7 +834,7 @@ export const sightingSchemaBase = yup.object().shape({
 			placeholder: 'z.B. MS Seelöwe, SY Nordwind, FFK Seeadler',
 			helpText: 'Name Ihres Bootes/Schiffes (optional)',
 			valueText:
-				'Schiffsnamen ermöglichen Langzeitstudien - einige Schiffe melden seit 15 Jahren regelmäßig Sichtungen',
+				'Schiffsnamen ermöglichen Langzeitauswertungen - einzelne Schiffe melden laut unserer Sichtungsdatenbank seit über 20 Jahren immer wieder Sichtungen',
 			icon: Ship
 		})
 		.notRequired(),
@@ -886,7 +887,7 @@ export const sightingSchemaBase = yup.object().shape({
 			placeholder: 'z.B. 2',
 			helpText: 'Wie viele andere Boote waren in der Nähe?',
 			valueText:
-				'Schiffsverkehr-Daten sind Gold wert - sie zeigen Lärmeinfluss auf Meerestiere. Auch "0 Schiffe" ist eine wichtige Information',
+				'Die Anzahl umliegender Schiffe hilft, den Einfluss von Unterwasserlärm einzuordnen. Auch "0 Schiffe" ist eine wichtige Information',
 			icon: CountIcon
 		})
 		.notRequired(),
@@ -1115,7 +1116,7 @@ export const sightingSchemaBase = yup.object().shape({
 			placeholder: 'Zusätzliche Beobachtungen, Besonderheiten...',
 			helpText: 'Was möchten Sie noch mitteilen?',
 			valueText:
-				'Diese Daten fließen in EU-Meeresschutzrichtlinien ein - Ihre Beobachtungen beeinflussen maritime Politikentscheidungen',
+				'Das Deutsche Meeresmuseum gibt die Sichtungsdaten direkt an die internationalen Gremien für den Schutz der Ostsee-Schweinswale weiter (HELCOM und ASCOBANS)',
 			type: 'textarea',
 			icon: FileText
 		})
@@ -1132,7 +1133,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.meta({
 			placeholder: 'Klimawandel-Effekte, Plastikverschmutzung, andere Meerestiere...',
 			helpText: 'Verhaltensänderungen zeigen Klimawandel-Einfluss auf Meerestiere',
-			valueText: 'Ihre Umweltbeobachtungen werden für den IPCC-Meeresspiegel-Report verwendet',
+			valueText:
+				'Auffälligkeiten am Lebensraum helfen, Sichtungen in ihren Umweltkontext einzuordnen',
 			icon: MessageCircle
 		})
 		.notRequired(),

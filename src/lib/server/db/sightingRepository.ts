@@ -25,7 +25,7 @@ import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting, UpdateSighting } from '$lib/types/sighting';
 import type { SightingFileInsert } from '$lib/types/sightingFile';
 import { isImageFile } from '$lib/utils';
-import { count, eq, isNotNull, not, sql } from 'drizzle-orm';
+import { count, eq, gte, isNotNull, sql } from 'drizzle-orm';
 import { readImageExifData } from '$lib/server/media/exifUtils';
 import { mapFormToSighting } from '$lib/server/db/mapFormToSighting';
 import { setSightingIdForReferenceId } from '$lib/server/db/sightingFilesRepository';
@@ -332,12 +332,22 @@ export interface SightingStatistics {
 	deadAnimalsFound: number;
 }
 
-// Einträge mit falsch übermitteltem Datum aussortieren
-const excludedDate = (() => {
-	const res = new Date(0);
-	res.setHours(2);
-	return res;
-})();
+/**
+ * Untere Plausibilitätsgrenze für Sichtungsdaten.
+ *
+ * 280 Datensätze liegen auf dem Epoch-Platzhalter `1970-01-01 01:00:00` — das
+ * sind fehlerhafte Importe, keine Sichtungen aus dem Jahr 1970. Sie zählen in
+ * Statistiken nicht mit. Die älteste echte Sichtung stammt von 2002, zwischen
+ * 1970 und 2002 liegt kein einziger Datensatz; die Grenze ist deshalb bewusst
+ * in diese Lücke gelegt.
+ *
+ * Vorher wurde auf Gleichheit mit `new Date(0)` + `setHours(2)` verglichen.
+ * `setHours` arbeitet in der lokalen Zeitzone: in Europe/Berlin traf das die
+ * Datensätze, in einem UTC-Container (Produktion setzt kein `TZ`) nicht — dort
+ * wurde Epoch mitgezählt und `yearsOfService` sprang von 24 auf ~56 Jahre.
+ * Die feste UTC-Grenze ist zeitzonenunabhängig.
+ */
+export const EARLIEST_PLAUSIBLE_SIGHTING_DATE = new Date('1990-01-01T00:00:00Z');
 
 /**
  * Ermittelt statistische Daten über Sichtungen für die FormHelp-Komponente
@@ -419,7 +429,7 @@ export const getSightingStatistics = async (): Promise<SightingStatistics> => {
 				minDate: sql<string>`MIN(${sightings.sightingDate})`
 			})
 			.from(sightings)
-			.where(not(eq(sightings.sightingDate, excludedDate)));
+			.where(gte(sightings.sightingDate, EARLIEST_PLAUSIBLE_SIGHTING_DATE));
 
 		const firstSighting = firstSightingQuery[0]?.minDate;
 		const yearsOfService = firstSighting

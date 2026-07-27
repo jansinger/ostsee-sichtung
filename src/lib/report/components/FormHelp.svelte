@@ -6,19 +6,14 @@
 	import SpeciesIdentificationHelp from './form/fields/SpeciesIdentificationHelp.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 
-	// Reaktive Statistiken mit Fallback-Werten
-	let statistics = $state<SightingStatistics>({
-		totalSightings: 2847,
-		completionRate: 89,
-		averageOptionalFields: 8,
-		yearsOfService: 15,
-		uniqueUsers: 150,
-		sightingsWithMedia: 1200,
-		deadAnimalsFound: 25
-	});
+	// Keine Platzhalter-Zahlen: Statistiken werden erst angezeigt, wenn sie
+	// tatsächlich geladen wurden. Erfundene Fallback-Werte würden Bürgern sonst
+	// bei jedem API-Ausfall als echte Zahlen des Meeresmuseums präsentiert.
+	// Siehe .claude/rules/design-system.md → "Zahlen in Nutzertexten nur mit Quelle".
+	let statistics = $state<SightingStatistics | null>(null);
 
 	let loading = $state(true);
-	let fetchFailed = $state(false);
+	const fetchFailed = $derived(!loading && statistics === null);
 
 	// Load statistics only in browser (avoid SSR fetch warning)
 	$effect(() => {
@@ -27,15 +22,15 @@
 			try {
 				const response = await fetch('/api/statistics');
 				if (response.ok) {
-					const data = await response.json();
-					statistics = data;
+					statistics = await response.json();
+				} else {
+					logger.warn({ status: response.status }, 'Statistics endpoint returned an error');
 				}
 			} catch (error) {
 				logger.warn(
 					{ error: error instanceof Error ? error.message : error },
-					'Could not load statistics, using fallback values'
+					'Could not load statistics'
 				);
-				fetchFailed = true;
 			} finally {
 				loading = false;
 			}
@@ -76,7 +71,7 @@
 												{#if loading}
 													<span class="loading loading-dots loading-sm"></span>
 												{:else}
-													{statistics.totalSightings.toLocaleString('de-DE')}
+													{statistics?.totalSightings.toLocaleString('de-DE') ?? '–'}
 												{/if}
 											</div>
 											<div class="text-xs">Sichtungen gemeldet</div>
@@ -85,8 +80,10 @@
 											<div class="text-primary font-bold">
 												{#if loading}
 													<span class="loading loading-dots loading-sm"></span>
-												{:else}
+												{:else if statistics}
 													{statistics.completionRate}%
+												{:else}
+													–
 												{/if}
 											</div>
 											<div class="text-xs">Beobachter füllen Zusatzfelder aus</div>
@@ -149,8 +146,10 @@
 									✅ <strong>
 										{#if loading}
 											<span class="loading loading-dots loading-xs"></span>
-										{:else}
+										{:else if statistics}
 											{Math.round((statistics.averageOptionalFields / 12) * 100)}%
+										{:else}
+											–
 										{/if}
 									</strong> der Beobachter füllen Zusatzfelder aus - Sie helfen bei Populationsmodellen
 								</div>
@@ -179,52 +178,39 @@
 								<Icon icon="lucide:chart-pie" width="16" class="text-success" />
 								Ihre Daten machen den Unterschied
 							</h4>
-							<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+							<div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
 								<div class="bg-success/10 border-success/20 rounded-lg border p-4 text-center">
 									<div class="text-success mb-2 text-2xl font-bold">
 										{#if loading}
 											<span class="loading loading-dots loading-sm"></span>
 										{:else}
-											3x
+											{statistics?.yearsOfService ?? '–'}
 										{/if}
 									</div>
-									<div class="text-base-content text-sm font-medium">häufiger zitiert</div>
+									<div class="text-base-content text-sm font-medium">Jahre Sichtungsmeldungen</div>
 									<div class="text-base-content/70 mt-1 text-xs">
-										werden komplette Meldungen in Studien verwendet
+										{#if !loading && statistics && statistics.uniqueUsers > 0}
+											{statistics.uniqueUsers.toLocaleString('de-DE')} Personen haben bereits gemeldet
+										{:else}
+											viele Beobachtende melden bereits regelmäßig
+										{/if}
 									</div>
 								</div>
 								<div class="bg-success/10 border-success/20 rounded-lg border p-4 text-center">
 									<div class="text-success mb-2 text-2xl font-bold">
 										{#if loading}
 											<span class="loading loading-dots loading-sm"></span>
-										{:else}
-											{statistics.yearsOfService}
-										{/if}
-									</div>
-									<div class="text-base-content text-sm font-medium">Jahre Treue</div>
-									<div class="text-base-content/70 mt-1 text-xs">
-										{#if !loading && statistics.uniqueUsers > 0}
-											{statistics.uniqueUsers} verschiedene Nutzer melden bereits regelmäßig
-										{:else}
-											melden manche Nutzer bereits regelmäßig
-										{/if}
-									</div>
-								</div>
-								<div
-									class="bg-success/10 border-success/20 rounded-lg border p-4 text-center sm:col-span-2 lg:col-span-1"
-								>
-									<div class="text-success mb-2 text-2xl font-bold">
-										{#if loading}
-											<span class="loading loading-dots loading-sm"></span>
-										{:else}
+										{:else if statistics && statistics.totalSightings > 0}
 											{Math.round(
 												(statistics.sightingsWithMedia / statistics.totalSightings) * 100
 											)}%
+										{:else}
+											–
 										{/if}
 									</div>
 									<div class="text-base-content text-sm font-medium">mit Fotos/Videos</div>
 									<div class="text-base-content/70 mt-1 text-xs">
-										{#if !loading}
+										{#if !loading && statistics}
 											{statistics.sightingsWithMedia.toLocaleString('de-DE')} Sichtungen mit Medien dokumentiert
 										{:else}
 											durch Ihre Fotos wissenschaftlich dokumentiert
@@ -253,7 +239,7 @@
 										{#if loading}
 											<span class="loading loading-dots loading-sm"></span>
 										{:else}
-											{statistics.deadAnimalsFound}
+											{statistics?.deadAnimalsFound.toLocaleString('de-DE') ?? '–'}
 										{/if}
 									</div>
 									<div class="text-base-content text-xs">
@@ -264,21 +250,16 @@
 						</div>
 					</div>
 
-					<div class="alert alert-warning">
+					<div class="alert alert-info">
 						<div>
-							<h4 class="font-semibold">🇪🇺 Einfluss auf EU-Politik</h4>
+							<h4 class="font-semibold">Wofür die Daten gebraucht werden</h4>
 							<p class="mt-1 text-xs">
-								Ihre Sichtungsdaten fließen direkt in die <strong>EU-Meeresschutzrichtlinie</strong>
-								und den
-								<strong>IPCC-Klimabericht</strong> ein. Windpark-Planungen werden anhand Ihrer
-								Koordinaten angepasst, um Meerestiere zu schützen.
-								<strong>Sie beeinflussen maritime Politik!</strong>
+								Ihre Meldung wird vom Deutschen Meeresmuseum wissenschaftlich ausgewertet und direkt
+								an die internationalen Gremien für den Schutz der Ostsee-Schweinswale weitergegeben:
+								an <strong>HELCOM</strong>, die Helsinki-Kommission zum Schutz der Ostsee, und an
+								<strong>ASCOBANS</strong>, das internationale Abkommen zum Schutz der Kleinwale. So
+								trägt Ihre Beobachtung zum Bild von Verbreitung und Vorkommen der Tiere bei.
 							</p>
-							<div class="mt-2 flex justify-center space-x-4 text-xs">
-								<span class="badge badge-outline">EU-MSRL</span>
-								<span class="badge badge-outline">IPCC Report</span>
-								<span class="badge badge-outline">Natura 2000</span>
-							</div>
 						</div>
 					</div>
 				</div>
