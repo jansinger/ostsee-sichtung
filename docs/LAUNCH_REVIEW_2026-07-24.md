@@ -197,8 +197,30 @@ Im Zuge dieses Reviews aktualisiert:
 - `docker.md`: Dual-Adapter (Vercel/Node via `USE_NODE_ADAPTER` + `build:docker`).
 - `database.md`: `db:migrate`-Hinweis.
 
-Noch offen (Bonus, nicht in .claude): `src/lib/report/README.md` verweist auf `$lib/constants/…`
-statt `$lib/report/formOptions/…`.
+### Nachtrag 2026-07-27 — erledigt ✅
+
+Der offene Bonus-Punkt (`src/lib/report/README.md` verweist auf `$lib/constants/…` statt
+`$lib/report/formOptions/…`) ist behoben. Bei der Prüfung zeigte sich, dass der falsche
+Importpfad nur ein Symptom war — die Datei beschrieb überwiegend eine nie gebaute
+Architektur (`formStore.ts`, `CombinedField.svelte`, `combinedFields`, 3 statt 4 Schritte,
+`form-design.md` als Quelle). Sie wurde gegen `src/` neu geschrieben.
+
+Im selben Zug korrigiert, weil identisch veraltet:
+
+- `.claude/rules/forms.md` — Feldnamen (`latitude`/`sightingDate`/`totalCount` statt
+  `lat`/`date`/`count`), `touched` in der API-Liste ergänzt, 0-basierter `currentStep`,
+  zwei- statt dreiargumentige `validateStep`/`isStepValid`, nicht existierende
+  `.form-field`-CSS entfernt, handgeschriebenes Formular-Beispiel durch den Context-Weg
+  (`Form.svelte` → `setFormContext` → `FormField`) ersetzt.
+
+`docs/DESIGN_GUIDE.md` war ebenfalls betroffen, ist aber unabhängig davon mit **#567**
+komplett neu geschrieben worden (419 → 161 Zeilen, deutsch, Leitlinien und verifizierter
+Ist-Zustand getrennt). Diese Fassung deckt alle Punkte ab; eine parallele Korrektur wurde
+verworfen. Ebenfalls mit #567: die verbindliche Kurzform `.claude/rules/design-system.md`.
+
+Anmerkung zum Zeitpunkt: #567 hat `createForm` um einen `touched`-Store erweitert, der das
+grüne Häkchen steuert (`touched && hasValue && !hasError` in `FieldRenderer`). Doku-Aussagen
+über ein „fehlendes `touched`" beziehen sich auf den Stand **vor** #567.
 
 ---
 

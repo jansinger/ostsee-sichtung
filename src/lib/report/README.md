@@ -1,202 +1,172 @@
-# Modern Whale Sighting Report Form
+# `src/lib/report` — Sighting Report Form
 
-This is an alternative implementation of the whale sighting reporting form following modern UX best practices from `form-design.md`.
+This directory contains the **production** multi-step sighting form. It is mounted by
+[`src/routes/+page.svelte`](../../routes/+page.svelte) via `ModernReportForm` — there is no
+second or "legacy" form implementation.
 
-## Key Features
+The binding rules for working on this code are in
+[`.claude/rules/forms.md`](../../../.claude/rules/forms.md); UX rationale is in
+[`docs/DESIGN_GUIDE.md`](../../../docs/DESIGN_GUIDE.md). This file is an orientation map
+only — where things live and how the pieces connect.
 
-### 🎯 Research-Based Design
-- **Multi-step architecture**: 86% higher conversion rates than single-page forms
-- **Progressive disclosure**: Reduces cognitive load and completion time by 42%
-- **Mobile-first design**: Optimized for 48×48 DP touch targets and field conditions
-- **GOV.UK "One Thing Per Page" pattern**: Maximum 4 primary fields per step
+## Core idea: the schema drives the form
 
-### 📱 Mobile-Optimized Experience
-- Single-column layouts with proper spacing
-- Auto-focus and appropriate input types
-- Offline data persistence with auto-save
-- Touch-friendly interface elements
-- Performance optimized for marine conditions
+[`src/lib/form/validation/sightingSchema.ts`](../form/validation/sightingSchema.ts) is the
+single source of truth. Besides validation it carries the field presentation via `.label()`
+and `.meta({ type, options, helpText, icon, … })`. `formConfig.ts` reads it with
+`sightingSchema.describe()` and derives `initialFormState` and `sightingSchemaFields`.
 
-### 🔧 Combined Select/Text Inputs
-When "OTHER" (Sonstiges) is selected in dropdowns, the form reveals intelligent text inputs with:
-- **Datalist suggestions**: Common alternatives pre-populated
-- **Smooth animations**: 200ms slide-in transitions
-- **Smart validation**: Required only when "OTHER" selected
-- **Accessibility**: Proper ARIA labeling and focus management
+Consequence: **a field is defined in the schema, not in a component.** Components only say
+which field to render.
 
-### ✅ Advanced Validation
-- **Real-time validation**: Debounced (500-1000ms) to avoid premature errors
-- **Step-by-step validation**: Users can't proceed with invalid data
-- **Constructive error messages**: Clear guidance on how to fix issues
-- **Conditional field logic**: Dynamic requirements based on user input
+## Structure
 
-## Architecture
-
-### Components Structure
 ```
 src/lib/report/
-├── components/
-│   ├── FormField.svelte          # Universal form field component
-│   ├── CombinedField.svelte      # Select + text for "OTHER" options
-│   ├── StepProgress.svelte       # Progress indicator with navigation
-│   ├── StepNavigation.svelte     # Previous/Next buttons
-│   ├── ModernReportForm.svelte   # Main form container
-│   └── steps/
-│       ├── Step1Essential.svelte      # Location, time, species, count
-│       ├── Step2Observations.svelte   # Behavior, environment, media
-│       └── Step3Contact.svelte        # Personal info, boat details
-├── types.ts              # TypeScript interfaces
-├── formConfig.ts         # Field configurations and form structure
-├── formStore.ts          # Svelte 5 runes-based state management
-└── README.md            # This file
+├── formConfig.ts                    # formStepsConfig, initialFormState, USER_CONTACT_FIELDS
+├── formContext.ts                   # set/getFormContext (Symbol key)
+├── types.ts                         # @deprecated re-export shim → import from $lib/types
+├── formOptions/                     # Enum + option helpers (16 files)
+└── components/
+    ├── ModernReportForm.svelte      # Entry point; owns currentStep + persistence
+    ├── steps/
+    │   ├── Step1LocationTime.svelte
+    │   ├── Step2SightingDetails.svelte
+    │   ├── Step3Observations.svelte
+    │   └── Step4Contact.svelte
+    ├── sections/                    # Reusable blocks composed by the steps
+    └── form/
+        ├── Form.svelte              # The only createForm call; sets context + honeypot
+        ├── FormSteps.svelte         # Progress indicator
+        ├── StepNavigation.svelte    # Back / Next / Submit
+        ├── LocationInput.svelte     # Lat/Lon inputs (use id, not name)
+        └── fields/
+            ├── FormField.svelte     # Context → value + error for one field
+            ├── FieldRenderer.svelte # Builds label, ARIA, error output; picks the control
+            └── Base*.svelte         # Input, Select, Textarea, Radio, Checkbox, Toggle
 ```
 
-### Form Steps
-1. **Essential Data** (4 fields max): Location, time, species, basic count
-2. **Observations** (optional): Behavior, environmental conditions, media
-3. **Contact Info**: Personal details, boat information, additional notes
+## Data flow
 
-### State Management
-- **Svelte 5 runes** (`$state`, `$derived`, `$effect`) for reactive state
-- **Auto-save**: Persists to localStorage with 24-hour expiration
-- **Validation caching**: Step-level validation with error tracking
-- **Progress tracking**: Completed steps and navigation state
+```
+Form.svelte  →  createForm(...)  →  setFormContext(...)
+                                         ↓
+                     FormField (getFormContext → value, error, handleChange)
+                                         ↓
+                     FieldRenderer (label + ARIA + control selection)
+                                         ↓
+                     BaseInput / BaseSelect / BaseTextarea / …
+```
 
-## Usage
+State comes from [`createForm`](../form/createForm.ts) — Svelte **stores**
+(`writable`/`derived`), subscribed with `$`. Runes (`$state`) are used for local UI state
+such as `currentStep`, not for the form values. `FormField` throws if used outside `<Form>`.
 
-### Basic Implementation
+## Form steps
+
+Titles, descriptions and the per-step validated fields live in `formStepsConfig`
+(`formConfig.ts`) — change them there, not in the step components.
+
+| Index | Title            | Content                  |
+| ----- | ---------------- | ------------------------ |
+| `0`   | Position & Zeit  | Location, date, time     |
+| `1`   | Sichtungsdetails | Species, count, distance |
+| `2`   | Beobachtungen    | Optional details         |
+| `3`   | Kontaktdaten     | Observer information     |
+
+**`currentStep` is 0-based** and indexes `formStepsConfig` directly. Only the display adds
+`+ 1`.
+
+## Validation
+
+Three distinct layers — see `.claude/rules/forms.md` for the full table:
+
+| Layer          | Where                                  | Effect                                          |
+| -------------- | -------------------------------------- | ----------------------------------------------- |
+| **Per step**   | `../form/validation/stepValidation.ts` | Gates "Next"; blocks navigation                 |
+| **Pre-submit** | `ModernReportForm.handleFinalSubmit`   | Logging only — does **not** block               |
+| **Submit**     | `createForm.handleSubmit`              | Authoritative; sets `$errors`, calls `onSubmit` |
+
+`isStepValid(currentStep, formData)` and `validateStep(currentStep, formData)` take **two**
+arguments and validate `sightingSchema.pick(formStepsConfig[currentStep].fields)`.
+
+There is no debouncing. `createForm` exposes
+`{ form, errors, touched, isSubmitting, isValid, handleSubmit, handleChange, updateField, updateInitialValues }`
+and nothing else — no `validateField`, no `reset`.
+
+`touched` (`Record<string, boolean>`) is set by `handleChange` / `updateField` and cleared by
+`updateInitialValues`. It drives **display only**, never validation. Errors appear only after
+a failed "Next"/"Submit" attempt — never on entering a step (see `stepNavigationState.ts`) —
+and clear when the field changes.
+
+## Conditional fields
+
+Progressive disclosure is done inline in the section components with `{#if}` against
+`$form` plus `transition:slide`. There is no config object and no `CombinedField`
+component.
+
+The "OTHER selected → reveal a free-text field" pattern compares against the option enum
+and shows a `<field>Text` companion — see
+[`sections/SightingDetails.svelte`](components/sections/SightingDetails.svelte)
+(`sightingFrom` / `boatDrive`). Dead-animal fields work the same way in
+[`sections/AnimalInfo.svelte`](components/sections/AnimalInfo.svelte).
+
+Datalist suggestions are provided by `BaseInput.svelte` when a text field has options.
+
+## Persistence
+
+Handled in `ModernReportForm.svelte` by two separate `$effect`s — the split is deliberate,
+a shared effect would fire twice per step change. Always go through
+[`$lib/storage/localStorage`](../storage/localStorage.ts), never `localStorage` directly;
+GDPR details in [`.claude/rules/browser-storage.md`](../../../.claude/rules/browser-storage.md).
+
+| Data               | Key                 | Backend          | Notes                                |
+| ------------------ | ------------------- | ---------------- | ------------------------------------ |
+| Sighting form data | `FORM_DATA`         | `sessionStorage` | Consent-free session data; no expiry |
+| Current step       | `CURRENT_STEP`      | `sessionStorage` | Restored via `loadFromStorage(…, 0)` |
+| Observer contact   | `USER_CONTACT_DATA` | `localStorage`   | Opt-in, survives sessions            |
+
+`USER_CONTACT_FIELDS` (`formConfig.ts`) lets `clearFormDataOnly()` reset the sighting
+without discarding saved observer details.
+
+## Accessibility
+
+`FieldRenderer.svelte` is the only place that builds label and ARIA markup — do not
+hand-roll it in step or section components. It generates the label from `.label()`, the
+required marker and `aria-required` from `fieldConfig.optional === false`, `aria-invalid`,
+a composed `aria-describedby` (help / description / error, only for IDs that exist), the
+error output with `role="alert"` + `aria-live="polite"`, and `data-testid="field-<name>"`.
+
+It picks one of three markup shapes so no `label[for]` dangles: `<fieldset>`/`<legend>` for
+radio groups, control-owned labels for checkbox/toggle, and `<label for>` otherwise.
+
+The green status checkmark is gated on `touched && hasValue && !hasError`, so it only appears
+on fields the user actually interacted with. `FormField` reads `$touched[name]` from the
+context and passes it down. The indicator is `aria-hidden` — the accessible signal is
+`aria-invalid` plus the error text.
+
+`FieldRenderer` derives `required` from the **static** schema description, where a Yup
+`when()` is invisible. For conditionally-required fields, pass the `required` override so the
+asterisk and `aria-required` match the actual validation:
+
 ```svelte
-<script>
-  import ModernReportForm from '$lib/report/components/ModernReportForm.svelte';
-  
-  async function handleSubmit(formData) {
-    // Transform and submit data
-    const response = await fetch('/api/sightings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    });
-    
-    if (!response.ok) {
-      throw new Error('Submission failed');
-    }
-  }
-</script>
-
-<ModernReportForm onSubmit={handleSubmit} />
+<FormField name="waterway" required={$form.hasPosition !== true} />
 ```
 
-### Customization
+Step changes move focus to the step heading (`scrollAndFocusStep` in
+`StepNavigation.svelte`) so screen readers announce the new step.
 
-#### Adding New Fields
-1. Add field to `SightingFormData` interface in `types.ts`
-2. Create field configuration in `formConfig.ts`
-3. Add validation logic to `formStore.ts`
-4. Include field in appropriate step component
+## Adding a field
 
-#### Creating Combined Fields
-```typescript
-// In formConfig.ts
-export const combinedFields: Record<string, CombinedFieldConfig> = {
-  myField: {
-    selectField: {
-      name: 'myField',
-      type: 'select',
-      label: 'My Field',
-      options: myOptions
-    },
-    textField: {
-      name: 'myFieldText',
-      type: 'text',
-      label: 'Specify',
-      required: true
-    },
-    otherValue: 'other'
-  }
-};
-```
+1. Define it in `sightingSchema.ts` — validation plus `.label()` and `.meta({ type, … })`.
+   Options belong in `formOptions/`.
+2. Add the field name to the right step's `fields` array in `formConfig.ts` so it is
+   validated and reachable by error navigation.
+3. Render it with `<FormField name="…" />` in the appropriate section component.
 
-#### Extending Validation
-```typescript
-// In formStore.ts, validateStep method
-if (stepIndex === 1) { // Observations step
-  if (this.data.myField === 'other' && !this.data.myFieldText?.trim()) {
-    errors.myFieldText = 'Description required when "Other" selected';
-  }
-}
-```
+**No type to update:** `SightingFormData` is `yup.InferType<typeof sightingSchema>`
+([`$lib/types/Form.ts`](../types/Form.ts)), so the type follows from step 1 automatically.
+Import types from `$lib/types`, not from the deprecated `report/types.ts` shim.
 
-## Integration with Existing Schema
-
-The form uses the existing Yup schema from `src/lib/form/validation/sightingSchema.ts`:
-
-### Field Mappings
-- `hasPosition` → Controls GPS vs. waterway input
-- `isDead` → Reveals dead animal fields conditionally
-- Combined fields → Use `fieldName` + `fieldNameText` pattern
-- All validation rules → Maintain compatibility with existing schema
-
-### Required Updates for Full Integration
-1. **Constants Integration**: Update field configurations to use actual constants:
-   ```typescript
-   import { getAnimalBehaviorOptions } from '$lib/constants/animalBehavior';
-   import { getBoatDriveOptions } from '$lib/constants/boatDrive';
-   // etc.
-   ```
-
-2. **API Compatibility**: Ensure form data structure matches API expectations:
-   ```typescript
-   // Transform form data before submission
-   const apiData = {
-     ...formData,
-     species: Number(formData.species),
-     // Handle conditional fields properly
-   };
-   ```
-
-3. **Validation Sync**: Keep form store validation in sync with Yup schema changes.
-
-## Performance & Accessibility
-
-### Performance Features
-- **Lazy loading**: Heavy form sections loaded on demand
-- **Style caching**: Computed styles cached for reuse
-- **Debounced validation**: Prevents excessive validation calls
-- **Auto-save optimization**: Batched localStorage updates
-
-### Accessibility (WCAG 2.2)
-- **Proper labeling**: All form elements have associated labels
-- **ARIA support**: Screen reader compatible with live regions
-- **Keyboard navigation**: Full keyboard accessibility with arrow key support
-- **Focus management**: Logical focus flow with visible indicators
-- **Error announcements**: Errors announced via `aria-live="polite"`
-
-### Browser Support
-- **Modern browsers**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
-- **Mobile support**: iOS Safari 14+, Chrome Mobile 90+
-- **Progressive enhancement**: Graceful degradation for older browsers
-
-## Research & Metrics
-
-This implementation follows research findings from `form-design.md`:
-
-- **Multi-step forms**: 86% higher conversion rates
-- **Mobile optimization**: 42.95% of completions happen on mobile
-- **Optional field completion**: 3x increase with value-focused messaging
-- **Error recovery**: 78% one-try submission rate with proper validation
-- **Touch targets**: 48×48 DP minimum for mobile usability
-
-### Recommended Metrics to Track
-- **View-to-start rate**: Users who begin vs just view forms
-- **Field-level abandonment**: Identify problematic fields
-- **Completion by device**: Monitor mobile vs desktop performance
-- **Error recovery rates**: Measure validation effectiveness
-- **Time to completion**: Track efficiency improvements
-
-## Future Enhancements
-
-1. **Offline Support**: Service worker for field conditions
-2. **Photo Integration**: Direct camera capture with GPS metadata
-3. **Voice Input**: Speech-to-text for behavioral descriptions
-4. **Expert Review**: Workflow integration for data validation
-5. **Real-time Feedback**: Live species identification suggestions
+New field _types_ go into `FieldRenderer` plus a `Base*` component — never into a step or
+section file.
