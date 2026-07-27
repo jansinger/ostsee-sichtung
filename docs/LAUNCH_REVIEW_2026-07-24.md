@@ -197,8 +197,25 @@ Im Zuge dieses Reviews aktualisiert:
 - `docker.md`: Dual-Adapter (Vercel/Node via `USE_NODE_ADAPTER` + `build:docker`).
 - `database.md`: `db:migrate`-Hinweis.
 
-Noch offen (Bonus, nicht in .claude): `src/lib/report/README.md` verweist auf `$lib/constants/…`
-statt `$lib/report/formOptions/…`.
+### Nachtrag 2026-07-27 — erledigt ✅
+
+Der offene Bonus-Punkt (`src/lib/report/README.md` verweist auf `$lib/constants/…` statt
+`$lib/report/formOptions/…`) ist behoben. Bei der Prüfung zeigte sich, dass der falsche
+Importpfad nur ein Symptom war — die Datei beschrieb überwiegend eine nie gebaute
+Architektur (`formStore.ts`, `CombinedField.svelte`, `combinedFields`, 3 statt 4 Schritte,
+`form-design.md` als Quelle). Sie wurde gegen `src/` neu geschrieben.
+
+Im selben Zug korrigiert, weil identisch veraltet:
+
+- `.claude/rules/forms.md` — Feldnamen (`latitude`/`sightingDate`/`totalCount` statt
+  `lat`/`date`/`count`), Validierung in drei Ebenen, `isStepValid`-Signatur, 0-basierter
+  `currentStep`, nicht existierende `.form-field`-CSS, ARIA über `FieldRenderer`.
+- `docs/DESIGN_GUIDE.md` — dieselben Punkte plus: kein Service Worker / PWA vorhanden,
+  kein Debouncing, Formulardaten in `sessionStorage` (nicht `localStorage`, kein Ablauf),
+  kein `FormContext.svelte`, kein `touched`.
+
+Nicht angetastet: die Forschungs-Prozentzahlen im Design Guide stammen aus dem nicht mehr
+vorhandenen `form-design.md` und sind jetzt als unbelegt gekennzeichnet.
 
 ---
 
