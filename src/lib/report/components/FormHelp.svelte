@@ -80,8 +80,10 @@
 											<div class="text-primary font-bold">
 												{#if loading}
 													<span class="loading loading-dots loading-sm"></span>
+												{:else if statistics}
+													{statistics.completionRate}%
 												{:else}
-													{statistics?.completionRate ?? '–'}%
+													–
 												{/if}
 											</div>
 											<div class="text-xs">Beobachter füllen Zusatzfelder aus</div>
@@ -145,10 +147,10 @@
 									✅ <strong>
 										{#if loading}
 											<span class="loading loading-dots loading-xs"></span>
+										{:else if statistics}
+											{Math.round((statistics.averageOptionalFields / 12) * 100)}%
 										{:else}
-											{statistics
-												? Math.round((statistics.averageOptionalFields / 12) * 100)
-												: '–'}%
+											–
 										{/if}
 									</strong> der Beobachter füllen Zusatzfelder aus - Sie helfen bei Populationsmodellen
 								</div>
@@ -199,7 +201,7 @@
 									<div class="text-success mb-2 text-2xl font-bold">
 										{#if loading}
 											<span class="loading loading-dots loading-sm"></span>
-										{:else if statistics}
+										{:else if statistics && statistics.totalSightings > 0}
 											{Math.round(
 												(statistics.sightingsWithMedia / statistics.totalSightings) * 100
 											)}%

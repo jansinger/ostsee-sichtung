@@ -72,6 +72,21 @@ const INSTITUTIONAL_CLAIM_PATTERNS: ReadonlyArray<RegExp> = [
 	/werden\s+(?:in|für)\s+.*\b(?:publiziert|veröffentlicht|verwendet)\b/i
 ];
 
+/**
+ * Geprüfte Institutions- und Verwertungsaussagen.
+ *
+ * Institutionen dürfen genannt werden — aber nur, wenn das Haus die Angabe
+ * bestätigt hat. Absichtlich noch leer: Ob Meldungen aus diesem Portal
+ * tatsächlich an ASCOBANS/HELCOM weitergegeben werden (Jastarnia-Projekt,
+ * FTZ Büsum), ist bislang nur über eine Sekundärquelle belegt und liegt dem
+ * Fachteam zur Klärung vor — siehe
+ * `docs/FAKTENCHECK_FORMULARTEXTE_2026-07-27.md`, Abschnitt 5, Punkt 2.
+ *
+ * Sobald das bestätigt ist: Text hier eintragen, `quelle` mit der Bestätigung
+ * füllen, dann ist die Nennung im Formular wieder erlaubt.
+ */
+const REVIEWED_INSTITUTIONAL_TEXTS: ReadonlyArray<{ text: string; quelle: string }> = [];
+
 /** Zitierte Feldwerte wie "0 Schiffe" sind Bedienhinweise, keine Statistik. */
 const stripQuotedValues = (text: string): string =>
 	text.replace(/["„»][^"“«]*["“«]/g, ' ').replace(/'[^']*'/g, ' ');
@@ -97,6 +112,9 @@ function collectMeta(): Array<{ field: string; key: keyof FieldMeta; text: strin
 
 const isReviewed = (text: string): boolean =>
 	REVIEWED_NUMERIC_TEXTS.some((entry) => entry.text === text);
+
+const isReviewedInstitutional = (text: string): boolean =>
+	REVIEWED_INSTITUTIONAL_TEXTS.some((entry) => entry.text === text);
 
 describe('sightingSchema — Zahlenangaben in Nutzertexten', () => {
 	it('findet überhaupt Metadaten zum Prüfen', () => {
@@ -135,6 +153,7 @@ describe('sightingSchema — Zahlenangaben in Nutzertexten', () => {
 	it('vereinnahmt keine fremden Institutionen und verspricht keine Verwertung', () => {
 		const offenders = collectMeta()
 			.filter(({ text }) => INSTITUTIONAL_CLAIM_PATTERNS.some((pattern) => pattern.test(text)))
+			.filter(({ text }) => !isReviewedInstitutional(text))
 			.map(({ field, key, text }) => `${field}.${key}: "${text}"`);
 
 		expect(
@@ -145,9 +164,23 @@ describe('sightingSchema — Zahlenangaben in Nutzertexten', () => {
 		).toEqual([]);
 	});
 
-	it('nennt für jede freigegebene Zahlenangabe eine Quelle', () => {
-		for (const entry of REVIEWED_NUMERIC_TEXTS) {
+	it('nennt für jede freigegebene Angabe eine Quelle', () => {
+		for (const entry of [...REVIEWED_NUMERIC_TEXTS, ...REVIEWED_INSTITUTIONAL_TEXTS]) {
 			expect(entry.quelle.trim().length, `Quelle fehlt für: "${entry.text}"`).toBeGreaterThan(20);
 		}
+	});
+
+	it('gibt freigegebene Institutionsnennungen wieder frei', () => {
+		// Schützt die Allowlist selbst: Ein Eintrag muss den Guard tatsächlich
+		// aufheben, sonst wäre die Freigabe wirkungslos.
+		const beispiel = 'Meldungen gehen an HELCOM';
+		expect(INSTITUTIONAL_CLAIM_PATTERNS.some((p) => p.test(beispiel))).toBe(true);
+
+		const freigegeben = [{ text: beispiel, quelle: 'Testbeispiel' }];
+		const blockiert = [beispiel]
+			.filter((text) => INSTITUTIONAL_CLAIM_PATTERNS.some((p) => p.test(text)))
+			.filter((text) => !freigegeben.some((entry) => entry.text === text));
+
+		expect(blockiert).toEqual([]);
 	});
 });
