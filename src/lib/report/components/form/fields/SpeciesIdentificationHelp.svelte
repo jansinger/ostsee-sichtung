@@ -121,8 +121,8 @@
 
 			<!-- Wichtigste Regel zuerst -->
 			<div class="bg-warning/10 border-warning/30 mb-4 rounded-lg border p-3">
-				<h5 class="text-warning mb-1 flex items-center gap-1 text-xs font-semibold">
-					<Icon icon="lucide:triangle-alert" width="14" />
+				<h5 class="text-base-content mb-1 flex items-center gap-1 text-xs font-semibold">
+					<Icon icon="lucide:triangle-alert" width="14" class="text-warning" aria-hidden="true" />
 					Im Zweifel nicht raten
 				</h5>
 				<p class="text-base-content/80 text-xs">
@@ -207,8 +207,10 @@
 
 										<!-- So sieht es an der Oberfläche aus: das Wichtigste zuerst -->
 										<div class="bg-info/10 rounded-lg p-3">
-											<h6 class="text-info mb-1 flex items-center gap-1 text-xs font-semibold">
-												<Icon icon="lucide:eye" width="14" />
+											<h6
+												class="text-base-content mb-1 flex items-center gap-1 text-xs font-semibold"
+											>
+												<Icon icon="lucide:eye" width="14" class="text-info" aria-hidden="true" />
 												So sieht es an der Oberfläche aus
 											</h6>
 											<ul class="text-base-content/80 ml-3 list-disc space-y-0.5 text-xs">
