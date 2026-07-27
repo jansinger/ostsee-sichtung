@@ -1,18 +1,16 @@
 ---
-name: tdd
-description: Führt Test-Driven Development durch — RED → GREEN → REFACTOR Workflow.
+description: Führt Test-Driven Development durch — RED → GREEN → REFACTOR. Nutze dies bei neuen Features und Bugfixes, um den Test vor der Implementierung zu schreiben (im Projekt verpflichtend).
+argument-hint: '<Beschreibung des Features oder Bugs>'
 allowed-tools: Bash, Read, Grep, Glob, Edit, Write
 ---
 
-# /tdd
+# Test-Driven Development
 
 Führt Test-First Development für ein neues Feature oder einen Bugfix durch.
 
 ## Argumente
 
 `$ARGUMENTS` - Beschreibung des Features oder Bugs (z.B. "validateEmail Utility", "fix: distance parameter ignored in showreports")
-
----
 
 ## Workflow
 
@@ -122,8 +120,6 @@ npm run test:quick
 
 Sicherstellen dass keine Regressionen entstanden sind.
 
----
-
 ## Entscheidungshilfe: Was testen?
 
 | Typ          | Was testen                                    |
@@ -140,8 +136,6 @@ Sicherstellen dass keine Regressionen entstanden sind.
 - Externe Libraries (fetch, Drizzle) — nur eigenen Code der sie aufruft
 - Private Hilfsfunktionen direkt — über öffentliche API testen
 
----
-
 ## Beispiel: Bugfix per TDD
 
 ```
@@ -155,8 +149,6 @@ Bug: "distance Parameter wird in showreports.json ignoriert"
 
 3. REFACTOR: Variable umbenennen, Kommentar hinzufügen wo es nicht offensichtlich ist
 ```
-
----
 
 ## Ausgabe
 

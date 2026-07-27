@@ -363,3 +363,17 @@ csp: {
 - Keine externen Tile-Server ohne CSP
 - Keine synchronen API-Calls in Map Events
 - Kein direkter PostGIS-Zugriff aus Frontend
+
+---
+
+## Dokumentation nachschlagen
+
+Für OpenLayers-APIs **Context7** verwenden (`/openlayers/openlayers`). Der GitMCP-Server
+zum OpenLayers-Repo wurde entfernt: er liefert keine API-Doku, weil OpenLayers sein
+apidoc generiert auf openlayers.org veröffentlicht und nicht als Markdown im Repository
+hält.
+
+Die Context7-Abdeckung ist bei OpenLayers dünner als bei anderen Libraries (751
+Snippets). Diese Rule ist deshalb die primäre Quelle für alles Projektspezifische —
+Ostsee-Grenzen, PostGIS-Endpunkte, WebGL-vs-Cluster-Schwelle, CSP für Tiles. Nutze
+Context7 für reine OL-API-Fragen, nicht für Architekturentscheidungen.

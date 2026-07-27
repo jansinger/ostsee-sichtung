@@ -2,7 +2,7 @@
 paths:
   - 'src/lib/server/db/**'
   - 'drizzle.config.ts'
-  - 'src/routes/api/**'
+  - 'src/lib/server/geo/**'
 ---
 
 # Datenbank & Drizzle ORM

@@ -1,10 +1,11 @@
 ---
-name: prepare-pr
-description: Bereitet einen Pull Request vor mit Tests, Linting und Commit-Erstellung.
+description: Bereitet einen Pull Request vor — Branch-Prüfung, Tests, Code-Qualität, Conventional Commit, Push und PR-Erstellung. Nur auf ausdrückliche Anfrage des Users verwenden.
+argument-hint: '[optionale Beschreibung der Änderungen]'
 allowed-tools: Bash, Read, Grep
+disable-model-invocation: true
 ---
 
-# /prepare-pr
+# Pull Request vorbereiten
 
 Bereitet einen Pull Request vor.
 

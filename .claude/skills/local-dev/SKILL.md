@@ -1,10 +1,10 @@
 ---
-name: local-dev
-description: Startet die lokale Entwicklungsumgebung mit allen notwendigen Prüfungen.
+description: Startet die lokale Entwicklungsumgebung mit Prüfung von .env, Dependencies, Datenbank und Dev-Server. Nur auf ausdrückliche Anfrage des Users verwenden.
 allowed-tools: Bash, Read
+disable-model-invocation: true
 ---
 
-# /local-dev
+# Lokale Entwicklungsumgebung
 
 Startet die lokale Entwicklungsumgebung.
 
@@ -23,6 +23,7 @@ grep -q "DATABASE_POSTGRES_URL" .env && echo "DB URL konfiguriert" || echo "FEHL
 ```
 
 **Kritische Variablen:**
+
 - `DATABASE_POSTGRES_URL` - Datenbankverbindung
 - `AUTH0_CLIENT_ID` - Auth0 Client (falls Auth aktiv)
 - `BLOB_READ_WRITE_TOKEN` - Blob Storage (falls aktiv)
@@ -37,11 +38,13 @@ npm ls --depth=0 2>/dev/null || npm install
 ### Schritt 3: Datenbank prüfen
 
 **Option A - Native PostgreSQL (Port 5432):**
+
 ```bash
 pg_isready -h localhost -p 5432 && echo "PostgreSQL läuft" || echo "PostgreSQL nicht erreichbar"
 ```
 
 **Option B - Docker PostgreSQL (Port 5433):**
+
 ```bash
 docker ps | grep postgres || echo "Docker PostgreSQL nicht gestartet - npm run db:start ausführen"
 ```
@@ -53,6 +56,7 @@ npm run dev
 ```
 
 **Server läuft auf:**
+
 - URL: https://localhost:4000
 - HTTPS: Automatische Zertifikate
 
@@ -74,9 +78,9 @@ Nützliche Befehle:
 
 ## Fehlerbehebung
 
-| Problem | Lösung |
-|---------|--------|
-| `.env` fehlt | Kopiere `.env.example` zu `.env` |
+| Problem             | Lösung                                              |
+| ------------------- | --------------------------------------------------- |
+| `.env` fehlt        | Kopiere `.env.example` zu `.env`                    |
 | DB nicht erreichbar | `npm run db:start` (Docker) oder PostgreSQL starten |
-| Port 4000 belegt | Prozess beenden: `lsof -i :4000` |
-| SSL Fehler | Zertifikate löschen: `rm -rf ./certs` |
+| Port 4000 belegt    | Prozess beenden: `lsof -i :4000`                    |
+| SSL Fehler          | Zertifikate löschen: `rm -rf ./certs`               |
