@@ -17,6 +17,11 @@
 		currentValue?: SightingFormData[keyof SightingFormData];
 	} = $props();
 
+	// Die Komponente wird mehrfach gerendert (Tierart-Feld und generisches
+	// Hilfe-Panel). Eine feste ID wäre im DOM doppelt und würde aria-controls
+	// unbrauchbar machen.
+	const helpContentId = $props.id();
+
 	let isExpanded = $state(false);
 	let modalImageSrc = $state<string | null>(null);
 	let modalImageAlt = $state<string>('');
@@ -99,7 +104,7 @@
 		class="btn btn-ghost btn-sm flex w-full justify-start gap-2 text-left"
 		onclick={toggleExpanded}
 		aria-expanded={isExpanded}
-		aria-controls="species-help-content"
+		aria-controls={helpContentId}
 	>
 		<Icon icon={isExpanded ? 'lucide:chevron-down' : 'lucide:chevron-right'} width="16" />
 		<Icon icon="lucide:circle-help" width="16" />
@@ -108,7 +113,7 @@
 
 	<!-- Expandable Content -->
 	{#if isExpanded}
-		<div id="species-help-content" class="bg-base-100 border-base-300 mt-2 rounded-lg border p-4">
+		<div id={helpContentId} class="bg-base-100 border-base-300 mt-2 rounded-lg border p-4">
 			<div class="mb-4">
 				<h4 class="text-base-content mb-2 text-sm font-semibold">
 					Bestimmungshilfe für Meerestiere

@@ -123,7 +123,7 @@ export const speciesIdentification: Record<SpeciesEnum, SpeciesIdentificationEnt
 				src: '/species/harbor-porpoise.png',
 				alt: 'Kopf aus der Nähe — runder Kopf ohne abgesetzten Schnabel (Tier in menschlicher Obhut)',
 				copyright:
-					'© <a href="https://commons.wikimedia.org/wiki/File:Daan_Close_Up.PNG">AVampireTear</a>, <a href="http://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>, via Wikimedia Commons'
+					'© <a href="https://commons.wikimedia.org/wiki/File:Daan_Close_Up.PNG">AVampireTear</a>, <a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>, via Wikimedia Commons'
 			}
 		]
 	},

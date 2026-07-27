@@ -111,6 +111,15 @@ describe('Bilder', () => {
 		}
 	});
 
+	it('verlinkt Quellen und Lizenzen ausschließlich über https', () => {
+		// Die Seite läuft über HTTPS; http-Links lösen Mixed-Content-Warnungen aus.
+		for (const species of allSpecies) {
+			for (const image of speciesIdentification[species].images) {
+				expect(image.copyright ?? '', `http-Link in Credit: ${image.src}`).not.toContain('http://');
+			}
+		}
+	});
+
 	it('verweist auf Bilder unterhalb von /species/', () => {
 		for (const species of allSpecies) {
 			for (const image of speciesIdentification[species].images) {
