@@ -120,9 +120,8 @@
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li>
-									<strong>Tierart:</strong> Bei Unsicherheit "Unbekannt" wählen <SpeciesIdentificationHelp
-										currentValue={0}
-									/>
+									<strong>Tierart:</strong> Bei Unsicherheit „Unbekannte Walart" oder „Unbekannte
+									Robbenart" wählen <SpeciesIdentificationHelp />
 								</li>
 								<li><strong>Anzahl:</strong> Auch Schätzungen sind wertvoll</li>
 								<li><strong>Jungtiere:</strong> Wichtig für Populationsstudien</li>

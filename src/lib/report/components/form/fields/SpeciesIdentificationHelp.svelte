@@ -1,6 +1,13 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
-	import { SpeciesEnum, speciesGroups } from '$lib/report/formOptions/species';
+	import { speciesGroups } from '$lib/report/formOptions/species';
+	import {
+		frequencyLabels,
+		observabilityLabels,
+		speciesIdentification,
+		type FrequencyLevel,
+		type Observability
+	} from '$lib/report/formOptions/speciesIdentification';
 	import type { SightingFormData } from '$lib/types';
 	import { sanitizeHtml } from '$lib/utils/sanitize';
 
@@ -9,6 +16,11 @@
 	}: {
 		currentValue?: SightingFormData[keyof SightingFormData];
 	} = $props();
+
+	// Die Komponente wird mehrfach gerendert (Tierart-Feld und generisches
+	// Hilfe-Panel). Eine feste ID wäre im DOM doppelt und würde aria-controls
+	// unbrauchbar machen.
+	const helpContentId = $props.id();
 
 	let isExpanded = $state(false);
 	let modalImageSrc = $state<string | null>(null);
@@ -56,282 +68,33 @@
 		}, 250);
 	}
 
-	// Identifikationsdaten für jede Tierart
-	const identificationData = {
-		[SpeciesEnum.HARBOR_PORPOISE]: {
-			name: 'Schweinswal',
-			size: '1,5-2 m',
-			weight: '50-70 kg',
-			distinguishing: [
-				'Kleine, dreieckige Rückenflosse',
-				'Kurze, stumpfe Schnauze',
-				'Dunkelgrauer bis schwarzer Rücken',
-				'Helle Bauchseite',
-				'Oft einzeln oder in kleinen Gruppen'
-			],
-			behavior: ['Kurze Tauchgänge (1-2 Min.)', 'Scheue Tiere', 'Atmen alle 2-4 Sekunden'],
-			images: [
-				{
-					src: '/species/harbor-porpoise.png',
-					alt: 'Schweinswal Seitenansicht',
-					copyright:
-						'© <a href="https://commons.wikimedia.org/wiki/File:Daan_Close_Up.PNG">AVampireTear</a>, <a href="http://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>, via Wikimedia Commons'
-				}
-			]
-		},
-		[SpeciesEnum.GREY_SEAL]: {
-			name: 'Kegelrobbe',
-			size: 'Männchen: bis 3 m, Weibchen: bis 2 m',
-			weight: 'Männchen: bis 300 kg, Weibchen: bis 150 kg',
-			distinguishing: [
-				'Langer, kegelförmiger Kopf',
-				'Große, weit auseinanderstehende Nasenlöcher',
-				'Grau mit dunklen Flecken',
-				'Deutlicher Geschlechtsdimorphismus',
-				'Männchen deutlich größer'
-			],
-			behavior: [
-				'Robuste Schwimmer',
-				'Tauchen bis zu 100 m tief',
-				'Leben oft in Kolonien',
-				'Sehr neugierig'
-			],
-			images: [
-				{
-					src: '/species/Two_seals_in_the_water.jpg',
-					alt: 'Kegelrobben im Wasser - Kopfform gut erkennbar',
-					copyright:
-						'© <a href="https://commons.wikimedia.org/wiki/File:Two_seals_in_the_water.jpg">Lucc77</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>, via Wikimedia Commons'
-				},
-				{
-					src: '/species/karsten-madsen-unsplash.jpg',
-					alt: 'Kegelrobbe Kopfdetail - charakteristische Nasenlöcher',
-					copyright: '© Foto von Karsten Madsen auf Unsplash'
-				}
-			]
-		},
-		[SpeciesEnum.HARBOR_SEAL]: {
-			name: 'Seehund',
-			size: '1,2-1,8 m',
-			weight: '50-100 kg',
-			distinguishing: [
-				'Rundlicher Kopf mit kurzer Schnauze',
-				'V-förmig zusammenlaufende Nasenlöcher',
-				'Graubraun mit dunklen Flecken',
-				'Relativ kleine Augen',
-				'Gedrungener Körperbau'
-			],
-			behavior: [
-				'Neugierig, nähern sich oft Booten',
-				'Leben in Gruppen',
-				'Ruhen gern auf Sandbänken',
-				'Tauchen meist 2-5 Minuten'
-			],
-			images: [
-				{
-					src: '/species/1080px-Common_Seal_Phoca_vitulina.jpg',
-					alt: 'Seehund Seitenansicht - rundlicher Kopf',
-					copyright:
-						'© By <a rel="nofollow" class="external text" href="http://photo-natur.de/">Andreas Trepte</a> - <span class="int-own-work" lang="en">Own work</span>, <a href="https://creativecommons.org/licenses/by-sa/2.5" title="Creative Commons Attribution-Share Alike 2.5">CC BY-SA 2.5</a>, <a href="https://commons.wikimedia.org/w/index.php?curid=21012232">Link</a>'
-				}
-			]
-		},
-		[SpeciesEnum.RINGED_SEAL]: {
-			name: 'Ringelrobbe',
-			size: '1-1,5 m',
-			weight: '50-70 kg',
-			distinguishing: [
-				'Kleinste Robbenart in der Ostsee',
-				'Charakteristische helle Ringe auf dunklem Fell',
-				'Rundlicher Kopf',
-				'Kurze Schnauze',
-				'Relativ große Augen'
-			],
-			behavior: ['Sehr scheu', 'Einzelgänger', 'Bevorzugen eisige Gewässer', 'Seltene Sichtungen'],
-			images: [
-				{
-					src: '/species/ringed-seal.jpg',
-					alt: 'Ringelrobbe mit charakteristischen Ringen',
-					copyright:
-						'© By <a href="//commons.wikimedia.org/w/index.php?title=User:Kirill.uyutnov&amp;action=edit&amp;redlink=1" class="new" title="User:Kirill.uyutnov (page does not exist)">Кирилл Уютнов</a> - <span class="int-own-work" lang="en">Own work</span>, <a href="https://creativecommons.org/licenses/by-sa/4.0" title="Creative Commons Attribution-Share Alike 4.0">CC BY-SA 4.0</a>, <a href="https://commons.wikimedia.org/w/index.php?curid=99756242">Link</a>'
-				}
-			]
-		},
-		[SpeciesEnum.DOLPHIN]: {
-			name: 'Delphin',
-			size: '2-4 m (je nach Art)',
-			weight: '150-500 kg',
-			distinguishing: [
-				'Längliche Schnauze (Rostrum)',
-				'Sichelförmige Rückenflosse',
-				'Stromlinienförmiger Körper',
-				'Meist grau mit hellerer Bauchseite',
-				'Leben in Schulen'
-			],
-			behavior: [
-				'Sehr aktive Schwimmer',
-				'Springen oft aus dem Wasser',
-				'Soziale Tiere in Gruppen',
-				'Neugierig gegenüber Booten'
-			],
-			images: [
-				{
-					src: '/species/974px-Tursiops_truncatus_01-cropped.jpg',
-					alt: 'Delphin beim Sprung - sichelförmige Rückenflosse',
-					copyright:
-						'© By NASA - <a rel="nofollow" class="external free" href="https://images.nasa.gov/details/KSC-04pd0178">https://images.nasa.gov/details/KSC-04pd0178</a><a rel="nofollow" class="external text" href="https://web.archive.org/web/20051113140743/http://mediaarchive.ksc.nasa.gov/detail.cfm?mediaid=21807">http://mediaarchive.ksc.nasa.gov/detail.cfm?mediaid=21807 on the Wayback Machine</a> at the <span lang="en" dir="ltr"><a href="https://en.wikipedia.org/wiki/Wayback_Machine" class="extiw" title="en:Wayback Machine"><span lang="en" dir="ltr">Wayback Machine</span></a></span>, Public Domain, <a href="https://commons.wikimedia.org/w/index.php?curid=37679800">Link</a>'
-				}
-			]
-		},
-		[SpeciesEnum.BELUGA]: {
-			name: 'Beluga (Weißwal)',
-			size: '3-5 m',
-			weight: '400-1500 kg',
-			distinguishing: [
-				'Charakteristische weiße Färbung (adult)',
-				'Rundlicher, flexibler Kopf (Melon)',
-				'Keine Rückenflosse',
-				'Breite, paddelförmige Brustflossen',
-				'Jungtiere grau'
-			],
-			behavior: [
-				'Leben in Familienverbänden',
-				'Sehr soziale Tiere',
-				'Langsame Schwimmer',
-				'Seltene Gäste in der Ostsee'
-			],
-			images: [
-				{
-					src: '/species/mendar-bouchali-djtZXyJkTU4-unsplash.jpg',
-					alt: 'Erwachsene Beluga - charakteristisch weiß',
-					copyright:
-						'Foto von <a href="https://unsplash.com/de/@mendarb?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Mendar Bouchali</a> auf <a href="https://unsplash.com/de/fotos/weisses-unterwassertier-djtZXyJkTU4?utm_content=creditCopyText&utm_medium=referral&utm_source=unsplash">Unsplash</a>'
-				}
-			]
-		},
-		[SpeciesEnum.MINKE_WHALE]: {
-			name: 'Zwergwal',
-			size: '7-10 m',
-			weight: '5-10 Tonnen',
-			distinguishing: [
-				'Kleinster Bartenwal',
-				'Spitzer Kopf',
-				'Weißes Band an den Brustflossen',
-				'Sichelförmige Rückenflosse',
-				'Dunkler Rücken, heller Bauch'
-			],
-			behavior: [
-				'Schnelle Schwimmer',
-				'Meist einzeln oder paarweise',
-				'Neugierig gegenüber Booten',
-				'Kurze Tauchgänge'
-			],
-			images: [
-				{
-					src: '/species/minke-whale.svg',
-					alt: 'Zwergwal mit charakteristischen weißen Bändern',
-					copyright: '© '
-				}
-			]
-		},
-		[SpeciesEnum.FIN_WHALE]: {
-			name: 'Finnwal',
-			size: '18-24 m',
-			weight: '40-70 Tonnen',
-			distinguishing: [
-				'Zweitgrößter Wal der Welt',
-				'Asymmetrische Kopffärbung',
-				'Hohe, sichelförmige Rückenflosse',
-				'V-förmiger Kopf von oben',
-				'Lange, schlanke Körperform'
-			],
-			behavior: [
-				'Sehr schnelle Schwimmer (bis 40 km/h)',
-				'Meist einzeln',
-				'Tiefe Tauchgänge',
-				'Seltene Sichtungen in der Ostsee'
-			],
-			images: [
-				{
-					src: '/species/fin-whale.svg',
-					alt: 'Finnwal - asymmetrische Kopffärbung sichtbar',
-					copyright: '© '
-				}
-			]
-		},
-		[SpeciesEnum.HUMPBACK_WHALE]: {
-			name: 'Buckelwal',
-			size: '12-16 m',
-			weight: '25-30 Tonnen',
-			distinguishing: [
-				'Sehr lange Brustflossen (bis 5 m)',
-				'Höcker auf dem Rücken',
-				'Warzen am Kopf',
-				'Kleine Rückenflosse auf Höcker',
-				'Komplexe Schwarz-Weiß-Muster'
-			],
-			behavior: [
-				'Spektakuläre Sprünge',
-				'Komplexe Gesänge',
-				'Lange Wanderungen',
-				'Sehr seltene Gäste in der Ostsee'
-			],
-			images: [
-				{
-					src: '/species/1066px-Humpback_whales_in_singing_position.jpg',
-					alt: 'Buckelwal unter Wasser',
-					copyright:
-						'© By Dr. Louis M. Herman. - <a rel="nofollow" class="external text" href="https://www.flickr.com/people/51647007@N08">NOAA Photo Library</a>: <a rel="nofollow" class="external text" href="https://www.flickr.com/photos/noaaphotolib/5077889241/">sanc0602</a>, Public Domain, <a href="https://commons.wikimedia.org/w/index.php?curid=79946">Link</a>'
-				}
-			]
-		},
-		[SpeciesEnum.UNKNOWN_WHALE]: {
-			name: 'Unbekannte Walart',
-			size: 'Variabel',
-			weight: 'Variabel',
-			distinguishing: [
-				'Wenn Artbestimmung nicht sicher möglich',
-				'Allgemeine Walmerkmale beachten',
-				'Größe und Körperform dokumentieren',
-				'Besondere Merkmale notieren'
-			],
-			behavior: ['Verhalten dokumentieren', 'Fotos wenn möglich', 'Genaue Ortsangabe wichtig'],
-			images: [
-				{
-					src: '/species/unknown-whale.svg',
-					alt: 'Unbekannte Walart - Platzhalter',
-					copyright: null
-				}
-			]
-		},
-		[SpeciesEnum.UNKNOWN_SEAL]: {
-			name: 'Unbekannte Robbenart',
-			size: 'Variabel',
-			weight: 'Variabel',
-			distinguishing: [
-				'Wenn Artbestimmung nicht sicher möglich',
-				'Kopfform und Nasenlöcher beachten',
-				'Größe schätzen',
-				'Fellmuster dokumentieren'
-			],
-			behavior: ['Verhalten beobachten', 'Fotos wenn möglich', 'Mit Bestimmungshilfe vergleichen'],
-			images: [
-				{
-					src: '/species/unknown-seal.svg',
-					alt: 'Unbekannte Robbenart - Platzhalter',
-					copyright: null
-				}
-			]
-		}
+	const frequencyBadge: Record<FrequencyLevel, string> = {
+		resident: 'badge-success',
+		regular: 'badge-info',
+		rare: 'badge-warning',
+		vagrant: 'badge-error'
 	};
 
-	// Gruppierte Daten für die Anzeige
+	const observabilityBadge: Record<Observability, string> = {
+		distance: 'badge-success',
+		closeup: 'badge-warning',
+		background: 'badge-ghost'
+	};
+
+	// Reihenfolge bewusst: zuerst das, was man im Feld tatsächlich sieht.
+	const observabilityOrder: Observability[] = ['distance', 'closeup', 'background'];
+
 	const groupedData = Object.entries(speciesGroups).map(([groupName, species]) => ({
 		groupName,
-		species: species
-			.filter((s) => s in identificationData)
-			.map((s) => ({ enum: s, ...identificationData[s as keyof typeof identificationData] }))
+		species: species.map((s) => ({ enum: s, ...speciesIdentification[s] }))
 	}));
+
+	function featuresFor(
+		features: (typeof speciesIdentification)[keyof typeof speciesIdentification]['distinguishing'],
+		observability: Observability
+	) {
+		return features.filter((f) => f.observability === observability);
+	}
 </script>
 
 <div class="mt-2">
@@ -341,22 +104,36 @@
 		class="btn btn-ghost btn-sm flex w-full justify-start gap-2 text-left"
 		onclick={toggleExpanded}
 		aria-expanded={isExpanded}
-		aria-controls="species-help-content"
+		aria-controls={helpContentId}
 	>
 		<Icon icon={isExpanded ? 'lucide:chevron-down' : 'lucide:chevron-right'} width="16" />
-		<Icon icon="lucide:circle-help" width="16" class="text-black" />
-		<span class="text-black">Hilfe bei der Tiererkennung</span>
+		<Icon icon="lucide:circle-help" width="16" />
+		<span>Hilfe bei der Tiererkennung</span>
 	</button>
 
 	<!-- Expandable Content -->
 	{#if isExpanded}
-		<div id="species-help-content" class="bg-base-100 border-base-300 mt-2 rounded-lg border p-4">
+		<div id={helpContentId} class="bg-base-100 border-base-300 mt-2 rounded-lg border p-4">
 			<div class="mb-4">
 				<h4 class="text-base-content mb-2 text-sm font-semibold">
 					Bestimmungshilfe für Meerestiere
 				</h4>
 				<p class="text-base-content/70 text-xs">
-					Klicken Sie auf eine Tierart um detaillierte Erkennungsmerkmale zu sehen.
+					Klicken Sie auf eine Tierart, um die Erkennungsmerkmale zu sehen. Merkmale sind danach
+					gekennzeichnet, ob sie bei einer echten Sichtung überhaupt zu erkennen sind.
+				</p>
+			</div>
+
+			<!-- Wichtigste Regel zuerst -->
+			<div class="bg-warning/10 border-warning/30 mb-4 rounded-lg border p-3">
+				<h5 class="text-base-content mb-1 flex items-center gap-1 text-xs font-semibold">
+					<Icon icon="lucide:triangle-alert" width="14" class="text-warning" aria-hidden="true" />
+					Im Zweifel nicht raten
+				</h5>
+				<p class="text-base-content/80 text-xs">
+					Wählen Sie „Unbekannte Walart" oder „Unbekannte Robbenart" und machen Sie wenn möglich ein
+					Foto — auch ein unscharfes. Eine unsichere Meldung mit Bild ist für die Forschung
+					wertvoller als eine falsch bestimmte.
 				</p>
 			</div>
 
@@ -365,15 +142,15 @@
 					<h5 class="text-primary mb-2 text-sm font-medium">{group.groupName}</h5>
 					<div class="grid grid-cols-1 gap-2">
 						{#each group.species as species (species.enum)}
-							<details class="collapse-arrow border-base-300 bg-base-50 collapse border">
+							<details class="collapse-arrow border-base-300 bg-base-100 collapse border">
 								<summary class="collapse-title min-h-0 py-2 text-sm font-medium">
-									<div class="flex items-center gap-2">
-										{#if species.images && species.images.length > 0 && species.images[0]}
+									<div class="flex flex-wrap items-center gap-2">
+										{#if species.images.length > 0 && species.images[0]}
 											<div class="avatar">
 												<div class="mask h-6 w-6 mask-circle">
 													<img
 														src={species.images[0].src}
-														alt={species.images[0].alt}
+														alt=""
 														class="object-cover"
 														loading="lazy"
 													/>
@@ -383,147 +160,149 @@
 										<span class={currentValue == species.enum ? 'text-primary font-semibold' : ''}>
 											{species.name}
 										</span>
+										<span class="badge badge-xs {frequencyBadge[species.frequency.level]}">
+											{frequencyLabels[species.frequency.level]}
+										</span>
 									</div>
 								</summary>
 								<div class="collapse-content px-4 pb-3">
 									<div class="space-y-3">
+										<!-- Häufigkeit einordnen -->
+										<p class="text-base-content/80 text-xs italic">
+											{species.frequency.text}
+										</p>
+
 										<!-- Bilder (klickbar für Vollbildansicht) -->
-										{#if species.images && species.images.length > 0}
-											<div class="space-y-3">
-												{#if species.images.length === 1}
-													<!-- Einzelnes Bild zentriert -->
-													<div class="flex justify-center">
-														<div class="text-center">
-															<button
-																type="button"
-																class="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:scale-105 hover:shadow-md"
-																onclick={() =>
-																	openImageModal(
-																		species.images?.[0]?.src || '',
-																		species.images?.[0]?.alt || species.name,
-																		species.images?.[0]?.copyright || null
-																	)}
-																aria-label={`${species.images?.[0]?.alt || species.name} in Originalgröße anzeigen`}
+										{#if species.images.length > 0}
+											<div
+												class="grid grid-cols-1 gap-3"
+												class:sm:grid-cols-2={species.images.length > 1}
+											>
+												{#each species.images as image (image.src)}
+													<div class="text-center">
+														<button
+															type="button"
+															class="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md"
+															onclick={() => openImageModal(image.src, image.alt, image.copyright)}
+															aria-label={`${image.alt} in Originalgröße anzeigen`}
+														>
+															<img
+																src={image.src}
+																alt={image.alt}
+																class="h-32 w-full object-cover transition-all group-hover:brightness-110"
+																loading="lazy"
+															/>
+															<div
+																class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
 															>
-																<img
-																	src={species.images?.[0]?.src || ''}
-																	alt={species.images?.[0]?.alt || species.name}
-																	class="h-32 w-auto object-cover transition-all group-hover:brightness-110"
-																	loading="lazy"
-																/>
-																<!-- Hover-Overlay mit Vergrößerungs-Icon -->
-																<div
-																	class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
-																>
-																	<svg
-																		class="h-6 w-6 text-white"
-																		fill="none"
-																		stroke="currentColor"
-																		viewBox="0 0 24 24"
-																	>
-																		<path
-																			stroke-linecap="round"
-																			stroke-linejoin="round"
-																			stroke-width="2"
-																			d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
-																		></path>
-																	</svg>
-																</div>
-															</button>
-															<!-- Copyright unter dem Bild -->
-															{#if species.images?.[0]?.copyright}
-																<p class="text-base-content/50 mt-1 text-xs">
-																	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-																	{@html sanitizeHtml(species.images[0].copyright)}
-																</p>
-															{/if}
-														</div>
-													</div>
-												{:else}
-													<!-- Mehrere Bilder in Grid -->
-													<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-														{#each species.images as image (image.src)}
-															<div class="text-center">
-																<button
-																	type="button"
-																	class="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:scale-105 hover:shadow-md"
-																	onclick={() =>
-																		openImageModal(image.src, image.alt, image.copyright || null)}
-																	aria-label={`${image.alt} in Originalgröße anzeigen`}
-																>
-																	<img
-																		src={image.src}
-																		alt={image.alt}
-																		class="h-28 w-full object-cover transition-all group-hover:brightness-110 sm:h-24"
-																		loading="lazy"
-																	/>
-																	<!-- Hover-Overlay mit Vergrößerungs-Icon -->
-																	<div
-																		class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
-																	>
-																		<svg
-																			class="h-5 w-5 text-white"
-																			fill="none"
-																			stroke="currentColor"
-																			viewBox="0 0 24 24"
-																		>
-																			<path
-																				stroke-linecap="round"
-																				stroke-linejoin="round"
-																				stroke-width="2"
-																				d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
-																			></path>
-																		</svg>
-																	</div>
-																</button>
-																<!-- Copyright unter dem Bild -->
-																{#if image.copyright}
-																	<p class="text-base-content/50 mt-1 text-xs">
-																		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-																		{@html sanitizeHtml(image.copyright)}
-																	</p>
-																{/if}
+																<Icon icon="lucide:zoom-in" width="24" class="text-white" />
 															</div>
-														{/each}
+														</button>
+														<p class="text-base-content/70 mt-1 text-xs">{image.alt}</p>
+														{#if image.copyright}
+															<p class="text-base-content/50 text-xs">
+																<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+																{@html sanitizeHtml(image.copyright)}
+															</p>
+														{/if}
 													</div>
-												{/if}
+												{/each}
 											</div>
 										{/if}
 
-										<!-- Grunddaten -->
-										<div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-											<div>
-												<span class="text-base-content/60 font-medium">Größe:</span>
-												<span class="text-base-content ml-1">{species.size}</span>
-											</div>
-											<div>
-												<span class="text-base-content/60 font-medium">Gewicht:</span>
-												<span class="text-base-content ml-1">{species.weight}</span>
-											</div>
-										</div>
-
-										<!-- Erkennungsmerkmale -->
-										<div>
-											<h6 class="text-base-content mb-1 text-xs font-medium">
-												Erkennungsmerkmale:
+										<!-- So sieht es an der Oberfläche aus: das Wichtigste zuerst -->
+										<div class="bg-info/10 rounded-lg p-3">
+											<h6
+												class="text-base-content mb-1 flex items-center gap-1 text-xs font-semibold"
+											>
+												<Icon icon="lucide:eye" width="14" class="text-info" aria-hidden="true" />
+												So sieht es an der Oberfläche aus
 											</h6>
 											<ul class="text-base-content/80 ml-3 list-disc space-y-0.5 text-xs">
-												{#each species.distinguishing as feature (feature)}
-													<li>{feature}</li>
+												{#each species.surfacing as item (item)}
+													<li>{item}</li>
 												{/each}
 											</ul>
 										</div>
 
-										<!-- Verhalten -->
+										<!-- Erkennungsmerkmale, nach Beobachtbarkeit gruppiert -->
+										<div>
+											<h6 class="text-base-content mb-1 text-xs font-medium">Erkennungsmerkmale</h6>
+											<div class="space-y-2">
+												{#each observabilityOrder as level (level)}
+													{@const features = featuresFor(species.distinguishing, level)}
+													{#if features.length > 0}
+														<div>
+															<span class="badge badge-xs {observabilityBadge[level]} mb-1">
+																{observabilityLabels[level]}
+															</span>
+															<ul class="text-base-content/80 ml-3 list-disc space-y-0.5 text-xs">
+																{#each features as feature (feature.text)}
+																	<li>{feature.text}</li>
+																{/each}
+															</ul>
+														</div>
+													{/if}
+												{/each}
+											</div>
+										</div>
+
+										<!-- Verwechslungsgefahr -->
+										{#if species.confusion.length > 0}
+											<div>
+												<h6
+													class="text-base-content mb-1 flex items-center gap-1 text-xs font-medium"
+												>
+													<Icon icon="lucide:git-compare-arrows" width="14" />
+													Häufig verwechselt mit
+												</h6>
+												<ul class="text-base-content/80 ml-3 list-disc space-y-0.5 text-xs">
+													{#each species.confusion as item (item)}
+														<li>{item}</li>
+													{/each}
+												</ul>
+											</div>
+										{/if}
+
+										<!-- Typisches Verhalten -->
 										<div>
 											<h6 class="text-base-content mb-1 text-xs font-medium">
-												Typisches Verhalten:
+												Typisches Verhalten
 											</h6>
 											<ul class="text-base-content/80 ml-3 list-disc space-y-0.5 text-xs">
 												{#each species.behavior as behaviorItem (behaviorItem)}
 													<li>{behaviorItem}</li>
 												{/each}
 											</ul>
+										</div>
+
+										<!-- Merkregel -->
+										{#if species.fieldTip}
+											<p
+												class="border-primary/40 text-base-content/80 border-l-2 pl-2 text-xs font-medium italic"
+											>
+												{species.fieldTip}
+											</p>
+										{/if}
+
+										<!-- Grunddaten: bewusst zuletzt, weil im Feld nicht schätzbar -->
+										<div class="border-base-300 border-t pt-2">
+											<div class="text-base-content/60 grid grid-cols-1 gap-1 text-xs">
+												<div>
+													<span class="font-medium">Größe:</span>
+													<span class="ml-1">{species.size}</span>
+												</div>
+												<div>
+													<span class="font-medium">Gewicht:</span>
+													<span class="ml-1">{species.weight}</span>
+												</div>
+												{#if species.scientificName !== '—'}
+													<div>
+														<span class="font-medium">Wissenschaftlich:</span>
+														<span class="ml-1 italic">{species.scientificName}</span>
+													</div>
+												{/if}
+											</div>
 										</div>
 									</div>
 								</div>
@@ -533,16 +312,64 @@
 				</div>
 			{/each}
 
-			<!-- Zusätzliche Hinweise -->
-			<div class="bg-info/10 rounded-lg p-3">
-				<h6 class="text-info mb-1 flex items-center gap-1 text-xs font-medium">
-					<Icon icon="lucide:circle-help" width="14" />
-					Wichtige Unterscheidungshilfe für Robben:
-				</h6>
-				<div class="text-base-content/80 space-y-1 text-xs">
-					<p><strong>Kegelrobbe:</strong> Langer, kegelförmiger Kopf, große Nasenlöcher</p>
-					<p><strong>Seehund:</strong> Rundlicher Kopf, V-förmige Nasenlöcher</p>
-					<p><strong>Ringelrobbe:</strong> Kleinste Art, charakteristische helle Ringe</p>
+			<!-- Übergreifende Unterscheidungshilfen -->
+			<div class="space-y-3">
+				<div class="bg-base-200 rounded-lg p-3">
+					<h6 class="text-base-content mb-1 flex items-center gap-1 text-xs font-semibold">
+						<Icon icon="lucide:circle-help" width="14" />
+						Wal oder Robbe? Die häufigste Verwechslung
+					</h6>
+					<div class="text-base-content/80 space-y-1 text-xs">
+						<p>
+							<strong>Robbe:</strong> Der runde Kopf steht senkrecht aus dem Wasser und bleibt liegen.
+							Augen, Schnauze und Barthaare sind erkennbar. Es gibt keine Rückenflosse.
+						</p>
+						<p>
+							<strong>Schweinswal:</strong> Kein Kopf zu sehen, nur ein rollender Rücken mit kleiner dreieckiger
+							Finne. Sichtbar für ein bis zwei Sekunden, danach ist das Tier weg.
+						</p>
+					</div>
+				</div>
+
+				<div class="bg-base-200 rounded-lg p-3">
+					<h6 class="text-base-content mb-1 flex items-center gap-1 text-xs font-semibold">
+						<Icon icon="lucide:circle-help" width="14" />
+						Robben unterscheiden: erst das Kopfprofil, dann die Nasenlöcher
+					</h6>
+					<div class="text-base-content/80 space-y-1 text-xs">
+						<p>
+							<strong>Kegelrobbe:</strong> langer Kopf, gerade Linie von der Schnauze zur Stirn; Nasenlöcher
+							parallel, laufen unten nicht zusammen.
+						</p>
+						<p>
+							<strong>Seehund:</strong> kurze Schnauze mit deutlichem Absatz zur Stirn, Augen weit vorn;
+							Nasenlöcher V-förmig und unten zusammenlaufend.
+						</p>
+						<p>
+							<strong>Ringelrobbe:</strong> kleinste Art, helle Ringe im Fell — in deutschen Gewässern
+							aber praktisch nicht anzutreffen.
+						</p>
+						<p class="text-base-content/60">
+							Das Kopfprofil ist auch auf 100–200 m mit dem Fernglas erkennbar. Die Nasenlöcher sind
+							das sicherste Merkmal, aber meist nur auf einem Foto zu beurteilen.
+						</p>
+					</div>
+				</div>
+
+				<div class="bg-base-200 rounded-lg p-3">
+					<h6 class="text-base-content mb-1 flex items-center gap-1 text-xs font-semibold">
+						<Icon icon="lucide:camera" width="14" />
+						Was der Forschung am meisten hilft
+					</h6>
+					<ul class="text-base-content/80 ml-3 list-disc space-y-0.5 text-xs">
+						<li>Ein Foto, auch unscharf — bei Großwalen möglichst die Fluke beim Abtauchen</li>
+						<li>Genaue Position und Uhrzeit</li>
+						<li>Größe im Vergleich zu Ihrem Boot statt einer Meterschätzung</li>
+						<li>
+							Bei Unsicherheit „Unbekannte Wal-" bzw. „Unbekannte Robbenart" statt einer Vermutung
+						</li>
+						<li>Halten Sie Abstand, besonders zu Robben an ihren Liegeplätzen</li>
+					</ul>
 				</div>
 			</div>
 		</div>
@@ -563,14 +390,7 @@
 						onclick={closeImageModal}
 						aria-label="Schließen"
 					>
-						<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M6 18L18 6M6 6l12 12"
-							></path>
-						</svg>
+						<Icon icon="lucide:x" width="24" />
 					</button>
 				</div>
 
@@ -580,9 +400,7 @@
 						src={modalImageSrc}
 						alt={modalImageAlt}
 						class="max-h-[70vh] max-w-full object-contain"
-						loading="lazy"
 					/>
-					<!-- Copyright unter dem vergrößerten Bild -->
 					{#if modalImageCopyright}
 						<p class="text-base-content/60 mt-3 text-sm">
 							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -613,12 +431,10 @@
 </dialog>
 
 <style>
-	/* Enhanced collapse animation */
 	.collapse-content {
 		transition: all 0.2s ease-in-out;
 	}
 
-	/* Improved image styling */
 	.avatar .mask {
 		transition: transform 0.2s ease;
 	}
@@ -627,7 +443,6 @@
 		transform: scale(1.05);
 	}
 
-	/* Clickable image button styling */
 	button.group {
 		border: none;
 		background: none;
@@ -635,11 +450,6 @@
 		cursor: pointer;
 	}
 
-	.group:hover img {
-		transform: scale(1.02);
-	}
-
-	/* Modal styling improvements */
 	.modal-box {
 		box-shadow:
 			0 20px 25px -5px oklch(0% 0 0 / 0.1),
@@ -651,13 +461,12 @@
 		background-color: oklch(0% 0 0 / 0.6);
 	}
 
-	/* Image modal specific styling */
 	.modal img {
 		border-radius: 0.5rem;
 		box-shadow: 0 4px 6px -1px oklch(0% 0 0 / 0.1);
 	}
 
-	/* Copyright link styling (bleibt global wegen {@html}) */
+	/* Copyright-Links stammen aus {@html} und brauchen daher globale Selektoren */
 	:global(.text-base-content\/50 a),
 	:global(.text-base-content\/60 a) {
 		color: inherit;
@@ -670,7 +479,6 @@
 		opacity: 0.8;
 	}
 
-	/* Better mobile responsiveness */
 	@media (max-width: 640px) {
 		.collapse-title {
 			font-size: 0.875rem;
@@ -681,7 +489,6 @@
 			padding-right: 1rem;
 		}
 
-		/* Mobile modal adjustments */
 		.modal-box {
 			width: 95%;
 			max-width: 95%;
@@ -692,17 +499,14 @@
 		}
 	}
 
-	/* Accessibility improvements */
 	@media (prefers-reduced-motion: reduce) {
 		.collapse-content,
 		.avatar .mask,
-		.group img,
 		button {
 			transition: none;
 		}
 	}
 
-	/* High contrast mode support */
 	@media (prefers-contrast: high) {
 		.group:hover {
 			outline: 2px solid;
