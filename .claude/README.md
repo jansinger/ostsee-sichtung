@@ -129,10 +129,11 @@ Subagents in `agents/` werden über ihre `description` automatisch delegiert.
 Projekt-Server stehen in [`../.mcp.json`](../.mcp.json) und werden **mitcommittet**,
 damit das Team und neue Worktrees sie automatisch erben.
 
-| Server        | Zweck                     | Credentials        |
-| ------------- | ------------------------- | ------------------ |
-| `drizzle-orm` | Drizzle ORM Docs (GitMCP) | keine              |
-| `github`      | PR-/Issue-Management      | `GITHUB_MCP_TOKEN` |
+| Server        | Zweck                                     | Credentials        |
+| ------------- | ----------------------------------------- | ------------------ |
+| `pg-aiguide`  | PostgreSQL-/PostGIS-Doku + Spatial-Skills | keine              |
+| `drizzle-orm` | Drizzle ORM Docs (GitMCP)                 | keine              |
+| `github`      | PR-/Issue-Management                      | `GITHUB_MCP_TOKEN` |
 
 **Secrets gehören nicht in `.mcp.json`.** Der GitHub-Server liest sein Token aus der
 Umgebungsvariablen `GITHUB_MCP_TOKEN`; wer sie nicht gesetzt hat, verliert nur diesen
@@ -156,23 +157,22 @@ aus `docs/*.md` und `llms.txt` im Repo. Die Abdeckung ist allerdings schmal
 (Custom Types, Joins, Table-Introspect); die Haupt-Doku liegt auf orm.drizzle.team.
 Für breitere Fragen bleibt Context7 die bessere Quelle.
 
-### Kandidat: PostgreSQL / PostGIS
+### PostgreSQL / PostGIS
 
-Aktuell ist **kein** Postgres-MCP konfiguriert, obwohl PostGIS Kerntechnologie ist.
-Geprüfte Option: [`pg-aiguide`](https://github.com/timescale/pg-aiguide) von TigerData —
-semantische Suche über PostgreSQL- **und PostGIS**-Doku, bringt eine
-`design-postgis-tables`-Skill mit (SRID, GiST-Indizes, `ST_DWithin`,
-GEOMETRY-vs-GEOGRAPHY). Verbindet sich **nie** mit einer Datenbank, braucht keine
-Credentials:
+`pg-aiguide` von TigerData deckt PostgreSQL- **und PostGIS**-Doku per semantischer
+Suche ab und bringt eine `design-postgis-tables`-Skill mit (SRID, GiST-Indizes,
+`ST_DWithin`, GEOMETRY-vs-GEOGRAPHY) — relevant, weil PostGIS hier Kerntechnologie ist.
 
-```bash
-claude mcp add --transport http --scope project pg-aiguide https://mcp.tigerdata.com/docs
-```
+Er verbindet sich **nie** mit einer Datenbank und braucht keine Credentials. Genau
+deshalb steht er in der committeten `.mcp.json` und nicht user-scoped.
 
-Für Query-Tuning gegen die lokale DB gäbe es zusätzlich `crystaldba/postgres-mcp`
-(EXPLAIN, hypothetische Indizes) — der braucht aber volle DB-Credentials und müsste
-für PostGIS-Queries im `unrestricted`-Modus laufen (Schreibrechte). Nur mit
-`--scope local` und ausschließlich gegen die Dev-DB sinnvoll.
+**Nicht konfiguriert:** Für Query-Tuning gegen die lokale DB gäbe es zusätzlich
+[`crystaldba/postgres-mcp`](https://github.com/crystaldba/postgres-mcp) (EXPLAIN,
+hypothetische Indizes). Der braucht aber volle DB-Credentials und müsste für
+PostGIS-Queries im `unrestricted`-Modus laufen, also mit Schreib- und DDL-Rechten —
+seine Query-Allowlist enthält keine einzige `ST_*`-Funktion. Bei den GDPR-relevanten
+Melderdaten nur mit `claude mcp add --scope local` und ausschließlich gegen die
+Dev-DB vertretbar.
 
 ---
 
