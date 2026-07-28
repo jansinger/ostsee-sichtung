@@ -70,7 +70,7 @@ describe('admin/statistics load() — Top-Observers Datumsspalten (M1)', () => {
 	it('berechnet firstSighting/lastSighting in Berlin-Ortszeit statt UTC-Tag', async () => {
 		recordedSelectColumns = [];
 
-		await load({} as any);
+		await load({} as unknown as Parameters<typeof load>[0]);
 
 		const topObserversColumns = recordedSelectColumns.find(
 			(columns) => 'firstSighting' in columns && 'lastSighting' in columns

@@ -94,6 +94,12 @@ describe('berlinToChar', () => {
 
 		expect(query.params).toEqual([]);
 	});
+
+	it('escapet Anführungszeichen im Muster (kein SQL-Bruch möglich)', () => {
+		// Vorgesehen sind nur Modulkonstanten — aber ein versehentlich
+		// durchgereichtes Muster mit ' darf das SQL-Literal nicht aufbrechen.
+		expect(toSql(berlinToChar(sightings.sightingDate, "HH24'MI"))).toContain(`'HH24''MI'`);
+	});
 });
 
 describe('Index-/Abfrage-Übereinstimmung', () => {

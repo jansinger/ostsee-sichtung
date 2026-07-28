@@ -85,8 +85,12 @@ export function berlinDatePart(part: 'year' | 'month' | 'day', column: SQLWrappe
  * @param column - Zeitstempelspalte, die UTC-Zeitpunkte hält
  * @param pattern - `to_char`-Formatmuster, z. B. `'DD.MM.YYYY'` oder `'HH24:MI'`.
  *   **Nur Modulkonstanten/Literale übergeben, niemals Nutzereingabe** — das
- *   Muster landet unparametrisiert (`sql.raw`) im SQL-Text.
+ *   Muster landet unparametrisiert (`sql.raw`) im SQL-Text. Anführungszeichen
+ *   werden defensiv SQL-standardkonform verdoppelt, damit ein versehentlich
+ *   durchgereichtes Muster das Literal nicht aufbrechen kann.
  */
 export function berlinToChar(column: SQLWrapper, pattern: string): SQL {
-	return sql`to_char(${asLocalTime(column)}, ${sql.raw(`'${pattern}'`)})`;
+	const escaped = pattern.replaceAll("'", "''");
+
+	return sql`to_char(${asLocalTime(column)}, ${sql.raw(`'${escaped}'`)})`;
 }
