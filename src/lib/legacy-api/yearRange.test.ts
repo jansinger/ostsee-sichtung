@@ -42,6 +42,18 @@ describe('getYearRange', () => {
 		expect(neujahrsNacht >= startDate && neujahrsNacht < endDate).toBe(true);
 	});
 
+	it('grenzt halboffen ab: endDate gehört bereits ins Folgejahr', () => {
+		// `endDate` ist Neujahr des Folgejahres. Wird es inklusiv gefiltert
+		// (SQL `BETWEEN`), landet eine Sichtung exakt um 00:00 Ortszeit am 01.01.
+		// in zwei Jahren. Das ist keine Theorie: 365 Datensätze haben genau
+		// 00:00 als Uhrzeit, weil keine angegeben wurde.
+		const { endDate } = getYearRange(2024);
+		const naechstesJahr = getYearRange(2025);
+
+		expect(formatDateDDMMYY(endDate)).toBe('01.01.25');
+		expect(endDate.getTime()).toBe(naechstesJahr.startDate.getTime());
+	});
+
 	it('liefert in jeder Server-Zeitzone dieselben Grenzen', () => {
 		const ergebnisse = TEST_TIME_ZONES.map((tz) =>
 			withTimeZone(tz, () => {

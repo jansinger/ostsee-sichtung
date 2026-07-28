@@ -24,7 +24,7 @@ import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { json, type RequestEvent } from '@sveltejs/kit';
-import { and, between, sql } from 'drizzle-orm';
+import { and, between, gte, lt, sql } from 'drizzle-orm';
 
 const logger = createLogger('api:legacy:showreports:pdf-compliant');
 
@@ -94,7 +94,13 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				// Jahresauslegung haben und darf nicht an der Server-Zeitzone hängen.
 				const { startDate, endDate } = getYearRange(yearNum);
 
-				whereConditions.push(and(between(sightings.sightingDate, startDate, endDate)));
+				// Halboffenes Intervall [startDate, endDate): `endDate` ist Neujahr
+				// des Folgejahres. SQL BETWEEN ist beidseitig inklusiv und würde eine
+				// Sichtung exakt um 00:00 Ortszeit am 01.01. in zwei Jahren liefern —
+				// 365 Datensätze haben genau diese Uhrzeit (keine Angabe).
+				whereConditions.push(
+					and(gte(sightings.sightingDate, startDate), lt(sightings.sightingDate, endDate))
+				);
 
 				logger.debug(
 					{

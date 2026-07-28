@@ -333,7 +333,7 @@ depended on it. One instance reached production — the statistics filter exclud
 epoch placeholder records via `setHours`, which evaluates in the **local** timezone.
 In Europe/Berlin it matched the 280 records, in the UTC container it did not, and
 `yearsOfService` jumped from 24 to ~56 years (fixed in
-[#571](https://github.com/jansinger/ostsee-sichtung/pull/571)).
+[#571](https://github.com/jansinger/ostsee-tiere/pull/571)).
 
 #### Why UTC and not Europe/Berlin
 
@@ -788,7 +788,7 @@ niemals setzen, sonst laufen Requests bei DB-Ausfall in Fehler statt in einen sa
 For questions about environment configuration:
 
 - **Documentation**: [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md)
-- **Issues**: https://github.com/jansinger/ostsee-sichtung/issues
+- **Issues**: https://github.com/jansinger/ostsee-tiere/issues
 - **Example File**: [.env.example](../.env.example)
 
 ---

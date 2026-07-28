@@ -134,13 +134,16 @@ async function reportAmbiguousTimestamps() {
 		  AND ((sichtungsdatum AT TIME ZONE ${SOURCE_TIME_ZONE}) AT TIME ZONE ${SOURCE_TIME_ZONE})
 		      <> sichtungsdatum`;
 
-	// Mehrdeutige Ortszeiten (Wiederholstunde im Herbst): dieselbe Wanduhrzeit
-	// existiert zweimal, Postgres wählt eine Auslegung.
+	// Mehrdeutige Ortszeiten (Wiederholstunde am Ende der Sommerzeit): dieselbe
+	// Wanduhrzeit existiert zweimal. Postgres wählt beim Umrechnen die spätere
+	// Auslegung (MEZ) — liegt eine Stunde davor dieselbe Wanduhrzeit, ist der
+	// Wert mehrdeutig. Nur die Stunde grob über Monat und Uhrzeit einzugrenzen
+	// würde alle Oktober-Sichtungen um 02:xx melden und die Warnung entwerten.
 	const [{ mehrdeutig }] = await sql`
 		SELECT count(*)::int AS mehrdeutig FROM sichtungen
 		WHERE sichtungsdatum IS NOT NULL
-		  AND date_part('month', sichtungsdatum) = 10
-		  AND date_part('hour', sichtungsdatum) = 2`;
+		  AND ((sichtungsdatum AT TIME ZONE ${SOURCE_TIME_ZONE}) - interval '1 hour')
+		      AT TIME ZONE ${SOURCE_TIME_ZONE} = sichtungsdatum`;
 
 	if (nichtExistent > 0) {
 		console.warn(`⚠️  ${nichtExistent} Zeitstempel liegen in der Frühjahrs-Zeitlücke.`);
