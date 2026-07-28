@@ -37,6 +37,19 @@ export class MediaFile {
 		this.uploadedFile = uploadedFile;
 		this.metadata = metadata;
 		this.fileName = fileName;
+		// Die Zusage „irgendwann ausgewertet" gehört an die injizierte Promise und
+		// damit hierher — nicht in die Factories. Sonst bliebe ein direkt
+		// konstruiertes MediaFile für immer „in Auswertung" (siehe MediaFile.test.ts).
+		//
+		// Reihenfolge unkritisch: Dieser Handler läuft vor dem der Factory, die
+		// `exifData` setzt. `analyzed` ist ein gewöhnliches Klassenfeld — Svelte
+		// proxyt Klasseninstanzen nicht, ein Schreibzugriff darauf weckt also
+		// nichts. Das einzige reaktive Signal ist die Neuzuweisung von
+		// `mediaStore.mediaFiles` in DropzoneEnhanced, deren Handler zuletzt
+		// registriert wird und beide Felder gesetzt vorfindet.
+		this.metadata.then(() => {
+			this.analyzed = true;
+		});
 	}
 
 	static createMediaFile(referenceId: string, file: File, isFromPositionStep?: boolean) {
@@ -55,7 +68,6 @@ export class MediaFile {
 			mediaFile.exifData = mediaFile.exifData ?? data.exifData;
 			mediaFile.thumbnail = mediaFile.thumbnail ?? data.thumbnail;
 			mediaFile.timestamp = data.exifData?.dateTimeOriginal ?? null;
-			mediaFile.analyzed = true;
 		});
 		mediaFile.uploadedFile.then((fileInfo) => {
 			mediaFile.isUploading = false;
@@ -91,7 +103,9 @@ export class MediaFile {
 			? new Date(mediaFile.exifData.dateTimeOriginal)
 			: null;
 		// Wiederhergestellte Datei: Die EXIF-Auswertung liegt bereits hinter uns,
-		// `fileInfo` trägt das Ergebnis. Nichts steht mehr aus.
+		// `fileInfo` trägt das Ergebnis. Bewusst sofort und zusätzlich zum
+		// Konstruktor-Handler — der liefe erst einen Microtask später, in dem die
+		// Datei fälschlich als „wird ausgewertet" gälte.
 		mediaFile.analyzed = true;
 		return mediaFile;
 	}

@@ -96,4 +96,26 @@ describe('MediaFile — Lebenszyklus von `analyzed`', () => {
 
 		expect(mediaFile.isAnalyzed()).toBe(true);
 	});
+
+	/**
+	 * Die Zusage gehört dem Konstruktor, nicht den Factories: Ein direkt
+	 * erzeugtes `MediaFile` bliebe sonst für immer „in Auswertung" — und ein
+	 * Panel, das darauf wartet, dauerhaft stumm.
+	 */
+	it('setzt das Flag auch bei direkter Konstruktion, ohne Factory', async () => {
+		const metadataPromise = Promise.resolve(metadata());
+		const mediaFile = new MediaFile(
+			'uid-2',
+			'foto.jpg',
+			'ref',
+			new Promise<UploadedFileInfo>(() => {}),
+			metadataPromise
+		);
+
+		expect(mediaFile.isAnalyzed()).toBe(false);
+
+		await metadataPromise;
+
+		expect(mediaFile.isAnalyzed()).toBe(true);
+	});
 });
