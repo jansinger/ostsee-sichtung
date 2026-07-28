@@ -264,9 +264,9 @@ describe('Contract: GET /api/config/public', () => {
 		const res = await publicGET(event);
 		const body = await res.json();
 
-		expect(Object.keys(body)).not.toContain('display.defaultMapCenter');
-		expect(Object.keys(body)).not.toContain('display.defaultMapZoom');
-		expect(Object.keys(body)).not.toContain('integration.mapTileProvider');
+		expect(body).not.toHaveProperty('display.defaultMapCenter');
+		expect(body).not.toHaveProperty('display.defaultMapZoom');
+		expect(body).not.toHaveProperty('integration.mapTileProvider');
 	});
 });
 

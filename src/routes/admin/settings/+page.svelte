@@ -316,7 +316,13 @@
 	<div class="mb-8 flex items-center justify-between">
 		<div>
 			<h1 class="text-base-content flex items-center gap-3 text-3xl font-bold">
-				<Icon icon="lucide:settings" width="32" height="32" class="text-primary" />
+				<Icon
+					icon="lucide:settings"
+					width="32"
+					height="32"
+					class="text-primary"
+					aria-hidden="true"
+				/>
 				Anwendungseinstellungen
 			</h1>
 			<p class="text-base-content/70 mt-2">
