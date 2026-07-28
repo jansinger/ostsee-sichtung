@@ -1,7 +1,7 @@
 # Positionsangabe in Schritt 1 — Design
 
 **Datum:** 2026-07-28
-**Status:** Entwurf zur Freigabe
+**Status:** Freigegeben (nach Review vom 2026-07-28)
 **Betrifft:** `src/lib/report/components/sections/PositionAndTime.svelte` und Umfeld
 
 ---
@@ -129,6 +129,33 @@ Statt einer stillen Sackgasse zwei benannte Ausgänge, die den Zielbereich
 aufklappen **und den Fokus dorthin setzen**. Das Foto bleibt hochgeladen — es ist
 als Medium weiterhin wertvoll.
 
+### Texte und bewusste Nicht-Entscheidungen
+
+**Der Einleitungstext entfällt.** „Wählen Sie die für Sie einfachste Methode zur
+Positionsangabe" (`PositionAndTime.svelte:92-94`) beschreibt eine Wahl, die es
+nicht mehr gibt, und wird durch eine Aussage über den Zweck ersetzt (etwa: „Wo
+haben Sie das Tier gesehen? Ein Foto mit GPS ist der schnellste Weg.").
+
+**Kein `capture`-Attribut am Datei-Input.** Über die Browser-Kamera aufgenommene
+Fotos tragen in aller Regel **kein** GPS-EXIF. Würde der Hero-Button die Kamera
+erzwingen, wäre Zustand C der Normalfall statt der Ausnahme. Die normale
+Betriebssystem-Auswahl (Galerie) ist die richtige — dort liegen die Fotos mit
+Positionsdaten.
+
+**Eingestandener Preis:** Die zugeklappte Karte ist weniger auffindbar als die
+heutige Karten-Kachel. Das ist der bewusste Preis für die Prominenz des
+Foto-Wegs, keine Nachlässigkeit. Wer die Karte sucht, findet eine beschriftete
+Zeile direkt unter dem Divider.
+
+**Der GPS-Button braucht ein eindeutiges Label.** „Aktuelle Position verwenden"
+übernimmt den Standort des *Geräts zum Zeitpunkt des Ausfüllens*. Sichtungen
+werden aber häufig später gemeldet — im Hafen, zu Hause, am Abend. Dann schriebe
+der Button stillschweigend eine falsche Position in den Forschungsdatensatz, und
+die Ostsee-Prüfung schlägt nicht an, weil auch die Küste in der Ostsee liegt.
+Label deshalb: **„Mein aktueller Standort"**. Ein zusätzlicher sanfter Hinweis,
+wenn `sightingDate` nicht der heutige Tag ist, wäre die bessere Lösung, ist aber
+optional und kann später folgen.
+
 ---
 
 ## Komponenten
@@ -142,14 +169,39 @@ gleichzeitig. Sie schrumpft auf reine Komposition.
 | `form/position/PositionPanel.svelte` **(neu)** | Foto-Karte, Divider, GPS-Button, Karten-Disclosure, `VerifyLocation` |
 | `form/position/LocationDescription.svelte` **(neu)** | `waterway` + `seaMark` samt Klapp-Logik |
 | `form/position/positionPanelState.ts` **(neu)** | reine Funktionen, in Node testbar |
-| `form/LocationInput.svelte` | Logik unverändert; Koordinatenfelder wandern in ein `<details>` |
+| `form/LocationInput.svelte` | Logik unverändert; neues Prop `collapsibleCoordinates` (Default `false`) |
 | `sections/positionMethod.ts` + Test | **entfällt** |
 
 `LocationInput` behält die Hoheit über die Koordinaten. Die Trennung von
 `mapLatitude`/`mapLongitude` gegenüber den echten Formularwerten samt
 `untrack`-Logik (`:30-41`) und der „leeres Feld ⇒ `undefined`"-Behandlung ist
-erkennbar hart erarbeitet und wird nicht angefasst. Es ändert sich nur, **wo** die
-Felder im Markup landen.
+erkennbar hart erarbeitet und wird nicht angefasst.
+
+### `LocationInput` wird vom Admin-Bereich mitbenutzt
+
+`sections/Location.svelte` bindet dieselbe `LocationInput`-Komponente ein und wird
+von `components/admin/AdminSightingEditForm.svelte:9` verwendet. Ein Zuklappen der
+Koordinatenfelder als neues Standardverhalten würde einem Admin, der eine Sichtung
+nachbearbeitet, genau die Felder verstecken, wegen derer er die Maske geöffnet hat.
+
+**Deshalb ist das Zuklappen ein Prop, kein neues Standardverhalten:**
+
+```ts
+// LocationInput.svelte
+collapsibleCoordinates?: boolean = false
+```
+
+- Default `false` → Admin-Maske bleibt unverändert.
+- `PositionPanel` übergibt `true`.
+
+Damit ändert sich für `LocationInput` nur, **ob** die Felder in einem
+Collapse-Container liegen — die Koordinatenlogik bleibt vollständig unberührt.
+
+**Randnotiz zu `hasPosition`:** `Location.svelte:25` rendert
+`<FormField name="hasPosition" />` als sichtbaren Toggle. Im Admin ist
+`hasPosition` also ein Bedienelement, im Meldeformular dagegen rein
+programmatisch (gesetzt aus EXIF, Karte oder Koordinatenfeldern). Das ist kein
+Widerspruch, sondern gewollt — beim Umsetzen aber leicht als einer zu lesen.
 
 `DropzoneEnhanced.svelte` bleibt unverändert. Der Foto-Zustand lässt sich von außen
 ableiten: `mediaStore` liegt bereits im Form-Context (`Form.svelte:40-50`), und
@@ -217,6 +269,8 @@ ist. Diese Logik ist korrekt und vorsichtig und bleibt unangetastet.
 | EXIF-Position außerhalb der Ostsee | Das Schema blockiert beim „Weiter" (`BALTIC_SEA_BBOX`) — unverändert. Neu ist, dass die aufgeklappte Karte den Fehler **sichtbar und korrigierbar** macht |
 | Beschreibung getippt, dann Foto mit GPS | Block bleibt offen, nur der Pflicht-Stern verschwindet |
 | Session-Restore | `derivePositionMethod` entfällt; die Zustände ergeben sich direkt aus den wiederhergestellten Werten — robuster als die heutige Rekonstruktion eines *Modus* |
+| Nutzer klappt die Karte wieder zu, obwohl Koordinaten gesetzt sind | `VerifyLocation` bleibt sichtbar — es liegt **außerhalb** der Karten-Disclosure. Sonst verschwände die Ostsee-Prüfung genau dann, wenn sie noch gilt |
+| GPS-Button, Sichtung aber an einem anderen Tag gemacht | Der Button übernimmt den aktuellen Gerätestandort. Abgefedert nur über das Label „Mein aktueller Standort" (siehe „Texte und bewusste Nicht-Entscheidungen"); eine Datumsprüfung ist optional und nicht Teil dieser Änderung |
 
 ### Offener Punkt
 
@@ -227,10 +281,25 @@ Umsetzen zu prüfen und gegebenenfalls um einen Hinweis zu ergänzen.
 
 ---
 
-## Barrierefreiheit
+## Barrierefreiheit und Design System
 
-- Auf-/Zuklappen über natives `<details>`/`<summary>` mit `open={...}` — Tastatur
-  und Screenreader ohne eigenes ARIA.
+- Auf-/Zuklappen über das im Projekt etablierte Muster aus `<details>` plus
+  DaisyUI-Collapse-Klassen (`Step4Contact.svelte:111-127`) — nativ zugänglich
+  *und* konsistent mit dem Bestand:
+
+  ```svelte
+  <details class="bg-base-100 collapse" open={…}>
+    <summary class="collapse-title min-h-0 py-2 text-sm font-medium">…</summary>
+    <div class="collapse-content">…</div>
+  </details>
+  ```
+
+- **Primäraktion:** Der Hero-Button ist `btn btn-primary`, obwohl „Weiter"
+  (`StepNavigation.svelte:214`) ebenfalls `btn-primary` ist und meist gleichzeitig
+  sichtbar. `design-system.md` fordert eine Primäraktion **pro Bereich**; Panel und
+  Navigationsleiste sind zwei Bereiche, die Regel ist also eingehalten. Die
+  Entscheidung ist bewusst getroffen und nicht beiläufig: Ohne
+  Vollton-Primärbutton trägt die Foto-Karte die geforderte Prominenz nicht.
 - Die „Kein GPS"-Meldung braucht `role="status"`, sonst erfährt ein
   Screenreader-Nutzer nichts vom fehlgeschlagenen Auslesen.
 - Die Ausgangs-Buttons in Zustand C setzen den **Fokus** in den Zielbereich, nicht
@@ -240,6 +309,20 @@ Umsetzen zu prüfen und gegebenenfalls um einen Hinweis zu ergänzen.
   hellblau ergibt rund 1,3:1 (siehe `.claude/rules/design-system.md`).
 - Touch-Targets mindestens 44×44 px.
 - Die Radiogruppe mit `fieldset`/`legend` entfällt ersatzlos mit der Methodenwahl.
+- Neue Elemente bekommen stabile `data-testid`-Hooks (Hero-Dropzone,
+  Karten-Disclosure, Beschreibungs-Disclosure, die beiden Ausgänge aus Zustand C).
+  Der heutige E2E-Test matcht auf Prosa (`Foto per Drag & Drop oder Klick
+  hochladen`) und bricht deshalb bei jeder Textänderung.
+- **Im iframe-Modus prüfen.** Die App läuft eingebettet auf meeresmuseum.de
+  (`.iframe-mode`, siehe `.claude/rules/daisyui.md`); ein längeres Panel verändert
+  dort das Scrollverhalten.
+
+**Vorbestehender Verstoß, den diese Änderung sichtbarer macht:** Die
+Entfernen-Buttons in `DropzoneEnhanced` sind `btn-xs` (`:349`, `:409`) und
+unterschreiten damit das 44-px-Minimum. Wird die Foto-Karte zum Hauptweg, ist das
+das meistgenutzte Bedienelement des Schritts. Behebung gehört in diese Änderung,
+sofern sie ohne Nebenwirkung auf die Medien-Sektion in Schritt 3 möglich ist —
+sonst als eigener Vorgang.
 
 ---
 
@@ -261,9 +344,19 @@ und `method-photo`; diese Selektoren existieren nicht mehr. Neu abzudecken:
 - Kartenbereich initial zugeklappt
 - `waterway` und `seaMark` ohne jeden Moduswechsel erreichbar
 
-Die EXIF-Pfade werden über die reinen Funktionen abgedeckt. In `e2e/fixtures/`
-liegt kein Bild; ein echtes Testfoto mit GPS-EXIF wäre wünschenswert, ist aber
-kein Muss für diese Änderung.
+**Neue Fixtures.** Es liegt kein Bild in `e2e/fixtures/`, und in `e2e/` gibt es
+bisher **kein einziges** `setInputFiles` — der Datei-Upload ist E2E vollständig
+ungetestet. Die Testfotos schließen damit eine größere Lücke als nur diese
+Änderung:
+
+| Datei | Anforderung |
+| --- | --- |
+| `e2e/fixtures/photo-with-gps.jpg` | JPEG mit `GPSLatitude`/`GPSLongitude` **innerhalb** von `BALTIC_SEA_BBOX` (Breite 53,0–66,0 · Länge 9,4–30,2, `checkBalticSea.ts:27`), z.B. 54,31 N / 12,09 E. `DateTimeOriginal` in der Vergangenheit — Zukunftsdaten weist das Schema ab |
+| `e2e/fixtures/photo-without-gps.jpg` | Gleiches Bild ohne GPS-Tags, `DateTimeOriginal` erhalten. Prüft Zustand C: „Datum übernommen, Position nicht" |
+| `e2e/fixtures/photo-gps-outside-baltic.jpg` | *(optional)* GPS außerhalb der Box — deckt den Validierungsfehler ab, der heute unsichtbar zuschlägt |
+
+JPEG, nicht PNG (PNG trägt keine GPS-EXIF zuverlässig). Ergänzend bleiben die
+reinen Funktionen die primäre Absicherung der EXIF-Zustandslogik.
 
 ---
 
