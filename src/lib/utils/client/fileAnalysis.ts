@@ -3,7 +3,58 @@
  * Diese funktionen nutzen die browser APIs für basic file validation und analysis
  */
 import type { BrowserFileMetadata, ExifData } from '$lib/types';
+import { berlinWallClockToInstant } from '$lib/utils/format/berlinWallClock';
 import * as exifr from 'exifr';
+
+/** EXIF-Zeitstempel, wie exifr sie liefert: entweder roher String oder belebtes Date. */
+type ExifTimestamp = Date | string;
+
+/** Rohes EXIF-Format: "YYYY:MM:DD HH:MM:SS". */
+const EXIF_DATETIME_PATTERN = /^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/;
+
+/**
+ * Wandelt einen EXIF-Zeitstempel in den echten Zeitpunkt der Aufnahme um.
+ *
+ * EXIF speichert reine Wanduhrzeit ohne Zonenangabe. Konvention im Projekt:
+ * Die Kamera stand auf deutscher Zeit (so normalisiert es auch `exifUtils.ts`
+ * serverseitig). `exifr` belebt den Zeitstempel dagegen in der Zeitzone des
+ * Browsers — der abgelesene Wert wandert dadurch für Melder außerhalb
+ * Deutschlands um den Zonenunterschied. Deshalb werden hier die **lokalen**
+ * Felder gelesen (sie tragen die Wanduhrzeit verbatim) und anschließend als
+ * deutsche Zeit verankert.
+ *
+ * @param value - EXIF-Zeitstempel als Date oder als roher "YYYY:MM:DD HH:MM:SS"-String
+ * @returns Der Aufnahmezeitpunkt in UTC, oder `undefined` bei unlesbarer Angabe
+ */
+function exifWallClockToInstant(value: ExifTimestamp): Date | undefined {
+	if (typeof value === 'string') {
+		const match = EXIF_DATETIME_PATTERN.exec(value);
+		if (!match) {
+			return undefined;
+		}
+		return berlinWallClockToInstant({
+			year: Number(match[1]),
+			month: Number(match[2]),
+			day: Number(match[3]),
+			hours: Number(match[4]),
+			minutes: Number(match[5]),
+			seconds: Number(match[6] ?? 0)
+		});
+	}
+
+	if (isNaN(value.getTime())) {
+		return undefined;
+	}
+
+	return berlinWallClockToInstant({
+		year: value.getFullYear(),
+		month: value.getMonth() + 1,
+		day: value.getDate(),
+		hours: value.getHours(),
+		minutes: value.getMinutes(),
+		seconds: value.getSeconds()
+	});
+}
 
 /**
  * Extrahiert EXIF-Daten client-seitig aus einem Bild
@@ -38,10 +89,9 @@ async function extractExifData(file: File): Promise<ExifData> {
 		// Extract timestamp
 		result.dateTime = exifData.DateTime;
 
-		if (exifData.DateTimeOriginal) {
-			result.dateTimeOriginal = new Date(exifData.DateTimeOriginal);
-		} else if (exifData.DateTime) {
-			result.dateTimeOriginal = new Date(exifData.DateTime);
+		const wallClock = exifData.DateTimeOriginal ?? exifData.DateTime;
+		if (wallClock) {
+			result.dateTimeOriginal = exifWallClockToInstant(wallClock);
 		}
 
 		return result;

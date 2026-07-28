@@ -25,6 +25,14 @@ export interface FormProgress {
 export type SightingFormData = yup.InferType<typeof sightingSchema>;
 
 export type SightingFormValues = Omit<SightingFormData, 'uploadedFiles'> & {
+	/**
+	 * Echter UTC-Zeitpunkt der Sichtung.
+	 *
+	 * Wird **ausschließlich serverseitig** aus der Datenbank befüllt (E-Mail-
+	 * Aufbereitung). Clients dürfen das Feld nicht mitschicken — es steht deshalb
+	 * nicht auf der Allowlist in `requestValidation.ts`, und `mapFormToSighting`
+	 * bildet den Zeitpunkt selbst aus `sightingDate`/`sightingTime`.
+	 */
 	sightingDatetime?: Date;
 	inBalticSea?: boolean;
 	inBalticSeaGeo?: boolean;

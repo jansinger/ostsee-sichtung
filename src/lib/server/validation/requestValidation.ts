@@ -16,10 +16,12 @@ export type AllowedSightingFormData = yup.InferType<typeof sightingSchemaBase> &
  * Set of allowed field names for sighting POST requests
  * These are the fields from sightingSchemaBase plus entryChannel, excluding administrative fields
  */
+// `sightingDatetime` steht bewusst NICHT auf der Liste: Der Zeitpunkt wird
+// serverseitig aus sightingDate/sightingTime gebildet — ein vom Browser
+// berechneter Instant trüge dessen Zeitzone.
 const ALLOWED_SIGHTING_FIELDS = new Set([
 	...Object.keys(sightingSchemaBase.fields),
-	'entryChannel', // This field is in sightingSchema but not in sightingSchemaBase
-	'sightingDatetime' // additional sighting time with browser timezone!
+	'entryChannel' // This field is in sightingSchema but not in sightingSchemaBase
 ]);
 
 /**

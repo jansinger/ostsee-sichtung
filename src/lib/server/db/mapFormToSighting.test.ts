@@ -1,5 +1,7 @@
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import type { SightingFormData } from '$lib/report/types';
+import type { SightingFormValues } from '$lib/types/Form';
+import { TEST_TIME_ZONES, withTimeZone } from '$lib/server/datetime/withTimeZone.testutil';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mapFormToSighting } from './mapFormToSighting';
 
@@ -384,6 +386,47 @@ describe('mapFormToSighting', () => {
 			expect(parsedDate.getUTCDate()).toBe(14); // Überlauf auf Vortag durch CET-Korrektur
 			expect(parsedDate.getUTCHours()).toBe(23); // midnight - 1h = 23:00 UTC
 			expect(parsedDate.getUTCMinutes()).toBe(0);
+		});
+	});
+
+	describe('Zeitzonen-Robustheit (K1)', () => {
+		it('ignoriert ein mitgeschicktes sightingDatetime und kombiniert Sommerzeit selbst', () => {
+			const formData = createMinimalFormData();
+			formData.sightingDate = '2026-07-15';
+			formData.sightingTime = '14:30';
+			// Ein Client könnte (mit seiner eigenen Zeitzone) einen abweichenden
+			// Instant mitschicken — der Server darf ihn nicht übernehmen.
+			(formData as Record<string, unknown>).sightingDatetime = new Date('2026-07-15T20:30:00.000Z');
+
+			const result = mapFormToSighting(formData as SightingFormValues);
+
+			// Berlin ist im Juli MESZ (UTC+2): 14:30 Wanduhr → 12:30 UTC
+			expect(new Date(result.sightingDate).toISOString()).toBe('2026-07-15T12:30:00.000Z');
+		});
+
+		it('ignoriert ein mitgeschicktes sightingDatetime und kombiniert Winterzeit selbst', () => {
+			const formData = createMinimalFormData();
+			formData.sightingDate = '2026-01-15';
+			formData.sightingTime = '14:30';
+			(formData as Record<string, unknown>).sightingDatetime = new Date('2026-01-15T20:30:00.000Z');
+
+			const result = mapFormToSighting(formData as SightingFormValues);
+
+			// Berlin ist im Januar MEZ (UTC+1): 14:30 Wanduhr → 13:30 UTC
+			expect(new Date(result.sightingDate).toISOString()).toBe('2026-01-15T13:30:00.000Z');
+		});
+
+		it('liefert in jeder Prozess-Zeitzone denselben Instant', () => {
+			const results = TEST_TIME_ZONES.map((timeZone) =>
+				withTimeZone(timeZone, () => {
+					const formData = createMinimalFormData();
+					formData.sightingDate = '2026-07-15';
+					formData.sightingTime = '14:30';
+					return new Date(mapFormToSighting(formData).sightingDate).toISOString();
+				})
+			);
+
+			expect(results).toEqual(TEST_TIME_ZONES.map(() => '2026-07-15T12:30:00.000Z'));
 		});
 	});
 

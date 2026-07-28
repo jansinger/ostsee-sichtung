@@ -54,15 +54,17 @@ describe('sightingSchema — entfernte Defaults', () => {
 		expect(defaults.totalCount).toBe(1);
 	});
 
-	it('behält einen Default für sightingDate (heute)', () => {
-		// Der Schema-Default wird beim Modul-Load berechnet, der Vergleichswert erst
-		// zur Testlaufzeit. Läuft der Test über Mitternacht, liegen beide einen Tag
-		// auseinander — deshalb gilt "heute oder gestern" als korrekt.
+	it('behält einen Default für sightingDate (heute in Berlin)', () => {
+		// Maßgeblich ist der Berliner Kalendertag, nicht der UTC-Tag — siehe
+		// sightingSchemaDate.test.ts. Läuft der Test über Mitternacht, liegen
+		// Default und Vergleichswert einen Tag auseinander; deshalb gilt
+		// "heute oder gestern" als korrekt.
+		const alsBerlinerTag = (d: Date) =>
+			d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
 		const heute = new Date();
 		const gestern = new Date(heute.getTime() - 24 * 60 * 60 * 1000);
-		const alsDatum = (d: Date) => d.toISOString().split('T')[0];
 
-		expect([alsDatum(heute), alsDatum(gestern)]).toContain(defaults.sightingDate);
+		expect([alsBerlinerTag(heute), alsBerlinerTag(gestern)]).toContain(defaults.sightingDate);
 	});
 });
 

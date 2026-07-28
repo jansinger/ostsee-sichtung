@@ -23,7 +23,6 @@
 	import type { FormContext, SightingFormData, UserContactData } from '$lib/types';
 	import type { SightingFormValues } from '$lib/types/Form';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
-	import { combineToDate } from '$lib/utils/format/dateTime';
 	import { createId } from '@paralleldrive/cuid2';
 	import { formStepsConfig } from '$lib/report/formConfig';
 	import { ValidationError } from 'yup';
@@ -80,15 +79,12 @@
 		validationSchema: sightingSchema,
 		onSubmit: async (values: SightingFormData) => {
 			try {
-				const sightingDatetime = combineToDate(
-					String(values.sightingDate),
-					String(values.sightingTime)
-				);
 				// Remove admin only attributes and uploaded files (already uploaded)
 				const { verified, internalComment, uploadedFiles, ...submitValuesTemp } = values;
 				let submitValues: SightingFormValues = submitValuesTemp as SightingFormValues;
-				// set full datetime from browser to get the locale timezone of the user!
-				submitValues.sightingDatetime = sightingDatetime;
+				// Datum und Uhrzeit gehen als Strings (deutsche Wanduhrzeit) raus — den
+				// Zeitpunkt bildet ausschließlich der Server, sonst ginge die Zeitzone
+				// des Browsers in den gespeicherten Instant ein.
 				// set mediaUpload indicator
 				submitValues.mediaUpload = uploadedFiles ? uploadedFiles.length > 0 : false;
 
