@@ -7,13 +7,13 @@
 export const UPLOAD_LIMITS = {
 	/** Maximum file size for regular uploads (50MB) */
 	MAX_FILE_SIZE: 50 * 1024 * 1024,
-	
+
 	/** Maximum file size for GPS photos in position step (10MB) */
 	PHOTO_GPS_MAX_SIZE: 10 * 1024 * 1024,
-	
+
 	/** Maximum number of files per upload session */
 	MAX_FILES: 20,
-	
+
 	/** Maximum total size for all files in one session (200MB) */
 	MAX_TOTAL_SIZE: 200 * 1024 * 1024
 } as const;
@@ -29,7 +29,7 @@ export const ALLOWED_MIME_TYPES = {
 		'image/bmp'
 		// Note: image/svg+xml excluded for security reasons
 	],
-	
+
 	VIDEOS: [
 		'video/mp4',
 		'video/avi',
@@ -40,11 +40,11 @@ export const ALLOWED_MIME_TYPES = {
 		'video/mkv',
 		'video/m4v'
 	],
-	
+
 	get MEDIA() {
 		return [...this.IMAGES, ...this.VIDEOS];
 	},
-	
+
 	get ALL() {
 		return this.MEDIA;
 	}
@@ -59,7 +59,7 @@ export const FILE_VALIDATION_PRESETS = {
 		maxFiles: UPLOAD_LIMITS.MAX_FILES,
 		accept: 'image/*,video/*'
 	},
-	
+
 	/** GPS photo upload (images only, smaller size limit) */
 	GPS_PHOTO: {
 		allowedTypes: ALLOWED_MIME_TYPES.IMAGES,
@@ -67,7 +67,7 @@ export const FILE_VALIDATION_PRESETS = {
 		maxFiles: 1,
 		accept: 'image/*'
 	},
-	
+
 	/** Images only upload */
 	IMAGES_ONLY: {
 		allowedTypes: ALLOWED_MIME_TYPES.IMAGES,
@@ -77,39 +77,24 @@ export const FILE_VALIDATION_PRESETS = {
 	}
 } as const;
 
-// Upload paths and directories
-export const UPLOAD_PATHS = {
-	/** Base upload directory */
-	BASE: 'uploads',
-	
-	/** Temporary uploads directory */
-	TEMP: 'temp',
-	
-	/** Thumbnails directory */
-	THUMBNAILS: 'thumbnails'
-} as const;
-
 // Error messages for upload validation
 export const UPLOAD_ERROR_MESSAGES = {
-	FILE_TOO_LARGE: (fileName: string, maxSize: number) => 
+	FILE_TOO_LARGE: (fileName: string, maxSize: number) =>
 		`${fileName}: Datei zu groß. Maximum: ${Math.round(maxSize / 1024 / 1024)}MB`,
-	
+
 	INVALID_TYPE: (fileName: string, allowedTypes: readonly string[]) =>
 		`${fileName}: Ungültiger Dateityp. Erlaubt: ${allowedTypes.join(', ')}`,
-	
-	TOO_MANY_FILES: (maxFiles: number) =>
-		`Zu viele Dateien. Maximum: ${maxFiles}`,
-	
+
+	TOO_MANY_FILES: (maxFiles: number) => `Zu viele Dateien. Maximum: ${maxFiles}`,
+
 	TOTAL_SIZE_EXCEEDED: (maxSize: number) =>
 		`Gesamtgröße überschritten. Maximum: ${Math.round(maxSize / 1024 / 1024)}MB`,
-	
-	EMPTY_FILE: (fileName: string) =>
-		`${fileName}: Datei ist leer`,
-	
-	INVALID_NAME: (fileName: string) =>
-		`${fileName}: Unsicherer Dateiname`,
-	
+
+	EMPTY_FILE: (fileName: string) => `${fileName}: Datei ist leer`,
+
+	INVALID_NAME: (fileName: string) => `${fileName}: Unsicherer Dateiname`,
+
 	NO_FILE: 'Keine Datei ausgewählt',
-	
+
 	UPLOAD_FAILED: 'Upload fehlgeschlagen. Versuchen Sie es erneut.'
 } as const;
