@@ -23,7 +23,7 @@ const logger = createLogger('api:sightings:verify');
  * Karte) filtern auf `freigegeben_am`.
  */
 export const PATCH: RequestHandler = async ({ params, request, locals, url, getClientAddress }) => {
-	// Authorization check - only admins can verify
+	// Authorization check - nur Admins dürfen prüfen und damit freigeben
 	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
 	const { id } = params;

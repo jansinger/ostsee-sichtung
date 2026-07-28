@@ -118,9 +118,11 @@ describe('Contract: GET /api/map/sightings', () => {
 
 		await GET(event);
 
-		// Die moderne Karte muss dieselbe Freigabe-Spalte (approvedAt) als Grundmenge
-		// nutzen wie /sichtungen/showreports.json — nicht mehr die Legacy-Spalte
-		// `verified`, die künftig nur noch ein Zusatzstatus ist.
+		// Die öffentliche Grundmenge der modernen Karte muss dieselbe Spalte nutzen
+		// wie /sichtungen/showreports.json, an die die Legacy-API vertraglich
+		// gebunden ist: approvedAt. `verified` und `approvedAt` werden zwar immer
+		// gemeinsam geschrieben, aber zwei verschiedene Filterspalten für zwei
+		// öffentliche Flächen können auseinanderlaufen — deshalb hier nur eine.
 		expect(isNotNull).toHaveBeenCalledWith('approvedAt');
 		expect(eq).not.toHaveBeenCalledWith('verified', 1);
 	});
