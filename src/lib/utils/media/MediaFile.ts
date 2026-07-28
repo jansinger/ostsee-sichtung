@@ -76,7 +76,17 @@ export class MediaFile {
 		return mediaFile;
 	}
 
-	static fromUploadedFile(fileInfo: UploadedFileInfo, referenceId: string) {
+	/**
+	 * Baut eine bereits hochgeladene Datei wieder auf (Wiederherstellung nach
+	 * Reload). `isFromPositionStep` muss der Aufrufer mitgeben — `fileInfo` trägt
+	 * die Herkunft nicht, und ohne sie fiele die Datei aus der Betrachtung des
+	 * Positions-Panels heraus (siehe `positionPanelState.ts`).
+	 */
+	static fromUploadedFile(
+		fileInfo: UploadedFileInfo,
+		referenceId: string,
+		isFromPositionStep?: boolean
+	) {
 		const fileName = fileInfo.originalName ?? fileInfo.fileName;
 		const mediaFile = new MediaFile(
 			fileInfo.uid,
@@ -96,6 +106,7 @@ export class MediaFile {
 
 		mediaFile.file = mockFile;
 		mediaFile.size = fileInfo.size;
+		mediaFile.isFromPositionStep = isFromPositionStep ?? false;
 		mediaFile.exifData = fileInfo.exifData as ExifData | null | undefined;
 		// Abgesicherte Media-Route statt direktem /uploads-Zugriff (Freigabe-/Admin-Prüfung)
 		mediaFile.thumbnail = `/api/media/${fileInfo.filePath}`;

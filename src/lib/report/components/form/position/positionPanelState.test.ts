@@ -8,11 +8,16 @@ import {
 
 /**
  * `analyzed = false` bildet den Zustand direkt nach dem Drop ab: `MediaFile`
- * liegt bereits im Store (DropzoneEnhanced.svelte:255, synchron), die
- * EXIF-Auswertung läuft aber noch (MediaFile.ts:47 — `metadata.then`).
+ * liegt bereits im Store (DropzoneEnhanced.svelte:264, synchron), die
+ * EXIF-Auswertung läuft aber noch (MediaFile.ts — `metadata.then` im Konstruktor).
  */
 function makeMediaFile(withGps: boolean, analyzed: boolean = true): PositionCapableFile {
-	return { hasPosition: () => withGps, isAnalyzed: () => analyzed };
+	return { hasPosition: () => withGps, isAnalyzed: () => analyzed, isFromPositionStep: true };
+}
+
+/** Datei aus Schritt 3 (Medien) — liegt im selben Store, gehört aber nicht hierher. */
+function makeMediaStepFile(withGps: boolean, analyzed: boolean = true): PositionCapableFile {
+	return { hasPosition: () => withGps, isAnalyzed: () => analyzed, isFromPositionStep: false };
 }
 
 describe('photoStatus', () => {
@@ -50,10 +55,35 @@ describe('photoStatus', () => {
 		);
 	});
 
-	it('wartet, solange auch nur eine Datei noch ausgewertet wird', () => {
+	it('wartet, solange auch nur eine Datei des Positions-Schritts noch ausgewertet wird', () => {
 		expect(photoStatus([makeMediaFile(false, true), makeMediaFile(false, false)])).toBe(
 			'analyzing'
 		);
+	});
+});
+
+/**
+ * `mediaStore` wird einmal pro Formular angelegt (Form.svelte:40) und von allen
+ * Schritten geteilt. Ohne Eingrenzung entschiede ein Foto aus Schritt 3
+ * (Medien) mit darüber, was das Panel in Schritt 1 über „dieses Foto" behauptet.
+ */
+describe('photoStatus — Eingrenzung auf den Positions-Schritt', () => {
+	it('ignoriert Dateien aus dem Medien-Schritt vollständig', () => {
+		expect(photoStatus([makeMediaStepFile(false), makeMediaStepFile(true)])).toBe('none');
+	});
+
+	it('behauptet nicht „kein GPS", wenn nur im Medien-Schritt Fotos ohne GPS liegen', () => {
+		expect(photoStatus([makeMediaStepFile(false)])).not.toBe('no-gps');
+	});
+
+	it('lässt eine laufende Auswertung im Medien-Schritt den Zustand C nicht blockieren', () => {
+		expect(photoStatus([makeMediaFile(false, true), makeMediaStepFile(false, false)])).toBe(
+			'no-gps'
+		);
+	});
+
+	it('übernimmt keine GPS-Position aus einem Foto des Medien-Schritts', () => {
+		expect(photoStatus([makeMediaFile(false, true), makeMediaStepFile(true)])).toBe('no-gps');
 	});
 });
 

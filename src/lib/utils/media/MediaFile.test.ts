@@ -96,6 +96,31 @@ describe('MediaFile — Lebenszyklus von `analyzed`', () => {
 
 		expect(mediaFile.isAnalyzed()).toBe(true);
 	});
+});
+
+/**
+ * `isFromPositionStep` grenzt ein, über welche Dateien das Positions-Panel
+ * urteilt (positionPanelState.ts → `photoStatus`). Nach einem Reload werden die
+ * Dateien aus `$form.uploadedFiles` neu aufgebaut — ginge die Markierung dabei
+ * verloren, verschwände der Hinweis „kein GPS im Foto" beim Neuladen der Seite.
+ */
+describe('MediaFile — Markierung des Positions-Schritts', () => {
+	it('merkt sich die Herkunft einer frisch abgelegten Datei', () => {
+		analyzeClientFile.mockResolvedValue(metadata());
+
+		expect(MediaFile.createMediaFile('ref', imageFile(), true).isFromPositionStep).toBe(true);
+		expect(MediaFile.createMediaFile('ref', imageFile(), false).isFromPositionStep).toBe(false);
+	});
+
+	it('übernimmt die Herkunft auch für eine wiederhergestellte Datei', () => {
+		expect(MediaFile.fromUploadedFile(uploadedFileInfo(), 'ref', true).isFromPositionStep).toBe(
+			true
+		);
+	});
+
+	it('bleibt ohne Angabe beim Medien-Schritt — Aufrufer ohne Positionsbezug ändern sich nicht', () => {
+		expect(MediaFile.fromUploadedFile(uploadedFileInfo(), 'ref').isFromPositionStep).toBe(false);
+	});
 
 	/**
 	 * Die Zusage gehört dem Konstruktor, nicht den Factories: Ein direkt

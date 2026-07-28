@@ -90,7 +90,12 @@
 
 		uploadedFiles.forEach((uf) => {
 			if (!currentMediaFiles.some((mf) => mf.uid === uf.uid)) {
-				updatedFiles.push(MediaFile.fromUploadedFile(uf, referenceId));
+				// `isPositionStep` mitgeben: `uf` trägt die Herkunft nicht, und das
+				// Positions-Panel urteilt nur über Dateien des Positions-Schritts
+				// (positionPanelState.ts). Ohne das Argument verlöre der Hinweis
+				// „kein GPS im Foto" jeden Reload — `$form.uploadedFiles` wird
+				// persistiert, `mediaStore` nicht.
+				updatedFiles.push(MediaFile.fromUploadedFile(uf, referenceId, isPositionStep));
 				hasChanges = true;
 			}
 		});
