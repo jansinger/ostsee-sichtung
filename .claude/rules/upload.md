@@ -120,12 +120,21 @@ die niemand mehr erreicht — samt EXIF-GPS.
 Schließen des Tabs nicht; was länger unverknüpft ist, kann nicht mehr abgesendet
 werden.
 
-Durchgesetzt wird die Frist derzeit **von Hand** über
-`npm run media:cleanup-orphans:dry-run` (Details: `src/tools/README.md`).
+Durchgesetzt wird die Frist über `POST /api/admin/cleanup-orphans` — aus der
+Admin-UI oder per externem Web-Cron mit `CLEANUP_TOKEN`. Für Läufe ohne laufende
+Anwendung bleibt `npm run media:cleanup-orphans:dry-run` (Details:
+`src/tools/README.md`). Beide teilen sich denselben Kern
+(`$lib/server/media/orphanCleanup`).
 
-**Offen:** Es gibt keinen automatischen Job — der Bestand wächst nach. Außerdem
-entfernen `DELETE /api/sightings/[id]` und `saveSightingFiles()` DB-Zeilen, ohne die
-Dateien zu löschen, und erzeugen so laufend neue Waisen.
+Dateien ohne Zeile (Klasse B) sind seit PR #584 die Ausnahme: Die Normalwege
+löschen die Storage-Datei über `deleteStoredFiles()` mit. Übrig bleiben
+fehlgeschlagene Storage-Löschungen — `deleteStoredFiles()` wirft bewusst nie und
+versucht es nicht erneut — sowie der Altbestand von vor #584.
+
+**Offen:** Der Cron-Aufruf ist ein Deployment-Schritt und muss beim Betreiber
+eingerichtet sein; ohne ihn wächst der Bestand nach. Außerdem löscht
+`POST /api/files/delete` weiterhin in umgekehrter Reihenfolge und meldet auch
+dann Erfolg, wenn die DB-Zeile stehen bleibt.
 
 ---
 
