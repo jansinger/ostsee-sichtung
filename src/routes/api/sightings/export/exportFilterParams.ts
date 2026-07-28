@@ -1,5 +1,6 @@
 import { isValidDateParam } from '../../../admin/dateParam';
-import { between, eq } from 'drizzle-orm';
+import { eq, gte, lt } from 'drizzle-orm';
+import { berlinDayRangeUtc } from '$lib/server/datetime/berlinDayRange';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 
 export function xmlEscape(str: string | null | undefined): string {
@@ -49,7 +50,12 @@ export function buildExportConditions(params: ExportFilterParams) {
 	const conditions = [];
 
 	if (isValidDateParam(fromDate) && isValidDateParam(toDate)) {
-		conditions.push(between(sightingsTable.sightingDate, new Date(fromDate), new Date(toDate)));
+		// fromDate/toDate meinen Berliner Kalendertage, die Spalte hält UTC.
+		// Halboffenes Intervall statt BETWEEN, damit der letzte Tag vollständig
+		// enthalten ist; beide Grenzen treffen den Index auf der rohen Spalte.
+		const { start, endExclusive } = berlinDayRangeUtc(fromDate, toDate);
+		conditions.push(gte(sightingsTable.sightingDate, start));
+		conditions.push(lt(sightingsTable.sightingDate, endExclusive));
 	}
 	if (verified === '1') {
 		conditions.push(eq(sightingsTable.verified, 1));

@@ -37,6 +37,8 @@ vi.mock('$lib/server/db/schema', () => ({
 vi.mock('drizzle-orm', () => ({
 	and: vi.fn((...args) => args),
 	between: vi.fn((a, b, c) => ({ a, b, c })),
+	gte: vi.fn((a, b) => ({ a, b })),
+	lt: vi.fn((a, b) => ({ a, b })),
 	eq: vi.fn((a, b) => ({ a, b })),
 	isNotNull: vi.fn((a) => ({ a }))
 }));
@@ -175,7 +177,9 @@ describe('Contract: GET /api/sightings/export/csv', () => {
 		const body = await res.text();
 
 		expect(body.split('\n').length).toBeGreaterThanOrEqual(2);
-		expect(body).toContain('REF-001');
+		// Spaltensatz und Zeitzone kommen aus generateCsvData (Europe/Berlin)
+		expect(body).toContain('"Schweinswal"');
+		expect(body).toContain('"15.06.2024";"16:30"');
 	});
 });
 
@@ -206,7 +210,9 @@ describe('Contract: GET /api/sightings/export/xml', () => {
 		const body = await res.text();
 
 		expect(body).toContain('<sichtung>');
-		expect(body).toContain('REF-001');
+		// Legacy-Feldnamen und Berliner Ortszeit kommen aus generateXmlData
+		expect(body).toContain('<nr>1</nr>');
+		expect(body).toContain('<datum>15.06.24</datum>');
 	});
 });
 
@@ -237,7 +243,9 @@ describe('Contract: GET /api/sightings/export/kml', () => {
 		const body = await res.text();
 
 		expect(body).toContain('<Placemark>');
-		expect(body).toContain('13.5,54.5,0');
+		// Koordinatenformat und Berliner Ortszeit kommen aus generateKmlData
+		expect(body).toContain('<coordinates>13.5,54.5</coordinates>');
+		expect(body).toContain('15.06.24 16:30');
 	});
 });
 

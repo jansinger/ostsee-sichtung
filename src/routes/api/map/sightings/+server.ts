@@ -2,8 +2,9 @@ import { createLogger } from '$lib/logger.server';
 import { sightingsToGeoJSON, type DBSighting } from '$lib/map/mapUtils';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
+import { berlinDayRangeUtc } from '$lib/server/datetime/berlinDayRange';
 import { json } from '@sveltejs/kit';
-import { and, between, isNotNull, sql } from 'drizzle-orm';
+import { and, gte, isNotNull, lt, sql } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:map:sightings');
@@ -24,9 +25,11 @@ export const GET: RequestHandler = async ({ url }) => {
 
 		// Jahr-Filter hinzufügen, wenn vorhanden
 		if (year) {
-			const yearStart = new Date(`${year}-01-01`);
-			const yearEnd = new Date(`${year}-12-31`);
-			conditions.push(between(sightingsTable.sightingDate, yearStart, yearEnd));
+			// Jahresgrenzen sind Berliner Mitternacht, die Spalte hält UTC. Halboffenes
+			// Intervall statt BETWEEN, sonst fehlt der gesamte 31.12.
+			const { start, endExclusive } = berlinDayRangeUtc(`${year}-01-01`, `${year}-12-31`);
+			conditions.push(gte(sightingsTable.sightingDate, start));
+			conditions.push(lt(sightingsTable.sightingDate, endExclusive));
 		}
 
 		// Suchfilter hinzufügen, wenn vorhanden

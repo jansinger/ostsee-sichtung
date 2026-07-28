@@ -1,12 +1,13 @@
 import { createLogger } from '$lib/logger.server';
-import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
+import { generateKmlData } from '$lib/server/export/kmlExport';
 import { text } from '@sveltejs/kit';
 import { and, isNotNull } from 'drizzle-orm';
 import { buildExportConditions, parseExportFilterParams, xmlEscape } from '../exportFilterParams';
+import { toFrontendSighting } from '../toFrontendSighting';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:sightings:export:kml');
@@ -39,63 +40,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			.where(and(...conditions))
 			.orderBy(sightingsTable.sightingDate);
 
-		// KML-Placemarks erstellen
-		const placemarks = sightings
-			.map((sighting) => {
-				const species = getSpeciesLabel(sighting.species || 0);
-				const description = `
-				<![CDATA[
-				<b>Tierart:</b> ${species}<br/>
-				<b>Anzahl:</b> ${sighting.totalCount || 'Unbekannt'}<br/>
-				<b>Sichtungsdatum:</b> ${sighting.sightingDate || 'Unbekannt'}<br/>
-				<b>Ort:</b> ${sighting.city || 'Unbekannt'}<br/>
-				${sighting.notes ? `<b>Kommentar:</b> ${sighting.notes}<br/>` : ''}
-				<b>Referenz-ID:</b> ${sighting.referenceId || ''}<br/>
-				<b>Verifiziert:</b> ${sighting.verified ? 'Ja' : 'Nein'}
-				]]>
-			`;
-
-				return `
-			<Placemark>
-				<name>${species} - ${sighting.referenceId || sighting.id}</name>
-				<description>${description}</description>
-				<Point>
-					<coordinates>${sighting.longitude},${sighting.latitude},0</coordinates>
-				</Point>
-				<ExtendedData>
-					<Data name="species">
-						<value>${species}</value>
-					</Data>
-					<Data name="totalCount">
-						<value>${sighting.totalCount || ''}</value>
-					</Data>
-					<Data name="sightingDate">
-						<value>${sighting.sightingDate || ''}</value>
-					</Data>
-					<Data name="verified">
-						<value>${sighting.verified ? 'true' : 'false'}</value>
-					</Data>
-				</ExtendedData>
-			</Placemark>`;
-			})
-			.join('');
-
-		// Vollständige KML-Datei erstellen
-		const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-	<Document>
-		<name>Ostsee-Sichtungen Export</name>
-		<description>Exportierte Meerestier-Sichtungen aus der Ostsee-Datenbank</description>
-		<Style id="defaultStyle">
-			<IconStyle>
-				<Icon>
-					<href>http://maps.google.com/mapfiles/kml/shapes/marine.png</href>
-				</Icon>
-			</IconStyle>
-		</Style>
-		${placemarks}
-	</Document>
-</kml>`;
+		// Formatierung ausschließlich über den getesteten Exporter — er rechnet
+		// die UTC-Zeitstempel nach Europe/Berlin um.
+		const kmlContent = generateKmlData(sightings.map(toFrontendSighting));
 
 		// Audit-Log schreiben
 		await logAuditEvent({
