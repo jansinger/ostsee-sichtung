@@ -88,4 +88,94 @@ describe('correctCestOffsetUTC', () => {
 			expect(ergebnis).toBe('2024-10-28T11:00:00.000Z');
 		});
 	});
+
+	/**
+	 * Regression: Am Umstellungstag selbst lieferte die Korrektur in der Stunde
+	 * 01:00–01:59 Ortszeit einen um eine Stunde verschobenen Zeitpunkt.
+	 *
+	 * Ursache war ein Vergleich über Systemgrenzen hinweg: `cestStart`/`cestEnd`
+	 * lagen auf dem echten UTC-Instant der Umstellung (01:00 UTC), verglichen
+	 * wurde aber mit `date.getTime()` — und das ist die von `combineToDate` als
+	 * UTC verpackte deutsche Wanduhrzeit. Die Grenzen liegen deshalb jetzt
+	 * ebenfalls auf Wanduhrzeit: 02:00 (MEZ→MESZ) bzw. 03:00 (MESZ→MEZ).
+	 *
+	 * Die Tests oben treffen das nicht, weil sie nur 12:00 prüfen.
+	 */
+	describe('Umstellungstag: Stunde 01:00–01:59 Ortszeit', () => {
+		it('verschiebt eine Sichtung um 01:30 am Tag des MESZ-Beginns nicht', () => {
+			const utc = withTimeZone('UTC', () => speichereSichtungszeit('2024-03-31', '01:30'));
+			const berlin = withTimeZone('Europe/Berlin', () =>
+				speichereSichtungszeit('2024-03-31', '01:30')
+			);
+
+			expect(utc).toBe(berlin);
+			// 01:30 liegt vor der Umstellung um 02:00, gilt also noch als MEZ (UTC+1).
+			expect(utc).toBe('2024-03-31T00:30:00.000Z');
+		});
+
+		it('verschiebt eine Sichtung um 01:30 am Tag des MESZ-Endes nicht', () => {
+			const utc = withTimeZone('UTC', () => speichereSichtungszeit('2024-10-27', '01:30'));
+			const berlin = withTimeZone('Europe/Berlin', () =>
+				speichereSichtungszeit('2024-10-27', '01:30')
+			);
+
+			expect(utc).toBe(berlin);
+			// 01:30 liegt vor der Rückstellung um 03:00, gilt also noch als MESZ (UTC+2).
+			expect(utc).toBe('2024-10-26T23:30:00.000Z');
+		});
+	});
+
+	/**
+	 * Die Pipeline-Tests oben prüfen nur 2024 und nur volle Stunden abseits der
+	 * Grenze. Hier wird die Funktion direkt geprüft, um zwei Dinge abzudecken:
+	 *
+	 * 1. Die Umschaltung erfolgt exakt auf der Wanduhr-Grenze (02:00 für den
+	 *    MESZ-Beginn einschließlich, 03:00 für das MESZ-Ende ausschließlich) —
+	 *    ein Vertauschen von `>=` und `>` fällt bei einem 12:00-Test nicht auf.
+	 * 2. 2024 ist der Sonderfall, in dem der letzte Sonntag im März tatsächlich
+	 *    der 31. ist. Würde `lastMarchSunday` fest auf 31 stehen, wäre das mit
+	 *    Testdaten aus 2024 allein nicht zu erkennen.
+	 */
+	describe('Umstellungszeitpunkt auf die Millisekunde', () => {
+		/** Wendet die Korrektur auf eine als UTC verpackte Wanduhrzeit an. */
+		function korrigiere(wanduhrMillis: number): number {
+			return withTimeZone('UTC', () => correctCestOffsetUTC(new Date(wanduhrMillis)).getTime());
+		}
+
+		const EINE_STUNDE = 3_600_000;
+		const ZWEI_STUNDEN = 7_200_000;
+
+		// Reale EU-Umstellungstermine: letzter Sonntag im März bzw. Oktober.
+		const MAERZ = 2;
+		const OKTOBER = 9;
+
+		it.each([
+			[2023, 26],
+			[2024, 31],
+			[2025, 30],
+			[2026, 29]
+		])('%i: MESZ beginnt exakt um 02:00 Ortszeit', (jahr, tag) => {
+			const grenze = Date.UTC(jahr, MAERZ, tag, 2, 0, 0, 0);
+
+			// Eine Millisekunde davor gilt noch MEZ (−1 h) …
+			expect(korrigiere(grenze - 1)).toBe(grenze - 1 - EINE_STUNDE);
+			// … ab der Grenze MESZ (−2 h). 02:00–02:59 existiert real nicht,
+			// die Funktion legt dieses Loch bewusst auf MESZ.
+			expect(korrigiere(grenze)).toBe(grenze - ZWEI_STUNDEN);
+		});
+
+		it.each([
+			[2023, 29],
+			[2024, 27],
+			[2025, 26],
+			[2026, 25]
+		])('%i: MESZ endet exakt um 03:00 Ortszeit', (jahr, tag) => {
+			const grenze = Date.UTC(jahr, OKTOBER, tag, 3, 0, 0, 0);
+
+			// Eine Millisekunde davor gilt noch MESZ (−2 h) …
+			expect(korrigiere(grenze - 1)).toBe(grenze - 1 - ZWEI_STUNDEN);
+			// … ab der Grenze wieder MEZ (−1 h).
+			expect(korrigiere(grenze)).toBe(grenze - EINE_STUNDE);
+		});
+	});
 });
