@@ -21,6 +21,7 @@ jobs:
     outputs:
       needs-e2e: ${{ steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.dependencies == 'true' || github.event_name == 'push' }}
       has-code-changes: ${{ steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true' }}
+      needs-migration-check: ${{ steps.filter.outputs.db-schema == 'true' || steps.filter.outputs.db-migrations == 'true' }}
 
     permissions:
       contents: read
@@ -52,6 +53,11 @@ jobs:
             dependencies:
               - 'package-lock.json'
               - 'package.json'
+            db-schema:
+              - 'src/lib/server/db/schema.ts'
+              - 'drizzle.config.ts'
+            db-migrations:
+              - 'drizzle/**'
 
   # Lint, type-check, unit tests, build — runs in parallel with E2E
   validate:
@@ -128,7 +134,81 @@ jobs:
         run: npm audit --audit-level=high
         continue-on-error: true
 
-  # Component browser tests — runs in parallel with validate, skipped for doc-only changes
+  # Schema changes must ship with a generated migration — deployed environments
+  # apply ONLY committed migrations on container start (scripts/docker-migrate.ts),
+  # so a schema.ts change without a drizzle/ migration would never reach production.
+  # Rule: .claude/rules/database.md
+  migration-check:
+    name: Migration Check
+    runs-on: ubuntu-latest
+    needs: changes
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.draft == false &&
+      needs.changes.outputs.needs-migration-check == 'true'
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Require migration files for schema changes
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD)
+
+          if echo "$CHANGED" | grep -qxE 'src/lib/server/db/schema\.ts|drizzle\.config\.ts'; then
+            if ! echo "$CHANGED" | grep -qE '^drizzle/.*\.sql$|^drizzle/meta/_journal\.json$'; then
+              echo "::error file=src/lib/server/db/schema.ts::Schema geändert, aber keine Migration committet."
+              echo ""
+              echo "❌ src/lib/server/db/schema.ts (oder drizzle.config.ts) wurde geändert,"
+              echo "   aber der PR enthält keine neue Migrationsdatei unter drizzle/."
+              echo ""
+              echo "Deployments wenden ausschließlich generierte Migrationen an"
+              echo "(scripts/docker-migrate.ts beim Container-Start) — ohne Migration"
+              echo "kommt diese Schema-Änderung in Produktion nie an."
+              echo ""
+              echo "Fix: npm run db:generate ausführen und die neuen Dateien unter"
+              echo "     drizzle/ mit committen. Regel: .claude/rules/database.md"
+              exit 1
+            fi
+          fi
+          echo "✅ Schema- und Migrationsänderungen sind konsistent committet."
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # drizzle-kit generate is offline (works from drizzle/meta snapshots); the
+      # URL is only needed because drizzle.config.ts refuses to load without it.
+      - name: Verify schema and migrations are in sync (drizzle-kit generate)
+        env:
+          DATABASE_POSTGRES_URL: postgresql://ci:ci@localhost:5432/ci
+        run: |
+          npx drizzle-kit generate --name ci_sync_check
+          if [ -n "$(git status --porcelain drizzle/)" ]; then
+            echo "::error::Schema und Migrationen sind nicht synchron."
+            echo ""
+            echo "❌ drizzle-kit generate hat aus dem committeten Schema noch"
+            echo "   Änderungen erzeugt — die committeten Migrationen decken das"
+            echo "   Schema nicht vollständig ab:"
+            echo ""
+            git status --porcelain drizzle/
+            echo ""
+            echo "Fix: npm run db:generate lokal ausführen und die neuen Dateien"
+            echo "     unter drizzle/ mit committen. Regel: .claude/rules/database.md"
+            exit 1
+          fi
+          echo "✅ Migrationen decken das Schema vollständig ab."
   component-tests:
     name: Component Tests
     runs-on: ubuntu-latest
