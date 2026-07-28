@@ -187,9 +187,29 @@ nachbearbeitet, genau die Felder verstecken, wegen derer er die Maske geöffnet 
 
 **Deshalb ist das Zuklappen ein Prop, kein neues Standardverhalten:**
 
-```ts
-// LocationInput.svelte
-collapsibleCoordinates?: boolean = false
+```svelte
+<!-- LocationInput.svelte — Ergänzung im bestehenden $props()-Destructuring -->
+<script lang="ts">
+	let {
+		mode = 'dd',
+		latitude = $bindable(),
+		longitude = $bindable(),
+		defaultCenter = { latitude: 54.5, longitude: 13.5 },
+		collapsibleCoordinates = false,
+		onchange = () => {}
+	} = $props<{
+		mode?: 'dms' | 'dm' | 'dd';
+		latitude?: number | undefined;
+		longitude?: number | undefined;
+		defaultCenter?: { latitude: number; longitude: number };
+		/**
+		 * Legt Formatwahl und Eingabefelder in einen Collapse-Container.
+		 * Default `false`, damit die Admin-Maske unverändert bleibt.
+		 */
+		collapsibleCoordinates?: boolean;
+		onchange?: EventListener | null;
+	}>();
+</script>
 ```
 
 - Default `false` → Admin-Maske bleibt unverändert.
