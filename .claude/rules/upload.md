@@ -54,7 +54,10 @@ Path-Traversal-Schutz via `normalize()` + `relative()`
 
 1. MIME-Type Whitelist (image/\*, video/\*, application/pdf)
 2. Magic Bytes Prüfung (verhindert Type-Spoofing)
-3. Größenlimit: 5MB anonym, 50MB authentifiziert
+3. Größenlimit: 10MB anonym, 50MB authentifiziert — der anonyme Wert kommt aus
+   `ANONYMOUS_UPLOAD_MAX_SIZE_BYTES` (`$lib/constants/uploadDefaults`) und muss mit
+   der öffentlichen Konfiguration übereinstimmen, sonst nimmt die Dropzone Dateien
+   an, die der Server mit 413 ablehnt (`uploadLimitConsistency.test.ts`)
 4. Rate Limit: 20/h anonym, 50/h authentifiziert
 5. EXIF-Extraktion (`exifr` Library)
 

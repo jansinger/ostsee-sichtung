@@ -849,11 +849,12 @@ export const sightingSchemaBase = yup.object().shape({
 	 */
 	mediaConsent: yup
 		.boolean()
-		.label('Einverständnis zur Mediennutzung')
+		.label('Veröffentlichung meiner Aufnahmen')
 		.meta({
-			helpText: 'Stimmen Sie der wissenschaftlichen Nutzung der Aufnahmen zu?',
+			helpText:
+				'Dürfen wir Ihre Aufnahmen veröffentlichen — etwa auf der Sichtungskarte oder in der Öffentlichkeitsarbeit des Meeresmuseums?',
 			valueText:
-				'Mit Ihrer Zustimmung können die Aufnahmen für wissenschaftliche Auswertung und die Öffentlichkeitsarbeit des Meeresmuseums genutzt werden',
+				'Ohne Ihre Zustimmung dienen die Aufnahmen ausschließlich der Prüfung Ihrer Meldung',
 			icon: Check
 		})
 		.default(false),
@@ -1185,7 +1186,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Einverständniserklärung')
 		.meta({
 			helpText:
-				'Ich stimme zu, dass meine Sichtungsdaten (Datum, Position, Tierart, Anzahl) öffentlich auf der Karte angezeigt und wissenschaftlich ausgewertet werden. Meine Kontaktdaten werden nur für Rückfragen verwendet. Ich bestätige die Richtigkeit meiner Angaben.',
+				'Ich stimme zu, dass meine Sichtungsdaten (Datum, Position, Tierart, Anzahl) öffentlich auf der Karte angezeigt und wissenschaftlich ausgewertet werden. Von mir hochgeladene Aufnahmen werden übertragen und zur fachlichen Prüfung meiner Meldung verwendet; über eine Veröffentlichung entscheide ich gesondert. Meine Kontaktdaten werden nur für Rückfragen verwendet. Ich bestätige die Richtigkeit meiner Angaben.',
 			valueText: 'Ermöglicht Datenverarbeitung für Wissenschaft und öffentliche Darstellung',
 			icon: ShieldCheck,
 			type: 'checkbox'
