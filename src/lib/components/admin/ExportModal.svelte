@@ -63,19 +63,23 @@
 		return recordCount * (bytesPerRecord[format as keyof typeof bytesPerRecord] || 500);
 	}
 
+	// `fromDate`/`toDate` sind reine Kalendertag-Strings ("YYYY-MM-DD") aus dem
+	// Datumsfilter, kein Zeitpunkt. Direkt umsortiert statt über ein Date-Objekt
+	// formatiert — sonst bestimmt die Browser-Zone den Tag mit (bis zu ±1 Tag).
+	function formatFilterDate(isoDate: string): string {
+		const [year, month, day] = isoDate.split('-');
+		return `${day}.${month}.${year}`;
+	}
+
 	// Aktive Filter als lesbare Strings formatieren
 	function getActiveFiltersDisplay(): string[] {
 		const filterDisplays: string[] = [];
 
 		if (currentFilters.fromDate) {
-			filterDisplays.push(
-				`Von: ${new Date(currentFilters.fromDate as string).toLocaleDateString('de-DE')}`
-			);
+			filterDisplays.push(`Von: ${formatFilterDate(currentFilters.fromDate as string)}`);
 		}
 		if (currentFilters.toDate) {
-			filterDisplays.push(
-				`Bis: ${new Date(currentFilters.toDate as string).toLocaleDateString('de-DE')}`
-			);
+			filterDisplays.push(`Bis: ${formatFilterDate(currentFilters.toDate as string)}`);
 		}
 		if (currentFilters.verified === '1') {
 			filterDisplays.push('Nur geprüfte Sichtungen');

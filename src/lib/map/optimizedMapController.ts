@@ -454,7 +454,11 @@ export class SichtungenMap {
 		const speciesName = sanitizeText(
 			speciesMap[props.ta.toString()] || `Unbekannte Art (${props.ta})`
 		);
-		const date = props.ts ? new Date(props.ts * 1000).toLocaleDateString('de-DE') : 'Unbekannt';
+		// M5: timeZone explizit setzen, sonst bestimmt die Browser-Zone das Datum
+		// (bis zu ±1 Tag Abweichung von der Berlin-Anzeige).
+		const date = props.ts
+			? new Date(props.ts * 1000).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin' })
+			: 'Unbekannt';
 
 		let content = `
 			<div class="sighting-popup">
@@ -542,7 +546,10 @@ export class SichtungenMap {
 			const speciesName = sanitizeText(
 				this.translations.speciesMap[props.ta.toString()] || `Art ${props.ta}`
 			);
-			const date = props.ts ? new Date(props.ts * 1000).toLocaleDateString('de-DE') : 'Unbekannt';
+			// M5: timeZone explizit setzen, sonst bestimmt die Browser-Zone das Datum.
+			const date = props.ts
+				? new Date(props.ts * 1000).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin' })
+				: 'Unbekannt';
 			const deadBadge = props.tf
 				? '<span style="color: #dc2626; font-weight: 600; margin-left: 4px;">&#x2020;</span>'
 				: '';
@@ -987,17 +994,20 @@ export class SichtungenMap {
 		const timeStartElement = document.getElementById('time-start');
 		const timeEndElement = document.getElementById('time-end');
 
+		// M5: timeZone explizit setzen, sonst bestimmt die Browser-Zone das Datum.
 		if (timeStartElement) {
 			timeStartElement.innerText = new Date(this.timeFilter.lower).toLocaleDateString('de-DE', {
 				day: '2-digit',
-				month: '2-digit'
+				month: '2-digit',
+				timeZone: 'Europe/Berlin'
 			});
 		}
 
 		if (timeEndElement) {
 			timeEndElement.innerText = new Date(this.timeFilter.upper).toLocaleDateString('de-DE', {
 				day: '2-digit',
-				month: '2-digit'
+				month: '2-digit',
+				timeZone: 'Europe/Berlin'
 			});
 		}
 	}
@@ -1005,8 +1015,9 @@ export class SichtungenMap {
 	private createInfoText(properties: SightingProperties): string {
 		const species = sanitizeText(this.translations.speciesMap[properties.ta] || 'Unbekannte Art');
 		const count = properties.ct || 0;
+		// M5: timeZone explizit setzen, sonst bestimmt die Browser-Zone das Datum.
 		const date = properties.ts
-			? new Date(properties.ts * 1000).toLocaleDateString('de-DE')
+			? new Date(properties.ts * 1000).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin' })
 			: 'Unbekanntes Datum';
 		const isDead = properties.tf ? ` (${sanitizeText(this.translations.found_dead)})` : '';
 		return `

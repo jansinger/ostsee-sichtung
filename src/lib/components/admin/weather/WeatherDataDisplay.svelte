@@ -2,7 +2,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import WeatherDisplay from '$lib/components/weather/WeatherDisplay.svelte';
 	import type { StoredWeatherData } from '$lib/services/weatherService';
-	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
+	import { formatISOLikeDatetime, formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { toast } from '$lib/stores/toastState.svelte';
 
@@ -85,6 +85,18 @@
 			isRefreshing = false;
 		}
 	}
+
+	// `observation_time` ist ein zonenloser Berlin-Wanduhrzeit-String (siehe
+	// weatherService.ts) — anders als `fetched_at` (echter UTC-Instant, unten
+	// weiter über formatLocalDateTime formatiert). formatLocalDateTime würde
+	// observation_time fälschlich ein zweites Mal nach Berlin konvertieren (M4).
+	function formatObservationTime(time: string | Date | null | undefined): string {
+		const iso = formatISOLikeDatetime(time);
+		if (!iso) return '';
+		const [datePart, timePart] = iso.split(' ');
+		const [year, month, day] = (datePart ?? '').split('-');
+		return `${day}.${month}.${year}, ${timePart}`;
+	}
 </script>
 
 {#if weatherData && sourceInfo}
@@ -132,7 +144,7 @@
 					</div>
 					<div class="flex items-center gap-2">
 						<Icon icon="lucide:calendar" width="12" />
-						<span>{formatLocalDateTime(weatherData.observation_time, 'datetime')}</span>
+						<span>{formatObservationTime(weatherData.observation_time)}</span>
 					</div>
 					{#if weatherData.location.elevation}
 						<div class="flex items-center gap-2">

@@ -455,8 +455,14 @@
 										</td>
 										<td>{formatNumber(parseFloat(String(observer.avgGroupSize)).toFixed(1))}</td>
 										<td class="text-sm">
-											{new Date(observer.firstSighting).getFullYear()} -
-											{new Date(observer.lastSighting).getFullYear()}
+											{new Date(observer.firstSighting).toLocaleDateString('de-DE', {
+												year: 'numeric',
+												timeZone: 'Europe/Berlin'
+											})} -
+											{new Date(observer.lastSighting).toLocaleDateString('de-DE', {
+												year: 'numeric',
+												timeZone: 'Europe/Berlin'
+											})}
 										</td>
 										<td>
 											<div class="text-xs">
@@ -555,7 +561,9 @@
 								.fill(null)
 								.map((_, i) => i) as dayIndex (dayIndex)}
 								{@const targetDate = new Date(Date.now() - (29 - dayIndex) * 24 * 60 * 60 * 1000)}
-								{@const dateStr = targetDate.toISOString().split('T')[0]}
+								{@const dateStr = targetDate.toLocaleDateString('sv-SE', {
+									timeZone: 'Europe/Berlin'
+								})}
 								{@const activity = data.recentActivity.find((a) => a.date === dateStr)}
 								{@const count = activity ? Number(activity.count) : 0}
 								{@const maxCount = Math.max(...data.recentActivity.map((a) => Number(a.count)))}
