@@ -175,3 +175,61 @@ describe('MediaFile — Markierung des Positions-Schritts', () => {
 		expect(mediaFile.isAnalyzed()).toBe(true);
 	});
 });
+
+/**
+ * Ablehnende Promises dürfen nicht als unbehandelte Rejection enden.
+ *
+ * `createMediaFile` hängt an beide injizierten Promises je ein `.then(...)`
+ * OHNE Rejection-Zweig. Jedes davon erzeugt eine neue, abgelehnte Promise, die
+ * niemandem gehört: Im Browser landet sie als `unhandledrejection` auf der
+ * Konsole, in Node als `unhandledRejection` am Prozess. `handleFilesAdded`
+ * (`DropzoneEnhanced.svelte`) hängt sein `.catch` an eine ANDERE Kette
+ * (`uploadedFile.then(...).catch(...)`) und deckt diese hier nicht ab.
+ */
+describe('MediaFile — abgelehnte Promises', () => {
+	async function collectUnhandledRejections(run: () => Promise<void>): Promise<unknown[]> {
+		const reasons: unknown[] = [];
+		const listener = (reason: unknown): void => {
+			reasons.push(reason);
+		};
+		process.on('unhandledRejection', listener);
+		try {
+			await run();
+			// Node meldet unbehandelte Rejections erst, wenn die Microtask-Queue
+			// leergelaufen ist — ein Makrotask später ist der Befund vollständig.
+			await new Promise((resolve) => setTimeout(resolve, 20));
+		} finally {
+			process.off('unhandledRejection', listener);
+		}
+		return reasons;
+	}
+
+	it('behandelt eine abgelehnte Metadaten-Promise vollständig', async () => {
+		analyzeClientFile.mockRejectedValue(new Error('exif kaputt'));
+
+		let mediaFile!: InstanceType<typeof MediaFile>;
+		const reasons = await collectUnhandledRejections(async () => {
+			mediaFile = MediaFile.createMediaFile('ref', imageFile(), true);
+			await mediaFile.metadata.catch(() => undefined);
+		});
+
+		expect(reasons).toEqual([]);
+		expect(mediaFile.isAnalyzed()).toBe(true);
+	});
+
+	it('behandelt eine abgelehnte Upload-Promise vollständig', async () => {
+		analyzeClientFile.mockResolvedValue(metadata());
+		uploadFileDirect.mockRejectedValue(new Error('upload kaputt'));
+
+		let mediaFile!: InstanceType<typeof MediaFile>;
+		const reasons = await collectUnhandledRejections(async () => {
+			mediaFile = MediaFile.createMediaFile('ref', imageFile(), true);
+			// Die Basis-Promise gehört dem Aufrufer — hier wird sie bewusst
+			// abgeholt, damit nur die INTERN erzeugte Kette übrig bleibt.
+			await expect(mediaFile.uploadedFile).rejects.toThrow('upload kaputt');
+		});
+
+		expect(reasons).toEqual([]);
+		expect(mediaFile.isUploading).toBe(false);
+	});
+});

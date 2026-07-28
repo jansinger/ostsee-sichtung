@@ -4,7 +4,7 @@ import { createForm } from '$lib/form/createForm';
 import { key as formContextKey } from '$lib/report/formContext';
 import { initialFormState } from '$lib/report/formConfig';
 import type { FormContext, SightingFormData, UploadedFileInfo, ValidationPreset } from '$lib/types';
-import type { MediaStore } from '$lib/utils/media/MediaFile';
+import { MediaFile, type MediaStore } from '$lib/utils/media/MediaFile';
 import { markPositionFile } from './positionFileOrigin';
 import DropzoneEnhanced from './DropzoneEnhanced.svelte';
 
@@ -51,9 +51,10 @@ function uploadedFile(uid: string): UploadedFileInfo {
 
 function renderDropzone(
 	files: UploadedFileInfo[],
-	props: { maxFiles: number; enableGPSExtraction: boolean }
+	props: { maxFiles: number; enableGPSExtraction: boolean },
+	seededMediaFiles: MediaFile[] = []
 ): MediaStore {
-	const mediaStore: MediaStore = { mediaFiles: [] };
+	const mediaStore: MediaStore = { mediaFiles: seededMediaFiles };
 	const context = {
 		...createForm<SightingFormData>({
 			initialValues: { ...initialFormState, uploadedFiles: files } as SightingFormData,
@@ -106,5 +107,39 @@ describe('DropzoneEnhanced — Herkunft wiederhergestellter Dateien', () => {
 			mediaStore.mediaFiles.map((file) => [file.uid, file.isFromPositionStep])
 		);
 		expect(byUid).toEqual({ 'position-uid': true, 'media-uid': false });
+	});
+});
+
+/**
+ * Baut ein `MediaFile`, dessen Metadaten-Auswertung ablehnt — der Fall, den
+ * `analyzeClientFile` heute selbst schluckt, den die injizierte Promise aber
+ * jederzeit liefern darf.
+ */
+function failingMediaFile(uid: string): MediaFile {
+	const mediaFile = new MediaFile(
+		uid,
+		`${uid}.jpg`,
+		'ref-1',
+		Promise.resolve(uploadedFile(uid)),
+		Promise.reject(new Error('exif kaputt'))
+	);
+	mediaFile.isFromPositionStep = true;
+	return mediaFile;
+}
+
+/**
+ * Scheitert die EXIF-Auswertung, hat der `{#await}`-Block bisher keinen
+ * `{:catch}`-Zweig: Die Ablehnung schlägt als Svelte-Fehler durch und der
+ * Nutzer sieht im besten Fall gar nichts, im schlechteren eine kaputte Seite.
+ * Sichtbar bleiben muss mindestens ein Ausweg — die Datei selbst ist ja da.
+ */
+describe('DropzoneEnhanced — gescheiterte EXIF-Auswertung', () => {
+	it('zeigt einen Hinweis statt eines Dauer-Spinners oder eines Absturzes', async () => {
+		renderDropzone([], { maxFiles: 1, enableGPSExtraction: true }, [failingMediaFile('kaputt')]);
+
+		await expect
+			.poll(() => document.querySelectorAll('[data-testid="photo-analysis-failed"]').length)
+			.toBe(1);
+		expect(document.querySelectorAll('[aria-label="Analysiere Bilddaten"]').length).toBe(0);
 	});
 });

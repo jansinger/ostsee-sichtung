@@ -76,15 +76,34 @@ export class MediaFile {
 		mediaFile.file = file;
 		mediaFile.size = file.size;
 		mediaFile.isFromPositionStep = isFromPositionStep ?? false;
-		mediaFile.metadata.then((data) => {
-			mediaFile.exifData = mediaFile.exifData ?? data.exifData;
-			mediaFile.thumbnail = mediaFile.thumbnail ?? data.thumbnail;
-			mediaFile.timestamp = data.exifData?.dateTimeOriginal ?? null;
-		});
-		mediaFile.uploadedFile.then((fileInfo) => {
-			mediaFile.isUploading = false;
-			mediaFile.exifData = mediaFile.exifData ?? fileInfo.exifData;
-		});
+		// Beide Ketten tragen einen Rejection-Zweig. Ohne ihn erzeugt jedes
+		// `.then(...)` eine neue, abgelehnte Promise, die niemandem gehört — im
+		// Browser eine `unhandledrejection` auf der Konsole, in Node ein
+		// `unhandledRejection` am Prozess. Das `.catch` in `handleFilesAdded`
+		// (`DropzoneEnhanced.svelte`) hängt an einer ANDEREN Kette und deckt diese
+		// hier nicht ab.
+		//
+		// Es gibt im Fehlerfall nichts zu übernehmen: `exifData`, `thumbnail` und
+		// `timestamp` behalten ihre Startwerte. `isUploading` wird trotzdem
+		// zurückgesetzt — der Upload ist auch dann vorbei, wenn er scheiterte
+		// (gleiche Begründung wie bei `analyzed` im Konstruktor).
+		mediaFile.metadata.then(
+			(data) => {
+				mediaFile.exifData = mediaFile.exifData ?? data.exifData;
+				mediaFile.thumbnail = mediaFile.thumbnail ?? data.thumbnail;
+				mediaFile.timestamp = data.exifData?.dateTimeOriginal ?? null;
+			},
+			() => undefined
+		);
+		mediaFile.uploadedFile.then(
+			(fileInfo) => {
+				mediaFile.isUploading = false;
+				mediaFile.exifData = mediaFile.exifData ?? fileInfo.exifData;
+			},
+			() => {
+				mediaFile.isUploading = false;
+			}
+		);
 		return mediaFile;
 	}
 

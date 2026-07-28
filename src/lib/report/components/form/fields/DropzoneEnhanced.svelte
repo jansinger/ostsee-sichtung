@@ -271,7 +271,15 @@
 					createToast('error', 'Fehler beim Hochladen der Datei');
 				});
 			// Trigger positionMediaFile update when metadata is ready
-			mediaFile.metadata.then(() => {
+			//
+			// Mit Rejection-Zweig, und der ist nicht kosmetisch: `analyzed` ist ein
+			// gewöhnliches Klassenfeld und weckt nichts; das einzige reaktive Signal
+			// ist die Neuzuweisung von `mediaStore.mediaFiles` unten. Lehnt die
+			// Metadaten-Promise ab und liefe nur der Erfolgs-Zweig, bliebe diese
+			// Zuweisung aus — das Panel hinge für immer in `'analyzing'`: kein
+			// GPS-Hinweis, kein Ausweg, keine Fehlermeldung. Zusätzlich entstünde
+			// eine unbehandelte Rejection.
+			const refreshAfterMetadata = (): void => {
 				// Directly update form GPS data here — the $effect that reads positionMediaFile.exifData
 				// runs before EXIF extraction completes (async), and won't re-run afterwards because
 				// positionMediaFile stays the same object reference (plain class property, not $state).
@@ -302,6 +310,10 @@
 				// wie zuvor — Sveltes Gleichheitsprüfung (deriveds.js:396) stoppt die
 				// Propagation, der `$effect` oben läuft also nicht erneut.
 				updateMediaFiles([...mediaStore.mediaFiles]);
+			};
+			mediaFile.metadata.then(refreshAfterMetadata, (error) => {
+				logger.warn({ error, uid: mediaFile.uid }, 'EXIF-Auswertung fehlgeschlagen');
+				refreshAfterMetadata();
 			});
 			return mediaFile;
 		});
@@ -703,6 +715,31 @@
 					{/await}
 				</div>
 			{/if}
+		{:catch}
+			<!-- Ohne diesen Zweig schlägt eine abgelehnte Metadaten-Promise als
+			     Svelte-Fehler durch (plus unbehandelte Rejection) und der Nutzer sieht
+			     gar nichts. Die Datei selbst ist da — was fehlt, sind nur die
+			     EXIF-Angaben. Deshalb Hinweis statt Abbruch, mit demselben Ausweg wie
+			     im GPS-losen Fall. -->
+			<div class="alert alert-warning" role="status" data-testid="photo-analysis-failed">
+				<Icon aria-hidden="true" icon="lucide:circle-alert" width="20" class="shrink-0" />
+				<div>
+					<p class="text-sm">
+						Die Bilddaten dieses Fotos konnten nicht gelesen werden. Position, Datum und Uhrzeit
+						bitte selbst angeben — das Foto bleibt erhalten.
+					</p>
+					<div class="mt-3">
+						<button
+							type="button"
+							class="btn btn-outline btn-sm min-h-11"
+							onclick={handleClear}
+							data-testid="photo-analysis-failed-reset"
+						>
+							Neu auswählen
+						</button>
+					</div>
+				</div>
+			</div>
 		{/await}
 	{:else}
 		<!-- Unified Dropzone -->
