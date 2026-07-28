@@ -89,8 +89,8 @@ const connectionString = process.env.DATABASE_POSTGRES_URL || process.env.DATABA
 
 if (!connectionString) {
 	console.error('❌ Keine Datenbankverbindung gefunden.');
-	console.error('   DATABASE_POSTGRES_URL muss gesetzt sein — entweder in der Umgebung');
-	console.error('   oder in einer .env im Arbeitsverzeichnis.');
+	console.error('   DATABASE_POSTGRES_URL (bevorzugt) oder DATABASE_URL muss gesetzt sein —');
+	console.error('   entweder in der Umgebung oder in einer .env im Arbeitsverzeichnis.');
 	console.error('   In einem Git-Worktree fehlt die .env oft:');
 	console.error('     bash scripts/new-worktree.sh --link-env "$(pwd)"');
 	console.error('   Diese Migration rät nicht — sie verschiebt Zeitstempel unumkehrbar.');
