@@ -82,7 +82,11 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		// Build where conditions array
 		const whereConditions = [];
 
-		// Only show approved sightings (as per PDF: "freigegeben")
+		// Only show approved sightings (as per PDF: "freigegeben").
+		// Deliberately kept as inline SQL — this legacy endpoint must not change.
+		// The public statistics use `approvedOnly()` from `$lib/server/db/approvalFilter`;
+		// `statisticsApprovalScope.test.ts` pins both to the same predicate so map
+		// and numbers cannot drift apart again.
 		whereConditions.push(sql`${sightings.approvedAt} IS NOT NULL`);
 
 		// Year filter - PDF specification behavior

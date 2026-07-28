@@ -1,5 +1,6 @@
 import { createLogger } from '$lib/logger.server';
 import { db } from '$lib/server/db';
+import { approvalFilter, type ResolvedSightingScope } from '$lib/server/db/approvalFilter';
 import { sightings } from '$lib/server/db/schema';
 import { berlinCalendarDate, berlinDatePart } from '$lib/server/db/sqlTimeZone';
 import { and, eq, isNotNull, ne, sql } from 'drizzle-orm';
@@ -7,20 +8,57 @@ import type { PageServerLoad } from './$types';
 
 const logger = createLogger('admin:statistics:page');
 
+/** Kennzahlen eines Freigabestatus — nie über beide Status summiert. */
+export interface AdminBasicStats {
+	totalSightings: number;
+	avgGroupSize: number;
+	maxGroupSize: number;
+	deadAnimals: number;
+	verifiedSightings: number;
+	withMedia: number;
+}
+
+const EMPTY_BASIC_STATS: AdminBasicStats = {
+	totalSightings: 0,
+	avgGroupSize: 0,
+	maxGroupSize: 0,
+	deadAnimals: 0,
+	verifiedSightings: 0,
+	withMedia: 0
+};
+
+/**
+ * Basis-Kennzahlen für **einen** Freigabestatus
+ *
+ * Vorgabe des Meeresmuseums: Nicht freigegebene Sichtungen dürfen in der
+ * Admin-Statistik vorkommen, aber niemals mit freigegebenen zu einer Zahl
+ * verschmelzen. Zwei getrennte Läufe statt einer Abfrage über die ganze
+ * Tabelle machen eine vermischte Summe strukturell unmöglich.
+ */
+async function loadBasicStats(scope: ResolvedSightingScope): Promise<AdminBasicStats> {
+	const [row] = await db
+		.select({
+			totalSightings: sql<number>`COUNT(*)::integer`,
+			avgGroupSize: sql<number>`COALESCE(AVG(${sightings.totalCount})::numeric, 0)`,
+			maxGroupSize: sql<number>`COALESCE(MAX(${sightings.totalCount})::integer, 0)`,
+			deadAnimals: sql<number>`COUNT(CASE WHEN ${sightings.isDead} = 1 THEN 1 END)::integer`,
+			verifiedSightings: sql<number>`COUNT(CASE WHEN ${sightings.verified} = 1 THEN 1 END)::integer`,
+			withMedia: sql<number>`COUNT(CASE WHEN ${sightings.mediaUpload} != 0 THEN 1 END)::integer`
+		})
+		.from(sightings)
+		.where(approvalFilter(scope));
+
+	return row ?? EMPTY_BASIC_STATS;
+}
+
 export const load: PageServerLoad = async () => {
 	try {
-		// Basic statistics
-		const [basicStats] = await db
-			.select({
-				totalSightings: sql<number>`COUNT(*)::integer`,
-				avgGroupSize: sql<number>`COALESCE(AVG(${sightings.totalCount})::numeric, 0)`,
-				maxGroupSize: sql<number>`COALESCE(MAX(${sightings.totalCount})::integer, 0)`,
-				deadAnimals: sql<number>`COUNT(CASE WHEN ${sightings.isDead} = 1 THEN 1 END)::integer`,
-				verifiedSightings: sql<number>`COUNT(CASE WHEN ${sightings.verified} = 1 THEN 1 END)::integer`,
-				approvedSightings: sql<number>`COUNT(CASE WHEN ${sightings.approvedAt} IS NOT NULL THEN 1 END)::integer`,
-				withMedia: sql<number>`COUNT(CASE WHEN ${sightings.mediaUpload} != 0 THEN 1 END)::integer`
-			})
-			.from(sightings);
+		// Basis-Kennzahlen getrennt nach Freigabestatus
+		const [approvedStats, pendingStats] = await Promise.all([
+			loadBasicStats('approved'),
+			loadBasicStats('pending')
+		]);
+		const basicStats = { approved: approvedStats, pending: pendingStats };
 
 		// Species distribution
 		const speciesStats = await db

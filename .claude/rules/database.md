@@ -148,6 +148,39 @@ export const saveSighting = async (
 
 ---
 
+## Prüfstatus in Auswertungen — immer explizit
+
+Der Prüfstatus selbst ist in `.claude/rules/api.md` geregelt: **genau zwei Zustände**
+(ungeprüft / geprüft), geprüft heißt veröffentlicht, `approvedAt IS NOT NULL` ist die
+öffentliche Grundmenge. Hier steht nur, was daraus für **Auswertungen** folgt.
+
+Die Statistiken filterten lange nach **gar keinem** Status, die öffentliche Karte dagegen
+schon — Karte und Zahlentext widersprachen sich sichtbar (19.262 vs. 19.877).
+
+Vorgabe des Meeresmuseums: Im öffentlichen Bereich zählen nur geprüfte Sichtungen. In der
+Admin-Statistik dürfen ungeprüfte vorkommen, aber **niemals mit geprüften zu einer Zahl
+vermischt** — getrennt ausweisen („19.262 geprüft / 615 offen").
+
+`approvedOnly()` und `pendingOnly()` bilden genau diese zwei Zustände ab; ein dritter
+Scope wäre ein Widerspruch zur Regel in `api.md` und darf nicht entstehen.
+
+```typescript
+import { approvedOnly, pendingOnly, approvalFilter } from '$lib/server/db/approvalFilter';
+
+// Öffentlich: nur freigegebene
+.where(approvedOnly())
+
+// Admin: getrennte Läufe statt CASE-Aggregaten — so kann keine Summe entstehen
+const [approved, pending] = await Promise.all([load('approved'), load('pending')]);
+```
+
+Wer eine neue Statistikabfrage ergänzt, muss den Status explizit setzen. `sichtungen_dateien`
+kennt die Spalte nicht — dort ist ein Join auf `sichtungen` nötig. Der Epoch-Ausschluss
+(`EARLIEST_PLAUSIBLE_SIGHTING_DATE`) gilt zusätzlich, nicht statt dessen.
+Abgesichert durch `src/lib/server/db/statisticsApprovalScope.test.ts`.
+
+---
+
 ## PostGIS Patterns
 
 ### Point erstellen

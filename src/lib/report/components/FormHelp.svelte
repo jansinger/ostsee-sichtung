@@ -10,6 +10,11 @@
 	// tatsächlich geladen wurden. Erfundene Fallback-Werte würden Bürgern sonst
 	// bei jedem API-Ausfall als echte Zahlen des Meeresmuseums präsentiert.
 	// Siehe .claude/rules/design-system.md → "Zahlen in Nutzertexten nur mit Quelle".
+	//
+	// Alle Zahlen aus /api/statistics beziehen sich ausschließlich auf
+	// FREIGEGEBENE Sichtungen — dieselbe Grundmenge wie die öffentliche Karte.
+	// Die Beschriftungen müssen das widerspiegeln und dürfen nicht suggerieren,
+	// dass jede eingegangene Meldung gemeint ist.
 	let statistics = $state<SightingStatistics | null>(null);
 
 	let loading = $state(true);
@@ -74,7 +79,7 @@
 													{statistics?.totalSightings.toLocaleString('de-DE') ?? '–'}
 												{/if}
 											</div>
-											<div class="text-xs">Sichtungen gemeldet</div>
+											<div class="text-xs">freigegebene Sichtungen</div>
 										</div>
 										<div>
 											<div class="text-primary font-bold">
@@ -187,7 +192,12 @@
 											{statistics?.yearsOfService ?? '–'}
 										{/if}
 									</div>
-									<div class="text-base-content text-sm font-medium">Jahre Sichtungsmeldungen</div>
+									<!-- Bezugsgröße sind freigegebene Sichtungen: Die frühere Angabe (24 Jahre)
+									     stützte sich auf 7 Datensätze von 2002, die nie freigegeben wurden. Die
+									     freigegebene Reihe beginnt 2009. -->
+									<div class="text-base-content text-sm font-medium">
+										Jahre mit freigegebenen Sichtungen
+									</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics && statistics.uniqueUsers > 0}
 											{statistics.uniqueUsers.toLocaleString('de-DE')} Personen haben bereits gemeldet
@@ -211,7 +221,8 @@
 									<div class="text-base-content text-sm font-medium">mit Fotos/Videos</div>
 									<div class="text-base-content/70 mt-1 text-xs">
 										{#if !loading && statistics}
-											{statistics.sightingsWithMedia.toLocaleString('de-DE')} Sichtungen mit Medien dokumentiert
+											{statistics.sightingsWithMedia.toLocaleString('de-DE')} freigegebene Sichtungen
+											mit Medien dokumentiert
 										{:else}
 											durch Ihre Fotos wissenschaftlich dokumentiert
 										{/if}
@@ -243,7 +254,7 @@
 										{/if}
 									</div>
 									<div class="text-base-content text-xs">
-										Totfunde bereits für die Wissenschaft dokumentiert
+										freigegebene Totfunde bereits für die Wissenschaft dokumentiert
 									</div>
 								</div>
 							</div>
