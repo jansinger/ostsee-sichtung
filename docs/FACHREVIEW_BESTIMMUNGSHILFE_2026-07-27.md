@@ -9,6 +9,15 @@
 > liegen jetzt in `src/lib/report/formOptions/speciesIdentification.ts` und sind durch
 > `speciesIdentification.test.ts` abgesichert. Die fachliche Abnahme durch das Deutsche
 > Meeresmuseum steht weiterhin aus (siehe Abschnitt E).
+>
+> **Nachkontrolle 2026-07-28:** Erneuter Abgleich gegen die vier DMM-Steckbriefe
+> (Schweinswal, Kegelrobbe, Seehund, Ringelrobbe — mehr gibt es dort nicht). Rest-Abweichungen
+> ausschließlich beim Schweinswal: Maximallänge ohne den Zusatz „sehr selten auch 2 m",
+> Kälbergröße 70–90 statt 65–90 cm, unbelegte Spannen „meist 1,4–1,7 m" und
+> „Ostsee-Tiere meist 45–60 kg", fehlender Größendimorphismus. Alle fünf Punkte korrigiert
+> und in `speciesIdentification.test.ts` (Block „Abgleich mit den DMM-Artensteckbriefen")
+> festgeschrieben. Für die übrigen sieben Formular-Einträge existiert beim DMM kein
+> Steckbrief; sie bleiben auf die in den Quellen genannten Referenzen gestützt.
 
 ## Zusammenfassung
 

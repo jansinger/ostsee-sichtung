@@ -80,6 +80,35 @@ describe('Merkmale', () => {
 	});
 });
 
+describe('Abgleich mit den DMM-Artensteckbriefen', () => {
+	// Quelle: https://www.deutsches-meeresmuseum.de/wissenschaft/infothek/artensteckbriefe/schweinswale
+	const schweinswal = speciesIdentification[SpeciesEnum.HARBOR_PORPOISE];
+
+	it('nennt Durchschnitts- und Maximallänge des Schweinswals wie das Meeresmuseum', () => {
+		expect(schweinswal.size).toContain('1,60 m');
+		expect(schweinswal.size).toContain('1,85 m');
+		// Ohne "sehr selten auch 2 m" wirkt ein größerer Totfund nach dem Text unmöglich.
+		expect(schweinswal.size).toMatch(/selten\s+2 m/);
+	});
+
+	it('nennt die Kälbergröße des Meeresmuseums (65–90 cm)', () => {
+		expect(schweinswal.size).toContain('65–90 cm');
+	});
+
+	it('gibt beim Schweinswal nur die belegte Gewichtsspanne an', () => {
+		// "Ostsee-Tiere meist 45–60 kg" steht in keinem Steckbrief.
+		expect(schweinswal.weight).toBe('40–90 kg');
+	});
+
+	it('führt den Größendimorphismus des Schweinswals als Hintergrundwissen', () => {
+		const dimorphismus = schweinswal.distinguishing.find(
+			(f) => f.text.includes('Weibchen') && f.text.includes('Männchen')
+		);
+		expect(dimorphismus, 'Merkmal zum Größenunterschied fehlt').toBeDefined();
+		expect(dimorphismus?.observability).toBe('background');
+	});
+});
+
 describe('Bilder', () => {
 	it('hat für jede Tierart mindestens ein Bild', () => {
 		for (const species of allSpecies) {
