@@ -6,8 +6,13 @@ import {
 	type PositionCapableFile
 } from './positionPanelState';
 
-function makeMediaFile(withGps: boolean): PositionCapableFile {
-	return { hasPosition: () => withGps };
+/**
+ * `analyzed = false` bildet den Zustand direkt nach dem Drop ab: `MediaFile`
+ * liegt bereits im Store (DropzoneEnhanced.svelte:255, synchron), die
+ * EXIF-Auswertung läuft aber noch (MediaFile.ts:47 — `metadata.then`).
+ */
+function makeMediaFile(withGps: boolean, analyzed: boolean = true): PositionCapableFile {
+	return { hasPosition: () => withGps, isAnalyzed: () => analyzed };
 }
 
 describe('photoStatus', () => {
@@ -25,6 +30,30 @@ describe('photoStatus', () => {
 
 	it('bevorzugt ein Foto mit GPS, auch wenn ein Foto ohne GPS zuerst kommt', () => {
 		expect(photoStatus([makeMediaFile(false), makeMediaFile(true)])).toBe('position-applied');
+	});
+
+	it('meldet "analyzing", solange die EXIF-Auswertung des Fotos noch läuft', () => {
+		expect(photoStatus([makeMediaFile(false, false)])).toBe('analyzing');
+	});
+
+	it('behauptet während der Auswertung NICHT, dass GPS fehlt', () => {
+		expect(photoStatus([makeMediaFile(false, false)])).not.toBe('no-gps');
+	});
+
+	it('meldet "no-gps" erst, wenn die Auswertung abgeschlossen ist', () => {
+		expect(photoStatus([makeMediaFile(false, true)])).toBe('no-gps');
+	});
+
+	it('meldet "position-applied", sobald eine Datei GPS trägt — auch wenn eine andere noch läuft', () => {
+		expect(photoStatus([makeMediaFile(false, false), makeMediaFile(true)])).toBe(
+			'position-applied'
+		);
+	});
+
+	it('wartet, solange auch nur eine Datei noch ausgewertet wird', () => {
+		expect(photoStatus([makeMediaFile(false, true), makeMediaFile(false, false)])).toBe(
+			'analyzing'
+		);
 	});
 });
 

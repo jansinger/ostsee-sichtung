@@ -226,8 +226,6 @@
 					deleteFile(mediaFile.uid);
 					createToast('error', 'Fehler beim Hochladen der Datei');
 				});
-			// Capture current positionMediaFile state to avoid timing-dependent behavior
-			const hadPositionMediaFileBeforeMetadata = !!positionMediaFile;
 			// Trigger positionMediaFile update when metadata is ready
 			mediaFile.metadata.then(() => {
 				// Directly update form GPS data here — the $effect that reads positionMediaFile.exifData
@@ -245,10 +243,21 @@
 						triggerChange('sightingTime', sightingTime);
 					}
 				}
-				// Trigger store update to refresh derived values
-				if (!hadPositionMediaFileBeforeMetadata && mediaFile.hasPosition()) {
-					updateMediaFiles([...mediaStore.mediaFiles]);
-				}
+				// Trigger store update to refresh derived values.
+				//
+				// Bedingungslos, und das ist der Punkt: Der Abschluss der Auswertung IST
+				// die Neuigkeit — auch (gerade) dann, wenn kein GPS gefunden wurde.
+				// PositionPanel unterscheidet „wird ausgewertet" von „kein GPS" über
+				// `MediaFile.isAnalyzed()`; ohne diese Zuweisung bliebe sein `$derived`
+				// auf dem Stand vom Drop-Zeitpunkt stehen und der Hinweis auf das Foto
+				// ohne GPS erschiene nie.
+				//
+				// Der bisherige Wächter (`!hadPositionMediaFile && hasPosition()`) hat
+				// den Fall ohne GPS ausgelassen. Doppelt angewandt wird dadurch nichts:
+				// `positionMediaFile` ist ein `$derived` und liefert dieselbe Instanz
+				// wie zuvor — Sveltes Gleichheitsprüfung (deriveds.js:396) stoppt die
+				// Propagation, der `$effect` oben läuft also nicht erneut.
+				updateMediaFiles([...mediaStore.mediaFiles]);
 			});
 			return mediaFile;
 		});

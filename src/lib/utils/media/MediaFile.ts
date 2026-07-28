@@ -17,6 +17,13 @@ export class MediaFile {
 	isUploading: boolean = true;
 	isDeleting: boolean = false;
 	timestamp: Date | null = null;
+	/**
+	 * True, sobald die Metadaten-Auswertung durch ist. Nötig, weil `exifData` den
+	 * Zustand nicht trägt: Es ist vor der Auswertung `undefined` und danach — bei
+	 * einem Bild ganz ohne EXIF — ebenfalls ein leeres Objekt, das man von
+	 * „noch nichts gelesen" nicht unterscheiden könnte.
+	 */
+	analyzed: boolean = false;
 
 	constructor(
 		uid: string,
@@ -48,6 +55,7 @@ export class MediaFile {
 			mediaFile.exifData = mediaFile.exifData ?? data.exifData;
 			mediaFile.thumbnail = mediaFile.thumbnail ?? data.thumbnail;
 			mediaFile.timestamp = data.exifData?.dateTimeOriginal ?? null;
+			mediaFile.analyzed = true;
 		});
 		mediaFile.uploadedFile.then((fileInfo) => {
 			mediaFile.isUploading = false;
@@ -82,11 +90,19 @@ export class MediaFile {
 		mediaFile.timestamp = mediaFile.exifData?.dateTimeOriginal
 			? new Date(mediaFile.exifData.dateTimeOriginal)
 			: null;
+		// Wiederhergestellte Datei: Die EXIF-Auswertung liegt bereits hinter uns,
+		// `fileInfo` trägt das Ergebnis. Nichts steht mehr aus.
+		mediaFile.analyzed = true;
 		return mediaFile;
 	}
 
 	hasPosition = (): boolean => {
 		return !!(this.exifData?.latitude && this.exifData?.longitude);
+	};
+
+	/** Siehe `analyzed` — trennt „kein GPS im Foto" von „noch nicht ausgewertet". */
+	isAnalyzed = (): boolean => {
+		return this.analyzed;
 	};
 }
 

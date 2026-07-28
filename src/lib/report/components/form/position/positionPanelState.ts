@@ -5,24 +5,39 @@
  * nicht im Markup verstreut liegen — dort waren sie die Ursache der bisherigen
  * Widersprüche zwischen Methodenwahl und Fallback-Block.
  */
-export type PhotoStatus = 'none' | 'position-applied' | 'no-gps';
+export type PhotoStatus = 'none' | 'analyzing' | 'position-applied' | 'no-gps';
 
 /**
  * Minimalform einer Mediendatei, wie sie hier gebraucht wird. Bewusst strukturell
  * statt über `MediaFileData` — `mediaStore.mediaFiles` trägt den Klassentyp
  * `MediaFile`, dessen Deckungsgleichheit mit dem Interface nicht zugesichert ist.
+ *
+ * Zwei Prädikate statt einem, weil `hasPosition()` allein nicht zwischen „kein
+ * GPS" und „noch nicht nachgesehen" unterscheiden kann: Es liest `exifData`, das
+ * bis zum Auflösen der Metadaten-Promise `undefined` bleibt (MediaFile.ts:13/47),
+ * während die Datei schon synchron im Store liegt (DropzoneEnhanced.svelte:255).
+ * `isAnalyzed()` trennt die beiden Fälle.
  */
 export interface PositionCapableFile {
 	hasPosition(): boolean;
+	isAnalyzed(): boolean;
 }
 
 /**
- * Leitet den Foto-Zustand aus den bereits analysierten Medien-Dateien ab.
- * Ein Foto mit GPS gewinnt immer — auch wenn zuvor eines ohne GPS abgelegt wurde.
+ * Leitet den Foto-Zustand aus den Medien-Dateien ab.
+ *
+ * Reihenfolge der Regeln ist bewusst:
+ * 1. Ein Foto mit GPS gewinnt immer — das ist eine abgeschlossene Tatsache und
+ *    gilt auch, wenn daneben noch eine Datei ausgewertet wird.
+ * 2. Läuft irgendwo noch eine Auswertung, ist der GPS-Befund offen → `analyzing`.
+ *    Ohne diesen Zweig behauptete das Panel im Moment des Drops „keine GPS-Daten"
+ *    und nähme es Sekundenbruchteile später wieder zurück.
+ * 3. Erst wenn alles ausgewertet ist und nichts GPS trägt, gilt `no-gps`.
  */
 export function photoStatus(mediaFiles: readonly PositionCapableFile[]): PhotoStatus {
 	if (mediaFiles.length === 0) return 'none';
 	if (mediaFiles.some((file) => file.hasPosition())) return 'position-applied';
+	if (mediaFiles.some((file) => !file.isAnalyzed())) return 'analyzing';
 	return 'no-gps';
 }
 
