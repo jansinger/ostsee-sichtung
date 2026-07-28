@@ -31,6 +31,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
 	DEFAULT_RETENTION,
+	cleanupOrphans,
 	computeCutoff,
 	parseRetention,
 	resolveSafeTarget,
@@ -216,6 +217,8 @@ async function main(): Promise<void> {
 
 		const diskEntries = await scanUploadDir(options.uploadsDir);
 
+		// Ein Lesestand, ein Grenzzeitpunkt — die Ports reichen die bereits
+		// geladenen Momentaufnahmen durch, statt erneut abzufragen.
 		const orphanedRows = selectOrphanedRows(candidateRows, cutoff);
 		const orphanedFiles = selectOrphanedFiles(
 			diskEntries,
@@ -252,41 +255,41 @@ async function main(): Promise<void> {
 			return;
 		}
 
-		let deletedRows = 0;
-		let deletedFiles = 0;
-
-		// Klasse A: erst die Zeile, dann die Datei. Scheitert das Löschen der
-		// Datei, bleibt eine Klasse-B-Waise zurück, die der nächste Lauf
-		// einsammelt. Umgekehrt entstünde eine Zeile ohne Datei — die findet
-		// danach keine der beiden Klassen mehr.
-		for (const row of orphanedRows) {
-			await sql`DELETE FROM sichtungen_dateien WHERE id = ${row.id}`;
-			deletedRows++;
-
-			const target = resolveSafeTarget(options.uploadsDir, row.filePath);
+		/** Löscht eine Datei über den geprüften Pfad; außerhalb der Basis: überspringen. */
+		async function deleteViaSafePath(relativePath: string): Promise<void> {
+			const target = resolveSafeTarget(options.uploadsDir, relativePath);
 			if (!target) {
-				console.warn(`⚠️  Pfad außerhalb des Upload-Verzeichnisses, übersprungen: ${row.filePath}`);
-				continue;
+				console.warn(`⚠️  Pfad außerhalb des Upload-Verzeichnisses, übersprungen: ${relativePath}`);
+				return;
 			}
-			if (await removeFile(target)) {
-				deletedFiles++;
+			if (!(await removeFile(target))) {
+				throw new Error('Datei ließ sich nicht entfernen');
 			}
 		}
 
-		for (const entry of orphanedFiles) {
-			const target = resolveSafeTarget(options.uploadsDir, entry.relativePath);
-			if (!target) {
+		const report = await cleanupOrphans({
+			now: new Date(),
+			retentionMs: options.retentionMs,
+			execute: true,
+			// Der Deckel schützt HTTP-Aufrufe vor Timeouts, nicht einen manuellen Lauf.
+			limit: Number.POSITIVE_INFINITY,
+			ports: {
+				findOrphanRows: async () => orphanedRows,
+				findOrphanFiles: async () => orphanedFiles,
+				deleteRow: async (id) => {
+					await sql`DELETE FROM sichtungen_dateien WHERE id = ${id}`;
+				},
+				deleteFile: deleteViaSafePath
+			},
+			onError: (subject, error) =>
 				console.warn(
-					`⚠️  Pfad außerhalb des Upload-Verzeichnisses, übersprungen: ${entry.relativePath}`
-				);
-				continue;
-			}
-			if (await removeFile(target)) {
-				deletedFiles++;
-			}
-		}
+					`⚠️  ${subject}: ${error instanceof Error ? error.message : String(error)}`
+				)
+		});
 
-		console.log(`\n✅ ${deletedRows} Zeilen und ${deletedFiles} Dateien gelöscht.`);
+		console.log(
+			`\n✅ ${report.rowsDeleted} Zeilen und ${report.filesDeleted} Dateien gelöscht.`
+		);
 	} finally {
 		await sql.end();
 	}
