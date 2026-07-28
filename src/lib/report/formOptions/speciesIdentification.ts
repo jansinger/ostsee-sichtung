@@ -67,8 +67,8 @@ export const speciesIdentification: Record<SpeciesEnum, SpeciesIdentificationEnt
 	[SpeciesEnum.HARBOR_PORPOISE]: {
 		name: 'Schweinswal',
 		scientificName: 'Phocoena phocoena',
-		size: 'meist 1,4–1,7 m, maximal ca. 1,85 m (Kälber 70–90 cm)',
-		weight: '40–90 kg (Ostsee-Tiere meist 45–60 kg)',
+		size: 'im Mittel 1,60 m, bis 1,85 m, sehr selten 2 m (Kälber 65–90 cm)',
+		weight: '40–90 kg',
 		frequency: {
 			level: 'resident',
 			text: 'Die einzige dauerhaft in der Ostsee lebende Walart. Fast alle Meldungen betreffen ihn.'
@@ -98,6 +98,10 @@ export const speciesIdentification: Record<SpeciesEnum, SpeciesIdentificationEnt
 			{
 				text: 'Heller, oft fast weißer Bauch; dunkler Streifen vom Mundwinkel zur Brustflosse',
 				observability: 'closeup'
+			},
+			{
+				text: 'Weibchen werden größer und schwerer als Männchen',
+				observability: 'background'
 			}
 		],
 		behavior: [
