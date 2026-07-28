@@ -14,8 +14,9 @@ export type PhotoStatus = 'none' | 'analyzing' | 'position-applied' | 'no-gps';
  *
  * Zwei Prädikate statt einem, weil `hasPosition()` allein nicht zwischen „kein
  * GPS" und „noch nicht nachgesehen" unterscheiden kann: Es liest `exifData`, das
- * bis zum Auflösen der Metadaten-Promise `undefined` bleibt (MediaFile.ts:13),
- * während die Datei schon synchron im Store liegt (DropzoneEnhanced.svelte:264).
+ * bis zum Auflösen der Metadaten-Promise `undefined` bleibt (`MediaFile`),
+ * während die Datei schon synchron im Store liegt (`handleFilesAdded` in
+ * `DropzoneEnhanced.svelte`).
  * `isAnalyzed()` trennt die beiden Fälle.
  *
  * `isFromPositionStep` grenzt ein, worüber das Panel überhaupt urteilen darf —

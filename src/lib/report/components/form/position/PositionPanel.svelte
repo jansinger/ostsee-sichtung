@@ -15,13 +15,15 @@
 
 	const { form, handleChange, mediaStore } = getFormContext();
 
-	// `mediaStore` ist das `$state`-Objekt aus Form.svelte:40 und wird über den
+	// `mediaStore` ist das `$state`-Objekt aus Form.svelte und wird über den
 	// Context als derselbe Proxy weitergereicht. DropzoneEnhanced ersetzt die
-	// Liste per Zuweisung (`mediaStore.mediaFiles = newFiles`, :82) — der
-	// Property-Write auf dem Proxy weckt dieses `$derived`. Das geschieht zweimal
-	// je Upload: beim Drop (synchron) und erneut, wenn die EXIF-Auswertung durch
-	// ist. Nur deshalb kann `photoStatus` von `'analyzing'` auf sein Endergebnis
-	// wechseln — siehe den Kommentar an `updateMediaFiles` in DropzoneEnhanced.
+	// Liste per Zuweisung (`updateMediaFiles`) — der Property-Write auf dem Proxy
+	// weckt dieses `$derived`. Das geschieht zweimal je Upload: beim Drop
+	// (synchron) und erneut, wenn die EXIF-Auswertung durch ist. Nur deshalb kann
+	// `photoStatus` von `'analyzing'` auf sein Endergebnis wechseln.
+	//
+	// Der Store gehört dem ganzen Formular, nicht diesem Schritt; die Eingrenzung
+	// auf die Dateien des Positions-Schritts steckt in `photoStatus`.
 	const status = $derived(photoStatus(mediaStore.mediaFiles));
 
 	const referenceId = $derived($form.referenceId);

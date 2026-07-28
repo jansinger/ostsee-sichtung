@@ -8,8 +8,8 @@ import {
 
 /**
  * `analyzed = false` bildet den Zustand direkt nach dem Drop ab: `MediaFile`
- * liegt bereits im Store (DropzoneEnhanced.svelte:264, synchron), die
- * EXIF-Auswertung läuft aber noch (MediaFile.ts — `metadata.then` im Konstruktor).
+ * liegt bereits im Store (`handleFilesAdded` legt sie synchron ab), die
+ * EXIF-Auswertung läuft aber noch (`metadata.then` im MediaFile-Konstruktor).
  */
 function makeMediaFile(withGps: boolean, analyzed: boolean = true): PositionCapableFile {
 	return { hasPosition: () => withGps, isAnalyzed: () => analyzed, isFromPositionStep: true };
