@@ -34,7 +34,11 @@ npm run db:studio   # Drizzle Studio öffnen
 > Statements ohne `ALLOW_DESTRUCTIVE_MIGRATIONS=true`).
 > `db:push` bleibt nur für schnelle Iteration auf der lokalen Dev-DB —
 > **eine Schema-Änderung ohne zugehörige Migrationsdatei darf nicht gemergt
-> werden.**
+> werden.** Das erzwingt die CI (`migration-check` in `.github/workflows/ci.yml`):
+> Der Job schlägt fehl, wenn ein PR `schema.ts` oder `drizzle.config.ts` ändert,
+> ohne eine Migration unter `drizzle/` zu committen, und verifiziert zusätzlich
+> per `drizzle-kit generate`, dass die committeten Migrationen das Schema
+> vollständig abdecken.
 
 > **ACHTUNG — `db:push` erkennt keine Änderungen an Ausdrucksindizes.** Verifiziert
 > am 2026-07-28: Nach einer Änderung des Datumsausdrucks in `idx_position_date_weather`
