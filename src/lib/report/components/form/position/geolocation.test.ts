@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import { describeGeolocationError, requestCurrentPosition } from './geolocation';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+	GEOLOCATION_TIMEOUT_MS,
+	describeGeolocationError,
+	requestCurrentPosition
+} from './geolocation';
 
 describe('describeGeolocationError', () => {
 	it('erklärt eine verweigerte Freigabe', () => {
@@ -48,5 +52,41 @@ describe('requestCurrentPosition', () => {
 		const result = await requestCurrentPosition(geolocation);
 		expect(result.ok).toBe(false);
 		expect(result.ok === false && result.message).toContain('nicht freigegeben');
+	});
+});
+
+/**
+ * Der `timeout`-Parameter der Geolocation-API läuft laut Spezifikation erst an,
+ * nachdem der Nutzer den Berechtigungsdialog beantwortet hat. Bleibt der Dialog
+ * offen, kommt weder Erfolg noch Fehler — ohne eigenen Wächter würde die Promise
+ * nie aufgelöst und der Button im Ladezustand hängen bleiben.
+ */
+describe('requestCurrentPosition — eigener Zeitwächter', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it('löst nach Ablauf der Wartezeit auf, wenn gar kein Callback kommt', async () => {
+		vi.useFakeTimers();
+		const geolocation = { getCurrentPosition: (): void => {} };
+
+		const pending = requestCurrentPosition(geolocation);
+		await vi.advanceTimersByTimeAsync(GEOLOCATION_TIMEOUT_MS);
+		const result = await pending;
+
+		expect(result.ok).toBe(false);
+		expect(result.ok === false && result.message).toContain('zu lange');
+	});
+
+	it('räumt den Zeitwächter nach einem Erfolg wieder ab', async () => {
+		vi.useFakeTimers();
+		const geolocation = {
+			getCurrentPosition: (onSuccess: PositionCallback) =>
+				onSuccess({ coords: { latitude: 54.31, longitude: 12.09 } } as GeolocationPosition)
+		};
+
+		await requestCurrentPosition(geolocation);
+
+		expect(vi.getTimerCount()).toBe(0);
 	});
 });

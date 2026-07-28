@@ -9,6 +9,9 @@
 export type GeolocationOutcome =
 	{ ok: true; latitude: number; longitude: number } | { ok: false; message: string };
 
+/** Obergrenze der Wartezeit — gilt für die API-Option und für den eigenen Wächter. */
+export const GEOLOCATION_TIMEOUT_MS = 10_000;
+
 /** Übersetzt die numerischen Codes der Geolocation-API in verständliche Sätze. */
 export function describeGeolocationError(error: { code: number }): string {
 	switch (error.code) {
@@ -26,6 +29,12 @@ export function describeGeolocationError(error: { code: number }): string {
 /**
  * Fragt den Gerätestandort ab und liefert immer ein aufgelöstes Ergebnis —
  * nie eine abgelehnte Promise. Der Aufrufer muss also keinen catch-Pfad bauen.
+ *
+ * Der eigene Zeitwächter ist kein Gürtel-und-Hosenträger: Die `timeout`-Option
+ * der Geolocation-API startet laut Spezifikation erst, nachdem der Nutzer den
+ * Berechtigungsdialog beantwortet hat. Wer den Dialog offen liegen lässt, bekommt
+ * weder Erfolgs- noch Fehler-Callback — ohne Wächter bliebe die Promise für
+ * immer offen und der Ladezustand im Aufrufer hängen.
  */
 export function requestCurrentPosition(
 	geolocation: Pick<Geolocation, 'getCurrentPosition'> | undefined
@@ -38,15 +47,30 @@ export function requestCurrentPosition(
 	}
 
 	return new Promise((resolve) => {
+		let settled = false;
+		// Der Wächter wird vor `getCurrentPosition` gestartet, damit `finish` ihn
+		// auch bei einem synchron aufgerufenen Callback bereits abräumen kann.
+		const watchdog = setTimeout(
+			() => finish({ ok: false, message: describeGeolocationError({ code: 3 }) }),
+			GEOLOCATION_TIMEOUT_MS
+		);
+
+		function finish(outcome: GeolocationOutcome): void {
+			if (settled) return;
+			settled = true;
+			clearTimeout(watchdog);
+			resolve(outcome);
+		}
+
 		geolocation.getCurrentPosition(
 			(position) =>
-				resolve({
+				finish({
 					ok: true,
 					latitude: position.coords.latitude,
 					longitude: position.coords.longitude
 				}),
-			(error) => resolve({ ok: false, message: describeGeolocationError(error) }),
-			{ enableHighAccuracy: true, timeout: 10_000 }
+			(error) => finish({ ok: false, message: describeGeolocationError(error) }),
+			{ enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS }
 		);
 	});
 }
