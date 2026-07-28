@@ -47,6 +47,16 @@ CREATE INDEX idx_year_sichtungen ON sichtungen USING btree (
 	EXTRACT(year FROM sichtungsdatum AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')
 );
 
+-- Kalendertag-Index in deutscher Ortszeit.
+-- Passend zum Datumsfilter der Admin-Liste (admin/+page.server.ts), der über
+-- berlinCalendarDate() filtert — ohne diesen Index läuft jeder gefilterte
+-- Listenaufruf (Daten + Count) als Seq Scan.
+DROP INDEX IF EXISTS idx_sichtungsdatum_berlin_tag;
+
+CREATE INDEX idx_sichtungsdatum_berlin_tag ON sichtungen (
+	DATE(sichtungsdatum AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')
+);
+
 COMMIT;
 
 ANALYZE sichtungen;

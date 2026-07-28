@@ -186,7 +186,13 @@ export function formatForXmlExport(utcDateTime: string | Date): {
 /**
  * Kombiniert ein Datum und eine Uhrzeit zu einem vollständigen Date-Objekt.
  *
- * Interpretiert das Datum in der browser locale
+ * NUR SERVERSEITIG verwenden, gepaart mit `correctCestOffsetUTC`: Das Datum
+ * wird als UTC-Mitternacht geparst, `setHours` arbeitet aber in der
+ * Laufzeit-Zeitzone — nur unter dem gepinnten `TZ=UTC` des Servers ergibt das
+ * die Wanduhrzeit als UTC-Instant, den `correctCestOffsetUTC` anschließend
+ * Berlin→UTC verschiebt. Im Browser hinge das Ergebnis an der Gerätezone
+ * (westlich von UTC kippt sogar der Kalendertag) — Formulare übertragen
+ * deshalb Datum und Uhrzeit als Strings und kombinieren erst auf dem Server.
  *
  * @param localDate - Das lokale Datum im Format "YYYY-MM-DD"
  * @param localTime - Die lokale Uhrzeit im Format "HH:MM" (optional)
@@ -249,18 +255,34 @@ export function isValidDate(date: string | Date | null | undefined): boolean {
 }
 
 /**
- * Format datetime in ISO-like format (YYYY-MM-DD HH:MM)
- * Used for weather data timestamps and API responses
- * @param dateTime Date object or ISO datetime string  
- * @returns Formatted datetime as "YYYY-MM-DD HH:MM"
+ * Formatiert Datum/Zeit als "YYYY-MM-DD HH:MM" (Wetterzeitstempel, API-Antworten).
+ *
+ * Zonenlose Strings (z. B. Open-Meteo-`hourly.time` mit `timezone=Europe/Berlin`)
+ * sind bereits Berlin-Wanduhrzeit und werden nur umformatiert — ohne den Umweg
+ * über ein Date-Objekt, der das Ergebnis an die Laufzeit-Zeitzone binden würde.
+ * Echte Instants (Date-Objekte, ISO-Strings mit Zonenangabe) werden explizit
+ * nach Europe/Berlin konvertiert.
+ *
+ * @param dateTime - Date-Objekt oder Datums-/Zeit-String
+ * @returns Formatiertes Datum als "YYYY-MM-DD HH:MM", leer bei ungültiger Eingabe
  */
 export function formatISOLikeDatetime(dateTime: string | Date | null | undefined): string {
 	if (!dateTime) return '';
 
+	if (typeof dateTime === 'string') {
+		const wanduhrzeit = dateTime.match(
+			/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?$/
+		);
+		if (wanduhrzeit) {
+			return `${wanduhrzeit[1]} ${wanduhrzeit[2]}`;
+		}
+	}
+
 	const date = new Date(dateTime);
 	if (isNaN(date.getTime())) return '';
 
-	return date.toLocaleDateString('sv-SE', {
+	return date.toLocaleString('sv-SE', {
+		timeZone: APP_TIMEZONE,
 		year: 'numeric',
 		month: '2-digit',
 		day: '2-digit',

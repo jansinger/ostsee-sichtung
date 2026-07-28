@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	combineToDate,
 	formatForExport,
+	formatISOLikeDatetime,
 	formatForKmlExport,
 	formatForXmlExport,
 	formatLocalDateTime,
@@ -575,6 +576,46 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 			// Großzügige Limits für langsame CI-Runner
 			expect(combineDuration).toBeLessThan(100);
 			expect(splitDuration).toBeLessThan(2000);
+		});
+	});
+
+	describe('formatISOLikeDatetime', () => {
+		it('reicht zonenlose Wanduhrzeit-Strings unverändert durch (nur Umformatierung)', () => {
+			// Open-Meteo liefert Berlin-Wanduhrzeit ohne Zonenangabe — die darf
+			// nicht über ein Date-Objekt laufen, sonst hängt das Ergebnis an der
+			// Prozess-Zeitzone.
+			expect(formatISOLikeDatetime('2024-06-15T14:00')).toBe('2024-06-15 14:00');
+			expect(formatISOLikeDatetime('2024-06-15 14:00')).toBe('2024-06-15 14:00');
+			expect(formatISOLikeDatetime('2024-06-15T14:00:30')).toBe('2024-06-15 14:00');
+		});
+
+		it('ist für zonenlose Strings unabhängig von der Prozess-Zeitzone', () => {
+			for (const zone of TEST_TIME_ZONES) {
+				withTimeZone(zone, () => {
+					expect(formatISOLikeDatetime('2024-06-15T14:00')).toBe('2024-06-15 14:00');
+				});
+			}
+		});
+
+		it('formatiert echte Instants (Date oder ISO mit Zone) in Europe/Berlin', () => {
+			for (const zone of TEST_TIME_ZONES) {
+				withTimeZone(zone, () => {
+					expect(formatISOLikeDatetime(new Date('2024-06-15T12:30:00.000Z'))).toBe(
+						'2024-06-15 14:30'
+					);
+					expect(formatISOLikeDatetime('2024-06-15T12:30:00.000Z')).toBe('2024-06-15 14:30');
+					// Winter: +1 statt +2
+					expect(formatISOLikeDatetime(new Date('2024-01-15T23:30:00.000Z'))).toBe(
+						'2024-01-16 00:30'
+					);
+				});
+			}
+		});
+
+		it('liefert leeren String für fehlende oder ungültige Eingaben', () => {
+			expect(formatISOLikeDatetime(null)).toBe('');
+			expect(formatISOLikeDatetime(undefined)).toBe('');
+			expect(formatISOLikeDatetime('kein Datum')).toBe('');
 		});
 	});
 });
