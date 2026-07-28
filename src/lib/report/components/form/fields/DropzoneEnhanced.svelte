@@ -54,7 +54,18 @@
 		config, // Datei-Validierungskonfiguration (Größe, Typen, etc.)
 		enableGPSExtraction = false, // GPS-Extraktionsmodus aktivieren (für Position-Schritt)
 		title, // Optionaler Titel für die Dropzone
-		additionalText = 'GPS-Daten werden beim Upload verarbeitet'
+		additionalText = 'GPS-Daten werden beim Upload verarbeitet',
+		/**
+		 * Eigener Warnhinweis „Keine GPS-Daten im Foto" (nur im GPS-Modus sichtbar).
+		 *
+		 * Abschaltbar für Aufrufer, die den Fall selbst und ausführlicher behandeln
+		 * — sonst stünden zwei `alert alert-warning` mit derselben Aussage
+		 * übereinander. Bewusst eine eigene Prop und NICHT an `isPositionStep`
+		 * gehängt: Das trifft auch auf `sections/PositionAndTime.svelte` zu, das
+		 * keinen eigenen Hinweis hat und den hiesigen als einzige Rückmeldung
+		 * braucht.
+		 */
+		showNoGpsWarning = true
 	} = $props<{
 		referenceId: string;
 		maxFiles?: number;
@@ -62,6 +73,7 @@
 		enableGPSExtraction?: boolean;
 		title?: string;
 		additionalText?: string;
+		showNoGpsWarning?: boolean;
 	}>();
 
 	// Lokaler State für Dropzone-Dateien (temporär während des Drag & Drop)
@@ -607,17 +619,20 @@
 						</div>
 					{/if}
 
-					<!-- Warning: No GPS data -->
-					<div class="alert alert-warning mt-3">
-						<Icon icon="lucide:map-pin-off" width="20" />
-						<div>
-							<h4 class="font-medium">Keine GPS-Daten im Foto</h4>
-							<p class="text-sm">
-								Bitte wählen Sie die Position manuell auf der Karte oder laden Sie ein Foto mit
-								GPS-Daten hoch.
-							</p>
+					<!-- Warning: No GPS data — entfällt, wenn der Aufrufer den Fall selbst
+					     erklärt (siehe Prop `showNoGpsWarning`). -->
+					{#if showNoGpsWarning}
+						<div class="alert alert-warning mt-3">
+							<Icon icon="lucide:map-pin-off" width="20" />
+							<div>
+								<h4 class="font-medium">Keine GPS-Daten im Foto</h4>
+								<p class="text-sm">
+									Bitte wählen Sie die Position manuell auf der Karte oder laden Sie ein Foto mit
+									GPS-Daten hoch.
+								</p>
+							</div>
 						</div>
-					</div>
+					{/if}
 
 					{#if positionMediaFile.timestamp}
 						<div class="mt-3 text-center">

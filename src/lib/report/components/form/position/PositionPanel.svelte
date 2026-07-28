@@ -189,11 +189,15 @@
 		</p>
 
 		{#if gpsPhotoConfig}
+			<!-- `showNoGpsWarning={false}`: Der Fall wird unten ausführlicher erklärt
+			     (Zustand C). Ohne das Abschalten stünden zwei Warn-Alerts mit
+			     derselben Aussage direkt übereinander. -->
 			<DropzoneEnhanced
 				{referenceId}
 				maxFiles={1}
 				config={gpsPhotoConfig}
 				enableGPSExtraction={true}
+				showNoGpsWarning={false}
 				title="Foto auswählen oder hierher ziehen"
 				additionalText="GPS-Daten werden automatisch ausgelesen"
 			/>
@@ -201,18 +205,13 @@
 			<div class="skeleton h-32 w-full"></div>
 		{/if}
 
-		<!-- Zustand C: Foto ohne EXIF-GPS. Bisher lief dieser Fall in eine
-		     Fehlermeldung beim „Weiter" ohne sichtbares Feld zum Korrigieren —
-		     hier stattdessen zwei benannte Ausgänge.
+		<!-- Zustand C: Foto ohne EXIF-GPS.
 
 		     Bewusst `=== 'no-gps'` und nicht „kein GPS im Formular": Während der
-		     Auswertung meldet `photoStatus` `'analyzing'`, und dann steht hier
-		     nichts. Ein Foto MIT GPS wurde sonst im Moment des Drops für
-		     GPS-los erklärt und die Behauptung Sekundenbruchteile später
-		     zurückgenommen — mit `role="status"` unten hätte ein Screenreader
-		     die falsche Aussage angesagt. Für `'analyzing'` bleibt der Block
-		     leer statt einen Erfolg vorwegzunehmen; die Rückmeldung zum
-		     laufenden Upload liefert die Dropzone. -->
+		     Auswertung meldet `photoStatus` `'analyzing'` und hier steht nichts.
+		     Sonst würde ein Foto MIT GPS im Moment des Drops für GPS-los erklärt
+		     und die Behauptung Sekundenbruchteile später zurückgenommen — mit
+		     `role="status"` sagt ein Screenreader sie inzwischen an. -->
 		{#if status === 'no-gps'}
 			<div class="alert alert-warning mt-4" role="status" data-testid="photo-no-gps">
 				<Icon aria-hidden="true" icon="lucide:circle-alert" width="20" class="shrink-0" />
@@ -222,13 +221,9 @@
 						weitergeleitete Bilder enthalten keine Position. Das Foto ist trotzdem wertvoll und
 						bleibt erhalten.
 					</p>
-					<!-- Hier stand „Datum und Uhrzeit konnten übernommen werden." — ersatzlos
-					     entfernt, weil der Satz in genau diesem Block nie zutrifft: Für ein
-					     Foto OHNE GPS schreibt DropzoneEnhanced Datum/Zeit gar nicht ins
-					     Formular (nur im Zweig `isPositionStep && mediaFile.hasPosition()`).
-					     Ein `{#if $form.sightingDate}` davor half nicht — die Bedingung ist
-					     konstant wahr, das Feld hat ab Formularstart einen Default
-					     (`sightingSchema.ts` → `.default(() => berlinToday())`). -->
+					<!-- Kein Satz über Datum/Uhrzeit: Für ein Foto OHNE GPS schreibt
+					     DropzoneEnhanced die EXIF-Zeit gar nicht ins Formular (nur im Zweig
+					     `isPositionStep && mediaFile.hasPosition()`). -->
 					<div class="mt-3 flex flex-wrap gap-2">
 						<button
 							type="button"
