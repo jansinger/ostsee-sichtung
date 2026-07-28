@@ -109,7 +109,7 @@
 
 		<!-- Address (optional) -->
 		<details class="bg-base-100 collapse mt-4">
-			<summary class="collapse-title min-h-0 py-2 text-sm font-medium">
+			<summary class="collapse-title min-h-11 py-3 text-sm font-medium">
 				<span class="inline-flex items-center gap-1.5">
 					<Icon icon="lucide:map-pin" width="14" class="text-primary" />
 					Adresse (optional)

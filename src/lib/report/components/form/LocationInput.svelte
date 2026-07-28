@@ -346,7 +346,7 @@
 
 	{#if collapsibleCoordinates}
 		<details class="bg-base-100 collapse" data-testid="coordinate-fields">
-			<summary class="collapse-title min-h-0 py-2 text-sm font-medium">
+			<summary class="collapse-title min-h-11 py-3 text-sm font-medium">
 				Koordinaten eingeben
 			</summary>
 			<div class="collapse-content">
