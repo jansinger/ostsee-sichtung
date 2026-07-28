@@ -81,10 +81,24 @@
 	}
 
 	/**
-	 * Einzige Stelle, an der `hasPosition` entsteht: genau dann true, wenn
-	 * Breiten- UND Längengrad im Formular als echte Zahlen vorliegen. Bewusst
-	 * aus dem Store gelesen statt aus den gerade geschriebenen Werten — so gilt
-	 * dieselbe Regel für Karte, Eingabefelder und GPS-Button.
+	 * Einziger Schreiber von `hasPosition` **in diesem Panel**: genau dann true,
+	 * wenn Breiten- UND Längengrad im Formular als echte Zahlen vorliegen.
+	 * Bewusst aus dem Store gelesen statt aus den gerade geschriebenen Werten —
+	 * so gilt dieselbe Regel für Karte, Eingabefelder und GPS-Button.
+	 *
+	 * Es ist nicht der einzige Schreiber im Meldeformular. Die EXIF-Auswertung
+	 * schreibt das Flag selbst, in `DropzoneEnhanced.svelte`:
+	 * - `applyExifPosition` setzt `true`,
+	 * - `resetExifPositionIfUnchanged` setzt `false`.
+	 * (Die Admin-Maske hat mit `sections/Location.svelte` ein eigenes,
+	 * nutzerbedientes Feld — anderes Formular, hier ohne Belang.)
+	 *
+	 * Die Invariante hält trotzdem: Jeder dieser Schreiber setzt
+	 * `latitude`/`longitude` im selben Aufruf und leitet das Flag aus derselben
+	 * Bedingung ab („beide Koordinaten sind echte Zahlen"). Wer einen weiteren
+	 * Schreiber ergänzt, muss genau das mitbringen — sonst behauptet das
+	 * Formular eine Position, die es nicht gibt, und `waterway` verliert seine
+	 * konditionale Pflicht.
 	 */
 	function syncHasPosition(): void {
 		const values = get(form);
