@@ -34,6 +34,10 @@
 		type AppliedExifPosition
 	} from '$lib/report/components/form/fields/exifPositionReset';
 	import {
+		shouldApplyExifDateTime,
+		type AppliedExifDateTime
+	} from '$lib/report/components/form/fields/exifDateTimeApply';
+	import {
 		isPositionUid,
 		loadPositionUids,
 		markPositionFile,
@@ -44,7 +48,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('DropzoneEnhanced');
-	let { form, handleChange, mediaStore } = getFormContext();
+	let { form, touched, handleChange, mediaStore } = getFormContext();
 
 	// Merkt sich die zuletzt aus EXIF in den Formularzustand übernommene
 	// Position (siehe `applyExifPosition`). Wird beim Entfernen des Fotos
@@ -52,6 +56,11 @@
 	// `hasPosition` NUR dann zurückzunehmen, wenn der Nutzer sie seither nicht
 	// manuell überschrieben hat (siehe `exifPositionReset.ts`).
 	let appliedExifPosition = $state<AppliedExifPosition | null>(null);
+
+	// Dasselbe für Datum und Uhrzeit (siehe `exifDateTimeApply.ts`): Merkt sich,
+	// was zuletzt aus EXIF übernommen wurde, damit ein Foto-Wechsel die eigene
+	// vorherige Übernahme ersetzen darf — eine Eingabe des Nutzers aber nicht.
+	let appliedExifDateTime = $state<AppliedExifDateTime | null>(null);
 
 	// Component Props
 	let {
@@ -81,7 +90,19 @@
 		 * eigene Erklärung. Bewusst eine eigene Prop und nicht an `isPositionStep`
 		 * gehängt: Der Zweck ist „Aufrufer erklärt es selbst", nicht „welcher Modus".
 		 */
-		showNoGpsWarning = true
+		showNoGpsWarning = true,
+		/**
+		 * Meldet dem Aufrufer, ob gerade Datum und Uhrzeit aus EXIF übernommen
+		 * wurden (`true`) oder ob das zugehörige Foto wieder entfernt wurde
+		 * (`false`).
+		 *
+		 * Nötig, weil sich das am Formularzustand nicht ablesen lässt:
+		 * `$form.sightingDate` ist wegen `berlinToday()` als Schema-Default immer
+		 * gefüllt. Genau daran scheiterte die frühere Fassung des Zustand-C-Satzes
+		 * „Datum und Uhrzeit konnten übernommen werden" — er stand auch dann da,
+		 * wenn nichts übernommen wurde.
+		 */
+		onExifDateTimeApplied = (_applied: boolean) => {}
 	} = $props<{
 		referenceId: string;
 		maxFiles?: number;
@@ -90,6 +111,7 @@
 		title?: string;
 		additionalText?: string;
 		showNoGpsWarning?: boolean;
+		onExifDateTimeApplied?: (applied: boolean) => void;
 	}>();
 
 	// Lokaler State für Dropzone-Dateien (temporär während des Drag & Drop)
@@ -220,6 +242,32 @@
 		appliedExifPosition = null;
 	}
 
+	/**
+	 * Übernimmt die Aufnahmezeit aus EXIF — auch für ein Foto OHNE GPS.
+	 *
+	 * Das war der eigentliche Fehler: Die Karte zeigte „Aufnahmezeit: …" an,
+	 * geschrieben wurde sie aber nur im Zweig mit GPS. Der Nutzer sah das
+	 * richtige Datum und prüfte das Feld deshalb nicht mehr — im Formular stand
+	 * weiter das heutige. Für ein Foto ohne GPS ist der Zeitstempel das Einzige,
+	 * was EXIF überhaupt noch beisteuern kann.
+	 *
+	 * Ob geschrieben werden darf, entscheidet `shouldApplyExifDateTime`
+	 * (`exifDateTimeApply.ts`) — eine Eingabe des Nutzers wird nicht
+	 * überschrieben.
+	 */
+	function applyExifDateTime(timestamp: Date): void {
+		const { date: sightingDate, time: sightingTime } = splitDateTime(timestamp);
+		if (!shouldApplyExifDateTime(get(form), appliedExifDateTime, get(touched))) {
+			logger.debug({ sightingDate, sightingTime }, 'EXIF timestamp not applied — field in use');
+			return;
+		}
+		logger.info({ sightingDate, sightingTime }, 'New sighting data extracted');
+		triggerChange('sightingDate', sightingDate);
+		triggerChange('sightingTime', sightingTime);
+		appliedExifDateTime = { sightingDate, sightingTime };
+		onExifDateTimeApplied(true);
+	}
+
 	$effect(() => {
 		if (positionMediaFile) {
 			if (positionMediaFile.exifData?.latitude && positionMediaFile.exifData?.longitude) {
@@ -227,10 +275,7 @@
 			}
 			const timestamp = positionMediaFile.timestamp;
 			if (timestamp) {
-				const { date: sightingDate, time: sightingTime } = splitDateTime(timestamp);
-				logger.info({ sightingDate, sightingTime }, 'New sighting data extracted');
-				triggerChange('sightingDate', sightingDate);
-				triggerChange('sightingTime', sightingTime);
+				applyExifDateTime(timestamp);
 			}
 		}
 	});
@@ -303,15 +348,12 @@
 				// positionMediaFile stays the same object reference (plain class property, not $state).
 				if (isPositionStep && mediaFile.hasPosition()) {
 					applyExifPosition(mediaFile.exifData!);
-					if (mediaFile.timestamp) {
-						const { date: sightingDate, time: sightingTime } = splitDateTime(mediaFile.timestamp);
-						logger.info(
-							{ sightingDate, sightingTime },
-							'New sighting data extracted from metadata'
-						);
-						triggerChange('sightingDate', sightingDate);
-						triggerChange('sightingTime', sightingTime);
-					}
+				}
+				// BEWUSST außerhalb des GPS-Zweigs: Ein Foto ohne GPS trägt trotzdem
+				// eine Aufnahmezeit, und sie war bisher das Einzige, was angezeigt,
+				// aber nie übernommen wurde.
+				if (isPositionStep && mediaFile.timestamp) {
+					applyExifDateTime(mediaFile.timestamp);
 				}
 				// Trigger store update to refresh derived values.
 				//
@@ -377,6 +419,12 @@
 				// Aus lokalen Stores entfernen
 				deleteFile(mediaFile.uid);
 				resetExifPositionIfUnchanged();
+				// Datum und Uhrzeit bleiben stehen — anders als die Koordinaten sind sie
+				// ohne Foto weiterhin plausibel, und `sightingDate` fiele sonst auf
+				// „heute" zurück. `appliedExifDateTime` bleibt deshalb ebenfalls gesetzt:
+				// Es besagt „diese Werte gehören uns" und erlaubt dem Ersatzfoto, sie zu
+				// überschreiben (exifDateTimeApply.ts). Nur der Hinweis im Panel geht.
+				onExifDateTimeApplied(false);
 				createToast('success', 'Datei erfolgreich gelöscht.');
 			}
 		} catch (error) {
@@ -427,6 +475,8 @@
 
 			uploadedFiles = uploadedFiles.filter((uf: UploadedFileInfo) => !removedUids.has(uf.uid));
 			resetExifPositionIfUnchanged();
+			// Siehe `handleFileRemoved`: Werte bleiben, nur der Hinweis geht.
+			onExifDateTimeApplied(false);
 
 			triggerChange('uploadedFiles', uploadedFiles);
 			createToast('success', 'Alle Dateien erfolgreich gelöscht.');

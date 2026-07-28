@@ -81,6 +81,17 @@
 		});
 	});
 
+	/**
+	 * Wurde die Aufnahmezeit des aktuellen Fotos wirklich ins Formular übernommen?
+	 *
+	 * Kommt als Meldung aus `DropzoneEnhanced` und nicht aus `$form.sightingDate`:
+	 * Das Feld hat mit `berlinToday()` einen Schema-Default und ist damit IMMER
+	 * gefüllt (`sightingSchema.ts`). Ein Gate darauf war immer wahr — genau
+	 * deshalb musste der Satz „Datum und Uhrzeit konnten übernommen werden"
+	 * vorher wieder entfernt werden.
+	 */
+	let exifDateTimeApplied = $state(false);
+
 	/** Setzt ein Formularfeld über den synthetischen handleChange-Event-Pfad. */
 	function setField(name: string, value: unknown): void {
 		handleChange({ target: { name, value } } as unknown as Event);
@@ -224,6 +235,7 @@
 				config={gpsPhotoConfig}
 				enableGPSExtraction={true}
 				showNoGpsWarning={false}
+				onExifDateTimeApplied={(applied) => (exifDateTimeApplied = applied)}
 				title="Foto auswählen oder hierher ziehen"
 				additionalText="GPS-Daten werden automatisch ausgelesen"
 			/>
@@ -251,9 +263,14 @@
 						weitergeleitete Bilder enthalten keine Position. Das Foto ist trotzdem wertvoll und
 						bleibt erhalten.
 					</p>
-					<!-- Kein Satz über Datum/Uhrzeit: Für ein Foto OHNE GPS schreibt
-					     DropzoneEnhanced die EXIF-Zeit gar nicht ins Formular (nur im Zweig
-					     `isPositionStep && mediaFile.hasPosition()`). -->
+					<!-- Nur wenn es wirklich passiert ist: `exifDateTimeApplied` kommt aus
+					     DropzoneEnhanced. Ein Gate auf `$form.sightingDate` wäre immer wahr
+					     (Schema-Default `berlinToday()`). -->
+					{#if exifDateTimeApplied}
+						<p class="mt-2 text-sm" data-testid="photo-datetime-applied">
+							Datum und Uhrzeit konnten übernommen werden.
+						</p>
+					{/if}
 					<div class="mt-3 flex flex-wrap gap-2">
 						<button
 							type="button"

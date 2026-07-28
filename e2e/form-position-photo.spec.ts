@@ -173,6 +173,16 @@ test.describe('PositionPanel — Foto-Upload mit EXIF', () => {
 		await expect(page.locator('[data-testid="exit-to-map"]')).toBeVisible();
 		await expect(page.locator('[data-testid="exit-to-description"]')).toBeVisible();
 
+		// Ohne GPS ist die Aufnahmezeit das Einzige, was EXIF noch beisteuern
+		// kann — sie MUSS übernommen werden. Vorher wurde sie in der Foto-Karte
+		// angezeigt („Aufnahmezeit: 15.8.2025, 10:30:00"), aber nie ins Formular
+		// geschrieben: Der Zweig dafür hing an `mediaFile.hasPosition()`. Der
+		// Nutzer sah das richtige Datum und prüfte das Feld deshalb nicht mehr,
+		// während dort weiter das heutige stand.
+		await expect(page.locator('[data-testid="field-sightingDate"]')).toHaveValue(EXIF_DATE);
+		await expect(page.locator('[data-testid="field-sightingTime"]')).toHaveValue(EXIF_TIME);
+		await expect(page.locator('[data-testid="photo-datetime-applied"]')).toBeVisible();
+
 		// Ohne GPS bleibt die Position leer: Die Karte klappt nicht von selbst
 		// auf, und das Fahrwasser bleibt Pflichtfeld.
 		await expect(page.locator('[data-testid="map-disclosure"]')).not.toHaveAttribute('open', '');
