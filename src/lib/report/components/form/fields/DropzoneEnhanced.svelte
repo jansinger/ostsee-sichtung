@@ -380,9 +380,11 @@
 					{mediaFiles.length} Datei{mediaFiles.length !== 1 ? 'en' : ''}
 					<!-- {previewFiles.length > 0 ? '(wird verarbeitet...)' : 'hochgeladen'} -->
 				</h3>
+				<!-- `min-h-11` hält das 44-px-Touch-Target, das `btn-sm` sonst
+				     unterschreitet (design-system.md, A11y-Mindestanforderungen). -->
 				<button
 					type="button"
-					class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-white"
+					class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
 					onclick={handleClear}
 				>
 					Alle löschen
@@ -439,14 +441,18 @@
 												Upload...
 											</div>
 										{:then}
-											<!-- Remove button -->
+											<!-- Remove button. `min-h-11 min-w-11` hält das 44-px-Touch-Target
+											     (design-system.md); der Button ist absolut positioniert und
+											     kann das Datei-Grid in Schritt 3 deshalb nicht umbrechen.
+											     `btn-error:hover` war eine tote Klasse — diese Schreibweise
+											     erzeugt Tailwind nicht (Variante wäre `hover:…`). -->
 											<button
 												type="button"
-												class="btn btn-circle btn-xs btn-error btn-error:hover absolute -top-2 -right-2 text-white"
+												class="btn btn-circle btn-sm btn-error text-error-content absolute -top-2 -right-2 min-h-11 min-w-11"
 												onclick={() => handleFileRemoved(mediaFile.uid)}
 												aria-label="Datei entfernen"
 											>
-												<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path
 														stroke-linecap="round"
 														stroke-linejoin="round"
@@ -533,7 +539,11 @@
 			{#if positionMediafileMetadata.exifData?.latitude && positionMediafileMetadata.exifData?.longitude}
 				<!-- Map Display with GPS Position -->
 				<div class="bg-base-100 border-base-300 rounded-lg border p-4">
-					<div class="mb-3 flex items-center justify-between">
+					<!-- `flex-wrap gap-2`: Die Zeile trägt drei Elemente, darunter ein
+					     `text-nowrap`-Badge mit den Koordinaten. Seit der Button auf
+					     `btn-sm` steht, passt sie auf schmalen Geräten nicht mehr
+					     zwingend in eine Zeile — ohne Umbruch liefe sie über. -->
+					<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 						<div class="flex items-center gap-2">
 							<Icon icon="lucide:map-pin" class="text-success h-[18px] w-[18px]" />
 							<h4 class="text-sm font-semibold">GPS-Position</h4>
@@ -549,9 +559,10 @@
 								Upload läuft im Hintergrund...
 							</div>
 						{:then}
+							<!-- `min-h-11` hält das 44-px-Touch-Target (design-system.md). -->
 							<button
 								type="button"
-								class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-white"
+								class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
 								onclick={handleClear}
 							>
 								Neu auswählen
@@ -598,7 +609,7 @@
 			{:else}
 				<!-- Image uploaded but no GPS data - show preview with info -->
 				<div class="bg-base-100 border-base-300 rounded-lg border p-4">
-					<div class="mb-3 flex items-center justify-between">
+					<div class="mb-3 flex items-center justify-between gap-2">
 						<div class="flex items-center gap-2">
 							<Icon icon="lucide:image" class="text-primary h-[18px] w-[18px]" />
 							<h4 class="text-sm font-semibold">Foto hochgeladen</h4>
@@ -606,9 +617,10 @@
 						{#await positionMediaFile.uploadedFile}
 							<div class="loading loading-spinner loading-sm text-primary"></div>
 						{:then}
+							<!-- `min-h-11` hält das 44-px-Touch-Target (design-system.md). -->
 							<button
 								type="button"
-								class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-white"
+								class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
 								onclick={handleClear}
 							>
 								Neu auswählen
