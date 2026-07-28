@@ -49,6 +49,7 @@ Theme-Tokens statt hardcodierter Farben, `*-content` ausschließlich auf Vollton
 
 ```bash
 npm run dev          # Server (https://localhost:4000)
+npm run certs:setup  # Dev-TLS-Zertifikate via mkcert (läuft automatisch vor dev)
 npm run build        # Production Build
 
 npm run db:start     # PostgreSQL starten (Docker)

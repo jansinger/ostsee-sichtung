@@ -5,8 +5,24 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
+
+const certFile = fileURLToPath(new URL('./certs/localhost.pem', import.meta.url));
+const keyFile = fileURLToPath(new URL('./certs/localhost-key.pem', import.meta.url));
+
+/**
+ * Von mkcert ausgestellte Zertifikate (scripts/setup-dev-certs.sh, läuft vor `npm run dev`)
+ * akzeptiert Chrome ohne Warnung. Fehlen sie — etwa weil mkcert nicht installiert ist —
+ * übernimmt basicSsl mit einem selbstsignierten Zertifikat: funktioniert, zeigt aber das
+ * Chrome-Interstitial.
+ */
+const devCert =
+	existsSync(certFile) && existsSync(keyFile)
+		? { cert: readFileSync(certFile), key: readFileSync(keyFile) }
+		: null;
 
 export default defineConfig({
 	plugins: [
@@ -21,15 +37,20 @@ export default defineConfig({
 				props.height = props.height || '20';
 			}
 		}),
-		basicSsl({
-			name: 'localhost',
-			domains: ['localhost', '*.local.dev'],
-			certDir: './certs'
-		})
+		...(devCert
+			? []
+			: [
+					basicSsl({
+						name: 'localhost',
+						domains: ['localhost', '*.local.dev'],
+						certDir: './certs/basic-ssl'
+					})
+				])
 	],
 	server: {
 		host: 'localhost',
 		port: parseInt(process.env.VITE_DEV_PORT || '4000'),
+		...(devCert ? { https: devCert } : {}),
 		hmr: {
 			overlay: true
 		},

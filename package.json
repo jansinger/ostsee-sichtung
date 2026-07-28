@@ -9,7 +9,8 @@
 		"node": "^20.19.0 || ^22.12.0 || >=24.0.0"
 	},
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "npm run certs:setup && vite dev",
+		"certs:setup": "bash scripts/setup-dev-certs.sh",
 		"build": "svelte-kit sync && vite build",
 		"build:docker": "USE_NODE_ADAPTER=true svelte-kit sync && vite build",
 		"preview": "vite preview",

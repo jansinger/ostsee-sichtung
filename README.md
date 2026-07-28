@@ -104,6 +104,19 @@ Die Anwendung ist dann unter https://localhost:4000 verfügbar.
 - Sichere iframe-Einbettung möglich
 - Unterstützt moderne Web-APIs
 
+Damit Chrome den Dev-Server ohne Sicherheitswarnung akzeptiert, wird
+[mkcert](https://github.com/FiloSottile/mkcert) benötigt — es legt eine lokale CA im
+System-Trust-Store an. Einmalig:
+
+```bash
+brew install mkcert nss
+```
+
+`npm run dev` erzeugt die Zertifikate danach automatisch in `certs/` (gitignored) und
+erneuert sie 30 Tage vor Ablauf; manuell über `npm run certs:setup`. Ohne mkcert startet
+der Server weiterhin, nutzt dann aber ein selbstsigniertes Zertifikat — Chrome zeigt in
+dem Fall die gewohnte Zertifikatswarnung.
+
 ### Datenbankbefehle
 
 ```bash
