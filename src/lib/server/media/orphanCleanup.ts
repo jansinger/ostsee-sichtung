@@ -279,7 +279,11 @@ export async function cleanupOrphans(options: CleanupOptions): Promise<CleanupRe
 	};
 
 	if (!execute) {
-		report.preview = { rows, files: files ?? [] };
+		// Auch die Liste deckeln, nicht nur das Löschen: Ein großer Rückstand
+		// ergäbe sonst eine Antwort von etlichen MB, die die Admin-Oberfläche
+		// vollständig rendern müsste. Die Zählungen bleiben vollständig.
+		report.preview = { rows: rows.slice(0, limit), files: (files ?? []).slice(0, limit) };
+		report.remaining = Math.max(0, rows.length + (files?.length ?? 0) - limit);
 		return report;
 	}
 

@@ -136,9 +136,12 @@ function maskConnection(connectionString: string): string {
 
 /**
  * Löscht eine Datei und meldet, ob sie tatsächlich entfernt wurde.
- * Eine bereits fehlende Datei ist kein Fehler — das Ziel ist erreicht.
+ *
+ * Eine bereits fehlende Datei ist **kein** Fehler — das Ziel ist erreicht, also
+ * `false` ohne Ausnahme. Echte Fehler werden dagegen geworfen, damit der
+ * Aufräum-Lauf sie als Fehlschlag zählen kann statt sie zu verschlucken.
  */
-async function removeFile(target: string): Promise<boolean> {
+export async function removeFile(target: string): Promise<boolean> {
 	try {
 		await unlink(target);
 		return true;
@@ -146,8 +149,7 @@ async function removeFile(target: string): Promise<boolean> {
 		if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
 			return false;
 		}
-		console.error(`❌ Konnte ${target} nicht löschen: ${(error as Error).message}`);
-		return false;
+		throw error;
 	}
 }
 
@@ -262,9 +264,10 @@ async function main(): Promise<void> {
 				console.warn(`⚠️  Pfad außerhalb des Upload-Verzeichnisses, übersprungen: ${relativePath}`);
 				return;
 			}
-			if (!(await removeFile(target))) {
-				throw new Error('Datei ließ sich nicht entfernen');
-			}
+			// Wirft nur bei echten Fehlern. Eine bereits fehlende Datei gilt als
+			// Erfolg — „gelöscht" heißt hier „nicht mehr vorhanden", genau wie
+			// beim Endpunkt, dessen Storage-Provider ebenfalls nicht wirft.
+			await removeFile(target);
 		}
 
 		const report = await cleanupOrphans({

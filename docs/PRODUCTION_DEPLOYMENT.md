@@ -110,6 +110,10 @@ PGPASSWORD="DEIN_SICHERES_PASSWORT"
 SESSION_SECRET="HIER_GENERIERTEN_WERT_EINFÜGEN"
 ENCRYPTION_KEY="HIER_GENERIERTEN_WERT_EINFÜGEN"
 
+# Token für den Aufräum-Cron (verwaiste Uploads). Ohne Wert bleibt der
+# Endpunkt nur über eine Admin-Session erreichbar — siehe Abschnitt unten.
+CLEANUP_TOKEN="HIER_GENERIERTEN_WERT_EINFÜGEN"
+
 # Auth0 Konfiguration
 AUTH0_CLIENT_ID="deine-client-id"
 AUTH0_CLIENT_SECRET="dein-client-secret"
@@ -137,6 +141,34 @@ openssl rand -base64 32
 
 # ENCRYPTION_KEY (64 Hex-Zeichen)
 openssl rand -hex 32
+
+# CLEANUP_TOKEN (mindestens 32 Zeichen)
+openssl rand -hex 32
+```
+
+### Aufräum-Cron einrichten — Pflicht
+
+Uploads werden übertragen, sobald ein Foto in der Dropzone landet; verknüpft
+werden sie erst beim Absenden. Abgebrochene Formularläufe hinterlassen deshalb
+Dateien samt EXIF-GPS. **Das Formular sagt Meldern zu, dass diese nach 24
+Stunden gelöscht werden** — eingehalten wird das nur, wenn ein Job den Endpunkt
+regelmäßig aufruft.
+
+```bash
+curl -fsS -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" \
+  "https://deine-domain.de/api/admin/cleanup-orphans?mode=execute"
+```
+
+Einmal täglich genügt. `-f` sorgt dafür, dass ein Fehlerstatus beim Cron-Dienst
+als Fehlschlag ankommt. Ohne `mode=execute` läuft der Aufruf als reine Vorschau
+und löscht nichts — ein Cron ohne dieses Flag sieht monatelang gesund aus und
+räumt trotzdem nichts weg.
+
+Vorschau zum Prüfen des Bestands:
+
+```bash
+curl -sk -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" \
+  "https://deine-domain.de/api/admin/cleanup-orphans"
 ```
 
 ---

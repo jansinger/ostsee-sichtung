@@ -351,6 +351,16 @@ describe('cleanupOrphans', () => {
 		expect(report.failed).toBe(0);
 	});
 
+	it('deckelt auch die Vorschau-Liste, nicht nur das Löschen', async () => {
+		// Sonst lieferte ein großer Rückstand eine Antwort von etlichen MB und
+		// die Admin-Oberfläche müsste sie alle rendern.
+		const p = ports([buildRow({ id: 1 }), buildRow({ id: 2 }), buildRow({ id: 3 })]);
+		const report = await run(p, { execute: false, limit: 2 });
+
+		expect(report.rowsFound).toBe(3);
+		expect(report.preview?.rows).toHaveLength(2);
+	});
+
 	it('räumt auch Dateien ohne Zeile ab', async () => {
 		const p = ports([], [buildEntry({ relativePath: 'ref/waise.jpg' })]);
 		const report = await run(p);

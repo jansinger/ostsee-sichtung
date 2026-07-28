@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
 	assertLocalStorage,
+	removeFile,
 	parseCliOptions,
 	resolveConnectionString
 } from './cleanup-orphaned-uploads';
@@ -82,5 +83,13 @@ describe('assertLocalStorage', () => {
 		expect(() => assertLocalStorage({ STORAGE_PROVIDER: 'vercel-blob' })).toThrow(
 			/nur für local storage/i
 		);
+	});
+});
+
+describe('removeFile', () => {
+	it('meldet eine bereits fehlende Datei als nicht gelöscht, ohne zu werfen', async () => {
+		// Ziel erreicht: Die Datei ist weg. Würde das als Fehlschlag zählen,
+		// meldete jeder Lauf über einem aufgeräumten Bestand Fehler.
+		await expect(removeFile('/nicht/vorhanden/datei.jpg')).resolves.toBe(false);
 	});
 });

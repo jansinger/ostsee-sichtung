@@ -92,8 +92,14 @@ PORT=3000
 # Security - GENERATE THESE:
 # SESSION_SECRET: openssl rand -base64 32
 # ENCRYPTION_KEY: openssl rand -hex 32
+# CLEANUP_TOKEN: openssl rand -hex 32
 SESSION_SECRET=REPLACE_WITH_GENERATED_VALUE
 ENCRYPTION_KEY=REPLACE_WITH_GENERATED_VALUE
+
+# Bearer token for the orphaned-upload cleanup cron. Without it the endpoint
+# stays reachable only through an admin session — and the 24h deletion promise
+# shown to reporters is never kept. See PRODUCTION_DEPLOYMENT.md.
+CLEANUP_TOKEN=REPLACE_WITH_GENERATED_VALUE
 
 # Auth0 - get these from your Auth0 dashboard
 AUTH0_CLIENT_ID=your-auth0-client-id
