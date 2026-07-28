@@ -43,7 +43,7 @@ const MILLIS_PER_DAY = 24 * MILLIS_PER_HOUR;
  * das Schließen des Tabs nicht — was 24 Stunden unverknüpft liegt, kann nicht
  * mehr abgesendet werden.
  */
-const DEFAULT_RETENTION = '24h';
+export const DEFAULT_RETENTION = '24h';
 
 /** Verzeichnis mit Altbestand aus der Migration des Vorgängersystems. */
 const EXCLUDED_DIRS = new Set(['_old_uploads']);

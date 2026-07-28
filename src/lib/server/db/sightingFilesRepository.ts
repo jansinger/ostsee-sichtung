@@ -1,6 +1,6 @@
 import { createLogger } from '$lib/logger.server';
 import type { UploadedFileInfo } from '$lib/types';
-import { and, eq, isNull, lt } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { db } from '.';
 import { sightingFiles } from './schema';
@@ -65,17 +65,4 @@ export async function setSightingIdForReferenceId(
 		.where(eq(sightingFiles.referenceId, referenceId))
 		.returning({ uid: sightingFiles.uid });
 	logger.info({ referenceId, count: result.length }, 'Mediendateien erfolgreich aktualisiert');
-}
-
-/**
- * Listet Dateien, die keiner Sichtung zugeordnet sind und vor `cutoff`
- * hochgeladen wurden — also Uploads zu Meldungen, die nie abgeschickt wurden.
- *
- * Siehe `$lib/server/media/orphanCleanup` für den Aufräum-Ablauf.
- */
-export async function listOrphanedFilesBefore(cutoff: Date) {
-	return db
-		.select({ filePath: sightingFiles.filePath, uid: sightingFiles.uid })
-		.from(sightingFiles)
-		.where(and(isNull(sightingFiles.sightingId), lt(sightingFiles.uploadedAt, cutoff)));
 }
