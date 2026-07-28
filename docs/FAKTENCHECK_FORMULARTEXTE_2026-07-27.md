@@ -289,11 +289,10 @@ Museumsentscheidung weiterhin mit.
   die 9 Datensätze „freigegeben, aber ungeprüft" (2016–2018) sind eingefrorene Altlasten des
   Altsystems, die der heutige Workflow nicht mehr erzeugen kann.
 
-  **Weiterhin offen:** Die Konfiguration `display.showUnapprovedOnMap` (Default `false`,
-  registriert in `configInitializer.ts:250`, exponiert über `/api/config/public`) wird von
-  **keinem** Kartenquery gelesen — auch nach PR #576 nicht. Der Schalter tut nichts; würde
-  er verdrahtet, bräche er die Parität und die Zwei-Zustände-Regel. Entweder entfernen oder
-  ausdrücklich als funktionslos kennzeichnen.
+  Ebenfalls mit #576 erledigt: Die Konfiguration `display.showUnapprovedOnMap` — ein
+  Schalter, den kein Kartenquery je gelesen hat und der, verdrahtet, die Zwei-Zustände-Regel
+  gebrochen hätte — wurde aus allen vier Fundstellen entfernt (`configInitializer`,
+  `configService`, `accessControl`, `/api/config/public`).
 
 - **Die übrigen Admin-Auswertungen** (Arten-, Jahres-, Monatsverteilung, Nutzer, Schiffe,
   Datenqualität, Geografie) filtern weiterhin auf `geprueft = 1` statt auf `freigegeben_am`.
