@@ -141,10 +141,12 @@ DB_READY=0
 
 # Extract host, port, user, and dbname from DATABASE_POSTGRES_URL
 # Example: postgres://user:password@host:port/dbname
-PGHOST=$(echo "$DATABASE_POSTGRES_URL" | sed -n 's#postgres://[^@]*@\([^:/]*\).*#\1#p')
-PGPORT=$(echo "$DATABASE_POSTGRES_URL" | sed -n 's#postgres://[^@]*@[^:/]*:\([0-9]*\).*#\1#p')
-PGUSER=$(echo "$DATABASE_POSTGRES_URL" | sed -n 's#postgres://\([^:]*\).*#\1#p')
-PGDATABASE=$(echo "$DATABASE_POSTGRES_URL" | sed -n 's#postgres://[^@]*@[^:/]*[:0-9]*/\([^?]*\).*#\1#p')
+# Both postgres:// and postgresql:// schemes are accepted (normalized first).
+DB_URL_NORMALIZED=$(echo "$DATABASE_POSTGRES_URL" | sed 's#^postgresql://#postgres://#')
+PGHOST=$(echo "$DB_URL_NORMALIZED" | sed -n 's#postgres://[^@]*@\([^:/]*\).*#\1#p')
+PGPORT=$(echo "$DB_URL_NORMALIZED" | sed -n 's#postgres://[^@]*@[^:/]*:\([0-9]*\).*#\1#p')
+PGUSER=$(echo "$DB_URL_NORMALIZED" | sed -n 's#postgres://\([^:]*\).*#\1#p')
+PGDATABASE=$(echo "$DB_URL_NORMALIZED" | sed -n 's#postgres://[^@]*@[^:/]*[:0-9]*/\([^?]*\).*#\1#p')
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if pg_isready -h "$PGHOST" -p "${PGPORT:-5432}" -U "$PGUSER" -d "$PGDATABASE" >/dev/null 2>&1; then

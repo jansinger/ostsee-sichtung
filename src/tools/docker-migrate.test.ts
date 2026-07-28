@@ -1,3 +1,6 @@
+// Testet die puren Funktionen aus scripts/docker-migrate.ts. Die Testdatei
+// liegt unter src/tools/ (nicht co-located), weil das Vitest-Server-Projekt
+// nur src/**/*.test.ts einsammelt.
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {

@@ -113,10 +113,13 @@ npm run db:start
 # Datenbank stoppen
 npm run db:stop
 
-# Schema-Änderungen anwenden
+# Schema-Änderungen auf lokale Dev-DB pushen (nur Entwicklung)
 npm run db:push
 
-# Migration erstellen
+# Migration aus Schema-Änderung generieren (committen — Pflicht für Deployments)
+npm run db:generate
+
+# Migrationen anwenden (Node ≥ 22.18; läuft im Container automatisch beim Start)
 npm run db:migrate
 
 # Drizzle Studio öffnen (UI zur Datenverwaltung)
