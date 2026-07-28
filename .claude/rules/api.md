@@ -33,7 +33,9 @@ src/routes/
 ### 100% Kompatibilität erforderlich
 
 Die Legacy API MUSS exakt mit der Original-Spezifikation übereinstimmen.
-Mobile Apps hängen davon ab!
+Stand 2026-07-28 sind keine Clients angebunden — der Vertrag gilt trotzdem,
+weil er sonst wertlos ist, sobald welche dazukommen. Einordnung und Umgang
+mit offensichtlichen Fehlern: `.claude/rules/legacy-api.md`.
 
 **Referenz:** docs/LEGACY_API_SPECIFICATION.md
 
