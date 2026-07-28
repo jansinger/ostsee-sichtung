@@ -12,7 +12,12 @@
  * @since 1.10.0
  */
 
-import { formatDateDDMMYY, formatTimeHHMI, toUnixTimestamp } from '$lib/legacy-api/date-utils.js';
+import {
+	formatDateDDMMYY,
+	formatTimeHHMI,
+	getYearRange,
+	toUnixTimestamp
+} from '$lib/legacy-api/date-utils.js';
 import { createLogger } from '$lib/logger.server';
 import { getSpeciesLabel } from '$lib/report/formOptions/species.js';
 import { db } from '$lib/server/db';
@@ -84,8 +89,10 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		if (year) {
 			const yearNum = parseInt(year);
 			if (!isNaN(yearNum) && yearNum >= 1900 && yearNum <= new Date().getFullYear() + 1) {
-				const startDate = new Date(yearNum, 0, 1); // January 1st
-				const endDate = new Date(yearNum + 1, 0, 1); // January 1st next year
+				// Jahresgrenzen in deutscher Ortszeit: `dt`/`ti` der Response werden
+				// nach Europe/Berlin umgerechnet, der Filter muss dieselbe
+				// Jahresauslegung haben und darf nicht an der Server-Zeitzone hängen.
+				const { startDate, endDate } = getYearRange(yearNum);
 
 				whereConditions.push(and(between(sightings.sightingDate, startDate, endDate)));
 

@@ -318,6 +318,75 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ---
 
+### `TZ`
+
+**Type**: `string` (IANA timezone)
+**Required**: No
+**Default**: `UTC` (set explicitly in `Dockerfile` and `docker-compose.production.yml`)
+**Description**: Process timezone. Deliberately pinned — do not remove.
+
+#### Why this is pinned
+
+Without `TZ`, Node falls back to UTC, which _happened_ to be correct but was never
+a decision: the timezone was whatever the environment supplied. Date logic silently
+depended on it. One instance reached production — the statistics filter excluded
+epoch placeholder records via `setHours`, which evaluates in the **local** timezone.
+In Europe/Berlin it matched the 280 records, in the UTC container it did not, and
+`yearsOfService` jumped from 24 to ~56 years (fixed in
+[#571](https://github.com/jansinger/ostsee-sichtung/pull/571)).
+
+#### Why UTC and not Europe/Berlin
+
+`UTC` is what production already runs, so pinning it changes nothing — no silent
+shift in stored timestamps, exports, or API responses. Log timestamps also stay
+unambiguous across the DST changeover, where Europe/Berlin repeats an hour.
+
+#### Storage convention
+
+All timestamp columns hold **true UTC instants**. Drizzle pins both directions
+explicitly (`toISOString()` on write, `+0000` on read), so storage does not
+depend on `TZ` either.
+
+This was not always true. The columns are `timestamp without time zone`, and the
+data inherited from the PHP predecessor held German wall-clock time — that system
+ran on a server in Europe/Berlin. A one-off migration converted it before launch:
+
+```bash
+npm run db:migrate-timestamps-utc:dry-run -- --cutover=<go-live ISO>
+```
+
+The tool refuses to run twice (marker in `app_config`) and aborts if records that
+were already written by this application fall inside its scope. Run the dry run
+first and take a backup — the conversion is not trivially reversible.
+
+#### Display
+
+German local time is **not** left to `TZ`. Every place that renders time for users
+names `Europe/Berlin` explicitly:
+
+| Concern                                                            | Implementation                                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Display & CSV/KML/XML/JSON export                                  | `src/lib/utils/format/dateTime.ts` — `Intl` with `timeZone: 'Europe/Berlin'`   |
+| Weather lookup (Open-Meteo, requested as `timezone=Europe/Berlin`) | `src/lib/server/weather/hourIndex.ts` — index parsed from the `"HH:MM"` string |
+| Legacy REST API output (`dt`, `ti`)                                | `src/lib/legacy-api/date-utils.ts` — `Intl` with `Europe/Berlin`       |
+| Legacy `year` filter                                               | `getYearRange()` — German local year bounds, matching the output                   |
+| Statistics plausibility bound                                      | `EARLIEST_PLAUSIBLE_SIGHTING_DATE` — fixed UTC instant                         |
+
+#### Before changing this value
+
+Changing `TZ` is safe only as long as the code stays timezone-independent.
+`src/lib/server/datetime/correctCestOffsetUTC.test.ts` proves the sighting pipeline
+(`combineToDate` → `correctCestOffsetUTC`) yields the same UTC instant under UTC and
+Europe/Berlin, for all 24 hours in both summer and winter. Note that
+`correctCestOffsetUTC` only _does_ anything when the process runs in UTC — it returns
+early otherwise. Run the full server suite after any change:
+
+```bash
+npm run test:unit
+```
+
+---
+
 ### `PORT`
 
 **Type**: `number`

@@ -93,10 +93,13 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 
 	// Verarbeite jede Sichtung zu einer CSV-Zeile
 	sightings.forEach((sighting) => {
-		// Datum und Zeit formatieren (deutsche Lokalisierung)
-		const sdt = new Date(sighting.sightingDate);
-		const date = `${sdt.getDate().toString().padStart(2, '0')}.${(sdt.getMonth() + 1).toString().padStart(2, '0')}.${sdt.getFullYear()}`;
-		const time = `${sdt.getHours().toString().padStart(2, '0')}:${sdt.getMinutes().toString().padStart(2, '0')}`;
+		// Datum und Zeit in deutscher Ortszeit formatieren.
+		// Bewusst über formatLocalDateTime (fixe Zeitzone Europe/Berlin) statt über
+		// getDate()/getHours(): diese Getter arbeiten in der Zeitzone des Prozesses,
+		// womit der Export im UTC-Container 1–2 Stunden gegenüber KML-, XML- und
+		// JSON-Export abgewichen wäre.
+		const date = formatLocalDateTime(sighting.sightingDate, 'date');
+		const time = formatLocalDateTime(sighting.sightingDate, 'time');
 
 		// Enum-Werte in lesbare Labels konvertieren
 		const speciesName = getSpeciesLabel(sighting.species);

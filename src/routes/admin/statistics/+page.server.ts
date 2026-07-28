@@ -36,27 +36,38 @@ export const load: PageServerLoad = async () => {
 			.groupBy(sightings.species)
 			.orderBy(sql`COUNT(*) DESC`);
 
+		// Jahr und Monat in deutscher Ortszeit gruppieren: `sichtungsdatum` hält
+		// seit der UTC-Migration echte Zeitpunkte. Eine Sichtung am 01.01. um 00:30
+		// Ortszeit steht darin als 31.12. 23:30 UTC und gehört trotzdem ins neue Jahr.
 		// Yearly trends (excluding obvious data errors)
 		const yearlyStats = await db
 			.select({
-				year: sql<number>`EXTRACT(year FROM ${sightings.sightingDate}::timestamp)`,
+				year: sql<number>`EXTRACT(year FROM ${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`,
 				sightings: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
 			.where(and(isNotNull(sightings.sightingDate), eq(sightings.verified, 1)))
-			.groupBy(sql`EXTRACT(year FROM ${sightings.sightingDate}::timestamp)`)
-			.orderBy(sql`EXTRACT(year FROM ${sightings.sightingDate}::timestamp)`);
+			.groupBy(
+				sql`EXTRACT(year FROM ${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`
+			)
+			.orderBy(
+				sql`EXTRACT(year FROM ${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`
+			);
 
 		// Monthly distribution (last 10 years)
 		const monthlyStats = await db
 			.select({
-				month: sql<number>`EXTRACT(month FROM ${sightings.sightingDate}::timestamp)`,
+				month: sql<number>`EXTRACT(month FROM ${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`,
 				sightings: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
 			.where(and(isNotNull(sightings.sightingDate), eq(sightings.verified, 1)))
-			.groupBy(sql`EXTRACT(month FROM ${sightings.sightingDate}::timestamp)`)
-			.orderBy(sql`EXTRACT(month FROM ${sightings.sightingDate}::timestamp)`);
+			.groupBy(
+				sql`EXTRACT(month FROM ${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`
+			)
+			.orderBy(
+				sql`EXTRACT(month FROM ${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`
+			);
 
 		// Recent activity (last 30 days)
 		const recentActivity = await db
@@ -193,7 +204,10 @@ export const load: PageServerLoad = async () => {
 			}
 		};
 	} catch (error) {
-		logger.error({ error: error instanceof Error ? error.message : error }, 'Error loading statistics');
+		logger.error(
+			{ error: error instanceof Error ? error.message : error },
+			'Error loading statistics'
+		);
 		throw error;
 	}
 };
