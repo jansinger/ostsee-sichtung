@@ -141,10 +141,12 @@ DB_READY=0
 
 # Extract host, port, user, and dbname from DATABASE_POSTGRES_URL
 # Example: postgres://user:password@host:port/dbname
-PGHOST=$(echo "$DATABASE_POSTGRES_URL" | sed -n 's#postgres://[^@]*@\([^:/]*\).*#\1#p')
-PGPORT=$(echo "$DATABASE_POSTGRES_URL" | sed -n 's#postgres://[^@]*@[^:/]*:\([0-9]*\).*#\1#p')
-PGUSER=$(echo "$DATABASE_POSTGRES_URL" | sed -n 's#postgres://\([^:]*\).*#\1#p')
-PGDATABASE=$(echo "$DATABASE_POSTGRES_URL" | sed -n 's#postgres://[^@]*@[^:/]*[:0-9]*/\([^?]*\).*#\1#p')
+# Both postgres:// and postgresql:// schemes are accepted (normalized first).
+DB_URL_NORMALIZED=$(echo "$DATABASE_POSTGRES_URL" | sed 's#^postgresql://#postgres://#')
+PGHOST=$(echo "$DB_URL_NORMALIZED" | sed -n 's#postgres://[^@]*@\([^:/]*\).*#\1#p')
+PGPORT=$(echo "$DB_URL_NORMALIZED" | sed -n 's#postgres://[^@]*@[^:/]*:\([0-9]*\).*#\1#p')
+PGUSER=$(echo "$DB_URL_NORMALIZED" | sed -n 's#postgres://\([^:]*\).*#\1#p')
+PGDATABASE=$(echo "$DB_URL_NORMALIZED" | sed -n 's#postgres://[^@]*@[^:/]*[:0-9]*/\([^?]*\).*#\1#p')
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if pg_isready -h "$PGHOST" -p "${PGPORT:-5432}" -U "$PGUSER" -d "$PGDATABASE" >/dev/null 2>&1; then
@@ -166,22 +168,24 @@ fi
 log_success "Database connection established"
 
 # ============================================
-# Database Migrations (Optional)
+# Database Migrations (default: enabled)
 # ============================================
-if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
+# Applies the reviewed SQL migrations from /app/drizzle via
+# scripts/docker-migrate.ts (advisory lock, baseline detection for
+# databases created with db:push, guard against destructive statements).
+# Disable with RUN_MIGRATIONS=false if migrations are managed externally.
+if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     log_info "Running database migrations..."
 
-    if command -v drizzle-kit >/dev/null 2>&1; then
-        if drizzle-kit migrate; then
-            log_success "Database migrations completed"
-        else
-            log_error "Database migrations failed"
-            exit 1
-        fi
+    if node /app/scripts/docker-migrate.ts; then
+        log_success "Database migrations completed"
     else
-        log_warning "drizzle-kit not found, skipping migrations"
-        log_warning "Ensure your database schema is up to date"
+        log_error "Database migrations failed - refusing to start the application"
+        exit 1
     fi
+else
+    log_warning "RUN_MIGRATIONS=false - skipping database migrations"
+    log_warning "Ensure your database schema is up to date"
 fi
 
 # ============================================

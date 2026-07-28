@@ -17,14 +17,24 @@ Regeln für PostgreSQL, PostGIS und Drizzle ORM.
 ## Befehle
 
 ```bash
-npm run db:start   # PostgreSQL starten (Docker, Port 5433)
-npm run db:stop    # Datenbank stoppen
-npm run db:push    # Schema direkt auf DB pushen (kein drizzle/-Verzeichnis nötig)
-npm run db:migrate # drizzle-kit migrate — läuft mangels drizzle/-Verzeichnis derzeit ins Leere
-npm run db:studio  # Drizzle Studio öffnen
+npm run db:start    # PostgreSQL starten (Docker, Port 5433)
+npm run db:stop     # Datenbank stoppen
+npm run db:push     # Schema direkt auf lokale Dev-DB pushen (nur Entwicklung!)
+npm run db:generate # Migration aus Schema-Änderung generieren (drizzle-kit generate)
+npm run db:migrate  # Migrationen anwenden (scripts/docker-migrate.ts, wie im Container; Node ≥ 22.18)
+npm run db:studio   # Drizzle Studio öffnen
 ```
 
-> **Migrations-Strategie:** Dieses Projekt nutzt `db:push` (Drizzle Kit Push) statt file-basierter Migrationen. Es gibt kein `drizzle/` Migrations-Verzeichnis im Repository. Schemaänderungen werden direkt via `npm run db:push` auf die Datenbank angewendet.
+> **Migrations-Strategie (seit 2026-07-28):** Deployte Umgebungen werden
+> ausschließlich über **generierte Migrationen** aktualisiert: Nach jeder
+> Schema-Änderung `npm run db:generate` ausführen und die neue SQL-Datei in
+> `drizzle/` **mit committen** (wird im PR reviewt). Der Container wendet die
+> Migrationen beim Start automatisch an (`scripts/docker-migrate.ts`: Advisory
+> Lock, Baseline-Erkennung für alte push-DBs, Verweigerung destruktiver
+> Statements ohne `ALLOW_DESTRUCTIVE_MIGRATIONS=true`).
+> `db:push` bleibt nur für schnelle Iteration auf der lokalen Dev-DB —
+> **eine Schema-Änderung ohne zugehörige Migrationsdatei darf nicht gemergt
+> werden.**
 
 > **ACHTUNG — `db:push` erkennt keine Änderungen an Ausdrucksindizes.** Verifiziert
 > am 2026-07-28: Nach einer Änderung des Datumsausdrucks in `idx_position_date_weather`
@@ -32,12 +42,12 @@ npm run db:studio  # Drizzle Studio öffnen
 > Der alte Index bleibt bestehen — die Abfrage wird dadurch nicht falsch, verliert
 > aber still ihre Index-Unterstützung für das geänderte Prädikat.
 >
-> Ausdrucksindizes (`index(...).using(..., sql\`...\`)`) deshalb **immer zusätzlich**
-als DDL-Skript unter `scripts/migrations/` ablegen und beim Deployment ausführen:
->
-> ```bash
-> psql "$DATABASE_POSTGRES_URL" -v ON_ERROR_STOP=1 -f scripts/migrations/<datei>.sql
-> ```
+> Für **deployte Umgebungen** ist das seit der Migrations-Umstellung gelöst:
+> `npm run db:generate` erfasst Ausdrucksindizes vollständig (verifiziert in
+> `drizzle/0000_initial.sql`) — bei Index-Änderungen also immer eine Migration
+> generieren. Nur für **lokale Dev-DBs**, die per `db:push` gepflegt werden,
+> müssen geänderte Ausdrucksindizes manuell nachgezogen werden (z. B. per
+> DDL-Skript unter `scripts/migrations/`).
 >
 > Prüfen lässt sich der Ist-Zustand mit:
 >

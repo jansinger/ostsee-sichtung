@@ -32,7 +32,6 @@ vite.config.ts.timestamp-*
 *.sql.gz
 
 # Development files
-drizzle
 tmp
 
 # Logo backups (keep these safe)

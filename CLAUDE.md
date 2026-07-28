@@ -52,7 +52,9 @@ npm run dev          # Server (https://localhost:4000)
 npm run build        # Production Build
 
 npm run db:start     # PostgreSQL starten (Docker)
-npm run db:push      # Schema pushen
+npm run db:push      # Schema auf lokale Dev-DB pushen (nur Entwicklung)
+npm run db:generate  # Migration generieren — PFLICHT bei Schema-Änderungen (committen!)
+npm run db:migrate   # Migrationen anwenden (läuft im Container automatisch)
 npm run db:studio    # Drizzle Studio
 
 npm run lint         # ESLint

@@ -124,8 +124,10 @@ docker run -d \
   --env-file /opt/ostsee-tiere/.env \
   ghcr.io/jansinger/ostsee-sichtung:latest
 
-# 9. Initialize database schema
-docker exec ostsee-tiere npx drizzle-kit push
+# 9. Database schema is migrated automatically on container startup.
+#    Requirement for external databases: PostGIS must be enabled once
+#    (CREATE EXTENSION IF NOT EXISTS postgis;) before the first start.
+docker logs ostsee-tiere | grep '\[migrate\]'
 
 # 10. Verify installation
 curl -f http://localhost:3000/health && echo "Success!"
@@ -170,8 +172,8 @@ nano .env  # Edit: Auth0 credentials, SESSION_SECRET, ENCRYPTION_KEY
 # 5. Start all services (app + database)
 docker compose -f docker-compose.production.yml up -d
 
-# 6. Initialize database schema
-docker exec ostsee-tiere-app npx drizzle-kit push
+# 6. Database schema is migrated automatically on startup (check the logs)
+docker logs ostsee-tiere-app | grep '\[migrate\]'
 
 # 7. (Optional) Enable monitoring
 docker compose -f docker-compose.production.yml --profile monitoring up -d
@@ -517,8 +519,8 @@ docker run -d \
   --env-file /opt/ostsee-tiere/.env \
   ghcr.io/jansinger/ostsee-sichtung:latest
 
-# Initialize database schema (first time only)
-docker exec ostsee-tiere npx drizzle-kit push
+# Database schema is migrated automatically on startup
+# (PostGIS must be enabled once on external databases beforehand)
 
 # Verify
 docker logs ostsee-tiere
@@ -1420,7 +1422,8 @@ docker inspect ostsee-tiere --format='{{.State.Health.Status}}'
 curl -f http://localhost:3000/health
 
 # Test database connection from container
-docker exec ostsee-tiere npx drizzle-kit check
+docker exec ostsee-tiere node -e "console.log('DB URL set:', Boolean(process.env.DATABASE_POSTGRES_URL))"
+docker exec ostsee-tiere node /app/scripts/docker-migrate.ts
 ```
 
 ### Application Won't Start
@@ -1433,14 +1436,14 @@ docker logs ostsee-tiere
 
 **Common issues and solutions:**
 
-| Error                                  | Cause             | Solution                                             |
-| -------------------------------------- | ----------------- | ---------------------------------------------------- |
-| `DATABASE_POSTGRES_URL is not set`     | Missing env var   | Check `.env` file exists and is loaded               |
-| `ECONNREFUSED 127.0.0.1:5432`          | Wrong DB host     | Use Docker gateway IP (172.17.0.1), not localhost    |
-| `password authentication failed`       | Wrong credentials | Verify user/password in DATABASE_POSTGRES_URL        |
-| `database "ostsee" does not exist`     | DB not created    | Run: `sudo -u postgres createdb ostsee`              |
-| `relation "sichtungen" does not exist` | Schema not pushed | Run: `docker exec ostsee-tiere npx drizzle-kit push` |
-| `Port 3000 already in use`             | Port conflict     | Change APP_PORT in .env or stop conflicting service  |
+| Error                                  | Cause                  | Solution                                                                                 |
+| -------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------- |
+| `DATABASE_POSTGRES_URL is not set`     | Missing env var        | Check `.env` file exists and is loaded                                                   |
+| `ECONNREFUSED 127.0.0.1:5432`          | Wrong DB host          | Use Docker gateway IP (172.17.0.1), not localhost                                        |
+| `password authentication failed`       | Wrong credentials      | Verify user/password in DATABASE_POSTGRES_URL                                            |
+| `database "ostsee" does not exist`     | DB not created         | Run: `sudo -u postgres createdb ostsee`                                                  |
+| `relation "sichtungen" does not exist` | Migrations not applied | Check startup logs (`docker logs ostsee-tiere \| grep '\[migrate\]'`), restart container |
+| `Port 3000 already in use`             | Port conflict          | Change APP_PORT in .env or stop conflicting service                                      |
 
 ### Database Connection Errors
 
@@ -1501,16 +1504,24 @@ docker exec ostsee-tiere touch /app/uploads/test.txt && echo "OK"
 
 ### Schema/Migration Issues
 
+Migrations run automatically on every container start (entrypoint →
+`scripts/docker-migrate.ts`). The migration SQL lives in `drizzle/` inside the
+image; applied migrations are tracked in `drizzle.__drizzle_migrations`.
+
 ```bash
-# Check current schema status
-docker exec ostsee-tiere npx drizzle-kit check
+# Show migration output of the last start
+docker logs ostsee-tiere | grep '\[migrate\]'
 
-# Push schema to database
-docker exec ostsee-tiere npx drizzle-kit push
+# Re-run migrations manually (idempotent, advisory-locked)
+docker exec ostsee-tiere node /app/scripts/docker-migrate.ts
 
-# View pending changes
-docker exec ostsee-tiere npx drizzle-kit generate
+# Inspect applied migrations
+psql "$DATABASE_POSTGRES_URL" -c 'SELECT * FROM drizzle.__drizzle_migrations;'
 ```
+
+If a pending migration contains destructive statements (`DROP TABLE`,
+`DROP COLUMN`, `TRUNCATE`), the container refuses to start. Create a database
+backup first, then restart with `ALLOW_DESTRUCTIVE_MIGRATIONS=true`.
 
 ### Performance Issues
 

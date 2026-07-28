@@ -614,13 +614,35 @@ LOG_LEVEL=trace
 
 **Type**: `boolean`
 **Required**: No
-**Default**: `false`
-**Description**: Run database migrations on container startup.
+**Default**: `true`
+**Description**: Run database migrations on container startup (entrypoint →
+`scripts/docker-migrate.ts`). Applies the versioned SQL migrations bundled in
+the image (`drizzle/` directory), idempotent and advisory-locked. Set to
+`false` only if the schema is managed externally.
 
 **Example**:
 
 ```bash
-RUN_MIGRATIONS=true
+RUN_MIGRATIONS=false
+```
+
+---
+
+### `ALLOW_DESTRUCTIVE_MIGRATIONS`
+
+**Type**: `boolean`
+**Required**: No
+**Default**: `false`
+**Description**: By default the startup migration refuses to apply pending
+migrations that contain destructive statements (`DROP TABLE`, `DROP COLUMN`,
+`TRUNCATE`) and the container does not start. Set to `true` **for a single
+start** to apply such a reviewed migration — always create a database backup
+first, then remove the variable again.
+
+**Example**:
+
+```bash
+ALLOW_DESTRUCTIVE_MIGRATIONS=true
 ```
 
 ---

@@ -46,8 +46,14 @@ cp .env.example .env.local
 # Edit .env.local with your values
 
 # Run database migrations
-npm run db:push
+npm run db:migrate
 ```
+
+> **Note:** Vercel deployments have no container entrypoint, so schema
+> migrations do **not** run automatically there. After schema changes, apply
+> the committed migrations manually against the target database:
+> `DATABASE_POSTGRES_URL=... npm run db:migrate` (Docker deployments do this
+> automatically on container startup).
 
 ### 2. Vercel Configuration
 
