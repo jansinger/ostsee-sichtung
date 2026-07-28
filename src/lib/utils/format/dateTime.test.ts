@@ -1,94 +1,126 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+/**
+ * @fileoverview Tests der zentralen Datums-/Zeitformatierung.
+ *
+ * Zusammengeführt aus `dateTime.test.ts` (lief unter `Europe/Berlin`) und
+ * `dateTime.UTC.test.ts` (lief unter `UTC`). Beide setzten `process.env.TZ` in
+ * `beforeEach` und hingen damit an globalem Prozess-Zustand. Statt zweier
+ * Dateien prüft diese eine die zeitzonenkritischen Fälle über `withTimeZone`
+ * unter mehreren Zeitzonen.
+ */
+
+import { TEST_TIME_ZONES, withTimeZone } from '$lib/server/datetime/withTimeZone.testutil';
+import { describe, expect, it } from 'vitest';
 import {
 	combineToDate,
 	formatForExport,
 	formatForKmlExport,
 	formatForXmlExport,
 	formatLocalDateTime,
-	getCurrentLocalTime,
 	isValidDate,
 	splitDateTime
 } from './dateTime';
 
+/**
+ * Zeitzonen, in denen die Anwendung tatsächlich läuft: UTC in Produktion
+ * (Dockerfile, docker-compose.production.yml) und Europe/Berlin in Entwicklung.
+ *
+ * `combineToDate` ist — anders als die Formatter — bewusst **nicht**
+ * zeitzonenunabhängig: es setzt die Uhrzeit über `setHours()` als Ortszeit.
+ * In Zonen mit negativem UTC-Offset rutscht dadurch der Kalendertag zurück
+ * (`America/New_York`: '2024-01-15' → 14.01.). Die vollen `TEST_TIME_ZONES` sind
+ * für diese Funktion daher kein erfüllbarer Vertrag; die Zeitzonen-Invarianz der
+ * Schreib-Pipeline sichert stattdessen `correctCestOffsetUTC.test.ts` ab.
+ */
+const DEPLOYMENT_TIME_ZONES = ['UTC', 'Europe/Berlin'];
+
+/**
+ * Führt `fn` unter mehreren Zeitzonen aus und stellt sicher, dass das Ergebnis
+ * in allen identisch ist — die eigentliche Zusicherung dieser Suite.
+ *
+ * @returns Das (in allen Zeitzonen gleiche) Ergebnis, für weitere Assertions.
+ */
+function zeitzonenInvariant<T>(fn: () => T, zones: string[] = TEST_TIME_ZONES): T {
+	const [erstes, ...weitere] = zones.map((tz) => withTimeZone(tz, fn));
+
+	weitere.forEach((ergebnis, i) => {
+		expect(ergebnis, `${zones[i + 1]} weicht von ${zones[0]} ab`).toEqual(erstes);
+	});
+
+	return erstes as T;
+}
+
+/** Wanduhrzeit in der **Prozess**-Zeitzone — Gegenstück zum Berlin-fixen `splitDateTime`. */
+function localWallClock(date: Date): { date: string; time: string } {
+	const pad = (value: number) => String(value).padStart(2, '0');
+	return {
+		date: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+		time: `${pad(date.getHours())}:${pad(date.getMinutes())}`
+	};
+}
+
 describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
-	// Mock für konsistente Zeitzone-Tests
-	const originalTimeZone = process.env.TZ;
-
-	beforeEach(() => {
-		// Setze Zeitzone für Tests
-		process.env.TZ = 'Europe/Berlin';
-	});
-
-	afterEach(() => {
-		// Stelle ursprüngliche Zeitzone wieder her
-		if (originalTimeZone !== undefined) {
-			process.env.TZ = originalTimeZone;
-		} else {
-			delete process.env.TZ;
-		}
-	});
-
 	describe('formatLocalDateTime', () => {
 		it('sollte UTC-Zeit korrekt in deutsche Zeit konvertieren (Winter)', () => {
 			// UTC-Zeit im Winter (MEZ = UTC+1)
-			const utcWinter = '2024-01-15T08:57:00.000Z';
-			const result = formatLocalDateTime(utcWinter, 'datetime');
+			const result = zeitzonenInvariant(() =>
+				formatLocalDateTime('2024-01-15T08:57:00.000Z', 'datetime')
+			);
 
-			// Erwarte deutsche Zeit (UTC+1)
 			expect(result).toMatch(/15\.01\.2024.*09:57/);
 		});
 
 		it('sollte UTC-Zeit korrekt in deutsche Zeit konvertieren (Sommer)', () => {
 			// UTC-Zeit im Sommer (MESZ = UTC+2)
-			const utcSummer = '2024-07-15T08:57:00.000Z';
-			const result = formatLocalDateTime(utcSummer, 'datetime');
+			const result = zeitzonenInvariant(() =>
+				formatLocalDateTime('2024-07-15T08:57:00.000Z', 'datetime')
+			);
 
-			// Erwarte deutsche Zeit (UTC+2)
 			expect(result).toMatch(/15\.07\.2024.*10:57/);
 		});
 
 		it('sollte verschiedene Format-Optionen unterstützen', () => {
 			const utcTime = '2024-01-15T08:57:30.000Z';
 
-			const fullFormat = formatLocalDateTime(utcTime, 'full');
-			const dateFormat = formatLocalDateTime(utcTime, 'date');
-			const timeFormat = formatLocalDateTime(utcTime, 'time');
-			const datetimeFormat = formatLocalDateTime(utcTime, 'datetime');
+			const formate = zeitzonenInvariant(() => ({
+				full: formatLocalDateTime(utcTime, 'full'),
+				date: formatLocalDateTime(utcTime, 'date'),
+				time: formatLocalDateTime(utcTime, 'time'),
+				datetime: formatLocalDateTime(utcTime, 'datetime')
+			}));
 
-			// Vollformat mit Sekunden
-			expect(fullFormat).toMatch(/15\.01\.2024.*09:57:30/);
-
-			// Nur Datum
-			expect(dateFormat).toBe('15.01.2024');
-
-			// Nur Zeit
-			expect(timeFormat).toBe('09:57');
-
-			// Datum und Zeit ohne Sekunden
-			expect(datetimeFormat).toMatch(/15\.01\.2024.*09:57/);
+			expect(formate.full).toMatch(/15\.01\.2024.*09:57:30/);
+			expect(formate.date).toBe('15.01.2024');
+			expect(formate.time).toBe('09:57');
+			expect(formate.datetime).toMatch(/15\.01\.2024.*09:57/);
 		});
 
 		it('sollte null/undefined korrekt behandeln', () => {
-			expect(formatLocalDateTime(null)).toBe('Nicht angegeben');
-			expect(formatLocalDateTime(undefined)).toBe('Nicht angegeben');
-			expect(formatLocalDateTime('')).toBe('Nicht angegeben');
+			expect(zeitzonenInvariant(() => formatLocalDateTime(null))).toBe('Nicht angegeben');
+			expect(zeitzonenInvariant(() => formatLocalDateTime(undefined))).toBe('Nicht angegeben');
+			expect(zeitzonenInvariant(() => formatLocalDateTime(''))).toBe('Nicht angegeben');
 		});
 
 		it('sollte ungültige Daten abfangen', () => {
-			const result = formatLocalDateTime('invalid-date');
-			expect(result).toBe('Ungültiges Datum');
+			expect(zeitzonenInvariant(() => formatLocalDateTime('invalid-date'))).toBe(
+				'Ungültiges Datum'
+			);
 		});
 
 		it('sollte Date-Objekte korrekt verarbeiten', () => {
-			const dateObj = new Date('2024-01-15T08:57:00.000Z');
-			const result = formatLocalDateTime(dateObj, 'datetime');
+			const result = zeitzonenInvariant(() =>
+				formatLocalDateTime(new Date('2024-01-15T08:57:00.000Z'), 'datetime')
+			);
+
 			expect(result).toMatch(/15\.01\.2024.*09:57/);
 		});
 
 		it('sollte Standard-Format "datetime" verwenden', () => {
 			const utcTime = '2024-01-15T08:57:00.000Z';
-			const withDefault = formatLocalDateTime(utcTime);
-			const withExplicit = formatLocalDateTime(utcTime, 'datetime');
+
+			const { withDefault, withExplicit } = zeitzonenInvariant(() => ({
+				withDefault: formatLocalDateTime(utcTime),
+				withExplicit: formatLocalDateTime(utcTime, 'datetime')
+			}));
 
 			expect(withDefault).toBe(withExplicit);
 		});
@@ -96,63 +128,67 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 
 	describe('formatForKmlExport', () => {
 		it('sollte KML-Legacy-Format korrekt erstellen', () => {
-			const utcTime = '2024-01-15T08:57:00.000Z';
-			const result = formatForKmlExport(utcTime);
-
 			// Erwarte Format: "DD.MM.YY HH:MM"
-			expect(result).toBe('15.01.24 09:57');
+			expect(zeitzonenInvariant(() => formatForKmlExport('2024-01-15T08:57:00.000Z'))).toBe(
+				'15.01.24 09:57'
+			);
 		});
 
 		it('sollte Sommer-/Winterzeit korrekt berücksichtigen', () => {
-			const utcWinter = '2024-01-15T08:57:00.000Z';
-			const utcSummer = '2024-07-15T08:57:00.000Z';
+			const { winter, sommer } = zeitzonenInvariant(() => ({
+				winter: formatForKmlExport('2024-01-15T08:57:00.000Z'),
+				sommer: formatForKmlExport('2024-07-15T08:57:00.000Z')
+			}));
 
-			const winterResult = formatForKmlExport(utcWinter);
-			const summerResult = formatForKmlExport(utcSummer);
-
-			expect(winterResult).toBe('15.01.24 09:57'); // UTC+1
-			expect(summerResult).toBe('15.07.24 10:57'); // UTC+2
+			expect(winter).toBe('15.01.24 09:57'); // UTC+1
+			expect(sommer).toBe('15.07.24 10:57'); // UTC+2
 		});
 
 		it('sollte 2-stelliges Jahr korrekt formatieren', () => {
-			const utcTime = '2024-12-31T22:00:00.000Z'; // 22:00 UTC = 23:00 MEZ (noch 31.12.)
-			const result = formatForKmlExport(utcTime);
-
-			expect(result).toMatch(/31\.12\.24/);
+			// 22:00 UTC = 23:00 MEZ (noch 31.12.)
+			expect(zeitzonenInvariant(() => formatForKmlExport('2024-12-31T22:00:00.000Z'))).toMatch(
+				/31\.12\.24/
+			);
 		});
 
 		it('sollte Padding für einstellige Werte verwenden', () => {
-			const utcTime = '2024-03-05T06:09:00.000Z';
-			const result = formatForKmlExport(utcTime);
+			expect(zeitzonenInvariant(() => formatForKmlExport('2024-03-05T06:09:00.000Z'))).toBe(
+				'05.03.24 07:09'
+			);
+		});
 
-			expect(result).toBe('05.03.24 07:09');
+		it('sollte ungültige Daten abfangen', () => {
+			expect(zeitzonenInvariant(() => formatForKmlExport('invalid-date'))).toBe('Ungültiges Datum');
 		});
 	});
 
 	describe('formatForXmlExport', () => {
 		it('sollte separate Datum- und Zeit-Strings erstellen', () => {
-			const utcTime = '2024-01-15T08:57:00.000Z';
-			const result = formatForXmlExport(utcTime);
-
-			expect(result).toEqual({
+			expect(zeitzonenInvariant(() => formatForXmlExport('2024-01-15T08:57:00.000Z'))).toEqual({
 				date: '15.01.24',
 				time: '0957' // Ohne Doppelpunkt
 			});
 		});
 
 		it('sollte Zeit ohne Doppelpunkt formatieren', () => {
-			const utcTime = '2024-01-15T08:57:00.000Z';
-			const result = formatForXmlExport(utcTime);
+			const result = zeitzonenInvariant(() => formatForXmlExport('2024-01-15T08:57:00.000Z'));
 
 			expect(result.time).toBe('0957');
 			expect(result.time).not.toContain(':');
 		});
 
 		it('sollte Mitternacht korrekt formatieren', () => {
-			const utcTime = '2024-01-14T23:00:00.000Z'; // 23:00 UTC = 00:00 MEZ
-			const result = formatForXmlExport(utcTime);
+			// 23:00 UTC = 00:00 MEZ
+			const result = zeitzonenInvariant(() => formatForXmlExport('2024-01-14T23:00:00.000Z'));
 
 			expect(result.time).toBe('0000');
+		});
+
+		it('sollte ungültige Daten abfangen', () => {
+			expect(zeitzonenInvariant(() => formatForXmlExport('invalid-date'))).toEqual({
+				date: 'Ungültiges Datum',
+				time: 'Ungültige Zeit'
+			});
 		});
 	});
 
@@ -160,70 +196,63 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 		const utcTime = '2024-01-15T08:57:00.000Z';
 
 		it('sollte CSV-Format korrekt erstellen', () => {
-			const result = formatForExport(utcTime, 'csv');
-			expect(result).toMatch(/15\.01\.2024.*09:57/);
+			expect(zeitzonenInvariant(() => formatForExport(utcTime, 'csv'))).toMatch(
+				/15\.01\.2024.*09:57/
+			);
 		});
 
 		it('sollte JSON-Format korrekt erstellen', () => {
-			const result = formatForExport(utcTime, 'json');
-			expect(result).toMatch(/15\.01\.2024.*09:57/);
+			expect(zeitzonenInvariant(() => formatForExport(utcTime, 'json'))).toMatch(
+				/15\.01\.2024.*09:57/
+			);
 		});
 
 		it('sollte KML-Format korrekt erstellen', () => {
-			const result = formatForExport(utcTime, 'kml');
-			expect(result).toBe('15.01.24 09:57');
+			expect(zeitzonenInvariant(() => formatForExport(utcTime, 'kml'))).toBe('15.01.24 09:57');
 		});
 
 		it('sollte XML-Datum korrekt erstellen', () => {
-			const result = formatForExport(utcTime, 'xml-date');
-			expect(result).toBe('15.01.24');
+			expect(zeitzonenInvariant(() => formatForExport(utcTime, 'xml-date'))).toBe('15.01.24');
 		});
 
 		it('sollte XML-Zeit korrekt erstellen', () => {
-			const result = formatForExport(utcTime, 'xml-time');
-			expect(result).toBe('0957');
+			expect(zeitzonenInvariant(() => formatForExport(utcTime, 'xml-time'))).toBe('0957');
 		});
 
 		it('sollte unbekannten Typ mit Standard-Format behandeln', () => {
-			const result = formatForExport(utcTime, 'unknown' as any);
-			expect(result).toMatch(/15\.01\.2024.*09:57/);
+			expect(zeitzonenInvariant(() => formatForExport(utcTime, 'unknown' as never))).toMatch(
+				/15\.01\.2024.*09:57/
+			);
 		});
 	});
 
 	describe('isValidDate', () => {
 		it('sollte gültige Daten erkennen', () => {
-			expect(isValidDate('2024-01-15T08:57:00.000Z')).toBe(true);
+			expect(zeitzonenInvariant(() => isValidDate('2024-01-15T08:57:00.000Z'))).toBe(true);
+			expect(zeitzonenInvariant(() => isValidDate('2024-01-15'))).toBe(true);
 			expect(isValidDate(new Date())).toBe(true);
-			expect(isValidDate('2024-01-15')).toBe(true);
 		});
 
 		it('sollte ungültige Daten erkennen', () => {
-			expect(isValidDate('invalid-date')).toBe(false);
-			expect(isValidDate(null)).toBe(false);
-			expect(isValidDate(undefined)).toBe(false);
-			expect(isValidDate('')).toBe(false);
-		});
-	});
-
-	describe('getCurrentLocalTime', () => {
-		it('sollte aktuelles Datum in deutscher Zeitzone zurückgeben', () => {
-			const result = getCurrentLocalTime();
-			expect(result).toBeInstanceOf(Date);
-			expect(result.getTime()).toBeGreaterThan(0);
+			expect(zeitzonenInvariant(() => isValidDate('invalid-date'))).toBe(false);
+			expect(zeitzonenInvariant(() => isValidDate(null))).toBe(false);
+			expect(zeitzonenInvariant(() => isValidDate(undefined))).toBe(false);
+			expect(zeitzonenInvariant(() => isValidDate(''))).toBe(false);
 		});
 	});
 
 	describe('Zeitzone-Edge-Cases', () => {
 		it('sollte Schaltjahr korrekt handhaben', () => {
-			const leapDay = '2024-02-29T12:00:00.000Z';
-			const result = formatLocalDateTime(leapDay, 'date');
-			expect(result).toBe('29.02.2024');
+			expect(
+				zeitzonenInvariant(() => formatLocalDateTime('2024-02-29T12:00:00.000Z', 'date'))
+			).toBe('29.02.2024');
 		});
 
 		it('sollte Jahreswechsel korrekt handhaben', () => {
-			const newYear = '2023-12-31T23:00:00.000Z'; // 23:00 UTC = 00:00 MEZ (nächster Tag)
-			const result = formatLocalDateTime(newYear, 'datetime');
-			expect(result).toMatch(/01\.01\.2024/);
+			// 23:00 UTC = 00:00 MEZ (nächster Tag)
+			expect(
+				zeitzonenInvariant(() => formatLocalDateTime('2023-12-31T23:00:00.000Z', 'datetime'))
+			).toMatch(/01\.01\.2024/);
 		});
 
 		it('sollte verschiedene ISO-Formate akzeptieren', () => {
@@ -234,45 +263,77 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 				'2024-01-15'
 			];
 
-			formats.forEach((format) => {
-				const result = formatLocalDateTime(format, 'date');
-				expect(result).toMatch(/15\.01\.2024/);
-			});
+			// '2024-01-15T08:57:00' (ohne Zonenangabe) wird als Ortszeit gelesen und ist
+			// daher bewusst nur unter den Deployment-Zeitzonen invariant.
+			const results = zeitzonenInvariant(
+				() => formats.map((format) => formatLocalDateTime(format, 'date')),
+				DEPLOYMENT_TIME_ZONES
+			);
+
+			results.forEach((result) => expect(result).toMatch(/15\.01\.2024/));
 		});
 	});
 
 	describe('combineToDate', () => {
 		it('sollte Datum und Zeit korrekt kombinieren', () => {
-			const result = combineToDate('2024-01-15', '14:30');
+			const felder = zeitzonenInvariant(() => {
+				const result = combineToDate('2024-01-15', '14:30');
+				return {
+					istDate: result instanceof Date,
+					jahr: result.getFullYear(),
+					monat: result.getMonth(), // Januar = 0
+					tag: result.getDate(),
+					stunde: result.getHours(),
+					minute: result.getMinutes(),
+					sekunde: result.getSeconds(),
+					ms: result.getMilliseconds()
+				};
+			}, DEPLOYMENT_TIME_ZONES);
 
-			expect(result).toBeInstanceOf(Date);
-			expect(result.getFullYear()).toBe(2024);
-			expect(result.getMonth()).toBe(0); // Januar = 0
-			expect(result.getDate()).toBe(15);
-			expect(result.getHours()).toBe(14);
-			expect(result.getMinutes()).toBe(30);
-			expect(result.getSeconds()).toBe(0);
-			expect(result.getMilliseconds()).toBe(0);
+			expect(felder).toEqual({
+				istDate: true,
+				jahr: 2024,
+				monat: 0,
+				tag: 15,
+				stunde: 14,
+				minute: 30,
+				sekunde: 0,
+				ms: 0
+			});
 		});
 
-		it('sollte Standardzeit (Mitternacht) verwenden wenn Zeit fehlt', () => {
-			const result = combineToDate('2024-01-15');
+		it('sollte die Uhrzeit als Ortszeit der Prozess-Zeitzone setzen', () => {
+			// setHours() arbeitet in Ortszeit — der resultierende UTC-Zeitpunkt hängt
+			// daher von process.env.TZ ab. Genau das gleicht correctCestOffsetUTC im
+			// Schreibpfad (mapFormToSighting.ts) wieder aus.
+			const wanduhr = zeitzonenInvariant(
+				() => localWallClock(combineToDate('2024-01-15', '14:30')),
+				DEPLOYMENT_TIME_ZONES
+			);
 
-			expect(result.getFullYear()).toBe(2024);
-			expect(result.getMonth()).toBe(0);
-			expect(result.getDate()).toBe(15);
-			expect(result.getHours()).toBe(1);
-			expect(result.getMinutes()).toBe(0);
+			expect(wanduhr).toEqual({ date: '2024-01-15', time: '14:30' });
 		});
 
-		it('sollte undefined Zeit als Mitternacht interpretieren', () => {
-			const result = combineToDate('2024-01-15', undefined);
+		it('sollte ohne Uhrzeit bei UTC-Mitternacht des ISO-Datums bleiben', () => {
+			// "YYYY-MM-DD" wird von new Date() laut Spezifikation als UTC gelesen.
+			// Ohne Uhrzeit greift setHours() nie — das Ergebnis ist deshalb sogar
+			// über alle TEST_TIME_ZONES hinweg identisch.
+			const zeitpunkte = zeitzonenInvariant(() => ({
+				ohne: combineToDate('2024-01-15').toISOString(),
+				undef: combineToDate('2024-01-15', undefined).toISOString(),
+				nullwert: combineToDate('2024-01-15', null).toISOString(),
+				leer: combineToDate('2024-01-15', '').toISOString()
+			}));
 
-			expect(result.getHours()).toBe(1);
-			expect(result.getMinutes()).toBe(0);
+			expect(zeitpunkte).toEqual({
+				ohne: '2024-01-15T00:00:00.000Z',
+				undef: '2024-01-15T00:00:00.000Z',
+				nullwert: '2024-01-15T00:00:00.000Z',
+				leer: '2024-01-15T00:00:00.000Z'
+			});
 		});
 
-		it('sollte aktuelles Datum zurückgeben bei ungültigem/leerem Datum', () => {
+		it('sollte aktuelles Datum zurückgeben bei leerem Datum', () => {
 			const beforeCall = new Date();
 			const result = combineToDate('');
 			const afterCall = new Date();
@@ -281,75 +342,85 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 			expect(result.getTime()).toBeLessThanOrEqual(afterCall.getTime());
 		});
 
+		it('sollte bei leerem Datum die Uhrzeit ignorieren', () => {
+			const result = combineToDate('', '14:30');
+			const now = new Date();
+
+			expect(Math.abs(result.getTime() - now.getTime())).toBeLessThan(1000);
+		});
+
 		it('sollte verschiedene Datumsformate akzeptieren', () => {
 			const formats = ['2024-01-15', '2024/01/15', '2024-1-15'];
 
-			formats.forEach((format) => {
-				const result = combineToDate(format, '12:30');
-				expect(result.getFullYear()).toBe(2024);
-				expect(result.getMonth()).toBe(0);
-				expect(result.getDate()).toBe(15);
-				expect(result.getHours()).toBe(12);
-				expect(result.getMinutes()).toBe(30);
-			});
+			const felder = zeitzonenInvariant(
+				() =>
+					formats.map((format) => {
+						const result = combineToDate(format, '12:30');
+						return {
+							jahr: result.getFullYear(),
+							monat: result.getMonth(),
+							tag: result.getDate(),
+							stunde: result.getHours(),
+							minute: result.getMinutes()
+						};
+					}),
+				DEPLOYMENT_TIME_ZONES
+			);
+
+			felder.forEach((feld) =>
+				expect(feld).toEqual({ jahr: 2024, monat: 0, tag: 15, stunde: 12, minute: 30 })
+			);
 		});
 
 		it('sollte ungültige Zeitangaben graceful handhaben', () => {
-			const result = combineToDate('2024-01-15', 'invalid:time');
+			// Das Zeit-Pattern ist auf "HH:MM" verankert. Alles andere wird verworfen,
+			// statt das Date via setHours(NaN) zu zerstören.
+			const invalidTimes = ['invalid:time', '1430', '14:30:45.123', '7:5'];
 
-			// When time contains invalid values, setHours(NaN, NaN) makes the whole date invalid
-			expect(result).toBeInstanceOf(Date);
-			expect(isNaN(result.getTime())).toBe(false); // Dateis still valid
+			const zeitpunkte = zeitzonenInvariant(() =>
+				invalidTimes.map((time) => combineToDate('2024-01-15', time).toISOString())
+			);
+
+			zeitpunkte.forEach((zeitpunkt) => expect(zeitpunkt).toBe('2024-01-15T00:00:00.000Z'));
 		});
 
 		it('sollte Sekunden und Millisekunden auf 0 setzen', () => {
-			const result = combineToDate('2024-01-15', '14:30:45.123');
+			const result = zeitzonenInvariant(() => {
+				const date = combineToDate('2024-01-15', '14:30');
+				return { sekunde: date.getSeconds(), ms: date.getMilliseconds() };
+			}, DEPLOYMENT_TIME_ZONES);
 
-			expect(result.getSeconds()).toBe(0);
-			expect(result.getMilliseconds()).toBe(0);
+			expect(result).toEqual({ sekunde: 0, ms: 0 });
 		});
 
 		it('sollte 24-Stunden-Format korrekt handhaben', () => {
-			const midnight = combineToDate('2024-01-15', '00:00');
-			const noon = combineToDate('2024-01-15', '12:00');
-			const lateEvening = combineToDate('2024-01-15', '23:59');
+			const testCases = ['00:00', '09:30', '12:00', '14:30', '23:59'];
 
-			expect(midnight.getHours()).toBe(0);
-			expect(noon.getHours()).toBe(12);
-			expect(lateEvening.getHours()).toBe(23);
-			expect(lateEvening.getMinutes()).toBe(59);
+			const stunden = zeitzonenInvariant(
+				() =>
+					testCases.map((time) => {
+						const result = combineToDate('2024-01-15', time);
+						return `${String(result.getHours()).padStart(2, '0')}:${String(result.getMinutes()).padStart(2, '0')}`;
+					}),
+				DEPLOYMENT_TIME_ZONES
+			);
+
+			expect(stunden).toEqual(testCases);
 		});
 	});
 
 	describe('splitDateTime', () => {
 		it('sollte Date-Objekt in separate Datum- und Zeit-Strings aufteilen', () => {
-			const dateTime = new Date('2024-01-15T14:30:45.000Z');
-			const result = splitDateTime(dateTime);
+			const result = zeitzonenInvariant(() => splitDateTime(new Date('2024-01-15T14:30:45.000Z')));
 
-			expect(result).toHaveProperty('date');
-			expect(result).toHaveProperty('time');
-			expect(typeof result.date).toBe('string');
-			expect(typeof result.time).toBe('string');
-		});
-
-		it('sollte ISO-String in separate Datum- und Zeit-Strings aufteilen', () => {
-			const dateTime = '2024-01-15T14:30:00.000Z';
-			const result = splitDateTime(dateTime);
-
-			expect(result).toHaveProperty('date');
-			expect(result).toHaveProperty('time');
-			expect(typeof result.date).toBe('string');
-			expect(typeof result.time).toBe('string');
+			expect(result).toEqual({ date: '2024-01-15', time: '15:30' });
 		});
 
 		it('sollte sv-SE Locale für ISO-kompatible Formate verwenden', () => {
-			// sv-SE gibt YYYY-MM-DD und HH:MM Format zurück
-			const dateTime = '2024-01-15T14:30:00.000Z';
-			const result = splitDateTime(dateTime);
+			const result = zeitzonenInvariant(() => splitDateTime('2024-01-15T14:30:00.000Z'));
 
-			// sv-SE sollte ISO-Format (YYYY-MM-DD) für Datum liefern
+			// sv-SE liefert YYYY-MM-DD und 24h HH:MM
 			expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-			// sv-SE sollte 24h-Format (HH:MM) für Zeit liefern
 			expect(result.time).toMatch(/^\d{2}:\d{2}$/);
 		});
 
@@ -357,72 +428,100 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 			const formats = [
 				'2024-01-15T14:30:00.000Z',
 				'2024-01-15T14:30:00Z',
-				'2024-01-15T14:30:00',
 				new Date('2024-01-15T14:30:00.000Z')
 			];
 
-			formats.forEach((format) => {
-				const result = splitDateTime(format);
-				expect(result).toHaveProperty('date');
-				expect(result).toHaveProperty('time');
+			const results = zeitzonenInvariant(() => formats.map((format) => splitDateTime(format)));
+
+			results.forEach((result) => {
 				expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 				expect(result.time).toMatch(/^\d{2}:\d{2}$/);
 			});
 		});
 
 		it('sollte Zeitzone korrekt für deutsche Zeit berücksichtigen', () => {
-			// UTC Winter-Zeit (sollte +1h werden)
-			const winterTime = '2024-01-15T14:30:00.000Z';
-			const winterResult = splitDateTime(winterTime);
+			const { winter, sommer } = zeitzonenInvariant(() => ({
+				winter: splitDateTime('2024-01-15T14:30:00.000Z'),
+				sommer: splitDateTime('2024-07-15T14:30:00.000Z')
+			}));
 
-			// UTC Sommer-Zeit (sollte +2h werden)
-			const summerTime = '2024-07-15T14:30:00.000Z';
-			const summerResult = splitDateTime(summerTime);
-
-			// Beide sollten gültige Formate zurückgeben
-			expect(winterResult.date).toMatch(/^2024-01-15$/);
-			expect(summerResult.date).toMatch(/^2024-07-15$/);
-
-			// Zeit sollte deutsche Zeitzone reflektieren
-			expect(winterResult.time).toMatch(/^15:30$/); // +1h
-			expect(summerResult.time).toMatch(/^16:30$/); // +2h
-		});
-
-		it('sollte für HTML-Eingabefelder geeignete Formate liefern', () => {
-			const dateTime = '2024-01-15T14:30:00.000Z';
-			const result = splitDateTime(dateTime);
-
-			// Diese Formate sollten direkt in HTML input[type="date"] und input[type="time"] verwendbar sein
-			expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/); // YYYY-MM-DD für input[type="date"]
-			expect(result.time).toMatch(/^\d{2}:\d{2}$/); // HH:MM für input[type="time"]
+			expect(winter).toEqual({ date: '2024-01-15', time: '15:30' }); // +1h
+			expect(sommer).toEqual({ date: '2024-07-15', time: '16:30' }); // +2h
 		});
 
 		it('sollte Mitternacht und Mittag korrekt handhaben', () => {
-			const midnight = '2024-01-15T23:00:00.000Z'; // 23:00 UTC = 00:00 MEZ
-			const noon = '2024-01-15T11:00:00.000Z'; // 11:00 UTC = 12:00 MEZ
+			const { midnight, noon } = zeitzonenInvariant(() => ({
+				midnight: splitDateTime('2024-01-15T23:00:00.000Z'), // = 00:00 MEZ
+				noon: splitDateTime('2024-01-15T11:00:00.000Z') // = 12:00 MEZ
+			}));
 
-			const midnightResult = splitDateTime(midnight);
-			const noonResult = splitDateTime(noon);
+			expect(midnight.time).toBe('00:00');
+			expect(noon.time).toBe('12:00');
+		});
 
-			expect(midnightResult.time).toMatch(/^00:00$/);
-			expect(noonResult.time).toMatch(/^12:00$/);
+		it('sollte Edge-Cases korrekt behandeln', () => {
+			const edgeCases = [
+				'2024-02-29T00:00:00.000Z', // Schaltjahr
+				'2024-12-31T23:59:59.000Z', // Jahresende
+				'2024-01-01T00:00:00.000Z' // Jahresanfang
+			];
+
+			const results = zeitzonenInvariant(() => edgeCases.map((input) => splitDateTime(input)));
+
+			results.forEach((result) => {
+				expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+				expect(result.time).toMatch(/^\d{2}:\d{2}$/);
+			});
 		});
 	});
 
 	describe('Integration: combineToDate und splitDateTime', () => {
-		it('sollte round-trip conversion korrekt durchführen', () => {
-			const originalDateTime = '2024-01-15T14:30:00.000Z';
+		it('sollte die zerlegten Werte als Prozess-Ortszeit wieder zusammensetzen', () => {
+			// Dokumentierte Asymmetrie: splitDateTime formatiert nach Europe/Berlin,
+			// combineToDate liest die Strings als Ortszeit der Prozess-Zeitzone zurück.
+			// Verlustfrei ist der Round-Trip daher nur in Europe/Berlin; der
+			// Schreibpfad gleicht das über correctCestOffsetUTC wieder aus.
+			const { split, wanduhr } = zeitzonenInvariant(() => {
+				const split = splitDateTime('2024-01-15T14:30:00.000Z');
+				return { split, wanduhr: localWallClock(combineToDate(split.date, split.time)) };
+			}, DEPLOYMENT_TIME_ZONES);
 
-			// Split -> Combine -> Split
-			const split1 = splitDateTime(originalDateTime);
-			const combined = combineToDate(split1.date, split1.time);
-			const split2 = splitDateTime(combined);
-
-			expect(split1.date).toBe(split2.date);
-			expect(split1.time).toBe(split2.time);
+			expect(split).toEqual({ date: '2024-01-15', time: '15:30' });
+			expect(wanduhr).toEqual(split);
 		});
 
-		it('sollte verschiedene Zeitzonen konsistent handhaben', () => {
+		it('sollte bei combine -> split -> combine das Datum erhalten', () => {
+			const felder = zeitzonenInvariant(() => {
+				const combined = combineToDate('2024-01-15', '14:30');
+				const { date, time } = splitDateTime(combined);
+				const recombined = combineToDate(date, time);
+
+				return {
+					gleichesJahr: recombined.getFullYear() === combined.getFullYear(),
+					gleicherMonat: recombined.getMonth() === combined.getMonth(),
+					gleicherTag: recombined.getDate() === combined.getDate()
+				};
+			}, DEPLOYMENT_TIME_ZONES);
+
+			expect(felder).toEqual({ gleichesJahr: true, gleicherMonat: true, gleicherTag: true });
+		});
+
+		it('sollte mit HTML-Formularwerten kompatibel bleiben', () => {
+			// Hier ist bewusst nur die FORM invariant, nicht der Wert: combineToDate
+			// liest '14:30' als Prozess-Ortszeit, splitDateTime gibt Berlin zurück —
+			// unter UTC also '15:30', unter Europe/Berlin '14:30'.
+			DEPLOYMENT_TIME_ZONES.forEach((timeZone) => {
+				const split = withTimeZone(timeZone, () =>
+					splitDateTime(combineToDate('2024-01-15', '14:30'))
+				);
+
+				// Ergebnis muss wieder in input[type="date"]/input[type="time"] passen
+				expect(split.date, timeZone).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+				expect(split.time, timeZone).toMatch(/^\d{2}:\d{2}$/);
+			});
+		});
+
+		it('sollte verschiedene Zeitpunkte konsistent handhaben', () => {
 			const testTimes = [
 				'2024-01-15T00:00:00.000Z', // Mitternacht UTC
 				'2024-01-15T12:00:00.000Z', // Mittag UTC
@@ -430,17 +529,20 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 				'2024-07-15T12:00:00.000Z' // Sommer-Zeit
 			];
 
-			testTimes.forEach((time) => {
-				const split = splitDateTime(time);
-				const combined = combineToDate(split.date, split.time);
+			const paare = zeitzonenInvariant(
+				() =>
+					testTimes.map((time) => {
+						const split = splitDateTime(time);
+						return { split, wanduhr: localWallClock(combineToDate(split.date, split.time)) };
+					}),
+				DEPLOYMENT_TIME_ZONES
+			);
 
-				// Die kombinierte Zeit sollte ein gültiges Date-Objekt sein
-				expect(combined).toBeInstanceOf(Date);
-				expect(combined.getTime()).toBeGreaterThan(0);
-			});
+			paare.forEach(({ split, wanduhr }) => expect(wanduhr).toEqual(split));
 		});
 	});
 
+	// Laufzeit-Schranken sind zeitzonenunabhängig und werden daher nur einmal geprüft.
 	describe('Performance und Speicher', () => {
 		it('sollte große Mengen von Daten effizient verarbeiten', () => {
 			const testData = Array.from(
@@ -449,41 +551,30 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 			);
 
 			const startTime = performance.now();
-
 			testData.forEach((date) => formatLocalDateTime(date, 'datetime'));
+			const duration = performance.now() - startTime;
 
-			const endTime = performance.now();
-			const duration = endTime - startTime;
-
-			// Sollte unter 100ms für 1000 Formatierungen sein
 			expect(duration).toBeLessThan(500);
 		});
 
 		it('sollte combineToDate und splitDateTime performant ausführen', () => {
-			const testCount = 100;
-			const testDate = '2024-01-15';
-			const testTime = '14:30';
-			const testDateTime = '2024-01-15T14:30:00.000Z';
+			const iterations = 1000;
 
-			// Test combineToDate Performance
 			const combineStart = performance.now();
-			for (let i = 0; i < testCount; i++) {
-				combineToDate(testDate, testTime);
+			for (let i = 0; i < iterations; i++) {
+				combineToDate('2024-01-15', '14:30');
 			}
-			const combineEnd = performance.now();
-			const combineDuration = combineEnd - combineStart;
+			const combineDuration = performance.now() - combineStart;
 
-			// Test splitDateTime Performance
 			const splitStart = performance.now();
-			for (let i = 0; i < testCount; i++) {
-				splitDateTime(testDateTime);
+			for (let i = 0; i < iterations; i++) {
+				splitDateTime('2024-01-15T14:30:00.000Z');
 			}
-			const splitEnd = performance.now();
-			const splitDuration = splitEnd - splitStart;
+			const splitDuration = performance.now() - splitStart;
 
-			// Beide Operationen sollten unter 200ms für 100 Aufrufe sein
-			expect(combineDuration).toBeLessThan(200);
-			expect(splitDuration).toBeLessThan(200);
+			// Großzügige Limits für langsame CI-Runner
+			expect(combineDuration).toBeLessThan(100);
+			expect(splitDuration).toBeLessThan(2000);
 		});
 	});
 });

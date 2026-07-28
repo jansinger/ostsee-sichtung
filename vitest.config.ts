@@ -13,6 +13,7 @@ export default defineConfig({
 				// Test files
 				'**/*.test.ts',
 				'**/*.spec.ts',
+				'**/*.testutil.ts',
 				// Type-only files
 				'src/**/*.d.ts',
 				// OpenLayers map controllers — instantiate OL Map/View/Layer/Canvas, need real DOM+WebGL
