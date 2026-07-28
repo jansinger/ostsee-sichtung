@@ -23,7 +23,8 @@ vi.mock('$lib/server/db', () => {
 		select: vi.fn(),
 		execute: vi.fn(),
 		delete: vi.fn(() => ({
-			where: vi.fn().mockResolvedValue(undefined)
+			// saveSightingFiles liest die Pfade der entfernten Zeilen per returning()
+			where: vi.fn(() => ({ returning: vi.fn().mockResolvedValue([]) }))
 		})),
 		// transaction runs the callback with the same mock so existing assertions work
 		transaction: vi.fn(async (callback: (tx: typeof db) => Promise<unknown>) => callback(db))
@@ -43,7 +44,8 @@ vi.mock('./mapFormToSighting', () => ({
 vi.mock('$lib/server/storage/factory', () => ({
 	isCloudStorage: vi.fn(() => false),
 	getStorageProvider: vi.fn(() => ({
-		getUrl: vi.fn((path) => `/uploads/${path}`)
+		getUrl: vi.fn((path) => `/uploads/${path}`),
+		delete: vi.fn().mockResolvedValue(undefined)
 	}))
 }));
 // vi.hoisted ensures this runs before the hoisted vi.mock factory
@@ -589,7 +591,7 @@ describe('sightingRepository', () => {
 
 			// Mock delete to return successful where chain
 			mockDb.delete.mockReturnValue({
-				where: vi.fn().mockResolvedValue(undefined)
+				where: vi.fn(() => ({ returning: vi.fn().mockResolvedValue([]) }))
 			});
 
 			mockDb.insert.mockReturnValue({
@@ -629,7 +631,7 @@ describe('sightingRepository', () => {
 
 			// Mock delete to return successful where chain
 			mockDb.delete.mockReturnValue({
-				where: vi.fn().mockResolvedValue(undefined)
+				where: vi.fn(() => ({ returning: vi.fn().mockResolvedValue([]) }))
 			});
 
 			// Mock insert to fail

@@ -3,39 +3,50 @@ import { GET, PUT, DELETE } from '../../routes/api/sightings/[id]/+server';
 import { createEvent, mockAdminUser } from './helpers/createEvent';
 import { asApiResponse } from './helpers/asApiResponse';
 
-const { mockSelectLimit, mockDeleteWhere, mockSighting, mockUpdateSighting } = vi.hoisted(() => {
-	const mockSighting = {
-		id: 123,
-		sightingDate: new Date('2024-06-15T14:30:00Z'),
-		created: new Date('2024-06-15T15:00:00Z'),
-		species: 1,
-		totalCount: 2,
-		juvenileCount: 0,
-		latitude: 54.5,
-		longitude: 13.5,
-		isDead: 0,
-		firstName: 'Max',
-		lastName: 'Muster',
-		email: 'max@example.com',
-		verified: 1,
-		approvedAt: null,
-		internalComment: null,
-		referenceId: 'ref-test-123'
-	};
-	const mockSelectLimit = vi.fn().mockResolvedValue([{ ...mockSighting }]);
-	const mockDeleteWhere = vi.fn().mockResolvedValue(undefined);
-	const mockUpdateSighting = vi.fn().mockResolvedValue({ ...mockSighting });
-	return { mockSelectLimit, mockDeleteWhere, mockSighting, mockUpdateSighting };
-});
+const { mockSelectLimit, mockDeleteWhere, mockSighting, mockUpdateSighting, mockSchema } =
+	vi.hoisted(() => {
+		const mockSighting = {
+			id: 123,
+			sightingDate: new Date('2024-06-15T14:30:00Z'),
+			created: new Date('2024-06-15T15:00:00Z'),
+			species: 1,
+			totalCount: 2,
+			juvenileCount: 0,
+			latitude: 54.5,
+			longitude: 13.5,
+			isDead: 0,
+			firstName: 'Max',
+			lastName: 'Muster',
+			email: 'max@example.com',
+			verified: 1,
+			approvedAt: null,
+			internalComment: null,
+			referenceId: 'ref-test-123'
+		};
+		const mockSelectLimit = vi.fn().mockResolvedValue([{ ...mockSighting }]);
+		const mockDeleteWhere = vi.fn().mockResolvedValue(undefined);
+		const mockUpdateSighting = vi.fn().mockResolvedValue({ ...mockSighting });
+		const mockSchema = {
+			sightings: {
+				id: 'id',
+				approvedAt: 'approvedAt',
+				internalComment: 'internalComment',
+				verified: 'verified'
+			},
+			sightingFiles: { sightingId: 'sightingId', filePath: 'filePath' }
+		};
+		return { mockSelectLimit, mockDeleteWhere, mockSighting, mockUpdateSighting, mockSchema };
+	});
 
 vi.mock('$lib/server/db', () => ({
 	db: {
 		select: vi.fn().mockReturnValue({
-			from: vi.fn().mockReturnValue({
-				where: vi.fn().mockReturnValue({
-					limit: mockSelectLimit
-				})
-			})
+			from: vi.fn((table: unknown) => ({
+				// Die Datei-Abfrage in DELETE wird direkt awaited, alle anderen über .limit()
+				where: vi.fn(() =>
+					table === mockSchema.sightingFiles ? Promise.resolve([]) : { limit: mockSelectLimit }
+				)
+			}))
 		}),
 		update: vi.fn().mockReturnValue({
 			set: vi.fn().mockReturnValue({
@@ -50,13 +61,10 @@ vi.mock('$lib/server/db', () => ({
 	}
 }));
 
-vi.mock('$lib/server/db/schema', () => ({
-	sightings: {
-		id: 'id',
-		approvedAt: 'approvedAt',
-		internalComment: 'internalComment',
-		verified: 'verified'
-	}
+vi.mock('$lib/server/db/schema', () => mockSchema);
+
+vi.mock('$lib/server/storage/factory', () => ({
+	getStorageProvider: vi.fn(() => ({ delete: vi.fn().mockResolvedValue(undefined) }))
 }));
 
 vi.mock('drizzle-orm', () => ({

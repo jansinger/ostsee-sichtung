@@ -5,7 +5,8 @@ import { logAuditEvent } from '$lib/server/audit/auditService';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { db } from '$lib/server/db';
-import { sightings } from '$lib/server/db/schema';
+import { sightingFiles, sightings } from '$lib/server/db/schema';
+import { deleteStoredFiles } from '$lib/server/storage/deleteStoredFiles';
 import { posix } from 'path';
 import {
 	loadSightingFiles,
@@ -225,8 +226,19 @@ export const DELETE: RequestHandler = async ({
 			throw error(404, 'Sichtung nicht gefunden');
 		}
 
-		// Sichtung löschen (cascade delete für zugehörige Dateien)
+		// Dateipfade einsammeln, solange die Zeilen noch existieren: der
+		// Fremdschlüssel löscht sie gleich per Cascade mit, der Storage weiß davon
+		// nichts.
+		const linkedFiles = await db
+			.select({ filePath: sightingFiles.filePath })
+			.from(sightingFiles)
+			.where(eq(sightingFiles.sightingId, Number(id)));
+
+		// Sichtung löschen (Cascade entfernt die sichtungen_dateien-Zeilen)
 		await db.delete(sightings).where(eq(sightings.id, Number(id)));
+
+		// Erst nach dem Löschen der Zeilen — siehe deleteStoredFiles()
+		await deleteStoredFiles(linkedFiles.map((file) => file.filePath));
 
 		const ipAddress = getClientIp(getClientAddress, request);
 		await logAuditEvent({

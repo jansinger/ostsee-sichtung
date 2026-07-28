@@ -57,6 +57,31 @@ list(prefix?): Promise<UploadedFileInfo[]>
 
 ---
 
+## Löschen: erst die DB-Zeile, dann die Datei
+
+Wer eine `sichtungen_dateien`-Zeile entfernt, muss auch die Datei im Storage
+entfernen — der Fremdschlüssel-Cascade tut das **nicht**. Reihenfolge ist
+vorgeschrieben:
+
+```typescript
+import { deleteStoredFiles } from '$lib/server/storage/deleteStoredFiles';
+
+// 1. Pfade lesen, solange die Zeilen existieren
+// 2. Zeilen löschen (direkt oder per Cascade über `sichtungen`)
+// 3. erst danach:
+await deleteStoredFiles(paths);
+```
+
+Bricht Schritt 3 ab, bleibt eine verwaiste Datei liegen — folgenlos, weil nichts
+mehr auf sie zeigt. In der umgekehrten Reihenfolge entstünde eine DB-Zeile, die
+auf eine fehlende Datei verweist, und die sieht der Nutzer als kaputtes Bild.
+`deleteStoredFiles()` wirft deshalb nie: der DB-Vorgang ist bereits committet.
+
+**Ausnahme (Altlast):** `POST /api/files/delete` löscht noch in umgekehrter
+Reihenfolge und meldet auch dann Erfolg, wenn die DB-Zeile stehen bleibt.
+
+---
+
 ## EXIF-Extraktion
 
 ```typescript
