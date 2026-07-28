@@ -1,9 +1,30 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	GEOLOCATION_TIMEOUT_MS,
+	GEOLOCATION_WATCHDOG_MS,
 	describeGeolocationError,
 	requestCurrentPosition
 } from './geolocation';
+
+/** Speichert die Callbacks, statt sie sofort aufzurufen — für zeitgesteuerte Tests. */
+function deferredGeolocation(): {
+	geolocation: Pick<Geolocation, 'getCurrentPosition'>;
+	succeed: () => void;
+} {
+	let onSuccess: PositionCallback | undefined;
+	return {
+		geolocation: {
+			getCurrentPosition: (success: PositionCallback): void => {
+				onSuccess = success;
+			}
+		},
+		succeed: (): void => {
+			onSuccess?.({
+				coords: { latitude: 54.31, longitude: 12.09 }
+			} as GeolocationPosition);
+		}
+	};
+}
 
 describe('describeGeolocationError', () => {
 	it('erklärt eine verweigerte Freigabe', () => {
@@ -66,12 +87,12 @@ describe('requestCurrentPosition — eigener Zeitwächter', () => {
 		vi.useRealTimers();
 	});
 
-	it('löst nach Ablauf der Wartezeit auf, wenn gar kein Callback kommt', async () => {
+	it('löst nach Ablauf der Wächter-Frist auf, wenn gar kein Callback kommt', async () => {
 		vi.useFakeTimers();
 		const geolocation = { getCurrentPosition: (): void => {} };
 
 		const pending = requestCurrentPosition(geolocation);
-		await vi.advanceTimersByTimeAsync(GEOLOCATION_TIMEOUT_MS);
+		await vi.advanceTimersByTimeAsync(GEOLOCATION_WATCHDOG_MS);
 		const result = await pending;
 
 		expect(result.ok).toBe(false);
@@ -88,5 +109,47 @@ describe('requestCurrentPosition — eigener Zeitwächter', () => {
 		await requestCurrentPosition(geolocation);
 
 		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	it('wartet länger als die API-Frist, damit ein offener Dialog nicht mitzählt', () => {
+		expect(GEOLOCATION_WATCHDOG_MS).toBeGreaterThan(GEOLOCATION_TIMEOUT_MS);
+	});
+
+	/**
+	 * Der Regressionsfall: Erstnutzer auf dem Handy braucht Sekunden für den
+	 * Berechtigungsdialog, danach dauert der kalte GPS-Fix noch einmal Sekunden.
+	 * Die API-Frist läuft erst ab der Antwort — der Wächter dagegen ab Aufruf.
+	 * Ein Erfolg jenseits der API-Frist ist deshalb völlig normal und darf nicht
+	 * als Zeitüberschreitung ausgegeben werden.
+	 */
+	it('lässt einen Erfolg gewinnen, der nach der API-Frist, aber vor dem Wächter eintrifft', async () => {
+		vi.useFakeTimers();
+		const { geolocation, succeed } = deferredGeolocation();
+
+		const pending = requestCurrentPosition(geolocation);
+		await vi.advanceTimersByTimeAsync(GEOLOCATION_TIMEOUT_MS + 3_000);
+		succeed();
+
+		expect(await pending).toEqual({ ok: true, latitude: 54.31, longitude: 12.09 });
+	});
+
+	it('verwirft einen Callback, der erst nach dem Wächter eintrifft, ohne doppelt aufzulösen', async () => {
+		vi.useFakeTimers();
+		const { geolocation, succeed } = deferredGeolocation();
+		const settled = vi.fn();
+
+		const pending = requestCurrentPosition(geolocation);
+		void pending.then(settled);
+
+		await vi.advanceTimersByTimeAsync(GEOLOCATION_WATCHDOG_MS);
+		succeed();
+		await vi.advanceTimersByTimeAsync(0);
+
+		expect(settled).toHaveBeenCalledTimes(1);
+		expect(settled).toHaveBeenCalledWith({
+			ok: false,
+			message: describeGeolocationError({ code: 3 })
+		});
+		expect(await pending).toEqual({ ok: false, message: describeGeolocationError({ code: 3 }) });
 	});
 });

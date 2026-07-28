@@ -9,8 +9,29 @@
 export type GeolocationOutcome =
 	{ ok: true; latitude: number; longitude: number } | { ok: false; message: string };
 
-/** Obergrenze der Wartezeit — gilt für die API-Option und für den eigenen Wächter. */
+/**
+ * Zeitbudget, das die Geolocation-API selbst bekommt (`timeout`-Option). Es läuft
+ * laut Spezifikation erst ab dem Moment, in dem der Nutzer den
+ * Berechtigungsdialog beantwortet hat.
+ */
 export const GEOLOCATION_TIMEOUT_MS = 10_000;
+
+/**
+ * Frist des eigenen Wächters. Bewusst eine eigene Konstante und deutlich größer
+ * als `GEOLOCATION_TIMEOUT_MS`:
+ *
+ * Die beiden Uhren starten zu verschiedenen Zeitpunkten — die API-Frist erst nach
+ * der Antwort auf den Dialog, der Wächter schon beim Aufruf. Wer beide gleich
+ * setzt, erklärt einen Erstnutzer, der ein paar Sekunden zum Lesen und Tippen
+ * braucht und danach auf einen kalten GPS-Fix wartet, für gescheitert — obwohl
+ * seine Position gleich eintrifft und der `settled`-Wächter sie dann verwirft.
+ *
+ * 30 s = API-Frist (10 s) + reichlich Spielraum für den Dialog. Der Wächter ist
+ * ausschließlich für den Fall da, dass der Dialog NIE beantwortet wird und
+ * deshalb überhaupt kein Callback kommt; er ist keine zweite Zeitmessung für die
+ * Ortung selbst.
+ */
+export const GEOLOCATION_WATCHDOG_MS = 30_000;
 
 /** Übersetzt die numerischen Codes der Geolocation-API in verständliche Sätze. */
 export function describeGeolocationError(error: { code: number }): string {
@@ -52,7 +73,7 @@ export function requestCurrentPosition(
 		// auch bei einem synchron aufgerufenen Callback bereits abräumen kann.
 		const watchdog = setTimeout(
 			() => finish({ ok: false, message: describeGeolocationError({ code: 3 }) }),
-			GEOLOCATION_TIMEOUT_MS
+			GEOLOCATION_WATCHDOG_MS
 		);
 
 		function finish(outcome: GeolocationOutcome): void {
