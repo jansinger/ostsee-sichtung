@@ -28,7 +28,7 @@ Der Widerspruch ist real und im Code belegbar:
 
 Das Datenmodell ist **binär, nicht ternär**: entweder Koordinaten
 (`hasPosition === true`) oder eine Beschreibung. Foto und Karte sind zwei Wege zum
-*selben* Wert. Drei gleichrangige Tabs bilden das falsch ab.
+_selben_ Wert. Drei gleichrangige Tabs bilden das falsch ab.
 
 ### Zwei weitere Befunde
 
@@ -46,7 +46,7 @@ Forschungsdatensatz ist das eine schwache Kontrolle.
 ### Domänen-Vergleich
 
 Vergleichbare Bürgerwissenschafts-Plattformen (iNaturalist, Observation.org,
-eBird) lösen dasselbe Problem einheitlich anders: *eine* Positionsoberfläche mit
+eBird) lösen dasselbe Problem einheitlich anders: _eine_ Positionsoberfläche mit
 der Karte als kanonischer Anzeige; Foto-EXIF und Geräte-GPS sind **Beschleuniger**,
 die den Marker setzen; ein Freitext-Ortsname ist immer verfügbar und
 **ergänzend**, nie eine Alternative, zwischen der man vorab wählen muss.
@@ -55,12 +55,12 @@ die den Marker setzen; ein Freitext-Ortsname ist immer verfügbar und
 
 ## Entscheidungen
 
-| Frage | Entscheidung |
-| --- | --- |
+| Frage                            | Entscheidung                                                               |
+| -------------------------------- | -------------------------------------------------------------------------- |
 | Beschreibung bei vorhandenem GPS | Bleibt erreichbar als eingeklappte optionale Zusatzangabe (nicht entfernt) |
-| Prominenz des Foto-Wegs | Foto wird das erste und größte Element des Panels |
-| Methodenwahl | Entfällt ersatzlos |
-| `mediaConsent` | **Nicht Teil dieser Änderung** — eigener Vorgang (siehe „Abgrenzung") |
+| Prominenz des Foto-Wegs          | Foto wird das erste und größte Element des Panels                          |
+| Methodenwahl                     | Entfällt ersatzlos                                                         |
+| `mediaConsent`                   | **Nicht Teil dieser Änderung** — eigener Vorgang (siehe „Abgrenzung")      |
 
 ---
 
@@ -148,7 +148,7 @@ Foto-Wegs, keine Nachlässigkeit. Wer die Karte sucht, findet eine beschriftete
 Zeile direkt unter dem Divider.
 
 **Der GPS-Button braucht ein eindeutiges Label.** „Aktuelle Position verwenden"
-übernimmt den Standort des *Geräts zum Zeitpunkt des Ausfüllens*. Sichtungen
+übernimmt den Standort des _Geräts zum Zeitpunkt des Ausfüllens_. Sichtungen
 werden aber häufig später gemeldet — im Hafen, zu Hause, am Abend. Dann schriebe
 der Button stillschweigend eine falsche Position in den Forschungsdatensatz, und
 die Ostsee-Prüfung schlägt nicht an, weil auch die Küste in der Ostsee liegt.
@@ -163,14 +163,15 @@ optional und kann später folgen.
 `PositionAndTime.svelte` ist mit 277 Zeilen zu groß und macht drei Dinge
 gleichzeitig. Sie schrumpft auf reine Komposition.
 
-| Datei | Rolle |
-| --- | --- |
-| `sections/PositionAndTime.svelte` | nur noch `<PositionPanel />` + Datum/Uhrzeit-Sektion |
-| `form/position/PositionPanel.svelte` **(neu)** | Foto-Karte, Divider, GPS-Button, Karten-Disclosure, `VerifyLocation` |
-| `form/position/LocationDescription.svelte` **(neu)** | `waterway` + `seaMark` samt Klapp-Logik |
-| `form/position/positionPanelState.ts` **(neu)** | reine Funktionen, in Node testbar |
-| `form/LocationInput.svelte` | Logik unverändert; neues Prop `collapsibleCoordinates` (Default `false`) |
-| `sections/positionMethod.ts` + Test | **entfällt** |
+| Datei                                                | Rolle                                                                                                                                                       |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sections/PositionAndTime.svelte`                    | nur noch `<PositionPanel />` + Datum/Uhrzeit-Sektion                                                                                                        |
+| `form/position/PositionPanel.svelte` **(neu)**       | Foto-Karte, Divider, GPS-Button, Karten-Disclosure, `VerifyLocation`                                                                                        |
+| `form/position/LocationDescription.svelte` **(neu)** | `waterway` + `seaMark` samt Klapp-Logik                                                                                                                     |
+| `form/position/positionPanelState.ts` **(neu)**      | reine Funktionen, in Node testbar                                                                                                                           |
+| `form/position/geolocation.ts` **(neu)**             | Standortabfrage für „Mein aktueller Standort" samt Übersetzung der Fehlercodes; `Geolocation` wird injiziert, damit der Fehlerpfad ohne Browser testbar ist |
+| `form/LocationInput.svelte`                          | Logik unverändert; neues Prop `collapsibleCoordinates` (Default `false`)                                                                                    |
+| `sections/positionMethod.ts` + Test                  | **entfällt**                                                                                                                                                |
 
 `LocationInput` behält die Hoheit über die Koordinaten. Die Trennung von
 `mapLatitude`/`mapLongitude` gegenüber den echten Formularwerten samt
@@ -218,14 +219,14 @@ descriptionCollapsed(hasCoordinates, waterway, seaMark): boolean
 ```
 
 `descriptionCollapsed` fängt eine echte Falle ab: Wer erst das Seegebiet
-beschreibt und *danach* ein Foto mit GPS hochlädt, dem darf der Block nicht
+beschreibt und _danach_ ein Foto mit GPS hochlädt, dem darf der Block nicht
 zuklappen und den eingegebenen Text verstecken.
 
 **Regel:** zuklappen nur, wenn Koordinaten vorliegen **und** beide Felder leer
 sind. Sonst bleibt der Block offen, nur ohne Pflicht-Stern.
 
 `mapExpanded` ist sticky, und zwar unabhängig davon, **warum** die Karte
-aufgegangen ist: Sobald sie einmal offen war — durch Nutzerklick *oder* durch das
+aufgegangen ist: Sobald sie einmal offen war — durch Nutzerklick _oder_ durch das
 automatische Aufklappen bei Koordinaten — bleibt sie offen, auch wenn die
 Koordinaten später wieder entfallen. Der zweite Parameter heißt daher besser
 `wasEverExpanded`. Das vermeidet springendes Layout und stellt sicher, dass die
@@ -262,15 +263,15 @@ ist. Diese Logik ist korrekt und vorsichtig und bleibt unangetastet.
 
 ## Fehler- und Randfälle
 
-| Fall | Verhalten |
-| --- | --- |
-| Foto ohne GPS | Zustand C. Foto bleibt hochgeladen; Datum/Uhrzeit werden trotzdem übernommen, falls im EXIF vorhanden |
-| Foto wieder entfernt | `resetExifPositionIfUnchanged` nimmt die Position zurück. Beschreibungsblock klappt auf, Pflicht-Stern kehrt zurück. Karte bleibt offen |
-| EXIF-Position außerhalb der Ostsee | Das Schema blockiert beim „Weiter" (`BALTIC_SEA_BBOX`) — unverändert. Neu ist, dass die aufgeklappte Karte den Fehler **sichtbar und korrigierbar** macht |
-| Beschreibung getippt, dann Foto mit GPS | Block bleibt offen, nur der Pflicht-Stern verschwindet |
-| Session-Restore | `derivePositionMethod` entfällt; die Zustände ergeben sich direkt aus den wiederhergestellten Werten — robuster als die heutige Rekonstruktion eines *Modus* |
-| Nutzer klappt die Karte wieder zu, obwohl Koordinaten gesetzt sind | `VerifyLocation` bleibt sichtbar — es liegt **außerhalb** der Karten-Disclosure. Sonst verschwände die Ostsee-Prüfung genau dann, wenn sie noch gilt |
-| GPS-Button, Sichtung aber an einem anderen Tag gemacht | Der Button übernimmt den aktuellen Gerätestandort. Abgefedert nur über das Label „Mein aktueller Standort" (siehe „Texte und bewusste Nicht-Entscheidungen"); eine Datumsprüfung ist optional und nicht Teil dieser Änderung |
+| Fall                                                               | Verhalten                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Foto ohne GPS                                                      | Zustand C. Foto bleibt hochgeladen; Datum/Uhrzeit werden trotzdem übernommen, falls im EXIF vorhanden                                                                                                                        |
+| Foto wieder entfernt                                               | `resetExifPositionIfUnchanged` nimmt die Position zurück. Beschreibungsblock klappt auf, Pflicht-Stern kehrt zurück. Karte bleibt offen                                                                                      |
+| EXIF-Position außerhalb der Ostsee                                 | Das Schema blockiert beim „Weiter" (`BALTIC_SEA_BBOX`) — unverändert. Neu ist, dass die aufgeklappte Karte den Fehler **sichtbar und korrigierbar** macht                                                                    |
+| Beschreibung getippt, dann Foto mit GPS                            | Block bleibt offen, nur der Pflicht-Stern verschwindet                                                                                                                                                                       |
+| Session-Restore                                                    | `derivePositionMethod` entfällt; die Zustände ergeben sich direkt aus den wiederhergestellten Werten — robuster als die heutige Rekonstruktion eines _Modus_                                                                 |
+| Nutzer klappt die Karte wieder zu, obwohl Koordinaten gesetzt sind | `VerifyLocation` bleibt sichtbar — es liegt **außerhalb** der Karten-Disclosure. Sonst verschwände die Ostsee-Prüfung genau dann, wenn sie noch gilt                                                                         |
+| GPS-Button, Sichtung aber an einem anderen Tag gemacht             | Der Button übernimmt den aktuellen Gerätestandort. Abgefedert nur über das Label „Mein aktueller Standort" (siehe „Texte und bewusste Nicht-Entscheidungen"); eine Datumsprüfung ist optional und nicht Teil dieser Änderung |
 
 ### Offener Punkt
 
@@ -285,7 +286,7 @@ Umsetzen zu prüfen und gegebenenfalls um einen Hinweis zu ergänzen.
 
 - Auf-/Zuklappen über das im Projekt etablierte Muster aus `<details>` plus
   DaisyUI-Collapse-Klassen (`Step4Contact.svelte:111-127`) — nativ zugänglich
-  *und* konsistent mit dem Bestand:
+  _und_ konsistent mit dem Bestand:
 
   ```svelte
   <details class="bg-base-100 collapse" open={…}>
@@ -312,7 +313,7 @@ Umsetzen zu prüfen und gegebenenfalls um einen Hinweis zu ergänzen.
 - Neue Elemente bekommen stabile `data-testid`-Hooks (Hero-Dropzone,
   Karten-Disclosure, Beschreibungs-Disclosure, die beiden Ausgänge aus Zustand C).
   Der heutige E2E-Test matcht auf Prosa (`Foto per Drag & Drop oder Klick
-  hochladen`) und bricht deshalb bei jeder Textänderung.
+hochladen`) und bricht deshalb bei jeder Textänderung.
 - **Im iframe-Modus prüfen.** Die App läuft eingebettet auf meeresmuseum.de
   (`.iframe-mode`, siehe `.claude/rules/daisyui.md`); ein längeres Panel verändert
   dort das Scrollverhalten.
@@ -349,11 +350,11 @@ bisher **kein einziges** `setInputFiles` — der Datei-Upload ist E2E vollständ
 ungetestet. Die Testfotos schließen damit eine größere Lücke als nur diese
 Änderung:
 
-| Datei | Anforderung |
-| --- | --- |
-| `e2e/fixtures/photo-with-gps.jpg` | JPEG mit `GPSLatitude`/`GPSLongitude` **innerhalb** von `BALTIC_SEA_BBOX` (Breite 53,0–66,0 · Länge 9,4–30,2, `checkBalticSea.ts:27`), z.B. 54,31 N / 12,09 E. `DateTimeOriginal` in der Vergangenheit — Zukunftsdaten weist das Schema ab |
-| `e2e/fixtures/photo-without-gps.jpg` | Gleiches Bild ohne GPS-Tags, `DateTimeOriginal` erhalten. Prüft Zustand C: „Datum übernommen, Position nicht" |
-| `e2e/fixtures/photo-gps-outside-baltic.jpg` | *(optional)* GPS außerhalb der Box — deckt den Validierungsfehler ab, der heute unsichtbar zuschlägt |
+| Datei                                       | Anforderung                                                                                                                                                                                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `e2e/fixtures/photo-with-gps.jpg`           | JPEG mit `GPSLatitude`/`GPSLongitude` **innerhalb** von `BALTIC_SEA_BBOX` (Breite 53,0–66,0 · Länge 9,4–30,2, `checkBalticSea.ts:27`), z.B. 54,31 N / 12,09 E. `DateTimeOriginal` in der Vergangenheit — Zukunftsdaten weist das Schema ab |
+| `e2e/fixtures/photo-without-gps.jpg`        | Gleiches Bild ohne GPS-Tags, `DateTimeOriginal` erhalten. Prüft Zustand C: „Datum übernommen, Position nicht"                                                                                                                              |
+| `e2e/fixtures/photo-gps-outside-baltic.jpg` | _(optional)_ GPS außerhalb der Box — deckt den Validierungsfehler ab, der heute unsichtbar zuschlägt                                                                                                                                       |
 
 JPEG, nicht PNG (PNG trägt keine GPS-EXIF zuverlässig). Ergänzend bleiben die
 reinen Funktionen die primäre Absicherung der EXIF-Zustandslogik.
