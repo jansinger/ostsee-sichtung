@@ -12,6 +12,7 @@
 		latitude = $bindable(),
 		longitude = $bindable(),
 		defaultCenter = { latitude: 54.5, longitude: 13.5 },
+		collapsibleCoordinates = false,
 		onchange = () => {}
 	} = $props<{
 		mode?: 'dms' | 'dm' | 'dd';
@@ -21,6 +22,12 @@
 		longitude?: number | undefined;
 		/** Nur für die Kartenansicht: Startpunkt, solange keine echte Position vorliegt. */
 		defaultCenter?: { latitude: number; longitude: number };
+		/**
+		 * Legt Formatwahl und Eingabefelder in einen Collapse-Container.
+		 * Default `false`, damit die Admin-Maske (`sections/Location.svelte`)
+		 * unverändert bleibt; das Meldeformular übergibt `true`.
+		 */
+		collapsibleCoordinates?: boolean;
 		onchange?: EventListener | null;
 	}>();
 
@@ -146,17 +153,7 @@
 	}
 </script>
 
-<div class="w-full">
-	<div class="border-base-300 mb-4 overflow-hidden rounded-lg border">
-		<OLMap
-			bind:latitude={mapLatitude}
-			bind:longitude={mapLongitude}
-			readonly={false}
-			enableGPS={true}
-			onchange={onMapChange}
-		/>
-	</div>
-
+{#snippet coordinateFields()}
 	<div class="mb-4 flex items-center justify-between">
 		<label class="label" for="gps-format">GPS-Eingabeformat</label>
 		<select id="gps-format" class="select ml-auto w-auto" bind:value={mode}>
@@ -333,5 +330,30 @@
 				/>
 			</div>
 		</div>
+	{/if}
+{/snippet}
+
+<div class="w-full">
+	<div class="border-base-300 mb-4 overflow-hidden rounded-lg border">
+		<OLMap
+			bind:latitude={mapLatitude}
+			bind:longitude={mapLongitude}
+			readonly={false}
+			enableGPS={true}
+			onchange={onMapChange}
+		/>
+	</div>
+
+	{#if collapsibleCoordinates}
+		<details class="bg-base-100 collapse" data-testid="coordinate-fields">
+			<summary class="collapse-title min-h-0 py-2 text-sm font-medium">
+				Koordinaten eingeben
+			</summary>
+			<div class="collapse-content">
+				{@render coordinateFields()}
+			</div>
+		</details>
+	{:else}
+		{@render coordinateFields()}
 	{/if}
 </div>
