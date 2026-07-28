@@ -27,6 +27,7 @@
 	import Cloud from '~icons/lucide/cloud';
 	import CloudRain from '~icons/lucide/cloud-rain';
 	import Columns from '~icons/lucide/columns';
+	import Crosshair from '~icons/lucide/crosshair';
 	import Download from '~icons/lucide/download';
 	import Eye from '~icons/lucide/eye';
 	import File from '~icons/lucide/file';
@@ -113,6 +114,7 @@
 		'lucide:filter': Filter,
 		'lucide:download': Download,
 		'lucide:columns': Columns,
+		'lucide:crosshair': Crosshair,
 		'lucide:user': User,
 		'lucide:log-out': LogOut,
 		'lucide:github': Github,

@@ -10,6 +10,7 @@
 	import VerifyLocation from '$lib/report/components/form/VerifyLocation.svelte';
 	import { hasCoordinates, toCoordinate } from '$lib/report/components/form/coordinateValue';
 	import LocationDescription from './LocationDescription.svelte';
+	import { requestCurrentPosition } from './geolocation';
 	import { shouldOpenMapOnCoordinateChange } from './positionPanelState';
 
 	const { form, handleChange } = getFormContext();
@@ -69,13 +70,44 @@
 	}
 
 	/**
-	 * Koordinaten-Änderung aus Karte oder Eingabefeldern.
-	 * hasPosition ist genau dann true, wenn Breiten- UND Längengrad gesetzt sind.
+	 * Einzige Stelle, an der `hasPosition` entsteht: genau dann true, wenn
+	 * Breiten- UND Längengrad im Formular als echte Zahlen vorliegen. Bewusst
+	 * aus dem Store gelesen statt aus den gerade geschriebenen Werten — so gilt
+	 * dieselbe Regel für Karte, Eingabefelder und GPS-Button.
 	 */
-	function handleLocationChange(event: Event): void {
-		handleChange(event);
+	function syncHasPosition(): void {
 		const values = get(form);
 		setField('hasPosition', hasCoordinates(values.latitude, values.longitude));
+	}
+
+	/** Koordinaten-Änderung aus Karte oder Eingabefeldern. */
+	function handleLocationChange(event: Event): void {
+		handleChange(event);
+		syncHasPosition();
+	}
+
+	let locating = $state(false);
+	let locationError = $state<string | null>(null);
+
+	/** Übernimmt den Gerätestandort und öffnet die Karte zur Kontrolle. */
+	async function useCurrentPosition(): Promise<void> {
+		locating = true;
+		locationError = null;
+
+		const result = await requestCurrentPosition(
+			typeof navigator === 'undefined' ? undefined : navigator.geolocation
+		);
+		locating = false;
+
+		if (!result.ok) {
+			locationError = result.message;
+			return;
+		}
+
+		setField('latitude', result.latitude);
+		setField('longitude', result.longitude);
+		syncHasPosition();
+		mapOpen = true;
 	}
 </script>
 
@@ -118,17 +150,55 @@
 
 	<div class="divider text-base-content/60 mt-6 mb-3 text-xs">oder Position selbst setzen</div>
 
+	<!-- Eigener Button statt des OpenLayers-GPS-Controls: Die Karte startet
+	     zugeklappt, im Startzustand gäbe es sonst gar keinen sichtbaren
+	     GPS-Button. Beschriftung und Fehlerpfad liegen so außerdem in unserer
+	     Hand — beides ist im Karten-Control nicht erreichbar. -->
+	<button
+		type="button"
+		class="btn btn-outline min-h-11 w-full sm:w-auto"
+		onclick={useCurrentPosition}
+		disabled={locating}
+		data-testid="use-current-position"
+	>
+		{#if locating}
+			<span class="loading loading-spinner loading-sm"></span>
+		{:else}
+			<Icon aria-hidden="true" icon="lucide:crosshair" width="18" />
+		{/if}
+		Mein aktueller Standort
+	</button>
+	<p class="text-base-content/60 mt-1 mb-3 text-xs">
+		Übernimmt den Standort Ihres Geräts — sinnvoll, wenn Sie die Sichtung direkt vor Ort melden.
+	</p>
+
+	{#if locationError}
+		<div
+			class="alert alert-warning mb-3"
+			role="alert"
+			aria-live="polite"
+			data-testid="geolocation-error"
+		>
+			<Icon aria-hidden="true" icon="lucide:circle-alert" width="20" class="shrink-0" />
+			<span class="text-sm">{locationError}</span>
+		</div>
+	{/if}
+
 	<details class="bg-base-100 collapse" bind:open={mapOpen} data-testid="map-disclosure">
 		<summary class="collapse-title min-h-11 py-3 text-sm font-medium">
 			Position auf Karte wählen
 		</summary>
 		<div class="collapse-content">
 			<!--
-				Erst mounten, wenn die Disclosure offen ist. OLMap ruft `updateSize()`
-				nur in `updateMarker` auf (OLMap.svelte:67) — eine Karte, die in einem
-				geschlossenen <details> entsteht, misst einen Container ohne Ausdehnung
-				und rendert leer, bis zufällig eine Koordinatenänderung eintrifft.
-				Nebeneffekt: Ohne geöffnete Karte werden auch keine Kacheln geladen.
+				Erst mounten, wenn die Disclosure offen ist: Für die Mehrheit, die die
+				Karte nie aufklappt, entsteht so keine OpenLayers-Instanz und es werden
+				keine Kacheln geladen.
+
+				Nicht der Grund: eine „leer rendernde" Karte. OpenLayers beobachtet das
+				Ziel-Element seit jeher mit einem ResizeObserver
+				(node_modules/ol/Map.js:449 in ol 10.9.0) und ruft `updateSize()` selbst
+				auf, sobald der Container Ausdehnung bekommt — eine im geschlossenen
+				<details> erzeugte Karte würde sich also von allein korrigieren.
 			-->
 			{#if mapOpen}
 				<LocationInput
