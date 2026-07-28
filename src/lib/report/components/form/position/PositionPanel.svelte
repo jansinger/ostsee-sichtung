@@ -13,7 +13,11 @@
 	import { openAncestorDetails } from '$lib/utils/fieldNavigation';
 	import LocationDescription from './LocationDescription.svelte';
 	import { requestCurrentPosition } from './geolocation';
-	import { photoStatus, shouldOpenMapOnCoordinateChange } from './positionPanelState';
+	import {
+		photoStatus,
+		shouldOpenMapOnCoordinateChange,
+		shouldWarnAboutMissingGps
+	} from './positionPanelState';
 
 	const { form, handleChange, mediaStore } = getFormContext();
 
@@ -229,12 +233,16 @@
 
 		<!-- Zustand C: Foto ohne EXIF-GPS.
 
-		     Bewusst `=== 'no-gps'` und nicht „kein GPS im Formular": Während der
+		     Bewusst `'no-gps'` und nicht „kein GPS im Formular": Während der
 		     Auswertung meldet `photoStatus` `'analyzing'` und hier steht nichts.
 		     Sonst würde ein Foto MIT GPS im Moment des Drops für GPS-los erklärt
 		     und die Behauptung Sekundenbruchteile später zurückgenommen — mit
-		     `role="status"` sagt ein Screenreader sie inzwischen an. -->
-		{#if status === 'no-gps'}
+		     `role="status"` sagt ein Screenreader sie inzwischen an.
+
+		     Die zweite Bedingung (`coordinatesPresent`) steckt in
+		     `shouldWarnAboutMissingGps`: Solange das Panel Koordinaten anzeigt,
+		     darf es ihr Fehlen nicht behaupten. -->
+		{#if shouldWarnAboutMissingGps(status, coordinatesPresent)}
 			<div class="alert alert-warning mt-4" role="status" data-testid="photo-no-gps">
 				<Icon aria-hidden="true" icon="lucide:circle-alert" width="20" class="shrink-0" />
 				<div>

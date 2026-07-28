@@ -54,6 +54,28 @@ export function photoStatus(mediaFiles: readonly PositionCapableFile[]): PhotoSt
 }
 
 /**
+ * Darf das Panel behaupten, im Foto stecke keine Position?
+ *
+ * Nur wenn im Formular auch wirklich keine steht. `photoStatus` urteilt allein
+ * über die `MediaFile`-Instanzen, die Koordinaten kommen aber aus einer zweiten,
+ * unabhängigen Quelle (`$form.latitude`/`longitude`, über `sessionStorage`
+ * reloadfest). Beide können auseinanderlaufen: Eine nach einem Reload aus
+ * `$form.uploadedFiles` neu gebaute Datei ohne `exifData` meldet
+ * `hasPosition() === false`, während die Koordinaten längst wieder da sind.
+ *
+ * Das Ergebnis war ein sichtbarer Widerspruch — grüne Ostsee-Bestätigung neben
+ * gelber „keine GPS-Daten"-Warnung — und der angebotene Ausweg „Auf Karte
+ * wählen" hätte die korrekte Position überschrieben. Ein Panel, das Koordinaten
+ * anzeigt, darf ihr Fehlen nicht behaupten.
+ */
+export function shouldWarnAboutMissingGps(
+	status: PhotoStatus,
+	coordinatesPresent: boolean
+): boolean {
+	return status === 'no-gps' && !coordinatesPresent;
+}
+
+/**
  * True auf der steigenden Flanke: genau dann, wenn eine Position NEU entsteht.
  *
  * Nicht `hasCoordinates || wasEverExpanded` — das würde `open` erzwingen und dem

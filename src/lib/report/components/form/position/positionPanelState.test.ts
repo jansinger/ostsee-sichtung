@@ -3,6 +3,7 @@ import {
 	descriptionCollapsed,
 	photoStatus,
 	shouldOpenMapOnCoordinateChange,
+	shouldWarnAboutMissingGps,
 	type PositionCapableFile
 } from './positionPanelState';
 
@@ -122,5 +123,34 @@ describe('descriptionCollapsed', () => {
 
 	it('bleibt offen, wenn ein Seezeichen bereits eingegeben wurde', () => {
 		expect(descriptionCollapsed(true, '', 'Tonne 14')).toBe(false);
+	});
+});
+
+/**
+ * Der Widerspruch, den diese Regel auflöst: Nach einem Reload kommen die
+ * Koordinaten aus `sessionStorage` zurück (`$form.latitude`), die
+ * `MediaFile`-Instanzen dagegen werden aus `$form.uploadedFiles` neu gebaut.
+ * Trägt eine wiederhergestellte Datei keine `exifData` — etwa weil der Server
+ * beim Upload keine lesen konnte — meldet `hasPosition()` false und
+ * `photoStatus` folgerichtig `'no-gps'`. Das Panel zeigte dann gleichzeitig die
+ * grüne Ostsee-Bestätigung und die gelbe Warnung „keine GPS-Daten" — samt eines
+ * Auswegs („Auf Karte wählen"), der die korrekte Position zerstört hätte.
+ *
+ * Die Warnung darf deshalb nie erscheinen, solange Koordinaten im Formular
+ * stehen — unabhängig davon, woher sie stammen.
+ */
+describe('shouldWarnAboutMissingGps', () => {
+	it('warnt bei einem Foto ohne GPS und ohne Koordinaten', () => {
+		expect(shouldWarnAboutMissingGps('no-gps', false)).toBe(true);
+	});
+
+	it('warnt nicht, solange das Formular Koordinaten trägt', () => {
+		expect(shouldWarnAboutMissingGps('no-gps', true)).toBe(false);
+	});
+
+	it('warnt in keinem anderen Zustand', () => {
+		expect(shouldWarnAboutMissingGps('none', false)).toBe(false);
+		expect(shouldWarnAboutMissingGps('analyzing', false)).toBe(false);
+		expect(shouldWarnAboutMissingGps('position-applied', false)).toBe(false);
 	});
 });
