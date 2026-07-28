@@ -163,6 +163,22 @@ describe('Freigabestatus in Sichtungs-Statistiken', () => {
 			expect(stats.totalSightings).not.toBe(MIXED_TOTAL);
 		});
 
+		it('zählt eine leere E-Mail-Adresse nicht als Person', async () => {
+			// `/about` und die Admin-Statistik filtern `email != ''`, die öffentliche
+			// Statistik tat es nicht. Heute steht kein Leerstring in der Tabelle, aber
+			// sobald einer entstünde, zählte ihn nur eine der beiden öffentlichen
+			// Flächen als "Person" — genau die Divergenz, die dieser PR beseitigt.
+			await getSightingStatistics('approved');
+
+			const emailFilter = recordedWheres.filter((w) => w.includes('"email"'));
+			expect(emailFilter.length).toBeGreaterThan(0);
+			for (const whereSql of emailFilter) {
+				expect(whereSql, `E-Mail-Abfrage ohne Leerstring-Ausschluss: ${whereSql}`).toContain(
+					'"email" <> '
+				);
+			}
+		});
+
 		it('behält den Epoch-Ausschluss zusätzlich zum Freigabefilter', async () => {
 			await getSightingStatistics('approved');
 

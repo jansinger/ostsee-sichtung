@@ -25,7 +25,7 @@ import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting, UpdateSighting } from '$lib/types/sighting';
 import type { SightingFileInsert } from '$lib/types/sightingFile';
 import { isImageFile } from '$lib/utils';
-import { and, count, countDistinct, eq, gte, isNotNull, sql, type SQL } from 'drizzle-orm';
+import { and, count, countDistinct, eq, gte, isNotNull, ne, sql, type SQL } from 'drizzle-orm';
 import {
 	approvalFilter,
 	type ResolvedSightingScope,
@@ -439,8 +439,8 @@ async function collectStatisticsForScope(
 ): Promise<SightingStatistics> {
 	const approval = approvalFilter(scope);
 
-	/** Verknüpft den Freigabefilter mit der abfragespezifischen Bedingung. */
-	const withApproval = (condition: SQL): SQL => and(approval, condition) as SQL;
+	/** Verknüpft den Freigabefilter mit den abfragespezifischen Bedingungen. */
+	const withApproval = (...conditions: SQL[]): SQL => and(approval, ...conditions) as SQL;
 
 	try {
 		logger.info({ scope }, 'Ermittle Sichtungs-Statistiken');
@@ -530,12 +530,17 @@ async function collectStatisticsForScope(
 			? new Date().getFullYear() - new Date(firstSighting).getFullYear()
 			: 0;
 
-		// Anzahl einzigartige Schiffe
+		// Anzahl einzigartige Schiffe.
+		// Der Leerstring wird mit ausgeschlossen: `SELECT DISTINCT` zählt ihn sonst als
+		// eigenen Wert und damit als zusätzliche "Person". `/about` und die
+		// Admin-Statistik filtern ihn seit jeher weg — ohne diese Bedingung lieferten
+		// zwei öffentliche Flächen unterschiedliche Personenzahlen, sobald ein
+		// Leerstring in die Tabelle käme (aktuell steht dort keiner).
 		const uniqueUsersQuery = await db.select({ count: count() }).from(
 			db
 				.selectDistinct({ email: sightings.email })
 				.from(sightings)
-				.where(withApproval(isNotNull(sightings.email)))
+				.where(withApproval(isNotNull(sightings.email), ne(sightings.email, '')))
 				.as('unique_ships')
 		);
 
