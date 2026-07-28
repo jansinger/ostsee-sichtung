@@ -52,3 +52,67 @@ describe('LocationInput — GPS-Control der Karte', () => {
 		expect(document.querySelector('[data-testid="coordinate-fields"]')).not.toBeNull();
 	});
 });
+
+/**
+ * Zustand der Karte, bevor eine Position gewählt wurde, und der Hinweistext
+ * darunter.
+ *
+ * Hintergrund: Die Karte braucht immer konkrete Zahlen, sonst startet sie im
+ * Nullmeridian (siehe `mapLatitude`/`mapLongitude` in `LocationInput.svelte`).
+ * Ein Marker auf diesem Startpunkt sieht aber genauso aus wie eine bewusst
+ * gesetzte Position — Melder halten die Vorgabe dann für ihre Sichtung. Der
+ * Marker darf deshalb erst erscheinen, wenn `latitude`/`longitude` echte
+ * Formularwerte tragen; `data-position` am Kartencontainer macht das prüfbar.
+ *
+ * Der Hinweistext nannte außerdem pauschal den GPS-Button, den es im
+ * Meldeformular gar nicht gibt (`enableGPS={!collapsibleCoordinates}`).
+ */
+function mapContainer(): HTMLElement | null {
+	return document.querySelector('.ol-map-container');
+}
+
+function mapHintText(): string {
+	return document.querySelector('[data-testid="map-hint"]')?.textContent?.trim() ?? '';
+}
+
+describe('LocationInput — Kartenzustand ohne gewählte Position', () => {
+	it('zeigt ohne Koordinaten keinen Marker und sagt das im Hinweis', async () => {
+		render(LocationInput, { collapsibleCoordinates: true });
+
+		await expect.poll(() => mapContainer()?.dataset.position, { timeout: 5000 }).toBe('unset');
+		expect(mapHintText()).toMatch(/Noch keine Position gewählt/i);
+	});
+
+	it('zeigt mit Koordinaten den Marker und einen Hinweis zum Verschieben', async () => {
+		render(LocationInput, {
+			latitude: 54.5,
+			longitude: 13.5,
+			collapsibleCoordinates: true
+		});
+
+		await expect.poll(() => mapContainer()?.dataset.position, { timeout: 5000 }).toBe('set');
+		expect(mapHintText()).toMatch(/Marker/i);
+		expect(mapHintText()).not.toMatch(/Noch keine Position/i);
+	});
+});
+
+describe('LocationInput — Hinweistext nennt den GPS-Button nur wenn er da ist', () => {
+	it('erwähnt im Meldeformular (kein GPS-Control) keinen GPS-Button', async () => {
+		render(LocationInput, {
+			latitude: 54.5,
+			longitude: 13.5,
+			collapsibleCoordinates: true
+		});
+
+		await expect.poll(() => mapHintText(), { timeout: 5000 }).not.toBe('');
+		expect(gpsControlCount()).toBe(0);
+		expect(mapHintText()).not.toMatch(/GPS/i);
+	});
+
+	it('erwähnt in der Admin-Variante (mit GPS-Control) den GPS-Button', async () => {
+		render(LocationInput, { latitude: 54.5, longitude: 13.5 });
+
+		await expect.poll(gpsControlCount, { timeout: 5000 }).toBe(1);
+		expect(mapHintText()).toMatch(/GPS-Button/i);
+	});
+});

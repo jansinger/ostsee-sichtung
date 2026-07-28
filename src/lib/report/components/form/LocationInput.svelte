@@ -41,6 +41,12 @@
 	let mapLatitude = $state(untrack(() => latitude ?? defaultCenter.latitude));
 	let mapLongitude = $state(untrack(() => longitude ?? defaultCenter.longitude));
 
+	// Nur wenn beide Formularwerte gesetzt sind, gibt es eine echte Position. Die
+	// Karte zeigt sonst zwar `defaultCenter`, aber keinen Marker — ein Marker auf
+	// dem Startpunkt wäre von einer bewusst gewählten Position nicht zu
+	// unterscheiden und würde als „Position steht schon" gelesen.
+	let hasPosition = $derived(latitude !== undefined && longitude !== undefined);
+
 	// Echte Position von außen (EXIF-GPS, Formular-Restore) auf die Karte spiegeln.
 	$effect(() => {
 		if (latitude === undefined) return;
@@ -354,6 +360,7 @@
 			bind:longitude={mapLongitude}
 			readonly={false}
 			enableGPS={!collapsibleCoordinates}
+			{hasPosition}
 			onchange={onMapChange}
 		/>
 	</div>

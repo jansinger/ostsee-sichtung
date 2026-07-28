@@ -102,3 +102,65 @@ test.describe('PositionAndTime — Single-Panel-Positionseingabe', () => {
 		await expect(page.locator('[data-testid="field-waterway"]')).toBeFocused();
 	});
 });
+
+// ── Karte: Tippen setzt die Position ───────────────────────────────────────
+//
+// Vor diesem Test setzte nur das Ziehen des Markers eine Koordinate. Auf dem
+// Telefon ist Tippen die erwartete Geste — zusammen mit dem Marker, der schon
+// auf dem Kartenmittelpunkt (54.5/13.5) stand, führte das dazu, dass ein
+// Tippen scheinbar nichts tat und die Vorgabe für die eigene Position gehalten
+// wurde. Genau diese „plausibel, aber falsch"-Position soll ausgeschlossen
+// bleiben.
+
+test.describe('PositionAndTime — Karte reagiert auf Tippen', () => {
+	test.beforeEach(async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+	});
+
+	test('Karte startet ohne Marker und ein Tippen setzt die Koordinaten', async ({ page }) => {
+		const disclosure = page.locator('[data-testid="map-disclosure"]');
+		await disclosure.locator('summary').click();
+		await expect(disclosure).toHaveAttribute('open', '');
+
+		const map = disclosure.locator('.ol-map-container');
+		await expect(map).toBeVisible();
+
+		// Zustand A: keine Position gewählt — kein Marker, und der Hinweis sagt es.
+		await expect(map).toHaveAttribute('data-position', 'unset');
+		await expect(page.locator('[data-testid="map-hint"]')).toContainText(
+			/Noch keine Position gewählt/i
+		);
+
+		// Abseits der Mitte tippen, damit der Wert sich vom Kartenmittelpunkt
+		// unterscheidet, und abseits der Zoom-Controls oben links.
+		const box = await map.boundingBox();
+		expect(box).not.toBeNull();
+		await map.click({ position: { x: box!.width * 0.7, y: box!.height * 0.7 } });
+
+		await expect(map).toHaveAttribute('data-position', 'set');
+
+		// Die Koordinatenfelder liegen im Meldeformular hinter einer Disclosure.
+		const coordinateFields = page.locator('[data-testid="coordinate-fields"]');
+		await coordinateFields.locator('summary').click();
+		await expect(coordinateFields).toHaveAttribute('open', '');
+
+		const latitude = page.locator('#latitude');
+		const longitude = page.locator('#longitude');
+		await expect(latitude).not.toHaveValue('');
+		await expect(longitude).not.toHaveValue('');
+		// Nicht der unveränderte Kartenmittelpunkt.
+		await expect(latitude).not.toHaveValue('54.5');
+		await expect(longitude).not.toHaveValue('13.5');
+	});
+
+	test('Hinweis unter der Karte nennt keinen GPS-Button (den es hier nicht gibt)', async ({
+		page
+	}) => {
+		const disclosure = page.locator('[data-testid="map-disclosure"]');
+		await disclosure.locator('summary').click();
+
+		await expect(disclosure.locator('.gps-control')).toHaveCount(0);
+		await expect(page.locator('[data-testid="map-hint"]')).not.toContainText(/GPS/i);
+	});
+});
