@@ -76,7 +76,7 @@
 		{ key: 'mediaUpload', label: 'Aufnahme', sortKey: null },
 		{ key: 'isDead', label: 'Totfund', sortKey: null },
 		{ key: 'inBalticSeaGeo', label: 'Ostsee', sortKey: null },
-		{ key: 'verified', label: 'Verifiziert', sortKey: null },
+		{ key: 'verified', label: 'Geprüft', sortKey: null },
 		{ key: 'actions', label: 'Aktionen', sortKey: null }
 	];
 
@@ -325,14 +325,14 @@
 
 			if (response.ok) {
 				const result = await response.json();
-				logger.info({ id, result }, 'Verifizierungsstatus erfolgreich geändert');
+				logger.info({ id, result }, 'Prüfstatus erfolgreich geändert');
 
 				// Daten vom Server neu laden
 				await invalidateAll();
 			} else {
 				const error = await response.json();
-				logger.error({ id, error }, 'Fehler beim Ändern des Verifizierungsstatus');
-				toast.error(error.error || 'Verifizierungsstatus konnte nicht geändert werden', {
+				logger.error({ id, error }, 'Fehler beim Ändern des Prüfstatus');
+				toast.error(error.error || 'Prüfstatus konnte nicht geändert werden', {
 					title: 'Fehler',
 					dismissible: true
 				});
@@ -340,8 +340,8 @@
 				await invalidateAll();
 			}
 		} catch (error) {
-			logger.error({ id, error }, 'Netzwerkfehler beim Ändern des Verifizierungsstatus');
-			toast.error('Netzwerkfehler beim Ändern des Verifizierungsstatus', {
+			logger.error({ id, error }, 'Netzwerkfehler beim Ändern des Prüfstatus');
+			toast.error('Netzwerkfehler beim Ändern des Prüfstatus', {
 				title: 'Verbindungsfehler',
 				dismissible: true
 			});
@@ -551,8 +551,8 @@
 						bind:value={verified}
 					>
 						<option value="">Alle</option>
-						<option value="1">Verifiziert</option>
-						<option value="0">Nicht verifiziert</option>
+						<option value="1">Geprüft</option>
+						<option value="0">Ungeprüft</option>
 					</select>
 				</div>
 				<div class="fieldset w-full">
@@ -686,7 +686,7 @@
 						Gemeldet: {formatLocalDateTime(sighting.created)}
 					</span>
 					<BaseToggle
-						label="Verifiziert"
+						label="Geprüft"
 						name={`verified-mobile-${sighting.id}`}
 						checked={!!sighting.verified}
 						onchange={() => {
@@ -771,7 +771,7 @@
 							<th class="hover:bg-base-300">Ostsee</th>
 						{/if}
 						{#if columnVisibility.verified}
-							<th class="hover:bg-base-300">Verifiziert</th>
+							<th class="hover:bg-base-300">Geprüft</th>
 						{/if}
 						{#if columnVisibility.actions}
 							<th class="hover:bg-base-300">Aktionen</th>
@@ -872,7 +872,7 @@
 							{#if columnVisibility.verified}
 								<td>
 									<BaseToggle
-										label="Verifiziert"
+										label="Geprüft"
 										name={`verified-${sighting.id}`}
 										checked={!!sighting.verified}
 										onchange={() => {

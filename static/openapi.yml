@@ -257,138 +257,19 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /api/sightings/{id}/approve:
-    patch:
-      tags:
-        - sightings
-      summary: Sichtung genehmigen
-      description: Genehmigt oder widerruft die Genehmigung einer Sichtung (Admin-Berechtigung erforderlich)
-      security:
-        - adminAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID der Sichtung
-          schema:
-            type: integer
-            minimum: 1
-            example: 1840
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - approve
-              properties:
-                approve:
-                  type: boolean
-                  description: true für Genehmigung, false für Widerruf
-                  example: true
-                internalComment:
-                  type: string
-                  description: Optionaler interner Kommentar (nur für Admins sichtbar)
-                  example: "Koordinaten geprüft, Sichtung plausibel"
-      responses:
-        '200':
-          description: Genehmigungsstatus erfolgreich aktualisiert
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - success
-                  - id
-                  - approved
-                  - message
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  id:
-                    type: integer
-                    example: 1840
-                  approved:
-                    type: boolean
-                    example: true
-                  internalComment:
-                    type: string
-                    nullable: true
-                    example: "Koordinaten geprüft"
-                  message:
-                    type: string
-                    example: "Sichtung wurde genehmigt"
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '302':
-          $ref: '#/components/responses/LoginRedirect'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    get:
-      tags:
-        - sightings
-      summary: Genehmigungsstatus abrufen
-      description: Gibt den aktuellen Genehmigungsstatus einer Sichtung zurück (Admin-Berechtigung erforderlich)
-      security:
-        - adminAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID der Sichtung
-          schema:
-            type: integer
-            minimum: 1
-            example: 1840
-      responses:
-        '200':
-          description: Aktueller Genehmigungsstatus
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - id
-                  - approved
-                properties:
-                  id:
-                    type: integer
-                    example: 1840
-                  approved:
-                    type: boolean
-                    example: true
-                  approvedAt:
-                    type: string
-                    format: date-time
-                    nullable: true
-                    example: "2024-03-15T10:30:00.000Z"
-                  internalComment:
-                    type: string
-                    nullable: true
-                    example: "Koordinaten geprüft"
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '302':
-          $ref: '#/components/responses/LoginRedirect'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
   /api/sightings/{id}/verify:
     patch:
       tags:
         - sightings
-      summary: Sichtung verifizieren
-      description: Setzt den Verifizierungsstatus einer Sichtung (Admin-Berechtigung erforderlich)
+      summary: Sichtung prüfen und freigeben
+      description: |
+        Setzt den Prüfstatus einer Sichtung (Admin-Berechtigung erforderlich).
+
+        Eine Sichtung kennt genau zwei Zustände: ungeprüft und geprüft.
+        Geprüft bedeutet zugleich veröffentlicht — einen dritten Zustand
+        "geprüft, aber nicht freigegeben" gibt es nicht. Der Endpunkt schreibt
+        deshalb immer beide Datenbankspalten gemeinsam: `verified` und
+        `approvedAt`.
       security:
         - adminAuth: []
       parameters:
@@ -412,11 +293,11 @@ paths:
                 verified:
                   type: integer
                   enum: [0, 1]
-                  description: 1 für verifiziert, 0 für nicht verifiziert
+                  description: 1 für geprüft und freigegeben, 0 für ungeprüft und zurückgezogen
                   example: 1
       responses:
         '200':
-          description: Verifizierungsstatus erfolgreich aktualisiert
+          description: Prüfstatus erfolgreich aktualisiert
           content:
             application/json:
               schema:
@@ -425,6 +306,7 @@ paths:
                   - success
                   - id
                   - verified
+                  - approvedAt
                   - message
                 properties:
                   success:
@@ -437,9 +319,15 @@ paths:
                     type: integer
                     enum: [0, 1]
                     example: 1
+                  approvedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: Zeitpunkt der Freigabe; null wenn ungeprüft
+                    example: "2026-07-28T09:12:44.000Z"
                   message:
                     type: string
-                    example: "Sichtung wurde verifiziert"
+                    example: "Sichtung wurde geprüft und freigegeben"
         '400':
           $ref: '#/components/responses/BadRequest'
         '302':
@@ -453,8 +341,8 @@ paths:
     get:
       tags:
         - sightings
-      summary: Verifizierungsstatus abrufen
-      description: Gibt den aktuellen Verifizierungsstatus einer Sichtung zurück (Admin-Berechtigung erforderlich)
+      summary: Prüfstatus abrufen
+      description: Gibt den aktuellen Prüf- und Freigabestatus einer Sichtung zurück (Admin-Berechtigung erforderlich)
       security:
         - adminAuth: []
       parameters:
@@ -468,7 +356,7 @@ paths:
             example: 1840
       responses:
         '200':
-          description: Aktueller Verifizierungsstatus
+          description: Aktueller Prüf- und Freigabestatus
           content:
             application/json:
               schema:
@@ -476,6 +364,7 @@ paths:
                 required:
                   - id
                   - verified
+                  - approvedAt
                 properties:
                   id:
                     type: integer
@@ -484,6 +373,12 @@ paths:
                     type: integer
                     enum: [0, 1]
                     example: 1
+                  approvedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: Zeitpunkt der Freigabe; null wenn ungeprüft
+                    example: "2026-07-28T09:12:44.000Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '302':

@@ -142,10 +142,7 @@
 					<h2 class="card-title text-lg">⚙️ Admin</h2>
 					<div class="space-y-1 text-sm">
 						<div>
-							<code class="text-info">POST</code> /sightings/{'{id}'}/approve - Genehmigen
-						</div>
-						<div>
-							<code class="text-info">POST</code> /sightings/{'{id}'}/verify - Verifizieren
+							<code class="text-info">PATCH</code> /sightings/{'{id}'}/verify - Prüfen und freigeben
 						</div>
 					</div>
 				</div>

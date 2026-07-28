@@ -28,6 +28,44 @@ src/routes/
 
 ---
 
+## Prüfstatus einer Sichtung — verbindlich
+
+**Eine Sichtung kennt genau zwei Zustände: ungeprüft und geprüft. Geprüft heißt
+veröffentlicht.** Einen dritten Zustand „geprüft, aber nicht freigegeben" gibt es
+fachlich nicht und er darf nicht eingeführt werden.
+
+Die Datenbank führt aus historischen Gründen zwei Spalten. Sie sind **kein**
+Ausdruck zweier Arbeitsschritte, sondern zwei Felder desselben Vorgangs:
+
+| Spalte           | Drizzle      | Rolle                                        |
+| ---------------- | ------------ | -------------------------------------------- |
+| `geprueft`       | `verified`   | Kennzeichen 0/1                              |
+| `freigegeben_am` | `approvedAt` | Zeitpunkt der Prüfung, `null` wenn ungeprüft |
+
+### Daraus folgende Regeln
+
+- **Ein Endpunkt** schreibt diese Spalten: `PATCH /api/sightings/[id]/verify`.
+  Er setzt beide immer gemeinsam in **einem** `db.update(...).set(...)`.
+  Es gibt bewusst keinen zweiten Endpunkt dafür — ein früherer
+  `/api/sightings/[id]/approve` wurde 2026-07 ersatzlos entfernt.
+- **Ein Bedienelement** in der Admin-UI: der Toggle „Geprüft".
+- **Öffentliche Grundmenge ist `approvedAt IS NOT NULL`** — sowohl in der
+  Legacy-API (`/sichtungen/showreports.json`) als auch auf der modernen Karte
+  (`/api/map/sightings`). Nicht auf `verified` filtern: die Legacy-API ist an
+  `freigegeben_am` vertraglich gebunden, und zwei verschiedene Spalten als Filter
+  für zwei öffentliche Flächen laufen zwangsläufig auseinander.
+
+### Hintergrund
+
+Bis 2025-11 pflegte das Altsystem (schweinswalsichtung.de, gleiche Datenbank)
+beide Spalten mit einem einzigen Bedienelement. In 19.262 Freigaben über 13 Jahre
+gibt es **keinen einzigen** Datensatz, der geprüft, aber nicht freigegeben ist.
+Beim Neubau entstand kurzzeitig je ein Endpunkt pro Spalte — eine mechanische
+Abbildung der Tabelle, die den Fachprozess falsch modellierte und dazu führte,
+dass die Admin-UI nur noch `geprueft` schrieb und damit nichts mehr veröffentlichte.
+
+---
+
 ## Legacy API - KRITISCH
 
 ### 100% Kompatibilität erforderlich

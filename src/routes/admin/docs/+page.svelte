@@ -66,8 +66,8 @@
 						löschen
 					</li>
 					<li>
-						• <code class="rounded bg-base-200 px-1">PATCH /api/sightings/{'{id}'}/approve</code> - Sichtung
-						genehmigen
+						• <code class="rounded bg-base-200 px-1">PATCH /api/sightings/{'{id}'}/verify</code> - Sichtung
+						prüfen und freigeben
 					</li>
 					<li>
 						• <code class="rounded bg-base-200 px-1">GET /api/sightings/export</code> - Datenexport (JSON)
