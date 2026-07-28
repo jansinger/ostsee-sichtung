@@ -1479,7 +1479,7 @@ paths:
         Erstellt eine neue Sichtung im Legacy-Format der ursprünglichen schweinswalsichtung.de API.
         
         Wichtige Hinweise:
-        - Unterstützt das kombinierte Datetime-Format "YYYY-MM-DD HH:MI"
+        - Unterstützt das kombinierte Datetime-Format "YYYY-MM-DD HH:MI" (deutsche Ortszeit, Europe/Berlin)
         - Feldnamen müssen exakt dem PDF-Spezifikation entsprechen
         - Boolean-Werte werden als 0/1 Integer übertragen
         - Totfunde werden durch `anzahl_gesamt = 0` signalisiert
@@ -1648,8 +1648,8 @@ paths:
         **WICHTIG: PDF-konforme abgekürzte Feldnamen**
         - ts: Unix Timestamp
         - id: Sichtungs-ID
-        - dt: Datum (DD.MM.YY)
-        - ti: Zeit (HH:MI)
+        - dt: Datum (DD.MM.YY), deutsche Ortszeit (Europe/Berlin)
+        - ti: Zeit (HH:MI), deutsche Ortszeit (Europe/Berlin)
         - lat, lon: Koordinaten als STRINGS
         - ct: Gesamtanzahl
         - yo: Jungtiere
@@ -1983,11 +1983,11 @@ components:
           example: 1672531200
         dt:
           type: string
-          description: Datum der Sichtung (DD.MM.YYYY)
+          description: Datum der Sichtung (DD.MM.YYYY), Kalendertag in deutscher Ortszeit (Europe/Berlin)
           example: "01.01.2024"
         ti:
           type: string
-          description: Uhrzeit der Sichtung (HH:MM)
+          description: Uhrzeit der Sichtung (HH:MM), deutsche Ortszeit (Europe/Berlin)
           example: "14:30"
         lat:
           type: number
@@ -2543,7 +2543,9 @@ components:
         # Pflichtfelder
         sichtungsdatum:
           type: string
-          description: 'Datum und Uhrzeit der Sichtung im Format "YYYY-MM-DD HH:MI"'
+          description: >-
+            Datum und Uhrzeit der Sichtung im Format "YYYY-MM-DD HH:MI"; wird als
+            deutsche Ortszeit (Europe/Berlin) interpretiert, nicht als UTC
           pattern: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$'
           example: "2024-01-01 14:30"
         anzahl_gesamt:
@@ -2749,12 +2751,12 @@ components:
           example: 817
         dt:
           type: string
-          description: 'Datum der Sichtung im Format DD.MM.YY (2-stelliges Jahr!)'
+          description: 'Datum der Sichtung im Format DD.MM.YY (2-stelliges Jahr!), Kalendertag in deutscher Ortszeit (Europe/Berlin)'
           pattern: '^\d{2}\.\d{2}\.\d{2}$'
           example: "25.01.12"
         ti:
           type: string
-          description: 'Zeit der Sichtung im Format HH:MI (24h, UTC)'
+          description: 'Zeit der Sichtung im Format HH:MI (24h, deutsche Ortszeit / Europe/Berlin)'
           pattern: '^\d{2}:\d{2}$'
           example: "14:50"
         lat:

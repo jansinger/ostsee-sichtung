@@ -23,54 +23,54 @@ This is a dated status, not a standing guarantee — re-check whether clients ha
 
 ### Request Body (JSON Object)
 
-| Attribute                   | Description                                                                     | Data Type / Range                   | Required                           |
-| --------------------------- | ------------------------------------------------------------------------------- | ----------------------------------- | ---------------------------------- |
-| `sichtungsdatum`            | Date and time of sighting                                                       | DateTime, "YYYY-MM-DD HH:MI"        | Yes                                |
-| `anzahl_gesamt`             | Total number of sighted animals. 0 is allowed and interpreted as death finding. | Integer                             | Yes                                |
-| `vorname`                   | First name                                                                      | String (64)                         | Yes                                |
-| `name`                      | Last name                                                                       | String (64)                         | Yes                                |
-| `email`                     | Email address                                                                   | E-Mail                              | Yes                                |
-| `gps_breite`                | Latitude decimal                                                                | Decimal, -90 – 90                   | No                                 |
-| `gps_laenge`                | Longitude decimal                                                               | Decimal, -180 – 180                 | No                                 |
-| `fahrwasser`                | Waterway or area                                                                | Text                                | No                                 |
-| `seezeichen`                | Sea mark or beach section                                                       | Text                                | No                                 |
-| `vonwo`                     | Sighting location                                                               | Integer-Range, 0-3                  | No                                 |
-| `vonwo_text`                | Other sighting location (when vonwo = 0)                                        | Text                                | No                                 |
-| `entfernung`                | Distance                                                                        | Integer-Range, 1-5                  | No                                 |
-| `anzahl_schiffe`            | Number of ships in vicinity                                                     | Integer                             | No                                 |
-| `anzahl_jung`               | Number of juvenile animals                                                      | Integer                             | No                                 |
-| `verteilung`                | Distribution of animals                                                         | Integer-Range, 0-3                  | No                                 |
-| `verteilung_text`           | Other distribution (when verteilung = 0)                                        | Text                                | No                                 |
-| `aufnahme`                  | Filename of uploaded media                                                      | String (255)                        | No                                 |
-| `aufnahmeHochladen`         | Media uploaded flag                                                             | Boolean, 0 = false, 1 = true        | No                                 |
-| `verhalten`                 | Behavior of animals                                                             | Integer-Range, 0-3                  | No                                 |
-| `verhalten_text`            | Other behavior (when verhalten = 0)                                             | Text                                | No                                 |
-| `reaktion`                  | Reaction of animals                                                             | Text                                | No                                 |
-| `sonstige_auffaelligkeiten` | Other observations                                                              | Text                                | No                                 |
-| `seegang`                   | Sea state                                                                       | Integer-Range, 0-5                  | No                                 |
-| `windrichtung`              | Wind direction                                                                  | 'N','NW','W','SW','S','SO','O','NO' | No                                 |
-| `windstaerke`               | Wind force in Beaufort                                                          | 1-12                                | No                                 |
-| `sichtweite`                | Visibility                                                                      | Integer-Range, 1-4                  | No                                 |
-| `schiffsname`               | Ship name                                                                       | String (64)                         | No, Yes if schiffnamensnennung = 1 |
-| `heimathafen`               | Home port                                                                       | String (64)                         | No                                 |
-| `bootstyp`                  | Boat type                                                                       | String (64)                         | No                                 |
-| `bootsantrieb`              | Boat drive                                                                      | Integer-Range, 0-4                  | No                                 |
-| `bootsantrieb_text`         | Other boat drive (when bootsantrieb = 0)                                        | Text                                | No                                 |
-| `strasse`                   | Street                                                                          | String (64)                         | No                                 |
-| `plz`                       | ZIP code                                                                        | String (5)                          | No                                 |
-| `ort`                       | City                                                                            | String (64)                         | No                                 |
-| `telefon`                   | Phone number                                                                    | String (64)                         | No                                 |
-| `fax`                       | Fax number                                                                      | String (64)                         | No                                 |
-| `namensnennung`             | Name mention desired?                                                           | Boolean, 0 = false, 1 = true        | No                                 |
-| `schiffnamensnennung`       | Ship name display allowed?                                                      | Boolean, 0 = false, 1 = true        | No                                 |
-| `bemerkungen`               | Comments                                                                        | Text                                | No                                 |
-| `eingangskanal`             | Entry channel of report                                                         | Integer-Range, 0-5                  | No                                 |
-| `tierart`                   | Reported animal species                                                         | Integer-Range, 0-10                 | No, Default = 0                    |
-| `totfund`                   | Death finding                                                                   | Boolean, 0 = false, 1 = true        | No                                 |
-| `totfund_zustand`           | Condition of animal                                                             | Integer-Range, 0-5                  | No                                 |
-| `totfund_geschlecht`        | Sex of animal                                                                   | Integer-Range, 0-2                  | No                                 |
-| `totfund_groesse`           | Size of animal in cm                                                            | Integer                             | No                                 |
-| `totfund_telefon`           | DMM already informed by phone                                                   | Boolean, 0 = false, 1 = true        | No                                 |
+| Attribute                   | Description                                                                                                  | Data Type / Range                   | Required                           |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------- | ---------------------------------- |
+| `sichtungsdatum`            | Date and time of sighting (German local time, Europe/Berlin — see [Zeitzonen-Semantik](#zeitzonen-semantik)) | DateTime, "YYYY-MM-DD HH:MI"        | Yes                                |
+| `anzahl_gesamt`             | Total number of sighted animals. 0 is allowed and interpreted as death finding.                              | Integer                             | Yes                                |
+| `vorname`                   | First name                                                                                                   | String (64)                         | Yes                                |
+| `name`                      | Last name                                                                                                    | String (64)                         | Yes                                |
+| `email`                     | Email address                                                                                                | E-Mail                              | Yes                                |
+| `gps_breite`                | Latitude decimal                                                                                             | Decimal, -90 – 90                   | No                                 |
+| `gps_laenge`                | Longitude decimal                                                                                            | Decimal, -180 – 180                 | No                                 |
+| `fahrwasser`                | Waterway or area                                                                                             | Text                                | No                                 |
+| `seezeichen`                | Sea mark or beach section                                                                                    | Text                                | No                                 |
+| `vonwo`                     | Sighting location                                                                                            | Integer-Range, 0-3                  | No                                 |
+| `vonwo_text`                | Other sighting location (when vonwo = 0)                                                                     | Text                                | No                                 |
+| `entfernung`                | Distance                                                                                                     | Integer-Range, 1-5                  | No                                 |
+| `anzahl_schiffe`            | Number of ships in vicinity                                                                                  | Integer                             | No                                 |
+| `anzahl_jung`               | Number of juvenile animals                                                                                   | Integer                             | No                                 |
+| `verteilung`                | Distribution of animals                                                                                      | Integer-Range, 0-3                  | No                                 |
+| `verteilung_text`           | Other distribution (when verteilung = 0)                                                                     | Text                                | No                                 |
+| `aufnahme`                  | Filename of uploaded media                                                                                   | String (255)                        | No                                 |
+| `aufnahmeHochladen`         | Media uploaded flag                                                                                          | Boolean, 0 = false, 1 = true        | No                                 |
+| `verhalten`                 | Behavior of animals                                                                                          | Integer-Range, 0-3                  | No                                 |
+| `verhalten_text`            | Other behavior (when verhalten = 0)                                                                          | Text                                | No                                 |
+| `reaktion`                  | Reaction of animals                                                                                          | Text                                | No                                 |
+| `sonstige_auffaelligkeiten` | Other observations                                                                                           | Text                                | No                                 |
+| `seegang`                   | Sea state                                                                                                    | Integer-Range, 0-5                  | No                                 |
+| `windrichtung`              | Wind direction                                                                                               | 'N','NW','W','SW','S','SO','O','NO' | No                                 |
+| `windstaerke`               | Wind force in Beaufort                                                                                       | 1-12                                | No                                 |
+| `sichtweite`                | Visibility                                                                                                   | Integer-Range, 1-4                  | No                                 |
+| `schiffsname`               | Ship name                                                                                                    | String (64)                         | No, Yes if schiffnamensnennung = 1 |
+| `heimathafen`               | Home port                                                                                                    | String (64)                         | No                                 |
+| `bootstyp`                  | Boat type                                                                                                    | String (64)                         | No                                 |
+| `bootsantrieb`              | Boat drive                                                                                                   | Integer-Range, 0-4                  | No                                 |
+| `bootsantrieb_text`         | Other boat drive (when bootsantrieb = 0)                                                                     | Text                                | No                                 |
+| `strasse`                   | Street                                                                                                       | String (64)                         | No                                 |
+| `plz`                       | ZIP code                                                                                                     | String (5)                          | No                                 |
+| `ort`                       | City                                                                                                         | String (64)                         | No                                 |
+| `telefon`                   | Phone number                                                                                                 | String (64)                         | No                                 |
+| `fax`                       | Fax number                                                                                                   | String (64)                         | No                                 |
+| `namensnennung`             | Name mention desired?                                                                                        | Boolean, 0 = false, 1 = true        | No                                 |
+| `schiffnamensnennung`       | Ship name display allowed?                                                                                   | Boolean, 0 = false, 1 = true        | No                                 |
+| `bemerkungen`               | Comments                                                                                                     | Text                                | No                                 |
+| `eingangskanal`             | Entry channel of report                                                                                      | Integer-Range, 0-5                  | No                                 |
+| `tierart`                   | Reported animal species                                                                                      | Integer-Range, 0-10                 | No, Default = 0                    |
+| `totfund`                   | Death finding                                                                                                | Boolean, 0 = false, 1 = true        | No                                 |
+| `totfund_zustand`           | Condition of animal                                                                                          | Integer-Range, 0-5                  | No                                 |
+| `totfund_geschlecht`        | Sex of animal                                                                                                | Integer-Range, 0-2                  | No                                 |
+| `totfund_groesse`           | Size of animal in cm                                                                                         | Integer                             | No                                 |
+| `totfund_telefon`           | DMM already informed by phone                                                                                | Boolean, 0 = false, 1 = true        | No                                 |
 
 ### Response
 
@@ -264,21 +264,21 @@ Returns all reports of a year that are approved and marked as lying in the Balti
 
 JSON Array with JSON Objects:
 
-| Attribute | Description                                                  | Data Type / Range                                   |
-| --------- | ------------------------------------------------------------ | --------------------------------------------------- |
-| `ts`      | Unix Timestamp                                               | Unix Timestamp                                      |
-| `id`      | Report ID                                                    | Integer                                             |
-| `dt`      | Date                                                         | String, DD.MM.YY                                    |
-| `ti`      | Time                                                         | String, HH:MI                                       |
-| `lat`     | Latitude                                                     | Decimal (as string)                                 |
-| `lon`     | Longitude                                                    | Decimal (as string)                                 |
-| `ct`      | Total number of sighted animals                              | Integer                                             |
-| `yo`      | Number of juveniles                                          | Integer                                             |
-| `sh`      | Ship name                                                    | String                                              |
-| `na`      | Sighter name (First name + Last name)                        | String                                              |
-| `ar`      | Waterway / Area                                              | String                                              |
-| `bm`      | Result of position check; only delivered for logged in admin | Integer: 0 = Outside, 1 = inchartarea, 2 = inbaltic |
-| `va`      | Entry checked; only delivered for logged in admin            | Boolean: 0 = False, 1 = True                        |
+| Attribute | Description                                                                             | Data Type / Range                                   |
+| --------- | --------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `ts`      | Unix Timestamp                                                                          | Unix Timestamp                                      |
+| `id`      | Report ID                                                                               | Integer                                             |
+| `dt`      | Date (German local time, Europe/Berlin — see [Zeitzonen-Semantik](#zeitzonen-semantik)) | String, DD.MM.YY                                    |
+| `ti`      | Time (German local time, Europe/Berlin — see [Zeitzonen-Semantik](#zeitzonen-semantik)) | String, HH:MI                                       |
+| `lat`     | Latitude                                                                                | Decimal (as string)                                 |
+| `lon`     | Longitude                                                                               | Decimal (as string)                                 |
+| `ct`      | Total number of sighted animals                                                         | Integer                                             |
+| `yo`      | Number of juveniles                                                                     | Integer                                             |
+| `sh`      | Ship name                                                                               | String                                              |
+| `na`      | Sighter name (First name + Last name)                                                   | String                                              |
+| `ar`      | Waterway / Area                                                                         | String                                              |
+| `bm`      | Result of position check; only delivered for logged in admin                            | Integer: 0 = Outside, 1 = inchartarea, 2 = inbaltic |
+| `va`      | Entry checked; only delivered for logged in admin                                       | Boolean: 0 = False, 1 = True                        |
 
 ### Example Response
 
@@ -318,6 +318,7 @@ JSON Array with JSON Objects:
    - Coordinates in showreports.json MUST be strings, not numbers
    - Boolean fields use 0/1 integers, not true/false
    - Date formats must match exactly (DD.MM.YY for showreports, YYYY-MM-DD HH:MI for input)
+   - All date/time values are German local time (Europe/Berlin), never UTC — see [Zeitzonen-Semantik](#zeitzonen-semantik)
 
 3. **URL Paths**: URLs must match exactly - no additional prefixes like `/api/legacy/`
 
@@ -326,3 +327,30 @@ JSON Array with JSON Objects:
 5. **Wind Direction**: Must include all values: 'N','NW','W','SW','S','SO','O','NO' (note 'SO' for southeast)
 
 6. **Backward Compatibility**: Any changes that break existing mobile app functionality are strictly forbidden.
+
+## Zeitzonen-Semantik
+
+Alle Datums-/Uhrzeitwerte dieser Legacy API sind **deutsche Ortszeit
+(Europe/Berlin)** — nie UTC. Das gilt für Eingabe und Ausgabe gleichermaßen:
+
+- **Eingabe** — `sichtungsdatum` (`POST /rest_sichtungen`, Format
+  `"YYYY-MM-DD HH:MI"`): Der Wert wird als deutsche Wanduhrzeit interpretiert
+  und serverseitig nach UTC umgerechnet, bevor er in der Datenbank
+  (`sichtungsdatum`, `timestamp without time zone`, echtes UTC) gespeichert
+  wird.
+- **Ausgabe** — `dt`/`ti` (`GET /sichtungen/showreports.json`): Beide Felder
+  werden aus dem gespeicherten UTC-Zeitpunkt zurück nach Europe/Berlin
+  konvertiert, nicht roh ausgegeben.
+
+**Warum deutsche Ortszeit und nicht UTC:** Die Ostsee-Daten haben als
+fachliche Konvention einen einheitlichen Bezugszeitpunkt — deutsche Ortszeit.
+Das gilt bewusst auch für Sichtungen in östlichen Randgewässern (z. B.
+estnische/finnische Küste, EET/EEST), die eine Stunde vor Berlin liegen: Es
+wird nicht nach Sichtungsort umgerechnet, sondern einheitlich die deutsche
+Ortszeit als Referenz verwendet.
+
+Die interne Speicherung als UTC (seit der Migration
+`src/tools/migrate-timestamps-to-utc.js`, siehe
+`docs/DATABASE_MIGRATION.md`) ist reine Implementierungsdetail und ändert an
+dieser vertraglichen Ein-/Ausgabe-Semantik nichts. Referenz für die
+zugrundeliegende Zeitzonen-Konvention: `docs/ENVIRONMENT.md`, Abschnitt `TZ`.

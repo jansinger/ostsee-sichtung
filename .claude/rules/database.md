@@ -44,6 +44,14 @@ als DDL-Skript unter `scripts/migrations/` ablegen und beim Deployment ausführe
 > ```sql
 > SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'sichtungen';
 > ```
+>
+> **Warum diese Ausdrücke überhaupt existieren:** Die Zeitstempelspalten sind
+> UTC, aber Kalenderfragen (Tag/Monat/Jahr) sind fachlich immer Berlin-Ortszeit
+> gemeint — der Ausdruck rechnet das bei jeder Abfrage um, statt eine zweite
+> Spalte zu pflegen. Der SQL-Text muss dabei **zeichengleich** mit
+> `berlinCalendarDate`/`berlinDatePart` aus `src/lib/server/db/sqlTimeZone.ts`
+> sein, sonst greift der Index nicht. Zentrale Referenz für die
+> Zeitzonen-Konvention: `docs/ENVIRONMENT.md`, Abschnitt `TZ`.
 
 ---
 
