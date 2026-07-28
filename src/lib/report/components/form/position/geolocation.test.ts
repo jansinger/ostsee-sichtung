@@ -133,6 +133,15 @@ describe('requestCurrentPosition — eigener Zeitwächter', () => {
 		expect(await pending).toEqual({ ok: true, latitude: 54.31, longitude: 12.09 });
 	});
 
+	/**
+	 * Was dieser Test hält — und was nicht: Er sichert die Zusage des Moduls, dass
+	 * genau ein Ergebnis herauskommt und das erste gewinnt. Diese Zusage entsteht
+	 * NICHT aus einer Fallunterscheidung im Code, sondern aus der Promise-Semantik
+	 * selbst; ein `if (settled) return;` wäre wirkungslos und wurde deshalb
+	 * entfernt (siehe `finish` in geolocation.ts). Der Test schlägt an, wenn jemand
+	 * `requestCurrentPosition` auf einen Callback- oder Event-Rückkanal umbaut, bei
+	 * dem die Idempotenz verloren ginge.
+	 */
 	it('verwirft einen Callback, der erst nach dem Wächter eintrifft, ohne doppelt aufzulösen', async () => {
 		vi.useFakeTimers();
 		const { geolocation, succeed } = deferredGeolocation();

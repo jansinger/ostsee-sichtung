@@ -68,7 +68,6 @@ export function requestCurrentPosition(
 	}
 
 	return new Promise((resolve) => {
-		let settled = false;
 		// Der Wächter wird vor `getCurrentPosition` gestartet, damit `finish` ihn
 		// auch bei einem synchron aufgerufenen Callback bereits abräumen kann.
 		const watchdog = setTimeout(
@@ -76,9 +75,14 @@ export function requestCurrentPosition(
 			GEOLOCATION_WATCHDOG_MS
 		);
 
+		/**
+		 * Bewusst ohne `settled`-Wächter: Ein zweiter Aufruf kann nichts anrichten.
+		 * `resolve` ist nach der ersten Auflösung wirkungslos (Promises lösen genau
+		 * einmal auf), und `clearTimeout` auf einen bereits abgelaufenen oder
+		 * abgeräumten Handle ist ein No-Op. Ein Flag hätte hier keine beobachtbare
+		 * Wirkung gehabt — und damit auch keinen Test, der es hält.
+		 */
 		function finish(outcome: GeolocationOutcome): void {
-			if (settled) return;
-			settled = true;
 			clearTimeout(watchdog);
 			resolve(outcome);
 		}
