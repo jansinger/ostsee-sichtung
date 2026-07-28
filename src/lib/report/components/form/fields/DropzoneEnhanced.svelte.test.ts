@@ -52,7 +52,12 @@ function uploadedFile(uid: string): UploadedFileInfo {
 
 function renderDropzone(
 	files: UploadedFileInfo[],
-	props: { maxFiles: number; enableGPSExtraction: boolean; showPositionMap?: boolean },
+	props: {
+		maxFiles: number;
+		enableGPSExtraction: boolean;
+		showPositionMap?: boolean;
+		actionLabel?: string;
+	},
 	seededMediaFiles: MediaFile[] = []
 ): { mediaStore: MediaStore; form: FormContext['form'] } {
 	const mediaStore: MediaStore = { mediaFiles: seededMediaFiles };
@@ -222,5 +227,41 @@ describe('DropzoneEnhanced — Karte in der Foto-Karte', () => {
 			.poll(() => document.querySelectorAll('[data-testid="photo-position-summary"]').length)
 			.toBe(1);
 		expect(document.querySelectorAll('.ol-viewport').length).toBe(0);
+	});
+});
+
+/**
+ * Sichtbarer Auslöser in der Dropzone.
+ *
+ * Bisher war die gestrichelte Fläche mit „Klicken oder Drag & Drop" der einzige
+ * Auslöser — auf einem Telefon die Beschreibung einer unmöglichen Handlung, und
+ * ohne Vollton-Primärbutton trägt die Foto-Karte die geforderte Prominenz
+ * nicht. Der Button ist das Klickziel, die Fläche bleibt das Drop-Ziel
+ * (GitHub-/Figma-Muster); genau ein `click()` auf dem versteckten
+ * `<input type="file">` — ein zweites käme aus dem `role="button"` der Fläche.
+ */
+describe('DropzoneEnhanced — sichtbarer Auslöser', () => {
+	it('öffnet den Dateidialog über einen Primärbutton, und zwar genau einmal', async () => {
+		const openDialog = vi
+			.spyOn(HTMLInputElement.prototype, 'click')
+			.mockImplementation(() => undefined);
+
+		renderDropzone([], {
+			maxFiles: 1,
+			enableGPSExtraction: true,
+			actionLabel: 'Foto auswählen'
+		});
+
+		const button = await vi.waitUntil(() =>
+			Array.from(document.querySelectorAll('button')).find(
+				(candidate) => candidate.textContent?.includes('Foto auswählen')
+			)
+		);
+		expect(button.className).toContain('btn-primary');
+
+		button.click();
+
+		expect(openDialog).toHaveBeenCalledTimes(1);
+		openDialog.mockRestore();
 	});
 });

@@ -223,8 +223,6 @@
 			Der schnellste Weg: Position, Datum und Uhrzeit werden automatisch übernommen.
 		</p>
 
-		<UploadNotice />
-
 		{#if gpsPhotoConfig}
 			<!-- `showNoGpsWarning={false}`: Der Fall wird unten ausführlicher erklärt
 			     (Zustand C). Ohne das Abschalten stünden zwei Warn-Alerts mit
@@ -237,12 +235,20 @@
 				showNoGpsWarning={false}
 				showPositionMap={false}
 				onExifDateTimeApplied={(applied) => (exifDateTimeApplied = applied)}
-				title="Foto auswählen oder hierher ziehen"
+				actionLabel="Foto auswählen"
 				additionalText="GPS-Daten werden automatisch ausgelesen"
 			/>
 		{:else}
 			<div class="skeleton h-32 w-full"></div>
 		{/if}
+
+		<!-- BEWUSST unter der Dropzone: Die Hero-Karte begann auf einem 812-px-Gerät
+		     erst bei 659 px, und dazwischen standen ~150 px Datenschutz-Prosa
+		     zwischen „Der schnellste Weg …" und dem Auslöser. Der Hinweis bleibt
+		     vollständig, nur nicht mehr im Weg. -->
+		<div class="mt-4">
+			<UploadNotice />
+		</div>
 
 		<!-- Zustand C: Foto ohne EXIF-GPS.
 

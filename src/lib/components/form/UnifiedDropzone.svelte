@@ -20,7 +20,25 @@
 		class: className = '',
 		isAnalyzing = false,
 		loadingText = 'Analysiere Dateien...',
-		showPreview = true
+		showPreview = true,
+		/**
+		 * Beschriftung eines echten Vollton-Buttons INNERHALB der Dropzone.
+		 *
+		 * Ohne ihn ist die gestrichelte Fläche selbst der einzige Auslöser — auf
+		 * einem Telefon beschreibt „Klicken oder Drag & Drop" eine unmögliche
+		 * Handlung, und die Fläche allein trägt die Prominenz nicht, die eine
+		 * Hero-Karte braucht.
+		 *
+		 * Ist die Prop gesetzt, wechselt die Rollenverteilung auf das
+		 * GitHub-/Figma-Muster: Die Fläche ist nur noch Drop-Ziel, der Button ist
+		 * das Klickziel. Deshalb verliert die Fläche dann `role="button"`,
+		 * `tabindex` und ihre Tastatur-/Klick-Handler — sonst stünde ein Button in
+		 * einem Button (verschachtelte Interaktion) und ein Klick öffnete den
+		 * Dateidialog zweimal.
+		 *
+		 * Ohne die Prop bleibt alles wie bisher (Schritt 3, Admin-Maske).
+		 */
+		actionLabel = undefined
 	} = $props<{
 		config: ValidationPreset;
 		files?: File[];
@@ -36,6 +54,7 @@
 		isAnalyzing?: boolean;
 		loadingText?: string;
 		showPreview?: boolean;
+		actionLabel?: string;
 	}>();
 
 	let isDragOver = $state(false);
@@ -119,6 +138,27 @@
 		}
 	}
 
+	/**
+	 * Rolle, Fokus und Handler der gestrichelten Fläche — aber nur, solange sie
+	 * selbst das Klickziel ist (kein `actionLabel`).
+	 *
+	 * Als Spread und nicht als fünf einzelne bedingte Attribute: Sveltes
+	 * A11y-Prüfung sieht `role` und `tabindex` sonst getrennt und meldet ein
+	 * `tabindex` auf einem nicht-interaktiven Element, obwohl beide immer
+	 * gemeinsam entfallen.
+	 */
+	const zoneTriggerAttributes = $derived(
+		actionLabel
+			? {}
+			: {
+					role: 'button',
+					tabindex: 0,
+					onclick: openFileDialog,
+					onkeydown: handleKeydown,
+					'aria-label': `${title} per Drag & Drop oder Klick`
+				}
+	);
+
 	function getFileIconName(type: string): string {
 		if (type.startsWith('image/')) return 'lucide:images';
 		if (type.startsWith('video/')) return 'lucide:video';
@@ -195,19 +235,18 @@
 	{/if}
 
 	<!-- Dropzone -->
+	<!-- Mit `actionLabel` ist diese Fläche nur noch Drop-Ziel; Rolle, Fokus und
+	     Handler wandern auf den Button darin (siehe Prop-Dokumentation). -->
 	<div
-		class="cursor-pointer rounded-lg border-2 border-dashed p-6 transition-all duration-200
+		class="rounded-lg border-2 border-dashed p-6 transition-all duration-200
+			{actionLabel ? '' : 'cursor-pointer'}
 			{isDragOver
 			? 'border-primary bg-primary/10 scale-[1.02]'
 			: 'border-base-300 hover:border-primary hover:bg-primary/5'}"
 		ondrop={handleDrop}
 		ondragover={handleDragOver}
 		ondragleave={handleDragLeave}
-		role="button"
-		tabindex="0"
-		onclick={openFileDialog}
-		onkeydown={handleKeydown}
-		aria-label="{title} per Drag & Drop oder Klick"
+		{...zoneTriggerAttributes}
 	>
 		<input
 			bind:this={fileInput}
@@ -235,7 +274,16 @@
 				<p class="text-sm font-medium {isDragOver ? 'text-primary' : ''}">
 					{isDragOver ? `${multiple ? 'Dateien' : 'Datei'} hier ablegen!` : title}
 				</p>
-				<p class="text-base-content/60 mt-1 text-xs">
+				{#if actionLabel}
+					<button type="button" class="btn btn-primary mt-3 min-h-11" onclick={openFileDialog}>
+						<Icon aria-hidden="true" icon="lucide:camera" width="18" />
+						{actionLabel}
+					</button>
+				{/if}
+				<!-- Ein Steuerelement überall, nur der Hinweis ist responsiv: Ziehen gibt
+				     es auf einem Telefon nicht, der Satz beschriebe dort eine unmögliche
+				     Handlung. -->
+				<p class="text-base-content/60 mt-1 text-xs {actionLabel ? 'hidden sm:inline' : ''}">
 					{emptyText}
 				</p>
 				<p class="text-base-content/40 mt-1 text-xs">

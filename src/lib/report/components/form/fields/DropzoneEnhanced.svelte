@@ -117,7 +117,13 @@
 		 * Admin-Maske) erreicht diesen Zweig mit `enableGPSExtraction={false}`
 		 * ohnehin nicht. Gleiches Muster wie `showNoGpsWarning`.
 		 */
-		showPositionMap = true
+		showPositionMap = true,
+		/**
+		 * Beschriftung des Vollton-Buttons in der Dropzone — wird unverändert an
+		 * `UnifiedDropzone` durchgereicht (dort dokumentiert). Ohne Angabe bleibt
+		 * die gestrichelte Fläche selbst der Auslöser.
+		 */
+		actionLabel = undefined
 	} = $props<{
 		referenceId: string;
 		maxFiles?: number;
@@ -128,6 +134,7 @@
 		showNoGpsWarning?: boolean;
 		onExifDateTimeApplied?: (applied: boolean) => void;
 		showPositionMap?: boolean;
+		actionLabel?: string;
 	}>();
 
 	// Lokaler State für Dropzone-Dateien (temporär während des Drag & Drop)
@@ -904,6 +911,7 @@
 		<!-- Unified Dropzone -->
 		<UnifiedDropzone
 			{config}
+			{actionLabel}
 			bind:files={dropzoneFiles}
 			onFilesAdded={handleFilesAdded}
 			onFileRemoved={handleFileRemoved}
