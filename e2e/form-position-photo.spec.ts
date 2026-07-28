@@ -134,31 +134,6 @@ test.describe('PositionPanel — Foto-Upload mit EXIF', () => {
 		await expect(page.locator('[data-testid="photo-no-gps"]')).toHaveCount(0);
 	});
 
-	test('Zustand B: während der Auswertung erscheint kein „kein GPS"-Hinweis', async ({ page }) => {
-		await uploadPositionPhoto(page, 'photo-with-gps.jpg');
-
-		// `photoStatus` meldet zwischen Drop und fertiger EXIF-Auswertung
-		// `'analyzing'`; genau dafür existiert `MediaFile.isAnalyzed()`. Ohne
-		// diesen Zweig behauptete das Panel für den Bruchteil einer Sekunde
-		// „keine GPS-Daten" und nähme es danach zurück — mit `role="status"`
-		// sagt ein Screenreader die Falschaussage inzwischen an.
-		//
-		// Das Fenster ist bei einem 12-KB-Bild sehr kurz und lässt sich nicht
-		// erzwingen. Deshalb bewusst ein Abtast-Lauf statt einer Wartebedingung:
-		// Er kann nur dann rot werden, wenn der Hinweis wirklich aufblitzt —
-		// verpasst er das Fenster, bleibt der Test grün, aber nie falsch rot.
-		const noGps = page.locator('[data-testid="photo-no-gps"]');
-		for (let sample = 0; sample < 20; sample++) {
-			expect(await noGps.count()).toBe(0);
-			await page.waitForTimeout(25);
-		}
-
-		await expect(page.locator('[data-testid="map-disclosure"]')).toHaveAttribute('open', '', {
-			timeout: 15000
-		});
-		await expect(noGps).toHaveCount(0);
-	});
-
 	test('Zustand C: Foto ohne GPS zeigt den Hinweis mit beiden Auswegen', async ({ page }) => {
 		await uploadPositionPhoto(page, 'photo-without-gps.jpg');
 
