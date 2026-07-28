@@ -148,15 +148,21 @@ export const saveSighting = async (
 
 ---
 
-## Freigabestatus — bei jeder Auswertung mitdenken
+## Prüfstatus in Auswertungen — immer explizit
 
-`sichtungen.freigegeben_am` (`approvedAt`) entscheidet, ob eine Meldung öffentlich ist.
-Die öffentliche Karte filtert danach; die Statistiken taten es lange **nicht** — Karte und
-Zahlentext widersprachen sich dadurch sichtbar (19.262 vs. 19.877).
+Der Prüfstatus selbst ist in `.claude/rules/api.md` geregelt: **genau zwei Zustände**
+(ungeprüft / geprüft), geprüft heißt veröffentlicht, `approvedAt IS NOT NULL` ist die
+öffentliche Grundmenge. Hier steht nur, was daraus für **Auswertungen** folgt.
 
-Vorgabe des Meeresmuseums: Im öffentlichen Bereich zählen nur freigegebene Sichtungen. In
-der Admin-Statistik dürfen offene Meldungen vorkommen, aber **niemals mit freigegebenen zu
-einer Zahl vermischt** — getrennt ausweisen („19.262 freigegeben / 615 offen").
+Die Statistiken filterten lange nach **gar keinem** Status, die öffentliche Karte dagegen
+schon — Karte und Zahlentext widersprachen sich sichtbar (19.262 vs. 19.877).
+
+Vorgabe des Meeresmuseums: Im öffentlichen Bereich zählen nur geprüfte Sichtungen. In der
+Admin-Statistik dürfen ungeprüfte vorkommen, aber **niemals mit geprüften zu einer Zahl
+vermischt** — getrennt ausweisen („19.262 geprüft / 615 offen").
+
+`approvedOnly()` und `pendingOnly()` bilden genau diese zwei Zustände ab; ein dritter
+Scope wäre ein Widerspruch zur Regel in `api.md` und darf nicht entstehen.
 
 ```typescript
 import { approvedOnly, pendingOnly, approvalFilter } from '$lib/server/db/approvalFilter';

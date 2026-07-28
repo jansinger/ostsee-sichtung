@@ -273,36 +273,49 @@ Museumsentscheidung weiterhin mit.
   | davon geprüft **und nicht** freigegeben     | 0          |
   | freigegeben, aber nicht geprüft             | 9          |
 
-  Aktuell wird also **keine** nicht freigegebene Sichtung öffentlich angezeigt — das ist
-  aber Zufall der Daten, keine erzwungene Invariante: Wer eine Sichtung prüft, ohne sie
-  freizugeben, veröffentlicht sie auf der modernen Karte. Ob dort `geprueft` oder
-  `freigegeben_am` die richtige Bezugsgröße ist, ist eine Entscheidung des Museums und
-  wurde deshalb **nicht** eigenmächtig geändert.
+  **Inzwischen erledigt.** PR #576 („Freigabe-Workflow auf einen Endpunkt vereinheitlichen",
+  auf `main` seit 2026-07-28) stellt die Karte auf `isNotNull(approvedAt)` um. Legacy-Karte,
+  moderne Karte und diese Statistiken hängen damit an derselben Spalte — die Parität ist
+  vollständig, die Restdivergenz von 9 Datensätzen aufgelöst.
 
-  Passend dazu existiert die Konfiguration `display.showUnapprovedOnMap` (Default `false`,
-  registriert in `configInitializer.ts:250`, öffentlich exponiert über
-  `/api/config/public`) — **kein einziger Kartenquery liest sie aus**. Der Schalter tut
-  heute nichts; würde er verdrahtet, bräche er die hier hergestellte Parität.
+  Der Auftraggeber hat dabei als verbindliche Fachregel gesetzt: **genau zwei Zustände**
+  (ungeprüft / geprüft), geprüft heißt veröffentlicht, ein Button, ein Endpunkt. Der frühere
+  `/api/sightings/[id]/approve` wurde ersatzlos entfernt, `PATCH /api/sightings/[id]/verify`
+  schreibt beide Spalten in einem Update, und `updateSighting` klammert `verified` aus, damit
+  die Spalten nicht auseinanderlaufen können. Nachzulesen in `.claude/rules/api.md` →
+  „Prüfstatus einer Sichtung — verbindlich".
+
+  Damit ist auch ein Zustand „geprüft, aber nicht freigegeben" strukturell ausgeschlossen;
+  die 9 Datensätze „freigegeben, aber ungeprüft" (2016–2018) sind eingefrorene Altlasten des
+  Altsystems, die der heutige Workflow nicht mehr erzeugen kann.
+
+  **Weiterhin offen:** Die Konfiguration `display.showUnapprovedOnMap` (Default `false`,
+  registriert in `configInitializer.ts:250`, exponiert über `/api/config/public`) wird von
+  **keinem** Kartenquery gelesen — auch nach PR #576 nicht. Der Schalter tut nichts; würde
+  er verdrahtet, bräche er die Parität und die Zwei-Zustände-Regel. Entweder entfernen oder
+  ausdrücklich als funktionslos kennzeichnen.
 
 - **Die übrigen Admin-Auswertungen** (Arten-, Jahres-, Monatsverteilung, Nutzer, Schiffe,
-  Datenqualität, Geografie) filtern weiterhin auf `geprueft = 1` statt auf den
-  Freigabestatus. Das ist ein **anderes Merkmal**, kein vergessener Filter.
+  Datenqualität, Geografie) filtern weiterhin auf `geprueft = 1` statt auf `freigegeben_am`.
 
-  Ein Review wies darauf hin, dass diese Abschnitte damit freigegebene und offene
-  Sichtungen vermischen könnten. Die Gegenprobe an den Daten (2026-07-27):
+  Ein Review hielt das für eine Vermischung freigegebener und offener Sichtungen. Das ist
+  es nicht: Nach der verbindlichen Regel in `.claude/rules/api.md` sind `geprueft` und
+  `freigegeben_am` **zwei Felder desselben Vorgangs**, nicht zwei Arbeitsschritte. Sie
+  werden von einem Endpunkt in einem Update gemeinsam gesetzt, ein Zustand „geprüft, aber
+  nicht freigegeben" existiert fachlich nicht. Die Gegenprobe an den Daten (2026-07-27):
 
   ```sql
   SELECT COUNT(*) FROM sichtungen WHERE geprueft = 1 AND freigegeben_am IS NULL;  -- 0
   ```
 
-  Es gibt derzeit **keine** geprüfte, nicht freigegebene Sichtung — die `verified`-Sektionen
-  enthalten also faktisch ausschließlich freigegebene Daten (19.253 von 19.262; die 9
-  fehlenden sind freigegeben, aber ungeprüft). Die Vermischung ist damit **latent, nicht
-  real**: Sie entstünde erst, wenn jemand eine Sichtung prüft, ohne sie freizugeben.
+  Null Datensätze in 19.262 Freigaben über 13 Jahre. `eq(verified, 1)` und
+  `isNotNull(approvedAt)` beschreiben dort also dieselbe Menge (19.253 von 19.262; die 9
+  fehlenden sind die eingefrorenen Altlasten von 2016–2018).
 
-  Nicht geändert, weil ein Wechsel von `geprueft` auf `freigegeben_am` die **Bedeutung**
-  dieser Auswertungen verschiebt (Datenqualität und Artbestimmung hängen an der fachlichen
-  Prüfung, nicht an der Veröffentlichung). Das ist eine Entscheidung des Museums.
+  Nicht umgestellt, weil es fachlich nichts ändert und die Zeitzonen-Arbeit aus PR #575/#577
+  genau diese Abfragen frisch angefasst hat. Eine Vereinheitlichung auf `approvedOnly()` wäre
+  Kosmetik mit Konfliktrisiko — sinnvoll beim nächsten ohnehin nötigen Eingriff in diese
+  Datei, nicht als eigener Umbau.
 
 ### Tests
 
