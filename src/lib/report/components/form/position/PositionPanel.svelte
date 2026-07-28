@@ -113,12 +113,15 @@
 	 * von FormField (FormField.svelte:77), das nicht fokussierbar ist. Das Testid
 	 * hängt am Input selbst (FieldRenderer.svelte:188 → BaseInput.svelte:84).
 	 *
-	 * Meist steht das Feld offen da — ohne Koordinaten liefert
-	 * `descriptionCollapsed` immer `false` (positionPanelState.ts:53). Zugeklappt
-	 * ist es aber genau dann, wenn zum Foto ohne GPS nachträglich Koordinaten
-	 * gesetzt wurden und beide Beschreibungsfelder leer sind — dieser Block hier
-	 * bleibt in dem Fall sichtbar. `.focus()` auf ein Element in einem
-	 * geschlossenen <details> täte still nichts, deshalb vorher aufklappen.
+	 * `LocationDescription` ist immer ein `<details>`. Dessen Startzustand kommt
+	 * einmalig aus `descriptionCollapsed`, danach gehört er dem Nutzer — das Feld
+	 * kann also zugeklappt sein, sowohl beim Start (Koordinaten vorhanden, beide
+	 * Beschreibungsfelder leer) als auch weil der Nutzer selbst zugeklappt hat.
+	 * `.focus()` auf ein Element in einem geschlossenen <details> täte still
+	 * nichts, deshalb vorher aufklappen.
+	 *
+	 * Das funktioniert nur, weil dort bewusst kein `bind:open` sitzt — ein
+	 * gebundener Zustand schriebe das hier gesetzte `open` sofort zurück.
 	 */
 	function focusDescription(): void {
 		const field = document.querySelector<HTMLElement>('[data-testid="field-waterway"]');
