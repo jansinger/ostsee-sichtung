@@ -255,6 +255,19 @@ describe('Contract: GET /api/config/public', () => {
 		expect(apiRes.status).toBe(200);
 		expect(apiRes).toSatisfyApiSpec();
 	});
+
+	// Die Karte (optimizedMapController.ts) verdrahtet Zentrum, Zoom und Tile-Quelle
+	// fest. Solange das so ist, gehören diese Schlüssel in keine öffentliche Antwort —
+	// sie wurden anonym ausgeliefert, ohne dass sie irgendwo gelesen wurden.
+	it('liefert keine Karten-Schlüssel aus, die nirgends gelesen werden', async () => {
+		const event = createEvent('/api/config/public');
+		const res = await publicGET(event);
+		const body = await res.json();
+
+		expect(Object.keys(body)).not.toContain('display.defaultMapCenter');
+		expect(Object.keys(body)).not.toContain('display.defaultMapZoom');
+		expect(Object.keys(body)).not.toContain('integration.mapTileProvider');
+	});
 });
 
 describe('Contract: GET /api/config/upload', () => {

@@ -7,12 +7,9 @@ const logger = createLogger('api:config:public');
 
 // Configuration keys that are safe to expose to clients
 const PUBLIC_CONFIG_KEYS = [
-	'display.defaultMapCenter',
-	'display.defaultMapZoom',
 	'display.dateFormat',
 	'display.maintenanceMode',
 	'display.maintenanceMessage',
-	'integration.mapTileProvider',
 	'mobile.minAppVersion',
 	'mobile.updateMessage',
 	'data.exportFormats'
