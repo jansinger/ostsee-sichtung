@@ -218,6 +218,22 @@ sollten bei tageszeitlichen Auswertungen aber gefiltert werden (wie in Abschnitt
 Folge: Der Hilfetext im Formular nannte 19.877, die Karte zeigte 19.262 Marker. Wer
 nachzählt, bekommt eine andere Zahl als der Text daneben behauptet.
 
+> **Nachtrag 2026-07-28:** Die Gesamtzahl liegt inzwischen bei 19.872, die nicht
+> freigegebenen bei 610. Die Differenz sind exakt die 5 Entwicklungs-Testdatensätze mit
+> millisekundengenauem `created` (2026-01 bis 2026-04), die gelöscht wurden. **Die
+> freigegebene Menge ist unverändert 19.262** — kein Datenverlust.
+>
+> Gegenprobe, dass die Umstellung der öffentlichen Anzeige auf `freigegeben_am` nichts
+> unsichtbar gemacht hat:
+>
+> ```sql
+> SELECT COUNT(*) FROM sichtungen WHERE geprueft = 1 AND freigegeben_am IS NULL;  -- 0
+> ```
+>
+> Die 610 ohne Freigabe verteilen sich über 13 Eingangsjahre (2013–2025), sind also
+> Ablehnungen des Altsystems und keine unbearbeitete Warteschlange; alle tragen
+> `geprueft = 0` und waren unter keinem Filter je öffentlich.
+
 ### Vorgabe des Deutschen Meeresmuseums (2026-07-27)
 
 1. Im öffentlichen Bereich zählen ausschließlich freigegebene Sichtungen.
