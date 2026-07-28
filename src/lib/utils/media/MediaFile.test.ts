@@ -143,4 +143,35 @@ describe('MediaFile — Markierung des Positions-Schritts', () => {
 
 		expect(mediaFile.isAnalyzed()).toBe(true);
 	});
+
+	/**
+	 * Die Auswertung ist auch dann durch, wenn sie gescheitert ist — „fehlgeschlagen"
+	 * ist ein Ergebnis, kein Dauerzustand. Bliebe das Flag hier `false`, hinge das
+	 * Positions-Panel für immer in `analyzing`: kein GPS-Hinweis, kein Ausweg, keine
+	 * Fehlermeldung.
+	 *
+	 * `metadata` ist eine in den Konstruktor injizierte Promise. Dass der heutige
+	 * Aufrufer `analyzeClientFile` übergibt, das jeden Fehler selbst schluckt, ist
+	 * deshalb keine Zusicherung dieser Klasse — jeder andere Aufrufer darf eine
+	 * ablehnende Promise übergeben.
+	 */
+	it('setzt das Flag auch, wenn die Metadaten-Auswertung ablehnt', async () => {
+		const metadataPromise = Promise.reject(new Error('exif kaputt'));
+		const mediaFile = new MediaFile(
+			'uid-3',
+			'foto.jpg',
+			'ref',
+			new Promise<UploadedFileInfo>(() => {}),
+			metadataPromise
+		);
+
+		expect(mediaFile.isAnalyzed()).toBe(false);
+
+		await expect(metadataPromise).rejects.toThrow('exif kaputt');
+		// Eine Mikrotask weiter — der Handler des Konstruktors hängt an derselben
+		// Promise und läuft direkt nach dem hiesigen `await`.
+		await Promise.resolve();
+
+		expect(mediaFile.isAnalyzed()).toBe(true);
+	});
 });

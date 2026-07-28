@@ -161,4 +161,25 @@ describe('requestCurrentPosition — eigener Zeitwächter', () => {
 		});
 		expect(await pending).toEqual({ ok: false, message: describeGeolocationError({ code: 3 }) });
 	});
+
+	/**
+	 * `getCurrentPosition` kann synchron werfen, statt den Fehler-Callback zu rufen —
+	 * etwa ohne Secure Context. Ungefangen würde der Wurf innerhalb des
+	 * Promise-Executors die zurückgegebene Promise *ablehnen*, und genau darauf ist
+	 * kein Aufrufer eingerichtet: `useCurrentPosition` in `PositionPanel` awaitet
+	 * ohne `try`, sodass `locating = false` nie liefe und der Button dauerhaft
+	 * stumm bliebe. Die Funktion verspricht ein `GeolocationOutcome` — auch hier.
+	 */
+	it('fängt einen synchronen Wurf aus getCurrentPosition ab', async () => {
+		const geolocation = {
+			getCurrentPosition: (): void => {
+				throw new Error('Only secure origins are allowed');
+			}
+		};
+
+		await expect(requestCurrentPosition(geolocation)).resolves.toEqual({
+			ok: false,
+			message: describeGeolocationError({ code: 99 })
+		});
+	});
 });

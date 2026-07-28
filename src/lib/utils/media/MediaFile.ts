@@ -47,9 +47,21 @@ export class MediaFile {
 		// nichts. Das einzige reaktive Signal ist die Neuzuweisung von
 		// `mediaStore.mediaFiles` in DropzoneEnhanced, deren Handler zuletzt
 		// registriert wird und beide Felder gesetzt vorfindet.
-		this.metadata.then(() => {
-			this.analyzed = true;
-		});
+		//
+		// Beide Zweige setzen dasselbe Flag: „fehlgeschlagen" ist ein Ergebnis der
+		// Auswertung, kein Dauerzustand. Der heutige Aufrufer übergibt
+		// `analyzeClientFile`, das jeden Fehler selbst schluckt — aber `metadata`
+		// ist ein Konstruktor-Parameter, und was diese Klasse zusichert, darf nicht
+		// davon abhängen, wer sie gerade aufruft. Ohne den Rejection-Zweig hinge das
+		// Positions-Panel für immer in `analyzing`.
+		this.metadata.then(
+			() => {
+				this.analyzed = true;
+			},
+			() => {
+				this.analyzed = true;
+			}
+		);
 	}
 
 	static createMediaFile(referenceId: string, file: File, isFromPositionStep?: boolean) {

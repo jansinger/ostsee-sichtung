@@ -87,15 +87,26 @@ export function requestCurrentPosition(
 			resolve(outcome);
 		}
 
-		geolocation.getCurrentPosition(
-			(position) =>
-				finish({
-					ok: true,
-					latitude: position.coords.latitude,
-					longitude: position.coords.longitude
-				}),
-			(error) => finish({ ok: false, message: describeGeolocationError(error) }),
-			{ enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS }
-		);
+		// `getCurrentPosition` kann synchron werfen, statt den Fehler-Callback zu
+		// rufen — etwa außerhalb eines Secure Context. Ungefangen würde der Wurf im
+		// Promise-Executor die zurückgegebene Promise ablehnen; darauf ist kein
+		// Aufrufer eingerichtet, denn diese Funktion verspricht ein
+		// `GeolocationOutcome`. `useCurrentPosition` awaitet ohne `try`, sodass
+		// `locating` nie zurückgesetzt würde und der Button stumm bliebe.
+		try {
+			geolocation.getCurrentPosition(
+				(position) =>
+					finish({
+						ok: true,
+						latitude: position.coords.latitude,
+						longitude: position.coords.longitude
+					}),
+				(error) => finish({ ok: false, message: describeGeolocationError(error) }),
+				{ enableHighAccuracy: true, timeout: GEOLOCATION_TIMEOUT_MS }
+			);
+		} catch {
+			// Kein Code-Mapping möglich — die allgemeine Meldung verweist auf die Karte.
+			finish({ ok: false, message: describeGeolocationError({ code: 99 }) });
+		}
 	});
 }
