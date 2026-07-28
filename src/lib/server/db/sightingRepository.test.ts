@@ -351,6 +351,31 @@ describe('sightingRepository', () => {
 		});
 
 		/**
+		 * Test: Der Prüfstatus darf NUR über /api/sightings/[id]/verify geändert
+		 * werden, damit `geprueft` und `freigegeben_am` nicht auseinanderlaufen.
+		 * Ein Update über das Admin-Bearbeitungsformular darf ihn nicht anfassen.
+		 */
+		it('sollte verified und approvedAt vom Update ausschließen', async () => {
+			// Arrange
+			const mockDb = db as any;
+			const setMock = vi.fn().mockReturnValue({
+				where: vi.fn().mockReturnValue({
+					returning: vi.fn().mockResolvedValue([mockFormData])
+				})
+			});
+			mockDb.update.mockReturnValue({ set: setMock });
+
+			// Act: Formular liefert einen gesetzten Prüfstatus mit
+			await updateSighting(42, { ...mockFormData, verified: true } as any);
+
+			// Assert
+			const updatePayload = setMock.mock.calls[0]?.[0];
+			expect(updatePayload).toBeDefined();
+			expect(updatePayload).not.toHaveProperty('verified');
+			expect(updatePayload).not.toHaveProperty('approvedAt');
+		});
+
+		/**
 		 * Test: Edge Case - Negative ID
 		 */
 		it('sollte negative IDs ablehnen', async () => {

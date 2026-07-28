@@ -128,8 +128,18 @@ export const updateSighting = async (
 	// Konvertiere Formulardaten in das normalisierte Datenbankschema
 	const sightingData: NewSighting = mapFormToSighting(formData);
 
-	// Entferne unveränderliche Felder für sauberes Update
-	const { id: _id, created: _created, approvedAt: _approvedAt, ...rest } = sightingData;
+	// Entferne unveränderliche Felder für sauberes Update.
+	// `verified` und `approvedAt` gehören zum Prüfstatus und werden ausschließlich
+	// von PATCH /api/sightings/[id]/verify gesetzt — beide immer gemeinsam. Würde
+	// das Bearbeitungsformular `verified` mitschreiben, liefen die Spalten
+	// auseinander und die Sichtung wäre "geprüft", aber nicht veröffentlicht.
+	const {
+		id: _id,
+		created: _created,
+		approvedAt: _approvedAt,
+		verified: _verified,
+		...rest
+	} = sightingData;
 	const updateData = rest as UpdateSighting;
 
 	// Führe Update-Operation mit ID-Filter aus

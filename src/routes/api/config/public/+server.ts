@@ -9,7 +9,6 @@ const logger = createLogger('api:config:public');
 const PUBLIC_CONFIG_KEYS = [
 	'display.defaultMapCenter',
 	'display.defaultMapZoom',
-	'display.showUnapprovedOnMap',
 	'display.dateFormat',
 	'display.maintenanceMode',
 	'display.maintenanceMessage',

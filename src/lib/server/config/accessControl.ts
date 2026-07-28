@@ -37,7 +37,6 @@ const SUPERADMIN_ONLY_CONFIG_KEYS = new Set([
 	'security.autoApproveThreshold',
 	
 	// Data processing settings
-	'data.autoVerifyBalticSea',
 	'data.duplicateCheckRadius',
 	'data.duplicateCheckTimeframe',
 	'data.exportFormats',
@@ -46,7 +45,6 @@ const SUPERADMIN_ONLY_CONFIG_KEYS = new Set([
 	// Advanced display settings
 	'display.defaultMapCenter',
 	'display.defaultMapZoom',
-	'display.showUnapprovedOnMap',
 	'display.dateFormat',
 	
 	// Integration settings

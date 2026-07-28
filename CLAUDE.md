@@ -30,6 +30,15 @@ Beim Erstellen oder Ändern von `.ts`/`.svelte`-Dateien mit Business-Logik MUSS 
 
 Die Legacy-Endpunkte (`/rest_sichtungen`, `/sichtungen/showreports.json`) implementieren den Vertrag der Vorgänger-API für Mobile Clients. Stand 2026-07-28 sind sie **nicht in Betrieb** — eine Abweichung bricht also nichts Laufendes, entwertet aber den Vertrag, sobald Clients angebunden werden. Feldnamen, URL-Pfade und Datentypen deshalb nur bewusst und dokumentiert ändern. Details laden automatisch beim Bearbeiten der betroffenen Routen (`.claude/rules/legacy-api.md`); verbindliche Referenz ist `docs/LEGACY_API_SPECIFICATION.md`.
 
+### Sichtungs-Status — genau zwei Zustände
+
+Eine Sichtung ist **ungeprüft oder geprüft; geprüft heißt veröffentlicht**. Kein
+dritter Zustand. Die zwei DB-Spalten (`geprueft`, `freigegeben_am`) gehören zu
+**einem** Vorgang und werden ausschließlich von `PATCH /api/sightings/[id]/verify`
+gemeinsam geschrieben. Öffentliche Grundmenge überall: `freigegeben_am IS NOT NULL`.
+Keinen zweiten Freigabe-Endpunkt und kein zweites Bedienelement einführen.
+Details: `.claude/rules/api.md`
+
 ### Design System — PFLICHT bei UI-Änderungen
 
 Theme-Tokens statt hardcodierter Farben, `*-content` ausschließlich auf Vollton-Flächen (auf Tints wie `bg-warning/10` gehört `text-base-content` — sonst weiß auf hell), WCAG 2.1 AA. Regeln laden automatisch bei UI-Dateien: `.claude/rules/design-system.md` (Feld-Pipeline, Button-Hierarchie, A11y-Minima) und `.claude/rules/daisyui.md` (Theme, DaisyUI-Overrides). Hintergrund und verifizierter Ist-Zustand: `docs/DESIGN_GUIDE.md`
