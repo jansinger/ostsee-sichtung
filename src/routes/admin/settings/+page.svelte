@@ -4,6 +4,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { untrack } from 'svelte';
+	import CleanupPanel from './CleanupPanel.svelte';
 
 	const logger = createLogger('admin:settings');
 
@@ -581,4 +582,8 @@
 			</div>
 		</div>
 	{/if}
+
+	<div class="mt-6">
+		<CleanupPanel />
+	</div>
 </div>
