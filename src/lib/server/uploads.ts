@@ -21,6 +21,7 @@
  * ausführlich getestet werden. Jeder Fehler kann zu Sicherheitslücken führen.
  */
 import { createLogger } from '$lib/logger.server';
+import { resolveUploadBasePath } from '$lib/server/storage/uploadPath';
 import { existsSync, statSync } from 'fs';
 import path from 'path';
 
@@ -236,9 +237,10 @@ export function isAllowedMimeType(mimeType: string): boolean {
 /**
  * Konstruiert sicheren absoluten Pfad für Upload-Dateien.
  *
- * Diese Funktion erstellt den vollständigen Pfad zu einer Upload-Datei
- * relativ zum Projektverzeichnis. Der resultierende Pfad ist sicher
- * und kann für Dateisystem-Operationen verwendet werden.
+ * Das Basisverzeichnis stammt aus `UPLOAD_PATH` (Standard: `uploads`
+ * relativ zum Arbeitsverzeichnis) — dieselbe Quelle, aus der auch der
+ * `LocalStorageProvider` beim Schreiben sein Verzeichnis bezieht.
+ * Lesen und Schreiben zeigen dadurch immer auf denselben Ort.
  *
  * **Sicherheitshinweis:**
  * Der Input sollte bereits mit `isValidUploadPath()` validiert sein.
@@ -248,14 +250,18 @@ export function isAllowedMimeType(mimeType: string): boolean {
  *
  * @example
  * ```typescript
- * // Annahme: process.cwd() = '/app'
+ * // Annahme: UPLOAD_PATH nicht gesetzt, process.cwd() = '/app'
  * getUploadPath('user123/photo.jpg')
  * // Returns: '/app/uploads/user123/photo.jpg'
+ *
+ * // Annahme: UPLOAD_PATH=/srv/ostsee/uploads
+ * getUploadPath('user123/photo.jpg')
+ * // Returns: '/srv/ostsee/uploads/user123/photo.jpg'
  * ```
  */
 export function getUploadPath(filePath: string): string {
-	// Sicheren absoluten Pfad zum Upload-Verzeichnis konstruieren
-	return path.join(process.cwd(), 'uploads', filePath);
+	// Sicheren absoluten Pfad zum konfigurierten Upload-Verzeichnis konstruieren
+	return path.join(resolveUploadBasePath(), filePath);
 }
 
 /**
