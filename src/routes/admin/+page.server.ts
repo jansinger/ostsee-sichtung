@@ -1,5 +1,6 @@
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
+import { berlinCalendarDate } from '$lib/server/db/sqlTimeZone';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
@@ -28,7 +29,13 @@ export const load: PageServerLoad = async ({ url }) => {
 
 	// Datums-Filter (nur mit validiertem YYYY-MM-DD Format)
 	if (isValidDateParam(fromDate) && isValidDateParam(toDate)) {
-		conditions.push(sql`DATE(${sightings.sightingDate}) BETWEEN ${fromDate} AND ${toDate}`);
+		// Kalendertag in deutscher Ortszeit: `fromDate`/`toDate` kommen als lokales
+		// "YYYY-MM-DD" aus der Admin-UI, `sichtungsdatum` hält seit der UTC-Migration
+		// echte Zeitpunkte. Ohne Umrechnung fiele eine Sichtung vom 15.07. um 00:30
+		// Ortszeit (= 14.07. 22:30 UTC) aus dem Filter.
+		conditions.push(
+			sql`${berlinCalendarDate(sightings.sightingDate)} BETWEEN ${fromDate} AND ${toDate}`
+		);
 	}
 
 	// Verifizierungs-Filter (als Integer 0/1)
