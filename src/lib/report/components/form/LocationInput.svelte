@@ -26,6 +26,10 @@
 		 * Legt Formatwahl und Eingabefelder in einen Collapse-Container.
 		 * Default `false`, damit die Admin-Maske (`sections/Location.svelte`)
 		 * unverändert bleibt; das Meldeformular übergibt `true`.
+		 *
+		 * Unterscheidet damit zugleich die beiden Einsatzorte: Nur ohne
+		 * Collapse (= Admin) trägt die Karte das GPS-Control, weil dort kein
+		 * eigener Standort-Button daneben steht (siehe `<OLMap>` unten).
 		 */
 		collapsibleCoordinates?: boolean;
 		onchange?: EventListener | null;
@@ -335,11 +339,21 @@
 
 <div class="w-full">
 	<div class="border-base-300 mb-4 overflow-hidden rounded-lg border">
+		<!--
+			Das OpenLayers-GPS-Control (`FormLocationControl`) bleibt nur dort, wo es
+			die einzige Standort-Bedienung ist — also in der Admin-Maske
+			(`sections/Location.svelte`, `collapsibleCoordinates={false}`).
+
+			Im Meldeformular liefert `PositionPanel` bereits einen eigenen Button
+			„Mein aktueller Standort" über der Karte. Beide schreiben dieselbe
+			Koordinate ins Formular; zwei Bedienelemente für dieselbe Aktion
+			verstoßen gegen „gleiche Aktion = gleiche Variante" (design-system.md).
+		-->
 		<OLMap
 			bind:latitude={mapLatitude}
 			bind:longitude={mapLongitude}
 			readonly={false}
-			enableGPS={true}
+			enableGPS={!collapsibleCoordinates}
 			onchange={onMapChange}
 		/>
 	</div>
