@@ -7,8 +7,17 @@ paths:
 
 # Legacy REST API — 100 % Kompatibilität
 
-Diese Endpunkte bedienen **bestehende Mobile Apps**. Jede Abweichung von der
-Spezifikation bricht produktive Clients.
+Diese Endpunkte implementieren die Spezifikation der Vorgänger-API für Mobile
+Clients.
+
+> **Stand 2026-07-28: keine Clients angebunden.** Die Endpunkte sind nicht in
+> Betrieb und waren es nie. Eine Abweichung bricht also derzeit **nichts
+> Laufendes** — sie entwertet aber den Vertrag, sobald Clients angebunden
+> werden. Änderungen an Feldnamen, Pfaden und Datentypen bleiben deshalb
+> begründungspflichtig, offensichtliche Fehler dürfen aber behoben werden.
+>
+> Diese Einordnung ist ein Datumsstand, keine Dauerzusage — vor größeren
+> Änderungen prüfen, ob inzwischen Clients angebunden sind.
 
 > **PFLICHT:** Lies `docs/LEGACY_API_SPECIFICATION.md` **vollständig**, bevor du
 > einen dieser Endpunkte änderst. Die Datei ist die verbindliche Referenz für

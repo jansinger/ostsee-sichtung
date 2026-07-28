@@ -346,7 +346,7 @@ export class EmailService {
 				html: `
 					<h2>Test E-Mail</h2>
 					<p>Diese Test-E-Mail wurde erfolgreich von der Ostsee-Tiere Anwendung gesendet.</p>
-					<p><strong>Zeitpunkt:</strong> ${new Date().toLocaleString('de-DE')}</p>
+					<p><strong>Zeitpunkt:</strong> ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}</p>
 					<p><strong>Konfiguration:</strong> Funktioniert korrekt ✅</p>
 				`,
 				text: 'Test E-Mail - Die Ostsee-Tiere E-Mail Konfiguration funktioniert korrekt.'

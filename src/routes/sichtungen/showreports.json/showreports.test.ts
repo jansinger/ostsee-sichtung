@@ -16,7 +16,9 @@ import type { RequestEvent } from '@sveltejs/kit';
 const mockSightingData = [
 	{
 		id: 817,
-		sichtungsdatum: '2012-01-25T14:50:00.000Z',
+		// Migrierter Altdatensatz: 25.01.2012 14:50 Ortszeit == 13:50 UTC (MEZ).
+		// Die Spalte hält echte UTC-Zeitpunkte, die API gibt Ortszeit aus.
+		sichtungsdatum: '2012-01-25T13:50:00.000Z',
 		latitude: '54.646667',
 		longitude: '11.333333',
 		totalCount: 1,
@@ -163,10 +165,10 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 
 			// PDF format: DD.MM.YY (2-digit year!)
 			expect(firstSighting.dt).toBe('25.01.12');
-			expect(firstSighting.ti).toBe('14:50'); // UTC time (consistent across all timezones)
+			expect(firstSighting.ti).toBe('14:50'); // German local time, unchanged by the UTC migration
 
-			// Verify Unix timestamp - calculated from UTC date/time
-			expect(firstSighting.ts).toBe(1327503000); // Unix timestamp for 2012-01-25T14:50:00.000Z
+			// Verify Unix timestamp - the true instant, not the local rendering
+			expect(firstSighting.ts).toBe(1327499400); // Unix timestamp for 2012-01-25T13:50:00.000Z
 		});
 
 		it('should return coordinates as strings with proper precision', async () => {

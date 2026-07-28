@@ -53,8 +53,13 @@ export async function checkExistingWeatherData(
 						ST_SetSRID(ST_Point(${longitude}, ${latitude}), 4326)::geography,
 						1000
 					)`,
-					// Same date
-					eq(sql`DATE(${sightings.sightingDate})`, date),
+					// Gleicher Kalendertag in deutscher Ortszeit: `date` kommt als
+					// lokales "YYYY-MM-DD" aus dem Formular, `sichtungsdatum` hält
+					// seit der UTC-Migration echte Zeitpunkte.
+					eq(
+						sql`DATE(${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`,
+						date
+					),
 					// Has weather data
 					isNotNull(sightings.weatherData)
 				)
@@ -186,7 +191,7 @@ export async function getWeatherCacheStatistics(): Promise<{
 		// Unique position+date combinations
 		const [uniqueResult] = await db
 			.select({
-				count: sql<number>`COUNT(DISTINCT (ROUND(gps_breite::numeric, 2), ROUND(gps_laenge::numeric, 2), DATE(sichtungsdatum)))`
+				count: sql<number>`COUNT(DISTINCT (ROUND(gps_breite::numeric, 2), ROUND(gps_laenge::numeric, 2), DATE(sichtungsdatum AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')))`
 			})
 			.from(sightings)
 			.where(isNotNull(sightings.weatherData));
