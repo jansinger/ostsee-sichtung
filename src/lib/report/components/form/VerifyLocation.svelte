@@ -133,7 +133,7 @@
 			</div>
 		{:else if error}
 			<!-- Error state -->
-			<div class="alert alert-error mt-0 mb-4" transition:slide>
+			<div class="alert alert-error mt-0 mb-4" data-testid="verify-location-failed" transition:slide>
 				<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
 				<span>Fehler beim Prüfen der Position: {error}</span>
 			</div>
@@ -142,13 +142,13 @@
 			<div transition:slide>
 				{#if currentResult.inBaltic}
 					<!-- In Baltic Sea -->
-					<div class="alert alert-success mt-0 mb-4">
+					<div class="alert alert-success mt-0 mb-4" data-testid="verify-location-inside">
 						<Icon icon="lucide:circle-check" class="h-6 w-6 shrink-0" />
 						<span>Die Koordinaten liegen innerhalb der Ostsee.</span>
 					</div>
 				{:else if currentResult.inChartArea}
 					<!-- Outside Baltic Sea (only show in browser) -->
-					<div class="alert alert-warning mt-0 mb-4">
+					<div class="alert alert-warning mt-0 mb-4" data-testid="verify-location-outside">
 						<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
 						<span>
 							Die Koordinaten liegen scheinbar außerhalb der Ostsee. Bitte prüfen Sie die Position.
@@ -158,7 +158,7 @@
 					</div>
 				{:else}
 					<!-- Invalid coordinates -->
-					<div class="alert alert-error mt-0 mb-4">
+					<div class="alert alert-error mt-0 mb-4" data-testid="verify-location-invalid">
 						<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
 						<span
 							>Die Koordinaten liegen außerhalb des gültigen Bereichs oder sind ungültig. Bitte
