@@ -1,23 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DELETE } from './+server';
 
+const { mockSchema } = vi.hoisted(() => ({
+	mockSchema: {
+		sightings: { id: 'id' },
+		sightingFiles: { sightingId: 'sichtung_id', filePath: 'datei_pfad' }
+	}
+}));
+
 vi.mock('$lib/server/db', () => ({
 	db: {
 		select: () => ({
 			from: () => ({
-				where: () => ({
-					limit: () => Promise.resolve([{ id: 123 }])
-				})
+				where: () => ({ limit: () => Promise.resolve([{ id: 123 }]) })
 			})
 		}),
-		delete: () => ({
-			where: () => Promise.resolve()
-		})
+		// DELETE löscht Dateizeilen und Sichtung gemeinsam in einer Transaktion
+		transaction: (callback: (tx: unknown) => Promise<unknown>) =>
+			callback({
+				delete: (table: unknown) => ({
+					where: () =>
+						table === mockSchema.sightingFiles
+							? { returning: () => Promise.resolve([]) }
+							: Promise.resolve()
+				})
+			})
 	}
 }));
 
-vi.mock('$lib/server/db/schema', () => ({
-	sightings: { id: 'id' }
+vi.mock('$lib/server/db/schema', () => mockSchema);
+
+vi.mock('$lib/server/storage/factory', () => ({
+	getStorageProvider: vi.fn(() => ({ delete: vi.fn().mockResolvedValue(undefined) }))
 }));
 
 vi.mock('drizzle-orm', () => ({
@@ -55,7 +69,10 @@ describe('/api/sightings/[id] DELETE endpoint', () => {
 		vi.clearAllMocks();
 	});
 
-	const createMockRequestEvent = (id: string, user: { email: string; roles: string[] } | null = { email: 'admin@test.com', roles: ['admin'] }) => {
+	const createMockRequestEvent = (
+		id: string,
+		user: { email: string; roles: string[] } | null = { email: 'admin@test.com', roles: ['admin'] }
+	) => {
 		return {
 			params: { id },
 			locals: { user },

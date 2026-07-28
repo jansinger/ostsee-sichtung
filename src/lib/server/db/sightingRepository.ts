@@ -34,6 +34,7 @@ import {
 import { readImageExifData } from '$lib/server/media/exifUtils';
 import { mapFormToSighting } from '$lib/server/db/mapFormToSighting';
 import { setSightingIdForReferenceId } from '$lib/server/db/sightingFilesRepository';
+import { deleteStoredFiles } from '$lib/server/storage/deleteStoredFiles';
 
 // Logger für Repository-Operationen
 const logger = createLogger('db:sightingRepository');
@@ -318,11 +319,22 @@ export const saveSightingFiles = async (
 		exifData: file.exifData || null
 	}));
 
-	// Delete existing and insert new file references atomically
-	await db.transaction(async (tx) => {
-		await tx.delete(sightingFiles).where(eq(sightingFiles.sightingId, sightingId));
+	// Delete existing and insert new file references atomically.
+	// `returning` liefert die Pfade der entfernten Zeilen — ohne sie wüsste
+	// niemand mehr, welche Dateien im Storage noch aufzuräumen sind.
+	const removedPaths = await db.transaction(async (tx) => {
+		const removed = await tx
+			.delete(sightingFiles)
+			.where(eq(sightingFiles.sightingId, sightingId))
+			.returning({ filePath: sightingFiles.filePath });
 		await tx.insert(sightingFiles).values(fileData);
+		return removed.map((file) => file.filePath);
 	});
+
+	// Nur Dateien löschen, die in der neuen Liste nicht mehr vorkommen —
+	// unveränderte Dateien wurden gerade nur neu verknüpft.
+	const keptPaths = new Set(fileData.map((file) => file.filePath));
+	await deleteStoredFiles(removedPaths.filter((filePath) => !keptPaths.has(filePath)));
 
 	logger.info(
 		{
