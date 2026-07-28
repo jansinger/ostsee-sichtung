@@ -1,5 +1,6 @@
 import { render } from 'vitest-browser-svelte';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { get } from 'svelte/store';
 import { createForm } from '$lib/form/createForm';
 import { key as formContextKey } from '$lib/report/formContext';
 import { initialFormState } from '$lib/report/formConfig';
@@ -53,7 +54,7 @@ function renderDropzone(
 	files: UploadedFileInfo[],
 	props: { maxFiles: number; enableGPSExtraction: boolean },
 	seededMediaFiles: MediaFile[] = []
-): MediaStore {
+): { mediaStore: MediaStore; form: FormContext['form'] } {
 	const mediaStore: MediaStore = { mediaFiles: seededMediaFiles };
 	const context = {
 		...createForm<SightingFormData>({
@@ -68,12 +69,12 @@ function renderDropzone(
 		context: new Map([[formContextKey, context]])
 	});
 
-	return mediaStore;
+	return { mediaStore, form: context.form };
 }
 
 describe('DropzoneEnhanced — Herkunft wiederhergestellter Dateien', () => {
 	it('markiert ein nicht vorgemerktes Medium nicht als Positions-Foto, auch wenn die Positions-Dropzone zuerst mountet', async () => {
-		const mediaStore = renderDropzone([uploadedFile('media-uid')], {
+		const { mediaStore } = renderDropzone([uploadedFile('media-uid')], {
 			maxFiles: 1,
 			enableGPSExtraction: true
 		});
@@ -85,7 +86,7 @@ describe('DropzoneEnhanced — Herkunft wiederhergestellter Dateien', () => {
 	it('markiert ein vorgemerktes Foto als Positions-Foto, auch wenn die Medien-Dropzone zuerst mountet', async () => {
 		markPositionFile('position-uid');
 
-		const mediaStore = renderDropzone([uploadedFile('position-uid')], {
+		const { mediaStore } = renderDropzone([uploadedFile('position-uid')], {
 			maxFiles: 10,
 			enableGPSExtraction: false
 		});
@@ -97,7 +98,7 @@ describe('DropzoneEnhanced — Herkunft wiederhergestellter Dateien', () => {
 	it('trennt beide Herkünfte in einem gemeinsamen Store', async () => {
 		markPositionFile('position-uid');
 
-		const mediaStore = renderDropzone([uploadedFile('position-uid'), uploadedFile('media-uid')], {
+		const { mediaStore } = renderDropzone([uploadedFile('position-uid'), uploadedFile('media-uid')], {
 			maxFiles: 10,
 			enableGPSExtraction: false
 		});
@@ -141,5 +142,47 @@ describe('DropzoneEnhanced — gescheiterte EXIF-Auswertung', () => {
 			.poll(() => document.querySelectorAll('[data-testid="photo-analysis-failed"]').length)
 			.toBe(1);
 		expect(document.querySelectorAll('[aria-label="Analysiere Bilddaten"]').length).toBe(0);
+	});
+});
+
+/** Wiederhergestellte Datei ohne GPS — `analyzed` ist sofort true. */
+function restoredMediaFile(uid: string, fromPositionStep: boolean): MediaFile {
+	return MediaFile.fromUploadedFile(uploadedFile(uid), 'ref-1', fromPositionStep);
+}
+
+/**
+ * `mediaStore` gehört dem ganzen Formular. `photoStatus` grenzt deshalb auf
+ * `isFromPositionStep` ein — sein Geschwister `positionMediaFile` tat es nicht
+ * und fiel auf `mediaFiles[0]` zurück. Nach einem Reload auf Schritt 1, mit
+ * Medien nur aus Schritt 3, zeigte Schritt 1 damit ein fremdes Foto als „das
+ * Positions-Foto" und ersetzte die Dropzone vollständig. Einziger Ausweg war
+ * „Neu auswählen" — und das löschte serverseitig alle Medien aller Schritte.
+ */
+describe('DropzoneEnhanced — Eingrenzung auf den Positions-Schritt', () => {
+	it('zeigt im Positions-Schritt die Dropzone, wenn nur Medien aus Schritt 3 vorliegen', async () => {
+		renderDropzone([], { maxFiles: 1, enableGPSExtraction: true }, [
+			restoredMediaFile('media-uid', false)
+		]);
+
+		await expect.poll(() => document.querySelectorAll('input[type="file"]').length).toBe(1);
+		expect(document.body.textContent).not.toContain('Neu auswählen');
+	});
+
+	it('löscht mit „Neu auswählen" keine Medien der anderen Schritte', async () => {
+		const { mediaStore, form } = renderDropzone(
+			[uploadedFile('position-uid'), uploadedFile('media-uid')],
+			{ maxFiles: 1, enableGPSExtraction: true },
+			[restoredMediaFile('position-uid', true), restoredMediaFile('media-uid', false)]
+		);
+
+		const reset = await vi.waitUntil(() =>
+			Array.from(document.querySelectorAll('button')).find(
+				(button) => button.textContent?.trim() === 'Neu auswählen'
+			)
+		);
+		reset.click();
+
+		await expect.poll(() => mediaStore.mediaFiles.map((file) => file.uid)).toEqual(['media-uid']);
+		expect(get(form).uploadedFiles.map((file) => file.uid)).toEqual(['media-uid']);
 	});
 });

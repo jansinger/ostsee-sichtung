@@ -138,9 +138,27 @@
 		}
 	});
 
+	/**
+	 * Dateien, über die diese Instanz überhaupt urteilen und verfügen darf.
+	 *
+	 * `mediaStore` gehört dem ganzen Formular (Form.svelte) und wird von allen
+	 * Schritten geteilt. Im Positions-Schritt zählen deshalb nur die Dateien
+	 * dieses Schritts — dieselbe Eingrenzung, die `photoStatus`
+	 * (`positionPanelState.ts`) für das Panel vornimmt. Ohne sie zeigte Schritt 1
+	 * nach einem Reload ein Foto aus Schritt 3 als „das Positions-Foto" und
+	 * ersetzte die Dropzone damit vollständig.
+	 *
+	 * Im Medien-Schritt bleibt es beim ganzen Store: Dort ist die Galerie
+	 * bewusst die Gesamtsicht.
+	 */
+	let ownedMediaFiles = $derived(
+		isPositionStep ? mediaFiles.filter((mf: MediaFile) => mf.isFromPositionStep) : mediaFiles
+	);
+
 	// Mediafile für Positionsdaten - bevorzuge Dateien mit GPS, aber zeige auch erste Datei ohne GPS
 	let positionMediaFile = $derived(
-		mediaFiles.find((mf) => mf.hasPosition()) ?? (isPositionStep ? mediaFiles[0] : undefined)
+		ownedMediaFiles.find((mf: MediaFile) => mf.hasPosition()) ??
+			(isPositionStep ? ownedMediaFiles[0] : undefined)
 	);
 
 	/**
@@ -382,20 +400,32 @@
 		try {
 			dropzoneFiles = [];
 
+			// Nur die eigenen Dateien (siehe `ownedMediaFiles`). Im Positions-Schritt
+			// ist „Neu auswählen" der einzige Ausweg aus der Foto-Karte; unbegrenzt
+			// gedacht löschte dieser eine Klick auch die Medien aus Schritt 3 —
+			// serverseitig und ohne Rückfrage. Im Medien-Schritt bleibt „Alle
+			// löschen" unverändert alles.
+			const removed = ownedMediaFiles;
+			const removedUids = new Set(removed.map((mediaFile: MediaFile) => mediaFile.uid));
+
 			// Vormerkungen der entfernten Dateien zurücknehmen, bevor der Store leer
 			// ist — sonst blieben verwaiste uids im sessionStorage stehen.
-			for (const mediaFile of mediaStore.mediaFiles) {
+			for (const mediaFile of removed) {
 				unmarkPositionFile(mediaFile.uid);
 			}
 
 			// Clear media files im Store
-			updateMediaFiles([]);
+			updateMediaFiles(
+				mediaStore.mediaFiles.filter((mediaFile) => !removedUids.has(mediaFile.uid))
+			);
 
-			// Alle hochgeladenen Dateien vom Server löschen
-			deleteMultipleFiles(uploadedFiles);
+			// Die zugehörigen hochgeladenen Dateien vom Server löschen
+			const removedUploads = uploadedFiles.filter((uf: UploadedFileInfo) =>
+				removedUids.has(uf.uid)
+			);
+			deleteMultipleFiles(removedUploads);
 
-			// Clear uploaded files
-			uploadedFiles = [];
+			uploadedFiles = uploadedFiles.filter((uf: UploadedFileInfo) => !removedUids.has(uf.uid));
 			resetExifPositionIfUnchanged();
 
 			triggerChange('uploadedFiles', uploadedFiles);
