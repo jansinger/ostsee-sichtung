@@ -18,7 +18,8 @@
  * - Alle ausstehenden Migrationen laufen in einer Transaktion (Drizzle-Migrator);
  *   bei Fehlern wird vollständig zurückgerollt und der Container startet nicht.
  *
- * Ausführung: `node scripts/docker-migrate.ts` (Node ≥ 24, natives Type Stripping).
+ * Ausführung: `node scripts/docker-migrate.ts` (Node ≥ 22.18 — natives Type
+ * Stripping; im Runtime-Image läuft Node 24).
  */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
