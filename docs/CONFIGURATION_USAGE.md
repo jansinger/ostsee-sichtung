@@ -23,7 +23,7 @@ import {
 const maxFileSize = await ServerConfigService.getNumber('security.maxFileSize');
 
 // Client-side (in .svelte components)
-const mapConfig = await ClientConfigService.getMapConfig();
+const dateFormat = await ClientConfigService.get<string>('display.dateFormat');
 
 // Universal (automatische Erkennung)
 const maintenanceMode = await ConfigService.get('display.maintenanceMode');
@@ -37,7 +37,7 @@ Alle Konfigurationswerte haben Standardwerte in `DEFAULT_VALUES`:
 const DEFAULT_VALUES = {
 	'display.maxSightingsPerPage': 50,
 	'security.maxFileSize': 10,
-	'display.defaultMapCenter': { lat: 54.5, lng: 13.5 }
+	'display.dateFormat': 'DD.MM.YYYY'
 	// ...
 } as const;
 ```
@@ -108,24 +108,21 @@ if (isMaintenanceEnabled) {
 }
 ```
 
-### 5. **Karten-Konfiguration**
+### 5. **Karte — bewusst nicht konfigurierbar**
 
-- **Konfigurationen**:
-  - `display.defaultMapCenter` - Standard-Kartenzentrum
-  - `display.defaultMapZoom` - Standard-Zoom-Level
-  - `integration.mapTileProvider` - Karten-Tile-URL
-- **Fallback**: Ostsee-Zentrum (54.5, 13.5), Zoom 7
+Die Karte ist **nicht** über den ConfigService steuerbar. Kartenzentrum, Zoom-Stufe
+und Tile-Quellen sind in `src/lib/map/optimizedMapController.ts` fest verdrahtet
+(OSM-Basislayer plus OpenSeaMap-Overlay, Startansicht 54.5 / 12.0 bei Zoom 7).
 
-> **Status:** `ConfigService.getMapConfig()` / `ServerConfigService.getMapConfig()`
-> existieren, werden aber aktuell von keiner Route aufgerufen — `/map` lädt seine
-> Daten über `+page.ts`. Die Sichtbarkeit der öffentlichen Karte hängt
-> ausschließlich am Datenbankfilter in `src/routes/api/map/sightings/+server.ts`,
-> nicht an einer Konfiguration.
+Die früheren Schlüssel `display.defaultMapCenter`, `display.defaultMapZoom` und
+`integration.mapTileProvider` sowie beide `getMapConfig()`-Methoden wurden entfernt:
+Sie wurden von keiner Route und keiner Komponente gelesen, wurden aber über
+`/api/config/public` anonym ausgeliefert und bei jedem Aufruf von `/admin/settings`
+in die Datenbank geschrieben. Wer die Karte konfigurierbar machen will, bindet
+zuerst `optimizedMapController.ts` an — nicht umgekehrt.
 
-```typescript
-const mapConfig = await ServerConfigService.getMapConfig();
-// { center, zoom, tileProvider }
-```
+Die Sichtbarkeit der öffentlichen Karte hängt ausschließlich am Datenbankfilter in
+`src/routes/api/map/sightings/+server.ts`, nicht an einer Konfiguration.
 
 ## 🔧 Verwendungspatterns
 
@@ -137,7 +134,7 @@ const mapConfig = await ServerConfigService.getMapConfig();
 import { ServerConfigService } from '$lib/services/configService';
 
 export const load: PageServerLoad = async () => {
-	const config = await ServerConfigService.getMapConfig();
+	const config = await ServerConfigService.getPaginationConfig();
 	return { config };
 };
 ```
@@ -151,7 +148,7 @@ import { ClientConfigService } from '$lib/services/configService';
 
 // Asynchron laden
 onMount(async () => {
-	const mapConfig = await ClientConfigService.getMapConfig();
+	const dateFormat = await ClientConfigService.get<string>('display.dateFormat');
 	// Konfiguration verwenden
 });
 ```
@@ -163,9 +160,6 @@ onMount(async () => {
 const isEnabled = await ServerConfigService.getBoolean('notification.email.enabled');
 const maxSize = await ServerConfigService.getNumber('security.maxFileSize');
 const allowedTypes = await ServerConfigService.getArray<string>('security.allowedFileTypes');
-const mapCenter = await ServerConfigService.getObject<{ lat: number; lng: number }>(
-	'display.defaultMapCenter'
-);
 ```
 
 ### Grouped Configuration Access
@@ -174,7 +168,6 @@ const mapCenter = await ServerConfigService.getObject<{ lat: number; lng: number
 // Grouped configurations for specific functionality
 const uploadConfig = await ServerConfigService.getUploadConfig();
 const emailConfig = await ServerConfigService.getEmailConfig();
-const mapConfig = await ServerConfigService.getMapConfig();
 const securityConfig = await ServerConfigService.getSecurityConfig();
 ```
 
@@ -191,12 +184,11 @@ const securityConfig = await ServerConfigService.getSecurityConfig();
 
 ### 🎨 Anzeige-Einstellungen
 
-| Schlüssel                     | Typ     | Verwendung             | Fallback                 |
-| ----------------------------- | ------- | ---------------------- | ------------------------ |
-| `display.maxSightingsPerPage` | number  | Admin-Paginierung      | `50`                     |
-| `display.defaultMapCenter`    | object  | Karten-Zentrum         | `{lat: 54.5, lng: 13.5}` |
-| `display.defaultMapZoom`      | number  | Standard-Zoom          | `7`                      |
-| `display.maintenanceMode`     | boolean | Wartungsmodus-Redirect | `false`                  |
+| Schlüssel                     | Typ     | Verwendung             | Fallback       |
+| ----------------------------- | ------- | ---------------------- | -------------- |
+| `display.maxSightingsPerPage` | number  | Admin-Paginierung      | `50`           |
+| `display.dateFormat`          | string  | Datumsformat           | `'DD.MM.YYYY'` |
+| `display.maintenanceMode`     | boolean | Wartungsmodus-Redirect | `false`        |
 
 ### 🔒 Sicherheit & Validierung
 
@@ -208,10 +200,10 @@ const securityConfig = await ServerConfigService.getSecurityConfig();
 
 ### 📊 Datenverarbeitung
 
-| Schlüssel                   | Typ     | Verwendung                | Fallback                        |
-| --------------------------- | ------- | ------------------------- | ------------------------------- |
-| `data.duplicateCheckRadius` | number  | Duplikatsprüfung (km)     | `1`                             |
-| `data.exportFormats`        | array   | Verfügbare Export-Formate | `['csv', 'json', 'kml', 'xml']` |
+| Schlüssel                   | Typ    | Verwendung                | Fallback                        |
+| --------------------------- | ------ | ------------------------- | ------------------------------- |
+| `data.duplicateCheckRadius` | number | Duplikatsprüfung (km)     | `1`                             |
+| `data.exportFormats`        | array  | Verfügbare Export-Formate | `['csv', 'json', 'kml', 'xml']` |
 
 ## 🚀 Erweiterung des Systems
 

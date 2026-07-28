@@ -13,37 +13,42 @@ const DEFAULT_VALUES = {
 	'notification.email.sender': 'noreply@ostsee-tiere.de',
 	'notification.email.senderName': 'Ostsee-Tiere',
 	'notification.email.template': '',
-	
+
 	// Display Settings
 	'display.maxSightingsPerPage': 50,
-	'display.defaultMapCenter': { lat: 54.5, lng: 13.5 },
-	'display.defaultMapZoom': 7,
 	'display.dateFormat': 'DD.MM.YYYY',
 	'display.maintenanceMode': false,
-	'display.maintenanceMessage': 'Die Anwendung wird gewartet. Bitte versuchen Sie es später erneut.',
-	
+	'display.maintenanceMessage':
+		'Die Anwendung wird gewartet. Bitte versuchen Sie es später erneut.',
+
 	// Security Settings
 	'security.maxFileSize': 10,
-	'security.allowedFileTypes': ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime'],
+	'security.allowedFileTypes': [
+		'image/jpeg',
+		'image/png',
+		'image/webp',
+		'video/mp4',
+		'video/quicktime'
+	],
 	'security.rateLimitPerIP': 10,
 	'security.requireEmailVerification': false,
 	'security.autoApproveThreshold': 5,
-	
+
 	// Data Processing Settings
 	'data.duplicateCheckRadius': 1,
 	'data.duplicateCheckTimeframe': 24,
 	'data.exportFormats': ['csv', 'json', 'kml', 'xml'],
 	'data.archiveAfterDays': 0,
-	
+
 	// Integration Settings
-	'integration.mapTileProvider': 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 	'integration.weatherApiKey': '',
 	'integration.geoApiKey': '',
 	'integration.webhookUrl': '',
-	
+
 	// Mobile App Settings
 	'mobile.minAppVersion': '1.0.0',
-	'mobile.updateMessage': 'Eine neue Version der App ist verfügbar. Bitte aktualisieren Sie für die beste Erfahrung.',
+	'mobile.updateMessage':
+		'Eine neue Version der App ist verfügbar. Bitte aktualisieren Sie für die beste Erfahrung.',
 	'mobile.apiRateLimit': 100
 } as const;
 
@@ -92,13 +97,6 @@ export class ServerConfigService {
 		return Array.isArray(value) ? value : [];
 	}
 
-	static async getObject<T extends Record<string, unknown>>(key: keyof typeof DEFAULT_VALUES): Promise<T> {
-		const value = await this.get(key);
-		return typeof value === 'object' && value !== null && !Array.isArray(value) 
-			? value as T 
-			: DEFAULT_VALUES[key] as unknown as T;
-	}
-
 	/**
 	 * Check if maintenance mode is enabled
 	 */
@@ -118,17 +116,6 @@ export class ServerConfigService {
 		return {
 			maxSightingsPerPage: await this.getNumber('display.maxSightingsPerPage'),
 			defaultPageSize: Math.min(await this.getNumber('display.maxSightingsPerPage'), 50)
-		};
-	}
-
-	/**
-	 * Get map configuration
-	 */
-	static async getMapConfig() {
-		return {
-			center: await this.getObject<{ lat: number; lng: number }>('display.defaultMapCenter'),
-			zoom: await this.getNumber('display.defaultMapZoom'),
-			tileProvider: await this.getString('integration.mapTileProvider')
 		};
 	}
 
@@ -208,17 +195,6 @@ export class ClientConfigService {
 	}
 
 	/**
-	 * Get map configuration for client-side
-	 */
-	static async getMapConfig() {
-		return {
-			center: await this.get<{ lat: number; lng: number }>('display.defaultMapCenter'),
-			zoom: await this.get<number>('display.defaultMapZoom'),
-			tileProvider: await this.get<string>('integration.mapTileProvider')
-		};
-	}
-
-	/**
 	 * Check if maintenance mode is enabled (client-side)
 	 */
 	static async isMaintenanceModeEnabled(): Promise<boolean> {
@@ -232,10 +208,10 @@ export class ClientConfigService {
 export const ConfigService = {
 	// Server-side methods (only work on server)
 	server: ServerConfigService,
-	
+
 	// Client-side methods (only work in browser)
 	client: ClientConfigService,
-	
+
 	// Get default value for any config key
 	getDefault(key: keyof typeof DEFAULT_VALUES) {
 		return DEFAULT_VALUES[key];

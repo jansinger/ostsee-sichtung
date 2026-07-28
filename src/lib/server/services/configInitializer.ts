@@ -235,18 +235,6 @@ const defaultConfigurations: ConfigItem[] = [
 		category: 'display'
 	},
 	{
-		key: 'display.defaultMapCenter',
-		value: { lat: 54.5, lng: 13.5 },
-		description: 'Standard Kartenzentrum (Ostsee)',
-		category: 'display'
-	},
-	{
-		key: 'display.defaultMapZoom',
-		value: 7,
-		description: 'Standard Zoom-Level für Karten',
-		category: 'display'
-	},
-	{
 		key: 'display.dateFormat',
 		value: 'DD.MM.YYYY',
 		description: 'Standard Datumsformat',
@@ -324,12 +312,6 @@ const defaultConfigurations: ConfigItem[] = [
 	},
 
 	// Integration Settings
-	{
-		key: 'integration.mapTileProvider',
-		value: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-		description: 'URL Template für Karten-Tiles',
-		category: 'integration'
-	},
 	{
 		key: 'integration.weatherApiKey',
 		value: '',

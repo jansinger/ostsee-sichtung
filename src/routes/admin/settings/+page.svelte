@@ -69,9 +69,11 @@
 		// Note: Other settings are planned but not yet actively used:
 		// - Most data processing settings (duplicate check, auto-approve, etc.)
 		// - Integration settings (weather API, geocoding, webhooks)
-		// - Advanced display settings (map defaults, date format)
+		// - Advanced display settings (date format)
 		// - Mobile app settings
 		// - Advanced security settings
+		// Karten-Defaults stehen hier bewusst nicht mehr: Zentrum, Zoom und
+		// Tile-Quelle sind in src/lib/map/optimizedMapController.ts fest verdrahtet.
 	]);
 
 	// Filter configurations to only show active ones
@@ -313,11 +315,17 @@
 	<!-- Header -->
 	<div class="mb-8 flex items-center justify-between">
 		<div>
-			<h1 class="flex items-center gap-3 text-3xl font-bold text-base-content">
-				<Icon icon="lucide:settings" width="32" height="32" class="text-primary" />
+			<h1 class="text-base-content flex items-center gap-3 text-3xl font-bold">
+				<Icon
+					icon="lucide:settings"
+					width="32"
+					height="32"
+					class="text-primary"
+					aria-hidden="true"
+				/>
 				Anwendungseinstellungen
 			</h1>
-			<p class="mt-2 text-base-content/70">
+			<p class="text-base-content/70 mt-2">
 				Konfigurieren Sie alle Aspekte der Ostsee-Tiere Anwendung über diese zentrale Oberfläche.
 			</p>
 		</div>
@@ -444,7 +452,7 @@
 								<div class="mb-3 flex items-start justify-between">
 									<div class="flex-1">
 										<div class="flex items-center gap-2">
-											<div class="text-sm font-semibold text-base-content">
+											<div class="text-base-content text-sm font-semibold">
 												{config.key}
 											</div>
 											{#if changedConfigs.has(config.key)}
@@ -456,7 +464,7 @@
 											{/if}
 										</div>
 										{#if config.description}
-											<p class="mt-1 text-sm text-base-content/70">{config.description}</p>
+											<p class="text-base-content/70 mt-1 text-sm">{config.description}</p>
 										{/if}
 									</div>
 

@@ -25,34 +25,31 @@ const SUPERADMIN_ONLY_CONFIG_KEYS = new Set([
 	'email.smtp.secure',
 	'email.smtp.user',
 	'email.smtp.password',
-	
+
 	// Email sender configuration (system-critical)
 	'notification.email.sender',
 	'notification.email.senderName',
-	
+
 	// Advanced security settings
 	'security.allowedFileTypes',
 	'security.rateLimitPerIP',
 	'security.requireEmailVerification',
 	'security.autoApproveThreshold',
-	
+
 	// Data processing settings
 	'data.duplicateCheckRadius',
 	'data.duplicateCheckTimeframe',
 	'data.exportFormats',
 	'data.archiveAfterDays',
-	
+
 	// Advanced display settings
-	'display.defaultMapCenter',
-	'display.defaultMapZoom',
 	'display.dateFormat',
-	
+
 	// Integration settings
-	'integration.mapTileProvider',
 	'integration.weatherApiKey',
 	'integration.geoApiKey',
 	'integration.webhookUrl',
-	
+
 	// Mobile app settings
 	'mobile.minAppVersion',
 	'mobile.updateMessage',
@@ -66,17 +63,17 @@ export function canUserAccessConfigKey(user: User | null | undefined, configKey:
 	if (!user) {
 		return false;
 	}
-	
+
 	// Superadmins can access everything
 	if (isSuperAdminUser(user)) {
 		return true;
 	}
-	
+
 	// Regular admins can only access non-system-critical settings
 	if (user.roles?.includes('admin')) {
 		return ADMIN_ACCESSIBLE_CONFIG_KEYS.has(configKey);
 	}
-	
+
 	// Non-admin users cannot access any config
 	return false;
 }
@@ -84,8 +81,11 @@ export function canUserAccessConfigKey(user: User | null | undefined, configKey:
 /**
  * Filter configuration items based on user access level
  */
-export function filterConfigsByUserAccess(configs: ConfigItem[], user: User | null | undefined): ConfigItem[] {
-	return configs.filter(config => canUserAccessConfigKey(user, config.key));
+export function filterConfigsByUserAccess(
+	configs: ConfigItem[],
+	user: User | null | undefined
+): ConfigItem[] {
+	return configs.filter((config) => canUserAccessConfigKey(user, config.key));
 }
 
 /**

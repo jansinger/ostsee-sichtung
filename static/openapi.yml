@@ -2936,13 +2936,12 @@ components:
       description: Öffentlich verfügbare Konfigurationswerte (Werte können beliebige JSON-Typen sein)
       additionalProperties: {}
       example:
-        "display.maxSightings": 100
-        "mobile.apiEnabled": true
-        "integration.mapTileUrl": "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        "display.defaultMapCenter":
-          lat: 54.3233
-          lng: 10.1228
-        "upload.allowedTypes": ["image/jpeg", "image/png"]
+        "display.dateFormat": "DD.MM.YYYY"
+        "display.maintenanceMode": false
+        "display.maintenanceMessage": "Die Anwendung wird gewartet. Bitte versuchen Sie es später erneut."
+        "mobile.minAppVersion": "1.0.0"
+        "mobile.updateMessage": "Eine neue Version der App ist verfügbar."
+        "data.exportFormats": ["csv", "json", "kml", "xml"]
 
     UploadConfig:
       type: object
