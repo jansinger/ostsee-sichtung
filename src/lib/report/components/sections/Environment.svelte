@@ -7,6 +7,7 @@
 		OpenMeteoRawData
 	} from '$lib/services/weatherService';
 	import { convertToStoredWeatherData } from '$lib/services/weatherService';
+	import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import SectionCard from './SectionCard.svelte';
 
@@ -31,7 +32,7 @@
 	function handleFullWeatherData(weatherData: WeatherData) {
 		// Bestimme automatisch den data_type basierend auf dem Sichtungsdatum
 		// (NIEDRIG: Berlin-Datum statt UTC — läuft im Browser, kein Server-Import).
-		const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
+		const today = berlinCalendarDayIso();
 		const sightingDateStr = sightingDate || '';
 		const dataType = sightingDateStr >= today ? 'forecast' : 'historical';
 

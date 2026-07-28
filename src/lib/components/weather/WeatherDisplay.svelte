@@ -13,7 +13,9 @@
 		StoredWeatherData
 	} from '$lib/services/weatherService';
 	import type { WeatherDataWithMetadata } from '$lib/types';
-	import { formatISOLikeDatetime } from '$lib/utils/format/dateTime';
+	// `time`/`observation_time` ist zonenlose Berlin-Wanduhrzeit (siehe
+	// weatherService.ts) — formatObservationTime reicht sie unkonvertiert durch (M4).
+	import { formatObservationTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { getWeatherIconClass, getWindDirectionIconClass } from '$lib/utils/weather/weatherIcons';
 
@@ -101,19 +103,6 @@
 			}
 		};
 	});
-
-	// `time`/`observation_time` ist ein zonenloser Berlin-Wanduhrzeit-String
-	// (siehe weatherService.ts). formatLocalDateTime würde ihn fälschlich ein
-	// zweites Mal nach Berlin konvertieren (M4) — formatISOLikeDatetime reicht
-	// zonenlose Strings verbatim durch. Nur umsortiert für die Anzeige, ohne
-	// Umweg über ein Date-Objekt (bliebe sonst an der Laufzeit-Zone hängen).
-	function formatObservationTime(time: string | Date | null | undefined): string {
-		const iso = formatISOLikeDatetime(time);
-		if (!iso) return '';
-		const [datePart, timePart] = iso.split(' ');
-		const [year, month, day] = (datePart ?? '').split('-');
-		return `${day}.${month}.${year}, ${timePart}`;
-	}
 </script>
 
 {#if displayData && Object.keys(displayData).length > 0}

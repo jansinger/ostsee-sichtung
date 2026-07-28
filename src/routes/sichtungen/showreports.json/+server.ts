@@ -23,6 +23,7 @@ import { getSpeciesLabel } from '$lib/report/formOptions/species.js';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { getClientIp } from '$lib/server/utils/getClientIp';
+import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { and, between, gte, lt, sql } from 'drizzle-orm';
 
@@ -94,9 +95,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			const yearNum = parseInt(year);
 			// NIEDRIG: Jahres-Obergrenze in Berliner Ortszeit statt Server-Prozesszone
 			// (nur an Silvester relevant) — sonst zeichengleiches Verhalten.
-			const currentBerlinYear = Number(
-				new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' }).slice(0, 4)
-			);
+			const currentBerlinYear = Number(berlinCalendarDayIso().slice(0, 4));
 			if (!isNaN(yearNum) && yearNum >= 1900 && yearNum <= currentBerlinYear + 1) {
 				// Jahresgrenzen in deutscher Ortszeit: `dt`/`ti` der Response werden
 				// nach Europe/Berlin umgerechnet, der Filter muss dieselbe

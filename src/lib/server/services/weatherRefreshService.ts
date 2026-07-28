@@ -10,6 +10,7 @@ import {
 	calculateSeaState
 } from '$lib/constants/weather';
 import { hourIndexFromLocalTime } from '$lib/server/weather/hourIndex';
+import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
 
 const logger = createLogger('service:weather-refresh');
 
@@ -59,7 +60,7 @@ export async function fetchWeatherData(
 	// Prüfe ob das Datum heute oder in der Zukunft ist (N5: deutsche Ortszeit,
 	// nicht UTC — sonst wird in den ersten 1-2 Stunden nach Mitternacht Berlin
 	// noch der UTC-Vortag als "heute" gewertet).
-	const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
+	const today = berlinCalendarDayIso();
 	const isToday = date >= today;
 
 	// Build Open-Meteo API URL - verwende Forecast API für heutige/zukünftige Daten

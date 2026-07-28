@@ -11,12 +11,14 @@
 import { TEST_TIME_ZONES, withTimeZone } from '$lib/server/datetime/withTimeZone.testutil';
 import { describe, expect, it } from 'vitest';
 import {
+	berlinCalendarDayIso,
 	combineToDate,
 	formatForExport,
 	formatISOLikeDatetime,
 	formatForKmlExport,
 	formatForXmlExport,
 	formatLocalDateTime,
+	formatObservationTime,
 	isValidDate,
 	splitDateTime
 } from './dateTime';
@@ -616,6 +618,56 @@ describe('dateTime - Zentrale Zeitzonenverwaltung', () => {
 			expect(formatISOLikeDatetime(null)).toBe('');
 			expect(formatISOLikeDatetime(undefined)).toBe('');
 			expect(formatISOLikeDatetime('kein Datum')).toBe('');
+		});
+	});
+
+	describe('formatObservationTime', () => {
+		it('formatiert zonenlose Berlin-Wanduhrzeit-Strings ohne Umrechnung', () => {
+			for (const zone of TEST_TIME_ZONES) {
+				withTimeZone(zone, () => {
+					expect(formatObservationTime('2024-06-15T14:00')).toBe('15.06.2024, 14:00');
+					expect(formatObservationTime('2024-06-15 14:00:30')).toBe('15.06.2024, 14:00');
+				});
+			}
+		});
+
+		it('konvertiert echte Instants nach Europe/Berlin', () => {
+			for (const zone of TEST_TIME_ZONES) {
+				withTimeZone(zone, () => {
+					expect(formatObservationTime(new Date('2024-06-15T12:30:00.000Z'))).toBe(
+						'15.06.2024, 14:30'
+					);
+					// Winter: +1 statt +2, Kalendertag kippt über Mitternacht
+					expect(formatObservationTime(new Date('2024-01-15T23:30:00.000Z'))).toBe(
+						'16.01.2024, 00:30'
+					);
+				});
+			}
+		});
+
+		it('liefert leeren String für fehlende oder ungültige Eingaben', () => {
+			expect(formatObservationTime(null)).toBe('');
+			expect(formatObservationTime(undefined)).toBe('');
+			expect(formatObservationTime('kein Datum')).toBe('');
+		});
+	});
+
+	describe('berlinCalendarDayIso', () => {
+		it('liefert den Berliner Kalendertag eines Instants als YYYY-MM-DD', () => {
+			for (const zone of TEST_TIME_ZONES) {
+				withTimeZone(zone, () => {
+					// 23:30 UTC im Winter = 00:30 Berlin am Folgetag
+					expect(berlinCalendarDayIso(new Date('2024-01-15T23:30:00.000Z'))).toBe('2024-01-16');
+					// 22:30 UTC im Sommer = 00:30 Berlin am Folgetag (MESZ +2)
+					expect(berlinCalendarDayIso(new Date('2024-06-15T22:30:00.000Z'))).toBe('2024-06-16');
+					// Mittags kein Tageswechsel
+					expect(berlinCalendarDayIso(new Date('2024-06-15T12:00:00.000Z'))).toBe('2024-06-15');
+				});
+			}
+		});
+
+		it('nutzt ohne Argument den aktuellen Zeitpunkt', () => {
+			expect(berlinCalendarDayIso()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 		});
 	});
 });

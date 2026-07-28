@@ -4,6 +4,7 @@
 	import { downloadHandlers, createTimestampedFilename } from '$lib/utils/download';
 	import type { FrontendSighting } from '$lib/types';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
+	import { formatWallClockDateTime } from '$lib/utils/format/formatWallClockDateTime';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('ExportModal');
@@ -63,23 +64,18 @@
 		return recordCount * (bytesPerRecord[format as keyof typeof bytesPerRecord] || 500);
 	}
 
-	// `fromDate`/`toDate` sind reine Kalendertag-Strings ("YYYY-MM-DD") aus dem
-	// Datumsfilter, kein Zeitpunkt. Direkt umsortiert statt über ein Date-Objekt
-	// formatiert — sonst bestimmt die Browser-Zone den Tag mit (bis zu ±1 Tag).
-	function formatFilterDate(isoDate: string): string {
-		const [year, month, day] = isoDate.split('-');
-		return `${day}.${month}.${year}`;
-	}
-
-	// Aktive Filter als lesbare Strings formatieren
+	// Aktive Filter als lesbare Strings formatieren. `fromDate`/`toDate` sind
+	// reine Kalendertag-Strings ("YYYY-MM-DD") aus dem Datumsfilter, kein
+	// Zeitpunkt — formatWallClockDateTime sortiert nur um, ohne Date-Objekt
+	// (sonst bestimmt die Browser-Zone den Tag mit, bis zu ±1 Tag).
 	function getActiveFiltersDisplay(): string[] {
 		const filterDisplays: string[] = [];
 
 		if (currentFilters.fromDate) {
-			filterDisplays.push(`Von: ${formatFilterDate(currentFilters.fromDate as string)}`);
+			filterDisplays.push(`Von: ${formatWallClockDateTime(currentFilters.fromDate as string)}`);
 		}
 		if (currentFilters.toDate) {
-			filterDisplays.push(`Bis: ${formatFilterDate(currentFilters.toDate as string)}`);
+			filterDisplays.push(`Bis: ${formatWallClockDateTime(currentFilters.toDate as string)}`);
 		}
 		if (currentFilters.verified === '1') {
 			filterDisplays.push('Nur geprüfte Sichtungen');

@@ -2,7 +2,9 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import WeatherDisplay from '$lib/components/weather/WeatherDisplay.svelte';
 	import type { StoredWeatherData } from '$lib/services/weatherService';
-	import { formatISOLikeDatetime, formatLocalDateTime } from '$lib/utils/format/dateTime';
+	// `observation_time` ist zonenlose Berlin-Wanduhrzeit, `fetched_at` ein echter
+	// UTC-Instant — deshalb formatObservationTime bzw. formatLocalDateTime (M4).
+	import { formatLocalDateTime, formatObservationTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { toast } from '$lib/stores/toastState.svelte';
 
@@ -84,18 +86,6 @@
 		} finally {
 			isRefreshing = false;
 		}
-	}
-
-	// `observation_time` ist ein zonenloser Berlin-Wanduhrzeit-String (siehe
-	// weatherService.ts) — anders als `fetched_at` (echter UTC-Instant, unten
-	// weiter über formatLocalDateTime formatiert). formatLocalDateTime würde
-	// observation_time fälschlich ein zweites Mal nach Berlin konvertieren (M4).
-	function formatObservationTime(time: string | Date | null | undefined): string {
-		const iso = formatISOLikeDatetime(time);
-		if (!iso) return '';
-		const [datePart, timePart] = iso.split(' ');
-		const [year, month, day] = (datePart ?? '').split('-');
-		return `${day}.${month}.${year}, ${timePart}`;
 	}
 </script>
 

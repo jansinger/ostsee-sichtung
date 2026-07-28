@@ -292,6 +292,41 @@ export function formatISOLikeDatetime(dateTime: string | Date | null | undefined
 }
 
 /**
+ * Formatiert einen Beobachtungszeitstempel für die Anzeige: "DD.MM.YYYY, HH:MM".
+ *
+ * Für zonenlose Berlin-Wanduhrzeit-Strings (z. B. `observation_time` aus
+ * `weatherService.ts`, geliefert von Open-Meteo mit `timezone=Europe/Berlin`):
+ * `formatLocalDateTime` würde sie fälschlich ein zweites Mal nach Berlin
+ * konvertieren — hier werden sie über `formatISOLikeDatetime` nur umsortiert,
+ * ohne Umweg über ein Date-Objekt (bliebe sonst an der Laufzeit-Zone hängen).
+ * Echte Instants (Date, ISO mit Zonenangabe) werden nach Europe/Berlin
+ * konvertiert.
+ *
+ * @param time - Zonenloser Wanduhrzeit-String, Instant-String oder Date
+ * @returns "DD.MM.YYYY, HH:MM", leer bei fehlender oder ungültiger Eingabe
+ */
+export function formatObservationTime(time: string | Date | null | undefined): string {
+	const iso = formatISOLikeDatetime(time);
+	if (!iso) return '';
+	const [datePart, timePart] = iso.split(' ');
+	const [year, month, day] = (datePart ?? '').split('-');
+	return `${day}.${month}.${year}, ${timePart}`;
+}
+
+/**
+ * Berliner Kalendertag eines Zeitpunkts als "YYYY-MM-DD".
+ *
+ * Für „Heute"-Vergleiche mit Kalendertag-Strings aus Formularen und APIs:
+ * in den 1–2 Stunden nach Mitternacht Berlin hat UTC den Tageswechsel noch
+ * nicht vollzogen — ein `toISOString()`-Schnitt läge dann einen Tag daneben.
+ *
+ * @param instant - Zeitpunkt, Standard: jetzt
+ */
+export function berlinCalendarDayIso(instant: Date = new Date()): string {
+	return instant.toLocaleDateString('sv-SE', { timeZone: APP_TIMEZONE });
+}
+
+/**
  * Hilfsfunktion: Formatiert ein Datum/Zeit-Objekt in einer bestimmten
  * Format zur Nutzung in Eingabefeldern
  *

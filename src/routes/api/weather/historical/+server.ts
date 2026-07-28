@@ -11,7 +11,11 @@ import {
 	type WeatherData
 } from '$lib/services/weatherService';
 import { hourIndexFromLocalTime } from '$lib/server/weather/hourIndex';
-import { combineToDate, formatISOLikeDatetime } from '$lib/utils/format/dateTime';
+import {
+	berlinCalendarDayIso,
+	combineToDate,
+	formatISOLikeDatetime
+} from '$lib/utils/format/dateTime';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
@@ -37,8 +41,7 @@ interface MarineResponse {
  * Forecast-API routen — das Archiv kennt den laufenden Tag noch nicht.
  */
 function isTodayDate(date: string): boolean {
-	const berlinToday = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
-	return date === berlinToday;
+	return date === berlinCalendarDayIso();
 }
 
 /**
