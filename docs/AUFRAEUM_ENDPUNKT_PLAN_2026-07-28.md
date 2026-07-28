@@ -1188,6 +1188,8 @@ git commit -m "docs(media): document cleanup endpoint and correct stale orphan n
 
 **Dateien:**
 
+- Anlegen: `src/routes/admin/settings/CleanupPanel.svelte`
+- Anlegen: `src/routes/admin/settings/cleanupPanel.svelte.test.ts`
 - Ändern: `src/routes/admin/settings/+page.svelte`
 
 - [ ] **Schritt 1: Abschnitt einfügen**
@@ -1287,18 +1289,68 @@ git commit -m "docs(media): document cleanup endpoint and correct stale orphan n
 </section>
 ```
 
-- [ ] **Schritt 2: Alles laufen lassen**
+- [ ] **Schritt 2: Komponententest schreiben**
 
-Ausführen: `npm run test:quick && npm run build`
+`src/routes/admin/settings/cleanupPanel.svelte.test.ts` — Browser-Umgebung,
+Suffix `.svelte.test.ts` ist Pflicht (`.claude/rules/testing.md`):
+
+```typescript
+/**
+ * Der Lösch-Button darf erst erscheinen, wenn eine Vorschau vorliegt — sonst
+ * löscht ein Admin blind.
+ */
+import { render } from 'vitest-browser-svelte';
+import { page } from 'vitest/browser';
+import { describe, expect, it, vi } from 'vitest';
+import CleanupPanel from './CleanupPanel.svelte';
+
+function respondWith(report: Record<string, unknown>) {
+	globalThis.fetch = vi.fn().mockResolvedValue({
+		ok: true,
+		json: async () => report
+	}) as unknown as typeof fetch;
+}
+
+describe('CleanupPanel', () => {
+	it('zeigt vor der Vorschau keinen Lösch-Button', async () => {
+		render(CleanupPanel);
+		await expect.element(page.getByRole('button', { name: 'Vorschau laden' })).toBeVisible();
+		expect(page.getByRole('button', { name: 'Endgültig löschen' }).elements()).toHaveLength(0);
+	});
+
+	it('zeigt den Lösch-Button erst, wenn die Vorschau Fundstücke meldet', async () => {
+		respondWith({ retentionHours: 24, rowsFound: 4, filesFound: 0, rowsDeleted: 0, filesDeleted: 0, failed: 0, remaining: 0 });
+		render(CleanupPanel);
+		await page.getByRole('button', { name: 'Vorschau laden' }).click();
+		await expect.element(page.getByRole('button', { name: 'Endgültig löschen' })).toBeVisible();
+	});
+
+	it('bietet kein Löschen an, wenn nichts gefunden wurde', async () => {
+		respondWith({ retentionHours: 24, rowsFound: 0, filesFound: 0, rowsDeleted: 0, filesDeleted: 0, failed: 0, remaining: 0 });
+		render(CleanupPanel);
+		await page.getByRole('button', { name: 'Vorschau laden' }).click();
+		await expect.element(page.getByText('0 Zeilen ohne Sichtung')).toBeVisible();
+		expect(page.getByRole('button', { name: 'Endgültig löschen' }).elements()).toHaveLength(0);
+	});
+});
+```
+
+Dafür wird der Abschnitt als eigene Komponente
+`src/routes/admin/settings/CleanupPanel.svelte` angelegt (Markup aus Schritt 1)
+und in `+page.svelte` eingebunden — testbar und hält die 18 KB große Seite klein.
+
+- [ ] **Schritt 3: Alles laufen lassen**
+
+Ausführen: `npm run test:quick && npm run test:unit:client && npm run build`
 Erwartet: Tests grün, Build ohne Fehler.
 
-- [ ] **Schritt 3: Im Browser prüfen**
+- [ ] **Schritt 4: Im Browser prüfen**
 
 Dev-Server starten, als Admin anmelden, `admin/settings` öffnen, „Vorschau
 laden“ klicken. Erwartet: Meldung mit den Zahlen aus dem Dry-Run des CLI
 (aktuell 4 Zeilen, 0 Dateien). Der Lösch-Button erscheint erst danach.
 
-- [ ] **Schritt 4: Commit**
+- [ ] **Schritt 5: Commit**
 
 ```bash
 git add -A
