@@ -1,16 +1,16 @@
 /**
  * Storage Factory - Abstrakte Speicher-Providererstellung und -verwaltung
- * 
+ *
  * Diese Datei implementiert das Factory-Pattern für Speicher-Provider und ermöglicht
- * die dynamische Auswahl des geeigneten Speicher-Backends basierend auf der 
+ * die dynamische Auswahl des geeigneten Speicher-Backends basierend auf der
  * Laufzeitumgebung und Konfiguration.
- * 
+ *
  * Das System unterstützt verschiedene Speicher-Provider:
  * - Local: Lokaler Dateisystem-Speicher (Entwicklung)
  * - Vercel Blob: Vercel's Cloud-Speicher (Produktion auf Vercel)
  * - S3: Amazon S3 (geplant)
  * - GCS: Google Cloud Storage (geplant)
- * 
+ *
  * Die Auswahl erfolgt automatisch oder über Umgebungsvariablen.
  */
 import { dev } from '$app/environment';
@@ -18,9 +18,17 @@ import { createLogger } from '$lib/logger.server';
 import type { StorageProvider, StorageProviderType } from '$lib/types';
 import { env } from '$env/dynamic/private';
 import { LocalStorageProvider } from './local';
+import { getUploadBasePath, resolveUploadBasePath } from './uploadPath';
 import { VercelBlobStorageProvider } from './vercel-blob';
 
 const logger = createLogger('storage:factory');
+
+/**
+ * Öffentliche URL-Basis für lokal gespeicherte Dateien.
+ * Unabhängig vom Ablageort auf der Platte — die Route `/uploads/[...path]`
+ * liefert die Dateien aus, egal wo sie liegen.
+ */
+const LOCAL_PUBLIC_URL_BASE = '/uploads';
 
 /**
  * Singleton-Instanz des aktuell aktiven Speicher-Providers.
@@ -30,25 +38,25 @@ let storageProvider: StorageProvider | null = null;
 
 /**
  * Erstellt oder gibt den konfigurierten Speicher-Provider zurück.
- * 
+ *
  * Diese Funktion implementiert das Singleton-Pattern und stellt sicher,
  * dass immer derselbe Provider verwendet wird. Die Auswahl des Providers
  * erfolgt basierend auf:
- * 
+ *
  * 1. STORAGE_PROVIDER Umgebungsvariable (explizite Konfiguration)
  * 2. Automatische Erkennung der Laufzeitumgebung:
  *    - Vercel-Umgebung → vercel-blob
  *    - Entwicklungsmodus → local
  *    - Andere Umgebungen → local (Fallback)
- * 
+ *
  * @returns Konfigurierter und betriebsbereiter StorageProvider
  * @throws {Error} Wenn ein unbekannter oder nicht implementierter Provider angefordert wird
- * 
+ *
  * @example
  * ```typescript
  * // Automatische Provider-Auswahl
  * const storage = getStorageProvider();
- * 
+ *
  * // Datei hochladen
  * const result = await storage.uploadFile(
  *   Buffer.from('Hello World'),
@@ -68,11 +76,17 @@ export function getStorageProvider(): StorageProvider {
 
 	// Provider-spezifische Initialisierung
 	switch (providerType) {
-		case 'local':
+		case 'local': {
 			// Lokaler Speicher mit konfigurierten Pfaden
-			storageProvider = new LocalStorageProvider('uploads', '/uploads');
-			logger.info('Using local file storage');
+			const uploadPath = getUploadBasePath();
+			storageProvider = new LocalStorageProvider(uploadPath, LOCAL_PUBLIC_URL_BASE);
+			// Beide Werte loggen: konfiguriert (evtl. relativ) und das tatsächliche Zielverzeichnis
+			logger.info(
+				{ uploadPath, resolvedUploadPath: resolveUploadBasePath() },
+				'Using local file storage'
+			);
 			break;
+		}
 
 		case 'vercel-blob':
 			// Vercel Blob Storage (Standardkonfiguration aus Umgebungsvariablen)
@@ -98,24 +112,24 @@ export function getStorageProvider(): StorageProvider {
 
 /**
  * Ermittelt den zu verwendenden Speicher-Provider-Typ.
- * 
+ *
  * Diese interne Funktion implementiert die Logik zur automatischen
  * Provider-Auswahl. Die Priorität ist:
- * 
+ *
  * 1. **Explizite Konfiguration**: STORAGE_PROVIDER Umgebungsvariable
  * 2. **Vercel-Erkennung**: VERCEL Umgebungsvariable vorhanden
  * 3. **Entwicklungsmodus**: SvelteKit dev-Flag aktiv
  * 4. **Fallback**: Lokaler Speicher als sicherer Standard
- * 
+ *
  * @returns Der ermittelte StorageProviderType
  * @internal
- * 
+ *
  * @example
  * ```typescript
  * // Umgebungsvariable setzen
  * process.env.STORAGE_PROVIDER = 'vercel-blob';
  * const type = getStorageProviderType(); // 'vercel-blob'
- * 
+ *
  * // Automatische Vercel-Erkennung
  * process.env.VERCEL = '1';
  * const type = getStorageProviderType(); // 'vercel-blob'
@@ -154,13 +168,13 @@ function getStorageProviderType(): StorageProviderType {
 
 /**
  * Setzt den Storage-Provider zurück (hauptsächlich für Tests).
- * 
+ *
  * Diese Funktion ermöglicht es, den Singleton-Provider zu resetten,
  * um in Tests verschiedene Provider-Konfigurationen zu testen.
- * 
+ *
  * **Achtung**: Diese Funktion sollte nur in Tests verwendet werden,
  * da ein Reset während der Laufzeit zu inkonsistentem Verhalten führen kann.
- * 
+ *
  * @example
  * ```typescript
  * // In Tests
@@ -176,15 +190,15 @@ export function resetStorageProvider(): void {
 
 /**
  * Prüft, ob ein Cloud-basierter Speicher-Provider verwendet wird.
- * 
+ *
  * Diese Hilfsfunktion ermöglicht es, unterschiedliche Verhaltensweisen
  * für lokale und Cloud-Speicher zu implementieren, z.B.:
  * - Verschiedene URL-Generierung
  * - Unterschiedliche Caching-Strategien
  * - Verschiedene Fehlerbehandlung
- * 
+ *
  * @returns `true` wenn ein Cloud-Provider aktiv ist, `false` für lokalen Speicher
- * 
+ *
  * @example
  * ```typescript
  * if (isCloudStorage()) {
@@ -203,20 +217,20 @@ export function isCloudStorage(): boolean {
 
 /**
  * Gibt den aktuell konfigurierten Storage-Provider-Typ zurück.
- * 
+ *
  * Diese Funktion ermöglicht es anderen Modulen, den aktiven Provider-Typ
  * zu ermitteln, ohne den Provider selbst zu instanziieren. Nützlich für:
  * - Conditional Logic basierend auf Provider-Typ
  * - Debugging und Logging
  * - Konfigurationsprüfungen
- * 
+ *
  * @returns Der aktuell konfigurierte StorageProviderType
- * 
+ *
  * @example
  * ```typescript
  * const currentProvider = getCurrentStorageProvider();
  * logger.info(`Active storage provider: ${currentProvider}`);
- * 
+ *
  * if (currentProvider === 'vercel-blob') {
  *   // Vercel-spezifische Konfiguration
  * }

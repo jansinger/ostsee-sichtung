@@ -7,7 +7,8 @@
  * 2. Ensures aufnahmeHochladen is set to "1" for all found rows
  * 3. Creates new entries in sichtung_files table with complete metadata
  * 4. Extracts EXIF data from image files (GPS, camera info, etc.)
- * 5. Copies files from uploads/_old_uploads/ to uploads/{referenz_id}/ (preserves originals)
+ * 5. Copies files from <UPLOAD_PATH>/_old_uploads/ to <UPLOAD_PATH>/{referenz_id}/
+ *    (preserves originals; UPLOAD_PATH defaults to `uploads` relative to the working directory)
  */
 
 import type { ExifData } from '$lib/types';
@@ -271,7 +272,9 @@ async function main() {
 	const client = postgres(databaseUrl);
 	const db = drizzle(client, { schema });
 
-	const baseUploadPath = path.join(process.cwd(), 'uploads');
+	// Same UPLOAD_PATH contract as the app (src/lib/server/storage/uploadPath.ts).
+	// Standalone script — cannot use $env/dynamic/private, so read process.env directly.
+	const baseUploadPath = path.resolve((process.env.UPLOAD_PATH ?? '').trim() || 'uploads');
 	const oldUploadPath = path.join(baseUploadPath, '_old_uploads');
 
 	try {

@@ -4,7 +4,8 @@ import type { StorageProviderType } from '$lib/types';
 // Mutable mock environment object
 const mockEnv: Record<string, string> = {
 	STORAGE_PROVIDER: '',
-	VERCEL: ''
+	VERCEL: '',
+	UPLOAD_PATH: ''
 };
 
 // Mock the app environment
@@ -84,6 +85,7 @@ describe('Storage Factory', () => {
 		// Reset mock environment variables
 		mockEnv.STORAGE_PROVIDER = '';
 		mockEnv.VERCEL = '';
+		mockEnv.UPLOAD_PATH = '';
 
 		// Clear all mocks
 		vi.clearAllMocks();
@@ -142,7 +144,9 @@ describe('Storage Factory', () => {
 			mockEnv.STORAGE_PROVIDER = 'gcs';
 			mockEnv.VERCEL = '';
 
-			expect(() => getStorageProvider()).toThrow('Google Cloud Storage provider not implemented yet');
+			expect(() => getStorageProvider()).toThrow(
+				'Google Cloud Storage provider not implemented yet'
+			);
 		});
 
 		test('should throw error for unknown provider', () => {
@@ -155,8 +159,8 @@ describe('Storage Factory', () => {
 
 		test('should default to local storage for unknown environments', () => {
 			// No special environment variables set
-			mockEnv.VERCEL = "";
-			mockEnv.STORAGE_PROVIDER = "";
+			mockEnv.VERCEL = '';
+			mockEnv.STORAGE_PROVIDER = '';
 
 			const provider = getStorageProvider();
 			expect(provider).toBeDefined();
@@ -306,12 +310,12 @@ describe('Storage Factory', () => {
 			expect(getCurrentStorageProvider()).toBe('vercel-blob');
 
 			// Undefined should be falsy
-			mockEnv.STORAGE_PROVIDER = "";
+			mockEnv.STORAGE_PROVIDER = '';
 			mockEnv.VERCEL = '1';
 			expect(getCurrentStorageProvider()).toBe('vercel-blob');
 
 			// Any truthy value for VERCEL should work
-			mockEnv.VERCEL = "";
+			mockEnv.VERCEL = '';
 			mockEnv.VERCEL = 'true';
 			expect(getCurrentStorageProvider()).toBe('vercel-blob');
 		});
@@ -326,6 +330,49 @@ describe('Storage Factory', () => {
 			// Access the mocked module
 			const localModule = await import('./local');
 			expect(localModule.LocalStorageProvider).toHaveBeenCalledWith('uploads', '/uploads');
+		});
+
+		test('should use UPLOAD_PATH as base directory for LocalStorageProvider', async () => {
+			mockEnv.STORAGE_PROVIDER = 'local';
+			mockEnv.UPLOAD_PATH = '/srv/ostsee/uploads';
+
+			getStorageProvider();
+
+			const localModule = await import('./local');
+			expect(localModule.LocalStorageProvider).toHaveBeenCalledWith(
+				'/srv/ostsee/uploads',
+				'/uploads'
+			);
+		});
+
+		test('should fall back to "uploads" when UPLOAD_PATH is not set', async () => {
+			mockEnv.STORAGE_PROVIDER = 'local';
+			mockEnv.UPLOAD_PATH = '';
+
+			getStorageProvider();
+
+			const localModule = await import('./local');
+			expect(localModule.LocalStorageProvider).toHaveBeenCalledWith('uploads', '/uploads');
+		});
+
+		test('should fall back to "uploads" when UPLOAD_PATH contains only whitespace', async () => {
+			mockEnv.STORAGE_PROVIDER = 'local';
+			mockEnv.UPLOAD_PATH = '   ';
+
+			getStorageProvider();
+
+			const localModule = await import('./local');
+			expect(localModule.LocalStorageProvider).toHaveBeenCalledWith('uploads', '/uploads');
+		});
+
+		test('should trim surrounding whitespace from UPLOAD_PATH', async () => {
+			mockEnv.STORAGE_PROVIDER = 'local';
+			mockEnv.UPLOAD_PATH = '  /app/uploads  ';
+
+			getStorageProvider();
+
+			const localModule = await import('./local');
+			expect(localModule.LocalStorageProvider).toHaveBeenCalledWith('/app/uploads', '/uploads');
 		});
 
 		test('should create VercelBlobStorageProvider with no parameters', async () => {
@@ -406,7 +453,7 @@ describe('Storage Factory', () => {
 			// Simulate production deployment on Vercel
 			process.env.NODE_ENV = 'production';
 			mockEnv.VERCEL = '1';
-			mockEnv.STORAGE_PROVIDER = "";
+			mockEnv.STORAGE_PROVIDER = '';
 
 			expect(getCurrentStorageProvider()).toBe('vercel-blob');
 			expect(isCloudStorage()).toBe(true);
@@ -421,8 +468,8 @@ describe('Storage Factory', () => {
 				dev: true
 			}));
 
-			mockEnv.VERCEL = "";
-			mockEnv.STORAGE_PROVIDER = "";
+			mockEnv.VERCEL = '';
+			mockEnv.STORAGE_PROVIDER = '';
 
 			// Dynamically import to get updated environment
 			const factory = await import('./factory');

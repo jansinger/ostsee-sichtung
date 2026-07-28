@@ -38,7 +38,10 @@ exists(filePath): Promise<boolean>
 list(prefix?): Promise<UploadedFileInfo[]>
 ```
 
-**Local:** Dateien in `uploads/`, Path-Traversal-Schutz via `normalize()` + `relative()`
+**Local:** Basisverzeichnis aus `UPLOAD_PATH` (Standard `uploads`, relativ zum Arbeitsverzeichnis).
+Einzige Auswertungsstelle: `src/lib/server/storage/uploadPath.ts` — Schreibpfad (`LocalStorageProvider`)
+und Lesepfad (`getUploadPath()` in `$lib/server/uploads`) beziehen ihr Verzeichnis beide von dort.
+Path-Traversal-Schutz via `normalize()` + `relative()`
 **Vercel Blob:** Token aus `BLOB_READ_WRITE_TOKEN`, öffentliche URLs
 
 ---

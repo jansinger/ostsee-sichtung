@@ -1,13 +1,21 @@
 import path from 'path';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import {
-	ALLOWED_UPLOAD_MIME_TYPES,
-	getFileInfo,
-	getMimeTypeFromExtension,
-	getUploadPath,
-	isAllowedMimeType,
-	isValidUploadPath
-} from './uploads';
+
+// Mutable mock environment object
+const mockEnv: Record<string, string> = {
+	UPLOAD_PATH: ''
+};
+
+// Mock environment variables (dynamic env) with getter to allow runtime changes
+vi.mock('$env/dynamic/private', () => ({
+	env: new Proxy({} as Record<string, string>, {
+		get: (_target, prop: string) => mockEnv[prop] ?? '',
+		set: (_target, prop: string, value: string) => {
+			mockEnv[prop] = value;
+			return true;
+		}
+	})
+}));
 
 // Mock the logger
 vi.mock('$lib/logger.server', () => ({
@@ -33,6 +41,16 @@ vi.mock('fs', () => ({
 	existsSync: vi.fn(),
 	statSync: vi.fn()
 }));
+
+// Import after mocks are set up
+import {
+	ALLOWED_UPLOAD_MIME_TYPES,
+	getFileInfo,
+	getMimeTypeFromExtension,
+	getUploadPath,
+	isAllowedMimeType,
+	isValidUploadPath
+} from './uploads';
 
 describe('uploads utilities', () => {
 	let mockExistsSync: any;
@@ -291,6 +309,38 @@ describe('uploads utilities', () => {
 	});
 
 	describe('getUploadPath', () => {
+		beforeEach(() => {
+			mockEnv.UPLOAD_PATH = '';
+		});
+
+		test('should use UPLOAD_PATH as base directory when set', () => {
+			mockEnv.UPLOAD_PATH = '/srv/ostsee/uploads';
+
+			expect(getUploadPath('user123/photo.jpg')).toBe('/srv/ostsee/uploads/user123/photo.jpg');
+		});
+
+		test('should resolve a relative UPLOAD_PATH against the working directory', () => {
+			mockEnv.UPLOAD_PATH = 'data/uploads';
+
+			expect(getUploadPath('photo.jpg')).toBe(
+				path.join(process.cwd(), 'data/uploads', 'photo.jpg')
+			);
+		});
+
+		test('should fall back to "uploads" when UPLOAD_PATH is not set', () => {
+			mockEnv.UPLOAD_PATH = '';
+
+			expect(getUploadPath('photo.jpg')).toBe(path.join(process.cwd(), 'uploads', 'photo.jpg'));
+		});
+
+		test('should reflect UPLOAD_PATH changes at runtime', () => {
+			mockEnv.UPLOAD_PATH = '/mnt/a';
+			expect(getUploadPath('x.jpg')).toBe('/mnt/a/x.jpg');
+
+			mockEnv.UPLOAD_PATH = '/mnt/b';
+			expect(getUploadPath('x.jpg')).toBe('/mnt/b/x.jpg');
+		});
+
 		test('should construct correct upload path', () => {
 			const expectedPath = path.join(process.cwd(), 'uploads', 'user123/photo.jpg');
 			expect(getUploadPath('user123/photo.jpg')).toBe(expectedPath);

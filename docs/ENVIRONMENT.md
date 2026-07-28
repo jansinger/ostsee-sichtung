@@ -270,14 +270,24 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 
 **Type**: `string` (Path)
 **Required**: When `STORAGE_PROVIDER=local`
-**Default**: `/app/uploads` (Docker), `uploads` (non-Docker)
-**Description**: Directory path for uploaded files.
+**Default**: `/app/uploads` (Docker, set in the image), `uploads` (non-Docker)
+**Description**: Directory path for uploaded files. Determines both where the application
+writes uploads and where it reads them back from.
+
+Relative values are resolved against the process working directory (`/app` inside the
+container, so the default `uploads` maps to `/app/uploads`). Absolute values are used as
+given. The Docker entrypoint validates this exact path for existence and write permission
+before the application starts, so entrypoint check and application behaviour cannot drift
+apart.
 
 **Example**:
 
 ```bash
 UPLOAD_PATH=/app/uploads
 ```
+
+**Note**: When running outside Docker with a working directory other than the project root,
+set an absolute path — otherwise uploads land next to wherever the process was started.
 
 ---
 
