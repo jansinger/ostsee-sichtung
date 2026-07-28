@@ -7,8 +7,8 @@
 # Quick Start:
 #   1. Copy .env.docker to .env and configure
 #   2. docker compose -f docker-compose.production.yml up -d
-#   3. Initialize schema: docker exec ostsee-tiere-app npx drizzle-kit push
-#   4. Access app at http://localhost:3000
+#      (database schema is migrated automatically on startup)
+#   3. Access app at http://localhost:3000
 
 services:
   # ============================================
@@ -35,6 +35,10 @@ services:
 
       # Database Connection (only DATABASE_POSTGRES_URL is used by the application)
       DATABASE_POSTGRES_URL: ${DATABASE_POSTGRES_URL}
+
+      # Startup migrations (see docs/ENVIRONMENT.md)
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
+      ALLOW_DESTRUCTIVE_MIGRATIONS: ${ALLOW_DESTRUCTIVE_MIGRATIONS:-false}
 
       # Storage Configuration
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}

@@ -240,16 +240,11 @@ sudo certbot --nginx -d deine-domain.de
 
 ## 6. Datenbank initialisieren
 
-### Schema erstellen
+### PostGIS aktivieren (bei externer DB — VOR dem ersten Start)
 
-```bash
-# Schema in die Datenbank pushen
-docker compose exec app npx drizzle-kit push
-```
-
-### PostGIS aktivieren (bei externer DB)
-
-Falls du eine externe PostgreSQL-Datenbank verwendest:
+Falls du eine externe PostgreSQL-Datenbank verwendest, muss PostGIS **vor dem
+ersten Container-Start** aktiviert sein (die inkludierte `postgis/postgis`-DB
+bringt das bereits mit):
 
 ```sql
 -- Verbinde dich mit der Datenbank
@@ -259,6 +254,37 @@ psql -h db.example.com -U dein_user -d ostsee
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
 ```
+
+### Schema-Migrationen (automatisch)
+
+Das Datenbank-Schema wird **automatisch beim Container-Start** angelegt und
+aktualisiert. Der Entrypoint führt die im Image enthaltenen, versionierten
+SQL-Migrationen aus (`drizzle/`-Verzeichnis, Journal in
+`drizzle.__drizzle_migrations`). Ein manueller Schritt ist nicht nötig.
+
+```bash
+# Migrations-Ausgabe des Starts prüfen
+docker compose logs app | grep '\[migrate\]'
+```
+
+Eigenschaften des Migrationslaufs:
+
+- **Idempotent:** Bereits angewendete Migrationen werden übersprungen; ein
+  Neustart ohne Schema-Änderung ist ein No-op.
+- **Transaktional:** Schlägt eine Migration fehl, wird zurückgerollt und der
+  Container startet nicht (Fehler in den Logs).
+- **Advisory Lock:** Mehrere gleichzeitig startende Container migrieren nie
+  parallel.
+- **Schutz vor Datenverlust:** Enthält eine ausstehende Migration destruktive
+  Statements (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`), verweigert der
+  Container den Start. Erst Backup erstellen (siehe Abschnitt 8), dann einmalig
+  mit `ALLOW_DESTRUCTIVE_MIGRATIONS=true` starten.
+- **Bestehende Datenbanken:** Eine früher per `db:push` aufgebaute DB wird beim
+  ersten Start automatisch als Baseline übernommen (Migrationen werden markiert,
+  nicht erneut ausgeführt) — vorausgesetzt, das DB-Schema entspricht dem
+  Release des Images.
+- Abschaltbar mit `RUN_MIGRATIONS=false` (dann muss das Schema extern gepflegt
+  werden).
 
 > **Migration von schweinswalsichtung.de** oder komplexe DB-Operationen (Permissions, Reference-IDs, Upload-Migration): Siehe [DATABASE_MIGRATION.md](./DATABASE_MIGRATION.md).
 
@@ -412,9 +438,10 @@ cd /opt/ostsee-tiere
 docker compose pull
 
 # Container neu starten (Zero-Downtime mit Health Checks)
+# Schema-Migrationen des neuen Release laufen dabei automatisch
 docker compose up -d
 
-# Logs prüfen
+# Logs prüfen (inkl. Migrations-Ausgabe)
 docker compose logs -f app
 ```
 

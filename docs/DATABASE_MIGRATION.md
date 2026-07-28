@@ -177,12 +177,21 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO ostsee_app;
 # DATABASE_POSTGRES_URL="postgresql://ostsee_app:ostsee_dev_password@localhost:5432/ostsee"
 ```
 
-**Push the schema to the target database:**
+**Create the schema in the target database:**
+
+The schema is created by the versioned Drizzle migrations in `drizzle/`.
+Either start the application container once (migrations run automatically on
+startup), or run them manually from a checkout:
 
 ```bash
 # Ensure .env points to the TARGET database
-npm run db:push
+npm run db:migrate
 ```
+
+> `npm run db:push` also works for pure development databases, but production
+> databases should always be built via migrations — otherwise the migration
+> journal (`drizzle.__drizzle_migrations`) is missing and the container start
+> falls back to baseline detection.
 
 ### Step 3: Import Data
 

@@ -91,6 +91,10 @@ COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nodejs:nodejs /app/sbom ./sbom
 
+# Copy database migrations (applied at container startup, see docker-migrate.ts)
+COPY --chown=nodejs:nodejs drizzle ./drizzle
+COPY --chown=nodejs:nodejs scripts/docker-migrate.ts ./scripts/docker-migrate.ts
+
 # Copy runtime scripts
 COPY --chown=nodejs:nodejs scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 COPY --chown=nodejs:nodejs scripts/docker-healthcheck.sh /usr/local/bin/docker-healthcheck.sh

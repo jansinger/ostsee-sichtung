@@ -111,6 +111,7 @@ sbom/*.xml
 src/tools
 scripts/*
 !scripts/docker-*.sh
+!scripts/docker-migrate.ts
 
 # Playwright
 playwright.config.ts
