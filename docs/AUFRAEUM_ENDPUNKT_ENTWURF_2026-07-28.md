@@ -105,7 +105,7 @@ export interface CleanupOptions {
 	retentionMs: number;
 	/** `false` = nur ermitteln, nichts löschen. */
 	execute: boolean;
-	/** Obergrenze gelöschter Objekte pro Lauf. */
+	/** Obergrenze bearbeiteter Fundstücke pro Lauf (Zeile samt Datei = eins). */
 	limit: number;
 	ports: CleanupPorts;
 	onError?: (subject: string, error: unknown) => void;
@@ -189,7 +189,10 @@ POST /api/admin/cleanup-orphans
 
 **Authentifizierung — genau zwei akzeptierte Wege:**
 
-1. Angemeldete Admin-Session (`requireUserRole(url, locals.user, ['admin', 'superadmin'])`)
+1. Angemeldete Admin-Session, geprüft über `isAdminUser(locals.user)`.
+   **Nicht** `requireUserRole`: Das wirft einen `redirect(302)` auf die
+   Anmeldeseite — ein Cron-Dienst bekäme statt `401` eine Weiterleitung und
+   würde den Lauf als Erfolg werten.
 2. `Authorization: Bearer <CLEANUP_TOKEN>`
 
 Ist `CLEANUP_TOKEN` nicht gesetzt, ist Weg 2 **abgeschaltet** — nicht offen.
@@ -226,7 +229,7 @@ Sicherheit suggerieren.
 - **Fristklemmung.** `hours` kann nur nach oben abweichen. Ohne diese Klemmung
   könnte ein geleaktes Token mit `hours=0` die Uploads gerade laufender
   Formulare abräumen.
-- **Löschdeckel** von 500 Objekten pro Aufruf, `remaining` im Bericht. Begrenzt
+- **Löschdeckel** von 500 Fundstücken pro Aufruf, `remaining` im Bericht. Begrenzt
   den Schaden eines missbräuchlichen Aufrufs und hält den Request unter
   Proxy- und Serverless-Timeouts.
 - **Rate Limit** über `enforceRateLimit` wie bei den übrigen Endpunkten.

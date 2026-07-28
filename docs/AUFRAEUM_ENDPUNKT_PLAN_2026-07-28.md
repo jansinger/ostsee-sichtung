@@ -29,7 +29,7 @@ Storage-Provider.
   (`.claude/rules/upload.md`).
 - Mindestfrist ist `ORPHAN_RETENTION_HOURS` aus `$lib/constants/uploadRetention`
   (aktuell `24`). Kleinere Angaben werden geklemmt, nicht abgelehnt.
-- Löschdeckel pro Aufruf: `500`.
+- Löschdeckel pro Aufruf: `500` **Fundstücke** (eine Zeile samt Datei zählt als eins).
 - Name der Umgebungsvariablen: `CLEANUP_TOKEN`, Mindestlänge 32 Zeichen.
 - Bei jeder Änderung an einer API-Route muss `static/openapi.yml` mit demselben
   Commit aktualisiert werden (`.claude/rules/api.md`).
@@ -97,9 +97,20 @@ Erwartet: keine Ausgabe, Exit 0.
 
 - [ ] **Schritt 3: Kernmodul anlegen**
 
-Die Zeilen 36–194 aus `src/tools/cleanup-orphaned-uploads.ts` (von
-`RETENTION_PATTERN` bis einschließlich `resolveSafeTarget`) unverändert nach
-`src/lib/server/media/orphanCleanup.ts` verschieben. Kopfkommentar:
+Aus `src/tools/cleanup-orphaned-uploads.ts` unverändert nach
+`src/lib/server/media/orphanCleanup.ts` verschieben: `RETENTION_PATTERN`,
+`MILLIS_PER_HOUR`, `MILLIS_PER_DAY`, `DEFAULT_RETENTION`, `EXCLUDED_DIRS`,
+`parseRetention`, `computeCutoff`, `OrphanRow`, `selectOrphanedRows`,
+`DiskEntry`, `normalizeRelativePath`, `KnownState`, `selectOrphanedFiles`,
+`resolveSafeTarget` **und `scanUploadDir`** (dort `export` ergänzen).
+
+`scanUploadDir` muss mit, obwohl es `node:fs` anfasst: Es trägt drei
+Absicherungen, die keine Zweitimplementierung verlieren darf — den Ausschluss
+von `_old_uploads` (Altbestand der Migration), das Überspringen von Punktdateien
+(`.DS_Store`, `.gitkeep` lägen sonst als Waisen im Ergebnis) und die
+ENOENT-Toleranz für ein fehlendes Upload-Verzeichnis. Tool und Endpunkt laufen
+beide unter Node; nur der Vercel-Pfad hat kein Dateisystem, und der ist über die
+Provider-Prüfung in Task 5 ausgeschlossen. Kopfkommentar:
 
 ```typescript
 /**
@@ -110,6 +121,7 @@ Die Zeilen 36–194 aus `src/tools/cleanup-orphaned-uploads.ts` (von
  * Stripping über einen relativen `.ts`-Import und muss ohne Anwendungslaufzeit
  * auskommen. Die I/O-gebundenen Teile stehen im Aufrufer.
  */
+import { readdir, stat } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 ```
 
@@ -134,6 +146,7 @@ import {
 	normalizeRelativePath,
 	parseRetention,
 	resolveSafeTarget,
+	scanUploadDir,
 	selectOrphanedFiles,
 	selectOrphanedRows,
 	type DiskEntry,
@@ -350,7 +363,8 @@ export interface CleanupOptions {
 	retentionMs: number;
 	/** `false` ermittelt nur und fasst nichts an. */
 	execute: boolean;
-	/** Obergrenze gelöschter Objekte pro Lauf. */
+	/** Obergrenze bearbeiteter **Fundstücke** pro Lauf. Eine Zeile samt ihrer
+	 * Datei zählt als eins. */
 	limit: number;
 	ports: CleanupPorts;
 	onError?: (subject: string, error: unknown) => void;
@@ -633,6 +647,8 @@ git commit -m "feat(security): add constant-time token check for cleanup endpoin
 **Dateien:**
 
 - Anlegen: `src/lib/server/media/cleanupPorts.ts`
+- Anlegen: `src/lib/server/media/cleanupPorts.test.ts`
+- Anlegen: `src/lib/server/media/scanLocalUploads.ts`
 - Anlegen: `src/routes/api/admin/cleanup-orphans/+server.ts`
 - Anlegen: `src/routes/api/admin/cleanup-orphans/endpoint.test.ts`
 - Ändern: `src/lib/server/audit/auditService.ts`
@@ -842,33 +858,19 @@ export function createDbPorts(): CleanupPorts {
 /**
  * Sucht Dateien im lokalen Upload-Verzeichnis, zu denen keine Zeile existiert.
  * Nur für `STORAGE_PROVIDER=local` — der Aufrufer stellt das sicher.
+ *
+ * Der Verzeichnis-Durchlauf kommt bewusst aus dem Kern (`scanUploadDir`) und
+ * wird hier NICHT nachgebaut: Er trägt den Ausschluss von `_old_uploads`, das
+ * Überspringen von Punktdateien und die ENOENT-Toleranz.
  */
 import { db } from '$lib/server/db';
 import { sightingFiles, sightings } from '$lib/server/db/schema';
-import { selectOrphanedFiles, type DiskEntry } from './orphanCleanup';
+import { scanUploadDir, selectOrphanedFiles, type DiskEntry } from './orphanCleanup';
 import { resolveUploadBasePath } from '$lib/server/storage/uploadPath';
-import { readdir, stat } from 'node:fs/promises';
-import { join, relative } from 'node:path';
-
-async function scan(baseDir: string, prefix = ''): Promise<DiskEntry[]> {
-	const entries = await readdir(join(baseDir, prefix), { withFileTypes: true });
-	const found: DiskEntry[] = [];
-	for (const entry of entries) {
-		const rel = prefix ? join(prefix, entry.name) : entry.name;
-		if (entry.isDirectory()) {
-			found.push(...(await scan(baseDir, rel)));
-			continue;
-		}
-		const info = await stat(join(baseDir, rel));
-		found.push({ relativePath: relative('', rel), modifiedAt: info.mtime });
-	}
-	return found;
-}
 
 export async function scanLocalUploads(cutoff: Date): Promise<DiskEntry[]> {
-	const baseDir = resolveUploadBasePath();
 	const [entries, knownPaths, knownRefs] = await Promise.all([
-		scan(baseDir),
+		scanUploadDir(resolveUploadBasePath()),
 		db.select({ filePath: sightingFiles.filePath }).from(sightingFiles),
 		db.select({ referenceId: sightings.referenceId }).from(sightings)
 	]);
@@ -997,12 +999,54 @@ export const POST: RequestHandler = async ({ request, url, locals, getClientAddr
 };
 ```
 
-- [ ] **Schritt 6: Tests laufen lassen**
+- [ ] **Schritt 6: Ports testen**
 
-Ausführen: `npx vitest run --project server src/routes/api/admin/cleanup-orphans/endpoint.test.ts`
+Der Endpunkt-Test ersetzt `cleanupOrphans` durch einen Mock — die Verdrahtung in
+`cleanupPorts.ts` bliebe damit ungetestet. `src/lib/server/media/cleanupPorts.test.ts`:
+
+```typescript
+/** Die Provider-Weiche entscheidet, ob Klasse B überhaupt gesucht wird. */
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const getCurrentStorageProvider = vi.fn();
+const scanLocalUploads = vi.fn();
+
+vi.mock('$lib/server/storage/factory', () => ({
+	getCurrentStorageProvider,
+	getStorageProvider: () => ({ delete: vi.fn() })
+}));
+vi.mock('$lib/server/media/scanLocalUploads', () => ({ scanLocalUploads }));
+vi.mock('$lib/server/db', () => ({ db: {} }));
+
+import { createDbPorts } from './cleanupPorts';
+
+describe('createDbPorts.findOrphanFiles', () => {
+	beforeEach(() => vi.clearAllMocks());
+
+	it('sucht nicht im Dateisystem, wenn der Provider keins hat', async () => {
+		getCurrentStorageProvider.mockReturnValue('vercel-blob');
+		await expect(createDbPorts().findOrphanFiles(new Date())).resolves.toBeNull();
+		expect(scanLocalUploads).not.toHaveBeenCalled();
+	});
+
+	it('reicht den Grenzzeitpunkt an den Scan durch', async () => {
+		// Ohne cutoff gälte die Lücke zwischen geschriebener Datei und noch
+		// fehlender DB-Zeile als Waise — ein laufender Upload würde zerstört.
+		getCurrentStorageProvider.mockReturnValue('local');
+		scanLocalUploads.mockResolvedValue([]);
+		const cutoff = new Date('2026-07-27T12:00:00.000Z');
+		await createDbPorts().findOrphanFiles(cutoff);
+		expect(scanLocalUploads).toHaveBeenCalledWith(cutoff);
+	});
+});
+```
+
+- [ ] **Schritt 7: Tests laufen lassen**
+
+Ausführen: `npx vitest run --project server src/routes/api/admin/cleanup-orphans src/lib/server/media`
 Erwartet: PASS.
 
-- [ ] **Schritt 7: OpenAPI ergänzen**
+- [ ] **Schritt 8: OpenAPI ergänzen**
 
 In `static/openapi.yml` unter `paths` einfügen:
 
@@ -1065,7 +1109,7 @@ CleanupReport:
     remaining: { type: integer }
 ```
 
-- [ ] **Schritt 8: YAML prüfen und alles laufen lassen**
+- [ ] **Schritt 9: YAML prüfen und alles laufen lassen**
 
 ```bash
 node --input-type=commonjs -e "const yaml=require('js-yaml'),fs=require('fs');yaml.load(fs.readFileSync('static/openapi.yml','utf8'));console.log('OK')"
@@ -1074,7 +1118,7 @@ npm run test:quick
 
 Erwartet: `OK`, danach alle Tests grün.
 
-- [ ] **Schritt 9: Commit**
+- [ ] **Schritt 10: Commit**
 
 ```bash
 git add -A
