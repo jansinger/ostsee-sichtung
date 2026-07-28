@@ -11,8 +11,9 @@
  * Siehe docs/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md, Befund B6 und Abschnitt 9.
  */
 
-/** Wie lange eine noch nicht zugeordnete Datei aufbewahrt wird. */
-export const ORPHAN_RETENTION_HOURS = 24;
+import { ORPHAN_RETENTION_HOURS } from '$lib/constants/uploadRetention';
+
+export { ORPHAN_RETENTION_HOURS };
 
 /** Eine noch keiner Sichtung zugeordnete Datei. */
 export interface OrphanedFile {

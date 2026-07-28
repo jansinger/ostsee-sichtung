@@ -5,6 +5,7 @@
 	import type { ValidationPreset } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
 	import DropzoneEnhanced from '$lib/report/components/form/fields/DropzoneEnhanced.svelte';
+	import UploadNotice from '$lib/report/components/form/UploadNotice.svelte';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import LocationInput from '$lib/report/components/form/LocationInput.svelte';
 	import VerifyLocation from '$lib/report/components/form/VerifyLocation.svelte';
@@ -198,6 +199,8 @@
 					<Icon aria-hidden="true" icon="lucide:camera" width="18" />
 					Foto mit GPS-Daten hochladen
 				</h4>
+
+				<UploadNotice />
 
 				{#if gpsPhotoConfig}
 					<DropzoneEnhanced
