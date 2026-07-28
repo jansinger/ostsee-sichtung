@@ -34,7 +34,15 @@ vi.mock('drizzle-orm', () => ({
 	and: vi.fn(),
 	eq: vi.fn(),
 	isNotNull: vi.fn(),
-	sql: vi.fn(() => ({ as: vi.fn() }))
+	// `sql` braucht auch die Hilfsmethoden, die der Produktionscode nutzt —
+	// `berlinCalendarDate()` greift auf `sql.raw()` zu. Fehlt die Methode, wirft
+	// der Aufruf einen TypeError, den das catch der Funktion als "keine Daten
+	// gefunden" verschluckt: Der Test schlägt dann mit `null` statt mit dem
+	// eigentlichen Fehler fehl.
+	sql: Object.assign(
+		vi.fn(() => ({ as: vi.fn() })),
+		{ raw: vi.fn(() => ({})) }
+	)
 }));
 
 import { db } from '$lib/server/db';

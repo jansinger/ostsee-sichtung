@@ -11,7 +11,7 @@
 import { PgDialect, getTableConfig } from 'drizzle-orm/pg-core';
 import { describe, expect, it } from 'vitest';
 import { sightings } from './schema';
-import { berlinCalendarDate, berlinDatePart } from './sqlTimeZone';
+import { DISPLAY_TIME_ZONE, berlinCalendarDate, berlinDatePart } from './sqlTimeZone';
 
 const dialect = new PgDialect();
 
@@ -38,6 +38,27 @@ describe('berlinCalendarDate', () => {
 		expect(toSql(berlinCalendarDate(sightings.created))).toBe(
 			`DATE("sichtungen"."created" AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`
 		);
+	});
+});
+
+describe('DISPLAY_TIME_ZONE', () => {
+	it('steuert den erzeugten Ausdruck tatsächlich', () => {
+		// Sonst wäre die Konstante bloße Dekoration: Eine Änderung an ihr hätte
+		// keinen Effekt auf das SQL, und der nächste Leser würde es trotzdem
+		// annehmen. Prüft die Konstante, nicht das Literal.
+		expect(toSql(berlinCalendarDate(sightings.sightingDate))).toContain(
+			`AT TIME ZONE '${DISPLAY_TIME_ZONE}'`
+		);
+		expect(toSql(berlinDatePart('year', sightings.sightingDate))).toContain(
+			`AT TIME ZONE '${DISPLAY_TIME_ZONE}'`
+		);
+	});
+
+	it('bettet den Zonennamen als Literal ein, nicht als Parameter', () => {
+		// Ein Ausdrucksindex kann keine gebundenen Parameter enthalten.
+		const query = dialect.sqlToQuery(berlinCalendarDate(sightings.sightingDate));
+
+		expect(query.params).toEqual([]);
 	});
 });
 

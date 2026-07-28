@@ -18,18 +18,34 @@
 
 import { sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 
+/** Zeitzone, als deren Zeitpunkte die naiven Zeitstempelspalten zu lesen sind. */
+const STORAGE_TIME_ZONE = 'UTC';
+
 /** Zeitzone, in der kalendarische Angaben ausgelegt werden. */
 export const DISPLAY_TIME_ZONE = 'Europe/Berlin';
 
 /**
- * Liest eine UTC-Zeitstempelspalte als deutsche Ortszeit.
+ * Bettet einen Zeitzonennamen als SQL-Literal ein.
  *
- * `timestamp AT TIME ZONE 'UTC'` deutet den naiven Wert als UTC-Zeitpunkt,
- * das zweite `AT TIME ZONE` rechnet ihn in die Wanduhrzeit der Zielzone um.
- * Beide Schritte sind IMMUTABLE, der Ausdruck ist damit indizierbar.
+ * Bewusst `sql.raw` statt eines gebundenen Parameters: Ein Ausdrucksindex kann
+ * keine Parameter enthalten, der Zonenname muss also im SQL-Text stehen. Das ist
+ * hier unbedenklich, weil ausschließlich die beiden Modulkonstanten oben
+ * hineingereicht werden — es gibt keinen Pfad von einer Eingabe hierher.
+ */
+function zoneLiteral(timeZone: string): SQL {
+	return sql.raw(`'${timeZone}'`);
+}
+
+/**
+ * Liest eine Zeitstempelspalte als Ortszeit der Anzeige-Zeitzone.
+ *
+ * Das erste `AT TIME ZONE` deutet den naiven Wert als Zeitpunkt in
+ * `STORAGE_TIME_ZONE`, das zweite rechnet ihn in die Wanduhrzeit von
+ * `DISPLAY_TIME_ZONE` um. Beide Schritte sind IMMUTABLE (verifiziert über
+ * `pg_proc.provolatile`), der Ausdruck ist damit indizierbar.
  */
 function asLocalTime(column: SQLWrapper): SQL {
-	return sql`${column} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin'`;
+	return sql`${column} AT TIME ZONE ${zoneLiteral(STORAGE_TIME_ZONE)} AT TIME ZONE ${zoneLiteral(DISPLAY_TIME_ZONE)}`;
 }
 
 /**
