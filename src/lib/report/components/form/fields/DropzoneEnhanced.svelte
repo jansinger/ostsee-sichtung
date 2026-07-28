@@ -102,7 +102,22 @@
 		 * „Datum und Uhrzeit konnten übernommen werden" — er stand auch dann da,
 		 * wenn nichts übernommen wurde.
 		 */
-		onExifDateTimeApplied = (_applied: boolean) => {}
+		onExifDateTimeApplied = (_applied: boolean) => {},
+		/**
+		 * Schreibgeschützte Vorschau-Karte in der Foto-Karte (nur im GPS-Modus).
+		 *
+		 * Abschaltbar für Aufrufer, die selbst schon eine Karte derselben Position
+		 * zeigen. `PositionPanel` tut genau das: Seine Disclosure klappt bei neuer
+		 * Position von allein auf, sodass rund 200 px tiefer eine zweite, diesmal
+		 * interaktive Karte mit demselben Marker stand — auf 375 px zusammen
+		 * ~600 px Karte, ohne erkennbaren Unterschied, welche bedienbar ist. Ohne
+		 * Karte tritt an ihre Stelle die kompakte Bestätigungszeile.
+		 *
+		 * Default `true` wie bisher; `sections/Media.svelte` (Schritt 3 und
+		 * Admin-Maske) erreicht diesen Zweig mit `enableGPSExtraction={false}`
+		 * ohnehin nicht. Gleiches Muster wie `showNoGpsWarning`.
+		 */
+		showPositionMap = true
 	} = $props<{
 		referenceId: string;
 		maxFiles?: number;
@@ -112,6 +127,7 @@
 		additionalText?: string;
 		showNoGpsWarning?: boolean;
 		onExifDateTimeApplied?: (applied: boolean) => void;
+		showPositionMap?: boolean;
 	}>();
 
 	// Lokaler State für Dropzone-Dateien (temporär während des Drag & Drop)
@@ -652,75 +668,138 @@
 			</div>
 		{:then positionMediafileMetadata}
 			{#if positionMediafileMetadata.exifData?.latitude && positionMediafileMetadata.exifData?.longitude}
-				<!-- Map Display with GPS Position -->
-				<div class="bg-base-100 border-base-300 rounded-lg border p-4">
-					<!-- `flex-wrap gap-2`: Die Zeile trägt drei Elemente, darunter ein
-					     `text-nowrap`-Badge mit den Koordinaten. Seit der Button auf
-					     `btn-sm` steht, passt sie auf schmalen Geräten nicht mehr
-					     zwingend in eine Zeile — ohne Umbruch liefe sie über. -->
-					<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-						<div class="flex items-center gap-2">
-							<Icon icon="lucide:map-pin" class="text-success h-[18px] w-[18px]" />
-							<h4 class="text-sm font-semibold">GPS-Position</h4>
-						</div>
-						<div class="badge badge-success badge-sm text-nowrap">
-							{formatLocation(
-								positionMediafileMetadata.exifData?.longitude,
-								positionMediafileMetadata.exifData?.latitude
-							)}
-						</div>
-						{#await positionMediaFile.uploadedFile}
-							<div class="loading loading-spinner loading-sm text-primary">
-								Upload läuft im Hintergrund...
+				{#if showPositionMap}
+					<!-- Map Display with GPS Position -->
+					<div class="bg-base-100 border-base-300 rounded-lg border p-4">
+						<!-- `flex-wrap gap-2`: Die Zeile trägt drei Elemente, darunter ein
+						     `text-nowrap`-Badge mit den Koordinaten. Seit der Button auf
+						     `btn-sm` steht, passt sie auf schmalen Geräten nicht mehr
+						     zwingend in eine Zeile — ohne Umbruch liefe sie über. -->
+						<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+							<div class="flex items-center gap-2">
+								<Icon icon="lucide:map-pin" class="text-success h-[18px] w-[18px]" />
+								<h4 class="text-sm font-semibold">GPS-Position</h4>
 							</div>
+							<div class="badge badge-success badge-sm text-nowrap">
+								{formatLocation(
+									positionMediafileMetadata.exifData?.longitude,
+									positionMediafileMetadata.exifData?.latitude
+								)}
+							</div>
+							{#await positionMediaFile.uploadedFile}
+								<div class="loading loading-spinner loading-sm text-primary">
+									Upload läuft im Hintergrund...
+								</div>
+							{:then}
+								<!-- `min-h-11` hält das 44-px-Touch-Target (design-system.md). -->
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
+									onclick={handleClear}
+								>
+									Neu auswählen
+								</button>
+							{/await}
+						</div>
+
+						<div
+							class="bg-base-200 border-base-300 overflow-hidden rounded-lg border"
+							style="height: 300px;"
+						>
+							<OLMap
+								latitude={positionMediafileMetadata.exifData.latitude!}
+								longitude={positionMediafileMetadata.exifData.longitude!}
+								zoom={13}
+								readonly={true}
+								--map-height="300px"
+							/>
+						</div>
+
+						{#if positionMediaFile.timestamp}
+							<div class="mt-3 text-center">
+								<p class="text-base-content/60 flex items-center justify-center gap-1 text-xs">
+									<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
+									Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE', {
+										timeZone: 'Europe/Berlin'
+									})}
+								</p>
+							</div>
+						{/if}
+
+						<!-- Show upload progress if still uploading -->
+						{#await positionMediaFile.uploadedFile}
+							<div
+								class="mt-3 flex items-center justify-center gap-2"
+								role="status"
+								aria-label="Upload läuft"
+							>
+								<div class="loading loading-spinner loading-sm"></div>
+								<span class="text-base-content/60 text-sm">Upload läuft im Hintergrund...</span>
+							</div>
+						{/await}
+					</div>
+				{:else}
+					<!-- Kompakte Bestätigungszeile (Zustand B der Spezifikation): Miniaturbild,
+					     Dateiname, eine Zeile über das Übernommene, Entfernen. Die Karte
+					     zeigt der Aufrufer — genau einmal und interaktiv. -->
+					<div
+						class="bg-base-100 border-base-300 flex items-center gap-3 rounded-lg border p-3"
+						data-testid="photo-position-summary"
+					>
+						{#if positionMediaFile.thumbnail}
+							<img
+								src={positionMediaFile.thumbnail}
+								alt={positionMediaFile.fileName}
+								class="bg-base-200 h-12 w-12 shrink-0 rounded object-cover"
+							/>
+						{:else}
+							<div
+								class="bg-base-200 flex h-12 w-12 shrink-0 items-center justify-center rounded"
+							>
+								<Icon
+									aria-hidden="true"
+									icon="lucide:image"
+									width="20"
+									class="text-base-content/60"
+								/>
+							</div>
+						{/if}
+
+						<div class="min-w-0 flex-1">
+							<p class="truncate text-sm font-medium" title={positionMediaFile.fileName}>
+								{positionMediaFile.fileName}
+							</p>
+							<!-- Tint-freie Fläche, trotzdem `text-base-content`: Die Statusfarbe
+							     trägt allein das Icon (design-system.md). -->
+							<p class="text-base-content/70 flex items-center gap-1 text-xs">
+								<Icon
+									aria-hidden="true"
+									icon="lucide:check"
+									width="14"
+									class="text-success shrink-0"
+								/>
+								Position, Datum und Uhrzeit aus dem Foto übernommen
+							</p>
+						</div>
+
+						{#await positionMediaFile.uploadedFile}
+							<div
+								class="loading loading-spinner loading-sm text-primary shrink-0"
+								role="status"
+								aria-label="Upload läuft"
+							></div>
 						{:then}
 							<!-- `min-h-11` hält das 44-px-Touch-Target (design-system.md). -->
 							<button
 								type="button"
-								class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
+								class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11 shrink-0"
 								onclick={handleClear}
 							>
 								Neu auswählen
 							</button>
 						{/await}
 					</div>
-
-					<div
-						class="bg-base-200 border-base-300 overflow-hidden rounded-lg border"
-						style="height: 300px;"
-					>
-						<OLMap
-							latitude={positionMediafileMetadata.exifData.latitude!}
-							longitude={positionMediafileMetadata.exifData.longitude!}
-							zoom={13}
-							readonly={true}
-							--map-height="300px"
-						/>
-					</div>
-
-					{#if positionMediaFile.timestamp}
-						<div class="mt-3 text-center">
-							<p class="text-base-content/60 flex items-center justify-center gap-1 text-xs">
-								<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
-								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE', {
-									timeZone: 'Europe/Berlin'
-								})}
-							</p>
-						</div>
-					{/if}
-
-					<!-- Show upload progress if still uploading -->
-					{#await positionMediaFile.uploadedFile}
-						<div
-							class="mt-3 flex items-center justify-center gap-2"
-							role="status"
-							aria-label="Upload läuft"
-						>
-							<div class="loading loading-spinner loading-sm"></div>
-							<span class="text-base-content/60 text-sm">Upload läuft im Hintergrund...</span>
-						</div>
-					{/await}
-				</div>
+				{/if}
 			{:else}
 				<!-- Image uploaded but no GPS data - show preview with info -->
 				<div class="bg-base-100 border-base-300 rounded-lg border p-4">

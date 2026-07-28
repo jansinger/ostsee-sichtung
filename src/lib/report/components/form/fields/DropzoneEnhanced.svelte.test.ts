@@ -52,7 +52,7 @@ function uploadedFile(uid: string): UploadedFileInfo {
 
 function renderDropzone(
 	files: UploadedFileInfo[],
-	props: { maxFiles: number; enableGPSExtraction: boolean },
+	props: { maxFiles: number; enableGPSExtraction: boolean; showPositionMap?: boolean },
 	seededMediaFiles: MediaFile[] = []
 ): { mediaStore: MediaStore; form: FormContext['form'] } {
 	const mediaStore: MediaStore = { mediaFiles: seededMediaFiles };
@@ -184,5 +184,43 @@ describe('DropzoneEnhanced — Eingrenzung auf den Positions-Schritt', () => {
 
 		await expect.poll(() => mediaStore.mediaFiles.map((file) => file.uid)).toEqual(['media-uid']);
 		expect(get(form).uploadedFiles.map((file) => file.uid)).toEqual(['media-uid']);
+	});
+});
+
+/**
+ * Zwei Karten derselben Position.
+ *
+ * Mit GPS-Foto rendert die Foto-Karte eine 300 px hohe, schreibgeschützte
+ * `OLMap`, und die Disclosure des Panels klappt darunter eine zweite,
+ * interaktive Karte mit demselben Marker auf — auf 375 px zusammen rund 600 px
+ * Karte, ohne erkennbaren Unterschied, welche davon bedienbar ist. Die
+ * Spezifikation sieht für Zustand B eine kompakte Bestätigungszeile plus GENAU
+ * EINE Karte vor: die interaktive.
+ *
+ * Wie bei `showNoGpsWarning` steckt die Entscheidung in einer Prop mit dem
+ * bisherigen Verhalten als Default — Schritt 3 und die Admin-Maske
+ * (`sections/Media.svelte`, beide mit `enableGPSExtraction={false}`) erreichen
+ * diesen Zweig ohnehin nicht.
+ */
+describe('DropzoneEnhanced — Karte in der Foto-Karte', () => {
+	function gpsMediaFile(uid: string): MediaFile {
+		const info = {
+			...uploadedFile(uid),
+			exifData: { latitude: 54.31, longitude: 12.09 }
+		} as UploadedFileInfo;
+		return MediaFile.fromUploadedFile(info, 'ref-1', true);
+	}
+
+	it('zeigt ohne `showPositionMap` die kompakte Bestätigungszeile statt einer zweiten Karte', async () => {
+		renderDropzone(
+			[],
+			{ maxFiles: 1, enableGPSExtraction: true, showPositionMap: false },
+			[gpsMediaFile('gps-uid')]
+		);
+
+		await expect
+			.poll(() => document.querySelectorAll('[data-testid="photo-position-summary"]').length)
+			.toBe(1);
+		expect(document.querySelectorAll('.ol-viewport').length).toBe(0);
 	});
 });

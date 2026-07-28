@@ -235,6 +235,7 @@
 				config={gpsPhotoConfig}
 				enableGPSExtraction={true}
 				showNoGpsWarning={false}
+				showPositionMap={false}
 				onExifDateTimeApplied={(applied) => (exifDateTimeApplied = applied)}
 				title="Foto auswählen oder hierher ziehen"
 				additionalText="GPS-Daten werden automatisch ausgelesen"
