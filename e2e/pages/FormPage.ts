@@ -61,11 +61,6 @@ export class FormPage {
 		await this.page.locator('[data-testid="field-waterway"]').fill(value);
 	}
 
-	/** Wechselt die Positionsmethode über das zugehörige Radio-Label (Radios sind sr-only). */
-	async selectPositionMethod(method: 'photo' | 'map' | 'manual') {
-		await this.page.locator(`label[for="method-${method}"]`).click();
-	}
-
 	// ── Step 2: Sichtungsdetails ─────────────────────────────────────────────
 
 	async selectSpecies(index: number) {
