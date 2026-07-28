@@ -60,10 +60,20 @@
 		 *
 		 * Abschaltbar für Aufrufer, die den Fall selbst und ausführlicher behandeln
 		 * — sonst stünden zwei `alert alert-warning` mit derselben Aussage
-		 * übereinander. Bewusst eine eigene Prop und NICHT an `isPositionStep`
-		 * gehängt: Das trifft auch auf `sections/PositionAndTime.svelte` zu, das
-		 * keinen eigenen Hinweis hat und den hiesigen als einzige Rückmeldung
-		 * braucht.
+		 * übereinander.
+		 *
+		 * Aufrufer (Stand Task 9):
+		 * - `form/position/PositionPanel.svelte` — setzt `false` und erklärt den
+		 *   Fall selbst (Zustand C, inkl. der Auswege „Auf Karte wählen" und
+		 *   „Seegebiet beschreiben").
+		 * - `sections/Media.svelte` — übernimmt den Default `true`, erreicht den
+		 *   Hinweis aber nie: mit `enableGPSExtraction={false}` ist
+		 *   `isPositionStep` falsch und der GPS-Zweig wird gar nicht gerendert.
+		 *
+		 * An diesem Default hängt damit aktuell kein sichtbarer Hinweis; er bleibt
+		 * `true` als sicheres Verhalten für einen künftigen GPS-Modus-Aufrufer ohne
+		 * eigene Erklärung. Bewusst eine eigene Prop und nicht an `isPositionStep`
+		 * gehängt: Der Zweck ist „Aufrufer erklärt es selbst", nicht „welcher Modus".
 		 */
 		showNoGpsWarning = true
 	} = $props<{
