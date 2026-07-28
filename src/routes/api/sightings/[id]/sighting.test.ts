@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockLogAuditEvent, mockSelect, mockDelete, mockSchema, mockStorage } = vi.hoisted(() => ({
-	mockLogAuditEvent: vi.fn().mockResolvedValue(undefined),
-	mockSelect: vi.fn(),
-	mockDelete: vi.fn(),
-	mockSchema: { sightings: {}, sightingFiles: {} },
-	mockStorage: { delete: vi.fn().mockResolvedValue(undefined) }
-}));
+const { mockLogAuditEvent, mockSelect, mockTransaction, mockSchema, mockStorage } = vi.hoisted(
+	() => ({
+		mockLogAuditEvent: vi.fn().mockResolvedValue(undefined),
+		mockSelect: vi.fn(),
+		mockTransaction: vi.fn(),
+		mockSchema: { sightings: {}, sightingFiles: {} },
+		mockStorage: { delete: vi.fn().mockResolvedValue(undefined) }
+	})
+);
 
 vi.mock('$lib/server/audit/auditService', () => ({
 	logAuditEvent: mockLogAuditEvent
@@ -29,7 +31,7 @@ vi.mock('$lib/form/validation/sightingSchema', () => ({
 }));
 
 vi.mock('$lib/server/db', () => ({
-	db: { select: mockSelect, delete: mockDelete }
+	db: { select: mockSelect, transaction: mockTransaction }
 }));
 
 vi.mock('$lib/server/db/schema', () => mockSchema);
@@ -51,24 +53,29 @@ vi.mock('drizzle-orm', () => ({
 import { PUT, DELETE } from './+server';
 import * as sightingRepository from '$lib/server/db/sightingRepository';
 
-/**
- * @param records Treffer der Sichtungs-Abfrage (`.limit(1)`)
- * @param fileRecords Treffer der Datei-Abfrage (ohne `.limit()`, direkt awaited)
- */
-function makeSelectChain(records: unknown[], fileRecords: { filePath: string }[] = []) {
-	mockSelect.mockImplementation(() => ({
-		from: (table: unknown) => ({
-			where: () =>
-				table === mockSchema.sightingFiles
-					? Promise.resolve(fileRecords)
-					: { limit: vi.fn().mockResolvedValue(records) }
-		})
-	}));
+function makeSelectChain(records: unknown[]) {
+	const mockLimit = vi.fn().mockResolvedValue(records);
+	const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit });
+	const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+	mockSelect.mockReturnValue({ from: mockFrom });
 }
 
-function makeDeleteChain() {
-	const mockWhere = vi.fn().mockResolvedValue(undefined);
-	mockDelete.mockReturnValue({ where: mockWhere });
+/**
+ * DELETE löscht Dateizeilen (mit `returning`) und Sichtung in einer Transaktion.
+ *
+ * @param fileRecords Pfade der entfernten `sichtungen_dateien`-Zeilen
+ */
+function makeDeleteTransaction(fileRecords: { filePath: string }[] = []) {
+	mockTransaction.mockImplementation((callback: (tx: unknown) => Promise<unknown>) =>
+		callback({
+			delete: (table: unknown) => ({
+				where: () =>
+					table === mockSchema.sightingFiles
+						? { returning: vi.fn().mockResolvedValue(fileRecords) }
+						: Promise.resolve()
+			})
+		})
+	);
 }
 
 function makeAdminLocals() {
@@ -155,7 +162,7 @@ describe('DELETE /api/sightings/[id] — Audit Logging', () => {
 
 	it('loggt sighting.delete nach erfolgreichem Löschen', async () => {
 		makeSelectChain([{ id: 42 }]);
-		makeDeleteChain();
+		makeDeleteTransaction();
 
 		const event = {
 			params: { id: '42' },

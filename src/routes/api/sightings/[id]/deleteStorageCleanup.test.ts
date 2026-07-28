@@ -5,22 +5,25 @@
  * Der Fremdschlüssel `sichtungen_dateien.sichtung_id` hat `onDelete: 'cascade'`
  * — die DB-Zeilen verschwinden also von selbst. Ohne expliziten Storage-Aufruf
  * bleiben die Dateien im Upload-Verzeichnis als verwaiste Objekte zurück.
+ *
+ * `filePath` ist der Storage-Key `referenceId/dateiname` (siehe
+ * `LocalStorageProvider.upload`) — nicht die öffentliche URL `/uploads/...`.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockSchema, mockSelect, mockDelete, mockStorage, callOrder } = vi.hoisted(() => ({
+const { mockSchema, mockSelect, mockTransaction, mockStorage, callOrder } = vi.hoisted(() => ({
 	mockSchema: {
 		sightings: { id: 'sichtungen.id' },
 		sightingFiles: { sightingId: 'sichtungen_dateien.sichtung_id', filePath: 'datei_pfad' }
 	},
 	mockSelect: vi.fn(),
-	mockDelete: vi.fn(),
+	mockTransaction: vi.fn(),
 	mockStorage: { delete: vi.fn().mockResolvedValue(undefined) },
 	callOrder: [] as string[]
 }));
 
 vi.mock('$lib/server/db', () => ({
-	db: { select: mockSelect, delete: mockDelete }
+	db: { select: mockSelect, transaction: mockTransaction }
 }));
 
 vi.mock('$lib/server/db/schema', () => mockSchema);
@@ -52,28 +55,36 @@ vi.mock('$lib/logger', () => ({
 import { DELETE } from './+server';
 
 /**
- * Baut den Select-Mock so, dass die Existenzprüfung eine Sichtung findet und
- * die Datei-Abfrage die übergebenen Pfade liefert.
+ * Baut die DB-Mocks so, dass die Existenzprüfung eine Sichtung findet und das
+ * Löschen der Dateizeilen die übergebenen Pfade zurückgibt.
  */
 function mockDbWithFiles(filePaths: string[]) {
 	mockSelect.mockImplementation(() => ({
-		from: (table: unknown) => ({
-			where: () => {
-				if (table === mockSchema.sightings) {
-					return { limit: () => Promise.resolve([{ id: 123 }]) };
-				}
-				callOrder.push('select:files');
-				return Promise.resolve(filePaths.map((filePath) => ({ filePath })));
-			}
-		})
+		from: () => ({ where: () => ({ limit: () => Promise.resolve([{ id: 123 }]) }) })
 	}));
 
-	mockDelete.mockImplementation(() => ({
-		where: () => {
-			callOrder.push('delete:sighting');
-			return Promise.resolve();
-		}
-	}));
+	const tx = {
+		delete: (table: unknown) => ({
+			where: () => {
+				if (table === mockSchema.sightingFiles) {
+					return {
+						returning: async () => {
+							callOrder.push('tx:delete-files');
+							return filePaths.map((filePath) => ({ filePath }));
+						}
+					};
+				}
+				callOrder.push('tx:delete-sighting');
+				return Promise.resolve();
+			}
+		})
+	};
+
+	mockTransaction.mockImplementation(async (callback: (tx: unknown) => Promise<unknown>) => {
+		const result = await callback(tx);
+		callOrder.push('tx:commit');
+		return result;
+	});
 }
 
 function makeEvent(id = '123') {
@@ -94,25 +105,30 @@ describe('DELETE /api/sightings/[id] — Storage-Aufräumen', () => {
 	});
 
 	it('löscht die zugehörigen Dateien aus dem Storage', async () => {
-		mockDbWithFiles(['uploads/a.jpg', 'uploads/b.png']);
+		mockDbWithFiles(['ref-abc123/a1b2c3d4.jpg', 'ref-abc123/e5f6g7h8.png']);
 
 		const response = await DELETE(makeEvent());
 
 		expect(response.status).toBe(200);
 		expect(mockStorage.delete).toHaveBeenCalledTimes(2);
-		expect(mockStorage.delete).toHaveBeenCalledWith('uploads/a.jpg');
-		expect(mockStorage.delete).toHaveBeenCalledWith('uploads/b.png');
+		expect(mockStorage.delete).toHaveBeenCalledWith('ref-abc123/a1b2c3d4.jpg');
+		expect(mockStorage.delete).toHaveBeenCalledWith('ref-abc123/e5f6g7h8.png');
 	});
 
-	it('liest die Dateipfade vor dem Löschen der Sichtung und löscht die Dateien danach', async () => {
-		mockDbWithFiles(['uploads/a.jpg']);
+	it('löscht Dateizeilen und Sichtung in einer Transaktion, den Storage erst danach', async () => {
+		mockDbWithFiles(['ref-abc123/a1b2c3d4.jpg']);
 		mockStorage.delete.mockImplementation(async () => {
 			callOrder.push('storage:delete');
 		});
 
 		await DELETE(makeEvent());
 
-		expect(callOrder).toEqual(['select:files', 'delete:sighting', 'storage:delete']);
+		expect(callOrder).toEqual([
+			'tx:delete-files',
+			'tx:delete-sighting',
+			'tx:commit',
+			'storage:delete'
+		]);
 	});
 
 	it('ruft den Storage nicht auf, wenn keine Dateien verknüpft sind', async () => {
@@ -124,7 +140,7 @@ describe('DELETE /api/sightings/[id] — Storage-Aufräumen', () => {
 	});
 
 	it('meldet Erfolg, auch wenn eine Datei nicht aus dem Storage entfernt werden kann', async () => {
-		mockDbWithFiles(['uploads/a.jpg', 'uploads/b.png']);
+		mockDbWithFiles(['ref-abc123/a1b2c3d4.jpg', 'ref-abc123/e5f6g7h8.png']);
 		mockStorage.delete.mockRejectedValueOnce(new Error('ENOENT'));
 
 		const response = await DELETE(makeEvent());

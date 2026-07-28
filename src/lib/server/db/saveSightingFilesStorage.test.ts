@@ -89,31 +89,35 @@ describe('saveSightingFiles — Storage-Aufräumen', () => {
 	});
 
 	it('löscht Dateien aus dem Storage, die nicht mehr verknüpft sind', async () => {
-		mockTransactionRemoving(['uploads/alt-1.jpg', 'uploads/alt-2.jpg']);
+		mockTransactionRemoving(['ref-abc123/alt-1.jpg', 'ref-abc123/alt-2.jpg']);
 
-		await saveSightingFiles(42, [file('uploads/neu.jpg')], 'ref-123');
+		await saveSightingFiles(42, [file('ref-abc123/neu.jpg')], 'ref-123');
 
 		expect(mockStorage.delete).toHaveBeenCalledTimes(2);
-		expect(mockStorage.delete).toHaveBeenCalledWith('uploads/alt-1.jpg');
-		expect(mockStorage.delete).toHaveBeenCalledWith('uploads/alt-2.jpg');
+		expect(mockStorage.delete).toHaveBeenCalledWith('ref-abc123/alt-1.jpg');
+		expect(mockStorage.delete).toHaveBeenCalledWith('ref-abc123/alt-2.jpg');
 	});
 
 	it('behält Dateien, die weiterhin in der neuen Liste stehen', async () => {
-		mockTransactionRemoving(['uploads/bleibt.jpg', 'uploads/weg.jpg']);
+		mockTransactionRemoving(['ref-abc123/bleibt.jpg', 'ref-abc123/weg.jpg']);
 
-		await saveSightingFiles(42, [file('uploads/bleibt.jpg'), file('uploads/neu.jpg')], 'ref-123');
+		await saveSightingFiles(
+			42,
+			[file('ref-abc123/bleibt.jpg'), file('ref-abc123/neu.jpg')],
+			'ref-123'
+		);
 
 		expect(mockStorage.delete).toHaveBeenCalledTimes(1);
-		expect(mockStorage.delete).toHaveBeenCalledWith('uploads/weg.jpg');
+		expect(mockStorage.delete).toHaveBeenCalledWith('ref-abc123/weg.jpg');
 	});
 
 	it('löscht die Dateien erst nach dem Commit der Transaktion', async () => {
-		mockTransactionRemoving(['uploads/weg.jpg']);
+		mockTransactionRemoving(['ref-abc123/weg.jpg']);
 		mockStorage.delete.mockImplementation(async () => {
 			callOrder.push('storage:delete');
 		});
 
-		await saveSightingFiles(42, [file('uploads/neu.jpg')], 'ref-123');
+		await saveSightingFiles(42, [file('ref-abc123/neu.jpg')], 'ref-123');
 
 		expect(callOrder).toEqual([
 			'tx:begin',
@@ -125,18 +129,18 @@ describe('saveSightingFiles — Storage-Aufräumen', () => {
 	});
 
 	it('scheitert nicht, wenn eine Datei nicht aus dem Storage entfernt werden kann', async () => {
-		mockTransactionRemoving(['uploads/weg.jpg']);
+		mockTransactionRemoving(['ref-abc123/weg.jpg']);
 		mockStorage.delete.mockRejectedValue(new Error('ENOENT'));
 
 		// Eine liegengebliebene Datei ist folgenlos — die bereits committete
 		// DB-Änderung darf davon nicht zurückgenommen werden.
 		await expect(
-			saveSightingFiles(42, [file('uploads/neu.jpg')], 'ref-123')
+			saveSightingFiles(42, [file('ref-abc123/neu.jpg')], 'ref-123')
 		).resolves.toBeUndefined();
 	});
 
 	it('rührt den Storage bei leerer Dateiliste nicht an', async () => {
-		mockTransactionRemoving(['uploads/weg.jpg']);
+		mockTransactionRemoving(['ref-abc123/weg.jpg']);
 
 		await saveSightingFiles(42, [], 'ref-123');
 

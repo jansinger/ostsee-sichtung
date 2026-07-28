@@ -41,13 +41,21 @@ const { mockSelectLimit, mockDeleteWhere, mockSighting, mockUpdateSighting, mock
 vi.mock('$lib/server/db', () => ({
 	db: {
 		select: vi.fn().mockReturnValue({
-			from: vi.fn((table: unknown) => ({
-				// Die Datei-Abfrage in DELETE wird direkt awaited, alle anderen über .limit()
-				where: vi.fn(() =>
-					table === mockSchema.sightingFiles ? Promise.resolve([]) : { limit: mockSelectLimit }
-				)
-			}))
+			from: vi.fn().mockReturnValue({
+				where: vi.fn().mockReturnValue({ limit: mockSelectLimit })
+			})
 		}),
+		// DELETE löscht Dateizeilen und Sichtung gemeinsam in einer Transaktion
+		transaction: vi.fn((callback: (tx: unknown) => Promise<unknown>) =>
+			callback({
+				delete: (table: unknown) => ({
+					where:
+						table === mockSchema.sightingFiles
+							? () => ({ returning: vi.fn().mockResolvedValue([]) })
+							: mockDeleteWhere
+				})
+			})
+		),
 		update: vi.fn().mockReturnValue({
 			set: vi.fn().mockReturnValue({
 				where: vi.fn().mockReturnValue({

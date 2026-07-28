@@ -226,19 +226,23 @@ export const DELETE: RequestHandler = async ({
 			throw error(404, 'Sichtung nicht gefunden');
 		}
 
-		// Dateipfade einsammeln, solange die Zeilen noch existieren: der
-		// Fremdschlüssel löscht sie gleich per Cascade mit, der Storage weiß davon
-		// nichts.
-		const linkedFiles = await db
-			.select({ filePath: sightingFiles.filePath })
-			.from(sightingFiles)
-			.where(eq(sightingFiles.sightingId, Number(id)));
+		// Die Dateizeilen explizit löschen statt sie still per Cascade verschwinden
+		// zu lassen: `returning` liefert die Pfade, die der Storage sonst nie
+		// erfährt. Lesen und Löschen in einer Anweisung schließt zudem aus, dass
+		// dazwischen eine neue Zeile entsteht, die die Cascade unbemerkt mitnimmt.
+		const removedFiles = await db.transaction(async (tx) => {
+			const removed = await tx
+				.delete(sightingFiles)
+				.where(eq(sightingFiles.sightingId, Number(id)))
+				.returning({ filePath: sightingFiles.filePath });
 
-		// Sichtung löschen (Cascade entfernt die sichtungen_dateien-Zeilen)
-		await db.delete(sightings).where(eq(sightings.id, Number(id)));
+			await tx.delete(sightings).where(eq(sightings.id, Number(id)));
 
-		// Erst nach dem Löschen der Zeilen — siehe deleteStoredFiles()
-		await deleteStoredFiles(linkedFiles.map((file) => file.filePath));
+			return removed;
+		});
+
+		// Erst nach dem Commit — siehe deleteStoredFiles()
+		await deleteStoredFiles(removedFiles.map((file) => file.filePath));
 
 		const ipAddress = getClientIp(getClientAddress, request);
 		await logAuditEvent({

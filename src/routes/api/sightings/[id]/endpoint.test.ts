@@ -11,17 +11,20 @@ const { mockSchema } = vi.hoisted(() => ({
 vi.mock('$lib/server/db', () => ({
 	db: {
 		select: () => ({
-			from: (table: unknown) => ({
-				// Die Datei-Abfrage wird direkt awaited, die Sichtungs-Abfrage über .limit(1)
-				where: () =>
-					table === mockSchema.sightingFiles
-						? Promise.resolve([])
-						: { limit: () => Promise.resolve([{ id: 123 }]) }
+			from: () => ({
+				where: () => ({ limit: () => Promise.resolve([{ id: 123 }]) })
 			})
 		}),
-		delete: () => ({
-			where: () => Promise.resolve()
-		})
+		// DELETE löscht Dateizeilen und Sichtung gemeinsam in einer Transaktion
+		transaction: (callback: (tx: unknown) => Promise<unknown>) =>
+			callback({
+				delete: (table: unknown) => ({
+					where: () =>
+						table === mockSchema.sightingFiles
+							? { returning: () => Promise.resolve([]) }
+							: Promise.resolve()
+				})
+			})
 	}
 }));
 

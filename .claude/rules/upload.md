@@ -66,11 +66,21 @@ vorgeschrieben:
 ```typescript
 import { deleteStoredFiles } from '$lib/server/storage/deleteStoredFiles';
 
-// 1. Pfade lesen, solange die Zeilen existieren
-// 2. Zeilen löschen (direkt oder per Cascade über `sichtungen`)
-// 3. erst danach:
-await deleteStoredFiles(paths);
+// Zeilen explizit löschen und die Pfade in derselben Anweisung mitnehmen
+const removed = await db
+	.delete(sightingFiles)
+	.where(eq(sightingFiles.sightingId, id))
+	.returning({ filePath: sightingFiles.filePath });
+
+// erst danach:
+await deleteStoredFiles(removed.map((file) => file.filePath));
 ```
+
+**Nicht auf die Cascade verlassen.** `onDelete: 'cascade'` räumt beim Löschen
+einer Sichtung zwar die Zeilen ab, aber lautlos — die Pfade sind dann weg. Ein
+vorgelagertes `select` wäre ebenfalls unzureichend: zwischen Lesen und Löschen
+kann eine Zeile dazukommen, die die Cascade unbemerkt mitnimmt. `delete … returning`
+in einer Transaktion mit dem Löschen der Sichtung schließt beides aus.
 
 Bricht Schritt 3 ab, bleibt eine verwaiste Datei liegen — folgenlos, weil nichts
 mehr auf sie zeigt. In der umgekehrten Reihenfolge entstünde eine DB-Zeile, die

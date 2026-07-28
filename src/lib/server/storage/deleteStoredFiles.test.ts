@@ -29,15 +29,15 @@ describe('deleteStoredFiles', () => {
 	});
 
 	it('löscht jeden übergebenen Pfad', async () => {
-		await deleteStoredFiles(['uploads/a.jpg', 'uploads/b.png']);
+		await deleteStoredFiles(['ref-abc123/a.jpg', 'ref-abc123/b.png']);
 
 		expect(mockStorage.delete).toHaveBeenCalledTimes(2);
-		expect(mockStorage.delete).toHaveBeenCalledWith('uploads/a.jpg');
-		expect(mockStorage.delete).toHaveBeenCalledWith('uploads/b.png');
+		expect(mockStorage.delete).toHaveBeenCalledWith('ref-abc123/a.jpg');
+		expect(mockStorage.delete).toHaveBeenCalledWith('ref-abc123/b.png');
 	});
 
 	it('löscht einen mehrfach referenzierten Pfad nur einmal', async () => {
-		await deleteStoredFiles(['uploads/a.jpg', 'uploads/a.jpg', 'uploads/b.png']);
+		await deleteStoredFiles(['ref-abc123/a.jpg', 'ref-abc123/a.jpg', 'ref-abc123/b.png']);
 
 		expect(mockStorage.delete).toHaveBeenCalledTimes(2);
 	});
@@ -52,7 +52,7 @@ describe('deleteStoredFiles', () => {
 		mockStorage.delete.mockRejectedValueOnce(new Error('ENOENT'));
 
 		await expect(
-			deleteStoredFiles(['uploads/kaputt.jpg', 'uploads/ok.png'])
+			deleteStoredFiles(['ref-abc123/kaputt.jpg', 'ref-abc123/ok.png'])
 		).resolves.toBeUndefined();
 		expect(mockStorage.delete).toHaveBeenCalledTimes(2);
 	});
@@ -62,7 +62,7 @@ describe('deleteStoredFiles', () => {
 			throw new Error('Unknown storage provider: s3');
 		});
 
-		await expect(deleteStoredFiles(['uploads/a.jpg'])).resolves.toBeUndefined();
+		await expect(deleteStoredFiles(['ref-abc123/a.jpg'])).resolves.toBeUndefined();
 		expect(mockStorage.delete).not.toHaveBeenCalled();
 	});
 });
