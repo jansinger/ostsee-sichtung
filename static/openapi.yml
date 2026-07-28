@@ -972,6 +972,56 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/admin/cleanup-orphans:
+    post:
+      tags:
+        - Admin
+      summary: Verwaiste Uploads ermitteln und entfernen
+      description: >
+        Entfernt Dateizeilen ohne Sichtung, deren Upload älter als die
+        Aufbewahrungsfrist ist, sowie Dateien ohne Zeile. Zugang über
+        Admin-Session oder Bearer-Token (`CLEANUP_TOKEN`) für einen externen
+        Web-Cron. Vorgabe ist die Vorschau — gelöscht wird nur mit
+        `mode=execute`. Unlesbare Parameter fallen auf die sichere Vorgabe
+        zurück, damit ein Cron nicht wegen eines Tippfehlers stillsteht.
+      security:
+        - adminAuth: []
+        - cleanupToken: []
+      parameters:
+        - name: mode
+          in: query
+          schema:
+            type: string
+            enum: [preview, execute]
+            default: preview
+        - name: hours
+          in: query
+          description: Aufbewahrungsfrist; kleinere Werte werden auf die Mindestfrist geklemmt.
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          description: Fundstücke pro Aufruf; eine Zeile samt Datei zählt als eins.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 500
+      responses:
+        '200':
+          description: Lauf durchgeführt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanupReport'
+        '401':
+          description: Kein oder falsches Token
+        '429':
+          description: Rate Limit überschritten
+        '500':
+          description: Unerwarteter Fehler
+
   /api/admin/test-email:
     post:
       tags:
@@ -1895,6 +1945,13 @@ paths:
 
 components:
   securitySchemes:
+    cleanupToken:
+      type: http
+      scheme: bearer
+      description: >
+        Wert der Umgebungsvariablen `CLEANUP_TOKEN` (mindestens 32 Zeichen).
+        Ist sie nicht gesetzt, ist dieser Zugang abgeschaltet.
+
     adminAuth:
       type: apiKey
       in: cookie
@@ -1949,6 +2006,29 @@ components:
         example: true
 
   schemas:
+    CleanupReport:
+      type: object
+      description: Ergebnis eines Aufräum-Laufs für verwaiste Uploads.
+      properties:
+        retentionHours:
+          type: number
+          description: Tatsächlich verwendete Frist nach der Klemmung.
+        rowsFound:
+          type: integer
+        filesFound:
+          type: integer
+          nullable: true
+          description: '`null` = für diesen Storage-Provider nicht anwendbar.'
+        rowsDeleted:
+          type: integer
+        filesDeleted:
+          type: integer
+        failed:
+          type: integer
+        remaining:
+          type: integer
+          description: Vom Deckel übrig gelassene Fundstücke; erneut aufrufen.
+
     Error:
       type: object
       required:

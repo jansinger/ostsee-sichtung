@@ -68,6 +68,12 @@ export const RATE_LIMITS = {
 		maxRequests: 100 // 100 Media-Zugriffe pro Minute für authentifizierte User
 	},
 
+	// Aufräum-Endpunkt: ein Cron braucht wenige Aufrufe pro Tag, ein Angreifer viele
+	ADMIN_CLEANUP: {
+		windowMs: 60 * 60 * 1000, // 1 Stunde
+		maxRequests: 30
+	},
+
 	// Sichtung Submission - bereits implementiert, hier zur Vollständigkeit
 	SIGHTING_SUBMISSION: {
 		windowMs: 60 * 60 * 1000, // 1 Stunde

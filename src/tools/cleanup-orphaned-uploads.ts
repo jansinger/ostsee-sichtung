@@ -26,172 +26,25 @@
  *
  * @author Ostsee-Tiere Team
  */
-import { readdir, stat, unlink } from 'node:fs/promises';
-import { isAbsolute, join, relative, resolve } from 'node:path';
+import { unlink } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {
+	DEFAULT_RETENTION,
+	cleanupOrphans,
+	computeCutoff,
+	parseRetention,
+	resolveSafeTarget,
+	scanUploadDir,
+	selectOrphanedFiles,
+	selectOrphanedRows,
+	type OrphanRow
+} from '../lib/server/media/orphanCleanup.ts';
+
+// Für den Fristen-Vertragstest und externe Aufrufer weiterhin von hier lesbar
+export { DEFAULT_RETENTION, parseRetention };
 import { config } from 'dotenv';
 import postgres from 'postgres';
-
-/** Erlaubte Fristangaben: positive Ganzzahl plus Einheit `h` oder `d`. */
-const RETENTION_PATTERN = /^(\d+)([hd])$/i;
-
-const MILLIS_PER_HOUR = 60 * 60 * 1000;
-const MILLIS_PER_DAY = 24 * MILLIS_PER_HOUR;
-
-/**
- * Vorgabe: einen Tag. Formularentwürfe liegen in sessionStorage und überstehen
- * das Schließen des Tabs nicht — was 24 Stunden unverknüpft liegt, kann nicht
- * mehr abgesendet werden.
- */
-const DEFAULT_RETENTION = '24h';
-
-/** Verzeichnis mit Altbestand aus der Migration des Vorgängersystems. */
-const EXCLUDED_DIRS = new Set(['_old_uploads']);
-
-/**
- * Wandelt eine Fristangabe wie `24h` oder `7d` in Millisekunden um.
- * Wirft bei allem anderen — ein stiller Default wäre hier gefährlich,
- * weil die Frist bestimmt, was gelöscht wird.
- */
-export function parseRetention(input: string): number {
-	const match = RETENTION_PATTERN.exec(input.trim());
-	if (!match) {
-		throw new Error(`Ungültige Frist: ${JSON.stringify(input)}. Erwartet z. B. "24h" oder "7d".`);
-	}
-
-	const [, rawAmount = '', rawUnit = ''] = match;
-
-	const amount = Number(rawAmount);
-	if (amount <= 0) {
-		throw new Error(`Ungültige Frist: ${JSON.stringify(input)}. Muss größer als 0 sein.`);
-	}
-
-	return rawUnit.toLowerCase() === 'h' ? amount * MILLIS_PER_HOUR : amount * MILLIS_PER_DAY;
-}
-
-/**
- * Bildet den Grenzzeitpunkt. Alles, was strikt davor liegt, gilt als verwaist.
- * Bewusst eine einzige Stelle: Klasse A und Klasse B müssen dieselbe Grenze
- * verwenden, sonst räumt ein Lauf die Datei ab und lässt die Zeile stehen.
- */
-export function computeCutoff(now: Date, retentionMs: number): Date {
-	return new Date(now.getTime() - retentionMs);
-}
-
-/** Eine Zeile aus `sichtungen_dateien` ohne verknüpfte Sichtung. */
-export interface OrphanRow {
-	id: number;
-	/** Pfad relativ zum Upload-Verzeichnis, wie in `datei_pfad` gespeichert. */
-	filePath: string;
-	uploadedAt: Date;
-}
-
-/**
- * Wählt die Zeilen, deren Upload strikt vor dem Grenzzeitpunkt liegt.
- * Strikt, damit ein Datensatz exakt auf der Grenze geschont wird.
- */
-export function selectOrphanedRows(rows: OrphanRow[], cutoff: Date): OrphanRow[] {
-	return rows.filter((row) => row.uploadedAt.getTime() < cutoff.getTime());
-}
-
-/** Eine Datei, die beim Durchlaufen des Upload-Verzeichnisses gefunden wurde. */
-export interface DiskEntry {
-	/** Pfad relativ zum Upload-Verzeichnis, mit `/` als Trennzeichen. */
-	relativePath: string;
-	modifiedAt: Date;
-}
-
-/**
- * Bringt einen Pfad in die Form, in der `datei_pfad` gespeichert wird:
- * Schrägstriche als Trennzeichen, kein führendes `/` oder `./`, Unicode als NFC.
- *
- * Die NFC-Angleichung ist der kritische Teil: macOS liefert Dateinamen zerlegt
- * (NFD), PostgreSQL zusammengesetzt (NFC). Ohne sie gilt jede Datei mit Umlaut
- * als verwaist, obwohl ihre Zeile existiert — am echten Bestand waren das 10
- * Dateien echter Sichtungen, die das Tool gelöscht hätte.
- */
-export function normalizeRelativePath(input: string): string {
-	return input.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\//, '').normalize('NFC');
-}
-
-/** Alles, was als „gehört zu einer Sichtung" gilt und deshalb tabu ist. */
-export interface KnownState {
-	/** Alle `datei_pfad`-Werte der Tabelle, auch die verknüpften. */
-	paths: Iterable<string>;
-	/** Alle `referenz_id`-Werte aus `sichtungen`. */
-	referenceIds: Iterable<string>;
-}
-
-/**
- * Wählt Dateien, zu denen es keine Zeile gibt und die strikt älter als der
- * Grenzzeitpunkt sind.
- *
- * Der Altersfilter ist hier kein Komfort, sondern Schutz: Der Upload schreibt
- * erst die Datei und danach die DB-Zeile. Ohne Filter würde genau diese Lücke
- * als Waise gedeutet und ein laufender Upload zerstört.
- */
-export function selectOrphanedFiles(
-	entries: DiskEntry[],
-	known: KnownState,
-	cutoff: Date
-): DiskEntry[] {
-	const knownPaths = new Set<string>();
-	for (const path of known.paths) {
-		knownPaths.add(normalizeRelativePath(path));
-	}
-
-	const knownReferenceIds = new Set<string>();
-	for (const referenceId of known.referenceIds) {
-		knownReferenceIds.add(referenceId.normalize('NFC'));
-	}
-
-	return entries.filter((entry) => {
-		const normalized = normalizeRelativePath(entry.relativePath);
-
-		if (entry.modifiedAt.getTime() >= cutoff.getTime()) return false;
-		if (knownPaths.has(normalized)) return false;
-
-		// Zweite, unabhängige Absicherung: Der erste Pfadabschnitt ist die
-		// `referenz_id`. Gehört sie zu einer echten Sichtung, ist die Datei
-		// tabu — auch ohne Zeile. Genau dann ist sie die einzige Kopie.
-		const referenceId = normalized.split('/')[0];
-		if (referenceId && knownReferenceIds.has(referenceId)) return false;
-
-		return true;
-	});
-}
-
-/**
- * Löst einen relativen Pfad gegen das Upload-Verzeichnis auf und gibt `null`
- * zurück, wenn das Ergebnis die Basis verlässt.
- *
- * `datei_pfad` kommt aus der Datenbank, nicht aus dem Code — dieselbe
- * Absicherung wie in `LocalStorageProvider.validatePath()`.
- */
-export function resolveSafeTarget(baseDir: string, relativePath: string): string | null {
-	// Ein absoluter Pfad in `datei_pfad` ist eine Datenanomalie. Ihn durch
-	// Abschneiden des führenden Schrägstrichs als relativ umzudeuten wäre
-	// stillschweigendes Raten — dann zeigte `/etc/passwd` auf
-	// `uploads/etc/passwd`. Lieber ablehnen und melden.
-	if (isAbsolute(relativePath) || relativePath.startsWith('/') || relativePath.startsWith('\\')) {
-		return null;
-	}
-
-	const normalized = normalizeRelativePath(relativePath);
-	if (normalized === '') {
-		return null;
-	}
-
-	const resolvedBase = resolve(baseDir);
-	const target = resolve(resolvedBase, normalized);
-	const rel = relative(resolvedBase, target);
-
-	if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) {
-		return null;
-	}
-
-	return target;
-}
 
 export interface CliOptions {
 	retentionMs: number;
@@ -276,44 +129,6 @@ export function assertLocalStorage(env: NodeJS.ProcessEnv): void {
 	}
 }
 
-/**
- * Läuft das Upload-Verzeichnis rekursiv ab und liefert alle Dateien mit
- * ihrem relativen Pfad und ihrer Änderungszeit.
- */
-async function scanUploadDir(baseDir: string, prefix = ''): Promise<DiskEntry[]> {
-	let dirEntries;
-	try {
-		dirEntries = await readdir(join(baseDir, prefix), { withFileTypes: true });
-	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-			return [];
-		}
-		throw error;
-	}
-
-	const results: DiskEntry[] = [];
-	for (const entry of dirEntries) {
-		// Punktdateien sind nie Uploads (`.DS_Store`, `.gitkeep`). Sie liegen
-		// real im Verzeichnis und wären sonst als Waise gelöscht worden.
-		if (entry.name.startsWith('.')) {
-			continue;
-		}
-
-		const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
-
-		if (entry.isDirectory()) {
-			if (EXCLUDED_DIRS.has(entry.name) && prefix === '') {
-				continue;
-			}
-			results.push(...(await scanUploadDir(baseDir, relativePath)));
-		} else if (entry.isFile()) {
-			const stats = await stat(join(baseDir, relativePath));
-			results.push({ relativePath, modifiedAt: stats.mtime });
-		}
-	}
-	return results;
-}
-
 /** Verdeckt das Passwort in einer Verbindungszeichenfolge für die Ausgabe. */
 function maskConnection(connectionString: string): string {
 	return connectionString.replace(/:[^:@]*@/, ':****@');
@@ -321,9 +136,12 @@ function maskConnection(connectionString: string): string {
 
 /**
  * Löscht eine Datei und meldet, ob sie tatsächlich entfernt wurde.
- * Eine bereits fehlende Datei ist kein Fehler — das Ziel ist erreicht.
+ *
+ * Eine bereits fehlende Datei ist **kein** Fehler — das Ziel ist erreicht, also
+ * `false` ohne Ausnahme. Echte Fehler werden dagegen geworfen, damit der
+ * Aufräum-Lauf sie als Fehlschlag zählen kann statt sie zu verschlucken.
  */
-async function removeFile(target: string): Promise<boolean> {
+export async function removeFile(target: string): Promise<boolean> {
 	try {
 		await unlink(target);
 		return true;
@@ -331,8 +149,7 @@ async function removeFile(target: string): Promise<boolean> {
 		if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
 			return false;
 		}
-		console.error(`❌ Konnte ${target} nicht löschen: ${(error as Error).message}`);
-		return false;
+		throw error;
 	}
 }
 
@@ -402,6 +219,8 @@ async function main(): Promise<void> {
 
 		const diskEntries = await scanUploadDir(options.uploadsDir);
 
+		// Ein Lesestand, ein Grenzzeitpunkt — die Ports reichen die bereits
+		// geladenen Momentaufnahmen durch, statt erneut abzufragen.
 		const orphanedRows = selectOrphanedRows(candidateRows, cutoff);
 		const orphanedFiles = selectOrphanedFiles(
 			diskEntries,
@@ -438,41 +257,42 @@ async function main(): Promise<void> {
 			return;
 		}
 
-		let deletedRows = 0;
-		let deletedFiles = 0;
-
-		// Klasse A: erst die Zeile, dann die Datei. Scheitert das Löschen der
-		// Datei, bleibt eine Klasse-B-Waise zurück, die der nächste Lauf
-		// einsammelt. Umgekehrt entstünde eine Zeile ohne Datei — die findet
-		// danach keine der beiden Klassen mehr.
-		for (const row of orphanedRows) {
-			await sql`DELETE FROM sichtungen_dateien WHERE id = ${row.id}`;
-			deletedRows++;
-
-			const target = resolveSafeTarget(options.uploadsDir, row.filePath);
+		/** Löscht eine Datei über den geprüften Pfad; außerhalb der Basis: überspringen. */
+		async function deleteViaSafePath(relativePath: string): Promise<void> {
+			const target = resolveSafeTarget(options.uploadsDir, relativePath);
 			if (!target) {
-				console.warn(`⚠️  Pfad außerhalb des Upload-Verzeichnisses, übersprungen: ${row.filePath}`);
-				continue;
+				console.warn(`⚠️  Pfad außerhalb des Upload-Verzeichnisses, übersprungen: ${relativePath}`);
+				return;
 			}
-			if (await removeFile(target)) {
-				deletedFiles++;
-			}
+			// Wirft nur bei echten Fehlern. Eine bereits fehlende Datei gilt als
+			// Erfolg — „gelöscht" heißt hier „nicht mehr vorhanden", genau wie
+			// beim Endpunkt, dessen Storage-Provider ebenfalls nicht wirft.
+			await removeFile(target);
 		}
 
-		for (const entry of orphanedFiles) {
-			const target = resolveSafeTarget(options.uploadsDir, entry.relativePath);
-			if (!target) {
+		const report = await cleanupOrphans({
+			now: new Date(),
+			retentionMs: options.retentionMs,
+			execute: true,
+			// Der Deckel schützt HTTP-Aufrufe vor Timeouts, nicht einen manuellen Lauf.
+			limit: Number.POSITIVE_INFINITY,
+			ports: {
+				findOrphanRows: async () => orphanedRows,
+				findOrphanFiles: async () => orphanedFiles,
+				deleteRow: async (id) => {
+					await sql`DELETE FROM sichtungen_dateien WHERE id = ${id}`;
+				},
+				deleteFile: deleteViaSafePath
+			},
+			onError: (subject, error) =>
 				console.warn(
-					`⚠️  Pfad außerhalb des Upload-Verzeichnisses, übersprungen: ${entry.relativePath}`
-				);
-				continue;
-			}
-			if (await removeFile(target)) {
-				deletedFiles++;
-			}
-		}
+					`⚠️  ${subject}: ${error instanceof Error ? error.message : String(error)}`
+				)
+		});
 
-		console.log(`\n✅ ${deletedRows} Zeilen und ${deletedFiles} Dateien gelöscht.`);
+		console.log(
+			`\n✅ ${report.rowsDeleted} Zeilen und ${report.filesDeleted} Dateien gelöscht.`
+		);
 	} finally {
 		await sql.end();
 	}

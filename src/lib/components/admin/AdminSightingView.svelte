@@ -283,7 +283,14 @@
 	const mediaRows = $derived(
 		[
 			DataRow('Aufnahme', currentSighting.mediaFile, hasValue(currentSighting.mediaFile)),
-			BooleanDataRow('Upload', currentSighting.mediaUpload, hasValue(currentSighting.mediaUpload))
+			BooleanDataRow('Upload', currentSighting.mediaUpload, hasValue(currentSighting.mediaUpload)),
+			// Ohne diese Einwilligung dürfen die Aufnahmen ausschließlich zur
+			// Prüfung der Meldung angesehen werden — nicht veröffentlicht.
+			BooleanDataRow(
+				'Veröffentlichung erlaubt',
+				currentSighting.mediaConsent,
+				hasValue(currentSighting.mediaConsent)
+			)
 		].filter((row): row is DataRowType => row !== undefined)
 	);
 

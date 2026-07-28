@@ -1,0 +1,95 @@
+<script lang="ts">
+	/**
+	 * Aufräumen verwaister Uploads aus der Admin-Oberfläche.
+	 *
+	 * Erst Vorschau, dann bestätigen: Der Lösch-Button erscheint bewusst erst,
+	 * wenn ein Befund vorliegt — sonst löscht ein Admin blind.
+	 */
+	import Icon from '$lib/components/Icon.svelte';
+
+	type CleanupReport = {
+		retentionHours: number;
+		rowsFound: number;
+		filesFound: number | null;
+		rowsDeleted: number;
+		filesDeleted: number;
+		failed: number;
+		remaining: number;
+	};
+
+	let report = $state<CleanupReport | null>(null);
+	let busy = $state(false);
+	let errorMessage = $state<string | null>(null);
+
+	let hasFindings = $derived(!!report && report.rowsFound + (report.filesFound ?? 0) > 0);
+
+	async function run(execute: boolean) {
+		busy = true;
+		errorMessage = null;
+		try {
+			const response = await fetch(
+				`/api/admin/cleanup-orphans?mode=${execute ? 'execute' : 'preview'}`,
+				{ method: 'POST' }
+			);
+			if (!response.ok) throw new Error(`Status ${response.status}`);
+			report = await response.json();
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
+		} finally {
+			busy = false;
+		}
+	}
+
+	function confirmCleanup() {
+		if (confirm('Verwaiste Uploads endgültig löschen? Das lässt sich nicht rückgängig machen.')) {
+			run(true);
+		}
+	}
+</script>
+
+<section class="card bg-base-100 border-base-300 border shadow-sm">
+	<div class="card-body">
+		<h2 class="card-title">
+			<Icon icon="lucide:trash-2" width="20" class="text-primary" aria-hidden="true" />
+			Verwaiste Uploads
+		</h2>
+		<p class="text-base-content/70 text-sm">
+			Aufnahmen, die übertragen, aber nie mit einer abgeschickten Sichtung verknüpft wurden.
+		</p>
+
+		<div class="mt-4 flex flex-wrap gap-2">
+			<button class="btn btn-primary min-h-11" disabled={busy} onclick={() => run(false)}>
+				Vorschau laden
+			</button>
+			{#if hasFindings}
+				<button
+					class="btn btn-outline btn-error btn-sm min-h-11"
+					disabled={busy}
+					onclick={confirmCleanup}
+				>
+					Endgültig löschen
+				</button>
+			{/if}
+		</div>
+
+		{#if errorMessage}
+			<div class="alert alert-error mt-4" role="alert">
+				<span class="text-sm">Aufräumen fehlgeschlagen: {errorMessage}</span>
+			</div>
+		{:else if report}
+			<div class="alert alert-info mt-4">
+				<span class="text-sm">
+					{report.rowsFound} Zeilen ohne Sichtung,
+					{report.filesFound ?? 'nicht anwendbar'} Dateien ohne Zeile (Frist: {report.retentionHours}
+					Stunden).
+					{#if report.rowsDeleted + report.filesDeleted > 0}
+						Entfernt: {report.rowsDeleted} Zeilen, {report.filesDeleted} Dateien.
+					{/if}
+					{#if report.remaining > 0}
+						Noch {report.remaining} übrig — erneut ausführen.
+					{/if}
+				</span>
+			</div>
+		{/if}
+	</div>
+</section>
