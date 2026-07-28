@@ -1,6 +1,7 @@
 test-results
 node_modules
 .worktrees
+.claude/worktrees/
 
 # AI planning artifacts (Claude Code superpowers plans)
 docs/superpowers/
