@@ -160,13 +160,17 @@ jobs:
         run: |
           BASE="origin/${{ github.base_ref }}"
           CHANGED=$(git diff --name-only "$BASE"...HEAD)
+          SCHEMA_FILES=$(echo "$CHANGED" | grep -xE 'src/lib/server/db/schema\.ts|drizzle\.config\.ts' || true)
 
-          if echo "$CHANGED" | grep -qxE 'src/lib/server/db/schema\.ts|drizzle\.config\.ts'; then
+          if [ -n "$SCHEMA_FILES" ]; then
             if ! echo "$CHANGED" | grep -qE '^drizzle/.*\.sql$|^drizzle/meta/_journal\.json$'; then
-              echo "::error file=src/lib/server/db/schema.ts::Schema geändert, aber keine Migration committet."
+              while IFS= read -r f; do
+                echo "::error file=$f::$f geändert, aber keine Migration committet."
+              done <<< "$SCHEMA_FILES"
               echo ""
-              echo "❌ src/lib/server/db/schema.ts (oder drizzle.config.ts) wurde geändert,"
-              echo "   aber der PR enthält keine neue Migrationsdatei unter drizzle/."
+              echo "❌ Folgende Datei(en) wurden geändert, aber der PR enthält keine"
+              echo "   neue Migrationsdatei unter drizzle/:"
+              echo "$SCHEMA_FILES" | sed 's/^/   - /'
               echo ""
               echo "Deployments wenden ausschließlich generierte Migrationen an"
               echo "(scripts/docker-migrate.ts beim Container-Start) — ohne Migration"
