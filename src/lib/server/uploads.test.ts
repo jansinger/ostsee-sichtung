@@ -1,13 +1,5 @@
 import path from 'path';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import {
-	ALLOWED_UPLOAD_MIME_TYPES,
-	getFileInfo,
-	getMimeTypeFromExtension,
-	getUploadPath,
-	isAllowedMimeType,
-	isValidUploadPath
-} from './uploads';
 
 // Mutable mock environment object
 const mockEnv: Record<string, string> = {
@@ -49,6 +41,16 @@ vi.mock('fs', () => ({
 	existsSync: vi.fn(),
 	statSync: vi.fn()
 }));
+
+// Import after mocks are set up
+import {
+	ALLOWED_UPLOAD_MIME_TYPES,
+	getFileInfo,
+	getMimeTypeFromExtension,
+	getUploadPath,
+	isAllowedMimeType,
+	isValidUploadPath
+} from './uploads';
 
 describe('uploads utilities', () => {
 	let mockExistsSync: any;
