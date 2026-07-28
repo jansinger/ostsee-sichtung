@@ -90,6 +90,30 @@ describe('correctCestOffsetUTC', () => {
 	});
 
 	/**
+	 * Die Eintrittsbedingung ist `getTimezoneOffset() !== 0`, also der Offset —
+	 * nicht der Name der Zeitzone. Das ist Absicht: `combineToDate` setzt die
+	 * Uhrzeit per `setHours`, und ob dabei ein Offset einfließt, entscheidet
+	 * allein der Offset des Prozesses.
+	 *
+	 * `Europe/London` im Winter ist der Prüffall dafür — Offset 0, aber nicht
+	 * `UTC`. Ein Namensvergleich statt des Offset-Vergleichs würde die Korrektur
+	 * hier überspringen und die Wanduhrzeit unkorrigiert speichern.
+	 */
+	describe('Zonen mit Offset 0, die nicht UTC heißen', () => {
+		it('korrigiert unter Europe/London im Winter wie unter UTC', () => {
+			const utc = withTimeZone('UTC', () => speichereSichtungszeit('2024-01-15', '14:30'));
+			const london = withTimeZone('Europe/London', () =>
+				speichereSichtungszeit('2024-01-15', '14:30')
+			);
+
+			// London ist im Winter GMT (Offset 0), verhält sich in `combineToDate`
+			// also exakt wie UTC — dieselbe Korrektur muss greifen.
+			expect(london).toBe(utc);
+			expect(london).toBe('2024-01-15T13:30:00.000Z');
+		});
+	});
+
+	/**
 	 * Regression: Am Umstellungstag selbst lieferte die Korrektur in der Stunde
 	 * 01:00–01:59 Ortszeit einen um eine Stunde verschobenen Zeitpunkt.
 	 *
