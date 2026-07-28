@@ -86,6 +86,13 @@ export const sightings = pgTable(
 		deadPhoneContact: smallint('totfund_telefon').default(0).notNull(),
 		species: smallint('tierart').default(0).notNull(),
 		privacyConsent: smallint('datenschutz_einverstaendnis').default(0).notNull(),
+		// Einwilligung zur **Veröffentlichung** hochgeladener Aufnahmen.
+		// Upload und fachliche Prüfung sind dagegen Teil der Meldung selbst und
+		// von `privacyConsent` gedeckt (Entscheidung 2026-07-28).
+		// Zeitpunkt und Textfassung sind der Nachweis nach Art. 7 Abs. 1 DSGVO.
+		mediaConsent: smallint('medien_einwilligung').default(0).notNull(),
+		mediaConsentAt: timestamp('medien_einwilligung_am', { mode: 'date' }),
+		mediaConsentVersion: varchar('medien_einwilligung_version', { length: 32 }),
 		referenceId: varchar('referenz_id', { length: 64 }),
 		// Weather data fields for Issue #110
 		weatherData: jsonb('weather_data'),

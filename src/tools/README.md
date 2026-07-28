@@ -80,6 +80,12 @@ Removes orphaned media uploads: `sichtungen_dateien` rows that never got linked 
 - Those rows carry `exif_daten` including GPS coordinates for reports that were never submitted
 - Files without a row accumulate because deleting a sighting cascades the rows but leaves the files on disk
 
+**Same logic is reachable over HTTP** via `POST /api/admin/cleanup-orphans` —
+from the admin UI or an external web cron using `CLEANUP_TOKEN`. Both share the
+core in `$lib/server/media/orphanCleanup`. This CLI stays for runs without a
+running application and for unbounded batches (the endpoint caps each call at
+500 findings to stay under proxy timeouts).
+
 **Usage:**
 
 ```bash

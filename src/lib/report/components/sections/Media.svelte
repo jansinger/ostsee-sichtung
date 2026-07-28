@@ -4,6 +4,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import DropzoneEnhanced from '$lib/report/components/form/fields/DropzoneEnhanced.svelte';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
+	import UploadNotice from '$lib/report/components/form/UploadNotice.svelte';
 	import type { ValidationPreset } from '$lib/types';
 	import SectionCard from './SectionCard.svelte';
 
@@ -63,6 +64,7 @@
 			</li>
 		</ul>
 	</div>
+	<UploadNotice />
 	<FormField name="mediaConsent" />
 	{#if uploadConfig}
 		<DropzoneEnhanced

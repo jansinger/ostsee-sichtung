@@ -1,3 +1,4 @@
+import { MEDIA_CONSENT_VERSION } from '$lib/form/consent/mediaConsentVersion';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting } from '$lib/types/sighting';
@@ -169,6 +170,12 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 		shipNameConsent: formData.shipNameConsent ? 1 : 0,
 		nameConsent: formData.nameConsent ? 1 : 0,
 		privacyConsent: formData.privacyConsent ? 1 : 0,
+		// Einwilligung zur Veröffentlichung von Aufnahmen. Zeitpunkt und
+		// Textfassung nur dann, wenn tatsächlich zugestimmt wurde — ein
+		// Nachweis für eine nicht erteilte Einwilligung wäre sinnlos.
+		mediaConsent: formData.mediaConsent ? 1 : 0,
+		mediaConsentAt: formData.mediaConsent ? new Date() : null,
+		mediaConsentVersion: formData.mediaConsent ? MEDIA_CONSENT_VERSION : null,
 
 		// === SYSTEM-FELDER UND VALIDIERUNGEN ===
 		// Eingabekanal (Web, Mobile App, Admin-Interface, etc.)

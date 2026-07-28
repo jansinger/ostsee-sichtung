@@ -103,7 +103,10 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 
 		// Additional required fields
 		persistentDataConsent: false, // Legacy API users implicitly consent to data storage
-		mediaConsent: true // Legacy API users consent to media handling
+		// Legacy-Clients kennen das Feld nicht und können die Veröffentlichung
+		// von Aufnahmen daher nicht erklären. Ein `true` würde einen
+		// Einwilligungsnachweis erfinden (siehe mediaConsent.test.ts).
+		mediaConsent: false
 	};
 }
 

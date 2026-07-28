@@ -53,6 +53,28 @@ DATABASE_POSTGRES_URL=postgresql://user:pass@pgbouncer:6432/ostsee
 
 ---
 
+### `CLEANUP_TOKEN`
+
+Bearer-Token für `POST /api/admin/cleanup-orphans`, mit dem ein externer
+Web-Cron verwaiste Uploads abräumt.
+
+- **Pflicht:** nein. Ohne Wert ist der externe Zugang abgeschaltet — der
+  Endpunkt bleibt dann nur über eine angemeldete Admin-Session erreichbar.
+- **Mindestlänge:** 32 Zeichen. Ein kürzerer Wert wird wie „nicht gesetzt"
+  behandelt und beim Zugriffsversuch als Warnung geloggt.
+- **Rotation:** Wert tauschen und neu deployen.
+
+```bash
+CLEANUP_TOKEN=$(openssl rand -hex 32)
+```
+
+Aufruf im Cron:
+
+```bash
+curl -fsS -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" \
+  "https://<host>/api/admin/cleanup-orphans?mode=execute"
+```
+
 ### `SESSION_SECRET`
 
 **Type**: `string`

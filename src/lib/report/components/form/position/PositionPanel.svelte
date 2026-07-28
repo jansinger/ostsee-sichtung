@@ -5,6 +5,7 @@
 	import { getUploadConfig } from '$lib/stores/configStore';
 	import type { ValidationPreset } from '$lib/types';
 	import Icon from '$lib/components/Icon.svelte';
+	import UploadNotice from '$lib/report/components/form/UploadNotice.svelte';
 	import DropzoneEnhanced from '$lib/report/components/form/fields/DropzoneEnhanced.svelte';
 	import LocationInput from '$lib/report/components/form/LocationInput.svelte';
 	import VerifyLocation from '$lib/report/components/form/VerifyLocation.svelte';
@@ -206,6 +207,8 @@
 		<p class="text-base-content/70 mb-4 text-sm">
 			Der schnellste Weg: Position, Datum und Uhrzeit werden automatisch übernommen.
 		</p>
+
+		<UploadNotice />
 
 		{#if gpsPhotoConfig}
 			<!-- `showNoGpsWarning={false}`: Der Fall wird unten ausführlicher erklärt
