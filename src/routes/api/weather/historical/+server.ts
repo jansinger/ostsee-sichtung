@@ -27,12 +27,18 @@ interface MarineResponse {
 }
 
 /**
- * Determine if sighting date is today (Issue #110)
+ * Determine if sighting date is today (Issue #110).
+ *
+ * N4: Vergleich in deutscher Ortszeit, nicht in Prozesszone. `date` ist bereits
+ * ein "YYYY-MM-DD"-Kalendertag (deutsche Ortszeit); ein `Date`-basierter
+ * Vergleich in UTC-Prozesszone würde in den ersten 1-2 Stunden nach Mitternacht
+ * Berlin (UTC hat den Tageswechsel noch nicht vollzogen) ein heutiges
+ * Berlin-Datum fälschlich als "nicht heute" werten und ans Archiv statt an die
+ * Forecast-API routen — das Archiv kennt den laufenden Tag noch nicht.
  */
 function isTodayDate(date: string): boolean {
-	const sightingDate = new Date(date);
-	const today = new Date();
-	return sightingDate.toDateString() === today.toDateString();
+	const berlinToday = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
+	return date === berlinToday;
 }
 
 /**

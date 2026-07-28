@@ -3,6 +3,7 @@ import { requireUserRole } from '$lib/server/auth/auth';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { getSightingById, updateSightingWeatherData } from '$lib/server/db/sightingRepository';
 import { fetchWeatherData } from '$lib/server/services/weatherRefreshService';
+import { splitDateTime } from '$lib/utils/format/dateTime';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
@@ -40,10 +41,11 @@ export const POST: RequestHandler = async ({ params, locals, url }: RequestEvent
 			);
 		}
 
-		// Format date for weather API
-		const sightingDateStr = sighting.sightingDate.toISOString().split('T')[0] || '';
-		const sightingTimeStr =
-			sighting.sightingDate.toISOString().split('T')[1]?.split(':').slice(0, 2).join(':') || '';
+		// H3: Berlin-Wanduhrzeit ableiten, nicht den UTC-Instant zerschneiden.
+		// Open-Meteo wird mit timezone=Europe/Berlin abgefragt (fetchWeatherData);
+		// ein toISOString()-Schnitt liefert dagegen UTC und trifft im Sommer die
+		// falsche Stunde, um Mitternacht sogar den falschen Kalendertag.
+		const { date: sightingDateStr, time: sightingTimeStr } = splitDateTime(sighting.sightingDate);
 
 		logger.debug(
 			{

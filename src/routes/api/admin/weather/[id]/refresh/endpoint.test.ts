@@ -29,7 +29,21 @@ vi.mock('$lib/server/db/sightingRepository', () => ({
 }));
 
 vi.mock('$lib/server/services/weatherRefreshService', () => ({
-	fetchWeatherData: vi.fn()
+	fetchWeatherData: vi.fn().mockResolvedValue({
+		provider: 'open-meteo',
+		fetched_at: new Date().toISOString(),
+		api_version: 'v1',
+		data_type: 'historical',
+		location: { latitude: 54.5, longitude: 13.5 },
+		observation_time: '2024-07-15T14:00',
+		raw_data: {},
+		processed: {},
+		quality: {}
+	})
+}));
+
+vi.mock('$lib/server/audit/auditService', () => ({
+	logAuditEvent: vi.fn()
 }));
 
 const createMockEvent = (id: string, user: { email: string; roles: string[] } | null = null) => ({
@@ -92,5 +106,49 @@ describe('/api/admin/weather/[id]/refresh POST endpoint', () => {
 		expect(body.success).toBe(false);
 		expect(body.error).not.toContain('postgresql://');
 		expect(body.error).not.toContain('DB connection failed');
+	});
+
+	// H3: Datum + Uhrzeit müssen als Berlin-Wanduhrzeit an fetchWeatherData
+	// gehen, nicht als UTC-Instant-Bestandteile (toISOString()).
+	it('leitet Datum und Uhrzeit als Berlin-Wanduhrzeit ab (Sommerzeit, kein Tageswechsel)', async () => {
+		const { getSightingById, updateSightingWeatherData } =
+			await import('$lib/server/db/sightingRepository');
+		const { fetchWeatherData } = await import('$lib/server/services/weatherRefreshService');
+		vi.mocked(getSightingById).mockResolvedValue({
+			id: 1,
+			latitude: '54.5',
+			longitude: '13.5',
+			// 12:30 UTC entspricht im Sommer (Berlin = UTC+2) 14:30 Uhr Berlin
+			sightingDate: new Date('2024-07-15T12:30:00Z')
+		} as never);
+		vi.mocked(updateSightingWeatherData).mockResolvedValue(true);
+
+		const event = createMockEvent('1', { email: 'admin@test.com', roles: ['admin'] });
+		const response = await POST(event as Parameters<typeof POST>[0]);
+
+		expect(response.status).toBe(200);
+		expect(vi.mocked(fetchWeatherData)).toHaveBeenCalledWith(54.5, 13.5, '2024-07-15', '14:30');
+	});
+
+	it('leitet Datum und Uhrzeit als Berlin-Wanduhrzeit ab (Tageswechsel über Mitternacht)', async () => {
+		const { getSightingById, updateSightingWeatherData } =
+			await import('$lib/server/db/sightingRepository');
+		const { fetchWeatherData } = await import('$lib/server/services/weatherRefreshService');
+		vi.mocked(getSightingById).mockResolvedValue({
+			id: 2,
+			latitude: '54.5',
+			longitude: '13.5',
+			// 22:30 UTC am 14.07. entspricht im Sommer 00:30 Uhr Berlin am 15.07. —
+			// der UTC-Kalendertag liegt hier noch auf dem 14., der Berlin-Tag schon
+			// auf dem 15.
+			sightingDate: new Date('2024-07-14T22:30:00Z')
+		} as never);
+		vi.mocked(updateSightingWeatherData).mockResolvedValue(true);
+
+		const event = createMockEvent('2', { email: 'admin@test.com', roles: ['admin'] });
+		const response = await POST(event as Parameters<typeof POST>[0]);
+
+		expect(response.status).toBe(200);
+		expect(vi.mocked(fetchWeatherData)).toHaveBeenCalledWith(54.5, 13.5, '2024-07-15', '00:30');
 	});
 });

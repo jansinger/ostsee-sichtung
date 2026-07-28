@@ -30,7 +30,8 @@
 	// Handle full weather data storage
 	function handleFullWeatherData(weatherData: WeatherData) {
 		// Bestimme automatisch den data_type basierend auf dem Sichtungsdatum
-		const today = new Date().toISOString().split('T')[0] || '';
+		// (NIEDRIG: Berlin-Datum statt UTC — läuft im Browser, kein Server-Import).
+		const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
 		const sightingDateStr = sightingDate || '';
 		const dataType = sightingDateStr >= today ? 'forecast' : 'historical';
 

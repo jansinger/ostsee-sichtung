@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { StoredWeatherData } from '$lib/services/weatherService';
+import { withTimeZone } from '$lib/server/datetime/withTimeZone.testutil';
 
 vi.mock('$lib/logger.server', () => ({
 	createLogger: () => ({
@@ -106,6 +107,10 @@ describe('fetchWeatherData', () => {
 	beforeEach(() => {
 		vi.stubGlobal('fetch', vi.fn());
 		vi.clearAllMocks();
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
 	});
 
 	it('wirft Fehler wenn fetch einen Netzwerkfehler wirft', async () => {
@@ -267,23 +272,38 @@ describe('fetchWeatherData', () => {
 		await expect(fetchWeatherData(54.5, 10.5, HISTORICAL_DATE)).rejects.toThrow();
 	});
 
-	it('wählt den zeitlich nächstgelegenen Datenpunkt bei Angabe einer Uhrzeit', async () => {
+	it('wählt den Index über die Ortszeit-Stunde (positionsbasiert), nicht über die kleinste Zeitdifferenz', async () => {
+		// N6: `hourly.time[]` ist durch `timezone=Europe/Berlin` bereits ortszeit-
+		// indiziert (Index i = Stunde i). Der Index muss deshalb über
+		// `hourIndexFromLocalTime` kommen statt über eine Date-Differenz-Suche.
+		// Um beide Implementierungen zu unterscheiden, trägt Index 14 hier absichtlich
+		// einen "falschen" Zeitstempel, während Index 2 zufällig den Zieltext "14:00"
+		// trägt — eine Differenz-Suche (alter Code) würde Index 2 wählen, die
+		// Ortszeit-Stunde muss trotzdem Index 14 liefern.
 		const { convertToStoredWeatherData } = await import('$lib/services/weatherService');
+
+		const time = Array.from(
+			{ length: 24 },
+			(_, i) => `${HISTORICAL_DATE}T${String(i).padStart(2, '0')}:00`
+		);
+		time[14] = `${HISTORICAL_DATE}T02:00`; // falsch beschriftet
+		time[2] = `${HISTORICAL_DATE}T14:00`; // trägt zufällig den Zieltext
+
+		const temperature_2m = Array.from({ length: 24 }, (_, i) => i);
+		temperature_2m[14] = 99;
+		temperature_2m[2] = 11;
+
 		vi.mocked(fetch)
 			.mockResolvedValueOnce({
 				ok: true,
 				json: async () => ({
 					hourly: {
-						time: [
-							`${HISTORICAL_DATE}T10:00`,
-							`${HISTORICAL_DATE}T11:00`,
-							`${HISTORICAL_DATE}T14:00`
-						],
-						temperature_2m: [10, 12, 18],
-						wind_speed_10m: [5, 8, 15],
-						wind_direction_10m: [180, 180, 180],
-						weather_code: [0, 0, 0],
-						visibility: [10000, 10000, 10000]
+						time,
+						temperature_2m,
+						wind_speed_10m: new Array(24).fill(10),
+						wind_direction_10m: new Array(24).fill(180),
+						weather_code: new Array(24).fill(0),
+						visibility: new Array(24).fill(10000)
 					}
 				})
 			} as Response)
@@ -294,15 +314,67 @@ describe('fetchWeatherData', () => {
 
 		await fetchWeatherData(54.5, 10.5, HISTORICAL_DATE, '14:00');
 
-		// convertToStoredWeatherData wird mit dem WeatherData-Objekt aufgerufen,
-		// dessen time dem nächstgelegenen Slot entspricht (14:00)
 		expect(vi.mocked(convertToStoredWeatherData)).toHaveBeenCalledWith(
-			expect.objectContaining({ time: `${HISTORICAL_DATE}T14:00` }),
+			expect.objectContaining({ time: time[14], temperature: 99 }),
 			expect.anything(),
 			expect.anything(),
 			54.5,
 			10.5
 		);
+	});
+
+	it('wählt denselben Index unabhängig von der Prozess-Zeitzone', async () => {
+		// Positionsbasierte Auswahl über hourIndexFromLocalTime ist per Konstruktion
+		// prozesszonen-fest (String-Parsing statt Date-Arithmetik). Abgesichert unter
+		// einer von Berlin/UTC abweichenden Zone, damit eine Rückkehr zu Date-Diffs
+		// hier auffällt.
+		const { convertToStoredWeatherData } = await import('$lib/services/weatherService');
+
+		await withTimeZone('America/New_York', async () => {
+			vi.mocked(fetch)
+				.mockResolvedValueOnce({
+					ok: true,
+					json: async () => makeWeatherResponse(HISTORICAL_DATE)
+				} as Response)
+				.mockResolvedValueOnce({
+					ok: true,
+					json: async () => makeMarineResponse()
+				} as Response);
+
+			await fetchWeatherData(54.5, 10.5, HISTORICAL_DATE, '12:00');
+
+			expect(vi.mocked(convertToStoredWeatherData)).toHaveBeenCalledWith(
+				expect.objectContaining({ time: `${HISTORICAL_DATE}T12:00` }),
+				expect.anything(),
+				expect.anything(),
+				54.5,
+				10.5
+			);
+		});
+	});
+
+	it('bestimmt "heute" über die Berliner Ortszeit, nicht über UTC (N5)', async () => {
+		// 23:30 UTC entspricht im Sommer (Berlin = UTC+2) bereits 01:30 Uhr des
+		// Folgetages in Berlin — UTC- und Berlin-Kalendertag weichen 30 Minuten lang
+		// voneinander ab. Das angefragte Datum ist zu diesem Zeitpunkt in Berlin
+		// bereits "gestern" und muss die Archive-API treffen, nicht die Forecast-API.
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2024-07-14T23:30:00Z'));
+
+		vi.mocked(fetch)
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => makeWeatherResponse('2024-07-14')
+			} as Response)
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => makeMarineResponse()
+			} as Response);
+
+		await fetchWeatherData(54.5, 10.5, '2024-07-14');
+
+		const firstCallUrl = vi.mocked(fetch).mock.calls[0]?.[0] as string;
+		expect(firstCallUrl).toContain('archive-api.open-meteo.com');
 	});
 
 	it('übergibt latitude und longitude korrekt an convertToStoredWeatherData', async () => {
