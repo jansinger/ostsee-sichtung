@@ -18,7 +18,10 @@
 	// `mediaStore` ist das `$state`-Objekt aus Form.svelte:40 und wird über den
 	// Context als derselbe Proxy weitergereicht. DropzoneEnhanced ersetzt die
 	// Liste per Zuweisung (`mediaStore.mediaFiles = newFiles`, :82) — der
-	// Property-Write auf dem Proxy weckt dieses `$derived`.
+	// Property-Write auf dem Proxy weckt dieses `$derived`. Das geschieht zweimal
+	// je Upload: beim Drop (synchron) und erneut, wenn die EXIF-Auswertung durch
+	// ist. Nur deshalb kann `photoStatus` von `'analyzing'` auf sein Endergebnis
+	// wechseln — siehe den Kommentar an `updateMediaFiles` in DropzoneEnhanced.
 	const status = $derived(photoStatus(mediaStore.mediaFiles));
 
 	const referenceId = $derived($form.referenceId);
@@ -135,10 +138,10 @@
 	/**
 	 * Übernimmt den Gerätestandort und öffnet die Karte zur Kontrolle.
 	 *
-	 * Der Button bleibt währenddessen bedienbar (nur `aria-busy`), weil `disabled`
-	 * ihn aus der Tab-Reihenfolge nimmt und der Browser den Fokus verwirft — ein
-	 * Tastatur-Nutzer verlöre bis zu zehn Sekunden lang seine Position. Den
-	 * Doppelklick-Schutz übernimmt stattdessen dieser Wächter.
+	 * Der Button bleibt währenddessen fokussierbar (nur `aria-disabled`), weil
+	 * `disabled` ihn aus der Tab-Reihenfolge nimmt und der Browser den Fokus
+	 * verwirft — ein Tastatur-Nutzer verlöre für die Dauer der Ortung seine
+	 * Position. Den Doppelklick-Schutz übernimmt stattdessen dieser Wächter.
 	 */
 	async function useCurrentPosition(): Promise<void> {
 		if (locating) return;
@@ -200,7 +203,16 @@
 
 		<!-- Zustand C: Foto ohne EXIF-GPS. Bisher lief dieser Fall in eine
 		     Fehlermeldung beim „Weiter" ohne sichtbares Feld zum Korrigieren —
-		     hier stattdessen zwei benannte Ausgänge. -->
+		     hier stattdessen zwei benannte Ausgänge.
+
+		     Bewusst `=== 'no-gps'` und nicht „kein GPS im Formular": Während der
+		     Auswertung meldet `photoStatus` `'analyzing'`, und dann steht hier
+		     nichts. Ein Foto MIT GPS wurde sonst im Moment des Drops für
+		     GPS-los erklärt und die Behauptung Sekundenbruchteile später
+		     zurückgenommen — mit `role="status"` unten hätte ein Screenreader
+		     die falsche Aussage angesagt. Für `'analyzing'` bleibt der Block
+		     leer statt einen Erfolg vorwegzunehmen; die Rückmeldung zum
+		     laufenden Upload liefert die Dropzone. -->
 		{#if status === 'no-gps'}
 			<div class="alert alert-warning mt-4" role="status" data-testid="photo-no-gps">
 				<Icon aria-hidden="true" icon="lucide:circle-alert" width="20" class="shrink-0" />
@@ -210,9 +222,13 @@
 						weitergeleitete Bilder enthalten keine Position. Das Foto ist trotzdem wertvoll und
 						bleibt erhalten.
 					</p>
-					{#if $form.sightingDate}
-						<p class="mt-1 text-sm">Datum und Uhrzeit konnten übernommen werden.</p>
-					{/if}
+					<!-- Hier stand „Datum und Uhrzeit konnten übernommen werden." — ersatzlos
+					     entfernt, weil der Satz in genau diesem Block nie zutrifft: Für ein
+					     Foto OHNE GPS schreibt DropzoneEnhanced Datum/Zeit gar nicht ins
+					     Formular (nur im Zweig `isPositionStep && mediaFile.hasPosition()`).
+					     Ein `{#if $form.sightingDate}` davor half nicht — die Bedingung ist
+					     konstant wahr, das Feld hat ab Formularstart einen Default
+					     (`sightingSchema.ts` → `.default(() => berlinToday())`). -->
 					<div class="mt-3 flex flex-wrap gap-2">
 						<button
 							type="button"
@@ -246,7 +262,7 @@
 		type="button"
 		class="btn btn-outline min-h-11 w-full sm:w-auto"
 		onclick={useCurrentPosition}
-		aria-busy={locating}
+		aria-disabled={locating}
 		data-testid="use-current-position"
 	>
 		{#if locating}
