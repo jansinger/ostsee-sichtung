@@ -26,6 +26,25 @@ npm run db:studio  # Drizzle Studio öffnen
 
 > **Migrations-Strategie:** Dieses Projekt nutzt `db:push` (Drizzle Kit Push) statt file-basierter Migrationen. Es gibt kein `drizzle/` Migrations-Verzeichnis im Repository. Schemaänderungen werden direkt via `npm run db:push` auf die Datenbank angewendet.
 
+> **ACHTUNG — `db:push` erkennt keine Änderungen an Ausdrucksindizes.** Verifiziert
+> am 2026-07-28: Nach einer Änderung des Datumsausdrucks in `idx_position_date_weather`
+> und `idx_year_sichtungen` enthielt der Push-Plan keine der beiden Anweisungen.
+> Der alte Index bleibt bestehen — die Abfrage wird dadurch nicht falsch, verliert
+> aber still ihre Index-Unterstützung für das geänderte Prädikat.
+>
+> Ausdrucksindizes (`index(...).using(..., sql\`...\`)`) deshalb **immer zusätzlich**
+als DDL-Skript unter `scripts/migrations/` ablegen und beim Deployment ausführen:
+>
+> ```bash
+> psql "$DATABASE_POSTGRES_URL" -v ON_ERROR_STOP=1 -f scripts/migrations/<datei>.sql
+> ```
+>
+> Prüfen lässt sich der Ist-Zustand mit:
+>
+> ```sql
+> SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'sichtungen';
+> ```
+
 ---
 
 ## Verbindung

@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import { berlinCalendarDate, berlinDatePart } from './sqlTimeZone';
 import {
 	bigint,
 	geometry,
@@ -99,20 +100,21 @@ export const sightings = pgTable(
 			table.location.asc().nullsLast().op('gist_geometry_ops_2d')
 		),
 		index('idx_sichtungsdatum').on(table.sightingDate),
-		index('idx_year_sichtungen').using(
-			'btree',
-			sql`date_part('year'::text, ${table.sightingDate})`
-		),
+		// Jahr in deutscher Ortszeit — muss zum Ausdruck der Statistik-Gruppierung
+		// passen (admin/statistics/+page.server.ts), sonst greift der Index nicht.
+		index('idx_year_sichtungen').using('btree', berlinDatePart('year', table.sightingDate)),
 		// Weather data indexes for Issue #110
 		index('idx_weather_data_gin').using('gin', table.weatherData),
 		index('idx_weather_fetched').on(table.weatherFetchedAt),
 		index('idx_weather_provider').on(table.weatherProvider),
-		// Compound index for position+date lookup (deduplication)
+		// Compound index for position+date lookup (deduplication).
+		// Der Datumsausdruck MUSS zeichengleich mit dem der Dedup-Abfrage bleiben
+		// (weatherDeduplication.ts) — deshalb beide über berlinCalendarDate().
 		index('idx_position_date_weather')
 			.on(
 				sql`ROUND(${table.latitude}::numeric, 2)`,
 				sql`ROUND(${table.longitude}::numeric, 2)`,
-				sql`DATE(${table.sightingDate})`
+				berlinCalendarDate(table.sightingDate)
 			)
 			.where(sql`${table.weatherData} IS NOT NULL`)
 	]

@@ -8,6 +8,7 @@
 import { createLogger } from '$lib/logger.server';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
+import { berlinCalendarDate } from '$lib/server/db/sqlTimeZone';
 import type { StoredWeatherData } from '$lib/services/weatherService';
 import { and, eq, isNotNull, sql } from 'drizzle-orm';
 
@@ -56,10 +57,7 @@ export async function checkExistingWeatherData(
 					// Gleicher Kalendertag in deutscher Ortszeit: `date` kommt als
 					// lokales "YYYY-MM-DD" aus dem Formular, `sichtungsdatum` hält
 					// seit der UTC-Migration echte Zeitpunkte.
-					eq(
-						sql`DATE(${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`,
-						date
-					),
+					eq(berlinCalendarDate(sightings.sightingDate), date),
 					// Has weather data
 					isNotNull(sightings.weatherData)
 				)
@@ -191,7 +189,7 @@ export async function getWeatherCacheStatistics(): Promise<{
 		// Unique position+date combinations
 		const [uniqueResult] = await db
 			.select({
-				count: sql<number>`COUNT(DISTINCT (ROUND(gps_breite::numeric, 2), ROUND(gps_laenge::numeric, 2), DATE(sichtungsdatum AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')))`
+				count: sql<number>`COUNT(DISTINCT (ROUND(gps_breite::numeric, 2), ROUND(gps_laenge::numeric, 2), ${berlinCalendarDate(sightings.sightingDate)}))`
 			})
 			.from(sightings)
 			.where(isNotNull(sightings.weatherData));

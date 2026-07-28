@@ -1,6 +1,7 @@
 import { createLogger } from '$lib/logger.server';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
+import { berlinCalendarDate, berlinDatePart } from '$lib/server/db/sqlTimeZone';
 import { and, eq, isNotNull, ne, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
@@ -42,43 +43,46 @@ export const load: PageServerLoad = async () => {
 		// Yearly trends (excluding obvious data errors)
 		const yearlyStats = await db
 			.select({
-				year: sql<number>`EXTRACT(year FROM ${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`,
+				year: sql<number>`${berlinDatePart('year', sightings.sightingDate)}`,
 				sightings: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
 			.where(and(isNotNull(sightings.sightingDate), eq(sightings.verified, 1)))
 			.groupBy(
-				sql`EXTRACT(year FROM ${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`
+				berlinDatePart('year', sightings.sightingDate)
 			)
 			.orderBy(
-				sql`EXTRACT(year FROM ${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`
+				berlinDatePart('year', sightings.sightingDate)
 			);
 
 		// Monthly distribution (last 10 years)
 		const monthlyStats = await db
 			.select({
-				month: sql<number>`EXTRACT(month FROM ${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`,
+				month: sql<number>`${berlinDatePart('month', sightings.sightingDate)}`,
 				sightings: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
 			.where(and(isNotNull(sightings.sightingDate), eq(sightings.verified, 1)))
 			.groupBy(
-				sql`EXTRACT(month FROM ${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`
+				berlinDatePart('month', sightings.sightingDate)
 			)
 			.orderBy(
-				sql`EXTRACT(month FROM ${sightings.sightingDate} AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Berlin')`
+				berlinDatePart('month', sightings.sightingDate)
 			);
 
 		// Recent activity (last 30 days)
 		const recentActivity = await db
 			.select({
-				date: sql<string>`DATE(${sightings.created})`,
+				date: sql<string>`${berlinCalendarDate(sightings.created)}`,
 				count: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
-			.where(sql`${sightings.created} >= NOW() - INTERVAL '30 days'`)
-			.groupBy(sql`DATE(${sightings.created})`)
-			.orderBy(sql`DATE(${sightings.created}) DESC`)
+			// `created` ist naives timestamp mit UTC-Inhalt. Der Vergleich gegen das
+			// timestamptz von NOW() würde sonst über die DB-Session-Zeitzone gecastet,
+			// die die Anwendung nirgends pinnt.
+			.where(sql`${sightings.created} >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days'`)
+			.groupBy(berlinCalendarDate(sightings.created))
+			.orderBy(sql`${berlinCalendarDate(sightings.created)} DESC`)
 			.limit(30);
 
 		// User engagement statistics - simple version
