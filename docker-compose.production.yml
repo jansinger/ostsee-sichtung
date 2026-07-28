@@ -28,6 +28,10 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOST: 0.0.0.0
+      # Zeitzone bewusst fixiert — siehe docs/ENVIRONMENT.md → TZ.
+      # Deutsche Ortszeit steht überall explizit im Code; nicht auf UTC
+      # abweichen, ohne die dortigen Hinweise gelesen zu haben.
+      TZ: ${TZ:-UTC}
 
       # Database Connection (only DATABASE_POSTGRES_URL is used by the application)
       DATABASE_POSTGRES_URL: ${DATABASE_POSTGRES_URL}

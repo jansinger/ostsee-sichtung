@@ -10,6 +10,7 @@ import {
 	type OpenMeteoRawData,
 	type WeatherData
 } from '$lib/services/weatherService';
+import { hourIndexFromLocalTime } from '$lib/server/weather/hourIndex';
 import { combineToDate, formatISOLikeDatetime } from '$lib/utils/format/dateTime';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
@@ -112,8 +113,11 @@ async function fetchForecastData(
 			return null;
 		}
 
-		let targetIndex = dateObj.getHours() + Math.round(dateObj.getMinutes() / 60);
-		if (isNaN(targetIndex) || targetIndex < 0 || targetIndex >= hourly.time.length) {
+		// `hourly.time[]` steht in deutscher Ortszeit (Abfrage mit timezone=Europe/Berlin),
+		// die Uhrzeit der Sichtung ebenfalls — der Index wird deshalb direkt aus "HH:MM"
+		// gebildet und nicht über die Prozess-Zeitzone eines Date-Objekts.
+		let targetIndex = hourIndexFromLocalTime(time);
+		if (targetIndex >= hourly.time.length) {
 			targetIndex = 12; // Default to noon
 		}
 
@@ -275,8 +279,11 @@ async function fetchHistoricalData(
 		}
 
 		// Find the closest hour index
-		let targetIndex = dateObj.getHours() + Math.round(dateObj.getMinutes() / 60);
-		if (isNaN(targetIndex) || targetIndex < 0 || targetIndex >= hourly.time.length) {
+		// `hourly.time[]` steht in deutscher Ortszeit (Abfrage mit timezone=Europe/Berlin),
+		// die Uhrzeit der Sichtung ebenfalls — der Index wird deshalb direkt aus "HH:MM"
+		// gebildet und nicht über die Prozess-Zeitzone eines Date-Objekts.
+		let targetIndex = hourIndexFromLocalTime(time);
+		if (targetIndex >= hourly.time.length) {
 			targetIndex = 12; // Default to noon if out of range
 		}
 
