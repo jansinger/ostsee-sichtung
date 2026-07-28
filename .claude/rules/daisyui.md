@@ -106,12 +106,12 @@ tote Klassen.
 `app.css` korrigiert einige DaisyUI-Defaults bewusst. Diese Stellen nicht in
 Komponenten gegen-patchen:
 
-| Override                                 | Warum                                                             |
-| ---------------------------------------- | ----------------------------------------------------------------- |
-| Alerts auf Soft-Style (`color-mix` 12 %) | DaisyUI-v5-Default-Alerts sind auf diesem Theme zu dunkel         |
-| `.input/.select/.textarea:focus`         | 3px-Outline in `primary` als deutlicher Focus-Indikator (WCAG)    |
-| Formularfelder ≥ `1rem`                  | WCAG AA und verhindert Auto-Zoom auf iOS                          |
-| `prefers-reduced-motion`                 | global entschärft — eigene Animationen brauchen keine Extra-Guard |
+| Override                                               | Warum                                                             |
+| ------------------------------------------------------ | ----------------------------------------------------------------- |
+| Alerts auf Soft-Style (`color-mix` 12 %, base-content) | DaisyUI-v5-Default-Alerts sind auf diesem Theme zu dunkel         |
+| `.input/.select/.textarea:focus`                       | 3px-Outline in `primary` als deutlicher Focus-Indikator (WCAG)    |
+| Formularfelder ≥ `1rem`                                | WCAG AA und verhindert Auto-Zoom auf iOS                          |
+| `prefers-reduced-motion`                               | global entschärft — eigene Animationen brauchen keine Extra-Guard |
 
 Ein `alert-soft` zusätzlich zu setzen ist überflüssig; die Klassen `alert-info`,
 `alert-success`, `alert-warning`, `alert-error` liefern den Soft-Look bereits.
@@ -137,6 +137,26 @@ Ein `alert-soft` zusätzlich zu setzen ist überflüssig; die Klassen `alert-inf
 > nicht. Der `color-mix`-Override in `app.css` bleibt daher die richtige Lösung und
 > ist kein Workaround, den man bei einem Update „endlich aufräumen" könnte. Erst
 > wenn DaisyUI eine solche Option nachliefert, lohnt ein erneuter Blick.
+>
+> **Was der Override konkret tut:** Er setzt für `.alert-info/-success/-warning/-error`
+> drei Dinge — Hintergrund auf `color-mix(… 12 %, base-100)`, Rahmenfarbe auf
+> `color-mix(… 20 %, base-100)` und **Textfarbe auf `var(--color-base-content)`**.
+>
+> **Warum die Textfarbe nicht die Statusfarbe ist:** DaisyUIs `alert-soft` nimmt
+> dafür `var(--alert-color)`, also die Statusfarbe auf einem 12-%-Tint ihrer selbst.
+> Auf diesem Theme ergibt das im Browser gemessen 2,45:1 (warning), 3,33:1 (success),
+> 3,40:1 (info) und 3,84:1 (error) — WCAG 1.4.3 verlangt 4,5:1. Es ist derselbe
+> Fehler wie `text-*-content` auf einem Tint (`design-system.md`), nur eine Ebene
+> tiefer. Mit `base-content` messen dieselben vier Flächen 14,2:1 bis 14,8:1.
+> Abgesichert ist das durch `e2e/form-a11y.spec.ts` → „Accessibility — Alert-Kontrast";
+> der Test muss im Browser laufen, weil sich `oklch()` + `color-mix(in oklab, …)`
+> erst nach dem Gamut-Mapping nach sRGB als Kontrastwert lesen lassen.
+>
+> **Konsequenz für Aufrufstellen:** Die Statusbedeutung trägt jetzt das Icon (jede
+> Variante hat eine eigene Form) plus der Hintergrund-Farbton. **Nicht** der Rahmen:
+> die 20-%-Mischung erreicht nur ~1,1:1 gegen die Alert-Fläche und ist reine
+> Dekoration. Ein Alert ohne Icon sieht deshalb in allen vier Varianten fast gleich
+> aus — jedes `alert-*` braucht ein Icon.
 
 ---
 

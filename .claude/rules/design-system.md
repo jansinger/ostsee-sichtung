@@ -45,6 +45,15 @@ Im Theme sind fast alle `*-content`-Farben reines Weiß (`oklch(1 0 0)`). Auf ei
 
 Die Soft-Darstellung der Alerts kommt aus `app.css` (Details in `daisyui.md`). Für diese Regel zählt nur: `<div class="alert alert-warning">` genügt — den Override **nicht** per `bg-warning`/`text-warning-content`/`shadow-*` an der Aufrufstelle aushebeln, sonst entsteht genau der `*-content`-Fehler von oben.
 
+Der Alert-Text steht in `base-content`, nicht in der Statusfarbe (WCAG 1.4.3, Messwerte in `daisyui.md`). Die Bedeutung trägt deshalb das **Icon** — jedes `alert-*` braucht eines, sonst sehen Warnung und Fehler praktisch gleich aus:
+
+```svelte
+<div class="alert alert-warning" role="alert">
+	<Icon icon="lucide:triangle-alert" class="shrink-0" aria-hidden="true" />
+	<span>Die Koordinaten liegen außerhalb der Ostsee.</span>
+</div>
+```
+
 ---
 
 ## Button-Hierarchie

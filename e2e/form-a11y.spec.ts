@@ -266,3 +266,85 @@ test.describe('Accessibility — Fokus-Indikator', () => {
 		await expectPrimaryFocusRing(field);
 	});
 });
+
+// ── Alert-Kontrast (Theme-Override in src/app.css) ─────────────────────────
+
+/**
+ * Schützt den Alert-Override `.alert-info/.alert-success/.alert-warning/
+ * .alert-error` aus `src/app.css` gegen einen Rückfall auf die Statusfarbe als
+ * Textfarbe.
+ *
+ * Warum im echten Browser und nicht über die CSS-Quelle: Die beteiligten Werte
+ * sind `oklch()`-Tokens, die per `color-mix(in oklab, …)` zu Hintergrund und
+ * Rahmen verrechnet werden. Ein Kontrastwert lässt sich daraus nur ableiten,
+ * wenn die Browser-Engine die Farben tatsächlich auflöst — inklusive
+ * Gamut-Mapping nach sRGB. Der Canvas-Umweg unten erzwingt genau diese
+ * Auflösung: `fillStyle` akzeptiert den serialisierten Computed Value,
+ * `getImageData` liefert die echten sRGB-Bytes zurück.
+ *
+ * Der Fehler, den dieser Test verhindert, hatte alle vier Varianten zwischen
+ * 2,45:1 und 3,84:1 gehalten (WCAG 1.4.3 verlangt 4,5:1 für Fließtext) — die
+ * Statusfarbe stand als Text auf einem 12-%-Tint ihrer selbst.
+ */
+const ALERT_VARIANTS = ['alert-info', 'alert-success', 'alert-warning', 'alert-error'] as const;
+
+async function measureAlertContrast(page: import('@playwright/test').Page) {
+	return page.evaluate(
+		(variants: readonly string[]) => {
+			const canvas = document.createElement('canvas');
+			canvas.width = 1;
+			canvas.height = 1;
+			const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+
+			/** Serialisierte CSS-Farbe (oklab/color-mix/oklch) → sRGB-Bytes. */
+			function toRgb(cssColor: string): [number, number, number] {
+				ctx.clearRect(0, 0, 1, 1);
+				ctx.fillStyle = '#000000';
+				ctx.fillStyle = cssColor;
+				ctx.fillRect(0, 0, 1, 1);
+				const d = ctx.getImageData(0, 0, 1, 1).data;
+				return [d[0], d[1], d[2]];
+			}
+
+			function luminance([r, g, b]: [number, number, number]): number {
+				const lin = [r, g, b]
+					.map((v) => v / 255)
+					.map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+				return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+			}
+
+			return variants.map((variant) => {
+				const probe = document.createElement('div');
+				probe.className = `alert ${variant}`;
+				probe.style.cssText = 'position:fixed;top:0;left:0;visibility:hidden;pointer-events:none';
+				probe.innerHTML = '<span>Kontrastprobe</span>';
+				document.body.appendChild(probe);
+
+				const style = getComputedStyle(probe);
+				const fg = toRgb(style.color);
+				const bg = toRgb(style.backgroundColor);
+				probe.remove();
+
+				const l1 = luminance(fg);
+				const l2 = luminance(bg);
+				const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+				return { variant, ratio: Math.round(ratio * 100) / 100 };
+			});
+		},
+		[...ALERT_VARIANTS] as string[]
+	);
+}
+
+test.describe('Accessibility — Alert-Kontrast', () => {
+	test('alle vier Alert-Varianten erreichen WCAG AA (4,5:1)', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		const measured = await measureAlertContrast(page);
+
+		expect(measured).toHaveLength(ALERT_VARIANTS.length);
+		for (const { variant, ratio } of measured) {
+			expect(ratio, `${variant}: gemessen ${ratio}:1`).toBeGreaterThanOrEqual(4.5);
+		}
+	});
+});
