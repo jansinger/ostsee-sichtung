@@ -1,9 +1,20 @@
 /**
- * Corrects the UTC offset for Central European Summer Time (CEST).
- * This function adjusts the given UTC date to account for daylight saving time in Central Europe.
+ * Rechnet eine deutsche Wanduhrzeit in den echten UTC-Zeitpunkt um.
  *
- * @param date - The UTC date to be corrected. Must be a UTC date.
- * @returns The corrected date, adjusted for CEST or CET as appropriate.
+ * Läuft der Prozess in UTC, erzeugt `combineToDate` aus der Formulareingabe ein
+ * `Date`, dessen UTC-Felder die *Wanduhrzeit* tragen (14:30 Eingabe → 14:30Z).
+ * Diese Funktion zieht den passenden MEZ/MESZ-Offset ab und macht daraus den
+ * tatsächlichen Zeitpunkt.
+ *
+ * In jeder anderen Prozess-Zeitzone hat `combineToDate` den Offset bereits
+ * korrekt angewandt — dann ist diese Funktion ein No-op.
+ *
+ * WICHTIG: `date` trägt Wanduhrzeit, keinen echten UTC-Zeitpunkt. Die
+ * Umstellungsgrenzen unten liegen deshalb ebenfalls auf Wanduhrzeit (02:00 bzw.
+ * 03:00) und nicht auf dem UTC-Instant der Umstellung (01:00Z).
+ *
+ * @param date - Als UTC verpackte deutsche Wanduhrzeit. Wird in-place verändert.
+ * @returns Dasselbe (mutierte) Date-Objekt, um den MEZ/MESZ-Offset zurückgesetzt.
  */
 export function correctCestOffsetUTC(date: Date): Date {
 	// Nur, wenn die Server Timezone UTC ist
@@ -11,20 +22,19 @@ export function correctCestOffsetUTC(date: Date): Date {
 	if (date.getTimezoneOffset() !== 0) {
 		return date;
 	}
-	// Das Datum muss ein UTC-Datum sein!
 	const year = date.getUTCFullYear();
 
 	// Letzter Sonntag im März (Sommerzeit beginnt)
 	const march = new Date(Date.UTC(year, 2, 31)); // 31. März
 	const marchDay = march.getUTCDay();
 	const lastMarchSunday = 31 - marchDay;
-	const cestStart = Date.UTC(year, 2, lastMarchSunday, 1); // 2:00 MEZ == 1:00 UTC
+	const cestStart = Date.UTC(year, 2, lastMarchSunday, 2); // Wanduhr 2:00, danach gilt MESZ
 
 	// Letzter Sonntag im Oktober (Sommerzeit endet)
 	const october = new Date(Date.UTC(year, 9, 31)); // 31. Oktober
 	const octoberDay = october.getUTCDay();
 	const lastOctoberSunday = 31 - octoberDay;
-	const cestEnd = Date.UTC(year, 9, lastOctoberSunday, 1); // 3:00 MESZ == 1:00 UTC
+	const cestEnd = Date.UTC(year, 9, lastOctoberSunday, 3); // Wanduhr 3:00, danach gilt MEZ
 
 	const time = date.getTime();
 
