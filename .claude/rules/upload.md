@@ -69,6 +69,25 @@ CEST-Zeitzonenkorrektur via `correctCestOffsetUTC()`.
 
 ---
 
+## Aufbewahrung unverknüpfter Uploads
+
+Ein Upload legt sofort eine Zeile mit `sichtung_id = NULL` an; verknüpft wird erst
+beim Absenden. Abgebrochene Formularläufe hinterlassen deshalb Zeilen und Dateien,
+die niemand mehr erreicht — samt EXIF-GPS.
+
+**Frist: 24 Stunden.** Formulardaten liegen in `sessionStorage` und überstehen das
+Schließen des Tabs nicht; was länger unverknüpft ist, kann nicht mehr abgesendet
+werden.
+
+Durchgesetzt wird die Frist derzeit **von Hand** über
+`npm run media:cleanup-orphans:dry-run` (Details: `src/tools/README.md`).
+
+**Offen:** Es gibt keinen automatischen Job — der Bestand wächst nach. Außerdem
+entfernen `DELETE /api/sightings/[id]` und `saveSightingFiles()` DB-Zeilen, ohne die
+Dateien zu löschen, und erzeugen so laufend neue Waisen.
+
+---
+
 ## Best Practices
 
 - Dateinamen basieren auf CUID, Original separat gespeichert

@@ -70,6 +70,46 @@ node src/tools/fix-media-upload-flags.js --dry-run --verbose
 - Graceful error handling
 - Database connection cleanup
 
+#### `cleanup-orphaned-uploads.ts`
+
+Removes orphaned media uploads: `sichtungen_dateien` rows that never got linked to a sighting, and files on disk that have no database row.
+
+**Purpose:**
+
+- Uploads create a `sichtungen_dateien` row with `sichtung_id = NULL` before the sighting exists; abandoned forms leave that row — and the file — behind forever
+- Those rows carry `exif_daten` including GPS coordinates for reports that were never submitted
+- Files without a row accumulate because deleting a sighting cascades the rows but leaves the files on disk
+
+**Usage:**
+
+```bash
+# Dry run first (this is the default — no flag needed)
+npm run media:cleanup-orphans:dry-run
+
+# Delete for real, after taking a backup
+npm run media:cleanup-orphans -- --execute
+```
+
+**Parameters:**
+
+- `--older-than=<n>h|<n>d`: Retention period, default `24h`. Only entries strictly older are removed.
+- `--execute`: Actually delete. Without it the tool only reports.
+- `--verbose`: List every finding individually
+- `--uploads-dir=<path>`: Override the upload directory (defaults to `uploads` relative to the working directory, matching the application)
+
+**Safety Features:**
+
+- Dry run is the default; deletion requires `--execute`
+- Refuses to run without `DATABASE_POSTGRES_URL` or `DATABASE_URL` — never guesses a target database
+- Refuses to run when `STORAGE_PROVIDER` is set to anything other than `local`
+- Age filter protects uploads still in progress (the file is written before the row)
+- Paths are compared as Unicode NFC — macOS reports filenames decomposed, PostgreSQL composed. Without this every file with an umlaut would look orphaned.
+- A file is also spared when its directory matches a `sichtungen.referenz_id`, even with no row pointing at it — in that case it is the only remaining copy
+- Every deletion path is validated against the resolved upload directory
+- `uploads/_old_uploads/` and dotfiles (`.DS_Store`, `.gitkeep`) are excluded
+
+**Before the first `--execute` run:** back up both the database and the upload directory. Deleted files are not recoverable. `DATABASE_POSTGRES_URL` usually lives only in `.env`, so run `set -a && . ./.env && set +a` before `pg_dump` — otherwise it silently connects elsewhere.
+
 ### 3. Data Migration
 
 #### `generate-reference-ids.ts`
