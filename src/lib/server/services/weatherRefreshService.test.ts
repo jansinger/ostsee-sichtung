@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { StoredWeatherData } from '$lib/services/weatherService';
 import { withTimeZone } from '$lib/server/datetime/withTimeZone.testutil';
+import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
 
 vi.mock('$lib/logger.server', () => ({
 	createLogger: () => ({
@@ -95,9 +96,19 @@ function makeMarineResponse() {
 	};
 }
 
-// Heutiges Datum im Format YYYY-MM-DD
+/**
+ * Heutiges Datum im Format YYYY-MM-DD — im **Berliner** Kalendertag, nicht UTC.
+ *
+ * `fetchWeatherData` entscheidet mit derselben Funktion, ob Forecast- oder
+ * Archive-API zuständig ist (`weatherRefreshService.ts`, `berlinCalendarDayIso()`).
+ * Ein `toISOString()` hier hätte in den ersten ein bis zwei Stunden nach
+ * Berliner Mitternacht noch den Vortag geliefert, während der Dienst schon den
+ * neuen Tag sieht — der Test forderte dann den Forecast für ein Datum, das aus
+ * Sicht des Dienstes Vergangenheit ist, und schlug fehl. Beide Seiten müssen
+ * denselben Kalendertag meinen.
+ */
 function todayString(): string {
-	return new Date().toISOString().split('T')[0]!;
+	return berlinCalendarDayIso();
 }
 
 // Historisches Datum (immer in der Vergangenheit)
