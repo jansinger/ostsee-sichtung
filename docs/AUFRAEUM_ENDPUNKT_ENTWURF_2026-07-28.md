@@ -41,14 +41,14 @@ ist ein Auslöser, der ohne Shell-Zugang zum Container funktioniert.
 
 ## 2. Getroffene Entscheidungen
 
-| Frage                        | Entscheidung                                                          |
-| ---------------------------- | --------------------------------------------------------------------- |
-| Produktion                   | Docker/Node mit `STORAGE_PROVIDER=local`; Vercel nur für Previews     |
-| Tool vs. Endpunkt            | **Gemeinsamer Kern**, beide bleiben erhalten                          |
-| M2M-Auth                     | Shared Secret im `Authorization: Bearer`-Header, konstantzeitig        |
-| Admin-UI                     | Erst Vorschau, dann bestätigen                                        |
-| Externes Token darf löschen  | Ja — sonst ist der Web-Cron sinnlos                                   |
-| Name der Umgebungsvariablen  | `CLEANUP_TOKEN`                                                       |
+| Frage                       | Entscheidung                                                      |
+| --------------------------- | ----------------------------------------------------------------- |
+| Produktion                  | Docker/Node mit `STORAGE_PROVIDER=local`; Vercel nur für Previews |
+| Tool vs. Endpunkt           | **Gemeinsamer Kern**, beide bleiben erhalten                      |
+| M2M-Auth                    | Shared Secret im `Authorization: Bearer`-Header, konstantzeitig   |
+| Admin-UI                    | Erst Vorschau, dann bestätigen                                    |
+| Externes Token darf löschen | Ja — sonst ist der Web-Cron sinnlos                               |
+| Name der Umgebungsvariablen | `CLEANUP_TOKEN`                                                   |
 
 ---
 
@@ -87,8 +87,15 @@ Orchestrator mit injizierten Ports:
 export interface CleanupPorts {
 	/** Zeilen ohne Sichtung, deren Upload vor `cutoff` liegt (Klasse A). */
 	findOrphanRows(cutoff: Date): Promise<OrphanRow[]>;
-	/** Dateien im Storage ohne zugehörige Zeile (Klasse B). `null` = Provider kann das nicht. */
-	findOrphanFiles(snapshot: RowSnapshot): Promise<OrphanFile[] | null>;
+	/**
+	 * Dateien im Storage ohne zugehörige Zeile, älter als `cutoff` (Klasse B).
+	 * `null` = Provider bietet kein Dateisystem.
+	 *
+	 * `cutoff` ist Schutz, kein Komfort: Der Upload schreibt erst die Datei und
+	 * danach die DB-Zeile. Ohne Altersfilter gälte genau diese Lücke als Waise —
+	 * ein laufender Upload würde zerstört.
+	 */
+	findOrphanFiles(cutoff: Date): Promise<DiskEntry[] | null>;
 	deleteRow(id: number): Promise<void>;
 	deleteFile(path: string): Promise<void>;
 }
@@ -113,7 +120,7 @@ export interface CleanupReport {
 	/** Wie viele Fundstücke der Deckel übrig gelassen hat. */
 	remaining: number;
 	/** Nur im Vorschaumodus gefüllt. */
-	preview?: { rows: OrphanRow[]; files: OrphanFile[] };
+	preview?: { rows: OrphanRow[]; files: DiskEntry[] };
 }
 
 export async function cleanupOrphans(options: CleanupOptions): Promise<CleanupReport>;
@@ -174,11 +181,11 @@ Bestätigung (`.claude/rules/design-system.md`).
 POST /api/admin/cleanup-orphans
 ```
 
-| Parameter (Query) | Werte                | Vorgabe             | Bedeutung                        |
-| ----------------- | -------------------- | ------------------- | -------------------------------- |
-| `mode`            | `preview` \| `execute` | `preview`         | `execute` löscht wirklich        |
-| `hours`           | positive Ganzzahl    | `ORPHAN_RETENTION_HOURS` | Aufbewahrungsfrist; kleinere Werte werden geklemmt |
-| `limit`           | 1 … 500              | `500`               | Löschdeckel pro Aufruf           |
+| Parameter (Query) | Werte                  | Vorgabe                  | Bedeutung                                          |
+| ----------------- | ---------------------- | ------------------------ | -------------------------------------------------- |
+| `mode`            | `preview` \| `execute` | `preview`                | `execute` löscht wirklich                          |
+| `hours`           | positive Ganzzahl      | `ORPHAN_RETENTION_HOURS` | Aufbewahrungsfrist; kleinere Werte werden geklemmt |
+| `limit`           | 1 … 500                | `500`                    | Löschdeckel pro Aufruf                             |
 
 **Authentifizierung — genau zwei akzeptierte Wege:**
 
@@ -189,17 +196,20 @@ Ist `CLEANUP_TOKEN` nicht gesetzt, ist Weg 2 **abgeschaltet** — nicht offen.
 
 **Antworten:**
 
-| Status | Fall                                                              |
-| ------ | ----------------------------------------------------------------- |
-| `200`  | Lauf durchgeführt; Body ist der `CleanupReport`                   |
-| `400`  | `mode`, `hours` oder `limit` unlesbar                             |
-| `401`  | Kein oder falsches Token (ohne Hinweis, welches von beidem)       |
-| `429`  | Rate Limit                                                        |
-| `500`  | Unerwarteter Fehler; Details nur im Log, nicht in der Antwort     |
+| Status | Fall                                                          |
+| ------ | ------------------------------------------------------------- |
+| `200`  | Lauf durchgeführt; Body ist der `CleanupReport`               |
+| `400`  | `mode`, `hours` oder `limit` unlesbar                         |
+| `401`  | Kein oder falsches Token (ohne Hinweis, welches von beidem)   |
+| `429`  | Rate Limit                                                    |
+| `500`  | Unerwarteter Fehler; Details nur im Log, nicht in der Antwort |
 
-Eine zu kleine `hours`-Angabe ist **kein** Fehler: Sie wird auf die Mindestfrist
-geklemmt, und der Bericht nennt die tatsächlich verwendete Frist. Ein Cron soll
-nicht wegen eines Konfigurationsfehlers stillstehen.
+**Unlesbare Parameter sind kein Fehler.** `mode` fällt auf `preview`, `hours` auf
+die Mindestfrist, `limit` auf den Deckel zurück — jede Vorgabe zeigt in die
+sichere Richtung. Eine zu kleine `hours`-Angabe wird geklemmt; der Bericht nennt
+die tatsächlich verwendete Frist. Ein Cron soll nicht wegen eines
+Konfigurationsfehlers stillstehen, und ein `400` würde hier nur eine falsche
+Sicherheit suggerieren.
 
 **Pflicht:** `static/openapi.yml` mit demselben Commit aktualisieren
 (`.claude/rules/api.md`).
@@ -271,14 +281,14 @@ und die im Formular zugesagte Frist müssen übereinstimmen.
 
 ## 8. Konfiguration und Dokumentation
 
-| Datei                        | Änderung                                                        |
-| ---------------------------- | --------------------------------------------------------------- |
-| `tsconfig.json`              | `allowImportingTsExtensions: true`                              |
-| `.env.example`               | `CLEANUP_TOKEN=""` mit Erläuterung                              |
-| `docs/ENVIRONMENT.md`        | `CLEANUP_TOKEN` dokumentieren                                   |
-| `static/openapi.yml`         | Endpunkt und Antwortschema                                      |
-| `.claude/rules/upload.md`    | Abschnitt „Aufbewahrung" — der Weg ist nicht mehr nur manuell   |
-| `src/tools/README.md`        | Verhältnis Tool ↔ Endpunkt                                      |
+| Datei                     | Änderung                                                      |
+| ------------------------- | ------------------------------------------------------------- |
+| `tsconfig.json`           | `allowImportingTsExtensions: true`                            |
+| `.env.example`            | `CLEANUP_TOKEN=""` mit Erläuterung                            |
+| `docs/ENVIRONMENT.md`     | `CLEANUP_TOKEN` dokumentieren                                 |
+| `static/openapi.yml`      | Endpunkt und Antwortschema                                    |
+| `.claude/rules/upload.md` | Abschnitt „Aufbewahrung" — der Weg ist nicht mehr nur manuell |
+| `src/tools/README.md`     | Verhältnis Tool ↔ Endpunkt                                    |
 
 Der Cron-Aufruf selbst ist ein Deployment-Schritt, kein Code:
 
@@ -300,7 +310,28 @@ curl -fsS -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" \
 - **Ein eingebauter Scheduler.** Der Auslöser bleibt extern.
 - **Rotation des Tokens im laufenden Betrieb.** Rotation heißt: Variable tauschen
   und neu deployen.
-- **Die übrigen Waisen-Quellen.** `DELETE /api/sightings/[id]` und
-  `saveSightingFiles()` erzeugen laut `.claude/rules/upload.md` weiterhin neue
-  Waisen, indem sie Zeilen ohne die zugehörigen Dateien entfernen. Dieser
-  Entwurf räumt auf, er stopft diese Quellen nicht.
+- **Die Altlast `POST /api/files/delete`.** Sie löscht weiterhin in umgekehrter
+  Reihenfolge (`storage.delete` vor `deleteFileByPath`) und meldet auch dann
+  Erfolg, wenn die Zeile stehen bleibt. Das erzeugt keine Klasse-B-Waise,
+  sondern den umgekehrten, **sichtbaren** Fehler: eine Zeile ohne Datei, die der
+  Nutzer als kaputtes Bild sieht. Eigener Schritt, nicht Teil dieses Entwurfs.
+
+### Nachtrag zur Häufigkeit von Klasse B
+
+Seit PR #584 löschen die Normalwege — `saveSightingFiles()` und
+`DELETE /api/sightings/[id]` — die Storage-Dateien über `deleteStoredFiles()`
+mit. Klasse B ist dadurch **kein Regelfall mehr**, sondern Restmenge aus:
+
+1. fehlgeschlagenen Storage-Löschungen (`deleteStoredFiles` wirft bewusst nie
+   und versucht es nie erneut — der Vorgang ist bereits committet),
+2. Altbestand von vor #584.
+
+Der erste Dry-Run gegen die lokale Datenbank bestätigt das: 0 Dateien ohne
+Zeile, 4 Zeilen ohne Sichtung. Klasse B bleibt im Entwurf, weil ein
+best-effort-Löschen ohne Wiederholung genau diese Restmenge erzeugt — sie ist
+nur seltener, als der ursprüngliche Aufhänger vermuten ließ.
+
+**Zu korrigieren:** `.claude/rules/upload.md` behauptet im Abschnitt
+„Aufbewahrung unverknüpfter Uploads" weiterhin, die beiden Normalwege entfernten
+Zeilen „ohne die Dateien zu löschen, und erzeugen so laufend neue Waisen". Das
+hat #584 behoben; der Satz kam mit #586 danach hinein.
