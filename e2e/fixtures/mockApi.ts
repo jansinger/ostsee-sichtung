@@ -47,8 +47,21 @@ export async function mockMapSightingsAbort(page: Page): Promise<void> {
 export async function mockFileUploadSuccess(page: Page): Promise<void> {
 	await page.route('**/api/files/upload', async (route: Route) => {
 		const body = route.request().postData() ?? '';
-		const field = (name: string): string =>
-			new RegExp(`name="${name}"\\r?\\n\\r?\\n([^\\r\\n]*)`).exec(body)?.[1] ?? '';
+		const field = (name: string): string => {
+			const match = new RegExp(`name="${name}"\\r?\\n\\r?\\n([^\\r\\n]*)`).exec(body);
+			if (!match) {
+				// Laut statt still: Eine fremde/leere uid würde `DropzoneEnhanced` dazu
+				// bringen, für die Antwort ein zusätzliches `MediaFile` anzulegen (siehe
+				// Doc-Kommentar oben) — und genau die Store-Zuweisung, die
+				// `form-position-photo.spec.ts` prüfen soll, unbemerkt nachliefern.
+				// Ein Fehler hier zeigt eine Änderung am Multipart-Format sofort an,
+				// statt die Zustand-C-Tests grün und bedeutungslos zu machen.
+				throw new Error(
+					`mockFileUploadSuccess: multipart field "${name}" nicht im Request-Body gefunden`
+				);
+			}
+			return match[1];
+		};
 
 		const uid = field('uid');
 		const originalName = /filename="([^"]*)"/.exec(body)?.[1] ?? 'foto.jpg';
