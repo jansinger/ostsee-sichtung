@@ -5,8 +5,6 @@ import { auditLogs } from '$lib/server/db/schema';
 const logger = createLogger('audit');
 
 export type AuditAction =
-	| 'sighting.approve'
-	| 'sighting.reject'
 	| 'sighting.edit'
 	| 'sighting.delete'
 	| 'sighting.verify'

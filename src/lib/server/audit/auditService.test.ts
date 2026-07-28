@@ -45,7 +45,7 @@ describe('logAuditEvent', () => {
 
 	it('schreibt ein Audit-Event mit allen Pflichtfeldern in die DB', async () => {
 		await logAuditEvent({
-			action: 'sighting.approve',
+			action: 'sighting.verify',
 			resourceType: 'sighting',
 			resourceId: '42',
 			userEmail: 'admin@example.com',
@@ -56,7 +56,7 @@ describe('logAuditEvent', () => {
 		const valuesCall = mockInsert.mock.results[0]!.value.values;
 		expect(valuesCall).toHaveBeenCalledWith(
 			expect.objectContaining({
-				action: 'sighting.approve',
+				action: 'sighting.verify',
 				resourceType: 'sighting',
 				resourceId: '42',
 				userEmail: 'admin@example.com',
@@ -101,7 +101,7 @@ describe('logAuditEvent', () => {
 		} as unknown as ReturnType<typeof db.insert>);
 
 		await expect(
-			logAuditEvent({ action: 'sighting.approve', resourceType: 'sighting' })
+			logAuditEvent({ action: 'sighting.verify', resourceType: 'sighting' })
 		).resolves.toBeUndefined();
 
 		expect(mockLoggerError).toHaveBeenCalledOnce();

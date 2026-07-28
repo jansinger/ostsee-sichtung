@@ -189,7 +189,11 @@ export function enforceRateLimit(
 
 	if (!result.allowed) {
 		const resetDate = new Date(result.resetTime);
-		const resetTimeFormatted = resetDate.toLocaleTimeString('de-DE');
+		// Zeitzone explizit: die Meldung geht an deutsche Nutzer, nicht an die
+		// Zeitzone des Servers.
+		const resetTimeFormatted = resetDate.toLocaleTimeString('de-DE', {
+			timeZone: 'Europe/Berlin'
+		});
 		const retryAfterSeconds = Math.ceil((result.resetTime - Date.now()) / 1000);
 
 		throw error(

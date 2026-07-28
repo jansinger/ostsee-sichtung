@@ -111,7 +111,11 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD /usr/local/bin/docker-healthcheck.sh
 
 # Set environment variables
+# TZ ist bewusst gesetzt: ohne TZ fällt Node auf UTC zurück, was funktioniert,
+# aber nur solange die Umgebung nichts anderes vorgibt. Datums-Logik hing dadurch
+# schon an der Zufalls-Zeitzone (siehe docs/ENVIRONMENT.md → TZ).
 ENV NODE_ENV=production \
+    TZ=UTC \
     PORT=3000 \
     HOST=0.0.0.0 \
     BODY_SIZE_LIMIT=52428800 \

@@ -3,7 +3,7 @@ import { sightingsToGeoJSON, type DBSighting } from '$lib/map/mapUtils';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { json } from '@sveltejs/kit';
-import { and, between, eq, sql } from 'drizzle-orm';
+import { and, between, isNotNull, sql } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:map:sightings');
@@ -16,7 +16,10 @@ export const GET: RequestHandler = async ({ url }) => {
 	try {
 		// Erstellen der Abfrage-Bedingungen
 		const conditions = [
-			eq(sightingsTable.verified, 1) // Nur verifizierte Sichtungen
+			// Geprüft heißt veröffentlicht: dieselbe Grundmenge wie die Legacy-API
+			// (/sichtungen/showreports.json), damit beide öffentlichen Flächen
+			// nachweislich an derselben Spalte hängen.
+			isNotNull(sightingsTable.approvedAt)
 		];
 
 		// Jahr-Filter hinzufügen, wenn vorhanden

@@ -247,12 +247,6 @@ const defaultConfigurations: ConfigItem[] = [
 		category: 'display'
 	},
 	{
-		key: 'display.showUnapprovedOnMap',
-		value: false,
-		description: 'Nicht verifizierte Sichtungen auf öffentlicher Karte anzeigen',
-		category: 'display'
-	},
-	{
 		key: 'display.dateFormat',
 		value: 'DD.MM.YYYY',
 		description: 'Standard Datumsformat',
@@ -304,12 +298,6 @@ const defaultConfigurations: ConfigItem[] = [
 	},
 
 	// Data Processing Settings
-	{
-		key: 'data.autoVerifyBalticSea',
-		value: true,
-		description: 'Automatische Verifizierung von Sichtungen in Ostsee-Gebieten',
-		category: 'data'
-	},
 	{
 		key: 'data.duplicateCheckRadius',
 		value: 1,

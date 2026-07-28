@@ -249,29 +249,6 @@ export function isValidDate(date: string | Date | null | undefined): boolean {
 }
 
 /**
- * Hilfsfunktion: Gibt die aktuelle Zeit in deutscher Zeitzone zurück.
- *
- * @returns Aktuelles Datum/Zeit-Objekt in deutscher Zeitzone
- */
-export function getCurrentLocalTime(): Date {
-	const now = new Date();
-
-	// Konvertiere aktuelle Zeit zu deutscher Zeitzone
-	const germanTimeString = now.toLocaleString(APP_LOCALE, {
-		timeZone: APP_TIMEZONE,
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit',
-		second: '2-digit'
-	});
-
-	// Parse zurück zu Date-Objekt
-	return new Date(germanTimeString.replace(/(\d{2})\.(\d{2})\.(\d{4}), /, '$3-$2-$1T'));
-}
-
-/**
  * Format datetime in ISO-like format (YYYY-MM-DD HH:MM)
  * Used for weather data timestamps and API responses
  * @param dateTime Date object or ISO datetime string  
@@ -279,13 +256,13 @@ export function getCurrentLocalTime(): Date {
  */
 export function formatISOLikeDatetime(dateTime: string | Date | null | undefined): string {
 	if (!dateTime) return '';
-	
+
 	const date = new Date(dateTime);
 	if (isNaN(date.getTime())) return '';
-	
+
 	return date.toLocaleDateString('sv-SE', {
 		year: 'numeric',
-		month: '2-digit', 
+		month: '2-digit',
 		day: '2-digit',
 		hour: '2-digit',
 		minute: '2-digit'

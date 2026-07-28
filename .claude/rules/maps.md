@@ -281,7 +281,9 @@ export async function GET() {
 			isDead: sightingsTable.isDead
 		})
 		.from(sightingsTable)
-		.where(eq(sightingsTable.verified, 1))
+		// Öffentliche Grundmenge: geprüft heißt veröffentlicht. Immer auf
+		// approvedAt filtern, nie auf verified — siehe .claude/rules/api.md
+		.where(isNotNull(sightingsTable.approvedAt))
 		.orderBy(sightingsTable.sightingDate);
 
 	return json(sightingsToGeoJSON(sightingsFromDB));

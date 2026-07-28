@@ -3,13 +3,18 @@ import { GET } from '../../routes/api/map/sightings/+server';
 import { createEvent, mockAdminUser } from './helpers/createEvent';
 import { asApiResponse } from './helpers/asApiResponse';
 
+const { mockWhere } = vi.hoisted(() => {
+	const mockWhere = vi.fn().mockReturnValue({
+		orderBy: vi.fn().mockResolvedValue([])
+	});
+	return { mockWhere };
+});
+
 vi.mock('$lib/server/db', () => ({
 	db: {
 		select: vi.fn().mockReturnValue({
 			from: vi.fn().mockReturnValue({
-				where: vi.fn().mockReturnValue({
-					orderBy: vi.fn().mockResolvedValue([])
-				}),
+				where: mockWhere,
 				orderBy: vi.fn().mockResolvedValue([])
 			})
 		})
@@ -21,6 +26,7 @@ vi.mock('$lib/server/db/schema', () => ({
 		id: 'id',
 		sightingDate: 'sightingDate',
 		verified: 'verified',
+		approvedAt: 'approvedAt',
 		firstName: 'firstName',
 		lastName: 'lastName',
 		nameConsent: 'nameConsent',
@@ -41,6 +47,7 @@ vi.mock('drizzle-orm', () => ({
 	and: vi.fn((...args) => args),
 	between: vi.fn((a, b, c) => ({ a, b, c })),
 	eq: vi.fn((a, b) => ({ a, b })),
+	isNotNull: vi.fn((a) => ({ isNotNull: a })),
 	sql: Object.assign(
 		vi.fn((strings: TemplateStringsArray) => String(strings.raw[0])),
 		{
@@ -101,5 +108,22 @@ describe('Contract: GET /api/map/sightings', () => {
 
 		expect(body.type).toBe('FeatureCollection');
 		expect(Array.isArray(body.features)).toBe(true);
+	});
+
+	it('filtert auf approvedAt IS NOT NULL statt auf verified=1 (gleiche Grundmenge wie Legacy-API)', async () => {
+		const { isNotNull, eq } = vi.mocked(await import('drizzle-orm'));
+		const event = createEvent('/api/map/sightings', {
+			locals: { user: mockAdminUser }
+		});
+
+		await GET(event);
+
+		// Die öffentliche Grundmenge der modernen Karte muss dieselbe Spalte nutzen
+		// wie /sichtungen/showreports.json, an die die Legacy-API vertraglich
+		// gebunden ist: approvedAt. `verified` und `approvedAt` werden zwar immer
+		// gemeinsam geschrieben, aber zwei verschiedene Filterspalten für zwei
+		// öffentliche Flächen können auseinanderlaufen — deshalb hier nur eine.
+		expect(isNotNull).toHaveBeenCalledWith('approvedAt');
+		expect(eq).not.toHaveBeenCalledWith('verified', 1);
 	});
 });
