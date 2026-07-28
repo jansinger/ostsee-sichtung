@@ -345,10 +345,12 @@ und `method-photo`; diese Selektoren existieren nicht mehr. Neu abzudecken:
 - Kartenbereich initial zugeklappt
 - `waterway` und `seaMark` ohne jeden Moduswechsel erreichbar
 
-**Neue Fixtures.** Es liegt kein Bild in `e2e/fixtures/`, und in `e2e/` gibt es
-bisher **kein einziges** `setInputFiles` — der Datei-Upload ist E2E vollständig
-ungetestet. Die Testfotos schließen damit eine größere Lücke als nur diese
-Änderung:
+**Neue Fixtures — liegen vor.** In `e2e/` gab es bisher **kein einziges**
+`setInputFiles`; der Datei-Upload war E2E vollständig ungetestet. Die drei
+Testfotos schließen damit eine größere Lücke als nur diese Änderung. Sie sind
+synthetisch erzeugt (kein fremdes Bildmaterial) und mit dem Parser der App
+(`exifr`) gegengeprüft — Details und der **Zeitzonen-Fallstrick beim
+EXIF-Zeitstempel** stehen in `e2e/fixtures/README.md`.
 
 | Datei                                       | Anforderung                                                                                                                                                                                                                                |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
