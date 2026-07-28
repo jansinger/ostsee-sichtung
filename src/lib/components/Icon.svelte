@@ -45,7 +45,8 @@
 	import Hash from '~icons/lucide/hash';
 	import Heart from '~icons/lucide/heart';
 	import Home from '~icons/lucide/home';
-	import Images from '~icons/lucide/images';
+	import Image from '~icons/lucide/image';
+import Images from '~icons/lucide/images';
 	import Info from '~icons/lucide/info';
 	import List from '~icons/lucide/list';
 	import Loader2 from '~icons/lucide/loader-2';
@@ -135,6 +136,7 @@
 		'lucide:arrow-left': ArrowLeft,
 		'lucide:play': Play,
 		'lucide:file-text': FileText,
+		'lucide:image': Image,
 		'lucide:images': Images,
 		'lucide:video': Video,
 		'lucide:circle-alert': CircleAlert,

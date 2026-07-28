@@ -242,13 +242,6 @@
 			<div class="skeleton h-32 w-full"></div>
 		{/if}
 
-		<!-- BEWUSST unter der Dropzone: Die Hero-Karte begann auf einem 812-px-Gerät
-		     erst bei 659 px, und dazwischen standen ~150 px Datenschutz-Prosa
-		     zwischen „Der schnellste Weg …" und dem Auslöser. Der Hinweis bleibt
-		     vollständig, nur nicht mehr im Weg. -->
-		<div class="mt-4">
-			<UploadNotice />
-		</div>
 
 		<!-- Zustand C: Foto ohne EXIF-GPS.
 
@@ -299,6 +292,14 @@
 				</div>
 			</div>
 		{/if}
+
+		<!-- BEWUSST unter der Dropzone: Die Hero-Karte begann auf einem 812-px-Gerät
+		     erst bei 659 px, und dazwischen standen ~150 px Datenschutz-Prosa
+		     zwischen „Der schnellste Weg …" und dem Auslöser. Der Hinweis bleibt
+		     vollständig, nur nicht mehr im Weg. -->
+		<div class="mt-4">
+			<UploadNotice />
+		</div>
 	</div>
 
 	<div class="divider text-base-content/60 mt-6 mb-3 text-xs">oder Position selbst setzen</div>
