@@ -119,16 +119,16 @@ Automatisiert über **release-please**: Commits auf `main` werden analysiert, ei
 
 ## Weitere Dokumentation
 
-| Dokument                           | Inhalt                                   |
-| ---------------------------------- | ---------------------------------------- |
-| `.claude/README.md`                | Aufbau der Claude-Konfiguration          |
-| `docs/DESIGN_GUIDE.md`             | Design-Prinzipien, Ist-Zustand, Grenzen  |
-| `docs/CONFIGURATION_USAGE.md`      | ConfigService (Laufzeit-Konfiguration)   |
-| `docs/LEGACY_API_SPECIFICATION.md` | Legacy API (KRITISCH)                    |
-| `docs/PRODUCTION_DEPLOYMENT.md`    | Production Deployment (Schnellanleitung) |
-| `docs/DOCKER_DEPLOYMENT.md`        | Docker Setup (Vollständige Referenz)     |
-| `docs/ENVIRONMENT.md`              | Umgebungsvariablen                       |
-| `docs/DATABASE_MIGRATION.md`       | DB Migrationen                           |
+| Dokument                           | Inhalt                                                          |
+| ---------------------------------- | --------------------------------------------------------------- |
+| `.claude/README.md`                | Aufbau der Claude-Konfiguration                                 |
+| `docs/DESIGN_GUIDE.md`             | Design-Prinzipien, Ist-Zustand, Grenzen                         |
+| `docs/CONFIGURATION_USAGE.md`      | ConfigService (Laufzeit-Konfiguration)                          |
+| `docs/LEGACY_API_SPECIFICATION.md` | Legacy API (KRITISCH)                                           |
+| `docs/PRODUCTION_DEPLOYMENT.md`    | Production Deployment (Schnellanleitung)                        |
+| `docs/DOCKER_DEPLOYMENT.md`        | Docker Setup (Vollständige Referenz)                            |
+| `docs/ENVIRONMENT.md`              | Umgebungsvariablen, inkl. Zeitzonen-Konvention (Abschnitt `TZ`) |
+| `docs/DATABASE_MIGRATION.md`       | DB Migrationen                                                  |
 
 Themenspezifische Regeln in `.claude/rules/` laden automatisch, sobald passende Dateien bearbeitet werden — sie müssen hier nicht aufgezählt werden.
 

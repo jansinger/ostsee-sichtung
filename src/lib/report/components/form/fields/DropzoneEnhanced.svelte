@@ -466,7 +466,7 @@
 										<div class="mt-1">
 											<p class="text-base-content/60 flex items-center gap-1 text-xs">
 												<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
-												{mediaFile.timestamp.toLocaleString('de-DE')}
+												{mediaFile.timestamp.toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}
 											</p>
 										</div>
 									{/if}
@@ -540,7 +540,9 @@
 						<div class="mt-3 text-center">
 							<p class="text-base-content/60 flex items-center justify-center gap-1 text-xs">
 								<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
-								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE')}
+								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE', {
+									timeZone: 'Europe/Berlin'
+								})}
 							</p>
 						</div>
 					{/if}
@@ -607,7 +609,9 @@
 						<div class="mt-3 text-center">
 							<p class="text-base-content/60 flex items-center justify-center gap-1 text-xs">
 								<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
-								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE')}
+								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE', {
+									timeZone: 'Europe/Berlin'
+								})}
 							</p>
 						</div>
 					{/if}

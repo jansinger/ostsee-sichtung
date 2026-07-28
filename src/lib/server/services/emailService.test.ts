@@ -401,6 +401,35 @@ describe('EmailService', () => {
 			expect(result).toBe(false);
 		});
 
+		it('formatiert sightingDate über formatLocalDateTime (Berlin) statt UTC-ISO-Split (M2)', async () => {
+			// Sichtung 22:30 UTC am 14.07. = 00:30 Berliner Sommerzeit am 15.07.
+			// `toISOString().split('T')[0]` läse fälschlich den 14.07. (UTC-Vortag).
+			const mockSighting = createMockSighting({
+				sightingDate: new Date('2024-07-14T22:30:00Z')
+			});
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						limit: vi.fn().mockResolvedValue([mockSighting])
+					})
+				})
+			} as any);
+
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'smtp.example.com' });
+			await EmailService.initialize(false);
+
+			await EmailService.sendNewSightingNotification(42);
+
+			// formatLocalDateTime muss mit dem rohen Sichtungsdatum und Format 'date'
+			// aufgerufen werden — nicht per toISOString().split('T')[0] umgangen.
+			expect(formatLocalDateTime).toHaveBeenCalledWith(mockSighting.sightingDate, 'date');
+
+			// formatSightingForDisplay (komplett gemockt) darf nur das Berlin-
+			// formatierte Datum erhalten, nie den rohen UTC-Tag (wäre der Vortag).
+			const callArg = vi.mocked(formatSightingForDisplay).mock.calls[0]?.[0];
+			expect(callArg?.sightingDate).not.toBe('2024-07-14');
+		});
+
 		it('gibt false zurück wenn DB-Abfrage fehlschlägt', async () => {
 			vi.mocked(db.select).mockReturnValue({
 				from: vi.fn().mockReturnValue({

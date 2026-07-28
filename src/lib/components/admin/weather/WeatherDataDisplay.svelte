@@ -2,7 +2,9 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import WeatherDisplay from '$lib/components/weather/WeatherDisplay.svelte';
 	import type { StoredWeatherData } from '$lib/services/weatherService';
-	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
+	// `observation_time` ist zonenlose Berlin-Wanduhrzeit, `fetched_at` ein echter
+	// UTC-Instant — deshalb formatObservationTime bzw. formatLocalDateTime (M4).
+	import { formatLocalDateTime, formatObservationTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { toast } from '$lib/stores/toastState.svelte';
 
@@ -132,7 +134,7 @@
 					</div>
 					<div class="flex items-center gap-2">
 						<Icon icon="lucide:calendar" width="12" />
-						<span>{formatLocalDateTime(weatherData.observation_time, 'datetime')}</span>
+						<span>{formatObservationTime(weatherData.observation_time)}</span>
 					</div>
 					{#if weatherData.location.elevation}
 						<div class="flex items-center gap-2">

@@ -39,6 +39,46 @@ import { getWindStrengthOptions } from '$lib/report/formOptions/windStrength';
 import { BALTIC_SEA_BBOX } from '$lib/utils/geo/checkBalticSea';
 import * as yup from 'yup';
 
+/**
+ * Heutiger Kalendertag in Deutschland als "YYYY-MM-DD".
+ *
+ * Der Sichtungstag ist fachlich immer Berlin-Ortszeit. Über UTC gerechnet
+ * (`toISOString()`) wäre der Tag zwischen 00:00 und 02:00 deutscher Zeit noch
+ * der Vortag — heutige Sichtungen gälten dann als „Zukunft".
+ *
+ * Diese Datei läuft auch im Browser: Die Zone wird deshalb explizit angegeben
+ * und nicht der Geräte-Zeitzone überlassen. `sv-SE` liefert die ISO-Reihenfolge.
+ */
+function berlinToday(): string {
+	return new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' });
+}
+
+/**
+ * Reduziert eine Datumseingabe auf ihren Kalendertag "YYYY-MM-DD".
+ *
+ * Akzeptiert sowohl das Formularformat als auch einen ISO-Zeitstempel (so
+ * liefert die Legacy-API). Der Vergleich läuft anschließend als String — bei
+ * ISO-Datum ist die lexikalische Ordnung die chronologische, und damit hängt
+ * das Urteil an keiner Zeitzone.
+ *
+ * @returns Der Kalendertag oder `null`, wenn die Eingabe kein gültiges Datum ist
+ */
+function toCalendarDay(value: string | undefined): string | null {
+	const match = typeof value === 'string' ? /^(\d{4}-\d{2}-\d{2})/.exec(value) : null;
+	if (!match) {
+		return null;
+	}
+
+	const calendarDay = match[1] as string;
+	// Fängt Angaben wie "2026-13-45" ab, die zwar zum Muster passen, aber keinen Tag benennen.
+	const parsed = new Date(`${calendarDay}T00:00:00.000Z`);
+	if (isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== calendarDay) {
+		return null;
+	}
+
+	return calendarDay;
+}
+
 // Icon names for the schema - using unplugin-icons format with lucide: prefix
 // These will be mapped to actual icon components in the UI layer
 const icons = {
@@ -297,8 +337,8 @@ export const sightingSchemaBase = yup.object().shape({
 		.string()
 		.required('Das Datum ist erforderlich')
 		.test('is-valid-date', 'Das Datum liegt in der Zukunft - bitte korrigieren Sie es', (value) => {
-			const date = new Date(value);
-			return !isNaN(date.getTime()) && date <= new Date();
+			const calendarDay = toCalendarDay(value);
+			return calendarDay !== null && calendarDay <= berlinToday();
 		})
 		.label('Sichtungsdatum')
 		.meta({
@@ -307,7 +347,7 @@ export const sightingSchemaBase = yup.object().shape({
 			type: 'date',
 			icon: Calendar
 		})
-		.default(new Date().toISOString().split('T')[0]), // Standard auf heute setzen
+		.default(() => berlinToday()), // Standard auf heute setzen
 
 	/**
 	 * Uhrzeit der Sichtung im Format HH:MM

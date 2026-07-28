@@ -100,6 +100,9 @@ export const sightings = pgTable(
 			table.location.asc().nullsLast().op('gist_geometry_ops_2d')
 		),
 		index('idx_sichtungsdatum').on(table.sightingDate),
+		// Berliner Kalendertag — muss zum Ausdruck des Admin-Datumsfilters passen
+		// (admin/+page.server.ts), sonst greift der Index nicht.
+		index('idx_sichtungsdatum_berlin_tag').using('btree', berlinCalendarDate(table.sightingDate)),
 		// Jahr in deutscher Ortszeit — muss zum Ausdruck der Statistik-Gruppierung
 		// passen (admin/statistics/+page.server.ts), sonst greift der Index nicht.
 		index('idx_year_sichtungen').using('btree', berlinDatePart('year', table.sightingDate)),

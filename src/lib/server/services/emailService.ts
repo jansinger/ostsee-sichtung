@@ -173,7 +173,9 @@ export class EmailService {
 				// Required core fields
 				latitude: sighting.latitude != null ? parseFloat(sighting.latitude) : null,
 				longitude: sighting.longitude != null ? parseFloat(sighting.longitude) : null,
-				sightingDate: (sighting.sightingDate || new Date()).toISOString().split('T')[0] as string,
+				// Berlin-Datum statt UTC-ISO-Split (M2): toISOString().split('T')[0]
+				// läse eine Sichtung um 00:30 Berliner Zeit als UTC-Vortag.
+				sightingDate: formatLocalDateTime(sighting.sightingDate || new Date(), 'date'),
 				sightingDatetime: sighting.sightingDate || undefined,
 				species: sighting.species || 0,
 				totalCount: sighting.totalCount || 1,

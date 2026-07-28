@@ -34,7 +34,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			.where(conditions.length > 0 ? and(...conditions) : undefined)
 			.orderBy(sightingsTable.sightingDate);
 
-		// Export-Metadaten hinzufügen
+		// Export-Metadaten hinzufügen.
+		// Bewusst kein Berlin-Formatter: JSON ist das Maschinenformat des Exports
+		// und gibt die Zeitstempel als UTC-ISO-Strings aus (`Date#toJSON`).
+		// Menschenlesbare Ortszeit liefern CSV, KML und XML.
 		const exportData = {
 			metadata: {
 				exportDate: new Date().toISOString(),

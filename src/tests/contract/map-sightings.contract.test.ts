@@ -46,6 +46,8 @@ vi.mock('$lib/server/db/schema', () => ({
 vi.mock('drizzle-orm', () => ({
 	and: vi.fn((...args) => args),
 	between: vi.fn((a, b, c) => ({ a, b, c })),
+	gte: vi.fn((a, b) => ({ a, b })),
+	lt: vi.fn((a, b) => ({ a, b })),
 	eq: vi.fn((a, b) => ({ a, b })),
 	isNotNull: vi.fn((a) => ({ isNotNull: a })),
 	sql: Object.assign(

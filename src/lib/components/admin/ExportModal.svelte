@@ -4,6 +4,7 @@
 	import { downloadHandlers, createTimestampedFilename } from '$lib/utils/download';
 	import type { FrontendSighting } from '$lib/types';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
+	import { formatWallClockDateTime } from '$lib/utils/format/formatWallClockDateTime';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('ExportModal');
@@ -63,19 +64,18 @@
 		return recordCount * (bytesPerRecord[format as keyof typeof bytesPerRecord] || 500);
 	}
 
-	// Aktive Filter als lesbare Strings formatieren
+	// Aktive Filter als lesbare Strings formatieren. `fromDate`/`toDate` sind
+	// reine Kalendertag-Strings ("YYYY-MM-DD") aus dem Datumsfilter, kein
+	// Zeitpunkt — formatWallClockDateTime sortiert nur um, ohne Date-Objekt
+	// (sonst bestimmt die Browser-Zone den Tag mit, bis zu ±1 Tag).
 	function getActiveFiltersDisplay(): string[] {
 		const filterDisplays: string[] = [];
 
 		if (currentFilters.fromDate) {
-			filterDisplays.push(
-				`Von: ${new Date(currentFilters.fromDate as string).toLocaleDateString('de-DE')}`
-			);
+			filterDisplays.push(`Von: ${formatWallClockDateTime(currentFilters.fromDate as string)}`);
 		}
 		if (currentFilters.toDate) {
-			filterDisplays.push(
-				`Bis: ${new Date(currentFilters.toDate as string).toLocaleDateString('de-DE')}`
-			);
+			filterDisplays.push(`Bis: ${formatWallClockDateTime(currentFilters.toDate as string)}`);
 		}
 		if (currentFilters.verified === '1') {
 			filterDisplays.push('Nur geprüfte Sichtungen');

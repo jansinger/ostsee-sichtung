@@ -7,9 +7,15 @@
 	import { getSeaStateLabel } from '$lib/report/formOptions/seaState';
 	import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
 	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
-	import type { WeatherData, WeatherFormFields, StoredWeatherData } from '$lib/services/weatherService';
+	import type {
+		WeatherData,
+		WeatherFormFields,
+		StoredWeatherData
+	} from '$lib/services/weatherService';
 	import type { WeatherDataWithMetadata } from '$lib/types';
-	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
+	// `time`/`observation_time` ist zonenlose Berlin-Wanduhrzeit (siehe
+	// weatherService.ts) — formatObservationTime reicht sie unkonvertiert durch (M4).
+	import { formatObservationTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { getWeatherIconClass, getWindDirectionIconClass } from '$lib/utils/weather/weatherIcons';
 
@@ -46,9 +52,11 @@
 		}
 
 		// For admin display (StoredWeatherData) - check if it has all required properties
-		const hasProcessed = weatherData && typeof weatherData === 'object' && 'processed' in weatherData;
+		const hasProcessed =
+			weatherData && typeof weatherData === 'object' && 'processed' in weatherData;
 		const hasLocation = weatherData && typeof weatherData === 'object' && 'location' in weatherData;
-		const hasObservationTime = weatherData && typeof weatherData === 'object' && 'observation_time' in weatherData;
+		const hasObservationTime =
+			weatherData && typeof weatherData === 'object' && 'observation_time' in weatherData;
 
 		if (hasProcessed && hasLocation && hasObservationTime) {
 			const processed = weatherData.processed;
@@ -108,7 +116,7 @@
 				{#if showTime && displayData.time}
 					<span class="flex items-center gap-1">
 						<Icon icon="lucide:calendar" width="16" class="text-primary" />
-						{formatLocalDateTime(displayData.time)}
+						{formatObservationTime(displayData.time)}
 					</span>
 				{/if}
 			</div>
@@ -132,7 +140,7 @@
 				</div>
 			{/if}
 
-			{#if displayData.windSpeed !== undefined && displayData.windSpeed !== null || formFields?.windForce}
+			{#if (displayData.windSpeed !== undefined && displayData.windSpeed !== null) || formFields?.windForce}
 				<div class="flex items-center gap-2">
 					<Icon icon="lucide:wind" width="18" class="text-primary" />
 					<span>
@@ -155,12 +163,13 @@
 					></i>
 					<span>
 						Windrichtung: <strong>{displayData.windDirectionCardinal || 'unbekannt'}</strong>
-						{#if displayData.windDirection !== undefined && displayData.windDirection !== null} - {displayData.windDirection}°{/if}
+						{#if displayData.windDirection !== undefined && displayData.windDirection !== null}
+							- {displayData.windDirection}°{/if}
 					</span>
 				</div>
 			{/if}
 
-			{#if displayData.seaState !== undefined && displayData.seaState !== null || formFields?.seaState}
+			{#if (displayData.seaState !== undefined && displayData.seaState !== null) || formFields?.seaState}
 				<div class="flex items-center gap-2">
 					<Icon icon="lucide:waves" width="18" class="text-primary" />
 					<span>
@@ -175,7 +184,7 @@
 				</div>
 			{/if}
 
-			{#if displayData.visibility !== undefined && displayData.visibility !== null || formFields?.visibility}
+			{#if (displayData.visibility !== undefined && displayData.visibility !== null) || formFields?.visibility}
 				<div class="flex items-center gap-2">
 					<Icon icon="lucide:eye" width="18" class="text-primary" />
 					<span>

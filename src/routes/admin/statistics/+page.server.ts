@@ -86,12 +86,8 @@ export const load: PageServerLoad = async () => {
 			})
 			.from(sightings)
 			.where(and(isNotNull(sightings.sightingDate), eq(sightings.verified, 1)))
-			.groupBy(
-				berlinDatePart('year', sightings.sightingDate)
-			)
-			.orderBy(
-				berlinDatePart('year', sightings.sightingDate)
-			);
+			.groupBy(berlinDatePart('year', sightings.sightingDate))
+			.orderBy(berlinDatePart('year', sightings.sightingDate));
 
 		// Monthly distribution (last 10 years)
 		const monthlyStats = await db
@@ -101,12 +97,8 @@ export const load: PageServerLoad = async () => {
 			})
 			.from(sightings)
 			.where(and(isNotNull(sightings.sightingDate), eq(sightings.verified, 1)))
-			.groupBy(
-				berlinDatePart('month', sightings.sightingDate)
-			)
-			.orderBy(
-				berlinDatePart('month', sightings.sightingDate)
-			);
+			.groupBy(berlinDatePart('month', sightings.sightingDate))
+			.orderBy(berlinDatePart('month', sightings.sightingDate));
 
 		// Recent activity (last 30 days)
 		const recentActivity = await db
@@ -118,6 +110,18 @@ export const load: PageServerLoad = async () => {
 			// `created` ist naives timestamp mit UTC-Inhalt. Der Vergleich gegen das
 			// timestamptz von NOW() würde sonst über die DB-Session-Zeitzone gecastet,
 			// die die Anwendung nirgends pinnt.
+			//
+			// N3 (bewusst so belassen): Die Fenstergrenze ist ein UTC-Instant, die
+			// Gruppierung darunter aber Berlin-Kalendertage (`berlinCalendarDate`).
+			// Das verschiebt höchstens den ältesten der 30 angezeigten Tage um bis zu
+			// 2 h (Sommerzeit) — kein Tag *innerhalb* des Fensters bekommt dadurch
+			// falsche Werte, nur der Rand zeigt ggf. 29 statt 30 volle Tage. Eine
+			// exakte Berlin-Mitternacht-Grenze bräuchte mehrere verkettete
+			// `AT TIME ZONE`-Hops (Berlin-Tag → Instant → UTC-naiv), die sich ohne
+			// Postgres-Semantiktest (siehe sqlTimeZone.test.ts-Lücke im Review) nicht
+			// zuverlässig verifizieren lassen — das Risiko eines neuen, unbemerkten
+			// Zeitzonenfehlers wiegt hier schwerer als der kosmetische Rand-Tag einer
+			// „letzte 30 Tage"-Trendanzeige.
 			.where(sql`${sightings.created} >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days'`)
 			.groupBy(berlinCalendarDate(sightings.created))
 			.orderBy(sql`${berlinCalendarDate(sightings.created)} DESC`)
@@ -172,8 +176,10 @@ export const load: PageServerLoad = async () => {
 			.select({
 				email: sightings.email,
 				sightingCount: sql<number>`COUNT(*)::integer`,
-				firstSighting: sql<string>`MIN(${sightings.created})::date`,
-				lastSighting: sql<string>`MAX(${sightings.created})::date`,
+				// Berlin-Kalendertag statt naivem UTC-Cast (M1) — sonst rutscht eine
+				// Sichtung um 00:30 Ortszeit auf den UTC-Vortag.
+				firstSighting: sql<string>`${berlinCalendarDate(sql`MIN(${sightings.created})`)}`,
+				lastSighting: sql<string>`${berlinCalendarDate(sql`MAX(${sightings.created})`)}`,
 				avgGroupSize: sql<number>`AVG(${sightings.totalCount})::numeric`
 			})
 			.from(sightings)

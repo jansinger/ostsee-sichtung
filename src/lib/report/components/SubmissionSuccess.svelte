@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import type { SightingFormValues } from '$lib/types/Form';
-	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
+	import { formatWallClockDateTime } from '$lib/utils/format/formatWallClockDateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { maskEmail } from '$lib/utils/privacy/emailMask';
 	import Icon from '$lib/components/Icon.svelte';
@@ -135,7 +135,7 @@
 						</div>
 						<div>
 							<span class="font-medium">Datum:</span>
-							{formatLocalDateTime(new Date(submittedData.sightingDatetime))}
+							{formatWallClockDateTime(submittedData.sightingDate, submittedData.sightingTime)}
 						</div>
 						<div>
 							<span class="font-medium">Position:</span>

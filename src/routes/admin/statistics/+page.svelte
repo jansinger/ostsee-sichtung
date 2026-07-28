@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
+	import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
 	import Icon from '$lib/components/Icon.svelte';
 	import type { PageData } from './$types';
 
@@ -455,8 +456,10 @@
 										</td>
 										<td>{formatNumber(parseFloat(String(observer.avgGroupSize)).toFixed(1))}</td>
 										<td class="text-sm">
-											{new Date(observer.firstSighting).getFullYear()} -
-											{new Date(observer.lastSighting).getFullYear()}
+											<!-- Bereits Berliner Kalendertag-Strings (berlinCalendarDate im Loader) —
+											     Jahr direkt abschneiden, kein Date-Umweg nötig. -->
+											{observer.firstSighting.slice(0, 4)} -
+											{observer.lastSighting.slice(0, 4)}
 										</td>
 										<td>
 											<div class="text-xs">
@@ -555,7 +558,7 @@
 								.fill(null)
 								.map((_, i) => i) as dayIndex (dayIndex)}
 								{@const targetDate = new Date(Date.now() - (29 - dayIndex) * 24 * 60 * 60 * 1000)}
-								{@const dateStr = targetDate.toISOString().split('T')[0]}
+								{@const dateStr = berlinCalendarDayIso(targetDate)}
 								{@const activity = data.recentActivity.find((a) => a.date === dateStr)}
 								{@const count = activity ? Number(activity.count) : 0}
 								{@const maxCount = Math.max(...data.recentActivity.map((a) => Number(a.count)))}

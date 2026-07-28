@@ -76,3 +76,21 @@ export function berlinCalendarDate(column: SQLWrapper): SQL {
 export function berlinDatePart(part: 'year' | 'month' | 'day', column: SQLWrapper): SQL {
 	return sql`EXTRACT(${sql.raw(part)} FROM ${asLocalTime(column)})`;
 }
+
+/**
+ * Formatiert eine UTC-Zeitstempelspalte über `to_char` als String in deutscher
+ * Ortszeit (z. B. für Legacy-kompatible Feldnamen wie `dt`/`ti`, die dieselbe
+ * Zeitzone wie die übrigen Legacy-Endpunkte tragen müssen).
+ *
+ * @param column - Zeitstempelspalte, die UTC-Zeitpunkte hält
+ * @param pattern - `to_char`-Formatmuster, z. B. `'DD.MM.YYYY'` oder `'HH24:MI'`.
+ *   **Nur Modulkonstanten/Literale übergeben, niemals Nutzereingabe** — das
+ *   Muster landet unparametrisiert (`sql.raw`) im SQL-Text. Anführungszeichen
+ *   werden defensiv SQL-standardkonform verdoppelt, damit ein versehentlich
+ *   durchgereichtes Muster das Literal nicht aufbrechen kann.
+ */
+export function berlinToChar(column: SQLWrapper, pattern: string): SQL {
+	const escaped = pattern.replaceAll("'", "''");
+
+	return sql`to_char(${asLocalTime(column)}, ${sql.raw(`'${escaped}'`)})`;
+}

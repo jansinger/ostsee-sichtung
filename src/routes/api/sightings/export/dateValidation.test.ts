@@ -37,6 +37,8 @@ vi.mock('$lib/server/db/schema', () => ({
 vi.mock('drizzle-orm', () => ({
 	and: vi.fn((...args) => args),
 	between: vi.fn(),
+	gte: vi.fn(),
+	lt: vi.fn(),
 	eq: vi.fn()
 }));
 

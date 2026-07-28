@@ -70,6 +70,60 @@ node src/tools/fix-media-upload-flags.js --dry-run --verbose
 - Graceful error handling
 - Database connection cleanup
 
+### 3. Data Migration
+
+#### `generate-reference-ids.ts`
+
+Generates CUID2 `referenceId` values for all sightings that don't have one yet — needed for the reference-ID-based URL structure and upload paths.
+
+**Purpose:**
+
+- Reuses an existing `referenceId` from associated `sichtungen_dateien` rows if present
+- Otherwise generates a new CUID2 and writes it to `sichtungen.referenz_id`
+- Never overwrites a `referenceId` that is already set
+
+**Usage:**
+
+```bash
+npx tsx --env-file=.env src/tools/generate-reference-ids.ts
+```
+
+#### `migrate-old-uploads.ts`
+
+Migrates files from the legacy `sichtungen.aufnahme` column into the `sichtungen_dateien` table and the new `uploads/{referenz_id}/` file layout.
+
+**Purpose:**
+
+- Sets `aufnahmeHochladen = 1` for sightings with a legacy upload
+- Creates `sichtungen_dateien` entries with full metadata, extracting EXIF data (GPS, camera info) from images
+- Copies files from `uploads/_old_uploads/` to `uploads/{referenz_id}/`, preserving the originals
+
+**Usage:**
+
+```bash
+npx tsx --env-file=.env src/tools/migrate-old-uploads.ts
+```
+
+#### `migrate-timestamps-to-utc.js`
+
+One-time migration converting naive legacy timestamps (`sichtungsdatum`, `created`, `freigegeben_am`, `hochgeladen_am`, `erstellt_am`) from German local time (Europe/Berlin wall-clock) to real UTC. Required after importing any pre-migration data — see `docs/DATABASE_MIGRATION.md` and `docs/ENVIRONMENT.md#tz`.
+
+**Purpose:**
+
+- Converts all rows created before a given `--cutover` timestamp from Europe/Berlin wall-clock to UTC
+- Refuses to run twice (marker in `app_config`) and refuses to touch rows that already look like app-written UTC data, unless explicitly excluded
+- Reports timestamps affected by the DST spring-forward gap or autumn repeated hour
+
+**Usage:**
+
+```bash
+# Dry run first (required before any live run) — take a DB backup beforehand
+npm run db:migrate-timestamps-utc:dry-run -- --cutover=<ISO>
+
+# Live run
+npm run db:migrate-timestamps-utc -- --cutover=<ISO>
+```
+
 ## Development Guidelines
 
 ### Creating New Tools

@@ -5,6 +5,8 @@ import { getClientIp } from '$lib/server/utils/getClientIp';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
+import { berlinToChar } from '$lib/server/db/sqlTimeZone';
+import { getYearRange } from '$lib/legacy-api/date-utils';
 import { saveSighting } from '$lib/server/db/sightingRepository';
 import { EmailService } from '$lib/server/services/emailService';
 import type { StoredWeatherData } from '$lib/services/weatherService';
@@ -37,9 +39,11 @@ export async function GET(event: RequestEvent) {
 			? parseInt(event.url.searchParams.get('year') as string)
 			: new Date().getFullYear();
 
-		// Zeitraum für das angegebene Jahr festlegen
-		const startDate = new Date(year, 0, 1); // 1. Januar des angegebenen Jahres
-		const endDate = new Date(year + 1, 0, 1); // 1. Januar des nächsten Jahres
+		// Zeitraum für das angegebene Jahr in deutscher Ortszeit (halboffenes
+		// Intervall) — `new Date(year, 0, 1)` hinge an der Prozess-Zeitzone;
+		// `dt`/`ti` werden unten nach Europe/Berlin formatiert, der Filter muss
+		// dieselbe Jahresauslegung haben.
+		const { startDate, endDate } = getYearRange(year);
 
 		logger.debug({ year, startDate, endDate }, 'Sichtungen abrufen');
 
@@ -48,8 +52,11 @@ export async function GET(event: RequestEvent) {
 			.select({
 				id: sightings.id,
 				ts: sightings.created,
-				dt: sql<string>`to_char(${sightings.sightingDate}, 'DD.MM.YYYY')`,
-				ti: sql<string>`to_char(${sightings.sightingDate}, 'HH24:MI')`,
+				// H2: dt/ti in Europe/Berlin — dieselben Feldnamen liefert
+				// showreports.json bereits in Berlin, ein rohes to_char() ohne
+				// AT TIME ZONE wäre UTC-Wanduhrzeit und würde 1-2 h abweichen.
+				dt: berlinToChar(sightings.sightingDate, 'DD.MM.YYYY'),
+				ti: berlinToChar(sightings.sightingDate, 'HH24:MI'),
 				lat: sightings.latitude,
 				lon: sightings.longitude,
 				ct: sightings.totalCount,

@@ -29,7 +29,18 @@ The migration process involves:
 4. **Post-Migration Scripts**: Running scripts to:
    - Generate reference IDs for all sightings
    - Migrate old file uploads to the new structure
+   - Convert legacy local-time timestamps to UTC
    - Update field mappings
+
+> **WARNING — Timestamp time zone:** The `sichtungsdatum`, `created` and
+> `freigegeben_am` columns are `timestamp without time zone` and store real
+> UTC instants. Data exported from the legacy schweinswalsichtung.de system
+> (or any other pre-migration source) is **German local time (Europe/Berlin
+> wall-clock)**, not UTC. Anyone who imports legacy data via Steps 1–3 below
+> **MUST** run `src/tools/migrate-timestamps-to-utc.js` (see
+> [Step 4.4](#44-convert-legacy-timestamps-to-utc)) afterwards — otherwise the
+> imported rows disagree with every UTC timestamp the application writes by
+> exactly the CET/CEST offset. Background: `docs/ENVIRONMENT.md#tz`.
 
 ---
 
@@ -283,6 +294,47 @@ npx tsx --env-file=.env src/tools/migrate-old-uploads.ts
 [INFO] Original files preserved in _old_uploads directory: 456 files
 ```
 
+#### 4.4 Convert Legacy Timestamps to UTC
+
+**Purpose:** Legacy data imported in Steps 1–3 has its `sichtungsdatum`,
+`created` and `freigegeben_am` values in German local time (Europe/Berlin
+wall-clock), because the old PHP application ran on a server pinned to that
+zone. The new application always writes real UTC instants, so the naive
+`timestamp without time zone` columns would otherwise mix two irreconcilable
+interpretations — off by exactly the CET/CEST offset. This is a **one-time**
+conversion; do not run it against a database that already contains
+app-written UTC timestamps in the same range (the script detects and refuses
+that automatically). Full rationale: `docs/ENVIRONMENT.md#tz`.
+
+**Before running:** take a database backup. The conversion is not easily
+reversible — a second accidental run (or a run after restoring the same
+backup without `--force`) would shift the same timestamps a second time.
+
+```bash
+# Dry run first — no writes, shows scope and sample conversions
+npm run db:migrate-timestamps-utc:dry-run -- --cutover=<ISO>
+
+# Example: legacy app went live 2026-08-01T00:00:00Z
+npm run db:migrate-timestamps-utc:dry-run -- --cutover=2026-08-01T00:00:00Z
+
+# Live run once the dry run looks correct
+npm run db:migrate-timestamps-utc -- --cutover=2026-08-01T00:00:00Z
+```
+
+**What this script does:**
+
+- Converts `sichtungen.sichtungsdatum/created/freigegeben_am` and
+  `sichtungen_dateien.hochgeladen_am/erstellt_am` from Europe/Berlin
+  wall-clock to UTC for all rows with `created`/`erstellt_am` before
+  `--cutover`
+- Refuses to run twice: it records a marker in `app_config` and aborts unless
+  `--force` is passed (only after restoring from backup)
+- Refuses to touch rows that already look like app-written UTC data
+  (detected via `weather_data IS NOT NULL`), unless explicitly excluded via
+  `--exclude-ids=…`
+- Reports timestamps that fall in the DST spring-forward gap or the autumn
+  repeated hour, since those are inherently ambiguous when converting
+
 ### Step 5: Migrate Uploaded Files
 
 **Verify file migration:**
@@ -312,10 +364,11 @@ rm -rf uploads/_old_uploads
 
 ## Migration Scripts Reference
 
-| Script                      | Purpose                                               | Command                                                       |
-| --------------------------- | ----------------------------------------------------- | ------------------------------------------------------------- |
-| `generate-reference-ids.ts` | Generate CUID2 reference IDs for all sightings        | `npx tsx --env-file=.env src/tools/generate-reference-ids.ts` |
-| `migrate-old-uploads.ts`    | Migrate files and create `sichtungen_dateien` entries | `npx tsx --env-file=.env src/tools/migrate-old-uploads.ts`    |
+| Script                         | Purpose                                                                 | Command                                                        |
+| ------------------------------ | ----------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `generate-reference-ids.ts`    | Generate CUID2 reference IDs for all sightings                          | `npx tsx --env-file=.env src/tools/generate-reference-ids.ts`  |
+| `migrate-old-uploads.ts`       | Migrate files and create `sichtungen_dateien` entries                   | `npx tsx --env-file=.env src/tools/migrate-old-uploads.ts`     |
+| `migrate-timestamps-to-utc.js` | Convert legacy Europe/Berlin timestamps to real UTC (one-time, see 4.4) | `npm run db:migrate-timestamps-utc:dry-run -- --cutover=<ISO>` |
 
 ---
 

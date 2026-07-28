@@ -9,6 +9,8 @@ import {
 	getWeatherDescription,
 	calculateSeaState
 } from '$lib/constants/weather';
+import { hourIndexFromLocalTime } from '$lib/server/weather/hourIndex';
+import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
 
 const logger = createLogger('service:weather-refresh');
 
@@ -55,8 +57,10 @@ export async function fetchWeatherData(
 	const startDate = date;
 	const endDate = date;
 
-	// Prüfe ob das Datum heute oder in der Zukunft ist
-	const today = new Date().toISOString().split('T')[0] || '';
+	// Prüfe ob das Datum heute oder in der Zukunft ist (N5: deutsche Ortszeit,
+	// nicht UTC — sonst wird in den ersten 1-2 Stunden nach Mitternacht Berlin
+	// noch der UTC-Vortag als "heute" gewertet).
+	const today = berlinCalendarDayIso();
 	const isToday = date >= today;
 
 	// Build Open-Meteo API URL - verwende Forecast API für heutige/zukünftige Daten
@@ -197,19 +201,13 @@ export async function fetchWeatherData(
 			'Available weather data slots from Open-Meteo'
 		);
 
-		// Find the closest time match
-		let bestIndex = 0;
-		if (time) {
-			const targetTime = `${date}T${time}:00`;
-			let minDiff = Infinity;
-
-			data.hourly.time.forEach((t, i) => {
-				const diff = Math.abs(new Date(t).getTime() - new Date(targetTime).getTime());
-				if (diff < minDiff) {
-					minDiff = diff;
-					bestIndex = i;
-				}
-			});
+		// N6: Index über die deutsche Ortszeit-Stunde ermitteln, nicht über eine
+		// Date-Differenz-Suche. `hourly.time[]` ist durch `timezone=Europe/Berlin`
+		// bereits ortszeit-indiziert (Index i = Stunde i) — `new Date(t)`-Vergleiche
+		// hingen dagegen an der Prozess-Zeitzone.
+		let bestIndex = hourIndexFromLocalTime(time);
+		if (bestIndex >= data.hourly.time.length) {
+			bestIndex = 0;
 		}
 
 		// Extract weather data for the best matching time

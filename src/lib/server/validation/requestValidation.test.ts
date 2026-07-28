@@ -51,6 +51,27 @@ describe('requestValidation', () => {
 			expect(result.error).toContain('Unerlaubte Felder');
 		});
 
+		it('lehnt ein clientseitig berechnetes sightingDatetime ab', () => {
+			// Der Instant wird ausschließlich serverseitig aus sightingDate/sightingTime
+			// gebildet — ein mitgeschickter Zeitstempel trüge die Browser-Zeitzone.
+			const dataWithClientDatetime = {
+				referenceId: 'test-123',
+				species: 0,
+				totalCount: 1,
+				firstName: 'John',
+				lastName: 'Doe',
+				email: 'john@example.com',
+				sightingDate: '2024-01-15',
+				sightingDatetime: '2024-01-15T14:30:00.000Z',
+				privacyConsent: true
+			};
+
+			const result = validateSightingFormData(dataWithClientDatetime);
+
+			expect(result.isValid).toBe(false);
+			expect(result.rejectedFields).toContain('sightingDatetime');
+		});
+
 		it('should reject requests with unknown fields', () => {
 			const dataWithUnknownFields = {
 				referenceId: 'test-123',
@@ -101,7 +122,7 @@ describe('requestValidation', () => {
 
 		it('should handle empty object', () => {
 			const result = validateSightingFormData({});
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.data).toEqual({});
 		});
@@ -140,7 +161,7 @@ describe('requestValidation', () => {
 
 		it('should handle empty object', () => {
 			const result = checkForbiddenAdminFields({});
-			
+
 			expect(result.hasForbiddenFields).toBe(false);
 			expect(result.forbiddenFields).toEqual([]);
 		});

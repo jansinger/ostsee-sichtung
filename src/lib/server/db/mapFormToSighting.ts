@@ -1,9 +1,8 @@
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting } from '$lib/types/sighting';
-import { combineToDate } from '$lib/utils/format/dateTime';
 import { sql } from 'drizzle-orm';
-import { correctCestOffsetUTC } from '$lib/server/datetime/correctCestOffsetUTC';
+import { berlinWallClockToUtc } from '$lib/server/datetime/berlinWallClockToUtc';
 import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 
 /**
@@ -67,18 +66,13 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 
 	/**
 	 * SCHRITT 2: Datum/Zeit-Verarbeitung
-	 * Kombiniert Datum und Zeit zu einem vollständigen DateTime-Objekt
+	 *
+	 * Datum und Uhrzeit sind deutsche Wanduhrzeit und werden ausschließlich hier
+	 * kombiniert. Ein vom Client mitgeschickter Zeitstempel wird bewusst nicht
+	 * ausgewertet — er trüge die Zeitzone des Browsers und verschöbe den
+	 * gespeicherten Zeitpunkt.
 	 */
-
-	let fullDateTime;
-	if (formData.sightingDatetime) {
-		fullDateTime = new Date(formData.sightingDatetime);
-	} else {
-		// Zeit verarbeiten und mit Datum kombinieren wenn vorhanden
-		fullDateTime = combineToDate(formData.sightingDate, formData.sightingTime);
-		// UTC-Korrektur anwenden (SERVER ONLY)
-		fullDateTime = correctCestOffsetUTC(fullDateTime);
-	}
+	const fullDateTime = berlinWallClockToUtc(formData.sightingDate, formData.sightingTime);
 
 	/**
 	 * SCHRITT 3: Datenbankschema-Objekt erstellen

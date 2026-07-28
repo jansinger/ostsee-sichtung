@@ -1,14 +1,13 @@
 import { createLogger } from '$lib/logger.server';
-import { getDistanceLabel } from '$lib/report/formOptions/distance';
-import { getDistributionLabel } from '$lib/report/formOptions/distribution';
-import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
+import { generateCsvData } from '$lib/server/export/csvExport';
 import { text } from '@sveltejs/kit';
 import { and } from 'drizzle-orm';
 import { buildExportConditions, parseExportFilterParams } from '../exportFilterParams';
+import { toFrontendSighting } from '../toFrontendSighting';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:sightings:export:csv');
@@ -37,67 +36,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			.where(conditions.length > 0 ? and(...conditions) : undefined)
 			.orderBy(sightingsTable.sightingDate);
 
-		// CSV-Header
-		const headers = [
-			'Referenz-ID',
-			'Sichtungsdatum',
-			'Meldedatum',
-			'Email',
-			'Name',
-			'Telefon',
-			'Tierart',
-			'Anzahl Total',
-			'Anzahl Jungtiere',
-			'Entfernung',
-			'Verteilung',
-			'Längengrad',
-			'Breitengrad',
-			'Ort',
-			'Position Unsicher',
-			'Totfund',
-			'Kommentar',
-			'Seegang',
-			'Wind',
-			'Sicht',
-			'Aufnahme',
-			'Ostsee',
-			'Verifiziert',
-			'Eingangskanal'
-		];
-
-		// CSV-Zeilen erstellen
-		const csvRows = sightings.map((sighting) => [
-			sighting.referenceId || '',
-			sighting.sightingDate || '',
-			sighting.created || '',
-			sighting.email || '',
-			sighting.lastName || '',
-			sighting.phone || '',
-			getSpeciesLabel(sighting.species || 0),
-			sighting.totalCount || '',
-			sighting.juvenileCount || '',
-			getDistanceLabel(sighting.distance || 0),
-			getDistributionLabel(sighting.distribution || 0),
-			sighting.longitude || '',
-			sighting.latitude || '',
-			sighting.city || '', // Using city instead of location
-			'', // positionUncertain doesn't exist in schema
-			sighting.isDead ? 'Ja' : 'Nein',
-			(sighting.notes || '').replace(/"/g, '""'), // Using notes instead of comment
-			sighting.seaState || '',
-			sighting.windForce || '',
-			sighting.visibility || '',
-			sighting.mediaUpload ? 'Ja' : 'Nein',
-			sighting.inBalticSeaGeo ? 'Ja' : 'Nein',
-			sighting.verified ? 'Ja' : 'Nein',
-			sighting.entryChannel || ''
-		]);
-
-		// CSV-String erstellen
-		const csvContent = [
-			headers.map((header) => `"${header}"`).join(','),
-			...csvRows.map((row) => row.map((cell) => `"${cell}"`).join(','))
-		].join('\n');
+		// Formatierung ausschließlich über den getesteten Exporter — er rechnet
+		// die UTC-Zeitstempel nach Europe/Berlin um.
+		const csvContent = generateCsvData(sightings.map(toFrontendSighting));
 
 		// Audit-Log schreiben
 		await logAuditEvent({
