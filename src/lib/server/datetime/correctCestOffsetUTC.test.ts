@@ -94,9 +94,10 @@ describe('correctCestOffsetUTC', () => {
 	 * für 2024. Das lässt zwei Dinge offen, die hier direkt an der Funktion
 	 * geprüft werden:
 	 *
-	 * 1. Die Grenze selbst liegt bei 01:00 UTC (MEZ-Beginn einschließlich,
-	 *    MESZ-Ende ausschließlich) — ein Vertauschen von `>=` und `>` fällt bei
-	 *    einem 12:00-Test nicht auf.
+	 * 1. Beide Grenzen liegen bei 01:00 UTC, und die MESZ-Spanne ist am Beginn
+	 *    einschließlich, am Ende ausschließlich (`time >= cestStart && time <
+	 *    cestEnd`). Ein Vertauschen von `>=` und `>` fällt bei einem 12:00-Test
+	 *    nicht auf.
 	 * 2. 2024 ist der Sonderfall, in dem der letzte Sonntag im März tatsächlich
 	 *    der 31. ist. Würde `lastMarchSunday` fest auf 31 stehen, wäre das mit
 	 *    Testdaten aus 2024 allein nicht zu erkennen.
@@ -111,7 +112,8 @@ describe('correctCestOffsetUTC', () => {
 		const ZWEI_STUNDEN = 7_200_000;
 
 		// Reale EU-Umstellungstermine: letzter Sonntag im März bzw. Oktober.
-		const sommerzeitBeginn: Array<[jahr: number, monat: number, tag: number]> = [
+		// `monatIndex` ist 0-basiert wie in `Date.UTC` — März = 2, Oktober = 9.
+		const sommerzeitBeginn: Array<[jahr: number, monatIndex: number, tag: number]> = [
 			[2023, 2, 26],
 			[2024, 2, 31],
 			[2025, 2, 30],
@@ -120,8 +122,8 @@ describe('correctCestOffsetUTC', () => {
 
 		it.each(sommerzeitBeginn)(
 			'%i: 01:00 UTC im März schaltet exakt von MEZ auf MESZ',
-			(jahr, monat, tag) => {
-				const grenze = Date.UTC(jahr, monat, tag, 1, 0, 0, 0);
+			(jahr, monatIndex, tag) => {
+				const grenze = Date.UTC(jahr, monatIndex, tag, 1, 0, 0, 0);
 
 				// Eine Millisekunde davor gilt noch MEZ (−1 h) …
 				expect(korrigiere(grenze - 1)).toBe(grenze - 1 - EINE_STUNDE);
@@ -130,7 +132,7 @@ describe('correctCestOffsetUTC', () => {
 			}
 		);
 
-		const sommerzeitEnde: Array<[jahr: number, monat: number, tag: number]> = [
+		const sommerzeitEnde: Array<[jahr: number, monatIndex: number, tag: number]> = [
 			[2023, 9, 29],
 			[2024, 9, 27],
 			[2025, 9, 26],
@@ -139,8 +141,8 @@ describe('correctCestOffsetUTC', () => {
 
 		it.each(sommerzeitEnde)(
 			'%i: 01:00 UTC im Oktober schaltet exakt von MESZ auf MEZ',
-			(jahr, monat, tag) => {
-				const grenze = Date.UTC(jahr, monat, tag, 1, 0, 0, 0);
+			(jahr, monatIndex, tag) => {
+				const grenze = Date.UTC(jahr, monatIndex, tag, 1, 0, 0, 0);
 
 				// Eine Millisekunde davor gilt noch MESZ (−2 h) …
 				expect(korrigiere(grenze - 1)).toBe(grenze - 1 - ZWEI_STUNDEN);
