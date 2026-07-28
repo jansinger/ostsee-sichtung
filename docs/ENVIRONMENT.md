@@ -368,8 +368,8 @@ names `Europe/Berlin` explicitly:
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | Display & CSV/KML/XML/JSON export                                  | `src/lib/utils/format/dateTime.ts` — `Intl` with `timeZone: 'Europe/Berlin'`   |
 | Weather lookup (Open-Meteo, requested as `timezone=Europe/Berlin`) | `src/lib/server/weather/hourIndex.ts` — index parsed from the `"HH:MM"` string |
-| Legacy REST API output (`dt`, `ti`)                                | `src/lib/legacy-api/date-utils.ts` — `Intl` with `Europe/Berlin`       |
-| Legacy `year` filter                                               | `getYearRange()` — German local year bounds, matching the output                   |
+| Legacy REST API output (`dt`, `ti`)                                | `src/lib/legacy-api/date-utils.ts` — `Intl` with `Europe/Berlin`               |
+| Legacy `year` filter                                               | `getYearRange()` — German local year bounds, matching the output               |
 | Statistics plausibility bound                                      | `EARLIEST_PLAUSIBLE_SIGHTING_DATE` — fixed UTC instant                         |
 
 #### Before changing this value
@@ -377,9 +377,15 @@ names `Europe/Berlin` explicitly:
 Changing `TZ` is safe only as long as the code stays timezone-independent.
 `src/lib/server/datetime/correctCestOffsetUTC.test.ts` proves the sighting pipeline
 (`combineToDate` → `correctCestOffsetUTC`) yields the same UTC instant under UTC and
-Europe/Berlin, for all 24 hours in both summer and winter. Note that
-`correctCestOffsetUTC` only _does_ anything when the process runs in UTC — it returns
-early otherwise. Run the full server suite after any change:
+Europe/Berlin, for all 24 hours in both summer and winter, including the two DST
+transition days themselves. Note that `correctCestOffsetUTC` only _does_ anything when
+the process runs in UTC — it returns early otherwise.
+
+The date it receives carries German **wall-clock** time, not a true UTC instant, so the
+DST boundaries inside it are wall-clock too (02:00 for the start of CEST, 03:00 for its
+end) — not the 01:00Z instant at which the changeover actually happens. Comparing the two
+against each other is what caused the one-hour shift fixed in this file's history. Run the
+full server suite after any change:
 
 ```bash
 npm run test:unit
