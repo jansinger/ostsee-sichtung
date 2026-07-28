@@ -18,7 +18,6 @@ const DEFAULT_VALUES = {
 	'display.maxSightingsPerPage': 50,
 	'display.defaultMapCenter': { lat: 54.5, lng: 13.5 },
 	'display.defaultMapZoom': 7,
-	'display.showUnapprovedOnMap': false,
 	'display.dateFormat': 'DD.MM.YYYY',
 	'display.maintenanceMode': false,
 	'display.maintenanceMessage': 'Die Anwendung wird gewartet. Bitte versuchen Sie es später erneut.',
@@ -31,7 +30,6 @@ const DEFAULT_VALUES = {
 	'security.autoApproveThreshold': 5,
 	
 	// Data Processing Settings
-	'data.autoVerifyBalticSea': true,
 	'data.duplicateCheckRadius': 1,
 	'data.duplicateCheckTimeframe': 24,
 	'data.exportFormats': ['csv', 'json', 'kml', 'xml'],
@@ -130,8 +128,7 @@ export class ServerConfigService {
 		return {
 			center: await this.getObject<{ lat: number; lng: number }>('display.defaultMapCenter'),
 			zoom: await this.getNumber('display.defaultMapZoom'),
-			tileProvider: await this.getString('integration.mapTileProvider'),
-			showUnapprovedSightings: await this.getBoolean('display.showUnapprovedOnMap')
+			tileProvider: await this.getString('integration.mapTileProvider')
 		};
 	}
 
@@ -217,8 +214,7 @@ export class ClientConfigService {
 		return {
 			center: await this.get<{ lat: number; lng: number }>('display.defaultMapCenter'),
 			zoom: await this.get<number>('display.defaultMapZoom'),
-			tileProvider: await this.get<string>('integration.mapTileProvider'),
-			showUnapprovedSightings: await this.get<boolean>('display.showUnapprovedOnMap')
+			tileProvider: await this.get<string>('integration.mapTileProvider')
 		};
 	}
 
