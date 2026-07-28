@@ -5,8 +5,9 @@
 
 <!-- Administrative Section -->
 <SectionCard title="Administratives" icon="lucide:settings">
-	<FormField name="verified" />
-
+	<!-- Kein Feld für "verified": Der Prüfstatus wird ausschließlich über den
+	     Toggle "Geprüft" in der Sichtungsliste gesetzt, damit `geprueft` und
+	     `freigegeben_am` gemeinsam geschrieben werden. -->
 	<FormField name="entryChannel" />
 
 	<FormField name="internalComment" />
