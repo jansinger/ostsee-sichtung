@@ -28,6 +28,7 @@
  */
 import { readdir, stat, unlink } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { config } from 'dotenv';
 import postgres from 'postgres';
 
@@ -253,8 +254,9 @@ export function resolveConnectionString(env: NodeJS.ProcessEnv): string {
 	const connectionString = env.DATABASE_POSTGRES_URL || env.DATABASE_URL;
 	if (!connectionString) {
 		throw new Error(
-			'Keine Datenbankverbindung gefunden. DATABASE_POSTGRES_URL muss gesetzt sein — ' +
-				'in der Umgebung oder in einer .env im Arbeitsverzeichnis.'
+			'Keine Datenbankverbindung gefunden. DATABASE_POSTGRES_URL (bevorzugt) oder ' +
+				'DATABASE_URL muss gesetzt sein — in der Umgebung oder in einer .env im ' +
+				'Arbeitsverzeichnis.'
 		);
 	}
 	return connectionString;
@@ -476,7 +478,14 @@ async function main(): Promise<void> {
 	}
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// `pathToFileURL` statt Zeichenkettenbau: `import.meta.url` ist eine korrekt
+// kodierte file:-URL. Bei einem Pfad mit Leerzeichen (`%20`) schlüge der
+// naive Vergleich fehl — das Tool beendete sich dann mit Code 0 und ganz ohne
+// Ausgabe. Gleiches Muster wie in scripts/docker-migrate.ts.
+const isDirectRun =
+	typeof process.argv[1] === 'string' && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isDirectRun) {
 	main().catch((error: unknown) => {
 		console.error(`\n💥 Abbruch: ${error instanceof Error ? error.message : String(error)}`);
 		process.exit(1);

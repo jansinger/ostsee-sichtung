@@ -305,6 +305,12 @@ describe('resolveConnectionString', () => {
 	it('wirft, wenn keine Verbindung gesetzt ist — es wird nicht geraten', () => {
 		expect(() => resolveConnectionString({})).toThrow(/DATABASE_POSTGRES_URL/);
 	});
+
+	it('nennt in der Fehlermeldung beide akzeptierten Variablen', () => {
+		// Die Meldung nannte nur DATABASE_POSTGRES_URL, obwohl DATABASE_URL
+		// ebenfalls akzeptiert wird — im Betrieb irreführend.
+		expect(() => resolveConnectionString({})).toThrow(/DATABASE_URL/);
+	});
 });
 
 describe('assertLocalStorage', () => {
