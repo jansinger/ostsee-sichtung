@@ -35,11 +35,17 @@ const logger = createLogger('api:admin:cleanup-orphans');
 const MAX_LIMIT = 500;
 const HOUR_IN_MS = 60 * 60 * 1000;
 
-/** Frist aus der Query, nach unten auf die Mindestfrist geklemmt. */
+/**
+ * Frist aus der Query: auf ganze Stunden abgerundet und nach unten auf die
+ * Mindestfrist geklemmt.
+ *
+ * Abrunden vor dem Klemmen — OpenAPI dokumentiert `hours` als `integer`, eine
+ * krumme Frist wäre weder dokumentiert noch im Bericht nachvollziehbar.
+ */
 function resolveRetentionMs(raw: string | null): number {
 	const parsed = raw === null ? NaN : Number(raw);
 	const hours = Number.isFinite(parsed)
-		? Math.max(parsed, ORPHAN_RETENTION_HOURS)
+		? Math.max(Math.floor(parsed), ORPHAN_RETENTION_HOURS)
 		: ORPHAN_RETENTION_HOURS;
 	return hours * HOUR_IN_MS;
 }

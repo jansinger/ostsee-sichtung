@@ -98,6 +98,25 @@ describe('POST /api/admin/cleanup-orphans', () => {
 		);
 	});
 
+	it('normalisiert eine Dezimalstelle in hours auf ganze Stunden', async () => {
+		// OpenAPI dokumentiert `hours` als integer; eine krumme Frist wäre
+		// weder dokumentiert noch nachvollziehbar.
+		const response = await POST(event({ token: TOKEN, query: 'hours=48.5' }));
+
+		expect(cleanupOrphans).toHaveBeenCalledWith(
+			expect.objectContaining({ retentionMs: 48 * 60 * 60 * 1000 })
+		);
+		expect((await response.json()).retentionHours).toBe(48);
+	});
+
+	it('klemmt eine gebrochene Frist unterhalb der Mindestfrist hoch', async () => {
+		await POST(event({ token: TOKEN, query: 'hours=0.5' }));
+
+		expect(cleanupOrphans).toHaveBeenCalledWith(
+			expect.objectContaining({ retentionMs: ORPHAN_RETENTION_HOURS * 60 * 60 * 1000 })
+		);
+	});
+
 	it('deckelt limit auf 500', async () => {
 		await POST(event({ token: TOKEN, query: 'limit=99999' }));
 		expect(cleanupOrphans).toHaveBeenCalledWith(expect.objectContaining({ limit: 500 }));
