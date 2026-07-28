@@ -14,7 +14,7 @@ const certFile = fileURLToPath(new URL('./certs/localhost.pem', import.meta.url)
 const keyFile = fileURLToPath(new URL('./certs/localhost-key.pem', import.meta.url));
 
 /**
- * Von mkcert ausgestellte Zertifikate (scripts/setup-dev-certs.sh, läuft vor `npm run dev`)
+ * Von mkcert ausgestellte Zertifikate (scripts/setup-dev-certs.mjs, läuft vor `npm run dev`)
  * akzeptiert Chrome ohne Warnung. Fehlen sie — etwa weil mkcert nicht installiert ist —
  * übernimmt basicSsl mit einem selbstsignierten Zertifikat: funktioniert, zeigt aber das
  * Chrome-Interstitial.

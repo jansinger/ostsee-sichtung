@@ -106,7 +106,9 @@ Die Anwendung ist dann unter https://localhost:4000 verfügbar.
 
 Damit Chrome den Dev-Server ohne Sicherheitswarnung akzeptiert, wird
 [mkcert](https://github.com/FiloSottile/mkcert) benötigt — es legt eine lokale CA im
-System-Trust-Store an. Einmalig:
+System-Trust-Store an. Einmalig installieren nach der
+[offiziellen Anleitung](https://github.com/FiloSottile/mkcert#installation), unter macOS
+zum Beispiel:
 
 ```bash
 brew install mkcert nss
