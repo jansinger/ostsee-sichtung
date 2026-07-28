@@ -33,6 +33,12 @@
 		shouldResetExifPosition,
 		type AppliedExifPosition
 	} from '$lib/report/components/form/fields/exifPositionReset';
+	import {
+		isPositionUid,
+		loadPositionUids,
+		markPositionFile,
+		unmarkPositionFile
+	} from '$lib/report/components/form/fields/positionFileOrigin';
 	import { get } from 'svelte/store';
 
 	import Icon from '$lib/components/Icon.svelte';
@@ -109,15 +115,20 @@
 		const currentMediaFiles = mediaStore.mediaFiles;
 		let hasChanges = false;
 		const updatedFiles = [...currentMediaFiles];
+		// Herkunft aus dem Storage statt aus `isPositionStep`: `uf` trägt sie
+		// nicht, und das Positions-Panel urteilt nur über Dateien des
+		// Positions-Schritts (positionPanelState.ts). Mit `isPositionStep`
+		// stempelte die zuerst gemountete Dropzone ihre eigene Herkunft auf alle
+		// wiederhergestellten Dateien — nach einem Reload auf Schritt 1 galten
+		// Schritt-3-Medien als Positions-Foto, nach einem Reload auf Schritt 2+
+		// verlor das echte Positions-Foto seinen Hinweis (positionFileOrigin.ts).
+		const positionUids = loadPositionUids();
 
 		uploadedFiles.forEach((uf) => {
 			if (!currentMediaFiles.some((mf) => mf.uid === uf.uid)) {
-				// `isPositionStep` mitgeben: `uf` trägt die Herkunft nicht, und das
-				// Positions-Panel urteilt nur über Dateien des Positions-Schritts
-				// (positionPanelState.ts). Ohne das Argument verlöre der Hinweis
-				// „kein GPS im Foto" jeden Reload — `$form.uploadedFiles` wird
-				// persistiert, `mediaStore` nicht.
-				updatedFiles.push(MediaFile.fromUploadedFile(uf, referenceId, isPositionStep));
+				updatedFiles.push(
+					MediaFile.fromUploadedFile(uf, referenceId, isPositionUid(positionUids, uf.uid))
+				);
 				hasChanges = true;
 			}
 		});
@@ -157,6 +168,7 @@
 	function deleteFile(uid: string) {
 		uploadedFiles = uploadedFiles.filter((uf) => uf.uid !== uid);
 		updateMediaFiles(mediaStore.mediaFiles.filter((mf) => mf.uid !== uid));
+		unmarkPositionFile(uid);
 		triggerChange('uploadedFiles', uploadedFiles);
 	}
 
@@ -242,6 +254,11 @@
 		// Add new files to mediaFiles and process them
 		const newMediaFiles = filesToProcess.map((file) => {
 			const mediaFile = MediaFile.createMediaFile(referenceId, file, isPositionStep);
+			// Herkunft sofort festhalten, damit sie einen Reload übersteht — hier
+			// ist sie bekannt, nach dem Reload nirgends mehr (positionFileOrigin.ts).
+			if (isPositionStep) {
+				markPositionFile(mediaFile.uid);
+			}
 			mediaFile.uploadedFile
 				.then((uploadedFile) => {
 					// Update form data
@@ -352,6 +369,12 @@
 	function handleClear() {
 		try {
 			dropzoneFiles = [];
+
+			// Vormerkungen der entfernten Dateien zurücknehmen, bevor der Store leer
+			// ist — sonst blieben verwaiste uids im sessionStorage stehen.
+			for (const mediaFile of mediaStore.mediaFiles) {
+				unmarkPositionFile(mediaFile.uid);
+			}
 
 			// Clear media files im Store
 			updateMediaFiles([]);
