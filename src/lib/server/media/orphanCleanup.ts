@@ -209,3 +209,116 @@ export async function scanUploadDir(baseDir: string, prefix = ''): Promise<DiskE
 	}
 	return results;
 }
+
+export interface CleanupPorts {
+	/** Zeilen ohne Sichtung, deren Upload vor `cutoff` liegt (Klasse A). */
+	findOrphanRows(cutoff: Date): Promise<OrphanRow[]>;
+	/**
+	 * Dateien ohne Zeile, älter als `cutoff` (Klasse B). `null`, wenn der
+	 * Provider kein Dateisystem bietet.
+	 *
+	 * `cutoff` ist Schutz, kein Komfort: Der Upload schreibt erst die Datei und
+	 * danach die DB-Zeile. Ohne Altersfilter gälte genau diese Lücke als Waise —
+	 * ein laufender Upload würde zerstört.
+	 */
+	findOrphanFiles(cutoff: Date): Promise<DiskEntry[] | null>;
+	deleteRow(id: number): Promise<void>;
+	deleteFile(relativePath: string): Promise<void>;
+}
+
+export interface CleanupOptions {
+	now: Date;
+	retentionMs: number;
+	/** `false` ermittelt nur und fasst nichts an. */
+	execute: boolean;
+	/** Obergrenze bearbeiteter **Fundstücke**; eine Zeile samt Datei zählt als eins. */
+	limit: number;
+	ports: CleanupPorts;
+	onError?: (subject: string, error: unknown) => void;
+}
+
+export interface CleanupReport {
+	rowsFound: number;
+	/** `null` = Klasse B für diesen Provider nicht anwendbar. */
+	filesFound: number | null;
+	rowsDeleted: number;
+	filesDeleted: number;
+	failed: number;
+	/** Vom Deckel übrig gelassene Fundstücke. */
+	remaining: number;
+	/** Nur im Vorschaumodus gefüllt. */
+	preview?: { rows: OrphanRow[]; files: DiskEntry[] };
+}
+
+/**
+ * Ermittelt verwaiste Uploads und entfernt sie, wenn `execute` gesetzt ist.
+ *
+ * Beide Klassen kommen aus einem Lesestand mit derselben Grenze — würde Klasse B
+ * nach dem Löschen von Klasse A ermittelt, tauchten deren Dateien erneut auf.
+ *
+ * Reihenfolge: erst die DB-Zeile, dann die Datei. Bricht der zweite Schritt ab,
+ * bleibt eine Datei liegen, auf die nichts mehr zeigt — der nächste Lauf sammelt
+ * sie als Klasse B ein. Andersherum entstünde eine Zeile ohne Datei, die der
+ * Nutzer als kaputtes Bild sieht und die keine der beiden Klassen mehr findet.
+ * Siehe `.claude/rules/upload.md`.
+ */
+export async function cleanupOrphans(options: CleanupOptions): Promise<CleanupReport> {
+	const { now, retentionMs, execute, limit, ports, onError } = options;
+
+	const cutoff = computeCutoff(now, retentionMs);
+	const rows = await ports.findOrphanRows(cutoff);
+	const files = await ports.findOrphanFiles(cutoff);
+
+	const report: CleanupReport = {
+		rowsFound: rows.length,
+		filesFound: files === null ? null : files.length,
+		rowsDeleted: 0,
+		filesDeleted: 0,
+		failed: 0,
+		remaining: 0
+	};
+
+	if (!execute) {
+		report.preview = { rows, files: files ?? [] };
+		return report;
+	}
+
+	let budget = limit;
+
+	for (const row of rows) {
+		if (budget <= 0) break;
+		budget--;
+		try {
+			await ports.deleteRow(row.id);
+			report.rowsDeleted++;
+		} catch (error) {
+			report.failed++;
+			onError?.(`row:${row.id}`, error);
+			continue;
+		}
+		// Die Zeile ist weg. Ein Fehlschlag hier macht das nicht rückgängig und
+		// hinterlässt nur eine unerreichbare Datei.
+		try {
+			await ports.deleteFile(row.filePath);
+			report.filesDeleted++;
+		} catch (error) {
+			report.failed++;
+			onError?.(`file:${row.filePath}`, error);
+		}
+	}
+
+	for (const file of files ?? []) {
+		if (budget <= 0) break;
+		budget--;
+		try {
+			await ports.deleteFile(file.relativePath);
+			report.filesDeleted++;
+		} catch (error) {
+			report.failed++;
+			onError?.(`file:${file.relativePath}`, error);
+		}
+	}
+
+	report.remaining = Math.max(0, rows.length + (files?.length ?? 0) - limit);
+	return report;
+}

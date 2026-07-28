@@ -3,14 +3,16 @@
  * übernommen, als die Logik in den gemeinsamen Kern wanderte — unverändert, damit
  * der Umzug nachweislich nichts am Verhalten geändert hat.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+	cleanupOrphans,
 	computeCutoff,
 	normalizeRelativePath,
 	parseRetention,
 	resolveSafeTarget,
 	selectOrphanedFiles,
 	selectOrphanedRows,
+	type CleanupPorts,
 	type DiskEntry,
 	type OrphanRow
 } from './orphanCleanup';
@@ -248,5 +250,112 @@ describe('resolveSafeTarget', () => {
 		expect(resolveSafeTarget(baseDir, 'ref/1538584452187..jpg')).toBe(
 			'/srv/app/uploads/ref/1538584452187..jpg'
 		);
+	});
+});
+
+describe('cleanupOrphans', () => {
+	const NOW = new Date('2026-07-28T12:00:00.000Z');
+	const HOUR = 60 * 60 * 1000;
+
+	/** Ports mit Aufzeichnung der Löschreihenfolge. */
+	function ports(rows: OrphanRow[] = [], files: DiskEntry[] | null = []) {
+		const order: string[] = [];
+		const port = {
+			order,
+			findOrphanRows: vi.fn(async () => rows),
+			findOrphanFiles: vi.fn(async () => files),
+			deleteRow: vi.fn(async (id: number) => {
+				order.push(`row:${id}`);
+			}),
+			deleteFile: vi.fn(async (path: string) => {
+				order.push(`file:${path}`);
+			})
+		};
+		return port;
+	}
+
+	function run(port: ReturnType<typeof ports>, over: Partial<Parameters<typeof cleanupOrphans>[0]> = {}) {
+		return cleanupOrphans({
+			now: NOW,
+			retentionMs: 24 * HOUR,
+			execute: true,
+			limit: 500,
+			ports: port as unknown as CleanupPorts,
+			...over
+		});
+	}
+
+	it('fragt beide Klassen mit derselben Grenze ab', () => {
+		const p = ports();
+		return run(p, { execute: false }).then(() => {
+			const cutoff = new Date('2026-07-27T12:00:00.000Z');
+			expect(p.findOrphanRows).toHaveBeenCalledWith(cutoff);
+			expect(p.findOrphanFiles).toHaveBeenCalledWith(cutoff);
+		});
+	});
+
+	it('löscht im Vorschaumodus nichts und liefert die Fundstücke', async () => {
+		const p = ports([buildRow({ id: 7 })]);
+		const report = await run(p, { execute: false });
+
+		expect(p.deleteRow).not.toHaveBeenCalled();
+		expect(p.deleteFile).not.toHaveBeenCalled();
+		expect(report.rowsFound).toBe(1);
+		expect(report.preview?.rows.map((row) => row.id)).toEqual([7]);
+	});
+
+	it('löscht erst die Zeile, dann die Datei', async () => {
+		// Andersherum entstünde eine Zeile ohne Datei — die sieht der Nutzer
+		// als kaputtes Bild. Siehe .claude/rules/upload.md.
+		const p = ports([buildRow({ id: 1, filePath: 'a/b.jpg' })]);
+		await run(p);
+
+		expect(p.order).toEqual(['row:1', 'file:a/b.jpg']);
+	});
+
+	it('zählt die Zeile als gelöscht, auch wenn die Datei nicht weggeht', async () => {
+		const p = ports([buildRow({ id: 1, filePath: 'a/b.jpg' })]);
+		p.deleteFile.mockRejectedValue(new Error('storage weg'));
+		const report = await run(p);
+
+		expect(report.rowsDeleted).toBe(1);
+		expect(report.filesDeleted).toBe(0);
+		expect(report.failed).toBe(1);
+	});
+
+	it('macht nach einem Fehler mit den übrigen Fundstücken weiter', async () => {
+		const p = ports([buildRow({ id: 1 }), buildRow({ id: 2 })]);
+		p.deleteRow.mockImplementation(async (id: number) => {
+			if (id === 1) throw new Error('DB weg');
+			p.order.push(`row:${id}`);
+		});
+		const report = await run(p);
+
+		expect(report.rowsDeleted).toBe(1);
+		expect(report.failed).toBe(1);
+	});
+
+	it('deckelt die Fundstücke und meldet den Rest', async () => {
+		const p = ports([buildRow({ id: 1 }), buildRow({ id: 2 }), buildRow({ id: 3 })]);
+		const report = await run(p, { limit: 2 });
+
+		expect(report.rowsDeleted).toBe(2);
+		expect(report.remaining).toBe(1);
+	});
+
+	it('behandelt einen Provider ohne Dateisystem als erfolgreichen Lauf', async () => {
+		const p = ports([], null);
+		const report = await run(p);
+
+		expect(report.filesFound).toBeNull();
+		expect(report.failed).toBe(0);
+	});
+
+	it('räumt auch Dateien ohne Zeile ab', async () => {
+		const p = ports([], [buildEntry({ relativePath: 'ref/waise.jpg' })]);
+		const report = await run(p);
+
+		expect(report.filesDeleted).toBe(1);
+		expect(p.order).toEqual(['file:ref/waise.jpg']);
 	});
 });
