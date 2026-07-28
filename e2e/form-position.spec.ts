@@ -78,4 +78,27 @@ test.describe('PositionAndTime — Single-Panel-Positionseingabe', () => {
 		await coordinateFields.locator('summary').click();
 		await expect(coordinateFields).toHaveAttribute('open', '');
 	});
+
+	// ── Regression: Vorgänger-Fix machte den Block schließbar, obwohl waterway
+	// ohne Koordinaten Pflicht bleibt (LocationDescription.svelte: einmalig
+	// gesetztes `open={startsOpen}`, bewusst kein `bind:open`). Schließt der
+	// Nutzer den Block und drückt „Weiter", landet er sonst wieder im
+	// Sackgassen-Zustand, den diese Branch eigentlich beheben sollte: die
+	// Fehlermeldung erscheint, aber das Feld ist unerreichbar
+	// (`scrollToFirstError` in `$lib/utils/fieldNavigation.ts`).
+	test('„Weiter" bei geschlossener Ortsbeschreibung öffnet sie wieder und fokussiert waterway', async ({
+		page
+	}) => {
+		const disclosure = page.locator('[data-testid="location-description"]');
+		// Ohne Koordinaten startet der Block offen — hier bewusst zuklappen, um
+		// den Sackgassen-Zustand nachzustellen.
+		await expect(disclosure).toHaveAttribute('open', '');
+		await disclosure.locator('summary').click();
+		await expect(disclosure).not.toHaveAttribute('open', '');
+
+		await page.getByRole('button', { name: /Nächster Schritt/i }).click();
+
+		await expect(disclosure).toHaveAttribute('open', '');
+		await expect(page.locator('[data-testid="field-waterway"]')).toBeFocused();
+	});
 });

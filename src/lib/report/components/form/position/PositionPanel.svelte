@@ -9,6 +9,7 @@
 	import LocationInput from '$lib/report/components/form/LocationInput.svelte';
 	import VerifyLocation from '$lib/report/components/form/VerifyLocation.svelte';
 	import { hasCoordinates, toCoordinate } from '$lib/report/components/form/coordinateValue';
+	import { openAncestorDetails } from '$lib/utils/fieldNavigation';
 	import LocationDescription from './LocationDescription.svelte';
 	import { requestCurrentPosition } from './geolocation';
 	import { photoStatus, shouldOpenMapOnCoordinateChange } from './positionPanelState';
@@ -136,17 +137,16 @@
 	 *
 	 * Das funktioniert nur, weil dort bewusst kein `bind:open` sitzt — ein
 	 * gebundener Zustand schriebe das hier gesetzte `open` sofort zurück.
+	 *
+	 * Der Vorfahren-`<details>`-Loop steckt in `openAncestorDetails`
+	 * (`$lib/utils/fieldNavigation.ts`) — `scrollToFirstError` dort braucht
+	 * denselben Schritt für jedes Feld hinter einer Disclosure, nicht nur für
+	 * `waterway`.
 	 */
 	function focusDescription(): void {
 		const field = document.querySelector<HTMLElement>('[data-testid="field-waterway"]');
 		if (!field) return;
-		for (
-			let disclosure = field.closest('details');
-			disclosure !== null;
-			disclosure = disclosure.parentElement?.closest('details') ?? null
-		) {
-			disclosure.open = true;
-		}
+		openAncestorDetails(field);
 		field.focus();
 		field.scrollIntoView({ block: 'center' });
 	}
