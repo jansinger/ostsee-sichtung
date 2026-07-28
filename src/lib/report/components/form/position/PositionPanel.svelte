@@ -11,9 +11,15 @@
 	import { hasCoordinates, toCoordinate } from '$lib/report/components/form/coordinateValue';
 	import LocationDescription from './LocationDescription.svelte';
 	import { requestCurrentPosition } from './geolocation';
-	import { shouldOpenMapOnCoordinateChange } from './positionPanelState';
+	import { photoStatus, shouldOpenMapOnCoordinateChange } from './positionPanelState';
 
-	const { form, handleChange } = getFormContext();
+	const { form, handleChange, mediaStore } = getFormContext();
+
+	// `mediaStore` ist das `$state`-Objekt aus Form.svelte:40 und wird über den
+	// Context als derselbe Proxy weitergereicht. DropzoneEnhanced ersetzt die
+	// Liste per Zuweisung (`mediaStore.mediaFiles = newFiles`, :82) — der
+	// Property-Write auf dem Proxy weckt dieses `$derived`.
+	const status = $derived(photoStatus(mediaStore.mediaFiles));
 
 	const referenceId = $derived($form.referenceId);
 
@@ -86,11 +92,56 @@
 		syncHasPosition();
 	}
 
+	let mapSummary = $state<HTMLElement | null>(null);
+
+	/** Öffnet die Karte und setzt den Fokus dorthin — nicht nur scrollen. */
+	function openMap(): void {
+		mapOpen = true;
+		mapSummary?.focus();
+		mapSummary?.scrollIntoView({ block: 'center' });
+	}
+
+	/**
+	 * Springt zur Ortsbeschreibung und fokussiert das Fahrwasser-Feld.
+	 *
+	 * `data-testid` und NICHT `data-field`: Letzteres sitzt auf dem Wrapper-<div>
+	 * von FormField (FormField.svelte:77), das nicht fokussierbar ist. Das Testid
+	 * hängt am Input selbst (FieldRenderer.svelte:188 → BaseInput.svelte:84).
+	 *
+	 * Meist steht das Feld offen da — ohne Koordinaten liefert
+	 * `descriptionCollapsed` immer `false` (positionPanelState.ts:53). Zugeklappt
+	 * ist es aber genau dann, wenn zum Foto ohne GPS nachträglich Koordinaten
+	 * gesetzt wurden und beide Beschreibungsfelder leer sind — dieser Block hier
+	 * bleibt in dem Fall sichtbar. `.focus()` auf ein Element in einem
+	 * geschlossenen <details> täte still nichts, deshalb vorher aufklappen.
+	 */
+	function focusDescription(): void {
+		const field = document.querySelector<HTMLElement>('[data-testid="field-waterway"]');
+		if (!field) return;
+		for (
+			let disclosure = field.closest('details');
+			disclosure !== null;
+			disclosure = disclosure.parentElement?.closest('details') ?? null
+		) {
+			disclosure.open = true;
+		}
+		field.focus();
+		field.scrollIntoView({ block: 'center' });
+	}
+
 	let locating = $state(false);
 	let locationError = $state<string | null>(null);
 
-	/** Übernimmt den Gerätestandort und öffnet die Karte zur Kontrolle. */
+	/**
+	 * Übernimmt den Gerätestandort und öffnet die Karte zur Kontrolle.
+	 *
+	 * Der Button bleibt währenddessen bedienbar (nur `aria-busy`), weil `disabled`
+	 * ihn aus der Tab-Reihenfolge nimmt und der Browser den Fokus verwirft — ein
+	 * Tastatur-Nutzer verlöre bis zu zehn Sekunden lang seine Position. Den
+	 * Doppelklick-Schutz übernimmt stattdessen dieser Wächter.
+	 */
 	async function useCurrentPosition(): Promise<void> {
+		if (locating) return;
 		locating = true;
 		locationError = null;
 
@@ -146,6 +197,43 @@
 		{:else}
 			<div class="skeleton h-32 w-full"></div>
 		{/if}
+
+		<!-- Zustand C: Foto ohne EXIF-GPS. Bisher lief dieser Fall in eine
+		     Fehlermeldung beim „Weiter" ohne sichtbares Feld zum Korrigieren —
+		     hier stattdessen zwei benannte Ausgänge. -->
+		{#if status === 'no-gps'}
+			<div class="alert alert-warning mt-4" role="status" data-testid="photo-no-gps">
+				<Icon aria-hidden="true" icon="lucide:circle-alert" width="20" class="shrink-0" />
+				<div>
+					<p class="text-sm">
+						In diesem Foto sind keine GPS-Daten gespeichert. Das ist häufig — viele Kameras und
+						weitergeleitete Bilder enthalten keine Position. Das Foto ist trotzdem wertvoll und
+						bleibt erhalten.
+					</p>
+					{#if $form.sightingDate}
+						<p class="mt-1 text-sm">Datum und Uhrzeit konnten übernommen werden.</p>
+					{/if}
+					<div class="mt-3 flex flex-wrap gap-2">
+						<button
+							type="button"
+							class="btn btn-outline btn-sm min-h-11"
+							onclick={openMap}
+							data-testid="exit-to-map"
+						>
+							Auf Karte wählen
+						</button>
+						<button
+							type="button"
+							class="btn btn-outline btn-sm min-h-11"
+							onclick={focusDescription}
+							data-testid="exit-to-description"
+						>
+							Seegebiet beschreiben
+						</button>
+					</div>
+				</div>
+			</div>
+		{/if}
 	</div>
 
 	<div class="divider text-base-content/60 mt-6 mb-3 text-xs">oder Position selbst setzen</div>
@@ -158,15 +246,17 @@
 		type="button"
 		class="btn btn-outline min-h-11 w-full sm:w-auto"
 		onclick={useCurrentPosition}
-		disabled={locating}
+		aria-busy={locating}
 		data-testid="use-current-position"
 	>
 		{#if locating}
-			<span class="loading loading-spinner loading-sm"></span>
+			<span aria-hidden="true" class="loading loading-spinner loading-sm"></span>
 		{:else}
 			<Icon aria-hidden="true" icon="lucide:crosshair" width="18" />
 		{/if}
-		Mein aktueller Standort
+		<!-- Der Spinner ist rein dekorativ; die Beschriftung trägt den Ladezustand,
+		     damit er auch angesagt wird und nicht nur zu sehen ist. -->
+		{locating ? 'Standort wird ermittelt …' : 'Mein aktueller Standort'}
 	</button>
 	<p class="text-base-content/60 mt-1 mb-3 text-xs">
 		Übernimmt den Standort Ihres Geräts — sinnvoll, wenn Sie die Sichtung direkt vor Ort melden.
@@ -185,7 +275,8 @@
 	{/if}
 
 	<details class="bg-base-100 collapse" bind:open={mapOpen} data-testid="map-disclosure">
-		<summary class="collapse-title min-h-11 py-3 text-sm font-medium">
+		<!-- `<summary>` ist nativ fokussierbar — kein `tabindex` nötig. -->
+		<summary bind:this={mapSummary} class="collapse-title min-h-11 py-3 text-sm font-medium">
 			Position auf Karte wählen
 		</summary>
 		<div class="collapse-content">
