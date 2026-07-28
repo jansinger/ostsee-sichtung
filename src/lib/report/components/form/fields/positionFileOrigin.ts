@@ -19,7 +19,10 @@
  * Die Mengen-Regeln stehen als pure Funktionen darüber, damit sie ohne Browser
  * testbar sind.
  */
+import { createLogger } from '$lib/logger';
 import { loadFromStorage, saveToStorage, STORAGE_KEYS } from '$lib/storage/localStorage';
+
+const logger = createLogger('positionFileOrigin');
 
 /**
  * Speicherform.
@@ -48,24 +51,68 @@ export function isPositionUid(uids: readonly string[], uid: string): boolean {
 }
 
 /**
+ * Der Zugriff auf `sessionStorage` darf nach außen nie werfen.
+ *
+ * `setItem` wirft einen `SecurityError`, wenn der Browser den Speicherzugriff
+ * sperrt (Chrome „alle Cookies blockieren", abgeschottetes Safari), und einen
+ * `QuotaExceededError`, wenn er voll ist; schon der reine *Zugriff* auf
+ * `sessionStorage` kann in diesen Modi werfen, `getItem` also ebenso.
+ *
+ * Die Vormerkung ist reine UI-Information des Browsers. Ihr Verlust kostet
+ * höchstens den GPS-Hinweis nach einem Reload — eine durchgereichte Ausnahme
+ * kostet dagegen den Upload: `markPositionFile` läuft in `handleFilesAdded`,
+ * das `UnifiedDropzone.svelte` ohne `await` aufruft, sodass die Ablehnung
+ * niemanden erreicht und `updateMediaFiles(...)` nie läuft — für den Nutzer tut
+ * die Dropzone dann einfach nichts. `loadPositionUids` läuft im `$effect.pre`
+ * von `DropzoneEnhanced` und damit mitten im Rendern.
+ */
+function withoutThrowing<T>(operation: () => T, fallback: T, action: string): T {
+	try {
+		return operation();
+	} catch (error) {
+		logger.warn(
+			{ error, action },
+			'Herkunft der Positions-Datei konnte nicht gelesen/geschrieben werden'
+		);
+		return fallback;
+	}
+}
+
+/**
  * Liest die vorgemerkten uids. Einmal je Wiederherstellungslauf aufrufen und
  * das Ergebnis an `isPositionUid` weiterreichen, statt pro Datei zu laden.
  */
 export function loadPositionUids(): string[] {
-	const stored = loadFromStorage<PositionFileOrigin>(STORAGE_KEYS.POSITION_FILE_UIDS, EMPTY);
-	return Array.isArray(stored.uids) ? stored.uids.filter((uid) => typeof uid === 'string') : [];
+	return withoutThrowing(
+		() => {
+			const stored = loadFromStorage<PositionFileOrigin>(STORAGE_KEYS.POSITION_FILE_UIDS, EMPTY);
+			return Array.isArray(stored.uids) ? stored.uids.filter((uid) => typeof uid === 'string') : [];
+		},
+		[],
+		'load'
+	);
 }
 
 /** Merkt eine Datei als Datei des Positions-Schritts vor. */
 export function markPositionFile(uid: string): void {
-	saveToStorage(STORAGE_KEYS.POSITION_FILE_UIDS, {
-		uids: withPositionUid(loadPositionUids(), uid)
-	});
+	withoutThrowing(
+		() =>
+			saveToStorage(STORAGE_KEYS.POSITION_FILE_UIDS, {
+				uids: withPositionUid(loadPositionUids(), uid)
+			}),
+		undefined,
+		'mark'
+	);
 }
 
 /** Nimmt die Vormerkung zurück — beim Löschen der Datei. */
 export function unmarkPositionFile(uid: string): void {
-	saveToStorage(STORAGE_KEYS.POSITION_FILE_UIDS, {
-		uids: withoutPositionUid(loadPositionUids(), uid)
-	});
+	withoutThrowing(
+		() =>
+			saveToStorage(STORAGE_KEYS.POSITION_FILE_UIDS, {
+				uids: withoutPositionUid(loadPositionUids(), uid)
+			}),
+		undefined,
+		'unmark'
+	);
 }

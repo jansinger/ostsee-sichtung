@@ -1,5 +1,18 @@
-import { describe, expect, it } from 'vitest';
-import { isPositionUid, withPositionUid, withoutPositionUid } from './positionFileOrigin';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+	isPositionUid,
+	loadPositionUids,
+	markPositionFile,
+	unmarkPositionFile,
+	withPositionUid,
+	withoutPositionUid
+} from './positionFileOrigin';
+
+// `loadFromStorage`/`saveToStorage` steigen ohne Browser sofort aus. Für die
+// Ausfall-Tests unten muss der Browser-Zweig genommen werden — sonst wäre jede
+// dieser Funktionen schon durch die SSR-Wache ein No-op und der Test bewiese
+// nichts.
+vi.mock('$app/environment', () => ({ browser: true }));
 
 describe('positionFileOrigin — reine Mengen-Regeln', () => {
 	it('nimmt eine uid auf', () => {
@@ -33,5 +46,54 @@ describe('positionFileOrigin — reine Mengen-Regeln', () => {
 		withPositionUid(uids, 'b');
 		withoutPositionUid(uids, 'a');
 		expect(uids).toEqual(['a']);
+	});
+});
+
+/**
+ * Ausfall des sessionStorage.
+ *
+ * `sessionStorage.setItem` wirft `SecurityError`, wenn der Browser den Zugriff
+ * sperrt (Chrome „alle Cookies blockieren", abgeschottetes Safari), und
+ * `QuotaExceededError`, wenn er voll ist. Die Vormerkung ist reine
+ * UI-Information; ihr Verlust darf höchstens den Hinweis kosten — nicht den
+ * Upload. `markPositionFile` läuft in `handleFilesAdded`, das
+ * `UnifiedDropzone.svelte` ohne `await` aufruft: Eine Ausnahme hier ließe die
+ * Datei nie im Store ankommen, sichtbar als „die Dropzone tut nichts".
+ * `loadPositionUids` läuft sogar im `$effect.pre`, also mitten im Rendern.
+ */
+describe('positionFileOrigin — Ausfall des sessionStorage', () => {
+	function breakStorage(method: 'getItem' | 'setItem', error: Error): void {
+		const storage = {
+			getItem: () => null,
+			setItem: () => undefined,
+			removeItem: () => undefined,
+			clear: () => undefined,
+			key: () => null,
+			length: 0
+		};
+		Object.defineProperty(storage, method, {
+			value: () => {
+				throw error;
+			}
+		});
+		vi.stubGlobal('sessionStorage', storage);
+	}
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('lässt einen Schreibfehler nicht bis zum Aufrufer durch', () => {
+		breakStorage('setItem', new DOMException('quota', 'QuotaExceededError'));
+
+		expect(() => markPositionFile('uid-1')).not.toThrow();
+		expect(() => unmarkPositionFile('uid-1')).not.toThrow();
+	});
+
+	it('lässt einen Lesefehler nicht bis zum Aufrufer durch und meldet eine leere Menge', () => {
+		breakStorage('getItem', new DOMException('blocked', 'SecurityError'));
+
+		expect(() => loadPositionUids()).not.toThrow();
+		expect(loadPositionUids()).toEqual([]);
 	});
 });
