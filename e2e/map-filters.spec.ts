@@ -47,6 +47,35 @@ test.describe.serial('Map Filter Panel', () => {
 		}
 	});
 
+	test('Jahreswechsel zeigt keinen Vollbild-Loading-Overlay mehr (M7)', async () => {
+		// M7: Das modale Vollbild-Overlay ist dem Initial-Load vorbehalten —
+		// Filter-/Jahreswechsel zeigen nur den Inline-Spinner im Filter-Panel.
+		// API künstlich verzögern, damit der Ladezustand beobachtbar ist.
+		await sharedPage.route('**/api/map/sightings?*', async (route) => {
+			await new Promise((resolve) => setTimeout(resolve, 700));
+			await route.continue();
+		});
+
+		await mapPage.openFilter();
+		const yearSelect = mapPage.getYearSelect();
+		const options = yearSelect.locator('option');
+		const count = await options.count();
+		const targetYear = await options.nth(count > 1 ? count - 1 : 0).getAttribute('value');
+
+		if (targetYear) {
+			const responsePromise = mapPage.waitForSightingsResponse();
+			await mapPage.selectYear(targetYear);
+
+			// Während des laufenden Requests: kein Vollbild-Overlay
+			await expect(mapPage.getLoadingOverlay()).toBeHidden();
+
+			await responsePromise;
+		}
+
+		await sharedPage.unroute('**/api/map/sightings?*');
+		await mapPage.closeFilter();
+	});
+
 	test('Suchtext in Eingabefeld löst API-Call mit search-Parameter aus', async () => {
 		await mapPage.openFilter();
 

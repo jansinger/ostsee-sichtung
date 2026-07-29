@@ -26,24 +26,16 @@ import {
 	createFeatureStyle,
 	getFeatureColorGroup
 } from './styleUtils';
-import { sanitizeText } from '$lib/utils/sanitize';
+import { clusterDistanceForZoom, clusterMinDistanceFor } from './clusterConfig';
+import {
+	createClusterInfoText,
+	createClusterListContent,
+	createInfoText,
+	createSightingPopupContent,
+	type SightingPopupProperties as SightingProperties
+} from './popupContent';
 
 const logger = createLogger('map:optimized-controller');
-
-/**
- * Interface für die Eigenschaften einer Sichtung
- */
-interface SightingProperties {
-	ta: string | number; // Tierart
-	ct: number; // Anzahl
-	jt?: number; // Jungtiere
-	ts?: number; // Timestamp
-	tf?: boolean; // Totfund
-	shipname?: string;
-	waterway?: string;
-	name?: string;
-	firstname?: string;
-}
 
 /**
  * Optionen für die Map-Klasse
@@ -104,6 +96,8 @@ export class SichtungenMap {
 	private activeAbortController: AbortController | null = null;
 	private filterDebounceTimeout: number | null = null;
 	private clusterDistance: number = 40; // Reduziert für bessere Performance
+	// M3: Seezeichen-Ebene als Feld, damit die Legende sie umschalten kann
+	private seamarkLayer: TileLayer<XYZ>;
 
 	// Popup-related
 	private popup!: Overlay;
@@ -155,10 +149,11 @@ export class SichtungenMap {
 			}
 		});
 
-		// Optimierte Cluster-Konfiguration
+		// Optimierte Cluster-Konfiguration — minDistance an die Distanz gekoppelt,
+		// sonst überlappen Cluster bei niedrigen Zoomstufen fast vollständig (M2)
 		this.clusterSource = new Cluster({
 			distance: this.clusterDistance,
-			minDistance: 10, // Mindestabstand zwischen Features
+			minDistance: clusterMinDistanceFor(this.clusterDistance),
 			source: this.reportsSource
 		});
 
@@ -186,6 +181,29 @@ export class SichtungenMap {
 					return styles ?? [];
 				}
 			}
+		});
+
+		// OpenSeaMap-Seezeichen (Bojen, Tonnen, Leuchtfeuer) — per Legende
+		// ein-/ausblendbar (M3), Default an
+		this.seamarkLayer = new TileLayer({
+			source: new XYZ({
+				url: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',
+				attributions: '© <a href="http://www.openseamap.org/">OpenSeaMap</a> contributors',
+				maxZoom: 18,
+				minZoom: 1,
+				crossOrigin: 'anonymous',
+				// Handle tile loading errors gracefully
+				tileLoadFunction: (tile, src) => {
+					const img = (tile as unknown as { getImage(): HTMLImageElement }).getImage();
+					img.onerror = () => {
+						// If tile fails to load, log for debugging and hide it
+						logger.warn({ tileUrl: src }, 'OpenSeaMap tile failed to load');
+						img.style.display = 'none';
+					};
+					img.src = src;
+				}
+			}),
+			opacity: 0.8 // Slightly transparent to blend well with base map
 		});
 
 		// Erstelle Popup
@@ -224,27 +242,8 @@ export class SichtungenMap {
 						}
 					})
 				}),
-				// OpenSeaMap-Layer für maritime Informationen
-				new TileLayer({
-					source: new XYZ({
-						url: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',
-						attributions: '© <a href="http://www.openseamap.org/">OpenSeaMap</a> contributors',
-						maxZoom: 18,
-						minZoom: 1,
-						crossOrigin: 'anonymous',
-						// Handle tile loading errors gracefully
-						tileLoadFunction: (tile, src) => {
-							const img = (tile as unknown as { getImage(): HTMLImageElement }).getImage();
-							img.onerror = () => {
-								// If tile fails to load, log for debugging and hide it
-								logger.warn({ tileUrl: src }, 'OpenSeaMap tile failed to load');
-								img.style.display = 'none';
-							};
-							img.src = src;
-						}
-					}),
-					opacity: 0.8 // Slightly transparent to blend well with base map
-				}),
+				// OpenSeaMap-Layer für maritime Informationen (Toggle in der Legende, M3)
+				this.seamarkLayer,
 				// Sichtungen-Layer (nur einer!)
 				this.reportsLayer,
 				// GPS-Position Layer
@@ -298,60 +297,19 @@ export class SichtungenMap {
 	}
 
 	private createPopup(): void {
+		// M6: Darstellung komplett über CSS-Klassen aus mapStyles.css —
+		// keine Inline-Styles am Theme vorbei.
 		this.popupElement = document.createElement('div');
 		this.popupElement.className = 'ol-popup';
 		this.popupElement.innerHTML = `
-			<style>
-				.cluster-list-item {
-					display: flex; align-items: center; gap: 8px; width: 100%;
-					padding: 8px; margin-bottom: 4px; border: 1px solid #e5e7eb;
-					border-radius: 6px; background: #f9fafb; cursor: pointer;
-					text-align: left; font-size: 13px; transition: background 0.15s;
-				}
-				.cluster-list-item:hover, .cluster-list-item:focus-visible {
-					background: #e0f2fe; outline: 2px solid #2563eb; outline-offset: -2px;
-				}
-			</style>
 			<div class="ol-popup-content">
 				<button class="ol-popup-closer" type="button" aria-label="Popup schließen">×</button>
 				<div class="popup-body"></div>
 			</div>
 		`;
 
-		// Style the popup
-		// padding-top berücksichtigt den 44px hohen Schließen-Button, damit dieser
-		// den Inhalt (Überschrift) nicht überlappt.
-		this.popupElement.style.cssText = `
-			position: absolute;
-			background-color: white;
-			box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-			padding: 44px 15px 15px 15px;
-			border-radius: 10px;
-			border: 1px solid #cccccc;
-			bottom: 12px;
-			left: -50px;
-			min-width: 280px;
-			z-index: 1000;
-		`;
-
-		// Close button — Hit-Target min. 44x44px (WCAG 2.5.5), Symbol bleibt optisch klein
 		const closer = this.popupElement.querySelector('.ol-popup-closer') as HTMLButtonElement;
 		closer.onclick = () => this.closePopup();
-		closer.style.cssText = `
-			position: absolute;
-			top: 0;
-			right: 0;
-			width: 44px;
-			height: 44px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			border: none;
-			background: none;
-			font-size: 18px;
-			cursor: pointer;
-			color: #999;
-		`;
 
 		this.popup = new Overlay({
 			element: this.popupElement,
@@ -388,16 +346,16 @@ export class SichtungenMap {
 					const features = feature.get('features');
 					if (features && features.length > 1) {
 						// Cluster-Info erstellen
-						infoText = this.createClusterInfoText(features);
+						infoText = createClusterInfoText(this.getPropsList(features), this.translations);
 					} else if (features && features.length === 1) {
 						// Einzelnes Feature aus Cluster
 						const singleFeature = features[0];
 						const props = singleFeature.getProperties();
-						infoText = this.createInfoText(props as SightingProperties);
+						infoText = createInfoText(props as SightingProperties, this.translations);
 					} else {
 						// Normales einzelnes Feature
 						const props = feature.getProperties();
-						infoText = this.createInfoText(props as SightingProperties);
+						infoText = createInfoText(props as SightingProperties, this.translations);
 					}
 
 					// Zeige Info-Element
@@ -454,6 +412,11 @@ export class SichtungenMap {
 		}) as EventsKey;
 	}
 
+	/** Properties-Liste für die reinen Content-Builder aus popupContent.ts */
+	private getPropsList(features: Feature<Geometry>[]): SightingProperties[] {
+		return features.map((feature) => feature.getProperties() as SightingProperties);
+	}
+
 	private sortFeaturesByDate(features: Feature<Geometry>[]): Feature<Geometry>[] {
 		return [...features].sort((a, b) => {
 			const tsA = (a.getProperties() as SightingProperties).ts || 0;
@@ -469,89 +432,16 @@ export class SichtungenMap {
 		if (features && features.length > 1) {
 			// Cluster - zeige Liste aller Sichtungen
 			const sorted = this.sortFeaturesByDate(features);
-			contentDiv.innerHTML = this.createClusterListContent(sorted);
+			contentDiv.innerHTML = createClusterListContent(this.getPropsList(sorted), this.translations);
 			this.attachClusterListHandlers(contentDiv, sorted, coordinate);
 		} else {
 			// Einzelfeature
 			const singleFeature = features ? features[0] : feature;
 			const props = singleFeature.getProperties() as SightingProperties;
-			contentDiv.innerHTML = this.createSightingPopupContent(props);
+			contentDiv.innerHTML = createSightingPopupContent(props, this.translations);
 		}
 
 		this.popup.setPosition(coordinate);
-	}
-
-	private createSightingPopupContent(props: SightingProperties): string {
-		const speciesMap = this.translations.speciesMap;
-		const speciesName = sanitizeText(
-			speciesMap[props.ta.toString()] || `Unbekannte Art (${props.ta})`
-		);
-		// M5: timeZone explizit setzen, sonst bestimmt die Browser-Zone das Datum
-		// (bis zu ±1 Tag Abweichung von der Berlin-Anzeige).
-		const date = props.ts
-			? new Date(props.ts * 1000).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin' })
-			: 'Unbekannt';
-
-		let content = `
-			<div class="sighting-popup">
-				<h3 style="margin: 0 0 10px 0; color: #333;">${speciesName}</h3>
-				<div style="margin-bottom: 8px;">
-					<strong>${sanitizeText(this.translations.count)}:</strong> ${props.ct} Tier${props.ct > 1 ? 'e' : ''}
-				</div>
-		`;
-
-		if (props.jt && props.jt > 0) {
-			content += `
-				<div style="margin-bottom: 8px;">
-					<strong>${sanitizeText(this.translations.young)}:</strong> ${props.jt}
-				</div>
-			`;
-		}
-
-		if (props.tf) {
-			content += `
-				<div style="margin-bottom: 8px; color: #dc2626;">
-					<strong>${sanitizeText(this.translations.found_dead)}:</strong> Ja
-				</div>
-			`;
-		}
-
-		content += `
-				<div style="margin-bottom: 8px;">
-					<strong>${sanitizeText(this.translations.report_date)}:</strong> ${date}
-				</div>
-		`;
-
-		if (props.waterway) {
-			content += `
-				<div style="margin-bottom: 8px;">
-					<strong>${sanitizeText(this.translations.area)}:</strong> ${sanitizeText(props.waterway)}
-				</div>
-			`;
-		}
-
-		if (props.name || props.firstname) {
-			const fullName = [props.firstname, props.name]
-				.filter(Boolean)
-				.map((v) => sanitizeText(v!))
-				.join(' ');
-			content += `
-				<div style="margin-bottom: 8px;">
-					<strong>${sanitizeText(this.translations.name)}:</strong> ${fullName}
-				</div>
-			`;
-		}
-
-		if (props.shipname) {
-			content += `
-				<div style="margin-bottom: 8px;">
-					<strong>${sanitizeText(this.translations.ship)}:</strong> ${sanitizeText(props.shipname)}
-				</div>
-			`;
-		}
-
-		content += '</div>';
-		return content;
 	}
 
 	/**
@@ -563,53 +453,6 @@ export class SichtungenMap {
 			.map((f) => f.getGeometry()?.getExtent() as [number, number, number, number] | undefined)
 			.filter((ext): ext is [number, number, number, number] => ext !== undefined);
 		return areExtentsColocated(extents);
-	}
-
-	/**
-	 * Erstellt eine scrollbare Liste aller Sichtungen im Cluster.
-	 * Erwartet bereits sortierte Features (via sortFeaturesByDate).
-	 */
-	private createClusterListContent(features: Feature<Geometry>[]): string {
-		const count = features.length;
-
-		let items = '';
-		features.forEach((feature, index) => {
-			const props = feature.getProperties() as SightingProperties;
-			const speciesName = sanitizeText(
-				this.translations.speciesMap[props.ta.toString()] || `Art ${props.ta}`
-			);
-			// M5: timeZone explizit setzen, sonst bestimmt die Browser-Zone das Datum.
-			const date = props.ts
-				? new Date(props.ts * 1000).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin' })
-				: 'Unbekannt';
-			const deadBadge = props.tf
-				? '<span style="color: #dc2626; font-weight: 600; margin-left: 4px;">&#x2020;</span>'
-				: '';
-
-			items += `
-				<li>
-					<button
-						type="button"
-						data-cluster-index="${index}"
-						class="cluster-list-item"
-						aria-label="${speciesName}, ${props.ct} Tier${props.ct > 1 ? 'e' : ''}, ${date}"
-					>
-						<span style="flex: 1; font-weight: 500;">${speciesName}${deadBadge}</span>
-						<span style="color: #6b7280; white-space: nowrap;">${props.ct}&nbsp;Tier${props.ct > 1 ? 'e' : ''}</span>
-						<span style="color: #9ca3af; font-size: 11px; white-space: nowrap;">${date}</span>
-					</button>
-				</li>
-			`;
-		});
-
-		return `
-			<div class="cluster-popup">
-				<h3 style="margin: 0 0 8px 0; color: #333; font-size: 14px;">${count} Sichtungen an diesem Ort</h3>
-				<ul aria-label="${count} Sichtungen" style="list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; padding-right: 4px;">
-					${items}
-				</ul>
-			</div>
-		`;
 	}
 
 	/**
@@ -632,10 +475,10 @@ export class SichtungenMap {
 				// Zeige Detail-Ansicht mit Zurück-Button
 				contentDiv.innerHTML = `
 					<div>
-						<button type="button" class="cluster-back-btn" style="display: inline-flex; align-items: center; gap: 4px; border: none; background: none; cursor: pointer; color: #2563eb; font-size: 12px; padding: 0 0 8px 0; font-weight: 500;">
+						<button type="button" class="cluster-back-btn">
 							&#8592; Alle ${sortedFeatures.length} Sichtungen
 						</button>
-						${this.createSightingPopupContent(props)}
+						${createSightingPopupContent(props, this.translations)}
 					</div>
 				`;
 				this.popup.setPosition(coordinate);
@@ -644,7 +487,10 @@ export class SichtungenMap {
 				const backBtn = contentDiv.querySelector('.cluster-back-btn');
 				backBtn?.addEventListener('click', (e) => {
 					e.stopPropagation();
-					contentDiv.innerHTML = this.createClusterListContent(sortedFeatures);
+					contentDiv.innerHTML = createClusterListContent(
+						this.getPropsList(sortedFeatures),
+						this.translations
+					);
 					this.attachClusterListHandlers(contentDiv, sortedFeatures, coordinate);
 					this.popup.setPosition(coordinate);
 				});
@@ -673,18 +519,11 @@ export class SichtungenMap {
 	private updateClusterDistance(): void {
 		const zoom = this.map.getView().getZoom() || 7;
 
-		let distance: number;
-		if (zoom < 8) {
-			distance = 50;
-		} else if (zoom < 10) {
-			distance = 40;
-		} else if (zoom < 12) {
-			distance = 30;
-		} else {
-			distance = 20;
-		}
-
+		// M2: minDistance mitführen — sonst fällt es auf den Konstruktor-Wert
+		// zurück und Cluster überlappen bei niedrigen Zoomstufen erneut
+		const distance = clusterDistanceForZoom(zoom);
 		this.clusterSource.setDistance(distance);
+		this.clusterSource.setMinDistance(clusterMinDistanceFor(distance));
 	}
 
 	/**
@@ -796,6 +635,15 @@ export class SichtungenMap {
 
 	public getMap(): Map {
 		return this.map;
+	}
+
+	/** M3: Seezeichen-Ebene (OpenSeaMap) ein-/ausblenden — Toggle in der Legende. */
+	public setSeamarkVisibility(visible: boolean): void {
+		this.seamarkLayer.setVisible(visible);
+	}
+
+	public getSeamarkVisibility(): boolean {
+		return this.seamarkLayer.getVisible();
 	}
 
 	private createCustomControls(): Control[] {
@@ -1063,53 +911,6 @@ export class SichtungenMap {
 				timeZone: 'Europe/Berlin'
 			});
 		}
-	}
-
-	private createInfoText(properties: SightingProperties): string {
-		const species = sanitizeText(this.translations.speciesMap[properties.ta] || 'Unbekannte Art');
-		const count = properties.ct || 0;
-		// M5: timeZone explizit setzen, sonst bestimmt die Browser-Zone das Datum.
-		const date = properties.ts
-			? new Date(properties.ts * 1000).toLocaleDateString('de-DE', { timeZone: 'Europe/Berlin' })
-			: 'Unbekanntes Datum';
-		const isDead = properties.tf ? ` (${sanitizeText(this.translations.found_dead)})` : '';
-		return `
-			<div class="p-2 text-sm">
-				<strong>${species}</strong><br>
-				${sanitizeText(this.translations.count)}: ${count}${isDead}<br>
-				${sanitizeText(this.translations.report_date)}${date}
-			</div>
-		`;
-	}
-
-	private createClusterInfoText(features: Feature<Geometry>[]): string {
-		const count = features.length;
-		const speciesCount: Record<string, number> = {};
-
-		// Zähle die verschiedenen Arten im Cluster
-		features.forEach((feature) => {
-			const properties = feature.getProperties() as SightingProperties;
-			const speciesKey = properties.ta.toString();
-			speciesCount[speciesKey] = (speciesCount[speciesKey] || 0) + 1;
-		});
-
-		// Erstelle eine Zusammenfassung der häufigsten Arten
-		const sortedSpecies = Object.entries(speciesCount)
-			.sort(([, a], [, b]) => b - a)
-			.slice(0, 3) // Zeige nur die 3 häufigsten Arten
-			.map(([speciesId, count]) => {
-				const speciesName = sanitizeText(
-					this.translations.speciesMap[speciesId] || 'Unbekannte Art'
-				);
-				return `${speciesName}: ${count}`;
-			});
-
-		return `
-			<div class="p-2 text-sm">
-				<strong>${count} Sichtungen</strong><br>
-				${sortedSpecies.join('<br>')}
-			</div>
-		`;
 	}
 
 	private positionInfoElement(

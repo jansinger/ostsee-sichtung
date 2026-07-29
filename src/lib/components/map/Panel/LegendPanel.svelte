@@ -25,7 +25,10 @@
 		// der URL initialisieren und über die Filter-Chips zurücksetzen kann —
 		// Checkboxen hier und Chips dort bleiben so eine einzige Wahrheit.
 		speciesVisibility = $bindable({}),
-		colorVisibility = $bindable({})
+		colorVisibility = $bindable({}),
+		// M3: Seezeichen-Ebene (OpenSeaMap) umschaltbar — der Parent reicht die
+		// Sichtbarkeit an den Map-Controller weiter.
+		onSeamarkToggle = undefined
 	} = $props<{
 		translations: MapTranslations;
 		counts: CountData;
@@ -33,6 +36,7 @@
 		isOpen?: boolean;
 		speciesVisibility?: Record<string, boolean>;
 		colorVisibility?: Record<string, boolean>;
+		onSeamarkToggle?: (visible: boolean) => void;
 	}>();
 
 	// CountManager via typisiertem Svelte Context (Symbol-Key, siehe mapContext.ts)
@@ -77,6 +81,13 @@
 	function handleColorToggle(colorGroup: string, visible: boolean) {
 		colorVisibility[colorGroup] = visible;
 		countManager.setColorVisibility(colorGroup, visible);
+	}
+
+	// M3: Sichtbarkeit der Seezeichen-Ebene — Default an (wie bisher)
+	let seamarkVisible = $state(true);
+	function handleSeamarkToggle(visible: boolean) {
+		seamarkVisible = visible;
+		onSeamarkToggle?.(visible);
 	}
 </script>
 
@@ -205,6 +216,22 @@
 				/>
 			</div>
 		{/each}
+	</div>
+
+	<div class="divider">Kartenebenen</div>
+
+	<!-- M3: Seezeichen-Ebene (OpenSeaMap) umschaltbar — sie dominiert ab
+	     mittleren Zoomstufen und ist für die Kernaufgabe sekundär -->
+	<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
+		<Icon icon="lucide:anchor" class="text-base-content/70 h-4 w-4 shrink-0" aria-hidden="true" />
+		<span class="flex-1 text-sm">Seezeichen &amp; Tonnen (OpenSeaMap)</span>
+		<input
+			type="checkbox"
+			class="seamark-checkbox checkbox checkbox-sm"
+			checked={seamarkVisible}
+			onchange={(e) => handleSeamarkToggle((e.target as HTMLInputElement).checked)}
+			aria-label="Seezeichen-Ebene (OpenSeaMap) anzeigen/ausblenden"
+		/>
 	</div>
 
 	<div class="divider">Cluster</div>
