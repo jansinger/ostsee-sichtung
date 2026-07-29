@@ -34,7 +34,7 @@ This is a dated status, not a standing guarantee — re-check whether clients ha
 | `gps_laenge`                | Longitude decimal                                                                                            | Decimal, -180 – 180                 | No                                 |
 | `fahrwasser`                | Waterway or area                                                                                             | Text                                | No                                 |
 | `seezeichen`                | Sea mark or beach section                                                                                    | Text                                | No                                 |
-| `vonwo`                     | Sighting location                                                                                            | Integer-Range, 0-3                  | No                                 |
+| `vonwo`                     | Sighting location (4 = ferry, 5 = not specified, see note below)                                             | Integer-Range, 0-5                  | No                                 |
 | `vonwo_text`                | Other sighting location (when vonwo = 0)                                                                     | Text                                | No                                 |
 | `entfernung`                | Distance                                                                                                     | Integer-Range, 1-5                  | No                                 |
 | `anzahl_schiffe`            | Number of ships in vicinity                                                                                  | Integer                             | No                                 |
@@ -168,7 +168,8 @@ JSON Object with the following structure:
 		"1": "Segelschiff",
 		"2": "Motorboot",
 		"3": "Land",
-		"4": "Fähre"
+		"4": "Fähre",
+		"5": "Keine Angabe"
 	},
 	"sichtweite": {
 		"1": "Außergewöhnlich klar (mehr als 20km)",
@@ -328,6 +329,33 @@ JSON Array with JSON Objects:
 5. **Wind Direction**: Must include all values: 'N','NW','W','SW','S','SO','O','NO' (note 'SO' for southeast)
 
 6. **Backward Compatibility**: Any changes that break existing mobile app functionality are strictly forbidden.
+
+## Abweichung von der Ursprungs-PDF: `vonwo = 5`
+
+Die Feldtabelle dieses Dokuments nannte für `vonwo` bis zum 2026-07-29 den
+Bereich **0–3**. Das war schon vorher falsch: `4` = „Fähre" existiert seit jeher
+und wird von 281 Bestandszeilen benutzt. Korrigiert auf **0–5**.
+
+Neu ist **`5` = „Keine Angabe"**.
+
+**Warum:** Die Spalte `vonwo` ist `integer default(0) notNull`, und `0` bedeutet
+„Sonstiges". Wurde nichts angegeben, entstand trotzdem eine `0` — der Datensatz
+behauptete also eine Antwort, die nie gegeben wurde.
+
+**Wichtig — der Bestand wurde bewusst NICHT umgeschrieben.** Anders als beim
+Bootsantrieb ist „Sonstiges" hier eine echte, häufig genutzte Kategorie: 713 der
+1.833 Null-Zeilen tragen einen Freitext in `vonwo_text` (Kajak 91×,
+Mehrzweckschiff 37×, SUP 31×, Ruderboot 24×, Seekajak 20× …), 538 einen
+Schiffsnamen. Zum Vergleich: bei allen anderen `vonwo`-Werten ist `vonwo_text`
+in unter 0,5 % der Zeilen gefüllt. Für die verbleibenden Zeilen ohne jedes Indiz
+(709) gibt es keine ableitbare Wahrheit — es existiert keine zweite Spalte, aus
+der hervorginge, wo jemand stand. `5` verhindert deshalb nur, dass **neue**
+Zeilen dieselbe Doppeldeutigkeit erben.
+
+**Auswirkung auf Clients:** analog zu `bootsantrieb = 5` (siehe unten) —
+`antworten.json` liefert einen zusätzlichen Schlüssel, `POST` akzeptiert den
+Wert zusätzlich, bestehende Werte bleiben unverändert. `5` ist im Formular nicht
+auswählbar und entsteht ausschließlich serverseitig.
 
 ## Abweichung von der Ursprungs-PDF: `bootsantrieb = 5`
 

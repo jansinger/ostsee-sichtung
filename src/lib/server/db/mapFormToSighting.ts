@@ -25,6 +25,36 @@ import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
  * Ein bereits vorhandener Wert wird **nicht** überschrieben: Beim Admin-Edit
  * einer Alt-Sichtung darf eine gespeicherte Angabe nicht still verloren gehen.
  */
+/**
+ * Bestimmt den zu speichernden Beobachtungsort.
+ *
+ * Die Spalte `vonwo` ist `integer default(0) notNull`, und `0` bedeutet
+ * "Sonstiges". Ohne Angabe entstand bisher trotzdem eine `0` — der Datensatz
+ * behauptete also eine Antwort, die nie gegeben wurde.
+ *
+ * **Anders als beim Bootsantrieb wurde der Bestand nicht korrigiert.** Bei
+ * `vonwo` ist "Sonstiges" eine echte, häufig genutzte Kategorie: 713 der 1.833
+ * Null-Zeilen tragen einen Freitext (Kajak 91×, Mehrzweckschiff 37×, SUP 31×,
+ * Ruderboot 24× …), 538 einen Schiffsnamen. Für die restlichen Zeilen gibt es
+ * keine ableitbare Wahrheit — wer den Ort nie angegeben hat, hat ihn nirgends
+ * angegeben. Ein UPDATE wäre entweder destruktiv oder unbelegt (Messung
+ * 2026-07-29, Entscheidung des Nutzers).
+ *
+ * Diese Funktion verhindert deshalb nur, dass NEUE Zeilen dieselbe
+ * Doppeldeutigkeit erben.
+ */
+function resolveSightingFrom(formData: SightingFormValues): number {
+	const value = formData.sightingFrom;
+
+	// Bewusst nicht `value ? … : …`: Eine aktive Auswahl "Sonstiges" ist `0`
+	// und damit falsy — sie darf nicht als fehlende Angabe gewertet werden.
+	if (value === undefined || value === null || String(value).trim() === '') {
+		return SightingFromEnum.UNKNOWN;
+	}
+
+	return Number(value);
+}
+
 function resolveBoatDrive(formData: SightingFormValues): number {
 	if (formData.boatDrive !== undefined && formData.boatDrive !== null) {
 		return Number(formData.boatDrive);
@@ -144,7 +174,7 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 
 		// === BEOBACHTUNGSDETAILS ===
 		// Beobachtungsplattform (Land, Boot, etc.)
-		sightingFrom: formData.sightingFrom ? Number(formData.sightingFrom) : 0,
+		sightingFrom: resolveSightingFrom(formData),
 		sightingFromText: formData.sightingFromText, // Freitext-Ergänzung
 		// Entfernung zur Sichtung
 		distance: formData.distance ? Number(formData.distance) : 0,

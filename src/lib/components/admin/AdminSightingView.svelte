@@ -171,10 +171,14 @@
 				getSightingFromLabel(currentSighting.sightingFrom),
 				hasValue(currentSighting.sightingFrom)
 			),
+			// Freitext immer zeigen, wenn vorhanden. Er gehört fachlich zu
+			// "Sonstiges" (0), nicht zu 4 (Fähre) — die frühere Bedingung
+			// versteckte ihn in 742 von 743 Fällen, darunter alle 713
+			// "Sonstiges"-Zeilen mit Angaben wie Kajak, SUP oder Seebrücke.
 			DataRow(
 				'Sichtung von (Details)',
 				currentSighting.sightingFromText,
-				hasValue(currentSighting.sightingFromText) && currentSighting.sightingFrom === 4
+				hasValue(currentSighting.sightingFromText)
 			),
 			DataRow(
 				'Entfernung',

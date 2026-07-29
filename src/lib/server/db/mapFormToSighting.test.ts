@@ -703,6 +703,58 @@ describe('mapFormToSighting', () => {
 		});
 	});
 
+	describe('Beobachtungsort ohne Angabe', () => {
+		/**
+		 * `vonwo` ist `integer default(0) notNull` und `0` bedeutet "Sonstiges"
+		 * — eine echte Kategorie. Ohne Angabe entstand bisher trotzdem eine `0`
+		 * und damit eine Antwort, die nie gegeben wurde.
+		 */
+		it('speichert UNKNOWN, wenn nichts angegeben wurde', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = undefined as unknown as number;
+
+			expect(mapFormToSighting(formData).sightingFrom).toBe(SightingFromEnum.UNKNOWN);
+		});
+
+		it('speichert UNKNOWN auch bei null', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = null as unknown as number;
+
+			expect(mapFormToSighting(formData).sightingFrom).toBe(SightingFromEnum.UNKNOWN);
+		});
+
+		it('speichert UNKNOWN bei leerem String (Select ohne Auswahl)', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = '' as unknown as number;
+
+			expect(mapFormToSighting(formData).sightingFrom).toBe(SightingFromEnum.UNKNOWN);
+		});
+
+		it('erhält eine aktive Auswahl "Sonstiges" (0) — das ist keine fehlende Angabe', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = SightingFromEnum.OTHER;
+
+			expect(mapFormToSighting(formData).sightingFrom).toBe(SightingFromEnum.OTHER);
+		});
+
+		it('reicht alle übrigen Werte unverändert durch, auch als String', () => {
+			for (const from of [
+				SightingFromEnum.SAILBOAT,
+				SightingFromEnum.MOTORBOAT,
+				SightingFromEnum.LAND,
+				SightingFromEnum.FERRY
+			]) {
+				const numeric = createMinimalFormData();
+				numeric.sightingFrom = from;
+				expect(mapFormToSighting(numeric).sightingFrom).toBe(from);
+
+				const asString = createMinimalFormData();
+				asString.sightingFrom = String(from) as unknown as number;
+				expect(mapFormToSighting(asString).sightingFrom).toBe(from);
+			}
+		});
+	});
+
 	describe('Integration mit checkBalticSeaFile', () => {
 		it('sollte verschiedene Baltic Sea Validierungsergebnisse handhaben', () => {
 			const testCases = [

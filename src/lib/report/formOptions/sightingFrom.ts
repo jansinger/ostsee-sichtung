@@ -1,13 +1,28 @@
 /**
  * Enum für die Art des Beobachtungsorts
  * Die numerischen Werte werden in der Datenbank gespeichert.
+ *
+ * **Achtung bei `OTHER = 0`:** Die Spalte `vonwo` ist
+ * `integer default(0) notNull` — `0` ist also gleichzeitig der Default und die
+ * Bedeutung "Sonstiges". Anders als beim Bootsantrieb ist "Sonstiges" hier eine
+ * echte, häufig genutzte Kategorie (Kajak, SUP, Mehrzweckschiff, Seebrücke …);
+ * 713 der 1.833 Bestandszeilen belegen das über einen Freitext in `vonwo_text`.
+ * Deshalb wurde der Bestand NICHT umgeschrieben — nur der Schreibpfad gehärtet.
  */
 export enum SightingFromEnum {
 	OTHER = 0,
 	SAILBOAT = 1,
 	MOTORBOAT = 2,
 	LAND = 3,
-	FERRY = 4
+	FERRY = 4,
+	/**
+	 * Es wurde kein Beobachtungsort angegeben.
+	 *
+	 * Wird ausschließlich serverseitig beim Speichern gesetzt
+	 * (`mapFormToSighting`) und ist bewusst **nicht** auswählbar — "keine
+	 * Angabe" ist keine Wahl, die ein Melder trifft.
+	 */
+	UNKNOWN = 5
 }
 
 /**
@@ -18,18 +33,31 @@ export const sightingFromLabels: Record<SightingFromEnum, string> = {
 	[SightingFromEnum.SAILBOAT]: 'Segelschiff',
 	[SightingFromEnum.MOTORBOAT]: 'Motorboot',
 	[SightingFromEnum.LAND]: 'Land',
-	[SightingFromEnum.FERRY]: 'Fähre'
+	[SightingFromEnum.FERRY]: 'Fähre',
+	[SightingFromEnum.UNKNOWN]: 'Keine Angabe'
 };
 
 export type SightingFrom = SightingFromEnum;
 
 /**
+ * Beobachtungsorte, die im Formular auswählbar sind.
+ * `UNKNOWN` ist bewusst ausgenommen (siehe Enum-Kommentar).
+ */
+const SELECTABLE_SIGHTING_FROM: readonly SightingFromEnum[] = [
+	SightingFromEnum.OTHER,
+	SightingFromEnum.SAILBOAT,
+	SightingFromEnum.MOTORBOAT,
+	SightingFromEnum.LAND,
+	SightingFromEnum.FERRY
+];
+
+/**
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-const sightingFromOptions: Array<{ value: number; label: string }> = Object.entries(
-	sightingFromLabels
-).map(([value, label]) => ({ value: Number(value), label }));
+const sightingFromOptions: Array<{ value: number; label: string }> = SELECTABLE_SIGHTING_FROM.map(
+	(value) => ({ value, label: sightingFromLabels[value] })
+);
 export const getSightingFromOptions = (): Array<{ value: number; label: string }> =>
 	sightingFromOptions;
 
