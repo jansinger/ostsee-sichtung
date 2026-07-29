@@ -1,0 +1,128 @@
+/**
+ * tokens.css — Primitive und semantische Design-Tokens (Ostsee-Tiere)
+ *
+ * Ebene 1 dieses Systems. Hier stehen die Rohwerte und die semantischen
+ * Tokens, die DaisyUI nicht kennt. Das DaisyUI-Theme selbst wird in app.css
+ * daraus gemappt — app.css bleibt die Datei, in der @plugin 'daisyui/theme'
+ * steht (siehe .claude/rules/daisyui.md).
+ *
+ * Regel: Werte NUR hier ändern. Komponenten greifen ausschließlich auf
+ * DaisyUI-Utilities oder auf die var(--…) dieser Datei zu.
+ *
+ * Kontraste sind gemessen (sRGB, WCAG 2.1). Wer einen Wert ändert, muss
+ * e2e/design-tokens.spec.ts grün halten — der Test rechnet im Browser nach.
+ */
+
+:root {
+	/* ── Ebene 1: Marken-Primitive ──────────────────────────────────────── */
+	/* Meeresmuseum-Blau. --brand-sea-600 ist die kanonische Markenfarbe. */
+	--brand-sea-900: oklch(0.25 0.089 235.3); /* #002545 */
+	--brand-sea-600: oklch(0.35 0.089 235.3); /* #004062 — WCAG AA mit weiß  */
+	--brand-sea-400: oklch(0.475 0.04 215.2); /* #42626a */
+	--brand-sea-300: oklch(0.65 0.04 215.2); /*  #74969f */
+	--brand-sea-200: oklch(0.8 0.047 215); /*    #9cc6d1 */
+
+	--brand-slate-700: oklch(0.37 0.016 251.8); /* #3a4048 */
+	--brand-slate-950: oklch(0.15 0.022 251.8); /* #050c14 */
+	--brand-mist-100: oklch(0.9403 0.0104 247.9); /* #e6ecf2 */
+	--brand-mist-200: oklch(0.88 0.012 247.9); /*   #d1d8df */
+	--brand-mist-300: oklch(0.82 0.015 247.9); /*   #bdc5ce */
+
+	/* Statusfarben in zwei Stufen.
+	   *-surface = Flächenfarbe (Button, Badge, Alert-Tint)
+	   *-strong  = Vordergrundfarbe (Text, Icon, Zahl) — L ≈ 0.47, damit sie
+	               auf base-100/200 ≥ 4,5:1 erreicht. Hue und Chroma sind
+	               gegenüber -surface unverändert. */
+	--status-info-surface: oklch(0.55 0.12 230); /*    #007daa */
+	--status-info-strong: oklch(0.465 0.12 230); /*    #00648f  5,51 / 4,58 */
+	--status-success-surface: oklch(0.55 0.16 145); /* #1c882d */
+	--status-success-strong: oklch(0.46 0.16 145); /*  #006d09  5,53 / 4,59 */
+	--status-warning-surface: oklch(0.65 0.16 85); /*  #bb8500 */
+	--status-warning-strong: oklch(0.48 0.16 85); /*   #865100  5,52 / 4,58 */
+	--status-error-surface: oklch(0.48 0.18 25); /*    #ac1922  — ist bereits
+	     beides: Fläche (weiß darauf 7,19) und Vordergrund (6,04 / 5,01). */
+
+	/* ── Ebene 2: semantische Tokens ────────────────────────────────────── */
+
+	/* Vordergrund-Statusfarben. In Komponenten als text-info-strong,
+	   text-warning-strong … verfügbar (siehe @theme-Block in app.css).
+	   NIE die -surface-Variante als Textfarbe verwenden. */
+	--color-info-strong: var(--status-info-strong);
+	--color-success-strong: var(--status-success-strong);
+	--color-warning-strong: var(--status-warning-strong);
+	--color-secondary-strong: var(--brand-sea-400);
+	--color-accent-strong: oklch(0.475 0.047 215); /* #3c636d  5,51 / 4,57 */
+
+	/* Typografie — sechs Rollen. Keine freien text-*-Utilities mehr für
+	   Fließtext und Überschriften.
+	   support ist bewusst 13px und nicht 12px: unter Sonnenlicht an Deck ist
+	   12px bei /60 nicht mehr lesbar. */
+	--text-display: 2rem; /*     32px — Seitentitel */
+	--text-display-lh: 1.1;
+	--text-title: 1.5rem; /*     24px — Schritt-/Panel-Titel */
+	--text-title-lh: 1.2;
+	--text-section: 1.125rem; /* 18px — Abschnittstitel */
+	--text-section-lh: 1.3;
+	--text-body: 1rem; /*        16px — Fließtext, Formularfelder */
+	--text-body-lh: 1.55;
+	--text-label: 0.875rem; /*   14px — Feld-Label */
+	--text-label-lh: 1.4;
+	--text-support: 0.8125rem; /* 13px — Hilfetext, Metadaten */
+	--text-support-lh: 1.5;
+
+	/* Deckkraft-Stufen von base-content. /60 ist die Untergrenze für Text
+	   und gilt nur auf base-100 und base-200 (auf base-300: 4,27 → zu wenig).
+	   /50 (3,39) und /40 (2,55) sind ausschließlich dekorativ. */
+	--fg-strong: 1;
+	--fg-muted: 0.7; /*   6,96 / 6,35 / 5,72 */
+	--fg-subtle: 0.6; /*  4,92 / 4,61 / 4,27 ← nur base-100 + base-200 */
+
+	/* Abstände — 4-px-Raster, fünf Stufen */
+	--space-1: 0.25rem; /*  4px — Icon zu Text */
+	--space-2: 0.5rem; /*   8px — Label zu Feld */
+	--space-3: 1rem; /*    16px — Feld zu Feld, Card-Innenrand mobil */
+	--space-4: 1.5rem; /*  24px — Card-Innenrand Desktop, Gruppe zu Gruppe */
+	--space-5: 2rem; /*    32px — Abschnitt zu Abschnitt */
+
+	/* Elevation — drei Stufen. Ersetzt shadow-sm/md/lg/xl/2xl,
+	   den Card-Hover aus app.css, den SectionCard-Hover und .panel-shadow. */
+	--elevation-flat: none;
+	--elevation-raised: 0 1px 3px color-mix(in oklab, var(--brand-slate-700) 14%, transparent);
+	--elevation-floating: 0 8px 24px color-mix(in oklab, var(--brand-slate-700) 20%, transparent);
+
+	/* Z-Index — fünf benannte Ebenen. Vorher: 10/30/40/50/[100], wobei
+	   Navbar und Panel-Toggle beide auf 50 lagen. */
+	--layer-base: 0;
+	--layer-raised: 10; /*   Feld-Icons, Karten-FAB */
+	--layer-panel: 20; /*    Karten-Panels, Bottom-Sheets */
+	--layer-nav: 30; /*      Navbar, Panel-Toggle */
+	--layer-overlay: 40; /*  Dropdown, Modal, Toast */
+	--layer-skip: 50; /*     Skip-Link — muss immer oben liegen */
+
+	/* Motion. Der prefers-reduced-motion-Block in app.css entschärft alles
+	   global; eigene Guards sind nicht nötig. */
+	--motion-instant: 120ms; /* Hover, Fokus */
+	--motion-quick: 200ms; /*   Aufklappen, Toast */
+	--motion-panel: 300ms; /*   Panel, Bottom-Sheet */
+	--motion-ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+	/* Touch-Targets. 44px ist die WCAG-2.5.5-Größe für ruhige Hände.
+	   data-density="field" schaltet auf 56px — für die Bedienung an Deck
+	   mit nassen Fingern oder Handschuhen. */
+	--target-min: 2.75rem; /* 44px */
+	--target-gap: var(--space-3);
+
+	/* Layout-Verträge. Die iframe-Breite ist ein Vertrag mit meeresmuseum.de
+	   und darf nicht beiläufig geändert werden. */
+	--layout-form-max: 42rem; /*     672px — standalone */
+	--layout-embedded-max: 42rem; /* 672px — eingebettet (vorher 600px,
+	     ohne erkennbaren Grund abweichend) */
+}
+
+/* Feldmodus: größere Ziele und mehr Abstand, ohne dass eine Komponente
+   davon weiß. Umschaltbar über <html data-density="field">. */
+[data-density='field'] {
+	--target-min: 3.5rem; /* 56px */
+	--target-gap: var(--space-4);
+	--text-support: 0.875rem; /* 14px */
+}

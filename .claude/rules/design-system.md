@@ -41,6 +41,44 @@ Im Theme sind fast alle `*-content`-Farben reines Weiß (`oklch(1 0 0)`). Auf ei
 
 ---
 
+## Statusfarben haben zwei Rollen
+
+Die `*-content`-Regel oben deckt Text **auf** einer Farbe ab. Sie deckt nicht ab, dass die Farbe **selbst** als Vordergrund verwendet wird — und das ist der häufigere Fehler.
+
+Gemessen auf `base-100` (Rechnung wie in `daisyui.md`, im Browser nach sRGB):
+
+| Utility          | Kontrast   | WCAG 1.4.3 |
+| ---------------- | ---------- | ---------- |
+| `text-primary`   | 9,22:1     | ✅         |
+| `text-error`     | 6,04:1     | ✅         |
+| `text-info`      | **3,92:1** | ❌         |
+| `text-success`   | **3,81:1** | ❌         |
+| `text-warning`   | **2,74:1** | ❌         |
+| `text-secondary` | **2,68:1** | ❌         |
+| `text-accent`    | **1,55:1** | ❌         |
+
+`text-warning` verfehlt mit 2,74:1 sogar die 3:1 aus WCAG 1.4.11 für grafische Objekte — es ist damit auch als **Icon-Farbe** nicht zulässig.
+
+**Regel:** Die Basis-Statusfarbe ist ausschließlich Flächenfarbe. Für Text, Icons und Zahlen gibt es `text-*-strong` (definiert in `src/css/tokens.css`, als Utility nutzbar über den `@theme`-Block in `app.css`).
+
+```svelte
+<!-- ❌ FALSCH -->
+<h4 class="text-warning">Totfund</h4>
+<Icon icon="lucide:triangle-alert" class="text-warning" />
+<div class="stat-value text-secondary">1.244</div>
+
+<!-- ✅ RICHTIG -->
+<h4 class="text-warning-strong">Totfund</h4>
+<Icon icon="lucide:triangle-alert" class="text-warning-strong" />
+<div class="stat-value text-secondary-strong">1.244</div>
+```
+
+**Gegenprobe:** Steht die Farbe hinter `text-`, `fill-` oder `stroke-`, muss `-strong` dranhängen. Steht sie hinter `bg-`, `btn-`, `badge-` oder `alert-`, darf sie es nicht.
+
+Der Bestand verletzt diese Regel an über 60 Stellen; sie werden nicht einzeln hier gelistet, sondern von `e2e/design-tokens.spec.ts` („verbotene Kombinationen im DOM") ausgegeben. Die Gruppe ist bis zum Aufräum-PR bewusst `fixme` — ihre Ausgabe ist die Arbeitsliste.
+
+---
+
 ## Bekannte Grenze: `text-error` auf `base-300`
 
 `--color-error` (`oklch(0.48 0.18 25)`, seit #599) ist als Textfarbe **nicht auf jeder
@@ -76,6 +114,68 @@ Kombination wiederum würde genau den riskanten Fall verfehlen, weil `hover:`-Zu
 deshalb die Regel hier, nicht `e2e/form-a11y.spec.ts`. Sobald eine echte Aufrufstelle
 entsteht, gehört sie mit `measureContrast` (`e2e/helpers/contrast.ts`) gemessen.
 
+**Dieselbe Grenze gilt für alle `-strong`-Varianten** aus dem Abschnitt oben: auf
+`base-300` liegen sie bei ~3,77:1. `text-*-strong` gehört deshalb genauso auf
+`base-100` oder `base-200` wie `text-error`. `e2e/design-tokens.spec.ts` prüft aus
+demselben Grund nur diese beiden Flächen — `base-300` ist hier ein Verbot, kein
+Testfall.
+
+---
+
+## Deckkraft-Untergrenze für Text ist /60
+
+`base-content` mit Deckkraft, gemessen:
+
+| Stufe | base-100    | base-200    | base-300    |
+| ----- | ----------- | ----------- | ----------- |
+| /80   | 9,87 ✅     | 8,69 ✅     | 7,56 ✅     |
+| /70   | 6,96 ✅     | 6,35 ✅     | 5,72 ✅     |
+| /60   | 4,92 ✅     | 4,61 ✅     | **4,27 ❌** |
+| /50   | **3,55 ❌** | **3,39 ❌** | **3,22 ❌** |
+| /40   | **2,63 ❌** | **2,55 ❌** | **2,46 ❌** |
+
+**Regel:** `/60` ist die Untergrenze für Text, und nur auf `base-100` und `base-200`. `/40` und `/50` (bzw. `opacity-40`/`opacity-50`) sind ausschließlich für dekorative Flächen — nie für Zeichen, die gelesen werden müssen.
+
+Sekundärtext gehört auf `/70`, nicht auf `/60`: Hilfetexte werden im Feld gelesen, bei Sonnenlicht an Deck, und dort ist der reale Kontrast deutlich niedriger als der gemessene.
+
+---
+
+## Typografie hat sechs Rollen
+
+Größen werden nicht mehr pro Komponente gewählt. Die Rolle bestimmt die Größe:
+
+| Rolle     | Größe | Verwendung                   |
+| --------- | ----- | ---------------------------- |
+| `display` | 32px  | Seitentitel (eine pro Seite) |
+| `title`   | 24px  | Schritt-Titel, Panel-Titel   |
+| `section` | 18px  | Abschnittstitel in Karten    |
+| `body`    | 16px  | Fließtext, Formularfelder    |
+| `label`   | 14px  | Feld-Label, Buttons          |
+| `support` | 13px  | Hilfetext, Metadaten, Badges |
+
+`text-support` ist bewusst 13px und nicht 12px (`text-xs`): unter Sonnenlicht an Deck ist 12px bei `/60` nicht mehr lesbar.
+
+Dieselbe semantische Ebene darf nicht in zwei Größen erscheinen — heute ist der Abschnittstitel je nach Komponente `text-base`, `text-lg` oder `sm:text-lg`.
+
+---
+
+## Elevation, Z-Index, Motion nur aus Tokens
+
+- **Schatten:** `shadow-raised` (Karten) oder `shadow-floating` (Panels, Modals, Toasts). Kein `shadow-sm`/`-md`/`-lg`/`-xl`/`-2xl`, keine handgeschriebenen `box-shadow` in Komponenten.
+- **Z-Index:** `--layer-raised` (10), `--layer-panel` (20), `--layer-nav` (30), `--layer-overlay` (40), `--layer-skip` (50). Keine freien `z-*`-Utilities. Vorher lagen Navbar und Panel-Toggle beide auf `z-50` — welches Element oben lag, entschied damit die DOM-Position.
+- **Dauer:** `--motion-instant` (120ms, Hover/Fokus), `--motion-quick` (200ms, Aufklappen/Toast), `--motion-panel` (300ms, Panel/Bottom-Sheet).
+
+---
+
+## Breakpoint-Vertrag
+
+Zwei Grenzen, mit Zuständigkeit:
+
+- **`md` (768px)** ist die Grenze zwischen kompakt und weit. Alles Inhaltliche schaltet hier: Formular-Layout, Grid-Spalten, Panels (Bottom-Sheet ↔ Seitenpanel), Innenabstände.
+- **`lg` (1024px)** schaltet ausschließlich die Navigation (Burger ↔ horizontales Menü).
+
+`sm` ist **keine** Layout-Grenze mehr. Vorher schaltete das Formular bei `sm`, die Panels bei `md` und die Navbar bei `lg` — auf einem 800px-Tablet war das Formular damit „Desktop", die Navigation aber „Mobil".
+
 ---
 
 ## Alerts
@@ -98,7 +198,7 @@ Der Alert-Text steht in `base-content`, nicht in der Statusfarbe (WCAG 1.4.3, Me
 - **Genau eine Primäraktion pro Bereich** (`btn btn-primary`). Im Formular ist das „Weiter"/„Absenden".
 - Sekundäre Navigation („Zurück") und Nebenaktionen: `btn btn-outline`. Keine Vollton-Sekundärbuttons neben der Primäraktion — sie konkurrieren optisch mit ihr und wirken je nach Fläche wie deaktiviert.
 - Zurückhaltende Aktionen (Toggles in Panels, Aufklapper): `btn btn-ghost`.
-- Destruktive Aktionen (Löschen, Zurücksetzen) einheitlich in **einer** Variante über das ganze Formular — im Sichtungsformular `btn btn-outline btn-error btn-sm min-h-11` (das `min-h-11` hält das 44-px-Touch-Target, das `btn-sm` sonst unterschreitet). Nicht an einer Stelle `btn-warning`, an anderer `btn-ghost text-error`. Destruktives immer mit Bestätigung.
+- Destruktive Aktionen (Löschen, Zurücksetzen) einheitlich in **einer** Variante über das ganze Formular — im Sichtungsformular `btn btn-outline btn-error btn-sm`. Nicht an einer Stelle `btn-warning`, an anderer `btn-ghost text-error`. Destruktives immer mit Bestätigung. (Das früher nötige `min-h-11` entfällt: die 44px kommen seit der Touch-Target-Regel aus `app.css`, siehe „Feldmodus und Touch-Targets".)
 - Gleiche Aktion = gleiche Variante = gleiches Icon, egal in welcher Komponente sie auftaucht.
 - Ein Button, der nichts bewirkt, gehört entfernt — nicht dekorativ stehen gelassen.
 
@@ -117,10 +217,23 @@ Alle Felder laufen über `FormField` → `FieldRenderer` (`src/lib/report/compon
 
 ---
 
+## Feldmodus und Touch-Targets
+
+Das Formular wird an Deck und am Strand ausgefüllt — nass, in der Sonne, mit einer Hand, teils mit Handschuhen. 44px ist die WCAG-Größe für ruhige Hände.
+
+- Touch-Targets kommen aus `--target-min` (44px, im Feldmodus 56px). Der `Touch-Targets`-Block in `app.css` setzt sie global durch — `min-h-11` an der Aufrufstelle ist damit nicht mehr nötig, und `btn-xs` unterschreitet die Grenze nicht mehr still.
+- **Zwei Mechanismen, nicht einer:** Buttons (`.btn`, `summary.btn`, `.btn-circle`) bekommen `min-height`/`min-width`. Für `.checkbox`, `.radio` und `.toggle` gilt stattdessen `--size: var(--target-min)`. Grund: DaisyUI setzt bei diesen dreien `width` **und** `height` fest — ein `min-height` überschreibt nur die Höhe und verzerrt sie (gemessen: Checkbox 24×44, Radio 24×44 als Ellipse, Toggle 40×44 mit versetztem Knopf). `--size` skaliert proportional auf 44×44 bzw. 75×44. Diese drei also nie über `min-height` vergrößern.
+- Ausnahmen tragen `.target-exempt` und **begründen das im Code-Kommentar**. Zulässig nur für Ziele, die nachweislich nicht mit dem Finger bedient werden.
+- Der Mindestabstand zwischen zwei Zielen ist `--target-gap`.
+- Der Feldmodus wird über `<html data-density="field">` geschaltet und hebt `--target-min` auf 56px sowie `--text-support` auf 14px. Keine Komponente kennt den Modus — sie liest nur die Tokens.
+- Die Primäraktion muss ohne Scrollen erreichbar sein: unterhalb `md` trägt die Schritt-Navigation `.form-step-nav` und wird zum ortsfesten Balken am unteren Rand (inkl. `env(safe-area-inset-bottom)`).
+
+---
+
 ## A11y-Mindestanforderungen (WCAG 2.1 AA)
 
 - Kontrast: **≥ 4,5:1** für Text (WCAG 1.4.3), **≥ 3:1** für grafische Objekte und UI-Begrenzungen (1.4.11).
-- Touch-Targets: Projekt-Mindestmaß **44×44 px** für alles, was im Feld mobil bedient wird (WCAG 2.5.5 ist formal AAA — hier gilt es trotzdem, weil das Formular an Deck ausgefüllt wird). DaisyUI-Default-Größen nicht per `btn-xs`/`input-xs` darunter drücken.
+- Touch-Targets: Projekt-Mindestmaß **44×44 px** für alles, was im Feld mobil bedient wird (WCAG 2.5.5 ist formal AAA — hier gilt es trotzdem, weil das Formular an Deck ausgefüllt wird). Durchgesetzt zentral in `app.css`, siehe „Feldmodus und Touch-Targets"; nicht per `.target-exempt` ohne Begründung aushebeln.
 - Fokus muss sichtbar bleiben: `:focus-visible` und die Input-Fokus-Regel in `app.css` nicht durch `outline-none` überschreiben.
 - Labels statt Platzhaltertexte. Ein `placeholder` ist Beispiel, nie Ersatz für das Label.
 - Dekorative Icons bekommen `aria-hidden="true"`; informationstragende Icons brauchen ein `aria-label` am fokussierbaren Element.
@@ -142,7 +255,23 @@ Vor der Nutzung einer Utility prüfen, ob sie im Setup überhaupt existiert.
 
 - Es ist **kein** Animations-Plugin installiert (weder `tailwindcss-animate` noch `tw-animate-css`). Klassen wie `animate-in`, `fade-in`, `slide-in-from-top-1` sind wirkungslos — sie sehen im Code nach Design aus und tun nichts.
 - Für Ein-/Ausblendungen `transition:slide` / `transition:fade` aus `svelte/transition` verwenden (so gelöst in `sections/SightingDetails.svelte`).
-- Gleiches gilt für `dark:`-Varianten (kein Dark-Theme, siehe `daisyui.md`) und für Keyframes, die nur in `app.css` definiert, aber an keine Klasse gebunden sind.
+- Gleiches gilt für `dark:`-Varianten (kein Dark-Theme, siehe `daisyui.md`).
+- Umgekehrt gilt: **eine Keyframe ist nicht tot, nur weil keine Klasse sie nennt.** `fadeIn`, `bounceIn`, `loadingPattern` und `spin` in `app.css` hängen an inline-`style="animation: …"` (`map/LoadingOverlay.svelte`, `MaintenanceBanner.svelte`) bzw. an einem scoped `<style>`-Block (`media/MediaThumbnail.svelte`). Vor dem Löschen einer Keyframe deshalb nach dem **Namen** greppen, nicht nach einer Klasse.
+- Neue eigene Utility (`text-*-strong`, `shadow-raised`, `text-support`, …) heißt: Eintrag im `@theme`-Block von `app.css`. Ein Token, das nur in `src/css/tokens.css` steht, ist eine CSS-Variable — **keine** Utility-Klasse. Fehlt der `@theme`-Eintrag, ist `class="text-warning-strong"` genau so tot wie `animate-in`.
+
+---
+
+## Randbereiche: wo Hex-Werte erlaubt sind
+
+Drei Bereiche dürfen Hex-Werte enthalten — aber jeweils nur an **einer** Stelle:
+
+| Bereich           | Warum Hex nötig ist                                | Wo die Werte stehen dürfen                |
+| ----------------- | -------------------------------------------------- | ----------------------------------------- |
+| OpenLayers-Canvas | Canvas kann keine CSS-Variablen lesen               | `src/lib/map/mapTokens.ts`                |
+| Marker-Palette    | Datenkodierung, farbfehlsichtigkeits-sicher (Wong) | `src/lib/map/styleUtils.ts` (unverändert) |
+| E-Mail-Templates  | Clients kennen `oklch()`/`color-mix()` nicht        | `src/lib/server/templates/emailTokens.ts` |
+
+Überall sonst gilt weiterhin: keine Hex-Werte, keine Tailwind-Paletten-Farben (`daisyui.md`). Abgesichert durch den DOM-Scan in `e2e/design-tokens.spec.ts`.
 
 ---
 
