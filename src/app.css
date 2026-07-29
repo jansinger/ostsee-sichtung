@@ -269,14 +269,15 @@ summary.btn {
    Die Handoff-Vorlage wollte fadeIn, bounceIn, loadingPattern und spin
    streichen („an keine Klasse gebunden"). Das stimmt wörtlich — sie hängen
    aber an inline-styles bzw. an einem scoped <style>-Block und sind damit
-   sehr wohl in Gebrauch:
-     fadeIn/bounceIn  → map/LoadingOverlay.svelte:37,45 (style="animation: …")
+   sehr wohl in Gebrauch. Belegt per Grep über src/:
+     fadeIn/bounceIn  → map/LoadingOverlay.svelte:37,45 — inzwischen an
+                        .animate-fade-in / .animate-bounce-in gebunden (unten)
      loadingPattern   → media/MediaThumbnail.svelte:243 (scoped <style>)
      spin             → MaintenanceBanner.svelte:11     (style="animation: …")
-   Sie bleiben deshalb stehen. `spin` heißt zwar zufällig wie Tailwinds
-   eigene Keyframe (die nur emittiert wird, solange irgendwo `animate-spin`
-   steht) — auf diesen Zufall soll sich das Zahnrad im Banner nicht
-   verlassen. */
+   Alle vier bleiben deshalb stehen. `spin` heißt zwar zufällig wie Tailwinds
+   eigene Keyframe — die wird aber nur emittiert, solange irgendwo
+   `animate-spin` im Build steht; auf diesen Zufall soll sich das Zahnrad im
+   Banner nicht verlassen. */
 @keyframes fadeIn {
 	from {
 		opacity: 0;
@@ -338,6 +339,20 @@ summary.btn {
 /* Ersetzt den Inline-style in Toast.svelte. */
 .animate-slide-in {
 	animation: slideIn var(--motion-quick) var(--motion-ease);
+}
+
+/* Ersetzen die Inline-styles in map/LoadingOverlay.svelte. Dauer aus den
+   Motion-Tokens statt als freier Wert: fadeIn stand auf 0.3s, was exakt
+   --motion-panel ist; bounceIn stand auf 0.4s, wofür es keine Stufe gibt —
+   normalisiert auf dieselbe Stufe. Beide gehören zur Overlay-Ebene, dort ist
+   eine gemeinsame Dauer ohnehin richtig (design-system.md: „Elevation,
+   Z-Index, Motion nur aus Tokens"). */
+.animate-fade-in {
+	animation: fadeIn var(--motion-panel) var(--motion-ease);
+}
+
+.animate-bounce-in {
+	animation: bounceIn var(--motion-panel) var(--motion-ease);
 }
 
 /* ===== Global Scrollbar Styling ===== */

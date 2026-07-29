@@ -33,16 +33,14 @@
 	{#if isVisible}
 		<!-- Backdrop (rein visuell) -->
 		<div
-			class="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-all duration-300"
-			style="animation: fadeIn 0.3s ease-out"
+			class="animate-fade-in fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-all duration-300"
 		></div>
 
 		<!-- Loading Content -->
 		<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
 			<div
 				data-testid="map-loading-content"
-				class="bg-base-100 mx-auto w-full max-w-sm scale-100 transform rounded-2xl p-8 shadow-2xl transition-all duration-300"
-				style="animation: bounceIn 0.4s ease-out"
+				class="animate-bounce-in bg-base-100 mx-auto w-full max-w-sm scale-100 transform rounded-2xl p-8 shadow-2xl transition-all duration-300"
 			>
 				<!-- Header -->
 				<div class="mb-6 text-center">
