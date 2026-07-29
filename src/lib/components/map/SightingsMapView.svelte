@@ -4,7 +4,6 @@
 	import { getDaysInYear } from '$lib/map/dateUtils';
 	import type { MapTranslations } from '$lib/map/mapUtils';
 	import { SichtungenMap } from '$lib/map/optimizedMapController';
-	import { MapPanelManager } from '$lib/map/panelManager';
 	import { MapTimeSliderManager } from '$lib/map/timeSliderManager';
 	import { speciesLabels } from '$lib/report/formOptions/species';
 	import {
@@ -64,7 +63,6 @@
 	// $state: Die Instanz entsteht erst nach dem async Jahres-Fetch — der
 	// Callback-Registrierungs-$effect unten muss auf die Zuweisung reagieren.
 	let mapInstance = $state<SichtungenMap | null>(null);
-	let panelManager: MapPanelManager | null = null;
 	let timeSliderManager: MapTimeSliderManager | null = null;
 
 	// CountManager wird auf Top-Level erstellt und via Context bereitgestellt,
@@ -238,7 +236,6 @@
 			defaultYear = initialYear;
 
 			// Initialisiere Manager
-			panelManager = new MapPanelManager();
 			timeSliderManager = new MapTimeSliderManager();
 
 			// Initialisiere Karte mit Loading-Callback (muss vor initialem setYear gesetzt sein)
@@ -281,7 +278,6 @@
 			});
 
 			// Initialisiere andere Manager
-			panelManager.initializePanels();
 			timeSliderManager.initialize(mapInstance);
 
 			// Tastatur-Navigation Setup
@@ -335,7 +331,6 @@
 		}
 
 		// Reset Manager
-		panelManager = null;
 		timeSliderManager = null;
 		mapInstance = null;
 

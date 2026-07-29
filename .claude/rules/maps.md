@@ -34,7 +34,6 @@ src/lib/
 │   ├── timeSliderManager.ts          # Zeitfilterung
 │   ├── mapUtils.ts                   # GeoJSON-Konvertierung & Typen
 │   ├── mapContext.ts                 # Svelte Context für Map-Instanz
-│   ├── panelManager.ts               # Panel-Zustand (Filter/Legende)
 │   ├── dateUtils.ts                  # Datums-Hilfen für Zeitfilter
 │   ├── mapStyles.css                 # Karten-CSS
 │   └── controls/                     # Custom OL-Controls (LocationControl, ZoomAllControl)
@@ -44,6 +43,7 @@ src/lib/
     ├── LazyMapWrapper.svelte         # Lazy Loading Wrapper
     ├── LoadingOverlay.svelte         # Lade-Overlay
     └── Panel/
+        ├── MapPanel.svelte           # Gemeinsamer Panel-Rahmen (selbst-verwaltend)
         ├── FilterPanel.svelte        # Filter-Panel
         └── LegendPanel.svelte        # Legenden-Panel
 ```
