@@ -1,4 +1,6 @@
+import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
+import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import type { SightingFormData } from '$lib/report/types';
 import type { SightingFormValues } from '$lib/types/Form';
 import { TEST_TIME_ZONES, withTimeZone } from '$lib/server/datetime/withTimeZone.testutil';
@@ -627,6 +629,77 @@ describe('mapFormToSighting', () => {
 
 			expect(result.behaviorText).toBe('Äöü ß & < > " \' 🐋');
 			expect(result.otherObservations).toBe('Line 1\\nLine 2\\tTabbed');
+		});
+	});
+
+	describe('Bootsantrieb bei Land-Sichtungen', () => {
+		/**
+		 * Die Spalte `bootsantrieb` ist `integer default(0) notNull` und `0`
+		 * bedeutet "Sonstiger Bootsantrieb". Ohne expliziten Wert trug jede
+		 * Land-Sichtung damit die aktive Behauptung, es habe ein Boot mit
+		 * ungewöhnlichem Antrieb gegeben. `NONE` macht "kein Boot" eindeutig.
+		 */
+		it('speichert NONE statt OTHER, wenn von Land beobachtet wurde', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = SightingFromEnum.LAND;
+			formData.boatDrive = undefined;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.boatDrive).toBe(BoatDriveEnum.NONE);
+			expect(result.boatDrive).not.toBe(BoatDriveEnum.OTHER);
+		});
+
+		it('speichert NONE auch, wenn sightingFrom als String ankommt (HTML-Select)', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = String(SightingFromEnum.LAND) as unknown as number;
+			formData.boatDrive = undefined;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.boatDrive).toBe(BoatDriveEnum.NONE);
+		});
+
+		it('überschreibt einen vorhandenen Antrieb bei Land NICHT', () => {
+			// Admin-Edit einer Alt-Sichtung: der gespeicherte Wert darf nicht
+			// still verloren gehen (76 solcher Zeilen im Bestand).
+			const formData = createMinimalFormData();
+			formData.sightingFrom = SightingFromEnum.LAND;
+			formData.boatDrive = BoatDriveEnum.ANCHORED;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.boatDrive).toBe(BoatDriveEnum.ANCHORED);
+		});
+
+		it('lässt Boot-Sichtungen unverändert bei OTHER, wenn nichts gewählt wurde', () => {
+			// Bei Segelschiff/Motorboot ist der Antrieb Pflicht; fehlt er
+			// trotzdem, bleibt es beim bisherigen Verhalten (0 = Sonstiger).
+			const formData = createMinimalFormData();
+			formData.sightingFrom = SightingFromEnum.SAILBOAT;
+			formData.boatDrive = undefined;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.boatDrive).toBe(BoatDriveEnum.OTHER);
+		});
+
+		it('lässt Fähre und Sonstiges unverändert (dort ist ein Boot im Spiel)', () => {
+			for (const from of [SightingFromEnum.FERRY, SightingFromEnum.OTHER]) {
+				const formData = createMinimalFormData();
+				formData.sightingFrom = from;
+				formData.boatDrive = undefined;
+
+				expect(mapFormToSighting(formData).boatDrive).toBe(BoatDriveEnum.OTHER);
+			}
+		});
+
+		it('erhält eine explizite Auswahl "Sonstiger Antrieb" auf einem Boot', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = SightingFromEnum.MOTORBOAT;
+			formData.boatDrive = BoatDriveEnum.OTHER;
+
+			expect(mapFormToSighting(formData).boatDrive).toBe(BoatDriveEnum.OTHER);
 		});
 	});
 

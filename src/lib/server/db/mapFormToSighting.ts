@@ -1,10 +1,42 @@
 import { MEDIA_CONSENT_VERSION } from '$lib/form/consent/mediaConsentVersion';
+import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
+import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting } from '$lib/types/sighting';
 import { sql } from 'drizzle-orm';
 import { berlinWallClockToUtc } from '$lib/server/datetime/berlinWallClockToUtc';
 import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
+
+/**
+ * Bestimmt den zu speichernden Bootsantrieb.
+ *
+ * Die Spalte `bootsantrieb` ist `integer default(0) notNull`, und `0` bedeutet
+ * "Sonstiger Bootsantrieb" — nicht "unbekannt" und nicht "kein Boot". Ohne
+ * diese Fallunterscheidung trug jede Sichtung von Land die aktive Behauptung,
+ * es habe ein Boot mit ungewöhnlichem Antrieb gegeben. Betroffen waren 5.858
+ * von 19.880 Zeilen (Stand 2026-07-29), wodurch "Sonstiger" in jeder
+ * Antriebs-Auswertung fälschlich die häufigste Kategorie war.
+ *
+ * Das Formular fragt den Antrieb bei Land-Sichtungen nicht mehr ab
+ * (`sightingSchema`, `when('sightingFrom', …)`) — hier wird entschieden, was
+ * stattdessen gespeichert wird.
+ *
+ * Ein bereits vorhandener Wert wird **nicht** überschrieben: Beim Admin-Edit
+ * einer Alt-Sichtung darf eine gespeicherte Angabe nicht still verloren gehen.
+ */
+function resolveBoatDrive(formData: SightingFormValues): number {
+	if (formData.boatDrive !== undefined && formData.boatDrive !== null) {
+		return Number(formData.boatDrive);
+	}
+
+	// String-Vergleich, da `sightingFrom` aus einem HTML-Select als String kommen kann
+	if (String(formData.sightingFrom) === String(SightingFromEnum.LAND)) {
+		return BoatDriveEnum.NONE;
+	}
+
+	return BoatDriveEnum.OTHER;
+}
 
 /**
  * Konvertiert Formulardaten in das Datenbankschema für Meeressäuger-Sichtungen.
@@ -150,8 +182,8 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 		boatType: formData.boatType,
 		// Anzahl Schiffe in der Umgebung
 		shipCount: formData.shipCount ? Number(formData.shipCount) : null,
-		// Antriebsart
-		boatDrive: formData.boatDrive ? Number(formData.boatDrive) : 0,
+		// Antriebsart (bei Land-Sichtungen "Kein Boot", siehe resolveBoatDrive)
+		boatDrive: resolveBoatDrive(formData),
 		boatDriveText: formData.boatDriveText, // Freitext-Ergänzung
 
 		// === KONTAKTINFORMATIONEN ===

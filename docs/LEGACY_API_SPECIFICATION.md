@@ -54,7 +54,7 @@ This is a dated status, not a standing guarantee — re-check whether clients ha
 | `schiffsname`               | Ship name                                                                                                    | String (64)                         | No, Yes if schiffnamensnennung = 1 |
 | `heimathafen`               | Home port                                                                                                    | String (64)                         | No                                 |
 | `bootstyp`                  | Boat type                                                                                                    | String (64)                         | No                                 |
-| `bootsantrieb`              | Boat drive                                                                                                   | Integer-Range, 0-4                  | No                                 |
+| `bootsantrieb`              | Boat drive (5 = no boat, see note below)                                                                     | Integer-Range, 0-5                  | No                                 |
 | `bootsantrieb_text`         | Other boat drive (when bootsantrieb = 0)                                                                     | Text                                | No                                 |
 | `strasse`                   | Street                                                                                                       | String (64)                         | No                                 |
 | `plz`                       | ZIP code                                                                                                     | String (5)                          | No                                 |
@@ -145,7 +145,8 @@ JSON Object with the following structure:
 		"1": "Motor",
 		"2": "Segel",
 		"3": "treibend",
-		"4": "vor Anker"
+		"4": "vor Anker",
+		"5": "Kein Boot"
 	},
 	"eingangskanal": {
 		"0": "Web",
@@ -327,6 +328,32 @@ JSON Array with JSON Objects:
 5. **Wind Direction**: Must include all values: 'N','NW','W','SW','S','SO','O','NO' (note 'SO' for southeast)
 
 6. **Backward Compatibility**: Any changes that break existing mobile app functionality are strictly forbidden.
+
+## Abweichung von der Ursprungs-PDF: `bootsantrieb = 5`
+
+Die Original-Spezifikation kennt für `bootsantrieb` nur den Bereich **0–4**.
+Seit dem 2026-07-29 gibt es zusätzlich **`5` = „Kein Boot"**.
+
+**Warum:** Die Spalte `bootsantrieb` ist `integer default(0) notNull`, und `0`
+bedeutet „Sonstiger Bootsantrieb" — nicht „unbekannt" und nicht „kein Boot".
+Jede Sichtung von Land (`vonwo = 3`) trug dadurch die aktive Behauptung, es habe
+ein Boot mit ungewöhnlichem Antrieb gegeben. Betroffen waren 5.858 von 19.880
+Zeilen (29,5 %); „Sonstiger" war dadurch in jeder Antriebs-Auswertung fälschlich
+die häufigste Kategorie, vor Motor und Segel.
+
+**Auswirkung auf Clients:**
+
+- `GET /rest_sichtungen/antworten.json` liefert einen zusätzlichen Schlüssel
+  `"5": "Kein Boot"`. Clients, die die Liste dynamisch rendern, brauchen keine
+  Änderung; Clients mit fest verdrahteter 0–4-Tabelle zeigen für `5` keinen
+  Text an und müssen den Wert nachtragen.
+- `POST /rest_sichtungen` akzeptiert `5` zusätzlich zu 0–4. Bestehende Werte
+  behalten ihre Bedeutung unverändert — es wurde nichts umnummeriert.
+- `GET /sichtungen/showreports.json` kann `5` in Bestandsdaten zurückgeben.
+
+**Nicht auswählbar im Formular:** `5` entsteht ausschließlich serverseitig beim
+Speichern einer Land-Sichtung (`mapFormToSighting`). Im Antriebs-Dropdown wird
+der Wert bewusst nicht angeboten — dort stehen weiterhin nur 0–4.
 
 ## Zeitzonen-Semantik
 

@@ -232,10 +232,15 @@
 				getBoatDriveLabel(currentSighting.boatDrive),
 				hasValue(currentSighting.boatDrive)
 			),
+			// Freitext immer zeigen, wenn vorhanden: Er ist laut Schema "auch bei
+			// Sonstiges" erlaubt und nicht an einen bestimmten Antrieb gebunden.
+			// Die frühere Bedingung `boatDrive === 4` (Vor Anker) versteckte den
+			// Text in 290 von 294 Fällen — u.a. bei allen 71 Land-Sichtungen,
+			// deren Melder dort "kein Boot" o.ä. eingetragen hatten.
 			DataRow(
 				'Bootsantrieb (Details)',
 				currentSighting.boatDriveText,
-				hasValue(currentSighting.boatDriveText) && currentSighting.boatDrive === 4
+				hasValue(currentSighting.boatDriveText)
 			),
 			DataRow('Anzahl Schiffe', currentSighting.shipCount, hasValue(currentSighting.shipCount))
 		].filter((row): row is DataRowType => row !== undefined)

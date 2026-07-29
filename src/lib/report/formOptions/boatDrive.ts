@@ -1,13 +1,26 @@
 /**
  * Enum für Bootsantriebsarten
  * Die numerischen Werte werden in der Datenbank gespeichert.
+ *
+ * **Achtung bei `OTHER = 0`:** Die Spalte `bootsantrieb` ist
+ * `integer default(0) notNull` — `0` ist also gleichzeitig der Default und die
+ * Bedeutung "Sonstiger Bootsantrieb". Wer nie ein Boot hatte, darf deshalb
+ * nicht auf `0` landen, sondern bekommt `NONE`.
  */
 export enum BoatDriveEnum {
 	OTHER = 0,
 	MOTOR = 1,
 	SAIL = 2,
 	DRIFTING = 3,
-	ANCHORED = 4
+	ANCHORED = 4,
+	/**
+	 * Kein Boot im Spiel (Sichtung von Land).
+	 *
+	 * Wird ausschließlich serverseitig beim Speichern gesetzt
+	 * (`mapFormToSighting`) und ist bewusst **nicht** auswählbar — im Formular
+	 * erscheint das Antriebsfeld nur bei Segelschiff/Motorboot.
+	 */
+	NONE = 5
 }
 
 /**
@@ -18,18 +31,31 @@ export const boatDriveLabels: Record<BoatDriveEnum, string> = {
 	[BoatDriveEnum.MOTOR]: 'Motor',
 	[BoatDriveEnum.SAIL]: 'Segel',
 	[BoatDriveEnum.DRIFTING]: 'Treibend',
-	[BoatDriveEnum.ANCHORED]: 'Vor Anker'
+	[BoatDriveEnum.ANCHORED]: 'Vor Anker',
+	[BoatDriveEnum.NONE]: 'Kein Boot'
 };
 
 export type BoatDrive = BoatDriveEnum;
 
 /**
+ * Antriebsarten, die im Formular auswählbar sind.
+ * `NONE` ist bewusst ausgenommen (siehe Enum-Kommentar).
+ */
+const SELECTABLE_BOAT_DRIVES: readonly BoatDriveEnum[] = [
+	BoatDriveEnum.OTHER,
+	BoatDriveEnum.MOTOR,
+	BoatDriveEnum.SAIL,
+	BoatDriveEnum.DRIFTING,
+	BoatDriveEnum.ANCHORED
+];
+
+/**
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-const boatDriveOptions: Array<{ value: number; label: string }> = Object.entries(
-	boatDriveLabels
-).map(([value, label]) => ({ value: Number(value), label }));
+const boatDriveOptions: Array<{ value: number; label: string }> = SELECTABLE_BOAT_DRIVES.map(
+	(value) => ({ value, label: boatDriveLabels[value] })
+);
 export const getBoatDriveOptions = (): Array<{ value: number; label: string }> => boatDriveOptions;
 
 /**
