@@ -28,7 +28,9 @@ Worktrees unter `<repo>/.claude/worktrees/` liegen, greifen sie automatisch auf
 `<repo>/node_modules` zu — inklusive `node_modules/.bin`, also auch `npm run …`.
 
 Verifiziert in einem Worktree ganz ohne eigenes `node_modules`: `npm run lint`,
-`npx svelte-kit sync` und `npm run test:unit` (2038 Tests) liefen durch.
+`npx svelte-kit sync` und `npm run test:unit` liefen durch (damals 2038 Tests — die
+Zahl wächst mit der Suite und ist hier nur Beleg dafür, dass die Suite vollständig
+lief, nicht der Sollwert).
 
 Eine eigene Installation kostet ~800 MB pro Worktree ohne Gegenwert. Nötig ist sie nur
 in zwei Fällen:

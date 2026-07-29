@@ -14,6 +14,7 @@ Complete reference for all environment variables used in the Ostsee-Tiere platfo
 - [Logging & Debugging](#logging--debugging)
 - [Feature Flags](#feature-flags)
 - [Docker-Specific Variables](#docker-specific-variables)
+- [Build & Development Variables](#build--development-variables)
 - [Quick Reference](#quick-reference)
 
 ---
@@ -203,6 +204,28 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 
 ## Database Configuration
 
+### `DATABASE_URL`
+
+**Type**: `string` (Connection String)
+**Required**: No
+**Default**: none
+**Description**: Fallback connection string, only read when `DATABASE_POSTGRES_URL` is
+unset. The application itself always uses `DATABASE_POSTGRES_URL`; the fallback exists
+for the maintenance tool `src/tools/cleanup-orphaned-uploads.ts`, which accepts either
+name so it can run in environments that already provide the conventional
+`DATABASE_URL`. Neither name has a built-in default — the tool deletes files and
+therefore refuses to guess a target database.
+
+**Precedence**:
+
+```bash
+# DATABASE_POSTGRES_URL wins whenever both are set
+DATABASE_POSTGRES_URL=postgresql://user:pass@db:5432/ostsee
+DATABASE_URL=postgresql://user:pass@other:5432/ostsee   # ignored here
+```
+
+---
+
 ### `PGUSER`
 
 **Type**: `string`
@@ -283,6 +306,28 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 **Default**: `local`
 **Options**: `local` | `vercel-blob`
 **Description**: Storage backend for uploaded media files. Currently, only `local` and `vercel-blob` are supported for production use. The values `s3` and `gcs` may appear in code and types as reserved providers, but they are not implemented yet and must not be used in configuration.
+
+---
+
+### `VERCEL`
+
+**Type**: `string`
+**Required**: No (set automatically by the Vercel platform)
+**Default**: unset
+**Description**: Platform marker, not meant to be set by hand. When `STORAGE_PROVIDER`
+is empty and `VERCEL` holds any non-empty value, the storage factory
+(`src/lib/server/storage/factory.ts`) selects `vercel-blob`. Outside Vercel the factory
+falls back to `local`.
+
+**Resolution order** (first match wins):
+
+1. `STORAGE_PROVIDER` — explicit configuration
+2. `VERCEL` non-empty → `vercel-blob`
+3. SvelteKit `dev` flag → `local`
+4. fallback → `local`
+
+Setting `STORAGE_PROVIDER` explicitly overrides the `VERCEL` detection, which is the
+supported way to run a Vercel deployment against local storage or vice versa.
 
 ---
 
@@ -734,6 +779,45 @@ ALLOW_DESTRUCTIVE_MIGRATIONS=true
 **Description**: Grafana admin password.
 
 **Important**: Change this in production!
+
+---
+
+## Build & Development Variables
+
+These are read by the build and dev tooling rather than by the running application.
+
+### `USE_NODE_ADAPTER`
+
+**Type**: `boolean` (string comparison against `"true"`)
+**Required**: No
+**Default**: unset → Vercel adapter
+**Description**: Selects the SvelteKit adapter in `svelte.config.js`. Only the exact
+string `true` switches to `@sveltejs/adapter-node`; any other value keeps the Vercel
+adapter. The Docker image sets it (`Dockerfile`), so container builds always produce the
+Node build. Set it at **build** time — changing it for an already-built image has no
+effect.
+
+```bash
+# Node build (what the Dockerfile does)
+USE_NODE_ADAPTER=true npm run build
+```
+
+---
+
+### `VITE_DEV_PORT`
+
+**Type**: `number`
+**Required**: No
+**Default**: `4000`
+**Description**: Port for the Vite dev server (`vite.config.ts`). Changing it is only
+half the story: `PUBLIC_SITE_URL` builds the Auth0 callback URL and is pinned to port
+4000, so a dev server on another port still gets redirected back to 4000 after login
+unless the alternative URL is registered in Auth0. See
+[docs/WORKTREES.md](WORKTREES.md) for the full picture.
+
+```bash
+VITE_DEV_PORT=4005 npm run dev
+```
 
 ---
 

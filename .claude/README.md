@@ -242,7 +242,7 @@ src/
 │   ├── map/                 # OpenLayers Controller & Utilities
 │   ├── report/              # Sichtungsmeldung
 │   │   ├── components/      # Form Steps, Sections, Fields
-│   │   └── formOptions/     # Enum/Option Definitionen (16 Dateien)
+│   │   └── formOptions/     # Enum/Option Definitionen (17 Dateien)
 │   ├── server/
 │   │   ├── audit/           # Audit-Logging
 │   │   ├── auth/            # JWT/Auth0 Authentication
@@ -258,7 +258,8 @@ src/
 │   │   ├── storage/         # File Storage (Local, Vercel Blob)
 │   │   ├── templates/       # Email-Templates (Handlebars)
 │   │   ├── utils/           # Server-Utilities (z.B. getClientIp)
-│   │   └── validation/      # Request-Validierung, Magic Bytes
+│   │   ├── validation/      # Request-Validierung, Magic Bytes
+│   │   └── weather/         # Wetter-Stundenindex
 │   ├── services/            # Client-Services (configService, weatherService)
 │   ├── storage/             # Browser Storage (GDPR-aware)
 │   ├── stores/              # Svelte Stores (Toast, Config)
