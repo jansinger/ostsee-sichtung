@@ -120,7 +120,7 @@ sudo chown 1001:1001 uploads
 chmod 600 .env
 
 # 8. Pull and start container
-docker pull ghcr.io/jansinger/ostsee-sichtung:latest
+docker pull ghcr.io/jansinger/ostsee-sichtung:production
 
 docker run -d \
   --name ostsee-tiere \
@@ -128,7 +128,7 @@ docker run -d \
   -p 127.0.0.1:3000:3000 \
   -v /opt/ostsee-tiere/uploads:/app/uploads \
   --env-file /opt/ostsee-tiere/.env \
-  ghcr.io/jansinger/ostsee-sichtung:latest
+  ghcr.io/jansinger/ostsee-sichtung:production
 
 # 9. Database schema is migrated automatically on container startup.
 #    Requirement for external databases: PostGIS must be enabled once
@@ -283,7 +283,7 @@ See [Local Development Testing](#local-development-testing-with-rancher-desktop)
 
 ```bash
 # Pull image
-docker pull ghcr.io/jansinger/ostsee-sichtung:latest
+docker pull ghcr.io/jansinger/ostsee-sichtung:production
 
 # Create uploads directory
 mkdir -p ./uploads
@@ -302,7 +302,7 @@ docker run -d \
   -e JWKS_URL="https://your-tenant.auth0.com/.well-known/jwks.json" \
   -e API_AUDIENCE="your-api-audience" \
   -e PUBLIC_SITE_URL="https://your-domain.com" \
-  ghcr.io/jansinger/ostsee-sichtung:latest
+  ghcr.io/jansinger/ostsee-sichtung:production
 
 # Alternative: Use named volume instead of bind mount
 # -v ostsee-uploads:/app/uploads
@@ -514,7 +514,7 @@ cp .env /opt/ostsee-tiere/.env
 chmod 600 /opt/ostsee-tiere/.env
 
 # Pull latest image
-docker pull ghcr.io/jansinger/ostsee-sichtung:latest
+docker pull ghcr.io/jansinger/ostsee-sichtung:production
 
 # Run container (bind to localhost only - use reverse proxy for external access)
 docker run -d \
@@ -523,7 +523,7 @@ docker run -d \
   -p 127.0.0.1:3000:3000 \
   -v /opt/ostsee-tiere/uploads:/app/uploads \
   --env-file /opt/ostsee-tiere/.env \
-  ghcr.io/jansinger/ostsee-sichtung:latest
+  ghcr.io/jansinger/ostsee-sichtung:production
 
 # Database schema is migrated automatically on startup
 # (PostGIS must be enabled once on external databases beforehand)
@@ -643,7 +643,7 @@ ExecStart=/usr/bin/docker run --rm \
   -p 127.0.0.1:3000:3000 \
   -v /opt/ostsee-tiere/uploads:/app/uploads \
   --env-file /opt/ostsee-tiere/.env \
-  ghcr.io/jansinger/ostsee-sichtung:latest
+  ghcr.io/jansinger/ostsee-sichtung:production
 ExecStop=/usr/bin/docker stop ostsee-tiere
 
 [Install]
@@ -657,9 +657,17 @@ sudo systemctl start ostsee-tiere
 
 ### Update Process
 
+> The `production` tag only advances after a release has been promoted (see
+> [CI/CD and Release Process](#cicd-and-release-process)). Pulling it therefore
+> never picks up an unverified build. **Back up the database first** — schema
+> migrations run automatically on container start and cannot be rolled back.
+
 ```bash
+# Back up before updating (see Backup & Restore below)
+/usr/local/bin/backup-db.sh
+
 # Pull new image
-docker pull ghcr.io/jansinger/ostsee-sichtung:latest
+docker pull ghcr.io/jansinger/ostsee-sichtung:production
 
 # Restart (with systemd)
 sudo systemctl restart ostsee-tiere
@@ -673,7 +681,7 @@ docker run -d \
   -p 127.0.0.1:3000:3000 \
   -v /opt/ostsee-tiere/uploads:/app/uploads \
   --env-file /opt/ostsee-tiere/.env \
-  ghcr.io/jansinger/ostsee-sichtung:latest
+  ghcr.io/jansinger/ostsee-sichtung:production
 
 # Clean up old images
 docker image prune -f
@@ -1107,62 +1115,82 @@ services:
 
 ## CI/CD and Release Process
 
-### Automated Docker Image Publishing
-
-Docker images are automatically built and published to GitHub Container Registry (GHCR) via GitHub Actions when:
-
-- A new version tag is pushed (e.g., `v1.31.2`)
-- A release is published
-- The workflow is manually triggered
+> Full pipeline reference including host-side pull setup and rollback:
+> [RELEASE_PIPELINE.md](./RELEASE_PIPELINE.md)
 
 **Image Repository:** [`ghcr.io/jansinger/ostsee-sichtung`](https://github.com/jansinger/ostsee-sichtung/pkgs/container/ostsee-sichtung)
 
-**Available Tags:**
+### The release chain
 
-- `latest` - Latest stable release
-- `vX.Y.Z` - Specific version (e.g., `v1.31.3`)
-- `main` - Latest build from main branch
+Releases are driven by **release-please**. Never push tags by hand.
 
-### Retry Mechanism for Transient Errors
+1. Commits land on `main` → release-please maintains an open release PR.
+2. Merging that PR creates tag `vX.Y.Z` and the GitHub Release, fast-forwards
+   the `release` branch, and calls
+   [`docker-publish.yml`](../.github/workflows/docker-publish.yml) via
+   `workflow_call` — all within the same workflow run.
+3. `docker-publish.yml` builds `linux/amd64` and `linux/arm64` on separate
+   runners, pushes both by digest, merges them into one manifest list, and tags
+   it `vX.Y.Z`, `X.Y.Z` and `staging`.
+4. After manual verification on staging,
+   [`promote-production.yml`](../.github/workflows/promote-production.yml) is
+   triggered by hand and gated by the `Production` environment. It moves
+   `production`, `latest`, `X.Y` and `X` onto the digest that was already
+   built — **no rebuild happens**.
 
-The Docker Release workflow includes automatic retry logic to handle transient registry errors (such as 502 Bad Gateway):
+> Why a call rather than its own trigger: tags and pushes created with
+> `GITHUB_TOKEN` do not start workflow runs, so `on: push: tags: ['v*']` would
+> never fire for a release-please tag. Calling the workflow also puts the build
+> in the same `needs` chain — a failed build turns the release run red instead
+> of failing silently in a separate run.
+>
+> The `push: tags` trigger in `docker-publish.yml` remains for tags pushed by
+> hand, as does `workflow_dispatch` for rebuilding an existing tag.
 
-**Retry Strategy:**
+### Available tags
 
-- **Maximum Attempts**: 3
-- **Wait Between Retries**:
-  - First retry: 60 seconds
-  - Second retry: 120 seconds (exponential backoff)
-- **Behavior**: Each failed push attempt is automatically retried with increasing wait times
+| Tag                  | Set by                   | Meaning                                                        |
+| -------------------- | ------------------------ | -------------------------------------------------------------- |
+| `vX.Y.Z`, `X.Y.Z`    | `docker-publish.yml`     | Immutable. Always resolves to the same digest.                 |
+| `staging`            | `docker-publish.yml`     | Newest release, **unverified**. Staging host follows this tag. |
+| `production`         | `promote-production.yml` | Approved for production. Production hosts follow this tag.     |
+| `latest`, `X.Y`, `X` | `promote-production.yml` | Convenience pointers to the current production release.        |
 
-**Why This Matters:**
-GitHub Container Registry (GHCR) may occasionally experience temporary unavailability or rate limiting, especially during:
+There is no `main` tag — nothing is published from branch builds.
 
-- Multi-platform builds (linux/amd64, linux/arm64)
-- Large layer uploads
-- High GitHub Actions usage periods
+**`latest` no longer moves at build time.** It advances only when a release is
+promoted to production. A host tracking `latest` therefore stays on the last
+approved release instead of picking up every fresh build. For fully
+reproducible deployments, pin `IMAGE_TAG` to an explicit `vX.Y.Z`, or set
+`APP_IMAGE` to a full digest reference — a digest attaches with `@` instead of
+`:` and therefore cannot go into `IMAGE_TAG`:
 
-The retry mechanism ensures that transient infrastructure issues don't block your releases. The workflow will:
+```bash
+IMAGE_TAG=v2.5.6
+# or, digest-exact (APP_IMAGE takes precedence over IMAGE_TAG):
+APP_IMAGE=ghcr.io/jansinger/ostsee-sichtung@sha256:...
+```
 
-1. ✅ Succeed on first attempt (most common case)
-2. ⚠️ Retry after 60 seconds if first attempt fails
-3. ⚠️ Retry after 120 seconds if second attempt fails
-4. ❌ Only fail permanently after all 3 attempts are exhausted
+### Verification and scanning
 
-**Monitoring:**
-Check the workflow logs at: https://github.com/jansinger/ostsee-sichtung/actions/workflows/docker-release.yml
+Every build additionally produces:
 
-Each retry attempt is clearly logged with attempt numbers and wait times.
+- **Trivy scan** (CRITICAL/HIGH) uploaded to GitHub Security as SARIF, plus a
+  JSON artifact retained for 90 days
+- **Image digest artifact** (`image-digest.txt`) with the manifest digest,
+  platform list and a ready-to-use pull command
+- **Release assets** attached to the GitHub Release:
+  `docker-compose.production.yml`, `.env.example`, the digest file and a
+  deployment tarball
 
-### Image Verification
+Verify what a tag currently resolves to:
 
-After a successful push, the workflow generates:
+```bash
+docker buildx imagetools inspect ghcr.io/jansinger/ostsee-sichtung:production \
+  --format '{{json .Manifest}}' | jq -r '.digest'
+```
 
-- **Image Digest**: Cryptographic hash of the image
-- **Image Tags**: All applied tags (version, latest, etc.)
-- **Pull Command**: Ready-to-use command with digest for verification
-
-Download these details from GitHub Actions artifacts (retention: 90 days).
+Workflow runs: <https://github.com/jansinger/ostsee-sichtung/actions>
 
 ---
 
@@ -1615,9 +1643,15 @@ services:
 
 ### 5. Regular Updates
 
+Track the `production` tag so hosts only ever receive promoted releases, and
+back up before every update — migrations run on container start.
+
 ```bash
-# Pull latest image
-docker pull ghcr.io/jansinger/ostsee-sichtung:latest
+# Back up first
+/usr/local/bin/backup-db.sh
+
+# Pull the promoted image (IMAGE_TAG=production in .env)
+docker compose -f docker-compose.production.yml pull
 
 # Recreate containers
 docker compose -f docker-compose.production.yml up -d
@@ -1633,7 +1667,7 @@ Images are automatically scanned with Trivy during CI/CD. Check results:
 
 # Or scan locally
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-  aquasec/trivy image ghcr.io/jansinger/ostsee-sichtung:latest
+  aquasec/trivy image ghcr.io/jansinger/ostsee-sichtung:production
 ```
 
 ---
@@ -1654,7 +1688,7 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
   "containerDefinitions": [
     {
       "name": "app",
-      "image": "ghcr.io/jansinger/ostsee-sichtung:latest",
+      "image": "ghcr.io/jansinger/ostsee-sichtung:production",
       "portMappings": [{"containerPort": 3000, "protocol": "tcp"}],
       "environment": [...],
       "secrets": [
@@ -1669,7 +1703,7 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
 
 ```bash
 gcloud run deploy ostsee-tiere \
-  --image ghcr.io/jansinger/ostsee-sichtung:latest \
+  --image ghcr.io/jansinger/ostsee-sichtung:production \
   --platform managed \
   --region europe-west1 \
   --allow-unauthenticated \
@@ -1683,7 +1717,7 @@ gcloud run deploy ostsee-tiere \
 az container create \
   --resource-group ostsee-tiere-rg \
   --name ostsee-tiere-app \
-  --image ghcr.io/jansinger/ostsee-sichtung:latest \
+  --image ghcr.io/jansinger/ostsee-sichtung:production \
   --cpu 2 --memory 4 \
   --ports 3000 \
   --environment-variables \

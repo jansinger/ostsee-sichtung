@@ -1,16 +1,27 @@
 name: Docker Publish
 
 on:
-  # Triggered by release-please after release creation
-  repository_dispatch:
-    types: [release-created]
-  # Manual trigger with version input
+  # Called by release-please.yml as part of the release run. Failures surface
+  # in that run instead of getting lost in a separate, fire-and-forget one.
+  workflow_call:
+    inputs:
+      version:
+        description: 'Release tag to build (e.g., v2.5.6)'
+        required: true
+        type: string
+      sha:
+        description: 'Commit SHA to build from'
+        required: true
+        type: string
+  # Rebuild an existing tag without cutting a new release — base image CVE,
+  # transient GHCR failure, retry of a broken build.
   workflow_dispatch:
     inputs:
       tag:
         description: 'Tag to build (e.g., v1.31.6)'
         required: true
-  # Also trigger on tags for backwards compatibility
+  # Manually pushed tags. Release-please tags do NOT reach this trigger:
+  # pushes made with GITHUB_TOKEN never start a workflow run.
   push:
     tags:
       - 'v*'
@@ -32,19 +43,41 @@ jobs:
       sha: ${{ steps.version.outputs.sha }}
 
     steps:
+      # github.event_name ist bei workflow_call das Event des AUFRUFERS (also
+      # `push`, wenn release-please durch einen main-Push lief) — es taugt hier
+      # nicht zur Unterscheidung. inputs.version ist nur bei workflow_call
+      # gesetzt und ist deshalb das verlässliche Signal.
       - name: Determine version
         id: version
+        env:
+          CALL_VERSION: ${{ inputs.version }}
+          CALL_SHA: ${{ inputs.sha }}
+          DISPATCH_TAG: ${{ github.event.inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          GIT_SHA: ${{ github.sha }}
         run: |
-          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
-            echo "version=${{ github.event.client_payload.tag }}" >> $GITHUB_OUTPUT
-            echo "sha=${{ github.event.client_payload.sha }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "version=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
-            echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          if [ -n "${CALL_VERSION}" ]; then
+            VERSION="${CALL_VERSION}"
+            SHA="${CALL_SHA}"
+          elif [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            VERSION="${DISPATCH_TAG}"
+            SHA="${GIT_SHA}"
           else
-            echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-            echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+            VERSION="${REF_NAME}"
+            SHA="${GIT_SHA}"
           fi
+
+          if [ -z "${VERSION}" ] || [ -z "${SHA}" ]; then
+            echo "::error::Version oder SHA konnte nicht bestimmt werden (version='${VERSION}' sha='${SHA}')."
+            exit 1
+          fi
+
+          {
+            echo "version=${VERSION}"
+            echo "sha=${SHA}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Log build info
         run: |
@@ -143,25 +176,25 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Beim Build entstehen NUR die unveränderlichen Versions-Tags plus der
+      # bewegliche `staging`-Zeiger. Die Production-Zeiger (`production`,
+      # `latest`, MAJOR, MINOR) setzt ausschließlich promote-production.yml —
+      # sonst stünde das frisch gebaute Image sofort auf dem Prod-Host und das
+      # Staging würde nichts absichern. Siehe docs/RELEASE_PIPELINE.md.
       - name: Create manifest list and push
         working-directory: /tmp/digests
         run: |
           VERSION="${{ needs.prepare.outputs.version }}"
           # Remove 'v' prefix for semver tags
           SEMVER="${VERSION#v}"
-          MAJOR="${SEMVER%%.*}"
-          MINOR="${SEMVER%.*}"
 
           echo "Creating manifest for version: $VERSION"
-          echo "Tags: $VERSION, $SEMVER, $MINOR, $MAJOR, latest"
+          echo "Tags: $VERSION, $SEMVER, staging"
 
-          # Create all tags
           docker buildx imagetools create \
             -t ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${VERSION} \
             -t ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${SEMVER} \
-            -t ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${MINOR} \
-            -t ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${MAJOR} \
-            -t ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest \
+            -t ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:staging \
             $(printf '${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
 
       - name: Inspect image

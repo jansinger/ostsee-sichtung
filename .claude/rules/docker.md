@@ -144,10 +144,14 @@ sudo chown -R 1001:1001 ./uploads
 
 ## Docker Compose Production
 
+Image-Zeiger: `staging` = jedes neue Release (ungeprüft), `production` = nach
+Freigabe, `vX.Y.Z` = unveränderlich. `latest` bewegt sich erst bei der
+Production-Promotion, nicht beim Build. Details: `docs/RELEASE_PIPELINE.md`
+
 ```yaml
 services:
   app:
-    image: ghcr.io/jansinger/ostsee-sichtung:latest
+    image: ghcr.io/jansinger/ostsee-sichtung:${IMAGE_TAG:-production}
     ports:
       - '3000:3000'
     environment:
@@ -245,5 +249,5 @@ server {
 
 - Keine Secrets in Dockerfile
 - Keine Build-Args für Secrets
-- Kein `latest` Tag in Production
+- Kein `staging` Tag in Production (Prod folgt `production` oder `vX.Y.Z`)
 - Keine Root-User im Container

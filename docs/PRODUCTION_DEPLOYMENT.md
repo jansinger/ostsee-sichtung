@@ -124,8 +124,9 @@ API_AUDIENCE="deine-api-audience"
 # Anwendung
 PUBLIC_SITE_URL="https://deine-domain.de"
 
-# WICHTIG: Für Production spezifische Version pinnen!
-IMAGE_TAG="v2.2.3"  # Nicht "latest" in Production!
+# Welchem Image-Zeiger folgt der Stack? Siehe RELEASE_PIPELINE.md
+# "production" = freigegebener Stand, "vX.Y.Z" = feste Version (am sichersten)
+IMAGE_TAG="v2.2.3"  # Nicht "staging" in Production!
 
 # App nur über Reverse Proxy erreichbar machen
 APP_HOST="127.0.0.1"
@@ -458,19 +459,24 @@ Unbegrenzt — kein automatisches Löschen. Manuelles Löschen via SQL wenn nöt
 
 ## 10. Updates durchführen
 
+> Ein neues Release landet **nicht** automatisch hier. Es geht zuerst auf
+> Staging (Tag `staging`); erst nach der Freigabe über den Workflow
+> _Promote to Production_ wandert der Zeiger `production` mit. Der komplette
+> Ablauf inkl. Rollback steht in [RELEASE_PIPELINE.md](./RELEASE_PIPELINE.md).
+
 ### Standard-Update
 
 ```bash
 cd /opt/ostsee-tiere
 
-# Backup erstellen
+# Backup erstellen — die Schema-Migrationen des neuen Release laufen beim
+# Container-Start automatisch und sind nicht rückrollbar
 ./backup.sh
 
 # Neues Image herunterladen
 docker compose pull
 
 # Container neu starten (Zero-Downtime mit Health Checks)
-# Schema-Migrationen des neuen Release laufen dabei automatisch
 docker compose up -d
 
 # Logs prüfen (inkl. Migrations-Ausgabe)
@@ -480,8 +486,8 @@ docker compose logs -f app
 ### Update auf spezifische Version
 
 ```bash
-# In .env oder docker-compose.yml:
-# image: ghcr.io/jansinger/ostsee-sichtung:v2.1.0
+# In .env:
+# IMAGE_TAG="v2.1.0"
 
 docker compose pull
 docker compose up -d
