@@ -1022,7 +1022,7 @@
 				<span class="loading loading-spinner loading-md"></span>
 			</div>
 		{:else if spamCheckModal.error}
-			<div class="alert alert-error mt-4">
+			<div class="alert alert-error mt-4" role="alert">
 				<Icon icon="lucide:circle-alert" class="shrink-0" aria-hidden="true" />
 				<span>{spamCheckModal.error}</span>
 			</div>

@@ -130,7 +130,7 @@
 			</p>
 		</div>
 	{:else if hasError}
-		<div class="alert alert-error">
+		<div class="alert alert-error" role="alert">
 			<Icon icon="lucide:circle-alert" class="shrink-0" aria-hidden="true" />
 			<div>
 				<span>{errorMessage}</span>

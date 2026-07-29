@@ -80,7 +80,7 @@
 			<p class="mt-4">OpenAPI-Spezifikation wird geladen...</p>
 		</div>
 	{:else if error}
-		<div class="alert alert-error">
+		<div class="alert alert-error" role="alert">
 			<Icon icon="lucide:circle-alert" class="shrink-0" aria-hidden="true" />
 			<span>Fehler beim Laden der API-Spezifikation: {error}</span>
 		</div>
