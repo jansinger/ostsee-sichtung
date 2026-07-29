@@ -1,5 +1,5 @@
 import { render } from 'vitest-browser-svelte';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import type { CountData } from '$lib/map/countManager';
 import type { MapTranslations } from '$lib/map/mapUtils';
@@ -221,5 +221,36 @@ describe('LegendPanel', () => {
 
 		expect(mockCountManager.setSpeciesVisibility).toHaveBeenCalledWith('0', false);
 		expect(mockCountManager.setColorVisibility).toHaveBeenCalledWith('ct1', false);
+	});
+});
+
+// ─── Befund H6: Legende als Bottom-Sheet (geteilte Panel-Komponente) ─────────
+
+describe('LegendPanel als Bottom-Sheet (H6)', () => {
+	afterEach(async () => {
+		// Vitest-Default-Viewport wiederherstellen
+		await page.viewport(414, 896);
+	});
+
+	it('offenes Panel trägt data-sheet-state="peek", der Vergrößern-Button schaltet auf expanded', async () => {
+		await page.viewport(375, 667);
+		render(LegendPanel, { translations, counts });
+
+		await page.getByRole('button', { name: /^Legende$/i }).click();
+
+		const panel = getLegendPanel();
+		await vi.waitFor(() => {
+			expect(panel.getAttribute('data-sheet-state')).toBe('peek');
+		});
+
+		const expandButton = document.querySelector('#legend-panel [aria-label="Legende vergrößern"]');
+		if (!(expandButton instanceof HTMLButtonElement)) {
+			throw new Error('Vergrößern-Button not found');
+		}
+
+		expandButton.click();
+		await vi.waitFor(() => {
+			expect(panel.getAttribute('data-sheet-state')).toBe('expanded');
+		});
 	});
 });

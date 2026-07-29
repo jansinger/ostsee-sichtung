@@ -19,6 +19,7 @@
 	import CheckCircle from '~icons/lucide/check-circle';
 	import ChevronDown from '~icons/lucide/chevron-down';
 	import ChevronRight from '~icons/lucide/chevron-right';
+	import ChevronUp from '~icons/lucide/chevron-up';
 	import CircleAlert from '~icons/lucide/circle-alert';
 	import CircleCheck from '~icons/lucide/circle-check';
 	import CircleHelp from '~icons/lucide/circle-help';
@@ -46,7 +47,7 @@
 	import Heart from '~icons/lucide/heart';
 	import Home from '~icons/lucide/home';
 	import Image from '~icons/lucide/image';
-import Images from '~icons/lucide/images';
+	import Images from '~icons/lucide/images';
 	import Info from '~icons/lucide/info';
 	import List from '~icons/lucide/list';
 	import Loader2 from '~icons/lucide/loader-2';
@@ -112,6 +113,7 @@ import Images from '~icons/lucide/images';
 		'lucide:x': X,
 		'lucide:chevron-down': ChevronDown,
 		'lucide:chevron-right': ChevronRight,
+		'lucide:chevron-up': ChevronUp,
 		'lucide:filter': Filter,
 		'lucide:download': Download,
 		'lucide:columns': Columns,
