@@ -34,16 +34,16 @@ This is a dated status, not a standing guarantee — re-check whether clients ha
 | `gps_laenge`                | Longitude decimal                                                                                            | Decimal, -180 – 180                 | No                                 |
 | `fahrwasser`                | Waterway or area                                                                                             | Text                                | No                                 |
 | `seezeichen`                | Sea mark or beach section                                                                                    | Text                                | No                                 |
-| `vonwo`                     | Sighting location                                                                                            | Integer-Range, 0-3                  | No                                 |
+| `vonwo`                     | Sighting location (4 = ferry, 5 = not specified, see note below)                                             | Integer-Range, 0-5                  | No                                 |
 | `vonwo_text`                | Other sighting location (when vonwo = 0)                                                                     | Text                                | No                                 |
 | `entfernung`                | Distance                                                                                                     | Integer-Range, 1-5                  | No                                 |
 | `anzahl_schiffe`            | Number of ships in vicinity                                                                                  | Integer                             | No                                 |
 | `anzahl_jung`               | Number of juvenile animals                                                                                   | Integer                             | No                                 |
-| `verteilung`                | Distribution of animals                                                                                      | Integer-Range, 0-3                  | No                                 |
+| `verteilung`                | Distribution of animals (4 = not specified, see note below)                                                  | Integer-Range, 0-4                  | No                                 |
 | `verteilung_text`           | Other distribution (when verteilung = 0)                                                                     | Text                                | No                                 |
 | `aufnahme`                  | Filename of uploaded media                                                                                   | String (255)                        | No                                 |
 | `aufnahmeHochladen`         | Media uploaded flag                                                                                          | Boolean, 0 = false, 1 = true        | No                                 |
-| `verhalten`                 | Behavior of animals                                                                                          | Integer-Range, 0-3                  | No                                 |
+| `verhalten`                 | Behavior of animals (4 = not specified, see note below)                                                      | Integer-Range, 0-4                  | No                                 |
 | `verhalten_text`            | Other behavior (when verhalten = 0)                                                                          | Text                                | No                                 |
 | `reaktion`                  | Reaction of animals                                                                                          | Text                                | No                                 |
 | `sonstige_auffaelligkeiten` | Other observations                                                                                           | Text                                | No                                 |
@@ -54,7 +54,7 @@ This is a dated status, not a standing guarantee — re-check whether clients ha
 | `schiffsname`               | Ship name                                                                                                    | String (64)                         | No, Yes if schiffnamensnennung = 1 |
 | `heimathafen`               | Home port                                                                                                    | String (64)                         | No                                 |
 | `bootstyp`                  | Boat type                                                                                                    | String (64)                         | No                                 |
-| `bootsantrieb`              | Boat drive                                                                                                   | Integer-Range, 0-4                  | No                                 |
+| `bootsantrieb`              | Boat drive (5 = no boat, see note below)                                                                     | Integer-Range, 0-5                  | No                                 |
 | `bootsantrieb_text`         | Other boat drive (when bootsantrieb = 0)                                                                     | Text                                | No                                 |
 | `strasse`                   | Street                                                                                                       | String (64)                         | No                                 |
 | `plz`                       | ZIP code                                                                                                     | String (5)                          | No                                 |
@@ -124,13 +124,15 @@ JSON Object with the following structure:
 		"0": "Sonstige Verteilung",
 		"1": "einzeln",
 		"2": "Mutter mit Jungtier",
-		"3": "deutliche Schulen"
+		"3": "deutliche Schulen",
+		"4": "Keine Angabe"
 	},
 	"verhalten": {
 		"0": "Sonstiges Verhalten",
 		"1": "Konstanter Kurs, regelmäßiges Tauchen (schwimmen, ziehen)",
 		"2": "Unterschiedlicher Kurs, kreisend, unregelmäßiges Tauchen (futtersuchend)",
-		"3": "Langsames Schwimmen, längere Zeit an der Wasseroberfläche (ruhend)"
+		"3": "Langsames Schwimmen, längere Zeit an der Wasseroberfläche (ruhend)",
+		"4": "Keine Angabe"
 	},
 	"seegang": {
 		"0": "Keine Angabe",
@@ -145,7 +147,8 @@ JSON Object with the following structure:
 		"1": "Motor",
 		"2": "Segel",
 		"3": "treibend",
-		"4": "vor Anker"
+		"4": "vor Anker",
+		"5": "Kein Boot"
 	},
 	"eingangskanal": {
 		"0": "Web",
@@ -167,7 +170,8 @@ JSON Object with the following structure:
 		"1": "Segelschiff",
 		"2": "Motorboot",
 		"3": "Land",
-		"4": "Fähre"
+		"4": "Fähre",
+		"5": "Keine Angabe"
 	},
 	"sichtweite": {
 		"1": "Außergewöhnlich klar (mehr als 20km)",
@@ -327,6 +331,100 @@ JSON Array with JSON Objects:
 5. **Wind Direction**: Must include all values: 'N','NW','W','SW','S','SO','O','NO' (note 'SO' for southeast)
 
 6. **Backward Compatibility**: Any changes that break existing mobile app functionality are strictly forbidden.
+
+## Abweichung von der Ursprungs-PDF: `verteilung = 4` und `verhalten = 4`
+
+Beide Felder kannten ursprünglich nur **0–3**. Seit dem 2026-07-29 gibt es
+jeweils zusätzlich **`4` = „Keine Angabe"**.
+
+**Warum:** `verteilung` und `verhalten` sind `integer default(0) notNull`, und
+`0` bedeutet dort „Sonstige Verteilung" bzw. „Sonstiges Verhalten" — echte
+Kategorien. Beide Felder sind im Formular **nicht** verpflichtend; eine fehlende
+Antwort wurde trotzdem als aktive Aussage gespeichert.
+
+Messung 2026-07-29 (19.880 Zeilen):
+
+| Feld         | Zeilen mit `0`   | davon mit Freitext | Freitext-Quote der übrigen Werte |
+| ------------ | ---------------- | ------------------ | -------------------------------- |
+| `verteilung` | 15.129 (76,1 %)  | 632 (4,2 %)        | 0,0–0,6 %                        |
+| `verhalten`  | 9.192 (46,2 %)   | 892 (9,7 %)        | 0,0–0,4 %                        |
+
+Bei `verteilung` war „Sonstige Verteilung" dadurch mit 76 % die dominierende
+Kategorie — vor „Einzeln" (3.046). Rechnet man die Nicht-Antworten heraus, ist
+„Einzeln" die häufigste Verteilung und „Sonstige" die seltenste.
+
+**Der Bestand wurde NICHT umgeschrieben.** Die Zeilen mit Freitext sind echte
+„Sonstige"-Antworten, und für die übrigen gibt es keine Spalte, aus der
+hervorginge, welche nie beantwortet wurden. `4` verhindert nur, dass **neue**
+Zeilen dieselbe Doppeldeutigkeit erben.
+
+**Auswirkung auf Clients:** `antworten.json` liefert je einen zusätzlichen
+Schlüssel, `POST` akzeptiert `4` zusätzlich, bestehende Werte bleiben
+unverändert. Im Formular ist `4` nicht auswählbar.
+
+## Abweichung von der Ursprungs-PDF: `vonwo = 5`
+
+Die Feldtabelle dieses Dokuments nannte für `vonwo` bis zum 2026-07-29 den
+Bereich **0–3**. Das war schon vorher falsch: `4` = „Fähre" existiert seit jeher
+und wird von 281 Bestandszeilen benutzt. Korrigiert auf **0–5**.
+
+Neu ist **`5` = „Keine Angabe"**.
+
+**Warum:** Die Spalte `vonwo` ist `integer default(0) notNull`, und `0` bedeutet
+„Sonstiges". Wurde nichts angegeben, entstand trotzdem eine `0` — der Datensatz
+behauptete also eine Antwort, die nie gegeben wurde.
+
+**Wichtig — der Bestand wurde bewusst NICHT umgeschrieben.** Anders als beim
+Bootsantrieb ist „Sonstiges" hier eine echte, häufig genutzte Kategorie: 713 der
+1.833 Null-Zeilen tragen einen Freitext in `vonwo_text` (Kajak 91×,
+Mehrzweckschiff 37×, SUP 31×, Ruderboot 24×, Seekajak 20× …), 538 einen
+Schiffsnamen. Zum Vergleich: bei allen anderen `vonwo`-Werten ist `vonwo_text`
+in unter 0,5 % der Zeilen gefüllt. Für die verbleibenden Zeilen ohne jedes Indiz
+(709) gibt es keine ableitbare Wahrheit — es existiert keine zweite Spalte, aus
+der hervorginge, wo jemand stand. `5` verhindert deshalb nur, dass **neue**
+Zeilen dieselbe Doppeldeutigkeit erben.
+
+**Auswirkung auf Clients:** analog zu `bootsantrieb = 5` (siehe unten) —
+`antworten.json` liefert einen zusätzlichen Schlüssel, `POST` akzeptiert den
+Wert zusätzlich, bestehende Werte bleiben unverändert. `5` ist im Formular nicht
+auswählbar und entsteht ausschließlich serverseitig.
+
+## Abweichung von der Ursprungs-PDF: `bootsantrieb = 5`
+
+Die Original-Spezifikation kennt für `bootsantrieb` nur den Bereich **0–4**.
+Seit dem 2026-07-29 gibt es zusätzlich **`5` = „Kein Boot"**.
+
+**Warum:** Die Spalte `bootsantrieb` ist `integer default(0) notNull`, und `0`
+bedeutet „Sonstiger Bootsantrieb" — nicht „unbekannt" und nicht „kein Boot".
+Jede Sichtung von Land (`vonwo = 3`) trug dadurch die aktive Behauptung, es habe
+ein Boot mit ungewöhnlichem Antrieb gegeben. Betroffen waren 5.858 von 19.880
+Zeilen (29,5 %); „Sonstiger" war dadurch in jeder Antriebs-Auswertung fälschlich
+die häufigste Kategorie, vor Motor und Segel.
+
+**Auswirkung auf Clients:**
+
+- `GET /rest_sichtungen/antworten.json` liefert einen zusätzlichen Schlüssel
+  `"5": "Kein Boot"`. Clients, die die Liste dynamisch rendern, brauchen keine
+  Änderung; Clients mit fest verdrahteter 0–4-Tabelle zeigen für `5` keinen
+  Text an und müssen den Wert nachtragen.
+- `POST /rest_sichtungen` akzeptiert `5` zusätzlich zu 0–4. Bestehende Werte
+  behalten ihre Bedeutung unverändert — es wurde nichts umnummeriert.
+- `GET /sichtungen/showreports.json` kann `5` in Bestandsdaten zurückgeben.
+
+**Nicht auswählbar im Formular:** `5` entsteht ausschließlich serverseitig
+(`mapFormToSighting`). Im Antriebs-Dropdown wird der Wert bewusst nicht
+angeboten — dort stehen weiterhin nur 0–4.
+
+**Seit 2026-07-29 ist `5` der generelle Fallback**, nicht nur bei
+Land-Sichtungen: Wurde kein Antrieb angegeben, wird `5` geschrieben statt `0`.
+`0` entsteht damit nur noch durch eine aktive Auswahl des Melders.
+
+Bekannte Unschärfe: `5` heißt wörtlich „Kein Boot". Bei einer Sichtung von einer
+Fähre oder von „Sonstiges" (Kajak, SUP) ist ein Fahrzeug im Spiel, dessen
+Antrieb nur niemand angegeben hat — dort ist `5` streng genommen zu stark.
+Bewusst in Kauf genommen: Ein eigener Wert „Antrieb unbekannt" wäre eine dritte
+Vertragsänderung an derselben Spalte, und eine erfundene Antriebsart wiegt
+schwerer als „kein Boot" bei einem Kajak.
 
 ## Zeitzonen-Semantik
 

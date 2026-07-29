@@ -1,3 +1,8 @@
+import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
+import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
+import { DistributionEnum } from '$lib/report/formOptions/distribution';
+import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
+import { SpeciesEnum } from '$lib/report/formOptions/species';
 /**
  * @fileoverview Field mapping adapter for PDF-compliant Legacy REST API
  *
@@ -44,15 +49,22 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		// Sighting details
 		totalCount: legacyData.anzahl_gesamt,
 		juvenileCount: legacyData.anzahl_jung || 0,
-		species: legacyData.tierart || 0,
+		// Bleibt bei 0: Die Spec dokumentiert für `tierart` ausdrücklich
+		// "Default = 0" (= Schweinswal). Das ist ein zugesagter Vertrag,
+		// kein Versehen — anders als bei den Feldern darunter.
+		species: legacyData.tierart ?? SpeciesEnum.HARBOR_PORPOISE,
 
 		// Observation context
-		sightingFrom: legacyData.vonwo || 0, // vonwo maps to sightingFrom
+		// `??` statt `||`: Eine übermittelte 0 ist die aktive Auswahl "Sonstiges"
+		// und darf nicht zum Sentinel werden. Die Spec sagt für dieses Feld
+		// keinen Default zu — "nicht übermittelt" ist deshalb "keine Angabe",
+		// nicht "Sonstiges".
+		sightingFrom: legacyData.vonwo ?? SightingFromEnum.UNKNOWN, // vonwo maps to sightingFrom
 		sightingFromText: legacyData.vonwo_text || '',
 		distance: legacyData.entfernung || 0,
-		distribution: legacyData.verteilung || 0,
+		distribution: legacyData.verteilung ?? DistributionEnum.UNKNOWN,
 		distributionText: legacyData.verteilung_text, // Legacy API doesn't separate this
-		behavior: legacyData.verhalten || 0,
+		behavior: legacyData.verhalten ?? AnimalBehaviorEnum.UNKNOWN,
 		behaviorText: legacyData.verhalten_text, // Legacy API doesn't separate this
 		reaction: legacyData.reaktion || '',
 
@@ -70,7 +82,7 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		shipName: legacyData.schiffsname || '',
 		homePort: legacyData.heimathafen || '',
 		boatType: legacyData.bootstyp || '',
-		boatDrive: legacyData.bootsantrieb || 0,
+		boatDrive: legacyData.bootsantrieb ?? BoatDriveEnum.NONE,
 		boatDriveText: legacyData.bootsantrieb_text, // Legacy API doesn't separate this
 
 		// Media and observations

@@ -565,7 +565,8 @@ export const sightingSchemaBase = yup.object().shape({
 
 	/**
 	 * Genauere Beschreibung des Sichtungsortes
-	 * Erforderlich, wenn sightingFrom = 5 (Sonstiges)
+	 * Erforderlich, wenn sightingFrom = 0 (Sonstiges).
+	 * NICHT 5 — das ist seit 2026-07-29 `SightingFromEnum.UNKNOWN` ("Keine Angabe").
 	 */
 	sightingFromText: yup
 		.string()

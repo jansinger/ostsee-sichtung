@@ -171,10 +171,14 @@
 				getSightingFromLabel(currentSighting.sightingFrom),
 				hasValue(currentSighting.sightingFrom)
 			),
+			// Freitext immer zeigen, wenn vorhanden. Er gehört fachlich zu
+			// "Sonstiges" (0), nicht zu 4 (Fähre) — die frühere Bedingung
+			// versteckte ihn in 742 von 743 Fällen, darunter alle 713
+			// "Sonstiges"-Zeilen mit Angaben wie Kajak, SUP oder Seebrücke.
 			DataRow(
 				'Sichtung von (Details)',
 				currentSighting.sightingFromText,
-				hasValue(currentSighting.sightingFromText) && currentSighting.sightingFrom === 4
+				hasValue(currentSighting.sightingFromText)
 			),
 			DataRow(
 				'Entfernung',
@@ -189,7 +193,11 @@
 			DataRow(
 				'Verhalten (Details)',
 				currentSighting.behaviorText,
-				hasValue(currentSighting.behaviorText) && currentSighting.behavior === 3
+				// Freitext immer zeigen, wenn vorhanden. Er gehört fachlich zu
+				// "Sonstiges Verhalten" (0), nicht zu 3 (Langsames Schwimmen) —
+				// bei `verhalten = 3` hat keine einzige Zeile einen Text, der
+				// Freitext war also in allen 919 Fällen unsichtbar.
+				hasValue(currentSighting.behaviorText)
 			),
 			DataRow('Reaktion auf Boot', currentSighting.reaction, hasValue(currentSighting.reaction))
 		].filter((row): row is DataRowType => row !== undefined)
@@ -232,10 +240,15 @@
 				getBoatDriveLabel(currentSighting.boatDrive),
 				hasValue(currentSighting.boatDrive)
 			),
+			// Freitext immer zeigen, wenn vorhanden: Er ist laut Schema "auch bei
+			// Sonstiges" erlaubt und nicht an einen bestimmten Antrieb gebunden.
+			// Die frühere Bedingung `boatDrive === 4` (Vor Anker) versteckte den
+			// Text in 290 von 294 Fällen — u.a. bei allen 71 Land-Sichtungen,
+			// deren Melder dort "kein Boot" o.ä. eingetragen hatten.
 			DataRow(
 				'Bootsantrieb (Details)',
 				currentSighting.boatDriveText,
-				hasValue(currentSighting.boatDriveText) && currentSighting.boatDrive === 4
+				hasValue(currentSighting.boatDriveText)
 			),
 			DataRow('Anzahl Schiffe', currentSighting.shipCount, hasValue(currentSighting.shipCount))
 		].filter((row): row is DataRowType => row !== undefined)

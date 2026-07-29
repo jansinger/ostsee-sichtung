@@ -1,10 +1,136 @@
 import { MEDIA_CONSENT_VERSION } from '$lib/form/consent/mediaConsentVersion';
+import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
+import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
+import { DistributionEnum } from '$lib/report/formOptions/distribution';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
+import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting } from '$lib/types/sighting';
 import { sql } from 'drizzle-orm';
 import { berlinWallClockToUtc } from '$lib/server/datetime/berlinWallClockToUtc';
 import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
+
+/**
+ * Sentinel für eine fehlende Entfernungsangabe.
+ *
+ * `DistanceEnum` geht von 1 bis 5 — die `0` der Spalte `entfernung` ist damit
+ * keine Kategorie, sondern liegt bewusst außerhalb und wird von
+ * `getDistanceLabel` als "Unbekannt" aufgelöst. Anders als bei `tierart`,
+ * `verteilung` oder `verhalten` behauptet diese Null also nichts Falsches und
+ * braucht keinen eigenen Enum-Wert.
+ */
+const DISTANCE_UNSPECIFIED = 0;
+
+/**
+ * Prüft, ob für ein numerisches Auswahlfeld eine verwertbare Angabe vorliegt.
+ *
+ * Bewusst **nicht** über Truthiness: In mehreren Enums ist `0` eine echte,
+ * aktiv wählbare Kategorie ("Sonstiges", "Schweinswal") und darf nicht als
+ * fehlende Angabe gelten. Genau diese Verwechslung hat den Bestand verfälscht.
+ *
+ * `NaN` und nicht parsebare Strings gelten ebenfalls als fehlend — sonst würde
+ * eine kaputte Eingabe über `Number(…)` still zu `NaN` oder (früher, per
+ * Falsy-Zweig) zum Enum-Wert `0` und damit zu einer erfundenen Aussage.
+ */
+function isProvided(value: unknown): boolean {
+	if (value === undefined || value === null || String(value).trim() === '') {
+		return false;
+	}
+
+	return !Number.isNaN(Number(value));
+}
+
+/**
+ * Bestimmt die zu speichernde Tierart.
+ *
+ * Die Spalte `tierart` ist `smallint default(0) notNull` und `0` bedeutet
+ * **"Schweinswal"**. Eine fehlende Art wurde damit zur Meldung eines
+ * Schweinswals — für ein Forschungsmuseum ein Phantom-Datensatz in der
+ * häufigsten Art überhaupt (16.037 von 19.880 Zeilen tragen `0`; ob darunter
+ * Artefakte sind, lässt sich nachträglich nicht mehr feststellen, weil der
+ * Wert fachlich plausibel ist).
+ *
+ * `species` ist Pflichtfeld — ein Fehlen ist deshalb ein echter Fehler und
+ * kein zu ratender Wert. Anders als bei den übrigen Feldern wird hier bewusst
+ * **kein** Ersatzwert gesetzt.
+ *
+ * Der Legacy-Vertrag bleibt unberührt: `mapLegacyToCurrentSchema` setzt den
+ * dokumentierten Default (`tierart ?? SpeciesEnum.HARBOR_PORPOISE`) bereits an
+ * der Legacy-Grenze, bevor diese Funktion überhaupt läuft. Nullish-Coalescing,
+ * nicht `||` — eine übermittelte `0` ist eine gemeldete Art und darf nicht als
+ * fehlend behandelt werden.
+ */
+function resolveSpecies(formData: SightingFormValues): number {
+	if (!isProvided(formData.species)) {
+		throw new Error(
+			'Tierart fehlt: Ohne Angabe würde die Sichtung als Schweinswal (0) gespeichert werden.'
+		);
+	}
+
+	return Number(formData.species);
+}
+
+/**
+ * Bestimmt den zu speichernden Beobachtungsort.
+ *
+ * Die Spalte `vonwo` ist `integer default(0) notNull`, und `0` bedeutet
+ * "Sonstiges". Ohne Angabe entstand bisher trotzdem eine `0` — der Datensatz
+ * behauptete also eine Antwort, die nie gegeben wurde.
+ *
+ * **Anders als beim Bootsantrieb wurde der Bestand nicht korrigiert.** Bei
+ * `vonwo` ist "Sonstiges" eine echte, häufig genutzte Kategorie: 713 der 1.833
+ * Null-Zeilen tragen einen Freitext (Kajak 91×, Mehrzweckschiff 37×, SUP 31×,
+ * Ruderboot 24× …), 538 einen Schiffsnamen. Für die restlichen Zeilen gibt es
+ * keine ableitbare Wahrheit — wer den Ort nie angegeben hat, hat ihn nirgends
+ * angegeben. Ein UPDATE wäre entweder destruktiv oder unbelegt (Messung
+ * 2026-07-29, Entscheidung des Nutzers).
+ *
+ * Diese Funktion verhindert deshalb nur, dass NEUE Zeilen dieselbe
+ * Doppeldeutigkeit erben.
+ */
+function resolveSightingFrom(formData: SightingFormValues): number {
+	// `isProvided` statt Truthiness: Eine aktive Auswahl "Sonstiges" ist `0`
+	// und damit falsy — sie darf nicht als fehlende Angabe gewertet werden.
+	return isProvided(formData.sightingFrom)
+		? Number(formData.sightingFrom)
+		: SightingFromEnum.UNKNOWN;
+}
+
+/**
+ * Bestimmt den zu speichernden Bootsantrieb.
+ *
+ * Die Spalte `bootsantrieb` ist `integer default(0) notNull`, und `0` bedeutet
+ * "Sonstiger Bootsantrieb" — nicht "unbekannt" und nicht "kein Boot". Ohne
+ * diese Fallunterscheidung trug jede Sichtung von Land die aktive Behauptung,
+ * es habe ein Boot mit ungewöhnlichem Antrieb gegeben. Betroffen waren 5.858
+ * von 19.880 Zeilen (Stand 2026-07-29), wodurch "Sonstiger" in jeder
+ * Antriebs-Auswertung fälschlich die häufigste Kategorie war.
+ *
+ * Das Formular fragt den Antrieb bei Land-Sichtungen nicht mehr ab
+ * (`sightingSchema`, `when('sightingFrom', …)`) — hier wird entschieden, was
+ * stattdessen gespeichert wird.
+ *
+ * Ein bereits vorhandener Wert wird **nicht** überschrieben: Beim Admin-Edit
+ * einer Alt-Sichtung darf eine gespeicherte Angabe nicht still verloren gehen.
+ *
+ * **Ohne Angabe wird immer `NONE` geschrieben, nie `OTHER`** — `OTHER` ist eine
+ * aktive Wahl des Melders und darf nicht aus einer Nicht-Antwort entstehen.
+ *
+ * Bekannte Unschärfe: `NONE` heißt wörtlich "Kein Boot". Bei Sichtungen von
+ * einer Fähre oder von "Sonstiges" (Kajak, SUP) ist durchaus ein Fahrzeug im
+ * Spiel, dessen Antrieb nur niemand angegeben hat — dort ist `NONE` streng
+ * genommen zu stark. Das ist bewusst in Kauf genommen: Die Alternative wäre ein
+ * weiterer Enum-Wert "Antrieb unbekannt" und damit eine dritte Änderung am
+ * Legacy-Vertrag für dieselbe Spalte. Eine falsche Antriebsart zu behaupten
+ * wiegt schwerer als die Aussage "kein Boot" bei einem Kajak.
+ */
+function resolveBoatDrive(formData: SightingFormValues): number {
+	if (isProvided(formData.boatDrive)) {
+		return Number(formData.boatDrive);
+	}
+
+	return BoatDriveEnum.NONE;
+}
 
 /**
  * Konvertiert Formulardaten in das Datenbankschema für Meeressäuger-Sichtungen.
@@ -100,7 +226,7 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 
 		// === TIERBEOBACHTUNG ===
 		// Tierart (numerische ID aus Dropdown)
-		species: formData.species ? Number(formData.species) : 0,
+		species: resolveSpecies(formData),
 		// Anzahl Tiere
 		totalCount: formData.totalCount ? Number(formData.totalCount) : 0,
 		juvenileCount: formData.juvenileCount ? Number(formData.juvenileCount) : 0,
@@ -112,15 +238,23 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 
 		// === BEOBACHTUNGSDETAILS ===
 		// Beobachtungsplattform (Land, Boot, etc.)
-		sightingFrom: formData.sightingFrom ? Number(formData.sightingFrom) : 0,
+		sightingFrom: resolveSightingFrom(formData),
 		sightingFromText: formData.sightingFromText, // Freitext-Ergänzung
 		// Entfernung zur Sichtung
-		distance: formData.distance ? Number(formData.distance) : 0,
+		// `entfernung` ist die Ausnahme unter den Auswahlfeldern: Das Enum geht
+		// von 1 bis 5, `0` ist also keine Kategorie, sondern ein Sentinel für
+		// "nicht angegeben" (282 Bestandszeilen) und wird als "Unbekannt"
+		// angezeigt. Hier ist die Null deshalb korrekt und bleibt.
+		distance: isProvided(formData.distance) ? Number(formData.distance) : DISTANCE_UNSPECIFIED,
 		// Verteilung der Tiere
-		distribution: formData.distribution ? Number(formData.distribution) : 0,
+		distribution: isProvided(formData.distribution)
+			? Number(formData.distribution)
+			: DistributionEnum.UNKNOWN,
 		distributionText: formData.distributionText,
 		// Verhalten der Tiere
-		behavior: formData.behavior ? Number(formData.behavior) : 0,
+		behavior: isProvided(formData.behavior)
+			? Number(formData.behavior)
+			: AnimalBehaviorEnum.UNKNOWN,
 		behaviorText: formData.behaviorText,
 		// Reaktion auf Beobachter
 		reaction: formData.reaction,
@@ -150,8 +284,8 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 		boatType: formData.boatType,
 		// Anzahl Schiffe in der Umgebung
 		shipCount: formData.shipCount ? Number(formData.shipCount) : null,
-		// Antriebsart
-		boatDrive: formData.boatDrive ? Number(formData.boatDrive) : 0,
+		// Antriebsart (bei Land-Sichtungen "Kein Boot", siehe resolveBoatDrive)
+		boatDrive: resolveBoatDrive(formData),
 		boatDriveText: formData.boatDriveText, // Freitext-Ergänzung
 
 		// === KONTAKTINFORMATIONEN ===

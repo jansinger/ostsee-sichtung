@@ -1,4 +1,9 @@
+import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
+import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
+import { DistributionEnum } from '$lib/report/formOptions/distribution';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
+import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
+import { SpeciesEnum } from '$lib/report/formOptions/species';
 import type { SightingFormData } from '$lib/report/types';
 import type { SightingFormValues } from '$lib/types/Form';
 import { TEST_TIME_ZONES, withTimeZone } from '$lib/server/datetime/withTimeZone.testutil';
@@ -461,16 +466,21 @@ describe('mapFormToSighting', () => {
 			expect(result.totalCount).toBe(0);
 		});
 
-		it('sollte ungültige numerische Werte korrekt behandeln', () => {
+		it('behandelt NaN bei der Tierart als fehlende Angabe, nicht als Schweinswal', () => {
+			// Früher fiel NaN über den Falsy-Zweig auf `0` — und `0` ist
+			// "Schweinswal". Eine kaputte Eingabe erzeugte damit eine
+			// erfundene Artmeldung.
 			const formData = createMinimalFormData();
 			formData.species = NaN;
+
+			expect(() => mapFormToSighting(formData)).toThrowError(/Tierart/i);
+		});
+
+		it('konvertiert NaN bei der Gesamtzahl weiterhin zu 0', () => {
+			const formData = createMinimalFormData();
 			formData.totalCount = NaN;
 
-			const result = mapFormToSighting(formData);
-
-			// NaN wird zu 0 konvertiert (da isNaN(NaN) || 0 = 0)
-			expect(result.species).toBe(0);
-			expect(result.totalCount).toBe(0);
+			expect(mapFormToSighting(formData).totalCount).toBe(0);
 		});
 	});
 
@@ -627,6 +637,262 @@ describe('mapFormToSighting', () => {
 
 			expect(result.behaviorText).toBe('Äöü ß & < > " \' 🐋');
 			expect(result.otherObservations).toBe('Line 1\\nLine 2\\tTabbed');
+		});
+	});
+
+	describe('Bootsantrieb bei Land-Sichtungen', () => {
+		/**
+		 * Die Spalte `bootsantrieb` ist `integer default(0) notNull` und `0`
+		 * bedeutet "Sonstiger Bootsantrieb". Ohne expliziten Wert trug jede
+		 * Land-Sichtung damit die aktive Behauptung, es habe ein Boot mit
+		 * ungewöhnlichem Antrieb gegeben. `NONE` macht "kein Boot" eindeutig.
+		 */
+		it('speichert NONE statt OTHER, wenn von Land beobachtet wurde', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = SightingFromEnum.LAND;
+			formData.boatDrive = undefined;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.boatDrive).toBe(BoatDriveEnum.NONE);
+			expect(result.boatDrive).not.toBe(BoatDriveEnum.OTHER);
+		});
+
+		it('speichert NONE auch, wenn sightingFrom als String ankommt (HTML-Select)', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = String(SightingFromEnum.LAND) as unknown as number;
+			formData.boatDrive = undefined;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.boatDrive).toBe(BoatDriveEnum.NONE);
+		});
+
+		it('überschreibt einen vorhandenen Antrieb bei Land NICHT', () => {
+			// Admin-Edit einer Alt-Sichtung: der gespeicherte Wert darf nicht
+			// still verloren gehen (76 solcher Zeilen im Bestand).
+			const formData = createMinimalFormData();
+			formData.sightingFrom = SightingFromEnum.LAND;
+			formData.boatDrive = BoatDriveEnum.ANCHORED;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.boatDrive).toBe(BoatDriveEnum.ANCHORED);
+		});
+
+		it('behauptet nie "Sonstiger Antrieb", wenn kein Antrieb angegeben wurde', () => {
+			// Der Fallback darf keine Antriebsart erfinden. Ohne Angabe wird
+			// NONE geschrieben — nie OTHER, das eine aktive Wahl bedeutet.
+			for (const from of [
+				SightingFromEnum.SAILBOAT,
+				SightingFromEnum.MOTORBOAT,
+				SightingFromEnum.FERRY,
+				SightingFromEnum.OTHER,
+				SightingFromEnum.UNKNOWN
+			]) {
+				const formData = createMinimalFormData();
+				formData.sightingFrom = from;
+				formData.boatDrive = undefined;
+
+				expect(mapFormToSighting(formData).boatDrive).toBe(BoatDriveEnum.NONE);
+				expect(mapFormToSighting(formData).boatDrive).not.toBe(BoatDriveEnum.OTHER);
+			}
+		});
+
+		it('schreibt NONE auch, wenn sightingFrom selbst fehlt', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = undefined as unknown as number;
+			formData.boatDrive = undefined;
+
+			expect(mapFormToSighting(formData).boatDrive).toBe(BoatDriveEnum.NONE);
+		});
+
+		it('wertet NaN und Leerstring als fehlende Angabe', () => {
+			for (const value of [NaN, '']) {
+				const formData = createMinimalFormData();
+				formData.sightingFrom = SightingFromEnum.MOTORBOAT;
+				formData.boatDrive = value as unknown as number;
+
+				expect(mapFormToSighting(formData).boatDrive).toBe(BoatDriveEnum.NONE);
+			}
+		});
+
+		it('erhält eine explizite Auswahl "Sonstiger Antrieb" auf einem Boot', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = SightingFromEnum.MOTORBOAT;
+			formData.boatDrive = BoatDriveEnum.OTHER;
+
+			expect(mapFormToSighting(formData).boatDrive).toBe(BoatDriveEnum.OTHER);
+		});
+	});
+
+	describe('Beobachtungsort ohne Angabe', () => {
+		/**
+		 * `vonwo` ist `integer default(0) notNull` und `0` bedeutet "Sonstiges"
+		 * — eine echte Kategorie. Ohne Angabe entstand bisher trotzdem eine `0`
+		 * und damit eine Antwort, die nie gegeben wurde.
+		 */
+		it('speichert UNKNOWN, wenn nichts angegeben wurde', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = undefined as unknown as number;
+
+			expect(mapFormToSighting(formData).sightingFrom).toBe(SightingFromEnum.UNKNOWN);
+		});
+
+		it('speichert UNKNOWN auch bei null', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = null as unknown as number;
+
+			expect(mapFormToSighting(formData).sightingFrom).toBe(SightingFromEnum.UNKNOWN);
+		});
+
+		it('speichert UNKNOWN bei leerem String (Select ohne Auswahl)', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = '' as unknown as number;
+
+			expect(mapFormToSighting(formData).sightingFrom).toBe(SightingFromEnum.UNKNOWN);
+		});
+
+		it('erhält eine aktive Auswahl "Sonstiges" (0) — das ist keine fehlende Angabe', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = SightingFromEnum.OTHER;
+
+			expect(mapFormToSighting(formData).sightingFrom).toBe(SightingFromEnum.OTHER);
+		});
+
+		it('reicht alle übrigen Werte unverändert durch, auch als String', () => {
+			for (const from of [
+				SightingFromEnum.SAILBOAT,
+				SightingFromEnum.MOTORBOAT,
+				SightingFromEnum.LAND,
+				SightingFromEnum.FERRY
+			]) {
+				const numeric = createMinimalFormData();
+				numeric.sightingFrom = from;
+				expect(mapFormToSighting(numeric).sightingFrom).toBe(from);
+
+				const asString = createMinimalFormData();
+				asString.sightingFrom = String(from) as unknown as number;
+				expect(mapFormToSighting(asString).sightingFrom).toBe(from);
+			}
+		});
+	});
+
+	describe('Entfernung ohne Angabe', () => {
+		/**
+		 * `entfernung` ist `integer default(0) notNull`, das Enum geht aber von
+		 * 1 bis 5 — `0` ist also **keine** Kategorie, sondern ein Sentinel für
+		 * "nicht angegeben" (282 Bestandszeilen). Anders als bei `verteilung`
+		 * oder `tierart` behauptet die Null hier nichts Falsches; sie wird als
+		 * "Unbekannt" angezeigt. Bleibt deshalb bewusst bei 0.
+		 */
+		it('schreibt den Sentinel 0, wenn keine Entfernung angegeben wurde', () => {
+			const formData = createMinimalFormData();
+			formData.distance = undefined as unknown as number;
+
+			expect(mapFormToSighting(formData).distance).toBe(0);
+		});
+
+		it('behandelt NaN und Leerstring ebenfalls als fehlende Angabe', () => {
+			for (const value of [NaN, '']) {
+				const formData = createMinimalFormData();
+				formData.distance = value as unknown as number;
+
+				expect(mapFormToSighting(formData).distance).toBe(0);
+			}
+		});
+
+		it('reicht gültige Entfernungen unverändert durch, auch als String', () => {
+			const numeric = createMinimalFormData();
+			numeric.distance = 5;
+			expect(mapFormToSighting(numeric).distance).toBe(5);
+
+			const asString = createMinimalFormData();
+			asString.distance = '5' as unknown as number;
+			expect(mapFormToSighting(asString).distance).toBe(5);
+		});
+	});
+
+	describe('Verteilung und Verhalten ohne Angabe', () => {
+		it('speichert UNKNOWN statt OTHER, wenn die Verteilung fehlt', () => {
+			const formData = createMinimalFormData();
+			formData.distribution = undefined;
+
+			expect(mapFormToSighting(formData).distribution).toBe(DistributionEnum.UNKNOWN);
+		});
+
+		it('speichert UNKNOWN statt OTHER, wenn das Verhalten fehlt', () => {
+			const formData = createMinimalFormData();
+			formData.behavior = undefined;
+
+			expect(mapFormToSighting(formData).behavior).toBe(AnimalBehaviorEnum.UNKNOWN);
+		});
+
+		it('erhält die aktive Wahl "Sonstige" (0) in beiden Feldern', () => {
+			const formData = createMinimalFormData();
+			formData.distribution = DistributionEnum.OTHER;
+			formData.behavior = AnimalBehaviorEnum.OTHER;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.distribution).toBe(DistributionEnum.OTHER);
+			expect(result.behavior).toBe(AnimalBehaviorEnum.OTHER);
+		});
+
+		it('reicht übrige Werte unverändert durch, auch als String', () => {
+			const formData = createMinimalFormData();
+			formData.distribution = String(DistributionEnum.SCHOOLS) as unknown as number;
+			formData.behavior = String(AnimalBehaviorEnum.VARYING_COURSE) as unknown as number;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.distribution).toBe(DistributionEnum.SCHOOLS);
+			expect(result.behavior).toBe(AnimalBehaviorEnum.VARYING_COURSE);
+		});
+	});
+
+	describe('Tierart — kein stiller Schweinswal', () => {
+		/**
+		 * `tierart` ist `smallint default(0) notNull` und `0` bedeutet
+		 * "Schweinswal". Eine fehlende Art wurde damit zur Meldung eines
+		 * Schweinswals — für ein Forschungsmuseum ein Phantom-Datensatz.
+		 *
+		 * `species` ist Pflichtfeld; ein Fehlen ist deshalb ein echter Fehler
+		 * und kein zu ratender Wert. Der Legacy-Vertrag bleibt unberührt:
+		 * `mapLegacyToCurrentSchema` setzt den dokumentierten Default
+		 * (`tierart ?? SpeciesEnum.HARBOR_PORPOISE`) bereits an der Legacy-Grenze.
+		 */
+		it('wirft, wenn keine Tierart angegeben wurde', () => {
+			const formData = createMinimalFormData();
+			formData.species = undefined as unknown as number;
+
+			expect(() => mapFormToSighting(formData)).toThrowError(/Tierart/i);
+		});
+
+		it('wirft auch bei null und leerem String', () => {
+			for (const value of [null, '']) {
+				const formData = createMinimalFormData();
+				formData.species = value as unknown as number;
+
+				expect(() => mapFormToSighting(formData)).toThrowError(/Tierart/i);
+			}
+		});
+
+		it('erhält eine aktive Auswahl "Schweinswal" (0)', () => {
+			const formData = createMinimalFormData();
+			formData.species = SpeciesEnum.HARBOR_PORPOISE;
+
+			expect(mapFormToSighting(formData).species).toBe(SpeciesEnum.HARBOR_PORPOISE);
+		});
+
+		it('reicht andere Arten unverändert durch, auch als String', () => {
+			const numeric = createMinimalFormData();
+			numeric.species = SpeciesEnum.GREY_SEAL;
+			expect(mapFormToSighting(numeric).species).toBe(SpeciesEnum.GREY_SEAL);
+
+			const asString = createMinimalFormData();
+			asString.species = String(SpeciesEnum.GREY_SEAL) as unknown as number;
+			expect(mapFormToSighting(asString).species).toBe(SpeciesEnum.GREY_SEAL);
 		});
 	});
 
