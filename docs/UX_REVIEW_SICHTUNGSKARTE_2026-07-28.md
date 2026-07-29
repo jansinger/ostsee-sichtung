@@ -250,8 +250,8 @@ Bewertung: ✅ erfüllt · ⚠️ teilweise · ❌ nicht erfüllt
 | Karte fokussierbar, Tastatur-Pan/Zoom               | ✅ behoben 2026-07-29 (`tabindex="0"` + Fokusring)     | K3      |
 | Marker per Tastatur/SR erreichbar                   | ✅ über Listenansicht (Umschalter „Karte / Liste")     | K3      |
 | Datenalternative (Tabelle/Liste)                    | ✅ behoben 2026-07-29 (`SightingsListView`)            | K3      |
-| Korrekte ARIA-Semantik                              | ❌                                                     | H5      |
-| Einzeltasten-Shortcuts abschaltbar                  | ❌                                                     | H7      |
+| Korrekte ARIA-Semantik                              | ✅ behoben 2026-07-29 (region + inert + Fokus-Mgmt)    | H5      |
+| Einzeltasten-Shortcuts abschaltbar                  | ✅ behoben 2026-07-29 (nur bei Fokus in der Karte)     | H7      |
 | Kontraste in Panels/Popups                          | ⚠️ Beluga-Badge, sonst ok                              | M1      |
 
 ---
@@ -272,7 +272,7 @@ Bewertung: ✅ erfüllt · ⚠️ teilweise · ❌ nicht erfüllt
 **Mittelfristig:**
 
 - K3: `tabindex` + Fokusring + Skip-Link; Listen-/Tabellenansicht der gefilterten Sichtungen. — **Umgesetzt 2026-07-29** (`SightingsMapView.svelte`, `SightingsListView.svelte`, `listViewUtils.ts`).
-- H5: ARIA-Sanierung der Panels (inert, region, Fokus-Management).
+- H5: ARIA-Sanierung der Panels (inert, region, Fokus-Management). — **Umgesetzt 2026-07-29** (`FilterPanel.svelte`, `LegendPanel.svelte`, `LoadingOverlay.svelte`, `panelFocus.ts`; inkl. H7: Shortcuts nur bei Fokus in der Karten-Region, Panel-Steuerung über `bind:isOpen` statt DOM-Queries).
 - M1: Einheitliches Marker-/Legenden-Codierungssystem (colorblind-safe, Legende aus gemeinsamen Konstanten).
 - M4: URL-State + Filter-Chips + Reset.
 - M7: Loading-Konzept (Vollbild nur initial).

@@ -109,6 +109,11 @@
 	// zur Karte und zeigt dieselbe gefilterte Datenmenge.
 	let viewMode = $state<'map' | 'list'>('map');
 	let showKeyboardHelp = $state(false);
+	// H5: Panel-Zustände leben hier und werden per bind:isOpen an die Panels
+	// gereicht — Tastaturkürzel schalten den State direkt statt DOM-Buttons
+	// per querySelector zu klicken.
+	let filterOpen = $state(false);
+	let legendOpen = $state(false);
 	let isLoadingData = $state(false);
 	let isInitialLoading = $state(true);
 	let loadingType = $state<'initial' | 'filter' | 'features'>('initial');
@@ -355,6 +360,36 @@
 				return;
 			}
 
+			// Escape ist kein Zeichen-Shortcut (WCAG 2.1.4 greift nicht) und
+			// wirkt deshalb weiterhin global.
+			// QW3: Kaskade Popup → Hilfe-Modal → Filter-Panel → Legende.
+			// Jede Stufe schließt nur genau eine Ebene pro Tastendruck.
+			if (event.key === 'Escape') {
+				if (mapInstance?.closePopup()) {
+					return;
+				}
+				if (showKeyboardHelp) {
+					showKeyboardHelp = false;
+					return;
+				}
+				if (filterOpen) {
+					filterOpen = false;
+					return;
+				}
+				if (legendOpen) {
+					legendOpen = false;
+				}
+				return;
+			}
+
+			// H7 (WCAG 2.1.4): Einzeltasten-Shortcuts nur, wenn der Fokus in
+			// der Karten-Region liegt — sonst lösen Spracheingabe oder
+			// beiläufiges Tippen sie versehentlich aus.
+			const mapElement = document.getElementById(mapContainerId);
+			if (!(event.target instanceof Node) || !mapElement?.contains(event.target)) {
+				return;
+			}
+
 			switch (event.key) {
 				case 'h':
 				case 'H':
@@ -363,59 +398,20 @@
 					showKeyboardHelp = !showKeyboardHelp;
 					break;
 				case 'f':
-				case 'F': {
+				case 'F':
 					event.preventDefault();
-					// Toggle Filter Panel
-					const filterButton = document.querySelector(
-						'[aria-label*="Filter"]'
-					) as HTMLButtonElement;
-					filterButton?.click();
+					filterOpen = !filterOpen;
 					break;
-				}
 				case 'l':
-				case 'L': {
+				case 'L':
 					event.preventDefault();
-					// Toggle Legende Panel
-					const legendButton = document.querySelector(
-						'[aria-label*="Legende"]'
-					) as HTMLButtonElement;
-					legendButton?.click();
+					legendOpen = !legendOpen;
 					break;
-				}
 				case 'z':
-				case 'Z': {
+				case 'Z':
 					event.preventDefault();
-					// Zoom auf alle Meldungen
-					const zoomButton = document.querySelector(
-						'.zoom-all-control button'
-					) as HTMLButtonElement;
-					zoomButton?.click();
+					mapInstance?.zoomAllFeatures();
 					break;
-				}
-				case 'Escape': {
-					// QW3: Kaskade Popup → Hilfe-Modal → Filter-Panel → Legende.
-					// Jede Stufe schließt nur genau eine Ebene pro Tastendruck.
-					if (mapInstance?.closePopup()) {
-						break;
-					}
-					if (showKeyboardHelp) {
-						showKeyboardHelp = false;
-						break;
-					}
-					// Schließe offene Panels in der Priorität: Filter → Legende
-					const filterPanel = document.querySelector('[aria-labelledby="filter-title"]');
-					const legendPanel = document.querySelector('[aria-labelledby="legend-title"]');
-					if (filterPanel?.getAttribute('aria-hidden') === 'false') {
-						filterPanel
-							.querySelector<HTMLButtonElement>('[aria-label="Filter schließen"]')
-							?.click();
-					} else if (legendPanel?.getAttribute('aria-hidden') === 'false') {
-						legendPanel
-							.querySelector<HTMLButtonElement>('[aria-label="Legende schließen"]')
-							?.click();
-					}
-					break;
-				}
 			}
 		};
 		document.addEventListener('keydown', keyboardHandler);
@@ -593,10 +589,16 @@
 	</div>
 
 	<!-- Filter-Panel Komponente -->
-	<FilterPanel {years} {defaultYear} {yearCounts} isLoading={isLoadingData} />
+	<FilterPanel
+		{years}
+		{defaultYear}
+		{yearCounts}
+		isLoading={isLoadingData}
+		bind:isOpen={filterOpen}
+	/>
 
 	<!-- Legende-Panel Komponente -->
-	<LegendPanel {translations} {counts} />
+	<LegendPanel {translations} {counts} bind:isOpen={legendOpen} />
 
 	<!-- Tastatur-Hilfe Button -->
 	<button
@@ -671,6 +673,10 @@
 				</div>
 
 				<div class="text-base-content/60 mt-6 space-y-1 text-xs">
+					<p class="flex items-center gap-2">
+						<Icon icon="lucide:info" width="14" height="14" class="text-primary" />
+						Die Buchstaben-Kürzel wirken, solange der Fokus auf der Karte liegt
+					</p>
 					<p class="flex items-center gap-2">
 						<Icon icon="lucide:navigation" width="14" height="14" class="text-primary" />
 						Karte mit Tab fokussieren, dann mit den Pfeiltasten verschieben und mit + / − zoomen
