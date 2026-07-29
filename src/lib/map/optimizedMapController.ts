@@ -16,6 +16,7 @@ import Cluster from 'ol/source/Cluster';
 import VectorSource from 'ol/source/Vector';
 import { Circle, Fill, Stroke, Style } from 'ol/style';
 import { LocationControl } from './controls/LocationControl.js';
+import { geolocationErrorMessage } from './controls/locationControlState.js';
 import { ZoomAllControl } from './controls/ZoomAllControl.js';
 import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 import { clampExtentToBaltic, type Extent } from './extentUtils';
@@ -63,6 +64,11 @@ export interface MapOptions {
 	initialSearchTerm?: string;
 	onLoading?: (isLoading: boolean) => void;
 	onError?: (error: Error) => void;
+	/**
+	 * N2: Geolocation-Fehler (verweigerte Berechtigung, Timeout, …) — erhält
+	 * eine bereits nutzerverständliche deutsche Meldung für die Toast-Anzeige.
+	 */
+	onGeolocationError?: (message: string) => void;
 }
 
 /**
@@ -70,8 +76,14 @@ export interface MapOptions {
  * Controls nutzen dieses Interface statt des konkreten SichtungenMap-Typs.
  */
 export interface MapController {
-	toggleGeolocation(): boolean;
+	toggleGeolocation(): void;
 	zoomAllFeatures(): void;
+	/**
+	 * N2: Registriert einen Listener für Tracking-Zustandswechsel — feuert auch,
+	 * wenn der Controller das Tracking selbst stoppt (Geolocation-Fehler), damit
+	 * die LocationControl ihren Toggle-Zustand zurücksetzen kann.
+	 */
+	onTrackingChange(callback: (isTracking: boolean) => void): void;
 }
 
 /**
@@ -110,6 +122,9 @@ export class SichtungenMap {
 	private locationSource!: VectorSource<Feature<Geometry>>;
 	private locationLayer!: VectorLayer<VectorSource<Feature<Geometry>>>;
 	private isTracking: boolean = false;
+	private trackingChangeCallbacks: ((isTracking: boolean) => void)[] = [];
+	// N2: Nur beim ersten Positionsfix pro Tracking-Sitzung zentrieren
+	private hasCenteredOnFirstFix: boolean = false;
 
 	constructor(options: MapOptions) {
 		this.translations = options.translations;
@@ -695,6 +710,9 @@ export class SichtungenMap {
 	}
 
 	private initializeGeolocation(): void {
+		// Datenschutz: Die Positionsdaten bleiben rein lokal im Browser — sie
+		// werden ausschließlich im locationLayer gerendert; es wird kein Request
+		// mit Koordinaten an den Server oder Dritte ausgelöst.
 		this.geolocation = new Geolocation({
 			trackingOptions: {
 				enableHighAccuracy: true
@@ -706,12 +724,20 @@ export class SichtungenMap {
 			this.geolocation.on('change:position', () => {
 				const coordinates = this.geolocation.getPosition();
 				if (coordinates) {
-					this.locationSource.clear();
-					const positionFeature = new Feature({
-						geometry: new OlPoint(coordinates),
-						type: 'location'
-					});
-					this.locationSource.addFeature(positionFeature);
+					this.replaceLocationFeature('location', new OlPoint(coordinates));
+
+					// N2: Beim ersten Fix einer Tracking-Sitzung auf die Position
+					// zentrieren — danach nicht mehr (kein Auto-Follow), damit der
+					// Nutzer die Karte frei verschieben kann.
+					if (!this.hasCenteredOnFirstFix) {
+						this.hasCenteredOnFirstFix = true;
+						const view = this.map.getView();
+						view.animate({
+							center: coordinates,
+							zoom: Math.max(view.getZoom() ?? 0, 10),
+							duration: 800
+						});
+					}
 				}
 			}) as EventsKey
 		);
@@ -720,15 +746,35 @@ export class SichtungenMap {
 			this.geolocation.on('change:accuracyGeometry', () => {
 				const accuracy = this.geolocation.getAccuracyGeometry();
 				if (accuracy) {
-					this.locationSource.clear();
-					const accuracyFeature = new Feature({
-						geometry: accuracy,
-						type: 'accuracy'
-					});
-					this.locationSource.addFeature(accuracyFeature);
+					this.replaceLocationFeature('accuracy', accuracy);
 				}
 			}) as EventsKey
 		);
+
+		// N2: Fehlerpfad — verweigerte Berechtigung, Timeout etc. Tracking
+		// stoppen (setzt via onTrackingChange auch die LocationControl zurück)
+		// und eine verständliche Meldung an die View geben.
+		this.geolocationKeys.push(
+			this.geolocation.on('error', (event) => {
+				logger.warn({ code: event.code, message: event.message }, 'Geolocation error');
+				this.stopTracking();
+				this.options.onGeolocationError?.(geolocationErrorMessage(event.code));
+			}) as EventsKey
+		);
+	}
+
+	/**
+	 * Ersetzt genau das Feature des angegebenen Typs im Location-Layer.
+	 * Positions- und Genauigkeits-Feature dürfen sich nicht gegenseitig
+	 * löschen — ein pauschales clear() ließ sonst immer nur das zuletzt
+	 * aktualisierte Feature übrig.
+	 */
+	private replaceLocationFeature(type: 'location' | 'accuracy', geometry: Geometry): void {
+		this.locationSource
+			.getFeatures()
+			.filter((feature) => feature.get('type') === type)
+			.forEach((feature) => this.locationSource.removeFeature(feature));
+		this.locationSource.addFeature(new Feature({ geometry, type }));
 	}
 
 	private applyFilter(searchTerm: string): void {
@@ -751,13 +797,24 @@ export class SichtungenMap {
 
 	public startTracking(): void {
 		this.isTracking = true;
+		this.hasCenteredOnFirstFix = false;
 		this.geolocation.setTracking(true);
+		this.notifyTrackingChange();
 	}
 
 	public stopTracking(): void {
 		this.isTracking = false;
 		this.geolocation.setTracking(false);
 		this.locationSource.clear();
+		this.notifyTrackingChange();
+	}
+
+	public onTrackingChange(callback: (isTracking: boolean) => void): void {
+		this.trackingChangeCallbacks.push(callback);
+	}
+
+	private notifyTrackingChange(): void {
+		this.trackingChangeCallbacks.forEach((callback) => callback(this.isTracking));
 	}
 
 	public isCurrentlyTracking(): boolean {
@@ -783,13 +840,11 @@ export class SichtungenMap {
 		});
 	}
 
-	public toggleGeolocation(): boolean {
+	public toggleGeolocation(): void {
 		if (this.isTracking) {
 			this.stopTracking();
-			return false;
 		} else {
 			this.startTracking();
-			return true;
 		}
 	}
 
@@ -817,6 +872,7 @@ export class SichtungenMap {
 		this.geolocationKeys.forEach((k) => unByKey(k));
 		this.geolocationKeys = [];
 		this.geolocation.dispose();
+		this.trackingChangeCallbacks = [];
 
 		// View resolution listener entfernen
 		if (this.viewResolutionKey) {
