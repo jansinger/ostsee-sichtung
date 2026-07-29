@@ -197,13 +197,14 @@ describe('DualRangeSlider', () => {
 		expect(document.querySelector('#time-end')).not.toBeNull();
 	});
 
-	it('übernimmt einen externen Reset (beide Werte + Events, z. B. Jahreswechsel QW4)', async () => {
+	it('übernimmt einen externen Reset (beide Werte + ein Event, z. B. Jahreswechsel QW4)', async () => {
 		render(DualRangeSlider, { max: 364, year: 2025 });
 
 		setRangeValue('time-range-start', 100);
 		setRangeValue('time-range-end', 200);
 
-		// timeSliderManager.reset(): max/value direkt setzen, dann Events
+		// timeSliderManager.reset(): max/value direkt setzen, dann EIN Event —
+		// die Handler lesen beide Slider, ein Event synct den ganzen State.
 		const start = getRange('time-range-start');
 		const end = getRange('time-range-end');
 		start.max = '365';
@@ -211,7 +212,6 @@ describe('DualRangeSlider', () => {
 		start.value = '0';
 		end.value = '365';
 		start.dispatchEvent(new Event('input', { bubbles: true }));
-		end.dispatchEvent(new Event('input', { bubbles: true }));
 
 		await vi.waitFor(() => {
 			expect(getRange('time-range-start').value).toBe('0');
