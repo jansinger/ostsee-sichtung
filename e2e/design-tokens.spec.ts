@@ -149,7 +149,17 @@ test.describe('Styleguide — Bedienung', () => {
 	   der Hydration tut nichts, weil `onclick` dann noch nicht am Element
 	   hängt. `networkidle` plus ein hydrationsabhängiges Element ist dasselbe
 	   Muster wie in `FormPage.goto()`; hier dient `data-density` als Signal:
-	   das Attribut entsteht erst durch den `$effect` der Seite. */
+	   das Attribut entsteht erst durch den `$effect` der Seite.
+
+	   Damit trägt `data-density` hier zwei Bedeutungen gleichzeitig: den
+	   Dichte-Zustand und — über seine bloße Anwesenheit — das Hydrations-Signal.
+	   Solange `tokens.css` nur `[data-density='field']` kennt, ist das
+	   folgenlos, weil „comfortable" ein reiner Marker ohne Wirkung ist. Sobald
+	   jemand `[data-density='comfortable']` stylt oder das Attribut in
+	   `app.html` vorbelegt, koppelt dieser `beforeEach` an etwas, das er nie
+	   prüfen wollte: er wartet dann auf einen Zustand, den schon das SSR-HTML
+	   mitbringt, und klickt wieder gegen einen toten Button. In dem Fall
+	   braucht die Hydration ein eigenes Signal — nicht dieses Attribut. */
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/styleguide');
 		await page.waitForLoadState('networkidle');

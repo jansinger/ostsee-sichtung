@@ -34,7 +34,13 @@
 	               auf base-100/200 ≥ 4,5:1 erreicht. Hue und Chroma sind
 	               gegenüber -surface unverändert. */
 	--status-info-surface: oklch(0.55 0.12 230); /*    #007daa */
-	--status-info-strong: oklch(0.465 0.12 230); /*    #00648f  5,51 / 4,58 */
+	/* L bewusst 0.46 und nicht 0.465 wie die Nachbarn: dieser Ton rundet
+	   ungünstig gegen base-200 (#d1d8df). Die 8-Bit-Quantisierung nach sRGB
+	   kostet ihn bei 0.465 ganze 0,043 Kontrast (4,578 gerechnet → 4,535
+	   gemessen) und lässt damit nur 0,03 über der 4,5-Schwelle. Die anderen
+	   vier -strong-Werte verlieren an derselben Stelle nur 0,005–0,012.
+	   Bei 0.46 sind es 4,672 → 4,662, also 0,16 Puffer. */
+	--status-info-strong: oklch(0.46 0.12 230); /*     #00628d  5,63 / 4,66 */
 	--status-success-surface: oklch(0.55 0.16 145); /* #1c882d */
 	--status-success-strong: oklch(0.46 0.16 145); /*  #006d09  5,53 / 4,59 */
 	--status-warning-surface: oklch(0.65 0.16 85); /*  #bb8500 */
