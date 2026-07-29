@@ -72,9 +72,10 @@ legt sofort eine Zeile in `sichtungen_files` an
 (`saveUploadedFile`, `src/lib/server/db/sightingFilesRepository.ts:18`) — mit
 `sightingId = null`.
 
-Die Dropzone in `sections/PositionAndTime.svelte` (Schritt 1) und die in
-`sections/Media.svelte` (Schritt 3) schreiben beide in dasselbe
-`$form.uploadedFiles`. `mediaConsent` wird erst in Schritt 3 gezeigt.
+Die Dropzone in `form/position/PositionPanel.svelte` (Schritt 1; bis #590 in
+`sections/PositionAndTime.svelte`) und die in `sections/Media.svelte` (Schritt 3)
+schreiben beide in dasselbe `$form.uploadedFiles`. `mediaConsent` wird erst in
+Schritt 3 gezeigt.
 
 ### B5 — EXIF-Auswertung braucht den Upload gar nicht _(neu, entscheidend)_
 
@@ -396,7 +397,7 @@ machen. Das Projekt schreibt Test-First vor (`.claude/rules/testing.md`).
 | B-I      | `schema.ts`, `mapFormToSighting.ts`, `drizzle/` (via `db:generate`), `field-mapping.ts`, `AdminSightingView.svelte`, `csvExport.ts` |
 | B-III    | `sightingSchema.ts:1182` (+ `sightingSchemaClaims.test.ts` beachten)                                                                |
 | A2       | `MediaFile.ts`, `DropzoneEnhanced.svelte`, `ModernReportForm.svelte`, `api/sightings/+server.ts`, `sightingFilesRepository.ts`      |
-| A1       | `PositionAndTime.svelte`, `Media.svelte`, `sightingSchema.ts`                                                                       |
+| A1       | `form/position/PositionPanel.svelte` (seit #590; vorher `PositionAndTime.svelte`), `Media.svelte`, `sightingSchema.ts`              |
 | Cleanup  | neues Skript unter `scripts/`, `sightingFilesRepository.ts`                                                                         |
 
 **Testabdeckung, die zuerst rot sein muss**
@@ -453,13 +454,13 @@ keinen Reload. Eine gehaltene Referenz überlebt Schritt 1 bis 4 problemlos.
 
 Und die Größen sind kleiner als gedacht:
 
-| Grenze | Wert | Fundstelle |
-|--------|------|------------|
-| Client-Konfiguration (DB-Default) | 10 MB | `configService.ts:25`, `configInitializer.ts:258` |
-| Server, **anonym** | **5 MB** (hart) | `api/files/upload/+server.ts` |
-| Server, angemeldet | 50 MB | ebd. |
-| GPS-Foto Schritt 1 | 10 MB, 1 Datei | `UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE` |
-| Erlaubte Videoformate | nur `video/mp4` | `configService.ts:26` |
+| Grenze                            | Wert            | Fundstelle                                        |
+| --------------------------------- | --------------- | ------------------------------------------------- |
+| Client-Konfiguration (DB-Default) | 10 MB           | `configService.ts:25`, `configInitializer.ts:258` |
+| Server, **anonym**                | **5 MB** (hart) | `api/files/upload/+server.ts`                     |
+| Server, angemeldet                | 50 MB           | ebd.                                              |
+| GPS-Foto Schritt 1                | 10 MB, 1 Datei  | `UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE`                |
+| Erlaubte Videoformate             | nur `video/mp4` | `configService.ts:26`                             |
 
 Für Bürgerinnen und Bürger — der Normalfall, anonym — liegt die reale Grenze
 also bei **5 MB**, auch für Videos. Die 50 MB aus

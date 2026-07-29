@@ -58,7 +58,7 @@ Folgen (live verifiziert):
 | U7  | **Doppelte Labels bei Toggles/Checkboxen:** Label erscheint zweimal („Handelt es sich um einen Totfund?" ×2, „Einverständnis zur Mediennutzung" ×2) — FieldRenderer rendert das Label, BaseToggle/BaseCheckbox wiederholen es.                                                                                                                                | FieldRenderer.svelte:237–272 + 291–293                                               |
 | U8  | **Copy-Fehler / inkonsistente Sprache:** „Handel**tete** es sich um **L**ebende Tiere…" (Tippfehler); „Reaktion auf **Ihr Boot**" auch bei Land-Sichtung; Medien-Sektion bewirbt „Fotos/**Videos**", akzeptiert aber nur Bildformate (JPG/PNG/GIF/WEBP); „max 10MB" vs. 30-MB-Cap im GPS-Upload-Code.                                                         | sightingSchema (isDead helpText), Behavior/Media-Sections, PositionAndTime.svelte:32 |
 | U9  | **Scroll/Fokus nach Schrittwechsel landet unterhalb des Step-Headers** (Badge „Schritt X von 4" und Überschrift werden übersprungen; live mehrfach mitten im Formular gelandet).                                                                                                                                                                              | StepNavigation.svelte:41–51 (`#form-content` beginnt unter dem Header)               |
-| U10 | **Positionsmethode nicht persistiert:** Nach Reload steht die Auswahl wieder auf „Foto mit GPS", auch wenn der Nutzer Karte/Beschreibung gewählt hatte; Methodenwechsel setzt bereits gesetzte Koordinaten nicht zurück.                                                                                                                                      | PositionAndTime.svelte:14, 39–48                                                     |
+| U10 | **Positionsmethode nicht persistiert:** Nach Reload steht die Auswahl wieder auf „Foto mit GPS", auch wenn der Nutzer Karte/Beschreibung gewählt hatte; Methodenwechsel setzt bereits gesetzte Koordinaten nicht zurück. — **Gegenstandslos seit #590:** es gibt keine Positionsmethode mehr (siehe Nachtrag 2026-07-29).                                     | Damals `PositionAndTime.svelte:14, 39–48` — Code existiert nicht mehr                |
 | U11 | **Fehlermeldungs-Stil inkonsistent:** teils freundlich-deutsch („Wie viele Tiere haben Sie gesehen?"), teils technisch-englisch (U3), teils Feldname-Präfix („GPS-Position: Breitengrad ist erforderlich").                                                                                                                                                   | sightingSchema.ts passim                                                             |
 
 ---
@@ -201,7 +201,7 @@ Stand nach der Nacharbeit: 1685 Unit-Tests, 74 Browser-Komponententests, 86 E2E-
 | **U4** toter Abbrechen-Button                | Entfernt (`goto('/')` auf der eigenen Seite war nachweislich wirkungslos, auch im iFrame-Modus).                                                                                                                  |
 | **U5** doppeltes „Kontaktdaten löschen"      | Konsolidiert in `src/lib/report/clearContactData.ts`, nur noch in Schritt 4 (fachlicher Kontext), ein Text, ein Toast.                                                                                            |
 | **U9** Scrollziel beim Schrittwechsel        | `scrollToStepHeader()` in `fieldNavigation.ts` — der Kopf des neuen Schritts (Icon/Überschrift/Badge) ist jetzt sichtbar.                                                                                         |
-| **U10** Positionsmethode nicht persistiert   | `positionMethod.ts`: Methode wird beim Mount aus dem Formularzustand abgeleitet (Koordinaten → Karte, Fahrwasser → Beschreibung, sonst Foto).                                                                     |
+| **U10** Positionsmethode nicht persistiert   | _(damals)_ `positionMethod.ts`: Methode wird beim Mount aus dem Formularzustand abgeleitet (Koordinaten → Karte, Fahrwasser → Beschreibung, sonst Foto). **Überholt durch #590 — siehe Nachtrag 2026-07-29.**     |
 | **U11/U8** erfundene Statistiken in Tooltips | Vier unbelegte Zahlen („73 % der Sichtungen morgens", „5x mehr Tiere", „40 % durch Nordwind", „60 % mit Elektromotor") entfernt und durch nachprüfbare Aussagen ersetzt. Belegte Zahlen können mit Quelle zurück. |
 | **D3** Button-Hierarchie                     | Eine Primäraktion pro Bereich; destruktive Aktionen einheitlich `btn-outline btn-error` mit 44 px Touch-Target; „Zurück" von Vollton auf `btn-outline`.                                                           |
 | **D5** Step-4-Markup                         | Sections liegen nicht mehr im zentrierten Header; alle `text-left`-Gegensteuerungen entfallen.                                                                                                                    |
@@ -223,3 +223,32 @@ Weiterhin bewusst offen: nur Light-Theme (Produktentscheidung), `boatDrive` kann
 2. **K3 + D1:** Totfund-Kontrast, tote Animationsklassen.
 3. **U1/U2 + U3:** Fehler-Timing & Bootsantrieb-Konditionallogik.
 4. Doku-Rest: `.claude/README.md`-Zeile, `DESIGN_GUIDE.md` ersetzen, Design-System-Rule + A11y-Check ergänzen.
+
+### Nachtrag: U10 ist gegenstandslos (2026-07-29)
+
+**U10 ist nicht behoben — die Frage stellt sich nicht mehr.** Mit
+[#590](https://github.com/jansinger/ostsee-sichtung/pull/590) (Commit `a7cbb2e`)
+ist die Positionsmethoden-Wahl **ersatzlos entfallen**. Es gibt kein „Foto mit
+GPS / Karte / Beschreibung" mehr, sondern genau ein Positions-Panel, in dem alle
+Wege gleichzeitig erreichbar sind. Ohne Modus gibt es weder einen Zustand, der
+über einen Reload zu persistieren wäre, noch einen Methodenwechsel, der
+Koordinaten zurücksetzen müsste — der stille Datenverlust im damaligen
+`selectMethod('manual')` ist damit ebenfalls weg.
+
+Die im obigen Text und in der Restliste genannten Fundstellen existieren so nicht
+mehr:
+
+| Damals                                                    | Heute                                                                                                      |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `sections/positionMethod.ts` (+ `positionMethod.test.ts`) | gelöscht                                                                                                   |
+| `sections/PositionAndTime.svelte:14, 39–48`               | Datei auf 18 Zeilen reine Komposition geschrumpft (`<PositionPanel />` + Datum/Uhrzeit-Sektion)            |
+| Radiogruppe / Kacheln der Methodenwahl                    | entfallen; stattdessen `form/position/PositionPanel.svelte` und `form/position/LocationDescription.svelte` |
+
+Damit sind auch die beiden Stellen weiter oben überholt, die die
+Methodenwahl als Stärke führen („Gesamteindruck", „Was gut funktioniert") — die
+Begründung dafür steht in `docs/UX_POSITIONSANGABE_SCHRITT1_2026-07-28.md`
+(Abschnitt „Problem"): Das Datenmodell ist binär, nicht ternär, und der dritte
+Tab bot kein Feld, das der Fallback-Block nicht ohnehin schon zeigte.
+
+Der Ist-Zustand samt der Abweichungen zwischen Spec und Umsetzung steht in
+`docs/UX_POSITIONSANGABE_SCHRITT1_2026-07-28.md`.

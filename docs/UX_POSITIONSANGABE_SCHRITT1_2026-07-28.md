@@ -1,8 +1,153 @@
 # Positionsangabe in Schritt 1 — Design
 
 **Datum:** 2026-07-28
-**Status:** Freigegeben (nach Review vom 2026-07-28)
-**Betrifft:** `src/lib/report/components/sections/PositionAndTime.svelte` und Umfeld
+**Status:** **Umgesetzt in #590** (Commit `a7cbb2e`, 2026-07-29) — mit dokumentierten
+Abweichungen, siehe nächster Abschnitt. Vorher: Freigegeben (Review vom 2026-07-28).
+**Betrifft:** `src/lib/report/components/form/position/` (neu),
+`src/lib/report/components/sections/PositionAndTime.svelte` (auf Komposition geschrumpft)
+und Umfeld
+
+---
+
+## Umsetzung — Abweichungen von dieser Spec
+
+Der Rest dieses Dokuments ist die Spec **vor** der Umsetzung und bleibt als
+Entwurfsstand stehen. Wo der gebaute Stand abweicht, gilt die Umsetzung — die
+Gründe stehen hier. An den betroffenen Stellen weiter unten steht jeweils ein
+kurzer Verweis hierher.
+
+### 1. Ortsbeschreibung: Klappzustand ist Startwert, nicht laufende Regel
+
+**Spec:** Der Beschreibungsblock klappt in Zustand B zu (`descriptionCollapsed`
+als fortlaufend ausgewertete Regel).
+
+**Gebaut:** `LocationDescription.svelte` ist genau **ein** `<details>`. Sein
+Startzustand wird **einmalig beim Mounten** aus `descriptionCollapsed` bestimmt
+(bewusst über `get(form)` statt `$form`, damit daraus keine reaktive Abhängigkeit
+wird); danach gehört er dem Nutzer.
+
+**Warum:** Ein reaktiv gebundener Zustand hing an genau den beiden Feldern
+(`waterway`/`seaMark`), die im Block liegen. Das erste `change` im gerade
+getippten Feld kippte den Zustand, Svelte riss den Teilbaum ab, das fokussierte
+Input wurde ersetzt und `document.activeElement` fiel auf `<body>` zurück — der
+nächste Tab begann wieder oben auf der Seite. Die Felder stehen deshalb jetzt
+genau einmal im Markup, in einem Container, der nie ausgetauscht wird. Auch kein
+`bind:open`, damit `PositionPanel.focusDescription()` die Disclosure imperativ
+aufklappen kann, ohne dass ein gebundener Zustand zurückschreibt.
+
+**Die gebaute Variante ist die bessere.** `descriptionCollapsed` existiert
+unverändert weiter und ist weiter getestet — nur seine Rolle ist eine andere.
+
+**Folge, die mitgebaut werden musste:** Der Block ist damit zuklappbar, während
+`waterway` noch Pflicht ist. `scrollToFirstError` fokussierte aber ein Feld, das
+in einem geschlossenen `<details>` per `content-visibility: hidden` unerreichbar
+ist — der `.focus()`-Aufruf tat still nichts. Der Vorfahren-`<details>`-Lauf
+liegt deshalb jetzt in `openAncestorDetails()` (`$lib/utils/fieldNavigation.ts`)
+und wird von beiden Aufrufern benutzt; jedes Feld hinter einer Disclosure bekommt
+so einen funktionierenden Fehlersprung, nicht nur `waterway`.
+
+### 2. Karte: `mapExpanded` heißt anders und ist nicht sticky
+
+**Spec:** `mapExpanded(hasCoordinates, wasEverExpanded)` — „einmal offen, bleibt
+offen".
+
+**Gebaut:** `shouldOpenMapOnCoordinateChange(hasCoordinates, hadCoordinates)` —
+true nur auf der **steigenden Flanke**, also genau dann, wenn eine Position neu
+entsteht. Die Disclosure selbst liegt an `bind:open={mapOpen}`.
+
+**Warum:** `hasCoordinates || wasEverExpanded` hätte `open` erzwungen und dem
+Nutzer das Zuklappen der Karte dauerhaft unmöglich gemacht. Der Zweck der
+Sticky-Regel — kein springendes Layout, „Foto wieder entfernt → Karte bleibt
+offen" — ist erfüllt: Nichts schließt die Karte automatisch. Sie bleibt offen,
+weil sie niemand zumacht, nicht weil sie festgehalten wird.
+
+### 3. `PhotoStatus` hat einen vierten Wert: `analyzing`
+
+**Spec:** `'none' | 'position-applied' | 'no-gps'`.
+
+**Gebaut:** zusätzlich `'analyzing'`, entschieden über ein zweites strukturelles
+Prädikat `isAnalyzed()`; `MediaFile` trägt dafür ein `analyzed`-Flag.
+
+**Warum:** Die `MediaFile` liegt beim Drop **synchron** im Store, `hasPosition()`
+liest aber `exifData`, das bis zum Auflösen der Metadaten-Promise `undefined`
+bleibt. Ohne den vierten Zustand meldete das Panel für **jedes** frische Foto
+zuerst „keine GPS-Daten" — auch für solche mit GPS — und nahm die Behauptung
+Sekundenbruchteile später zurück. Mit `role="status"` am Block sagt ein
+Screenreader sie inzwischen an.
+
+### 4. Neu: `shouldWarnAboutMissingGps(status, coordinatesPresent)`
+
+Nicht in der Spec vorgesehen. `photoStatus` urteilt allein über die
+`MediaFile`-Instanzen, die Koordinaten kommen aus einer zweiten, unabhängigen
+Quelle (`$form`, über `sessionStorage` reloadfest). Beide können auseinander
+laufen: Eine nach einem Reload aus `$form.uploadedFiles` neu gebaute Datei ohne
+`exifData` meldet `hasPosition() === false`, während die Koordinaten längst
+wieder da sind. Sichtbar war das als grüne Ostsee-Bestätigung **neben** gelber
+„keine GPS-Daten"-Warnung — deren Ausweg „Auf Karte wählen" die korrekte Position
+überschrieben hätte.
+
+### 5. `DropzoneEnhanced.svelte` bleibt **nicht** unverändert
+
+**Spec:** „bleibt unverändert. Der Foto-Zustand lässt sich von außen ableiten."
+
+**Gebaut:** Die Annahme hielt nur für die Koordinaten. Vier Dinge waren von außen
+nicht ableitbar und mussten in die Komponente:
+
+- **Abschluss der Auswertung** (`analyzed` / `isAnalyzed()`) — siehe Punkt 3.
+- **Herkunft einer Datei** (`isFromPositionStep`, über `positionFileOrigin.ts`
+  als uid-Menge in `sessionStorage` reloadfest). Ohne sie entschieden die Fotos
+  aus Schritt 3 mit darüber, was Schritt 1 über „dieses Foto" behauptet — und der
+  einzige Ausweg „Neu auswählen" löschte serverseitig **alle** Medien über alle
+  Schritte. Bewusst nicht in `$form.uploadedFiles`: das ist Teil des Yup-Schemas
+  und reist zum Server.
+- **Aufnahmezeit eines Fotos ohne GPS** (`exifDateTimeApply.ts`). Der Schreibvorgang
+  hing an `hasPosition()`; die Karte zeigte „Aufnahmezeit: …", im Formular stand
+  weiter der Schema-Default. Nutzer sahen das richtige Datum und hörten auf, das
+  Feld zu prüfen.
+- **Vier neue Props:** `showNoGpsWarning`, `showPositionMap`,
+  `onExifDateTimeApplied` (plus `actionLabel` an `UnifiedDropzone`) — siehe
+  Punkt 7.
+
+### 6. `LocationInput`: mehr als nur `collapsibleCoordinates`
+
+Die Koordinatenlogik ist wie vorgesehen unangetastet. Das Umfeld nicht:
+
+- `enableGPS={!collapsibleCoordinates}` — das OpenLayers-GPS-Control saß zusätzlich
+  zum Panel-Button in der Karte. Zwei Bedienelemente für dieselbe Aktion
+  widersprechen `.claude/rules/design-system.md`; im Meldeformular gewinnt der
+  Panel-Button (Fehlerpfad, erreichbar bei zugeklappter Karte, Beschriftung statt
+  „📍"), in der Admin-Maske bleibt das Control die einzige GPS-Möglichkeit.
+  `watchPosition` (Dauertracking) fällt damit weg — für eine Sichtung, die einen
+  Zeitpunkt festhält, ist das ein Fix, kein Verlust.
+- `hasPosition` wird an `OLMap` durchgereicht, damit vor der ersten Wahl **kein**
+  Marker auf `defaultCenter` 54.5/13.5 sitzt; `OLMap` bekam zusätzlich
+  Tippen-zum-Setzen und einen Hinweis, der keinen GPS-Button mehr nennt, den es
+  hier nicht gibt.
+
+### 7. Zustand A/B: „Koordinaten eingeben" liegt **in** der Karten-Disclosure
+
+Die ASCII-Skizzen zeigen zwei gleichrangige Disclosures auf Panel-Ebene. Gebaut
+ist die Koordinaten-Disclosure (`data-testid="coordinate-fields"`) **innerhalb**
+von `LocationInput` — und `LocationInput` wird erst gemountet, wenn die
+Karten-Disclosure offen ist (für die Mehrheit, die die Karte nie aufklappt,
+entsteht so keine OpenLayers-Instanz und es werden keine Kacheln geladen). Preis:
+Die Koordinatenfelder sind im Startzustand zwei Klicks entfernt statt einem.
+
+### Nachträglich doch umgesetzt (keine Abweichung)
+
+- **Primärbutton im Hero.** Über das neue Prop `actionLabel` an
+  `UnifiedDropzone`: Die gestrichelte Fläche bleibt Drop-Ziel, der Button wird
+  Klick-Ziel (GitHub-/Figma-Muster) — keine verschachtelte Interaktion, kein
+  doppelt geöffneter Dateidialog.
+- **Kompakte Zeile in Zustand B.** Über `showPositionMap={false}`. Ohne sie
+  rendert die Foto-Karte eine 300-px-Lesekarte, während die Panel-Disclosure
+  ~200 px darunter eine zweite, interaktive Karte mit demselben Marker
+  aufklappt — rund 600 px doppelte Karte auf 375 px Breite.
+- **„Datum und Uhrzeit konnten übernommen werden" (Zustand C)** steht wieder da,
+  aber gegated auf die Meldung `onExifDateTimeApplied` aus `DropzoneEnhanced` —
+  **nicht** auf `$form.sightingDate`. Letzteres ist durch den Schema-Default
+  `berlinToday()` ab Formular-Initialisierung immer gefüllt, die Bedingung wäre
+  konstant wahr.
 
 ---
 
@@ -113,6 +258,12 @@ selbst setzen) statt Methode ↔ Fallback.
 Die Karte klappt automatisch auf, sobald eine Position existiert — damit ist die
 EXIF-Position erstmals sichtbar und korrigierbar. Einmal geöffnet, bleibt sie
 offen.
+
+> **Abweichungen (#590):** Die Karte klappt nur auf, wenn eine Position **neu**
+> entsteht, und der Nutzer darf sie danach zuklappen (Punkt 2). „▸ Koordinaten
+> eingeben" liegt nicht neben der Karte, sondern in ihrer Disclosure (Punkt 7).
+> Die kompakte Bestätigungszeile ist umgesetzt — dafür rendert die Foto-Karte
+> hier keine eigene zweite Karte mehr (`showPositionMap={false}`).
 
 ### Zustand C — Foto ohne GPS-Daten
 
@@ -228,6 +379,10 @@ Widerspruch, sondern gewollt — beim Umsetzen aber leicht als einer zu lesen.
 ableiten: `mediaStore` liegt bereits im Form-Context (`Form.svelte:40-50`), und
 `MediaFile` bietet `hasPosition()`, `exifData` und `timestamp`.
 
+> **Abweichung (#590), Punkt 5:** Das hat nicht gehalten. `DropzoneEnhanced` hat
+> vier Props und drei neue Nachbarmodule bekommen; `LocationInput` und `OLMap`
+> haben mehr geändert als das eine Prop (Punkt 6).
+
 ### Reine Logik in `positionPanelState.ts`
 
 ```ts
@@ -238,12 +393,26 @@ mapExpanded(hasCoordinates, wasEverExpanded): boolean
 descriptionCollapsed(hasCoordinates, waterway, seaMark): boolean
 ```
 
+> **Abweichung (#590), Punkte 2–4.** Gebaut ist:
+>
+> ```ts
+> type PhotoStatus = 'none' | 'analyzing' | 'position-applied' | 'no-gps';
+>
+> photoStatus(mediaFiles): PhotoStatus
+> shouldWarnAboutMissingGps(status, coordinatesPresent): boolean
+> shouldOpenMapOnCoordinateChange(hasCoordinates, hadCoordinates): boolean
+> descriptionCollapsed(hasCoordinates, waterway, seaMark): boolean
+> ```
+
 `descriptionCollapsed` fängt eine echte Falle ab: Wer erst das Seegebiet
 beschreibt und _danach_ ein Foto mit GPS hochlädt, dem darf der Block nicht
 zuklappen und den eingegebenen Text verstecken.
 
 **Regel:** zuklappen nur, wenn Koordinaten vorliegen **und** beide Felder leer
 sind. Sonst bleibt der Block offen, nur ohne Pflicht-Stern.
+
+> **Abweichung (#590), Punkt 1:** Die Regel gilt, aber nur als **Startwert** beim
+> Mounten. Danach gehört der Klappzustand dem Nutzer.
 
 `mapExpanded` ist sticky, und zwar unabhängig davon, **warum** die Karte
 aufgegangen ist: Sobald sie einmal offen war — durch Nutzerklick _oder_ durch das
@@ -252,6 +421,11 @@ Koordinaten später wieder entfallen. Der zweite Parameter heißt daher besser
 `wasEverExpanded`. Das vermeidet springendes Layout und stellt sicher, dass die
 Fehler- und Randfall-Tabelle („Foto wieder entfernt → Karte bleibt offen") auch
 für den Nutzer gilt, der die Karte nie selbst angeklickt hat.
+
+> **Abweichung (#590), Punkt 2:** Nicht sticky umgesetzt, sondern als steigende
+> Flanke — sonst könnte der Nutzer die Karte nie wieder zuklappen. Der
+> beschriebene Effekt („Foto wieder entfernt → Karte bleibt offen") gilt
+> trotzdem: Nichts schließt sie automatisch.
 
 ---
 
@@ -293,12 +467,31 @@ ist. Diese Logik ist korrekt und vorsichtig und bleibt unangetastet.
 | Nutzer klappt die Karte wieder zu, obwohl Koordinaten gesetzt sind | `VerifyLocation` bleibt sichtbar — es liegt **außerhalb** der Karten-Disclosure. Sonst verschwände die Ostsee-Prüfung genau dann, wenn sie noch gilt                                                                         |
 | GPS-Button, Sichtung aber an einem anderen Tag gemacht             | Der Button übernimmt den aktuellen Gerätestandort. Abgefedert nur über das Label „Mein aktueller Standort" (siehe „Texte und bewusste Nicht-Entscheidungen"); eine Datumsprüfung ist optional und nicht Teil dieser Änderung |
 
-### Offener Punkt
+### Offener Punkt — **erledigt in #590**
 
 Der GPS-Button stammt aus einem OpenLayers-Control (`OLMap.svelte:80-86`). Ein
 Fehlerpfad für „Standortfreigabe abgelehnt" oder fehlendes HTTPS ist dort nicht
 erkennbar behandelt. Da der Button im neuen Layout prominenter wird, ist das beim
 Umsetzen zu prüfen und gegebenenfalls um einen Hinweis zu ergänzen.
+
+**Umsetzung:** Der Panel-Button benutzt das Control gar nicht mehr, sondern
+`form/position/geolocation.ts` mit injizierter `Geolocation`-Instanz.
+`describeGeolocationError` übersetzt die Codes 1–3 in Sätze, die im Panel als
+`alert alert-warning` erscheinen. Dazu kamen zwei Fälle, die die Spec nicht auf
+dem Schirm hatte:
+
+- **Nie beantworteter Berechtigungsdialog.** Die `timeout`-Option der API läuft
+  laut Spezifikation erst ab der Antwort auf den Dialog — ohne Antwort kommt
+  überhaupt kein Callback und die Promise wurde nie erfüllt. Ein eigener Wächter
+  (`GEOLOCATION_WATCHDOG_MS` = 30 s, bewusst deutlich größer als die
+  API-Frist `GEOLOCATION_TIMEOUT_MS` = 10 s, weil die beiden Uhren zu
+  verschiedenen Zeitpunkten starten) löst den Fall auf.
+- **`getCurrentPosition` wirft synchron** statt den Fehler-Callback zu rufen,
+  etwa außerhalb eines Secure Context. Im Promise-Executor hätte das die Promise
+  abgelehnt, die der Aufrufer ohne `try` awaitet — der Button wäre dauerhaft im
+  Ladezustand stehen geblieben.
+
+Das In-Karten-Control bleibt in der Admin-Maske (Punkt 6).
 
 ---
 
@@ -345,6 +538,13 @@ das meistgenutzte Bedienelement des Schritts. Behebung gehört in diese Änderun
 sofern sie ohne Nebenwirkung auf die Medien-Sektion in Schritt 3 möglich ist —
 sonst als eigener Vorgang.
 
+**Erledigt in #590** — und zwar an **vier** Stellen, nicht zwei: Die Datei trägt
+beide Dropzone-Layouts, die Spec hatte nur die zwei aus dem Positions-Schritt
+gesehen. Alle vier laufen jetzt auf `btn-sm` + `min-h-11` (bzw. zusätzlich
+`min-w-11` für die runde Variante) und wurden im Browser nachgemessen: 108×44,
+108×44, 92×44 und 44×44 bei 375 px und 1280 px, ohne horizontalen Überlauf. Die
+Zeile mit dem `text-nowrap`-Koordinaten-Badge brauchte dafür `flex-wrap gap-2`.
+
 ---
 
 ## Tests
@@ -354,6 +554,14 @@ Test-first gemäß `.claude/rules/testing.md`.
 **Neu (Node):** `positionPanelState.test.ts` — `photoStatus`, `mapExpanded`
 (inklusive Sticky-Verhalten), `descriptionCollapsed` inklusive des Falls „Text
 bereits eingegeben".
+
+> **Abweichung (#590):** statt `mapExpanded` deckt der Test
+> `shouldOpenMapOnCoordinateChange` (steigende Flanke) und
+> `shouldWarnAboutMissingGps` ab, dazu den neuen `analyzing`-Zustand von
+> `photoStatus`. Dazugekommen sind außerdem `geolocation.test.ts`,
+> `LocationDescription.svelte.test.ts`, `LocationInput.svelte.test.ts`,
+> `DropzoneEnhanced.svelte.test.ts`, `exifDateTimeApply.test.ts`,
+> `positionFileOrigin.test.ts` und `MediaFile.test.ts`.
 
 **Entfällt:** `positionMethod.test.ts`.
 
