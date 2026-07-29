@@ -1,6 +1,9 @@
+import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
 import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
+import { DistributionEnum } from '$lib/report/formOptions/distribution';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
+import { SpeciesEnum } from '$lib/report/formOptions/species';
 import type { SightingFormData } from '$lib/report/types';
 import type { SightingFormValues } from '$lib/types/Form';
 import { TEST_TIME_ZONES, withTimeZone } from '$lib/server/datetime/withTimeZone.testutil';
@@ -463,16 +466,21 @@ describe('mapFormToSighting', () => {
 			expect(result.totalCount).toBe(0);
 		});
 
-		it('sollte ungültige numerische Werte korrekt behandeln', () => {
+		it('behandelt NaN bei der Tierart als fehlende Angabe, nicht als Schweinswal', () => {
+			// Früher fiel NaN über den Falsy-Zweig auf `0` — und `0` ist
+			// "Schweinswal". Eine kaputte Eingabe erzeugte damit eine
+			// erfundene Artmeldung.
 			const formData = createMinimalFormData();
 			formData.species = NaN;
+
+			expect(() => mapFormToSighting(formData)).toThrowError(/Tierart/i);
+		});
+
+		it('konvertiert NaN bei der Gesamtzahl weiterhin zu 0', () => {
+			const formData = createMinimalFormData();
 			formData.totalCount = NaN;
 
-			const result = mapFormToSighting(formData);
-
-			// NaN wird zu 0 konvertiert (da isNaN(NaN) || 0 = 0)
-			expect(result.species).toBe(0);
-			expect(result.totalCount).toBe(0);
+			expect(mapFormToSighting(formData).totalCount).toBe(0);
 		});
 	});
 
@@ -752,6 +760,89 @@ describe('mapFormToSighting', () => {
 				asString.sightingFrom = String(from) as unknown as number;
 				expect(mapFormToSighting(asString).sightingFrom).toBe(from);
 			}
+		});
+	});
+
+	describe('Verteilung und Verhalten ohne Angabe', () => {
+		it('speichert UNKNOWN statt OTHER, wenn die Verteilung fehlt', () => {
+			const formData = createMinimalFormData();
+			formData.distribution = undefined;
+
+			expect(mapFormToSighting(formData).distribution).toBe(DistributionEnum.UNKNOWN);
+		});
+
+		it('speichert UNKNOWN statt OTHER, wenn das Verhalten fehlt', () => {
+			const formData = createMinimalFormData();
+			formData.behavior = undefined;
+
+			expect(mapFormToSighting(formData).behavior).toBe(AnimalBehaviorEnum.UNKNOWN);
+		});
+
+		it('erhält die aktive Wahl "Sonstige" (0) in beiden Feldern', () => {
+			const formData = createMinimalFormData();
+			formData.distribution = DistributionEnum.OTHER;
+			formData.behavior = AnimalBehaviorEnum.OTHER;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.distribution).toBe(DistributionEnum.OTHER);
+			expect(result.behavior).toBe(AnimalBehaviorEnum.OTHER);
+		});
+
+		it('reicht übrige Werte unverändert durch, auch als String', () => {
+			const formData = createMinimalFormData();
+			formData.distribution = String(DistributionEnum.SCHOOLS) as unknown as number;
+			formData.behavior = String(AnimalBehaviorEnum.VARYING_COURSE) as unknown as number;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.distribution).toBe(DistributionEnum.SCHOOLS);
+			expect(result.behavior).toBe(AnimalBehaviorEnum.VARYING_COURSE);
+		});
+	});
+
+	describe('Tierart — kein stiller Schweinswal', () => {
+		/**
+		 * `tierart` ist `smallint default(0) notNull` und `0` bedeutet
+		 * "Schweinswal". Eine fehlende Art wurde damit zur Meldung eines
+		 * Schweinswals — für ein Forschungsmuseum ein Phantom-Datensatz.
+		 *
+		 * `species` ist Pflichtfeld; ein Fehlen ist deshalb ein echter Fehler
+		 * und kein zu ratender Wert. Der Legacy-Vertrag bleibt unberührt:
+		 * `mapLegacyToCurrentSchema` setzt den dokumentierten Default
+		 * (`tierart || 0`) bereits an der Legacy-Grenze.
+		 */
+		it('wirft, wenn keine Tierart angegeben wurde', () => {
+			const formData = createMinimalFormData();
+			formData.species = undefined as unknown as number;
+
+			expect(() => mapFormToSighting(formData)).toThrowError(/Tierart/i);
+		});
+
+		it('wirft auch bei null und leerem String', () => {
+			for (const value of [null, '']) {
+				const formData = createMinimalFormData();
+				formData.species = value as unknown as number;
+
+				expect(() => mapFormToSighting(formData)).toThrowError(/Tierart/i);
+			}
+		});
+
+		it('erhält eine aktive Auswahl "Schweinswal" (0)', () => {
+			const formData = createMinimalFormData();
+			formData.species = SpeciesEnum.HARBOR_PORPOISE;
+
+			expect(mapFormToSighting(formData).species).toBe(SpeciesEnum.HARBOR_PORPOISE);
+		});
+
+		it('reicht andere Arten unverändert durch, auch als String', () => {
+			const numeric = createMinimalFormData();
+			numeric.species = SpeciesEnum.GREY_SEAL;
+			expect(mapFormToSighting(numeric).species).toBe(SpeciesEnum.GREY_SEAL);
+
+			const asString = createMinimalFormData();
+			asString.species = String(SpeciesEnum.GREY_SEAL) as unknown as number;
+			expect(mapFormToSighting(asString).species).toBe(SpeciesEnum.GREY_SEAL);
 		});
 	});
 

@@ -1,5 +1,7 @@
 import { MEDIA_CONSENT_VERSION } from '$lib/form/consent/mediaConsentVersion';
+import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
 import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
+import { DistributionEnum } from '$lib/report/formOptions/distribution';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import type { SightingFormValues } from '$lib/types/Form';
@@ -9,22 +11,52 @@ import { berlinWallClockToUtc } from '$lib/server/datetime/berlinWallClockToUtc'
 import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 
 /**
- * Bestimmt den zu speichernden Bootsantrieb.
+ * Prüft, ob für ein numerisches Auswahlfeld eine verwertbare Angabe vorliegt.
  *
- * Die Spalte `bootsantrieb` ist `integer default(0) notNull`, und `0` bedeutet
- * "Sonstiger Bootsantrieb" — nicht "unbekannt" und nicht "kein Boot". Ohne
- * diese Fallunterscheidung trug jede Sichtung von Land die aktive Behauptung,
- * es habe ein Boot mit ungewöhnlichem Antrieb gegeben. Betroffen waren 5.858
- * von 19.880 Zeilen (Stand 2026-07-29), wodurch "Sonstiger" in jeder
- * Antriebs-Auswertung fälschlich die häufigste Kategorie war.
+ * Bewusst **nicht** über Truthiness: In mehreren Enums ist `0` eine echte,
+ * aktiv wählbare Kategorie ("Sonstiges", "Schweinswal") und darf nicht als
+ * fehlende Angabe gelten. Genau diese Verwechslung hat den Bestand verfälscht.
  *
- * Das Formular fragt den Antrieb bei Land-Sichtungen nicht mehr ab
- * (`sightingSchema`, `when('sightingFrom', …)`) — hier wird entschieden, was
- * stattdessen gespeichert wird.
- *
- * Ein bereits vorhandener Wert wird **nicht** überschrieben: Beim Admin-Edit
- * einer Alt-Sichtung darf eine gespeicherte Angabe nicht still verloren gehen.
+ * `NaN` und nicht parsebare Strings gelten ebenfalls als fehlend — sonst würde
+ * eine kaputte Eingabe über `Number(…)` still zu `NaN` oder (früher, per
+ * Falsy-Zweig) zum Enum-Wert `0` und damit zu einer erfundenen Aussage.
  */
+function isProvided(value: unknown): boolean {
+	if (value === undefined || value === null || String(value).trim() === '') {
+		return false;
+	}
+
+	return !Number.isNaN(Number(value));
+}
+
+/**
+ * Bestimmt die zu speichernde Tierart.
+ *
+ * Die Spalte `tierart` ist `smallint default(0) notNull` und `0` bedeutet
+ * **"Schweinswal"**. Eine fehlende Art wurde damit zur Meldung eines
+ * Schweinswals — für ein Forschungsmuseum ein Phantom-Datensatz in der
+ * häufigsten Art überhaupt (16.037 von 19.880 Zeilen tragen `0`; ob darunter
+ * Artefakte sind, lässt sich nachträglich nicht mehr feststellen, weil der
+ * Wert fachlich plausibel ist).
+ *
+ * `species` ist Pflichtfeld — ein Fehlen ist deshalb ein echter Fehler und
+ * kein zu ratender Wert. Anders als bei den übrigen Feldern wird hier bewusst
+ * **kein** Ersatzwert gesetzt.
+ *
+ * Der Legacy-Vertrag bleibt unberührt: `mapLegacyToCurrentSchema` setzt den
+ * dokumentierten Default (`tierart || 0`) bereits an der Legacy-Grenze, bevor
+ * diese Funktion überhaupt läuft.
+ */
+function resolveSpecies(formData: SightingFormValues): number {
+	if (!isProvided(formData.species)) {
+		throw new Error(
+			'Tierart fehlt: Ohne Angabe würde die Sichtung als Schweinswal (0) gespeichert werden.'
+		);
+	}
+
+	return Number(formData.species);
+}
+
 /**
  * Bestimmt den zu speichernden Beobachtungsort.
  *
@@ -44,19 +76,32 @@ import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
  * Doppeldeutigkeit erben.
  */
 function resolveSightingFrom(formData: SightingFormValues): number {
-	const value = formData.sightingFrom;
-
-	// Bewusst nicht `value ? … : …`: Eine aktive Auswahl "Sonstiges" ist `0`
+	// `isProvided` statt Truthiness: Eine aktive Auswahl "Sonstiges" ist `0`
 	// und damit falsy — sie darf nicht als fehlende Angabe gewertet werden.
-	if (value === undefined || value === null || String(value).trim() === '') {
-		return SightingFromEnum.UNKNOWN;
-	}
-
-	return Number(value);
+	return isProvided(formData.sightingFrom)
+		? Number(formData.sightingFrom)
+		: SightingFromEnum.UNKNOWN;
 }
 
+/**
+ * Bestimmt den zu speichernden Bootsantrieb.
+ *
+ * Die Spalte `bootsantrieb` ist `integer default(0) notNull`, und `0` bedeutet
+ * "Sonstiger Bootsantrieb" — nicht "unbekannt" und nicht "kein Boot". Ohne
+ * diese Fallunterscheidung trug jede Sichtung von Land die aktive Behauptung,
+ * es habe ein Boot mit ungewöhnlichem Antrieb gegeben. Betroffen waren 5.858
+ * von 19.880 Zeilen (Stand 2026-07-29), wodurch "Sonstiger" in jeder
+ * Antriebs-Auswertung fälschlich die häufigste Kategorie war.
+ *
+ * Das Formular fragt den Antrieb bei Land-Sichtungen nicht mehr ab
+ * (`sightingSchema`, `when('sightingFrom', …)`) — hier wird entschieden, was
+ * stattdessen gespeichert wird.
+ *
+ * Ein bereits vorhandener Wert wird **nicht** überschrieben: Beim Admin-Edit
+ * einer Alt-Sichtung darf eine gespeicherte Angabe nicht still verloren gehen.
+ */
 function resolveBoatDrive(formData: SightingFormValues): number {
-	if (formData.boatDrive !== undefined && formData.boatDrive !== null) {
+	if (isProvided(formData.boatDrive)) {
 		return Number(formData.boatDrive);
 	}
 
@@ -162,7 +207,7 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 
 		// === TIERBEOBACHTUNG ===
 		// Tierart (numerische ID aus Dropdown)
-		species: formData.species ? Number(formData.species) : 0,
+		species: resolveSpecies(formData),
 		// Anzahl Tiere
 		totalCount: formData.totalCount ? Number(formData.totalCount) : 0,
 		juvenileCount: formData.juvenileCount ? Number(formData.juvenileCount) : 0,
@@ -179,10 +224,14 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 		// Entfernung zur Sichtung
 		distance: formData.distance ? Number(formData.distance) : 0,
 		// Verteilung der Tiere
-		distribution: formData.distribution ? Number(formData.distribution) : 0,
+		distribution: isProvided(formData.distribution)
+			? Number(formData.distribution)
+			: DistributionEnum.UNKNOWN,
 		distributionText: formData.distributionText,
 		// Verhalten der Tiere
-		behavior: formData.behavior ? Number(formData.behavior) : 0,
+		behavior: isProvided(formData.behavior)
+			? Number(formData.behavior)
+			: AnimalBehaviorEnum.UNKNOWN,
 		behaviorText: formData.behaviorText,
 		// Reaktion auf Beobachter
 		reaction: formData.reaction,

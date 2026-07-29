@@ -2,11 +2,25 @@
  * Enum für Tierverhalten
  * Die numerischen Werte werden in der Datenbank gespeichert.
  */
+/**
+ * **Achtung bei `OTHER = 0`:** Die Spalte `verhalten` ist
+ * `integer default(0) notNull` — `0` ist gleichzeitig Default und die Bedeutung
+ * "Sonstiges Verhalten". Das Feld ist im Schema nicht `.required()`, eine
+ * fehlende Antwort wurde also als aktive Aussage gespeichert (9.192 von 19.880
+ * Zeilen, Stand 2026-07-29). Fehlt eine Angabe, gehört sie auf `UNKNOWN`.
+ */
 export enum AnimalBehaviorEnum {
 	OTHER = 0,
 	CONSTANT_COURSE = 1,
 	VARYING_COURSE = 2,
-	SLOW_SWIMMING = 3
+	SLOW_SWIMMING = 3,
+	/**
+	 * Es wurde kein Verhalten angegeben.
+	 *
+	 * Wird ausschließlich serverseitig beim Speichern gesetzt
+	 * (`mapFormToSighting`) und ist bewusst nicht auswählbar.
+	 */
+	UNKNOWN = 4
 }
 
 /**
@@ -18,8 +32,20 @@ export const animalBehaviorLabels: Record<AnimalBehaviorEnum, string> = {
 	[AnimalBehaviorEnum.VARYING_COURSE]:
 		'Unterschiedlicher Kurs, kreisend, unregelmäßiges Tauchen (futtersuchend)',
 	[AnimalBehaviorEnum.SLOW_SWIMMING]:
-		'Langsames Schwimmen, längere Zeit an der Wasseroberfläche (ruhend)'
+		'Langsames Schwimmen, längere Zeit an der Wasseroberfläche (ruhend)',
+	[AnimalBehaviorEnum.UNKNOWN]: 'Keine Angabe'
 };
+
+/**
+ * Verhaltensweisen, die im Formular auswählbar sind.
+ * `UNKNOWN` ist bewusst ausgenommen (siehe Enum-Kommentar).
+ */
+const SELECTABLE_BEHAVIORS: readonly AnimalBehaviorEnum[] = [
+	AnimalBehaviorEnum.OTHER,
+	AnimalBehaviorEnum.CONSTANT_COURSE,
+	AnimalBehaviorEnum.VARYING_COURSE,
+	AnimalBehaviorEnum.SLOW_SWIMMING
+];
 
 export type AnimalBehavior = AnimalBehaviorEnum;
 
@@ -27,9 +53,9 @@ export type AnimalBehavior = AnimalBehaviorEnum;
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-const animalBehaviorOptions: Array<{ value: number; label: string }> = Object.entries(
-	animalBehaviorLabels
-).map(([value, label]) => ({ value: Number(value), label }));
+const animalBehaviorOptions: Array<{ value: number; label: string }> = SELECTABLE_BEHAVIORS.map(
+	(value) => ({ value, label: animalBehaviorLabels[value] })
+);
 export const getAnimalBehaviorOptions = (): Array<{ value: number; label: string }> =>
 	animalBehaviorOptions;
 

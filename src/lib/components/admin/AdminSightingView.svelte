@@ -193,7 +193,11 @@
 			DataRow(
 				'Verhalten (Details)',
 				currentSighting.behaviorText,
-				hasValue(currentSighting.behaviorText) && currentSighting.behavior === 3
+				// Freitext immer zeigen, wenn vorhanden. Er gehört fachlich zu
+				// "Sonstiges Verhalten" (0), nicht zu 3 (Langsames Schwimmen) —
+				// bei `verhalten = 3` hat keine einzige Zeile einen Text, der
+				// Freitext war also in allen 919 Fällen unsichtbar.
+				hasValue(currentSighting.behaviorText)
 			),
 			DataRow('Reaktion auf Boot', currentSighting.reaction, hasValue(currentSighting.reaction))
 		].filter((row): row is DataRowType => row !== undefined)

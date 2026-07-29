@@ -39,11 +39,11 @@ This is a dated status, not a standing guarantee — re-check whether clients ha
 | `entfernung`                | Distance                                                                                                     | Integer-Range, 1-5                  | No                                 |
 | `anzahl_schiffe`            | Number of ships in vicinity                                                                                  | Integer                             | No                                 |
 | `anzahl_jung`               | Number of juvenile animals                                                                                   | Integer                             | No                                 |
-| `verteilung`                | Distribution of animals                                                                                      | Integer-Range, 0-3                  | No                                 |
+| `verteilung`                | Distribution of animals (4 = not specified, see note below)                                                  | Integer-Range, 0-4                  | No                                 |
 | `verteilung_text`           | Other distribution (when verteilung = 0)                                                                     | Text                                | No                                 |
 | `aufnahme`                  | Filename of uploaded media                                                                                   | String (255)                        | No                                 |
 | `aufnahmeHochladen`         | Media uploaded flag                                                                                          | Boolean, 0 = false, 1 = true        | No                                 |
-| `verhalten`                 | Behavior of animals                                                                                          | Integer-Range, 0-3                  | No                                 |
+| `verhalten`                 | Behavior of animals (4 = not specified, see note below)                                                      | Integer-Range, 0-4                  | No                                 |
 | `verhalten_text`            | Other behavior (when verhalten = 0)                                                                          | Text                                | No                                 |
 | `reaktion`                  | Reaction of animals                                                                                          | Text                                | No                                 |
 | `sonstige_auffaelligkeiten` | Other observations                                                                                           | Text                                | No                                 |
@@ -124,13 +124,15 @@ JSON Object with the following structure:
 		"0": "Sonstige Verteilung",
 		"1": "einzeln",
 		"2": "Mutter mit Jungtier",
-		"3": "deutliche Schulen"
+		"3": "deutliche Schulen",
+		"4": "Keine Angabe"
 	},
 	"verhalten": {
 		"0": "Sonstiges Verhalten",
 		"1": "Konstanter Kurs, regelmäßiges Tauchen (schwimmen, ziehen)",
 		"2": "Unterschiedlicher Kurs, kreisend, unregelmäßiges Tauchen (futtersuchend)",
-		"3": "Langsames Schwimmen, längere Zeit an der Wasseroberfläche (ruhend)"
+		"3": "Langsames Schwimmen, längere Zeit an der Wasseroberfläche (ruhend)",
+		"4": "Keine Angabe"
 	},
 	"seegang": {
 		"0": "Keine Angabe",
@@ -329,6 +331,36 @@ JSON Array with JSON Objects:
 5. **Wind Direction**: Must include all values: 'N','NW','W','SW','S','SO','O','NO' (note 'SO' for southeast)
 
 6. **Backward Compatibility**: Any changes that break existing mobile app functionality are strictly forbidden.
+
+## Abweichung von der Ursprungs-PDF: `verteilung = 4` und `verhalten = 4`
+
+Beide Felder kannten ursprünglich nur **0–3**. Seit dem 2026-07-29 gibt es
+jeweils zusätzlich **`4` = „Keine Angabe"**.
+
+**Warum:** `verteilung` und `verhalten` sind `integer default(0) notNull`, und
+`0` bedeutet dort „Sonstige Verteilung" bzw. „Sonstiges Verhalten" — echte
+Kategorien. Beide Felder sind im Formular **nicht** verpflichtend; eine fehlende
+Antwort wurde trotzdem als aktive Aussage gespeichert.
+
+Messung 2026-07-29 (19.880 Zeilen):
+
+| Feld         | Zeilen mit `0`   | davon mit Freitext | Freitext-Quote der übrigen Werte |
+| ------------ | ---------------- | ------------------ | -------------------------------- |
+| `verteilung` | 15.129 (76,1 %)  | 632 (4,2 %)        | 0,0–0,6 %                        |
+| `verhalten`  | 9.192 (46,2 %)   | 892 (9,7 %)        | 0,0–0,4 %                        |
+
+Bei `verteilung` war „Sonstige Verteilung" dadurch mit 76 % die dominierende
+Kategorie — vor „Einzeln" (3.046). Rechnet man die Nicht-Antworten heraus, ist
+„Einzeln" die häufigste Verteilung und „Sonstige" die seltenste.
+
+**Der Bestand wurde NICHT umgeschrieben.** Die Zeilen mit Freitext sind echte
+„Sonstige"-Antworten, und für die übrigen gibt es keine Spalte, aus der
+hervorginge, welche nie beantwortet wurden. `4` verhindert nur, dass **neue**
+Zeilen dieselbe Doppeldeutigkeit erben.
+
+**Auswirkung auf Clients:** `antworten.json` liefert je einen zusätzlichen
+Schlüssel, `POST` akzeptiert `4` zusätzlich, bestehende Werte bleiben
+unverändert. Im Formular ist `4` nicht auswählbar.
 
 ## Abweichung von der Ursprungs-PDF: `vonwo = 5`
 
