@@ -146,6 +146,15 @@ export class MapPage {
 		return this.page.locator('#time-end');
 	}
 
+	/** M10: Datums-Eingabefelder — gleichwertige Alternative zum Dual-Slider */
+	getStartDateInput(): Locator {
+		return this.page.locator('#time-date-start');
+	}
+
+	getEndDateInput(): Locator {
+		return this.page.locator('#time-date-end');
+	}
+
 	/**
 	 * Sets a range slider value and fires the input event so event handlers run.
 	 * Playwright's fill() does not reliably fire input events on range inputs.

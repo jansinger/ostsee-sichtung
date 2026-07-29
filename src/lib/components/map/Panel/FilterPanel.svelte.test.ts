@@ -157,6 +157,26 @@ describe('FilterPanel', () => {
 			expect(getSlider('time-range-end').getAttribute('max')).toBe('365');
 		});
 	});
+
+	// M10: Datums-Eingabefelder als gleichwertige Alternative zum Dual-Slider —
+	// ihre min/max-Klemmung folgt dem gewählten Jahr.
+	it('klemmt die Datums-Eingabefelder auf das gewählte Jahr', async () => {
+		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+
+		await page.getByRole('button', { name: /^Filter$/i }).click();
+
+		expect(getSlider('time-date-start').min).toBe('2025-01-01');
+		expect(getSlider('time-date-end').max).toBe('2025-12-31');
+
+		const yearSelect = getYearSelect();
+		yearSelect.value = '2024';
+		yearSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+		await vi.waitFor(() => {
+			expect(getSlider('time-date-start').min).toBe('2024-01-01');
+			expect(getSlider('time-date-end').max).toBe('2024-12-31');
+		});
+	});
 });
 
 // ─── Befund H6: Panels als Bottom-Sheet (Mobile) / 320-px-Panel (Desktop) ────
