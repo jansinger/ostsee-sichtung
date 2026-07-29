@@ -680,25 +680,40 @@ describe('mapFormToSighting', () => {
 			expect(result.boatDrive).toBe(BoatDriveEnum.ANCHORED);
 		});
 
-		it('lässt Boot-Sichtungen unverändert bei OTHER, wenn nichts gewählt wurde', () => {
-			// Bei Segelschiff/Motorboot ist der Antrieb Pflicht; fehlt er
-			// trotzdem, bleibt es beim bisherigen Verhalten (0 = Sonstiger).
-			const formData = createMinimalFormData();
-			formData.sightingFrom = SightingFromEnum.SAILBOAT;
-			formData.boatDrive = undefined;
-
-			const result = mapFormToSighting(formData);
-
-			expect(result.boatDrive).toBe(BoatDriveEnum.OTHER);
-		});
-
-		it('lässt Fähre und Sonstiges unverändert (dort ist ein Boot im Spiel)', () => {
-			for (const from of [SightingFromEnum.FERRY, SightingFromEnum.OTHER]) {
+		it('behauptet nie "Sonstiger Antrieb", wenn kein Antrieb angegeben wurde', () => {
+			// Der Fallback darf keine Antriebsart erfinden. Ohne Angabe wird
+			// NONE geschrieben — nie OTHER, das eine aktive Wahl bedeutet.
+			for (const from of [
+				SightingFromEnum.SAILBOAT,
+				SightingFromEnum.MOTORBOAT,
+				SightingFromEnum.FERRY,
+				SightingFromEnum.OTHER,
+				SightingFromEnum.UNKNOWN
+			]) {
 				const formData = createMinimalFormData();
 				formData.sightingFrom = from;
 				formData.boatDrive = undefined;
 
-				expect(mapFormToSighting(formData).boatDrive).toBe(BoatDriveEnum.OTHER);
+				expect(mapFormToSighting(formData).boatDrive).toBe(BoatDriveEnum.NONE);
+				expect(mapFormToSighting(formData).boatDrive).not.toBe(BoatDriveEnum.OTHER);
+			}
+		});
+
+		it('schreibt NONE auch, wenn sightingFrom selbst fehlt', () => {
+			const formData = createMinimalFormData();
+			formData.sightingFrom = undefined as unknown as number;
+			formData.boatDrive = undefined;
+
+			expect(mapFormToSighting(formData).boatDrive).toBe(BoatDriveEnum.NONE);
+		});
+
+		it('wertet NaN und Leerstring als fehlende Angabe', () => {
+			for (const value of [NaN, '']) {
+				const formData = createMinimalFormData();
+				formData.sightingFrom = SightingFromEnum.MOTORBOAT;
+				formData.boatDrive = value as unknown as number;
+
+				expect(mapFormToSighting(formData).boatDrive).toBe(BoatDriveEnum.NONE);
 			}
 		});
 
@@ -760,6 +775,41 @@ describe('mapFormToSighting', () => {
 				asString.sightingFrom = String(from) as unknown as number;
 				expect(mapFormToSighting(asString).sightingFrom).toBe(from);
 			}
+		});
+	});
+
+	describe('Entfernung ohne Angabe', () => {
+		/**
+		 * `entfernung` ist `integer default(0) notNull`, das Enum geht aber von
+		 * 1 bis 5 — `0` ist also **keine** Kategorie, sondern ein Sentinel für
+		 * "nicht angegeben" (282 Bestandszeilen). Anders als bei `verteilung`
+		 * oder `tierart` behauptet die Null hier nichts Falsches; sie wird als
+		 * "Unbekannt" angezeigt. Bleibt deshalb bewusst bei 0.
+		 */
+		it('schreibt den Sentinel 0, wenn keine Entfernung angegeben wurde', () => {
+			const formData = createMinimalFormData();
+			formData.distance = undefined as unknown as number;
+
+			expect(mapFormToSighting(formData).distance).toBe(0);
+		});
+
+		it('behandelt NaN und Leerstring ebenfalls als fehlende Angabe', () => {
+			for (const value of [NaN, '']) {
+				const formData = createMinimalFormData();
+				formData.distance = value as unknown as number;
+
+				expect(mapFormToSighting(formData).distance).toBe(0);
+			}
+		});
+
+		it('reicht gültige Entfernungen unverändert durch, auch als String', () => {
+			const numeric = createMinimalFormData();
+			numeric.distance = 5;
+			expect(mapFormToSighting(numeric).distance).toBe(5);
+
+			const asString = createMinimalFormData();
+			asString.distance = '5' as unknown as number;
+			expect(mapFormToSighting(asString).distance).toBe(5);
 		});
 	});
 

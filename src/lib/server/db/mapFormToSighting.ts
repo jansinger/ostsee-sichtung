@@ -11,6 +11,17 @@ import { berlinWallClockToUtc } from '$lib/server/datetime/berlinWallClockToUtc'
 import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 
 /**
+ * Sentinel für eine fehlende Entfernungsangabe.
+ *
+ * `DistanceEnum` geht von 1 bis 5 — die `0` der Spalte `entfernung` ist damit
+ * keine Kategorie, sondern liegt bewusst außerhalb und wird von
+ * `getDistanceLabel` als "Unbekannt" aufgelöst. Anders als bei `tierart`,
+ * `verteilung` oder `verhalten` behauptet diese Null also nichts Falsches und
+ * braucht keinen eigenen Enum-Wert.
+ */
+const DISTANCE_UNSPECIFIED = 0;
+
+/**
  * Prüft, ob für ein numerisches Auswahlfeld eine verwertbare Angabe vorliegt.
  *
  * Bewusst **nicht** über Truthiness: In mehreren Enums ist `0` eine echte,
@@ -99,18 +110,24 @@ function resolveSightingFrom(formData: SightingFormValues): number {
  *
  * Ein bereits vorhandener Wert wird **nicht** überschrieben: Beim Admin-Edit
  * einer Alt-Sichtung darf eine gespeicherte Angabe nicht still verloren gehen.
+ *
+ * **Ohne Angabe wird immer `NONE` geschrieben, nie `OTHER`** — `OTHER` ist eine
+ * aktive Wahl des Melders und darf nicht aus einer Nicht-Antwort entstehen.
+ *
+ * Bekannte Unschärfe: `NONE` heißt wörtlich "Kein Boot". Bei Sichtungen von
+ * einer Fähre oder von "Sonstiges" (Kajak, SUP) ist durchaus ein Fahrzeug im
+ * Spiel, dessen Antrieb nur niemand angegeben hat — dort ist `NONE` streng
+ * genommen zu stark. Das ist bewusst in Kauf genommen: Die Alternative wäre ein
+ * weiterer Enum-Wert "Antrieb unbekannt" und damit eine dritte Änderung am
+ * Legacy-Vertrag für dieselbe Spalte. Eine falsche Antriebsart zu behaupten
+ * wiegt schwerer als die Aussage "kein Boot" bei einem Kajak.
  */
 function resolveBoatDrive(formData: SightingFormValues): number {
 	if (isProvided(formData.boatDrive)) {
 		return Number(formData.boatDrive);
 	}
 
-	// String-Vergleich, da `sightingFrom` aus einem HTML-Select als String kommen kann
-	if (String(formData.sightingFrom) === String(SightingFromEnum.LAND)) {
-		return BoatDriveEnum.NONE;
-	}
-
-	return BoatDriveEnum.OTHER;
+	return BoatDriveEnum.NONE;
 }
 
 /**
@@ -222,7 +239,11 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 		sightingFrom: resolveSightingFrom(formData),
 		sightingFromText: formData.sightingFromText, // Freitext-Ergänzung
 		// Entfernung zur Sichtung
-		distance: formData.distance ? Number(formData.distance) : 0,
+		// `entfernung` ist die Ausnahme unter den Auswahlfeldern: Das Enum geht
+		// von 1 bis 5, `0` ist also keine Kategorie, sondern ein Sentinel für
+		// "nicht angegeben" (282 Bestandszeilen) und wird als "Unbekannt"
+		// angezeigt. Hier ist die Null deshalb korrekt und bleibt.
+		distance: isProvided(formData.distance) ? Number(formData.distance) : DISTANCE_UNSPECIFIED,
 		// Verteilung der Tiere
 		distribution: isProvided(formData.distribution)
 			? Number(formData.distribution)

@@ -411,9 +411,20 @@ die häufigste Kategorie, vor Motor und Segel.
   behalten ihre Bedeutung unverändert — es wurde nichts umnummeriert.
 - `GET /sichtungen/showreports.json` kann `5` in Bestandsdaten zurückgeben.
 
-**Nicht auswählbar im Formular:** `5` entsteht ausschließlich serverseitig beim
-Speichern einer Land-Sichtung (`mapFormToSighting`). Im Antriebs-Dropdown wird
-der Wert bewusst nicht angeboten — dort stehen weiterhin nur 0–4.
+**Nicht auswählbar im Formular:** `5` entsteht ausschließlich serverseitig
+(`mapFormToSighting`). Im Antriebs-Dropdown wird der Wert bewusst nicht
+angeboten — dort stehen weiterhin nur 0–4.
+
+**Seit 2026-07-29 ist `5` der generelle Fallback**, nicht nur bei
+Land-Sichtungen: Wurde kein Antrieb angegeben, wird `5` geschrieben statt `0`.
+`0` entsteht damit nur noch durch eine aktive Auswahl des Melders.
+
+Bekannte Unschärfe: `5` heißt wörtlich „Kein Boot". Bei einer Sichtung von einer
+Fähre oder von „Sonstiges" (Kajak, SUP) ist ein Fahrzeug im Spiel, dessen
+Antrieb nur niemand angegeben hat — dort ist `5` streng genommen zu stark.
+Bewusst in Kauf genommen: Ein eigener Wert „Antrieb unbekannt" wäre eine dritte
+Vertragsänderung an derselben Spalte, und eine erfundene Antriebsart wiegt
+schwerer als „kein Boot" bei einem Kajak.
 
 ## Zeitzonen-Semantik
 
