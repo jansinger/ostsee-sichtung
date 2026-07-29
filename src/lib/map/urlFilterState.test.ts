@@ -124,6 +124,12 @@ describe('parseMapFilterParams', () => {
 			});
 		});
 
+		it('trimmt Whitespace um Einträge (handbearbeitete URLs)', () => {
+			expect(parseMapFilterParams(params({ hs: '1, 2 ,3' }))).toEqual({
+				hiddenSpecies: ['1', '2', '3']
+			});
+		});
+
 		it('ignoriert hs wenn kein gültiger Eintrag übrig bleibt', () => {
 			expect(parseMapFilterParams(params({ hs: 'abc,,x' }))).toEqual({});
 		});
@@ -145,6 +151,12 @@ describe('parseMapFilterParams', () => {
 		it('entfernt Duplikate', () => {
 			expect(parseMapFilterParams(params({ hc: 'ct1,ct1,ct2' }))).toEqual({
 				hiddenColors: ['ct1', 'ct2']
+			});
+		});
+
+		it('trimmt Whitespace um Einträge (handbearbeitete URLs)', () => {
+			expect(parseMapFilterParams(params({ hc: ' ct0 , ct1' }))).toEqual({
+				hiddenColors: ['ct0', 'ct1']
 			});
 		});
 

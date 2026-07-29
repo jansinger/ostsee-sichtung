@@ -49,10 +49,21 @@ function parseIsoDate(iso: string): Date | null {
 	return date;
 }
 
-/** Splittet einen kommaseparierten Listen-Param, validiert und dedupliziert. */
+/**
+ * Splittet einen kommaseparierten Listen-Param, validiert und dedupliziert.
+ * Einträge werden vorher getrimmt — handbearbeitete URLs enthalten gern
+ * Leerzeichen nach den Kommas (`hs=1, 2`).
+ */
 function parseListParam(raw: string | null, pattern: RegExp): string[] {
 	if (!raw) return [];
-	return [...new Set(raw.split(',').filter((entry) => pattern.test(entry)))];
+	return [
+		...new Set(
+			raw
+				.split(',')
+				.map((entry) => entry.trim())
+				.filter((entry) => pattern.test(entry))
+		)
+	];
 }
 
 /**

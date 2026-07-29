@@ -337,7 +337,8 @@
 		const query = serializeMapFilterParams(state);
 		const search = query ? `?${query}` : '';
 		if (window.location.search === search) return;
-		replaceState(`${window.location.pathname}${search}`, page.state);
+		// Hash beibehalten — z. B. #map-skip-target nach Nutzung des Skip-Links.
+		replaceState(`${window.location.pathname}${search}${window.location.hash}`, page.state);
 	}
 
 	// --- N6: Aktionen der Filter-Chips -------------------------------------
