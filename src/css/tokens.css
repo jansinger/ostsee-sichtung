@@ -43,6 +43,7 @@
 		0.48 0.18 25
 	); /*    #ac1922  — ist bereits
 	     beides: Fläche (weiß darauf 7,19) und Vordergrund (6,04 / 5,01). */
+	--status-accent-strong: oklch(0.475 0.047 215); /* #3c636d  5,51 / 4,57 */
 
 	/* ── Ebene 2: semantische Tokens ────────────────────────────────────── */
 
@@ -53,7 +54,7 @@
 	--color-success-strong: var(--status-success-strong);
 	--color-warning-strong: var(--status-warning-strong);
 	--color-secondary-strong: var(--brand-sea-400);
-	--color-accent-strong: oklch(0.475 0.047 215); /* #3c636d  5,51 / 4,57 */
+	--color-accent-strong: var(--status-accent-strong);
 
 	/* Typografie — sechs Rollen. Keine freien text-*-Utilities mehr für
 	   Fließtext und Überschriften.

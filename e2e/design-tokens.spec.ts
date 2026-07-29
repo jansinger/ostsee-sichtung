@@ -124,12 +124,23 @@ test.describe.skip('Design-Tokens — Kontrast', () => {
 	});
 });
 
-/* Erwartet rot bis PR 4; die Testausgabe IST die Arbeitsliste.
+/* Bekannt rot bis PR 4 — läuft deshalb bewusst NICHT mit.
    Die Gruppe scannt den Bestand und listet jede Aufrufstelle, die eine
    Flächen-Statusfarbe als Vordergrund verwendet, Text unter Deckkraft /60
    setzt oder eine Tailwind-Paletten-Farbe am Theme vorbei nutzt (Befunde F2,
-   F3 und F11 des Reviews — über 60 Stellen). PR 4 räumt sie auf, danach fällt
-   `.fixme` weg.
+   F3 und F11 des Reviews — über 60 Stellen).
+
+   `describe.fixme` überspringt die Tests, sie erzeugen im normalen Lauf also
+   weder Rot noch Ausgabe — das ist hier der Zweck: CI bleibt grün, ohne dass
+   die Assertions aufgeweicht werden. Die Arbeitsliste holt man sich gezielt,
+   indem man `.fixme` temporär entfernt und nur diese Datei laufen lässt:
+
+     npx playwright test e2e/design-tokens.spec.ts --reporter=list
+
+   Die Fehlermeldung jedes Tests enthält dann die gefundenen Aufrufstellen
+   (max. 20 pro Route). PR 4 arbeitet sie ab; danach fällt `.fixme` dauerhaft
+   weg und die Gruppe wird zum echten Guard.
+
    Die Regex NICHT aufweichen, um die Gruppe grün zu bekommen: sie wäre genau
    dann wertlos, wenn sie nur noch findet, was ohnehin konform ist. */
 test.describe.fixme('Design-Tokens — verbotene Kombinationen im DOM', () => {

@@ -85,18 +85,35 @@
 }
 
 /* ===== Tailwind-Utilities für die eigenen Tokens =====
-   Damit text-warning-strong, shadow-floating, z-nav usw. als Utilities
-   existieren. Ohne diesen Block sind die Klassen tot (design-system.md:
-   „Keine toten Utility-Klassen"). */
+   Damit text-warning-strong, shadow-floating usw. als Utilities existieren.
+   Ohne diesen Block sind die Klassen tot (design-system.md: „Keine toten
+   Utility-Klassen").
+
+   Jeder Eintrag referenziert die Quelle in css/tokens.css, statt den Wert zu
+   wiederholen — sonst driften Utility und var()-Zugriff auseinander, sobald
+   jemand nur eine der beiden Stellen anfasst.
+
+   Die --text-*-Zeilen sind die Ausnahme und wiederholen den Wert. Das ist
+   keine Nachlässigkeit, sondern eine Zwangslage: Tailwind erzeugt die Utility
+   nur für Namen, die IN diesem Block stehen, und `--text-support:
+   var(--text-support)` wäre zirkulär. Gleichzeitig muss der Name in
+   tokens.css im :root stehen, weil @theme-Variablen weggeshakt werden, sobald
+   keine Utility sie nutzt — dann wäre var(--text-display) tot. Die Werte
+   müssen hier also paarweise gepflegt werden.
+   Der Feldmodus bleibt davon unberührt: der @theme-Output liegt in
+   @layer theme, [data-density='field'] aus tokens.css ist ungelayert und
+   gewinnt deshalb die Kaskade (im Production-Build nachgemessen).
+   Auflösbar wäre die Dopplung mit `@theme static` — dann emittiert Tailwind
+   auch ungenutzte Variablen und tokens.css bräuchte die Namen nicht mehr. */
 @theme {
 	--color-info-strong: var(--status-info-strong);
 	--color-success-strong: var(--status-success-strong);
 	--color-warning-strong: var(--status-warning-strong);
 	--color-secondary-strong: var(--brand-sea-400);
-	--color-accent-strong: oklch(0.475 0.047 215);
+	--color-accent-strong: var(--status-accent-strong);
 
-	--shadow-raised: 0 1px 3px color-mix(in oklab, oklch(0.37 0.016 251.8) 14%, transparent);
-	--shadow-floating: 0 8px 24px color-mix(in oklab, oklch(0.37 0.016 251.8) 20%, transparent);
+	--shadow-raised: var(--elevation-raised);
+	--shadow-floating: var(--elevation-floating);
 
 	--text-display: 2rem;
 	--text-title: 1.5rem;
