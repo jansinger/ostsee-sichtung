@@ -16,7 +16,7 @@ Storage-Provider.
 **Tech-Stack:** SvelteKit 5, TypeScript, Drizzle, Vitest, Node ≥ 22.18
 (Type Stripping).
 
-**Entwurf:** `docs/AUFRAEUM_ENDPUNKT_ENTWURF_2026-07-28.md`
+**Entwurf:** `docs/archive/AUFRAEUM_ENDPUNKT_ENTWURF_2026-07-28.md`
 
 ## Globale Vorgaben
 
@@ -555,7 +555,7 @@ git commit -m "refactor(media): drive cleanup tool through shared orchestrator"
 ```typescript
 /**
  * Prüfung des M2M-Tokens für den Aufräum-Endpunkt.
- * Siehe docs/AUFRAEUM_ENDPUNKT_ENTWURF_2026-07-28.md, § 5.
+ * Siehe docs/archive/AUFRAEUM_ENDPUNKT_ENTWURF_2026-07-28.md, § 5.
  */
 import { describe, expect, it } from 'vitest';
 import { MIN_TOKEN_LENGTH, isValidCleanupToken } from './cleanupAuth';
@@ -899,7 +899,7 @@ export async function scanLocalUploads(cutoff: Date): Promise<DiskEntry[]> {
  * ist der Token-Weg abgeschaltet.
  *
  * Vorgabe ist die Vorschau; gelöscht wird nur mit `mode=execute`.
- * Entwurf: docs/AUFRAEUM_ENDPUNKT_ENTWURF_2026-07-28.md
+ * Entwurf: docs/archive/AUFRAEUM_ENDPUNKT_ENTWURF_2026-07-28.md
  */
 import { env } from '$env/dynamic/private';
 import { ORPHAN_RETENTION_HOURS } from '$lib/constants/uploadRetention';
