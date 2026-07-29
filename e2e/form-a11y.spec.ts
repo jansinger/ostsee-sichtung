@@ -1,7 +1,7 @@
 import { test, expect, type Locator } from '@playwright/test';
 import { FormPage } from './pages/FormPage';
 import { fillStep1, fillStep2, expectCurrentStep } from './helpers/form-helpers';
-import { measureContrast } from './helpers/contrast';
+import { formatRatio, measureContrast } from './helpers/contrast';
 
 // ── Phase 5A: FormSteps Indicator ──────────────────────────────────────────
 
@@ -301,7 +301,7 @@ test.describe('Accessibility — Alert-Kontrast', () => {
 
 		expect(measured).toHaveLength(ALERT_VARIANTS.length);
 		for (const { name, ratio } of measured) {
-			expect(ratio, `${name}: gemessen ${ratio}:1`).toBeGreaterThanOrEqual(4.5);
+			expect(ratio, `${name}: gemessen ${formatRatio(ratio)}:1`).toBeGreaterThanOrEqual(4.5);
 		}
 	});
 });
@@ -343,7 +343,7 @@ test.describe('Accessibility — text-error auf Buttons', () => {
 		]);
 
 		for (const { name, ratio } of measured) {
-			expect(ratio, `${name}: gemessen ${ratio}:1`).toBeGreaterThanOrEqual(4.5);
+			expect(ratio, `${name}: gemessen ${formatRatio(ratio)}:1`).toBeGreaterThanOrEqual(4.5);
 		}
 	});
 
@@ -372,11 +372,11 @@ test.describe('Accessibility — text-error auf Buttons', () => {
 
 		expect(
 			onBase100.ratio,
-			`${onBase100.name}: ${onBase100.foreground} auf ${onBase100.background} = ${onBase100.ratio}:1`
+			`${onBase100.name}: ${onBase100.foreground} auf ${onBase100.background} = ${formatRatio(onBase100.ratio)}:1`
 		).toBeGreaterThanOrEqual(4.5);
 		expect(
 			onBase200.ratio,
-			`${onBase200.name}: ${onBase200.foreground} auf ${onBase200.background} = ${onBase200.ratio}:1`
+			`${onBase200.name}: ${onBase200.foreground} auf ${onBase200.background} = ${formatRatio(onBase200.ratio)}:1`
 		).toBeGreaterThanOrEqual(4.5);
 	});
 });
@@ -387,13 +387,15 @@ test.describe('Accessibility — text-error auf Buttons', () => {
  * Projekt-Mindestmaß ist 44×44 px (`design-system.md`, A11y-Mindestanforderungen)
  * — das Formular wird an Deck einhändig auf dem Telefon ausgefüllt.
  *
- * Gemessen wird die **echte Trefferfläche**, nicht `getBoundingClientRect()`:
- * Der Hinweis-Button steht inline in einer Label-Zeile, und die 44 px kommen
- * über ein Pseudo-Element, damit die Zeilenhöhe (28 px) erhalten bleibt. Ein
- * Test über die Box-Maße würde diese Lösung fälschlich durchfallen lassen und
- * eine Lösung durchwinken, die zwar 44 px groß aussieht, aber daneben klickt.
- * `elementFromPoint` prüft stattdessen, was der Browser an den Rändern des
- * 44-px-Quadrats tatsächlich träfe.
+ * Gemessen wird die **echte Trefferfläche**, nicht `getBoundingClientRect()`.
+ * Der Hinweis-Button steht inline in einer Label-Zeile: Er ist über
+ * `min-h-11 min-w-11` echte 44×44 px groß, ragt durch `-my-2.5` aber oben und
+ * unten aus der 28 px hohen Zeile heraus (`FieldRenderer.svelte`). Ein Test
+ * über die Box-Maße prüfte nur, wie groß das Element sich *nennt* — er würde
+ * eine Lösung durchwinken, die 44 px misst, deren Ränder aber von einem
+ * Nachbarn überdeckt sind oder ins Leere klicken. `elementFromPoint` prüft
+ * stattdessen, was der Browser an den Rändern des 44-px-Quadrats tatsächlich
+ * träfe, und bleibt damit gültig, wenn die 44 px später anders erzeugt werden.
  */
 const MIN_TOUCH_TARGET = 44;
 

@@ -26,11 +26,26 @@ export interface ContrastProbe {
 
 export interface ContrastResult {
 	name: string;
-	/** Kontrastverhältnis Vordergrund : Hintergrund, auf 2 Nachkommastellen. */
+	/**
+	 * Kontrastverhältnis Vordergrund : Hintergrund — **ungerundet**.
+	 *
+	 * Bewusst nicht gerundet: Der Wert wird direkt gegen die WCAG-Schwelle
+	 * verglichen. Bei zwei Nachkommastellen bestünde ein echtes 4,4951 als
+	 * 4,50 — und dieser Test existiert gerade dafür, ein Abdriften Richtung
+	 * Schwelle zu bemerken. Gerundet wird erst in der Fehlermeldung.
+	 */
 	ratio: number;
 	/** Serialisierte sRGB-Werte — hilfreich, wenn eine Messung überrascht. */
 	foreground: string;
 	background: string;
+}
+
+/**
+ * Rundet ein Kontrastverhältnis für die Ausgabe — nur für Fehlermeldungen.
+ * Verglichen wird immer der ungerundete Wert aus `ContrastResult.ratio`.
+ */
+export function formatRatio(ratio: number): string {
+	return ratio.toFixed(2);
 }
 
 export async function measureContrast(
@@ -104,7 +119,7 @@ export async function measureContrast(
 			const l2 = luminance(bg);
 			return {
 				name: item.name,
-				ratio: Math.round(((Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)) * 100) / 100,
+				ratio: (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05),
 				foreground: `rgb(${fg.join(', ')})`,
 				background: `rgb(${bg.join(', ')})`
 			};
