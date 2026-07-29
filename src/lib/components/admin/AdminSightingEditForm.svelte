@@ -82,7 +82,7 @@
 		<div class="space-y-4">
 			<div class="card bg-base-200 p-4">
 				<!-- Technische Informationen -->
-				<div class="text-sm text-gray-600">
+				<div class="text-sm text-base-content/70">
 					<p>Datensatz ID: {sighting.id}</p>
 					<p>Gemeldet: {formatLocalDateTime(sighting.created)}</p>
 					<p>Verifiziert: <BooleanStatus value={sighting.verified} /></p>

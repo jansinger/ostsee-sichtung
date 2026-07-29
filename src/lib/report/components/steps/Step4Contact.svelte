@@ -71,7 +71,7 @@
 			<div class="alert alert-info mt-4">
 				<div class="text-xs">
 					<p class="mb-2 flex items-center gap-2 font-medium">
-						<Icon icon="lucide:save" width="16" class="text-info" />
+						<Icon icon="lucide:save" width="16" class="text-info-strong" />
 						Automatische Speicherung für Komfort
 					</p>
 					<p>
@@ -81,7 +81,7 @@
 
 					{#if hasSavedContactData}
 						<div class="mt-3 flex items-center justify-between">
-							<span class="text-success font-medium">✓ Gespeicherte Kontaktdaten gefunden</span>
+							<span class="text-success-strong font-medium">✓ Gespeicherte Kontaktdaten gefunden</span>
 							<button
 								type="button"
 								class="btn btn-outline btn-error btn-sm min-h-11"

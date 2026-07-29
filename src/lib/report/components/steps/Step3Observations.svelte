@@ -77,7 +77,7 @@
 			</button>
 		</div>
 
-		<div class="divider text-xs opacity-50">oder Details hinzufügen</div>
+		<div class="divider text-xs opacity-70">oder Details hinzufügen</div>
 	</div>
 
 	<Media></Media>

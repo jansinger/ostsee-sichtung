@@ -261,7 +261,7 @@
 									<div class="min-w-0 flex-1">
 										<div class="font-medium">{info.name}</div>
 										<div class="text-base-content/70 mt-1 text-xs">{info.description}</div>
-										<div class="text-base-content/50 mt-1 text-xs">
+										<div class="text-base-content/70 mt-1 text-xs">
 											~{formatFileSize(estimateFileSize(format, totalRecords))}
 										</div>
 									</div>

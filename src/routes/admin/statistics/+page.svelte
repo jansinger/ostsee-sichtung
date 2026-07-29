@@ -134,7 +134,7 @@
 				<h1 class="text-base-content text-3xl font-bold">Statistiken</h1>
 				<p class="text-base-content/70 mt-2">
 					Analyse von {formatNumber(data.basicStats?.approved.totalSightings || 0)} freigegebenen Meerestier-Sichtungen
-					<span class="text-base-content/50">
+					<span class="text-base-content/70">
 						· {formatNumber(data.basicStats?.pending.totalSightings || 0)} noch nicht freigegeben
 					</span>
 				</p>
@@ -195,7 +195,7 @@
 								100
 						)})
 						<br />
-						<span class="text-warning"
+						<span class="text-warning-strong"
 							>{formatNumber(data.basicStats?.pending.totalSightings || 0)} noch offen</span
 						>
 					</div>
@@ -204,11 +204,11 @@
 
 			<div class="stats shadow">
 				<div class="stat">
-					<div class="stat-figure text-secondary">
+					<div class="stat-figure text-secondary-strong">
 						<Icon icon="lucide:activity" class="h-8 w-8" />
 					</div>
 					<div class="stat-title">Ø Gruppengröße</div>
-					<div class="stat-value text-secondary">
+					<div class="stat-value text-secondary-strong">
 						{formatNumber(
 							parseFloat(String(data.basicStats?.approved.avgGroupSize || 0)).toFixed(1)
 						)}
@@ -221,11 +221,11 @@
 
 			<div class="stats shadow">
 				<div class="stat">
-					<div class="stat-figure text-warning">
+					<div class="stat-figure text-warning-strong">
 						<Icon icon="lucide:trending-up" class="h-8 w-8" />
 					</div>
 					<div class="stat-title">Totfunde</div>
-					<div class="stat-value text-warning">
+					<div class="stat-value text-warning-strong">
 						{formatNumber(data.basicStats?.approved.deadAnimals || 0)}
 					</div>
 					<div class="stat-desc">
@@ -235,7 +235,7 @@
 								100
 						)} der freigegebenen
 						<br />
-						<span class="text-warning"
+						<span class="text-warning-strong"
 							>{formatNumber(data.basicStats?.pending.deadAnimals || 0)} noch offen</span
 						>
 					</div>
@@ -244,11 +244,11 @@
 
 			<div class="stats shadow">
 				<div class="stat">
-					<div class="stat-figure text-accent">
+					<div class="stat-figure text-accent-strong">
 						<Icon icon="lucide:calendar" class="h-8 w-8" />
 					</div>
 					<div class="stat-title">Mit Medien</div>
-					<div class="stat-value text-accent">
+					<div class="stat-value text-accent-strong">
 						{formatNumber(data.basicStats?.approved.withMedia || 0)}
 					</div>
 					<div class="stat-desc">
@@ -263,11 +263,11 @@
 
 			<div class="stats shadow">
 				<div class="stat">
-					<div class="stat-figure text-info">
+					<div class="stat-figure text-info-strong">
 						<Icon icon="lucide:users" class="h-8 w-8" />
 					</div>
 					<div class="stat-title">Unique Nutzer</div>
-					<div class="stat-value text-info">{formatNumber(data.userStats?.uniqueUsers || 0)}</div>
+					<div class="stat-value text-info-strong">{formatNumber(data.userStats?.uniqueUsers || 0)}</div>
 					<div class="stat-desc">
 						{formatNumber(data.userStats?.repeatUsers || 0)} Wiederholungs-Nutzer ({formatPercentage(
 							data.userStats?.repeatUserPercentage || 0
@@ -312,7 +312,7 @@
 											class={deadPerc > 30
 												? 'text-error font-bold'
 												: deadPerc > 15
-													? 'text-warning font-semibold'
+													? 'text-warning-strong font-semibold'
 													: ''}
 										>
 											{formatPercentage(species.deadPercentage)}
@@ -371,7 +371,7 @@
 						</div>
 						<div class="stat">
 							<div class="stat-title">Wiederkehrer</div>
-							<div class="stat-value text-secondary">
+							<div class="stat-value text-secondary-strong">
 								{formatNumber(data.userStats?.repeatUsers || 0)}
 							</div>
 							<div class="stat-desc">
@@ -380,7 +380,7 @@
 						</div>
 						<div class="stat">
 							<div class="stat-title">Eindeutige Schiffsnamen</div>
-							<div class="stat-value text-accent">
+							<div class="stat-value text-accent-strong">
 								{formatNumber(data.shipStats?.uniqueShips || 0)}
 							</div>
 							<div class="stat-desc">
@@ -514,7 +514,7 @@
 										{#if prevYear}
 											<span
 												class={change > 0
-													? 'text-success'
+													? 'text-success-strong'
 													: change < 0
 														? 'text-error'
 														: 'text-base-content'}
@@ -522,7 +522,7 @@
 												{change > 0 ? '+' : ''}{formatPercentage(change)}
 											</span>
 										{:else}
-											<span class="text-base-content/50">-</span>
+											<span class="text-base-content/70">-</span>
 										{/if}
 									</td>
 									<td class="w-32">
@@ -602,14 +602,14 @@
 						</div>
 						<div class="stat">
 							<div class="stat-title">Durchschnitt</div>
-							<div class="stat-value text-secondary">
+							<div class="stat-value text-secondary-strong">
 								{formatNumber((totalRecentSightings / 30).toFixed(1))}
 							</div>
 							<div class="stat-desc">Sichtungen pro Tag</div>
 						</div>
 						<div class="stat">
 							<div class="stat-title">Aktivste Tage</div>
-							<div class="stat-value text-accent">{data.recentActivity.length}</div>
+							<div class="stat-value text-accent-strong">{data.recentActivity.length}</div>
 							<div class="stat-desc">Tage mit Meldungen</div>
 						</div>
 					</div>

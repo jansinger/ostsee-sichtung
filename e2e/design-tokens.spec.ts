@@ -259,26 +259,18 @@ test.describe('Styleguide — Bedienung', () => {
 	}
 });
 
-/* Bekannt rot bis PR 4 — läuft deshalb bewusst NICHT mit.
-   Die Gruppe scannt den Bestand und listet jede Aufrufstelle, die eine
-   Flächen-Statusfarbe als Vordergrund verwendet, Text unter Deckkraft /60
-   setzt oder eine Tailwind-Paletten-Farbe am Theme vorbei nutzt (Befunde F2,
-   F3 und F11 des Reviews — über 60 Stellen).
+/* Seit PR 4 aktiver Guard — vorher `describe.fixme`, weil der Bestand die
+   Befunde F2, F3 und F11 des Reviews an über 60 Stellen enthielt.
 
-   `describe.fixme` überspringt die Tests, sie erzeugen im normalen Lauf also
-   weder Rot noch Ausgabe — das ist hier der Zweck: CI bleibt grün, ohne dass
-   die Assertions aufgeweicht werden. Die Arbeitsliste holt man sich gezielt,
-   indem man `.fixme` temporär entfernt und nur diese Datei laufen lässt:
+   Die Gruppe scannt den ausgelieferten DOM und meldet jede Aufrufstelle, die
+   eine Flächen-Statusfarbe als Vordergrund verwendet, Text unter Deckkraft /60
+   setzt oder eine Tailwind-Paletten-Farbe am Theme vorbei nutzt.
 
-     npx playwright test e2e/design-tokens.spec.ts --reporter=list
-
-   Die Fehlermeldung jedes Tests enthält dann die gefundenen Aufrufstellen
-   (max. 20 pro Route). PR 4 arbeitet sie ab; danach fällt `.fixme` dauerhaft
-   weg und die Gruppe wird zum echten Guard.
-
-   Die Regex NICHT aufweichen, um die Gruppe grün zu bekommen: sie wäre genau
-   dann wertlos, wenn sie nur noch findet, was ohnehin konform ist. */
-test.describe.fixme('Design-Tokens — verbotene Kombinationen im DOM', () => {
+   Die Regex NICHT aufweichen, um die Gruppe grün zu halten: sie wäre genau
+   dann wertlos, wenn sie nur noch findet, was ohnehin konform ist. Eine neue
+   Fundstelle gehört an der Aufrufstelle behoben — `text-*-strong` statt
+   `text-*`, `/70` statt `/50`, Theme-Token statt Tailwind-Palette. */
+test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 	/* Ruhezustand-Scan. Hover-Zustände tauchen in getComputedStyle nicht auf
 	   und sind hier deshalb nicht prüfbar — dafür gilt die Regel in
 	   design-system.md („text-error nicht auf base-300"). */

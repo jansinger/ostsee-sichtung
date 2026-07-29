@@ -28,6 +28,7 @@ import {
 	getFeatureColorGroup
 } from './styleUtils';
 import { clusterDistanceForZoom, clusterMinDistanceFor } from './clusterConfig';
+import { MAP_THEME } from './mapTokens';
 import {
 	createClusterInfoText,
 	createClusterListContent,
@@ -145,18 +146,20 @@ export class SichtungenMap {
 					return new Style({
 						image: new Circle({
 							radius: 8,
-							fill: new Fill({ color: '#3b82f6' }),
-							stroke: new Stroke({ color: '#ffffff', width: 2 })
+							fill: new Fill({ color: MAP_THEME.primary }),
+							stroke: new Stroke({ color: MAP_THEME.primaryContent, width: 2 })
 						})
 					});
 				} else if (type === 'accuracy') {
 					return new Style({
 						stroke: new Stroke({
-							color: '#3b82f6',
+							color: MAP_THEME.primary,
 							width: 2
 						}),
 						fill: new Fill({
-							color: 'rgba(59, 130, 246, 0.1)'
+							// 10 % Deckkraft als 8-stelliges Hex — ol/color löst #RRGGBBAA auf,
+							// eine zweite Konstante in mapTokens.ts wäre dafür nicht nötig.
+							color: `${MAP_THEME.primary}1a`
 						})
 					});
 				}

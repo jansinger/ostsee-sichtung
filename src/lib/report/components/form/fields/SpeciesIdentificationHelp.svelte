@@ -127,7 +127,7 @@
 			<!-- Wichtigste Regel zuerst -->
 			<div class="bg-warning/10 border-warning/30 mb-4 rounded-lg border p-3">
 				<h5 class="text-base-content mb-1 flex items-center gap-1 text-xs font-semibold">
-					<Icon icon="lucide:triangle-alert" width="14" class="text-warning" aria-hidden="true" />
+					<Icon icon="lucide:triangle-alert" width="14" class="text-warning-strong" aria-hidden="true" />
 					Im Zweifel nicht raten
 				</h5>
 				<p class="text-base-content/80 text-xs">
@@ -200,7 +200,7 @@
 														</button>
 														<p class="text-base-content/70 mt-1 text-xs">{image.alt}</p>
 														{#if image.copyright}
-															<p class="text-base-content/50 text-xs">
+															<p class="text-base-content/70 text-xs">
 																<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 																{@html sanitizeHtml(image.copyright)}
 															</p>
@@ -215,7 +215,7 @@
 											<h6
 												class="text-base-content mb-1 flex items-center gap-1 text-xs font-semibold"
 											>
-												<Icon icon="lucide:eye" width="14" class="text-info" aria-hidden="true" />
+												<Icon icon="lucide:eye" width="14" class="text-info-strong" aria-hidden="true" />
 												So sieht es an der Oberfläche aus
 											</h6>
 											<ul class="text-base-content/80 ml-3 list-disc space-y-0.5 text-xs">

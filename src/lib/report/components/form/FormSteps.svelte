@@ -46,7 +46,7 @@
 			{@const navigable = canNavigateTo(index)}
 			<li
 				class="step {currentStep >= index ? 'step-primary' : ''}"
-				class:opacity-50={!navigable && index > currentStep}
+				class:opacity-70={!navigable && index > currentStep}
 			>
 				<button
 					type="button"

@@ -91,13 +91,13 @@
 				<div class="card-body">
 					<h2 class="card-title text-lg">🔍 Sichtungen</h2>
 					<div class="space-y-1 text-sm">
-						<div><code class="text-success">GET</code> /sightings - Öffentliche Sichtungen</div>
-						<div><code class="text-info">POST</code> /sightings - Neue Sichtung</div>
+						<div><code class="text-success-strong">GET</code> /sightings - Öffentliche Sichtungen</div>
+						<div><code class="text-info-strong">POST</code> /sightings - Neue Sichtung</div>
 						<div>
-							<code class="text-success">GET</code> /sightings/{'{id}'} - Einzelne Sichtung
+							<code class="text-success-strong">GET</code> /sightings/{'{id}'} - Einzelne Sichtung
 						</div>
 						<div>
-							<code class="text-orange-600">PUT</code> /sightings/{'{id}'} - Sichtung ändern
+							<code class="text-warning-strong">PUT</code> /sightings/{'{id}'} - Sichtung ändern
 						</div>
 						<div>
 							<code class="text-error">DELETE</code> /sightings/{'{id}'} - Sichtung löschen
@@ -110,9 +110,9 @@
 				<div class="card-body">
 					<h2 class="card-title text-lg">🔐 Authentifizierung</h2>
 					<div class="space-y-1 text-sm">
-						<div><code class="text-success">GET</code> /auth/login - Login starten</div>
-						<div><code class="text-success">GET</code> /auth/logout - Logout</div>
-						<div><code class="text-success">GET</code> /auth/callback - Auth0 Callback</div>
+						<div><code class="text-success-strong">GET</code> /auth/login - Login starten</div>
+						<div><code class="text-success-strong">GET</code> /auth/logout - Logout</div>
+						<div><code class="text-success-strong">GET</code> /auth/callback - Auth0 Callback</div>
 					</div>
 				</div>
 			</div>
@@ -121,7 +121,7 @@
 				<div class="card-body">
 					<h2 class="card-title text-lg">📁 Dateien</h2>
 					<div class="space-y-1 text-sm">
-						<div><code class="text-info">POST</code> /files/upload - Datei hochladen</div>
+						<div><code class="text-info-strong">POST</code> /files/upload - Datei hochladen</div>
 						<div><code class="text-error">DELETE</code> /files/delete - Datei löschen</div>
 					</div>
 				</div>
@@ -131,10 +131,10 @@
 				<div class="card-body">
 					<h2 class="card-title text-lg">📊 Export</h2>
 					<div class="space-y-1 text-sm">
-						<div><code class="text-success">GET</code> /sightings/export/json - JSON Export</div>
-						<div><code class="text-success">GET</code> /sightings/export/csv - CSV Export</div>
-						<div><code class="text-success">GET</code> /sightings/export/xml - XML Export</div>
-						<div><code class="text-success">GET</code> /sightings/export/kml - KML Export</div>
+						<div><code class="text-success-strong">GET</code> /sightings/export/json - JSON Export</div>
+						<div><code class="text-success-strong">GET</code> /sightings/export/csv - CSV Export</div>
+						<div><code class="text-success-strong">GET</code> /sightings/export/xml - XML Export</div>
+						<div><code class="text-success-strong">GET</code> /sightings/export/kml - KML Export</div>
 					</div>
 				</div>
 			</div>
@@ -144,7 +144,7 @@
 					<h2 class="card-title text-lg">⚙️ Admin</h2>
 					<div class="space-y-1 text-sm">
 						<div>
-							<code class="text-info">PATCH</code> /sightings/{'{id}'}/verify - Prüfen und freigeben
+							<code class="text-info-strong">PATCH</code> /sightings/{'{id}'}/verify - Prüfen und freigeben
 						</div>
 					</div>
 				</div>
@@ -154,8 +154,8 @@
 				<div class="card-body">
 					<h2 class="card-title text-lg">🌍 Geo</h2>
 					<div class="space-y-1 text-sm">
-						<div><code class="text-success">GET</code> /geo/inBaltic - Ostsee-Prüfung</div>
-						<div><code class="text-success">GET</code> /map/sightings - Kartendaten</div>
+						<div><code class="text-success-strong">GET</code> /geo/inBaltic - Ostsee-Prüfung</div>
+						<div><code class="text-success-strong">GET</code> /map/sightings - Kartendaten</div>
 					</div>
 				</div>
 			</div>

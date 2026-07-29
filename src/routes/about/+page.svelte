@@ -136,9 +136,9 @@
 					<div
 						class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110"
 					>
-						<Icon icon="lucide:map" width="48" class="text-secondary" />
+						<Icon icon="lucide:map" width="48" class="text-secondary-strong" />
 					</div>
-					<h3 class="card-title text-secondary mb-4 justify-center text-xl">Interaktive Karte</h3>
+					<h3 class="card-title text-secondary-strong mb-4 justify-center text-xl">Interaktive Karte</h3>
 					<p class="text-base-content/80 text-base leading-relaxed">
 						Visualisieren Sie <strong>alle Sichtungen</strong> auf einer detaillierten Karte der
 						Ostsee und entdecken Sie <em>Muster und Hotspots</em>.
@@ -154,9 +154,9 @@
 					<div
 						class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110"
 					>
-						<Icon icon="lucide:chart-pie" width="48" class="text-accent" />
+						<Icon icon="lucide:chart-pie" width="48" class="text-accent-strong" />
 					</div>
-					<h3 class="card-title text-accent mb-4 justify-center text-xl">Offene Daten</h3>
+					<h3 class="card-title text-accent-strong mb-4 justify-center text-xl">Offene Daten</h3>
 					<p class="text-base-content/80 text-base leading-relaxed">
 						Alle Daten sind für <strong>Forschungszwecke verfügbar</strong> und können in
 						verschiedenen Formaten <em>exportiert</em> werden.
@@ -208,7 +208,7 @@
 	<!-- Data Protection & Security Section -->
 	<div class="mb-16">
 		<h2 class="mb-8 flex items-center justify-center gap-3 text-center text-3xl font-bold">
-			<Icon icon="lucide:shield-check" width="30" class="text-success" />
+			<Icon icon="lucide:shield-check" width="30" class="text-success-strong" />
 			Datenschutz & Sicherheit
 		</h2>
 
@@ -217,7 +217,7 @@
 			<div class="card bg-base-100 border-success/20 border shadow-xl">
 				<div class="card-body">
 					<div class="mb-4 flex items-center gap-2">
-						<Icon icon="lucide:shield-check" width="30" class="text-success" />
+						<Icon icon="lucide:shield-check" width="30" class="text-success-strong" />
 						<h3 class="card-title">Datenschutz</h3>
 					</div>
 					<p class="mb-4 text-sm text-base-content/80">
@@ -226,19 +226,19 @@
 					</p>
 					<ul class="space-y-2 text-sm">
 						<li class="flex items-start gap-2">
-							<Icon icon="lucide:check" width="16" class="text-success mt-1" />
+							<Icon icon="lucide:check" width="16" class="text-success-strong mt-1" />
 							<span>Freiwillige Angabe personenbezogener Daten</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<Icon icon="lucide:check" width="16" class="text-success mt-1" />
+							<Icon icon="lucide:check" width="16" class="text-success-strong mt-1" />
 							<span>Verschlüsselte Übertragung aller Daten</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<Icon icon="lucide:check" width="16" class="text-success mt-1" />
+							<Icon icon="lucide:check" width="16" class="text-success-strong mt-1" />
 							<span>Keine Weitergabe an unbefugte Dritte</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<Icon icon="lucide:check" width="16" class="text-success mt-1" />
+							<Icon icon="lucide:check" width="16" class="text-success-strong mt-1" />
 							<span>Anonymisierte öffentliche Darstellung</span>
 						</li>
 					</ul>
@@ -259,7 +259,7 @@
 			<div class="card bg-base-100 border-info/20 border shadow-xl">
 				<div class="card-body">
 					<div class="mb-4 flex items-center gap-2">
-						<Icon icon="lucide:lock" width="30" class="text-info" />
+						<Icon icon="lucide:lock" width="30" class="text-info-strong" />
 						<h3 class="card-title">Technische Sicherheit</h3>
 					</div>
 					<p class="mb-4 text-sm text-base-content/80">
@@ -268,19 +268,19 @@
 					</p>
 					<ul class="space-y-2 text-sm">
 						<li class="flex items-start gap-2">
-							<Icon icon="lucide:check" width="16" class="text-info mt-1" />
+							<Icon icon="lucide:check" width="16" class="text-info-strong mt-1" />
 							<span>HTTPS/SSL-Verschlüsselung für alle Verbindungen</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<Icon icon="lucide:check" width="16" class="text-info mt-1" />
+							<Icon icon="lucide:check" width="16" class="text-info-strong mt-1" />
 							<span>Sichere Authentifizierung mit Auth0</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<Icon icon="lucide:check" width="16" class="text-info mt-1" />
+							<Icon icon="lucide:check" width="16" class="text-info-strong mt-1" />
 							<span>Regelmäßige Sicherheitsupdates</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<Icon icon="lucide:check" width="16" class="text-info mt-1" />
+							<Icon icon="lucide:check" width="16" class="text-info-strong mt-1" />
 							<span>Gehostete Infrastruktur in Deutschland/EU</span>
 						</li>
 					</ul>
@@ -293,7 +293,7 @@
 								href="https://auth0.com"
 								target="_blank"
 								rel="noopener noreferrer"
-								class="text-info font-semibold hover:underline">Auth0</a
+								class="text-info-strong font-semibold hover:underline">Auth0</a
 							>
 							– der führenden Plattform für sichere Authentifizierung und Autorisierung.
 						</p>
@@ -307,7 +307,7 @@
 			class="border-success/10 mt-8 rounded-lg border bg-gradient-to-r from-green-50 to-emerald-50 p-6"
 		>
 			<div class="flex items-start gap-4">
-				<Icon icon="lucide:file-text" width="24" class="text-success" />
+				<Icon icon="lucide:file-text" width="24" class="text-success-strong" />
 				<div class="flex-1">
 					<h4 class="mb-2 font-semibold">DSGVO-Konformität</h4>
 					<p class="mb-3 text-sm text-base-content/80">
@@ -316,19 +316,19 @@
 					</p>
 					<div class="grid gap-3 text-sm md:grid-cols-2">
 						<div class="flex items-center gap-2">
-							<Icon icon="lucide:check" width="16" class="text-success" />
+							<Icon icon="lucide:check" width="16" class="text-success-strong" />
 							<span>Recht auf Auskunft</span>
 						</div>
 						<div class="flex items-center gap-2">
-							<Icon icon="lucide:check" width="16" class="text-success" />
+							<Icon icon="lucide:check" width="16" class="text-success-strong" />
 							<span>Recht auf Berichtigung</span>
 						</div>
 						<div class="flex items-center gap-2">
-							<Icon icon="lucide:check" width="16" class="text-success" />
+							<Icon icon="lucide:check" width="16" class="text-success-strong" />
 							<span>Recht auf Löschung</span>
 						</div>
 						<div class="flex items-center gap-2">
-							<Icon icon="lucide:check" width="16" class="text-success" />
+							<Icon icon="lucide:check" width="16" class="text-success-strong" />
 							<span>Recht auf Datenübertragbarkeit</span>
 						</div>
 					</div>
@@ -365,7 +365,7 @@
 	<div class="bg-base-200 mb-16 rounded-lg p-8">
 		<div class="mb-6 flex flex-col items-center justify-center gap-2">
 			<h2 class="flex items-center gap-3 text-center text-3xl font-bold">
-				<Icon icon="lucide:zap" width="30" class="text-warning" />
+				<Icon icon="lucide:zap" width="30" class="text-warning-strong" />
 				Technologie
 			</h2>
 			<div class="badge badge-neutral badge-lg font-mono">Version {data.version}</div>
@@ -505,7 +505,7 @@ SOFTWARE.</pre>
 			class="border-purple/10 mt-8 rounded-lg border bg-gradient-to-r from-purple-50 to-indigo-50 p-6"
 		>
 			<div class="flex items-start gap-4">
-				<Icon icon="lucide:circle-alert" width="32" height="32" class="text-warning mt-1" />
+				<Icon icon="lucide:circle-alert" width="32" height="32" class="text-warning-strong mt-1" />
 				<div class="flex-1">
 					<h4 class="mb-2 font-semibold">Fehler gefunden oder Verbesserungsvorschlag?</h4>
 					<p class="mb-3 text-sm text-base-content/80">
@@ -626,7 +626,7 @@ SOFTWARE.</pre>
 					</div>
 					<div class="stat">
 						<div class="stat-title">Aktive</div>
-						<div class="stat-value text-secondary">
+						<div class="stat-value text-secondary-strong">
 							{data.totalObservers != null
 								? new Intl.NumberFormat('de-DE').format(data.totalObservers)
 								: '500+'}
@@ -635,7 +635,7 @@ SOFTWARE.</pre>
 					</div>
 					<div class="stat">
 						<div class="stat-title">Für die</div>
-						<div class="stat-value text-accent">Wissenschaft</div>
+						<div class="stat-value text-accent-strong">Wissenschaft</div>
 						<div class="stat-desc">verfügbar</div>
 					</div>
 				</div>

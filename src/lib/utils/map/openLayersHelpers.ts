@@ -35,6 +35,7 @@ export class FormLocationControl extends Control {
 		button.innerHTML = '📍';
 		button.title = 'GPS-Position anzeigen';
 		button.className = 'gps-button';
+		button.setAttribute('aria-pressed', 'false');
 
 		const element = document.createElement('div');
 		element.className = 'ol-control gps-control';
@@ -70,9 +71,10 @@ export class FormLocationControl extends Control {
 	}
 
 	private startTracking() {
-		// Button-Erscheinungsbild aktualisieren
-		this.button.style.backgroundColor = '#3b82f6';
-		this.button.style.color = 'white';
+		// Zustand über aria-pressed statt Inline-Farben — ein Zustand, eine Quelle.
+		// Die Farben stehen in mapStyles.css (.gps-button[aria-pressed='true']);
+		// der Button ist DOM, kein Canvas, und braucht deshalb keine Hex-Werte.
+		this.button.setAttribute('aria-pressed', 'true');
 		this.button.title = 'GPS-Tracking stoppen';
 
 		// Kontinuierliche Positionsverfolgung starten
@@ -109,8 +111,7 @@ export class FormLocationControl extends Control {
 		this.isTracking = false;
 
 		// Button-Erscheinungsbild zurücksetzen
-		this.button.style.backgroundColor = 'rgba(0, 60, 136, 0.5)';
-		this.button.style.color = 'white';
+		this.button.setAttribute('aria-pressed', 'false');
 		this.button.title = 'GPS-Position anzeigen';
 	}
 

@@ -609,7 +609,7 @@
 								{sighting.referenceId}
 							</a>
 						{:else}
-							<span class="text-base-content/50 text-sm">Keine Referenz</span>
+							<span class="text-base-content/70 text-sm">Keine Referenz</span>
 						{/if}
 						<h3 class="mt-1 text-base font-semibold">{getSpeciesLabel(sighting.species)}</h3>
 					</div>
@@ -791,7 +791,7 @@
 											{sighting.referenceId}
 										</a>
 									{:else}
-										<span class="text-base-content/50">—</span>
+										<span class="text-base-content/70">—</span>
 									{/if}
 								</td>
 							{/if}
@@ -1053,7 +1053,7 @@
 					{/each}
 				</ul>
 			{:else}
-				<p class="text-success mt-4 text-sm">Keine Indikatoren gefunden.</p>
+				<p class="text-success-strong mt-4 text-sm">Keine Indikatoren gefunden.</p>
 			{/if}
 		{/if}
 

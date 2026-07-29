@@ -9,7 +9,7 @@
 			aria-hidden="true"
 			icon="lucide:triangle-alert"
 			width="16"
-			class="text-warning shrink-0"
+			class="text-warning-strong shrink-0"
 		/>
 		<span>Zusätzliche Informationen für Totfund</span>
 	</h4>

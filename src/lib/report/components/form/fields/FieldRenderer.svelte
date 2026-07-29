@@ -263,7 +263,7 @@
 				{#if hasError}
 					<Icon icon="lucide:x" width="14" class="text-error inline" />
 				{:else if isValid}
-					<Icon icon="lucide:check" width="14" class="text-success inline" />
+					<Icon icon="lucide:check" width="14" class="text-success-strong inline" />
 				{/if}
 			</span>
 		{/if}

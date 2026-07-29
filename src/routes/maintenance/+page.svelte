@@ -25,7 +25,7 @@
 			<!-- Maintenance Icon -->
 			<div class="mb-6 flex justify-center">
 				<div class="bg-warning/20 rounded-full p-6">
-					<Icon icon="lucide:settings" class="text-warning size-16 animate-spin" />
+					<Icon icon="lucide:settings" class="text-warning-strong size-16 animate-spin" />
 				</div>
 			</div>
 

@@ -18,6 +18,7 @@ import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { ConfigRepository } from '$lib/server/db/configRepository';
+import { emailColorContext } from '$lib/server/templates/emailTokens';
 
 // Dynamic environment variables for Docker runtime
 const NODE_ENV = env.NODE_ENV ?? 'development';
@@ -278,7 +279,11 @@ export class EmailService {
 				adminUrl,
 				currentDate: formatLocalDateTime(new Date(), 'date'),
 				currentTime: formatLocalDateTime(new Date(), 'time'),
-				spamCheck: spamIndicators
+				spamCheck: spamIndicators,
+				// Farbpalette als Kontext statt als Literale in der Vorlage. Auch
+				// eine in der DB gespeicherte Vorlage bekommt sie damit — sonst
+				// wären genau die Templates ausgenommen, die niemand reviewt.
+				...emailColorContext()
 			};
 
 			// Compile template

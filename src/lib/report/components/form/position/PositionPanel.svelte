@@ -11,6 +11,7 @@
 	import VerifyLocation from '$lib/report/components/form/VerifyLocation.svelte';
 	import { hasCoordinates, toCoordinate } from '$lib/report/components/form/coordinateValue';
 	import { openAncestorDetails } from '$lib/utils/fieldNavigation';
+	import SectionCard from '$lib/report/components/sections/SectionCard.svelte';
 	import LocationDescription from './LocationDescription.svelte';
 	import { requestCurrentPosition } from './geolocation';
 	import {
@@ -200,11 +201,7 @@
 	}
 </script>
 
-<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 md:p-4">
-	<h3 class="mb-3 flex items-center gap-2 text-base font-semibold md:text-lg">
-		<Icon aria-hidden="true" icon="lucide:map-pin" width="20" class="text-primary" />
-		Positionsangabe
-	</h3>
+<SectionCard title="Positionsangabe" icon="lucide:map-pin" variant="inset">
 	<p class="text-base-content/70 mb-6 text-sm">
 		Wo haben Sie das Tier gesehen? Ein Foto mit GPS-Daten ist der schnellste Weg.
 	</p>
@@ -373,6 +370,6 @@
 	{#if latitude !== undefined && longitude !== undefined}
 		<VerifyLocation {longitude} {latitude} />
 	{/if}
-</div>
+</SectionCard>
 
 <LocationDescription />

@@ -38,19 +38,19 @@ const defaultConfigurations: ConfigItem[] = [
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Neue Sichtung - {{referenceId}}</title>
 	<style>
-		.alert-warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 16px 0; }
-		.alert-success { background: #dcfce7; border-left: 4px solid #10b981; padding: 12px; margin: 16px 0; }
-		.alert-info { background: #dbeafe; border-left: 4px solid #3b82f6; padding: 12px; margin: 16px 0; }
+		.alert-warning { background: {{colors.warningSurface}}; border-left: 4px solid {{colors.warningStrong}}; padding: 12px; margin: 16px 0; }
+		.alert-success { background: {{colors.successSurface}}; border-left: 4px solid {{colors.successStrong}}; padding: 12px; margin: 16px 0; }
+		.alert-info { background: {{colors.infoSurface}}; border-left: 4px solid {{colors.infoStrong}}; padding: 12px; margin: 16px 0; }
 		.badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-		.badge-success { background: #10b981; color: white; }
-		.badge-warning { background: #f59e0b; color: white; }
-		.badge-error { background: #ef4444; color: white; }
-		.coordinates { font-family: monospace; background: #f3f4f6; padding: 4px 8px; border-radius: 4px; }
+		.badge-success { background: {{colors.successSurface}}; color: {{colors.text}}; }
+		.badge-warning { background: {{colors.warningSurface}}; color: {{colors.text}}; }
+		.badge-error { background: {{colors.errorSurface}}; color: {{colors.text}}; }
+		.coordinates { font-family: monospace; background: {{colors.page}}; padding: 4px 8px; border-radius: 4px; }
 	</style>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #333;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; line-height: 1.6; color: {{colors.text}};">
 	<!-- Header -->
-	<div style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; padding: 24px; border-radius: 8px; text-align: center; margin-bottom: 24px;">
+	<div style="background: {{colors.brand}}; color: {{colors.brandContent}}; padding: 24px; border-radius: 8px; text-align: center; margin-bottom: 24px;">
 		<h1 style="margin: 0; font-size: 24px;">🐋 Neue Sichtung eingegangen</h1>
 		<p style="margin: 8px 0 0 0; opacity: 0.9;">Referenz: <strong>{{referenceId}}</strong></p>
 		<p style="margin: 4px 0 0 0; font-size: 14px; opacity: 0.8;">{{currentDate}} um {{currentTime}}</p>
@@ -59,7 +59,7 @@ const defaultConfigurations: ConfigItem[] = [
 	<!-- Spam Check Warning -->
 	{{#if spamCheck.isHighRisk}}
 	<div class="alert-warning">
-		<h4 style="margin: 0 0 8px 0; color: #f59e0b;">⚠️ Spam-Verdacht (Score: {{spamCheck.score}})</h4>
+		<h4 style="margin: 0 0 8px 0; color: {{colors.warningStrong}};">⚠️ Spam-Verdacht (Score: {{spamCheck.score}})</h4>
 		<ul style="margin: 8px 0 0 20px; padding: 0;">
 			{{#each spamCheck.indicators}}
 			<li style="margin: 4px 0;">{{this}}</li>
@@ -71,8 +71,8 @@ const defaultConfigurations: ConfigItem[] = [
 
 	<!-- Geographic Validation -->
 	{{#if sighting.coordinatesFormatted}}
-	<div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-		<h3 style="margin: 0 0 16px 0; color: #1e293b; display: flex; align-items: center;">
+	<div style="background: {{colors.surface}}; padding: 20px; border-radius: 8px; margin: 20px 0;">
+		<h3 style="margin: 0 0 16px 0; color: {{colors.brand}}; display: flex; align-items: center;">
 			📍 Positionsangabe
 			{{#if sighting.inBalticSeaGeo}}
 				<span class="badge badge-success" style="margin-left: 12px;">Ostsee ✓</span>
@@ -107,8 +107,8 @@ const defaultConfigurations: ConfigItem[] = [
 	{{/if}}
 
 	<!-- Sighting Details -->
-	<div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-		<h3 style="margin: 0 0 16px 0; color: #1e293b;">🔍 Sichtungsdetails</h3>
+	<div style="background: {{colors.surface}}; padding: 20px; border-radius: 8px; margin: 20px 0;">
+		<h3 style="margin: 0 0 16px 0; color: {{colors.brand}};">🔍 Sichtungsdetails</h3>
 		<table style="width: 100%; border-collapse: collapse;">
 			<tr>
 				<td style="padding: 8px 12px 8px 0; font-weight: bold; vertical-align: top; width: 120px;">Datum:</td>
@@ -143,22 +143,22 @@ const defaultConfigurations: ConfigItem[] = [
 
 	<!-- Contact Information -->
 	{{#if sighting.email}}
-	<div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-		<h3 style="margin: 0 0 16px 0; color: #1e293b;">👤 Kontaktdaten</h3>
+	<div style="background: {{colors.surface}}; padding: 20px; border-radius: 8px; margin: 20px 0;">
+		<h3 style="margin: 0 0 16px 0; color: {{colors.brand}};">👤 Kontaktdaten</h3>
 		{{#if sighting.firstName}}
 		<p><strong>Name:</strong> {{sighting.firstName}} {{sighting.lastName}}</p>
 		{{/if}}
-		<p><strong>E-Mail:</strong> <a href="mailto:{{sighting.email}}" style="color: #0ea5e9;">{{sighting.email}}</a></p>
+		<p><strong>E-Mail:</strong> <a href="mailto:{{sighting.email}}" style="color: {{colors.brand}};">{{sighting.email}}</a></p>
 		{{#if sighting.phone}}
-		<p><strong>Telefon:</strong> <a href="tel:{{sighting.phone}}" style="color: #0ea5e9;">{{sighting.phone}}</a></p>
+		<p><strong>Telefon:</strong> <a href="tel:{{sighting.phone}}" style="color: {{colors.brand}};">{{sighting.phone}}</a></p>
 		{{/if}}
 	</div>
 	{{/if}}
 
 	<!-- Notes -->
 	{{#if sighting.notes}}
-	<div style="background: #fffbeb; border-left: 4px solid #f59e0b; padding: 20px; border-radius: 8px; margin: 20px 0;">
-		<h3 style="margin: 0 0 12px 0; color: #92400e;">💬 Bemerkungen</h3>
+	<div style="background: {{colors.warningSurface}}; border-left: 4px solid {{colors.warningStrong}}; padding: 20px; border-radius: 8px; margin: 20px 0;">
+		<h3 style="margin: 0 0 12px 0; color: {{colors.warningStrong}};">💬 Bemerkungen</h3>
 		<p style="margin: 0; white-space: pre-wrap;">{{sighting.notes}}</p>
 	</div>
 	{{/if}}
@@ -167,7 +167,7 @@ const defaultConfigurations: ConfigItem[] = [
 	{{#if spamCheck.indicators}}
 	{{#unless spamCheck.isHighRisk}}
 	{{#if spamCheck.score}}
-	<div style="background: #fef3c7; padding: 16px; border-radius: 6px; margin: 20px 0; font-size: 14px;">
+	<div style="background: {{colors.warningSurface}}; padding: 16px; border-radius: 6px; margin: 20px 0; font-size: 14px;">
 		<p style="margin: 0 0 8px 0;"><strong>Hinweise zur Qualitätsprüfung (Score: {{spamCheck.score}}):</strong></p>
 		<ul style="margin: 0; padding-left: 20px;">
 			{{#each spamCheck.indicators}}
@@ -181,13 +181,13 @@ const defaultConfigurations: ConfigItem[] = [
 	
 	<!-- Action Button -->
 	<div style="text-align: center; margin: 32px 0;">
-		<a href="{{adminUrl}}" style="display: inline-block; background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);">
+		<a href="{{adminUrl}}" style="display: inline-block; background: {{colors.brand}}; color: {{colors.brandContent}}; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold;">
 			🔍 Sichtung im Admin-Bereich prüfen
 		</a>
 	</div>
 
 	<!-- Footer -->
-	<div style="text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
+	<div style="text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid {{colors.border}}; color: {{colors.textMuted}}; font-size: 14px;">
 		<p style="margin: 0;">Ostsee-Tiere · Sichtungsmeldungen für den Meeresschutz</p>
 		<p style="margin: 8px 0 0 0;">Diese E-Mail wurde automatisch generiert am {{currentDate}} um {{currentTime}}</p>
 	</div>

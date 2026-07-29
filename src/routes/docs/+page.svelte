@@ -83,15 +83,15 @@
 					<h3 class="mb-2 text-sm font-semibold">Öffentliche Endpunkte:</h3>
 					<div class="space-y-2">
 						<div class="rounded bg-base-200 p-2 text-xs">
-							<code class="text-info">GET /api/sightings</code>
+							<code class="text-info-strong">GET /api/sightings</code>
 							<span class="ml-2 text-base-content/60">Öffentliche Sichtungen</span>
 						</div>
 						<div class="rounded bg-base-200 p-2 text-xs">
-							<code class="text-info">POST /api/sightings</code>
+							<code class="text-info-strong">POST /api/sightings</code>
 							<span class="ml-2 text-base-content/60">Neue Sichtung melden</span>
 						</div>
 						<div class="rounded bg-base-200 p-2 text-xs">
-							<code class="text-info">POST /api/files/upload</code>
+							<code class="text-info-strong">POST /api/files/upload</code>
 							<span class="ml-2 text-base-content/60">Dateien hochladen</span>
 						</div>
 					</div>

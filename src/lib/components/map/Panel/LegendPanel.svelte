@@ -105,7 +105,7 @@
 	<!-- Info-Box: wie die Marker codiert sind -->
 	<div class="bg-base-300/50 mb-4 rounded-lg p-3 text-sm">
 		<div class="flex items-start gap-2">
-			<Icon icon="lucide:info" class="text-info mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+			<Icon icon="lucide:info" class="text-info-strong mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
 			<div>
 				<strong>So lesen Sie die Karte:</strong> Die Ringfarbe zeigt die Tiergruppe, das Symbol die Gruppe
 				als zweites Merkmal. Ab zwei Tieren steht die Anzahl unter dem Marker. Ein schwarzer Ring bedeutet
@@ -140,7 +140,7 @@
 				data-species-row={key}
 			>
 				<!-- 0/0-Arten ausgrauen: visuelle Teile abschwächen, Checkbox bleibt bedienbar -->
-				<div class="flex flex-1 items-center gap-3 {total === 0 ? 'opacity-40 grayscale' : ''}">
+				<div class="flex flex-1 items-center gap-3 {total === 0 ? 'opacity-60 grayscale' : ''}">
 					<div
 						class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full shadow-sm"
 						style="background-color: {MARKER_BACKGROUND_COLOR}; border: 3px solid {symbol
