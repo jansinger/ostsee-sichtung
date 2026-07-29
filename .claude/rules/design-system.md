@@ -122,6 +122,25 @@ Testfall.
 
 ---
 
+## Harte Grenze: `--color-info` und `--color-success` dürfen nie heller werden
+
+Beide Flächen liegen konstruktionsbedingt dicht über der Schwelle. Weißer Text darauf ist bereits die **beste** verfügbare Wahl — `base-content` ist dort messbar schlechter:
+
+| Fläche            | weißer Text | `base-content` |
+| ----------------- | ----------- | -------------- |
+| `--color-info`    | **4,65:1**  | 4,22:1 ❌      |
+| `--color-success` | **4,56:1**  | 4,31:1 ❌      |
+
+(Im Production-Build gemessen, sRGB nach Gamut-Mapping.)
+
+Anders als bei `warning` und `secondary` — wo der Wechsel von Weiß auf `base-content` den Kontrast von 3,26 auf 6,05 bzw. von 3,19 auf 6,18 hob — gibt es hier **keine bessere Vordergrundfarbe ohne Farbtonänderung**. Der Puffer über 4,5:1 beträgt 0,15 bzw. 0,06.
+
+**Regel:** Die Lightness von `--status-info-surface` und `--status-success-surface` (`tokens.css`) darf **nicht erhöht** werden. Ein „etwas freundlicheres Grün" oder „helleres Blau" schiebt `*-content` unter AA — und zwar in **jedem** `btn-info`, `badge-info`, `btn-success` und `badge-success` gleichzeitig.
+
+**Wenn der Kontrast-Test in PR 2 unter 4,5:1 misst, ist die Konsequenz, die Lightness um 0,01–0,02 zu senken und neu zu messen — nicht die Schwelle im Test zu senken.** Die Schwelle ist die Anforderung, nicht die Stellschraube. Dasselbe gilt, falls ein Browser-Update das Gamut-Mapping minimal verschiebt.
+
+---
+
 ## Deckkraft-Untergrenze für Text ist /60
 
 `base-content` mit Deckkraft, gemessen:
@@ -173,7 +192,16 @@ Dieselbe semantische Ebene darf nicht in zwei Größen erscheinen — heute ist 
 Ein Token, das **nur** im `@theme`-Block steht, ist über `var()` nicht erreichbar: Tailwind backt Schatten- und Größenwerte direkt in die Utility und referenziert die Theme-Variable nie, sie landet also nicht im `:root`. Deshalb deklariert `tokens.css` jeden Wert selbst — inklusive der Aliase `--shadow-raised`/`--shadow-floating` auf `--elevation-*`. **Neuer Token heißt: Eintrag in `tokens.css` (für `var()`) UND im `@theme`-Block (für die Utility)** — sonst ist einer der beiden Wege still tot.
 
 - **Z-Index:** `--layer-raised` (10), `--layer-panel` (20), `--layer-nav` (30), `--layer-overlay` (40), `--layer-skip` (50). Keine freien `z-*`-Utilities. Vorher lagen Navbar und Panel-Toggle beide auf `z-50` — welches Element oben lag, entschied damit die DOM-Position.
-- **Dauer:** `--motion-instant` (120ms, Hover/Fokus), `--motion-quick` (200ms, Aufklappen/Toast), `--motion-panel` (300ms, Panel/Bottom-Sheet).
+- **Dauer:**
+
+  | Token               | Wert  | Wofür                        | Kurve           |
+  | ------------------- | ----- | ---------------------------- | --------------- |
+  | `--motion-instant`  | 120ms | Hover, Fokus                 | `--motion-ease` |
+  | `--motion-quick`    | 200ms | Aufklappen, Toast            | `--motion-ease` |
+  | `--motion-panel`    | 300ms | Panel, Bottom-Sheet, Overlay | `--motion-ease` |
+  | `--motion-emphasis` | 400ms | Überschwung, Federung        | **`linear`**    |
+
+  Die ersten drei beschreiben **Übergänge** und werden mit `--motion-ease` gefahren. `--motion-emphasis` ist keine Übergangsstufe: betonte Bewegungen bringen ihre Kurve über die Keyframe-Stops mit (`bounceIn`: `.3 → 1.05 → .9 → 1`). Eine zusätzliche Easing-Funktion biegt dort **jedes Segment einzeln** und lässt den Überschwung hektisch wirken — deshalb `linear`. Wer eine neue betonte Keyframe anlegt, nimmt diese Stufe und lässt die Kurve in den Stops.
 
 ---
 
@@ -232,7 +260,19 @@ Alle Felder laufen über `FormField` → `FieldRenderer` (`src/lib/report/compon
 Das Formular wird an Deck und am Strand ausgefüllt — nass, in der Sonne, mit einer Hand, teils mit Handschuhen. 44px ist die WCAG-Größe für ruhige Hände.
 
 - Touch-Targets kommen aus `--target-min` (44px, im Feldmodus 56px). Der `Touch-Targets`-Block in `app.css` setzt sie global durch — `min-h-11` an der Aufrufstelle ist damit nicht mehr nötig, und `btn-xs` unterschreitet die Grenze nicht mehr still.
-- **Zwei Mechanismen, nicht einer:** Buttons (`.btn`, `summary.btn`, `.btn-circle`) bekommen `min-height`/`min-width`. Für `.checkbox`, `.radio` und `.toggle` gilt stattdessen `--size: var(--target-min)`. Grund: DaisyUI setzt bei diesen dreien `width` **und** `height` fest — ein `min-height` überschreibt nur die Höhe und verzerrt sie (gemessen: Checkbox 24×44, Radio 24×44 als Ellipse, Toggle 40×44 mit versetztem Knopf). `--size` skaliert proportional auf 44×44 bzw. 75×44. Diese drei also nie über `min-height` vergrößern.
+- **Das Ziel ist 44px, nicht das Bedienelement.** WCAG 2.5.5 verlangt eine Trefferfläche dieser Größe — kein Control dieser Größe. Daraus folgen drei getrennte Mechanismen:
+
+  | Element                                   | Mechanismus                     | Größe                          |
+  | ----------------------------------------- | ------------------------------- | ------------------------------ |
+  | `.btn`, `summary.btn`                     | `min-height: var(--target-min)` | 44px (Feldmodus 56px)          |
+  | `.btn-circle`                             | zusätzlich `min-width`          | 44×44                          |
+  | `label:has(> .checkbox\|.radio\|.toggle)` | `min-height: var(--target-min)` | 44px — **hier liegt das Ziel** |
+  | `.checkbox`, `.radio`, `.toggle`          | `--size: var(--control-size)`   | 28px, sichtbare Größe          |
+
+  `.checkbox`/`.radio`/`.toggle` **nie über `min-height`** vergrößern: DaisyUI setzt bei ihnen `width` **und** `height` fest, `min-height` überschreibt nur die Höhe und verzerrt sie (gemessen: Checkbox 24×44, Radio 24×44 als Ellipse, Toggle 40×44 mit versetztem Knopf). Und `--size` **nicht** auf `--target-min` setzen — dann greifen Control-Größe und Trefferfläche gleichzeitig, der Toggle würde 75×44 breit (im Feldmodus 96×56).
+
+  Das `align-items: flex-start` an der Label-Regel ist nicht kosmetisch: ohne es streckt der Flex-Default `stretch` das Control wieder auf die volle Label-Höhe, sobald die `min-height` die Zeile aufzieht oder das Label mehrzeilig wird.
+
 - Ausnahmen tragen `.target-exempt` und **begründen das im Code-Kommentar**. Zulässig nur für Ziele, die nachweislich nicht mit dem Finger bedient werden.
 - Der Mindestabstand zwischen zwei Zielen ist `--target-gap`.
 - Der Feldmodus wird über `<html data-density="field">` geschaltet und hebt `--target-min` auf 56px sowie `--text-support` auf 14px. Keine Komponente kennt den Modus — sie liest nur die Tokens.

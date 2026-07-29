@@ -273,13 +273,28 @@ summary.btn {
    min-height überschreibt nur die Höhe. Im Browser gemessen wurde daraus
    Checkbox 24×44, Radio 24×44 (eine Ellipse) und Toggle 40×44 mit versetztem
    Knopf; das Häkchen stand sichtbar über den Rahmen hinaus.
-   --size skaliert stattdessen proportional und trifft dieselbe Zielgröße:
-   Checkbox 44×44, Radio 44×44, Toggle 75×44. Weil der Wert aus --target-min
-   kommt, wächst er im Feldmodus automatisch auf 56px mit. */
+   --size skaliert stattdessen proportional — hier aber auf --control-size
+   (28px) und ausdrücklich NICHT auf --target-min: sonst greifen Control-Größe
+   und Trefferfläche gleichzeitig und der Toggle würde 75×44 (im Feldmodus
+   sogar 96×56) breit. */
 .checkbox,
 .radio,
 .toggle {
-	--size: var(--target-min);
+	--size: var(--control-size);
+}
+
+/* Die 44px trägt das umschließende <label>, nicht das Control.
+   WCAG 2.5.5 verlangt ein Ziel dieser Größe, kein Bedienelement dieser Größe
+   — und das Label ist in BaseCheckbox/BaseToggle ohnehin der Klickbereich
+   (`<label class="flex … py-2">`), kam mit Padding aber nur auf ~40px.
+   align-items: flex-start hält das Control oben bündig, wenn das Label
+   mehrzeilig wird oder die min-height die Zeile aufzieht — ohne das streckt
+   der Flex-Default `stretch` es wieder. */
+label:has(> .checkbox),
+label:has(> .radio),
+label:has(> .toggle) {
+	min-height: var(--target-min);
+	align-items: flex-start;
 }
 
 /* ===== Component Animations =====
@@ -358,18 +373,19 @@ summary.btn {
 	animation: slideIn var(--motion-quick) var(--motion-ease);
 }
 
-/* Ersetzen die Inline-styles in map/LoadingOverlay.svelte. Dauer aus den
-   Motion-Tokens statt als freier Wert: fadeIn stand auf 0.3s, was exakt
-   --motion-panel ist; bounceIn stand auf 0.4s, wofür es keine Stufe gibt —
-   normalisiert auf dieselbe Stufe. Beide gehören zur Overlay-Ebene, dort ist
-   eine gemeinsame Dauer ohnehin richtig (design-system.md: „Elevation,
-   Z-Index, Motion nur aus Tokens"). */
+/* Ersetzen die Inline-styles in map/LoadingOverlay.svelte.
+   fadeIn ist ein Übergang: --motion-panel (0.3s, war schon der Wert) mit
+   --motion-ease.
+   bounceIn ist keiner. Seine Kurve steckt in den vier Keyframe-Stops
+   (.3 → 1.05 → .9 → 1); eine zusätzliche Easing-Funktion biegt jedes Segment
+   einzeln und macht den Überschwung hektisch. Deshalb `linear` und die
+   eigene Stufe --motion-emphasis (400ms, der ursprüngliche Wert). */
 .animate-fade-in {
 	animation: fadeIn var(--motion-panel) var(--motion-ease);
 }
 
 .animate-bounce-in {
-	animation: bounceIn var(--motion-panel) var(--motion-ease);
+	animation: bounceIn var(--motion-emphasis) linear;
 }
 
 /* ===== Global Scrollbar Styling ===== */

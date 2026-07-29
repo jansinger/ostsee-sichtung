@@ -120,6 +120,13 @@
 	--motion-instant: 120ms; /* Hover, Fokus */
 	--motion-quick: 200ms; /*   Aufklappen, Toast */
 	--motion-panel: 300ms; /*   Panel, Bottom-Sheet */
+	/* Betonte Bewegung mit eigener Kurve IN den Keyframes (Überschwung,
+	   Federung). Bewusst keine Übergangsstufe: die drei oben beschreiben
+	   Übergänge und werden mit --motion-ease gefahren. Ein Überschwung ist
+	   kein Übergang — er bringt seine Kurve über die Keyframe-Stops mit und
+	   wird deshalb `linear` abgespielt, sonst biegt --motion-ease jedes
+	   Segment einzeln und der Überschwung wirkt hektisch. */
+	--motion-emphasis: 400ms;
 	--motion-ease: cubic-bezier(0.32, 0.72, 0, 1);
 
 	/* Touch-Targets. 44px ist die WCAG-2.5.5-Größe für ruhige Hände.
@@ -127,6 +134,12 @@
 	   mit nassen Fingern oder Handschuhen. */
 	--target-min: 2.75rem; /* 44px */
 	--target-gap: var(--space-3);
+	/* Sichtbare Größe von Checkbox/Radio/Toggle — bewusst NICHT --target-min.
+	   WCAG 2.5.5 verlangt ein 44-px-Ziel, kein 44-px-Bedienelement: die
+	   Trefferfläche trägt das umschließende <label> (Regel in app.css), das
+	   Control bleibt visuell ruhig. 28px liegt leicht über DaisyUIs 24px —
+	   an Deck bei Sonne besser auszumachen, ohne die Zeile zu dominieren. */
+	--control-size: 1.75rem; /* 28px */
 
 	/* Layout-Verträge. Die iframe-Breite ist ein Vertrag mit meeresmuseum.de
 	   und darf nicht beiläufig geändert werden. */
