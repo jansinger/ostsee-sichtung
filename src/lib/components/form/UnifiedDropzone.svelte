@@ -167,7 +167,16 @@
 </script>
 
 <div class="space-y-4 {className}">
-	<!-- File Preview Section (nur wenn showPreview und Dateien vorhanden) -->
+	<!-- File Preview Section (nur wenn showPreview und Dateien vorhanden)
+
+	     Hinweis zur Erreichbarkeit: In der App rendert dieser Block derzeit nie —
+	     einziger Consumer ist `DropzoneEnhanced.svelte`, und der setzt
+	     `showPreview={false}`. Der Prop-Default ist aber `true`, der nächste
+	     Consumer bekäme die Vorschau also sofort. Deshalb gelten hier dieselben
+	     Regeln wie nebenan: 44-px-Touch-Targets (`min-h-11`, design-system.md)
+	     und ausschließlich Theme-Tokens (`text-error-content` statt `text-white`,
+	     daisyui.md). Abgesichert durch `UnifiedDropzone.svelte.test.ts`
+	     → „Vorschau-Buttons — A11y und Theme-Tokens". -->
 	{#if showPreview && files.length > 0}
 		<div class="bg-base-200 rounded-lg p-4">
 			<div class="mb-4 flex items-center justify-between">
@@ -177,7 +186,7 @@
 				{#if multiple}
 					<button
 						type="button"
-						class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-white"
+						class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
 						onclick={clearAll}
 					>
 						Alle löschen
@@ -193,10 +202,13 @@
 							<div class="flex items-start gap-3">
 								<!-- File Icon/Thumbnail -->
 								<div class="flex-shrink-0">
-									<div
-										class="bg-base-200 flex h-12 w-12 items-center justify-center rounded"
-									>
-										<Icon icon={getFileIconName(file.type)} width="24" height="24" class="text-primary" />
+									<div class="bg-base-200 flex h-12 w-12 items-center justify-center rounded">
+										<Icon
+											icon={getFileIconName(file.type)}
+											width="24"
+											height="24"
+											class="text-primary"
+										/>
 									</div>
 								</div>
 
@@ -213,7 +225,7 @@
 								<!-- Remove Button -->
 								<button
 									type="button"
-									class="btn btn-ghost btn-xs text-error"
+									class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11 min-w-11"
 									onclick={() => removeFile(file)}
 									aria-label="Datei entfernen"
 								>
@@ -269,7 +281,9 @@
 			<div class="flex flex-col items-center">
 				<Icon
 					icon="lucide:upload"
-					class="mb-2 h-8 w-8 transition-colors {isDragOver ? 'text-primary' : 'text-base-content/40'}"
+					class="mb-2 h-8 w-8 transition-colors {isDragOver
+						? 'text-primary'
+						: 'text-base-content/40'}"
 				/>
 				<p class="text-sm font-medium {isDragOver ? 'text-primary' : ''}">
 					{isDragOver ? `${multiple ? 'Dateien' : 'Datei'} hier ablegen!` : title}
