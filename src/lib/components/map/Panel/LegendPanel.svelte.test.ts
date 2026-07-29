@@ -206,6 +206,32 @@ describe('LegendPanel', () => {
 		expect(document.body.textContent).toContain('je dunkler');
 	});
 
+	it('bietet einen Seezeichen-Toggle (OpenSeaMap), Default an (M3)', async () => {
+		render(LegendPanel, { translations, counts });
+
+		await page.getByRole('button', { name: /^Legende$/i }).click();
+
+		const checkbox = document.querySelector('.seamark-checkbox');
+		if (!(checkbox instanceof HTMLInputElement)) {
+			throw new Error('Seamark checkbox not found');
+		}
+		expect(checkbox.checked).toBe(true);
+		expect(document.body.textContent).toContain('Seezeichen');
+	});
+
+	it('meldet das Ausblenden der Seezeichen-Ebene über onSeamarkToggle (M3)', async () => {
+		const onSeamarkToggle = vi.fn();
+		render(LegendPanel, { translations, counts, onSeamarkToggle });
+
+		await page.getByRole('button', { name: /^Legende$/i }).click();
+
+		const checkbox = document.querySelector('.seamark-checkbox') as HTMLInputElement;
+		checkbox.checked = false;
+		checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(onSeamarkToggle).toHaveBeenCalledWith(false);
+	});
+
 	it('meldet Species- und Farb-Toggles an den CountManager', async () => {
 		render(LegendPanel, { translations, counts });
 

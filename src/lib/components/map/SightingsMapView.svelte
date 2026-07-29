@@ -52,7 +52,8 @@
 		overview: 'Übersichtskarte',
 		zoom_title: 'Kartenauschnitt auf alle Meldungen zoomen',
 		zoom: 'Alle Meldungen',
-		report_date: 'Sichtung vom ',
+		// M6: kein Trailing-Space — der Builder setzt das Datum mit eigenem Trenner
+		report_date: 'Sichtung vom',
 		language: 'de',
 		species: 'Tierart',
 		species_legend: 'Tierart [ sichtbar / gesamt ]',
@@ -148,7 +149,6 @@
 	});
 	let isLoadingData = $state(false);
 	let isInitialLoading = $state(true);
-	let loadingType = $state<'initial' | 'filter' | 'features'>('initial');
 	let errorMessage = $state<string | null>(null);
 
 	// M4/N6: Sichtbarkeits-States der Legende — hierher gehoben, damit
@@ -444,7 +444,6 @@
 				onLoading: (loading) => {
 					isLoadingData = loading;
 					if (loading) {
-						loadingType = 'features';
 						errorMessage = null;
 					} else if (!firstLoadComplete) {
 						firstLoadComplete = true;
@@ -749,19 +748,10 @@
 			id="info"
 			class="border-base-300 bg-base-100 pointer-events-none absolute z-10 hidden max-w-sm rounded border p-2 shadow-lg"
 		></div>
-		<!-- Bestehender Load-Overlay -->
-		<div
-			id="overlay-load"
-			class="bg-base-100/70 absolute top-0 left-0 z-20 flex hidden h-full w-full items-center justify-center"
-		>
-			<div class="loading loading-lg loading-spinner"></div>
-		</div>
-
-		<!-- Verbesserter Loading-Overlay -->
-		<LoadingOverlay
-			isVisible={isInitialLoading || isLoadingData}
-			type={isInitialLoading ? 'initial' : loadingType}
-		/>
+		<!-- M7: Vollbild-Overlay nur beim Initial-Load — Filter-/Jahreswechsel
+		     zeigen stattdessen den Inline-Spinner im Filter-Panel (isLoading-Prop),
+		     dessen Toggle-Tab auch bei geschlossenem Panel mitrotiert. -->
+		<LoadingOverlay isVisible={isInitialLoading} type="initial" />
 
 		<!-- Keine Sichtungen für das gewählte Jahr -->
 		{#if showNoResults}
@@ -890,6 +880,7 @@
 		bind:isOpen={legendOpen}
 		bind:speciesVisibility
 		bind:colorVisibility
+		onSeamarkToggle={(visible) => mapInstance?.setSeamarkVisibility(visible)}
 	/>
 
 	<!-- Tastatur-Hilfe Button -->

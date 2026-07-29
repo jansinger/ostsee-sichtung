@@ -47,6 +47,36 @@ test.describe.serial('Map Filter Panel', () => {
 		}
 	});
 
+	test('Jahreswechsel zeigt keinen Vollbild-Loading-Overlay mehr (M7)', async () => {
+		// M7: Das modale Vollbild-Overlay ist dem Initial-Load vorbehalten —
+		// Filter-/Jahreswechsel zeigen nur den Inline-Spinner im Filter-Panel.
+		// API künstlich verzögern, damit der Ladezustand beobachtbar ist.
+		// route.fallback() statt continue(): setupMapPage mockt den Endpoint
+		// bereits (fulfill) — continue() würde am Mock vorbei zum echten Server
+		// gehen, der in CI keine Datenbank hat.
+		await sharedPage.route('**/api/map/sightings?*', async (route) => {
+			await new Promise((resolve) => setTimeout(resolve, 700));
+			await route.fallback();
+		});
+
+		await mapPage.openFilter();
+		const yearSelect = mapPage.getYearSelect();
+		const targetYear = await yearSelect.locator('option').last().getAttribute('value');
+
+		if (targetYear) {
+			const responsePromise = mapPage.waitForSightingsResponse();
+			await mapPage.selectYear(targetYear);
+
+			// Während des laufenden Requests: kein Vollbild-Overlay
+			await expect(mapPage.getLoadingOverlay()).toBeHidden();
+
+			await responsePromise;
+		}
+
+		await sharedPage.unroute('**/api/map/sightings?*');
+		await mapPage.closeFilter();
+	});
+
 	test('Suchtext in Eingabefeld löst API-Call mit search-Parameter aus', async () => {
 		await mapPage.openFilter();
 

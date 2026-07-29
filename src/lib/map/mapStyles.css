@@ -237,6 +237,132 @@
 	padding: 8px;
 }
 
+/* ===========================
+   Sichtungs-Popup (M6)
+   Klassen statt Inline-Hex-Styles — Farben aus den Theme-Tokens,
+   die Inhalte kommen aus src/lib/map/popupContent.ts.
+   =========================== */
+
+/* padding-top berücksichtigt den 44px hohen Schließen-Button, damit dieser
+   den Inhalt (Überschrift) nicht überlappt. */
+.ol-popup {
+	position: absolute;
+	background-color: var(--color-base-100);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+	padding: 44px 15px 15px 15px;
+	border-radius: 10px;
+	border: 1px solid var(--color-base-300);
+	bottom: 12px;
+	left: -50px;
+	min-width: 280px;
+	z-index: 1000;
+}
+
+/* Close button — Hit-Target min. 44x44px (WCAG 2.5.5), Symbol bleibt optisch klein */
+.ol-popup-closer {
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 44px;
+	height: 44px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	background: none;
+	font-size: 18px;
+	cursor: pointer;
+	color: var(--color-base-content);
+	opacity: 0.6;
+}
+
+.sighting-popup .popup-title {
+	margin: 0 0 10px 0;
+	color: var(--color-base-content);
+}
+
+.cluster-popup .popup-title {
+	margin: 0 0 8px 0;
+	font-size: 14px;
+	color: var(--color-base-content);
+}
+
+.popup-row {
+	margin-bottom: 8px;
+}
+
+.popup-row-dead {
+	color: var(--color-error);
+}
+
+.cluster-list {
+	list-style: none;
+	margin: 0;
+	padding: 0 4px 0 0;
+	max-height: 240px;
+	overflow-y: auto;
+}
+
+.cluster-list-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 8px;
+	margin-bottom: 4px;
+	border: 1px solid var(--color-base-300);
+	border-radius: 6px;
+	background: var(--color-base-200);
+	cursor: pointer;
+	text-align: left;
+	font-size: 13px;
+	transition: background 0.15s;
+}
+
+.cluster-list-item:hover,
+.cluster-list-item:focus-visible {
+	background: var(--color-base-300);
+	outline: 2px solid var(--color-primary);
+	outline-offset: -2px;
+}
+
+.cluster-item-species {
+	flex: 1;
+	font-weight: 500;
+}
+
+.cluster-item-count {
+	color: var(--color-base-content);
+	opacity: 0.7;
+	white-space: nowrap;
+}
+
+.cluster-item-date {
+	color: var(--color-base-content);
+	opacity: 0.7;
+	font-size: 11px;
+	white-space: nowrap;
+}
+
+.cluster-item-dead {
+	color: var(--color-error);
+	font-weight: 600;
+	margin-left: 4px;
+}
+
+.cluster-back-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	border: none;
+	background: none;
+	cursor: pointer;
+	color: var(--color-primary);
+	font-size: 12px;
+	padding: 0 0 8px 0;
+	font-weight: 500;
+}
+
 /* Map Container Wrapper */
 .map-container-wrapper {
 	position: relative;
