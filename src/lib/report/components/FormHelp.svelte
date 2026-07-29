@@ -262,6 +262,7 @@
 					</div>
 
 					<div class="alert alert-info">
+						<Icon icon="lucide:info" class="shrink-0" aria-hidden="true" />
 						<div>
 							<h4 class="font-semibold">Wofür die Daten gebraucht werden</h4>
 							<p class="mt-1 text-xs">

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Component } from 'svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import LoadingOverlay from './LoadingOverlay.svelte';
 
 	// Props
@@ -59,7 +60,10 @@
 {#if loadError}
 	<div class={containerClass}>
 		<div class="flex h-full flex-col items-center justify-center gap-4">
-			<div class="alert alert-error" role="alert">{loadError}</div>
+			<div class="alert alert-error" role="alert">
+				<Icon icon="lucide:circle-alert" class="shrink-0" aria-hidden="true" />
+				<span>{loadError}</span>
+			</div>
 			<button
 				type="button"
 				class="btn btn-primary"

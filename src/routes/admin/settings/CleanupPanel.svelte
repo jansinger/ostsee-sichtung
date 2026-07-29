@@ -74,10 +74,12 @@
 
 		{#if errorMessage}
 			<div class="alert alert-error mt-4" role="alert">
+				<Icon icon="lucide:circle-alert" class="shrink-0" aria-hidden="true" />
 				<span class="text-sm">Aufräumen fehlgeschlagen: {errorMessage}</span>
 			</div>
 		{:else if report}
 			<div class="alert alert-info mt-4">
+				<Icon icon="lucide:info" class="shrink-0" aria-hidden="true" />
 				<span class="text-sm">
 					{report.rowsFound} Zeilen ohne Sichtung,
 					{report.filesFound ?? 'nicht anwendbar'} Dateien ohne Zeile (Frist: {report.retentionHours}

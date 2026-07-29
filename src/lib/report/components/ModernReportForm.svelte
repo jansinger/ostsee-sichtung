@@ -5,6 +5,7 @@
 	import RequiredConsent from './form/RequiredConsent.svelte';
 
 	import { browser } from '$app/environment';
+	import Icon from '$lib/components/Icon.svelte';
 	import { submitSightingForm } from '$lib/form/submitSightingForm';
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
@@ -236,6 +237,7 @@
 	<!-- Error Message -->
 	{#if submissionError}
 		<div class="alert alert-error mb-6" role="alert">
+			<Icon icon="lucide:circle-alert" class="shrink-0" aria-hidden="true" />
 			<span>{submissionError}</span>
 		</div>
 	{/if}

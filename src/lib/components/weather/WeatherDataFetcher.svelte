@@ -2,6 +2,7 @@
 	import type { WeatherData, WeatherFormFields } from '$lib/services/weatherService';
 	import type { WeatherDataWithMetadata } from '$lib/types';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
+	import Icon from '$lib/components/Icon.svelte';
 	import WeatherDisplay from './WeatherDisplay.svelte';
 
 	interface Props {
@@ -112,12 +113,12 @@
 			onWeatherDataFetched(weatherData);
 		}
 	}
-
 </script>
 
 <div class="weather-fetcher">
 	{#if error}
 		<div class="alert alert-error mt-2" role="alert">
+			<Icon icon="lucide:circle-alert" class="shrink-0" aria-hidden="true" />
 			<span>{error}</span>
 		</div>
 	{/if}
