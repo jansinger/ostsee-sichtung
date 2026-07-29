@@ -194,7 +194,7 @@
 				{/if}
 			</div>
 
-			<div class="grid gap-3 {multiple ? 'sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}">
+			<div class="grid gap-3 {multiple ? 'md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}">
 				{#each files as file, index (file.name + index)}
 					<div class="card bg-base-100 shadow-sm">
 						<div class="card-body p-3">
@@ -217,7 +217,7 @@
 									<h4 class="truncate text-sm font-medium" title={file.name}>
 										{file.name}
 									</h4>
-									<p class="text-base-content/60 text-xs">
+									<p class="text-base-content/70 text-support">
 										{(file.size / (1024 * 1024)).toFixed(2)} MB
 									</p>
 								</div>
@@ -297,10 +297,10 @@
 				<!-- Ein Steuerelement überall, nur der Hinweis ist responsiv: Ziehen gibt
 				     es auf einem Telefon nicht, der Satz beschriebe dort eine unmögliche
 				     Handlung. -->
-				<p class="text-base-content/60 mt-1 text-xs {actionLabel ? 'hidden sm:inline' : ''}">
+				<p class="text-base-content/70 text-support mt-1 {actionLabel ? 'hidden md:inline' : ''}">
 					{emptyText}
 				</p>
-				<p class="text-base-content/40 mt-1 text-xs">
+				<p class="text-base-content/70 text-support mt-1">
 					{subtitle}{additionalText ? ` - ${additionalText}` : ''}
 				</p>
 			</div>

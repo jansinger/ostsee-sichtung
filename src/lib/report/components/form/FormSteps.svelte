@@ -32,7 +32,15 @@
   circle). Navigation is a real <button> for proper keyboard/AT support;
   aria-current marks the active step (WAI stepper pattern).
 -->
-<nav class="mb-8" aria-label="Formular-Schritte">
+<!--
+  Ab `md`. Unterhalb davon zeigt `StepProgressCompact.svelte` denselben Zustand
+  im ortsfesten Balken unten — der Stepper hier wäre dort doppelt: er kostet
+  oben Platz und ist beim Bedienen der Navigation längst aus dem Bild.
+  Ausgeblendet statt umgebaut, weil beide Varianten dieselbe Regel
+  (`canNavigateToStep`) und dasselbe `aria-current` benutzen; es gibt keinen
+  Zustand, der nur in einer der beiden existiert.
+-->
+<nav class="mb-8 hidden md:block" aria-label="Formular-Schritte">
 	<ul class="steps steps-horizontal w-full">
 		{#each steps as step, index (step.id)}
 			{@const navigable = canNavigateTo(index)}
@@ -42,7 +50,7 @@
 			>
 				<button
 					type="button"
-					class="step-button px-1 text-xs sm:text-sm"
+					class="text-support step-button px-1"
 					class:cursor-not-allowed={!navigable}
 					aria-disabled={!navigable ? 'true' : 'false'}
 					aria-label={step.title}

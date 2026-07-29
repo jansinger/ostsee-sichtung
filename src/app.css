@@ -447,6 +447,19 @@ label:has(> .toggle) {
 		padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
 		box-shadow: 0 -4px 16px color-mix(in oklab, var(--color-neutral) 14%, transparent);
 	}
+
+	/* Gegenstück zum Balken: Ein Feld am unteren Ende des Schritts wird von
+	   `scrollIntoView` und vom Fokus-Scroll des Browsers sonst genau hinter den
+	   Balken geschoben — man tippt ins Feld und sieht es nicht mehr. Betrifft
+	   auch `scrollToFirstError` nach einem gescheiterten „Weiter".
+	   Der Wert deckt den Balken im Normalfall ab (132px gemessen bei 390px
+	   Breite: Fortschrittszeile + Schaltflächen + Innenabstand). Mit
+	   eingeblendetem Inline-Alert ist der Balken höher — dann ist es eine
+	   Näherung, keine Garantie. Das ist vertretbar, weil in dem Zustand die
+	   Fehlermeldung im Bild wichtiger ist als das Feld darunter. */
+	html {
+		scroll-padding-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
+	}
 }
 
 /* ===== Accessibility ===== */

@@ -70,7 +70,14 @@ nachzumessen, dokumentiert eine Vermutung.
 bessere Wahl, `base-content` misst 4,22 bzw. 4,31. Die Lightness von
 `--status-info-surface` und `--status-success-surface` darf deshalb nie erhöht
 werden (Regel in `.claude/rules/design-system.md`). Auf `base-200` ist
-`text-info-strong` mit 4,53 der knappste Vordergrundwert.
+`text-accent-strong` mit 4,57 der knappste Vordergrundwert.
+
+`text-info-strong` lag dort ursprünglich bei 4,53 und ist mit PR 3 auf
+`oklch(0.46 …)` gesenkt worden (4,66). Grund war nicht der Wert selbst, sondern
+seine Empfindlichkeit: die 8-Bit-Quantisierung nach sRGB kostete diesen Farbton
+bei `L = 0.465` **0,043** Kontrast, die vier Nachbarn nur 0,005–0,012. Wer einen
+`-strong`-Wert ändert, misst deshalb den quantisierten Wert nach, nicht den
+gerechneten — Begründung steht an der Zeile in `src/css/tokens.css`.
 
 **Regel:** `text-`, `fill-`, `stroke-` → immer `-strong`. `bg-`, `btn-`,
 `badge-`, `alert-` → nie `-strong`.
@@ -188,6 +195,35 @@ Ziel trägt das Label", inklusive Umschalter auf den Feldmodus.
 `min-h-11` an der Aufrufstelle ist damit überflüssig und `btn-xs` nicht mehr
 gefährlich. Ausnahme über `.target-exempt` — nur für Ziele, die nachweislich
 nicht mit dem Finger bedient werden.
+
+### Feldmodus aktivieren
+
+Der Modus hängt an genau einem Attribut am `<html>`-Element. Es gibt drei Wege
+dorthin, je nachdem, wie lange er halten soll:
+
+| Zweck                        | Weg                                                                    | Reichweite                  |
+| ---------------------------- | ---------------------------------------------------------------------- | --------------------------- |
+| Dauerhaft für ein Deployment | in `src/app.html` `data-density="field"` an das `<html>` hängen        | die ganze Auslieferung      |
+| Kurz ansehen oder nachmessen | `/styleguide` → Umschalter „Feldmodus"                                 | solange die Seite offen ist |
+| Einmalig prüfen, ohne Neubau | DevTools-Konsole: `document.documentElement.dataset.density = 'field'` | bis zum nächsten Laden      |
+
+Der Normalzustand ist die **Abwesenheit** des Attributs — es gibt bewusst
+keinen Selektor für `comfortable`. Wer `[data-density='comfortable']` stylt,
+bricht damit zwei Dinge auf einmal: den „Attribut weg = Normalfall"-Vertrag und
+den Hydrations-Check in `e2e/design-tokens.spec.ts`, der die Anwesenheit des
+Attributs als Signal benutzt (dort kommentiert).
+
+Was der Modus ändert, steht vollständig in `src/css/tokens.css` unter
+`[data-density='field']`: `--target-min` 44 → 56px, `--target-gap` 16 → 24px,
+`--text-support` 13 → 14px. Keine Komponente fragt den Modus ab. Eine
+Komponente, die ihn abfragen müsste, ist ein Hinweis darauf, dass ihr ein Token
+fehlt — nicht darauf, dass sie eine Fallunterscheidung braucht.
+
+**Keine Bedienung in der App.** Es gibt absichtlich keinen Umschalter im
+Formular: Der Modus ist eine Betriebsentscheidung für ein Gerät („dieses Tablet
+liegt an Deck"), keine Nutzerpräferenz pro Sitzung. Ein Schalter im Formular
+wäre ein weiteres Bedienelement in genau dem Bildschirmbereich, den der Modus
+freiräumen soll.
 
 ---
 

@@ -41,23 +41,23 @@
 
 <div class="space-y-8">
 	<!-- Step Header -->
-	<div class="space-y-4 px-2 text-center sm:px-0">
+	<div class="space-y-4 px-2 text-center md:px-0">
 		<div class="flex justify-center">
 			<div
-				class="bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full sm:h-12 sm:w-12"
+				class="bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full md:h-12 md:w-12"
 			>
-				<Icon icon="lucide:activity" width="20" class="text-primary sm:h-6 sm:w-6" />
+				<Icon icon="lucide:activity" width="20" class="text-primary md:h-6 md:w-6" />
 			</div>
 		</div>
-		<h2 class="text-base-content text-xl font-bold sm:text-2xl">Zusätzliche Beobachtungen</h2>
-		<p class="text-base-content/70 mx-auto max-w-2xl text-sm sm:text-base">
+		<h2 class="text-base-content text-xl font-bold md:text-2xl">Zusätzliche Beobachtungen</h2>
+		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
 			Diese Details sind <strong>optional, aber extrem wertvoll</strong> für die Forschung!
 			Verhaltensinformationen, Umweltbedingungen und <strong>Fotos/Videos</strong> helfen bei der Artbestimmung
 			und dem Verständnis der Meerestiere.
 		</p>
 		<div class="flex items-center justify-center gap-4">
 			<div
-				class="badge badge-outline badge-primary h-auto min-h-fit max-w-xs px-3 py-2 text-center text-xs whitespace-normal sm:max-w-none sm:text-sm sm:whitespace-nowrap"
+				class="badge badge-outline badge-primary h-auto min-h-fit max-w-xs px-3 py-2 text-center text-xs whitespace-normal md:max-w-none md:text-sm md:whitespace-nowrap"
 			>
 				Schritt 3 von 4 - Optional, aber sehr hilfreich
 			</div>

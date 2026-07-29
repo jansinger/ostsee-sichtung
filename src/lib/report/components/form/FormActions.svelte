@@ -32,10 +32,10 @@
 </script>
 
 <!-- Form Actions -->
-<div class="mx-auto mt-8 flex justify-center sm:justify-start">
+<div class="mx-auto mt-8 flex justify-center md:justify-start">
 	<button
 		type="button"
-		class="btn btn-outline btn-error btn-sm min-h-11 w-full sm:w-auto"
+		class="btn btn-outline btn-error btn-sm min-h-11 w-full md:w-auto"
 		onclick={handleReset}
 		disabled={$isSubmitting}
 	>

@@ -183,7 +183,7 @@
 								<Icon icon="lucide:chart-pie" width="16" class="text-success" />
 								Ihre Daten machen den Unterschied
 							</h4>
-							<div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+							<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 								<div class="bg-success/10 border-success/20 rounded-lg border p-4 text-center">
 									<div class="text-success mb-2 text-2xl font-bold">
 										{#if loading}

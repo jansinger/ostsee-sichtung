@@ -149,7 +149,7 @@
 		{/if}
 
 		<!-- Action Buttons -->
-		<div class="flex flex-col justify-center gap-4 sm:flex-row">
+		<div class="flex flex-col justify-center gap-4 md:flex-row">
 			<button onclick={handleNewReport} class="btn btn-primary btn-lg">
 				Weitere Sichtung melden
 			</button>
@@ -166,7 +166,7 @@
 				<div class="card-body text-center">
 					<h3 class="mb-4 text-lg font-semibold">Interessiert an mehr?</h3>
 
-					<div class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+					<div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
 						<a href="/map" class="btn btn-outline btn-sm flex items-center gap-2">
 							<Icon icon="lucide:map" width="16" height="16" />
 							Alle Sichtungen auf der Karte

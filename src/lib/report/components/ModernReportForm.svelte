@@ -224,11 +224,11 @@
 <Form {...formProps} bind:context={formContext}>
 	{#if isNotIFrame}
 		<!-- Form Title -->
-		<div class="mb-4 text-center sm:mb-8">
-			<h1 class="text-base-content mb-2 text-2xl font-bold sm:text-3xl lg:text-4xl">
+		<div class="mb-4 text-center md:mb-8">
+			<h1 class="text-base-content mb-2 text-2xl font-bold md:text-3xl lg:text-4xl">
 				Meerestier-Sichtung melden
 			</h1>
-			<p class="text-base-content/70 px-2 text-sm sm:text-lg">
+			<p class="text-base-content/70 px-2 text-sm md:text-lg">
 				Helfen Sie der Forschung mit Ihrer Wal- oder Robbensichtung
 			</p>
 		</div>

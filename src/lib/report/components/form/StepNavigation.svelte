@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import StepProgressCompact from './StepProgressCompact.svelte';
 	import { validateStep } from '$lib/form/validation/stepValidation';
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
@@ -178,47 +179,64 @@
 	}
 </script>
 
-<!-- Inline validation error above navigation — only after a failed "Weiter"-attempt -->
-{#if showStepAlert && stepErrorMessages.length > 0}
-	<div class="alert alert-warning mb-2" role="alert">
-		<Icon icon="lucide:triangle-alert" class="shrink-0" aria-hidden="true" />
-		{#if stepErrorMessages.length === 1}
-			<span>{stepErrorMessages[0]?.message}</span>
-		{:else}
-			<ul class="list-inside list-disc">
-				{#each stepErrorMessages as { field, message } (field)}
-					<li>{message}</li>
-				{/each}
-			</ul>
-		{/if}
-	</div>
-{/if}
+<!--
+  Unterhalb `md` ist dieser Block der ortsfeste Balken am unteren Rand
+  (`.form-step-nav`, Regel in app.css inkl. `env(safe-area-inset-bottom)`).
 
-<!-- Navigation UI -->
-<nav
-	class="bg-base-200 flex items-center justify-between rounded-lg p-4"
-	aria-label="Formular Navigation"
->
-	<button
-		type="button"
-		onclick={previousStep}
-		disabled={isFirstStep || $isSubmitting}
-		class="btn btn-outline"
-		aria-label="Vorheriger Schritt"
-	>
-		← Zurück
-	</button>
+  Die Klasse trägt der Wrapper und NICHT das <nav> darin — obwohl das <nav> das
+  eigentliche Bedienelement ist. Grund: `position: sticky` wirkt nur auf das
+  Element, das die Klasse trägt. Läge der Inline-Alert wie zuvor als Geschwister
+  DAVOR, würde er beim Scrollen weglaufen, während der Balken stehen bleibt —
+  „Weiter" reagiert dann sichtbar nicht, und die Begründung dafür steht
+  irgendwo weiter oben außerhalb des Bildes. Alert, Fortschritt und Schaltflächen
+  gehören deshalb in denselben stickyen Container.
 
-	<button
-		type="button"
-		onclick={nextStep}
-		disabled={$isSubmitting}
-		class="btn btn-primary"
-		aria-label={isLastStep ? 'Formular absenden' : 'Nächster Schritt'}
-	>
-		{#if $isSubmitting}
-			<span class="loading loading-spinner loading-sm"></span>
-		{/if}
-		{isLastStep ? 'Absenden' : 'Weiter →'}
-	</button>
-</nav>
+  Der Container ist bewusst kein zweites <nav>: die Navigations-Landmark bleibt
+  das innere <nav>, der Wrapper ist reines Layout.
+-->
+<div class="form-step-nav bg-base-200 rounded-lg p-4">
+	<!-- Inline validation error above navigation — only after a failed "Weiter"-attempt -->
+	{#if showStepAlert && stepErrorMessages.length > 0}
+		<div class="alert alert-warning mb-3" role="alert">
+			<Icon icon="lucide:triangle-alert" class="shrink-0" aria-hidden="true" />
+			{#if stepErrorMessages.length === 1}
+				<span>{stepErrorMessages[0]?.message}</span>
+			{:else}
+				<ul class="list-inside list-disc">
+					{#each stepErrorMessages as { field, message } (field)}
+						<li>{message}</li>
+					{/each}
+				</ul>
+			{/if}
+		</div>
+	{/if}
+
+	<!-- Fortschritt im Balken — nur unterhalb `md`, oberhalb zeigt ihn FormSteps -->
+	<StepProgressCompact steps={formStepsConfig} bind:currentStep />
+
+	<!-- Navigation UI -->
+	<nav class="mt-3 flex items-center justify-between md:mt-0" aria-label="Formular Navigation">
+		<button
+			type="button"
+			onclick={previousStep}
+			disabled={isFirstStep || $isSubmitting}
+			class="btn btn-outline"
+			aria-label="Vorheriger Schritt"
+		>
+			← Zurück
+		</button>
+
+		<button
+			type="button"
+			onclick={nextStep}
+			disabled={$isSubmitting}
+			class="btn btn-primary"
+			aria-label={isLastStep ? 'Formular absenden' : 'Nächster Schritt'}
+		>
+			{#if $isSubmitting}
+				<span class="loading loading-spinner loading-sm"></span>
+			{/if}
+			{isLastStep ? 'Absenden' : 'Weiter →'}
+		</button>
+	</nav>
+</div>

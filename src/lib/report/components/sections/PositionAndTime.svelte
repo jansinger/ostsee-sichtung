@@ -8,8 +8,8 @@
 	<PositionPanel />
 
 	<!-- Date and Time Section (always visible) -->
-	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
-		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
+	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 md:p-4">
+		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold md:text-lg">
 			<Icon aria-hidden="true" icon="lucide:calendar" width="20" class="text-primary" />
 			Datum und Uhrzeit
 		</h3>

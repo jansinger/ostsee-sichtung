@@ -176,7 +176,7 @@
 										{#if species.images.length > 0}
 											<div
 												class="grid grid-cols-1 gap-3"
-												class:sm:grid-cols-2={species.images.length > 1}
+												class:md:grid-cols-2={species.images.length > 1}
 											>
 												{#each species.images as image (image.src)}
 													<div class="text-center">
