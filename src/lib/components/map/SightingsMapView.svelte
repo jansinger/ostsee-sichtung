@@ -7,7 +7,7 @@
 	import { MapTimeSliderManager } from '$lib/map/timeSliderManager';
 	import { speciesLabels } from '$lib/report/formOptions/species';
 	import {
-		getAvailableYears,
+		deriveSelectableYears,
 		getDefaultSightingYear,
 		pickDefaultYear,
 		type YearWithCount
@@ -94,13 +94,6 @@
 	// window/page.url sind hier also verfügbar.
 	const urlFilterState = parseMapFilterParams(page.url.searchParams);
 
-	// Verfügbare Jahre für den Filter (10 Jahre zurück); ein per URL geteiltes
-	// älteres Jahr wird ergänzt, damit das Dropdown es anzeigen kann.
-	const years = getAvailableYears(10);
-	if (urlFilterState.year !== undefined && !years.includes(urlFilterState.year)) {
-		years.push(urlFilterState.year);
-		years.sort((a, b) => a - b);
-	}
 	// Bisheriges Fallback-Jahr, synchron verfügbar für den allerersten Render
 	// (bevor GET /api/map/sightings/years geladen ist). Als Konstante erfasst,
 	// damit die beiden $state-Deklarationen unten nicht voneinander abhängen.
@@ -114,6 +107,13 @@
 	let apiDefaultYear = $state(initialFallbackYear);
 	// Rohdaten der verfügbaren Jahre (Antwort von GET /api/map/sightings/years)
 	let availableYearsData = $state<YearWithCount[]>([]);
+	// N4: Wählbare Jahre für das Filter-Dropdown — alle Jahre mit Daten aus dem
+	// Endpoint (vor dem Laden bzw. bei Fehlschlag: Fallback auf die letzten
+	// 11 Kalenderjahre), vereint mit dem aktuellen Jahr und einem URL-Jahr (M4).
+	const currentCalendarYear = new Date().getFullYear();
+	let years = $derived(
+		deriveSelectableYears(availableYearsData, currentCalendarYear, urlFilterState.year)
+	);
 	// Sichtungsanzahl je Jahr für die Jahres-Dropdown-Beschriftung ("2025 (817)")
 	let yearCounts = $derived(
 		Object.fromEntries(availableYearsData.map((entry) => [entry.year, entry.count]))

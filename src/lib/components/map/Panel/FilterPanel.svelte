@@ -29,9 +29,10 @@
 
 	// Explizite User-Auswahl (undefined = noch keine manuelle Wahl getroffen)
 	let userSelectedYear: number | undefined = $state(undefined);
-	// Effektiv gewähltes Jahr: User-Auswahl hat Vorrang, sonst Prop-Default
+	// Effektiv gewähltes Jahr: User-Auswahl hat Vorrang, sonst Prop-Default,
+	// sonst das neueste Jahr der absteigend sortierten Liste (N4)
 	let selectedYear = $derived(
-		userSelectedYear ?? defaultYear ?? years.at(-1) ?? new Date().getFullYear()
+		userSelectedYear ?? defaultYear ?? years[0] ?? new Date().getFullYear()
 	);
 	// Bewusst nur der Startwert: danach ist das Eingabefeld (bind:value)
 	// die Quelle der Wahrheit.
@@ -72,7 +73,7 @@
 				title="Wählen Sie das Jahr aus, für das Sichtungen angezeigt werden sollen"
 				onchange={handleYearChange}
 			>
-				{#each years.toReversed() as year (year)}
+				{#each years as year (year)}
 					<option value={year} selected={year === selectedYear}>
 						{yearCounts[year] ? `${year} (${yearCounts[year]})` : year}
 					</option>

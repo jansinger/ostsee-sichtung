@@ -36,30 +36,45 @@ export function isInTransitionPeriod(): boolean {
 }
 
 /**
- * Gibt eine Liste von Jahren für Auswahlfelder zurück.
- * Beginnt mit dem aktuellen Jahr und geht die angegebene Anzahl Jahre zurück.
- *
- * @param yearsBack Anzahl der Jahre, die zurück gegangen werden soll (Standard: 10)
- * @returns Array von Jahren in absteigender Reihenfolge
- */
-export function getAvailableYears(yearsBack: number = 10): number[] {
-	const currentYear = new Date().getFullYear();
-	const years: number[] = [];
-
-	for (let i = 0; i <= yearsBack; i++) {
-		years.push(currentYear - i);
-	}
-
-	return years;
-}
-
-/**
  * Ein Jahr mit der Anzahl an Sichtungen darin (z. B. Antwort von
  * `GET /api/map/sightings/years`).
  */
 export interface YearWithCount {
 	year: number;
 	count: number;
+}
+
+/**
+ * Leitet die im Jahres-Dropdown wählbaren Jahre ab (N4).
+ *
+ * Reine Funktion (kein Fetch, kein Datum) — testbar ohne Fake-Timer.
+ * - Basis sind alle Jahre mit `count > 0` aus `GET /api/map/sightings/years`.
+ * - Liefert der Endpoint nichts Brauchbares (Fehler, leere Dev-DB), greift der
+ *   bisherige Fallback: die letzten 11 Kalenderjahre ab `currentYear`.
+ * - `currentYear` ist immer wählbar, auch ohne Daten — sonst käme man nach der
+ *   ersten Freigabe des Jahres ohne Seiten-Reload nicht dorthin.
+ * - `extraYear` (Jahr aus einer geteilten URL, M4) wird ergänzt, falls es fehlt.
+ *
+ * @param availableYears Jahre mit Sichtungsanzahl, beliebige Reihenfolge
+ * @param currentYear Aktuelles Kalenderjahr
+ * @param extraYear Zusätzlich wählbares Jahr (z. B. `?year=…` aus der URL)
+ * @returns Wählbare Jahre, absteigend sortiert und ohne Duplikate
+ */
+export function deriveSelectableYears(
+	availableYears: YearWithCount[],
+	currentYear: number,
+	extraYear?: number
+): number[] {
+	const withData = availableYears.filter((entry) => entry.count > 0).map((entry) => entry.year);
+	const fallback = Array.from({ length: 11 }, (_, index) => currentYear - index);
+
+	const years = new Set(withData.length > 0 ? withData : fallback);
+	years.add(currentYear);
+	if (extraYear !== undefined) {
+		years.add(extraYear);
+	}
+
+	return [...years].sort((a, b) => b - a);
 }
 
 /**
