@@ -45,6 +45,15 @@ Im Theme sind fast alle `*-content`-Farben reines Weiß (`oklch(1 0 0)`). Auf ei
 
 Die Soft-Darstellung der Alerts kommt aus `app.css` (Details in `daisyui.md`). Für diese Regel zählt nur: `<div class="alert alert-warning">` genügt — den Override **nicht** per `bg-warning`/`text-warning-content`/`shadow-*` an der Aufrufstelle aushebeln, sonst entsteht genau der `*-content`-Fehler von oben.
 
+Der Alert-Text steht in `base-content`, nicht in der Statusfarbe (WCAG 1.4.3, Messwerte in `daisyui.md`). Die Bedeutung trägt deshalb das **Icon** — jedes `alert-*` braucht eines, sonst sehen Warnung und Fehler praktisch gleich aus:
+
+```svelte
+<div class="alert alert-warning" role="alert">
+	<Icon icon="lucide:triangle-alert" class="shrink-0" aria-hidden="true" />
+	<span>Die Koordinaten liegen außerhalb der Ostsee.</span>
+</div>
+```
+
 ---
 
 ## Button-Hierarchie
@@ -64,7 +73,7 @@ Alle Felder laufen über `FormField` → `FieldRenderer` (`src/lib/report/compon
 
 - Label, Hilfetext, Platzhalter, Icon, Optionen und Feldtyp kommen aus dem Yup-Schema (`.label()` / `.meta({...})` in `src/lib/form/validation/sightingSchema.ts`), nicht aus dem Template.
 - Pflicht-Markierung (`*`) und `aria-required` stammen aus **derselben** Variable in `FieldRenderer`. Nie eines von beidem separat setzen — sonst driften optische und semantische Pflicht auseinander.
-- **Konditionale Pflichten** (Yup `when()`) sind aus `describe()` nicht ableitbar. Dafür den `required`-Override an `FormField` setzen — Beispiel `waterway` in `sections/PositionAndTime.svelte`: `<FormField name="waterway" required={waterwayRequired} />`.
+- **Konditionale Pflichten** (Yup `when()`) sind aus `describe()` nicht ableitbar. Dafür den `required`-Override an `FormField` setzen — Beispiel `waterway` in `src/lib/report/components/form/position/LocationDescription.svelte`: `<FormField name="waterway" required={waterwayRequired} />`.
 - Neues Feld: im Schema definieren **und** in `formStepsConfig` (`src/lib/report/formConfig.ts`) dem richtigen Schritt zuordnen — sonst greift weder Schritt-Validierung noch Fehler-Navigation.
 - `data-testid="field-<name>"` entsteht automatisch; keine eigenen Test-IDs an Feldern vergeben.
 - Fehler **nie** beim Betreten eines Schritts anzeigen — erst nach einem gescheiterten „Weiter"-Versuch (`StepNavigation.svelte` / `stepNavigationState.ts`).

@@ -54,16 +54,14 @@ export class FormPage {
 
 	/**
 	 * Fahrwasser/Seegebiet — Pflichtfeld solange keine GPS-Position vorliegt
-	 * (`hasPosition !== true`). Sichtbar in allen drei Positionsmethoden
-	 * (Foto/Karte: Fallback-Bereich "Kein GPS?"; Beschreibung: direkt).
+	 * (`hasPosition !== true`). Es gibt keine Methodenwahl mehr: Das Feld steht
+	 * immer im Block „Ortsbeschreibung" (`LocationDescription.svelte`) und ist
+	 * ohne Koordinaten von Anfang an aufgeklappt. Mit Koordinaten und leeren
+	 * Beschreibungsfeldern startet der Block zugeklappt — dann vorher die
+	 * `<summary>` klicken, sonst greift `fill()` ins Leere.
 	 */
 	async fillWaterway(value: string) {
 		await this.page.locator('[data-testid="field-waterway"]').fill(value);
-	}
-
-	/** Wechselt die Positionsmethode über das zugehörige Radio-Label (Radios sind sr-only). */
-	async selectPositionMethod(method: 'photo' | 'map' | 'manual') {
-		await this.page.locator(`label[for="method-${method}"]`).click();
 	}
 
 	// ── Step 2: Sichtungsdetails ─────────────────────────────────────────────

@@ -150,12 +150,23 @@ h6 {
 
 /* Alerts: Use soft style by default (light background, dark text).
    DaisyUI v5 default alerts use the base color as background (too dark for our theme).
-   The alert-soft variant gives color-mix(8% color, base-100) — perfect for readable alerts. */
+   The alert-soft variant gives color-mix(8% color, base-100) — perfect for readable alerts.
+
+   Text color is base-content, NOT the status color: on a 12% tint of itself the
+   status color reaches only 2.45:1 (warning) to 3.84:1 (error) — WCAG 1.4.3 wants
+   4.5:1. That is the same trap as `text-*-content` on a tint (design-system.md).
+   base-content on the same tints measures 14.2:1 to 14.9:1.
+
+   What now carries the status is the icon at the call site (distinct shape per
+   variant) plus the background hue. NOT the border: --alert-border-color below is
+   a 20% mix and reaches only ~1.1:1 against the alert background, so it is
+   decoration, not a signal. Every alert therefore needs an icon — a bare
+   `<div class="alert alert-error">Text</div>` no longer looks like an error. */
 .alert-info,
 .alert-success,
 .alert-warning,
 .alert-error {
-	color: var(--alert-color, var(--color-base-content));
+	color: var(--color-base-content);
 	background: color-mix(
 		in oklab,
 		var(--alert-color, var(--color-base-content)) 12%,

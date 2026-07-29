@@ -44,6 +44,10 @@ const USER_CONTACT_DEFAULTS: UserContactData = {
 export const STORAGE_KEYS = {
 	CURRENT_STEP: 'sichtungen_current_step', // Aktueller Formular-Schritt
 	FORM_DATA: 'sichtungen_form_data', // Hauptformulardaten
+	// uids der Dateien aus dem Positions-Schritt (siehe positionFileOrigin.ts).
+	// Gehört zu FORM_DATA und muss dessen Lebensdauer teilen — sonst verlöre eine
+	// wiederhergestellte Datei ihre Herkunft.
+	POSITION_FILE_UIDS: 'sichtungen_position_file_uids',
 	USER_CONTACT_DATA: 'sichtungen_user_contact_data' // Benutzer-Kontaktdaten
 };
 
@@ -51,7 +55,11 @@ export const STORAGE_KEYS = {
  * Schlüssel für sessionStorage (temporäre Session-Daten)
  * Diese Daten werden beim Schließen des Browsers automatisch gelöscht
  */
-const sessionKeys = [STORAGE_KEYS.FORM_DATA, STORAGE_KEYS.CURRENT_STEP];
+const sessionKeys = [
+	STORAGE_KEYS.FORM_DATA,
+	STORAGE_KEYS.CURRENT_STEP,
+	STORAGE_KEYS.POSITION_FILE_UIDS
+];
 
 /**
  * Intelligente Storage-Zugriffsfunktion
@@ -210,6 +218,10 @@ export function clearFormDataOnly(): void {
 
 	// Nur Hauptformulardaten löschen (liegt in sessionStorage)
 	sessionStorage.removeItem(STORAGE_KEYS.FORM_DATA);
+	// Die Datei-Herkunft gehört zu den Formulardaten (positionFileOrigin.ts):
+	// bleibt sie stehen, erbt eine später hochgeladene Datei mit derselben uid
+	// eine fremde Herkunft.
+	sessionStorage.removeItem(STORAGE_KEYS.POSITION_FILE_UIDS);
 }
 
 /**

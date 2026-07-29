@@ -17,6 +17,13 @@ export class MediaFile {
 	isUploading: boolean = true;
 	isDeleting: boolean = false;
 	timestamp: Date | null = null;
+	/**
+	 * True, sobald die Metadaten-Auswertung durch ist. Nötig, weil `exifData` den
+	 * Zustand nicht trägt: Es ist vor der Auswertung `undefined` und danach — bei
+	 * einem Bild ganz ohne EXIF — ebenfalls ein leeres Objekt, das man von
+	 * „noch nichts gelesen" nicht unterscheiden könnte.
+	 */
+	analyzed: boolean = false;
 
 	constructor(
 		uid: string,
@@ -30,6 +37,31 @@ export class MediaFile {
 		this.uploadedFile = uploadedFile;
 		this.metadata = metadata;
 		this.fileName = fileName;
+		// Die Zusage „irgendwann ausgewertet" gehört an die injizierte Promise und
+		// damit hierher — nicht in die Factories. Sonst bliebe ein direkt
+		// konstruiertes MediaFile für immer „in Auswertung" (siehe MediaFile.test.ts).
+		//
+		// Reihenfolge unkritisch: Dieser Handler läuft vor dem der Factory, die
+		// `exifData` setzt. `analyzed` ist ein gewöhnliches Klassenfeld — Svelte
+		// proxyt Klasseninstanzen nicht, ein Schreibzugriff darauf weckt also
+		// nichts. Das einzige reaktive Signal ist die Neuzuweisung von
+		// `mediaStore.mediaFiles` in DropzoneEnhanced, deren Handler zuletzt
+		// registriert wird und beide Felder gesetzt vorfindet.
+		//
+		// Beide Zweige setzen dasselbe Flag: „fehlgeschlagen" ist ein Ergebnis der
+		// Auswertung, kein Dauerzustand. Der heutige Aufrufer übergibt
+		// `analyzeClientFile`, das jeden Fehler selbst schluckt — aber `metadata`
+		// ist ein Konstruktor-Parameter, und was diese Klasse zusichert, darf nicht
+		// davon abhängen, wer sie gerade aufruft. Ohne den Rejection-Zweig hinge das
+		// Positions-Panel für immer in `analyzing`.
+		this.metadata.then(
+			() => {
+				this.analyzed = true;
+			},
+			() => {
+				this.analyzed = true;
+			}
+		);
 	}
 
 	static createMediaFile(referenceId: string, file: File, isFromPositionStep?: boolean) {
@@ -44,19 +76,48 @@ export class MediaFile {
 		mediaFile.file = file;
 		mediaFile.size = file.size;
 		mediaFile.isFromPositionStep = isFromPositionStep ?? false;
-		mediaFile.metadata.then((data) => {
-			mediaFile.exifData = mediaFile.exifData ?? data.exifData;
-			mediaFile.thumbnail = mediaFile.thumbnail ?? data.thumbnail;
-			mediaFile.timestamp = data.exifData?.dateTimeOriginal ?? null;
-		});
-		mediaFile.uploadedFile.then((fileInfo) => {
-			mediaFile.isUploading = false;
-			mediaFile.exifData = mediaFile.exifData ?? fileInfo.exifData;
-		});
+		// Beide Ketten tragen einen Rejection-Zweig. Ohne ihn erzeugt jedes
+		// `.then(...)` eine neue, abgelehnte Promise, die niemandem gehört — im
+		// Browser eine `unhandledrejection` auf der Konsole, in Node ein
+		// `unhandledRejection` am Prozess. Das `.catch` in `handleFilesAdded`
+		// (`DropzoneEnhanced.svelte`) hängt an einer ANDEREN Kette und deckt diese
+		// hier nicht ab.
+		//
+		// Es gibt im Fehlerfall nichts zu übernehmen: `exifData`, `thumbnail` und
+		// `timestamp` behalten ihre Startwerte. `isUploading` wird trotzdem
+		// zurückgesetzt — der Upload ist auch dann vorbei, wenn er scheiterte
+		// (gleiche Begründung wie bei `analyzed` im Konstruktor).
+		mediaFile.metadata.then(
+			(data) => {
+				mediaFile.exifData = mediaFile.exifData ?? data.exifData;
+				mediaFile.thumbnail = mediaFile.thumbnail ?? data.thumbnail;
+				mediaFile.timestamp = data.exifData?.dateTimeOriginal ?? null;
+			},
+			() => undefined
+		);
+		mediaFile.uploadedFile.then(
+			(fileInfo) => {
+				mediaFile.isUploading = false;
+				mediaFile.exifData = mediaFile.exifData ?? fileInfo.exifData;
+			},
+			() => {
+				mediaFile.isUploading = false;
+			}
+		);
 		return mediaFile;
 	}
 
-	static fromUploadedFile(fileInfo: UploadedFileInfo, referenceId: string) {
+	/**
+	 * Baut eine bereits hochgeladene Datei wieder auf (Wiederherstellung nach
+	 * Reload). `isFromPositionStep` muss der Aufrufer mitgeben — `fileInfo` trägt
+	 * die Herkunft nicht, und ohne sie fiele die Datei aus der Betrachtung des
+	 * Positions-Panels heraus (siehe `positionPanelState.ts`).
+	 */
+	static fromUploadedFile(
+		fileInfo: UploadedFileInfo,
+		referenceId: string,
+		isFromPositionStep?: boolean
+	) {
 		const fileName = fileInfo.originalName ?? fileInfo.fileName;
 		const mediaFile = new MediaFile(
 			fileInfo.uid,
@@ -76,17 +137,28 @@ export class MediaFile {
 
 		mediaFile.file = mockFile;
 		mediaFile.size = fileInfo.size;
+		mediaFile.isFromPositionStep = isFromPositionStep ?? false;
 		mediaFile.exifData = fileInfo.exifData as ExifData | null | undefined;
 		// Abgesicherte Media-Route statt direktem /uploads-Zugriff (Freigabe-/Admin-Prüfung)
 		mediaFile.thumbnail = `/api/media/${fileInfo.filePath}`;
 		mediaFile.timestamp = mediaFile.exifData?.dateTimeOriginal
 			? new Date(mediaFile.exifData.dateTimeOriginal)
 			: null;
+		// Wiederhergestellte Datei: Die EXIF-Auswertung liegt bereits hinter uns,
+		// `fileInfo` trägt das Ergebnis. Bewusst sofort und zusätzlich zum
+		// Konstruktor-Handler — der liefe erst einen Microtask später, in dem die
+		// Datei fälschlich als „wird ausgewertet" gälte.
+		mediaFile.analyzed = true;
 		return mediaFile;
 	}
 
 	hasPosition = (): boolean => {
 		return !!(this.exifData?.latitude && this.exifData?.longitude);
+	};
+
+	/** Siehe `analyzed` — trennt „kein GPS im Foto" von „noch nicht ausgewertet". */
+	isAnalyzed = (): boolean => {
+		return this.analyzed;
 	};
 }
 

@@ -12,6 +12,7 @@
 		latitude = $bindable(),
 		longitude = $bindable(),
 		defaultCenter = { latitude: 54.5, longitude: 13.5 },
+		collapsibleCoordinates = false,
 		onchange = () => {}
 	} = $props<{
 		mode?: 'dms' | 'dm' | 'dd';
@@ -21,6 +22,16 @@
 		longitude?: number | undefined;
 		/** Nur für die Kartenansicht: Startpunkt, solange keine echte Position vorliegt. */
 		defaultCenter?: { latitude: number; longitude: number };
+		/**
+		 * Legt Formatwahl und Eingabefelder in einen Collapse-Container.
+		 * Default `false`, damit die Admin-Maske (`sections/Location.svelte`)
+		 * unverändert bleibt; das Meldeformular übergibt `true`.
+		 *
+		 * Unterscheidet damit zugleich die beiden Einsatzorte: Nur ohne
+		 * Collapse (= Admin) trägt die Karte das GPS-Control, weil dort kein
+		 * eigener Standort-Button daneben steht (siehe `<OLMap>` unten).
+		 */
+		collapsibleCoordinates?: boolean;
 		onchange?: EventListener | null;
 	}>();
 
@@ -29,6 +40,12 @@
 	// leer, solange der Nutzer keine Position gewählt hat.
 	let mapLatitude = $state(untrack(() => latitude ?? defaultCenter.latitude));
 	let mapLongitude = $state(untrack(() => longitude ?? defaultCenter.longitude));
+
+	// Nur wenn beide Formularwerte gesetzt sind, gibt es eine echte Position. Die
+	// Karte zeigt sonst zwar `defaultCenter`, aber keinen Marker — ein Marker auf
+	// dem Startpunkt wäre von einer bewusst gewählten Position nicht zu
+	// unterscheiden und würde als „Position steht schon" gelesen.
+	let hasPosition = $derived(latitude !== undefined && longitude !== undefined);
 
 	// Echte Position von außen (EXIF-GPS, Formular-Restore) auf die Karte spiegeln.
 	$effect(() => {
@@ -146,17 +163,7 @@
 	}
 </script>
 
-<div class="w-full">
-	<div class="border-base-300 mb-4 overflow-hidden rounded-lg border">
-		<OLMap
-			bind:latitude={mapLatitude}
-			bind:longitude={mapLongitude}
-			readonly={false}
-			enableGPS={true}
-			onchange={onMapChange}
-		/>
-	</div>
-
+{#snippet coordinateFields()}
 	<div class="mb-4 flex items-center justify-between">
 		<label class="label" for="gps-format">GPS-Eingabeformat</label>
 		<select id="gps-format" class="select ml-auto w-auto" bind:value={mode}>
@@ -333,5 +340,41 @@
 				/>
 			</div>
 		</div>
+	{/if}
+{/snippet}
+
+<div class="w-full">
+	<div class="border-base-300 mb-4 overflow-hidden rounded-lg border">
+		<!--
+			Das OpenLayers-GPS-Control (`FormLocationControl`) bleibt nur dort, wo es
+			die einzige Standort-Bedienung ist — also in der Admin-Maske
+			(`sections/Location.svelte`, `collapsibleCoordinates={false}`).
+
+			Im Meldeformular liefert `PositionPanel` bereits einen eigenen Button
+			„Mein aktueller Standort" über der Karte. Beide schreiben dieselbe
+			Koordinate ins Formular; zwei Bedienelemente für dieselbe Aktion
+			verstoßen gegen „gleiche Aktion = gleiche Variante" (design-system.md).
+		-->
+		<OLMap
+			bind:latitude={mapLatitude}
+			bind:longitude={mapLongitude}
+			readonly={false}
+			enableGPS={!collapsibleCoordinates}
+			{hasPosition}
+			onchange={onMapChange}
+		/>
+	</div>
+
+	{#if collapsibleCoordinates}
+		<details class="bg-base-100 collapse" data-testid="coordinate-fields">
+			<summary class="collapse-title min-h-11 py-3 text-sm font-medium">
+				Koordinaten eingeben
+			</summary>
+			<div class="collapse-content">
+				{@render coordinateFields()}
+			</div>
+		</details>
+	{:else}
+		{@render coordinateFields()}
 	{/if}
 </div>

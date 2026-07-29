@@ -333,6 +333,7 @@ jobs:
                 e2e/form-ux.spec.ts \
                 e2e/form-a11y.spec.ts \
                 e2e/form-position.spec.ts \
+                e2e/form-position-photo.spec.ts \
                 e2e/form-autosave.spec.ts
               ;;
             map)

@@ -15,9 +15,21 @@ Regeln für DSGVO-konforme Browser-Speicherung.
 STORAGE_KEYS = {
 	CURRENT_STEP: 'sichtungen_current_step', // sessionStorage
 	FORM_DATA: 'sichtungen_form_data', // sessionStorage
+	POSITION_FILE_UIDS: 'sichtungen_position_file_uids', // sessionStorage
 	USER_CONTACT_DATA: 'sichtungen_user_contact_data' // localStorage ODER sessionStorage
 };
 ```
+
+`POSITION_FILE_UIDS` hält die uids der Dateien aus dem Positions-Schritt
+(`src/lib/report/components/form/fields/positionFileOrigin.ts`). Die Herkunft
+steht bewusst **neben** `FORM_DATA` statt darin: `uploadedFiles` gehört zum
+Yup-Schema und wandert beim Absenden zum Server. Beide Schlüssel werden von
+`clearFormDataOnly()` und `clearStorage()` gemeinsam geräumt — sonst erbte eine
+wiederhergestellte Datei eine fremde Herkunft.
+
+**Arrays nicht direkt speichern:** `loadFromStorage` verwirft ein gespeichertes
+Array und liefert den Default zurück (Array-Guard in der Sanitisierung). Listen
+deshalb in ein Objekt einpacken, wie `{ uids: [...] }` oben.
 
 ---
 

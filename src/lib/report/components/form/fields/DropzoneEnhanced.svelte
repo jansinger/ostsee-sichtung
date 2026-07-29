@@ -33,12 +33,22 @@
 		shouldResetExifPosition,
 		type AppliedExifPosition
 	} from '$lib/report/components/form/fields/exifPositionReset';
+	import {
+		shouldApplyExifDateTime,
+		type AppliedExifDateTime
+	} from '$lib/report/components/form/fields/exifDateTimeApply';
+	import {
+		isPositionUid,
+		loadPositionUids,
+		markPositionFile,
+		unmarkPositionFile
+	} from '$lib/report/components/form/fields/positionFileOrigin';
 	import { get } from 'svelte/store';
 
 	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('DropzoneEnhanced');
-	let { form, handleChange, mediaStore } = getFormContext();
+	let { form, touched, handleChange, mediaStore } = getFormContext();
 
 	// Merkt sich die zuletzt aus EXIF in den Formularzustand übernommene
 	// Position (siehe `applyExifPosition`). Wird beim Entfernen des Fotos
@@ -47,6 +57,11 @@
 	// manuell überschrieben hat (siehe `exifPositionReset.ts`).
 	let appliedExifPosition = $state<AppliedExifPosition | null>(null);
 
+	// Dasselbe für Datum und Uhrzeit (siehe `exifDateTimeApply.ts`): Merkt sich,
+	// was zuletzt aus EXIF übernommen wurde, damit ein Foto-Wechsel die eigene
+	// vorherige Übernahme ersetzen darf — eine Eingabe des Nutzers aber nicht.
+	let appliedExifDateTime = $state<AppliedExifDateTime | null>(null);
+
 	// Component Props
 	let {
 		referenceId, // Eindeutige ID für Upload-Referenz (meist sighting.tempId)
@@ -54,7 +69,61 @@
 		config, // Datei-Validierungskonfiguration (Größe, Typen, etc.)
 		enableGPSExtraction = false, // GPS-Extraktionsmodus aktivieren (für Position-Schritt)
 		title, // Optionaler Titel für die Dropzone
-		additionalText = 'GPS-Daten werden beim Upload verarbeitet'
+		additionalText = 'GPS-Daten werden beim Upload verarbeitet',
+		/**
+		 * Eigener Warnhinweis „Keine GPS-Daten im Foto" (nur im GPS-Modus sichtbar).
+		 *
+		 * Abschaltbar für Aufrufer, die den Fall selbst und ausführlicher behandeln
+		 * — sonst stünden zwei `alert alert-warning` mit derselben Aussage
+		 * übereinander.
+		 *
+		 * Aufrufer (Stand Task 9):
+		 * - `form/position/PositionPanel.svelte` — setzt `false` und erklärt den
+		 *   Fall selbst (Zustand C, inkl. der Auswege „Auf Karte wählen" und
+		 *   „Seegebiet beschreiben").
+		 * - `sections/Media.svelte` — übernimmt den Default `true`, erreicht den
+		 *   Hinweis aber nie: mit `enableGPSExtraction={false}` ist
+		 *   `isPositionStep` falsch und der GPS-Zweig wird gar nicht gerendert.
+		 *
+		 * An diesem Default hängt damit aktuell kein sichtbarer Hinweis; er bleibt
+		 * `true` als sicheres Verhalten für einen künftigen GPS-Modus-Aufrufer ohne
+		 * eigene Erklärung. Bewusst eine eigene Prop und nicht an `isPositionStep`
+		 * gehängt: Der Zweck ist „Aufrufer erklärt es selbst", nicht „welcher Modus".
+		 */
+		showNoGpsWarning = true,
+		/**
+		 * Meldet dem Aufrufer, ob gerade Datum und Uhrzeit aus EXIF übernommen
+		 * wurden (`true`) oder ob das zugehörige Foto wieder entfernt wurde
+		 * (`false`).
+		 *
+		 * Nötig, weil sich das am Formularzustand nicht ablesen lässt:
+		 * `$form.sightingDate` ist wegen `berlinToday()` als Schema-Default immer
+		 * gefüllt. Genau daran scheiterte die frühere Fassung des Zustand-C-Satzes
+		 * „Datum und Uhrzeit konnten übernommen werden" — er stand auch dann da,
+		 * wenn nichts übernommen wurde.
+		 */
+		onExifDateTimeApplied = (_applied: boolean) => {},
+		/**
+		 * Schreibgeschützte Vorschau-Karte in der Foto-Karte (nur im GPS-Modus).
+		 *
+		 * Abschaltbar für Aufrufer, die selbst schon eine Karte derselben Position
+		 * zeigen. `PositionPanel` tut genau das: Seine Disclosure klappt bei neuer
+		 * Position von allein auf, sodass rund 200 px tiefer eine zweite, diesmal
+		 * interaktive Karte mit demselben Marker stand — auf 375 px zusammen
+		 * ~600 px Karte, ohne erkennbaren Unterschied, welche bedienbar ist. Ohne
+		 * Karte tritt an ihre Stelle die kompakte Bestätigungszeile.
+		 *
+		 * Default `true` wie bisher; `sections/Media.svelte` (Schritt 3 und
+		 * Admin-Maske) erreicht diesen Zweig mit `enableGPSExtraction={false}`
+		 * ohnehin nicht. Gleiches Muster wie `showNoGpsWarning`.
+		 */
+		showPositionMap = true,
+		/**
+		 * Beschriftung des Vollton-Buttons in der Dropzone — wird unverändert an
+		 * `UnifiedDropzone` durchgereicht (dort dokumentiert). Ohne Angabe bleibt
+		 * die gestrichelte Fläche selbst der Auslöser.
+		 */
+		actionLabel = undefined
 	} = $props<{
 		referenceId: string;
 		maxFiles?: number;
@@ -62,6 +131,10 @@
 		enableGPSExtraction?: boolean;
 		title?: string;
 		additionalText?: string;
+		showNoGpsWarning?: boolean;
+		onExifDateTimeApplied?: (applied: boolean) => void;
+		showPositionMap?: boolean;
+		actionLabel?: string;
 	}>();
 
 	// Lokaler State für Dropzone-Dateien (temporär während des Drag & Drop)
@@ -87,10 +160,20 @@
 		const currentMediaFiles = mediaStore.mediaFiles;
 		let hasChanges = false;
 		const updatedFiles = [...currentMediaFiles];
+		// Herkunft aus dem Storage statt aus `isPositionStep`: `uf` trägt sie
+		// nicht, und das Positions-Panel urteilt nur über Dateien des
+		// Positions-Schritts (positionPanelState.ts). Mit `isPositionStep`
+		// stempelte die zuerst gemountete Dropzone ihre eigene Herkunft auf alle
+		// wiederhergestellten Dateien — nach einem Reload auf Schritt 1 galten
+		// Schritt-3-Medien als Positions-Foto, nach einem Reload auf Schritt 2+
+		// verlor das echte Positions-Foto seinen Hinweis (positionFileOrigin.ts).
+		const positionUids = loadPositionUids();
 
 		uploadedFiles.forEach((uf) => {
 			if (!currentMediaFiles.some((mf) => mf.uid === uf.uid)) {
-				updatedFiles.push(MediaFile.fromUploadedFile(uf, referenceId));
+				updatedFiles.push(
+					MediaFile.fromUploadedFile(uf, referenceId, isPositionUid(positionUids, uf.uid))
+				);
 				hasChanges = true;
 			}
 		});
@@ -100,9 +183,27 @@
 		}
 	});
 
+	/**
+	 * Dateien, über die diese Instanz überhaupt urteilen und verfügen darf.
+	 *
+	 * `mediaStore` gehört dem ganzen Formular (Form.svelte) und wird von allen
+	 * Schritten geteilt. Im Positions-Schritt zählen deshalb nur die Dateien
+	 * dieses Schritts — dieselbe Eingrenzung, die `photoStatus`
+	 * (`positionPanelState.ts`) für das Panel vornimmt. Ohne sie zeigte Schritt 1
+	 * nach einem Reload ein Foto aus Schritt 3 als „das Positions-Foto" und
+	 * ersetzte die Dropzone damit vollständig.
+	 *
+	 * Im Medien-Schritt bleibt es beim ganzen Store: Dort ist die Galerie
+	 * bewusst die Gesamtsicht.
+	 */
+	let ownedMediaFiles = $derived(
+		isPositionStep ? mediaFiles.filter((mf: MediaFile) => mf.isFromPositionStep) : mediaFiles
+	);
+
 	// Mediafile für Positionsdaten - bevorzuge Dateien mit GPS, aber zeige auch erste Datei ohne GPS
 	let positionMediaFile = $derived(
-		mediaFiles.find((mf) => mf.hasPosition()) ?? (isPositionStep ? mediaFiles[0] : undefined)
+		ownedMediaFiles.find((mf: MediaFile) => mf.hasPosition()) ??
+			(isPositionStep ? ownedMediaFiles[0] : undefined)
 	);
 
 	/**
@@ -130,6 +231,7 @@
 	function deleteFile(uid: string) {
 		uploadedFiles = uploadedFiles.filter((uf) => uf.uid !== uid);
 		updateMediaFiles(mediaStore.mediaFiles.filter((mf) => mf.uid !== uid));
+		unmarkPositionFile(uid);
 		triggerChange('uploadedFiles', uploadedFiles);
 	}
 
@@ -163,6 +265,32 @@
 		appliedExifPosition = null;
 	}
 
+	/**
+	 * Übernimmt die Aufnahmezeit aus EXIF — auch für ein Foto OHNE GPS.
+	 *
+	 * Das war der eigentliche Fehler: Die Karte zeigte „Aufnahmezeit: …" an,
+	 * geschrieben wurde sie aber nur im Zweig mit GPS. Der Nutzer sah das
+	 * richtige Datum und prüfte das Feld deshalb nicht mehr — im Formular stand
+	 * weiter das heutige. Für ein Foto ohne GPS ist der Zeitstempel das Einzige,
+	 * was EXIF überhaupt noch beisteuern kann.
+	 *
+	 * Ob geschrieben werden darf, entscheidet `shouldApplyExifDateTime`
+	 * (`exifDateTimeApply.ts`) — eine Eingabe des Nutzers wird nicht
+	 * überschrieben.
+	 */
+	function applyExifDateTime(timestamp: Date): void {
+		const { date: sightingDate, time: sightingTime } = splitDateTime(timestamp);
+		if (!shouldApplyExifDateTime(get(form), appliedExifDateTime, get(touched))) {
+			logger.debug({ sightingDate, sightingTime }, 'EXIF timestamp not applied — field in use');
+			return;
+		}
+		logger.info({ sightingDate, sightingTime }, 'New sighting data extracted');
+		triggerChange('sightingDate', sightingDate);
+		triggerChange('sightingTime', sightingTime);
+		appliedExifDateTime = { sightingDate, sightingTime };
+		onExifDateTimeApplied(true);
+	}
+
 	$effect(() => {
 		if (positionMediaFile) {
 			if (positionMediaFile.exifData?.latitude && positionMediaFile.exifData?.longitude) {
@@ -170,10 +298,7 @@
 			}
 			const timestamp = positionMediaFile.timestamp;
 			if (timestamp) {
-				const { date: sightingDate, time: sightingTime } = splitDateTime(timestamp);
-				logger.info({ sightingDate, sightingTime }, 'New sighting data extracted');
-				triggerChange('sightingDate', sightingDate);
-				triggerChange('sightingTime', sightingTime);
+				applyExifDateTime(timestamp);
 			}
 		}
 	});
@@ -215,6 +340,11 @@
 		// Add new files to mediaFiles and process them
 		const newMediaFiles = filesToProcess.map((file) => {
 			const mediaFile = MediaFile.createMediaFile(referenceId, file, isPositionStep);
+			// Herkunft sofort festhalten, damit sie einen Reload übersteht — hier
+			// ist sie bekannt, nach dem Reload nirgends mehr (positionFileOrigin.ts).
+			if (isPositionStep) {
+				markPositionFile(mediaFile.uid);
+			}
 			mediaFile.uploadedFile
 				.then((uploadedFile) => {
 					// Update form data
@@ -226,29 +356,47 @@
 					deleteFile(mediaFile.uid);
 					createToast('error', 'Fehler beim Hochladen der Datei');
 				});
-			// Capture current positionMediaFile state to avoid timing-dependent behavior
-			const hadPositionMediaFileBeforeMetadata = !!positionMediaFile;
 			// Trigger positionMediaFile update when metadata is ready
-			mediaFile.metadata.then(() => {
+			//
+			// Mit Rejection-Zweig, und der ist nicht kosmetisch: `analyzed` ist ein
+			// gewöhnliches Klassenfeld und weckt nichts; das einzige reaktive Signal
+			// ist die Neuzuweisung von `mediaStore.mediaFiles` unten. Lehnt die
+			// Metadaten-Promise ab und liefe nur der Erfolgs-Zweig, bliebe diese
+			// Zuweisung aus — das Panel hinge für immer in `'analyzing'`: kein
+			// GPS-Hinweis, kein Ausweg, keine Fehlermeldung. Zusätzlich entstünde
+			// eine unbehandelte Rejection.
+			const refreshAfterMetadata = (): void => {
 				// Directly update form GPS data here — the $effect that reads positionMediaFile.exifData
 				// runs before EXIF extraction completes (async), and won't re-run afterwards because
 				// positionMediaFile stays the same object reference (plain class property, not $state).
 				if (isPositionStep && mediaFile.hasPosition()) {
 					applyExifPosition(mediaFile.exifData!);
-					if (mediaFile.timestamp) {
-						const { date: sightingDate, time: sightingTime } = splitDateTime(mediaFile.timestamp);
-						logger.info(
-							{ sightingDate, sightingTime },
-							'New sighting data extracted from metadata'
-						);
-						triggerChange('sightingDate', sightingDate);
-						triggerChange('sightingTime', sightingTime);
-					}
 				}
-				// Trigger store update to refresh derived values
-				if (!hadPositionMediaFileBeforeMetadata && mediaFile.hasPosition()) {
-					updateMediaFiles([...mediaStore.mediaFiles]);
+				// BEWUSST außerhalb des GPS-Zweigs: Ein Foto ohne GPS trägt trotzdem
+				// eine Aufnahmezeit, und sie war bisher das Einzige, was angezeigt,
+				// aber nie übernommen wurde.
+				if (isPositionStep && mediaFile.timestamp) {
+					applyExifDateTime(mediaFile.timestamp);
 				}
+				// Trigger store update to refresh derived values.
+				//
+				// Bedingungslos, und das ist der Punkt: Der Abschluss der Auswertung IST
+				// die Neuigkeit — auch (gerade) dann, wenn kein GPS gefunden wurde.
+				// PositionPanel unterscheidet „wird ausgewertet" von „kein GPS" über
+				// `MediaFile.isAnalyzed()`; ohne diese Zuweisung bliebe sein `$derived`
+				// auf dem Stand vom Drop-Zeitpunkt stehen und der Hinweis auf das Foto
+				// ohne GPS erschiene nie.
+				//
+				// Der bisherige Wächter (`!hadPositionMediaFile && hasPosition()`) hat
+				// den Fall ohne GPS ausgelassen. Doppelt angewandt wird dadurch nichts:
+				// `positionMediaFile` ist ein `$derived` und liefert dieselbe Instanz
+				// wie zuvor — Sveltes Gleichheitsprüfung (deriveds.js:396) stoppt die
+				// Propagation, der `$effect` oben läuft also nicht erneut.
+				updateMediaFiles([...mediaStore.mediaFiles]);
+			};
+			mediaFile.metadata.then(refreshAfterMetadata, (error) => {
+				logger.warn({ error, uid: mediaFile.uid }, 'EXIF-Auswertung fehlgeschlagen');
+				refreshAfterMetadata();
 			});
 			return mediaFile;
 		});
@@ -294,6 +442,12 @@
 				// Aus lokalen Stores entfernen
 				deleteFile(mediaFile.uid);
 				resetExifPositionIfUnchanged();
+				// Datum und Uhrzeit bleiben stehen — anders als die Koordinaten sind sie
+				// ohne Foto weiterhin plausibel, und `sightingDate` fiele sonst auf
+				// „heute" zurück. `appliedExifDateTime` bleibt deshalb ebenfalls gesetzt:
+				// Es besagt „diese Werte gehören uns" und erlaubt dem Ersatzfoto, sie zu
+				// überschreiben (exifDateTimeApply.ts). Nur der Hinweis im Panel geht.
+				onExifDateTimeApplied(false);
 				createToast('success', 'Datei erfolgreich gelöscht.');
 			}
 		} catch (error) {
@@ -317,15 +471,35 @@
 		try {
 			dropzoneFiles = [];
 
+			// Nur die eigenen Dateien (siehe `ownedMediaFiles`). Im Positions-Schritt
+			// ist „Neu auswählen" der einzige Ausweg aus der Foto-Karte; unbegrenzt
+			// gedacht löschte dieser eine Klick auch die Medien aus Schritt 3 —
+			// serverseitig und ohne Rückfrage. Im Medien-Schritt bleibt „Alle
+			// löschen" unverändert alles.
+			const removed = ownedMediaFiles;
+			const removedUids = new Set(removed.map((mediaFile: MediaFile) => mediaFile.uid));
+
+			// Vormerkungen der entfernten Dateien zurücknehmen, bevor der Store leer
+			// ist — sonst blieben verwaiste uids im sessionStorage stehen.
+			for (const mediaFile of removed) {
+				unmarkPositionFile(mediaFile.uid);
+			}
+
 			// Clear media files im Store
-			updateMediaFiles([]);
+			updateMediaFiles(
+				mediaStore.mediaFiles.filter((mediaFile) => !removedUids.has(mediaFile.uid))
+			);
 
-			// Alle hochgeladenen Dateien vom Server löschen
-			deleteMultipleFiles(uploadedFiles);
+			// Die zugehörigen hochgeladenen Dateien vom Server löschen
+			const removedUploads = uploadedFiles.filter((uf: UploadedFileInfo) =>
+				removedUids.has(uf.uid)
+			);
+			deleteMultipleFiles(removedUploads);
 
-			// Clear uploaded files
-			uploadedFiles = [];
+			uploadedFiles = uploadedFiles.filter((uf: UploadedFileInfo) => !removedUids.has(uf.uid));
 			resetExifPositionIfUnchanged();
+			// Siehe `handleFileRemoved`: Werte bleiben, nur der Hinweis geht.
+			onExifDateTimeApplied(false);
 
 			triggerChange('uploadedFiles', uploadedFiles);
 			createToast('success', 'Alle Dateien erfolgreich gelöscht.');
@@ -344,9 +518,11 @@
 					{mediaFiles.length} Datei{mediaFiles.length !== 1 ? 'en' : ''}
 					<!-- {previewFiles.length > 0 ? '(wird verarbeitet...)' : 'hochgeladen'} -->
 				</h3>
+				<!-- `min-h-11` hält das 44-px-Touch-Target, das `btn-sm` sonst
+				     unterschreitet (design-system.md, A11y-Mindestanforderungen). -->
 				<button
 					type="button"
-					class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-white"
+					class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
 					onclick={handleClear}
 				>
 					Alle löschen
@@ -403,14 +579,18 @@
 												Upload...
 											</div>
 										{:then}
-											<!-- Remove button -->
+											<!-- Remove button. `min-h-11 min-w-11` hält das 44-px-Touch-Target
+											     (design-system.md); der Button ist absolut positioniert und
+											     kann das Datei-Grid in Schritt 3 deshalb nicht umbrechen.
+											     `btn-error:hover` war eine tote Klasse — diese Schreibweise
+											     erzeugt Tailwind nicht (Variante wäre `hover:…`). -->
 											<button
 												type="button"
-												class="btn btn-circle btn-xs btn-error btn-error:hover absolute -top-2 -right-2 text-white"
+												class="btn btn-circle btn-sm btn-error text-error-content absolute -top-2 -right-2 min-h-11 min-w-11"
 												onclick={() => handleFileRemoved(mediaFile.uid)}
 												aria-label="Datei entfernen"
 											>
-												<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path
 														stroke-linecap="round"
 														stroke-linejoin="round"
@@ -495,74 +675,142 @@
 			</div>
 		{:then positionMediafileMetadata}
 			{#if positionMediafileMetadata.exifData?.latitude && positionMediafileMetadata.exifData?.longitude}
-				<!-- Map Display with GPS Position -->
-				<div class="bg-base-100 border-base-300 rounded-lg border p-4">
-					<div class="mb-3 flex items-center justify-between">
-						<div class="flex items-center gap-2">
-							<Icon icon="lucide:map-pin" class="text-success h-[18px] w-[18px]" />
-							<h4 class="text-sm font-semibold">GPS-Position</h4>
-						</div>
-						<div class="badge badge-success badge-sm text-nowrap">
-							{formatLocation(
-								positionMediafileMetadata.exifData?.longitude,
-								positionMediafileMetadata.exifData?.latitude
-							)}
-						</div>
-						{#await positionMediaFile.uploadedFile}
-							<div class="loading loading-spinner loading-sm text-primary">
-								Upload läuft im Hintergrund...
+				{#if showPositionMap}
+					<!-- Map Display with GPS Position -->
+					<div class="bg-base-100 border-base-300 rounded-lg border p-4">
+						<!-- `flex-wrap gap-2`: Die Zeile trägt drei Elemente, darunter ein
+						     `text-nowrap`-Badge mit den Koordinaten. Seit der Button auf
+						     `btn-sm` steht, passt sie auf schmalen Geräten nicht mehr
+						     zwingend in eine Zeile — ohne Umbruch liefe sie über. -->
+						<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+							<div class="flex items-center gap-2">
+								<Icon icon="lucide:map-pin" class="text-success h-[18px] w-[18px]" />
+								<h4 class="text-sm font-semibold">GPS-Position</h4>
 							</div>
+							<div class="badge badge-success badge-sm text-nowrap">
+								{formatLocation(
+									positionMediafileMetadata.exifData?.longitude,
+									positionMediafileMetadata.exifData?.latitude
+								)}
+							</div>
+							{#await positionMediaFile.uploadedFile}
+								<div class="loading loading-spinner loading-sm text-primary">
+									Upload läuft im Hintergrund...
+								</div>
+							{:then}
+								<!-- `min-h-11` hält das 44-px-Touch-Target (design-system.md). -->
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
+									onclick={handleClear}
+								>
+									Neu auswählen
+								</button>
+							{/await}
+						</div>
+
+						<div
+							class="bg-base-200 border-base-300 overflow-hidden rounded-lg border"
+							style="height: 300px;"
+						>
+							<OLMap
+								latitude={positionMediafileMetadata.exifData.latitude!}
+								longitude={positionMediafileMetadata.exifData.longitude!}
+								zoom={13}
+								readonly={true}
+								--map-height="300px"
+							/>
+						</div>
+
+						{#if positionMediaFile.timestamp}
+							<div class="mt-3 text-center">
+								<p class="text-base-content/60 flex items-center justify-center gap-1 text-xs">
+									<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
+									Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE', {
+										timeZone: 'Europe/Berlin'
+									})}
+								</p>
+							</div>
+						{/if}
+
+						<!-- Show upload progress if still uploading -->
+						{#await positionMediaFile.uploadedFile}
+							<div
+								class="mt-3 flex items-center justify-center gap-2"
+								role="status"
+								aria-label="Upload läuft"
+							>
+								<div class="loading loading-spinner loading-sm"></div>
+								<span class="text-base-content/60 text-sm">Upload läuft im Hintergrund...</span>
+							</div>
+						{/await}
+					</div>
+				{:else}
+					<!-- Kompakte Bestätigungszeile (Zustand B der Spezifikation): Miniaturbild,
+					     Dateiname, eine Zeile über das Übernommene, Entfernen. Die Karte
+					     zeigt der Aufrufer — genau einmal und interaktiv. -->
+					<div
+						class="bg-base-100 border-base-300 flex items-center gap-3 rounded-lg border p-3"
+						data-testid="photo-position-summary"
+					>
+						{#if positionMediaFile.thumbnail}
+							<img
+								src={positionMediaFile.thumbnail}
+								alt={positionMediaFile.fileName}
+								class="bg-base-200 h-12 w-12 shrink-0 rounded object-cover"
+							/>
+						{:else}
+							<div
+								class="bg-base-200 flex h-12 w-12 shrink-0 items-center justify-center rounded"
+							>
+								<Icon
+									aria-hidden="true"
+									icon="lucide:image"
+									width="20"
+									class="text-base-content/60"
+								/>
+							</div>
+						{/if}
+
+						<div class="min-w-0 flex-1">
+							<p class="truncate text-sm font-medium" title={positionMediaFile.fileName}>
+								{positionMediaFile.fileName}
+							</p>
+							<!-- Tint-freie Fläche, trotzdem `text-base-content`: Die Statusfarbe
+							     trägt allein das Icon (design-system.md). -->
+							<p class="text-base-content/70 flex items-center gap-1 text-xs">
+								<Icon
+									aria-hidden="true"
+									icon="lucide:check"
+									width="14"
+									class="text-success shrink-0"
+								/>
+								Position, Datum und Uhrzeit aus dem Foto übernommen
+							</p>
+						</div>
+
+						{#await positionMediaFile.uploadedFile}
+							<div
+								class="loading loading-spinner loading-sm text-primary shrink-0"
+								role="status"
+								aria-label="Upload läuft"
+							></div>
 						{:then}
+							<!-- `min-h-11` hält das 44-px-Touch-Target (design-system.md). -->
 							<button
 								type="button"
-								class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-white"
+								class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11 shrink-0"
 								onclick={handleClear}
 							>
 								Neu auswählen
 							</button>
 						{/await}
 					</div>
-
-					<div
-						class="bg-base-200 border-base-300 overflow-hidden rounded-lg border"
-						style="height: 300px;"
-					>
-						<OLMap
-							latitude={positionMediafileMetadata.exifData.latitude!}
-							longitude={positionMediafileMetadata.exifData.longitude!}
-							zoom={13}
-							readonly={true}
-							--map-height="300px"
-						/>
-					</div>
-
-					{#if positionMediaFile.timestamp}
-						<div class="mt-3 text-center">
-							<p class="text-base-content/60 flex items-center justify-center gap-1 text-xs">
-								<Icon icon="lucide:calendar" width="12" height="12" class="text-primary" />
-								Aufnahmezeit: {positionMediaFile.timestamp.toLocaleString('de-DE', {
-									timeZone: 'Europe/Berlin'
-								})}
-							</p>
-						</div>
-					{/if}
-
-					<!-- Show upload progress if still uploading -->
-					{#await positionMediaFile.uploadedFile}
-						<div
-							class="mt-3 flex items-center justify-center gap-2"
-							role="status"
-							aria-label="Upload läuft"
-						>
-							<div class="loading loading-spinner loading-sm"></div>
-							<span class="text-base-content/60 text-sm">Upload läuft im Hintergrund...</span>
-						</div>
-					{/await}
-				</div>
+				{/if}
 			{:else}
 				<!-- Image uploaded but no GPS data - show preview with info -->
 				<div class="bg-base-100 border-base-300 rounded-lg border p-4">
-					<div class="mb-3 flex items-center justify-between">
+					<div class="mb-3 flex items-center justify-between gap-2">
 						<div class="flex items-center gap-2">
 							<Icon icon="lucide:image" class="text-primary h-[18px] w-[18px]" />
 							<h4 class="text-sm font-semibold">Foto hochgeladen</h4>
@@ -570,9 +818,10 @@
 						{#await positionMediaFile.uploadedFile}
 							<div class="loading loading-spinner loading-sm text-primary"></div>
 						{:then}
+							<!-- `min-h-11` hält das 44-px-Touch-Target (design-system.md). -->
 							<button
 								type="button"
-								class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-white"
+								class="btn btn-ghost btn-sm text-error hover:bg-error hover:text-error-content min-h-11"
 								onclick={handleClear}
 							>
 								Neu auswählen
@@ -593,17 +842,20 @@
 						</div>
 					{/if}
 
-					<!-- Warning: No GPS data -->
-					<div class="alert alert-warning mt-3">
-						<Icon icon="lucide:map-pin-off" width="20" />
-						<div>
-							<h4 class="font-medium">Keine GPS-Daten im Foto</h4>
-							<p class="text-sm">
-								Bitte wählen Sie die Position manuell auf der Karte oder laden Sie ein Foto mit
-								GPS-Daten hoch.
-							</p>
+					<!-- Warning: No GPS data — entfällt, wenn der Aufrufer den Fall selbst
+					     erklärt (siehe Prop `showNoGpsWarning`). -->
+					{#if showNoGpsWarning}
+						<div class="alert alert-warning mt-3">
+							<Icon icon="lucide:map-pin-off" width="20" />
+							<div>
+								<h4 class="font-medium">Keine GPS-Daten im Foto</h4>
+								<p class="text-sm">
+									Bitte wählen Sie die Position manuell auf der Karte oder laden Sie ein Foto mit
+									GPS-Daten hoch.
+								</p>
+							</div>
 						</div>
-					</div>
+					{/if}
 
 					{#if positionMediaFile.timestamp}
 						<div class="mt-3 text-center">
@@ -629,11 +881,37 @@
 					{/await}
 				</div>
 			{/if}
+		{:catch}
+			<!-- Ohne diesen Zweig schlägt eine abgelehnte Metadaten-Promise als
+			     Svelte-Fehler durch (plus unbehandelte Rejection) und der Nutzer sieht
+			     gar nichts. Die Datei selbst ist da — was fehlt, sind nur die
+			     EXIF-Angaben. Deshalb Hinweis statt Abbruch, mit demselben Ausweg wie
+			     im GPS-losen Fall. -->
+			<div class="alert alert-warning" role="status" data-testid="photo-analysis-failed">
+				<Icon aria-hidden="true" icon="lucide:circle-alert" width="20" class="shrink-0" />
+				<div>
+					<p class="text-sm">
+						Die Bilddaten dieses Fotos konnten nicht gelesen werden. Position, Datum und Uhrzeit
+						bitte selbst angeben — das Foto bleibt erhalten.
+					</p>
+					<div class="mt-3">
+						<button
+							type="button"
+							class="btn btn-outline btn-sm min-h-11"
+							onclick={handleClear}
+							data-testid="photo-analysis-failed-reset"
+						>
+							Neu auswählen
+						</button>
+					</div>
+				</div>
+			</div>
 		{/await}
 	{:else}
 		<!-- Unified Dropzone -->
 		<UnifiedDropzone
 			{config}
+			{actionLabel}
 			bind:files={dropzoneFiles}
 			onFilesAdded={handleFilesAdded}
 			onFileRemoved={handleFileRemoved}

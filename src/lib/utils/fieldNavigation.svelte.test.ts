@@ -6,7 +6,7 @@
  * Playwright), obwohl keine Svelte-Komponente gerendert wird.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { scrollToElement, scrollToStepHeader } from './fieldNavigation';
+import { scrollToElement, scrollToFirstError, scrollToStepHeader } from './fieldNavigation';
 
 /** Baut die für Step-Komponenten typische Struktur nach: Container > Step-Root > Header(Icon, h2, Badge) */
 function buildStepContainer(containerId: string): { header: HTMLElement; heading: HTMLElement } {
@@ -101,5 +101,85 @@ describe('scrollToStepHeader', () => {
 		vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
 		expect(scrollToStepHeader('form-content')).toBe(heading);
+	});
+});
+
+describe('scrollToFirstError', () => {
+	afterEach(() => {
+		document.body.innerHTML = '';
+		vi.restoreAllMocks();
+		vi.useRealTimers();
+	});
+
+	/**
+	 * Regression: `LocationDescription.svelte` rendert `waterway` seit dem
+	 * Vorgänger-Fix in einem einzigen `<details>`, dessen Startzustand nur
+	 * einmalig gesetzt wird (kein `bind:open`) — der Nutzer darf den Block
+	 * also zuklappen. Klappt er zu und schlägt „Weiter" wegen `waterway`
+	 * fehl, liegt das Feld in einem geschlossenen `<details>`. Native
+	 * `<details>` setzt seinen Inhalt dann auf `content-visibility: hidden`
+	 * — `.focus()` auf ein Element darin tut still nichts, ohne dass
+	 * `scrollToFirstError` das öffnet.
+	 */
+	it('öffnet ein geschlossenes Vorfahren-<details> und fokussiert das Feld darin', () => {
+		vi.useFakeTimers();
+		vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+		const disclosure = document.createElement('details');
+		disclosure.setAttribute('data-testid', 'location-description');
+		const input = document.createElement('input');
+		input.name = 'waterway';
+		input.setAttribute('data-testid', 'field-waterway');
+		disclosure.appendChild(input);
+		document.body.appendChild(disclosure);
+
+		expect(disclosure.open).toBe(false);
+
+		const navigated = scrollToFirstError({ waterway: 'Pflichtfeld' });
+
+		expect(navigated).toBe(true);
+		// Muss synchron passieren, VOR dem verzögerten `.focus()` — sonst hätte
+		// das geschlossene <details> beim Fokussieren keine Wirkung.
+		expect(disclosure.open).toBe(true);
+
+		vi.advanceTimersByTime(600);
+
+		expect(document.activeElement).toBe(input);
+	});
+
+	it('öffnet mehrere verschachtelte <details>-Vorfahren', () => {
+		vi.useFakeTimers();
+		vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+		const outer = document.createElement('details');
+		const inner = document.createElement('details');
+		const input = document.createElement('input');
+		input.name = 'seaMark';
+		inner.appendChild(input);
+		outer.appendChild(inner);
+		document.body.appendChild(outer);
+
+		scrollToFirstError({ seaMark: 'Pflichtfeld' });
+
+		expect(outer.open).toBe(true);
+		expect(inner.open).toBe(true);
+
+		vi.advanceTimersByTime(600);
+		expect(document.activeElement).toBe(input);
+	});
+
+	it('funktioniert unverändert, wenn das Feld in keinem <details> liegt', () => {
+		vi.useFakeTimers();
+		vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+		const input = document.createElement('input');
+		input.name = 'sightingDate';
+		document.body.appendChild(input);
+
+		const navigated = scrollToFirstError({ sightingDate: 'Pflichtfeld' });
+		expect(navigated).toBe(true);
+
+		vi.advanceTimersByTime(600);
+		expect(document.activeElement).toBe(input);
 	});
 });

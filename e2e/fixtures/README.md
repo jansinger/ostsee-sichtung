@@ -9,7 +9,7 @@ heruntergeladen — so hängen keine fremden Bildrechte am Repository.
 | Datei                          | GPS               | Zweck                                                                                |
 | ------------------------------ | ----------------- | ------------------------------------------------------------------------------------ |
 | `photo-with-gps.jpg`           | 54,31 N / 12,09 E | Innerhalb der Ostsee-Box. Erfolgsfall: Position, Datum und Uhrzeit werden übernommen |
-| `photo-without-gps.jpg`        | keins             | Zustand „Foto ohne GPS": Datum wird übernommen, Position nicht                       |
+| `photo-without-gps.jpg`        | keins             | Zustand „Foto ohne GPS": Datum und Uhrzeit werden übernommen, die Position nicht     |
 | `photo-gps-outside-baltic.jpg` | 41,39 N / 2,17 E  | Mittelmeer, außerhalb der Box. Löst den Validierungsfehler aus `BALTIC_SEA_BBOX` aus |
 
 Alle drei tragen `DateTimeOriginal`, `CreateDate` und `ModifyDate` mit der

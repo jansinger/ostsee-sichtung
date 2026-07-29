@@ -33,6 +33,11 @@ export function scrollToFirstError(
 		const fieldElement = findFieldElement(firstErrorField);
 
 		if (fieldElement) {
+			// The field may sit inside a collapsed <details> (e.g. an optional
+			// section the user closed). A closed <details> hides its content via
+			// `content-visibility: hidden`, so `.focus()` on an element inside it
+			// silently does nothing — open every ancestor first.
+			openAncestorDetails(fieldElement);
 			scrollToElement(fieldElement);
 			focusElement(fieldElement);
 			return true;
@@ -40,6 +45,23 @@ export function scrollToFirstError(
 	}
 
 	return false;
+}
+
+/**
+ * Opens every ancestor `<details>` of the given element, walking up through
+ * nested disclosures. Use this before scrolling/focusing an element that may
+ * be hidden inside a collapsed `<details>` — a closed `<details>` hides its
+ * content via `content-visibility: hidden`, so `.focus()` on a descendant
+ * silently does nothing until the disclosure is open.
+ */
+export function openAncestorDetails(element: HTMLElement): void {
+	for (
+		let disclosure = element.closest('details');
+		disclosure !== null;
+		disclosure = disclosure.parentElement?.closest('details') ?? null
+	) {
+		disclosure.open = true;
+	}
 }
 
 /**

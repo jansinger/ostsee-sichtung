@@ -143,7 +143,7 @@
 					<div class="grid grid-cols-1 gap-2">
 						{#each group.species as species (species.enum)}
 							<details class="collapse-arrow border-base-300 bg-base-100 collapse border">
-								<summary class="collapse-title min-h-0 py-2 text-sm font-medium">
+								<summary class="collapse-title min-h-11 py-3 text-sm font-medium">
 									<div class="flex flex-wrap items-center gap-2">
 										{#if species.images.length > 0 && species.images[0]}
 											<div class="avatar">

@@ -27,6 +27,7 @@
 	import Cloud from '~icons/lucide/cloud';
 	import CloudRain from '~icons/lucide/cloud-rain';
 	import Columns from '~icons/lucide/columns';
+	import Crosshair from '~icons/lucide/crosshair';
 	import Download from '~icons/lucide/download';
 	import Eye from '~icons/lucide/eye';
 	import File from '~icons/lucide/file';
@@ -44,7 +45,8 @@
 	import Hash from '~icons/lucide/hash';
 	import Heart from '~icons/lucide/heart';
 	import Home from '~icons/lucide/home';
-	import Images from '~icons/lucide/images';
+	import Image from '~icons/lucide/image';
+import Images from '~icons/lucide/images';
 	import Info from '~icons/lucide/info';
 	import List from '~icons/lucide/list';
 	import Loader2 from '~icons/lucide/loader-2';
@@ -113,6 +115,7 @@
 		'lucide:filter': Filter,
 		'lucide:download': Download,
 		'lucide:columns': Columns,
+		'lucide:crosshair': Crosshair,
 		'lucide:user': User,
 		'lucide:log-out': LogOut,
 		'lucide:github': Github,
@@ -133,6 +136,7 @@
 		'lucide:arrow-left': ArrowLeft,
 		'lucide:play': Play,
 		'lucide:file-text': FileText,
+		'lucide:image': Image,
 		'lucide:images': Images,
 		'lucide:video': Video,
 		'lucide:circle-alert': CircleAlert,
