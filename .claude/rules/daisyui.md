@@ -94,6 +94,9 @@ sondern über `btn btn-outline btn-error btn-sm` (die kanonische destruktive
 Variante, siehe `design-system.md`) auch **Textfarbe**. Mit dem ursprünglichen
 `oklch(0.55 0.18 25)` erreichte diese Beschriftung nur 4,46:1 auf `base-100` und
 3,69:1 auf `base-200`; seit `oklch(0.48 0.18 25)` sind es 6,05:1 bzw. 5,01:1.
+Auf `base-300` bleiben es allerdings 4,13:1 — diese Kombination ist weiterhin unter
+AA und deshalb in `design-system.md` („Bekannte Grenze: `text-error` auf `base-300`")
+als Verbot festgehalten. Es gibt aktuell keine solche Aufrufstelle.
 Abgesichert ist das durch `e2e/form-a11y.spec.ts` → „Accessibility — text-error
 auf Buttons". Die Messmechanik liegt in `e2e/helpers/contrast.ts` und wird auch
 vom Alert-Test benutzt — sie muss im Browser laufen, weil `oklch()` und
