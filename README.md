@@ -163,6 +163,12 @@ npm run format
 npm run check
 ```
 
+### Styleguide
+
+Bei laufendem Dev-Server erreichbar unter **[https://localhost:4000/styleguide](https://localhost:4000/styleguide)** — dort steht jedes Design-Token einmal als echtes DOM (Farben, Typografie, Abstände, Elevation, Z-Index, Motion, Buttons, Alerts, Formularfelder, Badges), inklusive Umschalter auf den Feldmodus. Erste Anlaufstelle vor jeder UI-Änderung.
+
+Die Route ist bewusst **nur in `dev`** erreichbar (`+page.server.ts` wirft sonst 404); sie ist Entwickler-Werkzeug, keine öffentliche Seite. Die Token-Werte in Prosa stehen in [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md), die Regeln in `.claude/rules/design-system.md`.
+
 ## Projektstruktur
 
 ```
@@ -320,7 +326,8 @@ docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-sichtung:latest
 - 📗 [Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT.md) - Schnellanleitung für Production
 - 📙 [Environment Variables Reference](docs/ENVIRONMENT.md) - Alle Umgebungsvariablen
 - 📕 [Database Migration Guide](docs/DATABASE_MIGRATION.md) - Migration von bestehenden Installationen
-- 📒 [Design Guide](docs/DESIGN_GUIDE.md) - UI/UX Best Practices
+- 📒 [Design Guide](docs/DESIGN_GUIDE.md) - UI/UX Best Practices und Begründungen
+- 📓 [Design System](docs/DESIGN_SYSTEM.md) - Token-Referenz (Farben, Typografie, Abstände, Motion)
 
 ## Beitragen
 
