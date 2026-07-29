@@ -146,26 +146,35 @@ Neubewertung aller Befunde gegen den aktuellen Stand (Code-Diff + erneuter Brows
 | **Doku: forms.md / architecture.md / CLAUDE.md / agents/form-development.md** | **Behoben.** forms.md dokumentiert jetzt die hauseigene `createForm`-API (inkl. „kein touched/validateField"-Hinweis), Tech-Stack-Tabellen aktualisiert. **Offen:** `.claude/README.md:109` nennt weiterhin svelte-forms-lib. |
 | Bonus (nicht im Original-Review)                                              | Autocomplete-Attribute auf Kontaktfeldern, Confirm vor „Formular zurücksetzen", Info-Tooltips tastaturerreichbar, Skip-Link/Landmarks.                                                                                        |
 
-### 🔴 Weiterhin offen (kritisch)
+### 🔴 Weiterhin offen (kritisch) — _Momentaufnahme bei `acce0d2`, inzwischen erledigt_
 
-| Befund                                                                | Verifiziert im aktuellen Code                                                                                                                      |
-| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **K1** Default-Koordinaten / Phantom-Position                         | `sightingSchema.ts`: `hasPosition .default(true)` (Z. 178), `latitude .default(54.5)` (Z. 214), `longitude .default(13.5)` (Z. 246) — unverändert. |
-| **K2** Tierart/Anzahl vorbelegt + grüne Haken auf unberührten Feldern | Defaults und `hasValue`-basierte Häkchen unverändert.                                                                                              |
-| **K3** Totfund-Kontrast (weiß auf hellgelb)                           | `DeadAnimal.svelte` nutzt weiter `text-warning-content` auf `bg-warning/10`.                                                                       |
+> **Diese Tabelle ist historisch.** Sie beschreibt den Stand vor der Umsetzung vom
+> 2026-07-24. Alle drei Befunde sind behoben; die Spalte „Heute" nennt die Belegstelle
+> im aktuellen Code. Der aktuelle Backlog steht unter
+> „[Offene Punkte — Stand 2026-07-29](#offene-punkte--stand-2026-07-29)".
 
-### 🟡 Weiterhin offen (moderat)
+| Befund                                                                | Damals (`acce0d2`)                                                                                                                                 | Heute                                                                                                                                                                                                                                                                                                                                                 |
+| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **K1** Default-Koordinaten / Phantom-Position                         | `sightingSchema.ts`: `hasPosition .default(true)` (Z. 178), `latitude .default(54.5)` (Z. 214), `longitude .default(13.5)` (Z. 246) — unverändert. | ✅ **Behoben (#567, ergänzt durch #590).** `latitude`/`longitude` haben kein `.default()` mehr und sind nur bei `hasPosition === true` Pflicht; `hasPosition` steht auf `.default(false)`, `waterway` wird stattdessen Pflicht. Zusätzlich seit #590: `OLMap.svelte` zeichnet den Marker nur bei `hasPosition`, ein `singleclick` setzt die Position. |
+| **K2** Tierart/Anzahl vorbelegt + grüne Haken auf unberührten Feldern | Defaults und `hasValue`-basierte Häkchen unverändert.                                                                                              | ✅ **Behoben (#567).** `species` hat kein `.default()` mehr, sondern `.required('Bitte wählen Sie eine Tierart aus')`. Das grüne Häkchen ist an `touched` gekoppelt (`FieldRenderer.svelte`: `isValid = touched && hasValue && !hasError`). `totalCount` behält bewusst `.default(1)` — ohne Häkchen ist das ein Vorschlag, keine Scheinbestätigung.  |
+| **K3** Totfund-Kontrast (weiß auf hellgelb)                           | `DeadAnimal.svelte` nutzt weiter `text-warning-content` auf `bg-warning/10`.                                                                       | ✅ **Behoben (#567).** Kein `text-*-content` liegt mehr auf einem Tint; die verbliebenen Vorkommen (Dropzones, Karten-Badge, Fehlerseite) sitzen auf Vollton-Flächen. Als Regel festgehalten in `.claude/rules/design-system.md`.                                                                                                                     |
 
-- **U1/U2:** Premature-Error-Alert + disabled „Weiter" unverändert (`StepNavigation.svelte:33–35, 169`); `showValidationError()`-Flow bleibt toter Code.
-- **U3:** `boatDrive` weiter unconditional `.required()` ohne deutsche Meldung (englischer Yup-Fallback), Schema-Kommentar sagt „Optional"; keine Konditionallogik auf `sightingFrom`.
-- **U4:** „Abbrechen" → `goto('/')` auf Seite `/` — toter Button.
-- **U5:** Doppelte „Kontaktdaten löschen"-Funktion (Step4Contact + FormActions) mit unterschiedlichen Texten; native `confirm()`.
-- **U10:** Positionsmethode nicht persistiert; Methodenwechsel setzt Koordinaten nicht zurück.
-- **U11:** Fehlermeldungs-Stil weiter inkonsistent.
-- **D1:** `animate-in`-Klassen weiter tot (kein Animations-Plugin in package.json), jetzt `FieldRenderer.svelte:331`.
-- **D3–D7:** Button-Hierarchie, Inline-Styles, Step-4-Verschachtelung, nur Light-Theme, Icon-Duplikate — unverändert.
-- **`docs/DESIGN_GUIDE.md`:** unverändert veraltet (falsche CSS-Zitate, Service-Worker-Behauptung, „keine premature errors").
-- **Fehlende Rules:** Design-System-Rule (Tokens, `*-content`-Regel, Button-Hierarchie) und A11y-Check in `/review`//`prepare-pr` weiterhin offen — forms.md deckt jetzt nur das Form-State-Pattern ab.
+### 🟡 Weiterhin offen (moderat) — _Momentaufnahme bei `acce0d2`, größtenteils erledigt_
+
+> **Auch diese Liste ist historisch.** Der Status hinter jedem Punkt gibt den am
+> 2026-07-29 gegen `main` nachgeprüften Stand wieder. Was hier noch offen ist, steht
+> gesammelt unter „[Offene Punkte — Stand 2026-07-29](#offene-punkte--stand-2026-07-29)".
+
+- **U1/U2:** Premature-Error-Alert + disabled „Weiter" unverändert (`StepNavigation.svelte:33–35, 169`); `showValidationError()`-Flow bleibt toter Code. — ✅ **Behoben (#567).** `shouldShowStepAlert()` in `stepNavigationState.ts` verlangt `attemptedStep === currentStep`, der Alert erscheint also erst nach einem gescheiterten „Weiter". Der Button ist nur noch bei `$isSubmitting` deaktiviert; `showValidationError()` ist damit der aktive Pfad, nicht toter Code. Seit #590 öffnet das darin aufgerufene `scrollToFirstError()` zusätzlich geschlossene `<details>`-Vorfahren.
+- **U3:** `boatDrive` weiter unconditional `.required()` ohne deutsche Meldung (englischer Yup-Fallback), Schema-Kommentar sagt „Optional"; keine Konditionallogik auf `sightingFrom`. — ✅ **Behoben (#567).** `boatDrive` hat `.when('sightingFrom', …)` und ist nur bei Segelschiff/Motorboot Pflicht, mit deutscher Meldung „Bitte wählen Sie den Bootsantrieb aus.".
+- **U4:** „Abbrechen" → `goto('/')` auf Seite `/` — toter Button. — ✅ **Behoben (#567).** Button entfernt; `FormActions.svelte` hält die Begründung als Kommentar fest.
+- **U5:** Doppelte „Kontaktdaten löschen"-Funktion (Step4Contact + FormActions) mit unterschiedlichen Texten; native `confirm()`. — ✅ **Behoben (#567).** Konsolidiert in `src/lib/report/clearContactData.ts`, einziger Aufrufer ist `Step4Contact.svelte`.
+- **U10:** Positionsmethode nicht persistiert; Methodenwechsel setzt Koordinaten nicht zurück. — ⚪️ **Gegenstandslos (#590)**, siehe Nachtrag 2026-07-29 unten.
+- **U11:** Fehlermeldungs-Stil weiter inkonsistent. — 🟡 **Teilweise offen.** Der englische Yup-Fallback ist mit U3 verschwunden; alle nutzersichtbaren Pflichtfelder haben deutsche Meldungen. Der Stil-Mix bleibt: `latitude`/`longitude` melden mit Feldnamen-Präfix („GPS-Position: Breitengrad ist erforderlich"), andere Felder in Frageform („Wie viele Tiere haben Sie gesehen?").
+- **D1:** `animate-in`-Klassen weiter tot (kein Animations-Plugin in package.json), jetzt `FieldRenderer.svelte:331`. — ✅ **Behoben (#567).** `animate-in`/`slide-in-from-*`/`fade-in` kommen in `src/` nicht mehr vor; als Regel in `.claude/rules/design-system.md` („Keine toten Utility-Klassen") festgehalten.
+- **D3–D7:** Button-Hierarchie, Inline-Styles, Step-4-Verschachtelung, nur Light-Theme, Icon-Duplikate — unverändert. — Aufgeteilt: **D3 ✅ behoben (#567)** (destruktive Aktionen einheitlich `btn btn-outline btn-error btn-sm min-h-11`), **D5 ✅ behoben (#567)** (Sections liegen nicht mehr im zentrierten Header), **D6 ⚪️ bewusste Produktentscheidung** (nur Light-Theme), **D4 🔴 offen** (Inline-`word-wrap`-Styles in 5 Dateien), **D7 🔴 offen** (`lucide:activity` doppelt vergeben).
+- **`docs/DESIGN_GUIDE.md`:** unverändert veraltet (falsche CSS-Zitate, Service-Worker-Behauptung, „keine premature errors"). — ✅ **Behoben (#567).** Ersetzt durch Leitlinien + verifizierten Ist-Zustand; der fehlende Service Worker steht jetzt korrekt unter „Bekannte Einschränkungen".
+- **Fehlende Rules:** Design-System-Rule (Tokens, `*-content`-Regel, Button-Hierarchie) und A11y-Check in `/review`//`prepare-pr` weiterhin offen — forms.md deckt jetzt nur das Form-State-Pattern ab. — ✅ **Behoben (#567).** `.claude/rules/design-system.md` existiert; der Kontrast-/ARIA-Prüfschritt inklusive `oklch`-Messmethode steht in `.claude/skills/review/SKILL.md`. `svelte-forms-lib` kommt weder in `.claude/` noch in `CLAUDE.md` noch vor.
 
 ### Umsetzung am 2026-07-24 (dieser Branch, uncommitted)
 
@@ -217,7 +226,12 @@ Endstand: **1703 Unit-Tests, 80 Browser-Komponententests, 86 E2E-Tests grün**; 
 
 Weiterhin bewusst offen: nur Light-Theme (Produktentscheidung), `boatDrive` kann DB-bedingt (`notNull default 0`) kein „keine Angabe" abbilden, Karten-Neuaufbau bei jeder Koordinatenänderung (vorbestehend).
 
-### Aktualisierte Prioritäten
+### Aktualisierte Prioritäten (Stand 2026-07-24 — vollständig abgearbeitet)
+
+> Historisch. Alle vier Punkte sind erledigt: 1.–3. mit #567 (Schema-Defaults,
+> Totfund-Kontrast, tote Animationsklassen, Fehler-Timing, Bootsantrieb-Konditionallogik), 4. ebenfalls mit #567 (`DESIGN_GUIDE.md` ersetzt, `.claude/rules/design-system.md`
+> neu, A11y-Prüfschritt in `/review`); `svelte-forms-lib` steht nirgends mehr.
+> Der aktuelle Backlog steht unten.
 
 1. **K1/K2:** Schema-Defaults entfernen (unverändert wichtigster Fix).
 2. **K3 + D1:** Totfund-Kontrast, tote Animationsklassen.
@@ -252,3 +266,37 @@ Tab bot kein Feld, das der Fallback-Block nicht ohnehin schon zeigte.
 
 Der Ist-Zustand samt der Abweichungen zwischen Spec und Umsetzung steht in
 `docs/UX_POSITIONSANGABE_SCHRITT1_2026-07-28.md`.
+
+---
+
+## Offene Punkte — Stand 2026-07-29
+
+Alle Befunde dieses Reviews wurden am 2026-07-29 einzeln gegen `main` (`d965edf`)
+nachgeprüft. **Dies ist der maßgebliche Backlog** — die „Weiterhin offen"-Abschnitte
+weiter oben sind Momentaufnahmen früherer Stände und größtenteils überholt.
+
+### Noch offen
+
+| Befund                               | Ist-Zustand                                                                                                                                                                                             |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D4** Inline-Styles statt Utilities | `style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"` steht identisch in fünf Dateien: `FieldRenderer.svelte`, `Checkbox.svelte` (2×), `BaseCheckbox.svelte`, `BaseToggle.svelte`. |
+| **D7** Section-Icons doppelt         | `lucide:activity` in `SightingDetails.svelte` **und** `OptionalSightingDetails.svelte`.                                                                                                                 |
+| **U11** Fehlermeldungs-Stil          | Rest von U11: `latitude`/`longitude` melden mit Feldnamen-Präfix („GPS-Position: Breitengrad ist erforderlich"), andere Felder in Frageform. Kein englischer Fallback mehr.                             |
+
+### Bewusst offen (keine Aufgabe)
+
+| Punkt                      | Begründung                                                                                                                                                                    |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D6** nur Light-Theme     | Produktentscheidung (`prefersdark: false` in `src/app.css`).                                                                                                                  |
+| `boatDrive` „keine Angabe" | DB-bedingt: `notNull default 0` lässt keinen dritten Zustand zu.                                                                                                              |
+| `totalCount .default(1)`   | Bleibt bewusst. Seit dem `touched`-gekoppelten Häkchen (#567) wirkt der Wert als Vorschlag, nicht als bestätigte Nutzereingabe — der ursprüngliche K2-Einwand entfällt damit. |
+
+### Erledigt seit dem Ursprungsreview
+
+K1, K2, K3, U1–U9, U11 (englischer Fallback), D1, D3, D5 sowie der komplette
+Doku-/Rules-Block (`DESIGN_GUIDE.md`, `.claude/rules/design-system.md`,
+A11y-Prüfschritt in `/review`, `svelte-forms-lib`-Referenzen) — überwiegend mit
+[#567](https://github.com/jansinger/ostsee-tiere/pull/567), ergänzt durch
+[#590](https://github.com/jansinger/ostsee-tiere/pull/590) (Positions-Panel) und
+[#599](https://github.com/jansinger/ostsee-tiere/pull/599) (Kontrast/Touch-Targets).
+U10 ist mit #590 gegenstandslos. Belegstellen stehen jeweils am Befund.
