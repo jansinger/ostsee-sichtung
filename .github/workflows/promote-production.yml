@@ -1,0 +1,167 @@
+name: Promote to Production
+
+# Schiebt eine bereits gebaute und auf Staging verifizierte Release-Version nach
+# Production — durch UMHÄNGEN der Image-Tags, nicht durch einen Rebuild. Das auf
+# Production laufende Image ist damit bitgleich mit dem, das auf Staging getestet
+# wurde (identischer Digest).
+#
+# Ablauf: docker-publish.yml baut beim Release `vX.Y.Z` + `X.Y.Z` + `staging`.
+# Der Staging-Host folgt `staging` automatisch. Dieser Workflow setzt nach
+# manueller Freigabe `production`, `latest`, `X.Y` und `X` auf denselben Digest;
+# der Prod-Host folgt `production`.
+#
+# Details: docs/RELEASE_PIPELINE.md
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release-Version, die nach Production soll (z. B. v2.5.6)'
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ostsee-sichtung
+
+permissions: {}
+
+jobs:
+  promote:
+    name: Promote ${{ inputs.version }} to Production
+    runs-on: ubuntu-latest
+    # Das Approval-Gate. Required Reviewers werden am Environment `Production`
+    # in den Repo-Settings konfiguriert — existiert die Environment nicht, legt
+    # GitHub sie beim ersten Lauf OHNE Schutzregeln an und der Job läuft still
+    # ohne Rückfrage durch. Namen sind case-insensitiv.
+    environment:
+      name: Production
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: promote-production
+      cancel-in-progress: false
+
+    steps:
+      - name: Validate version input
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$INPUT_VERSION" | grep -Eq '^v?[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::'$INPUT_VERSION' ist keine gültige Release-Version (erwartet: vX.Y.Z)."
+            exit 1
+          fi
+
+          SEMVER="${INPUT_VERSION#v}"
+          {
+            echo "tag=v${SEMVER}"
+            echo "semver=${SEMVER}"
+            echo "minor=${SEMVER%.*}"
+            echo "major=${SEMVER%%.*}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Stellt sicher, dass wirklich das getestete Artefakt weitergereicht wird:
+      # existiert der Versions-Tag nicht, wurde er nie gebaut — dann bricht die
+      # Promotion ab, statt einen falschen Zeiger zu setzen.
+      - name: Verify release image exists
+        id: source
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if ! docker buildx imagetools inspect "${IMAGE}:${TAG}" >/dev/null 2>&1; then
+            echo "::error::${IMAGE}:${TAG} existiert nicht in der Registry. Wurde das Release gebaut?"
+            exit 1
+          fi
+
+          DIGEST=$(docker buildx imagetools inspect "${IMAGE}:${TAG}" --format '{{json .Manifest}}' | jq -r '.digest')
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "Promoting ${IMAGE}:${TAG} (${DIGEST})"
+
+      # Warnt, wenn der Staging-Zeiger nicht auf dieser Version steht — dann
+      # wurde entweder etwas anderes getestet oder inzwischen ein neueres
+      # Release gebaut. Kein harter Abbruch: eine bewusste Re-Promotion einer
+      # älteren Version (Rollback) muss möglich bleiben.
+      - name: Check staging pointer
+        continue-on-error: true
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          EXPECTED: ${{ steps.source.outputs.digest }}
+        run: |
+          set -euo pipefail
+          STAGING=$(docker buildx imagetools inspect "${IMAGE}:staging" --format '{{json .Manifest}}' 2>/dev/null | jq -r '.digest' || echo '')
+          if [ -z "$STAGING" ]; then
+            echo "::warning::Kein staging-Tag gefunden — Promotion nicht gegen Staging abgeglichen."
+          elif [ "$STAGING" != "$EXPECTED" ]; then
+            echo "::warning::staging zeigt auf ${STAGING}, promotet wird aber ${EXPECTED}. Rollback oder veraltete Auswahl?"
+          else
+            echo "staging und Promotion-Ziel sind identisch (${EXPECTED})."
+          fi
+
+      - name: Move production tags
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          TAG: ${{ steps.version.outputs.tag }}
+          MINOR: ${{ steps.version.outputs.minor }}
+          MAJOR: ${{ steps.version.outputs.major }}
+        run: |
+          set -euo pipefail
+          # imagetools create kopiert die Manifest-Liste — Multi-Arch bleibt
+          # erhalten und der Digest ist identisch mit dem der Quelle.
+          docker buildx imagetools create \
+            -t "${IMAGE}:production" \
+            -t "${IMAGE}:latest" \
+            -t "${IMAGE}:${MINOR}" \
+            -t "${IMAGE}:${MAJOR}" \
+            "${IMAGE}:${TAG}"
+
+      - name: Verify production pointer
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          EXPECTED: ${{ steps.source.outputs.digest }}
+        run: |
+          set -euo pipefail
+          ACTUAL=$(docker buildx imagetools inspect "${IMAGE}:production" --format '{{json .Manifest}}' | jq -r '.digest')
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::production zeigt auf ${ACTUAL}, erwartet war ${EXPECTED}."
+            exit 1
+          fi
+          echo "production == ${ACTUAL}"
+
+      - name: Job summary
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          TAG: ${{ steps.version.outputs.tag }}
+          DIGEST: ${{ steps.source.outputs.digest }}
+        run: |
+          {
+            echo "## Production-Promotion: ${TAG}"
+            echo
+            echo "| | |"
+            echo "| --- | --- |"
+            echo "| Image | \`${IMAGE}\` |"
+            echo "| Version | \`${TAG}\` |"
+            echo "| Digest | \`${DIGEST}\` |"
+            echo "| Bewegte Tags | \`production\`, \`latest\`, \`${{ steps.version.outputs.minor }}\`, \`${{ steps.version.outputs.major }}\` |"
+            echo "| Freigegeben von | @${{ github.actor }} |"
+            echo
+            echo "Der Prod-Host zieht beim nächsten Pull-Lauf. Digest-genau pinnen:"
+            echo
+            echo '```bash'
+            echo "IMAGE_TAG=${TAG}   # oder: ${IMAGE}@${DIGEST}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

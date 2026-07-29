@@ -15,9 +15,15 @@ services:
   # Application Service
   # ============================================
   app:
-    # Pin to specific version in production! Use :latest only for testing
-    # Example: ghcr.io/jansinger/ostsee-sichtung:v2.1.0
-    image: ghcr.io/jansinger/ostsee-sichtung:${IMAGE_TAG:-latest}
+    # IMAGE_TAG steuert, welchem Zeiger dieser Stack folgt:
+    #   production  - freigegebener Stand (Default; wird nur von
+    #                 promote-production.yml bewegt)
+    #   staging     - jedes neue Release, ungeprüft (Staging-Host)
+    #   vX.Y.Z      - feste Version, empfohlen für Prod-Stacks
+    # Maximale Genauigkeit per Digest:
+    #   ghcr.io/jansinger/ostsee-sichtung@sha256:...
+    # Siehe docs/RELEASE_PIPELINE.md
+    image: ghcr.io/jansinger/ostsee-sichtung:${IMAGE_TAG:-production}
     container_name: ostsee-tiere-app
     restart: unless-stopped
     # SECURITY: Bind to localhost only if using reverse proxy

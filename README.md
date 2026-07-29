@@ -318,6 +318,7 @@ docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-sichtung:latest
 
 - 📘 [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md) - Vollständige Deployment-Anleitung
 - 📗 [Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT.md) - Schnellanleitung für Production
+- 🚦 [Release-Pipeline](docs/RELEASE_PIPELINE.md) - Release → Staging → Production, Image-Tags, Rollback
 - 📙 [Environment Variables Reference](docs/ENVIRONMENT.md) - Alle Umgebungsvariablen
 - 📕 [Database Migration Guide](docs/DATABASE_MIGRATION.md) - Migration von bestehenden Installationen
 - 📒 [Design Guide](docs/DESIGN_GUIDE.md) - UI/UX Best Practices

@@ -39,26 +39,48 @@ jobs:
         with:
           ref: ${{ needs.release-please.outputs.sha }}
           fetch-depth: 0
+          fetch-tags: true
 
-      - name: Update release branch
+      # Fast-forward statt Force-Push: `release` soll den Release-Tag immer nur
+      # nach VORNE bewegen. Ein Force-Push würde einen Direkt-Hotfix auf
+      # `release` stillschweigend verwerfen — der --ff-only-Merge bricht in dem
+      # Fall laut ab, und die Divergenz wird sichtbar statt vernichtet.
+      - name: Fast-forward release branch to tag
+        env:
+          TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Force push the release tag commit to the release branch
-          git push origin HEAD:release --force-with-lease
+          if git ls-remote --exit-code --heads origin release >/dev/null 2>&1; then
+            git fetch --force origin release:refs/remotes/origin/release
+            git checkout -B release refs/remotes/origin/release
+            git merge --ff-only "$TAG"
+          else
+            echo "Branch 'release' existiert noch nicht — wird aus $TAG erzeugt."
+            git checkout -B release "$TAG"
+          fi
 
-          echo "Updated release branch to ${{ needs.release-please.outputs.tag_name }}"
+          git push origin release
+          echo "Updated release branch to $TAG"
 
-  # Trigger Docker build after release
-  trigger-docker-build:
-    runs-on: ubuntu-latest
-    needs: release-please
+  # Docker-Build als aufgerufener Workflow, nicht per repository_dispatch:
+  # dadurch schlägt DIESER Release-Lauf fehl, wenn der Build scheitert. Beim
+  # Dispatch blieb der Release-Lauf grün und der Fehler nur im separaten Run
+  # sichtbar.
+  #
+  # Die Permissions müssen hier stehen: ein aufgerufener Workflow bekommt nie
+  # mehr Rechte als der aufrufende Job. Ohne packages/security-events bricht
+  # der Push nach GHCR bzw. der Trivy-Upload ab — erst mitten im Build.
+  docker-publish:
+    needs: [release-please, update-release-branch]
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
-
-    steps:
-      - name: Trigger Docker publish workflow
-        uses: peter-evans/repository-dispatch@v4
-        with:
-          event-type: release-created
-          client-payload: '{"tag": "${{ needs.release-please.outputs.tag_name }}", "sha": "${{ needs.release-please.outputs.sha }}"}'
+    permissions:
+      contents: write # Release-Assets ans GitHub Release hängen
+      packages: write # Push nach GHCR
+      security-events: write # Trivy-SARIF nach GitHub Security
+    uses: ./.github/workflows/docker-publish.yml
+    with:
+      version: ${{ needs.release-please.outputs.tag_name }}
+      sha: ${{ needs.release-please.outputs.sha }}
