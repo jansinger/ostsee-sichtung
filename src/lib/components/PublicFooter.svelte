@@ -17,7 +17,7 @@
 		<nav>
 			<div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
 				<a
-					href="https://github.com/jansinger/ostsee-sichtung"
+					href="https://github.com/jansinger/ostsee-tiere"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="btn btn-ghost btn-xs sm:btn-sm text-xs sm:text-sm"

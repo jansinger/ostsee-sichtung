@@ -24,9 +24,9 @@ services:
     # APP_IMAGE überschreibt die komplette Referenz und ist der einzige Weg,
     # auf einen Digest zu pinnen — ein Digest hängt mit `@` statt `:` an und
     # passt deshalb nicht in IMAGE_TAG:
-    #   APP_IMAGE=ghcr.io/jansinger/ostsee-sichtung@sha256:...
+    #   APP_IMAGE=ghcr.io/jansinger/ostsee-tiere@sha256:...
     # Siehe docs/RELEASE_PIPELINE.md
-    image: ${APP_IMAGE:-ghcr.io/jansinger/ostsee-sichtung:${IMAGE_TAG:-production}}
+    image: ${APP_IMAGE:-ghcr.io/jansinger/ostsee-tiere:${IMAGE_TAG:-production}}
     container_name: ostsee-tiere-app
     restart: unless-stopped
     # SECURITY: Bind to localhost only if using reverse proxy

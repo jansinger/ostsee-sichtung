@@ -122,7 +122,7 @@ This will guide you through creating a conventional commit message step by step.
 
    ```bash
    git clone <repository-url>
-   cd ostsee-sichtung
+   cd ostsee-tiere
    ```
 
 2. **Install dependencies**

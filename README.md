@@ -2,14 +2,14 @@
 
 # Ostsee-Tiere
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/jansinger/ostsee-sichtung/ci.yml?style=flat-square&logo=github&label=CI)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/jansinger/ostsee-tiere/ci.yml?style=flat-square&logo=github&label=CI)
 ![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=flat-square&logo=vercel)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/m/jansinger/ostsee-sichtung?style=flat-square&logo=github)
-![GitHub last commit](https://img.shields.io/github/last-commit/jansinger/ostsee-sichtung?style=flat-square&logo=github)
-![GitHub issues](https://img.shields.io/github/issues/jansinger/ostsee-sichtung?style=flat-square&logo=github)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/jansinger/ostsee-sichtung?style=flat-square&logo=github)
-![GitHub](https://img.shields.io/github/license/jansinger/ostsee-sichtung?style=flat-square)
-![GitHub package.json version](https://img.shields.io/github/package-json/v/jansinger/ostsee-sichtung?style=flat-square&logo=npm)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/jansinger/ostsee-tiere?style=flat-square&logo=github)
+![GitHub last commit](https://img.shields.io/github/last-commit/jansinger/ostsee-tiere?style=flat-square&logo=github)
+![GitHub issues](https://img.shields.io/github/issues/jansinger/ostsee-tiere?style=flat-square&logo=github)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/jansinger/ostsee-tiere?style=flat-square&logo=github)
+![GitHub](https://img.shields.io/github/license/jansinger/ostsee-tiere?style=flat-square)
+![GitHub package.json version](https://img.shields.io/github/package-json/v/jansinger/ostsee-tiere?style=flat-square&logo=npm)
 
 **Ostsee-Tiere** ist eine moderne SvelteKit-WebApp zur Erfassung und Verwaltung von Meerestier-Sichtungen in der Ostsee. Die Anwendung ermöglicht es Bürgern, Forschern und Naturbeobachtern, ihre Sichtungen von Walen, Robben und anderen Meerestieren zu melden und der Wissenschaft zur Verfügung zu stellen.
 
@@ -48,8 +48,8 @@ Ostsee-Tiere bietet eine benutzerfreundliche Plattform zur wissenschaftlichen Er
 
 ```bash
 # Repository klonen
-git clone https://github.com/jansinger/ostsee-sichtung.git
-cd ostsee-sichtung
+git clone https://github.com/jansinger/ostsee-tiere.git
+cd ostsee-tiere
 
 # Konfigurieren
 cp .env.docker .env
@@ -83,8 +83,8 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 
 ```bash
 # Repository klonen
-git clone https://github.com/jansinger/ostsee-sichtung.git
-cd ostsee-sichtung
+git clone https://github.com/jansinger/ostsee-tiere.git
+cd ostsee-tiere
 
 # Abhängigkeiten installieren
 npm install
@@ -172,7 +172,7 @@ Die Route ist bewusst **nur in `dev`** erreichbar (`+page.server.ts` wirft sonst
 ## Projektstruktur
 
 ```
-ostsee-sichtung/
+ostsee-tiere/
 ├── src/
 │   ├── lib/
 │   │   ├── components/     # UI-Komponenten (Form, Map, Media, Admin, Weather)
@@ -311,13 +311,13 @@ docker compose -f docker-compose.production.yml --profile monitoring up -d
 
 ```bash
 # Neueste Version ziehen
-docker pull ghcr.io/jansinger/ostsee-sichtung:latest
+docker pull ghcr.io/jansinger/ostsee-tiere:latest
 
 # Oder spezifische Version (siehe GitHub Releases)
-docker pull ghcr.io/jansinger/ostsee-sichtung:v1.0.0
+docker pull ghcr.io/jansinger/ostsee-tiere:v1.0.0
 
 # Mit Tag ausführen
-docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-sichtung:latest
+docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-tiere:latest
 ```
 
 ### Dokumentation

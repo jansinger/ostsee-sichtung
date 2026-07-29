@@ -68,7 +68,7 @@ FROM node:24-alpine AS runtime
 # OCI Image Labels (placed in final stage for proper metadata)
 LABEL org.opencontainers.image.title="Ostsee-Tiere"
 LABEL org.opencontainers.image.description="Marine animal sighting reporting platform for the Baltic Sea"
-LABEL org.opencontainers.image.source="https://github.com/jansinger/ostsee-sichtung"
+LABEL org.opencontainers.image.source="https://github.com/jansinger/ostsee-tiere"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.vendor="Ostsee-Tiere Project"
 

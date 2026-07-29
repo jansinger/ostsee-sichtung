@@ -143,7 +143,7 @@ RUNNING=$(docker inspect --format '{{.Image}}' \
 
 docker compose pull --quiet
 PULLED=$(docker image inspect --format '{{.Id}}' \
-  ghcr.io/jansinger/ostsee-sichtung:production)
+  ghcr.io/jansinger/ostsee-tiere:production)
 
 if [ "$RUNNING" = "$PULLED" ]; then
   exit 0

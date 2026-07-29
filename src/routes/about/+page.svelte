@@ -441,7 +441,7 @@ SOFTWARE.</pre>
 					</div>
 					<div class="card-actions mt-4">
 						<a
-							href="https://github.com/jansinger/ostsee-sichtung"
+							href="https://github.com/jansinger/ostsee-tiere"
 							target="_blank"
 							rel="noopener noreferrer"
 							class="btn btn-outline btn-sm"
@@ -514,7 +514,7 @@ SOFTWARE.</pre>
 					</p>
 					<div class="flex flex-wrap gap-3">
 						<a
-							href="https://github.com/jansinger/ostsee-sichtung/issues/new"
+							href="https://github.com/jansinger/ostsee-tiere/issues/new"
 							target="_blank"
 							rel="noopener noreferrer"
 							class="btn btn-outline btn-sm"
@@ -530,7 +530,7 @@ SOFTWARE.</pre>
 							Issue erstellen
 						</a>
 						<a
-							href="https://github.com/jansinger/ostsee-sichtung/issues"
+							href="https://github.com/jansinger/ostsee-tiere/issues"
 							target="_blank"
 							rel="noopener noreferrer"
 							class="btn btn-ghost btn-sm"

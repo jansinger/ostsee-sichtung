@@ -63,8 +63,8 @@ The migration process involves:
 
 ```bash
 # Clone the repository (if not already done)
-git clone https://github.com/jansinger/ostsee-sichtung.git
-cd ostsee-sichtung
+git clone https://github.com/jansinger/ostsee-tiere.git
+cd ostsee-tiere
 
 # Install dependencies
 npm install
@@ -516,8 +516,8 @@ psql $DATABASE_POSTGRES_URL -c "SELECT 1;"
 
 ### Getting Help
 
-- **Issues**: https://github.com/jansinger/ostsee-sichtung/issues
-- **Documentation**: https://github.com/jansinger/ostsee-sichtung/tree/main/docs
+- **Issues**: https://github.com/jansinger/ostsee-tiere/issues
+- **Documentation**: https://github.com/jansinger/ostsee-tiere/tree/main/docs
 
 ---
 
