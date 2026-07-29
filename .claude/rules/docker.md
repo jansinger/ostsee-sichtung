@@ -151,7 +151,7 @@ Production-Promotion, nicht beim Build. Details: `docs/RELEASE_PIPELINE.md`
 ```yaml
 services:
   app:
-    image: ghcr.io/jansinger/ostsee-sichtung:${IMAGE_TAG:-production}
+    image: ghcr.io/jansinger/ostsee-tiere:${IMAGE_TAG:-production}
     ports:
       - '3000:3000'
     environment:

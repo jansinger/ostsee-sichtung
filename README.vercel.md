@@ -38,7 +38,7 @@ LOG_LEVEL="info"
 ```bash
 # Clone and install dependencies
 git clone your-repo
-cd ostsee-sichtung
+cd ostsee-tiere
 npm install
 
 # Set up local environment

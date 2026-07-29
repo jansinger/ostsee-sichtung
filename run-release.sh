@@ -23,7 +23,7 @@
 set -e
 
 CONTAINER_NAME="ostsee-tiere-release"
-IMAGE_BASE="ghcr.io/jansinger/ostsee-sichtung"
+IMAGE_BASE="ghcr.io/jansinger/ostsee-tiere"
 VERSION="${1:-latest}"
 PORT="${PORT:-3000}"
 SSL_PORT="${SSL_PORT:-3443}"

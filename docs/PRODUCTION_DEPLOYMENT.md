@@ -75,10 +75,10 @@ mkdir -p uploads
 
 ```bash
 # Nur die benötigten Dateien herunterladen
-curl -fsSL https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/docker-compose.production.yml \
+curl -fsSL https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/docker-compose.production.yml \
   -o docker-compose.yml
 
-curl -fsSL https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/.env.docker \
+curl -fsSL https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/.env.docker \
   -o .env.example
 ```
 

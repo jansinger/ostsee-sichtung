@@ -120,7 +120,7 @@ sudo chown 1001:1001 uploads
 chmod 600 .env
 
 # 8. Pull and start container
-docker pull ghcr.io/jansinger/ostsee-sichtung:production
+docker pull ghcr.io/jansinger/ostsee-tiere:production
 
 docker run -d \
   --name ostsee-tiere \
@@ -128,7 +128,7 @@ docker run -d \
   -p 127.0.0.1:3000:3000 \
   -v /opt/ostsee-tiere/uploads:/app/uploads \
   --env-file /opt/ostsee-tiere/.env \
-  ghcr.io/jansinger/ostsee-sichtung:production
+  ghcr.io/jansinger/ostsee-tiere:production
 
 # 9. Database schema is migrated automatically on container startup.
 #    Requirement for external databases: PostGIS must be enabled once
@@ -161,15 +161,15 @@ For development or testing with PostgreSQL running inside Docker.
 mkdir -p ostsee-tiere && cd ostsee-tiere
 
 # 2. Download required files
-curl -O https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/docker-compose.production.yml
-curl -O https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/.env.docker
+curl -O https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/docker-compose.production.yml
+curl -O https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/.env.docker
 
 # 3. (Optional) Download monitoring config
 mkdir -p monitoring/grafana/provisioning/datasources monitoring/grafana/provisioning/dashboards monitoring/grafana/dashboards
-curl -o monitoring/prometheus.yml https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/monitoring/prometheus.yml
-curl -o monitoring/grafana/provisioning/datasources/prometheus.yml https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/monitoring/grafana/provisioning/datasources/prometheus.yml
-curl -o monitoring/grafana/provisioning/dashboards/default.yml https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/monitoring/grafana/provisioning/dashboards/default.yml
-curl -o monitoring/grafana/dashboards/ostsee-tiere-overview.json https://raw.githubusercontent.com/jansinger/ostsee-sichtung/main/monitoring/grafana/dashboards/ostsee-tiere-overview.json
+curl -o monitoring/prometheus.yml https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/monitoring/prometheus.yml
+curl -o monitoring/grafana/provisioning/datasources/prometheus.yml https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/monitoring/grafana/provisioning/datasources/prometheus.yml
+curl -o monitoring/grafana/provisioning/dashboards/default.yml https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/monitoring/grafana/provisioning/dashboards/default.yml
+curl -o monitoring/grafana/dashboards/ostsee-tiere-overview.json https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/monitoring/grafana/dashboards/ostsee-tiere-overview.json
 
 # 4. Configure environment
 cp .env.docker .env
@@ -226,8 +226,8 @@ Access the application at: http://localhost:3000
 
 ```bash
 # Clone repository
-git clone https://github.com/jansinger/ostsee-sichtung.git
-cd ostsee-sichtung
+git clone https://github.com/jansinger/ostsee-tiere.git
+cd ostsee-tiere
 
 # Configure
 cp .env.docker .env
@@ -283,7 +283,7 @@ See [Local Development Testing](#local-development-testing-with-rancher-desktop)
 
 ```bash
 # Pull image
-docker pull ghcr.io/jansinger/ostsee-sichtung:production
+docker pull ghcr.io/jansinger/ostsee-tiere:production
 
 # Create uploads directory
 mkdir -p ./uploads
@@ -302,7 +302,7 @@ docker run -d \
   -e JWKS_URL="https://your-tenant.auth0.com/.well-known/jwks.json" \
   -e API_AUDIENCE="your-api-audience" \
   -e PUBLIC_SITE_URL="https://your-domain.com" \
-  ghcr.io/jansinger/ostsee-sichtung:production
+  ghcr.io/jansinger/ostsee-tiere:production
 
 # Alternative: Use named volume instead of bind mount
 # -v ostsee-uploads:/app/uploads
@@ -514,7 +514,7 @@ cp .env /opt/ostsee-tiere/.env
 chmod 600 /opt/ostsee-tiere/.env
 
 # Pull latest image
-docker pull ghcr.io/jansinger/ostsee-sichtung:production
+docker pull ghcr.io/jansinger/ostsee-tiere:production
 
 # Run container (bind to localhost only - use reverse proxy for external access)
 docker run -d \
@@ -523,7 +523,7 @@ docker run -d \
   -p 127.0.0.1:3000:3000 \
   -v /opt/ostsee-tiere/uploads:/app/uploads \
   --env-file /opt/ostsee-tiere/.env \
-  ghcr.io/jansinger/ostsee-sichtung:production
+  ghcr.io/jansinger/ostsee-tiere:production
 
 # Database schema is migrated automatically on startup
 # (PostGIS must be enabled once on external databases beforehand)
@@ -643,7 +643,7 @@ ExecStart=/usr/bin/docker run --rm \
   -p 127.0.0.1:3000:3000 \
   -v /opt/ostsee-tiere/uploads:/app/uploads \
   --env-file /opt/ostsee-tiere/.env \
-  ghcr.io/jansinger/ostsee-sichtung:production
+  ghcr.io/jansinger/ostsee-tiere:production
 ExecStop=/usr/bin/docker stop ostsee-tiere
 
 [Install]
@@ -667,7 +667,7 @@ sudo systemctl start ostsee-tiere
 /usr/local/bin/backup-db.sh
 
 # Pull new image
-docker pull ghcr.io/jansinger/ostsee-sichtung:production
+docker pull ghcr.io/jansinger/ostsee-tiere:production
 
 # Restart (with systemd)
 sudo systemctl restart ostsee-tiere
@@ -681,7 +681,7 @@ docker run -d \
   -p 127.0.0.1:3000:3000 \
   -v /opt/ostsee-tiere/uploads:/app/uploads \
   --env-file /opt/ostsee-tiere/.env \
-  ghcr.io/jansinger/ostsee-sichtung:production
+  ghcr.io/jansinger/ostsee-tiere:production
 
 # Clean up old images
 docker image prune -f
@@ -1118,7 +1118,7 @@ services:
 > Full pipeline reference including host-side pull setup and rollback:
 > [RELEASE_PIPELINE.md](./RELEASE_PIPELINE.md)
 
-**Image Repository:** [`ghcr.io/jansinger/ostsee-sichtung`](https://github.com/jansinger/ostsee-sichtung/pkgs/container/ostsee-sichtung)
+**Image Repository:** [`ghcr.io/jansinger/ostsee-tiere`](https://github.com/jansinger/ostsee-tiere/pkgs/container/ostsee-tiere)
 
 ### The release chain
 
@@ -1168,7 +1168,7 @@ reproducible deployments, pin `IMAGE_TAG` to an explicit `vX.Y.Z`, or set
 ```bash
 IMAGE_TAG=v2.5.6
 # or, digest-exact (APP_IMAGE takes precedence over IMAGE_TAG):
-APP_IMAGE=ghcr.io/jansinger/ostsee-sichtung@sha256:...
+APP_IMAGE=ghcr.io/jansinger/ostsee-tiere@sha256:...
 ```
 
 ### Verification and scanning
@@ -1186,11 +1186,11 @@ Every build additionally produces:
 Verify what a tag currently resolves to:
 
 ```bash
-docker buildx imagetools inspect ghcr.io/jansinger/ostsee-sichtung:production \
+docker buildx imagetools inspect ghcr.io/jansinger/ostsee-tiere:production \
   --format '{{json .Manifest}}' | jq -r '.digest'
 ```
 
-Workflow runs: <https://github.com/jansinger/ostsee-sichtung/actions>
+Workflow runs: <https://github.com/jansinger/ostsee-tiere/actions>
 
 ---
 
@@ -1339,7 +1339,7 @@ Note: PostgreSQL must be configured to accept connections from Docker
 Starting Ostsee-Tiere Release Container
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Runtime:   rancher
-Image:     ghcr.io/jansinger/ostsee-sichtung:latest
+Image:     ghcr.io/jansinger/ostsee-tiere:latest
 Port:      http://localhost:3000
 Database:  postgresql://ostsee_app:***@192.168.68.51:5432/ostsee
 Uploads:   /path/to/project/uploads
@@ -1663,11 +1663,11 @@ Images are automatically scanned with Trivy during CI/CD. Check results:
 
 ```bash
 # View scan results in GitHub Actions
-# https://github.com/jansinger/ostsee-sichtung/actions
+# https://github.com/jansinger/ostsee-tiere/actions
 
 # Or scan locally
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-  aquasec/trivy image ghcr.io/jansinger/ostsee-sichtung:production
+  aquasec/trivy image ghcr.io/jansinger/ostsee-tiere:production
 ```
 
 ---
@@ -1688,7 +1688,7 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
   "containerDefinitions": [
     {
       "name": "app",
-      "image": "ghcr.io/jansinger/ostsee-sichtung:production",
+      "image": "ghcr.io/jansinger/ostsee-tiere:production",
       "portMappings": [{"containerPort": 3000, "protocol": "tcp"}],
       "environment": [...],
       "secrets": [
@@ -1703,7 +1703,7 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
 
 ```bash
 gcloud run deploy ostsee-tiere \
-  --image ghcr.io/jansinger/ostsee-sichtung:production \
+  --image ghcr.io/jansinger/ostsee-tiere:production \
   --platform managed \
   --region europe-west1 \
   --allow-unauthenticated \
@@ -1717,7 +1717,7 @@ gcloud run deploy ostsee-tiere \
 az container create \
   --resource-group ostsee-tiere-rg \
   --name ostsee-tiere-app \
-  --image ghcr.io/jansinger/ostsee-sichtung:production \
+  --image ghcr.io/jansinger/ostsee-tiere:production \
   --cpu 2 --memory 4 \
   --ports 3000 \
   --environment-variables \
@@ -1777,14 +1777,14 @@ docker volume prune -f
 
 ### Getting Help
 
-- **Issues**: https://github.com/jansinger/ostsee-sichtung/issues
-- **Discussions**: https://github.com/jansinger/ostsee-sichtung/discussions
-- **Documentation**: https://github.com/jansinger/ostsee-sichtung/tree/main/docs
+- **Issues**: https://github.com/jansinger/ostsee-tiere/issues
+- **Discussions**: https://github.com/jansinger/ostsee-tiere/discussions
+- **Documentation**: https://github.com/jansinger/ostsee-tiere/tree/main/docs
 
 ### Reporting Security Issues
 
 Please report security vulnerabilities via GitHub Security Advisories:
-https://github.com/jansinger/ostsee-sichtung/security/advisories
+https://github.com/jansinger/ostsee-tiere/security/advisories
 
 **Do NOT create public GitHub issues for security vulnerabilities.**
 

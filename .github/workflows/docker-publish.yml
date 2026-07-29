@@ -28,7 +28,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ostsee-sichtung
+  IMAGE_NAME: ostsee-tiere
 
 permissions: {}
 
@@ -292,7 +292,7 @@ jobs:
           ## Support
 
           For issues and questions, visit:
-          https://github.com/jansinger/ostsee-sichtung/issues
+          https://github.com/jansinger/ostsee-tiere/issues
           EOF
 
           # Create tarball

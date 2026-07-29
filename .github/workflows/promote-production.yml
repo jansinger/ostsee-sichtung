@@ -22,7 +22,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ostsee-sichtung
+  IMAGE_NAME: ostsee-tiere
 
 permissions: {}
 
