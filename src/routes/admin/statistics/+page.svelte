@@ -158,7 +158,14 @@
 									: insight.type === 'warning'
 										? 'alert-warning'
 										: 'alert-info'}
+							{@const alertIcon =
+								insight.type === 'critical'
+									? 'lucide:circle-alert'
+									: insight.type === 'warning'
+										? 'lucide:triangle-alert'
+										: 'lucide:info'}
 							<div class="alert {alertClass} alert-sm">
+								<Icon icon={alertIcon} class="shrink-0" aria-hidden="true" />
 								<div>
 									<div class="font-semibold">{insight.title}</div>
 									<div class="text-sm">{insight.description}</div>

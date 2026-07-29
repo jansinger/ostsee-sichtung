@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let openApiSpec = $state<string | null>(null);
 	let isLoading = $state(true);
@@ -59,7 +60,7 @@
 <div class="mx-auto max-w-6xl p-4">
 	<div class="mb-8">
 		<h1 class="mb-4 text-3xl font-bold">📄 API-Dokumentation (Fallback)</h1>
-		<p class="mb-4 text-base-content/70">
+		<p class="text-base-content/70 mb-4">
 			Diese vereinfachte Ansicht zeigt die OpenAPI-Spezifikation an, falls die interaktive
 			Scalar-Dokumentation nicht geladen werden kann.
 		</p>
@@ -79,7 +80,8 @@
 			<p class="mt-4">OpenAPI-Spezifikation wird geladen...</p>
 		</div>
 	{:else if error}
-		<div class="alert alert-error">
+		<div class="alert alert-error" role="alert">
+			<Icon icon="lucide:circle-alert" class="shrink-0" aria-hidden="true" />
 			<span>Fehler beim Laden der API-Spezifikation: {error}</span>
 		</div>
 	{:else if openApiSpec}
@@ -160,7 +162,7 @@
 		</div>
 
 		<!-- Authentication Info -->
-		<div class="mb-8 rounded-lg border border-warning/30 bg-warning/10 p-6">
+		<div class="border-warning/30 bg-warning/10 mb-8 rounded-lg border p-6">
 			<h2 class="mb-4 text-xl font-semibold">🔐 Authentifizierung</h2>
 			<div class="grid gap-6 md:grid-cols-2">
 				<div>
@@ -192,7 +194,7 @@
 					YAML-Inhalt anzeigen
 				</summary>
 				<div class="collapse-content">
-					<pre class="max-h-96 overflow-auto rounded border bg-base-200 p-4 text-xs"><code
+					<pre class="bg-base-200 max-h-96 overflow-auto rounded border p-4 text-xs"><code
 							>{openApiSpec}</code
 						></pre>
 				</div>
@@ -200,23 +202,23 @@
 		</div>
 
 		<!-- Alternative Tools -->
-		<div class="rounded-lg border border-info/30 bg-info/10 p-6">
+		<div class="border-info/30 bg-info/10 rounded-lg border p-6">
 			<h2 class="mb-4 text-xl font-semibold">🔧 Alternative Tools</h2>
-			<p class="mb-4 text-sm text-base-content/70">
+			<p class="text-base-content/70 mb-4 text-sm">
 				Sie können die OpenAPI-Spezifikation in diesen Tools verwenden:
 			</p>
 			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 				<div class="rounded border bg-white p-4">
 					<h3 class="mb-2 font-medium">Postman</h3>
-					<p class="text-xs text-base-content/70">Importieren Sie die YAML-Datei für API-Tests</p>
+					<p class="text-base-content/70 text-xs">Importieren Sie die YAML-Datei für API-Tests</p>
 				</div>
 				<div class="rounded border bg-white p-4">
 					<h3 class="mb-2 font-medium">Insomnia</h3>
-					<p class="text-xs text-base-content/70">Laden Sie die Spezifikation für REST-Tests</p>
+					<p class="text-base-content/70 text-xs">Laden Sie die Spezifikation für REST-Tests</p>
 				</div>
 				<div class="rounded border bg-white p-4">
 					<h3 class="mb-2 font-medium">Swagger Editor</h3>
-					<p class="text-xs text-base-content/70">Online-Editor für OpenAPI-Specs</p>
+					<p class="text-base-content/70 text-xs">Online-Editor für OpenAPI-Specs</p>
 				</div>
 			</div>
 		</div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import { validateStep } from '$lib/form/validation/stepValidation';
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
@@ -180,6 +181,7 @@
 <!-- Inline validation error above navigation — only after a failed "Weiter"-attempt -->
 {#if showStepAlert && stepErrorMessages.length > 0}
 	<div class="alert alert-warning mb-2" role="alert">
+		<Icon icon="lucide:triangle-alert" class="shrink-0" aria-hidden="true" />
 		{#if stepErrorMessages.length === 1}
 			<span>{stepErrorMessages[0]?.message}</span>
 		{:else}

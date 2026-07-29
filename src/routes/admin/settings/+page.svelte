@@ -365,14 +365,15 @@
 
 	<!-- Messages -->
 	{#if saveMessage}
-		<div class="alert alert-success mb-6">
+		<div class="alert alert-success mb-6" role="status">
+			<Icon icon="lucide:circle-check" class="shrink-0" aria-hidden="true" />
 			<span>{saveMessage}</span>
 		</div>
 	{/if}
 
 	{#if errorMessage}
-		<div class="alert alert-error mb-6">
-			<Icon icon="lucide:circle-alert" class="size-5" />
+		<div class="alert alert-error mb-6" role="alert">
+			<Icon icon="lucide:circle-alert" class="shrink-0" aria-hidden="true" />
 			<span>{errorMessage}</span>
 		</div>
 	{/if}
@@ -571,6 +572,7 @@
 	<!-- Summary -->
 	{#if changedConfigs.size > 0}
 		<div class="alert alert-info mt-8">
+			<Icon icon="lucide:info" class="shrink-0" aria-hidden="true" />
 			<div>
 				<h3 class="text-lg font-semibold">Ungespeicherte Änderungen</h3>
 				<p>
