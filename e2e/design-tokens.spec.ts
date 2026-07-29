@@ -101,10 +101,9 @@ test.describe.skip('Design-Tokens — Kontrast', () => {
 			}))
 		);
 		for (const probe of measured) {
-			expect(
-				probe.ratio,
-				`${probe.name}: ${formatRatio(probe.ratio)}:1`
-			).toBeGreaterThanOrEqual(AA_TEXT);
+			expect(probe.ratio, `${probe.name}: ${formatRatio(probe.ratio)}:1`).toBeGreaterThanOrEqual(
+				AA_TEXT
+			);
 		}
 	});
 
@@ -118,10 +117,9 @@ test.describe.skip('Design-Tokens — Kontrast', () => {
 			}))
 		);
 		for (const probe of measured) {
-			expect(
-				probe.ratio,
-				`${probe.name}: ${formatRatio(probe.ratio)}:1`
-			).toBeGreaterThanOrEqual(AA_GRAPHIC);
+			expect(probe.ratio, `${probe.name}: ${formatRatio(probe.ratio)}:1`).toBeGreaterThanOrEqual(
+				AA_GRAPHIC
+			);
 		}
 	});
 });
@@ -144,10 +142,15 @@ test.describe.fixme('Design-Tokens — verbotene Kombinationen im DOM', () => {
 		test(`${route}: keine Statusfarbe als Textfarbe`, async ({ page }) => {
 			await page.goto(route);
 			const offenders = await page.evaluate(() => {
+				/* getAttribute('class'), NICHT el.className: bei SVG-Elementen ist
+				   className ein SVGAnimatedString, das als "[object SVGAnimatedString]"
+				   stringifiziert — der Scan würde ausgerechnet die Icons verfehlen, für
+				   die diese Regel gedacht ist (Icon.svelte rendert <svg class="…">). */
+				const cls = (el: Element) => el.getAttribute('class') ?? '';
 				const banned = /(^|\s)text-(info|success|warning|secondary|accent)(\s|$)/;
 				return [...document.querySelectorAll('[class]')]
-					.filter((el) => banned.test(el.className))
-					.map((el) => `${el.tagName.toLowerCase()}.${el.className}`)
+					.filter((el) => banned.test(cls(el)))
+					.map((el) => `${el.tagName.toLowerCase()}.${cls(el)}`)
 					.slice(0, 20);
 			});
 			expect(
@@ -159,10 +162,11 @@ test.describe.fixme('Design-Tokens — verbotene Kombinationen im DOM', () => {
 		test(`${route}: keine Textfarbe unter Deckkraft /60`, async ({ page }) => {
 			await page.goto(route);
 			const offenders = await page.evaluate(() => {
+				const cls = (el: Element) => el.getAttribute('class') ?? '';
 				const banned = /(^|\s)(text-base-content\/(40|50)|opacity-(40|50))(\s|$)/;
 				return [...document.querySelectorAll('[class]')]
-					.filter((el) => banned.test(el.className) && (el.textContent ?? '').trim().length > 0)
-					.map((el) => `${el.tagName.toLowerCase()}.${el.className}`)
+					.filter((el) => banned.test(cls(el)) && (el.textContent ?? '').trim().length > 0)
+					.map((el) => `${el.tagName.toLowerCase()}.${cls(el)}`)
 					.slice(0, 20);
 			});
 			expect(offenders, '/40 und /50 sind dekorativ, nicht für Text').toEqual([]);
@@ -171,11 +175,12 @@ test.describe.fixme('Design-Tokens — verbotene Kombinationen im DOM', () => {
 		test(`${route}: keine Tailwind-Paletten-Farben`, async ({ page }) => {
 			await page.goto(route);
 			const offenders = await page.evaluate(() => {
+				const cls = (el: Element) => el.getAttribute('class') ?? '';
 				const banned =
 					/(^|\s)(bg|text|border)-(gray|slate|zinc|red|green|blue|yellow|amber|emerald|sky|indigo|orange)-\d{2,3}(\s|$)/;
 				return [...document.querySelectorAll('[class]')]
-					.filter((el) => banned.test(el.className))
-					.map((el) => `${el.tagName.toLowerCase()}.${el.className}`)
+					.filter((el) => banned.test(cls(el)))
+					.map((el) => `${el.tagName.toLowerCase()}.${cls(el)}`)
 					.slice(0, 20);
 			});
 			expect(offenders, 'Theme-Tokens statt Tailwind-Palette (daisyui.md)').toEqual([]);

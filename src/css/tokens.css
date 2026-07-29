@@ -39,7 +39,9 @@
 	--status-success-strong: oklch(0.46 0.16 145); /*  #006d09  5,53 / 4,59 */
 	--status-warning-surface: oklch(0.65 0.16 85); /*  #bb8500 */
 	--status-warning-strong: oklch(0.48 0.16 85); /*   #865100  5,52 / 4,58 */
-	--status-error-surface: oklch(0.48 0.18 25); /*    #ac1922  — ist bereits
+	--status-error-surface: oklch(
+		0.48 0.18 25
+	); /*    #ac1922  — ist bereits
 	     beides: Fläche (weiß darauf 7,19) und Vordergrund (6,04 / 5,01). */
 
 	/* ── Ebene 2: semantische Tokens ────────────────────────────────────── */

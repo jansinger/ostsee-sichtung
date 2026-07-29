@@ -267,9 +267,9 @@ Drei Bereiche dürfen Hex-Werte enthalten — aber jeweils nur an **einer** Stel
 
 | Bereich           | Warum Hex nötig ist                                | Wo die Werte stehen dürfen                |
 | ----------------- | -------------------------------------------------- | ----------------------------------------- |
-| OpenLayers-Canvas | Canvas kann keine CSS-Variablen lesen               | `src/lib/map/mapTokens.ts`                |
+| OpenLayers-Canvas | Canvas kann keine CSS-Variablen lesen              | `src/lib/map/mapTokens.ts`                |
 | Marker-Palette    | Datenkodierung, farbfehlsichtigkeits-sicher (Wong) | `src/lib/map/styleUtils.ts` (unverändert) |
-| E-Mail-Templates  | Clients kennen `oklch()`/`color-mix()` nicht        | `src/lib/server/templates/emailTokens.ts` |
+| E-Mail-Templates  | Clients kennen `oklch()`/`color-mix()` nicht       | `src/lib/server/templates/emailTokens.ts` |
 
 Überall sonst gilt weiterhin: keine Hex-Werte, keine Tailwind-Paletten-Farben (`daisyui.md`). Abgesichert durch den DOM-Scan in `e2e/design-tokens.spec.ts`.
 
