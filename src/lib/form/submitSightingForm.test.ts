@@ -87,4 +87,52 @@ describe('submitSightingForm', () => {
 
 		await expect(submitSightingForm(validFormValues)).rejects.toThrow('Failed to fetch');
 	});
+
+	/**
+	 * Regression: `response.json()` lief vor der `response.ok`-Prüfung. Ein 502
+	 * mit HTML-Fehlerseite (Reverse Proxy, Gateway) warf damit einen
+	 * JSON-Parse-Fehler, dessen Rohtext ungefiltert beim Nutzer landete.
+	 */
+	describe('Antworten, die kein JSON sind', () => {
+		function mockNonJsonResponse(status: number) {
+			global.fetch = vi.fn().mockResolvedValue({
+				ok: status >= 200 && status < 300,
+				status,
+				json: () =>
+					Promise.reject(
+						new SyntaxError('Unexpected token \'<\', "<html><bo"... is not valid JSON')
+					)
+			});
+		}
+
+		it('meldet einen 502 mit HTML-Body als verständlichen Fehler', async () => {
+			mockNonJsonResponse(502);
+
+			await expect(submitSightingForm(validFormValues)).rejects.toThrow(
+				'Die Sichtung konnte nicht gespeichert werden'
+			);
+		});
+
+		it('lässt den rohen Parse-Fehler nicht zum Nutzer durch', async () => {
+			mockNonJsonResponse(502);
+
+			await expect(submitSightingForm(validFormValues)).rejects.not.toThrow(/Unexpected token/);
+		});
+
+		it('räumt den Speicher bei einem 502 nicht auf', async () => {
+			mockNonJsonResponse(502);
+
+			await expect(submitSightingForm(validFormValues)).rejects.toThrow();
+			expect(clearStorage).not.toHaveBeenCalled();
+		});
+
+		it('meldet auch eine unlesbare 200-Antwort verständlich', async () => {
+			mockNonJsonResponse(200);
+
+			await expect(submitSightingForm(validFormValues)).rejects.toThrow(
+				'Die Sichtung konnte nicht gespeichert werden'
+			);
+			expect(clearStorage).not.toHaveBeenCalled();
+		});
+	});
 });

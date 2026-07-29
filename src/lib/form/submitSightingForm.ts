@@ -36,6 +36,33 @@ import type { SightingFormValues } from '$lib/types/Form';
  * @note Bereinigt automatisch den localStorage bei erfolgreicher Übermittlung
  * @note Verwendet JSON-Serialisierung für komplexe Formularstrukturen
  */
+/** Fehlermeldung, die der Nutzer sieht, wenn der Server keine eigene liefert. */
+const FALLBACK_MESSAGE = 'Die Sichtung konnte nicht gespeichert werden';
+
+/** Antwortkörper der Sichtungs-API, soweit der Client ihn auswertet. */
+interface SightingApiResponse {
+	success?: boolean;
+	id?: number;
+	message?: string;
+}
+
+/**
+ * Liest den Antwortkörper als JSON — und gibt `null` zurück, wenn das nicht geht.
+ *
+ * Nicht jede Antwort auf dieser Route ist JSON: Ein 502 kommt als HTML-Fehlerseite
+ * des Reverse Proxy, ein 504 als Klartext des Gateways. `response.json()` wirft
+ * dort einen `SyntaxError`, dessen Rohtext („Unexpected token '<' …") für den
+ * Nutzer bedeutungslos ist. Der Parse-Fehler wird deshalb hier abgefangen und
+ * nicht weitergereicht.
+ */
+async function readJsonBody(response: Response): Promise<SightingApiResponse | null> {
+	try {
+		return (await response.json()) as SightingApiResponse;
+	} catch {
+		return null;
+	}
+}
+
 export async function submitSightingForm(
 	values: SightingFormValues
 ): Promise<{ id: number; success: boolean }> {
@@ -48,17 +75,21 @@ export async function submitSightingForm(
 		body: JSON.stringify(values) // Serialisiere komplette Formulardaten
 	});
 
-	// Parse JSON-Antwort vom Server
-	const result = await response.json();
+	// Statusprüfung VOR dem Parsen: Bei einem HTTP-Fehler ist der Körper oft
+	// kein JSON, und der Parse-Fehler würde die eigentliche Ursache verdecken.
+	if (!response.ok) {
+		const body = await readJsonBody(response);
+		throw new Error(body?.message || FALLBACK_MESSAGE);
+	}
 
-	if (response.ok && result.success) {
+	const result = await readJsonBody(response);
+
+	if (result?.success && typeof result.id === 'number') {
 		// Erfolgreiche Übermittlung: Lokalen Speicher bereinigen
 		clearStorage();
 		return { id: result.id, success: true };
-	} else {
-		// Fehlerbehandlung: Server-Fehlermeldung oder Fallback verwenden
-		return Promise.reject(
-			new Error(result.message || 'Die Sichtung konnte nicht gespeichert werden')
-		);
 	}
+
+	// 2xx, aber unlesbar oder `success: false` — Server-Meldung oder Fallback.
+	throw new Error(result?.message || FALLBACK_MESSAGE);
 }
