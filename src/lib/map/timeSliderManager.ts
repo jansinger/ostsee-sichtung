@@ -73,6 +73,15 @@ export class MapTimeSliderManager implements TimeSliderManager {
 		endSlider.max = maxValue;
 		startSlider.value = '0';
 		endSlider.value = maxValue;
+
+		// M10: ein input-Event dispatchen, damit die DualRangeSlider-Komponente
+		// (Füllbereich, aria-valuetext, Datums-Eingabefelder) den neuen Zustand
+		// übernimmt. Ein einzelnes Event genügt, weil Komponente und
+		// updateTimeFilter() beide Slider-Werte lesen — beide sind zu diesem
+		// Zeitpunkt bereits konsistent gesetzt, das Clamping ist ein No-op.
+		// Der ausgelöste setFilter()-Aufruf setzt denselben vollen
+		// Jahresbereich, den setYear() im Controller bereits gesetzt hat.
+		startSlider.dispatchEvent(new Event('input', { bubbles: true }));
 	}
 
 	/**

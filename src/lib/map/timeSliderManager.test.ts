@@ -18,6 +18,12 @@ class FakeRangeInput {
 	dispatch(type: string): void {
 		(this.listeners[type] ?? []).forEach((handler) => handler());
 	}
+
+	// M10: reset() dispatcht echte input-Events — der Stub braucht die DOM-API.
+	dispatchEvent(event: { type: string }): boolean {
+		this.dispatch(event.type);
+		return true;
+	}
 }
 
 function createMockMapInstance(): SichtungenMap {
@@ -81,6 +87,50 @@ describe('MapTimeSliderManager', () => {
 			const manager = new MapTimeSliderManager();
 
 			expect(() => manager.reset(366)).not.toThrow();
+		});
+
+		// M10: Die DualRangeSlider-Komponente hält ihren State über input-Events
+		// synchron. reset() muss deshalb nach dem Setzen der Werte ein Event
+		// dispatchen — sonst zeigen Füllbereich und Datums-Eingabefelder nach
+		// Jahreswechsel (QW4) oder Chip-Reset die alte Auswahl. Ein einzelnes
+		// Event genügt: Komponente und updateTimeFilter lesen beide Slider.
+		it('dispatcht genau ein input-Event nach dem Setzen beider Werte (M10)', () => {
+			const manager = new MapTimeSliderManager();
+			manager.initialize(createMockMapInstance());
+
+			const seen: Array<[string, string]> = [];
+			startSlider.addEventListener('input', () => seen.push([startSlider.value, endSlider.value]));
+			endSlider.addEventListener('input', () => seen.push([startSlider.value, endSlider.value]));
+
+			manager.reset(366);
+
+			// Genau ein Event, und beide Werte sind zu dem Zeitpunkt schon gesetzt
+			expect(seen).toEqual([['0', '365']]);
+		});
+
+		it('propagiert nach reset() den vollen Jahresbereich an setFilter (einmal)', () => {
+			const mapInstance = createMockMapInstance();
+			const manager = new MapTimeSliderManager();
+			manager.initialize(mapInstance);
+
+			manager.reset(366);
+
+			// getDisplayedYear liefert 2024 (Schaltjahr): Tag 0 = 1. Januar,
+			// Tag 365 = 31. Dezember, Ende des Tages. Nur ein setFilter-Aufruf —
+			// doppeltes Filtern + URL-Sync wäre redundante Arbeit.
+			const setFilter = vi.mocked(mapInstance.setFilter);
+			expect(setFilter).toHaveBeenCalledOnce();
+			const [start, end] = setFilter.mock.calls.at(-1)!;
+			expect(start).toBe(new Date(2024, 0, 1).getTime());
+			expect(end).toBe(new Date(2024, 11, 31, 23, 59, 59, 999).getTime());
+		});
+
+		it('wirft nicht, wenn reset() vor initialize() läuft (keine Listener)', () => {
+			const manager = new MapTimeSliderManager();
+
+			expect(() => manager.reset(365)).not.toThrow();
+			expect(startSlider.value).toBe('0');
+			expect(endSlider.value).toBe('364');
 		});
 	});
 

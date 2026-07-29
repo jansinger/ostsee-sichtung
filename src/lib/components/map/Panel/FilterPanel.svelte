@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import { getDaysInYear } from '$lib/map/dateUtils';
+	import DualRangeSlider from './DualRangeSlider.svelte';
 	import MapPanel from './MapPanel.svelte';
 
 	let {
@@ -108,52 +109,15 @@
 			</div>
 		</div>
 
-		<div class="space-y-3">
+		<div class="space-y-2">
 			<div class="label py-1">
 				<span class="text-sm font-medium">Zeitraum</span>
 			</div>
 
-			<div class="space-y-3">
-				<div>
-					<label class="label py-0" for="time-range-start">
-						<span class="text-xs">Start</span>
-					</label>
-					<input
-						type="range"
-						id="time-range-start"
-						class="range range-primary range-xs"
-						min="0"
-						max={daysInYear - 1}
-						value="0"
-					/>
-					<div class="mt-1">
-						<div
-							id="time-start"
-							class="bg-base-200 rounded px-2 py-1 text-center text-xs font-medium"
-						></div>
-					</div>
-				</div>
-
-				<div>
-					<label class="label py-0" for="time-range-end">
-						<span class="text-xs">Ende</span>
-					</label>
-					<input
-						type="range"
-						id="time-range-end"
-						class="range range-primary range-xs"
-						min="0"
-						max={daysInYear - 1}
-						value={daysInYear - 1}
-					/>
-					<div class="mt-1">
-						<div
-							id="time-end"
-							class="bg-base-200 rounded px-2 py-1 text-center text-xs font-medium"
-						></div>
-					</div>
-				</div>
-			</div>
+			<!-- M10: Ein Track, zwei Griffe, gefüllter Bereich; Datums-Felder als
+			     gleichwertige Alternative. DOM-Verträge (IDs, input-Events) bleiben
+			     erhalten — timeSliderManager und applyUrlFilters greifen direkt zu. -->
+			<DualRangeSlider max={daysInYear - 1} year={selectedYear} />
 		</div>
 	</div>
 </MapPanel>
