@@ -26,6 +26,13 @@
 -->
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	/* Importiert statt abgeschrieben: die Marker-Palette ist Datenkodierung mit
+	   genau einer Quelle (design-system.md, „Randbereiche: wo Hex-Werte erlaubt
+	   sind"). Eine zweite Liste hier hätte den Absatz darunter — der
+	   styleUtils.ts als Quelle benennt — beim ersten Farbwechsel zur Lüge
+	   gemacht. Das Emoji kommt aus derselben Struktur und ist der zweite,
+	   redundante Kanal der Gruppe (UX-Review M1). */
+	import { MARKER_BACKGROUND_COLOR, speciesGroupStyles } from '$lib/map/styleUtils';
 
 	/* Jede Kombination einmal ausgeschrieben — siehe Kommentar oben. */
 	const surfaces = [
@@ -519,14 +526,15 @@
 			Hex-Werte zulässig sind.
 		</p>
 		<div class="flex flex-wrap gap-3">
-			{#each [{ l: 'Kleinwal', c: '#0072B2' }, { l: 'Großwal', c: '#009E73' }, { l: 'Robbe', c: '#D55E00' }, { l: 'Art unbestimmt', c: '#767676' }] as m (m.c)}
+			{#each Object.entries(speciesGroupStyles) as [category, group] (category)}
 				<div class="border-base-300 rounded-box flex items-center gap-2 border p-3">
 					<span
 						class="inline-block h-5 w-5 rounded-full border-2"
-						style="background: {m.c}; border-color: #FFFFFF"
+						style="background: {group.color}; border-color: {MARKER_BACKGROUND_COLOR}"
 					></span>
-					<span class="text-label">{m.l}</span>
-					<code class="text-support text-base-content/60">{m.c}</code>
+					<span aria-hidden="true">{group.symbol}</span>
+					<span class="text-label">{group.label}</span>
+					<code class="text-support text-base-content/60">{group.color}</code>
 				</div>
 			{/each}
 		</div>
