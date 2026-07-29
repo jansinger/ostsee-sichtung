@@ -625,7 +625,11 @@
 													<span class="badge badge-warning badge-xs">Außerhalb</span>
 												{/if}
 											</div>
-											<p class="text-success/80 mt-0.5 text-xs">
+											<!-- Koordinaten sind Fließtext auf einem Tint, also base-content:
+											     text-success misst 3,81:1 und unter /80 noch weniger. Die
+											     Statusfarbe trägt hier das Icon und die Beschriftung darüber
+											     (design-system.md, „Die *-content-Regel"). -->
+											<p class="text-base-content/70 mt-0.5 text-xs">
 												{formatLocation(
 													fileMetadata.exifData.longitude,
 													fileMetadata.exifData.latitude
@@ -760,9 +764,7 @@
 								class="bg-base-200 h-12 w-12 shrink-0 rounded object-cover"
 							/>
 						{:else}
-							<div
-								class="bg-base-200 flex h-12 w-12 shrink-0 items-center justify-center rounded"
-							>
+							<div class="bg-base-200 flex h-12 w-12 shrink-0 items-center justify-center rounded">
 								<Icon
 									aria-hidden="true"
 									icon="lucide:image"
