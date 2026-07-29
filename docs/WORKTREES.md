@@ -39,13 +39,13 @@ in zwei Fällen:
 
 ## Was von selbst funktioniert
 
-| Thema           | Warum kein Setup nötig                                                                                      |
-| --------------- | ----------------------------------------------------------------------------------------------------------- |
-| TLS-Zertifikate | `npm run dev` ruft `scripts/setup-dev-certs.mjs` auf und stellt sie pro Worktree aus (mkcert-CA ist global) |
-| Git-Hooks       | `core.hooksPath = .husky/_` löst gegen das Haupt-Repo auf — prüfbar mit `git rev-parse --git-path hooks`    |
-| MCP-Server      | `.mcp.json` ist committet und wird mit ausgecheckt                                                          |
-| Rules & Skills  | `.claude/rules/`, `.claude/agents/`, `.claude/skills/` sind committet                                       |
-| Playwright      | Browser liegen global in `~/Library/Caches/ms-playwright`                                                   |
+| Thema           | Warum kein Setup nötig                                                                                                                                                      |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TLS-Zertifikate | `npm run dev` ruft `scripts/setup-dev-certs.mjs` auf und stellt sie pro Worktree aus (mkcert-CA ist global)                                                                 |
+| Git-Hooks       | `core.hooksPath = .husky/_` löst gegen das Haupt-Repo auf — prüfbar mit `git rev-parse --git-path hooks`                                                                    |
+| MCP-Server      | `.mcp.json` ist committet und wird mit ausgecheckt                                                                                                                          |
+| Rules & Skills  | `.claude/rules/`, `.claude/agents/`, `.claude/skills/` sind committet                                                                                                       |
+| Playwright      | Browser liegen in einem globalen Cache außerhalb des Repos (macOS `~/Library/Caches/ms-playwright`, Linux `~/.cache/ms-playwright`, Windows `%LOCALAPPDATA%\ms-playwright`) |
 
 Nicht mit übernommen wird `.claude/settings.local.json` (global gitignoriert) — lokale
 Permissions gelten pro Worktree neu. Bei Bedarf verlinken:
