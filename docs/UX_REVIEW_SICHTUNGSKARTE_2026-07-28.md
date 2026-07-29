@@ -161,6 +161,8 @@ Ab Zoom ~12 fluten Seezeichen, Ankerplätze, Bojen (magenta/blau/gelb) die Karte
 
 Jahr, Suche, Zeitraum, Arten-Toggles und Kartenausschnitt sind nicht in der URL → gefilterte Ansichten sind **nicht teilbar/bookmarkbar**, Reload verwirft alles. Es gibt keinen „Filter zurücksetzen"-Button und keine sichtbaren aktiven Filter (Chips), sobald das Panel zu ist — die Karte kann kommentarlos „leer" wirken, wenn ein vergessener Suchbegriff/Slider aktiv ist (der Hinweis-State existiert nur beim Totalausfall aller Marker). **Empfehlung:** Query-Params (`?year=&q=&from=&to=`) + `replaceState`; Chips über der Karte mit Einzel-Entfernen + „Alle zurücksetzen".
 
+**Umgesetzt 2026-07-29** (bis auf den Kartenausschnitt): Query-Params `year`, `q`, `from`, `to`, `hs` (ausgeblendete Arten), `hc` (ausgeblendete Anzahl-Gruppen) werden beim Laden angewendet und per `replaceState` synchron gehalten (`urlFilterState.ts` mit Unit-Tests, `SightingsMapView.svelte`); aktive Filter erscheinen als einzeln entfernbare Chips über der Karte plus „Alle Filter zurücksetzen" (stellt Default-Jahr, leere Suche, vollen Zeitraum und alle Sichtbarkeiten wieder her). Der Kartenausschnitt (Center/Zoom) bleibt bewusst außen vor.
+
 ### M5 — Kein Weg zurück zur Ausgangsansicht; „Z"-Control kryptisch
 
 Nach Pan/Zoom (oder dem Welt-Zoom aus K2) gibt es keinen Home-Button; das einzige Extent-Control zeigt nur den Buchstaben „Z". **Empfehlung:** Home-Control (Ostsee-Extent) mit Icon + Tooltip; „Z" durch Icon (z. B. `lucide:maximize`) ersetzen.
@@ -201,7 +203,7 @@ Zoom-Buttons tragen englische Titles/Labels („Zoom in", „Zoom out") in anson
 - **N3:** `createClusterStyle` (`styleUtils.ts:386`) wird nirgends verwendet (Duplikat der Controller-Logik ohne Filterunterstützung).
 - **N4:** Jahresliste ist auf 10 Jahre begrenzt (`getAvailableYears(10)`), obwohl Daten bis 2007 zurückreichen — ältere Jahrgänge sind unerreichbar.
 - **N5:** Sichtungen an Land (im Test: Marker bei Hamburg-Zentrum und südlich von Hamburg) — Hinweis auf fehlende Plausibilitätsprüfung im Altbestand; auf der Karte wirken sie wie Fehler.
-- **N6:** Titel-Chip „Sichtungskarte 2026" aktualisiert korrekt bei Jahreswechsel (gut), kommuniziert aber nicht aktive Such-/Zeitfilter (siehe M4).
+- **N6:** Titel-Chip „Sichtungskarte 2026" aktualisiert korrekt bei Jahreswechsel (gut), kommuniziert aber nicht aktive Such-/Zeitfilter (siehe M4). — **Behoben 2026-07-29** über die Filter-Chips aus M4.
 - **N7:** Der Hilfe-„?"-Button unten links bleibt bestehen — gut sichtbar, aber sein Modal erwähnt die automatische Suche nicht und listet Escape nur für „Dialoge".
 
 ---
@@ -215,7 +217,7 @@ Bewertung: ✅ erfüllt · ⚠️ teilweise · ❌ nicht erfüllt
 | **Navigation/Controls**                             |                                                                                      |         |
 | Zoom-Buttons sichtbar, ≥44 px                       | ❌ 19×19 px                                                                          | H4      |
 | Kein Verdecken relevanter Daten durch UI            | ⚠️ Panels auf 320 px reduziert (2026-07-29), überlagern rechts weiterhin             | H6      |
-| Zustand teilbar (URL)                               | ❌                                                                                   | M4      |
+| Zustand teilbar (URL)                               | ⚠️ Filter in URL (2026-07-29), Kartenausschnitt weiterhin nicht                      | M4      |
 | Home-/Ausgangsansicht                               | ❌                                                                                   | M5      |
 | „Locate me"                                         | ❌ implementiert, deaktiviert                                                        | N2      |
 | Basemap lenkt nicht ab                              | ⚠️ OpenSeaMap dominiert ab Z12                                                       | M3      |
@@ -233,7 +235,7 @@ Bewertung: ✅ erfüllt · ⚠️ teilweise · ❌ nicht erfüllt
 | **Filter/Legende**                                  |                                                                                      |         |
 | Wirkung sofort sichtbar                             | ✅                                                                                   | —       |
 | Ergebnisanzahl sichtbar                             | ⚠️ nur in Legende (sichtbar/gesamt), nicht am Suchfeld                               | H3      |
-| Aktive Filter als Chips + Reset                     | ❌                                                                                   | M4      |
+| Aktive Filter als Chips + Reset                     | ✅ behoben 2026-07-29 (Chips über der Karte + „Alle zurücksetzen")                   | M4      |
 | Slider mit numerischem Fallback                     | ❌                                                                                   | M10     |
 | Legende konsistent mit Kartendarstellung            | ❌                                                                                   | M1      |
 | Ladeindikator bei Filteranwendung                   | ⚠️ vorhanden, aber fake-getimt bzw. überblockierend                                  | H3/M7   |
@@ -274,7 +276,7 @@ Bewertung: ✅ erfüllt · ⚠️ teilweise · ❌ nicht erfüllt
 - K3: `tabindex` + Fokusring + Skip-Link; Listen-/Tabellenansicht der gefilterten Sichtungen. — **Umgesetzt 2026-07-29** (`SightingsMapView.svelte`, `SightingsListView.svelte`, `listViewUtils.ts`).
 - H5: ARIA-Sanierung der Panels (inert, region, Fokus-Management). — **Umgesetzt 2026-07-29** (`FilterPanel.svelte`, `LegendPanel.svelte`, `LoadingOverlay.svelte`, `panelFocus.ts`; inkl. H7: Shortcuts nur bei Fokus in der Karten-Region, Panel-Steuerung über `bind:isOpen` statt DOM-Queries).
 - M1: Einheitliches Marker-/Legenden-Codierungssystem (colorblind-safe, Legende aus gemeinsamen Konstanten).
-- M4: URL-State + Filter-Chips + Reset.
+- M4: URL-State + Filter-Chips + Reset. — **Umgesetzt 2026-07-29** (`urlFilterState.ts` + Tests, `SightingsMapView.svelte`, `FilterPanel.svelte`, `LegendPanel.svelte`, `optimizedMapController.ts`; Kartenausschnitt weiterhin nicht in der URL).
 - M7: Loading-Konzept (Vollbild nur initial).
 - H6: Mobile Bottom-Sheet für Filter/Legende. — **Umgesetzt 2026-07-29** (gemeinsame Wrapper-Komponente `MapPanel.svelte`: < md Bottom-Sheet mit Peek/Expanded-Zustand, Schließen per Button, ab md 320-px-Seitenpanel mit `h-[calc(100%-5rem)]`; Öffnen des einen Panels schließt das andere in `SightingsMapView.svelte`; solange ein Sheet offen ist, blendet Mobile die Toggle-Tabs aus, weil sie sonst den Sheet-Header verdecken).
 
