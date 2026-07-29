@@ -1,8 +1,11 @@
 /* ===== Tailwind CSS 4 ===== */
 @import 'tailwindcss';
 
+/* ===== Design-Tokens (Ebene 1) =====
+   MUSS vor dem Theme stehen — das Theme unten mappt aus diesen Werten. */
+@import './css/tokens.css';
+
 /* ===== Local Fonts - Optimized with font-display ===== */
-/* Only load essential weights initially, others on-demand */
 @import '@fontsource/roboto/400.css'; /* Regular - Primary text */
 @import '@fontsource/roboto/500.css'; /* Medium - Headings */
 @import '@fontsource/roboto/700.css'; /* Bold - Emphasis */
@@ -13,7 +16,6 @@
 /* ===== OpenLayers Map Styles ===== */
 @import './lib/map/mapStyles.css';
 
-/* Add font-display: swap for better perceived performance */
 @layer base {
 	@font-face {
 		font-family: 'Roboto';
@@ -21,7 +23,9 @@
 	}
 }
 
-/* ===== DaisyUI Plugin mit Theme ===== */
+/* ===== DaisyUI Plugin mit Theme =====
+   Die Werte kommen aus css/tokens.css. Bewusst als var()-Referenzen:
+   ein Wert existiert genau einmal. */
 @plugin 'daisyui';
 @plugin 'daisyui/theme' {
 	name: 'meeresmuseum';
@@ -30,51 +34,93 @@
 	prefersdark: false;
 
 	/* ── Brand Colors ──────────────────────────────────────────────── */
-	--color-primary: oklch(0.35 0.089 235.3); /* Meeresmuseum-Blau, WCAG AA mit weißem Text */
+	--color-primary: var(--brand-sea-600);
 	--color-primary-content: oklch(1 0 0);
-	--color-secondary: oklch(0.65 0.04 215.2);
-	--color-secondary-content: oklch(1 0 0);
-	--color-accent: oklch(0.8 0.047 215);
-	--color-accent-content: oklch(0.25 0.089 235.3);
-	--color-neutral: oklch(0.37 0.016 251.8);
+	--color-secondary: var(--brand-sea-300);
+	/* GEÄNDERT (war oklch(1 0 0) = weiß): Weiß auf secondary erreicht nur
+	   3,19:1 — jedes btn-secondary und badge-secondary verletzte damit
+	   WCAG 1.4.3. Mit base-content sind es 6,17:1. Betroffene Aufrufstellen
+	   (unverändert übernommen): WeatherDataDisplay.svelte:229,
+	   MediaModal.svelte:207, MediaThumbnail.svelte:146. */
+	--color-secondary-content: var(--brand-slate-950);
+	--color-accent: var(--brand-sea-200);
+	--color-accent-content: var(--brand-sea-900);
+	--color-neutral: var(--brand-slate-700);
 	--color-neutral-content: oklch(1 0 0);
 
 	/* ── Base Colors (Hintergründe & Text) ─────────────────────────── */
-	--color-base-100: oklch(0.9403 0.0104 247.9); /* Leicht bläulicher Hintergrund */
-	--color-base-200: oklch(0.88 0.012 247.9);
-	--color-base-300: oklch(0.82 0.015 247.9);
-	--color-base-content: oklch(0.15 0.022 251.8); /* WCAG AA >4.5:1 auf base-100 */
+	--color-base-100: var(--brand-mist-100);
+	--color-base-200: var(--brand-mist-200);
+	--color-base-300: var(--brand-mist-300);
+	--color-base-content: var(--brand-slate-950); /* 16,53:1 auf base-100 */
 
 	/* ── Status Colors ─────────────────────────────────────────────── */
-	/* Base color = Hauptfarbe für Buttons, Text, Badges.
-	   Content = Text AUF dieser Farbe (für btn-info, badge-info etc.).
-	   Alerts werden per Override in app.css auf soft-Style gesetzt. */
-	--color-info: oklch(0.55 0.12 230);
-	--color-info-content: oklch(1 0 0);
-	--color-success: oklch(0.55 0.16 145);
-	--color-success-content: oklch(1 0 0);
-	--color-warning: oklch(0.65 0.16 85);
-	--color-warning-content: oklch(1 0 0);
-	/* Nur die Lightness gegenüber dem Ursprungswert 0.55 abgesenkt (Hue 25 und
-	   Chroma 0.18 unverändert): `text-error` ist die kanonische destruktive
-	   Button-Farbe und lag als Beschriftung bei 4,46:1 auf base-100 und 3,69:1
-	   auf base-200 — beides unter WCAG 1.4.3 (4,5:1; `btn-sm` ist mit .75rem
-	   kein „large text"). Im Browser gemessen ergibt 0.48 jetzt 6,05:1 auf
-	   base-100 und 5,01:1 auf base-200; weißer Text auf `bg-error`/`btn-error`
-	   steigt dabei von 5,31:1 auf 7,20:1. Abgesichert durch
-	   `e2e/form-a11y.spec.ts` → „Accessibility — text-error auf Buttons". */
-	--color-error: oklch(0.48 0.18 25);
-	--color-error-content: oklch(1 0 0);
+	/* Basisfarbe = FLÄCHE (Button, Badge, Alert-Tint).
+	   Für Text und Icons gibt es die -strong-Variante aus tokens.css.
+	   Die Basisfarbe NIE als Vordergrundfarbe verwenden:
+	   text-info 3,92 · text-success 3,81 · text-warning 2,74 · text-accent 1,55 */
+	--color-info: var(--status-info-surface);
+	--color-info-content: oklch(1 0 0); /* weiß auf info: 4,66 ✓ */
+	--color-success: var(--status-success-surface);
+	--color-success-content: oklch(1 0 0); /* weiß auf success: 4,54 ✓ */
+	--color-warning: var(--status-warning-surface);
+	/* GEÄNDERT (war oklch(1 0 0) = weiß): Weiß auf warning erreicht nur
+	   3,26:1. Mit base-content sind es 6,04:1. Der Hue bleibt unangetastet —
+	   ein dunkleres Gelb wäre kein Gelb mehr. Betroffene Aufrufstellen:
+	   MaintenanceBanner.svelte:29, admin/settings/+page.svelte:359,
+	   DropzoneEnhanced.svelte:625, SpeciesIdentificationHelp.svelte:74,80. */
+	--color-warning-content: var(--brand-slate-950);
+	--color-error: var(--status-error-surface);
+	--color-error-content: oklch(1 0 0); /* weiß auf error: 7,19 ✓ */
 
 	/* ── DaisyUI v5 Layout Variablen ──────────────────────────────── */
-	--radius-selector: 0.5rem; /* Checkboxes, Radios, Toggles */
-	--radius-field: 0.25rem; /* Inputs, Selects, Textareas */
-	--radius-box: 0.5rem; /* Cards, Alerts, Modals */
-	--size-selector: 0.25rem; /* Checkbox/Radio Größe */
-	--size-field: 0.25rem; /* Input-Feld Größe */
-	--border: 1px; /* Globale Border-Dicke */
-	--depth: 1; /* 3D-Tiefe (0=flach, 1=normal) */
-	--noise: 0; /* Textur-Rauschen (0=keine) */
+	--radius-selector: 0.5rem;
+	--radius-field: 0.25rem;
+	--radius-box: 0.5rem;
+	--size-selector: 0.25rem;
+	--size-field: 0.25rem;
+	--border: 1px;
+	--depth: 1;
+	--noise: 0;
+}
+
+/* ===== Tailwind-Utilities für die eigenen Tokens =====
+   Damit text-warning-strong, shadow-floating usw. als Utilities existieren.
+   Ohne diesen Block sind die Klassen tot (design-system.md: „Keine toten
+   Utility-Klassen").
+
+   Jeder Eintrag referenziert die Quelle in css/tokens.css, statt den Wert zu
+   wiederholen — sonst driften Utility und var()-Zugriff auseinander, sobald
+   jemand nur eine der beiden Stellen anfasst.
+
+   Die --text-*-Zeilen sind die Ausnahme und wiederholen den Wert. Das ist
+   keine Nachlässigkeit, sondern eine Zwangslage: Tailwind erzeugt die Utility
+   nur für Namen, die IN diesem Block stehen, und `--text-support:
+   var(--text-support)` wäre zirkulär. Gleichzeitig muss der Name in
+   tokens.css im :root stehen, weil @theme-Variablen weggeshakt werden, sobald
+   keine Utility sie nutzt — dann wäre var(--text-display) tot. Die Werte
+   müssen hier also paarweise gepflegt werden.
+   Der Feldmodus bleibt davon unberührt: der @theme-Output liegt in
+   @layer theme, [data-density='field'] aus tokens.css ist ungelayert und
+   gewinnt deshalb die Kaskade (im Production-Build nachgemessen).
+   Auflösbar wäre die Dopplung mit `@theme static` — dann emittiert Tailwind
+   auch ungenutzte Variablen und tokens.css bräuchte die Namen nicht mehr. */
+@theme {
+	--color-info-strong: var(--status-info-strong);
+	--color-success-strong: var(--status-success-strong);
+	--color-warning-strong: var(--status-warning-strong);
+	--color-secondary-strong: var(--brand-sea-400);
+	--color-accent-strong: var(--status-accent-strong);
+
+	--shadow-raised: var(--elevation-raised);
+	--shadow-floating: var(--elevation-floating);
+
+	--text-display: 2rem;
+	--text-title: 1.5rem;
+	--text-section: 1.125rem;
+	--text-body: 1rem;
+	--text-label: 0.875rem;
+	--text-support: 0.8125rem;
 }
 
 /* ===== OpenLayers Map ===== */
@@ -86,9 +132,22 @@ body {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	background-color: var(--color-base-100);
+	font-size: var(--text-body);
+	line-height: var(--text-body-lh);
 }
 
-/* ===== iframe Integration Styles ===== */
+/* Formularfelder immer ≥ 16px — WCAG AA und iOS-Auto-Zoom-Schutz.
+   Vorher stand das nur im .iframe-mode-Block; beim direkten Aufruf von
+   ostsee-tiere.de zoomte Safari beim Fokussieren weiter. */
+.input,
+.select,
+.textarea {
+	font-size: var(--text-body);
+}
+
+/* ===== Einbettungs-Modi =====
+   Vorher ein Boolean (isNotIFrame). Drei benannte Modi machen die Absicht
+   lesbar und erlauben eine serverseitige Entscheidung über data-embed. */
 .iframe-mode {
 	margin: 0;
 	padding: 0;
@@ -96,47 +155,35 @@ body {
 
 .iframe-mode .container,
 .iframe-mode main {
-	padding: 1rem;
+	padding: var(--space-3);
 	max-width: 100%;
 }
 
-/* Kompakte Abstände für iframe */
 .iframe-mode h1 {
 	margin-top: 0;
-	margin-bottom: 1rem;
-	font-size: 1.5rem;
+	margin-bottom: var(--space-3);
+	font-size: var(--text-title);
 }
 
 .iframe-mode h2 {
-	margin-top: 1.5rem;
-	margin-bottom: 0.75rem;
-	font-size: 1.25rem;
+	margin-top: var(--space-4);
+	margin-bottom: var(--space-2);
+	font-size: var(--text-section);
 }
 
-/* Angepasste Button-Größen für iframe */
 .iframe-mode .btn {
-	padding: 0.5rem 1rem;
-	font-size: 0.9rem;
+	padding: var(--space-2) var(--space-3);
 }
 
-/* Kompaktere Form-Elemente */
 .iframe-mode .fieldset {
-	margin-bottom: 1rem;
+	margin-bottom: var(--space-3);
 }
 
-.iframe-mode .input,
-.iframe-mode .select,
-.iframe-mode .textarea {
-	font-size: 1rem; /* WCAG AA: Mindestens 16px für Formulare */
-}
-
-/* Navigation für iframe anpassen */
-.iframe-mode .navbar {
-	display: none; /* Keine Navigation im iframe */
-}
-
+/* Im eingebetteten Zustand trägt die Elternseite die Marke — die App darf
+   keine zweite Navigation und keine zweite Wortmarke zeigen. */
+.iframe-mode .navbar,
 .iframe-mode .footer {
-	display: none; /* Kein Footer im iframe */
+	display: none;
 }
 
 /* ===== Typography ===== */
@@ -152,24 +199,9 @@ h6 {
 }
 
 /* ===== Component Refinements ===== */
-/* Status colors are now set correctly in the theme (dark base, white content).
-   DaisyUI v5 handles button/text/alert styling automatically via theme variables.
-   No !important overrides needed for buttons or text utilities. */
-
-/* Alerts: Use soft style by default (light background, dark text).
-   DaisyUI v5 default alerts use the base color as background (too dark for our theme).
-   The alert-soft variant gives color-mix(8% color, base-100) — perfect for readable alerts.
-
-   Text color is base-content, NOT the status color: on a 12% tint of itself the
-   status color reaches only 2.45:1 (warning) to 3.84:1 (error) — WCAG 1.4.3 wants
-   4.5:1. That is the same trap as `text-*-content` on a tint (design-system.md).
-   base-content on the same tints measures 14.2:1 to 14.9:1.
-
-   What now carries the status is the icon at the call site (distinct shape per
-   variant) plus the background hue. NOT the border: --alert-border-color below is
-   a 20% mix and reaches only ~1.1:1 against the alert background, so it is
-   decoration, not a signal. Every alert therefore needs an icon — a bare
-   `<div class="alert alert-error">Text</div>` no longer looks like an error. */
+/* Alerts: Soft-Style als Default. Begründung und Messwerte in
+   .claude/rules/daisyui.md. Textfarbe ist base-content, nicht die
+   Statusfarbe — die Bedeutung trägt das Icon. */
 .alert-info,
 .alert-success,
 .alert-warning,
@@ -189,11 +221,18 @@ h6 {
 	background-image: none;
 }
 
-/* Enhanced form focus - WCAG AA konform */
+.alert {
+	border-width: 1px;
+	border-style: solid;
+	border-left-width: 4px;
+}
+
+/* Enhanced form focus - WCAG AA konform.
+   Ungelayert, gewinnt damit gegen DaisyUIs @layer utilities. */
 .input:focus,
 .select:focus,
 .textarea:focus {
-	outline: 3px solid var(--color-primary); /* Deutlicher Focus-Indikator */
+	outline: 3px solid var(--color-primary);
 	outline-offset: 2px;
 	box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-primary) 20%, transparent);
 }
@@ -201,33 +240,76 @@ h6 {
 /* Subtle button hover */
 .btn:hover:not(:disabled) {
 	transform: translateY(-1px);
+	transition: transform var(--motion-instant) var(--motion-ease);
 }
 
-/* Card hover effect */
+/* Card hover — eine Definition für alle Karten.
+   Ersetzt zusätzlich den lokalen <style>-Block in SectionCard.svelte. */
 .card:hover {
-	box-shadow: 0 4px 12px color-mix(in oklab, var(--color-neutral) 10%, transparent);
+	box-shadow: var(--elevation-floating);
+	transition:
+		box-shadow var(--motion-quick) var(--motion-ease),
+		transform var(--motion-quick) var(--motion-ease);
 }
 
-/* Alert refinements */
-.alert {
-	border-width: 1px;
-	border-style: solid;
+/* ===== Touch-Targets =====
+   Setzt die 44-px-Regel aus design-system.md durch, statt sie an jeder
+   Aufrufstelle per min-h-11 zu wiederholen. Greift auch dort, wo btn-xs /
+   badge-xs sie bisher unterlief (Toast-Schließer, Footer, Tooltip-Auslöser
+   in BaseCheckbox). Ausnahme über .target-exempt für Ziele, die
+   nachweislich nicht mit dem Finger bedient werden. */
+.btn:not(.target-exempt),
+summary.btn {
+	min-height: var(--target-min);
 }
 
-.alert-info {
-	border-left-width: 4px;
-}
-.alert-success {
-	border-left-width: 4px;
-}
-.alert-warning {
-	border-left-width: 4px;
-}
-.alert-error {
-	border-left-width: 4px;
+.btn-circle:not(.target-exempt) {
+	min-width: var(--target-min);
 }
 
-/* ===== Component Animations ===== */
+/* Checkbox, Radio und Toggle über --size statt über min-height.
+   Die Handoff-Vorlage hatte sie in die min-height-Regel oben aufgenommen —
+   das verzerrt sie: DaisyUI setzt für diese drei width UND height fest,
+   min-height überschreibt nur die Höhe. Im Browser gemessen wurde daraus
+   Checkbox 24×44, Radio 24×44 (eine Ellipse) und Toggle 40×44 mit versetztem
+   Knopf; das Häkchen stand sichtbar über den Rahmen hinaus.
+   --size skaliert stattdessen proportional — hier aber auf --control-size
+   (28px) und ausdrücklich NICHT auf --target-min: sonst greifen Control-Größe
+   und Trefferfläche gleichzeitig und der Toggle würde 75×44 (im Feldmodus
+   sogar 96×56) breit. */
+.checkbox,
+.radio,
+.toggle {
+	--size: var(--control-size);
+}
+
+/* Die 44px trägt das umschließende <label>, nicht das Control.
+   WCAG 2.5.5 verlangt ein Ziel dieser Größe, kein Bedienelement dieser Größe
+   — und das Label ist in BaseCheckbox/BaseToggle ohnehin der Klickbereich
+   (`<label class="flex … py-2">`), kam mit Padding aber nur auf ~40px.
+   align-items: flex-start hält das Control oben bündig, wenn das Label
+   mehrzeilig wird oder die min-height die Zeile aufzieht — ohne das streckt
+   der Flex-Default `stretch` es wieder. */
+label:has(> .checkbox),
+label:has(> .radio),
+label:has(> .toggle) {
+	min-height: var(--target-min);
+	align-items: flex-start;
+}
+
+/* ===== Component Animations =====
+   Die Handoff-Vorlage wollte fadeIn, bounceIn, loadingPattern und spin
+   streichen („an keine Klasse gebunden"). Das stimmt wörtlich — sie hängen
+   aber an inline-styles bzw. an einem scoped <style>-Block und sind damit
+   sehr wohl in Gebrauch. Belegt per Grep über src/:
+     fadeIn/bounceIn  → map/LoadingOverlay.svelte:37,45 — inzwischen an
+                        .animate-fade-in / .animate-bounce-in gebunden (unten)
+     loadingPattern   → media/MediaThumbnail.svelte:243 (scoped <style>)
+     spin             → MaintenanceBanner.svelte:11     (style="animation: …")
+   Alle vier bleiben deshalb stehen. `spin` heißt zwar zufällig wie Tailwinds
+   eigene Keyframe — die wird aber nur emittiert, solange irgendwo
+   `animate-spin` im Build steht; auf diesen Zufall soll sich das Zahnrad im
+   Banner nicht verlassen. */
 @keyframes fadeIn {
 	from {
 		opacity: 0;
@@ -286,6 +368,26 @@ h6 {
 	}
 }
 
+/* Ersetzt den Inline-style in Toast.svelte. */
+.animate-slide-in {
+	animation: slideIn var(--motion-quick) var(--motion-ease);
+}
+
+/* Ersetzen die Inline-styles in map/LoadingOverlay.svelte.
+   fadeIn ist ein Übergang: --motion-panel (0.3s, war schon der Wert) mit
+   --motion-ease.
+   bounceIn ist keiner. Seine Kurve steckt in den vier Keyframe-Stops
+   (.3 → 1.05 → .9 → 1); eine zusätzliche Easing-Funktion biegt jedes Segment
+   einzeln und macht den Überschwung hektisch. Deshalb `linear` und die
+   eigene Stufe --motion-emphasis (400ms, der ursprüngliche Wert). */
+.animate-fade-in {
+	animation: fadeIn var(--motion-panel) var(--motion-ease);
+}
+
+.animate-bounce-in {
+	animation: bounceIn var(--motion-emphasis) linear;
+}
+
 /* ===== Global Scrollbar Styling ===== */
 .scroll-styled::-webkit-scrollbar {
 	width: 6px;
@@ -306,18 +408,30 @@ h6 {
 	background: color-mix(in oklab, var(--color-base-300) 80%, transparent);
 }
 
-/* ===== Media Loading States ===== */
-/* .loading-image Klasse entfernt - wird komponentenspezifisch in MediaThumbnail.svelte gehandhabt */
-
 /* ===== Global Panel Styles ===== */
 .panel-transition {
 	transition:
-		transform 0.3s ease-in-out,
-		opacity 0.3s ease-in-out;
+		transform var(--motion-panel) var(--motion-ease),
+		opacity var(--motion-panel) var(--motion-ease);
 }
 
 .panel-shadow {
-	box-shadow: -4px 0 24px oklch(0% 0 0 / 0.1);
+	box-shadow: var(--elevation-floating);
+}
+
+/* ===== Feldmodus-Navigation =====
+   Unterhalb von md wird die Schritt-Navigation zum ortsfesten Balken am
+   unteren Rand. Grund: die Primäraktion („Weiter") lag am Ende eines bis zu
+   2.400px langen Schritts — auf dem Telefon musste man durchscrollen, um
+   weiterzukommen. safe-area-inset für iPhones mit Home-Indicator. */
+@media (max-width: 767px) {
+	.form-step-nav {
+		position: sticky;
+		bottom: 0;
+		z-index: var(--layer-nav);
+		padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+		box-shadow: 0 -4px 16px color-mix(in oklab, var(--color-neutral) 14%, transparent);
+	}
 }
 
 /* ===== Accessibility ===== */

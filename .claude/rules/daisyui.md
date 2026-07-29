@@ -7,8 +7,10 @@ paths:
 
 # DaisyUI v5 & Theme `meeresmuseum`
 
-Styling-Basis: **DaisyUI v5** auf **Tailwind CSS v4**. Das gesamte Theme ist in
-`src/app.css` definiert.
+Styling-Basis: **DaisyUI v5** auf **Tailwind CSS v4**. Das Theme wird in
+`src/app.css` **deklariert**, seine Werte stehen seit 2026-07-29 eine Ebene
+tiefer in `src/css/tokens.css` — `app.css` mappt sie nur noch per `var()` in
+den `@plugin 'daisyui/theme'`-Block. Ein Farbwert existiert damit genau einmal.
 
 ---
 
@@ -29,7 +31,10 @@ DaisyUI wird über CSS eingebunden, **nicht** über ein Plugin-Array in
 
 Anleitungen, die `plugins: [require('daisyui')]` oder eine `daisyui: { themes: [...] }`
 -Sektion in `tailwind.config.js` zeigen, beziehen sich auf DaisyUI v4.
-**`src/app.css` ist die alleinige Source of Truth** für DaisyUI und das Theme.
+**`src/app.css` ist die alleinige Source of Truth** für die DaisyUI-Einbindung
+(Plugin, Theme-Deklaration, Overrides, `@theme`-Utilities); die **Farb- und
+Maß-Werte** kommen aus `src/css/tokens.css`. Beide zusammen — und keine
+JS-Config — definieren das Theme.
 
 > **Es gibt bewusst keine `tailwind.config.js` mehr.**
 > Die Datei war ein Rest aus der DaisyUI-v4-Zeit und wurde entfernt, nachdem
@@ -82,9 +87,16 @@ Verfügbar: `primary`, `secondary`, `accent`, `neutral`, `base-100/200/300`,
 ## Kontraste sind handgeprüft — nicht beiläufig ändern
 
 Die Farbwerte stehen in `oklch()` und wurden gezielt auf **WCAG 2.1 AA** eingestellt;
-die betroffenen Zeilen in `app.css` sind entsprechend kommentiert (z. B.
-`--color-primary` als „WCAG AA mit weißem Text", `--color-base-content` mit
-„>4.5:1 auf base-100").
+die betroffenen Zeilen in `src/css/tokens.css` tragen den gemessenen Wert als
+Kommentar (z. B. `--status-warning-strong` mit „5,52 / 4,58" für base-100/200),
+die Theme-Zuweisungen in `app.css` die Begründung der Wahl.
+
+**Zwei Rollen pro Statusfarbe:** `--status-*-surface` ist Flächenfarbe (Button,
+Badge, Alert-Tint), `--status-*-strong` Vordergrundfarbe (Text, Icon). Weißer
+Text auf `warning` erreichte nur 3,26:1 und auf `secondary` 3,19:1 — beide
+`*-content` stehen deshalb auf `--brand-slate-950` (6,05:1 bzw. 6,18:1, im
+Browser gemessen). Welche Variante wohin gehört, steht in `design-system.md`
+(„Statusfarben haben zwei Rollen").
 
 Wer einen Farbwert ändert, muss den Kontrast neu prüfen. Ein „etwas helleres Blau"
 kann die Barrierefreiheit brechen.
