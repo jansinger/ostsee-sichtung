@@ -51,9 +51,12 @@ test.describe.serial('Map Filter Panel', () => {
 		// M7: Das modale Vollbild-Overlay ist dem Initial-Load vorbehalten —
 		// Filter-/Jahreswechsel zeigen nur den Inline-Spinner im Filter-Panel.
 		// API künstlich verzögern, damit der Ladezustand beobachtbar ist.
+		// route.fallback() statt continue(): setupMapPage mockt den Endpoint
+		// bereits (fulfill) — continue() würde am Mock vorbei zum echten Server
+		// gehen, der in CI keine Datenbank hat.
 		await sharedPage.route('**/api/map/sightings?*', async (route) => {
 			await new Promise((resolve) => setTimeout(resolve, 700));
-			await route.continue();
+			await route.fallback();
 		});
 
 		await mapPage.openFilter();
