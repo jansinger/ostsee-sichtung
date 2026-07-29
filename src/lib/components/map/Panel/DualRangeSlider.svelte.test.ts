@@ -170,6 +170,26 @@ describe('DualRangeSlider', () => {
 		});
 	});
 
+	it('stellt das Datums-Feld auch dann zurück, wenn die Klemmung den Wert nicht ändert', async () => {
+		render(DualRangeSlider, { max: 364, year: 2025 });
+
+		// Start == Ende (Tag 100) — die Klemmung eines späteren Datums ergibt
+		// wieder 100, der State ändert sich also nicht. Das Feld darf trotzdem
+		// nicht auf dem getippten Datum stehen bleiben.
+		setRangeValue('time-range-end', 100);
+		setRangeValue('time-range-start', 100);
+
+		const startDate = getDateInput('time-date-start');
+		startDate.value = '2025-12-01';
+		startDate.dispatchEvent(new Event('change', { bubbles: true }));
+
+		await vi.waitFor(() => {
+			expect(getRange('time-range-start').value).toBe('100');
+			// Tag 100 in 2025 = 11. April
+			expect(getDateInput('time-date-start').value).toBe('2025-04-11');
+		});
+	});
+
 	it('enthält die Anzeige-Elemente #time-start und #time-end (Controller-Vertrag)', () => {
 		render(DualRangeSlider, { max: 364, year: 2025 });
 

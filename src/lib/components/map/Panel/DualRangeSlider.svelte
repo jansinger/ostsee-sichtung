@@ -92,6 +92,10 @@
 		}
 		rangeEl.value = String(clamp(day, min, max));
 		rangeEl.dispatchEvent(new Event('input', { bubbles: true }));
+		// Rückschreiben aus dem tatsächlichen (ggf. auf den anderen Griff
+		// geklemmten) Wert: ändert die Klemmung den State nicht, würde Svelte
+		// das Feld sonst auf dem getippten Datum stehen lassen.
+		input.value = isoDateFromDayOfYear(year, Number(rangeEl.value));
 	}
 
 	function onStartDateChange(event: Event): void {
@@ -155,7 +159,7 @@
 				type="date"
 				id="time-date-start"
 				class="input input-sm focus:input-primary w-full"
-				min={isoDateFromDayOfYear(year, 0)}
+				min={isoDateFromDayOfYear(year, min)}
 				max={isoDateFromDayOfYear(year, max)}
 				value={isoDateFromDayOfYear(year, startValue)}
 				onchange={onStartDateChange}
@@ -169,7 +173,7 @@
 				type="date"
 				id="time-date-end"
 				class="input input-sm focus:input-primary w-full"
-				min={isoDateFromDayOfYear(year, 0)}
+				min={isoDateFromDayOfYear(year, min)}
 				max={isoDateFromDayOfYear(year, max)}
 				value={isoDateFromDayOfYear(year, endValue)}
 				onchange={onEndDateChange}
