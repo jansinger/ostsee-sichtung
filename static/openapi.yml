@@ -1448,6 +1448,12 @@ paths:
       description: |
         Ruft Sichtungsdaten für die Kartendarstellung ab.
         Optimiert für große Datenmengen mit räumlicher Filterung.
+
+        Liefert nur freigegebene Sichtungen (`freigegeben_am IS NOT NULL`) mit
+        plausiblen Ostsee-Koordinaten (Bounding Box `9.4–30.2°O`, `53.0–66.0°N`).
+        Sichtungen mit fehlenden oder unplausiblen Koordinaten werden serverseitig
+        ausgeschlossen, damit keine "Null Island"-Marker ([0,0]) auf der Karte
+        erscheinen.
       parameters:
         - name: bbox
           in: query
@@ -1517,6 +1523,68 @@ paths:
                     example: "Fehler beim Abrufen der Sichtungen"
               example:
                 error: "Fehler beim Abrufen der Sichtungen"
+
+  /api/map/sightings/years:
+    get:
+      tags:
+        - map
+      summary: Verfügbare Jahre für die Sichtungskarte
+      description: |
+        Liefert die Jahre, für die freigegebene Sichtungen mit plausiblen
+        Ostsee-Koordinaten vorliegen, jeweils mit Anzahl — absteigend nach Jahr
+        sortiert. Jahre ohne Treffer (`count = 0`) werden nicht ausgegeben.
+
+        Dieselbe Grundmenge wie `GET /api/map/sightings` (Freigabe- und
+        Koordinatenfilter identisch), damit Jahres-Dropdown und Kartendaten nie
+        auseinanderlaufen. Das Kalenderjahr wird in deutscher Ortszeit gebildet
+        (Europe/Berlin), nicht UTC.
+      responses:
+        '200':
+          description: Verfügbare Jahre mit Anzahl der Sichtungen
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - years
+                properties:
+                  years:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - year
+                        - count
+                      properties:
+                        year:
+                          type: integer
+                          example: 2025
+                        count:
+                          type: integer
+                          example: 817
+              example:
+                years:
+                  - year: 2025
+                    count: 817
+                  - year: 2024
+                    count: 632
+        '500':
+          description: >-
+            Interner Serverfehler. Es wird ausschließlich eine generische
+            Fehlermeldung zurückgegeben; interne Fehlerdetails (`details`,
+            Exception-Message) werden aus Sicherheitsgründen NICHT an den Client
+            geleakt (der konkrete Fehler wird nur serverseitig geloggt).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Generische Fehlermeldung ohne interne Details
+                    example: "Fehler beim Abrufen der verfügbaren Jahre"
+              example:
+                error: "Fehler beim Abrufen der verfügbaren Jahre"
 
   /rest_sichtungen:
     post:

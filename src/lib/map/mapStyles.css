@@ -35,9 +35,13 @@
 	font-weight: bold !important;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
 	margin: 2px !important;
-	height: 1.375em !important;
-	width: 1.375em !important;
-	font-size: 14px !important;
+	/* Touch-Target min. 44x44px (WCAG 2.5.5) — Desktop und Mobile identisch */
+	height: 44px !important;
+	width: 44px !important;
+	font-size: 20px !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
 }
 
 .ol-zoom button:hover {
@@ -71,8 +75,10 @@
 }
 
 /* Zoom All Control */
+/* top: 11rem — ol-zoom (top 4.5rem) + zwei 44px-Buttons + Control-Padding, damit
+   die größeren Touch-Targets aus QW6 nicht mit dem Zoom-Control kollidieren. */
 .zoom-all-control {
-	top: 8.5rem;
+	top: 11rem;
 	left: 0.5rem;
 }
 
@@ -82,12 +88,16 @@
 	border-radius: 4px !important;
 	color: #444 !important;
 	cursor: pointer;
-	height: 1.375em !important;
-	width: 1.375em !important;
+	/* Touch-Target min. 44x44px (WCAG 2.5.5) — Desktop und Mobile identisch */
+	height: 44px !important;
+	width: 44px !important;
 	font-weight: bold !important;
-	font-size: 14px !important;
+	font-size: 20px !important;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
 	margin: 2px !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
 }
 
 .zoom-all-control button:hover {
@@ -95,8 +105,9 @@
 }
 
 /* Location Control */
+/* top: 14.5rem — analog zur Zoom-All-Control-Berechnung, ein 44px-Button darunter. */
 .location-control {
-	top: 12.5rem;
+	top: 14.5rem;
 	left: 0.5rem;
 }
 
@@ -106,12 +117,16 @@
 	border-radius: 4px !important;
 	color: #444 !important;
 	cursor: pointer;
-	height: 1.375em !important;
-	width: 1.375em !important;
+	/* Touch-Target min. 44x44px (WCAG 2.5.5) — Desktop und Mobile identisch */
+	height: 44px !important;
+	width: 44px !important;
 	font-weight: bold !important;
-	font-size: 14px !important;
+	font-size: 20px !important;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
 	margin: 2px !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
 	transition: all 0.2s ease;
 }
 
@@ -144,7 +159,7 @@
 	border-color: #3b82f6;
 }
 
-.gps-control .gps-button[style*="background-color: rgb(59, 130, 246)"] {
+.gps-control .gps-button[style*='background-color: rgb(59, 130, 246)'] {
 	border-color: #3b82f6;
 }
 
@@ -237,29 +252,12 @@
 		padding: 0.5rem !important;
 	}
 
-	/* Panel-Breite auf mobilen Geräten anpassen */
-	.w-90 {
-		width: 100vw !important;
-	}
+	/* QW8: .w-90-Regel entfernt — die Panels heißen inzwischen w-100 (siehe
+	   FilterPanel.svelte/LegendPanel.svelte), diese Regel griff nie mehr. */
 
-	/* OpenLayers Zoom-Buttons größer auf Touch-Geräten */
-	.ol-zoom button {
-		height: 2.2em !important;
-		width: 2.2em !important;
-		font-size: 16px !important;
-	}
-
-	.zoom-all-control button {
-		height: 2.2em !important;
-		width: 2.2em !important;
-		font-size: 16px !important;
-	}
-
-	.location-control button {
-		height: 2.2em !important;
-		width: 2.2em !important;
-		font-size: 16px !important;
-	}
+	/* OpenLayers Zoom-/Zoom-All-/Location-Buttons: 44px-Touch-Target ist bereits
+	   die Desktop-Basisgröße (siehe oben) und gilt unverändert auch mobil — keine
+	   separate Mobile-Größe mehr nötig. */
 
 	/* GPS Control größer auf mobilen Geräten */
 	.gps-control .gps-button {

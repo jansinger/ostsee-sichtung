@@ -4,7 +4,8 @@ import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { berlinDayRangeUtc } from '$lib/server/datetime/berlinDayRange';
 import { json } from '@sveltejs/kit';
-import { and, gte, isNotNull, lt, sql } from 'drizzle-orm';
+import { and, gte, lt, sql } from 'drizzle-orm';
+import { publicMapSightingConditions } from './publicMapConditions';
 import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:map:sightings');
@@ -17,10 +18,12 @@ export const GET: RequestHandler = async ({ url }) => {
 	try {
 		// Erstellen der Abfrage-Bedingungen
 		const conditions = [
-			// Geprüft heißt veröffentlicht: dieselbe Grundmenge wie die Legacy-API
-			// (/sichtungen/showreports.json), damit beide öffentlichen Flächen
-			// nachweislich an derselben Spalte hängen.
-			isNotNull(sightingsTable.approvedAt)
+			// Geprüft heißt veröffentlicht (dieselbe Grundmenge wie die Legacy-API,
+			// /sichtungen/showreports.json) UND plausible Ostsee-Koordinaten.
+			// Ohne den Koordinatenfilter fallen NULL-Koordinaten in
+			// sightingsToGeoJSON auf [0,0] zurück ("Null Island"). Identische
+			// Grundmenge wie /api/map/sightings/years — siehe publicMapConditions.ts.
+			...publicMapSightingConditions()
 		];
 
 		// Jahr-Filter hinzufügen, wenn vorhanden

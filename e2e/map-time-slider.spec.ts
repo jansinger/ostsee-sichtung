@@ -51,7 +51,7 @@ test.describe.serial('Map Time Slider', () => {
 		await expect(mapPage.getEndSlider()).toHaveValue('270');
 	});
 
-	test('Start-Slider wird auf Ende-1 geclampt wenn er Ende überschreitet', async () => {
+	test('Start-Slider wird auf Ende geclampt wenn er Ende überschreitet', async () => {
 		const result = await sharedPage.evaluate(() => {
 			const start = document.getElementById('time-range-start') as HTMLInputElement;
 			const end = document.getElementById('time-range-end') as HTMLInputElement;
@@ -69,11 +69,12 @@ test.describe.serial('Map Time Slider', () => {
 			return { startValue: start.value, endValue: end.value };
 		});
 
-		// Constraint: start (200) >= end (100) → start is clamped to end - 1 = 99
-		expect(result.startValue).toBe('99');
+		// Constraint (QW4): start (200) > end (100) → start wird auf end geklemmt;
+		// start == end ist erlaubt (Auswahl eines einzelnen Tages)
+		expect(result.startValue).toBe('100');
 	});
 
-	test('Ende-Slider wird auf Start+1 geclampt wenn er Start unterschreitet', async () => {
+	test('Ende-Slider wird auf Start geclampt wenn er Start unterschreitet', async () => {
 		const result = await sharedPage.evaluate(() => {
 			const start = document.getElementById('time-range-start') as HTMLInputElement;
 			const end = document.getElementById('time-range-end') as HTMLInputElement;
@@ -91,8 +92,9 @@ test.describe.serial('Map Time Slider', () => {
 			return { startValue: start.value, endValue: end.value };
 		});
 
-		// Constraint: end (50) <= start (200) → end is clamped to start + 1 = 201
-		expect(result.endValue).toBe('201');
+		// Constraint (QW4): end (50) < start (200) → end wird auf start geklemmt;
+		// start == end ist erlaubt (Auswahl eines einzelnen Tages)
+		expect(result.endValue).toBe('200');
 	});
 
 	test('Zeitraum-Anzeige-Elemente sind im DOM vorhanden', async () => {

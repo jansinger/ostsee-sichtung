@@ -18,6 +18,7 @@ import { Circle, Fill, Stroke, Style, Text } from 'ol/style';
 import { LocationControl } from './controls/LocationControl.js';
 import { ZoomAllControl } from './controls/ZoomAllControl.js';
 import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
+import { clampExtentToBaltic, type Extent } from './extentUtils';
 import { areExtentsColocated, type MapTranslations } from './mapUtils';
 import { clearStyleCache, createFeatureStyle, getFeatureColorGroup } from './styleUtils';
 import { sanitizeText } from '$lib/utils/sanitize';
@@ -51,6 +52,12 @@ export interface MapOptions {
 	timeStartId?: string;
 	timeEndId?: string;
 	enableLocationControl?: boolean;
+	/**
+	 * Überschreibt das über `getDefaultSightingYear()` ermittelte Default-Jahr,
+	 * z. B. mit dem Ergebnis von `pickDefaultYear()` (QW2b) sobald die
+	 * verfügbaren Jahre vom Server geladen sind.
+	 */
+	initialYear?: number;
 	onLoading?: (isLoading: boolean) => void;
 	onError?: (error: Error) => void;
 }
@@ -179,7 +186,7 @@ export class SichtungenMap {
 		const defaultZoom = 7;
 
 		// Initialize the timeFilter with sensible defaults (zeige das ganze Jahr)
-		this.displayedYear = getDefaultSightingYear();
+		this.displayedYear = options.initialYear ?? getDefaultSightingYear();
 		const yearStart = new Date(this.displayedYear, 0, 1).getTime();
 		const yearEnd = new Date(this.displayedYear, 11, 31, 23, 59, 59).getTime();
 		this.timeFilter = {
@@ -238,7 +245,13 @@ export class SichtungenMap {
 				minZoom: 2,
 				maxZoom: 18
 			}),
-			controls: defaultControls({ rotate: false }).extend(this.createCustomControls())
+			controls: defaultControls({
+				rotate: false,
+				zoomOptions: {
+					zoomInTipLabel: 'Vergrößern',
+					zoomOutTipLabel: 'Verkleinern'
+				}
+			}).extend(this.createCustomControls())
 		});
 
 		// Popup hinzufügen
@@ -294,11 +307,13 @@ export class SichtungenMap {
 		`;
 
 		// Style the popup
+		// padding-top berücksichtigt den 44px hohen Schließen-Button, damit dieser
+		// den Inhalt (Überschrift) nicht überlappt.
 		this.popupElement.style.cssText = `
 			position: absolute;
 			background-color: white;
 			box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-			padding: 15px;
+			padding: 44px 15px 15px 15px;
 			border-radius: 10px;
 			border: 1px solid #cccccc;
 			bottom: 12px;
@@ -307,13 +322,18 @@ export class SichtungenMap {
 			z-index: 1000;
 		`;
 
-		// Close button
+		// Close button — Hit-Target min. 44x44px (WCAG 2.5.5), Symbol bleibt optisch klein
 		const closer = this.popupElement.querySelector('.ol-popup-closer') as HTMLButtonElement;
-		closer.onclick = () => this.popup.setPosition(undefined);
+		closer.onclick = () => this.closePopup();
 		closer.style.cssText = `
 			position: absolute;
-			top: 2px;
-			right: 8px;
+			top: 0;
+			right: 0;
+			width: 44px;
+			height: 44px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
 			border: none;
 			background: none;
 			font-size: 18px;
@@ -412,7 +432,7 @@ export class SichtungenMap {
 					this.showPopup(event.coordinate, feature as Feature<Geometry>);
 				}
 			} else {
-				this.popup.setPosition(undefined);
+				this.closePopup();
 			}
 		});
 
@@ -655,6 +675,23 @@ export class SichtungenMap {
 		this.clusterSource.setDistance(distance);
 	}
 
+	/**
+	 * Schließt ein offenes Popup, falls eines geöffnet ist.
+	 *
+	 * QW3: Ein Popup bleibt sonst über Jahres-/Filterwechsel hinweg sichtbar
+	 * und zeigt Stammdaten eines Features, das nach dem Wechsel gar nicht
+	 * mehr in der aktuellen Auswahl enthalten ist ("stale popup"). Wird daher
+	 * am Anfang jeder Methode aufgerufen, die die sichtbare Feature-Menge
+	 * ändert, und zusätzlich von der Escape-Kaskade in SightingsMapView.
+	 *
+	 * @returns `true` wenn ein Popup offen war (und geschlossen wurde), sonst `false`.
+	 */
+	public closePopup(): boolean {
+		const wasOpen = this.popup.getPosition() !== undefined;
+		this.popup.setPosition(undefined);
+		return wasOpen;
+	}
+
 	public setYearChangeCallback(callback: (year: number) => void): void {
 		this.yearChangeCallback = callback;
 	}
@@ -665,6 +702,7 @@ export class SichtungenMap {
 
 	// Behalte alle bestehenden Public-Methoden für Kompatibilität
 	public async setYear(year: number): Promise<void> {
+		this.closePopup();
 		this.displayedYear = year;
 		this.yearChangeCallback?.(year);
 		this.loadingCallback?.(true);
@@ -834,6 +872,7 @@ export class SichtungenMap {
 	}
 
 	private applyFilter(searchTerm: string): void {
+		this.closePopup();
 		this.searchTerm = searchTerm;
 		this.loadingCallback?.(true);
 		void this.loadSightings(this.displayedYear, searchTerm)
@@ -879,14 +918,17 @@ export class SichtungenMap {
 	}
 
 	public zoomAllFeatures(): void {
-		const extent = this.reportsSource.getExtent();
-		if (extent && extent.every((val) => isFinite(val))) {
-			this.map.getView().fit(extent, {
-				padding: [50, 50, 50, 50],
-				duration: 1000,
-				maxZoom: 12
-			});
-		}
+		// Extent immer auf die Ostsee klemmen: Datensätze mit ungültigen
+		// Koordinaten (z. B. Null Island) ließen den Feature-Extent sonst auf
+		// Weltgröße anwachsen, und "Z" zoomte auf die Weltansicht. Ist der
+		// Feature-Extent leer/unendlich, wird stattdessen auf die Ostsee gezoomt
+		// statt gar nicht zu reagieren.
+		const extent = clampExtentToBaltic(this.reportsSource.getExtent() as Extent);
+		this.map.getView().fit(extent, {
+			padding: [50, 50, 50, 50],
+			duration: 1000,
+			maxZoom: 12
+		});
 	}
 
 	public toggleGeolocation(): boolean {
@@ -961,6 +1003,7 @@ export class SichtungenMap {
 	}
 
 	public setSpeciesVisibility(speciesId: string, visible: boolean): void {
+		this.closePopup();
 		this.hiddenSpecies[speciesId] = !visible;
 		this.reportsLayer.changed();
 		if (this.legendUpdateCallback) {
@@ -969,6 +1012,7 @@ export class SichtungenMap {
 	}
 
 	public setColorVisibility(colorGroup: string, visible: boolean): void {
+		this.closePopup();
 		this.hiddenColors[colorGroup] = !visible;
 		this.reportsLayer.changed();
 		if (this.legendUpdateCallback) {
@@ -977,8 +1021,9 @@ export class SichtungenMap {
 	}
 
 	public setFilter(start?: number, end?: number): void {
-		if (start) this.timeFilter.lower = start;
-		if (end) this.timeFilter.upper = end;
+		this.closePopup();
+		if (start !== undefined) this.timeFilter.lower = start;
+		if (end !== undefined) this.timeFilter.upper = end;
 		this.reportsLayer.changed();
 		if (this.legendUpdateCallback) {
 			this.legendUpdateCallback();

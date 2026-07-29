@@ -62,7 +62,7 @@
 <button
 	onclick={togglePanel}
 	class="glass text-base-content hover:bg-base-200 border-secondary/20 fixed top-52 right-0 z-50 flex h-32 w-8 cursor-pointer flex-col items-center justify-center rounded-l-lg border-2 border-r-0 shadow-xl backdrop-blur-sm transition-all duration-300 sm:w-12 md:w-8"
-	style="transform: translateX({isOpen ? '-400px' : '0px'});"
+	style="transform: translateX({isOpen ? 'calc(-1 * min(400px, 100vw))' : '0px'});"
 	aria-label="Legende {isOpen ? 'schließen' : 'öffnen'}"
 >
 	<Icon icon="lucide:list" class="mb-1 h-4 w-4" />
@@ -76,7 +76,7 @@
 
 <!-- Panel Container -->
 <div
-	class="glass border-secondary/20 fixed top-20 right-0 z-40 h-full w-100 overflow-hidden border-l-2 pr-8 shadow-2xl backdrop-blur-sm transition-transform duration-300 ease-in-out"
+	class="glass border-secondary/20 fixed top-20 right-0 z-40 h-full w-100 max-w-[100vw] overflow-hidden border-l-2 pr-8 shadow-2xl backdrop-blur-sm transition-transform duration-300 ease-in-out"
 	style="transform: translateX({isOpen ? '0px' : '100%'});"
 	role="dialog"
 	aria-modal="true"
@@ -124,7 +124,7 @@
 									{symbol.symbol}
 								</span>
 							{:else}
-								<div class="h-4 w-4 rounded-full bg-base-content/40"></div>
+								<div class="bg-base-content/40 h-4 w-4 rounded-full"></div>
 							{/if}
 						</div>
 

@@ -2,14 +2,20 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { getDaysInYear } from '$lib/map/dateUtils';
 
-	let { years = [], defaultYear } = $props<{
+	let {
+		years = [],
+		defaultYear,
+		yearCounts = {},
+		isLoading = false
+	} = $props<{
 		years?: number[];
 		defaultYear?: number;
+		yearCounts?: Record<number, number>;
+		isLoading?: boolean;
 	}>();
 
 	// Reactive state für Panel-Sichtbarkeit (Svelte 5 runes)
 	let isOpen = $state(false);
-	let isApplyingFilter = $state(false);
 	// Explizite User-Auswahl (undefined = noch keine manuelle Wahl getroffen)
 	let userSelectedYear: number | undefined = $state(undefined);
 	// Effektiv gewähltes Jahr: User-Auswahl hat Vorrang, sonst Prop-Default
@@ -30,28 +36,9 @@
 		isOpen = false;
 	}
 
-	// Kurze visuelle Rückmeldung bei Filter-Änderung
-	let filterFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
-	function handleFilterApply() {
-		isApplyingFilter = true;
-		if (filterFeedbackTimeout) clearTimeout(filterFeedbackTimeout);
-		filterFeedbackTimeout = setTimeout(() => {
-			isApplyingFilter = false;
-			filterFeedbackTimeout = null;
-		}, 800);
-	}
-
-	// Cleanup bei Unmount
-	$effect(() => {
-		return () => {
-			if (filterFeedbackTimeout) clearTimeout(filterFeedbackTimeout);
-		};
-	});
-
 	function handleYearChange(e: Event) {
 		const year = parseInt((e.target as HTMLSelectElement).value, 10);
 		if (!isNaN(year)) userSelectedYear = year;
-		handleFilterApply();
 	}
 </script>
 
@@ -59,12 +46,12 @@
 <button
 	onclick={togglePanel}
 	class="glass text-base-content hover:bg-base-200 border-primary/20 fixed top-20 right-0 z-50 flex h-32 w-8 cursor-pointer flex-col items-center justify-center rounded-l-lg border-2 border-r-0 shadow-xl backdrop-blur-sm transition-all duration-300 sm:w-12 md:w-8"
-	style="transform: translateX({isOpen ? '-400px' : '0px'});"
+	style="transform: translateX({isOpen ? 'calc(-1 * min(400px, 100vw))' : '0px'});"
 	aria-label="Filter {isOpen ? 'schließen' : 'öffnen'}"
 >
 	<Icon
-		icon={isApplyingFilter ? 'lucide:loader-2' : 'lucide:filter'}
-		class="mb-1 h-4 w-4 {isApplyingFilter ? 'animate-spin' : ''}"
+		icon={isLoading ? 'lucide:loader-2' : 'lucide:filter'}
+		class="mb-1 h-4 w-4 {isLoading ? 'animate-spin' : ''}"
 	/>
 	<div
 		class="text-xs whitespace-nowrap"
@@ -76,7 +63,7 @@
 
 <!-- Panel Container -->
 <div
-	class="glass border-primary/20 fixed top-20 right-0 z-40 h-full w-100 overflow-hidden border-l-2 pr-8 shadow-2xl backdrop-blur-sm transition-transform duration-300 ease-in-out"
+	class="glass border-primary/20 fixed top-20 right-0 z-40 h-full w-100 max-w-[100vw] overflow-hidden border-l-2 pr-8 shadow-2xl backdrop-blur-sm transition-transform duration-300 ease-in-out"
 	style="transform: translateX({isOpen ? '0px' : '100%'});"
 	role="dialog"
 	aria-modal="true"
@@ -100,21 +87,22 @@
 				<div class="fieldset w-full">
 					<label for="year-select" class="label py-1">
 						<span class="text-sm font-medium">Jahr</span>
-						{#if isApplyingFilter}
+						{#if isLoading}
 							<Icon icon="lucide:loader-2" class="text-primary ml-2 h-3 w-3 animate-spin" />
 						{/if}
 					</label>
 					<select
 						id="year-select"
-						class="select select-sm focus:select-primary w-full text-sm {isApplyingFilter
+						class="select select-sm focus:select-primary w-full text-sm {isLoading
 							? 'loading'
 							: ''}"
 						title="Wählen Sie das Jahr aus, für das Sichtungen angezeigt werden sollen"
 						onchange={handleYearChange}
-						disabled={isApplyingFilter}
 					>
 						{#each years.toReversed() as year (year)}
-							<option value={year} selected={year === selectedYear}>{year}</option>
+							<option value={year} selected={year === selectedYear}>
+								{yearCounts[year] ? `${year} (${yearCounts[year]})` : year}
+							</option>
 						{/each}
 					</select>
 				</div>
@@ -128,17 +116,12 @@
 							id="filter-input"
 							type="text"
 							bind:value={searchValue}
-							placeholder="E-Mail, Name, Schiff..."
+							placeholder="Fahrwasser, Schiffsname, Name…"
 							class="input input-sm focus:input-primary w-full pr-10"
-							title="Nach E-Mail, Schiffsname, Name oder Vorname filtern (Return zum filtern)."
+							title="Nach Fahrwasser, Seezeichen, Schiffsname oder Name filtern. Filtert automatisch beim Tippen."
 							aria-describedby="filter-help"
-							onkeydown={(e) => {
-								if (e.key === 'Enter') {
-									handleFilterApply();
-								}
-							}}
 						/>
-						{#if isApplyingFilter}
+						{#if isLoading}
 							<div class="absolute top-1/2 right-3 -translate-y-1/2 transform">
 								<Icon icon="lucide:loader-2" class="text-primary h-4 w-4 animate-spin" />
 							</div>
@@ -146,7 +129,7 @@
 					</div>
 					<label class="label py-0" for="filter-input">
 						<span id="filter-help" class="text-base-content/60 text-xs">
-							{isApplyingFilter ? 'Filter wird angewendet...' : 'Enter-Taste zum Filtern drücken'}
+							{isLoading ? 'Filter wird angewendet...' : 'Filtert automatisch beim Tippen'}
 						</span>
 					</label>
 				</div>

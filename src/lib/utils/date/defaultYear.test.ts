@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getDefaultSightingYear, isInTransitionPeriod, getAvailableYears } from './defaultYear';
+import {
+	getDefaultSightingYear,
+	isInTransitionPeriod,
+	getAvailableYears,
+	pickDefaultYear
+} from './defaultYear';
 
 describe('defaultYear utilities', () => {
 	describe('getDefaultSightingYear', () => {
@@ -46,11 +51,11 @@ describe('defaultYear utilities', () => {
 			// Test at the very beginning of January
 			vi.setSystemTime(new Date('2025-01-01T00:00:00'));
 			expect(getDefaultSightingYear()).toBe(2024);
-			
+
 			// Test at the very end of March
 			vi.setSystemTime(new Date('2025-03-31T23:59:59'));
 			expect(getDefaultSightingYear()).toBe(2024);
-			
+
 			// Test at the very beginning of April
 			vi.setSystemTime(new Date('2025-04-01T00:00:00'));
 			expect(getDefaultSightingYear()).toBe(2025);
@@ -124,6 +129,62 @@ describe('defaultYear utilities', () => {
 		it('should handle 0 years back', () => {
 			const years = getAvailableYears(0);
 			expect(years).toEqual([2024]);
+		});
+	});
+
+	describe('pickDefaultYear', () => {
+		it('gibt den Fallback zurück, wenn die Liste leer ist', () => {
+			expect(pickDefaultYear([], 2025)).toBe(2025);
+		});
+
+		it('gibt den Fallback zurück, wenn kein Jahr Daten hat (count 0)', () => {
+			const years = [
+				{ year: 2025, count: 0 },
+				{ year: 2024, count: 0 }
+			];
+			expect(pickDefaultYear(years, 2025)).toBe(2025);
+		});
+
+		it('gibt das aktuelle Jahr zurück, wenn es Daten hat', () => {
+			const years = [
+				{ year: 2025, count: 817 },
+				{ year: 2024, count: 620 }
+			];
+			expect(pickDefaultYear(years, 2025)).toBe(2025);
+		});
+
+		it('gibt das jüngste Jahr mit Daten zurück, wenn nur ältere Jahre Daten haben', () => {
+			const years = [
+				{ year: 2025, count: 0 },
+				{ year: 2024, count: 620 },
+				{ year: 2023, count: 400 }
+			];
+			expect(pickDefaultYear(years, 2025)).toBe(2024);
+		});
+
+		it('ignoriert Jahre nach dem Fallback-Jahr, wenn ältere Jahre mit Daten existieren', () => {
+			const years = [
+				{ year: 2026, count: 5 },
+				{ year: 2024, count: 620 }
+			];
+			expect(pickDefaultYear(years, 2025)).toBe(2024);
+		});
+
+		it('greift auf das jüngste Jahr mit Daten überhaupt zurück, wenn alle Jahre mit Daten in der Zukunft liegen', () => {
+			const years = [
+				{ year: 2027, count: 3 },
+				{ year: 2026, count: 5 }
+			];
+			expect(pickDefaultYear(years, 2025)).toBe(2027);
+		});
+
+		it('ist unabhängig von der Reihenfolge der Eingabeliste', () => {
+			const years = [
+				{ year: 2022, count: 10 },
+				{ year: 2024, count: 20 },
+				{ year: 2023, count: 15 }
+			];
+			expect(pickDefaultYear(years, 2025)).toBe(2024);
 		});
 	});
 });
