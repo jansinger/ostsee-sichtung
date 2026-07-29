@@ -35,23 +35,36 @@
 		}
 	});
 
-	// Custom classes for better styling
-	const badgeClasses = $derived.by(() => {
-		const baseClasses = `badge badge-${size} inline-flex items-center gap-1 font-medium`;
-		if (isTrue) {
-			return `${baseClasses} bg-green-100 text-green-800 border-green-200`;
-		} else {
-			return `${baseClasses} bg-gray-100 text-gray-600 border-gray-200`;
-		}
-	});
+	/* Vollständige Klassennamen, kein `badge-${size}`: Tailwind 4 erkennt nur
+	   Strings, die als Ganzes im Quelltext stehen (daisyui.md). */
+	const SIZE_CLASS = {
+		xs: 'badge-xs',
+		sm: 'badge-sm',
+		md: 'badge-md',
+		lg: 'badge-lg'
+	} as const;
+
+	/* badge-success ist eine Vollton-Fläche — dort ist `*-content` korrekt und
+	   kommt aus DaisyUI selbst. badge-ghost trägt base-content auf base-200. */
+	const badgeClasses = $derived(
+		`badge ${SIZE_CLASS[size]} ${isTrue ? 'badge-success' : 'badge-ghost'} inline-flex items-center gap-1 font-medium`
+	);
 </script>
 
 <div class={badgeClasses}>
 	{#if showIcon}
 		{#if isTrue}
-			<Icon icon="lucide:circle-check" class="flex-shrink-0" style="width: {iconSize}px; height: {iconSize}px;" />
+			<Icon
+				icon="lucide:circle-check"
+				class="flex-shrink-0"
+				style="width: {iconSize}px; height: {iconSize}px;"
+			/>
 		{:else}
-			<Icon icon="lucide:circle-x" class="flex-shrink-0" style="width: {iconSize}px; height: {iconSize}px;" />
+			<Icon
+				icon="lucide:circle-x"
+				class="flex-shrink-0"
+				style="width: {iconSize}px; height: {iconSize}px;"
+			/>
 		{/if}
 	{/if}
 	<span>{isTrue ? trueLabel : falseLabel}</span>

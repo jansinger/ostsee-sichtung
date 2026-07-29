@@ -617,8 +617,8 @@
 									{#if fileMetadata.exifData?.latitude && fileMetadata.exifData?.longitude}
 										<div class="bg-success/10 mt-1 rounded p-1.5">
 											<div class="flex items-center gap-1">
-												<Icon icon="lucide:map-pin" width="12" class="text-success" />
-												<span class="text-success text-xs font-medium">GPS</span>
+												<Icon icon="lucide:map-pin" width="12" class="text-success-strong" />
+												<span class="text-success-strong text-xs font-medium">GPS</span>
 												{#if isInBalticArea(fileMetadata.exifData.longitude, fileMetadata.exifData.latitude)}
 													<span class="badge badge-success badge-xs">Ostsee</span>
 												{:else}
@@ -684,7 +684,7 @@
 						     zwingend in eine Zeile — ohne Umbruch liefe sie über. -->
 						<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 							<div class="flex items-center gap-2">
-								<Icon icon="lucide:map-pin" class="text-success h-[18px] w-[18px]" />
+								<Icon icon="lucide:map-pin" class="text-success-strong h-[18px] w-[18px]" />
 								<h4 class="text-sm font-semibold">GPS-Position</h4>
 							</div>
 							<div class="badge badge-success badge-sm text-nowrap">
@@ -783,7 +783,7 @@
 									aria-hidden="true"
 									icon="lucide:check"
 									width="14"
-									class="text-success shrink-0"
+									class="text-success-strong shrink-0"
 								/>
 								Position, Datum und Uhrzeit aus dem Foto übernommen
 							</p>

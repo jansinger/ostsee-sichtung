@@ -48,7 +48,7 @@
 	<div class="card-body p-2">
 		<details class="collapse">
 			<summary class="collapse-title flex cursor-pointer items-center gap-2 text-sm font-medium">
-				<Icon icon="lucide:circle-help" width="16" class="text-info" />
+				<Icon icon="lucide:circle-help" width="16" class="text-info-strong" />
 				Hilfe & Tipps für eine wertvolle Sichtungsmeldung
 			</summary>
 			<div class="collapse-content text-base-content/80 text-sm">
@@ -66,7 +66,7 @@
 							</p>
 							<div class="bg-base-100 mt-3 rounded-lg p-3">
 								{#if !loading && fetchFailed}
-									<p class="text-base-content/50 text-center text-xs">
+									<p class="text-base-content/70 text-center text-xs">
 										Statistiken konnten nicht geladen werden
 									</p>
 								{:else}
@@ -180,12 +180,12 @@
 					<div class="alert alert-success">
 						<div>
 							<h4 class="mb-4 flex items-center justify-center gap-2 text-center font-semibold">
-								<Icon icon="lucide:chart-pie" width="16" class="text-success" />
+								<Icon icon="lucide:chart-pie" width="16" class="text-success-strong" />
 								Ihre Daten machen den Unterschied
 							</h4>
 							<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 								<div class="bg-success/10 border-success/20 rounded-lg border p-4 text-center">
-									<div class="text-success mb-2 text-2xl font-bold">
+									<div class="text-success-strong mb-2 text-2xl font-bold">
 										{#if loading}
 											<span class="loading loading-dots loading-sm"></span>
 										{:else}
@@ -207,7 +207,7 @@
 									</div>
 								</div>
 								<div class="bg-success/10 border-success/20 rounded-lg border p-4 text-center">
-									<div class="text-success mb-2 text-2xl font-bold">
+									<div class="text-success-strong mb-2 text-2xl font-bold">
 										{#if loading}
 											<span class="loading loading-dots loading-sm"></span>
 										{:else if statistics && statistics.totalSightings > 0}
@@ -235,7 +235,7 @@
 					<div class="alert alert-warning">
 						<div>
 							<h4 class="flex items-center gap-2 font-semibold">
-								<Icon icon="lucide:triangle-alert" width="16" class="text-warning" />
+								<Icon icon="lucide:triangle-alert" width="16" class="text-warning-strong" />
 								Totfunde - Besonders wichtig!
 							</h4>
 							<p class="mt-1 text-xs">
@@ -246,7 +246,7 @@
 							</p>
 							<div class="bg-warning/10 mt-3 rounded-lg p-3">
 								<div class="text-center">
-									<div class="text-warning mb-1 text-xl font-bold">
+									<div class="text-warning-strong mb-1 text-xl font-bold">
 										{#if loading}
 											<span class="loading loading-dots loading-sm"></span>
 										{:else}

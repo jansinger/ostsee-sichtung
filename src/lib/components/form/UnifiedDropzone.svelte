@@ -283,7 +283,7 @@
 					icon="lucide:upload"
 					class="mb-2 h-8 w-8 transition-colors {isDragOver
 						? 'text-primary'
-						: 'text-base-content/40'}"
+						: 'text-base-content/70'}"
 				/>
 				<p class="text-sm font-medium {isDragOver ? 'text-primary' : ''}">
 					{isDragOver ? `${multiple ? 'Dateien' : 'Datei'} hier ablegen!` : title}

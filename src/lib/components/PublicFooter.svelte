@@ -46,7 +46,7 @@
 				<span class="hidden sm:inline">Deutsches Meeresmuseum, Stralsund, Deutschland</span>
 				<span class="sm:hidden">Deutsches Meeresmuseum</span>
 			</p>
-			<p class="mt-1 text-xs opacity-50">
+			<p class="mt-1 text-xs opacity-70">
 				<span class="hidden sm:inline">Meldeplattform für Meerestiere in der Ostsee</span>
 				<span class="sm:hidden">Ostsee Sichtungen</span>
 			</p>

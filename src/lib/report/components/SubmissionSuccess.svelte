@@ -28,7 +28,7 @@
 		<div class="mb-8 space-y-6 text-center">
 			<div class="flex justify-center">
 				<div class="bg-success/20 flex h-20 w-20 items-center justify-center rounded-full">
-					<Icon icon="lucide:check" width="40" class="text-success" />
+					<Icon icon="lucide:check" width="40" class="text-success-strong" />
 				</div>
 			</div>
 
@@ -45,11 +45,11 @@
 		<!-- Success Details -->
 		<div class="card bg-base-200 mb-8 shadow-xl">
 			<div class="card-body">
-				<h2 class="card-title text-success mb-4">Was passiert als Nächstes?</h2>
+				<h2 class="card-title text-success-strong mb-4">Was passiert als Nächstes?</h2>
 
 				<div class="space-y-4">
 					<div class="flex items-start gap-3">
-						<Icon icon="lucide:check-circle" width="24" height="24" class="text-success mt-1" />
+						<Icon icon="lucide:check-circle" width="24" height="24" class="text-success-strong mt-1" />
 						<div>
 							<h3 class="font-semibold">Bestätigung per E-Mail</h3>
 							<p class="text-base-content/70 text-sm">
@@ -61,7 +61,7 @@
 					</div>
 
 					<div class="flex items-start gap-3">
-						<Icon icon="lucide:activity" width="24" height="24" class="text-info mt-1" />
+						<Icon icon="lucide:activity" width="24" height="24" class="text-info-strong mt-1" />
 						<div>
 							<h3 class="font-semibold">Wissenschaftliche Auswertung</h3>
 							<p class="text-base-content/70 text-sm">
@@ -72,7 +72,7 @@
 
 					{#if submittedData?.mediaUpload}
 						<div class="flex items-start gap-3">
-							<Icon icon="lucide:camera" width="24" height="24" class="text-accent mt-1" />
+							<Icon icon="lucide:camera" width="24" height="24" class="text-accent-strong mt-1" />
 							<div>
 								<h3 class="font-semibold">Medien-Upload</h3>
 								<p class="text-base-content/70 text-sm">
@@ -85,7 +85,7 @@
 
 					{#if submittedData?.isDead}
 						<div class="flex items-start gap-3">
-							<Icon icon="lucide:triangle-alert" width="24" height="24" class="text-warning mt-1" />
+							<Icon icon="lucide:triangle-alert" width="24" height="24" class="text-warning-strong mt-1" />
 							<div>
 								<h3 class="font-semibold">Totfund gemeldet</h3>
 								<p class="text-base-content/70 text-sm">

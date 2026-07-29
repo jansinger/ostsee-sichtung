@@ -65,7 +65,7 @@
 		</button>
 	</div>
 </div>
-<div class="mb-4 text-sm text-gray-600">
+<div class="mb-4 text-sm text-base-content/70">
 	Referenz-ID: {sighting.referenceId}
 </div>
 <AdminSightingEditForm {sighting} {onCancel} onSave={handleSave} />

@@ -99,7 +99,7 @@
 		</button>
 	</div>
 </div>
-<div class="mb-4 text-sm text-gray-600">
+<div class="mb-4 text-sm text-base-content/70">
 	Referenz-ID: {sighting.referenceId}
 </div>
 
@@ -126,8 +126,8 @@
 					class="h-5 w-5 {result.isHighRisk
 						? 'text-error'
 						: result.score > 0
-							? 'text-warning'
-							: 'text-success'}"
+							? 'text-warning-strong'
+							: 'text-success-strong'}"
 				/>
 				<h3 class="card-title text-base">
 					{#if result.isHighRisk}

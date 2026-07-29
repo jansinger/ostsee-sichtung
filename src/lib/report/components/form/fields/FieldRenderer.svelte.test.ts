@@ -212,7 +212,7 @@ describe('FieldRenderer', () => {
 			});
 
 			// Erfolgs-Icon (lucide:check) darf nicht gerendert sein
-			const check = screen.container.querySelector('.text-success');
+			const check = screen.container.querySelector('.text-success-strong');
 			expect(check).toBeNull();
 		});
 
@@ -224,7 +224,7 @@ describe('FieldRenderer', () => {
 				touched: true
 			});
 
-			const check = screen.container.querySelector('.text-success');
+			const check = screen.container.querySelector('.text-success-strong');
 			expect(check).not.toBeNull();
 		});
 
@@ -237,7 +237,7 @@ describe('FieldRenderer', () => {
 				error: 'Fehler'
 			});
 
-			const check = screen.container.querySelector('.text-success');
+			const check = screen.container.querySelector('.text-success-strong');
 			expect(check).toBeNull();
 		});
 	});

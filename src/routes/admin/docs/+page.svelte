@@ -94,19 +94,19 @@
 				<div class="bg-warning/10 border-warning/20 rounded border p-4">
 					<ul class="space-y-2 text-sm">
 						<li class="flex items-start gap-2">
-							<span class="text-warning font-bold">•</span>
+							<span class="text-warning-strong font-bold">•</span>
 							<span>API-Schlüssel und Tokens niemals in Client-Code verwenden</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<span class="text-warning font-bold">•</span>
+							<span class="text-warning-strong font-bold">•</span>
 							<span>Alle Admin-Aktionen werden protokolliert</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<span class="text-warning font-bold">•</span>
+							<span class="text-warning-strong font-bold">•</span>
 							<span>Bei verdächtigen Aktivitäten wird die Session beendet</span>
 						</li>
 						<li class="flex items-start gap-2">
-							<span class="text-warning font-bold">•</span>
+							<span class="text-warning-strong font-bold">•</span>
 							<span>Lösch-Operationen können nicht rückgängig gemacht werden</span>
 						</li>
 					</ul>

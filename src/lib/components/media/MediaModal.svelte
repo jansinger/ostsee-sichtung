@@ -153,7 +153,7 @@
 				{:else}
 					<!-- Andere Dateitypen - Vorschau nicht möglich -->
 					<div class="flex flex-col items-center justify-center py-12 text-center">
-						<Icon icon="lucide:file-type" width="48" class="text-base-content/40 mb-4" />
+						<Icon icon="lucide:file-type" width="48" class="text-base-content/70 mb-4" />
 						<h4 class="mb-2 text-lg font-semibold">Vorschau nicht verfügbar</h4>
 						<p class="text-base-content/60 mb-4">Für diesen Dateityp ist keine Vorschau möglich.</p>
 						<a
@@ -213,7 +213,7 @@
 								{#if hasGPSData()}
 									<div class="bg-base-200 rounded-lg p-3">
 										<h5 class="mb-2 flex items-center gap-1 text-xs font-medium">
-											<Icon icon="lucide:map-pin" width="12" class="text-success" />
+											<Icon icon="lucide:map-pin" width="12" class="text-success-strong" />
 											GPS-Position
 										</h5>
 										<div class="space-y-1 text-xs">
@@ -238,7 +238,7 @@
 								{#if hasCameraData()}
 									<div class="bg-base-200 rounded-lg p-3">
 										<h5 class="mb-2 flex items-center gap-1 text-xs font-medium">
-											<Icon icon="lucide:settings" width="12" class="text-secondary" />
+											<Icon icon="lucide:settings" width="12" class="text-secondary-strong" />
 											Kamera-Einstellungen
 										</h5>
 										<div class="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">

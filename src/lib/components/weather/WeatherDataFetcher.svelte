@@ -153,7 +153,7 @@
 					{/if}
 				</p>
 				{#if weatherData._metadata?.dataType === 'forecast'}
-					<p class="text-warning">
+					<p class="text-warning-strong">
 						⚠️ Prognosedaten für heutige Sichtung (aktualisiert sich mehrmals täglich)
 					</p>
 				{/if}

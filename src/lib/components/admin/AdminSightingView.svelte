@@ -353,7 +353,7 @@
 				class="text-primary mx-auto mb-4 animate-spin"
 			/>
 			<p class="text-base-content/70 text-lg">Daten werden geladen...</p>
-			<p class="text-base-content/50 text-sm">Bitte warten Sie einen Moment</p>
+			<p class="text-base-content/70 text-sm">Bitte warten Sie einen Moment</p>
 		</div>
 	</div>
 {:else}

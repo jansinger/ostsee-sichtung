@@ -112,7 +112,7 @@
 		<div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
 			<div class="bg-base-100 rounded-lg p-3">
 				<h5 class="mb-2 flex items-center gap-2 font-medium">
-					<Icon icon="lucide:info" width="16" class="text-info" />
+					<Icon icon="lucide:info" width="16" class="text-info-strong" />
 					API-Wetterdaten
 				</h5>
 
@@ -121,7 +121,7 @@
 
 			<div class="bg-base-100 rounded-lg p-3">
 				<h5 class="mb-2 flex items-center gap-2 font-medium">
-					<Icon icon="lucide:map-pin" width="16" class="text-secondary" />
+					<Icon icon="lucide:map-pin" width="16" class="text-secondary-strong" />
 					Position & Zeit
 				</h5>
 
@@ -149,19 +149,19 @@
 		<!-- Zusätzliche Wetterdaten -->
 		<div class="border-base-300 mt-4 border-t pt-3">
 			<h5 class="mb-2 flex items-center gap-2 text-sm font-medium">
-				<Icon icon="lucide:cloud" width="16" class="text-info" />
+				<Icon icon="lucide:cloud" width="16" class="text-info-strong" />
 				Erweiterte Wetterdaten
 			</h5>
 			<div class="grid grid-cols-2 gap-3 text-sm md:grid-cols-3">
 				{#if weatherData.processed.humidity}
 					<div class="flex items-center gap-2">
-						<Icon icon="lucide:cloud" width="14" class="text-info" />
+						<Icon icon="lucide:cloud" width="14" class="text-info-strong" />
 						<span>Luftfeuchtigkeit: {weatherData.processed.humidity}%</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.precipitation}
 					<div class="flex items-center gap-2">
-						<Icon icon="lucide:cloud-rain" width="14" class="text-info" />
+						<Icon icon="lucide:cloud-rain" width="14" class="text-info-strong" />
 						<span>Niederschlag: {weatherData.raw_data.precipitation}mm</span>
 					</div>
 				{/if}
@@ -173,25 +173,25 @@
 				{/if}
 				{#if weatherData.raw_data.wave_height}
 					<div class="flex items-center gap-2">
-						<Icon icon="lucide:waves" width="14" class="text-info" />
+						<Icon icon="lucide:waves" width="14" class="text-info-strong" />
 						<span>Wellenhöhe: {weatherData.raw_data.wave_height.toFixed(2)}m</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.wave_direction}
 					<div class="flex items-center gap-2">
-						<Icon icon="lucide:wind" width="14" class="text-info" />
+						<Icon icon="lucide:wind" width="14" class="text-info-strong" />
 						<span>Wellenrichtung: {Math.round(weatherData.raw_data.wave_direction)}°</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.wave_period}
 					<div class="flex items-center gap-2">
-						<Icon icon="lucide:gem" width="14" class="text-info" />
+						<Icon icon="lucide:gem" width="14" class="text-info-strong" />
 						<span>Wellenperiode: {weatherData.raw_data.wave_period.toFixed(1)}s</span>
 					</div>
 				{/if}
 				{#if weatherData.raw_data.sea_surface_temperature}
 					<div class="flex items-center gap-2">
-						<Icon icon="lucide:thermometer" width="14" class="text-info" />
+						<Icon icon="lucide:thermometer" width="14" class="text-info-strong" />
 						<span>Wassertemp: {weatherData.raw_data.sea_surface_temperature}°C</span>
 					</div>
 				{/if}
@@ -215,7 +215,7 @@
 						<div>Konfidenz: {Math.round(weatherData.quality.confidence * 100)}%</div>
 					</div>
 					{#if weatherData.quality.notes}
-						<div class="text-base-content/50 mt-2 text-xs">
+						<div class="text-base-content/70 mt-2 text-xs">
 							Hinweis: {weatherData.quality.notes}
 						</div>
 					{/if}
@@ -237,6 +237,9 @@
 {:else}
 	<div class="no-weather-data border-base-300 bg-base-50 mt-4 rounded-lg border p-4">
 		<div class="text-base-content/70 text-center">
+			<!-- opacity-50 ist hier zulässig: rein dekoratives Leerzustands-Icon ohne
+			     Textinhalt. Die /60-Untergrenze aus design-system.md gilt für Zeichen,
+			     die gelesen werden müssen — die Aussage trägt der Text darunter. -->
 			<Icon icon="lucide:cloud" width="24" class="mx-auto mb-2 opacity-50" />
 			<p class="font-medium">Keine API-Wetterdaten verfügbar</p>
 			<p class="mt-1 text-sm">Diese Sichtung wurde vor der Weather-API-Integration erstellt.</p>

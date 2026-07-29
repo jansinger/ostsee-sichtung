@@ -59,7 +59,7 @@
 		{#if imageFiles.length > 0}
 			<div class="mb-6">
 				<div class="mb-2 flex items-center gap-2">
-					<Icon icon="lucide:images" width="16" class="text-secondary" />
+					<Icon icon="lucide:images" width="16" class="text-secondary-strong" />
 					<h5 class="text-base-content/70 text-sm font-medium">
 						Bilder ({imageFiles.length})
 					</h5>
@@ -76,7 +76,7 @@
 		{#if videoFiles.length > 0}
 			<div class="mb-6">
 				<div class="mb-2 flex items-center gap-2">
-					<Icon icon="lucide:video" width="16" class="text-secondary" />
+					<Icon icon="lucide:video" width="16" class="text-secondary-strong" />
 					<h5 class="text-base-content/70 text-sm font-medium">
 						Videos ({videoFiles.length})
 					</h5>
@@ -93,7 +93,7 @@
 		{#if otherFiles.length > 0}
 			<div class="mb-6">
 				<div class="mb-2 flex items-center gap-2">
-					<Icon icon="lucide:file-text" width="16" class="text-secondary" />
+					<Icon icon="lucide:file-text" width="16" class="text-secondary-strong" />
 					<h5 class="text-base-content/70 text-sm font-medium">
 						Andere Dateien ({otherFiles.length})
 					</h5>
@@ -132,7 +132,7 @@
 {:else}
 	<div class="bg-base-100 flex items-center justify-center rounded-lg p-8 text-center">
 		<div class="space-y-3">
-			<Icon icon="lucide:images" width="32" class="text-base-content/40 mx-auto" />
+			<Icon icon="lucide:images" width="32" class="text-base-content/70 mx-auto" />
 			<p class="text-base-content/60 text-sm">Keine Medien vorhanden</p>
 		</div>
 	</div>
