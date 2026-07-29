@@ -55,8 +55,10 @@ function isProvided(value: unknown): boolean {
  * **kein** Ersatzwert gesetzt.
  *
  * Der Legacy-Vertrag bleibt unberührt: `mapLegacyToCurrentSchema` setzt den
- * dokumentierten Default (`tierart || 0`) bereits an der Legacy-Grenze, bevor
- * diese Funktion überhaupt läuft.
+ * dokumentierten Default (`tierart ?? SpeciesEnum.HARBOR_PORPOISE`) bereits an
+ * der Legacy-Grenze, bevor diese Funktion überhaupt läuft. Nullish-Coalescing,
+ * nicht `||` — eine übermittelte `0` ist eine gemeldete Art und darf nicht als
+ * fehlend behandelt werden.
  */
 function resolveSpecies(formData: SightingFormValues): number {
 	if (!isProvided(formData.species)) {

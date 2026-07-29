@@ -860,7 +860,7 @@ describe('mapFormToSighting', () => {
 		 * `species` ist Pflichtfeld; ein Fehlen ist deshalb ein echter Fehler
 		 * und kein zu ratender Wert. Der Legacy-Vertrag bleibt unberührt:
 		 * `mapLegacyToCurrentSchema` setzt den dokumentierten Default
-		 * (`tierart || 0`) bereits an der Legacy-Grenze.
+		 * (`tierart ?? SpeciesEnum.HARBOR_PORPOISE`) bereits an der Legacy-Grenze.
 		 */
 		it('wirft, wenn keine Tierart angegeben wurde', () => {
 			const formData = createMinimalFormData();
