@@ -247,9 +247,9 @@ Bewertung: ✅ erfüllt · ⚠️ teilweise · ❌ nicht erfüllt
 | Request-Abbruch bei schnellen Wechseln              | ✅ AbortController                                     | —       |
 | Kein Layout-Shift                                   | ✅                                                     | —       |
 | **Accessibility**                                   |                                                        |         |
-| Karte fokussierbar, Tastatur-Pan/Zoom               | ❌                                                     | K3      |
-| Marker per Tastatur/SR erreichbar                   | ❌                                                     | K3      |
-| Datenalternative (Tabelle/Liste)                    | ❌                                                     | K3      |
+| Karte fokussierbar, Tastatur-Pan/Zoom               | ✅ behoben 2026-07-29 (`tabindex="0"` + Fokusring)     | K3      |
+| Marker per Tastatur/SR erreichbar                   | ✅ über Listenansicht (Umschalter „Karte / Liste")     | K3      |
+| Datenalternative (Tabelle/Liste)                    | ✅ behoben 2026-07-29 (`SightingsListView`)            | K3      |
 | Korrekte ARIA-Semantik                              | ❌                                                     | H5      |
 | Einzeltasten-Shortcuts abschaltbar                  | ❌                                                     | H7      |
 | Kontraste in Panels/Popups                          | ⚠️ Beluga-Badge, sonst ok                              | M1      |
@@ -271,7 +271,7 @@ Bewertung: ✅ erfüllt · ⚠️ teilweise · ❌ nicht erfüllt
 
 **Mittelfristig:**
 
-- K3: `tabindex` + Fokusring + Skip-Link; Listen-/Tabellenansicht der gefilterten Sichtungen.
+- K3: `tabindex` + Fokusring + Skip-Link; Listen-/Tabellenansicht der gefilterten Sichtungen. — **Umgesetzt 2026-07-29** (`SightingsMapView.svelte`, `SightingsListView.svelte`, `listViewUtils.ts`).
 - H5: ARIA-Sanierung der Panels (inert, region, Fokus-Management).
 - M1: Einheitliches Marker-/Legenden-Codierungssystem (colorblind-safe, Legende aus gemeinsamen Konstanten).
 - M4: URL-State + Filter-Chips + Reset.
