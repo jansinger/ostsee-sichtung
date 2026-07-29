@@ -1022,8 +1022,8 @@ export class SichtungenMap {
 
 	public setFilter(start?: number, end?: number): void {
 		this.closePopup();
-		if (start) this.timeFilter.lower = start;
-		if (end) this.timeFilter.upper = end;
+		if (start !== undefined) this.timeFilter.lower = start;
+		if (end !== undefined) this.timeFilter.upper = end;
 		this.reportsLayer.changed();
 		if (this.legendUpdateCallback) {
 			this.legendUpdateCallback();
