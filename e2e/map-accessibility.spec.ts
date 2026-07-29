@@ -73,7 +73,7 @@ test.describe.serial('Map Accessibility', () => {
 		await expect(mapPage.getLegendPanel()).toHaveAttribute('aria-hidden', 'true');
 	});
 
-	// ─── Befund K3: Barrierefreie Sichtungskarte (TDD RED) ─────────────────────
+	// ─── Befund K3: Barrierefreie Sichtungskarte ───────────────────────────────
 
 	test('Karten-Container ist per Tastatur fokussierbar (tabindex=0)', async () => {
 		await expect(mapPage.getMapContainer()).toHaveAttribute('tabindex', '0');

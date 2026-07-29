@@ -423,13 +423,16 @@
 </script>
 
 <div class="{containerClass} map-container-wrapper">
-	<!-- K3: Skip-Link — erstes fokussierbares Element, überspringt die Karte -->
-	<a
-		href="#map-skip-target"
-		class="btn btn-primary sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-1/2 focus:z-[70] focus:-translate-x-1/2"
-	>
-		Karte überspringen
-	</a>
+	<!-- K3: Skip-Link — erstes fokussierbares Element, überspringt die Karte.
+	     Nur in der Kartenansicht: in der Liste gibt es nichts zu überspringen. -->
+	{#if viewMode === 'map'}
+		<a
+			href="#map-skip-target"
+			class="btn btn-primary sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-1/2 focus:z-[70] focus:-translate-x-1/2"
+		>
+			Karte überspringen
+		</a>
+	{/if}
 
 	{#if showTitle}
 		<h1 class={titleClass}>

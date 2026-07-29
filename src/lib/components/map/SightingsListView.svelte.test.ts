@@ -5,9 +5,9 @@ import SightingsListView from './SightingsListView.svelte';
 import type { SightingListEntry } from '$lib/map/listViewUtils';
 
 /**
- * TDD RED-Phase für Befund K3 (Barrierefreie Sichtungskarte):
- * Die Komponente SightingsListView.svelte existiert noch nicht — diese Tests
- * definieren den Vertrag der barrierefreien Tabellen-Alternative zur Karte.
+ * Tests für SightingsListView (Befund K3): der Vertrag der barrierefreien
+ * Tabellen-Alternative zur Sichtungskarte — echte Tabellen-Semantik,
+ * Totfund-/Fahrwasser-Darstellung und Leerzustand mit role="status".
  */
 
 // 2025-06-15T12:00:00Z bzw. 2025-06-20T12:00:00Z — mittags UTC gegen Zeitzonen-Kipper

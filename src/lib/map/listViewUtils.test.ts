@@ -8,9 +8,9 @@ import {
 } from '$lib/map/listViewUtils';
 
 /**
- * TDD RED-Phase für Befund K3 (Barrierefreie Sichtungskarte):
- * Das Modul $lib/map/listViewUtils existiert noch nicht — diese Tests
- * definieren den Vertrag der Listenansicht-Utilities.
+ * Tests für die Listenansicht-Utilities der Sichtungskarte (Befund K3):
+ * definieren den Vertrag von Sichtbarkeit, Mapping und Sortierung der
+ * barrierefreien Tabellen-Alternative.
  *
  * Sichtbarkeitslogik ist identisch zur Kartenlogik in styleUtils/countManager:
  * versteckt wenn hiddenSpecies[ta], hiddenColors[farbgruppe] oder
