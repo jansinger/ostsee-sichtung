@@ -380,3 +380,92 @@ test.describe('Accessibility — text-error auf Buttons', () => {
 		).toBeGreaterThanOrEqual(4.5);
 	});
 });
+
+// ── Touch-Target der Hinweis-Buttons in der Feld-Pipeline ──────────────────
+
+/**
+ * Projekt-Mindestmaß ist 44×44 px (`design-system.md`, A11y-Mindestanforderungen)
+ * — das Formular wird an Deck einhändig auf dem Telefon ausgefüllt.
+ *
+ * Gemessen wird die **echte Trefferfläche**, nicht `getBoundingClientRect()`:
+ * Der Hinweis-Button steht inline in einer Label-Zeile, und die 44 px kommen
+ * über ein Pseudo-Element, damit die Zeilenhöhe (28 px) erhalten bleibt. Ein
+ * Test über die Box-Maße würde diese Lösung fälschlich durchfallen lassen und
+ * eine Lösung durchwinken, die zwar 44 px groß aussieht, aber daneben klickt.
+ * `elementFromPoint` prüft stattdessen, was der Browser an den Rändern des
+ * 44-px-Quadrats tatsächlich träfe.
+ */
+const MIN_TOUCH_TARGET = 44;
+
+async function probeHitArea(page: import('@playwright/test').Page, selector: string) {
+	return page.evaluate(
+		({ selector, size }: { selector: string; size: number }) => {
+			const buttons = Array.from(document.querySelectorAll<HTMLElement>(selector));
+			const half = size / 2 - 1; // 1 px Sicherheitsabstand zum Rand des Quadrats
+			return buttons.map((button) => {
+				// `elementFromPoint` arbeitet nur im sichtbaren Viewport — die Felder
+				// stehen weit unterhalb der Falz, also jeden Button erst zentrieren.
+				button.scrollIntoView({ block: 'center' });
+				const rect = button.getBoundingClientRect();
+				const cx = rect.left + rect.width / 2;
+				const cy = rect.top + rect.height / 2;
+				const points: Array<[string, number, number]> = [
+					['oben', cx, cy - half],
+					['unten', cx, cy + half],
+					['links', cx - half, cy],
+					['rechts', cx + half, cy]
+				];
+				const misses = points
+					.filter(([, x, y]) => {
+						const hit = document.elementFromPoint(x, y);
+						return !hit || !(hit === button || button.contains(hit));
+					})
+					.map(([edge]) => edge);
+				return {
+					label: (button.getAttribute('aria-label') ?? '').slice(0, 40),
+					box: `${Math.round(rect.width)}x${Math.round(rect.height)}`,
+					misses
+				};
+			});
+		},
+		{ selector, size: MIN_TOUCH_TARGET }
+	);
+}
+
+test.describe('Accessibility — Touch-Targets der Hinweis-Buttons', () => {
+	test('jeder Hinweis-Button in FieldRenderer ist 44×44 px treffbar', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		// Schritt 1 rendert vier davon — genug, um die geteilte Pipeline zu prüfen.
+		const buttons = page.locator('button[aria-label^="Hinweis:"]');
+		expect(await buttons.count()).toBeGreaterThan(0);
+
+		const probed = await probeHitArea(page, 'button[aria-label^="Hinweis:"]');
+		for (const { label, box, misses } of probed) {
+			expect(
+				misses,
+				`${label} (Box ${box}): ${MIN_TOUCH_TARGET}px-Quadrat nicht treffbar an ${misses.join(', ')}`
+			).toEqual([]);
+		}
+	});
+
+	test('die Label-Zeile bleibt kompakt (kein 44-px-Sprung)', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		// Gegenprobe zum Test darüber: Das vergrößerte Touch-Target darf die
+		// Label-Zeile nicht auf Buttonhöhe aufblasen — sonst reißt es das Label
+		// vom zugehörigen Feld weg. Gemessen vor der Änderung: 28 px.
+		const rowHeights = await page.evaluate(() =>
+			Array.from(document.querySelectorAll<HTMLElement>('button[aria-label^="Hinweis:"]')).map(
+				(button) => Math.round(button.closest('label, legend')!.getBoundingClientRect().height)
+			)
+		);
+
+		expect(rowHeights.length).toBeGreaterThan(0);
+		for (const height of rowHeights) {
+			expect(height, `Label-Zeile ist ${height}px hoch`).toBeLessThanOrEqual(32);
+		}
+	});
+});

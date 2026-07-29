@@ -268,12 +268,23 @@
 			</span>
 		{/if}
 
-		<!-- Value Information Tooltip (fokussierbar für Tastatur/Touch) -->
+		<!-- Value Information Tooltip (fokussierbar für Tastatur/Touch)
+
+		     `min-h-11 min-w-11` hält das 44-px-Touch-Target (design-system.md),
+		     das `btn-xs` mit 24 px deutlich unterschritt. Das `-my-2.5` nimmt die
+		     zusätzlichen 2 × 10 px wieder aus dem Zeilenfluss heraus, damit die
+		     Label-Zeile bei 28 px bleibt und das Label nicht von seinem Feld
+		     weggedrückt wird — ohne den Negativ-Margin wächst sie auf 48 px.
+
+		     Damit das trägt, darf am Label/Legend kein `overflow-hidden` stehen:
+		     es klippt nicht nur den überstehenden Teil der Trefferfläche, sondern
+		     auch die Tooltip-Blase selbst. Horizontal hält `w-full` zusammen mit
+		     dem `overflow-wrap: break-word` der Caption-Span. -->
 		{#if metaValues.valueText}
 			<span class="tooltip tooltip-left ml-2 inline-block" data-tip={metaValues.valueText}>
 				<button
 					type="button"
-					class="btn btn-ghost btn-xs btn-circle"
+					class="btn btn-ghost btn-sm btn-circle -my-2.5 min-h-11 min-w-11"
 					aria-label={`Hinweis: ${metaValues.valueText}`}
 				>
 					<Icon icon="lucide:info" width="14" class="text-base-content/60" />
@@ -313,7 +324,7 @@
 	{#if isRadioGroup}
 		<!-- Radiogruppe: fieldset+legend statt label[for], das ins Leere zeigen würde -->
 		<fieldset class="w-full">
-			<legend class="label w-full overflow-hidden pb-1">{@render caption()}</legend>
+			<legend class="label w-full pb-1">{@render caption()}</legend>
 			{@render description()}
 			{@render fieldControl()}
 		</fieldset>
@@ -322,7 +333,7 @@
 		{@render description()}
 		{@render fieldControl()}
 	{:else}
-		<label for={fieldId} class="label w-full overflow-hidden pb-1">{@render caption()}</label>
+		<label for={fieldId} class="label w-full pb-1">{@render caption()}</label>
 		{@render description()}
 		{@render fieldControl()}
 	{/if}
