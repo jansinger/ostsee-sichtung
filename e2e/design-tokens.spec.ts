@@ -1,4 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { seedAdminSession } from './helpers/adminSession';
 import { formatRatio, measureContrast } from './helpers/contrast';
 
 /**
@@ -273,12 +275,80 @@ test.describe('Styleguide — Bedienung', () => {
 test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 	/* Ruhezustand-Scan. Hover-Zustände tauchen in getComputedStyle nicht auf
 	   und sind hier deshalb nicht prüfbar — dafür gilt die Regel in
-	   design-system.md („text-error nicht auf base-300"). */
-	const ROUTES = ['/', '/map', '/about'];
+	   design-system.md („text-error nicht auf base-300").
+
+	   Der Admin-Bereich ist seit 2026-07-29 dabei. Er war vorher ungedeckt,
+	   nicht schmutzig: Eine Prüfung von Hand über alle sechs Routen fand null
+	   Verstöße — aber eben von Hand. Der Zugang läuft über `seedAdminSession`
+	   (dort steht, warum nicht über die Auth0-Oberfläche). */
+	const ROUTES = [
+		{ path: '/', auth: false },
+		{ path: '/map', auth: false },
+		{ path: '/about', auth: false },
+		{ path: '/admin', auth: true },
+		{ path: '/admin/statistics', auth: true },
+		{ path: '/admin/docs', auth: true },
+		{ path: '/admin/settings', auth: true }
+	];
+
+	/* Öffnet die Route und stellt sicher, dass wirklich die Seite gemessen wird
+	   und nicht eine Fehler- oder Login-Ausweichseite. Ohne diese beiden Wächter
+	   wäre der Scan auf den Admin-Routen wertlos: Sowohl der Auth0-Redirect als
+	   auch die SvelteKit-Fehlerseite liefern ein DOM, in dem keine einzige
+	   verbotene Kombination steht — die Prüfung meldete dann grün, ohne je die
+	   Seite gesehen zu haben, um die es geht. */
+	const openRoute = async (
+		page: Page,
+		context: BrowserContext,
+		baseURL: string | undefined,
+		route: (typeof ROUTES)[number]
+	) => {
+		if (route.auth) {
+			if (!baseURL) throw new Error('baseURL fehlt — playwright.config.ts setzt sie normalerweise');
+			await seedAdminSession(context, baseURL);
+		}
+
+		const response = await page.goto(route.path);
+
+		/* Der E2E-Job in ci.yml startet keinen Postgres (`cp .env.example .env`,
+		   SKIP_DB_CHECK=true, kein services:-Block). Datengetriebene Admin-Seiten
+		   können dort deshalb 5xx liefern. Das ausdrücklich zu überspringen ist
+		   ehrlicher als ein Scan über eine Fehlerseite — und es steht im Report,
+		   statt still grün zu sein. */
+		const status = response?.status() ?? 0;
+
+		if (status >= 500) {
+			test.skip(
+				true,
+				`${route.path} antwortet mit ${status} — vermutlich keine Datenbank verfügbar (CI fährt E2E ohne Postgres). Die Route bleibt damit ungeprüft.`
+			);
+		}
+
+		if (!route.auth) return;
+
+		if (!page.url().startsWith(baseURL ?? '')) {
+			throw new Error(
+				`${route.path} hat auf ${page.url()} umgeleitet — das Session-Cookie wurde nicht akzeptiert. ` +
+					'Prüfe SESSION_SECRET und COOKIE_NAME in .env (siehe e2e/helpers/adminSession.ts).'
+			);
+		}
+
+		/* 401/403 bleiben auf derselben URL und liefern Status < 500 — ohne diese
+		   Prüfung würde der Scan die SvelteKit-Fehlerseite messen, dort nichts
+		   finden und grün melden. Das ist kein Infrastrukturproblem wie die
+		   fehlende Datenbank, sondern ein kaputtes Fixture: Cookie akzeptiert,
+		   aber `roles` reicht nicht für requireUserRole. Deshalb hart. */
+		if (status === 401 || status === 403) {
+			throw new Error(
+				`${route.path} antwortet mit ${status} — die Session gilt, aber die Rolle reicht nicht. ` +
+					'ADMIN_IDENTITY.roles in e2e/helpers/adminSession.ts muss die von requireUserRole geforderte Rolle enthalten.'
+			);
+		}
+	};
 
 	for (const route of ROUTES) {
-		test(`${route}: keine Statusfarbe als Textfarbe`, async ({ page }) => {
-			await page.goto(route);
+		test(`${route.path}: keine Statusfarbe als Textfarbe`, async ({ page, context, baseURL }) => {
+			await openRoute(page, context, baseURL, route);
 			const offenders = await page.evaluate(() => {
 				/* getAttribute('class'), NICHT el.className: bei SVG-Elementen ist
 				   className ein SVGAnimatedString, das als "[object SVGAnimatedString]"
@@ -297,8 +367,12 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 			).toEqual([]);
 		});
 
-		test(`${route}: keine Textfarbe unter Deckkraft /60`, async ({ page }) => {
-			await page.goto(route);
+		test(`${route.path}: keine Textfarbe unter Deckkraft /60`, async ({
+			page,
+			context,
+			baseURL
+		}) => {
+			await openRoute(page, context, baseURL, route);
 			const offenders = await page.evaluate(() => {
 				const cls = (el: Element) => el.getAttribute('class') ?? '';
 				const banned = /(^|\s)(text-base-content\/(40|50)|opacity-(40|50))(\s|$)/;
@@ -310,8 +384,8 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 			expect(offenders, '/40 und /50 sind dekorativ, nicht für Text').toEqual([]);
 		});
 
-		test(`${route}: keine Tailwind-Paletten-Farben`, async ({ page }) => {
-			await page.goto(route);
+		test(`${route.path}: keine Tailwind-Paletten-Farben`, async ({ page, context, baseURL }) => {
+			await openRoute(page, context, baseURL, route);
 			const offenders = await page.evaluate(() => {
 				const cls = (el: Element) => el.getAttribute('class') ?? '';
 				const banned =
@@ -323,5 +397,115 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 			});
 			expect(offenders, 'Theme-Tokens statt Tailwind-Palette (daisyui.md)').toEqual([]);
 		});
+	}
+});
+
+/**
+ * Vollständigkeit: jede eigene Utility hat einen Vertreter auf /styleguide.
+ *
+ * **Warum es diesen Test gibt** — die Seite hat eine Doppelrolle, die man ihr
+ * nicht ansieht. Sie ist Schaufenster *und* Lieferbedingung:
+ *
+ * Tailwind 4 erzeugt eine Utility nur, wenn ihr Klassenname als vollständiger
+ * String im gescannten Quelltext steht (`daisyui.md`, „Content-Detection"). Von
+ * den dreizehn projekteigenen Utilities haben sieben ihre **einzige**
+ * Aufrufstelle auf /styleguide — für die ist diese Seite der Grund, warum die
+ * Klasse überhaupt im ausgelieferten CSS landet. Der `@theme`-Kommentar in
+ * `app.css` hält denselben Umstand für die dortige `@theme static`-Entscheidung
+ * fest.
+ *
+ * Damit hängt das Token-Set an der Vollständigkeit einer Seite, die sonst
+ * niemand prüft. Wer ein Farbfeld löscht, weil es „nur Demo" ist, entfernt
+ * still eine Utility aus dem Build: `class="text-accent-strong"` bleibt in den
+ * anderen Komponenten stehen und tut nichts mehr. Das ist derselbe Fehlerfall
+ * wie `animate-in` in `design-system.md` („Keine toten Utility-Klassen") — nur
+ * ohne die sichtbare Ursache, weil die Klasse ja korrekt geschrieben ist.
+ *
+ * Die Kontrast-Gruppe ganz oben fängt das nicht auf: Sie misst, was auf der
+ * Seite steht. Verschwindet ein Feld, verschwindet sein Messpunkt mit — sie
+ * misst dann eine Teilmenge und meldet weiter grün. Dieser Test prüft deshalb
+ * nicht Werte, sondern dass der Messplatz vollständig ist.
+ *
+ * Maßgeblich ist `src/css/tokens.css` (Ebene 1, `daisyui.md`) und nicht der
+ * `@theme`-Block: Ein Token, das dort deklariert ist, aber auf keiner Seite
+ * vorkommt, ist genau der Fall, um den es geht.
+ */
+
+/* Kommentare vorher entfernen: tokens.css erklärt seine eigenen Tokens in
+   Fließtext, „--text-*" kommt dort auch in Prosa vor. Ohne diesen Schritt
+   zählte ein Kommentar als Deklaration. */
+const TOKEN_NAMES = [
+	...new Set(
+		[
+			...readFileSync(new URL('../src/css/tokens.css', import.meta.url), 'utf8')
+				.replace(/\/\*[\s\S]*?\*\//g, '')
+				.matchAll(/^\s*(--[\w-]+)\s*:/gm)
+		].map((match) => match[1])
+	)
+];
+
+const UTILITY_GROUPS = [
+	{
+		group: 'Statusfarbe als Vordergrund',
+		/* --color-info-strong → text-info-strong. Nur die -strong-Varianten:
+		   die Flächenfarben kommen aus dem DaisyUI-Theme, nicht von hier. */
+		matches: (token: string) => /^--color-.+-strong$/.test(token),
+		utility: (token: string) => `text-${token.slice('--color-'.length)}`
+	},
+	{
+		group: 'Typografie-Rolle',
+		/* --text-title → text-title. Die -lh-Zwillinge sind die Zeilenhöhe zum
+		   jeweiligen Token und haben bewusst keine eigene Utility. */
+		matches: (token: string) => token.startsWith('--text-') && !token.endsWith('-lh'),
+		utility: (token: string) => token.slice(2)
+	},
+	{
+		group: 'Elevation',
+		/* Bewusst --shadow-* und nicht --elevation-*: die Utility heißt
+		   `shadow-raised`, und --elevation-flat ist die Stufe „Rahmen statt
+		   Schatten" (`none`) und hat gar keine. Die beiden Aliase in tokens.css
+		   sind genau der Ort, an dem Utility-Name und Wert zusammenfinden —
+		   der Kommentar dort begründet, warum es sie gibt. */
+		matches: (token: string) => token.startsWith('--shadow-'),
+		utility: (token: string) => token.slice(2)
+	}
+];
+
+test.describe('Design-Tokens — Utilities haben einen Vertreter auf /styleguide', () => {
+	const classesOnStyleguide = async (page: Page) => {
+		await page.goto('/styleguide');
+		/* getAttribute('class') aus demselben Grund wie im DOM-Scan oben:
+		   el.className ist bei SVG ein SVGAnimatedString. */
+		return new Set(
+			await page.evaluate(() =>
+				[...document.querySelectorAll('[class]')].flatMap((el) =>
+					(el.getAttribute('class') ?? '').split(/\s+/).filter(Boolean)
+				)
+			)
+		);
+	};
+
+	for (const { group, matches, utility } of UTILITY_GROUPS) {
+		const tokens = TOKEN_NAMES.filter(matches);
+
+		/* Ohne diesen Fall wäre die Gruppe still wirkungslos, sobald sich das
+		   Namensschema in tokens.css ändert: Eine leere Liste erzeugt keinen
+		   einzigen Testfall — und keine Testfälle sind keine roten Testfälle. */
+		test(`${group}: tokens.css liefert überhaupt Tokens`, () => {
+			expect(
+				tokens,
+				`Kein Token in src/css/tokens.css passt auf die Gruppe „${group}". Entweder wurde das Namensschema geändert — dann gehört die Regel hier nachgezogen — oder die Tokens sind weg.`
+			).not.toEqual([]);
+		});
+
+		for (const token of tokens) {
+			test(`${group}: ${utility(token)} steht auf /styleguide`, async ({ page }) => {
+				const classes = await classesOnStyleguide(page);
+				expect(
+					classes.has(utility(token)),
+					`${token} ist in src/css/tokens.css deklariert, aber kein Element auf /styleguide trägt die Klasse "${utility(token)}". Für die sieben Utilities, deren einzige Aufrufstelle diese Seite ist, heißt das: Tailwind erzeugt sie nicht mehr, und jede Verwendung im Rest der App ist ab sofort wirkungslos.`
+				).toBe(true);
+			});
+		}
 	}
 });
