@@ -438,7 +438,9 @@
 				sliderRangeId: 'slider-range',
 				timeStartId: 'time-start',
 				timeEndId: 'time-end',
-				enableLocationControl: false,
+				// N2: GPS-Standort-Control aktiv — Positionsdaten bleiben rein
+				// lokal im Browser (kein Request mit Koordinaten).
+				enableLocationControl: true,
 				initialYear,
 				initialSearchTerm: urlFilterState.query ?? '',
 				onLoading: (loading) => {
@@ -463,6 +465,11 @@
 					errorMessage = 'Fehler beim Laden der Kartendaten. Bitte versuchen Sie es erneut.';
 					isLoadingData = false;
 					isInitialLoading = false;
+				},
+				// N2: Geolocation-Fehler (z. B. verweigerte Berechtigung) im
+				// bestehenden Fehler-Toast anzeigen statt stumm zu scheitern.
+				onGeolocationError: (message) => {
+					errorMessage = message;
 				}
 			});
 

@@ -127,11 +127,23 @@
 	display: flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	transition: all 0.2s ease;
+	/* Keine transition hier: Chromium wendet !important-Wechsel (aria-pressed)
+	   bei `transition: all` nicht an — der Aktiv-Zustand bliebe unsichtbar. */
 }
 
 .location-control button:hover {
 	background-color: rgba(255, 255, 255, 1) !important;
+}
+
+/* N2: Aktives Tracking — Zustand hängt am aria-pressed-Attribut (ein Zustand,
+   eine Quelle), Farben aus dem Theme (Buttons sind DOM, kein Canvas). */
+.location-control button[aria-pressed='true'] {
+	background-color: var(--color-primary) !important;
+	color: var(--color-primary-content) !important;
+}
+
+.location-control button[aria-pressed='true']:hover {
+	background-color: var(--color-primary) !important;
 }
 
 /* GPS Control */
