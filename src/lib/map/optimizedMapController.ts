@@ -14,13 +14,18 @@ import { fromLonLat } from 'ol/proj';
 import { OSM, XYZ } from 'ol/source';
 import Cluster from 'ol/source/Cluster';
 import VectorSource from 'ol/source/Vector';
-import { Circle, Fill, Stroke, Style, Text } from 'ol/style';
+import { Circle, Fill, Stroke, Style } from 'ol/style';
 import { LocationControl } from './controls/LocationControl.js';
 import { ZoomAllControl } from './controls/ZoomAllControl.js';
 import { getDefaultSightingYear } from '$lib/utils/date/defaultYear';
 import { clampExtentToBaltic, type Extent } from './extentUtils';
 import { areExtentsColocated, type MapTranslations } from './mapUtils';
-import { clearStyleCache, createFeatureStyle, getFeatureColorGroup } from './styleUtils';
+import {
+	clearStyleCache,
+	createClusterStyle,
+	createFeatureStyle,
+	getFeatureColorGroup
+} from './styleUtils';
 import { sanitizeText } from '$lib/utils/sanitize';
 
 const logger = createLogger('map:optimized-controller');
@@ -165,14 +170,14 @@ export class SichtungenMap {
 				} else {
 					const singleFeature = features ? features[0] : feature;
 					// Verwende die originale Style-Funktion mit den aktuellen Filtern
-					const style = createFeatureStyle(
+					const styles = createFeatureStyle(
 						singleFeature as Feature<Geometry>,
 						this.hiddenSpecies,
 						this.hiddenColors,
 						this.timeFilter
 					);
-					// Return empty array if style is null to make feature invisible
-					return style ? [style] : [];
+					// Return empty array if styles are null to make feature invisible
+					return styles ?? [];
 				}
 			}
 		});
@@ -1170,60 +1175,7 @@ export class SichtungenMap {
 			return null;
 		}
 
-		// Erstelle Cluster-Style basierend auf der Anzahl sichtbarer Features
-		const size = visibleCount;
-
-		// Bestimme Cluster-Größe und Farbe basierend auf Anzahl der sichtbaren Features
-		let radius = 15;
-		let fontSize = 12;
-		let color = '#3399CC';
-
-		if (size < 5) {
-			radius = 18;
-			fontSize = 12;
-			color = '#51C2D5';
-		} else if (size < 10) {
-			radius = 22;
-			fontSize = 13;
-			color = '#3399CC';
-		} else if (size < 25) {
-			radius = 26;
-			fontSize = 14;
-			color = '#2E7D99';
-		} else if (size < 50) {
-			radius = 30;
-			fontSize = 15;
-			color = '#1E5266';
-		} else {
-			radius = 35;
-			fontSize = 16;
-			color = '#0F2933';
-		}
-
-		return new Style({
-			image: new Circle({
-				radius: radius,
-				fill: new Fill({
-					color: color + 'E6' // 90% Transparenz
-				}),
-				stroke: new Stroke({
-					color: color,
-					width: 2
-				})
-			}),
-			text: new Text({
-				text: size.toString(),
-				font: `bold ${fontSize}px Arial, sans-serif`,
-				fill: new Fill({
-					color: '#FFFFFF'
-				}),
-				stroke: new Stroke({
-					color: color,
-					width: 1
-				}),
-				textAlign: 'center',
-				textBaseline: 'middle'
-			})
-		});
+		// Gemeinsame Cluster-Skala aus styleUtils — identisch mit der Legende
+		return createClusterStyle(visibleCount);
 	}
 }

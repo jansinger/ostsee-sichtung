@@ -2,7 +2,14 @@
 	import type { CountData } from '$lib/map/countManager';
 	import { getMapCountManager } from '$lib/map/mapContext';
 	import type { MapTranslations } from '$lib/map/mapUtils';
-	import { backgroundColors, speciesSymbols } from '$lib/map/styleUtils';
+	import {
+		clusterStyleSteps,
+		legendGroups,
+		speciesGroupStyles,
+		speciesSymbols,
+		MARKER_BACKGROUND_COLOR,
+		TOTFUND_RING_COLOR
+	} from '$lib/map/styleUtils';
 	import Icon from '$lib/components/Icon.svelte';
 
 	let { translations, counts } = $props<{
@@ -19,6 +26,20 @@
 	// Zustand der Sichtbarkeitsfilter
 	let speciesVisibility = $state<Record<string, boolean>>({});
 	let colorVisibility = $state<Record<string, boolean>>({});
+
+	// Anzahl-Filtergruppen in Anzeige-Reihenfolge (Totfund zuletzt) — aus styleUtils
+	const countGroups = $derived(
+		Object.entries(legendGroups).map(([key, group]) => ({
+			key,
+			label: key === 'ct0' ? String(translations.found_dead) : group.name
+		}))
+	);
+
+	// Farbschlüssel: Tiergruppen-Ringe plus Totfund-Ring (gleiche Swatch-Darstellung)
+	const ringLegendEntries = $derived([
+		...Object.values(speciesGroupStyles).map(({ label, color }) => ({ label, color })),
+		{ label: String(translations.found_dead), color: TOTFUND_RING_COLOR }
+	]);
 
 	// Toggle-Funktion für das Panel
 	function togglePanel() {
@@ -38,8 +59,8 @@
 				speciesVisibility[key] = true;
 			});
 
-			// Initialisiere alle Farb-Gruppen als sichtbar
-			['ct0', 'ct1', 'ct2', 'ct6', 'ct11', 'ct15'].forEach((colorGroup) => {
+			// Initialisiere alle Anzahl-Gruppen als sichtbar
+			Object.keys(legendGroups).forEach((colorGroup) => {
 				colorVisibility[colorGroup] = true;
 			});
 		}
@@ -96,51 +117,66 @@
 				</button>
 			</div>
 
-			<div class="divider">{translations.species_legend}</div>
-
-			<!-- Info-Box über die Bedienung -->
+			<!-- Info-Box: wie die Marker codiert sind -->
 			<div class="bg-base-300/50 mb-4 rounded-lg p-3 text-sm">
 				<div class="flex items-start gap-2">
-					<span class="text-info">ℹ️</span>
+					<Icon icon="lucide:info" class="text-info mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
 					<div>
-						<strong>Verwendung:</strong> Deaktivieren Sie Checkboxen, um bestimmte Arten oder Gruppengrößen
-						auszublenden. Die Zahlen zeigen sichtbare/gesamt Sichtungen an.
+						<strong>So lesen Sie die Karte:</strong> Die Ringfarbe zeigt die Tiergruppe, das Symbol die
+						Gruppe als zweites Merkmal. Ab zwei Tieren steht die Anzahl unter dem Marker. Ein schwarzer
+						Ring bedeutet Totfund. Deaktivieren Sie Checkboxen, um Arten oder Gruppengrößen auszublenden
+						— die Zahlen zeigen sichtbare/gesamt Sichtungen.
 					</div>
 				</div>
 			</div>
 
+			<!-- Tiergruppen-Farbschlüssel -->
+			<div class="mb-4 flex flex-wrap gap-3">
+				{#each ringLegendEntries as entry (entry.label)}
+					<span class="flex items-center gap-1.5 text-xs">
+						<span
+							class="inline-block h-4 w-4 rounded-full"
+							style="background-color: {MARKER_BACKGROUND_COLOR}; border: 3px solid {entry.color};"
+							aria-hidden="true"
+						></span>
+						{entry.label}
+					</span>
+				{/each}
+			</div>
+
+			<div class="divider">{translations.species_legend}</div>
+
 			<div class="mb-6 space-y-3">
 				{#each Object.entries(translations.speciesMap) as [key, value] (key)}
 					{@const symbol = speciesSymbols[key]}
-					<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
-						<div
-							class="flex h-8 w-8 items-center justify-center rounded-full border shadow-sm"
-							style="background-color: {symbol
-								? backgroundColors[symbol.category] + 'CC'
-								: '#F0F0F0'}; border-color: {symbol ? symbol.baseColor : '#333'};"
-						>
-							{#if symbol}
-								<span class="text-xl" style="color: {symbol.baseColor};" title={String(value)}>
-									{symbol.symbol}
-								</span>
-							{:else}
-								<div class="bg-base-content/40 h-4 w-4 rounded-full"></div>
-							{/if}
-						</div>
+					{@const total = counts.speciesCounts[key]?.total || 0}
+					<div
+						class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors"
+						data-species-row={key}
+					>
+						<!-- 0/0-Arten ausgrauen: visuelle Teile abschwächen, Checkbox bleibt bedienbar -->
+						<div class="flex flex-1 items-center gap-3 {total === 0 ? 'opacity-40 grayscale' : ''}">
+							<div
+								class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full shadow-sm"
+								style="background-color: {MARKER_BACKGROUND_COLOR}; border: 3px solid {symbol
+									? symbol.baseColor
+									: speciesGroupStyles.unbekannt.color};"
+							>
+								{#if symbol}
+									<span class="text-base" title={String(value)}>{symbol.symbol}</span>
+								{:else}
+									<div class="bg-base-content/40 h-4 w-4 rounded-full"></div>
+								{/if}
+							</div>
 
-						<div class="flex-1">
 							<div class="flex items-center gap-2">
 								<span class="text-sm font-medium">{value}</span>
 								{#if symbol}
 									<span
-										class="rounded-full px-2 py-1 text-xs font-medium text-white"
-										style="background-color: {symbol.baseColor};"
+										class="text-base-content rounded-full border-2 px-2 py-0.5 text-xs font-medium"
+										style="border-color: {symbol.baseColor};"
 									>
-										{symbol.category === 'kleinwal'
-											? 'Kleinwal'
-											: symbol.category === 'grosswal'
-												? 'Großwal'
-												: 'Robbe'}
+										{speciesGroupStyles[symbol.category].label}
 									</span>
 								{/if}
 							</div>
@@ -148,7 +184,7 @@
 
 						<div class="flex items-center gap-2">
 							<span class="text-base-content/70 font-mono text-xs">
-								{counts.speciesCounts[key]?.visible || 0}/{counts.speciesCounts[key]?.total || 0}
+								{counts.speciesCounts[key]?.visible || 0}/{total}
 							</span>
 							<input
 								type="checkbox"
@@ -157,7 +193,7 @@
 								checked={speciesVisibility[key] ?? true}
 								onchange={(e) => handleSpeciesToggle(key, (e.target as HTMLInputElement).checked)}
 								aria-label="Sichtbarkeit für {value} umschalten. Aktuell {counts.speciesCounts[key]
-									?.visible || 0} von {counts.speciesCounts[key]?.total || 0} Sichtungen sichtbar."
+									?.visible || 0} von {total} Sichtungen sichtbar."
 							/>
 						</div>
 					</div>
@@ -167,96 +203,53 @@
 			<div class="divider">{translations.count}</div>
 
 			<div class="space-y-3">
-				<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
-					<div class="h-5 w-5 rounded border shadow-sm" style="background-color: #FFD700;"></div>
-					<span class="flex-1 text-sm">1</span>
-					<span class="text-base-content/70 font-mono text-xs"
-						>{counts.colorCounts['ct1'] || 0}</span
-					>
-					<input
-						type="checkbox"
-						class="color-checkbox checkbox checkbox-sm"
-						value="ct1"
-						checked={colorVisibility['ct1'] ?? true}
-						onchange={(e) => handleColorToggle('ct1', (e.target as HTMLInputElement).checked)}
-						aria-label="Sichtungen mit 1 Tier anzeigen/ausblenden"
-					/>
+				{#each countGroups as group (group.key)}
+					<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
+						{#if group.key === 'ct0'}
+							<span
+								class="h-5 w-5 shrink-0 rounded-full shadow-sm"
+								style="background-color: {MARKER_BACKGROUND_COLOR}; border: 3px solid {TOTFUND_RING_COLOR};"
+								aria-hidden="true"
+							></span>
+						{:else}
+							<span
+								class="text-base-content/70 w-5 shrink-0 text-center font-mono text-xs"
+								aria-hidden="true">#</span
+							>
+						{/if}
+						<span class="flex-1 text-sm">{group.label}</span>
+						<span class="text-base-content/70 font-mono text-xs"
+							>{counts.colorCounts[group.key] || 0}</span
+						>
+						<input
+							type="checkbox"
+							class="color-checkbox checkbox checkbox-sm"
+							value={group.key}
+							checked={colorVisibility[group.key] ?? true}
+							onchange={(e) => handleColorToggle(group.key, (e.target as HTMLInputElement).checked)}
+							aria-label="Sichtungen der Gruppe {group.label} anzeigen/ausblenden"
+						/>
+					</div>
+				{/each}
+			</div>
+
+			<div class="divider">Cluster</div>
+
+			<!-- Cluster-Farbskala erklären (M1) — aus derselben Konstante wie die Karte -->
+			<div class="mb-8">
+				<div class="mb-2 flex items-center gap-1" aria-hidden="true">
+					{#each clusterStyleSteps as step (step.color)}
+						<span
+							class="inline-flex items-center justify-center rounded-full text-[10px] font-bold text-white"
+							style="background-color: {step.color}; width: {step.radius}px; height: {step.radius}px;"
+						></span>
+					{/each}
 				</div>
-				<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
-					<div class="h-5 w-5 rounded border shadow-sm" style="background-color: #FF8C00;"></div>
-					<span class="flex-1 text-sm">2-5</span>
-					<span class="text-base-content/70 font-mono text-xs"
-						>{counts.colorCounts['ct2'] || 0}</span
-					>
-					<input
-						type="checkbox"
-						class="color-checkbox checkbox checkbox-sm"
-						value="ct2"
-						checked={colorVisibility['ct2'] ?? true}
-						onchange={(e) => handleColorToggle('ct2', (e.target as HTMLInputElement).checked)}
-						aria-label="Sichtungen mit 2-5 Tieren anzeigen/ausblenden"
-					/>
-				</div>
-				<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
-					<div class="h-5 w-5 rounded border shadow-sm" style="background-color: #DC143C;"></div>
-					<span class="flex-1 text-sm">6-10</span>
-					<span class="text-base-content/70 font-mono text-xs"
-						>{counts.colorCounts['ct6'] || 0}</span
-					>
-					<input
-						type="checkbox"
-						class="color-checkbox checkbox checkbox-sm"
-						value="ct6"
-						checked={colorVisibility['ct6'] ?? true}
-						onchange={(e) => handleColorToggle('ct6', (e.target as HTMLInputElement).checked)}
-						aria-label="Sichtungen mit 6-10 Tieren anzeigen/ausblenden"
-					/>
-				</div>
-				<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
-					<div class="h-5 w-5 rounded border shadow-sm" style="background-color: #8B008B;"></div>
-					<span class="flex-1 text-sm">11-15</span>
-					<span class="text-base-content/70 font-mono text-xs"
-						>{counts.colorCounts['ct11'] || 0}</span
-					>
-					<input
-						type="checkbox"
-						class="color-checkbox checkbox checkbox-sm"
-						value="ct11"
-						checked={colorVisibility['ct11'] ?? true}
-						onchange={(e) => handleColorToggle('ct11', (e.target as HTMLInputElement).checked)}
-						aria-label="Sichtungen mit 11-15 Tieren anzeigen/ausblenden"
-					/>
-				</div>
-				<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
-					<div class="h-5 w-5 rounded border shadow-sm" style="background-color: #0066CC;"></div>
-					<span class="flex-1 text-sm">&gt; 15</span>
-					<span class="text-base-content/70 font-mono text-xs"
-						>{counts.colorCounts['ct15'] || 0}</span
-					>
-					<input
-						type="checkbox"
-						class="color-checkbox checkbox checkbox-sm"
-						value="ct15"
-						checked={colorVisibility['ct15'] ?? true}
-						onchange={(e) => handleColorToggle('ct15', (e.target as HTMLInputElement).checked)}
-						aria-label="Sichtungen mit mehr als 15 Tieren anzeigen/ausblenden"
-					/>
-				</div>
-				<div class="hover:bg-base-200 flex items-center gap-3 rounded-lg p-2 transition-colors">
-					<div class="h-5 w-5 rounded border bg-black shadow-sm"></div>
-					<span class="flex-1 text-sm">{translations.found_dead}</span>
-					<span class="text-base-content/70 font-mono text-xs"
-						>{counts.colorCounts['ct0'] || 0}</span
-					>
-					<input
-						type="checkbox"
-						class="color-checkbox checkbox checkbox-sm"
-						value="ct0"
-						checked={colorVisibility['ct0'] ?? true}
-						onchange={(e) => handleColorToggle('ct0', (e.target as HTMLInputElement).checked)}
-						aria-label="Totfunde anzeigen/ausblenden"
-					/>
-				</div>
+				<p class="text-base-content/80 text-sm">
+					Blaue Kreise fassen mehrere Sichtungen an nahe beieinanderliegenden Orten zusammen. Die
+					Zahl nennt die Anzahl der Sichtungen; je dunkler und größer der Kreis, desto mehr sind es.
+					Beim Hineinzoomen teilt sich ein Cluster in einzelne Marker auf.
+				</p>
 			</div>
 		</div>
 	</div>

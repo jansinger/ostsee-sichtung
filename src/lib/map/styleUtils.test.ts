@@ -1,55 +1,147 @@
-// ol/style wird auf Modulebene instanziiert (new Stroke(), new Fill() in legendGroups).
+// ol/style wird auf Modulebene instanziiert (new Stroke(), new Fill()).
 // Mock muss vor dem Import aktiv sein — vi.mock() wird von Vitest automatisch gehoisted.
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('ol/style', () => {
 	class Stroke {
-		private color: string;
+		private opts: { color?: string; width?: number };
 		constructor(opts?: { color?: string; width?: number }) {
-			this.color = opts?.color ?? 'black';
+			this.opts = opts ?? {};
 		}
 		getColor() {
-			return this.color;
+			return this.opts.color ?? 'black';
 		}
 	}
 	class Fill {
-		private color: string;
+		private opts: { color?: string };
 		constructor(opts?: { color?: string }) {
-			this.color = opts?.color ?? '#000';
+			this.opts = opts ?? {};
 		}
 		getColor() {
-			return this.color;
+			return this.opts.color ?? '#000';
+		}
+	}
+	class Circle {
+		private opts: { stroke?: Stroke; fill?: Fill; radius?: number };
+		constructor(opts?: { stroke?: Stroke; fill?: Fill; radius?: number }) {
+			this.opts = opts ?? {};
+		}
+		getStroke() {
+			return this.opts.stroke;
+		}
+		getFill() {
+			return this.opts.fill;
+		}
+	}
+	class Text {
+		private opts: { text?: string };
+		constructor(opts?: { text?: string }) {
+			this.opts = opts ?? {};
+		}
+		getText() {
+			return this.opts.text;
 		}
 	}
 	class Style {
-		constructor(_opts?: unknown) {}
-	}
-	class Circle {
-		constructor(_opts?: unknown) {}
+		private opts: { image?: unknown; text?: Text };
+		constructor(opts?: { image?: unknown; text?: Text }) {
+			this.opts = opts ?? {};
+		}
+		getImage() {
+			return this.opts.image;
+		}
+		getText() {
+			return this.opts.text;
+		}
 	}
 	class RegularShape {
-		constructor(_opts?: unknown) {}
-	}
-	class Text {
 		constructor(_opts?: unknown) {}
 	}
 	return { Stroke, Fill, Style, Circle, RegularShape, Text };
 });
 
+import type { Feature } from 'ol';
+import type { Geometry } from 'ol/geom';
 import {
-	backgroundColors,
 	clearStyleCache,
+	clusterStyleSteps,
 	createClusterStyle,
+	createFeatureStyle,
+	getClusterStyleStep,
 	getFeatureColorGroup,
 	isBetween,
 	legendGroups,
-	speciesSymbols
+	MARKER_BACKGROUND_COLOR,
+	speciesGroupStyles,
+	speciesSymbols,
+	TOTFUND_RING_COLOR
 } from './styleUtils';
-import type { SightingProperties } from './styleUtils';
-import type { Feature } from 'ol';
-import type { Geometry } from 'ol/geom';
+import type { SightingProperties, SpeciesCategory } from './styleUtils';
+
+/**
+ * WCAG-Kontrastverhältnis zweier Hex-Farben (z. B. '#0072B2' vs '#FFFFFF').
+ */
+function contrastRatio(hexA: string, hexB: string): number {
+	const luminance = (hex: string): number => {
+		const channels = [1, 3, 5].map((i) => {
+			const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+			return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+		});
+		return 0.2126 * channels[0]! + 0.7152 * channels[1]! + 0.0722 * channels[2]!;
+	};
+	const [l1, l2] = [luminance(hexA), luminance(hexB)].sort((a, b) => b - a);
+	return (l1! + 0.05) / (l2! + 0.05);
+}
+
+/** Minimaler Feature-Mock für createFeatureStyle */
+function mockFeature(props: Partial<SightingProperties>): Feature<Geometry> {
+	const properties = { ta: 0, ct: 1, tf: false, ts: 1000, ...props };
+	const stored: Record<string, unknown> = {};
+	return {
+		getProperties: () => properties,
+		set: (key: string, value: unknown) => {
+			stored[key] = value;
+		},
+		get: (key: string) => stored[key]
+	} as unknown as Feature<Geometry>;
+}
+
+const NO_FILTER = { lower: 0, upper: Number.MAX_SAFE_INTEGER };
 
 describe('styleUtils', () => {
+	describe('speciesGroupStyles (Farbe = Artgruppe, M1)', () => {
+		const categories: SpeciesCategory[] = ['kleinwal', 'grosswal', 'robbe', 'unbekannt'];
+
+		it('definiert alle vier Artgruppen mit Label, Farbe und Symbol', () => {
+			for (const category of categories) {
+				const group = speciesGroupStyles[category];
+				expect(group, `Gruppe ${category} fehlt`).toBeDefined();
+				expect(group.label).toBeTruthy();
+				expect(group.color).toMatch(/^#[0-9A-Fa-f]{6}$/);
+				expect(group.symbol).toBeTruthy();
+			}
+		});
+
+		it('alle Gruppenfarben sind paarweise verschieden', () => {
+			const colors = categories.map((c) => speciesGroupStyles[c].color);
+			expect(new Set(colors).size).toBe(colors.length);
+		});
+
+		it('jede Gruppenfarbe hat ≥ 3:1 Kontrast auf dem weißen Marker (WCAG 1.4.11)', () => {
+			for (const category of categories) {
+				const ratio = contrastRatio(speciesGroupStyles[category].color, MARKER_BACKGROUND_COLOR);
+				expect(ratio, `${category}: ${ratio.toFixed(2)}`).toBeGreaterThanOrEqual(3);
+			}
+		});
+
+		it('Totfund-Ring ist Schwarz und von allen Gruppenfarben unterscheidbar', () => {
+			expect(TOTFUND_RING_COLOR).toBe('#000000');
+			for (const category of categories) {
+				expect(speciesGroupStyles[category].color).not.toBe(TOTFUND_RING_COLOR);
+			}
+		});
+	});
+
 	describe('speciesSymbols', () => {
 		it('hat Einträge für alle 11 Tierarten (0–10)', () => {
 			for (let i = 0; i <= 10; i++) {
@@ -62,40 +154,47 @@ describe('styleUtils', () => {
 				expect(entry.symbol, `symbol fehlt für ${id}`).toBeTruthy();
 				expect(entry.baseColor, `baseColor fehlt für ${id}`).toMatch(/^#[0-9A-Fa-f]{6}$/);
 				expect(entry.size, `size fehlt für ${id}`).toBeGreaterThan(0);
-				expect(['kleinwal', 'grosswal', 'robbe'], `ungültige category für ${id}`).toContain(
-					entry.category
-				);
+				expect(
+					['kleinwal', 'grosswal', 'robbe', 'unbekannt'],
+					`ungültige category für ${id}`
+				).toContain(entry.category);
 			}
 		});
 
-		it('Schweinswal (0) ist Kleinwal', () => {
+		it('Farbe und Symbol jeder Art stammen aus ihrer Gruppendefinition (eine Quelle für Karte + Legende)', () => {
+			for (const [id, entry] of Object.entries(speciesSymbols)) {
+				const group = speciesGroupStyles[entry.category];
+				expect(entry.baseColor, `baseColor von ${id} weicht von Gruppe ab`).toBe(group.color);
+				expect(entry.symbol, `symbol von ${id} weicht von Gruppe ab`).toBe(group.symbol);
+			}
+		});
+
+		it('Kleinwale: Schweinswal (0), Delphin (3), Beluga (4)', () => {
 			expect(speciesSymbols['0']!.category).toBe('kleinwal');
+			expect(speciesSymbols['3']!.category).toBe('kleinwal');
+			expect(speciesSymbols['4']!.category).toBe('kleinwal');
 		});
 
-		it('Kegelrobbe (1) ist Robbe', () => {
-			expect(speciesSymbols['1']!.category).toBe('robbe');
-		});
-
-		it('Buckelwal (7) ist Großwal', () => {
+		it('Großwale: Zwergwal (5), Finnwal (6), Buckelwal (7)', () => {
+			expect(speciesSymbols['5']!.category).toBe('grosswal');
+			expect(speciesSymbols['6']!.category).toBe('grosswal');
 			expect(speciesSymbols['7']!.category).toBe('grosswal');
 		});
-	});
 
-	describe('backgroundColors', () => {
-		it('hat Hintergrundfarben für alle drei Kategorien', () => {
-			expect(backgroundColors['kleinwal']).toBeDefined();
-			expect(backgroundColors['grosswal']).toBeDefined();
-			expect(backgroundColors['robbe']).toBeDefined();
+		it('Unbekannte Walart (8) wird NICHT als Großwal ausgewiesen (M8)', () => {
+			expect(speciesSymbols['8']!.category).toBe('unbekannt');
+			expect(speciesGroupStyles['unbekannt'].label).not.toBe('Großwal');
 		});
 
-		it('alle Farben sind gültige Hex-Codes', () => {
-			for (const [, color] of Object.entries(backgroundColors)) {
-				expect(color).toMatch(/^#[0-9A-Fa-f]{6}$/);
-			}
+		it('Robben: Kegelrobbe (1), Seehund (2), Ringelrobbe (9), Unbekannte Robbenart (10)', () => {
+			expect(speciesSymbols['1']!.category).toBe('robbe');
+			expect(speciesSymbols['2']!.category).toBe('robbe');
+			expect(speciesSymbols['9']!.category).toBe('robbe');
+			expect(speciesSymbols['10']!.category).toBe('robbe');
 		});
 	});
 
-	describe('legendGroups', () => {
+	describe('legendGroups (Anzahl-Filtergruppen)', () => {
 		it('enthält alle erwarteten Gruppen', () => {
 			expect(legendGroups['ct0']).toBeDefined();
 			expect(legendGroups['ct1']).toBeDefined();
@@ -158,11 +257,8 @@ describe('styleUtils', () => {
 			expect(getFeatureColorGroup({ ta: 0, ct: 1, tf: false, ts: 0 })).toBe('ct1');
 		});
 
-		it('gibt ct2 zurück für ct = 2', () => {
+		it('gibt ct2 zurück für ct = 2 und ct = 5', () => {
 			expect(getFeatureColorGroup({ ta: 0, ct: 2, tf: false, ts: 0 })).toBe('ct2');
-		});
-
-		it('gibt ct2 zurück für ct = 5', () => {
 			expect(getFeatureColorGroup({ ta: 0, ct: 5, tf: false, ts: 0 })).toBe('ct2');
 		});
 
@@ -177,11 +273,118 @@ describe('styleUtils', () => {
 		it('gibt ct15 zurück für ct = 16', () => {
 			expect(getFeatureColorGroup({ ta: 0, ct: 16, tf: false, ts: 0 })).toBe('ct15');
 		});
+	});
 
-		it('gibt ct1 als Fallback zurück (Grenzfall: kein Match)', () => {
-			// Alle realistischen Werte matchen. Testet dass die Funktion einen Default zurückgibt.
-			// ct=1, tf=false → ct1
-			expect(getFeatureColorGroup({ ta: 5, ct: 1, tf: false, ts: 0 })).toBe('ct1');
+	describe('createFeatureStyle (Ring = Gruppenfarbe, Anzahl = Zahl)', () => {
+		it('gibt null zurück, wenn die Art ausgeblendet ist', () => {
+			const feature = mockFeature({ ta: 0 });
+			expect(createFeatureStyle(feature, { '0': true }, {}, NO_FILTER)).toBeNull();
+		});
+
+		it('gibt null zurück, wenn die Anzahl-Gruppe ausgeblendet ist', () => {
+			const feature = mockFeature({ ta: 0, ct: 3 });
+			expect(createFeatureStyle(feature, {}, { ct2: true }, NO_FILTER)).toBeNull();
+		});
+
+		it('gibt null zurück, wenn der Zeitstempel außerhalb des Zeitfilters liegt', () => {
+			const feature = mockFeature({ ta: 0, ts: 1 });
+			expect(createFeatureStyle(feature, {}, {}, { lower: 5000, upper: 9000 })).toBeNull();
+		});
+
+		it('Einzeltier (ct=1): nur Marker-Style ohne Zahl', () => {
+			clearStyleCache();
+			const styles = createFeatureStyle(mockFeature({ ta: 0, ct: 1 }), {}, {}, NO_FILTER);
+			expect(styles).toHaveLength(1);
+		});
+
+		it('Gruppe (ct=7): Marker-Style plus Anzahl-Text "7"', () => {
+			clearStyleCache();
+			const styles = createFeatureStyle(mockFeature({ ta: 0, ct: 7 }), {}, {}, NO_FILTER);
+			expect(styles).toHaveLength(2);
+			const countText = (styles![1] as unknown as { getText(): { getText(): string } }).getText();
+			expect(countText.getText()).toBe('7');
+		});
+
+		it('Ringfarbe entspricht der Gruppenfarbe der Art (Robbe)', () => {
+			clearStyleCache();
+			const styles = createFeatureStyle(mockFeature({ ta: 1, ct: 2 }), {}, {}, NO_FILTER);
+			const image = (
+				styles![0] as unknown as { getImage(): { getStroke(): { getColor(): string } } }
+			).getImage();
+			expect(image.getStroke().getColor()).toBe(speciesGroupStyles['robbe'].color);
+		});
+
+		it('teilt den Marker-Basisstyle zwischen unterschiedlichen Anzahlen (Cache)', () => {
+			clearStyleCache();
+			const styles3 = createFeatureStyle(mockFeature({ ta: 0, ct: 3 }), {}, {}, NO_FILTER);
+			const styles9 = createFeatureStyle(mockFeature({ ta: 0, ct: 9 }), {}, {}, NO_FILTER);
+			// Ring+Emoji hängen nur von Art und Totfund ab — gleiche Style-Instanz
+			expect(styles3![0]).toBe(styles9![0]);
+		});
+
+		it('teilt den Anzahl-Textstyle zwischen unterschiedlichen Arten (Cache)', () => {
+			clearStyleCache();
+			const porpoise = createFeatureStyle(mockFeature({ ta: 0, ct: 4 }), {}, {}, NO_FILTER);
+			const seal = createFeatureStyle(mockFeature({ ta: 1, ct: 4 }), {}, {}, NO_FILTER);
+			expect(porpoise![1]).toBe(seal![1]);
+		});
+
+		it('Totfund: Ring ist schwarz, unabhängig von der Art', () => {
+			clearStyleCache();
+			const styles = createFeatureStyle(mockFeature({ ta: 1, ct: 1, tf: true }), {}, {}, NO_FILTER);
+			const image = (
+				styles![0] as unknown as { getImage(): { getStroke(): { getColor(): string } } }
+			).getImage();
+			expect(image.getStroke().getColor()).toBe(TOTFUND_RING_COLOR);
+		});
+	});
+
+	describe('clusterStyleSteps (Cluster-Skala, eine Quelle für Karte + Legende)', () => {
+		it('Schwellen steigen monoton, letzte Stufe ist offen (upTo === null)', () => {
+			expect(clusterStyleSteps.length).toBeGreaterThanOrEqual(3);
+			for (let i = 1; i < clusterStyleSteps.length; i++) {
+				const prev = clusterStyleSteps[i - 1]!;
+				const curr = clusterStyleSteps[i]!;
+				if (curr.upTo !== null) {
+					expect(prev.upTo).not.toBeNull();
+					expect(curr.upTo).toBeGreaterThan(prev.upTo!);
+				}
+				expect(curr.radius).toBeGreaterThan(prev.radius);
+			}
+			expect(clusterStyleSteps[clusterStyleSteps.length - 1]!.upTo).toBeNull();
+		});
+
+		it('weiße Zahl hat ≥ 4,5:1 Kontrast auf jeder Cluster-Farbe (WCAG 1.4.3)', () => {
+			for (const step of clusterStyleSteps) {
+				const ratio = contrastRatio(step.color, '#FFFFFF');
+				expect(ratio, `${step.color}: ${ratio.toFixed(2)}`).toBeGreaterThanOrEqual(4.5);
+			}
+		});
+
+		it('getClusterStyleStep wählt die richtige Stufe', () => {
+			expect(getClusterStyleStep(2)).toBe(clusterStyleSteps[0]);
+			expect(getClusterStyleStep(10_000)).toBe(clusterStyleSteps[clusterStyleSteps.length - 1]);
+			// Grenzwert: upTo ist inklusiv
+			const first = clusterStyleSteps[0]!;
+			expect(getClusterStyleStep(first.upTo!)).toBe(first);
+			expect(getClusterStyleStep(first.upTo! + 1)).toBe(clusterStyleSteps[1]);
+		});
+	});
+
+	describe('createClusterStyle', () => {
+		it('zeigt die Anzahl als Text und nutzt die Farbe der passenden Stufe', () => {
+			clearStyleCache();
+			const style = createClusterStyle(3);
+			const text = (style as unknown as { getText(): { getText(): string } }).getText();
+			expect(text.getText()).toBe('3');
+		});
+
+		it('cached Styles pro Größe', () => {
+			clearStyleCache();
+			const style1 = createClusterStyle(2);
+			expect(createClusterStyle(2)).toBe(style1);
+			clearStyleCache();
+			expect(createClusterStyle(2)).not.toBe(style1);
 		});
 	});
 
@@ -204,26 +407,6 @@ describe('styleUtils', () => {
 	});
 
 	describe('clearStyleCache', () => {
-		it('leert den Style-Cache — createClusterStyle erstellt danach neues Objekt', () => {
-			// Minimaler Mock für ein Cluster-Feature (2 Features → Schlüssel "cluster_2")
-			const mockFeature = {
-				get: (key: string) => (key === 'features' ? [{}, {}] : undefined)
-			} as unknown as Feature<Geometry>;
-
-			// Ersten Style erzeugen und cachen
-			const style1 = createClusterStyle(mockFeature);
-			// Zweiter Aufruf: kommt aus dem Cache (gleiches Objekt)
-			const style1Cached = createClusterStyle(mockFeature);
-			expect(style1).toBe(style1Cached);
-
-			// Cache leeren
-			clearStyleCache();
-
-			// Dritter Aufruf: Cache ist leer → neues Objekt
-			const style2 = createClusterStyle(mockFeature);
-			expect(style2).not.toBe(style1);
-		});
-
 		it('kann mehrfach aufgerufen werden ohne Fehler', () => {
 			expect(() => {
 				clearStyleCache();
