@@ -3,7 +3,6 @@
  */
 
 import type { Map } from 'ol';
-import type { Fill } from 'ol/style';
 
 /**
  * Translation interface for map labels
@@ -168,11 +167,10 @@ export interface PanelManager {
 }
 
 /**
- * Legend group definition
+ * Legend group definition (count filter groups — no color anymore, see styleUtils.ts)
  */
 export interface LegendGroup {
 	name: string;
-	fill: Fill;
 	match: (properties: SightingProperties) => boolean;
 }
 
@@ -180,8 +178,8 @@ export interface LegendGroup {
  * Species symbol definition
  */
 export interface SpeciesSymbol {
-	symbol: string; // Unicode symbol
-	baseColor: string; // Base color of animal group
+	symbol: string; // Unicode symbol (identical to the group symbol)
+	baseColor: string; // Group color (identical to speciesGroupStyles[category].color)
 	size: number; // Relative size
-	category: 'kleinwal' | 'grosswal' | 'robbe';
+	category: 'kleinwal' | 'grosswal' | 'robbe' | 'unbekannt';
 }

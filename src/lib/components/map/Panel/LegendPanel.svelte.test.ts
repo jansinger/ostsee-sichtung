@@ -34,7 +34,8 @@ const translations: MapTranslations = {
 	speciesMap: {
 		'0': 'Schweinswal',
 		'1': 'Kegelrobbe',
-		'2': 'Seehund'
+		'2': 'Seehund',
+		'8': 'Unbekannte Walart'
 	}
 };
 
@@ -42,7 +43,8 @@ const counts: CountData = {
 	speciesCounts: {
 		'0': { visible: 3, total: 5 },
 		'1': { visible: 1, total: 2 },
-		'2': { visible: 0, total: 1 }
+		'2': { visible: 0, total: 1 },
+		'8': { visible: 0, total: 0 }
 	},
 	colorCounts: {
 		ct0: 1,
@@ -119,11 +121,53 @@ describe('LegendPanel', () => {
 		expect(panel.getAttribute('aria-modal')).toBe('true');
 		expect(panel.getAttribute('aria-labelledby')).toBe('legend-title');
 
-		expect(document.querySelectorAll('.species-checkbox')).toHaveLength(3);
+		expect(document.querySelectorAll('.species-checkbox')).toHaveLength(4);
 		expect(document.querySelectorAll('.color-checkbox')).toHaveLength(6);
 		expect(document.body.textContent).toContain('Schweinswal');
 		expect(document.body.textContent).toContain('3/5');
 		expect(document.body.textContent).toContain('Totfund');
+	});
+
+	it('zeigt Gruppen-Badges aus den styleUtils-Konstanten (Kegelrobbe → Robbe)', async () => {
+		render(LegendPanel, { translations, counts });
+
+		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+
+		const sealRow = document.querySelector('[data-species-row="1"]');
+		expect(sealRow?.textContent).toContain('Robbe');
+	});
+
+	it('weist Unbekannte Walart nicht als Großwal aus (M8)', async () => {
+		render(LegendPanel, { translations, counts });
+
+		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+
+		const unknownRow = document.querySelector('[data-species-row="8"]');
+		expect(unknownRow?.textContent).not.toContain('Großwal');
+		expect(unknownRow?.textContent).toContain('Art unbestimmt');
+	});
+
+	it('graut Arten ohne Sichtungen (0/0) aus, Checkbox bleibt bedienbar', async () => {
+		render(LegendPanel, { translations, counts });
+
+		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+
+		const unknownRow = document.querySelector('[data-species-row="8"]');
+		expect(unknownRow?.querySelector('.grayscale')).not.toBeNull();
+		// Art mit Sichtungen ist nicht ausgegraut
+		const porpoiseRow = document.querySelector('[data-species-row="0"]');
+		expect(porpoiseRow?.querySelector('.grayscale')).toBeNull();
+		// Checkbox der 0/0-Art bleibt vorhanden und aktivierbar
+		expect(unknownRow?.querySelector('.species-checkbox')).not.toBeNull();
+	});
+
+	it('erklärt die Cluster-Farbskala', async () => {
+		render(LegendPanel, { translations, counts });
+
+		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+
+		expect(document.body.textContent).toContain('Cluster');
+		expect(document.body.textContent).toContain('je dunkler');
 	});
 
 	it('meldet Species- und Farb-Toggles an den CountManager', async () => {
