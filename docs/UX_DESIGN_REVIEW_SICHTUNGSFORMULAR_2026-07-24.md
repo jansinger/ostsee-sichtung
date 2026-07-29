@@ -241,7 +241,7 @@ mehr:
 | Damals                                                    | Heute                                                                                                      |
 | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `sections/positionMethod.ts` (+ `positionMethod.test.ts`) | gelöscht                                                                                                   |
-| `sections/PositionAndTime.svelte:14, 39–48`               | Datei auf 18 Zeilen reine Komposition geschrumpft (`<PositionPanel />` + Datum/Uhrzeit-Sektion)            |
+| `sections/PositionAndTime.svelte:14, 39–48`               | Datei auf 21 Zeilen reine Komposition geschrumpft (`<PositionPanel />` + Datum/Uhrzeit-Sektion)            |
 | Radiogruppe / Kacheln der Methodenwahl                    | entfallen; stattdessen `form/position/PositionPanel.svelte` und `form/position/LocationDescription.svelte` |
 
 Damit sind auch die beiden Stellen weiter oben überholt, die die

@@ -380,8 +380,9 @@ ableiten: `mediaStore` liegt bereits im Form-Context (`Form.svelte:40-50`), und
 `MediaFile` bietet `hasPosition()`, `exifData` und `timestamp`.
 
 > **Abweichung (#590), Punkt 5:** Das hat nicht gehalten. `DropzoneEnhanced` hat
-> vier Props und drei neue Nachbarmodule bekommen; `LocationInput` und `OLMap`
-> haben mehr geändert als das eine Prop (Punkt 6).
+> vier neue Props und zwei neue Nachbarmodule bekommen (`exifDateTimeApply.ts`,
+> `positionFileOrigin.ts`), dazu ein erweitertes `MediaFile`; `LocationInput` und
+> `OLMap` haben mehr geändert als das eine Prop (Punkt 6).
 
 ### Reine Logik in `positionPanelState.ts`
 
@@ -572,6 +573,12 @@ und `method-photo`; diese Selektoren existieren nicht mehr. Neu abzudecken:
 - Beschreibungsblock beim Laden offen, `waterway` als Pflichtfeld
 - Kartenbereich initial zugeklappt
 - `waterway` und `seaMark` ohne jeden Moduswechsel erreichbar
+
+> **Umgesetzt in #590:** Alle vier Punkte sind abgedeckt; statt der alten
+> Selektoren assertet der Test jetzt ihre **Abwesenheit** (`toHaveCount(0)` auf
+> `#method-*`). Dazu kam `e2e/form-position-photo.spec.ts` — bis dahin enthielt
+> `e2e/` kein einziges `setInputFiles`, der Datei-Upload war E2E vollständig
+> ungetestet.
 
 **Neue Fixtures — liegen vor.** In `e2e/` gab es bisher **kein einziges**
 `setInputFiles`; der Datei-Upload war E2E vollständig ungetestet. Die drei
