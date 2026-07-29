@@ -14,10 +14,12 @@
 		type YearWithCount
 	} from '$lib/utils/date/defaultYear';
 	import { setMapCountManager } from '$lib/map/mapContext';
+	import { toListEntries, type SightingListProperties } from '$lib/map/listViewUtils';
 	import 'ol/ol.css';
 	import LoadingOverlay from './LoadingOverlay.svelte';
 	import FilterPanel from './Panel/FilterPanel.svelte';
 	import LegendPanel from './Panel/LegendPanel.svelte';
+	import SightingsListView from './SightingsListView.svelte';
 
 	// Props
 	let {
@@ -103,6 +105,9 @@
 	);
 
 	// UI-Zustände
+	// K3: Umschaltbare Ansicht — die Liste ist die Screenreader-/Tastatur-Alternative
+	// zur Karte und zeigt dieselbe gefilterte Datenmenge.
+	let viewMode = $state<'map' | 'list'>('map');
 	let showKeyboardHelp = $state(false);
 	let isLoadingData = $state(false);
 	let isInitialLoading = $state(true);
@@ -120,20 +125,43 @@
 	let visibleFeatures = $derived(
 		Object.values(counts.speciesCounts).reduce((sum, c) => sum + c.visible, 0)
 	);
+	// Die Empty-State-Overlays gehören zur Kartenansicht — in der Listenansicht
+	// übernimmt SightingsListView die "Keine Sichtungen"-Meldung (role="status").
 	let showNoResults = $derived(
-		!isInitialLoading &&
+		viewMode === 'map' &&
+			!isInitialLoading &&
 			!isLoadingData &&
 			!errorMessage &&
 			featureCount === 0 &&
 			totalFeatures === 0
 	);
 	let showNoVisibleResults = $derived(
-		!isInitialLoading &&
+		viewMode === 'map' &&
+			!isInitialLoading &&
 			!isLoadingData &&
 			!errorMessage &&
 			featureCount > 0 &&
 			visibleFeatures === 0
 	);
+
+	// K3: Einträge für die Listenansicht — gleiche Datenbasis und gleiche Filter
+	// wie die Karte. `counts` dient als reaktiver Trigger: der CountManager feuert
+	// nach jeder Filter-, Zeitraum- und Jahresänderung, dadurch bleibt die Liste
+	// ohne zweiten Datenpfad synchron zur Karte.
+	let listEntries = $derived.by(() => {
+		void counts;
+		if (!mapInstance) return [];
+		const hidden = mapInstance.getHidden();
+		const filters = {
+			hiddenSpecies: hidden.species,
+			hiddenColors: hidden.colors,
+			timeFilter: mapInstance.getTimeFilter()
+		};
+		const propsList = mapInstance
+			.getFeatures()
+			.map((feature) => feature.getProperties() as unknown as SightingListProperties);
+		return toListEntries(propsList, filters, speciesLabels);
+	});
 
 	// Event Handler für Cleanup
 	let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
@@ -395,6 +423,14 @@
 </script>
 
 <div class="{containerClass} map-container-wrapper">
+	<!-- K3: Skip-Link — erstes fokussierbares Element, überspringt die Karte -->
+	<a
+		href="#map-skip-target"
+		class="btn btn-primary sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-1/2 focus:z-[70] focus:-translate-x-1/2"
+	>
+		Karte überspringen
+	</a>
+
 	{#if showTitle}
 		<h1 class={titleClass}>
 			<Icon icon="lucide:map" width="24" height="24" class="text-primary" />
@@ -404,12 +440,30 @@
 
 	<!-- Vollbild-Karte -->
 	<div class="relative h-full w-full">
+		<!--
+			K3: tabindex="0" macht das OL-Target fokussierbar — damit greifen die
+			OpenLayers-Default-Interactions KeyboardPan (Pfeiltasten) und
+			KeyboardZoom (+/−), vgl. https://openlayers.org/en/latest/examples/accessible.html
+			role="application" bleibt bewusst erhalten: Die Karte ist damit echt
+			tastaturbedienbar; der Bedienhinweis hängt per aria-describedby dran.
+			In der Listenansicht nimmt inert die Karte samt OL-Controls aus Fokus-
+			und AT-Reihenfolge — aria-hidden allein ließe die Zoom-Buttons
+			fokussierbar (WCAG 4.1.2, axe "aria-hidden-focus").
+		-->
 		<div
 			id={mapContainerId}
-			class="h-full w-full"
+			class="sightings-map-target h-full w-full"
 			role="application"
+			tabindex={viewMode === 'map' ? 0 : -1}
+			inert={viewMode === 'list'}
 			aria-label="Interaktive Sichtungskarte der Ostsee"
+			aria-describedby="map-keyboard-hint"
 		></div>
+		<p id="map-keyboard-hint" class="sr-only">
+			Nach dem Fokussieren der Karte verschieben die Pfeiltasten den Kartenausschnitt, Plus und
+			Minus zoomen. Als Alternative steht die Listenansicht über den Umschalter „Karte / Liste" zur
+			Verfügung.
+		</p>
 		<div
 			id="info"
 			class="border-base-300 bg-base-100 pointer-events-none absolute z-10 hidden max-w-sm rounded border p-2 shadow-lg"
@@ -493,6 +547,46 @@
 				</button>
 			</div>
 		{/if}
+		<!-- K3: Listenansicht — barrierefreie Tabellen-Alternative zur Karte -->
+		{#if viewMode === 'list'}
+			<section
+				class="bg-base-100 absolute inset-0 z-20 overflow-y-auto pt-16 pb-24"
+				aria-label="Listenansicht der Sichtungen"
+			>
+				<div class="mx-auto max-w-3xl px-4">
+					<SightingsListView entries={listEntries} year={currentDisplayedYear} />
+				</div>
+			</section>
+		{/if}
+	</div>
+
+	<!-- K3: Sprungziel des Skip-Links — direkt hinter der Karte, vor den Panels -->
+	<div id="map-skip-target" tabindex="-1" class="sr-only">Ende der Karte</div>
+
+	<!-- K3: Umschalter Karte/Liste -->
+	<div
+		class="absolute bottom-4 left-1/2 z-30 -translate-x-1/2"
+		role="group"
+		aria-label="Darstellung der Sichtungen wählen"
+	>
+		<div class="join shadow-lg">
+			<button
+				type="button"
+				class="btn join-item min-h-11 {viewMode === 'map' ? 'btn-primary' : ''}"
+				aria-pressed={viewMode === 'map'}
+				onclick={() => (viewMode = 'map')}
+			>
+				Karte
+			</button>
+			<button
+				type="button"
+				class="btn join-item min-h-11 {viewMode === 'list' ? 'btn-primary' : ''}"
+				aria-pressed={viewMode === 'list'}
+				onclick={() => (viewMode = 'list')}
+			>
+				Liste
+			</button>
+		</div>
 	</div>
 
 	<!-- Filter-Panel Komponente -->
@@ -576,7 +670,11 @@
 				<div class="text-base-content/60 mt-6 space-y-1 text-xs">
 					<p class="flex items-center gap-2">
 						<Icon icon="lucide:navigation" width="14" height="14" class="text-primary" />
-						Verwenden Sie die Maus oder Touch-Gesten zum Navigieren der Karte
+						Karte mit Tab fokussieren, dann mit den Pfeiltasten verschieben und mit + / − zoomen
+					</p>
+					<p class="flex items-center gap-2">
+						<Icon icon="lucide:list" width="14" height="14" class="text-primary" />
+						Der Umschalter „Karte / Liste" zeigt alle Sichtungen als Tabelle
 					</p>
 					<p class="flex items-center gap-2">
 						<Icon icon="lucide:mouse-pointer" width="14" height="14" class="text-primary" />
@@ -589,3 +687,14 @@
 </div>
 
 <!-- Map styles sind jetzt global in app.css importiert -->
+
+<style>
+	/*
+	 * K3: Sichtbarer Fokusring für das Karten-Target. Inset-Offset, damit der
+	 * Ring trotz overflow-hidden des Vollbild-Containers sichtbar bleibt.
+	 */
+	.sightings-map-target:focus-visible {
+		outline: 3px solid var(--color-primary);
+		outline-offset: -3px;
+	}
+</style>
