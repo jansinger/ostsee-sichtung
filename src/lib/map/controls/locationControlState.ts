@@ -27,6 +27,8 @@ export function geolocationErrorMessage(code?: number): string {
 	switch (code) {
 		case 1:
 			return 'Die Standortfreigabe wurde verweigert. Bitte erlauben Sie den Standortzugriff in Ihren Browser-Einstellungen.';
+		case 2:
+			return 'Ihre Position ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.';
 		case 3:
 			return 'Zeitüberschreitung bei der Standortbestimmung. Bitte versuchen Sie es erneut.';
 		default:

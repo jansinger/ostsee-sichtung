@@ -29,8 +29,11 @@ describe('geolocationErrorMessage', () => {
 		expect(message).toContain('verweigert');
 	});
 
-	it('meldet bei POSITION_UNAVAILABLE (2) eine nicht ermittelbare Position', () => {
-		expect(geolocationErrorMessage(2)).toContain('konnte nicht ermittelt werden');
+	it('meldet bei POSITION_UNAVAILABLE (2) eine nicht verfügbare Position', () => {
+		const message = geolocationErrorMessage(2);
+		expect(message).toContain('derzeit nicht verfügbar');
+		// Abgrenzung zum Default-Text für unbekannte Codes
+		expect(message).not.toBe(geolocationErrorMessage(undefined));
 	});
 
 	it('meldet bei TIMEOUT (3) eine Zeitüberschreitung', () => {
