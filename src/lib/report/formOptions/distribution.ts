@@ -37,13 +37,13 @@ export const distributionLabels: Record<DistributionEnum, string> = {
 /**
  * Verteilungen, die im Formular auswählbar sind.
  * `UNKNOWN` ist bewusst ausgenommen (siehe Enum-Kommentar).
+ *
+ * Abgeleitet statt aufgezählt: Ein später ergänzter echter Wert erscheint
+ * dadurch automatisch im Formular, statt still zu fehlen.
  */
-const SELECTABLE_DISTRIBUTIONS: readonly DistributionEnum[] = [
-	DistributionEnum.OTHER,
-	DistributionEnum.SINGLE,
-	DistributionEnum.MOTHER_WITH_YOUNG,
-	DistributionEnum.SCHOOLS
-];
+const SELECTABLE_DISTRIBUTIONS: readonly DistributionEnum[] = Object.values(DistributionEnum).filter(
+	(value): value is DistributionEnum => typeof value === 'number' && value !== DistributionEnum.UNKNOWN
+);
 
 export type Distribution = DistributionEnum;
 

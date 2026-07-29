@@ -50,10 +50,18 @@ const BOAT_DRIVE_OTHER = 0;
 /** `BoatDriveEnum.NONE` — "Kein Boot" */
 const BOAT_DRIVE_NONE = 5;
 
-const connectionString =
-	process.env.DATABASE_POSTGRES_URL ||
-	process.env.DATABASE_URL ||
-	'postgresql://root:mysecretpassword@localhost:5433/local';
+// Kein stiller Fallback auf eine Default-URL: Das Skript schreibt auf ~30 %
+// der Zeilen. Fehlt die Variable, ist ein Abbruch sicherer als ein UPDATE auf
+// einer Datenbank, die der Aufrufer nicht bewusst gewählt hat (dasselbe Muster
+// wie in migrate-timestamps-to-utc.js).
+const connectionString = process.env.DATABASE_POSTGRES_URL || process.env.DATABASE_URL;
+
+if (!connectionString) {
+	console.error(
+		'❌ DATABASE_POSTGRES_URL (oder DATABASE_URL) ist nicht gesetzt — Abbruch statt Schreiben auf eine geratene Datenbank.'
+	);
+	process.exit(1);
+}
 
 const sql = postgres(connectionString);
 

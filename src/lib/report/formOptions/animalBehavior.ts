@@ -39,13 +39,13 @@ export const animalBehaviorLabels: Record<AnimalBehaviorEnum, string> = {
 /**
  * Verhaltensweisen, die im Formular auswählbar sind.
  * `UNKNOWN` ist bewusst ausgenommen (siehe Enum-Kommentar).
+ *
+ * Abgeleitet statt aufgezählt: Ein später ergänzter echter Wert erscheint
+ * dadurch automatisch im Formular, statt still zu fehlen.
  */
-const SELECTABLE_BEHAVIORS: readonly AnimalBehaviorEnum[] = [
-	AnimalBehaviorEnum.OTHER,
-	AnimalBehaviorEnum.CONSTANT_COURSE,
-	AnimalBehaviorEnum.VARYING_COURSE,
-	AnimalBehaviorEnum.SLOW_SWIMMING
-];
+const SELECTABLE_BEHAVIORS: readonly AnimalBehaviorEnum[] = Object.values(AnimalBehaviorEnum).filter(
+	(value): value is AnimalBehaviorEnum => typeof value === 'number' && value !== AnimalBehaviorEnum.UNKNOWN
+);
 
 export type AnimalBehavior = AnimalBehaviorEnum;
 

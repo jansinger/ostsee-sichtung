@@ -40,14 +40,13 @@ export type BoatDrive = BoatDriveEnum;
 /**
  * Antriebsarten, die im Formular auswählbar sind.
  * `NONE` ist bewusst ausgenommen (siehe Enum-Kommentar).
+ *
+ * Abgeleitet statt aufgezählt: Ein später ergänzter echter Wert erscheint
+ * dadurch automatisch im Formular, statt still zu fehlen.
  */
-const SELECTABLE_BOAT_DRIVES: readonly BoatDriveEnum[] = [
-	BoatDriveEnum.OTHER,
-	BoatDriveEnum.MOTOR,
-	BoatDriveEnum.SAIL,
-	BoatDriveEnum.DRIFTING,
-	BoatDriveEnum.ANCHORED
-];
+const SELECTABLE_BOAT_DRIVES: readonly BoatDriveEnum[] = Object.values(BoatDriveEnum).filter(
+	(value): value is BoatDriveEnum => typeof value === 'number' && value !== BoatDriveEnum.NONE
+);
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten

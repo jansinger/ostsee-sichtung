@@ -42,14 +42,13 @@ export type SightingFrom = SightingFromEnum;
 /**
  * Beobachtungsorte, die im Formular auswählbar sind.
  * `UNKNOWN` ist bewusst ausgenommen (siehe Enum-Kommentar).
+ *
+ * Abgeleitet statt aufgezählt: Ein später ergänzter echter Wert erscheint
+ * dadurch automatisch im Formular, statt still zu fehlen.
  */
-const SELECTABLE_SIGHTING_FROM: readonly SightingFromEnum[] = [
-	SightingFromEnum.OTHER,
-	SightingFromEnum.SAILBOAT,
-	SightingFromEnum.MOTORBOAT,
-	SightingFromEnum.LAND,
-	SightingFromEnum.FERRY
-];
+const SELECTABLE_SIGHTING_FROM: readonly SightingFromEnum[] = Object.values(SightingFromEnum).filter(
+	(value): value is SightingFromEnum => typeof value === 'number' && value !== SightingFromEnum.UNKNOWN
+);
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten
