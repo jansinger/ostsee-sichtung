@@ -103,10 +103,13 @@ describe('DropzoneEnhanced — Herkunft wiederhergestellter Dateien', () => {
 	it('trennt beide Herkünfte in einem gemeinsamen Store', async () => {
 		markPositionFile('position-uid');
 
-		const { mediaStore } = renderDropzone([uploadedFile('position-uid'), uploadedFile('media-uid')], {
-			maxFiles: 10,
-			enableGPSExtraction: false
-		});
+		const { mediaStore } = renderDropzone(
+			[uploadedFile('position-uid'), uploadedFile('media-uid')],
+			{
+				maxFiles: 10,
+				enableGPSExtraction: false
+			}
+		);
 
 		await expect.poll(() => mediaStore.mediaFiles.length).toBe(2);
 		const byUid = Object.fromEntries(
@@ -217,11 +220,9 @@ describe('DropzoneEnhanced — Karte in der Foto-Karte', () => {
 	}
 
 	it('zeigt ohne `showPositionMap` die kompakte Bestätigungszeile statt einer zweiten Karte', async () => {
-		renderDropzone(
-			[],
-			{ maxFiles: 1, enableGPSExtraction: true, showPositionMap: false },
-			[gpsMediaFile('gps-uid')]
-		);
+		renderDropzone([], { maxFiles: 1, enableGPSExtraction: true, showPositionMap: false }, [
+			gpsMediaFile('gps-uid')
+		]);
 
 		await expect
 			.poll(() => document.querySelectorAll('[data-testid="photo-position-summary"]').length)
@@ -253,8 +254,8 @@ describe('DropzoneEnhanced — sichtbarer Auslöser', () => {
 		});
 
 		const button = await vi.waitUntil(() =>
-			Array.from(document.querySelectorAll('button')).find(
-				(candidate) => candidate.textContent?.includes('Foto auswählen')
+			Array.from(document.querySelectorAll('button')).find((candidate) =>
+				candidate.textContent?.includes('Foto auswählen')
 			)
 		);
 		expect(button.className).toContain('btn-primary');
