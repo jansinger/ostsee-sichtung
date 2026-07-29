@@ -11,6 +11,7 @@
 	"scripts": {
 		"dev": "npm run certs:setup && vite dev",
 		"certs:setup": "node scripts/setup-dev-certs.mjs",
+		"worktree:setup": "bash scripts/setup-worktree.sh",
 		"build": "svelte-kit sync && vite build",
 		"build:docker": "USE_NODE_ADAPTER=true svelte-kit sync && vite build",
 		"preview": "vite preview",

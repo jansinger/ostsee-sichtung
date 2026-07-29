@@ -67,6 +67,21 @@ npm run test:quick   # Schnell-Test (lint + types + check + unit)
 
 Vollständige Test-Befehle: `.claude/rules/testing.md`
 
+### Worktrees
+
+Ein neuer Worktree ist nach `npm run worktree:setup` einsatzbereit (läuft automatisch
+per `SessionStart`-Hook). Drei Dinge, die dabei erfahrungsgemäß schiefgehen:
+
+- **Kein `npm install` im Worktree.** Node löst `node_modules` aus dem Haupt-Repo auf —
+  eigene Installation kostet ~800 MB ohne Gegenwert. Ausnahme: Der Branch ändert
+  `package-lock.json`.
+- **Nur ein Dev-Server auf Port 4000.** `PUBLIC_SITE_URL` ist fest auf 4000 und baut die
+  Auth0-Callback-URL; ein anderer Port bricht den Login.
+- **Datenbank und `uploads/` sind geteilt.** `db:push` und `media:cleanup-orphans`
+  wirken auf alle Worktrees.
+
+Details, Belege und Aufräum-Befehle: `docs/WORKTREES.md`
+
 ---
 
 ## Architektur
@@ -131,6 +146,7 @@ Automatisiert über **release-please**: Commits auf `main` werden analysiert, ei
 | `docs/PRODUCTION_DEPLOYMENT.md`    | Production Deployment (Schnellanleitung)                        |
 | `docs/DOCKER_DEPLOYMENT.md`        | Docker Setup (Vollständige Referenz)                            |
 | `docs/ENVIRONMENT.md`              | Umgebungsvariablen, inkl. Zeitzonen-Konvention (Abschnitt `TZ`) |
+| `docs/WORKTREES.md`                | Worktree-Setup, geteilte Ressourcen, Ports                      |
 | `docs/DATABASE_MIGRATION.md`       | DB Migrationen                                                  |
 
 Themenspezifische Regeln in `.claude/rules/` laden automatisch, sobald passende Dateien bearbeitet werden — sie müssen hier nicht aufgezählt werden.

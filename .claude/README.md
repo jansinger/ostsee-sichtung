@@ -30,11 +30,11 @@ Bei jedem Session-Start werden geladen:
 
 | Datei                   | Zeilen | Warum                    |
 | ----------------------- | ------ | ------------------------ |
-| `CLAUDE.md`             | ~138   | Projekt-Einstieg         |
+| `CLAUDE.md`             | ~166   | Projekt-Einstieg         |
 | `rules/architecture.md` | ~187   | kein `paths`-Frontmatter |
 | `rules/testing.md`      | ~96    | kein `paths`-Frontmatter |
 
-Zusammen ~420 Zeilen. Die beiden Rules enthalten bewusst nur noch **Vorschriften**
+Zusammen ~450 Zeilen. Die beiden Rules enthalten bewusst nur noch **Vorschriften**
 (Test-First-Pflicht, Runes-Pflicht, Clean-Code-Standards, Datei-Konventionen). Die
 zugehörigen **Rezepte** liegen in `testing-patterns.md` und `svelte-patterns.md` und
 laden erst, wenn eine Test- bzw. Komponentendatei angefasst wird.
@@ -198,9 +198,14 @@ oben einmal selbst ausführen — anders als bei `.mcp.json`, das automatisch gr
 
 In [`settings.json`](settings.json):
 
-| Hook     | Event                    | Aktion                           |
-| -------- | ------------------------ | -------------------------------- |
-| Prettier | PostToolUse (Write/Edit) | Auto-Format nach Dateiänderungen |
+| Hook           | Event                    | Aktion                              |
+| -------------- | ------------------------ | ----------------------------------- |
+| Prettier       | PostToolUse (Write/Edit) | Auto-Format nach Dateiänderungen    |
+| Worktree-Setup | SessionStart             | `scripts/setup-worktree.sh --quiet` |
+
+Das Worktree-Setup verlinkt `.env` und `uploads/` ins Haupt-Repo und erzeugt
+`.svelte-kit/`. Es ist idempotent und im Haupt-Repo ein No-Op, kostet dort also nur
+einen Prozessstart. Hintergrund: [`../docs/WORKTREES.md`](../docs/WORKTREES.md).
 
 ---
 
