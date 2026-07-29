@@ -1,6 +1,7 @@
 import { test, expect, type Locator } from '@playwright/test';
 import { FormPage } from './pages/FormPage';
 import { fillStep1, fillStep2, expectCurrentStep } from './helpers/form-helpers';
+import { formatRatio, measureContrast } from './helpers/contrast';
 
 // ── Phase 5A: FormSteps Indicator ──────────────────────────────────────────
 
@@ -274,13 +275,9 @@ test.describe('Accessibility — Fokus-Indikator', () => {
  * .alert-error` aus `src/app.css` gegen einen Rückfall auf die Statusfarbe als
  * Textfarbe.
  *
- * Warum im echten Browser und nicht über die CSS-Quelle: Die beteiligten Werte
- * sind `oklch()`-Tokens, die per `color-mix(in oklab, …)` zu Hintergrund und
- * Rahmen verrechnet werden. Ein Kontrastwert lässt sich daraus nur ableiten,
- * wenn die Browser-Engine die Farben tatsächlich auflöst — inklusive
- * Gamut-Mapping nach sRGB. Der Canvas-Umweg unten erzwingt genau diese
- * Auflösung: `fillStyle` akzeptiert den serialisierten Computed Value,
- * `getImageData` liefert die echten sRGB-Bytes zurück.
+ * Warum im echten Browser und nicht über die CSS-Quelle: siehe die Erklärung in
+ * `helpers/contrast.ts` — `oklch()` und `color-mix(in oklab, …)` werden erst
+ * nach dem Gamut-Mapping nach sRGB als Kontrastwert lesbar.
  *
  * Der Fehler, den dieser Test verhindert, hatte alle vier Varianten zwischen
  * 2,45:1 und 3,84:1 gehalten (WCAG 1.4.3 verlangt 4,5:1 für Fließtext) — die
@@ -288,63 +285,189 @@ test.describe('Accessibility — Fokus-Indikator', () => {
  */
 const ALERT_VARIANTS = ['alert-info', 'alert-success', 'alert-warning', 'alert-error'] as const;
 
-async function measureAlertContrast(page: import('@playwright/test').Page) {
-	return page.evaluate(
-		(variants: readonly string[]) => {
-			const canvas = document.createElement('canvas');
-			canvas.width = 1;
-			canvas.height = 1;
-			const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-
-			/** Serialisierte CSS-Farbe (oklab/color-mix/oklch) → sRGB-Bytes. */
-			function toRgb(cssColor: string): [number, number, number] {
-				ctx.clearRect(0, 0, 1, 1);
-				ctx.fillStyle = '#000000';
-				ctx.fillStyle = cssColor;
-				ctx.fillRect(0, 0, 1, 1);
-				const d = ctx.getImageData(0, 0, 1, 1).data;
-				return [d[0], d[1], d[2]];
-			}
-
-			function luminance([r, g, b]: [number, number, number]): number {
-				const lin = [r, g, b]
-					.map((v) => v / 255)
-					.map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-				return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
-			}
-
-			return variants.map((variant) => {
-				const probe = document.createElement('div');
-				probe.className = `alert ${variant}`;
-				probe.style.cssText = 'position:fixed;top:0;left:0;visibility:hidden;pointer-events:none';
-				probe.innerHTML = '<span>Kontrastprobe</span>';
-				document.body.appendChild(probe);
-
-				const style = getComputedStyle(probe);
-				const fg = toRgb(style.color);
-				const bg = toRgb(style.backgroundColor);
-				probe.remove();
-
-				const l1 = luminance(fg);
-				const l2 = luminance(bg);
-				const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-				return { variant, ratio: Math.round(ratio * 100) / 100 };
-			});
-		},
-		[...ALERT_VARIANTS] as string[]
-	);
-}
-
 test.describe('Accessibility — Alert-Kontrast', () => {
 	test('alle vier Alert-Varianten erreichen WCAG AA (4,5:1)', async ({ page }) => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		const measured = await measureAlertContrast(page);
+		const measured = await measureContrast(
+			page,
+			ALERT_VARIANTS.map((variant) => ({
+				name: variant,
+				className: `alert ${variant}`,
+				backdrop: 'var(--color-base-100)'
+			}))
+		);
 
 		expect(measured).toHaveLength(ALERT_VARIANTS.length);
-		for (const { variant, ratio } of measured) {
-			expect(ratio, `${variant}: gemessen ${ratio}:1`).toBeGreaterThanOrEqual(4.5);
+		for (const { name, ratio } of measured) {
+			expect(ratio, `${name}: gemessen ${formatRatio(ratio)}:1`).toBeGreaterThanOrEqual(4.5);
+		}
+	});
+});
+
+// ── Kontrast von `text-error` als Button-Beschriftung ──────────────────────
+
+/**
+ * Schützt `--color-error` aus `src/app.css` gegen eine Aufhellung.
+ *
+ * Die kanonische destruktive Variante des Projekts ist
+ * `btn btn-outline btn-error btn-sm min-h-11` (`design-system.md`,
+ * Button-Hierarchie) — „Formular zurücksetzen", „Kontaktdaten löschen" und jeder
+ * Entfernen-Button lösen zu dieser Farbe auf. `btn-sm` setzt `--fontsize: .75rem`
+ * bei Gewicht 600; das ist **kein** „large text", die 3:1-Ausnahme aus WCAG 1.4.3
+ * greift also nicht.
+ *
+ * Gemessen wird auf beiden Flächen, auf denen der Button real vorkommt:
+ * `base-100` (Karten-Inhalt) und `base-200` (Seitenhintergrund). Mit dem alten
+ * `oklch(0.55 0.18 25)` lagen die Werte bei 4,46:1 bzw. 3,69:1 — beide unter AA.
+ */
+const DESTRUCTIVE_BUTTON_CLASS = 'btn btn-outline btn-error btn-sm min-h-11';
+
+test.describe('Accessibility — text-error auf Buttons', () => {
+	test('destruktiver Button erreicht WCAG AA auf base-100 und base-200', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		const measured = await measureContrast(page, [
+			{
+				name: 'btn-outline btn-error auf base-100',
+				className: DESTRUCTIVE_BUTTON_CLASS,
+				backdrop: 'var(--color-base-100)'
+			},
+			{
+				name: 'btn-outline btn-error auf base-200',
+				className: DESTRUCTIVE_BUTTON_CLASS,
+				backdrop: 'var(--color-base-200)'
+			}
+		]);
+
+		for (const { name, ratio } of measured) {
+			expect(ratio, `${name}: gemessen ${formatRatio(ratio)}:1`).toBeGreaterThanOrEqual(4.5);
+		}
+	});
+
+	test('der echte „Formular zurücksetzen"-Button erreicht WCAG AA', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		// Nicht nur eine Probe mit denselben Klassen: dieser Teil bemerkt auch,
+		// wenn die Aufrufstelle in `FormActions.svelte` auf eine andere Variante
+		// wechselt.
+		const reset = page.getByRole('button', { name: /Formular zurücksetzen/i });
+		await expect(reset).toBeVisible();
+
+		const [onBase100, onBase200] = await measureContrast(page, [
+			{
+				name: 'Formular zurücksetzen auf base-100',
+				selector: 'button.btn-error',
+				backdrop: 'var(--color-base-100)'
+			},
+			{
+				name: 'Formular zurücksetzen auf base-200',
+				selector: 'button.btn-error',
+				backdrop: 'var(--color-base-200)'
+			}
+		]);
+
+		expect(
+			onBase100.ratio,
+			`${onBase100.name}: ${onBase100.foreground} auf ${onBase100.background} = ${formatRatio(onBase100.ratio)}:1`
+		).toBeGreaterThanOrEqual(4.5);
+		expect(
+			onBase200.ratio,
+			`${onBase200.name}: ${onBase200.foreground} auf ${onBase200.background} = ${formatRatio(onBase200.ratio)}:1`
+		).toBeGreaterThanOrEqual(4.5);
+	});
+});
+
+// ── Touch-Target der Hinweis-Buttons in der Feld-Pipeline ──────────────────
+
+/**
+ * Projekt-Mindestmaß ist 44×44 px (`design-system.md`, A11y-Mindestanforderungen)
+ * — das Formular wird an Deck einhändig auf dem Telefon ausgefüllt.
+ *
+ * Gemessen wird die **echte Trefferfläche**, nicht `getBoundingClientRect()`.
+ * Der Hinweis-Button steht inline in einer Label-Zeile: Er ist über
+ * `min-h-11 min-w-11` echte 44×44 px groß, ragt durch `-my-2.5` aber oben und
+ * unten aus der 28 px hohen Zeile heraus (`FieldRenderer.svelte`). Ein Test
+ * über die Box-Maße prüfte nur, wie groß das Element sich *nennt* — er würde
+ * eine Lösung durchwinken, die 44 px misst, deren Ränder aber von einem
+ * Nachbarn überdeckt sind oder ins Leere klicken. `elementFromPoint` prüft
+ * stattdessen, was der Browser an den Rändern des 44-px-Quadrats tatsächlich
+ * träfe, und bleibt damit gültig, wenn die 44 px später anders erzeugt werden.
+ */
+const MIN_TOUCH_TARGET = 44;
+
+async function probeHitArea(page: import('@playwright/test').Page, selector: string) {
+	return page.evaluate(
+		({ selector, size }: { selector: string; size: number }) => {
+			const buttons = Array.from(document.querySelectorAll<HTMLElement>(selector));
+			const half = size / 2 - 1; // 1 px Sicherheitsabstand zum Rand des Quadrats
+			return buttons.map((button) => {
+				// `elementFromPoint` arbeitet nur im sichtbaren Viewport — die Felder
+				// stehen weit unterhalb der Falz, also jeden Button erst zentrieren.
+				button.scrollIntoView({ block: 'center' });
+				const rect = button.getBoundingClientRect();
+				const cx = rect.left + rect.width / 2;
+				const cy = rect.top + rect.height / 2;
+				const points: Array<[string, number, number]> = [
+					['oben', cx, cy - half],
+					['unten', cx, cy + half],
+					['links', cx - half, cy],
+					['rechts', cx + half, cy]
+				];
+				const misses = points
+					.filter(([, x, y]) => {
+						const hit = document.elementFromPoint(x, y);
+						return !hit || !(hit === button || button.contains(hit));
+					})
+					.map(([edge]) => edge);
+				return {
+					label: (button.getAttribute('aria-label') ?? '').slice(0, 40),
+					box: `${Math.round(rect.width)}x${Math.round(rect.height)}`,
+					misses
+				};
+			});
+		},
+		{ selector, size: MIN_TOUCH_TARGET }
+	);
+}
+
+test.describe('Accessibility — Touch-Targets der Hinweis-Buttons', () => {
+	test('jeder Hinweis-Button in FieldRenderer ist 44×44 px treffbar', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		// Schritt 1 rendert vier davon — genug, um die geteilte Pipeline zu prüfen.
+		const buttons = page.locator('button[aria-label^="Hinweis:"]');
+		expect(await buttons.count()).toBeGreaterThan(0);
+
+		const probed = await probeHitArea(page, 'button[aria-label^="Hinweis:"]');
+		for (const { label, box, misses } of probed) {
+			expect(
+				misses,
+				`${label} (Box ${box}): ${MIN_TOUCH_TARGET}px-Quadrat nicht treffbar an ${misses.join(', ')}`
+			).toEqual([]);
+		}
+	});
+
+	test('die Label-Zeile bleibt kompakt (kein 44-px-Sprung)', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		// Gegenprobe zum Test darüber: Das vergrößerte Touch-Target darf die
+		// Label-Zeile nicht auf Buttonhöhe aufblasen — sonst reißt es das Label
+		// vom zugehörigen Feld weg. Gemessen vor der Änderung: 28 px.
+		const rowHeights = await page.evaluate(() =>
+			Array.from(document.querySelectorAll<HTMLElement>('button[aria-label^="Hinweis:"]')).map(
+				(button) => Math.round(button.closest('label, legend')!.getBoundingClientRect().height)
+			)
+		);
+
+		expect(rowHeights.length).toBeGreaterThan(0);
+		for (const height of rowHeights) {
+			expect(height, `Label-Zeile ist ${height}px hoch`).toBeLessThanOrEqual(32);
 		}
 	});
 });

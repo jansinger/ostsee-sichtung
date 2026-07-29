@@ -347,4 +347,61 @@ describe('UnifiedDropzone', () => {
 			});
 		});
 	});
+
+	/**
+	 * Die Vorschau ist in der App derzeit nicht erreichbar: einziger Consumer ist
+	 * `DropzoneEnhanced.svelte`, und der setzt `showPreview={false}`. Der Default
+	 * der Prop ist aber `true` — der nächste Consumer, der sie weglässt, bekäme
+	 * die Buttons sofort zu sehen. Deshalb gelten hier dieselben Regeln wie
+	 * nebenan in `DropzoneEnhanced`: 44 px Touch-Target
+	 * (`design-system.md`) und ausschließlich Theme-Tokens, kein `text-white`
+	 * (`daisyui.md`).
+	 */
+	describe('Vorschau-Buttons — A11y und Theme-Tokens', () => {
+		/**
+		 * Geprüft werden die Klassen, nicht die gerenderte Pixelhöhe: Das
+		 * Browser-Test-Setup lädt `src/app.css` nicht, es gibt im Test-DOM also
+		 * weder Tailwind- noch DaisyUI-Regeln — ein `getBoundingClientRect()`
+		 * misst hier die ungestylte Button-Höhe (21 px) und wäre aussagelos.
+		 * Die tatsächliche Pixelgröße im gebauten CSS deckt der E2E-Test
+		 * „Accessibility — Touch-Targets der Hinweis-Buttons" ab.
+		 */
+		it('Entfernen- und "Alle löschen"-Button tragen die 44-px-Klassen', async () => {
+			render(UnifiedDropzone, {
+				config: mockConfig,
+				files: [makeFile('a.jpg'), makeFile('b.jpg')],
+				showPreview: true,
+				multiple: true
+			});
+
+			const buttons = [
+				page.getByRole('button', { name: 'Alle löschen' }),
+				page.getByRole('button', { name: 'Datei entfernen' }).first()
+			];
+
+			for (const button of buttons) {
+				await expect.element(button).toBeVisible();
+				const className = (button.element() as HTMLElement).className;
+				expect(className, `unerwartete Größenklasse: ${className}`).toContain('min-h-11');
+				expect(className, `btn-xs unterschreitet 44 px: ${className}`).not.toContain('btn-xs');
+			}
+		});
+
+		it('verwendet keine rohen Farbklassen ausserhalb des Themes', async () => {
+			render(UnifiedDropzone, {
+				config: mockConfig,
+				files: [makeFile('a.jpg')],
+				showPreview: true,
+				multiple: true
+			});
+
+			await expect.element(page.getByRole('button', { name: 'Alle löschen' })).toBeVisible();
+
+			const rawColorClasses = Array.from(document.querySelectorAll<HTMLElement>('button'))
+				.map((button) => button.className)
+				.filter((className) => /(^|:)text-white\b|(^|:)bg-white\b|-gray-\d/.test(className));
+
+			expect(rawColorClasses).toEqual([]);
+		});
+	});
 });

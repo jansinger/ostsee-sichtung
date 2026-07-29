@@ -55,7 +55,15 @@
 	--color-success-content: oklch(1 0 0);
 	--color-warning: oklch(0.65 0.16 85);
 	--color-warning-content: oklch(1 0 0);
-	--color-error: oklch(0.55 0.18 25);
+	/* Nur die Lightness gegenüber dem Ursprungswert 0.55 abgesenkt (Hue 25 und
+	   Chroma 0.18 unverändert): `text-error` ist die kanonische destruktive
+	   Button-Farbe und lag als Beschriftung bei 4,46:1 auf base-100 und 3,69:1
+	   auf base-200 — beides unter WCAG 1.4.3 (4,5:1; `btn-sm` ist mit .75rem
+	   kein „large text"). Im Browser gemessen ergibt 0.48 jetzt 6,05:1 auf
+	   base-100 und 5,01:1 auf base-200; weißer Text auf `bg-error`/`btn-error`
+	   steigt dabei von 5,31:1 auf 7,20:1. Abgesichert durch
+	   `e2e/form-a11y.spec.ts` → „Accessibility — text-error auf Buttons". */
+	--color-error: oklch(0.48 0.18 25);
 	--color-error-content: oklch(1 0 0);
 
 	/* ── DaisyUI v5 Layout Variablen ──────────────────────────────── */

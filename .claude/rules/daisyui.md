@@ -89,6 +89,17 @@ die betroffenen Zeilen in `app.css` sind entsprechend kommentiert (z. B.
 Wer einen Farbwert ändert, muss den Kontrast neu prüfen. Ein „etwas helleres Blau"
 kann die Barrierefreiheit brechen.
 
+`--color-error` ist dabei der empfindlichste Wert: er ist nicht nur Flächenfarbe,
+sondern über `btn btn-outline btn-error btn-sm` (die kanonische destruktive
+Variante, siehe `design-system.md`) auch **Textfarbe**. Mit dem ursprünglichen
+`oklch(0.55 0.18 25)` erreichte diese Beschriftung nur 4,46:1 auf `base-100` und
+3,69:1 auf `base-200`; seit `oklch(0.48 0.18 25)` sind es 6,05:1 bzw. 5,01:1.
+Abgesichert ist das durch `e2e/form-a11y.spec.ts` → „Accessibility — text-error
+auf Buttons". Die Messmechanik liegt in `e2e/helpers/contrast.ts` und wird auch
+vom Alert-Test benutzt — sie muss im Browser laufen, weil `oklch()` und
+`color-mix(in oklab, …)` erst nach dem Gamut-Mapping nach sRGB als Kontrastwert
+lesbar sind.
+
 ---
 
 ## Nur ein helles Theme
