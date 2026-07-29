@@ -177,28 +177,38 @@ ostsee-sichtung/
 │   │   ├── map/            # OpenLayers Karten-Funktionalitäten
 │   │   ├── report/         # Sichtungsmeldung-Komponenten und -Logik
 │   │   ├── server/         # Server-seitige Logik
+│   │   │   ├── audit/      # Audit-Logging
 │   │   │   ├── auth/       # Auth0 + JWT Authentifizierung
 │   │   │   ├── config/     # Access Control Konfiguration
+│   │   │   ├── datetime/   # Server-Datums-Utilities (UTC / Berliner Ortszeit)
 │   │   │   ├── db/         # Datenbankzugriff und Schema
 │   │   │   ├── export/     # Datenexport (CSV, JSON, KML, XML)
 │   │   │   ├── geo/        # PostGIS / Baltic Sea Validation
 │   │   │   ├── media/      # EXIF-Metadaten-Extraktion
 │   │   │   ├── middleware/  # DB-Check, Maintenance, Rate Limit, Security Headers
 │   │   │   ├── services/   # Email, Config Init, Weather
+│   │   │   ├── spam/       # Spam-Erkennung
 │   │   │   ├── storage/    # Datei-Speicher (Local, Vercel Blob)
 │   │   │   ├── templates/  # E-Mail HTML-Templates
-│   │   │   └── validation/ # Magic Bytes, Request Validation
+│   │   │   ├── utils/      # Server-Utilities (z. B. getClientIp)
+│   │   │   ├── validation/ # Magic Bytes, Request Validation
+│   │   │   └── weather/    # Wetter-Stundenindex
 │   │   ├── services/       # Client/Server Services (Config, Weather)
 │   │   ├── storage/        # Browser Storage (GDPR-aware)
 │   │   ├── stores/         # Svelte Stores
 │   │   ├── types/          # TypeScript Typen
 │   │   └── utils/          # Hilfsfunktionen
 │   └── routes/             # SvelteKit-Routen
-│       ├── api/            # API-Endpunkte
+│       ├── about/          # Über-Seite
 │       ├── admin/          # Admin-Interface
+│       ├── api/            # API-Endpunkte
+│       ├── docs/           # API-Dokumentation (Scalar)
+│       ├── health/         # Health-Check-Endpunkt
+│       ├── maintenance/    # Wartungsmodus-Seite
 │       ├── map/            # Karten-Visualisierung
 │       ├── rest_sichtungen/ # Legacy REST API (POST, antworten, inBaltic)
-│       └── sichtungen/     # Legacy Sichtungs-API (showreports)
+│       ├── sichtungen/     # Legacy Sichtungs-API (showreports)
+│       └── uploads/        # Ausgelieferte Uploads (Local Storage)
 ├── static/                 # Statische Assets
 ├── docs/                   # Dokumentation
 └── e2e/                    # End-to-End Tests (Playwright)
