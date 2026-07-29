@@ -76,40 +76,13 @@ export type {
 } from './Geography.js';
 
 // Validation types
-export type {
-	FileValidationConfig,
-	ValidationPreset,
-	ValidationResult
-} from './validation.js';
+export type { FileValidationConfig, ValidationPreset, ValidationResult } from './validation.js';
 
 // Toast notification types
 export type { CreateToastOptions, ToastMessage, ToastOptions, ToastType } from './toast.js';
 
-// Map types
-export type {
-	CountData,
-	CountManager,
-	DBSighting,
-	GeoJSONResponse,
-	LegendGroup,
-	LoadDataOptions,
-	MapOptions,
-	MapTranslations,
-	PanelManager,
-	SightingFeature,
-	SightingProperties,
-	SimpleMapOptions,
-	SpeciesSymbol,
-	TimeSliderManager
-} from './map.js';
-
 // Export types
-export type {
-	ExportFormat,
-	ExportOptions,
-	KmlPlacemark,
-	XmlSighting
-} from './export.js';
+export type { ExportFormat, ExportOptions, KmlPlacemark, XmlSighting } from './export.js';
 
 // Media types
 export type {
