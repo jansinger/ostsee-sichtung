@@ -28,23 +28,23 @@
 
 <div class="space-y-8">
 	<!-- Step Header -->
-	<div class="space-y-2 px-2 text-center sm:px-0">
+	<div class="space-y-2 px-2 text-center md:px-0">
 		<div class="flex justify-center">
 			<div
-				class="bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full sm:h-12 sm:w-12"
+				class="bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full md:h-12 md:w-12"
 			>
-				<Icon icon="lucide:user" width="20" class="text-primary sm:h-6 sm:w-6" />
+				<Icon icon="lucide:user" width="20" class="text-primary md:h-6 md:w-6" />
 			</div>
 		</div>
-		<h2 class="text-base-content text-xl font-bold sm:text-2xl">Kontaktdaten & Abschluss</h2>
-		<p class="text-base-content/70 mx-auto max-w-2xl text-sm sm:text-base">
+		<h2 class="text-base-content text-xl font-bold md:text-2xl">Kontaktdaten & Abschluss</h2>
+		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
 			Ihre <strong>E-Mail-Adresse</strong> ist erforderlich für die Bestätigung. Kontaktdaten
 			ermöglichen wichtige Rückfragen zur Datenqualität. <strong>Datenschutz:</strong> Ihre persönlichen
 			Daten werden nie öffentlich angezeigt!
 		</p>
 		<div class="flex justify-center">
 			<div
-				class="badge badge-outline badge-primary h-auto min-h-fit max-w-xs px-3 py-2 text-center text-xs whitespace-normal sm:max-w-none sm:text-sm sm:whitespace-nowrap"
+				class="badge badge-outline badge-primary h-auto min-h-fit max-w-xs px-3 py-2 text-center text-xs whitespace-normal md:max-w-none md:text-sm md:whitespace-nowrap"
 			>
 				Schritt 4 von 4 - Fast geschafft!
 			</div>
@@ -52,8 +52,8 @@
 	</div>
 
 	<!-- Personal Contact Information -->
-	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
-		<h3 class="mb-3 flex gap-2 text-base font-semibold sm:text-lg">
+	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 md:p-4">
+		<h3 class="mb-3 flex gap-2 text-base font-semibold md:text-lg">
 			<Icon icon="lucide:user" width="20" class="text-primary" />
 			Ihre Kontaktdaten
 		</h3>
@@ -128,8 +128,8 @@
 	</div>
 
 	<!-- Boat Information Section -->
-	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
-		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
+	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 md:p-4">
+		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold md:text-lg">
 			<Icon icon="lucide:anchor" width="20" class="text-primary" />
 			Boot-/Schiffsinformationen
 		</h3>
@@ -146,8 +146,8 @@
 	</div>
 
 	<!-- Additional Information Section -->
-	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
-		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
+	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 md:p-4">
+		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold md:text-lg">
 			<Icon icon="lucide:message-square" width="20" class="text-primary" />
 			Zusätzliche Informationen
 		</h3>
@@ -156,8 +156,8 @@
 	</div>
 
 	<!-- Privacy and Consent Section -->
-	<div class="border-primary/20 bg-base-200/50 rounded-lg border p-3 sm:p-4">
-		<h3 class="mb-3 flex gap-2 text-base font-semibold sm:text-lg">
+	<div class="border-primary/20 bg-base-200/50 rounded-lg border p-3 md:p-4">
+		<h3 class="mb-3 flex gap-2 text-base font-semibold md:text-lg">
 			<Icon icon="lucide:lock" width="20" class="text-primary" />
 			Datenschutz und Einverständnis
 		</h3>

@@ -8,10 +8,21 @@ import type { Page, Locator } from '@playwright/test';
  * elements by FieldRenderer.svelte (not on a wrapper div). Use `[data-testid="field-X"]`
  * directly to target the field.
  *
+ * Note on the active step: since PR 3 the step state stands TWICE in the DOM —
+ * the written out stepper (`FormSteps.svelte`, `md` and up) and the compact one
+ * in the fixed bar (`StepProgressCompact.svelte`, below `md`). Both carry
+ * `aria-current="step"`; CSS hides one of them, so assistive technology and the
+ * user only ever meet one. A bare `[aria-current="step"]` therefore matches two
+ * elements and trips Playwright's strict mode — every access goes through
+ * ACTIVE_STEP, which adds `:visible` and thus means "the active step at THIS
+ * viewport width".
+ *
  * Note on navigation: Step indicator buttons allow direct navigation.
  * Backward: always allowed. Forward: only if all intermediate steps are valid.
  * Steps with unmet validation are disabled. Primary navigation via clickNext() / clickPrevious().
  */
+const ACTIVE_STEP = '[aria-current="step"]:visible';
+
 export class FormPage {
 	constructor(private page: Page) {}
 
@@ -20,7 +31,7 @@ export class FormPage {
 		// Wait for Svelte to fully hydrate before interacting with form elements
 		await this.page.waitForLoadState('networkidle');
 		// Ensure the step indicator (Svelte component) is rendered and interactive
-		await this.page.locator('[aria-current="step"]').waitFor({ state: 'visible' });
+		await this.page.locator(ACTIVE_STEP).waitFor({ state: 'visible' });
 	}
 
 	// ── Step Navigation ──────────────────────────────────────────────────────
@@ -116,7 +127,7 @@ export class FormPage {
 	// ── Status Queries ────────────────────────────────────────────────────────
 
 	async getCurrentStep(): Promise<string> {
-		return (await this.page.locator('[aria-current="step"]').getAttribute('aria-label')) ?? '';
+		return (await this.page.locator(ACTIVE_STEP).getAttribute('aria-label')) ?? '';
 	}
 
 	async isNextDisabled(): Promise<boolean> {
@@ -137,6 +148,6 @@ export class FormPage {
 	}
 
 	getActiveStepButton(): Locator {
-		return this.page.locator('[aria-current="step"]');
+		return this.page.locator(ACTIVE_STEP);
 	}
 }

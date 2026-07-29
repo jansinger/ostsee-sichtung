@@ -287,7 +287,7 @@
 					class="btn btn-ghost btn-sm btn-circle -my-2.5 min-h-11 min-w-11"
 					aria-label={`Hinweis: ${metaValues.valueText}`}
 				>
-					<Icon icon="lucide:info" width="14" class="text-base-content/60" />
+					<Icon icon="lucide:info" width="14" class="text-base-content/70" />
 				</button>
 			</span>
 		{/if}
@@ -341,7 +341,7 @@
 	<!-- Help Text -->
 	{#if metaValues.helpText}
 		<div id={helpId} class="mt-1 text-left">
-			<span class="text-base-content/60 text-xs leading-relaxed">
+			<span class="text-base-content/70 text-support leading-relaxed">
 				{metaValues.helpText}
 			</span>
 		</div>
@@ -350,7 +350,7 @@
 	<!-- Error Message -->
 	{#if error}
 		<div id={errorId} class="mt-1 text-left" role="alert" aria-live="polite">
-			<span class="text-error flex items-center gap-1 text-xs font-medium">
+			<span class="text-error text-support flex items-center gap-1 font-medium">
 				<Icon icon="lucide:triangle-alert" width="14" class="text-error flex-shrink-0" />
 				{error}
 			</span>

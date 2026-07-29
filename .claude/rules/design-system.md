@@ -143,15 +143,16 @@ Anders als bei `warning` und `secondary` — wo der Wechsel von Weiß auf `base-
 
 ## Deckkraft-Untergrenze für Text ist /60
 
-`base-content` mit Deckkraft, gemessen:
+`base-content` mit Deckkraft, im Browser gemessen (nicht aus den oklch-Werten
+gerechnet — die Differenz beträgt hier bis zu 0,08):
 
 | Stufe | base-100    | base-200    | base-300    |
 | ----- | ----------- | ----------- | ----------- |
-| /80   | 9,87 ✅     | 8,69 ✅     | 7,56 ✅     |
-| /70   | 6,96 ✅     | 6,35 ✅     | 5,72 ✅     |
-| /60   | 4,92 ✅     | 4,61 ✅     | **4,27 ❌** |
-| /50   | **3,55 ❌** | **3,39 ❌** | **3,22 ❌** |
-| /40   | **2,63 ❌** | **2,55 ❌** | **2,46 ❌** |
+| /80   | 9,82 ✅     | 8,62 ✅     | 7,46 ✅     |
+| /70   | 7,04 ✅     | 6,41 ✅     | 5,74 ✅     |
+| /60   | 4,94 ✅     | 4,62 ✅     | **4,26 ❌** |
+| /50   | **3,54 ❌** | **3,39 ❌** | **3,23 ❌** |
+| /40   | **2,64 ❌** | **2,56 ❌** | **2,46 ❌** |
 
 **Regel:** `/60` ist die Untergrenze für Text, und nur auf `base-100` und `base-200`. `/40` und `/50` (bzw. `opacity-40`/`opacity-50`) sind ausschließlich für dekorative Flächen — nie für Zeichen, die gelesen werden müssen.
 
@@ -239,6 +240,37 @@ Der Alert-Text steht in `base-content`, nicht in der Statusfarbe (WCAG 1.4.3, Me
 - Destruktive Aktionen (Löschen, Zurücksetzen) einheitlich in **einer** Variante über das ganze Formular — im Sichtungsformular `btn btn-outline btn-error btn-sm`. Nicht an einer Stelle `btn-warning`, an anderer `btn-ghost text-error`. Destruktives immer mit Bestätigung. (Das früher nötige `min-h-11` entfällt: die 44px kommen seit der Touch-Target-Regel aus `app.css`, siehe „Feldmodus und Touch-Targets".)
 - Gleiche Aktion = gleiche Variante = gleiches Icon, egal in welcher Komponente sie auftaucht.
 - Ein Button, der nichts bewirkt, gehört entfernt — nicht dekorativ stehen gelassen.
+
+---
+
+## Gesperrte Schaltflächen tragen `aria-disabled`, nicht `disabled`
+
+Eine Schaltfläche, die gerade nicht ausgeführt werden darf, wird über
+`aria-disabled="true"` gesperrt und bleibt fokussierbar. `disabled` nimmt sie aus
+der Tab-Reihenfolge, und der Browser verwirft dabei den Fokus — wer per Tastatur
+arbeitet, verliert seine Position, und zwar ausgerechnet während einer laufenden
+Aktion. Die eigentliche Sperre übernimmt ein Wächter in der Handler-Funktion.
+
+Begründet und angewendet in `PositionPanel.svelte` („Mein aktueller Standort"
+während der Ortung), `FormSteps.svelte` und `StepProgressCompact.svelte` (noch
+nicht erreichbare Schritte). Nebeneffekt, der das Muster zusätzlich trägt: der
+`title` mit der Begründung („Bitte füllen Sie zuerst die vorherigen Schritte
+aus") ist an einem `disabled`-Element per Tastatur nicht erreichbar.
+
+**Konsequenz für Tests — leicht zu übersehen:** Playwright wertet
+`aria-disabled="true"` selbst als „nicht bedienbar" und klickt gar nicht erst.
+Ein Test, der die Sperre prüfen will, läuft ohne `force: true` in einen Timeout
+und bestätigt am Ende nur Playwrights eigene Actionability-Prüfung — die Sperre
+der Anwendung wird dabei nie erreicht.
+
+```ts
+await expect(letzter).toHaveAttribute('aria-disabled', 'true');
+await letzter.click({ force: true }); // ohne force: Timeout, App-Sperre ungeprüft
+await expect(ersterSchritt).toHaveAttribute('aria-current', 'step');
+```
+
+Beispiel: `e2e/form-field-mode.spec.ts` → „Vorwärts bleibt gesperrt, solange der
+Schritt unvollständig ist".
 
 ---
 

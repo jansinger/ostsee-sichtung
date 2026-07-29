@@ -18,7 +18,7 @@ test.describe('FormSteps — Step-Indikator', () => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		const activeStep = page.locator('[aria-current="step"]');
+		const activeStep = page.locator('[aria-current="step"]:visible');
 		await expect(activeStep).toBeVisible();
 		await expect(activeStep).toHaveAttribute('aria-label', /Position & Zeit/i);
 	});
@@ -129,8 +129,13 @@ test.describe('Accessibility — Keyboard Navigation', () => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		// Navigation should have aria-label
-		const nav = page.locator('nav[aria-label="Formular-Schritte"]');
+		/* Navigation should have aria-label.
+		   `:visible` ist hier nicht Kosmetik: Seit PR 3 gibt es ZWEI Navigationen
+		   mit diesem Label — den ausgeschriebenen Stepper ab `md` und den
+		   kompakten im ortsfesten Balken darunter. CSS blendet immer genau eine
+		   aus, Screenreader-Nutzende treffen also nie beide. Ohne den Filter
+		   wäre das ein Strict-Mode-Verstoß und kein echter Befund. */
+		const nav = page.locator('nav[aria-label="Formular-Schritte"]:visible');
 		await expect(nav).toBeVisible();
 
 		// Buttons should have aria-labels

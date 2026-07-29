@@ -200,8 +200,8 @@
 	}
 </script>
 
-<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 sm:p-4">
-	<h3 class="mb-3 flex items-center gap-2 text-base font-semibold sm:text-lg">
+<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 md:p-4">
+	<h3 class="mb-3 flex items-center gap-2 text-base font-semibold md:text-lg">
 		<Icon aria-hidden="true" icon="lucide:map-pin" width="20" class="text-primary" />
 		Positionsangabe
 	</h3>
@@ -212,7 +212,7 @@
 	<!-- Hero: Foto mit GPS. Tint-Fläche trägt bewusst text-base-content,
 	     NICHT text-primary-content (weiß auf hellblau ≈ 1,3:1). -->
 	<div
-		class="border-primary bg-primary/5 text-base-content rounded-lg border-2 p-4 sm:p-6"
+		class="border-primary bg-primary/5 text-base-content rounded-lg border-2 p-4 md:p-6"
 		data-testid="photo-position-card"
 	>
 		<h4 class="mb-1 flex items-center gap-2 font-semibold">
@@ -302,7 +302,7 @@
 		</div>
 	</div>
 
-	<div class="divider text-base-content/60 mt-6 mb-3 text-xs">oder Position selbst setzen</div>
+	<div class="divider text-base-content/70 text-support mt-6 mb-3">oder Position selbst setzen</div>
 
 	<!-- Eigener Button statt des OpenLayers-GPS-Controls: Die Karte startet
 	     zugeklappt, im Startzustand gäbe es sonst gar keinen sichtbaren
@@ -310,7 +310,7 @@
 	     Hand — beides ist im Karten-Control nicht erreichbar. -->
 	<button
 		type="button"
-		class="btn btn-outline min-h-11 w-full sm:w-auto"
+		class="btn btn-outline min-h-11 w-full md:w-auto"
 		onclick={useCurrentPosition}
 		aria-disabled={locating}
 		data-testid="use-current-position"
@@ -324,7 +324,7 @@
 		     damit er auch angesagt wird und nicht nur zu sehen ist. -->
 		{locating ? 'Standort wird ermittelt …' : 'Mein aktueller Standort'}
 	</button>
-	<p class="text-base-content/60 mt-1 mb-3 text-xs">
+	<p class="text-base-content/70 text-support mt-1 mb-3">
 		Übernimmt den Standort Ihres Geräts — sinnvoll, wenn Sie die Sichtung direkt vor Ort melden.
 	</p>
 

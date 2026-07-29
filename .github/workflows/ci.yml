@@ -334,7 +334,8 @@ jobs:
                 e2e/form-a11y.spec.ts \
                 e2e/form-position.spec.ts \
                 e2e/form-position-photo.spec.ts \
-                e2e/form-autosave.spec.ts
+                e2e/form-autosave.spec.ts \
+                e2e/form-field-mode.spec.ts
               ;;
             map)
               npm run test:e2e -- e2e/map-*.spec.ts

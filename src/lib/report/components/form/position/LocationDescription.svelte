@@ -49,7 +49,7 @@
 			: 'Kein GPS? Beschreiben Sie das Seegebiet'}
 	</summary>
 	<div class="collapse-content">
-		<p class="text-base-content/70 mb-3 text-xs">
+		<p class="text-base-content/70 text-support mb-3">
 			Viele Fotos enthalten keine GPS-Daten, und nicht jede Position lässt sich auf der Karte
 			wiederfinden — das ist kein Problem. Eine kurze Beschreibung des Fahrwassers genügt uns, auch
 			ungefähre Angaben sind wertvoll.

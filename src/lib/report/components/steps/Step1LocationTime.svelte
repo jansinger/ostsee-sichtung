@@ -5,14 +5,14 @@
 
 <div class="space-y-8">
 	<!-- Step Header -->
-	<div class="space-y-2 text-center px-2 sm:px-0">
+	<div class="space-y-2 text-center px-2 md:px-0">
 		<div class="flex justify-center">
-			<div class="bg-primary/20 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full">
-				<Icon icon="lucide:map-pin" width="20" class="text-primary sm:w-6 sm:h-6" />
+			<div class="bg-primary/20 flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-full">
+				<Icon icon="lucide:map-pin" width="20" class="text-primary md:w-6 md:h-6" />
 			</div>
 		</div>
-		<h2 class="text-base-content text-xl sm:text-2xl font-bold">Position & Zeit</h2>
-		<p class="text-base-content/70 mx-auto max-w-2xl text-sm sm:text-base">
+		<h2 class="text-base-content text-xl md:text-2xl font-bold">Position & Zeit</h2>
+		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
 			Wo und wann haben Sie die Sichtung gemacht? <strong
 				>GPS-Koordinaten sind am wertvollsten</strong
 			>
@@ -20,7 +20,7 @@
 			für die Wissenschaft!
 		</p>
 		<div class="flex justify-center">
-			<div class="badge badge-outline badge-primary text-center min-h-fit h-auto py-2 px-3 whitespace-normal text-xs sm:text-sm sm:whitespace-nowrap max-w-xs sm:max-w-none">
+			<div class="badge badge-outline badge-primary text-center min-h-fit h-auto py-2 px-3 whitespace-normal text-xs md:text-sm md:whitespace-nowrap max-w-xs md:max-w-none">
 				Schritt 1 von 4 - Grunddaten (erforderlich)
 			</div>
 		</div>

@@ -32,18 +32,36 @@
 	   *-surface = Flächenfarbe (Button, Badge, Alert-Tint)
 	   *-strong  = Vordergrundfarbe (Text, Icon, Zahl) — L ≈ 0.47, damit sie
 	               auf base-100/200 ≥ 4,5:1 erreicht. Hue und Chroma sind
-	               gegenüber -surface unverändert. */
+	               gegenüber -surface unverändert.
+
+	   Die Zahlenpaare hinter den -strong-Zeilen sind base-100 / base-200 und
+	   sind im Browser GEMESSEN, nicht gerechnet: erst nach dem Gamut-Mapping
+	   nach sRGB und der 8-Bit-Quantisierung steht der Wert fest, den ein Auge
+	   tatsächlich sieht. Die Differenz ist nicht immer vernachlässigbar — siehe
+	   den Kommentar an --status-info-strong, wo sie 0,043 beträgt.
+
+	   Maßgeblich ist deshalb nicht dieser Kommentar, sondern
+	   e2e/design-tokens.spec.ts: der Test misst dieselben Kombinationen unter
+	   /styleguide im echten Browser und ist die Instanz, die Rot oder Grün
+	   sagt. Wer hier eine Zahl ändert, ohne sie dort nachzumessen, schreibt
+	   eine Vermutung auf. */
 	--status-info-surface: oklch(0.55 0.12 230); /*    #007daa */
-	--status-info-strong: oklch(0.465 0.12 230); /*    #00648f  5,51 / 4,58 */
+	/* L bewusst 0.46 und nicht 0.465 wie die Nachbarn: dieser Ton rundet
+	   ungünstig gegen base-200 (#d1d8df). Die 8-Bit-Quantisierung nach sRGB
+	   kostet ihn bei 0.465 ganze 0,043 Kontrast (4,578 gerechnet → 4,535
+	   gemessen) und lässt damit nur 0,03 über der 4,5-Schwelle. Die anderen
+	   vier -strong-Werte verlieren an derselben Stelle nur 0,005–0,012.
+	   Bei 0.46 sind es 4,672 → 4,662, also 0,16 Puffer. */
+	--status-info-strong: oklch(0.46 0.12 230); /*     #00628d  5,63 / 4,66 */
 	--status-success-surface: oklch(0.55 0.16 145); /* #1c882d */
-	--status-success-strong: oklch(0.46 0.16 145); /*  #006d09  5,53 / 4,59 */
+	--status-success-strong: oklch(0.46 0.16 145); /*  #006d09  5,53 / 4,57 */
 	--status-warning-surface: oklch(0.65 0.16 85); /*  #bb8500 */
-	--status-warning-strong: oklch(0.48 0.16 85); /*   #865100  5,52 / 4,58 */
+	--status-warning-strong: oklch(0.48 0.16 85); /*   #865100  5,53 / 4,58 */
 	--status-error-surface: oklch(
 		0.48 0.18 25
 	); /*    #ac1922  — ist bereits
-	     beides: Fläche (weiß darauf 7,19) und Vordergrund (6,04 / 5,01). */
-	--status-accent-strong: oklch(0.475 0.047 215); /* #3c636d  5,51 / 4,57 */
+	     beides: Fläche (weiß darauf 7,20) und Vordergrund (6,05 / 5,01). */
+	--status-accent-strong: oklch(0.475 0.047 215); /* #3c636d  5,52 / 4,57 */
 
 	/* ── Ebene 2: semantische Tokens ────────────────────────────────────── */
 
@@ -53,6 +71,8 @@
 	--color-info-strong: var(--status-info-strong);
 	--color-success-strong: var(--status-success-strong);
 	--color-warning-strong: var(--status-warning-strong);
+	/* Als einzige -strong-Farbe kein eigenes Primitiv, sondern das Marken-Grau
+	   --brand-sea-400 (#42626a). Gemessen 5,54 / 4,58. */
 	--color-secondary-strong: var(--brand-sea-400);
 	--color-accent-strong: var(--status-accent-strong);
 
@@ -74,11 +94,12 @@
 	--text-support-lh: 1.5;
 
 	/* Deckkraft-Stufen von base-content. /60 ist die Untergrenze für Text
-	   und gilt nur auf base-100 und base-200 (auf base-300: 4,27 → zu wenig).
-	   /50 (3,39) und /40 (2,55) sind ausschließlich dekorativ. */
+	   und gilt nur auf base-100 und base-200 (auf base-300: 4,26 → zu wenig).
+	   /50 (3,39) und /40 (2,56) sind ausschließlich dekorativ.
+	   Zahlen wie oben gemessen, nicht gerechnet — base-100 / 200 / 300. */
 	--fg-strong: 1;
-	--fg-muted: 0.7; /*   6,96 / 6,35 / 5,72 */
-	--fg-subtle: 0.6; /*  4,92 / 4,61 / 4,27 ← nur base-100 + base-200 */
+	--fg-muted: 0.7; /*   7,04 / 6,41 / 5,74 */
+	--fg-subtle: 0.6; /*  4,94 / 4,62 / 4,26 ← nur base-100 + base-200 */
 
 	/* Abstände — 4-px-Raster, fünf Stufen */
 	--space-1: 0.25rem; /*  4px — Icon zu Text */

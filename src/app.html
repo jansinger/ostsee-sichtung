@@ -1,4 +1,21 @@
 <!doctype html>
+<!--
+  Feldmodus: `data-density="field"` an das <html> unten hängen — mehr braucht es
+  nicht. `[data-density='field']` in src/css/tokens.css hebt dann --target-min
+  auf 56px, --target-gap auf 24px und --text-support auf 14px; keine Komponente
+  kennt den Modus, alle lesen nur die Tokens. Anleitung und Grenzen:
+  docs/DESIGN_SYSTEM.md, Abschnitt „Feldmodus aktivieren".
+
+  Das Attribut steht hier bewusst NICHT mit dem Normalwert „comfortable"
+  vorbelegt, obwohl das symmetrischer aussähe. Zwei Gründe:
+  1. Es gibt keinen Selektor für „comfortable" — der Normalfall ist die
+     Abwesenheit des Attributs. Ein vorbelegter Wert wäre Zierde, die man beim
+     Umschalten überschreiben statt setzen müsste.
+  2. /styleguide schreibt das Attribut beim Mounten und löscht es beim
+     Verlassen wieder. Stünde hier ein Startwert, wäre er danach weg — und
+     e2e/design-tokens.spec.ts benutzt genau die Abwesenheit als Signal dafür,
+     dass die Seite hydriert ist (dort ausführlich kommentiert).
+-->
 <html lang="de" data-theme="meeresmuseum">
 	<head>
 		<meta charset="utf-8" />
