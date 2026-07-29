@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig, searchForWorkspaceRoot } from 'vite';
+import { stableDepHash } from './src/tools/vite-stable-dep-hash';
 
 /**
  * In Git-Worktrees liegt das installierte node_modules außerhalb des
@@ -37,8 +38,10 @@ export default defineConfig({
 				props.height = props.height || '20';
 			}
 		}),
-		sveltekit()
+		sveltekit(),
 		// No basicSsl plugin for CI to avoid HTTPS certificate issues
+		// Zuletzt: sortiert resolve.external/noExternal nach allen anderen Plugins.
+		stableDepHash()
 	],
 	server: {
 		host: '0.0.0.0',
