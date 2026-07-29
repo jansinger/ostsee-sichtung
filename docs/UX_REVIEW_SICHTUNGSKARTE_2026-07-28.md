@@ -201,7 +201,7 @@ Zoom-Buttons tragen englische Titles/Labels („Zoom in", „Zoom out") in anson
 - **N1:** `MapPanelManager.initializePanels()` ist funktionsloser Platzhalter (`panelManager.ts:15-29`); `updateTimeFilter()` im Controller ebenso (`optimizedMapController.ts:853-859`). Tote Pfade entfernen.
 - **N2:** `LocationControl`/Geolocation ist vollständig implementiert, aber deaktiviert (`enableLocationControl: false`, `SightingsMapView.svelte:131`) — entweder aktivieren („Mein Standort" ist Standard bei Sichtungskarten) oder Code entfernen.
 - **N3:** `createClusterStyle` (`styleUtils.ts:386`) wird nirgends verwendet (Duplikat der Controller-Logik ohne Filterunterstützung).
-- **N4:** Jahresliste ist auf 10 Jahre begrenzt (`getAvailableYears(10)`), obwohl Daten bis 2007 zurückreichen — ältere Jahrgänge sind unerreichbar.
+- **N4:** Jahresliste ist auf 10 Jahre begrenzt (`getAvailableYears(10)`), obwohl Daten bis 2007 zurückreichen — ältere Jahrgänge sind unerreichbar. — **Behoben 2026-07-29:** Dropdown speist sich aus `GET /api/map/sightings/years` (`deriveSelectableYears`, absteigend); aktuelles Kalenderjahr und URL-Jahr bleiben immer wählbar, bei leerem Endpoint greift der 11-Jahre-Fallback.
 - **N5:** Sichtungen an Land (im Test: Marker bei Hamburg-Zentrum und südlich von Hamburg) — Hinweis auf fehlende Plausibilitätsprüfung im Altbestand; auf der Karte wirken sie wie Fehler.
 - **N6:** Titel-Chip „Sichtungskarte 2026" aktualisiert korrekt bei Jahreswechsel (gut), kommuniziert aber nicht aktive Such-/Zeitfilter (siehe M4). — **Behoben 2026-07-29** über die Filter-Chips aus M4.
 - **N7:** Der Hilfe-„?"-Button unten links bleibt bestehen — gut sichtbar, aber sein Modal erwähnt die automatische Suche nicht und listet Escape nur für „Dialoge".

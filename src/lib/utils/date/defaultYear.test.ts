@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
 	getDefaultSightingYear,
 	isInTransitionPeriod,
-	getAvailableYears,
+	deriveSelectableYears,
 	pickDefaultYear
 } from './defaultYear';
 
@@ -97,38 +97,59 @@ describe('defaultYear utilities', () => {
 		});
 	});
 
-	describe('getAvailableYears', () => {
-		beforeEach(() => {
-			vi.useFakeTimers();
-			vi.setSystemTime(new Date('2024-06-15'));
+	// N4: Das Jahres-Dropdown speist sich aus GET /api/map/sightings/years —
+	// alle Jahre mit Daten, nicht nur die letzten 10.
+	describe('deriveSelectableYears', () => {
+		it('liefert alle Jahre mit Daten absteigend, vereint mit dem aktuellen Kalenderjahr', () => {
+			const available = [
+				{ year: 2007, count: 5 },
+				{ year: 2025, count: 817 },
+				{ year: 2010, count: 3 }
+			];
+			expect(deriveSelectableYears(available, 2026)).toEqual([2026, 2025, 2010, 2007]);
 		});
 
-		afterEach(() => {
-			vi.useRealTimers();
+		it('schließt Jahre ohne Sichtungen (count 0) aus', () => {
+			const available = [
+				{ year: 2024, count: 0 },
+				{ year: 2023, count: 5 }
+			];
+			expect(deriveSelectableYears(available, 2026)).toEqual([2026, 2023]);
 		});
 
-		it('should return 11 years by default (current + 10 previous)', () => {
-			const years = getAvailableYears();
-			expect(years).toHaveLength(11);
-			expect(years[0]).toBe(2024);
-			expect(years[10]).toBe(2014);
+		it('dupliziert das aktuelle Kalenderjahr nicht, wenn es bereits Daten hat', () => {
+			expect(deriveSelectableYears([{ year: 2026, count: 10 }], 2026)).toEqual([2026]);
 		});
 
-		it('should return correct number of years when specified', () => {
-			const years = getAvailableYears(5);
-			expect(years).toHaveLength(6);
-			expect(years[0]).toBe(2024);
-			expect(years[5]).toBe(2019);
+		it('fällt bei leerer Endpoint-Antwort auf die letzten 11 Kalenderjahre zurück', () => {
+			expect(deriveSelectableYears([], 2026)).toEqual([
+				2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016
+			]);
 		});
 
-		it('should return years in descending order', () => {
-			const years = getAvailableYears(3);
-			expect(years).toEqual([2024, 2023, 2022, 2021]);
+		it('fällt zurück, wenn kein einziges Jahr Daten hat (nur count 0)', () => {
+			expect(deriveSelectableYears([{ year: 2025, count: 0 }], 2026)).toEqual([
+				2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016
+			]);
 		});
 
-		it('should handle 0 years back', () => {
-			const years = getAvailableYears(0);
-			expect(years).toEqual([2024]);
+		it('ergänzt ein URL-Jahr (M4, ?year=…), das nicht in der Endpoint-Liste steht', () => {
+			const available = [{ year: 2025, count: 10 }];
+			expect(deriveSelectableYears(available, 2026, 2008)).toEqual([2026, 2025, 2008]);
+		});
+
+		it('dupliziert ein URL-Jahr nicht, das die Endpoint-Liste bereits enthält', () => {
+			const available = [
+				{ year: 2008, count: 4 },
+				{ year: 2025, count: 10 }
+			];
+			expect(deriveSelectableYears(available, 2026, 2008)).toEqual([2026, 2025, 2008]);
+		});
+
+		it('ergänzt das URL-Jahr auch im Fallback-Fall (geteilte URL bei leerer DB)', () => {
+			expect(deriveSelectableYears([], 2026, 2008)).toEqual([
+				2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2008
+			]);
 		});
 	});
 

@@ -144,6 +144,17 @@ describe('FilterPanel', () => {
 		expect(options.length).toBe(3);
 	});
 
+	// N4: Die years-Prop kommt bereits absteigend sortiert aus deriveSelectableYears —
+	// das Dropdown übernimmt die Reihenfolge unverändert (neuestes Jahr zuerst).
+	it('rendert die Jahresoptionen in Prop-Reihenfolge (absteigend, neuestes zuerst)', async () => {
+		render(FilterPanel, { years: [2026, 2025, 2008], defaultYear: 2025 });
+
+		await page.getByRole('button', { name: /^Filter$/i }).click();
+
+		const options = Array.from(getYearSelect().querySelectorAll('option'));
+		expect(options.map((option) => option.value)).toEqual(['2026', '2025', '2008']);
+	});
+
 	it('passt Slider-Maximum bei Schaltjahr an', async () => {
 		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
 
