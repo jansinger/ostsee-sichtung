@@ -210,11 +210,26 @@ PUBLIC_SITE_URL=https://sightings.meeresmuseum.de
 **Required**: No
 **Default**: none
 **Description**: Fallback connection string, only read when `DATABASE_POSTGRES_URL` is
-unset. The application itself always uses `DATABASE_POSTGRES_URL`; the fallback exists
-for the maintenance tool `src/tools/cleanup-orphaned-uploads.ts`, which accepts either
-name so it can run in environments that already provide the conventional
-`DATABASE_URL`. Neither name has a built-in default — the tool deletes files and
-therefore refuses to guess a target database.
+unset. The application itself never reads it — `src/lib/server/db/index.ts`,
+`drizzle.config.ts`, `scripts/docker-migrate.ts` and `scripts/docker-entrypoint.sh` all
+require `DATABASE_POSTGRES_URL`. The fallback exists for part of the maintenance tooling
+in `src/tools/`, so those scripts also run in environments that already provide the
+conventional `DATABASE_URL`.
+
+**Which tools accept it**:
+
+| Tool                           | Behaviour when neither variable is set                             |
+| ------------------------------ | ------------------------------------------------------------------ |
+| `cleanup-orphaned-uploads.ts`  | aborts — it deletes files and must never guess a target            |
+| `migrate-timestamps-to-utc.js` | aborts                                                             |
+| `fix-media-upload-flags.js`    | falls back to a hard-coded local dev connection (`localhost:5433`) |
+
+The remaining tools (`generate-reference-ids.ts`, `migrate-old-uploads.ts`) read
+`DATABASE_POSTGRES_URL` only and do **not** honour `DATABASE_URL`.
+
+Note the third row: `fix-media-upload-flags.js` is the one script that connects
+somewhere by default instead of failing. Set the variable explicitly before running it
+against anything other than the local dev database.
 
 **Precedence**:
 

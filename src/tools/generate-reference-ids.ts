@@ -12,7 +12,8 @@
  * 3. Update the sighting with the determined referenceId
  *
  * Prerequisites:
- * - DATABASE_URL environment variable must be set
+ * - DATABASE_POSTGRES_URL environment variable must be set (this tool does not
+ *   fall back to DATABASE_URL)
  * - Database connection must be available
  *
  * Usage:
