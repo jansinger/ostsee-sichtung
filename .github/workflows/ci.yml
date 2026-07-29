@@ -340,11 +340,16 @@ jobs:
               npm run test:e2e -- e2e/map-*.spec.ts
               ;;
             smoke)
+              # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das
+              # Theme, nicht das Formular. Läuft gegen /styleguide, das der
+              # dev-Guard nur im Entwicklungsmodus freigibt — der Shard startet
+              # ohnehin `vite dev` (playwright.config.ts).
               npm run test:e2e -- \
                 e2e/basic.test.ts \
                 e2e/homepage.test.ts \
                 e2e/about-page.spec.ts \
-                e2e/auth.spec.ts
+                e2e/auth.spec.ts \
+                e2e/design-tokens.spec.ts
               ;;
             *)
               echo "Unknown shard: ${{ matrix.shard }}"
