@@ -35,7 +35,7 @@ Ostsee-Tiere bietet eine benutzerfreundliche Plattform zur wissenschaftlichen Er
 
 - **Frontend**: SvelteKit (Svelte 5 mit Runes) mit TypeScript
 - **Styling**: TailwindCSS mit DaisyUI-Komponenten
-- **Formularvalidierung**: svelte-forms-lib mit Yup
+- **Formularvalidierung**: eigene `createForm`-Implementierung (`src/lib/form/createForm.ts`) mit Yup
 - **Datenbank**: PostgreSQL mit PostGIS-Erweiterung
 - **ORM**: Drizzle
 - **Karten**: OpenLayers
@@ -212,7 +212,7 @@ Das Herzstück der Anwendung ist ein mehrstufiges Formular mit intelligenter Nav
 
 - Dynamische Schritte basierend auf Benutzereingaben
 - Conditional Logic und progressive Offenlegung
-- Yup-basierte Validierung mit svelte-forms-lib
+- Yup-basierte Validierung über die projekteigene `createForm`-Implementierung
 - Automatische GPS-Koordinaten-Erfassung
 
 ### Interaktive Kartenvisualisierung

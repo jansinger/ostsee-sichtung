@@ -41,6 +41,43 @@ Im Theme sind fast alle `*-content`-Farben reines Weiß (`oklch(1 0 0)`). Auf ei
 
 ---
 
+## Bekannte Grenze: `text-error` auf `base-300`
+
+`--color-error` (`oklch(0.48 0.18 25)`, seit #599) ist als Textfarbe **nicht auf jeder
+Fläche AA-tauglich**. Gemessen gegen die drei Basisflächen:
+
+| Fläche     | Kontrast   | WCAG 1.4.3 (4,5:1) |
+| ---------- | ---------- | ------------------ |
+| `base-100` | 6,05:1     | ✅                 |
+| `base-200` | 5,01:1     | ✅                 |
+| `base-300` | **4,13:1** | ❌                 |
+
+**Es gibt derzeit keine solche Aufrufstelle** — `base-300` dient im Projekt durchgängig
+als Rahmen (`border-base-300`) oder Zeilen-Hover (`hover:bg-base-300`), `text-error`
+sitzt immer auf `base-100`. Der Fall ist hier dokumentiert, weil er sich versehentlich
+leicht herstellen lässt:
+
+```svelte
+<!-- ❌ Fehlerfall: im Hover-Zustand nur 4,13:1 -->
+<tr class="hover:bg-base-300">
+	<td><button class="btn btn-outline btn-error btn-sm min-h-11">Löschen</button></td>
+</tr>
+```
+
+**Regel:** `text-error` (und die destruktive Button-Variante) nur auf `base-100` oder
+`base-200` platzieren. Braucht eine Zeile mit destruktiver Aktion einen Hover, dann
+`hover:bg-base-200` verwenden — nicht `base-300`.
+
+Warum das **kein** E2E-Test absichert: Eine Schwellwert-Assertion (`≥ 4,5:1`) wäre heute
+rot, und sie grün zu bekommen hieße `--color-error` zu ändern — ein Eingriff ins
+Farb-Theme, den dieser hypothetische Fall nicht rechtfertigt. Ein DOM-Scan nach der
+Kombination wiederum würde genau den riskanten Fall verfehlen, weil `hover:`-Zustände in
+`getComputedStyle` im Ruhezustand nicht auftauchen. Der wirksame Ort für diesen Guard ist
+deshalb die Regel hier, nicht `e2e/form-a11y.spec.ts`. Sobald eine echte Aufrufstelle
+entsteht, gehört sie mit `measureContrast` (`e2e/helpers/contrast.ts`) gemessen.
+
+---
+
 ## Alerts
 
 Die Soft-Darstellung der Alerts kommt aus `app.css` (Details in `daisyui.md`). Für diese Regel zählt nur: `<div class="alert alert-warning">` genügt — den Override **nicht** per `bg-warning`/`text-warning-content`/`shadow-*` an der Aufrufstelle aushebeln, sonst entsteht genau der `*-content`-Fehler von oben.
