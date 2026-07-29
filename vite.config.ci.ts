@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig, searchForWorkspaceRoot } from 'vite';
+import { stableDepHash } from './src/tools/vite-stable-dep-hash';
 
 /**
  * In Git-Worktrees liegt das installierte node_modules außerhalb des
@@ -27,6 +28,7 @@ export default defineConfig({
 		'process.env.SKIP_DB_CHECK': JSON.stringify('true')
 	},
 	plugins: [
+		stableDepHash(),
 		tailwindcss(),
 		Icons({
 			compiler: 'svelte',

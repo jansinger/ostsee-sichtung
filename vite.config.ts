@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
+import { stableDepHash } from './src/tools/vite-stable-dep-hash';
 
 const certFile = fileURLToPath(new URL('./certs/localhost.pem', import.meta.url));
 const keyFile = fileURLToPath(new URL('./certs/localhost-key.pem', import.meta.url));
@@ -26,6 +27,7 @@ const devCert =
 
 export default defineConfig({
 	plugins: [
+		stableDepHash(),
 		tailwindcss(),
 		sveltekit(),
 		Icons({
@@ -53,6 +55,17 @@ export default defineConfig({
 		...(devCert ? { https: devCert } : {}),
 		hmr: {
 			overlay: true
+		},
+		/**
+		 * Git-Worktrees liegen unter `.claude/worktrees/` *innerhalb* des Repo-Roots.
+		 * Aktuell hält Vite sie ohnehin heraus (es beobachtet nur Dateien aus dem
+		 * Modulgraph), und alle übrigen Tools schließen sie über `.gitignore` aus.
+		 * Der Eintrag hier ist die Absicherung: Fällt die `.gitignore`-Zeile weg,
+		 * beobachtet der Watcher sonst still ein Vielfaches an Dateien.
+		 * Vite ergänzt seine Defaults (`**\/node_modules/**`, `**\/.git/**`).
+		 */
+		watch: {
+			ignored: ['**/.claude/worktrees/**', '**/.worktrees/**']
 		},
 		// Warmup critical modules for faster initial page load
 		warmup: {
