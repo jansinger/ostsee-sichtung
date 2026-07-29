@@ -39,6 +39,28 @@ in zwei Fällen:
   Worktree** (das lokale `node_modules` verdeckt das des Haupt-Repos)
 - der Worktree liegt außerhalb des Repo-Baums — dann greift die Auflösung nach oben nicht
 
+## Browser-Tests: `server.fs.allow` muss das echte `node_modules` freigeben
+
+Die `*.svelte.test.ts`-Tests (`npm run test:unit:client`) laufen über einen
+Vite-Dev-Server, der Module an den Headless-Browser ausliefert. Im Worktree liegt das
+aufgelöste `node_modules` im Haupt-Repo — **außerhalb** des Worktree-Roots — und Vites
+`server.fs.allow` blockte die Auslieferung: alle Browser-Tests scheiterten mit
+„Failed to fetch dynamically imported module …/node_modules/vitest-browser-svelte/…".
+
+Behoben in [`vite.config.ci.ts`](../vite.config.ci.ts) (wird von den Client-Tests via
+`vitest.config.ts` extended): Das reale `node_modules` wird über
+`createRequire(import.meta.url).resolve('vite/package.json')` ermittelt und zusammen
+mit `searchForWorkspaceRoot(process.cwd())` in `server.fs.allow` eingetragen —
+`fs.allow` ersetzt Vites Default (Workspace-Root), deshalb müssen beide Einträge rein.
+
+Zwei Stolperfallen für künftige Änderungen an dieser Stelle:
+
+- Ein bloßer Existenz-Check per Verzeichnis-Aufstieg findet das **falsche**
+  Verzeichnis: Vite legt im Worktree ein Cache-Stub `node_modules/.vite` ohne Pakete
+  an. Deshalb Nodes eigene Paketauflösung nutzen.
+- Verifiziert am 2026-07-29: `npx vitest run --project client src/lib/components/map/Panel/`
+  läuft mit dieser Config im Worktree **und** im Haupt-Repo grün.
+
 ## Was von selbst funktioniert
 
 | Thema           | Warum kein Setup nötig                                                                                                                                                      |

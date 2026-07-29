@@ -4,8 +4,22 @@
  */
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 import Icons from 'unplugin-icons/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, searchForWorkspaceRoot } from 'vite';
+
+/**
+ * In Git-Worktrees liegt das installierte node_modules außerhalb des
+ * Worktree-Roots (Node löst es per Verzeichnis-Aufstieg aus dem Haupt-Repo
+ * auf). Vites server.fs.allow blockt dann die Auslieferung z. B. von
+ * vitest-browser-svelte an die Browser-Tests. Deshalb das reale
+ * node_modules über Nodes eigene Auflösung ermitteln — ein bloßer
+ * Existenz-Check reicht nicht, weil Vite im Worktree ein Cache-Stub
+ * (node_modules/.vite) ohne Pakete anlegt.
+ */
+const require = createRequire(import.meta.url);
+const nodeModulesDir = path.dirname(path.dirname(require.resolve('vite/package.json')));
 
 export default defineConfig({
 	// Set environment variable to skip database check in CI/E2E tests
@@ -31,7 +45,11 @@ export default defineConfig({
 		port: 4000,
 		strictPort: true,
 		// Disable HMR overlay for CI
-		hmr: false
+		hmr: false,
+		fs: {
+			// fs.allow ersetzt Vites Default (Workspace-Root) — daher beides angeben
+			allow: [searchForWorkspaceRoot(process.cwd()), nodeModulesDir]
+		}
 	},
 	optimizeDeps: {
 		// Pre-bundle these dependencies to avoid CommonJS issues
