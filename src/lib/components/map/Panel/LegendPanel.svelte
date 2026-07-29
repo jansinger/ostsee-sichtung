@@ -160,7 +160,7 @@
 								class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full shadow-sm"
 								style="background-color: {MARKER_BACKGROUND_COLOR}; border: 3px solid {symbol
 									? symbol.baseColor
-									: TOTFUND_RING_COLOR};"
+									: speciesGroupStyles.unbekannt.color};"
 							>
 								{#if symbol}
 									<span class="text-base" title={String(value)}>{symbol.symbol}</span>

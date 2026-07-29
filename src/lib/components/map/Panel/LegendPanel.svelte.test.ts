@@ -161,6 +161,24 @@ describe('LegendPanel', () => {
 		expect(unknownRow?.querySelector('.species-checkbox')).not.toBeNull();
 	});
 
+	it('unbekannte Tierart-IDs bekommen den neutralen grauen Ring, nicht Totfund-Schwarz', async () => {
+		render(LegendPanel, {
+			translations: {
+				...translations,
+				speciesMap: { ...translations.speciesMap, '99': 'Zukünftige Art' }
+			},
+			counts
+		});
+
+		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+
+		const row = document.querySelector('[data-species-row="99"]');
+		const swatch = row?.querySelector('div[style*="border"]');
+		// Browser normalisiert Hex zu rgb(): #767676 = rgb(118, 118, 118)
+		expect(swatch?.getAttribute('style')).toContain('rgb(118, 118, 118)');
+		expect(swatch?.getAttribute('style')).not.toContain('rgb(0, 0, 0)');
+	});
+
 	it('erklärt die Cluster-Farbskala', async () => {
 		render(LegendPanel, { translations, counts });
 

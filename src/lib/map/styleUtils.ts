@@ -150,50 +150,72 @@ export function getFeatureColorGroup(properties: SightingProperties): string {
 	return 'ct1';
 }
 
+/** Schriftgröße des Emoji-Symbols einer Art */
+function markerFontSize(speciesSymbol: SpeciesSymbol): number {
+	return Math.round(defaultRadius * 2.5 * speciesSymbol.size);
+}
+
+/** Radius des Markerkreises einer Art (auch Bezug für den Anzahl-Offset) */
+function markerRadius(speciesSymbol: SpeciesSymbol): number {
+	return markerFontSize(speciesSymbol) / 2 + 4;
+}
+
 /**
- * Erstellt die Marker-Styles: weißer Kreis mit Gruppenfarben-Ring und Emoji,
- * darunter die Anzahl als Zahl (ab 2 Tieren).
+ * Marker-Basisstyle (weißer Kreis, Gruppenfarben-Ring, Emoji) — hängt nur von
+ * Art und Totfund-Status ab und wird deshalb unabhängig von der Anzahl gecacht.
  */
-function createMarkerStyles(speciesId: string, count: number, isDead: boolean): Style[] {
-	const speciesSymbol = speciesSymbols[speciesId] ?? speciesEntry('unbekannt');
-	const ringColor = isDead ? TOTFUND_RING_COLOR : speciesSymbol.baseColor;
-
-	const fontSize = Math.round(defaultRadius * 2.5 * speciesSymbol.size);
-	const radius = fontSize / 2 + 4;
-
-	const styles = [
-		new Style({
-			image: new Circle({
-				radius,
-				fill: new Fill({ color: MARKER_BACKGROUND_COLOR + 'E6' }), // 90% Deckung
-				stroke: new Stroke({ color: ringColor, width: 3 })
-			}),
-			text: new Text({
-				text: speciesSymbol.symbol,
-				font: `${fontSize}px Arial, sans-serif`,
-				textAlign: 'center',
-				textBaseline: 'middle'
-			})
-		})
-	];
-
-	if (count > 1) {
-		styles.push(
-			new Style({
-				text: new Text({
-					text: count.toString(),
-					font: 'bold 12px Arial, sans-serif',
-					offsetY: radius + 9,
-					fill: new Fill({ color: '#1A1A1A' }),
-					stroke: new Stroke({ color: '#FFFFFF', width: 3 }),
-					textAlign: 'center',
-					textBaseline: 'middle'
-				})
-			})
-		);
+function getMarkerBaseStyle(speciesId: string, isDead: boolean): Style {
+	const key = `markerBase_${speciesId}#${isDead}`;
+	if (styleCache[key]) {
+		return styleCache[key] as Style;
 	}
 
-	return styles;
+	const speciesSymbol = speciesSymbols[speciesId] ?? speciesEntry('unbekannt');
+	const ringColor = isDead ? TOTFUND_RING_COLOR : speciesSymbol.baseColor;
+	const fontSize = markerFontSize(speciesSymbol);
+
+	const style = new Style({
+		image: new Circle({
+			radius: markerRadius(speciesSymbol),
+			fill: new Fill({ color: MARKER_BACKGROUND_COLOR + 'E6' }), // 90% Deckung
+			stroke: new Stroke({ color: ringColor, width: 3 })
+		}),
+		text: new Text({
+			text: speciesSymbol.symbol,
+			font: `${fontSize}px Arial, sans-serif`,
+			textAlign: 'center',
+			textBaseline: 'middle'
+		})
+	});
+
+	styleCache[key] = style;
+	return style;
+}
+
+/**
+ * Anzahl-Textstyle unter dem Marker — hängt nur von Anzahl und Offset ab
+ * und wird artenübergreifend geteilt.
+ */
+function getCountTextStyle(count: number, offsetY: number): Style {
+	const key = `countText_${count}#${offsetY}`;
+	if (styleCache[key]) {
+		return styleCache[key] as Style;
+	}
+
+	const style = new Style({
+		text: new Text({
+			text: count.toString(),
+			font: 'bold 12px Arial, sans-serif',
+			offsetY,
+			fill: new Fill({ color: '#1A1A1A' }),
+			stroke: new Stroke({ color: '#FFFFFF', width: 3 }),
+			textAlign: 'center',
+			textBaseline: 'middle'
+		})
+	});
+
+	styleCache[key] = style;
+	return style;
 }
 
 /**
@@ -230,7 +252,14 @@ export function createFeatureStyle(
 		return styleCache[key] as Style[];
 	}
 
-	const styles = createMarkerStyles(speciesId, properties.ct, isDead);
+	// Basis- und Anzahl-Style werden separat gecacht und hier nur kombiniert —
+	// so entsteht pro Anzahl kein neuer Ring/Emoji-Style
+	const speciesSymbol = speciesSymbols[speciesId] ?? speciesEntry('unbekannt');
+	const base = getMarkerBaseStyle(speciesId, isDead);
+	const styles =
+		properties.ct > 1
+			? [base, getCountTextStyle(properties.ct, markerRadius(speciesSymbol) + 9)]
+			: [base];
 	styleCache[key] = styles;
 
 	return styles;

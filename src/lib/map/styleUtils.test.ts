@@ -314,6 +314,21 @@ describe('styleUtils', () => {
 			expect(image.getStroke().getColor()).toBe(speciesGroupStyles['robbe'].color);
 		});
 
+		it('teilt den Marker-Basisstyle zwischen unterschiedlichen Anzahlen (Cache)', () => {
+			clearStyleCache();
+			const styles3 = createFeatureStyle(mockFeature({ ta: 0, ct: 3 }), {}, {}, NO_FILTER);
+			const styles9 = createFeatureStyle(mockFeature({ ta: 0, ct: 9 }), {}, {}, NO_FILTER);
+			// Ring+Emoji hängen nur von Art und Totfund ab — gleiche Style-Instanz
+			expect(styles3![0]).toBe(styles9![0]);
+		});
+
+		it('teilt den Anzahl-Textstyle zwischen unterschiedlichen Arten (Cache)', () => {
+			clearStyleCache();
+			const porpoise = createFeatureStyle(mockFeature({ ta: 0, ct: 4 }), {}, {}, NO_FILTER);
+			const seal = createFeatureStyle(mockFeature({ ta: 1, ct: 4 }), {}, {}, NO_FILTER);
+			expect(porpoise![1]).toBe(seal![1]);
+		});
+
 		it('Totfund: Ring ist schwarz, unabhängig von der Art', () => {
 			clearStyleCache();
 			const styles = createFeatureStyle(mockFeature({ ta: 1, ct: 1, tf: true }), {}, {}, NO_FILTER);
