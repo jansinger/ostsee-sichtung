@@ -227,7 +227,7 @@ Weiterhin bewusst offen: nur Light-Theme (Produktentscheidung), `boatDrive` kann
 ### Nachtrag: U10 ist gegenstandslos (2026-07-29)
 
 **U10 ist nicht behoben — die Frage stellt sich nicht mehr.** Mit
-[#590](https://github.com/jansinger/ostsee-sichtung/pull/590) (Commit `a7cbb2e`)
+[#590](https://github.com/jansinger/ostsee-tiere/pull/590) (Commit `a7cbb2e`)
 ist die Positionsmethoden-Wahl **ersatzlos entfallen**. Es gibt kein „Foto mit
 GPS / Karte / Beschreibung" mehr, sondern genau ein Positions-Panel, in dem alle
 Wege gleichzeitig erreichbar sind. Ohne Modus gibt es weder einen Zustand, der
