@@ -103,8 +103,23 @@
    Der Feldmodus bleibt davon unberührt: der @theme-Output liegt in
    @layer theme, [data-density='field'] aus tokens.css ist ungelayert und
    gewinnt deshalb die Kaskade (im Production-Build nachgemessen).
-   Auflösbar wäre die Dopplung mit `@theme static` — dann emittiert Tailwind
-   auch ungenutzte Variablen und tokens.css bräuchte die Namen nicht mehr. */
+
+   `@theme static` wurde in PR 2 geprüft und VERWORFEN. Am Output ändert es
+   nichts mehr: seit /styleguide hat jede der 13 Utilities eine echte
+   Aufrufstelle, `static` emittiert also nichts zusätzlich (gemessen —
+   0.*.css ist mit und ohne exakt 284.176 Bytes groß). Es würde nur erlauben,
+   die --text-*-Zeilen aus tokens.css zu streichen — und damit die Werte
+   32px/24px/18px/16px/14px/13px nach app.css verlegen. Genau das verbietet
+   daisyui.md: app.css ist die alleinige Quelle der DaisyUI-EINBINDUNG, die
+   Maß- und Farbwerte stehen in css/tokens.css (Ebene 1). Die Alternative —
+   Zweitnamen in tokens.css (--size-text-display o.ä.), auf die @theme static
+   verweist — tauscht zwei dokumentierte Zeilen gegen sechs Indirektionen mit
+   einem Namensschema, dem sonst kein Token folgt.
+   Eine tailwind.config.js ist als Ausweg ebenfalls keine Option: sie wurde
+   bewusst entfernt und wird unter Tailwind 4 ohne @config gar nicht geladen
+   (daisyui.md). Die Dopplung bleibt, sie ist hier dokumentiert, und ihr
+   Fehlerfall — Utility und var() driften auseinander — steht auf
+   /styleguide direkt nebeneinander. */
 @theme {
 	--color-info-strong: var(--status-info-strong);
 	--color-success-strong: var(--status-success-strong);

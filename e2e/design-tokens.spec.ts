@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { formatRatio, measureContrast } from './helpers/contrast';
 
 /**
@@ -21,13 +21,17 @@ import { formatRatio, measureContrast } from './helpers/contrast';
 const AA_TEXT = 4.5;
 const AA_GRAPHIC = 3;
 
-/* Übersprungen bis PR 2: Die Prüffläche /styleguide entsteht erst dort, samt
-   der Attribute data-token-surface / data-token-fg / data-token-icon, gegen
-   die hier selektiert wird. Ohne die Route liefe jeder Test dieser Gruppe in
-   einen 404 und meldete einen Fehler, der nichts über die Tokens aussagt.
-   Mit PR 2 wird `.skip` entfernt — dann ist diese Gruppe der eigentliche
-   Kontrast-Vertrag und muss grün sein. */
-test.describe.skip('Design-Tokens — Kontrast', () => {
+/* Seit PR 2 aktiv: /styleguide existiert samt der Attribute
+   data-token-surface / data-token-fg / data-token-icon, gegen die hier
+   selektiert wird. Diese Gruppe ist damit der Kontrast-Vertrag und muss grün
+   sein.
+
+   Die Route ist über `dev`-Guard nur im Entwicklungsmodus erreichbar — das
+   passt, weil `playwright.config.ts` in beiden Umgebungen einen Vite-Dev-Server
+   startet (lokal `npm run dev`, in CI `vite dev --config vite.config.ci.ts`).
+   Gegen einen Production-Build würde diese Gruppe in 404 laufen; dann ist der
+   Guard die Ursache, nicht ein Token. */
+test.describe('Design-Tokens — Kontrast', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/styleguide');
 		// :focus und getComputedStyle brauchen ein fokussiertes Fenster.
@@ -122,6 +126,127 @@ test.describe.skip('Design-Tokens — Kontrast', () => {
 			);
 		}
 	});
+});
+
+/**
+ * Die Seite selbst — sie ist Entwickler-Werkzeug, aber ein bedienbares.
+ *
+ * Zwei Dinge sind hier keine Kosmetik:
+ *
+ * 1. Der Dichte-Umschalter schreibt auf `<html>`, also außerhalb der eigenen
+ *    Komponente. Bleibt `data-density="field"` beim Verlassen der Route
+ *    stehen, läuft die ganze App im Feldmodus weiter — mit 56-px-Zielen und
+ *    14-px-Hilfetext, und ohne ein Bedienelement, das ihn zurücknimmt.
+ * 2. Ein Umschalter ohne `aria-pressed` sagt Screenreader-Nutzenden nicht,
+ *    welcher Modus aktiv ist; die Farbdifferenz `btn-primary`/`btn-outline`
+ *    ist die einzige andere Anzeige.
+ *
+ * Gemessen wird im Browser aus demselben Grund wie oben in `form-a11y.spec.ts`:
+ * `:focus-visible` und die aufgelösten Theme-Farben gibt es nur dort.
+ */
+test.describe('Styleguide — Bedienung', () => {
+	/* Anders als die Kontrastgruppe oben klickt diese hier — und ein Klick vor
+	   der Hydration tut nichts, weil `onclick` dann noch nicht am Element
+	   hängt. `networkidle` plus ein hydrationsabhängiges Element ist dasselbe
+	   Muster wie in `FormPage.goto()`; hier dient `data-density` als Signal:
+	   das Attribut entsteht erst durch den `$effect` der Seite. */
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/styleguide');
+		await page.waitForLoadState('networkidle');
+		await expect.poll(() => page.evaluate(() => document.hasFocus())).toBe(true);
+		await expect
+			.poll(() => page.evaluate(() => document.documentElement.dataset.density ?? null))
+			.toBe('comfortable');
+	});
+
+	const densityAttribute = (page: Page) =>
+		page.evaluate(() => document.documentElement.dataset.density ?? null);
+
+	test('Dichte-Umschalter meldet seinen Zustand über aria-pressed', async ({ page }) => {
+		const comfortable = page.getByRole('button', { name: /Normal/ });
+		const field = page.getByRole('button', { name: /Feldmodus/ });
+
+		await expect(comfortable).toHaveAttribute('aria-pressed', 'true');
+		await expect(field).toHaveAttribute('aria-pressed', 'false');
+
+		await field.click();
+
+		await expect(comfortable).toHaveAttribute('aria-pressed', 'false');
+		await expect(field).toHaveAttribute('aria-pressed', 'true');
+	});
+
+	test('Feldmodus schaltet data-density und nimmt es zurück', async ({ page }) => {
+		await page.getByRole('button', { name: /Feldmodus/ }).click();
+		await expect.poll(() => densityAttribute(page)).toBe('field');
+
+		await page.getByRole('button', { name: /Normal/ }).click();
+		await expect.poll(() => densityAttribute(page)).toBe('comfortable');
+	});
+
+	/* Der eigentliche Fallstrick: nicht der Umschalter, sondern das Verlassen
+	   der Route. Deshalb per Klick auf die Navigation — ein `page.goto()` würde
+	   das Dokument neu laden und den Feldmodus auch dann verlieren, wenn die
+	   Aufräumfunktion fehlt. */
+	test('Feldmodus überlebt die Route nicht', async ({ page }) => {
+		await page.getByRole('button', { name: /Feldmodus/ }).click();
+		await expect.poll(() => densityAttribute(page)).toBe('field');
+
+		await page.getByRole('link', { name: 'Meldung' }).click();
+		await expect(page).toHaveURL(/\/$/);
+
+		await expect
+			.poll(() => densityAttribute(page), {
+				message: 'data-density bleibt nach dem Verlassen von /styleguide auf <html> stehen'
+			})
+			.toBeNull();
+	});
+
+	test('Tastatur-Fokus ist auf dem Umschalter sichtbar', async ({ page }) => {
+		const field = page.getByRole('button', { name: /Feldmodus/ });
+		// Fokus über die Tastatur setzen, damit :focus-visible greift.
+		await field.focus();
+		await page.keyboard.press('Shift+Tab');
+		await page.keyboard.press('Tab');
+		await expect(field).toBeFocused();
+
+		await expect
+			.poll(async () =>
+				field.evaluate((el) => {
+					const probe = document.createElement('span');
+					probe.style.cssText =
+						'position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;color:var(--color-primary)';
+					document.body.appendChild(probe);
+					const primary = getComputedStyle(probe).color;
+					probe.remove();
+
+					const style = getComputedStyle(el);
+					return {
+						focusVisible: el.matches(':focus-visible'),
+						style: style.outlineStyle,
+						width: style.outlineWidth,
+						colorIsPrimary: style.outlineColor === primary
+					};
+				})
+			)
+			.toEqual({ focusVisible: true, style: 'solid', width: '2px', colorIsPrimary: true });
+	});
+
+	/* Das Muster aus PR 1, an der Stelle geprüft, an der die Seite es zeigt:
+	   die 44px trägt das Label, das Control bleibt auf --control-size (28px).
+	   Im Feldmodus wächst nur das Label. */
+	for (const control of ['checkbox', 'toggle', 'radio']) {
+		test(`${control}: das Ziel ist das Label, nicht das Control`, async ({ page }) => {
+			const label = page.locator(`[data-token-target="${control}"]`);
+			const input = label.locator('input');
+
+			expect((await label.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+			expect((await input.boundingBox())?.height).toBeCloseTo(28, 0);
+
+			await page.getByRole('button', { name: /Feldmodus/ }).click();
+			await expect.poll(async () => (await label.boundingBox())?.height).toBeGreaterThanOrEqual(56);
+			expect((await input.boundingBox())?.height).toBeCloseTo(28, 0);
+		});
+	}
 });
 
 /* Bekannt rot bis PR 4 — läuft deshalb bewusst NICHT mit.
