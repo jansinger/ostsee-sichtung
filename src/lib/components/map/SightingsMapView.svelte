@@ -15,6 +15,16 @@
 	} from '$lib/utils/date/defaultYear';
 	import { setMapCountManager } from '$lib/map/mapContext';
 	import { toListEntries, type SightingListProperties } from '$lib/map/listViewUtils';
+	import { legendGroups } from '$lib/map/styleUtils';
+	import {
+		buildFilterUrlState,
+		dayOfYearFromIsoDate,
+		parseMapFilterParams,
+		serializeMapFilterParams,
+		type MapFilterUrlState
+	} from '$lib/map/urlFilterState';
+	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
 	import 'ol/ol.css';
 	import LoadingOverlay from './LoadingOverlay.svelte';
 	import FilterPanel from './Panel/FilterPanel.svelte';
@@ -79,15 +89,30 @@
 		colorCounts: {}
 	});
 
-	// Verfügbare Jahre für den Filter (10 Jahre zurück)
+	// M4: Filterzustand aus der URL — einmalig beim Initialisieren gelesen.
+	// Danach ist der Map-Controller die Quelle der Wahrheit, die URL folgt
+	// per replaceState (siehe syncFiltersToUrl). Die Route läuft mit ssr=false,
+	// window/page.url sind hier also verfügbar.
+	const urlFilterState = parseMapFilterParams(page.url.searchParams);
+
+	// Verfügbare Jahre für den Filter (10 Jahre zurück); ein per URL geteiltes
+	// älteres Jahr wird ergänzt, damit das Dropdown es anzeigen kann.
 	const years = getAvailableYears(10);
+	if (urlFilterState.year !== undefined && !years.includes(urlFilterState.year)) {
+		years.push(urlFilterState.year);
+		years.sort((a, b) => a - b);
+	}
 	// Bisheriges Fallback-Jahr, synchron verfügbar für den allerersten Render
 	// (bevor GET /api/map/sightings/years geladen ist). Als Konstante erfasst,
 	// damit die beiden $state-Deklarationen unten nicht voneinander abhängen.
 	const initialFallbackYear = getDefaultSightingYear();
 	// Default-Jahr: wird aktualisiert, sobald die verfügbaren Jahre geladen
-	// sind (QW2b). Bei fehlgeschlagenem Request bleibt der Fallback.
-	let defaultYear = $state(initialFallbackYear);
+	// sind (QW2b). Bei fehlgeschlagenem Request bleibt der Fallback. Ein Jahr
+	// aus der URL hat Vorrang — es speist das Jahres-Dropdown im FilterPanel.
+	let defaultYear = $state(urlFilterState.year ?? initialFallbackYear);
+	// Jahr, auf das „Filter zurücksetzen" führt (QW2b-Default, unabhängig von
+	// der URL) — Referenz dafür, ob das angezeigte Jahr als Filter-Chip zählt.
+	let apiDefaultYear = $state(initialFallbackYear);
 	// Rohdaten der verfügbaren Jahre (Antwort von GET /api/map/sightings/years)
 	let availableYearsData = $state<YearWithCount[]>([]);
 	// Sichtungsanzahl je Jahr für die Jahres-Dropdown-Beschriftung ("2025 (817)")
@@ -127,6 +152,26 @@
 	let isInitialLoading = $state(true);
 	let loadingType = $state<'initial' | 'filter' | 'features'>('initial');
 	let errorMessage = $state<string | null>(null);
+
+	// M4/N6: Sichtbarkeits-States der Legende — hierher gehoben, damit
+	// URL-Initialisierung und Filter-Chips dieselben Checkbox-Zustände
+	// steuern wie das LegendPanel (bind: an dessen Props).
+	let speciesVisibility = $state<Record<string, boolean>>({});
+	let colorVisibility = $state<Record<string, boolean>>({});
+
+	// N6: aktuell aktive Filter für die Chips — nach jedem Count-Update aus
+	// dem Controller-Zustand neu abgeleitet (Default-Werte sind weggelassen).
+	let activeFilters = $state<MapFilterUrlState>({});
+	let hasActiveFilters = $derived(
+		activeFilters.year !== undefined ||
+			activeFilters.query !== undefined ||
+			activeFilters.from !== undefined ||
+			(activeFilters.hiddenSpecies?.length ?? 0) > 0 ||
+			(activeFilters.hiddenColors?.length ?? 0) > 0
+	);
+	// URL-Schreiben erst nach applyUrlFilters() freischalten — die Zwischen-
+	// stände des Initial-Loads würden die geteilten Params sonst wegkürzen.
+	let urlSyncEnabled = false;
 
 	// Aktuell angezeigtes Jahr für den Titel
 	let currentDisplayedYear = $state(initialFallbackYear);
@@ -218,6 +263,148 @@
 		yearSelect.dispatchEvent(new Event('change', { bubbles: true }));
 	}
 
+	/**
+	 * Wendet den beim Start aus der URL gelesenen Filterzustand an (M4).
+	 * Läuft einmalig nach dem ersten Daten-Load (siehe onLoading-Callback).
+	 * Jahr und Suchbegriff sind zu dem Zeitpunkt bereits über initialYear/
+	 * initialSearchTerm des Controllers aktiv — hier fehlen noch Zeitraum
+	 * und Sichtbarkeiten.
+	 */
+	function applyUrlFilters(): void {
+		if (!mapInstance) return;
+		const year = mapInstance.getDisplayedYear();
+
+		// Ausgeblendete Arten/Farbgruppen — nur bekannte Keys übernehmen,
+		// damit Tippfehler aus geteilten URLs nicht dauerhaft mitgeschleppt werden.
+		for (const id of urlFilterState.hiddenSpecies ?? []) {
+			if (id in speciesLabels) {
+				speciesVisibility[id] = false;
+				countManager.setSpeciesVisibility(id, false);
+			}
+		}
+		for (const key of urlFilterState.hiddenColors ?? []) {
+			if (key in legendGroups) {
+				colorVisibility[key] = false;
+				countManager.setColorVisibility(key, false);
+			}
+		}
+
+		// Zeitraum: über denselben Pfad wie die Slider-Bedienung (DOM-Werte
+		// setzen + input-Event), damit Slider-Stellung und Datenfilter nicht
+		// auseinanderlaufen. Daten aus einem anderen Jahr liefern null und
+		// werden ignoriert.
+		const startDay = urlFilterState.from ? dayOfYearFromIsoDate(urlFilterState.from, year) : null;
+		const endDay = urlFilterState.to ? dayOfYearFromIsoDate(urlFilterState.to, year) : null;
+		if (startDay === null && endDay === null) return;
+
+		const startSlider = document.getElementById('time-range-start') as HTMLInputElement | null;
+		const endSlider = document.getElementById('time-range-end') as HTMLInputElement | null;
+		if (!startSlider || !endSlider) return;
+
+		// max explizit setzen — das reaktive max-Attribut des FilterPanels ist
+		// zu diesem Zeitpunkt möglicherweise noch nicht auf das Jahr geflusht.
+		const maxValue = (getDaysInYear(year) - 1).toString();
+		startSlider.max = maxValue;
+		endSlider.max = maxValue;
+		if (endDay !== null) endSlider.value = endDay.toString();
+		if (startDay !== null) startSlider.value = startDay.toString();
+		// Beide Werte sind gesetzt, bevor Events feuern — der Clamping-Code im
+		// TimeSliderManager sieht damit bereits das konsistente Paar.
+		endSlider.dispatchEvent(new Event('input', { bubbles: true }));
+		startSlider.dispatchEvent(new Event('input', { bubbles: true }));
+	}
+
+	/** Liest den aktuellen Filterzustand aus dem Controller (Defaults weggelassen). */
+	function readCurrentFilterState(): MapFilterUrlState {
+		if (!mapInstance) return {};
+		const hidden = mapInstance.getHidden();
+		return buildFilterUrlState({
+			year: mapInstance.getDisplayedYear(),
+			defaultYear: apiDefaultYear,
+			searchTerm: mapInstance.getSearchTerm(),
+			timeFilter: mapInstance.getTimeFilter(),
+			hiddenSpecies: hidden.species,
+			hiddenColors: hidden.colors
+		});
+	}
+
+	/**
+	 * M4: Spiegelt den Filterzustand per replaceState in die URL — keine
+	 * Navigation, kein History-Eintrag, damit Zurück nicht durch jede
+	 * Filteränderung läuft.
+	 */
+	function syncFiltersToUrl(state: MapFilterUrlState): void {
+		const query = serializeMapFilterParams(state);
+		const search = query ? `?${query}` : '';
+		if (window.location.search === search) return;
+		replaceState(`${window.location.pathname}${search}`, page.state);
+	}
+
+	// --- N6: Aktionen der Filter-Chips -------------------------------------
+
+	/** Leert die Suche über denselben Pfad wie das Suchfeld (input-Event). */
+	function clearSearchFilter(): void {
+		const input = document.getElementById('filter-input') as HTMLInputElement | null;
+		if (!input) return;
+		input.value = '';
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+	}
+
+	/** Stellt den vollen Jahres-Zeitraum wieder her (Slider + Datenfilter). */
+	function resetTimeFilter(): void {
+		if (!mapInstance) return;
+		const year = mapInstance.getDisplayedYear();
+		timeSliderManager?.reset(getDaysInYear(year));
+		mapInstance.setFilter(
+			new Date(year, 0, 1).getTime(),
+			new Date(year, 11, 31, 23, 59, 59, 999).getTime()
+		);
+	}
+
+	function showSpecies(speciesId: string): void {
+		speciesVisibility[speciesId] = true;
+		countManager.setSpeciesVisibility(speciesId, true);
+	}
+
+	function showColorGroup(colorGroup: string): void {
+		colorVisibility[colorGroup] = true;
+		countManager.setColorVisibility(colorGroup, true);
+	}
+
+	/**
+	 * N6: Stellt Default-Jahr, leere Suche, vollen Zeitraum und alle
+	 * Sichtbarkeiten wieder her.
+	 */
+	function resetAllFilters(): void {
+		clearSearchFilter();
+		resetTimeFilter();
+		// Kopien iterieren: die Handler stoßen Count-Updates an, die
+		// activeFilters während der Iteration neu zuweisen.
+		[...(activeFilters.hiddenSpecies ?? [])].forEach(showSpecies);
+		[...(activeFilters.hiddenColors ?? [])].forEach(showColorGroup);
+		if (mapInstance && mapInstance.getDisplayedYear() !== apiDefaultYear) {
+			switchToYear(apiDefaultYear);
+		}
+	}
+
+	/** Chip-Beschriftung einer Art — speciesLabels ist über SpeciesEnum indiziert. */
+	function speciesLabel(speciesId: string): string {
+		const labels: Record<string, string> = speciesLabels;
+		return labels[speciesId] ?? `Art ${speciesId}`;
+	}
+
+	/** Chip-Beschriftung einer Anzahl-Gruppe (analog zum LegendPanel). */
+	function colorGroupLabel(colorGroup: string): string {
+		if (colorGroup === 'ct0') return String(translations.found_dead);
+		return `Anzahl ${legendGroups[colorGroup]?.name ?? colorGroup}`;
+	}
+
+	/** ISO-Datum (YYYY-MM-DD) → kompakte deutsche Anzeige „TT.MM." */
+	function formatChipDate(iso: string): string {
+		const [, month, day] = iso.split('-');
+		return `${day}.${month}.`;
+	}
+
 	// Modern $effect for map initialization and cleanup
 	$effect(() => {
 		// Check if we have the required DOM element
@@ -232,9 +419,12 @@
 		void (async () => {
 			// QW2b: Verfügbare Jahre vor Karteninitialisierung laden, damit die
 			// Karte direkt mit einem Jahr startet, das tatsächlich Daten hat.
-			const initialYear = await loadAvailableYears();
+			// M4: Ein Jahr aus der URL hat Vorrang vor dem ermittelten Default.
+			const loadedDefaultYear = await loadAvailableYears();
 			if (cancelled) return;
 
+			apiDefaultYear = loadedDefaultYear;
+			const initialYear = urlFilterState.year ?? loadedDefaultYear;
 			defaultYear = initialYear;
 
 			// Initialisiere Manager
@@ -252,6 +442,7 @@
 				timeEndId: 'time-end',
 				enableLocationControl: false,
 				initialYear,
+				initialSearchTerm: urlFilterState.query ?? '',
 				onLoading: (loading) => {
 					isLoadingData = loading;
 					if (loading) {
@@ -259,6 +450,12 @@
 						errorMessage = null;
 					} else if (!firstLoadComplete) {
 						firstLoadComplete = true;
+						// M4: URL-Filter erst nach dem ersten Load anwenden —
+						// setYear() setzt den timeFilter nach dem Fetch auf das
+						// volle Jahr zurück und würde einen früher gesetzten
+						// URL-Zeitraum wieder verwerfen.
+						applyUrlFilters();
+						urlSyncEnabled = true;
 						countManager.updateCounts();
 						currentDisplayedYear = mapInstance!.getDisplayedYear();
 						isInitialLoading = false;
@@ -278,6 +475,10 @@
 			countManager.onCountsUpdated((newCounts) => {
 				counts = newCounts;
 				featureCount = countMapInstance.getFeatures().length;
+				// M4/N6: Der CountManager feuert nach jeder Filter-, Zeitraum-
+				// und Jahresänderung — derselbe Trigger hält Chips und URL synchron.
+				activeFilters = readCurrentFilterState();
+				if (urlSyncEnabled) syncFiltersToUrl(activeFilters);
 			});
 
 			// Initialisiere andere Manager
@@ -448,6 +649,80 @@
 		</h1>
 	{/if}
 
+	<!-- N6: Aktive Filter als einzeln entfernbare Chips über der Karte —
+	     sichtbar auch bei geschlossenen Panels. Klick auf einen Chip entfernt
+	     genau diesen Filter; „Alle zurücksetzen" stellt den Grundzustand her. -->
+	{#if hasActiveFilters}
+		<div
+			class="absolute top-16 left-1/2 z-30 flex w-max max-w-[92vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2"
+			role="group"
+			aria-label="Aktive Filter"
+		>
+			{#if activeFilters.year !== undefined}
+				<button
+					type="button"
+					class="btn btn-sm bg-base-100 min-h-11 gap-1 shadow-lg"
+					onclick={() => switchToYear(apiDefaultYear)}
+					aria-label="Filter Jahr {activeFilters.year} entfernen und zum Standard-Jahr {apiDefaultYear} wechseln"
+				>
+					Jahr {activeFilters.year}
+					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
+				</button>
+			{/if}
+			{#if activeFilters.query !== undefined}
+				<button
+					type="button"
+					class="btn btn-sm bg-base-100 min-h-11 max-w-56 gap-1 shadow-lg"
+					onclick={clearSearchFilter}
+					aria-label="Suchfilter {activeFilters.query} entfernen"
+				>
+					<span class="truncate">Suche „{activeFilters.query}"</span>
+					<Icon icon="lucide:x" width="14" height="14" class="shrink-0" aria-hidden="true" />
+				</button>
+			{/if}
+			{#if activeFilters.from !== undefined && activeFilters.to !== undefined}
+				<button
+					type="button"
+					class="btn btn-sm bg-base-100 min-h-11 gap-1 shadow-lg"
+					onclick={resetTimeFilter}
+					aria-label="Zeitraum-Filter entfernen und volles Jahr anzeigen"
+				>
+					Zeitraum {formatChipDate(activeFilters.from)}–{formatChipDate(activeFilters.to)}
+					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
+				</button>
+			{/if}
+			{#each activeFilters.hiddenSpecies ?? [] as speciesId (speciesId)}
+				<button
+					type="button"
+					class="btn btn-sm bg-base-100 min-h-11 gap-1 shadow-lg"
+					onclick={() => showSpecies(speciesId)}
+					aria-label="{speciesLabel(speciesId)} wieder anzeigen"
+				>
+					Ohne {speciesLabel(speciesId)}
+					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
+				</button>
+			{/each}
+			{#each activeFilters.hiddenColors ?? [] as colorGroup (colorGroup)}
+				<button
+					type="button"
+					class="btn btn-sm bg-base-100 min-h-11 gap-1 shadow-lg"
+					onclick={() => showColorGroup(colorGroup)}
+					aria-label="Gruppe {colorGroupLabel(colorGroup)} wieder anzeigen"
+				>
+					Ohne {colorGroupLabel(colorGroup)}
+					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
+				</button>
+			{/each}
+			<button
+				type="button"
+				class="btn btn-outline btn-sm bg-base-100 min-h-11 shadow-lg"
+				onclick={resetAllFilters}
+			>
+				Alle Filter zurücksetzen
+			</button>
+		</div>
+	{/if}
+
 	<!-- Vollbild-Karte -->
 	<div class="relative h-full w-full">
 		<!--
@@ -606,6 +881,7 @@
 		{defaultYear}
 		{yearCounts}
 		isLoading={isLoadingData}
+		initialSearch={urlFilterState.query ?? ''}
 		toggleHidden={filterOpen || legendOpen}
 		bind:isOpen={filterOpen}
 	/>
@@ -616,6 +892,8 @@
 		{counts}
 		toggleHidden={filterOpen || legendOpen}
 		bind:isOpen={legendOpen}
+		bind:speciesVisibility
+		bind:colorVisibility
 	/>
 
 	<!-- Tastatur-Hilfe Button -->

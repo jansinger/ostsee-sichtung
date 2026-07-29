@@ -20,20 +20,23 @@
 		toggleHidden = false,
 		// H5: bindable, damit Tastaturkürzel im Parent das Panel direkt über
 		// den State steuern können statt über DOM-Queries.
-		isOpen = $bindable(false)
+		isOpen = $bindable(false),
+		// M4/N6: Sichtbarkeits-States sind bindable, damit der Parent sie aus
+		// der URL initialisieren und über die Filter-Chips zurücksetzen kann —
+		// Checkboxen hier und Chips dort bleiben so eine einzige Wahrheit.
+		speciesVisibility = $bindable({}),
+		colorVisibility = $bindable({})
 	} = $props<{
 		translations: MapTranslations;
 		counts: CountData;
 		toggleHidden?: boolean;
 		isOpen?: boolean;
+		speciesVisibility?: Record<string, boolean>;
+		colorVisibility?: Record<string, boolean>;
 	}>();
 
 	// CountManager via typisiertem Svelte Context (Symbol-Key, siehe mapContext.ts)
 	const countManager = getMapCountManager();
-
-	// Zustand der Sichtbarkeitsfilter
-	let speciesVisibility = $state<Record<string, boolean>>({});
-	let colorVisibility = $state<Record<string, boolean>>({});
 
 	// Anzahl-Filtergruppen in Anzeige-Reihenfolge (Totfund zuletzt) — aus styleUtils
 	const countGroups = $derived(
@@ -49,17 +52,17 @@
 		{ label: String(translations.found_dead), color: TOTFUND_RING_COLOR }
 	]);
 
-	// Initialisiere Visibility-States (alle sichtbar)
+	// Initialisiere Visibility-States (alle sichtbar). Nur fehlende Keys
+	// auffüllen — bereits gesetzte Werte (z. B. aus der URL wiederhergestellte
+	// ausgeblendete Arten, M4) dürfen nicht überschrieben werden.
 	$effect(() => {
 		if (translations && translations.speciesMap) {
-			// Initialisiere alle Arten als sichtbar
 			Object.keys(translations.speciesMap).forEach((key) => {
-				speciesVisibility[key] = true;
+				if (!(key in speciesVisibility)) speciesVisibility[key] = true;
 			});
 
-			// Initialisiere alle Anzahl-Gruppen als sichtbar
 			Object.keys(legendGroups).forEach((colorGroup) => {
-				colorVisibility[colorGroup] = true;
+				if (!(colorGroup in colorVisibility)) colorVisibility[colorGroup] = true;
 			});
 		}
 	});

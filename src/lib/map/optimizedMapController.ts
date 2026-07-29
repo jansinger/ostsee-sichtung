@@ -63,6 +63,12 @@ export interface MapOptions {
 	 * verfügbaren Jahre vom Server geladen sind.
 	 */
 	initialYear?: number;
+	/**
+	 * Startet die Karte mit einem bereits gesetzten Suchbegriff (M4: aus der
+	 * URL wiederhergestellt) — fließt in den ersten Daten-Fetch ein, statt
+	 * nach dem Initial-Load einen zweiten Request auszulösen.
+	 */
+	initialSearchTerm?: string;
 	onLoading?: (isLoading: boolean) => void;
 	onError?: (error: Error) => void;
 }
@@ -192,6 +198,7 @@ export class SichtungenMap {
 
 		// Initialize the timeFilter with sensible defaults (zeige das ganze Jahr)
 		this.displayedYear = options.initialYear ?? getDefaultSightingYear();
+		this.searchTerm = options.initialSearchTerm ?? '';
 		const yearStart = new Date(this.displayedYear, 0, 1).getTime();
 		const yearEnd = new Date(this.displayedYear, 11, 31, 23, 59, 59).getTime();
 		this.timeFilter = {
@@ -997,6 +1004,10 @@ export class SichtungenMap {
 
 	public getTimeFilter(): { lower: number; upper: number } {
 		return this.timeFilter;
+	}
+
+	public getSearchTerm(): string {
+		return this.searchTerm;
 	}
 
 	public getFeatures(): Feature<Geometry>[] {

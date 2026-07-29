@@ -8,6 +8,9 @@
 		defaultYear,
 		yearCounts = {},
 		isLoading = false,
+		// M4: Suchbegriff aus der URL wiederhergestellt — nur Anzeige-Startwert,
+		// der zugehörige Daten-Fetch läuft über initialSearchTerm des Controllers.
+		initialSearch = '',
 		// H6: Parent blendet die Toggle-Tabs auf Mobile aus, solange ein Sheet offen ist
 		toggleHidden = false,
 		// H5: bindable, damit Tastaturkürzel im Parent das Panel direkt über
@@ -18,6 +21,7 @@
 		defaultYear?: number;
 		yearCounts?: Record<number, number>;
 		isLoading?: boolean;
+		initialSearch?: string;
 		toggleHidden?: boolean;
 		isOpen?: boolean;
 	}>();
@@ -28,7 +32,10 @@
 	let selectedYear = $derived(
 		userSelectedYear ?? defaultYear ?? years.at(-1) ?? new Date().getFullYear()
 	);
-	let searchValue = $state('');
+	// Bewusst nur der Startwert: danach ist das Eingabefeld (bind:value)
+	// die Quelle der Wahrheit.
+	// svelte-ignore state_referenced_locally
+	let searchValue = $state(initialSearch);
 
 	let daysInYear = $derived(getDaysInYear(selectedYear));
 
