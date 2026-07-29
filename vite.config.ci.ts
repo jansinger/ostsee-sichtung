@@ -28,7 +28,6 @@ export default defineConfig({
 		'process.env.SKIP_DB_CHECK': JSON.stringify('true')
 	},
 	plugins: [
-		stableDepHash(),
 		tailwindcss(),
 		Icons({
 			compiler: 'svelte',
@@ -39,8 +38,10 @@ export default defineConfig({
 				props.height = props.height || '20';
 			}
 		}),
-		sveltekit()
+		sveltekit(),
 		// No basicSsl plugin for CI to avoid HTTPS certificate issues
+		// Zuletzt: sortiert resolve.external/noExternal nach allen anderen Plugins.
+		stableDepHash()
 	],
 	server: {
 		host: '0.0.0.0',

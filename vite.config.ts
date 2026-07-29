@@ -27,7 +27,6 @@ const devCert =
 
 export default defineConfig({
 	plugins: [
-		stableDepHash(),
 		tailwindcss(),
 		sveltekit(),
 		Icons({
@@ -47,7 +46,9 @@ export default defineConfig({
 						domains: ['localhost', '*.local.dev'],
 						certDir: './certs/basic-ssl'
 					})
-				])
+				]),
+		// Zuletzt: sortiert resolve.external/noExternal nach allen anderen Plugins.
+		stableDepHash()
 	],
 	server: {
 		host: 'localhost',

@@ -29,6 +29,10 @@ function resolveOf(config: ResolvedConfig, envName = 'ssr') {
 }
 
 describe('stableDepHash', () => {
+	it('läuft als post-Plugin, damit spätere configResolved-Hooks nicht mehr umsortieren', () => {
+		expect(stableDepHash().enforce).toBe('post');
+	});
+
 	it('sortiert resolve.external, damit der Config-Hash stabil bleibt', () => {
 		const config = configWith(['local-pkg', '@antfu/install-pkg', 'cookie']);
 

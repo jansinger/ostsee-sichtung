@@ -22,8 +22,17 @@ import type { Plugin } from 'vite';
 export function stableDepHash(): Plugin {
 	return {
 		name: 'ostsee:stable-dep-hash',
-		// Muss vor der Initialisierung des Dep-Optimizers laufen — configResolved
-		// ist der letzte Hook davor.
+		/**
+		 * `configResolved` ist der letzte Hook vor der Initialisierung des
+		 * Dep-Optimizers. `enforce: 'post'` sorgt dafür, dass die Sortierung nach
+		 * den `configResolved`-Hooks aller anderen Plugins läuft — sonst könnte ein
+		 * Plugin danach noch anhängen und die Reihenfolge erneut kippen.
+		 *
+		 * Gemessen ist das aktuell nicht nötig (die Listen stehen schon vor dem
+		 * ersten `configResolved` fest, kein Plugin mutiert sie danach). Es macht
+		 * die Garantie aber strukturell statt zufällig und kostet nichts.
+		 */
+		enforce: 'post',
 		configResolved(config) {
 			for (const environment of Object.values(config.environments)) {
 				const { resolve } = environment;
