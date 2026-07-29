@@ -299,3 +299,129 @@ Kontrastwert lesbar sind.
 6. Formularfeld? Dann im Yup-Schema definieren **und** in `formStepsConfig`
    dem richtigen Schritt zuordnen.
 7. `npm run test:quick` und die beiden Playwright-Specs grün.
+
+---
+
+## Admin-Muster
+
+Bestandsaufnahme vom 2026-07-29 über `src/routes/admin/**` und
+`src/lib/components/admin/**` (16 Svelte-Dateien, 33 Dateien insgesamt).
+**Reines Inventar — hier wurde kein Komponentencode geändert.** Es beantwortet
+drei Fragen: welche Muster der Admin-Bereich hat und das Meldeformular nicht,
+welche Zustände fehlen, und wo das Theme verletzt wird.
+
+### 1. Wiederkehrende Muster
+
+| Muster                   | Wo                                                                                                              | Varianten | Kanonisch sollte sein                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------- |
+| Datentabelle             | `src/routes/admin/+page.svelte:722`, `src/lib/components/admin/AdminSightingView.svelte` (9×), `src/routes/admin/statistics/+page.svelte:289`, `src/lib/components/admin/DataTableRow.svelte` | **4**     | Zwei Komponenten: `DataTable` (Liste) und `DataTableRow` (Schlüssel/Wert) |
+| Filter + Sortierung      | `src/routes/admin/+page.svelte` (URL-Parameter, `sortableTh`-Snippet)                                                      | 1         | bleibt — aber ohne Bezug zum `FilterPanel` der Karte                      |
+| Detail- gegen Edit-Sicht | `src/lib/components/admin/AdminSightingView.svelte` / `src/lib/components/admin/AdminSightingEditForm.svelte`                                                     | 2         | bleibt getrennt (siehe unten)                                             |
+| Dialog                   | `src/lib/components/admin/ExportModal.svelte`, Spam-Check in `src/routes/admin/+page.svelte:1011`, `src/lib/components/ui/Dialog/DeleteDialog.svelte`                  | **3**     | `DeleteDialog`s Grundgerüst als `Modal` verallgemeinern                   |
+| Statusbadge              | `src/lib/components/admin/BooleanStatus.svelte` + 5 handgebaute Stellen                                                                  | **6**     | `BooleanStatus` erweitern statt `badge-*` an der Aufrufstelle             |
+| Paginierung              | `src/routes/admin/+page.svelte:945`                                                                                        | 1         | bleibt — einzige Aufrufstelle                                             |
+| Spalten-Sichtbarkeit     | `src/routes/admin/+page.svelte:440`                                                                                        | 1         | admin-spezifisch, kein Formular-Gegenstück                                |
+
+**Zwei Korrekturen an der erwarteten Liste:**
+
+- **Massenaktionen gibt es nicht.** Die Checkboxen in `src/routes/admin/+page.svelte:459`
+  steuern ausschließlich die Spalten-Sichtbarkeit, keine Zeilenauswahl. Es gibt
+  keinen Weg, mehrere Sichtungen gemeinsam zu prüfen, freizugeben oder zu
+  löschen — jede Aktion läuft einzeln über ihre Zeile.
+- **Das Export-Modal ist kein eigenes Muster, sondern eine von drei
+  Dialog-Umsetzungen.** Alle drei bauen `<dialog class="modal">` samt
+  `showModal()`/`close()`-Synchronisation per `$effect` selbst nach.
+
+**Dafür ein achtes Muster, das in der Liste fehlte: Datentabelle in zwei
+Gestalten.** `src/routes/admin/+page.svelte` rendert dieselben Daten zweimal — als
+Kartenliste (Zeile 599, `md:hidden`) und als Tabelle (Zeile 722,
+`hidden md:block`). Beide Schleifen sind getrennt gepflegt; die Spalten-
+Sichtbarkeit wirkt nur auf die Tabelle.
+
+**Ein Bruch des Breakpoint-Vertrags dabei:** Der Seitenkopf schaltet bei `sm`
+(640px, Zeile 385), die Datenliste bei `md` (768px, Zeile 599). Zwischen 640
+und 768px zeigt der Kopf also das Desktop-Layout, während darunter noch Karten
+stehen. Laut Abschnitt „Breakpoints" ist `sm` keine Layout-Grenze.
+
+**Warum Detail und Edit getrennt bleiben sollten:** `AdminSightingEditForm`
+setzt auf denselben Schema-getriebenen Feld-Pipeline wie das öffentliche
+Formular (`Location`, `DateTime`, `AnimalInfo`, … aus
+`report/components/sections/`). `AdminSightingView` ist eine reine
+Schlüssel/Wert-Darstellung über `DataTableRow`. Das sind zwei verschiedene
+Aufgaben, keine zwei Varianten derselben.
+
+### 2. Fehlende Zustände
+
+Dieselbe Matrix wie im Meldeformular:
+
+| Zustand        | Stand im Admin-Bereich                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------ |
+| **leer**       | **Fehlt vollständig.** Beide `{#each sightings}` (Zeile 600 und 782) haben keinen `{:else}`-Zweig.           |
+| **lädt**       | Nur in `src/lib/components/admin/AdminSightingView.svelte:346` (`loading`-Prop). Liste, Statistiken und Einstellungen haben keinen.   |
+| **teilweise**  | Fehlt vollständig.                                                                                           |
+| fehlgeschlagen | Nur als Toast (`src/routes/admin/+page.svelte`: Löschen, Prüfstatus, Test-Mail) plus ein `alert-error` in `admin/[id]`. |
+| **offline**    | Fehlt vollständig.                                                                                           |
+
+**Der wahrscheinlichste Fall ist auch der ungedeckte:** Ein Filter ohne Treffer
+zeigt eine Tabelle mit Kopfzeile und leerem Körper — ohne Aussage, ob gefiltert
+wurde, ob noch geladen wird oder ob die Datenbank leer ist. Dieselbe Lücke, die
+die Karte hatte, bevor `SightingsMapView` einen Leer-Zustand bekam.
+
+**Fehlschläge als Toast sind das Muster, von dem sich das Formular gerade
+gelöst hat.** Löschen, Prüfstatus-Wechsel und Test-Mail melden ihren Fehler in
+einer Einblendung, die nach fünf Sekunden weg ist und die Wiederholung nicht
+trägt. `StatusBlock` deckt `loading`, `empty`, `partial`, `failed` und
+`offline` bereits ab und ist ohne Anpassung verwendbar.
+
+### 3. Theme-Verstöße
+
+Vollständiger Scan über beide Verzeichnisse (nicht nur eine Teilmenge):
+
+| Prüfung                                  | Treffer | Bewertung                             |
+| ---------------------------------------- | ------- | ------------------------------------- |
+| Tailwind-Paletten-Klassen                | **0**   | sauber (Ergebnis des Randbereiche-PR) |
+| Hex-Werte                                | **0**   | sauber                                |
+| Statusfarbe als Textfarbe ohne `-strong` | **32**  | Verstoß gegen WCAG 1.4.3, Liste unten |
+| Deckkraft unter `/60` auf Text           | **2**   | `opacity-50` = 3,54:1                 |
+| `btn-xs` / `badge-xs` ohne `min-h-11`    | 12      | **kein Verstoß**, siehe Anmerkung     |
+
+**Anmerkung zu `btn-xs`/`badge-xs`:** Diese Prüfung ist seit dem
+Touch-Target-Block in `app.css` gegenstandslos. `.btn:not(.target-exempt)`
+steht dort ungelayert und gewinnt gegen Tailwinds `@layer utilities` — im
+Browser gemessen liefern `btn btn-xs`, `btn btn-sm` und sogar
+`btn btn-sm min-h-10` alle 44px. Umgekehrt heißt das: die zwei verbliebenen
+`min-h-11` und die vier `min-h-10` an den Paginierungs-Schaltflächen sind tote
+Utilities und können bei Gelegenheit weg — `min-h-10` ist dabei irreführend,
+weil es 40px verspricht und nichts bewirkt.
+
+**Die 32 Statusfarben als Textfarbe** (`text-primary` und `text-error` sind
+nicht dabei — sie erreichen mit 9,22:1 bzw. 6,04:1 AA):
+
+| Datei                                                    | Zeilen                                                                         | Anzahl |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------ | ------ |
+| `src/routes/admin/statistics/+page.svelte`                          | 198, 207, 211, 224, 228, 238, 247, 251, 266, 270, 315, 374, 383, 517, 605, 612 | 16     |
+| `src/lib/components/admin/weather/WeatherDataDisplay.svelte` | 115, 124, 152, 158, 164, 176, 182, 188, 194                                    | 9      |
+| `src/routes/admin/docs/+page.svelte`                                | 97, 101, 105, 109                                                              | 4      |
+| `src/routes/admin/[id]/+page.svelte`                                | 129, 130                                                                       | 2      |
+| `src/routes/admin/+page.svelte`                                     | 1056                                                                           | 1      |
+
+Dazu `opacity-50` auf Text in `src/lib/components/admin/weather/WeatherDataDisplay.svelte:240` und `:243`.
+
+`src/routes/admin/statistics/+page.svelte` ist dabei in sich widersprüchlich: die
+`stat-value`-Zeilen 211, 228, 251 und 270 nutzen bereits korrekt
+`text-secondary-strong` / `text-warning-strong` / `text-accent-strong` /
+`text-info-strong`, während die Beschriftungen daneben (207, 224, 247, 266) auf
+der Basisfarbe stehen geblieben sind. Der Fix ist dort ein Suffix, keine
+Umgestaltung.
+
+### Reproduktion
+
+```bash
+# Statusfarbe als Vordergrund ohne -strong
+grep -rnoE '\b(text|fill|stroke)-(secondary|accent|info|success|warning)(/[0-9]+)?\b' \
+  src/routes/admin src/lib/components/admin | grep -v -- -strong
+
+# Deckkraft unter /60 auf Text
+grep -rnoE '\btext-base-content/(40|50)\b|\bopacity-(40|50)\b' \
+  src/routes/admin src/lib/components/admin
+```
