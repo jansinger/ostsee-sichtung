@@ -894,14 +894,6 @@ export class SichtungenMap {
 			});
 	}
 
-	private updateTimeFilter(): void {
-		// Time filter implementation
-		this.reportsLayer.changed();
-		if (this.legendUpdateCallback) {
-			this.legendUpdateCallback();
-		}
-	}
-
 	public startTracking(): void {
 		this.isTracking = true;
 		this.geolocation.setTracking(true);
