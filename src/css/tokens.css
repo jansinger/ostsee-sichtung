@@ -92,6 +92,19 @@
 	--elevation-raised: 0 1px 3px color-mix(in oklab, var(--brand-slate-700) 14%, transparent);
 	--elevation-floating: 0 8px 24px color-mix(in oklab, var(--brand-slate-700) 20%, transparent);
 
+	/* Aliase unter dem Utility-Namen. Ohne sie hätte derselbe Schatten je nach
+	   Zugriffsweg zwei Namen: die Utility heißt `shadow-raised`, die Variable
+	   hieß nur `--elevation-raised`.
+	   Grund: Tailwind backt Schattenwerte aus dem @theme-Block direkt in die
+	   Utility (`--tw-shadow: 0 1px 3px …`) und referenziert die Theme-Variable
+	   nie — sie landet deshalb nicht im :root des Builds. Im Production-Build
+	   gemessen ergab `var(--shadow-raised)` dort `none`, während die Klasse
+	   `shadow-raised` korrekt zeichnete. Farben und Schriftgrößen haben das
+	   Problem nicht, weil sie hier oben ohnehin unter demselben Namen stehen.
+	   Mit diesen zwei Zeilen funktionieren beide Wege unter einem Namen. */
+	--shadow-raised: var(--elevation-raised);
+	--shadow-floating: var(--elevation-floating);
+
 	/* Z-Index — fünf benannte Ebenen. Vorher: 10/30/40/50/[100], wobei
 	   Navbar und Panel-Toggle beide auf 50 lagen. */
 	--layer-base: 0;

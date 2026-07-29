@@ -162,6 +162,16 @@ Dieselbe semantische Ebene darf nicht in zwei Größen erscheinen — heute ist 
 ## Elevation, Z-Index, Motion nur aus Tokens
 
 - **Schatten:** `shadow-raised` (Karten) oder `shadow-floating` (Panels, Modals, Toasts). Kein `shadow-sm`/`-md`/`-lg`/`-xl`/`-2xl`, keine handgeschriebenen `box-shadow` in Komponenten.
+
+**Zwei Zugriffswege, ein Name.** Jeder Token dieser Ebene ist als Utility (`class="text-warning-strong"`) **und** als Variable (`style="box-shadow: var(--shadow-raised)"`) benutzbar. Die beiden Wege entstehen unterschiedlich, und das hat eine Konsequenz:
+
+| Weg        | Woher                           | Gilt für                                                                                                                  |
+| ---------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Utility    | `@theme`-Block in `app.css`     | wird von Tailwind **on demand** erzeugt — nur wenn der Klassenname als vollständiger String im gescannten Quelltext steht |
+| `var(--…)` | `:root` in `src/css/tokens.css` | steht immer im ausgelieferten CSS                                                                                         |
+
+Ein Token, das **nur** im `@theme`-Block steht, ist über `var()` nicht erreichbar: Tailwind backt Schatten- und Größenwerte direkt in die Utility und referenziert die Theme-Variable nie, sie landet also nicht im `:root`. Deshalb deklariert `tokens.css` jeden Wert selbst — inklusive der Aliase `--shadow-raised`/`--shadow-floating` auf `--elevation-*`. **Neuer Token heißt: Eintrag in `tokens.css` (für `var()`) UND im `@theme`-Block (für die Utility)** — sonst ist einer der beiden Wege still tot.
+
 - **Z-Index:** `--layer-raised` (10), `--layer-panel` (20), `--layer-nav` (30), `--layer-overlay` (40), `--layer-skip` (50). Keine freien `z-*`-Utilities. Vorher lagen Navbar und Panel-Toggle beide auf `z-50` — welches Element oben lag, entschied damit die DOM-Position.
 - **Dauer:** `--motion-instant` (120ms, Hover/Fokus), `--motion-quick` (200ms, Aufklappen/Toast), `--motion-panel` (300ms, Panel/Bottom-Sheet).
 
