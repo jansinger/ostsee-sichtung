@@ -72,9 +72,10 @@ legt sofort eine Zeile in `sichtungen_files` an
 (`saveUploadedFile`, `src/lib/server/db/sightingFilesRepository.ts:18`) — mit
 `sightingId = null`.
 
-Die Dropzone in `sections/PositionAndTime.svelte` (Schritt 1) und die in
-`sections/Media.svelte` (Schritt 3) schreiben beide in dasselbe
-`$form.uploadedFiles`. `mediaConsent` wird erst in Schritt 3 gezeigt.
+Die Dropzone in `form/position/PositionPanel.svelte` (Schritt 1; bis #590 in
+`sections/PositionAndTime.svelte`) und die in `sections/Media.svelte` (Schritt 3)
+schreiben beide in dasselbe `$form.uploadedFiles`. `mediaConsent` wird erst in
+Schritt 3 gezeigt.
 
 ### B5 — EXIF-Auswertung braucht den Upload gar nicht _(neu, entscheidend)_
 
@@ -396,7 +397,7 @@ machen. Das Projekt schreibt Test-First vor (`.claude/rules/testing.md`).
 | B-I      | `schema.ts`, `mapFormToSighting.ts`, `drizzle/` (via `db:generate`), `field-mapping.ts`, `AdminSightingView.svelte`, `csvExport.ts` |
 | B-III    | `sightingSchema.ts:1182` (+ `sightingSchemaClaims.test.ts` beachten)                                                                |
 | A2       | `MediaFile.ts`, `DropzoneEnhanced.svelte`, `ModernReportForm.svelte`, `api/sightings/+server.ts`, `sightingFilesRepository.ts`      |
-| A1       | `PositionAndTime.svelte`, `Media.svelte`, `sightingSchema.ts`                                                                       |
+| A1       | `form/position/PositionPanel.svelte` (seit #590; vorher `PositionAndTime.svelte`), `Media.svelte`, `sightingSchema.ts`              |
 | Cleanup  | neues Skript unter `scripts/`, `sightingFilesRepository.ts`                                                                         |
 
 **Testabdeckung, die zuerst rot sein muss**
@@ -453,24 +454,32 @@ keinen Reload. Eine gehaltene Referenz überlebt Schritt 1 bis 4 problemlos.
 
 Und die Größen sind kleiner als gedacht:
 
-| Grenze | Wert | Fundstelle |
-|--------|------|------------|
-| Client-Konfiguration (DB-Default) | 10 MB | `configService.ts:25`, `configInitializer.ts:258` |
-| Server, **anonym** | **5 MB** (hart) | `api/files/upload/+server.ts` |
-| Server, angemeldet | 50 MB | ebd. |
-| GPS-Foto Schritt 1 | 10 MB, 1 Datei | `UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE` |
-| Erlaubte Videoformate | nur `video/mp4` | `configService.ts:26` |
+> **Stand 2026-07-29 korrigiert.** Die ursprüngliche Fassung dieses Abschnitts
+> nannte 5 MB für anonyme Melder und einen offenen Client/Server-Widerspruch.
+> Beides ist überholt (siehe unten) — die Argumentation gegen A2 ändert das
+> nicht, die Größenordnung bleibt klein.
 
-Für Bürgerinnen und Bürger — der Normalfall, anonym — liegt die reale Grenze
-also bei **5 MB**, auch für Videos. Die 50 MB aus
-`FILE_VALIDATION_PRESETS.MEDIA` greifen nur für angemeldete Nutzer.
+| Grenze                              | Wert                       | Fundstelle                                             |
+| ----------------------------------- | -------------------------- | ------------------------------------------------------ |
+| **Anonym** — Client **und** Server  | **10 MB**, nur Bildformate | `src/lib/constants/uploadDefaults.ts`                  |
+| Angemeldet (Laufzeit-Konfiguration) | 10 MB (DB-Default)         | `configService.ts:25`, `configInitializer.ts:258`      |
+| Angemeldet, Server-Obergrenze       | 50 MB                      | `api/files/upload/+server.ts`                          |
+| GPS-Foto Schritt 1                  | 10 MB, 1 Datei             | `PositionPanel.svelte` (Bilder, `maxFiles={1}`)        |
+| Videoformate                        | nur `video/mp4`            | `configService.ts:26` — **nur für angemeldete Nutzer** |
 
-**Nebenbefund (eigener Bug, unabhängig vom Einwilligungsthema):** Client und
-Server widersprechen sich. Die Dropzone akzeptiert nach DB-Konfiguration 10 MB,
-der Server lehnt oberhalb 5 MB mit 413 ab. Eine 6-MB-Datei kommt also durch die
-Client-Validierung und scheitert danach. Heute fällt das sofort als Fehler-Toast
-auf; bei verzögertem Upload würde es erst beim Absenden auffallen. Sollte in
-jedem Fall behoben werden.
+Für Bürgerinnen und Bürger — der Normalfall, anonym — liegt die reale Grenze bei
+**10 MB**, und **Videos gibt es dort gar nicht**: `/api/config/upload` liefert
+nicht authentifizierten Nutzern `PUBLIC_UPLOAD_ALLOWED_TYPES` (jpeg/png/gif/webp).
+Die 50 MB aus `FILE_VALIDATION_PRESETS.MEDIA` greifen nur für angemeldete Nutzer.
+
+**Nebenbefund — behoben, nicht mehr offen.** Die ursprüngliche Fassung notierte
+hier einen Client/Server-Widerspruch: Dropzone 10 MB, Server 413 oberhalb 5 MB.
+Beide Seiten ziehen inzwischen aus derselben Konstante
+(`ANONYMOUS_UPLOAD_MAX_SIZE_BYTES = PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES`,
+`src/lib/constants/uploadDefaults.ts`); die gemeinsame Quelle kam mit #567, die
+serverseitige Angleichung mit #589. Gegen ein erneutes Auseinanderlaufen steht
+`src/lib/constants/uploadLimitConsistency.test.ts`, dessen Doc-Kommentar
+ausdrücklich auf diesen Abschnitt zurückverweist.
 
 ### 9.2 Die drei Risiken, die gegen A2 sprechen
 
