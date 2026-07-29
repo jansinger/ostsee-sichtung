@@ -159,9 +159,11 @@ jobs:
             echo "| Bewegte Tags | \`production\`, \`latest\`, \`${{ steps.version.outputs.minor }}\`, \`${{ steps.version.outputs.major }}\` |"
             echo "| Freigegeben von | @${{ github.actor }} |"
             echo
-            echo "Der Prod-Host zieht beim nächsten Pull-Lauf. Digest-genau pinnen:"
+            echo "Der Prod-Host zieht beim nächsten Pull-Lauf. Fest pinnen (.env):"
             echo
             echo '```bash'
-            echo "IMAGE_TAG=${TAG}   # oder: ${IMAGE}@${DIGEST}"
+            echo "IMAGE_TAG=${TAG}"
+            echo "# oder digest-genau — APP_IMAGE hat Vorrang vor IMAGE_TAG:"
+            echo "APP_IMAGE=${IMAGE}@${DIGEST}"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"

@@ -202,6 +202,7 @@ der Backup-Schritt im Prod-Skript vor `docker compose up -d`.
 - [ ] Staging-Host: Stack unter `/opt/ostsee-staging` mit `IMAGE_TAG=staging`,
       eigener DB und eigenem `uploads`-Volume
 - [ ] Prod-Host: `IMAGE_TAG` in der bestehenden `.env` auf `production` setzen
+      (oder digest-genau per `APP_IMAGE=…@sha256:…`, das Vorrang hat)
       (bisheriger Default war `latest`)
 - [ ] Beide Hosts: `docker login ghcr.io` mit einem Read-Token, falls das
       Package privat ist

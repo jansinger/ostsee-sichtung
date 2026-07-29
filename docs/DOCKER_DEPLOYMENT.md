@@ -1161,8 +1161,15 @@ There is no `main` tag — nothing is published from branch builds.
 **`latest` no longer moves at build time.** It advances only when a release is
 promoted to production. A host tracking `latest` therefore stays on the last
 approved release instead of picking up every fresh build. For fully
-reproducible deployments, pin `IMAGE_TAG` to an explicit `vX.Y.Z` or to a
-digest.
+reproducible deployments, pin `IMAGE_TAG` to an explicit `vX.Y.Z`, or set
+`APP_IMAGE` to a full digest reference — a digest attaches with `@` instead of
+`:` and therefore cannot go into `IMAGE_TAG`:
+
+```bash
+IMAGE_TAG=v2.5.6
+# or, digest-exact (APP_IMAGE takes precedence over IMAGE_TAG):
+APP_IMAGE=ghcr.io/jansinger/ostsee-sichtung@sha256:...
+```
 
 ### Verification and scanning
 

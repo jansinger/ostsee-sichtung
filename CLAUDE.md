@@ -132,10 +132,11 @@ Durchgesetzt via `commitlint.config.mjs`.
 Automatisiert über **release-please**: Commits auf `main` werden analysiert, ein Release-PR wird erstellt, bei Merge folgen Tag, GitHub Release, Branch `release` und Docker Build.
 
 Das Release-Image geht **nicht** direkt nach Production. Es bekommt beim Bau nur
-`vX.Y.Z` und den `staging`-Zeiger; der Staging-Host zieht automatisch. Erst der
-manuelle Workflow **Promote to Production** (mit Approval am Environment
-`production`) hängt `production`/`latest` auf denselben Digest um — es wird dabei
-nichts neu gebaut. Ablauf, Host-Setup und Rollback: `docs/RELEASE_PIPELINE.md`
+`vX.Y.Z`, `X.Y.Z` und den `staging`-Zeiger; der Staging-Host zieht automatisch.
+Erst der manuelle Workflow **Promote to Production** (mit Approval am Environment
+`Production`) hängt `production`, `latest`, `X.Y` und `X` auf denselben Digest um
+— es wird dabei nichts neu gebaut. Ablauf, Host-Setup und Rollback:
+`docs/RELEASE_PIPELINE.md`
 
 **Wichtig:** Keine manuellen Releases oder Tags. Nicht auf den `release` Branch pushen.
 
