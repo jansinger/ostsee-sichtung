@@ -44,7 +44,7 @@ export async function fillStep4(formPage: FormPage) {
 
 /** Wait for the active step indicator to show a specific step name */
 export async function expectCurrentStep(page: Page, pattern: RegExp) {
-	await expect(page.locator('[aria-current="step"]')).toHaveAttribute('aria-label', pattern, {
+	await expect(page.locator('[aria-current="step"]:visible')).toHaveAttribute('aria-label', pattern, {
 		timeout: 5000
 	});
 }

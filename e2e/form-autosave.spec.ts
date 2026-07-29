@@ -20,7 +20,7 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		// Reload page
 		await page.reload();
 		await page.waitForLoadState('networkidle');
-		await page.locator('[aria-current="step"]').waitFor({ state: 'visible' });
+		await page.locator('[aria-current="step"]:visible').waitFor({ state: 'visible' });
 
 		// Step 2 should be restored
 		await expectCurrentStep(page, /Sichtungsdetails/i);
@@ -40,7 +40,7 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		// Reload
 		await page.reload();
 		await page.waitForLoadState('networkidle');
-		await page.locator('[aria-current="step"]').waitFor({ state: 'visible' });
+		await page.locator('[aria-current="step"]:visible').waitFor({ state: 'visible' });
 
 		// Date should still be filled
 		const dateInput = page.locator('[data-testid="field-sightingDate"]');
@@ -95,7 +95,7 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		// Reload to verify storage was cleared
 		await page.reload();
 		await page.waitForLoadState('networkidle');
-		await page.locator('[aria-current="step"]').waitFor({ state: 'visible' });
+		await page.locator('[aria-current="step"]:visible').waitFor({ state: 'visible' });
 
 		// Should start fresh on Step 1 with no restore toast
 		await expectCurrentStep(page, /Position & Zeit/i);

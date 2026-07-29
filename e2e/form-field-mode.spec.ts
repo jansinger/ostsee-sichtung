@@ -32,10 +32,12 @@ async function gotoStep(page: Page, step: number): Promise<void> {
 
 const compactStepper = (page: Page) =>
 	page.locator('.form-step-nav nav[aria-label="Formular-Schritte"]');
+/* Beide Stepper tragen dasselbe `aria-label` — sie sind dieselbe Navigation in
+   zwei Darstellungen, und wer die Seite bedient, trifft immer nur eine davon.
+   Auseinandergehalten werden sie deshalb an ihrer Umgebung: der kompakte liegt
+   im `.form-step-nav`-Balken, der ausgeschriebene bringt `.step-button` mit. */
 const fullStepper = (page: Page) =>
-	page
-		.locator('nav[aria-label="Formular-Schritte"]')
-		.filter({ hasNot: page.locator('ol li span') });
+	page.locator('nav[aria-label="Formular-Schritte"]').filter({ has: page.locator('.step-button') });
 
 test.describe('Feldmodus — ortsfeste Schritt-Navigation', () => {
 	test.use({ viewport: PHONE });
