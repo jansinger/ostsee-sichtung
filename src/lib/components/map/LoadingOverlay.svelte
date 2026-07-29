@@ -49,7 +49,11 @@
 					<div
 						class="bg-primary/10 mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full"
 					>
-						<Icon icon={iconMap[loadingType]} class="text-primary h-8 w-8 animate-spin" />
+						<Icon
+							icon={iconMap[loadingType]}
+							class="text-primary h-8 w-8 animate-spin"
+							aria-hidden="true"
+						/>
 					</div>
 					<h3 class="text-base-content text-lg font-semibold">
 						{displayMessage}

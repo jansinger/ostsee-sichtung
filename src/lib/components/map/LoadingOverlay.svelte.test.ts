@@ -42,6 +42,14 @@ describe('LoadingOverlay', () => {
 		expect(document.querySelector('[aria-modal]')).toBeNull();
 	});
 
+	it('dekoratives Spinner-Icon ist aria-hidden (wird in der Live-Region nicht mit angesagt)', () => {
+		render(LoadingOverlay, { isVisible: true, type: 'filter' });
+
+		const svg = document.querySelector('[role="status"] svg');
+		expect(svg).not.toBeNull();
+		expect(svg?.getAttribute('aria-hidden')).toBe('true');
+	});
+
 	it('zeigt den passenden Text für Filter-Ladevorgänge', () => {
 		render(LoadingOverlay, { isVisible: true, type: 'filter' });
 

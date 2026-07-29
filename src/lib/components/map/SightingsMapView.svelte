@@ -350,18 +350,9 @@
 	 */
 	function setupKeyboardNavigation() {
 		keyboardHandler = (event) => {
-			// Nur aktiv wenn kein Input-Element fokussiert ist
-			if (
-				event.target instanceof HTMLInputElement ||
-				event.target instanceof HTMLSelectElement ||
-				event.target instanceof HTMLTextAreaElement ||
-				(event.target instanceof HTMLElement && event.target.isContentEditable)
-			) {
-				return;
-			}
-
 			// Escape ist kein Zeichen-Shortcut (WCAG 2.1.4 greift nicht) und
-			// wirkt deshalb weiterhin global.
+			// wirkt global — auch bei Fokus im Suchfeld, deshalb VOR dem
+			// Input-Guard behandelt.
 			// QW3: Kaskade Popup → Hilfe-Modal → Filter-Panel → Legende.
 			// Jede Stufe schließt nur genau eine Ebene pro Tastendruck.
 			if (event.key === 'Escape') {
@@ -379,6 +370,17 @@
 				if (legendOpen) {
 					legendOpen = false;
 				}
+				return;
+			}
+
+			// Zeichen-Shortcuts: nicht aktiv, wenn ein Eingabe-Element
+			// fokussiert ist
+			if (
+				event.target instanceof HTMLInputElement ||
+				event.target instanceof HTMLSelectElement ||
+				event.target instanceof HTMLTextAreaElement ||
+				(event.target instanceof HTMLElement && event.target.isContentEditable)
+			) {
 				return;
 			}
 
@@ -674,19 +676,19 @@
 
 				<div class="text-base-content/60 mt-6 space-y-1 text-xs">
 					<p class="flex items-center gap-2">
-						<Icon icon="lucide:info" width="14" height="14" class="text-primary" />
+						<Icon icon="lucide:info" width="14" height="14" class="text-primary" aria-hidden="true" />
 						Die Buchstaben-Kürzel wirken, solange der Fokus auf der Karte liegt
 					</p>
 					<p class="flex items-center gap-2">
-						<Icon icon="lucide:navigation" width="14" height="14" class="text-primary" />
+						<Icon icon="lucide:navigation" width="14" height="14" class="text-primary" aria-hidden="true" />
 						Karte mit Tab fokussieren, dann mit den Pfeiltasten verschieben und mit + / − zoomen
 					</p>
 					<p class="flex items-center gap-2">
-						<Icon icon="lucide:list" width="14" height="14" class="text-primary" />
+						<Icon icon="lucide:list" width="14" height="14" class="text-primary" aria-hidden="true" />
 						Der Umschalter „Karte / Liste" zeigt alle Sichtungen als Tabelle
 					</p>
 					<p class="flex items-center gap-2">
-						<Icon icon="lucide:mouse-pointer" width="14" height="14" class="text-primary" />
+						<Icon icon="lucide:mouse-pointer" width="14" height="14" class="text-primary" aria-hidden="true" />
 						Klicken Sie auf Marker für Details
 					</p>
 				</div>

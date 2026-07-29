@@ -16,8 +16,9 @@ export function focusPanelHeading(heading: HTMLElement | undefined): void {
 /**
  * Gibt den Fokus an den Toggle-Button zurück — aber nur, wenn er beim
  * Schließen im Panel lag oder durch das `inert`-Attribut bereits auf
- * `<body>` zurückgefallen ist. Lag der Fokus woanders (z. B. auf der Karte
- * beim Schließen per Tastaturkürzel), wird er nicht gestohlen.
+ * `<body>`/`<html>` zurückgefallen ist (Browser unterscheiden sich hier).
+ * Lag der Fokus woanders (z. B. auf der Karte beim Schließen per
+ * Tastaturkürzel), wird er nicht gestohlen.
  */
 export function returnFocusToToggle(
 	panel: HTMLElement | undefined,
@@ -25,7 +26,12 @@ export function returnFocusToToggle(
 ): void {
 	void tick().then(() => {
 		const active = document.activeElement;
-		if (active === null || active === document.body || (panel?.contains(active) ?? false)) {
+		if (
+			active === null ||
+			active === document.body ||
+			active === document.documentElement ||
+			(panel?.contains(active) ?? false)
+		) {
 			toggle?.focus();
 		}
 	});

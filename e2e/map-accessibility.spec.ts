@@ -64,6 +64,17 @@ test.describe.serial('Map Accessibility', () => {
 		await expect(mapPage.getFilterPanel()).toHaveJSProperty('inert', true);
 	});
 
+	test('ESC schließt das Filter-Panel auch bei Fokus im Suchfeld', async () => {
+		// Escape wirkt global — der Input-Guard des Keyboard-Handlers darf
+		// Escape nicht verschlucken (Copilot-Review PR #601)
+		await mapPage.openFilter();
+		await expect(mapPage.getFilterPanel()).toHaveJSProperty('inert', false);
+		await mapPage.getFilterInput().focus();
+
+		await sharedPage.keyboard.press('Escape');
+		await expect(mapPage.getFilterPanel()).toHaveJSProperty('inert', true);
+	});
+
 	test('ESC schließt offene Legende', async () => {
 		await mapPage.openLegend();
 		await expect(mapPage.getLegendPanel()).toHaveJSProperty('inert', false);
