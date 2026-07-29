@@ -58,9 +58,7 @@ test.describe.serial('Map Filter Panel', () => {
 
 		await mapPage.openFilter();
 		const yearSelect = mapPage.getYearSelect();
-		const options = yearSelect.locator('option');
-		const count = await options.count();
-		const targetYear = await options.nth(count > 1 ? count - 1 : 0).getAttribute('value');
+		const targetYear = await yearSelect.locator('option').last().getAttribute('value');
 
 		if (targetYear) {
 			const responsePromise = mapPage.waitForSightingsResponse();

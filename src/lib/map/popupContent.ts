@@ -35,10 +35,13 @@ function formatSightingDate(ts: number | undefined, fallback: string): string {
 		: fallback;
 }
 
-function speciesName(props: SightingPopupProperties, translations: MapTranslations): string {
-	return sanitizeText(
-		translations.speciesMap[props.ta.toString()] || `Unbekannte Art (${props.ta})`
-	);
+/** Artname aus der speciesMap, sanitisiert; der Fallback-Text variiert je Kontext. */
+function speciesName(
+	props: SightingPopupProperties,
+	translations: MapTranslations,
+	fallback: string
+): string {
+	return sanitizeText(translations.speciesMap[props.ta.toString()] || fallback);
 }
 
 /** Detail-Inhalt für das Klick-Popup einer einzelnen Sichtung. */
@@ -50,7 +53,7 @@ export function createSightingPopupContent(
 
 	let content = `
 		<div class="sighting-popup">
-			<h3 class="popup-title">${speciesName(props, translations)}</h3>
+			<h3 class="popup-title">${speciesName(props, translations, `Unbekannte Art (${props.ta})`)}</h3>
 			<div class="popup-row">
 				<strong>${sanitizeText(translations.count)}:</strong> ${props.ct}
 			</div>
@@ -122,9 +125,10 @@ export function createClusterListContent(
 
 	let items = '';
 	propsList.forEach((props, index) => {
-		const name = sanitizeText(translations.speciesMap[props.ta.toString()] || `Art ${props.ta}`);
+		const name = speciesName(props, translations, `Art ${props.ta}`);
 		const date = formatSightingDate(props.ts, 'Unbekannt');
 		const deadBadge = props.tf ? '<span class="cluster-item-dead">&#x2020;</span>' : '';
+		const tierWord = props.ct > 1 ? 'Tiere' : 'Tier';
 
 		items += `
 			<li>
@@ -132,10 +136,10 @@ export function createClusterListContent(
 					type="button"
 					data-cluster-index="${index}"
 					class="cluster-list-item"
-					aria-label="${name}, ${props.ct} Tier${props.ct > 1 ? 'e' : ''}, ${date}"
+					aria-label="${name}, ${props.ct} ${tierWord}, ${date}"
 				>
 					<span class="cluster-item-species">${name}${deadBadge}</span>
-					<span class="cluster-item-count">${props.ct}&nbsp;Tier${props.ct > 1 ? 'e' : ''}</span>
+					<span class="cluster-item-count">${props.ct}&nbsp;${tierWord}</span>
 					<span class="cluster-item-date">${date}</span>
 				</button>
 			</li>
@@ -157,7 +161,7 @@ export function createInfoText(
 	props: SightingPopupProperties,
 	translations: MapTranslations
 ): string {
-	const species = sanitizeText(translations.speciesMap[props.ta] || 'Unbekannte Art');
+	const species = speciesName(props, translations, 'Unbekannte Art');
 	const count = props.ct || 0;
 	const date = formatSightingDate(props.ts, 'Unbekanntes Datum');
 	const isDead = props.tf ? ` (${sanitizeText(translations.found_dead)})` : '';
