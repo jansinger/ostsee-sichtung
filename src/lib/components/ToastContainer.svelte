@@ -15,7 +15,7 @@
 			type={toast.type}
 			title={toast.title || ''}
 			message={toast.message}
-			duration={toast.duration || 5000}
+			duration={toast.duration ?? 5000}
 			dismissible={!!toast.dismissible}
 			onDismiss={() => removeToast(toast.id)}
 		/>
