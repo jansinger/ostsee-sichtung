@@ -106,9 +106,24 @@ function makeMarineResponse() {
  * neuen Tag sieht — der Test forderte dann den Forecast für ein Datum, das aus
  * Sicht des Dienstes Vergangenheit ist, und schlug fehl. Beide Seiten müssen
  * denselben Kalendertag meinen.
+ *
+ * Tests, die "heute" verwenden, frieren die Uhr zusätzlich mit
+ * `freezeClock()` ein, damit das Ergebnis nicht vom realen Systemdatum
+ * abhängt (und der Vergleich Test↔Dienst nicht am Berliner Tageswechsel
+ * racen kann).
  */
 function todayString(): string {
 	return berlinCalendarDayIso();
+}
+
+/**
+ * Friert die Systemzeit auf einen festen Zeitpunkt ein (Berliner Vormittag,
+ * weit weg vom Tageswechsel). `afterEach` setzt die Uhr per
+ * `vi.useRealTimers()` wieder zurück.
+ */
+function freezeClock(instant = '2026-03-15T10:00:00Z'): void {
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date(instant));
 }
 
 // Historisches Datum (immer in der Vergangenheit)
@@ -168,6 +183,7 @@ describe('fetchWeatherData', () => {
 	});
 
 	it('gibt StoredWeatherData zurück bei erfolgreicher aktueller Anfrage (heutiges Datum)', async () => {
+		freezeClock();
 		const today = todayString();
 		vi.mocked(fetch)
 			.mockResolvedValueOnce({
@@ -186,6 +202,9 @@ describe('fetchWeatherData', () => {
 	});
 
 	it('wählt den Archive-API-Endpunkt für historische Daten', async () => {
+		// Uhr einfrieren: HISTORICAL_DATE liegt damit garantiert in der
+		// Vergangenheit, unabhängig vom realen Systemdatum.
+		freezeClock();
 		vi.mocked(fetch)
 			.mockResolvedValueOnce({
 				ok: true,
@@ -203,6 +222,10 @@ describe('fetchWeatherData', () => {
 	});
 
 	it('wählt den Forecast-API-Endpunkt für das heutige Datum', async () => {
+		// Uhr einfrieren: "heute" ist damit ein festes Datum — der Test hängt
+		// nicht mehr am realen Systemdatum und kann nicht am Berliner
+		// Tageswechsel zwischen todayString() und Dienst-Aufruf racen.
+		freezeClock();
 		const today = todayString();
 		vi.mocked(fetch)
 			.mockResolvedValueOnce({
@@ -369,8 +392,7 @@ describe('fetchWeatherData', () => {
 		// Folgetages in Berlin — UTC- und Berlin-Kalendertag weichen 30 Minuten lang
 		// voneinander ab. Das angefragte Datum ist zu diesem Zeitpunkt in Berlin
 		// bereits "gestern" und muss die Archive-API treffen, nicht die Forecast-API.
-		vi.useFakeTimers();
-		vi.setSystemTime(new Date('2024-07-14T23:30:00Z'));
+		freezeClock('2024-07-14T23:30:00Z');
 
 		vi.mocked(fetch)
 			.mockResolvedValueOnce({
