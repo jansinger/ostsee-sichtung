@@ -48,8 +48,8 @@ die als Fläche funktioniert, funktioniert als Vordergrund nicht.
 
 | Farbe       | Fläche (`bg-*`) | weiß darauf | Vordergrund (`text-*-strong`) | auf base-100 | auf base-200 |
 | ----------- | --------------- | ----------- | ----------------------------- | ------------ | ------------ |
-| `primary`   | `#004062`       | 11,00 ✅    | `text-primary` genügt         | 9,22 ✅      | 7,66 ✅      |
-| `info`      | `#007daa`       | 4,65 ✅     | `#00648f`                     | 5,48 ✅      | 4,53 ✅      |
+| `primary`   | `#004062`       | 11,00 ✅    | `text-primary` genügt         | 9,24 ✅      | 7,65 ✅      |
+| `info`      | `#007daa`       | 4,65 ✅     | `#00628d`                     | 5,63 ✅      | 4,66 ✅      |
 | `success`   | `#1c882d`       | 4,56 ✅     | `#006d09`                     | 5,53 ✅      | 4,57 ✅      |
 | `warning`   | `#bb8500`       | 3,26 ❌ †   | `#865100`                     | 5,53 ✅      | 4,58 ✅      |
 | `error`     | `#ac1922`       | 7,20 ✅     | `text-error` genügt           | 6,05 ✅      | 5,01 ✅      |
@@ -90,12 +90,12 @@ gehören nur auf `base-100` und `base-200` — dieselbe Regel, die für
 
 | Token         | Stufe | base-100 | base-200 | base-300 | Verwendung                      |
 | ------------- | ----- | -------- | -------- | -------- | ------------------------------- |
-| `--fg-strong` | 100 % | 16,53 ✅ | 13,72 ✅ | 11,3 ✅  | Fließtext                       |
-| `--fg-muted`  | 70 %  | 6,96 ✅  | 6,35 ✅  | 5,72 ✅  | Sekundärtext, Hilfetext         |
-| `--fg-subtle` | 60 %  | 4,94 ✅  | 4,62 ✅  | 4,27 ❌  | Untergrenze, nicht auf base-300 |
+| `--fg-strong` | 100 % | 16,50 ✅ | 13,66 ✅ | 11,26 ✅ | Fließtext                       |
+| `--fg-muted`  | 70 %  | 7,04 ✅  | 6,41 ✅  | 5,74 ✅  | Sekundärtext, Hilfetext         |
+| `--fg-subtle` | 60 %  | 4,94 ✅  | 4,62 ✅  | 4,26 ❌  | Untergrenze, nicht auf base-300 |
 
-`/50` (3,39) und `/40` (2,55) sind **dekorativ**. Nie für Zeichen, die gelesen
-werden müssen.
+`/50` (3,54 / 3,39 / 3,23) und `/40` (2,64 / 2,56 / 2,46) sind **dekorativ**.
+Nie für Zeichen, die gelesen werden müssen.
 
 ---
 

@@ -444,6 +444,13 @@ label:has(> .toggle) {
 		position: sticky;
 		bottom: 0;
 		z-index: var(--layer-nav);
+		/* Oben --space-2 statt --space-3: die erste Zeile ist die
+		   Fortschrittsanzeige, deren Schaltflächen 44px hoch sind, während die
+		   Linie darin nur 6px zeichnet. Über der Linie liegen dadurch schon 19px
+		   Leerraum aus dem Ziel selbst — zusammen mit 8px Polsterung sind das
+		   27px, mehr als die 16px, die eine Zeile mit sichtbarem Inhalt bräuchte.
+		   Unten bleibt --space-3, dort grenzt die Schaltflächenzeile direkt an. */
+		padding-top: var(--space-2);
 		padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
 		box-shadow: 0 -4px 16px color-mix(in oklab, var(--color-neutral) 14%, transparent);
 	}
@@ -452,13 +459,13 @@ label:has(> .toggle) {
 	   `scrollIntoView` und vom Fokus-Scroll des Browsers sonst genau hinter den
 	   Balken geschoben — man tippt ins Feld und sieht es nicht mehr. Betrifft
 	   auch `scrollToFirstError` nach einem gescheiterten „Weiter".
-	   Der Wert deckt den Balken im Normalfall ab (132px gemessen bei 390px
-	   Breite: Fortschrittszeile + Schaltflächen + Innenabstand). Mit
-	   eingeblendetem Inline-Alert ist der Balken höher — dann ist es eine
-	   Näherung, keine Garantie. Das ist vertretbar, weil in dem Zustand die
-	   Fehlermeldung im Bild wichtiger ist als das Feld darunter. */
+	   Der Wert entspricht der gemessenen Balkenhöhe bei 390px Breite: 120px aus
+	   Fortschrittszeile, Schaltflächenzeile und Innenabstand. Im Feldmodus sind
+	   es 144px — dort ist es also eine Näherung. Bewusst nicht auf das Maximum
+	   gesetzt: der Wert gilt auch oberhalb `md` nicht, und ein zu großer Wert
+	   schiebt fokussierte Felder unnötig weit nach oben. */
 	html {
-		scroll-padding-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
+		scroll-padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
 	}
 }
 

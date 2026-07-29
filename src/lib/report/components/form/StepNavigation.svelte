@@ -61,6 +61,16 @@
 	// All error messages of the current step, for inline display
 	const stepErrorMessages = $derived(getStepAlertMessages(stepValidation.errors));
 
+	// Zahl für die kompakte Anzeige im Balken. Dieselbe Quelle wie die
+	// ausgeschriebene Liste — getErrorCount zählt bereits, was showValidationError
+	// für seine Toast-Meldung benutzt.
+	const stepErrorCount = $derived(getErrorCount(stepValidation.errors));
+
+	/** Springt zum ersten fehlerhaften Feld — gleiche Reihenfolge wie nach „Weiter". */
+	function jumpToFirstError(): void {
+		scrollToFirstError(stepValidation.errors, stepFieldOrders[currentStep] ?? []);
+	}
+
 	const isLastStep = $derived(currentStep >= totalSteps - 1);
 	const isFirstStep = $derived(currentStep <= 0);
 
@@ -180,42 +190,54 @@
 </script>
 
 <!--
+  Der volle Alert steht im Fluss, NICHT im ortsfesten Balken.
+
+  Er dort hineinzunehmen war der naheliegende Reflex — `position: sticky` wirkt
+  nur auf das Element mit der Klasse, ein Alert davor scrollt also weg. Gemessen
+  ist das aber die schlechtere Wahl: Schritt 1 kann fünf Regeln gleichzeitig
+  verletzen (Breitengrad, Längengrad, Fahrwasser-Länge, Zukunftsdatum,
+  Uhrzeitformat), und die <ul> darunter machte den Balken bei 390×844 dann
+  390px hoch — 46 % des Bildschirms, dauerhaft im Weg.
+
+  Der Alert muss auch gar nicht stehen bleiben: Er wird in dem Moment gelesen,
+  in dem er entsteht, und direkt danach springt `scrollToFirstError` zum ersten
+  fehlerhaften Feld, wo das Feld seinen Fehler selbst trägt (`FieldRenderer`,
+  `role="alert"`). Was im Balken bleiben muss, ist nur die Tatsache „hier sind
+  noch N Fehler" plus ein Weg zurück dorthin — das leistet die kompakte
+  Schaltfläche unten mit einer Zeile Höhe statt fünf.
+-->
+{#if showStepAlert && stepErrorMessages.length > 0}
+	<div class="alert alert-warning mb-2" role="alert">
+		<Icon icon="lucide:triangle-alert" class="shrink-0" aria-hidden="true" />
+		{#if stepErrorMessages.length === 1}
+			<span>{stepErrorMessages[0]?.message}</span>
+		{:else}
+			<ul class="list-inside list-disc">
+				{#each stepErrorMessages as { field, message } (field)}
+					<li>{message}</li>
+				{/each}
+			</ul>
+		{/if}
+	</div>
+{/if}
+
+<!--
   Unterhalb `md` ist dieser Block der ortsfeste Balken am unteren Rand
   (`.form-step-nav`, Regel in app.css inkl. `env(safe-area-inset-bottom)`).
 
-  Die Klasse trägt der Wrapper und NICHT das <nav> darin — obwohl das <nav> das
-  eigentliche Bedienelement ist. Grund: `position: sticky` wirkt nur auf das
-  Element, das die Klasse trägt. Läge der Inline-Alert wie zuvor als Geschwister
-  DAVOR, würde er beim Scrollen weglaufen, während der Balken stehen bleibt —
-  „Weiter" reagiert dann sichtbar nicht, und die Begründung dafür steht
-  irgendwo weiter oben außerhalb des Bildes. Alert, Fortschritt und Schaltflächen
-  gehören deshalb in denselben stickyen Container.
-
-  Der Container ist bewusst kein zweites <nav>: die Navigations-Landmark bleibt
-  das innere <nav>, der Wrapper ist reines Layout.
+  Die Klasse trägt der Wrapper und nicht das <nav> darin: der Balken ist mehr
+  als die Navigations-Landmark — er trägt auch den Fortschritt und den
+  Fehler-Sprung. Das <nav> bleibt die Landmark, der Wrapper ist reines Layout.
 -->
 <div class="form-step-nav bg-base-200 rounded-lg p-4">
-	<!-- Inline validation error above navigation — only after a failed "Weiter"-attempt -->
-	{#if showStepAlert && stepErrorMessages.length > 0}
-		<div class="alert alert-warning mb-3" role="alert">
-			<Icon icon="lucide:triangle-alert" class="shrink-0" aria-hidden="true" />
-			{#if stepErrorMessages.length === 1}
-				<span>{stepErrorMessages[0]?.message}</span>
-			{:else}
-				<ul class="list-inside list-disc">
-					{#each stepErrorMessages as { field, message } (field)}
-						<li>{message}</li>
-					{/each}
-				</ul>
-			{/if}
-		</div>
-	{/if}
-
 	<!-- Fortschritt im Balken — nur unterhalb `md`, oberhalb zeigt ihn FormSteps -->
 	<StepProgressCompact steps={formStepsConfig} bind:currentStep />
 
 	<!-- Navigation UI -->
-	<nav class="mt-3 flex items-center justify-between md:mt-0" aria-label="Formular Navigation">
+	<nav
+		class="mt-2 flex items-center justify-between gap-2 md:mt-0"
+		aria-label="Formular Navigation"
+	>
 		<button
 			type="button"
 			onclick={previousStep}
@@ -225,6 +247,30 @@
 		>
 			← Zurück
 		</button>
+
+		<!--
+			Kompakte Fehleranzeige — ersetzt im Balken die ausgeschriebene Liste.
+			Nur unterhalb `md`: darüber ist der Balken nicht ortsfest, der volle
+			Alert steht also ohnehin sichtbar direkt darüber und diese Schaltfläche
+			wäre eine zweite Anzeige derselben Sache.
+
+			„Fehler" ist im Deutschen im Singular und Plural gleich, der sichtbare
+			Text braucht deshalb keine Fallunterscheidung — der Accessible Name
+			schon, sonst liest der Screenreader „Zu den 1 fehlerhaften Feldern".
+		-->
+		{#if showStepAlert && stepErrorCount > 0}
+			<button
+				type="button"
+				onclick={jumpToFirstError}
+				class="btn btn-ghost btn-sm text-error gap-1 md:hidden"
+				aria-label={stepErrorCount === 1
+					? 'Zum fehlerhaften Feld springen'
+					: `Zu den ${stepErrorCount} fehlerhaften Feldern springen`}
+			>
+				<Icon icon="lucide:triangle-alert" width="16" class="shrink-0" aria-hidden="true" />
+				{stepErrorCount} Fehler
+			</button>
+		{/if}
 
 		<button
 			type="button"

@@ -59,27 +59,75 @@ test.describe('Feldmodus — ortsfeste Schritt-Navigation', () => {
 		expect(geometrie.zIndex).toBe('30'); // --layer-nav
 	});
 
-	/* Der Grund, warum `.form-step-nav` am Wrapper hängt und nicht am <nav>:
-	   ein Alert außerhalb des stickyen Elements scrollt weg, während der Balken
-	   stehen bleibt — die Begründung für ein nicht reagierendes „Weiter" wäre
-	   dann genau im falschen Moment aus dem Bild. */
-	test('Der Inline-Alert wandert mit dem Balken mit', async ({ page }) => {
+	/* Der Alert steht bewusst NICHT im stickyen Container.
+
+	   Erst dort hineingenommen (dann wandert er mit), dann wieder heraus: bei
+	   fünf gleichzeitig verletzten Regeln in Schritt 1 machte die <ul> den
+	   Balken 390px hoch — 46 % eines 844px-Bildschirms, dauerhaft. Was im
+	   Balken bleiben muss, ist die Zahl und ein Weg zurück zum Feld. */
+	test('Der volle Alert steht im Fluss, nicht im Balken', async ({ page }) => {
 		await gotoStep(page, 0);
 		await page.getByRole('button', { name: 'Nächster Schritt' }).click();
 
-		const alert = page.locator('.form-step-nav .alert[role="alert"]');
-		await expect(alert).toBeVisible();
+		const alert = page.locator('.alert[role="alert"]').filter({ hasText: /Fahrwasser|Position/i });
+		await expect(alert.first()).toBeVisible();
+		expect(
+			await page.locator('.form-step-nav .alert[role="alert"]').count(),
+			'Der Alert gehört nicht in den ortsfesten Balken'
+		).toBe(0);
+	});
 
-		// Mitten im Dokument stehen bleiben — der Alert muss im Bild bleiben
-		await page.evaluate(() => window.scrollTo(0, 300));
+	test('Der Balken zeigt die Fehlerzahl und springt zum ersten Feld', async ({ page }) => {
+		await gotoStep(page, 0);
+		await page.getByRole('button', { name: 'Nächster Schritt' }).click();
+
+		const sprung = page.locator('.form-step-nav').getByRole('button', { name: /fehlerhaften/i });
+		await expect(sprung).toBeVisible();
+		await expect(sprung).toContainText(/\d+ Fehler/);
+
+		await sprung.click();
+		/* scrollToFirstError bringt das erste Feld der fieldOrder ins Bild —
+		   geprüft wird die Wirkung, nicht der Aufruf. */
 		await expect
 			.poll(() =>
-				alert.evaluate((el) => {
-					const r = el.getBoundingClientRect();
-					return r.top >= 0 && r.bottom <= window.innerHeight;
+				page.evaluate(() => {
+					const feld = document.querySelector('[data-field="waterway"], [data-testid="field-waterway"]');
+					if (!feld) return null;
+					const r = feld.getBoundingClientRect();
+					return r.top >= 0 && r.top <= window.innerHeight;
 				})
 			)
 			.toBe(true);
+	});
+
+	/* Der eigentliche Regressionsschutz für die Höhe: Der Balken darf auch im
+	   schlimmsten Fehlerfall nicht wieder zum halben Bildschirm werden. */
+	test('Der Balken bleibt auch bei fünf Fehlern kompakt', async ({ page }) => {
+		await page.addInitScript(() => {
+			sessionStorage.setItem('sichtungen_current_step', '0');
+			sessionStorage.setItem(
+				'sichtungen_form_data',
+				JSON.stringify({
+					hasPosition: true,
+					latitude: 10,
+					longitude: 0,
+					waterway: 'x'.repeat(300),
+					sightingDate: '2099-01-01',
+					sightingTime: ''
+				})
+			);
+		});
+		await page.goto('/');
+		await page.waitForLoadState('networkidle');
+		await page.getByRole('button', { name: 'Nächster Schritt' }).click();
+		await expect(
+			page.locator('.form-step-nav').getByRole('button', { name: /fehlerhaften/i })
+		).toBeVisible();
+
+		const hoehe = await page
+			.locator('.form-step-nav')
+			.evaluate((el) => el.getBoundingClientRect().height);
+		expect(hoehe, 'Der Balken frisst wieder den halben Bildschirm').toBeLessThanOrEqual(130);
 	});
 
 	test('Am Dokumentende verdeckt der Balken keinen Inhalt', async ({ page }) => {
@@ -101,8 +149,8 @@ test.describe('Feldmodus — ortsfeste Schritt-Navigation', () => {
 		const padding = await page.evaluate(
 			() => getComputedStyle(document.documentElement).scrollPaddingBottom
 		);
-		// 8.5rem = 136px, mindestens die gemessene Balkenhöhe von 132px
-		expect(parseFloat(padding)).toBeGreaterThanOrEqual(132);
+		// 7.5rem = 120px — die gemessene Balkenhöhe im Normalfall
+		expect(parseFloat(padding)).toBeGreaterThanOrEqual(120);
 	});
 });
 
