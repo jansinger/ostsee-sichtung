@@ -6,6 +6,7 @@ import type { SichtungenMap } from './optimizedMapController';
 
 export interface TimeSliderManager {
 	initialize(mapInstance: SichtungenMap): void;
+	reset(daysInYear: number): void;
 }
 
 export class MapTimeSliderManager implements TimeSliderManager {
@@ -27,9 +28,10 @@ export class MapTimeSliderManager implements TimeSliderManager {
 			const startValue = parseInt(startSlider.value, 10);
 			const endValue = parseInt(endSlider.value, 10);
 
-			// Stelle sicher, dass Start nicht größer als End ist
-			if (startValue >= endValue) {
-				startSlider.value = (endValue - 1).toString();
+			// Klemmen statt Verschieben: Start darf gleich Ende sein (ein einzelner
+			// Tag als Zeitraum), aber nicht darüber hinaus.
+			if (startValue > endValue) {
+				startSlider.value = endValue.toString();
 			}
 
 			this.updateTimeFilter(startSlider, endSlider);
@@ -40,13 +42,37 @@ export class MapTimeSliderManager implements TimeSliderManager {
 			const startValue = parseInt(startSlider.value, 10);
 			const endValue = parseInt(endSlider.value, 10);
 
-			// Stelle sicher, dass End nicht kleiner als Start ist
-			if (endValue <= startValue) {
-				endSlider.value = (startValue + 1).toString();
+			// Klemmen statt Verschieben: Ende darf gleich Start sein.
+			if (endValue < startValue) {
+				endSlider.value = startValue.toString();
 			}
 
 			this.updateTimeFilter(startSlider, endSlider);
 		});
+	}
+
+	/**
+	 * Setzt beide Slider auf den vollen Jahresbereich zurück (0 bis
+	 * `daysInYear - 1`) und aktualisiert deren `max`-Attribut.
+	 *
+	 * QW4: Bei einem Jahreswechsel bleiben die Slider-Werte sonst auf der
+	 * zuvor gewählten Position (z. B. Juli) stehen, während der Controller den
+	 * Datenfilter bereits auf das volle neue Jahr zurücksetzt — sichtbarer
+	 * Widerspruch zwischen Slider-Stellung und tatsächlich gefilterten Daten.
+	 * Reine DOM-Aktualisierung; den Datenfilter selbst setzt `setYear()` im
+	 * Controller bereits korrekt auf das volle Jahr.
+	 */
+	reset(daysInYear: number): void {
+		const startSlider = document.getElementById('time-range-start') as HTMLInputElement | null;
+		const endSlider = document.getElementById('time-range-end') as HTMLInputElement | null;
+
+		if (!startSlider || !endSlider) return;
+
+		const maxValue = (daysInYear - 1).toString();
+		startSlider.max = maxValue;
+		endSlider.max = maxValue;
+		startSlider.value = '0';
+		endSlider.value = maxValue;
 	}
 
 	/**

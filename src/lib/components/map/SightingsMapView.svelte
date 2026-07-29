@@ -1,12 +1,18 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import { MapCountManager, type CountData } from '$lib/map/countManager';
+	import { getDaysInYear } from '$lib/map/dateUtils';
 	import type { MapTranslations } from '$lib/map/mapUtils';
 	import { SichtungenMap } from '$lib/map/optimizedMapController';
 	import { MapPanelManager } from '$lib/map/panelManager';
 	import { MapTimeSliderManager } from '$lib/map/timeSliderManager';
 	import { speciesLabels } from '$lib/report/formOptions/species';
-	import { getAvailableYears, getDefaultSightingYear } from '$lib/utils/date/defaultYear';
+	import {
+		getAvailableYears,
+		getDefaultSightingYear,
+		pickDefaultYear,
+		type YearWithCount
+	} from '$lib/utils/date/defaultYear';
 	import { setMapCountManager } from '$lib/map/mapContext';
 	import 'ol/ol.css';
 	import LoadingOverlay from './LoadingOverlay.svelte';
@@ -53,7 +59,9 @@
 	};
 
 	// Manager-Instanzen
-	let mapInstance: SichtungenMap | null = null;
+	// $state: Die Instanz entsteht erst nach dem async Jahres-Fetch — der
+	// Callback-Registrierungs-$effect unten muss auf die Zuweisung reagieren.
+	let mapInstance = $state<SichtungenMap | null>(null);
 	let panelManager: MapPanelManager | null = null;
 	let timeSliderManager: MapTimeSliderManager | null = null;
 
@@ -71,7 +79,28 @@
 
 	// Verfügbare Jahre für den Filter (10 Jahre zurück)
 	const years = getAvailableYears(10);
-	const defaultYear = getDefaultSightingYear();
+	// Bisheriges Fallback-Jahr, synchron verfügbar für den allerersten Render
+	// (bevor GET /api/map/sightings/years geladen ist). Als Konstante erfasst,
+	// damit die beiden $state-Deklarationen unten nicht voneinander abhängen.
+	const initialFallbackYear = getDefaultSightingYear();
+	// Default-Jahr: wird aktualisiert, sobald die verfügbaren Jahre geladen
+	// sind (QW2b). Bei fehlgeschlagenem Request bleibt der Fallback.
+	let defaultYear = $state(initialFallbackYear);
+	// Rohdaten der verfügbaren Jahre (Antwort von GET /api/map/sightings/years)
+	let availableYearsData = $state<YearWithCount[]>([]);
+	// Sichtungsanzahl je Jahr für die Jahres-Dropdown-Beschriftung ("2025 (817)")
+	let yearCounts = $derived(
+		Object.fromEntries(availableYearsData.map((entry) => [entry.year, entry.count]))
+	);
+	// Jüngstes Jahr mit tatsächlichen Daten (für den Empty-State-Button, QW2b)
+	let latestYearWithData = $derived(
+		availableYearsData
+			.filter((entry) => entry.count > 0)
+			.reduce<number | undefined>(
+				(latest, entry) => (latest === undefined || entry.year > latest ? entry.year : latest),
+				undefined
+			)
+	);
 
 	// UI-Zustände
 	let showKeyboardHelp = $state(false);
@@ -81,7 +110,7 @@
 	let errorMessage = $state<string | null>(null);
 
 	// Aktuell angezeigtes Jahr für den Titel
-	let currentDisplayedYear = $state(defaultYear);
+	let currentDisplayedYear = $state(initialFallbackYear);
 
 	// Feature-Anzahl direkt vom Map-Controller abfragen (robuster als counts-basiert)
 	let featureCount = $state(0);
@@ -109,17 +138,68 @@
 	// Event Handler für Cleanup
 	let keyboardHandler: ((event: KeyboardEvent) => void) | null = null;
 
+	/**
+	 * Lädt die verfügbaren Jahre (QW2a-Endpoint) und ermittelt daraus das
+	 * Default-Jahr (QW2b). Fehlerpfad: stiller Fallback auf das bisherige
+	 * Verhalten (getDefaultSightingYear()) — kein Fehler-Toast dafür, da es
+	 * sich um eine reine Komfort-Optimierung handelt.
+	 */
+	async function loadAvailableYears(): Promise<number> {
+		let fetchedYears: YearWithCount[] = [];
+		try {
+			const response = await fetch('/api/map/sightings/years');
+			if (response.ok) {
+				const data = await response.json();
+				if (Array.isArray(data?.years)) {
+					fetchedYears = data.years;
+				}
+			}
+		} catch (err) {
+			console.warn('Konnte verfügbare Jahre nicht laden, nutze Standard-Jahr:', err);
+		}
+
+		availableYearsData = fetchedYears;
+
+		return pickDefaultYear(fetchedYears, initialFallbackYear);
+	}
+
+	/**
+	 * Schaltet das angezeigte Jahr um — über denselben Pfad wie das
+	 * Jahres-Dropdown im Filter-Panel (DOM-Wert setzen + `change`-Event), damit
+	 * genau ein Code-Pfad für den Jahreswechsel existiert. Wird vom
+	 * Empty-State-Button (QW2b) verwendet.
+	 */
+	function switchToYear(year: number) {
+		const yearSelect = document.getElementById('year-select') as HTMLSelectElement | null;
+		if (!yearSelect) return;
+		yearSelect.value = year.toString();
+		yearSelect.dispatchEvent(new Event('change', { bubbles: true }));
+	}
+
 	// Modern $effect for map initialization and cleanup
 	$effect(() => {
 		// Check if we have the required DOM element
 		const mapElement = document.getElementById(mapContainerId);
-		if (mapElement) {
+		if (!mapElement) {
+			return;
+		}
+
+		let cancelled = false;
+		let firstLoadComplete = false;
+
+		void (async () => {
+			// QW2b: Verfügbare Jahre vor Karteninitialisierung laden, damit die
+			// Karte direkt mit einem Jahr startet, das tatsächlich Daten hat.
+			const initialYear = await loadAvailableYears();
+			if (cancelled) return;
+
+			defaultYear = initialYear;
+
 			// Initialisiere Manager
 			panelManager = new MapPanelManager();
 			timeSliderManager = new MapTimeSliderManager();
 
 			// Initialisiere Karte mit Loading-Callback (muss vor initialem setYear gesetzt sein)
-			let firstLoadComplete = false;
 			mapInstance = new SichtungenMap({
 				translations,
 				target: mapContainerId,
@@ -129,6 +209,7 @@
 				timeStartId: 'time-start',
 				timeEndId: 'time-end',
 				enableLocationControl: false,
+				initialYear,
 				onLoading: (loading) => {
 					isLoadingData = loading;
 					if (loading) {
@@ -163,15 +244,14 @@
 
 			// Tastatur-Navigation Setup
 			setupKeyboardNavigation();
+		})();
 
-			// Cleanup function (replaces onDestroy)
-			return () => {
-				cleanup();
-			};
-		}
-
-		// Return undefined if mapElement is not available yet
-		return;
+		// Cleanup function (replaces onDestroy) — auch relevant, falls die
+		// Komponente zerstört wird, bevor der obige async Block fertig ist.
+		return () => {
+			cancelled = true;
+			cleanup();
+		};
 	});
 
 	// Effect zum Registrieren des Jahr-Änderungs-Callbacks
@@ -180,6 +260,9 @@
 			const instance = mapInstance;
 			instance.setYearChangeCallback((newYear: number) => {
 				currentDisplayedYear = newYear;
+				// QW4: Zeitslider auf den vollen neuen Jahresbereich zurücksetzen,
+				// sonst bleiben die Thumbs auf der zuvor gewählten Position stehen.
+				timeSliderManager?.reset(getDaysInYear(newYear));
 			});
 
 			return () => {
@@ -281,24 +364,30 @@
 					zoomButton?.click();
 					break;
 				}
-				case 'Escape':
+				case 'Escape': {
+					// QW3: Kaskade Popup → Hilfe-Modal → Filter-Panel → Legende.
+					// Jede Stufe schließt nur genau eine Ebene pro Tastendruck.
+					if (mapInstance?.closePopup()) {
+						break;
+					}
 					if (showKeyboardHelp) {
 						showKeyboardHelp = false;
-					} else {
-						// Schließe offene Panels in der Priorität: Filter → Legende
-						const filterPanel = document.querySelector('[aria-labelledby="filter-title"]');
-						const legendPanel = document.querySelector('[aria-labelledby="legend-title"]');
-						if (filterPanel?.getAttribute('aria-hidden') === 'false') {
-							filterPanel
-								.querySelector<HTMLButtonElement>('[aria-label="Filter schließen"]')
-								?.click();
-						} else if (legendPanel?.getAttribute('aria-hidden') === 'false') {
-							legendPanel
-								.querySelector<HTMLButtonElement>('[aria-label="Legende schließen"]')
-								?.click();
-						}
+						break;
+					}
+					// Schließe offene Panels in der Priorität: Filter → Legende
+					const filterPanel = document.querySelector('[aria-labelledby="filter-title"]');
+					const legendPanel = document.querySelector('[aria-labelledby="legend-title"]');
+					if (filterPanel?.getAttribute('aria-hidden') === 'false') {
+						filterPanel
+							.querySelector<HTMLButtonElement>('[aria-label="Filter schließen"]')
+							?.click();
+					} else if (legendPanel?.getAttribute('aria-hidden') === 'false') {
+						legendPanel
+							.querySelector<HTMLButtonElement>('[aria-label="Legende schließen"]')
+							?.click();
 					}
 					break;
+				}
 			}
 		};
 		document.addEventListener('keydown', keyboardHandler);
@@ -348,6 +437,15 @@
 				<p class="text-base-content text-sm font-medium">
 					Keine Sichtungen für {currentDisplayedYear} vorhanden.
 				</p>
+				{#if latestYearWithData !== undefined && latestYearWithData !== currentDisplayedYear}
+					<button
+						type="button"
+						class="btn btn-primary btn-sm mt-2"
+						onclick={() => switchToYear(latestYearWithData!)}
+					>
+						Sichtungen {latestYearWithData} anzeigen
+					</button>
+				{/if}
 			</div>
 		{/if}
 
@@ -398,7 +496,7 @@
 	</div>
 
 	<!-- Filter-Panel Komponente -->
-	<FilterPanel {years} {defaultYear} />
+	<FilterPanel {years} {defaultYear} {yearCounts} isLoading={isLoadingData} />
 
 	<!-- Legende-Panel Komponente -->
 	<LegendPanel {translations} {counts} />

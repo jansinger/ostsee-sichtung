@@ -15,7 +15,12 @@ vi.mock('$lib/server/db', () => ({
 }));
 
 vi.mock('$lib/server/db/schema', () => ({
-	sightings: { sightingDate: 'sightingDate', approvedAt: 'approvedAt' }
+	sightings: {
+		sightingDate: 'sightingDate',
+		approvedAt: 'approvedAt',
+		latitude: 'latitude',
+		longitude: 'longitude'
+	}
 }));
 
 // Drizzle wird durch Marker-Objekte ersetzt, damit die erzeugten Grenz-Instants
@@ -24,6 +29,7 @@ vi.mock('drizzle-orm', () => ({
 	and: vi.fn((...conditions) => conditions),
 	between: vi.fn((column, from, to) => ({ op: 'between', column, from, to })),
 	gte: vi.fn((column, value) => ({ op: 'gte', column, value })),
+	lte: vi.fn((column, value) => ({ op: 'lte', column, value })),
 	lt: vi.fn((column, value) => ({ op: 'lt', column, value })),
 	eq: vi.fn((column, value) => ({ op: 'eq', column, value })),
 	isNotNull: vi.fn((column) => ({ op: 'isNotNull', column })),
@@ -70,14 +76,16 @@ describe('GET /api/map/sightings — Jahresfilter meint Berliner Kalenderjahre',
 	});
 
 	it('nutzt kein BETWEEN, sondern das halboffene Intervall gte/lt', async () => {
-		const { between, gte, lt } = vi.mocked(await import('drizzle-orm'));
+		const { between, gte, lte, lt } = vi.mocked(await import('drizzle-orm'));
 
 		await GET({
 			url: new URL('http://localhost/api/map/sightings?year=2024')
 		} as Parameters<typeof GET>[0]);
 
 		expect(between).not.toHaveBeenCalled();
-		expect(gte).toHaveBeenCalledTimes(1);
+		// 1x sightingDate-Jahresgrenze + 2x Ostsee-Bounding-Box (Lat/Lon) — QW1
+		expect(gte).toHaveBeenCalledTimes(3);
+		expect(lte).toHaveBeenCalledTimes(2);
 		expect(lt).toHaveBeenCalledTimes(1);
 	});
 
