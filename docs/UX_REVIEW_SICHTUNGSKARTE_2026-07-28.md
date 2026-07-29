@@ -210,49 +210,49 @@ Zoom-Buttons tragen englische Titles/Labels („Zoom in", „Zoom out") in anson
 
 Bewertung: ✅ erfüllt · ⚠️ teilweise · ❌ nicht erfüllt
 
-| Kriterium                                           | Status                                                 | Verweis |
-| --------------------------------------------------- | ------------------------------------------------------ | ------- |
-| **Navigation/Controls**                             |                                                        |         |
-| Zoom-Buttons sichtbar, ≥44 px                       | ❌ 19×19 px                                            | H4      |
-| Kein Verdecken relevanter Daten durch UI            | ❌ Panels über Datenfläche                             | H6      |
-| Zustand teilbar (URL)                               | ❌                                                     | M4      |
-| Home-/Ausgangsansicht                               | ❌                                                     | M5      |
-| „Locate me"                                         | ❌ implementiert, deaktiviert                          | N2      |
-| Basemap lenkt nicht ab                              | ⚠️ OpenSeaMap dominiert ab Z12                         | M3      |
-| **Marker/Cluster**                                  |                                                        |         |
-| Clustering mit Zählern                              | ✅                                                     | —       |
-| Cluster-Klick zoomt / ortsgleiche auffächerbar      | ✅ Liste statt Spiderfy                                | —       |
-| Cluster überlappen nicht                            | ❌                                                     | M2      |
-| ≤6 colorblind-sichere Farben, Farbe + zweiter Kanal | ⚠️ Anzahl-Farben ok, Artcodierung faktisch wirkungslos | M1      |
-| Selected-State des Markers                          | ❌                                                     | M6      |
-| **Popups/Details**                                  |                                                        |         |
-| Nur Identifikations-Kern + Weg zu Details           | ⚠️ kein Detail-Link                                    | M6      |
-| Escape + X, Fokusrückgabe                           | ❌ Escape fehlt, kein Fokus-Mgmt                       | H1/H5   |
-| Nur ein Popup zugleich                              | ✅                                                     | —       |
-| Popup konsistent mit Filterzustand                  | ❌ Stale Popup                                         | H1      |
-| **Filter/Legende**                                  |                                                        |         |
-| Wirkung sofort sichtbar                             | ✅                                                     | —       |
-| Ergebnisanzahl sichtbar                             | ⚠️ nur in Legende (sichtbar/gesamt), nicht am Suchfeld | H3      |
-| Aktive Filter als Chips + Reset                     | ❌                                                     | M4      |
-| Slider mit numerischem Fallback                     | ❌                                                     | M10     |
-| Legende konsistent mit Kartendarstellung            | ❌                                                     | M1      |
-| Ladeindikator bei Filteranwendung                   | ⚠️ vorhanden, aber fake-getimt bzw. überblockierend    | H3/M7   |
-| **Mobile/Touch**                                    |                                                        |         |
-| Kein Layout-Bruch auf 375 px                        | ❌ Panel > Viewport                                    | H6      |
-| Details als Bottom Sheet                            | ❌ Desktop-Popup auch mobil                            | H6      |
-| Touch-Targets ≥44 px                                | ❌                                                     | H4      |
-| Pinch/Drag + Button-Alternativen                    | ✅                                                     | —       |
-| **Performance/Laden**                               |                                                        |         |
-| Clustering statt DOM-Marker                         | ✅ Canvas + Cluster                                    | —       |
-| Request-Abbruch bei schnellen Wechseln              | ✅ AbortController                                     | —       |
-| Kein Layout-Shift                                   | ✅                                                     | —       |
-| **Accessibility**                                   |                                                        |         |
-| Karte fokussierbar, Tastatur-Pan/Zoom               | ✅ behoben 2026-07-29 (`tabindex="0"` + Fokusring)     | K3      |
-| Marker per Tastatur/SR erreichbar                   | ✅ über Listenansicht (Umschalter „Karte / Liste")     | K3      |
-| Datenalternative (Tabelle/Liste)                    | ✅ behoben 2026-07-29 (`SightingsListView`)            | K3      |
-| Korrekte ARIA-Semantik                              | ✅ behoben 2026-07-29 (region + inert + Fokus-Mgmt)    | H5      |
-| Einzeltasten-Shortcuts abschaltbar                  | ✅ behoben 2026-07-29 (nur bei Fokus in der Karte)     | H7      |
-| Kontraste in Panels/Popups                          | ⚠️ Beluga-Badge, sonst ok                              | M1      |
+| Kriterium                                           | Status                                                                               | Verweis |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------ | ------- |
+| **Navigation/Controls**                             |                                                                                      |         |
+| Zoom-Buttons sichtbar, ≥44 px                       | ❌ 19×19 px                                                                          | H4      |
+| Kein Verdecken relevanter Daten durch UI            | ⚠️ Panels auf 320 px reduziert (2026-07-29), überlagern rechts weiterhin             | H6      |
+| Zustand teilbar (URL)                               | ❌                                                                                   | M4      |
+| Home-/Ausgangsansicht                               | ❌                                                                                   | M5      |
+| „Locate me"                                         | ❌ implementiert, deaktiviert                                                        | N2      |
+| Basemap lenkt nicht ab                              | ⚠️ OpenSeaMap dominiert ab Z12                                                       | M3      |
+| **Marker/Cluster**                                  |                                                                                      |         |
+| Clustering mit Zählern                              | ✅                                                                                   | —       |
+| Cluster-Klick zoomt / ortsgleiche auffächerbar      | ✅ Liste statt Spiderfy                                                              | —       |
+| Cluster überlappen nicht                            | ❌                                                                                   | M2      |
+| ≤6 colorblind-sichere Farben, Farbe + zweiter Kanal | ⚠️ Anzahl-Farben ok, Artcodierung faktisch wirkungslos                               | M1      |
+| Selected-State des Markers                          | ❌                                                                                   | M6      |
+| **Popups/Details**                                  |                                                                                      |         |
+| Nur Identifikations-Kern + Weg zu Details           | ⚠️ kein Detail-Link                                                                  | M6      |
+| Escape + X, Fokusrückgabe                           | ❌ Escape fehlt, kein Fokus-Mgmt                                                     | H1/H5   |
+| Nur ein Popup zugleich                              | ✅                                                                                   | —       |
+| Popup konsistent mit Filterzustand                  | ❌ Stale Popup                                                                       | H1      |
+| **Filter/Legende**                                  |                                                                                      |         |
+| Wirkung sofort sichtbar                             | ✅                                                                                   | —       |
+| Ergebnisanzahl sichtbar                             | ⚠️ nur in Legende (sichtbar/gesamt), nicht am Suchfeld                               | H3      |
+| Aktive Filter als Chips + Reset                     | ❌                                                                                   | M4      |
+| Slider mit numerischem Fallback                     | ❌                                                                                   | M10     |
+| Legende konsistent mit Kartendarstellung            | ❌                                                                                   | M1      |
+| Ladeindikator bei Filteranwendung                   | ⚠️ vorhanden, aber fake-getimt bzw. überblockierend                                  | H3/M7   |
+| **Mobile/Touch**                                    |                                                                                      |         |
+| Kein Layout-Bruch auf 375 px                        | ✅ behoben 2026-07-29 (Panels als Bottom-Sheet < md)                                 | H6      |
+| Details als Bottom Sheet                            | ⚠️ Filter/Legende als Bottom-Sheet (2026-07-29); Marker-Popup weiterhin Desktop-Stil | H6      |
+| Touch-Targets ≥44 px                                | ❌                                                                                   | H4      |
+| Pinch/Drag + Button-Alternativen                    | ✅                                                                                   | —       |
+| **Performance/Laden**                               |                                                                                      |         |
+| Clustering statt DOM-Marker                         | ✅ Canvas + Cluster                                                                  | —       |
+| Request-Abbruch bei schnellen Wechseln              | ✅ AbortController                                                                   | —       |
+| Kein Layout-Shift                                   | ✅                                                                                   | —       |
+| **Accessibility**                                   |                                                                                      |         |
+| Karte fokussierbar, Tastatur-Pan/Zoom               | ✅ behoben 2026-07-29 (`tabindex="0"` + Fokusring)                                   | K3      |
+| Marker per Tastatur/SR erreichbar                   | ✅ über Listenansicht (Umschalter „Karte / Liste")                                   | K3      |
+| Datenalternative (Tabelle/Liste)                    | ✅ behoben 2026-07-29 (`SightingsListView`)                                          | K3      |
+| Korrekte ARIA-Semantik                              | ✅ behoben 2026-07-29 (region + inert + Fokus-Mgmt)                                  | H5      |
+| Einzeltasten-Shortcuts abschaltbar                  | ✅ behoben 2026-07-29 (nur bei Fokus in der Karte)                                   | H7      |
+| Kontraste in Panels/Popups                          | ⚠️ Beluga-Badge, sonst ok                                                            | M1      |
 
 ---
 
@@ -276,7 +276,7 @@ Bewertung: ✅ erfüllt · ⚠️ teilweise · ❌ nicht erfüllt
 - M1: Einheitliches Marker-/Legenden-Codierungssystem (colorblind-safe, Legende aus gemeinsamen Konstanten).
 - M4: URL-State + Filter-Chips + Reset.
 - M7: Loading-Konzept (Vollbild nur initial).
-- H6: Mobile Bottom-Sheet für Filter/Legende.
+- H6: Mobile Bottom-Sheet für Filter/Legende. — **Umgesetzt 2026-07-29** (gemeinsame Wrapper-Komponente `MapPanel.svelte`: < md Bottom-Sheet mit Peek/Expanded-Zustand, Schließen per Button, ab md 320-px-Seitenpanel mit `h-[calc(100%-5rem)]`; Öffnen des einen Panels schließt das andere in `SightingsMapView.svelte`; solange ein Sheet offen ist, blendet Mobile die Toggle-Tabs aus, weil sie sonst den Sheet-Header verdecken).
 
 **Strategisch:**
 

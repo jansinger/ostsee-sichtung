@@ -1,7 +1,12 @@
 import { render } from 'vitest-browser-svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import FilterPanel from './FilterPanel.svelte';
+// H6: Das Browser-Test-Setup lädt src/app.css nicht — für die Layout-Assertions
+// (Bottom-Sheet-Geometrie, md:hidden, Touch-Targets) müssen die Tailwind-Styles
+// aber wirken. Der Import gilt dateiweit und ändert an den bestehenden
+// (rein DOM-/Fokus-basierten) Tests nichts.
+import '../../../../app.css';
 
 const YEARS = [2023, 2024, 2025];
 
@@ -151,5 +156,147 @@ describe('FilterPanel', () => {
 			expect(getSlider('time-range-start').getAttribute('max')).toBe('365');
 			expect(getSlider('time-range-end').getAttribute('max')).toBe('365');
 		});
+	});
+});
+
+// ─── Befund H6: Panels als Bottom-Sheet (Mobile) / 320-px-Panel (Desktop) ────
+
+/** Vergrößern-/Verkleinern-Button im Panel-Header (H6, nur Mobile sichtbar) */
+function getSheetToggleButton(): HTMLButtonElement {
+	const button = document.querySelector(
+		'#filter-panel [aria-label="Filter vergrößern"], #filter-panel [aria-label="Filter verkleinern"]'
+	);
+	if (!(button instanceof HTMLButtonElement)) {
+		throw new Error('Vergrößern-Button not found');
+	}
+	return button;
+}
+
+async function openPanel(): Promise<void> {
+	await page.getByRole('button', { name: /^Filter$/i }).click();
+}
+
+describe('FilterPanel als Bottom-Sheet (H6)', () => {
+	afterEach(async () => {
+		// Vitest-Default-Viewport wiederherstellen, damit Folge-Tests
+		// nicht auf einem mobilen Viewport laufen
+		await page.viewport(414, 896);
+	});
+
+	it('Panel trägt data-sheet-state="peek" initial, nach dem Öffnen und nach erneutem Öffnen', async () => {
+		await page.viewport(375, 667);
+		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+
+		const panel = getFilterPanel();
+		expect(panel.getAttribute('data-sheet-state')).toBe('peek');
+
+		await openPanel();
+		expect(panel.getAttribute('data-sheet-state')).toBe('peek');
+
+		// Vergrößern → expanded
+		getSheetToggleButton().click();
+		await vi.waitFor(() => {
+			expect(panel.getAttribute('data-sheet-state')).toBe('expanded');
+		});
+
+		// Schließen und erneut öffnen → wieder peek
+		getCloseButton().click();
+		await vi.waitFor(() => {
+			expect(panel.inert).toBe(true);
+		});
+		await openPanel();
+		await vi.waitFor(() => {
+			expect(panel.getAttribute('data-sheet-state')).toBe('peek');
+		});
+	});
+
+	it('Vergrößern-Button wechselt aria-label und aria-expanded mit dem Sheet-Zustand', async () => {
+		await page.viewport(375, 667);
+		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+
+		await openPanel();
+
+		const button = getSheetToggleButton();
+		expect(button.getAttribute('aria-label')).toBe('Filter vergrößern');
+		expect(button.getAttribute('aria-expanded')).toBe('false');
+
+		button.click();
+		await vi.waitFor(() => {
+			expect(getSheetToggleButton().getAttribute('aria-label')).toBe('Filter verkleinern');
+			expect(getSheetToggleButton().getAttribute('aria-expanded')).toBe('true');
+		});
+	});
+
+	it('Vergrößern-Button ist auf Desktop-Viewports per CSS versteckt (md:hidden)', async () => {
+		await page.viewport(1024, 768);
+		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+
+		await openPanel();
+
+		// Im DOM vorhanden, aber ≥768px nicht sichtbar
+		const button = getSheetToggleButton();
+		expect(getComputedStyle(button).display).toBe('none');
+		expect(button.offsetParent).toBeNull();
+	});
+
+	it('Mobile: offenes Panel liegt als Bottom-Sheet unten über die volle Breite (peek 30–60%)', async () => {
+		await page.viewport(375, 667);
+		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+
+		await openPanel();
+
+		// transition-transform (300ms) abwarten — Geometrie erst nach der Animation stabil
+		await vi.waitFor(
+			() => {
+				const rect = getFilterPanel().getBoundingClientRect();
+				expect(rect.left).toBe(0);
+				expect(rect.width).toBe(window.innerWidth);
+				expect(Math.abs(rect.bottom - window.innerHeight)).toBeLessThanOrEqual(2);
+				expect(rect.height).toBeGreaterThanOrEqual(window.innerHeight * 0.3);
+				expect(rect.height).toBeLessThanOrEqual(window.innerHeight * 0.6);
+			},
+			{ timeout: 2000 }
+		);
+	});
+
+	it('Mobile: expanded-Sheet nimmt mehr als 70% der Viewport-Höhe ein', async () => {
+		await page.viewport(375, 667);
+		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+
+		await openPanel();
+		getSheetToggleButton().click();
+
+		await vi.waitFor(
+			() => {
+				const rect = getFilterPanel().getBoundingClientRect();
+				expect(rect.height).toBeGreaterThan(window.innerHeight * 0.7);
+				expect(Math.abs(rect.bottom - window.innerHeight)).toBeLessThanOrEqual(2);
+			},
+			{ timeout: 2000 }
+		);
+	});
+
+	it('Desktop: offenes Panel ist 320px breit und ragt nicht unten aus dem Viewport', async () => {
+		await page.viewport(1024, 768);
+		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+
+		await openPanel();
+
+		await vi.waitFor(
+			() => {
+				const rect = getFilterPanel().getBoundingClientRect();
+				expect(rect.width).toBe(320);
+				expect(rect.bottom).toBeLessThanOrEqual(window.innerHeight);
+			},
+			{ timeout: 2000 }
+		);
+	});
+
+	it('Toggle-Button hält das 44px-Touch-Target auf Mobile (WCAG 2.5.5)', async () => {
+		await page.viewport(375, 667);
+		render(FilterPanel, { years: YEARS, defaultYear: 2025 });
+
+		const rect = getToggleButton().getBoundingClientRect();
+		expect(rect.width).toBeGreaterThanOrEqual(44);
 	});
 });

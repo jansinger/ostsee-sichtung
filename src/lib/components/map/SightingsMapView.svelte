@@ -114,6 +114,15 @@
 	// per querySelector zu klicken.
 	let filterOpen = $state(false);
 	let legendOpen = $state(false);
+
+	// H6: Es ist immer nur ein Panel offen — beide liegen an derselben Position
+	// (Desktop rechts, Mobile als Bottom-Sheet) und würden sich sonst überlagern.
+	$effect(() => {
+		if (filterOpen) legendOpen = false;
+	});
+	$effect(() => {
+		if (legendOpen) filterOpen = false;
+	});
 	let isLoadingData = $state(false);
 	let isInitialLoading = $state(true);
 	let loadingType = $state<'initial' | 'filter' | 'features'>('initial');
@@ -590,17 +599,24 @@
 		</div>
 	</div>
 
-	<!-- Filter-Panel Komponente -->
+	<!-- Filter-Panel Komponente — toggleHidden: solange ein Bottom-Sheet offen
+	     ist, verdecken die fixen Tabs auf Mobile sonst dessen Header (H6) -->
 	<FilterPanel
 		{years}
 		{defaultYear}
 		{yearCounts}
 		isLoading={isLoadingData}
+		toggleHidden={filterOpen || legendOpen}
 		bind:isOpen={filterOpen}
 	/>
 
 	<!-- Legende-Panel Komponente -->
-	<LegendPanel {translations} {counts} bind:isOpen={legendOpen} />
+	<LegendPanel
+		{translations}
+		{counts}
+		toggleHidden={filterOpen || legendOpen}
+		bind:isOpen={legendOpen}
+	/>
 
 	<!-- Tastatur-Hilfe Button -->
 	<button
@@ -676,19 +692,43 @@
 
 				<div class="text-base-content/60 mt-6 space-y-1 text-xs">
 					<p class="flex items-center gap-2">
-						<Icon icon="lucide:info" width="14" height="14" class="text-primary" aria-hidden="true" />
+						<Icon
+							icon="lucide:info"
+							width="14"
+							height="14"
+							class="text-primary"
+							aria-hidden="true"
+						/>
 						Die Buchstaben-Kürzel wirken, solange der Fokus auf der Karte liegt
 					</p>
 					<p class="flex items-center gap-2">
-						<Icon icon="lucide:navigation" width="14" height="14" class="text-primary" aria-hidden="true" />
+						<Icon
+							icon="lucide:navigation"
+							width="14"
+							height="14"
+							class="text-primary"
+							aria-hidden="true"
+						/>
 						Karte mit Tab fokussieren, dann mit den Pfeiltasten verschieben und mit + / − zoomen
 					</p>
 					<p class="flex items-center gap-2">
-						<Icon icon="lucide:list" width="14" height="14" class="text-primary" aria-hidden="true" />
+						<Icon
+							icon="lucide:list"
+							width="14"
+							height="14"
+							class="text-primary"
+							aria-hidden="true"
+						/>
 						Der Umschalter „Karte / Liste" zeigt alle Sichtungen als Tabelle
 					</p>
 					<p class="flex items-center gap-2">
-						<Icon icon="lucide:mouse-pointer" width="14" height="14" class="text-primary" aria-hidden="true" />
+						<Icon
+							icon="lucide:mouse-pointer"
+							width="14"
+							height="14"
+							class="text-primary"
+							aria-hidden="true"
+						/>
 						Klicken Sie auf Marker für Details
 					</p>
 				</div>
