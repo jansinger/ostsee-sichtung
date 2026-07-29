@@ -27,27 +27,34 @@ test.describe('Map Page', () => {
 
 	// Skip in CI: Route interception for lazy-loaded chunks doesn't work reliably
 	// in production builds where chunk names are hashed differently
-	(isCI ? test.skip : test)('shows loading state with accessible dialog', async ({ page }) => {
-		await page.route('**/SightingsMapView*.js', async (route) => {
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-			await route.continue();
-		});
+	(isCI ? test.skip : test)(
+		'shows loading state with accessible status message',
+		async ({ page }) => {
+			await page.route('**/SightingsMapView*.js', async (route) => {
+				await new Promise((resolve) => setTimeout(resolve, 1000));
+				await route.continue();
+			});
 
-		const mapPage = new MapPage(page);
-		await mapPage.goto();
+			const mapPage = new MapPage(page);
+			await mapPage.goto();
 
-		const loadingDialog = mapPage.getLoadingOverlay();
-		const isDialogVisible = await loadingDialog.isVisible().catch(() => false);
+			const loadingStatus = mapPage.getLoadingOverlay();
+			const isStatusVisible = await loadingStatus.isVisible().catch(() => false);
 
-		if (isDialogVisible) {
-			await expect(loadingDialog).toHaveAttribute('aria-modal', 'true');
-			await expect(loadingDialog).toHaveAttribute('aria-labelledby', 'loading-title');
-			await expect(page.locator('#loading-title')).toContainText(/wird/i);
-			await expect(loadingDialog).toBeHidden({ timeout: MAP_TEST_TIMEOUTS.overlayHide });
+			if (isStatusVisible) {
+				// H5: Ladezustand ist eine Statusmeldung in einer polite-Live-Region,
+				// kein Dialog
+				await expect(loadingStatus).toContainText(/wird/i);
+				const liveRegion = page.locator('[role="status"][aria-live="polite"]', {
+					has: loadingStatus
+				});
+				await expect(liveRegion).toHaveCount(1);
+				await expect(loadingStatus).toBeHidden({ timeout: MAP_TEST_TIMEOUTS.overlayHide });
+			}
+
+			await expect(page.locator('body')).toBeVisible();
 		}
-
-		await expect(page.locator('body')).toBeVisible();
-	});
+	);
 
 	// Skip in CI: Route interception for lazy-loaded chunks doesn't work reliably
 	// in production builds where chunk names are hashed differently

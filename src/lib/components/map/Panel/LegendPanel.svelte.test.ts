@@ -95,30 +95,48 @@ describe('LegendPanel', () => {
 		vi.clearAllMocks();
 	});
 
-	it('öffnet und schließt das Panel über die Buttons', async () => {
+	it('öffnet und schließt das Panel über die Buttons (inert im geschlossenen Zustand)', async () => {
 		render(LegendPanel, { translations, counts });
 
+		// H5: Geschlossenes Panel ist inert — kein Element im Tab-Zyklus
 		const panel = getLegendPanel();
-		expect(panel.getAttribute('aria-hidden')).toBe('true');
+		expect(panel.inert).toBe(true);
 
-		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+		await page.getByRole('button', { name: /^Legende$/i }).click();
 		await vi.waitFor(() => {
-			expect(panel.getAttribute('aria-hidden')).toBe('false');
+			expect(panel.inert).toBe(false);
 		});
 
 		getCloseButton().click();
 		await vi.waitFor(() => {
-			expect(panel.getAttribute('aria-hidden')).toBe('true');
+			expect(panel.inert).toBe(true);
+		});
+	});
+
+	it('Toggle-Button trägt aria-expanded und aria-controls (H5)', async () => {
+		render(LegendPanel, { translations, counts });
+
+		const toggle = document.querySelector('button[aria-controls="legend-panel"]');
+		if (!(toggle instanceof HTMLButtonElement)) {
+			throw new Error('Legend toggle button not found');
+		}
+		expect(toggle.getAttribute('aria-expanded')).toBe('false');
+
+		await page.getByRole('button', { name: /^Legende$/i }).click();
+		await vi.waitFor(() => {
+			expect(toggle.getAttribute('aria-expanded')).toBe('true');
 		});
 	});
 
 	it('rendert Arten-, Farbgruppen- und Zählerdaten', async () => {
 		render(LegendPanel, { translations, counts });
 
-		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+		await page.getByRole('button', { name: /^Legende$/i }).click();
 
+		// H5: Nicht-modales Seitenpanel — role="region", kein aria-modal
 		const panel = getLegendPanel();
-		expect(panel.getAttribute('aria-modal')).toBe('true');
+		expect(panel.getAttribute('role')).toBe('region');
+		expect(panel.hasAttribute('aria-modal')).toBe(false);
 		expect(panel.getAttribute('aria-labelledby')).toBe('legend-title');
 
 		expect(document.querySelectorAll('.species-checkbox')).toHaveLength(4);
@@ -131,7 +149,7 @@ describe('LegendPanel', () => {
 	it('zeigt Gruppen-Badges aus den styleUtils-Konstanten (Kegelrobbe → Robbe)', async () => {
 		render(LegendPanel, { translations, counts });
 
-		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+		await page.getByRole('button', { name: /^Legende$/i }).click();
 
 		const sealRow = document.querySelector('[data-species-row="1"]');
 		expect(sealRow?.textContent).toContain('Robbe');
@@ -140,7 +158,7 @@ describe('LegendPanel', () => {
 	it('weist Unbekannte Walart nicht als Großwal aus (M8)', async () => {
 		render(LegendPanel, { translations, counts });
 
-		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+		await page.getByRole('button', { name: /^Legende$/i }).click();
 
 		const unknownRow = document.querySelector('[data-species-row="8"]');
 		expect(unknownRow?.textContent).not.toContain('Großwal');
@@ -150,7 +168,7 @@ describe('LegendPanel', () => {
 	it('graut Arten ohne Sichtungen (0/0) aus, Checkbox bleibt bedienbar', async () => {
 		render(LegendPanel, { translations, counts });
 
-		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+		await page.getByRole('button', { name: /^Legende$/i }).click();
 
 		const unknownRow = document.querySelector('[data-species-row="8"]');
 		expect(unknownRow?.querySelector('.grayscale')).not.toBeNull();
@@ -170,7 +188,7 @@ describe('LegendPanel', () => {
 			counts
 		});
 
-		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+		await page.getByRole('button', { name: /^Legende$/i }).click();
 
 		const row = document.querySelector('[data-species-row="99"]');
 		const swatch = row?.querySelector('div[style*="border"]');
@@ -182,7 +200,7 @@ describe('LegendPanel', () => {
 	it('erklärt die Cluster-Farbskala', async () => {
 		render(LegendPanel, { translations, counts });
 
-		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+		await page.getByRole('button', { name: /^Legende$/i }).click();
 
 		expect(document.body.textContent).toContain('Cluster');
 		expect(document.body.textContent).toContain('je dunkler');
@@ -191,7 +209,7 @@ describe('LegendPanel', () => {
 	it('meldet Species- und Farb-Toggles an den CountManager', async () => {
 		render(LegendPanel, { translations, counts });
 
-		await page.getByRole('button', { name: /Legende öffnen/i }).click();
+		await page.getByRole('button', { name: /^Legende$/i }).click();
 
 		const speciesCheckbox = getSpeciesCheckbox('0');
 		speciesCheckbox.checked = false;

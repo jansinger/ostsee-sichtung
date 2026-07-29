@@ -10,10 +10,10 @@ test.describe('Map Legend Panel', () => {
 	});
 
 	test('Tastatur-Shortcut L öffnet Legende-Panel', async ({ page }) => {
-		// Focus the page body to ensure keyboard events are received
-		await page.locator('body').click();
+		// H7: Zeichen-Shortcuts wirken nur bei Fokus in der Karten-Region
+		await mapPage.getMapContainer().focus();
 		await page.keyboard.press('l');
-		await expect(mapPage.getLegendPanel()).toHaveAttribute('aria-hidden', 'false');
+		await expect(mapPage.getLegendPanel()).toHaveJSProperty('inert', false);
 		await expect(mapPage.getColorCheckboxes().first()).toBeVisible();
 	});
 });

@@ -26,54 +26,64 @@
 	const displayMessage = $derived(messageMap[loadingType]);
 </script>
 
-{#if isVisible}
-	<!-- Backdrop -->
-	<div
-		class="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-all duration-300"
-		style="animation: fadeIn 0.3s ease-out"
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="loading-title"
-	></div>
-
-	<!-- Loading Content -->
-	<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+<!-- H5: Der Ladezustand ist kein Dialog, sondern eine Statusmeldung. Die
+     Live-Region bleibt dauerhaft im DOM, damit Screenreader schon die erste
+     Statusänderung ansagen; der Inhalt wird nur bei Sichtbarkeit gerendert. -->
+<div role="status" aria-live="polite">
+	{#if isVisible}
+		<!-- Backdrop (rein visuell) -->
 		<div
-			class="bg-base-100 mx-auto w-full max-w-sm scale-100 transform rounded-2xl p-8 shadow-2xl transition-all duration-300"
-			style="animation: bounceIn 0.4s ease-out"
-		>
-			<!-- Header -->
-			<div class="mb-6 text-center">
-				<div
-					class="bg-primary/10 mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full"
-				>
-					<Icon icon={iconMap[loadingType]} class="text-primary h-8 w-8 animate-spin" />
-				</div>
-				<h3 id="loading-title" class="text-base-content text-lg font-semibold">
-					{displayMessage}
-				</h3>
-			</div>
+			class="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-all duration-300"
+			style="animation: fadeIn 0.3s ease-out"
+		></div>
 
-			<!-- Indeterminate Loading Dots -->
-			<div class="mb-2 flex items-center justify-center space-x-2">
-				<div class="bg-primary h-2 w-2 animate-bounce rounded-full"></div>
-				<div
-					class="bg-primary h-2 w-2 animate-bounce rounded-full"
-					style="animation-delay: 0.1s"
-				></div>
-				<div
-					class="bg-primary h-2 w-2 animate-bounce rounded-full"
-					style="animation-delay: 0.2s"
-				></div>
-			</div>
-
-			{#if type === 'initial'}
-				<div class="text-base-content/60 mt-4 text-center text-sm">
-					<p>Verwenden Sie <kbd class="kbd kbd-xs">H</kbd> für Tastaturkürzel</p>
+		<!-- Loading Content -->
+		<div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+			<div
+				data-testid="map-loading-content"
+				class="bg-base-100 mx-auto w-full max-w-sm scale-100 transform rounded-2xl p-8 shadow-2xl transition-all duration-300"
+				style="animation: bounceIn 0.4s ease-out"
+			>
+				<!-- Header -->
+				<div class="mb-6 text-center">
+					<div
+						class="bg-primary/10 mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full"
+					>
+						<Icon
+							icon={iconMap[loadingType]}
+							class="text-primary h-8 w-8 animate-spin"
+							aria-hidden="true"
+						/>
+					</div>
+					<h3 class="text-base-content text-lg font-semibold">
+						{displayMessage}
+					</h3>
 				</div>
-			{/if}
+
+				<!-- Indeterminate Loading Dots -->
+				<div class="mb-2 flex items-center justify-center space-x-2">
+					<div class="bg-primary h-2 w-2 animate-bounce rounded-full"></div>
+					<div
+						class="bg-primary h-2 w-2 animate-bounce rounded-full"
+						style="animation-delay: 0.1s"
+					></div>
+					<div
+						class="bg-primary h-2 w-2 animate-bounce rounded-full"
+						style="animation-delay: 0.2s"
+					></div>
+				</div>
+
+				{#if type === 'initial'}
+					<div class="text-base-content/60 mt-4 text-center text-sm">
+						<!-- H7: Kürzel wirken nur bei fokussierter Karte (WCAG 2.1.4) -->
+						<p>
+							Tastaturkürzel: Karte fokussieren, dann <kbd class="kbd kbd-xs">H</kbd> drücken
+						</p>
+					</div>
+				{/if}
+			</div>
 		</div>
-	</div>
-{/if}
+	{/if}
+</div>
 
 <!-- Animations sind jetzt global in app.css definiert -->

@@ -11,17 +11,41 @@
 		TOTFUND_RING_COLOR
 	} from '$lib/map/styleUtils';
 	import Icon from '$lib/components/Icon.svelte';
+	import { focusPanelHeading, returnFocusToToggle } from '$lib/map/panelFocus';
 
-	let { translations, counts } = $props<{
+	let {
+		translations,
+		counts,
+		// H5: bindable, damit Tastaturkürzel im Parent das Panel direkt über
+		// den State steuern können statt über DOM-Queries.
+		isOpen = $bindable(false)
+	} = $props<{
 		translations: MapTranslations;
 		counts: CountData;
+		isOpen?: boolean;
 	}>();
 
 	// CountManager via typisiertem Svelte Context (Symbol-Key, siehe mapContext.ts)
 	const countManager = getMapCountManager();
 
-	// Reactive state für Panel-Sichtbarkeit (Svelte 5 runes)
-	let isOpen = $state(false);
+	// Element-Referenzen für das Fokus-Management (H5)
+	let panelEl = $state<HTMLDivElement>();
+	let toggleEl = $state<HTMLButtonElement>();
+	let headingEl = $state<HTMLHeadingElement>();
+
+	// H5: Fokus folgt dem Panel-Zustand — beim Öffnen auf die Überschrift,
+	// beim Schließen zurück zum Toggle. Läuft auch, wenn der Zustand von
+	// außen (Tastaturkürzel im Parent) geändert wird.
+	let wasOpen = false;
+	$effect(() => {
+		if (isOpen === wasOpen) return;
+		wasOpen = isOpen;
+		if (isOpen) {
+			focusPanelHeading(headingEl);
+		} else {
+			returnFocusToToggle(panelEl, toggleEl);
+		}
+	});
 
 	// Zustand der Sichtbarkeitsfilter
 	let speciesVisibility = $state<Record<string, boolean>>({});
@@ -81,10 +105,13 @@
 
 <!-- Toggle Button (always visible) -->
 <button
+	bind:this={toggleEl}
 	onclick={togglePanel}
 	class="glass text-base-content hover:bg-base-200 border-secondary/20 fixed top-52 right-0 z-50 flex h-32 w-8 cursor-pointer flex-col items-center justify-center rounded-l-lg border-2 border-r-0 shadow-xl backdrop-blur-sm transition-all duration-300 sm:w-12 md:w-8"
 	style="transform: translateX({isOpen ? 'calc(-1 * min(400px, 100vw))' : '0px'});"
-	aria-label="Legende {isOpen ? 'schließen' : 'öffnen'}"
+	aria-label="Legende"
+	aria-expanded={isOpen}
+	aria-controls="legend-panel"
 >
 	<Icon icon="lucide:list" class="mb-1 h-4 w-4" />
 	<div
@@ -95,19 +122,25 @@
 	</div>
 </button>
 
-<!-- Panel Container -->
+<!-- Panel Container: nicht-modales Seitenpanel (H5) — role="region" statt
+     Fake-Dialog; inert nimmt das geschlossene (nur verschobene) Panel samt
+     seiner fokussierbaren Elemente aus Tab-Zyklus und Accessibility-Tree. -->
 <div
+	bind:this={panelEl}
+	id="legend-panel"
 	class="glass border-secondary/20 fixed top-20 right-0 z-40 h-full w-100 max-w-[100vw] overflow-hidden border-l-2 pr-8 shadow-2xl backdrop-blur-sm transition-transform duration-300 ease-in-out"
 	style="transform: translateX({isOpen ? '0px' : '100%'});"
-	role="dialog"
-	aria-modal="true"
+	role="region"
 	aria-labelledby="legend-title"
-	aria-hidden={!isOpen}
+	inert={!isOpen}
 >
 	<div class="scroll-styled h-full overflow-y-auto">
 		<div class="p-6">
 			<div class="mb-4 flex items-center justify-between">
-				<h2 id="legend-title" class="text-xl font-bold">Legende</h2>
+				<!-- tabindex="-1": Fokusziel beim Öffnen des Panels (H5) -->
+				<h2 id="legend-title" tabindex="-1" bind:this={headingEl} class="text-xl font-bold">
+					Legende
+				</h2>
 				<button
 					onclick={closePanel}
 					class="btn btn-ghost btn-sm hover:bg-base-200"

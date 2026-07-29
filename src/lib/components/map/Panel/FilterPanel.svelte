@@ -1,21 +1,42 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import { getDaysInYear } from '$lib/map/dateUtils';
+	import { focusPanelHeading, returnFocusToToggle } from '$lib/map/panelFocus';
 
 	let {
 		years = [],
 		defaultYear,
 		yearCounts = {},
-		isLoading = false
+		isLoading = false,
+		// H5: bindable, damit Tastaturkürzel im Parent das Panel direkt über
+		// den State steuern können statt über DOM-Queries.
+		isOpen = $bindable(false)
 	} = $props<{
 		years?: number[];
 		defaultYear?: number;
 		yearCounts?: Record<number, number>;
 		isLoading?: boolean;
+		isOpen?: boolean;
 	}>();
 
-	// Reactive state für Panel-Sichtbarkeit (Svelte 5 runes)
-	let isOpen = $state(false);
+	// Element-Referenzen für das Fokus-Management (H5)
+	let panelEl = $state<HTMLDivElement>();
+	let toggleEl = $state<HTMLButtonElement>();
+	let headingEl = $state<HTMLHeadingElement>();
+
+	// H5: Fokus folgt dem Panel-Zustand — beim Öffnen auf die Überschrift,
+	// beim Schließen zurück zum Toggle. Läuft auch, wenn der Zustand von
+	// außen (Tastaturkürzel im Parent) geändert wird.
+	let wasOpen = false;
+	$effect(() => {
+		if (isOpen === wasOpen) return;
+		wasOpen = isOpen;
+		if (isOpen) {
+			focusPanelHeading(headingEl);
+		} else {
+			returnFocusToToggle(panelEl, toggleEl);
+		}
+	});
 	// Explizite User-Auswahl (undefined = noch keine manuelle Wahl getroffen)
 	let userSelectedYear: number | undefined = $state(undefined);
 	// Effektiv gewähltes Jahr: User-Auswahl hat Vorrang, sonst Prop-Default
@@ -44,10 +65,13 @@
 
 <!-- Toggle Button (always visible) -->
 <button
+	bind:this={toggleEl}
 	onclick={togglePanel}
 	class="glass text-base-content hover:bg-base-200 border-primary/20 fixed top-20 right-0 z-50 flex h-32 w-8 cursor-pointer flex-col items-center justify-center rounded-l-lg border-2 border-r-0 shadow-xl backdrop-blur-sm transition-all duration-300 sm:w-12 md:w-8"
 	style="transform: translateX({isOpen ? 'calc(-1 * min(400px, 100vw))' : '0px'});"
-	aria-label="Filter {isOpen ? 'schließen' : 'öffnen'}"
+	aria-label="Filter"
+	aria-expanded={isOpen}
+	aria-controls="filter-panel"
 >
 	<Icon
 		icon={isLoading ? 'lucide:loader-2' : 'lucide:filter'}
@@ -61,19 +85,25 @@
 	</div>
 </button>
 
-<!-- Panel Container -->
+<!-- Panel Container: nicht-modales Seitenpanel (H5) — role="region" statt
+     Fake-Dialog; inert nimmt das geschlossene (nur verschobene) Panel samt
+     seiner 18 fokussierbaren Elemente aus Tab-Zyklus und Accessibility-Tree. -->
 <div
+	bind:this={panelEl}
+	id="filter-panel"
 	class="glass border-primary/20 fixed top-20 right-0 z-40 h-full w-100 max-w-[100vw] overflow-hidden border-l-2 pr-8 shadow-2xl backdrop-blur-sm transition-transform duration-300 ease-in-out"
 	style="transform: translateX({isOpen ? '0px' : '100%'});"
-	role="dialog"
-	aria-modal="true"
+	role="region"
 	aria-labelledby="filter-title"
-	aria-hidden={!isOpen}
+	inert={!isOpen}
 >
 	<div class="scroll-styled h-full overflow-y-auto">
 		<div class="p-4">
 			<div class="mb-3 flex items-center justify-between">
-				<h2 id="filter-title" class="text-lg font-bold">Filter</h2>
+				<!-- tabindex="-1": Fokusziel beim Öffnen des Panels (H5) -->
+				<h2 id="filter-title" tabindex="-1" bind:this={headingEl} class="text-lg font-bold">
+					Filter
+				</h2>
 				<button
 					onclick={closePanel}
 					class="btn btn-ghost btn-xs hover:bg-base-200"

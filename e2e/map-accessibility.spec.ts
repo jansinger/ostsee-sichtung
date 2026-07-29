@@ -25,8 +25,9 @@ test.describe.serial('Map Accessibility', () => {
 		expect(label).toMatch(/Sichtungskarte/i);
 	});
 
-	test('Tastatur-Shortcut H öffnet Hilfe-Modal', async () => {
-		await sharedPage.locator('body').click();
+	test('Tastatur-Shortcut H öffnet Hilfe-Modal (bei fokussierter Karte)', async () => {
+		// H7: Zeichen-Shortcuts wirken nur bei Fokus in der Karten-Region
+		await mapPage.getMapContainer().focus();
 		await sharedPage.keyboard.press('h');
 
 		const dialog = sharedPage.getByRole('dialog', { name: /tastaturkürzel/i });
@@ -36,7 +37,7 @@ test.describe.serial('Map Accessibility', () => {
 	});
 
 	test('Tastatur-Shortcut ? öffnet Hilfe-Modal', async () => {
-		await sharedPage.locator('body').click();
+		await mapPage.getMapContainer().focus();
 		await sharedPage.keyboard.press('?');
 
 		const dialog = sharedPage.getByRole('dialog', { name: /tastaturkürzel/i });
@@ -46,7 +47,7 @@ test.describe.serial('Map Accessibility', () => {
 	});
 
 	test('Escape schließt Hilfe-Modal', async () => {
-		await sharedPage.locator('body').click();
+		await mapPage.getMapContainer().focus();
 		await sharedPage.keyboard.press('h');
 		const dialog = sharedPage.getByRole('dialog', { name: /tastaturkürzel/i });
 		await expect(dialog).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.keyboardModal });
@@ -57,20 +58,91 @@ test.describe.serial('Map Accessibility', () => {
 
 	test('ESC schließt offenes Filter-Panel', async () => {
 		await mapPage.openFilter();
-		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'false');
+		await expect(mapPage.getFilterPanel()).toHaveJSProperty('inert', false);
 
-		await sharedPage.locator('body').click();
 		await sharedPage.keyboard.press('Escape');
-		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'true');
+		await expect(mapPage.getFilterPanel()).toHaveJSProperty('inert', true);
+	});
+
+	test('ESC schließt das Filter-Panel auch bei Fokus im Suchfeld', async () => {
+		// Escape wirkt global — der Input-Guard des Keyboard-Handlers darf
+		// Escape nicht verschlucken (Copilot-Review PR #601)
+		await mapPage.openFilter();
+		await expect(mapPage.getFilterPanel()).toHaveJSProperty('inert', false);
+		await mapPage.getFilterInput().focus();
+
+		await sharedPage.keyboard.press('Escape');
+		await expect(mapPage.getFilterPanel()).toHaveJSProperty('inert', true);
 	});
 
 	test('ESC schließt offene Legende', async () => {
 		await mapPage.openLegend();
-		await expect(mapPage.getLegendPanel()).toHaveAttribute('aria-hidden', 'false');
+		await expect(mapPage.getLegendPanel()).toHaveJSProperty('inert', false);
 
-		await sharedPage.locator('body').click();
 		await sharedPage.keyboard.press('Escape');
-		await expect(mapPage.getLegendPanel()).toHaveAttribute('aria-hidden', 'true');
+		await expect(mapPage.getLegendPanel()).toHaveJSProperty('inert', true);
+	});
+
+	// ─── Befund H5: ARIA-Semantik der Seitenpanels ─────────────────────────────
+
+	test('Panels sind nicht-modale Regionen, Toggles tragen aria-expanded/aria-controls', async () => {
+		// Nicht-modales Seitenpanel: role="region" statt Fake-Dialog
+		await expect(mapPage.getFilterPanel()).toHaveAttribute('role', 'region');
+		await expect(mapPage.getFilterPanel()).not.toHaveAttribute('aria-modal', 'true');
+		await expect(mapPage.getLegendPanel()).toHaveAttribute('role', 'region');
+		await expect(mapPage.getLegendPanel()).not.toHaveAttribute('aria-modal', 'true');
+
+		// Zustand hängt am Toggle-Button, nicht an aria-hidden am Panel
+		await expect(mapPage.getFilterToggle()).toHaveAttribute('aria-expanded', 'false');
+		await expect(mapPage.getFilterToggle()).toHaveAttribute('aria-controls', 'filter-panel');
+		await mapPage.openFilter();
+		await expect(mapPage.getFilterToggle()).toHaveAttribute('aria-expanded', 'true');
+		await sharedPage.keyboard.press('Escape');
+		await expect(mapPage.getFilterToggle()).toHaveAttribute('aria-expanded', 'false');
+	});
+
+	test('Geschlossene Panels sind inert — kein Element im Tab-Zyklus (WCAG 4.1.2)', async () => {
+		await expect(mapPage.getFilterPanel()).toHaveJSProperty('inert', true);
+
+		// Fokusversuch auf ein Element im geschlossenen Panel darf nicht greifen
+		const focusable = await mapPage.getYearSelect().evaluate((el) => {
+			(el as HTMLSelectElement).focus();
+			return document.activeElement === el;
+		});
+		expect(focusable).toBe(false);
+	});
+
+	test('Fokus wandert beim Öffnen ins Panel und beim Schließen zurück zum Toggle', async () => {
+		await mapPage.openFilter();
+		await expect
+			.poll(async () => sharedPage.evaluate(() => document.activeElement?.id))
+			.toBe('filter-title');
+
+		await mapPage.closeFilter();
+		const toggleFocused = await mapPage
+			.getFilterToggle()
+			.evaluate((el) => document.activeElement === el);
+		expect(toggleFocused).toBe(true);
+	});
+
+	// ─── Befund H7: Einzeltasten-Shortcuts nur bei Fokus in der Karte ──────────
+
+	test('F-Shortcut wirkt nicht, wenn der Fokus außerhalb der Karte liegt (WCAG 2.1.4)', async () => {
+		// Fokus auf ein Element außerhalb der Karten-Region legen
+		await sharedPage.getByRole('button', { name: /Tastatur-Hilfe anzeigen/i }).focus();
+		await sharedPage.keyboard.press('f');
+
+		// Panel bleibt zu — der Shortcut darf hier nicht feuern
+		await expect(mapPage.getFilterToggle()).toHaveAttribute('aria-expanded', 'false');
+	});
+
+	test('F-Shortcut öffnet das Filter-Panel bei fokussierter Karte', async () => {
+		await mapPage.getMapContainer().focus();
+		await sharedPage.keyboard.press('f');
+
+		await expect(mapPage.getFilterToggle()).toHaveAttribute('aria-expanded', 'true');
+		await sharedPage.keyboard.press('Escape');
+		await expect(mapPage.getFilterToggle()).toHaveAttribute('aria-expanded', 'false');
 	});
 
 	// ─── Befund K3: Barrierefreie Sichtungskarte ───────────────────────────────

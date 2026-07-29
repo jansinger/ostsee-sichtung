@@ -16,10 +16,10 @@ test.describe.serial('Map Filter Panel', () => {
 	});
 
 	test('Tastatur-Shortcut F öffnet Filter-Panel', async () => {
-		// Focus the page body to ensure keyboard events are received
-		await sharedPage.locator('body').click();
+		// H7: Zeichen-Shortcuts wirken nur bei Fokus in der Karten-Region
+		await mapPage.getMapContainer().focus();
 		await sharedPage.keyboard.press('f');
-		await expect(mapPage.getFilterPanel()).toHaveAttribute('aria-hidden', 'false');
+		await expect(mapPage.getFilterPanel()).toHaveJSProperty('inert', false);
 		await mapPage.closeFilter();
 	});
 
