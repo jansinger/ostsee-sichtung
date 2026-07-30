@@ -109,6 +109,48 @@ describe('NOTIFICATION_EMAIL_DEFAULT_TEMPLATE — Ostsee-Status', () => {
 	});
 
 	/**
+	 * Foto-Ankündigung (neu gebauter iOS-Client `OstSeeTiere/8`, Stand
+	 * 2026-07-30): Der Client setzt `aufnahmeHochladen`, kann aber kein Foto
+	 * hochladen — es kommt separat per E-Mail nach. Ohne einen Hinweis in
+	 * dieser Mail lässt sich eine später eintreffende Foto-Mail keiner
+	 * Sichtung zuordnen.
+	 */
+	describe('Foto-Ankündigung', () => {
+		function renderWithMediaUpload(mediaUpload: boolean) {
+			return render({
+				referenceId: 'REF-77',
+				adminUrl: 'https://example.com/admin/1',
+				currentDate: '30.07.2026',
+				currentTime: '12:00',
+				spamCheck: { score: 0, isHighRisk: false, indicators: [] },
+				sighting: {
+					species: 'Schweinswal',
+					sightingDate: '30.07.2026',
+					coordinatesFormatted: null,
+					mediaUpload,
+					balticSea: balticSeaEmailContext({})
+				},
+				...emailColorContext()
+			});
+		}
+
+		it('weist beim Empfänger auf das nachfolgende Foto hin und nennt die Referenz-ID', () => {
+			const html = renderWithMediaUpload(true);
+
+			expect(html).toContain('Foto angekündigt');
+			// Referenz-ID steht bereits im Kopfbereich — hier zählt, dass sie
+			// auch innerhalb des Hinweises zum Zuordnen genannt wird.
+			expect(html.match(/REF-77/g)?.length).toBeGreaterThan(1);
+		});
+
+		it('lässt den Hinweis weg, wenn kein Foto angekündigt wurde', () => {
+			const html = renderWithMediaUpload(false);
+
+			expect(html).not.toContain('Foto angekündigt');
+		});
+	});
+
+	/**
 	 * Ein `<!-- … -->` mit `{{#if …}}` darin wird von Handlebars **ausgewertet**,
 	 * nicht zitiert — genau daran ist diese Vorlage beim Umbau einmal
 	 * unbalanciert geworden (Parse-Fehler erst zur Laufzeit). Erklärende Notizen
@@ -143,7 +185,7 @@ describe('Fingerabdruck des ausgelieferten Stands', () => {
 			.update(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE, 'utf8')
 			.digest('hex');
 
-		expect(hash).toBe('7f55d293b7799debff9908e074e8e22c2b87323c98bf7b76cc7ba86186e95a8e');
+		expect(hash).toBe('2444299392fe83096f5a2ebbcd4806c20f4fc1866dd0d13c105066ccfc0dd7f0');
 	});
 
 	it('führt den aktuellen Stand nicht als früheren Stand', () => {

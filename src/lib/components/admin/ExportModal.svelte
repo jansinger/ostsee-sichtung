@@ -5,6 +5,7 @@
 	import type { FrontendSighting } from '$lib/types';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
 	import { formatWallClockDateTime } from '$lib/utils/format/formatWallClockDateTime';
+	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('ExportModal');
@@ -89,6 +90,8 @@
 			filterDisplays.push('Nur mit Aufnahmen');
 		} else if (currentFilters.mediaUpload === '0') {
 			filterDisplays.push('Nur ohne Aufnahmen');
+		} else if (currentFilters.mediaUpload === MEDIA_UPLOAD_ANNOUNCED_MISSING) {
+			filterDisplays.push('Nur angekündigt, Foto fehlt noch');
 		}
 
 		return filterDisplays.length > 0 ? filterDisplays : ['Keine Filter aktiv'];

@@ -2,6 +2,7 @@ import { isValidDateParam } from '../../../admin/dateParam';
 import { eq, gte, lt } from 'drizzle-orm';
 import { berlinDayRangeUtc } from '$lib/server/datetime/berlinDayRange';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
+import { mediaUploadCondition } from '$lib/server/db/mediaUploadFilter';
 
 export function xmlEscape(str: string | null | undefined): string {
 	if (!str) return '';
@@ -68,10 +69,11 @@ export function buildExportConditions(params: ExportFilterParams) {
 			conditions.push(eq(sightingsTable.entryChannel, channelId));
 		}
 	}
-	if (mediaUpload === '1') {
-		conditions.push(eq(sightingsTable.mediaUpload, 1));
-	} else if (mediaUpload === '0') {
-		conditions.push(eq(sightingsTable.mediaUpload, 0));
+	// Inkl. „angekündigt, aber keine Datei angehängt" (announced_missing),
+	// siehe mediaUploadFilter.ts — dieselbe Bedingung wie in der Admin-Liste.
+	const mediaCondition = mediaUploadCondition(mediaUpload);
+	if (mediaCondition) {
+		conditions.push(mediaCondition);
 	}
 
 	return conditions;

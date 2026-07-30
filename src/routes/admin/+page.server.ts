@@ -1,6 +1,10 @@
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { berlinCalendarDate } from '$lib/server/db/sqlTimeZone';
+import {
+	MEDIA_UPLOAD_ANNOUNCED_MISSING,
+	mediaUploadCondition
+} from '$lib/server/db/mediaUploadFilter';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
@@ -53,11 +57,11 @@ export const load: PageServerLoad = async ({ url }) => {
 		}
 	}
 
-	// Aufnahme-Filter (Media Upload)
-	if (mediaUpload === '1') {
-		conditions.push(eq(sightings.mediaUpload, 1));
-	} else if (mediaUpload === '0') {
-		conditions.push(eq(sightings.mediaUpload, 0));
+	// Aufnahme-Filter (Media Upload) — inkl. „angekündigt, aber keine Datei
+	// angehängt" (announced_missing), siehe mediaUploadFilter.ts.
+	const mediaCondition = mediaUploadCondition(mediaUpload);
+	if (mediaCondition) {
+		conditions.push(mediaCondition);
 	}
 
 	// Kombinierte WHERE-Bedingung erstellen
@@ -100,10 +104,23 @@ export const load: PageServerLoad = async ({ url }) => {
 	// WHERE-Klausel zur Count-Abfrage hinzufügen
 	const countQuery = whereCondition ? countBaseQuery.where(whereCondition) : countBaseQuery;
 
-	// Abfragen ausführen
-	const data = await paginatedQuery;
-	const countResult = await countQuery;
+	// Arbeitslisten-Zähler „Foto angekündigt, fehlt noch" — unabhängig vom
+	// aktiven Filter, damit er als Hinweis im Dashboard-Kopf sichtbar ist, auch
+	// wenn gerade eine andere Ansicht gefiltert ist.
+	const pendingPhotoQuery = db
+		.select({ count: sql<number>`count(*)` })
+		.from(sightings)
+		.where(mediaUploadCondition(MEDIA_UPLOAD_ANNOUNCED_MISSING));
+
+	// Abfragen ausführen — voneinander unabhängig, deshalb parallel statt
+	// sequenziell (drei Round-Trips gleichzeitig statt hintereinander).
+	const [data, countResult, pendingPhotoResult] = await Promise.all([
+		paginatedQuery,
+		countQuery,
+		pendingPhotoQuery
+	]);
 	const count = countResult[0]?.count || 0;
+	const pendingPhotoAnnouncements = pendingPhotoResult[0]?.count || 0;
 
 	return {
 		sightings: data,
@@ -113,6 +130,7 @@ export const load: PageServerLoad = async ({ url }) => {
 			totalPages: Math.ceil(count / perPage),
 			total: count,
 			maxPerPage: paginationConfig.maxSightingsPerPage
-		}
+		},
+		pendingPhotoAnnouncements
 	};
 };

@@ -25,6 +25,11 @@
 		getBalticSeaStatus,
 		type BalticSeaStatus
 	} from '$lib/utils/geo/balticSeaStatus';
+	import {
+		isPhotoAnnouncementPending,
+		PHOTO_ANNOUNCEMENT_LABEL,
+		PHOTO_ANNOUNCEMENT_TITLE
+	} from '$lib/utils/media/photoAnnouncement';
 	import Icon from '$lib/components/Icon.svelte';
 	import { untrack } from 'svelte';
 
@@ -104,6 +109,46 @@
 		const { label: value, badgeClass, title } = BALTIC_SEA_STATUS_PRESENTATION[status];
 
 		return { label, value, badgeClass, title };
+	}
+
+	/**
+	 * Rendert die „Upload"-Zeile der Legacy-Medien-Karte.
+	 *
+	 * Diese Karte wird nur gezeigt, wenn keine Datei angehängt ist (siehe die
+	 * `{#if currentSighting.uploadedFiles?.length}`-Weiche im Markup) — „keine
+	 * Datei" ist an dieser Stelle also bereits sichergestellt. Ist zusätzlich
+	 * `mediaUpload` gesetzt, kommt das Foto laut App per E-Mail nach
+	 * (`$lib/utils/media/photoAnnouncement.ts`); die reine Ja/Nein-Anzeige wäre
+	 * hier nicht von einem defekten Datensatz zu unterscheiden.
+	 *
+	 * Zeigt wie zuvor gar keine Zeile, wenn `mediaUpload` keinen Wert trägt
+	 * (`hasValue`) — dieselbe Bedingung, die vorher direkt an `BooleanDataRow`
+	 * übergeben wurde.
+	 * @returns Ein DataRowType Objekt oder undefined, wenn kein Wert vorliegt
+	 */
+	function MediaUploadRow(): DataRowType | undefined {
+		if (!hasValue(currentSighting.mediaUpload)) return undefined;
+
+		// Zählt die tatsächlich geladenen Dateien, statt sich allein auf die
+		// Template-Weiche zu verlassen — bleibt so auch dann richtig, wenn diese
+		// Funktion einmal außerhalb des aktuellen Kontexts wiederverwendet wird.
+		const attachedFileCount = currentSighting.uploadedFiles?.length ?? 0;
+
+		if (isPhotoAnnouncementPending(currentSighting.mediaUpload, attachedFileCount)) {
+			return {
+				label: 'Upload',
+				value: PHOTO_ANNOUNCEMENT_LABEL,
+				badgeClass: 'badge-info',
+				title: PHOTO_ANNOUNCEMENT_TITLE
+			};
+		}
+
+		return {
+			label: 'Upload',
+			value: '',
+			isBoolean: true,
+			booleanValue: Boolean(currentSighting.mediaUpload)
+		};
 	}
 
 	/**
@@ -320,7 +365,7 @@
 	const mediaRows = $derived(
 		[
 			DataRow('Aufnahme', currentSighting.mediaFile, hasValue(currentSighting.mediaFile)),
-			BooleanDataRow('Upload', currentSighting.mediaUpload, hasValue(currentSighting.mediaUpload)),
+			MediaUploadRow(),
 			// Ohne diese Einwilligung dürfen die Aufnahmen ausschließlich zur
 			// Prüfung der Meldung angesehen werden — nicht veröffentlicht.
 			BooleanDataRow(
