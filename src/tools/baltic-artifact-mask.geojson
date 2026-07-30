@@ -1,0 +1,81 @@
+{
+	"type": "FeatureCollection",
+	"features": [
+		{
+			"type": "Feature",
+			"properties": {
+				"name": "Ladogasee und Onegasee",
+				"grund": "Die IHO-Flaeche Gulf of Finland (mrgid 2407) reicht bis 37,47 E und schliesst beide Binnenseen ein. Die Newa-Bucht endet bei 30,35 E und bleibt westlich der Maske."
+			},
+			"geometry": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[30.4, 59.5],
+						[38.0, 59.5],
+						[38.0, 63.5],
+						[30.4, 63.5],
+						[30.4, 59.5]
+					]
+				]
+			}
+		},
+		{
+			"type": "Feature",
+			"properties": {
+				"name": "Torne- und Kalix-Flusslaeufe",
+				"grund": "Die IHO-Flaeche Gulf of Bothnia (mrgid 2402) folgt den Fluessen bis 67,08 N. Das offene Meer endet bei Tornio auf rund 65,85 N."
+			},
+			"geometry": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[16.0, 65.95],
+						[27.0, 65.95],
+						[27.0, 67.5],
+						[16.0, 67.5],
+						[16.0, 65.95]
+					]
+				]
+			}
+		},
+		{
+			"type": "Feature",
+			"properties": {
+				"name": "Weichsel binnenlands",
+				"grund": "Die IHO-Flaeche Baltic Sea (mrgid 2401) folgt der Weichsel bis Wloclawek auf 52,65 N, rund 200 km landeinwaerts."
+			},
+			"geometry": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[17.5, 52.5],
+						[20.0, 52.5],
+						[20.0, 53.55],
+						[17.5, 53.55],
+						[17.5, 52.5]
+					]
+				]
+			}
+		},
+		{
+			"type": "Feature",
+			"properties": {
+				"name": "Limfjord",
+				"grund": "Die IHO-Flaeche Kattegat (mrgid 2374) reicht mit fuenf Stuetzpunkten bis 9,366 E in den Limfjord. Der Limfjord ist zugleich die einzige durchverbundene Nordsee-Ostsee-Passage und muss deshalb auch den 20-km-Puffer blockieren."
+			},
+			"geometry": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[8.0, 56.7],
+						[9.45, 56.7],
+						[9.45, 57.35],
+						[8.0, 57.35],
+						[8.0, 56.7]
+					]
+				]
+			}
+		}
+	]
+}
