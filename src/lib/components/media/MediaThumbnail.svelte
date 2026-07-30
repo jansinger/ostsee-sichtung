@@ -61,11 +61,15 @@
 					}
 				}}
 			/>
-			<!-- Hover Overlay -->
+			<!-- Hover Overlay. bg-scrim/<n> statt bg-black/<n>: der Wert steht seit
+			     dem 2026-07-30 als --scrim-surface in tokens.css. Ein Schleier ist
+			     keine Fläche des Themes, sondern eine Abdunklung des Fotos darunter —
+			     die Begründung, warum das Token neutrales Schwarz ist und nicht
+			     bg-neutral, steht dort. -->
 			<div
-				class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+				class="bg-scrim/60 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
 			>
-				<Icon icon="lucide:eye" width="24" class="text-white" />
+				<Icon icon="lucide:eye" width="24" class="text-on-scrim" />
 			</div>
 
 			<!-- GPS Badge für Bilder -->
@@ -99,15 +103,17 @@
 			<!-- Play Icon Overlay -->
 			<div class="absolute inset-0 flex items-center justify-center">
 				<div
-					class="rounded-full bg-black/60 p-3 transition-all group-hover:scale-110 group-hover:bg-black/80"
+					class="bg-scrim/60 group-hover:bg-scrim/80 rounded-full p-3 transition-all group-hover:scale-110"
 				>
-					<Icon icon="lucide:play" width="24" class="text-white" />
+					<Icon icon="lucide:play" width="24" class="text-on-scrim" />
 				</div>
 			</div>
 
-			<!-- Hover Overlay -->
+			<!-- Hover Overlay. Trägt nichts, was gelesen werden muss — /20 ist hier
+			     eine reine Andeutung über dem Videobild und bleibt deshalb, anders als
+			     im Zweig darunter, unverändert. -->
 			<div
-				class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100"
+				class="bg-scrim/20 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
 			></div>
 		</div>
 	{:else}
@@ -122,11 +128,16 @@
 				</p>
 			</div>
 
-			<!-- Hover Overlay -->
+			<!-- Hover Overlay. Der einzige der drei Zweige, der NICHT über fremdem
+			     Bildinhalt liegt: darunter steht bg-base-200 (#d1d8df), eine bekannte
+			     Theme-Fläche. Der vorherige Schleier auf /20 ergab dort für das Icon
+			     gerechnete 2,27:1 und verfehlte WCAG 1.4.11 (3:1) — anders als bei
+			     Foto und Video war das kein „hängt vom Inhalt ab", sondern ein fester,
+			     zu niedriger Wert. Mit /60 sind es 7,34:1. -->
 			<div
-				class="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100"
+				class="bg-scrim/60 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
 			>
-				<Icon icon="lucide:download" width="20" class="text-white" />
+				<Icon icon="lucide:download" width="20" class="text-on-scrim" />
 			</div>
 		</div>
 	{/if}

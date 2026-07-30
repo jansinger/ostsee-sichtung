@@ -903,8 +903,13 @@
 	<!-- Logo (unten rechts) - optional -->
 	{#if showLogo}
 		<div class="group absolute right-1 bottom-6 z-30">
+			<!-- Helle Platte, weil /dmm-logo.png durchgängig dunkel auf transparent
+			     zeichnet (nachgemessen: 14.097 deckende Pixel, alle unter L 128) und
+			     über dunklen Kacheln sonst verschwindet. Das ist ein Flächenbedarf,
+			     kein Schleier — base-100 ist die helle Fläche des Themes; das /95
+			     bleibt, damit die Karte durchschimmert. -->
 			<div
-				class="border-primary/10 rounded-xl border bg-white/95 p-1 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+				class="border-primary/10 bg-base-100/95 rounded-xl border p-1 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:shadow-2xl"
 			>
 				<div class="flex flex-col items-center">
 					<img
@@ -921,7 +926,9 @@
 
 	<!-- Tastatur-Hilfe Modal -->
 	{#if showKeyboardHelp}
-		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+		<!-- Schleier über der Karte, kein Theme-Ton: bg-scrim/<n>
+		     (--scrim-surface in tokens.css). -->
+		<div class="bg-scrim/50 fixed inset-0 z-50 flex items-center justify-center">
 			<div
 				role="dialog"
 				aria-modal="true"

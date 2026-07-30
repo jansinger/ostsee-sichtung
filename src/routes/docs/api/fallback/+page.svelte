@@ -208,15 +208,15 @@
 				Sie können die OpenAPI-Spezifikation in diesen Tools verwenden:
 			</p>
 			<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-				<div class="rounded border bg-white p-4">
+				<div class="bg-base-100 rounded border p-4">
 					<h3 class="mb-2 font-medium">Postman</h3>
 					<p class="text-base-content/70 text-xs">Importieren Sie die YAML-Datei für API-Tests</p>
 				</div>
-				<div class="rounded border bg-white p-4">
+				<div class="bg-base-100 rounded border p-4">
 					<h3 class="mb-2 font-medium">Insomnia</h3>
 					<p class="text-base-content/70 text-xs">Laden Sie die Spezifikation für REST-Tests</p>
 				</div>
-				<div class="rounded border bg-white p-4">
+				<div class="bg-base-100 rounded border p-4">
 					<h3 class="mb-2 font-medium">Swagger Editor</h3>
 					<p class="text-base-content/70 text-xs">Online-Editor für OpenAPI-Specs</p>
 				</div>

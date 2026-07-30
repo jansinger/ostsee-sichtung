@@ -59,7 +59,9 @@
 			<button class="btn btn-error" onclick={confirm}>Löschen</button>
 		</div>
 	</div>
-	<form method="dialog" class="modal-backdrop bg-black/50">
+	<!-- Schleier über der Seite dahinter, kein Theme-Ton: bg-scrim/<n>
+	     (--scrim-surface in tokens.css). -->
+	<form method="dialog" class="modal-backdrop bg-scrim/50">
 		<button aria-label="Dialog schließen" onclick={cancel}>
 			<span class="sr-only">Dialog schließen</span>
 		</button>

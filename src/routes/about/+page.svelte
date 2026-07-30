@@ -138,7 +138,9 @@
 					>
 						<Icon icon="lucide:map" width="48" class="text-secondary-strong" />
 					</div>
-					<h3 class="card-title text-secondary-strong mb-4 justify-center text-xl">Interaktive Karte</h3>
+					<h3 class="card-title text-secondary-strong mb-4 justify-center text-xl">
+						Interaktive Karte
+					</h3>
 					<p class="text-base-content/80 text-base leading-relaxed">
 						Visualisieren Sie <strong>alle Sichtungen</strong> auf einer detaillierten Karte der
 						Ostsee und entdecken Sie <em>Muster und Hotspots</em>.
@@ -220,7 +222,7 @@
 						<Icon icon="lucide:shield-check" width="30" class="text-success-strong" />
 						<h3 class="card-title">Datenschutz</h3>
 					</div>
-					<p class="mb-4 text-sm text-base-content/80">
+					<p class="text-base-content/80 mb-4 text-sm">
 						Ihre Daten sind bei uns sicher. Wir verarbeiten alle personenbezogenen Daten gemäß der
 						EU-Datenschutz-Grundverordnung (DSGVO) und dem Bundesdatenschutzgesetz (BDSG).
 					</p>
@@ -262,7 +264,7 @@
 						<Icon icon="lucide:lock" width="30" class="text-info-strong" />
 						<h3 class="card-title">Technische Sicherheit</h3>
 					</div>
-					<p class="mb-4 text-sm text-base-content/80">
+					<p class="text-base-content/80 mb-4 text-sm">
 						Wir nutzen modernste Sicherheitstechnologien, um Ihre Daten und unsere Plattform zu
 						schützen.
 					</p>
@@ -284,11 +286,15 @@
 							<span>Gehostete Infrastruktur in Deutschland/EU</span>
 						</li>
 					</ul>
-					<div class="border-info/10 mt-4 rounded-lg border bg-black p-3">
+					<!-- Dunkle Fläche ist hier keine Laune: /auth0.svg zeichnet in #FFFEFA auf
+					     transparent und wäre auf base-100 unsichtbar. Der Bedarf ist damit
+					     „dunkle Vollton-Fläche" — und dafür gibt es ein Token. bg-neutral
+					     (#3a4048) trägt sein neutral-content mit 10,5:1. -->
+					<div class="border-info/10 bg-neutral mt-4 rounded-lg border p-3">
 						<a href="https://auth0.com" target="_blank" rel="noopener noreferrer"
 							><img src="/auth0.svg" alt="Auth0 Logo" class=" mx-auto mb-4" /></a
 						>
-						<p class="text-xs text-white">
+						<p class="text-neutral-content text-xs">
 							Gesichert durch <a
 								href="https://auth0.com"
 								target="_blank"
@@ -310,7 +316,7 @@
 				<Icon icon="lucide:file-text" width="24" class="text-success-strong" />
 				<div class="flex-1">
 					<h4 class="mb-2 font-semibold">DSGVO-Konformität</h4>
-					<p class="mb-3 text-sm text-base-content/80">
+					<p class="text-base-content/80 mb-3 text-sm">
 						Als öffentliche Einrichtung nehmen wir den Datenschutz besonders ernst. Unsere Plattform
 						erfüllt alle Anforderungen der europäischen Datenschutz-Grundverordnung:
 					</p>
@@ -339,7 +345,7 @@
 		<!-- Contact for Data Protection -->
 		<div class="bg-base-200 mt-8 rounded-lg p-6 text-center">
 			<h4 class="mb-3 font-semibold">Fragen zum Datenschutz?</h4>
-			<p class="mb-4 text-sm text-base-content/80">
+			<p class="text-base-content/80 mb-4 text-sm">
 				Bei Fragen zum Datenschutz oder zur Verarbeitung Ihrer Daten können Sie sich jederzeit an
 				uns wenden:
 			</p>
@@ -370,26 +376,26 @@
 			</h2>
 			<div class="badge badge-neutral badge-lg font-mono">Version {data.version}</div>
 		</div>
-		<p class="mx-auto mb-8 max-w-3xl text-center text-base-content/80">
+		<p class="text-base-content/80 mx-auto mb-8 max-w-3xl text-center">
 			Unsere Plattform nutzt moderne Web-Technologien für eine optimale Benutzererfahrung und
 			zuverlässige Datenverarbeitung.
 		</p>
 		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 			<div class="text-center">
 				<div class="badge badge-primary badge-lg">SvelteKit</div>
-				<p class="mt-2 text-xs text-base-content/70">Modern Web Framework</p>
+				<p class="text-base-content/70 mt-2 text-xs">Modern Web Framework</p>
 			</div>
 			<div class="text-center">
 				<div class="badge badge-secondary badge-lg">PostGIS</div>
-				<p class="mt-2 text-xs text-base-content/70">Geografische Datenbank</p>
+				<p class="text-base-content/70 mt-2 text-xs">Geografische Datenbank</p>
 			</div>
 			<div class="text-center">
 				<div class="badge badge-accent badge-lg">OpenAPI</div>
-				<p class="mt-2 text-xs text-base-content/70">Standardisierte API</p>
+				<p class="text-base-content/70 mt-2 text-xs">Standardisierte API</p>
 			</div>
 			<div class="text-center">
 				<div class="badge badge-info badge-lg">OpenLayers</div>
-				<p class="mt-2 text-xs text-base-content/70">Interaktive Karten</p>
+				<p class="text-base-content/70 mt-2 text-xs">Interaktive Karten</p>
 			</div>
 		</div>
 	</div>
@@ -409,16 +415,16 @@
 						<Icon icon="lucide:file-text" width="32" height="32" class="text-primary" />
 						<h3 class="card-title">Projekt-Lizenz</h3>
 					</div>
-					<p class="mb-4 text-sm text-base-content/80">
+					<p class="text-base-content/80 mb-4 text-sm">
 						Die Ostsee-Tiere Plattform ist Open Source Software und steht unter der MIT-Lizenz. Dies
 						bedeutet, dass der Quellcode frei verfügbar ist und für eigene Projekte genutzt werden
 						kann.
 					</p>
-					<div class="rounded-lg bg-base-200 p-4">
+					<div class="bg-base-200 rounded-lg p-4">
 						<div class="mb-2 font-mono text-xs font-semibold">MIT License</div>
-						<div class="max-h-48 overflow-y-auto rounded border border-base-300 bg-white p-3">
+						<div class="border-base-300 bg-base-100 max-h-48 overflow-y-auto rounded border p-3">
 							<pre
-								class="font-mono text-xs whitespace-pre-wrap text-base-content/70">Copyright (c) 2025-2026 Ostsee-Tiere WebApp Contributors
+								class="text-base-content/70 font-mono text-xs whitespace-pre-wrap">Copyright (c) 2025-2026 Ostsee-Tiere WebApp Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -464,36 +470,36 @@ SOFTWARE.</pre>
 						<Icon icon="lucide:archive" width="32" height="32" class="text-primary" />
 						<h3 class="card-title">Verwendete Technologien</h3>
 					</div>
-					<p class="mb-4 text-sm text-base-content/80">
+					<p class="text-base-content/80 mb-4 text-sm">
 						Diese Plattform baut auf bewährten Open Source Technologien auf:
 					</p>
 					<div class="space-y-2 text-xs">
-						<div class="flex items-center justify-between rounded bg-base-200 p-2">
+						<div class="bg-base-200 flex items-center justify-between rounded p-2">
 							<span class="font-medium">SvelteKit</span>
 							<span class="badge badge-sm">MIT</span>
 						</div>
-						<div class="flex items-center justify-between rounded bg-base-200 p-2">
+						<div class="bg-base-200 flex items-center justify-between rounded p-2">
 							<span class="font-medium">TailwindCSS</span>
 							<span class="badge badge-sm">MIT</span>
 						</div>
-						<div class="flex items-center justify-between rounded bg-base-200 p-2">
+						<div class="bg-base-200 flex items-center justify-between rounded p-2">
 							<span class="font-medium">DaisyUI</span>
 							<span class="badge badge-sm">MIT</span>
 						</div>
-						<div class="flex items-center justify-between rounded bg-base-200 p-2">
+						<div class="bg-base-200 flex items-center justify-between rounded p-2">
 							<span class="font-medium">OpenLayers</span>
 							<span class="badge badge-sm">BSD-2</span>
 						</div>
-						<div class="flex items-center justify-between rounded bg-base-200 p-2">
+						<div class="bg-base-200 flex items-center justify-between rounded p-2">
 							<span class="font-medium">PostgreSQL</span>
 							<span class="badge badge-sm">PostgreSQL</span>
 						</div>
-						<div class="flex items-center justify-between rounded bg-base-200 p-2">
+						<div class="bg-base-200 flex items-center justify-between rounded p-2">
 							<span class="font-medium">Drizzle ORM</span>
 							<span class="badge badge-sm">Apache-2.0</span>
 						</div>
 					</div>
-					<p class="mt-3 text-xs text-base-content/60">
+					<p class="text-base-content/60 mt-3 text-xs">
 						Alle verwendeten Bibliotheken sind sorgfältig ausgewählt und lizenzkonform eingesetzt.
 					</p>
 				</div>
@@ -508,7 +514,7 @@ SOFTWARE.</pre>
 				<Icon icon="lucide:circle-alert" width="32" height="32" class="text-warning-strong mt-1" />
 				<div class="flex-1">
 					<h4 class="mb-2 font-semibold">Fehler gefunden oder Verbesserungsvorschlag?</h4>
-					<p class="mb-3 text-sm text-base-content/80">
+					<p class="text-base-content/80 mb-3 text-sm">
 						Wir freuen uns über Ihr Feedback! Die Ostsee-Tiere Plattform wird kontinuierlich
 						weiterentwickelt. Ihre Hinweise helfen uns dabei, die Plattform zu verbessern.
 					</p>
@@ -548,7 +554,7 @@ SOFTWARE.</pre>
 				<Icon icon="lucide:heart" width="20" height="20" class="text-primary" />
 				Danksagung
 			</h4>
-			<p class="mb-4 text-sm text-base-content/80">
+			<p class="text-base-content/80 mb-4 text-sm">
 				Wir danken allen Entwicklern und Organisationen, die durch ihre Open Source Projekte diese
 				Plattform ermöglichen. Besonderer Dank gilt:
 			</p>

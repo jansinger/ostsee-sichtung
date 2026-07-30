@@ -108,6 +108,74 @@ describe('TAILWIND_PALETTE', () => {
 		expect(TAILWIND_PALETTE.offends('text-gray-700')).toBe(true);
 	});
 
+	/* Die zweite strukturelle Lücke derselben Regel, gefunden beim Schließen der
+	   Deckkraft-Lücke: `white` und `black` tragen keine Farbstufe, das `-\d{2,3}`
+	   im Muster konnte sie deshalb nie treffen. Sie umgehen das Theme aber
+	   genauso vollständig wie `bg-gray-100` — im Bestand standen 27 solche
+	   Fundstellen, darunter ein `bg-black/20` über `bg-base-200`, auf dem ein
+	   weißes Icon 2,27:1 erreichte.
+
+	   Deckkraft gehört ausdrücklich dazu: Ein Schleier ist der häufigste Fall,
+	   und genau er hat die Lücke jahrelang plausibel aussehen lassen. Die
+	   Antwort darauf ist `bg-scrim/<n>` (--scrim-surface in tokens.css), nicht
+	   eine Ausnahme in dieser Regel. */
+	it.each(['bg-white', 'text-white', 'bg-black', 'text-black', 'border-white'])(
+		'meldet %s',
+		(className) => {
+			expect(TAILWIND_PALETTE.offends(className)).toBe(true);
+		}
+	);
+
+	it.each(['bg-black/50', 'bg-white/95', 'text-white/70', 'bg-black/5'])(
+		'meldet %s mit Deckkraft-Suffix',
+		(className) => {
+			expect(TAILWIND_PALETTE.offends(className)).toBe(true);
+		}
+	);
+
+	/* Der Ersatz muss durchkommen, sonst ist die Regel unerfüllbar. */
+	it.each(['bg-scrim', 'bg-scrim/40', 'text-on-scrim', 'bg-neutral', 'text-neutral-content'])(
+		'lässt %s durch',
+		(className) => {
+			expect(TAILWIND_PALETTE.offends(className)).toBe(false);
+		}
+	);
+
+	/* Die Aufzählung war auf die Töne beschränkt, die im Bestand vorkamen — zwölf
+	   von 22. Ein `bg-teal-500` wäre also durchgerutscht, ohne dass an der Regel
+	   etwas „kaputt" gewesen wäre. */
+	it.each([
+		'bg-stone-100',
+		'text-lime-600',
+		'bg-teal-500/40',
+		'text-cyan-700',
+		'bg-violet-400',
+		'text-purple-900',
+		'bg-fuchsia-300',
+		'text-pink-500',
+		'bg-rose-600',
+		'bg-neutral-500'
+	])('meldet %s', (className) => {
+		expect(TAILWIND_PALETTE.offends(className)).toBe(true);
+	});
+
+	/* `neutral` steht als Paletten-Ton in der Liste UND ist ein Theme-Token. Die
+	   Farbstufe im Muster trennt beide — sonst hätte das Schließen der einen
+	   Lücke die Ersatz-Klasse aus dem Auth0-Panel verboten. */
+	it.each(['bg-neutral', 'text-neutral-content', 'bg-neutral/50'])(
+		'lässt das Theme-Token %s durch',
+		(className) => {
+			expect(TAILWIND_PALETTE.offends(className)).toBe(false);
+		}
+	);
+
+	/* Verankerung: `white`/`black` dürfen nicht als Teilwort anschlagen —
+	   `bg-whitesmoke` gibt es in Tailwind nicht, aber eine eigene Utility mit
+	   dem Präfix wäre kein Verstoß. */
+	it.each(['bg-whitesmoke', 'text-blackboard'])('lässt %s durch', (className) => {
+		expect(TAILWIND_PALETTE.offends(className)).toBe(false);
+	});
+
 	/* base-200 ist ein Theme-Token und darf nicht an der Ziffernregel hängen
 	   bleiben; base-content/40 gehört der Regel oben. */
 	it.each(['bg-base-200', 'text-base-content/40', 'bg-primary', 'border-base-300'])(
