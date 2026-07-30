@@ -351,11 +351,19 @@ Geometrie und müssen mitgezogen werden.
 
 **Neu**
 
-- `src/tools/baltic-artifact-mask.geojson` — die vier Ausschlüsse
-- `src/tools/build-baltic-geometry.ts` — Pipeline (Abschnitt 3.1)
-- `src/tools/render-baltic-review.ts` — Kartenprüfung (Abschnitt 3.3)
-- `src/tools/recalc-baltic-flags.ts` — Report und Migration (Abschnitt 3.5)
-- Metadaten-Datei mit ungerundetem Extent (Abschnitt 3.4)
+- `src/tools/baltic-artifact-mask.geojson` — die fünf Ausschlüsse (Ladogasee und
+  Onegasee, Torne-/Kalix-Flussläufe, Weichsel, westlicher Limfjord, Oder)
+- `src/tools/baltic-inclusion-mask.geojson` — Korridore für Schlei, Trave, Warnow
+- `src/tools/build-baltic-geometry.sql` — die Pipeline-Schritte (Abschnitt 3.1)
+- `src/tools/build-baltic-geometry.sh` — Orchestrierung: Daten laden, SQL, Export
+- `src/tools/render-baltic-review.ts` — Prüfkarte (Abschnitt 3.3)
+- `src/tools/recalc-baltic-flags.sql` — Konsistenzprüfung und Änderungs-View, lesend
+- `src/tools/recalc-baltic-flags-write.sql` — der einzige schreibende Teil
+- `src/tools/recalc-baltic-flags.sh` — Wrapper für Report und Migration (Abschnitt 3.5)
+- `src/lib/server/geo/baltic-extent.json` — Extent, gerundete Box, Stellhebel und
+  Datenstand der Quellen (Abschnitt 3.4)
+- `src/lib/server/geo/balticGeometry.test.ts` — fachliche Referenzpunkte
+- `src/lib/utils/geo/checkBalticSea.test.ts` — Box-Ableitung und Invariante
 
 **Geändert**
 

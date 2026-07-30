@@ -10,8 +10,10 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 OUT="$HERE/out"
 LAND_SHP="${BALTIC_LAND_SHP:-$HOME/geodata/land-polygons-complete-4326/land_polygons.shp}"
 
+[[ -f "$ROOT/.env" ]] || { echo "Es fehlt $ROOT/.env — ohne DATABASE_POSTGRES_URL geht nichts." >&2; exit 1; }
 set -a; . "$ROOT/.env"; set +a
-DB="$DATABASE_POSTGRES_URL"
+DB="${DATABASE_POSTGRES_URL:-}"
+[[ -n "$DB" ]] || { echo "DATABASE_POSTGRES_URL ist in $ROOT/.env nicht gesetzt." >&2; exit 1; }
 
 if [[ ! -f "$LAND_SHP" ]]; then
   cat >&2 <<MSG
@@ -28,6 +30,13 @@ Entpacken und den Pfad ueber BALTIC_LAND_SHP setzen.
 MSG
   exit 1
 fi
+
+# Datenstand der OSM-Kuestenlinie fuer die Metadaten (Reproduzierbarkeit).
+# Der Wert wird beim Extent-Export nach baltic-extent.json geschrieben; ohne
+# Zuweisung bricht das Skript dort wegen `set -u` ab — nach einer Stunde Rechenzeit.
+LAND_DATE="$(grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' "$(dirname "$LAND_SHP")/README.txt" 2>/dev/null | head -1 || true)"
+LAND_DATE="${LAND_DATE:-unbekannt}"
+echo "OSM-Kuestenlinie: $LAND_SHP (Datenstand $LAND_DATE)"
 
 mkdir -p "$OUT"
 psql "$DB" -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS geo_build;"

@@ -19,7 +19,8 @@
  * baltic-water.geojson getestet (Bounding-Box-Vorfilter je Teilflaeche vor
  * `booleanPointInPolygon`, da die Datei rund 1.567 Teilflaechen hat) und in
  * zwei Gruppen eingefaerbt: violett = jetzt innerhalb ("durch die
- * Bereinigung gewonnen"), orange = weiterhin ausserhalb.
+ * Orange markiert sind die im Kartenbereich gemeldeten Positionen, die
+ * ausserhalb der Wasserflaeche liegen — die Luecken zur Beurteilung.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -40,56 +41,6 @@ interface Extent {
 	maxLatitude: number;
 }
 
-/** Ein Blatt des rbush-Index: eine der fuenf alten IHO-Teilflaechen. */
-interface RBushLeaf {
-	minX: number;
-	minY: number;
-	maxX: number;
-	maxY: number;
-	id: string;
-	geometry: Polygon | MultiPolygon;
-}
-
-interface RBushNode {
-	children?: RBushNode[];
-	geometry?: Polygon | MultiPolygon;
-	minX?: number;
-	minY?: number;
-	maxX?: number;
-	maxY?: number;
-}
-
-interface RBushIndex {
-	itemCount: number;
-	tree: RBushNode;
-}
-
-/**
- * Sammelt die Blaetter eines RBush-Baums.
- *
- * Der Baum ist ab etwa 1.500 Eintraegen **mehrstufig** — `tree.children` sind
- * dann Zwischenknoten ohne `geometry`. Bei den fruehreren fuenf IHO-Features war
- * er flach, weshalb ein Durchlauf ueber die erste Ebene lange genuegt hat. Wer
- * das uebersieht, bekommt "polygon is required" aus Turf. Vgl.
- * `.claude/rules/geo.md` und `src/lib/utils/geo/checkBalticSea.test.ts`.
- */
-function collectLeaves(index: RBushIndex): RBushLeaf[] {
-	const leaves: RBushLeaf[] = [];
-	const descend = (node: RBushNode): void => {
-		if (node.geometry) {
-			leaves.push(node as RBushLeaf);
-			return;
-		}
-		node.children?.forEach(descend);
-	};
-	descend(index.tree);
-	if (leaves.length !== index.itemCount) {
-		throw new Error(
-			`RBush-Index: ${leaves.length} Blaetter gefunden, erwartet ${index.itemCount}. Der Baumdurchlauf ist unvollstaendig.`
-		);
-	}
-	return leaves;
-}
 
 /** Eine Teilflaeche aus baltic-water.geojson mit vorab berechneter Bounding Box. */
 interface WaterPart {
@@ -178,32 +129,6 @@ function loadBoxCoordinates(): Array<[number, number]> {
 		});
 }
 
-/**
- * Filtert auf Punkte, die das alte IHO-Polygon ablehnt (Bounding-Box-Vorfilter
- * je Teilflaeche, dann booleanPointInPolygon). Das sind die bisherigen
- * Falsch-Negativen — sie muessen jetzt innerhalb der neuen Wasserflaeche
- * liegen.
- */
-function filterRejectedByOldPolygon(
-	coordinates: ReadonlyArray<[number, number]>
-): Array<[number, number]> {
-	const index: RBushIndex = JSON.parse(
-		readFileSync(join(ROOT, 'src', 'lib', 'server', 'geo', 'rbush-index.json'), 'utf8')
-	);
-	const leaves = collectLeaves(index);
-
-	return coordinates.filter(([lon, lat]) => {
-		const candidate = point([lon, lat]);
-		const acceptedByOldPolygon = leaves.some((leaf) => {
-			if (lon < leaf.minX || lon > leaf.maxX || lat < leaf.minY || lat > leaf.maxY) {
-				return false;
-			}
-			return booleanPointInPolygon(candidate, leaf.geometry);
-		});
-		return !acceptedByOldPolygon;
-	});
-}
-
 function main(): void {
 	const water: unknown = JSON.parse(readFileSync(join(OUT, 'baltic-water.geojson'), 'utf8'));
 	const iho: unknown = JSON.parse(readFileSync(join(HERE, 'iho.json'), 'utf8'));
@@ -214,17 +139,25 @@ function main(): void {
 		readFileSync(join(ROOT, 'src', 'lib', 'server', 'geo', 'baltic-extent.json'), 'utf8')
 	);
 
+	// Es gibt bewusst KEINEN Vergleich gegen eine Vorgaenger-Geometrie mehr.
+	// Frueher las diese Stelle rbush-index.json als "altes IHO-Polygon" — seit der
+	// Index aus derselben Pipeline stammt, verglich sie die Geometrie mit sich
+	// selbst und lieferte sinnlose Marker. Eine Baseline gibt es nach dem Merge
+	// ohnehin nicht mehr im Repository.
+	//
+	// Die Karte beantwortet stattdessen die Frage, die bei jeder Freigabe zaehlt:
+	// welche gemeldeten Positionen liegen im Kartenbereich, aber ausserhalb der
+	// Wasserflaeche? Genau das sind die Luecken, die zu beurteilen sind.
 	const boxCoordinates = loadBoxCoordinates();
-	const falseNegatives = filterRejectedByOldPolygon(boxCoordinates);
-
 	const waterParts = loadWaterParts();
-	const gewonnen: Array<[number, number]> = [];
-	const bleibtAussen: Array<[number, number]> = [];
-	for (const [lon, lat] of falseNegatives) {
+
+	const abgelehnt: Array<[number, number]> = [];
+	let angenommen = 0;
+	for (const [lon, lat] of boxCoordinates) {
 		if (isInNewWater(lon, lat, waterParts)) {
-			gewonnen.push([lon, lat]);
+			angenommen++;
 		} else {
-			bleibtAussen.push([lon, lat]);
+			abgelehnt.push([lon, lat]);
 		}
 	}
 
@@ -234,16 +167,17 @@ function main(): void {
 		mask,
 		extent,
 		fehlerA: FEHLER_A,
-		gewonnen,
-		bleibtAussen
+		abgelehnt,
+		angenommen,
+		imKartenbereich: boxCoordinates.length
 	};
 
 	writeFileSync(join(OUT, 'review-data.js'), `window.REVIEW = ${JSON.stringify(payload)};`);
 	writeFileSync(join(OUT, 'baltic-review.html'), HTML);
 	console.log('Geschrieben:', join(OUT, 'baltic-review.html'));
-	console.log('Marker gesamt (bisherige Falsch-Negative):', falseNegatives.length);
-	console.log('  davon jetzt innerhalb (gewonnen):', gewonnen.length);
-	console.log('  davon weiterhin ausserhalb:', bleibtAussen.length);
+	console.log('Sichtungen im Kartenbereich:', boxCoordinates.length);
+	console.log('  davon innerhalb der Wasserflaeche:', angenommen);
+	console.log('  davon ausserhalb (als Marker):', abgelehnt.length);
 }
 
 const HTML = `<!doctype html>
@@ -286,16 +220,12 @@ L.rectangle([[e.minLatitude, e.minLongitude], [e.maxLatitude, e.maxLongitude]],
   { color: '#15803d', weight: 2, fill: false }).addTo(map);
 
 // Bisherige Falsch-Negative, jetzt in zwei Gruppen:
-// violett = durch die Bereinigung gewonnen (jetzt innerhalb der neuen Flaeche)
-// orange  = bleibt ausserhalb (auch nach der Bereinigung kein Wasser)
-const gewonnen = L.layerGroup(R.gewonnen.map(function (p) {
-  return L.circleMarker([p[1], p[0]], { radius: 3, color: '#7c3aed', weight: 1, fillOpacity: 0.8 });
-})).addTo(map);
-const bleibtAussen = L.layerGroup(R.bleibtAussen.map(function (p) {
-  return L.circleMarker([p[1], p[0]], { radius: 3, color: '#c2410c', fillColor: '#f97316', weight: 1, fillOpacity: 0.9 });
+// Orange: im Kartenbereich gemeldet, aber ausserhalb der Wasserflaeche.
+// Das sind die Luecken, die bei der Freigabe zu beurteilen sind.
+L.layerGroup(R.abgelehnt.map(function (p) {
+  return L.circleMarker([p[1], p[0]], { radius: 3, color: '#ea580c', weight: 1, fillOpacity: 0.85 });
 })).addTo(map);
 
-// Fehler-A-Referenzpunkte — muessen AUSSERHALB liegen
 R.fehlerA.forEach(function (p) {
   L.circleMarker([p[2], p[1]], { radius: 7, color: '#000', fillColor: '#ef4444', fillOpacity: 1, weight: 2 })
     .bindTooltip(p[0] + ' — muss draussen sein', { permanent: false }).addTo(map);
@@ -310,10 +240,9 @@ legend.onAdd = function () {
     '<span class="sw" style="background:transparent;border-color:#b91c1c;border-style:dashed"></span>altes IHO-Polygon<br>' +
     '<span class="sw" style="background:#facc15"></span>Artefakt-Maske<br>' +
     '<span class="sw" style="background:transparent;border-color:#15803d"></span>abgeleitete Bounding Box<br>' +
-    '<span class="sw" style="background:#7c3aed;border-radius:50%"></span>' + R.gewonnen.length +
-      ' durch die Bereinigung gewonnen <i>(jetzt innerhalb)</i><br>' +
-    '<span class="sw" style="background:#f97316;border-radius:50%"></span>' + R.bleibtAussen.length +
-      ' bleiben ausserhalb <i>(auch nach der Bereinigung kein Wasser)</i><br>' +
+    '<span class="sw" style="background:#ea580c;border-radius:50%"></span>' + R.abgelehnt.length +
+      ' von ' + R.imKartenbereich + ' Sichtungen liegen <b>ausserhalb</b> der Flaeche' +
+      ' <i>(' + R.angenommen + ' innerhalb)</i><br>' +
     '<span class="sw" style="background:#ef4444;border-radius:50%"></span>Fehler-A-Punkte <i>(muessen draussen liegen)</i>';
   return d;
 };
