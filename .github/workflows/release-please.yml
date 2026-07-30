@@ -40,6 +40,13 @@ jobs:
           ref: ${{ needs.release-please.outputs.sha }}
           fetch-depth: 0
           fetch-tags: true
+          # Ohne ssh-key klont checkout per HTTPS und der Push geht als
+          # github-actions[bot] raus. Das Ruleset auf `release` sperrt jeden
+          # Update und erlaubt als Ausnahme nur Deploy Keys — der Bot ist keiner
+          # und wird mit GH013 abgewiesen. Mit ssh-key zeigt origin auf
+          # git@github.com und der Push authentifiziert sich als Deploy Key,
+          # womit der Bypass greift.
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
       # Fast-forward statt Force-Push: `release` soll den Release-Tag immer nur
       # nach VORNE bewegen. Ein Force-Push würde einen Direkt-Hotfix auf
