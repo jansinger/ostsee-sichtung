@@ -2102,10 +2102,13 @@ components:
     ExportMediaUpload:
       name: mediaUpload
       in: query
-      description: Medienupload-Filter (1=mit Aufnahme, 0=ohne Aufnahme)
+      description: >-
+        Medienupload-Filter (1=mit Aufnahme, 0=ohne Aufnahme,
+        announced_missing=Foto laut App angekündigt, aber keine Datei
+        angehängt — der Melder reicht es separat per E-Mail nach)
       schema:
         type: string
-        enum: ["0", "1"]
+        enum: ["0", "1", "announced_missing"]
         example: "1"
 
     ExportVerified:

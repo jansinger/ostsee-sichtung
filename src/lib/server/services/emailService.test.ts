@@ -95,7 +95,8 @@ import {
 	isUnknownOrMissingSpecies
 } from '$lib/utils/format/sightingFormatter';
 import { formatLocalDateTime } from '$lib/utils/format/dateTime';
-import { EmailService } from './emailService';
+import Handlebars from 'handlebars';
+import { DEFAULT_EMAIL_TEMPLATE, EmailService } from './emailService';
 
 // Hilfsfunktionen zum Erstellen von Mocks
 function createMockTransporter(sendMailResult = { messageId: 'test-id-123' }) {
@@ -521,6 +522,73 @@ describe('EmailService', () => {
 			});
 		});
 
+		// ------------------------------------------------------------------
+		// Foto-Ankündigung (rebuilter iOS-Client, Stand 2026-07-30): Der
+		// Client setzt `aufnahmeHochladen`, kann aber kein Foto hochladen —
+		// es kommt per E-Mail nach. Ohne einen Hinweis in der
+		// Benachrichtigungs-Mail weiß niemand, welcher Sichtung eine später
+		// eintreffende Foto-Mail zuzuordnen ist.
+		// ------------------------------------------------------------------
+		describe('Foto-Ankündigung im Template-Kontext', () => {
+			async function renderMailFor(mediaUpload: unknown): Promise<string> {
+				vi.mocked(db.select).mockReturnValue({
+					from: vi.fn().mockReturnValue({
+						where: vi.fn().mockReturnValue({
+							limit: vi.fn().mockResolvedValue([createMockSighting({ mediaUpload })])
+						})
+					})
+				} as any);
+
+				// Der globale Mock in `beforeEach` liefert ein festes Objekt ohne
+				// `mediaUpload`. Hier stattdessen wie die echte Implementierung
+				// das Feld unverändert durchreichen (`...restSighting` in
+				// `formatSightingForDisplay`) — sonst prüfte der Test nur den
+				// eigenen Mock, nicht die Verdrahtung von `loadSightingForEmail`.
+				vi.mocked(formatSightingForDisplay).mockImplementation(
+					(input) =>
+						({
+							species: 'Schweinswal',
+							sightingDate: '15.06.2024',
+							coordinatesFormatted: '54.5000° N, 12.3000° O',
+							mediaUpload: input.mediaUpload
+						}) as any
+				);
+
+				setupConfigRepositoryMocks({
+					enabled: true,
+					smtpHost: 'smtp.example.com',
+					// Minimale Vorlage — prüft die Verdrahtung, nicht das Layout des
+					// ausgelieferten Textes (das übernimmt notificationEmailDefault.test.ts).
+					template:
+						'<html>{{#if sighting.mediaUpload}}foto-angekuendigt:{{referenceId}}{{/if}}</html>'
+				});
+				await EmailService.initialize(false);
+
+				await EmailService.sendNewSightingNotification(42);
+
+				const mailOptions = mockTransporter.sendMail.mock.calls[0]?.[0];
+				return (mailOptions as { html: string }).html;
+			}
+
+			it('reicht ein gesetztes Flag als sighting.mediaUpload an die Vorlage durch', async () => {
+				const html = await renderMailFor(1);
+
+				expect(html).toContain('foto-angekuendigt:REF-42');
+			});
+
+			it('lässt den Block weg, wenn kein Foto angekündigt wurde', async () => {
+				const html = await renderMailFor(0);
+
+				expect(html).not.toContain('foto-angekuendigt');
+			});
+
+			it('lässt den Block bei null (kein Wert in der Zeile) ebenfalls weg', async () => {
+				const html = await renderMailFor(null);
+
+				expect(html).not.toContain('foto-angekuendigt');
+			});
+		});
+
 		it('gibt false zurück wenn DB-Abfrage fehlschlägt', async () => {
 			vi.mocked(db.select).mockReturnValue({
 				from: vi.fn().mockReturnValue({
@@ -703,6 +771,48 @@ describe('EmailService', () => {
 			const result = await EmailService.sendNewSightingNotification(42);
 
 			expect(result).toBe(true);
+		});
+
+		// ------------------------------------------------------------------
+		// DEFAULT_EMAIL_TEMPLATE ist der letzte Rückfall, wenn sowohl die
+		// DB-Konfiguration als auch die Datei `sightingNotificationTemplate.html`
+		// nicht lesbar sind. Direkter Handlebars-Test statt über den Service:
+		// `getEmailConfig()` liefert im Test immer einen konfigurierten
+		// `template`-Wert (siehe `setupConfigRepositoryMocks`) und erreicht
+		// `getDefaultTemplate()` deshalb nie — dieser Pfad ist nur so prüfbar.
+		describe('DEFAULT_EMAIL_TEMPLATE — Foto-Ankündigung', () => {
+			const render = Handlebars.compile(DEFAULT_EMAIL_TEMPLATE);
+
+			function renderWithMediaUpload(mediaUpload: boolean) {
+				return render({
+					referenceId: 'REF-99',
+					adminUrl: 'https://example.com/admin/1',
+					sighting: {
+						species: 'Schweinswal',
+						sightingDate: '30.07.2026',
+						coordinatesFormatted: '54.5000° N, 12.3000° O',
+						mediaUpload,
+						balticSea: { label: 'Ostsee' }
+					}
+				});
+			}
+
+			it('weist auch im letzten Rückfall auf das nachfolgende Foto hin', () => {
+				const html = renderWithMediaUpload(true);
+
+				expect(html).toContain('Foto angekündigt');
+				expect(html).toContain('REF-99');
+			});
+
+			it('lässt den Hinweis weg, wenn kein Foto angekündigt wurde', () => {
+				const html = renderWithMediaUpload(false);
+
+				expect(html).not.toContain('Foto angekündigt');
+			});
+
+			it('ist gültiges Handlebars und rendert ohne Ausnahme', () => {
+				expect(() => renderWithMediaUpload(true)).not.toThrow();
+			});
 		});
 	});
 });

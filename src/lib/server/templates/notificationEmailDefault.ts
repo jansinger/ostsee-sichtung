@@ -34,6 +34,10 @@
  * aktuellen Stands und schlägt bei jeder Änderung fehl.
  */
 export const PREVIOUS_SHIPPED_TEMPLATE_HASHES = [
+	// Stand bis 2026-07-30: ohne Hinweis auf ein per E-Mail nachgereichtes
+	// Foto (rebuilter iOS-Client `OstSeeTiere/8` setzt `aufnahmeHochladen`,
+	// kann aber keine Datei hochladen).
+	'7f55d293b7799debff9908e074e8e22c2b87323c98bf7b76cc7ba86186e95a8e',
 	// Stand bis 2026-07-30: verzweigte über `inBalticSeaGeo` (Bounding Box) und
 	// zeigte einer Meldung aus dem Hamburger Hafen „Ostsee ✓".
 	'28cc78828fb2383bf92a3738dc75fc83f57ae041884d790ca877e6f46b9a1c72',
@@ -146,6 +150,21 @@ export const NOTIFICATION_EMAIL_DEFAULT_TEMPLATE = `<!DOCTYPE html>
 			{{/if}}
 		</table>
 	</div>
+
+	{{!--
+		Foto-Ankündigung: Der rebuilte iOS-Client (OstSeeTiere/8, Stand
+		2026-07-30) setzt aufnahmeHochladen, kann aber selbst keine Datei
+		hochladen — der Melder wird gebeten, das Foto per E-Mail nachzureichen.
+		Ohne diesen Hinweis lässt sich die später eintreffende Foto-Mail keiner
+		Sichtung zuordnen. Siehe $lib/utils/media/photoAnnouncement.ts.
+	--}}
+	{{#if sighting.mediaUpload}}
+	<div class="alert-info">
+		<p style="margin: 0; font-size: 14px;">
+			<strong>📷 Foto angekündigt:</strong> Der Melder hat laut App ein Foto, kann es aber nicht direkt hochladen — es kommt separat per E-Mail nach. Beim Eintreffen bitte anhand der Referenz-ID <strong>{{referenceId}}</strong> zuordnen.
+		</p>
+	</div>
+	{{/if}}
 
 	<!-- Contact Information -->
 	{{#if sighting.email}}

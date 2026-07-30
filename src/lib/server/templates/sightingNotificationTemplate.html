@@ -167,7 +167,27 @@
 				{{/if}}
 			</div>
 
-			{{#if sighting.notes}}
+			{{!-- Foto-Ankündigung: Der rebuilte iOS-Client (OstSeeTiere/8, Stand 2026-07-30) setzt
+			aufnahmeHochladen, kann aber selbst keine Datei hochladen — der Melder wird gebeten, das Foto
+			per E-Mail nachzureichen. Siehe $lib/utils/media/photoAnnouncement.ts. --}} {{#if
+			sighting.mediaUpload}}
+			<div
+				style="
+					background: {{colors.infoSurface}};
+					border: 1px solid {{colors.infoStrong}};
+					border-radius: 6px;
+					padding: 15px;
+					margin: 15px 0;
+				"
+			>
+				<h3 style="margin-top: 0; color: {{colors.infoStrong}}">📷 Foto angekündigt</h3>
+				<p style="color: {{colors.text}}">
+					Der Melder hat laut App ein Foto, kann es aber nicht direkt hochladen — es kommt separat
+					per E-Mail nach. Beim Eintreffen bitte anhand der Referenz-ID
+					<strong>{{referenceId}}</strong> zuordnen.
+				</p>
+			</div>
+			{{/if}} {{#if sighting.notes}}
 			<div
 				style="
 					background: {{colors.page}};

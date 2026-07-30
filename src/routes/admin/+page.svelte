@@ -22,6 +22,7 @@
 		BALTIC_SEA_STATUS_PRESENTATION,
 		getBalticSeaStatus
 	} from '$lib/utils/geo/balticSeaStatus';
+	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
 
 	const logger = createLogger('SichtungenPage');
 
@@ -143,6 +144,18 @@
 
 		url.searchParams.set('page', '1');
 		goto(url);
+	}
+
+	/**
+	 * Springt direkt zur Arbeitsliste „Foto angekündigt, fehlt noch"
+	 * (siehe `$lib/utils/media/photoAnnouncement.ts`). Setzt nur den
+	 * Aufnahme-Filter — andere aktive Filter bleiben erhalten, damit z. B. ein
+	 * bereits gesetzter Datumsbereich nicht verloren geht.
+	 */
+	function showPendingPhotoAnnouncements(): void {
+		mediaUpload = MEDIA_UPLOAD_ANNOUNCED_MISSING;
+		isFilterPanelOpen = true;
+		applyFilters();
 	}
 
 	function resetFilters(): void {
@@ -385,6 +398,31 @@
 <div class="pt-6">
 	<!-- Page Header -->
 	<div class="container mx-auto mb-6 px-4 sm:px-6">
+		<!--
+			Arbeitslisten-Hinweis „Foto angekündigt, fehlt noch"
+			(siehe $lib/utils/media/photoAnnouncement.ts). Echter `btn btn-outline`
+			statt eines mit `onclick` klickbar gemachten `badge`: Nur `.btn` bzw.
+			`summary.btn` bekommen über app.css automatisch die 44px-Touch-Target-
+			Mindestgröße (design-system.md „Feldmodus und Touch-Targets") — ein
+			`badge` bleibt bei ~24px hoch und wäre auf der Mobile-Kartenansicht
+			dieser Seite nicht zuverlässig zu treffen. `btn-outline` statt eines
+			vollton-farbigen `btn-info`, weil Vollton-Sekundärbuttons neben der
+			Primäraktion „Export" optisch mit ihr konkurrieren würden (Button-
+			Hierarchie-Regel); die Statusfarbe trägt stattdessen nur das Icon
+			(`text-info-strong`, AA-geprüft laut tokens.css).
+		-->
+		{#snippet pendingPhotoBadge()}
+			<button
+				type="button"
+				class="btn btn-sm btn-outline"
+				onclick={showPendingPhotoAnnouncements}
+				title="Sichtungen mit angekündigtem, aber noch nicht eingetroffenem Foto anzeigen"
+			>
+				<Icon icon="lucide:camera" class="text-info-strong mr-1 h-4 w-4" aria-hidden="true" />
+				{data.pendingPhotoAnnouncements} Foto{data.pendingPhotoAnnouncements === 1 ? '' : 's'} ausstehend
+			</button>
+		{/snippet}
+
 		<!-- Mobile Layout -->
 		<div class="block space-y-3 sm:hidden">
 			<h1 class="text-2xl font-bold">Sichtungen</h1>
@@ -415,9 +453,14 @@
 						Export
 					</button>
 				</div>
-				{#if data.pagination && data.pagination.total}
-					<div class="text-center">
-						<span class="badge badge-outline text-sm">{data.pagination.total} Ergebnisse</span>
+				{#if (data.pagination && data.pagination.total) || data.pendingPhotoAnnouncements}
+					<div class="flex flex-wrap items-center justify-center gap-2">
+						{#if data.pagination && data.pagination.total}
+							<span class="badge badge-outline text-sm">{data.pagination.total} Ergebnisse</span>
+						{/if}
+						{#if data.pendingPhotoAnnouncements}
+							{@render pendingPhotoBadge()}
+						{/if}
 					</div>
 				{/if}
 			</div>
@@ -494,6 +537,9 @@
 					<Icon icon="lucide:download" class="mr-1 h-4 w-4" />
 					Export
 				</button>
+				{#if data.pendingPhotoAnnouncements}
+					{@render pendingPhotoBadge()}
+				{/if}
 				{#if data.pagination && data.pagination.total}
 					<span class="badge badge-outline whitespace-nowrap"
 						>{data.pagination.total} Ergebnisse</span
@@ -588,6 +634,7 @@
 						<option value="">Alle</option>
 						<option value="1">Mit</option>
 						<option value="0">Ohne</option>
+						<option value={MEDIA_UPLOAD_ANNOUNCED_MISSING}>Angekündigt, fehlt noch</option>
 					</select>
 				</div>
 			</div>

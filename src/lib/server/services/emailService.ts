@@ -37,7 +37,10 @@ const __dirname = dirname(__filename);
 const logger = createLogger('emailService');
 
 // Default email template as constant to avoid inline HTML
-const DEFAULT_EMAIL_TEMPLATE = `<!DOCTYPE html>
+// Exportiert, damit dieser letzte Rückfallpfad (DB **und** Datei nicht
+// lesbar) direkt mit Handlebars getestet werden kann — siehe
+// emailService.test.ts, "DEFAULT_EMAIL_TEMPLATE — Foto-Ankündigung".
+export const DEFAULT_EMAIL_TEMPLATE = `<!DOCTYPE html>
 <html lang="de">
 <head>
 	<meta charset="UTF-8">
@@ -48,6 +51,9 @@ const DEFAULT_EMAIL_TEMPLATE = `<!DOCTYPE html>
 	<p><strong>Tierart:</strong> {{sighting.species}}</p>
 	<p><strong>Datum:</strong> {{sighting.sightingDate}}</p>
 	<p><strong>Position:</strong> {{sighting.coordinatesFormatted}} ({{sighting.balticSea.label}})</p>
+	{{#if sighting.mediaUpload}}
+	<p><strong>📷 Foto angekündigt:</strong> Der Melder hat laut App ein Foto, kann es aber nicht direkt hochladen — es kommt separat per E-Mail nach. Beim Eintreffen bitte anhand der Referenz-ID {{referenceId}} zuordnen.</p>
+	{{/if}}
 	<p><a href="{{adminUrl}}">Sichtung im Admin-Bereich anzeigen</a></p>
 </body>
 </html>`;
