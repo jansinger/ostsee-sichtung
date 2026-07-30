@@ -171,6 +171,15 @@ Sichtungen pro Stunde und IP, was einen Sammelimport unbrauchbar machen würde.
 das, was noch offen ist. Ein zweiter Lauf legt nichts doppelt an, weil bereits
 verschobene Dateien nicht mehr in `posteingang/` liegen.
 
+**Jede übernommene Sichtung löst eine Benachrichtigungs-E-Mail aus** — dieselbe,
+die auch bei einer Meldung über das Formular verschickt wird. Das ist so gewollt
+(der Dienst selbst verschickt bewusst keine Mail, siehe
+`docs/archive/LEGACY_INBOX_ENTWURF_2026-07-30.md`, Abschnitt 12), hat aber eine
+unangenehme Seite: Wird nach einer Störung ein größerer Rückstand abgearbeitet,
+geht für jede einzelne Datei eine Mail heraus. Vor einem solchen Lauf entweder
+die Empfänger vorwarnen oder den Versand in der Konfiguration vorübergehend
+abschalten.
+
 **Scheitert das Verschieben nach `importiert/`.** Die Sichtung ist zu diesem
 Zeitpunkt bereits in der Datenbank angelegt — nur das Aufräumen der Datei ist
 fehlgeschlagen (nach mehreren Versuchen, etwa bei kurzzeitig voller Platte).
