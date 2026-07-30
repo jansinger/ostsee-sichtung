@@ -301,6 +301,84 @@ test.describe('Sichtung melden — Submit mit API-Mock', () => {
 		});
 	});
 
+	/**
+	 * Der Sprung zum abgelehnten Feld.
+	 *
+	 * `message` ist bei einem `VALIDATION_ERROR` immer derselbe Satz und nennt
+	 * kein Feld — der Nutzer stand vorher auf Schritt 4 vor „Validierungsfehler
+	 * bei der Eingabe" und hatte keinen Hinweis, dass das gemeinte Feld zwei
+	 * Schritte zurück liegt. Die Feldkarte aus `errors` macht daraus ein Ziel.
+	 */
+	test('Feldfehler: Server nennt ein Feld aus Schritt 1 — Formular springt dorthin', async ({
+		page
+	}) => {
+		await page.route('**/api/sightings', (route) => {
+			route.fulfill({
+				status: 400,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					success: false,
+					code: 'VALIDATION_ERROR',
+					message: 'Validierungsfehler bei der Eingabe',
+					errors: { waterway: 'Fahrwasser darf höchstens 100 Zeichen haben' }
+				})
+			});
+		});
+
+		const formPage = new FormPage(page);
+		await formPage.goto();
+		await fillAllSteps(formPage, page);
+		await formPage.clickSubmit();
+
+		// Zurück auf Schritt 1 — dort steht das abgelehnte Feld
+		await expectCurrentStep(page, /Position & Zeit/i);
+
+		// Das Feld trägt die Meldung des Servers selbst …
+		const waterway = page.locator('[data-testid="field-waterway"]');
+		await expect(page.getByText('Fahrwasser darf höchstens 100 Zeichen haben')).toBeVisible({
+			timeout: 5000
+		});
+		await expect(waterway).toHaveAttribute('aria-invalid', 'true');
+
+		// … und bekommt den Fokus (fieldNavigation fokussiert nach ~500 ms)
+		await expect(waterway).toBeFocused({ timeout: 5000 });
+
+		// Der Zustand über der Navigation bleibt bestehen — er trägt Referenz und
+		// Wiederholen, das Feld trägt den Grund.
+		await expect(page.locator('[data-testid="submit-status-failed"]')).toBeVisible();
+	});
+
+	test('Feldfehler auf dem aktuellen Schritt: kein Sprung, Feld zeigt den Grund', async ({
+		page
+	}) => {
+		await page.route('**/api/sightings', (route) => {
+			route.fulfill({
+				status: 400,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					success: false,
+					code: 'VALIDATION_ERROR',
+					message: 'Validierungsfehler bei der Eingabe',
+					errors: { email: 'Diese E-Mail-Adresse ist bereits gesperrt' }
+				})
+			});
+		});
+
+		const formPage = new FormPage(page);
+		await formPage.goto();
+		await fillAllSteps(formPage, page);
+		await formPage.clickSubmit();
+
+		await expectCurrentStep(page, /Kontaktdaten/i);
+		await expect(page.getByText('Diese E-Mail-Adresse ist bereits gesperrt')).toBeVisible({
+			timeout: 5000
+		});
+		await expect(page.locator('[data-testid="field-email"]')).toHaveAttribute(
+			'aria-invalid',
+			'true'
+		);
+	});
+
 	test('Netzwerkfehler: Route abgebrochen — als Verbindungsproblem erkannt', async ({ page }) => {
 		await page.route('**/api/sightings', (route) => {
 			route.abort('connectionrefused');

@@ -31,30 +31,96 @@ import type { SightingFormValues } from '$lib/types/Form';
  * Wiederholen an; `describeSubmitFailure` unten macht aus jedem Fall den Satz,
  * den der Nutzer liest, und arbeitet `retryAfter` als Information in ihn ein.
  *
- * **Kein Feldbezug bei `rejected`, und das ist eine offene Lücke, kein
- * Entwurf.** Ein Sprung zum abgelehnten Feld wäre die richtige Reaktion, ist
- * aber mit diesem Typ nicht möglich: `rejected` trägt nur einen String, und der
- * lautet bei einem Validierungsfehler „Validierungsfehler bei der Eingabe".
- * Die Feldinformation existiert — `POST /api/sightings` liefert bei 400 ein
- * `errors: Record<pfad, meldung>` mit —, wird von `SightingApiResponse` unten
- * aber nicht gelesen. Wer den Sprung nachrüstet, erweitert dort und hier, nicht
- * am Server.
+ * **Feldbezug bei `rejected`.** `message` allein reicht dafür nicht: Bei einem
+ * Validierungsfehler lautet sie immer „Validierungsfehler bei der Eingabe" und
+ * nennt kein Feld — der Nutzer stand damit vor einem Satz, der ihm nicht sagte,
+ * wo er suchen soll, womöglich drei Schritte entfernt. `fields` trägt deshalb
+ * zusätzlich die Karte Feldname → Meldung, aus der die Aufrufstelle den Sprung
+ * zum ersten betroffenen Feld baut (`ModernReportForm.svelte`). Alle drei
+ * Quellen des Servers laufen darin zusammen, siehe {@link readFieldErrors}.
  */
 export type SubmitResult =
 	| { status: 'ok'; id: number }
 	| { status: 'offline' }
 	| { status: 'server'; httpStatus: number }
-	| { status: 'rejected'; message: string }
+	| { status: 'rejected'; message: string; fields?: Record<string, string> }
 	| { status: 'ratelimited'; retryAfter?: number };
 
 /** Fehlermeldung, die der Nutzer sieht, wenn der Server keine eigene liefert. */
 const FALLBACK_MESSAGE = 'Die Sichtung konnte nicht gespeichert werden';
+
+/**
+ * Meldung für ein Feld aus einer der beiden Namenslisten des Servers —
+ * `rejectedFields` (400) **und** `forbiddenFields` (403). Der Server liefert
+ * dort nur Feldnamen und begründet die Ablehnung gesammelt in `message`.
+ *
+ * Der Name ist deshalb bewusst neutral gehalten und greift keine der beiden
+ * Listen auf: Ein `FORBIDDEN_…` hier würde beim Lesen so wirken, als gälte die
+ * Meldung nur für den 403er-Zweig.
+ */
+const DISALLOWED_FIELD_MESSAGE = 'Dieses Feld darf nicht mitgesendet werden';
 
 /** Antwortkörper der Sichtungs-API, soweit der Client ihn auswertet. */
 interface SightingApiResponse {
 	success?: boolean;
 	id?: number;
 	message?: string;
+	/** `code: 'VALIDATION_ERROR'` (400) — Yup-Pfad → Meldung, aus `abortEarly: false`. */
+	errors?: Record<string, string>;
+	/** `code: 'INVALID_FIELDS'` (400) — Feldnamen außerhalb der Whitelist. */
+	rejectedFields?: string[];
+	/** `code: 'FORBIDDEN_FIELDS'` (403) — Admin-Felder, die Clients nicht setzen dürfen. */
+	forbiddenFields?: string[];
+}
+
+/**
+ * Führt die drei Feld-Quellen des Servers zu einer Karte zusammen.
+ *
+ * `POST /api/sightings` benennt abgelehnte Felder auf drei Wegen, und sie sind
+ * disjunkt — welcher greift, entscheidet der Server vor allen anderen Prüfungen:
+ *
+ * | Feld              | Code                | Status | Inhalt              |
+ * | ----------------- | ------------------- | ------ | ------------------- |
+ * | `forbiddenFields` | `FORBIDDEN_FIELDS`  | 403    | nur Namen           |
+ * | `rejectedFields`  | `INVALID_FIELDS`    | 400    | nur Namen           |
+ * | `errors`          | `VALIDATION_ERROR`  | 400    | Pfad → Meldung      |
+ *
+ * Für die Oberfläche ist das derselbe Vorgang — ein Feld, das korrigiert werden
+ * muss —, deshalb entsteht hier eine einheitliche Form. Für die beiden
+ * Namenslisten stellt der Client den Text, weil der Server dort keinen pro Feld
+ * liefert.
+ *
+ * Einträge ohne Meldungstext fallen weg: Ein Feld als ungültig zu markieren,
+ * ohne sagen zu können warum, ist schlechter als es unmarkiert zu lassen.
+ *
+ * @returns die Karte, oder `undefined` wenn kein Feld benannt ist — die
+ *   Eigenschaft wird dann weggelassen (`exactOptionalPropertyTypes`), statt auf
+ *   `undefined` zu stehen.
+ */
+function readFieldErrors(body: SightingApiResponse | null): Record<string, string> | undefined {
+	const fields: Record<string, string> = {};
+
+	for (const [field, message] of Object.entries(body?.errors ?? {})) {
+		if (typeof message === 'string' && message.length > 0) {
+			fields[field] = message;
+		}
+	}
+
+	for (const field of [...(body?.rejectedFields ?? []), ...(body?.forbiddenFields ?? [])]) {
+		if (typeof field === 'string' && field.length > 0) {
+			fields[field] ??= DISALLOWED_FIELD_MESSAGE;
+		}
+	}
+
+	return Object.keys(fields).length > 0 ? fields : undefined;
+}
+
+/** Baut den `rejected`-Fall inklusive Feldkarte, sofern der Server eine liefert. */
+function toRejected(message: string, body: SightingApiResponse | null): SubmitResult {
+	const fields = readFieldErrors(body);
+	return fields === undefined
+		? { status: 'rejected', message }
+		: { status: 'rejected', message, fields };
 }
 
 /**
@@ -167,7 +233,7 @@ export async function submitSightingForm(values: SightingFormValues): Promise<Su
 		// verbotene Felder) — der Text nennt das betroffene Feld und hilft dem
 		// Nutzer. 5xx-Meldungen sind generisch; dort zählt nur „wiederholbar".
 		if (response.status < 500 && body?.message) {
-			return { status: 'rejected', message: body.message };
+			return toRejected(body.message, body);
 		}
 		return { status: 'server', httpStatus: response.status };
 	}
@@ -178,7 +244,7 @@ export async function submitSightingForm(values: SightingFormValues): Promise<Su
 
 	// 2xx, aber der Körper widerspricht sich oder ist unlesbar.
 	if (body?.success === false && body.message) {
-		return { status: 'rejected', message: body.message };
+		return toRejected(body.message, body);
 	}
 	return { status: 'server', httpStatus: response.status };
 }
