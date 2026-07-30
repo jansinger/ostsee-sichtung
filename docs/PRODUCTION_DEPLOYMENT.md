@@ -410,35 +410,65 @@ sudo nano /opt/ostsee-tiere/backup.sh
 
 ```bash
 #!/bin/bash
+# Bricht bei jedem Fehler ab — auch mitten in einer Pipe. Ohne pipefail würde
+# ein fehlgeschlagener pg_dump ein gültig aussehendes, leeres .gz hinterlassen.
+set -euo pipefail
+
 BACKUP_DIR="/opt/ostsee-tiere/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p "$BACKUP_DIR"
 
-# Datenbank-Backup (im Verzeichnis /opt/ostsee-tiere ausführen)
+# Im Verzeichnis mit der Compose-Datei arbeiten
 cd /opt/ostsee-tiere
-docker compose exec -T db pg_dump -U postgres ostsee | \
-  gzip > "$BACKUP_DIR/db-$DATE.sql.gz"
 
-# Uploads-Backup aus dem benannten Volume.
-# Exakten Namen ermitteln mit: docker volume ls | grep uploads
-UPLOADS_VOLUME="ostsee-tiere_uploads"
+# Datenbank-Backup. Erst unter .tmp schreiben und nur bei Erfolg umbenennen,
+# damit ein Abbruch keine halbe Datei als fertiges Backup zurücklässt.
+docker compose exec -T db pg_dump -U postgres ostsee \
+  | gzip >"$BACKUP_DIR/db-$DATE.sql.gz.tmp"
+mv "$BACKUP_DIR/db-$DATE.sql.gz.tmp" "$BACKUP_DIR/db-$DATE.sql.gz"
+
+# Uploads-Volume am laufenden Container ablesen statt den Namen zu raten: Er
+# trägt das Compose-Projekt als Präfix (Verzeichnisname bzw.
+# COMPOSE_PROJECT_NAME) und ist auf einem anders benannten Host ein anderer.
+UPLOADS_VOLUME=$(docker inspect "$(docker compose ps -q app)" \
+  --format '{{range .Mounts}}{{if eq .Destination "/app/uploads"}}{{.Name}}{{end}}{{end}}')
+
+if [ -z "$UPLOADS_VOLUME" ]; then
+  echo "FEHLER: Uploads-Volume nicht gefunden — läuft der app-Container?" >&2
+  exit 1
+fi
 
 docker run --rm \
   -v "$UPLOADS_VOLUME":/data:ro \
   -v "$BACKUP_DIR":/backup \
-  alpine tar czf "/backup/uploads-$DATE.tar.gz" -C /data .
+  alpine tar czf "/backup/uploads-$DATE.tar.gz.tmp" -C /data .
+mv "$BACKUP_DIR/uploads-$DATE.tar.gz.tmp" "$BACKUP_DIR/uploads-$DATE.tar.gz"
 
 # Alte Backups löschen (älter als 30 Tage)
 find "$BACKUP_DIR" -name "db-*.sql.gz" -mtime +30 -delete
 find "$BACKUP_DIR" -name "uploads-*.tar.gz" -mtime +30 -delete
 
+# Reste abgebrochener Läufe. Die .tmp-Endung schützt sie davor, oben als
+# fertiges Backup mitgezählt zu werden — aufräumen muss man sie trotzdem.
+find "$BACKUP_DIR" -name "*.tmp" -mtime +1 -delete
+
 echo "Backup erstellt: db-$DATE.sql.gz, uploads-$DATE.tar.gz"
 ```
 
-> Den exakten Volume-Namen zeigt `docker volume ls | grep uploads` — er trägt
-> das Compose-Projekt als Präfix (Verzeichnisname bzw.
-> `COMPOSE_PROJECT_NAME`). Trag ihn oben fest ein, statt ihn zu raten.
+> Der Volume-Name wird bewusst zur Laufzeit ermittelt. Ein fest eingetragener
+> Name wie `ostsee-tiere_uploads` stimmt nur, solange das Compose-Projekt genau
+> so heißt — auf einem Host mit anderem Verzeichnisnamen oder gesetztem
+> `COMPOSE_PROJECT_NAME` (z. B. dem Staging-Stack) würde still das falsche oder
+> gar kein Volume gesichert. Zum Nachsehen: `docker volume ls | grep uploads`.
+
+**Backup einmal prüfen, nicht nur einrichten:**
+
+```bash
+/opt/ostsee-tiere/backup.sh
+gunzip -t /opt/ostsee-tiere/backups/db-*.sql.gz   # Archiv-Integrität
+tar tzf /opt/ostsee-tiere/backups/uploads-*.tar.gz | head
+```
 
 ```bash
 chmod +x /opt/ostsee-tiere/backup.sh
@@ -456,16 +486,29 @@ sudo crontab -e
 
 ### Uploads wiederherstellen
 
+Volume-Namen wie beim Backup am Container ablesen — der App-Container muss dafür
+noch laufen, deshalb erst ermitteln, dann stoppen:
+
 ```bash
+cd /opt/ostsee-tiere
+
+UPLOADS_VOLUME=$(docker inspect "$(docker compose ps -q app)" \
+  --format '{{range .Mounts}}{{if eq .Destination "/app/uploads"}}{{.Name}}{{end}}{{end}}')
+echo "$UPLOADS_VOLUME"   # prüfen, nicht blind weitermachen
+
 docker compose stop app
 
 docker run --rm \
-  -v ostsee-tiere_uploads:/data \
+  -v "$UPLOADS_VOLUME":/data \
   -v /opt/ostsee-tiere/backups:/backup:ro \
   alpine tar xzf /backup/uploads-20260730_020000.tar.gz -C /data
 
 docker compose start app
 ```
+
+> Das Archiv wird **über** den vorhandenen Bestand entpackt, gelöschte Dateien
+> also nicht entfernt. Für einen exakten Stand vorher `docker volume rm` und das
+> Volume neu anlegen lassen.
 
 ---
 
@@ -506,8 +549,8 @@ docker compose logs --since 1h app  # letzte Stunde
 > Volume zurück und kann weg:
 >
 > ```bash
-> docker volume ls | grep _logs
-> docker volume rm ostsee-tiere_logs
+> docker volume ls | grep _logs          # exakten Namen ablesen
+> docker volume rm <projekt>_logs
 > ```
 
 ### Überwachung ohne Monitoring-Stack

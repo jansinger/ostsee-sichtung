@@ -796,20 +796,28 @@ docker run -p 3000:3000 -v ./uploads:/app/uploads --env-file .env ostsee-tiere:l
 
 **Backup:**
 
-```bash
-# Backup uploads (Named Volume)
-docker run --rm -v ostsee-tiere_uploads:/data -v $(pwd):/backup \
-  alpine tar czf /backup/uploads-backup-$(date +%Y%m%d).tar.gz /data
+The volume name carries the Compose project as a prefix (directory name, or
+`COMPOSE_PROJECT_NAME`), so read it off the running container instead of
+hardcoding it — a wrong name silently archives nothing:
 
-# Restore uploads (Named Volume)
-docker run --rm -v ostsee-tiere_uploads:/data -v $(pwd):/backup \
-  alpine tar xzf /backup/uploads-backup-20250116.tar.gz -C /
+```bash
+UPLOADS_VOLUME=$(docker inspect "$(docker compose ps -q app)" \
+  --format '{{range .Mounts}}{{if eq .Destination "/app/uploads"}}{{.Name}}{{end}}{{end}}')
+echo "$UPLOADS_VOLUME"
+
+# Backup uploads (Named Volume)
+docker run --rm -v "$UPLOADS_VOLUME":/data:ro -v $(pwd):/backup \
+  alpine tar czf /backup/uploads-backup-$(date +%Y%m%d).tar.gz -C /data .
+
+# Restore uploads (Named Volume) — stop the app first
+docker run --rm -v "$UPLOADS_VOLUME":/data -v $(pwd):/backup:ro \
+  alpine tar xzf /backup/uploads-backup-20250116.tar.gz -C /data
 
 # Backup uploads (Bind Mount)
-tar czf uploads-backup-$(date +%Y%m%d).tar.gz ./uploads
+tar czf uploads-backup-$(date +%Y%m%d).tar.gz -C ./uploads .
 
 # Restore uploads (Bind Mount)
-tar xzf uploads-backup-20250116.tar.gz
+tar xzf uploads-backup-20250116.tar.gz -C ./uploads
 ```
 
 ### Vercel Blob Storage
@@ -1256,12 +1264,13 @@ Uploads live in the named volume `uploads`, not in a host directory — a
 `tar` of `./uploads` on the host would archive an empty folder.
 
 ```bash
-# Confirm the actual volume names first (prefix = Compose project name)
-docker volume ls | grep -E 'uploads|pgdata'
+# Read the volume name off the running container (prefix = Compose project name)
+UPLOADS_VOLUME=$(docker inspect "$(docker compose ps -q app)" \
+  --format '{{range .Mounts}}{{if eq .Destination "/app/uploads"}}{{.Name}}{{end}}{{end}}')
 
 # Backup uploads
 docker run --rm \
-  -v ostsee-tiere_uploads:/data:ro \
+  -v "$UPLOADS_VOLUME":/data:ro \
   -v $(pwd)/backups:/backup \
   alpine tar czf "/backup/uploads-$(date +%Y%m%d).tar.gz" -C /data .
 ```
