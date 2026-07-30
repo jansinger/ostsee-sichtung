@@ -51,6 +51,7 @@ coverage/
 
 # Archive (for reference only)
 archive/
+!docs/archive/
 
 certs/
 
