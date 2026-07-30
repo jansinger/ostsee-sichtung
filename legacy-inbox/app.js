@@ -7,6 +7,12 @@ const konfiguration = leseKonfiguration(process.env);
 const store = await erstelleStore({ datenVerzeichnis: konfiguration.datenVerzeichnis });
 await store.initialisiere();
 
+const freiMB = Math.round((await store.freierPlatzBytes()) / (1024 * 1024));
+if (freiMB < 500) {
+	console.error(`Nur noch ${freiMB} MB frei — der Posteingang startet nicht.`);
+	process.exit(1);
+}
+
 const rateLimit = erstelleRateLimit({
 	proIpProStunde: konfiguration.rateLimitProIp,
 	globalProStunde: konfiguration.rateLimitGlobal

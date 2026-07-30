@@ -1,4 +1,4 @@
-import { open, mkdir, readdir, rename, access, unlink } from 'node:fs/promises';
+import { open, mkdir, readdir, rename, access, unlink, statfs } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
 
@@ -109,5 +109,15 @@ export async function erstelleStore({ datenVerzeichnis }) {
 		return ergebnis;
 	}
 
-	return { initialisiere, istBeschreibbar, schreibe };
+	/**
+	 * Freier Platz in Bytes. Wird beim Start geprüft und von /health
+	 * mitgeliefert, damit die Überwachung Vorlauf hat statt erst zu merken,
+	 * dass nichts mehr geht.
+	 */
+	async function freierPlatzBytes() {
+		const werte = await statfs(datenVerzeichnis);
+		return werte.bavail * werte.bsize;
+	}
+
+	return { initialisiere, istBeschreibbar, schreibe, freierPlatzBytes };
 }

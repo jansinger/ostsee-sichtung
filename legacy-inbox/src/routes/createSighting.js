@@ -1,6 +1,7 @@
 import { leseBody, parseBody } from '../readBody.js';
 import { validiere, fehlerAntwort } from '../validate.js';
 import { antworteJson } from '../respond.js';
+import { protokolliere } from '../logger.js';
 
 /**
  * POST /rest_sichtungen
@@ -38,6 +39,7 @@ export async function createSighting(req, res, { konfiguration, store, rateLimit
 		({ payload, parseFehler } = parseBody(roh, contentType));
 	} catch (fehler) {
 		leseFehler = fehler;
+		protokolliere('fehler', 'lesen_fehlgeschlagen', { meldung: fehler.message });
 	}
 
 	const validierung = leseFehler
@@ -92,13 +94,20 @@ export async function createSighting(req, res, { konfiguration, store, rateLimit
 			validierung.gueltig ? 'posteingang' : 'abgewiesen'
 		);
 	} catch (fehler) {
-		console.error('Schreiben fehlgeschlagen', fehler);
+		protokolliere('fehler', 'schreiben_fehlgeschlagen', { meldung: fehler.message });
 		antworteJson(res, 500, {
 			error: 'Failed to save sighting',
 			message: 'Internal server error occurred'
 		});
 		return;
 	}
+
+	protokolliere('info', 'sichtung_abgelegt', {
+		lfd_nr: geschrieben.lfdNr,
+		gueltig: validierung.gueltig,
+		abgeschnitten,
+		felder_mit_fehler: Object.keys(validierung.fehler)
+	});
 
 	// Das Rate-Limit pro IP weist erst hier ab — der Request ist bereits
 	// sicher abgelegt. Mobilfunkanbieter setzen CGNAT ein; ein 429 an eine

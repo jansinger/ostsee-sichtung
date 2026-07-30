@@ -4,7 +4,10 @@ import { erstelleServer } from './server.js';
 let server;
 let basis;
 
-const storeAttrappe = { istBeschreibbar: async () => true };
+const storeAttrappe = {
+	istBeschreibbar: async () => true,
+	freierPlatzBytes: async () => 5_000_000_000
+};
 const rateLimitAttrappe = { pruefeIp: () => true, pruefeGlobal: () => true };
 
 beforeAll(async () => {
@@ -23,7 +26,11 @@ describe('Router', () => {
 	it('meldet über /health, dass das Datenverzeichnis beschreibbar ist', async () => {
 		const antwort = await fetch(`${basis}/health`);
 		expect(antwort.status).toBe(200);
-		expect(await antwort.json()).toEqual({ status: 'ok', datenverzeichnis: 'beschreibbar' });
+		expect(await antwort.json()).toEqual({
+			status: 'ok',
+			datenverzeichnis: 'beschreibbar',
+			frei_mb: 4768
+		});
 	});
 
 	it('antwortet 404 auf unbekannte Pfade', async () => {
@@ -39,7 +46,7 @@ describe('Router', () => {
 	it('meldet 503, wenn das Datenverzeichnis nicht beschreibbar ist', async () => {
 		const kaputt = erstelleServer({
 			konfiguration: { maxBodyBytes: 262144 },
-			store: { istBeschreibbar: async () => false },
+			store: { istBeschreibbar: async () => false, freierPlatzBytes: async () => 5_000_000_000 },
 			rateLimit: rateLimitAttrappe
 		});
 		await new Promise((fertig) => kaputt.listen(0, fertig));

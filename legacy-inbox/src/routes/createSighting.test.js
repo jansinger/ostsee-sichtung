@@ -229,3 +229,41 @@ describe('POST /rest_sichtungen — Vertrag', () => {
 		expect(umschlag.validierung.gueltig).toBe(false);
 	});
 });
+
+describe('POST /rest_sichtungen — Rate-Limit', () => {
+	it('schreibt trotz 429 pro IP', async () => {
+		await new Promise((fertig) => server.close(fertig));
+		const store = await erstelleStore({ datenVerzeichnis: verzeichnis });
+		await store.initialisiere();
+		server = erstelleServer({
+			konfiguration: { maxBodyBytes: 262144 },
+			store,
+			rateLimit: erstelleRateLimit({ proIpProStunde: 1, globalProStunde: 1000 })
+		});
+		await new Promise((fertig) => server.listen(0, fertig));
+		basis = `http://127.0.0.1:${server.address().port}`;
+
+		expect((await sende(JSON.stringify(gueltig))).status).toBe(201);
+		expect((await sende(JSON.stringify(gueltig))).status).toBe(429);
+
+		expect(await dateienIn('posteingang')).toHaveLength(2);
+	});
+
+	it('schreibt bei der globalen Reißleine bewusst NICHT', async () => {
+		await new Promise((fertig) => server.close(fertig));
+		const store = await erstelleStore({ datenVerzeichnis: verzeichnis });
+		await store.initialisiere();
+		server = erstelleServer({
+			konfiguration: { maxBodyBytes: 262144 },
+			store,
+			rateLimit: erstelleRateLimit({ proIpProStunde: 100, globalProStunde: 1 })
+		});
+		await new Promise((fertig) => server.listen(0, fertig));
+		basis = `http://127.0.0.1:${server.address().port}`;
+
+		expect((await sende(JSON.stringify(gueltig))).status).toBe(201);
+		expect((await sende(JSON.stringify(gueltig))).status).toBe(429);
+
+		expect(await dateienIn('posteingang')).toHaveLength(1);
+	});
+});

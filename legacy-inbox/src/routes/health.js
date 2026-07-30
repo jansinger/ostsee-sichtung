@@ -15,5 +15,11 @@ export async function health(_req, res, { store }) {
 		return;
 	}
 
-	antworteJson(res, 200, { status: 'ok', datenverzeichnis: 'beschreibbar' });
+	const freiMB = Math.round((await store.freierPlatzBytes()) / (1024 * 1024));
+
+	antworteJson(res, 200, {
+		status: 'ok',
+		datenverzeichnis: 'beschreibbar',
+		frei_mb: freiMB
+	});
 }
