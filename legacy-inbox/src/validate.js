@@ -1,5 +1,10 @@
 import * as yup from 'yup';
 
+// Bewusst auf jedes Zahlenfeld angewendet, nicht nur auf die drei Felder wie
+// in src/lib/legacy-api/yup-validation.ts. Dieser Dienst nimmt
+// application/x-www-form-urlencoded entgegen: ein leer gelassenes optionales
+// Feld kommt dabei als leerer String an, nicht als fehlender Key. Ohne diese
+// Transformation würde ein leeres Dropdown zu einem 400 führen.
 const zahl = () => yup.number().transform((wert) => (isNaN(wert) ? undefined : wert));
 const text = () => yup.string().nullable().optional();
 

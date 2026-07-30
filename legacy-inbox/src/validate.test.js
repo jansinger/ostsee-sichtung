@@ -53,6 +53,23 @@ describe('validiere', () => {
 		const ergebnis = await validiere({ ...gueltig, voellig_neues_feld: 'wert' });
 		expect(ergebnis.gueltig).toBe(true);
 	});
+
+	it('akzeptiert leere Strings in optionalen Zahlenfeldern (Formular-Encoding)', async () => {
+		const ergebnis = await validiere({ ...gueltig, vonwo: '', entfernung: '' });
+		expect(ergebnis.gueltig).toBe(true);
+		expect(ergebnis.fehler.vonwo).toBeUndefined();
+		expect(ergebnis.fehler.entfernung).toBeUndefined();
+	});
+
+	it.each([
+		['null', null],
+		['undefined', undefined],
+		['einen String', 'kein Objekt'],
+		['eine Zahl', 42],
+		['ein Array', ['kein Objekt']]
+	])('wirft nicht bei %s als Payload und meldet gueltig: false', async (_beschreibung, payload) => {
+		await expect(validiere(payload)).resolves.toEqual(expect.objectContaining({ gueltig: false }));
+	});
 });
 
 describe('fehlerAntwort', () => {
