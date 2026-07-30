@@ -31,6 +31,13 @@ import { formatRatio, measureContrast } from './helpers/contrast';
  * Dieser Test hätte die beiden kritischen Befunde des Reviews am Tag ihrer
  * Entstehung gefunden: weißer Text auf warning (3,26:1) und auf secondary
  * (3,19:1).
+ *
+ * Damit er das auch in CI tut, muss er dort laufen: Bis zum `e2e`-Filter in
+ * `.github/workflows/ci.yml` galt ein PR, der nur `e2e/` anfasste, als
+ * Doc-Only — `needs-e2e` blieb false und dieser Scan wurde übersprungen. In
+ * #636 und #641 wurde deshalb die Regel in `helpers/bannedClasses.ts`
+ * verschärft, ohne dass ihre Reichweite je gegen die echten Routen lief;
+ * grün war nur der Unit-Test der Regel.
  */
 
 const AA_TEXT = 4.5;
@@ -425,10 +432,7 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 	   die SvelteKit-Fehlerseite liefern ein DOM, in dem keine einzige verbotene
 	   Kombination steht — die Prüfung meldete dann grün, ohne je die Seite
 	   gesehen zu haben, um die es geht. */
-	const openRoute = async (
-		{ page, context, request, baseURL }: ScanFixtures,
-		route: ScanRoute
-	) => {
+	const openRoute = async ({ page, context, request, baseURL }: ScanFixtures, route: ScanRoute) => {
 		/* Seit dem 2026-07-30 fährt der E2E-Job einen Postgres-Service samt
 		   Migrationen und Seed (ci.yml, Job `e2e`). Dieser Zweig ist damit **nur
 		   noch** der lokale Komfortpfad für einen Lauf ohne `npm run db:start`.
@@ -512,10 +516,7 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 			}))
 		);
 
-	const scanRoute = async (
-		fixtures: ScanFixtures,
-		route: ScanRoute
-	): Promise<ScannedElement[]> => {
+	const scanRoute = async (fixtures: ScanFixtures, route: ScanRoute): Promise<ScannedElement[]> => {
 		await openRoute(fixtures, route);
 
 		for (const probe of route.renders ?? []) {
