@@ -565,9 +565,21 @@ Bei der Deckkraft-Regel wurde dabei aus der Aufzählung `(40|50)` ein
 **Schwellenvergleich gegen /60**. Die alte Fassung hätte ein `/30` oder `/25`
 genauso durchgelassen wie das `/80`.
 
-Was die Regeln weiterhin **nicht** sehen: `hover:`-Varianten (der Scan liest den
-Ruhezustand) und `fill-`/`stroke-` (nur `text-` ist im Muster; im Bestand gibt es
-derzeit keine solche Fundstelle).
+**`fill-` und `stroke-` sind seit dem 2026-07-30 mit im Muster.** Die Regel oben
+verlangt das `-strong` hinter allen drei Präfixen, das Muster kannte nur `text-`.
+Die Lücke stand hier als bekannt notiert, mit der Begründung „im Bestand gibt es
+derzeit keine solche Fundstelle" — dasselbe Argument, das `bannedClasses.ts` bei der
+Paletten-Regel ausdrücklich verwirft, wo zehn Farbtöne ohne Fundstelle ergänzt
+wurden. Eine Regel, die nur die Schreibweisen kennt, die schon jemand benutzt hat,
+meldet die erste neue nicht. Erreichbar ist der Fall auch: `Icon.svelte` rendert
+`<svg class="…">`, und der Scan liest `class` per `getAttribute` — ein `fill-warning`
+an einem Icon landet also im gescannten Bestand und trägt dieselben 2,74:1 wie
+`text-warning`, verfehlt damit auch die 3:1 aus WCAG 1.4.11 für grafische Objekte.
+Der Scan über die sieben Routen bleibt dabei grün: die einzigen `stroke-`-Klassen im
+Bestand sind zwei `stroke-current`, und die enthalten keinen Farbnamen.
+
+Was die Regeln weiterhin **nicht** sehen: `hover:`-Varianten — der Scan liest den
+Ruhezustand.
 
 **Beim Aufräumen einer Fundstelle gilt:** Erst prüfen, ob die Farbe dort Bedeutung
 trägt. Ein dekoratives Icon oder ein Zierelement gehört auf `base-content/70` —
