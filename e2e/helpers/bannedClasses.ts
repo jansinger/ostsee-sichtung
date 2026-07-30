@@ -90,8 +90,27 @@ const SURFACE_ONLY_COLORS = ['info', 'success', 'warning', 'secondary', 'accent'
 /** Optionales Tailwind-Deckkraft-Suffix, z. B. das `/80` in `text-success/80`. */
 const OPACITY_SUFFIX = String.raw`(?:\/\d{1,3})?`;
 
+/**
+ * Präfixe, die eine Farbe zum **Vordergrund** machen.
+ *
+ * `design-system.md` verlangt das `-strong` ausdrücklich hinter allen drei
+ * („Steht die Farbe hinter `text-`, `fill-` oder `stroke-`, muss `-strong`
+ * dranhängen"). Im Muster stand bis 2026-07-30 nur `text-`, und die Lücke war
+ * mit „im Bestand gibt es derzeit keine solche Fundstelle" begründet — dasselbe
+ * Argument, das diese Datei bei `PALETTE_HUES` unten verwirft. Es trägt hier
+ * genauso wenig: Eine Regel, die nur die Schreibweisen kennt, die schon jemand
+ * benutzt hat, meldet die erste neue nicht.
+ *
+ * Erreichbar ist der Fall, weil `Icon.svelte` `<svg class="…">` rendert und der
+ * Scan `class` per `getAttribute` liest (siehe `ScannedElement.classes`). Ein
+ * SVG, das seine Fläche über `fill-` bezieht, hat dabei genau das
+ * Kontrastproblem, für das die Regel existiert: `fill-warning` trägt dieselben
+ * 2,74:1 wie `text-warning` und verfehlt damit auch die 3:1 aus WCAG 1.4.11.
+ */
+const FOREGROUND_PREFIXES = ['text', 'fill', 'stroke'] as const;
+
 const STATUS_AS_FOREGROUND_PATTERN = new RegExp(
-	String.raw`^text-(?:${SURFACE_ONLY_COLORS.join('|')})${OPACITY_SUFFIX}$`
+	String.raw`^(?:${FOREGROUND_PREFIXES.join('|')})-(?:${SURFACE_ONLY_COLORS.join('|')})${OPACITY_SUFFIX}$`
 );
 
 /**
@@ -102,9 +121,13 @@ const STATUS_AS_FOREGROUND_PATTERN = new RegExp(
  * `^text-warning(/\d+)?$` und werden deshalb nie gemeldet. Genau daran ist die
  * „32 Fundstellen"-Liste in `docs/DESIGN_SYSTEM.md` gescheitert — `grep -o`
  * schnitt das Suffix vor dem Filter ab.
+ *
+ * Sie trägt auch die beiden neuen Präfixe: `stroke-current` und `fill-none`
+ * enthalten keinen Farbnamen aus der Liste und schlagen deshalb nicht an —
+ * `stroke-current` ist eine echte Aufrufstelle im Bestand.
  */
 export const STATUS_AS_FOREGROUND: BannedRule = {
-	hint: 'Flächen-Statusfarben als Vordergrund verwenden — stattdessen text-*-strong. Bei dekorativen Icons und Zierelementen ist text-base-content/70 die richtige Antwort, nicht -strong.',
+	hint: 'Flächen-Statusfarben als Vordergrund verwenden (text-, fill-, stroke-) — stattdessen die -strong-Variante. Bei dekorativen Icons und Zierelementen ist text-base-content/70 die richtige Antwort, nicht -strong.',
 	offends: (className) => STATUS_AS_FOREGROUND_PATTERN.test(className)
 };
 

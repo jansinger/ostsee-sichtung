@@ -67,6 +67,55 @@ describe('STATUS_AS_FOREGROUND', () => {
 			expect(STATUS_AS_FOREGROUND.offends(className)).toBe(false);
 		}
 	);
+
+	/* `fill-` und `stroke-` (seit 2026-07-30). design-system.md verlangt das
+	   `-strong` ausdrücklich hinter allen drei Präfixen; im Muster stand nur
+	   `text-`. Die Lücke war als solche notiert, mit der Begründung „im Bestand
+	   gibt es derzeit keine solche Fundstelle" — genau das Argument, das dieselbe
+	   Datei bei PALETTE_HUES verwirft: Eine Regel, die nur kennt, was schon
+	   jemand benutzt hat, meldet die erste neue Fundstelle nicht.
+
+	   Erreichbar ist der Fall sehr wohl: `Icon.svelte` rendert `<svg class="…">`,
+	   und der Scan liest `class` per `getAttribute` — ein `fill-warning` an einem
+	   Icon landet also im gescannten Bestand. Ein SVG, das seine Fläche über
+	   `fill-` bezieht, hat dasselbe Kontrastproblem wie ein Zeichen über `text-`;
+	   `fill-warning` misst dieselben 2,74:1 und verfehlt damit auch die 3:1 aus
+	   WCAG 1.4.11 für grafische Objekte. */
+	it.each([
+		'fill-warning',
+		'stroke-warning',
+		'fill-info',
+		'stroke-success',
+		'fill-secondary/80',
+		'stroke-accent/70'
+	])('meldet %s', (className) => {
+		expect(STATUS_AS_FOREGROUND.offends(className)).toBe(true);
+	});
+
+	it('meldet fill- an einem Icon-SVG mit der konkreten Klasse', () => {
+		expect(
+			findOffenders(STATUS_AS_FOREGROUND, [
+				{ tag: 'svg', classes: 'fill-warning h-5 w-5', hasText: false }
+			])
+		).toEqual(['<svg> fill-warning — in class="fill-warning h-5 w-5"']);
+	});
+
+	/* Der Ersatz und die zulässigen Farben müssen hinter allen drei Präfixen
+	   durchkommen, sonst ist die Regel unerfüllbar. `stroke-current` ist eine
+	   echte Aufrufstelle im Bestand (zwei Fundstellen) und trägt gar keinen
+	   Farbnamen — die Verankerung hält sie draußen. */
+	it.each([
+		'fill-warning-strong',
+		'stroke-warning-strong',
+		'fill-success-strong/80',
+		'fill-primary',
+		'stroke-error',
+		'stroke-current',
+		'fill-base-content',
+		'fill-none'
+	])('lässt %s durch', (className) => {
+		expect(STATUS_AS_FOREGROUND.offends(className)).toBe(false);
+	});
 });
 
 describe('BELOW_OPACITY_FLOOR', () => {
