@@ -80,8 +80,9 @@ Passenger, und `proxy_set_header` gehört zu nginx' Proxy-Modul — es wirkt nur
 auf Anfragen, die per `proxy_pass` weitergereicht werden. Bei einer
 Passenger-Anwendung läuft die Direktive wirkungslos ins Leere, **ohne
 Fehlermeldung**: nginx startet, die Anwendung startet, alles sieht richtig
-aus, und der Dienst sieht trotzdem nur `127.0.0.1`. Am 2026-07-30 auf hawking
-genau so passiert.
+aus, und der Dienst sieht trotzdem nur `127.0.0.1`. Bei der ersten
+Inbetriebnahme am 2026-07-30 genau so passiert — die Direktive ist also keine
+theoretische Vorsichtsmaßnahme.
 
 Nach dem Eintragen von außen prüfen — nicht vom Server selbst, sonst ist
 `127.0.0.1` die korrekte Antwort. Die empfangene Adresse steht im Umschlag
