@@ -19,6 +19,25 @@ import { createId } from '@paralleldrive/cuid2';
 import type { LegacySightingRequest } from './types.js';
 
 /**
+ * Prüft ein Legacy-0/1-Feld auf „gesetzt".
+ *
+ * Legacy-Clients dürfen Formulardaten schicken; der Endpunkt baut daraus
+ * `Object.fromEntries(formData.entries())`, also **Strings**. `!!'0'` wäre
+ * `true` — deshalb wird numerisch verglichen.
+ */
+function isLegacyFlagSet(value: number | string | undefined | null): boolean {
+	return value !== undefined && value !== null && value !== '' && Number(value) === 1;
+}
+
+/**
+ * Prüft ein Legacy-Zahlenfeld auf exakt 0 — ebenfalls string-tolerant,
+ * weil `'0' === 0` in TypeScript false ist.
+ */
+function isLegacyZero(value: number | string | undefined | null): boolean {
+	return value !== undefined && value !== null && value !== '' && Number(value) === 0;
+}
+
+/**
  * Maps legacy API request to current SightingFormData format
  *
  * @param legacyData - Legacy API request data
@@ -42,6 +61,7 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		lastName: legacyData.name, // Note: "name" in legacy API, not "nachname"
 		email: legacyData.email,
 		phone: legacyData.telefon || '',
+		fax: legacyData.fax || '',
 		street: legacyData.strasse || '',
 		zipCode: legacyData.plz || '',
 		city: legacyData.ort || '',
@@ -88,7 +108,18 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		// Media and observations
 		mediaFile: legacyData.aufnahme || '',
 		mediaUpload: legacyData.aufnahmeHochladen ? true : false,
-		otherObservations: legacyData.sonstige_auffälligkeiten || '',
+		// Die Spezifikation nennt das Feld `sonstige_auffaelligkeiten` (mit `ae`);
+		// diese Implementierung las bis 2026-07-30 nur die Umlaut-Variante und
+		// verwarf den Freitext spec-konformer Clients kommentarlos.
+		//
+		// Beide Schreibweisen werden gelesen. Unter zwei **gefüllten** Werten
+		// gewinnt der Vertragsname; ein leerer Vertragsname verdrängt dagegen
+		// keinen vorhandenen Umlaut-Text. Deshalb `||` und nicht `??`: Ein
+		// Serializer, der abwesende Felder als `""` ausgibt, würde mit `??` den
+		// vorhandenen Text verwerfen — genau der stille Datenverlust, den diese
+		// Änderung behebt. Festgenagelt in field-mapping.test.ts.
+		otherObservations:
+			legacyData.sonstige_auffaelligkeiten || legacyData.sonstige_auffälligkeiten || '',
 		notes: legacyData.bemerkungen || '',
 
 		// Consent flags (convert 0/1 to boolean)
@@ -97,7 +128,12 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		privacyConsent: legacyData.datenschutzEinverstaendnis ? true : false,
 
 		// Death finding detection and fields
-		isDead: legacyData.anzahl_gesamt === 0 ? true : false,
+		//
+		// Die Spec kennt zwei Wege zum Totfund: das eigene 0/1-Feld `totfund` und
+		// die Regel „`anzahl_gesamt = 0` wird als Totfund interpretiert". Bis
+		// 2026-07-30 wurde nur der Zähler ausgewertet — ein explizites
+		// `totfund: 1` bei `anzahl_gesamt > 0` verschwand.
+		isDead: isLegacyFlagSet(legacyData.totfund) || isLegacyZero(legacyData.anzahl_gesamt),
 		deadSize: legacyData.totfund_groesse || undefined,
 		deadCondition: legacyData.totfund_zustand || 0,
 		deadSex: legacyData.totfund_geschlecht || 0,

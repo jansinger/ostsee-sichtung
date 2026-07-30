@@ -1,10 +1,10 @@
 /**
  * @fileoverview Type definitions for PDF-compliant Legacy REST API
- * 
+ *
  * Defines the interface contracts for the legacy mobile app API compatibility layer.
- * These types match EXACTLY the original schweinswalsichtung.de API specification 
+ * These types match EXACTLY the original schweinswalsichtung.de API specification
  * from the PDF documentation. Field names MUST NOT be changed!
- * 
+ *
  * @author Ostsee-Tiere Team  
  * @since 1.10.0
  */
@@ -45,7 +45,18 @@ export interface LegacySightingRequest {
 	verhalten?: number; // Behavior (0-3)
 	verhalten_text?: string; // Other behavior text (when verhalten = 0)
 	reaktion?: string; // Animal reaction
-	sonstige_auffälligkeiten?: string; // Other observations
+	/**
+	 * Other observations — Vertragsname aus der Spezifikation (mit `ae`).
+	 * Diese Schreibweise hat Vorrang.
+	 */
+	sonstige_auffaelligkeiten?: string;
+	/**
+	 * @deprecated Historische Umlaut-Schreibweise dieser Implementierung. Die
+	 * Spezifikation kennt nur `sonstige_auffaelligkeiten`; das Feld wird nur
+	 * noch gelesen, damit bereits gegen diese App gebaute Clients ihren
+	 * Freitext nicht verlieren. Nicht in neuen Clients verwenden.
+	 */
+	sonstige_auffälligkeiten?: string;
 
 	// Environmental conditions
 	seegang?: number; // Sea state (0-5)
@@ -100,21 +111,21 @@ export interface LegacyLocationResponse {
 
 /**
  * Legacy API error response format - EXACT format from original API
+ *
+ * Flach, wie im Originaldokument (Abschnitt „Bei Validierungsfehlern"):
+ * `{"message": "Validation failed.", "errors": {"anzahl_gesamt": ["…"]}}`.
+ * `message` ist ein String — kein verschachteltes Objekt.
  */
 export interface LegacyErrorResponse {
-	message: {
-		message: string;
-		errors?: Record<string, string[]>; // Field validation errors in German
-	};
+	message: string;
+	errors?: Record<string, string[]>; // Field validation errors in German
 }
 
 /**
  * Simple error response for specific cases like "No data send"
  */
 export interface LegacySimpleErrorResponse {
-	message: {
-		message: string;
-	};
+	message: string;
 }
 
 /**

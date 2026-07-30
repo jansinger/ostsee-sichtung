@@ -344,10 +344,10 @@ Antwort wurde trotzdem als aktive Aussage gespeichert.
 
 Messung 2026-07-29 (19.880 Zeilen):
 
-| Feld         | Zeilen mit `0`   | davon mit Freitext | Freitext-Quote der übrigen Werte |
-| ------------ | ---------------- | ------------------ | -------------------------------- |
-| `verteilung` | 15.129 (76,1 %)  | 632 (4,2 %)        | 0,0–0,6 %                        |
-| `verhalten`  | 9.192 (46,2 %)   | 892 (9,7 %)        | 0,0–0,4 %                        |
+| Feld         | Zeilen mit `0`  | davon mit Freitext | Freitext-Quote der übrigen Werte |
+| ------------ | --------------- | ------------------ | -------------------------------- |
+| `verteilung` | 15.129 (76,1 %) | 632 (4,2 %)        | 0,0–0,6 %                        |
+| `verhalten`  | 9.192 (46,2 %)  | 892 (9,7 %)        | 0,0–0,4 %                        |
 
 Bei `verteilung` war „Sonstige Verteilung" dadurch mit 76 % die dominierende
 Kategorie — vor „Einzeln" (3.046). Rechnet man die Nicht-Antworten heraus, ist
@@ -425,6 +425,124 @@ Antrieb nur niemand angegeben hat — dort ist `5` streng genommen zu stark.
 Bewusst in Kauf genommen: Ein eigener Wert „Antrieb unbekannt" wäre eine dritte
 Vertragsänderung an derselben Spalte, und eine erfundene Antriebsart wiegt
 schwerer als „kein Boot" bei einem Kajak.
+
+## Zusätzlich akzeptiert: `sonstige_auffälligkeiten` (Umlaut-Variante)
+
+Vertragsname ist und bleibt `sonstige_auffaelligkeiten` (mit `ae`), so wie ihn
+das Originaldokument nennt.
+
+Diese Implementierung las bis zum 2026-07-30 **ausschließlich** die
+Umlaut-Schreibweise `sonstige_auffälligkeiten` (`src/lib/legacy-api/types.ts`,
+`yup-validation.ts`, `field-mapping.ts`). Ein spec-konformer Client verlor
+seinen Freitext dadurch kommentarlos — `otherObservations` wurde `''`, ohne
+Validierungsfehler.
+
+**Seit dem 2026-07-30 werden beide Schreibweisen gelesen**, der Vertragsname hat
+Vorrang, wenn beide im selben Request stehen. Die Umlaut-Variante ist in
+`static/openapi.yml` als `deprecated` markiert und existiert nur, damit bereits
+gegen diese App gebaute Clients nichts verlieren. Neue Clients benutzen
+`sonstige_auffaelligkeiten`.
+
+Kein Effekt auf Ausgaben: `showreports.json` liefert dieses Feld nicht.
+
+## Korrektur 2026-07-30: Form der Fehlerantwort
+
+Der Abschnitt [Validation Errors](#validation-errors) war schon immer die
+verbindliche Form (`message` als String, `errors` daneben) — die
+Implementierung wich davon ab und schachtelte
+`{"message": {"message": …, "errors": …}}`. `static/openapi.yml` beschrieb mit
+`{"error": …, "message": …}` eine dritte, wieder andere Struktur ohne
+`errors`-Objekt.
+
+Beide sind seit dem 2026-07-30 auf die flache Form des Originaldokuments
+korrigiert. Ein Client, der `message` vertragsgemäß als Text liest, bekam vorher
+ein Objekt.
+
+Betroffen sind der 400er-Validierungsfehler, die `"No data send."`-Antwort
+(die dieser Endpunkt mit Status **200** ausliefert) und der 500er-Pfad für
+unerwartete Fehler.
+
+**Nicht** betroffen ist der 500er nach einem fehlgeschlagenen Schreibvorgang: Er
+liefert weiterhin `{"error": "Failed to save sighting", "message": "Internal
+server error occurred"}` und damit einen `error`-Schlüssel, den die flache
+Vertragsform nicht kennt. `static/openapi.yml` dokumentiert für 500 deshalb
+beide Formen.
+
+## Korrektur 2026-07-30: `fax` und `totfund` wurden verworfen
+
+Beide Felder standen in der Validierung, landeten aber nirgends — dieselbe
+Fehlerklasse wie bei `sonstige_auffaelligkeiten` oben.
+
+- **`fax`**: Die DB-Spalte `fax` existiert seit immer, aber das Feld fehlte im
+  Formular-Schema (`sightingSchema`) und damit in `SightingFormData`. Der
+  Legacy-Adapter hatte kein Ziel für den Wert. `fax` ist jetzt im Schema (ohne
+  `.meta()`, also kein Formularfeld) und wird von `mapFormToSighting`
+  geschrieben.
+- **`totfund`**: `isDead` wurde ausschließlich aus `anzahl_gesamt = 0`
+  abgeleitet. Ein explizites `totfund: 1` bei `anzahl_gesamt > 0` verschwand.
+  Beide Wege gelten jetzt, und beide werden string-tolerant ausgewertet — der
+  Formulardaten-Pfad liefert `Object.fromEntries(formData.entries())`, also
+  Strings, und `'0' === 0` ist in TypeScript false.
+
+## Bewusst nicht umgesetzt: der Ostsee-Filter in `showreports.json`
+
+Abschnitt 4 beschreibt die Grundmenge als „approved **and marked as lying in the
+Baltic Sea**". Der zweite Teil ist **absichtlich nicht implementiert**. Der
+Endpunkt filtert ausschließlich `freigegeben_am IS NOT NULL`.
+
+**Grund 1 — `ostsee = 0` heißt „nicht berechnet", nicht „nicht in der Ostsee".**
+Die Berechnung des Wertes wurde erst nachträglich eingeführt; für den davor
+entstandenen Bestand steht der Default `0` in der Spalte, ohne dass je eine
+Positionsprüfung stattgefunden hätte. Der Wert ist damit **kein** Prädikat, auf
+das man filtern kann — er ist teilweise unbefüllt.
+
+Messung am 2026-07-30 über die 19.262 freigegebenen Zeilen der lokalen DB:
+
+| Spalte       | `= 1`  | `= 0` | `NULL` |
+| ------------ | ------ | ----- | ------ |
+| `ostsee`     | 10.028 | 9.234 | 0      |
+| `ostsee_geo` | 3.838  |       |        |
+
+Von den 9.234 Zeilen mit `ostsee = 0` liegen **9.135 (98,9 %) im Kartenbereich**
+(53–66 N, 9–31 O) — es sind plausible Ostsee-Sichtungen, für die nur niemand die
+Prüfung gerechnet hat. Umgekehrt tragen 179 Zeilen mit `ostsee = 1` überhaupt
+keine Koordinaten.
+
+Die Quote schwankt jahrgangsweise stark und **nicht monoton** (2012: 93 %, 2020:
+27 %, 2021: 73 %). Sie folgt also nicht einfach dem Einführungszeitpunkt — für
+einen Backfill heißt das, dass die vorhandenen `1`-Werte nicht automatisch
+vertrauenswürdiger sind als die `0`-Werte und die Herkunft der Altwerte mit
+geklärt werden muss.
+
+Ein Filter auf `ostsee = 1` würde damit rund **9.100 echte Sichtungen (48 %)**
+aus der öffentlichen Ausgabe entfernen. `ostsee = 1 OR ostsee_geo = 1` wären
+immer noch 7.383 (38 %).
+
+**Grund 2 — `.claude/rules/api.md` verbietet es.** Dort ist die öffentliche
+Grundmenge verbindlich auf `approvedAt IS NOT NULL` festgelegt, ausdrücklich für
+die Legacy-API **und** die moderne Karte (`/api/map/sightings`, via
+`approvedOnly()` aus `src/lib/server/db/approvalFilter.ts`), mit der Begründung,
+dass zwei verschiedene Filter für zwei öffentliche Flächen zwangsläufig
+auseinanderlaufen. Ein zusätzlicher Marker-Filter nur hier wäre genau dieser
+Fall.
+
+**Was das für Clients heißt:** Die Ergebnismenge ist eine Obermenge dessen, was
+die Spec beschreibt. Ein Client bekommt zusätzliche Meldungen, keine fehlenden —
+die verträglichere Richtung. Die Felder `bm`/`va` wären der vertragsgemäße Weg,
+das Ergebnis der Positionsprüfung an Clients zu übermitteln — sie werden derzeit
+gar nicht ausgeliefert, auch nicht an eingeloggte Admins.
+
+**Offen — Backfill, aber erst nach der Überarbeitung der Geo-Funktion.** Der
+Bestand muss nachgerechnet werden, bevor der Filter überhaupt bewertbar ist. Das
+darf aber nicht mit der heutigen Prüfung passieren: Die Küstenabgrenzung wird
+gerade überarbeitet (Stand `docs/archive/`-Analyse vom 2026-07-29: eine
+Distanzschwelle taugt nicht als Kriterium, weil Schlei, Elbe und Trave bis 74 km
+„binnenlands" liegen — brauchbar ist nur eine ungeteilte OSM-Küstenlinie). Ein
+Backfill mit der alten Funktion müsste danach ein zweites Mal laufen und würde
+zwischenzeitlich falsche Werte als geprüft ausweisen.
+
+Reihenfolge also: Geo-Funktion überarbeiten → Backfill → Marker bewerten →
+Filter entscheiden. Bis dahin bleibt der Filter aus.
 
 ## Zeitzonen-Semantik
 
