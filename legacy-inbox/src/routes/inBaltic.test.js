@@ -20,8 +20,17 @@ const frage = (abfrage) => fetch(`${basis}/rest_sichtungen/inBaltic.json?${abfra
 
 describe('GET /rest_sichtungen/inBaltic.json', () => {
 	it('liefert das Beispiel aus dem PDF', async () => {
+		// location=53,10 → Raum Hamburg. `inchartarea` ist false, seit die
+		// Bounding Box aus der bereinigten Geometrie abgeleitet wird
+		// (minLat 53,55). Die Hauptanwendung antwortet identisch.
 		const antwort = await frage('location=53,10');
 		expect(antwort.status).toBe(200);
+		expect(await antwort.json()).toEqual({ inbaltic: false, inchartarea: false });
+	});
+
+	it('meldet Festland innerhalb des Kartenbereichs', async () => {
+		// Schwerin — innerhalb der Box, aber nicht in der Ostsee-Geometrie.
+		const antwort = await frage('location=53.63,11.42');
 		expect(await antwort.json()).toEqual({ inbaltic: false, inchartarea: true });
 	});
 

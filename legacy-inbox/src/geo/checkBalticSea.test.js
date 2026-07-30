@@ -8,8 +8,17 @@ describe('checkBalticSea', () => {
 	});
 
 	it('erkennt eine Position an Land im Kartenbereich', () => {
-		// Beispiel aus dem PDF: location=53,10 → Raum Hamburg
-		expect(checkBalticSea(10, 53)).toEqual({ inBaltic: false, inChartArea: true });
+		// Schwerin — Festland, liegt aber innerhalb der Bounding Box.
+		expect(checkBalticSea(11.42, 53.63)).toEqual({ inBaltic: false, inChartArea: true });
+	});
+
+	it('legt das PDF-Beispiel südlich der Bounding Box ab', () => {
+		// Beispiel aus dem PDF: location=53,10 → Raum Hamburg. Seit die Box aus
+		// der bereinigten Geometrie abgeleitet wird (minLat 53,55 statt 53,0),
+		// liegt Hamburg außerhalb des Kartenbereichs. Die Hauptanwendung
+		// antwortet hier genauso — verglichen in
+		// src/tests/contract/legacy-inbox.contract.test.ts.
+		expect(checkBalticSea(10, 53)).toEqual({ inBaltic: false, inChartArea: false });
 	});
 
 	it('erkennt eine Position weit außerhalb', () => {

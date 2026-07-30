@@ -13,19 +13,25 @@ const text = () => yup.string().nullable().optional();
 /**
  * Portiert aus src/lib/legacy-api/yup-validation.ts. Die deutschen Meldungen
  * sind Teil des Vertrags und wortgleich übernommen.
+ *
+ * Nicht abweichend pflegen: `src/tests/contract/legacy-inbox.sync.contract.test.ts`
+ * in der Hauptanwendung liest die Meldungen aus beiden Schemata aus und schlägt
+ * fehl, sobald eine davon hier anders lautet als dort.
  */
 export const legacySchema = yup.object().shape({
 	sichtungsdatum: yup
 		.string()
 		.required('Bitte geben Sie ein gültiges Datum an.')
 		.matches(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/, 'Bitte geben Sie ein gültiges Datum an.'),
+	// Fehlt das Feld, lautet die Meldung "Dieses Feld kann nicht leer gelassen
+	// werden." — nicht die Längenmeldung. Ist es zu lang, umgekehrt.
 	vorname: yup
 		.string()
-		.required('Der Vorname darf nicht länger als 64 Zeichen sein.')
+		.required('Dieses Feld kann nicht leer gelassen werden.')
 		.max(64, 'Der Vorname darf nicht länger als 64 Zeichen sein.'),
 	name: yup
 		.string()
-		.required('Der Name darf nicht länger als 64 Zeichen sein.')
+		.required('Dieses Feld kann nicht leer gelassen werden.')
 		.max(64, 'Der Name darf nicht länger als 64 Zeichen sein.'),
 	email: yup
 		.string()

@@ -21,9 +21,28 @@ import { protokolliere } from '../logger.js';
  * unabhängig davon ihr echtes Ergebnis.
  */
 
-// Identisch mit CHART_AREA_ENVELOPE in PostGIS.
-const BBOX = { minLon: 9.4, maxLon: 30.2, minLat: 53.0, maxLat: 66.0 };
-const GRENZEN = { minLon: -180, maxLon: 180, minLat: -90, maxLat: 90 };
+/**
+ * Kopie von BALTIC_SEA_BBOX aus src/lib/utils/geo/checkBalticSea.ts.
+ *
+ * Nicht von Hand pflegen: die Werte sind dort der Extent der bereinigten
+ * Ostsee-Geometrie (`src/lib/server/geo/baltic-extent.json`, nach außen auf
+ * 0,05° gerundet, erzeugt von `npm run geo:build`). Ändert sich die Geometrie,
+ * ändert sich die Box — dieser Dienst muss dann nachgezogen werden.
+ * `src/tests/contract/legacy-inbox.sync.contract.test.ts` in der Hauptanwendung
+ * schlägt fehl, solange das nicht passiert ist.
+ *
+ * - West: 9,40°E — innere Flensburger Förde (das Skagerrak gehört nicht dazu)
+ * - Ost: 30,25°E — Kopf der Newa-Bucht
+ * - Süd: 53,55°N — Oder bei Police
+ * - Nord: 65,95°N — Bottenwiek bei Tornio
+ */
+export const BBOX = { minLon: 9.4, maxLon: 30.25, minLat: 53.55, maxLat: 65.95 };
+
+/**
+ * Kopie von GEO_LIMITS aus src/lib/utils/geo/checkBalticSea.ts — die globalen
+ * WGS84-Grenzen für die Plausibilitätsprüfung vor der Bounding-Box.
+ */
+export const GRENZEN = { minLon: -180, maxLon: 180, minLat: -90, maxLat: 90 };
 
 const HIER = path.dirname(fileURLToPath(import.meta.url));
 
