@@ -18,6 +18,7 @@
 	import type { SpamCheckResult } from '$lib/types/spam';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import Icon from '$lib/components/Icon.svelte';
+	import { BALTIC_SEA_STATUS_PRESENTATION, getBalticSeaStatus } from './balticSeaStatus';
 
 	const logger = createLogger('SichtungenPage');
 
@@ -53,7 +54,7 @@
 		visibility: false,
 		mediaUpload: true,
 		isDead: true,
-		inBalticSeaGeo: true,
+		balticSea: true,
 		verified: true,
 		actions: true
 	});
@@ -75,7 +76,7 @@
 		{ key: 'visibility', label: 'Sichtweite', sortKey: 'visibility' },
 		{ key: 'mediaUpload', label: 'Aufnahme', sortKey: null },
 		{ key: 'isDead', label: 'Totfund', sortKey: null },
-		{ key: 'inBalticSeaGeo', label: 'Ostsee', sortKey: null },
+		{ key: 'balticSea', label: 'Ostsee', sortKey: null },
 		{ key: 'verified', label: 'Geprüft', sortKey: null },
 		{ key: 'actions', label: 'Aktionen', sortKey: null }
 	];
@@ -598,6 +599,7 @@
 	<!-- Mobile Card Layout -->
 	<div class="container mx-auto block space-y-3 px-4 sm:px-6 md:hidden">
 		{#each sightings as sighting (sighting.id)}
+			{@const balticSea = BALTIC_SEA_STATUS_PRESENTATION[getBalticSeaStatus(sighting)]}
 			<div class="bg-base-100 border-base-300 rounded-lg border p-4 shadow-sm">
 				<div class="mb-3 flex items-start justify-between">
 					<div class="flex-1">
@@ -676,9 +678,15 @@
 					{#if sighting.isDead}
 						<span class="badge badge-error badge-sm">Totfund</span>
 					{/if}
-					{#if sighting.inBalticSeaGeo}
-						<span class="badge badge-info badge-sm">Ostsee</span>
-					{/if}
+					<!-- Anders als Aufnahme/Totfund immer sichtbar: „außerhalb" und „ohne
+					     Position" sind für die Triage genauso relevant wie „Ostsee", ein
+					     fehlendes Badge wäre hier also keine Aussage. -->
+					<span
+						class="badge badge-sm {balticSea.badgeClass} whitespace-nowrap"
+						title={balticSea.title}
+					>
+						{balticSea.label}
+					</span>
 				</div>
 
 				<div class="mt-3 flex items-center justify-between">
@@ -767,7 +775,7 @@
 						{#if columnVisibility.isDead}
 							<th class="hover:bg-base-300">Totfund</th>
 						{/if}
-						{#if columnVisibility.inBalticSeaGeo}
+						{#if columnVisibility.balticSea}
 							<th class="hover:bg-base-300">Ostsee</th>
 						{/if}
 						{#if columnVisibility.verified}
@@ -860,13 +868,17 @@
 									{/if}
 								</td>
 							{/if}
-							{#if columnVisibility.inBalticSeaGeo}
+							{#if columnVisibility.balticSea}
+								{@const balticSea = BALTIC_SEA_STATUS_PRESENTATION[getBalticSeaStatus(sighting)]}
 								<td class="text-center">
-									{#if sighting.inBalticSeaGeo}
-										<span class="badge badge-info badge-sm">Ja</span>
-									{:else}
-										<span class="badge badge-ghost badge-sm">Nein</span>
-									{/if}
+									<!-- whitespace-nowrap: „ohne Position" bricht in der schmalen Spalte sonst
+									     um und läuft aus dem Badge heraus, der Rahmen schneidet durch den Text. -->
+									<span
+										class="badge badge-sm {balticSea.badgeClass} whitespace-nowrap"
+										title={balticSea.title}
+									>
+										{balticSea.label}
+									</span>
 								</td>
 							{/if}
 							{#if columnVisibility.verified}
