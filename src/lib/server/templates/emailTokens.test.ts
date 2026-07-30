@@ -11,9 +11,16 @@ import { EMAIL_COLORS, emailColorContext } from './emailTokens';
  *
  * Warum kein DOM-Scan wie bei `e2e/design-tokens.spec.ts`: E-Mail-HTML wird nie
  * in einem Browser dieses Projekts gerendert. Die Prüfung muss deshalb über die
- * Vorlagen-Quelltexte laufen — beide, die Datei und den DB-Default aus
- * `configInitializer.ts`. Der DB-Default wurde bisher übersehen, weil er als
- * Template-Literal in einer Service-Datei steht und nicht wie eine Vorlage aussieht.
+ * Vorlagen-Quelltexte laufen — über **beide** ausgelieferten Vorlagen: die Datei
+ * `sightingNotificationTemplate.html` (Code-Default) und den Seed, der nach
+ * `app_config` geschrieben wird.
+ *
+ * Der Seed wurde bei der Einführung dieses Tests übersehen, weil er als
+ * Template-Literal mitten in `configInitializer.ts` stand. Seit dem 2026-07-30
+ * liegt er in `notificationEmailDefault.ts`, wird hier aber weiterhin über
+ * `getDefaultConfigurationsByCategory()` gelesen — also über den Weg, auf dem er
+ * tatsächlich in der Datenbank landet. Ein direkter Import der Konstante würde
+ * nicht bemerken, wenn der Seed-Eintrag versehentlich auf etwas anderes zeigt.
  */
 
 const templateDir = dirname(fileURLToPath(import.meta.url));
@@ -60,6 +67,32 @@ describe('E-Mail-Vorlagen — Farben kommen aus emailTokens', () => {
 			const html = Handlebars.compile(template)(emailColorContext());
 			expect(html).not.toContain('{{colors.');
 			expect(html).toContain(EMAIL_COLORS.brand);
+		});
+
+		/**
+		 * Der Ostsee-Status gehört nicht in die Vorlage nachgebaut.
+		 *
+		 * `ostsee_geo` ist die grobe Bounding Box; wer darüber verzweigt, weist
+		 * eine Meldung aus dem Hamburger Hafen als Ostsee-Sichtung aus. Genau das
+		 * ist beiden Vorlagen passiert (Fehler 4 in `docs/OSTSEE_FLAGS.md`) — der
+		 * Status kommt seit dem 2026-07-30 vorberechnet als `sighting.balticSea`
+		 * aus `balticSeaEmailContext.ts`.
+		 *
+		 * Die Prüfung sitzt bewusst in dieser Schleife und nicht in
+		 * `notificationEmailDefault.test.ts`: dort deckte sie nur den Seed ab,
+		 * während die Datei-Vorlage — die ausgeliefert wird, solange `app_config`
+		 * den Schlüssel nicht hat — unbewacht blieb. Ein Guard, der nur eine von
+		 * zwei Kopien kennt, ist der Fehler eine Ebene höher.
+		 */
+		it(`${name}: verzweigt nicht über die Ostsee-Rohflags`, () => {
+			const rawFlagBlocks = [...template.matchAll(/\{\{#(?:if|unless)\s+sighting\.(\w+)/g)]
+				.map((match) => match[1] ?? '')
+				.filter((field) => field === 'inBalticSea' || field === 'inBalticSeaGeo');
+
+			expect(
+				rawFlagBlocks,
+				'Status über {{sighting.balticSea.…}} beziehen, nicht über die Rohflags'
+			).toEqual([]);
 		});
 	}
 });

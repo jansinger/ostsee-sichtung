@@ -58,6 +58,8 @@
 		"db:fix-media-flags:dry-run": "node src/tools/fix-media-upload-flags.js --dry-run",
 		"db:fix-media-flags:verbose": "node src/tools/fix-media-upload-flags.js --verbose",
 		"media:cleanup-orphans:dry-run": "node src/tools/cleanup-orphaned-uploads.ts --dry-run --verbose",
+		"config:refresh-email-template:dry-run": "node src/tools/refresh-email-template.ts --dry-run",
+		"config:refresh-email-template": "node src/tools/refresh-email-template.ts",
 		"media:cleanup-orphans": "node src/tools/cleanup-orphaned-uploads.ts",
 		"sbom:generate": "npm run sbom:json && npm run sbom:xml",
 		"sbom:json": "npx @cyclonedx/cyclonedx-npm --ignore-npm-errors --output-format JSON --output-file sbom/sbom.json --validate",

@@ -7,6 +7,15 @@
 		isBoolean?: boolean;
 		booleanValue?: boolean;
 		isPreformatted?: boolean;
+		/**
+		 * DaisyUI-Badge-Klasse (`badge-info`, `badge-ghost`, …) für Werte, die
+		 * einen von mehreren Zuständen darstellen statt ja/nein — etwa den
+		 * Ostsee-Status. Die Klasse ist Flächenfarbe, kommt also ohne
+		 * `-strong`-Suffix (`.claude/rules/design-system.md`).
+		 */
+		badgeClass?: string;
+		/** Erklärung des Zustands als Tooltip. Nur zusammen mit `badgeClass`. */
+		title?: string;
 	}
 
 	let {
@@ -14,7 +23,9 @@
 		value = '',
 		isBoolean = false,
 		booleanValue = false,
-		isPreformatted = false
+		isPreformatted = false,
+		badgeClass = '',
+		title = ''
 	}: Props = $props();
 </script>
 
@@ -23,6 +34,8 @@
 	<td class:whitespace-pre-wrap={isPreformatted}>
 		{#if isBoolean}
 			<BooleanStatus value={booleanValue} />
+		{:else if badgeClass}
+			<span class="badge {badgeClass}" {title}>{value}</span>
 		{:else}
 			{value}
 		{/if}

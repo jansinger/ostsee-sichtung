@@ -99,37 +99,32 @@
 				</h3>
 				<p style="color: {{colors.text}}; margin: 5px 0"><strong>Heuristik-Score:</strong> 0</p>
 			</div>
-			{{/if}} {{/if}} {{#if sighting.inBalticSea}} {{#unless sighting.inBalticSeaGeo}}
+			{{/if}} {{/if}}
+			<!--
+				Ostsee-Status: eine Verzweigung über einen vorberechneten Wert.
+
+				Vorher standen hier zwei verschachtelte Bedingungen über die beiden
+				Rohflags — eine dritte Kopie derselben Zustandsmaschine. Sie hatte
+				zusätzlich keinen Koordinaten-Guard und behauptete bei einer Meldung
+				ohne Position „Die angegebene Position liegt deutlich außerhalb der
+				Ostsee". Der Zustand `noPosition` deckt genau diesen Fall ab.
+
+				Werte kommen aus balticSeaEmailContext.ts.
+			-->
+			{{#if sighting.balticSea.needsAttention}}
 			<div
 				style="
-					background: {{colors.warningSurface}};
-					border: 1px solid {{colors.warningStrong}};
+					background: {{sighting.balticSea.surface}};
+					border: 1px solid {{sighting.balticSea.strong}};
 					border-radius: 6px;
 					padding: 15px;
 					margin: 15px 0;
 				"
 			>
-				<h3 style="margin-top: 0; color: {{colors.warningStrong}}">🌊 Position außerhalb Ostsee</h3>
-				<p style="color: {{colors.text}}">
-					Die angegebene Position liegt außerhalb der typischen Ostsee-Grenzen. Bitte prüfen Sie die
-					Koordinaten.
-				</p>
-			</div>
-			{{/unless}} {{else}}
-			<div
-				style="
-					background: {{colors.errorSurface}};
-					border: 1px solid {{colors.errorStrong}};
-					border-radius: 6px;
-					padding: 15px;
-					margin: 15px 0;
-				"
-			>
-				<h3 style="margin-top: 0; color: {{colors.errorStrong}}">🌍 Position außerhalb Ostsee</h3>
-				<p style="color: {{colors.text}}">
-					Die angegebene Position liegt deutlich außerhalb der Ostsee. Bitte überprüfen Sie diese
-					Sichtung sorgfältig.
-				</p>
+				<h3 style="margin-top: 0; color: {{sighting.balticSea.strong}}">
+					🌊 Ostsee-Status: {{sighting.balticSea.label}}
+				</h3>
+				<p style="color: {{colors.text}}">{{sighting.balticSea.title}}</p>
 			</div>
 			{{/if}}
 
@@ -147,7 +142,22 @@
 				{{#if sighting.totalCount}}
 				<p><strong>Anzahl:</strong> {{sighting.totalCount}}</p>
 				{{/if}} {{#if sighting.coordinatesFormatted}}
-				<p><strong>Position:</strong> {{sighting.coordinatesFormatted}}</p>
+				<p>
+					<strong>Position:</strong> {{sighting.coordinatesFormatted}}
+					<span
+						style="
+							display: inline-block;
+							margin-left: 8px;
+							padding: 2px 8px;
+							border-radius: 4px;
+							font-size: 12px;
+							font-weight: bold;
+							background: {{sighting.balticSea.surface}};
+							color: {{colors.text}};
+						"
+						>{{sighting.balticSea.label}}</span
+					>
+				</p>
 				{{/if}} {{#if sighting.behavior}}
 				<p><strong>Verhalten:</strong> {{sighting.behavior}}</p>
 				{{/if}} {{#if sighting.distance}}

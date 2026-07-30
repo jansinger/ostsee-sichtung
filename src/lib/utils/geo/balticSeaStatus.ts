@@ -1,5 +1,17 @@
 /**
- * Ostsee-Status einer Sichtung für die Admin-Übersicht.
+ * Ostsee-Status einer Sichtung — **die einzige Stelle**, an der dieser Status
+ * entsteht.
+ *
+ * Angeschlossen sind die Admin-Übersicht (`routes/admin/+page.svelte`), die
+ * Detailansicht (`components/admin/AdminSightingView.svelte`) und die
+ * Benachrichtigungs-Mail (über `server/templates/balticSeaEmailContext.ts`, weil
+ * Handlebars keine TypeScript-Funktion aufrufen kann). Wer eine vierte
+ * Anzeigestelle baut, ruft diese Funktion auf und baut die Flag-Logik nicht nach
+ * — genau daran ist die Mail auseinandergelaufen.
+ *
+ * **Nicht nach `$lib/server/` verschieben:** Die Admin-Übersicht ist eine
+ * Client-Komponente. Die Funktion ist reine Logik über die Flags plus
+ * Koordinaten und hat keine Server-Abhängigkeiten.
  *
  * Die Tabelle `sichtungen` hält zwei Flags, deren Namen die Bedeutungen verkehrt
  * herum nahelegen: `ostsee` (`inBalticSea`) ist die **strenge** Punkt-in-Polygon-
@@ -35,7 +47,7 @@ export type BalticSeaStatus = 'baltic' | 'edge' | 'outside' | 'noPosition';
  * Spalten mit Default optional, also zusätzlich `undefined`. Die Koordinaten sind
  * `numeric`-Spalten und kommen deshalb als String.
  */
-type BalticSeaFlags = {
+export type BalticSeaFlags = {
 	/** Spalte `ostsee` — exaktes Polygon, nullable (Altbestand-Asymmetrie). */
 	inBalticSea?: number | null | undefined;
 	/** Spalte `ostsee_geo` — Bounding Box, drei Werte (0, 1, 2). */

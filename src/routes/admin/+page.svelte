@@ -18,7 +18,10 @@
 	import type { SpamCheckResult } from '$lib/types/spam';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import Icon from '$lib/components/Icon.svelte';
-	import { BALTIC_SEA_STATUS_PRESENTATION, getBalticSeaStatus } from './balticSeaStatus';
+	import {
+		BALTIC_SEA_STATUS_PRESENTATION,
+		getBalticSeaStatus
+	} from '$lib/utils/geo/balticSeaStatus';
 
 	const logger = createLogger('SichtungenPage');
 
