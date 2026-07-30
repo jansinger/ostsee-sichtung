@@ -59,6 +59,7 @@
 		"media:cleanup-orphans": "node src/tools/cleanup-orphaned-uploads.ts",
 		"generate:antworten": "TEST=true vite-node src/tools/generate-antworten-json.js",
 		"import:legacy-inbox": "TEST=true vite-node src/tools/import-legacy-inbox-cli.js --",
+		"analyse:legacy-inbox": "node src/tools/analyse-legacy-inbox.js",
 		"sbom:generate": "npm run sbom:json && npm run sbom:xml",
 		"sbom:json": "npx @cyclonedx/cyclonedx-npm --ignore-npm-errors --output-format JSON --output-file sbom/sbom.json --validate",
 		"sbom:xml": "npx @cyclonedx/cyclonedx-npm --ignore-npm-errors --output-format XML --output-file sbom/sbom.xml --validate",
