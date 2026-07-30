@@ -25,12 +25,12 @@ export const legacyApiSchema = yup.object().shape({
 
 	vorname: yup
 		.string()
-		.required('Der Vorname darf nicht länger als 64 Zeichen sein.')
+		.required('Dieses Feld kann nicht leer gelassen werden.')
 		.max(64, 'Der Vorname darf nicht länger als 64 Zeichen sein.'),
 
 	name: yup
 		.string()
-		.required('Der Name darf nicht länger als 64 Zeichen sein.')
+		.required('Dieses Feld kann nicht leer gelassen werden.')
 		.max(64, 'Der Name darf nicht länger als 64 Zeichen sein.'),
 
 	email: yup
