@@ -112,11 +112,14 @@ export const load: PageServerLoad = async ({ url }) => {
 		.from(sightings)
 		.where(mediaUploadCondition(MEDIA_UPLOAD_ANNOUNCED_MISSING));
 
-	// Abfragen ausführen
-	const data = await paginatedQuery;
-	const countResult = await countQuery;
+	// Abfragen ausführen — voneinander unabhängig, deshalb parallel statt
+	// sequenziell (drei Round-Trips gleichzeitig statt hintereinander).
+	const [data, countResult, pendingPhotoResult] = await Promise.all([
+		paginatedQuery,
+		countQuery,
+		pendingPhotoQuery
+	]);
 	const count = countResult[0]?.count || 0;
-	const pendingPhotoResult = await pendingPhotoQuery;
 	const pendingPhotoAnnouncements = pendingPhotoResult[0]?.count || 0;
 
 	return {

@@ -523,7 +523,7 @@ describe('EmailService', () => {
 		});
 
 		// ------------------------------------------------------------------
-		// Foto-Ankündigung (rebuilter iOS-Client, Stand 2026-07-30): Der
+		// Foto-Ankündigung (neu gebauter iOS-Client, Stand 2026-07-30): Der
 		// Client setzt `aufnahmeHochladen`, kann aber kein Foto hochladen —
 		// es kommt per E-Mail nach. Ohne einen Hinweis in der
 		// Benachrichtigungs-Mail weiß niemand, welcher Sichtung eine später

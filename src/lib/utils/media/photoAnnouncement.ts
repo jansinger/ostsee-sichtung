@@ -1,6 +1,6 @@
 /**
  * „Foto angekündigt, aber noch nicht eingetroffen" — Zustand einer Sichtung
- * vom rebuilten iOS-Client (`OstSeeTiere/8`, Stand 2026-07-30).
+ * vom neu gebauten iOS-Client (`OstSeeTiere/8`, Stand 2026-07-30).
  *
  * Der Client setzt `aufnahmeHochladen` (→ `mediaUpload`), wenn der Melder ein
  * Foto hat, kann darüber aber keine Datei übertragen — der Client kann nicht

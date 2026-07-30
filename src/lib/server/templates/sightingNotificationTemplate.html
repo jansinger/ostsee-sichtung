@@ -167,10 +167,14 @@
 				{{/if}}
 			</div>
 
-			{{!-- Foto-Ankündigung: Der rebuilte iOS-Client (OstSeeTiere/8, Stand 2026-07-30) setzt
-			aufnahmeHochladen, kann aber selbst keine Datei hochladen — der Melder wird gebeten, das Foto
-			per E-Mail nachzureichen. Siehe $lib/utils/media/photoAnnouncement.ts. --}} {{#if
-			sighting.mediaUpload}}
+			<!-- prettier-ignore -->
+			{{!--
+				Foto-Ankündigung: Der neu gebaute iOS-Client (OstSeeTiere/8, Stand
+				2026-07-30) setzt aufnahmeHochladen, kann aber selbst keine Datei
+				hochladen — der Melder wird gebeten, das Foto per E-Mail
+				nachzureichen. Siehe $lib/utils/media/photoAnnouncement.ts.
+			--}}
+			{{#if sighting.mediaUpload}}
 			<div
 				style="
 					background: {{colors.infoSurface}};
@@ -187,7 +191,9 @@
 					<strong>{{referenceId}}</strong> zuordnen.
 				</p>
 			</div>
-			{{/if}} {{#if sighting.notes}}
+			<!-- prettier-ignore -->
+			{{/if}}
+			{{#if sighting.notes}}
 			<div
 				style="
 					background: {{colors.page}};

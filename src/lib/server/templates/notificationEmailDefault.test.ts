@@ -109,7 +109,7 @@ describe('NOTIFICATION_EMAIL_DEFAULT_TEMPLATE — Ostsee-Status', () => {
 	});
 
 	/**
-	 * Foto-Ankündigung (rebuilter iOS-Client `OstSeeTiere/8`, Stand
+	 * Foto-Ankündigung (neu gebauter iOS-Client `OstSeeTiere/8`, Stand
 	 * 2026-07-30): Der Client setzt `aufnahmeHochladen`, kann aber kein Foto
 	 * hochladen — es kommt separat per E-Mail nach. Ohne einen Hinweis in
 	 * dieser Mail lässt sich eine später eintreffende Foto-Mail keiner
@@ -185,7 +185,7 @@ describe('Fingerabdruck des ausgelieferten Stands', () => {
 			.update(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE, 'utf8')
 			.digest('hex');
 
-		expect(hash).toBe('e40a8d357f37192aa47c71cf1883514110b50ed773e98620bbd9110aa3e17390');
+		expect(hash).toBe('2444299392fe83096f5a2ebbcd4806c20f4fc1866dd0d13c105066ccfc0dd7f0');
 	});
 
 	it('führt den aktuellen Stand nicht als früheren Stand', () => {

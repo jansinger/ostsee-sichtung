@@ -1,7 +1,7 @@
 /**
  * @fileoverview Foto-Ankündigung in der Admin-Detailansicht.
  *
- * Der rebuilte iOS-Client setzt `mediaUpload`, kann aber keine Datei
+ * Der neu gebaute iOS-Client setzt `mediaUpload`, kann aber keine Datei
  * hochladen — das Foto kommt per E-Mail nach. Ohne Einordnung zeigte die
  * Detailansicht dafür nur „Upload: Ja" ohne jede Datei, was wie ein defekter
  * Datensatz aussieht. Siehe `$lib/utils/media/photoAnnouncement.ts`.

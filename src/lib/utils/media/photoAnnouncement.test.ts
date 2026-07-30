@@ -1,5 +1,5 @@
 /**
- * @fileoverview Der rebuilte iOS-Client (`OstSeeTiere/8`) setzt `aufnahmeHochladen`
+ * @fileoverview Der neu gebaute iOS-Client (`OstSeeTiere/8`) setzt `aufnahmeHochladen`
  * (→ `mediaUpload`), kann aber selbst keine Datei hochladen — Melder werden
  * gebeten, das Foto per E-Mail nachzureichen. Bis dahin liest „Upload: ja" ohne
  * angehängte Datei wie ein defekter Datensatz.

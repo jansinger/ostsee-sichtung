@@ -1,7 +1,7 @@
 /**
  * @fileoverview Admin-Dashboard: Arbeitsliste „Foto angekündigt, fehlt noch".
  *
- * Der rebuilte iOS-Client setzt `aufnahmeHochladen`, kann aber kein Foto
+ * Der neu gebaute iOS-Client setzt `aufnahmeHochladen`, kann aber kein Foto
  * hochladen — es kommt per E-Mail nach (`$lib/utils/media/photoAnnouncement.ts`).
  * `load()` muss zwei Dinge leisten:
  *

@@ -34,8 +34,12 @@
  * aktuellen Stands und schlägt bei jeder Änderung fehl.
  */
 export const PREVIOUS_SHIPPED_TEMPLATE_HASHES = [
+	// Stand bis 2026-07-30: Foto-Hinweis wortidentisch, aber „rebuilter
+	// iOS-Client" statt der im Projekt sonst üblichen Formulierung „neu
+	// gebauter iOS-Client" (siehe .claude/rules/legacy-api.md).
+	'e40a8d357f37192aa47c71cf1883514110b50ed773e98620bbd9110aa3e17390',
 	// Stand bis 2026-07-30: ohne Hinweis auf ein per E-Mail nachgereichtes
-	// Foto (rebuilter iOS-Client `OstSeeTiere/8` setzt `aufnahmeHochladen`,
+	// Foto (neu gebauter iOS-Client `OstSeeTiere/8` setzt `aufnahmeHochladen`,
 	// kann aber keine Datei hochladen).
 	'7f55d293b7799debff9908e074e8e22c2b87323c98bf7b76cc7ba86186e95a8e',
 	// Stand bis 2026-07-30: verzweigte über `inBalticSeaGeo` (Bounding Box) und
@@ -152,7 +156,7 @@ export const NOTIFICATION_EMAIL_DEFAULT_TEMPLATE = `<!DOCTYPE html>
 	</div>
 
 	{{!--
-		Foto-Ankündigung: Der rebuilte iOS-Client (OstSeeTiere/8, Stand
+		Foto-Ankündigung: Der neu gebaute iOS-Client (OstSeeTiere/8, Stand
 		2026-07-30) setzt aufnahmeHochladen, kann aber selbst keine Datei
 		hochladen — der Melder wird gebeten, das Foto per E-Mail nachzureichen.
 		Ohne diesen Hinweis lässt sich die später eintreffende Foto-Mail keiner

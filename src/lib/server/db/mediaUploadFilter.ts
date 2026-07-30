@@ -10,10 +10,10 @@
  */
 import { and, eq, sql, type SQL } from 'drizzle-orm';
 import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
-import { sightingFiles, sightings } from './schema';
+import { sightingFiles, sightings } from '$lib/server/db/schema';
 
 /**
- * „Foto angekündigt, aber keine Datei angehängt" — der rebuilte iOS-Client
+ * „Foto angekündigt, aber keine Datei angehängt" — der neu gebaute iOS-Client
  * (`OstSeeTiere/8`, Stand 2026-07-30) setzt `aufnahmeHochladen`, kann aber
  * keine Datei hochladen; das Foto kommt per E-Mail nach. Dieselbe Aussage wie
  * `isPhotoAnnouncementPending()` in `$lib/utils/media/photoAnnouncement.ts`,
