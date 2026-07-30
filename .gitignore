@@ -68,3 +68,6 @@ sbom/*.xml
 !sbom/README.md
 !sbom/.gitkeep
 
+# Zwischenergebnisse der Ostsee-Geometrie-Pipeline (src/tools/build-baltic-geometry.sh)
+src/tools/out/
+
