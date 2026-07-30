@@ -86,9 +86,9 @@ describe('legacy-inbox stays in sync — geo constants', () => {
 	});
 });
 
-/** One configured Yup test: its name (`required`, `max`, …) and its message. */
+/** One configured Yup test: its name (`required`, `max`, …), message and params. */
 interface ConfiguredTest {
-	OPTIONS?: { name?: string; message?: unknown };
+	OPTIONS?: { name?: string; message?: unknown; params?: Record<string, unknown> };
 }
 
 /**
@@ -115,6 +115,46 @@ function messagesByField(fields: Record<string, unknown>): Record<string, Record
 	return byField;
 }
 
+/** Total number of (field, test) messages a `messagesByField` result carries. */
+function countMessages(byField: Record<string, Record<string, string>>): number {
+	return Object.values(byField).reduce(
+		(total, messages) => total + Object.keys(messages).length,
+		0
+	);
+}
+
+/**
+ * Reads the numeric `min`/`max` arguments out of a Yup schema. Yup keeps them
+ * on `OPTIONS.params`; the `matches` and `email` tests carry a `regex` param
+ * instead, which does not survive a comparison and is skipped.
+ */
+function limitsByField(fields: Record<string, unknown>): Record<string, Record<string, number>> {
+	const byField: Record<string, Record<string, number>> = {};
+
+	for (const [fieldName, fieldSchema] of Object.entries(fields)) {
+		const tests = (fieldSchema as { tests?: ConfiguredTest[] }).tests ?? [];
+		const limits: Record<string, number> = {};
+
+		for (const test of tests) {
+			const { name, params } = test.OPTIONS ?? {};
+			if (!name || !params) continue;
+			for (const key of ['min', 'max'] as const) {
+				const value = params[key];
+				if (typeof value === 'number') limits[`${name}.${key}`] = value;
+			}
+		}
+
+		if (Object.keys(limits).length > 0) byField[fieldName] = limits;
+	}
+
+	return byField;
+}
+
+/** Total number of (field, limit) arguments a `limitsByField` result carries. */
+function countLimits(byField: Record<string, Record<string, number>>): number {
+	return Object.values(byField).reduce((total, limits) => total + Object.keys(limits).length, 0);
+}
+
 /** Pulls the `_general` fallback message out of a source file's own text. */
 function generalFallbackMessage(relativePath: string): string {
 	const source = readFileSync(path.resolve(REPO_ROOT, relativePath), 'utf8');
@@ -128,25 +168,108 @@ function generalFallbackMessage(relativePath: string): string {
 	return match[1]!;
 }
 
-describe('legacy-inbox stays in sync — validation messages', () => {
+/**
+ * Fields the copy is allowed to be missing, each with a reason.
+ *
+ * `datenschutzEinverstaendnis` is declared in the main schema only. The inbox
+ * neither maps nor stores mapped data — it validates and keeps the raw
+ * payload, and an undeclared field is neither rejected nor stripped
+ * (`stripUnknown` is off, see `legacy-inbox/src/validate.js`). Declaring it
+ * there would not change any answer the inbox gives today, so the divergence
+ * is tolerated rather than papered over.
+ *
+ * The list is not a place to silence a failure: anything added here must be
+ * harmless for the same demonstrable reason.
+ */
+const FIELDS_ONLY_IN_SOURCE = ['datenschutzEinverstaendnis'];
+
+/**
+ * How many messages and limits `messagesByField`/`limitsByField` currently see
+ * in the main schema. Asserted exactly, not as a lower bound: Yup does not
+ * expose the `required(...)` message of a **number** field on
+ * `schema.tests[].OPTIONS` — for `anzahl_gesamt` only `min` and `integer`
+ * appear. A drift in that one message therefore stays green here, and the
+ * former `toBeGreaterThanOrEqual(5)` could not have noticed if extraction had
+ * quietly shrunk further. Raise these numbers together with the schema.
+ */
+const EXPECTED_MESSAGE_COUNT = 15;
+const EXPECTED_LIMIT_COUNT = 8;
+
+/**
+ * What this guard covers — and what it does not.
+ *
+ * Covered: the German message text of every extractable test, the set of
+ * declared field names, and the numeric `min`/`max` arguments.
+ *
+ * Not covered: the declared type of a field (`yup.number()` vs `yup.string()`),
+ * the `transform`/`nullable`/`optional` chain, the `matches` and `email`
+ * regexes, and the `required(...)` message of number fields (see
+ * `EXPECTED_MESSAGE_COUNT`). A divergence in any of those passes unnoticed.
+ */
+describe('legacy-inbox stays in sync — validation schema', () => {
 	const COPY = 'legacy-inbox/src/validate.js';
 	const SOURCE = 'src/lib/legacy-api/yup-validation.ts';
 
-	const expected = messagesByField(legacyApiSchema.fields as Record<string, unknown>);
-	const actual = messagesByField(
-		(legacySchema as { fields: Record<string, unknown> }).fields as Record<string, unknown>
-	);
+	const sourceFields = legacyApiSchema.fields as Record<string, unknown>;
+	const copyFields = (legacySchema as { fields: Record<string, unknown> }).fields;
 
-	it('still finds messages to compare at all', () => {
+	const expected = messagesByField(sourceFields);
+	const actual = messagesByField(copyFields);
+
+	const expectedLimits = limitsByField(sourceFields);
+	const actualLimits = limitsByField(copyFields);
+
+	it('still finds every message it expects to compare', () => {
 		// Without this, a change to Yup's internals would empty both sides and
 		// turn the guard below into a test that can never fail — worse than no
-		// guard, because it would still be trusted.
+		// guard, because it would still be trusted. An exact count also catches
+		// a *partial* loss, which a lower bound cannot.
 		expect(
-			Object.keys(expected).length,
-			`No validation messages could be read out of ${SOURCE}. \`schema.tests[].OPTIONS\` ` +
-				'is a Yup internal; a Yup upgrade may have moved it. Fix `messagesByField` in ' +
-				'this file before believing any green run below.'
-		).toBeGreaterThanOrEqual(5);
+			countMessages(expected),
+			`${countMessages(expected)} validation messages could be read out of ${SOURCE}, ` +
+				`expected ${EXPECTED_MESSAGE_COUNT}. \`schema.tests[].OPTIONS\` is a Yup ` +
+				'internal; a Yup upgrade may have moved it, in which case `messagesByField` in ' +
+				'this file must be fixed before any green run below is believable. If the ' +
+				'schema itself gained or lost a message, update EXPECTED_MESSAGE_COUNT.'
+		).toBe(EXPECTED_MESSAGE_COUNT);
+	});
+
+	it('still finds every limit it expects to compare', () => {
+		expect(
+			countLimits(expectedLimits),
+			`${countLimits(expectedLimits)} min/max arguments could be read out of ${SOURCE}, ` +
+				`expected ${EXPECTED_LIMIT_COUNT}. Same reasoning as the message count above: ` +
+				'either `limitsByField` stopped working or the schema changed. Fix the former, ' +
+				'or update EXPECTED_LIMIT_COUNT for the latter.'
+		).toBe(EXPECTED_LIMIT_COUNT);
+	});
+
+	it('declares the same fields, apart from the documented exceptions', () => {
+		expect(
+			Object.keys(copyFields).sort(),
+			`The field list in ${COPY} no longer matches ${SOURCE}. A field that only exists ` +
+				'here silently accepts anything over there, and one that only exists there is ' +
+				'validated by a rule this application does not have. Add the missing field to ' +
+				`${COPY}, or — if the divergence is provably harmless — add it to ` +
+				'FIELDS_ONLY_IN_SOURCE with the reason. No command to run.'
+		).toEqual(
+			Object.keys(sourceFields)
+				.filter((field) => !FIELDS_ONLY_IN_SOURCE.includes(field))
+				.sort()
+		);
+	});
+
+	it('ports every min/max limit', () => {
+		// `email.max(64)` → `.max(100)` in one place only would leave the inbox
+		// rejecting submissions this application accepts, or the other way round.
+		// The message comparison below cannot see that: the text says "gültige
+		// E-Mail-Adresse", not the number.
+		expect(
+			actualLimits,
+			`The min/max limits in ${COPY} no longer match ${SOURCE}. The two would then ` +
+				'accept different submissions while showing the same message. Align the ' +
+				`numbers in ${COPY}. No command to run.`
+		).toEqual(expectedLimits);
 	});
 
 	it('ports every German validation message character for character', () => {
