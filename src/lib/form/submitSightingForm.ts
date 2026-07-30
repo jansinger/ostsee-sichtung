@@ -50,10 +50,15 @@ export type SubmitResult =
 const FALLBACK_MESSAGE = 'Die Sichtung konnte nicht gespeichert werden';
 
 /**
- * Meldung für ein Feld aus `rejectedFields`/`forbiddenFields`. Der Server
- * liefert dort nur Feldnamen und begründet die Ablehnung gesammelt in `message`.
+ * Meldung für ein Feld aus einer der beiden Namenslisten des Servers —
+ * `rejectedFields` (400) **und** `forbiddenFields` (403). Der Server liefert
+ * dort nur Feldnamen und begründet die Ablehnung gesammelt in `message`.
+ *
+ * Der Name ist deshalb bewusst neutral gehalten und greift keine der beiden
+ * Listen auf: Ein `FORBIDDEN_…` hier würde beim Lesen so wirken, als gälte die
+ * Meldung nur für den 403er-Zweig.
  */
-const FORBIDDEN_FIELD_MESSAGE = 'Dieses Feld darf nicht mitgesendet werden';
+const DISALLOWED_FIELD_MESSAGE = 'Dieses Feld darf nicht mitgesendet werden';
 
 /** Antwortkörper der Sichtungs-API, soweit der Client ihn auswertet. */
 interface SightingApiResponse {
@@ -103,7 +108,7 @@ function readFieldErrors(body: SightingApiResponse | null): Record<string, strin
 
 	for (const field of [...(body?.rejectedFields ?? []), ...(body?.forbiddenFields ?? [])]) {
 		if (typeof field === 'string' && field.length > 0) {
-			fields[field] ??= FORBIDDEN_FIELD_MESSAGE;
+			fields[field] ??= DISALLOWED_FIELD_MESSAGE;
 		}
 	}
 
