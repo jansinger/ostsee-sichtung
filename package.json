@@ -64,7 +64,8 @@
 		"sbom:xml": "npx @cyclonedx/cyclonedx-npm --ignore-npm-errors --output-format XML --output-file sbom/sbom.xml --validate",
 		"sbom:prod": "npx @cyclonedx/cyclonedx-npm --ignore-npm-errors --omit dev --omit optional --output-format JSON --output-file sbom/sbom-prod.json --validate",
 		"sbom:check": "node src/tools/check-sbom-vulnerabilities.js",
-		"geo:build": "bash src/tools/build-baltic-geometry.sh"
+		"geo:build": "bash src/tools/build-baltic-geometry.sh",
+		"geo:review": "tsx src/tools/render-baltic-review.ts"
 	},
 	"config": {
 		"commitizen": {
