@@ -278,7 +278,6 @@ src/
 │   └── uploads/             # Ausgelieferte Uploads (Local Storage)
 └── hooks.server.ts          # Middleware Chain (sequence)
 e2e/                         # E2E Tests (Root-Level)
-monitoring/                  # Prometheus + Grafana Konfiguration
 ```
 
 ---

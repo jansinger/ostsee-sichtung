@@ -4,7 +4,9 @@ Schnellanleitung für das Deployment von Ostsee-Tiere in einer Produktionsumgebu
 
 > **Hinweis:** Diese Anleitung ist für erfahrene Administratoren gedacht, die Docker und Linux-Server verwalten. Für detaillierte Hintergrundinformationen siehe [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md).
 
-> **Neu in v2.3.0:** Vite 8 mit Rolldown-Engine (10–30× schnellere Builds), @sveltejs/vite-plugin-svelte 7. Vorherige: PostgreSQL 18 mit PostGIS 3.6 Support, Node.js 24, Security Hardening.
+> **Stand:** Version 2.5.5. Basis: Node.js 24 (Alpine), PostgreSQL 18 mit
+> PostGIS 3.6, Vite 8 mit Rolldown-Engine. Welcher Image-Tag wohin gehört, steht
+> in [RELEASE_PIPELINE.md](./RELEASE_PIPELINE.md).
 
 ---
 
@@ -18,7 +20,11 @@ Schnellanleitung für das Deployment von Ostsee-Tiere in einer Produktionsumgebu
 6. [Datenbank initialisieren](#6-datenbank-initialisieren)
 7. [Verifizierung](#7-verifizierung)
 8. [Backup einrichten](#8-backup-einrichten)
-9. [Updates durchführen](#9-updates-durchführen)
+9. [Logs](#9-logs)
+10. [Audit Logging](#10-audit-logging)
+11. [Updates durchführen](#11-updates-durchführen)
+
+Danach: [Systemd Service](#systemd-service-optional) · [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -66,10 +72,11 @@ docker compose version
 sudo mkdir -p /opt/ostsee-tiere
 sudo chown $USER:$USER /opt/ostsee-tiere
 cd /opt/ostsee-tiere
-
-# Uploads-Verzeichnis erstellen
-mkdir -p uploads
 ```
+
+> Kein `mkdir uploads` nötig: Der Compose-Stack legt Uploads in das **benannte
+> Volume** `uploads` (nicht in ein Host-Verzeichnis). Ein von Hand erstelltes
+> `./uploads` bliebe leer — was beim Backup gefährlich ist, siehe Abschnitt 8.
 
 ### Docker Compose herunterladen
 
@@ -81,6 +88,12 @@ curl -fsSL https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/docker-
 curl -fsSL https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/.env.docker \
   -o .env.example
 ```
+
+> **Warum in `docker-compose.yml` umbenennen:** So findet `docker compose` die
+> Datei ohne `-f`. Alle Befehle in dieser Anleitung setzen das voraus. Behältst
+> du den Namen `docker-compose.production.yml`, muss jeder Aufruf `-f
+docker-compose.production.yml` mitführen — auch der Backup-Cron und die
+> systemd-Unit.
 
 ---
 
@@ -125,12 +138,38 @@ API_AUDIENCE="deine-api-audience"
 PUBLIC_SITE_URL="https://deine-domain.de"
 
 # Welchem Image-Zeiger folgt der Stack? Siehe RELEASE_PIPELINE.md
-# "production" = freigegebener Stand, "vX.Y.Z" = feste Version (am sichersten)
-IMAGE_TAG="v2.2.3"  # Nicht "staging" in Production!
+# "production" = freigegebener Stand — das ist der richtige Wert für Production.
+# Der Zeiger wird ausschließlich vom Workflow "Promote to Production" bewegt,
+# der Host bekommt also nie einen ungeprüften Build.
+# NICHT "staging" (jedes Release, ungeprüft) und nicht "latest".
+IMAGE_TAG="production"
 
 # App nur über Reverse Proxy erreichbar machen
 APP_HOST="127.0.0.1"
+
+# Reverse-Proxy-Header — PFLICHT hinter Nginx/Caddy.
+# Ohne diese liefert getClientAddress() die Proxy-IP, und das IP-basierte
+# Rate-Limiting greift für alle Clients gemeinsam statt pro Client.
+# XFF_DEPTH = Anzahl vertrauenswürdiger Proxies (bei genau einem: 1).
+ADDRESS_HEADER="x-forwarded-for"
+XFF_DEPTH="1"
+PROTOCOL_HEADER="x-forwarded-proto"
+HOST_HEADER="x-forwarded-host"
+
+# Zeitzone — bewusst UTC. Vor einer Änderung ENVIRONMENT.md → TZ lesen.
+TZ="UTC"
+
+# Log-Level (trace|debug|info|warn|error|fatal)
+LOG_LEVEL="info"
 ```
+
+> **`ORIGIN` nicht setzen.** Der Compose-Stack reicht die Variable nicht an den
+> Container weiter — der Eintrag wäre wirkungslos. Die App bestimmt ihren Origin
+> aus `PROTOCOL_HEADER`/`HOST_HEADER` und fällt sonst auf den `Host`-Header
+> zurück. Achtung beim Weg über `docker run --env-file`: Ein **leeres**
+> `ORIGIN=` reicht dort einen Leerstring an den adapter-node durch, der daran
+> beim Start abbricht (`Invalid ORIGIN: ''`). Entweder eine vollständige URL
+> eintragen oder die Zeile ganz weglassen.
 
 > **Vollständige Variablenreferenz:** Alle optionalen Einstellungen (E-Mail, Storage, Rate-Limiting etc.) siehe [ENVIRONMENT.md](./ENVIRONMENT.md).
 
@@ -254,11 +293,17 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
     }
 
     client_max_body_size 50M;
 }
 ```
+
+> `X-Forwarded-For` und `X-Forwarded-Proto` sind Pflicht — sie speisen
+> `ADDRESS_HEADER` und `PROTOCOL_HEADER` aus Abschnitt 3 und damit die echte
+> Client-IP fürs Rate-Limiting. `X-Forwarded-Host` passt zu `HOST_HEADER`; fehlt
+> der Header, nutzt die App den `Host`-Header. Caddy setzt alle drei von selbst.
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/ostsee-tiere /etc/nginx/sites-enabled/
@@ -351,6 +396,8 @@ docker compose logs app 2>&1 | grep -i error
 docker compose logs app 2>&1 | grep '"event":"security.'
 ```
 
+> Wo diese Logs liegen und wie lange sie überleben: Abschnitt 9.
+
 ---
 
 ## 8. Backup einrichten
@@ -363,20 +410,64 @@ sudo nano /opt/ostsee-tiere/backup.sh
 
 ```bash
 #!/bin/bash
+# Bricht bei jedem Fehler ab — auch mitten in einer Pipe. Ohne pipefail würde
+# ein fehlgeschlagener pg_dump ein gültig aussehendes, leeres .gz hinterlassen.
+set -euo pipefail
+
 BACKUP_DIR="/opt/ostsee-tiere/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p "$BACKUP_DIR"
 
-# Datenbank-Backup (im Verzeichnis /opt/ostsee-tiere ausführen)
+# Im Verzeichnis mit der Compose-Datei arbeiten
 cd /opt/ostsee-tiere
-docker compose -f docker-compose.production.yml exec -T db pg_dump -U postgres ostsee | \
-  gzip > "$BACKUP_DIR/db-$DATE.sql.gz"
+
+# Datenbank-Backup. Erst unter .tmp schreiben und nur bei Erfolg umbenennen,
+# damit ein Abbruch keine halbe Datei als fertiges Backup zurücklässt.
+docker compose exec -T db pg_dump -U postgres ostsee \
+  | gzip >"$BACKUP_DIR/db-$DATE.sql.gz.tmp"
+mv "$BACKUP_DIR/db-$DATE.sql.gz.tmp" "$BACKUP_DIR/db-$DATE.sql.gz"
+
+# Uploads-Volume am laufenden Container ablesen statt den Namen zu raten: Er
+# trägt das Compose-Projekt als Präfix (Verzeichnisname bzw.
+# COMPOSE_PROJECT_NAME) und ist auf einem anders benannten Host ein anderer.
+UPLOADS_VOLUME=$(docker inspect "$(docker compose ps -q app)" \
+  --format '{{range .Mounts}}{{if eq .Destination "/app/uploads"}}{{.Name}}{{end}}{{end}}')
+
+if [ -z "$UPLOADS_VOLUME" ]; then
+  echo "FEHLER: Uploads-Volume nicht gefunden — läuft der app-Container?" >&2
+  exit 1
+fi
+
+docker run --rm \
+  -v "$UPLOADS_VOLUME":/data:ro \
+  -v "$BACKUP_DIR":/backup \
+  alpine tar czf "/backup/uploads-$DATE.tar.gz.tmp" -C /data .
+mv "$BACKUP_DIR/uploads-$DATE.tar.gz.tmp" "$BACKUP_DIR/uploads-$DATE.tar.gz"
 
 # Alte Backups löschen (älter als 30 Tage)
 find "$BACKUP_DIR" -name "db-*.sql.gz" -mtime +30 -delete
+find "$BACKUP_DIR" -name "uploads-*.tar.gz" -mtime +30 -delete
 
-echo "Backup erstellt: db-$DATE.sql.gz"
+# Reste abgebrochener Läufe. Die .tmp-Endung schützt sie davor, oben als
+# fertiges Backup mitgezählt zu werden — aufräumen muss man sie trotzdem.
+find "$BACKUP_DIR" -name "*.tmp" -mtime +1 -delete
+
+echo "Backup erstellt: db-$DATE.sql.gz, uploads-$DATE.tar.gz"
+```
+
+> Der Volume-Name wird bewusst zur Laufzeit ermittelt. Ein fest eingetragener
+> Name wie `ostsee-tiere_uploads` stimmt nur, solange das Compose-Projekt genau
+> so heißt — auf einem Host mit anderem Verzeichnisnamen oder gesetztem
+> `COMPOSE_PROJECT_NAME` (z. B. dem Staging-Stack) würde still das falsche oder
+> gar kein Volume gesichert. Zum Nachsehen: `docker volume ls | grep uploads`.
+
+**Backup einmal prüfen, nicht nur einrichten:**
+
+```bash
+/opt/ostsee-tiere/backup.sh
+gunzip -t /opt/ostsee-tiere/backups/db-*.sql.gz   # Archiv-Integrität
+tar tzf /opt/ostsee-tiere/backups/uploads-*.tar.gz | head
 ```
 
 ```bash
@@ -393,17 +484,97 @@ sudo crontab -e
 0 2 * * * /opt/ostsee-tiere/backup.sh >> /var/log/ostsee-backup.log 2>&1
 ```
 
-### Uploads sichern
+### Uploads wiederherstellen
+
+Volume-Namen wie beim Backup am Container ablesen — der App-Container muss dafür
+noch laufen, deshalb erst ermitteln, dann stoppen:
 
 ```bash
-# Uploads-Verzeichnis in Backup einbeziehen
-tar czf /opt/ostsee-tiere/backups/uploads-$(date +%Y%m%d).tar.gz \
-  /opt/ostsee-tiere/uploads
+cd /opt/ostsee-tiere
+
+UPLOADS_VOLUME=$(docker inspect "$(docker compose ps -q app)" \
+  --format '{{range .Mounts}}{{if eq .Destination "/app/uploads"}}{{.Name}}{{end}}{{end}}')
+echo "$UPLOADS_VOLUME"   # prüfen, nicht blind weitermachen
+
+docker compose stop app
+
+docker run --rm \
+  -v "$UPLOADS_VOLUME":/data \
+  -v /opt/ostsee-tiere/backups:/backup:ro \
+  alpine tar xzf /backup/uploads-20260730_020000.tar.gz -C /data
+
+docker compose start app
 ```
+
+> Das Archiv wird **über** den vorhandenen Bestand entpackt, gelöschte Dateien
+> also nicht entfernt. Für einen exakten Stand vorher `docker volume rm` und das
+> Volume neu anlegen lassen.
 
 ---
 
-## 9. Audit Logging
+## 9. Logs
+
+### Wohin die Logs gehen
+
+Die Anwendung schreibt **ausschließlich auf stdout** (Pino, strukturiertes
+JSON). Es gibt keine Logdatei innerhalb des Containers. Docker nimmt stdout mit
+dem `json-file`-Treiber auf; die Rotation ist in
+`docker-compose.production.yml` festgelegt:
+
+| Dienst | max-size | max-file | Maximum auf Platte |
+| ------ | -------- | -------- | ------------------ |
+| `app`  | 10 MB    | 5        | ~50 MB             |
+| `db`   | 10 MB    | 3        | ~30 MB             |
+
+Auf dem Host liegen die Dateien unter
+`/var/lib/docker/containers/<container-id>/<container-id>-json.log*`. Der
+vorgesehene Zugriff ist aber `docker compose logs`:
+
+```bash
+docker compose logs -f app          # folgen
+docker compose logs --tail 200 app  # letzte 200 Zeilen
+docker compose logs --since 1h app  # letzte Stunde
+```
+
+> **Rotation heißt Verlust.** Nach ~50 MB sind ältere App-Logs weg. Wer
+> Security-Events länger vorhalten will, hängt einen anderen Log-Treiber ein
+> (z. B. `journald` oder `syslog`) oder schickt sie an einen externen Collector.
+> Die revisionsrelevanten Admin-Aktionen liegen davon unabhängig in der
+> Tabelle `audit_logs` (Abschnitt 10) und überleben jede Log-Rotation.
+
+> **Es gibt keine Logdatei.** Weder Image noch Compose-Stack legen ein
+> Log-Verzeichnis an — stdout plus json-file-Treiber ist die ganze Kette. Ältere
+> Stacks mounteten ein Volume `logs` auf `/app/logs`; dort wurde nie etwas
+> geschrieben, es ist entfernt. Beim Update von so einem Stack bleibt das leere
+> Volume zurück und kann weg:
+>
+> ```bash
+> docker volume ls | grep _logs          # exakten Namen ablesen
+> docker volume rm <projekt>_logs
+> ```
+
+### Überwachung ohne Monitoring-Stack
+
+Der Stack enthält bewusst **kein** Prometheus/Grafana. Für „läuft die App?"
+genügen:
+
+```bash
+docker compose ps                     # Health-Status beider Container
+curl -f https://deine-domain.de/health
+
+# Health-Historie des Containers (letzte Prüfungen inkl. Fehlermeldung)
+docker inspect ostsee-tiere-app --format='{{json .State.Health}}' | jq
+```
+
+Der Container bringt einen eigenen Health Check mit (alle 30 s, 40 s
+Start-Karenz), auf den auch `restart: unless-stopped` und ein Neustart-Alarm des
+Hosters aufsetzen können. Für Host-Metriken (CPU, RAM, Platte) ist das
+Monitoring des Hosters der einfachere Weg — insbesondere die **Plattenfüllung**,
+denn Uploads und DB-Volume wachsen unbegrenzt.
+
+---
+
+## 10. Audit Logging
 
 Das System protokolliert kritische Admin-Aktionen in der `audit_logs` Tabelle und Security-Events als strukturierte JSON-Logs in stdout.
 
@@ -457,7 +628,7 @@ Unbegrenzt — kein automatisches Löschen. Manuelles Löschen via SQL wenn nöt
 
 ---
 
-## 10. Updates durchführen
+## 11. Updates durchführen
 
 > Ein neues Release landet **nicht** automatisch hier. Es geht zuerst auf
 > Staging (Tag `staging`); erst nach der Freigabe über den Workflow
@@ -483,15 +654,24 @@ docker compose up -d
 docker compose logs -f app
 ```
 
-### Update auf spezifische Version
+### Auf eine bestimmte Version festnageln (Ausnahmefall)
+
+Normalbetrieb ist `IMAGE_TAG="production"` — der Zeiger folgt der Freigabe, ein
+Update ist dann nur `pull` + `up -d`. Eine feste Version einzutragen ist nur für
+einen Rollback von Hand oder eine gezielte Diagnose sinnvoll; danach zurück auf
+`production` stellen, sonst bekommt der Host künftige Freigaben nicht mehr.
 
 ```bash
 # In .env:
-# IMAGE_TAG="v2.1.0"
+# IMAGE_TAG="v2.5.5"
 
 docker compose pull
 docker compose up -d
 ```
+
+> Ein Rollback läuft normalerweise über den Workflow _Promote to Production_ mit
+> der älteren Version — dann bleibt `production` der einzige Zeiger, dem der Host
+> folgt. Siehe [RELEASE_PIPELINE.md](./RELEASE_PIPELINE.md#rollback).
 
 ### Aufräumen nach Update
 
@@ -520,9 +700,11 @@ Requires=docker.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/opt/ostsee-tiere
-# Note: Adjust path if docker compose is installed differently
-ExecStart=/usr/bin/docker compose -f docker-compose.production.yml up -d
-ExecStop=/usr/bin/docker compose -f docker-compose.production.yml down
+# Note: Adjust path if docker compose is installed differently.
+# Setzt voraus, dass die Compose-Datei wie in Abschnitt 2 als
+# docker-compose.yml im WorkingDirectory liegt.
+ExecStart=/usr/bin/docker compose up -d
+ExecStop=/usr/bin/docker compose down
 TimeoutStartSec=300
 
 [Install]
@@ -578,9 +760,10 @@ sudo certbot renew --dry-run
 ## Weiterführende Dokumentation
 
 - [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md) - Vollständige Docker-Dokumentation
+- [RELEASE_PIPELINE.md](./RELEASE_PIPELINE.md) - Release → Staging → Production, Promotion, Rollback
 - [ENVIRONMENT.md](./ENVIRONMENT.md) - Alle Umgebungsvariablen
 - [DATABASE_MIGRATION.md](./DATABASE_MIGRATION.md) - Datenbank-Migration
 
 ---
 
-_Letzte Aktualisierung: April 2026_
+_Letzte Aktualisierung: Juli 2026 (Version 2.5.5)_

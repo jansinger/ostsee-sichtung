@@ -759,44 +759,6 @@ ALLOW_DESTRUCTIVE_MIGRATIONS=true
 
 ---
 
-### `PROMETHEUS_PORT`
-
-**Type**: `number`
-**Required**: No (Docker Compose)
-**Default**: `9090`
-**Description**: External port mapping for Prometheus (Docker Compose).
-
----
-
-### `GRAFANA_PORT`
-
-**Type**: `number`
-**Required**: No (Docker Compose)
-**Default**: `3001`
-**Description**: External port mapping for Grafana (Docker Compose).
-
----
-
-### `GRAFANA_ADMIN_USER`
-
-**Type**: `string`
-**Required**: No (Docker Compose)
-**Default**: `admin`
-**Description**: Grafana admin username.
-
----
-
-### `GRAFANA_ADMIN_PASSWORD`
-
-**Type**: `string`
-**Required**: No (Docker Compose)
-**Default**: `admin`
-**Description**: Grafana admin password.
-
-**Important**: Change this in production!
-
----
-
 ## Build & Development Variables
 
 These are read by the build and dev tooling rather than by the running application.

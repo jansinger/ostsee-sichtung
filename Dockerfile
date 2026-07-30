@@ -100,9 +100,11 @@ COPY --chown=nodejs:nodejs scripts/docker-entrypoint.sh /usr/local/bin/docker-en
 COPY --chown=nodejs:nodejs scripts/docker-healthcheck.sh /usr/local/bin/docker-healthcheck.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh /usr/local/bin/docker-healthcheck.sh
 
-# Create directories for persistent data
-RUN mkdir -p /app/uploads /app/logs && \
-    chown -R nodejs:nodejs /app/uploads /app/logs
+# Create directories for persistent data.
+# Note: no /app/logs — the application logs to stdout only (Pino), and Docker
+# captures it via the json-file driver. See docs/DOCKER_DEPLOYMENT.md -> Logging
+RUN mkdir -p /app/uploads && \
+    chown -R nodejs:nodejs /app/uploads
 
 # Switch to non-root user
 USER nodejs

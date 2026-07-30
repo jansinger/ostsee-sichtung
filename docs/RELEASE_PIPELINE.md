@@ -104,7 +104,7 @@ liegt allein in `.env`.
 # /opt/ostsee-staging/.env
 IMAGE_TAG=staging
 COMPOSE_PROJECT_NAME=ostsee-staging
-ORIGIN=https://staging.ostsee-tiere.example.com
+PUBLIC_SITE_URL=https://staging.ostsee-tiere.example.com
 ```
 
 Update-Lauf, z. B. als systemd-Timer alle 5 Minuten:
@@ -124,8 +124,13 @@ docker image prune -f --filter "until=168h"
 # /opt/ostsee-tiere/.env
 IMAGE_TAG=production
 COMPOSE_PROJECT_NAME=ostsee-tiere
-ORIGIN=https://ostsee-tiere.example.com
+PUBLIC_SITE_URL=https://ostsee-tiere.example.com
 ```
+
+> `ORIGIN` gehört hier **nicht** hinein: Die Compose-Datei reicht die Variable
+> nicht an den Container weiter, der Eintrag wäre wirkungslos. Den Origin
+> bestimmt der adapter-node aus `PROTOCOL_HEADER`/`HOST_HEADER` (Default in der
+> Compose-Datei), sonst aus dem `Host`-Header.
 
 Auf Production **vor** dem Update sichern — die Schema-Migrationen des neuen
 Release laufen beim Container-Start automatisch und sind nicht rückrollbar:
