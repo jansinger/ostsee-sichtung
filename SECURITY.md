@@ -68,7 +68,11 @@ Configured in `svelte.config.js` (`kit.csp`, `mode: 'auto'`) — not in a hook.
   `'unsafe-inline'` requires replacing or self-hosting the Scalar bundle.
 - **`style-src`** also allows `'unsafe-inline'` (Svelte scoped styles) plus `openlayers.org`.
 - **`'unsafe-eval'`** is added in development only; `'wasm-unsafe-eval'` is needed by OpenLayers.
-- **CSP violation reporting** endpoint at `/api/csp-report` (`report-uri`).
+- **Violation reporting is narrower than it looks.** `report-uri: /api/csp-report` sits in
+  `kit.csp.reportOnly`, not in the enforced `directives`, and that Report-Only policy declares
+  only `frame-ancestors`. So the endpoint receives framing attempts from unlisted ancestors —
+  and nothing else. A `script-src` or `connect-src` violation of the **enforced** policy is
+  blocked but **never reported**. Wiring `report-uri` into `directives` as well is on the roadmap.
 - **`frame-ancestors`** restricted to `'self'` and the Meeresmuseum domains — this is what makes
   the museum iframe embedding possible without `X-Frame-Options: DENY`.
 - **Allowlists** for tiles (OSM, OpenSeaMap) and Vercel Blob in `img-src`/`connect-src`.
@@ -180,7 +184,9 @@ appear in `npm audit`. They were closed by routine Dependabot updates, not by a 
    requests that change dependencies, see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
 6. **SBOM**: CycloneDX SBOM generated during the Docker build and shipped inside the image
    (`npm run sbom:prod`); `npm run sbom:check` audits it
-7. **CSP violation monitoring**: violations are reported to `/api/csp-report`
+7. **CSP violation monitoring**: `/api/csp-report` receives reports from the **Report-Only**
+   policy only, which declares just `frame-ancestors` — i.e. framing attempts. The enforced policy
+   has no `report-uri`, so its violations are blocked silently. See the CSP section above.
 
 ### Application Security ✅
 
@@ -291,6 +297,8 @@ The following security features have been implemented:
 - [ ] **Malware Scanning**: Integrate malware scanning for file uploads
 - [ ] **CSP Hardening**: remove `'unsafe-inline'` from `script-src`, which requires replacing or
       self-hosting the Scalar API documentation bundle
+- [ ] **CSP Reporting Coverage**: add `report-uri` to the enforced `directives` in
+      `svelte.config.js` — today only the Report-Only `frame-ancestors` policy reports
 
 ### Long-Term Enhancements (Months)
 

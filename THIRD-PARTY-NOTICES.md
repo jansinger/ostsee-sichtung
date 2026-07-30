@@ -2,7 +2,7 @@
 
 This project uses third-party software components. The following is a list of these components and their respective licenses.
 
-Generated on: 2026-07-30 (from the installed production dependency tree)
+Generated on: 2026-07-30 (UTC), from the installed production dependency tree
 
 ## License Summary
 
