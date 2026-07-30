@@ -60,12 +60,26 @@ Struktur (`{"message":{"message":…,"errors":…}}`), und
 „PDF compliance" fest. Der Kommentar ist nachweislich falsch — das PDF zeigt die
 flache Form.
 
+`static/openapi.yml:2733` beschreibt eine **dritte**, wieder andere Struktur:
+`LegacyErrorResponse` verlangt `error` und `message` als Strings und kennt gar
+kein `errors`-Objekt.
+
+Damit existieren drei einander widersprechende Beschreibungen desselben
+Response-Bodys:
+
+| Quelle                                   | Form                                           |
+| ---------------------------------------- | ---------------------------------------------- |
+| PDF / `docs/LEGACY_API_SPECIFICATION.md` | `{"message": "…", "errors": {…}}`              |
+| `src/lib/legacy-api/error-messages.ts`   | `{"message": {"message": "…", "errors": {…}}}` |
+| `static/openapi.yml`                     | `{"error": "…", "message": "…"}`               |
+
 **Entscheidung: Der neue Dienst antwortet flach, wie das Original.** Ein Client,
 der `message` als Text liest, bekommt sonst ein Objekt.
 
-**Offen, außerhalb dieses Projekts:** Die SvelteKit-App weicht damit von ihrer
-eigenen verbindlichen Spec ab. Das gehört korrigiert, ist aber eine eigene
-Änderung an einem anderen System.
+**Offen, außerhalb dieses Projekts:** SvelteKit-App und OpenAPI-Spec weichen
+beide von der verbindlichen Referenz ab. Das gehört korrigiert, ist aber eine
+eigene Änderung an einem anderen System. Für die Testplanung ist es relevant —
+siehe Abschnitt 8.
 
 ### 2.2 Feldname `sonstige_auffaelligkeiten` — mit `ae`
 
@@ -189,6 +203,21 @@ Eine Datei je Sichtung. Der Dateiname entsteht aus Sequenz und Zeitstempel —
 }
 ```
 
+### Die laufende Nummer
+
+`lfd_nr` wird **nicht** in einer eigenen Zählerdatei geführt — eine solche Datei
+kann von den Sichtungsdateien abweichen und ist dann eine zweite Wahrheit. Der
+Dienst ermittelt die höchste vorhandene Nummer beim Start aus den Dateinamen
+(einschließlich `importiert/`) und zählt im Speicher weiter. Die Vergabe erfolgt
+über eine serialisierte Warteschlange, sodass zwei gleichzeitige Requests nie
+dieselbe Nummer bekommen.
+
+Der Dateiname bleibt auch bei einem Fehler in der Nummernvergabe eindeutig, weil
+der Zeitstempel in Millisekunden mit einfließt; die Nummer dient der
+Nachvollziehbarkeit, nicht der Eindeutigkeit.
+
+### Roher Payload
+
 `payload` wird nicht umgeformt, nicht gemappt und nicht von unbekannten Feldern
 bereinigt. Der Import kann ihn deshalb unverändert an `POST /rest_sichtungen` der
 Hauptanwendung weiterreichen — kein zweites Mapping, keine Interpretation auf dem
@@ -219,7 +248,12 @@ Der Endpunkt bleibt ohne Authentifizierung, wie vom Vertrag vorgegeben. Der Schu
 liegt woanders:
 
 - 64-KB-Grenze für den Body, hart am Stream durchgesetzt
-- Rate-Limit von 20/Stunde pro IP, dazu eine globale Obergrenze als Reißleine
+- Rate-Limit von 20/Stunde pro IP, dazu 500/Stunde über alle IPs als Reißleine.
+  Beide antworten mit `429`. Der Vertrag kennt diesen Fall nicht — die
+  Hauptanwendung antwortet ebenfalls mit `429`, und ein anderer Code wäre
+  gegenüber einem Client irreführender. Der globale Wert liegt weit über dem
+  bisherigen Aufkommen und greift nur bei einem Angriff; er ist über eine
+  Umgebungsvariable änderbar, damit eine echte Meldewelle nicht abgewiesen wird
 - keine Nutzereingabe in Dateipfaden
 - `X-Content-Type-Options: nosniff`
 - kein CORS — die Legacy-Routen der Hauptanwendung haben ebenfalls keins
@@ -258,6 +292,20 @@ Der Kern ist ein **Vertragstest gegen die SvelteKit-Implementierung**: dieselben
 Requests durch beide Systeme, die Antworten müssen übereinstimmen — mit Ausnahme
 der in Abschnitt 2 und 4 begründeten, dokumentierten Abweichungen. Das ist der
 einzige Mechanismus, der „100 % kompatibel" nachweist statt behauptet.
+
+Das Hauptrepo hat dafür bereits eine Grundlage: `src/tests/contract/` prüft
+Antworten mit `vitest-openapi` gegen `static/openapi.yml`
+(`helpers/specSetup.ts`), und `legacy.contract.test.ts` deckt die Legacy-Routen
+ab. Diese Mechanik lässt sich für `antworten.json` und `inBaltic.json`
+weiterverwenden — die Schemata `LegacyLocationResponse` und
+`LegacyAnswerOptions` beschreiben dort dasselbe, was der neue Dienst liefern muss.
+
+**Für den Fehlerpfad taugt sie nicht.** `LegacyErrorResponse` in
+`static/openapi.yml` beschreibt eine dritte, von PDF und Implementierung
+abweichende Struktur (Abschnitt 2.1). Der Fehlerpfad wird deshalb direkt gegen
+das PDF getestet, nicht gegen die OpenAPI-Spec. Solange die Spec nicht
+korrigiert ist, wäre `toSatisfyApiSpec()` dort ein Test, der das Falsche
+festschreibt.
 
 Dazu:
 
