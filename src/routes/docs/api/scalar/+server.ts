@@ -1,10 +1,35 @@
 import { ScalarApiReference } from '@scalar/sveltekit';
 import type { RequestHandler } from './$types';
 
+/**
+ * KEIN `customCss` hier — und das ist eine bewusste Entscheidung, keine Lücke.
+ *
+ * Bis 2026-07-30 stand hier ein Block, der Scrolling und Sidebar-Navigation
+ * „reparieren" sollte und beides erst kaputt gemacht hat. Von seinen Selektoren
+ * existiert im ausgelieferten Scalar-Bundle nur `.scalar-app`:
+ *
+ * | Selektor                    | im Bundle | Wirkung                          |
+ * | --------------------------- | --------- | -------------------------------- |
+ * | `.scalar-app`               | ja        | `overflow: hidden` + `100vh`     |
+ * | `.scalar-content`           | nein      | keine                            |
+ * | `.scalar-sidebar`           | nein      | keine (nur `--scalar-sidebar-*`) |
+ * | `.scalar-sidebar__item`     | nein      | keine                            |
+ *
+ * Die einzige greifende Regel hat also das Scrollen abgeschaltet, während die
+ * Regeln, die es zurückholen sollten, ins Leere zielten. Im Browser gemessen:
+ * `scrollHeight` 18.777 px gegen `clientHeight` 812 px — 17.965 px Inhalt waren
+ * unerreichbar, und Klicks auf Endpunkte scrollten einen Container, der nicht
+ * scrollen darf (deshalb wirkte die Navigation tot).
+ *
+ * Scalar bringt sein Layout (`.references-layout`, Grid mit `100dvh`) samt
+ * Scroll-Containern selbst mit. Wer hier wieder CSS ergänzt, muss die
+ * Klassennamen vorher im CDN-Bundle verifizieren — sie sind nicht Teil einer
+ * öffentlichen API und ändern sich mit der unpinned CDN-Version.
+ */
 const configuration = {
-	spec: {
-		url: '/openapi.yml'
-	},
+	// `url` statt des deprecated `spec.url`: das Bundle migriert `spec.url`
+	// intern weiter, protokolliert dabei aber eine Deprecation-Warnung.
+	url: '/openapi.yml',
 	theme: 'default' as const,
 	layout: 'modern' as const,
 	showSidebar: true,
@@ -12,53 +37,6 @@ const configuration = {
 	hiddenClients: [],
 	isEditable: false,
 	darkMode: false,
-	customCss: `
-		/* Custom styling for better integration */
-		.scalar-app {
-			font-family: 'Roboto', system-ui, sans-serif;
-			height: 100vh !important;
-			overflow: hidden;
-		}
-		
-		/* Fix sidebar scrolling */
-		.scalar-sidebar {
-			overflow-y: auto !important;
-			max-height: 100vh;
-		}
-		
-		/* Main content scrolling */
-		.scalar-content {
-			overflow-y: auto !important;
-			max-height: 100vh;
-		}
-		
-		/* Better mobile responsiveness */
-		@media (max-width: 768px) {
-			.scalar-sidebar {
-				width: 100% !important;
-			}
-			
-			.scalar-app {
-				height: auto !important;
-			}
-		}
-		
-		/* Ensure clickable elements work */
-		.scalar-sidebar a,
-		.scalar-sidebar button {
-			cursor: pointer !important;
-			pointer-events: auto !important;
-		}
-		
-		/* Fix operation selection */
-		.scalar-sidebar .scalar-sidebar__item {
-			pointer-events: auto !important;
-		}
-		
-		.scalar-sidebar .scalar-sidebar__item:hover {
-			background-color: rgba(0, 0, 0, 0.05) !important;
-		}
-	`,
 	metaData: {
 		title: 'Ostsee-Tiere API Documentation',
 		description: 'Interaktive API-Dokumentation für die Ostsee-Tiere Plattform',

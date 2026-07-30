@@ -88,13 +88,17 @@
 						Bürgerwissenschaft macht <strong>jeden zum Forscher</strong> und trägt zu wichtigen wissenschaftlichen
 						Erkenntnissen bei.
 					</p>
-					<div class="stats stats-vertical mt-6 shadow-sm">
-						<div class="stat">
-							<div class="stat-title text-xs">Seit</div>
-							<div class="stat-value text-primary text-2xl">2011</div>
-							<div class="stat-desc">aktiv</div>
+					<!-- Jahreszahl kommt aus der Datenbank (älteste freigegebene Sichtung),
+					     nicht aus dem Template — Begründung in +page.server.ts. -->
+					{#if data.earliestSightingYear != null}
+						<div class="stats stats-vertical mt-6 shadow-sm">
+							<div class="stat">
+								<div class="stat-title text-xs">Sichtungen seit</div>
+								<div class="stat-value text-primary text-2xl">{data.earliestSightingYear}</div>
+								<div class="stat-desc">in unserer Datenbank</div>
+							</div>
 						</div>
-					</div>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -141,9 +145,11 @@
 					<h3 class="card-title text-secondary-strong mb-4 justify-center text-xl">
 						Interaktive Karte
 					</h3>
+					<!-- „alle Sichtungen" traf nicht zu: die Karte zeigt ausschließlich
+					     freigegebene Meldungen und filtert dabei auf ein Jahr. -->
 					<p class="text-base-content/80 text-base leading-relaxed">
-						Visualisieren Sie <strong>alle Sichtungen</strong> auf einer detaillierten Karte der
-						Ostsee und entdecken Sie <em>Muster und Hotspots</em>.
+						Sehen Sie die <strong>freigegebenen Sichtungen</strong> jahrweise auf einer
+						detaillierten Karte der Ostsee und entdecken Sie <em>Muster und Hotspots</em>.
 					</p>
 					<div class="mt-4">
 						<div class="badge badge-secondary badge-outline">OpenLayers</div>
@@ -159,9 +165,15 @@
 						<Icon icon="lucide:chart-pie" width="48" class="text-accent-strong" />
 					</div>
 					<h3 class="card-title text-accent-strong mb-4 justify-center text-xl">Offene Daten</h3>
+					<!-- Vorher: „Alle Daten sind für Forschungszwecke verfügbar und können in
+					     verschiedenen Formaten exportiert werden." Der Export in mehrere
+					     Formate ist eine Funktion des Admin-Bereichs, nicht der Öffentlichkeit
+					     (das Setting `data.exportFormats` wird nirgends gelesen). Öffentlich
+					     abrufbar sind die freigegebenen Sichtungen über die dokumentierte
+					     API — das steht hier jetzt statt des weitergehenden Versprechens. -->
 					<p class="text-base-content/80 text-base leading-relaxed">
-						Alle Daten sind für <strong>Forschungszwecke verfügbar</strong> und können in
-						verschiedenen Formaten <em>exportiert</em> werden.
+						Die freigegebenen Sichtungen sind über eine <strong>offene API</strong> abrufbar und
+						damit für <em>Forschung und Lehre</em> nutzbar.
 					</p>
 					<div class="mt-4">
 						<div class="badge badge-accent badge-outline">Open Data</div>
@@ -626,25 +638,43 @@ SOFTWARE.</pre>
 					</p>
 				</div>
 
+				<!--
+					Beschriftungen und Rückfallwerte korrigiert (2026-07-30):
+
+					- „Bereits erfasst" war falsch: `totalSightings` zählt über
+					  `approvedOnly()` nur die **freigegebenen** Sichtungen. Erfasst sind
+					  mehr (die noch nicht freigegebenen fehlen in dieser Zahl).
+					- „Aktive Beobachter" war doppelt falsch: der Wert ist die Zahl
+					  **unterschiedlicher E-Mail-Adressen** in allen freigegebenen
+					  Sichtungen — kumuliert über den gesamten Zeitraum, nicht „aktiv".
+					  Melder ohne E-Mail-Angabe fehlen, eine Person mit zwei Adressen
+					  zählt zweimal. Deshalb „Melder-Adressen" statt „Beobachter".
+					- Die Rückfallwerte `1.800+` und `500+` lagen um den Faktor 10 unter
+					  der Realität (19.262 bzw. 6.430). Bei einem Datenbankfehler hätte die
+					  Seite also grob falsche Zahlen als Tatsache ausgegeben. Jetzt wird
+					  die Kachel in diesem Fall weggelassen — keine Zahl ist besser als
+					  eine erfundene (siehe .claude/rules/design-system.md, „Zahlen in
+					  Nutzertexten nur mit Quelle").
+				-->
 				<div class="stats stats-vertical sm:stats-horizontal bg-base-100/50 mb-8 w-full shadow-xl">
-					<div class="stat">
-						<div class="stat-title">Bereits erfasst</div>
-						<div class="stat-value text-primary">
-							{data.totalSightings != null
-								? new Intl.NumberFormat('de-DE').format(data.totalSightings)
-								: '1.800+'}
+					{#if data.totalSightings != null}
+						<div class="stat">
+							<div class="stat-title">Veröffentlicht</div>
+							<div class="stat-value text-primary">
+								{new Intl.NumberFormat('de-DE').format(data.totalSightings)}
+							</div>
+							<div class="stat-desc">freigegebene Sichtungen</div>
 						</div>
-						<div class="stat-desc">Sichtungen</div>
-					</div>
-					<div class="stat">
-						<div class="stat-title">Aktive</div>
-						<div class="stat-value text-secondary-strong">
-							{data.totalObservers != null
-								? new Intl.NumberFormat('de-DE').format(data.totalObservers)
-								: '500+'}
+					{/if}
+					{#if data.totalObservers != null}
+						<div class="stat">
+							<div class="stat-title">Beteiligt</div>
+							<div class="stat-value text-secondary-strong">
+								{new Intl.NumberFormat('de-DE').format(data.totalObservers)}
+							</div>
+							<div class="stat-desc">Melder-Adressen insgesamt</div>
 						</div>
-						<div class="stat-desc">Beobachter</div>
-					</div>
+					{/if}
 					<div class="stat">
 						<div class="stat-title">Für die</div>
 						<div class="stat-value text-accent-strong">Wissenschaft</div>

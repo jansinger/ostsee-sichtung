@@ -26,6 +26,9 @@ const toSqlText = (expression: SQLWrapper): string => dialect.sqlToQuery(express
 /** Alle Spalten-Objekte, die je an `db.select({...})` übergeben wurden. */
 let recordedSelectColumns: Array<Record<string, unknown>> = [];
 
+/** Alle Prädikate, die je an `.where(...)` übergeben wurden. */
+let recordedWhereClauses: SQLWrapper[] = [];
+
 /**
  * Minimaler, aufzeichnender Drizzle-Query-Builder.
  *
@@ -38,7 +41,10 @@ function createRecordingBuilder() {
 	const builder = {
 		from: () => builder,
 		innerJoin: () => builder,
-		where: () => builder,
+		where: (predicate?: SQLWrapper) => {
+			if (predicate) recordedWhereClauses.push(predicate);
+			return builder;
+		},
 		groupBy: () => builder,
 		orderBy: () => builder,
 		having: () => builder,
@@ -94,5 +100,62 @@ describe('admin/statistics load() — Top-Observers Datumsspalten (M1)', () => {
 		expect(lastSightingSql).not.toContain('::date');
 		expect(firstSightingSql).toContain('Europe/Berlin');
 		expect(lastSightingSql).toContain('Europe/Berlin');
+	});
+});
+
+/**
+ * Vorgabe 3 aus `src/lib/server/db/approvalFilter.ts`: „Eine Statistikzahl ohne
+ * erkennbaren Freigabebezug soll es nicht geben."
+ *
+ * Bis 2026-07-30 galt das nur für die Kopfzahlen. Arten-, Jahres-, Monats-,
+ * Nutzer-, Schiffs-, Beobachter- und Qualitätsabfragen filterten stattdessen auf
+ * `geprueft = 1`, `recentActivity` filterte überhaupt nicht. Die Seite mischte
+ * damit zwei Grundmengen: Kopfzeile 19.262 (freigegeben), Abschnitte darunter
+ * 19.253 (geprüft) — und `recentActivity` die vollen 19.880 inklusive offener
+ * Meldungen.
+ *
+ * Der Test prüft die Struktur, nicht Zahlen: **jede** Abfrage muss sich auf
+ * `freigegeben_am` beziehen, und keine darf mehr über `geprueft` filtern.
+ */
+describe('admin/statistics load() — einheitliche Grundmenge', () => {
+	it('bezieht jede Abfrage auf den Freigabestatus und keine mehr auf geprueft', async () => {
+		recordedWhereClauses = [];
+
+		await load({} as unknown as Parameters<typeof load>[0]);
+
+		expect(
+			recordedWhereClauses.length,
+			'keine WHERE-Klauseln aufgezeichnet — Mock greift nicht mehr'
+		).toBeGreaterThan(5);
+
+		const ohneFreigabebezug: string[] = [];
+		const mitGeprueft: string[] = [];
+
+		for (const clause of recordedWhereClauses) {
+			const text = toSqlText(clause);
+			if (!text.includes('freigegeben_am')) ohneFreigabebezug.push(text);
+			if (text.includes('geprueft')) mitGeprueft.push(text);
+		}
+
+		expect(
+			ohneFreigabebezug,
+			`Abfrage(n) ohne Freigabebezug:\n${ohneFreigabebezug.join('\n')}`
+		).toEqual([]);
+		expect(mitGeprueft, `Abfrage(n) filtern noch auf geprueft:\n${mitGeprueft.join('\n')}`).toEqual(
+			[]
+		);
+	});
+
+	it('fährt die Kopfzahlen getrennt für freigegeben und offen', async () => {
+		recordedWhereClauses = [];
+
+		await load({} as unknown as Parameters<typeof load>[0]);
+
+		const texte = recordedWhereClauses.map(toSqlText);
+
+		// `loadBasicStats` läuft zweimal — einmal je Freigabestatus. Eine vermischte
+		// Summe über beide soll strukturell unmöglich bleiben (Vorgabe 2).
+		expect(texte.some((t) => /freigegeben_am"? is not null/i.test(t))).toBe(true);
+		expect(texte.some((t) => /freigegeben_am"? is null/i.test(t))).toBe(true);
 	});
 });

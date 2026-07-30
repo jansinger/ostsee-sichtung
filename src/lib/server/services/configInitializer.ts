@@ -17,6 +17,22 @@ const defaultConfigurations: ConfigItem[] = [
 		description: 'E-Mail Adresse für Benachrichtigungen über neue Sichtungen',
 		category: 'email'
 	},
+	// CC/BCC werden von emailService.getEmailConfig() über
+	// `ConfigRepository.getArray('notification.email.cc', [])` gelesen, standen aber
+	// bis 2026-07-30 in keiner Vorbelegung und damit auch in keinem Formular der
+	// Settings-Seite — gelesen, aber nicht konfigurierbar.
+	{
+		key: 'notification.email.cc',
+		value: [],
+		description: 'Zusätzliche Empfänger in Kopie (kommagetrennt)',
+		category: 'email'
+	},
+	{
+		key: 'notification.email.bcc',
+		value: [],
+		description: 'Zusätzliche Empfänger in Blindkopie (kommagetrennt)',
+		category: 'email'
+	},
 	{
 		key: 'notification.email.sender',
 		value: 'noreply@ostsee-tiere.de',

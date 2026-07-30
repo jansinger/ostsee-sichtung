@@ -48,6 +48,20 @@ const DEFAULT_EMAIL_TEMPLATE = `<!DOCTYPE html>
 </body>
 </html>`;
 
+/**
+ * Liest einen Konfigurationswert und fällt bei **leerem** DB-Wert auf die
+ * Umgebungsvariable zurück.
+ *
+ * Hält die Regel „Leerstring heißt nicht konfiguriert" an einer Stelle fest. Der
+ * ENV-Wert darf nicht als `defaultValue` an `getString` gehen: der Default greift
+ * dort nur bei `null`, und `initializeDefaultConfigurations()` legt die SMTP-Keys
+ * mit Leerstring an — der ENV-Zweig war damit unerreichbar (siehe
+ * `emailService.envFallback.test.ts`).
+ */
+async function configOrEnv(key: string, envValue: string): Promise<string> {
+	return (await ConfigRepository.getString(key, '')) || envValue;
+}
+
 export interface EmailConfig {
 	enabled: boolean;
 	recipient: string;
@@ -81,18 +95,33 @@ export class EmailService {
 				return;
 			}
 
-			// Get SMTP configuration
-			const smtpHost = await ConfigRepository.getString('email.smtp.host', SMTP_HOST || '');
+			// SMTP-Konfiguration. Priorität laut .claude/rules/email.md:
+			// Datenbank > Environment Variables.
+			//
+			// Der ENV-Wert darf NICHT als `defaultValue` an `getString` gehen: der
+			// Default greift dort nur bei `null`, und `initializeDefaultConfigurations()`
+			// legt diese drei Keys mit **Leerstring** an. Sobald `/admin/settings`
+			// einmal geöffnet war, existierte die Zeile also mit `''`, der Default
+			// wurde nie erreicht und SMTP aus der Umgebung war toter Code — der
+			// Versand brach still mit der Warnung unten ab.
+			//
+			// Deshalb der Fallback erst *nach* dem DB-Zugriff: ein gesetzter DB-Wert
+			// gewinnt, ein leerer gilt als „in der DB nicht konfiguriert".
+			const smtpHost = await configOrEnv('email.smtp.host', SMTP_HOST);
+			const smtpUser = await configOrEnv('email.smtp.user', SMTP_USER);
+			const smtpPassword = await configOrEnv('email.smtp.password', SMTP_PASSWORD);
+
+			// Port und `secure` bleiben beim Default-Mechanismus: beide haben einen
+			// sinnvollen Wert (587 bzw. false), der auch als Seed in der DB steht.
+			// Ein gesetztes `SMTP_PORT` ist damit ebenfalls wirkungslos — anders als
+			// beim Host lässt sich hier aber „bewusst auf 587 gestellt" nicht von
+			// „nur geseedet" unterscheiden, und ein Fallback auf ENV würde eine
+			// absichtliche DB-Einstellung überstimmen. `SMTP_SECURE` gibt es nicht.
 			const smtpPort = await ConfigRepository.getNumber(
 				'email.smtp.port',
 				parseInt(SMTP_PORT || '587')
 			);
 			const smtpSecure = await ConfigRepository.getBoolean('email.smtp.secure', false);
-			const smtpUser = await ConfigRepository.getString('email.smtp.user', SMTP_USER || '');
-			const smtpPassword = await ConfigRepository.getString(
-				'email.smtp.password',
-				SMTP_PASSWORD || ''
-			);
 
 			if (!smtpHost) {
 				logger.warn('Email service not initialized: SMTP host not configured');
