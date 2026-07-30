@@ -1,5 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import {
+	expect,
+	test,
+	type APIRequestContext,
+	type BrowserContext,
+	type Page
+} from '@playwright/test';
 import { seedAdminSession } from './helpers/adminSession';
 import { formatRatio, measureContrast } from './helpers/contrast';
 
@@ -282,45 +288,90 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 	   Verstöße — aber eben von Hand. Der Zugang läuft über `seedAdminSession`
 	   (dort steht, warum nicht über die Auth0-Oberfläche). */
 	const ROUTES = [
-		{ path: '/', auth: false },
-		{ path: '/map', auth: false },
-		{ path: '/about', auth: false },
-		{ path: '/admin', auth: true },
-		{ path: '/admin/statistics', auth: true },
-		{ path: '/admin/docs', auth: true },
-		{ path: '/admin/settings', auth: true }
+		{ path: '/', auth: false, needsDb: false },
+		{ path: '/map', auth: false, needsDb: false },
+		{ path: '/about', auth: false, needsDb: false },
+		{ path: '/admin', auth: true, needsDb: true },
+		{ path: '/admin/statistics', auth: true, needsDb: true },
+		/* /admin/docs hat nur ein +page.ts und keinen Server-Load — die einzige
+		   Admin-Route, die ohne Datenbank vollständig rendert. */
+		{ path: '/admin/docs', auth: true, needsDb: false },
+		/* +page.server.ts ruft ConfigRepository.getAll(). War zunächst als
+		   needsDb: false markiert und wurde dadurch in drei von sechs Läufen
+		   ohne Datenbank flaky — die Markierung ist keine Formalie, sondern
+		   entscheidet, ob die Route sauber übersprungen wird oder in den
+		   Navigations-Timeout läuft. */
+		{ path: '/admin/settings', auth: true, needsDb: true }
 	];
 
+	/* Einmal pro Worker beantwortet, nicht pro Test: Steht eine Datenbank?
+	   /api/map/sightings ist dafür der richtige Fühler — öffentlich (kein
+	   requireUserRole) und geht direkt an `db`.
+
+	   Der erste Anlauf hat das stattdessen am Status der Seite selbst
+	   entschieden, und das war ein Rennen: Ohne Postgres liefert /admin nicht
+	   zuverlässig 5xx, sondern hängt oft, bis Playwrights navigationTimeout
+	   zuschlägt. Im CI-Lauf von #632 wurden daraus zwei `flaky` — beim ersten
+	   Versuch Timeout, beim Retry der schnelle 500 und damit der Skip. Grün war
+	   das nur, weil `retries: 1` Flaky nicht rot macht. Eine gebundene Sonde
+	   vorab entscheidet dagegen für alle betroffenen Routen gleich, und der
+	   Test navigiert gar nicht erst. */
+	let databaseProbe: Promise<boolean> | undefined;
+	const databaseAvailable = (request: APIRequestContext) => {
+		databaseProbe ??= request
+			.get('/api/map/sightings', { timeout: 10_000 })
+			.then((response) => response.ok())
+			.catch(() => false);
+		return databaseProbe;
+	};
+
 	/* Öffnet die Route und stellt sicher, dass wirklich die Seite gemessen wird
-	   und nicht eine Fehler- oder Login-Ausweichseite. Ohne diese beiden Wächter
-	   wäre der Scan auf den Admin-Routen wertlos: Sowohl der Auth0-Redirect als
-	   auch die SvelteKit-Fehlerseite liefern ein DOM, in dem keine einzige
-	   verbotene Kombination steht — die Prüfung meldete dann grün, ohne je die
-	   Seite gesehen zu haben, um die es geht. */
+	   und nicht eine Fehler- oder Login-Ausweichseite. Ohne diese Wächter wäre
+	   der Scan auf den Admin-Routen wertlos: Sowohl der Auth0-Redirect als auch
+	   die SvelteKit-Fehlerseite liefern ein DOM, in dem keine einzige verbotene
+	   Kombination steht — die Prüfung meldete dann grün, ohne je die Seite
+	   gesehen zu haben, um die es geht. */
 	const openRoute = async (
-		page: Page,
-		context: BrowserContext,
-		baseURL: string | undefined,
+		{
+			page,
+			context,
+			request,
+			baseURL
+		}: {
+			page: Page;
+			context: BrowserContext;
+			request: APIRequestContext;
+			baseURL: string | undefined;
+		},
 		route: (typeof ROUTES)[number]
 	) => {
+		/* Der E2E-Job in ci.yml startet keinen Postgres (`cp .env.example .env`,
+		   kein services:-Block). Datengetriebene Admin-Seiten sind dort nicht
+		   prüfbar. Das ausdrücklich zu überspringen ist ehrlicher als ein Scan
+		   über eine Fehlerseite — und es steht im Report, statt still grün zu
+		   sein. Wer die Routen auch in CI abdecken will, hängt einen
+		   Postgres-Service in den Job; dann greift dieser Zweig nicht mehr. */
+		if (route.needsDb && !(await databaseAvailable(request))) {
+			test.skip(
+				true,
+				`${route.path} braucht eine Datenbank, und /api/map/sightings antwortet nicht — CI fährt E2E ohne Postgres. Die Route bleibt ungeprüft.`
+			);
+		}
+
 		if (route.auth) {
 			if (!baseURL) throw new Error('baseURL fehlt — playwright.config.ts setzt sie normalerweise');
 			await seedAdminSession(context, baseURL);
 		}
 
 		const response = await page.goto(route.path);
-
-		/* Der E2E-Job in ci.yml startet keinen Postgres (`cp .env.example .env`,
-		   SKIP_DB_CHECK=true, kein services:-Block). Datengetriebene Admin-Seiten
-		   können dort deshalb 5xx liefern. Das ausdrücklich zu überspringen ist
-		   ehrlicher als ein Scan über eine Fehlerseite — und es steht im Report,
-		   statt still grün zu sein. */
 		const status = response?.status() ?? 0;
 
+		/* Backstop für den Fall, dass eine Route ohne needsDb-Markierung doch
+		   serverseitig scheitert — dann ist die Markierung falsch, und das soll
+		   auffallen statt zu einem Scan über die Fehlerseite zu führen. */
 		if (status >= 500) {
-			test.skip(
-				true,
-				`${route.path} antwortet mit ${status} — vermutlich keine Datenbank verfügbar (CI fährt E2E ohne Postgres). Die Route bleibt damit ungeprüft.`
+			throw new Error(
+				`${route.path} antwortet mit ${status}, obwohl die Datenbank erreichbar ist (oder die Route als needsDb: false markiert ist). Kein Skip — hier stimmt etwas anderes nicht.`
 			);
 		}
 
@@ -347,8 +398,13 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 	};
 
 	for (const route of ROUTES) {
-		test(`${route.path}: keine Statusfarbe als Textfarbe`, async ({ page, context, baseURL }) => {
-			await openRoute(page, context, baseURL, route);
+		test(`${route.path}: keine Statusfarbe als Textfarbe`, async ({
+			page,
+			context,
+			request,
+			baseURL
+		}) => {
+			await openRoute({ page, context, request, baseURL }, route);
 			const offenders = await page.evaluate(() => {
 				/* getAttribute('class'), NICHT el.className: bei SVG-Elementen ist
 				   className ein SVGAnimatedString, das als "[object SVGAnimatedString]"
@@ -370,9 +426,10 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 		test(`${route.path}: keine Textfarbe unter Deckkraft /60`, async ({
 			page,
 			context,
+			request,
 			baseURL
 		}) => {
-			await openRoute(page, context, baseURL, route);
+			await openRoute({ page, context, request, baseURL }, route);
 			const offenders = await page.evaluate(() => {
 				const cls = (el: Element) => el.getAttribute('class') ?? '';
 				const banned = /(^|\s)(text-base-content\/(40|50)|opacity-(40|50))(\s|$)/;
@@ -384,8 +441,13 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 			expect(offenders, '/40 und /50 sind dekorativ, nicht für Text').toEqual([]);
 		});
 
-		test(`${route.path}: keine Tailwind-Paletten-Farben`, async ({ page, context, baseURL }) => {
-			await openRoute(page, context, baseURL, route);
+		test(`${route.path}: keine Tailwind-Paletten-Farben`, async ({
+			page,
+			context,
+			request,
+			baseURL
+		}) => {
+			await openRoute({ page, context, request, baseURL }, route);
 			const offenders = await page.evaluate(() => {
 				const cls = (el: Element) => el.getAttribute('class') ?? '';
 				const banned =
