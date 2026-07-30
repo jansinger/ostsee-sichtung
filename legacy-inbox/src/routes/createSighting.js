@@ -140,7 +140,12 @@ export async function createSighting(req, res, { konfiguration, store, rateLimit
  * Request zählte dann als neue IP.
  *
  * Stattdessen X-Real-IP, das nginx setzt und das ein Client nicht durchreichen
- * kann (Plesk-Direktive siehe README), sonst die Adresse der Verbindung selbst.
+ * kann, sonst die Adresse der Verbindung selbst.
+ *
+ * Unter Plesk muss die Kopfzeile mit `passenger_set_header` gesetzt werden,
+ * nicht mit `proxy_set_header` — letzteres wirkt nur auf `proxy_pass` und
+ * bleibt bei einer Passenger-Anwendung wirkungslos, ohne Fehlermeldung. Steht
+ * hier `127.0.0.1`, ist das der erste Verdacht. Einzelheiten in der README.
  */
 function ermittleIp(req) {
 	const vomProxy = req.headers['x-real-ip'];
