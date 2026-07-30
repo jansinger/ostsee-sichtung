@@ -116,7 +116,8 @@ export async function createRBushIndex(inputFile, outputFile) {
 					maxY: bbox.maxY,
 					// Store the feature data for later point-in-polygon tests
 					featureIndex: i,
-					id: feature.id,
+					// ogr2ogr legt die Kennung als Property ab, nicht als Feature-ID.
+					id: feature.id ?? feature.properties?.id,
 					geometry: {
 						type: geometry.type,
 						coordinates: geometry.coordinates
@@ -148,7 +149,9 @@ export async function createRBushIndex(inputFile, outputFile) {
 		};
 
 		// Save index
-		writeFileSync(outputFile, JSON.stringify(indexData, null, 2));
+		// Ohne Einrückung: der Index wird nur maschinell gelesen, und die
+		// Einrückung vervierfachte die Dateigröße (31,9 MB für 8,3 MB Quelldaten).
+		writeFileSync(outputFile, JSON.stringify(indexData));
 		console.log(`Spatial index saved to: ${outputFile}`);
 		console.log(`Index contains ${indexItems.length} items`);
 
@@ -171,7 +174,8 @@ export async function createRBushIndex(inputFile, outputFile) {
 
 // Usage: node create-rbush-index.js input.geojson rbush-index.json
 if (import.meta.url === `file://${process.argv[1]}`) {
-	const inputFile = process.argv[2] || 'iho.json';
-	const outputFile = process.argv[3] || 'rbush-index.json';
+	// Vorgabe ist die Ausgabe der Geometrie-Pipeline (npm run geo:build).
+	const inputFile = process.argv[2] || 'out/baltic-water.geojson';
+	const outputFile = process.argv[3] || '../lib/server/geo/rbush-index.json';
 	createRBushIndex(inputFile, outputFile);
 }

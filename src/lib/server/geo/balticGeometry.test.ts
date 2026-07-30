@@ -86,9 +86,23 @@ describe('Ostsee-Geometrie: Kerngebiet unverändert', () => {
 });
 
 describe('Ostsee-Geometrie: Uferstreifen für Strandfunde', () => {
-	// Strandabschnitt Prerow, Nordseite Darß. Küstenlinie verläuft hier bei ~54.4560 N.
+	// Strandabschnitt Prerow, Nordseite Darß, entlang des Meridians 12.5427 E.
+	//
+	// Die Breitengrade sind gegen die Geometrie GEMESSEN, nicht aus der Karte
+	// geschätzt — ein früherer Schätzwert (54.4551) lag tatsächlich 463 m
+	// landeinwärts statt 100 m. Abstände zur Küstenlinie (`geo_build.water`,
+	// also vor dem Uferstreifen) per `ST_Distance` auf `geography`:
+	//
+	//   54.4600 →  14 m   im Uferstreifen
+	//   54.4590 →  99 m   im Uferstreifen   ← der 100-m-Fall unten
+	//   54.4580 → 186 m   im Uferstreifen
+	//   54.4575 → 232 m   außerhalb          ← die 200-m-Kante liegt hier
+	//   54.4110 → 5,4 km  außerhalb          ← der 5-km-Fall unten
+	//
+	// Wer den Uferstreifen in `build-baltic-geometry.sql` verändert, muss diese
+	// beiden Werte neu messen.
 	it('nimmt einen Punkt rund 100 m landeinwärts noch auf', () => {
-		expect(checkBalticSeaFile(12.5427, 54.4551).inBaltic).toBe(true);
+		expect(checkBalticSeaFile(12.5427, 54.459).inBaltic).toBe(true);
 	});
 
 	it('schließt einen Punkt 5 km landeinwärts aus', () => {

@@ -165,9 +165,9 @@ describe('Ostsee-Geometrie: Kerngebiet unverändert', () => {
 });
 
 describe('Ostsee-Geometrie: Uferstreifen für Strandfunde', () => {
-	// Strandabschnitt Prerow, Nordseite Darß. Küstenlinie verläuft hier bei ~54.4560 N.
+	// Strandabschnitt Prerow, Nordseite Darß. Breitengrade gegen die Geometrie gemessen, siehe Kommentar in der Testdatei.
 	it('nimmt einen Punkt rund 100 m landeinwärts noch auf', () => {
-		expect(checkBalticSeaFile(12.5427, 54.4551).inBaltic).toBe(true);
+		expect(checkBalticSeaFile(12.5427, 54.459).inBaltic).toBe(true);
 	});
 
 	it('schließt einen Punkt 5 km landeinwärts aus', () => {
@@ -194,7 +194,7 @@ Die beiden Prerow-Punkte sind aus der Karte abgelesen. Vor dem Commit einmal ver
 cd /Users/jansinger/Documents/Code/ostsee-sichtung && set -a && . ./.env && set +a && \
 psql "$DATABASE_POSTGRES_URL" -t -A -c "
 SELECT ST_Distance(
-  ST_SetSRID(ST_MakePoint(12.5427, 54.4551), 4326)::geography,
+  ST_SetSRID(ST_MakePoint(12.5427, 54.459), 4326)::geography,
   ST_SetSRID(ST_MakePoint(12.5427, 54.4560), 4326)::geography
 ) AS meter_zur_kueste;"
 ```
