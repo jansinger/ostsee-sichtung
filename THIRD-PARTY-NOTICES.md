@@ -2,7 +2,7 @@
 
 This project uses third-party software components. The following is a list of these components and their respective licenses.
 
-Generated on: [AUTO-GENERATED]
+Generated on: 2026-07-30 (from the installed production dependency tree)
 
 ## License Summary
 
@@ -553,15 +553,19 @@ This project is committed to Free and Open Source Software (FOSS) compliance:
 1. **License Compatibility**: All production dependencies use licenses compatible with our MIT license
 2. **Attribution**: This document provides proper attribution to all third-party components
 3. **Source Availability**: Links to source repositories are provided where available
-4. **No Copyleft Contamination**: No GPL/AGPL licensed code in production dependencies
-5. **Regular Audits**: License compliance is checked automatically in CI/CD pipeline
+4. **No Copyleft Contamination**: No GPL/AGPL licensed code in production dependencies. The
+   allowlist in `license:audit` also tolerates weak copyleft (MPL-2.0); no such dependency is
+   currently present — see the summary table above.
+5. **Regular Audits**: License compliance is checked in CI whenever dependencies change
 
 ## License Validation
 
-License compliance is automatically validated using:
-- `license-checker` in GitHub Actions on every PR
+License compliance is validated using:
+- The `Compliance Check` job in `.github/workflows/ci.yml`, which runs `license-checker` on
+  pull requests that change dependencies (label `dependencies` or a `dependabot/` branch).
+  Pull requests that do not touch dependencies skip this job.
+- `npm run license:audit` locally — fails on any license outside the allowlist in `package.json`
 - Manual review for major dependency updates
-- Automated alerts for license changes
 
 ## Questions or Concerns
 
