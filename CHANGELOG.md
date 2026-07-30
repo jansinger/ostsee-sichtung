@@ -2,6 +2,116 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.6.0](https://github.com/jansinger/ostsee-tiere/compare/v2.5.5...v2.6.0) (2026-07-30)
+
+
+### Features
+
+* **admin:** surface photo announcements the app can't upload ([#660](https://github.com/jansinger/ostsee-tiere/issues/660)) ([5b70f39](https://github.com/jansinger/ostsee-tiere/commit/5b70f392a4901788b941fcd29f6719392d270afe))
+* **api:** capture legacy-API sightings on disk, and fix what the new client revealed ([#651](https://github.com/jansinger/ostsee-tiere/issues/651)) ([54fbdcf](https://github.com/jansinger/ostsee-tiere/commit/54fbdcf3187e86b2cbb09e02e69b47593d41b8c5))
+* **build:** Chrome-vertrauenswürdige TLS-Zertifikate für den Dev-Server ([#592](https://github.com/jansinger/ostsee-tiere/issues/592)) ([6eaa689](https://github.com/jansinger/ostsee-tiere/commit/6eaa689bba9ca0b507c95de093c44e8496f1da63))
+* **config:** set up new git worktrees automatically ([#595](https://github.com/jansinger/ostsee-tiere/issues/595)) ([53be14a](https://github.com/jansinger/ostsee-tiere/commit/53be14a4efe70058558f0635f902e6c2faf67595))
+* **db:** apply versioned migrations automatically on container startup ([#582](https://github.com/jansinger/ostsee-tiere/issues/582)) ([ad91385](https://github.com/jansinger/ostsee-tiere/commit/ad91385c8d87f139dc6f264a2d2f8c24c123f399))
+* **map:** bottom-sheet-panels auf mobile und 320-px-seitenpanels am desktop (H6) ([#603](https://github.com/jansinger/ostsee-tiere/issues/603)) ([2934d11](https://github.com/jansinger/ostsee-tiere/commit/2934d11a371680499c116981e141f4ac2b6cb1f2))
+* **map:** consistent species-group color coding for markers and legend ([#597](https://github.com/jansinger/ostsee-tiere/issues/597)) ([6f08170](https://github.com/jansinger/ostsee-tiere/commit/6f0817078333e750ba40b2db22d639324fddb319))
+* **map:** dual-range time slider with aria-valuetext and date inputs (M10) ([#610](https://github.com/jansinger/ostsee-tiere/issues/610)) ([8168a3b](https://github.com/jansinger/ostsee-tiere/commit/8168a3b84476a5f2e33a4af148f3436084ca6e6e))
+* **map:** feed year dropdown from sightings years endpoint (N4) ([#612](https://github.com/jansinger/ostsee-tiere/issues/612)) ([0d33e71](https://github.com/jansinger/ostsee-tiere/commit/0d33e71e967dafa0b2efdb55316ae475e99e7b66))
+* **map:** gps location control aktivieren (UX-Review N2) ([#613](https://github.com/jansinger/ostsee-tiere/issues/613)) ([d024466](https://github.com/jansinger/ostsee-tiere/commit/d0244668e3a520d341ff6782a0ee52fc3e98bacb))
+* **map:** seamark layer toggle and ux review fixes (M2, M3, M6, M7) ([#611](https://github.com/jansinger/ostsee-tiere/issues/611)) ([dfdb703](https://github.com/jansinger/ostsee-tiere/commit/dfdb7032d9dce7455eda46c04bfedddd04e87ba8))
+* **map:** Tastaturbedienung, Skip-Link und barrierefreie Listenansicht für die Sichtungskarte (K3) ([#598](https://github.com/jansinger/ostsee-tiere/issues/598)) ([533d563](https://github.com/jansinger/ostsee-tiere/commit/533d563b4e87aaec56cdb135476de16db025cd05))
+* **map:** url-sync der kartenfilter und entfernbare filter-chips (M4, N6) ([#608](https://github.com/jansinger/ostsee-tiere/issues/608)) ([d1a8323](https://github.com/jansinger/ostsee-tiere/commit/d1a832343cf446a1426f2f4489e334f9664874e6))
+* **map:** UX quick wins from sightings map review ([#593](https://github.com/jansinger/ostsee-tiere/issues/593)) ([af1bde7](https://github.com/jansinger/ostsee-tiere/commit/af1bde71a1928ac58d9d94b7b3a5f3c8b7f2d143))
+* **media:** Aufräum-Tool für verwaiste Medien-Uploads ([#586](https://github.com/jansinger/ostsee-tiere/issues/586)) ([13de36a](https://github.com/jansinger/ostsee-tiere/commit/13de36a768744a9a062c533a52525ecb1a519e50))
+* **report:** Feldfehler des Servers durchreichen und zum Feld springen ([#644](https://github.com/jansinger/ostsee-tiere/issues/644)) ([30be31a](https://github.com/jansinger/ostsee-tiere/commit/30be31aea86659708a16a2b2fc04adc5cde07ae3))
+* **report:** Medien-Einwilligung speichern und verwaiste Uploads aufräumen ([#589](https://github.com/jansinger/ostsee-tiere/issues/589)) ([6ec70dc](https://github.com/jansinger/ostsee-tiere/commit/6ec70dc43a92efed5a222ec247d8494ac3e21326))
+* **ui:** field mode for the sighting form (PR 3/4) ([#618](https://github.com/jansinger/ostsee-tiere/issues/618)) ([020739c](https://github.com/jansinger/ostsee-tiere/commit/020739cc7117071403ed87b29d6a67abe6af01f3))
+* **ui:** styleguide route as living design system reference (PR 2/4) ([#615](https://github.com/jansinger/ostsee-tiere/issues/615)) ([b301c6c](https://github.com/jansinger/ostsee-tiere/commit/b301c6c8d70249f90d66dab5ea50a2a6e1c13fa6))
+* **ui:** SubmitStatus, StatusBlock und ConnectionBadge nach main bringen ([#642](https://github.com/jansinger/ostsee-tiere/issues/642)) ([2110317](https://github.com/jansinger/ostsee-tiere/commit/2110317f1317c204b368636ff1775ed37c559b5e))
+
+
+### Bug Fixes
+
+* **a11y:** add status icons to alerts that had none ([#594](https://github.com/jansinger/ostsee-tiere/issues/594)) ([742f803](https://github.com/jansinger/ostsee-tiere/commit/742f803d46037082f8ca3187e530e92c328f0d19))
+* **a11y:** meet WCAG AA contrast and 44px targets in the shared layer ([#599](https://github.com/jansinger/ostsee-tiere/issues/599)) ([d965edf](https://github.com/jansinger/ostsee-tiere/commit/d965edfc4296c8d0641f115fea672f1121ec0a92))
+* **a11y:** status colors meet WCAG AA on solid surfaces (PR 1/4) ([#614](https://github.com/jansinger/ostsee-tiere/issues/614)) ([deb0007](https://github.com/jansinger/ostsee-tiere/commit/deb000733ee94fbdc83da94f309e3f6b7bf0bd2c))
+* **admin:** show the polygon flag instead of the bounding box in the baltic column ([#649](https://github.com/jansinger/ostsee-tiere/issues/649)) ([7a91f0e](https://github.com/jansinger/ostsee-tiere/commit/7a91f0e4b30fad89a5582e84a58e814132f3bc52))
+* **admin:** stop 13 years of legacy mediaUpload rows from faking a work list ([#663](https://github.com/jansinger/ostsee-tiere/issues/663)) ([618f1e0](https://github.com/jansinger/ostsee-tiere/commit/618f1e086138344236ae5539d79606f69dedf8ca))
+* **api:** align legacy REST API with the binding contract ([#638](https://github.com/jansinger/ostsee-tiere/issues/638)) ([032ffec](https://github.com/jansinger/ostsee-tiere/commit/032ffec3adb708d2d8aa2c3e580ee05d26ea230e))
+* **api:** correct required-field message for legacy vorname/name ([#648](https://github.com/jansinger/ostsee-tiere/issues/648)) ([f6ef2e3](https://github.com/jansinger/ostsee-tiere/commit/f6ef2e30409d4b0deee69dc204904378e2a73a5a))
+* **api:** derive the baltic status from one function everywhere ([#650](https://github.com/jansinger/ostsee-tiere/issues/650)) ([03c1547](https://github.com/jansinger/ostsee-tiere/commit/03c154738af6084ea10a26fe73bb3fc32bd23cab))
+* **api:** Freigabe-Workflow auf einen Endpunkt vereinheitlichen ([#576](https://github.com/jansinger/ostsee-tiere/issues/576)) ([8895a72](https://github.com/jansinger/ostsee-tiere/commit/8895a7200034e983dbaf58ebaa9d0d80c4602d2b))
+* **api:** let passenger load the service without top-level await ([#659](https://github.com/jansinger/ostsee-tiere/issues/659)) ([79d5e9b](https://github.com/jansinger/ostsee-tiere/commit/79d5e9b24e1a96c03e4e922a57eae22900083ee9))
+* **api:** öffentliche Statistiken zählen nur noch geprüfte Sichtungen ([#579](https://github.com/jansinger/ostsee-tiere/issues/579)) ([6313021](https://github.com/jansinger/ostsee-tiere/commit/6313021fade6adcb4ca9e5180aac1b67b672514b))
+* **build:** keep vite dep-optimizer cache valid across dev restarts ([#616](https://github.com/jansinger/ostsee-tiere/issues/616)) ([32d997a](https://github.com/jansinger/ostsee-tiere/commit/32d997a083ed69fb1f8960cd32a2bc6a9a51c954))
+* **ci:** gate production behind staging and propagate build failures ([#617](https://github.com/jansinger/ostsee-tiere/issues/617)) ([da39a50](https://github.com/jansinger/ostsee-tiere/commit/da39a509eb99c2c7b44b3292e27eea7e57990f14))
+* **ci:** run E2E tests for PRs that only touch e2e/ ([#643](https://github.com/jansinger/ostsee-tiere/issues/643)) ([cacd291](https://github.com/jansinger/ostsee-tiere/commit/cacd291d5229e35b769f1b5c28271ca824b6bd5c))
+* **config:** UPLOAD_PATH wird gelesen statt hartkodiert ([#585](https://github.com/jansinger/ostsee-tiere/issues/585)) ([b91845c](https://github.com/jansinger/ostsee-tiere/commit/b91845c96109d544ae95c77a6538ad003f6d6248))
+* **db:** compare DST boundaries on wall-clock time, not the UTC instant ([#577](https://github.com/jansinger/ostsee-tiere/issues/577)) ([3247de6](https://github.com/jansinger/ostsee-tiere/commit/3247de6b518553063211cf1a832e4a1e79db4c71))
+* **db:** stop default 0 from asserting answers nobody gave ([#605](https://github.com/jansinger/ostsee-tiere/issues/605)) ([3cb030a](https://github.com/jansinger/ostsee-tiere/commit/3cb030aba31797de9881efc33ecc8f40660987cb))
+* **db:** Zeitzonen-Ausdrücke zwischen Indizes und Abfragen angleichen ([#575](https://github.com/jansinger/ostsee-tiere/issues/575)) ([8fc4b43](https://github.com/jansinger/ostsee-tiere/commit/8fc4b4317100275fabf4191d9c68f5f3926c08a8))
+* **db:** Zeitzonen-Semantik vereinheitlichen und TZ explizit setzen ([#572](https://github.com/jansinger/ostsee-tiere/issues/572)) ([0eab659](https://github.com/jansinger/ostsee-tiere/commit/0eab6592e314db33bf9be0f6a97a2adf63f3fcf4))
+* konsistente Zeitzonen-Behandlung vor Inbetriebnahme ([#581](https://github.com/jansinger/ostsee-tiere/issues/581)) ([d79571d](https://github.com/jansinger/ostsee-tiere/commit/d79571d85a99b86c9044cda5d689eaf5b9130f12))
+* **map:** clean the baltic geometry and derive the bounding box from it ([#647](https://github.com/jansinger/ostsee-tiere/issues/647)) ([ecfa4b9](https://github.com/jansinger/ostsee-tiere/commit/ecfa4b903ec50cd975aaf19b061a9325f7019b9e))
+* **map:** korrekte ARIA-Semantik der Karten-Panels und WCAG-konforme Tastaturkürzel (H5, H7) ([#601](https://github.com/jansinger/ostsee-tiere/issues/601)) ([7b56e3c](https://github.com/jansinger/ostsee-tiere/commit/7b56e3c14cf8cc020991654ae7190a8bc0fb1f33))
+* **media:** Storage-Dateien beim Löschen von Sichtungs-Dateizeilen mitlöschen ([#584](https://github.com/jansinger/ostsee-tiere/issues/584)) ([e664e9e](https://github.com/jansinger/ostsee-tiere/commit/e664e9e8c8963b41adcad8af69f9d4f02a260997))
+* **report:** Bestimmungshilfe fachlich korrigieren und zur Feldbestimmung umbauen ([#568](https://github.com/jansinger/ostsee-tiere/issues/568)) ([2efd337](https://github.com/jansinger/ostsee-tiere/commit/2efd33708a52bc2673f1b669bbc10d7964099d7f))
+* **report:** erfundene Statistiken aus Bürgertexten entfernen ([#571](https://github.com/jansinger/ostsee-tiere/issues/571)) ([adc0d3b](https://github.com/jansinger/ostsee-tiere/commit/adc0d3bbb1599a359b4fa5cd8e6f0d47876508c3))
+* **report:** Phantom-Position entfernen und Formular-UX reparieren ([#567](https://github.com/jansinger/ostsee-tiere/issues/567)) ([7659d86](https://github.com/jansinger/ostsee-tiere/commit/7659d86bd271ab783ee7e6a8670d3105f3cfcc22))
+* **report:** Schweinswal-Angaben an DMM-Steckbrief angleichen ([#591](https://github.com/jansinger/ostsee-tiere/issues/591)) ([94fd2ec](https://github.com/jansinger/ostsee-tiere/commit/94fd2ec9ca6f3bacafafd28b3b2dcf2669a76a8b))
+* **test:** allow serving main-repo node_modules to browser tests in worktrees ([#606](https://github.com/jansinger/ostsee-tiere/issues/606)) ([1dda527](https://github.com/jansinger/ostsee-tiere/commit/1dda52785c2c83fdaf687050c90a9dd3a124791e))
+* **test:** freeze system clock in weather endpoint selection tests ([#609](https://github.com/jansinger/ostsee-tiere/issues/609)) ([a167156](https://github.com/jansinger/ostsee-tiere/commit/a16715627a37e7ba499c13bc5c5902a7e142fb98))
+* **test:** stop stream-abort tests colliding with unrelated services on the same port ([#658](https://github.com/jansinger/ostsee-tiere/issues/658)) ([e4f3b12](https://github.com/jansinger/ostsee-tiere/commit/e4f3b128e54611958c11e89afe63299c2087fcbe))
+* **ui:** close the white/black hole in the design-system scan ([#637](https://github.com/jansinger/ostsee-tiere/issues/637)) ([a828261](https://github.com/jansinger/ostsee-tiere/commit/a8282613f701c59788209cffbf0756a9ba08d594))
+* **ui:** keep error toasts on screen and stop leaking JSON parse errors ([#623](https://github.com/jansinger/ostsee-tiere/issues/623)) ([3c2f5fd](https://github.com/jansinger/ostsee-tiere/commit/3c2f5fd6f7a180b6c75c0d689724a2812f3a7b2d))
+* **ui:** UI/UX-Befunde aus dem Review vom 2026-07-30 abarbeiten ([#639](https://github.com/jansinger/ostsee-tiere/issues/639)) ([e908542](https://github.com/jansinger/ostsee-tiere/commit/e908542350c27fce4bc92350bbbd488223d104fe))
+
+
+### Documentation
+
+* **admin:** inventory the admin patterns, states and theme violations ([#628](https://github.com/jansinger/ostsee-tiere/issues/628)) ([f920e1b](https://github.com/jansinger/ostsee-tiere/commit/f920e1b83cc59f3bc731191cf4dd9cca5991f950))
+* **api:** name the nginx directive that actually works under passenger ([#661](https://github.com/jansinger/ostsee-tiere/issues/661)) ([3b93e75](https://github.com/jansinger/ostsee-tiere/commit/3b93e75b422ed4720521af5ae2605abda78fd01f))
+* **api:** warn that verifying the perimeter can trigger fail2ban ([#662](https://github.com/jansinger/ostsee-tiere/issues/662)) ([2ee60c7](https://github.com/jansinger/ostsee-tiere/commit/2ee60c7a3982ecd7d51b3bd863d97418fc4a16e0))
+* archive point-in-time reports out of docs/ root ([#633](https://github.com/jansinger/ostsee-tiere/issues/633)) ([b6b9bf8](https://github.com/jansinger/ostsee-tiere/commit/b6b9bf872498e4e7726320445c9b4771bd16b485))
+* bring README, SECURITY and THIRD-PARTY-NOTICES back in line with the code ([#645](https://github.com/jansinger/ostsee-tiere/issues/645)) ([3cab290](https://github.com/jansinger/ostsee-tiere/commit/3cab290337b73cf08fd23b24fc13453cc4b9a13b))
+* correct `latest` tag semantics in run-release.sh and deployment guide ([#646](https://github.com/jansinger/ostsee-tiere/issues/646)) ([7119d51](https://github.com/jansinger/ostsee-tiere/commit/7119d51453aa65a83a6ee140de4db4e1fc1c27db))
+* correct Docker deployment guides and remove the unused monitoring stack ([#640](https://github.com/jansinger/ostsee-tiere/issues/640)) ([62b9b90](https://github.com/jansinger/ostsee-tiere/commit/62b9b906a0ecd0d82d50b98f6c706be30e0f7715))
+* **docs:** sync position docs with the merged single-panel state ([#596](https://github.com/jansinger/ostsee-tiere/issues/596)) ([b828454](https://github.com/jansinger/ostsee-tiere/commit/b82845426ee4cccb6d1fe727fbcaf225dd0559c6))
+* fix documentation that contradicts the code ([#604](https://github.com/jansinger/ostsee-tiere/issues/604)) ([1dea25c](https://github.com/jansinger/ostsee-tiere/commit/1dea25c23b162e5a8cf13363a7d0f87f858ee80e))
+* mark error 2 as fixed and back it with the measurements. Error 4 is ([7a91f0e](https://github.com/jansinger/ostsee-tiere/commit/7a91f0e4b30fad89a5582e84a58e814132f3bc52))
+* refresh the sighting form UX review backlog and record the base-300 contrast limit ([#602](https://github.com/jansinger/ostsee-tiere/issues/602)) ([4142289](https://github.com/jansinger/ostsee-tiere/commit/41422896fc4579b44e6720a9fba4056e76f98f18))
+* **report:** align form documentation with the implementation ([#569](https://github.com/jansinger/ostsee-tiere/issues/569)) ([c79579a](https://github.com/jansinger/ostsee-tiere/commit/c79579af1b76645a91b2aacdaab571eafc8d4c9c))
+* **report:** design for single-panel location input in step 1 ([#588](https://github.com/jansinger/ostsee-tiere/issues/588)) ([b5a7964](https://github.com/jansinger/ostsee-tiere/commit/b5a79649ada0cf9bf671bb4416785e6aade411f1))
+
+
+### Code Refactoring
+
+* **config:** remove unused UPLOAD_PATHS constant ([#587](https://github.com/jansinger/ostsee-tiere/issues/587)) ([346a2b7](https://github.com/jansinger/ostsee-tiere/commit/346a2b702ab5a301b5dba7978c092d64067ef68e))
+* **map:** remove dead panel-manager code (UX review N1) ([#607](https://github.com/jansinger/ostsee-tiere/issues/607)) ([d001fc2](https://github.com/jansinger/ostsee-tiere/commit/d001fc297a1823d0c3e0363406fd16fbfeea22d9))
+* **report:** replace the position method chooser with one panel ([#590](https://github.com/jansinger/ostsee-tiere/issues/590)) ([a7cbb2e](https://github.com/jansinger/ostsee-tiere/commit/a7cbb2e4b7ce435f49533bb4a8b19222e373f763))
+* **types:** remove unused duplicate map type definitions ([#600](https://github.com/jansinger/ostsee-tiere/issues/600)) ([a305009](https://github.com/jansinger/ostsee-tiere/commit/a305009ba6be0e75ac261cfa8ca739a842786c19))
+* **ui:** return the last hardcoded areas to the design system (PR 4/4) ([#620](https://github.com/jansinger/ostsee-tiere/issues/620)) ([3dde27f](https://github.com/jansinger/ostsee-tiere/commit/3dde27fc47d1c4da4eb84a713d782d24ff549e99))
+
+
+### Dependencies
+
+* **deps:** bump @fontsource/roboto from 5.2.10 to 5.3.0 ([#553](https://github.com/jansinger/ostsee-tiere/issues/553)) ([0576a4a](https://github.com/jansinger/ostsee-tiere/commit/0576a4a8d38b7d829b877fd95ca2334f1de7a5b2))
+* **deps:** bump @iconify/json from 2.2.481 to 2.2.506 ([#654](https://github.com/jansinger/ostsee-tiere/issues/654)) ([d6286c9](https://github.com/jansinger/ostsee-tiere/commit/d6286c94f276bb3a87819d633262a496e77c635c))
+* **deps:** bump @scalar/sveltekit from 0.3.8 to 0.3.11 ([#655](https://github.com/jansinger/ostsee-tiere/issues/655)) ([2dcbb09](https://github.com/jansinger/ostsee-tiere/commit/2dcbb09c9dc2e741bc100c5204f4e8d53a9a2a5f))
+* **deps:** bump @tailwindcss/vite from 4.3.2 to 4.3.3 ([#563](https://github.com/jansinger/ostsee-tiere/issues/563)) ([0d84c61](https://github.com/jansinger/ostsee-tiere/commit/0d84c61dc606db13113673bd782414022d49d70c))
+* **deps:** bump actions/setup-node in the github-actions group ([#549](https://github.com/jansinger/ostsee-tiere/issues/549)) ([da3750e](https://github.com/jansinger/ostsee-tiere/commit/da3750e760e606fa06f035c96d55da033a471453))
+* **deps:** bump daisyui from 5.6.13 to 5.7.4 ([#562](https://github.com/jansinger/ostsee-tiere/issues/562)) ([7d51aff](https://github.com/jansinger/ostsee-tiere/commit/7d51aff09e0d44b217d2ffbc176dacfa0f98365b))
+* **deps:** bump fast-uri from 3.1.2 to 3.1.4 ([#557](https://github.com/jansinger/ostsee-tiere/issues/557)) ([723351e](https://github.com/jansinger/ostsee-tiere/commit/723351e957759aab5a672256394bb8bb5c8818e1))
+* **deps:** bump globals from 17.6.0 to 17.7.0 ([#554](https://github.com/jansinger/ostsee-tiere/issues/554)) ([8123a5e](https://github.com/jansinger/ostsee-tiere/commit/8123a5ea76939d269d5fe56a159a276427d2b0f5))
+* **deps:** bump globals from 17.7.0 to 17.8.0 ([#656](https://github.com/jansinger/ostsee-tiere/issues/656)) ([251bb78](https://github.com/jansinger/ostsee-tiere/commit/251bb78e0d254378cabc75937ff3349890848211))
+* **deps:** bump svelte in the svelte-framework group ([#561](https://github.com/jansinger/ostsee-tiere/issues/561)) ([35cbf95](https://github.com/jansinger/ostsee-tiere/commit/35cbf95f40780506bdde997aeb4ce0db0a84da22))
+* **deps:** bump svelte-check in the dev-tooling group ([#653](https://github.com/jansinger/ostsee-tiere/issues/653)) ([6dd2afa](https://github.com/jansinger/ostsee-tiere/commit/6dd2afa3c08b9a6aca0925bd5a2870bafba15464))
+* **deps:** bump tailwindcss from 4.3.2 to 4.3.3 ([#552](https://github.com/jansinger/ostsee-tiere/issues/552)) ([e99fa3f](https://github.com/jansinger/ostsee-tiere/commit/e99fa3f87b62c091e57669bab93c62cf27c25378))
+* **deps:** bump the dev-tooling group across 1 directory with 5 updates ([#556](https://github.com/jansinger/ostsee-tiere/issues/556)) ([f54e654](https://github.com/jansinger/ostsee-tiere/commit/f54e6549acb15252ca0d8c735209e690bb7b073a))
+* **deps:** bump the dev-tooling group with 3 updates ([#560](https://github.com/jansinger/ostsee-tiere/issues/560)) ([0726851](https://github.com/jansinger/ostsee-tiere/commit/0726851e9374a2a12b2cf8b25f4387ff40053f74))
+* **deps:** bump the github-actions group with 2 updates ([#657](https://github.com/jansinger/ostsee-tiere/issues/657)) ([051edbb](https://github.com/jansinger/ostsee-tiere/commit/051edbb0ac45029e911f0522aa59296aababec73))
+* **deps:** bump the production-dependencies group with 2 updates ([#559](https://github.com/jansinger/ostsee-tiere/issues/559)) ([bb0f720](https://github.com/jansinger/ostsee-tiere/commit/bb0f7209ad08922dac8dace9d89697ee519fcd04))
+* **deps:** bump the svelte-framework group with 3 updates ([#551](https://github.com/jansinger/ostsee-tiere/issues/551)) ([9b78acc](https://github.com/jansinger/ostsee-tiere/commit/9b78acc4721fcd794d89892379afde00589d4e22))
+
 ## [2.5.5](https://github.com/jansinger/ostsee-sichtung/compare/v2.5.4...v2.5.5) (2026-07-15)
 
 
