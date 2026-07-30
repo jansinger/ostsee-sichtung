@@ -57,16 +57,12 @@ nano .env  # Passwörter und Auth0-Credentials anpassen
 
 # Starten
 docker compose -f docker-compose.production.yml up -d
-
-# Optional: Mit Monitoring (Prometheus + Grafana)
-docker compose -f docker-compose.production.yml --profile monitoring up -d
 ```
 
 **Zugriff:**
 
 - Anwendung: http://localhost:3000
-- Grafana: http://localhost:3001 (mit `--profile monitoring`)
-- Prometheus: http://localhost:9090 (mit `--profile monitoring`)
+- Logs: `docker compose -f docker-compose.production.yml logs -f app`
 
 📖 **Vollständige Dokumentation**: [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md)
 
@@ -279,7 +275,7 @@ Docker ist die **primäre Deployment-Methode** für Self-Hosted-Installationen.
 
 - ✅ **Multi-Stage Build** für optimierte Image-Größe (~150-200 MB)
 - ✅ **Multi-Architektur** (AMD64 + ARM64: Raspberry Pi 4/5, AWS Graviton, Apple Silicon)
-- ✅ **Integriertes Monitoring** (Prometheus + Grafana)
+- ✅ **Automatische Schema-Migrationen** beim Container-Start
 - ✅ **Multi-Storage Support** (Local, Vercel Blob)
 - ✅ **Production-Ready** mit Health Checks und Auto-Restart
 - ✅ **Security-Hardened** (Non-root user, read-only filesystem möglich)
@@ -296,8 +292,8 @@ npm run docker:run
 # Mit Docker Compose starten (inkl. Datenbank)
 npm run docker:compose
 
-# Monitoring aktivieren
-docker compose -f docker-compose.production.yml --profile monitoring up -d
+# Compose-Stack stoppen
+npm run docker:stop
 ```
 
 **Hinweis zu `docker:run`:**

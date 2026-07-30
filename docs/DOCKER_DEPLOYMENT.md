@@ -7,6 +7,7 @@ This comprehensive guide covers deploying the Ostsee-Tiere marine animal sightin
 ## Table of Contents
 
 - [Production Quick Start (5 Minuten)](#production-quick-start-5-minuten)
+- [Quick Start (Docker Compose - All-in-One)](#quick-start-docker-compose---all-in-one)
 - [System Requirements](#system-requirements)
 - [Installation Options](#installation-options)
 - [Dedicated Server with Native PostgreSQL](#dedicated-server-with-native-postgresql)
@@ -14,7 +15,7 @@ This comprehensive guide covers deploying the Ostsee-Tiere marine animal sightin
 - [Storage Setup](#storage-setup)
 - [Database Configuration](#database-configuration)
 - [Database Migration](#database-migration)
-- [Monitoring Setup](#monitoring-setup)
+- [Logging](#logging)
 - [Production Deployment](#production-deployment)
 - [CI/CD and Release Process](#cicd-and-release-process)
 - [Backup & Restore](#backup--restore)
@@ -22,6 +23,8 @@ This comprehensive guide covers deploying the Ostsee-Tiere marine animal sightin
 - [Production with External PostgreSQL](#production-with-external-postgresql)
 - [Troubleshooting](#troubleshooting)
 - [Security Best Practices](#security-best-practices)
+- [Cloud Deployment Patterns](#cloud-deployment-patterns)
+- [Maintenance](#maintenance)
 
 ---
 
@@ -154,7 +157,7 @@ sudo systemctl restart caddy
 
 For development or testing with PostgreSQL running inside Docker.
 
-> **Note:** Docker Compose requires downloading `docker-compose.production.yml` and optionally the monitoring configuration.
+> **Note:** Docker Compose only requires `docker-compose.production.yml` and `.env` — no repository clone.
 
 ```bash
 # 1. Create deployment directory
@@ -164,25 +167,15 @@ mkdir -p ostsee-tiere && cd ostsee-tiere
 curl -O https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/docker-compose.production.yml
 curl -O https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/.env.docker
 
-# 3. (Optional) Download monitoring config
-mkdir -p monitoring/grafana/provisioning/datasources monitoring/grafana/provisioning/dashboards monitoring/grafana/dashboards
-curl -o monitoring/prometheus.yml https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/monitoring/prometheus.yml
-curl -o monitoring/grafana/provisioning/datasources/prometheus.yml https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/monitoring/grafana/provisioning/datasources/prometheus.yml
-curl -o monitoring/grafana/provisioning/dashboards/default.yml https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/monitoring/grafana/provisioning/dashboards/default.yml
-curl -o monitoring/grafana/dashboards/ostsee-tiere-overview.json https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/monitoring/grafana/dashboards/ostsee-tiere-overview.json
-
-# 4. Configure environment
+# 3. Configure environment
 cp .env.docker .env
 nano .env  # Edit: Auth0 credentials, SESSION_SECRET, ENCRYPTION_KEY
 
-# 5. Start all services (app + database)
+# 4. Start all services (app + database)
 docker compose -f docker-compose.production.yml up -d
 
-# 6. Database schema is migrated automatically on startup (check the logs)
+# 5. Database schema is migrated automatically on startup (check the logs)
 docker logs ostsee-tiere-app | grep '\[migrate\]'
-
-# 7. (Optional) Enable monitoring
-docker compose -f docker-compose.production.yml --profile monitoring up -d
 ```
 
 Access the application at: http://localhost:3000
@@ -222,7 +215,7 @@ Access the application at: http://localhost:3000
 
 ### Option 1: Docker Compose (Recommended)
 
-**Best for**: Production deployments with database, monitoring included.
+**Best for**: Production deployments with the database in a container.
 
 ```bash
 # Clone repository
@@ -235,9 +228,6 @@ nano .env  # Set your passwords, Auth0 credentials, etc.
 
 # Start all services (app + database)
 docker compose -f docker-compose.production.yml up -d
-
-# With monitoring (Prometheus + Grafana)
-docker compose -f docker-compose.production.yml --profile monitoring up -d
 
 # View logs
 docker compose -f docker-compose.production.yml logs -f
@@ -487,12 +477,24 @@ UPLOAD_PATH=/app/uploads
 NODE_ENV=production
 PUBLIC_SITE_URL=https://your-domain.com
 PORT=3000
+TZ=UTC
+
+# Reverse proxy header handling (REQUIRED behind Nginx/Caddy).
+# Without these, getClientAddress() returns the proxy IP and IP-based rate
+# limiting applies to all clients collectively instead of per client.
+# XFF_DEPTH = number of trusted proxies in front of the app (one proxy: 1).
+ADDRESS_HEADER=x-forwarded-for
+XFF_DEPTH=1
+PROTOCOL_HEADER=x-forwarded-proto
+HOST_HEADER=x-forwarded-host
 
 # Security (GENERATE THESE!)
 # openssl rand -base64 32
 SESSION_SECRET=your-generated-session-secret-here
 # openssl rand -hex 32
 ENCRYPTION_KEY=your-generated-64-char-hex-key-here
+# openssl rand -hex 32 — required for the orphaned-upload cleanup cron
+CLEANUP_TOKEN=your-generated-cleanup-token-here
 
 # Auth0
 AUTH0_CLIENT_ID=your-auth0-client-id
@@ -500,7 +502,16 @@ AUTH0_CLIENT_SECRET=your-auth0-client-secret
 AUTH0_DOMAIN=your-tenant.auth0.com
 JWKS_URL=https://your-tenant.auth0.com/.well-known/jwks.json
 API_AUDIENCE=your-api-audience
+
+# Logging (trace|debug|info|warn|error|fatal)
+LOG_LEVEL=info
 ```
+
+> **Do not add an empty `ORIGIN=`.** With `--env-file`, an empty value is passed
+> through to adapter-node as an empty string and the container aborts at startup
+> with `Invalid ORIGIN: ''`. Either set a full URL
+> (`ORIGIN=https://your-domain.com`) or omit the line entirely — origin is then
+> derived from `PROTOCOL_HEADER`/`HOST_HEADER`, falling back to the `Host` header.
 
 ### Container Deployment
 
@@ -972,60 +983,60 @@ See [DATABASE_MIGRATION.md](./DATABASE_MIGRATION.md) for complete step-by-step i
 
 ---
 
-## Monitoring Setup
+## Logging
 
-Ostsee-Tiere includes integrated monitoring with Prometheus and Grafana.
+### Where the logs go
 
-### Enable Monitoring
+The application logs **to stdout only** — structured JSON via Pino
+(`src/lib/logger/serverLogger.ts`). There is no log file inside the container,
+and PII fields (names, addresses, email, phone, tokens) are redacted at the
+logger level before anything is written.
+
+Docker captures stdout with the `json-file` driver. Rotation is pinned in
+`docker-compose.production.yml`:
+
+| Service | max-size | max-file | Worst case on disk |
+| ------- | -------- | -------- | ------------------ |
+| `app`   | 10 MB    | 5        | ~50 MB             |
+| `db`    | 10 MB    | 3        | ~30 MB             |
+
+On the host the raw files live at
+`/var/lib/docker/containers/<id>/<id>-json.log*`, but the intended access path
+is the CLI:
 
 ```bash
-# Start with monitoring profile
-docker compose -f docker-compose.production.yml --profile monitoring up -d
+docker compose logs -f app             # follow
+docker compose logs --tail 200 app     # last 200 lines
+docker compose logs --since 1h app     # last hour
+docker logs -f ostsee-tiere-app        # standalone container
+
+# Structured queries
+docker compose logs app 2>&1 | grep '"level":50'          # errors (Pino level)
+docker compose logs app 2>&1 | grep '"event":"security.'  # security events
+docker compose logs app 2>&1 | grep '\[migrate\]'         # startup migrations
 ```
 
-**Access Points:**
+Set verbosity with `LOG_LEVEL` (`trace`…`fatal`, default `info`); see
+[ENVIRONMENT.md](./ENVIRONMENT.md#log_level).
 
-- **Application**: http://localhost:3000
-- **Grafana**: http://localhost:3001 (default: admin/admin)
-- **Prometheus**: http://localhost:9090
+### Two things to know
 
-### Grafana Setup
+**Rotation means loss.** Past roughly 50 MB the older application logs are
+gone. If security events need longer retention, switch the log driver
+(`journald`, `syslog`) or ship to an external collector. Audit-relevant admin
+actions are stored independently in the `audit_logs` database table and survive
+rotation entirely — see
+[PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md#10-audit-logging).
 
-1. **Login**: http://localhost:3001 (admin/admin)
-2. **Change Password**: Follow prompt on first login
-3. **View Dashboards**: Navigate to "Dashboards" → "Ostsee-Tiere Overview"
+**There is no log file to find.** Neither the image nor the Compose stack
+provides a log directory — stdout plus the json-file driver is the whole
+pipeline. Earlier versions mounted a `logs` volume at `/app/logs`; it was never
+written to and has been removed. If you are upgrading from such a stack, the
+orphaned volume can be dropped:
 
-**Pre-configured Metrics:**
-
-- Application uptime and health
-- CPU usage
-- Memory consumption
-- Network traffic
-- Database connections
-- Request rates and response times
-
-### Custom Alerts (Optional)
-
-Edit `monitoring/prometheus.yml` to add alerting rules:
-
-```yaml
-rule_files:
-  - 'alerts/*.yml'
-```
-
-Create `monitoring/alerts/app-alerts.yml`:
-
-```yaml
-groups:
-  - name: ostsee-tiere
-    rules:
-      - alert: ApplicationDown
-        expr: up{job="ostsee-tiere-app"} == 0
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: 'Application is down'
+```bash
+docker volume ls | grep _logs      # verify it is empty and unused
+docker volume rm <project>_logs
 ```
 
 ---
@@ -1241,14 +1252,24 @@ docker compose -f docker-compose.production.yml start app
 
 ### Volume Backup
 
+Uploads live in the named volume `uploads`, not in a host directory — a
+`tar` of `./uploads` on the host would archive an empty folder.
+
 ```bash
-# Backup all volumes
+# Confirm the actual volume names first (prefix = Compose project name)
+docker volume ls | grep -E 'uploads|pgdata'
+
+# Backup uploads
 docker run --rm \
-  -v ostsee-tiere_uploads:/uploads \
-  -v ostsee-tiere_pgdata:/pgdata \
+  -v ostsee-tiere_uploads:/data:ro \
   -v $(pwd)/backups:/backup \
-  alpine sh -c "tar czf /backup/volumes-backup-$(date +%Y%m%d).tar.gz /uploads /pgdata"
+  alpine tar czf "/backup/uploads-$(date +%Y%m%d).tar.gz" -C /data .
 ```
+
+For the database prefer `pg_dump` (see above) over archiving `pgdata`: a file
+copy of a running PostgreSQL data directory is not guaranteed to be consistent.
+Note that the volume mounts at `/var/lib/postgresql` (not `/var/lib/postgresql/data`)
+because PostgreSQL 18 uses a version-specific subdirectory.
 
 ---
 
@@ -1638,8 +1659,11 @@ services:
     read_only: true
     tmpfs:
       - /tmp
-      - /app/logs
 ```
+
+`/app/uploads` must stay writable, so keep its volume mount when using
+`read_only`. No tmpfs for `/app/logs` is needed — the application does not write
+log files (see [Logging](#logging)).
 
 ### 5. Regular Updates
 
@@ -1796,4 +1820,4 @@ MIT License - See [LICENSE](../LICENSE) for details.
 
 ---
 
-_Last Updated: April 2026_
+_Last Updated: July 2026 (version 2.5.5)_
