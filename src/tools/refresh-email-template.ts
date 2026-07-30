@@ -42,12 +42,11 @@ import { createHash } from 'crypto';
 import { pathToFileURL } from 'node:url';
 import { config } from 'dotenv';
 import postgres from 'postgres';
+import { maskConnection, resolveConnectionString } from './dbConnection.ts';
 import {
 	NOTIFICATION_EMAIL_DEFAULT_TEMPLATE,
 	PREVIOUS_SHIPPED_TEMPLATE_HASHES
 } from '../lib/server/templates/notificationEmailDefault.ts';
-
-config();
 
 /** Was mit dem gespeicherten Wert geschehen soll. */
 export type RefreshDecision = 'already-current' | 'refresh' | 'customised';
@@ -87,19 +86,33 @@ const isForce = args.includes('--force');
 
 const CONFIG_KEY = 'notification.email.template';
 
-const connectionString =
-	process.env.DATABASE_POSTGRES_URL ||
-	process.env.DATABASE_URL ||
-	'postgresql://root:mysecretpassword@localhost:5433/local';
-
-const sql = postgres(connectionString);
-
 function sha256(value: string): string {
 	return createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
+/**
+ * Verbindung erst beim Lauf aufbauen, nicht beim Import: `refresh-email-template.test.ts`
+ * importiert `decideTemplateRefresh` aus dieser Datei und soll dabei weder eine
+ * `.env` lesen noch einen Verbindungspool anlegen.
+ */
 async function main(): Promise<number> {
-	console.log(`🔗 Datenbank: ${connectionString.replace(/:[^:@]*@/, ':****@')}`);
+	config();
+
+	// Kein Fallback auf eine Standardverbindung — dieses Werkzeug schreibt und
+	// darf die Zieldatenbank nie raten. Im Git-Worktree fehlt die `.env`
+	// regelmäßig; genau dort ginge ein geratener Wert auf die falsche Datenbank.
+	const connectionString = resolveConnectionString(process.env);
+	const sql = postgres(connectionString);
+
+	try {
+		return await run(sql, connectionString);
+	} finally {
+		await sql.end();
+	}
+}
+
+async function run(sql: postgres.Sql, connectionString: string): Promise<number> {
+	console.log(`🔗 Datenbank: ${maskConnection(connectionString)}`);
 
 	const rows = await sql<{ stored: string | null; updatedBy: string | null }[]>`
 		SELECT value #>> '{}' AS stored, updated_by AS "updatedBy"
@@ -200,14 +213,13 @@ const isDirectRun =
 	typeof process.argv[1] === 'string' && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isDirectRun) {
+	// `sql.end()` liegt im finally von main() — hier gibt es keine Verbindung
+	// mehr zu schließen, auch nicht im Fehlerfall (etwa wenn schon
+	// resolveConnectionString wirft, bevor ein Pool existiert).
 	main()
-		.then(async (code) => {
-			await sql.end();
-			process.exit(code);
-		})
-		.catch(async (error) => {
+		.then((code) => process.exit(code))
+		.catch((error: unknown) => {
 			console.error('❌ Fehler:', error instanceof Error ? error.message : error);
-			await sql.end();
 			process.exit(2);
 		});
 }

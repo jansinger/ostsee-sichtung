@@ -147,12 +147,14 @@ npm run config:refresh-email-template
 - Exits with code 1 on a customised template and prints the Handlebars placeholders that need to be inserted by hand
 - Idempotent: a value that already equals the current default is left untouched, so `updated_at` does not churn
 - Touches exactly one key — never the recipient or SMTP settings
+- Refuses to run without `DATABASE_POSTGRES_URL` or `DATABASE_URL` — never guesses a target database. Shares `resolveConnectionString()` with `cleanup-orphaned-uploads.ts` (`dbConnection.ts`); a git worktree regularly has no `.env`, and that is exactly where a guessed default would have written to the wrong database.
+- The connection is opened inside `main()`, so importing the module for tests neither reads `.env` nor opens a pool
 
 **When changing the template:** add the _old_ hash to `PREVIOUS_SHIPPED_TEMPLATE_HASHES` in `src/lib/server/templates/notificationEmailDefault.ts`. `notificationEmailDefault.test.ts` pins the current hash and fails on every change to force this. Skipping it cuts off the upgrade path for every existing installation.
 
 **Note:** a running instance caches configuration for 5 minutes — the new template takes effect after that, or after a restart.
 
-**Which database:** the tool follows `DATABASE_POSTGRES_URL` from `.env`, i.e. the local Postgres. That is currently the only live dataset — the new production database will be seeded from it, and the old Supabase production has had its records deleted for data-protection reasons. A run against the local database is therefore complete; there is no separate production step to schedule.
+**Which database:** the tool uses `DATABASE_POSTGRES_URL` (or `DATABASE_URL`) and aborts with exit code 2 if neither is set. In practice that is the local Postgres, currently the only live dataset — the new production database will be seeded from it, and the old Supabase production has had its records deleted for data-protection reasons. A run against the local database is therefore complete; there is no separate production step to schedule.
 
 ### 3. Data Migration
 

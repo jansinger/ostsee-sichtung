@@ -41,8 +41,13 @@ import {
 	type OrphanRow
 } from '../lib/server/media/orphanCleanup.ts';
 
+// `resolveConnectionString`/`maskConnection` liegen seit dem 2026-07-30 in
+// `dbConnection.ts` — `refresh-email-template.ts` schreibt ebenfalls und braucht
+// dieselbe Zusicherung, dass die Zieldatenbank nie geraten wird.
+import { maskConnection, resolveConnectionString } from './dbConnection.ts';
+
 // Für den Fristen-Vertragstest und externe Aufrufer weiterhin von hier lesbar
-export { DEFAULT_RETENTION, parseRetention };
+export { DEFAULT_RETENTION, parseRetention, resolveConnectionString };
 import { config } from 'dotenv';
 import postgres from 'postgres';
 
@@ -98,24 +103,6 @@ export function parseCliOptions(argv: string[], env: NodeJS.ProcessEnv): CliOpti
 }
 
 /**
- * Liefert die Verbindungszeichenfolge oder wirft. Kein Fallback auf eine
- * Standardverbindung: Dieses Tool löscht, es darf die Zieldatenbank nie raten.
- * In einem Git-Worktree fehlt die `.env` regelmäßig — genau dort wäre ein
- * geratener Fallback auf die falsche Datenbank gegangen.
- */
-export function resolveConnectionString(env: NodeJS.ProcessEnv): string {
-	const connectionString = env.DATABASE_POSTGRES_URL || env.DATABASE_URL;
-	if (!connectionString) {
-		throw new Error(
-			'Keine Datenbankverbindung gefunden. DATABASE_POSTGRES_URL (bevorzugt) oder ' +
-				'DATABASE_URL muss gesetzt sein — in der Umgebung oder in einer .env im ' +
-				'Arbeitsverzeichnis.'
-		);
-	}
-	return connectionString;
-}
-
-/**
  * Bricht ab, wenn ein anderer Storage-Provider als `local` konfiguriert ist.
  * Der Dateisystem-Scan gilt nur für lokalen Storage; bei `vercel-blob` fände
  * er nichts und meldete „0 Waisen" — eine Falschaussage.
@@ -127,11 +114,6 @@ export function assertLocalStorage(env: NodeJS.ProcessEnv): void {
 			`STORAGE_PROVIDER ist "${provider}". Dieses Tool arbeitet nur für local storage.`
 		);
 	}
-}
-
-/** Verdeckt das Passwort in einer Verbindungszeichenfolge für die Ausgabe. */
-function maskConnection(connectionString: string): string {
-	return connectionString.replace(/:[^:@]*@/, ':****@');
 }
 
 /**
@@ -285,14 +267,10 @@ async function main(): Promise<void> {
 				deleteFile: deleteViaSafePath
 			},
 			onError: (subject, error) =>
-				console.warn(
-					`⚠️  ${subject}: ${error instanceof Error ? error.message : String(error)}`
-				)
+				console.warn(`⚠️  ${subject}: ${error instanceof Error ? error.message : String(error)}`)
 		});
 
-		console.log(
-			`\n✅ ${report.rowsDeleted} Zeilen und ${report.filesDeleted} Dateien gelöscht.`
-		);
+		console.log(`\n✅ ${report.rowsDeleted} Zeilen und ${report.filesDeleted} Dateien gelöscht.`);
 	} finally {
 		await sql.end();
 	}
