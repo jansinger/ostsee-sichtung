@@ -70,12 +70,8 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 
 		// Environmental conditions
 		seaState: legacyData.seegang || 0,
-		windDirection:
-			legacyData.windrichtung &&
-			['', 'N', 'NW', 'W', 'SW', 'S', 'SO', 'O', 'NO'].includes(legacyData.windrichtung as string)
-				? (legacyData.windrichtung as '' | 'N' | 'NW' | 'W' | 'SW' | 'S' | 'SO' | 'O' | 'NO')
-				: '',
-		windForce: legacyData.windstaerke ? Number(legacyData.windstaerke) : undefined,
+		windDirection: normalizeWindDirection(legacyData.windrichtung),
+		windForce: parseWindForce(legacyData.windstaerke),
 		visibility: legacyData.sichtweite || 0,
 
 		// Vessel information
@@ -97,7 +93,13 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		privacyConsent: legacyData.datenschutzEinverstaendnis ? true : false,
 
 		// Death finding detection and fields
-		isDead: legacyData.anzahl_gesamt === 0 ? true : false,
+		// `totfund` (Spec: "Death finding, Boolean, 0 = false, 1 = true") ist der
+		// explizite Weg, einen Totfund zu melden. Die Altkonvention
+		// `anzahl_gesamt === 0` bleibt zusätzlich gültig — der neue iOS-Client
+		// (OstSeeTiere/8) sendet `totfund: 1` zusammen mit einem `anzahl_gesamt`
+		// > 0 (beobachtet: 1, 2, 3, 7), das darf nicht als lebende Sichtung
+		// durchgehen.
+		isDead: !!legacyData.totfund || legacyData.anzahl_gesamt === 0,
 		deadSize: legacyData.totfund_groesse || undefined,
 		deadCondition: legacyData.totfund_zustand || 0,
 		deadSex: legacyData.totfund_geschlecht || 0,
@@ -120,6 +122,53 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		// Einwilligungsnachweis erfinden (siehe mediaConsent.test.ts).
 		mediaConsent: false
 	};
+}
+
+/** Windrichtungen, wie die Spec, die DB-Spalte, das Formular und `antworten.json` sie kennen. */
+const GERMAN_WIND_DIRECTIONS = ['', 'N', 'NW', 'W', 'SW', 'S', 'SO', 'O', 'NO'] as const;
+type GermanWindDirection = (typeof GERMAN_WIND_DIRECTIONS)[number];
+
+/**
+ * Der neu gebaute iOS-Client (OstSeeTiere/8) sendet englische
+ * Himmelsrichtungs-Abkürzungen statt der deutschen. Nur drei der acht Werte
+ * unterscheiden sich zwischen den Sprachen — diese Tabelle bildet sie auf die
+ * deutsche Form ab. `N`, `S`, `W`, `NW`, `SW` sind in beiden Sprachen
+ * identisch und brauchen keinen Eintrag.
+ */
+const ENGLISH_TO_GERMAN_WIND_DIRECTION: Record<string, GermanWindDirection> = {
+	NE: 'NO',
+	E: 'O',
+	SE: 'SO'
+};
+
+/**
+ * Normalisiert eine Windrichtung auf die deutsche Form. Deutsche Eingaben
+ * durchlaufen unverändert (byte-identisch zum bisherigen Verhalten), englische
+ * Abkürzungen werden übersetzt. Alles andere — inklusive fehlender Angabe —
+ * wird zu `''`, wie bisher.
+ */
+function normalizeWindDirection(value: string | undefined): GermanWindDirection {
+	if (!value) {
+		return '';
+	}
+	const normalized = ENGLISH_TO_GERMAN_WIND_DIRECTION[value] ?? value;
+	return (GERMAN_WIND_DIRECTIONS as readonly string[]).includes(normalized)
+		? (normalized as GermanWindDirection)
+		: '';
+}
+
+/**
+ * Wandelt `windstaerke` in eine Zahl um, ohne eine aktiv gemeldete `0`
+ * (Windstille, ein reales Beaufort-Maß) mit „nicht übermittelt" zu verwechseln.
+ * `undefined`/`null`/`''` bleiben `undefined`; alles andere — Zahl oder String,
+ * je nach JSON- oder Formular-Encoding — wird zur Zahl.
+ */
+function parseWindForce(value: number | string | undefined | null): number | undefined {
+	if (value === undefined || value === null || value === '') {
+		return undefined;
+	}
+	const parsed = Number(value);
+	return Number.isNaN(parsed) ? undefined : parsed;
 }
 
 /**

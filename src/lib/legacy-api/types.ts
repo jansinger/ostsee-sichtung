@@ -1,10 +1,10 @@
 /**
  * @fileoverview Type definitions for PDF-compliant Legacy REST API
- * 
+ *
  * Defines the interface contracts for the legacy mobile app API compatibility layer.
- * These types match EXACTLY the original schweinswalsichtung.de API specification 
+ * These types match EXACTLY the original schweinswalsichtung.de API specification
  * from the PDF documentation. Field names MUST NOT be changed!
- * 
+ *
  * @author Ostsee-Tiere Team  
  * @since 1.10.0
  */
@@ -50,7 +50,7 @@ export interface LegacySightingRequest {
 	// Environmental conditions
 	seegang?: number; // Sea state (0-5)
 	windrichtung?: string; // Wind direction 'N','NW','W','SW','S','SO','O','NO'
-	windstaerke?: string; // Wind force 1-12
+	windstaerke?: string | number | null; // Wind force 0-12 (JSON sends a number, form-encoded a string, or explicit null)
 	sichtweite?: number; // Visibility (1-4)
 
 	// Vessel information

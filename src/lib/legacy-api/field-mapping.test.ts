@@ -105,3 +105,158 @@ describe('mapLegacyToCurrentSchema — explizite Nullen bleiben erhalten', () =>
 		expect(result.species).toBe(SpeciesEnum.GREY_SEAL);
 	});
 });
+
+/**
+ * Der neu gebaute iOS-Client (OstSeeTiere/8) sendet `totfund: 1` zusammen mit
+ * einem `anzahl_gesamt` > 0 (beobachtet: 1, 2, 3, 7). Die alte Prüfung las nur
+ * `anzahl_gesamt === 0` und klassifizierte solche Totfunde als lebende
+ * Sichtungen — bei gleichzeitig gesetzten `deadCondition`/`deadSex`/`deadSize`
+ * ein in sich widersprüchlicher Datensatz. `totfund` ersetzt die
+ * `anzahl_gesamt === 0`-Konvention nicht, sondern ergänzt sie: beide bleiben
+ * gültige Wege zu einem Totfund.
+ */
+describe('mapLegacyToCurrentSchema — Totfund-Erkennung', () => {
+	it('erkennt einen Totfund über totfund=1, auch bei anzahl_gesamt > 0', () => {
+		const request = {
+			...minimalRequest(),
+			anzahl_gesamt: 3,
+			totfund: 1
+		} as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.isDead).toBe(true);
+	});
+
+	it('erkennt einen Totfund weiterhin über anzahl_gesamt=0, auch ohne totfund (Bestandsverhalten)', () => {
+		const request = {
+			...minimalRequest(),
+			anzahl_gesamt: 0
+		} as LegacySightingRequest;
+		delete (request as { totfund?: number }).totfund;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.isDead).toBe(true);
+	});
+
+	it('erkennt keinen Totfund, wenn weder totfund noch anzahl_gesamt=0 vorliegen', () => {
+		const request = {
+			...minimalRequest(),
+			anzahl_gesamt: 2
+		} as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.isDead).toBe(false);
+	});
+});
+
+/**
+ * Der neu gebaute Client sendet englische Windrichtungs-Abkürzungen. Deutsch
+ * und Englisch unterscheiden sich in genau drei Fällen (NO/NE, O/E, SO/SE);
+ * `N`, `S`, `W`, `NW`, `SW` sind identisch. Die alte Prüfung akzeptierte nur
+ * die deutsche Liste und machte aus jedem englischen Wert `''` — die
+ * Windrichtung ging verloren.
+ */
+describe('mapLegacyToCurrentSchema — Windrichtung: englische Abkürzungen', () => {
+	it.each([
+		['NE', 'NO'],
+		['E', 'O'],
+		['SE', 'SO']
+	])('normalisiert die englische Abkürzung %s zu %s', (input, expected) => {
+		const request = { ...minimalRequest(), windrichtung: input } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windDirection).toBe(expected);
+	});
+
+	it.each(['', 'N', 'NW', 'W', 'SW', 'S', 'SO', 'O', 'NO'])(
+		'lässt den deutschen Wert %s unverändert',
+		(value) => {
+			const request = { ...minimalRequest(), windrichtung: value } as LegacySightingRequest;
+
+			const result = mapLegacyToCurrentSchema(request);
+
+			expect(result.windDirection).toBe(value);
+		}
+	);
+
+	it.each(['SW', 'NW'])('lässt %s unverändert, weil in beiden Sprachen identisch', (value) => {
+		const request = { ...minimalRequest(), windrichtung: value } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windDirection).toBe(value);
+	});
+
+	it('macht aus einem unbekannten Wert einen leeren String', () => {
+		const request = { ...minimalRequest(), windrichtung: 'XX' } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windDirection).toBe('');
+	});
+
+	it('macht aus fehlender Windrichtung einen leeren String', () => {
+		const result = mapLegacyToCurrentSchema(minimalRequest());
+
+		expect(result.windDirection).toBe('');
+	});
+});
+
+/**
+ * `windstaerke` ist mit `0` (Windstille) ein reales Beaufort-Maß, das der neue
+ * Client tatsächlich sendet (beobachtet in fünf Einreichungen). `0 ? … :
+ * undefined` behandelte die aktiv gemeldete `0` wie ein fehlendes Feld. Das
+ * Feld kommt als Zahl aus JSON und als String aus Formular-Encoding — beides
+ * muss funktionieren.
+ */
+describe('mapLegacyToCurrentSchema — Windstärke 0 bleibt erhalten', () => {
+	it('übernimmt die Zahl 0', () => {
+		const request = { ...minimalRequest(), windstaerke: 0 } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windForce).toBe(0);
+	});
+
+	it('übernimmt den String "0" und wandelt ihn in eine Zahl', () => {
+		const request = { ...minimalRequest(), windstaerke: '0' } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windForce).toBe(0);
+	});
+
+	it('übernimmt 12', () => {
+		const request = { ...minimalRequest(), windstaerke: 12 } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windForce).toBe(12);
+	});
+
+	it('macht aus fehlendem windstaerke undefined', () => {
+		const result = mapLegacyToCurrentSchema(minimalRequest());
+
+		expect(result.windForce).toBeUndefined();
+	});
+
+	it('macht aus null undefined', () => {
+		const request = { ...minimalRequest(), windstaerke: null } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windForce).toBeUndefined();
+	});
+
+	it('macht aus leerem String undefined', () => {
+		const request = { ...minimalRequest(), windstaerke: '' } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windForce).toBeUndefined();
+	});
+});
