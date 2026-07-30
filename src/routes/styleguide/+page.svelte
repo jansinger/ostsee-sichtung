@@ -25,8 +25,11 @@
   Nur in dev erreichbar (siehe +page.server.ts daneben).
 -->
 <script lang="ts">
+	import ConnectionBadge from '$lib/components/ConnectionBadge.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import StatusBlock from '$lib/components/StatusBlock.svelte';
+	import SubmitStatus from '$lib/report/components/form/SubmitStatus.svelte';
+	import { connection } from '$lib/stores/connectionState.svelte';
 	/* Importiert statt abgeschrieben: die Marker-Palette ist Datenkodierung mit
 	   genau einer Quelle (design-system.md, „Randbereiche: wo Hex-Werte erlaubt
 	   sind"). Eine zweite Liste hier hätte den Absatz darunter — der
@@ -408,6 +411,77 @@
 				action={{ label: 'Erneut versuchen', onClick: () => {} }}
 			/>
 		</div>
+	</section>
+
+	<!-- ══ SubmitStatus ══ -->
+	<section class="mb-10">
+		<h2 class="text-title mb-1 font-bold">SubmitStatus</h2>
+		<p class="text-support text-base-content/70 mb-4">
+			Zustandsfläche direkt über „Absenden" — der Ersatz für den früheren Fehler-Toast. Sie
+			verschwindet <strong>nie</strong> von selbst: Ein gescheitertes Absenden verlangt eine
+			Handlung, und die gehört an den Ort der Handlung. Jeder Fehlerzustand nennt außerdem das
+			Schicksal der Daten; einzige Ausnahme ist <code>partial</code>, wo die Aufnahme schon auf dem
+			Server liegt. <code>idle</code> rendert nichts und fehlt deshalb hier.
+		</p>
+		<div>
+			<SubmitStatus state="submitting" />
+			<SubmitStatus state="offline" onRetry={() => {}} />
+			<SubmitStatus state="failed" attempt={2} referenceId="a7f3c1e9" onRetry={() => {}} />
+			<SubmitStatus
+				state="partial"
+				title="Die E-Mail-Adresse wurde nicht akzeptiert."
+				attempt={1}
+				referenceId="a7f3c1e9"
+				onRetry={() => {}}
+			/>
+		</div>
+	</section>
+
+	<!-- ══ ConnectionBadge ══ -->
+	<section class="mb-10">
+		<h2 class="text-title mb-1 font-bold">ConnectionBadge</h2>
+		<p class="text-support text-base-content/70 mb-4">
+			Ein Zustand, kein Alarm — sichtbar nur ohne Verbindung. Für „online" gibt es bewusst keinen
+			Dauer-Indikator: Was 99 % der Zeit dasselbe sagt, wird nicht gelesen. „Wieder online" ist die
+			eine Stelle, an der ein verschwindender Hinweis richtig ist.
+		</p>
+		<p class="text-support text-base-content/70 mb-4">
+			Deshalb steht hier <strong>kein nachgebauter Beispiel-Zustand</strong>, sondern die echte
+			Komponente am echten Zustand (<code>connectionState.svelte.ts</code>). Ein zweiter,
+			handgeschriebener Aufbau wäre beim ersten Wechsel an der Komponente falsch — und der Zustand
+			kommt nicht aus <code>navigator.onLine</code> allein, ließe sich also auch nicht per Prop ehrlich
+			vortäuschen. Die Schaltflächen unten setzen denselben Zustand, den ein gescheiterter Request setzt;
+			das Abzeichen in der Navbar reagiert mit.
+		</p>
+		<div class="flex flex-wrap items-center gap-2">
+			<button
+				type="button"
+				class="btn btn-outline btn-sm"
+				onclick={() => connection.reportUnreachable()}
+			>
+				Offline melden
+			</button>
+			<button
+				type="button"
+				class="btn btn-outline btn-sm"
+				onclick={() => connection.reportReachable()}
+			>
+				Wieder erreichbar melden
+			</button>
+			<button type="button" class="btn btn-ghost btn-sm" onclick={() => connection.reset()}>
+				Zurücksetzen
+			</button>
+		</div>
+		<div class="mt-3 space-y-2">
+			<ConnectionBadge announce={false} />
+			<ConnectionBadge announce={false} compact />
+		</div>
+		{#if !connection.isOffline && !connection.justReconnected}
+			<p class="text-support text-base-content/70 mt-3">
+				Zurzeit online — beide Abzeichen rendern nichts und kosten keinen Platz. Das ist der
+				Normalfall, nicht ein fehlendes Beispiel.
+			</p>
+		{/if}
 	</section>
 
 	<!-- ══ Formularfelder ══ -->
