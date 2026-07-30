@@ -2790,6 +2790,29 @@ components:
             Weiteres akzeptiert, damit bereits gegen diese App gebaute Clients
             ihren Freitext nicht verlieren. Nicht in neuen Clients verwenden.
           example: "Tier war deutlich verletzt"
+        windrichtung:
+          type: string
+          description: >-
+            Windrichtung. Gespeichert wird ausschließlich die deutsche Form
+            ('N','NW','W','SW','S','SO','O','NO'). Zusätzlich werden seit
+            2026-07-30 die englischen Abkürzungen 'NE', 'E' und 'SE'
+            angenommen und auf 'NO', 'O' bzw. 'SO' normalisiert — der
+            angebundene iOS-Client sendet sie, und vorher ging die Windrichtung
+            dabei verloren. Ein unbekannter Wert ergibt weiterhin einen leeren
+            String.
+          enum: ["", "N", "NW", "W", "SW", "S", "SO", "O", "NO", "NE", "E", "SE"]
+          example: "NO"
+        windstaerke:
+          type: integer
+          description: >-
+            Windstärke in Beaufort. Der Bereich ist 0-12, nicht 1-12: 0 ist
+            Windstille, ein realer Messwert, den der iOS-Client tatsächlich
+            sendet. Bis 2026-07-30 wurde die aktiv gemeldete 0 als fehlende
+            Angabe verworfen. Wird auch als String akzeptiert, weil
+            Formular-Encoding jeden Wert als String überträgt.
+          minimum: 0
+          maximum: 12
+          example: 0
 
     LegacyCreateResponse:
       type: object

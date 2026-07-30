@@ -55,8 +55,18 @@ Zusätzlich existiert `/en/rest_sichtungen/antworten.json` (englische Variante).
    - Booleans sind `0`/`1` als Integer, **nicht** `true`/`false`
    - Datumsformate: `DD.MM.YY` in `showreports.json`, `YYYY-MM-DD HH:MI` im Input
 
-4. **Windrichtungen** — vollständige Liste `'N','NW','W','SW','S','SO','O','NO'`
-   (beachte `SO` für Südost, nicht `SE`).
+4. **Windrichtungen** — gespeichert und ausgeliefert wird ausschließlich die
+   deutsche Liste `'N','NW','W','SW','S','SO','O','NO'` (beachte `SO` für
+   Südost, nicht `SE`).
+
+   **Auf der Eingabeseite werden zusätzlich die englischen Abkürzungen
+   `NE`, `E` und `SE` angenommen** und auf `NO`, `O` bzw. `SO` normalisiert
+   (`normalizeWindDirection` in `src/lib/legacy-api/field-mapping.ts`). Der
+   angebundene iOS-Client sendet sie; ohne die Normalisierung wurde daraus
+   `''` und die Windrichtung ging verloren. `N`, `S`, `W`, `NW` und `SW` sind
+   in beiden Sprachen gleich. Die Normalisierung ist eine Ergänzung, kein
+   Ersatz — deutsche Eingaben laufen unverändert durch, und die Annahme der
+   englischen Formen darf nicht als „Verstoß gegen Regel 4" entfernt werden.
 
 5. **Response-Strukturen** exakt wie spezifiziert, inklusive Feldbenennung.
 
