@@ -359,3 +359,51 @@ describe('mapLegacyToCurrentSchema — Windstärke 0 bleibt erhalten', () => {
 		expect(result.windForce).toBeUndefined();
 	});
 });
+
+/**
+ * Die 0/1-Flags des Vertrags — und was sie im Formularmodell setzen.
+ *
+ * Drei davon sind Einwilligungen (`nameConsent`, `shipNameConsent`,
+ * `privacyConsent`), die darüber entscheiden, ob `showreports.json` Name und
+ * Schiffsname des Melders veröffentlicht.
+ */
+const LEGACY_FLAGS = [
+	['namensnennung', 'nameConsent'],
+	['schiffnamensnennung', 'shipNameConsent'],
+	['datenschutzEinverstaendnis', 'privacyConsent'],
+	['aufnahmeHochladen', 'mediaUpload'],
+	['totfund_telefon', 'deadPhoneContact']
+] as const;
+
+/**
+ * Der Endpunkt nimmt `application/x-www-form-urlencoded` entgegen und baut
+ * seinen Payload mit `Object.fromEntries(formData.entries())` — jeder Wert
+ * kommt dort als **String** an. Ein vertragskonformes `namensnennung=0` war
+ * damit `'0'`, und `'0' ? true : false` ist `true`: Das ausdrückliche „nein"
+ * des Melders wurde als „ja" gespeichert und sein Name veröffentlicht.
+ *
+ * Deshalb wird jedes dieser Flags numerisch ausgewertet (`isLegacyFlagSet`),
+ * genau wie `totfund`. JSON-Submissions mit echten Zahlen verhalten sich
+ * unverändert.
+ */
+describe.each(LEGACY_FLAGS)('mapLegacyToCurrentSchema — 0/1-Flag %s', (legacyField, formField) => {
+	it.each([
+		['die Zahl 1 als Zustimmung', 1, true],
+		['den String "1" als Zustimmung', '1', true],
+		['die Zahl 0 als Ablehnung', 0, false],
+		['den String "0" als Ablehnung', '0', false]
+	])('wertet %s', (_label, wert, erwartet) => {
+		const result = mapLegacyToCurrentSchema({
+			...minimalRequest(),
+			[legacyField]: wert
+		} as unknown as LegacySightingRequest);
+
+		expect(result[formField]).toBe(erwartet);
+	});
+
+	it('wertet ein nicht übermitteltes Feld als Ablehnung', () => {
+		const result = mapLegacyToCurrentSchema(minimalRequest());
+
+		expect(result[formField]).toBe(false);
+	});
+});

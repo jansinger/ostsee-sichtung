@@ -114,7 +114,7 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 
 		// Media and observations
 		mediaFile: legacyData.aufnahme || '',
-		mediaUpload: legacyData.aufnahmeHochladen ? true : false,
+		mediaUpload: isLegacyFlagSet(legacyData.aufnahmeHochladen),
 		// Die Spezifikation nennt das Feld `sonstige_auffaelligkeiten` (mit `ae`);
 		// diese Implementierung las bis 2026-07-30 nur die Umlaut-Variante und
 		// verwarf den Freitext spec-konformer Clients kommentarlos.
@@ -130,9 +130,17 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		notes: legacyData.bemerkungen || '',
 
 		// Consent flags (convert 0/1 to boolean)
-		nameConsent: legacyData.namensnennung ? true : false,
-		shipNameConsent: legacyData.schiffnamensnennung ? true : false,
-		privacyConsent: legacyData.datenschutzEinverstaendnis ? true : false,
+		//
+		// `isLegacyFlagSet` statt `? true : false`: Über den Formulardaten-Pfad
+		// kommt jedes Feld als String an (`Object.fromEntries(formData.entries())`
+		// in src/routes/rest_sichtungen/+server.ts). Ein vertragskonformes
+		// `namensnennung=0` war damit `'0'` — und `'0' ? true : false` ist `true`.
+		// Das ausdrückliche „nein" des Melders wurde bis 2026-07-30 als
+		// Zustimmung gespeichert und sein Name in showreports.json
+		// veröffentlicht. Nur eine explizite 1 ist eine Zustimmung.
+		nameConsent: isLegacyFlagSet(legacyData.namensnennung),
+		shipNameConsent: isLegacyFlagSet(legacyData.schiffnamensnennung),
+		privacyConsent: isLegacyFlagSet(legacyData.datenschutzEinverstaendnis),
 
 		// Death finding detection and fields
 		//
@@ -145,7 +153,7 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		deadSize: legacyData.totfund_groesse || undefined,
 		deadCondition: legacyData.totfund_zustand || 0,
 		deadSex: legacyData.totfund_geschlecht || 0,
-		deadPhoneContact: legacyData.totfund_telefon ? true : false,
+		deadPhoneContact: isLegacyFlagSet(legacyData.totfund_telefon),
 
 		// System fields
 		entryChannel: legacyData.eingangskanal || EntryChannelEnum.APP,

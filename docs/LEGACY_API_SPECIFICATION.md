@@ -481,7 +481,7 @@ ergibt weiterhin `undefined`, wie bisher. Das Feld kommt als Zahl aus
 JSON-Submissions oder als String aus Formular-Encoding — beide Formen werden
 akzeptiert.
 
-## `namensnennung` und `schiffnamensnennung`: bewusst kein Default auf Zustimmung
+## `namensnennung` und `schiffnamensnennung`: nur eine explizite `1` ist Zustimmung
 
 Der neue iOS-Client sendet weder `namensnennung` noch `schiffnamensnennung`.
 Beide werden serverseitig als Zustimmungs-Flags interpretiert
@@ -494,9 +494,34 @@ vorliegt. Ein fehlendes Feld ist keine Zustimmung. Würde man das Fehlen als
 `1` interpretieren, würde für jede Meldung des neuen Clients eine Einwilligung
 erfunden, die nie gegeben wurde.
 
-**Für spätere Bearbeitung festgehalten:** Dieses Verhalten ist kein Bug und
-soll nicht durch einen Default auf `true` „korrigiert" werden. Wenn der Client
-diese Felder künftig sendet, greift die Zustimmung des Melders wie gewohnt.
+**Die drei Fälle im Einzelnen** — sie waren bis zum 2026-07-30 nicht sauber
+getrennt und dürfen nicht wieder zusammenfallen:
+
+| Übermittelter Wert                     | Ergebnis         |
+| -------------------------------------- | ---------------- |
+| Feld fehlt (`undefined`, `null`, `''`) | keine Zustimmung |
+| explizit `0` bzw. `'0'`                | keine Zustimmung |
+| explizit `1` bzw. `'1'`                | **Zustimmung**   |
+
+**Korrektur 2026-07-30:** Der mittlere Fall war fehlerhaft. Die Umwandlung
+lautete `legacyData.namensnennung ? true : false`, und über den
+Formulardaten-Pfad (`application/x-www-form-urlencoded`, ausgepackt mit
+`Object.fromEntries(formData.entries())`) kommt jeder Wert als **String** an.
+Ein vertragskonformes `namensnennung=0` war damit `'0'` — in JavaScript
+truthy. Ein Melder, der die Veröffentlichung seines Namens ausdrücklich
+untersagt hatte, wurde in `showreports.json` mit Namen geführt. Betroffen
+waren fünf Flags: `namensnennung`, `schiffnamensnennung`,
+`datenschutzEinverstaendnis`, `aufnahmeHochladen` und `totfund_telefon`. Alle
+werden jetzt numerisch ausgewertet, wie `totfund` schon vorher.
+
+**Auswirkung auf Clients:** JSON-Submissions mit den Zahlen `0` und `1`
+verhalten sich unverändert. Formular-Submissions mit `'0'` werden jetzt als
+Ablehnung gewertet statt als Zustimmung.
+
+**Für spätere Bearbeitung festgehalten:** Dass ein **fehlendes** Feld keine
+Zustimmung ergibt, ist kein Bug und soll nicht durch einen Default auf `true`
+„korrigiert" werden. Wenn der Client diese Felder künftig sendet, greift die
+Zustimmung des Melders wie gewohnt.
 
 ## Zusätzlich akzeptiert: `sonstige_auffälligkeiten` (Umlaut-Variante)
 
