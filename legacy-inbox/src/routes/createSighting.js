@@ -20,16 +20,56 @@ export async function createSighting(req, res, { konfiguration, store, rateLimit
 		return;
 	}
 
-	const { roh, abgeschnitten } = await leseBody(req, { maxBytes: konfiguration.maxBodyBytes });
 	const contentType = req.headers['content-type'] || '';
-	const { payload, parseFehler } = parseBody(roh, contentType);
 
-	const validierung = payload
-		? await validiere(payload)
-		: {
+	// leseBody und parseBody laufen bewusst in einem gemeinsamen try: Bricht
+	// der Body-Stream mitten in der Übertragung ab (typischerweise ein Client,
+	// der die Verbindung trennt), darf das nicht in den äußeren Catch von
+	// server.js durchschlagen — dort gäbe es ein 500 ohne jede Ablage. Was bis
+	// zum Fehler gelesen war, ist an dieser Stelle nicht mehr verfügbar
+	// (leseBody gibt bei einem Wurf nichts zurück), also bleibt roh leer.
+	let roh = '';
+	let abgeschnitten = false;
+	let payload = null;
+	let parseFehler = null;
+	let leseFehler = null;
+	try {
+		({ roh, abgeschnitten } = await leseBody(req, { maxBytes: konfiguration.maxBodyBytes }));
+		({ payload, parseFehler } = parseBody(roh, contentType));
+	} catch (fehler) {
+		leseFehler = fehler;
+	}
+
+	const validierung = leseFehler
+		? {
 				gueltig: false,
-				fehler: { _general: [parseFehler ?? 'Body konnte nicht gelesen werden.'] }
-			};
+				fehler: {
+					_general: [
+						'Beim Lesen der Übertragung ist ein Fehler aufgetreten, die Daten sind unvollständig.'
+					]
+				}
+			}
+		: payload
+			? await validiere(payload)
+			: {
+					gueltig: false,
+					fehler: { _general: [parseFehler ?? 'Body konnte nicht gelesen werden.'] }
+				};
+
+	// Ein abgeschnittener Body fließt in dieselbe Verdikt-Variable ein statt in
+	// eine zweite Bedingung an der Schreib- oder Antwortstelle: So kann die
+	// Wahl des Zielverzeichnisses nie von der Antwort abweichen (Entwurf,
+	// Abschnitt 4) — beide lesen ausschließlich validierung.gueltig.
+	if (abgeschnitten) {
+		validierung.gueltig = false;
+		validierung.fehler = {
+			...validierung.fehler,
+			_general: [
+				...(validierung.fehler._general ?? []),
+				'Die Übertragung wurde abgebrochen, bevor die Daten vollständig empfangen wurden.'
+			]
+		};
+	}
 
 	const umschlag = {
 		empfangen_am: new Date().toISOString(),
@@ -49,7 +89,7 @@ export async function createSighting(req, res, { konfiguration, store, rateLimit
 	try {
 		geschrieben = await store.schreibe(
 			umschlag,
-			validierung.gueltig && !abgeschnitten ? 'posteingang' : 'abgewiesen'
+			validierung.gueltig ? 'posteingang' : 'abgewiesen'
 		);
 	} catch (fehler) {
 		console.error('Schreiben fehlgeschlagen', fehler);

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm, readdir, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import net from 'node:net';
 import path from 'node:path';
 import { erstelleStore } from '../store.js';
 import { erstelleServer } from '../server.js';
@@ -47,6 +48,34 @@ afterEach(async () => {
 
 const sende = (koerper, kopfzeilen = { 'Content-Type': 'application/json' }) =>
 	fetch(`${basis}/rest_sichtungen`, { method: 'POST', headers: kopfzeilen, body: koerper });
+
+/**
+ * Rohes TCP statt fetch: simuliert einen Client, der die Verbindung mitten in
+ * der Übertragung abbricht. Ein Content-Length-Versprechen, das nie eingelöst
+ * wird, plus ein Half-Close (FIN) auf der Schreibseite reicht, damit Node den
+ * Body-Stream serverseitig mit einem Fehler statt mit 'end' abschließt — die
+ * Leseseite bleibt offen, damit die Antwort noch gelesen werden kann.
+ */
+const sendeUnterbrochen = (port, teilkoerper) =>
+	new Promise((resolve, reject) => {
+		const socket = net.connect(port, '127.0.0.1', () => {
+			socket.write(
+				'POST /rest_sichtungen HTTP/1.1\r\n' +
+					'Host: localhost\r\n' +
+					'Content-Type: application/json\r\n' +
+					`Content-Length: ${teilkoerper.length + 1000}\r\n` +
+					'\r\n' +
+					teilkoerper
+			);
+			socket.end();
+		});
+		let antwortRoh = '';
+		socket.on('data', (stueck) => {
+			antwortRoh += stueck.toString();
+		});
+		socket.on('close', () => resolve(antwortRoh));
+		socket.on('error', reject);
+	});
 
 describe('POST /rest_sichtungen — der Leitsatz', () => {
 	it('hinterlässt auch bei vollständigem Unsinn eine Datei', async () => {
@@ -141,6 +170,36 @@ describe('POST /rest_sichtungen — Vertrag', () => {
 		expect(Buffer.byteLength(umschlag.roh, 'utf8')).toBe(100);
 	});
 
+	it('weist eine bei Padding abgeschnittene, sonst gültige Sichtung ab statt sie zu speichern', async () => {
+		// Anders als der Test oben wird NICHT mitten im JSON geschnitten: Der
+		// gültige JSON-Text passt vollständig vor die Grenze, nur das
+		// Padding danach fällt weg. roh bleibt dadurch valides, vollständiges
+		// JSON — validiere(...) allein würde gueltig:true liefern. Das ist
+		// genau der Fall, den Fix 1 abfängt: abgeschnitten muss die Antwort
+		// auch dann auf ungültig ziehen, wenn die Nutzdaten selbst
+		// vollständig und korrekt sind.
+		await new Promise((fertig) => server.close(fertig));
+		const store = await erstelleStore({ datenVerzeichnis: verzeichnis });
+		await store.initialisiere();
+		const json = JSON.stringify(gueltig);
+		server = erstelleServer({
+			konfiguration: { maxBodyBytes: Buffer.byteLength(json, 'utf8') },
+			store,
+			rateLimit: erstelleRateLimit({ proIpProStunde: 100, globalProStunde: 1000 })
+		});
+		await new Promise((fertig) => server.listen(0, fertig));
+		basis = `http://127.0.0.1:${server.address().port}`;
+
+		const antwort = await sende(json + ' '.repeat(50));
+
+		expect(antwort.status).toBe(400);
+		const umschlag = await einzigeDateiIn('abgewiesen');
+		expect(umschlag.abgeschnitten).toBe(true);
+		expect(umschlag.validierung.gueltig).toBe(false);
+		const koerper = await antwort.json();
+		expect(koerper.errors._general.join(' ')).toMatch(/abgebrochen.*vollständig empfangen/);
+	});
+
 	it('antwortet 500 statt 201, wenn nicht geschrieben werden kann', async () => {
 		await new Promise((fertig) => server.close(fertig));
 		server = erstelleServer({
@@ -158,5 +217,15 @@ describe('POST /rest_sichtungen — Vertrag', () => {
 
 		const antwort = await sende(JSON.stringify(gueltig));
 		expect(antwort.status).toBe(500);
+	});
+
+	it('schreibt trotzdem ab, wenn der Body-Stream mitten in der Übertragung abbricht', async () => {
+		const antwortRoh = await sendeUnterbrochen(server.address().port, '{"anzahl_gesamt": 1');
+
+		const [statuszeile] = antwortRoh.split('\r\n');
+		expect(statuszeile).toContain(' 400 ');
+
+		const umschlag = await einzigeDateiIn('abgewiesen');
+		expect(umschlag.validierung.gueltig).toBe(false);
 	});
 });
