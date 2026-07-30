@@ -31,9 +31,10 @@
      Statusänderung ansagen; der Inhalt wird nur bei Sichtbarkeit gerendert. -->
 <div role="status" aria-live="polite">
 	{#if isVisible}
-		<!-- Backdrop (rein visuell) -->
+		<!-- Backdrop (rein visuell). Schleier über der Kartenkachel, kein Theme-Ton:
+		     bg-scrim/<n> (--scrim-surface in tokens.css). -->
 		<div
-			class="animate-fade-in fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-all duration-300"
+			class="animate-fade-in bg-scrim/30 fixed inset-0 z-40 backdrop-blur-sm transition-all duration-300"
 		></div>
 
 		<!-- Loading Content -->

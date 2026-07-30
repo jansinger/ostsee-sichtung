@@ -297,8 +297,52 @@ der Code sauber war, nicht weil die Regel griff.
 `e2e/helpers/bannedClasses.test.ts` stellt deshalb jede Regel an konstruierten
 Beispielen scharf und läuft in `npm run test:quick` mit. Die Gegenprobe dazu ist
 gefahren: Nimmt man das Deckkraft-Suffix aus dem Statusfarben-Muster, fallen
-2 von 30 Fällen; ersetzt man den Schwellenvergleich wieder durch die Aufzählung
-`(40|50)`, fallen 5.
+2 von 46 Fällen; ersetzt man den Schwellenvergleich wieder durch die Aufzählung
+`(40|50)`, fallen 5; nimmt man `white|black` aus dem Paletten-Muster, fallen 9.
+
+### Die zweite Lücke derselben Regel: `white` und `black`
+
+Beim Schließen der Deckkraft-Lücke fiel eine zweite auf, gleicher Bauart. Das
+Paletten-Muster verlangte hinter dem Farbnamen eine Farbstufe (`-\d{2,3}`) —
+`bg-white`, `text-white`, `bg-black` und ihre Deckkraft-Varianten tragen keine
+und konnten deshalb **strukturell** nie gemeldet werden. Nicht eine vergessene
+Farbe in der Aufzählung, sondern die Form des Musters: dieselbe Fehlerklasse wie
+das fehlende Suffix.
+
+Im Bestand standen 27 Fundstellen. Bewertet wurde jede einzeln, mit drei
+Ausgängen:
+
+| Fall                                         | Antwort                             | Beispiel                                       |
+| -------------------------------------------- | ----------------------------------- | ---------------------------------------------- |
+| Helle Fläche (Codeblock, Logo-Platte, Karte) | `bg-base-100`                       | Lizenztext auf `/about`, DMM-Platte auf `/map` |
+| Dunkle Vollton-Fläche (helles Logo darauf)   | `bg-neutral`/`text-neutral-content` | Auth0-Panel auf `/about` (Logo ist `#FFFEFA`)  |
+| Schleier über fremdem Inhalt                 | `bg-scrim/<n>`/`text-on-scrim`      | Modal-Backdrops, Foto- und Video-Overlays      |
+
+Der dritte Fall war der Grund, warum die Lücke plausibel aussah: Für „dunkle
+etwas anderes" gab es wirklich kein Token. Statt daraus eine Ausnahme in der
+Regel zu machen — über die Klassenliste allein ohnehin nicht entscheidbar, weil
+der Scan nicht sieht, was unter einem Element liegt — hat das Theme jetzt eines
+(`--scrim-surface` in `src/css/tokens.css`). Die Regel bleibt damit ausnahmslos.
+
+**Echte Fehler steckten darunter.** Der auffälligste: In `MediaThumbnail.svelte`
+lag ein `bg-black/20` nicht über einem Foto, sondern über `bg-base-200`. Das
+weiße Icon darauf erreichte 2,27:1 und verfehlte WCAG 1.4.11 (3:1). Steht jetzt
+auf `/60` (7,34:1).
+
+Der erste Anlauf hat daraus die falsche Regel abgeleitet — „bei bekanntem
+Untergrund ist der Kontrast ausrechenbar, über fremdem Inhalt nicht". Das stimmt
+für den _tatsächlichen_ Kontrast, aber nicht für den **schlechtesten Fall**: Ein
+Foto, das an der Stelle des Icons reinweiß ist, ist genauso ausrechenbar. Weiß
+auf `/40` über Weiß sind 2,85:1, auf `/30` sogar 2,11:1 — drei weitere Overlays
+(Foto- und Artfoto-Lupe, Upload-Spinner) lagen damit ebenfalls unter 3:1. Alle
+Schleier, die selbst einen Vordergrund tragen, stehen jetzt auf `/60` (5,74:1
+über Weiß); reine Backdrops ohne eigenen Vordergrund bleiben leichter. Die
+Untergrenze steht als Regel in `.claude/rules/design-system.md`.
+
+Die Reihenfolge war dabei nicht beliebig: Erst die 27 Fundstellen bewerten, dann
+die Regel schärfen. Andersherum wäre der Scan über mehrere Routen rot gewesen,
+bevor überhaupt entschieden war, was an jeder Stelle richtig ist — und der
+schnellste Weg zurück auf grün wäre das Aufweichen der Regel gewesen.
 
 ### Vollabdeckung in CI seit dem 2026-07-30
 

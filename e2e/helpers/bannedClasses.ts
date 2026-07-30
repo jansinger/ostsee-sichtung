@@ -125,18 +125,85 @@ export const BELOW_OPACITY_FLOOR: BannedRule = {
 };
 
 /**
+ * Farbstufige Paletten-Farbtöne — `bg-red-500`, `text-gray-700`.
+ *
+ * **Vollständig, nicht nach Bestand.** Die Liste enthielt zwölf der 22 Töne aus
+ * Tailwind 4 — die zehn fehlenden (`stone`, `neutral`, `lime`, `teal`, `cyan`,
+ * `violet`, `purple`, `fuchsia`, `pink`, `rose`) hatten schlicht keine
+ * Fundstelle. Das ist die Lücke-in-den-Daten-Variante genau des Fehlers, dessen
+ * Grammatik-Variante diese Datei sonst beschreibt: Eine Regel, die nur die
+ * Farben kennt, die schon jemand benutzt hat, meldet die erste neue nicht.
+ *
+ * `neutral` ist der einzige Eintrag, der auch ein Theme-Token ist. Das ist
+ * folgenlos, weil das Muster hinter dem Ton eine Farbstufe verlangt:
+ * `bg-neutral-500` (Palette) schlägt an, `bg-neutral` und `text-neutral-content`
+ * (Theme) nicht.
+ */
+const PALETTE_HUES = [
+	'slate',
+	'gray',
+	'zinc',
+	'neutral',
+	'stone',
+	'red',
+	'orange',
+	'amber',
+	'yellow',
+	'lime',
+	'green',
+	'emerald',
+	'teal',
+	'cyan',
+	'sky',
+	'blue',
+	'indigo',
+	'violet',
+	'purple',
+	'fuchsia',
+	'pink',
+	'rose'
+] as const;
+
+/**
  * Tailwind-Paletten-Farben am Theme vorbei.
  *
  * Das Deckkraft-Suffix ist hier aus demselben Grund optional wie oben:
  * `bg-red-500/50` umgeht das Theme genauso vollständig wie `bg-red-500`.
+ *
+ * **`white` und `black` stehen als eigene Alternative im Muster** (seit
+ * 2026-07-30) und nicht bei den Farbtönen oben. Das ist keine Kosmetik, sondern
+ * der Grund, warum die Regel sie über Monate nicht melden konnte: Beide tragen
+ * keine Farbstufe, und das `-\d{2,3}` hinter dem Farbton hat sie deshalb
+ * strukturell verfehlt — nicht durch eine vergessene Zeile in der Aufzählung,
+ * sondern durch die Form des Musters. Dieselbe Fehlerklasse wie beim
+ * Deckkraft-Suffix darüber: Die Lücke saß in der Grammatik, nicht in den Daten.
+ *
+ * Umgangen wird das Theme dabei genauso vollständig. Im Bestand standen 27
+ * Fundstellen; die schädlichste war ein `bg-black/20` über `bg-base-200` in
+ * `MediaThumbnail.svelte`, auf dem ein weißes Icon 2,27:1 erreichte — hier ist
+ * die Regel also nicht nur formal im Recht.
+ *
+ * **Warum es dafür keine Ausnahme gibt.** Der häufigste Fall war ein
+ * Overlay-Schleier über fremdem Inhalt (Foto, Videobild, Kartenkachel, Seite
+ * hinter einem Modal), und für den galt bis dahin zu Recht „das Theme kennt
+ * keine Abdunklung". Genau diese plausible Ausnahme hat die Lücke am Leben
+ * gehalten und die echten Fehler mit durchgelassen. Statt sie hier
+ * festzuschreiben, hat das Theme jetzt ein Token dafür (`--scrim-surface` in
+ * `src/css/tokens.css` → `bg-scrim/<n>`, `text-on-scrim`). Damit hat jede
+ * Aufrufstelle eine Antwort, und die Regel bleibt ausnahmslos — eine Regel mit
+ * Ausnahme wäre über die Klassenliste allein ohnehin nicht entscheidbar, weil
+ * der Scan nicht sieht, was unter einem Element liegt.
+ *
+ * Die Verankerung trägt `white`/`black` als ganzes Wort: `bg-whitesmoke` (oder
+ * eine eigene Utility mit diesem Präfix) ist kein Verstoß.
  */
 const TAILWIND_PALETTE_PATTERN = new RegExp(
-	String.raw`^(?:bg|text|border)-(?:gray|slate|zinc|red|green|blue|yellow|amber|emerald|sky|indigo|orange)-\d{2,3}${OPACITY_SUFFIX}$`
+	String.raw`^(?:bg|text|border)-(?:(?:${PALETTE_HUES.join('|')})-\d{2,3}|white|black)${OPACITY_SUFFIX}$`
 );
 
 /** Tailwind-Paletten-Farbe statt Theme-Token. */
 export const TAILWIND_PALETTE: BannedRule = {
-	hint: 'Theme-Tokens statt Tailwind-Palette (daisyui.md)',
+	hint: 'Theme-Tokens statt Tailwind-Palette (daisyui.md). Für white/black: eine helle oder dunkle Vollton-Fläche ist bg-base-100 bzw. bg-neutral (mit *-content); ein Schleier über fremdem Inhalt ist bg-scrim/<n> mit text-on-scrim.',
 	offends: (className) => TAILWIND_PALETTE_PATTERN.test(className)
 };
 

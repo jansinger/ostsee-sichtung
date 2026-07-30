@@ -82,6 +82,21 @@ Verfügbar: `primary`, `secondary`, `accent`, `neutral`, `base-100/200/300`,
 `info`, `success`, `warning`, `error` — jeweils mit passendem `*-content` für Text
 **auf** dieser Farbe.
 
+**`bg-white`, `text-white` und `bg-black` gehören ausdrücklich zur verbotenen
+Palette** — auch mit Deckkraft-Suffix. Sie sehen harmloser aus als `bg-blue-700`,
+umgehen das Theme aber genauso vollständig, und der DOM-Scan konnte sie bis zum
+2026-07-30 strukturell nicht melden (Begründung in `design-system.md`). Die drei
+Ersatzfälle:
+
+| Bedarf                                     | Token                                 |
+| ------------------------------------------ | ------------------------------------- |
+| Helle Fläche (Karte, Codeblock, Platte)    | `bg-base-100`                         |
+| Dunkle Vollton-Fläche (helles Logo darauf) | `bg-neutral` + `text-neutral-content` |
+| Schleier über fremdem Inhalt               | `bg-scrim/<n>` + `text-on-scrim`      |
+
+`--scrim-surface`/`--scrim-foreground` stehen wie alle Farbwerte in
+`src/css/tokens.css`; `app.css` mappt sie im `@theme`-Block zu den Utilities.
+
 ---
 
 ## Kontraste sind handgeprüft — nicht beiläufig ändern
