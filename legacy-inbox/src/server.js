@@ -2,10 +2,11 @@ import http from 'node:http';
 import { health } from './routes/health.js';
 import { createSighting } from './routes/createSighting.js';
 import { antworten } from './routes/antworten.js';
+import { inBaltic } from './routes/inBaltic.js';
 import { antworteJson } from './respond.js';
 
 /**
- * Die vier bedienten Pfade. Alles andere ist 404 — insbesondere
+ * Die fünf bedienten Pfade. Alles andere ist 404 — insbesondere
  * /sichtungen/showreports.json, das ohne Datenbank nur ein falsches
  * leeres Array liefern könnte (siehe Entwurf, Abschnitt 1).
  */
@@ -14,7 +15,7 @@ const ROUTEN = [
 	{ pfad: '/rest_sichtungen', methode: 'POST', behandeln: createSighting },
 	{ pfad: '/rest_sichtungen/antworten.json', methode: 'GET', behandeln: antworten },
 	{ pfad: '/en/rest_sichtungen/antworten.json', methode: 'GET', behandeln: antworten },
-	{ pfad: '/rest_sichtungen/inBaltic.json', methode: 'GET', behandeln: null }
+	{ pfad: '/rest_sichtungen/inBaltic.json', methode: 'GET', behandeln: inBaltic }
 ];
 
 export function erstelleServer(abhaengigkeiten) {
