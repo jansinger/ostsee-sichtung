@@ -4,6 +4,7 @@ import RBush from 'rbush';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { protokolliere } from '../logger.js';
 
 /**
  * Portiert aus src/lib/server/geo/checkBalticSeaFile.ts.
@@ -11,6 +12,11 @@ import { fileURLToPath } from 'node:url';
  * Zwei Stufen wie im Original: eine schnelle Bounding-Box-Prüfung für den
  * Kartenbereich, danach ein Punkt-in-Polygon-Test über den vorkompilierten
  * RBush-Index für die eigentliche Ostsee-Geometrie.
+ *
+ * @throws Gibt niemals Exceptions — jeder Fehler beim Laden des Index oder
+ * bei der Geometrie-Prüfung degradiert zu `inBaltic: false`. Die schnelle
+ * Bounding-Box-Prüfung (`inChartArea`) braucht keinen Index und liefert
+ * unabhängig davon ihr echtes Ergebnis.
  */
 
 // Identisch mit CHART_AREA_ENVELOPE in PostGIS.
@@ -20,12 +26,24 @@ const GRENZEN = { minLon: -180, maxLon: 180, minLat: -90, maxLat: 90 };
 const HIER = path.dirname(fileURLToPath(import.meta.url));
 
 let index = null;
+// Merkt sich einen fehlgeschlagenen Ladeversuch, damit nicht bei jeder
+// Anfrage erneut versucht (und protokolliert) wird, dieselbe kaputte
+// Index-Datei zu parsen.
+let indexLadenFehlgeschlagen = false;
 
 function ladeIndex() {
-	if (index === null) {
-		const roh = JSON.parse(readFileSync(path.join(HIER, 'rbush-index.json'), 'utf8'));
-		index = new RBush();
-		index.fromJSON(roh.tree);
+	if (index === null && !indexLadenFehlgeschlagen) {
+		try {
+			const roh = JSON.parse(readFileSync(path.join(HIER, 'rbush-index.json'), 'utf8'));
+			const baum = new RBush();
+			baum.fromJSON(roh.tree);
+			index = baum;
+		} catch (fehler) {
+			indexLadenFehlgeschlagen = true;
+			protokolliere('fehler', 'baltic_index_laden_fehlgeschlagen', {
+				meldung: fehler instanceof Error ? fehler.message : String(fehler)
+			});
+		}
 	}
 	return index;
 }
@@ -40,36 +58,44 @@ function imKartenbereich(longitude, latitude) {
 }
 
 function inOstseeGeometrie(longitude, latitude) {
-	const baum = ladeIndex();
-	const kandidaten = baum.search({
-		minX: longitude,
-		minY: latitude,
-		maxX: longitude,
-		maxY: latitude
-	});
+	try {
+		const baum = ladeIndex();
+		if (!baum) return false;
 
-	if (!kandidaten || kandidaten.length === 0) return false;
+		const kandidaten = baum.search({
+			minX: longitude,
+			minY: latitude,
+			maxX: longitude,
+			maxY: latitude
+		});
 
-	const punkt = point([longitude, latitude]);
+		if (!kandidaten || kandidaten.length === 0) return false;
 
-	for (const kandidat of kandidaten) {
-		const geometrie = kandidat.geometry;
-		if (!geometrie || !Array.isArray(geometrie.coordinates)) continue;
+		const punkt = point([longitude, latitude]);
 
-		try {
-			if (geometrie.type === 'Polygon') {
-				if (booleanPointInPolygon(punkt, polygon(geometrie.coordinates))) return true;
-			} else if (geometrie.type === 'MultiPolygon') {
-				if (booleanPointInPolygon(punkt, multiPolygon(geometrie.coordinates))) return true;
+		for (const kandidat of kandidaten) {
+			const geometrie = kandidat.geometry;
+			if (!geometrie || !Array.isArray(geometrie.coordinates)) continue;
+
+			try {
+				if (geometrie.type === 'Polygon') {
+					if (booleanPointInPolygon(punkt, polygon(geometrie.coordinates))) return true;
+				} else if (geometrie.type === 'MultiPolygon') {
+					if (booleanPointInPolygon(punkt, multiPolygon(geometrie.coordinates))) return true;
+				}
+			} catch {
+				// Beschädigte Einzelgeometrie überspringen, nicht die ganze Prüfung
+				// aufgeben — das Original verhält sich ebenso.
+				continue;
 			}
-		} catch {
-			// Beschädigte Einzelgeometrie überspringen, nicht die ganze Prüfung
-			// aufgeben — das Original verhält sich ebenso.
-			continue;
 		}
-	}
 
-	return false;
+		return false;
+	} catch {
+		// Jeder unerwartete Fehler bei Index-Zugriff oder Geometrie-Prüfung
+		// degradiert zu false, statt die Anfrage scheitern zu lassen.
+		return false;
+	}
 }
 
 export function checkBalticSea(longitude, latitude) {
