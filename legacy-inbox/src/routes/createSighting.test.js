@@ -74,15 +74,20 @@ const sende = (koerper, kopfzeilen = { 'Content-Type': 'application/json' }) =>
 	fetch(`${basis}/rest_sichtungen`, { method: 'POST', headers: kopfzeilen, body: koerper });
 
 /**
- * Rohes TCP statt fetch: simuliert einen Client, der die Verbindung mitten in
- * der Übertragung abbricht. Ein Content-Length-Versprechen, das nie eingelöst
- * wird, plus ein Half-Close (FIN) auf der Schreibseite reicht, damit Node den
- * Body-Stream serverseitig mit einem Fehler statt mit 'end' abschließt — die
- * Leseseite bleibt offen, damit die Antwort noch gelesen werden kann.
+ * Rohes Socket statt fetch: simuliert einen Client, der die Verbindung mitten
+ * in der Übertragung abbricht. Ein Content-Length-Versprechen, das nie
+ * eingelöst wird, plus ein Half-Close (FIN) auf der Schreibseite reicht,
+ * damit Node den Body-Stream serverseitig mit einem Fehler statt mit 'end'
+ * abschließt — die Leseseite bleibt offen, damit die Antwort noch gelesen
+ * werden kann.
+ *
+ * Verbindet über einen Unix-Domain-Socket-Pfad, nicht über einen per
+ * server.listen(0) vergebenen TCP-Port (siehe serverAufUnixSocket() unten für
+ * die Begründung).
  */
-const sendeUnterbrochen = (port, teilkoerper) =>
+const sendeUnterbrochen = (sockPfad, teilkoerper) =>
 	new Promise((resolve, reject) => {
-		const socket = net.connect(port, '127.0.0.1', () => {
+		const socket = net.connect(sockPfad, () => {
 			socket.write(
 				'POST /rest_sichtungen HTTP/1.1\r\n' +
 					'Host: localhost\r\n' +
@@ -100,6 +105,34 @@ const sendeUnterbrochen = (port, teilkoerper) =>
 		socket.on('close', () => resolve(antwortRoh));
 		socket.on('error', reject);
 	});
+
+/**
+ * Schließt den übergebenen Server und ersetzt ihn durch einen auf einem
+ * Unix-Domain-Socket im Testverzeichnis — nur für sendeUnterbrochen(...)
+ * gebraucht.
+ *
+ * Grund: server.listen(0) lässt die Laufzeitumgebung einen freien TCP-Port
+ * wählen, aber "frei" ist nur eine Momentaufnahme beim Binden. In der Zeit
+ * zwischen dem close() des einen Servers und dem listen(0) des nächsten kann
+ * ein fremder, kurzlebiger Prozess denselben Port belegen (beobachtet auf
+ * einer Maschine mit vielen parallelen Kurzlebig-Listenern: der Client bekam
+ * eine SSH-Banner-Zeile bzw. eine fremde 401/404-Antwort statt der eigenen
+ * Serverantwort — die Sichtung landete dann folgerichtig nirgends, was wie
+ * ein Schreib-Race aussah, aber keins war). Ein Unix-Domain-Socket-Pfad liegt
+ * dagegen im mkdtemp-Testverzeichnis dieses Tests und ist damit exklusiv:
+ * kein anderer Prozess kann zufällig auf denselben Pfad binden.
+ */
+async function serverAufUnixSocket(aktuellerServer, store) {
+	await new Promise((fertig) => aktuellerServer.close(fertig));
+	const sockPfad = path.join(verzeichnis, 'ipc.sock');
+	const neuerServer = erstelleServer({
+		konfiguration: { maxBodyBytes: 262144 },
+		store,
+		rateLimit: erstelleRateLimit({ proIpProStunde: 100, globalProStunde: 1000 })
+	});
+	await new Promise((fertig) => neuerServer.listen(sockPfad, fertig));
+	return { server: neuerServer, sockPfad };
+}
 
 describe('POST /rest_sichtungen — der Leitsatz', () => {
 	it('hinterlässt auch bei vollständigem Unsinn eine Datei', async () => {
@@ -244,7 +277,12 @@ describe('POST /rest_sichtungen — Vertrag', () => {
 	});
 
 	it('schreibt trotzdem ab, wenn der Body-Stream mitten in der Übertragung abbricht', async () => {
-		const antwortRoh = await sendeUnterbrochen(server.address().port, '{"anzahl_gesamt": 1');
+		const store = await erstelleStore({ datenVerzeichnis: verzeichnis });
+		await store.initialisiere();
+		const ersetzt = await serverAufUnixSocket(server, store);
+		server = ersetzt.server;
+
+		const antwortRoh = await sendeUnterbrochen(ersetzt.sockPfad, '{"anzahl_gesamt": 1');
 
 		const [statuszeile] = antwortRoh.split('\r\n');
 		expect(statuszeile).toContain(' 400 ');
@@ -263,20 +301,15 @@ describe('POST /rest_sichtungen — Vertrag', () => {
 		// Antwortete der clientError-Handler selbst, käme beim Client ein 400
 		// an, obwohl nichts auf der Platte liegt — und ein 500, das ihn zum
 		// erneuten Versuch bewegen würde, wäre nicht mehr möglich.
-		await new Promise((fertig) => server.close(fertig));
-		server = erstelleServer({
-			konfiguration: { maxBodyBytes: 262144 },
-			store: {
-				istBeschreibbar: async () => false,
-				schreibe: async () => {
-					throw new Error('ENOSPC: no space left on device');
-				}
-			},
-			rateLimit: erstelleRateLimit({ proIpProStunde: 100, globalProStunde: 1000 })
+		const ersetzt = await serverAufUnixSocket(server, {
+			istBeschreibbar: async () => false,
+			schreibe: async () => {
+				throw new Error('ENOSPC: no space left on device');
+			}
 		});
-		await new Promise((fertig) => server.listen(0, fertig));
+		server = ersetzt.server;
 
-		const antwortRoh = await sendeUnterbrochen(server.address().port, '{"anzahl_gesamt": 1');
+		const antwortRoh = await sendeUnterbrochen(ersetzt.sockPfad, '{"anzahl_gesamt": 1');
 
 		const [statuszeile] = antwortRoh.split('\r\n');
 		expect(statuszeile).toContain(' 500 ');
@@ -290,7 +323,12 @@ describe('POST /rest_sichtungen — Vertrag', () => {
 		// task-5-report.md, Abschnitt "Fix: flakiger Stream-Abbruch-Test". Dieser
 		// Test prüft direkt gegen die Bytes auf der Leitung, dass stattdessen die
 		// vertragskonforme JSON-Form ankommt.
-		const antwortRoh = await sendeUnterbrochen(server.address().port, '{"anzahl_gesamt": 1');
+		const store = await erstelleStore({ datenVerzeichnis: verzeichnis });
+		await store.initialisiere();
+		const ersetzt = await serverAufUnixSocket(server, store);
+		server = ersetzt.server;
+
+		const antwortRoh = await sendeUnterbrochen(ersetzt.sockPfad, '{"anzahl_gesamt": 1');
 
 		const trennstelle = antwortRoh.indexOf('\r\n\r\n');
 		expect(trennstelle).toBeGreaterThan(-1);
