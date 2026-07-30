@@ -126,9 +126,9 @@ Eine Neufassung muss `> 0` statt `= 1` prüfen.
 
 ---
 
-## Fehler 2: Die Admin-Übersicht zeigt die falsche Spalte (offen)
+## Fehler 2: Die Admin-Übersicht zeigte die falsche Spalte (behoben am 2026-07-30)
 
-`src/routes/admin/+page.svelte` beschriftet die Spalte mit **„Ostsee"**, rendert
+`src/routes/admin/+page.svelte` beschriftete die Spalte mit **„Ostsee"**, renderte
 darin aber `inBalticSeaGeo`:
 
 ```svelte
@@ -137,16 +137,75 @@ darin aber `inBalticSeaGeo`:
 {#if sighting.inBalticSeaGeo}
 ```
 
-Weil `ostsee_geo` die Bounding Box ist, erscheinen **9.316 Zeilen** mit
-`ostsee = 0` (also nachweislich **nicht** in der Ostsee) in dieser Spalte als „in
-der Ostsee". Eine Meldung aus Hamburg oder Hannover würde dort als Ostsee-Sichtung
-ausgewiesen.
+Weil `ostsee_geo` die Bounding Box ist, erschienen vor der Geometrie-Bereinigung
+**9.316 Zeilen** mit `ostsee = 0` (also nachweislich **nicht** in der Ostsee) in
+dieser Spalte als „in der Ostsee". Eine Meldung aus **Hamburg** (9,99° O /
+53,55° N — in der Box, nicht im Polygon) wurde dort als Ostsee-Sichtung
+ausgewiesen. Hannover übrigens nicht: es liegt mit 52,38° N südlich der Südgrenze.
 
-Die Detailansicht macht es richtig — `AdminSightingView.svelte` zeigt beide Werte
-getrennt als „In der Ostsee" und „In der Ostsee (geo)".
+### Korrektur: ein kombinierter Status
 
-**Korrektur:** In der Übersicht `inBalticSea` unter dem Label „Ostsee" rendern
-und `inBalticSeaGeo`, wenn überhaupt, als eigene Spalte „Kartenbereich".
+Die Spalte trägt weiter das Label „Ostsee", zeigt aber den Status aus **beiden**
+Flags plus der Frage, ob überhaupt Koordinaten vorliegen —
+`src/routes/admin/balticSeaStatus.ts`:
+
+| Koordinaten | `ostsee` | `ostsee_geo` | Anzeige         | Badge           |
+| ----------- | -------- | ------------ | --------------- | --------------- |
+| fehlen      | beliebig | beliebig     | „ohne Position" | `badge-outline` |
+| vorhanden   | `> 0`    | `> 0`        | „Ostsee"        | `badge-info`    |
+| vorhanden   | `> 0`    | `0`          | „Widerspruch"   | `badge-warning` |
+| vorhanden   | `0`      | beliebig     | „außerhalb"     | `badge-ghost`   |
+
+Zwei getrennte Spalten wären die naheliegendere Korrektur gewesen, aber die
+Tabelle führt bereits 18 Spalten, und `ostsee_geo` als nacktes Ja/Nein ist allein
+nicht handlungsleitend.
+
+Der Zustand **„Widerspruch"** ist nach der Bereinigung leer (0 Zeilen) und kann von
+keinem Code-Pfad mehr erzeugt werden: die Recalc-SQL schreibt beide Spalten in
+einer Transaktion mit Invarianten-Wächter, und `mapFormToSighting` — auch im
+Bearbeitungsweg über `updateSighting` — nimmt beide Werte aus **einem**
+`checkBalticSeaFile`-Aufruf. Er bleibt trotzdem als eigener Zustand bestehen:
+**Produktion ist noch nicht neu berechnet** und trägt die Kombination weiterhin.
+Ohne den Zustand würde die Übersicht solche Zeilen stillschweigend als „Ostsee"
+ausweisen — genau der Fehler, um den es hier geht.
+
+Der Zustand **„ohne Position"** trifft 390 Zeilen. Ohne Koordinaten belegt auch
+`ostsee = 1` nichts; vor der Bereinigung standen 378 solcher Zeilen auf `1`.
+
+### Nachgemessen (2026-07-30, nach der Bereinigung)
+
+Über alle 19.491 Zeilen mit Koordinaten, gegen `checkBalticSeaFile` gerechnet:
+
+| Spalte       | stimmt mit ihrer Prüfung überein |
+| ------------ | -------------------------------- |
+| `ostsee`     | **100,00 %** (Polygon)           |
+| `ostsee_geo` | **100,00 %** (Bounding Box)      |
+
+Die alte Anzeige über `ostsee_geo` würde weiterhin **457 Zeilen** falsch als
+Ostsee ausweisen (`ostsee = 0` bei `ostsee_geo > 0`). Verteilung der Spalte heute:
+18.717 „Ostsee", 774 „außerhalb", 390 „ohne Position", 0 „Widerspruch".
+
+Abgesichert durch `src/routes/admin/balticSeaStatus.test.ts`; der zentrale Test
+weist eine Sichtung mit `ostsee = 0` und `ostsee_geo = 1` **nicht** als Ostsee aus.
+
+### Offen: dieselbe Verwechslung an drei weiteren Stellen
+
+1. **`AdminSightingView.svelte`** (Zeilen um 328/329) zeigt beide Rohwerte getrennt
+   als „In der Ostsee" und „In der Ostsee (geo)" — nicht falsch, aber nicht
+   derselbe Wert wie die Übersicht.
+2. **Die Benachrichtigungs-Mail** (Default in `configInitializer.ts`, Zeilen ~72–107)
+   prüft in der **äußeren** Bedingung `inBalticSeaGeo` und zeigt dann ein grünes
+   „Ostsee ✓". Eine Meldung aus dem Hamburger Hafen bekommt damit denselben Badge
+   wie eine echte Ostsee-Sichtung; `inBalticSea` wird nur im else-Zweig angesehen.
+   Ausführlich als **Fehler 4** weiter unten — inklusive des Stolpersteins, dass
+   die Vorlage aus `app_config` kommt und der DB-Wert gegen den Code-Default
+   gewinnt.
+3. **`statistics/+page.server.ts`** (Zeilen ~229/230) zählt
+   `COUNT(CASE WHEN ostsee_geo = 1 …)` unter dem Feldnamen `inBalticSea` — falsche
+   Spalte und der `= 1`-Fehler aus Fehler 1 in einer Abfrage. Wird nicht gerendert.
+
+Alle drei sollen an dieselbe Funktion wie die Übersicht angeschlossen werden,
+damit der Wert nur an einer Stelle entsteht.
 
 ---
 
@@ -191,13 +250,50 @@ Vollständige Messung, Entscheidungen und Umsetzung:
 
 ---
 
-## Die E-Mail-Benachrichtigung ist korrekt
+## Fehler 4: Die E-Mail-Benachrichtigung zeigt die Bounding Box als „Ostsee ✓" (offen)
 
-Die Handlebars-Vorlage (Default in `configInitializer.ts`) staffelt richtig:
-`inBalticSeaGeo` ist die äußere, gröbere Bedingung, `inBalticSea` die
-Verfeinerung. Der Fall „im Polygon, aber außerhalb der Bounding Box" wird als
-**„Ostsee-Rand — bitte Plausibilität prüfen"** ausgewiesen. Das ist für die
-Westkante genau die passende Aussage.
+> Dieser Abschnitt hieß bis zum 2026-07-30 „Die E-Mail-Benachrichtigung ist
+> korrekt" und begründete das damit, `inBalticSeaGeo` sei die äußere, gröbere
+> Bedingung und `inBalticSea` die Verfeinerung. Die **Staffelung** ist richtig, das
+> **Ergebnis** nicht.
+
+Die Handlebars-Vorlage (Default in `configInitializer.ts`, Zeilen ~72–107) prüft in
+der äußeren Bedingung `inBalticSeaGeo` und zeigt dann sofort ein grünes
+**„Ostsee ✓"**. `inBalticSea` wird nur im else-Zweig angesehen:
+
+```handlebars
+{{#if sighting.inBalticSeaGeo}}      → Badge „Ostsee ✓" (grün)
+{{else}}{{#if sighting.inBalticSea}} → „Ostsee-Rand" (gelb)
+        {{else}}                     → „Außerhalb Ostsee" (rot)
+```
+
+| `ostsee` | `ostsee_geo` | Mail zeigt         | richtig?                       |
+| -------- | ------------ | ------------------ | ------------------------------ |
+| `> 0`    | `> 0`        | „Ostsee ✓"         | ✅                             |
+| **`0`**  | **`> 0`**    | **„Ostsee ✓"**     | ❌ — liegt nicht in der Ostsee |
+| `> 0`    | `0`          | „Ostsee-Rand"      | seit der Bereinigung leer      |
+| `0`      | `0`          | „Außerhalb Ostsee" | ✅                             |
+
+Es ist dieselbe Verwechslung wie in Fehler 2, nur eine Ausgabe weiter. Eine
+Meldung aus dem Hamburger Hafen bekommt denselben grünen Badge wie eine echte
+Ostsee-Sichtung. Die betroffene Klasse `ostsee = 0, ostsee_geo > 0` umfasst
+derzeit **457 Zeilen**; für Neumeldungen entsteht sie bei jeder Position im
+Rechteck außerhalb des Polygons. Der zweite, gleich gebaute Block unter
+`{{#unless sighting.inBalticSeaGeo}}` (Zeilen ~95–105) trägt die Fließtexte und
+hat denselben Fehler.
+
+Der Zweig „Ostsee-Rand" ist zusätzlich toter Code: Beide Werte stammen aus **einem**
+`checkBalticSeaFile`-Aufruf, und das Polygon liegt in der Box — die Kombination
+kann bei einer Neumeldung nicht entstehen.
+
+**Beim Beheben beachten:** Die Vorlage kommt nicht aus dem Code, sondern aus
+`app_config` unter dem Key `notification.email.template`
+(`ConfigRepository.getString(…, this.getDefaultTemplate())` — der DB-Wert gewinnt,
+der Default ist nur Fallback). Den Default zu ändern wirkt auf **keine**
+bestehende Installation; der geseedete Wert muss mitgezogen werden. Und weil
+Handlebars keine TypeScript-Funktion aufrufen kann, gehört der Status **einmal** in
+`emailService.ts` berechnet und in den Template-Kontext gegeben — sonst wird die
+Logik zum zweiten Mal nachgebaut und läuft wieder auseinander.
 
 ---
 
