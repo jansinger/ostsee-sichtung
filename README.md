@@ -200,6 +200,10 @@ ostsee-tiere/
 │   │   ├── stores/         # Svelte Stores
 │   │   ├── types/          # TypeScript Typen
 │   │   └── utils/          # Hilfsfunktionen
+│   ├── css/                # Design-Tokens (tokens.css) und Weather-Icon-Styles
+│   ├── font/               # Weather-Icon-Webfonts
+│   ├── tests/              # Contract-Tests
+│   ├── tools/              # Build-/Wartungsskripte (siehe src/tools/README.md)
 │   └── routes/             # SvelteKit-Routen
 │       ├── about/          # Über-Seite
 │       ├── admin/          # Admin-Interface
@@ -210,6 +214,7 @@ ostsee-tiere/
 │       ├── map/            # Karten-Visualisierung
 │       ├── rest_sichtungen/ # Legacy REST API (POST, antworten, inBaltic)
 │       ├── sichtungen/     # Legacy Sichtungs-API (showreports)
+│       ├── styleguide/     # Design-Token-Referenz (nur in dev erreichbar)
 │       └── uploads/        # Ausgelieferte Uploads (Local Storage)
 ├── static/                 # Statische Assets
 ├── docs/                   # Dokumentation
@@ -239,11 +244,17 @@ Moderne OpenLayers-Integration mit erweiterten Features:
 
 ### Legacy REST API Kompatibilität
 
-100% kompatible REST API für bestehende mobile Apps:
+Die Endpunkte `/rest_sichtungen` und `/sichtungen/showreports.json` implementieren den Vertrag
+der Vorgänger-API, damit Mobile Clients ohne Anpassung angebunden werden können:
 
 - Exakte Feld-Mappings der Original-API
 - Backward-kompatible Antwortformate
 - Unterstützung aller ursprünglichen Endpunkte
+
+**Stand 2026-07-30 ist kein Client angebunden** — die Endpunkte sind implementiert und getestet,
+aber nicht in Betrieb. Feldnamen, Pfade und Datentypen dürfen trotzdem nur bewusst geändert
+werden, sonst ist der Vertrag entwertet, sobald ein Client dazukommt. Verbindliche Referenz:
+[LEGACY_API_SPECIFICATION.md](docs/LEGACY_API_SPECIFICATION.md)
 
 ### Erweiterte Medienverwaltung
 
@@ -269,11 +280,14 @@ Docker ist die **primäre Deployment-Methode** für Self-Hosted-Installationen.
 ### Verfügbare Deployment-Optionen
 
 1. **Docker (Self-Hosted)**: Vollständige Kontrolle über Infrastruktur und Daten (empfohlen)
-2. **Vercel (Cloud-Native)**: Automatisches Deployment via GitHub Actions
+2. **Vercel (Cloud-Native)**: Deployment über Vercels eigene Git-Integration (kein
+   GitHub-Actions-Workflow im Repository); der Adapter wird in `svelte.config.js` anhand des
+   Build-Ziels gewählt
 
 ### Docker-Features
 
-- ✅ **Multi-Stage Build** für optimierte Image-Größe (~150-200 MB)
+- ✅ **Multi-Stage Build**: der Builder pruned die devDependencies, ins finale Layer kommen nur
+  `build/`, die Production-Dependencies, das SBOM und die Migrations-Skripte
 - ✅ **Multi-Architektur** (AMD64 + ARM64: Raspberry Pi 4/5, AWS Graviton, Apple Silicon)
 - ✅ **Automatische Schema-Migrationen** beim Container-Start
 - ✅ **Multi-Storage Support** (Local, Vercel Blob)
@@ -305,16 +319,30 @@ npm run docker:stop
 
 ### Images auf GitHub Container Registry
 
+**`latest` ist nicht der neueste Build.** Der Tag bewegt sich erst bei der
+Production-Freigabe — das frischeste Release liegt auf `staging`:
+
+| Tag                    | Bedeutung                                                               |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `staging`              | Neuestes Release, **ungeprüft**                                         |
+| `production`, `latest` | Freigegebener Stand (`production` ist der Default in der Compose-Datei) |
+| `vX.Y.Z`, `X.Y`, `X`   | `vX.Y.Z` ist unveränderlich, `X.Y`/`X` folgen dem Production-Stand      |
+
 ```bash
-# Neueste Version ziehen
-docker pull ghcr.io/jansinger/ostsee-tiere:latest
+# Freigegebenen Production-Stand ziehen
+docker pull ghcr.io/jansinger/ostsee-tiere:production
 
-# Oder spezifische Version (siehe GitHub Releases)
-docker pull ghcr.io/jansinger/ostsee-tiere:v1.0.0
+# Neuestes, noch ungeprüftes Release (Staging)
+docker pull ghcr.io/jansinger/ostsee-tiere:staging
 
-# Mit Tag ausführen
-docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-tiere:latest
+# Feste Version (Tag-Liste unter GitHub Releases)
+docker pull ghcr.io/jansinger/ostsee-tiere:vX.Y.Z
+
+# Ausführen
+docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-tiere:production
 ```
+
+Vollständige Tag-Semantik und der Promotion-Ablauf: [Release-Pipeline](docs/RELEASE_PIPELINE.md)
 
 ### Dokumentation
 
@@ -325,10 +353,19 @@ docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-tiere:latest
 - 📕 [Database Migration Guide](docs/DATABASE_MIGRATION.md) - Migration von bestehenden Installationen
 - 📒 [Design Guide](docs/DESIGN_GUIDE.md) - UI/UX Best Practices und Begründungen
 - 📓 [Design System](docs/DESIGN_SYSTEM.md) - Token-Referenz (Farben, Typografie, Abstände, Motion)
+- 📔 [Legacy API Specification](docs/LEGACY_API_SPECIFICATION.md) - Verbindlicher Vertrag der Vorgänger-API
+- 📰 [Configuration Usage](docs/CONFIGURATION_USAGE.md) - ConfigService (Laufzeit-Konfiguration)
+- 🌊 [Ostsee-Flags](docs/OSTSEE_FLAGS.md) - `ostsee` vs. `ostsee_geo` (Namen sind irreführend)
+- 🌳 [Worktrees](docs/WORKTREES.md) - Worktree-Setup, geteilte Ressourcen, Ports
 
 ## Beitragen
 
 Beiträge zum Projekt sind willkommen! Bitte erstellen Sie einen Fork des Repositories und reichen Sie Pull Requests ein.
+
+Vor dem ersten PR: [CONTRIBUTING.md](CONTRIBUTING.md) (Branch-Schutz, Conventional Commits,
+Quality Checks) und [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Für die Arbeit an mehreren Branches
+parallel siehe [WORKTREES.md](docs/WORKTREES.md) — ein neuer Worktree wird mit
+`npm run worktree:setup` einsatzbereit gemacht.
 
 ## Lizenz
 
