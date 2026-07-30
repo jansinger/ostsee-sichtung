@@ -294,6 +294,9 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 		lastName: formData.lastName,
 		email: formData.email,
 		phone: formData.phone,
+		// Nur über die Legacy-REST-API befüllt (Spec-Feld `fax`); das Formular
+		// bietet kein Fax-Eingabefeld an.
+		fax: formData.fax,
 		// Adresse
 		street: formData.street,
 		zipCode: formData.zipCode,

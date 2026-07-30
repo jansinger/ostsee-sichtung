@@ -1061,6 +1061,24 @@ export const sightingSchemaBase = yup.object().shape({
 	 * Telefonnummer für Rückfragen
 	 * Optional, Freitextfeld
 	 */
+	/**
+	 * Faxnummer
+	 *
+	 * Ausschließlich für die Legacy-REST-API: `docs/LEGACY_API_SPECIFICATION.md`
+	 * führt `fax` als optionales Feld, und die DB-Spalte existiert seit immer —
+	 * nur fehlte das Feld hier, weshalb der Legacy-Adapter den Wert bis
+	 * 2026-07-30 stillschweigend verwarf.
+	 *
+	 * **Bewusst ohne `.meta()`**: Das Formular rendert seine Felder aus den
+	 * expliziten Listen in `formConfig.ts`, nicht aus dem Schema. Ohne Metadaten
+	 * bleibt `fax` damit ein reines Datenfeld und taucht in keinem Schritt auf.
+	 */
+	fax: yup
+		.string()
+		.max(64, 'Die Faxnummer darf nicht länger als 64 Zeichen sein.')
+		.label('Faxnummer')
+		.notRequired(),
+
 	phone: yup
 		.string()
 		.max(64, 'Die Telefonnummer darf nicht länger als 64 Zeichen sein.')

@@ -2761,6 +2761,21 @@ components:
           example: "max@example.com"
         # Optionale Felder (Auszug — vollständige Liste in
         # docs/LEGACY_API_SPECIFICATION.md)
+        fax:
+          type: string
+          description: >-
+            Faxnummer. Wurde bis 2026-07-30 validiert, aber nicht gespeichert;
+            das Formular bietet dafür kein Eingabefeld an.
+          maxLength: 64
+          example: "+49 431 123456"
+        totfund:
+          type: integer
+          description: >-
+            Totfund-Kennzeichen (0/1). Gilt zusätzlich zur Regel
+            "anzahl_gesamt = 0 wird als Totfund interpretiert" — ein
+            `totfund: 1` bei `anzahl_gesamt > 0` wurde bis 2026-07-30 ignoriert.
+          enum: [0, 1]
+          example: 1
         sonstige_auffaelligkeiten:
           type: string
           description: >-

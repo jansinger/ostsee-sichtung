@@ -468,6 +468,66 @@ server error occurred"}` und damit einen `error`-Schlüssel, den die flache
 Vertragsform nicht kennt. `static/openapi.yml` dokumentiert für 500 deshalb
 beide Formen.
 
+## Korrektur 2026-07-30: `fax` und `totfund` wurden verworfen
+
+Beide Felder standen in der Validierung, landeten aber nirgends — dieselbe
+Fehlerklasse wie bei `sonstige_auffaelligkeiten` oben.
+
+- **`fax`**: Die DB-Spalte `fax` existiert seit immer, aber das Feld fehlte im
+  Formular-Schema (`sightingSchema`) und damit in `SightingFormData`. Der
+  Legacy-Adapter hatte kein Ziel für den Wert. `fax` ist jetzt im Schema (ohne
+  `.meta()`, also kein Formularfeld) und wird von `mapFormToSighting`
+  geschrieben.
+- **`totfund`**: `isDead` wurde ausschließlich aus `anzahl_gesamt = 0`
+  abgeleitet. Ein explizites `totfund: 1` bei `anzahl_gesamt > 0` verschwand.
+  Beide Wege gelten jetzt, und beide werden string-tolerant ausgewertet — der
+  Formulardaten-Pfad liefert `Object.fromEntries(formData.entries())`, also
+  Strings, und `'0' === 0` ist in TypeScript false.
+
+## Bewusst nicht umgesetzt: der Ostsee-Filter in `showreports.json`
+
+Abschnitt 4 beschreibt die Grundmenge als „approved **and marked as lying in the
+Baltic Sea**". Der zweite Teil ist **absichtlich nicht implementiert**. Der
+Endpunkt filtert ausschließlich `freigegeben_am IS NOT NULL`.
+
+**Grund 1 — der Marker wurde nicht durchgängig gepflegt.** Messung am
+2026-07-30 über die 19.262 freigegebenen Zeilen der lokalen DB:
+
+| Spalte       | `= 1`  | `= 0` | `NULL` |
+| ------------ | ------ | ----- | ------ |
+| `ostsee`     | 10.028 | 9.234 | 0      |
+| `ostsee_geo` | 3.838  |       |        |
+
+Von den 9.234 Zeilen mit `ostsee = 0` liegen **9.135 (98,9 %) im Kartenbereich**
+(53–66 N, 9–31 O) — es sind plausible Ostsee-Sichtungen. Umgekehrt tragen 179
+Zeilen mit `ostsee = 1` überhaupt keine Koordinaten; der Marker ist also nicht
+koordinatenabgeleitet. Die Trefferquote schwankt zudem jahrgangsweise stark
+(2012: 93 %, 2020: 27 %, 2021: 73 %), was auf einen Prozess- oder Importwechsel
+deutet, nicht auf eine stabile fachliche Bedeutung.
+
+Ein Filter auf `ostsee = 1` würde damit rund **9.100 echte Sichtungen (48 %)**
+aus der öffentlichen Ausgabe entfernen. `ostsee = 1 OR ostsee_geo = 1` wären
+immer noch 7.383 (38 %).
+
+**Grund 2 — `.claude/rules/api.md` verbietet es.** Dort ist die öffentliche
+Grundmenge verbindlich auf `approvedAt IS NOT NULL` festgelegt, ausdrücklich für
+die Legacy-API **und** die moderne Karte (`/api/map/sightings`, via
+`approvedOnly()` aus `src/lib/server/db/approvalFilter.ts`), mit der Begründung,
+dass zwei verschiedene Filter für zwei öffentliche Flächen zwangsläufig
+auseinanderlaufen. Ein zusätzlicher Marker-Filter nur hier wäre genau dieser
+Fall.
+
+**Was das für Clients heißt:** Die Ergebnismenge ist eine Obermenge dessen, was
+die Spec beschreibt. Ein Client bekommt zusätzliche Meldungen, keine fehlenden —
+die verträglichere Richtung. Die Felder `bm`/`va` wären der vertragsgemäße Weg,
+das Ergebnis der Positionsprüfung an Clients zu übermitteln — sie werden derzeit
+gar nicht ausgeliefert, auch nicht an eingeloggte Admins.
+
+**Offen:** Wenn der Marker fachlich doch maßgeblich ist, gehört er vor einer
+Aktivierung nachgezogen — bewertbar nur mit einer Aussage der DMM dazu, was
+`ostsee = 0` bei einer Sichtung mitten in der Ostsee bedeuten soll. Bis dahin
+bleibt der Filter aus.
+
 ## Zeitzonen-Semantik
 
 Alle Datums-/Uhrzeitwerte dieser Legacy API sind **deutsche Ortszeit

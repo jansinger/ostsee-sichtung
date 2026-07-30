@@ -150,3 +150,78 @@ describe('mapLegacyToCurrentSchema — sonstige_auffaelligkeiten', () => {
 		expect(result.otherObservations).toBe('');
 	});
 });
+
+/**
+ * `fax` steht als optionales Feld in der Spezifikation und wurde von
+ * `yup-validation.ts` auch validiert — nur landete der Wert nirgends. Die
+ * DB-Spalte `fax` existiert seit immer, `SightingFormData` kannte das Feld
+ * jedoch nicht, also verwarf der Adapter es stillschweigend.
+ */
+describe('mapLegacyToCurrentSchema — fax', () => {
+	it('übernimmt die Faxnummer', () => {
+		const result = mapLegacyToCurrentSchema({
+			...minimalRequest(),
+			fax: '+49 431 123456'
+		} as LegacySightingRequest);
+
+		expect(result.fax).toBe('+49 431 123456');
+	});
+
+	it('bleibt ohne Angabe ein leerer String', () => {
+		expect(mapLegacyToCurrentSchema(minimalRequest()).fax).toBe('');
+	});
+});
+
+/**
+ * Die Spezifikation führt `totfund` als eigenes 0/1-Feld — zusätzlich zur
+ * Regel „`anzahl_gesamt = 0` wird als Totfund interpretiert". Der Adapter
+ * leitete `isDead` bis 2026-07-30 ausschließlich aus dem Zähler ab; ein
+ * explizites `totfund: 1` bei `anzahl_gesamt > 0` verschwand.
+ *
+ * Beide Wege müssen außerdem den Formulardaten-Pfad überleben: dort kommt
+ * `Object.fromEntries(formData.entries())` an, also **Strings**. `'0' === 0`
+ * ist false, `!!'0'` ist true — deshalb wird numerisch verglichen.
+ */
+describe('mapLegacyToCurrentSchema — totfund', () => {
+	it('erkennt einen explizit gemeldeten Totfund trotz anzahl_gesamt > 0', () => {
+		const result = mapLegacyToCurrentSchema({
+			...minimalRequest(),
+			anzahl_gesamt: 3,
+			totfund: 1
+		} as LegacySightingRequest);
+
+		expect(result.isDead).toBe(true);
+	});
+
+	it('erkennt einen Totfund weiterhin an anzahl_gesamt = 0', () => {
+		const result = mapLegacyToCurrentSchema({
+			...minimalRequest(),
+			anzahl_gesamt: 0
+		} as LegacySightingRequest);
+
+		expect(result.isDead).toBe(true);
+	});
+
+	it('bleibt bei totfund = 0 und anzahl_gesamt > 0 ein Lebendfund', () => {
+		const result = mapLegacyToCurrentSchema({
+			...minimalRequest(),
+			anzahl_gesamt: 2,
+			totfund: 0
+		} as LegacySightingRequest);
+
+		expect(result.isDead).toBe(false);
+	});
+
+	it.each([
+		['totfund', { totfund: '1', anzahl_gesamt: '2' }, true],
+		['anzahl_gesamt', { anzahl_gesamt: '0' }, true],
+		['keins von beiden', { totfund: '0', anzahl_gesamt: '2' }, false]
+	])('wertet Strings aus dem Formulardaten-Pfad aus (%s)', (_label, overrides, expected) => {
+		const result = mapLegacyToCurrentSchema({
+			...minimalRequest(),
+			...overrides
+		} as unknown as LegacySightingRequest);
+
+		expect(result.isDead).toBe(expected);
+	});
+});
