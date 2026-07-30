@@ -76,7 +76,7 @@ export default defineConfig({
 				test: {
 					name: 'server',
 					environment: 'node',
-					include: ['src/**/*.{test,spec}.{js,ts}'],
+					include: ['src/**/*.{test,spec}.{js,ts}', 'legacy-inbox/**/*.test.js'],
 					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
 					setupFiles: ['./vitest-setup-server.ts'],
 					// Force UTC timezone for consistent date/time tests across environments

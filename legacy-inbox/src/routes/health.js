@@ -1,0 +1,19 @@
+/**
+ * Health-Endpunkt für die externe Überwachung.
+ *
+ * Prüft ausdrücklich die Beschreibbarkeit des Datenverzeichnisses und nicht
+ * nur, ob der Prozess antwortet: Ein Dienst, der läuft aber nicht schreiben
+ * kann, ist für diesen Zweck genauso kaputt wie einer, der tot ist.
+ */
+import { antworteJson } from '../respond.js';
+
+export async function health(_req, res, { store }) {
+	const beschreibbar = await store.istBeschreibbar();
+
+	if (!beschreibbar) {
+		antworteJson(res, 503, { status: 'fehler', datenverzeichnis: 'nicht beschreibbar' });
+		return;
+	}
+
+	antworteJson(res, 200, { status: 'ok', datenverzeichnis: 'beschreibbar' });
+}
