@@ -344,6 +344,9 @@ docker run -p 3000:3000 --env-file .env ghcr.io/jansinger/ostsee-tiere:productio
 
 Vollständige Tag-Semantik und der Promotion-Ablauf: [Release-Pipeline](docs/RELEASE_PIPELINE.md)
 
+Bricht `docker pull` mit `denied` ab, ist das Package nicht öffentlich: vorher
+`docker login ghcr.io` mit einem Token mit `read:packages`-Scope.
+
 ### Dokumentation
 
 - 📘 [Docker Deployment Guide](docs/DOCKER_DEPLOYMENT.md) - Vollständige Deployment-Anleitung
