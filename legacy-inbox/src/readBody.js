@@ -19,7 +19,7 @@ import { StringDecoder } from 'node:string_decoder';
  * vollständigen Zeichengrenze, ohne dass davor etwas verloren geht.
  */
 export async function leseBody(req, { maxBytes } = {}) {
-	if (typeof maxBytes !== 'number' || maxBytes <= 0) {
+	if (!Number.isFinite(maxBytes) || maxBytes <= 0) {
 		throw new Error('leseBody benötigt eine positive maxBytes-Obergrenze.');
 	}
 

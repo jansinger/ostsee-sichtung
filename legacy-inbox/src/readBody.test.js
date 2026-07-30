@@ -41,6 +41,14 @@ describe('leseBody', () => {
 		await expect(leseBody(anfrage('x'), { maxBytes: 0 })).rejects.toThrow();
 		await expect(leseBody(anfrage('x'), { maxBytes: -5 })).rejects.toThrow();
 	});
+
+	it('wirft bei maxBytes NaN', async () => {
+		await expect(leseBody(anfrage('x'), { maxBytes: NaN })).rejects.toThrow();
+	});
+
+	it('wirft bei maxBytes Infinity', async () => {
+		await expect(leseBody(anfrage('x'), { maxBytes: Infinity })).rejects.toThrow();
+	});
 });
 
 describe('parseBody', () => {
