@@ -1,11 +1,12 @@
 #!/bin/bash
 #
-# Run the latest release Docker image with local PostgreSQL and optional Caddy SSL proxy
+# Run a released Docker image with local PostgreSQL and optional Caddy SSL proxy
 #
 # Usage:
-#   ./run-release.sh           # Run latest release (with Caddy if available)
+#   ./run-release.sh           # Released production build (with Caddy if available)
 #   ./run-release.sh start     # Same as above
-#   ./run-release.sh v2.1.0    # Run specific version
+#   ./run-release.sh staging   # Newest release, not yet verified
+#   ./run-release.sh v2.5.5    # Run specific version
 #   ./run-release.sh stop      # Stop running container and Caddy
 #   ./run-release.sh logs      # View container logs
 #   ./run-release.sh status    # Show status of container and Caddy
@@ -147,22 +148,25 @@ case "$VERSION" in
         exit 0
         ;;
     start)
-        # "start" is the default action — treat it as "latest"
+        # "start" is the default action. `latest` tracks the RELEASED PRODUCTION
+        # build (moved only by promote-production.yml), not the newest release —
+        # that one is `staging`. See docs/RELEASE_PIPELINE.md.
         VERSION="latest"
         ;;
     help|--help|-h)
         echo "Usage: ./run-release.sh [command|version]"
         echo ""
         echo "Commands:"
-        echo "  start          Start with latest release (default)"
+        echo "  start          Start the released production build (default)"
         echo "  stop           Stop running container and Caddy"
         echo "  logs           View container logs"
         echo "  status         Show status of container and Caddy"
         echo "  help           Show this help"
         echo ""
         echo "Version:"
-        echo "  v2.1.0         Start specific version"
-        echo "  latest         Start latest release (default)"
+        echo "  v2.5.5         Start a specific version"
+        echo "  latest         Released production build (default)"
+        echo "  staging        Newest release, not yet verified"
         exit 0
         ;;
 esac

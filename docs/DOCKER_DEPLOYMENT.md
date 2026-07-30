@@ -240,8 +240,11 @@ docker compose -f docker-compose.production.yml logs -f
 The `run-release.sh` script simplifies running Docker releases with a local PostgreSQL database:
 
 ```bash
-# Run latest release
+# Run the released production build (tag `latest`)
 ./run-release.sh
+
+# Run the newest, not-yet-verified release
+./run-release.sh staging
 
 # Run specific version
 ./run-release.sh v2.0.3
@@ -1348,7 +1351,7 @@ API_AUDIENCE=your-api-audience
 ### Step 3: Run the Release
 
 ```bash
-# Run latest release
+# Run the released production build (tag `latest`)
 ./run-release.sh
 
 # The script automatically:
@@ -1404,7 +1407,8 @@ https://localhost:3443
 ### Step 5: Commands Reference
 
 ```bash
-./run-release.sh              # Run latest release
+./run-release.sh              # Run the released production build (tag `latest`)
+./run-release.sh staging      # Run the newest, not-yet-verified release
 ./run-release.sh v2.0.3       # Run specific version
 ./run-release.sh stop         # Stop container
 ./run-release.sh logs         # View logs (follow mode)
