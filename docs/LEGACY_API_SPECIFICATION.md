@@ -236,14 +236,26 @@ JSON Object:
 
 **Request**: `/rest_sichtungen/inBaltic.json?location=53,10`
 
-**Response**:
+**Response** (aktuell):
 
 ```json
 {
 	"inbaltic": false,
-	"inchartarea": true
+	"inchartarea": false
 }
 ```
+
+> **Abweichung vom Ursprungs-PDF.** Dort lautet die Antwort auf dieselbe Anfrage
+> `{"inbaltic": false, "inchartarea": true}`. Seit der Bereinigung der
+> Ostsee-Geometrie am 2026-07-30 (`fix(map): clean the baltic geometry and
+derive the bounding box from it`) liegt die Südgrenze des Kartenbereichs bei
+> **53,55° N** statt bei 53,0° — die Beispielkoordinate 53,10 (Raum Hamburg)
+> fällt damit aus dem Kartenbereich heraus.
+>
+> Die Antwort selbst ist also unverändert korrekt berechnet; nur das im PDF
+> gewählte Beispiel liegt inzwischen jenseits der Grenze. Wer eine Koordinate
+> zum Prüfen von `inchartarea: true` braucht, nimmt einen Punkt innerhalb der
+> Ostsee-Bounding-Box, etwa `location=53.63,11.41` (Schwerin).
 
 ## 4. Retrieving Sighting Data
 
