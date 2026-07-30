@@ -7,6 +7,13 @@ import {
 	type Page
 } from '@playwright/test';
 import { seedAdminSession } from './helpers/adminSession';
+import {
+	BELOW_OPACITY_FLOOR,
+	findOffenders,
+	STATUS_AS_FOREGROUND,
+	TAILWIND_PALETTE,
+	type ScannedElement
+} from './helpers/bannedClasses';
 import { formatRatio, measureContrast } from './helpers/contrast';
 
 /**
@@ -24,6 +31,13 @@ import { formatRatio, measureContrast } from './helpers/contrast';
  * Dieser Test hätte die beiden kritischen Befunde des Reviews am Tag ihrer
  * Entstehung gefunden: weißer Text auf warning (3,26:1) und auf secondary
  * (3,19:1).
+ *
+ * Damit er das auch in CI tut, muss er dort laufen: Bis zum `e2e`-Filter in
+ * `.github/workflows/ci.yml` galt ein PR, der nur `e2e/` anfasste, als
+ * Doc-Only — `needs-e2e` blieb false und dieser Scan wurde übersprungen. In
+ * #636 und #641 wurde deshalb die Regel in `helpers/bannedClasses.ts`
+ * verschärft, ohne dass ihre Reichweite je gegen die echten Routen lief;
+ * grün war nur der Unit-Test der Regel.
  */
 
 const AA_TEXT = 4.5;
@@ -274,11 +288,47 @@ test.describe('Styleguide — Bedienung', () => {
    eine Flächen-Statusfarbe als Vordergrund verwendet, Text unter Deckkraft /60
    setzt oder eine Tailwind-Paletten-Farbe am Theme vorbei nutzt.
 
-   Die Regex NICHT aufweichen, um die Gruppe grün zu halten: sie wäre genau
-   dann wertlos, wenn sie nur noch findet, was ohnehin konform ist. Eine neue
+   Die drei Regeln stehen seit dem 2026-07-30 in `helpers/bannedClasses.ts` und
+   nicht mehr als Regex-Literale in den `page.evaluate()`-Callbacks hier. Der
+   Grund steht dort ausführlich; kurz: Sie waren so nur mit laufendem Browser
+   prüfbar, und ein Scan über einen konformen Bestand belegt nichts über die
+   Regel — genau daran ist die Deckkraft-Lücke (`text-success/80`) unentdeckt
+   geblieben. `helpers/bannedClasses.test.ts` stellt sie jetzt an konstruierten
+   Beispielen scharf.
+
+   Die Regeln NICHT aufweichen, um die Gruppe grün zu halten: sie wären genau
+   dann wertlos, wenn sie nur noch finden, was ohnehin konform ist. Eine neue
    Fundstelle gehört an der Aufrufstelle behoben — `text-*-strong` statt
-   `text-*`, `/70` statt `/50`, Theme-Token statt Tailwind-Palette. */
+   `text-*`, `/70` statt `/50`, Theme-Token statt Tailwind-Palette. Und bei
+   dekorativen Icons und Zierelementen ist `base-content/70` die richtige
+   Antwort, nicht ein mechanisches `-strong`: eine Statusfarbe, die keine
+   Bedeutung trägt, gehört gar nicht dorthin. */
 test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
+	/** Belegt, dass die Seite wirklich Inhalt gerendert hat. */
+	interface ContentProbe {
+		/** Erscheint in der Fehlermeldung. */
+		readonly what: string;
+		readonly selector: string;
+		readonly min: number;
+	}
+
+	interface ScanRoute {
+		readonly path: string;
+		readonly auth: boolean;
+		readonly needsDb: boolean;
+		readonly renders?: readonly ContentProbe[];
+	}
+
+	/* Die Fixtures, die beide Helfer unten brauchen. Als eigener Typ, weil die
+	   Form sonst zweimal ausgeschrieben dasteht und beim Ergänzen einer Fixture
+	   auseinanderlaufen kann. */
+	type ScanFixtures = {
+		page: Page;
+		context: BrowserContext;
+		request: APIRequestContext;
+		baseURL: string | undefined;
+	};
+
 	/* Ruhezustand-Scan. Hover-Zustände tauchen in getComputedStyle nicht auf
 	   und sind hier deshalb nicht prüfbar — dafür gilt die Regel in
 	   design-system.md („text-error nicht auf base-300").
@@ -287,12 +337,63 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 	   nicht schmutzig: Eine Prüfung von Hand über alle sechs Routen fand null
 	   Verstöße — aber eben von Hand. Der Zugang läuft über `seedAdminSession`
 	   (dort steht, warum nicht über die Auth0-Oberfläche). */
-	const ROUTES = [
+	const ROUTES: readonly ScanRoute[] = [
 		{ path: '/', auth: false, needsDb: false },
 		{ path: '/map', auth: false, needsDb: false },
 		{ path: '/about', auth: false, needsDb: false },
-		{ path: '/admin', auth: true, needsDb: true },
-		{ path: '/admin/statistics', auth: true, needsDb: true },
+		/* Die `renders`-Sonden sind für die beiden datengetriebenen Seiten keine
+		   Zugabe, sondern der Kern ihrer Aussagekraft: Eine leere Tabelle liefert
+		   ein DOM ohne eine einzige verbotene Kombination und wäre damit
+		   vakuum-grün — genau wie es der Auth0-Redirect und die 403-Seite gewesen
+		   wären, gegen die die Wächter unten stehen. Status < 500 ist dafür kein
+		   Beleg. */
+		{
+			path: '/admin',
+			auth: true,
+			needsDb: true,
+			renders: [
+				/* Beide Layouts stehen gleichzeitig im DOM (`md:hidden` /
+				   `hidden md:block` sind reines CSS); die Tabelle ist die mit den
+				   Zebra-Streifen und den Statusbadges. Mehrere Zeilen, weil eine
+				   einzelne Zeile kein Zebra ergibt. */
+				{ what: 'Tabellenzeilen', selector: 'table.table-zebra tbody tr', min: 10 },
+				/* Paginierung erscheint immer, aber mit einer Seite ist jede
+				   Navigations-Schaltfläche deaktiviert. Erst ein bedienbares
+				   „Nächste Seite" belegt, dass der Bestand über eine Seite
+				   hinausgeht und die Muster im Ruhezustand messbar sind. */
+				{
+					what: 'Paginierung über mehr als eine Seite',
+					selector: '.join button[title="Nächste Seite"]:not([disabled])',
+					min: 1
+				}
+			]
+		},
+		{
+			path: '/admin/statistics',
+			auth: true,
+			needsDb: true,
+			renders: [
+				/* `stat-value` trägt die Statusfarben-Muster dieser Seite
+				   (text-secondary-strong, text-warning-strong, text-accent-strong,
+				   text-info-strong) — ohne Zahlen dahinter ist der Scan blind. */
+				{ what: 'Kennzahlen', selector: '.stat-value', min: 5 },
+				/* Über die Kopfzeile selektiert und nicht über eine Klasse: die
+				   Seite hat mehrere Tabellen, und `table` vs. `table-zebra` ist
+				   Gestaltung, die sich ändern darf. Zwei Zeilen sind das Minimum,
+				   damit die Entwicklungs-Spalte überhaupt rechnet — bei einem
+				   einzigen Jahr bleibt sie leer. */
+				{
+					what: 'Jahreszeilen im Trend (mehrjährige Daten)',
+					selector: 'table:has(thead th:text-is("Jahr")) tbody tr',
+					min: 2
+				},
+				{
+					what: 'Zeilen in der Artenverteilung',
+					selector: 'table:has(thead th:text-is("Art")) tbody tr',
+					min: 2
+				}
+			]
+		},
 		/* /admin/docs hat nur ein +page.ts und keinen Server-Load — die einzige
 		   Admin-Route, die ohne Datenbank vollständig rendert. */
 		{ path: '/admin/docs', auth: true, needsDb: false },
@@ -331,30 +432,28 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 	   die SvelteKit-Fehlerseite liefern ein DOM, in dem keine einzige verbotene
 	   Kombination steht — die Prüfung meldete dann grün, ohne je die Seite
 	   gesehen zu haben, um die es geht. */
-	const openRoute = async (
-		{
-			page,
-			context,
-			request,
-			baseURL
-		}: {
-			page: Page;
-			context: BrowserContext;
-			request: APIRequestContext;
-			baseURL: string | undefined;
-		},
-		route: (typeof ROUTES)[number]
-	) => {
-		/* Der E2E-Job in ci.yml startet keinen Postgres (`cp .env.example .env`,
-		   kein services:-Block). Datengetriebene Admin-Seiten sind dort nicht
-		   prüfbar. Das ausdrücklich zu überspringen ist ehrlicher als ein Scan
-		   über eine Fehlerseite — und es steht im Report, statt still grün zu
-		   sein. Wer die Routen auch in CI abdecken will, hängt einen
-		   Postgres-Service in den Job; dann greift dieser Zweig nicht mehr. */
+	const openRoute = async ({ page, context, request, baseURL }: ScanFixtures, route: ScanRoute) => {
+		/* Seit dem 2026-07-30 fährt der E2E-Job einen Postgres-Service samt
+		   Migrationen und Seed (ci.yml, Job `e2e`). Dieser Zweig ist damit **nur
+		   noch** der lokale Komfortpfad für einen Lauf ohne `npm run db:start`.
+
+		   In CI ist er ausdrücklich ein Fehler und kein Skip: Ein übersprungener
+		   Test in CI ist kein Test, und übersprungen wären ausgerechnet die zwei
+		   datenreichsten Seiten — Datentabelle, Statusbadges, `stat-value`,
+		   Paginierung. Dass die vier übrigen Routen sauber sind, sagt darüber
+		   nichts. */
 		if (route.needsDb && !(await databaseAvailable(request))) {
+			if (process.env.CI) {
+				throw new Error(
+					`${route.path} braucht eine Datenbank, und /api/map/sightings antwortet nicht. ` +
+						'In CI ist das ein Fehler: Der `e2e`-Job startet einen Postgres-Service, wendet die ' +
+						'Migrationen an und legt Testdaten an (ci.yml). Schlägt die Sonde hier fehl, ist einer ' +
+						'dieser Schritte kaputt — nicht die Route.'
+				);
+			}
 			test.skip(
 				true,
-				`${route.path} braucht eine Datenbank, und /api/map/sightings antwortet nicht — CI fährt E2E ohne Postgres. Die Route bleibt ungeprüft.`
+				`${route.path} braucht eine Datenbank, und /api/map/sightings antwortet nicht. Lokal: npm run db:start && npm run db:push. In CI wäre das ein harter Fehler.`
 			);
 		}
 
@@ -397,6 +496,41 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 		}
 	};
 
+	/* Trennt Ernten von Bewerten: Der Browser gibt nur Klassenlisten heraus,
+	   gefiltert wird in Node mit den Regeln aus `helpers/bannedClasses.ts` — also
+	   mit demselben Code, den `bannedClasses.test.ts` an konstruierten Beispielen
+	   prüft. Vorher stand je Regel ein Regex-Literal in einem eigenen
+	   `page.evaluate()`; drei Kopien einer Grenzbedingung sind drei Orte, an denen
+	   sie schiefgehen kann. */
+	const harvestClasses = (page: Page): Promise<ScannedElement[]> =>
+		page.evaluate(() =>
+			[...document.querySelectorAll('[class]')].map((el) => ({
+				tag: el.tagName.toLowerCase(),
+				/* getAttribute('class'), NICHT el.className: bei SVG-Elementen ist
+				   className ein SVGAnimatedString, das als "[object SVGAnimatedString]"
+				   stringifiziert — der Scan würde ausgerechnet die Icons verfehlen, für
+				   die die Statusfarben-Regel gedacht ist (Icon.svelte rendert
+				   <svg class="…">). */
+				classes: el.getAttribute('class') ?? '',
+				hasText: (el.textContent ?? '').trim().length > 0
+			}))
+		);
+
+	const scanRoute = async (fixtures: ScanFixtures, route: ScanRoute): Promise<ScannedElement[]> => {
+		await openRoute(fixtures, route);
+
+		for (const probe of route.renders ?? []) {
+			expect(
+				await fixtures.page.locator(probe.selector).count(),
+				`${route.path} rendert keine ${probe.what} (mindestens ${probe.min} erwartet, Selektor: ${probe.selector}). ` +
+					'Der Scan hätte damit ein DOM ohne verbotene Kombination gemessen und wäre grün geworden, ohne die Seite gesehen zu haben. ' +
+					'Prüfe den Seed (npm run db:seed:e2e) und den Server-Load der Route.'
+			).toBeGreaterThanOrEqual(probe.min);
+		}
+
+		return harvestClasses(fixtures.page);
+	};
+
 	for (const route of ROUTES) {
 		test(`${route.path}: keine Statusfarbe als Textfarbe`, async ({
 			page,
@@ -404,23 +538,8 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 			request,
 			baseURL
 		}) => {
-			await openRoute({ page, context, request, baseURL }, route);
-			const offenders = await page.evaluate(() => {
-				/* getAttribute('class'), NICHT el.className: bei SVG-Elementen ist
-				   className ein SVGAnimatedString, das als "[object SVGAnimatedString]"
-				   stringifiziert — der Scan würde ausgerechnet die Icons verfehlen, für
-				   die diese Regel gedacht ist (Icon.svelte rendert <svg class="…">). */
-				const cls = (el: Element) => el.getAttribute('class') ?? '';
-				const banned = /(^|\s)text-(info|success|warning|secondary|accent)(\s|$)/;
-				return [...document.querySelectorAll('[class]')]
-					.filter((el) => banned.test(cls(el)))
-					.map((el) => `${el.tagName.toLowerCase()}.${cls(el)}`)
-					.slice(0, 20);
-			});
-			expect(
-				offenders,
-				'Flächen-Statusfarben als Vordergrund verwenden — stattdessen text-*-strong'
-			).toEqual([]);
+			const elements = await scanRoute({ page, context, request, baseURL }, route);
+			expect(findOffenders(STATUS_AS_FOREGROUND, elements), STATUS_AS_FOREGROUND.hint).toEqual([]);
 		});
 
 		test(`${route.path}: keine Textfarbe unter Deckkraft /60`, async ({
@@ -429,16 +548,8 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 			request,
 			baseURL
 		}) => {
-			await openRoute({ page, context, request, baseURL }, route);
-			const offenders = await page.evaluate(() => {
-				const cls = (el: Element) => el.getAttribute('class') ?? '';
-				const banned = /(^|\s)(text-base-content\/(40|50)|opacity-(40|50))(\s|$)/;
-				return [...document.querySelectorAll('[class]')]
-					.filter((el) => banned.test(cls(el)) && (el.textContent ?? '').trim().length > 0)
-					.map((el) => `${el.tagName.toLowerCase()}.${cls(el)}`)
-					.slice(0, 20);
-			});
-			expect(offenders, '/40 und /50 sind dekorativ, nicht für Text').toEqual([]);
+			const elements = await scanRoute({ page, context, request, baseURL }, route);
+			expect(findOffenders(BELOW_OPACITY_FLOOR, elements), BELOW_OPACITY_FLOOR.hint).toEqual([]);
 		});
 
 		test(`${route.path}: keine Tailwind-Paletten-Farben`, async ({
@@ -447,17 +558,8 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 			request,
 			baseURL
 		}) => {
-			await openRoute({ page, context, request, baseURL }, route);
-			const offenders = await page.evaluate(() => {
-				const cls = (el: Element) => el.getAttribute('class') ?? '';
-				const banned =
-					/(^|\s)(bg|text|border)-(gray|slate|zinc|red|green|blue|yellow|amber|emerald|sky|indigo|orange)-\d{2,3}(\s|$)/;
-				return [...document.querySelectorAll('[class]')]
-					.filter((el) => banned.test(cls(el)))
-					.map((el) => `${el.tagName.toLowerCase()}.${cls(el)}`)
-					.slice(0, 20);
-			});
-			expect(offenders, 'Theme-Tokens statt Tailwind-Palette (daisyui.md)').toEqual([]);
+			const elements = await scanRoute({ page, context, request, baseURL }, route);
+			expect(findOffenders(TAILWIND_PALETTE, elements), TAILWIND_PALETTE.hint).toEqual([]);
 		});
 	}
 });

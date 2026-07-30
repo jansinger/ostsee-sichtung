@@ -76,7 +76,23 @@ export default defineConfig({
 				test: {
 					name: 'server',
 					environment: 'node',
-					include: ['src/**/*.{test,spec}.{js,ts}', 'legacy-inbox/**/*.test.js'],
+					/* `e2e/helpers/` steht hier bewusst mit — und bewusst nur dieses
+					   Unterverzeichnis. Die Scan-Regeln aus `bannedClasses.ts` sind
+					   reine Funktionen über Klassennamen und gehören damit in
+					   `test:quick`, nicht erst in einen Playwright-Shard. Ein
+					   breiteres `e2e/**` würde dagegen die Playwright-Specs
+					   einsammeln (`e2e/basic.test.ts`, `e2e/homepage.test.ts`), die
+					   `@playwright/test` als Runner brauchen und unter Vitest
+					   scheitern. */
+					include: [
+						'src/**/*.{test,spec}.{js,ts}',
+						'e2e/helpers/*.{test,spec}.{js,ts}',
+						'legacy-inbox/**/*.test.js'
+					],
+					// Das node_modules-Muster muss explizit mit: Ein eigenes `exclude`
+					// ersetzt Vitests Default. Ohne den Eintrag würde das
+					// `legacy-inbox/**`-Include Testdateien aus den Abhängigkeiten
+					// einsammeln, sobald dort jemand `npm install` ausführt.
 					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', '**/node_modules/**'],
 					setupFiles: ['./vitest-setup-server.ts'],
 					// Force UTC timezone for consistent date/time tests across environments

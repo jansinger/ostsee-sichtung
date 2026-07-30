@@ -29,7 +29,12 @@
 		<div class="bg-base-100 mb-4 rounded-lg p-4">
 			<div class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
 				<div class="flex items-start gap-3">
-					<Icon icon="lucide:check-circle" width="20" height="20" class="text-success-strong mt-0.5" />
+					<Icon
+						icon="lucide:check-circle"
+						width="20"
+						height="20"
+						class="text-success-strong mt-0.5"
+					/>
 					<div>
 						<p class="font-medium">Öffentliche Wissenschaftsdaten</p>
 						<p class="text-base-content/70 text-xs">
@@ -55,6 +60,19 @@
 			<p class="text-primary/70 mt-2 text-xs">
 				<strong>Ohne diese Zustimmung kann Ihre Sichtung nicht gespeichert werden.</strong>
 				Sie können diese Zustimmung jederzeit per E-Mail an datenschutz@meeresmuseum.de widerrufen.
+				<!--
+					Art. 13 DSGVO verlangt die Datenschutzhinweise dort, wo die Daten erhoben
+					werden. Bis 2026-07-30 stand die Erklärung nur als externer Link auf
+					/about — an der Einwilligung selbst, also an der Erhebungsstelle, fehlte
+					sie.
+				-->
+				Einzelheiten zur Verarbeitung stehen in der
+				<a
+					href="https://www.deutsches-meeresmuseum.de/datenschutz"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="link">Datenschutzerklärung</a
+				>.
 			</p>
 		</div>
 	</div>

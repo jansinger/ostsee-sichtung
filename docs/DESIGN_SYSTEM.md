@@ -273,7 +273,7 @@ Datenfarben müssen über Theme-Änderungen hinweg stabil bleiben.
 ## Prüfung
 
 ```bash
-npm run test:quick                              # Lint, Types, svelte-check, Unit
+npm run test:quick                              # Lint, Types, svelte-check, Unit (inkl. Scan-Regeln)
 npx playwright test e2e/design-tokens.spec.ts   # Token-Kontraste + DOM-Scan
 npx playwright test e2e/form-a11y.spec.ts       # Fokus, Alerts, error-Buttons
 ```
@@ -282,26 +282,115 @@ npx playwright test e2e/form-a11y.spec.ts       # Fokus, Alerts, error-Buttons
 `/styleguide` (dort steht jede Kombination genau einmal), die App gegen
 verbotene Kombinationen (Statusfarbe als Vordergrund, Deckkraft unter /60,
 Tailwind-Paletten-Klassen) und die **Vollständigkeit von `/styleguide`** selbst.
-
-Der DOM-Scan deckt seit dem 2026-07-29 auch `/admin`, `/admin/statistics`,
-`/admin/docs` und `/admin/settings` ab. Die Session dafür stellt
-`e2e/helpers/adminSession.ts` selbst aus — mit `SESSION_SECRET` signiert, ohne
-Auth0. Die Begründung steht dort ausführlich; kurz: Auth0 erklärt die
-Universal-Login-Routen als nicht für Automation gedacht, und ein
-ROPG-Token konsumiert diese App nirgends, weil ihre Session ein
-selbstsigniertes JWT ist. Zwei Wächter verhindern, dass der Scan eine
-Ausweichseite misst und grün meldet: Umleitung zu Auth0 und 401/403 sind harte
-Fehler mit eigener Meldung.
-
-**Teilabdeckung in CI, bewusst:** Der E2E-Job in `ci.yml` startet keinen
-Postgres (`cp .env.example .env`, kein `services:`-Block). `/admin` und
-`/admin/statistics` antworten dort mit 5xx und werden **ausdrücklich
-übersprungen** — sichtbar im Report, nicht still grün. `/admin/docs` und
-`/admin/settings` laufen auch ohne Datenbank. Wer die zwei fehlenden Routen in
-CI abdecken will, braucht einen Postgres-Service im `e2e`-Job; lokal sind alle
-vier grün.
 Gemessen wird im Browser, weil `oklch()` und `color-mix(in oklab, …)` erst nach
 dem Gamut-Mapping nach sRGB als Kontrastwert lesbar sind.
+
+### Die drei Scan-Regeln liegen in Node, nicht im Browser
+
+Seit dem 2026-07-30 stehen sie als reine Funktionen in
+`e2e/helpers/bannedClasses.ts`; der Browser gibt nur noch Klassenlisten heraus,
+gefiltert wird in Node. Das hat einen Grund, der über Aufräumen hinausgeht: Ein
+Scan über einen konformen Bestand belegt nichts über die Regel. Genau daran ist
+die Deckkraft-Lücke unten monatelang unentdeckt geblieben — sie war grün, weil
+der Code sauber war, nicht weil die Regel griff.
+
+`e2e/helpers/bannedClasses.test.ts` stellt deshalb jede Regel an konstruierten
+Beispielen scharf und läuft in `npm run test:quick` mit. Die Gegenprobe dazu ist
+gefahren: Nimmt man das Deckkraft-Suffix aus dem Statusfarben-Muster, fallen
+2 von 46 Fällen; ersetzt man den Schwellenvergleich wieder durch die Aufzählung
+`(40|50)`, fallen 5; nimmt man `white|black` aus dem Paletten-Muster, fallen 9.
+
+### Die zweite Lücke derselben Regel: `white` und `black`
+
+Beim Schließen der Deckkraft-Lücke fiel eine zweite auf, gleicher Bauart. Das
+Paletten-Muster verlangte hinter dem Farbnamen eine Farbstufe (`-\d{2,3}`) —
+`bg-white`, `text-white`, `bg-black` und ihre Deckkraft-Varianten tragen keine
+und konnten deshalb **strukturell** nie gemeldet werden. Nicht eine vergessene
+Farbe in der Aufzählung, sondern die Form des Musters: dieselbe Fehlerklasse wie
+das fehlende Suffix.
+
+Im Bestand standen 27 Fundstellen. Bewertet wurde jede einzeln, mit drei
+Ausgängen:
+
+| Fall                                         | Antwort                             | Beispiel                                       |
+| -------------------------------------------- | ----------------------------------- | ---------------------------------------------- |
+| Helle Fläche (Codeblock, Logo-Platte, Karte) | `bg-base-100`                       | Lizenztext auf `/about`, DMM-Platte auf `/map` |
+| Dunkle Vollton-Fläche (helles Logo darauf)   | `bg-neutral`/`text-neutral-content` | Auth0-Panel auf `/about` (Logo ist `#FFFEFA`)  |
+| Schleier über fremdem Inhalt                 | `bg-scrim/<n>`/`text-on-scrim`      | Modal-Backdrops, Foto- und Video-Overlays      |
+
+Der dritte Fall war der Grund, warum die Lücke plausibel aussah: Für „dunkle
+etwas anderes" gab es wirklich kein Token. Statt daraus eine Ausnahme in der
+Regel zu machen — über die Klassenliste allein ohnehin nicht entscheidbar, weil
+der Scan nicht sieht, was unter einem Element liegt — hat das Theme jetzt eines
+(`--scrim-surface` in `src/css/tokens.css`). Die Regel bleibt damit ausnahmslos.
+
+**Echte Fehler steckten darunter.** Der auffälligste: In `MediaThumbnail.svelte`
+lag ein `bg-black/20` nicht über einem Foto, sondern über `bg-base-200`. Das
+weiße Icon darauf erreichte 2,27:1 und verfehlte WCAG 1.4.11 (3:1). Steht jetzt
+auf `/60` (7,34:1).
+
+Der erste Anlauf hat daraus die falsche Regel abgeleitet — „bei bekanntem
+Untergrund ist der Kontrast ausrechenbar, über fremdem Inhalt nicht". Das stimmt
+für den _tatsächlichen_ Kontrast, aber nicht für den **schlechtesten Fall**: Ein
+Foto, das an der Stelle des Icons reinweiß ist, ist genauso ausrechenbar. Weiß
+auf `/40` über Weiß sind 2,85:1, auf `/30` sogar 2,11:1 — drei weitere Overlays
+(Foto- und Artfoto-Lupe, Upload-Spinner) lagen damit ebenfalls unter 3:1. Alle
+Schleier, die selbst einen Vordergrund tragen, stehen jetzt auf `/60` (5,74:1
+über Weiß); reine Backdrops ohne eigenen Vordergrund bleiben leichter. Die
+Untergrenze steht als Regel in `.claude/rules/design-system.md`.
+
+Die Reihenfolge war dabei nicht beliebig: Erst die 27 Fundstellen bewerten, dann
+die Regel schärfen. Andersherum wäre der Scan über mehrere Routen rot gewesen,
+bevor überhaupt entschieden war, was an jeder Stelle richtig ist — und der
+schnellste Weg zurück auf grün wäre das Aufweichen der Regel gewesen.
+
+### Vollabdeckung in CI seit dem 2026-07-30
+
+Der DOM-Scan deckt `/`, `/map`, `/about` sowie `/admin`, `/admin/statistics`,
+`/admin/docs` und `/admin/settings` ab — **alle sieben auch in CI**. Der
+`e2e`-Job in `ci.yml` fährt dafür einen `postgis/postgis:18-3.6`-Service (dasselbe
+Image wie `docker-compose.yml`; PostGIS ist nötig, weil `sichtungen.location` eine
+`geometry(point)`-Spalte ist), wendet die committeten Migrationen an und legt über
+`npm run db:seed:e2e` 60 Sichtungen an.
+
+Die 60 sind keine runde Zahl, sondern drei Schwellen: > 50 (`defaultPageSize`) für
+eine **bedienbare** Paginierung, > 1 Zeile für die Zebra-Streifen, ≥ 2 Kalenderjahre
+für die Spalte „Entwicklung" der Jahrestrend-Tabelle. Der Seed ist über
+`kommentar_intern = 'e2e-seed'` idempotent und mit `npm run db:seed:e2e:purge`
+wieder entfernbar — die lokale Datenbank ist laut `docs/WORKTREES.md` über alle
+Worktrees geteilt.
+
+**Vorher war die Aufteilung die schlechtestmögliche:** Übersprungen wurden genau
+die zwei datenreichen Seiten — Datentabelle, Statusbadges, `stat-value`,
+Paginierung. Dass die vier übrigen Routen sauber sind, sagte darüber nichts.
+Nebeneffekt: rund 50 s Wartezeit im Smoke-Shard, weil die DB-Verbindungen in
+Timeouts liefen.
+
+**Der Skip-Pfad steht noch, aber nur lokal.** Wer ohne `npm run db:start` fährt,
+bekommt für die vier DB-Routen einen sichtbaren Skip. **In CI ist derselbe Fall ein
+harter Fehler** (`if (process.env.CI) throw`): Ein übersprungener Test in CI ist
+kein Test.
+
+**Drei Wächter gegen „vakuum-grün".** Eine leere Tabelle liefert ein DOM ohne eine
+einzige verbotene Kombination — der Scan wäre grün, ohne die Seite gesehen zu
+haben, genau wie bei einem Auth0-Redirect oder einer 403-Seite. Deshalb:
+
+| Wächter                   | Fehlerfall, den er abfängt                                   |
+| ------------------------- | ------------------------------------------------------------ |
+| Umleitung ≠ eigene Origin | Session-Cookie nicht akzeptiert (SESSION_SECRET/COOKIE_NAME) |
+| Status 401/403            | Cookie gilt, aber `roles` reicht nicht für `requireUserRole` |
+| `renders`-Sonden          | Seite antwortet 200 und rendert trotzdem nichts              |
+
+Die Sonden prüfen Mindestzahlen, nicht bloß Status < 500: ≥ 10 Tabellenzeilen und
+ein **bedienbares** „Nächste Seite" auf `/admin`; ≥ 5 `stat-value`, ≥ 2 Jahreszeilen
+und ≥ 2 Zeilen Artenverteilung auf `/admin/statistics`. Nachgestellt: Ruft man
+`/admin` mit einem Filter ohne Treffer auf, sind alle drei Klassen-Scans grün und
+nur die Sonde rot.
+
+Die Session stellt `e2e/helpers/adminSession.ts` selbst aus — mit `SESSION_SECRET`
+signiert, ohne Auth0. Die Begründung steht dort ausführlich; kurz: Auth0 erklärt die
+Universal-Login-Routen als nicht für Automation gedacht, und ein ROPG-Token
+konsumiert diese App nirgends, weil ihre Session ein selbstsigniertes JWT ist.
 
 Die dritte Gruppe hängt an einer Eigenschaft der Seite, die man ihr nicht
 ansieht: Sie ist Schaufenster **und** Lieferbedingung. Tailwind erzeugt eine
@@ -455,13 +544,54 @@ gelesen werden müssen, hier also zu Recht nicht.
 **Ein echter Fund fiel bei der Gegenprüfung an, außerhalb des Admin-Bereichs:**
 `text-success/80` in
 `src/lib/report/components/form/fields/DropzoneEnhanced.svelte:628` (GPS-Koordinaten
-auf `bg-success/10`) — inzwischen auf `text-base-content/70` korrigiert. Der
-DOM-Scan in `e2e/design-tokens.spec.ts` hatte sie nicht gemeldet: Seine Regex
-verlangt hinter dem Farbnamen Leerzeichen oder Zeilenende, ein
-Deckkraft-Suffix wie `/80` schiebt sich dazwischen. Die Lücke ist bekannt und
-absichtlich nicht im Rahmen dieses PR geschlossen worden.
+auf `bg-success/10`) — inzwischen auf `text-base-content/70` korrigiert.
+
+**Die Lücke, die ihn verdeckte, ist seit dem 2026-07-30 zu.** Sie war keine
+Randnotiz: Die alte Regex verlangte hinter dem Farbnamen Leerzeichen oder
+Zeilenende, und ein Deckkraft-Suffix schiebt sich dazwischen. `text-success` misst
+auf `base-100` 3,81:1, mit `/80` weniger — eine Statusfarbe mit Deckkraft auf einem
+Tint derselben Farbe ist die Fehlerklasse, für die die `*-content`-Regel überhaupt
+existiert, nur eine Ebene tiefer.
+
+Alle drei Regeln in `e2e/helpers/bannedClasses.ts` fangen das Suffix jetzt mit.
+Statt die Wortgrenzen um ein optionales `/<zahl>` zu erweitern, splittet der Scan
+die Klassenliste an Weißraum und prüft jede Klasse gegen ein **verankertes** Muster
+(`^text-success(/\d+)?$`). Das ist gleichwertig, hat aber kein
+Überlappungsproblem bei zwei Treffern in einer Liste, benennt in der Meldung die
+konkrete Klasse — und `-strong`/`-content` fallen durch die Verankerung heraus statt
+durch ein nachgeschaltetes `grep -v`, an dem die Liste oben gescheitert ist.
+
+Bei der Deckkraft-Regel wurde dabei aus der Aufzählung `(40|50)` ein
+**Schwellenvergleich gegen /60**. Die alte Fassung hätte ein `/30` oder `/25`
+genauso durchgelassen wie das `/80`.
+
+**`fill-` und `stroke-` sind seit dem 2026-07-30 mit im Muster.** Die Regel oben
+verlangt das `-strong` hinter allen drei Präfixen, das Muster kannte nur `text-`.
+Die Lücke stand hier als bekannt notiert, mit der Begründung „im Bestand gibt es
+derzeit keine solche Fundstelle" — dasselbe Argument, das `bannedClasses.ts` bei der
+Paletten-Regel ausdrücklich verwirft, wo zehn Farbtöne ohne Fundstelle ergänzt
+wurden. Eine Regel, die nur die Schreibweisen kennt, die schon jemand benutzt hat,
+meldet die erste neue nicht. Erreichbar ist der Fall auch: `Icon.svelte` rendert
+`<svg class="…">`, und der Scan liest `class` per `getAttribute` — ein `fill-warning`
+an einem Icon landet also im gescannten Bestand und trägt dieselben 2,74:1 wie
+`text-warning`, verfehlt damit auch die 3:1 aus WCAG 1.4.11 für grafische Objekte.
+Der Scan über die sieben Routen bleibt dabei grün: die einzigen `stroke-`-Klassen im
+Bestand sind zwei `stroke-current`, und die enthalten keinen Farbnamen.
+
+Was die Regeln weiterhin **nicht** sehen: `hover:`-Varianten — der Scan liest den
+Ruhezustand.
+
+**Beim Aufräumen einer Fundstelle gilt:** Erst prüfen, ob die Farbe dort Bedeutung
+trägt. Ein dekoratives Icon oder ein Zierelement gehört auf `base-content/70` —
+nicht mechanisch auf `-strong`. So wurden die vier Trennpunkte in der Danksagung
+auf `/about` behandelt, die der erweiterte Scan als Erstes gemeldet hat: `opacity-30`
+→ `text-base-content/70` **plus** `aria-hidden="true"`, weil Screenreader dort
+bisher „Svelte Team Bullet Tailwind Labs Bullet …" vorlasen.
 
 ### Reproduktion
+
+Verbindlich sind die Regeln in `e2e/helpers/bannedClasses.ts` — die `grep`-Befehle
+unten sind der schnelle Blick von Hand, nicht die Prüfung.
 
 ```bash
 # Statusfarbe als Vordergrund ohne -strong.
@@ -474,8 +604,9 @@ grep -rnE '\b(text|fill|stroke)-(secondary|accent|info|success|warning)(/[0-9]+)
 grep -rnoE '\b(text|fill|stroke)-(secondary|accent|info|success|warning)(/[0-9]+)?(-strong|-content)?' \
   src/routes/admin src/lib/components/admin | grep -vE '(-strong|-content)$'
 
-# Deckkraft unter /60 auf Text (Treffer einzeln ansehen: dekorative Flächen
-# und Icons ohne Textinhalt sind zulässig)
-grep -rnE '\btext-base-content/(40|50)\b|\bopacity-(40|50)\b' \
+# Deckkraft unter /60 auf Text — jeder Wert darunter, nicht nur 40 und 50.
+# Treffer einzeln ansehen: dekorative Flächen und Icons ohne Textinhalt sind
+# zulässig (die /60-Untergrenze gilt für Zeichen, die gelesen werden müssen).
+grep -rnE '\btext-base-content/([1-5]?[0-9])\b|\bopacity-([1-5]?[0-9])\b' \
   src/routes/admin src/lib/components/admin
 ```

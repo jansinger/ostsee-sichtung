@@ -11,7 +11,7 @@
  */
 
 import {
-	GERMAN_ERROR_MESSAGES,
+	LEGACY_API_MESSAGES,
 	createOriginalApiErrorResponse,
 	createSimpleErrorResponse
 } from '$lib/legacy-api/error-messages.js';
@@ -69,7 +69,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
 						{ error: jsonError, ip: clientIp },
 						'Failed to parse request body as JSON or form data'
 					);
-					const errorResponse = createSimpleErrorResponse(GERMAN_ERROR_MESSAGES.NO_DATA_SEND);
+					const errorResponse = createSimpleErrorResponse(LEGACY_API_MESSAGES.NO_DATA_SEND);
 					return json(errorResponse, { status: 200 });
 				}
 			}
@@ -79,7 +79,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
 				requestData = await event.request.json();
 			} catch (parseError) {
 				logger.warn({ error: parseError, ip: clientIp }, 'Failed to parse JSON request body');
-				const errorResponse = createSimpleErrorResponse(GERMAN_ERROR_MESSAGES.NO_DATA_SEND);
+				const errorResponse = createSimpleErrorResponse(LEGACY_API_MESSAGES.NO_DATA_SEND);
 				return json(errorResponse, { status: 200 });
 			}
 		}

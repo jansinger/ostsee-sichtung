@@ -170,6 +170,44 @@ export const saveSighting = async (
 
 ---
 
+## `ostsee` und `ostsee_geo` — die Namen sind vertauscht
+
+Zwei Spalten in `sichtungen` bedeuten scheinbar dasselbe. Sie tun es nicht, und ihre
+Namen legen die Bedeutungen **verkehrt herum** nahe:
+
+| Spalte       | Drizzle          | Prüfung                                           |
+| ------------ | ---------------- | ------------------------------------------------- |
+| `ostsee`     | `inBalticSea`    | exaktes Ostsee-Polygon — **streng**               |
+| `ostsee_geo` | `inBalticSeaGeo` | Bounding Box `BALTIC_SEA_BBOX` — **schwach**       |
+
+Das „geo" sitzt an der _groben_ Prüfung. Deren Rechteck umfasst Jütland, Schonen,
+Nordostdeutschland, Polen und das Baltikum. Die Kanten stehen in
+`BALTIC_SEA_BBOX` (`$lib/utils/geo/checkBalticSea`) und werden seit dem
+2026-07-30 aus der Geometrie abgeleitet — hier bewusst keine Zahlen, sie würden
+veralten.
+Fachliche Aussagen („liegt in der Ostsee") gehören deshalb ausschließlich auf
+`ostsee`.
+
+`ostsee_geo` ist `integer` und hat **drei** Werte: `0` = keine Position im
+Kartenbereich, `1` = drin, `2` = drin (nur Altsystem, 15.208 Zeilen, endet
+2025-11-09). Der Unterschied zwischen 1 und 2 ist aus den Daten nicht
+rekonstruierbar. **Immer `> 0` prüfen, nie `= 1`** — sonst fallen 79 % des
+Bestands lautlos heraus, genau so ist die entfernte `geographicStats`-Abfrage
+entstanden.
+
+Diese Erläuterung steht hier und **nicht als Kommentar an den Spalten**: Der
+CI-Job `migration-check` verlangt bei jeder Änderung an `schema.ts` eine
+Migration unter `drizzle/` — rein pfadbasiert, auch bei reinen Kommentaren, für
+die `db:generate` erwartungsgemäß „No schema changes" meldet. Diese Regeldatei
+lädt über `paths` bei jeder Datei unter `src/lib/server/db/**` und ist damit beim
+Bearbeiten des Schemas ohnehin im Kontext.
+
+Vollständige Referenz mit Messwerten und verworfenen Hypothesen zur `2`:
+`docs/OSTSEE_FLAGS.md`. Die Geometrie-Bereinigung vom 2026-07-30 samt Migration:
+`docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
+
+---
+
 ## Prüfstatus in Auswertungen — immer explizit
 
 Der Prüfstatus selbst ist in `.claude/rules/api.md` geregelt: **genau zwei Zustände**

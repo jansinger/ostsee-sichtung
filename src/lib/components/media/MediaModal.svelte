@@ -308,8 +308,9 @@
 		</div>
 	</div>
 
-	<!-- Backdrop -->
-	<form method="dialog" class="modal-backdrop bg-black/60 backdrop-blur-sm">
+	<!-- Backdrop. Schleier über der Seite dahinter, kein Theme-Ton: bg-scrim/<n>
+	     (--scrim-surface in tokens.css). -->
+	<form method="dialog" class="modal-backdrop bg-scrim/60 backdrop-blur-sm">
 		<button onclick={onClose} aria-label="Modal schließen">Schließen</button>
 	</form>
 </dialog>

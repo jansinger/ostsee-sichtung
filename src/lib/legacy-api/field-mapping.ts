@@ -19,6 +19,36 @@ import { createId } from '@paralleldrive/cuid2';
 import type { LegacySightingRequest } from './types.js';
 
 /**
+ * „Wurde das Feld überhaupt übermittelt?"
+ *
+ * Legacy-Clients dürfen Formulardaten schicken; der Endpunkt baut daraus
+ * `Object.fromEntries(formData.entries())`, also **Strings**. Eine aktiv
+ * gemeldete `0` (bzw. `'0'`) ist ein echter Wert und muss von „nicht
+ * übermittelt" (`undefined`/`null`/`''`) unterscheidbar bleiben — genau
+ * diese Grenze ziehen alle drei Helfer unten gemeinsam.
+ */
+function isLegacyValuePresent<T extends number | string>(value: T | undefined | null): value is T {
+	return value !== undefined && value !== null && value !== '';
+}
+
+/**
+ * Prüft ein Legacy-0/1-Feld auf „gesetzt".
+ *
+ * String-tolerant: `!!'0'` wäre `true` — deshalb wird numerisch verglichen.
+ */
+function isLegacyFlagSet(value: number | string | undefined | null): boolean {
+	return isLegacyValuePresent(value) && Number(value) === 1;
+}
+
+/**
+ * Prüft ein Legacy-Zahlenfeld auf exakt 0 — ebenfalls string-tolerant,
+ * weil `'0' === 0` in TypeScript false ist.
+ */
+function isLegacyZero(value: number | string | undefined | null): boolean {
+	return isLegacyValuePresent(value) && Number(value) === 0;
+}
+
+/**
  * Maps legacy API request to current SightingFormData format
  *
  * @param legacyData - Legacy API request data
@@ -42,6 +72,7 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		lastName: legacyData.name, // Note: "name" in legacy API, not "nachname"
 		email: legacyData.email,
 		phone: legacyData.telefon || '',
+		fax: legacyData.fax || '',
 		street: legacyData.strasse || '',
 		zipCode: legacyData.plz || '',
 		city: legacyData.ort || '',
@@ -84,7 +115,18 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		// Media and observations
 		mediaFile: legacyData.aufnahme || '',
 		mediaUpload: legacyData.aufnahmeHochladen ? true : false,
-		otherObservations: legacyData.sonstige_auffälligkeiten || '',
+		// Die Spezifikation nennt das Feld `sonstige_auffaelligkeiten` (mit `ae`);
+		// diese Implementierung las bis 2026-07-30 nur die Umlaut-Variante und
+		// verwarf den Freitext spec-konformer Clients kommentarlos.
+		//
+		// Beide Schreibweisen werden gelesen. Unter zwei **gefüllten** Werten
+		// gewinnt der Vertragsname; ein leerer Vertragsname verdrängt dagegen
+		// keinen vorhandenen Umlaut-Text. Deshalb `||` und nicht `??`: Ein
+		// Serializer, der abwesende Felder als `""` ausgibt, würde mit `??` den
+		// vorhandenen Text verwerfen — genau der stille Datenverlust, den diese
+		// Änderung behebt. Festgenagelt in field-mapping.test.ts.
+		otherObservations:
+			legacyData.sonstige_auffaelligkeiten || legacyData.sonstige_auffälligkeiten || '',
 		notes: legacyData.bemerkungen || '',
 
 		// Consent flags (convert 0/1 to boolean)
@@ -93,13 +135,13 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		privacyConsent: legacyData.datenschutzEinverstaendnis ? true : false,
 
 		// Death finding detection and fields
-		// `totfund` (Spec: "Death finding, Boolean, 0 = false, 1 = true") ist der
-		// explizite Weg, einen Totfund zu melden. Die Altkonvention
-		// `anzahl_gesamt === 0` bleibt zusätzlich gültig — der neue iOS-Client
-		// (OstSeeTiere/8) sendet `totfund: 1` zusammen mit einem `anzahl_gesamt`
-		// > 0 (beobachtet: 1, 2, 3, 7), das darf nicht als lebende Sichtung
-		// durchgehen.
-		isDead: !!legacyData.totfund || legacyData.anzahl_gesamt === 0,
+		//
+		// Die Spec kennt zwei Wege zum Totfund: das eigene 0/1-Feld `totfund` und
+		// die Regel „`anzahl_gesamt = 0` wird als Totfund interpretiert". Bis
+		// 2026-07-30 wurde nur der Zähler ausgewertet — ein explizites
+		// `totfund: 1` bei `anzahl_gesamt > 0` verschwand. Der neu angebundene
+		// iOS-Client (OstSeeTiere/8) sendet genau das (beobachtet: 1, 2, 3, 7).
+		isDead: isLegacyFlagSet(legacyData.totfund) || isLegacyZero(legacyData.anzahl_gesamt),
 		deadSize: legacyData.totfund_groesse || undefined,
 		deadCondition: legacyData.totfund_zustand || 0,
 		deadSex: legacyData.totfund_geschlecht || 0,
@@ -147,8 +189,8 @@ const ENGLISH_TO_GERMAN_WIND_DIRECTION: Record<string, GermanWindDirection> = {
  * Abkürzungen werden übersetzt. Alles andere — inklusive fehlender Angabe —
  * wird zu `''`, wie bisher.
  */
-function normalizeWindDirection(value: string | undefined): GermanWindDirection {
-	if (!value) {
+function normalizeWindDirection(value: string | undefined | null): GermanWindDirection {
+	if (!isLegacyValuePresent(value)) {
 		return '';
 	}
 	const normalized = ENGLISH_TO_GERMAN_WIND_DIRECTION[value] ?? value;
@@ -161,10 +203,11 @@ function normalizeWindDirection(value: string | undefined): GermanWindDirection 
  * Wandelt `windstaerke` in eine Zahl um, ohne eine aktiv gemeldete `0`
  * (Windstille, ein reales Beaufort-Maß) mit „nicht übermittelt" zu verwechseln.
  * `undefined`/`null`/`''` bleiben `undefined`; alles andere — Zahl oder String,
- * je nach JSON- oder Formular-Encoding — wird zur Zahl.
+ * je nach JSON- oder Formular-Encoding — wird zur Zahl. Dieselbe Grenze wie
+ * bei `isLegacyFlagSet`/`isLegacyZero`, deshalb derselbe Helfer.
  */
 function parseWindForce(value: number | string | undefined | null): number | undefined {
-	if (value === undefined || value === null || value === '') {
+	if (!isLegacyValuePresent(value)) {
 		return undefined;
 	}
 	const parsed = Number(value);

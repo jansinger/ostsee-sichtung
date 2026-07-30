@@ -63,6 +63,34 @@
 	     beides: Fläche (weiß darauf 7,20) und Vordergrund (6,05 / 5,01). */
 	--status-accent-strong: oklch(0.475 0.047 215); /* #3c636d  5,52 / 4,57 */
 
+	/* Overlay-Schleier. Kein Markenton, und das ist der Punkt: Ein Schleier ist
+	   keine Fläche, sondern eine ABDUNKLUNG von etwas Fremdem — einem Foto, einem
+	   Videobild, der Kartenkachel, der Seite hinter einem Modal. Jede Farbe mit
+	   Chroma verschiebt dabei den Farbton dessen, was darunter liegt; ein
+	   blaustichiger Schleier macht aus einem Schweinswalfoto ein blaustichiges
+	   Schweinswalfoto. Neutrales Schwarz ist der einzige Ton, der nur die
+	   Helligkeit senkt.
+
+	   Deshalb steht der Wert hier und nicht als `bg-black/40` in neun
+	   Komponenten: „das Theme kennt keine Abdunklung" war jahrelang die
+	   Begründung dafür, an dieser einen Stelle an der Palette vorbeizugreifen —
+	   und damit die Lücke, durch die auch echte Fehler durchrutschten
+	   (`bg-black/20` über `bg-base-200` in MediaThumbnail: weißes Icon auf
+	   2,27:1). Mit einem Token gibt es die Ausnahme nicht mehr, und die
+	   Scan-Regel in `e2e/helpers/bannedClasses.ts` kann `black`/`white`
+	   ausnahmslos verbieten.
+
+	   Die Deckkraft bleibt an der Aufrufstelle (`bg-scrim/40`): sie hängt davon
+	   ab, wie viel vom Untergrund noch lesbar sein soll, und ist damit
+	   Komponentensache — anders als der Farbton. */
+	--scrim-surface: oklch(0 0 0);
+	/* Vordergrund AUF einem Schleier. Bewusst nicht `--color-scrim-content`:
+	   `*-content` gehört laut design-system.md ausschließlich auf Vollton-
+	   Flächen, und ein Schleier ist per Definition durchscheinend. Der Name
+	   `text-on-scrim` sagt an der Aufrufstelle dasselbe, ohne die Konvention zu
+	   verwässern, gegen die die `*-content`-Regel steht. */
+	--scrim-foreground: oklch(1 0 0);
+
 	/* ── Ebene 2: semantische Tokens ────────────────────────────────────── */
 
 	/* Vordergrund-Statusfarben. In Komponenten als text-info-strong,
@@ -75,6 +103,11 @@
 	   --brand-sea-400 (#42626a). Gemessen 5,54 / 4,58. */
 	--color-secondary-strong: var(--brand-sea-400);
 	--color-accent-strong: var(--status-accent-strong);
+
+	/* Schleier und sein Vordergrund. In Komponenten als bg-scrim/<n> und
+	   text-on-scrim verfügbar (siehe @theme-Block in app.css). */
+	--color-scrim: var(--scrim-surface);
+	--color-on-scrim: var(--scrim-foreground);
 
 	/* Typografie — sechs Rollen. Keine freien text-*-Utilities mehr für
 	   Fließtext und Überschriften.

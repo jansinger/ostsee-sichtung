@@ -38,7 +38,9 @@
 	/* Touch-Target min. 44x44px (WCAG 2.5.5) — Desktop und Mobile identisch */
 	height: 44px !important;
 	width: 44px !important;
-	font-size: 20px !important;
+	/* Symbolgröße, nicht Trefferfläche: die 44x44px oben bleiben unangetastet
+	   (WCAG 2.5.5), nur das Glyph wird ruhiger. */
+	font-size: 16px !important;
 	display: flex !important;
 	align-items: center !important;
 	justify-content: center !important;
@@ -48,31 +50,24 @@
 	background-color: var(--color-base-100) !important;
 }
 
-/* OpenLayers Control Grundeinstellungen */
+/* OpenLayers Control Grundeinstellungen
+   Kein eigener Hintergrund und kein Padding: die Buttons sind selbst schon
+   deckend, eine zusätzliche Platte darunter ergibt den „Pille auf Pille"-Effekt,
+   der die Controls schwerer wirken lässt als sie sind. */
 .ol-control {
-	background-color: color-mix(in oklab, var(--color-base-100) 40%, transparent);
-	border-radius: 4px;
-	padding: 2px;
-}
-
-.ol-control button {
-	background-color: var(--color-primary);
-	color: var(--color-primary-content);
-	border: none;
-	display: inline-block;
-	font-size: 14px;
-	line-height: 1.375em;
-	text-align: center;
-	cursor: pointer;
+	background-color: transparent;
 	padding: 0;
-	width: 1.375em;
-	height: 1.375em;
-	border-radius: 2px;
 }
 
-.ol-control button:hover {
-	background-color: color-mix(in oklab, var(--color-primary) 85%, var(--color-base-content));
-}
+/* Bewusst KEINE generische `.ol-control button`-Regel.
+   Sie stammte aus der Zeit, in der ol.css nach dieser Datei geladen wurde und
+   deshalb ohnehin gewann — wirkungslos und daher unbemerkt. Ihr Entfernen ändert
+   nichts: ol.css setzt auf `.ol-control button` dieselben `width/height: 1.375em`,
+   die Maße gehen also unverändert an OpenLayers zurück. Und das einzige Control
+   ohne eigene Regel unten, der Attribution-Umschalter, ist hier ohnehin nie
+   sichtbar (OL setzt `.ol-uncollapsible`, gemessen 0x0 bei 1280px und 375px).
+   Die Regel weg zu lassen ist damit reine Aufräumarbeit — jedes echte Control
+   bringt seine Regel unten selbst mit. */
 
 /* Zoom All Control */
 /* top: 11rem — ol-zoom (top 4.5rem) + zwei 44px-Buttons + Control-Padding, damit
@@ -92,7 +87,9 @@
 	height: 44px !important;
 	width: 44px !important;
 	font-weight: bold !important;
-	font-size: 20px !important;
+	/* Symbolgröße, nicht Trefferfläche: die 44x44px oben bleiben unangetastet
+	   (WCAG 2.5.5), nur das Glyph wird ruhiger. */
+	font-size: 16px !important;
 	box-shadow: var(--shadow-raised) !important;
 	margin: 2px !important;
 	display: flex !important;
@@ -121,7 +118,9 @@
 	height: 44px !important;
 	width: 44px !important;
 	font-weight: bold !important;
-	font-size: 20px !important;
+	/* Symbolgröße, nicht Trefferfläche: die 44x44px oben bleiben unangetastet
+	   (WCAG 2.5.5), nur das Glyph wird ruhiger. */
+	font-size: 16px !important;
 	box-shadow: var(--shadow-raised) !important;
 	margin: 2px !important;
 	display: flex !important;

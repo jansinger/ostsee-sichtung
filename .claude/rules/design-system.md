@@ -75,9 +75,21 @@ Gemessen auf `base-100` (Rechnung wie in `daisyui.md`, im Browser nach sRGB):
 
 **Gegenprobe:** Steht die Farbe hinter `text-`, `fill-` oder `stroke-`, muss `-strong` dranhängen. Steht sie hinter `bg-`, `btn-`, `badge-` oder `alert-`, darf sie es nicht.
 
-Die über 60 Verstöße des Altbestands sind mit PR 4/4 (#620) abgearbeitet; seither ist die Gruppe „verbotene Kombinationen im DOM" in `e2e/design-tokens.spec.ts` ein **aktiver Guard** und kein `fixme` mehr. Sie fährt `/`, `/map`, `/about` sowie vier Admin-Routen (Session über `e2e/helpers/adminSession.ts`, ohne Auth0 — Begründung dort). Eine neue Fundstelle gehört an der Aufrufstelle behoben — nicht durch Aufweichen der Regex.
+Die über 60 Verstöße des Altbestands sind mit PR 4/4 (#620) abgearbeitet; seither ist die Gruppe „verbotene Kombinationen im DOM" in `e2e/design-tokens.spec.ts` ein **aktiver Guard** und kein `fixme` mehr. Sie fährt `/`, `/map`, `/about` sowie vier Admin-Routen (Session über `e2e/helpers/adminSession.ts`, ohne Auth0 — Begründung dort) — seit dem 2026-07-30 **alle sieben auch in CI**, gegen einen Postgres-Service mit Seed. Eine neue Fundstelle gehört an der Aufrufstelle behoben — nicht durch Aufweichen der Regel.
 
-**Was der Scan nicht sieht:** Seine Regex verlangt hinter dem Farbnamen ein Leerzeichen oder das Zeilenende. Ein Deckkraft-Suffix schiebt sich dazwischen, `text-success/80` rutscht also durch (real gefunden in `DropzoneEnhanced.svelte`). Und `hover:`-Zustände tauchen in `getComputedStyle` im Ruhezustand ohnehin nicht auf. Beim Prüfen per `grep` gilt außerdem: **`grep -o` schneidet das `-strong`-Suffix aus der Ausgabezeile**, ein nachgeschaltetes `grep -v -- -strong` filtert dann ins Leere und meldet jede korrekte Verwendung als Verstoß — so entstand die inzwischen korrigierte „32 Fundstellen"-Liste in `docs/DESIGN_SYSTEM.md`.
+**Die Regeln stehen in `e2e/helpers/bannedClasses.ts`,** nicht als Regex-Literale im Spec, und sind über `bannedClasses.test.ts` an konstruierten Beispielen abgesichert (läuft in `npm run test:quick`). Der Grund: Ein Scan über einen konformen Bestand belegt nichts über die Regel — genau daran ist die Deckkraft-Lücke unentdeckt geblieben.
+
+**Deckkraft-Suffixe werden mitgefangen** (seit 2026-07-30). `text-success/80` ist ein Verstoß wie `text-success`, und `bg-red-500/50` einer wie `bg-red-500`. Die Deckkraft-Regel vergleicht gegen die Schwelle /60 statt gegen die Literale 40 und 50 — ein `/30` auf Text ist damit ebenfalls ein Verstoß.
+
+**`white` und `black` ebenfalls** (seit 2026-07-30). `bg-white`, `text-white`, `bg-black` und deren Deckkraft-Varianten umgehen das Theme genauso vollständig wie `bg-gray-100`, wurden von der Paletten-Regel aber strukturell nie erfasst: Sie tragen keine Farbstufe, und das Muster verlangte hinter dem Farbnamen eine Ziffernfolge. Es ist dieselbe Fehlerklasse wie beim Deckkraft-Suffix — die Lücke saß in der Grammatik des Musters, nicht in der Aufzählung der Farben. Der Ersatz ist je nach Fall `bg-base-100`, `bg-neutral`/`text-neutral-content` oder `bg-scrim/<n>`/`text-on-scrim` (siehe „Schleier über fremdem Inhalt" unten).
+
+**`fill-` und `stroke-` ebenfalls** (seit 2026-07-30). Die Gegenprobe oben verlangt das `-strong` hinter allen drei Präfixen; im Muster stand nur `text-`. Notiert war das als bekannte Lücke, begründet mit „im Bestand gibt es derzeit keine solche Fundstelle" — dasselbe Argument, das `bannedClasses.ts` bei der Paletten-Regel ausdrücklich verwirft, wo zehn Farbtöne ohne Fundstelle ergänzt wurden. Erreichbar ist der Fall auch: `Icon.svelte` rendert `<svg class="…">`, und der Scan liest `class` per `getAttribute`. Ein SVG, das seine Fläche über `fill-` bezieht, trägt dabei genau das Kontrastproblem, um das es hier geht — `fill-warning` misst dieselben 2,74:1 und verfehlt damit auch die 3:1 aus WCAG 1.4.11. `stroke-current` und `fill-none` schlagen nicht an: sie enthalten keinen Farbnamen aus der Liste.
+
+**Was der Scan nicht sieht:** `hover:`-Zustände — er liest den Ruhezustand. Dafür gilt die Regel „`text-error` nicht auf `base-300`" unten.
+
+**Beim Beheben nicht mechanisch ersetzen:** Erst prüfen, ob die Farbe an der Stelle Bedeutung trägt. Dekorative Icons und Zierelemente gehören auf `base-content/70` — nicht auf eine Statusfarbe mit `-strong`. Trägt ein Zeichen gar keine Bedeutung (Trennpunkt, Zierglyphe), gehört zusätzlich `aria-hidden="true"` daran; Beispiel: die Danksagungs-Trennpunkte in `src/routes/about/+page.svelte`.
+
+Beim Prüfen per `grep` gilt außerdem: **`grep -o` schneidet das `-strong`-Suffix aus der Ausgabezeile**, ein nachgeschaltetes `grep -v -- -strong` filtert dann ins Leere und meldet jede korrekte Verwendung als Verstoß — so entstand die inzwischen korrigierte „32 Fundstellen"-Liste in `docs/DESIGN_SYSTEM.md`. Die Regeln im Scan umgehen das, indem sie die Klassenliste splitten und jede Klasse gegen ein verankertes Muster prüfen.
 
 ---
 
@@ -156,7 +168,7 @@ gerechnet — die Differenz beträgt hier bis zu 0,08):
 | /50   | **3,54 ❌** | **3,39 ❌** | **3,23 ❌** |
 | /40   | **2,64 ❌** | **2,56 ❌** | **2,46 ❌** |
 
-**Regel:** `/60` ist die Untergrenze für Text, und nur auf `base-100` und `base-200`. `/40` und `/50` (bzw. `opacity-40`/`opacity-50`) sind ausschließlich für dekorative Flächen — nie für Zeichen, die gelesen werden müssen.
+**Regel:** `/60` ist die Untergrenze für Text, und nur auf `base-100` und `base-200`. **Jeder Wert darunter** — `/50`, `/40`, `/30`, … bzw. das entsprechende `opacity-*` — ist ausschließlich für dekorative Flächen und für Zeichen ohne Bedeutung; nie für etwas, das gelesen werden muss. Der Scan prüft das als Schwelle und nicht als Aufzählung (`e2e/helpers/bannedClasses.ts`), damit `/30` nicht durchrutscht wie früher.
 
 Sekundärtext gehört auf `/70`, nicht auf `/60`: Hilfetexte werden im Feld gelesen, bei Sonnenlicht an Deck, und dort ist der reale Kontrast deutlich niedriger als der gemessene.
 
@@ -344,6 +356,8 @@ Vor der Nutzung einer Utility prüfen, ob sie im Setup überhaupt existiert.
 - Neue eigene Utility (`text-*-strong`, `shadow-raised`, `text-support`, …) heißt: Eintrag im `@theme`-Block von `app.css`. Ein Token, das nur in `src/css/tokens.css` steht, ist eine CSS-Variable — **keine** Utility-Klasse. Fehlt der `@theme`-Eintrag, ist `class="text-warning-strong"` genau so tot wie `animate-in`.
 - **Und ein Feld auf `/styleguide`.** Tailwind erzeugt eine Utility nur, wenn ihr Name als vollständiger String im gescannten Quelltext steht — sieben der dreizehn eigenen Utilities haben ihre einzige Aufrufstelle auf dieser Seite. Ein dort gelöschtes Farbfeld nimmt die Klasse still aus dem Build. Abgesichert durch `e2e/design-tokens.spec.ts` → „Utilities haben einen Vertreter auf /styleguide": Der Test liest die Tokens aus `tokens.css` und verlangt für jeden ein Element mit der zugehörigen Klasse.
 
+  **`bg-scrim` und `text-on-scrim` stehen bewusst außerhalb dieser Gruppe.** Der Wächter zielt auf Utilities, deren einzige Aufrufstelle `/styleguide` ist — dort nimmt ein gelöschtes Farbfeld die Klasse still aus dem Build. Die Schleier-Utilities haben zehn Aufrufstellen in Komponenten; sie können nicht versehentlich verschwinden. Ein `UTILITY_GROUPS`-Eintrag würde außerdem ein Element mit dem unverdünnten `bg-scrim` auf der Seite erzwingen — eine Klasse, die es sonst nirgends gibt, nur damit ein Test grün wird. Wer den Schleier später auf `/styleguide` zeigen will (die Deckkraft-Tabelle oben wäre der Ort), kann die Gruppe nachziehen.
+
 ---
 
 ## Randbereiche: wo Hex-Werte erlaubt sind
@@ -357,6 +371,46 @@ Drei Bereiche dürfen Hex-Werte enthalten — aber jeweils nur an **einer** Stel
 | E-Mail-Templates  | Clients kennen `oklch()`/`color-mix()` nicht       | `src/lib/server/templates/emailTokens.ts` |
 
 Überall sonst gilt weiterhin: keine Hex-Werte, keine Tailwind-Paletten-Farben (`daisyui.md`). Abgesichert durch den DOM-Scan in `e2e/design-tokens.spec.ts`.
+
+**Der Overlay-Schleier ist bewusst _kein_ vierter Eintrag.** Er sah lange nach einem aus: `bg-black/50` hinter einem Medien-Modal ließ sich mit „das Theme kennt keine Abdunklung" begründen, und das stimmte sogar. Nur ist eine Abdunklung kein Fall, den ein Canvas oder ein E-Mail-Client erzwingt — sie war schlicht nie modelliert. Seit dem 2026-07-30 gibt es dafür ein Token (`--scrim-surface` → `bg-scrim/<n>`, `text-on-scrim`, siehe unten). Damit ist der Bereich kein Randbereich mehr, sondern normale Token-Nutzung, und die Paletten-Regel im Scan bleibt ausnahmslos.
+
+---
+
+## Schleier über fremdem Inhalt: `bg-scrim/<n>`
+
+Ein Schleier verdunkelt etwas, das die App nicht kennt — ein hochgeladenes Foto, ein Videobild, eine Kartenkachel, die Seite hinter einem Modal. Er ist damit **keine Fläche des Themes**, sondern eine Abschwächung dessen, was darunter liegt.
+
+```svelte
+<!-- ❌ FALSCH — umgeht das Theme, seit 2026-07-30 vom Scan gemeldet -->
+<div class="bg-black/40"><Icon icon="lucide:eye" class="text-white" /></div>
+
+<!-- ✅ RICHTIG -->
+<div class="bg-scrim/40"><Icon icon="lucide:eye" class="text-on-scrim" /></div>
+```
+
+Drei Punkte, die dabei regelmäßig verwechselt werden:
+
+- **Der Farbton gehört ins Token, die Deckkraft an die Aufrufstelle.** `--scrim-surface` ist neutrales Schwarz und **kein** Markenton: jede Farbe mit Chroma verschiebt den Farbton des Fotos darunter. Wie viel durchscheinen soll, hängt dagegen vom Bild ab und bleibt Komponentensache.
+- **`text-on-scrim`, nicht `*-content`.** Ein Schleier ist per Definition durchscheinend; `*-content` gilt laut der Regel ganz oben ausschließlich auf Vollton-Flächen. Der eigene Name hält beide Konventionen sauber getrennt.
+- **Ein Schleier ist nicht dasselbe wie eine Fläche, die zufällig hell oder dunkel sein muss.** Braucht ein Element eine helle Fläche (Logo-Platte, Codeblock), ist das `bg-base-100`; braucht es eine dunkle (weißes Logo darauf), ist das `bg-neutral` mit `text-neutral-content`. Nur wenn fremder Inhalt _durchscheinen_ soll, ist es ein Schleier.
+
+**Ein Schleier über einer bekannten Theme-Fläche ist ein Verdachtsfall, kein Schleier.** Genau daran hing der auffälligste Fehler des Bestands: In `MediaThumbnail.svelte` lag ein `bg-black/20` nicht über einem Foto, sondern über `bg-base-200` — das weiße Icon darauf erreichte 2,27:1 und verfehlte WCAG 1.4.11 (3:1). Ist der Untergrund bekannt, ist der Kontrast ausrechenbar und gehört ausgerechnet (dort jetzt `/60` = 7,34:1).
+
+### Trägt der Schleier einen Vordergrund, ist `/60` die Untergrenze
+
+Über fremdem Inhalt ist der Kontrast nicht bestimmt — aber sein **schlechtester Fall** ist es sehr wohl: ein Foto, das an der Stelle des Icons reinweiß ist. Weiß auf einem schwarzen Schleier über Weiß, gerechnet:
+
+| Schleier | Kontrast (weißer Vordergrund über weißem Bild) | WCAG 1.4.11 (3:1) |
+| -------- | ---------------------------------------------- | ----------------- |
+| `/20`    | 1,61:1                                         | ❌                |
+| `/30`    | 2,11:1                                         | ❌                |
+| `/40`    | 2,85:1                                         | ❌                |
+| `/50`    | 3,98:1                                         | ✅                |
+| `/60`    | **5,74:1**                                     | ✅                |
+
+**Regel:** Sobald auf dem Schleier selbst etwas Sichtbares liegt — Icon, Spinner, Text — gilt `bg-scrim/60` als Untergrenze. `/60` und nicht das gerade noch ausreichende `/50`, aus demselben Grund wie bei der Deckkraft-Untergrenze für Text: Der Wert soll nicht auf der Schwelle balancieren.
+
+Ausgenommen sind Schleier **ohne** eigenen Vordergrund. Ein reiner Modal-Backdrop (`MediaModal`, `DeleteDialog`, das Hilfe-Overlay in `SightingsMapView`) und ein inhaltsloser Hover-Hinweis (`MediaThumbnail`, Video-Zweig, `/20`) dürfen leichter sein — was dort gelesen werden muss, steht auf einer eigenen `bg-base-100`-Fläche darüber, nicht auf dem Schleier.
 
 ---
 

@@ -11,6 +11,30 @@
 			<a href="/about" class="link link-hover text-sm sm:text-base">Über uns</a>
 			<a href="/docs" class="link link-hover text-sm sm:text-base">Dokumentation</a>
 			<a href="/map" class="link link-hover text-sm sm:text-base">Sichtungskarte</a>
+			<!--
+				Anbieterkennzeichnung nach § 5 DDG und Datenschutzhinweis nach Art. 13 DSGVO.
+				Beides fehlte bis 2026-07-30 vollständig: es gab weder eine Route noch einen
+				Link, und unter eigener Domain deckt die iframe-Einbettung auf
+				meeresmuseum.de die Pflicht nicht ab.
+
+				Verlinkt werden bewusst die Seiten des Betreibers (Deutsches Meeresmuseum)
+				statt einer eigenen Kopie — eine zweite, separat zu pflegende Fassung
+				derselben Rechtstexte würde nur auseinanderlaufen. „Ständig verfügbar" ist
+				gegeben, weil dieser Footer auf jeder Seite steht; im iframe-Modus ist er
+				ausgeblendet, dort trägt die einbettende Seite ihre eigene Kennzeichnung.
+			-->
+			<a
+				href="https://www.deutsches-meeresmuseum.de/impressum"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="link link-hover text-sm sm:text-base">Impressum</a
+			>
+			<a
+				href="https://www.deutsches-meeresmuseum.de/datenschutz"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="link link-hover text-sm sm:text-base">Datenschutz</a
+			>
 		</nav>
 
 		<!-- External Links - Stack on Mobile, Inline on Desktop -->

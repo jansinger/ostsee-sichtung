@@ -1,9 +1,9 @@
 /**
  * @fileoverview Yup-based validation for Legacy REST API
- * 
+ *
  * Uses the existing Yup schema with German error messages for consistent
  * validation across frontend forms and legacy API endpoints.
- * 
+ *
  * @author Ostsee-Tiere Team
  * @since 1.10.0
  */
@@ -21,27 +21,24 @@ export const legacyApiSchema = yup.object().shape({
 	sichtungsdatum: yup
 		.string()
 		.required('Bitte geben Sie ein gültiges Datum an.')
-		.matches(
-			/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/,
-			'Bitte geben Sie ein gültiges Datum an.'
-		),
-	
+		.matches(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/, 'Bitte geben Sie ein gültiges Datum an.'),
+
 	vorname: yup
 		.string()
-		.required('Der Vorname darf nicht länger als 64 Zeichen sein.')
+		.required('Dieses Feld kann nicht leer gelassen werden.')
 		.max(64, 'Der Vorname darf nicht länger als 64 Zeichen sein.'),
-	
+
 	name: yup
 		.string()
-		.required('Der Name darf nicht länger als 64 Zeichen sein.')
+		.required('Dieses Feld kann nicht leer gelassen werden.')
 		.max(64, 'Der Name darf nicht länger als 64 Zeichen sein.'),
-	
+
 	email: yup
 		.string()
 		.required('Bitte geben Sie eine gültige E-Mail-Adresse ein.')
 		.email('Bitte geben Sie eine gültige E-Mail-Adresse ein.')
 		.max(64, 'Bitte geben Sie eine gültige E-Mail-Adresse ein.'),
-	
+
 	anzahl_gesamt: yup
 		.number()
 		.transform((value) => (isNaN(value) ? undefined : value))
@@ -57,7 +54,7 @@ export const legacyApiSchema = yup.object().shape({
 		.max(90, 'Der Breitengrad muss zwischen -90 und 90 liegen.')
 		.nullable()
 		.optional(),
-	
+
 	gps_laenge: yup
 		.number()
 		.transform((value) => (isNaN(value) ? undefined : value))
@@ -81,6 +78,9 @@ export const legacyApiSchema = yup.object().shape({
 	verhalten: yup.number().nullable().optional(),
 	verhalten_text: yup.string().nullable().optional(),
 	reaktion: yup.string().nullable().optional(),
+	// Vertragsname (mit `ae`) plus die historische Umlaut-Schreibweise dieser
+	// Implementierung — beide bleiben gültig, siehe field-mapping.ts.
+	sonstige_auffaelligkeiten: yup.string().nullable().optional(),
 	sonstige_auffälligkeiten: yup.string().nullable().optional(),
 	seegang: yup.number().nullable().optional(),
 	windrichtung: yup.string().nullable().optional(),
@@ -121,7 +121,7 @@ export async function validateLegacySightingWithYup(
 	} catch (error) {
 		if (error instanceof yup.ValidationError) {
 			const errors: Record<string, string[]> = {};
-			
+
 			error.inner.forEach((err) => {
 				if (err.path) {
 					if (!errors[err.path]) {
@@ -130,10 +130,10 @@ export async function validateLegacySightingWithYup(
 					errors[err.path]!.push(err.message);
 				}
 			});
-			
+
 			return { isValid: false, errors };
 		}
-		
+
 		// Unknown error
 		return {
 			isValid: false,
@@ -145,11 +145,9 @@ export async function validateLegacySightingWithYup(
 /**
  * Creates a legacy error response using Yup validation results
  */
-export function createLegacyErrorFromYup(
-	validationResult: { isValid: boolean; errors: Record<string, string[]> }
-): ReturnType<typeof createOriginalApiErrorResponse> {
-	return createOriginalApiErrorResponse(
-		'Validation failed.',
-		validationResult.errors
-	);
+export function createLegacyErrorFromYup(validationResult: {
+	isValid: boolean;
+	errors: Record<string, string[]>;
+}): ReturnType<typeof createOriginalApiErrorResponse> {
+	return createOriginalApiErrorResponse('Validation failed.', validationResult.errors);
 }

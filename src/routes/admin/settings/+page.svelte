@@ -5,6 +5,7 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { untrack } from 'svelte';
 	import CleanupPanel from './CleanupPanel.svelte';
+	import { ACTIVE_CONFIG_KEYS, getConfigLabel } from './configLabels';
 
 	const logger = createLogger('admin:settings');
 
@@ -44,38 +45,9 @@
 		mobile: 'Mobile App-spezifische Einstellungen'
 	};
 
-	// Define which settings are currently implemented and should be shown
-	const activeConfigKeys = new Set([
-		// Email settings - fully implemented
-		'notification.email.enabled',
-		'notification.email.recipient',
-		'notification.email.sender',
-		'notification.email.senderName',
-		'notification.email.template',
-		'email.smtp.host',
-		'email.smtp.port',
-		'email.smtp.secure',
-		'email.smtp.user',
-		'email.smtp.password',
-
-		// Display settings - implemented
-		'display.maintenanceMode',
-		'display.maintenanceMessage',
-		'display.maxSightingsPerPage',
-
-		// Security settings - partially implemented
-		'security.maxFileSize',
-		'security.allowedFileTypes'
-
-		// Note: Other settings are planned but not yet actively used:
-		// - Most data processing settings (duplicate check, auto-approve, etc.)
-		// - Integration settings (weather API, geocoding, webhooks)
-		// - Advanced display settings (date format)
-		// - Mobile app settings
-		// - Advanced security settings
-		// Karten-Defaults stehen hier bewusst nicht mehr: Zentrum, Zoom und
-		// Tile-Quelle sind in src/lib/map/optimizedMapController.ts fest verdrahtet.
-	]);
+	// Labels und die Liste der wirksamen Einstellungen liegen in configLabels.ts —
+	// dort sind sie durch configLabels.test.ts gegen die Vorbelegungen abgeglichen.
+	const activeConfigKeys = ACTIVE_CONFIG_KEYS;
 
 	// Filter configurations to only show active ones
 	function filterActiveConfigs(
@@ -455,7 +427,7 @@
 									<div class="flex-1">
 										<div class="flex items-center gap-2">
 											<div class="text-base-content text-sm font-semibold">
-												{config.key}
+												{getConfigLabel(config.key)}
 											</div>
 											{#if changedConfigs.has(config.key)}
 												<span class="badge badge-warning badge-sm">Geändert</span>
@@ -468,6 +440,10 @@
 										{#if config.description}
 											<p class="text-base-content/70 mt-1 text-sm">{config.description}</p>
 										{/if}
+										<!-- Der technische Schlüssel bleibt sichtbar, nur nicht mehr als
+										     Überschrift: er wird für Support-Rückfragen und beim Abgleich
+										     mit .env / Logs gebraucht. -->
+										<p class="text-base-content/70 text-support mt-1 font-mono">{config.key}</p>
 									</div>
 
 									{#if changedConfigs.has(config.key)}

@@ -151,7 +151,7 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 				aufnahmeHochladen: 1, // PDF: Boolean as 0/1
 				verhalten: 3, // PDF: Integer-Range 0-3
 				reaktion: 'Animals approached boat',
-				sonstige_auffälligkeiten: 'Perfect weather conditions',
+				sonstige_auffaelligkeiten: 'Perfect weather conditions', // PDF: field name uses "ae", not "ä"
 				seegang: 2, // PDF: Integer-Range 0-5
 				windrichtung: 'SO', // PDF: Must include 'SO'
 				windstaerke: '3', // PDF: String format 1-12
@@ -181,8 +181,29 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 					shipNameConsent: false,
 					mediaUpload: true,
 					mediaFile: 'photo123.jpg',
-					windDirection: 'SO' // Critical: Must support 'SO'
+					windDirection: 'SO', // Critical: Must support 'SO'
+					otherObservations: 'Perfect weather conditions'
 				})
+			);
+		});
+
+		it('should also accept the historic umlaut spelling of sonstige_auffaelligkeiten', async () => {
+			// Die Implementierung las bis 2026-07-30 nur `sonstige_auffälligkeiten`.
+			// Beide Schreibweisen bleiben gültig, damit weder spec-konforme noch
+			// bereits vorhandene Clients ihren Freitext verlieren.
+			const event = createMockRequestEvent({
+				sichtungsdatum: '2024-03-15 12:00',
+				anzahl_gesamt: 1,
+				vorname: 'Umlaut',
+				name: 'Test',
+				email: 'umlaut@example.com',
+				sonstige_auffälligkeiten: 'Auffälliges Verhalten'
+			} as LegacySightingRequest);
+			const response = await POST(event);
+
+			expect(response.status).toBe(201);
+			expect(mockSave).toHaveBeenCalledWith(
+				expect.objectContaining({ otherObservations: 'Auffälliges Verhalten' })
 			);
 		});
 
@@ -227,10 +248,16 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 			expect(response.status).toBe(400);
 			const responseData = await response.json();
 
-			// PDF compliance: Error response format (nested message structure)
-			expect(responseData).toHaveProperty('message');
-			expect(responseData.message).toHaveProperty('message');
-			expect(responseData.message.message).toContain('failed');
+			// PDF compliance: flache Fehlerform aus dem Abschnitt „Bei
+			// Validierungsfehlern" — `message` ist ein String, `errors` liegt
+			// daneben. Eine geschachtelte `message.message`-Struktur wäre für
+			// Clients, die `message` als Text lesen, ein Objekt.
+			expect(responseData.message).toBe('Validation failed.');
+			expect(responseData.errors).toEqual(
+				expect.objectContaining({
+					anzahl_gesamt: expect.arrayContaining([expect.any(String)])
+				})
+			);
 		});
 
 		it('should validate PDF datetime format strictly', async () => {
@@ -247,7 +274,8 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 
 			expect(response.status).toBe(400);
 			const responseData = await response.json();
-			expect(responseData.message.message).toContain('failed');
+			expect(responseData.message).toBe('Validation failed.');
+			expect(responseData.errors).toHaveProperty('sichtungsdatum');
 		});
 
 		it('should validate coordinate ranges as per PDF', async () => {
@@ -317,6 +345,29 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 			});
 			const response = await POST(event);
 			expect(response.status).toBe(201);
+		});
+	});
+
+	describe('PDF Compliance - Unparsable Body', () => {
+		it('should answer an unparsable JSON body with 200 and a flat "No data send." message', async () => {
+			// Dieser Pfad ist keine PDF-Zusage, sondern Verhalten dieser
+			// Implementierung (Status 200, nicht 400). Er wird hier festgenagelt,
+			// weil `static/openapi.yml` ihn seit 2026-07-30 als 200-Response
+			// dokumentiert — und weil `message` dabei ein String sein muss.
+			const event = {
+				request: {
+					json: () => Promise.reject(new SyntaxError('Unexpected token')),
+					headers: {
+						get: (name: string) => (name === 'content-type' ? 'application/json' : null)
+					}
+				},
+				getClientAddress: () => '127.0.0.1'
+			} as unknown as RequestEvent;
+
+			const response = await POST(event);
+
+			expect(response.status).toBe(200);
+			expect(await response.json()).toEqual({ message: 'No data send.' });
 		});
 	});
 

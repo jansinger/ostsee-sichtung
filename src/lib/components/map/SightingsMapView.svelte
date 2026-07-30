@@ -24,8 +24,12 @@
 	} from '$lib/map/urlFilterState';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
-	import 'ol/ol.css';
+	// Kein `import 'ol/ol.css'` hier: die Datei kommt global aus app.css, und zwar
+	// bewusst VOR mapStyles.css. Ein zweiter Import aus einer Komponente hängt
+	// ol.css erneut hinter die Projekt-Overrides und macht sie wirkungslos —
+	// genau so ist die Titel-Überlappung des Zoom-Controls entstanden.
 	import LoadingOverlay from './LoadingOverlay.svelte';
+	import StatusBlock from '$lib/components/StatusBlock.svelte';
 	import FilterPanel from './Panel/FilterPanel.svelte';
 	import LegendPanel from './Panel/LegendPanel.svelte';
 	import SightingsListView from './SightingsListView.svelte';
@@ -167,6 +171,27 @@
 			(activeFilters.hiddenSpecies?.length ?? 0) > 0 ||
 			(activeFilters.hiddenColors?.length ?? 0) > 0
 	);
+
+	/**
+	 * Darstellung der Filter-Chips (UX-Review 2026-07-30: „zu präsent, zu viel
+	 * Platz oben").
+	 *
+	 * Die 44px Trefferfläche bleiben — `min-h-11` ist WCAG 2.5.5 und nicht
+	 * verhandelbar. Zurückgenommen wird ausschließlich das Gewicht: halbtransparent
+	 * und mit `backdrop-blur` wie der Kartentitel statt deckendem `bg-base-100`,
+	 * `shadow-lg` entfällt, Beschriftung auf `text-support` in normaler Schriftstärke.
+	 *
+	 * Der eigentliche Platzfresser war aber nicht das Gewicht, sondern der Umbruch:
+	 * mit `flex-wrap` wuchs das Band bei mehreren aktiven Filtern auf zwei bis drei
+	 * 44px-Reihen und verdeckte die Karte. Eine Zeile mit horizontalem Scroll
+	 * begrenzt es auf konstant eine Reihe, unabhängig von der Anzahl der Filter.
+	 *
+	 * Der Klassenname steht absichtlich als vollständiges Literal hier: Tailwind
+	 * erkennt nur komplette Strings im Quelltext (siehe .claude/rules/daisyui.md).
+	 */
+	const chipClass =
+		'btn btn-sm border-base-300 bg-base-100/80 text-support min-h-11 shrink-0 gap-1 font-normal backdrop-blur-md';
+
 	// URL-Schreiben erst nach applyUrlFilters() freischalten — die Zwischen-
 	// stände des Initial-Loads würden die geteilten Params sonst wegkürzen.
 	let urlSyncEnabled = false;
@@ -656,14 +681,14 @@
 	     genau diesen Filter; „Alle zurücksetzen" stellt den Grundzustand her. -->
 	{#if hasActiveFilters}
 		<div
-			class="absolute top-16 left-1/2 z-30 flex w-max max-w-[92vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2"
+			class="scroll-styled absolute top-16 left-1/2 z-30 flex w-max max-w-[92vw] -translate-x-1/2 flex-nowrap items-center justify-start gap-1.5 overflow-x-auto px-1 pb-1"
 			role="group"
 			aria-label="Aktive Filter"
 		>
 			{#if activeFilters.year !== undefined}
 				<button
 					type="button"
-					class="btn btn-sm bg-base-100 min-h-11 gap-1 shadow-lg"
+					class={chipClass}
 					onclick={() => switchToYear(apiDefaultYear)}
 					aria-label="Filter Jahr {activeFilters.year} entfernen und zum Standard-Jahr {apiDefaultYear} wechseln"
 				>
@@ -674,7 +699,7 @@
 			{#if activeFilters.query !== undefined}
 				<button
 					type="button"
-					class="btn btn-sm bg-base-100 min-h-11 max-w-56 gap-1 shadow-lg"
+					class="{chipClass} max-w-56"
 					onclick={clearSearchFilter}
 					aria-label="Suchfilter {activeFilters.query} entfernen"
 				>
@@ -685,7 +710,7 @@
 			{#if activeFilters.from !== undefined && activeFilters.to !== undefined}
 				<button
 					type="button"
-					class="btn btn-sm bg-base-100 min-h-11 gap-1 shadow-lg"
+					class={chipClass}
 					onclick={resetTimeFilter}
 					aria-label="Zeitraum-Filter entfernen und volles Jahr anzeigen"
 				>
@@ -696,7 +721,7 @@
 			{#each activeFilters.hiddenSpecies ?? [] as speciesId (speciesId)}
 				<button
 					type="button"
-					class="btn btn-sm bg-base-100 min-h-11 gap-1 shadow-lg"
+					class={chipClass}
 					onclick={() => showSpecies(speciesId)}
 					aria-label="{speciesLabel(speciesId)} wieder anzeigen"
 				>
@@ -707,7 +732,7 @@
 			{#each activeFilters.hiddenColors ?? [] as colorGroup (colorGroup)}
 				<button
 					type="button"
-					class="btn btn-sm bg-base-100 min-h-11 gap-1 shadow-lg"
+					class={chipClass}
 					onclick={() => showColorGroup(colorGroup)}
 					aria-label="Gruppe {colorGroupLabel(colorGroup)} wieder anzeigen"
 				>
@@ -715,11 +740,7 @@
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
 				</button>
 			{/each}
-			<button
-				type="button"
-				class="btn btn-outline btn-sm bg-base-100 min-h-11 shadow-lg"
-				onclick={resetAllFilters}
-			>
+			<button type="button" class="{chipClass} btn-outline" onclick={resetAllFilters}>
 				Alle Filter zurücksetzen
 			</button>
 		</div>
@@ -760,39 +781,47 @@
 		     dessen Toggle-Tab auch bei geschlossenem Panel mitrotiert. -->
 		<LoadingOverlay isVisible={isInitialLoading} type="initial" />
 
+		<!--
+			Die beiden Leer-Zustände waren zwei handgebaute Glas-Kästchen mit je
+			eigener Typografie und eigener Rollenauszeichnung. Inhaltlich sind sie
+			derselbe Fall — „hier stünden Daten, es gibt aber keine" — und laufen
+			jetzt beide über `StatusBlock`. Der Wrapper trägt nur noch die Position
+			und eine deckende Fläche, damit der Text über den Kartenkacheln lesbar
+			bleibt; Rolle, Icon und Abstände kommen aus der Komponente.
+		-->
+
 		<!-- Keine Sichtungen für das gewählte Jahr -->
 		{#if showNoResults}
 			<div
-				role="status"
-				class="glass absolute top-1/2 left-1/2 z-30 -translate-x-1/2 -translate-y-1/2 rounded-lg px-5 py-3 text-center shadow-lg backdrop-blur-md"
+				class="bg-base-100 rounded-box absolute top-1/2 left-1/2 z-30 w-[min(24rem,90%)] -translate-x-1/2 -translate-y-1/2"
+				style="box-shadow: var(--shadow-floating)"
 			>
-				<p class="text-base-content text-sm font-medium">
-					Keine Sichtungen für {currentDisplayedYear} vorhanden.
-				</p>
-				{#if latestYearWithData !== undefined && latestYearWithData !== currentDisplayedYear}
-					<button
-						type="button"
-						class="btn btn-primary btn-sm mt-2"
-						onclick={() => switchToYear(latestYearWithData!)}
-					>
-						Sichtungen {latestYearWithData} anzeigen
-					</button>
-				{/if}
+				<StatusBlock
+					variant="empty"
+					title="Keine Sichtungen für {currentDisplayedYear} vorhanden"
+					description="Für dieses Jahr liegen keine freigegebenen Meldungen vor."
+					action={latestYearWithData !== undefined && latestYearWithData !== currentDisplayedYear
+						? {
+								label: `Sichtungen ${latestYearWithData} anzeigen`,
+								onClick: () => switchToYear(latestYearWithData!),
+								icon: 'lucide:calendar'
+							}
+						: undefined}
+				/>
 			</div>
 		{/if}
 
 		<!-- Alle Sichtungen durch Filter ausgeblendet -->
 		{#if showNoVisibleResults}
 			<div
-				role="status"
-				class="glass absolute top-1/2 left-1/2 z-30 -translate-x-1/2 -translate-y-1/2 rounded-lg px-5 py-3 text-center shadow-lg backdrop-blur-md"
+				class="bg-base-100 rounded-box absolute top-1/2 left-1/2 z-30 w-[min(24rem,90%)] -translate-x-1/2 -translate-y-1/2"
+				style="box-shadow: var(--shadow-floating)"
 			>
-				<p class="text-base-content text-sm font-medium">
-					Keine Sichtungen für den aktuellen Filter sichtbar.
-				</p>
-				<p class="text-base-content/60 mt-1 text-xs">
-					Passen Sie den Zeitraum oder die Tierart-Filter an.
-				</p>
+				<StatusBlock
+					variant="empty"
+					title="Keine Sichtungen für den aktuellen Filter sichtbar"
+					description="Passen Sie den Zeitraum oder die Tierart-Filter an."
+				/>
 			</div>
 		{/if}
 
@@ -903,8 +932,13 @@
 	<!-- Logo (unten rechts) - optional -->
 	{#if showLogo}
 		<div class="group absolute right-1 bottom-6 z-30">
+			<!-- Helle Platte, weil /dmm-logo.png durchgängig dunkel auf transparent
+			     zeichnet (nachgemessen: 14.097 deckende Pixel, alle unter L 128) und
+			     über dunklen Kacheln sonst verschwindet. Das ist ein Flächenbedarf,
+			     kein Schleier — base-100 ist die helle Fläche des Themes; das /95
+			     bleibt, damit die Karte durchschimmert. -->
 			<div
-				class="border-primary/10 rounded-xl border bg-white/95 p-1 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+				class="border-primary/10 bg-base-100/95 rounded-xl border p-1 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:shadow-2xl"
 			>
 				<div class="flex flex-col items-center">
 					<img
@@ -921,7 +955,9 @@
 
 	<!-- Tastatur-Hilfe Modal -->
 	{#if showKeyboardHelp}
-		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+		<!-- Schleier über der Karte, kein Theme-Ton: bg-scrim/<n>
+		     (--scrim-surface in tokens.css). -->
+		<div class="bg-scrim/50 fixed inset-0 z-50 flex items-center justify-center">
 			<div
 				role="dialog"
 				aria-modal="true"

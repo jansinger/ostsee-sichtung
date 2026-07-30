@@ -565,11 +565,13 @@
 										{/if}
 
 										{#await mediaFile.uploadedFile}
-											<!-- Loading spinner overlay -->
+											<!-- Loading spinner overlay. Liegt über der hochgeladenen Bildvorschau,
+											     also über fremdem Inhalt: bg-scrim/<n> und text-on-scrim
+											     (--scrim-surface in tokens.css). -->
 											<div
-												class="absolute inset-0 flex items-center justify-center rounded bg-black/30"
+												class="bg-scrim/60 absolute inset-0 flex items-center justify-center rounded"
 											>
-												<div class="loading loading-spinner loading-sm text-white"></div>
+												<div class="loading loading-spinner loading-sm text-on-scrim"></div>
 											</div>
 
 											<!-- Upload progress indicator -->

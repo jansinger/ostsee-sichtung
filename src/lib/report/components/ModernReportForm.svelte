@@ -4,12 +4,15 @@
 	import FormActions from './form/FormActions.svelte';
 	import RequiredConsent from './form/RequiredConsent.svelte';
 
+	import SubmitStatus, { type SubmitState } from './form/SubmitStatus.svelte';
+
 	import { browser } from '$app/environment';
-	import Icon from '$lib/components/Icon.svelte';
-	import { submitSightingForm } from '$lib/form/submitSightingForm';
+	import { connection, watchConnection } from '$lib/stores/connectionState.svelte';
+	import { describeSubmitFailure, submitSightingForm } from '$lib/form/submitSightingForm';
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
 	import { findStepForErrors } from '$lib/report/findStepForErrors';
+	import { resolveServerFieldErrors } from '$lib/report/serverFieldErrors';
 	import { initialFormState } from '$lib/report/formConfig';
 	import { toast } from '$lib/stores/toastState.svelte';
 	import {
@@ -24,6 +27,7 @@
 	import type { FormContext, SightingFormData, UserContactData } from '$lib/types';
 	import type { SightingFormValues } from '$lib/types/Form';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
+	import { scrollToFirstError } from '$lib/utils/fieldNavigation';
 	import { createId } from '@paralleldrive/cuid2';
 	import { formStepsConfig } from '$lib/report/formConfig';
 	import { ValidationError } from 'yup';
@@ -71,8 +75,48 @@
 		});
 	}
 
-	// Status für Fehleranzeige
-	let submissionError = $state<string | null>(null);
+	/**
+	 * Zustand der Übermittlung — getragen von `SubmitStatus` über der Navigation.
+	 *
+	 * Ersetzt den früheren `submissionError`-Alert plus den Submit-Fehler-Toast:
+	 * beide sagten nur, DASS etwas schiefging, nicht was mit den Daten passiert
+	 * ist und was der Nutzer jetzt tun kann.
+	 */
+	let submitState = $state<SubmitState>('idle');
+	/** Überschrift im Zustand `failed` — je nach Fehlerart eine andere. */
+	let submitTitle = $state('Der Server hat nicht geantwortet');
+	/** Zählt die Absende-Versuche, damit „Wiederholen" sichtbar etwas bewirkt. */
+	let submitAttempt = $state(0);
+
+	// Verbindungszustand an die Browser-Ereignisse binden.
+	$effect(() => watchConnection());
+
+	/**
+	 * Ohne Verbindung wird vorab gesperrt, statt den Versuch scheitern zu lassen.
+	 * Ein laufender Submit behält seinen eigenen Zustand — sonst überschriebe ein
+	 * kurzer Aussetzer die Anzeige mitten in der Übertragung.
+	 */
+	$effect(() => {
+		if (connection.isOffline) {
+			// NUR aus `idle` heraus. Ein bereits angezeigter Fehlschlag darf nicht
+			// überschrieben werden: Er verschwände beim nächsten Verbindungswechsel
+			// von selbst wieder — genau das, was `SubmitStatus` ausschließt.
+			if (submitState === 'idle') submitState = 'offline';
+		} else if (submitState === 'offline') {
+			submitState = 'idle';
+		}
+	});
+
+	/**
+	 * Hart gesperrt wird nur beim sicheren Nein des Browsers.
+	 *
+	 * `connection.isOffline` ist auch dann wahr, wenn lediglich der letzte
+	 * Request an einem `TypeError` gescheitert ist — das wirft `fetch` aber auch
+	 * bei einem Server-Neustart oder einem CORS-Fehler, und dort feuert nie ein
+	 * `online`-Ereignis, das den Zustand wieder aufhebt. An dieser Bedingung
+	 * gesperrt käme der Nutzer nur durch ein Neuladen wieder heraus.
+	 */
+	const submitBlocked = $derived(submitState === 'offline' && connection.isInterfaceDown);
 
 	// Formular initialisieren
 	const formProps = {
@@ -89,10 +133,46 @@
 				// set mediaUpload indicator
 				submitValues.mediaUpload = uploadedFiles ? uploadedFiles.length > 0 : false;
 
+				submitAttempt += 1;
+				submitState = 'submitting';
+
 				const result = await submitSightingForm(submitValues);
 
+				if (result.status !== 'ok') {
+					// Jede Fehlerart bekommt ihren eigenen Zustand: `offline` sperrt das
+					// Absenden vorab, die übrigen bieten Wiederholen an. Liegt bereits
+					// eine Aufnahme auf dem Server, gilt die Datenzusage nicht mehr
+					// uneingeschränkt — dafür gibt es `partial`.
+					connection[result.status === 'offline' ? 'reportUnreachable' : 'reportReachable']();
+
+					// Einmal berechnen: Anzeige und geworfene Meldung sollen dieselbe
+					// Aussage tragen, nicht zwei unabhängig entstandene.
+					const failure = describeSubmitFailure(result);
+
+					// Hat der Server Felder benannt, ist die Meldung über der Navigation
+					// nicht die vollständige Antwort — sie lautet bei einer Validierung
+					// immer „Validierungsfehler bei der Eingabe". Das Ziel steht in
+					// `fields`; siehe `applyServerFieldErrors`.
+					if (result.status === 'rejected' && result.fields) {
+						applyServerFieldErrors(result.fields);
+					}
+
+					if (result.status === 'offline') {
+						submitState = 'offline';
+					} else {
+						submitState = submitValues.mediaUpload ? 'partial' : 'failed';
+						submitTitle = failure;
+					}
+
+					throw new Error(failure);
+				}
+
+				connection.reportReachable();
+				submitState = 'idle';
+				submitAttempt = 0;
+
 				// Speichere Benutzer-Kontaktdaten für zukünftige Formulare basierend auf Zustimmung
-				if (result.success) {
+				{
 					const userContactData: UserContactData = {
 						firstName: values.firstName,
 						lastName: values.lastName,
@@ -115,22 +195,98 @@
 					);
 				}
 
-				submissionError = null;
 				const submitResult = await onSubmit(submitValues);
-				// Reset nur nach erfolgreichem Submit (Fehler in onSubmit soll Formular erhalten)
+				// Reset nur nach erfolgreichem Submit (Fehler in onSubmit soll Formular erhalten).
+				// Diese Stelle ist seither die EINZIGE, die nach einer Übermittlung aufräumt:
+				// `submitSightingForm` rief zuvor zusätzlich `clearStorage()` — und zwar schon
+				// vor `onSubmit`, was den Kommentar oben aushebelte. `clearFormDataOnly()` plus
+				// das Zurücksetzen von CURRENT_STEP deckt denselben Umfang ab.
 				clearFormDataOnly(); // Clears only form data, keeps currentStep and user contact data
 				currentStep = 0;
 				saveToStorage(STORAGE_KEYS.CURRENT_STEP, 0);
 				return submitResult;
 			} catch (error: unknown) {
-				submissionError = (error as Error)?.message || 'Unbekannter Fehler bei der Übermittlung';
-				logger.error(error, submissionError);
+				const message = (error as Error)?.message || 'Unbekannter Fehler bei der Übermittlung';
+				// Scheitert erst der `onSubmit`-Callback (nicht die Übermittlung),
+				// steht `submitState` noch auf `submitting` — auch dieser Fall ist ein
+				// Fehlschlag und braucht die Wiederholen-Fläche.
+				if (submitState === 'submitting') {
+					submitState = 'failed';
+					submitTitle = message;
+				}
+				logger.error(error, message);
 				throw error;
 			}
 		}
 	};
 
 	let formContext: FormContext = $state({} as FormContext);
+
+	/**
+	 * Erneuter Versuch aus `SubmitStatus` heraus.
+	 *
+	 * `handleFinalSubmit` wirft bei einem Fehlschlag weiter, damit die
+	 * Schritt-Navigation ihren Weg zum fehlerhaften Feld gehen kann. Hier gibt es
+	 * keinen solchen Aufrufer — der Zustand steht bereits in `submitState`, das
+	 * erneute Werfen wäre nur eine unbehandelte Rejection in der Konsole.
+	 */
+	function retrySubmit(): void {
+		void handleFinalSubmit(new Event('submit')).catch((error: unknown) => {
+			logger.error({ error }, 'Erneuter Absendeversuch fehlgeschlagen');
+		});
+	}
+
+	/**
+	 * Übernimmt die Feldfehler einer Server-Ablehnung ins Formular und führt zum
+	 * ersten betroffenen Feld.
+	 *
+	 * Das ist derselbe Weg, den die Vorab-Validierung in `handleFinalSubmit` unten
+	 * für Yup-Fehler geht — nur mit den Feldern des Servers als Quelle. Beide
+	 * Fälle sind für den Nutzer dasselbe Ereignis: „ein Feld stimmt nicht, und es
+	 * kann in einem anderen Schritt liegen". Getrennt bleiben sie trotzdem: dieser
+	 * Weg mischt die Fehler und scrollt selbst, der andere setzt sie und überlässt
+	 * das Scrollen der Schritt-Navigation.
+	 *
+	 * Die Fehler werden **gemischt**, nicht gesetzt: Ein bereits sichtbarer
+	 * Client-Fehler an einem anderen Feld ist damit nicht plötzlich weg, nur weil
+	 * der Server ein zusätzliches Feld beanstandet.
+	 *
+	 * `scrollToFirstError` läuft erst im nächsten Frame — der Schrittwechsel oben
+	 * ist zu diesem Zeitpunkt noch nicht gerendert, das Zielfeld existiert also
+	 * noch gar nicht im DOM.
+	 *
+	 * **Abhängigkeit, die nicht offensichtlich ist:** Nach dem `throw` unten läuft
+	 * in `StepNavigation.handleFormSubmission` der Catch-Zweig mit
+	 * `showValidationError()`, das einen ZWEITEN `scrollToFirstError` samt
+	 * eigenem Fokus-Timeout auslöst. Zwei konkurrierende Sprünge entstehen daraus
+	 * heute nicht, weil `handleFinalSubmit` gegen das volle Schema vorvalidiert:
+	 * Der Server wird nur mit client-seitig gültigen Daten erreicht, `validateStep`
+	 * findet dort nichts und `showValidationError` steigt sofort wieder aus. Wer
+	 * dieses Vorab-Gate lockert, muss die beiden Sprünge gegeneinander absichern.
+	 */
+	function applyServerFieldErrors(serverFields: Record<string, string>): void {
+		const { fields, targetStep, fieldOrder } = resolveServerFieldErrors(
+			serverFields,
+			formStepsConfig,
+			currentStep
+		);
+
+		// Ausschließlich unbekannte Felder benannt — es gibt nichts anzuspringen und
+		// nichts zu markieren. Die Meldung selbst steht weiterhin in `SubmitStatus`.
+		if (Object.keys(fields).length === 0) {
+			return;
+		}
+
+		formContext.errors.update((current) => ({ ...current, ...fields }));
+
+		if (targetStep !== null) {
+			currentStep = targetStep;
+		}
+
+		requestAnimationFrame(() => {
+			scrollToFirstError(fields, fieldOrder);
+		});
+	}
 
 	// Formularstatus
 	async function handleFinalSubmit(e: Event): Promise<void> {
@@ -234,13 +390,12 @@
 		</div>
 	{/if}
 
-	<!-- Error Message -->
-	{#if submissionError}
-		<div class="alert alert-error mb-6" role="alert">
-			<Icon icon="lucide:circle-alert" class="shrink-0" aria-hidden="true" />
-			<span>{submissionError}</span>
-		</div>
-	{/if}
+	<!--
+		Der frühere `submissionError`-Alert stand hier oben, weit weg von der
+		Schaltfläche, die ihn ausgelöst hat — auf dem Telefon außerhalb des
+		Bildschirms. Er ist in `SubmitStatus` aufgegangen, das direkt über der
+		Schritt-Navigation sitzt.
+	-->
 
 	<!-- Step Progress -->
 	<FormSteps steps={formStepsConfig} bind:currentStep />
@@ -264,7 +419,21 @@
 			<!-- Required Privacy Consent - Prominent placement before submit -->
 			<RequiredConsent {currentStep} />
 
-			<StepNavigation bind:currentStep onSubmit={handleFinalSubmit} />
+			<!--
+				`referenceId` kommt aus `savedFormData`, nicht aus `$form`: `formContext`
+				wird erst über `bind:context` gefüllt, beim Server-Rendering ist `$form`
+				an dieser Stelle noch undefiniert. Die Referenz steht ohnehin fest — sie
+				entsteht einmal beim Aufbau des Formulars und ändert sich nie.
+			-->
+			<SubmitStatus
+				state={submitState}
+				title={submitTitle}
+				attempt={submitAttempt}
+				referenceId={savedFormData.referenceId ?? ''}
+				onRetry={submitBlocked ? undefined : retrySubmit}
+			/>
+
+			<StepNavigation bind:currentStep onSubmit={handleFinalSubmit} {submitBlocked} />
 		</div>
 	</div>
 

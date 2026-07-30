@@ -223,11 +223,12 @@ const clusterLayer = new VectorLayer({
 
 ```typescript
 // src/lib/utils/geo/checkBalticSea.ts
+// Abgeleitet aus der Geometrie, nicht von Hand gepflegt — siehe geo.md
 export const BALTIC_SEA_BBOX: BoundingBox = {
 	minLongitude: 9.4,
-	maxLongitude: 30.2,
-	minLatitude: 53.0,
-	maxLatitude: 66.0
+	maxLongitude: 30.25,
+	minLatitude: 53.55,
+	maxLatitude: 65.95
 };
 
 export function isInBalticArea(longitude: number, latitude: number): boolean {
@@ -246,7 +247,12 @@ export function isInBalticArea(longitude: number, latitude: number): boolean {
 import { boundingExtent } from 'ol/extent';
 import { fromLonLat } from 'ol/proj';
 
-const balticExtent = boundingExtent([fromLonLat([9.4, 53.0]), fromLonLat([30.2, 66.0])]);
+// Die Werte nicht abschreiben — BALTIC_SEA_BBOX importieren, sonst laufen
+// Karten-Extent und Geometrie auseinander (vgl. src/lib/map/extentUtils.ts).
+const balticExtent = boundingExtent([
+	fromLonLat([BALTIC_SEA_BBOX.minLongitude, BALTIC_SEA_BBOX.minLatitude]),
+	fromLonLat([BALTIC_SEA_BBOX.maxLongitude, BALTIC_SEA_BBOX.maxLatitude])
+]);
 
 new View({
 	extent: balticExtent,

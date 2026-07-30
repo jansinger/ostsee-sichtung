@@ -29,6 +29,8 @@ const SUPERADMIN_ONLY_CONFIG_KEYS = new Set([
 	// Email sender configuration (system-critical)
 	'notification.email.sender',
 	'notification.email.senderName',
+	'notification.email.cc',
+	'notification.email.bcc',
 
 	// Advanced security settings
 	'security.allowedFileTypes',
