@@ -1,20 +1,36 @@
 import { createLogger } from '$lib/logger.server';
 import { db } from '$lib/server/db';
-import { approvalFilter, type ResolvedSightingScope } from '$lib/server/db/approvalFilter';
+import {
+	approvalFilter,
+	approvedOnly,
+	type ResolvedSightingScope
+} from '$lib/server/db/approvalFilter';
 import { sightings } from '$lib/server/db/schema';
 import { berlinCalendarDate, berlinDatePart } from '$lib/server/db/sqlTimeZone';
-import { and, eq, isNotNull, ne, sql } from 'drizzle-orm';
+import { and, isNotNull, ne, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 const logger = createLogger('admin:statistics:page');
 
-/** Kennzahlen eines Freigabestatus — nie über beide Status summiert. */
+/**
+ * Kennzahlen eines Freigabestatus — nie über beide Status summiert.
+ *
+ * `verifiedSightings` ist hier 2026-07-30 entfallen. Die Kennzahl zählte
+ * innerhalb der freigegebenen Menge noch einmal `geprueft = 1` und war damit
+ * tautologisch (gemessen 19.253 von 19.262 = 99,95 %). Sie widersprach außerdem
+ * der Invariante des Projekts: eine Sichtung ist ungeprüft **oder** geprüft, und
+ * geprüft heißt veröffentlicht (siehe CLAUDE.md und `.claude/rules/api.md`) — ein
+ * eigener „verifiziert"-Anteil innerhalb der Veröffentlichten suggeriert eine
+ * Qualitätsdimension, die es nach diesem Modell nicht gibt. Die 9 Zeilen, die
+ * tatsächlich abweichen (`freigegeben_am` gesetzt, `geprueft = 0`), sind
+ * Inkonsistenzen aus dem Altsystem und gehören in eine Datenprüfung, nicht in
+ * eine Übersichtskennzahl.
+ */
 export interface AdminBasicStats {
 	totalSightings: number;
 	avgGroupSize: number;
 	maxGroupSize: number;
 	deadAnimals: number;
-	verifiedSightings: number;
 	withMedia: number;
 }
 
@@ -23,7 +39,6 @@ const EMPTY_BASIC_STATS: AdminBasicStats = {
 	avgGroupSize: 0,
 	maxGroupSize: 0,
 	deadAnimals: 0,
-	verifiedSightings: 0,
 	withMedia: 0
 };
 
@@ -42,7 +57,6 @@ async function loadBasicStats(scope: ResolvedSightingScope): Promise<AdminBasicS
 			avgGroupSize: sql<number>`COALESCE(AVG(${sightings.totalCount})::numeric, 0)`,
 			maxGroupSize: sql<number>`COALESCE(MAX(${sightings.totalCount})::integer, 0)`,
 			deadAnimals: sql<number>`COUNT(CASE WHEN ${sightings.isDead} = 1 THEN 1 END)::integer`,
-			verifiedSightings: sql<number>`COUNT(CASE WHEN ${sightings.verified} = 1 THEN 1 END)::integer`,
 			withMedia: sql<number>`COUNT(CASE WHEN ${sightings.mediaUpload} != 0 THEN 1 END)::integer`
 		})
 		.from(sightings)
@@ -71,7 +85,7 @@ export const load: PageServerLoad = async () => {
 				deadPercentage: sql<number>`ROUND(COUNT(CASE WHEN ${sightings.isDead} = 1 THEN 1 END) * 100.0 / COUNT(*), 2)::numeric`
 			})
 			.from(sightings)
-			.where(eq(sightings.verified, 1))
+			.where(approvedOnly())
 			.groupBy(sightings.species)
 			.orderBy(sql`COUNT(*) DESC`);
 
@@ -85,7 +99,7 @@ export const load: PageServerLoad = async () => {
 				sightings: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
-			.where(and(isNotNull(sightings.sightingDate), eq(sightings.verified, 1)))
+			.where(and(isNotNull(sightings.sightingDate), approvedOnly()))
 			.groupBy(berlinDatePart('year', sightings.sightingDate))
 			.orderBy(berlinDatePart('year', sightings.sightingDate));
 
@@ -96,7 +110,7 @@ export const load: PageServerLoad = async () => {
 				sightings: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
-			.where(and(isNotNull(sightings.sightingDate), eq(sightings.verified, 1)))
+			.where(and(isNotNull(sightings.sightingDate), approvedOnly()))
 			.groupBy(berlinDatePart('month', sightings.sightingDate))
 			.orderBy(berlinDatePart('month', sightings.sightingDate));
 
@@ -122,7 +136,15 @@ export const load: PageServerLoad = async () => {
 			// zuverlässig verifizieren lassen — das Risiko eines neuen, unbemerkten
 			// Zeitzonenfehlers wiegt hier schwerer als der kosmetische Rand-Tag einer
 			// „letzte 30 Tage"-Trendanzeige.
-			.where(sql`${sightings.created} >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days'`)
+			// Freigabebezug wie überall sonst auf dieser Seite: vorher war dies die
+			// einzige Abfrage ohne Filter und zählte damit als Einzige die gesamte
+			// Tabelle inklusive noch offener Meldungen (Vorgabe 3 in approvalFilter.ts).
+			.where(
+				and(
+					approvedOnly(),
+					sql`${sightings.created} >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days'`
+				)
+			)
 			.groupBy(berlinCalendarDate(sightings.created))
 			.orderBy(sql`${berlinCalendarDate(sightings.created)} DESC`)
 			.limit(30);
@@ -133,7 +155,7 @@ export const load: PageServerLoad = async () => {
 				uniqueUsers: sql<number>`COUNT(DISTINCT email)::integer`
 			})
 			.from(sightings)
-			.where(and(sql`email IS NOT NULL AND email != ''`, eq(sightings.verified, 1)));
+			.where(and(sql`email IS NOT NULL AND email != ''`, approvedOnly()));
 
 		// Repeat users count - safe subquery approach
 		const repeatUsers = await db
@@ -142,7 +164,7 @@ export const load: PageServerLoad = async () => {
 				count: sql<number>`COUNT(*)::integer`
 			})
 			.from(sightings)
-			.where(and(sql`email IS NOT NULL AND email != ''`, eq(sightings.verified, 1)))
+			.where(and(sql`email IS NOT NULL AND email != ''`, approvedOnly()))
 			.groupBy(sql`email`)
 			.having(sql`COUNT(*) > 1`);
 
@@ -162,7 +184,7 @@ export const load: PageServerLoad = async () => {
 				totalWithShipName: sql<number>`COUNT(*)::integer`
 			})
 			.from(sightings)
-			.where(and(sql`schiffsname IS NOT NULL AND schiffsname != ''`, eq(sightings.verified, 1)));
+			.where(and(sql`schiffsname IS NOT NULL AND schiffsname != ''`, approvedOnly()));
 
 		const shipStats = [
 			{
@@ -184,7 +206,10 @@ export const load: PageServerLoad = async () => {
 			})
 			.from(sightings)
 			.where(
-				sql`${sightings.email} IS NOT NULL AND ${sightings.email} != '' AND ${sightings.email} NOT LIKE '%@meeresmuseum.de' AND ${sightings.verified} = 1`
+				and(
+					sql`${sightings.email} IS NOT NULL AND ${sightings.email} != '' AND ${sightings.email} NOT LIKE '%@meeresmuseum.de'`,
+					approvedOnly()
+				)
 			)
 			.groupBy(sightings.email)
 			.having(sql`COUNT(*) > 1`)
@@ -195,25 +220,17 @@ export const load: PageServerLoad = async () => {
 		const [totalVerified] = await db
 			.select({ total: sql<number>`COUNT(*)` })
 			.from(sightings)
-			.where(eq(sightings.verified, 1));
+			.where(approvedOnly());
 
 		const [coordVerified] = await db
 			.select({ count: sql<number>`COUNT(*)` })
 			.from(sightings)
-			.where(
-				and(
-					eq(sightings.verified, 1),
-					isNotNull(sightings.latitude),
-					isNotNull(sightings.longitude)
-				)
-			);
+			.where(and(approvedOnly(), isNotNull(sightings.latitude), isNotNull(sightings.longitude)));
 
 		const [behaviorVerified] = await db
 			.select({ count: sql<number>`COUNT(*)` })
 			.from(sightings)
-			.where(
-				and(eq(sightings.verified, 1), isNotNull(sightings.behavior), ne(sightings.behavior, 0))
-			);
+			.where(and(approvedOnly(), isNotNull(sightings.behavior), ne(sightings.behavior, 0)));
 
 		const qualityStats = [
 			{
@@ -223,15 +240,18 @@ export const load: PageServerLoad = async () => {
 			}
 		];
 
-		// Geographic distribution (simplified)
-		const geographicStats = await db
-			.select({
-				inBalticSea: sql<number>`COUNT(CASE WHEN ${sightings.inBalticSeaGeo} = 1 THEN 1 END)::integer`,
-				outsideBalticSea: sql<number>`COUNT(CASE WHEN ${sightings.inBalticSeaGeo} = 0 THEN 1 END)::integer`,
-				total: sql<number>`COUNT(*)::integer`
-			})
-			.from(sightings)
-			.where(eq(sightings.verified, 1));
+		// Die frühere `geographicStats`-Abfrage ist hier ersatzlos entfallen.
+		//
+		// Sie wurde bei jedem Seitenaufruf über die gesamte Tabelle ausgeführt, aber
+		// von `+page.svelte` nie gerendert — reine Last ohne Abnehmer. Ihre Logik war
+		// zudem falsch: gezählt wurden nur `ostsee_geo = 1` und `= 0`, während der
+		// überwiegende Teil der Altdaten den Wert `2` trägt (Stand 2026-07-30: 15.070
+		// von 19.253 geprüften Zeilen). Der Rest der Anwendung behandelt `ostsee_geo`
+		// als Wahrheitswert (`!!sighting.inBalticSeaGeo` in emailService.ts,
+		// `{#if sighting.inBalticSeaGeo}` in admin/+page.svelte) und zählt die `2`
+		// damit als „in der Ostsee". Eine wiederbelebte Kennzahl müsste diese drei
+		// Zustände erst fachlich klären, statt 78 % der Daten stillschweigend
+		// fallen zu lassen.
 
 		return {
 			basicStats,
@@ -239,7 +259,6 @@ export const load: PageServerLoad = async () => {
 			yearlyStats,
 			monthlyStats,
 			recentActivity,
-			geographicStats,
 			userStats,
 			shipStats: shipStats[0] || { uniqueShips: 0, totalWithShipName: 0 },
 			topObservers,

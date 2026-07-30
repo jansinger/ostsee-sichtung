@@ -13,7 +13,21 @@
 @import './css/weather-icons.css';
 @import './css/weather-icons-wind.css';
 
-/* ===== OpenLayers Map Styles ===== */
+/* ===== OpenLayers =====
+   Reihenfolge ist hier die ganze Logik und darf nicht umgestellt werden:
+   `ol.css` liefert die Defaults, `mapStyles.css` überschreibt sie. Beide
+   adressieren dieselben Klassen (`.ol-zoom`, `.ol-control`, `.ol-control button`)
+   mit identischer Spezifität (0,1,0) — bei gleichem Gewicht entscheidet die
+   Dokumentreihenfolge, also gewinnt die letzte Datei.
+
+   Bis 2026-07-30 stand `ol.css` weiter unten in dieser Datei und hat damit die
+   Projekt-Overrides ausgehebelt: `.ol-zoom { top: 4.5rem }` verlor gegen OLs
+   `top: .5em`, das Zoom-Control saß in der Ecke und schnitt den Kartentitel
+   (gemessen: Titel x=48..246, Control x=8..60 bei gleicher Höhe). Zugleich
+   klaffte eine 70-px-Lücke zur Zoom-All-Control, deren `top: 11rem` für die
+   *gedachte* Position berechnet war. Dass `mapStyles.css` voller `!important`
+   steht, war die Kompensation genau dieses Ordnungsfehlers. */
+@import 'ol/ol.css';
 @import './lib/map/mapStyles.css';
 
 @layer base {
@@ -144,9 +158,6 @@
 	--text-label: 0.875rem;
 	--text-support: 0.8125rem;
 }
-
-/* ===== OpenLayers Map ===== */
-@import 'ol/ol.css';
 
 /* ===== Base Styles ===== */
 body {

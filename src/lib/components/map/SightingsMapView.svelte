@@ -24,7 +24,10 @@
 	} from '$lib/map/urlFilterState';
 	import { page } from '$app/state';
 	import { replaceState } from '$app/navigation';
-	import 'ol/ol.css';
+	// Kein `import 'ol/ol.css'` hier: die Datei kommt global aus app.css, und zwar
+	// bewusst VOR mapStyles.css. Ein zweiter Import aus einer Komponente hängt
+	// ol.css erneut hinter die Projekt-Overrides und macht sie wirkungslos —
+	// genau so ist die Titel-Überlappung des Zoom-Controls entstanden.
 	import LoadingOverlay from './LoadingOverlay.svelte';
 	import FilterPanel from './Panel/FilterPanel.svelte';
 	import LegendPanel from './Panel/LegendPanel.svelte';
@@ -167,6 +170,27 @@
 			(activeFilters.hiddenSpecies?.length ?? 0) > 0 ||
 			(activeFilters.hiddenColors?.length ?? 0) > 0
 	);
+
+	/**
+	 * Darstellung der Filter-Chips (UX-Review 2026-07-30: „zu präsent, zu viel
+	 * Platz oben").
+	 *
+	 * Die 44px Trefferfläche bleiben — `min-h-11` ist WCAG 2.5.5 und nicht
+	 * verhandelbar. Zurückgenommen wird ausschließlich das Gewicht: halbtransparent
+	 * und mit `backdrop-blur` wie der Kartentitel statt deckendem `bg-base-100`,
+	 * `shadow-lg` entfällt, Beschriftung auf `text-support` in normaler Schriftstärke.
+	 *
+	 * Der eigentliche Platzfresser war aber nicht das Gewicht, sondern der Umbruch:
+	 * mit `flex-wrap` wuchs das Band bei mehreren aktiven Filtern auf zwei bis drei
+	 * 44px-Reihen und verdeckte die Karte. Eine Zeile mit horizontalem Scroll
+	 * begrenzt es auf konstant eine Reihe, unabhängig von der Anzahl der Filter.
+	 *
+	 * Der Klassenname steht absichtlich als vollständiges Literal hier: Tailwind
+	 * erkennt nur komplette Strings im Quelltext (siehe .claude/rules/daisyui.md).
+	 */
+	const chipClass =
+		'btn btn-sm border-base-300 bg-base-100/80 text-support min-h-11 shrink-0 gap-1 font-normal backdrop-blur-md';
+
 	// URL-Schreiben erst nach applyUrlFilters() freischalten — die Zwischen-
 	// stände des Initial-Loads würden die geteilten Params sonst wegkürzen.
 	let urlSyncEnabled = false;
@@ -656,14 +680,14 @@
 	     genau diesen Filter; „Alle zurücksetzen" stellt den Grundzustand her. -->
 	{#if hasActiveFilters}
 		<div
-			class="absolute top-16 left-1/2 z-30 flex w-max max-w-[92vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2"
+			class="scroll-styled absolute top-16 left-1/2 z-30 flex w-max max-w-[92vw] -translate-x-1/2 flex-nowrap items-center justify-start gap-1.5 overflow-x-auto px-1 pb-1"
 			role="group"
 			aria-label="Aktive Filter"
 		>
 			{#if activeFilters.year !== undefined}
 				<button
 					type="button"
-					class="btn btn-sm bg-base-100 min-h-11 gap-1 shadow-lg"
+					class={chipClass}
 					onclick={() => switchToYear(apiDefaultYear)}
 					aria-label="Filter Jahr {activeFilters.year} entfernen und zum Standard-Jahr {apiDefaultYear} wechseln"
 				>
@@ -674,7 +698,7 @@
 			{#if activeFilters.query !== undefined}
 				<button
 					type="button"
-					class="btn btn-sm bg-base-100 min-h-11 max-w-56 gap-1 shadow-lg"
+					class="{chipClass} max-w-56"
 					onclick={clearSearchFilter}
 					aria-label="Suchfilter {activeFilters.query} entfernen"
 				>
@@ -685,7 +709,7 @@
 			{#if activeFilters.from !== undefined && activeFilters.to !== undefined}
 				<button
 					type="button"
-					class="btn btn-sm bg-base-100 min-h-11 gap-1 shadow-lg"
+					class={chipClass}
 					onclick={resetTimeFilter}
 					aria-label="Zeitraum-Filter entfernen und volles Jahr anzeigen"
 				>
@@ -696,7 +720,7 @@
 			{#each activeFilters.hiddenSpecies ?? [] as speciesId (speciesId)}
 				<button
 					type="button"
-					class="btn btn-sm bg-base-100 min-h-11 gap-1 shadow-lg"
+					class={chipClass}
 					onclick={() => showSpecies(speciesId)}
 					aria-label="{speciesLabel(speciesId)} wieder anzeigen"
 				>
@@ -707,7 +731,7 @@
 			{#each activeFilters.hiddenColors ?? [] as colorGroup (colorGroup)}
 				<button
 					type="button"
-					class="btn btn-sm bg-base-100 min-h-11 gap-1 shadow-lg"
+					class={chipClass}
 					onclick={() => showColorGroup(colorGroup)}
 					aria-label="Gruppe {colorGroupLabel(colorGroup)} wieder anzeigen"
 				>
@@ -715,11 +739,7 @@
 					<Icon icon="lucide:x" width="14" height="14" aria-hidden="true" />
 				</button>
 			{/each}
-			<button
-				type="button"
-				class="btn btn-outline btn-sm bg-base-100 min-h-11 shadow-lg"
-				onclick={resetAllFilters}
-			>
+			<button type="button" class="{chipClass} btn-outline" onclick={resetAllFilters}>
 				Alle Filter zurücksetzen
 			</button>
 		</div>

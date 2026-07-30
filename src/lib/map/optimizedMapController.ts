@@ -3,7 +3,9 @@ import { Feature, Geolocation, Map, Overlay, View } from 'ol';
 import type { Control } from 'ol/control';
 import { defaults as defaultControls } from 'ol/control';
 import type { EventsKey } from 'ol/events';
+import { all, noModifierKeys, primaryAction } from 'ol/events/condition';
 import * as olExtent from 'ol/extent';
+import { defaults as defaultInteractions, DragPan } from 'ol/interaction';
 import GeoJSON from 'ol/format/GeoJSON';
 import type { Geometry } from 'ol/geom';
 import { Point as OlPoint } from 'ol/geom';
@@ -280,7 +282,53 @@ export class SichtungenMap {
 					zoomInTipLabel: 'Vergrößern',
 					zoomOutTipLabel: 'Verkleinern'
 				}
-			}).extend(this.createCustomControls())
+			}).extend(this.createCustomControls()),
+
+			/**
+			 * Interactions wie OpenLayers sie selbst baut — **nur DragPan** ist vom
+			 * Fokus-Zwang ausgenommen.
+			 *
+			 * `onFocusOnly: true` ist hier kein Zusatz, sondern die Wiederherstellung
+			 * des Verhaltens, das `ol/Map` beim Weglassen der Option verwendet: Map.js
+			 * ruft `defaultInteractions({ onFocusOnly: true })` auf. Ruft man
+			 * `defaults()` dagegen selbst auf, ist der Default `false` — wer das
+			 * übersieht, hebt den Fokus-Schutz still für **alle** Interactions auf. Genau
+			 * das ist beim ersten Anlauf dieses Fixes passiert und im Test aufgefallen.
+			 *
+			 * Was `onFocusOnly` bewirkt: `DragPan` und `MouseWheelZoom` bekommen
+			 * `all(focusWithTabindex, …)` vorgeschaltet. `focusWithTabindex` verlangt —
+			 * **nur wenn das Map-Target ein `tabindex`-Attribut trägt** — dass der Fokus
+			 * innerhalb des Targets liegt. Der Sinn ist Scroll-Hijacking-Schutz auf
+			 * Seiten, die eine Karte einbetten.
+			 *
+			 * Genau dieses `tabindex="0"` setzt `SightingsMapView.svelte` bewusst auf
+			 * `#map`, damit KeyboardPan und KeyboardZoom greifen (Tastaturbedienung,
+			 * Befund K3). Nebenwirkung: Maus-Pan war damit tot, bis der Nutzer einmal in
+			 * die Karte klickte — die Barrierefreiheits-Verbesserung hat die Maussteuerung
+			 * gebrochen.
+			 *
+			 * Nachgewiesen in `e2e/map-pan-zoom.spec.ts`: Beim ersten Ziehen war
+			 * `document.activeElement` der `<body>`, die Condition damit `false` und
+			 * `DragPan.handleDownEvent` gab `false` zurück — bei identischen, trusted
+			 * Pointer-Events. Nach einem Klick war `activeElement` das `#map`-Div und
+			 * dasselbe Ziehen funktionierte.
+			 *
+			 * Warum nur DragPan ausgenommen ist: Ein Drag ist eine eindeutige Absicht,
+			 * es gibt keine konkurrierende Deutung — der Fokus-Schutz kostet dort nur
+			 * Bedienbarkeit. Das Mausrad ist der Gegenfall: Die App wird auf
+			 * meeresmuseum.de in einem iframe eingebettet, und wer dort die **Seite**
+			 * scrollen will, würde ohne Schutz stattdessen die Karte zoomen. Mausrad-Zoom
+			 * setzt deshalb weiterhin einen Klick oder Tab in die Karte voraus, wie bei
+			 * Kartendiensten üblich.
+			 *
+			 * Der ausgetauschte DragPan bekommt **kein** `onFocusOnly` und damit die
+			 * Standard-Condition `all(noModifierKeys, primaryAction)` ohne Fokus-Prüfung.
+			 * `kinetic` wird bewusst nicht mitgegeben: `defaults()` setzt dort eine
+			 * Schwung-Animation, die auf einer Datenkarte eher stört als hilft.
+			 */
+			interactions: defaultInteractions({ onFocusOnly: true, dragPan: false }).extend([
+				new DragPan({ condition: all(noModifierKeys, primaryAction) })
+			])
 		});
 
 		// Popup hinzufügen

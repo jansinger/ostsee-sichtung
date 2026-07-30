@@ -33,70 +33,8 @@
 		return `${numValue.toFixed(1)}%`;
 	}
 
-	// Types
-	type Insight = {
-		type: 'critical' | 'warning' | 'info';
-		title: string;
-		description: string;
-	};
-
-	// Calculate scientific insights
-	let scientificInsights = $derived.by(() => {
-		if (!data.basicStats) return [];
-
-		const insights: Insight[] = [];
-
-		// Mortality rate analysis — Bezugsgröße sind ausschließlich freigegebene
-		// Sichtungen, damit die Quote nicht zwischen den Freigabestatus mischt.
-		const totalDeadAnimals = data.basicStats.approved.deadAnimals;
-		const totalSightings = data.basicStats.approved.totalSightings;
-		const overallMortalityRate = totalSightings > 0 ? (totalDeadAnimals / totalSightings) * 100 : 0;
-
-		if (overallMortalityRate > 10) {
-			insights.push({
-				type: 'warning',
-				title: 'Erhöhte Mortalitätsrate',
-				description: `${formatPercentage(overallMortalityRate)} der Sichtungen betreffen tote Tiere - deutlich über dem erwarteten Niveau.`
-			});
-		}
-
-		// Seasonal patterns
-		const summerSightings = data.monthlyStats
-			.filter((m) => m.month >= 6 && m.month <= 8)
-			.reduce((sum, m) => sum + m.sightings, 0);
-		const totalYearSightings = data.monthlyStats.reduce((sum, m) => sum + m.sightings, 0);
-		// Ohne Guard liefert eine leere Monatsstatistik NaN, und `NaN > 60` ist zwar
-		// false — die Erkenntnis bliebe also aus —, aber der Wert wanderte bei jeder
-		// künftigen Umformulierung ungeprüft in den Text.
-		const summerPercentage =
-			totalYearSightings > 0 ? (summerSightings / totalYearSightings) * 100 : 0;
-
-		if (summerPercentage > 60) {
-			insights.push({
-				type: 'info',
-				title: 'Starke Saisonalität',
-				description: `${formatPercentage(summerPercentage)} aller Sichtungen finden in den Sommermonaten statt - deutliche Wanderungsmuster erkennbar.`
-			});
-		}
-
-		// Species-specific concerns
-		const criticalSpecies = data.speciesStats.filter((s) => {
-			const deadPerc =
-				typeof s.deadPercentage === 'string' ? parseFloat(s.deadPercentage) : s.deadPercentage || 0;
-			return deadPerc > 30;
-		});
-		if (criticalSpecies.length > 0) {
-			criticalSpecies.forEach((species) => {
-				insights.push({
-					type: 'critical',
-					title: `Kritische Mortalität: ${getSpeciesLabel(species.species)}`,
-					description: `${formatPercentage(species.deadPercentage)} Mortalitätsrate bei ${getSpeciesLabel(species.species)} - erfordert sofortige wissenschaftliche Aufmerksamkeit.`
-				});
-			});
-		}
-
-		return insights;
-	});
+	// Die Ableitung `scientificInsights` ist 2026-07-30 entfallen; die Begründung
+	// steht an ihrer Anzeigestelle in der Vorlage unten.
 </script>
 
 <svelte:head>
@@ -139,43 +77,34 @@
 					</span>
 				</p>
 			</div>
-			<div class="badge badge-primary badge-lg">
-				{formatNumber(data.basicStats?.approved.verifiedSightings || 0)} verifiziert
-			</div>
 		</div>
 
-		<!-- Scientific Insights Alert Box -->
-		{#if scientificInsights.length > 0}
-			<div class="alert alert-info">
-				<Icon icon="lucide:trending-up" class="h-6 w-6" />
-				<div class="flex-1">
-					<h3 class="font-bold">Wissenschaftliche Erkenntnisse</h3>
-					<div class="mt-2 space-y-2">
-						{#each scientificInsights as insight (insight.title)}
-							{@const alertClass =
-								insight.type === 'critical'
-									? 'alert-error'
-									: insight.type === 'warning'
-										? 'alert-warning'
-										: 'alert-info'}
-							{@const alertIcon =
-								insight.type === 'critical'
-									? 'lucide:circle-alert'
-									: insight.type === 'warning'
-										? 'lucide:triangle-alert'
-										: 'lucide:info'}
-							<div class="alert {alertClass} alert-sm">
-								<Icon icon={alertIcon} class="shrink-0" aria-hidden="true" />
-								<div>
-									<div class="font-semibold">{insight.title}</div>
-									<div class="text-sm">{insight.description}</div>
-								</div>
-							</div>
-						{/each}
-					</div>
-				</div>
-			</div>
-		{/if}
+		<!--
+			Hier stand bis 2026-07-30 ein Block „Wissenschaftliche Erkenntnisse".
+			Er ist ersatzlos entfernt, weil seine Aussagen aus dieser Datenbasis
+			grundsätzlich nicht ableitbar sind:
+
+			- „Erhöhte Mortalitätsrate" rechnete Totfund-Meldungen / alle Meldungen.
+			  Das ist der Anteil der Meldungen über tote Tiere, keine Mortalitätsrate —
+			  dafür bräuchte es eine Population und einen bekannten Beobachtungsaufwand.
+			  Der Zusatz „deutlich über dem erwarteten Niveau" erfand zusätzlich ein
+			  Erwartungsniveau ohne Quelle.
+			- „Starke Saisonalität … deutliche Wanderungsmuster erkennbar" deutete die
+			  Verteilung der Meldungen als Verhalten der Tiere. Die Tabelle enthält nur
+			  Positivmeldungen ohne Aufwand, die Verteilung spiegelt daher primär den
+			  Rhythmus der Beobachtenden.
+			- „Kritische Mortalität: <Art> … erfordert sofortige wissenschaftliche
+			  Aufmerksamkeit" feuerte ab 30 % Totfundanteil ohne Mindest-Stichprobe. Es
+			  traf zuletzt „Unbekannte Robbenart" (145 von 317) — eine Kategorie, die
+			  überwiegend aus Totfunden besteht, weil verweste Tiere oft nicht mehr
+			  bestimmbar sind. Das Ergebnis war ein Artefakt der Kategoriedefinition.
+
+			Genau diese Art unbelegter Zahlenaussagen verbietet
+			`.claude/rules/design-system.md` („Zahlen in Nutzertexten nur mit Quelle",
+			Abschnitt „Grenze der eigenen Datenbasis"). Eine belastbare Auswertung
+			gehört in eine fachliche Analyse mit Aufwandsdaten, nicht in eine
+			Übersichtsseite.
+		-->
 
 		<!-- Key Metrics Grid -->
 		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
@@ -189,12 +118,6 @@
 						{formatNumber(data.basicStats?.approved.totalSightings || 0)}
 					</div>
 					<div class="stat-desc">
-						{formatNumber(data.basicStats?.approved.verifiedSightings || 0)} verifiziert ({formatPercentage(
-							((data.basicStats?.approved.verifiedSightings || 0) /
-								(data.basicStats?.approved.totalSightings || 1)) *
-								100
-						)})
-						<br />
 						<span class="text-warning-strong"
 							>{formatNumber(data.basicStats?.pending.totalSightings || 0)} noch offen</span
 						>
@@ -267,7 +190,9 @@
 						<Icon icon="lucide:users" class="h-8 w-8" />
 					</div>
 					<div class="stat-title">Unique Nutzer</div>
-					<div class="stat-value text-info-strong">{formatNumber(data.userStats?.uniqueUsers || 0)}</div>
+					<div class="stat-value text-info-strong">
+						{formatNumber(data.userStats?.uniqueUsers || 0)}
+					</div>
 					<div class="stat-desc">
 						{formatNumber(data.userStats?.repeatUsers || 0)} Wiederholungs-Nutzer ({formatPercentage(
 							data.userStats?.repeatUserPercentage || 0
