@@ -33,7 +33,7 @@ type MediaUploadFlag = number | boolean | null | undefined;
 /**
  * Der neu gebaute iOS-Client (`OstSeeTiere/8`) ist seit diesem Tag
  * angebunden (`.claude/rules/legacy-api.md`). Nur Sichtungen ab diesem
- * Zeitpunkt können „wartet auf eine per E-Mail nachgereichte Foto" bedeuten
+ * Zeitpunkt können „wartet auf ein per E-Mail nachgereichtes Foto" bedeuten
  * — jede ältere Zeile mit `mediaUpload=1` ist Altbestand mit einer anderen,
  * unbekannten Bedeutung des Flags (siehe Modul-Kommentar oben).
  */
