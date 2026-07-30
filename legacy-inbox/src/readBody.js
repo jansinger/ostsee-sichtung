@@ -1,3 +1,5 @@
+import { StringDecoder } from 'node:string_decoder';
+
 /**
  * Liest den Request-Body mit harter Obergrenze.
  *
@@ -5,9 +7,24 @@
  * der Header ist eine Behauptung des Clients. Wird sie erreicht, behalten wir
  * das bereits Gelesene und markieren es als abgeschnitten; verworfen wird nie
  * etwas (siehe Entwurf, Leitsatz in Abschnitt 4).
+ *
+ * Eine fehlende oder nicht-positive maxBytes ist ein Programmierfehler am
+ * Aufrufort (nicht Client-Input) — dafür wird geworfen, statt die Grenze
+ * stillschweigend zu deaktivieren.
+ *
+ * Die Dekodierung läuft über StringDecoder statt Buffer#toString: der
+ * Schnitt bei maxBytes kann mitten in ein mehrbytiges UTF-8-Zeichen fallen,
+ * und StringDecoder hält ein unvollständiges Zeichen am Ende zurück statt es
+ * als Ersatzzeichen (U+FFFD) auszugeben. So bleibt roh sauber auf einer
+ * vollständigen Zeichengrenze, ohne dass davor etwas verloren geht.
  */
-export async function leseBody(req, { maxBytes }) {
-	const stuecke = [];
+export async function leseBody(req, { maxBytes } = {}) {
+	if (typeof maxBytes !== 'number' || maxBytes <= 0) {
+		throw new Error('leseBody benötigt eine positive maxBytes-Obergrenze.');
+	}
+
+	const decoder = new StringDecoder('utf8');
+	let roh = '';
 	let gelesen = 0;
 	let abgeschnitten = false;
 
@@ -18,16 +35,23 @@ export async function leseBody(req, { maxBytes }) {
 		}
 		const rest = maxBytes - gelesen;
 		if (stueck.length > rest) {
-			stuecke.push(stueck.subarray(0, rest));
+			roh += decoder.write(stueck.subarray(0, rest));
 			gelesen = maxBytes;
 			abgeschnitten = true;
 			break;
 		}
-		stuecke.push(stueck);
+		roh += decoder.write(stueck);
 		gelesen += stueck.length;
 	}
 
-	return { roh: Buffer.concat(stuecke).toString('utf8'), abgeschnitten };
+	// Nur bei vollständig gelesenem Body flushen: end() würde ein am Rand
+	// abgeschnittenes Zeichen als Ersatzzeichen ausgeben. Bei abgeschnitten
+	// wird das zurückgehaltene Rest-Byte bewusst verworfen (siehe oben).
+	if (!abgeschnitten) {
+		roh += decoder.end();
+	}
+
+	return { roh, abgeschnitten };
 }
 
 /**
@@ -39,11 +63,19 @@ export async function leseBody(req, { maxBytes }) {
  * (src/routes/rest_sichtungen/+server.ts:54).
  */
 export function parseBody(roh, contentType) {
+	// Nicht-stringiger roh (undefined, null, Zahl, Array …) ist kein
+	// gültiger Body-Text — wie ein leerer Body behandeln statt zu werfen.
+	if (typeof roh !== 'string') {
+		return { payload: null, parseFehler: 'Body konnte nicht als Text gelesen werden.' };
+	}
+
 	if (roh.trim() === '') {
 		return { payload: null, parseFehler: 'Leerer Request-Body.' };
 	}
 
-	const typ = (contentType || '').toLowerCase();
+	// Ein truthy, aber nicht-stringiger Content-Type (z.B. ein Array) würde
+	// an toLowerCase() sonst werfen — wie fehlend behandeln.
+	const typ = typeof contentType === 'string' ? contentType.toLowerCase() : '';
 
 	if (typ.includes('application/x-www-form-urlencoded')) {
 		return { payload: formularZuObjekt(roh), parseFehler: null };

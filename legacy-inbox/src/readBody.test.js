@@ -22,6 +22,25 @@ describe('leseBody', () => {
 		const { roh } = await leseBody(anfrage(''), { maxBytes: 1000 });
 		expect(roh).toBe('');
 	});
+
+	it('schneidet nicht mitten in einem Mehrbyte-Zeichen ab', async () => {
+		// 'ö' ist in UTF-8 zwei Byte lang; bei maxBytes: 10 landet die Grenze
+		// genau zwischen den beiden Bytes. Das unvollständige Zeichen muss
+		// verworfen werden, alles davor bleibt erhalten.
+		const roh = 'a'.repeat(9) + 'ö';
+		const { roh: text, abgeschnitten } = await leseBody(anfrage(roh), { maxBytes: 10 });
+		expect(text).toBe('a'.repeat(9));
+		expect(abgeschnitten).toBe(true);
+	});
+
+	it('wirft ohne maxBytes, statt die Grenze stillschweigend zu deaktivieren', async () => {
+		await expect(leseBody(anfrage('x'), {})).rejects.toThrow();
+	});
+
+	it('wirft bei maxBytes 0 oder negativ', async () => {
+		await expect(leseBody(anfrage('x'), { maxBytes: 0 })).rejects.toThrow();
+		await expect(leseBody(anfrage('x'), { maxBytes: -5 })).rejects.toThrow();
+	});
 });
 
 describe('parseBody', () => {
@@ -57,5 +76,30 @@ describe('parseBody', () => {
 		const ergebnis = parseBody('', 'application/json');
 		expect(ergebnis.payload).toBeNull();
 		expect(ergebnis.parseFehler).toBeTruthy();
+	});
+
+	it('wirft nicht bei undefined roh', () => {
+		const ergebnis = parseBody(undefined, 'application/json');
+		expect(ergebnis.payload).toBeNull();
+		expect(ergebnis.parseFehler).toBeTruthy();
+	});
+
+	it('wirft nicht bei null roh', () => {
+		const ergebnis = parseBody(null, 'application/json');
+		expect(ergebnis.payload).toBeNull();
+		expect(ergebnis.parseFehler).toBeTruthy();
+	});
+
+	it('wirft nicht bei numerischem roh', () => {
+		const ergebnis = parseBody(42, 'application/json');
+		expect(ergebnis.payload).toBeNull();
+		expect(ergebnis.parseFehler).toBeTruthy();
+	});
+
+	it('behandelt einen nicht-string Content-Type wie fehlend', () => {
+		// Ein truthy, aber nicht-stringiger Content-Type (z.B. ein Array aus
+		// kaputtem Client-Code) darf nicht an toLowerCase() durchgereicht werden.
+		const ergebnis = parseBody('{"a":1}', ['application/json']);
+		expect(ergebnis).toEqual({ payload: { a: 1 }, parseFehler: null });
 	});
 });
