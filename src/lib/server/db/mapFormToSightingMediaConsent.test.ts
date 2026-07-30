@@ -3,7 +3,7 @@
  * überleben — sonst kann das Museum sie weder nachweisen (Art. 7 Abs. 1 DSGVO)
  * noch im Betrieb auswerten, welches Foto veröffentlicht werden darf.
  *
- * Hintergrund und Entscheidungslage: docs/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md
+ * Hintergrund und Entscheidungslage: docs/archive/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md
  */
 import type { SightingFormValues } from '$lib/types/Form';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

@@ -14,7 +14,7 @@ import { ORPHAN_RETENTION_HOURS } from '$lib/constants/uploadRetention';
  *
  * ACHTUNG: Wortlaut noch nicht vom Museum freigegeben — vor Inbetriebnahme
  * juristisch abnehmen lassen. Siehe
- * docs/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md, Abschnitt 6.
+ * docs/archive/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md, Abschnitt 6.
  */
 export const UPLOAD_NOTICE =
 	`Ihre Aufnahme wird beim Ablegen zu uns übertragen und dient der fachlichen ` +
