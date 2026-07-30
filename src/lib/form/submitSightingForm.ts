@@ -22,9 +22,23 @@ import type { SightingFormValues } from '$lib/types/Form';
  * Bei fehlendem Netz kam diese Meldung sogar direkt vom Browser („Failed to
  * fetch"), also unübersetzt und ohne Bezug zur Anwendung.
  *
- * Die vier Fehlerfälle verlangen unterschiedliche Reaktionen:
- * `offline` → Absenden vorab sperren, `server` → Wiederholen anbieten,
- * `rejected` → zum Feld springen, `ratelimited` → warten lassen.
+ * **Was dieser Typ leistet — und was nicht.** Er unterscheidet die Fälle und
+ * hängt an jeden das, was der Server dazu hergibt: den HTTP-Status (`server`),
+ * die Meldung des Servers (`rejected`), die Wartezeit (`ratelimited`). Wie
+ * darauf reagiert wird, entscheidet die Aufrufstelle — hier wird nichts
+ * erzwungen. `ModernReportForm` sperrt bei `offline` das Absenden über
+ * `connection.reportUnreachable()` und bietet in den übrigen drei Fällen
+ * Wiederholen an; `describeSubmitFailure` unten macht aus jedem Fall den Satz,
+ * den der Nutzer liest, und arbeitet `retryAfter` als Information in ihn ein.
+ *
+ * **Kein Feldbezug bei `rejected`, und das ist eine offene Lücke, kein
+ * Entwurf.** Ein Sprung zum abgelehnten Feld wäre die richtige Reaktion, ist
+ * aber mit diesem Typ nicht möglich: `rejected` trägt nur einen String, und der
+ * lautet bei einem Validierungsfehler „Validierungsfehler bei der Eingabe".
+ * Die Feldinformation existiert — `POST /api/sightings` liefert bei 400 ein
+ * `errors: Record<pfad, meldung>` mit —, wird von `SightingApiResponse` unten
+ * aber nicht gelesen. Wer den Sprung nachrüstet, erweitert dort und hier, nicht
+ * am Server.
  */
 export type SubmitResult =
 	| { status: 'ok'; id: number }
