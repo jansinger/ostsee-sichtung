@@ -29,7 +29,50 @@ function starte(umgebung) {
 	});
 }
 
+/**
+ * Lädt app.js so, wie Phusion Passenger es auf dem Plesk-Server tut: per
+ * `require()` aus einem CJS-Kontext heraus
+ * (`/usr/share/passenger/helper-scripts/node-loader.js`).
+ *
+ * Dieser Ladeweg unterscheidet sich vom direkten `node app.js` in genau einem
+ * Punkt, und der hat den Dienst beim ersten Deploy am Starten gehindert: Node
+ * lädt ESM aus CJS nur, wenn der Modulgraph kein Top-Level-`await` enthält.
+ * Sonst gibt es ERR_REQUIRE_ASYNC_MODULE, bevor eigener Code läuft — und
+ * `node app.js` allein hätte das nie gezeigt.
+ */
+function starteWiePassenger(umgebung) {
+	return new Promise((fertig) => {
+		const prozess = spawn(
+			process.execPath,
+			[
+				'--input-type=commonjs',
+				'-e',
+				`require(${JSON.stringify(path.join(WURZEL, 'app.js'))});` +
+					'setTimeout(() => process.exit(0), 2000);'
+			],
+			{ env: { ...process.env, ...umgebung } }
+		);
+		let ausgabe = '';
+		prozess.stdout.on('data', (d) => (ausgabe += d));
+		prozess.stderr.on('data', (d) => (ausgabe += d));
+		prozess.on('exit', (code) => fertig({ ausgabe, code }));
+	});
+}
+
 describe('app.js', () => {
+	it('lässt sich laden, wie Passenger es lädt', async () => {
+		const verzeichnis = await mkdtemp(path.join(tmpdir(), 'inbox-passenger-'));
+		const { ausgabe } = await starteWiePassenger({
+			LEGACY_INBOX_DATA_DIR: verzeichnis,
+			PORT: '0'
+		});
+
+		expect(ausgabe).not.toContain('ERR_REQUIRE_ASYNC_MODULE');
+		expect(ausgabe).toContain('lauscht auf Port');
+
+		await rm(verzeichnis, { recursive: true, force: true });
+	}, 20_000);
+
 	it('startet und meldet Port und Datenverzeichnis', async () => {
 		const verzeichnis = await mkdtemp(path.join(tmpdir(), 'inbox-app-'));
 		const { ausgabe } = await starte({ LEGACY_INBOX_DATA_DIR: verzeichnis, PORT: '0' });
