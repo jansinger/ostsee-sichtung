@@ -109,6 +109,12 @@ sbom/*.xml
 
 # Scripts (except Docker scripts)
 src/tools
+# Ausnahme: kein Script, sondern eine Build-Zeit-Abhängigkeit. vite.config.ts
+# und vite.config.ci.ts importieren stableDepHash auf Modulebene — fehlt die
+# Datei im Kontext, bricht schon das Laden der Vite-Config ab (UNRESOLVED_IMPORT),
+# lange bevor irgendetwas gebaut wird. Der zugehörige Test bleibt über das
+# *.test.ts-Muster weiter draußen.
+!src/tools/vite-stable-dep-hash.ts
 scripts/*
 !scripts/docker-*.sh
 !scripts/docker-migrate.ts
