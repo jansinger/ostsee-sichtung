@@ -6,6 +6,25 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { importiere } from './import-legacy-inbox.js';
 
+/**
+ * `importiere()`'s default `notify` (sendeBenachrichtigung, see
+ * import-legacy-inbox.js) reads the email config from the database via
+ * ServerConfigService. Tests below that don't inject their own `notify` fall
+ * through to that default — without this mock they'd reach a real database
+ * connection, which CI does not have (a run against `.env.example` hangs
+ * every such test until the 5s timeout). Same house pattern as
+ * src/tests/contract/legacy.contract.test.ts.
+ *
+ * `enabled: false` makes sendeBenachrichtigung() return before it would ever
+ * call EmailService, so this alone is enough to keep every test in this file
+ * off the network — no EmailService mock is needed on top of it.
+ */
+vi.mock('$lib/services/configService', () => ({
+	ServerConfigService: {
+		getEmailConfig: vi.fn().mockResolvedValue({ enabled: false, recipient: null })
+	}
+}));
+
 let verzeichnis: string;
 
 const repoWurzel = fileURLToPath(new URL('../../', import.meta.url));
