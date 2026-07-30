@@ -1,3 +1,5 @@
+// @ts-nocheck — reines JavaScript ohne Typdeklarationen (siehe CLAUDE.md, Legacy REST API);
+// erst seit Aufgabe 9 von src/tests/contract importiert und damit von tsc erreichbar.
 /**
  * Einziger Weg, eine Antwort zu schreiben — damit die Kopfzeilen des Vertrags
  * (JSON, UTF-8, nosniff) an keiner Route vergessen werden können.

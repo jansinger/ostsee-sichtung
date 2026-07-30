@@ -72,5 +72,16 @@ export default ts.config(
 			'@typescript-eslint/no-explicit-any': 'off',
 			'@typescript-eslint/ban-ts-comment': 'off'
 		}
+	},
+	{
+		// legacy-inbox ist bewusst reines JavaScript ohne Typdeklarationen
+		// (siehe CLAUDE.md, Legacy REST API). Seit Aufgabe 9 importiert
+		// src/tests/contract diese Module direkt, wodurch tsc sie über
+		// `checkJs` in die Prüfung hineinzieht; `@ts-nocheck` markiert das
+		// bewusst als außerhalb der TS-Konventionen von src/.
+		files: ['legacy-inbox/**/*.js'],
+		rules: {
+			'@typescript-eslint/ban-ts-comment': 'off'
+		}
 	}
 );

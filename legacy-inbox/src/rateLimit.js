@@ -1,3 +1,5 @@
+// @ts-nocheck — reines JavaScript ohne Typdeklarationen (siehe CLAUDE.md, Legacy REST API);
+// erst seit Aufgabe 9 von src/tests/contract importiert und damit von tsc erreichbar.
 const STUNDE_MS = 3_600_000;
 
 /**

@@ -1,3 +1,5 @@
+// @ts-nocheck — reines JavaScript ohne Typdeklarationen (siehe CLAUDE.md, Legacy REST API);
+// erst seit Aufgabe 9 von src/tests/contract importiert und damit von tsc erreichbar.
 /**
  * Zeilenweises JSON auf stdout. Passenger schreibt das in die Logdatei der
  * Domain; damit ist es ohne weitere Infrastruktur auswertbar.

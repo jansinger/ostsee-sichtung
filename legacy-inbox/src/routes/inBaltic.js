@@ -1,3 +1,5 @@
+// @ts-nocheck — reines JavaScript ohne Typdeklarationen (siehe CLAUDE.md, Legacy REST API);
+// erst seit Aufgabe 9 von src/tests/contract importiert und damit von tsc erreichbar.
 import { checkBalticSea } from '../geo/checkBalticSea.js';
 import { antworteJson } from '../respond.js';
 
