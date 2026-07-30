@@ -23,15 +23,26 @@ const FEHLER_A: ReadonlyArray<[string, number, number]> = [
  * unbrauchbare Referenzkoordinaten"). Ersetzt durch belegte Wasserpunkte,
  * geprüft mit `ogrinfo -dialect SQLITE` (ST_Intersects/MakePoint) gegen
  * land-polygons-complete-4326.
+ *
+ * Korrekturlauf 2026-07-30 (zweite Runde): Der erste Ersatzsatz war zwar Wasser,
+ * lag aber bereits innerhalb des heutigen, unbereinigten Polygons — die Auswahl
+ * war über das gespeicherte `ostsee`-Flag statt über das Polygon selbst gelaufen
+ * und testete die geplante Geometrie-Korrektur damit nicht mehr (Block grün, ohne
+ * dass etwas behoben war). Neu ermittelt, doppelt qualifiziert: das heutige
+ * IHO-Polygon lehnt den Punkt ab UND die OSM-Küstenlinie stuft ihn als Wasser
+ * ein. Wer hier Punkte tauscht, muss beides erneut prüfen; ein reiner
+ * Wasserpunkt, der schon im Polygon liegt, testet nichts.
  */
 const FEHLER_B: ReadonlyArray<[string, number, number]> = [
-	// Sichtung id 1170, mit ogrinfo als Wasser bestätigt.
-	['Flensburger Förde', 9.680556, 54.840278],
-	// Sichtung id 452, mit ogrinfo als Wasser bestätigt.
-	['Eckernförder Bucht', 9.984398, 54.497362],
-	['Greifswalder Bodden', 13.45, 54.2],
-	// Mit ogrinfo als Wasser bestätigt (nicht aus Sichtungsdaten, aus der Kartenmitte).
-	['Strelasund bei Stralsund', 13.12, 54.29]
+	// Sichtung id 3946. Außerhalb des heutigen Polygons (Turf/rbush-index.json)
+	// und nach OSM-Küstenlinie Wasser (ogrinfo -dialect SQLITE, ST_Intersects/MakePoint).
+	['Flensburger Förde', 9.589748, 54.850426],
+	// Sichtung id 25581. Außerhalb des heutigen Polygons und nach OSM Wasser.
+	['Eckernförder Bucht', 9.838145, 54.475078],
+	// Sichtung id 4949. Außerhalb des heutigen Polygons und nach OSM Wasser.
+	['Strelasund', 13.098357, 54.314608],
+	// Sichtung id 8868. Außerhalb des heutigen Polygons und nach OSM Wasser.
+	['Greifswalder Bodden', 13.66281, 54.28838]
 ];
 
 /** Muss auch nach der Bereinigung draußen bleiben. */

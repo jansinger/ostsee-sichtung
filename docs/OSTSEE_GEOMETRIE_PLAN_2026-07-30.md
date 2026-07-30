@@ -106,15 +106,22 @@ const FEHLER_A: ReadonlyArray<[string, number, number]> = [
  * Karte geschätzt und lagen laut OSM-Küstenlinie tatsächlich auf Land. Ersetzt
  * durch belegte Wasserpunkte, geprüft mit `ogrinfo -dialect SQLITE`
  * (ST_Intersects/MakePoint) gegen land-polygons-complete-4326.
+ *
+ * Korrekturlauf 2026-07-30 (zweite Runde): Der erste Ersatzsatz war zwar Wasser,
+ * lag aber bereits innerhalb des heutigen, unbereinigten Polygons und testete die
+ * geplante Geometrie-Korrektur damit nicht mehr. Neu ermittelt, doppelt
+ * qualifiziert: das heutige IHO-Polygon lehnt den Punkt ab UND die OSM-Küstenlinie
+ * stuft ihn als Wasser ein. Wer hier Punkte tauscht, muss beides erneut prüfen.
  */
 const FEHLER_B: ReadonlyArray<[string, number, number]> = [
-	// Sichtung id 1170, mit ogrinfo als Wasser bestätigt.
-	['Flensburger Förde', 9.680556, 54.840278],
-	// Sichtung id 452, mit ogrinfo als Wasser bestätigt.
-	['Eckernförder Bucht', 9.984398, 54.497362],
-	['Greifswalder Bodden', 13.45, 54.2],
-	// Mit ogrinfo als Wasser bestätigt (nicht aus Sichtungsdaten, aus der Kartenmitte).
-	['Strelasund bei Stralsund', 13.12, 54.29]
+	// Sichtung id 3946. Außerhalb des heutigen Polygons und nach OSM Wasser.
+	['Flensburger Förde', 9.589748, 54.850426],
+	// Sichtung id 25581. Außerhalb des heutigen Polygons und nach OSM Wasser.
+	['Eckernförder Bucht', 9.838145, 54.475078],
+	// Sichtung id 4949. Außerhalb des heutigen Polygons und nach OSM Wasser.
+	['Strelasund', 13.098357, 54.314608],
+	// Sichtung id 8868. Außerhalb des heutigen Polygons und nach OSM Wasser.
+	['Greifswalder Bodden', 13.66281, 54.28838]
 ];
 
 /** Muss auch nach der Bereinigung draußen bleiben. */
@@ -316,7 +323,7 @@ const W='.claude/worktrees/<worktree>/';
 const m=JSON.parse(fs.readFileSync(W+'src/tools/baltic-artifact-mask.geojson','utf8'));
 const inMask=(lo,la)=>m.features.some(f=>booleanPointInPolygon(point([lo,la]),f.geometry));
 const A=[['Ladoga',31.5,60.8],['Onega',35.5,61.8],['Weichsel',19.0,52.7],['Torne',24.0,66.5],['Limfjord',9.38,57.02]];
-const KEEP=[['Fehmarnbelt',11.3,54.6],['Arkona',13.5,55.0],['Bornholm',15.0,55.2],['Newa-Bucht',30.05,59.93],['Flensb. Foerde',9.6,54.83],['Eckernfoerder',9.95,54.5],['Greifsw. Bodden',13.45,54.2],['Strelasund',13.1,54.31]];
+const KEEP=[['Fehmarnbelt',11.3,54.6],['Arkona',13.5,55.0],['Bornholm',15.0,55.2],['Newa-Bucht',30.05,59.93],['Flensb. Foerde',9.589748,54.850426],['Eckernfoerder',9.838145,54.475078],['Strelasund',13.098357,54.314608],['Greifsw. Bodden',13.66281,54.28838]];
 let ok=true;
 for(const [n,lo,la] of A){const r=inMask(lo,la); if(!r)ok=false; console.log('A',n.padEnd(18),r?'maskiert OK':'FEHLT >>>');}
 for(const [n,lo,la] of KEEP){const r=inMask(lo,la); if(r)ok=false; console.log('K',n.padEnd(18),r?'FAELSCHLICH MASKIERT >>>':'frei OK');}
@@ -1204,10 +1211,10 @@ WITH referenz(name, lon, lat, erwartet) AS (
     ('Weichsel Wloclawek',     19.0,  52.7,  false),
     ('Torne-Flusslauf',        24.0,  66.5,  false),
     ('Limfjord',                9.38, 57.02, false),
-    ('Flensburger Foerde',       9.680556, 54.840278, true),
-    ('Eckernfoerder Bucht',      9.984398, 54.497362, true),
-    ('Greifswalder Bodden',     13.45,     54.2,      true),
-    ('Strelasund',              13.12,     54.29,     true),
+    ('Flensburger Foerde',       9.589748, 54.850426, true),
+    ('Eckernfoerder Bucht',      9.838145, 54.475078, true),
+    ('Strelasund',              13.098357, 54.314608, true),
+    ('Greifswalder Bodden',     13.66281,  54.28838,  true),
     ('Helgoland',               7.89, 54.18, false),
     ('Hamburg',                10.0,  53.55, false),
     ('Hannover',                9.73, 52.37, false),
