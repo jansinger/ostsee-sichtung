@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.6.1](https://github.com/jansinger/ostsee-tiere/compare/v2.6.0...v2.6.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **ci:** push the release branch as deploy key, not as the bot ([#664](https://github.com/jansinger/ostsee-tiere/issues/664)) ([b334210](https://github.com/jansinger/ostsee-tiere/commit/b334210b227db3c0315297b321b1b049015c6cbd))
+
 ## [2.6.0](https://github.com/jansinger/ostsee-tiere/compare/v2.5.5...v2.6.0) (2026-07-30)
 
 
