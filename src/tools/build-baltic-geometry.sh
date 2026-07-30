@@ -56,11 +56,21 @@ ogr2ogr -f GeoJSON "$OUT/baltic-water.geojson" "PG:$DB" \
   -sql "SELECT id, geom FROM geo_build.ostsee_parts ORDER BY id" -lco RFC7946=YES
 
 echo "== Extent exportieren"
+# Die Stellhebel stehen ausschliesslich in der .sql. Hier werden sie ausgelesen,
+# nicht wiederholt — sonst dokumentiert baltic-extent.json stillschweigend
+# falsche Werte, sobald jemand nur die .sql anfasst.
+sqlvar() { grep -oE "^\\\\set $1 +[0-9]+" "$HERE/build-baltic-geometry.sql" | grep -oE '[0-9]+$'; }
+BUF_REGION="$(sqlvar buffer_region_m)"
+BUF_SHORE="$(sqlvar buffer_shore_m)"
+SIMPLIFY="$(sqlvar simplify_m)"
+for v in BUF_REGION BUF_SHORE SIMPLIFY; do
+  [[ -n "${!v}" ]] || { echo "Stellhebel $v nicht aus build-baltic-geometry.sql lesbar." >&2; exit 1; }
+done
 psql "$DB" -tA -o "$ROOT/src/lib/server/geo/baltic-extent.json" -c "
 SELECT json_build_object(
   'minLongitude', ST_XMin(e), 'maxLongitude', ST_XMax(e),
   'minLatitude',  ST_YMin(e), 'maxLatitude',  ST_YMax(e),
-  'bufferRegionMeters', 20000, 'bufferShoreMeters', 200, 'simplifyMeters', 20,
+  'bufferRegionMeters', $BUF_REGION, 'bufferShoreMeters', $BUF_SHORE, 'simplifyMeters', $SIMPLIFY,
   'source', 'MarineRegions IHO Sea Areas + OSM land-polygons-complete-4326'
 )::text FROM (SELECT ST_Extent(geom) AS e FROM geo_build.ostsee) x;"
 
