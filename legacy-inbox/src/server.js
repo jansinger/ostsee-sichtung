@@ -1,5 +1,6 @@
 import http from 'node:http';
 import { health } from './routes/health.js';
+import { createSighting } from './routes/createSighting.js';
 import { antworteJson } from './respond.js';
 
 /**
@@ -9,7 +10,7 @@ import { antworteJson } from './respond.js';
  */
 const ROUTEN = [
 	{ pfad: '/health', methode: 'GET', behandeln: health },
-	{ pfad: '/rest_sichtungen', methode: 'POST', behandeln: null },
+	{ pfad: '/rest_sichtungen', methode: 'POST', behandeln: createSighting },
 	{ pfad: '/rest_sichtungen/antworten.json', methode: 'GET', behandeln: null },
 	{ pfad: '/en/rest_sichtungen/antworten.json', methode: 'GET', behandeln: null },
 	{ pfad: '/rest_sichtungen/inBaltic.json', methode: 'GET', behandeln: null }
