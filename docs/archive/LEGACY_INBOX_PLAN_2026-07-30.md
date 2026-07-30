@@ -134,13 +134,35 @@ Grund: `npm run test:quick` bleibt das einzige Tor. Der Dienst selbst liefert da
 	"engines": { "node": ">=20" },
 	"main": "app.js",
 	"dependencies": {
-		"@turf/boolean-point-in-polygon": "^7.1.0",
-		"@turf/helpers": "^7.1.0",
+		"@turf/boolean-point-in-polygon": "^7.3.5",
+		"@turf/helpers": "^7.3.4",
 		"rbush": "^4.0.1",
-		"yup": "^1.4.0"
+		"yup": "^1.7.1"
 	}
 }
 ```
+
+**Die Versionen müssen mit dem Wurzel-`package.json` übereinstimmen.** Die Tests
+lösen aus dem `node_modules` des Hauptrepos auf — weichen die Bereiche hier ab,
+wird gegen andere Versionen getestet als auf dem Server laufen. Vor dem Eintragen
+prüfen:
+
+Ausführen: `node -e "const p=require('./package.json');const d={...p.dependencies,...p.devDependencies};for(const k of ['yup','rbush','@turf/helpers','@turf/boolean-point-in-polygon'])console.log(k,d[k])"`
+
+- [ ] **Schritt 4b: Lockfile erzeugen**
+
+`npm ci` in der Betriebsanleitung bricht ohne `package-lock.json` ab. Einmalig
+erzeugen und mitversionieren:
+
+```bash
+npm install --package-lock-only --prefix legacy-inbox
+```
+
+Prüfen: `test -f legacy-inbox/package-lock.json && echo vorhanden`
+Erwartet: `vorhanden`
+
+Die Zeile `node_modules/` in `.gitignore` bleibt — das Lockfile wird versioniert,
+die Pakete nicht.
 
 `legacy-inbox/.gitignore`:
 
@@ -378,7 +400,7 @@ server.listen(konfiguration.port, () => {
 });
 ```
 
-Hinweis: `app.js` lässt sich erst nach Aufgabe 2 und 6 starten. Das ist beabsichtigt — der Einstiegspunkt wird einmal geschrieben und nicht mehrfach umgebaut.
+Hinweis: `app.js` lässt sich erst nach Aufgabe 2 und 6 starten. Das ist beabsichtigt — der Einstiegspunkt wird einmal geschrieben und nicht mehrfach umgebaut. Der Rauchtest dafür steht in Aufgabe 6, Schritt 8.
 
 - [ ] **Schritt 13: Committen**
 
@@ -1332,10 +1354,21 @@ export async function createSighting(req, res, { konfiguration, store, rateLimit
 	);
 }
 
+/**
+ * Ermittelt die Absender-IP.
+ *
+ * X-Forwarded-For wird NICHT verwendet: Die Kopfzeile kommt vom Client. Hängt
+ * der Proxy den echten Wert nur an, statt zu ersetzen, genügt ein zufälliges
+ * X-Forwarded-For je Request, um das Rate-Limit pro IP auszuhebeln — jeder
+ * Request zählte dann als neue IP.
+ *
+ * Stattdessen X-Real-IP, das nginx setzt und das ein Client nicht durchreichen
+ * kann (Plesk-Direktive siehe README), sonst die Adresse der Verbindung selbst.
+ */
 function ermittleIp(req) {
-	const weitergeleitet = req.headers['x-forwarded-for'];
-	if (typeof weitergeleitet === 'string' && weitergeleitet.length > 0) {
-		return weitergeleitet.split(',')[0].trim();
+	const vomProxy = req.headers['x-real-ip'];
+	if (typeof vomProxy === 'string' && vomProxy.length > 0) {
+		return vomProxy.trim();
 	}
 	return req.socket.remoteAddress || '';
 }
@@ -1560,10 +1593,159 @@ describe('POST /rest_sichtungen — Rate-Limit', () => {
 Ausführen: `npx vitest run --project server legacy-inbox/src/routes/createSighting.test.js`
 Erwartet: PASS, 12 Tests
 
-- [ ] **Schritt 7: Committen**
+- [ ] **Schritt 7: Plattenplatz-Prüfung und Protokollierung ergänzen**
+
+Der Entwurf (Abschnitt 11) verlangt eine Prüfung des freien Platzes beim Start. Ohne sie fällt eine volle Platte erst beim ersten fehlgeschlagenen Schreibvorgang auf — also an einer echten Sichtung.
+
+`legacy-inbox/src/logger.js`:
+
+```js
+/**
+ * Zeilenweises JSON auf stdout. Passenger schreibt das in die Logdatei der
+ * Domain; damit ist es ohne weitere Infrastruktur auswertbar.
+ *
+ * Nie den Payload protokollieren — er enthält Namen, E-Mail-Adressen und
+ * Anschriften. Ins Protokoll gehören Kennzahlen, nicht Inhalte.
+ */
+export function protokolliere(stufe, ereignis, felder = {}) {
+	process.stdout.write(
+		JSON.stringify({ zeit: new Date().toISOString(), stufe, ereignis, ...felder }) + '\n'
+	);
+}
+```
+
+In `legacy-inbox/src/store.js` die Platzprüfung ergänzen — Import und Funktion:
+
+```js
+import { statfs } from 'node:fs/promises';
+```
+
+```js
+/**
+ * Freier Platz in Bytes. Wird beim Start geprüft und von /health
+ * mitgeliefert, damit die Überwachung Vorlauf hat statt erst zu merken,
+ * dass nichts mehr geht.
+ */
+async function freierPlatzBytes() {
+	const werte = await statfs(datenVerzeichnis);
+	return werte.bavail * werte.bsize;
+}
+```
+
+`freierPlatzBytes` in das zurückgegebene Objekt aufnehmen:
+
+```js
+return { initialisiere, istBeschreibbar, schreibe, freierPlatzBytes };
+```
+
+In `legacy-inbox/src/routes/health.js` mitliefern:
+
+```js
+const freiMB = Math.round((await store.freierPlatzBytes()) / (1024 * 1024));
+
+antworteJson(res, 200, {
+	status: 'ok',
+	datenverzeichnis: 'beschreibbar',
+	frei_mb: freiMB
+});
+```
+
+Der bestehende Test in `server.test.js` muss dafür `freierPlatzBytes: async () => 5_000_000_000` in beiden Store-Attrappen ergänzen und die Erwartung auf `{ status: 'ok', datenverzeichnis: 'beschreibbar', frei_mb: 4768 }` anpassen.
+
+In `legacy-inbox/app.js` nach `store.initialisiere()` einfügen:
+
+```js
+const freiMB = Math.round((await store.freierPlatzBytes()) / (1024 * 1024));
+if (freiMB < 500) {
+	console.error(`Nur noch ${freiMB} MB frei — der Posteingang startet nicht.`);
+	process.exit(1);
+}
+```
+
+In `legacy-inbox/src/routes/createSighting.js` die beiden `console.error` und den Erfolgsfall auf den Protokollierer umstellen:
+
+```js
+import { protokolliere } from '../logger.js';
+```
+
+```js
+protokolliere('fehler', 'schreiben_fehlgeschlagen', { meldung: fehler.message });
+```
+
+```js
+protokolliere('info', 'sichtung_abgelegt', {
+	lfd_nr: geschrieben.lfdNr,
+	gueltig: validierung.gueltig,
+	abgeschnitten,
+	felder_mit_fehler: Object.keys(validierung.fehler)
+});
+```
+
+`felder_mit_fehler` ist der Schlüssel für die Überwachung aus Abschnitt 11: Häufen sich dort immer dieselben Feldnamen, liegen Validierer und reale App auseinander — genau das Frühwarnsignal für stillen Datenverlust.
+
+- [ ] **Schritt 8: Rauchtest für den Einstiegspunkt**
+
+`app.js` wird von keinem anderen Test ausgeführt. Ein Tippfehler dort fiele sonst erst auf dem Server auf.
+
+`legacy-inbox/app.test.js`:
+
+```js
+import { describe, it, expect } from 'vitest';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const WURZEL = path.dirname(fileURLToPath(import.meta.url));
+
+function starte(umgebung) {
+	return new Promise((fertig) => {
+		const prozess = spawn(process.execPath, [path.join(WURZEL, 'app.js')], {
+			env: { ...process.env, ...umgebung }
+		});
+		let ausgabe = '';
+		prozess.stdout.on('data', (d) => {
+			ausgabe += d;
+			if (ausgabe.includes('lauscht auf Port')) {
+				prozess.kill();
+				fertig({ ausgabe, code: 0 });
+			}
+		});
+		prozess.stderr.on('data', (d) => (ausgabe += d));
+		prozess.on('exit', (code) => fertig({ ausgabe, code }));
+	});
+}
+
+describe('app.js', () => {
+	it('startet und meldet Port und Datenverzeichnis', async () => {
+		const verzeichnis = await mkdtemp(path.join(tmpdir(), 'inbox-app-'));
+		const { ausgabe } = await starte({ LEGACY_INBOX_DATA_DIR: verzeichnis, PORT: '0' });
+
+		expect(ausgabe).toContain('lauscht auf Port');
+		expect(ausgabe).toContain(verzeichnis);
+
+		await rm(verzeichnis, { recursive: true, force: true });
+	});
+
+	it('bricht ohne LEGACY_INBOX_DATA_DIR mit klarer Meldung ab', async () => {
+		const { ausgabe, code } = await starte({ LEGACY_INBOX_DATA_DIR: '' });
+
+		expect(code).not.toBe(0);
+		expect(ausgabe).toContain('LEGACY_INBOX_DATA_DIR');
+	});
+});
+```
+
+- [ ] **Schritt 9: Alle Tests des Dienstes ausführen**
+
+Ausführen: `npx vitest run --project server legacy-inbox/`
+Erwartet: PASS — alle bisherigen Tests plus die zwei Rauchtests
+
+- [ ] **Schritt 10: Committen**
 
 ```bash
-git add legacy-inbox/src/rateLimit.js legacy-inbox/src/rateLimit.test.js legacy-inbox/src/routes/createSighting.test.js && git commit -m "feat(api): rate-limit per ip after the write, globally before it"
+git add legacy-inbox/ && git commit -m "feat(api): rate-limit per ip after the write, globally before it"
 ```
 
 ---
@@ -2305,6 +2487,10 @@ git add src/tests/contract/legacy-inbox.contract.test.ts && git commit -m "test(
 
 ## Aufgabe 10: Import-Skript
 
+**Warum nicht über HTTP:** Der naheliegende Weg — den Payload an `POST /rest_sichtungen` der Hauptanwendung schicken — trägt nicht. Dieser Endpunkt begrenzt auf 20 Sichtungen pro Stunde und IP (`src/lib/server/middleware/rateLimit.ts:78`, `SIGHTING_SUBMISSION`), und der Import kommt von einer einzigen IP. Ab Datensatz 21 käme `429`; ein paar hundert wartende Sichtungen bräuchten Tage.
+
+Das Skript ruft deshalb dieselben Bausteine direkt auf, die auch die Route benutzt: `mapLegacyToCurrentSchema` und `saveSighting`. Damit gibt es weiterhin **kein zweites Mapping** — es ist wörtlich dasselbe —, aber kein Rate-Limit und keine neue Umgehung an einer öffentlichen Fläche.
+
 **Dateien:**
 
 - Erstellen: `src/tools/import-legacy-inbox.js`
@@ -2312,8 +2498,8 @@ git add src/tests/contract/legacy-inbox.contract.test.ts && git commit -m "test(
 
 **Schnittstellen:**
 
-- Erzeugt: `importiere({ datenVerzeichnis, zielUrl, holen })` → `Promise<{ uebernommen: number, fehlgeschlagen: number }>`
-- `holen` ist die Abrufefunktion (Vorgabe `fetch`) — im Test austauschbar
+- Verbraucht: `mapLegacyToCurrentSchema(legacyData)` aus `src/lib/legacy-api/field-mapping.js`, `saveSighting(daten)` aus `src/lib/server/db/sightingRepository.js` → `{ id: number }`
+- Erzeugt: `importiere({ datenVerzeichnis, mappe?, speichere? })` → `Promise<{ uebernommen: number, fehlgeschlagen: number }>` — `mappe` und `speichere` sind nur für Tests austauschbar
 
 - [ ] **Schritt 1: Test schreiben**
 
@@ -2329,7 +2515,7 @@ import { importiere } from './import-legacy-inbox.js';
 
 let verzeichnis: string;
 
-async function legeUmschlagAn(name: string, payload: Record<string, unknown>) {
+async function legeUmschlagAn(name: string, payload: Record<string, unknown> | null) {
 	await writeFile(
 		path.join(verzeichnis, 'posteingang', name),
 		JSON.stringify({
@@ -2339,7 +2525,7 @@ async function legeUmschlagAn(name: string, payload: Record<string, unknown>) {
 			roh: JSON.stringify(payload),
 			abgeschnitten: false,
 			payload,
-			validierung: { gueltig: true, fehler: {} }
+			validierung: { gueltig: payload !== null, fehler: {} }
 		})
 	);
 }
@@ -2355,20 +2541,20 @@ afterEach(async () => {
 });
 
 describe('importiere', () => {
-	it('schickt den Payload unverändert an die Zielanwendung', async () => {
+	it('reicht den Payload unverändert an das Mapping der Hauptanwendung', async () => {
 		await legeUmschlagAn('000001__a.json', { anzahl_gesamt: 3, vorname: 'Jörg' });
-		const gesendet: unknown[] = [];
+		const gemappt: unknown[] = [];
 
 		await importiere({
 			datenVerzeichnis: verzeichnis,
-			zielUrl: 'https://example.de/rest_sichtungen',
-			holen: async (_url: string, optionen: { body: string }) => {
-				gesendet.push(JSON.parse(optionen.body));
-				return { ok: true, status: 201 };
-			}
+			mappe: (daten: unknown) => {
+				gemappt.push(daten);
+				return { totalCount: 3 };
+			},
+			speichere: async () => ({ id: 4711 })
 		});
 
-		expect(gesendet).toEqual([{ anzahl_gesamt: 3, vorname: 'Jörg' }]);
+		expect(gemappt).toEqual([{ anzahl_gesamt: 3, vorname: 'Jörg' }]);
 	});
 
 	it('verschiebt Übernommenes nach importiert/', async () => {
@@ -2376,8 +2562,8 @@ describe('importiere', () => {
 
 		const ergebnis = await importiere({
 			datenVerzeichnis: verzeichnis,
-			zielUrl: 'https://example.de/rest_sichtungen',
-			holen: async () => ({ ok: true, status: 201 })
+			mappe: () => ({ totalCount: 1 }),
+			speichere: async () => ({ id: 1 })
 		});
 
 		expect(ergebnis).toEqual({ uebernommen: 1, fehlgeschlagen: 0 });
@@ -2390,25 +2576,44 @@ describe('importiere', () => {
 
 		const ergebnis = await importiere({
 			datenVerzeichnis: verzeichnis,
-			zielUrl: 'https://example.de/rest_sichtungen',
-			holen: async () => ({ ok: false, status: 500 })
+			mappe: () => ({ totalCount: 1 }),
+			speichere: async () => {
+				throw new Error('Datenbank nicht erreichbar');
+			}
 		});
 
 		expect(ergebnis).toEqual({ uebernommen: 0, fehlgeschlagen: 1 });
 		expect(await readdir(path.join(verzeichnis, 'posteingang'))).toEqual(['000001__a.json']);
 	});
 
-	it('legt einen zweiten Lauf nichts doppelt an', async () => {
+	it('bricht bei einem Fehler nicht ab, sondern nimmt den Rest mit', async () => {
+		await legeUmschlagAn('000001__a.json', { anzahl_gesamt: 1 });
+		await legeUmschlagAn('000002__b.json', { anzahl_gesamt: 2 });
+
+		let aufruf = 0;
+		const ergebnis = await importiere({
+			datenVerzeichnis: verzeichnis,
+			mappe: () => ({ totalCount: 1 }),
+			speichere: async () => {
+				aufruf++;
+				if (aufruf === 1) throw new Error('einmaliger Fehler');
+				return { id: 2 };
+			}
+		});
+
+		expect(ergebnis).toEqual({ uebernommen: 1, fehlgeschlagen: 1 });
+	});
+
+	it('legt bei einem zweiten Lauf nichts doppelt an', async () => {
 		await legeUmschlagAn('000001__a.json', { anzahl_gesamt: 1 });
 		let aufrufe = 0;
-		const holen = async () => {
-			aufrufe++;
-			return { ok: true, status: 201 };
-		};
 		const optionen = {
 			datenVerzeichnis: verzeichnis,
-			zielUrl: 'https://example.de/rest_sichtungen',
-			holen
+			mappe: () => ({ totalCount: 1 }),
+			speichere: async () => {
+				aufrufe++;
+				return { id: 1 };
+			}
 		};
 
 		await importiere(optionen);
@@ -2417,23 +2622,37 @@ describe('importiere', () => {
 		expect(aufrufe).toBe(1);
 	});
 
-	it('übernimmt sonstige_auffaelligkeiten in der Schreibweise der Hauptanwendung', async () => {
+	it('übersetzt sonstige_auffaelligkeiten in die Schreibweise der Hauptanwendung', async () => {
 		await legeUmschlagAn('000001__a.json', {
 			anzahl_gesamt: 1,
 			sonstige_auffaelligkeiten: 'Sehr ruhig'
 		});
-		let gesendet: Record<string, unknown> = {};
+		let gemappt: Record<string, unknown> = {};
 
 		await importiere({
 			datenVerzeichnis: verzeichnis,
-			zielUrl: 'https://example.de/rest_sichtungen',
-			holen: async (_url: string, optionen: { body: string }) => {
-				gesendet = JSON.parse(optionen.body);
-				return { ok: true, status: 201 };
-			}
+			mappe: (daten: Record<string, unknown>) => {
+				gemappt = daten;
+				return { totalCount: 1 };
+			},
+			speichere: async () => ({ id: 1 })
 		});
 
-		expect(gesendet['sonstige_auffälligkeiten']).toBe('Sehr ruhig');
+		expect(gemappt['sonstige_auffälligkeiten']).toBe('Sehr ruhig');
+		expect(gemappt).not.toHaveProperty('sonstige_auffaelligkeiten');
+	});
+
+	it('rührt Umschläge ohne Payload nicht an', async () => {
+		await legeUmschlagAn('000001__a.json', null);
+
+		const ergebnis = await importiere({
+			datenVerzeichnis: verzeichnis,
+			mappe: () => ({ totalCount: 1 }),
+			speichere: async () => ({ id: 1 })
+		});
+
+		expect(ergebnis).toEqual({ uebernommen: 0, fehlgeschlagen: 1 });
+		expect(await readdir(path.join(verzeichnis, 'posteingang'))).toEqual(['000001__a.json']);
 	});
 });
 ```
@@ -2451,17 +2670,28 @@ Erwartet: FAIL — `Failed to load url ./import-legacy-inbox.js`
 /**
  * Übernimmt die Dateien des Legacy-Posteingangs in die Hauptanwendung.
  *
- * Der Payload wird unverändert an POST /rest_sichtungen weitergereicht —
- * kein zweites Mapping. Übernommene Dateien wandern nach importiert/; die
- * Datei selbst ist damit das Protokoll, und ein zweiter Lauf kann nichts
- * doppelt anlegen.
+ * Ruft dieselben Bausteine auf wie POST /rest_sichtungen — mapLegacyToCurrentSchema
+ * und saveSighting —, statt über HTTP zu gehen. Grund: Der Endpunkt begrenzt auf
+ * 20 Sichtungen pro Stunde und IP (rateLimit.ts:78), was einen Sammelimport
+ * unbrauchbar machen würde. Ein zweites Mapping entsteht dadurch nicht; es ist
+ * wörtlich dieselbe Funktion.
  *
- * Aufruf: node src/tools/import-legacy-inbox.js <datenverzeichnis> <ziel-url>
+ * Übernommene Dateien wandern nach importiert/. Die Datei selbst ist damit das
+ * Protokoll: Ein zweiter Lauf kann nichts doppelt anlegen, und was liegen
+ * bleibt, ist genau das, was noch offen ist.
+ *
+ * Aufruf: node src/tools/import-legacy-inbox.js <datenverzeichnis>
  */
 import { readdir, readFile, rename } from 'node:fs/promises';
 import path from 'node:path';
+import { mapLegacyToCurrentSchema } from '../lib/legacy-api/field-mapping.js';
+import { saveSighting } from '../lib/server/db/sightingRepository.js';
 
-export async function importiere({ datenVerzeichnis, zielUrl, holen = fetch }) {
+export async function importiere({
+	datenVerzeichnis,
+	mappe = mapLegacyToCurrentSchema,
+	speichere = saveSighting
+}) {
 	const eingang = path.join(datenVerzeichnis, 'posteingang');
 	const erledigt = path.join(datenVerzeichnis, 'importiert');
 
@@ -2471,26 +2701,25 @@ export async function importiere({ datenVerzeichnis, zielUrl, holen = fetch }) {
 	let fehlgeschlagen = 0;
 
 	for (const datei of dateien) {
-		const umschlag = JSON.parse(await readFile(path.join(eingang, datei), 'utf8'));
+		try {
+			const umschlag = JSON.parse(await readFile(path.join(eingang, datei), 'utf8'));
 
-		if (!umschlag.payload) {
-			// Ohne geparsten Payload ist nichts zu übernehmen — der Rohtext
-			// bleibt liegen und braucht einen Menschen.
-			fehlgeschlagen++;
-			continue;
-		}
+			if (!umschlag.payload) {
+				// Ohne geparsten Payload ist nichts zu übernehmen. Der Rohtext
+				// bleibt liegen und braucht einen Menschen.
+				console.error(`${datei}: kein Payload — bleibt liegen`);
+				fehlgeschlagen++;
+				continue;
+			}
 
-		const antwort = await holen(zielUrl, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(vereinheitliche(umschlag.payload))
-		});
+			const gespeichert = await speichere(mappe(vereinheitliche(umschlag.payload)));
 
-		if (antwort.ok) {
 			await rename(path.join(eingang, datei), path.join(erledigt, datei));
 			uebernommen++;
-		} else {
-			console.error(`${datei}: Zielanwendung antwortete mit ${antwort.status}`);
+			console.log(`${datei} → Sichtung ${gespeichert.id}`);
+		} catch (fehler) {
+			// Ein Fehler in einer Datei darf den Rest nicht aufhalten.
+			console.error(`${datei}: ${fehler.message}`);
 			fehlgeschlagen++;
 		}
 	}
@@ -2500,8 +2729,12 @@ export async function importiere({ datenVerzeichnis, zielUrl, holen = fetch }) {
 
 /**
  * Der Vertrag schreibt sonstige_auffaelligkeiten mit "ae", die Hauptanwendung
- * erwartet den Umlaut (Entwurf, Abschnitt 2.2). Ohne diese Übersetzung
- * verlöre der Import den Freitext still.
+ * erwartet den Umlaut (Entwurf, Abschnitt 2.2). Ohne diese Übersetzung verlöre
+ * der Import den Freitext still.
+ *
+ * Läuft die parallele Korrektur der Hauptanwendung durch, akzeptiert
+ * mapLegacyToCurrentSchema beide Schreibweisen und diese Funktion wird
+ * überflüssig — sie schadet dann aber auch nicht.
  */
 function vereinheitliche(payload) {
 	if (!('sonstige_auffaelligkeiten' in payload)) return payload;
@@ -2512,12 +2745,12 @@ function vereinheitliche(payload) {
 
 // Direkter Aufruf über die Kommandozeile
 if (import.meta.url === `file://${process.argv[1]}`) {
-	const [datenVerzeichnis, zielUrl] = process.argv.slice(2);
-	if (!datenVerzeichnis || !zielUrl) {
-		console.error('Aufruf: node src/tools/import-legacy-inbox.js <datenverzeichnis> <ziel-url>');
+	const [datenVerzeichnis] = process.argv.slice(2);
+	if (!datenVerzeichnis) {
+		console.error('Aufruf: node src/tools/import-legacy-inbox.js <datenverzeichnis>');
 		process.exit(1);
 	}
-	const ergebnis = await importiere({ datenVerzeichnis, zielUrl });
+	const ergebnis = await importiere({ datenVerzeichnis });
 	console.log(`${ergebnis.uebernommen} übernommen, ${ergebnis.fehlgeschlagen} offen.`);
 	process.exit(ergebnis.fehlgeschlagen > 0 ? 1 : 0);
 }
@@ -2526,12 +2759,20 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 - [ ] **Schritt 4: Test ausführen, Erfolg prüfen**
 
 Ausführen: `npx vitest run --project server src/tools/import-legacy-inbox.test.ts`
-Erwartet: PASS, 5 Tests
+Erwartet: PASS, 7 Tests
 
-- [ ] **Schritt 5: Committen**
+- [ ] **Schritt 5: Skript im Wurzel-`package.json` eintragen**
+
+```json
+		"import:legacy-inbox": "vite-node src/tools/import-legacy-inbox.js --",
+```
+
+Grund für `vite-node`: Das Skript importiert aus `$lib`-Pfaden und braucht die Auflösung von SvelteKit; mit blankem `node` schlägt der Import fehl.
+
+- [ ] **Schritt 6: Committen**
 
 ```bash
-git add src/tools/import-legacy-inbox.js src/tools/import-legacy-inbox.test.ts && git commit -m "feat(api): import inbox files into the main application"
+git add src/tools/import-legacy-inbox.js src/tools/import-legacy-inbox.test.ts package.json && git commit -m "feat(api): import inbox files through the repository, not over http"
 ```
 
 ---
@@ -2551,7 +2792,7 @@ Die drei Punkte aus Abschnitt 11 des Entwurfs fängt kein Code ab. Ohne sie ist 
 
 `legacy-inbox/README.md`:
 
-````markdown
+```markdown
 # Legacy-Posteingang
 
 Eigenständiger Node-Dienst für den Plesk-Server. Bedient drei Endpunkte der
@@ -2581,43 +2822,72 @@ Datei". Fällt er weg, ist der Dienst wieder einer, der Daten verwerfen kann.
 `/sichtungen/showreports.json` wird bewusst **nicht** bedient — ohne Datenbank
 könnte der Dienst dort nur ein falsches leeres Array liefern.
 
+`/health` gehört nicht zum Legacy-Vertrag. Es ist ein zusätzlicher Pfad für die
+Überwachung und liefert keine Daten aus dem Posteingang.
+
 ## Umgebungsvariablen
 
-| Variable                         | Vorgabe | Bedeutung                                                   |
-| -------------------------------- | ------- | ----------------------------------------------------------- |
-| `LEGACY_INBOX_DATA_DIR`          | —       | **Pflicht.** Datenverzeichnis, außerhalb des Document-Roots |
-| `PORT`                           | 3000    | Wird von Passenger gesetzt                                  |
-| `LEGACY_INBOX_RATE_LIMIT_IP`     | 100     | Requests pro IP und Stunde                                  |
-| `LEGACY_INBOX_RATE_LIMIT_GLOBAL` | 1000    | Reißleine über alle IPs                                     |
-| `LEGACY_INBOX_MAX_BODY_BYTES`    | 262144  | Obergrenze des Request-Bodys                                |
+| Variable                         | Vorgabe | Bedeutung                                                     |
+| -------------------------------- | ------- | ------------------------------------------------------------- |
+| `LEGACY_INBOX_DATA_DIR`          | —       | **Pflicht.** Datenverzeichnis, außerhalb des Document-Roots   |
+| `PORT`                           | 3000    | Wird von Passenger gesetzt                                    |
+| `LEGACY_INBOX_RATE_LIMIT_IP`     | 100     | Requests pro IP und Stunde — weist ab, schreibt aber trotzdem |
+| `LEGACY_INBOX_RATE_LIMIT_GLOBAL` | 1000    | Reißleine über alle IPs — weist ohne Schreiben ab             |
+| `LEGACY_INBOX_MAX_BODY_BYTES`    | 262144  | Obergrenze des Request-Bodys                                  |
 
 ## Einrichtung in Plesk
 
-1. Node.js-Extension der Domain aktivieren, Anwendungswurzel auf `legacy-inbox/`
-   und Startdatei auf `app.js` setzen
-2. `npm ci` über die Plesk-Oberfläche oder per SSH
-3. Datenverzeichnis **außerhalb** des Document-Roots anlegen und `LEGACY_INBOX_DATA_DIR`
-   darauf setzen:
-   ```bash
-   mkdir -p /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data
-   chmod 700 /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data
-   chown <anwendungsbenutzer> /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data
-   ```
-````
+**1.** Node.js-Extension der Domain aktivieren, Anwendungswurzel auf
+`legacy-inbox/` und Startdatei auf `app.js` setzen.
 
-Läge es im Document-Root, wären Namen, E-Mail-Adressen und Telefonnummern
-der Melder über die Domain abrufbar. Das ist die wichtigste einzelne
-Einstellung des gesamten Aufbaus. 4. Let's Encrypt aktivieren — **ohne** erzwungene HTTPS-Umleitung. Die Spec nennt
-`http://` als Basis-URL, und ein `301` auf ein POST lässt bei etlichen
-HTTP-Clients den Body verschwinden 5. Prüfen:
+**2.** `npm ci` über die Plesk-Oberfläche oder per SSH.
 
-```bash
-curl -s https://schweinswalsichtung.de/health
-curl -s 'https://schweinswalsichtung.de/rest_sichtungen/inBaltic.json?location=53,10'
-```
+**3.** Datenverzeichnis **außerhalb** des Document-Roots anlegen und
+`LEGACY_INBOX_DATA_DIR` darauf setzen:
 
-Erwartet: `{"status":"ok","datenverzeichnis":"beschreibbar"}` und
+    mkdir -p /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data
+    chmod 700 /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data
+    chown <anwendungsbenutzer> /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data
+
+Läge es im Document-Root, wären Namen, E-Mail-Adressen und Telefonnummern der
+Melder über die Domain abrufbar. Das ist die wichtigste einzelne Einstellung des
+gesamten Aufbaus.
+
+**4.** `X-Real-IP` in den nginx-Zusatzdirektiven der Domain setzen — sonst kennt
+der Dienst nur die Adresse des Proxys und zählt alle Melder als einen:
+
+    proxy_set_header X-Real-IP $remote_addr;
+
+`X-Forwarded-For` wird bewusst **nicht** ausgewertet: Die Kopfzeile kommt vom
+Client, und ein zufälliger Wert je Request würde das Rate-Limit aushebeln.
+
+**5.** Let's Encrypt aktivieren — **ohne** erzwungene HTTPS-Umleitung. Die Spec
+nennt `http://` als Basis-URL, und ein `301` auf ein POST lässt bei etlichen
+HTTP-Clients den Body verschwinden.
+
+**6.** Prüfen:
+
+    curl -s https://schweinswalsichtung.de/health
+    curl -s 'https://schweinswalsichtung.de/rest_sichtungen/inBaltic.json?location=53,10'
+
+Erwartet: `{"status":"ok","datenverzeichnis":"beschreibbar","frei_mb":…}` und
 `{"inbaltic":false,"inchartarea":true}`
+
+## In den Posteingang schauen
+
+Es gibt bewusst keine Oberfläche — die Dateien liegen im Dateisystem:
+
+    cd "$LEGACY_INBOX_DATA_DIR"
+
+    ls posteingang | wc -l        # wie viele warten auf den Import
+    ls abgewiesen  | wc -l        # Warnsignal, siehe unten
+    ls importiert  | wc -l        # bereits übernommen
+
+    # letzter Eingang, ohne die persönlichen Daten
+    ls -t posteingang | head -1 | xargs -I{} jq '{empfangen_am, lfd_nr, validierung}' posteingang/{}
+
+    # welche Felder bemängelt wurden — die Frage bei jedem Eintrag in abgewiesen/
+    jq -r '.validierung.fehler | keys[]' abgewiesen/*.json | sort | uniq -c | sort -rn
 
 ## Betrieb — Voraussetzung, nicht Kür
 
@@ -2630,30 +2900,41 @@ Datenübernahme, sondern der eigentliche Schutzmechanismus.
 **Überwachung.** Eine **externe** Überwachung muss `/health` regelmäßig abfragen
 — extern, weil eine Überwachung auf demselben Server genau dann mit ausfällt,
 wenn sie gebraucht wird. Mit zu überwachen: die Anzahl der Dateien in
-`abgewiesen/`. Jeder Eintrag dort bedeutet, dass Validierer und reale App
-auseinanderliegen, und ist ein Frühwarnsignal für stillen Datenverlust.
+`abgewiesen/` und das Feld `frei_mb`.
 
-**Plattenplatz.** Prüfung beim Start, laufende Überwachung des freien Platzes,
-Alarm mit Vorlauf. Allein der Geo-Index belegt 33 MB.
+**Jeder Eintrag in `abgewiesen/` ist ein Warnsignal.** Entweder Missbrauch —
+dann kann er weg — oder eine echte Sichtung, die der Validierer zu Unrecht
+abgelehnt hat. Der zweite Fall ist stiller Datenverlust und muss auffallen. Der
+`jq`-Befehl oben zeigt, welche Felder bemängelt wurden; häufen sich dieselben
+Namen, liegen Validierer und reale App auseinander.
+
+**Plattenplatz.** Der Dienst startet nicht mehr, wenn weniger als 500 MB frei
+sind, und liefert den freien Platz über `/health` mit. Zu bedenken: Allein der
+Geo-Index belegt 33 MB, und innerhalb der globalen Reißleine passen im
+schlimmsten Fall rund 6 GB pro Tag auf die Platte (1.000 Requests/Stunde à
+256 KB). Die Reißleine schützt vor einer Flut, nicht vor einem geduldigen
+Angreifer.
+
+**Aufräumen.** Weder `abgewiesen/` noch `importiert/` räumen sich selbst auf:
+
+- `abgewiesen/` nach Sichtung durch einen Menschen leeren — echte Sichtungen
+  von Hand nachtragen, Missbrauch löschen
+- `importiert/` nach gesicherter Übernahme in die Datenbank archivieren oder
+  löschen. Die Dateien werden nur noch als Herkunftsnachweis gebraucht
 
 ## Import
 
-```bash
-node src/tools/import-legacy-inbox.js /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data https://<hauptanwendung>/rest_sichtungen
-```
+    npm run import:legacy-inbox -- /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data
 
-Übernommene Dateien wandern nach `importiert/`. Was liegen bleibt, ist genau
-das, was noch offen ist.
+Läuft im Hauptrepo, nicht auf dem Plesk-Server. Übernommene Dateien wandern nach
+`importiert/`; was liegen bleibt, ist genau das, was noch offen ist.
 
 ## Tests
 
 Die Tests laufen im Vitest des Hauptrepos mit:
 
-```bash
-npm run test:quick
+    npm run test:quick
 ```
-
-````
 
 - [ ] **Schritt 2: Archiv-README ergänzen**
 
@@ -2661,7 +2942,7 @@ In `docs/archive/README.md` nach der Zeile zu `LEGACY_INBOX_ENTWURF_2026-07-30.m
 
 ```markdown
 | `LEGACY_INBOX_PLAN_2026-07-30.md` | Implementierungsplan dazu |
-````
+```
 
 - [ ] **Schritt 3: Client-Status in beiden Dateien aktualisieren**
 
@@ -2690,13 +2971,21 @@ Nach Aufgabe 11 steht:
 
 - ein lauffähiger Dienst mit drei vertragstreuen Endpunkten und einem Health-Check
 - ein Vertragstest, der Übereinstimmung mit der Hauptanwendung und dem Original-PDF nachweist
-- ein Import-Skript, das den Payload unverändert weiterreicht
-- eine Betriebsanleitung, die die drei Punkte benennt, die kein Code abfängt
+- ein Import-Skript, das dieselben Bausteine benutzt wie die Route der Hauptanwendung
+- eine Betriebsanleitung, die die Punkte benennt, die kein Code abfängt
 
 **Vor der Inbetriebnahme zu klären** (nicht Teil dieses Plans, weil außerhalb des Codes):
 
 1. Wohin wird das Datenverzeichnis gesichert, und in welchem Takt?
 2. Welches System fragt `/health` von außen ab, und wer bekommt den Alarm?
-3. In welchem Takt läuft der Import?
+3. Wer sieht sich `abgewiesen/` an, und wie oft?
+4. Wann läuft der Import — und wer entscheidet, dass die Hauptanwendung so weit ist?
 
-Ohne Antworten auf diese drei Fragen sollte der Dienst nicht online gehen.
+Ohne Antworten auf diese vier Fragen sollte der Dienst nicht online gehen.
+
+**Später zu prüfen:** Sobald die Hauptanwendung produktiv und vom Plesk-Server aus
+erreichbar ist, lohnt ein zweiter Blick auf den Zuschnitt. Dann könnte der Dienst
+jede Sichtung sofort weiterreichen und die Platte nur noch als Rückfallpuffer für
+gescheiterte Zustellungen benutzen. Das Verlustfenster schrumpfte von Tagen auf
+Sekunden, und die halbe Betriebslast aus Abschnitt 11 des Entwurfs entfiele. Der
+Sammelimport ist die richtige Form für die jetzige Lage, nicht für alle Zeit.
