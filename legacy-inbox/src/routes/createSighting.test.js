@@ -19,7 +19,17 @@ const gueltig = {
 	anzahl_gesamt: 1
 };
 
-const dateienIn = async (unter) => readdir(path.join(verzeichnis, unter)).catch(() => []);
+/**
+ * Die .tmp-Datei zählt bewusst nicht mit: Sie ist ein Zwischenstand vor dem
+ * rename und beweist gerade nicht, dass die Sichtung dauerhaft abgelegt ist.
+ * Ohne diesen Filter kann ein Test grün werden, obwohl der Schreibvorgang
+ * danach noch scheitert — genau das war vor dem Fix auf dem Abbruch-Pfad der
+ * Fall (rename lief ins Leere, die Prüfung sah die .tmp-Datei).
+ */
+const dateienIn = async (unter) =>
+	readdir(path.join(verzeichnis, unter))
+		.catch(() => [])
+		.then((dateien) => dateien.filter((datei) => !datei.endsWith('.tmp')));
 
 const einzigeDateiIn = async (unter) => {
 	const dateien = await dateienIn(unter);
@@ -41,33 +51,24 @@ beforeEach(async () => {
 	basis = `http://127.0.0.1:${server.address().port}`;
 });
 
+/**
+ * Ein einzelner rm() ohne Wiederholungen — und das ist Absicht.
+ *
+ * Früher brauchte dieses Aufräumen mehrere Anläufe: Auf dem Abbruch-Pfad
+ * antwortete der clientError-Handler dem Client, während createSighting.js
+ * noch schrieb. Der Test war damit fertig, bevor die Sichtung auf der Platte
+ * lag, und traf mit rm() auf ein Verzeichnis, in das gerade noch geschrieben
+ * wurde. Die Wiederholungen verdeckten genau den Fehler, den zu prüfen der
+ * Sinn dieser Tests ist.
+ *
+ * Seit die Antwort erst nach dem Schreiben rausgeht, kann kein Schreibvorgang
+ * das Ende eines Tests überleben. Bricht rm() hier wieder mit ENOTEMPTY ab,
+ * ist das die Regression und soll auffallen, statt weggewartet zu werden.
+ */
 afterEach(async () => {
 	await new Promise((fertig) => server.close(fertig));
-	await raeumeAuf(verzeichnis);
+	await rm(verzeichnis, { recursive: true, force: true });
 });
-
-/**
- * server.close() wartet nur auf offene Verbindungen, nicht auf verwaiste
- * Request-Handler-Promises: Ein Body-Stream-Abbruch (siehe Tests unten) lässt
- * die Verbindung sofort enden, während createSighting.js im Hintergrund noch
- * auf die Platte schreibt (erst schreiben, dann antworten — das gilt auch,
- * wenn die Antwort durch den clientError-Handler in server.js bereits
- * vorzeitig beim Client angekommen ist). Ein einzelner rm() kann deshalb auf
- * ein Verzeichnis treffen, in das der Hintergrund-Schreibvorgang gerade noch
- * hineinschreibt (ENOTEMPTY). Ein paar Wiederholungen mit kurzer Pause geben
- * diesem Schreibvorgang die Zeit, die er ohnehin bekommt (die Datei landet in
- * jedem Fall auf der Platte) — reines Aufräum-Timing, keine Änderung an dem,
- * was geprüft wird.
- */
-async function raeumeAuf(verzeichnis, versucheUebrig = 5) {
-	try {
-		await rm(verzeichnis, { recursive: true, force: true });
-	} catch (fehler) {
-		if (versucheUebrig <= 0) throw fehler;
-		await new Promise((fertig) => setTimeout(fertig, 25));
-		await raeumeAuf(verzeichnis, versucheUebrig - 1);
-	}
-}
 
 const sende = (koerper, kopfzeilen = { 'Content-Type': 'application/json' }) =>
 	fetch(`${basis}/rest_sichtungen`, { method: 'POST', headers: kopfzeilen, body: koerper });
@@ -250,6 +251,35 @@ describe('POST /rest_sichtungen — Vertrag', () => {
 
 		const umschlag = await einzigeDateiIn('abgewiesen');
 		expect(umschlag.validierung.gueltig).toBe(false);
+		// Der eigentliche Punkt: Eine Datei, die nur belegt, dass irgendwann
+		// irgendwas ankam, ist wertlos. Was bis zum Abbruch übertragen wurde,
+		// muss im Umschlag stehen — sonst ist die Sichtung genauso verloren,
+		// als hätte der Dienst nie geschrieben.
+		expect(umschlag.roh).toBe('{"anzahl_gesamt": 1');
+	});
+
+	it('antwortet auf dem Abbruch-Pfad 500, wenn der Schreibvorgang scheitert', async () => {
+		// Die Zusage „nie antworten, bevor geschrieben ist" gilt gerade hier:
+		// Antwortete der clientError-Handler selbst, käme beim Client ein 400
+		// an, obwohl nichts auf der Platte liegt — und ein 500, das ihn zum
+		// erneuten Versuch bewegen würde, wäre nicht mehr möglich.
+		await new Promise((fertig) => server.close(fertig));
+		server = erstelleServer({
+			konfiguration: { maxBodyBytes: 262144 },
+			store: {
+				istBeschreibbar: async () => false,
+				schreibe: async () => {
+					throw new Error('ENOSPC: no space left on device');
+				}
+			},
+			rateLimit: erstelleRateLimit({ proIpProStunde: 100, globalProStunde: 1000 })
+		});
+		await new Promise((fertig) => server.listen(0, fertig));
+
+		const antwortRoh = await sendeUnterbrochen(server.address().port, '{"anzahl_gesamt": 1');
+
+		const [statuszeile] = antwortRoh.split('\r\n');
+		expect(statuszeile).toContain(' 500 ');
 	});
 
 	it('antwortet mit der eigenen JSON-Fehlerform statt Nodes Klartext-400, wenn der Body-Stream mitten in der Übertragung abbricht', async () => {

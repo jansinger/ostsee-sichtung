@@ -38,7 +38,22 @@ const ROUTEN = [
 ];
 
 export function erstelleServer(abhaengigkeiten) {
+	// Welche Anfragen gerade in einem eigenen Handler stecken. 'clientError'
+	// bekommt nur den rohen Socket; ohne dieses Verzeichnis lässt sich nicht
+	// unterscheiden, ob überhaupt jemand da ist, der noch antworten wird.
+	const inFlug = new Map();
+
 	const server = http.createServer(async (req, res) => {
+		inFlug.set(req.socket, { req, res });
+		res.on('close', () => inFlug.delete(req.socket));
+
+		// Schutz-Listener: Der clientError-Handler unten meldet einen Abbruch
+		// über req.emit('error', …). Ein 'error' ohne Zuhörer beendet den
+		// Prozess — und zwar genau dann, wenn der Abbruch außerhalb des
+		// Lesevorgangs eintrifft, also während bereits geschrieben wird. Der
+		// Fehler selbst ist an dieser Stelle schon protokolliert.
+		req.on('error', () => {});
+
 		const pfad = new URL(req.url, 'http://localhost').pathname;
 		const treffer = ROUTEN.filter((r) => r.pfad === pfad);
 
@@ -71,24 +86,47 @@ export function erstelleServer(abhaengigkeiten) {
 		}
 	});
 
-	// Ohne eigenen Handler beantwortet Node ein fehlerhaftes oder mitten in der
-	// Übertragung abgebrochenes Request selbst — mit seiner eingebauten
-	// Klartext-400-Antwort ("HTTP/1.1 400 Bad Request\r\nConnection:
-	// close\r\n\r\n"), die weder JSON noch die Vertragsform ist, und die dem
-	// eigentlichen Request-Handler den Socket unter den Füßen wegzieht, bevor
-	// dessen eigene antworteJson-Antwort dort ankommt (siehe
-	// .superpowers/sdd/task-5-report.md, Abschnitt "Fix: flakiger
-	// Stream-Abbruch-Test"). Ein Versuch, dem bereits laufenden Handler die
-	// Antwort zu überlassen (nur protokollieren, Socket unangetastet lassen),
-	// wurde geprüft und verworfen: Genau das Beenden des Sockets ist es, was
-	// den hängenden Lesevorgang in createSighting.js (for await über req)
-	// überhaupt erst mit einem Fehler abschließt — ohne eigenes Handling
-	// bliebe die Verbindung sonst unbeantwortet offen (per Repro bestätigt,
-	// siehe Bericht). Diese Antwort hier gewinnt also weiterhin das Rennen
-	// gegen den eigenen Schreibvorgang — anders als Node's Default betrifft
-	// das aber nur die Antwort, nie das Schreiben selbst.
+	// 'clientError' deckt zwei grundverschiedene Lagen ab, und nur die
+	// Unterscheidung hält die Zusage „nie antworten, bevor geschrieben ist".
+	//
+	// (1) Die Kopfzeilen waren vollständig, der Body bricht mitten in der
+	//     Übertragung ab (HPE_INVALID_EOF_STATE). Node hat das 'request'-
+	//     Ereignis dann längst ausgelöst: Ein Handler läuft, hat den Teil-Body
+	//     bereits gelesen und wird gleich schreiben und antworten. Antwortete
+	//     hier zusätzlich der clientError-Handler, käme beim Client ein 400 an,
+	//     bevor irgendetwas auf der Platte liegt — und scheiterte das Schreiben
+	//     danach, wäre das dafür vorgesehene 500 nicht mehr zustellbar.
+	//     Deshalb: nicht antworten. Der Socket bleibt unangetastet, damit die
+	//     Antwort des Handlers ihren Weg noch findet.
+	//
+	//     Der Lesevorgang muss aber beendet werden. Ohne Zutun bleibt
+	//     `for await (… of req)` in leseBody für dieses Fehlerbild für immer
+	//     hängen (per Repro bestätigt, siehe .superpowers/sdd/task-5-report.md):
+	//     Node reicht den Parser-Fehler nicht an den Request-Strom durch. Ein
+	//     req.destroy(fehler) scheidet aus — das reißt den Socket mit und damit
+	//     die Antwort. Bleibt, den Fehler dem Strom selbst zuzustellen; der
+	//     Async-Iterator bricht darauf ab, leseBody gibt das Gelesene zurück.
+	//
+	//     Connection: close ist nötig, weil die Verbindung nach einem
+	//     Framing-Fehler nicht wiederverwendbar ist: Ohne die Kopfzeile hält
+	//     Node sie als Keep-Alive offen und der Client wartet auf ein Ende,
+	//     das erst der Zeitablauf bringt.
+	//
+	// (2) Schon die Kopfzeilen waren unbrauchbar (etwa HPE_INVALID_METHOD).
+	//     Es gibt keinen Handler und keine Sichtung — hier muss geantwortet
+	//     werden, sonst gewinnt Nodes eingebaute Klartext-400-Antwort, die
+	//     weder JSON noch die Vertragsform ist.
 	server.on('clientError', (fehler, socket) => {
 		protokolliere('fehler', 'client_error', { meldung: fehler.message });
+
+		const laufend = inFlug.get(socket);
+		if (laufend && !laufend.res.writableEnded) {
+			if (!laufend.res.headersSent) {
+				laufend.res.setHeader('Connection', 'close');
+			}
+			laufend.req.emit('error', fehler);
+			return;
+		}
 
 		// Node-Doku zu 'clientError': der Socket kann bereits zerstört sein
 		// oder nicht mehr beschreibbar — ein Schreibversuch würde dann werfen.

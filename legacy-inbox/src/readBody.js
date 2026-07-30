@@ -19,6 +19,18 @@ import { StringDecoder } from 'node:string_decoder';
  * und StringDecoder hält ein unvollständiges Zeichen am Ende zurück statt es
  * als Ersatzzeichen (U+FFFD) auszugeben. So bleibt roh sauber auf einer
  * vollständigen Zeichengrenze, ohne dass davor etwas verloren geht.
+ *
+ * Bricht der Strom mitten in der Übertragung ab, wird der Fehler als
+ * leseFehler ZURÜCKGEGEBEN statt geworfen. Ein Wurf würde das bereits
+ * Gelesene mit dem Aufrufrahmen verwerfen — der Aufrufer legte dann eine
+ * Datei mit leerem roh ab, also den Nachweis, dass etwas ankam, ohne das,
+ * was ankam. Für einen Mobilclient mit wackliger Verbindung auf See ist
+ * genau das der häufigste Verlustfall (Entwurf, Abschnitt 4).
+ *
+ * Rückgabe: { roh, abgeschnitten, leseFehler }. abgeschnitten meint
+ * ausschließlich die Byte-Obergrenze, leseFehler ausschließlich den
+ * Verbindungsabbruch — beide führen beim Aufrufer zu gueltig: false, sind
+ * aber verschiedene Befunde und stehen deshalb getrennt im Umschlag.
  */
 export async function leseBody(req, { maxBytes } = {}) {
 	if (!Number.isFinite(maxBytes) || maxBytes <= 0) {
@@ -29,31 +41,38 @@ export async function leseBody(req, { maxBytes } = {}) {
 	let roh = '';
 	let gelesen = 0;
 	let abgeschnitten = false;
+	let leseFehler = null;
 
-	for await (const stueck of req) {
-		if (gelesen >= maxBytes) {
-			abgeschnitten = true;
-			break;
+	try {
+		for await (const stueck of req) {
+			if (gelesen >= maxBytes) {
+				abgeschnitten = true;
+				break;
+			}
+			const rest = maxBytes - gelesen;
+			if (stueck.length > rest) {
+				roh += decoder.write(stueck.subarray(0, rest));
+				gelesen = maxBytes;
+				abgeschnitten = true;
+				break;
+			}
+			roh += decoder.write(stueck);
+			gelesen += stueck.length;
 		}
-		const rest = maxBytes - gelesen;
-		if (stueck.length > rest) {
-			roh += decoder.write(stueck.subarray(0, rest));
-			gelesen = maxBytes;
-			abgeschnitten = true;
-			break;
-		}
-		roh += decoder.write(stueck);
-		gelesen += stueck.length;
+	} catch (fehler) {
+		leseFehler = fehler;
 	}
 
 	// Nur bei vollständig gelesenem Body flushen: end() würde ein am Rand
 	// abgeschnittenes Zeichen als Ersatzzeichen ausgeben. Bei abgeschnitten
-	// wird das zurückgehaltene Rest-Byte bewusst verworfen (siehe oben).
-	if (!abgeschnitten) {
+	// wie bei einem Abbruch wird das zurückgehaltene Rest-Byte bewusst
+	// verworfen (siehe oben) — in beiden Fällen steht der Schnitt an einer
+	// beliebigen Byte-Grenze.
+	if (!abgeschnitten && !leseFehler) {
 		roh += decoder.end();
 	}
 
-	return { roh, abgeschnitten };
+	return { roh, abgeschnitten, leseFehler };
 }
 
 /**

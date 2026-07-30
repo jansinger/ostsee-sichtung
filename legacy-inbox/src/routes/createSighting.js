@@ -25,24 +25,23 @@ export async function createSighting(req, res, { konfiguration, store, rateLimit
 
 	const contentType = req.headers['content-type'] || '';
 
-	// leseBody und parseBody laufen bewusst in einem gemeinsamen try: Bricht
-	// der Body-Stream mitten in der Übertragung ab (typischerweise ein Client,
-	// der die Verbindung trennt), darf das nicht in den äußeren Catch von
-	// server.js durchschlagen — dort gäbe es ein 500 ohne jede Ablage. Was bis
-	// zum Fehler gelesen war, ist an dieser Stelle nicht mehr verfügbar
-	// (leseBody gibt bei einem Wurf nichts zurück), also bleibt roh leer.
-	let roh = '';
-	let abgeschnitten = false;
-	let payload = null;
-	let parseFehler = null;
-	let leseFehler = null;
-	try {
-		({ roh, abgeschnitten } = await leseBody(req, { maxBytes: konfiguration.maxBodyBytes }));
-		({ payload, parseFehler } = parseBody(roh, contentType));
-	} catch (fehler) {
-		leseFehler = fehler;
-		protokolliere('fehler', 'lesen_fehlgeschlagen', { meldung: fehler.message });
+	// leseBody wirft nicht, auch nicht bei einem Abbruch mitten in der
+	// Übertragung (typischerweise ein Client, der die Verbindung trennt): Es
+	// gibt zurück, was bis dahin ankam, und meldet den Abbruch als leseFehler.
+	// Deshalb wird auch ein unvollständiger Body noch geparst — gelingt das
+	// (etwa bei Formulardaten), steht im Umschlag zusätzlich zum Rohtext ein
+	// payload. Über die Gültigkeit entscheidet das nicht: leseFehler zieht die
+	// Validierung unten in jedem Fall auf false.
+	const { roh, abgeschnitten, leseFehler } = await leseBody(req, {
+		maxBytes: konfiguration.maxBodyBytes
+	});
+	if (leseFehler) {
+		protokolliere('fehler', 'lesen_fehlgeschlagen', {
+			meldung: leseFehler.message,
+			gelesene_zeichen: roh.length
+		});
 	}
+	const { payload, parseFehler } = parseBody(roh, contentType);
 
 	const validierung = leseFehler
 		? {

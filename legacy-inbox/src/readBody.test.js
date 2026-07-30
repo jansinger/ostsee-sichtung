@@ -4,11 +4,61 @@ import { leseBody, parseBody } from './readBody.js';
 
 const anfrage = (text) => Readable.from([Buffer.from(text, 'utf8')]);
 
+/**
+ * Ein Strom, der ein Stück liefert und danach mit einem Fehler abbricht —
+ * der Mobilclient, dem mitten im Senden die Verbindung wegbricht.
+ */
+const abbrechenderStrom = (text) => {
+	let geliefert = false;
+	return new Readable({
+		read() {
+			if (!geliefert) {
+				geliefert = true;
+				this.push(Buffer.from(text, 'utf8'));
+				return;
+			}
+			this.destroy(new Error('Übertragung abgebrochen'));
+		}
+	});
+};
+
 describe('leseBody', () => {
 	it('liest den vollständigen Body', async () => {
-		const { roh, abgeschnitten } = await leseBody(anfrage('{"a":1}'), { maxBytes: 1000 });
+		const { roh, abgeschnitten, leseFehler } = await leseBody(anfrage('{"a":1}'), {
+			maxBytes: 1000
+		});
 		expect(roh).toBe('{"a":1}');
 		expect(abgeschnitten).toBe(false);
+		expect(leseFehler).toBeNull();
+	});
+
+	it('behält das Gelesene, wenn der Strom mitten in der Übertragung abbricht', async () => {
+		// Der Kern der Zusage: Ein Abbruch darf die bereits empfangenen Bytes
+		// nicht unerreichbar machen. Würde hier geworfen, stünde am Aufrufort
+		// nur noch ein leeres roh zur Verfügung — die Sichtung wäre auf der
+		// Platte vorhanden, aber inhaltsleer.
+		const { roh, abgeschnitten, leseFehler } = await leseBody(
+			abbrechenderStrom('{"anzahl_gesamt": 1'),
+			{ maxBytes: 1000 }
+		);
+
+		expect(roh).toBe('{"anzahl_gesamt": 1');
+		expect(leseFehler).toBeInstanceOf(Error);
+		// abgeschnitten meint ausschließlich die Byte-Obergrenze (Entwurf,
+		// Abschnitt 5); ein Verbindungsabbruch ist ein eigener Vermerk.
+		expect(abgeschnitten).toBe(false);
+	});
+
+	it('wirft auch bei einem Abbruch ohne jedes gelesene Byte nicht', async () => {
+		const strom = new Readable({
+			read() {
+				this.destroy(new Error('sofort weg'));
+			}
+		});
+
+		const { roh, leseFehler } = await leseBody(strom, { maxBytes: 1000 });
+		expect(roh).toBe('');
+		expect(leseFehler).toBeInstanceOf(Error);
 	});
 
 	it('behält das Gelesene bei Überschreitung, statt es zu verwerfen', async () => {
