@@ -490,8 +490,13 @@ Abschnitt 4 beschreibt die Grundmenge als „approved **and marked as lying in t
 Baltic Sea**". Der zweite Teil ist **absichtlich nicht implementiert**. Der
 Endpunkt filtert ausschließlich `freigegeben_am IS NOT NULL`.
 
-**Grund 1 — der Marker wurde nicht durchgängig gepflegt.** Messung am
-2026-07-30 über die 19.262 freigegebenen Zeilen der lokalen DB:
+**Grund 1 — `ostsee = 0` heißt „nicht berechnet", nicht „nicht in der Ostsee".**
+Die Berechnung des Wertes wurde erst nachträglich eingeführt; für den davor
+entstandenen Bestand steht der Default `0` in der Spalte, ohne dass je eine
+Positionsprüfung stattgefunden hätte. Der Wert ist damit **kein** Prädikat, auf
+das man filtern kann — er ist teilweise unbefüllt.
+
+Messung am 2026-07-30 über die 19.262 freigegebenen Zeilen der lokalen DB:
 
 | Spalte       | `= 1`  | `= 0` | `NULL` |
 | ------------ | ------ | ----- | ------ |
@@ -499,11 +504,15 @@ Endpunkt filtert ausschließlich `freigegeben_am IS NOT NULL`.
 | `ostsee_geo` | 3.838  |       |        |
 
 Von den 9.234 Zeilen mit `ostsee = 0` liegen **9.135 (98,9 %) im Kartenbereich**
-(53–66 N, 9–31 O) — es sind plausible Ostsee-Sichtungen. Umgekehrt tragen 179
-Zeilen mit `ostsee = 1` überhaupt keine Koordinaten; der Marker ist also nicht
-koordinatenabgeleitet. Die Trefferquote schwankt zudem jahrgangsweise stark
-(2012: 93 %, 2020: 27 %, 2021: 73 %), was auf einen Prozess- oder Importwechsel
-deutet, nicht auf eine stabile fachliche Bedeutung.
+(53–66 N, 9–31 O) — es sind plausible Ostsee-Sichtungen, für die nur niemand die
+Prüfung gerechnet hat. Umgekehrt tragen 179 Zeilen mit `ostsee = 1` überhaupt
+keine Koordinaten.
+
+Die Quote schwankt jahrgangsweise stark und **nicht monoton** (2012: 93 %, 2020:
+27 %, 2021: 73 %). Sie folgt also nicht einfach dem Einführungszeitpunkt — für
+einen Backfill heißt das, dass die vorhandenen `1`-Werte nicht automatisch
+vertrauenswürdiger sind als die `0`-Werte und die Herkunft der Altwerte mit
+geklärt werden muss.
 
 Ein Filter auf `ostsee = 1` würde damit rund **9.100 echte Sichtungen (48 %)**
 aus der öffentlichen Ausgabe entfernen. `ostsee = 1 OR ostsee_geo = 1` wären
@@ -523,10 +532,17 @@ die verträglichere Richtung. Die Felder `bm`/`va` wären der vertragsgemäße W
 das Ergebnis der Positionsprüfung an Clients zu übermitteln — sie werden derzeit
 gar nicht ausgeliefert, auch nicht an eingeloggte Admins.
 
-**Offen:** Wenn der Marker fachlich doch maßgeblich ist, gehört er vor einer
-Aktivierung nachgezogen — bewertbar nur mit einer Aussage der DMM dazu, was
-`ostsee = 0` bei einer Sichtung mitten in der Ostsee bedeuten soll. Bis dahin
-bleibt der Filter aus.
+**Offen — Backfill, aber erst nach der Überarbeitung der Geo-Funktion.** Der
+Bestand muss nachgerechnet werden, bevor der Filter überhaupt bewertbar ist. Das
+darf aber nicht mit der heutigen Prüfung passieren: Die Küstenabgrenzung wird
+gerade überarbeitet (Stand `docs/archive/`-Analyse vom 2026-07-29: eine
+Distanzschwelle taugt nicht als Kriterium, weil Schlei, Elbe und Trave bis 74 km
+„binnenlands" liegen — brauchbar ist nur eine ungeteilte OSM-Küstenlinie). Ein
+Backfill mit der alten Funktion müsste danach ein zweites Mal laufen und würde
+zwischenzeitlich falsche Werte als geprüft ausweisen.
+
+Reihenfolge also: Geo-Funktion überarbeiten → Backfill → Marker bewerten →
+Filter entscheiden. Bis dahin bleibt der Filter aus.
 
 ## Zeitzonen-Semantik
 
