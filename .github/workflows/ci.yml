@@ -385,13 +385,21 @@ jobs:
               const sql = postgres(process.env.DATABASE_POSTGRES_URL, { max: 1, connect_timeout: 5 });
               try {
                 const [row] = await sql`SELECT postgis_version() AS version`;
+                if (!row) throw new Error("SELECT postgis_version() lieferte keine Zeile");
                 console.log(`PostGIS bereit: ${row.version}`);
                 await sql.end();
                 process.exit(0);
               } catch (error) {
                 await sql.end({ timeout: 1 }).catch(() => {});
                 if (attempt === ATTEMPTS) {
-                  const reason = error.message || error.code || String(error);
+                  // Erst auf Objekt prüfen, dann Felder lesen: `throw null` ist
+                  // erlaubtes JS, und ein catch-Block, der beim Formulieren der
+                  // Meldung selbst wirft, verdeckt genau die Ursache, die er
+                  // melden soll. `code` bleibt als Rückfall, weil ein
+                  // ECONNREFUSED aus `postgres` hier nachweislich mit leerer
+                  // `message` ankam.
+                  const fields = error && typeof error === "object" ? error : {};
+                  const reason = fields.message || fields.code || String(error);
                   console.error(`::error::PostGIS ist nach ${ATTEMPTS} Versuchen nicht erreichbar: ${reason}`);
                   process.exit(1);
                 }
