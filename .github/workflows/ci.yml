@@ -288,6 +288,48 @@ jobs:
     permissions:
       contents: read
 
+    # Eine Quelle für die Verbindung: Die Migrations- und Seed-Skripte lesen sie
+    # aus `process.env`, der von Playwright gestartete Dev-Server über
+    # `$env/dynamic/private` aus der `.env` (siehe src/lib/server/db/index.ts).
+    # Der „Setup environment"-Schritt unten schreibt denselben Wert dorthin —
+    # beide Seiten müssen hier übereinstimmen, sonst migriert der Job eine andere
+    # Datenbank als die, welche die Seiten lesen.
+    env:
+      DATABASE_POSTGRES_URL: postgresql://ci:ci@localhost:5432/ostsee_ci
+
+    # PostGIS, nicht plain Postgres: `sichtungen.location` ist eine
+    # geometry(point)-Spalte (drizzle/0000_initial.sql), die Migration scheitert
+    # ohne die Extension. Dasselbe Image wie in docker-compose.yml — das
+    # postgis/postgis-Image aktiviert die Extension beim initdb selbst in
+    # POSTGRES_DB, ein eigenes `CREATE EXTENSION` ist deshalb nicht nötig.
+    #
+    # Warum überhaupt: Ohne Datenbank übersprang der Scan in
+    # design-tokens.spec.ts ausgerechnet /admin und /admin/statistics — die zwei
+    # datenreichsten Seiten, auf denen Datentabelle, Statusbadges, stat-value und
+    # Paginierung sitzen. Nebeneffekt der alten Lage: rund 50 s Wartezeit im
+    # smoke-Shard, weil die DB-Verbindungen in Timeouts liefen.
+    services:
+      postgres:
+        image: postgis/postgis:18-3.6
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ostsee_ci
+        ports:
+          - 5432:5432
+        # `-h 127.0.0.1` erzwingt TCP und ist kein Detail: Der Entrypoint des
+        # Postgres-Images startet während `initdb` einen temporären Server, der
+        # NUR auf dem Unix-Socket lauscht — dort laufen dann die Init-Skripte,
+        # inklusive dem, das PostGIS anlegt. Ein `pg_isready` über den Socket
+        # meldet in diesem Fenster „bereit", während die Datenbank noch nicht
+        # existiert. Lokal nachgestellt: `pg_isready` sagte 4 s vor der Datenbank
+        # „accepting connections". Über TCP gibt es das Fenster nicht.
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U ci -d ostsee_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -298,14 +340,74 @@ jobs:
           node-version: "24"
           cache: "npm"
 
+      # `.env` liest der Dev-Server (über Vite) und liest der Testprozess
+      # (e2e/helpers/adminSession.ts ruft dotenv auf, für SESSION_SECRET und
+      # COOKIE_NAME). Der Platzhalter aus .env.example genügt dafür — beide Seiten
+      # müssen nur denselben Wert sehen.
+      #
+      # Die Zuweisungen unten sind mit `sed` gesetzt und nicht angehängt, damit
+      # die Datei jede Variable genau einmal enthält: Bei zwei Zeilen mit
+      # demselben Namen entscheidet die Reihenfolge, und das wäre ein stiller
+      # Unterschied zwischen dotenv und Vite.
       - name: Setup environment
-        run: cp .env.example .env
+        run: |
+          cp .env.example .env
+          sed -i "s|^DATABASE_POSTGRES_URL=.*|DATABASE_POSTGRES_URL=\"${DATABASE_POSTGRES_URL}\"|" .env
+          # SKIP_DB_CHECK aus .env.example gilt hier nicht mehr: Es gibt jetzt eine
+          # Datenbank. Bleibt der Skip an, fällt ein Ausfall des Postgres-Service
+          # nicht als 503 auf, sondern erst irgendwo im Seiten-Load — und die
+          # Lücke, die dieser Job schließt, wäre wieder offen.
+          sed -i 's|^SKIP_DB_CHECK=.*|SKIP_DB_CHECK="false"|' .env
+          grep -cE '^DATABASE_POSTGRES_URL=' .env | grep -qx 1
+          grep -E '^(DATABASE_POSTGRES_URL|SKIP_DB_CHECK)=' .env
 
       - name: Install dependencies
         run: npm ci
 
       - name: Run SvelteKit sync
         run: npx svelte-kit sync
+
+      # Zweiter Wächter neben dem Health-Check: Er stellt sicher, dass PostGIS
+      # wirklich installiert ist. `sichtungen.location` ist geometry(point) — ohne
+      # die Extension scheitert die erste Migration mit „type geometry does not
+      # exist", und das ist eine Meldung, die man ohne diesen Schritt drei
+      # Ebenen tiefer sucht.
+      #
+      # Über das `postgres`-Paket aus node_modules und nicht über `psql`: Ein
+      # `psql` auf dem Runner-Image ist eine Zusage der Image-Zusammenstellung,
+      # das Paket ist eine Zusage der package-lock.json.
+      - name: Verify PostGIS is ready
+        run: |
+          node --input-type=module -e '
+            const { default: postgres } = await import("postgres");
+            const ATTEMPTS = 30;
+            for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+              const sql = postgres(process.env.DATABASE_POSTGRES_URL, { max: 1, connect_timeout: 5 });
+              try {
+                const [row] = await sql`SELECT postgis_version() AS version`;
+                console.log(`PostGIS bereit: ${row.version}`);
+                await sql.end();
+                process.exit(0);
+              } catch (error) {
+                await sql.end({ timeout: 1 }).catch(() => {});
+                if (attempt === ATTEMPTS) {
+                  const reason = error.message || error.code || String(error);
+                  console.error(`::error::PostGIS ist nach ${ATTEMPTS} Versuchen nicht erreichbar: ${reason}`);
+                  process.exit(1);
+                }
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+              }
+            }
+          '
+
+      # Ausschließlich die committeten Migrationen — kein `drizzle-kit push`.
+      # Begründung in scripts/docker-migrate.ts; hier zählt zusätzlich, dass CI
+      # damit denselben Weg fährt wie der Produktions-Container.
+      - name: Apply database migrations
+        run: npm run db:migrate
+
+      - name: Seed E2E test data
+        run: npm run db:seed:e2e
 
       - name: Get Playwright version
         id: playwright-version

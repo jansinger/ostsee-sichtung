@@ -75,9 +75,17 @@ Gemessen auf `base-100` (Rechnung wie in `daisyui.md`, im Browser nach sRGB):
 
 **Gegenprobe:** Steht die Farbe hinter `text-`, `fill-` oder `stroke-`, muss `-strong` dranhängen. Steht sie hinter `bg-`, `btn-`, `badge-` oder `alert-`, darf sie es nicht.
 
-Die über 60 Verstöße des Altbestands sind mit PR 4/4 (#620) abgearbeitet; seither ist die Gruppe „verbotene Kombinationen im DOM" in `e2e/design-tokens.spec.ts` ein **aktiver Guard** und kein `fixme` mehr. Sie fährt `/`, `/map`, `/about` sowie vier Admin-Routen (Session über `e2e/helpers/adminSession.ts`, ohne Auth0 — Begründung dort). Eine neue Fundstelle gehört an der Aufrufstelle behoben — nicht durch Aufweichen der Regex.
+Die über 60 Verstöße des Altbestands sind mit PR 4/4 (#620) abgearbeitet; seither ist die Gruppe „verbotene Kombinationen im DOM" in `e2e/design-tokens.spec.ts` ein **aktiver Guard** und kein `fixme` mehr. Sie fährt `/`, `/map`, `/about` sowie vier Admin-Routen (Session über `e2e/helpers/adminSession.ts`, ohne Auth0 — Begründung dort) — seit dem 2026-07-30 **alle sieben auch in CI**, gegen einen Postgres-Service mit Seed. Eine neue Fundstelle gehört an der Aufrufstelle behoben — nicht durch Aufweichen der Regel.
 
-**Was der Scan nicht sieht:** Seine Regex verlangt hinter dem Farbnamen ein Leerzeichen oder das Zeilenende. Ein Deckkraft-Suffix schiebt sich dazwischen, `text-success/80` rutscht also durch (real gefunden in `DropzoneEnhanced.svelte`). Und `hover:`-Zustände tauchen in `getComputedStyle` im Ruhezustand ohnehin nicht auf. Beim Prüfen per `grep` gilt außerdem: **`grep -o` schneidet das `-strong`-Suffix aus der Ausgabezeile**, ein nachgeschaltetes `grep -v -- -strong` filtert dann ins Leere und meldet jede korrekte Verwendung als Verstoß — so entstand die inzwischen korrigierte „32 Fundstellen"-Liste in `docs/DESIGN_SYSTEM.md`.
+**Die Regeln stehen in `e2e/helpers/bannedClasses.ts`,** nicht als Regex-Literale im Spec, und sind über `bannedClasses.test.ts` an konstruierten Beispielen abgesichert (läuft in `npm run test:quick`). Der Grund: Ein Scan über einen konformen Bestand belegt nichts über die Regel — genau daran ist die Deckkraft-Lücke unentdeckt geblieben.
+
+**Deckkraft-Suffixe werden mitgefangen** (seit 2026-07-30). `text-success/80` ist ein Verstoß wie `text-success`, und `bg-red-500/50` einer wie `bg-red-500`. Die Deckkraft-Regel vergleicht gegen die Schwelle /60 statt gegen die Literale 40 und 50 — ein `/30` auf Text ist damit ebenfalls ein Verstoß.
+
+**Was der Scan nicht sieht:** `hover:`-Zustände (er liest den Ruhezustand — dafür gilt die Regel „`text-error` nicht auf `base-300`" unten) und `fill-`/`stroke-` (nur `text-` steht im Muster; im Bestand gibt es derzeit keine solche Fundstelle).
+
+**Beim Beheben nicht mechanisch ersetzen:** Erst prüfen, ob die Farbe an der Stelle Bedeutung trägt. Dekorative Icons und Zierelemente gehören auf `base-content/70` — nicht auf eine Statusfarbe mit `-strong`. Trägt ein Zeichen gar keine Bedeutung (Trennpunkt, Zierglyphe), gehört zusätzlich `aria-hidden="true"` daran; Beispiel: die Danksagungs-Trennpunkte in `src/routes/about/+page.svelte`.
+
+Beim Prüfen per `grep` gilt außerdem: **`grep -o` schneidet das `-strong`-Suffix aus der Ausgabezeile**, ein nachgeschaltetes `grep -v -- -strong` filtert dann ins Leere und meldet jede korrekte Verwendung als Verstoß — so entstand die inzwischen korrigierte „32 Fundstellen"-Liste in `docs/DESIGN_SYSTEM.md`. Die Regeln im Scan umgehen das, indem sie die Klassenliste splitten und jede Klasse gegen ein verankertes Muster prüfen.
 
 ---
 
@@ -156,7 +164,7 @@ gerechnet — die Differenz beträgt hier bis zu 0,08):
 | /50   | **3,54 ❌** | **3,39 ❌** | **3,23 ❌** |
 | /40   | **2,64 ❌** | **2,56 ❌** | **2,46 ❌** |
 
-**Regel:** `/60` ist die Untergrenze für Text, und nur auf `base-100` und `base-200`. `/40` und `/50` (bzw. `opacity-40`/`opacity-50`) sind ausschließlich für dekorative Flächen — nie für Zeichen, die gelesen werden müssen.
+**Regel:** `/60` ist die Untergrenze für Text, und nur auf `base-100` und `base-200`. **Jeder Wert darunter** — `/50`, `/40`, `/30`, … bzw. das entsprechende `opacity-*` — ist ausschließlich für dekorative Flächen und für Zeichen ohne Bedeutung; nie für etwas, das gelesen werden muss. Der Scan prüft das als Schwelle und nicht als Aufzählung (`e2e/helpers/bannedClasses.ts`), damit `/30` nicht durchrutscht wie früher.
 
 Sekundärtext gehört auf `/70`, nicht auf `/60`: Hilfetexte werden im Feld gelesen, bei Sonnenlicht an Deck, und dort ist der reale Kontrast deutlich niedriger als der gemessene.
 

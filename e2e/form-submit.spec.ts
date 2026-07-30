@@ -175,9 +175,21 @@ test.describe('Sichtung melden — Formular absenden', () => {
 		await expect(submitButton).toBeEnabled({ timeout: 3000 });
 	});
 
-	// This test requires a running database — skip in CI (no DB service configured)
+	/* Braucht eine echte Datenbank — der Test schreibt eine Sichtung.
+	   Läuft seit dem 2026-07-30 auch in CI: Der `e2e`-Job fährt einen
+	   Postgres-Service und setzt DATABASE_POSTGRES_URL auf Job-Ebene (ci.yml).
+
+	   Der Wächter liest bewusst `process.env` des **Testprozesses** und nicht den
+	   Zustand des Servers. Das ist eine Annahme, keine Messung: Lokal kann der von
+	   Playwright gestartete Dev-Server seine URL aus `.env` haben, während der
+	   Testprozess sie nicht in `process.env` sieht — dann überspringt dieser Test,
+	   obwohl eine Datenbank steht. Umgekehrt gilt dasselbe. Wer das genauer
+	   braucht, sondiert wie `design-tokens.spec.ts` über einen HTTP-Endpunkt. */
 	test('Submit sendet Formular und zeigt Erfolgsseite', async ({ page }) => {
-		test.skip(!process.env.DATABASE_POSTGRES_URL, 'Requires database connection (skipped in CI)');
+		test.skip(
+			!process.env.DATABASE_POSTGRES_URL,
+			'Braucht eine Datenbank — DATABASE_POSTGRES_URL ist im Testprozess nicht gesetzt'
+		);
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
