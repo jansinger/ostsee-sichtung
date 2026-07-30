@@ -1,0 +1,114 @@
+{
+	"tierart": {
+		"0": "Schweinswal",
+		"1": "Kegelrobbe",
+		"2": "Seehund",
+		"3": "Delphin",
+		"4": "Beluga",
+		"5": "Zwergwal",
+		"6": "Finnwal",
+		"7": "Buckelwal",
+		"8": "Unbekannte Walart",
+		"9": "Ringelrobbe",
+		"10": "Unbekannte Robbenart"
+	},
+	"vonwo": {
+		"0": "Sonstiges",
+		"1": "Segelschiff",
+		"2": "Motorboot",
+		"3": "Land",
+		"4": "Fähre",
+		"5": "Keine Angabe"
+	},
+	"entfernung": {
+		"1": "weniger als 10 Meter",
+		"2": "10 bis 50 Meter",
+		"3": "51 bis 100 Meter",
+		"4": "101 bis 500 Meter",
+		"5": "mehr als 500 Meter"
+	},
+	"verteilung": {
+		"0": "Sonstige Verteilung",
+		"1": "Einzeln",
+		"2": "Mutter mit Jungtier",
+		"3": "Deutliche Schulen",
+		"4": "Keine Angabe"
+	},
+	"verhalten": {
+		"0": "Sonstiges Verhalten",
+		"1": "Konstanter Kurs, regelmäßiges Tauchen (schwimmen, ziehen)",
+		"2": "Unterschiedlicher Kurs, kreisend, unregelmäßiges Tauchen (futtersuchend)",
+		"3": "Langsames Schwimmen, längere Zeit an der Wasseroberfläche (ruhend)",
+		"4": "Keine Angabe"
+	},
+	"seegang": {
+		"0": "Keine Angabe",
+		"1": "Glatte See, keine Wellen",
+		"2": "Ruhige See, gekräuselte, kurze Wellen",
+		"3": "Leicht bewegte See, Schaumköpfe",
+		"4": "Grobe See, lange, brechende Wellen",
+		"5": "Hohe See, Wellenberge und Gischt"
+	},
+	"windrichtung": {
+		"": "Keine Angabe",
+		"N": "Nord",
+		"NW": "Nordwest",
+		"W": "West",
+		"SW": "Südwest",
+		"S": "Süd",
+		"SO": "Südost",
+		"O": "Ost",
+		"NO": "Nordost"
+	},
+	"windstaerke": {
+		"0": "0 - Windstille (< 1 km/h)",
+		"1": "1 - Leiser Zug (1-5 km/h)",
+		"2": "2 - Leichte Brise (6-11 km/h)",
+		"3": "3 - Schwache Brise (12-19 km/h)",
+		"4": "4 - Mäßige Brise (20-28 km/h)",
+		"5": "5 - Frische Brise (29-38 km/h)",
+		"6": "6 - Starker Wind (39-49 km/h)",
+		"7": "7 - Steifer Wind (50-61 km/h)",
+		"8": "8 - Stürmischer Wind (62-74 km/h)",
+		"9": "9 - Sturm (75-88 km/h)",
+		"10": "10 - Schwerer Sturm (89-102 km/h)",
+		"11": "11 - Orkanartiger Sturm (103-117 km/h)",
+		"12": "12 - Orkan (> 117 km/h)"
+	},
+	"sichtweite": {
+		"0": "Keine Angabe",
+		"1": "Außergewöhnlich klar (mehr als 20km)",
+		"2": "Klar (bis 20km)",
+		"3": "Diesig (bis 4km)",
+		"4": "Nebel (bis 1km)"
+	},
+	"bootsantrieb": {
+		"0": "Sonstiger Bootsantrieb",
+		"1": "Motor",
+		"2": "Segel",
+		"3": "Treibend",
+		"4": "Vor Anker",
+		"5": "Kein Boot"
+	},
+	"eingangskanal": {
+		"0": "Web",
+		"1": "E-Mail",
+		"2": "Post",
+		"3": "Fax",
+		"4": "App",
+		"5": "Telefon"
+	},
+	"totfund_zustand": {
+		"0": "Unbekannt",
+		"1": "Extrem frisch",
+		"2": "Frisch, bzw. beginnende Verwesung",
+		"3": "Mittlere Verwesung",
+		"4": "Fortgeschrittene Verwesung",
+		"5": "Starke Verwesung"
+	},
+	"totfund_geschlecht": {
+		"0": "Unbekannt",
+		"1": "Weiblich",
+		"2": "Männlich"
+	}
+}

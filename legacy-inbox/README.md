@@ -1,0 +1,205 @@
+# Legacy-Posteingang
+
+Eigenständiger Node-Dienst für den Plesk-Server. Bedient drei Endpunkte der
+Legacy-API und legt jede eingehende Sichtung als JSON-Datei ab.
+
+Entwurf und Begründungen: `docs/archive/LEGACY_INBOX_ENTWURF_2026-07-30.md`
+Vertrag: `docs/LEGACY_API_SPECIFICATION.md`
+
+## Der Leitsatz
+
+Was den Dienst erreicht hat, wird geschrieben — ausnahmslos, auch wenn es
+ungültig, unparsbar oder Unsinn ist. Die Validierung entscheidet nur über die
+HTTP-Antwort und das Zielverzeichnis, nie über die Existenz der Daten.
+
+Der zugehörige Test heißt „hinterlässt auch bei vollständigem Unsinn eine
+Datei". Fällt er weg, ist der Dienst wieder einer, der Daten verwerfen kann.
+
+## Endpunkte
+
+| URL                                           | Methode |
+| --------------------------------------------- | ------- |
+| `/rest_sichtungen`                            | POST    |
+| `/rest_sichtungen/antworten.json` (+ `/en/…`) | GET     |
+| `/rest_sichtungen/inBaltic.json`              | GET     |
+| `/health`                                     | GET     |
+
+`/sichtungen/showreports.json` wird bewusst **nicht** bedient — ohne Datenbank
+könnte der Dienst dort nur ein falsches leeres Array liefern.
+
+`/health` gehört nicht zum Legacy-Vertrag. Es ist ein zusätzlicher Pfad für die
+Überwachung und liefert keine Daten aus dem Posteingang.
+
+## Umgebungsvariablen
+
+| Variable                         | Vorgabe | Bedeutung                                                     |
+| -------------------------------- | ------- | ------------------------------------------------------------- |
+| `LEGACY_INBOX_DATA_DIR`          | —       | **Pflicht.** Datenverzeichnis, außerhalb des Document-Roots   |
+| `PORT`                           | 3000    | Wird von Passenger gesetzt                                    |
+| `LEGACY_INBOX_RATE_LIMIT_IP`     | 100     | Requests pro IP und Stunde — weist ab, schreibt aber trotzdem |
+| `LEGACY_INBOX_RATE_LIMIT_GLOBAL` | 1000    | Reißleine über alle IPs — weist ohne Schreiben ab             |
+| `LEGACY_INBOX_MAX_BODY_BYTES`    | 262144  | Obergrenze des Request-Bodys                                  |
+
+## Einrichtung in Plesk
+
+**1.** Node.js-Extension der Domain aktivieren, Anwendungswurzel auf
+`legacy-inbox/` und Startdatei auf `app.js` setzen.
+
+**2.** Genau eine Instanz laufen lassen. `lfd_nr` wird von einer
+Warteschlange im Prozessspeicher vergeben (`legacy-inbox/src/store.js`) —
+diese Nummer existiert nur innerhalb eines einzigen Prozesses. Bedient
+Passenger dieselbe Anwendung über mehrere Prozesse oder Worker, führen zwei
+Prozesse unabhängig voneinander Buch und können derselben Sichtung
+denselben `lfd_nr` zuweisen. Solange die Zeitstempel im Dateinamen
+verschieden sind, entsteht daraus kein Datenverlust, nur eine doppelt
+vergebene Nummer. Fallen Zeitstempel und Nummer beider Prozesse aber auf
+dieselbe Millisekunde, schlägt das atomare Anlegen der Datei fehl und der
+Dienst antwortet mit `500` statt `201` — vermeidbar, indem die Domain in
+Plesk auf eine einzige Anwendungsinstanz begrenzt bleibt.
+
+**3.** `npm ci` über die Plesk-Oberfläche oder per SSH.
+
+**4.** Datenverzeichnis **außerhalb** des Document-Roots anlegen und
+`LEGACY_INBOX_DATA_DIR` darauf setzen:
+
+    mkdir -p /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data
+    chmod 700 /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data
+    chown <anwendungsbenutzer> /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data
+
+Läge es im Document-Root, wären Namen, E-Mail-Adressen und Telefonnummern der
+Melder über die Domain abrufbar. Das ist die wichtigste einzelne Einstellung des
+gesamten Aufbaus.
+
+**5.** `X-Real-IP` in den nginx-Zusatzdirektiven der Domain setzen — sonst kennt
+der Dienst nur die Adresse des Proxys und zählt alle Melder als einen:
+
+    proxy_set_header X-Real-IP $remote_addr;
+
+`X-Forwarded-For` wird bewusst **nicht** ausgewertet: Die Kopfzeile kommt vom
+Client, und ein zufälliger Wert je Request würde das Rate-Limit aushebeln.
+
+**6.** Let's Encrypt aktivieren — **ohne** erzwungene HTTPS-Umleitung. Die Spec
+nennt `http://` als Basis-URL, und ein `301` auf ein POST lässt bei etlichen
+HTTP-Clients den Body verschwinden.
+
+**7.** Prüfen:
+
+    curl -s https://schweinswalsichtung.de/health
+    curl -s 'https://schweinswalsichtung.de/rest_sichtungen/inBaltic.json?location=53,10'
+
+Erwartet: `{"status":"ok","datenverzeichnis":"beschreibbar","frei_mb":…}` und
+`{"inbaltic":false,"inchartarea":false}`
+
+Die zweite Antwort überrascht auf den ersten Blick, ist aber richtig: Seit der
+Bereinigung der Ostsee-Geometrie beginnt der Kartenbereich bei 53,55° N, und
+53,10 (Raum Hamburg) liegt südlich davon. Wer prüfen will, dass die Geometrie
+überhaupt greift, nimmt zusätzlich eine Koordinate innerhalb des Bereichs:
+
+    curl -s 'https://schweinswalsichtung.de/rest_sichtungen/inBaltic.json?location=54.5,10.5'
+
+Erwartet: `{"inbaltic":true,"inchartarea":true}` (Kieler Bucht, offenes Wasser).
+
+Startet der Dienst gar nicht erst, steht der Grund im Passenger-Log. Er bricht
+den Start ab, wenn `LEGACY_INBOX_DATA_DIR` fehlt oder das Datenverzeichnis
+nicht beschreibbar ist (`legacy-inbox/src/startPruefung.js`) — ein Rechte- oder
+Pfadfehler soll beim Deploy auffallen und nicht bei der ersten echten Sichtung.
+Knapper Plattenplatz verhindert den Start dagegen **nicht**, sondern wird laut
+protokolliert; siehe Abschnitt „Plattenplatz" unten.
+
+## In den Posteingang schauen
+
+Es gibt bewusst keine Oberfläche — die Dateien liegen im Dateisystem:
+
+    cd "$LEGACY_INBOX_DATA_DIR"
+
+    ls posteingang | wc -l        # wie viele warten auf den Import
+    ls abgewiesen  | wc -l        # Warnsignal, siehe unten
+    ls importiert  | wc -l        # bereits übernommen
+
+    # letzter Eingang, ohne die persönlichen Daten
+    ls -t posteingang | head -1 | xargs -I{} jq '{empfangen_am, lfd_nr, validierung}' posteingang/{}
+
+    # welche Felder bemängelt wurden — die Frage bei jedem Eintrag in abgewiesen/
+    jq -r '.validierung.fehler | keys[]' abgewiesen/*.json | sort | uniq -c | sort -rn
+
+## Betrieb — Voraussetzung, nicht Kür
+
+**Sicherung.** Bis zum Import ist die Platte dieses Servers der einzige Ort, an
+dem eine eingegangene Sichtung existiert. Nötig sind beide Hälften: eine
+Sicherung des Datenverzeichnisses auf einen **anderen Rechner** und ein
+regelmäßiger, kurz getakteter Import. Der Import ist damit nicht nur
+Datenübernahme, sondern der eigentliche Schutzmechanismus.
+
+**Überwachung.** Eine **externe** Überwachung muss `/health` regelmäßig abfragen
+— extern, weil eine Überwachung auf demselben Server genau dann mit ausfällt,
+wenn sie gebraucht wird. Mit zu überwachen: die Anzahl der Dateien in
+`abgewiesen/` und das Feld `frei_mb`.
+
+Ein `503` mit `{"status":"fehler","datenverzeichnis":"nicht beschreibbar"}`
+heißt: Der Dienst läuft noch, kann aber nicht mehr schreiben — falsche Rechte,
+volles Dateisystem oder ein versehentlich entfernter Pfad. Sofort prüfen, denn
+jede Sichtung, die in diesem Zustand eintrifft, scheitert am Schreiben und
+bekommt vom Client aus gesehen nur ein `500` statt einer Bestätigung.
+
+**Jeder Eintrag in `abgewiesen/` ist ein Warnsignal.** Entweder Missbrauch —
+dann kann er weg — oder eine echte Sichtung, die der Validierer zu Unrecht
+abgelehnt hat. Der zweite Fall ist stiller Datenverlust und muss auffallen. Der
+`jq`-Befehl oben zeigt, welche Felder bemängelt wurden; häufen sich dieselben
+Namen, liegen Validierer und reale App auseinander.
+
+**Plattenplatz.** Beim Start prüft der Dienst den freien Platz und meldet
+weniger als 500 MB als Ereignis `plattenplatz_knapp` auf Stufe `fehler` ins
+Protokoll — er läuft dabei aber weiter und liefert den freien Platz über
+`/health` mit. Ein Startabbruch wäre hier das falsche Mittel: Auf einer Domain
+mit Kontingent nähme er den Posteingang vollständig vom Netz, und jede
+eintreffende Sichtung wäre verloren, ohne dass überhaupt etwas geschrieben
+würde — schlimmer als das Problem, vor dem er schützen soll. Der Alarm gehört
+deshalb in die Überwachung, nicht in den Startcode. Zu bedenken: Allein der
+Geo-Index belegt 33 MB, und innerhalb der globalen Reißleine passen im
+schlimmsten Fall rund 6 GB pro Tag auf die Platte (1.000 Requests/Stunde à
+256 KB). Die Reißleine schützt vor einer Flut, nicht vor einem geduldigen
+Angreifer.
+
+**Aufräumen.** Weder `abgewiesen/` noch `importiert/` räumen sich selbst auf:
+
+- `abgewiesen/` nach Sichtung durch einen Menschen leeren — echte Sichtungen
+  von Hand nachtragen, Missbrauch löschen
+- `importiert/` nach gesicherter Übernahme in die Datenbank archivieren oder
+  löschen. Die Dateien werden nur noch als Herkunftsnachweis gebraucht
+
+## Import
+
+    npm run import:legacy-inbox -- /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data
+
+Läuft im Hauptrepo, nicht auf dem Plesk-Server, und ruft dieselben Bausteine
+wie `POST /rest_sichtungen` direkt auf (`mapLegacyToCurrentSchema` und
+`saveSighting`), statt über HTTP zu gehen — der Endpunkt begrenzt auf 20
+Sichtungen pro Stunde und IP, was einen Sammelimport unbrauchbar machen würde.
+
+Übernommene Dateien wandern nach `importiert/`; was liegen bleibt, ist genau
+das, was noch offen ist. Ein zweiter Lauf legt nichts doppelt an, weil bereits
+verschobene Dateien nicht mehr in `posteingang/` liegen.
+
+**Jede übernommene Sichtung löst eine Benachrichtigungs-E-Mail aus** — dieselbe,
+die auch bei einer Meldung über das Formular verschickt wird. Das ist so gewollt
+(der Dienst selbst verschickt bewusst keine Mail, siehe
+`docs/archive/LEGACY_INBOX_ENTWURF_2026-07-30.md`, Abschnitt 12), hat aber eine
+unangenehme Seite: Wird nach einer Störung ein größerer Rückstand abgearbeitet,
+geht für jede einzelne Datei eine Mail heraus. Vor einem solchen Lauf entweder
+die Empfänger vorwarnen oder den Versand in der Konfiguration vorübergehend
+abschalten.
+
+**Scheitert das Verschieben nach `importiert/`.** Die Sichtung ist zu diesem
+Zeitpunkt bereits in der Datenbank angelegt — nur das Aufräumen der Datei ist
+fehlgeschlagen (nach mehreren Versuchen, etwa bei kurzzeitig voller Platte).
+Der Lauf bricht in diesem Fall sofort ab und meldet Dateiname und die bereits
+vergebene Sichtungs-ID auf der Konsole. Die Datei muss dann **von Hand** nach
+`importiert/` verschoben werden, bevor der Import erneut läuft — sonst liegt
+sie beim nächsten Lauf weiterhin in `posteingang/` und wird ein zweites Mal
+angelegt.
+
+## Tests
+
+Die Tests laufen im Vitest des Hauptrepos mit:
+
+    npm run test:quick

@@ -61,7 +61,7 @@ export interface LegacySightingRequest {
 	// Environmental conditions
 	seegang?: number; // Sea state (0-5)
 	windrichtung?: string; // Wind direction 'N','NW','W','SW','S','SO','O','NO'
-	windstaerke?: string; // Wind force 1-12
+	windstaerke?: string | number | null; // Wind force 0-12 (JSON sends a number, form-encoded a string, or explicit null)
 	sichtweite?: number; // Visibility (1-4)
 
 	// Vessel information

@@ -4,9 +4,9 @@
 
 This specification is derived from the original schweinswalsichtung.de API documentation. The legacy APIs MUST maintain 100% compatibility with it, so that mobile clients built against the original API keep working.
 
-**Status 2026-07-28: no clients are connected.** The endpoints are not in service and never have been. A deviation therefore breaks nothing that is currently running — but it does void the contract the moment a client is connected, and such a client cannot be fixed from this side. Field names, URL paths and data types must only change deliberately and documented; obvious defects may of course be fixed.
+**Status 2026-07-30: a client is connected.** A rebuilt iOS app identifying itself as `OstSeeTiere/8` is submitting sightings through `POST /rest_sichtungen`. The "nothing breaks" reasoning from earlier snapshots of this document no longer applies — a deviation now costs real data and cannot be repaired from this side, because the previous app is no longer available for testing and every behaviour it relies on must keep working exactly as documented. Field names, URL paths and data types must only change deliberately and documented; obvious defects may of course be fixed, but only as additions, never as replacements of an existing code path.
 
-This is a dated status, not a standing guarantee — re-check whether clients have been connected before making larger changes.
+This is a dated status, not a standing guarantee — re-check whether further clients have been connected before making larger changes.
 
 ## Base URLs
 
@@ -49,7 +49,7 @@ This is a dated status, not a standing guarantee — re-check whether clients ha
 | `sonstige_auffaelligkeiten` | Other observations                                                                                           | Text                                | No                                 |
 | `seegang`                   | Sea state                                                                                                    | Integer-Range, 0-5                  | No                                 |
 | `windrichtung`              | Wind direction                                                                                               | 'N','NW','W','SW','S','SO','O','NO' | No                                 |
-| `windstaerke`               | Wind force in Beaufort                                                                                       | 1-12                                | No                                 |
+| `windstaerke`               | Wind force in Beaufort                                                                                       | 0-12                                | No                                 |
 | `sichtweite`                | Visibility                                                                                                   | Integer-Range, 1-4                  | No                                 |
 | `schiffsname`               | Ship name                                                                                                    | String (64)                         | No, Yes if schiffnamensnennung = 1 |
 | `heimathafen`               | Home port                                                                                                    | String (64)                         | No                                 |
@@ -236,14 +236,25 @@ JSON Object:
 
 **Request**: `/rest_sichtungen/inBaltic.json?location=53,10`
 
-**Response**:
+**Response** (aktuell):
 
 ```json
 {
 	"inbaltic": false,
-	"inchartarea": true
+	"inchartarea": false
 }
 ```
+
+> **Abweichung vom Ursprungs-PDF.** Dort lautet die Antwort auf dieselbe Anfrage
+> `{"inbaltic": false, "inchartarea": true}`. Seit der Bereinigung der
+> Ostsee-Geometrie am 2026-07-30 liegt die Südgrenze des Kartenbereichs bei
+> **53,55° N** statt bei 53,0° — die Beispielkoordinate 53,10 (Raum Hamburg)
+> fällt damit aus dem Kartenbereich heraus.
+>
+> Die Antwort selbst ist also unverändert korrekt berechnet; nur das im PDF
+> gewählte Beispiel liegt inzwischen jenseits der Grenze. Wer eine Koordinate
+> zum Prüfen von `inchartarea: true` braucht, nimmt einen Punkt innerhalb der
+> Ostsee-Bounding-Box, etwa `location=53.63,11.41` (Schwerin).
 
 ## 4. Retrieving Sighting Data
 
@@ -426,6 +437,91 @@ Bewusst in Kauf genommen: Ein eigener Wert „Antrieb unbekannt" wäre eine drit
 Vertragsänderung an derselben Spalte, und eine erfundene Antriebsart wiegt
 schwerer als „kein Boot" bei einem Kajak.
 
+## Abweichung von der Ursprungs-PDF: `windrichtung` akzeptiert englische Abkürzungen
+
+Der neu gebaute iOS-Client (`OstSeeTiere/8`) sendet Windrichtungen als englische
+Abkürzungen, nicht als die in diesem Dokument spezifizierten deutschen. Seit
+dem 2026-07-30 akzeptiert `POST /rest_sichtungen` beide Schreibweisen und
+normalisiert englische Eingaben serverseitig auf die deutsche Form, weil die
+DB-Spalte, das Formular und `antworten.json` ausschließlich die deutsche Form
+kennen.
+
+Deutsch und Englisch unterscheiden sich in genau drei der acht Werte:
+
+| Deutsch (Vertrag) | Englisch (neuer Client) |
+| ----------------- | ----------------------- |
+| `NO`              | `NE`                    |
+| `O`               | `E`                     |
+| `SO`              | `SE`                    |
+
+`N`, `S`, `W`, `NW` und `SW` sind in beiden Sprachen identisch und brauchen
+keine Abbildung.
+
+**Auswirkung auf Clients:** Deutsche Eingaben laufen unverändert durch — für
+den alten Client, der nicht mehr testbar ist, ändert sich nichts. Ein
+unbekannter Wert (weder eine der acht deutschen Formen noch eine der drei
+englischen Abkürzungen) ergibt weiterhin `''`, wie bisher.
+
+## Abweichung von der Ursprungs-PDF: `windstaerke` akzeptiert 0
+
+Die Feldtabelle dieses Dokuments nannte für `windstaerke` bis zum 2026-07-30
+den Bereich **1-12**. Das war falsch: Die Beaufort-Skala beginnt bei **0**
+(Windstille), und der neue iOS-Client sendet diesen Wert tatsächlich
+(beobachtet in fünf Einreichungen). Korrigiert auf **0-12**.
+
+**Warum das vorher brach:** Die serverseitige Umwandlung prüfte `windstaerke`
+auf Wahrheitswert (`legacyData.windstaerke ? Number(...) : undefined`). Eine
+aktiv gemeldete `0` ist in JavaScript falsy und wurde deshalb wie ein fehlendes
+Feld behandelt — die Windstärke ging verloren.
+
+**Auswirkung auf Clients:** `windstaerke: 0` wird jetzt als `0` übernommen,
+nicht mehr verworfen. Fehlende Angabe (`undefined`, `null`, leerer String)
+ergibt weiterhin `undefined`, wie bisher. Das Feld kommt als Zahl aus
+JSON-Submissions oder als String aus Formular-Encoding — beide Formen werden
+akzeptiert.
+
+## `namensnennung` und `schiffnamensnennung`: nur eine explizite `1` ist Zustimmung
+
+Der neue iOS-Client sendet weder `namensnennung` noch `schiffnamensnennung`.
+Beide werden serverseitig als Zustimmungs-Flags interpretiert
+(`nameConsent`/`shipNameConsent`), und ein fehlendes Feld ergibt „nein" (`0`
+bzw. `false`) — nicht „ja".
+
+**Das ist beabsichtigt und dient dem Datenschutz.** Name und Schiffsname eines
+Melders dürfen nur veröffentlicht werden, wenn eine ausdrückliche Zustimmung
+vorliegt. Ein fehlendes Feld ist keine Zustimmung. Würde man das Fehlen als
+`1` interpretieren, würde für jede Meldung des neuen Clients eine Einwilligung
+erfunden, die nie gegeben wurde.
+
+**Die drei Fälle im Einzelnen** — sie waren bis zum 2026-07-30 nicht sauber
+getrennt und dürfen nicht wieder zusammenfallen:
+
+| Übermittelter Wert                     | Ergebnis         |
+| -------------------------------------- | ---------------- |
+| Feld fehlt (`undefined`, `null`, `''`) | keine Zustimmung |
+| explizit `0` bzw. `'0'`                | keine Zustimmung |
+| explizit `1` bzw. `'1'`                | **Zustimmung**   |
+
+**Korrektur 2026-07-30:** Der mittlere Fall war fehlerhaft. Die Umwandlung
+lautete `legacyData.namensnennung ? true : false`, und über den
+Formulardaten-Pfad (`application/x-www-form-urlencoded`, ausgepackt mit
+`Object.fromEntries(formData.entries())`) kommt jeder Wert als **String** an.
+Ein vertragskonformes `namensnennung=0` war damit `'0'` — in JavaScript
+truthy. Ein Melder, der die Veröffentlichung seines Namens ausdrücklich
+untersagt hatte, wurde in `showreports.json` mit Namen geführt. Betroffen
+waren fünf Flags: `namensnennung`, `schiffnamensnennung`,
+`datenschutzEinverstaendnis`, `aufnahmeHochladen` und `totfund_telefon`. Alle
+werden jetzt numerisch ausgewertet, wie `totfund` schon vorher.
+
+**Auswirkung auf Clients:** JSON-Submissions mit den Zahlen `0` und `1`
+verhalten sich unverändert. Formular-Submissions mit `'0'` werden jetzt als
+Ablehnung gewertet statt als Zustimmung.
+
+**Für spätere Bearbeitung festgehalten:** Dass ein **fehlendes** Feld keine
+Zustimmung ergibt, ist kein Bug und soll nicht durch einen Default auf `true`
+„korrigiert" werden. Wenn der Client diese Felder künftig sendet, greift die
+Zustimmung des Melders wie gewohnt.
+
 ## Zusätzlich akzeptiert: `sonstige_auffälligkeiten` (Umlaut-Variante)
 
 Vertragsname ist und bleibt `sonstige_auffaelligkeiten` (mit `ae`), so wie ihn
@@ -483,6 +579,20 @@ Fehlerklasse wie bei `sonstige_auffaelligkeiten` oben.
   Beide Wege gelten jetzt, und beide werden string-tolerant ausgewertet — der
   Formulardaten-Pfad liefert `Object.fromEntries(formData.entries())`, also
   Strings, und `'0' === 0` ist in TypeScript false.
+
+Genau das trifft den neuen iOS-Client: Er sendet `totfund: 1` zusammen mit einem
+`anzahl_gesamt` > 0 (beobachtet: 1, 2, 3, 7). Ein Totfund neben lebenden Tieren
+ist eine reale Situation (z. B. ein verendetes Jungtier neben einer Gruppe).
+Solche Meldungen wurden vorher als lebende Sichtung gespeichert, obwohl sie
+gleichzeitig `totfund_zustand`, `totfund_geschlecht`, `totfund_groesse` und
+`totfund_telefon` trugen — ein in sich widersprüchlicher Datensatz. Da Totfunde
+die zeitkritischen Meldungen für das Deutsche Meeresmuseum sind, war das mehr
+als ein Ordnungsproblem.
+
+`totfund` ersetzt die `anzahl_gesamt = 0`-Konvention nicht, sondern ergänzt sie:
+Beide sind gleichberechtigte Wege zu einem Totfund. Der alte Client kennt
+`totfund` nicht und meldet Totfunde weiterhin ausschließlich über
+`anzahl_gesamt = 0`; dieser Weg bleibt unverändert funktionsfähig.
 
 ## Bewusst nicht umgesetzt: der Ostsee-Filter in `showreports.json`
 

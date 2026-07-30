@@ -226,6 +226,17 @@ describe('mapLegacyToCurrentSchema — totfund', () => {
 		expect(result.isDead).toBe(false);
 	});
 
+	it('erkennt keinen Totfund, wenn weder totfund noch anzahl_gesamt=0 vorliegen', () => {
+		const request = {
+			...minimalRequest(),
+			anzahl_gesamt: 2
+		} as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.isDead).toBe(false);
+	});
+
 	it.each([
 		['totfund', { totfund: '1', anzahl_gesamt: '2' }, true],
 		['anzahl_gesamt', { anzahl_gesamt: '0' }, true],
@@ -237,5 +248,162 @@ describe('mapLegacyToCurrentSchema — totfund', () => {
 		} as unknown as LegacySightingRequest);
 
 		expect(result.isDead).toBe(expected);
+	});
+});
+
+/**
+ * Der neu gebaute Client sendet englische Windrichtungs-Abkürzungen. Deutsch
+ * und Englisch unterscheiden sich in genau drei Fällen (NO/NE, O/E, SO/SE);
+ * `N`, `S`, `W`, `NW`, `SW` sind identisch. Die alte Prüfung akzeptierte nur
+ * die deutsche Liste und machte aus jedem englischen Wert `''` — die
+ * Windrichtung ging verloren.
+ */
+describe('mapLegacyToCurrentSchema — Windrichtung: englische Abkürzungen', () => {
+	it.each([
+		['NE', 'NO'],
+		['E', 'O'],
+		['SE', 'SO']
+	])('normalisiert die englische Abkürzung %s zu %s', (input, expected) => {
+		const request = { ...minimalRequest(), windrichtung: input } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windDirection).toBe(expected);
+	});
+
+	it.each(['', 'N', 'NW', 'W', 'SW', 'S', 'SO', 'O', 'NO'])(
+		'lässt den deutschen Wert %s unverändert',
+		(value) => {
+			const request = { ...minimalRequest(), windrichtung: value } as LegacySightingRequest;
+
+			const result = mapLegacyToCurrentSchema(request);
+
+			expect(result.windDirection).toBe(value);
+		}
+	);
+
+	it.each(['SW', 'NW'])('lässt %s unverändert, weil in beiden Sprachen identisch', (value) => {
+		const request = { ...minimalRequest(), windrichtung: value } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windDirection).toBe(value);
+	});
+
+	it('macht aus einem unbekannten Wert einen leeren String', () => {
+		const request = { ...minimalRequest(), windrichtung: 'XX' } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windDirection).toBe('');
+	});
+
+	it('macht aus fehlender Windrichtung einen leeren String', () => {
+		const result = mapLegacyToCurrentSchema(minimalRequest());
+
+		expect(result.windDirection).toBe('');
+	});
+});
+
+/**
+ * `windstaerke` ist mit `0` (Windstille) ein reales Beaufort-Maß, das der neue
+ * Client tatsächlich sendet (beobachtet in fünf Einreichungen). `0 ? … :
+ * undefined` behandelte die aktiv gemeldete `0` wie ein fehlendes Feld. Das
+ * Feld kommt als Zahl aus JSON und als String aus Formular-Encoding — beides
+ * muss funktionieren.
+ */
+describe('mapLegacyToCurrentSchema — Windstärke 0 bleibt erhalten', () => {
+	it('übernimmt die Zahl 0', () => {
+		const request = { ...minimalRequest(), windstaerke: 0 } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windForce).toBe(0);
+	});
+
+	it('übernimmt den String "0" und wandelt ihn in eine Zahl', () => {
+		const request = { ...minimalRequest(), windstaerke: '0' } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windForce).toBe(0);
+	});
+
+	it('übernimmt 12', () => {
+		const request = { ...minimalRequest(), windstaerke: 12 } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windForce).toBe(12);
+	});
+
+	it('macht aus fehlendem windstaerke undefined', () => {
+		const result = mapLegacyToCurrentSchema(minimalRequest());
+
+		expect(result.windForce).toBeUndefined();
+	});
+
+	it('macht aus null undefined', () => {
+		const request = { ...minimalRequest(), windstaerke: null } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windForce).toBeUndefined();
+	});
+
+	it('macht aus leerem String undefined', () => {
+		const request = { ...minimalRequest(), windstaerke: '' } as LegacySightingRequest;
+
+		const result = mapLegacyToCurrentSchema(request);
+
+		expect(result.windForce).toBeUndefined();
+	});
+});
+
+/**
+ * Die 0/1-Flags des Vertrags — und was sie im Formularmodell setzen.
+ *
+ * Drei davon sind Einwilligungen (`nameConsent`, `shipNameConsent`,
+ * `privacyConsent`), die darüber entscheiden, ob `showreports.json` Name und
+ * Schiffsname des Melders veröffentlicht.
+ */
+const LEGACY_FLAGS = [
+	['namensnennung', 'nameConsent'],
+	['schiffnamensnennung', 'shipNameConsent'],
+	['datenschutzEinverstaendnis', 'privacyConsent'],
+	['aufnahmeHochladen', 'mediaUpload'],
+	['totfund_telefon', 'deadPhoneContact']
+] as const;
+
+/**
+ * Der Endpunkt nimmt `application/x-www-form-urlencoded` entgegen und baut
+ * seinen Payload mit `Object.fromEntries(formData.entries())` — jeder Wert
+ * kommt dort als **String** an. Ein vertragskonformes `namensnennung=0` war
+ * damit `'0'`, und `'0' ? true : false` ist `true`: Das ausdrückliche „nein"
+ * des Melders wurde als „ja" gespeichert und sein Name veröffentlicht.
+ *
+ * Deshalb wird jedes dieser Flags numerisch ausgewertet (`isLegacyFlagSet`),
+ * genau wie `totfund`. JSON-Submissions mit echten Zahlen verhalten sich
+ * unverändert.
+ */
+describe.each(LEGACY_FLAGS)('mapLegacyToCurrentSchema — 0/1-Flag %s', (legacyField, formField) => {
+	it.each([
+		['die Zahl 1 als Zustimmung', 1, true],
+		['den String "1" als Zustimmung', '1', true],
+		['die Zahl 0 als Ablehnung', 0, false],
+		['den String "0" als Ablehnung', '0', false]
+	])('wertet %s', (_label, wert, erwartet) => {
+		const result = mapLegacyToCurrentSchema({
+			...minimalRequest(),
+			[legacyField]: wert
+		} as unknown as LegacySightingRequest);
+
+		expect(result[formField]).toBe(erwartet);
+	});
+
+	it('wertet ein nicht übermitteltes Feld als Ablehnung', () => {
+		const result = mapLegacyToCurrentSchema(minimalRequest());
+
+		expect(result[formField]).toBe(false);
 	});
 });

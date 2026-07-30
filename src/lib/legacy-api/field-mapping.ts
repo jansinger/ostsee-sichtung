@@ -19,14 +19,25 @@ import { createId } from '@paralleldrive/cuid2';
 import type { LegacySightingRequest } from './types.js';
 
 /**
- * Prüft ein Legacy-0/1-Feld auf „gesetzt".
+ * „Wurde das Feld überhaupt übermittelt?"
  *
  * Legacy-Clients dürfen Formulardaten schicken; der Endpunkt baut daraus
- * `Object.fromEntries(formData.entries())`, also **Strings**. `!!'0'` wäre
- * `true` — deshalb wird numerisch verglichen.
+ * `Object.fromEntries(formData.entries())`, also **Strings**. Eine aktiv
+ * gemeldete `0` (bzw. `'0'`) ist ein echter Wert und muss von „nicht
+ * übermittelt" (`undefined`/`null`/`''`) unterscheidbar bleiben — genau
+ * diese Grenze ziehen alle drei Helfer unten gemeinsam.
+ */
+function isLegacyValuePresent<T extends number | string>(value: T | undefined | null): value is T {
+	return value !== undefined && value !== null && value !== '';
+}
+
+/**
+ * Prüft ein Legacy-0/1-Feld auf „gesetzt".
+ *
+ * String-tolerant: `!!'0'` wäre `true` — deshalb wird numerisch verglichen.
  */
 function isLegacyFlagSet(value: number | string | undefined | null): boolean {
-	return value !== undefined && value !== null && value !== '' && Number(value) === 1;
+	return isLegacyValuePresent(value) && Number(value) === 1;
 }
 
 /**
@@ -34,7 +45,7 @@ function isLegacyFlagSet(value: number | string | undefined | null): boolean {
  * weil `'0' === 0` in TypeScript false ist.
  */
 function isLegacyZero(value: number | string | undefined | null): boolean {
-	return value !== undefined && value !== null && value !== '' && Number(value) === 0;
+	return isLegacyValuePresent(value) && Number(value) === 0;
 }
 
 /**
@@ -90,12 +101,8 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 
 		// Environmental conditions
 		seaState: legacyData.seegang || 0,
-		windDirection:
-			legacyData.windrichtung &&
-			['', 'N', 'NW', 'W', 'SW', 'S', 'SO', 'O', 'NO'].includes(legacyData.windrichtung as string)
-				? (legacyData.windrichtung as '' | 'N' | 'NW' | 'W' | 'SW' | 'S' | 'SO' | 'O' | 'NO')
-				: '',
-		windForce: legacyData.windstaerke ? Number(legacyData.windstaerke) : undefined,
+		windDirection: normalizeWindDirection(legacyData.windrichtung),
+		windForce: parseWindForce(legacyData.windstaerke),
 		visibility: legacyData.sichtweite || 0,
 
 		// Vessel information
@@ -107,7 +114,7 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 
 		// Media and observations
 		mediaFile: legacyData.aufnahme || '',
-		mediaUpload: legacyData.aufnahmeHochladen ? true : false,
+		mediaUpload: isLegacyFlagSet(legacyData.aufnahmeHochladen),
 		// Die Spezifikation nennt das Feld `sonstige_auffaelligkeiten` (mit `ae`);
 		// diese Implementierung las bis 2026-07-30 nur die Umlaut-Variante und
 		// verwarf den Freitext spec-konformer Clients kommentarlos.
@@ -123,21 +130,30 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		notes: legacyData.bemerkungen || '',
 
 		// Consent flags (convert 0/1 to boolean)
-		nameConsent: legacyData.namensnennung ? true : false,
-		shipNameConsent: legacyData.schiffnamensnennung ? true : false,
-		privacyConsent: legacyData.datenschutzEinverstaendnis ? true : false,
+		//
+		// `isLegacyFlagSet` statt `? true : false`: Über den Formulardaten-Pfad
+		// kommt jedes Feld als String an (`Object.fromEntries(formData.entries())`
+		// in src/routes/rest_sichtungen/+server.ts). Ein vertragskonformes
+		// `namensnennung=0` war damit `'0'` — und `'0' ? true : false` ist `true`.
+		// Das ausdrückliche „nein" des Melders wurde bis 2026-07-30 als
+		// Zustimmung gespeichert und sein Name in showreports.json
+		// veröffentlicht. Nur eine explizite 1 ist eine Zustimmung.
+		nameConsent: isLegacyFlagSet(legacyData.namensnennung),
+		shipNameConsent: isLegacyFlagSet(legacyData.schiffnamensnennung),
+		privacyConsent: isLegacyFlagSet(legacyData.datenschutzEinverstaendnis),
 
 		// Death finding detection and fields
 		//
 		// Die Spec kennt zwei Wege zum Totfund: das eigene 0/1-Feld `totfund` und
 		// die Regel „`anzahl_gesamt = 0` wird als Totfund interpretiert". Bis
 		// 2026-07-30 wurde nur der Zähler ausgewertet — ein explizites
-		// `totfund: 1` bei `anzahl_gesamt > 0` verschwand.
+		// `totfund: 1` bei `anzahl_gesamt > 0` verschwand. Der neu angebundene
+		// iOS-Client (OstSeeTiere/8) sendet genau das (beobachtet: 1, 2, 3, 7).
 		isDead: isLegacyFlagSet(legacyData.totfund) || isLegacyZero(legacyData.anzahl_gesamt),
 		deadSize: legacyData.totfund_groesse || undefined,
 		deadCondition: legacyData.totfund_zustand || 0,
 		deadSex: legacyData.totfund_geschlecht || 0,
-		deadPhoneContact: legacyData.totfund_telefon ? true : false,
+		deadPhoneContact: isLegacyFlagSet(legacyData.totfund_telefon),
 
 		// System fields
 		entryChannel: legacyData.eingangskanal || EntryChannelEnum.APP,
@@ -156,6 +172,54 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		// Einwilligungsnachweis erfinden (siehe mediaConsent.test.ts).
 		mediaConsent: false
 	};
+}
+
+/** Windrichtungen, wie die Spec, die DB-Spalte, das Formular und `antworten.json` sie kennen. */
+const GERMAN_WIND_DIRECTIONS = ['', 'N', 'NW', 'W', 'SW', 'S', 'SO', 'O', 'NO'] as const;
+type GermanWindDirection = (typeof GERMAN_WIND_DIRECTIONS)[number];
+
+/**
+ * Der neu gebaute iOS-Client (OstSeeTiere/8) sendet englische
+ * Himmelsrichtungs-Abkürzungen statt der deutschen. Nur drei der acht Werte
+ * unterscheiden sich zwischen den Sprachen — diese Tabelle bildet sie auf die
+ * deutsche Form ab. `N`, `S`, `W`, `NW`, `SW` sind in beiden Sprachen
+ * identisch und brauchen keinen Eintrag.
+ */
+const ENGLISH_TO_GERMAN_WIND_DIRECTION: Record<string, GermanWindDirection> = {
+	NE: 'NO',
+	E: 'O',
+	SE: 'SO'
+};
+
+/**
+ * Normalisiert eine Windrichtung auf die deutsche Form. Deutsche Eingaben
+ * durchlaufen unverändert (byte-identisch zum bisherigen Verhalten), englische
+ * Abkürzungen werden übersetzt. Alles andere — inklusive fehlender Angabe —
+ * wird zu `''`, wie bisher.
+ */
+function normalizeWindDirection(value: string | undefined | null): GermanWindDirection {
+	if (!isLegacyValuePresent(value)) {
+		return '';
+	}
+	const normalized = ENGLISH_TO_GERMAN_WIND_DIRECTION[value] ?? value;
+	return (GERMAN_WIND_DIRECTIONS as readonly string[]).includes(normalized)
+		? (normalized as GermanWindDirection)
+		: '';
+}
+
+/**
+ * Wandelt `windstaerke` in eine Zahl um, ohne eine aktiv gemeldete `0`
+ * (Windstille, ein reales Beaufort-Maß) mit „nicht übermittelt" zu verwechseln.
+ * `undefined`/`null`/`''` bleiben `undefined`; alles andere — Zahl oder String,
+ * je nach JSON- oder Formular-Encoding — wird zur Zahl. Dieselbe Grenze wie
+ * bei `isLegacyFlagSet`/`isLegacyZero`, deshalb derselbe Helfer.
+ */
+function parseWindForce(value: number | string | undefined | null): number | undefined {
+	if (!isLegacyValuePresent(value)) {
+		return undefined;
+	}
+	const parsed = Number(value);
+	return Number.isNaN(parsed) ? undefined : parsed;
 }
 
 /**

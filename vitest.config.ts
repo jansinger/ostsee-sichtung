@@ -84,8 +84,16 @@ export default defineConfig({
 					   einsammeln (`e2e/basic.test.ts`, `e2e/homepage.test.ts`), die
 					   `@playwright/test` als Runner brauchen und unter Vitest
 					   scheitern. */
-					include: ['src/**/*.{test,spec}.{js,ts}', 'e2e/helpers/*.{test,spec}.{js,ts}'],
-					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+					include: [
+						'src/**/*.{test,spec}.{js,ts}',
+						'e2e/helpers/*.{test,spec}.{js,ts}',
+						'legacy-inbox/**/*.test.js'
+					],
+					// Das node_modules-Muster muss explizit mit: Ein eigenes `exclude`
+					// ersetzt Vitests Default. Ohne den Eintrag würde das
+					// `legacy-inbox/**`-Include Testdateien aus den Abhängigkeiten
+					// einsammeln, sobald dort jemand `npm install` ausführt.
+					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', '**/node_modules/**'],
 					setupFiles: ['./vitest-setup-server.ts'],
 					// Force UTC timezone for consistent date/time tests across environments
 					env: {
