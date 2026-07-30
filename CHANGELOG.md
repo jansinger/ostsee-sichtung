@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.6.2](https://github.com/jansinger/ostsee-tiere/compare/v2.6.1...v2.6.2) (2026-07-30)
+
+
+### Bug Fixes
+
+* **build:** let the vite config's dep-hash helper into the docker context ([#666](https://github.com/jansinger/ostsee-tiere/issues/666)) ([4b14a0d](https://github.com/jansinger/ostsee-tiere/commit/4b14a0d597bdfda12440ad59732ed9d1c72c5923))
+
 ## [2.6.1](https://github.com/jansinger/ostsee-tiere/compare/v2.6.0...v2.6.1) (2026-07-30)
 
 
