@@ -36,6 +36,19 @@ Der Vertrag kennt **keinen Medien-Upload**. `aufnahme` ist nur ein Dateiname,
 Verbindlich ist `docs/LEGACY_API_SPECIFICATION.md`, in Zweifelsfällen das
 Originaldokument `docs/archive/Sichtungsdb-Web-Schnittstelle.pdf`.
 
+### Der Client-Status ändert sich mit diesem Dienst
+
+`docs/LEGACY_API_SPECIFICATION.md:7` und `.claude/rules/legacy-api.md` halten
+fest: „keine Clients angebunden" (Stand 2026-07-28). Auf dieser Notiz beruht die
+projektweite Einschätzung, Abweichungen am Legacy-Vertrag seien derzeit
+unkritisch, weil sie nichts Laufendes brechen.
+
+**Mit der Inbetriebnahme dieses Dienstes gilt das nicht mehr.** Ab dann liefern
+Apps echte Sichtungen, und jede Vertragsabweichung kostet Daten, die von dieser
+Seite aus nicht zu reparieren sind. Beide Dateien sind zum Zeitpunkt der
+Inbetriebnahme entsprechend zu aktualisieren — das ist keine Formalie, sondern
+die Grundlage, auf der künftige Änderungen an diesen Endpunkten bewertet werden.
+
 Bei der Entwurfsarbeit sind **zwei Abweichungen der bestehenden SvelteKit-
 Implementierung vom Original** aufgefallen. Beide wurden am PDF geprüft und
 entschieden. Sie betreffen den neuen Dienst unmittelbar, weil er nicht zu beiden
@@ -140,23 +153,67 @@ zusätzlich `GEO_LIMITS` und `isInBalticArea` aus
 
 ## 4. Datenfluss `POST /rest_sichtungen`
 
-1. **Rate-Limit** pro IP prüfen — 20 pro Stunde, entsprechend
-   `RATE_LIMITS.SIGHTING_SUBMISSION` in der Hauptanwendung
-2. **Body lesen** mit hartem Abbruch bei 64 KB. Der Abbruch erfolgt am Stream,
-   nicht anhand von `Content-Length` — der Header ist eine Behauptung des Clients
-3. **Parsen**: JSON **oder** `application/x-www-form-urlencoded`. Die
-   Hauptanwendung akzeptiert beides ausdrücklich für Mobile-Clients, die keinen
-   `Content-Type` senden (`src/routes/rest_sichtungen/+server.ts:54`); dieses
-   Verhalten wird übernommen
-4. **Validieren** → bei Fehler `400` mit der flachen Fehlerform aus 2.1
-5. **Schreiben**: in `.tmp`-Datei schreiben → `fsync` → `rename`
-6. **Erst danach** `201`, `Location`-Header, `{"message":"Saved"}`
+### Der Leitsatz
 
-Schritt 6 ist die zentrale Zusage des Dienstes: **Ein `201` wird erst gesendet,
-wenn die Sichtung sicher auf der Platte liegt.** Schlägt das Schreiben fehl, gibt
-es `500`, damit der Client es erneut versuchen kann. Eine Empfangsbestätigung für
-eine Sichtung, die nirgends liegt, wäre der schwerwiegendste denkbare Fehler
-dieses Dienstes.
+**Was den Dienst erreicht hat, wird geschrieben — ausnahmslos, auch wenn es
+ungültig, unparsbar oder Unsinn ist.** Die Validierung entscheidet nur über die
+**Antwort** an den Client, niemals über die Existenz der Daten.
+
+Der Grund ist unbequem, aber zwingend: Ein `400` ist ein Client-Fehler, und eine
+korrekt gebaute App wiederholt ihn nicht — zu Recht, denn beim zweiten Versuch
+käme dasselbe heraus. Verwirft der Dienst bei `400` den Body, ist die Sichtung
+endgültig weg, und zwar lautlos. Das passiert genau dann, wenn der portierte
+Validierer an irgendeiner Stelle strenger ist als das Original: ein Datumsformat
+mit Sekunden, eine E-Mail mit 65 Zeichen, ein Feldname, den die App anders
+schreibt als das PDF.
+
+Diese Sorge ist nicht hypothetisch. In diesem Projekt gibt es drei einander
+widersprechende Beschreibungen allein der Fehlerantwort (Abschnitt 2.1) und einen
+Feldnamen, den die Hauptanwendung anders schreibt als der Vertrag (2.2). Die
+Annahme, ein Neubau träfe in jedem Detail exakt das, was die reale App sendet,
+trägt nicht.
+
+Der Vertrag bleibt davon unberührt: Der Client bekommt weiterhin sein `400` mit
+den korrekten deutschen Feldmeldungen und merkt keinen Unterschied.
+
+### Ablauf
+
+1. **Body lesen**, Obergrenze 256 KB, hart am Stream durchgesetzt — nicht anhand
+   von `Content-Length`, der ist eine Behauptung des Clients. Wird die Grenze
+   erreicht, wird **das Gelesene behalten** und im Umschlag als abgeschnitten
+   vermerkt, nicht verworfen
+2. **Parsen** nach Kräften: JSON **oder** `application/x-www-form-urlencoded`.
+   Die Hauptanwendung akzeptiert beides ausdrücklich für Mobile-Clients ohne
+   `Content-Type` (`src/routes/rest_sichtungen/+server.ts:54`); das wird
+   übernommen. Scheitert das Parsen, geht es ohne `payload` weiter — der
+   Rohtext bleibt im Umschlag
+3. **Validieren** — das Ergebnis wird im Umschlag festgehalten, nicht zur
+   Abbruchbedingung gemacht
+4. **Schreiben**: `.tmp` → `fsync` der Datei → `rename` → `fsync` des
+   Verzeichnisses. Zielverzeichnis nach Ergebnis: `posteingang/` bei gültigen,
+   `abgewiesen/` bei ungültigen Daten
+5. **Erst danach antworten**: `201` mit `Location` und `{"message":"Saved"}` bei
+   gültigen Daten, `400` mit der flachen Fehlerform aus 2.1 bei ungültigen
+
+Der `fsync` des **Verzeichnisses** in Schritt 4 ist kein Detail: Ohne ihn kann
+bei einem Stromausfall die Datei zwar geschrieben, der Verzeichniseintrag aber
+noch nicht dauerhaft sein — die Datei ist dann nach dem Neustart verschwunden.
+
+Schritt 5 ist die zentrale Zusage: **Es wird nie geantwortet, bevor die Daten
+sicher auf der Platte liegen.** Schlägt das Schreiben fehl, gibt es `500`, damit
+der Client es erneut versuchen kann — Doppel sind beim Import erkennbar und
+allemal besser als Verlust. Eine Empfangsbestätigung für eine Sichtung, die
+nirgends liegt, wäre der schwerwiegendste denkbare Fehler dieses Dienstes.
+
+### Verbleibendes Restrisiko
+
+Zwischen dem vollständigen Lesen des Bodys und dem Schreiben liegt reine
+Rechenarbeit ohne Ein-/Ausgabe. Stirbt der Prozess genau in diesem Fenster —
+Stromausfall, `OOM-Killer` —, ist der Request verloren. Das Fenster auf null zu
+bringen erforderte zwei Schreibvorgänge je Request (erst roh, dann angereichert);
+das Verhältnis von Aufwand zu gewonnener Sicherheit rechtfertigt das hier nicht.
+Der Fall ist bewusst in Kauf genommen und hier festgehalten, damit er eine
+Entscheidung bleibt und nicht zur Überraschung wird.
 
 ### `Location`-Header
 
@@ -197,11 +254,37 @@ Eine Datei je Sichtung. Der Dateiname entsteht aus Sequenz und Zeitstempel —
 		"user_agent": "…",
 		"content_type": "application/json"
 	},
+	"roh": "…Body als Text, exakt wie empfangen…",
+	"abgeschnitten": false,
 	"payload": {
-		"…": "roher Legacy-Body, unverändert, einschließlich unbekannter Felder"
-	}
+		"…": "geparster Legacy-Body, unverändert, einschließlich unbekannter Felder"
+	},
+	"validierung": { "gueltig": true, "fehler": {} }
 }
 ```
+
+`roh` ist der Rückfallweg und der eigentliche Grund, warum nichts verloren gehen
+kann: Selbst wenn Parsen und Validierung beide scheitern, steht der Text hier
+Zeichen für Zeichen. `payload` fehlt dann ganz. Die Angabe `abgeschnitten`
+markiert Bodys, die an der 256-KB-Grenze abgeschnitten wurden — die dürften
+praktisch nicht vorkommen, aber wenn doch, soll das sichtbar sein und nicht
+stillschweigend als vollständige Sichtung durchgehen.
+
+### Verzeichnisse
+
+```
+<datenverzeichnis>/
+├── posteingang/   # gültig, wartet auf Import
+├── abgewiesen/    # Validierung fehlgeschlagen — braucht einen Menschen
+└── importiert/    # erledigt, bleibt als Nachweis liegen
+```
+
+`abgewiesen/` ist kein Papierkorb, sondern eine Arbeitsliste. Was dort landet,
+ist entweder Missbrauch — dann kann es weg — oder eine echte Sichtung, die der
+Validierer zu Unrecht abgelehnt hat. Der zweite Fall ist genau der, dessentwegen
+dieser Entwurf überarbeitet wurde, und er muss auffallen. **Das Verzeichnis
+gehört deshalb in die Überwachung** (Abschnitt 11): Jeder Eintrag ist ein Hinweis
+darauf, dass der Validierer und die reale App auseinanderliegen.
 
 ### Die laufende Nummer
 
@@ -247,13 +330,22 @@ einzige verfügbare Merkmal. Sie verschwindet mit dem Umschlag beim Import.
 Der Endpunkt bleibt ohne Authentifizierung, wie vom Vertrag vorgegeben. Der Schutz
 liegt woanders:
 
-- 64-KB-Grenze für den Body, hart am Stream durchgesetzt
-- Rate-Limit von 20/Stunde pro IP, dazu 500/Stunde über alle IPs als Reißleine.
-  Beide antworten mit `429`. Der Vertrag kennt diesen Fall nicht — die
-  Hauptanwendung antwortet ebenfalls mit `429`, und ein anderer Code wäre
-  gegenüber einem Client irreführender. Der globale Wert liegt weit über dem
-  bisherigen Aufkommen und greift nur bei einem Angriff; er ist über eine
-  Umgebungsvariable änderbar, damit eine echte Meldewelle nicht abgewiesen wird
+- 256-KB-Grenze für den Body, hart am Stream durchgesetzt. Das Gelesene wird
+  behalten und als abgeschnitten vermerkt (Abschnitt 4)
+- **Rate-Limit pro IP: 100/Stunde, und es weist nichts ab, was schon gelesen
+  wurde** — der Request wird geschrieben, die Antwort ist `429`. Zwei Gründe für
+  beides: Mobilfunkanbieter setzen CGNAT ein, hunderte Nutzer teilen sich eine
+  öffentliche IP, und der Wert der Hauptanwendung (20/Stunde,
+  `RATE_LIMITS.SIGHTING_SUBMISSION`) ist für eine Mobile-App darum zu scharf. Und
+  ein `429` an eine echte Meldewelle nach einem Zeitungsartikel wäre derselbe
+  stille Verlust wie ein zu Unrecht vergebenes `400`
+- **Globale Reißleine: 1.000/Stunde über alle IPs — die weist als einzige Regel
+  ab, ohne zu schreiben.** Das ist die bewusste Ausnahme vom Leitsatz: Sie
+  schützt nicht vor Missbrauch, sondern davor, dass eine Flut die Platte füllt
+  und damit _alle_ nachfolgenden Sichtungen unschreibbar macht. Ein Angriff darf
+  einzelne Requests kosten, aber nicht den gesamten Posteingang. Der Wert liegt
+  weit über jedem realistischen Aufkommen und ist über eine Umgebungsvariable
+  änderbar
 - keine Nutzereingabe in Dateipfaden
 - `X-Content-Type-Options: nosniff`
 - kein CORS — die Legacy-Routen der Hauptanwendung haben ebenfalls keins
@@ -307,16 +399,31 @@ das PDF getestet, nicht gegen die OpenAPI-Spec. Solange die Spec nicht
 korrigiert ist, wäre `toSatisfyApiSpec()` dort ein Test, der das Falsche
 festschreibt.
 
-Dazu:
+### Der wichtigste Test
+
+**Ein Request mit vollständigem Unsinn im Body hinterlässt trotzdem eine Datei.**
+
+Dieser eine Test hält den Leitsatz aus Abschnitt 4 fest. Fällt er weg oder wird
+er später „vereinfacht", ist der Dienst wieder einer, der Daten verwerfen kann.
+Dazu gehören als Varianten: kaputtes JSON, leerer Body, Body ohne
+`Content-Type`, Body in einem Format, das der Dienst gar nicht kennt — jedes Mal
+liegt danach eine Datei in `abgewiesen/`, und `roh` enthält den gesendeten Text
+unverändert.
+
+### Weitere Fälle
 
 - Drift-Test für die eingefrorenen `antworten.json`-Dateien (Abschnitt 7)
-- Body-Grenze: 64 KB + 1 Byte wird abgewiesen, ohne den Prozess zu belasten
-- Rate-Limit greift und gibt den korrekten Statuscode
-- kaputtes JSON → 400
+- Body-Grenze: 256 KB + 1 Byte wird abgeschnitten, geschrieben und als
+  `abgeschnitten` markiert — **nicht** verworfen
+- Rate-Limit pro IP: antwortet `429`, **schreibt aber trotzdem**
+- globale Reißleine: weist ab, ohne zu schreiben — die einzige Regel, die das darf
 - `x-www-form-urlencoded` ohne `Content-Type` → wird angenommen
-- leerer Body → 400 mit den erwarteten deutschen Feldmeldungen
+- gültiger Body → `201`, Datei in `posteingang/`, `Location` gesetzt
+- ungültiger Body → `400` mit den erwarteten deutschen Feldmeldungen, Datei in
+  `abgewiesen/`
 - gleichzeitige Requests erzeugen eindeutige Dateinamen, keine Lücken in der Sequenz
 - **Schreibfehler ergibt 500, nicht 201** — ausdrücklich geprüft
+- Umlaute in Namen überstehen JSON und Formularkodierung unverändert
 - `inBaltic`: dieselben Koordinaten ergeben dieselbe Antwort wie in der Hauptanwendung
 
 Testverfahren nach Projektregel `.claude/rules/testing.md`: Test zuerst, dann
@@ -362,7 +469,57 @@ Anwendung über Plesk.
 
 ---
 
-## 11. Bewusst nicht enthalten
+## 11. Betrieb — Voraussetzung für die Inbetriebnahme
+
+Die drei folgenden Punkte fängt **kein Code ab**. Ohne sie ist die Zusage
+„es geht nichts verloren" nicht haltbar, egal wie sorgfältig der Dienst
+geschrieben ist. Sie gehören deshalb zur Inbetriebnahme, nicht auf eine Liste
+für später.
+
+### Sicherung
+
+Bis zum Import ist die Platte dieses Servers der **einzige** Ort, an dem eine
+eingegangene Sichtung existiert. Ein Plattenausfall, ein versehentliches `rm`,
+ein misslungenes Plesk-Update — und alles seit dem letzten Import ist weg.
+
+Nötig sind beide Hälften:
+
+- eine Sicherung des Datenverzeichnisses **auf einen anderen Rechner**, nicht nur
+  ein Plesk-Backup auf derselben Maschine
+- ein **regelmäßiger, kurz getakteter Import**, damit das ungesicherte Zeitfenster
+  klein bleibt. Der Import ist damit nicht nur Datenübernahme, sondern der
+  eigentliche Schutzmechanismus: Was importiert ist, liegt in der Datenbank der
+  Hauptanwendung und fällt unter deren Sicherung
+
+### Überwachung
+
+Scheitert `app.js` beim Start — Datenverzeichnis fehlt, Rechte nach einem Update
+falsch —, antwortet jeder Request mit `500`. Die App versucht es einige Male und
+gibt auf. Das kann tagelang laufen, ohne dass es jemandem auffällt.
+
+Nötig ist eine **externe** Überwachung, die den Dienst regelmäßig anspricht und
+Alarm schlägt — extern, weil eine Überwachung auf demselben Server genau dann
+mit ausfällt, wenn sie gebraucht wird. Dafür bekommt der Dienst einen
+Health-Endpunkt, der prüft, ob das Datenverzeichnis beschreibbar ist, und nicht
+nur, ob der Prozess antwortet.
+
+Mit zu überwachen: **die Anzahl der Dateien in `abgewiesen/`.** Jeder Eintrag
+dort ist ein Hinweis, dass Validierer und reale App auseinanderliegen — und damit
+ein Frühwarnsignal für genau die Art Verlust, gegen die Abschnitt 4 gebaut ist.
+
+### Plattenplatz
+
+Plesk-Domains haben oft Kontingente. Ist die Platte voll, schlägt jedes Schreiben
+fehl — und dann greift die einzige Schutzschicht, die es dagegen gibt, nämlich
+`500` statt `201`. Der Client kann es wiederholen, aber irgendwann gibt er auf.
+
+Nötig: eine Prüfung beim Start, eine laufende Überwachung des freien Platzes und
+ein Alarm mit genug Vorlauf, um zu reagieren. Zu bedenken beim Bemessen: allein
+der Geo-Index belegt 33 MB, dazu kommen die Protokolldateien.
+
+---
+
+## 12. Bewusst nicht enthalten
 
 - **Keine Datenbank, kein PostGIS, keine Zugangsdaten** auf dem Plesk-Server
 - **Kein E-Mail-Versand** — die Hauptanwendung benachrichtigt beim Import
