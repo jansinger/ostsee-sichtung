@@ -74,17 +74,27 @@ export async function erstelleStore({ datenVerzeichnis }) {
 			griff = null;
 
 			await rename(tmpPfad, pfad);
-
-			// … dann der Verzeichniseintrag. Ohne diesen zweiten sync kann der
-			// rename einen Stromausfall nicht überleben, obwohl die Datei
-			// geschrieben war — die Datei wäre nach dem Neustart verschwunden.
-			const verzeichnisGriff = await open(path.join(datenVerzeichnis, ziel), 'r');
-			await verzeichnisGriff.sync();
-			await verzeichnisGriff.close();
 		} catch (fehler) {
 			if (griff) await griff.close().catch(() => {});
 			await unlink(tmpPfad).catch(() => {});
 			throw fehler;
+		}
+
+		// … dann der Verzeichniseintrag. Ohne diesen zweiten sync kann der
+		// rename einen Stromausfall nicht überleben, obwohl die Datei
+		// geschrieben war — die Datei wäre nach dem Neustart verschwunden.
+		// Scheitert dieser sync, ist die Datei aber bereits unter ihrem
+		// endgültigen Namen auf der Platte, also wird hier nur protokolliert
+		// statt einen erfolgreichen Schreibvorgang als Fehler zu melden.
+		try {
+			const verzeichnisGriff = await open(path.join(datenVerzeichnis, ziel), 'r');
+			try {
+				await verzeichnisGriff.sync();
+			} finally {
+				await verzeichnisGriff.close().catch(() => {});
+			}
+		} catch (fehler) {
+			console.error('Verzeichnis-fsync nach rename fehlgeschlagen:', fehler);
 		}
 
 		return { lfdNr, pfad };

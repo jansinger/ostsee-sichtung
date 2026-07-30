@@ -1,8 +1,35 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtemp, rm, readdir, readFile, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { erstelleStore } from './store.js';
+
+// Steuert einen Stub, der ausschließlich den Verzeichnis-fsync in schreibe()
+// scheitern lässt (open(..., 'r')). Datei-Schreibvorgänge (open(..., 'wx', …))
+// laufen unverändert über die echte Implementierung.
+let verzeichnisSyncSchlaegtFehl = false;
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+	const original = await importOriginal();
+	return {
+		...original,
+		open: async (pfad, ...rest) => {
+			const griff = await original.open(pfad, ...rest);
+			if (verzeichnisSyncSchlaegtFehl && rest[0] === 'r') {
+				return new Proxy(griff, {
+					get(ziel, eigenschaft) {
+						if (eigenschaft === 'sync') {
+							return () => Promise.reject(new Error('Verzeichnis-fsync fehlgeschlagen (stub)'));
+						}
+						const wert = Reflect.get(ziel, eigenschaft, ziel);
+						return typeof wert === 'function' ? wert.bind(ziel) : wert;
+					}
+				});
+			}
+			return griff;
+		}
+	};
+});
 
 let verzeichnis;
 let store;
@@ -24,6 +51,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+	verzeichnisSyncSchlaegtFehl = false;
 	await chmod(verzeichnis, 0o700).catch(() => {});
 	await rm(verzeichnis, { recursive: true, force: true });
 });
@@ -92,5 +120,14 @@ describe('erstelleStore', () => {
 		expect(await store.istBeschreibbar()).toBe(true);
 		await chmod(path.join(verzeichnis, 'posteingang'), 0o500);
 		expect(await store.istBeschreibbar()).toBe(false);
+	});
+
+	it('meldet Erfolg, wenn nur der Verzeichnis-fsync nach dem rename fehlschlägt', async () => {
+		verzeichnisSyncSchlaegtFehl = true;
+
+		const { pfad } = await store.schreibe(umschlag(), 'posteingang');
+
+		const gelesen = JSON.parse(await readFile(pfad, 'utf8'));
+		expect(gelesen.lfd_nr).toBe(1);
 	});
 });
