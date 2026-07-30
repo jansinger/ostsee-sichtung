@@ -11,7 +11,9 @@
  * Protokoll: Ein zweiter Lauf kann nichts doppelt anlegen, und was liegen
  * bleibt, ist genau das, was noch offen ist.
  *
- * Aufruf: node src/tools/import-legacy-inbox.js <datenverzeichnis>
+ * Aufruf über die Kommandozeile: npm run import:legacy-inbox -- <datenverzeichnis>
+ * Der Einstiegspunkt dafür liegt in import-legacy-inbox-cli.js; diese Datei ist
+ * reines Modul und führt beim Import nichts aus.
  */
 import { readdir, readFile, rename } from 'node:fs/promises';
 import path from 'node:path';
@@ -133,22 +135,4 @@ function vereinheitliche(payload) {
 
 	const { sonstige_auffaelligkeiten, ...rest } = payload;
 	return { ...rest, sonstige_auffälligkeiten: sonstige_auffaelligkeiten };
-}
-
-// Direkter Aufruf über die Kommandozeile
-if (import.meta.url === `file://${process.argv[1]}`) {
-	const [datenVerzeichnis] = process.argv.slice(2);
-	if (!datenVerzeichnis) {
-		console.error('Aufruf: node src/tools/import-legacy-inbox.js <datenverzeichnis>');
-		process.exit(1);
-	}
-	const ergebnis = await importiere({ datenVerzeichnis });
-	console.log(`${ergebnis.uebernommen} übernommen, ${ergebnis.fehlgeschlagen} offen.`);
-	if (ergebnis.moveFailure) {
-		console.error(
-			`Lauf abgebrochen: ${ergebnis.moveFailure.file} (Sichtung ${ergebnis.moveFailure.sightingId}) ` +
-				'konnte nicht verschoben werden — siehe Fehlermeldung oben.'
-		);
-	}
-	process.exit(ergebnis.fehlgeschlagen > 0 || ergebnis.moveFailure ? 1 : 0);
 }

@@ -1,10 +1,49 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { execFile } from 'node:child_process';
 import { mkdtemp, rm, mkdir, writeFile, readdir, rename } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { importiere } from './import-legacy-inbox.js';
 
 let verzeichnis: string;
+
+const repoWurzel = fileURLToPath(new URL('../../', import.meta.url));
+
+/**
+ * Ruft den Import so auf, wie ihn ein Betreiber aufruft: über den
+ * dokumentierten npm-Eintrag, in einem eigenen Prozess.
+ *
+ * Vitest setzt selbst `TEST=true` und `VITEST*` in die eigene Umgebung. Würden
+ * diese Variablen an das Kind vererbt, liefe der SvelteKit-Vite-Guard auch dann
+ * durch, wenn der npm-Eintrag sie gar nicht setzt — der Test wäre blind für
+ * genau den Fehler, den er absichern soll.
+ */
+function rufeCliAuf(
+	argumente: string[]
+): Promise<{ code: number; ausgabe: string; fehler: string }> {
+	const umgebung: NodeJS.ProcessEnv = { ...process.env };
+	for (const schluessel of Object.keys(umgebung)) {
+		if (schluessel === 'TEST' || schluessel.startsWith('VITEST')) delete umgebung[schluessel];
+	}
+
+	return new Promise((fertig) => {
+		execFile(
+			'npm',
+			['run', '--silent', 'import:legacy-inbox', '--', ...argumente],
+			{ cwd: repoWurzel, env: umgebung, timeout: 110_000 },
+			(fehler, ausgabe, fehlerAusgabe) => {
+				const code =
+					fehler && typeof (fehler as NodeJS.ErrnoException).code === 'number'
+						? Number((fehler as NodeJS.ErrnoException).code)
+						: fehler
+							? 1
+							: 0;
+				fertig({ code, ausgabe: String(ausgabe), fehler: String(fehlerAusgabe) });
+			}
+		);
+	});
+}
 
 async function legeUmschlagAn(name: string, payload: Record<string, unknown> | null) {
 	await writeFile(
@@ -233,4 +272,35 @@ describe('importiere', () => {
 
 		vi.restoreAllMocks();
 	});
+});
+
+/**
+ * Die Tests oben rufen `importiere()` direkt auf und sehen deshalb nichts von
+ * dem, was zwischen Kommandozeile und Funktion liegt: dem npm-Eintrag und dem
+ * Einstiegspunkt der Tool-Datei. Genau dort lag der Fehler, der den
+ * dokumentierten Befehl unbenutzbar machte — diese Tests schließen die Lücke,
+ * indem sie den Befehl als eigenen Prozess starten.
+ */
+describe('Kommandozeilen-Aufruf (npm run import:legacy-inbox)', () => {
+	it('nennt den Aufruf und endet mit einem Fehlercode, wenn das Verzeichnis fehlt', async () => {
+		const ergebnis = await rufeCliAuf([]);
+
+		expect(ergebnis.code).toBe(1);
+		expect(`${ergebnis.fehler}${ergebnis.ausgabe}`).toContain('Aufruf:');
+	}, 120_000);
+
+	it('meldet ein nicht vorhandenes Verzeichnis verständlich statt still zu enden', async () => {
+		const fehlend = path.join(verzeichnis, 'gibt-es-nicht');
+		const ergebnis = await rufeCliAuf([fehlend]);
+
+		expect(ergebnis.code).not.toBe(0);
+		expect(`${ergebnis.fehler}${ergebnis.ausgabe}`).toContain(fehlend);
+	}, 120_000);
+
+	it('meldet für ein leeres Datenverzeichnis einen leeren Lauf und endet mit 0', async () => {
+		const ergebnis = await rufeCliAuf([verzeichnis]);
+
+		expect(ergebnis.ausgabe).toContain('0 übernommen, 0 offen.');
+		expect(ergebnis.code).toBe(0);
+	}, 120_000);
 });
