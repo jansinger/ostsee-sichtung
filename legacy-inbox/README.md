@@ -132,9 +132,20 @@ Deshalb: Anfragen entzerren, oder vorher wissen, wie man sich wieder befreit.
     fail2ban-client set <jail> unbanip <ip>   # Sperre aufheben
 
 Ob der Dienst noch läuft oder wirklich nur die Sperre greift, klärt ein Aufruf
-**auf dem Server selbst** — der geht nicht über den Perimeter:
+**auf dem Server selbst**. fail2ban sperrt nach Quelladresse und hat
+`127.0.0.1` standardmäßig in seiner `ignoreip`-Liste, ein lokaler Aufruf kommt
+also durch:
 
-    curl -s http://127.0.0.1:<port>/health
+    curl -s -H 'Host: schweinswalsichtung.de' http://127.0.0.1/health
+
+Der `Host`-Kopf ist nötig, damit nginx die Anfrage der richtigen Domain
+zuordnet.
+
+Nicht funktionieren würde ein Aufruf direkt gegen den Anwendungsport: `PORT`
+setzt Passenger nur in der Umgebung des Anwendungsprozesses, nicht in deiner
+Shell — und Passenger fängt `server.listen()` ohnehin ab und verbindet die
+Anwendung über einen eigenen Socket. Ob überhaupt ein TCP-Port lauscht, zeigt
+`ss -ltnp | grep node`.
 
 Startet der Dienst gar nicht erst, steht der Grund im Passenger-Log. Er bricht
 den Start ab, wenn `LEGACY_INBOX_DATA_DIR` fehlt oder das Datenverzeichnis
