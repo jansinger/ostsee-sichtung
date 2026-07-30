@@ -12,6 +12,7 @@
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
 	import { findStepForErrors } from '$lib/report/findStepForErrors';
+	import { resolveServerFieldErrors } from '$lib/report/serverFieldErrors';
 	import { initialFormState } from '$lib/report/formConfig';
 	import { toast } from '$lib/stores/toastState.svelte';
 	import {
@@ -26,6 +27,7 @@
 	import type { FormContext, SightingFormData, UserContactData } from '$lib/types';
 	import type { SightingFormValues } from '$lib/types/Form';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
+	import { scrollToFirstError } from '$lib/utils/fieldNavigation';
 	import { createId } from '@paralleldrive/cuid2';
 	import { formStepsConfig } from '$lib/report/formConfig';
 	import { ValidationError } from 'yup';
@@ -147,6 +149,14 @@
 					// Aussage tragen, nicht zwei unabhängig entstandene.
 					const failure = describeSubmitFailure(result);
 
+					// Hat der Server Felder benannt, ist die Meldung über der Navigation
+					// nicht die vollständige Antwort — sie lautet bei einer Validierung
+					// immer „Validierungsfehler bei der Eingabe". Das Ziel steht in
+					// `fields`; siehe `applyServerFieldErrors`.
+					if (result.status === 'rejected' && result.fields) {
+						applyServerFieldErrors(result.fields);
+					}
+
 					if (result.status === 'offline') {
 						submitState = 'offline';
 					} else {
@@ -223,6 +233,58 @@
 	function retrySubmit(): void {
 		void handleFinalSubmit(new Event('submit')).catch((error: unknown) => {
 			logger.error({ error }, 'Erneuter Absendeversuch fehlgeschlagen');
+		});
+	}
+
+	/**
+	 * Übernimmt die Feldfehler einer Server-Ablehnung ins Formular und führt zum
+	 * ersten betroffenen Feld.
+	 *
+	 * Das ist derselbe Weg, den die Vorab-Validierung in `handleFinalSubmit` unten
+	 * für Yup-Fehler geht — nur mit den Feldern des Servers als Quelle. Beide
+	 * Fälle sind für den Nutzer dasselbe Ereignis: „ein Feld stimmt nicht, und es
+	 * kann in einem anderen Schritt liegen". Getrennt bleiben sie trotzdem: dieser
+	 * Weg mischt die Fehler und scrollt selbst, der andere setzt sie und überlässt
+	 * das Scrollen der Schritt-Navigation.
+	 *
+	 * Die Fehler werden **gemischt**, nicht gesetzt: Ein bereits sichtbarer
+	 * Client-Fehler an einem anderen Feld ist damit nicht plötzlich weg, nur weil
+	 * der Server ein zusätzliches Feld beanstandet.
+	 *
+	 * `scrollToFirstError` läuft erst im nächsten Frame — der Schrittwechsel oben
+	 * ist zu diesem Zeitpunkt noch nicht gerendert, das Zielfeld existiert also
+	 * noch gar nicht im DOM.
+	 *
+	 * **Abhängigkeit, die nicht offensichtlich ist:** Nach dem `throw` unten läuft
+	 * in `StepNavigation.handleFormSubmission` der Catch-Zweig mit
+	 * `showValidationError()`, das einen ZWEITEN `scrollToFirstError` samt
+	 * eigenem Fokus-Timeout auslöst. Zwei konkurrierende Sprünge entstehen daraus
+	 * heute nicht, weil `handleFinalSubmit` gegen das volle Schema vorvalidiert:
+	 * Der Server wird nur mit client-seitig gültigen Daten erreicht, `validateStep`
+	 * findet dort nichts und `showValidationError` steigt sofort wieder aus. Wer
+	 * dieses Vorab-Gate lockert, muss die beiden Sprünge gegeneinander absichern.
+	 */
+	function applyServerFieldErrors(serverFields: Record<string, string>): void {
+		const { fields, targetStep, fieldOrder } = resolveServerFieldErrors(
+			serverFields,
+			formStepsConfig,
+			currentStep
+		);
+
+		// Ausschließlich unbekannte Felder benannt — es gibt nichts anzuspringen und
+		// nichts zu markieren. Die Meldung selbst steht weiterhin in `SubmitStatus`.
+		if (Object.keys(fields).length === 0) {
+			return;
+		}
+
+		formContext.errors.update((current) => ({ ...current, ...fields }));
+
+		if (targetStep !== null) {
+			currentStep = targetStep;
+		}
+
+		requestAnimationFrame(() => {
+			scrollToFirstError(fields, fieldOrder);
 		});
 	}
 

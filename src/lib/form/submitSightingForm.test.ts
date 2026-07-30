@@ -222,6 +222,120 @@ describe('submitSightingForm', () => {
 				httpStatus: 400
 			});
 		});
+
+		/**
+		 * Der eigentliche Punkt: `message` ist bei `VALIDATION_ERROR` immer derselbe
+		 * Satz („Validierungsfehler bei der Eingabe") und nennt kein Feld. Welches
+		 * Feld gemeint ist, steht ausschließlich in `errors` — wird das verworfen,
+		 * kann die Oberfläche nicht zum Feld springen.
+		 */
+		it('reicht die Feldkarte eines Validierungsfehlers durch', async () => {
+			mockResponse({
+				status: 400,
+				body: {
+					success: false,
+					code: 'VALIDATION_ERROR',
+					message: 'Validierungsfehler bei der Eingabe',
+					errors: {
+						waterway: 'Fahrwasser darf höchstens 100 Zeichen haben',
+						email: 'Bitte geben Sie eine gültige E-Mail-Adresse an'
+					}
+				}
+			});
+
+			await expect(submitSightingForm(validFormValues)).resolves.toStrictEqual({
+				status: 'rejected',
+				message: 'Validierungsfehler bei der Eingabe',
+				fields: {
+					waterway: 'Fahrwasser darf höchstens 100 Zeichen haben',
+					email: 'Bitte geben Sie eine gültige E-Mail-Adresse an'
+				}
+			});
+		});
+
+		/**
+		 * `INVALID_FIELDS` (ebenfalls 400) trägt statt `errors` nur die nackten
+		 * Feldnamen in `rejectedFields` — die Whitelist-Prüfung kennt keine Meldung
+		 * pro Feld. Damit die Aufrufstelle beide Fälle gleich behandeln kann,
+		 * entsteht daraus dieselbe Feldkarte; den Text stellt der Client.
+		 */
+		it('macht aus rejectedFields dieselbe Feldkarte', async () => {
+			mockResponse({
+				status: 400,
+				body: {
+					success: false,
+					code: 'INVALID_FIELDS',
+					message: 'Unerlaubte Felder: nickname',
+					rejectedFields: ['nickname']
+				}
+			});
+
+			await expect(submitSightingForm(validFormValues)).resolves.toStrictEqual({
+				status: 'rejected',
+				message: 'Unerlaubte Felder: nickname',
+				fields: { nickname: 'Dieses Feld darf nicht mitgesendet werden' }
+			});
+		});
+
+		/**
+		 * Die dritte Quelle, und die einzige mit einem anderen Status:
+		 * `checkForbiddenAdminFields` läuft VOR der Whitelist-Prüfung und antwortet
+		 * mit **403** und `forbiddenFields`. `verified` gehört hierher und kann
+		 * `rejectedFields` deshalb nie erreichen — die beiden Listen sind
+		 * disjunkt, nicht austauschbar.
+		 */
+		it('liest auch die forbiddenFields eines 403', async () => {
+			mockResponse({
+				status: 403,
+				body: {
+					success: false,
+					code: 'FORBIDDEN_FIELDS',
+					message: 'Die folgenden Felder dürfen nicht von Clients gesetzt werden: verified',
+					forbiddenFields: ['verified']
+				}
+			});
+
+			await expect(submitSightingForm(validFormValues)).resolves.toStrictEqual({
+				status: 'rejected',
+				message: 'Die folgenden Felder dürfen nicht von Clients gesetzt werden: verified',
+				fields: { verified: 'Dieses Feld darf nicht mitgesendet werden' }
+			});
+		});
+
+		/**
+		 * `exactOptionalPropertyTypes`: ohne Feldbezug fehlt die Eigenschaft, sie
+		 * steht nicht auf `undefined` — sonst müsste jede Aufrufstelle beides prüfen.
+		 */
+		it('lässt die Feldkarte weg, wenn der Server keine liefert', async () => {
+			mockResponse({
+				status: 422,
+				body: { success: false, code: 'DATABASE_ERROR', message: 'Die Daten konnten nicht …' }
+			});
+
+			await expect(submitSightingForm(validFormValues)).resolves.toStrictEqual({
+				status: 'rejected',
+				message: 'Die Daten konnten nicht …'
+			});
+		});
+
+		/** Ein Feld ohne Meldungstext ist kein Sprungziel — es würde leer anzeigen. */
+		it('überspringt Einträge ohne Meldungstext', async () => {
+			mockResponse({
+				status: 400,
+				body: {
+					success: false,
+					code: 'VALIDATION_ERROR',
+					message: 'Validierungsfehler bei der Eingabe',
+					errors: { waterway: '', email: 'Pflichtfeld' }
+				}
+			});
+
+			await expect(submitSightingForm(validFormValues)).resolves.toStrictEqual({
+				status: 'rejected',
+				message: 'Validierungsfehler bei der Eingabe',
+				fields: { email: 'Pflichtfeld' }
+			});
+		});
 	});
 
 	describe("status 'ratelimited'", () => {
