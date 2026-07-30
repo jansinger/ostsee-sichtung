@@ -20,4 +20,5 @@ Code-Änderungen automatisch geladen oder aktuell gehalten.
 | `AUFRAEUM_ENDPUNKT_ENTWURF_2026-07-28.md`          | Entwurf tokengesicherter Aufräum-Endpunkt für verwaiste Uploads                             |
 | `AUFRAEUM_ENDPUNKT_PLAN_2026-07-28.md`             | Implementierungsplan dazu — umgesetzt (`/api/admin/cleanup-orphans`)                        |
 | `LEGACY_INBOX_ENTWURF_2026-07-30.md`               | Entwurf eigenständiger Node-Posteingang auf dem Plesk-Server (Legacy-API ohne DB)           |
+| `LEGACY_INBOX_PLAN_2026-07-30.md`                  | Implementierungsplan dazu — 11 Aufgaben, testgetrieben                                      |
 | `Sichtungsdb-Web-Schnittstelle.pdf`                | Ursprüngliches PDF-Schnittstellendokument, Grundlage von `docs/LEGACY_API_SPECIFICATION.md` |
