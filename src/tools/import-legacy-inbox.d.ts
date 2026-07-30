@@ -26,6 +26,14 @@ export interface ImportOptions {
 	mappe?(daten: unknown): unknown;
 	speichere?(daten: unknown): Promise<{ id: number | undefined }>;
 	/**
+	 * Benachrichtigt über eine gerade angelegte Sichtung. Default: Mailversand
+	 * über ServerConfigService/EmailService, genau wie in POST
+	 * /rest_sichtungen. Wird abgewartet — ein CLI-Prozess endet mit der
+	 * Ereignisschleife und würde einen nur angestoßenen Versand abschneiden.
+	 * Ein Fehler wird geloggt, hält den Import aber nicht auf.
+	 */
+	notify?(sightingId: number): Promise<unknown>;
+	/**
 	 * Verschiebt eine übernommene Datei von posteingang/ nach importiert/.
 	 * Default: `rename` aus `node:fs/promises`. Nur zum Testen des
 	 * Verschiebe-Fehlerpfads gedacht — die Signatur entspricht `rename`.

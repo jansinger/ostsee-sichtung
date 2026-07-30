@@ -275,6 +275,99 @@ describe('importiere', () => {
 });
 
 /**
+ * Der Entwurf (Abschnitt 12) begründet den fehlenden Mailversand des Dienstes
+ * damit, dass die Hauptanwendung beim Import benachrichtigt. Totfunde sind für
+ * das Meeresmuseum zeitkritisch — ohne diese Tests landete eine importierte
+ * Sichtung in der Datenbank, ohne dass jemand davon erfuhr.
+ */
+describe('importiere — Benachrichtigung', () => {
+	it('benachrichtigt über eine übernommene Sichtung', async () => {
+		await legeUmschlagAn('000001__a.json', { anzahl_gesamt: 1 });
+		const benachrichtigt: number[] = [];
+
+		const ergebnis = await importiere({
+			datenVerzeichnis: verzeichnis,
+			mappe: () => ({ totalCount: 1 }),
+			speichere: async () => ({ id: 4711 }),
+			notify: async (id: number) => {
+				benachrichtigt.push(id);
+			}
+		});
+
+		expect(benachrichtigt).toEqual([4711]);
+		expect(ergebnis.uebernommen).toBe(1);
+	});
+
+	it('wartet den Versand ab, bevor der Lauf endet', async () => {
+		// Ein CLI-Prozess endet mit der Ereignisschleife. Ein nur angestoßener
+		// Versand würde dabei abgeschnitten — anders als in der Route, die den
+		// HTTP-Client nicht warten lassen darf.
+		await legeUmschlagAn('000001__a.json', { anzahl_gesamt: 1 });
+		let abgeschlossen = false;
+
+		await importiere({
+			datenVerzeichnis: verzeichnis,
+			mappe: () => ({ totalCount: 1 }),
+			speichere: async () => ({ id: 1 }),
+			notify: async () => {
+				await new Promise((weiter) => setTimeout(weiter, 20));
+				abgeschlossen = true;
+			}
+		});
+
+		expect(abgeschlossen).toBe(true);
+	});
+
+	it('lässt einen fehlgeschlagenen Versand den Import nicht aufhalten', async () => {
+		await legeUmschlagAn('000001__a.json', { anzahl_gesamt: 1 });
+		await legeUmschlagAn('000002__b.json', { anzahl_gesamt: 2 });
+		const fehlerSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+		const ergebnis = await importiere({
+			datenVerzeichnis: verzeichnis,
+			mappe: () => ({ totalCount: 1 }),
+			speichere: async () => ({ id: 7 }),
+			notify: async () => {
+				throw new Error('SMTP nicht erreichbar');
+			}
+		});
+
+		// Die Sichtung ist gespeichert, das Verschieben bleibt richtig.
+		expect(ergebnis).toEqual({ uebernommen: 2, fehlgeschlagen: 0, moveFailure: null });
+		expect(await readdir(path.join(verzeichnis, 'posteingang'))).toEqual([]);
+		expect(await readdir(path.join(verzeichnis, 'importiert'))).toEqual([
+			'000001__a.json',
+			'000002__b.json'
+		]);
+		expect(fehlerSpy.mock.calls.map((call) => String(call[0])).join('\n')).toContain(
+			'SMTP nicht erreichbar'
+		);
+
+		fehlerSpy.mockRestore();
+	});
+
+	it('benachrichtigt nicht über eine Sichtung, die nicht gespeichert werden konnte', async () => {
+		await legeUmschlagAn('000001__a.json', { anzahl_gesamt: 1 });
+		const benachrichtigt: number[] = [];
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+
+		await importiere({
+			datenVerzeichnis: verzeichnis,
+			mappe: () => ({ totalCount: 1 }),
+			speichere: async () => {
+				throw new Error('Datenbank nicht erreichbar');
+			},
+			notify: async (id: number) => {
+				benachrichtigt.push(id);
+			}
+		});
+
+		expect(benachrichtigt).toEqual([]);
+		vi.restoreAllMocks();
+	});
+});
+
+/**
  * Die Tests oben rufen `importiere()` direkt auf und sehen deshalb nichts von
  * dem, was zwischen Kommandozeile und Funktion liegt: dem npm-Eintrag und dem
  * Einstiegspunkt der Tool-Datei. Genau dort lag der Fehler, der den

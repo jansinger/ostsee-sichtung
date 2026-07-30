@@ -19,6 +19,8 @@ import { readdir, readFile, rename } from 'node:fs/promises';
 import path from 'node:path';
 import { mapLegacyToCurrentSchema } from '../lib/legacy-api/field-mapping.js';
 import { saveSighting } from '../lib/server/db/sightingRepository.js';
+import { EmailService } from '../lib/server/services/emailService.js';
+import { ServerConfigService } from '../lib/services/configService.js';
 
 // Kleine, feste Obergrenze für Verschiebe-Versuche: Sie räumt transiente
 // Ursachen (kurzzeitig volle Platte, Race mit einem parallelen Aufräumjob)
@@ -30,10 +32,32 @@ function sleep(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Benachrichtigt über eine importierte Sichtung, wie es POST /rest_sichtungen
+ * für eine über HTTP gemeldete tut (src/routes/rest_sichtungen/+server.ts).
+ *
+ * Der Entwurf (docs/archive/LEGACY_INBOX_ENTWURF_2026-07-30.md, Abschnitt 12)
+ * begründet den fehlenden Mailversand des Posteingang-Dienstes ausdrücklich
+ * damit, dass die Hauptanwendung beim Import benachrichtigt. Ohne diesen
+ * Aufruf wäre das schlicht nicht wahr — ein Totfund läge dann in der
+ * Datenbank, ohne dass jemand davon erführe.
+ *
+ * Anders als die Route wird hier gewartet: Die Route darf den HTTP-Client
+ * nicht aufhalten und stößt den Versand nur an. Ein CLI-Prozess endet dagegen
+ * mit der Ereignisschleife und würde einen nur angestoßenen Versand
+ * abschneiden.
+ */
+async function sendeBenachrichtigung(sightingId) {
+	const emailConfig = await ServerConfigService.getEmailConfig();
+	if (!emailConfig.enabled || !emailConfig.recipient) return;
+	await EmailService.sendNewSightingNotification(sightingId);
+}
+
 export async function importiere({
 	datenVerzeichnis,
 	mappe = mapLegacyToCurrentSchema,
 	speichere = saveSighting,
+	notify = sendeBenachrichtigung,
 	renameFile = rename,
 	renameRetryDelayMs = DEFAULT_RENAME_RETRY_DELAY_MS
 }) {
@@ -78,6 +102,20 @@ export async function importiere({
 			console.error(`${datei}: ${fehler.message}`);
 			fehlgeschlagen++;
 			continue;
+		}
+
+		// Ab hier ist die Sichtung angelegt — jetzt darf benachrichtigt werden.
+		// Ein gescheiterter Versand darf den Import nicht scheitern lassen: Die
+		// Sichtung steht bereits in der Datenbank, und sie nach importiert/ zu
+		// verschieben bleibt richtig. Sonst legte der nächste Lauf sie ein
+		// zweites Mal an, nur weil eine Mail nicht rausging.
+		try {
+			await notify(gespeichert.id);
+		} catch (fehler) {
+			console.error(
+				`${datei}: Sichtung ${gespeichert.id} wurde angelegt, aber die Benachrichtigung ` +
+					`schlug fehl (${fehler.message}). Der Import läuft weiter.`
+			);
 		}
 
 		// Ab hier ist die Sichtung bereits in der Datenbank angelegt. Ein
