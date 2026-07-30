@@ -278,12 +278,42 @@ npx playwright test e2e/design-tokens.spec.ts   # Token-Kontraste + DOM-Scan
 npx playwright test e2e/form-a11y.spec.ts       # Fokus, Alerts, error-Buttons
 ```
 
-`design-tokens.spec.ts` prüft zweierlei: die Token-Kontraste gegen
-`/styleguide` (dort steht jede Kombination genau einmal) und die App gegen
+`design-tokens.spec.ts` prüft dreierlei: die Token-Kontraste gegen
+`/styleguide` (dort steht jede Kombination genau einmal), die App gegen
 verbotene Kombinationen (Statusfarbe als Vordergrund, Deckkraft unter /60,
-Tailwind-Paletten-Klassen). Gemessen wird im Browser, weil `oklch()` und
-`color-mix(in oklab, …)` erst nach dem Gamut-Mapping nach sRGB als
-Kontrastwert lesbar sind.
+Tailwind-Paletten-Klassen) und die **Vollständigkeit von `/styleguide`** selbst.
+
+Der DOM-Scan deckt seit dem 2026-07-29 auch `/admin`, `/admin/statistics`,
+`/admin/docs` und `/admin/settings` ab. Die Session dafür stellt
+`e2e/helpers/adminSession.ts` selbst aus — mit `SESSION_SECRET` signiert, ohne
+Auth0. Die Begründung steht dort ausführlich; kurz: Auth0 erklärt die
+Universal-Login-Routen als nicht für Automation gedacht, und ein
+ROPG-Token konsumiert diese App nirgends, weil ihre Session ein
+selbstsigniertes JWT ist. Zwei Wächter verhindern, dass der Scan eine
+Ausweichseite misst und grün meldet: Umleitung zu Auth0 und 401/403 sind harte
+Fehler mit eigener Meldung.
+
+**Teilabdeckung in CI, bewusst:** Der E2E-Job in `ci.yml` startet keinen
+Postgres (`cp .env.example .env`, kein `services:`-Block). `/admin` und
+`/admin/statistics` antworten dort mit 5xx und werden **ausdrücklich
+übersprungen** — sichtbar im Report, nicht still grün. `/admin/docs` und
+`/admin/settings` laufen auch ohne Datenbank. Wer die zwei fehlenden Routen in
+CI abdecken will, braucht einen Postgres-Service im `e2e`-Job; lokal sind alle
+vier grün.
+Gemessen wird im Browser, weil `oklch()` und `color-mix(in oklab, …)` erst nach
+dem Gamut-Mapping nach sRGB als Kontrastwert lesbar sind.
+
+Die dritte Gruppe hängt an einer Eigenschaft der Seite, die man ihr nicht
+ansieht: Sie ist Schaufenster **und** Lieferbedingung. Tailwind erzeugt eine
+Utility nur, wenn ihr Klassenname als vollständiger String im Quelltext steht —
+sieben der dreizehn eigenen Utilities haben ihre einzige Aufrufstelle hier. Wer
+ein Farbfeld löscht, weil es „nur Demo" ist, entfernt damit still die Klasse aus
+dem ausgelieferten CSS; die Verwendungen im Rest der App bleiben stehen und
+wirken nicht mehr. Der Test liest die Tokens aus `src/css/tokens.css` und
+verlangt für jeden ein Element mit der zugehörigen Klasse — er schlägt in beide
+Richtungen fehl, bei einem Token ohne Vertreter ebenso wie bei einem entfernten
+Vertreter. Die Kontrast-Gruppe allein fängt das nicht: Sie misst, was auf der
+Seite steht, und meldet bei einer Teilmenge weiter grün.
 
 ---
 
@@ -312,15 +342,15 @@ welche Zustände fehlen, und wo das Theme verletzt wird.
 
 ### 1. Wiederkehrende Muster
 
-| Muster                   | Wo                                                                                                              | Varianten | Kanonisch sollte sein                                                     |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------- |
+| Muster                   | Wo                                                                                                                                                                                            | Varianten | Kanonisch sollte sein                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------- |
 | Datentabelle             | `src/routes/admin/+page.svelte:722`, `src/lib/components/admin/AdminSightingView.svelte` (9×), `src/routes/admin/statistics/+page.svelte:289`, `src/lib/components/admin/DataTableRow.svelte` | **4**     | Zwei Komponenten: `DataTable` (Liste) und `DataTableRow` (Schlüssel/Wert) |
-| Filter + Sortierung      | `src/routes/admin/+page.svelte` (URL-Parameter, `sortableTh`-Snippet)                                                      | 1         | bleibt — aber ohne Bezug zum `FilterPanel` der Karte                      |
-| Detail- gegen Edit-Sicht | `src/lib/components/admin/AdminSightingView.svelte` / `src/lib/components/admin/AdminSightingEditForm.svelte`                                                     | 2         | bleibt getrennt (siehe unten)                                             |
-| Dialog                   | `src/lib/components/admin/ExportModal.svelte`, Spam-Check in `src/routes/admin/+page.svelte:1011`, `src/lib/components/ui/Dialog/DeleteDialog.svelte`                  | **3**     | `DeleteDialog`s Grundgerüst als `Modal` verallgemeinern                   |
-| Statusbadge              | `src/lib/components/admin/BooleanStatus.svelte` + 5 handgebaute Stellen                                                                  | **6**     | `BooleanStatus` erweitern statt `badge-*` an der Aufrufstelle             |
-| Paginierung              | `src/routes/admin/+page.svelte:945`                                                                                        | 1         | bleibt — einzige Aufrufstelle                                             |
-| Spalten-Sichtbarkeit     | `src/routes/admin/+page.svelte:440`                                                                                        | 1         | admin-spezifisch, kein Formular-Gegenstück                                |
+| Filter + Sortierung      | `src/routes/admin/+page.svelte` (URL-Parameter, `sortableTh`-Snippet)                                                                                                                         | 1         | bleibt — aber ohne Bezug zum `FilterPanel` der Karte                      |
+| Detail- gegen Edit-Sicht | `src/lib/components/admin/AdminSightingView.svelte` / `src/lib/components/admin/AdminSightingEditForm.svelte`                                                                                 | 2         | bleibt getrennt (siehe unten)                                             |
+| Dialog                   | `src/lib/components/admin/ExportModal.svelte`, Spam-Check in `src/routes/admin/+page.svelte:1011`, `src/lib/components/ui/Dialog/DeleteDialog.svelte`                                         | **3**     | `DeleteDialog`s Grundgerüst als `Modal` verallgemeinern                   |
+| Statusbadge              | `src/lib/components/admin/BooleanStatus.svelte` + 5 handgebaute Stellen                                                                                                                       | **6**     | `BooleanStatus` erweitern statt `badge-*` an der Aufrufstelle             |
+| Paginierung              | `src/routes/admin/+page.svelte:945`                                                                                                                                                           | 1         | bleibt — einzige Aufrufstelle                                             |
+| Spalten-Sichtbarkeit     | `src/routes/admin/+page.svelte:440`                                                                                                                                                           | 1         | admin-spezifisch, kein Formular-Gegenstück                                |
 
 **Zwei Korrekturen an der erwarteten Liste:**
 
@@ -354,13 +384,13 @@ Aufgaben, keine zwei Varianten derselben.
 
 Dieselbe Matrix wie im Meldeformular:
 
-| Zustand        | Stand im Admin-Bereich                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------ |
-| **leer**       | **Fehlt vollständig.** Beide `{#each sightings}` (Zeile 600 und 782) haben keinen `{:else}`-Zweig.           |
-| **lädt**       | Nur in `src/lib/components/admin/AdminSightingView.svelte:346` (`loading`-Prop). Liste, Statistiken und Einstellungen haben keinen.   |
-| **teilweise**  | Fehlt vollständig.                                                                                           |
-| fehlgeschlagen | Nur als Toast (`src/routes/admin/+page.svelte`: Löschen, Prüfstatus, Test-Mail) plus ein `alert-error` in `admin/[id]`. |
-| **offline**    | Fehlt vollständig.                                                                                           |
+| Zustand        | Stand im Admin-Bereich                                                                                                              |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **leer**       | **Fehlt vollständig.** Beide `{#each sightings}` (Zeile 600 und 782) haben keinen `{:else}`-Zweig.                                  |
+| **lädt**       | Nur in `src/lib/components/admin/AdminSightingView.svelte:346` (`loading`-Prop). Liste, Statistiken und Einstellungen haben keinen. |
+| **teilweise**  | Fehlt vollständig.                                                                                                                  |
+| fehlgeschlagen | Nur als Toast (`src/routes/admin/+page.svelte`: Löschen, Prüfstatus, Test-Mail) plus ein `alert-error` in `admin/[id]`.             |
+| **offline**    | Fehlt vollständig.                                                                                                                  |
 
 **Der wahrscheinlichste Fall ist auch der ungedeckte:** Ein Filter ohne Treffer
 zeigt eine Tabelle mit Kopfzeile und leerem Körper — ohne Aussage, ob gefiltert
@@ -381,8 +411,8 @@ Vollständiger Scan über beide Verzeichnisse (nicht nur eine Teilmenge):
 | ---------------------------------------- | ------- | ------------------------------------- |
 | Tailwind-Paletten-Klassen                | **0**   | sauber (Ergebnis des Randbereiche-PR) |
 | Hex-Werte                                | **0**   | sauber                                |
-| Statusfarbe als Textfarbe ohne `-strong` | **32**  | Verstoß gegen WCAG 1.4.3, Liste unten |
-| Deckkraft unter `/60` auf Text           | **2**   | `opacity-50` = 3,54:1                 |
+| Statusfarbe als Textfarbe ohne `-strong` | **0**   | siehe Korrektur unten                 |
+| Deckkraft unter `/60` auf Text           | **0**   | siehe Korrektur unten                 |
 | `btn-xs` / `badge-xs` ohne `min-h-11`    | 12      | **kein Verstoß**, siehe Anmerkung     |
 
 **Anmerkung zu `btn-xs`/`badge-xs`:** Diese Prüfung ist seit dem
@@ -394,34 +424,58 @@ Browser gemessen liefern `btn btn-xs`, `btn btn-sm` und sogar
 Utilities und können bei Gelegenheit weg — `min-h-10` ist dabei irreführend,
 weil es 40px verspricht und nichts bewirkt.
 
-**Die 32 Statusfarben als Textfarbe** (`text-primary` und `text-error` sind
-nicht dabei — sie erreichen mit 9,22:1 bzw. 6,04:1 AA):
+**Korrektur vom 2026-07-29: Die hier ursprünglich gelisteten „32 Statusfarben
+als Textfarbe" und „2 `opacity-50` auf Text" existieren nicht.** Beide Zahlen
+waren Artefakte des Prüfbefehls, nicht Befunde im Code. Alle 32 Stellen tragen
+bereits `-strong`; nachgezählt mit dem korrigierten Befehl unten sind es null.
+Der Aufräum-PR 4/4 (#620) hatte den Bestand vollständig erfasst.
 
-| Datei                                                    | Zeilen                                                                         | Anzahl |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------ | ------ |
-| `src/routes/admin/statistics/+page.svelte`                          | 198, 207, 211, 224, 228, 238, 247, 251, 266, 270, 315, 374, 383, 517, 605, 612 | 16     |
-| `src/lib/components/admin/weather/WeatherDataDisplay.svelte` | 115, 124, 152, 158, 164, 176, 182, 188, 194                                    | 9      |
-| `src/routes/admin/docs/+page.svelte`                                | 97, 101, 105, 109                                                              | 4      |
-| `src/routes/admin/[id]/+page.svelte`                                | 129, 130                                                                       | 2      |
-| `src/routes/admin/+page.svelte`                                     | 1056                                                                           | 1      |
+**Warum der Befehl falsch zählte** — und das ist der eigentlich merkenswerte
+Teil, weil derselbe Fehler in jeder Prüf-Pipeline steckt, die `grep -o`
+filtert:
 
-Dazu `opacity-50` auf Text in `src/lib/components/admin/weather/WeatherDataDisplay.svelte:240` und `:243`.
+```bash
+grep -rnoE '…-(secondary|accent|info|success|warning)…' … | grep -v -- -strong
+#      ↑ -o schneidet den Treffer aus der Zeile heraus
+```
 
-`src/routes/admin/statistics/+page.svelte` ist dabei in sich widersprüchlich: die
-`stat-value`-Zeilen 211, 228, 251 und 270 nutzen bereits korrekt
-`text-secondary-strong` / `text-warning-strong` / `text-accent-strong` /
-`text-info-strong`, während die Beschriftungen daneben (207, 224, 247, 266) auf
-der Basisfarbe stehen geblieben sind. Der Fix ist dort ein Suffix, keine
-Umgestaltung.
+`-o` gibt nicht die Quellzeile aus, sondern nur den Treffer. Aus
+`class="text-warning-strong"` wird damit die Ausgabezeile `text-warning` — das
+Suffix, nach dem der zweite `grep` filtern soll, ist zu diesem Zeitpunkt bereits
+abgeschnitten. Der Filter konnte also nie greifen, und die Prüfung meldete
+zuverlässig jede korrekte Verwendung als Verstoß. Ohne `-o` liefert dieselbe
+Kette null Treffer.
+
+Dazu kommt eine zweite Ungenauigkeit: Bei den zwei `opacity-50`-Fundstellen war
+die eine (`WeatherDataDisplay.svelte:240`) der **Kommentar**, der die andere
+(`:243`) begründet. Und `:243` ist ein dekoratives Leerzustands-Icon ohne
+Textinhalt — die `/60`-Untergrenze gilt laut `design-system.md` für Zeichen, die
+gelesen werden müssen, hier also zu Recht nicht.
+
+**Ein echter Fund fiel bei der Gegenprüfung an, außerhalb des Admin-Bereichs:**
+`text-success/80` in
+`src/lib/report/components/form/fields/DropzoneEnhanced.svelte:628` (GPS-Koordinaten
+auf `bg-success/10`) — inzwischen auf `text-base-content/70` korrigiert. Der
+DOM-Scan in `e2e/design-tokens.spec.ts` hatte sie nicht gemeldet: Seine Regex
+verlangt hinter dem Farbnamen Leerzeichen oder Zeilenende, ein
+Deckkraft-Suffix wie `/80` schiebt sich dazwischen. Die Lücke ist bekannt und
+absichtlich nicht im Rahmen dieses PR geschlossen worden.
 
 ### Reproduktion
 
 ```bash
-# Statusfarbe als Vordergrund ohne -strong
-grep -rnoE '\b(text|fill|stroke)-(secondary|accent|info|success|warning)(/[0-9]+)?\b' \
-  src/routes/admin src/lib/components/admin | grep -v -- -strong
+# Statusfarbe als Vordergrund ohne -strong.
+# Ohne -o, sonst filtert der zweite grep gegen einen abgeschnittenen Treffer.
+grep -rnE '\b(text|fill|stroke)-(secondary|accent|info|success|warning)(/[0-9]+)?\b' \
+  src/routes/admin src/lib/components/admin | grep -v -- '-strong'
 
-# Deckkraft unter /60 auf Text
-grep -rnoE '\btext-base-content/(40|50)\b|\bopacity-(40|50)\b' \
+# Mit -o und deshalb ohne nachgeschalteten Filter: die optionale Endung
+# gehört ins Muster, damit sie im Treffer sichtbar bleibt.
+grep -rnoE '\b(text|fill|stroke)-(secondary|accent|info|success|warning)(/[0-9]+)?(-strong|-content)?' \
+  src/routes/admin src/lib/components/admin | grep -vE '(-strong|-content)$'
+
+# Deckkraft unter /60 auf Text (Treffer einzeln ansehen: dekorative Flächen
+# und Icons ohne Textinhalt sind zulässig)
+grep -rnE '\btext-base-content/(40|50)\b|\bopacity-(40|50)\b' \
   src/routes/admin src/lib/components/admin
 ```

@@ -75,7 +75,9 @@ Gemessen auf `base-100` (Rechnung wie in `daisyui.md`, im Browser nach sRGB):
 
 **Gegenprobe:** Steht die Farbe hinter `text-`, `fill-` oder `stroke-`, muss `-strong` dranhängen. Steht sie hinter `bg-`, `btn-`, `badge-` oder `alert-`, darf sie es nicht.
 
-Der Bestand verletzt diese Regel an über 60 Stellen; sie werden nicht einzeln hier gelistet, sondern von `e2e/design-tokens.spec.ts` („verbotene Kombinationen im DOM") ausgegeben. Die Gruppe ist bis zum Aufräum-PR bewusst `fixme` — ihre Ausgabe ist die Arbeitsliste.
+Die über 60 Verstöße des Altbestands sind mit PR 4/4 (#620) abgearbeitet; seither ist die Gruppe „verbotene Kombinationen im DOM" in `e2e/design-tokens.spec.ts` ein **aktiver Guard** und kein `fixme` mehr. Sie fährt `/`, `/map`, `/about` sowie vier Admin-Routen (Session über `e2e/helpers/adminSession.ts`, ohne Auth0 — Begründung dort). Eine neue Fundstelle gehört an der Aufrufstelle behoben — nicht durch Aufweichen der Regex.
+
+**Was der Scan nicht sieht:** Seine Regex verlangt hinter dem Farbnamen ein Leerzeichen oder das Zeilenende. Ein Deckkraft-Suffix schiebt sich dazwischen, `text-success/80` rutscht also durch (real gefunden in `DropzoneEnhanced.svelte`). Und `hover:`-Zustände tauchen in `getComputedStyle` im Ruhezustand ohnehin nicht auf. Beim Prüfen per `grep` gilt außerdem: **`grep -o` schneidet das `-strong`-Suffix aus der Ausgabezeile**, ein nachgeschaltetes `grep -v -- -strong` filtert dann ins Leere und meldet jede korrekte Verwendung als Verstoß — so entstand die inzwischen korrigierte „32 Fundstellen"-Liste in `docs/DESIGN_SYSTEM.md`.
 
 ---
 
@@ -340,6 +342,7 @@ Vor der Nutzung einer Utility prüfen, ob sie im Setup überhaupt existiert.
 - Gleiches gilt für `dark:`-Varianten (kein Dark-Theme, siehe `daisyui.md`).
 - Umgekehrt gilt: **eine Keyframe ist nicht tot, nur weil keine Klasse sie nennt.** `fadeIn`, `bounceIn`, `loadingPattern` und `spin` in `app.css` hängen an inline-`style="animation: …"` (`map/LoadingOverlay.svelte`, `MaintenanceBanner.svelte`) bzw. an einem scoped `<style>`-Block (`media/MediaThumbnail.svelte`). Vor dem Löschen einer Keyframe deshalb nach dem **Namen** greppen, nicht nach einer Klasse.
 - Neue eigene Utility (`text-*-strong`, `shadow-raised`, `text-support`, …) heißt: Eintrag im `@theme`-Block von `app.css`. Ein Token, das nur in `src/css/tokens.css` steht, ist eine CSS-Variable — **keine** Utility-Klasse. Fehlt der `@theme`-Eintrag, ist `class="text-warning-strong"` genau so tot wie `animate-in`.
+- **Und ein Feld auf `/styleguide`.** Tailwind erzeugt eine Utility nur, wenn ihr Name als vollständiger String im gescannten Quelltext steht — sieben der dreizehn eigenen Utilities haben ihre einzige Aufrufstelle auf dieser Seite. Ein dort gelöschtes Farbfeld nimmt die Klasse still aus dem Build. Abgesichert durch `e2e/design-tokens.spec.ts` → „Utilities haben einen Vertreter auf /styleguide": Der Test liest die Tokens aus `tokens.css` und verlangt für jeden ein Element mit der zugehörigen Klasse.
 
 ---
 
