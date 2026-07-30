@@ -52,6 +52,22 @@ describe('legacyApiSchema — sonstige_auffaelligkeiten', () => {
 	});
 });
 
+describe('legacyApiSchema — required vs. max Fehlermeldungen', () => {
+	it('meldet fehlenden Vornamen als Pflichtfeld, nicht als "zu lang"', async () => {
+		const { vorname, ...rest } = minimalRequest();
+		const result = await validateLegacySightingWithYup(rest as LegacySightingRequest);
+
+		expect(result.errors.vorname).toEqual(['Dieses Feld kann nicht leer gelassen werden.']);
+	});
+
+	it('meldet fehlenden Nachnamen als Pflichtfeld, nicht als "zu lang"', async () => {
+		const { name, ...rest } = minimalRequest();
+		const result = await validateLegacySightingWithYup(rest as LegacySightingRequest);
+
+		expect(result.errors.name).toEqual(['Dieses Feld kann nicht leer gelassen werden.']);
+	});
+});
+
 describe('createLegacyErrorFromYup', () => {
 	it('erzeugt die flache Fehlerform aus dem Originaldokument', () => {
 		const response = createLegacyErrorFromYup({
