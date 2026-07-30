@@ -10,14 +10,17 @@ paths:
 Diese Endpunkte implementieren die Spezifikation der Vorgänger-API für Mobile
 Clients.
 
-> **Stand 2026-07-28: keine Clients angebunden.** Die Endpunkte sind nicht in
-> Betrieb und waren es nie. Eine Abweichung bricht also derzeit **nichts
-> Laufendes** — sie entwertet aber den Vertrag, sobald Clients angebunden
-> werden. Änderungen an Feldnamen, Pfaden und Datentypen bleiben deshalb
-> begründungspflichtig, offensichtliche Fehler dürfen aber behoben werden.
+> **Stand 2026-07-30: ein Client ist angebunden.** Ein neu gebauter iOS-Client
+> (`OstSeeTiere/8`) sendet Sichtungen über `POST /rest_sichtungen`. Die alte
+> Einordnung „bricht nichts Laufendes" gilt damit nicht mehr — eine Abweichung
+> kostet jetzt echte Daten und kann nicht von dieser Seite repariert werden,
+> weil der alte Client nicht mehr testbar ist. Änderungen an Feldnamen, Pfaden
+> und Datentypen bleiben begründungspflichtig; offensichtliche Fehler dürfen
+> behoben werden, aber nur als Ergänzung, nie als Ersatz eines bestehenden
+> Codepfads.
 >
 > Diese Einordnung ist ein Datumsstand, keine Dauerzusage — vor größeren
-> Änderungen prüfen, ob inzwischen Clients angebunden sind.
+> Änderungen prüfen, ob weitere Clients angebunden sind.
 
 > **PFLICHT:** Lies `docs/LEGACY_API_SPECIFICATION.md` **vollständig**, bevor du
 > einen dieser Endpunkte änderst. Die Datei ist die verbindliche Referenz für
