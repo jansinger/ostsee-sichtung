@@ -97,7 +97,28 @@ SELECT
   END AS region
 FROM neu
 WHERE alt_ostsee IS DISTINCT FROM neu_ostsee
-   OR (alt_geo > 0)::int IS DISTINCT FROM neu_geo_roh;
+   OR (alt_geo > 0)::int IS DISTINCT FROM neu_geo_roh
+
+UNION ALL
+
+-- Zeilen ohne verwertbare Position: eine Meldung ohne Koordinaten kann nicht
+-- "in der Ostsee" liegen. mapFormToSighting.ts setzt fuer neue Meldungen in
+-- genau diesem Fall beide Werte auf 0; im Altbestand tragen 378 Zeilen
+-- trotzdem ostsee = 1 bei ostsee_geo = 0 und verletzen damit die Invariante
+-- "Polygon liegt in der Bounding Box". ostsee_geo bleibt unberuehrt — es ist
+-- dort bereits durchgaengig 0.
+SELECT
+  s.id,
+  NULL::float8 AS lon,
+  NULL::float8 AS lat,
+  s.ostsee     AS alt_ostsee,
+  0            AS neu_ostsee,
+  s.ostsee_geo AS alt_geo,
+  s.ostsee_geo AS neu_geo,
+  'ohne Position' AS region
+FROM sichtungen s
+WHERE (s.gps_laenge IS NULL OR s.gps_breite IS NULL)
+  AND s.ostsee IS DISTINCT FROM 0;
 
 \echo ''
 \echo '== Zusammenfassung'
