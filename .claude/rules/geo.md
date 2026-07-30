@@ -17,22 +17,58 @@ Regeln für Ostsee-Positionsprüfung und Spatial Indexing.
 
 ```typescript
 BALTIC_SEA_BBOX = {
-	minLongitude: 9.4,
-	maxLongitude: 30.2,
-	minLatitude: 53.0,
-	maxLatitude: 66.0
+	minLongitude: 9.4, // Kattegat vor Nordjütland — NICHT Skagerrak
+	maxLongitude: 30.25, // Kopf der Newa-Bucht
+	minLatitude: 53.55, // Oder bei Police
+	maxLatitude: 65.95 // Bottenwiek bei Tornio
 };
 ```
 
 O(1), <0.01ms. Client + Server verfügbar.
 
+**Nicht von Hand pflegen.** Die vier Werte sind der Extent der Geometrie aus
+`src/lib/server/geo/baltic-extent.json`, nach außen auf 0,05° gerundet.
+`src/lib/utils/geo/checkBalticSea.test.ts` schlägt fehl, sobald Konstante und
+Extent auseinanderlaufen.
+
 ### 2. Präzise Geometrie (`isInBalticShape`)
 
 RBush Spatial Index + Turf.js `booleanPointInPolygon`.
 
-- Index: `rbush-index.json` (32MB, 5 MultiPolygon Features)
-- Lazy Loading als Singleton (10-50ms init, 0.5-2ms pro Query)
+- Index: `rbush-index.json` (3,9 MB, 1.575 subdividierte Teilflächen)
+- Singleton-Initialisierung (10-50ms init, 0.5-2ms pro Query)
 - Behandelt Inseln/Archipele korrekt
+
+Der Index wird **nicht** aus Rohdaten gerechnet, sondern von einer manuell
+gestarteten PostGIS-Pipeline erzeugt:
+
+```bash
+export BALTIC_LAND_SHP=…/land-polygons-complete-4326/land_polygons.shp
+npm run geo:build    # Geometrie + baltic-extent.json (~1 h)
+npm run geo:review   # Prüfkarte — MUSS freigegeben werden
+cd src/tools && node create-rbush-index.js
+```
+
+Quellen und Stellhebel (alle in `src/tools/build-baltic-geometry.sql`):
+20 km Regionspuffer, 200 m Uferstreifen, 20 m Simplify-Toleranz. Ausgeschlossen
+per `baltic-artifact-mask.geojson`: Ladogasee, Onegasee, Weichsel- und
+Torne-Flussläufe, Limfjord, Oder oberhalb des Stettiner Haffs. Eingeschlossen
+per `baltic-inclusion-mask.geojson`: Schlei, Trave- und Warnow-Mündung.
+
+Für die OSM-Küstenlinie ist zwingend die **ungeteilte** Variante
+`land-polygons-complete-4326` zu verwenden. Punkt-in-Polygon-Stichproben gegen
+das Shapefile brauchen `ogrinfo -dialect SQLITE` mit `ST_Intersects`/`MakePoint`
+— `-spat` ist untauglich, weil die Landpolygone kontinentgroß sind und ihre
+Bounding Box immer trifft.
+
+**Beim Durchlaufen des Index selbst:** `tree.children` sind ab dieser Größe
+Zwischenknoten, nicht Blätter. Rekursiv absteigen und auf `node.geometry` prüfen
+— bei den früheren fünf Features war der Baum flach.
+
+Offener Punkt: `checkBalticSeaFile.ts` importiert `rbush-index.json` **statisch**,
+der Index landet also im Bundle. Der Umbau auf einen dynamischen Import macht
+`checkBalticSeaFile` `async` und zieht vier Aufrufer plus zwei Testdateien nach;
+er ist bewusst aufgeschoben.
 
 ---
 
@@ -68,12 +104,19 @@ neuen Code:
    drin, `2` = drin (nur Altsystem, 15.225 Zeilen). Deshalb **immer `> 0` prüfen,
    nie `= 1`** — sonst fallen 79 % des Bestands lautlos heraus.
 
-Die Invariante „Polygon liegt in der Bounding Box" gilt **nicht**: die Westgrenze
-9,4° E schneidet Kieler Bucht und Flensburger Förde ab (126 Zeilen mit
-`ostsee = 1` westlich davon). Wer `BALTIC_SEA_BBOX` anfasst, prüft das mit.
+Die Invariante „Polygon liegt in der Bounding Box" **gilt** und wird von
+`src/lib/utils/geo/checkBalticSea.test.ts` über alle Stützpunkte geprüft. Wer die
+Box-Zahlen ändern will, ändert die Geometrie und lässt `npm run geo:build`
+laufen.
 
-Vollständige Referenz inkl. Messwerten und zwei noch offener Fehler:
-`docs/OSTSEE_FLAGS.md`
+Seit der Bereinigung am 2026-07-30 hat der Altbestand keine Widersprüche mehr:
+`ostsee` ist für alle 19.881 Zeilen aus der Geometrie gerechnet, Zeilen ohne
+Koordinaten tragen 0. Die Rückfallebene ist die Tabelle
+`sichtungen_ostsee_backup`.
+
+Vollständige Referenz inkl. Messwerten: `docs/OSTSEE_FLAGS.md`.
+Bereinigung, Entscheidungen und Umsetzung:
+`docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
 
 ---
 
@@ -82,7 +125,9 @@ Vollständige Referenz inkl. Messwerten und zwei noch offener Fehler:
 | Datei                                      | Zweck                              |
 | ------------------------------------------ | ---------------------------------- |
 | `src/lib/server/geo/checkBalticSeaFile.ts` | RBush + Turf.js Server-Validierung |
-| `src/lib/server/geo/rbush-index.json`      | 32MB Spatial Index                 |
+| `src/lib/server/geo/rbush-index.json`      | Spatial Index, 3,9 MB (erzeugt)    |
+| `src/lib/server/geo/baltic-extent.json`    | Extent — Quelle der Box            |
+| `src/tools/build-baltic-geometry.sql`      | Geometrie-Pipeline                 |
 | `src/lib/utils/geo/checkBalticSea.ts`      | Client-Bounding-Box                |
 | `src/routes/api/geo/inBaltic/+server.ts`   | HTTP Endpoint                      |
 

@@ -6,6 +6,26 @@ weichen ab, siehe `docs/WORKTREES.md`.
 
 Diese Spec ersetzt die Diagnose in `docs/OSTSEE_FLAGS.md`, Abschnitt „Fehler 3".
 
+> **Umgesetzt am 2026-07-30.** Abweichungen und Ergänzungen gegenüber dem
+> Entwurf, alle mit dem Auftraggeber entschieden:
+>
+> - Die **Oder** stellte sich als fünftes Binnenwasser-Artefakt heraus (bis
+>   Gryfino, 50 km oberhalb des Stettiner Haffs) und wurde nachträglich maskiert.
+> - **Schlei, Trave- und Warnow-Mündung** werden über eine zweite, kuratierte
+>   Einschlussmaske aufgenommen — die in Abschnitt 2 zunächst verworfene Variante
+>   „benannte Innengewässer", nach Ansicht der Prüfkarte nachgezogen.
+> - Die Migration erfasst auch **Zeilen ohne Koordinaten** (378 trugen ein
+>   Altsystem-`ostsee = 1`). Ohne sie ist die Invariante nicht herstellbar.
+> - Der dynamische Import des Index (Abschnitt 3.2) ist **aufgeschoben**: er macht
+>   `checkBalticSeaFile` `async` und zieht vier Aufrufer plus zwei Testdateien
+>   nach. `.claude/rules/geo.md` nennt ihn als offenen Punkt.
+>
+> Tatsächliche Werte: Simplify-Toleranz 20 m, Index 3,9 MB, 1.575 Teilflächen,
+> 158.976 Stützpunkte, Fläche 426.759 km². `BALTIC_SEA_BBOX` = 9,40 / 30,25 /
+> 53,55 / 65,95. Verbleibend außerhalb: 77 Sichtungen in Schlei, Trave und
+> Warnow, deren Korridore dort zu schmal geraten sind, sowie 71 Strandfunde
+> knapp außerhalb des 200-m-Uferstreifens.
+
 ---
 
 ## 1. Ausgangslage und Messung
