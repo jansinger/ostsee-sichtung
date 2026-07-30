@@ -67,6 +67,45 @@ updates:
     commit-message:
       prefix: 'chore(deps)'
 
+  # legacy-inbox — eigenes Lockfile, deshalb ein eigener Eintrag.
+  #
+  # Der Dienst wird getrennt vom Hauptrepo auf einen Plesk-Server ausgeliefert
+  # und dort per `npm ci` aus `legacy-inbox/package-lock.json` installiert. Der
+  # Eintrag oben für `/` erfasst dieses Lockfile nicht — ohne diesen Block
+  # liefen die vier Abhängigkeiten des Dienstes unbeobachtet.
+  #
+  # Das wiegt hier schwerer als beim Hauptrepo: Der Dienst ist ein
+  # unauthentifizierter Endpunkt im offenen Netz und hält bis zum Import die
+  # einzige Kopie eingegangener Sichtungen, inklusive Namen, E-Mail-Adressen,
+  # Anschriften und Telefonnummern.
+  #
+  # Anders als oben sind Major-Updates hier nicht ausgeschlossen. Bei vier
+  # direkten Abhängigkeiten ist ein Major überschaubar zu prüfen, und ein
+  # ausgeschlossenes Major bedeutet bei einer Sicherheitslücke, dass der
+  # Hinweis ausbleibt.
+  - package-ecosystem: 'npm'
+    directory: '/legacy-inbox'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Europe/Berlin'
+    open-pull-requests-limit: 3
+    groups:
+      legacy-inbox-dependencies:
+        applies-to: version-updates
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+    labels:
+      - 'dependencies'
+      - 'automated'
+      - 'legacy-inbox'
+    commit-message:
+      prefix: 'chore(deps)'
+
   # GitHub Actions - grouped together
   - package-ecosystem: 'github-actions'
     directory: '/'
