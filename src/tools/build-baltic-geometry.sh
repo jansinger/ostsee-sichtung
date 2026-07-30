@@ -40,6 +40,10 @@ echo "== Artefakt-Maske laden"
 ogr2ogr -f PostgreSQL "PG:$DB" "$HERE/baltic-artifact-mask.geojson" \
   -nln geo_build.artifact_mask -lco GEOMETRY_NAME=geom -overwrite -t_srs EPSG:4326
 
+echo "== Einschlussmaske laden (Schlei/Trave/Warnow)"
+ogr2ogr -f PostgreSQL "PG:$DB" "$HERE/baltic-inclusion-mask.geojson" \
+  -nln geo_build.inclusion_mask -lco GEOMETRY_NAME=geom -overwrite -t_srs EPSG:4326
+
 if psql "$DB" -tAc "SELECT to_regclass('geo_build.osm_land') IS NOT NULL;" | grep -q '^t$'; then
   echo "== OSM-Kuestenlinie bereits geladen, uebersprungen"
 else

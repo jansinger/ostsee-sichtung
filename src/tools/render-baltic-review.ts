@@ -11,12 +11,21 @@
  * Koordinaten aus der Box geladen und in TypeScript gegen das alte
  * IHO-Polygon (rbush-Index, 5 Teilflaechen) geprueft. Nur was das alte
  * Polygon ablehnt, sind die eigentlichen Falsch-Negativen.
+ *
+ * Zweite Abweichung (Korrektur 4, 2026-07-30): die violetten Marker waren
+ * bisher ausnahmslos alle Falsch-Negativen gegen das alte IHO-Polygon,
+ * unabhaengig davon, ob die neue Wasserflaeche sie tatsaechlich aufnimmt.
+ * Jeder Marker wird deshalb zusaetzlich gegen die neue Flaeche aus
+ * baltic-water.geojson getestet (Bounding-Box-Vorfilter je Teilflaeche vor
+ * `booleanPointInPolygon`, da die Datei rund 1.567 Teilflaechen hat) und in
+ * zwei Gruppen eingefaerbt: violett = jetzt innerhalb ("durch die
+ * Bereinigung gewonnen"), orange = weiterhin ausserhalb.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { MultiPolygon, Polygon } from 'geojson';
+import type { Feature, FeatureCollection, MultiPolygon, Polygon } from 'geojson';
 import { booleanPointInPolygon } from '@turf/boolean-point-in-polygon';
 import { point } from '@turf/helpers';
 
@@ -45,6 +54,62 @@ interface RBushIndex {
 	tree: {
 		children: RBushLeaf[];
 	};
+}
+
+/** Eine Teilflaeche aus baltic-water.geojson mit vorab berechneter Bounding Box. */
+interface WaterPart {
+	minX: number;
+	minY: number;
+	maxX: number;
+	maxY: number;
+	feature: Feature<Polygon | MultiPolygon>;
+}
+
+function bboxOf(geometry: Polygon | MultiPolygon): [number, number, number, number] {
+	let minX = Infinity,
+		minY = Infinity,
+		maxX = -Infinity,
+		maxY = -Infinity;
+	const rings: number[][][] =
+		geometry.type === 'Polygon' ? geometry.coordinates : geometry.coordinates.flat();
+	for (const ring of rings) {
+		for (const pos of ring) {
+			const x = pos[0];
+			const y = pos[1];
+			if (x === undefined || y === undefined) continue;
+			if (x < minX) minX = x;
+			if (x > maxX) maxX = x;
+			if (y < minY) minY = y;
+			if (y > maxY) maxY = y;
+		}
+	}
+	return [minX, minY, maxX, maxY];
+}
+
+/**
+ * Baut die Bounding-Box-Vorfilterung fuer die ~1.567 Teilflaechen der neuen
+ * Wasserflaeche auf, damit `booleanPointInPolygon` nicht bei jedem der 1.901
+ * Marker ueber alle Teilflaechen laufen muss.
+ */
+function loadWaterParts(): WaterPart[] {
+	const water: FeatureCollection<Polygon | MultiPolygon> = JSON.parse(
+		readFileSync(join(OUT, 'baltic-water.geojson'), 'utf8')
+	);
+	return water.features.map((feature) => {
+		const [minX, minY, maxX, maxY] = bboxOf(feature.geometry);
+		return { minX, minY, maxX, maxY, feature };
+	});
+}
+
+/** Prueft einen Punkt gegen die neue Wasserflaeche (Bounding-Box-Vorfilter je Teilflaeche). */
+function isInNewWater(lon: number, lat: number, parts: ReadonlyArray<WaterPart>): boolean {
+	const candidate = point([lon, lat]);
+	return parts.some((part) => {
+		if (lon < part.minX || lon > part.maxX || lat < part.minY || lat > part.maxY) {
+			return false;
+		}
+		return booleanPointInPolygon(candidate, part.feature.geometry);
+	});
 }
 
 /** Die fuenf Referenzpunkte aus Fehler A. Muessen ausserhalb der Flaeche liegen. */
@@ -117,19 +182,33 @@ function main(): void {
 	const boxCoordinates = loadBoxCoordinates();
 	const falseNegatives = filterRejectedByOldPolygon(boxCoordinates);
 
+	const waterParts = loadWaterParts();
+	const gewonnen: Array<[number, number]> = [];
+	const bleibtAussen: Array<[number, number]> = [];
+	for (const [lon, lat] of falseNegatives) {
+		if (isInNewWater(lon, lat, waterParts)) {
+			gewonnen.push([lon, lat]);
+		} else {
+			bleibtAussen.push([lon, lat]);
+		}
+	}
+
 	const payload = {
 		water,
 		iho,
 		mask,
 		extent,
 		fehlerA: FEHLER_A,
-		falseNegatives
+		gewonnen,
+		bleibtAussen
 	};
 
 	writeFileSync(join(OUT, 'review-data.js'), `window.REVIEW = ${JSON.stringify(payload)};`);
 	writeFileSync(join(OUT, 'baltic-review.html'), HTML);
 	console.log('Geschrieben:', join(OUT, 'baltic-review.html'));
-	console.log('Marker (bisherige Falsch-Negative):', payload.falseNegatives.length);
+	console.log('Marker gesamt (bisherige Falsch-Negative):', falseNegatives.length);
+	console.log('  davon jetzt innerhalb (gewonnen):', gewonnen.length);
+	console.log('  davon weiterhin ausserhalb:', bleibtAussen.length);
 }
 
 const HTML = `<!doctype html>
@@ -171,9 +250,14 @@ const e = R.extent;
 L.rectangle([[e.minLatitude, e.minLongitude], [e.maxLatitude, e.maxLongitude]],
   { color: '#15803d', weight: 2, fill: false }).addTo(map);
 
-// Bisherige Falsch-Negative — muessen jetzt INNERHALB der blauen Flaeche liegen
-const fn = L.layerGroup(R.falseNegatives.map(function (p) {
+// Bisherige Falsch-Negative, jetzt in zwei Gruppen:
+// violett = durch die Bereinigung gewonnen (jetzt innerhalb der neuen Flaeche)
+// orange  = bleibt ausserhalb (auch nach der Bereinigung kein Wasser)
+const gewonnen = L.layerGroup(R.gewonnen.map(function (p) {
   return L.circleMarker([p[1], p[0]], { radius: 3, color: '#7c3aed', weight: 1, fillOpacity: 0.8 });
+})).addTo(map);
+const bleibtAussen = L.layerGroup(R.bleibtAussen.map(function (p) {
+  return L.circleMarker([p[1], p[0]], { radius: 3, color: '#c2410c', fillColor: '#f97316', weight: 1, fillOpacity: 0.9 });
 })).addTo(map);
 
 // Fehler-A-Referenzpunkte — muessen AUSSERHALB liegen
@@ -191,8 +275,10 @@ legend.onAdd = function () {
     '<span class="sw" style="background:transparent;border-color:#b91c1c;border-style:dashed"></span>altes IHO-Polygon<br>' +
     '<span class="sw" style="background:#facc15"></span>Artefakt-Maske<br>' +
     '<span class="sw" style="background:transparent;border-color:#15803d"></span>abgeleitete Bounding Box<br>' +
-    '<span class="sw" style="background:#7c3aed;border-radius:50%"></span>' + R.falseNegatives.length +
-      ' bisher Falsch-Negative <i>(muessen drin liegen)</i><br>' +
+    '<span class="sw" style="background:#7c3aed;border-radius:50%"></span>' + R.gewonnen.length +
+      ' durch die Bereinigung gewonnen <i>(jetzt innerhalb)</i><br>' +
+    '<span class="sw" style="background:#f97316;border-radius:50%"></span>' + R.bleibtAussen.length +
+      ' bleiben ausserhalb <i>(auch nach der Bereinigung kein Wasser)</i><br>' +
     '<span class="sw" style="background:#ef4444;border-radius:50%"></span>Fehler-A-Punkte <i>(muessen draussen liegen)</i>';
   return d;
 };

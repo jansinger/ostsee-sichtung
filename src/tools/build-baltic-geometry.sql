@@ -1,6 +1,7 @@
 -- Bereinigte Ostsee-Wasserflaeche aus IHO-Seegebieten und OSM-Kuestenlinie.
 -- Aufgerufen von build-baltic-geometry.sh. Erwartet die Tabellen
--- geo_build.iho_raw, geo_build.artifact_mask und geo_build.osm_land.
+-- geo_build.iho_raw, geo_build.artifact_mask, geo_build.osm_land und
+-- geo_build.inclusion_mask.
 -- Begruendung aller Schritte: docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
 
 \set ON_ERROR_STOP on
@@ -76,17 +77,40 @@ SELECT ST_Union(p.geom) AS geom
 FROM parts p
 WHERE ST_Intersects(p.geom, (SELECT geom FROM region));
 
-\echo '== 7+8: Uferstreifen und Vereinfachung, beides metrisch in EPSG:3035'
+\echo '== 7: Uferstreifen, metrisch in EPSG:3035'
+DROP TABLE IF EXISTS shored;
+CREATE TABLE shored AS
+SELECT ST_Transform(
+         ST_Buffer(ST_Transform(geom, 3035), :buffer_shore_m),
+         4326
+       ) AS geom
+FROM water;
+
+-- Einschlussmaske (Schlei, Trave, Warnow) NACH dem Uferstreifen und VOR der
+-- Vereinfachung hinzuvereinigen. Der Landabzug aus Schritt 5 gilt innerhalb
+-- dieser Korridore bewusst nicht: die OSM-Kuestenlinie fuehrt diese
+-- Gewaesser als Binnenwasser und wuerde sie sonst wieder herausrechnen.
+-- Deshalb sind die Korridore in baltic-inclusion-mask.geojson schmal
+-- gezeichnet, statt grob ueber die betroffenen Flussmuendungen zu greifen.
+\echo '== Einschlussmaske hinzuvereinigen (Schlei/Trave/Warnow, kein Landabzug darin)'
+DROP TABLE IF EXISTS included;
+CREATE TABLE included AS
+SELECT ST_Union(
+         (SELECT geom FROM shored),
+         (SELECT ST_Union(ST_MakeValid(geom)) FROM inclusion_mask)
+       ) AS geom;
+
+\echo '== 8: Vereinfachung, metrisch in EPSG:3035'
 DROP TABLE IF EXISTS ostsee;
 CREATE TABLE ostsee AS
 SELECT ST_Transform(
          ST_SimplifyPreserveTopology(
-           ST_Buffer(ST_Transform(geom, 3035), :buffer_shore_m),
+           ST_Transform(geom, 3035),
            :simplify_m
          ),
          4326
        ) AS geom
-FROM water;
+FROM included;
 
 \echo '== 9: Subdivide fuer den RBush-Index'
 DROP TABLE IF EXISTS ostsee_parts;

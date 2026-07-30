@@ -76,6 +76,25 @@
 					]
 				]
 			}
+		},
+		{
+			"type": "Feature",
+			"properties": {
+				"name": "Oder binnenlands (bis Gryfino)",
+				"grund": "Die IHO-Flaeche Baltic Sea (mrgid 2401) folgt der Oder bis Gryfino auf 53,399 N, rund 50 km oberhalb des Stettiner Haffs. Das Stettiner Haff selbst (Kontrollpunkt 14,100/53,780) ist brackiges, Ostsee-verbundenes Wasser mit Sichtungen und muss innen bleiben. Die Maske setzt deshalb erst an der Enge bei Police an, ab 53,60 N suedwaerts, mit deutlichem Abstand zum Haff-Kontrollpunkt (0,18 Grad, rund 20 km) und schliesst den Oderverlauf bis unterhalb von Gryfino ein."
+			},
+			"geometry": {
+				"type": "Polygon",
+				"coordinates": [
+					[
+						[14.2, 53.3],
+						[14.9, 53.3],
+						[14.9, 53.6],
+						[14.2, 53.6],
+						[14.2, 53.3]
+					]
+				]
+			}
 		}
 	]
 }
