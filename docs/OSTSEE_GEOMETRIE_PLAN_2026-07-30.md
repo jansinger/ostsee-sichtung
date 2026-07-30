@@ -12,7 +12,9 @@
 
 ## Globale Randbedingungen
 
-- **Startvoraussetzung:** PR #639 muss gemerged sein. Erst danach von aktualisiertem `main` abzweigen. `docs/OSTSEE_FLAGS.md` kommt von dort.
+- **Startvoraussetzung erfüllt:** PR #639 ist am 2026-07-30 gemerged (`e908542`), dieser Branch ist darauf rebased. `docs/OSTSEE_FLAGS.md` liegt vor.
+- **Keine `$lib`-Importe in `src/tools/`.** `tsx` löst den Alias dort nicht auf — ein Skript, das `checkBalticSeaFile` importiert, scheitert mit `ERR_MODULE_NOT_FOUND` auf `$lib/logger.server`. Empirisch geprüft. Deshalb läuft die Neuberechnung in PostGIS (Aufgabe 8), und die Prüfkarte kommt ohne Projekt-Importe aus.
+- **`tsx` ist nicht als Abhängigkeit deklariert**, liegt aber transitiv in `node_modules/.bin/tsx`. Aufgabe 4 nutzt es. Wer sich darauf nicht verlassen will, deklariert es als `devDependency` — dann ändert sich `package-lock.json`, und der Worktree braucht einmalig `npm install` (die in `CLAUDE.md` vorgesehene Ausnahme).
 - **Hartes Tor:** Vor Aufgabe 8 (Trockenlauf) muss die visuelle Kartenprüfung aus Aufgabe 4 durch den Auftraggeber freigegeben sein. Kein Schreibvorgang an der Datenbank vorher.
 - **Test-First ist Pflicht** (`.claude/rules/testing.md`). Jede Aufgabe beginnt mit einem fehlschlagenden Test.
 - **`npm run test:quick` muss am Ende jeder Aufgabe grün sein.**
@@ -35,7 +37,9 @@
 | `src/tools/build-baltic-geometry.sh`        | Orchestrierung: Daten laden, SQL ausführen, Ergebnis exportieren.                                            |
 | `src/tools/build-baltic-geometry.sql`       | Die zehn Pipeline-Schritte. Einzige Stelle mit Geometrie-Logik.                                              |
 | `src/tools/render-baltic-review.ts`         | Erzeugt die Prüfkarte aus den Pipeline-Ausgaben.                                                             |
-| `src/tools/recalc-baltic-flags.ts`          | Trockenlauf-Report und Migration, über ein Flag unterschieden.                                               |
+| `src/tools/recalc-baltic-flags.sql`         | Konsistenzprüfung und Änderungs-View. Rein lesend.                                                           |
+| `src/tools/recalc-baltic-flags.sh`          | Wrapper: liest die Box aus dem Extent, ruft Report bzw. Migration.                                           |
+| `src/tools/recalc-baltic-flags-write.sql`   | Der einzige schreibende Teil: Backup-Tabelle und `UPDATE`.                                                   |
 | `src/lib/server/geo/baltic-extent.json`     | Ungerundeter Extent aus der Pipeline. Quelle der Wahrheit für den Box-Test.                                  |
 | `src/lib/server/geo/balticGeometry.test.ts` | Fachliche Referenzpunkte (Fehler A, Fehler B, Uferstreifen, Außenpunkte).                                    |
 
@@ -907,7 +911,7 @@ Im `catch`-Zweig zusätzlich `rbushIndexTyped = null;` setzen, damit ein fehlges
 
 **Achtung:** `checkBalticSeaFile` ist heute synchron und wird an vier Stellen synchron aufgerufen (`mapFormToSighting.ts:188`, `routes/api/geo/inBaltic/+server.ts`, `routes/rest_sichtungen/inBaltic.json/+server.ts`, `report/components/form/VerifyLocation.svelte` über die API). Wird die Ladefunktion `async`, muss `checkBalticSeaFile` ebenfalls `async` werden und alle vier Aufrufstellen brauchen ein `await`. `mapFormToSighting` ist bereits `async`.
 
-Ebenfalls betroffen: **die Tests aus Aufgabe 1 und die aus Aufgabe 8** rufen `checkBalticSeaFile` synchron auf. Wird die Funktion `async`, müssen dort alle Aufrufe ein `await` bekommen und die Testfunktionen `async` werden — auch die `it.each`-Rückrufe. `computeFlags` aus Aufgabe 8 müsste dann ebenfalls `async` werden und `Promise<FlagChange[]>` liefern.
+Ebenfalls betroffen: **die Tests aus Aufgabe 1** rufen `checkBalticSeaFile` synchron auf. Wird die Funktion `async`, brauchen alle Aufrufe dort ein `await` und die `it.each`-Rückrufe müssen `async` werden. Aufgabe 8 ist nicht betroffen — sie rechnet in PostGIS.
 
 **Empfehlung: Schritt 4 überspringen.** Der statische Import ist ein Bundling-Problem, kein Geometrie-Problem; die Bereinigung hängt nicht davon ab, und der Umbau berührt vier Produktionsaufrufer plus zwei Testdateien. Ihn hier mitzunehmen vermischt zwei Vorgänge und macht das Review schwerer. Stattdessen: Schritt 4 auslassen, in Aufgabe 10 als offenen Punkt festhalten und `.claude/rules/geo.md` auf den Ist-Zustand korrigieren, damit dort keine Regel steht, die der Code nicht einhält.
 
@@ -1138,210 +1142,208 @@ git commit -m "test(map): align existing expectations with the cleaned geometry"
 
 **Setzt die Freigabe aus Aufgabe 4 voraus.** Ändert nichts an den Daten.
 
+Die Neuberechnung läuft **in PostGIS**, nicht in JavaScript. Grund: ein
+Node-Skript unter `src/tools/` kann `checkBalticSeaFile` nicht importieren — der
+`$lib`-Alias wird von `tsx` dort nicht aufgelöst (empirisch geprüft,
+`ERR_MODULE_NOT_FOUND` auf `$lib/logger.server`). Die bereinigte Geometrie liegt
+nach Aufgabe 3 ohnehin als `geo_build.ostsee` in der Datenbank; `ST_Intersects`
+gegen einen GiST-Index ist dort exakt und schnell.
+
 **Dateien:**
 
-- Erstellen: `src/tools/recalc-baltic-flags.ts`
+- Erstellen: `src/tools/recalc-baltic-flags.sql`
+- Erstellen: `src/tools/recalc-baltic-flags.sh`
 - Ändern: `package.json`
 
 **Schnittstellen:**
 
-- Nutzt: `checkBalticSeaFile` und `isInBalticArea`.
-- Liefert: `computeFlags(rows: readonly SightingRow[]): FlagChange[]`, `region(lon: number, lat: number): string` und `renderReport(changes: readonly FlagChange[], gesamt: number): string` — `computeFlags` wird in Aufgabe 9 vom Migrationszweig derselben Datei genutzt. Typen siehe Code unten.
+- Nutzt: `geo_build.ostsee` (Aufgabe 3), `BALTIC_SEA_BBOX` aus Aufgabe 6 — die Box
+  wird als psql-Variable übergeben, nicht dupliziert.
+- Liefert: die View `geo_build.flag_changes` mit den Spalten `id`, `lon`, `lat`,
+  `alt_ostsee`, `neu_ostsee`, `alt_geo`, `neu_geo`, `region`. Aufgabe 9 schreibt
+  aus genau dieser View.
 
-- [ ] **Schritt 1: Skript schreiben**
+- [ ] **Schritt 1: Konsistenzprüfung schreiben**
 
-`src/tools/recalc-baltic-flags.ts`:
+Bevor irgendetwas gerechnet wird, muss belegt sein, dass PostGIS und Turf
+dasselbe Urteil fällen. Sonst weicht die Migration vom Laufzeitverhalten ab.
 
-```typescript
-/**
- * Rechnet ostsee und ostsee_geo aus der bereinigten Geometrie neu.
- *
- *   --report    nur auswerten und ausgeben, nichts schreiben (Vorgabe)
- *   --migrate   Altwerte sichern und neue Werte schreiben
- *
- * Voraussetzung: die visuelle Kartenfreigabe aus
- * docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md, Abschnitt 3.3.
- *
- * Die Datenbank-Verbindung folgt dem Muster aus
- * src/tools/fix-land-boat-drive.js — dort nachsehen und uebernehmen,
- * damit im Projekt nur ein Treiber verwendet wird.
- */
-import { checkBalticSeaFile } from '../lib/server/geo/checkBalticSeaFile';
-
-export interface SightingRow {
-	id: number;
-	longitude: number;
-	latitude: number;
-	inBalticSea: number | null;
-	inBalticSeaGeo: number;
-}
-
-export interface FlagChange {
-	id: number;
-	longitude: number;
-	latitude: number;
-	altOstsee: number | null;
-	neuOstsee: number;
-	altGeo: number;
-	neuGeo: number;
-}
-
-/** Reine Funktion — bewusst ohne Datenbankzugriff, damit sie testbar bleibt. */
-export function computeFlags(rows: readonly SightingRow[]): FlagChange[] {
-	const changes: FlagChange[] = [];
-	for (const row of rows) {
-		const { inBaltic, inChartArea } = checkBalticSeaFile(row.longitude, row.latitude);
-		const neuOstsee = inBaltic ? 1 : 0;
-		const neuGeo = inChartArea ? 1 : 0;
-		// ostsee_geo = 2 stammt aus dem Altsystem und bedeutet dasselbe wie 1.
-		// Es wird nur angefasst, wenn sich die Aussage "im Kartenbereich" aendert.
-		const geoAendertSich = (row.inBalticSeaGeo > 0 ? 1 : 0) !== neuGeo;
-		if (row.inBalticSea !== neuOstsee || geoAendertSich) {
-			changes.push({
-				id: row.id,
-				longitude: row.longitude,
-				latitude: row.latitude,
-				altOstsee: row.inBalticSea,
-				neuOstsee,
-				altGeo: row.inBalticSeaGeo,
-				neuGeo: geoAendertSich ? neuGeo : row.inBalticSeaGeo
-			});
-		}
-	}
-	return changes;
-}
-
-/** Grobe Regionszuordnung, nur fuer die Lesbarkeit des Reports. */
-export function region(lon: number, lat: number): string {
-	if (lon < 9.4 || lon > 30.4 || lat < 53.1 || lat > 66.0) return 'ausserhalb der Box';
-	if (lon < 10.5) return 'Flensburger Foerde / Kieler Bucht';
-	if (lon < 12.5) return 'Luebecker und Wismarbucht';
-	if (lon < 14.5) return 'Bodden, Ruegen, Darss';
-	if (lon < 20.0) return 'zentrale Ostsee';
-	if (lat > 60.0) return 'Bottnischer und Finnischer Meerbusen';
-	return 'oestliche Ostsee';
-}
-
-export function renderReport(changes: readonly FlagChange[], gesamt: number): string {
-	const hoch = changes.filter((c) => c.altOstsee !== 1 && c.neuOstsee === 1);
-	const runter = changes.filter((c) => c.altOstsee === 1 && c.neuOstsee === 0);
-
-	const byRegion = new Map<string, number>();
-	for (const c of changes) {
-		const key = region(c.longitude, c.latitude);
-		byRegion.set(key, (byRegion.get(key) ?? 0) + 1);
-	}
-
-	const lines: string[] = [
-		'# Trockenlauf: Neuberechnung von ostsee und ostsee_geo',
-		'',
-		`Zeilen mit Koordinaten: ${gesamt}`,
-		`Zeilen mit Aenderung:   ${changes.length}`,
-		`  ostsee 0 -> 1: ${hoch.length}`,
-		`  ostsee 1 -> 0: ${runter.length}`,
-		'',
-		'## Nach Region',
-		''
-	];
-	for (const [name, count] of [...byRegion].sort((a, b) => b[1] - a[1])) {
-		lines.push(`${String(count).padStart(6)}  ${name}`);
-	}
-	lines.push('', '## Beispiele 0 -> 1', '');
-	for (const c of hoch.slice(0, 20)) {
-		lines.push(`  id ${c.id}  ${c.longitude}/${c.latitude}  ${region(c.longitude, c.latitude)}`);
-	}
-	lines.push('', '## Beispiele 1 -> 0 (kritischer, bitte einzeln pruefen)', '');
-	for (const c of runter.slice(0, 40)) {
-		lines.push(`  id ${c.id}  ${c.longitude}/${c.latitude}  ${region(c.longitude, c.latitude)}`);
-	}
-	return lines.join('\n');
-}
-```
-
-Den Datenbank-Teil ergänzen: Zeilen laden per
+`src/tools/recalc-baltic-flags.sql`, erster Teil:
 
 ```sql
-SELECT id, gps_laenge::float8, gps_breite::float8, ostsee, ostsee_geo
-FROM sichtungen
-WHERE gps_laenge IS NOT NULL AND gps_breite IS NOT NULL
+-- Neuberechnung von ostsee und ostsee_geo aus der bereinigten Geometrie.
+-- Aufgerufen von recalc-baltic-flags.sh.
+-- Spec: docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
+
+\set ON_ERROR_STOP on
+SET search_path TO geo_build, public;
+
+CREATE INDEX IF NOT EXISTS ostsee_geom_gix ON geo_build.ostsee USING GIST (geom);
+
+\echo '== Konsistenzpruefung gegen die Referenzpunkte aus balticGeometry.test.ts'
+WITH referenz(name, lon, lat, erwartet) AS (
+  VALUES
+    ('Ladogasee',              31.5,  60.8,  false),
+    ('Onegasee',               35.5,  61.8,  false),
+    ('Weichsel Wloclawek',     19.0,  52.7,  false),
+    ('Torne-Flusslauf',        24.0,  66.5,  false),
+    ('Limfjord',                9.38, 57.02, false),
+    ('Flensburger Foerde',      9.6,  54.83, true),
+    ('Eckernfoerder Bucht',     9.95, 54.5,  true),
+    ('Greifswalder Bodden',    13.45, 54.2,  true),
+    ('Strelasund',             13.1,  54.31, true),
+    ('Helgoland',               7.89, 54.18, false),
+    ('Hamburg',                10.0,  53.55, false),
+    ('Hannover',                9.73, 52.37, false),
+    ('Doggerbank',              2.02, 54.87, false),
+    ('Fehmarnbelt',            11.3,  54.6,  true),
+    ('Arkonabecken',           13.5,  55.0,  true),
+    ('Bornholmbecken',         15.0,  55.2,  true),
+    ('Newa-Bucht',             30.05, 59.93, true)
+)
+SELECT r.name, r.erwartet, ST_Intersects(o.geom, ST_SetSRID(ST_MakePoint(r.lon, r.lat), 4326)) AS postgis
+FROM referenz r, geo_build.ostsee o
+WHERE ST_Intersects(o.geom, ST_SetSRID(ST_MakePoint(r.lon, r.lat), 4326)) IS DISTINCT FROM r.erwartet;
 ```
 
-und bei `--report` das Ergebnis von `renderReport` nach `src/tools/out/baltic-flags-report.md` schreiben sowie auf der Konsole ausgeben. Verbindungsaufbau und `process.argv`-Auswertung genau wie in `src/tools/fix-land-boat-drive.js`.
-
-- [ ] **Schritt 2: Test für die reine Funktion schreiben**
-
-`src/tools/recalc-baltic-flags.test.ts`:
-
-```typescript
-import { describe, expect, it } from 'vitest';
-import { computeFlags, region, type SightingRow } from './recalc-baltic-flags';
-
-const row = (over: Partial<SightingRow>): SightingRow => ({
-	id: 1,
-	longitude: 13.45,
-	latitude: 54.2,
-	inBalticSea: 0,
-	inBalticSeaGeo: 0,
-	...over
-});
-
-describe('computeFlags', () => {
-	it('meldet den Greifswalder Bodden als Aenderung 0 -> 1', () => {
-		const [change] = computeFlags([row({ inBalticSea: 0 })]);
-		expect(change.neuOstsee).toBe(1);
-		expect(change.altOstsee).toBe(0);
-	});
-
-	it('laesst eine bereits korrekte Zeile unangetastet', () => {
-		expect(computeFlags([row({ inBalticSea: 1, inBalticSeaGeo: 1 })])).toHaveLength(0);
-	});
-
-	it('behaelt den Altwert 2 in ostsee_geo, solange die Aussage gleich bleibt', () => {
-		const [change] = computeFlags([row({ inBalticSea: 0, inBalticSeaGeo: 2 })]);
-		expect(change.neuGeo).toBe(2);
-	});
-
-	it('setzt Ladoga auf 0', () => {
-		const [change] = computeFlags([
-			row({ longitude: 31.5, latitude: 60.8, inBalticSea: 1, inBalticSeaGeo: 1 })
-		]);
-		expect(change.neuOstsee).toBe(0);
-	});
-});
-
-describe('region', () => {
-	it('ordnet die Flensburger Foerde zu', () => {
-		expect(region(9.6, 54.83)).toBe('Flensburger Foerde / Kieler Bucht');
-	});
-});
-```
-
-- [ ] **Schritt 3: Tests laufen lassen**
+- [ ] **Schritt 2: Konsistenzprüfung laufen lassen**
 
 ```bash
-npm run test:unit -- src/tools/recalc-baltic-flags.test.ts
+cd /Users/jansinger/Documents/Code/ostsee-sichtung && set -a && . ./.env && set +a && \
+psql "$DATABASE_POSTGRES_URL" -P pager=off -f .claude/worktrees/<worktree>/src/tools/recalc-baltic-flags.sql
 ```
 
-Erwartung: grün.
+Erwartung: **null Zeilen**. Jede ausgegebene Zeile ist ein Punkt, bei dem PostGIS
+anders urteilt als der Vitest-Lauf aus Aufgabe 5 — dann stimmen Geometrie in der
+Datenbank und Geometrie im Index nicht überein, und es geht nicht weiter, bis das
+geklärt ist. Häufigste Ursache: `npm run geo:build` lief nach dem letzten
+Index-Bau erneut.
 
-- [ ] **Schritt 4: `package.json` ergänzen**
+- [ ] **Schritt 3: Änderungs-View ergänzen**
+
+An `src/tools/recalc-baltic-flags.sql` anhängen. Die vier Box-Werte kommen als
+psql-Variablen aus dem Shell-Skript, damit sie nicht doppelt gepflegt werden:
+
+```sql
+\echo '== Aenderungen ermitteln'
+DROP VIEW IF EXISTS flag_changes;
+CREATE VIEW flag_changes AS
+WITH neu AS (
+  SELECT
+    s.id,
+    s.gps_laenge::float8 AS lon,
+    s.gps_breite::float8 AS lat,
+    s.ostsee     AS alt_ostsee,
+    s.ostsee_geo AS alt_geo,
+    CASE WHEN EXISTS (
+      SELECT 1 FROM geo_build.ostsee o
+      WHERE ST_Intersects(o.geom, ST_SetSRID(ST_MakePoint(s.gps_laenge, s.gps_breite), 4326))
+    ) THEN 1 ELSE 0 END AS neu_ostsee,
+    CASE WHEN s.gps_laenge BETWEEN :box_w AND :box_o
+          AND s.gps_breite BETWEEN :box_s AND :box_n
+         THEN 1 ELSE 0 END AS neu_geo_roh
+  FROM sichtungen s
+  WHERE s.gps_laenge IS NOT NULL AND s.gps_breite IS NOT NULL
+)
+SELECT
+  id, lon, lat, alt_ostsee, neu_ostsee, alt_geo,
+  -- ostsee_geo = 2 stammt aus dem Altsystem und bedeutet dasselbe wie 1.
+  -- Der Altwert bleibt stehen, solange sich die Aussage nicht aendert.
+  CASE WHEN (alt_geo > 0)::int = neu_geo_roh THEN alt_geo ELSE neu_geo_roh END AS neu_geo,
+  CASE
+    WHEN lon < :box_w OR lon > :box_o OR lat < :box_s OR lat > :box_n THEN 'ausserhalb der Box'
+    WHEN lon < 10.5 THEN 'Flensburger Foerde / Kieler Bucht'
+    WHEN lon < 12.5 THEN 'Luebecker und Wismarbucht'
+    WHEN lon < 14.5 THEN 'Bodden, Ruegen, Darss'
+    WHEN lon < 20.0 THEN 'zentrale Ostsee'
+    WHEN lat > 60.0 THEN 'Bottnischer und Finnischer Meerbusen'
+    ELSE 'oestliche Ostsee'
+  END AS region
+FROM neu
+WHERE alt_ostsee IS DISTINCT FROM neu_ostsee
+   OR (alt_geo > 0)::int IS DISTINCT FROM neu_geo_roh;
+
+\echo '== Zusammenfassung'
+SELECT
+  (SELECT count(*) FROM sichtungen WHERE gps_laenge IS NOT NULL AND gps_breite IS NOT NULL) AS zeilen_mit_koordinaten,
+  (SELECT count(*) FROM flag_changes)                                                        AS aenderungen,
+  (SELECT count(*) FROM flag_changes WHERE alt_ostsee IS DISTINCT FROM 1 AND neu_ostsee = 1) AS ostsee_hoch,
+  (SELECT count(*) FROM flag_changes WHERE alt_ostsee = 1 AND neu_ostsee = 0)                AS ostsee_runter;
+
+\echo '== Nach Region'
+SELECT region, count(*) FROM flag_changes GROUP BY region ORDER BY 2 DESC;
+
+\echo '== Beispiele 0 -> 1'
+SELECT id, lon, lat, region FROM flag_changes
+WHERE alt_ostsee IS DISTINCT FROM 1 AND neu_ostsee = 1 ORDER BY id LIMIT 20;
+
+\echo '== Alle 1 -> 0 (kritisch, jede Zeile muss erklaerbar sein)'
+SELECT id, lon, lat, alt_geo, region FROM flag_changes
+WHERE alt_ostsee = 1 AND neu_ostsee = 0 ORDER BY id;
+```
+
+- [ ] **Schritt 4: Shell-Wrapper schreiben**
+
+`src/tools/recalc-baltic-flags.sh`:
+
+```bash
+#!/usr/bin/env bash
+# Trockenlauf und Migration fuer ostsee / ostsee_geo.
+#   ohne Argument  -> nur Report, schreibt nichts
+#   --migrate      -> sichert Altwerte und schreibt neue Werte
+# Voraussetzung: npm run geo:build lief, geo_build.ostsee existiert.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/../.." && pwd)"
+OUT="$HERE/out"
+set -a; . "$ROOT/.env"; set +a
+DB="$DATABASE_POSTGRES_URL"
+
+# Box-Werte aus der einen Quelle lesen, statt sie hier zu wiederholen.
+read -r BOX_W BOX_O BOX_S BOX_N < <(node -e "
+const e=require('$ROOT/src/lib/server/geo/baltic-extent.json');
+const f=(v,up)=>((up?Math.ceil(v/0.05):Math.floor(v/0.05))*0.05).toFixed(2);
+console.log(f(e.minLongitude,false),f(e.maxLongitude,true),f(e.minLatitude,false),f(e.maxLatitude,true));
+")
+echo "Bounding Box: $BOX_W .. $BOX_O E / $BOX_S .. $BOX_N N"
+
+mkdir -p "$OUT"
+psql "$DB" -v ON_ERROR_STOP=1 -P pager=off \
+  -v box_w="$BOX_W" -v box_o="$BOX_O" -v box_s="$BOX_S" -v box_n="$BOX_N" \
+  -f "$HERE/recalc-baltic-flags.sql" | tee "$OUT/baltic-flags-report.txt"
+
+if [[ "${1:-}" != "--migrate" ]]; then
+  echo
+  echo "Trockenlauf. Report: $OUT/baltic-flags-report.txt"
+  echo "Nichts geschrieben. Nach Freigabe: npm run geo:migrate"
+  exit 0
+fi
+
+psql "$DB" -v ON_ERROR_STOP=1 -P pager=off -f "$HERE/recalc-baltic-flags-write.sql"
+```
+
+- [ ] **Schritt 5: `package.json` ergänzen**
 
 ```json
-"geo:report": "tsx src/tools/recalc-baltic-flags.ts --report",
+"geo:report": "bash src/tools/recalc-baltic-flags.sh",
 ```
 
-- [ ] **Schritt 5: Trockenlauf ausführen und vorlegen**
+- [ ] **Schritt 6: Trockenlauf ausführen und vorlegen**
 
 ```bash
-set -a && . ./.env && set +a && npm run geo:report
+chmod +x src/tools/recalc-baltic-flags.sh && npm run geo:report
 ```
 
-Den Report übergeben. Besonders auf den Block „1 → 0" achten: jede Zeile, die ihren Ostsee-Status verliert, muss erklärbar sein (Altsystem-Müll, Nordsee, Binnenwasser). Sind darunter plausible Ostsee-Positionen, ist die Geometrie noch nicht richtig — zurück zu Aufgabe 3.
+Den Report übergeben. Der Block „Alle 1 → 0" wird vollständig ausgegeben, nicht
+gekürzt: **jede** Zeile, die ihren Ostsee-Status verliert, muss erklärbar sein
+(Altsystem-Müll, Nordsee, Binnenwasser). Sind darunter plausible Ostsee-Positionen,
+ist die Geometrie noch nicht richtig — zurück zu Aufgabe 3.
 
-- [ ] **Schritt 6: Commit**
+- [ ] **Schritt 7: Commit**
 
 ```bash
-git add package.json src/tools/recalc-baltic-flags.ts src/tools/recalc-baltic-flags.test.ts
+git add package.json src/tools/recalc-baltic-flags.sql src/tools/recalc-baltic-flags.sh
 git commit -m "feat(db): add dry-run report for recomputing the baltic flags"
 ```
 
@@ -1353,92 +1355,95 @@ git commit -m "feat(db): add dry-run report for recomputing the baltic flags"
 
 **Dateien:**
 
-- Ändern: `src/tools/recalc-baltic-flags.ts`
+- Erstellen: `src/tools/recalc-baltic-flags-write.sql`
 - Ändern: `package.json`
 
 **Schnittstellen:**
 
-- Nutzt: `computeFlags` aus Aufgabe 8.
+- Nutzt: die View `geo_build.flag_changes` aus Aufgabe 8.
 - Liefert: die Tabelle `sichtungen_ostsee_backup` als Rollback-Grundlage.
 
-- [ ] **Schritt 1: Migrationszweig ergänzen**
-
-In `src/tools/recalc-baltic-flags.ts` bei `--migrate` vor dem Schreiben sichern:
-
-```sql
-DROP TABLE IF EXISTS sichtungen_ostsee_backup;
-CREATE TABLE sichtungen_ostsee_backup AS
-SELECT id, ostsee, ostsee_geo, now() AS gesichert_am FROM sichtungen;
-```
-
-Dann in einer Transaktion und in Blöcken zu 500 Zeilen schreiben:
-
-```sql
-UPDATE sichtungen SET ostsee = $2, ostsee_geo = $3 WHERE id = $1;
-```
-
-Das Skript muss abbrechen, wenn `sichtungen_ostsee_backup` bereits existiert und Zeilen enthält, die nicht zum aktuellen Bestand passen — sonst überschreibt ein zweiter Lauf die einzige Rückfallebene. Prüfung vor dem `DROP`:
-
-```sql
-SELECT count(*) FROM sichtungen_ostsee_backup;
-```
-
-Ist die Tabelle vorhanden und nicht leer, mit einem Hinweis abbrechen und `--force` verlangen.
-
-- [ ] **Schritt 2: Zeilenzahl vor der Migration festhalten**
+- [ ] **Schritt 1: Zeilenzahl vor der Migration festhalten**
 
 ```bash
 cd /Users/jansinger/Documents/Code/ostsee-sichtung && set -a && . ./.env && set +a && \
 psql "$DATABASE_POSTGRES_URL" -P pager=off -c "
 SELECT count(*) gesamt,
-       count(*) FILTER (WHERE ostsee = 1) ostsee_1,
+       count(*) FILTER (WHERE ostsee = 1)     ostsee_1,
        count(*) FILTER (WHERE ostsee_geo > 0) geo_gt0
 FROM sichtungen;"
 ```
 
-Die Zahlen notieren.
+Die drei Zahlen notieren — Schritt 4 vergleicht dagegen.
+
+- [ ] **Schritt 2: Schreib-Skript anlegen**
+
+`src/tools/recalc-baltic-flags-write.sql`:
+
+```sql
+-- Schreibt die in geo_build.flag_changes ermittelten Werte.
+-- Wird ausschliesslich von recalc-baltic-flags.sh --migrate aufgerufen,
+-- immer NACH dem Report im selben Lauf, damit View und Schreibvorgang
+-- denselben Stand sehen.
+
+\set ON_ERROR_STOP on
+
+BEGIN;
+
+-- Die Backup-Tabelle ist die einzige Rueckfallebene. Ein zweiter Lauf darf sie
+-- nicht ueberschreiben, sonst geht der Ausgangszustand verloren.
+DO $$
+BEGIN
+  IF to_regclass('public.sichtungen_ostsee_backup') IS NOT NULL
+     AND (SELECT count(*) FROM sichtungen_ostsee_backup) > 0 THEN
+    RAISE EXCEPTION
+      'sichtungen_ostsee_backup existiert bereits mit % Zeilen. Erst pruefen und bewusst verwerfen.',
+      (SELECT count(*) FROM sichtungen_ostsee_backup);
+  END IF;
+END $$;
+
+CREATE TABLE sichtungen_ostsee_backup AS
+SELECT id, ostsee, ostsee_geo, now() AS gesichert_am FROM sichtungen;
+
+UPDATE sichtungen s
+SET ostsee = c.neu_ostsee, ostsee_geo = c.neu_geo
+FROM geo_build.flag_changes c
+WHERE s.id = c.id;
+
+\echo '== Kontrolle innerhalb der Transaktion'
+SELECT
+  count(*)                                                        AS gesamt,
+  count(*) FILTER (WHERE ostsee = 1)                              AS ostsee_1,
+  count(*) FILTER (WHERE ostsee_geo > 0)                          AS geo_gt0,
+  count(*) FILTER (WHERE ostsee = 1 AND ostsee_geo = 0)           AS invariante_verletzt
+FROM sichtungen;
+
+-- invariante_verletzt MUSS 0 sein. Ist sie es nicht, hier ROLLBACK statt COMMIT
+-- ausfuehren und zurueck zu Aufgabe 3.
+COMMIT;
+```
 
 - [ ] **Schritt 3: `package.json` ergänzen**
 
 ```json
-"geo:migrate": "tsx src/tools/recalc-baltic-flags.ts --migrate",
+"geo:migrate": "bash src/tools/recalc-baltic-flags.sh --migrate",
 ```
 
-- [ ] **Schritt 4: Migration ausführen**
+- [ ] **Schritt 4: Migration ausführen und prüfen**
 
 ```bash
 set -a && . ./.env && set +a && npm run geo:migrate
 ```
 
-- [ ] **Schritt 5: Ergebnis prüfen**
+Erwartung: `gesamt` unverändert gegenüber Schritt 1, `ostsee_1` um `ostsee_hoch`
+minus `ostsee_runter` aus dem Report verschoben, **`invariante_verletzt` = 0**.
 
-```bash
-cd /Users/jansinger/Documents/Code/ostsee-sichtung && set -a && . ./.env && set +a && \
-psql "$DATABASE_POSTGRES_URL" -P pager=off -c "
-SELECT count(*) gesamt,
-       count(*) FILTER (WHERE ostsee = 1) ostsee_1,
-       count(*) FILTER (WHERE ostsee_geo > 0) geo_gt0,
-       count(*) FILTER (WHERE ostsee = 1 AND ostsee_geo = 0) invariante_verletzt
-FROM sichtungen;
-SELECT count(*) AS gesicherte_zeilen FROM sichtungen_ostsee_backup;"
-```
+Ist `invariante_verletzt` größer als 0, sofort zurückrollen (Schritt 5).
 
-Erwartung: `gesamt` unverändert, `ostsee_1` um rund die Zahl aus dem Report gestiegen, **`invariante_verletzt` = 0**, `gesicherte_zeilen` gleich `gesamt`.
+- [ ] **Schritt 5: Rollback proben**
 
-Ist `invariante_verletzt` größer als 0, sofort zurückrollen (Schritt 6) und die Ursache klären.
-
-- [ ] **Schritt 6: Rollback-Weg dokumentieren und einmal proben**
-
-Den Weg in den Kopfkommentar des Skripts aufnehmen:
-
-```sql
-UPDATE sichtungen s
-SET ostsee = b.ostsee, ostsee_geo = b.ostsee_geo
-FROM sichtungen_ostsee_backup b
-WHERE s.id = b.id;
-```
-
-Einmal auf einer einzelnen ID proben, damit der Weg belegt ist und nicht nur behauptet:
+Der Weg ist ein `UPDATE … FROM` aus der Backup-Tabelle. Einmal auf einer einzelnen
+ID proben, damit er belegt ist und nicht nur behauptet:
 
 ```bash
 cd /Users/jansinger/Documents/Code/ostsee-sichtung && set -a && . ./.env && set +a && \
@@ -1452,12 +1457,22 @@ SELECT id, ostsee FROM sichtungen WHERE id = (SELECT min(id) FROM sichtungen_ost
 ROLLBACK;"
 ```
 
-Erwartung: Der zweite `SELECT` zeigt den Altwert, das `ROLLBACK` macht auch das wieder rückgängig.
+Erwartung: Der zweite `SELECT` zeigt den Altwert, das `ROLLBACK` nimmt auch das
+wieder zurück.
 
-- [ ] **Schritt 7: Commit**
+Den vollständigen Rollback in den Kopfkommentar von
+`recalc-baltic-flags-write.sql` aufnehmen:
+
+```sql
+-- Rollback:
+--   UPDATE sichtungen s SET ostsee = b.ostsee, ostsee_geo = b.ostsee_geo
+--   FROM sichtungen_ostsee_backup b WHERE s.id = b.id;
+```
+
+- [ ] **Schritt 6: Commit**
 
 ```bash
-git add package.json src/tools/recalc-baltic-flags.ts
+git add package.json src/tools/recalc-baltic-flags-write.sql
 git commit -m "feat(db): recompute baltic flags with backup table and rollback path"
 ```
 
@@ -1495,13 +1510,27 @@ Vollständige Messung, Entscheidungen und Umsetzung:
 
 - [ ] **Schritt 2: `.claude/rules/geo.md` aktualisieren**
 
-Die Box-Werte in Zeile 19–24 auf die neuen bringen. Den Abschnitt „Präzise Geometrie" ergänzen um Datenquelle, Pufferwerte, die tatsächlich verwendete Simplify-Toleranz aus Aufgabe 5 Schritt 2 sowie den Hinweis, dass `npm run geo:build` die Geometrie erzeugt und die Karte aus `npm run geo:review` freigegeben werden muss. Die Angabe „32 MB, 5 MultiPolygon Features" auf die tatsächliche neue Größe und Teilflächenzahl korrigieren.
+**Zuerst der von PR #639 ergänzte Abschnitt „Persistenz: `ostsee` und `ostsee_geo`" (Zeilen 51–76).** Er enthält die widerlegte Diagnose:
+
+> Die Invariante „Polygon liegt in der Bounding Box" gilt **nicht**: die Westgrenze 9,4° E schneidet Kieler Bucht und Flensburger Förde ab (126 Zeilen mit `ostsee = 1` westlich davon). Wer `BALTIC_SEA_BBOX` anfasst, prüft das mit.
+
+Dieser Absatz ist in zwei Punkten falsch und muss ersetzt werden: die Kieler Bucht liegt vollständig östlich von 9,4° E, und die 126 Zeilen sind Altsystem-Flags auf Müll- und Nordsee-Koordinaten, keine Polygon-Treffer. Neuer Text:
+
+```markdown
+Die Invariante „Polygon liegt in der Bounding Box" **gilt** und wird von
+`src/lib/utils/geo/checkBalticSea.test.ts` über alle Stützpunkte geprüft.
+`BALTIC_SEA_BBOX` wird aus der Geometrie abgeleitet und nicht von Hand
+gepflegt — wer die Zahlen ändern will, ändert die Geometrie und lässt
+`npm run geo:build` laufen.
+```
+
+Danach die Box-Werte in Zeile 19–24 auf die neuen bringen. Den Abschnitt „Präzise Geometrie" ergänzen um Datenquelle, Pufferwerte, die tatsächlich verwendete Simplify-Toleranz aus Aufgabe 5 Schritt 2 sowie den Hinweis, dass `npm run geo:build` die Geometrie erzeugt und die Karte aus `npm run geo:review` freigegeben werden muss. Die Angabe „32 MB, 5 MultiPolygon Features" auf die tatsächliche neue Größe und Teilflächenzahl korrigieren.
 
 Wurde Aufgabe 5, Schritt 4 übersprungen, den Satz „Index NICHT bundlen — Lazy Loading verwenden" auf den Ist-Zustand korrigieren und den offenen Punkt benennen, statt eine Regel stehenzulassen, die der Code nicht einhält.
 
 - [ ] **Schritt 3: `.claude/rules/maps.md` aktualisieren**
 
-Der Block ab Zeile 222 („Ostsee-Grenzen") wiederholt die Box-Werte im Klartext und in einem `View Constraint`-Beispiel mit `[9.4, 53.0]` und `[30.2, 66.0]`. Beide auf die neuen Werte bringen.
+Zwei Stellen: die Konstante ab Zeile 226 und das `View Constraint`-Beispiel in Zeile 249 mit `boundingExtent([fromLonLat([9.4, 53.0]), fromLonLat([30.2, 66.0])])`. Beide auf die neuen Werte bringen.
 
 - [ ] **Schritt 4: Spec als erledigt kennzeichnen**
 
