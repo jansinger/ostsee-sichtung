@@ -18,10 +18,22 @@ import path from 'node:path';
 import { mapLegacyToCurrentSchema } from '../lib/legacy-api/field-mapping.js';
 import { saveSighting } from '../lib/server/db/sightingRepository.js';
 
+// Kleine, feste Obergrenze für Verschiebe-Versuche: Sie räumt transiente
+// Ursachen (kurzzeitig volle Platte, Race mit einem parallelen Aufräumjob)
+// aus dem Weg, ohne den Lauf endlos zu blockieren.
+const MAX_RENAME_ATTEMPTS = 3;
+const DEFAULT_RENAME_RETRY_DELAY_MS = 50;
+
+function sleep(ms) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function importiere({
 	datenVerzeichnis,
 	mappe = mapLegacyToCurrentSchema,
-	speichere = saveSighting
+	speichere = saveSighting,
+	renameFile = rename,
+	renameRetryDelayMs = DEFAULT_RENAME_RETRY_DELAY_MS
 }) {
 	const eingang = path.join(datenVerzeichnis, 'posteingang');
 	const erledigt = path.join(datenVerzeichnis, 'importiert');
@@ -30,8 +42,11 @@ export async function importiere({
 
 	let uebernommen = 0;
 	let fehlgeschlagen = 0;
+	let moveFailure = null;
 
 	for (const datei of dateien) {
+		let gespeichert;
+
 		try {
 			const umschlag = JSON.parse(await readFile(path.join(eingang, datei), 'utf8'));
 
@@ -43,19 +58,65 @@ export async function importiere({
 				continue;
 			}
 
-			const gespeichert = await speichere(mappe(vereinheitliche(umschlag.payload)));
+			gespeichert = await speichere(mappe(vereinheitliche(umschlag.payload)));
 
-			await rename(path.join(eingang, datei), path.join(erledigt, datei));
-			uebernommen++;
-			console.log(`${datei} → Sichtung ${gespeichert.id}`);
+			if (gespeichert.id === undefined) {
+				// speichere() kann laut eigenem Vertrag eine undefinierte ID
+				// liefern, ohne zu werfen. Ohne ID gibt es nichts, worauf ein
+				// Verschieben aufbauen könnte — als gewöhnlicher Fehlschlag
+				// behandeln, die Datei bleibt für den nächsten Lauf liegen.
+				console.error(`${datei}: speichere() lieferte keine Sichtungs-ID — bleibt liegen`);
+				fehlgeschlagen++;
+				continue;
+			}
 		} catch (fehler) {
-			// Ein Fehler in einer Datei darf den Rest nicht aufhalten.
+			// Ein Fehler beim Lesen, Mappen oder Speichern darf den Rest nicht
+			// aufhalten — die Sichtung wurde nicht angelegt, die Datei bleibt
+			// unverändert liegen und wird beim nächsten Lauf erneut versucht.
 			console.error(`${datei}: ${fehler.message}`);
 			fehlgeschlagen++;
+			continue;
 		}
+
+		// Ab hier ist die Sichtung bereits in der Datenbank angelegt. Ein
+		// Fehler beim Verschieben ist deshalb kein "Speichern ist
+		// fehlgeschlagen" mehr, sondern eine gescheiterte Aufräumarbeit an
+		// einem bereits abgeschlossenen Vorgang — das darf weder als
+		// `fehlgeschlagen` gezählt noch mit einem stillen Weiterlaufen
+		// beantwortet werden, sonst legt der nächste Lauf dieselbe Sichtung
+		// noch einmal an.
+		let verschoben = false;
+		let letzterFehler;
+
+		for (let versuch = 1; versuch <= MAX_RENAME_ATTEMPTS; versuch++) {
+			try {
+				await renameFile(path.join(eingang, datei), path.join(erledigt, datei));
+				verschoben = true;
+				break;
+			} catch (fehler) {
+				letzterFehler = fehler;
+				if (versuch < MAX_RENAME_ATTEMPTS) {
+					await sleep(renameRetryDelayMs);
+				}
+			}
+		}
+
+		if (!verschoben) {
+			console.error(
+				`${datei}: Sichtung ${gespeichert.id} wurde in der Datenbank angelegt, aber die Datei ` +
+					`konnte nach ${MAX_RENAME_ATTEMPTS} Versuchen nicht nach importiert/ verschoben werden ` +
+					`(${letzterFehler.message}). Datei von Hand nach importiert/ verschieben, bevor der ` +
+					`Import erneut läuft — sonst wird die Sichtung doppelt angelegt.`
+			);
+			moveFailure = { file: datei, sightingId: gespeichert.id, message: letzterFehler.message };
+			break;
+		}
+
+		uebernommen++;
+		console.log(`${datei} → Sichtung ${gespeichert.id}`);
 	}
 
-	return { uebernommen, fehlgeschlagen };
+	return { uebernommen, fehlgeschlagen, moveFailure };
 }
 
 /**
@@ -83,5 +144,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 	}
 	const ergebnis = await importiere({ datenVerzeichnis });
 	console.log(`${ergebnis.uebernommen} übernommen, ${ergebnis.fehlgeschlagen} offen.`);
-	process.exit(ergebnis.fehlgeschlagen > 0 ? 1 : 0);
+	if (ergebnis.moveFailure) {
+		console.error(
+			`Lauf abgebrochen: ${ergebnis.moveFailure.file} (Sichtung ${ergebnis.moveFailure.sightingId}) ` +
+				'konnte nicht verschoben werden — siehe Fehlermeldung oben.'
+		);
+	}
+	process.exit(ergebnis.fehlgeschlagen > 0 || ergebnis.moveFailure ? 1 : 0);
 }
