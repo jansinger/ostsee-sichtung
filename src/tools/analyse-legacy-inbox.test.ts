@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { analysiere } from './analyse-legacy-inbox.js';
+import { analysiere, formatiere } from './analyse-legacy-inbox.js';
 
 let verzeichnis: string;
 
@@ -246,5 +246,123 @@ describe('analysiere', () => {
 				diffMinutes: -33
 			})
 		]);
+	});
+});
+
+/**
+ * Die Ausgabe dieses Werkzeugs wird in Notizen, Issues und Chats eingefügt —
+ * von Menschen, die sie für geschwärzt halten. Deshalb gilt umgekehrt zu
+ * vorher: Ein Feld wird geschwärzt, **außer** es ist ausdrücklich als
+ * unbedenklich markiert (Zahlen- und Auswahlfelder des Vertrags).
+ *
+ * Bis zum 2026-07-30 galt das Gegenteil (`regel?.personal === true`). Für ein
+ * Feld, das nicht in CONTRACT_FIELDS steht, ist `regel` `undefined` — dessen
+ * Werte wurden also im Klartext ausgegeben. Genau das sind aber die Felder,
+ * für die es dieses Werkzeug gibt.
+ */
+describe('analysiere — Schwärzung', () => {
+	it('gibt den Wert eines unbekannten Feldes nirgends aus', async () => {
+		await legeUmschlagAn('posteingang', '000001__a.json', {
+			payload: {
+				anzahl_gesamt: 1,
+				reporterEmail: 'joerg@example.test',
+				deviceName: 'iPhone von Jörg'
+			}
+		});
+
+		const ergebnis = await analysiere(verzeichnis);
+		const alsText = `${JSON.stringify(ergebnis)}\n${formatiere(ergebnis)}`;
+
+		expect(alsText).not.toContain('joerg@example.test');
+		expect(alsText).not.toContain('iPhone von Jörg');
+	});
+
+	it('zeigt ein unbekanntes Feld trotz Schwärzung mit Häufigkeit und Typ', async () => {
+		await legeUmschlagAn('posteingang', '000001__a.json', {
+			payload: { anzahl_gesamt: 1, deviceName: 'iPhone von Jörg' }
+		});
+		await legeUmschlagAn('posteingang', '000002__b.json', {
+			payload: { anzahl_gesamt: 1, deviceName: 'iPhone von Anna' }
+		});
+
+		const ergebnis = await analysiere(verzeichnis);
+
+		const feld = ergebnis.fields.find((f) => f.name === 'deviceName');
+		expect(feld?.count).toBe(2);
+		expect(feld?.types).toEqual(['string']);
+		expect(feld?.inContract).toBe(false);
+		expect(formatiere(ergebnis)).toContain('deviceName [NICHT IM VERTRAG] — 2×');
+	});
+
+	it('gibt den Freitext eines bekannten Vertragsfeldes nirgends aus', async () => {
+		// Bürger schreiben regelmäßig Namen und Rückrufnummern in Kommentarfelder.
+		await legeUmschlagAn('posteingang', '000001__a.json', {
+			payload: {
+				anzahl_gesamt: 1,
+				bemerkungen: 'Bitte anrufen unter 0171 2345678, Jörg Schneider',
+				reaktion: 'Tier tauchte ab, Kapitän Meier stoppte',
+				vonwo_text: 'von der Fähre der Familie Schmidt',
+				verteilung_text: 'zwei Gruppen, Meldung von Anna Krause',
+				verhalten_text: 'kreiste um das Boot von Herrn Böhm',
+				sonstige_auffaelligkeiten: 'Narbe am Rücken, Foto bei Lena Voß',
+				seezeichen: 'Tonne 12, Steg von Familie Ahrens',
+				schiffsname: 'MS Jörg Schneider'
+			}
+		});
+
+		const ergebnis = await analysiere(verzeichnis);
+		const alsText = `${JSON.stringify(ergebnis)}\n${formatiere(ergebnis)}`;
+
+		for (const wert of [
+			'0171 2345678',
+			'Jörg Schneider',
+			'Kapitän Meier',
+			'Familie Schmidt',
+			'Anna Krause',
+			'Herrn Böhm',
+			'Lena Voß',
+			'Familie Ahrens'
+		]) {
+			expect(alsText).not.toContain(wert);
+		}
+	});
+
+	it('zeigt die Werte der Zahlen- und Auswahlfelder weiterhin im Klartext', async () => {
+		// Ohne diese Werte wäre das Werkzeug nutzlos: Es soll ja gerade zeigen,
+		// welche Enum- und Zahlenwerte ein Client tatsächlich sendet.
+		await legeUmschlagAn('posteingang', '000001__a.json', {
+			payload: {
+				anzahl_gesamt: 3,
+				windstaerke: 0,
+				windrichtung: 'NE',
+				tierart: 2,
+				namensnennung: 0,
+				gps_breite: 54.5
+			}
+		});
+
+		const ergebnis = await analysiere(verzeichnis);
+
+		const werteVon = (name: string) => ergebnis.fields.find((f) => f.name === name)?.values;
+		expect(werteVon('anzahl_gesamt')).toEqual([3]);
+		expect(werteVon('windstaerke')).toEqual([0]);
+		expect(werteVon('windrichtung')).toEqual(['NE']);
+		expect(werteVon('tierart')).toEqual([2]);
+		expect(werteVon('namensnennung')).toEqual([0]);
+		expect(werteVon('gps_breite')).toEqual([54.5]);
+	});
+
+	it('schwärzt den Wert auch in der Verstoßliste eines unbekannten Feldes', async () => {
+		// Unbekannte Felder erzeugen zwar keine Verstöße, bekannte Freitextfelder
+		// mit maxLength schon — und deren Wert darf dort ebenfalls nicht stehen.
+		await legeUmschlagAn('posteingang', '000001__a.json', {
+			payload: { anzahl_gesamt: 1, schiffsname: 'MS Jörg Schneider'.padEnd(70, '!') }
+		});
+
+		const ergebnis = await analysiere(verzeichnis);
+
+		expect(ergebnis.violations).toContainEqual(
+			expect.objectContaining({ field: 'schiffsname', value: '[REDACTED]' })
+		);
 	});
 });

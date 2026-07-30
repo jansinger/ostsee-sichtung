@@ -60,55 +60,81 @@ export const ACCEPTED_WIND_DIRECTIONS = [
  * Wertebereich geführt sind (z. B. anzahl_gesamt, anzahl_schiffe,
  * anzahl_jung, totfund_groesse), bekommen bewusst kein `range`, sonst würde
  * dieses Tool einen Vertrag prüfen, der so nicht dokumentiert ist.
+ *
+ * `unbedenklich: true` erlaubt die Klartext-Ausgabe der Werte. Ohne diese
+ * Markierung wird geschwärzt — auch bei Feldern, die hier gar nicht stehen
+ * (siehe `istUnbedenklich`). Markiert sind ausschließlich Zahlen- und
+ * Auswahlfelder: Deren Wertemenge ist durch den Vertrag begrenzt, sie können
+ * also nichts über den Melder verraten. Jedes Freitextfeld bleibt geschwärzt,
+ * denn Bürger schreiben dort erfahrungsgemäß Namen und Rückrufnummern hinein.
  */
 export const CONTRACT_FIELDS = {
-	sichtungsdatum: { required: true },
-	anzahl_gesamt: { required: true },
-	vorname: { required: true, personal: true, maxLength: 64 },
-	name: { required: true, personal: true, maxLength: 64 },
-	email: { required: true, personal: true, maxLength: 64 },
-	gps_breite: { range: [-90, 90] },
-	gps_laenge: { range: [-180, 180] },
+	sichtungsdatum: { required: true, unbedenklich: true },
+	anzahl_gesamt: { required: true, unbedenklich: true },
+	vorname: { required: true, maxLength: 64 },
+	name: { required: true, maxLength: 64 },
+	email: { required: true, maxLength: 64 },
+	gps_breite: { range: [-90, 90], unbedenklich: true },
+	gps_laenge: { range: [-180, 180], unbedenklich: true },
 	fahrwasser: {},
 	seezeichen: {},
-	vonwo: { range: [0, 5] },
+	vonwo: { range: [0, 5], unbedenklich: true },
 	vonwo_text: {},
-	entfernung: { range: [1, 5] },
-	anzahl_schiffe: {},
-	anzahl_jung: {},
-	verteilung: { range: [0, 4] },
+	entfernung: { range: [1, 5], unbedenklich: true },
+	anzahl_schiffe: { unbedenklich: true },
+	anzahl_jung: { unbedenklich: true },
+	verteilung: { range: [0, 4], unbedenklich: true },
 	verteilung_text: {},
 	aufnahme: { maxLength: 255 },
-	aufnahmeHochladen: { boolean: true },
-	verhalten: { range: [0, 4] },
+	aufnahmeHochladen: { boolean: true, unbedenklich: true },
+	verhalten: { range: [0, 4], unbedenklich: true },
 	verhalten_text: {},
 	reaktion: {},
 	sonstige_auffaelligkeiten: {},
-	seegang: { range: [0, 5] },
-	windrichtung: { wind: true },
-	windstaerke: { range: [0, 12] },
-	sichtweite: { range: [1, 4] },
+	seegang: { range: [0, 5], unbedenklich: true },
+	windrichtung: { wind: true, unbedenklich: true },
+	windstaerke: { range: [0, 12], unbedenklich: true },
+	sichtweite: { range: [1, 4], unbedenklich: true },
 	schiffsname: { maxLength: 64 },
 	heimathafen: { maxLength: 64 },
 	bootstyp: { maxLength: 64 },
-	bootsantrieb: { range: [0, 5] },
+	bootsantrieb: { range: [0, 5], unbedenklich: true },
 	bootsantrieb_text: {},
-	strasse: { personal: true, maxLength: 64 },
-	plz: { personal: true, maxLength: 5 },
-	ort: { personal: true, maxLength: 64 },
-	telefon: { personal: true, maxLength: 64 },
-	fax: { personal: true, maxLength: 64 },
-	namensnennung: { boolean: true },
-	schiffnamensnennung: { boolean: true },
+	strasse: { maxLength: 64 },
+	plz: { maxLength: 5 },
+	ort: { maxLength: 64 },
+	telefon: { maxLength: 64 },
+	fax: { maxLength: 64 },
+	namensnennung: { boolean: true, unbedenklich: true },
+	schiffnamensnennung: { boolean: true, unbedenklich: true },
 	bemerkungen: {},
-	eingangskanal: { range: [0, 5] },
-	tierart: { range: [0, 10] },
-	totfund: { boolean: true },
-	totfund_zustand: { range: [0, 5] },
-	totfund_geschlecht: { range: [0, 2] },
-	totfund_groesse: {},
-	totfund_telefon: { boolean: true }
+	eingangskanal: { range: [0, 5], unbedenklich: true },
+	tierart: { range: [0, 10], unbedenklich: true },
+	totfund: { boolean: true, unbedenklich: true },
+	totfund_zustand: { range: [0, 5], unbedenklich: true },
+	totfund_geschlecht: { range: [0, 2], unbedenklich: true },
+	totfund_groesse: { unbedenklich: true },
+	totfund_telefon: { boolean: true, unbedenklich: true }
 };
+
+/**
+ * „Darf der Wert dieses Feldes im Klartext ausgegeben werden?"
+ *
+ * Bewusst als Umkehrung formuliert: Bis zum 2026-07-30 lautete die Prüfung
+ * `regel?.personal === true` — für ein Feld, das nicht in CONTRACT_FIELDS
+ * steht, ist `regel` aber `undefined`, und dessen Werte landeten deshalb
+ * ungeschwärzt in der Ausgabe. Genau diese unbekannten Felder sind aber der
+ * Zweck des Werkzeugs, also sein Normalfall (beobachtet: `reporterEmail`,
+ * `deviceName`). Die Ausgabe wird in Notizen, Issues und Chats eingefügt, von
+ * Menschen, die sie für geschwärzt halten.
+ *
+ * Geschwärzt werden nur die **Werte**. Dass ein Feld existiert, wie oft es
+ * gesendet wurde und welche Typen es hat, bleibt sichtbar — sonst könnte das
+ * Werkzeug seine Aufgabe nicht mehr erfüllen.
+ */
+function istUnbedenklich(regel) {
+	return regel?.unbedenklich === true;
+}
 
 const REDACTED = '[REDACTED]';
 
@@ -247,7 +273,7 @@ export async function analysiere(datenVerzeichnis) {
 		if (istObjekt) {
 			for (const [feldname, wert] of Object.entries(payload)) {
 				const regel = CONTRACT_FIELDS[feldname];
-				const persoenlich = regel?.personal === true;
+				const geschwaerzt = !istUnbedenklich(regel);
 
 				if (!feldStatistik.has(feldname)) {
 					feldStatistik.set(feldname, {
@@ -255,14 +281,14 @@ export async function analysiere(datenVerzeichnis) {
 						count: 0,
 						types: new Set(),
 						inContract: feldname in CONTRACT_FIELDS,
-						personal: persoenlich,
+						redacted: geschwaerzt,
 						values: new Map()
 					});
 				}
 				const eintrag = feldStatistik.get(feldname);
 				eintrag.count++;
 				eintrag.types.add(typName(wert));
-				if (persoenlich) {
+				if (geschwaerzt) {
 					eintrag.values.set(REDACTED, REDACTED);
 				} else {
 					eintrag.values.set(JSON.stringify(wert), wert);
@@ -274,7 +300,7 @@ export async function analysiere(datenVerzeichnis) {
 						violations.push({
 							datei,
 							feldname,
-							wert: persoenlich ? REDACTED : wert,
+							wert: geschwaerzt ? REDACTED : wert,
 							grund
 						});
 					}
@@ -308,7 +334,7 @@ export async function analysiere(datenVerzeichnis) {
 			count: eintrag.count,
 			types: [...eintrag.types].sort(),
 			inContract: eintrag.inContract,
-			personal: eintrag.personal,
+			redacted: eintrag.redacted,
 			values: [...eintrag.values.values()]
 		}))
 		.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
@@ -372,12 +398,16 @@ export function formatiere(ergebnis) {
 	}
 
 	zeilen.push('## 3. Gesendete Felder (nach Häufigkeit)');
+	zeilen.push(
+		`Werte werden nur für die Zahlen- und Auswahlfelder des Vertrags ausgegeben; ` +
+			`alles andere — Freitext und jedes unbekannte Feld — steht als ${REDACTED}.`
+	);
 	if (ergebnis.fields.length === 0) {
 		zeilen.push('(keine Umschläge mit lesbarem Payload gefunden)');
 	}
 	for (const feld of ergebnis.fields) {
 		const markierung = feld.inContract ? '' : ' [NICHT IM VERTRAG]';
-		const werte = feld.personal
+		const werte = feld.redacted
 			? REDACTED
 			: feld.values.slice(0, MAX_ANGEZEIGTE_WERTE).map(formatiereWert).join(', ') +
 				(feld.values.length > MAX_ANGEZEIGTE_WERTE ? ', …' : '');
