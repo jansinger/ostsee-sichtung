@@ -76,7 +76,8 @@ updates:
   #
   # Das wiegt hier schwerer als beim Hauptrepo: Der Dienst ist ein
   # unauthentifizierter Endpunkt im offenen Netz und hält bis zum Import die
-  # einzige Kopie eingegangener Sichtungen, inklusive Namen und Anschriften.
+  # einzige Kopie eingegangener Sichtungen, inklusive Namen, E-Mail-Adressen,
+  # Anschriften und Telefonnummern.
   #
   # Anders als oben sind Major-Updates hier nicht ausgeschlossen. Bei vier
   # direkten Abhängigkeiten ist ein Major überschaubar zu prüfen, und ein
