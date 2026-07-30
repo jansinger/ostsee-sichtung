@@ -121,6 +121,14 @@ In `vitest.config.ts` das `include` des Projekts `server` (Zeile 79) ergänzen:
 
 Grund: `npm run test:quick` bleibt das einzige Tor. Der Dienst selbst liefert dadurch keine Entwicklungsabhängigkeiten mit — Vitest liegt im Wurzel-`package.json`.
 
+Zusätzlich das `exclude` des Projekts `server` (Zeile 80) um `**/node_modules/**` ergänzen:
+
+```ts
+					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}', '**/node_modules/**'],
+```
+
+Grund: `exclude` ersetzt Vitests Vorgabe, deshalb muss `**/node_modules/**` ausdrücklich stehen.
+
 - [ ] **Schritt 4: `package.json` und `.gitignore` anlegen**
 
 `legacy-inbox/package.json`:
