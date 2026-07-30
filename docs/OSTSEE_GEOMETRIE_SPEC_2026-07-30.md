@@ -180,6 +180,13 @@ Flensburger Hafen als binnenlands ein), die `-split`-Variante hat Kachelkanten
 mitten auf dem Festland. Das Skript prüft auf Vorhandensein und nennt sonst die
 Bezugsquelle.
 
+**Einzelne Punkte gegen die Küstenlinie prüfen:** `ogrinfo -ro -dialect SQLITE
+-sql "SELECT COUNT(*) AS c FROM land_polygons WHERE ST_Intersects(geometry,
+MakePoint(<LON>,<LAT>,4326))" land_polygons.shp` — `c = 0` heißt Wasser, `c = 1`
+heißt Land. `ogrinfo -spat` ist dafür untauglich: die Landpolygone sind
+kontinentgroß, ihre Bounding Box liefert für praktisch jeden Punkt einen
+Treffer.
+
 ### 3.2 Laufzeit
 
 `src/lib/server/geo/checkBalticSeaFile.ts` behält seinen Aufbau (RBush-Index,
@@ -275,14 +282,14 @@ Zwei Warnungen:
 Test-First nach `.claude/rules/testing.md`: die Tests werden vor der
 Implementierung geschrieben und schlagen zunächst fehl.
 
-| Test             | Punkte                                                                                                                  | Erwartung                       |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| Invariante       | Raster über alle Polygon-Stützpunkte                                                                                    | `isInBalticArea` überall `true` |
-| Fehler A behoben | Ladoga 31,5/60,8 · Onega 35,5/61,8 · Weichsel 19,0/52,7 · Torne 24,0/66,5 · Limfjord 9,38/57,02                         | `inBaltic === false`            |
-| Fehler B behoben | Flensburger Förde 9,60/54,83 · Eckernförder Bucht 9,95/54,50 · Greifswalder Bodden 13,45/54,20 · Strelasund 13,10/54,31 | `inBaltic === true`             |
-| Uferstreifen     | Strandpunkt ~100 m landeinwärts / 5 km landeinwärts                                                                     | `true` / `false`                |
-| Weiterhin außen  | Helgoland 7,89/54,18 · Hamburg 10,0/53,55 · Hannover 9,73/52,37 · Doggerbank 2,02/54,87                                 | `inBaltic === false`            |
-| Box abgeleitet   | Konstante gegen Generator-Metadaten                                                                                     | identisch                       |
+| Test             | Punkte                                                                                                                                                                                               | Erwartung                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Invariante       | Raster über alle Polygon-Stützpunkte                                                                                                                                                                 | `isInBalticArea` überall `true` |
+| Fehler A behoben | Ladoga 31,5/60,8 · Onega 35,5/61,8 · Weichsel 19,0/52,7 · Torne 24,0/66,5 · Limfjord 9,38/57,02                                                                                                      | `inBaltic === false`            |
+| Fehler B behoben | Flensburger Förde 9,680556/54,840278 (Sichtung id 1170) · Eckernförder Bucht 9,984398/54,497362 (Sichtung id 452) · Greifswalder Bodden 13,45/54,20 · Strelasund 13,12/54,29 (mit ogrinfo bestätigt) | `inBaltic === true`             |
+| Uferstreifen     | Strandpunkt ~100 m landeinwärts / 5 km landeinwärts                                                                                                                                                  | `true` / `false`                |
+| Weiterhin außen  | Helgoland 7,89/54,18 · Hamburg 10,0/53,55 · Hannover 9,73/52,37 · Doggerbank 2,02/54,87                                                                                                              | `inBaltic === false`            |
+| Box abgeleitet   | Konstante gegen Generator-Metadaten                                                                                                                                                                  | identisch                       |
 
 `src/lib/server/geo/checkBalticSeaFile.comprehensive.test.ts` enthält rund 30
 `inChartArea`-Zusicherungen. Einige Erwartungen ändern sich durch die neue

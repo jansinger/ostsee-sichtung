@@ -15,12 +15,23 @@ const FEHLER_A: ReadonlyArray<[string, number, number]> = [
 	['Limfjord bei Aalborg', 9.38, 57.02]
 ];
 
-/** Fehler B — innere Küstengewässer, die die grobe IHO-Küstenlinie weglässt. */
+/**
+ * Fehler B — innere Küstengewässer, die die grobe IHO-Küstenlinie weglässt.
+ * Die drei nachfolgend kommentierten Punkte waren ursprünglich von Hand aus der
+ * Karte geschätzt und lagen laut OSM-Küstenlinie tatsächlich auf Land (siehe
+ * .superpowers/sdd/progress.md, Abschnitt „BEFUND: Aufgabe 1 hat drei
+ * unbrauchbare Referenzkoordinaten"). Ersetzt durch belegte Wasserpunkte,
+ * geprüft mit `ogrinfo -dialect SQLITE` (ST_Intersects/MakePoint) gegen
+ * land-polygons-complete-4326.
+ */
 const FEHLER_B: ReadonlyArray<[string, number, number]> = [
-	['Flensburger Förde', 9.6, 54.83],
-	['Eckernförder Bucht', 9.95, 54.5],
+	// Sichtung id 1170, mit ogrinfo als Wasser bestätigt.
+	['Flensburger Förde', 9.680556, 54.840278],
+	// Sichtung id 452, mit ogrinfo als Wasser bestätigt.
+	['Eckernförder Bucht', 9.984398, 54.497362],
 	['Greifswalder Bodden', 13.45, 54.2],
-	['Strelasund bei Stralsund', 13.1, 54.31]
+	// Mit ogrinfo als Wasser bestätigt (nicht aus Sichtungsdaten, aus der Kartenmitte).
+	['Strelasund bei Stralsund', 13.12, 54.29]
 ];
 
 /** Muss auch nach der Bereinigung draußen bleiben. */

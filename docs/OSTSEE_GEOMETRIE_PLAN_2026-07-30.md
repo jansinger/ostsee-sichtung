@@ -100,12 +100,21 @@ const FEHLER_A: ReadonlyArray<[string, number, number]> = [
 	['Limfjord bei Aalborg', 9.38, 57.02]
 ];
 
-/** Fehler B — innere Küstengewässer, die die grobe IHO-Küstenlinie weglässt. */
+/**
+ * Fehler B — innere Küstengewässer, die die grobe IHO-Küstenlinie weglässt.
+ * Die drei nachfolgend kommentierten Punkte waren ursprünglich von Hand aus der
+ * Karte geschätzt und lagen laut OSM-Küstenlinie tatsächlich auf Land. Ersetzt
+ * durch belegte Wasserpunkte, geprüft mit `ogrinfo -dialect SQLITE`
+ * (ST_Intersects/MakePoint) gegen land-polygons-complete-4326.
+ */
 const FEHLER_B: ReadonlyArray<[string, number, number]> = [
-	['Flensburger Förde', 9.6, 54.83],
-	['Eckernförder Bucht', 9.95, 54.5],
+	// Sichtung id 1170, mit ogrinfo als Wasser bestätigt.
+	['Flensburger Förde', 9.680556, 54.840278],
+	// Sichtung id 452, mit ogrinfo als Wasser bestätigt.
+	['Eckernförder Bucht', 9.984398, 54.497362],
 	['Greifswalder Bodden', 13.45, 54.2],
-	['Strelasund bei Stralsund', 13.1, 54.31]
+	// Mit ogrinfo als Wasser bestätigt (nicht aus Sichtungsdaten, aus der Kartenmitte).
+	['Strelasund bei Stralsund', 13.12, 54.29]
 ];
 
 /** Muss auch nach der Bereinigung draußen bleiben. */
@@ -329,6 +338,13 @@ git commit -m "feat(map): add exclusion mask for the four IHO inland-water artef
 ## Aufgabe 3: PostGIS-Pipeline
 
 Erzeugt aus IHO-Geometrie, Maske und OSM-Küstenlinie die bereinigte Wasserfläche.
+
+**Einzelne Punkte gegen die Küstenlinie prüfen** (z. B. um Referenzkoordinaten zu
+belegen, bevor die volle Pipeline läuft): `ogrinfo -ro -dialect SQLITE -sql
+"SELECT COUNT(*) AS c FROM land_polygons WHERE ST_Intersects(geometry,
+MakePoint(<LON>,<LAT>,4326))" land_polygons.shp` — `c = 0` heißt Wasser, `c = 1`
+heißt Land. `ogrinfo -spat` ist dafür untauglich, die Landpolygone sind
+kontinentgroß und ihre Bounding Box liefert praktisch immer einen Treffer.
 
 **Dateien:**
 
@@ -1188,10 +1204,10 @@ WITH referenz(name, lon, lat, erwartet) AS (
     ('Weichsel Wloclawek',     19.0,  52.7,  false),
     ('Torne-Flusslauf',        24.0,  66.5,  false),
     ('Limfjord',                9.38, 57.02, false),
-    ('Flensburger Foerde',      9.6,  54.83, true),
-    ('Eckernfoerder Bucht',     9.95, 54.5,  true),
-    ('Greifswalder Bodden',    13.45, 54.2,  true),
-    ('Strelasund',             13.1,  54.31, true),
+    ('Flensburger Foerde',       9.680556, 54.840278, true),
+    ('Eckernfoerder Bucht',      9.984398, 54.497362, true),
+    ('Greifswalder Bodden',     13.45,     54.2,      true),
+    ('Strelasund',              13.12,     54.29,     true),
     ('Helgoland',               7.89, 54.18, false),
     ('Hamburg',                10.0,  53.55, false),
     ('Hannover',                9.73, 52.37, false),
