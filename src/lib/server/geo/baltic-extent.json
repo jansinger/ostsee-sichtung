@@ -1,0 +1,17 @@
+{
+ "minLongitude": 9.416443758366562,
+ "maxLongitude": 30.238326837416174,
+ "minLatitude": 53.598203357021895,
+ "maxLatitude": 65.90887735682688,
+ "bufferRegionMeters": 20000,
+ "bufferShoreMeters": 200,
+ "simplifyMeters": 20,
+ "source": "MarineRegions IHO Sea Areas + OSM land-polygons-complete-4326",
+ "boxMinLongitude": 9.4,
+ "boxMaxLongitude": 30.25,
+ "boxMinLatitude": 53.55,
+ "boxMaxLatitude": 65.95,
+ "boxRoundingDegrees": 0.05,
+ "landPolygonsDate": "2026-07-30",
+ "ihoSource": "MarineRegions IHO Sea Areas v3 (src/tools/iho.json)"
+}

@@ -18,6 +18,7 @@
 import { describe, it, expect } from 'vitest';
 import { checkBalticSeaFile } from './checkBalticSeaFile';
 import type { BalticSeaFileResult } from '$lib/types';
+import { BALTIC_SEA_BBOX } from '$lib/utils/geo/checkBalticSea';
 
 describe('checkBalticSeaFile', () => {
 	// Test helper to create expected result structure
@@ -248,19 +249,21 @@ describe('checkBalticSeaFile', () => {
 			expect(result.inChartArea).toBe(true);
 		});
 
+		// Grenzwerte aus der Konstante ableiten, nicht wiederholen: BALTIC_SEA_BBOX
+		// wird aus der Geometrie erzeugt (npm run geo:build) und aendert sich mit ihr.
 		it('should accept coordinates at southern chart boundary', () => {
-			const result = checkBalticSeaFile(15.0, 53.0);
+			const result = checkBalticSeaFile(15.0, BALTIC_SEA_BBOX.minLatitude);
 
 			expect(result.longitude).toBe(15.0);
-			expect(result.latitude).toBe(53.0);
+			expect(result.latitude).toBe(BALTIC_SEA_BBOX.minLatitude);
 			expect(result.inChartArea).toBe(true);
 		});
 
 		it('should accept coordinates at northern chart boundary', () => {
-			const result = checkBalticSeaFile(20.0, 66.0);
+			const result = checkBalticSeaFile(20.0, BALTIC_SEA_BBOX.maxLatitude);
 
 			expect(result.longitude).toBe(20.0);
-			expect(result.latitude).toBe(66.0);
+			expect(result.latitude).toBe(BALTIC_SEA_BBOX.maxLatitude);
 			expect(result.inChartArea).toBe(true);
 		});
 	});
@@ -526,12 +529,14 @@ describe('checkBalticSeaFile', () => {
 		});
 
 		it('should use same chart area definition as PostGIS version', () => {
-			// Test boundary coordinates that should match PostGIS CHART_AREA_ENVELOPE
+			// Ecken aus der Konstante ableiten statt sie zu wiederholen — sonst
+			// laeuft dieser Test bei der naechsten Geometrie-Aenderung wieder auf.
+			const { minLongitude, maxLongitude, minLatitude, maxLatitude } = BALTIC_SEA_BBOX;
 			const boundaryTests = [
-				[9.4, 53.0], // SW corner
-				[30.2, 53.0], // SE corner
-				[9.4, 66.0], // NW corner
-				[30.2, 66.0], // NE corner
+				[minLongitude, minLatitude], // SW corner
+				[maxLongitude, minLatitude], // SE corner
+				[minLongitude, maxLatitude], // NW corner
+				[maxLongitude, maxLatitude], // NE corner
 				[19.8, 59.5] // Center
 			];
 

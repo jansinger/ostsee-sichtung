@@ -101,12 +101,23 @@ describe('GET /api/map/sightings — Koordinatenfilter gegen Null Island', () =>
 	});
 
 	it('nutzt die Konstanten aus checkBalticSea.ts (kein duplizierter Wert)', () => {
-		expect(BALTIC_SEA_BBOX).toEqual({
-			minLongitude: 9.4,
-			maxLongitude: 30.2,
-			minLatitude: 53.0,
-			maxLatitude: 66.0
-		});
+		// Bewusst keine Zahlen: BALTIC_SEA_BBOX wird aus der Geometrie abgeleitet
+		// (npm run geo:build), die Werte werden in checkBalticSea.test.ts gegen
+		// baltic-extent.json geprueft. Hier zaehlt nur, dass der Filter die
+		// Konstante benutzt und keine eigenen Werte mitbringt.
+		const { minLongitude, maxLongitude, minLatitude, maxLatitude } = BALTIC_SEA_BBOX;
+
+		// Wohlgeformt: echtes Rechteck, keine vertauschten oder fehlenden Kanten.
+		expect(minLongitude).toBeLessThan(maxLongitude);
+		expect(minLatitude).toBeLessThan(maxLatitude);
+
+		// Grob in der Ostsee-Region — faengt vertauschte Achsen und Ausreisser ab,
+		// ohne die exakten Werte zu wiederholen. Ein Vorzeichenfehler oder ein
+		// Lon/Lat-Tausch faellt hier auf, bevor der Kartenfilter ihn uebernimmt.
+		expect(minLongitude).toBeGreaterThan(5);
+		expect(maxLongitude).toBeLessThan(35);
+		expect(minLatitude).toBeGreaterThan(50);
+		expect(maxLatitude).toBeLessThan(70);
 	});
 
 	it('behält den Freigabe-Filter bei (approvedAt)', async () => {

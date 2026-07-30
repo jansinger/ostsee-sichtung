@@ -67,7 +67,9 @@ export interface BalticSeaValidationResult {
 	/**
 	 * Liegt die Position im erweiterten Kartenbereich?
 	 * 
-	 * Prüft die Bounding Box des Ostsee-Kartenbereichs (9.4°-30.2° E, 53°-66° N).
+	 * Prüft die Bounding Box des Ostsee-Kartenbereichs. Die Kanten stehen in
+	 * `BALTIC_SEA_BBOX` (`$lib/utils/geo/checkBalticSea`) und werden aus der
+	 * Geometrie abgeleitet — hier bewusst keine Zahlen, sie würden veralten.
 	 * Nützlich für Kartendarstellung und Navigation außerhalb der exakten Ostsee-Grenzen.
 	 */
 	inChartArea: boolean;
