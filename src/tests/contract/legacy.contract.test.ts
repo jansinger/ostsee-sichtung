@@ -54,7 +54,7 @@ vi.mock('$lib/legacy-api/field-mapping.js', () => ({
 }));
 
 vi.mock('$lib/legacy-api/error-messages.js', () => ({
-	GERMAN_ERROR_MESSAGES: { NO_DATA_SEND: 'No data send.' },
+	LEGACY_API_MESSAGES: { NO_DATA_SEND: 'No data send.' },
 	// Flache Legacy-Fehlerform (`message` als String) — wie das echte Modul und
 	// wie `LegacyErrorResponse` in static/openapi.yml.
 	createOriginalApiErrorResponse: vi.fn().mockReturnValue({ message: 'Error' }),

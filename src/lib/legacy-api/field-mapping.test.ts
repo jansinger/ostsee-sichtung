@@ -134,7 +134,7 @@ describe('mapLegacyToCurrentSchema — sonstige_auffaelligkeiten', () => {
 		expect(result.otherObservations).toBe('Tier war deutlich verletzt');
 	});
 
-	it('gibt der Vertragsschreibweise den Vorrang, wenn beide gesendet werden', () => {
+	it('gibt der Vertragsschreibweise den Vorrang, wenn beide gefüllt sind', () => {
 		const result = mapLegacyToCurrentSchema({
 			...minimalRequest(),
 			sonstige_auffaelligkeiten: 'Vertragsform',
@@ -142,6 +142,20 @@ describe('mapLegacyToCurrentSchema — sonstige_auffaelligkeiten', () => {
 		} as LegacySightingRequest);
 
 		expect(result.otherObservations).toBe('Vertragsform');
+	});
+
+	it('rettet den Umlaut-Text, wenn der Vertragsname leer mitgesendet wird', () => {
+		// Bewusst `||` und nicht `??`: Ein Serializer, der abwesende Felder als
+		// "" ausgibt, würde mit `??` den vorhandenen Text verwerfen — genau der
+		// stille Datenverlust, den diese Änderung behebt. Vorrang gilt deshalb
+		// unter gefüllten Werten, nicht gegen einen leeren gegen einen gefüllten.
+		const result = mapLegacyToCurrentSchema({
+			...minimalRequest(),
+			sonstige_auffaelligkeiten: '',
+			sonstige_auffälligkeiten: 'Tier war deutlich verletzt'
+		} as LegacySightingRequest);
+
+		expect(result.otherObservations).toBe('Tier war deutlich verletzt');
 	});
 
 	it('bleibt ohne Angabe ein leerer String', () => {

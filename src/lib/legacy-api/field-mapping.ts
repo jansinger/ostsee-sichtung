@@ -110,8 +110,14 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		mediaUpload: legacyData.aufnahmeHochladen ? true : false,
 		// Die Spezifikation nennt das Feld `sonstige_auffaelligkeiten` (mit `ae`);
 		// diese Implementierung las bis 2026-07-30 nur die Umlaut-Variante und
-		// verwarf den Freitext spec-konformer Clients kommentarlos. Beide
-		// Schreibweisen werden gelesen, der Vertragsname hat Vorrang.
+		// verwarf den Freitext spec-konformer Clients kommentarlos.
+		//
+		// Beide Schreibweisen werden gelesen. Unter zwei **gefüllten** Werten
+		// gewinnt der Vertragsname; ein leerer Vertragsname verdrängt dagegen
+		// keinen vorhandenen Umlaut-Text. Deshalb `||` und nicht `??`: Ein
+		// Serializer, der abwesende Felder als `""` ausgibt, würde mit `??` den
+		// vorhandenen Text verwerfen — genau der stille Datenverlust, den diese
+		// Änderung behebt. Festgenagelt in field-mapping.test.ts.
 		otherObservations:
 			legacyData.sonstige_auffaelligkeiten || legacyData.sonstige_auffälligkeiten || '',
 		notes: legacyData.bemerkungen || '',

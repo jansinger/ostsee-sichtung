@@ -1,8 +1,11 @@
 /**
- * @fileoverview German error messages for Legacy REST API
+ * @fileoverview Error message literals and response builders for the Legacy REST API
  *
- * Provides German error messages that match exactly with the original
- * schweinswalsichtung.de API for 100% compatibility.
+ * Provides the wording used by the original schweinswalsichtung.de API, verbatim,
+ * for 100% compatibility. The strings are NOT all German — the original API mixes
+ * languages, and its top-level messages ("Validation failed.", "No data send.")
+ * are English. Only the field-level messages are German; those live in
+ * `yup-validation.ts`.
  *
  * @author Ostsee-Tiere Team
  * @since 1.10.0
@@ -11,9 +14,11 @@
 import type { LegacyErrorResponse, LegacySimpleErrorResponse } from './types.js';
 
 /**
- * German error messages that match the original API exactly
+ * Message literals taken verbatim from the original API — English wording
+ * included, see the file header. Do not translate: the exact string is part
+ * of the contract.
  */
-export const GERMAN_ERROR_MESSAGES = {
+export const LEGACY_API_MESSAGES = {
 	// General validation
 	NO_DATA_SEND: 'No data send.'
 } as const;
