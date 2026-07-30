@@ -20,6 +20,11 @@
 	import type { FrontendSighting } from '$lib/types';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
+	import {
+		BALTIC_SEA_STATUS_PRESENTATION,
+		getBalticSeaStatus,
+		type BalticSeaStatus
+	} from '$lib/utils/geo/balticSeaStatus';
 	import Icon from '$lib/components/Icon.svelte';
 	import { untrack } from 'svelte';
 
@@ -29,6 +34,8 @@
 		value: string;
 		isBoolean?: boolean;
 		booleanValue?: boolean;
+		badgeClass?: string;
+		title?: string;
 	}
 
 	let { sighting, loading = false } = $props<{
@@ -80,6 +87,23 @@
 			label,
 			value: String(value)
 		};
+	}
+
+	/**
+	 * Rendert eine Zeile mit dem Ostsee-Status als Badge.
+	 *
+	 * Label, Farbe und Tooltip kommen unverändert aus
+	 * `BALTIC_SEA_STATUS_PRESENTATION` — derselben Quelle, aus der die
+	 * Admin-Übersicht und die Benachrichtigungs-Mail sie beziehen. Damit können
+	 * die drei Anzeigestellen nicht auseinanderlaufen.
+	 *
+	 * @param label - Die Beschriftung
+	 * @param status - Der Zustand aus `getBalticSeaStatus()`
+	 */
+	function BadgeDataRow(label: string, status: BalticSeaStatus): DataRowType {
+		const { label: value, badgeClass, title } = BALTIC_SEA_STATUS_PRESENTATION[status];
+
+		return { label, value, badgeClass, title };
 	}
 
 	/**
@@ -325,8 +349,23 @@
 			DataRow('Position', formatLocation(currentSighting.longitude, currentSighting.latitude)),
 			DataRow('Fahrwasser', currentSighting.waterway, hasValue(currentSighting.waterway)),
 			DataRow('Seezeichen', currentSighting.seaMark, hasValue(currentSighting.seaMark)),
-			BooleanDataRow('In der Ostsee', currentSighting.inBalticSea),
-			BooleanDataRow('In der Ostsee (geo)', currentSighting.inBalticSeaGeo)
+			// Die fachliche Aussage — derselbe Wert und dasselbe Label wie in der
+			// Übersicht und in der Benachrichtigungs-Mail. Vorher standen hier zwei
+			// Häkchen „In der Ostsee" und „In der Ostsee (geo)"; wer nur auf das
+			// zweite sah, las die Bounding Box als Ostsee-Zugehörigkeit.
+			BadgeDataRow('Ostsee-Status', getBalticSeaStatus(currentSighting)),
+			// Die Rohwerte bleiben für die Prüfarbeit sichtbar, aber ausdrücklich als
+			// Rohwerte: sie zeigen als Zahl auch den Altsystem-Wert 2 in `ostsee_geo`,
+			// den ein Häkchen verschluckt hätte. Namen und Bedeutung sind vertauscht,
+			// deshalb stehen sie in der Beschriftung (siehe docs/OSTSEE_FLAGS.md).
+			//
+			// `DataRow` blendet `null` aus (nicht `0` — das wird gezeigt). `ostsee`
+			// ist nullable, führt seit der Bereinigung am 2026-07-30 aber keine
+			// NULL-Werte mehr; die Zeile fehlt dann, statt eine 0 zu behaupten, die
+			// nicht in der Spalte steht. Verhalten wie beim vorherigen
+			// `BooleanDataRow` — dort wäre aus NULL ein „Nein" geworden.
+			DataRow('Rohwert ostsee (Polygon)', currentSighting.inBalticSea),
+			DataRow('Rohwert ostsee_geo (Kartenbereich)', currentSighting.inBalticSeaGeo)
 		].filter((row): row is DataRowType => row !== undefined)
 	);
 

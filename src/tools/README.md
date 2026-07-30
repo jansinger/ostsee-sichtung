@@ -116,6 +116,46 @@ npm run media:cleanup-orphans -- --execute
 
 **Before the first `--execute` run:** back up both the database and the upload directory. Deleted files are not recoverable. `DATABASE_POSTGRES_URL` usually lives only in `.env`, so run `set -a && . ./.env && set +a` before `pg_dump` — otherwise it silently connects elsewhere.
 
+#### `refresh-email-template.ts`
+
+Pulls the seeded notification email template in `app_config` up to the current code default.
+
+**Purpose:**
+
+- The template is seeded once (`initializeDefaultConfigurations()` → `insertManyIfAbsent`) and read from the database afterwards: `ConfigRepository.getString('notification.email.template', getDefaultTemplate())`
+- The database value **wins** over the code default, so editing `templates/notificationEmailDefault.ts` has no effect on any existing installation
+- Without this tool the only way to update a seeded template would be `resetToDefaultConfigurations()`, which overwrites **every** key — including recipients and SMTP credentials
+
+**Usage:**
+
+```bash
+# Show what would happen
+npm run config:refresh-email-template:dry-run
+
+# Pull the seed forward
+npm run config:refresh-email-template
+```
+
+**Parameters:**
+
+- `--dry-run`: Report only, change nothing
+- `--force`: Overwrite even a customised template (discards it!)
+
+**Safety Features:**
+
+- Overwrites only when the stored value's SHA-256 matches a known shipped default (`PREVIOUS_SHIPPED_TEMPLATE_HASHES`). A customised customer template is never silently replaced.
+- Exits with code 1 on a customised template and prints the Handlebars placeholders that need to be inserted by hand
+- Idempotent: a value that already equals the current default is left untouched, so `updated_at` does not churn
+- Touches exactly one key — never the recipient or SMTP settings
+- Refuses to run without `DATABASE_POSTGRES_URL` or `DATABASE_URL` — never guesses a target database. Shares `resolveConnectionString()` with `cleanup-orphaned-uploads.ts` (`dbConnection.ts`); a git worktree regularly has no `.env`, and that is exactly where a guessed default would have written to the wrong database.
+- The connection is opened inside `main()`, so importing the module for tests neither reads `.env` nor opens a pool
+
+**When changing the template:** add the _old_ hash to `PREVIOUS_SHIPPED_TEMPLATE_HASHES` in `src/lib/server/templates/notificationEmailDefault.ts`. `notificationEmailDefault.test.ts` pins the current hash and fails on every change to force this. Skipping it cuts off the upgrade path for every existing installation.
+
+**Note:** a running instance caches configuration for 5 minutes — the new template takes effect after that, or after a restart.
+
+**Which database:** the tool uses `DATABASE_POSTGRES_URL` (or `DATABASE_URL`) and aborts with exit code 2 if neither is set. In practice that is the local Postgres, currently the only live dataset — the new production database will be seeded from it, and the old Supabase production has had its records deleted for data-protection reasons. A run against the local database is therefore complete; there is no separate production step to schedule.
+
 ### 3. Data Migration
 
 #### `generate-reference-ids.ts`

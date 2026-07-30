@@ -18,6 +18,10 @@ import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { ConfigRepository } from '$lib/server/db/configRepository';
+import {
+	balticSeaEmailContext,
+	type BalticSeaEmailContext
+} from '$lib/server/templates/balticSeaEmailContext';
 import { emailColorContext } from '$lib/server/templates/emailTokens';
 
 // Dynamic environment variables for Docker runtime
@@ -43,7 +47,7 @@ const DEFAULT_EMAIL_TEMPLATE = `<!DOCTYPE html>
 	<h1>🐋 Neue Sichtung: {{referenceId}}</h1>
 	<p><strong>Tierart:</strong> {{sighting.species}}</p>
 	<p><strong>Datum:</strong> {{sighting.sightingDate}}</p>
-	<p><strong>Position:</strong> {{sighting.coordinatesFormatted}}</p>
+	<p><strong>Position:</strong> {{sighting.coordinatesFormatted}} ({{sighting.balticSea.label}})</p>
 	<p><a href="{{adminUrl}}">Sichtung im Admin-Bereich anzeigen</a></p>
 </body>
 </html>`;
@@ -165,7 +169,8 @@ export class EmailService {
 		return this.sendEmailNotification(
 			sightingData.sightingFormValues,
 			sightingData.referenceId,
-			sightingData.adminUrl
+			sightingData.adminUrl,
+			sightingData.balticSea
 		);
 	}
 
@@ -177,6 +182,7 @@ export class EmailService {
 		sightingFormValues: SightingFormValues;
 		referenceId: string;
 		adminUrl: string;
+		balticSea: BalticSeaEmailContext;
 	} | null> {
 		try {
 			const sightingResult = await db
@@ -242,7 +248,10 @@ export class EmailService {
 				hasPosition: !!(sighting.latitude && sighting.longitude),
 				persistentDataConsent: true, // Already saved, so consent was given
 				otherObservations: sighting.otherObservations || undefined,
-				// ✅ These values are correctly processed from the database
+				// Rohwerte der beiden Flags. Sie bleiben im Kontext, weil eine in
+				// `app_config` gespeicherte (womöglich angepasste) Vorlage sie noch
+				// referenzieren kann — die **fachliche** Aussage kommt aber aus
+				// `balticSea` unten, nicht aus diesen beiden Werten.
 				inBalticSea: !!sighting.inBalticSea,
 				inBalticSeaGeo: !!sighting.inBalticSeaGeo
 			} as SightingFormValues;
@@ -254,7 +263,12 @@ export class EmailService {
 			return {
 				sightingFormValues,
 				referenceId,
-				adminUrl
+				adminUrl,
+				// Aus der **Rohzeile**, nicht aus `sightingFormValues`: das `!!` oben
+				// verliert den Altsystem-Wert 2 und macht `noPosition` unerreichbar.
+				// Derselbe Aufruf wie in der Admin-Übersicht — der Status entsteht
+				// genau einmal (`$lib/utils/geo/balticSeaStatus.ts`).
+				balticSea: balticSeaEmailContext(sighting)
 			};
 		} catch (error) {
 			logger.error({ error, sightingId }, 'Failed to load sighting from database');
@@ -268,7 +282,8 @@ export class EmailService {
 	private static async sendEmailNotification(
 		sightingFormValues: SightingFormValues,
 		referenceId: string,
-		adminUrl: string
+		adminUrl: string,
+		balticSea: BalticSeaEmailContext
 	): Promise<boolean> {
 		try {
 			const enabled = await ConfigRepository.getBoolean('notification.email.enabled', false);
@@ -304,7 +319,9 @@ export class EmailService {
 			const formattedSighting = formatSightingForDisplay(sightingFormValues);
 			const templateData = {
 				referenceId,
-				sighting: formattedSighting,
+				// Der Ostsee-Status liegt unter `sighting.balticSea` — die Vorlage
+				// verzweigt darüber und nicht mehr über die beiden Rohflags.
+				sighting: { ...formattedSighting, balticSea },
 				adminUrl,
 				currentDate: formatLocalDateTime(new Date(), 'date'),
 				currentTime: formatLocalDateTime(new Date(), 'time'),

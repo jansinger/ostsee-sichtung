@@ -123,6 +123,28 @@ Seit der Bereinigung am 2026-07-30 hat der Altbestand keine Widersprüche mehr:
 Koordinaten tragen 0. Die Rückfallebene ist die Tabelle
 `sichtungen_ostsee_backup`.
 
+### Anzeige: nie selbst über die Flags verzweigen
+
+Der anzuzeigende Zustand kommt aus **`getBalticSeaStatus()`**
+(`src/lib/utils/geo/balticSeaStatus.ts`), Label und Erklärung aus
+`BALTIC_SEA_STATUS_PRESENTATION` daneben. Vier Zustände: `baltic`, `edge`
+(Flags widersprechen sich), `outside`, `noPosition`.
+
+Das gilt auch für Handlebars-Vorlagen, die keine TypeScript-Funktion aufrufen
+können: Der Status wird **einmal** in `emailService.ts` berechnet
+(`server/templates/balticSeaEmailContext.ts`) und als `sighting.balticSea` in den
+Kontext gelegt. Ein `{{#if sighting.inBalticSeaGeo}}` in einer Vorlage ist genau
+der Fehler, an dem die Benachrichtigungs-Mail von der Admin-Anzeige abgewichen
+ist (Fehler 4 in `docs/OSTSEE_FLAGS.md`).
+
+**Der Status muss aus den Rohwerten der Zeile kommen** — vor jeder
+`!!`-Umwandlung. Booleans verlieren den Altsystem-Wert `2` und machen
+`noPosition` unerreichbar.
+
+Die wirksame Mail-Vorlage steht in `app_config`, nicht im Code. Wer den Default
+ändert, zieht den Seed mit `npm run config:refresh-email-template` nach und trägt
+den Hash des alten Stands in `PREVIOUS_SHIPPED_TEMPLATE_HASHES` ein.
+
 Vollständige Referenz inkl. Messwerten: `docs/OSTSEE_FLAGS.md`.
 Bereinigung, Entscheidungen und Umsetzung:
 `docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`

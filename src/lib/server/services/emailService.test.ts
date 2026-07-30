@@ -430,6 +430,97 @@ describe('EmailService', () => {
 			expect(callArg?.sightingDate).not.toBe('2024-07-14');
 		});
 
+		// ------------------------------------------------------------------
+		// Ostsee-Status im Template-Kontext
+		//
+		// Der Status muss aus der **Rohzeile** kommen. `sightingFormValues`
+		// wandelt beide Flags mit `!!` um — damit verschwindet der
+		// Altsystem-Wert 2, und ohne Koordinaten wäre `noPosition` nicht mehr
+		// erkennbar. Diese Tests fahren den echten Pfad
+		// loadSightingForEmail → balticSeaEmailContext → Vorlage.
+		// ------------------------------------------------------------------
+		describe('Ostsee-Status im Template-Kontext', () => {
+			async function renderMailFor(overrides: Record<string, unknown>): Promise<string> {
+				vi.mocked(db.select).mockReturnValue({
+					from: vi.fn().mockReturnValue({
+						where: vi.fn().mockReturnValue({
+							limit: vi.fn().mockResolvedValue([createMockSighting(overrides)])
+						})
+					})
+				} as any);
+
+				setupConfigRepositoryMocks({
+					enabled: true,
+					smtpHost: 'smtp.example.com',
+					// Minimale Vorlage, die nur den Status ausgibt — der Test prüft die
+					// Verdrahtung, nicht das Layout der ausgelieferten Vorlage (das
+					// tut notificationEmailDefault.test.ts).
+					template:
+						'<html>{{sighting.balticSea.status}}|{{sighting.balticSea.label}}|{{sighting.balticSea.needsAttention}}</html>'
+				});
+				await EmailService.initialize(false);
+
+				await EmailService.sendNewSightingNotification(42);
+
+				const mailOptions = mockTransporter.sendMail.mock.calls[0]?.[0];
+				return (mailOptions as { html: string }).html;
+			}
+
+			// Der eigentliche Befund: ostsee_geo ist die grobe Bounding Box. Eine
+			// Meldung aus dem Hamburger Hafen liegt darin, aber nicht im Polygon.
+			it('weist eine Sichtung in der Box, aber außerhalb des Polygons NICHT als Ostsee aus', async () => {
+				const html = await renderMailFor({
+					inBalticSea: 0,
+					inBalticSeaGeo: 1,
+					latitude: '53.540000',
+					longitude: '9.970000'
+				});
+
+				expect(html).toContain('outside');
+				expect(html).not.toContain('Ostsee');
+			});
+
+			it('weist eine echte Ostsee-Sichtung als Ostsee aus', async () => {
+				const html = await renderMailFor({
+					inBalticSea: 1,
+					inBalticSeaGeo: 1,
+					latitude: '54.020000',
+					longitude: '11.100000'
+				});
+
+				expect(html).toContain('baltic|Ostsee|false');
+			});
+
+			// Beweist, dass der Status aus der Rohzeile stammt: nach `!!` wäre die
+			// 2 nicht mehr von 1 zu unterscheiden — hier ist sie es auch nicht,
+			// aber ein späterer Umbau auf `> 1`-Semantik fiele sofort auf.
+			it('behandelt den Altsystem-Wert 2 in ostsee_geo wie 1', async () => {
+				const html = await renderMailFor({
+					inBalticSea: 1,
+					inBalticSeaGeo: 2,
+					latitude: '54.020000',
+					longitude: '11.100000'
+				});
+
+				expect(html).toContain('baltic|Ostsee|false');
+			});
+
+			// Ohne Koordinaten trägt kein Flag eine Aussage. Käme der Status aus
+			// `sightingFormValues`, wären die Koordinaten dort schon Zahlen und
+			// dieser Zustand nicht erreichbar.
+			it('meldet eine Sichtung ohne Koordinaten als „ohne Position"', async () => {
+				const html = await renderMailFor({
+					inBalticSea: 1,
+					inBalticSeaGeo: 1,
+					latitude: null,
+					longitude: null
+				});
+
+				expect(html).toContain('noPosition');
+				expect(html).toContain('true');
+			});
+		});
+
 		it('gibt false zurück wenn DB-Abfrage fehlschlägt', async () => {
 			vi.mocked(db.select).mockReturnValue({
 				from: vi.fn().mockReturnValue({

@@ -105,9 +105,14 @@ das offen ist, gilt die einzige belastbare Auslegung:
 > **`ostsee_geo = 0` heißt „keine Position im Kartenbereich", jeder Wert `> 0`
 > heißt „Position im Kartenbereich".**
 
-Genau so behandelt der Code die Spalte bereits — `!!sighting.inBalticSeaGeo` in
-`emailService.ts` und `{#if sighting.inBalticSeaGeo}` in den Svelte-Vorlagen machen
-aus `2` ein `true`. Eine Abfrage darf deshalb **nie** auf `= 1` prüfen.
+Genau so behandelt der Code die Spalte: `getBalticSeaStatus()` prüft beide Flags
+mit `> 0` (`src/lib/utils/geo/balticSeaStatus.ts`). Eine Abfrage darf deshalb
+**nie** auf `= 1` prüfen.
+
+Wichtig ist dabei, wo die Umwandlung stattfindet: `emailService.ts` legt die Flags
+zwar weiterhin als `!!`-Wahrheitswerte in den Kontext (eine gespeicherte Vorlage
+kann sie referenzieren), berechnet den **Status** aber aus der Rohzeile, bevor
+dieses `!!` greift. Sonst wäre der Zustand „ohne Position" nicht mehr erkennbar.
 
 ---
 
@@ -147,7 +152,7 @@ ausgewiesen. Hannover übrigens nicht: es liegt mit 52,38° N südlich der Südg
 
 Die Spalte trägt weiter das Label „Ostsee", zeigt aber den Status aus **beiden**
 Flags plus der Frage, ob überhaupt Koordinaten vorliegen —
-`src/routes/admin/balticSeaStatus.ts`:
+`src/lib/utils/geo/balticSeaStatus.ts`:
 
 | Koordinaten | `ostsee` | `ostsee_geo` | Anzeige         | Badge           |
 | ----------- | -------- | ------------ | --------------- | --------------- |
@@ -185,27 +190,33 @@ Die alte Anzeige über `ostsee_geo` würde weiterhin **457 Zeilen** falsch als
 Ostsee ausweisen (`ostsee = 0` bei `ostsee_geo > 0`). Verteilung der Spalte heute:
 18.717 „Ostsee", 774 „außerhalb", 390 „ohne Position", 0 „Widerspruch".
 
-Abgesichert durch `src/routes/admin/balticSeaStatus.test.ts`; der zentrale Test
+Abgesichert durch `src/lib/utils/geo/balticSeaStatus.test.ts`; der zentrale Test
 weist eine Sichtung mit `ostsee = 0` und `ostsee_geo = 1` **nicht** als Ostsee aus.
 
-### Offen: dieselbe Verwechslung an drei weiteren Stellen
+### Alle Anzeigestellen hängen an dieser einen Funktion (seit 2026-07-30)
 
-1. **`AdminSightingView.svelte`** (Zeilen um 328/329) zeigt beide Rohwerte getrennt
-   als „In der Ostsee" und „In der Ostsee (geo)" — nicht falsch, aber nicht
-   derselbe Wert wie die Übersicht.
-2. **Die Benachrichtigungs-Mail** (Default in `configInitializer.ts`, Zeilen ~72–107)
-   prüft in der **äußeren** Bedingung `inBalticSeaGeo` und zeigt dann ein grünes
-   „Ostsee ✓". Eine Meldung aus dem Hamburger Hafen bekommt damit denselben Badge
-   wie eine echte Ostsee-Sichtung; `inBalticSea` wird nur im else-Zweig angesehen.
-   Ausführlich als **Fehler 4** weiter unten — inklusive des Stolpersteins, dass
-   die Vorlage aus `app_config` kommt und der DB-Wert gegen den Code-Default
-   gewinnt.
-3. **`statistics/+page.server.ts`** (Zeilen ~229/230) zählt
-   `COUNT(CASE WHEN ostsee_geo = 1 …)` unter dem Feldnamen `inBalticSea` — falsche
-   Spalte und der `= 1`-Fehler aus Fehler 1 in einer Abfrage. Wird nicht gerendert.
+`getBalticSeaStatus()` liegt in `src/lib/utils/geo/balticSeaStatus.ts` — neben
+`checkBalticSea.ts` und **nicht** unter `$lib/server/`, weil die Admin-Übersicht
+eine Client-Komponente ist. Angeschlossen sind:
 
-Alle drei sollen an dieselbe Funktion wie die Übersicht angeschlossen werden,
-damit der Wert nur an einer Stelle entsteht.
+| Stelle                                  | bezieht Status über                         |
+| --------------------------------------- | ------------------------------------------- |
+| `routes/admin/+page.svelte` (Übersicht) | `getBalticSeaStatus()` direkt               |
+| `components/admin/AdminSightingView`    | `getBalticSeaStatus()` direkt               |
+| Benachrichtigungs-Mail                  | `server/templates/balticSeaEmailContext.ts` |
+
+Label und Erklärungstext kommen überall aus `BALTIC_SEA_STATUS_PRESENTATION`, sind
+also wortgleich. Die Mail braucht den Umweg über einen vorberechneten Kontext,
+weil Handlebars keine TypeScript-Funktion aufrufen kann; nur die **Farben** sind
+dort eigene Werte (E-Mail-Clients kennen weder `oklch()` noch die DaisyUI-Klassen).
+
+Die Detailansicht zeigt zusätzlich beide Rohwerte, aber ausdrücklich als
+„Rohwert ostsee (Polygon)" und „Rohwert ostsee_geo (Kartenbereich)" — als Zahl,
+damit der Altsystem-Wert `2` sichtbar bleibt, den ein Häkchen verschluckt hätte.
+
+Die dritte damals offene Stelle, `geographicStats` in
+`statistics/+page.server.ts`, ist ersatzlos entfallen (siehe Fehler 1) — sie wurde
+nie gerendert.
 
 ---
 
@@ -250,16 +261,16 @@ Vollständige Messung, Entscheidungen und Umsetzung:
 
 ---
 
-## Fehler 4: Die E-Mail-Benachrichtigung zeigt die Bounding Box als „Ostsee ✓" (offen)
+## Fehler 4: Die E-Mail-Benachrichtigung zeigte die Bounding Box als „Ostsee ✓" (behoben am 2026-07-30)
 
 > Dieser Abschnitt hieß bis zum 2026-07-30 „Die E-Mail-Benachrichtigung ist
 > korrekt" und begründete das damit, `inBalticSeaGeo` sei die äußere, gröbere
 > Bedingung und `inBalticSea` die Verfeinerung. Die **Staffelung** ist richtig, das
 > **Ergebnis** nicht.
 
-Die Handlebars-Vorlage (Default in `configInitializer.ts`, Zeilen ~72–107) prüft in
-der äußeren Bedingung `inBalticSeaGeo` und zeigt dann sofort ein grünes
-**„Ostsee ✓"**. `inBalticSea` wird nur im else-Zweig angesehen:
+Die Handlebars-Vorlage prüfte in der äußeren Bedingung `inBalticSeaGeo` und zeigte
+dann sofort ein grünes **„Ostsee ✓"**. `inBalticSea` wurde nur im else-Zweig
+angesehen:
 
 ```handlebars
 {{#if sighting.inBalticSeaGeo}}      → Badge „Ostsee ✓" (grün)
@@ -275,25 +286,77 @@ der äußeren Bedingung `inBalticSeaGeo` und zeigt dann sofort ein grünes
 | `0`      | `0`          | „Außerhalb Ostsee" | ✅                             |
 
 Es ist dieselbe Verwechslung wie in Fehler 2, nur eine Ausgabe weiter. Eine
-Meldung aus dem Hamburger Hafen bekommt denselben grünen Badge wie eine echte
+Meldung aus dem Hamburger Hafen bekam denselben grünen Badge wie eine echte
 Ostsee-Sichtung. Die betroffene Klasse `ostsee = 0, ostsee_geo > 0` umfasst
 derzeit **457 Zeilen**; für Neumeldungen entsteht sie bei jeder Position im
-Rechteck außerhalb des Polygons. Der zweite, gleich gebaute Block unter
-`{{#unless sighting.inBalticSeaGeo}}` (Zeilen ~95–105) trägt die Fließtexte und
-hat denselben Fehler.
+Rechteck außerhalb des Polygons.
 
-Der Zweig „Ostsee-Rand" ist zusätzlich toter Code: Beide Werte stammen aus **einem**
+Der Zweig „Ostsee-Rand" war zusätzlich toter Code: Beide Werte stammen aus **einem**
 `checkBalticSeaFile`-Aufruf, und das Polygon liegt in der Box — die Kombination
 kann bei einer Neumeldung nicht entstehen.
 
-**Beim Beheben beachten:** Die Vorlage kommt nicht aus dem Code, sondern aus
-`app_config` unter dem Key `notification.email.template`
-(`ConfigRepository.getString(…, this.getDefaultTemplate())` — der DB-Wert gewinnt,
-der Default ist nur Fallback). Den Default zu ändern wirkt auf **keine**
-bestehende Installation; der geseedete Wert muss mitgezogen werden. Und weil
-Handlebars keine TypeScript-Funktion aufrufen kann, gehört der Status **einmal** in
-`emailService.ts` berechnet und in den Template-Kontext gegeben — sonst wird die
-Logik zum zweiten Mal nachgebaut und läuft wieder auseinander.
+### Es waren drei Kopien, nicht eine
+
+Beim Beheben kam eine dritte Stelle dazu, die die Zustandsmaschine ebenfalls
+nachbaute:
+
+| Vorlage                                           | wirksam wann                            | Fehler                                                                         |
+| ------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------ |
+| Seed in `app_config` (aus `configInitializer.ts`) | **immer**, sobald einmal geseedet       | äußere Bedingung auf der Bounding Box → „Ostsee ✓"                             |
+| `templates/sightingNotificationTemplate.html`     | wenn kein Seed existiert (Code-Default) | Verzweigung ohne Koordinaten-Guard: behauptete ohne Position „liegt außerhalb" |
+| `DEFAULT_EMAIL_TEMPLATE` in `emailService.ts`     | wenn zusätzlich die Datei unlesbar ist  | nannte den Status gar nicht                                                    |
+
+Alle drei verzweigen jetzt über **einen** Wert aus
+`server/templates/balticSeaEmailContext.ts`:
+
+```handlebars
+{{sighting.balticSea.label}}
+→ Badge-Text, wortgleich mit der Übersicht
+{{sighting.balticSea.surface}}
+→ Badge-Fläche als sRGB-Hex
+{{#if sighting.balticSea.needsAttention}}
+	→ Hinweiskasten für alles außer „Ostsee"
+	{{sighting.balticSea.title}}
+	→ Begründung, wortgleich mit dem Tooltip
+{{/if}}
+```
+
+`needsAttention` ist ein fertiger Wahrheitswert, weil Handlebars ohne eigenen
+Helper nicht auf Gleichheit prüfen kann — sonst wäre die Verzweigung wieder
+verschachtelt.
+
+### Der Seed muss nachgezogen werden
+
+Die wirksame Vorlage kommt nicht aus dem Code, sondern aus `app_config` unter dem
+Key `notification.email.template` (`ConfigRepository.getString(…,
+getDefaultTemplate())` — der DB-Wert gewinnt, der Default ist nur Fallback). Den
+Default zu ändern wirkt auf **keine** bestehende Installation.
+
+Dafür gibt es `src/tools/refresh-email-template.ts`:
+
+```bash
+npm run config:refresh-email-template:dry-run   # zeigt nur, was geschehen würde
+npm run config:refresh-email-template           # zieht nach
+```
+
+Es überschreibt **nur**, wenn der gespeicherte Wert per SHA-256 als unveränderter
+Seed erkennbar ist (`PREVIOUS_SHIPPED_TEMPLATE_HASHES` in
+`templates/notificationEmailDefault.ts`). Ein angepasster Kundentext bleibt liegen;
+das Werkzeug endet dann mit Exit-Code 1 und nennt die drei Platzhalter, die von
+Hand einzusetzen sind. `resetToDefaultConfigurations()` wäre der falsche Weg — es
+überschreibt alle Schlüssel, auch Empfänger und SMTP-Zugang.
+
+**Wer die Vorlage künftig ändert, trägt den Hash des alten Stands in diese Liste
+ein.** `notificationEmailDefault.test.ts` pinnt den Hash des aktuellen Stands und
+erzwingt das: ohne den Eintrag hält das Werkzeug jeden frisch geseedeten Bestand
+für angepasst und zieht ihn nie wieder nach.
+
+Der Wert ist am 2026-07-30 nachgezogen (`updated_by = refresh-email-template`).
+**Damit ist die Sache erledigt — es gibt keinen zweiten Lauf „gegen Produktion".**
+Die lokale PG ist die Quelle, aus der die neue Produktionsdatenbank befüllt wird;
+auf der aktuellen Supabase-Prod sind die Altdaten aus Datenschutzgründen gelöscht.
+Ein Prod-Schritt an dieser Stelle liefe ins Leere und würde eine zweite
+Datenquelle suggerieren, die es nicht gibt.
 
 ---
 

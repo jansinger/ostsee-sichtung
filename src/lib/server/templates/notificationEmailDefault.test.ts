@@ -1,0 +1,163 @@
+/**
+ * Rendert die **ausgelieferte** Standard-Vorlage und prüft, was in der Mail
+ * ankommt. Ein Test gegen `balticSeaEmailContext` allein würde nicht bemerken,
+ * dass die Vorlage den Wert falsch verzweigt — genau dort saß der Fehler.
+ */
+import { createHash } from 'crypto';
+import Handlebars from 'handlebars';
+import { describe, expect, it } from 'vitest';
+import { balticSeaEmailContext } from './balticSeaEmailContext';
+import { emailColorContext } from './emailTokens';
+import {
+	NOTIFICATION_EMAIL_DEFAULT_TEMPLATE,
+	PREVIOUS_SHIPPED_TEMPLATE_HASHES
+} from './notificationEmailDefault';
+
+const render = Handlebars.compile(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE);
+
+/**
+ * Baut den Kontext so, wie `emailService.sendEmailNotification()` ihn baut —
+ * inklusive `coordinatesFormatted`, weil der Positionsblock daran hängt.
+ */
+function renderWithFlags(flags: {
+	inBalticSea?: number | null;
+	inBalticSeaGeo?: number | null;
+	latitude?: string | null;
+	longitude?: string | null;
+}) {
+	const hasPosition = Boolean(flags.latitude && flags.longitude);
+	return render({
+		referenceId: 'REF-1',
+		adminUrl: 'https://example.com/admin/1',
+		currentDate: '30.07.2026',
+		currentTime: '12:00',
+		spamCheck: { score: 0, isHighRisk: false, indicators: [] },
+		sighting: {
+			species: 'Schweinswal',
+			sightingDate: '30.07.2026',
+			coordinatesFormatted: hasPosition ? `${flags.latitude}, ${flags.longitude}` : null,
+			balticSea: balticSeaEmailContext(flags)
+		},
+		...emailColorContext()
+	});
+}
+
+describe('NOTIFICATION_EMAIL_DEFAULT_TEMPLATE — Ostsee-Status', () => {
+	// Der Kern des Befunds. Hamburger Hafen: in der Bounding Box, nicht im
+	// Polygon. Die alte Vorlage verzweigte über `inBalticSeaGeo` und setzte
+	// dafür ein grünes „Ostsee ✓".
+	it('weist eine Sichtung in der Box, aber außerhalb des Polygons NICHT als Ostsee aus', () => {
+		const html = renderWithFlags({
+			inBalticSea: 0,
+			inBalticSeaGeo: 1,
+			latitude: '53.540000',
+			longitude: '9.970000'
+		});
+
+		expect(html).not.toContain('Ostsee ✓');
+		expect(html).toContain('außerhalb');
+		// Der Hinweiskasten muss erscheinen — die Meldung soll auffallen.
+		expect(html).toContain('Achtung:');
+	});
+
+	it('weist eine echte Ostsee-Sichtung als Ostsee aus und warnt nicht', () => {
+		const html = renderWithFlags({
+			inBalticSea: 1,
+			inBalticSeaGeo: 1,
+			latitude: '54.020000',
+			longitude: '11.100000'
+		});
+
+		expect(html).toContain('>Ostsee<');
+		expect(html).not.toContain('Achtung:');
+	});
+
+	// Altsystem-Wert 2 in ostsee_geo bedeutet dasselbe wie 1.
+	it('behandelt den Altsystem-Wert 2 wie 1', () => {
+		const html = renderWithFlags({
+			inBalticSea: 1,
+			inBalticSeaGeo: 2,
+			latitude: '54.020000',
+			longitude: '11.100000'
+		});
+
+		expect(html).toContain('>Ostsee<');
+		expect(html).not.toContain('Achtung:');
+	});
+
+	// Dass keine der Vorlagen wieder über die Rohflags verzweigt, prüft
+	// `emailTokens.test.ts` — dort läuft die Schleife über **beide**
+	// ausgelieferten Vorlagen. Hier stünde der Guard nur für den Seed und
+	// ließe die Datei-Vorlage unbewacht.
+
+	it('ist gültiges Handlebars und rendert ohne Ausnahme', () => {
+		expect(() =>
+			renderWithFlags({ inBalticSea: 1, inBalticSeaGeo: 1, latitude: '54.0', longitude: '11.1' })
+		).not.toThrow();
+	});
+
+	// Der Statusblock hing früher an den Koordinaten. Eine Meldung ohne Position
+	// erwähnte die Position dann gar nicht, während die Admin-Übersicht „ohne
+	// Position" anzeigte — dieselbe Divergenz, nur durch Weglassen.
+	it('nennt den Status auch ohne Koordinaten', () => {
+		const html = renderWithFlags({ inBalticSea: 1, inBalticSeaGeo: 1 });
+
+		expect(html).toContain('Positionsangabe');
+		expect(html).toContain('ohne Position');
+		// Ohne Koordinaten darf keine Koordinatenzeile stehen.
+		expect(html).not.toContain('<strong>Koordinaten:</strong>');
+	});
+
+	/**
+	 * Ein `<!-- … -->` mit `{{#if …}}` darin wird von Handlebars **ausgewertet**,
+	 * nicht zitiert — genau daran ist diese Vorlage beim Umbau einmal
+	 * unbalanciert geworden (Parse-Fehler erst zur Laufzeit). Erklärende Notizen
+	 * gehören deshalb in `{{!-- … --}}`; das hält sie zusätzlich aus der
+	 * versendeten Mail heraus.
+	 */
+	it('führt keine Handlebars-Blöcke in HTML-Kommentaren', () => {
+		const htmlComments = NOTIFICATION_EMAIL_DEFAULT_TEMPLATE.match(/<!--[\s\S]*?-->/g) ?? [];
+
+		for (const comment of htmlComments) {
+			expect(comment).not.toMatch(/\{\{[#/]/);
+		}
+	});
+});
+
+describe('Fingerabdruck des ausgelieferten Stands', () => {
+	/**
+	 * Dieser Test ist ein **Zwang, keine Zusicherung über den Inhalt**: Der Seed
+	 * in `app_config` gewinnt gegen den Code-Default, eine Vorlagenänderung wirkt
+	 * also auf keine bestehende Installation. `refresh-email-template.ts` zieht
+	 * den Seed nur nach, wenn er einen der bekannten Stände trägt.
+	 *
+	 * Schlägt dieser Test fehl, wurde die Vorlage geändert. Dann beides tun:
+	 *   1. den hier gepinnten (alten) Hash oben in
+	 *      `PREVIOUS_SHIPPED_TEMPLATE_HASHES` eintragen,
+	 *   2. den neuen Hash aus der Fehlermeldung hier einsetzen.
+	 * Wer nur (2) macht, kappt den Nachzieh-Pfad für alle bestehenden
+	 * Installationen.
+	 */
+	it('entspricht dem gepinnten Hash', () => {
+		const hash = createHash('sha256')
+			.update(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE, 'utf8')
+			.digest('hex');
+
+		expect(hash).toBe('7f55d293b7799debff9908e074e8e22c2b87323c98bf7b76cc7ba86186e95a8e');
+	});
+
+	it('führt den aktuellen Stand nicht als früheren Stand', () => {
+		const hash = createHash('sha256')
+			.update(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE, 'utf8')
+			.digest('hex');
+
+		expect(PREVIOUS_SHIPPED_TEMPLATE_HASHES).not.toContain(hash);
+	});
+
+	it('listet die früheren Stände als 64-stellige SHA-256-Hex-Werte', () => {
+		expect(PREVIOUS_SHIPPED_TEMPLATE_HASHES.length).toBeGreaterThan(0);
+		for (const hash of PREVIOUS_SHIPPED_TEMPLATE_HASHES) {
+			expect(hash).toMatch(/^[0-9a-f]{64}$/);
+		}
+	});
+});

@@ -244,14 +244,16 @@ export const load: PageServerLoad = async () => {
 		//
 		// Sie wurde bei jedem Seitenaufruf über die gesamte Tabelle ausgeführt, aber
 		// von `+page.svelte` nie gerendert — reine Last ohne Abnehmer. Ihre Logik war
-		// zudem falsch: gezählt wurden nur `ostsee_geo = 1` und `= 0`, während der
-		// überwiegende Teil der Altdaten den Wert `2` trägt (Stand 2026-07-30: 15.070
-		// von 19.253 geprüften Zeilen). Der Rest der Anwendung behandelt `ostsee_geo`
-		// als Wahrheitswert (`!!sighting.inBalticSeaGeo` in emailService.ts,
-		// `{#if sighting.inBalticSeaGeo}` in admin/+page.svelte) und zählt die `2`
-		// damit als „in der Ostsee". Eine wiederbelebte Kennzahl müsste diese drei
-		// Zustände erst fachlich klären, statt 78 % der Daten stillschweigend
-		// fallen zu lassen.
+		// zudem doppelt falsch: gezählt wurde die Spalte `ostsee_geo` (die grobe
+		// Bounding Box) unter dem Feldnamen `inBalticSea`, und das mit `= 1`, während
+		// der überwiegende Teil der Altdaten den Wert `2` trägt (Stand 2026-07-30:
+		// 15.070 von 19.253 geprüften Zeilen).
+		//
+		// Eine wiederbelebte Kennzahl zählt `ostsee` (das Polygon) und geht über
+		// `getBalticSeaStatus()` aus `$lib/utils/geo/balticSeaStatus.ts` — dieselbe
+		// Funktion, an der Übersicht, Detailansicht und Benachrichtigungs-Mail
+		// hängen. Sie muss außerdem die vier Zustände abbilden statt zweier: ohne
+		// Koordinaten ist auch `ostsee = 1` keine Aussage.
 
 		return {
 			basicStats,
