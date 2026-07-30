@@ -19,7 +19,7 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.draft == false
 
     outputs:
-      needs-e2e: ${{ steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.dependencies == 'true' || github.event_name == 'push' }}
+      needs-e2e: ${{ steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.dependencies == 'true' || steps.filter.outputs.e2e == 'true' || github.event_name == 'push' }}
       has-code-changes: ${{ steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true' }}
       needs-migration-check: ${{ steps.filter.outputs.db-schema == 'true' || steps.filter.outputs.db-migrations == 'true' }}
 
@@ -46,6 +46,28 @@ jobs:
             backend:
               - 'src/routes/api/**'
               - 'src/lib/server/**'
+            # Die Tests selbst sind Code. Ohne diesen Filter fiel ein PR, der nur
+            # unter `e2e/` änderte, in den Doc-Only-Fall: `needs-e2e` blieb false,
+            # und `E2E Tests` wie `Component Tests` wurden übersprungen. Genau so
+            # liefen #636 und #641 durch — beide verschärften die Scan-Regel in
+            # `e2e/helpers/bannedClasses.ts`, aber nur deren Unit-Test lief (über
+            # `Validate` → `npm run test:unit`, das `e2e/helpers/*.test.ts`
+            # einsammelt, siehe vitest.config.ts). Der DOM-Scan in
+            # `e2e/design-tokens.spec.ts` — der Teil, der die Reichweite der Regel
+            # gegen die echten Routen prüft — lief nie.
+            #
+            # `scripts/seed-e2e.ts` gehört dazu, weil der E2E-Job es als
+            # „Seed E2E test data" ausführt; sonst wäre eine kaputte Seed-Datei
+            # ungetestet gemergt. `playwright.config.ts` und `vite.config.ci.ts`
+            # stehen hier der Klarheit halber, obwohl `frontend` sie über
+            # `*.config.ts` heute schon einfängt — dieser Filter soll die
+            # E2E-Eingaben vollständig benennen, nicht auf einen Zufallstreffer
+            # bauen.
+            e2e:
+              - 'e2e/**'
+              - 'playwright.config.ts'
+              - 'vite.config.ci.ts'
+              - 'scripts/seed-e2e.ts'
             docs:
               - '*.md'
               - 'docs/**'
