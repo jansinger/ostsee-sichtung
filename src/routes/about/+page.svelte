@@ -552,6 +552,12 @@ SOFTWARE.</pre>
 				Wir danken allen Entwicklern und Organisationen, die durch ihre Open Source Projekte diese
 				Plattform ermöglichen. Besonderer Dank gilt:
 			</p>
+			<!-- Die Trennpunkte zwischen den Links sind reine Zier: `aria-hidden`, weil
+			     Screenreader bisher „Svelte Team Bullet Tailwind Labs Bullet …" vorlasen,
+			     und `text-base-content/70` statt `opacity-30`, weil ein Punkt ein Zeichen
+			     und keine Fläche ist — die Deckkraft-Untergrenze /60 aus
+			     design-system.md gilt hier also. /70 ist die dort für Zierelemente
+			     vorgesehene Stufe. -->
 			<div class="flex flex-wrap justify-center gap-4 text-sm">
 				<a
 					href="https://svelte.dev"
@@ -559,28 +565,28 @@ SOFTWARE.</pre>
 					rel="noopener noreferrer"
 					class="link link-hover">Svelte Team</a
 				>
-				<span class="opacity-30">•</span>
+				<span class="text-base-content/70" aria-hidden="true">•</span>
 				<a
 					href="https://tailwindcss.com"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="link link-hover">Tailwind Labs</a
 				>
-				<span class="opacity-30">•</span>
+				<span class="text-base-content/70" aria-hidden="true">•</span>
 				<a
 					href="https://openlayers.org"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="link link-hover">OpenLayers Contributors</a
 				>
-				<span class="opacity-30">•</span>
+				<span class="text-base-content/70" aria-hidden="true">•</span>
 				<a
 					href="https://auth0.com"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="link link-hover">Auth0</a
 				>
-				<span class="opacity-30">•</span>
+				<span class="text-base-content/70" aria-hidden="true">•</span>
 				<a
 					href="https://www.postgresql.org"
 					target="_blank"

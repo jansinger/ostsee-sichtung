@@ -8,7 +8,9 @@ const isCI = process.env.CI === 'true';
 
 test.describe('Map Page', () => {
 	test('loads map page and shows content', async ({ page }) => {
-		// Mock sightings API — CI has no real database
+		// Mock sightings API — der Test prüft das Nachladen der Karten-Komponente,
+		// nicht die Daten. Seit dem 2026-07-30 steht in CI eine Datenbank (ci.yml);
+		// der Mock bleibt, damit dieser Test unabhängig von ihrem Inhalt ist.
 		await mockMapSightingsSuccess(page);
 		const mapPage = new MapPage(page);
 		await mapPage.goto();
