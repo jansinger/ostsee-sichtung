@@ -128,7 +128,7 @@ Eine Neufassung muss `> 0` statt `= 1` prüfen.
 
 ## Fehler 2: Die Admin-Übersicht zeigte die falsche Spalte (behoben am 2026-07-30)
 
-`src/routes/admin/+page.svelte` beschriftete die Spalte mit **„Ostsee"**, rendete
+`src/routes/admin/+page.svelte` beschriftete die Spalte mit **„Ostsee"**, renderte
 darin aber `inBalticSeaGeo`:
 
 ```svelte
