@@ -18,7 +18,7 @@
 - **Fehlerantwort flach:** `{"message": "Validation failed.", "errors": {...}}` — nicht die geschachtelte Form aus `src/lib/legacy-api/error-messages.ts`.
 - **Booleans im Vertrag sind `0`/`1` als Integer**, nicht `true`/`false`.
 - **Kein `any`, keine Nutzereingabe in Dateipfaden, keine Shell-Aufrufe.**
-- **Sprache:** Code und Bezeichner englisch, Umschlag-Felder und Fehlermeldungen deutsch (Vertrag).
+- **Sprache:** Bezeichner **deutsch** — abweichend von der Repo-Konvention in `.claude/rules/architecture.md`. Grund: Das Vokabular dieses Dienstes ist deutsch (`posteingang`, `abgewiesen`, `umschlag`, `lfd_nr` sind Verzeichnis- und Feldnamen ohne englische Entsprechung); ein `createStore` daneben wäre eine halbe Übersetzung. Der Dienst ist ein eigenes Paket mit eigenem Deployment, die Abweichung endet an seiner Grenze. Skripte im Hauptrepo (`src/tools/`) folgen weiter der Repo-Konvention.
 - **Commits:** `<type>(<scope>): <beschreibung>`, englisch, Subject kleingeschrieben. Scopes hier: `api`, `test`, `build`, `docs`.
 - **Test zuerst** (`.claude/rules/testing.md`) — jeder Schritt schreibt erst den fehlschlagenden Test.
 
@@ -855,7 +855,10 @@ git add legacy-inbox/src/readBody.js legacy-inbox/src/readBody.test.js && git co
 - Erzeugt: `validiere(payload)` → `Promise<{ gueltig: boolean, fehler: Record<string, string[]> }>`
 - Erzeugt: `fehlerAntwort(fehler)` → `{ message: 'Validation failed.', errors: {...} }` — die **flache** Form
 
-**Vorlage:** `src/lib/legacy-api/yup-validation.ts`. Übernommen werden die Regeln und die deutschen Meldungen wortgleich, mit einer Korrektur: `sonstige_auffaelligkeiten` wird in **beiden** Schreibweisen akzeptiert (Entwurf, Abschnitt 2.2).
+**Vorlage:** `src/lib/legacy-api/yup-validation.ts`. Die **deutschen Meldungen** werden wortgleich übernommen — sie sind Teil des Vertrags. Bei den **Regeln** gibt es zwei bewusste Abweichungen:
+
+1. `sonstige_auffaelligkeiten` wird in **beiden** Schreibweisen akzeptiert (Entwurf, Abschnitt 2.2).
+2. Der `isNaN → undefined`-Transform liegt auf **allen** Zahlenfeldern, nicht nur auf `anzahl_gesamt`, `gps_breite` und `gps_laenge` wie in der Hauptanwendung. Grund: Dieser Dienst nimmt `application/x-www-form-urlencoded` an, und dort kommt ein nicht ausgefülltes Wahlfeld als leerer String an, nicht als fehlender Schlüssel — `new URLSearchParams('vonwo=&name=Meier')` ergibt `vonwo: ""`. Mit dem engeren Transform der Hauptanwendung bekäme ein Melder ein `400`, weil er ein optionales Auswahlfeld nicht angefasst hat.
 
 - [ ] **Schritt 1: Test schreiben**
 
