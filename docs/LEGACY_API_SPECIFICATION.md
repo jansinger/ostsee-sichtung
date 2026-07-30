@@ -344,10 +344,10 @@ Antwort wurde trotzdem als aktive Aussage gespeichert.
 
 Messung 2026-07-29 (19.880 Zeilen):
 
-| Feld         | Zeilen mit `0`   | davon mit Freitext | Freitext-Quote der übrigen Werte |
-| ------------ | ---------------- | ------------------ | -------------------------------- |
-| `verteilung` | 15.129 (76,1 %)  | 632 (4,2 %)        | 0,0–0,6 %                        |
-| `verhalten`  | 9.192 (46,2 %)   | 892 (9,7 %)        | 0,0–0,4 %                        |
+| Feld         | Zeilen mit `0`  | davon mit Freitext | Freitext-Quote der übrigen Werte |
+| ------------ | --------------- | ------------------ | -------------------------------- |
+| `verteilung` | 15.129 (76,1 %) | 632 (4,2 %)        | 0,0–0,6 %                        |
+| `verhalten`  | 9.192 (46,2 %)  | 892 (9,7 %)        | 0,0–0,4 %                        |
 
 Bei `verteilung` war „Sonstige Verteilung" dadurch mit 76 % die dominierende
 Kategorie — vor „Einzeln" (3.046). Rechnet man die Nicht-Antworten heraus, ist
@@ -425,6 +425,48 @@ Antrieb nur niemand angegeben hat — dort ist `5` streng genommen zu stark.
 Bewusst in Kauf genommen: Ein eigener Wert „Antrieb unbekannt" wäre eine dritte
 Vertragsänderung an derselben Spalte, und eine erfundene Antriebsart wiegt
 schwerer als „kein Boot" bei einem Kajak.
+
+## Zusätzlich akzeptiert: `sonstige_auffälligkeiten` (Umlaut-Variante)
+
+Vertragsname ist und bleibt `sonstige_auffaelligkeiten` (mit `ae`), so wie ihn
+das Originaldokument nennt.
+
+Diese Implementierung las bis zum 2026-07-30 **ausschließlich** die
+Umlaut-Schreibweise `sonstige_auffälligkeiten` (`src/lib/legacy-api/types.ts`,
+`yup-validation.ts`, `field-mapping.ts`). Ein spec-konformer Client verlor
+seinen Freitext dadurch kommentarlos — `otherObservations` wurde `''`, ohne
+Validierungsfehler.
+
+**Seit dem 2026-07-30 werden beide Schreibweisen gelesen**, der Vertragsname hat
+Vorrang, wenn beide im selben Request stehen. Die Umlaut-Variante ist in
+`static/openapi.yml` als `deprecated` markiert und existiert nur, damit bereits
+gegen diese App gebaute Clients nichts verlieren. Neue Clients benutzen
+`sonstige_auffaelligkeiten`.
+
+Kein Effekt auf Ausgaben: `showreports.json` liefert dieses Feld nicht.
+
+## Korrektur 2026-07-30: Form der Fehlerantwort
+
+Der Abschnitt [Validation Errors](#validation-errors) war schon immer die
+verbindliche Form (`message` als String, `errors` daneben) — die
+Implementierung wich davon ab und schachtelte
+`{"message": {"message": …, "errors": …}}`. `static/openapi.yml` beschrieb mit
+`{"error": …, "message": …}` eine dritte, wieder andere Struktur ohne
+`errors`-Objekt.
+
+Beide sind seit dem 2026-07-30 auf die flache Form des Originaldokuments
+korrigiert. Ein Client, der `message` vertragsgemäß als Text liest, bekam vorher
+ein Objekt.
+
+Betroffen sind der 400er-Validierungsfehler, die `"No data send."`-Antwort
+(die dieser Endpunkt mit Status **200** ausliefert) und der 500er-Pfad für
+unerwartete Fehler.
+
+**Nicht** betroffen ist der 500er nach einem fehlgeschlagenen Schreibvorgang: Er
+liefert weiterhin `{"error": "Failed to save sighting", "message": "Internal
+server error occurred"}` und damit einen `error`-Schlüssel, den die flache
+Vertragsform nicht kennt. `static/openapi.yml` dokumentiert für 500 deshalb
+beide Formen.
 
 ## Zeitzonen-Semantik
 

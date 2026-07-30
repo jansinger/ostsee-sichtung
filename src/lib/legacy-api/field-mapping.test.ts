@@ -105,3 +105,48 @@ describe('mapLegacyToCurrentSchema — explizite Nullen bleiben erhalten', () =>
 		expect(result.species).toBe(SpeciesEnum.GREY_SEAL);
 	});
 });
+
+/**
+ * Das Originaldokument (`docs/archive/Sichtungsdb-Web-Schnittstelle.pdf`, Zeile
+ * „sonstige_auffaelligkeiten … Auffälligkeiten … Text … Nein") und
+ * `docs/LEGACY_API_SPECIFICATION.md` nennen das Feld ohne Umlaut. Die
+ * Implementierung las bis 2026-07-30 ausschließlich `sonstige_auffälligkeiten`
+ * — ein spec-konformer Client verlor seinen Freitext deshalb kommentarlos.
+ *
+ * Beide Schreibweisen werden angenommen, die Vertragsform hat Vorrang.
+ */
+describe('mapLegacyToCurrentSchema — sonstige_auffaelligkeiten', () => {
+	it('übernimmt die Vertragsschreibweise mit ae', () => {
+		const result = mapLegacyToCurrentSchema({
+			...minimalRequest(),
+			sonstige_auffaelligkeiten: 'Tier war deutlich verletzt'
+		} as LegacySightingRequest);
+
+		expect(result.otherObservations).toBe('Tier war deutlich verletzt');
+	});
+
+	it('übernimmt weiterhin die bestehende Umlaut-Schreibweise', () => {
+		const result = mapLegacyToCurrentSchema({
+			...minimalRequest(),
+			sonstige_auffälligkeiten: 'Tier war deutlich verletzt'
+		} as LegacySightingRequest);
+
+		expect(result.otherObservations).toBe('Tier war deutlich verletzt');
+	});
+
+	it('gibt der Vertragsschreibweise den Vorrang, wenn beide gesendet werden', () => {
+		const result = mapLegacyToCurrentSchema({
+			...minimalRequest(),
+			sonstige_auffaelligkeiten: 'Vertragsform',
+			sonstige_auffälligkeiten: 'Umlautform'
+		} as LegacySightingRequest);
+
+		expect(result.otherObservations).toBe('Vertragsform');
+	});
+
+	it('bleibt ohne Angabe ein leerer String', () => {
+		const result = mapLegacyToCurrentSchema(minimalRequest());
+
+		expect(result.otherObservations).toBe('');
+	});
+});

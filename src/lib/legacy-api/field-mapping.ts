@@ -88,7 +88,12 @@ export function mapLegacyToCurrentSchema(legacyData: LegacySightingRequest): Sig
 		// Media and observations
 		mediaFile: legacyData.aufnahme || '',
 		mediaUpload: legacyData.aufnahmeHochladen ? true : false,
-		otherObservations: legacyData.sonstige_auffälligkeiten || '',
+		// Die Spezifikation nennt das Feld `sonstige_auffaelligkeiten` (mit `ae`);
+		// diese Implementierung las bis 2026-07-30 nur die Umlaut-Variante und
+		// verwarf den Freitext spec-konformer Clients kommentarlos. Beide
+		// Schreibweisen werden gelesen, der Vertragsname hat Vorrang.
+		otherObservations:
+			legacyData.sonstige_auffaelligkeiten || legacyData.sonstige_auffälligkeiten || '',
 		notes: legacyData.bemerkungen || '',
 
 		// Consent flags (convert 0/1 to boolean)

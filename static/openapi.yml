@@ -1623,12 +1623,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LegacyCreateResponse'
-        '400':
-          description: Validierungsfehler
+        '200':
+          description: >-
+            Unlesbarer Request-Body (weder JSON noch Formulardaten). Dieser Pfad
+            antwortet bewusst mit **200**, nicht mit 400 — Verhalten dieser
+            Implementierung, keine Zusage des Originaldokuments. Der Body hat
+            die flache Legacy-Form mit `message` als String.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LegacyErrorResponse'
+              example:
+                message: "No data send."
+        '400':
+          description: >-
+            Validierungsfehler. Flache Legacy-Form: `message` als String,
+            Feldfehler daneben unter `errors`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyErrorResponse'
+              example:
+                message: "Validation failed."
+                errors:
+                  anzahl_gesamt:
+                    - "Dieses Feld kann nicht leer gelassen werden."
         '405':
           description: Methode nicht erlaubt
           content:
@@ -1645,7 +1664,31 @@ paths:
         '429':
           $ref: '#/components/responses/RateLimitExceeded'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: >-
+            Interner Serverfehler. Dieser Legacy-Endpunkt verwendet NICHT das
+            generische `ErrorResponse`-Schema der modernen API: Ein
+            fehlgeschlagener Schreibvorgang liefert `{"error": …, "message": …}`,
+            ein unerwarteter Fehler die flache Legacy-Fehlerform
+            (`LegacyErrorResponse`).
+          content:
+            application/json:
+              schema:
+                # anyOf, nicht oneOf: `{"error": …, "message": …}` erfüllt auch
+                # LegacyErrorResponse (dort ist nur `message` Pflicht), womit
+                # oneOf ("genau eines") fehlschlagen würde.
+                anyOf:
+                  - $ref: '#/components/schemas/LegacyErrorResponse'
+                  - type: object
+                    required:
+                      - error
+                      - message
+                    properties:
+                      error:
+                        type: string
+                        example: "Failed to save sighting"
+                      message:
+                        type: string
+                        example: "Internal server error occurred"
 
   /rest_sichtungen/antworten.json:
     get:
@@ -2716,6 +2759,22 @@ components:
           format: email
           description: E-Mail-Adresse des Melders
           example: "max@example.com"
+        # Optionale Felder (Auszug — vollständige Liste in
+        # docs/LEGACY_API_SPECIFICATION.md)
+        sonstige_auffaelligkeiten:
+          type: string
+          description: >-
+            Sonstige Auffälligkeiten (Freitext). Vertragsname der Spezifikation,
+            mit "ae" geschrieben — diese Schreibweise hat Vorrang.
+          example: "Tier war deutlich verletzt"
+        sonstige_auffälligkeiten:
+          type: string
+          deprecated: true
+          description: >-
+            Historische Umlaut-Schreibweise dieser Implementierung. Wird bis auf
+            Weiteres akzeptiert, damit bereits gegen diese App gebaute Clients
+            ihren Freitext nicht verlieren. Nicht in neuen Clients verwenden.
+          example: "Tier war deutlich verletzt"
 
     LegacyCreateResponse:
       type: object
@@ -2733,19 +2792,40 @@ components:
     LegacyErrorResponse:
       type: object
       title: Legacy Fehlerantwort
-      description: Fehlerantwort der Legacy API im ursprünglichen Format
+      description: |
+        Fehlerantwort der Legacy API im ursprünglichen Format — **flach**:
+        `message` ist ein String, die Feldfehler liegen daneben unter `errors`.
+
+        Verbindlich ist der Abschnitt „Bei Validierungsfehlern" des
+        Originaldokuments (`docs/archive/Sichtungsdb-Web-Schnittstelle.pdf`),
+        siehe auch `docs/LEGACY_API_SPECIFICATION.md`:
+
+        ```json
+        {"message": "Validation failed.", "errors": {"anzahl_gesamt": ["…"]}}
+        ```
+
+        Diese Spec beschrieb bis 2026-07-30 stattdessen `{"error": …, "message": …}`
+        und kannte gar kein `errors`-Objekt.
       required:
-        - error
         - message
       properties:
-        error:
-          type: string
-          description: Fehlercode/Typ
-          example: "ValidationError"
         message:
           type: string
           description: Allgemeine Fehlermeldung
-          example: "Validation failed"
+          example: "Validation failed."
+        errors:
+          type: object
+          description: >-
+            Feldbezogene Validierungsfehler auf Deutsch. Schlüssel ist der
+            Legacy-Feldname, Wert eine Liste von Meldungen. Fehlt, wenn keine
+            feldbezogenen Fehler vorliegen.
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            anzahl_gesamt:
+              - "Dieses Feld kann nicht leer gelassen werden."
 
     LegacyLocationResponse:
       type: object
