@@ -3,7 +3,7 @@
  * sie kennen das Feld nicht. Ein hartes `true` im Mapping würde einen
  * Einwilligungsnachweis erfinden, sobald der Wert persistiert wird.
  *
- * Siehe docs/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md, Befund B8.
+ * Siehe docs/archive/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md, Befund B8.
  */
 import { describe, expect, it } from 'vitest';
 import { mapLegacyToCurrentSchema } from './field-mapping';

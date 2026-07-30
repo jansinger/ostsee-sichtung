@@ -10,7 +10,7 @@
  * eine Weiterleitung und würde den Lauf als Erfolg werten.
  *
  * Vorgabe ist die Vorschau; gelöscht wird nur mit `mode=execute`.
- * Entwurf: docs/AUFRAEUM_ENDPUNKT_ENTWURF_2026-07-28.md
+ * Entwurf: docs/archive/AUFRAEUM_ENDPUNKT_ENTWURF_2026-07-28.md
  */
 import { env } from '$env/dynamic/private';
 import { ORPHAN_RETENTION_HOURS } from '$lib/constants/uploadRetention';

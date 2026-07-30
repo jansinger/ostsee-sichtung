@@ -2,7 +2,7 @@
 
 **Stand:** 2026-07-28
 **Status:** Entwurf, abgestimmt — noch nicht implementiert
-**Vorgeschichte:** `docs/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md`, PR #586
+**Vorgeschichte:** `docs/archive/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md`, PR #586
 
 ---
 

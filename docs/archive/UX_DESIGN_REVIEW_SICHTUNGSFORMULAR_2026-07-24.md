@@ -261,12 +261,12 @@ mehr:
 
 Damit sind auch die beiden Stellen weiter oben überholt, die die
 Methodenwahl als Stärke führen („Gesamteindruck", „Was gut funktioniert") — die
-Begründung dafür steht in `docs/UX_POSITIONSANGABE_SCHRITT1_2026-07-28.md`
+Begründung dafür steht in `docs/archive/UX_POSITIONSANGABE_SCHRITT1_2026-07-28.md`
 (Abschnitt „Problem"): Das Datenmodell ist binär, nicht ternär, und der dritte
 Tab bot kein Feld, das der Fallback-Block nicht ohnehin schon zeigte.
 
 Der Ist-Zustand samt der Abweichungen zwischen Spec und Umsetzung steht in
-`docs/UX_POSITIONSANGABE_SCHRITT1_2026-07-28.md`.
+`docs/archive/UX_POSITIONSANGABE_SCHRITT1_2026-07-28.md`.
 
 ---
 

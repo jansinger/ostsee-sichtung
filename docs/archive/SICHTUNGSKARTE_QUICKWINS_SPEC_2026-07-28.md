@@ -1,6 +1,6 @@
 # Spec: Sichtungskarte — Quick-Win-Fixes aus dem UX-Review
 
-**Datum:** 2026-07-28 · **Basis:** `docs/UX_REVIEW_SICHTUNGSKARTE_2026-07-28.md`
+**Datum:** 2026-07-28 · **Basis:** `docs/archive/UX_REVIEW_SICHTUNGSKARTE_2026-07-28.md`
 **Scope:** Die acht Quick Wins (§8 des Reviews). Größere Maßnahmen (K3-A11y, ARIA-Sanierung, Bottom-Sheet, Farbsystem, URL-State) sind **nicht** Teil dieser Spec — sie werden als separate Follow-Up-Tasks angelegt.
 
 **Verbindlich für alle Punkte:** Test-First gemäß `.claude/rules/testing.md` (reproduzierender Test vor dem Fix; reine CSS-/Textänderungen sind dokumentierte Ausnahmen). API-Änderungen aktualisieren `static/openapi.yml`. Design-Tokens gemäß `.claude/rules/design-system.md`.

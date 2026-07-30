@@ -1,6 +1,6 @@
 /**
  * Pure Funktionen für den URL-Query-Param-Sync der Sichtungskarten-Filter
- * (Befund M4/N6 aus docs/UX_REVIEW_SICHTUNGSKARTE_2026-07-28.md).
+ * (Befund M4/N6 aus docs/archive/UX_REVIEW_SICHTUNGSKARTE_2026-07-28.md).
  *
  * Query-Params: `year`, `q`, `from`, `to`, `hs` (ausgeblendete Arten-IDs,
  * kommasepariert), `hc` (ausgeblendete Farbgruppen, kommasepariert).

@@ -1,6 +1,6 @@
 /**
  * Prüfung des M2M-Tokens für den Aufräum-Endpunkt.
- * Siehe docs/AUFRAEUM_ENDPUNKT_ENTWURF_2026-07-28.md, § 5.
+ * Siehe docs/archive/AUFRAEUM_ENDPUNKT_ENTWURF_2026-07-28.md, § 5.
  */
 import { describe, expect, it } from 'vitest';
 import { MIN_TOKEN_LENGTH, isValidCleanupToken } from './cleanupAuth';

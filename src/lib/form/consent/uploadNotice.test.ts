@@ -4,7 +4,7 @@
  * wird, wie lange eine nicht abgeschickte Datei bleibt und dass über die
  * Veröffentlichung getrennt entschieden wird.
  *
- * Siehe docs/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md, Abschnitt 9.4.
+ * Siehe docs/archive/MEDIENEINWILLIGUNG_ANALYSE_2026-07-28.md, Abschnitt 9.4.
  */
 import { ORPHAN_RETENTION_HOURS } from '$lib/constants/uploadRetention';
 import { describe, expect, it } from 'vitest';
