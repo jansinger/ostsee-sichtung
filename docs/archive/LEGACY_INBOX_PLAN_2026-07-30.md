@@ -1399,7 +1399,9 @@ git add legacy-inbox/src/routes/createSighting.js legacy-inbox/src/routes/create
 
 ---
 
-## Aufgabe 6: Rate-Limit mit den zwei unterschiedlichen Rollen
+## Aufgabe 6: Rate-Limit, Betriebsbereitschaft und Rauchtest
+
+Diese Aufgabe schließt den Dienst ab: die zwei Rate-Limits mit ihren unterschiedlichen Rollen (Schritte 1–6), danach Plattenplatz-Prüfung, Protokollierung und ein Rauchtest, der `app.js` wirklich startet (Schritte 7–8). Die Schritte 7 und 8 gehören hierher, weil `app.js` erst mit dem fertigen Rate-Limit lauffähig ist.
 
 **Dateien:**
 
@@ -1745,7 +1747,7 @@ Erwartet: PASS — alle bisherigen Tests plus die zwei Rauchtests
 - [ ] **Schritt 10: Committen**
 
 ```bash
-git add legacy-inbox/ && git commit -m "feat(api): rate-limit per ip after the write, globally before it"
+git add legacy-inbox/ && git commit -m "feat(api): add disk-space guard, structured logging and a boot smoke test"
 ```
 
 ---
