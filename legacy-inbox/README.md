@@ -106,6 +106,33 @@ Pfadfehler soll beim Deploy auffallen und nicht bei der ersten echten Sichtung.
 Knapper Plattenplatz verhindert den Start dagegen **nicht**, sondern wird laut
 protokolliert; siehe Abschnitt „Plattenplatz" unten.
 
+### Zwei Startfehler mit eindeutiger Signatur
+
+**`Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'yup'`**
+
+Im Verzeichnis des Dienstes fehlt `node_modules`. Plesks „NPM install"
+arbeitet im Application Root; zeigt der auf einen Symlink, geht die
+Installation je nach Plesk-Version ins Leere. Zuverlässig ist der Weg über
+SSH, im echten Verzeichnis:
+
+    cd <anwendungswurzel>
+    npm ci
+
+Danach die Anwendung neu starten und prüfen:
+
+    ls node_modules | grep -E '^(yup|rbush)$'
+
+**`Error [ERR_REQUIRE_ASYNC_MODULE]: require() cannot be used on an ESM graph with top-level await`**
+
+Passenger lädt die Anwendung per `require()`, und Node lädt ESM aus CJS nur,
+wenn der Modulgraph kein Top-Level-`await` enthält. `app.js` hält sich daran
+und trägt oben einen Kommentar, der erklärt warum — wer den asynchronen Start
+dort wieder auf die oberste Ebene zieht, bricht das Deployment, ohne dass ein
+lokales `node app.js` etwas davon merkt.
+
+Der Test „lässt sich laden, wie Passenger es lädt" in `app.test.js` deckt
+genau diesen Ladeweg ab.
+
 ## In den Posteingang schauen
 
 Es gibt bewusst keine Oberfläche — die Dateien liegen im Dateisystem:
