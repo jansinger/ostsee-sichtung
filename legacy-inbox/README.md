@@ -73,7 +73,20 @@ gesamten Aufbaus.
 **5.** `X-Real-IP` in den nginx-Zusatzdirektiven der Domain setzen — sonst kennt
 der Dienst nur die Adresse des Proxys und zählt alle Melder als einen:
 
-    proxy_set_header X-Real-IP $remote_addr;
+    passenger_set_header X-Real-IP $remote_addr;
+
+**Nicht `proxy_set_header`.** Plesk bedient Node-Anwendungen über Phusion
+Passenger, und `proxy_set_header` gehört zu nginx' Proxy-Modul — es wirkt nur
+auf Anfragen, die per `proxy_pass` weitergereicht werden. Bei einer
+Passenger-Anwendung läuft die Direktive wirkungslos ins Leere, **ohne
+Fehlermeldung**: nginx startet, die Anwendung startet, alles sieht richtig
+aus, und der Dienst sieht trotzdem nur `127.0.0.1`. Bei der ersten
+Inbetriebnahme am 2026-07-30 genau so passiert — die Direktive ist also keine
+theoretische Vorsichtsmaßnahme.
+
+Nach dem Eintragen von außen prüfen — nicht vom Server selbst, sonst ist
+`127.0.0.1` die korrekte Antwort. Die empfangene Adresse steht im Umschlag
+unter `quelle.ip`.
 
 `X-Forwarded-For` wird bewusst **nicht** ausgewertet: Die Kopfzeile kommt vom
 Client, und ein zufälliger Wert je Request würde das Rate-Limit aushebeln.
