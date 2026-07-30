@@ -16,19 +16,29 @@ export const GEO_LIMITS: GeoLimits = {
 };
 
 /**
- * Erweiterte Ostsee-Bounding Box für Kartenbereich
+ * Ostsee-Bounding Box — Hülle der bereinigten Ostsee-Geometrie
  *
- * Diese Koordinaten definieren den erweiterten Ostsee-Kartenbereich,
- * der auch angrenzende Küstenregionen und Zuflüsse umfasst.
- * Identisch mit PostGIS CHART_AREA_ENVELOPE für Konsistenz.
+ * **Nicht von Hand pflegen.** Die Werte sind der Extent aus
+ * `src/lib/server/geo/baltic-extent.json`, nach außen auf 0,05° gerundet.
+ * Erzeugt von `npm run geo:build`. `checkBalticSea.test.ts` schlägt fehl,
+ * wenn Konstante und Extent auseinanderlaufen, und prüft zusätzlich die
+ * Invariante „Polygon liegt vollständig in der Box".
+ *
+ * Die Geometrie umfasst die IHO-Seegebiete Baltic Sea, Gulf of Bothnia,
+ * Gulf of Finland, Gulf of Riga und **Kattegat** — das Skagerrak gehört
+ * nicht dazu. Ausgeschlossen ist Binnenwasser (Ladogasee, Onegasee,
+ * Weichsel- und Torne-Flussläufe, Limfjord, Oder oberhalb des Stettiner
+ * Haffs); eingeschlossen sind Schlei, Trave- und Warnow-Mündung.
+ *
+ * Hintergrund: `docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
  *
  * @constant
  */
 export const BALTIC_SEA_BBOX: BoundingBox = {
-	minLongitude: 9.4, // Westgrenze (etwa Skagerrak)
-	maxLongitude: 30.2, // Ostgrenze (etwa Finnischer Meerbusen)
-	minLatitude: 53.0, // Südgrenze (etwa Norddeutsche Küste)
-	maxLatitude: 66.0 // Nordgrenze (etwa Bottnischer Meerbusen)
+	minLongitude: 9.4, // Westgrenze — Kattegat vor Nordjütland
+	maxLongitude: 30.25, // Ostgrenze — Kopf der Newa-Bucht
+	minLatitude: 53.55, // Südgrenze — Oder bei Police
+	maxLatitude: 65.95 // Nordgrenze — Bottenwiek bei Tornio
 };
 
 /**
@@ -48,10 +58,10 @@ export const BALTIC_SEA_BBOX: BoundingBox = {
  * ## Koordinaten-Referenz
  *
  * Verwendet identische Bounding Box wie PostGIS CHART_AREA_ENVELOPE:
- * - West: 9.4°E (Skagerrak-Region)
- * - Ost: 30.2°E (Finnischer Meerbusen)
- * - Süd: 53.0°N (Norddeutsche Küste)
- * - Nord: 66.0°N (Bottnischer Meerbusen)
+ * - West: 9,40°E (Kattegat vor Nordjütland — **nicht** Skagerrak)
+ * - Ost: 30,25°E (Kopf der Newa-Bucht)
+ * - Süd: 53,55°N (Oder bei Police)
+ * - Nord: 65,95°N (Bottenwiek bei Tornio)
  *
  * @param longitude Längengrad in Dezimalgrad (WGS84)
  * @param latitude Breitengrad in Dezimalgrad (WGS84)
