@@ -7,7 +7,7 @@
 -- Rollback:
 --   UPDATE sichtungen s
 --   SET ostsee = b.ostsee, ostsee_geo = b.ostsee_geo
---   FROM sichtungen_ostsee_backup b
+--   FROM public.sichtungen_ostsee_backup b
 --   WHERE s.id = b.id;
 --
 -- Spec: docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
@@ -26,7 +26,7 @@ DO $$
 DECLARE vorhanden bigint;
 BEGIN
   IF to_regclass('public.sichtungen_ostsee_backup') IS NOT NULL THEN
-    EXECUTE 'SELECT count(*) FROM sichtungen_ostsee_backup' INTO vorhanden;
+    EXECUTE 'SELECT count(*) FROM public.sichtungen_ostsee_backup' INTO vorhanden;
     IF vorhanden > 0 THEN
       RAISE EXCEPTION
         'sichtungen_ostsee_backup existiert bereits mit % Zeilen. Erst pruefen und bewusst verwerfen, dann erneut migrieren.',
@@ -35,12 +35,12 @@ BEGIN
   END IF;
 END $$;
 
-DROP TABLE IF EXISTS sichtungen_ostsee_backup;
-CREATE TABLE sichtungen_ostsee_backup AS
+DROP TABLE IF EXISTS public.sichtungen_ostsee_backup;
+CREATE TABLE public.sichtungen_ostsee_backup AS
 SELECT id, ostsee, ostsee_geo, now() AS gesichert_am FROM sichtungen;
 
 \echo '== Gesicherte Zeilen'
-SELECT count(*) AS gesichert FROM sichtungen_ostsee_backup;
+SELECT count(*) AS gesichert FROM public.sichtungen_ostsee_backup;
 
 UPDATE sichtungen s
 SET ostsee = c.neu_ostsee, ostsee_geo = c.neu_geo

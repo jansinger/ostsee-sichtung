@@ -50,10 +50,45 @@ interface RBushLeaf {
 	geometry: Polygon | MultiPolygon;
 }
 
+interface RBushNode {
+	children?: RBushNode[];
+	geometry?: Polygon | MultiPolygon;
+	minX?: number;
+	minY?: number;
+	maxX?: number;
+	maxY?: number;
+}
+
 interface RBushIndex {
-	tree: {
-		children: RBushLeaf[];
+	itemCount: number;
+	tree: RBushNode;
+}
+
+/**
+ * Sammelt die Blaetter eines RBush-Baums.
+ *
+ * Der Baum ist ab etwa 1.500 Eintraegen **mehrstufig** — `tree.children` sind
+ * dann Zwischenknoten ohne `geometry`. Bei den fruehreren fuenf IHO-Features war
+ * er flach, weshalb ein Durchlauf ueber die erste Ebene lange genuegt hat. Wer
+ * das uebersieht, bekommt "polygon is required" aus Turf. Vgl.
+ * `.claude/rules/geo.md` und `src/lib/utils/geo/checkBalticSea.test.ts`.
+ */
+function collectLeaves(index: RBushIndex): RBushLeaf[] {
+	const leaves: RBushLeaf[] = [];
+	const descend = (node: RBushNode): void => {
+		if (node.geometry) {
+			leaves.push(node as RBushLeaf);
+			return;
+		}
+		node.children?.forEach(descend);
 	};
+	descend(index.tree);
+	if (leaves.length !== index.itemCount) {
+		throw new Error(
+			`RBush-Index: ${leaves.length} Blaetter gefunden, erwartet ${index.itemCount}. Der Baumdurchlauf ist unvollstaendig.`
+		);
+	}
+	return leaves;
 }
 
 /** Eine Teilflaeche aus baltic-water.geojson mit vorab berechneter Bounding Box. */
@@ -155,7 +190,7 @@ function filterRejectedByOldPolygon(
 	const index: RBushIndex = JSON.parse(
 		readFileSync(join(ROOT, 'src', 'lib', 'server', 'geo', 'rbush-index.json'), 'utf8')
 	);
-	const leaves = index.tree.children;
+	const leaves = collectLeaves(index);
 
 	return coordinates.filter(([lon, lat]) => {
 		const candidate = point([lon, lat]);

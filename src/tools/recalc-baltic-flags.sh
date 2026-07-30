@@ -24,12 +24,15 @@ if ! psql "$DB" -tAc "SELECT to_regclass('geo_build.ostsee') IS NOT NULL;" | gre
   exit 1
 fi
 
-# Die Box kommt aus derselben Quelle wie BALTIC_SEA_BBOX, damit Report und
-# Laufzeitcode nicht auseinanderlaufen koennen.
+# Die Box wird GELESEN, nicht nachgerechnet: die Rundungsregel steht
+# ausschliesslich in build-baltic-geometry.sh. Eine zweite Kopie hier wuerde
+# bedeuten, dass die Migration nach einer anderen Regel schreibt als
+# BALTIC_SEA_BBOX verwendet.
 read -r BOX_W BOX_O BOX_S BOX_N < <(node -e "
 const e=require('$ROOT/src/lib/server/geo/baltic-extent.json');
-const f=(v,up)=>((up?Math.ceil(v/0.05):Math.floor(v/0.05))*0.05).toFixed(2);
-console.log(f(e.minLongitude,false),f(e.maxLongitude,true),f(e.minLatitude,false),f(e.maxLatitude,true));
+for (const k of ['boxMinLongitude','boxMaxLongitude','boxMinLatitude','boxMaxLatitude'])
+  if (typeof e[k] !== 'number') { console.error('baltic-extent.json: '+k+' fehlt — npm run geo:build erneut laufen lassen.'); process.exit(1); }
+console.log(e.boxMinLongitude, e.boxMaxLongitude, e.boxMinLatitude, e.boxMaxLatitude);
 ")
 echo "Bounding Box aus baltic-extent.json: $BOX_W .. $BOX_O E / $BOX_S .. $BOX_N N"
 

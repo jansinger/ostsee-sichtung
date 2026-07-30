@@ -12,7 +12,11 @@ const FEHLER_A: ReadonlyArray<[string, number, number]> = [
 	['Onegasee', 35.5, 61.8],
 	['Weichsel bei Włocławek', 19.0, 52.7],
 	['Torne-Flusslauf', 24.0, 66.5],
-	['Limfjord bei Aalborg', 9.38, 57.02]
+	// Die Maske schliesst den WESTLICHEN Limfjord und damit die Nordsee-Passage.
+	// Der oestliche Arm bei Aalborg und Hals bleibt bewusst drin (Kattegat-Zufahrt)
+	// — ein Punkt dort waere hier also falsch.
+	['Limfjord Loegstoer (westlicher Arm)', 9.35, 56.97],
+	['Thyboroen, Nordsee-Seite der Passage', 8.22, 56.7]
 ];
 
 /**

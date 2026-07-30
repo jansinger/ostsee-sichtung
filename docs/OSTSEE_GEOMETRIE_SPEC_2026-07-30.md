@@ -20,6 +20,20 @@ Diese Spec ersetzt die Diagnose in `docs/OSTSEE_FLAGS.md`, Abschnitt „Fehler 3
 >   `checkBalticSeaFile` `async` und zieht vier Aufrufer plus zwei Testdateien
 >   nach. `.claude/rules/geo.md` nennt ihn als offenen Punkt.
 >
+ > **Offene Punkte aus dem Abschluss-Review vom 2026-07-30:**
+>
+> - **Die Einschluss-Korridore schlagen rund 165 km² Festland der Ostsee zu**
+>   (Schlei 81, Trave 50, Warnow 34), weil in ihnen der Landabzug nicht greift.
+>   Kappeln, Arnis, Travemünde, Priwall, Warnemünde und der Rostocker Hafen
+>   liefern damit `inBaltic = true`. Als Plausibilitätssignal ist `ostsee` dort
+>   stumpf. Entweder Korridore auf die Wasserachse verengen — und die 77
+>   Restfälle akzeptieren — oder die Abweichung so belassen. Braucht eine
+>   fachliche Entscheidung.
+> - **Der östliche Limfjord** (Aalborg, Hals) ist Teil der Fläche; die Maske
+>   schließt nur den westlichen Arm und damit die Nordsee-Passage bei Thyborøn.
+>   Das ist als Kattegat-Zufahrt verteidigbar, war aber ursprünglich anders
+>   dokumentiert und ist jetzt überall richtiggestellt.
+>
 > Tatsächliche Werte: Simplify-Toleranz 20 m, Index 3,9 MB, 1.575 Teilflächen,
 > 158.976 Stützpunkte, Fläche 426.759 km². `BALTIC_SEA_BBOX` = 9,40 / 30,25 /
 > 53,55 / 65,95. Verbleibend außerhalb: 77 Sichtungen in Schlei, Trave und

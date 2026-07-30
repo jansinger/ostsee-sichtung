@@ -46,17 +46,22 @@ inBalticSeaGeo: inChartArea ? 1 : 0  // ostsee_geo
 
 `checkBalticSeaFile` (`src/lib/server/geo/checkBalticSeaFile.ts`) liefert:
 
-- **`inBaltic`** — Punkt-in-Polygon gegen die Natural-Earth-Ostsee-Geometrie
-  (RBush-Index + Turf.js). Präzise Küstenlinie.
+- **`inBaltic`** — Punkt-in-Polygon gegen die bereinigte Ostsee-Geometrie
+  (RBush-Index + Turf.js). Quelle sind die IHO-Seegebiete von MarineRegions,
+  verschnitten mit der OSM-Küstenlinie; erzeugt von `npm run geo:build`.
 - **`inChartArea`** — reine Bounding-Box-Prüfung gegen `BALTIC_SEA_BBOX`
   (`src/lib/utils/geo/checkBalticSea.ts`):
 
-  | Grenze | Wert    |
-  | ------ | ------- |
-  | West   | 9,4° E  |
-  | Ost    | 30,2° E |
-  | Süd    | 53,0° N |
-  | Nord   | 66,0° N |
+  | Grenze | Wert     |
+  | ------ | -------- |
+  | West   | 9,40° E  |
+  | Ost    | 30,25° E |
+  | Süd    | 53,55° N |
+  | Nord   | 65,95° N |
+
+  **Nicht abschreiben.** Die Werte sind seit dem 2026-07-30 aus der Geometrie
+  abgeleitet und ändern sich mit ihr; eine Auswertung importiert
+  `BALTIC_SEA_BBOX` aus `src/lib/utils/geo/checkBalticSea.ts`.
 
   Dieses Rechteck umfasst große Landflächen (Jütland, Schonen, Nordostdeutschland,
   Polen, Baltikum) und Wasser, das keine Ostsee ist. Eine Sichtung in Hannover

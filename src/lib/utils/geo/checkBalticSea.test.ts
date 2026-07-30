@@ -13,20 +13,26 @@ import { BALTIC_SEA_BBOX, isInBalticArea } from './checkBalticSea';
  * Hintergrund: `docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
  */
 
-/** Nach außen auf 0,05° runden — siehe Spec, Abschnitt 3.4. */
-function outward(value: number, up: boolean): number {
-	const steps = up ? Math.ceil(value / 0.05) : Math.floor(value / 0.05);
-	return Number((steps * 0.05).toFixed(2));
-}
-
 describe('BALTIC_SEA_BBOX ist aus der Geometrie abgeleitet', () => {
-	it('entspricht dem nach außen gerundeten Extent der Pipeline', () => {
+	// Die Rundungsregel wird hier NICHT nachgebaut. Sie steht ausschliesslich in
+	// build-baltic-geometry.sh, das die gerundeten Kanten mit in
+	// baltic-extent.json schreibt. Eine Kopie hier wuerde nur pruefen, dass zwei
+	// Implementierungen derselben Regel uebereinstimmen — nicht, dass die
+	// Konstante zur Geometrie passt.
+	it('entspricht der gerundeten Box aus der Generator-Ausgabe', () => {
 		expect(BALTIC_SEA_BBOX).toEqual({
-			minLongitude: outward(extent.minLongitude, false),
-			maxLongitude: outward(extent.maxLongitude, true),
-			minLatitude: outward(extent.minLatitude, false),
-			maxLatitude: outward(extent.maxLatitude, true)
+			minLongitude: extent.boxMinLongitude,
+			maxLongitude: extent.boxMaxLongitude,
+			minLatitude: extent.boxMinLatitude,
+			maxLatitude: extent.boxMaxLatitude
 		});
+	});
+
+	it('umschliesst den ungerundeten Extent', () => {
+		expect(BALTIC_SEA_BBOX.minLongitude).toBeLessThanOrEqual(extent.minLongitude);
+		expect(BALTIC_SEA_BBOX.maxLongitude).toBeGreaterThanOrEqual(extent.maxLongitude);
+		expect(BALTIC_SEA_BBOX.minLatitude).toBeLessThanOrEqual(extent.minLatitude);
+		expect(BALTIC_SEA_BBOX.maxLatitude).toBeGreaterThanOrEqual(extent.maxLatitude);
 	});
 });
 

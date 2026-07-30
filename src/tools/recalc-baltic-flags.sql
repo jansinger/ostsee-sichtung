@@ -16,49 +16,76 @@ CREATE INDEX IF NOT EXISTS ostsee_geom_gix ON geo_build.ostsee USING GIST (geom)
 
 \echo ''
 \echo '== Konsistenzpruefung: PostGIS gegen die Referenzpunkte aus balticGeometry.test.ts'
-\echo '   Erwartung: KEINE Zeile. Jede Zeile heisst, dass die Geometrie in der'
-\echo '   Datenbank nicht der im RBush-Index entspricht.'
-WITH referenz(name, lon, lat, erwartet) AS (
-  VALUES
-    -- Fehler A: Binnenwasser, muss aussen sein
-    ('Ladogasee',              31.5,      60.8,      false),
-    ('Onegasee',               35.5,      61.8,      false),
-    ('Weichsel Wloclawek',     19.0,      52.7,      false),
-    ('Torne-Flusslauf',        24.0,      66.5,      false),
-    ('Limfjord',                9.38,     57.02,     false),
-    ('Oder Gryfino',           14.606,    53.399,    false),
-    ('Nord-Ostsee-Kanal',       9.650,    54.330,    false),
-    -- Fehler B: innere Kuestengewaesser, muss innen sein
-    ('Flensburger Foerde',      9.589748, 54.850426, true),
-    ('Eckernfoerder Bucht',     9.838145, 54.475078, true),
-    ('Strelasund',             13.098357, 54.314608, true),
-    ('Greifswalder Bodden',    13.66281,  54.28838,  true),
-    -- Einschlussmaske
-    ('Schlei Schleimuende',    10.030,    54.676,    true),
-    ('Schlei Missunde',         9.755,    54.545,    true),
-    ('Schlei Schleswig',        9.585,    54.518,    true),
-    ('Trave Travemuende',      10.875,    53.960,    true),
-    ('Warnow Warnemuende',     12.098,    54.180,    true),
-    ('Stettiner Haff',         14.100,    53.780,    true),
-    -- Muss aussen bleiben
-    ('Helgoland',               7.89,     54.18,     false),
-    ('Hamburg',                10.0,      53.55,     false),
-    ('Hannover',                9.73,     52.37,     false),
-    ('Doggerbank',              2.02,     54.87,     false),
-    -- Kerngebiet, Regressionsschutz
-    ('Fehmarnbelt',            11.3,      54.6,      true),
-    ('Arkonabecken',           13.5,      55.0,      true),
-    ('Bornholmbecken',         15.0,      55.2,      true),
-    ('Newa-Bucht',             30.05,     59.93,     true),
-    -- Uferstreifen
-    ('Prerow 100 m landein',   12.5427,   54.459,    true),
-    ('Prerow 5 km landein',    12.5427,   54.411,    false)
-)
+\echo '   Erwartung: KEINE Zeile. Jede Zeile heisst, dass geo_build.ostsee und'
+\echo '   rbush-index.json nicht denselben Stand haben.'
+
+-- Die Punkte stehen an EINER Stelle. Anzeige und harter Abbruch lesen dieselbe
+-- Tabelle — zwei Kopien derselben Liste wuerden auseinanderlaufen.
+DROP TABLE IF EXISTS geo_build.referenzpunkte;
+CREATE TABLE geo_build.referenzpunkte (name text, lon float8, lat float8, erwartet boolean);
+INSERT INTO geo_build.referenzpunkte VALUES
+  -- Fehler A: Binnenwasser, muss aussen sein
+  ('Ladogasee',                31.5,      60.8,      false),
+  ('Onegasee',                 35.5,      61.8,      false),
+  ('Weichsel Wloclawek',       19.0,      52.7,      false),
+  ('Torne-Flusslauf',          24.0,      66.5,      false),
+  ('Oder Gryfino',             14.606,    53.399,    false),
+  ('Nord-Ostsee-Kanal',         9.650,    54.330,    false),
+  -- Limfjord: die Maske schliesst den WESTLICHEN Arm und damit die
+  -- Nordsee-Passage. Der oestliche Arm zum Kattegat bleibt bewusst drin.
+  ('Limfjord Loegstoer (West)',  9.35,    56.97,     false),
+  ('Thyboroen (Nordsee-Seite)',  8.22,    56.70,     false),
+  ('Limfjord Hals (Kattegat)',  10.30,    56.99,     true),
+  -- Fehler B: innere Kuestengewaesser, muss innen sein
+  ('Flensburger Foerde',         9.589748, 54.850426, true),
+  ('Eckernfoerder Bucht',        9.838145, 54.475078, true),
+  ('Strelasund',                13.098357, 54.314608, true),
+  ('Greifswalder Bodden',       13.66281,  54.28838,  true),
+  -- Einschlussmaske
+  ('Schlei Schleimuende',       10.030,    54.676,    true),
+  ('Schlei Missunde',            9.755,    54.545,    true),
+  ('Schlei Schleswig',           9.585,    54.518,    true),
+  ('Trave Travemuende',         10.875,    53.960,    true),
+  ('Warnow Warnemuende',        12.098,    54.180,    true),
+  ('Stettiner Haff',            14.100,    53.780,    true),
+  -- Muss aussen bleiben
+  ('Helgoland',                  7.89,     54.18,     false),
+  ('Hamburg',                   10.0,      53.55,     false),
+  ('Hannover',                   9.73,     52.37,     false),
+  ('Doggerbank',                 2.02,     54.87,     false),
+  -- Kerngebiet, Regressionsschutz
+  ('Fehmarnbelt',               11.3,      54.6,      true),
+  ('Arkonabecken',              13.5,      55.0,      true),
+  ('Bornholmbecken',            15.0,      55.2,      true),
+  ('Newa-Bucht',                30.05,     59.93,     true),
+  -- Uferstreifen
+  ('Prerow 100 m landein',      12.5427,   54.459,    true),
+  ('Prerow 5 km landein',       12.5427,   54.411,    false);
+
+CREATE OR REPLACE VIEW geo_build.referenz_abweichungen AS
 SELECT r.name, r.erwartet,
        ST_Intersects(o.geom, ST_SetSRID(ST_MakePoint(r.lon, r.lat), 4326)) AS postgis
-FROM referenz r, geo_build.ostsee o
+FROM geo_build.referenzpunkte r, geo_build.ostsee o
 WHERE ST_Intersects(o.geom, ST_SetSRID(ST_MakePoint(r.lon, r.lat), 4326))
       IS DISTINCT FROM r.erwartet;
+
+SELECT * FROM geo_build.referenz_abweichungen;
+
+-- Harter Abbruch, nicht nur eine Ausgabe: bei --migrate laeuft der
+-- Schreibvorgang unmittelbar danach. Eine Abweichung heisst, dass die Migration
+-- Werte schreiben wuerde, die die Laufzeit anders berechnet — und kein Test kann
+-- das sehen, weil die Tests den Index nur gegen sich selbst pruefen. Typischer
+-- Ausloeser: geo:build lief erneut, create-rbush-index.js nicht.
+DO $$
+DECLARE abweichungen bigint;
+BEGIN
+  SELECT count(*) INTO abweichungen FROM geo_build.referenz_abweichungen;
+  IF abweichungen > 0 THEN
+    RAISE EXCEPTION
+      'Konsistenzpruefung fehlgeschlagen: % Referenzpunkte weichen ab. Erst "cd src/tools && node create-rbush-index.js" laufen lassen. Es wurde nichts geschrieben.',
+      abweichungen;
+  END IF;
+END $$;
 
 \echo ''
 \echo '== Aenderungen ermitteln'

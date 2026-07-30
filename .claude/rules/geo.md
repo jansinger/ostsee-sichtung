@@ -17,7 +17,7 @@ Regeln für Ostsee-Positionsprüfung und Spatial Indexing.
 
 ```typescript
 BALTIC_SEA_BBOX = {
-	minLongitude: 9.4, // Kattegat vor Nordjütland — NICHT Skagerrak
+	minLongitude: 9.4, // innere Flensburger Förde
 	maxLongitude: 30.25, // Kopf der Newa-Bucht
 	minLatitude: 53.55, // Oder bei Police
 	maxLatitude: 65.95 // Bottenwiek bei Tornio
@@ -52,8 +52,17 @@ cd src/tools && node create-rbush-index.js
 Quellen und Stellhebel (alle in `src/tools/build-baltic-geometry.sql`):
 20 km Regionspuffer, 200 m Uferstreifen, 20 m Simplify-Toleranz. Ausgeschlossen
 per `baltic-artifact-mask.geojson`: Ladogasee, Onegasee, Weichsel- und
-Torne-Flussläufe, Limfjord, Oder oberhalb des Stettiner Haffs. Eingeschlossen
+Torne-Flussläufe, Oder oberhalb des Stettiner Haffs, **westlicher** Limfjord
+(damit ist die Nordsee-Passage bei Thyborøn zu; der östliche Limfjord bei
+Aalborg und Hals bleibt als Kattegat-Zufahrt drin). Eingeschlossen
 per `baltic-inclusion-mask.geojson`: Schlei, Trave- und Warnow-Mündung.
+
+**Einschränkung:** In den Einschluss-Korridoren greift der Landabzug nicht, sonst
+wären diese Gewässer nicht aufnehmbar (OSM führt sie als Binnenwasser). Die
+Korridore sind breiter als das Wasser und schlagen rund **165 km² Festland** der
+Ostsee zu. Kappeln, Arnis, Travemünde, Priwall, Warnemünde und der Rostocker
+Hafen liefern deshalb `inBaltic = true`. Wer `ostsee` als Plausibilitätssignal
+verwendet, muss das wissen — dort trägt es nicht. Offener Punkt.
 
 Für die OSM-Küstenlinie ist zwingend die **ungeteilte** Variante
 `land-polygons-complete-4326` zu verwenden. Punkt-in-Polygon-Stichproben gegen

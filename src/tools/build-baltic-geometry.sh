@@ -74,7 +74,16 @@ psql "$DB" -tA -o "$ROOT/src/lib/server/geo/baltic-extent.json" -c "
 SELECT json_build_object(
   'minLongitude', ST_XMin(e), 'maxLongitude', ST_XMax(e),
   'minLatitude',  ST_YMin(e), 'maxLatitude',  ST_YMax(e),
+  -- Die gerundete Box wird HIER berechnet und ist damit die einzige Stelle mit
+  -- der Rundungsregel. BALTIC_SEA_BBOX, checkBalticSea.test.ts und
+  -- recalc-baltic-flags.sh lesen sie, statt sie nachzurechnen.
+  'boxMinLongitude', floor(ST_XMin(e) / 0.05) * 0.05,
+  'boxMaxLongitude', ceil(ST_XMax(e) / 0.05) * 0.05,
+  'boxMinLatitude',  floor(ST_YMin(e) / 0.05) * 0.05,
+  'boxMaxLatitude',  ceil(ST_YMax(e) / 0.05) * 0.05,
+  'boxRoundingDegrees', 0.05,
   'bufferRegionMeters', $BUF_REGION, 'bufferShoreMeters', $BUF_SHORE, 'simplifyMeters', $SIMPLIFY,
+  'landPolygonsDate', '$LAND_DATE', 'ihoSource', 'MarineRegions IHO Sea Areas v3 (src/tools/iho.json)',
   'source', 'MarineRegions IHO Sea Areas + OSM land-polygons-complete-4326'
 )::text FROM (SELECT ST_Extent(geom) AS e FROM geo_build.ostsee) x;"
 
