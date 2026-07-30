@@ -90,9 +90,12 @@ HTTP-Clients den Body verschwinden.
 Erwartet: `{"status":"ok","datenverzeichnis":"beschreibbar","frei_mb":…}` und
 `{"inbaltic":false,"inchartarea":true}`
 
-Startet der Dienst gar nicht erst, steht der Grund im Passenger-Log. Bei
-weniger als 500 MB freiem Platz im Datenverzeichnis bricht er den Start
-bewusst ab (`legacy-inbox/app.js`) — siehe Abschnitt „Plattenplatz" unten.
+Startet der Dienst gar nicht erst, steht der Grund im Passenger-Log. Er bricht
+den Start ab, wenn `LEGACY_INBOX_DATA_DIR` fehlt oder das Datenverzeichnis
+nicht beschreibbar ist (`legacy-inbox/src/startPruefung.js`) — ein Rechte- oder
+Pfadfehler soll beim Deploy auffallen und nicht bei der ersten echten Sichtung.
+Knapper Plattenplatz verhindert den Start dagegen **nicht**, sondern wird laut
+protokolliert; siehe Abschnitt „Plattenplatz" unten.
 
 ## In den Posteingang schauen
 
@@ -135,8 +138,14 @@ abgelehnt hat. Der zweite Fall ist stiller Datenverlust und muss auffallen. Der
 `jq`-Befehl oben zeigt, welche Felder bemängelt wurden; häufen sich dieselben
 Namen, liegen Validierer und reale App auseinander.
 
-**Plattenplatz.** Der Dienst startet nicht mehr, wenn weniger als 500 MB frei
-sind, und liefert den freien Platz über `/health` mit. Zu bedenken: Allein der
+**Plattenplatz.** Beim Start prüft der Dienst den freien Platz und meldet
+weniger als 500 MB als Ereignis `plattenplatz_knapp` auf Stufe `fehler` ins
+Protokoll — er läuft dabei aber weiter und liefert den freien Platz über
+`/health` mit. Ein Startabbruch wäre hier das falsche Mittel: Auf einer Domain
+mit Kontingent nähme er den Posteingang vollständig vom Netz, und jede
+eintreffende Sichtung wäre verloren, ohne dass überhaupt etwas geschrieben
+würde — schlimmer als das Problem, vor dem er schützen soll. Der Alarm gehört
+deshalb in die Überwachung, nicht in den Startcode. Zu bedenken: Allein der
 Geo-Index belegt 33 MB, und innerhalb der globalen Reißleine passen im
 schlimmsten Fall rund 6 GB pro Tag auf die Platte (1.000 Requests/Stunde à
 256 KB). Die Reißleine schützt vor einer Flut, nicht vor einem geduldigen

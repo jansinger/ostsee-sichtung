@@ -2,14 +2,18 @@ import { leseKonfiguration } from './src/config.js';
 import { erstelleServer } from './src/server.js';
 import { erstelleStore } from './src/store.js';
 import { erstelleRateLimit } from './src/rateLimit.js';
+import { pruefeStartbedingungen } from './src/startPruefung.js';
 
 const konfiguration = leseKonfiguration(process.env);
 const store = await erstelleStore({ datenVerzeichnis: konfiguration.datenVerzeichnis });
 await store.initialisiere();
 
-const freiMB = Math.round((await store.freierPlatzBytes()) / (1024 * 1024));
-if (freiMB < 500) {
-	console.error(`Nur noch ${freiMB} MB frei — der Posteingang startet nicht.`);
+// Beschreibbarkeit ist Abbruchgrund, knapper Platz nur ein lauter Hinweis —
+// Begründung beider Entscheidungen in src/startPruefung.js.
+try {
+	await pruefeStartbedingungen({ store, datenVerzeichnis: konfiguration.datenVerzeichnis });
+} catch (fehler) {
+	console.error(fehler.message);
 	process.exit(1);
 }
 
