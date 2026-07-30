@@ -4,34 +4,34 @@ import path from 'node:path';
 import { GET } from './+server';
 
 /**
- * Hält die eingefrorenen Dateien des Legacy-Posteingangs mit dieser Route
- * zusammen. Wird hier ein Label geändert, muss `npm run generate:antworten`
- * laufen — sonst liefern App und Posteingang unterschiedliche Enum-Tabellen.
+ * Keeps frozen legacy inbox files in sync with this route. When a label changes
+ * here, `npm run generate:antworten` must run — otherwise the app and inbox
+ * will serve different enum tables.
  */
-async function routeAntwort(pfad: string) {
-	const antwort = await GET({
-		url: new URL(`https://localhost${pfad}`),
+async function routeResponse(routePath: string) {
+	const response = await GET({
+		url: new URL(`https://localhost${routePath}`),
 		getClientAddress: () => '127.0.0.1',
-		request: new Request(`https://localhost${pfad}`)
+		request: new Request(`https://localhost${routePath}`)
 	} as never);
-	return antwort.json();
+	return response.json();
 }
 
-async function eingefroren(datei: string) {
-	const inhalt = await readFile(path.resolve('legacy-inbox/data', datei), 'utf8');
-	return JSON.parse(inhalt);
+async function frozenFile(filename: string) {
+	const content = await readFile(path.resolve('legacy-inbox/data', filename), 'utf8');
+	return JSON.parse(content);
 }
 
-describe('eingefrorene antworten.json', () => {
-	it('stimmt mit der deutschen Route überein', async () => {
-		expect(await eingefroren('antworten.de.json')).toEqual(
-			await routeAntwort('/rest_sichtungen/antworten.json')
+describe('Frozen antworten.json', () => {
+	it('should match the German route', async () => {
+		expect(await frozenFile('antworten.de.json')).toEqual(
+			await routeResponse('/rest_sichtungen/antworten.json')
 		);
 	});
 
-	it('stimmt mit der englischen Route überein', async () => {
-		expect(await eingefroren('antworten.en.json')).toEqual(
-			await routeAntwort('/en/rest_sichtungen/antworten.json')
+	it('should match the English route', async () => {
+		expect(await frozenFile('antworten.en.json')).toEqual(
+			await routeResponse('/en/rest_sichtungen/antworten.json')
 		);
 	});
 });
