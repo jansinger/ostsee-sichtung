@@ -43,8 +43,31 @@ beforeEach(async () => {
 
 afterEach(async () => {
 	await new Promise((fertig) => server.close(fertig));
-	await rm(verzeichnis, { recursive: true, force: true });
+	await raeumeAuf(verzeichnis);
 });
+
+/**
+ * server.close() wartet nur auf offene Verbindungen, nicht auf verwaiste
+ * Request-Handler-Promises: Ein Body-Stream-Abbruch (siehe Tests unten) lässt
+ * die Verbindung sofort enden, während createSighting.js im Hintergrund noch
+ * auf die Platte schreibt (erst schreiben, dann antworten — das gilt auch,
+ * wenn die Antwort durch den clientError-Handler in server.js bereits
+ * vorzeitig beim Client angekommen ist). Ein einzelner rm() kann deshalb auf
+ * ein Verzeichnis treffen, in das der Hintergrund-Schreibvorgang gerade noch
+ * hineinschreibt (ENOTEMPTY). Ein paar Wiederholungen mit kurzer Pause geben
+ * diesem Schreibvorgang die Zeit, die er ohnehin bekommt (die Datei landet in
+ * jedem Fall auf der Platte) — reines Aufräum-Timing, keine Änderung an dem,
+ * was geprüft wird.
+ */
+async function raeumeAuf(verzeichnis, versucheUebrig = 5) {
+	try {
+		await rm(verzeichnis, { recursive: true, force: true });
+	} catch (fehler) {
+		if (versucheUebrig <= 0) throw fehler;
+		await new Promise((fertig) => setTimeout(fertig, 25));
+		await raeumeAuf(verzeichnis, versucheUebrig - 1);
+	}
+}
 
 const sende = (koerper, kopfzeilen = { 'Content-Type': 'application/json' }) =>
 	fetch(`${basis}/rest_sichtungen`, { method: 'POST', headers: kopfzeilen, body: koerper });
@@ -224,6 +247,32 @@ describe('POST /rest_sichtungen — Vertrag', () => {
 
 		const [statuszeile] = antwortRoh.split('\r\n');
 		expect(statuszeile).toContain(' 400 ');
+
+		const umschlag = await einzigeDateiIn('abgewiesen');
+		expect(umschlag.validierung.gueltig).toBe(false);
+	});
+
+	it('antwortet mit der eigenen JSON-Fehlerform statt Nodes Klartext-400, wenn der Body-Stream mitten in der Übertragung abbricht', async () => {
+		// Ohne server.on('clientError', ...) gewinnt Node's eingebaute
+		// Default-Antwort ("HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n",
+		// reiner Text, kein Content-Type) das Rennen gegen die eigene
+		// antworteJson-Antwort aus createSighting.js — siehe Diagnose in
+		// task-5-report.md, Abschnitt "Fix: flakiger Stream-Abbruch-Test". Dieser
+		// Test prüft direkt gegen die Bytes auf der Leitung, dass stattdessen die
+		// vertragskonforme JSON-Form ankommt.
+		const antwortRoh = await sendeUnterbrochen(server.address().port, '{"anzahl_gesamt": 1');
+
+		const trennstelle = antwortRoh.indexOf('\r\n\r\n');
+		expect(trennstelle).toBeGreaterThan(-1);
+		const kopfzeilen = antwortRoh.slice(0, trennstelle);
+		const koerperRoh = antwortRoh.slice(trennstelle + 4);
+
+		expect(kopfzeilen).toContain(' 400 ');
+		expect(kopfzeilen.toLowerCase()).toContain('content-type: application/json');
+
+		const koerper = JSON.parse(koerperRoh);
+		expect(koerper.message).toBe('Validation failed.');
+		expect(koerper.errors._general.join(' ')).toMatch(/unvollständig/);
 
 		const umschlag = await einzigeDateiIn('abgewiesen');
 		expect(umschlag.validierung.gueltig).toBe(false);
