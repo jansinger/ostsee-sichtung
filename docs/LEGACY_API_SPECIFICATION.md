@@ -247,8 +247,7 @@ JSON Object:
 
 > **Abweichung vom Ursprungs-PDF.** Dort lautet die Antwort auf dieselbe Anfrage
 > `{"inbaltic": false, "inchartarea": true}`. Seit der Bereinigung der
-> Ostsee-Geometrie am 2026-07-30 (`fix(map): clean the baltic geometry and
-derive the bounding box from it`) liegt die Südgrenze des Kartenbereichs bei
+> Ostsee-Geometrie am 2026-07-30 liegt die Südgrenze des Kartenbereichs bei
 > **53,55° N** statt bei 53,0° — die Beispielkoordinate 53,10 (Raum Hamburg)
 > fällt damit aus dem Kartenbereich heraus.
 >

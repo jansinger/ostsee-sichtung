@@ -28,6 +28,31 @@ import { ServerConfigService } from '../lib/services/configService.js';
 const MAX_RENAME_ATTEMPTS = 3;
 const DEFAULT_RENAME_RETRY_DELAY_MS = 50;
 
+/**
+ * Leitet aus einem geworfenen Wert eine Meldung ab, ohne selbst zu werfen.
+ *
+ * JavaScript erlaubt `throw` mit beliebigen Werten, und die Fehler hier kommen
+ * aus fremdem Gebiet: `JSON.parse` über Dateien, die ein Client geschrieben
+ * hat, sowie die injizierbaren Stellen `mappe`, `speichere` und `notify`. Ein
+ * `throw null` würde beim Zugriff auf `.message` einen zweiten Fehler auslösen
+ * — ausgerechnet im `catch`, der dafür sorgen soll, dass eine kaputte Datei den
+ * Rest des Laufs nicht aufhält.
+ */
+export function fehlerText(fehler) {
+	if (fehler instanceof Error && typeof fehler.message === 'string') {
+		return fehler.message;
+	}
+	if (typeof fehler === 'string') {
+		return fehler;
+	}
+	try {
+		return String(fehler);
+	} catch {
+		// Ein Objekt mit einem werfenden toString() bleibt übrig.
+		return 'Unbekannter Fehler';
+	}
+}
+
 function sleep(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -99,7 +124,7 @@ export async function importiere({
 			// Ein Fehler beim Lesen, Mappen oder Speichern darf den Rest nicht
 			// aufhalten — die Sichtung wurde nicht angelegt, die Datei bleibt
 			// unverändert liegen und wird beim nächsten Lauf erneut versucht.
-			console.error(`${datei}: ${fehler.message}`);
+			console.error(`${datei}: ${fehlerText(fehler)}`);
 			fehlgeschlagen++;
 			continue;
 		}
@@ -114,7 +139,7 @@ export async function importiere({
 		} catch (fehler) {
 			console.error(
 				`${datei}: Sichtung ${gespeichert.id} wurde angelegt, aber die Benachrichtigung ` +
-					`schlug fehl (${fehler.message}). Der Import läuft weiter.`
+					`schlug fehl (${fehlerText(fehler)}). Der Import läuft weiter.`
 			);
 		}
 
@@ -145,10 +170,10 @@ export async function importiere({
 			console.error(
 				`${datei}: Sichtung ${gespeichert.id} wurde in der Datenbank angelegt, aber die Datei ` +
 					`konnte nach ${MAX_RENAME_ATTEMPTS} Versuchen nicht nach importiert/ verschoben werden ` +
-					`(${letzterFehler.message}). Datei von Hand nach importiert/ verschieben, bevor der ` +
+					`(${fehlerText(letzterFehler)}). Datei von Hand nach importiert/ verschieben, bevor der ` +
 					`Import erneut läuft — sonst wird die Sichtung doppelt angelegt.`
 			);
-			moveFailure = { file: datei, sightingId: gespeichert.id, message: letzterFehler.message };
+			moveFailure = { file: datei, sightingId: gespeichert.id, message: fehlerText(letzterFehler) };
 			break;
 		}
 

@@ -27,7 +27,7 @@
  * hier ausgeführt wird. Dieselbe Begründung steht in
  * generate-antworten-json.js.
  */
-import { importiere } from './import-legacy-inbox.js';
+import { fehlerText, importiere } from './import-legacy-inbox.js';
 
 const [datenVerzeichnis] = process.argv.slice(2);
 
@@ -45,7 +45,7 @@ try {
 	// posteingang/. Ein roher Stacktrace hilft dabei niemandem — der Pfad, den
 	// der Aufrufer eingetippt hat, schon.
 	console.error(
-		`Der Import konnte das Datenverzeichnis ${datenVerzeichnis} nicht lesen: ${fehler.message}\n` +
+		`Der Import konnte das Datenverzeichnis ${datenVerzeichnis} nicht lesen: ${fehlerText(fehler)}\n` +
 			'Erwartet wird ein Verzeichnis mit den Unterverzeichnissen posteingang/ und importiert/.'
 	);
 	process.exit(1);

@@ -60,3 +60,10 @@ export interface MoveFailure {
 export function importiere(
 	optionen: ImportOptions
 ): Promise<{ uebernommen: number; fehlgeschlagen: number; moveFailure: MoveFailure | null }>;
+
+/**
+ * Leitet aus einem geworfenen Wert eine Meldung ab, ohne selbst zu werfen.
+ * JavaScript erlaubt `throw` mit beliebigen Werten; ein Zugriff auf `.message`
+ * eines `null` würde im `catch` einen zweiten Fehler auslösen.
+ */
+export function fehlerText(fehler: unknown): string;

@@ -4,7 +4,7 @@ import { mkdtemp, rm, mkdir, writeFile, readdir, rename } from 'node:fs/promises
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { importiere } from './import-legacy-inbox.js';
+import { fehlerText, importiere } from './import-legacy-inbox.js';
 
 /**
  * `importiere()`'s default `notify` (sendeBenachrichtigung, see
@@ -415,4 +415,50 @@ describe('Kommandozeilen-Aufruf (npm run import:legacy-inbox)', () => {
 		expect(ergebnis.ausgabe).toContain('0 übernommen, 0 offen.');
 		expect(ergebnis.code).toBe(0);
 	}, 120_000);
+});
+
+describe('fehlerText', () => {
+	it('nimmt die Meldung eines echten Fehlers', () => {
+		expect(fehlerText(new Error('Platte voll'))).toBe('Platte voll');
+	});
+
+	it('wirft nicht bei null oder undefined', () => {
+		expect(fehlerText(null)).toBe('null');
+		expect(fehlerText(undefined)).toBe('undefined');
+	});
+
+	it('reicht einen geworfenen String durch', () => {
+		expect(fehlerText('etwas ging schief')).toBe('etwas ging schief');
+	});
+
+	it('kommt mit einem Objekt zurecht, dessen toString wirft', () => {
+		const bosartig = {
+			toString() {
+				throw new Error('auch das noch');
+			}
+		};
+		expect(fehlerText(bosartig)).toBe('Unbekannter Fehler');
+	});
+});
+
+describe('importiere — nicht-Error-Würfe', () => {
+	it('hält den Lauf nicht auf, wenn speichere() null wirft', async () => {
+		await legeUmschlagAn('000001__a.json', { anzahl_gesamt: 1 });
+		await legeUmschlagAn('000002__b.json', { anzahl_gesamt: 2 });
+
+		let aufruf = 0;
+		const ergebnis = await importiere({
+			datenVerzeichnis: verzeichnis,
+			mappe: () => ({ totalCount: 1 }),
+			speichere: async () => {
+				aufruf++;
+				if (aufruf === 1) throw null;
+				return { id: 2 };
+			},
+			notify: async () => {}
+		});
+
+		expect(ergebnis.uebernommen).toBe(1);
+		expect(ergebnis.fehlgeschlagen).toBe(1);
+	});
 });

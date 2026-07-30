@@ -88,7 +88,16 @@ HTTP-Clients den Body verschwinden.
     curl -s 'https://schweinswalsichtung.de/rest_sichtungen/inBaltic.json?location=53,10'
 
 Erwartet: `{"status":"ok","datenverzeichnis":"beschreibbar","frei_mb":…}` und
-`{"inbaltic":false,"inchartarea":true}`
+`{"inbaltic":false,"inchartarea":false}`
+
+Die zweite Antwort überrascht auf den ersten Blick, ist aber richtig: Seit der
+Bereinigung der Ostsee-Geometrie beginnt der Kartenbereich bei 53,55° N, und
+53,10 (Raum Hamburg) liegt südlich davon. Wer prüfen will, dass die Geometrie
+überhaupt greift, nimmt zusätzlich eine Koordinate innerhalb des Bereichs:
+
+    curl -s 'https://schweinswalsichtung.de/rest_sichtungen/inBaltic.json?location=54.5,10.5'
+
+Erwartet: `{"inbaltic":true,"inchartarea":true}` (Kieler Bucht, offenes Wasser).
 
 Startet der Dienst gar nicht erst, steht der Grund im Passenger-Log. Er bricht
 den Start ab, wenn `LEGACY_INBOX_DATA_DIR` fehlt oder das Datenverzeichnis
