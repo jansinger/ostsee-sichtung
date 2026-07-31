@@ -12,7 +12,12 @@ import {
 import { maxUploadSizeFor } from '$lib/constants/uploadLimits';
 
 import type { ValidationPreset, ValidationResult } from '$lib/types';
-import { isImageFile, isMediaFile, isVideoFile } from '$lib/utils/file/fileType';
+import {
+	describeFileFormats,
+	isImageFile,
+	isMediaFile,
+	isVideoFile
+} from '$lib/utils/file/fileType';
 
 /**
  * Validates a single file against specified criteria
@@ -216,20 +221,11 @@ export function getValidationPreset(
 /**
  * Generiert eine benutzerfreundliche Liste der erlaubten Dateitypen.
  *
- * Die Sonderfälle sind nicht kosmetisch: Aus `image/jpeg` würde sonst „JPEG"
- * (Melder kennen „JPG") und aus `video/quicktime` „QUICKTIME" statt „MOV".
+ * Die Sonderfall-Tabelle liegt zentral in `$lib/utils/file/fileType.ts`
+ * (`describeFileFormats`) — dort auch für `UPLOAD_ERROR_MESSAGES.INVALID_TYPE`
+ * in `$lib/constants/upload.ts` genutzt, damit beide Stellen für dieselben
+ * MIME-Typen dieselben Formatnamen liefern.
  */
 export function getFileTypeDescription(allowedTypes: readonly string[]): string {
-	const FORMAT_NAMES: Record<string, string> = {
-		'image/jpeg': 'JPG',
-		'video/quicktime': 'MOV',
-		'video/x-msvideo': 'AVI',
-		'video/x-matroska': 'MKV'
-	};
-
-	const names = allowedTypes.map(
-		(type) => FORMAT_NAMES[type] ?? type.split('/')[1]?.toUpperCase() ?? type
-	);
-
-	return [...new Set(names)].join(', ');
+	return describeFileFormats(allowedTypes);
 }

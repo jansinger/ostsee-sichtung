@@ -34,6 +34,26 @@ describe('UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE', () => {
 
 		expect(message).not.toMatch(/Auflösung/);
 	});
+
+	it('richtet sich nach dem MIME-Typ, nicht nach der (frei wählbaren) Dateiendung', () => {
+		// Bild-Endung, aber Video-MIME-Typ: der Ausweg muss trotzdem erscheinen.
+		const videoWithImageName = UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(
+			'wal.jpg',
+			100 * MB,
+			137 * MB,
+			'video/mp4'
+		);
+		expect(videoWithImageName).toMatch(/Auflösung|kürzen/);
+
+		// Video-Endung, aber Bild-MIME-Typ: der Ausweg darf nicht erscheinen.
+		const imageWithVideoName = UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(
+			'wal.mp4',
+			10 * MB,
+			14 * MB,
+			'image/jpeg'
+		);
+		expect(imageWithVideoName).not.toMatch(/Auflösung/);
+	});
 });
 
 describe('UPLOAD_ERROR_MESSAGES.INVALID_TYPE', () => {

@@ -4,7 +4,7 @@
  */
 
 import { MEDIA_FALLBACK_EMAIL } from '$lib/constants/contact';
-import { isVideoFile } from '$lib/utils/file/fileType';
+import { describeFileFormats, isVideoFile } from '$lib/utils/file/fileType';
 
 // File size limits (in bytes)
 export const UPLOAD_LIMITS = {
@@ -86,34 +86,6 @@ export const FILE_VALIDATION_PRESETS = {
 	}
 } as const;
 
-/**
- * "image/jpeg, video/mp4" → "JPG, MP4"
- *
- * Zweite Ableitung von MIME-Typ zu Formatname neben `getFileTypeDescription`
- * (`$lib/utils/validation/fileValidation.ts`) — bewusst, nicht aus Versehen:
- * `fileValidation.ts` importiert bereits Werte aus dieser Datei
- * (`UPLOAD_ERROR_MESSAGES`, `ALLOWED_MIME_TYPES`, `UPLOAD_LIMITS`). Ein
- * Re-Import von `getFileTypeDescription` hier würde daraus einen echten
- * Value-Zyklus machen (nicht nur einen Typ-Zyklus), mit der üblichen Gefahr
- * unfertiger Bindings je nach Modul-Ladereihenfolge. Die Sonderfälle sind
- * deshalb dupliziert, nicht neu erfunden — dieselbe Tabelle wie dort, damit
- * "JPG"/"MOV"/"AVI"/"MKV" für dieselben Eingaben identisch herauskommen
- * (siehe `getFileTypeDescription`-Tests in `fileValidation.test.ts`).
- */
-function describeFormats(allowedTypes: readonly string[]): string {
-	const FORMAT_NAMES: Record<string, string> = {
-		'image/jpeg': 'JPG',
-		'video/quicktime': 'MOV',
-		'video/x-msvideo': 'AVI',
-		'video/x-matroska': 'MKV'
-	};
-
-	const names = allowedTypes.map(
-		(type) => FORMAT_NAMES[type] ?? type.split('/')[1]?.toUpperCase() ?? type
-	);
-	return [...new Set(names)].join(', ');
-}
-
 // Error messages for upload validation
 //
 // Die Texte nennen bewusst die IST-Größe und einen Ausweg. „Datei zu groß.
@@ -138,7 +110,7 @@ export const UPLOAD_ERROR_MESSAGES = {
 	},
 
 	INVALID_TYPE: (fileName: string, allowedTypes: readonly string[]) =>
-		`${fileName}: Dieses Format können wir nicht annehmen. Möglich sind ${describeFormats(allowedTypes)}.`,
+		`${fileName}: Dieses Format können wir nicht annehmen. Möglich sind ${describeFileFormats(allowedTypes)}.`,
 
 	TOO_MANY_FILES: (maxFiles: number) => `Zu viele Dateien. Maximum: ${maxFiles}`,
 
