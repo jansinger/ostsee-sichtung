@@ -290,10 +290,16 @@ test.describe('Sichtungskarte im iframe — Mausrad', () => {
 			route.fulfill({
 				status: 200,
 				contentType: 'text/html',
+				// Die Rahmenseite ist bewusst **scrollbar**: Der Rahmen füllt den Viewport,
+				// darunter steht Platz. Nur so lässt sich überhaupt messen, ob ein Rad über
+				// der Karte an die einbettende Seite durchgereicht wird — mit `overflow:hidden`
+				// bliebe der Scroll-Wert zwangsläufig bei 0 und die Aussage wäre leer.
 				body: `<!doctype html><html><head><meta charset="utf-8"><style>
-					html,body{margin:0;height:100%;overflow:hidden}
-					iframe{border:0;width:100%;height:100%;display:block}
-				</style></head><body><iframe src="/map" title="Sichtungskarte"></iframe></body></html>`
+					html,body{margin:0}
+					iframe{border:0;width:100%;height:100vh;display:block}
+					.nach-der-karte{height:600px}
+				</style></head><body><iframe src="/map" title="Sichtungskarte"></iframe>
+				<div class="nach-der-karte">Inhalt der einbettenden Seite</div></body></html>`
 			})
 		);
 
@@ -324,14 +330,22 @@ test.describe('Sichtungskarte im iframe — Mausrad', () => {
 		return { x: box.x + box.width * relX, y: box.y + box.height * relY };
 	}
 
-	test('Mausrad zoomt nicht ohne Fokus, damit die einbettende Seite scrollen kann', async ({
-		page
-	}) => {
+	test('Mausrad ohne Fokus scrollt die einbettende Seite, statt zu zoomen', async ({ page }) => {
 		const { mapFrame, box } = await embedMap(page);
 
 		const before = await hoverAndSettle(page, pointInFrame(box), mapFrame);
+		expect(await page.evaluate(() => window.scrollY), 'Rahmenseite startet nicht oben').toBe(0);
 
-		await page.mouse.wheel(0, -400);
+		// Nach unten, denn oben am Dokumentanfang gäbe es nichts zu scrollen.
+		await page.mouse.wheel(0, 400);
+
+		// Der eigentliche Punkt: Das Rad landet bei der einbettenden Seite.
+		await expect
+			.poll(async () => page.evaluate(() => window.scrollY), {
+				timeout: 4000,
+				message: 'Rahmenseite hat nicht gescrollt — die Karte hat das Rad verschluckt'
+			})
+			.toBeGreaterThan(0);
 
 		await expectMapToStayPut(
 			mapFrame,
@@ -341,14 +355,18 @@ test.describe('Sichtungskarte im iframe — Mausrad', () => {
 	});
 
 	/**
-	 * Positiv-Kontrolle zum Test darüber.
+	 * Positiv-Kontrolle zum Test darüber — und dessen Spiegelbild.
 	 *
 	 * `expectMapToStayPut` ist mit **jedem** Grund zufrieden, aus dem sich das
 	 * Kartenbild nicht ändert — auch damit, dass das Mausrad den Frame nie erreicht
 	 * oder die Karte dort gar nicht zoomen kann. Erst dieser Test zeigt, dass beides
-	 * funktioniert und oben wirklich die Condition gebremst hat.
+	 * funktioniert und oben wirklich die Condition gebremst hat. Gleiche Geste,
+	 * gleiche Rahmenseite, vertauschtes Ergebnis: hier zoomt die Karte und die
+	 * einbettende Seite bleibt stehen, weil `MouseWheelZoom` `preventDefault()` ruft.
 	 */
-	test('Mausrad zoomt im iframe nach einem Klick in die Karte', async ({ page }) => {
+	test('Mausrad nach einem Klick in die Karte zoomt und lässt die Rahmenseite stehen', async ({
+		page
+	}) => {
 		const { mapFrame, box } = await embedMap(page);
 
 		// Abseits der Sichtungen klicken, damit kein Popup mit `autoPan` die Ansicht bewegt.
@@ -357,12 +375,17 @@ test.describe('Sichtungskarte im iframe — Mausrad', () => {
 
 		const before = await hoverAndSettle(page, pointInFrame(box), mapFrame);
 
-		await page.mouse.wheel(0, -400);
+		await page.mouse.wheel(0, 400);
 
 		await expectMapToMove(
 			mapFrame,
 			before,
 			'Mausrad-Zoom blieb im iframe auch mit Fokus ohne Wirkung — der Test darüber wäre damit gehaltlos'
 		);
+
+		expect(
+			await page.evaluate(() => window.scrollY),
+			'Rahmenseite ist trotz Karten-Zoom mitgescrollt'
+		).toBe(0);
 	});
 });
