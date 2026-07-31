@@ -44,6 +44,10 @@ Alle Zeilenangaben gegen `main` bei Commit `11a4e87` geprüft.
 | B15 | Der Staging-Stack ist laut Setup-Checkliste noch nicht eingerichtet                                                                                                                                     | `docs/RELEASE_PIPELINE.md:207`                                     |
 | B16 | Das Cookie ist nur signiert, nicht verschlüsselt: base64-Dekodieren liefert `sub`, E-Mail und Rollen im Klartext                                                                                        | folgt aus B1 (JWS statt JWE)                                       |
 
+**Stand nach diesem Branch:** B8, B9 und B10 sind durch den in Abschnitt 4 beschriebenen
+Startup-Guard (`secretGuard.ts`) behoben — sie beschreiben hier bewusst noch den Zustand
+_vor_ dem Guard, als Begründung für dessen Notwendigkeit.
+
 ### 1.2 Offene Betriebsfrage
 
 Woher `SESSION_SECRET` beim Start des Produktions-Containers kommt und wer diese Quelle lesen
@@ -148,7 +152,6 @@ _Platzhalter_. Ein 32-stelliger Hex-Wert (16 Byte) kommt heute durch und lässt
 Länge und Hex-Zeichensatz ergänzt.
 
 **Beide Prüfungen ziehen in ein eigenes Modul** `src/lib/server/config/secretGuard.ts`.
-Sein Import hat Seiteneffekte (DB-Modul, Middleware-Kette, Signal-Handler) und die Guards laufen im Modul-Scope; die Coverage erfasst zudem nur `src/lib/**`
 Sein Import hat Seiteneffekte (DB-Modul, Middleware-Kette, Signal-Handler) und die Guards
 laufen im Modul-Scope — ein Test müsste das Modul je Fall neu importieren; die Coverage erfasst
 zudem nur `src/lib/**` (`vitest.config.ts`, `coverage.include`). Reine Funktionen

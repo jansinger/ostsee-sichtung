@@ -11,17 +11,28 @@
 /**
  * Werte, die als `SESSION_SECRET` nie gelten dürfen, weil sie öffentlich einsehbar sind.
  *
- * Beide sind 33 Zeichen lang und bestehen damit jede reine Mindestlängenprüfung — der
- * Vergleich gegen diese Menge ist deshalb nicht optional.
+ * Alle sind mindestens 32 Zeichen lang und bestehen damit jede reine Mindestlängenprüfung —
+ * der Vergleich gegen diese Menge ist deshalb nicht optional.
  */
 export const PUBLIC_SESSION_SECRETS: ReadonlySet<string> = new Set([
 	'your-secret-key-here-min-32-chars', // .env.example
-	'8K7h3L9mN2pQ4rS6tU8vW0xY2zA4bC6dE' // docs/ENVIRONMENT.md
+	'8K7h3L9mN2pQ4rS6tU8vW0xY2zA4bC6dE', // docs/ENVIRONMENT.md
+	// .env.docker (committet, per docker-compose.production.yml als Vorlage verlinkt) —
+	// der Wert wurde bereits ausgeliefert, laufende Deployments können ihn übernommen
+	// haben; ihn nur aus der Vorlage zu entfernen erreicht die nicht.
+	'CHANGE-ME-use-openssl-rand-base64-32',
+	// docs/DOCKER_DEPLOYMENT.md — aus demselben Grund: bereits ausgeliefert, zusätzlich
+	// zur Bereinigung der Vorlage muss der Wert selbst blockiert werden.
+	'your-generated-session-secret-here',
+	'your-secure-random-string-min-32-chars'
 ]);
 
 export const MIN_SESSION_SECRET_LENGTH = 32;
 
 const GENERATE_HINT = 'Erzeugen mit: openssl rand -base64 32';
+
+/** Analog zu `GENERATE_HINT`, aber für `ENCRYPTION_KEY` (Befund 6: einheitliche Behandlung). */
+const ENCRYPTION_KEY_HINT = 'Erzeugen mit: openssl rand -hex 32';
 
 /**
  * Prüft einen `SESSION_SECRET`-Wert.
@@ -71,30 +82,28 @@ const HEX_ONLY = /^[0-9a-f]+$/i;
  * @returns `null` wenn gültig, sonst die vollständige Fehlermeldung.
  */
 export function validateEncryptionKey(raw: string): string | null {
-	const hint = 'Erzeugen mit: openssl rand -hex 32';
-
 	/* Trimmen vor dem Vergleich, analog zu validateSessionSecret: sonst umgeht umgebender
 	   Leerraum die Platzhalter-Prüfung und die Fehlermeldung nennt die falsche Ursache
 	   (Längenfehler statt Platzhalter). */
 	const value = raw.trim();
 
 	if (!value) {
-		return `ENCRYPTION_KEY ist in Produktion erforderlich. ${hint}`;
+		return `ENCRYPTION_KEY ist in Produktion erforderlich. ${ENCRYPTION_KEY_HINT}`;
 	}
 	if (value === PLACEHOLDER_ENCRYPTION_KEY) {
 		return (
 			'ENCRYPTION_KEY ist der Platzhalter aus der Beispiel-Konfiguration. ' +
-			`Die Verschlüsselung des PKCE-Verifiers wäre damit wirkungslos. ${hint}`
+			`Die Verschlüsselung des PKCE-Verifiers wäre damit wirkungslos. ${ENCRYPTION_KEY_HINT}`
 		);
 	}
 	if (value.length !== ENCRYPTION_KEY_LENGTH) {
 		return (
 			`ENCRYPTION_KEY muss genau ${ENCRYPTION_KEY_LENGTH} Zeichen lang sein ` +
-			`(32 Byte für aes-256-gcm), ist aber ${value.length}. ${hint}`
+			`(32 Byte für aes-256-gcm), ist aber ${value.length}. ${ENCRYPTION_KEY_HINT}`
 		);
 	}
 	if (!HEX_ONLY.test(value)) {
-		return `ENCRYPTION_KEY muss hexadezimal sein (nur 0-9 und a-f). ${hint}`;
+		return `ENCRYPTION_KEY muss hexadezimal sein (nur 0-9 und a-f). ${ENCRYPTION_KEY_HINT}`;
 	}
 	return null;
 }
@@ -111,7 +120,13 @@ export function assertProductionSecrets(env: {
 	SESSION_SECRET: string;
 	ENCRYPTION_KEY: string;
 }): void {
-	if (env.NODE_ENV !== 'production') {
+	/* Groß-/Kleinschreibung und umgebender Leerraum dürfen den Guard nicht abschalten
+	   ("Production", " production ", "PRODUCTION" sind gemeint). Eine Kurzform wie "prod"
+	   gilt bewusst NICHT als Produktion: SvelteKit und die Skripte dieses Projekts setzen
+	   durchgehend "production" — eine Zusatzbedeutung zu erfinden wäre eine eigene
+	   Entscheidung, die dieser Guard nicht treffen soll. */
+	const normalizedNodeEnv = env.NODE_ENV.trim().toLowerCase();
+	if (normalizedNodeEnv !== 'production') {
 		return;
 	}
 

@@ -65,8 +65,12 @@ describe('validateEncryptionKey', () => {
 		expect(validateEncryptionKey(valid.toUpperCase())).toBeNull();
 	});
 
+	/* "ENCRYPTION_KEY" allein steht in jeder Fehlermeldung dieser Funktion — eine vertauschte
+	   Prüfreihenfolge (leer erst nach der Längenprüfung) bliebe mit dieser Erwartung grün.
+	   "erforderlich" kommt dagegen nur in der Pflicht-Meldung vor (Platzhalter-, Längen- und
+	   Hex-Meldung enthalten das Wort nicht) und trifft damit gezielt den Pflicht-Zweig. */
 	it('lehnt einen leeren Wert ab', () => {
-		expect(validateEncryptionKey('')).toMatch(/ENCRYPTION_KEY/);
+		expect(validateEncryptionKey('')).toMatch(/erforderlich/);
 	});
 
 	it('lehnt den Platzhalter aus .env.example ab', () => {
@@ -143,5 +147,34 @@ describe('assertProductionSecrets', () => {
 		}
 		expect(message).toMatch(/SESSION_SECRET/);
 		expect(message).toMatch(/ENCRYPTION_KEY/);
+	});
+
+	/* Befund 4 (#635-Review): `NODE_ENV !== 'production'` war ein exakter Vergleich. Bei
+	   "Production", " production " oder "PRODUCTION" blieb der Guard lautlos aus — ein
+	   Betreiber, der eine dieser Schreibweisen setzt, bekommt keinen Schutz. */
+	it.each(['Production', ' production ', 'PRODUCTION'])(
+		'greift auch bei der Schreibweise NODE_ENV=%j',
+		(nodeEnv) => {
+			expect(() =>
+				assertProductionSecrets({
+					NODE_ENV: nodeEnv,
+					SESSION_SECRET: '',
+					ENCRYPTION_KEY: ''
+				})
+			).toThrow(/SESSION_SECRET/);
+		}
+	);
+
+	/* "prod" ist keine Schreibvariante von "production", sondern ein eigener Wert. SvelteKit
+	   und die Skripte dieses Projekts setzen durchgehend "production" — eine Zusatzbedeutung
+	   für "prod" zu erfinden wäre eine eigene Entscheidung, die der Guard nicht treffen soll. */
+	it('behandelt NODE_ENV="prod" NICHT als Produktion', () => {
+		expect(() =>
+			assertProductionSecrets({
+				NODE_ENV: 'prod',
+				SESSION_SECRET: '',
+				ENCRYPTION_KEY: ''
+			})
+		).not.toThrow();
 	});
 });
