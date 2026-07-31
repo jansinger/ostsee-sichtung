@@ -118,7 +118,7 @@ const defaultConfigurations: ConfigItem[] = [
 	},
 	{
 		key: 'security.allowedFileTypes',
-		value: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime'],
+		value: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'],
 		description: 'Erlaubte MIME-Typen für Datei-Uploads',
 		category: 'security'
 	},

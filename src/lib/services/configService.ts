@@ -26,6 +26,7 @@ const DEFAULT_VALUES = {
 	'security.allowedFileTypes': [
 		'image/jpeg',
 		'image/png',
+		'image/gif',
 		'image/webp',
 		'video/mp4',
 		'video/quicktime'

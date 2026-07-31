@@ -98,6 +98,17 @@ const MAGIC_BYTES: Record<string, Array<Array<{ bytes: number[]; offset: number 
 };
 
 /**
+ * Prüft, ob für einen MIME-Typ überhaupt eine Signatur hinterlegt ist.
+ *
+ * `validateMagicBytes()` lässt unbekannte Typen bewusst durch (konservativer
+ * Ansatz). Wer einen Typ öffentlich anbietet, muss ihn aber prüfen können —
+ * sonst ist die Inhaltsprüfung für genau diesen Typ wirkungslos.
+ */
+export function hasMagicByteSignature(mimeType: string): boolean {
+	return Object.prototype.hasOwnProperty.call(MAGIC_BYTES, mimeType.toLowerCase());
+}
+
+/**
  * Validates if the buffer matches the expected magic bytes for the given MIME type
  * @param buffer - The file buffer to check
  * @param declaredMimeType - The MIME type declared by the client
