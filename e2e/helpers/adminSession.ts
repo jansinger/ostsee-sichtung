@@ -104,10 +104,17 @@ export async function seedAdminSession(context: BrowserContext, baseURL: string)
 
 	const sql = postgres(databaseUrl, { max: 1 });
 	try {
-		/* Alte Zeilen derselben Testidentität wegräumen. Ohne das sammelt jeder Lauf eine
-		   weitere Zeile an — in einer Datenbank, die sich laut docs/WORKTREES.md alle
-		   Worktrees teilen. */
-		await sql`DELETE FROM sessions WHERE sub = ${ADMIN_SUB}`;
+		/* Alte Zeilen derselben Testidentität wegräumen, aber nur abgelaufene — nicht
+		   unconditional. `fullyParallel: true` ruft diese Funktion für dieselbe ADMIN_SUB
+		   aus mehreren Workern gleichzeitig auf (design-tokens.spec.ts hat vier
+		   auth-Routen mit je drei Tests); ein unconditional DELETE hier löschte die gerade
+		   erst eingefügte, noch gültige Zeile eines parallel laufenden Tests, dessen
+		   nachfolgender page.goto() dann auf einen Login-Redirect lief statt auf die Seite,
+		   die der Scan messen sollte — sichtbar als flaky Design-Token-Verstoß auf
+		   wechselnden Admin-Routen. Dieselbe Bedingung wie in sessionRepository.ts
+		   createSession(): mehrere gültige Sessions pro sub sind kein Sonderfall, sondern
+		   der Normalzustand, weil resolveSessionUser ausschließlich über token_hash sucht. */
+		await sql`DELETE FROM sessions WHERE sub = ${ADMIN_SUB} AND expires_at < NOW()`;
 
 		await sql`
 			INSERT INTO sessions (token_hash, sub, roles, user_claims, expires_at, absolute_expires_at)
