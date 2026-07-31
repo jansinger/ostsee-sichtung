@@ -5,6 +5,7 @@ hochladen ermöglichen (wenn das geht und GPS Info entnehmen)".
 **Stand:** 2026-07-31, geprüft gegen Branch `claude/meeresmuseum-website-changes-d47405`
 (Release 2.6.2, `11a4e87`).
 **Status:** Konzept freigegeben, noch nicht implementiert.
+**Überarbeitet:** 2026-07-31 nach Review — zwei Aussagen der Erstfassung waren falsch (Abschnitt 2.1 und 2.6), drei Befunde kamen hinzu. Plan: `docs/superpowers/plans/2026-07-31-video-upload.md` (nicht versioniert).
 
 ---
 
@@ -145,10 +146,25 @@ wäre eine vierte Zahl gegen eine Gefahr — 20 Uploads/h × 100 MB = 2 GB/h je 
 Gesamtlimit je Meldung zusammen mit dem bestehenden Rate Limit gezielter abdeckt. Falls das
 Museum den Hebel dennoch will, ist es ein zusätzlicher Schlüssel, kein Umbau.
 
-**Wegfall einer Kontrolle, bewusst:** Die Unterscheidung anonym/angemeldet bei der
-Dateigröße entfällt. Sie existiert heute nur, weil die öffentliche Auskunft statisch ist.
-Kompensiert wird sie durch das neue Gesamtlimit je Meldung und das unveränderte Rate Limit
-(20 Uploads/h anonym).
+**Wegfall einer Kontrolle — und die Korrektur dazu.** Die Unterscheidung anonym/angemeldet
+bei der Dateigröße entfällt; sie existiert heute nur, weil die öffentliche Auskunft statisch
+ist. Die Erstfassung dieses Konzepts hat behauptet, das Gesamtlimit je Meldung kompensiere
+das. **Das ist falsch:** `referenceId` kommt aus dem `FormData` und wird nur gegen `isCuid()`
+geprüft (`+server.ts:49`) — eine neue CUID je Datei umgeht das Limit vollständig.
+
+Übrig bliebe allein `FILE_UPLOAD_ANONYMOUS` mit 20 Uploads pro Stunde:
+
+| | vorher | ohne zusätzliche Bremse |
+| --- | --- | --- |
+| Je IP und Stunde | 20 × 10 MB = 200 MB | 20 × 100 MB = **2 GB** |
+| Bis zur 24-h-Bereinigung | 4,8 GB | **48 GB** |
+
+Der gesamte Medienbestand aus 13 Jahren beträgt 1,59 GB — eine einzelne IP füllt das in
+unter einer Stunde.
+
+**Deshalb zusätzlich: ein Byte-Budget je Kennung und Stunde** (300 MB anonym, 2 GB
+angemeldet), an derselben Kennung wie das Rate Limit. Ohne dieses Budget darf die anonyme
+Sondergrenze nicht fallen und keine Videogröße freigeschaltet werden.
 
 ### 2.2 Formate — MP4 und QuickTime, drei Listen mit klaren Rollen
 
@@ -210,8 +226,24 @@ gerichtet, die sich gar nicht anmelden können.
   verschwinden; ein Validierungsfehler ohne Verknüpfung zum Bedienelement verletzt
   außerdem WCAG 2.1 SC 3.3.1.
 - Der Hinweis „Medien auf anderem Weg zukommen lassen" in `sections/Media.svelte` ist
-  heute immer sichtbar und verweist auf Instruktionen _nach_ dem Absenden. Im Fehlerfall
-  gehört der Weg sofort dorthin, mit konkretem nächstem Schritt.
+  heute immer sichtbar und verweist auf Instruktionen _nach_ dem Absenden. **Diese
+  Instruktionen existieren nicht:** `SubmissionSuccess.svelte:77-82` nennt weder Adresse
+  noch Weg. Die Adresse ist inzwischen bestätigt — `sichtungen@meeresmuseum.de` — und
+  gehört als Konstante an eine Stelle, aus der Fehlertext, Formularhinweis und
+  Bestätigungsseite sie lesen.
+
+**Und der schwerste Punkt, in der Erstfassung übersehen: Es gibt keinen
+Upload-Fortschritt.** `uploadFileDirect` nutzt `fetch()` (`uploadUtils.ts:25`), und `fetch`
+meldet keinen Fortschritt des Request-Bodys. Die Oberfläche zeigt einen unbestimmten
+Spinner und ein Abzeichen „Upload…" (`DropzoneEnhanced.svelte:577`).
+
+Bei einem Foto von 3 MB ist das in Ordnung. Bei **3 bis 13 Minuten** für ein 100-MB-Video
+sieht der Melder auf dem Boot einen Kringel, hält die Übertragung für hängengeblieben und
+bricht ab — nach zehn Minuten Funk. Ohne Prozentanzeige und Abbrechen-Knopf ist das Feature
+praktisch unbenutzbar, und eine kleinere Grenze hilft nicht: 25 MB bei 1 Mbit/s Uplink sind
+immer noch 3,3 Minuten. Nötig ist `XMLHttpRequest` mit `upload.onprogress`; `fetch` mit
+`ReadableStream`-Body scheidet aus, weil Safari es nicht unterstützt — also genau die
+iPhone-Melder trifft, um die es geht.
 
 ### 2.5 GPS aus Video — eigenes Vorhaben, später
 
@@ -241,6 +273,12 @@ Struktur steht. Zu tun:
   Video-Vorschau tot.
 - **`preload="none"`** in `MediaThumbnail.svelte` statt `metadata`, dazu das leere
   `poster=""` entfernen. Das Play-Overlay ist bereits vorhanden.
+- **Das Media-Rate-Limit für Teilanfragen anheben — in der Erstfassung übersehen.**
+  `MEDIA_ACCESS_ANONYMOUS` erlaubt 30 Abrufe pro Minute. Ohne Range-Support war das ein
+  Abruf je Datei; mit Range macht ein Player beim Springen im Video leicht 30 Anfragen in
+  Sekunden, und die Wiedergabe endet mit 429 — der Fix verschlechterte damit genau das
+  Symptom, das er beheben soll. Lösung ohne die Bremse aufzugeben: ein eigenes, zehnfach
+  höheres Limit für 206-Anfragen, während das Volumen weiterhin am Byte-Budget hängt.
 - **Kein serverseitiges Poster-Rendering.** Dafür bräuchte das Image ffmpeg (~100 MB plus
   native Abhängigkeit) — das steht in keinem Verhältnis.
 
@@ -250,15 +288,22 @@ Struktur steht. Zu tun:
 
 | PR    | Inhalt                                                                                                                                        | Größe |
 | ----- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| **1** | Grenzen und Listen auf eine Quelle, neue Konfigurationsschlüssel, Konsistenztests ausgeweitet, GIF-Drift behoben. Noch kein sichtbares Video. | M     |
-| **2** | **Auslieferung videofähig:** Range/Streaming in `/api/media`, `media-src`, `preload="none"`.                                                  | **L** |
-| **3** | Videos freischalten: MP4 + QuickTime öffentlich, ISO-BMFF-Prüfung entschärft, Gesamtlimit je Meldung, Formattexte.                            | S     |
-| **4** | Rückmeldung: Fehlertexte, 413-Text, bleibender Fehlerbereich, `BODY_SIZE_LIMIT` angleichen inkl. Doku und Startwarnung.                       | S     |
+| **1** | Grenzen und Listen auf eine Quelle, neue Konfigurationsschlüssel, Konsistenztests ausgeweitet, GIF-Drift behoben, **Byte-Budget je IP und Stunde**. Noch kein sichtbares Video. | M     |
+| **2** | **Auslieferung videofähig:** Range/Streaming in `/api/media`, Rate-Limit für Teilanfragen, `media-src`, `preload="none"`.                     | **L** |
+| **3** | Videos freischalten: MP4 + QuickTime öffentlich, ISO-BMFF-Prüfung entschärft, Gesamtlimit je Meldung, Formatnamen und Dauerhinweis.           | S     |
+| **4** | Rückmeldung: Fehlertexte mit Adresse, 413-Text, bleibender Fehlerbereich, **Upload-Fortschritt mit Abbruch**, `BODY_SIZE_LIMIT` inkl. Doku und Startwarnung. | **M** |
 | —     | _Separat:_ GPS aus Video, nach B2/B6.                                                                                                         | M     |
 
-**PR 2 muss vor PR 3 kommen** — sonst nehmen wir Videos an, die niemand abspielen kann.
-Muss der Umfang schrumpfen, ist PR 2 der Teil, den man **nicht** streichen darf; eher
-bleibt die Grenze zunächst bei 25 MB.
+**Zwei harte Reihenfolgebedingungen:**
+
+1. **Das Byte-Budget aus PR 1 muss vor PR 3 stehen.** PR 1 schafft die anonyme
+   Sondergrenze ab; ohne die Volumen-Bremse wären 2 GB pro IP und Stunde möglich.
+2. **PR 2 muss vor PR 3 kommen** — sonst nehmen wir Videos an, die niemand abspielen kann.
+
+Muss der Umfang schrumpfen, ist **keiner** dieser drei Teile streichbar. Eine kleinere
+Grenze (25 MB) spart sie nicht ein: Der Upload dauert dann immer noch 3,3 Minuten bei
+1 Mbit/s, die Fortschrittsanzeige bleibt also nötig, und das Budget ist ohnehin nur eine
+Rate-Limit-Variante. Streichbar wäre allenfalls der Dauerhinweis im Formular.
 
 **Betriebsaufgabe außerhalb der PRs:** `BODY_SIZE_LIMIT` und die Reverse-Proxy-Grenze auf
 dem Staging- und Produktions-Host anheben. Ohne das wirkt keine Konfigurationsänderung.
@@ -273,8 +318,10 @@ Präzisiert Rückfrage 6 aus `MEERESMUSEUM_AENDERUNGSWUENSCHE_2026-07-31.md`:
    wären technisch möglich, praktisch aber kaum durchführbar.
 2. **Videos annehmen, obwohl wir daraus zunächst keine Position lesen?** Empfehlung: ja.
 3. **Genügen MP4 und MOV?** Das deckt iPhone und Android ab.
-4. **Wie soll der Weg für zu große Videos aussehen** — E-Mail-Adresse direkt im
-   Fehlertext, oder weiterhin erst nach dem Absenden?
+4. ~~**Wie soll der Weg für zu große Videos aussehen?**~~ **Beantwortet am 2026-07-31:**
+   `sichtungen@meeresmuseum.de`, direkt im Fehlertext **und** auf der Bestätigungsseite.
+   Nebenbefund dabei: Die Bestätigungsseite verspricht heute Instruktionen, die es nie
+   gab — das wird mit erledigt.
 
 Die Antworten betreffen nur PR 3 und PR 4. PR 1 und PR 2 sind unabhängig davon und können
 sofort beginnen.
