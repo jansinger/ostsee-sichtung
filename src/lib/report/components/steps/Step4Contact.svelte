@@ -38,9 +38,22 @@
 		</div>
 		<h2 class="text-base-content text-xl font-bold md:text-2xl">Kontaktdaten</h2>
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
-			Ihre <strong>E-Mail-Adresse</strong> ist erforderlich für die Bestätigung. Kontaktdaten
-			ermöglichen wichtige Rückfragen zur Datenqualität. <strong>Datenschutz:</strong> Ihre persönlichen
-			Daten werden nie öffentlich angezeigt!
+			Ihre <strong>E-Mail-Adresse</strong> ist erforderlich für die Bestätigung. Kontaktdaten ermöglichen
+			wichtige Rückfragen zur Datenqualität.
+		</p>
+		<!-- Der frühere Satz „Ihre persönlichen Daten werden nie öffentlich
+		     angezeigt!" war nachweislich falsch: Direkt darunter stehen die
+		     Einwilligungen zur Namensnennung, und `/api/map/sightings` liefert
+		     Vor- und Nachnamen aus, sobald `nameConsent` gesetzt ist
+		     (`mapUtils.ts`). Die Kartensuche durchsucht sie, CSV-, XML- und
+		     KML-Export tragen sie ebenfalls. Die neue Fassung sagt, was
+		     tatsächlich passiert, und erklärt die Ankreuzfelder darunter,
+		     statt ihnen zu widersprechen. -->
+		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
+			<strong>Datenschutz:</strong> Ihre Kontaktdaten verwenden wir ausschließlich für Rückfragen zu Ihrer
+			Meldung und geben sie nicht an Dritte weiter. Öffentlich sichtbar werden nur die Sichtungsdaten
+			selbst — Datum, Position, Tierart und Anzahl. Ihr Name erscheint nur, wenn Sie das unten ausdrücklich
+			erlauben.
 		</p>
 	</div>
 
