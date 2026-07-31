@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Frame, type Page } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
 import { mockMapSightingsWithFeatures } from './fixtures/mockApi';
 
@@ -31,9 +31,16 @@ import { mockMapSightingsWithFeatures } from './fixtures/mockApi';
  * bestätigte der Test am Ende diesen Nebeneffekt statt des Pans.
  */
 
+/**
+ * Wo die Karte lebt: im Hauptdokument (`Page`) oder — für den iframe-Fall — im
+ * eingebetteten Frame. Nur das Messen ist frame-abhängig; Maus-Eingaben laufen
+ * immer über die `Page`, weil Playwright Koordinaten am Viewport misst.
+ */
+type MapScope = Page | Frame;
+
 /** Ein Wert, der sich ändert, sobald sich das Kartenbild ändert. */
-async function canvasState(page: Page): Promise<{ hash: number; distinct: number } | null> {
-	return page.evaluate(() => {
+async function canvasState(scope: MapScope): Promise<{ hash: number; distinct: number } | null> {
+	return scope.evaluate(() => {
 		const canvases = [...document.querySelectorAll<HTMLCanvasElement>('#map canvas')];
 		if (canvases.length === 0) return null;
 
@@ -65,14 +72,14 @@ async function canvasState(page: Page): Promise<{ hash: number; distinct: number
  * gleich — sonst würde eine noch laufende Erstdarstellung als Pan-Wirkung
  * durchgehen.
  */
-async function settledCanvasHash(page: Page): Promise<number> {
+async function settledCanvasHash(scope: MapScope): Promise<number> {
 	let previous: number | null = null;
 	let current: number | null = null;
 
 	await expect
 		.poll(
 			async () => {
-				const state = await canvasState(page);
+				const state = await canvasState(scope);
 				previous = current;
 				current = state?.hash ?? null;
 				return current !== null && current === previous;
@@ -87,7 +94,7 @@ async function settledCanvasHash(page: Page): Promise<number> {
 
 	// Gegenprobe: Ein einfarbiges Canvas könnte sich durch einen Pan nicht
 	// verändern — der Test wäre dann gehaltlos statt aussagekräftig.
-	const state = await canvasState(page);
+	const state = await canvasState(scope);
 	expect(
 		state?.distinct ?? 0,
 		'Karte zeichnet nichts — Fingerprint wäre gehaltlos'
@@ -97,9 +104,9 @@ async function settledCanvasHash(page: Page): Promise<number> {
 }
 
 /** Erwartet, dass sich das Kartenbild binnen weniger Sekunden verändert. */
-async function expectMapToMove(page: Page, before: number, hinweis: string): Promise<void> {
+async function expectMapToMove(scope: MapScope, before: number, hinweis: string): Promise<void> {
 	await expect
-		.poll(async () => (await canvasState(page))?.hash ?? null, {
+		.poll(async () => (await canvasState(scope))?.hash ?? null, {
 			timeout: 4000,
 			intervals: [150, 250, 400, 600],
 			message: hinweis
@@ -117,10 +124,10 @@ async function expectMapToMove(page: Page, before: number, hinweis: string): Pro
  * `expectMapToMove`-Toleranz, damit ein verzögerter Zoom nicht durchrutscht:
  * `MouseWheelZoom` arbeitet intern mit einem Timeout und einer Animation.
  */
-async function expectMapToStayPut(page: Page, before: number, hinweis: string): Promise<void> {
+async function expectMapToStayPut(scope: MapScope, before: number, hinweis: string): Promise<void> {
 	for (let versuch = 0; versuch < 8; versuch++) {
-		await page.waitForTimeout(200);
-		const jetzt = (await canvasState(page))?.hash ?? null;
+		await scope.waitForTimeout(200);
+		const jetzt = (await canvasState(scope))?.hash ?? null;
 		expect(jetzt, `${hinweis} (Messung ${versuch + 1} von 8)`).toBe(before);
 	}
 }
@@ -153,9 +160,13 @@ async function mapPoint(page: Page, relX = 0.45, relY = 0.5) {
  * dann auch ohne Pan grün, und ein Test auf „hat sich nicht bewegt" fälschlich rot
  * (genau so ist der Mausrad-Test beim ersten Lauf gescheitert).
  */
-async function hoverAndSettle(page: Page, point: { x: number; y: number }): Promise<number> {
+async function hoverAndSettle(
+	page: Page,
+	point: { x: number; y: number },
+	scope: MapScope = page
+): Promise<number> {
 	await page.mouse.move(point.x, point.y);
-	return settledCanvasHash(page);
+	return settledCanvasHash(scope);
 }
 
 test.describe('Sichtungskarte — Pan und Zoom', () => {
@@ -213,31 +224,32 @@ test.describe('Sichtungskarte — Pan und Zoom', () => {
 		);
 	});
 
-	// ── Mausrad: Fokus-Schutz bleibt absichtlich erhalten ──────────────────────
+	// ── Mausrad: freigeschaltet, solange die App nicht eingebettet ist ─────────
 	//
-	// Anders als beim Ziehen ist das beim Mausrad **gewolltes** Verhalten und keine
-	// Einschränkung: Die App wird auf meeresmuseum.de in einem iframe eingebettet.
-	// Wer dort die Seite scrollen will, würde ohne diesen Schutz stattdessen die
-	// Karte zoomen. `MouseWheelZoom` behält deshalb die OpenLayers-Default-Condition
-	// `focusWithTabindex` — siehe die Begründung an `interactions:` in
+	// Der Fokus-Zwang des Mausrads stammt aus derselben Quelle wie der beim Ziehen
+	// (`focusWithTabindex`, ausgelöst durch das `tabindex="0"` am `#map`-Div) und
+	// war für Nutzer derselbe Defekt: erst klicken, dann zoomen. Er hat nur **im
+	// iframe** einen Sinn — dort würde ein ungebremstes Mausrad das Scrollen der
+	// einbettenden Seite verschlucken. Auf der eigenen Seite gibt es nichts zu
+	// schützen, dort zoomt das Rad sofort. Siehe `interactions:` in
 	// `optimizedMapController.ts`.
 
-	test('Mausrad zoomt nicht, solange die Karte keinen Fokus hat', async ({ page }) => {
+	test('Mausrad zoomt ohne vorherigen Klick', async ({ page }) => {
 		const point = await mapPoint(page);
 		const before = await hoverAndSettle(page, point);
 
 		await page.mouse.wheel(0, -400);
 
-		await expectMapToStayPut(
+		await expectMapToMove(
 			page,
 			before,
-			'Mausrad hat ohne Fokus gezoomt — der Scroll-Hijacking-Schutz ist weg'
+			'Mausrad-Zoom blieb ohne Klick wirkungslos — genau der berichtete Befund'
 		);
 	});
 
-	test('Mausrad zoomt nach einem Klick in die Karte', async ({ page }) => {
-		// Der Klick setzt den Fokus auf das `#map`-Div (`tabindex="0"`) und schaltet
-		// damit `focusWithTabindex` frei.
+	test('Mausrad zoomt auch nach einem Klick in die Karte', async ({ page }) => {
+		// Kontrollfall: Der Klick setzt den Fokus auf das `#map`-Div und darf am
+		// Ergebnis nichts ändern.
 		const klickPunkt = await mapPoint(page, 0.2, 0.85);
 		await page.mouse.click(klickPunkt.x, klickPunkt.y);
 
@@ -247,5 +259,110 @@ test.describe('Sichtungskarte — Pan und Zoom', () => {
 		await page.mouse.wheel(0, -400);
 
 		await expectMapToMove(page, before, 'Mausrad-Zoom blieb auch mit Fokus ohne Wirkung');
+	});
+});
+
+/**
+ * Der Gegenfall zum Mausrad-Test oben.
+ *
+ * Die App wird auf meeresmuseum.de in einem iframe eingebettet. Zoomte die Karte
+ * dort ohne Fokus, könnte niemand mehr an ihr vorbeiscrollen — sie füllt den
+ * Rahmen, und `MouseWheelZoom` ruft `preventDefault()`, sodass das Scrollen nicht
+ * an die einbettende Seite durchgereicht wird. Deshalb bleibt im iframe der
+ * Fokus-Zwang.
+ *
+ * Die Rahmenseite kommt aus einer gerouteten Antwort und nicht aus `setContent`, weil
+ * letzteres das Dokument auf `about:blank` stehen lässt — ein `<iframe src="/map">`
+ * hätte dort keine Basis-URL zum Auflösen. Für `isNotIFrame` spielt die Herkunft keine
+ * Rolle: `window === window.top` funktioniert auch über Origin-Grenzen, und die
+ * Produktions-Einbettung auf meeresmuseum.de ist ohnehin cross-origin.
+ */
+test.describe('Sichtungskarte im iframe — Mausrad', () => {
+	const HOST_ROUTE = '/e2e/iframe-host';
+
+	type Box = { x: number; y: number; width: number; height: number };
+
+	/** Baut die Rahmenseite, wartet auf die Karte im Frame und gibt beides zurück. */
+	async function embedMap(page: Page): Promise<{ mapFrame: Frame; box: Box }> {
+		await mockMapSightingsWithFeatures(page);
+
+		await page.route(`**${HOST_ROUTE}`, (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'text/html',
+				body: `<!doctype html><html><head><meta charset="utf-8"><style>
+					html,body{margin:0;height:100%;overflow:hidden}
+					iframe{border:0;width:100%;height:100%;display:block}
+				</style></head><body><iframe src="/map" title="Sichtungskarte"></iframe></body></html>`
+			})
+		);
+
+		await page.goto(HOST_ROUTE);
+
+		// Der Filter-Reiter beweist, dass `SightingsMapView` im Frame steht.
+		await expect(
+			page.frameLocator('iframe').getByRole('button', { name: /^filter$/i })
+		).toBeVisible({ timeout: 20000 });
+
+		const mapFrame = page.frames().find((f) => f.url().includes('/map'));
+		if (!mapFrame) throw new Error('iframe mit /map nicht gefunden');
+
+		// Gegenprobe zur Voraussetzung: Ohne echte Einbettung wäre der Test gehaltlos.
+		expect(
+			await mapFrame.evaluate(() => window === window.top),
+			'Frame hält sich nicht für eingebettet'
+		).toBe(false);
+
+		const box = await page.locator('iframe').boundingBox();
+		if (!box) throw new Error('iframe hat keine Bounding-Box');
+
+		return { mapFrame, box };
+	}
+
+	/** Punkt innerhalb des eingebetteten Kartenbilds, in Viewport-Koordinaten. */
+	function pointInFrame(box: Box, relX = 0.45, relY = 0.5) {
+		return { x: box.x + box.width * relX, y: box.y + box.height * relY };
+	}
+
+	test('Mausrad zoomt nicht ohne Fokus, damit die einbettende Seite scrollen kann', async ({
+		page
+	}) => {
+		const { mapFrame, box } = await embedMap(page);
+
+		const before = await hoverAndSettle(page, pointInFrame(box), mapFrame);
+
+		await page.mouse.wheel(0, -400);
+
+		await expectMapToStayPut(
+			mapFrame,
+			before,
+			'Karte hat im iframe ohne Fokus gezoomt — der Scroll-Hijacking-Schutz ist weg'
+		);
+	});
+
+	/**
+	 * Positiv-Kontrolle zum Test darüber.
+	 *
+	 * `expectMapToStayPut` ist mit **jedem** Grund zufrieden, aus dem sich das
+	 * Kartenbild nicht ändert — auch damit, dass das Mausrad den Frame nie erreicht
+	 * oder die Karte dort gar nicht zoomen kann. Erst dieser Test zeigt, dass beides
+	 * funktioniert und oben wirklich die Condition gebremst hat.
+	 */
+	test('Mausrad zoomt im iframe nach einem Klick in die Karte', async ({ page }) => {
+		const { mapFrame, box } = await embedMap(page);
+
+		// Abseits der Sichtungen klicken, damit kein Popup mit `autoPan` die Ansicht bewegt.
+		const klickPunkt = pointInFrame(box, 0.2, 0.85);
+		await page.mouse.click(klickPunkt.x, klickPunkt.y);
+
+		const before = await hoverAndSettle(page, pointInFrame(box), mapFrame);
+
+		await page.mouse.wheel(0, -400);
+
+		await expectMapToMove(
+			mapFrame,
+			before,
+			'Mausrad-Zoom blieb im iframe auch mit Fokus ohne Wirkung — der Test darüber wäre damit gehaltlos'
+		);
 	});
 });
