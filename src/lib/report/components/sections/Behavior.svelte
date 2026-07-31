@@ -26,6 +26,4 @@
 	{/if}
 
 	<FormField name="reaction" />
-
-	<FormField name="otherObservations" />
 </SectionCard>

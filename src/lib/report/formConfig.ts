@@ -24,6 +24,12 @@ export const sightingSchemaFields = sightingSchemaDescription.fields;
  * Used by FormActions and Step4Contact to clear saved contact data
  * without a page reload.
  */
+/**
+ * Straße, PLZ und Ort werden seit dem Wegfall der Adressabfrage NICHT mehr
+ * gespeichert (`UserContactData`), stehen hier aber weiterhin: „Kontaktdaten
+ * löschen" soll auch einen Wert aufräumen, den ein früherer Besuch noch in den
+ * Formular-State gespiegelt hat.
+ */
 export const USER_CONTACT_FIELDS = [
 	'firstName',
 	'lastName',
@@ -84,13 +90,11 @@ export const formStepsConfig: FormStep[] = [
 			'distributionText',
 			'behavior',
 			'behaviorText',
-			'otherObservations',
 			'reaction',
 			'shipCount',
 			'seaState',
 			'visibility',
 			'windForce',
-			'windDirection',
 			'mediaFile',
 			'mediaUpload',
 			'mediaConsent'
@@ -106,9 +110,6 @@ export const formStepsConfig: FormStep[] = [
 			'lastName',
 			'email',
 			'phone',
-			'street',
-			'zipCode',
-			'city',
 			'shipName',
 			'homePort',
 			'boatType',

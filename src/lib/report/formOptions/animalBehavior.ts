@@ -42,10 +42,21 @@ export const animalBehaviorLabels: Record<AnimalBehaviorEnum, string> = {
  *
  * Abgeleitet statt aufgezählt: Ein später ergänzter echter Wert erscheint
  * dadurch automatisch im Formular, statt still zu fehlen.
+ *
+ * `OTHER` wandert dabei ans Ende der Liste — es ist die Auffangkategorie und
+ * stand durch den Enum-Wert `0` bisher an erster Stelle, also vor allen
+ * konkreten Antworten (Wunsch des Deutschen Meeresmuseums). Der gespeicherte
+ * Wert bleibt `0`; nur die Reihenfolge der Optionen ändert sich.
  */
-const SELECTABLE_BEHAVIORS: readonly AnimalBehaviorEnum[] = Object.values(AnimalBehaviorEnum).filter(
-	(value): value is AnimalBehaviorEnum => typeof value === 'number' && value !== AnimalBehaviorEnum.UNKNOWN
-);
+const SELECTABLE_BEHAVIORS: readonly AnimalBehaviorEnum[] = [
+	...Object.values(AnimalBehaviorEnum).filter(
+		(value): value is AnimalBehaviorEnum =>
+			typeof value === 'number' &&
+			value !== AnimalBehaviorEnum.UNKNOWN &&
+			value !== AnimalBehaviorEnum.OTHER
+	),
+	AnimalBehaviorEnum.OTHER
+];
 
 export type AnimalBehavior = AnimalBehaviorEnum;
 

@@ -102,24 +102,11 @@
 			<FormField name="phone" />
 		</div>
 
-		<!-- Address (optional) -->
-		<details class="bg-base-100 collapse mt-4">
-			<summary class="collapse-title min-h-11 py-3 text-sm font-medium">
-				<span class="inline-flex items-center gap-1.5">
-					<Icon icon="lucide:map-pin" width="14" class="text-primary" />
-					Adresse (optional)
-				</span>
-			</summary>
-			<div class="collapse-content space-y-4 pt-4">
-				<FormField name="street" />
-
-				<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-					<FormField name="zipCode" />
-
-					<FormField name="city" />
-				</div>
-			</div>
-		</details>
+		<!-- Adresse (Straße/PLZ/Ort) wird nicht mehr abgefragt: Für Rückfragen
+		     genügen E-Mail und Telefon, und weniger personenbezogene Daten sind
+		     datenschutzrechtlich die bessere Wahl (Wunsch des Deutschen
+		     Meeresmuseums). Schema-Einträge und DB-Spalten bleiben — die
+		     Legacy-API führt `strasse`/`plz`/`ort` weiter. -->
 	</div>
 
 	<!-- Boat Information Section -->

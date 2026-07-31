@@ -32,6 +32,13 @@ export interface PublicUser {
 
 /**
  * Interface für persistente Benutzer-Kontaktdaten
+ *
+ * Straße, PLZ und Ort gehören bewusst NICHT mehr dazu: Seit die Adresse nicht
+ * mehr abgefragt wird (Wunsch des Deutschen Meeresmuseums), gibt es keinen Weg
+ * mehr, sie zu sehen oder zu ändern. Blieben sie hier, würde ein früher
+ * gespeicherter Wert weiterhin ins Formular zurückgespielt und bei jeder
+ * Meldung unsichtbar mitgesendet. Schema-Einträge und DB-Spalten bleiben
+ * erhalten — die Legacy-API führt `strasse`/`plz`/`ort` weiter.
  */
 export type UserContactData = Pick<
 	SightingFormData,
@@ -39,9 +46,6 @@ export type UserContactData = Pick<
 	| 'lastName'
 	| 'email'
 	| 'phone'
-	| 'street'
-	| 'zipCode'
-	| 'city'
 	| 'shipName'
 	| 'homePort'
 	| 'boatType'

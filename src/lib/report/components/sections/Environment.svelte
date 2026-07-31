@@ -71,10 +71,12 @@
 		<FormField name="visibility" />
 	</div>
 
-	<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-		<!-- Wind Direction -->
-		<FormField name="windDirection" />
-
+	<!-- `windDirection` wird hier bewusst nicht mehr abgefragt (Wunsch des
+	     Deutschen Meeresmuseums), geht aber nicht verloren: Der
+	     WeatherDataFetcher unten schreibt das Feld weiterhin automatisch über
+	     `handleWeatherData`, sobald Position und Datum stehen. Schema-Eintrag
+	     und DB-Spalte `windrichtung` bleiben unverändert. -->
+	<div class="mt-4 grid grid-cols-1 gap-4">
 		<!-- Wind Force -->
 		<FormField name="windForce" />
 	</div>
