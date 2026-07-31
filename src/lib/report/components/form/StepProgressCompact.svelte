@@ -3,6 +3,7 @@
 	import { canNavigateToStep } from '$lib/form/validation/stepNavigation';
 	import { getFormContext } from '$lib/report/formContext';
 	import type { FormStep } from '$lib/report/types';
+	import { stepNavigationLabel } from './stepLabels';
 
 	/**
 	 * Kompakte Fortschrittsanzeige für den ortsfesten Balken unterhalb `md`.
@@ -67,10 +68,11 @@
 				<button
 					type="button"
 					class="flex min-h-[var(--target-min)] w-full items-center px-0.5"
+					class:cursor-pointer={navigable}
 					class:cursor-not-allowed={!navigable}
 					aria-current={currentStep === index ? 'step' : undefined}
 					aria-disabled={!navigable ? 'true' : 'false'}
-					aria-label="Schritt {index + 1}: {step.title}"
+					aria-label={stepNavigationLabel(index, currentStep, step.title)}
 					title={navigable
 						? step.description
 						: 'Bitte füllen Sie zuerst die vorherigen Schritte aus'}

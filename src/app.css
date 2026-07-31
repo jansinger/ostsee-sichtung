@@ -515,13 +515,33 @@ label:has(> .toggle) {
    statt 13px), bei abweichender Schriftdarstellung oder anderer Sprache kippt
    das — und zwar still, weil abgeschnitten wird statt umzubrechen.
 
-   `minmax(0, 1fr)` bindet die Spalte an die Leiste statt an den Inhalt, der
-   Rest lässt den Titel darin umbrechen. Damit hängt die Darstellung nicht mehr
-   an der Länge der Beschriftung. */
+   `minmax(0, 1fr)` bindet die Spalte an die Leiste statt an den Inhalt; die
+   Umbruch-Eigenschaften am `.step-button` unten (`width`, `min-width`,
+   `white-space`, `overflow-wrap`, `hyphens`) lassen den Titel darin umbrechen.
+   Damit hängt die Darstellung nicht mehr an der Länge der Beschriftung. */
 .steps .step {
 	grid-template-columns: minmax(0, 1fr);
 }
 
+/* ===== Der Stepper muss aussehen wie Navigation =====
+
+   Er WAR immer welche — besuchte Schritte lassen sich seit jeher anspringen
+   (`canNavigateToStep`). Nur sah man es ihm nicht an: Im Ruhezustand trugen
+   erreichbarer und aktueller Schritt dieselbe Farbe (`base-content`), denselben
+   Schnitt (400) und denselben Cursor. `default` übrigens, aus Tailwinds
+   Preflight — der EINZIGE Schritt mit abweichendem Cursor war der gesperrte
+   (`not-allowed`). Das Zeigegerät meldete also ausschließlich, wo nichts geht.
+
+   Daraus entstand der Wunsch des Deutschen Meeresmuseums nach einem
+   „Zurück-Button auch oberhalb" (B5 der Änderungswünsche; das Dokument liegt
+   seit #676 außerhalb dieses Repos). Die Antwort ist
+   kein zweites Bedienelement — das verstieße gegen die Button-Hierarchie in
+   design-system.md („Gleiche Aktion = gleiche Variante") —, sondern die
+   fehlende Affordanz. Abgesichert durch `e2e/form-stepper-affordance.spec.ts`.
+
+   Die Zustände kommen aus `aria-disabled` und `aria-current` statt aus eigenen
+   Klassen: Beide stehen ohnehin im Markup, weil die Barrierefreiheit sie
+   braucht. Eine parallele Klasse könnte davon abweichen — dieses Paar nicht. */
 .steps .step-button {
 	width: 100%;
 	min-width: 0;
@@ -529,6 +549,57 @@ label:has(> .toggle) {
 	white-space: normal;
 	overflow-wrap: break-word;
 	hyphens: auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	/* WCAG 2.5.5: Bis hierher war das Ziel die nackte Textzeile, gemessen 16px
+	   hoch. Der zentrale Touch-Target-Block oben greift nicht, weil er auf
+	   `.btn` zielt und dies keiner ist. Der Wert kommt aus dem Token, im
+	   Feldmodus also automatisch 56px. */
+	min-height: var(--target-min);
+	border-radius: var(--radius-field);
+	transition:
+		color var(--motion-instant) var(--motion-ease),
+		background-color var(--motion-instant) var(--motion-ease),
+		text-decoration-thickness var(--motion-instant) var(--motion-ease);
+}
+
+/* Erreichbar, aber nicht der aktuelle Schritt: liest sich als Link.
+   Farbe UND Unterstreichung, damit die Auszeichnung nicht allein an der Farbe
+   hängt (WCAG 1.4.1). `primary` ist keine Statusfarbe, die `-strong`-Pflicht
+   gilt hier nicht — im Browser gemessen 9,24:1. Bezugsfläche ist `base-100`:
+   Der Stepper sitzt im Formular-Container `div.bg-base-100`, nicht auf dem
+   Seitenhintergrund. */
+.steps .step-button[aria-disabled='false']:not([aria-current='step']) {
+	cursor: pointer;
+	color: var(--color-primary);
+	text-decoration-line: underline;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+}
+
+/* `:focus-visible` mit auf dieselbe Fläche: Wer per Tastatur ankommt, soll
+   dasselbe sehen wie mit der Maus. Der globale Fokusring aus dem
+   Accessibility-Block bleibt zusätzlich — er umschließt seit der `min-height`
+   oben eine 44px-Fläche statt einer 16px-Textzeile.
+   Gemessen 7,73:1 für den Titel auf dieser Fläche. */
+.steps .step-button[aria-disabled='false']:not([aria-current='step']):hover,
+.steps .step-button[aria-disabled='false']:not([aria-current='step']):focus-visible {
+	background-color: color-mix(in oklab, var(--color-primary) 10%, transparent);
+	text-decoration-thickness: 2px;
+}
+
+/* Der aktuelle Schritt ist Standort, kein Ziel: kräftiger, aber nicht
+   unterstrichen und nicht in der Linkfarbe. */
+.steps .step-button[aria-current='step'] {
+	font-weight: 600;
+}
+
+/* Gesperrt: der `li` trägt bereits die Abblendung, hier fehlte nur der Cursor.
+   Er stand vorher als Utility an der Aufrufstelle — beide Zustände gehören an
+   dieselbe Stelle, sonst driften sie auseinander. */
+.steps .step-button[aria-disabled='true'] {
+	cursor: not-allowed;
 }
 
 /* ===== Print ===== */
