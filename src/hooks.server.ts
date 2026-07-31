@@ -7,6 +7,7 @@ import { databaseCheck } from '$lib/server/middleware/databaseCheck';
 import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';
 import { createSecurityHeadersHandler } from '$lib/server/middleware/securityHeaders';
 import { warnIfBodySizeLimitTooLow } from '$lib/server/startup/bodySizeLimit';
+import { formatStartupBanner, getBuildInfo } from '$lib/server/startup/versionInfo';
 import { buildErrorLogFields } from '$lib/server/utils/errorChain';
 import { ServerConfigService } from '$lib/services/configService';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
@@ -18,6 +19,13 @@ const NODE_ENV = env.NODE_ENV ?? 'development';
 const ENCRYPTION_KEY = env.ENCRYPTION_KEY ?? '';
 
 const logger = createLogger('hooks:server');
+
+// gitSha/buildDate kommen aus den Docker-Build-Args VCS_REF/BUILD_DATE (siehe Dockerfile)
+// und existieren nur im Container-Image. Ein lokaler `npm run dev` hat sie nicht —
+// formatStartupBanner zeigt das dann bewusst als "unknown", statt eine falsche
+// Versionsangabe vorzutäuschen.
+const buildInfo = getBuildInfo();
+logger.info({ ...buildInfo, nodeEnv: NODE_ENV }, formatStartupBanner(buildInfo, NODE_ENV));
 
 // Guard: Der Server startet in Produktion nicht mit einem fehlenden oder unbrauchbaren
 // ENCRYPTION_KEY. Die Prüflogik steht in secretGuard.ts, damit sie testbar ist —

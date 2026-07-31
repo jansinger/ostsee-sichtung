@@ -95,3 +95,6 @@ export type {
 
 // Weather types
 export type { WeatherDataWithMetadata } from './weather.js';
+
+// Build/version info (startup log, /health, admin footer)
+export type { BuildInfo } from './BuildInfo.js';

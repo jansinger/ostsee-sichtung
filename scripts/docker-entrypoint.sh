@@ -51,6 +51,18 @@ echo "║                                           ║"
 echo "╚═══════════════════════════════════════════╝"
 echo ""
 
+# Version aus package.json lesen — dieselbe Quelle, die die App selbst über
+# getBuildInfo() (versionInfo.ts) für /health und den strukturierten Startup-Log
+# verwendet. APP_VERSION (ARG-Default "dev", siehe Dockerfile) wird hier bewusst
+# NICHT gelesen: es würde bei einem Build ohne --build-arg VERSION="dev" zeigen,
+# während App-Log und /health im selben Container die echte package.json-Version
+# melden — zwei widersprüchliche Angaben für dieselbe laufende Instanz.
+APP_VERSION=$(node -p "require('/app/package.json').version" 2>/dev/null || echo "unknown")
+log_info "Version: ${APP_VERSION}"
+log_info "Commit:  ${APP_GIT_SHA:-unknown}"
+log_info "Built:   ${APP_BUILD_DATE:-unknown}"
+echo ""
+
 # ============================================
 # Environment Validation
 # ============================================
