@@ -65,10 +65,19 @@
 		{#each steps as step, index (step.id)}
 			{@const navigable = canNavigateTo(index)}
 			<li class="flex-1">
+				<!--
+					`index !== currentStep` ist nicht redundant: `canNavigateToStep`
+					liefert für den aktuellen Schritt `true` (`targetIndex <= currentStep`),
+					ein Klick darauf tut aber nichts. Ohne die Bedingung gäbe der aktuelle
+					Schritt sich als Navigationsziel aus. Der Stepper am Seitenkopf schließt
+					denselben Fall über `:not([aria-current='step'])` im CSS aus — hier
+					steht der Cursor an der Aufrufstelle, weil diese Komponente sonst
+					keinen eigenen CSS-Block hat.
+				-->
 				<button
 					type="button"
 					class="flex min-h-[var(--target-min)] w-full items-center px-0.5"
-					class:cursor-pointer={navigable}
+					class:cursor-pointer={navigable && index !== currentStep}
 					class:cursor-not-allowed={!navigable}
 					aria-current={currentStep === index ? 'step' : undefined}
 					aria-disabled={!navigable ? 'true' : 'false'}

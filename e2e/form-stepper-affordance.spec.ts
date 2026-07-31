@@ -207,3 +207,55 @@ test.describe('Stepper — erkennbar als Navigation', () => {
 		);
 	});
 });
+
+/**
+ * Unterhalb `md` übernimmt `StepProgressCompact.svelte` im ortsfesten Balken.
+ * Dort steht „Zurück" als echter Button daneben, die Segmente brauchen also
+ * keine eigene Link-Optik — wohl aber denselben Cursor-Vertrag.
+ *
+ * Der Anlass für diesen Block: `canNavigateToStep` liefert für den AKTUELLEN
+ * Schritt `true` (`targetIndex <= currentStep`). Oben schließt das CSS ihn über
+ * `:not([aria-current='step'])` aus; unten hing der Cursor an einer Utility, die
+ * das nicht tat — der aktuelle Schritt gab sich damit als Navigationsziel aus,
+ * obwohl ein Klick darauf nichts tut.
+ */
+test.describe('Kompakte Fortschrittsanzeige — derselbe Cursor-Vertrag', () => {
+	const SEGMENT = 'nav[aria-label="Formular-Schritte"]:visible ol button';
+
+	test.beforeEach(async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+	});
+
+	test('nur erreichbare Schritte außer dem aktuellen zeigen den Zeigefinger', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+		await formPage.fillWaterway('Kieler Förde');
+		await formPage.clickNext();
+		await expect(page.locator(`${SEGMENT}[aria-current="step"]`)).toHaveAttribute(
+			'aria-label',
+			/Angaben zum Tier/
+		);
+
+		const segmente = page.locator(SEGMENT);
+		await expect(segmente).toHaveCount(4);
+
+		// Schritt 1: erreichbar, nicht aktuell → Ziel.
+		expect(await style(segmente.nth(0), 'cursor')).toBe('pointer');
+		// Schritt 2: aktuell → Standort, kein Ziel.
+		expect(await style(segmente.nth(1), 'cursor')).not.toBe('pointer');
+		// Schritt 3 und 4: gesperrt.
+		expect(await style(segmente.nth(2), 'cursor')).toBe('not-allowed');
+		expect(await style(segmente.nth(3), 'cursor')).toBe('not-allowed');
+	});
+
+	test('auf Schritt 1 ist kein Segment ein Ziel', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		const segmente = page.locator(SEGMENT);
+		// Der einzige erreichbare Schritt ist der aktuelle — es gibt nichts
+		// anzuspringen, also darf auch nichts danach aussehen.
+		expect(await style(segmente.nth(0), 'cursor')).not.toBe('pointer');
+		expect(await style(segmente.nth(1), 'cursor')).toBe('not-allowed');
+	});
+});
