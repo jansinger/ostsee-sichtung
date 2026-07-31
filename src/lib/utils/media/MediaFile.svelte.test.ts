@@ -183,6 +183,83 @@ describe('MediaFile — Markierung des Positions-Schritts', () => {
 });
 
 /**
+ * Task 13a verdrahtet `createMediaFile` mit `uploadFileDirect`: gemeldeter
+ * Fortschritt landet in `uploadPercent`, `abortUpload` zeigt auf die
+ * `abort`-Funktion des Handles, und `uploadPercent` fällt nach Abschluss —
+ * ob erfolgreich oder nicht — wieder auf `undefined`. Ohne diese Verdrahtung
+ * bliebe die Prozentanzeige stehen, während ein 100-MB-Video im Hintergrund
+ * längst fertig oder abgebrochen ist.
+ */
+describe('MediaFile — Fortschrittsanzeige und Abbruch des Uploads', () => {
+	it('übernimmt einen gemeldeten Fortschritt in uploadPercent', () => {
+		analyzeClientFile.mockResolvedValue(metadata());
+		let reportProgress:
+			| ((progress: { loadedBytes: number; totalBytes: number; percent: number }) => void)
+			| undefined;
+		uploadFileDirect.mockImplementation((...args: unknown[]) => {
+			reportProgress = args[3] as typeof reportProgress;
+			return {
+				result: new Promise<UploadedFileInfo>(() => {}),
+				abort: vi.fn()
+			};
+		});
+
+		const mediaFile = MediaFile.createMediaFile('ref', imageFile(), true);
+		reportProgress?.({ loadedBytes: 50, totalBytes: 100, percent: 50 });
+
+		expect(mediaFile.uploadPercent).toBe(50);
+	});
+
+	it('setzt uploadPercent nach erfolgreichem Abschluss wieder zurück', async () => {
+		analyzeClientFile.mockResolvedValue(metadata());
+		uploadFileDirect.mockReturnValue({
+			result: Promise.resolve(uploadedFileInfo()),
+			abort: vi.fn()
+		});
+
+		const mediaFile = MediaFile.createMediaFile('ref', imageFile(), true);
+		mediaFile.uploadPercent = 42;
+
+		await mediaFile.uploadedFile;
+
+		expect(mediaFile.uploadPercent).toBeUndefined();
+	});
+
+	/**
+	 * Sonst bliebe die Anzeige an einer Kachel kleben, die gar nicht mehr
+	 * hochlädt — genau das Fehlszenario aus dem Review zu Task 13a.
+	 */
+	it('setzt uploadPercent auch nach einem fehlgeschlagenen Upload wieder zurück', async () => {
+		analyzeClientFile.mockResolvedValue(metadata());
+		uploadFileDirect.mockReturnValue({
+			result: Promise.reject(new Error('upload kaputt')),
+			abort: vi.fn()
+		});
+
+		const mediaFile = MediaFile.createMediaFile('ref', imageFile(), true);
+		mediaFile.uploadPercent = 77;
+
+		await expect(mediaFile.uploadedFile).rejects.toThrow('upload kaputt');
+
+		expect(mediaFile.uploadPercent).toBeUndefined();
+	});
+
+	it('ruft beim Abbrechen die abort-Funktion des Upload-Handles auf', () => {
+		analyzeClientFile.mockResolvedValue(metadata());
+		const abort = vi.fn();
+		uploadFileDirect.mockReturnValue({
+			result: new Promise<UploadedFileInfo>(() => {}),
+			abort
+		});
+
+		const mediaFile = MediaFile.createMediaFile('ref', imageFile(), true);
+		mediaFile.abortUpload?.();
+
+		expect(abort).toHaveBeenCalledOnce();
+	});
+});
+
+/**
  * Ablehnende Promises dürfen nicht als unbehandelte Rejection enden.
  *
  * `createMediaFile` hängt an beide injizierten Promises je ein `.then(...)`
