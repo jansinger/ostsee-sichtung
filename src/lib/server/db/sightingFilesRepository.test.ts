@@ -11,7 +11,11 @@ import {
 	sumFileSizesForReference
 } from './sightingFilesRepository';
 
-vi.mock('$lib/server/db', () => {
+// Gleicher Specifier wie im Code unter Test (`import { db } from '.'` in
+// sightingFilesRepository.ts) — sonst könnten Mock und echter Import bei
+// unterschiedlicher Alias-Auflösung auseinanderlaufen und der Mock griffe
+// nicht (PR #688 Review-Hinweis).
+vi.mock('.', () => {
 	const db: Record<string, any> = {
 		insert: vi.fn(),
 		update: vi.fn(),
