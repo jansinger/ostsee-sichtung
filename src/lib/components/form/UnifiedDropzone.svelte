@@ -334,7 +334,11 @@
 			<Icon icon="lucide:circle-alert" width="20" class="text-error-strong" aria-hidden="true" />
 			<div class="text-sm">
 				<ul class="list-inside list-disc space-y-1">
-					{#each visibleRejectionErrors as message (message)}
+					<!-- Position als Key, nicht der Text: Zwei gleich große Dateien mit
+					     gleichem Namen erzeugen byte-identische Meldungen, und doppelte
+					     Keys sind in Svelte ein Laufzeitfehler. Die Liste wird ohnehin
+					     immer als Ganzes ersetzt — es gibt nichts zu erhalten. -->
+					{#each visibleRejectionErrors as message, index (index)}
 						<li>{message}</li>
 					{/each}
 				</ul>
