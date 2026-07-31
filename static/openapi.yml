@@ -1859,7 +1859,8 @@ paths:
             nur bei vorliegender Schiffsnamensfreigabe durchsucht; die
             E-Mail-Adresse wird nicht durchsucht. Angemeldete Admins durchsuchen
             zusätzlich die E-Mail-Adresse und ohne Freigabe-Filter.
-            LIKE-Platzhalter (% und _) werden literal gesucht.
+            LIKE-Platzhalter (%, _ und der Escape-Backslash \) werden literal
+            gesucht.
           schema:
             type: string
             maxLength: 100
