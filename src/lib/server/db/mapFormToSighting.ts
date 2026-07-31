@@ -1,3 +1,8 @@
+import {
+	NAME_CONSENT_VERSION,
+	PRIVACY_CONSENT_VERSION,
+	SHIP_NAME_CONSENT_VERSION
+} from '$lib/form/consent/consentVersions';
 import { MEDIA_CONSENT_VERSION } from '$lib/form/consent/mediaConsentVersion';
 import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
 import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
@@ -303,10 +308,19 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 		city: formData.city,
 
 		// === DATENSCHUTZ-EINWILLIGUNGEN ===
-		// DSGVO-konforme Einwilligungen (boolean zu int)
+		// DSGVO-konforme Einwilligungen (boolean zu int). Zu jeder erteilten
+		// Einwilligung gehören Zeitpunkt und Textfassung — sie sind der Nachweis
+		// nach Art. 7 Abs. 1 DSGVO. Zu einer abgelehnten Einwilligung gehört
+		// nichts davon: Ein Zeitstempel würde eine Zustimmung vortäuschen.
 		shipNameConsent: formData.shipNameConsent ? 1 : 0,
+		shipNameConsentAt: formData.shipNameConsent ? new Date() : null,
+		shipNameConsentVersion: formData.shipNameConsent ? SHIP_NAME_CONSENT_VERSION : null,
 		nameConsent: formData.nameConsent ? 1 : 0,
+		nameConsentAt: formData.nameConsent ? new Date() : null,
+		nameConsentVersion: formData.nameConsent ? NAME_CONSENT_VERSION : null,
 		privacyConsent: formData.privacyConsent ? 1 : 0,
+		privacyConsentAt: formData.privacyConsent ? new Date() : null,
+		privacyConsentVersion: formData.privacyConsent ? PRIVACY_CONSENT_VERSION : null,
 		// Einwilligung zur Veröffentlichung von Aufnahmen. Zeitpunkt und
 		// Textfassung nur dann, wenn tatsächlich zugestimmt wurde — ein
 		// Nachweis für eine nicht erteilte Einwilligung wäre sinnlos.

@@ -8,6 +8,11 @@
  *
  * CRITICAL: Response format uses abbreviated field names as specified in PDF!
  *
+ * Einzige bewusste Abweichung von der Spezifikation: der Umfang der `search`-Suche
+ * für nicht angemeldete Aufrufer (Datenschutz, siehe Kommentar am Suchfilter und
+ * "Deviation: consent-gated search" in docs/LEGACY_API_SPECIFICATION.md).
+ * Feldnamen, URL-Pfade, Datentypen und Response-Struktur sind unverändert.
+ *
  * @author Ostsee-Tiere Team
  * @since 1.10.0
  */
@@ -20,7 +25,9 @@ import {
 } from '$lib/legacy-api/date-utils.js';
 import { createLogger } from '$lib/logger.server';
 import { getSpeciesLabel } from '$lib/report/formOptions/species.js';
+import { isAdminUser } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
+import { consentGatedNameSearch, containsPattern } from '$lib/server/db/consentGatedSearch';
 import { sightings } from '$lib/server/db/schema';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
@@ -68,6 +75,11 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		const bbox = searchParams.get('bbox');
 		const search = searchParams.get('search');
 
+		// Steuert den Umfang der Suche (siehe Kommentar am Suchfilter weiter unten).
+		// `isAdminUser` statt `locals.isAdmin`, damit hier dieselbe Rollenprüfung
+		// greift wie in den übrigen Routen.
+		const isAdmin = isAdminUser(event.locals.user);
+
 		logger.debug(
 			{
 				year,
@@ -75,6 +87,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
 				distance,
 				bbox,
 				search: search ? '***masked***' : null, // Privacy: mask search terms
+				isAdmin,
 				ip: clientIp
 			},
 			'PDF-compliant legacy sightings retrieval request'
@@ -262,25 +275,45 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			}
 		}
 
-		// Search filter - PDF specification: searches in Email, Name, First name, Ship name
+		// Search filter - PDF specification: searches in Email, Name, First name, Ship name.
+		//
+		// BEWUSSTE ABWEICHUNG VON DER SPEZIFIKATION für nicht angemeldete Aufrufer
+		// (dokumentiert in docs/LEGACY_API_SPECIFICATION.md):
+		// Die *Ausgabe* war immer consent-gated (`na` nur bei `namensnennung`,
+		// `sh` nur bei `schiffnamensnennung`), die *Trefferzahl* nicht. Damit konnte
+		// ein anonymer Aufrufer prüfen, ob eine E-Mail-Adresse oder ein Name im
+		// Bestand existiert — auch bei Meldern, die der Namensnennung nie zugestimmt
+		// haben. Das widerspricht der Zusage im Meldeformular (Step4Contact.svelte).
+		//
+		// Deshalb gestuft: anonym ohne `email` und nur mit Einwilligung (identisch zu
+		// /api/map/sightings), für angemeldete Admins die volle Vier-Feld-Suche der
+		// Spezifikation — Admins sehen diese Felder ohnehin.
 		if (search && search.trim().length > 0) {
-			const searchTerm = `%${search.trim()}%`;
+			// Wildcards werden escaped, damit `%` und `_` literal gesucht werden —
+			// ohne das matcht `search=%` jeden Datensatz und verstärkt das oben
+			// beschriebene Orakel. Das Consent-Gate für den anonymen Zweig ist mit
+			// /api/map/sightings geteilt, damit beide öffentlichen Flächen dieselbe
+			// Teilmenge freigeben — siehe consentGatedSearch.ts.
+			const searchTerm = containsPattern(search);
 
 			whereConditions.push(
-				sql`(
-					${sightings.email} ILIKE ${searchTerm} OR 
-					${sightings.firstName} ILIKE ${searchTerm} OR 
-					${sightings.lastName} ILIKE ${searchTerm} OR
-					${sightings.shipName} ILIKE ${searchTerm}
+				isAdmin
+					? sql`(
+					${sightings.email} ILIKE ${searchTerm} ESCAPE '\\' OR
+					${sightings.firstName} ILIKE ${searchTerm} ESCAPE '\\' OR
+					${sightings.lastName} ILIKE ${searchTerm} ESCAPE '\\' OR
+					${sightings.shipName} ILIKE ${searchTerm} ESCAPE '\\'
 				)`
+					: consentGatedNameSearch(searchTerm, 'ILIKE')
 			);
 
 			logger.debug(
 				{
 					searchLength: search.length,
+					scope: isAdmin ? 'admin' : 'public',
 					ip: clientIp
 				},
-				'Applied search filter (PDF compliant)'
+				'Applied search filter (consent-gated for anonymous callers)'
 			);
 		}
 
@@ -374,7 +407,14 @@ export async function GET(event: RequestEvent): Promise<Response> {
 
 		return json(pdfCompliantSightings, {
 			headers: {
-				'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+				// Seit der Consent-Gatung der Suche hängt die Antwort von der Session ab:
+				// Ein Admin bekommt unter derselben URL mehr Treffer als ein anonymer
+				// Aufrufer. `public` würde einem Shared Cache erlauben, die Admin-Antwort
+				// zu speichern und anonym auszuliefern — also genau das Membership-Orakel
+				// wiederherzustellen, das die Gatung schließt. Cache-Header sind nicht
+				// Teil des Legacy-Vertrags (docs/LEGACY_API_SPECIFICATION.md).
+				'Cache-Control': isAdmin ? 'private, max-age=0, no-store' : 'public, max-age=300',
+				Vary: 'Cookie',
 				'Content-Type': 'application/json'
 			}
 		});

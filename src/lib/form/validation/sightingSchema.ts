@@ -36,7 +36,6 @@ import { getSpeciesOptions, isValidSpecies } from '$lib/report/formOptions/speci
 import { getVisibilityOptions, isValidVisibility } from '$lib/report/formOptions/visibility';
 import { getWindDirectionOptions } from '$lib/report/formOptions/windDirection';
 import { getWindStrengthOptions } from '$lib/report/formOptions/windStrength';
-import { BALTIC_SEA_BBOX } from '$lib/utils/geo/checkBalticSea';
 import * as yup from 'yup';
 
 /**
@@ -233,14 +232,8 @@ export const sightingSchemaBase = yup.object().shape({
 			then: (schema) =>
 				schema
 					.required('GPS-Position: Breitengrad ist erforderlich')
-					.min(
-						BALTIC_SEA_BBOX.minLatitude,
-						`Der Wert muss zwischen ${BALTIC_SEA_BBOX.minLatitude}° und ${BALTIC_SEA_BBOX.maxLatitude}° liegen (Ostseebereich)`
-					)
-					.max(
-						BALTIC_SEA_BBOX.maxLatitude,
-						`Der Wert muss zwischen ${BALTIC_SEA_BBOX.minLatitude}° und ${BALTIC_SEA_BBOX.maxLatitude}° liegen (Ostseebereich)`
-					),
+					.min(-90, 'Der Breitengrad muss zwischen -90° und 90° liegen')
+					.max(90, 'Der Breitengrad muss zwischen -90° und 90° liegen'),
 			otherwise: (schema) => schema.notRequired()
 		})
 		.label('Breitengrad')
@@ -264,14 +257,8 @@ export const sightingSchemaBase = yup.object().shape({
 			then: (schema) =>
 				schema
 					.required('GPS-Position: Längengrad ist erforderlich')
-					.min(
-						BALTIC_SEA_BBOX.minLongitude,
-						`Der Wert muss zwischen ${BALTIC_SEA_BBOX.minLongitude}° und ${BALTIC_SEA_BBOX.maxLongitude}° liegen (Ostseebereich)`
-					)
-					.max(
-						BALTIC_SEA_BBOX.maxLongitude,
-						`Der Wert muss zwischen ${BALTIC_SEA_BBOX.minLongitude}° und ${BALTIC_SEA_BBOX.maxLongitude}° liegen (Ostseebereich)`
-					),
+					.min(-180, 'Der Längengrad muss zwischen -180° und 180° liegen')
+					.max(180, 'Der Längengrad muss zwischen -180° und 180° liegen'),
 			otherwise: (schema) => schema.notRequired()
 		})
 		.label('Längengrad')
@@ -398,12 +385,17 @@ export const sightingSchemaBase = yup.object().shape({
 	/**
 	 * Gesamtanzahl der gesichteten Tiere
 	 * Pflichtfeld, muss eine positive ganze Zahl sein
+	 *
+	 * Untergrenze 1: Eine Sichtung ohne Tier ist keine Sichtung. Die Grenze
+	 * gehört bewusst NUR hierher — in der Legacy-API kennzeichnet
+	 * `anzahl_gesamt = 0` einen Totfund (`docs/LEGACY_API_SPECIFICATION.md`),
+	 * dort bleibt `min(0)` stehen.
 	 */
 	totalCount: yup
 		.number()
 		.transform((value) => (isNaN(value) ? undefined : value))
 		.integer('Bitte nur ganze Zahlen eingeben')
-		.min(0, 'Die Anzahl muss 0 oder höher sein')
+		.min(1, 'Bitte geben Sie mindestens 1 Tier an')
 		.max(15, 'Bei mehr als 15 Tieren bitte 15 eintragen')
 		.required('Wie viele Tiere haben Sie gesehen?')
 		.label('Anzahl Tiere')
@@ -419,6 +411,11 @@ export const sightingSchemaBase = yup.object().shape({
 	/**
 	 * Anzahl der Jungtiere unter den gesichteten Tieren
 	 * Optional, muss eine positive ganze Zahl sein
+	 *
+	 * Jungtiere sind eine Teilmenge von `totalCount`, keine zusätzliche
+	 * Gruppe — mehr Jungtiere als Tiere insgesamt kann es nicht geben.
+	 * Beide Felder sind bei 15 gekappt; die Regel greift deshalb auch an
+	 * der Kappungsgrenze (15/15 gültig, 15 von 10 nicht).
 	 */
 	juvenileCount: yup
 		.number()
@@ -426,6 +423,22 @@ export const sightingSchemaBase = yup.object().shape({
 		.integer('Bitte nur ganze Zahlen eingeben')
 		.min(0, 'Die Anzahl muss 0 oder höher sein')
 		.max(15, 'Bei mehr als 15 bitte 15 eintragen')
+		.test(
+			'juveniles-within-total',
+			'Es können nicht mehr Jungtiere als Tiere insgesamt sein',
+			function (value) {
+				// Ohne Angabe greift die Regel nicht — das Feld bleibt optional.
+				if (value === undefined || value === null) return true;
+
+				// Fehlt oder taugt `totalCount` nicht, meldet dessen eigene
+				// Validierung den Fehler. Hier zusätzlich anzuschlagen würde
+				// denselben Sachverhalt zweimal anzeigen.
+				const total = this.parent?.totalCount;
+				if (typeof total !== 'number' || Number.isNaN(total)) return true;
+
+				return value <= total;
+			}
+		)
 		.label('Davon Jungtiere')
 		.meta({
 			placeholder: '0',
@@ -597,8 +610,7 @@ export const sightingSchemaBase = yup.object().shape({
 		)
 		.label('Entfernung zum Tier')
 		.meta({
-			helpText:
-				'Wie weit waren die Tiere entfernt? (Schätzung) - Tipp: Größe einer Münze = 50m, Streichholz = 200m',
+			helpText: 'Wie weit waren die Tiere entfernt? (Schätzung)',
 			valueText:
 				'Je geringer die Entfernung, desto verlässlicher lassen sich Art und Anzahl bestimmen - die Angabe hilft, Beobachtungen zu gewichten',
 			type: 'select',
@@ -741,7 +753,7 @@ export const sightingSchemaBase = yup.object().shape({
 			'Bitte geben Sie eine gültige Sichtweiten-Kategorie an.',
 			(value) => value === undefined || isValidVisibility(value)
 		)
-		.label('Sichtweite')
+		.label('Sichtbedingungen')
 		.meta({
 			helpText: 'Wie weit konnten Sie sehen?',
 			valueText:
@@ -924,7 +936,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.transform((value) => (isNaN(value) ? undefined : value))
 		.min(0, 'Die Anzahl der Schiffe muss positiv sein.')
 		.max(15, 'Die Anzahl der Schiffe darf 15 nicht überschreiten.')
-		.label('Anzahl anderer Schiffe')
+		.label('Anzahl anderer Schiffe in näherer Umgebung')
 		.meta({
 			placeholder: 'z.B. 2',
 			helpText: 'Wie viele andere Boote waren in der Nähe?',
@@ -1277,3 +1289,45 @@ export const sightingSchema = yup
 			.default(0)
 	})
 	.concat(sightingSchemaBase);
+
+/**
+ * Schema der Admin-Maske: dasselbe Formular, aber ohne die Eingabegrenzen für
+ * die Anzahlen.
+ *
+ * Die Grenzen in `sightingSchema` sind **Eingaberegeln für neue Meldungen** —
+ * mindestens ein Tier, höchstens 15, Jungtiere nicht mehr als Tiere insgesamt.
+ * Auf den Bestand angewendet sperren sie die Korrektur genau der Datensätze,
+ * die eine Korrektur am ehesten brauchen (Stand 2026-07-31, 19.880 Zeilen):
+ *
+ * | Bedingung                    | Zeilen | Herkunft                          |
+ * | ---------------------------- | -----: | --------------------------------- |
+ * | `anzahl_gesamt = 0`          |      5 | Legacy-Konvention „0 = Totfund"   |
+ * | `anzahl_jung > anzahl_gesamt`|      8 | Altbestand                        |
+ * | `anzahl_gesamt > 15`         |     22 | Altbestand, Kappung kam später    |
+ *
+ * Ohne diese Lockerung könnte ein Admin eine solche Zeile nicht mehr speichern
+ * — auch dann nicht, wenn er an einem ganz anderen Feld etwas richtigstellt.
+ *
+ * Abgeleitet statt neu geschrieben: `.min()`/`.max()` und ein `.test()` mit
+ * gleichem Namen ersetzen in Yup den vorhandenen Eintrag. Label und `meta`
+ * bleiben damit erhalten — die Feld-Pipeline (`FieldRenderer`) liest sie aus
+ * `describe()`, eine Kopie würde beim nächsten Textwechsel auseinanderlaufen.
+ */
+export const adminSightingSchema = sightingSchema.shape({
+	totalCount: (sightingSchema.fields.totalCount as yup.NumberSchema)
+		.min(0, 'Die Anzahl darf nicht negativ sein')
+		.max(9999, 'Bitte eine plausible Anzahl eintragen'),
+	juvenileCount: (sightingSchema.fields.juvenileCount as yup.NumberSchema)
+		.max(9999, 'Bitte eine plausible Anzahl eintragen')
+		// Hebt die Teilmengen-Regel für den Bestand auf, statt sie zu duplizieren.
+		// `exclusive: true` ist dabei nicht schmückend: Yup entfernt einen
+		// gleichnamigen Test nur dann, wenn der neue exklusiv ist oder dieselbe
+		// Funktionsreferenz trägt (`Schema.test()`) — ohne das Flag liefen beide
+		// Tests, und der alte würde weiterhin greifen.
+		.test({
+			name: 'juveniles-within-total',
+			exclusive: true,
+			message: '',
+			test: () => true
+		})
+});

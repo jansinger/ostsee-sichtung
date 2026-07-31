@@ -87,7 +87,6 @@ services:
       HOST_HEADER: ${HOST_HEADER:-x-forwarded-host}
 
       # Security Settings
-      SESSION_SECRET: ${SESSION_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       COOKIE_NAME: ${COOKIE_NAME:-auth-cookie}
       # Bearer-Token für POST /api/admin/cleanup-orphans (externer Web-Cron).

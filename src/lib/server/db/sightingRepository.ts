@@ -139,11 +139,40 @@ export const updateSighting = async (
 	// von PATCH /api/sightings/[id]/verify gesetzt — beide immer gemeinsam. Würde
 	// das Bearbeitungsformular `verified` mitschreiben, liefen die Spalten
 	// auseinander und die Sichtung wäre "geprüft", aber nicht veröffentlicht.
+	//
+	// Die Einwilligungen gehören vollständig — Flag UND Nachweis — nicht ins
+	// Update. Sie sind eine Aussage der meldenden Person, kein Attribut des
+	// Datensatzes: Ein Admin ist nicht die betroffene Person und kann nicht für
+	// sie einwilligen. `mapFormToSighting` stempelt die `…ConsentAt`-Spalten auf
+	// `new Date()` — beim Anlegen richtig, beim Bearbeiten eine Erfindung.
+	//
+	// Nur den Nachweis auszuschließen und das Flag schreibbar zu lassen, würde
+	// über diesen Pfad genau die Kombination erzeugen, die der Anlege-Pfad als
+	// Fehler definiert (Flag 1 bei NULL-Nachweis, siehe
+	// `mapFormToSightingConsentProof.test.ts`). Die Invariante hinge dann allein
+	// daran, dass die Admin-Oberfläche kein Einwilligungsfeld anbietet.
+	//
+	// Es geht nichts verloren: Einziger Aufrufer ist PUT /api/sightings/[id]
+	// hinter dem Admin-Bearbeitungsformular, und das rendert die drei übrigen
+	// Einwilligungen nicht und zeigt `mediaConsent` gesperrt. Eine nachträglich
+	// erteilte Einwilligung braucht einen eigenen Weg mit eigenem Nachweis.
 	const {
 		id: _id,
 		created: _created,
 		approvedAt: _approvedAt,
 		verified: _verified,
+		nameConsent: _nameConsent,
+		shipNameConsent: _shipNameConsent,
+		privacyConsent: _privacyConsent,
+		mediaConsent: _mediaConsent,
+		nameConsentAt: _nameConsentAt,
+		nameConsentVersion: _nameConsentVersion,
+		shipNameConsentAt: _shipNameConsentAt,
+		shipNameConsentVersion: _shipNameConsentVersion,
+		privacyConsentAt: _privacyConsentAt,
+		privacyConsentVersion: _privacyConsentVersion,
+		mediaConsentAt: _mediaConsentAt,
+		mediaConsentVersion: _mediaConsentVersion,
 		...rest
 	} = sightingData;
 	const updateData = rest as UpdateSighting;

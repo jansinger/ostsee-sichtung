@@ -20,7 +20,7 @@ test.describe('FormSteps — Step-Indikator', () => {
 
 		const activeStep = page.locator('[aria-current="step"]:visible');
 		await expect(activeStep).toBeVisible();
-		await expect(activeStep).toHaveAttribute('aria-label', /Position & Zeit/i);
+		await expect(activeStep).toHaveAttribute('aria-label', /Position & Zeitpunkt/i);
 	});
 
 	test('Klick auf navigierbaren Step wechselt Step', async ({ page }) => {
@@ -33,12 +33,12 @@ test.describe('FormSteps — Step-Indikator', () => {
 			timeout: 3000
 		});
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		// Click on Step 1 indicator (backward = always allowed)
 		const step1Button = page.locator('.step-button').nth(0);
 		await step1Button.click();
-		await expectCurrentStep(page, /Position & Zeit/i);
+		await expectCurrentStep(page, /Position & Zeitpunkt/i);
 	});
 });
 
@@ -112,7 +112,7 @@ test.describe('Accessibility — Keyboard Navigation', () => {
 			timeout: 3000
 		});
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		// Step 2 hat leere Pflichtfelder → erst der Klick auf "Weiter" löst die
 		// Inline-Fehlermeldung aus (kein automatisches Erscheinen beim Betreten)
@@ -240,7 +240,7 @@ test.describe('Accessibility — Fokus-Indikator', () => {
 
 		await fillStep1(formPage);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		const field = page.locator('[data-testid="field-species"]');
 		await field.focus();
@@ -256,11 +256,11 @@ test.describe('Accessibility — Fokus-Indikator', () => {
 		// `notes` steht auf Schritt 4 (Kontaktdaten), nicht auf "Beobachtungen".
 		await fillStep1(formPage);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		await fillStep2(formPage);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Beobachtungen/i);
+		await expectCurrentStep(page, /Weitere Informationen/i);
 
 		await formPage.skipStep();
 		await expectCurrentStep(page, /Kontaktdaten/i);

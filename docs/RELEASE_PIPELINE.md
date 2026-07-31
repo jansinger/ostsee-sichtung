@@ -176,6 +176,11 @@ Staging-Deploy die Produktion, und die Freigabe sichert nichts mehr ab.
 Medien liegen seit dem 28.07.2026 auf Platte statt in Vercel Blob; ein geteiltes
 Volume würde Staging-Testdaten in den Prod-Bestand schreiben.
 
+Ein dritter Punkt stand hier bis zum Session-Store: `SESSION_SECRET` musste je Stack
+verschieden sein, sonst war ein Staging-Zugang ein Produktions-Zugang. Die Variable
+existiert nicht mehr — Sessions liegen in der Datenbank, und die ist nach dem ersten Punkt
+ohnehin getrennt. Der Punkt ist damit nicht weggefallen, sondern im ersten aufgegangen.
+
 ---
 
 ## Rollback

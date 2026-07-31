@@ -1322,6 +1322,17 @@ paths:
             type: string
             format: uri
             example: "/admin"
+        - name: authRetry
+          in: query
+          description: >-
+            Interner Marker. Wird vom Callback gesetzt, wenn er den Login wegen
+            abgelaufener Flow-Cookies neu gestartet hat, und in die redirect_uri
+            übernommen, damit der Callback ihn nach dem Auth0-Rücklauf wiedersieht.
+            Nur der Wert '1' wird weitergereicht.
+          schema:
+            type: string
+            enum:
+              - '1'
       responses:
         '302':
           description: Weiterleitung zu Auth0
@@ -1333,7 +1344,12 @@ paths:
       tags:
         - auth
       summary: Logout
-      description: Meldet den Benutzer ab und leitet zu Auth0 Logout weiter
+      description: >
+        Beendet die Session serverseitig und leitet zu Auth0 Logout weiter.
+
+        Der Aufruf widerruft die Session-Zeile in der Datenbank: Das Cookie ist danach
+        auch dann ungültig, wenn der Client es behält. Bis zum Session-Store löschte
+        dieser Endpunkt nur das Cookie, das signierte JWT blieb gültig.
       responses:
         '302':
           description: Weiterleitung zu Auth0 Logout
@@ -1363,11 +1379,27 @@ paths:
           schema:
             type: string
             format: uri
+        - name: authRetry
+          in: query
+          description: >-
+            Interner Marker. Wird gesetzt, wenn der Login wegen abgelaufener
+            Flow-Cookies bereits einmal neu gestartet wurde, und verhindert eine
+            Endlosschleife zwischen Login und Callback.
+          schema:
+            type: string
+            enum:
+              - '1'
       responses:
         '302':
-          description: Weiterleitung nach erfolgreichem Login
+          description: >-
+            Weiterleitung nach erfolgreichem Login zur returnUrl — oder zurück auf
+            /api/auth/login, wenn die Flow-Cookies abgelaufen oder bereits verbraucht
+            sind (dann mit authRetry=1).
         '403':
-          description: Ungültiger State oder fehlender Code
+          description: >-
+            Fehlender Code, oder vorhandener State-Cookie, der dem übergebenen state
+            widerspricht (CSRF-Verdacht). Ebenso, wenn der Login-Neustart bereits
+            erfolglos versucht wurde (authRetry=1).
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -1949,7 +1981,14 @@ paths:
             example: "9,53,31,66"
         - name: search
           in: query
-          description: 'Suchtext in Name, E-Mail, Schiffsname (Teilstring-Suche)'
+          description: >
+            Suchtext (Teilstring-Suche). Für nicht angemeldete Aufrufer werden
+            Vorname/Name nur bei vorliegender Namensfreigabe und der Schiffsname
+            nur bei vorliegender Schiffsnamensfreigabe durchsucht; die
+            E-Mail-Adresse wird nicht durchsucht. Angemeldete Admins durchsuchen
+            zusätzlich die E-Mail-Adresse und ohne Freigabe-Filter.
+            LIKE-Platzhalter (%, _ und der Escape-Backslash \) werden literal
+            gesucht.
           schema:
             type: string
             maxLength: 100
@@ -2165,6 +2204,12 @@ components:
       name: auth-cookie
       description: >
         Session-Cookie für Admin-Authentifizierung.
+
+        Der Wert ist ein opakes Zufalls-Token (32 Byte, base64url) ohne eigenen Inhalt —
+        kein JWT. Der Session-Zustand (Identität, Rollen, Ablauf) liegt serverseitig in
+        der Tabelle `sessions`; das Cookie ist nur der Schlüssel darauf. Es trägt damit
+        keine Identitätsdaten mehr und lässt sich nicht dekodieren.
+
         Der Cookie-Name ist der Default-Wert (`auth-cookie`) und kann per
         `COOKIE_NAME` Umgebungsvariable überschrieben werden.
 
@@ -2238,6 +2283,11 @@ components:
         remaining:
           type: integer
           description: Vom Deckel übrig gelassene Fundstücke; erneut aufrufen.
+        sessionsRemoved:
+          type: integer
+          description: >
+            Im selben Lauf gelöschte abgelaufene oder widerrufene Session-Zeilen.
+            Nur bei `mode=execute` größer als 0.
 
     Error:
       type: object
@@ -2451,11 +2501,74 @@ components:
           description: Einverständnis zur Namensveröffentlichung
           enum: [0, 1]
           example: 1
+        nameConsentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            Zeitpunkt der Einwilligung zur Namensveröffentlichung (Nachweis nach
+            Art. 7 Abs. 1 DSGVO). `null`, wenn nicht eingewilligt wurde oder der
+            Datensatz aus dem Altbestand vor Einführung des Nachweises stammt.
+          example: "2026-07-31T10:30:00Z"
+        nameConsentVersion:
+          type: string
+          nullable: true
+          description: >-
+            Fassung des Einwilligungstextes, dem zugestimmt wurde. `null` unter
+            denselben Bedingungen wie `nameConsentAt`.
+          maxLength: 32
+          example: "2025-08-12"
         shipNameConsent:
           type: integer
           description: Einverständnis zur Schiffsnamen-Veröffentlichung
           enum: [0, 1]
           example: 1
+        shipNameConsentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zeitpunkt der Einwilligung zur Schiffsnamen-Veröffentlichung
+          example: "2026-07-31T10:30:00Z"
+        shipNameConsentVersion:
+          type: string
+          nullable: true
+          description: Fassung des zugestimmten Einwilligungstextes
+          maxLength: 32
+          example: "2025-08-12"
+        privacyConsent:
+          type: integer
+          description: Pflicht-Einwilligung zur Datenverarbeitung
+          enum: [0, 1]
+          example: 1
+        privacyConsentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zeitpunkt der Pflicht-Einwilligung
+          example: "2026-07-31T10:30:00Z"
+        privacyConsentVersion:
+          type: string
+          nullable: true
+          description: Fassung des zugestimmten Einwilligungstextes
+          maxLength: 32
+          example: "2026-07-28"
+        mediaConsent:
+          type: integer
+          description: Einwilligung zur Veröffentlichung hochgeladener Aufnahmen
+          enum: [0, 1]
+          example: 1
+        mediaConsentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zeitpunkt der Medien-Einwilligung
+          example: "2026-07-31T10:30:00Z"
+        mediaConsentVersion:
+          type: string
+          nullable: true
+          description: Fassung des zugestimmten Einwilligungstextes
+          maxLength: 32
+          example: "2026-07-28"
         internalComment:
           type: string
           nullable: true

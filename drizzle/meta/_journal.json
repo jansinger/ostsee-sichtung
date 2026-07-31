@@ -15,6 +15,20 @@
       "when": 1785252001790,
       "tag": "0001_first_wallop",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785506723798,
+      "tag": "0002_nervous_deadpool",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785515751077,
+      "tag": "0003_solid_steel_serpent",
+      "breakpoints": true
     }
   ]
 }

@@ -28,7 +28,7 @@ export const speciesLabels: Record<SpeciesEnum, string> = {
 	[SpeciesEnum.HARBOR_PORPOISE]: 'Schweinswal',
 	[SpeciesEnum.GREY_SEAL]: 'Kegelrobbe',
 	[SpeciesEnum.HARBOR_SEAL]: 'Seehund',
-	[SpeciesEnum.DOLPHIN]: 'Delphin',
+	[SpeciesEnum.DOLPHIN]: 'Delfin',
 	[SpeciesEnum.BELUGA]: 'Beluga',
 	[SpeciesEnum.MINKE_WHALE]: 'Zwergwal',
 	[SpeciesEnum.FIN_WHALE]: 'Finnwal',

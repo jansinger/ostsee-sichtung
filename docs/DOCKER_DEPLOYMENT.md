@@ -93,10 +93,8 @@ PUBLIC_SITE_URL=https://your-domain.com
 PORT=3000
 
 # Security - GENERATE THESE:
-# SESSION_SECRET: openssl rand -base64 32
 # ENCRYPTION_KEY: openssl rand -hex 32
 # CLEANUP_TOKEN: openssl rand -hex 32
-SESSION_SECRET=REPLACE_WITH_GENERATED_VALUE
 ENCRYPTION_KEY=REPLACE_WITH_GENERATED_VALUE
 
 # Bearer token for the orphaned-upload cleanup cron. Without it the endpoint
@@ -169,7 +167,7 @@ curl -O https://raw.githubusercontent.com/jansinger/ostsee-tiere/main/.env.docke
 
 # 3. Configure environment
 cp .env.docker .env
-nano .env  # Edit: Auth0 credentials, SESSION_SECRET, ENCRYPTION_KEY
+nano .env  # Edit: Auth0 credentials, ENCRYPTION_KEY
 
 # 4. Start all services (app + database)
 docker compose -f docker-compose.production.yml up -d
@@ -287,7 +285,6 @@ docker run -d \
   -p 3000:3000 \
   -v ./uploads:/app/uploads \
   -e DATABASE_POSTGRES_URL="postgresql://user:pass@host:5432/dbname" \
-  -e SESSION_SECRET="your-secret-key-here" \
   -e ENCRYPTION_KEY="your-64-char-hex-key" \
   -e AUTH0_CLIENT_ID="your-auth0-client-id" \
   -e AUTH0_CLIENT_SECRET="your-auth0-secret" \
@@ -493,7 +490,6 @@ HOST_HEADER=x-forwarded-host
 
 # Security (GENERATE THESE!)
 # openssl rand -base64 32
-SESSION_SECRET=your-generated-session-secret-here
 # openssl rand -hex 32
 ENCRYPTION_KEY=your-generated-64-char-hex-key-here
 # openssl rand -hex 32 — required for the orphaned-upload cleanup cron
@@ -716,7 +712,6 @@ Create a `.env` file with your configuration. See [ENVIRONMENT.md](./ENVIRONMENT
 DATABASE_POSTGRES_URL=postgresql://postgres:yourpassword@db:5432/ostsee
 
 # Security (REQUIRED - generate secure values!)
-SESSION_SECRET=your-secure-random-string-min-32-chars
 ENCRYPTION_KEY=your-64-character-hexadecimal-encryption-key
 
 # Auth0 (REQUIRED)
@@ -734,9 +729,6 @@ NODE_ENV=production
 **Generate Secure Keys:**
 
 ```bash
-# SESSION_SECRET (32+ characters)
-openssl rand -base64 32
-
 # ENCRYPTION_KEY (64 hex characters)
 openssl rand -hex 32
 ```
@@ -1339,7 +1331,6 @@ DATABASE_POSTGRES_URL="postgresql://ostsee_app:your-password@localhost:5432/osts
 STORAGE_PROVIDER=local
 
 # Security
-SESSION_SECRET=your-secure-random-string-min-32-chars
 ENCRYPTION_KEY=your-64-character-hexadecimal-encryption-key
 
 # Auth0 (can use test values for local testing)
@@ -1731,7 +1722,7 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
       "portMappings": [{"containerPort": 3000, "protocol": "tcp"}],
       "environment": [...],
       "secrets": [
-        {"name": "SESSION_SECRET", "valueFrom": "arn:aws:secretsmanager:..."}
+        {"name": "ENCRYPTION_KEY", "valueFrom": "arn:aws:secretsmanager:..."}
       ]
     }
   ]
@@ -1747,7 +1738,7 @@ gcloud run deploy ostsee-tiere \
   --region europe-west1 \
   --allow-unauthenticated \
   --set-env-vars DATABASE_POSTGRES_URL="..." \
-  --set-secrets SESSION_SECRET=session-secret:latest
+  --set-secrets ENCRYPTION_KEY=encryption-key:latest
 ```
 
 ### Azure Container Instances
@@ -1764,7 +1755,6 @@ az container create \
     PUBLIC_SITE_URL=https://ostsee-tiere.azurewebsites.net \
   --secure-environment-variables \
     DATABASE_POSTGRES_URL="..." \
-    SESSION_SECRET="..."
 ```
 
 ---

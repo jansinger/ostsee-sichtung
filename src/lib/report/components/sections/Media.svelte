@@ -10,6 +10,13 @@
 	import { MEDIA_FALLBACK_EMAIL } from '$lib/constants/contact';
 	import SectionCard from './SectionCard.svelte';
 
+	// Im Admin-Bearbeitungsformular bleibt die Medien-Einwilligung sichtbar, aber
+	// gesperrt: Sie ist eine Aussage der meldenden Person, kein Attribut des
+	// Datensatzes. Ein Admin könnte sie weder stellvertretend erteilen noch
+	// nachweisen — `updateSighting` schreibt die Nachweisspalten bewusst nicht
+	// mehr mit (Art. 7 Abs. 1 DSGVO).
+	let { adminMode = false }: { adminMode?: boolean } = $props();
+
 	// Generiere eine einfache referenceId für Upload (temporäre Lösung)
 	const { form } = getFormContext();
 	let referenceId = $derived($form.referenceId);
@@ -71,7 +78,19 @@
 		</ul>
 	</div>
 	<UploadNotice />
-	<FormField name="mediaConsent" />
+	<FormField name="mediaConsent" disabled={adminMode} />
+	{#if adminMode}
+		<!--
+			Bewusst ohne `aria-describedby`: Ein `disabled` Control ist nicht
+			fokussierbar, eine Beschreibung daran würde im Formularmodus nie
+			vorgelesen. Der sichtbare Text in Dokumentreihenfolge ist hier der
+			wirksame Weg. Die Feld-Pipeline (`FieldRenderer`) bietet ohnehin keinen
+			Hook für eine zusätzliche Beschreibung.
+		-->
+		<p class="text-support text-base-content/70 mt-1">
+			Diese Einwilligung kann nur die meldende Person selbst erteilen oder zurückziehen.
+		</p>
+	{/if}
 	{#if uploadConfig}
 		<DropzoneEnhanced
 			{referenceId}

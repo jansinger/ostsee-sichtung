@@ -42,9 +42,9 @@ export const GEO_LIMITS: GeoLimits = {
  * Arnis, Travemünde, Priwall, Warnemünde und der Rostocker Hafen liefern
  * `inBaltic = true`. Als Plausibilitätssignal ist `ostsee` dort also stumpf —
  * gerade im Gebiet mit der höchsten Meldedichte. Offener Punkt, siehe
- * `docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`.
+ * `docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`.
  *
- * Hintergrund: `docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
+ * Hintergrund: `docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
  *
  * @constant
  */

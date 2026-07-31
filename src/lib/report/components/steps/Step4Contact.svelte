@@ -36,19 +36,35 @@
 				<Icon icon="lucide:user" width="20" class="text-primary md:h-6 md:w-6" />
 			</div>
 		</div>
-		<h2 class="text-base-content text-xl font-bold md:text-2xl">Kontaktdaten & Abschluss</h2>
+		<h2 class="text-base-content text-xl font-bold md:text-2xl">Kontaktdaten</h2>
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
-			Ihre <strong>E-Mail-Adresse</strong> ist erforderlich für die Bestätigung. Kontaktdaten
-			ermöglichen wichtige Rückfragen zur Datenqualität. <strong>Datenschutz:</strong> Ihre persönlichen
-			Daten werden nie öffentlich angezeigt!
+			Ihre <strong>E-Mail-Adresse</strong> ist erforderlich für die Bestätigung. Kontaktdaten ermöglichen
+			wichtige Rückfragen zur Datenqualität.
 		</p>
-		<div class="flex justify-center">
-			<div
-				class="badge badge-outline badge-primary h-auto min-h-fit max-w-xs px-3 py-2 text-center text-xs whitespace-normal md:max-w-none md:text-sm md:whitespace-nowrap"
-			>
-				Schritt 4 von 4 - Fast geschafft!
-			</div>
-		</div>
+		<!-- Der frühere Satz „Ihre persönlichen Daten werden nie öffentlich
+		     angezeigt!" war nachweislich falsch: Direkt darunter stehen die
+		     Einwilligungen zur Namensnennung, und `/api/map/sightings` liefert
+		     Vor- und Nachnamen aus, sobald `nameConsent` gesetzt ist
+		     (`mapUtils.ts`). Die Kartensuche durchsucht sie, CSV-, XML- und
+		     KML-Export tragen sie ebenfalls — die sind allerdings, anders als in
+		     der Analyse angenommen, nur für Admins erreichbar
+		     (`requireUserRole(['admin','superadmin'])`); der öffentliche Weg ist
+		     allein die Karten-API.
+
+		     „Ortsangaben zum Seegebiet" steht bewusst in der Aufzählung:
+		     `/api/map/sightings` liefert `waterway` und `seaMark` unkonditioniert
+		     aus. Das sind Freitextfelder, die der Melder selbst tippt und die
+		     beiläufig Personenbezug tragen können — wer sie ausfüllt, soll
+		     wissen, dass sie öffentlich werden.
+
+		     Die neue Fassung sagt, was tatsächlich passiert, und erklärt die
+		     Ankreuzfelder darunter, statt ihnen zu widersprechen. -->
+		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
+			<strong>Datenschutz:</strong> Ihre Kontaktdaten verwenden wir ausschließlich für Rückfragen zu Ihrer
+			Meldung und geben sie nicht an Dritte weiter. Öffentlich sichtbar werden nur die Sichtungsdaten
+			selbst — Datum, Position, Tierart, Anzahl und Ihre Ortsangaben zum Seegebiet. Ihr Name erscheint
+			nur, wenn Sie das unten ausdrücklich erlauben.
+		</p>
 	</div>
 
 	<!-- Personal Contact Information -->
@@ -81,7 +97,9 @@
 
 					{#if hasSavedContactData}
 						<div class="mt-3 flex items-center justify-between">
-							<span class="text-success-strong font-medium">✓ Gespeicherte Kontaktdaten gefunden</span>
+							<span class="text-success-strong font-medium"
+								>✓ Gespeicherte Kontaktdaten gefunden</span
+							>
 							<button
 								type="button"
 								class="btn btn-outline btn-error btn-sm min-h-11"
@@ -107,43 +125,17 @@
 			<FormField name="phone" />
 		</div>
 
-		<!-- Address (optional) -->
-		<details class="bg-base-100 collapse mt-4">
-			<summary class="collapse-title min-h-11 py-3 text-sm font-medium">
-				<span class="inline-flex items-center gap-1.5">
-					<Icon icon="lucide:map-pin" width="14" class="text-primary" />
-					Adresse (optional)
-				</span>
-			</summary>
-			<div class="collapse-content space-y-4 pt-4">
-				<FormField name="street" />
-
-				<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-					<FormField name="zipCode" />
-
-					<FormField name="city" />
-				</div>
-			</div>
-		</details>
+		<!-- Adresse (Straße/PLZ/Ort) wird nicht mehr abgefragt: Für Rückfragen
+		     genügen E-Mail und Telefon, und weniger personenbezogene Daten sind
+		     datenschutzrechtlich die bessere Wahl (Wunsch des Deutschen
+		     Meeresmuseums). Schema-Einträge und DB-Spalten bleiben — die
+		     Legacy-API führt `strasse`/`plz`/`ort` weiter. -->
 	</div>
 
-	<!-- Boat Information Section -->
-	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 md:p-4">
-		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold md:text-lg">
-			<Icon icon="lucide:anchor" width="20" class="text-primary" />
-			Boot-/Schiffsinformationen
-		</h3>
-
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<FormField name="shipName" />
-
-			<FormField name="homePort" />
-		</div>
-
-		<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-1">
-			<FormField name="boatType" />
-		</div>
-	</div>
+	<!-- Die Boot-/Schiffsangaben stehen seit dem 2026-07-31 auf Schritt 3
+	     (`sections/BoatInfo.svelte`): Sie beschreiben die Beobachtungssituation,
+	     nicht die Person. „Kontaktdaten löschen" oben räumt sie weiterhin mit
+	     auf — sie bleiben Teil von `USER_CONTACT_FIELDS`. -->
 
 	<!-- Additional Information Section -->
 	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 md:p-4">

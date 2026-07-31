@@ -47,7 +47,6 @@ vi.mock('$env/dynamic/private', () => ({
 		AUTH0_DOMAIN: 'test-domain.auth0.com',
 		COOKIE_NAME: 'test-auth-cookie',
 		JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
-		SESSION_SECRET: 'test-session-secret',
 		ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
 		NODE_ENV: 'test'
 	}
@@ -71,12 +70,9 @@ import { createRemoteJWKSet, decodeJwt, jwtVerify, SignJWT } from 'jose';
 
 // Import the functions to test after mocking
 import {
-	clearAuthCookie,
-	getAuthUser,
 	getPKCEVerifierFromCookie,
 	getToken,
 	requireUserRole,
-	setAuthCookie,
 	setCsrfCookie,
 	setPKCECookie
 } from './auth';
@@ -243,109 +239,10 @@ describe('auth.ts', () => {
 		});
 	});
 
-	describe('getAuthUser', () => {
-		it('should return user from valid cookie', async () => {
-			const testUser: User = {
-				nickname: 'testuser',
-				name: 'Test User',
-				picture: 'https://example.com/avatar.jpg',
-				updated_at: '2023-01-01T00:00:00.000Z',
-				email: 'test@example.com',
-				email_verified: true,
-				iss: 'https://test-domain.auth0.com/',
-				aud: 'test-client-id',
-				iat: 1672531200,
-				exp: 1672617600,
-				sub: 'auth0|123456789',
-				sid: 'session-id',
-				roles: ['user']
-			};
-
-			vi.mocked(mockCookies.get).mockReturnValue('valid-jwt-token');
-			vi.mocked(jwtVerify).mockResolvedValue({
-				payload: testUser,
-				protectedHeader: { alg: 'HS256' }
-			} as any);
-
-			const result = await getAuthUser(mockCookies);
-
-			expect(result).toEqual(testUser);
-			expect(mockCookies.get).toHaveBeenCalledWith('test-auth-cookie');
-			expect(jwtVerify).toHaveBeenCalledWith('valid-jwt-token', expect.any(Uint8Array));
-		});
-
-		it('should return null when no cookie exists', async () => {
-			vi.mocked(mockCookies.get).mockReturnValue(undefined);
-
-			const result = await getAuthUser(mockCookies);
-
-			expect(result).toBeNull();
-			expect(jwtVerify).not.toHaveBeenCalled();
-		});
-
-		it('should return null when cookie is empty', async () => {
-			vi.mocked(mockCookies.get).mockReturnValue('');
-
-			const result = await getAuthUser(mockCookies);
-
-			expect(result).toBeNull();
-		});
-
-		it('should return null when token is invalid', async () => {
-			vi.mocked(mockCookies.get).mockReturnValue('invalid-token');
-			vi.mocked(jwtVerify).mockRejectedValue(new Error('Invalid token'));
-
-			const result = await getAuthUser(mockCookies);
-
-			expect(result).toBeNull();
-		});
-	});
-
-	describe('setAuthCookie', () => {
-		it('should set auth cookie with correct parameters', async () => {
-			const testUser: User = {
-				nickname: 'testuser',
-				name: 'Test User',
-				picture: 'https://example.com/avatar.jpg',
-				updated_at: '2023-01-01T00:00:00.000Z',
-				email: 'test@example.com',
-				email_verified: true,
-				iss: 'https://test-domain.auth0.com/',
-				aud: 'test-client-id',
-				iat: 1672531200,
-				exp: 1672617600,
-				sub: 'auth0|123456789',
-				sid: 'session-id',
-				roles: ['user']
-			};
-
-			await setAuthCookie(mockCookies, testUser);
-
-			expect(SignJWT).toHaveBeenCalledWith({ ...testUser });
-			// Session-Cookie muss SameSite=None; Secure sein (iframe-Einbettung meeresmuseum.de)
-			expect(mockCookies.set).toHaveBeenCalledWith('test-auth-cookie', 'signed-jwt-token', {
-				httpOnly: true,
-				sameSite: 'none',
-				secure: true,
-				maxAge: 60 * 60 * 24 * 1, // 1 Tag
-				path: '/'
-			});
-		});
-	});
-
-	describe('clearAuthCookie', () => {
-		it('should delete auth cookie', () => {
-			clearAuthCookie(mockCookies);
-
-			// Attribute müssen mit setAuthCookie übereinstimmen, sonst wird der Cookie nicht gelöscht
-			expect(mockCookies.delete).toHaveBeenCalledWith('test-auth-cookie', {
-				path: '/',
-				httpOnly: true,
-				sameSite: 'none',
-				secure: true
-			});
-		});
-	});
+	/* getAuthUser, setAuthCookie und clearAuthCookie sind mit dem Session-Store entfallen
+	   (#635). Die zugehoerigen Tests stehen jetzt in sessionRepository.test.ts und pruefen
+	   dort das Entscheidende mit: dass ein selbst signiertes JWT keinen Benutzer mehr
+	   ergibt. */
 
 	describe('requireUserRole', () => {
 		const testUrl = new URL('https://example.com/admin');
@@ -666,6 +563,28 @@ describe('auth.ts', () => {
 			expect(token1).not.toBe(token2);
 			expect(mockCookies.set).toHaveBeenCalledTimes(2);
 		});
+
+		// OWASP verlangt für Session-/CSRF-Token mindestens 128 Bit. Math.random().toString(36)
+		// .substring(7) lieferte gemessen 3–7 base36-Zeichen (~15–36 Bit) und ist zudem kein
+		// kryptografischer Zufall — beides für einen CSRF-State ungeeignet.
+		it('erzeugt einen State mit mindestens 128 Bit kryptografischer Entropie', () => {
+			const token = setCsrfCookie(mockCookies);
+
+			// base64url: 4 Zeichen je 3 Byte → 128 Bit brauchen mindestens 22 Zeichen
+			expect(token.length).toBeGreaterThanOrEqual(22);
+			expect(token).toMatch(/^[A-Za-z0-9_-]+$/);
+		});
+
+		it('bleibt zufällig, auch wenn Math.random festgenagelt ist', () => {
+			const mockRandom = vi.spyOn(Math, 'random').mockReturnValue(0.42);
+
+			const token1 = setCsrfCookie(mockCookies);
+			const token2 = setCsrfCookie(mockCookies);
+
+			expect(token1).not.toBe(token2);
+
+			mockRandom.mockRestore();
+		});
 	});
 
 	describe('setPKCECookie', () => {
@@ -719,6 +638,84 @@ describe('auth.ts', () => {
 			});
 
 			expect(() => setPKCECookie(mockCookies)).toThrow('Encryption failed');
+		});
+	});
+
+	describe('getEncryptionKey (Trimmen)', () => {
+		/* Befund 3 (#635-Review): secretGuard.ts prüft ENCRYPTION_KEY getrimmt, auth.ts liest
+		   ihn bisher ungetrimmt (`env.ENCRYPTION_KEY ?? ''`) und reicht ihn an
+		   `Buffer.from(wert, 'hex')` weiter. Bei Leerraum drumherum (z. B. durch
+		   `openssl rand -hex 32 > datei` oder einen YAML-Blockskalar) sagt der Guard beim
+		   Start "in Ordnung", `createCipheriv` wirft dann erst beim ersten Admin-Login mit
+		   "Invalid key length". Dieser Test belegt, dass setPKCECookie denselben getrimmten
+		   Wert verwendet, den der Guard geprüft hat. */
+		it('trimmt ENCRYPTION_KEY vor der Verwendung, damit Leerraum drumherum den Guard nicht unterläuft', async () => {
+			vi.resetModules();
+			vi.doMock('$env/dynamic/private', () => ({
+				env: {
+					AUTH0_CLIENT_ID: 'test-client-id',
+					AUTH0_CLIENT_SECRET: 'test-client-secret',
+					AUTH0_DOMAIN: 'test-domain.auth0.com',
+					COOKIE_NAME: 'test-auth-cookie',
+					JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
+					// Leerraum drumherum, wie ihn `openssl rand -hex 32 > datei` oder ein
+					// YAML-Blockskalar erzeugen kann.
+					ENCRYPTION_KEY: '  0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n',
+					NODE_ENV: 'test'
+				}
+			}));
+
+			const { setPKCECookie } = await import('./auth');
+			const mockPKCEData = { verifier: 'test-verifier-123', challenge: 'test-challenge-456' };
+			vi.mocked(getPKCEChallengeData).mockReturnValue(mockPKCEData);
+			vi.mocked(encrypt).mockReturnValue({
+				iv: Buffer.from('00', 'hex'),
+				encryptedData: Buffer.from('00', 'hex'),
+				tag: Buffer.from('00', 'hex')
+			});
+
+			setPKCECookie(mockCookies);
+
+			expect(encrypt).toHaveBeenCalledWith(
+				'test-verifier-123',
+				Buffer.from('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'hex')
+			);
+		});
+	});
+
+	describe('getNodeEnv (Normalisierung)', () => {
+		/* Befund 1 (#668-Review): secretGuard.ts normalisiert NODE_ENV vor dem Vergleich
+		   (trimmen, Kleinbuchstaben), damit "Production" oder " production " den Startup-Guard
+		   nicht lautlos abschalten. getNodeEnv() hier verglich bisher ungetrimmt und
+		   case-sensitiv gegen 'production' — bei NODE_ENV="Production" greift der Guard, aber
+		   das secure-Flag der Cookies (setCsrfCookie, setPKCECookie) bliebe false. Zwei
+		   Sicherheitsentscheidungen aus derselben Variable liefen damit auseinander. */
+		it('setzt secure:true bei NODE_ENV="Production" (Grossschreibung)', async () => {
+			vi.resetModules();
+			vi.doMock('$env/dynamic/private', () => ({
+				env: {
+					AUTH0_CLIENT_ID: 'test-client-id',
+					AUTH0_CLIENT_SECRET: 'test-client-secret',
+					AUTH0_DOMAIN: 'test-domain.auth0.com',
+					COOKIE_NAME: 'test-auth-cookie',
+					JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
+					ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+					NODE_ENV: 'Production'
+				}
+			}));
+
+			const { setCsrfCookie } = await import('./auth');
+			const mockRandom = vi.spyOn(Math, 'random').mockReturnValue(0.9999);
+
+			const result = setCsrfCookie(mockCookies);
+
+			expect(mockCookies.set).toHaveBeenCalledWith(
+				'csrfState',
+				result,
+				expect.objectContaining({ secure: true })
+			);
+
+			mockRandom.mockRestore();
 		});
 	});
 

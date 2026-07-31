@@ -12,6 +12,8 @@ declare global {
 			user?: User;
 			cspNonce?: string;
 			isAdmin?: boolean;
+			/** Ende des gleitenden Inaktivitaetsfensters — Grundlage fuer #634. */
+			sessionExpiresAt?: Date;
 		}
 		// interface PageData {}
 		// interface PageState {}

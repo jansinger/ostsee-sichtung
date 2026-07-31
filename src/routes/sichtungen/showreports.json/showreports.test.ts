@@ -11,6 +11,25 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { GET, POST, PUT, DELETE } from './+server';
 import type { RequestEvent } from '@sveltejs/kit';
+import type { SQL } from 'drizzle-orm';
+import { PgDialect } from 'drizzle-orm/pg-core';
+
+// Die WHERE-Bedingung wird aus dem DB-Mock herausgereicht, damit die Tests die
+// tatsächlich erzeugte SQL prüfen können statt nur den HTTP-Status. Ohne das
+// bleibt der Suchfilter unsichtbar — genau so konnte die ungegatete Suche
+// über personenbezogene Felder unbemerkt bleiben.
+const captured = vi.hoisted(() => ({ where: null as unknown }));
+
+const dialect = new PgDialect();
+
+/** Rendert die zuletzt erfasste WHERE-Bedingung als SQL-Text mit Parametern. */
+function capturedWhereQuery(): { text: string; params: unknown[] } {
+	if (!captured.where) {
+		throw new Error('Keine WHERE-Bedingung erfasst — wurde die Query ausgeführt?');
+	}
+	const query = dialect.sqlToQuery(captured.where as SQL);
+	return { text: query.sql, params: query.params };
+}
 
 // Mock database - simplified approach using partial database operations
 const mockSightingData = [
@@ -74,11 +93,14 @@ vi.mock('$lib/server/db', () => {
 		db: {
 			select: vi.fn(() => ({
 				from: vi.fn(() => ({
-					where: vi.fn(() => ({
-						orderBy: vi.fn(() => ({
-							limit: vi.fn(() => Promise.resolve(mockSightingData))
-						}))
-					}))
+					where: vi.fn((condition: unknown) => {
+						captured.where = condition;
+						return {
+							orderBy: vi.fn(() => ({
+								limit: vi.fn(() => Promise.resolve(mockSightingData))
+							}))
+						};
+					})
 				}))
 			}))
 		}
@@ -96,7 +118,10 @@ vi.mock('$lib/logger', () => ({
 }));
 
 // Helper to create mock request event
-function createMockRequestEvent(searchParams: Record<string, string> = {}): RequestEvent {
+function createMockRequestEvent(
+	searchParams: Record<string, string> = {},
+	locals: App.Locals = {}
+): RequestEvent {
 	const url = new URL('https://example.com/sichtungen/showreports.json');
 	Object.entries(searchParams).forEach(([key, value]) => {
 		url.searchParams.set(key, value);
@@ -104,13 +129,23 @@ function createMockRequestEvent(searchParams: Record<string, string> = {}): Requ
 
 	return {
 		url,
+		locals,
 		getClientAddress: () => '127.0.0.1'
 	} as any;
+}
+
+/** Request-Event eines eingeloggten Admins (Rolle wie in `hooks.server.ts` gesetzt). */
+function createAdminRequestEvent(searchParams: Record<string, string> = {}): RequestEvent {
+	return createMockRequestEvent(searchParams, {
+		user: { sub: 'auth0|admin', roles: ['admin'] } as NonNullable<App.Locals['user']>,
+		isAdmin: true
+	});
 }
 
 describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		captured.where = null;
 	});
 
 	describe('PDF Compliance - Response Format', () => {
@@ -365,6 +400,65 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 		});
 	});
 
+	describe('Datenschutz - Suche über personenbezogene Felder', () => {
+		// Hintergrund: Die Ausgabe war schon immer consent-gegated (`na`, `sh`),
+		// die Trefferzahl nicht. Ein anonymer Aufrufer konnte damit prüfen, ob eine
+		// E-Mail-Adresse oder ein Name im Bestand existiert — auch bei Meldern ohne
+		// Einwilligung. Vgl. `/api/map/sightings`, das dieselbe Consent-Gatung umsetzt.
+
+		it('durchsucht für anonyme Aufrufer die E-Mail-Adresse nicht', async () => {
+			await GET(createMockRequestEvent({ search: 'melder@example.com' }));
+
+			const { text } = capturedWhereQuery();
+			expect(text).not.toContain('"email"');
+		});
+
+		it('durchsucht Name und Schiffsname für anonyme Aufrufer nur mit Einwilligung', async () => {
+			await GET(createMockRequestEvent({ search: 'Private' }));
+
+			const { text } = capturedWhereQuery();
+			// Die Felder werden weiterhin durchsucht ...
+			expect(text).toContain('"vorname"');
+			expect(text).toContain('"name"');
+			expect(text).toContain('"schiffsname"');
+			// ... aber ausschließlich innerhalb des Consent-Gates.
+			expect(text).toMatch(/"namensnennung"\s*=\s*1/);
+			expect(text).toMatch(/"schiffnamensnennung"\s*=\s*1/);
+		});
+
+		it('behandelt LIKE-Wildcards im Suchbegriff als Literale', async () => {
+			// Ohne Escaping matcht `search=%` jeden Datensatz und `_` jedes
+			// Einzelzeichen — das verstärkt das Membership-Orakel zusätzlich.
+			await GET(createMockRequestEvent({ search: '50%_x' }));
+
+			const { text, params } = capturedWhereQuery();
+			expect(params).toContain('%50\\%\\_x%');
+			expect(text).toContain('ESCAPE');
+		});
+
+		it('durchsucht für eingeloggte Admins weiterhin alle vier Felder der Spezifikation', async () => {
+			await GET(createAdminRequestEvent({ search: 'Schneider' }));
+
+			const { text } = capturedWhereQuery();
+			expect(text).toContain('"email"');
+			expect(text).toContain('"vorname"');
+			expect(text).toContain('"name"');
+			expect(text).toContain('"schiffsname"');
+			// Kein Consent-Gate: Admins sehen ohnehin alle Felder.
+			expect(text).not.toContain('"namensnennung"');
+			expect(text).not.toContain('"schiffnamensnennung"');
+		});
+
+		it('erzeugt ohne search-Parameter keine Bedingung auf personenbezogene Felder', async () => {
+			await GET(createMockRequestEvent());
+
+			const { text } = capturedWhereQuery();
+			expect(text).not.toContain('"email"');
+			expect(text).not.toContain('"vorname"');
+			expect(text).not.toContain('"schiffsname"');
+		});
+	});
+
 	describe('PDF Compliance - Cache and Headers', () => {
 		it('should set proper cache headers', async () => {
 			const event = createMockRequestEvent();
@@ -373,6 +467,23 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			expect(response.status).toBe(200);
 			expect(response.headers.get('Cache-Control')).toBe('public, max-age=300');
 			expect(response.headers.get('Content-Type')).toBe('application/json');
+		});
+
+		it('markiert die Admin-Antwort als nicht öffentlich cachebar', async () => {
+			// Die Antwort hängt seit der Consent-Gatung von der Session ab: Ein Admin
+			// bekommt unter derselben URL mehr Treffer. Mit `public` dürfte ein Shared
+			// Cache die Admin-Antwort an anonyme Aufrufer weiterreichen — genau das
+			// Orakel, das die Gatung schließt.
+			const response = await GET(createAdminRequestEvent({ search: 'Schneider' }));
+
+			expect(response.status).toBe(200);
+			expect(response.headers.get('Cache-Control')).toBe('private, max-age=0, no-store');
+		});
+
+		it('meldet die Abhängigkeit von der Session per Vary', async () => {
+			const anonymous = await GET(createMockRequestEvent({ search: 'Schneider' }));
+
+			expect(anonymous.headers.get('Vary')).toBe('Cookie');
 		});
 	});
 

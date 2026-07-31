@@ -3,7 +3,7 @@ import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 
 /**
  * Fachliche Referenzpunkte für die bereinigte Ostsee-Geometrie.
- * Herkunft und Begründung: docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
+ * Herkunft und Begründung: docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
  */
 
 /** Fehler A — Binnenwasser-Artefakte der IHO-Geometrie. Müssen draußen sein. */

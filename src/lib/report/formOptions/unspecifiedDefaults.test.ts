@@ -83,14 +83,17 @@ describe('AnimalBehaviorEnum.UNKNOWN', () => {
 		expect(isValidAnimalBehavior('4')).toBe(true);
 	});
 
-	it('erscheint NICHT in den auswählbaren Optionen', () => {
+	// `OTHER` steht am ENDE, obwohl sein Enum-Wert `0` ist: Die Auffangkategorie
+	// gehört hinter die konkreten Antworten, nicht davor (Wunsch des Deutschen
+	// Meeresmuseums). Der gespeicherte Wert bleibt `0`.
+	it('erscheint NICHT in den auswählbaren Optionen, "Sonstiges" steht am Ende', () => {
 		const values = getAnimalBehaviorOptions().map((option) => option.value);
 		expect(values).not.toContain(AnimalBehaviorEnum.UNKNOWN);
 		expect(values).toEqual([
-			AnimalBehaviorEnum.OTHER,
 			AnimalBehaviorEnum.CONSTANT_COURSE,
 			AnimalBehaviorEnum.VARYING_COURSE,
-			AnimalBehaviorEnum.SLOW_SWIMMING
+			AnimalBehaviorEnum.SLOW_SWIMMING,
+			AnimalBehaviorEnum.OTHER
 		]);
 	});
 

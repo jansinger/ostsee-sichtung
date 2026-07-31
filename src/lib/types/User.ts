@@ -12,10 +12,14 @@ export interface User {
 	updated_at: string;
 	email: string;
 	email_verified: boolean;
-	iss: string;
-	aud: string;
-	iat: number;
-	exp: number;
+	/* Token-Metadaten. Optional, seit die Session serverseitig liegt: Sie stammten aus
+	   unserem eigenen, mit SESSION_SECRET signierten JWT. Beim Login kommen sie noch aus
+	   dem Auth0-ID-Token (`exp` setzt dort `absolute_expires_at`), aus der Session-Zeile
+	   kommen sie nicht mehr zurück — dort ist `absolute_expires_at` die Autorität. */
+	iss?: string;
+	aud?: string;
+	iat?: number;
+	exp?: number;
 	sub: string;
 	sid: string;
 	roles: string[];
@@ -32,6 +36,13 @@ export interface PublicUser {
 
 /**
  * Interface für persistente Benutzer-Kontaktdaten
+ *
+ * Straße, PLZ und Ort gehören bewusst NICHT mehr dazu: Seit die Adresse nicht
+ * mehr abgefragt wird (Wunsch des Deutschen Meeresmuseums), gibt es keinen Weg
+ * mehr, sie zu sehen oder zu ändern. Blieben sie hier, würde ein früher
+ * gespeicherter Wert weiterhin ins Formular zurückgespielt und bei jeder
+ * Meldung unsichtbar mitgesendet. Schema-Einträge und DB-Spalten bleiben
+ * erhalten — die Legacy-API führt `strasse`/`plz`/`ort` weiter.
  */
 export type UserContactData = Pick<
 	SightingFormData,
@@ -39,9 +50,6 @@ export type UserContactData = Pick<
 	| 'lastName'
 	| 'email'
 	| 'phone'
-	| 'street'
-	| 'zipCode'
-	| 'city'
 	| 'shipName'
 	| 'homePort'
 	| 'boatType'

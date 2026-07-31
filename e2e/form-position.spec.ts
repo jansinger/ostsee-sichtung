@@ -67,16 +67,16 @@ test.describe('PositionAndTime — Single-Panel-Positionseingabe', () => {
 		await disclosure.locator('summary').click();
 		await expect(disclosure).toHaveAttribute('open', '');
 
-		// Die Koordinatenfelder liegen im Meldeformular hinter einer eigenen
-		// Disclosure (collapsibleCoordinates={true}) — anders als in der Admin-
-		// Maske. Sie existieren jetzt, sind aber selbst noch zugeklappt.
-		const coordinateFields = page.locator('[data-testid="coordinate-fields"]');
-		await expect(coordinateFields).toBeVisible();
-		await expect(coordinateFields).not.toHaveAttribute('open', '');
-
-		// Und lassen sich unabhängig von der Karten-Disclosure öffnen.
-		await coordinateFields.locator('summary').click();
-		await expect(coordinateFields).toHaveAttribute('open', '');
+		// Die Koordinatenfelder stehen seit dem 2026-07-31 offen unter der Karte
+		// (`collapsibleCoordinates={false}`, Wunsch des Deutschen Meeresmuseums).
+		// Vorher lagen sie hinter einer zweiten Disclosure und waren damit zwei
+		// Klicks tief — die gibt es nicht mehr.
+		await expect(page.locator('[data-testid="coordinate-fields"]')).toHaveCount(0);
+		await expect(page.locator('#latitude')).toBeVisible();
+		await expect(page.locator('#longitude')).toBeVisible();
+		await expect(page.locator('[data-testid="coordinates-hint"]')).toContainText(
+			/GPS-Koordinaten/i
+		);
 	});
 
 	// ── Regression: Vorgänger-Fix machte den Block schließbar, obwohl waterway
@@ -140,11 +140,7 @@ test.describe('PositionAndTime — Karte reagiert auf Tippen', () => {
 
 		await expect(map).toHaveAttribute('data-position', 'set');
 
-		// Die Koordinatenfelder liegen im Meldeformular hinter einer Disclosure.
-		const coordinateFields = page.locator('[data-testid="coordinate-fields"]');
-		await coordinateFields.locator('summary').click();
-		await expect(coordinateFields).toHaveAttribute('open', '');
-
+		// Die Koordinatenfelder stehen offen unter der Karte — kein Aufklappen mehr.
 		const latitude = page.locator('#latitude');
 		const longitude = page.locator('#longitude');
 		await expect(latitude).not.toHaveValue('');

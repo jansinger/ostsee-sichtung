@@ -11,6 +11,9 @@
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import SectionCard from './SectionCard.svelte';
 
+	/** Siehe `Behavior.svelte` — vollständiger Editor statt kuratierter Teilmenge. */
+	let { adminMode = false }: { adminMode?: boolean } = $props();
+
 	const { form, handleChange } = getFormContext();
 
 	let latitude: number | null | undefined = $derived($form.latitude);
@@ -71,12 +74,32 @@
 		<FormField name="visibility" />
 	</div>
 
-	<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-		<!-- Wind Direction -->
-		<FormField name="windDirection" />
+	<!-- `windDirection` wird hier bewusst nicht mehr abgefragt (Wunsch des
+	     Deutschen Meeresmuseums), geht aber nicht verloren: `applyWeatherData`
+	     im WeatherDataFetcher unten schreibt `windForce`, `windDirection`,
+	     `seaState` und `visibility` gemeinsam ins Formular
+	     (`WeatherFormFields`) — `windDirection` fährt also mit den drei
+	     Feldern mit, die hier weiterhin stehen.
 
+	     Genauer als in der Analyse notiert: Die Wetterdaten werden zwar
+	     automatisch GEHOLT (`autoFetch`), ins Formular übernommen werden sie
+	     aber erst mit „Daten übernehmen". Ohne diesen Klick blieb auch vorher
+	     schon keines der vier Felder gefüllt — die Windrichtung verliert durch
+	     das Ausblenden also nichts, was sie vorher gehabt hätte. Im Browser
+	     gegengeprüft: nach dem Klick steht `windDirection` im Formular-State,
+	     obwohl das Feld nicht mehr gerendert wird.
+
+	     Schema-Eintrag und DB-Spalte `windrichtung` bleiben unverändert. -->
+	<!-- Zweispaltig nur, wenn auch zwei Felder darin stehen — sonst stünde die
+	     Windstärke im Meldeformular auf halber Breite neben einer Leerstelle. -->
+	<div class="mt-4 grid grid-cols-1 gap-4 {adminMode ? 'md:grid-cols-2' : ''}">
 		<!-- Wind Force -->
 		<FormField name="windForce" />
+
+		<!-- Im Admin editierbar: 9.642 Datensätze tragen eine Windrichtung. -->
+		{#if adminMode}
+			<FormField name="windDirection" />
+		{/if}
 	</div>
 
 	<!-- Weather Data Fetcher - Auto-fetch when environment section is visible -->

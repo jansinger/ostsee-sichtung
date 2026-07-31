@@ -68,8 +68,16 @@ export const sightings = pgTable(
 		phone: varchar('telefon', { length: 64 }),
 		fax: varchar('fax', { length: 64 }),
 		email: varchar('email', { length: 64 }),
+		// Einwilligung zur Veröffentlichung von Vor- und Nachname. `/api/sightings`
+		// gibt den Namen aus, sobald das Flag steht — Zeitpunkt und Textfassung
+		// sind der Nachweis nach Art. 7 Abs. 1 DSGVO. Altbestand: NULL, dort gibt
+		// es keinen Nachweis, und ein rückdatierter Wert wäre eine Erfindung.
 		nameConsent: integer('namensnennung').default(0).notNull(),
+		nameConsentAt: timestamp('namensnennung_am', { mode: 'date' }),
+		nameConsentVersion: varchar('namensnennung_version', { length: 32 }),
 		shipNameConsent: integer('schiffnamensnennung').default(0).notNull(),
+		shipNameConsentAt: timestamp('schiffnamensnennung_am', { mode: 'date' }),
+		shipNameConsentVersion: varchar('schiffnamensnennung_version', { length: 32 }),
 		notes: text('bemerkungen'),
 		created: timestamp('created', { mode: 'date' }).notNull(),
 		entryChannel: integer('eingangskanal').default(0).notNull(),
@@ -85,7 +93,11 @@ export const sightings = pgTable(
 		deadSex: smallint('totfund_geschlecht').default(0).notNull(),
 		deadPhoneContact: smallint('totfund_telefon').default(0).notNull(),
 		species: smallint('tierart').default(0).notNull(),
+		// Pflicht-Einwilligung der Meldung. Zeitpunkt und Textfassung sind auch
+		// hier der Nachweis nach Art. 7 Abs. 1 DSGVO.
 		privacyConsent: smallint('datenschutz_einverstaendnis').default(0).notNull(),
+		privacyConsentAt: timestamp('datenschutz_einverstaendnis_am', { mode: 'date' }),
+		privacyConsentVersion: varchar('datenschutz_einverstaendnis_version', { length: 32 }),
 		// Einwilligung zur **Veröffentlichung** hochgeladener Aufnahmen.
 		// Upload und fachliche Prüfung sind dagegen Teil der Meldung selbst und
 		// von `privacyConsent` gedeckt (Entscheidung 2026-07-28).
@@ -200,3 +212,44 @@ export const auditLogs = pgTable(
 
 export type AuditLogSelect = typeof auditLogs.$inferSelect;
 export type AuditLogInsert = typeof auditLogs.$inferInsert;
+
+/**
+ * Server-seitige Sessions (Issue #635, #634).
+ *
+ * Das Cookie trägt nur noch ein opakes Zufalls-Token; die Identität steht hier. Damit ist
+ * eine Session nicht mehr fälschbar (ein erfundenes Cookie findet keine Zeile) und Logout
+ * wirkt tatsächlich, statt nur den Cookie zu löschen.
+ *
+ * `token_hash` speichert bewusst nur den SHA-256 des Cookie-Werts: Ein Lesezugriff auf diese
+ * Tabelle händigt damit keine lebenden Sessions aus.
+ */
+export const sessions = pgTable(
+	'sessions',
+	{
+		id: serial().primaryKey().notNull(),
+		tokenHash: varchar('token_hash', { length: 64 }).notNull().unique(),
+		sub: varchar('sub', { length: 255 }).notNull(),
+		/* Snapshot des Auth0-Rollen-Claims vom Login. Eigene Spalte statt in user_claims
+		   vergraben, damit abfragbar bleibt, welche Session privilegiert ist. */
+		roles: text('roles')
+			.array()
+			.notNull()
+			.default(sql`ARRAY[]::text[]`),
+		/* Rest der Identität (Name, E-Mail, Bild, sid) für locals.user */
+		userClaims: jsonb('user_claims').notNull(),
+		/* Gleitendes Inaktivitätsfenster — wird von touchSession fortgeschrieben. */
+		expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+		/* Nicht verlängerbar: der exp des Auth0-ID-Tokens vom Login. */
+		absoluteExpiresAt: timestamp('absolute_expires_at', { withTimezone: true }).notNull(),
+		revokedAt: timestamp('revoked_at', { withTimezone: true }),
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+		lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(table) => [
+		index('idx_sessions_sub').on(table.sub),
+		index('idx_sessions_expires_at').on(table.expiresAt)
+	]
+);
+
+export type SessionSelect = typeof sessions.$inferSelect;
+export type SessionInsert = typeof sessions.$inferInsert;

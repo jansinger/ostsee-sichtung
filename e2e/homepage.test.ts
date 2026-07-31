@@ -40,7 +40,7 @@ test.describe('Form Navigation', () => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		await expect(page.locator('.step-button[aria-label="Position & Zeit"]')).toBeVisible();
+		await expect(page.locator('.step-button', { hasText: 'Position & Zeitpunkt' })).toBeVisible();
 		await expect(formPage.getActiveStepButton()).toBeVisible();
 	});
 
@@ -64,32 +64,31 @@ test.describe('Form Navigation', () => {
 
 		// All step buttons should be visible
 		const stepNames = [
-			'Position & Zeit',
-			'Sichtungsdetails',
-			'Beobachtungen',
+			'Position & Zeitpunkt',
+			'Angaben zum Tier',
+			'Weitere Informationen',
 			'Kontaktdaten'
 		] as const;
+		// Anker ist der sichtbare Titel, nicht der `aria-label`: Der Label-Text
+		// benennt seit der Stepper-Affordanz die Aktion („Zurück zu Schritt 1: …")
+		// und hat mit `stepLabels.test.ts` plus `form-stepper-affordance.spec.ts`
+		// eigene Tests. Ein exakter Attribut-Selektor hier koppelte diese Tests an
+		// eine Formulierung, die sie gar nicht prüfen wollen.
 		for (const name of stepNames) {
-			await expect(page.locator(`.step-button[aria-label="${name}"]`)).toBeVisible();
+			await expect(page.locator('.step-button', { hasText: name })).toBeVisible();
 		}
 
 		// On Step 1: current step should be navigable
-		await expect(page.locator('.step-button[aria-label="Position & Zeit"]')).toHaveAttribute(
-			'aria-disabled',
-			'false'
-		);
-
-		await expect(page.locator('.step-button[aria-label="Position & Zeit"]')).toHaveAttribute(
-			'aria-label',
-			/Position & Zeit/i
-		);
+		const ersterSchritt = page.locator('.step-button', { hasText: 'Position & Zeitpunkt' });
+		await expect(ersterSchritt).toHaveAttribute('aria-disabled', 'false');
+		await expect(ersterSchritt).toHaveAttribute('aria-label', /Position & Zeitpunkt/i);
 	});
 
-	test('active step starts on Position & Zeit', async ({ page }) => {
+	test('active step starts on Position & Zeitpunkt', async ({ page }) => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
 		const currentStep = await formPage.getCurrentStep();
-		expect(currentStep).toMatch(/Position & Zeit/i);
+		expect(currentStep).toMatch(/Position & Zeitpunkt/i);
 	});
 });

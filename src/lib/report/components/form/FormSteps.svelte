@@ -2,6 +2,7 @@
 	import { canNavigateToStep } from '$lib/form/validation/stepNavigation';
 	import { getFormContext } from '$lib/report/formContext';
 	import type { FormStep } from '$lib/report/types';
+	import { stepNavigationLabel } from './stepLabels';
 
 	/**
 	 * Step navigation component - currentStep is managed by parent
@@ -31,6 +32,12 @@
   The step title is rendered as visible <li> content (shown below the
   circle). Navigation is a real <button> for proper keyboard/AT support;
   aria-current marks the active step (WAI stepper pattern).
+
+  Wie die drei Zustände AUSSEHEN, steht in app.css („Der Stepper muss aussehen
+  wie Navigation") und hängt allein an aria-disabled und aria-current — hier
+  gibt es bewusst keine parallelen Zustandsklassen, die davon abweichen
+  könnten. Deshalb steht auch der gesperrte Cursor dort und nicht mehr als
+  `class:cursor-not-allowed` an dieser Stelle.
 -->
 <!--
   Ab `md`. Unterhalb davon zeigt `StepProgressCompact.svelte` denselben Zustand
@@ -51,9 +58,8 @@
 				<button
 					type="button"
 					class="text-support step-button px-1"
-					class:cursor-not-allowed={!navigable}
 					aria-disabled={!navigable ? 'true' : 'false'}
-					aria-label={step.title}
+					aria-label={stepNavigationLabel(index, currentStep, step.title)}
 					aria-current={currentStep === index ? 'step' : undefined}
 					title={navigable
 						? step.description

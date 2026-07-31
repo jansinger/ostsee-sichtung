@@ -361,6 +361,8 @@ Kritische Admin-Aktionen werden in der `audit_logs` PostgreSQL-Tabelle gespeiche
 | `config.update`      | Einstellung geändert                                    | `{ key, category }`           |
 | `auth.login_success` | Erfolgreicher Admin-Login                               | —                             |
 | `auth.login_failure` | Fehlgeschlagener Login                                  | status: 'failure'             |
+| `auth.logout`        | Benutzer meldet sich ab (Session wird widerrufen)       | —                             |
+| `auth.session_revoked` | Sessions eines Benutzers gezielt widerrufen           | `{ sub }`                     |
 | `export.download`    | Admin startet Daten-Export über `/api/sightings/export` | `{ format }`                  |
 
 **Pino stdout (nicht in DB):**

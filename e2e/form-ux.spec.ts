@@ -58,7 +58,7 @@ test.describe('StepNavigation — Error-UX', () => {
 		await fillStep1(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		// Kein Fehler-Alert direkt beim Betreten des Schritts (keine premature errors)
 		await expect(page.locator('[role="alert"]')).toHaveCount(0);
@@ -76,7 +76,7 @@ test.describe('StepNavigation — Error-UX', () => {
 		await fillStep1(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		// Step 2 Pflichtfelder leer → Klick auf "Weiter" löst Validierung aus
 		await formPage.clickNext();
@@ -94,7 +94,7 @@ test.describe('StepNavigation — Error-UX', () => {
 		await fillStep1(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		// Fehlgeschlagener Weiter-Versuch zeigt den Alert
 		await formPage.clickNext();
@@ -118,7 +118,7 @@ test.describe('AnimalInfo — isDead Conditional Rendering', () => {
 		await fillStep1(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 	});
 
 	test('DeadAnimal-Section ist initial nicht sichtbar', async ({ page }) => {

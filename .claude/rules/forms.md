@@ -26,9 +26,9 @@ Regeln für Formular-Entwicklung mit der projekteigenen `createForm`-Implementie
 
 Das Hauptformular (`/src/routes/+page.svelte`) nutzt 4 Schritte:
 
-1. **Position & Zeit** - Ort, Datum, Uhrzeit
-2. **Sichtungsdetails** - Tierart, Anzahl, Entfernung
-3. **Verhaltensbeobachtungen** - Optionale Details
+1. **Position & Zeitpunkt** - Ort, Datum, Uhrzeit
+2. **Angaben zum Tier** - Tierart, Anzahl, Entfernung
+3. **Weitere Informationen** - Optionale Details, Boot-/Schiffsangaben
 4. **Kontaktdaten** - Beobachter-Information
 
 ### Struktur

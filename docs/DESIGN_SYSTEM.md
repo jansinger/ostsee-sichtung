@@ -377,7 +377,7 @@ haben, genau wie bei einem Auth0-Redirect oder einer 403-Seite. Deshalb:
 
 | Wächter                   | Fehlerfall, den er abfängt                                   |
 | ------------------------- | ------------------------------------------------------------ |
-| Umleitung ≠ eigene Origin | Session-Cookie nicht akzeptiert (SESSION_SECRET/COOKIE_NAME) |
+| Umleitung ≠ eigene Origin | Session-Zeile fehlt oder Cookie-Name passt nicht              |
 | Status 401/403            | Cookie gilt, aber `roles` reicht nicht für `requireUserRole` |
 | `renders`-Sonden          | Seite antwortet 200 und rendert trotzdem nichts              |
 
@@ -387,10 +387,12 @@ und ≥ 2 Zeilen Artenverteilung auf `/admin/statistics`. Nachgestellt: Ruft man
 `/admin` mit einem Filter ohne Treffer auf, sind alle drei Klassen-Scans grün und
 nur die Sonde rot.
 
-Die Session stellt `e2e/helpers/adminSession.ts` selbst aus — mit `SESSION_SECRET`
-signiert, ohne Auth0. Die Begründung steht dort ausführlich; kurz: Auth0 erklärt die
+Die Session legt `e2e/helpers/adminSession.ts` selbst an — als Zeile in `sessions`,
+ohne Auth0. Die Begründung steht dort ausführlich; kurz: Auth0 erklärt die
 Universal-Login-Routen als nicht für Automation gedacht, und ein ROPG-Token
-konsumiert diese App nirgends, weil ihre Session ein selbstsigniertes JWT ist.
+konsumiert diese App nirgends. Seit dem Session-Store (#635) setzt der Weg
+Schreibzugriff auf die Datenbank voraus und taugt deshalb nicht mehr als
+Angriffspfad gegen Produktion.
 
 Die dritte Gruppe hängt an einer Eigenschaft der Seite, die man ihr nicht
 ansieht: Sie ist Schaufenster **und** Lieferbedingung. Tailwind erzeugt eine

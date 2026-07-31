@@ -273,7 +273,44 @@ Returns all reports of a year that are approved and marked as lying in the Balti
 | `location` | Position specification: Latitude and longitude, comma separated. Returns all reports within radius of this position (default radius 100 km)                                                                                  | Latitude, Longitude                                              | No       |
 | `distance` | Distance in meters for radius search, only used with "location"                                                                                                                                                              | Integer                                                          | No       |
 | `bbox`     | Area specification defined by lower left and upper right corner in degrees, separated by commas. Format: Longitude lower left, Latitude lower left, Longitude upper right, Latitude upper right. Compatible with OpenLayers. | Longitude min_x, Latitude min_y, Longitude max_x, Latitude max_y | No       |
-| `search`   | Searches for given text in fields Email, Name, First name and Ship name. Partial string search (%<text>%).                                                                                                                   | String                                                           | No       |
+| `search`   | Searches for given text in fields Email, Name, First name and Ship name. Partial string search (%<text>%). **Restricted for anonymous callers — see [Deviation: consent-gated search](#deviation-consent-gated-search).**    | String                                                           | No       |
+
+### Deviation: consent-gated search
+
+This is the **one deliberate deviation** from the original specification in this
+endpoint. Introduced 2026-07-31 after a data-protection review.
+
+| Caller              | Fields searched                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Anonymous (default) | First name + Last name **only if `namensnennung = 1`**, Ship name **only if `schiffnamensnennung = 1`**. Email is **not** searched at all. |
+| Logged-in admin     | Email, First name, Last name, Ship name — unrestricted, exactly as specified above.                                                        |
+
+**Why.** The _response_ has always been consent-gated: `na` is only emitted when
+the reporter released their name, `sh` only when they released the ship name.
+The _result count_ was not. A `search=` request therefore let any anonymous
+caller confirm whether a given email address or name exists in the database —
+including for reporters who never consented to being named. That is a membership
+oracle over personal data and contradicts the promise made in the reporting form
+("Ihre Kontaktdaten verwenden wir ausschließlich für Rückfragen zu Ihrer
+Meldung"). Email is dropped entirely rather than gated, because the field is
+never part of any response and searching it serves no legitimate purpose for a
+public client.
+
+The gating mirrors `/api/map/sightings`, so both public surfaces expose the same
+subset. Additionally, LIKE wildcards (`%`, `_`, `\`) in the search term are
+escaped and matched literally; previously `search=%` matched every record.
+
+Both surfaces build the predicate from `src/lib/server/db/consentGatedSearch.ts`
+rather than each spelling it out, so the "same subset" claim above cannot drift
+apart in a later edit. The one intended difference stays explicit: this endpoint
+passes `ILIKE` (case-insensitive, as specified), the map passes `LIKE`.
+
+**Impact on clients.** A client searching by email, or by the name of a reporter
+without consent, now receives an empty array instead of results. No field name,
+URL path, data type or response structure changed. Admin clients are unaffected.
+
+Pinned by `src/routes/sichtungen/showreports.json/showreports.test.ts`
+(`Datenschutz - Suche über personenbezogene Felder`).
 
 ### Response Format
 
