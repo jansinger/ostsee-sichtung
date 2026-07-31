@@ -17,10 +17,13 @@ export const UPLOAD_LIMITS = {
 	/** Maximum number of files per upload session */
 	MAX_FILES: 20,
 
-	/** Maximum total size for all files in one session (200MB) */
-	// Bleibt vorerst bei 200 MB; Task 10 zieht den Wert auf die 250 MB der
-	// Konfiguration nach, sobald es dort ein serverseitiges Gegenstück gibt.
-	MAX_TOTAL_SIZE: 200 * 1024 * 1024
+	/**
+	 * Offline-Fallback für die Gesamtgröße einer Meldung. Im Normalbetrieb
+	 * entscheidet `security.maxTotalUploadSize` auf dem Server; dieser Wert
+	 * greift nur, solange die Konfiguration nicht geladen ist, und muss
+	 * deshalb ≤ deren Vorbelegung bleiben.
+	 */
+	MAX_TOTAL_SIZE: 250 * 1024 * 1024
 } as const;
 
 // Allowed MIME types

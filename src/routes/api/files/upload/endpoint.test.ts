@@ -20,8 +20,11 @@ vi.mock('$lib/logger', () => ({
 	})
 }));
 
+const sumFileSizesForReference = vi.fn().mockResolvedValue(0);
+
 vi.mock('$lib/server/db/sightingFilesRepository', () => ({
-	saveUploadedFile: vi.fn().mockResolvedValue({ id: 1 })
+	saveUploadedFile: vi.fn().mockResolvedValue({ id: 1 }),
+	sumFileSizesForReference: (...args: [string]) => sumFileSizesForReference(...args)
 }));
 
 vi.mock('$lib/server/media/exifUtils', () => ({
@@ -182,6 +185,27 @@ describe('/api/files/upload POST', () => {
 		const event = createMockRequest({ file: video });
 
 		await expect(POST(event)).rejects.toMatchObject({ status: 413 });
+	});
+
+	it('weist eine Datei ab, die das Gesamtlimit der Meldung sprengt', async () => {
+		sumFileSizesForReference.mockResolvedValueOnce(245 * 1024 * 1024);
+		const video = new File([new Uint8Array(20 * 1024 * 1024)], 'noch-eins.mp4', {
+			type: 'video/mp4'
+		});
+		const event = createMockRequest({ file: video });
+
+		await expect(POST(event)).rejects.toMatchObject({ status: 413 });
+	});
+
+	it('lässt eine Datei durch, die unter dem Gesamtlimit bleibt', async () => {
+		sumFileSizesForReference.mockResolvedValueOnce(100 * 1024 * 1024);
+		const video = new File([new Uint8Array(20 * 1024 * 1024)], 'passt.mp4', {
+			type: 'video/mp4'
+		});
+		const event = createMockRequest({ file: video });
+
+		const response = await POST(event);
+		expect(response.status).toBe(200);
 	});
 
 	it('lehnt weitere Uploads ab, sobald das Byte-Budget erschöpft ist', async () => {

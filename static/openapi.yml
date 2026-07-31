@@ -1364,8 +1364,12 @@ paths:
         Maximale Dateigröße: konfigurationsabhängig und nach Medientyp getrennt
         (Vorbelegung 10 MB für Bilder, 100 MB für Videos), im Admin-Bereich
         änderbar über `security.maxFileSize` bzw. `security.maxVideoFileSize`.
+        Zusätzlich gilt ein Gesamtlimit je Meldung (`referenceId`, Vorbelegung
+        250 MB, `security.maxTotalUploadSize`) — es zählt die Summe aller
+        bereits für diese Meldung hochgeladenen Dateien zuzüglich der neuen.
         Die aktuellen Werte liefert `GET /api/config/upload`. Eine Überschreitung
-        ergibt `413`, ein nicht erlaubter Dateityp `400`.
+        der Einzeldatei- oder der Gesamtgrenze ergibt `413`, ein nicht erlaubter
+        Dateityp `400`.
       requestBody:
         required: true
         content:
@@ -1389,7 +1393,9 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '413':
-          description: Datei zu groß
+          description: >-
+            Datei zu groß, oder die Meldung (`referenceId`) würde durch diese
+            Datei ihr Gesamtlimit überschreiten
           content:
             application/json:
               schema:

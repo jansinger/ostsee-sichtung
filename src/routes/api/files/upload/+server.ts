@@ -2,7 +2,7 @@ import { FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
 import { maxUploadSizeFor } from '$lib/constants/uploadLimits';
 import { createLogger } from '$lib/logger.server';
 import { getClientIp } from '$lib/server/utils/getClientIp';
-import { saveUploadedFile } from '$lib/server/db/sightingFilesRepository';
+import { saveUploadedFile, sumFileSizesForReference } from '$lib/server/db/sightingFilesRepository';
 import { getOrCreateUploadUid } from '$lib/server/auth/uploadOwnership';
 import { readImageExifData } from '$lib/server/media/exifUtils';
 import { getStorageProvider } from '$lib/server/storage/factory';
@@ -100,10 +100,40 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 			);
 		}
 
+		// Gesamtlimit je Meldung. Die referenceId kommt vom Client und wird nur
+		// gegen isCuid() geprüft — dieses Limit ist deshalb KEINE Missbrauchsbremse
+		// (die übernimmt das Byte-Budget unten), sondern schützt eine ehrliche
+		// Meldung davor, unbemerkt anzuwachsen (zehn 100-MB-Videos wären sonst
+		// 1 GB pro Meldung). Bewusst VOR dem Byte-Budget geprüft: Der Melder
+		// erfährt so den konkreteren Fehler (wie viel die Meldung schon enthält),
+		// und ein Versuch, der nur das Meldungs-Limit sprengt, belastet nicht die
+		// stündliche IP-Missbrauchsbremse — die bleibt für tatsächlichen Missbrauch
+		// reserviert.
+		const alreadyUploaded = await sumFileSizesForReference(referenceId);
+		if (alreadyUploaded + file.size > uploadConfig.maxTotalUploadSizeBytes) {
+			logger.warn(
+				{
+					action: 'file_upload_rejected',
+					reason: 'total_size_limit_exceeded',
+					user: userIdentifier,
+					clientIp,
+					referenceId,
+					alreadyUploaded,
+					fileSize: file.size,
+					maxAllowed: uploadConfig.maxTotalUploadSizeBytes
+				},
+				'Upload rejected - total size for this report exceeded'
+			);
+			throw error(
+				413,
+				`Die Meldung enthält bereits ${Math.round(alreadyUploaded / 1024 / 1024)} MB. Insgesamt sind ${uploadConfig.maxTotalUploadSize} MB erlaubt.`
+			);
+		}
+
 		// Volumen-Bremse. Der Zähler oben begrenzt die Anzahl der Uploads, nicht
 		// ihr Volumen; bei 100 MB je Video wären 20 Uploads 2 GB pro Stunde und
-		// IP. Das Gesamtlimit je Meldung greift hier nicht — die referenceId
-		// liefert der Client.
+		// IP. Das ist die Missbrauchsbremse — anders als das Gesamtlimit oben
+		// gilt sie über alle Meldungen einer IP/eines Nutzers hinweg.
 		const byteBudget: ByteBudget = isAuthenticated
 			? RATE_LIMITS.UPLOAD_BYTES_AUTHENTICATED
 			: RATE_LIMITS.UPLOAD_BYTES_ANONYMOUS;

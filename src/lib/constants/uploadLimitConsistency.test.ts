@@ -18,6 +18,7 @@ import {
 import { getDefaultConfigurationsByCategory } from '$lib/server/services/configInitializer';
 import { hasMagicByteSignature } from '$lib/server/validation/magicBytes';
 import { DEFAULT_CONFIG_VALUES } from '$lib/services/configService';
+import { UPLOAD_LIMITS } from './upload';
 
 // Beide importierten Module hängen über ConfigRepository bzw. direkt an
 // `$lib/logger.server`. Ohne Mock zieht der Test die Server-Logger-Einrichtung
@@ -44,6 +45,11 @@ describe('Upload-Grenzen', () => {
 	it('verspricht im Fallback nicht mehr, als die Vorbelegung für Videos erlaubt', () => {
 		const configuredBytes = DEFAULT_CONFIG_VALUES['security.maxVideoFileSize'] * 1024 * 1024;
 		expect(PUBLIC_UPLOAD_MAX_VIDEO_FILE_SIZE_BYTES).toBeLessThanOrEqual(configuredBytes);
+	});
+
+	it('verspricht im Fallback nicht mehr, als die Vorbelegung insgesamt erlaubt', () => {
+		const configuredBytes = DEFAULT_CONFIG_VALUES['security.maxTotalUploadSize'] * 1024 * 1024;
+		expect(UPLOAD_LIMITS.MAX_TOTAL_SIZE).toBeLessThanOrEqual(configuredBytes);
 	});
 });
 
