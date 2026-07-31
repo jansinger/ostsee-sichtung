@@ -32,10 +32,18 @@ async function measure(page: import('@playwright/test').Page): Promise<StepperRe
 		const ul = nav?.querySelector('ul.steps');
 		if (!nav || !ul || getComputedStyle(nav).display === 'none') return null;
 
-		const items = [...ul.querySelectorAll('li')].map((li) => {
-			const b = li.querySelector('.step-button') as HTMLElement;
+		// Defensiv statt Cast: Fehlt der Button — etwa weil `FormSteps.svelte`
+		// umgebaut wurde —, soll der Test das benennen und nicht mit einer
+		// Null-Referenz aus `page.evaluate()` fallen, die nichts erklärt.
+		const items = [...ul.querySelectorAll('li')].map((li, index) => {
+			const b = li.querySelector('.step-button');
+			if (!(b instanceof HTMLElement)) {
+				throw new Error(
+					`Schritt ${index + 1} hat kein .step-button-Element — Markup von FormSteps.svelte geändert?`
+				);
+			}
 			const r = b.getBoundingClientRect();
-			return { label: b.textContent!.trim(), left: r.left, right: r.right, el: b };
+			return { label: b.textContent?.trim() ?? '', left: r.left, right: r.right, el: b };
 		});
 
 		const overlaps: string[] = [];

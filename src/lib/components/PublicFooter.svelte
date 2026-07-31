@@ -6,7 +6,7 @@
 <!-- Footer with navigation (versteckt in iFrame) -->
 {#if isNotIFrame}
 	<footer class="footer footer-center bg-base-200 text-base-content mt-8 rounded-t-lg p-4 sm:p-6">
-		<!-- Navigation Links - Responsive Grid -->
+		<!-- Navigation Links — umbrechende Flexbox, kein Grid -->
 		<!--
 			Bewusst KEIN `md:grid md:grid-flow-col`: Das zwang die fünf Links ab 768px
 			in eine einzige Grid-Zeile, die nicht umbrechen kann. Zwischen 768 und
