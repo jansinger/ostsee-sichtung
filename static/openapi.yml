@@ -3409,6 +3409,19 @@ components:
           type: string
           description: Anwendungsversion
           example: "2.2.3"
+        gitSha:
+          type: string
+          description: >-
+            Auf 7 Stellen gekürzter Git-Commit-Hash des laufenden Builds. Kommt aus
+            dem Docker-Build-Arg VCS_REF; "unknown" bei Builds ohne dieses Build-Arg
+            (z.B. lokales `npm run dev`).
+          example: "a1b2c3d"
+        buildDate:
+          type: string
+          description: >-
+            Zeitpunkt, zu dem das laufende Image gebaut wurde (Docker-Build-Arg
+            BUILD_DATE). "unknown" bei Builds ohne dieses Build-Arg.
+          example: "2026-07-31T10:00:00Z"
         responseTime:
           type: string
           description: Antwortzeit des letzten Checks

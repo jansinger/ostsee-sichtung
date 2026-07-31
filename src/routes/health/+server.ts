@@ -11,6 +11,7 @@
 
 import { env } from '$env/dynamic/private';
 import { testDatabaseConnection } from '$lib/server/db';
+import { getBuildInfo } from '$lib/server/startup/versionInfo';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
@@ -22,13 +23,19 @@ const NO_CACHE_HEADERS = {
 export const GET: RequestHandler = async () => {
 	const startTime = Date.now();
 
+	// Herkunft von version/gitSha/buildDate ist in versionInfo.ts dokumentiert
+	// (getBuildInfo()). Gecacht — läuft hier auf jedem Docker-Healthcheck-Poll (alle 30s).
+	const buildInfo = getBuildInfo();
+
 	// Basis-Status
 	const health: Record<string, unknown> = {
 		status: 'healthy',
 		timestamp: new Date().toISOString(),
 		uptime: process.uptime(),
 		environment: env.NODE_ENV ?? process.env.NODE_ENV ?? 'unknown',
-		version: env.npm_package_version ?? process.env.npm_package_version ?? 'unknown'
+		version: buildInfo.version,
+		gitSha: buildInfo.shortGitSha,
+		buildDate: buildInfo.buildDate ?? 'unknown'
 	};
 
 	// Readiness: echte DB-Konnektivität prüfen. Docker/compose fragt nur `/health`

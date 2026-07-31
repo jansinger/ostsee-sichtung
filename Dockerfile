@@ -65,12 +65,21 @@ RUN npm prune --omit=dev
 # ============================================
 FROM node:24-alpine AS runtime
 
+# Build-Args aus .github/workflows/docker-publish.yml (dort schon gesetzt, hier
+# bisher ungenutzt — ohne ARG-Deklaration verwirft Docker sie stillschweigend).
+ARG VERSION=dev
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
+
 # OCI Image Labels (placed in final stage for proper metadata)
 LABEL org.opencontainers.image.title="Ostsee-Tiere"
 LABEL org.opencontainers.image.description="Marine animal sighting reporting platform for the Baltic Sea"
 LABEL org.opencontainers.image.source="https://github.com/jansinger/ostsee-tiere"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.vendor="Ostsee-Tiere Project"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.revision="${VCS_REF}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
 
 # Install runtime dependencies
 RUN apk add --no-cache \
@@ -126,7 +135,10 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     BODY_SIZE_LIMIT=125829120 \
     STORAGE_PROVIDER=local \
-    UPLOAD_PATH=/app/uploads
+    UPLOAD_PATH=/app/uploads \
+    APP_VERSION=${VERSION} \
+    APP_GIT_SHA=${VCS_REF} \
+    APP_BUILD_DATE=${BUILD_DATE}
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]

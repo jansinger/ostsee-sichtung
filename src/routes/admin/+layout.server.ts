@@ -1,4 +1,5 @@
 import { requireUserRole } from '$lib/server/auth/auth';
+import { getBuildInfo } from '$lib/server/startup/versionInfo';
 import type { PublicUser } from '$lib/types/User';
 import type { LayoutServerLoad } from './$types';
 
@@ -20,6 +21,7 @@ export const load = (async ({ locals, url }) => {
 	return {
 		user: adminUser,
 		// Server-computed admin status - no client-side role checking needed
-		isAdmin: true // We know user is admin since requireUserRole passed
+		isAdmin: true, // We know user is admin since requireUserRole passed
+		buildInfo: getBuildInfo()
 	};
 }) satisfies LayoutServerLoad;

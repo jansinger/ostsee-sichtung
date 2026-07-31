@@ -12,7 +12,7 @@ vi.mock('$lib/logger', () => ({
 }));
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { NODE_ENV: 'test', npm_package_version: '0.0.0' }
+	env: { NODE_ENV: 'test', APP_GIT_SHA: 'abcdef1234567890', APP_BUILD_DATE: '2026-07-31T10:00:00Z' }
 }));
 
 // DB-Konnektivität mocken: gesund (true), damit der Contract-Test 200 erhält

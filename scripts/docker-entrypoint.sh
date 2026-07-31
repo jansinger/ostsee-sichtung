@@ -51,6 +51,15 @@ echo "║                                           ║"
 echo "╚═══════════════════════════════════════════╝"
 echo ""
 
+# APP_VERSION/APP_GIT_SHA/APP_BUILD_DATE kommen aus den Docker-Build-Args
+# VERSION/VCS_REF/BUILD_DATE (siehe Dockerfile). Ein Image, das ohne diese
+# Build-Args gebaut wurde (z.B. lokal per `docker build .`), zeigt die
+# ARG-Defaults "dev"/"unknown" statt falsche Angaben vorzutäuschen.
+log_info "Version: ${APP_VERSION:-dev}"
+log_info "Commit:  ${APP_GIT_SHA:-unknown}"
+log_info "Built:   ${APP_BUILD_DATE:-unknown}"
+echo ""
+
 # ============================================
 # Environment Validation
 # ============================================

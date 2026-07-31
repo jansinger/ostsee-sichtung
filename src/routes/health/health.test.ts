@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const testDatabaseConnection = vi.fn();
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { NODE_ENV: 'test', npm_package_version: '0.0.0' }
+	env: { NODE_ENV: 'test', APP_GIT_SHA: 'abcdef1234567890', APP_BUILD_DATE: '2026-07-31T10:00:00Z' }
 }));
 
 vi.mock('$lib/server/db', () => ({
@@ -35,6 +35,17 @@ describe('GET /health', () => {
 		expect(res.status).toBe(200);
 		expect(body.status).toBe('healthy');
 		expect(body.database).toBe('connected');
+	});
+
+	it('liefert Version, Commit (gekürzt auf 7 Stellen) und Build-Datum', async () => {
+		testDatabaseConnection.mockResolvedValue(true);
+
+		const res = await GET(event);
+		const body = await res.json();
+
+		expect(body.version).toBe('2.7.0');
+		expect(body.gitSha).toBe('abcdef1');
+		expect(body.buildDate).toBe('2026-07-31T10:00:00Z');
 	});
 
 	it('liefert 503 und status "unhealthy" wenn die DB nicht erreichbar ist', async () => {
