@@ -313,8 +313,25 @@ Grenze (25 MB) spart sie nicht ein: Der Upload dauert dann immer noch 3,3 Minute
 1 Mbit/s, die Fortschrittsanzeige bleibt also nötig, und das Budget ist ohnehin nur eine
 Rate-Limit-Variante. Streichbar wäre allenfalls der Dauerhinweis im Formular.
 
-**Betriebsaufgabe außerhalb der PRs:** `BODY_SIZE_LIMIT` und die Reverse-Proxy-Grenze auf
-dem Staging- und Produktions-Host anheben. Ohne das wirkt keine Konfigurationsänderung.
+**Betriebsaufgaben außerhalb der PRs:**
+
+- `BODY_SIZE_LIMIT` und die Reverse-Proxy-Grenze auf dem Staging- und
+  Produktions-Host anheben. Ohne das wirkt keine Konfigurationsänderung.
+- **„GIF-Drift behoben" (PR 1) gilt nur für Neuanlagen.** Die Code-Vorbelegung
+  in `configInitializer.ts` wurde korrigiert, greift aber nur, wenn
+  `security.allowedFileTypes` noch gar nicht existiert (`insertManyIfAbsent`).
+  Jede bestehende Installation — inklusive Staging und Production, die den
+  Schlüssel längst gesät haben — braucht dafür zusätzlich einen einmaligen,
+  manuellen Lauf von
+  `scripts/migrations/2026-07-31-upload-allowed-types-gif.sql`. Das Skript
+  liegt bewusst außerhalb von `drizzle/`, weil es eine bestehende
+  Konfigurationszeile inhaltlich korrigiert statt das Tabellenschema zu
+  ändern — der automatische Migrationslauf des Containers fasst es deshalb
+  nicht an. Eingetragen als Betriebsaufgabe in
+  [PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md#6-datenbank-initialisieren).
+  Ohne diesen Lauf nimmt die Dropzone weiterhin GIFs an, die der Server mit
+  400 ablehnt — der Befund aus Abschnitt 1.3d ist damit nur im Code, nicht im
+  Betrieb, erledigt.
 
 ---
 
