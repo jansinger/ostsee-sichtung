@@ -4,7 +4,7 @@ import { isAdminUser } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightingFiles, sightings } from '$lib/server/db/schema';
 import { getStorageProvider } from '$lib/server/storage/factory';
-import { parseRangeHeader } from '$lib/server/media/rangeHeader';
+import { isRangeHeaderSyntaxValid, parseRangeHeader } from '$lib/server/media/rangeHeader';
 import {
 	RATE_LIMITS,
 	enforceRateLimit,
@@ -49,7 +49,14 @@ export const GET: RequestHandler = async ({ params, url, request, locals, getCli
 	// Rate limiting based on authentication status. Range-Anfragen (Springen im
 	// Video) bekommen ein eigenes, höheres Limit — sonst endet die Wiedergabe
 	// mit 429, sobald ein Player mehrfach pro Sekunde einen neuen Bereich anfordert.
-	const hasRangeHeader = !!request.headers.get('range');
+	//
+	// Die Stufe hängt an der SYNTAX des Headers, nicht an seiner bloßen
+	// Existenz (Befund 4, PR #682 Review): `parseRangeHeader` braucht für die
+	// volle Auswertung die Dateigröße, die hier noch nicht feststeht — die
+	// Syntaxprüfung kommt ohne sie aus und verhindert, dass ein kaputter
+	// Header (`Range: unsinn`, am Ende als `kind: 'none'` behandelt, volle
+	// Datei) sich unter dem zehnfach höheren media_range-Limit versteckt.
+	const hasRangeHeader = isRangeHeaderSyntaxValid(request.headers.get('range'));
 	const rateLimitConfig = hasRangeHeader
 		? isAuthenticated
 			? RATE_LIMITS.MEDIA_RANGE_AUTHENTICATED

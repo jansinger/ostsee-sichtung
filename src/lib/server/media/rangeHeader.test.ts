@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseRangeHeader } from './rangeHeader';
+import { isRangeHeaderSyntaxValid, parseRangeHeader } from './rangeHeader';
 
 const SIZE = 1000;
 
@@ -71,5 +71,70 @@ describe('parseRangeHeader', () => {
 
 	it('meldet jeden Range auf einer leeren Datei als nicht erfüllbar', () => {
 		expect(parseRangeHeader('bytes=0-', 0)).toEqual({ kind: 'unsatisfiable' });
+	});
+});
+
+/**
+ * Befund 4 (PR #682 Review): Die Rate-Limit-Stufenwahl in `+server.ts` prüfte
+ * bisher nur `!!request.headers.get('range')` — ein syntaktisch kaputter
+ * Header (`Range: unsinn`) zählte damit gegen das 10x höhere
+ * `media_range`-Limit, obwohl `parseRangeHeader` ihn als `kind: 'none'`
+ * einstuft und die volle Datei liefert. `isRangeHeaderSyntaxValid` prüft nur
+ * die Syntax, ohne die Dateigröße zu brauchen (die steht zum Zeitpunkt der
+ * Stufenwahl noch nicht fest) — bewusst NICHT „erfüllbar", nur „ein
+ * Bereichsausdruck, den `parseRangeHeader` nicht als `kind: 'none'`
+ * behandelt".
+ */
+describe('isRangeHeaderSyntaxValid', () => {
+	it('lehnt einen fehlenden Header ab', () => {
+		expect(isRangeHeaderSyntaxValid(null)).toBe(false);
+	});
+
+	it('akzeptiert einen vollständigen Bereich', () => {
+		expect(isRangeHeaderSyntaxValid('bytes=0-499')).toBe(true);
+	});
+
+	it('akzeptiert einen offenen Bereich ohne Ende', () => {
+		expect(isRangeHeaderSyntaxValid('bytes=500-')).toBe(true);
+	});
+
+	it('akzeptiert die Suffix-Form', () => {
+		expect(isRangeHeaderSyntaxValid('bytes=-200')).toBe(true);
+	});
+
+	it('lehnt Unfug ab', () => {
+		expect(isRangeHeaderSyntaxValid('unsinn')).toBe(false);
+		expect(isRangeHeaderSyntaxValid('bytes=abc')).toBe(false);
+	});
+
+	it('lehnt "bytes=-" ab (weder Anfang noch Ende)', () => {
+		expect(isRangeHeaderSyntaxValid('bytes=-')).toBe(false);
+	});
+
+	it('lehnt eine fremde Einheit ab', () => {
+		expect(isRangeHeaderSyntaxValid('items=0-99')).toBe(false);
+	});
+
+	it('lehnt Mehrfach-Bereiche ab — dieselbe Regel wie parseRangeHeader', () => {
+		expect(isRangeHeaderSyntaxValid('bytes=0-99,200-299')).toBe(false);
+	});
+
+	it('stimmt für jeden Header mit parseRangeHeader überein (kind !== "none" ⇔ syntaktisch gültig)', () => {
+		const headers = [
+			null,
+			'bytes=0-499',
+			'bytes=500-',
+			'bytes=-200',
+			'bytes=abc',
+			'bytes=-',
+			'items=0-99',
+			'bytes=0-99,200-299',
+			'bytes=999999-' // syntaktisch gültig, auch wenn später unerfüllbar
+		];
+
+		for (const header of headers) {
+			const parsed = parseRangeHeader(header, SIZE);
+			expect(isRangeHeaderSyntaxValid(header)).toBe(parsed.kind !== 'none');
+		}
 	});
 });

@@ -16,14 +16,23 @@ export type ParsedRange =
 
 const BYTES_RANGE = /^bytes=(\d*)-(\d*)$/;
 
-export function parseRangeHeader(header: string | null, totalSize: number): ParsedRange {
+/**
+ * Zerlegt einen `Range`-Header in Start/Ende-Rohtext, wenn er syntaktisch ein
+ * `bytes=`-Bereichsausdruck ist (nicht leer, richtige Einheit, nicht
+ * Mehrfach-Bereiche, nicht "bytes=-" ohne Anfang und Ende) — sonst `null`.
+ *
+ * Einzige Stelle, die das `bytes=`-Muster kennt: `isRangeHeaderSyntaxValid`
+ * und `parseRangeHeader` bauen beide darauf auf, statt die Regel zweimal zu
+ * pflegen.
+ */
+function matchBytesRange(header: string | null): { rawStart: string; rawEnd: string } | null {
 	if (!header) {
-		return { kind: 'none' };
+		return null;
 	}
 
 	const match = BYTES_RANGE.exec(header.trim());
 	if (!match) {
-		return { kind: 'none' };
+		return null;
 	}
 
 	const rawStart = match[1] ?? '';
@@ -31,8 +40,36 @@ export function parseRangeHeader(header: string | null, totalSize: number): Pars
 
 	// "bytes=-" nennt weder Anfang noch Ende und ist damit keine Angabe.
 	if (rawStart === '' && rawEnd === '') {
+		return null;
+	}
+
+	return { rawStart, rawEnd };
+}
+
+/**
+ * Reine Syntaxprüfung eines `Range`-Headers, ohne Dateigröße.
+ *
+ * Für die Rate-Limit-Stufenwahl in `+server.ts` reichte bisher
+ * `!!request.headers.get('range')` — ein syntaktisch kaputter Header
+ * (`Range: unsinn`) zählte damit gegen das zehnfach höhere
+ * `media_range`-Limit, obwohl `parseRangeHeader` ihn als `kind: 'none'`
+ * einstuft und die volle Datei liefert (Befund 4, PR #682 Review). Diese
+ * Funktion beantwortet nur „ist das syntaktisch ein Bereichsausdruck, den
+ * `parseRangeHeader` NICHT als `kind: 'none'` behandelt" — bewusst nicht
+ * „erfüllbar", das hängt von der zu diesem Zeitpunkt noch unbekannten
+ * Dateigröße ab.
+ */
+export function isRangeHeaderSyntaxValid(header: string | null): boolean {
+	return matchBytesRange(header) !== null;
+}
+
+export function parseRangeHeader(header: string | null, totalSize: number): ParsedRange {
+	const match = matchBytesRange(header);
+	if (!match) {
 		return { kind: 'none' };
 	}
+
+	const { rawStart, rawEnd } = match;
 
 	if (totalSize === 0) {
 		return { kind: 'unsatisfiable' };
