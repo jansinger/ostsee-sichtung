@@ -87,12 +87,15 @@
 			class="bg-base-300 relative flex aspect-square items-center justify-center overflow-hidden"
 		>
 			<!-- Video Preview (falls Browser unterstützt) -->
+			<!-- preload="none": Mit "metadata" lädt der Browser die Datei an, was
+			     ohne Range-Support die GANZE Datei war — in einer Kachelansicht
+			     einmal pro Video. Das Play-Overlay darunter zeigt ohnehin an, dass
+			     hier ein Video liegt; geladen wird erst im Modal. -->
 			<video
 				src={`/api/media/${file.filePath}`}
 				class="h-full w-full object-contain"
 				muted
-				preload="metadata"
-				poster=""
+				preload="none"
 				onerror={(e) => {
 					console.error('Video loading failed:', `/api/media/${file.filePath}`, e);
 				}}
