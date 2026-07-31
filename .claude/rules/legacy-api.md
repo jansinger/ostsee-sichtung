@@ -74,6 +74,18 @@ Zusätzlich existiert `/en/rest_sichtungen/antworten.json` (englische Variante).
    Vorname und Schiffsname nur, wenn der Melder das freigegeben hat. Die Felder
    `bm` und `va` nur für eingeloggte Admins.
 
+   **Das gilt seit 2026-07-31 auch für den `search`-Parameter** — und das ist
+   die einzige bewusste Abweichung von der Spezifikation in diesem Endpunkt.
+   Anonyme Aufrufer durchsuchen Vorname/Name nur bei `namensnennung = 1`, den
+   Schiffsnamen nur bei `schiffnamensnennung = 1`, die E-Mail-Adresse gar nicht;
+   eingeloggte Admins bekommen die volle Vier-Feld-Suche der Spezifikation.
+   Grund: Die Ausgabe war immer gegated, die **Trefferzahl** nicht — damit war
+   die Suche ein Membership-Orakel über personenbezogene Daten. Die Einschränkung
+   ist eine Datenschutzmaßnahme, **kein zu behebender Spec-Verstoß**; sie darf
+   nicht mit Verweis auf Regel 1 oder auf `docs/LEGACY_API_SPECIFICATION.md`
+   zurückgebaut werden. Festgeschrieben in `showreports.test.ts`, begründet unter
+   „Deviation: consent-gated search" in der Spezifikation.
+
 ---
 
 ## Statuscodes
