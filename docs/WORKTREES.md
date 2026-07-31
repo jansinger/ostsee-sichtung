@@ -108,6 +108,10 @@ Uploads.
 - `npm run db:push` aus einem Worktree ändert das Schema für alle
 - `npm run media:cleanup-orphans` löscht Dateien für alle
 - Migrations-Branches deshalb bevorzugt gegen die Docker-DB (Port 5433) testen
+- Manuelle Browser-Verifikation von Foto-/Video-Upload (Pflicht bei
+  UI-Änderungen) schreibt echte Zeilen und Dateien in genau diese geteilte DB —
+  Aufräumbefehl und Hintergrund: `.claude/rules/upload.md` §
+  „Aufbewahrung unverknüpfter Uploads"
 
 ## Code-Graph-Tools
 
