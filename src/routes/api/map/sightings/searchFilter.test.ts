@@ -105,7 +105,22 @@ describe('GET /api/map/sightings — Datenschutz der Suche', () => {
 	it('sucht case-sensitiv (LIKE) — die Legacy-Route ist separat auf ILIKE festgelegt', async () => {
 		const { text } = await queryFor('Wal');
 
-		expect(text).not.toContain('ilike');
+		// Drizzle rendert den Operator groß. Beide Zusicherungen zusammen sind
+		// nötig: `toContain('LIKE')` allein wäre auch bei ILIKE erfüllt.
+		expect(text).not.toContain('ILIKE');
+		expect(text).toContain('LIKE');
+	});
+
+	it('wendet bei einem Suchbegriff aus reinem Whitespace keinen Filter an', async () => {
+		// Gleichlauf mit der Legacy-Route, die in diesem Fall gar nicht filtert.
+		// Ohne den Gleichlauf entstünde `%%`, was jede Zeile ausschlösse, in der
+		// alle durchsuchten Felder NULL sind (`NULL LIKE '%%'` ist NULL, nicht
+		// wahr) — die Zusage "dieselbe Teilmenge" wäre damit verletzt.
+		const { text } = await queryFor('   ');
+
+		expect(text).not.toContain('"fahrwasser"');
+		expect(text).not.toContain('"vorname"');
+		expect(text).not.toContain('"namensnennung"');
 	});
 
 	it('erzeugt ohne search-Parameter keine Bedingung auf personenbezogene Felder', async () => {

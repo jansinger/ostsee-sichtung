@@ -36,8 +36,11 @@ export const GET: RequestHandler = async ({ url }) => {
 			conditions.push(lt(sightingsTable.sightingDate, endExclusive));
 		}
 
-		// Suchfilter hinzufügen, wenn vorhanden
-		if (search) {
+		// Suchfilter hinzufügen, wenn vorhanden. Der Guard prüft den getrimmten
+		// Begriff — gleichlautend mit der Legacy-Route, die bei reinem Whitespace
+		// ebenfalls nicht filtert. Andernfalls entstünde hier `%%`, was jede Zeile
+		// ausschlösse, in der alle durchsuchten Felder NULL sind.
+		if (search?.trim()) {
 			// Fahrwasser und Seezeichen sind nicht personenbezogen und bleiben frei
 			// durchsuchbar; Name und Schiffsname nur mit Einwilligung des Melders.
 			// Das Gate ist mit der Legacy-API geteilt, damit beide öffentlichen
