@@ -70,8 +70,13 @@ const HEX_ONLY = /^[0-9a-f]+$/i;
  *
  * @returns `null` wenn gültig, sonst die vollständige Fehlermeldung.
  */
-export function validateEncryptionKey(value: string): string | null {
+export function validateEncryptionKey(raw: string): string | null {
 	const hint = 'Erzeugen mit: openssl rand -hex 32';
+
+	/* Trimmen vor dem Vergleich, analog zu validateSessionSecret: sonst umgeht umgebender
+	   Leerraum die Platzhalter-Prüfung und die Fehlermeldung nennt die falsche Ursache
+	   (Längenfehler statt Platzhalter). */
+	const value = raw.trim();
 
 	if (!value) {
 		return `ENCRYPTION_KEY ist in Produktion erforderlich. ${hint}`;

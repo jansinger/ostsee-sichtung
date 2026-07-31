@@ -90,7 +90,9 @@ handgeschriebene PKCE-Flow im Repo bleibt angemessen und wird nicht angefasst.
 Zwei Pakete, getrennt ausgeliefert.
 
 **Paket A — Startup-Guard.** Schließt den Fall „Deployment läuft mit einem öffentlich
-bekannten Secret". Klein, sofort mergefähig, kein Verhaltenswechsel.
+bekannten Secret". Klein, sofort mergefähig — bis auf eine gewollte Ausnahme kein
+Verhaltenswechsel: Ein Deployment mit ungültigem `ENCRYPTION_KEY` startete bisher und brach
+erst beim ersten Login, jetzt verweigert es den Start.
 
 **Paket D — Session-Store.** Das Cookie wird ein opakes Zufalls-Token, der Session-Zustand
 liegt in einer Tabelle. Beseitigt die Fälschbarkeit vollständig und löst #634 im selben Zug.
@@ -116,8 +118,8 @@ liegt genau das Risiko, um das es geht.
 
 ### 4.1 Code
 
-Alles in `src/hooks.server.ts`, in der Struktur des bestehenden
-`PLACEHOLDER_ENCRYPTION_KEY`-Guards (Zeilen 21, 36–45).
+Die Prüflogik liegt in `src/lib/server/config/secretGuard.ts`, `hooks.server.ts` ruft sie nur
+auf — in der Struktur des bestehenden `PLACEHOLDER_ENCRYPTION_KEY`-Guards (Zeilen 21, 36–45).
 
 ```ts
 // Öffentlich bekannte Werte, die als Secret nie gelten dürfen:

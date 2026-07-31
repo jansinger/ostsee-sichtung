@@ -81,6 +81,13 @@ describe('validateEncryptionKey', () => {
 	it('lehnt Nicht-Hex-Zeichen ab', () => {
 		expect(validateEncryptionKey('z'.repeat(64))).toMatch(/hexadezimal/);
 	});
+
+	/* Ohne Trimmen erkennt die Längenprüfung den Platzhalter nicht als Platzhalter, sondern
+	   als "66 statt 64 Zeichen" — eine irreführende Fehlermeldung, analog zu
+	   validateSessionSecret oben. */
+	it('lehnt den Platzhalter auch mit Leerraum drumherum ab', () => {
+		expect(validateEncryptionKey(`  ${PLACEHOLDER_ENCRYPTION_KEY}\n`)).toMatch(/Platzhalter/);
+	});
 });
 
 describe('assertProductionSecrets', () => {

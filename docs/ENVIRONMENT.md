@@ -86,8 +86,8 @@ curl -fsS -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" \
 
 **Wichtig**: Der Guard beim Serverstart lehnt in Production zwei öffentlich bekannte Beispielwerte ab
 (den Platzhalter aus `.env.example` und den Beispielwert dieser Dokumentation). Ein abgelehntes
-Secret verhindert, dass der Server startet. Erzeugen Sie für jede Umgebung ein eindeutiges,
-zufälliges Secret.
+Secret verhindert, dass der Server startet. Für jede Umgebung ein eigenes, zufällig erzeugtes
+Secret verwenden.
 
 **Generate**:
 
@@ -133,7 +133,7 @@ openssl rand -hex 32
 **Example**:
 
 ```bash
-ENCRYPTION_KEY=f5fcd0aaabcc4bdd0a87d4b2c03203e5863c0459f89fe99dab1fe8dde1cdf181
+ENCRYPTION_KEY=<Ausgabe von openssl rand -hex 32>
 ```
 
 ---
