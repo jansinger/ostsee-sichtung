@@ -300,6 +300,11 @@ The gating mirrors `/api/map/sightings`, so both public surfaces expose the same
 subset. Additionally, LIKE wildcards (`%`, `_`, `\`) in the search term are
 escaped and matched literally; previously `search=%` matched every record.
 
+Both surfaces build the predicate from `src/lib/server/db/consentGatedSearch.ts`
+rather than each spelling it out, so the "same subset" claim above cannot drift
+apart in a later edit. The one intended difference stays explicit: this endpoint
+passes `ILIKE` (case-insensitive, as specified), the map passes `LIKE`.
+
 **Impact on clients.** A client searching by email, or by the name of a reporter
 without consent, now receives an empty array instead of results. No field name,
 URL path, data type or response structure changed. Admin clients are unaffected.

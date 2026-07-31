@@ -1,4 +1,11 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Frame, type Page } from '@playwright/test';
+
+/**
+ * Wo die Karte lebt: im Hauptdokument (`Page`) oder — für den iframe-Fall — im
+ * eingebetteten Frame. Nur das **Messen** ist frame-abhängig; Maus-Eingaben
+ * laufen immer über die `Page`, weil Playwright Koordinaten am Viewport misst.
+ */
+export type MapScope = Page | Frame;
 
 /**
  * Messwerkzeug für „hat sich die Karte bewegt?"-Tests.
@@ -45,6 +52,12 @@ export type MapCanvasProbeOptions = {
 	 */
 	maxWidth?: number;
 	maxHeight?: number;
+	/**
+	 * Dokument, in dem gemessen wird. Default ist die `Page` selbst; für die
+	 * iframe-Tests der Sichtungskarte der eingebettete `Frame`. Die Maus bleibt
+	 * davon unberührt — sie gehört immer zur `Page`.
+	 */
+	scope?: MapScope;
 };
 
 export type MapCanvasProbe = {
@@ -63,10 +76,10 @@ export type MapCanvasProbe = {
 };
 
 export function createMapCanvasProbe(page: Page, options: MapCanvasProbeOptions): MapCanvasProbe {
-	const { selector, stride = 401, maxWidth = 1200, maxHeight = 800 } = options;
+	const { selector, stride = 401, maxWidth = 1200, maxHeight = 800, scope = page } = options;
 
 	async function state(): Promise<CanvasState | null> {
-		return page.evaluate(
+		return scope.evaluate(
 			({ selector, stride, maxWidth, maxHeight }) => {
 				const canvases = Array.from(
 					document.querySelectorAll<HTMLCanvasElement>(`${selector} canvas`)
@@ -199,10 +212,8 @@ export function createMapCanvasProbe(page: Page, options: MapCanvasProbeOptions)
 /**
  * Weist die Kachel-Hosts ab, damit sich das Kartenbild nicht von selbst ändert.
  *
- * OLs `OSM`-Source nutzt den Einzelhost `tile.openstreetmap.org` (kein
- * Subdomain-Sharding) — ein Muster für `*.tile.openstreetmap.org` würde nie
- * greifen. `tiles.openseamap.org` nur mitnehmen, wo die Karte den Seezeichen-
- * Layer überhaupt anlegt.
+ * Nur für die Formular-Karte gedacht — die Sichtungskarte erledigt das in
+ * `mockMapSightingsWithFeatures`, zusammen mit ihren Fest-Sichtungen.
  */
 export async function blockTileHosts(page: Page, hosts: string[]): Promise<void> {
 	for (const pattern of hosts) {
@@ -210,8 +221,12 @@ export async function blockTileHosts(page: Page, hosts: string[]): Promise<void>
 	}
 }
 
-/** Kachel-Hosts der Sichtungskarte (OSM + OpenSeaMap-Layer). */
-export const SIGHTINGS_TILE_HOSTS = ['**://tile.openstreetmap.org/**', '**tiles.openseamap.org/**'];
-
-/** Kachel-Host der Formular-Karte — `createMap()` legt nur einen OSM-Layer an. */
+/**
+ * Kachel-Host der Formular-Karte. `createMap()` legt nur einen OSM-Layer an, den
+ * OpenSeaMap-Layer der Sichtungskarte gibt es hier nicht.
+ *
+ * OLs `OSM`-Source nutzt den Einzelhost `tile.openstreetmap.org` (kein
+ * Subdomain-Sharding) — ein Muster für `*.tile.openstreetmap.org` würde nie
+ * greifen.
+ */
 export const FORM_TILE_HOSTS = ['**://tile.openstreetmap.org/**'];

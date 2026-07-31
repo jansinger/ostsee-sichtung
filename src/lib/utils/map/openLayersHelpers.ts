@@ -209,10 +209,12 @@ export function createMap(
 
 		/**
 		 * Interactions wie OpenLayers sie selbst baut — **nur DragPan** ist vom
-		 * Fokus-Zwang ausgenommen. Der Ausdruck ist derselbe wie in
-		 * `src/lib/map/optimizedMapController.ts`; die Begründung für das Mausrad
-		 * ist es **nicht**, siehe unten. Wer eine der beiden Stellen ändert, muss
-		 * deshalb nicht automatisch die andere mitziehen.
+		 * Fokus-Zwang ausgenommen. Dieselbe Abwägung wie in
+		 * `src/lib/map/optimizedMapController.ts`, dort aber mit einem anderen
+		 * Ausgang für das Mausrad: Die Sichtungskarte nimmt `MouseWheelZoom`
+		 * ebenfalls aus den Defaults und lässt es außerhalb des iframes frei
+		 * zoomen (`onFocusOnly: !isNotIFrame`). Hier bleibt die Bremse — Begründung
+		 * unten. Die beiden Stellen sind bewusst nicht gekoppelt.
 		 *
 		 * `onFocusOnly: true` ist kein Zusatz, sondern die Wiederherstellung des
 		 * Verhaltens, das `ol/Map` beim Weglassen der Option verwendet: Map.js ruft
@@ -242,8 +244,8 @@ export function createMap(
 		 *
 		 * **Das Mausrad behält den Fokus-Zwang** — und zwar aus einem Grund, den die
 		 * Sichtungskarte nicht hat. Dort trägt die Bremse allein die iframe-
-		 * Einbettung auf meeresmuseum.de; fiele die weg, könnte das Rad frei zoomen,
-		 * weil die Karte die Seite füllt. Hier ist sie ein rund 556×400 großes
+		 * Einbettung auf meeresmuseum.de, und außerhalb des Rahmens zoomt das Rad
+		 * deshalb frei: Die Karte füllt dort die Seite. Hier ist sie ein 556×400
 		 * Element mitten in einem langen, scrollbaren Formular. Ein bedingungsloser
 		 * Rad-Zoom würde das Seiten-Scrollen auf halber Strecke abfangen
 		 * (`MouseWheelZoom` ruft `preventDefault()`), und der Melder käme über der

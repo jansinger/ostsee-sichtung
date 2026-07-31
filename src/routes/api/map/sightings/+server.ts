@@ -3,6 +3,7 @@ import { sightingsToGeoJSON, type DBSighting } from '$lib/map/mapUtils';
 import { db } from '$lib/server/db';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { berlinDayRangeUtc } from '$lib/server/datetime/berlinDayRange';
+import { consentGatedNameSearch, containsPattern } from '$lib/server/db/consentGatedSearch';
 import { json } from '@sveltejs/kit';
 import { and, gte, lt, sql } from 'drizzle-orm';
 import { publicMapSightingConditions } from './publicMapConditions';
@@ -35,22 +36,21 @@ export const GET: RequestHandler = async ({ url }) => {
 			conditions.push(lt(sightingsTable.sightingDate, endExclusive));
 		}
 
-		// Suchfilter hinzufügen, wenn vorhanden
-		if (search) {
-			// LIKE-Wildcards im Suchbegriff escapen, damit % und _ literal gesucht werden
-			const escapedSearch = search.replace(/[%_\\]/g, '\\$&');
-			// Suche nur in nicht-personenbezogenen Feldern oder mit Consent
+		// Suchfilter hinzufügen, wenn vorhanden. Der Guard prüft den getrimmten
+		// Begriff — gleichlautend mit der Legacy-Route, die bei reinem Whitespace
+		// ebenfalls nicht filtert. Andernfalls entstünde hier `%%`, was jede Zeile
+		// ausschlösse, in der alle durchsuchten Felder NULL sind.
+		if (search?.trim()) {
+			// Fahrwasser und Seezeichen sind nicht personenbezogen und bleiben frei
+			// durchsuchbar; Name und Schiffsname nur mit Einwilligung des Melders.
+			// Das Gate ist mit der Legacy-API geteilt, damit beide öffentlichen
+			// Flächen dieselbe Teilmenge freigeben — siehe consentGatedSearch.ts.
+			const pattern = containsPattern(search);
 			conditions.push(
 				sql`(
-          ${sightingsTable.waterway} LIKE ${`%${escapedSearch}%`} ESCAPE '\\' OR
-          ${sightingsTable.seaMark} LIKE ${`%${escapedSearch}%`} ESCAPE '\\' OR
-          (${sightingsTable.nameConsent} = 1 AND (
-            ${sightingsTable.firstName} LIKE ${`%${escapedSearch}%`} ESCAPE '\\' OR
-            ${sightingsTable.lastName} LIKE ${`%${escapedSearch}%`} ESCAPE '\\'
-          )) OR
-          (${sightingsTable.shipNameConsent} = 1 AND
-            ${sightingsTable.shipName} LIKE ${`%${escapedSearch}%`} ESCAPE '\\'
-          )
+          ${sightingsTable.waterway} LIKE ${pattern} ESCAPE '\\' OR
+          ${sightingsTable.seaMark} LIKE ${pattern} ESCAPE '\\' OR
+          ${consentGatedNameSearch(pattern, 'LIKE')}
         )`
 			);
 		}

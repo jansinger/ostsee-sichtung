@@ -27,6 +27,7 @@ import { createLogger } from '$lib/logger.server';
 import { getSpeciesLabel } from '$lib/report/formOptions/species.js';
 import { isAdminUser } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
+import { consentGatedNameSearch, containsPattern } from '$lib/server/db/consentGatedSearch';
 import { sightings } from '$lib/server/db/schema';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
@@ -288,11 +289,12 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		// /api/map/sightings), für angemeldete Admins die volle Vier-Feld-Suche der
 		// Spezifikation — Admins sehen diese Felder ohnehin.
 		if (search && search.trim().length > 0) {
-			// LIKE-Wildcards im Suchbegriff escapen, damit % und _ literal gesucht
-			// werden. Ohne das matcht `search=%` jeden Datensatz und `_` jedes
-			// Einzelzeichen — beides verstärkt das oben beschriebene Orakel.
-			const escapedSearch = search.trim().replace(/[%_\\]/g, '\\$&');
-			const searchTerm = `%${escapedSearch}%`;
+			// Wildcards werden escaped, damit `%` und `_` literal gesucht werden —
+			// ohne das matcht `search=%` jeden Datensatz und verstärkt das oben
+			// beschriebene Orakel. Das Consent-Gate für den anonymen Zweig ist mit
+			// /api/map/sightings geteilt, damit beide öffentlichen Flächen dieselbe
+			// Teilmenge freigeben — siehe consentGatedSearch.ts.
+			const searchTerm = containsPattern(search);
 
 			whereConditions.push(
 				isAdmin
@@ -302,15 +304,7 @@ export async function GET(event: RequestEvent): Promise<Response> {
 					${sightings.lastName} ILIKE ${searchTerm} ESCAPE '\\' OR
 					${sightings.shipName} ILIKE ${searchTerm} ESCAPE '\\'
 				)`
-					: sql`(
-					(${sightings.nameConsent} = 1 AND (
-						${sightings.firstName} ILIKE ${searchTerm} ESCAPE '\\' OR
-						${sightings.lastName} ILIKE ${searchTerm} ESCAPE '\\'
-					)) OR
-					(${sightings.shipNameConsent} = 1 AND
-						${sightings.shipName} ILIKE ${searchTerm} ESCAPE '\\'
-					)
-				)`
+					: consentGatedNameSearch(searchTerm, 'ILIKE')
 			);
 
 			logger.debug(
