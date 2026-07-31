@@ -1,9 +1,4 @@
-import {
-	PUBLIC_UPLOAD_ACCEPT,
-	PUBLIC_UPLOAD_ALLOWED_TYPES,
-	PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES,
-	PUBLIC_UPLOAD_MAX_FILE_SIZE_MB
-} from '$lib/constants/uploadDefaults';
+import { PUBLIC_UPLOAD_ACCEPT, PUBLIC_UPLOAD_ALLOWED_TYPES } from '$lib/constants/uploadDefaults';
 import { createLogger } from '$lib/logger.server';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { ServerConfigService } from '$lib/services/configService';
@@ -12,14 +7,16 @@ import type { RequestHandler } from './$types';
 
 const logger = createLogger('api:config:upload');
 
-// Public configuration for anonymous users — shared with the client fallbacks
-// in $lib/stores/configStore so both sides can never drift apart.
-const PUBLIC_UPLOAD_CONFIG = {
-	maxFileSize: PUBLIC_UPLOAD_MAX_FILE_SIZE_MB,
-	maxFileSizeBytes: PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES,
-	allowedTypes: [...PUBLIC_UPLOAD_ALLOWED_TYPES],
-	accept: PUBLIC_UPLOAD_ACCEPT
-};
+/**
+ * Baut das `accept`-Attribut für den Datei-Dialog aus einer MIME-Typ-Liste.
+ */
+function buildAccept(allowedTypes: readonly string[]): string {
+	return allowedTypes
+		.map((type) =>
+			type.startsWith('image/') ? 'image/*' : type.startsWith('video/') ? 'video/*' : type
+		)
+		.join(',');
+}
 
 export const GET: RequestHandler = async ({ setHeaders, locals, request, getClientAddress }) => {
 	const isAuthenticated = !!locals.user;
@@ -27,68 +24,43 @@ export const GET: RequestHandler = async ({ setHeaders, locals, request, getClie
 	const clientIp = getClientIp(getClientAddress, request) ?? 'unknown';
 
 	try {
-		// Security: Return limited config for unauthenticated users
-		if (!isAuthenticated) {
-			logger.info(
-				{
-					action: 'config_upload_request',
-					user: userIdentifier,
-					authenticated: false,
-					clientIp,
-					configType: 'public'
-				},
-				'Public upload configuration requested'
-			);
-
-			// Set cache headers (5 minutes)
-			setHeaders({
-				'Cache-Control': 'public, max-age=300',
-				'Content-Type': 'application/json'
-			});
-
-			return json(PUBLIC_UPLOAD_CONFIG);
-		}
-
-		// Get full upload configuration for authenticated users
 		const uploadConfig = await ServerConfigService.getUploadConfig();
+
+		// Die Typliste bleibt für anonyme Melder die kuratierte, kleinere:
+		// Eine Teilmenge dessen, was der Server annimmt, ist unbedenklich —
+		// umgekehrt entsteht die Drift, die uploadLimitConsistency.test.ts
+		// verhindert. Die GRÖSSEN kommen für beide aus der Konfiguration,
+		// sonst wirkt eine Änderung im Admin für anonyme Melder gar nicht.
+		const allowedTypes = isAuthenticated
+			? uploadConfig.allowedTypes
+			: [...PUBLIC_UPLOAD_ALLOWED_TYPES];
 
 		logger.info(
 			{
 				action: 'config_upload_request',
 				user: userIdentifier,
-				authenticated: true,
+				authenticated: isAuthenticated,
 				clientIp,
-				configType: 'full'
+				configType: isAuthenticated ? 'full' : 'public'
 			},
-			'Full upload configuration requested'
+			'Upload configuration requested'
 		);
 
-		// Set cache headers (5 minutes)
 		setHeaders({
 			'Cache-Control': 'public, max-age=300',
 			'Content-Type': 'application/json'
 		});
 
 		return json({
-			maxFileSize: uploadConfig.maxFileSize, // in MB
-			maxFileSizeBytes: uploadConfig.maxFileSizeBytes, // in bytes
-			allowedTypes: uploadConfig.allowedTypes,
-			// Generate accept attribute for HTML inputs
-			accept: uploadConfig.allowedTypes
-				.map((type) =>
-					type.startsWith('image/') ? 'image/*' : type.startsWith('video/') ? 'video/*' : type
-				)
-				.join(',')
+			maxFileSize: uploadConfig.maxFileSize,
+			maxFileSizeBytes: uploadConfig.maxFileSizeBytes,
+			maxVideoFileSize: uploadConfig.maxVideoFileSize,
+			maxVideoFileSizeBytes: uploadConfig.maxVideoFileSizeBytes,
+			allowedTypes,
+			accept: isAuthenticated ? buildAccept(allowedTypes) : PUBLIC_UPLOAD_ACCEPT
 		});
 	} catch (error) {
-		logger.error(
-			{
-				error,
-				user: userIdentifier,
-				clientIp
-			},
-			'Failed to get upload configuration'
-		);
+		logger.error({ error, user: userIdentifier, clientIp }, 'Failed to get upload configuration');
 		return json({ success: false, error: 'Internal server error' }, { status: 500 });
 	}
 };

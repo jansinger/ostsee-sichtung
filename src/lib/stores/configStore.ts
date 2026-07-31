@@ -61,7 +61,9 @@ export async function getUploadConfig(): Promise<ValidationPreset> {
 		const validationPreset: ValidationPreset = {
 			allowedTypes: config.allowedTypes,
 			maxFileSize: config.maxFileSizeBytes, // ValidationPreset expects bytes
-			maxVideoFileSize: PUBLIC_UPLOAD_MAX_VIDEO_FILE_SIZE_BYTES,
+			// Aus der Server-Antwort, nicht aus der Konstanten: Sonst wirkt eine
+			// Änderung von security.maxVideoFileSize im Admin auf dem Client nicht.
+			maxVideoFileSize: config.maxVideoFileSizeBytes,
 			maxFiles: 20, // Keep default for now
 			accept: config.accept
 		};

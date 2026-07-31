@@ -3226,6 +3226,8 @@ components:
       required:
         - maxFileSize
         - maxFileSizeBytes
+        - maxVideoFileSize
+        - maxVideoFileSizeBytes
         - allowedTypes
         - accept
       properties:
@@ -3237,6 +3239,14 @@ components:
           type: integer
           description: Maximale Dateigröße in Bytes
           example: 10485760
+        maxVideoFileSize:
+          type: integer
+          description: Maximale Videodateigröße in MB
+          example: 100
+        maxVideoFileSizeBytes:
+          type: integer
+          description: Maximale Videodateigröße in Bytes
+          example: 104857600
         allowedTypes:
           type: array
           items:
