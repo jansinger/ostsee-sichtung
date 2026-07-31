@@ -1,7 +1,10 @@
 # Video-Upload für Melder — Konzept
 
-**Anlass:** Wunsch B3 aus `MEERESMUSEUM_AENDERUNGSWUENSCHE_2026-07-31.md` — „Foto und Video
-hochladen ermöglichen (wenn das geht und GPS Info entnehmen)".
+**Anlass:** Änderungswunsch des Deutschen Meeresmuseums — „Foto und Video hochladen
+ermöglichen (wenn das geht und GPS Info entnehmen)". Die vollständige Wunschliste lag als
+Analysedokument im Repository und wurde mit `03e72333` bewusst daraus entfernt, weil sie
+eine Einzelperson der Partnerinstitution benennt; sie ist **nicht** wiederherzustellen.
+Alles für dieses Vorhaben Nötige steht in diesem Dokument.
 **Stand:** 2026-07-31, geprüft gegen Branch `claude/meeresmuseum-website-changes-d47405`
 (Release 2.6.2, `11a4e87`).
 **Status:** Umgesetzt mit PR … (Branch `claude/wizardly-hypatia-46e74c`). Alle vier
