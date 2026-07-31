@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.7.0](https://github.com/jansinger/ostsee-tiere/compare/v2.6.2...v2.7.0) (2026-07-31)
+
+
+### Features
+
+* **auth:** keep sessions in the database instead of a signed cookie ([#681](https://github.com/jansinger/ostsee-tiere/issues/681)) ([cf7a678](https://github.com/jansinger/ostsee-tiere/commit/cf7a678821584ff4b50b6f3ba0d3c1678209f5e8))
+* **db:** record timestamp and text version for all consents ([#672](https://github.com/jansinger/ostsee-tiere/issues/672)) ([6c3aaec](https://github.com/jansinger/ostsee-tiere/commit/6c3aaec858b0d99432b857049ee893d479e37e89))
+* **media:** accept video uploads from reporters ([#682](https://github.com/jansinger/ostsee-tiere/issues/682)) ([dbd38a7](https://github.com/jansinger/ostsee-tiere/commit/dbd38a73014a84d4dcc503712e94eaaa960a7e64))
+* **report:** meeresmuseum quick wins — texts, validation and field layout ([#669](https://github.com/jansinger/ostsee-tiere/issues/669)) ([25ff6ad](https://github.com/jansinger/ostsee-tiere/commit/25ff6ad5ee6b07d3551165cc08260b53f4b999e2))
+
+
+### Bug Fixes
+
+* **auth:** restart the login instead of dead-ending on an expired oauth flow ([#678](https://github.com/jansinger/ostsee-tiere/issues/678)) ([a53a3a8](https://github.com/jansinger/ostsee-tiere/commit/a53a3a8b4c64f4f9448a4ea86cf76d826f1e45c0))
+* **map:** let the mouse wheel zoom without a click outside the iframe ([#674](https://github.com/jansinger/ostsee-tiere/issues/674)) ([9e6f3c5](https://github.com/jansinger/ostsee-tiere/commit/9e6f3c5e1bb94e8b35cb45094438962d9abafcb0))
+* **map:** let the position picker pan without a position-setting click ([#677](https://github.com/jansinger/ostsee-tiere/issues/677)) ([c10e9aa](https://github.com/jansinger/ostsee-tiere/commit/c10e9aa4a65a9e781b0c0c462073704d293fe302))
+* **media:** skip 0-byte source files in legacy upload migration ([#686](https://github.com/jansinger/ostsee-tiere/issues/686)) ([5b28c56](https://github.com/jansinger/ostsee-tiere/commit/5b28c56a26a304838e758b3f8bac0c7e72c709d9))
+* **security:** gate showreports.json search behind reporter consent ([#671](https://github.com/jansinger/ostsee-tiere/issues/671)) ([2e86b27](https://github.com/jansinger/ostsee-tiere/commit/2e86b27d86006d8095dc889d388a536acad2cd6b))
+* **security:** log error cause chain, keep query params out of the log ([#679](https://github.com/jansinger/ostsee-tiere/issues/679)) ([3f0d9ac](https://github.com/jansinger/ostsee-tiere/commit/3f0d9acb4286718f811f765fa18dbebee066c71d))
+* **security:** refuse to start production with a publicly known SESSION_SECRET ([#668](https://github.com/jansinger/ostsee-tiere/issues/668)) ([a7f3e58](https://github.com/jansinger/ostsee-tiere/commit/a7f3e58383eedbd60000b5521c1f47a89ac26e49))
+* **security:** stop caching admin-only media in shared caches ([#685](https://github.com/jansinger/ostsee-tiere/issues/685)) ([fa50987](https://github.com/jansinger/ostsee-tiere/commit/fa509877b7ff89c947815d5b26ce3dfd9883ee6c))
+* **test:** ignore vitest helper file in playwright test collection ([#684](https://github.com/jansinger/ostsee-tiere/issues/684)) ([ab78ee2](https://github.com/jansinger/ostsee-tiere/commit/ab78ee24584abddda14d18a7c7f3e91d05db472d))
+* **test:** stop concurrent admin-session seeding from deleting live rows ([#687](https://github.com/jansinger/ostsee-tiere/issues/687)) ([62808ce](https://github.com/jansinger/ostsee-tiere/commit/62808ceff07377e713bde75682f922e86b2345b6))
+* **test:** stop playwright collecting the vitest helper test in e2e/ ([#683](https://github.com/jansinger/ostsee-tiere/issues/683)) ([f6762b4](https://github.com/jansinger/ostsee-tiere/commit/f6762b4443712445f28b80ec66976c35d82a84aa))
+* **ui:** make the form stepper look like the navigation it already is ([#680](https://github.com/jansinger/ostsee-tiere/issues/680)) ([db1dd70](https://github.com/jansinger/ostsee-tiere/commit/db1dd70fbde116bb674b00ceae927419aa7654d8))
+* **ui:** stepper clipping, sideways page scroll and blocked non-Baltic positions ([#673](https://github.com/jansinger/ostsee-tiere/issues/673)) ([e524726](https://github.com/jansinger/ostsee-tiere/commit/e524726fd334e4b333295b9032500e98ecd05919))
+
+
+### Documentation
+
+* remove the change-request analysis from the public repo, close the geometry plan ([#676](https://github.com/jansinger/ostsee-tiere/issues/676)) ([45beda6](https://github.com/jansinger/ostsee-tiere/commit/45beda6d6f2442ed8aa47d3507aa8fdbe41f18a3))
+
+
+### Code Refactoring
+
+* **api:** share LIKE escaping and consent gate between both public search surfaces ([#675](https://github.com/jansinger/ostsee-tiere/issues/675)) ([61d2cbd](https://github.com/jansinger/ostsee-tiere/commit/61d2cbdaffa3fa1beb25c1a696c4f6f15b6ec12a))
+
 ## [2.6.2](https://github.com/jansinger/ostsee-tiere/compare/v2.6.1...v2.6.2) (2026-07-30)
 
 
