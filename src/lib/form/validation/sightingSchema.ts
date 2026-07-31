@@ -1302,3 +1302,45 @@ export const sightingSchema = yup
 			.default(0)
 	})
 	.concat(sightingSchemaBase);
+
+/**
+ * Schema der Admin-Maske: dasselbe Formular, aber ohne die Eingabegrenzen für
+ * die Anzahlen.
+ *
+ * Die Grenzen in `sightingSchema` sind **Eingaberegeln für neue Meldungen** —
+ * mindestens ein Tier, höchstens 15, Jungtiere nicht mehr als Tiere insgesamt.
+ * Auf den Bestand angewendet sperren sie die Korrektur genau der Datensätze,
+ * die eine Korrektur am ehesten brauchen (Stand 2026-07-31, 19.880 Zeilen):
+ *
+ * | Bedingung                    | Zeilen | Herkunft                          |
+ * | ---------------------------- | -----: | --------------------------------- |
+ * | `anzahl_gesamt = 0`          |      5 | Legacy-Konvention „0 = Totfund"   |
+ * | `anzahl_jung > anzahl_gesamt`|      8 | Altbestand                        |
+ * | `anzahl_gesamt > 15`         |     22 | Altbestand, Kappung kam später    |
+ *
+ * Ohne diese Lockerung könnte ein Admin eine solche Zeile nicht mehr speichern
+ * — auch dann nicht, wenn er an einem ganz anderen Feld etwas richtigstellt.
+ *
+ * Abgeleitet statt neu geschrieben: `.min()`/`.max()` und ein `.test()` mit
+ * gleichem Namen ersetzen in Yup den vorhandenen Eintrag. Label und `meta`
+ * bleiben damit erhalten — die Feld-Pipeline (`FieldRenderer`) liest sie aus
+ * `describe()`, eine Kopie würde beim nächsten Textwechsel auseinanderlaufen.
+ */
+export const adminSightingSchema = sightingSchema.shape({
+	totalCount: (sightingSchema.fields.totalCount as yup.NumberSchema)
+		.min(0, 'Die Anzahl darf nicht negativ sein')
+		.max(9999, 'Bitte eine plausible Anzahl eintragen'),
+	juvenileCount: (sightingSchema.fields.juvenileCount as yup.NumberSchema)
+		.max(9999, 'Bitte eine plausible Anzahl eintragen')
+		// Hebt die Teilmengen-Regel für den Bestand auf, statt sie zu duplizieren.
+		// `exclusive: true` ist dabei nicht schmückend: Yup entfernt einen
+		// gleichnamigen Test nur dann, wenn der neue exklusiv ist oder dieselbe
+		// Funktionsreferenz trägt (`Schema.test()`) — ohne das Flag liefen beide
+		// Tests, und der alte würde weiterhin greifen.
+		.test({
+			name: 'juveniles-within-total',
+			exclusive: true,
+			message: '',
+			test: () => true
+		})
+});

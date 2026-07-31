@@ -18,7 +18,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { sightingSchema } from './sightingSchema';
+import { adminSightingSchema, sightingSchema } from './sightingSchema';
 import { legacyApiSchema } from '$lib/legacy-api/yup-validation';
 
 /**
@@ -92,6 +92,62 @@ describe('sightingSchema — Jungtiere (juvenileCount)', () => {
 
 	it('meldet den Fehler am Feld juvenileCount, nicht an totalCount', async () => {
 		expect(await fieldError('totalCount', { totalCount: 2, juvenileCount: 3 })).toBeNull();
+	});
+});
+
+/**
+ * Die Admin-Maske editiert den Bestand, nicht eine neue Meldung. Die
+ * Eingabegrenzen dürfen dort nicht greifen, sonst lassen sich genau die
+ * Altdatensätze nicht mehr speichern, die eine Korrektur brauchen —
+ * 5 Zeilen mit `anzahl_gesamt = 0`, 8 mit mehr Jung- als Gesamttieren und
+ * 22 über der 15er-Kappung (Stand 2026-07-31).
+ */
+describe('adminSightingSchema — Bestand bleibt editierbar', () => {
+	async function adminError(field: string, data: Record<string, unknown>): Promise<string | null> {
+		try {
+			await adminSightingSchema.validateAt(field, data, { abortEarly: true });
+			return null;
+		} catch (error) {
+			return (error as { message: string }).message;
+		}
+	}
+
+	it('akzeptiert 0 Tiere (Legacy-Totfund)', async () => {
+		expect(await adminError('totalCount', { totalCount: 0 })).toBeNull();
+	});
+
+	it('akzeptiert mehr als 15 Tiere', async () => {
+		expect(await adminError('totalCount', { totalCount: 40 })).toBeNull();
+	});
+
+	it('akzeptiert mehr Jungtiere als Tiere insgesamt', async () => {
+		expect(await adminError('juvenileCount', { totalCount: 2, juvenileCount: 3 })).toBeNull();
+	});
+
+	it('weist negative Anzahlen weiterhin zurück', async () => {
+		expect(await adminError('totalCount', { totalCount: -1 })).not.toBeNull();
+	});
+
+	// Die Ableitung ist der Punkt: Eine Kopie der Felddefinition würde beim
+	// nächsten Textwechsel auseinanderlaufen, und `FieldRenderer` liest Label
+	// und `meta` aus `describe()`.
+	it('erbt Label und Metadaten aus sightingSchema', () => {
+		const base = sightingSchema.describe().fields.totalCount as {
+			label?: string;
+			meta?: unknown;
+		};
+		const admin = adminSightingSchema.describe().fields.totalCount as {
+			label?: string;
+			meta?: unknown;
+		};
+
+		expect(base.label).toBe('Anzahl Tiere');
+		expect(admin.label).toBe(base.label);
+		expect(admin.meta).toEqual(base.meta);
+	});
+
+	it('lässt das Meldeformular unverändert streng', async () => {
+		await expect(sightingSchema.validateAt('totalCount', { totalCount: 0 })).rejects.toThrow();
 	});
 });
 

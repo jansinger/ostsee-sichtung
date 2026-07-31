@@ -46,14 +46,24 @@
 		     Einwilligungen zur Namensnennung, und `/api/map/sightings` liefert
 		     Vor- und Nachnamen aus, sobald `nameConsent` gesetzt ist
 		     (`mapUtils.ts`). Die Kartensuche durchsucht sie, CSV-, XML- und
-		     KML-Export tragen sie ebenfalls. Die neue Fassung sagt, was
-		     tatsächlich passiert, und erklärt die Ankreuzfelder darunter,
-		     statt ihnen zu widersprechen. -->
+		     KML-Export tragen sie ebenfalls — die sind allerdings, anders als in
+		     der Analyse angenommen, nur für Admins erreichbar
+		     (`requireUserRole(['admin','superadmin'])`); der öffentliche Weg ist
+		     allein die Karten-API.
+
+		     „Ortsangaben zum Seegebiet" steht bewusst in der Aufzählung:
+		     `/api/map/sightings` liefert `waterway` und `seaMark` unkonditioniert
+		     aus. Das sind Freitextfelder, die der Melder selbst tippt und die
+		     beiläufig Personenbezug tragen können — wer sie ausfüllt, soll
+		     wissen, dass sie öffentlich werden.
+
+		     Die neue Fassung sagt, was tatsächlich passiert, und erklärt die
+		     Ankreuzfelder darunter, statt ihnen zu widersprechen. -->
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
 			<strong>Datenschutz:</strong> Ihre Kontaktdaten verwenden wir ausschließlich für Rückfragen zu Ihrer
 			Meldung und geben sie nicht an Dritte weiter. Öffentlich sichtbar werden nur die Sichtungsdaten
-			selbst — Datum, Position, Tierart und Anzahl. Ihr Name erscheint nur, wenn Sie das unten ausdrücklich
-			erlauben.
+			selbst — Datum, Position, Tierart, Anzahl und Ihre Ortsangaben zum Seegebiet. Ihr Name erscheint
+			nur, wenn Sie das unten ausdrücklich erlauben.
 		</p>
 	</div>
 

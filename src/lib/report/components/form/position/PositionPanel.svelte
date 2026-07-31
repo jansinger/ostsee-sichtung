@@ -310,10 +310,12 @@
 
 	     NICHT `btn-primary`: Die einzige Primäraktion des Schritts ist „Weiter"
 	     (Button-Hierarchie, `.claude/rules/design-system.md`). Die Betonung
-	     kommt deshalb über Fläche und Rahmenstärke, nicht über die Farbrolle. -->
+	     kommt über Fläche und volle Breite — `btn-lg` statt handgeschriebener
+	     Maße, damit Höhe und Schriftgröße aus dem Theme kommen und nicht aus
+	     `py-4`/`text-base` an dieser einen Aufrufstelle. -->
 	<button
 		type="button"
-		class="btn btn-outline btn-primary mt-4 h-auto w-full border-2 py-4 text-base"
+		class="btn btn-outline btn-lg mt-4 w-full"
 		onclick={useCurrentPosition}
 		aria-disabled={locating}
 		data-testid="use-current-position"

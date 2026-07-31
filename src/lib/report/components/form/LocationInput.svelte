@@ -56,6 +56,12 @@
 		onchange?: EventListener | null;
 	}>();
 
+	// Hydrations-sichere id für die Verknüpfung Hinweis ↔ Koordinaten-Gruppe.
+	// `$props.id()` liefert auf Server und Client denselben Wert; ein selbst
+	// gewürfelter Wert würde beim Hydrieren auseinanderlaufen, ein fester
+	// Literal-Wert bräche, sobald zwei Karten auf einer Seite stehen.
+	const hintId = $props.id();
+
 	// Kartenansicht ist von den Eingabefeldern getrennt: Die Karte braucht immer
 	// konkrete Zahlen (sonst startet sie im Nullmeridian), die Zahlenfelder bleiben
 	// leer, solange der Nutzer keine Position gewählt hat.
@@ -395,12 +401,22 @@
 				{@render coordinateFields()}
 			</div>
 		</details>
-	{:else}
-		{#if coordinatesHint}
-			<p class="text-base-content/70 text-support mb-2" data-testid="coordinates-hint">
+	{:else if coordinatesHint}
+		<!-- Der Hinweis gilt für die ganze Koordinaten-Gruppe, nicht für ein
+		     einzelnes Feld — je nach Format sind es zwei bis sechs Eingaben.
+		     Deshalb `role="group"` mit `aria-describedby` statt sechs einzelner
+		     Verweise: So wird er beim Betreten der Gruppe einmal angesagt.
+
+		     Ohne diese Verknüpfung wäre der Satz nur optisch vorhanden — die
+		     Felder hier sind rohe Inputs und laufen nicht über `FormField`,
+		     das `aria-describedby` sonst zentral setzt (`design-system.md`). -->
+		<div role="group" aria-label="Koordinaten" aria-describedby={hintId}>
+			<p id={hintId} class="text-base-content/70 text-support mb-2" data-testid="coordinates-hint">
 				{coordinatesHint}
 			</p>
-		{/if}
+			{@render coordinateFields()}
+		</div>
+	{:else}
 		{@render coordinateFields()}
 	{/if}
 </div>

@@ -11,6 +11,9 @@
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import SectionCard from './SectionCard.svelte';
 
+	/** Siehe `Behavior.svelte` — vollständiger Editor statt kuratierter Teilmenge. */
+	let { adminMode = false }: { adminMode?: boolean } = $props();
+
 	const { form, handleChange } = getFormContext();
 
 	let latitude: number | null | undefined = $derived($form.latitude);
@@ -87,9 +90,16 @@
 	     obwohl das Feld nicht mehr gerendert wird.
 
 	     Schema-Eintrag und DB-Spalte `windrichtung` bleiben unverändert. -->
-	<div class="mt-4 grid grid-cols-1 gap-4">
+	<!-- Zweispaltig nur, wenn auch zwei Felder darin stehen — sonst stünde die
+	     Windstärke im Meldeformular auf halber Breite neben einer Leerstelle. -->
+	<div class="mt-4 grid grid-cols-1 gap-4 {adminMode ? 'md:grid-cols-2' : ''}">
 		<!-- Wind Force -->
 		<FormField name="windForce" />
+
+		<!-- Im Admin editierbar: 9.642 Datensätze tragen eine Windrichtung. -->
+		{#if adminMode}
+			<FormField name="windDirection" />
+		{/if}
 	</div>
 
 	<!-- Weather Data Fetcher - Auto-fetch when environment section is visible -->
