@@ -91,7 +91,9 @@ test.describe('Feldmodus — ortsfeste Schritt-Navigation', () => {
 		await expect
 			.poll(() =>
 				page.evaluate(() => {
-					const feld = document.querySelector('[data-field="waterway"], [data-testid="field-waterway"]');
+					const feld = document.querySelector(
+						'[data-field="waterway"], [data-testid="field-waterway"]'
+					);
 					if (!feld) return null;
 					const r = feld.getBoundingClientRect();
 					return r.top >= 0 && r.top <= window.innerHeight;
@@ -176,7 +178,7 @@ test.describe('Kompakter Schritt-Stepper', () => {
 			'aria-current',
 			'step'
 		);
-		await expect(page.getByRole('heading', { name: 'Position & Zeit' })).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Position & Zeitpunkt' })).toBeVisible();
 	});
 
 	test('Vorwärts bleibt gesperrt, solange der Schritt unvollständig ist', async ({ page }) => {

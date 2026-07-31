@@ -19,7 +19,7 @@ test.describe('Absenden ohne Internetverbindung', () => {
 		// Bis zum letzten Schritt durchfüllen
 		await fillStep1(formPage);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		await fillStep2(formPage);
 		await formPage.clickNext();
@@ -97,7 +97,7 @@ test.describe('Absenden ohne Internetverbindung', () => {
 
 		await fillStep1(formPage);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		await fillStep2(formPage);
 		await formPage.clickNext();

@@ -317,7 +317,7 @@ export const speciesIdentification: Record<SpeciesEnum, SpeciesIdentificationEnt
 	},
 
 	[SpeciesEnum.DOLPHIN]: {
-		name: 'Delphin',
+		name: 'Delfin',
 		scientificName: 'u. a. Tursiops truncatus, Lagenorhynchus albirostris',
 		size: '2–4 m',
 		weight: 'ca. 150–650 kg',

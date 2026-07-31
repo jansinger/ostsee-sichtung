@@ -36,19 +36,12 @@
 				<Icon icon="lucide:user" width="20" class="text-primary md:h-6 md:w-6" />
 			</div>
 		</div>
-		<h2 class="text-base-content text-xl font-bold md:text-2xl">Kontaktdaten & Abschluss</h2>
+		<h2 class="text-base-content text-xl font-bold md:text-2xl">Kontaktdaten</h2>
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
 			Ihre <strong>E-Mail-Adresse</strong> ist erforderlich für die Bestätigung. Kontaktdaten
 			ermöglichen wichtige Rückfragen zur Datenqualität. <strong>Datenschutz:</strong> Ihre persönlichen
 			Daten werden nie öffentlich angezeigt!
 		</p>
-		<div class="flex justify-center">
-			<div
-				class="badge badge-outline badge-primary h-auto min-h-fit max-w-xs px-3 py-2 text-center text-xs whitespace-normal md:max-w-none md:text-sm md:whitespace-nowrap"
-			>
-				Schritt 4 von 4 - Fast geschafft!
-			</div>
-		</div>
 	</div>
 
 	<!-- Personal Contact Information -->
@@ -81,7 +74,9 @@
 
 					{#if hasSavedContactData}
 						<div class="mt-3 flex items-center justify-between">
-							<span class="text-success-strong font-medium">✓ Gespeicherte Kontaktdaten gefunden</span>
+							<span class="text-success-strong font-medium"
+								>✓ Gespeicherte Kontaktdaten gefunden</span
+							>
 							<button
 								type="button"
 								class="btn btn-outline btn-error btn-sm min-h-11"

@@ -597,8 +597,7 @@ export const sightingSchemaBase = yup.object().shape({
 		)
 		.label('Entfernung zum Tier')
 		.meta({
-			helpText:
-				'Wie weit waren die Tiere entfernt? (Schätzung) - Tipp: Größe einer Münze = 50m, Streichholz = 200m',
+			helpText: 'Wie weit waren die Tiere entfernt? (Schätzung)',
 			valueText:
 				'Je geringer die Entfernung, desto verlässlicher lassen sich Art und Anzahl bestimmen - die Angabe hilft, Beobachtungen zu gewichten',
 			type: 'select',
@@ -741,7 +740,7 @@ export const sightingSchemaBase = yup.object().shape({
 			'Bitte geben Sie eine gültige Sichtweiten-Kategorie an.',
 			(value) => value === undefined || isValidVisibility(value)
 		)
-		.label('Sichtweite')
+		.label('Sichtbedingungen')
 		.meta({
 			helpText: 'Wie weit konnten Sie sehen?',
 			valueText:
@@ -924,7 +923,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.transform((value) => (isNaN(value) ? undefined : value))
 		.min(0, 'Die Anzahl der Schiffe muss positiv sein.')
 		.max(15, 'Die Anzahl der Schiffe darf 15 nicht überschreiten.')
-		.label('Anzahl anderer Schiffe')
+		.label('Anzahl anderer Schiffe in näherer Umgebung')
 		.meta({
 			placeholder: 'z.B. 2',
 			helpText: 'Wie viele andere Boote waren in der Nähe?',

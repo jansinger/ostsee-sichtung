@@ -43,7 +43,7 @@ export const USER_CONTACT_FIELDS = [
 export const formStepsConfig: FormStep[] = [
 	{
 		id: 'location-time',
-		title: 'Position & Zeit',
+		title: 'Position & Zeitpunkt',
 		description: 'Wo und wann haben Sie die Sichtung gemacht?',
 		fields: [
 			'hasPosition',
@@ -57,7 +57,7 @@ export const formStepsConfig: FormStep[] = [
 	},
 	{
 		id: 'sighting-details',
-		title: 'Sichtungsdetails',
+		title: 'Angaben zum Tier',
 		description: 'Was haben Sie genau beobachtet?',
 		fields: [
 			'species',
@@ -77,7 +77,7 @@ export const formStepsConfig: FormStep[] = [
 	},
 	{
 		id: 'observations',
-		title: 'Beobachtungen',
+		title: 'Weitere Informationen',
 		description: 'Details zu Verhalten und Umweltbedingungen',
 		fields: [
 			'distribution',

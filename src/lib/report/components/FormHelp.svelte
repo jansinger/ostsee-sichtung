@@ -120,7 +120,7 @@
 						<div class="card bg-base-100 p-4">
 							<h4 class="mb-2 flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:map-pin" width="16" class="text-primary" />
-								Schritt 1: Position & Zeit
+								Schritt 1: Position & Zeitpunkt
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li><strong>GPS-Koordinaten:</strong> Am wertvollsten für die Forschung</li>
@@ -135,7 +135,7 @@
 						<div class="card bg-base-100 p-4">
 							<h4 class="mb-2 flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:binoculars" width="16" class="text-primary" />
-								Schritt 2: Sichtungsdetails
+								Schritt 2: Angaben zum Tier
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li>
@@ -153,7 +153,7 @@
 						<div class="card bg-base-100 p-4">
 							<h4 class="mb-2 flex items-center gap-2 font-semibold">
 								<Icon icon="lucide:eye" width="16" class="text-primary" />
-								Schritt 3: Beobachtungen
+								Schritt 3: Weitere Informationen
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li><strong>Verhalten:</strong> Fütterung, Ruhen, Springen, etc.</li>
