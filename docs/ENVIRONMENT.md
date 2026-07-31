@@ -84,6 +84,11 @@ curl -fsS -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" \
 **Min Length**: 32 characters
 **Description**: Secret key for encrypting session data.
 
+**Important**: Do not use an example value that looks realistic. In production, the startup
+guard verifies that `SESSION_SECRET` is neither a well-known test value nor a default. A
+value that looks authentic will be copied — and the server will refuse to start, rejecting
+it. Generate a unique, random secret for each environment.
+
 **Generate**:
 
 ```bash
@@ -93,8 +98,21 @@ openssl rand -base64 32
 **Example**:
 
 ```bash
-SESSION_SECRET=8K7h3L9mN2pQ4rS6tU8vW0xY2zA4bC6dE
+SESSION_SECRET=<Ausgabe von openssl rand -base64 32>
 ```
+
+**Rotation:**
+
+`SESSION_SECRET` lässt sich jederzeit wechseln — der neue Wert wird in die `.env` des
+Hosts geschrieben, danach `docker compose up -d`.
+
+**Nebenwirkung:** Jeder Wechsel beendet **alle** laufenden Sitzungen gleichzeitig. Jedes
+`jwtVerify` gegen das alte Cookie schlägt fehl, das Cookie wird gelöscht, alle Angemeldeten
+landen im Login. Das ist der Notausschalter für den Verdachtsfall („jemand könnte das
+Secret kennen") — und der einzige Weg, eine ausgestellte Session ungültig zu machen.
+
+Staging und Production müssen **verschiedene** Secrets haben. Sonst ist ein Staging-Zugang
+ein Produktions-Zugang.
 
 ---
 

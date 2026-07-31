@@ -166,7 +166,7 @@ Skript nach der Freigabe von Hand auf.
 
 ---
 
-## Zwei Dinge, die getrennt sein müssen
+## Drei Dinge, die getrennt sein müssen
 
 **Datenbanken.** Staging und Production brauchen jeweils eine eigene DB.
 Migrationen laufen beim Container-Start — bei geteilter DB migriert das
@@ -175,6 +175,11 @@ Staging-Deploy die Produktion, und die Freigabe sichert nichts mehr ab.
 **Upload-Verzeichnisse.** Jeder Stack braucht sein eigenes `uploads/`-Volume.
 Medien liegen seit dem 28.07.2026 auf Platte statt in Vercel Blob; ein geteiltes
 Volume würde Staging-Testdaten in den Prod-Bestand schreiben.
+
+**`SESSION_SECRET`.** Jeder Stack braucht sein eigenes. Das Secret ist die alleinige
+Grundlage dafür, dass eine Session echt ist — wer es kennt, kann sich eine Admin-Session
+ausstellen, ohne Auth0 zu berühren. Ein geteiltes Secret macht einen Staging-Zugang zu
+einem Produktions-Zugang. Siehe `docs/ENVIRONMENT.md`, Abschnitt `SESSION_SECRET`.
 
 ---
 
