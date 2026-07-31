@@ -1239,6 +1239,17 @@ paths:
             type: string
             format: uri
             example: "/admin"
+        - name: authRetry
+          in: query
+          description: >-
+            Interner Marker. Wird vom Callback gesetzt, wenn er den Login wegen
+            abgelaufener Flow-Cookies neu gestartet hat, und in die redirect_uri
+            übernommen, damit der Callback ihn nach dem Auth0-Rücklauf wiedersieht.
+            Nur der Wert '1' wird weitergereicht.
+          schema:
+            type: string
+            enum:
+              - '1'
       responses:
         '302':
           description: Weiterleitung zu Auth0
