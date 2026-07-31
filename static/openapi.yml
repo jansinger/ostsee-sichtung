@@ -2355,11 +2355,74 @@ components:
           description: Einverständnis zur Namensveröffentlichung
           enum: [0, 1]
           example: 1
+        nameConsentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            Zeitpunkt der Einwilligung zur Namensveröffentlichung (Nachweis nach
+            Art. 7 Abs. 1 DSGVO). `null`, wenn nicht eingewilligt wurde oder der
+            Datensatz aus dem Altbestand vor Einführung des Nachweises stammt.
+          example: "2026-07-31T10:30:00Z"
+        nameConsentVersion:
+          type: string
+          nullable: true
+          description: >-
+            Fassung des Einwilligungstextes, dem zugestimmt wurde. `null` unter
+            denselben Bedingungen wie `nameConsentAt`.
+          maxLength: 32
+          example: "2025-08-12"
         shipNameConsent:
           type: integer
           description: Einverständnis zur Schiffsnamen-Veröffentlichung
           enum: [0, 1]
           example: 1
+        shipNameConsentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zeitpunkt der Einwilligung zur Schiffsnamen-Veröffentlichung
+          example: "2026-07-31T10:30:00Z"
+        shipNameConsentVersion:
+          type: string
+          nullable: true
+          description: Fassung des zugestimmten Einwilligungstextes
+          maxLength: 32
+          example: "2025-08-12"
+        privacyConsent:
+          type: integer
+          description: Pflicht-Einwilligung zur Datenverarbeitung
+          enum: [0, 1]
+          example: 1
+        privacyConsentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zeitpunkt der Pflicht-Einwilligung
+          example: "2026-07-31T10:30:00Z"
+        privacyConsentVersion:
+          type: string
+          nullable: true
+          description: Fassung des zugestimmten Einwilligungstextes
+          maxLength: 32
+          example: "2026-07-28"
+        mediaConsent:
+          type: integer
+          description: Einwilligung zur Veröffentlichung hochgeladener Aufnahmen
+          enum: [0, 1]
+          example: 1
+        mediaConsentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zeitpunkt der Medien-Einwilligung
+          example: "2026-07-31T10:30:00Z"
+        mediaConsentVersion:
+          type: string
+          nullable: true
+          description: Fassung des zugestimmten Einwilligungstextes
+          maxLength: 32
+          example: "2026-07-28"
         internalComment:
           type: string
           nullable: true

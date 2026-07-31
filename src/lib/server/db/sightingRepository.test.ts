@@ -4,6 +4,12 @@
  * Testet alle Funktionen des Repository-Patterns für Sichtungen
  * mit besonderem Fokus auf Sicherheit und Edge Cases
  */
+import {
+	NAME_CONSENT_VERSION,
+	PRIVACY_CONSENT_VERSION,
+	SHIP_NAME_CONSENT_VERSION
+} from '$lib/form/consent/consentVersions';
+import { MEDIA_CONSENT_VERSION } from '$lib/form/consent/mediaConsentVersion';
 import { db } from '$lib/server/db';
 import * as schema from '$lib/server/db/schema';
 import type { UploadedFileInfo } from '$lib/types';
@@ -33,12 +39,31 @@ vi.mock('$lib/server/db', () => {
 });
 
 vi.mock('./mapFormToSighting', () => ({
-	mapFormToSighting: vi.fn((formData) => ({
-		id: 1,
-		...formData,
-		created: new Date().toISOString(),
-		approvedAt: null
-	}))
+	// Der Mock muss die Nachweisspalten der Einwilligungen mit erzeugen — sonst
+	// prüft der Test „Nachweisspalten vom Update ausschließen" ins Leere: Was der
+	// Mapper nie liefert, kann das Update auch nicht schreiben.
+	mapFormToSighting: vi.fn((formData) => {
+		const proof = (granted: unknown, version: string) =>
+			granted ? { at: new Date(), version } : { at: null, version: null };
+		const name = proof(formData.nameConsent, NAME_CONSENT_VERSION);
+		const ship = proof(formData.shipNameConsent, SHIP_NAME_CONSENT_VERSION);
+		const privacy = proof(formData.privacyConsent, PRIVACY_CONSENT_VERSION);
+		const media = proof(formData.mediaConsent, MEDIA_CONSENT_VERSION);
+		return {
+			id: 1,
+			...formData,
+			created: new Date().toISOString(),
+			approvedAt: null,
+			nameConsentAt: name.at,
+			nameConsentVersion: name.version,
+			shipNameConsentAt: ship.at,
+			shipNameConsentVersion: ship.version,
+			privacyConsentAt: privacy.at,
+			privacyConsentVersion: privacy.version,
+			mediaConsentAt: media.at,
+			mediaConsentVersion: media.version
+		};
+	})
 }));
 
 vi.mock('$lib/server/storage/factory', () => ({
@@ -375,6 +400,92 @@ describe('sightingRepository', () => {
 			expect(updatePayload).toBeDefined();
 			expect(updatePayload).not.toHaveProperty('verified');
 			expect(updatePayload).not.toHaveProperty('approvedAt');
+		});
+
+		/**
+		 * Test: Der Nachweis einer Einwilligung ist ein historisches Ereignis —
+		 * „Person X hat am T der Fassung V zugestimmt". Ein Admin, der einen
+		 * Datensatz bearbeitet, ist nicht die betroffene Person und kann diesen
+		 * Nachweis nicht erneuern. Liefe er über `mapFormToSighting`, trüge jede
+		 * Bearbeitung den Bearbeitungszeitpunkt ein und behauptete damit eine
+		 * Einwilligung, die es nie gab.
+		 */
+		it('sollte die Nachweisspalten der Einwilligungen vom Update ausschließen', async () => {
+			// Arrange
+			const mockDb = db as any;
+			const setMock = vi.fn().mockReturnValue({
+				where: vi.fn().mockReturnValue({
+					returning: vi.fn().mockResolvedValue([mockFormData])
+				})
+			});
+			mockDb.update.mockReturnValue({ set: setMock });
+
+			// Act: Das Admin-Formular schickt die geladenen Einwilligungen mit
+			await updateSighting(42, {
+				...mockFormData,
+				nameConsent: true,
+				shipNameConsent: true,
+				privacyConsent: true,
+				mediaConsent: true
+			} as any);
+
+			// Assert
+			const updatePayload = setMock.mock.calls[0]?.[0];
+			expect(updatePayload).toBeDefined();
+			for (const column of [
+				'nameConsentAt',
+				'nameConsentVersion',
+				'shipNameConsentAt',
+				'shipNameConsentVersion',
+				'privacyConsentAt',
+				'privacyConsentVersion',
+				'mediaConsentAt',
+				'mediaConsentVersion'
+			]) {
+				expect(updatePayload).not.toHaveProperty(column);
+			}
+		});
+
+		/**
+		 * Test: Auch die Flags selbst gehören nicht ins Update.
+		 *
+		 * Nur den Nachweis auszuschließen und das Flag schreibbar zu lassen
+		 * erzeugt über `PUT /api/sightings/[id]` genau die Kombination, die der
+		 * Anlege-Pfad als Fehler definiert: Flag 1 bei NULL-Nachweis. Die
+		 * Invariante hinge dann allein daran, dass die Admin-Oberfläche kein
+		 * Einwilligungsfeld anbietet — eine UI-Sperre als einzige Absicherung
+		 * einer Datenregel.
+		 *
+		 * Es geht dabei nichts verloren: Einziger Aufrufer ist das
+		 * Admin-Bearbeitungsformular, und das rendert `nameConsent`,
+		 * `shipNameConsent` und `privacyConsent` gar nicht; `mediaConsent` ist
+		 * dort gesperrt. Eine nachträglich erteilte Einwilligung braucht ohnehin
+		 * einen eigenen Weg mit eigenem Nachweis.
+		 */
+		it('sollte auch die Einwilligungs-Flags vom Update ausschließen', async () => {
+			// Arrange
+			const mockDb = db as any;
+			const setMock = vi.fn().mockReturnValue({
+				where: vi.fn().mockReturnValue({
+					returning: vi.fn().mockResolvedValue([mockFormData])
+				})
+			});
+			mockDb.update.mockReturnValue({ set: setMock });
+
+			// Act: Ein Aufruf am UI vorbei versucht, eine Einwilligung zu setzen
+			await updateSighting(42, {
+				...mockFormData,
+				nameConsent: true,
+				shipNameConsent: true,
+				privacyConsent: true,
+				mediaConsent: true
+			} as any);
+
+			// Assert
+			const updatePayload = setMock.mock.calls[0]?.[0];
+			for (const flag of ['nameConsent', 'shipNameConsent', 'privacyConsent', 'mediaConsent']) {
+				expect(updatePayload).not.toHaveProperty(flag);
+			}
 		});
 
 		/**

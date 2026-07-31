@@ -68,8 +68,16 @@ export const sightings = pgTable(
 		phone: varchar('telefon', { length: 64 }),
 		fax: varchar('fax', { length: 64 }),
 		email: varchar('email', { length: 64 }),
+		// Einwilligung zur Veröffentlichung von Vor- und Nachname. `/api/sightings`
+		// gibt den Namen aus, sobald das Flag steht — Zeitpunkt und Textfassung
+		// sind der Nachweis nach Art. 7 Abs. 1 DSGVO. Altbestand: NULL, dort gibt
+		// es keinen Nachweis, und ein rückdatierter Wert wäre eine Erfindung.
 		nameConsent: integer('namensnennung').default(0).notNull(),
+		nameConsentAt: timestamp('namensnennung_am', { mode: 'date' }),
+		nameConsentVersion: varchar('namensnennung_version', { length: 32 }),
 		shipNameConsent: integer('schiffnamensnennung').default(0).notNull(),
+		shipNameConsentAt: timestamp('schiffnamensnennung_am', { mode: 'date' }),
+		shipNameConsentVersion: varchar('schiffnamensnennung_version', { length: 32 }),
 		notes: text('bemerkungen'),
 		created: timestamp('created', { mode: 'date' }).notNull(),
 		entryChannel: integer('eingangskanal').default(0).notNull(),
@@ -85,7 +93,11 @@ export const sightings = pgTable(
 		deadSex: smallint('totfund_geschlecht').default(0).notNull(),
 		deadPhoneContact: smallint('totfund_telefon').default(0).notNull(),
 		species: smallint('tierart').default(0).notNull(),
+		// Pflicht-Einwilligung der Meldung. Zeitpunkt und Textfassung sind auch
+		// hier der Nachweis nach Art. 7 Abs. 1 DSGVO.
 		privacyConsent: smallint('datenschutz_einverstaendnis').default(0).notNull(),
+		privacyConsentAt: timestamp('datenschutz_einverstaendnis_am', { mode: 'date' }),
+		privacyConsentVersion: varchar('datenschutz_einverstaendnis_version', { length: 32 }),
 		// Einwilligung zur **Veröffentlichung** hochgeladener Aufnahmen.
 		// Upload und fachliche Prüfung sind dagegen Teil der Meldung selbst und
 		// von `privacyConsent` gedeckt (Entscheidung 2026-07-28).
