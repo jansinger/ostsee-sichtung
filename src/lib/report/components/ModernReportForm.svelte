@@ -178,9 +178,6 @@
 						lastName: values.lastName,
 						email: values.email,
 						phone: values.phone,
-						street: values.street,
-						zipCode: values.zipCode,
-						city: values.city,
 						shipName: values.shipName,
 						homePort: values.homePort,
 						boatType: values.boatType,
@@ -382,10 +379,10 @@
 		<!-- Form Title -->
 		<div class="mb-4 text-center md:mb-8">
 			<h1 class="text-base-content mb-2 text-2xl font-bold md:text-3xl lg:text-4xl">
-				Meerestier-Sichtung melden
+				Sichtung von Meeressäugetieren melden
 			</h1>
 			<p class="text-base-content/70 px-2 text-sm md:text-lg">
-				Helfen Sie der Forschung mit Ihrer Wal- oder Robbensichtung
+				für die Forschung des Deutschen Meeresmuseums
 			</p>
 		</div>
 	{/if}

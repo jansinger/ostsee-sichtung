@@ -24,6 +24,12 @@ export const sightingSchemaFields = sightingSchemaDescription.fields;
  * Used by FormActions and Step4Contact to clear saved contact data
  * without a page reload.
  */
+/**
+ * Straße, PLZ und Ort werden seit dem Wegfall der Adressabfrage NICHT mehr
+ * gespeichert (`UserContactData`), stehen hier aber weiterhin: „Kontaktdaten
+ * löschen" soll auch einen Wert aufräumen, den ein früherer Besuch noch in den
+ * Formular-State gespiegelt hat.
+ */
 export const USER_CONTACT_FIELDS = [
 	'firstName',
 	'lastName',
@@ -43,7 +49,7 @@ export const USER_CONTACT_FIELDS = [
 export const formStepsConfig: FormStep[] = [
 	{
 		id: 'location-time',
-		title: 'Position & Zeit',
+		title: 'Position & Zeitpunkt',
 		description: 'Wo und wann haben Sie die Sichtung gemacht?',
 		fields: [
 			'hasPosition',
@@ -57,7 +63,7 @@ export const formStepsConfig: FormStep[] = [
 	},
 	{
 		id: 'sighting-details',
-		title: 'Sichtungsdetails',
+		title: 'Angaben zum Tier',
 		description: 'Was haben Sie genau beobachtet?',
 		fields: [
 			'species',
@@ -77,20 +83,21 @@ export const formStepsConfig: FormStep[] = [
 	},
 	{
 		id: 'observations',
-		title: 'Beobachtungen',
+		title: 'Weitere Informationen',
 		description: 'Details zu Verhalten und Umweltbedingungen',
 		fields: [
 			'distribution',
 			'distributionText',
 			'behavior',
 			'behaviorText',
-			'otherObservations',
 			'reaction',
 			'shipCount',
 			'seaState',
 			'visibility',
 			'windForce',
-			'windDirection',
+			'shipName',
+			'homePort',
+			'boatType',
 			'mediaFile',
 			'mediaUpload',
 			'mediaConsent'
@@ -106,12 +113,6 @@ export const formStepsConfig: FormStep[] = [
 			'lastName',
 			'email',
 			'phone',
-			'street',
-			'zipCode',
-			'city',
-			'shipName',
-			'homePort',
-			'boatType',
 			'nameConsent',
 			'shipNameConsent',
 			'notes',

@@ -6,6 +6,16 @@
 	import SectionCard from './SectionCard.svelte';
 
 	const { form } = getFormContext();
+
+	/**
+	 * Zeigt zusätzlich die Felder, die das Meldeformular nicht mehr abfragt.
+	 *
+	 * Das Meldeformular ist eine kuratierte Teilmenge des Schemas — die
+	 * Admin-Maske ist der vollständige Editor über denselben Datensatz. Ohne
+	 * diesen Schalter hätte das Ausblenden im Formular auch die Korrektur im
+	 * Admin genommen, denn beide benutzen diese Sektion.
+	 */
+	let { adminMode = false }: { adminMode?: boolean } = $props();
 </script>
 
 <!-- Animal Behavior Section -->
@@ -27,5 +37,10 @@
 
 	<FormField name="reaction" />
 
-	<FormField name="otherObservations" />
+	<!-- `otherObservations` ist aus dem Meldeformular genommen (Überschneidung
+	     mit „Bemerkungen"), bleibt im Admin aber editierbar: 844 Datensätze
+	     tragen dort Inhalt. -->
+	{#if adminMode}
+		<FormField name="otherObservations" />
+	{/if}
 </SectionCard>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { sightingSchema } from '$lib/form/validation/sightingSchema';
+	import { adminSightingSchema } from '$lib/form/validation/sightingSchema';
 	import Form from '$lib/report/components/form/Form.svelte';
 	import Administrative from '$lib/report/components/sections/Administrative.svelte';
 	import AnimalInfo from '$lib/report/components/sections/AnimalInfo.svelte';
@@ -68,7 +68,7 @@
 				latitude: Number(sighting.latitude)?.toFixed(4) || 0,
 				hasPosition: Boolean(sighting.longitude && sighting.latitude)
 			},
-			validationSchema: sightingSchema,
+			validationSchema: adminSightingSchema,
 			onSubmit: submitForm
 		};
 	});
@@ -101,11 +101,11 @@
 		<!-- Rechte Spalte - Zusatzinformationen -->
 		<div class="space-y-4">
 			<!-- Zusätzliche Informationen -->
-			<OptionalSightingDetails />
+			<OptionalSightingDetails adminMode={true} />
 			<!-- Umweltbedingungen -->
-			<Environment />
-			<!-- Schiffs-/Bootsangaben -->
-			<Behavior />
+			<Environment adminMode={true} />
+			<!-- Verhalten und Reaktion -->
+			<Behavior adminMode={true} />
 			<Media />
 			<!-- Administratives -->
 			<Administrative />

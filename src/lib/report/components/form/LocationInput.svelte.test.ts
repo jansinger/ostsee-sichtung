@@ -3,17 +3,24 @@ import { describe, expect, it } from 'vitest';
 import LocationInput from './LocationInput.svelte';
 
 /**
- * Deckt die beiden Einsatzorte von `LocationInput` ab — sie unterscheiden sich
- * über `collapsibleCoordinates`:
+ * Deckt die beiden Einsatzorte von `LocationInput` ab. Sie unterscheiden sich
+ * über ZWEI unabhängige Schalter:
  *
- * - Admin-Maske (`sections/Location.svelte`, Default `false`): Koordinatenfelder
- *   stehen direkt sichtbar da, und die Karte trägt das OpenLayers-GPS-Control,
- *   weil daneben kein eigener Standort-Button existiert.
- * - Meldeformular (`form/position/PositionPanel.svelte`, `true`): Felder liegen
- *   hinter einer Disclosure, das GPS-Control entfällt — `PositionPanel` hat
- *   einen eigenen Button „Mein aktueller Standort" über der Karte, zwei
- *   Bedienelemente für dieselbe Aktion wären ein Verstoß gegen
- *   `.claude/rules/design-system.md`.
+ * - `collapsibleCoordinates` legt die Koordinatenfelder hinter eine Disclosure.
+ * - `enableMapGps` schaltet das OpenLayers-GPS-Control der Karte.
+ *
+ * Beides hing früher an `collapsibleCoordinates` allein. Das trug, solange die
+ * Kombination „Felder sichtbar + eigenes GPS-Control" nur in der Admin-Maske
+ * vorkam. Seit das Meldeformular die Koordinaten dauerhaft zeigt (Wunsch des
+ * Deutschen Meeresmuseums), braucht es dort „Felder sichtbar + KEIN
+ * GPS-Control" — mit einem einzigen Schalter nicht ausdrückbar.
+ *
+ * - Admin-Maske (`sections/Location.svelte`, beide Defaults): Felder sichtbar,
+ *   Karte trägt das GPS-Control, weil daneben kein eigener Standort-Button steht.
+ * - Meldeformular (`form/position/PositionPanel.svelte`): Felder sichtbar,
+ *   `enableMapGps={false}` — `PositionPanel` hat einen eigenen Button „Mein
+ *   aktueller Standort", zwei Bedienelemente für dieselbe Aktion wären ein
+ *   Verstoß gegen `.claude/rules/design-system.md`.
  *
  * Das GPS-Control wird von `createMap` erzeugt (`FormLocationControl`,
  * `utils/map/openLayersHelpers.ts`) und trägt die Klasse `gps-control`. Die
@@ -25,7 +32,7 @@ function gpsControlCount(): number {
 }
 
 describe('LocationInput — GPS-Control der Karte', () => {
-	it('zeigt in der Admin-Variante (collapsibleCoordinates=false) das GPS-Control', async () => {
+	it('zeigt in der Admin-Variante (Defaults) das GPS-Control', async () => {
 		render(LocationInput, { latitude: 54.5, longitude: 13.5 });
 
 		await expect.poll(gpsControlCount, { timeout: 5000 }).toBe(1);
@@ -36,20 +43,47 @@ describe('LocationInput — GPS-Control der Karte', () => {
 		expect(document.querySelector('#latitude')).not.toBeNull();
 	});
 
-	it('unterdrückt das GPS-Control im Meldeformular (collapsibleCoordinates=true)', async () => {
+	it('unterdrückt das GPS-Control im Meldeformular (enableMapGps=false)', async () => {
 		render(LocationInput, {
 			latitude: 54.5,
 			longitude: 13.5,
-			collapsibleCoordinates: true
+			enableMapGps: false
 		});
 
 		// Auf die fertige Karte warten, damit die Aussage „kein Control" nicht
 		// nur bedeutet, dass die Karte noch gar nicht existiert.
 		await expect.poll(() => document.querySelectorAll('.ol-viewport').length).toBe(1);
 		expect(gpsControlCount()).toBe(0);
+	});
 
-		// Die Felder liegen hier hinter der Disclosure.
-		expect(document.querySelector('[data-testid="coordinate-fields"]')).not.toBeNull();
+	it('zeigt die Koordinatenfelder auch ohne GPS-Control direkt an', async () => {
+		render(LocationInput, { latitude: 54.5, longitude: 13.5, enableMapGps: false });
+
+		await expect.poll(() => document.querySelector('#latitude'), { timeout: 5000 }).not.toBeNull();
+		expect(document.querySelector('[data-testid="coordinate-fields"]')).toBeNull();
+	});
+
+	it('legt die Felder nur bei collapsibleCoordinates hinter eine Disclosure', async () => {
+		render(LocationInput, { latitude: 54.5, longitude: 13.5, collapsibleCoordinates: true });
+
+		await expect
+			.poll(() => document.querySelector('[data-testid="coordinate-fields"]'), { timeout: 5000 })
+			.not.toBeNull();
+	});
+
+	it('blendet den Koordinaten-Hinweis nur ein, wenn einer übergeben wird', async () => {
+		render(LocationInput, {
+			latitude: 54.5,
+			longitude: 13.5,
+			enableMapGps: false,
+			coordinatesHint: 'Bitte tragen Sie die GPS-Koordinaten ein.'
+		});
+
+		await expect
+			.poll(() => document.querySelector('[data-testid="coordinates-hint"]')?.textContent, {
+				timeout: 5000
+			})
+			.toMatch(/GPS-Koordinaten/i);
 	});
 });
 
@@ -65,7 +99,7 @@ describe('LocationInput — GPS-Control der Karte', () => {
  * Formularwerte tragen; `data-position` am Kartencontainer macht das prüfbar.
  *
  * Der Hinweistext nannte außerdem pauschal den GPS-Button, den es im
- * Meldeformular gar nicht gibt (`enableGPS={!collapsibleCoordinates}`).
+ * Meldeformular gar nicht gibt (`enableMapGps={false}`).
  */
 function mapContainer(): HTMLElement | null {
 	return document.querySelector('.ol-map-container');
@@ -77,7 +111,7 @@ function mapHintText(): string {
 
 describe('LocationInput — Kartenzustand ohne gewählte Position', () => {
 	it('zeigt ohne Koordinaten keinen Marker und sagt das im Hinweis', async () => {
-		render(LocationInput, { collapsibleCoordinates: true });
+		render(LocationInput, { enableMapGps: false });
 
 		await expect.poll(() => mapContainer()?.dataset.position, { timeout: 5000 }).toBe('unset');
 		expect(mapHintText()).toMatch(/Noch keine Position gewählt/i);
@@ -87,7 +121,7 @@ describe('LocationInput — Kartenzustand ohne gewählte Position', () => {
 		render(LocationInput, {
 			latitude: 54.5,
 			longitude: 13.5,
-			collapsibleCoordinates: true
+			enableMapGps: false
 		});
 
 		await expect.poll(() => mapContainer()?.dataset.position, { timeout: 5000 }).toBe('set');
@@ -101,7 +135,7 @@ describe('LocationInput — Hinweistext nennt den GPS-Button nur wenn er da ist'
 		render(LocationInput, {
 			latitude: 54.5,
 			longitude: 13.5,
-			collapsibleCoordinates: true
+			enableMapGps: false
 		});
 
 		await expect.poll(() => mapHintText(), { timeout: 5000 }).not.toBe('');

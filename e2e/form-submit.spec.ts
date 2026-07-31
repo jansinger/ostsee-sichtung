@@ -11,11 +11,11 @@ import {
 // ── Navigation Tests ────────────────────────────────────────────────────────
 
 test.describe('Sichtung melden — Formular Navigation', () => {
-	test('Formular startet auf Step 1 (Position & Zeit)', async ({ page }) => {
+	test('Formular startet auf Step 1 (Position & Zeitpunkt)', async ({ page }) => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		await expectCurrentStep(page, /Position & Zeit/i);
+		await expectCurrentStep(page, /Position & Zeitpunkt/i);
 	});
 
 	test('Step 1: Datum eingeben und zu Step 2 navigieren', async ({ page }) => {
@@ -26,7 +26,7 @@ test.describe('Sichtung melden — Formular Navigation', () => {
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
 
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 	});
 
 	test('Zurück-Button kehrt zum vorherigen Step zurück', async ({ page }) => {
@@ -36,22 +36,22 @@ test.describe('Sichtung melden — Formular Navigation', () => {
 		await fillStep1(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		await formPage.clickPrevious();
-		await expectCurrentStep(page, /Position & Zeit/i);
+		await expectCurrentStep(page, /Position & Zeitpunkt/i);
 	});
 
 	test('Step-Buttons zeigen aktuellen Schritt als aria-current="step"', async ({ page }) => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		await expectCurrentStep(page, /Position & Zeit/i);
+		await expectCurrentStep(page, /Position & Zeitpunkt/i);
 
 		await fillStep1(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 	});
 });
 
@@ -68,7 +68,7 @@ test.describe('Sichtung melden — Step-Validierung', () => {
 		await fillStep1(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		const stepButtons = page.locator('.step-button');
 		// Step 1 (rückwärts) = navigable, Step 2 (aktuell) = navigable
@@ -87,7 +87,7 @@ test.describe('Sichtung melden — Step-Validierung', () => {
 		await fillStep1(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		// Step 1 (index 0) sollte navigierbar sein (rückwärts erlaubt)
 		const stepButtons = page.locator('.step-button');
@@ -104,7 +104,7 @@ test.describe('Sichtung melden — Step-Validierung', () => {
 		await fillStep1(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		// Step 2 hat keine Defaults für Pflichtfelder, der Weiter-Button bleibt aber
 		// klickbar — er wird nur noch beim Absenden ($isSubmitting) deaktiviert.
@@ -133,7 +133,7 @@ test.describe('Sichtung melden — Step 3 überspringen', () => {
 		await fillStep2(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Beobachtungen/i);
+		await expectCurrentStep(page, /Weitere Informationen/i);
 
 		// Step 3 überspringen
 		await formPage.skipStep();
@@ -150,17 +150,17 @@ test.describe('Sichtung melden — Formular absenden', () => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		// Step 1: Position & Zeit
+		// Step 1: Position & Zeitpunkt
 		await fillStep1(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
-		// Step 2: Sichtungsdetails
+		// Step 2: Angaben zum Tier
 		await fillStep2(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Beobachtungen/i);
+		await expectCurrentStep(page, /Weitere Informationen/i);
 
 		// Step 3: Skip (optional)
 		await formPage.skipStep();
@@ -331,7 +331,7 @@ test.describe('Sichtung melden — Submit mit API-Mock', () => {
 		await formPage.clickSubmit();
 
 		// Zurück auf Schritt 1 — dort steht das abgelehnte Feld
-		await expectCurrentStep(page, /Position & Zeit/i);
+		await expectCurrentStep(page, /Position & Zeitpunkt/i);
 
 		// Das Feld trägt die Meldung des Servers selbst …
 		const waterway = page.locator('[data-testid="field-waterway"]');

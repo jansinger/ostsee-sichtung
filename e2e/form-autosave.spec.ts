@@ -15,7 +15,7 @@ test.describe('Formular — Auto-Save & Restore', () => {
 			timeout: 3000
 		});
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		// Reload page
 		await page.reload();
@@ -23,7 +23,7 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		await page.locator('[aria-current="step"]:visible').waitFor({ state: 'visible' });
 
 		// Step 2 should be restored
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 	});
 
 	test('Formulardaten bleiben nach Reload erhalten', async ({ page }) => {
@@ -80,7 +80,7 @@ test.describe('Formular — Auto-Save & Restore', () => {
 			timeout: 3000
 		});
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		// Click reset button — a confirm() dialog now guards the reset, accept it
 		const resetBtn = page.getByRole('button', { name: /zurücksetzen/i });
@@ -89,7 +89,7 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		await resetBtn.click();
 
 		// After reset, should be back on Step 1
-		await expectCurrentStep(page, /Position & Zeit/i);
+		await expectCurrentStep(page, /Position & Zeitpunkt/i);
 
 		// Date should be reset (either empty or today's default)
 		// Reload to verify storage was cleared
@@ -98,7 +98,7 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		await page.locator('[aria-current="step"]:visible').waitFor({ state: 'visible' });
 
 		// Should start fresh on Step 1 with no restore toast
-		await expectCurrentStep(page, /Position & Zeit/i);
+		await expectCurrentStep(page, /Position & Zeitpunkt/i);
 		await expect(page.getByText(/vorherigen Eingaben.*wiederhergestellt/i)).not.toBeVisible();
 	});
 });

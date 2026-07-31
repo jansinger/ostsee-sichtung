@@ -5,6 +5,7 @@
 <script lang="ts">
 	import { createLogger } from '$lib/logger';
 	import Behavior from '$lib/report/components/sections/Behavior.svelte';
+	import BoatInfo from '$lib/report/components/sections/BoatInfo.svelte';
 	import Environment from '$lib/report/components/sections/Environment.svelte';
 	import Media from '$lib/report/components/sections/Media.svelte';
 	import { getFormContext } from '$lib/report/formContext';
@@ -49,19 +50,12 @@
 				<Icon icon="lucide:activity" width="20" class="text-primary md:h-6 md:w-6" />
 			</div>
 		</div>
-		<h2 class="text-base-content text-xl font-bold md:text-2xl">Zusätzliche Beobachtungen</h2>
+		<h2 class="text-base-content text-xl font-bold md:text-2xl">Weitere Informationen</h2>
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
 			Diese Details sind <strong>optional, aber extrem wertvoll</strong> für die Forschung!
 			Verhaltensinformationen, Umweltbedingungen und <strong>Fotos/Videos</strong> helfen bei der Artbestimmung
-			und dem Verständnis der Meerestiere.
+			und dem Verständnis der Meeressäuger.
 		</p>
-		<div class="flex items-center justify-center gap-4">
-			<div
-				class="badge badge-outline badge-primary h-auto min-h-fit max-w-xs px-3 py-2 text-center text-xs whitespace-normal md:max-w-none md:text-sm md:whitespace-nowrap"
-			>
-				Schritt 3 von 4 - Optional, aber sehr hilfreich
-			</div>
-		</div>
 
 		<!-- Skip Button prominent oben platziert -->
 		<div class="flex justify-center">
@@ -87,4 +81,6 @@
 	<Behavior></Behavior>
 
 	<Environment></Environment>
+
+	<BoatInfo></BoatInfo>
 </div>

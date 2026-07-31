@@ -67,12 +67,12 @@ such as `currentStep`, not for the form values. `FormField` throws if used outsi
 Titles, descriptions and the per-step validated fields live in `formStepsConfig`
 (`formConfig.ts`) — change them there, not in the step components.
 
-| Index | Title            | Content                  |
-| ----- | ---------------- | ------------------------ |
-| `0`   | Position & Zeit  | Location, date, time     |
-| `1`   | Sichtungsdetails | Species, count, distance |
-| `2`   | Beobachtungen    | Optional details         |
-| `3`   | Kontaktdaten     | Observer information     |
+| Index | Title                 | Content                  |
+| ----- | --------------------- | ------------------------ |
+| `0`   | Position & Zeitpunkt  | Location, date, time     |
+| `1`   | Angaben zum Tier      | Species, count, distance |
+| `2`   | Weitere Informationen | Optional details         |
+| `3`   | Kontaktdaten          | Observer information     |
 
 **`currentStep` is 0-based** and indexes `formStepsConfig` directly. Only the display adds
 `+ 1`.

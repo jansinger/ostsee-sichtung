@@ -50,9 +50,8 @@
 	</summary>
 	<div class="collapse-content">
 		<p class="text-base-content/70 text-support mb-3">
-			Viele Fotos enthalten keine GPS-Daten, und nicht jede Position lässt sich auf der Karte
-			wiederfinden — das ist kein Problem. Eine kurze Beschreibung des Fahrwassers genügt uns, auch
-			ungefähre Angaben sind wertvoll.
+			Nicht jede Sichtung lässt sich exakt verorten. Auch eine Beschreibung des Fahrwassers oder
+			ungefähre Positionsangaben sind für die Forschung wertvoll.
 		</p>
 
 		<FormField name="waterway" required={waterwayRequired} />

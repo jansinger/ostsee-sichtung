@@ -52,7 +52,7 @@ export class FormPage {
 		await this.page.getByRole('button', { name: /Schritt überspringen/i }).click();
 	}
 
-	// ── Step 1: Position & Zeit ───────────────────────────────────────────────
+	// ── Step 1: Position & Zeitpunkt ───────────────────────────────────────────────
 
 	async fillDate(value: string) {
 		// data-testid sits directly on the <input type="date"> element
@@ -75,7 +75,7 @@ export class FormPage {
 		await this.page.locator('[data-testid="field-waterway"]').fill(value);
 	}
 
-	// ── Step 2: Sichtungsdetails ─────────────────────────────────────────────
+	// ── Step 2: Angaben zum Tier ─────────────────────────────────────────────
 
 	async selectSpecies(index: number) {
 		await this.page.locator('[data-testid="field-species"]').selectOption(String(index));
