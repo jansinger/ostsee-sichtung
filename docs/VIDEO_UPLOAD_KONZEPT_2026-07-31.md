@@ -4,7 +4,12 @@
 hochladen ermöglichen (wenn das geht und GPS Info entnehmen)".
 **Stand:** 2026-07-31, geprüft gegen Branch `claude/meeresmuseum-website-changes-d47405`
 (Release 2.6.2, `11a4e87`).
-**Status:** Konzept freigegeben, noch nicht implementiert.
+**Status:** Umgesetzt mit PR … (Branch `claude/wizardly-hypatia-46e74c`). Alle vier
+Teile aus Abschnitt 3 (Task 1–14 des Umsetzungsplans) sind im Code: einheitliche
+Größengrenzen aus der Laufzeit-Konfiguration inkl. Byte-Budget, Range/Streaming in
+`/api/media/[...path]`, MP4 + QuickTime öffentlich freigeschaltet, Fehlertexte samt
+`BODY_SIZE_LIMIT`-Angleichung und Startwarnung (letzter Baustein: Commit `ec6b856`).
+GPS aus Video (Abschnitt 2.5) bleibt bewusst ein eigenes, separates Vorhaben.
 **Überarbeitet:** 2026-07-31 nach Review — zwei Aussagen der Erstfassung waren falsch (Abschnitt 2.1 und 2.6), drei Befunde kamen hinzu. Plan: `docs/superpowers/plans/2026-07-31-video-upload.md` (nicht versioniert).
 
 ---
@@ -154,10 +159,10 @@ geprüft (`+server.ts:49`) — eine neue CUID je Datei umgeht das Limit vollstä
 
 Übrig bliebe allein `FILE_UPLOAD_ANONYMOUS` mit 20 Uploads pro Stunde:
 
-| | vorher | ohne zusätzliche Bremse |
-| --- | --- | --- |
-| Je IP und Stunde | 20 × 10 MB = 200 MB | 20 × 100 MB = **2 GB** |
-| Bis zur 24-h-Bereinigung | 4,8 GB | **48 GB** |
+|                          | vorher              | ohne zusätzliche Bremse |
+| ------------------------ | ------------------- | ----------------------- |
+| Je IP und Stunde         | 20 × 10 MB = 200 MB | 20 × 100 MB = **2 GB**  |
+| Bis zur 24-h-Bereinigung | 4,8 GB              | **48 GB**               |
 
 Der gesamte Medienbestand aus 13 Jahren beträgt 1,59 GB — eine einzelne IP füllt das in
 unter einer Stunde.
@@ -286,13 +291,13 @@ Struktur steht. Zu tun:
 
 ## 3. Reihenfolge und Aufwand
 
-| PR    | Inhalt                                                                                                                                        | Größe |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| PR    | Inhalt                                                                                                                                                                          | Größe |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
 | **1** | Grenzen und Listen auf eine Quelle, neue Konfigurationsschlüssel, Konsistenztests ausgeweitet, GIF-Drift behoben, **Byte-Budget je IP und Stunde**. Noch kein sichtbares Video. | M     |
-| **2** | **Auslieferung videofähig:** Range/Streaming in `/api/media`, Rate-Limit für Teilanfragen, `media-src`, `preload="none"`.                     | **L** |
-| **3** | Videos freischalten: MP4 + QuickTime öffentlich, ISO-BMFF-Prüfung entschärft, Gesamtlimit je Meldung, Formatnamen und Dauerhinweis.           | S     |
-| **4** | Rückmeldung: Fehlertexte mit Adresse, 413-Text, bleibender Fehlerbereich, **Upload-Fortschritt mit Abbruch**, `BODY_SIZE_LIMIT` inkl. Doku und Startwarnung. | **M** |
-| —     | _Separat:_ GPS aus Video, nach B2/B6.                                                                                                         | M     |
+| **2** | **Auslieferung videofähig:** Range/Streaming in `/api/media`, Rate-Limit für Teilanfragen, `media-src`, `preload="none"`.                                                       | **L** |
+| **3** | Videos freischalten: MP4 + QuickTime öffentlich, ISO-BMFF-Prüfung entschärft, Gesamtlimit je Meldung, Formatnamen und Dauerhinweis.                                             | S     |
+| **4** | Rückmeldung: Fehlertexte mit Adresse, 413-Text, bleibender Fehlerbereich, **Upload-Fortschritt mit Abbruch**, `BODY_SIZE_LIMIT` inkl. Doku und Startwarnung.                    | **M** |
+| —     | _Separat:_ GPS aus Video, nach B2/B6.                                                                                                                                           | M     |
 
 **Zwei harte Reihenfolgebedingungen:**
 
@@ -312,16 +317,21 @@ dem Staging- und Produktions-Host anheben. Ohne das wirkt keine Konfigurationsä
 
 ## 4. Offene Entscheidungen fürs Museum
 
-Präzisiert Rückfrage 6 aus `MEERESMUSEUM_AENDERUNGSWUENSCHE_2026-07-31.md`:
+Präzisiert Rückfrage 6 aus der internen Änderungswunsch-Analyse (nicht mehr Teil
+dieses öffentlichen Repositories, siehe Commit `03e72333`):
 
-1. **100 MB pro Video?** (≈ 100 s in 1080p, 3–13 Minuten Upload über Mobilfunk). 200 MB
-   wären technisch möglich, praktisch aber kaum durchführbar.
-2. **Videos annehmen, obwohl wir daraus zunächst keine Position lesen?** Empfehlung: ja.
-3. **Genügen MP4 und MOV?** Das deckt iPhone und Android ab.
+1. ~~**100 MB pro Video?**~~ **Umgesetzt:** `security.maxVideoFileSize` steht auf
+   100 (MB), Standardwert wie hier vorgeschlagen.
+2. ~~**Videos annehmen, obwohl wir daraus zunächst keine Position lesen?**~~
+   **Umgesetzt wie empfohlen:** Videos werden angenommen, GPS-Extraktion aus
+   Video bleibt bewusst außen vor — eigenes Vorhaben nach C1/B2 (Abschnitt 2.5).
+3. ~~**Genügen MP4 und MOV?**~~ **Umgesetzt:** `security.allowedFileTypes` und
+   `PUBLIC_UPLOAD_ALLOWED_TYPES` führen ausschließlich `video/mp4` und
+   `video/quicktime`.
 4. ~~**Wie soll der Weg für zu große Videos aussehen?**~~ **Beantwortet am 2026-07-31:**
    `sichtungen@meeresmuseum.de`, direkt im Fehlertext **und** auf der Bestätigungsseite.
    Nebenbefund dabei: Die Bestätigungsseite verspricht heute Instruktionen, die es nie
    gab — das wird mit erledigt.
 
-Die Antworten betreffen nur PR 3 und PR 4. PR 1 und PR 2 sind unabhängig davon und können
-sofort beginnen.
+Alle vier Rückfragen sind damit beantwortet und umgesetzt. PR 1–4 aus Abschnitt 3
+sind vollständig im Code.
