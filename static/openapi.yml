@@ -1853,7 +1853,14 @@ paths:
             example: "9,53,31,66"
         - name: search
           in: query
-          description: 'Suchtext in Name, E-Mail, Schiffsname (Teilstring-Suche)'
+          description: >
+            Suchtext (Teilstring-Suche). Für nicht angemeldete Aufrufer werden
+            Vorname/Name nur bei vorliegender Namensfreigabe und der Schiffsname
+            nur bei vorliegender Schiffsnamensfreigabe durchsucht; die
+            E-Mail-Adresse wird nicht durchsucht. Angemeldete Admins durchsuchen
+            zusätzlich die E-Mail-Adresse und ohne Freigabe-Filter.
+            LIKE-Platzhalter (%, _ und der Escape-Backslash \) werden literal
+            gesucht.
           schema:
             type: string
             maxLength: 100
