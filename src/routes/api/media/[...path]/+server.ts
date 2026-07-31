@@ -145,11 +145,16 @@ export const GET: RequestHandler = async ({ params, url, request, locals, getCli
 
 		// Set appropriate headers including rate limiting
 		const rateLimitHeaders = buildRateLimitHeaders(rateLimitConfig, rateLimitResult);
+		// Unapproved media is admin-only — shared caches must not retain it.
+		// Approved media keeps the long-lived public cache; note verify/+server.ts can
+		// revoke approval later, so an already-cached copy can outlive that revocation
+		// for up to a year (immutable) in any downstream cache that grabbed it while public.
+		const cacheControl = isApproved ? 'public, max-age=31536000, immutable' : 'private, no-store';
 		const headers = new Headers({
 			'Content-Type': file.mimeType,
 			'Content-Length': content.length.toString(),
 			'Content-Disposition': `inline; filename="${encodeURIComponent(file.originalName)}"`,
-			'Cache-Control': 'public, max-age=31536000, immutable', // Cache for 1 year
+			'Cache-Control': cacheControl,
 			ETag: `"${Buffer.from(filePath + file.size).toString('base64')}"`,
 			'X-Content-Type-Options': 'nosniff',
 			'X-Frame-Options': 'SAMEORIGIN',

@@ -1182,10 +1182,15 @@ paths:
                 type: string
                 example: 'inline; filename="photo.jpg"'
             Cache-Control:
-              description: Cache-Einstellungen
+              description: >-
+                Cache-Einstellungen. Freigegebene Medien werden langfristig
+                öffentlich gecacht; nicht freigegebene (nur für Admins
+                sichtbare) Medien dürfen nicht in geteilten Caches landen.
               schema:
                 type: string
-                example: "public, max-age=31536000, immutable"
+                enum:
+                  - "public, max-age=31536000, immutable"
+                  - "private, no-store"
             ETag:
               description: Entity Tag für Caching
               schema:
@@ -1993,10 +1998,15 @@ paths:
                 type: integer
                 example: 1024000
             Cache-Control:
-              description: Cache-Einstellungen
+              description: >-
+                Cache-Einstellungen. Freigegebene Medien werden öffentlich
+                gecacht; nicht freigegebene (nur für Admins sichtbare) Medien
+                dürfen nicht in geteilten Caches landen.
               schema:
                 type: string
-                example: "public, max-age=31536000, immutable"
+                enum:
+                  - "public, max-age=86400"
+                  - "private, no-store"
             ETag:
               description: Entity Tag für Caching
               schema:
@@ -2024,10 +2034,15 @@ paths:
                 type: string
                 format: uri
             Cache-Control:
-              description: Cache-Einstellungen
+              description: >-
+                Cache-Einstellungen. Freigegebene Medien werden langfristig
+                öffentlich gecacht; nicht freigegebene (nur für Admins
+                sichtbare) Medien dürfen nicht in geteilten Caches landen.
               schema:
                 type: string
-                example: "public, max-age=31536000, immutable"
+                enum:
+                  - "public, max-age=31536000, immutable"
+                  - "private, no-store"
         '400':
           description: Ungültiger Dateipfad
           content:
