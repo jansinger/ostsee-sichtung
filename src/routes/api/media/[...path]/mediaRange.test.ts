@@ -40,7 +40,7 @@ vi.mock('$lib/server/storage/factory', () => ({
 	getStorageProvider: () => ({ getFileStream, getMetadata })
 }));
 
-function createEvent(rangeHeader: string | null) {
+function createEvent(rangeHeader: string | null, clientIp = '127.0.0.1') {
 	return {
 		params: { path: 'sichtung-42/wal.mp4' },
 		url: new URL('http://localhost/api/media/sichtung-42/wal.mp4'),
@@ -50,7 +50,7 @@ function createEvent(rangeHeader: string | null) {
 			}
 		} as unknown as Request,
 		locals: {},
-		getClientAddress: () => '127.0.0.1'
+		getClientAddress: () => clientIp
 	} as never;
 }
 
@@ -167,5 +167,47 @@ describe('/api/media GET — Range', () => {
 		expect(response.status).toBe(200);
 		expect(response.headers.get('Content-Length')).toBe('10');
 		expect(response.headers.get('Content-Range')).toBeNull();
+	});
+
+	it('teilt sich das Rate-Limit nicht zwischen Range- und Nicht-Range-Anfragen (Befund 1)', async () => {
+		// MEDIA_ACCESS_ANONYMOUS erlaubt nur 30 Nicht-Range-Anfragen pro Minute,
+		// MEDIA_RANGE_ANONYMOUS aber 300 Range-Anfragen. Läuft beides über
+		// denselben Zähler-Schlüssel, verbraucht ein Player, der beim Springen im
+		// Video 35 Range-Anfragen stellt (< 300, erlaubt), unbemerkt das viel
+		// engere Nicht-Range-Budget mit — eine anschließende gewöhnliche Anfrage
+		// (z. B. ein Vorschaubild ohne Range-Header) bekäme fälschlich 429, obwohl
+		// es die erste Nicht-Range-Anfrage in diesem Fenster ist.
+		const clientIp = '203.0.113.42';
+
+		getMetadata.mockResolvedValue({
+			size: 1000,
+			mimeType: 'video/mp4',
+			lastModified: new Date('2026-01-01T00:00:00Z')
+		});
+		getFileStream.mockImplementation(async () => ({
+			stream: new Response('x').body,
+			totalSize: 1000,
+			rangeDelivered: true
+		}));
+
+		for (let i = 0; i < 35; i++) {
+			const response = await GET(createEvent(`bytes=${i}-${i}`, clientIp));
+			expect(response.status).toBe(206);
+		}
+
+		getMetadata.mockResolvedValue({
+			size: 10,
+			mimeType: 'video/mp4',
+			lastModified: new Date('2026-01-01T00:00:00Z')
+		});
+		getFileStream.mockImplementation(async () => ({
+			stream: new Response('0123456789').body,
+			totalSize: 10,
+			rangeDelivered: true
+		}));
+
+		const response = await GET(createEvent(null, clientIp));
+
+		expect(response.status).toBe(200);
 	});
 });

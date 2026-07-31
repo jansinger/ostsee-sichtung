@@ -53,10 +53,16 @@ export const GET: RequestHandler = async ({ params, url, request, locals, getCli
 		: isAuthenticated
 			? RATE_LIMITS.MEDIA_ACCESS_AUTHENTICATED
 			: RATE_LIMITS.MEDIA_ACCESS_ANONYMOUS;
+	// Eigener Zähler-Schlüssel je Stufe: Range- und Nicht-Range-Anfragen teilen
+	// sich sonst denselben Eintrag (`${endpoint}:${identifier}` in rateLimit.ts),
+	// obwohl sie gegen unterschiedliche Configs geprüft werden. Ein Player, der
+	// beim Springen im Video das Range-Limit ausschöpft, würde damit unbemerkt
+	// auch das viel engere Nicht-Range-Limit verbrauchen.
+	const rateLimitEndpoint = hasRangeHeader ? 'media_range' : 'media_access';
 
 	const rateLimitIdentifier = createRateLimitIdentifier(userIdentifier, clientIp, isAuthenticated);
 
-	const rateLimitResult = enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'media_access');
+	const rateLimitResult = enforceRateLimit(rateLimitIdentifier, rateLimitConfig, rateLimitEndpoint);
 
 	// Security audit log for all media access attempts
 	logger.info(

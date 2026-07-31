@@ -84,7 +84,9 @@ export const RATE_LIMITS = {
 	// viele kleine Bereiche derselben, bereits freigegebenen Datei an — das ist
 	// eine Wiedergabe, kein wiederholter Zugriff. Die Bremse bleibt (ein
 	// Skript kann nicht unbegrenzt saugen), sie sitzt nur eine Größenordnung
-	// höher. Das Byte-Budget aus Task 4a begrenzt zusätzlich das Volumen.
+	// höher. Ein Volumen-Limit wie das Byte-Budget aus Task 4a (consumeByteBudget,
+	// nur im Upload-Pfad) gibt es hier nicht — die einzige Bremse auf dieser
+	// Route ist die Anfragenzahl pro Minute.
 	MEDIA_RANGE_ANONYMOUS: {
 		windowMs: 60 * 1000,
 		maxRequests: 300
