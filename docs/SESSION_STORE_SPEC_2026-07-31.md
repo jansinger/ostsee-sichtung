@@ -200,6 +200,16 @@ Attribute bleiben wie in `setAuthCookie` heute: `httpOnly`, `sameSite: 'none'`, 
 `path: '/'`. Die `SameSite=None`-Anforderung stammt aus der iframe-Einbettung auf
 meeresmuseum.de und bleibt unberührt.
 
+`maxAge` folgt dem Inaktivitätsfenster und wird bei jedem Fortschreiben von `expires_at`
+mitgesetzt. Cookie-Lebensdauer und Zeilen-Lebensdauer dürfen nicht auseinanderlaufen — genau
+diese Diskrepanz ist der Mechanismus hinter #634, nur in der anderen Richtung.
+
+**Warum SHA-256 und kein Passwort-KDF.** Der Token ist 256 Bit Zufall, kein geratener Wert:
+Es gibt kein Wörterbuch, gegen das ein Angreifer den Hash prüfen könnte, und damit nichts, was
+ein absichtlich langsames Verfahren erschweren würde. bcrypt oder Argon2 wären hier pro Request
+messbare Kosten ohne Gegenwert. Ungesalzenes SHA-256 ist die richtige Wahl und keine
+Nachlässigkeit.
+
 Der Cookie-**Name** bleibt (`COOKIE_NAME`, Default `auth-cookie`). Alte JWT-Werte finden nach
 dem Deploy schlicht keine Zeile, werden verworfen und gelöscht. Das ist die Migration:
 einmalig neu einloggen.
@@ -225,9 +235,23 @@ tokens if the Auth0 session remains valid)". Der Redirect ist still, solange die
 lebt, und die App tut ihn **heute schon**. Damit braucht diese Spec weder den
 `offline_access`-Scope noch eine verschlüsselte Refresh-Token-Spalte.
 
-**Aufräumen ohne Cron.** Beim Anlegen einer Session werden abgelaufene Zeilen desselben `sub`
-in derselben Anweisung gelöscht. Ein Timer wäre eine zusätzliche bewegliche Komponente für ein
-Problem, das ein `DELETE` löst.
+**`touchSession` darf nicht bei jedem Request schreiben.** Heute kostet die gleitende
+Verlängerung einen Cookie-Header; ein `UPDATE` pro Request wäre etwas anderes — `handle` läuft
+für jeden Request, auch für Assets. Deshalb: `touchSession` schreibt nur, wenn `last_seen_at`
+älter als ein Schwellwert ist (Vorschlag: 60 Sekunden). Dazwischen wird die Zeile nur gelesen.
+Der Effekt auf die Sitzungsdauer ist vernachlässigbar (bis zu einer Minute Unschärfe im
+Inaktivitätsfenster), der Effekt auf die Schreiblast erheblich.
+
+**Aufräumen ohne Cron.** Beim Anlegen einer Session werden abgelaufene **und widerrufene**
+Zeilen desselben `sub` in derselben Anweisung gelöscht. Ein Timer wäre eine zusätzliche
+bewegliche Komponente für ein Problem, das ein `DELETE` löst.
+
+**Aufbewahrung (DSGVO).** `user_claims` enthält Name und E-Mail, also personenbezogene Daten.
+Sie werden nicht archiviert: Eine widerrufene oder abgelaufene Zeile wird beim nächsten Login
+desselben `sub` gelöscht, nicht nur markiert. `revoked_at` ist ein Übergangszustand für die
+Dauer zwischen Logout und nächster Anmeldung, kein Aufbewahrungsmechanismus. Für den Fall, dass
+ein Benutzer sich nie wieder anmeldet, deckt das nichts ab — dafür genügt ein `DELETE` auf
+abgelaufene Zeilen im bestehenden Wartungsendpunkt `/api/admin/cleanup-orphans`.
 
 ### 5.4 Betroffene Dateien
 
@@ -246,6 +270,23 @@ Problem, das ein `DELETE` löst.
 | `e2e/helpers/adminSession.ts`                                                                                                                                                                                      | schreibt eine `sessions`-Zeile statt ein JWT zu signieren                                                                                                          |
 | `e2e/design-tokens.spec.ts:482`                                                                                                                                                                                    | Fehlermeldung anpassen (nennt heute `SESSION_SECRET`)                                                                                                              |
 | `.env.example`, `docker-compose.production.yml`, `run-release.sh`, `scripts/docker-entrypoint.sh`, `.github/workflows/ci.yml`, `docs/ENVIRONMENT.md`, `docs/DOCKER_DEPLOYMENT.md`, `docs/PRODUCTION_DEPLOYMENT.md` | `SESSION_SECRET` entfernen                                                                                                                                         |
+
+**Zusätzlich betroffen, beim ersten Entwurf übersehen:**
+
+- `src/lib/server/audit/auditService.ts` — neue Events `auth.logout` und `auth.session_revoked`.
+  `.claude/rules/security.md` führt eine verbindliche Tabelle der Audit-Events; sie ist
+  mitzupflegen. `auth.login_success` existiert bereits und bleibt.
+- `static/openapi.yml:1248` — `/api/auth/logout` ist dokumentiert und ändert sein Verhalten
+  (wirkt jetzt wirklich). Ebenso zu prüfen: `securitySchemes` ab Zeile 2058, falls dort das
+  Session-Cookie als JWT beschrieben ist. CLAUDE.md verlangt die Aktualisierung der OpenAPI-Spec
+  nach API-Änderungen.
+- `e2e/helpers/adminSession.ts` braucht einen **eigenen** `postgres`-Client (`postgres@^3.4.9`,
+  bereits Abhängigkeit). Ein Import aus `$lib/server/...` funktioniert dort nicht: Playwright
+  läuft als gewöhnliches Node-Programm ohne SvelteKit-Bundler, also ohne `$lib`-Alias und ohne
+  `$env/dynamic/private`. Präzedenz für genau diesen Weg steht in
+  `.github/workflows/ci.yml` — der PostGIS-Check nutzt bewusst das `postgres`-Paket statt `psql`.
+  Die Verbindungsdaten kommen aus `DATABASE_POSTGRES_URL` in `.env`, das die Fixture über
+  `dotenv` bereits lädt.
 
 **Unverändert bleiben** `requireUserRole`, `isUserInRole`, `isAdminUser`, `isSuperAdminUser`
 und `src/lib/server/config/accessControl.ts`. Sie lesen `locals.user.roles`, und dort steht
@@ -277,11 +318,39 @@ Die vier zugehörigen Tests in `auth.test.ts` entfallen mit.
 - **Nicht gelöst:** Wer Schreibzugriff auf die Datenbank hat, kann sich eine Session-Zeile
   anlegen. Das ist die bewusste Grenze — wer die DB schreiben kann, braucht keine Admin-Session
   mehr, um Schaden anzurichten.
+- **Sitzungen werden nicht kürzer.** Die effektive Lebensdauer ist schon heute Auth0s `exp` —
+  genau das ist der Mechanismus hinter #634. `absolute_expires_at` übernimmt dieselbe Grenze,
+  nur sichtbar und mit Vorwarnung statt still. D verschärft nichts, es macht das Bestehende
+  erklärbar.
+- **CSRF-neutral.** `SameSite=None` bleibt (iframe-Einbettung meeresmuseum.de), der Schutz ruht
+  weiter auf SvelteKits Origin-Prüfung. Der CSRF-Bypass für `/rest_sichtungen` in
+  `hooks.server.ts:53–60` bleibt unberührt — die Legacy-Endpunkte nutzen kein Session-Cookie.
+- **Nicht gelöst:** Eine Abmeldung bei Auth0 beendet unsere Session nicht; sie läuft bis zum
+  Ablauf weiter. Das ist heute genauso, wird durch die Tabelle aber erstmals adressierbar — der
+  `sid`-Claim liegt in `user_claims` und wäre der Anknüpfungspunkt für Auth0s Back-Channel-Logout.
+  Bewusst nicht in dieser Spec.
 - **Nicht gelöst:** Rollenentzug in Auth0 wirkt erst bei der nächsten Anmeldung. Die
   Session-Zeile trägt einen Snapshot. Gegenmittel im Bedarfsfall: gezielter Widerruf, oder
   später die verworfene Management-API-Auffrischung.
 
 ---
+
+### 5.7 Abgleich mit dem OWASP Session Management Cheat Sheet
+
+Auth0 und SvelteKit begründen die _Wahl_ des Ansatzes. Der Maßstab für seine _Ausführung_ ist
+OWASP. Die sechs Kernanforderungen und wo diese Spec sie erfüllt:
+
+| OWASP-Anforderung                                           | Umsetzung                                                                                                         |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Session-ID mit mindestens 128 Bit Länge und 64 Bit Entropie | 256 Bit aus `crypto.randomBytes` (§5.2)                                                                           |
+| Session-ID ohne Bedeutung, kein Träger von Daten            | opakes Token, alle Daten in der Zeile (§5.2)                                                                      |
+| Serverseitig nicht im Klartext gespeichert                  | SHA-256 in `token_hash` (§5.1, §5.2)                                                                              |
+| Neuvergabe bei Anmeldung (Session Fixation)                 | jeder Login legt eine neue Zeile mit neuem Token an; ein vom Client mitgebrachter Wert wird nie übernommen (§5.3) |
+| Idle- **und** Absolut-Timeout                               | `expires_at` und `absolute_expires_at` (§5.1)                                                                     |
+| Invalidierung bei Logout, serverseitig                      | `destroySession` setzt `revoked_at` (§5.3, behebt B7)                                                             |
+
+Cookie-Attribute (`httpOnly`, `Secure`, `Path`) entsprechen der Empfehlung; `SameSite=None` ist
+eine begründete Abweichung aus der iframe-Einbettung und war schon vorher so.
 
 ## 6. Verhältnis zu #634
 
@@ -342,6 +411,13 @@ auf. Die Tests laufen gegen diese Funktion (`sessionRepository.test.ts`):
   abgelaufen (kein „Cookie lebt, Token tot" mehr)
 - `touchSession` verlängert nicht über `absolute_expires_at` hinaus
 
+### 7.3a Schreiblast und Cookie-Kopplung
+
+- `touchSession` schreibt **nicht**, wenn `last_seen_at` jünger als der Schwellwert ist
+- `touchSession` schreibt, sobald der Schwellwert überschritten ist
+- Ein `createSession` setzt `maxAge` passend zum Inaktivitätsfenster; ein Fortschreiben von
+  `expires_at` setzt das Cookie mit
+
 ### 7.4 Regression zu B7
 
 - Nach `destroySession` ist dasselbe Cookie ungültig — auch wenn der Client es behält
@@ -391,6 +467,7 @@ Betriebliche Schritte bei PR 2:
 
 ## 10. Quellen
 
+- [OWASP — Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
 - [SvelteKit — Auth](https://svelte.dev/docs/kit/auth)
 - [Auth0 — Best Practices for Application Session Management](https://auth0.com/blog/application-session-management-best-practices/)
 - [Auth0 — Sessions](https://auth0.com/docs/manage-users/sessions)
