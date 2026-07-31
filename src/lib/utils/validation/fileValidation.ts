@@ -9,6 +9,7 @@ import {
 	UPLOAD_LIMITS,
 	type FILE_VALIDATION_PRESETS
 } from '$lib/constants/upload';
+import { maxUploadSizeFor } from '$lib/constants/uploadLimits';
 
 import type { ValidationPreset, ValidationResult } from '$lib/types';
 import { isImageFile, isMediaFile, isVideoFile } from '$lib/utils/file/fileType';
@@ -43,8 +44,9 @@ export function validateFile(file: File, preset: ValidationPreset): ValidationRe
 		errors.push(UPLOAD_ERROR_MESSAGES.EMPTY_FILE(file.name));
 	}
 
-	if (file.size > preset.maxFileSize) {
-		errors.push(UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(file.name, preset.maxFileSize));
+	const maxSize = maxUploadSizeFor(file.type, preset);
+	if (file.size > maxSize) {
+		errors.push(UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(file.name, maxSize));
 	}
 
 	// Check MIME type

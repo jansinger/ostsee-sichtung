@@ -42,7 +42,7 @@ vi.mock('$lib/services/configService', () => ({
 			allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 		})
 	},
-	DEFAULT_VALUES: {}
+	DEFAULT_CONFIG_VALUES: {}
 }));
 
 vi.mock('$lib/server/services/configInitializer', () => ({

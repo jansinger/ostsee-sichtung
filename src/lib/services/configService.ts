@@ -6,7 +6,11 @@ import type { ConfigValue } from '$lib/server/db/configRepository';
 const logger = createLogger('configService');
 
 // Default fallback values - these ensure the app works without database configurations
-const DEFAULT_VALUES = {
+/**
+ * Vorbelegung aller Konfigurationswerte. Exportiert, damit
+ * `uploadLimitConsistency.test.ts` die Offline-Fallbacks dagegen prüfen kann.
+ */
+export const DEFAULT_CONFIG_VALUES = {
 	// Email Settings
 	'notification.email.enabled': false,
 	'notification.email.recipient': '',
@@ -67,35 +71,35 @@ export class ServerConfigService {
 	/**
 	 * Get a configuration value with fallback to default
 	 */
-	static async get<T>(key: keyof typeof DEFAULT_VALUES): Promise<T> {
+	static async get<T>(key: keyof typeof DEFAULT_CONFIG_VALUES): Promise<T> {
 		try {
 			const value = await ConfigRepository.get(key);
-			return value !== null ? (value as T) : (DEFAULT_VALUES[key] as T);
+			return value !== null ? (value as T) : (DEFAULT_CONFIG_VALUES[key] as T);
 		} catch (error) {
 			logger.error({ error, key }, 'Failed to get config, using default');
-			return DEFAULT_VALUES[key] as unknown as T;
+			return DEFAULT_CONFIG_VALUES[key] as unknown as T;
 		}
 	}
 
 	/**
 	 * Get typed configuration values with proper fallbacks
 	 */
-	static async getString(key: keyof typeof DEFAULT_VALUES): Promise<string> {
+	static async getString(key: keyof typeof DEFAULT_CONFIG_VALUES): Promise<string> {
 		const value = await this.get(key);
 		return String(value);
 	}
 
-	static async getNumber(key: keyof typeof DEFAULT_VALUES): Promise<number> {
+	static async getNumber(key: keyof typeof DEFAULT_CONFIG_VALUES): Promise<number> {
 		const value = await this.get(key);
 		return Number(value);
 	}
 
-	static async getBoolean(key: keyof typeof DEFAULT_VALUES): Promise<boolean> {
+	static async getBoolean(key: keyof typeof DEFAULT_CONFIG_VALUES): Promise<boolean> {
 		const value = await this.get(key);
 		return Boolean(value);
 	}
 
-	static async getArray<T>(key: keyof typeof DEFAULT_VALUES): Promise<T[]> {
+	static async getArray<T>(key: keyof typeof DEFAULT_CONFIG_VALUES): Promise<T[]> {
 		const value = await this.get(key);
 		return Array.isArray(value) ? value : [];
 	}
@@ -194,15 +198,15 @@ export class ClientConfigService {
 		}
 
 		// Return default values if loading fails
-		return DEFAULT_VALUES as unknown as Record<string, ConfigValue>;
+		return DEFAULT_CONFIG_VALUES as unknown as Record<string, ConfigValue>;
 	}
 
 	/**
 	 * Get a configuration value on client-side
 	 */
-	static async get<T>(key: keyof typeof DEFAULT_VALUES): Promise<T> {
+	static async get<T>(key: keyof typeof DEFAULT_CONFIG_VALUES): Promise<T> {
 		const configs = await this.loadConfigs();
-		return configs[key] !== undefined ? (configs[key] as T) : (DEFAULT_VALUES[key] as T);
+		return configs[key] !== undefined ? (configs[key] as T) : (DEFAULT_CONFIG_VALUES[key] as T);
 	}
 
 	/**
@@ -224,12 +228,12 @@ export const ConfigService = {
 	client: ClientConfigService,
 
 	// Get default value for any config key
-	getDefault(key: keyof typeof DEFAULT_VALUES) {
-		return DEFAULT_VALUES[key];
+	getDefault(key: keyof typeof DEFAULT_CONFIG_VALUES) {
+		return DEFAULT_CONFIG_VALUES[key];
 	},
 
 	// Check if we're on server or client and use appropriate service
-	async get<T>(key: keyof typeof DEFAULT_VALUES): Promise<T> {
+	async get<T>(key: keyof typeof DEFAULT_CONFIG_VALUES): Promise<T> {
 		if (browser) {
 			return ClientConfigService.get<T>(key);
 		} else {
@@ -238,6 +242,4 @@ export const ConfigService = {
 	}
 };
 
-// Export default values for direct access
-export { DEFAULT_VALUES };
-export type ConfigKey = keyof typeof DEFAULT_VALUES;
+export type ConfigKey = keyof typeof DEFAULT_CONFIG_VALUES;

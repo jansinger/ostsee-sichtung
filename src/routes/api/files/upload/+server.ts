@@ -1,5 +1,5 @@
 import { FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
-import { ANONYMOUS_UPLOAD_MAX_SIZE_BYTES } from '$lib/constants/uploadDefaults';
+import { maxUploadSizeFor } from '$lib/constants/uploadLimits';
 import { createLogger } from '$lib/logger.server';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { saveUploadedFile } from '$lib/server/db/sightingFilesRepository';
@@ -53,42 +53,35 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 			throw error(400, 'Upload ID ist erforderlich');
 		}
 
-		// Security: Stricter limits for unauthenticated users.
-		// Der anonyme Wert kommt aus derselben Quelle wie die öffentliche
-		// Upload-Konfiguration — sonst nimmt die Dropzone Dateien an, die hier
-		// mit 413 scheitern (siehe uploadLimitConsistency.test.ts).
-		const MAX_SIZE_ANONYMOUS = ANONYMOUS_UPLOAD_MAX_SIZE_BYTES;
-		const MAX_SIZE_AUTHENTICATED = 50 * 1024 * 1024; // 50MB for authenticated users
+		// Die Konfiguration ist die einzige Autorität für Größen — dieselbe
+		// Quelle, aus der /api/config/upload die Dropzone speist. Zwei getrennte
+		// Zahlen (anonym/angemeldet) waren nur nötig, solange die öffentliche
+		// Auskunft statisch war; siehe docs/VIDEO_UPLOAD_KONZEPT_2026-07-31.md.
+		const uploadConfig = await ServerConfigService.getUploadConfig();
+		const maxSize = maxUploadSizeFor(file.type, {
+			maxFileSize: uploadConfig.maxFileSizeBytes,
+			maxVideoFileSize: uploadConfig.maxVideoFileSizeBytes
+		});
 
-		if (!isAuthenticated && file.size > MAX_SIZE_ANONYMOUS) {
+		if (file.size > maxSize) {
 			logger.warn(
 				{
 					action: 'file_upload_rejected',
 					reason: 'size_limit_exceeded',
 					user: userIdentifier,
+					authenticated: isAuthenticated,
 					clientIp,
 					fileName: file.name,
+					fileType: file.type,
 					fileSize: file.size,
-					maxAllowed: MAX_SIZE_ANONYMOUS
+					maxAllowed: maxSize
 				},
-				'Anonymous upload rejected - file too large'
+				'Upload rejected - file too large'
 			);
-			throw error(413, 'Datei zu groß. Für größere Dateien bitte anmelden.');
-		}
-
-		if (isAuthenticated && file.size > MAX_SIZE_AUTHENTICATED) {
-			logger.warn(
-				{
-					action: 'file_upload_rejected',
-					reason: 'size_limit_exceeded',
-					user: userIdentifier,
-					fileName: file.name,
-					fileSize: file.size,
-					maxAllowed: MAX_SIZE_AUTHENTICATED
-				},
-				'Authenticated upload rejected - file too large'
+			throw error(
+				413,
+				`Datei zu groß: ${Math.round(file.size / 1024 / 1024)} MB. Erlaubt sind ${Math.round(maxSize / 1024 / 1024)} MB.`
 			);
-			throw error(413, `Datei zu groß. Maximale Größe: ${MAX_SIZE_AUTHENTICATED / 1024 / 1024}MB`);
 		}
 
 		// Security audit logging
@@ -119,9 +112,6 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 		);
 
 		const rateLimitResult = enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'file_upload');
-
-		// Get upload configuration from database
-		const uploadConfig = await ServerConfigService.getUploadConfig();
 
 		// Create dynamic validation preset using configuration
 		const dynamicPreset = {

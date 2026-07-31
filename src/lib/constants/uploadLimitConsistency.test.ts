@@ -11,12 +11,13 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import {
-	ANONYMOUS_UPLOAD_MAX_SIZE_BYTES,
 	PUBLIC_UPLOAD_ALLOWED_TYPES,
-	PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES
+	PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES,
+	PUBLIC_UPLOAD_MAX_VIDEO_FILE_SIZE_BYTES
 } from './uploadDefaults';
 import { getDefaultConfigurationsByCategory } from '$lib/server/services/configInitializer';
 import { hasMagicByteSignature } from '$lib/server/validation/magicBytes';
+import { DEFAULT_CONFIG_VALUES } from '$lib/services/configService';
 
 // Beide importierten Module hängen über ConfigRepository bzw. direkt an
 // `$lib/logger.server`. Ohne Mock zieht der Test die Server-Logger-Einrichtung
@@ -35,12 +36,14 @@ function seededAllowedFileTypes(): string[] {
 }
 
 describe('Upload-Grenzen', () => {
-	it('verspricht anonymen Meldern nicht mehr, als der Server annimmt', () => {
-		expect(PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES).toBeLessThanOrEqual(ANONYMOUS_UPLOAD_MAX_SIZE_BYTES);
+	it('verspricht im Fallback nicht mehr, als die Vorbelegung für Bilder erlaubt', () => {
+		const configuredBytes = DEFAULT_CONFIG_VALUES['security.maxFileSize'] * 1024 * 1024;
+		expect(PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES).toBeLessThanOrEqual(configuredBytes);
 	});
 
-	it('hält die beiden Werte in einer einzigen Quelle zusammen', () => {
-		expect(ANONYMOUS_UPLOAD_MAX_SIZE_BYTES).toBe(PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES);
+	it('verspricht im Fallback nicht mehr, als die Vorbelegung für Videos erlaubt', () => {
+		const configuredBytes = DEFAULT_CONFIG_VALUES['security.maxVideoFileSize'] * 1024 * 1024;
+		expect(PUBLIC_UPLOAD_MAX_VIDEO_FILE_SIZE_BYTES).toBeLessThanOrEqual(configuredBytes);
 	});
 });
 

@@ -45,8 +45,12 @@ vi.mock('$lib/services/configService', () => ({
 	ServerConfigService: {
 		getUploadConfig: vi.fn().mockResolvedValue({
 			allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4'],
-			maxFileSizeBytes: 30 * 1024 * 1024,
-			maxFiles: 10
+			maxFileSize: 10,
+			maxFileSizeBytes: 10 * 1024 * 1024,
+			maxVideoFileSize: 100,
+			maxVideoFileSizeBytes: 100 * 1024 * 1024,
+			maxTotalUploadSize: 250,
+			maxTotalUploadSizeBytes: 250 * 1024 * 1024
 		})
 	}
 }));
@@ -99,7 +103,7 @@ function createMockRequest(
 		route: { id: '/api/files/upload' },
 		url: new URL('http://localhost/api/files/upload'),
 		setHeaders: vi.fn(),
-		cookies: {} as any,
+		cookies: { get: vi.fn(), set: vi.fn() } as any,
 		fetch: fetch,
 		getClientAddress: () => '127.0.0.1',
 		platform: undefined,
@@ -148,5 +152,33 @@ describe('/api/files/upload POST', () => {
 		await expect(POST(event)).rejects.toMatchObject({
 			status: 400
 		});
+	});
+
+	it('weist ein Bild über der Bildgrenze mit 413 ab', async () => {
+		const oversized = new File([new Uint8Array(11 * 1024 * 1024)], 'gross.jpg', {
+			type: 'image/jpeg'
+		});
+		const event = createMockRequest({ file: oversized });
+
+		await expect(POST(event)).rejects.toMatchObject({ status: 413 });
+	});
+
+	it('lässt ein Video über der Bildgrenze, aber unter der Videogrenze durch', async () => {
+		const video = new File([new Uint8Array(20 * 1024 * 1024)], 'wal.mp4', {
+			type: 'video/mp4'
+		});
+		const event = createMockRequest({ file: video });
+
+		const response = await POST(event);
+		expect(response.status).toBe(200);
+	});
+
+	it('weist ein Video über der Videogrenze mit 413 ab', async () => {
+		const video = new File([new Uint8Array(101 * 1024 * 1024)], 'lang.mp4', {
+			type: 'video/mp4'
+		});
+		const event = createMockRequest({ file: video });
+
+		await expect(POST(event)).rejects.toMatchObject({ status: 413 });
 	});
 });
