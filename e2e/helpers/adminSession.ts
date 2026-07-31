@@ -63,13 +63,24 @@ const ADMIN_CLAIMS = {
 };
 
 /**
- * Laufzeit der Test-Session.
+ * Inaktivitätsfenster der Test-Session — gespiegelt aus `SESSION_IDLE_SECONDS`
+ * (`src/lib/server/auth/sessionRepository.ts`), das hier nicht importierbar ist.
  *
- * Großzügig gewählt, damit ein langsamer CI-Lauf nicht mitten in der Suite in einen
- * Ablauf läuft — insbesondere gilt das Inaktivitätsfenster von einer Stunde auch hier.
- * Die Zeile wird bei jedem Aufruf neu angelegt, ein großzügiger Wert kostet also nichts.
+ * Bewusst derselbe Wert wie in Produktion und **nicht** großzügiger: Sonst prüfte der
+ * E2E-Pfad ein Ablaufverhalten, das es so nicht gibt. Die Fixture kommt damit aus, weil
+ * `touchSession` das Fenster bei jedem Request fortschreibt, der mehr als eine Minute
+ * nach dem letzten liegt — eine Stunde echter Untätigkeit gibt es in keinem Testlauf.
  */
-const TEST_SESSION_HOURS = 12;
+const IDLE_SECONDS = 60 * 60;
+
+/**
+ * Absolute Grenze, die in Produktion der `exp` des Auth0-ID-Tokens setzt.
+ *
+ * Hier großzügig gewählt, damit ein langsamer CI-Lauf nicht mitten in der Suite gegen sie
+ * läuft. Sie ist die einzige Grenze, die `touchSession` nicht verschieben kann — deshalb
+ * muss der Puffer hier sitzen und nicht im Inaktivitätsfenster.
+ */
+const ABSOLUTE_HOURS = 12;
 
 /**
  * Legt ein gültiges Admin-Session-Cookie in den Browser-Context.
@@ -87,7 +98,9 @@ export async function seedAdminSession(context: BrowserContext, baseURL: string)
 
 	const token = randomBytes(32).toString('base64url');
 	const tokenHash = createHash('sha256').update(token, 'utf8').digest('hex');
-	const expiresAt = new Date(Date.now() + TEST_SESSION_HOURS * 60 * 60 * 1000);
+	const now = Date.now();
+	const expiresAt = new Date(now + IDLE_SECONDS * 1000);
+	const absoluteExpiresAt = new Date(now + ABSOLUTE_HOURS * 60 * 60 * 1000);
 
 	const sql = postgres(databaseUrl, { max: 1 });
 	try {
@@ -104,7 +117,7 @@ export async function seedAdminSession(context: BrowserContext, baseURL: string)
 				${sql.array(['admin'])},
 				${sql.json(ADMIN_CLAIMS)},
 				${expiresAt},
-				${expiresAt}
+				${absoluteExpiresAt}
 			)
 		`;
 	} finally {
