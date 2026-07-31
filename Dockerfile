@@ -124,7 +124,7 @@ ENV NODE_ENV=production \
     TZ=UTC \
     PORT=3000 \
     HOST=0.0.0.0 \
-    BODY_SIZE_LIMIT=52428800 \
+    BODY_SIZE_LIMIT=125829120 \
     STORAGE_PROVIDER=local \
     UPLOAD_PATH=/app/uploads
 

@@ -50,16 +50,48 @@ Path-Traversal-Schutz via `normalize()` + `relative()`
 
 **FormData-Felder:** `file`, `referenceId` (CUID), `uid` (CUID)
 
-**Validierungs-Pipeline:**
+**Validierungs-Pipeline** (Reihenfolge wie im Code, `+server.ts`):
 
-1. MIME-Type Whitelist (image/\*, video/\*, application/pdf)
-2. Magic Bytes Prüfung (verhindert Type-Spoofing)
-3. Größenlimit: 10MB anonym, 50MB authentifiziert — der anonyme Wert kommt aus
-   `ANONYMOUS_UPLOAD_MAX_SIZE_BYTES` (`$lib/constants/uploadDefaults`) und muss mit
-   der öffentlichen Konfiguration übereinstimmen, sonst nimmt die Dropzone Dateien
-   an, die der Server mit 413 ablehnt (`uploadLimitConsistency.test.ts`)
-4. Rate Limit: 20/h anonym, 50/h authentifiziert
-5. EXIF-Extraktion (`exifr` Library)
+1. Rate Limit für die Anzahl der Uploads: 20/h anonym, 50/h authentifiziert
+   (`RATE_LIMITS.FILE_UPLOAD_*`). Überschreitung: 429
+2. Größenlimit je MIME-Typ: `maxUploadSizeFor()` (`$lib/constants/uploadLimits`)
+   gegen `security.maxFileSize` bzw. `security.maxVideoFileSize` — dieselbe
+   Funktion speist `/api/config/upload` und damit die Dropzone. Überschreitung: 413
+3. Gesamtgröße je Meldung gegen `security.maxTotalUploadSize`. Geprüft **vor**
+   dem Byte-Budget (Schritt 4): gibt den konkreteren Fehler und belastet die
+   stündliche Missbrauchsbremse nicht für eine Meldung, die nur groß ist, nicht
+   missbräuchlich. `referenceId` kommt vom Client und wird nur gegen `isCuid()`
+   geprüft — dieses Limit schützt eine ehrliche Meldung vor unbemerktem
+   Anwachsen, ist aber selbst keine Missbrauchsbremse. Überschreitung: 413
+4. Byte-Budget je Kennung (`user:{sub}` oder `ip:{clientIp}`) und Stunde: 300 MB
+   anonym, 2 GB authentifiziert (`RATE_LIMITS.UPLOAD_BYTES_*`,
+   `consumeByteBudget()`). Wirkt über alle Meldungen einer Kennung hinweg —
+   das eigentliche Missbrauchslimit, seit die anonym/authentifiziert-Grenze aus
+   Schritt 2 entfallen ist. Überschreitung: 429
+5. MIME-Type-Whitelist aus `security.allowedFileTypes` (`validateFile()`).
+   Überschreitung: 400
+6. Magic Bytes (`validateMagicBytes()`, verhindert Type-Spoofing); ISO-BMFF-Typen
+   (MP4, QuickTime, M4V) prüfen nur die `ftyp`-Box bei Offset 4, nicht die
+   Brand danach — iPhones schreiben je nach Aufnahmemodus abweichende Brands in
+   `.mov`- und `.mp4`-Dateien. Überschreitung: 400
+7. Gefährliche Dateitypen (`isDangerousFileType()`). Überschreitung: 400
+8. EXIF-Extraktion (`exifr`, `readImageExifData()`) — nur für Bilder, läuft
+   parallel zum Storage-Upload
+
+**Es gibt keine getrennten Größengrenzen für anonym und angemeldet mehr.** Die
+Laufzeit-Konfiguration (`security.maxFileSize`, `security.maxVideoFileSize`,
+`security.maxTotalUploadSize`) ist die einzige Autorität für Größen; `ServerConfigService.getUploadConfig()`
+liefert alle drei. Die technische Obergrenze darüber ist `BODY_SIZE_LIMIT` — sie
+muss über `security.maxVideoFileSize` liegen, sonst bricht der Upload auf
+Plattformebene ab, bevor diese Pipeline überhaupt läuft (`docs/ENVIRONMENT.md`).
+
+**Auslieferung:** `/api/media/[...path]` streamt (kein Voll-Buffering mehr) mit
+`Accept-Ranges: bytes` und beantwortet einen `Range`-Header mit 206 Partial
+Content bzw. 416 Range Not Satisfiable. Range-Anfragen zählen gegen ein eigenes,
+höheres Rate Limit (`MEDIA_RANGE_*`: 300/min anonym, 600/min authentifiziert)
+statt gegen `MEDIA_ACCESS_*` (30/min bzw. 100/min) — sonst würde Springen im
+Video das Limit sprengen, das eigentlich einzelne Zugriffe drosseln soll.
+Details: `docs/VIDEO_UPLOAD_KONZEPT_2026-07-31.md`.
 
 ---
 
@@ -135,6 +167,13 @@ versucht es nicht erneut — sowie der Altbestand von vor #584.
 eingerichtet sein; ohne ihn wächst der Bestand nach. Außerdem löscht
 `POST /api/files/delete` weiterhin in umgekehrter Reihenfolge und meldet auch
 dann Erfolg, wenn die DB-Zeile stehen bleibt.
+
+**Mit Videos wiegt die Frist schwerer.** Ein abgebrochener Formularlauf
+hinterlässt jetzt bis zu `security.maxTotalUploadSize` (250 MB) statt bis zu
+100 MB, und der Cron-Aufruf ist eine Betreiberaufgabe, die ausbleiben kann.
+Beim Freischalten von Videos gehört deshalb geprüft, dass
+`POST /api/admin/cleanup-orphans` tatsächlich läuft — vorher wächst der Bestand
+um Größenordnungen schneller nach als zuvor.
 
 ---
 

@@ -59,18 +59,29 @@ const perPage = Number(url.searchParams.get('perPage')) || paginationConfig.defa
 ### 2. **Datei-Uploads** (`/api/files/upload`)
 
 - **Konfigurationen**:
-  - `security.maxFileSize` - Maximale Dateigröße in MB
+  - `security.maxFileSize` - Maximale Dateigröße für Bilder in MB
+  - `security.maxVideoFileSize` - Maximale Dateigröße für Videos in MB
+  - `security.maxTotalUploadSize` - Gesamtgröße aller Dateien je Meldung in MB
   - `security.allowedFileTypes` - Erlaubte MIME-Typen
 - **Nutzung**: Dynamische Validierung von hochgeladenen Dateien
-- **Fallback**: 10MB, Standard-Medientypen
+- **Fallback**: 10 MB (Bilder) / 100 MB (Videos) / 250 MB (Gesamt je Meldung), Standard-Medientypen
+
+`getUploadConfig()` liefert alle drei Größen (jeweils als MB-Zahl und als
+`*Bytes`-Variante). Welche der beiden Einzelgrenzen für eine konkrete Datei
+gilt, entscheidet `maxUploadSizeFor(mimeType, limits)` (`$lib/constants/uploadLimits`)
+anhand des MIME-Typs — dieselbe Funktion speist sowohl `POST /api/files/upload`
+als auch `GET /api/config/upload` und damit die Dropzone. `maxTotalUploadSize`
+wird separat gegen die Summe aller Dateien einer Meldung geprüft. `BODY_SIZE_LIMIT`
+(`docs/ENVIRONMENT.md`) muss oberhalb von `security.maxVideoFileSize` liegen, sonst
+bricht der Upload auf Plattformebene ab, bevor diese Prüfung überhaupt läuft.
 
 ```typescript
 // src/routes/api/files/upload/+server.ts
 const uploadConfig = await ServerConfigService.getUploadConfig();
-const dynamicPreset = {
-	allowedTypes: uploadConfig.allowedTypes,
-	maxFileSize: uploadConfig.maxFileSizeBytes
-};
+const maxSize = maxUploadSizeFor(file.type, {
+	maxFileSize: uploadConfig.maxFileSizeBytes,
+	maxVideoFileSize: uploadConfig.maxVideoFileSizeBytes
+});
 ```
 
 ### 3. **E-Mail-Benachrichtigungen** (`/api/sightings`)
@@ -192,11 +203,13 @@ const securityConfig = await ServerConfigService.getSecurityConfig();
 
 ### 🔒 Sicherheit & Validierung
 
-| Schlüssel                   | Typ    | Verwendung             | Fallback             |
-| --------------------------- | ------ | ---------------------- | -------------------- |
-| `security.maxFileSize`      | number | Upload-Begrenzung (MB) | `10`                 |
-| `security.allowedFileTypes` | array  | Erlaubte MIME-Typen    | Standard-Medientypen |
-| `security.rateLimitPerIP`   | number | API Rate-Limit         | `10`                 |
+| Schlüssel                     | Typ    | Verwendung                        | Fallback             |
+| ----------------------------- | ------ | --------------------------------- | -------------------- |
+| `security.maxFileSize`        | number | Upload-Begrenzung für Bilder (MB) | `10`                 |
+| `security.maxVideoFileSize`   | number | Upload-Begrenzung für Videos (MB) | `100`                |
+| `security.maxTotalUploadSize` | number | Gesamtgröße je Meldung (MB)       | `250`                |
+| `security.allowedFileTypes`   | array  | Erlaubte MIME-Typen               | Standard-Medientypen |
+| `security.rateLimitPerIP`     | number | API Rate-Limit                    | `10`                 |
 
 ### 📊 Datenverarbeitung
 

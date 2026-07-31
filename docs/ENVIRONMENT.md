@@ -519,20 +519,31 @@ PORT=3000
 
 **Type**: `number` (bytes)
 **Required**: No
-**Default**: `52428800` (50MB)
-**Description**: Maximum size for request body (file uploads).
+**Default**: `125829120` (120 MB)
+**Description**: Maximum size for request bodies (file uploads).
+
+**This value must stay above the configured upload limit.** It is enforced by
+the Node adapter _before_ the route runs, so a request over this size fails
+without the application's own error message — the reporter only sees a generic
+transfer failure and never learns their file was too large. The application logs
+a warning at startup if the two are out of order.
+
+Related runtime configuration (database, `app_config`):
+`security.maxFileSize` (default 10 MB) and `security.maxVideoFileSize`
+(default 100 MB). With the 100 MB video default, `BODY_SIZE_LIMIT` needs at
+least 101 MB; 120 MB leaves room for the multipart envelope and a raised limit.
+
+**The reverse proxy needs the same headroom** — `client_max_body_size 120M;`
+for nginx. Whichever limit is lower is the binding one.
 
 **Examples**:
 
 ```bash
-# 50 MB (default)
+# 120 MB (default, matches a 100 MB video limit)
+BODY_SIZE_LIMIT=125829120
+
+# 50 MB — only with security.maxVideoFileSize lowered to 45 or below
 BODY_SIZE_LIMIT=52428800
-
-# 100 MB
-BODY_SIZE_LIMIT=104857600
-
-# 10 MB
-BODY_SIZE_LIMIT=10485760
 ```
 
 ---
