@@ -89,10 +89,15 @@ describe('configStore', () => {
 			const config = await getUploadConfig();
 
 			// Der Fallback muss der öffentlichen Server-Konfiguration entsprechen,
-			// sonst nimmt die Dropzone Dateien an, die der Server ablehnt.
+			// sonst nimmt die Dropzone Dateien an, die der Server ablehnt. Seit
+			// Task 11 gehören video/mp4 und video/quicktime zur öffentlichen Liste,
+			// der Fallback bleibt aber restriktiver als die volle Server-Liste
+			// (kein video/webm, kein video/m4v).
 			expect(config.allowedTypes).toEqual([...PUBLIC_UPLOAD_ALLOWED_TYPES]);
 			expect(config.maxFileSize).toBe(PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES);
-			expect(config.allowedTypes.some((type) => type.startsWith('video/'))).toBe(false);
+			expect(config.allowedTypes).toContain('video/mp4');
+			expect(config.allowedTypes).toContain('video/quicktime');
+			expect(config.allowedTypes).not.toContain('video/webm');
 		});
 
 		it('gibt Fallback zurück bei HTTP-Fehler-Status', async () => {

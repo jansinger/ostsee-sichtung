@@ -38,16 +38,11 @@ export const ALLOWED_MIME_TYPES = {
 		// Note: image/svg+xml excluded for security reasons
 	],
 
-	VIDEOS: [
-		'video/mp4',
-		'video/avi',
-		'video/mov',
-		'video/wmv',
-		'video/flv',
-		'video/webm',
-		'video/mkv',
-		'video/m4v'
-	],
+	// Nur MIME-Typen, die Browser tatsächlich melden. `video/mov`, `video/avi`,
+	// `video/mkv`, `video/wmv` und `video/flv` standen hier, kommen aber aus
+	// keinem Browser — die richtigen Schreibweisen sind video/quicktime,
+	// video/x-msvideo, video/x-matroska, video/x-ms-wmv und video/x-flv.
+	VIDEOS: ['video/mp4', 'video/quicktime', 'video/webm', 'video/m4v'],
 
 	get MEDIA() {
 		return [...this.IMAGES, ...this.VIDEOS];

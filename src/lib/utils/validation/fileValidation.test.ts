@@ -276,7 +276,7 @@ describe('fileValidation', () => {
 			it('should return true for valid video types', () => {
 				const validVideos = [
 					createMockFile('test.mp4', 1000, 'video/mp4'),
-					createMockFile('test.avi', 1000, 'video/avi'),
+					createMockFile('test.mov', 1000, 'video/quicktime'),
 					createMockFile('test.webm', 1000, 'video/webm')
 				];
 

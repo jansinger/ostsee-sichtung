@@ -209,19 +209,22 @@ export function getValidationPreset(
 }
 
 /**
- * Generiert eine benutzerfreundliche Liste der erlaubten Dateitypen
+ * Generiert eine benutzerfreundliche Liste der erlaubten Dateitypen.
+ *
+ * Die Sonderfälle sind nicht kosmetisch: Aus `image/jpeg` würde sonst „JPEG"
+ * (Melder kennen „JPG") und aus `video/quicktime` „QUICKTIME" statt „MOV".
  */
-export function getFileTypeDescription(allowedTypes: string[]): string {
-	const extensions = allowedTypes.map((type) => {
-		const extension = type.split('/')[1]?.toUpperCase();
-		// Spezielle Behandlung für bekannte Typen
-		switch (extension) {
-			case 'JPEG':
-				return 'JPG';
-			default:
-				return extension;
-		}
-	});
+export function getFileTypeDescription(allowedTypes: readonly string[]): string {
+	const FORMAT_NAMES: Record<string, string> = {
+		'image/jpeg': 'JPG',
+		'video/quicktime': 'MOV',
+		'video/x-msvideo': 'AVI',
+		'video/x-matroska': 'MKV'
+	};
 
-	return extensions.join(', ');
+	const names = allowedTypes.map(
+		(type) => FORMAT_NAMES[type] ?? type.split('/')[1]?.toUpperCase() ?? type
+	);
+
+	return [...new Set(names)].join(', ');
 }

@@ -32,7 +32,22 @@ export const PUBLIC_UPLOAD_ALLOWED_TYPES = [
 	'image/jpeg',
 	'image/png',
 	'image/gif',
-	'image/webp'
+	'image/webp',
+	'video/mp4',
+	'video/quicktime'
 ] as const;
 
-export const PUBLIC_UPLOAD_ACCEPT = PUBLIC_UPLOAD_ALLOWED_TYPES.join(',');
+/**
+ * `accept`-Attribut für den Datei-Dialog. MIME-Typen werden zu `image/*` bzw.
+ * `video/*` gruppiert — derselbe Aufbau wie `buildAccept()` in
+ * `GET /api/config/upload`, damit anonyme und authentifizierte Melder denselben
+ * Dialog sehen. Ein einzelner `video/mp4,video/quicktime` würde den Dialog auf
+ * genau diese Container beschränken, statt alle Video-Dateien anzubieten.
+ */
+export const PUBLIC_UPLOAD_ACCEPT = [
+	...new Set(
+		PUBLIC_UPLOAD_ALLOWED_TYPES.map((type) =>
+			type.startsWith('image/') ? 'image/*' : type.startsWith('video/') ? 'video/*' : type
+		)
+	)
+].join(',');
