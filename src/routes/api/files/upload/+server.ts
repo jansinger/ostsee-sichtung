@@ -15,6 +15,7 @@ import {
 	createRateLimitIdentifier,
 	buildRateLimitHeaders
 } from '$lib/server/middleware/rateLimit';
+import { consumeByteBudget, type ByteBudget } from '$lib/server/middleware/uploadByteBudget';
 import { isCuid } from '@paralleldrive/cuid2';
 import { error, isHttpError, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
@@ -53,6 +54,21 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 			throw error(400, 'Upload ID ist erforderlich');
 		}
 
+		// Rate limiting based on authentication status. Identifier und Ergebnis
+		// werden hier (statt erst nach der Größenprüfung) ermittelt, weil die
+		// Byte-Budget-Prüfung unten denselben Identifier braucht.
+		const rateLimitConfig = isAuthenticated
+			? RATE_LIMITS.FILE_UPLOAD_AUTHENTICATED
+			: RATE_LIMITS.FILE_UPLOAD_ANONYMOUS;
+
+		const rateLimitIdentifier = createRateLimitIdentifier(
+			userIdentifier,
+			clientIp,
+			isAuthenticated
+		);
+
+		const rateLimitResult = enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'file_upload');
+
 		// Die Konfiguration ist die einzige Autorität für Größen — dieselbe
 		// Quelle, aus der /api/config/upload die Dropzone speist. Zwei getrennte
 		// Zahlen (anonym/angemeldet) waren nur nötig, solange die öffentliche
@@ -84,6 +100,35 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 			);
 		}
 
+		// Volumen-Bremse. Der Zähler oben begrenzt die Anzahl der Uploads, nicht
+		// ihr Volumen; bei 100 MB je Video wären 20 Uploads 2 GB pro Stunde und
+		// IP. Das Gesamtlimit je Meldung greift hier nicht — die referenceId
+		// liefert der Client.
+		const byteBudget: ByteBudget = isAuthenticated
+			? RATE_LIMITS.UPLOAD_BYTES_AUTHENTICATED
+			: RATE_LIMITS.UPLOAD_BYTES_ANONYMOUS;
+		const budgetResult = consumeByteBudget(rateLimitIdentifier, file.size, byteBudget);
+
+		if (!budgetResult.allowed) {
+			logger.warn(
+				{
+					action: 'file_upload_rejected',
+					reason: 'byte_budget_exhausted',
+					user: userIdentifier,
+					authenticated: isAuthenticated,
+					clientIp,
+					fileSize: file.size,
+					usedBytes: budgetResult.usedBytes,
+					remainingBytes: budgetResult.remainingBytes
+				},
+				'Upload rejected - hourly byte budget exhausted'
+			);
+			throw error(
+				429,
+				`Sie haben in der letzten Stunde bereits ${Math.round(budgetResult.usedBytes / 1024 / 1024)} MB übertragen. Bitte versuchen Sie es später erneut.`
+			);
+		}
+
 		// Security audit logging
 		logger.info(
 			{
@@ -99,19 +144,6 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 			},
 			'File upload initiated'
 		);
-
-		// Rate limiting based on authentication status
-		const rateLimitConfig = isAuthenticated
-			? RATE_LIMITS.FILE_UPLOAD_AUTHENTICATED
-			: RATE_LIMITS.FILE_UPLOAD_ANONYMOUS;
-
-		const rateLimitIdentifier = createRateLimitIdentifier(
-			userIdentifier,
-			clientIp,
-			isAuthenticated
-		);
-
-		const rateLimitResult = enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'file_upload');
 
 		// Create dynamic validation preset using configuration
 		const dynamicPreset = {

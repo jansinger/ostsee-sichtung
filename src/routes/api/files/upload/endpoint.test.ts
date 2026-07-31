@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { POST } from './+server';
+import { resetByteBudgets } from '$lib/server/middleware/uploadByteBudget';
 
 vi.mock('$lib/logger.server', () => ({
 	createLogger: () => ({
@@ -70,6 +71,7 @@ function createMockRequest(
 		file?: File | null;
 		referenceId?: string;
 		uid?: string;
+		authenticated?: boolean;
 	} = {}
 ) {
 	const file =
@@ -98,7 +100,7 @@ function createMockRequest(
 			},
 			formData: async () => formData
 		} as unknown as Request,
-		locals: { user: { sub: 'test-user' } },
+		locals: overrides.authenticated === false ? {} : { user: { sub: 'test-user' } },
 		params: {},
 		route: { id: '/api/files/upload' },
 		url: new URL('http://localhost/api/files/upload'),
@@ -180,5 +182,22 @@ describe('/api/files/upload POST', () => {
 		const event = createMockRequest({ file: video });
 
 		await expect(POST(event)).rejects.toMatchObject({ status: 413 });
+	});
+
+	it('lehnt weitere Uploads ab, sobald das Byte-Budget erschöpft ist', async () => {
+		resetByteBudgets();
+		const event = () =>
+			createMockRequest({
+				file: new File([new Uint8Array(100 * 1024 * 1024)], 'wal.mp4', { type: 'video/mp4' }),
+				authenticated: false
+			});
+
+		// 3 × 100 MB passen in die 300 MB des anonymen Budgets.
+		expect((await POST(event())).status).toBe(200);
+		expect((await POST(event())).status).toBe(200);
+		expect((await POST(event())).status).toBe(200);
+
+		// Das vierte Video sprengt es.
+		await expect(POST(event())).rejects.toMatchObject({ status: 429 });
 	});
 });

@@ -58,6 +58,18 @@ export const RATE_LIMITS = {
 		maxRequests: 50 // 25 Uploads pro Stunde für authentifizierte User
 	},
 
+	// Volumen-Bremse neben dem Zähler. 300 MB reichen für drei Videos an der
+	// 100-MB-Grenze oder dreißig Fotos — mehr als eine ehrliche Meldung je
+	// braucht, und zwei Größenordnungen unter dem, was 20 × 100 MB wären.
+	UPLOAD_BYTES_ANONYMOUS: {
+		windowMs: 60 * 60 * 1000,
+		maxBytes: 300 * 1024 * 1024
+	},
+	UPLOAD_BYTES_AUTHENTICATED: {
+		windowMs: 60 * 60 * 1000,
+		maxBytes: 2 * 1024 * 1024 * 1024
+	},
+
 	// Media Access - moderate Limits
 	MEDIA_ACCESS_ANONYMOUS: {
 		windowMs: 60 * 1000, // 1 Minute
