@@ -1083,7 +1083,9 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
 
-    # Max upload size (50MB for images)
+    # Max upload size — muss zur App-Grenze passen (security.maxVideoFileSize,
+    # Vorbelegung 100 MB) und mit BODY_SIZE_LIMIT übereinstimmen, siehe
+    # ENVIRONMENT.md → BODY_SIZE_LIMIT
     client_max_body_size 120M;
 
     location / {

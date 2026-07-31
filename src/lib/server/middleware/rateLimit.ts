@@ -55,7 +55,7 @@ export const RATE_LIMITS = {
 	},
 	FILE_UPLOAD_AUTHENTICATED: {
 		windowMs: 60 * 60 * 1000, // 1 Stunde
-		maxRequests: 50 // 25 Uploads pro Stunde für authentifizierte User
+		maxRequests: 50 // 50 Uploads pro Stunde für authentifizierte User
 	},
 
 	// Volumen-Bremse neben dem Zähler. 300 MB reichen für drei Videos an der

@@ -1379,9 +1379,10 @@ paths:
       description: |
         Lädt eine Bild- oder Videodatei hoch.
 
-        Unterstützte Formate:
-        - Bilder: JPEG, PNG, GIF, WebP, BMP, SVG
-        - Videos: MP4, AVI, MOV, WMV, FLV, WebM, MKV, M4V
+        Unterstützte Formate (sechs, aus `security.allowedFileTypes`):
+        - Bilder: JPEG, PNG, GIF, WebP (kein SVG — aus Sicherheitsgründen
+          ausdrücklich ausgeschlossen)
+        - Videos: MP4, QuickTime (MOV)
 
         Maximale Dateigröße: konfigurationsabhängig und nach Medientyp getrennt
         (Vorbelegung 10 MB für Bilder, 100 MB für Videos), im Admin-Bereich
