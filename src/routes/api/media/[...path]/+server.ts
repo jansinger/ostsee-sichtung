@@ -4,6 +4,7 @@ import { isAdminUser } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightingFiles, sightings } from '$lib/server/db/schema';
 import { getStorageProvider } from '$lib/server/storage/factory';
+import { parseRangeHeader } from '$lib/server/media/rangeHeader';
 import {
 	RATE_LIMITS,
 	enforceRateLimit,
@@ -41,10 +42,17 @@ export const GET: RequestHandler = async ({ params, url, request, locals, getCli
 		throw error(400, 'File path is required');
 	}
 
-	// Rate limiting based on authentication status
-	const rateLimitConfig = isAuthenticated
-		? RATE_LIMITS.MEDIA_ACCESS_AUTHENTICATED
-		: RATE_LIMITS.MEDIA_ACCESS_ANONYMOUS;
+	// Rate limiting based on authentication status. Range-Anfragen (Springen im
+	// Video) bekommen ein eigenes, höheres Limit — sonst endet die Wiedergabe
+	// mit 429, sobald ein Player mehrfach pro Sekunde einen neuen Bereich anfordert.
+	const hasRangeHeader = !!request.headers.get('range');
+	const rateLimitConfig = hasRangeHeader
+		? isAuthenticated
+			? RATE_LIMITS.MEDIA_RANGE_AUTHENTICATED
+			: RATE_LIMITS.MEDIA_RANGE_ANONYMOUS
+		: isAuthenticated
+			? RATE_LIMITS.MEDIA_ACCESS_AUTHENTICATED
+			: RATE_LIMITS.MEDIA_ACCESS_ANONYMOUS;
 
 	const rateLimitIdentifier = createRateLimitIdentifier(userIdentifier, clientIp, isAuthenticated);
 
@@ -134,50 +142,100 @@ export const GET: RequestHandler = async ({ params, url, request, locals, getCli
 			);
 		}
 
-		// Get file content from storage
+		// Auslieferung als Stream mit Range-Unterstützung.
+		//
+		// Die frühere Variante las die ganze Datei über getFileContent() in einen
+		// Buffer. Bei Bildern von wenigen MB fiel das nicht auf; bei Videos von
+		// 100 MB kostet jeder Abruf die volle Größe an Arbeitsspeicher, Springen
+		// im Video ist ohne Range unmöglich, und Safari/iOS verweigert bei
+		// fehlendem Accept-Ranges in der Regel die Wiedergabe.
 		const storage = getStorageProvider();
-		const content = await storage.getFileContent(filePath);
 
-		if (!content) {
+		// EINE Größenquelle, und zwar der Storage — nicht die Datenbankspalte.
+		// Beides zu mischen wäre ein echter Fehler: Die Bereichsrechnung liefe gegen
+		// einen anderen Wert als der Content-Range-Header nennt, sobald DB-Größe und
+		// Datei auseinanderlaufen, und ein Player bricht auf so einer Antwort ab.
+		// Der Storage kennt die Bytes, die er gleich ausliefert.
+		const metadata = await storage.getMetadata(filePath);
+		if (!metadata) {
+			logger.warn({ filePath }, 'File metadata not found in storage');
+			throw error(404, 'File not found');
+		}
+		const totalSize = metadata.size;
+		const range = parseRangeHeader(request.headers.get('range'), totalSize);
+
+		const baseHeaders: Record<string, string> = {
+			'Content-Type': file.mimeType,
+			'Content-Disposition': `inline; filename="${encodeURIComponent(file.originalName)}"`,
+			'Cache-Control': 'public, max-age=31536000, immutable',
+			ETag: `"${Buffer.from(filePath + totalSize).toString('base64')}"`,
+			'Accept-Ranges': 'bytes',
+			'X-Content-Type-Options': 'nosniff',
+			'X-Frame-Options': 'SAMEORIGIN',
+			...buildRateLimitHeaders(rateLimitConfig, rateLimitResult)
+		};
+
+		if (range.kind === 'unsatisfiable') {
+			logger.warn({ filePath, totalSize }, 'Range not satisfiable');
+			return new Response(null, {
+				status: 416,
+				headers: { ...baseHeaders, 'Content-Range': `bytes */${totalSize}` }
+			});
+		}
+
+		// Bedingte Anfragen: Der Client schickt sein ETag als Query-Parameter
+		// (bestehende Konvention dieser Route, nicht If-None-Match).
+		const clientETag = url.searchParams.get('etag') || '';
+		if (clientETag && clientETag === baseHeaders.ETag) {
+			return new Response(null, { status: 304, headers: baseHeaders });
+		}
+
+		const requestedRange =
+			range.kind === 'satisfiable' ? { start: range.start, end: range.end } : undefined;
+		const result = await storage.getFileStream(filePath, requestedRange);
+
+		if (!result) {
 			logger.warn({ filePath }, 'File content not found in storage');
 			throw error(404, 'File not found');
 		}
 
-		// Set appropriate headers including rate limiting
-		const rateLimitHeaders = buildRateLimitHeaders(rateLimitConfig, rateLimitResult);
-		const headers = new Headers({
-			'Content-Type': file.mimeType,
-			'Content-Length': content.length.toString(),
-			'Content-Disposition': `inline; filename="${encodeURIComponent(file.originalName)}"`,
-			'Cache-Control': 'public, max-age=31536000, immutable', // Cache for 1 year
-			ETag: `"${Buffer.from(filePath + file.size).toString('base64')}"`,
-			'X-Content-Type-Options': 'nosniff',
-			'X-Frame-Options': 'SAMEORIGIN',
-			...rateLimitHeaders
-		});
+		// Ob der Storage einen angeforderten Bereich tatsächlich eingehalten hat,
+		// steht nicht schon fest, weil der Client ihn angefragt hat — ein CDN vor
+		// Vercel Blob darf den Range-Header ignorieren und mit 200 und dem vollen
+		// Body antworten (RFC 9110). Nur wenn beides zutrifft — Bereich erfüllbar
+		// UND vom Storage geliefert — ist 206 mit Content-Range korrekt. Sonst
+		// entstünde eine in sich widersprüchliche Antwort: Status 206 über einem
+		// Body, der die ganze Datei enthält.
+		if (range.kind === 'satisfiable' && result.rangeDelivered) {
+			const length = range.end - range.start + 1;
+			logger.debug(
+				{ filePath, sightingId: file.sightingId, range, totalSize, isApproved },
+				'Serving media file range'
+			);
+			return new Response(result.stream, {
+				status: 206,
+				headers: {
+					...baseHeaders,
+					'Content-Length': String(length),
+					'Content-Range': `bytes ${range.start}-${range.end}/${totalSize}`
+				}
+			});
+		}
 
-		// Handle conditional requests (ETags/If-Modified-Since)
-		const clientETag = url.searchParams.get('etag') || '';
-		const serverETag = headers.get('ETag') || '';
-
-		if (clientETag && clientETag === serverETag) {
-			return new Response(null, { status: 304, headers });
+		if (range.kind === 'satisfiable' && !result.rangeDelivered) {
+			logger.warn(
+				{ filePath, sightingId: file.sightingId, range, totalSize },
+				'Storage did not honor range request, falling back to full response'
+			);
 		}
 
 		logger.debug(
-			{
-				filePath,
-				sightingId: file.sightingId,
-				size: content.length,
-				mimeType: file.mimeType,
-				isApproved
-			},
+			{ filePath, sightingId: file.sightingId, size: totalSize, isApproved },
 			'Serving media file'
 		);
-
-		// Convert Buffer to Uint8Array for proper Response body
-		const bodyContent = new Uint8Array(content);
-		return new Response(bodyContent, { headers });
+		return new Response(result.stream, {
+			headers: { ...baseHeaders, 'Content-Length': String(totalSize) }
+		});
 	} catch (err: unknown) {
 		if (typeof err === 'object' && err && 'status' in err) {
 			// If the error is a SvelteKit error, re-throw it

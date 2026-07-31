@@ -1149,11 +1149,18 @@ paths:
       summary: Sichere Medien-Bereitstellung
       description: |
         Stellt Mediendateien mit Zugriffskontrolle bereit.
-        
+
         **Zugriffskontrolle:**
         - Öffentlicher Zugriff für genehmigte Sichtungen
         - Admin-Zugriff für nicht genehmigte Sichtungen
         - 404 für nicht existierende oder nicht autorisierte Dateien
+
+        **Range-Unterstützung:**
+        Die Route kündigt `Accept-Ranges: bytes` an und beantwortet einen
+        `Range`-Header mit `206 Partial Content`, sofern der Storage den
+        angeforderten Bereich tatsächlich liefert — sonst mit `200` und der
+        vollen Datei. Ein unerfüllbarer Bereich ergibt `416 Range Not
+        Satisfiable`. Nötig für Video-Seeking und Safari/iOS-Wiedergabe.
       parameters:
         - name: path
           in: path
@@ -1162,9 +1169,18 @@ paths:
           schema:
             type: string
             example: "sichtung-123/photo-abc123.jpg"
+        - name: Range
+          in: header
+          required: false
+          description: |
+            Byte-Bereich nach RFC 9110 (`bytes=start-end`), z. B. für
+            Video-Seeking. Mehrfach-Bereiche werden wie „kein Range" behandelt.
+          schema:
+            type: string
+            example: "bytes=0-1023"
       responses:
         '200':
-          description: Mediendatei erfolgreich bereitgestellt
+          description: Mediendatei erfolgreich bereitgestellt (vollständig)
           headers:
             Content-Type:
               description: MIME-Type der Datei
@@ -1191,6 +1207,11 @@ paths:
               schema:
                 type: string
                 example: '"abc123def456"'
+            Accept-Ranges:
+              description: Kündigt Range-Unterstützung an
+              schema:
+                type: string
+                example: "bytes"
           content:
             image/jpeg:
               schema:
@@ -1212,6 +1233,38 @@ paths:
               schema:
                 type: string
                 format: binary
+        '206':
+          description: |
+            Angeforderter Byte-Bereich (Partial Content). Wird nur gesendet,
+            wenn der Storage den Bereich tatsächlich liefert — antwortet der
+            Storage stattdessen mit der vollen Datei (z. B. ein CDN, das den
+            Range-Header ignoriert), sendet die Route `200` mit der vollen
+            Länge statt einer widersprüchlichen `206`-Antwort.
+          headers:
+            Content-Range:
+              description: Gelieferter Bereich und Gesamtgröße
+              schema:
+                type: string
+                example: "bytes 0-1023/1024000"
+            Content-Length:
+              description: Länge des gelieferten Bereichs in Bytes
+              schema:
+                type: integer
+                example: 1024
+            Accept-Ranges:
+              description: Kündigt Range-Unterstützung an
+              schema:
+                type: string
+                example: "bytes"
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
         '304':
           description: Not Modified (Cache-Hit)
         '404':
@@ -1222,6 +1275,14 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 message: "File not found"
+        '416':
+          description: Angeforderter Byte-Bereich ist nicht erfüllbar
+          headers:
+            Content-Range:
+              description: Gesamtgröße der Datei zur Orientierung
+              schema:
+                type: string
+                example: "bytes */1024000"
         '500':
           $ref: '#/components/responses/InternalServerError'
 

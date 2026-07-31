@@ -663,6 +663,7 @@ describe('LocalStorageProvider', () => {
 
 			expect(result).not.toBeNull();
 			expect(result?.totalSize).toBe(10);
+			expect(result?.rangeDelivered).toBe(true);
 			expect(await new Response(result!.stream).text()).toBe('0123456789');
 			expect(fs.createReadStream).toHaveBeenCalledWith(expect.stringContaining(filePath));
 		});
@@ -676,6 +677,7 @@ describe('LocalStorageProvider', () => {
 			const result = await provider.getFileStream(filePath, { start: 2, end: 5 });
 
 			expect(result?.totalSize).toBe(10);
+			expect(result?.rangeDelivered).toBe(true);
 			expect(await new Response(result!.stream).text()).toBe('2345');
 			expect(fs.createReadStream).toHaveBeenCalledWith(expect.stringContaining(filePath), {
 				start: 2,

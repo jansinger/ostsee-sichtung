@@ -80,6 +80,20 @@ export const RATE_LIMITS = {
 		maxRequests: 100 // 100 Media-Zugriffe pro Minute für authentifizierte User
 	},
 
+	// Teilanfragen eines laufenden Videos. Ein Player fordert beim Springen
+	// viele kleine Bereiche derselben, bereits freigegebenen Datei an — das ist
+	// eine Wiedergabe, kein wiederholter Zugriff. Die Bremse bleibt (ein
+	// Skript kann nicht unbegrenzt saugen), sie sitzt nur eine Größenordnung
+	// höher. Das Byte-Budget aus Task 4a begrenzt zusätzlich das Volumen.
+	MEDIA_RANGE_ANONYMOUS: {
+		windowMs: 60 * 1000,
+		maxRequests: 300
+	},
+	MEDIA_RANGE_AUTHENTICATED: {
+		windowMs: 60 * 1000,
+		maxRequests: 600
+	},
+
 	// Aufräum-Endpunkt: ein Cron braucht wenige Aufrufe pro Tag, ein Angreifer viele
 	ADMIN_CLEANUP: {
 		windowMs: 60 * 60 * 1000, // 1 Stunde

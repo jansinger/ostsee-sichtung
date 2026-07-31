@@ -451,6 +451,11 @@ export class VercelBlobStorageProvider implements StorageProvider {
 	 * Speicher geladen: Der `Range`-Header wird direkt an Vercel Blob durchgereicht,
 	 * sodass auch bei großen Videos nur der angeforderte Ausschnitt übertragen wird.
 	 *
+	 * Das CDN vor Vercel Blob darf den `Range`-Header ignorieren und stattdessen
+	 * mit `200` und dem vollen Body antworten — deshalb steht im Ergebnis
+	 * `rangeDelivered`, das anhand des tatsächlichen Antwortstatus bestimmt wird,
+	 * nicht anhand der Anfrage.
+	 *
 	 * @param range Inklusiver Bereich; `end` ist das letzte gelieferte Byte.
 	 */
 	async getFileStream(
@@ -472,9 +477,16 @@ export class VercelBlobStorageProvider implements StorageProvider {
 			}
 
 			const totalSize = this.totalSizeFromResponse(response);
-			logger.debug({ filePath, totalSize, range }, 'File stream opened from Vercel Blob');
+			// Ein CDN darf einen Range-Header ignorieren und mit 200 und dem vollen
+			// Body antworten (RFC 9110). Nur eine 206-Antwort auf eine angeforderte
+			// Bereichsanfrage ist ein tatsächlich gelieferter Bereich.
+			const rangeDelivered = range ? response.status === 206 : true;
+			logger.debug(
+				{ filePath, totalSize, range, rangeDelivered, status: response.status },
+				'File stream opened from Vercel Blob'
+			);
 
-			return { stream: response.body as ReadableStream<Uint8Array>, totalSize };
+			return { stream: response.body as ReadableStream<Uint8Array>, totalSize, rangeDelivered };
 		} catch (error) {
 			logger.error({ error, filePath }, 'Failed to open file stream from Vercel Blob');
 			return null;

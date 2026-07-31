@@ -306,7 +306,11 @@ export class LocalStorageProvider implements StorageProvider {
 
 			return {
 				stream: Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>,
-				totalSize
+				totalSize,
+				// createReadStream({ start, end }) hält einen angeforderten Bereich
+				// immer ein — anders als ein CDN kann der lokale Provider ihn nicht
+				// stillschweigend ignorieren.
+				rangeDelivered: true
 			};
 		} catch (error) {
 			logger.error({ error, filePath }, 'Failed to open file stream');

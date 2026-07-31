@@ -13,6 +13,25 @@ import type { FileMetadata, UploadedFileInfo, UploadOptions } from './UploadedFi
 export interface StorageFileStream {
 	stream: ReadableStream<Uint8Array>;
 	totalSize: number;
+
+	/**
+	 * Ob ein angeforderter Bereich tatsächlich als Teilantwort geliefert wurde.
+	 *
+	 * `true`, wenn kein Bereich angefordert wurde (die ganze Datei ist die
+	 * Antwort) oder wenn der Storage den angeforderten Bereich eingehalten hat.
+	 * `false` ausschließlich dann, wenn ein Bereich angefordert, aber vom
+	 * Storage ignoriert wurde — `stream` enthält dann die gesamte Datei statt
+	 * des angeforderten Ausschnitts. Das ist bei Vercel Blob möglich: Die
+	 * Range-Anfrage geht an ein CDN, das laut HTTP-Spec einen Range-Header
+	 * ignorieren und stattdessen mit 200 und vollem Body antworten darf. Der
+	 * lokale Provider hält einen angeforderten Bereich immer ein, dort ist das
+	 * Feld deshalb immer `true`.
+	 *
+	 * Aufrufer, die das Feld ignorieren, riskieren eine in sich widersprüchliche
+	 * Antwort: Status 206 mit `Content-Range`-Grenzen über einem Body, der die
+	 * ganze Datei enthält.
+	 */
+	rangeDelivered: boolean;
 }
 
 export interface StorageProvider {
