@@ -75,6 +75,10 @@
 
 	// Generate unique ID for the input
 	const inputId = `dropzone-${Math.random().toString(36).substring(2, 9)}`;
+	// Von inputId abgeleitet statt einer fest verdrahteten Zeichenkette: Zwei
+	// Dropzones auf derselben Seite hatten sonst dieselbe `#dropzone-errors`-ID,
+	// und `aria-describedby` konnte auf die falsche Instanz verweisen.
+	const errorsId = `${inputId}-errors`;
 
 	function handleFileSelect(event: Event) {
 		const target = event.target as HTMLInputElement;
@@ -279,7 +283,7 @@
 			bind:this={fileInput}
 			id={inputId}
 			data-testid="dropzone-input"
-			aria-describedby={rejectionErrors.length > 0 ? 'dropzone-errors' : undefined}
+			aria-describedby={rejectionErrors.length > 0 ? errorsId : undefined}
 			aria-invalid={rejectionErrors.length > 0}
 			type="file"
 			accept={config.accept}
@@ -330,7 +334,12 @@
 		     Text ist base-content, die Statusfarbe gehört als Akzent auf das Icon.
 		     `text-error-strong`, NICHT `text-error` — design-system.md verlangt für
 		     Icons und Text durchgängig die -strong-Variante. -->
-		<div id="dropzone-errors" role="alert" class="alert alert-error mt-3 items-start">
+		<div
+			id={errorsId}
+			data-testid="dropzone-errors"
+			role="alert"
+			class="alert alert-error mt-3 items-start"
+		>
 			<Icon icon="lucide:circle-alert" width="20" class="text-error-strong" aria-hidden="true" />
 			<div class="text-sm">
 				<ul class="list-inside list-disc space-y-1">

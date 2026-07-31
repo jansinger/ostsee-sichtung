@@ -312,13 +312,18 @@ test.describe('Accessibility — Alert-Kontrast', () => {
 
 	/**
 	 * Der bleibende Fehlerbereich der Dropzone (`UnifiedDropzone.svelte`,
-	 * `#dropzone-errors`) nutzt dieselbe `alert alert-error`-Klasse wie oben,
-	 * ist aber eine eigene Aufrufstelle mit eigenem `text-error-strong`-Icon —
-	 * ein neuer Ort, an dem der Soft-Tint-Fehler von oben (Statusfarbe als
-	 * Fließtext) versehentlich wieder auftauchen könnte. Gemessen wird das
-	 * echte, im Browser gerenderte Element (nicht nur eine Probe mit denselben
-	 * Klassen), damit ein Wechsel der Aufrufstelle auf eine andere Klasse
-	 * ebenfalls auffällt.
+	 * `[data-testid="dropzone-errors"]`) nutzt dieselbe `alert alert-error`-Klasse
+	 * wie oben, ist aber eine eigene Aufrufstelle mit eigenem
+	 * `text-error-strong`-Icon — ein neuer Ort, an dem der Soft-Tint-Fehler von
+	 * oben (Statusfarbe als Fließtext) versehentlich wieder auftauchen könnte.
+	 * Gemessen wird das echte, im Browser gerenderte Element (nicht nur eine
+	 * Probe mit denselben Klassen), damit ein Wechsel der Aufrufstelle auf eine
+	 * andere Klasse ebenfalls auffällt.
+	 *
+	 * Selektor bewusst über `data-testid`, nicht über die `id`: Die `id` des
+	 * Fehlerbereichs wird pro Dropzone-Instanz aus einer zufälligen `inputId`
+	 * abgeleitet (Befund 2, PR #682 Review) — auf einer Seite mit mehreren
+	 * Dropzones ist sie also nicht vorhersagbar. Das `data-testid` ist stabil.
 	 */
 	test('der bleibende Fehlerbereich der Dropzone erreicht WCAG AA (4,5:1)', async ({ page }) => {
 		const formPage = new FormPage(page);
@@ -352,13 +357,13 @@ test.describe('Accessibility — Alert-Kontrast', () => {
 			buffer: Buffer.alloc(maxFileSizeBytes + 1)
 		});
 
-		const errorRegion = page.locator('#dropzone-errors');
+		const errorRegion = page.locator('[data-testid="dropzone-errors"]');
 		await expect(errorRegion).toBeVisible();
 
 		const [measured] = await measureContrast(page, [
 			{
 				name: 'dropzone-errors',
-				selector: '#dropzone-errors',
+				selector: '[data-testid="dropzone-errors"]',
 				backdrop: 'var(--color-base-100)'
 			}
 		]);
