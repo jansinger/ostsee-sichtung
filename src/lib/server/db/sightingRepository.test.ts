@@ -52,7 +52,10 @@ vi.mock('./mapFormToSighting', () => ({
 		return {
 			id: 1,
 			...formData,
-			created: new Date().toISOString(),
+			// `Date`, nicht `toISOString()`: Die echte Implementierung liefert hier
+			// ein Date-Objekt (`mapFormToSighting.ts`). Ein String im Mock ließe
+			// Typ- und Serialisierungsfehler im Insert/Update-Payload durchrutschen.
+			created: new Date(),
 			approvedAt: null,
 			nameConsentAt: name.at,
 			nameConsentVersion: name.version,
