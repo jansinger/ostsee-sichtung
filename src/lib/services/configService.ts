@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { createLogger } from '$lib/logger';
 import { ConfigRepository } from '$lib/server/db/configRepository';
 import type { ConfigValue } from '$lib/server/db/configRepository';
+import { normalizeUploadSize } from '$lib/constants/uploadLimits';
 
 const logger = createLogger('configService');
 
@@ -128,11 +129,23 @@ export class ServerConfigService {
 
 	/**
 	 * Get file upload configuration
+	 *
+	 * Die drei Größen werden hier zentral normalisiert (`normalizeUploadSize()`,
+	 * `$lib/constants/uploadLimits.ts`): `getNumber()` liefert rohes
+	 * `Number(dbValue)` ohne Prüfung, und ein kaputter DB-Wert (NaN, negativ,
+	 * Infinity — z. B. durch `PUT /api/config` mit ungültiger Eingabe) lief
+	 * sonst bis zu den Aufrufern durch. Für die Gesamtgrößen-Prüfung in
+	 * `POST /api/files/upload` bedeutete das: `x > NaN` ist in JavaScript immer
+	 * `false`, die Prüfung war also lautlos abgeschaltet statt den Upload
+	 * abzulehnen. Restriktiver Fallback wie bei `maxUploadSizeFor()`: eine
+	 * kaputte Grenze wird zu `0`, nicht zu „unbegrenzt".
 	 */
 	static async getUploadConfig() {
-		const maxFileSize = await this.getNumber('security.maxFileSize');
-		const maxVideoFileSize = await this.getNumber('security.maxVideoFileSize');
-		const maxTotalUploadSize = await this.getNumber('security.maxTotalUploadSize');
+		const maxFileSize = normalizeUploadSize(await this.getNumber('security.maxFileSize'));
+		const maxVideoFileSize = normalizeUploadSize(await this.getNumber('security.maxVideoFileSize'));
+		const maxTotalUploadSize = normalizeUploadSize(
+			await this.getNumber('security.maxTotalUploadSize')
+		);
 
 		return {
 			maxFileSize,

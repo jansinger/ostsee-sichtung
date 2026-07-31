@@ -29,6 +29,24 @@ function isValidPositiveLimit(value: number): boolean {
 }
 
 /**
+ * Bildet eine Größenangabe auf sich selbst ab, wenn sie taugt (endlich,
+ * positiv), sonst restriktiv auf `0` — siehe Begründung an `maxUploadSizeFor()`.
+ *
+ * Exportiert, weil `ServerConfigService.getUploadConfig()`
+ * (`$lib/services/configService.ts`) dieselbe Normalisierung für die
+ * AGGREGIERTEN Größen (Einzel-, Video- und Gesamtgrenze) braucht, nicht nur
+ * für die Einzeldateiprüfung hier. Vorher rechnete `getUploadConfig()`
+ * `Number(...)` direkt in Bytes um; ein kaputter DB-Wert (NaN, negativ,
+ * Infinity) lief so ungefiltert bis zur Gesamtgrößen-Prüfung in
+ * `POST /api/files/upload` durch, wo `x > NaN` immer `false` ist — die
+ * Prüfung war damit lautlos abgeschaltet, und `/api/config/upload` lieferte
+ * `null` an den Client (`JSON.stringify(NaN) === 'null'`).
+ */
+export function normalizeUploadSize(value: number): number {
+	return isValidPositiveLimit(value) ? value : 0;
+}
+
+/**
  * Liefert die erlaubte Dateigröße in Bytes für einen MIME-Typ.
  *
  * Unbekannte Typen bekommen die allgemeine (kleinere) Grenze — im Zweifel
@@ -41,10 +59,16 @@ function isValidPositiveLimit(value: number): boolean {
  * negativ, 0, Infinity), wird deshalb auf `0` abgebildet: `file.size > 0`
  * ist für jede nicht-leere Datei wahr, der Upload wird also abgelehnt, bis
  * die Konfiguration repariert ist — statt heimlich jede Größe zuzulassen.
+ *
+ * Diese Absicherung bleibt bestehen, obwohl `getUploadConfig()` seine drei
+ * Größen inzwischen selbst normalisiert (`normalizeUploadSize()` oben):
+ * `limits` kommt hier nicht nur aus der Serverkonfiguration, sondern auch aus
+ * clientseitig gelieferten Presets (z. B. `getValidationPreset()` in
+ * `fileValidation.ts`), die `getUploadConfig()` nie durchlaufen.
  */
 export function maxUploadSizeFor(mimeType: string, limits: UploadSizeLimits): number {
 	const rawLimit = isVideoFile(mimeType.toLowerCase())
 		? limits.maxVideoFileSize
 		: limits.maxFileSize;
-	return isValidPositiveLimit(rawLimit) ? rawLimit : 0;
+	return normalizeUploadSize(rawLimit);
 }
