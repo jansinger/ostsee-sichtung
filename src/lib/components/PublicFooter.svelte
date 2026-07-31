@@ -6,8 +6,16 @@
 <!-- Footer with navigation (versteckt in iFrame) -->
 {#if isNotIFrame}
 	<footer class="footer footer-center bg-base-200 text-base-content mt-8 rounded-t-lg p-4 sm:p-6">
-		<!-- Navigation Links - Responsive Grid -->
-		<nav class="flex flex-wrap justify-center gap-2 sm:gap-4 md:grid md:grid-flow-col">
+		<!-- Navigation Links — umbrechende Flexbox, kein Grid -->
+		<!--
+			Bewusst KEIN `md:grid md:grid-flow-col`: Das zwang die fünf Links ab 768px
+			in eine einzige Grid-Zeile, die nicht umbrechen kann. Zwischen 768 und
+			~890px passte sie nicht mehr — das Dokument wurde dadurch breiter als der
+			Viewport (gemessen 891px bei 768px Breite), die ganze Seite ließ sich
+			seitlich schieben und der Schritt-Stepper darüber wurde mit angeschnitten.
+			`flex flex-wrap` trägt jede Breite und braucht keine Ausnahme.
+		-->
+		<nav class="flex flex-wrap justify-center gap-2 sm:gap-4">
 			<a href="/about" class="link link-hover text-sm sm:text-base">Über uns</a>
 			<a href="/docs" class="link link-hover text-sm sm:text-base">Dokumentation</a>
 			<a href="/map" class="link link-hover text-sm sm:text-base">Sichtungskarte</a>

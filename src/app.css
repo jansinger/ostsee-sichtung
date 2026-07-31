@@ -500,6 +500,37 @@ label:has(> .toggle) {
 	}
 }
 
+/* ===== Schritt-Titel im Stepper dürfen umbrechen =====
+
+   DaisyUI gibt `.steps` ein `overflow: auto hidden` und `.step` ein
+   `grid-template-columns: auto`. Die Spalte ist damit INHALTSBREIT: Ein Titel,
+   der breiter ist als sein Viertel der Leiste, sprengt die Spalte und wird vom
+   `overflow` der Leiste **abgeschnitten** — sichtbar als angeschnittene
+   Beschriftung am linken und rechten Rand.
+
+   Das war lange unauffällig, weil die Titel kurz waren („Position & Zeit",
+   „Beobachtungen"). Mit den längeren Titeln des Museums („Weitere
+   Informationen") schrumpfte die Reserve auf wenige Pixel: gemessen 137px Text
+   in einer 156px-Spalte bei 768px Breite. Im Feldmodus (`--text-support` 14px
+   statt 13px), bei abweichender Schriftdarstellung oder anderer Sprache kippt
+   das — und zwar still, weil abgeschnitten wird statt umzubrechen.
+
+   `minmax(0, 1fr)` bindet die Spalte an die Leiste statt an den Inhalt, der
+   Rest lässt den Titel darin umbrechen. Damit hängt die Darstellung nicht mehr
+   an der Länge der Beschriftung. */
+.steps .step {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.steps .step-button {
+	width: 100%;
+	min-width: 0;
+	line-height: 1.25;
+	white-space: normal;
+	overflow-wrap: break-word;
+	hyphens: auto;
+}
+
 /* ===== Print ===== */
 @media print {
 	.no-print {
