@@ -10,6 +10,10 @@ export default defineConfig({
 		ignoreHTTPSErrors: true
 	},
 	testDir: 'e2e',
+	/* e2e/helpers/*.test.ts are vitest unit tests (collected separately by vitest.config.ts's
+	 * `server` project) that happen to live under e2e/ — Playwright's default glob would
+	 * otherwise pick them up too and crash at collection time. */
+	testIgnore: ['**/helpers/**'],
 	/* Run tests in files in parallel */
 	fullyParallel: true,
 	/* Fail the build on CI if you accidentally left test.only in the source code. */
