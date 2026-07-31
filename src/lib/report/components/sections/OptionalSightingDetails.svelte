@@ -8,5 +8,7 @@
 	<!-- Distribution -->
 	<FormField name="distribution" />
 
-	<FormField name="shipCount" />
+	<!-- `shipCount` steht jetzt in `BoatInfo.svelte`: Die Anzahl umliegender
+	     Schiffe gehört zu den Boot-/Schiffsangaben, nicht zwischen die
+	     Beobachtungsdetails. -->
 </SectionCard>

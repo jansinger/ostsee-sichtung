@@ -5,6 +5,7 @@
 <script lang="ts">
 	import { createLogger } from '$lib/logger';
 	import Behavior from '$lib/report/components/sections/Behavior.svelte';
+	import BoatInfo from '$lib/report/components/sections/BoatInfo.svelte';
 	import Environment from '$lib/report/components/sections/Environment.svelte';
 	import Media from '$lib/report/components/sections/Media.svelte';
 	import { getFormContext } from '$lib/report/formContext';
@@ -80,4 +81,6 @@
 	<Behavior></Behavior>
 
 	<Environment></Environment>
+
+	<BoatInfo></BoatInfo>
 </div>

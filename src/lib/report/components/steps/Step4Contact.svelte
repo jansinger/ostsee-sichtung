@@ -109,23 +109,10 @@
 		     Legacy-API führt `strasse`/`plz`/`ort` weiter. -->
 	</div>
 
-	<!-- Boat Information Section -->
-	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 md:p-4">
-		<h3 class="mb-3 flex items-center gap-2 text-base font-semibold md:text-lg">
-			<Icon icon="lucide:anchor" width="20" class="text-primary" />
-			Boot-/Schiffsinformationen
-		</h3>
-
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<FormField name="shipName" />
-
-			<FormField name="homePort" />
-		</div>
-
-		<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-1">
-			<FormField name="boatType" />
-		</div>
-	</div>
+	<!-- Die Boot-/Schiffsangaben stehen seit dem 2026-07-31 auf Schritt 3
+	     (`sections/BoatInfo.svelte`): Sie beschreiben die Beobachtungssituation,
+	     nicht die Person. „Kontaktdaten löschen" oben räumt sie weiterhin mit
+	     auf — sie bleiben Teil von `USER_CONTACT_FIELDS`. -->
 
 	<!-- Additional Information Section -->
 	<div class="border-base-300 bg-base-200/50 rounded-lg border p-3 md:p-4">
