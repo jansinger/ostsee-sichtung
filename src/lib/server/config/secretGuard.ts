@@ -93,3 +93,32 @@ export function validateEncryptionKey(value: string): string | null {
 	}
 	return null;
 }
+
+/**
+ * Prüft beim Serverstart alle Produktions-Secrets und wirft mit einer Meldung,
+ * die **alle** gefundenen Probleme nennt.
+ *
+ * Beide Fehler gemeinsam zu melden ist Absicht: Ein Betreiber, der nur den ersten
+ * sieht, deployt zweimal.
+ */
+export function assertProductionSecrets(env: {
+	NODE_ENV: string;
+	SESSION_SECRET: string;
+	ENCRYPTION_KEY: string;
+}): void {
+	if (env.NODE_ENV !== 'production') {
+		return;
+	}
+
+	const problems = [
+		validateSessionSecret(env.SESSION_SECRET),
+		validateEncryptionKey(env.ENCRYPTION_KEY)
+	].filter((problem): problem is string => problem !== null);
+
+	if (problems.length > 0) {
+		throw new Error(
+			`Ungültige Produktions-Konfiguration:\n- ${problems.join('\n- ')}\n` +
+				'Der Server startet aus Sicherheitsgründen nicht.'
+		);
+	}
+}

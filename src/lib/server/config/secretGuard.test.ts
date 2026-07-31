@@ -5,7 +5,8 @@ import {
 	validateSessionSecret,
 	ENCRYPTION_KEY_LENGTH,
 	PLACEHOLDER_ENCRYPTION_KEY,
-	validateEncryptionKey
+	validateEncryptionKey,
+	assertProductionSecrets
 } from '$lib/server/config/secretGuard';
 
 describe('validateSessionSecret', () => {
@@ -79,5 +80,60 @@ describe('validateEncryptionKey', () => {
 
 	it('lehnt Nicht-Hex-Zeichen ab', () => {
 		expect(validateEncryptionKey('z'.repeat(64))).toMatch(/hexadezimal/);
+	});
+});
+
+describe('assertProductionSecrets', () => {
+	const good = { SESSION_SECRET: 'a'.repeat(48), ENCRYPTION_KEY: 'a3f1'.repeat(16) };
+
+	it('wirft nicht ausserhalb von production', () => {
+		expect(() =>
+			assertProductionSecrets({
+				NODE_ENV: 'development',
+				SESSION_SECRET: 'your-secret-key-here-min-32-chars',
+				ENCRYPTION_KEY: '0'.repeat(64)
+			})
+		).not.toThrow();
+	});
+
+	it('wirft nicht bei gültiger Produktionskonfiguration', () => {
+		expect(() => assertProductionSecrets({ NODE_ENV: 'production', ...good })).not.toThrow();
+	});
+
+	it('wirft in production bei öffentlich bekanntem SESSION_SECRET', () => {
+		expect(() =>
+			assertProductionSecrets({
+				NODE_ENV: 'production',
+				...good,
+				SESSION_SECRET: 'your-secret-key-here-min-32-chars'
+			})
+		).toThrow(/öffentlich bekannter Beispielwert/);
+	});
+
+	it('wirft in production bei zu kurzem ENCRYPTION_KEY', () => {
+		expect(() =>
+			assertProductionSecrets({
+				NODE_ENV: 'production',
+				...good,
+				ENCRYPTION_KEY: 'a3f1'.repeat(8)
+			})
+		).toThrow(/64 Zeichen/);
+	});
+
+	/* Beide Fehler zusammen: Die Meldung muss beide nennen, damit ein Betreiber nicht
+	   zweimal deployen muss, um beide zu finden. */
+	it('nennt beide Fehler in einer Meldung', () => {
+		let message = '';
+		try {
+			assertProductionSecrets({
+				NODE_ENV: 'production',
+				SESSION_SECRET: '',
+				ENCRYPTION_KEY: ''
+			});
+		} catch (error) {
+			message = error instanceof Error ? error.message : String(error);
+		}
+		expect(message).toMatch(/SESSION_SECRET/);
+		expect(message).toMatch(/ENCRYPTION_KEY/);
 	});
 });
