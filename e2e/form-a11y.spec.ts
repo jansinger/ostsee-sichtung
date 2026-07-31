@@ -329,14 +329,14 @@ test.describe('Accessibility — Alert-Kontrast', () => {
 			timeout: 3000
 		});
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Sichtungsdetails/i);
+		await expectCurrentStep(page, /Angaben zum Tier/i);
 
 		await fillStep2(formPage);
 		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeEnabled({
 			timeout: 3000
 		});
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Beobachtungen/i);
+		await expectCurrentStep(page, /Weitere Informationen/i);
 
 		// Grenze aus der Laufzeit-Konfiguration lesen statt eine feste Byte-Zahl zu
 		// raten — dieselbe Quelle, die `videoUpload.spec.ts` schon nutzt.
