@@ -51,3 +51,45 @@ export function validateSessionSecret(raw: string): string | null {
 	}
 	return null;
 }
+
+/**
+ * Platzhalter-Wert aus `.env.example` (64x "0") — NIE in Produktion nutzen.
+ */
+export const PLACEHOLDER_ENCRYPTION_KEY = '0'.repeat(64);
+
+/**
+ * `crypto.ts` nutzt aes-256-gcm. Das verlangt exakt 32 Byte Schlüssel,
+ * hex-kodiert also 64 Zeichen.
+ */
+export const ENCRYPTION_KEY_LENGTH = 64;
+
+const HEX_ONLY = /^[0-9a-f]+$/i;
+
+/**
+ * Prüft einen `ENCRYPTION_KEY`-Wert.
+ *
+ * @returns `null` wenn gültig, sonst die vollständige Fehlermeldung.
+ */
+export function validateEncryptionKey(value: string): string | null {
+	const hint = 'Erzeugen mit: openssl rand -hex 32';
+
+	if (!value) {
+		return `ENCRYPTION_KEY ist in Produktion erforderlich. ${hint}`;
+	}
+	if (value === PLACEHOLDER_ENCRYPTION_KEY) {
+		return (
+			'ENCRYPTION_KEY ist der Platzhalter aus der Beispiel-Konfiguration. ' +
+			`Die Verschlüsselung des PKCE-Verifiers wäre damit wirkungslos. ${hint}`
+		);
+	}
+	if (value.length !== ENCRYPTION_KEY_LENGTH) {
+		return (
+			`ENCRYPTION_KEY muss genau ${ENCRYPTION_KEY_LENGTH} Zeichen lang sein ` +
+			`(32 Byte für aes-256-gcm), ist aber ${value.length}. ${hint}`
+		);
+	}
+	if (!HEX_ONLY.test(value)) {
+		return `ENCRYPTION_KEY muss hexadezimal sein (nur 0-9 und a-f). ${hint}`;
+	}
+	return null;
+}
