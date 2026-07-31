@@ -1155,6 +1155,13 @@ paths:
         - Admin-Zugriff für nicht genehmigte Sichtungen
         - 404 für nicht existierende oder nicht autorisierte Dateien
 
+        **Caching:** Genehmigte Dateien sind CUID-benannt und unveränderlich
+        und bekommen `Cache-Control: public, max-age=31536000, immutable`.
+        Nicht genehmigte Dateien (nur per Admin-Zugriff erreichbar) bekommen
+        stattdessen `private, no-store` — geteilte Caches (CDN, Proxy) dürfen
+        sie nicht vorhalten, und eine spätere Ablehnung der Sichtung
+        invalidiert dadurch nichts Zwischengespeichertes.
+
         **Range-Unterstützung:**
         Die Route kündigt `Accept-Ranges: bytes` an und beantwortet einen
         `Range`-Header mit `206 Partial Content`, sofern der Storage den
@@ -1205,7 +1212,10 @@ paths:
                 type: string
                 example: 'inline; filename="photo.jpg"'
             Cache-Control:
-              description: Cache-Einstellungen
+              description: |
+                Cache-Einstellungen. `public, max-age=31536000, immutable` für
+                genehmigte Dateien, `private, no-store` für nicht genehmigte
+                (nur per Admin-Zugriff erreichbar).
               schema:
                 type: string
                 example: "public, max-age=31536000, immutable"
@@ -2089,7 +2099,10 @@ paths:
                 type: integer
                 example: 1024000
             Cache-Control:
-              description: Cache-Einstellungen
+              description: |
+                Cache-Einstellungen. `public, max-age=31536000, immutable` für
+                genehmigte Dateien, `private, no-store` für nicht genehmigte
+                (nur per Admin-Zugriff erreichbar).
               schema:
                 type: string
                 example: "public, max-age=31536000, immutable"

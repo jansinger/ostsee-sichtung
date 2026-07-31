@@ -174,10 +174,20 @@ export const GET: RequestHandler = async ({ params, url, request, locals, getCli
 		const totalSize = metadata.size;
 		const range = parseRangeHeader(request.headers.get('range'), totalSize);
 
+		// Freigegebene Dateien sind CUID-benannt und unveränderlich — die lange
+		// öffentliche Cache-Dauer ist dort gewollt. Nicht freigegebene Dateien
+		// liefert dieser Endpunkt nur an Admins aus (siehe isApproved-Zweig
+		// oben); `public` würde geteilten Caches (CDN, Firmenproxy,
+		// Reverse-Proxy-Cache) trotzdem erlauben, sie vorzuhalten und
+		// weiterzureichen — und `immutable` über ein Jahr verhindert, dass eine
+		// spätere Ablehnung der Sichtung diesen Cache invalidiert. Vorbestehender
+		// Befund, nicht durch diesen Branch eingeführt.
+		const cacheControl = isApproved ? 'public, max-age=31536000, immutable' : 'private, no-store';
+
 		const baseHeaders: Record<string, string> = {
 			'Content-Type': file.mimeType,
 			'Content-Disposition': `inline; filename="${encodeURIComponent(file.originalName)}"`,
-			'Cache-Control': 'public, max-age=31536000, immutable',
+			'Cache-Control': cacheControl,
 			ETag: `"${Buffer.from(filePath + totalSize).toString('base64')}"`,
 			'Accept-Ranges': 'bytes',
 			'X-Content-Type-Options': 'nosniff',
