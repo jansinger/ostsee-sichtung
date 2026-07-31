@@ -308,7 +308,7 @@
 	     Hand — beides ist im Karten-Control nicht erreichbar. -->
 	<button
 		type="button"
-		class="btn btn-outline min-h-11 w-full md:w-auto"
+		class="btn btn-outline w-full md:w-auto"
 		onclick={useCurrentPosition}
 		aria-disabled={locating}
 		data-testid="use-current-position"
