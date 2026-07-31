@@ -88,6 +88,45 @@ export function getFileExtension(fileNameOrMimeType: string): string {
 }
 
 /**
+ * Sonderfälle für die Übersetzung von MIME-Typ in einen für Melder lesbaren
+ * Formatnamen. Ohne diese Tabelle würde aus `image/jpeg` „JPEG" (Melder
+ * kennen „JPG") und aus `video/quicktime` „QUICKTIME" statt „MOV".
+ *
+ * Einzige Quelle für diese Zuordnung — vormals dupliziert in
+ * `$lib/constants/upload.ts` (`describeFormats`) und
+ * `$lib/utils/validation/fileValidation.ts` (`getFileTypeDescription`).
+ * Diese Datei importiert selbst nichts, ist also für beide zyklusfrei
+ * erreichbar.
+ */
+const FILE_FORMAT_NAMES: Record<string, string> = {
+	'image/jpeg': 'JPG',
+	'video/quicktime': 'MOV',
+	'video/x-msvideo': 'AVI',
+	'video/x-matroska': 'MKV'
+};
+
+/**
+ * Übersetzt einen einzelnen MIME-Typ in seinen für Melder lesbaren Formatnamen.
+ * @param mimeType - Der zu übersetzende MIME-Typ
+ * @returns Lesbarer Formatname (z. B. "JPG", "MOV") oder, mangels Sonderfall,
+ *   der großgeschriebene Subtyp; bei fehlerhaften MIME-Typen der MIME-Typ selbst.
+ */
+export function getFormatName(mimeType: string): string {
+	return FILE_FORMAT_NAMES[mimeType] ?? mimeType.split('/')[1]?.toUpperCase() ?? mimeType;
+}
+
+/**
+ * Erzeugt eine benutzerfreundliche, entdoppelte Liste von Formatnamen aus
+ * einer Liste von MIME-Typen. "image/jpeg, image/jpg" → "JPG" (nicht "JPG, JPG").
+ * @param mimeTypes - Liste von MIME-Typen
+ * @returns Kommagetrennte, entdoppelte Liste lesbarer Formatnamen
+ */
+export function describeFileFormats(mimeTypes: readonly string[]): string {
+	const names = mimeTypes.map(getFormatName);
+	return [...new Set(names)].join(', ');
+}
+
+/**
  * Gets mime type from file extension
  * @param extension - File extension (with or without dot)
  * @returns Mime type string

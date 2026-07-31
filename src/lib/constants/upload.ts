@@ -3,10 +3,16 @@
  * Single source of truth for all upload-related settings
  */
 
+import { MEDIA_FALLBACK_EMAIL } from '$lib/constants/contact';
+import { describeFileFormats, isVideoFile } from '$lib/utils/file/fileType';
+
 // File size limits (in bytes)
 export const UPLOAD_LIMITS = {
 	/** Maximum file size for regular uploads (50MB) */
 	MAX_FILE_SIZE: 50 * 1024 * 1024,
+
+	/** Maximum video file size when no runtime configuration is available (100MB) */
+	MAX_VIDEO_FILE_SIZE: 100 * 1024 * 1024,
 
 	/** Maximum file size for GPS photos in position step (10MB) */
 	PHOTO_GPS_MAX_SIZE: 10 * 1024 * 1024,
@@ -14,8 +20,13 @@ export const UPLOAD_LIMITS = {
 	/** Maximum number of files per upload session */
 	MAX_FILES: 20,
 
-	/** Maximum total size for all files in one session (200MB) */
-	MAX_TOTAL_SIZE: 200 * 1024 * 1024
+	/**
+	 * Offline-Fallback für die Gesamtgröße einer Meldung. Im Normalbetrieb
+	 * entscheidet `security.maxTotalUploadSize` auf dem Server; dieser Wert
+	 * greift nur, solange die Konfiguration nicht geladen ist, und muss
+	 * deshalb ≤ deren Vorbelegung bleiben.
+	 */
+	MAX_TOTAL_SIZE: 250 * 1024 * 1024
 } as const;
 
 // Allowed MIME types
@@ -30,16 +41,11 @@ export const ALLOWED_MIME_TYPES = {
 		// Note: image/svg+xml excluded for security reasons
 	],
 
-	VIDEOS: [
-		'video/mp4',
-		'video/avi',
-		'video/mov',
-		'video/wmv',
-		'video/flv',
-		'video/webm',
-		'video/mkv',
-		'video/m4v'
-	],
+	// Nur MIME-Typen, die Browser tatsächlich melden. `video/mov`, `video/avi`,
+	// `video/mkv`, `video/wmv` und `video/flv` standen hier, kommen aber aus
+	// keinem Browser — die richtigen Schreibweisen sind video/quicktime,
+	// video/x-msvideo, video/x-matroska, video/x-ms-wmv und video/x-flv.
+	VIDEOS: ['video/mp4', 'video/quicktime', 'video/webm', 'video/m4v'],
 
 	get MEDIA() {
 		return [...this.IMAGES, ...this.VIDEOS];
@@ -56,6 +62,7 @@ export const FILE_VALIDATION_PRESETS = {
 	MEDIA: {
 		allowedTypes: ALLOWED_MIME_TYPES.MEDIA,
 		maxFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
+		maxVideoFileSize: UPLOAD_LIMITS.MAX_VIDEO_FILE_SIZE,
 		maxFiles: UPLOAD_LIMITS.MAX_FILES,
 		accept: 'image/*,video/*'
 	},
@@ -64,6 +71,7 @@ export const FILE_VALIDATION_PRESETS = {
 	GPS_PHOTO: {
 		allowedTypes: ALLOWED_MIME_TYPES.IMAGES,
 		maxFileSize: UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE,
+		maxVideoFileSize: UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE,
 		maxFiles: 1,
 		accept: 'image/*'
 	},
@@ -72,18 +80,37 @@ export const FILE_VALIDATION_PRESETS = {
 	IMAGES_ONLY: {
 		allowedTypes: ALLOWED_MIME_TYPES.IMAGES,
 		maxFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
+		maxVideoFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
 		maxFiles: UPLOAD_LIMITS.MAX_FILES,
 		accept: 'image/*'
 	}
 } as const;
 
 // Error messages for upload validation
+//
+// Die Texte nennen bewusst die IST-Größe und einen Ausweg. „Datei zu groß.
+// Maximum: 10MB" sagt dem Melder nicht, wie weit er daneben liegt, und rohe
+// MIME-Typen („image/jpeg, image/png") sind für ihn keine Formatangabe.
 export const UPLOAD_ERROR_MESSAGES = {
-	FILE_TOO_LARGE: (fileName: string, maxSize: number) =>
-		`${fileName}: Datei zu groß. Maximum: ${Math.round(maxSize / 1024 / 1024)}MB`,
+	FILE_TOO_LARGE: (
+		fileName: string,
+		maxSize: number,
+		actualSize: number,
+		mimeType: string
+	): string => {
+		const actualMB = Math.round(actualSize / 1024 / 1024);
+		const maxMB = Math.round(maxSize / 1024 / 1024);
+		// Der MIME-Typ kommt von der Aufrufstelle, nicht aus dem Dateinamen:
+		// Ein „.mov" mit HEVC und ein „.mp4" melden sich unterschiedlich, und
+		// eine Endung ist ohnehin frei wählbar.
+		const hint = isVideoFile(mimeType)
+			? ` Nehmen Sie das Video in geringerer Auflösung auf oder kürzen Sie es — oder senden Sie es an ${MEDIA_FALLBACK_EMAIL}.`
+			: '';
+		return `${fileName}: zu groß mit ${actualMB} MB (erlaubt sind ${maxMB} MB).${hint}`;
+	},
 
 	INVALID_TYPE: (fileName: string, allowedTypes: readonly string[]) =>
-		`${fileName}: Ungültiger Dateityp. Erlaubt: ${allowedTypes.join(', ')}`,
+		`${fileName}: Dieses Format können wir nicht annehmen. Möglich sind ${describeFileFormats(allowedTypes)}.`,
 
 	TOO_MANY_FILES: (maxFiles: number) => `Zu viele Dateien. Maximum: ${maxFiles}`,
 

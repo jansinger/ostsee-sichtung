@@ -292,7 +292,7 @@ server {
         proxy_set_header X-Forwarded-Host $host;
     }
 
-    client_max_body_size 50M;
+    client_max_body_size 120M;
 }
 ```
 
@@ -361,6 +361,41 @@ Eigenschaften des Migrationslaufs:
   werden).
 
 > **Migration von schweinswalsichtung.de** oder komplexe DB-Operationen (Permissions, Reference-IDs, Upload-Migration): Siehe [DATABASE_MIGRATION.md](./DATABASE_MIGRATION.md).
+
+### Manuelle Betriebsaufgaben (einmalig, nicht automatisiert)
+
+Zwei Punkte laufen bewusst **nicht** über die automatischen Schema-Migrationen
+oben — beide müssen von Hand nachgezogen werden, sonst bleiben sie unbemerkt
+liegen:
+
+- **`BODY_SIZE_LIMIT` über der Video-Upload-Grenze setzen.** Der Node-Adapter
+  bricht Uploads über diesem Wert auf Plattformebene ab, bevor die Anwendung
+  ihre eigene, verständliche Fehlermeldung zeigen kann — der Melder sieht dann
+  nur einen allgemeinen Übertragungsfehler. Muss mindestens
+  `security.maxVideoFileSize` + 1 MB Multipart-Rahmen betragen und zusammen mit
+  der Grenze des Reverse Proxy (`client_max_body_size` bei Nginx, siehe Option B
+  oben) gepflegt werden. Details und Formel: [ENVIRONMENT.md → `BODY_SIZE_LIMIT`](./ENVIRONMENT.md#body_size_limit).
+  Ein Serverstart warnt bei Unterschreitung in den Logs
+  (`grep body_size_limit_too_low`); `PUT /api/config` lehnt seit dem
+  Abschlussreview des Video-Uploads eine `security.maxVideoFileSize`/
+  `security.maxFileSize`-Änderung ab, die diesen Wert unterschreiten würde.
+
+- **`scripts/migrations/2026-07-31-upload-allowed-types-gif.sql` ausführen** —
+  einmalig, für jede Installation, die `security.allowedFileTypes` bereits vor
+  dem 2026-07-31 angelegt hat (also praktisch jede bestehende Production-DB).
+  Ohne diesen Lauf nimmt die Dropzone weiterhin GIFs an, die der Server mit 400
+  ablehnt: Die Code-Vorbelegung wurde um `image/gif` ergänzt, greift aber nur
+  bei **Neuanlage** des Schlüssels (`insertManyIfAbsent`), nicht bei einer
+  bereits vorhandenen Zeile. Das Skript liegt bewusst **nicht** unter
+  `drizzle/` — es korrigiert den Inhalt einer bestehenden Konfigurationszeile
+  (Daten), nicht das Tabellenschema, und der automatische Migrationslauf des
+  Containers fasst `drizzle/` nur für Schema-Änderungen an. Idempotent, kann
+  gefahrlos mehrfach laufen:
+
+  ```bash
+  docker compose exec -T db psql -U postgres -d ostsee \
+    -f - < scripts/migrations/2026-07-31-upload-allowed-types-gif.sql
+  ```
 
 ---
 

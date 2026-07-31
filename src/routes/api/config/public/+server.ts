@@ -1,5 +1,5 @@
 import { createLogger } from '$lib/logger.server';
-import { ServerConfigService, DEFAULT_VALUES } from '$lib/services/configService';
+import { ServerConfigService, DEFAULT_CONFIG_VALUES } from '$lib/services/configService';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
@@ -25,7 +25,7 @@ export const GET: RequestHandler = async ({ setHeaders }) => {
 				publicConfigs[key] = await ServerConfigService.get(key);
 			} catch (error) {
 				logger.warn({ error, key }, 'Failed to get public config, using default');
-				publicConfigs[key] = DEFAULT_VALUES[key];
+				publicConfigs[key] = DEFAULT_CONFIG_VALUES[key];
 			}
 		}
 

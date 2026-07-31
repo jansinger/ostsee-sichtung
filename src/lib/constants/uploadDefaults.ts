@@ -1,32 +1,53 @@
 /**
  * Öffentliche Upload-Konfiguration (anonyme Melder).
  *
- * Einzige Quelle für die Werte, die `/api/config/upload` an nicht
- * authentifizierte Nutzer ausliefert UND für die Client-Fallbacks in
- * `$lib/stores/configStore`. Beide Seiten müssen übereinstimmen: Weichen sie
- * ab, akzeptiert die Dropzone Dateien, die der Server anschließend ablehnt
- * (oder die UI verspricht Formate, die es gar nicht gibt).
+ * Diese Werte sind **Fallbacks**: Im Normalbetrieb liefert
+ * `GET /api/config/upload` die Größen aus der Laufzeit-Konfiguration. Greift
+ * der Fetch nicht (Offline, SSR), fällt `$lib/stores/configStore` hierauf
+ * zurück — und dann muss gelten, dass diese Werte nie mehr versprechen, als die
+ * Vorbelegung der Konfiguration hergibt. Sonst akzeptiert die Dropzone Dateien,
+ * die der Server anschließend ablehnt.
  *
- * Authentifizierte Nutzer (Admin) erhalten stattdessen die Laufzeit-Konfiguration
- * aus dem ConfigService — die kann großzügiger sein.
+ * Abgesichert durch `uploadLimitConsistency.test.ts`.
  */
 export const PUBLIC_UPLOAD_MAX_FILE_SIZE_MB = 10;
 
 export const PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES = PUBLIC_UPLOAD_MAX_FILE_SIZE_MB * 1024 * 1024;
 
 /**
- * Obergrenze, die `POST /api/files/upload` für nicht authentifizierte Melder
- * durchlässt. Muss mit der öffentlichen Konfiguration übereinstimmen — sonst
- * nimmt die Dropzone eine Datei an, die der Server danach mit 413 ablehnt.
- * Abgesichert durch `uploadLimitConsistency.test.ts`.
+ * Offline-Fallback für die Videogrenze. Gilt nur, solange
+ * `GET /api/config/upload` nicht erreichbar ist — im Normalbetrieb kommt der
+ * Wert aus `security.maxVideoFileSize`.
+ *
+ * Muss ≤ der Vorbelegung von `security.maxVideoFileSize` bleiben, sonst
+ * verspricht der Fallback mehr, als der Server annimmt
+ * (`uploadLimitConsistency.test.ts`).
  */
-export const ANONYMOUS_UPLOAD_MAX_SIZE_BYTES = PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES;
+export const PUBLIC_UPLOAD_MAX_VIDEO_FILE_SIZE_MB = 100;
+
+export const PUBLIC_UPLOAD_MAX_VIDEO_FILE_SIZE_BYTES =
+	PUBLIC_UPLOAD_MAX_VIDEO_FILE_SIZE_MB * 1024 * 1024;
 
 export const PUBLIC_UPLOAD_ALLOWED_TYPES = [
 	'image/jpeg',
 	'image/png',
 	'image/gif',
-	'image/webp'
+	'image/webp',
+	'video/mp4',
+	'video/quicktime'
 ] as const;
 
-export const PUBLIC_UPLOAD_ACCEPT = PUBLIC_UPLOAD_ALLOWED_TYPES.join(',');
+/**
+ * `accept`-Attribut für den Datei-Dialog. MIME-Typen werden zu `image/*` bzw.
+ * `video/*` gruppiert — derselbe Aufbau wie `buildAccept()` in
+ * `GET /api/config/upload`, damit anonyme und authentifizierte Melder denselben
+ * Dialog sehen. Ein einzelner `video/mp4,video/quicktime` würde den Dialog auf
+ * genau diese Container beschränken, statt alle Video-Dateien anzubieten.
+ */
+export const PUBLIC_UPLOAD_ACCEPT = [
+	...new Set(
+		PUBLIC_UPLOAD_ALLOWED_TYPES.map((type) =>
+			type.startsWith('image/') ? 'image/*' : type.startsWith('video/') ? 'video/*' : type
+		)
+	)
+].join(',');

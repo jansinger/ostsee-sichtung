@@ -614,7 +614,7 @@ server {
     ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
 
-    client_max_body_size 50M;
+    client_max_body_size 120M;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -1075,8 +1075,10 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
 
-    # Max upload size (50MB for images)
-    client_max_body_size 50M;
+    # Max upload size — muss zur App-Grenze passen (security.maxVideoFileSize,
+    # Vorbelegung 100 MB) und mit BODY_SIZE_LIMIT übereinstimmen, siehe
+    # ENVIRONMENT.md → BODY_SIZE_LIMIT
+    client_max_body_size 120M;
 
     location / {
         proxy_pass http://localhost:3000;

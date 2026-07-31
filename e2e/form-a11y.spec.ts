@@ -309,6 +309,70 @@ test.describe('Accessibility — Alert-Kontrast', () => {
 			expect(ratio, `${name}: gemessen ${formatRatio(ratio)}:1`).toBeGreaterThanOrEqual(4.5);
 		}
 	});
+
+	/**
+	 * Der bleibende Fehlerbereich der Dropzone (`UnifiedDropzone.svelte`,
+	 * `[data-testid="dropzone-errors"]`) nutzt dieselbe `alert alert-error`-Klasse
+	 * wie oben, ist aber eine eigene Aufrufstelle mit eigenem
+	 * `text-error-strong`-Icon — ein neuer Ort, an dem der Soft-Tint-Fehler von
+	 * oben (Statusfarbe als Fließtext) versehentlich wieder auftauchen könnte.
+	 * Gemessen wird das echte, im Browser gerenderte Element (nicht nur eine
+	 * Probe mit denselben Klassen), damit ein Wechsel der Aufrufstelle auf eine
+	 * andere Klasse ebenfalls auffällt.
+	 *
+	 * Selektor bewusst über `data-testid`, nicht über die `id`: Die `id` des
+	 * Fehlerbereichs wird pro Dropzone-Instanz aus einer zufälligen `inputId`
+	 * abgeleitet (Befund 2, PR #682 Review) — auf einer Seite mit mehreren
+	 * Dropzones ist sie also nicht vorhersagbar. Das `data-testid` ist stabil.
+	 */
+	test('der bleibende Fehlerbereich der Dropzone erreicht WCAG AA (4,5:1)', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		await fillStep1(formPage);
+		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeEnabled({
+			timeout: 3000
+		});
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Angaben zum Tier/i);
+
+		await fillStep2(formPage);
+		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeEnabled({
+			timeout: 3000
+		});
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Weitere Informationen/i);
+
+		// Grenze aus der Laufzeit-Konfiguration lesen statt eine feste Byte-Zahl zu
+		// raten — dieselbe Quelle, die `videoUpload.spec.ts` schon nutzt.
+		const configResponse = await page.request.get('/api/config/upload');
+		expect(configResponse.ok()).toBe(true);
+		const { maxFileSizeBytes } = await configResponse.json();
+
+		const input = page.locator('[data-testid="dropzone-input"]');
+		await input.waitFor({ state: 'attached' });
+		await input.setInputFiles({
+			name: 'zu-gross.jpg',
+			mimeType: 'image/jpeg',
+			buffer: Buffer.alloc(maxFileSizeBytes + 1)
+		});
+
+		const errorRegion = page.locator('[data-testid="dropzone-errors"]');
+		await expect(errorRegion).toBeVisible();
+
+		const [measured] = await measureContrast(page, [
+			{
+				name: 'dropzone-errors',
+				selector: '[data-testid="dropzone-errors"]',
+				backdrop: 'var(--color-base-100)'
+			}
+		]);
+
+		expect(
+			measured.ratio,
+			`${measured.name}: gemessen ${formatRatio(measured.ratio)}:1`
+		).toBeGreaterThanOrEqual(4.5);
+	});
 });
 
 // ── Kontrast von `text-error` als Button-Beschriftung ──────────────────────

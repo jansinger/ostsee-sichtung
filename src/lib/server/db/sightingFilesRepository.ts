@@ -1,6 +1,6 @@
 import { createLogger } from '$lib/logger.server';
 import type { UploadedFileInfo } from '$lib/types';
-import { eq } from 'drizzle-orm';
+import { eq, sum } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { db } from '.';
 import { sightingFiles } from './schema';
@@ -50,6 +50,22 @@ export async function deleteFileByPath(filePath: string) {
 		.where(eq(sightingFiles.filePath, filePath))
 		.returning({ uid: sightingFiles.uid });
 	logger.info({ filePath, count: result.length }, 'Mediendatei erfolgreich gelöscht');
+}
+
+/**
+ * Summe der bereits für eine Meldung hochgeladenen Dateien, in Bytes.
+ *
+ * Der Client prüft die Gesamtgröße in `validateFiles()`, aber jeder Upload ist
+ * ein eigener Request — ohne diese Prüfung ist die Summe serverseitig
+ * unbegrenzt.
+ */
+export async function sumFileSizesForReference(referenceId: string): Promise<number> {
+	const [row] = await db
+		.select({ total: sum(sightingFiles.size) })
+		.from(sightingFiles)
+		.where(eq(sightingFiles.referenceId, referenceId));
+
+	return Number(row?.total ?? 0);
 }
 
 export async function setSightingIdForReferenceId(

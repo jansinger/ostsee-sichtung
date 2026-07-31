@@ -4,7 +4,7 @@
 
 import type { FormApi } from '$lib/form/createForm';
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
-import type { MediaStore } from '$lib/utils/media/MediaFile';
+import type { MediaStore } from '$lib/utils/media/MediaFile.svelte';
 import * as yup from 'yup';
 
 export interface FormStep {
