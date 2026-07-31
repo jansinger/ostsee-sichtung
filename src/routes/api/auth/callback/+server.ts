@@ -5,9 +5,9 @@ import {
 	getPKCEVerifierFromCookie,
 	getToken,
 	getTokenClaims,
-	setAuthCookie,
 	verifyToken
 } from '$lib/server/auth/auth.js';
+import { createSession } from '$lib/server/auth/sessionRepository';
 import { sanitizeReturnUrl } from '$lib/server/auth/returnUrl';
 import type { User } from '$lib/types';
 import { error, redirect, type Cookies } from '@sveltejs/kit';
@@ -77,7 +77,7 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 
 		authUser.roles = claims[rolesClaim] || [];
 
-		await setAuthCookie(cookies, authUser);
+		await createSession(cookies, authUser);
 		// Fire-and-forget: audit write must not delay the redirect (login latency)
 		void logAuditEvent({
 			action: 'auth.login_success',

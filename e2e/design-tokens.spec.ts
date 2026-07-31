@@ -479,7 +479,8 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 		if (!page.url().startsWith(baseURL ?? '')) {
 			throw new Error(
 				`${route.path} hat auf ${page.url()} umgeleitet — das Session-Cookie wurde nicht akzeptiert. ` +
-					'Prüfe SESSION_SECRET und COOKIE_NAME in .env (siehe e2e/helpers/adminSession.ts).'
+					'Prüfe DATABASE_POSTGRES_URL und COOKIE_NAME in .env und ob die sessions-Tabelle ' +
+					'migriert ist (siehe e2e/helpers/adminSession.ts).'
 			);
 		}
 
@@ -491,7 +492,7 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 		if (status === 401 || status === 403) {
 			throw new Error(
 				`${route.path} antwortet mit ${status} — die Session gilt, aber die Rolle reicht nicht. ` +
-					'ADMIN_IDENTITY.roles in e2e/helpers/adminSession.ts muss die von requireUserRole geforderte Rolle enthalten.'
+					'Die roles-Spalte der Session-Zeile aus e2e/helpers/adminSession.ts muss die von requireUserRole geforderte Rolle enthalten.'
 			);
 		}
 	};

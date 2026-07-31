@@ -15,6 +15,8 @@ export type AuditAction =
 	| 'config.delete'
 	| 'auth.login_success'
 	| 'auth.login_failure'
+	| 'auth.logout'
+	| 'auth.session_revoked'
 	| 'export.download';
 
 export type ResourceType = 'sighting' | 'file' | 'config' | 'auth' | 'export';

@@ -120,7 +120,6 @@ PGPASSWORD="DEIN_SICHERES_PASSWORT"
 # DATABASE_POSTGRES_URL="postgresql://user:pass@db.example.com:5432/ostsee"
 
 # Security Keys (WICHTIG: Generiere diese mit den Befehlen unten!)
-SESSION_SECRET="HIER_GENERIERTEN_WERT_EINFÜGEN"
 ENCRYPTION_KEY="HIER_GENERIERTEN_WERT_EINFÜGEN"
 
 # Token für den Aufräum-Cron (verwaiste Uploads). Ohne Wert bleibt der
@@ -176,9 +175,6 @@ LOG_LEVEL="info"
 ### Security Keys generieren
 
 ```bash
-# SESSION_SECRET (mindestens 32 Zeichen)
-openssl rand -base64 32
-
 # ENCRYPTION_KEY (64 Hex-Zeichen)
 openssl rand -hex 32
 

@@ -1261,7 +1261,12 @@ paths:
       tags:
         - auth
       summary: Logout
-      description: Meldet den Benutzer ab und leitet zu Auth0 Logout weiter
+      description: >
+        Beendet die Session serverseitig und leitet zu Auth0 Logout weiter.
+
+        Der Aufruf widerruft die Session-Zeile in der Datenbank: Das Cookie ist danach
+        auch dann ungültig, wenn der Client es behält. Bis zum Session-Store löschte
+        dieser Endpunkt nur das Cookie, das signierte JWT blieb gültig.
       responses:
         '302':
           description: Weiterleitung zu Auth0 Logout
@@ -2103,6 +2108,12 @@ components:
       name: auth-cookie
       description: >
         Session-Cookie für Admin-Authentifizierung.
+
+        Der Wert ist ein opakes Zufalls-Token (32 Byte, base64url) ohne eigenen Inhalt —
+        kein JWT. Der Session-Zustand (Identität, Rollen, Ablauf) liegt serverseitig in
+        der Tabelle `sessions`; das Cookie ist nur der Schlüssel darauf. Es trägt damit
+        keine Identitätsdaten mehr und lässt sich nicht dekodieren.
+
         Der Cookie-Name ist der Default-Wert (`auth-cookie`) und kann per
         `COOKIE_NAME` Umgebungsvariable überschrieben werden.
 
@@ -2176,6 +2187,11 @@ components:
         remaining:
           type: integer
           description: Vom Deckel übrig gelassene Fundstücke; erneut aufrufen.
+        sessionsRemoved:
+          type: integer
+          description: >
+            Im selben Lauf gelöschte abgelaufene oder widerrufene Session-Zeilen.
+            Nur bei `mode=execute` größer als 0.
 
     Error:
       type: object

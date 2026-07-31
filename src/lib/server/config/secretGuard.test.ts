@@ -1,57 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-	MIN_SESSION_SECRET_LENGTH,
-	PUBLIC_SESSION_SECRETS,
-	validateSessionSecret,
 	ENCRYPTION_KEY_LENGTH,
 	PLACEHOLDER_ENCRYPTION_KEY,
 	validateEncryptionKey,
 	assertProductionSecrets
 } from '$lib/server/config/secretGuard';
-
-describe('validateSessionSecret', () => {
-	it('akzeptiert ein ausreichend langes, unbekanntes Secret', () => {
-		expect(validateSessionSecret('a'.repeat(48))).toBeNull();
-	});
-
-	it('lehnt einen leeren Wert ab', () => {
-		expect(validateSessionSecret('')).toMatch(/SESSION_SECRET/);
-	});
-
-	it('lehnt einen zu kurzen Wert ab', () => {
-		const tooShort = 'x'.repeat(MIN_SESSION_SECRET_LENGTH - 1);
-		expect(validateSessionSecret(tooShort)).toMatch(/32/);
-	});
-
-	it('lehnt den Platzhalter aus .env.example ab', () => {
-		expect(validateSessionSecret('your-secret-key-here-min-32-chars')).toMatch(/öffentlich/);
-	});
-
-	it('lehnt den Beispielwert aus docs/ENVIRONMENT.md ab', () => {
-		expect(validateSessionSecret('8K7h3L9mN2pQ4rS6tU8vW0xY2zA4bC6dE')).toMatch(/öffentlich/);
-	});
-
-	/* Ein Leerzeichen oder Zeilenumbruch um den Platzhalter darf die Prüfung nicht
-	   aushebeln — sonst ist der Guard still wirkungslos. */
-	it('lehnt den Platzhalter auch mit Leerraum drumherum ab', () => {
-		expect(validateSessionSecret('  your-secret-key-here-min-32-chars\n')).toMatch(/öffentlich/);
-	});
-
-	it('lehnt einen Wert ab, der nur aus Leerraum besteht', () => {
-		expect(validateSessionSecret('   ')).toMatch(/erforderlich/);
-	});
-
-	/* Der Kern des Befunds aus #635: Beide öffentlich bekannten Werte sind 33 Zeichen lang
-	   und bestehen jede reine Längenprüfung. Ohne diesen Test ist die naheliegende
-	   Implementierung (nur `>= 32`) grün und trotzdem falsch. */
-	it.each([...PUBLIC_SESSION_SECRETS])(
-		'erkennt, dass %s die Längenprüfung bestehen würde',
-		(known) => {
-			expect(known.length).toBeGreaterThanOrEqual(MIN_SESSION_SECRET_LENGTH);
-			expect(validateSessionSecret(known)).not.toBeNull();
-		}
-	);
-});
 
 describe('validateEncryptionKey', () => {
 	const valid = 'a3f1'.repeat(16); // 64 Hex-Zeichen = 32 Byte
@@ -96,13 +49,12 @@ describe('validateEncryptionKey', () => {
 });
 
 describe('assertProductionSecrets', () => {
-	const good = { SESSION_SECRET: 'a'.repeat(48), ENCRYPTION_KEY: 'a3f1'.repeat(16) };
+	const good = { ENCRYPTION_KEY: 'a3f1'.repeat(16) };
 
 	it('wirft nicht ausserhalb von production', () => {
 		expect(() =>
 			assertProductionSecrets({
 				NODE_ENV: 'development',
-				SESSION_SECRET: 'your-secret-key-here-min-32-chars',
 				ENCRYPTION_KEY: '0'.repeat(64)
 			})
 		).not.toThrow();
@@ -112,14 +64,13 @@ describe('assertProductionSecrets', () => {
 		expect(() => assertProductionSecrets({ NODE_ENV: 'production', ...good })).not.toThrow();
 	});
 
-	it('wirft in production bei öffentlich bekanntem SESSION_SECRET', () => {
+	it('wirft in production bei Platzhalter-ENCRYPTION_KEY', () => {
 		expect(() =>
 			assertProductionSecrets({
 				NODE_ENV: 'production',
-				...good,
-				SESSION_SECRET: 'your-secret-key-here-min-32-chars'
+				ENCRYPTION_KEY: '0'.repeat(64)
 			})
-		).toThrow(/öffentlich bekannter Beispielwert/);
+		).toThrow(/Platzhalter/);
 	});
 
 	it('wirft in production bei zu kurzem ENCRYPTION_KEY', () => {
@@ -132,20 +83,13 @@ describe('assertProductionSecrets', () => {
 		).toThrow(/64 Zeichen/);
 	});
 
-	/* Beide Fehler zusammen: Die Meldung muss beide nennen, damit ein Betreiber nicht
-	   zweimal deployen muss, um beide zu finden. */
-	it('nennt beide Fehler in einer Meldung', () => {
+	it('nennt die betroffene Variable in der Meldung', () => {
 		let message = '';
 		try {
-			assertProductionSecrets({
-				NODE_ENV: 'production',
-				SESSION_SECRET: '',
-				ENCRYPTION_KEY: ''
-			});
+			assertProductionSecrets({ NODE_ENV: 'production', ENCRYPTION_KEY: '' });
 		} catch (error) {
 			message = error instanceof Error ? error.message : String(error);
 		}
-		expect(message).toMatch(/SESSION_SECRET/);
 		expect(message).toMatch(/ENCRYPTION_KEY/);
 	});
 
@@ -156,12 +100,8 @@ describe('assertProductionSecrets', () => {
 		'greift auch bei der Schreibweise NODE_ENV=%j',
 		(nodeEnv) => {
 			expect(() =>
-				assertProductionSecrets({
-					NODE_ENV: nodeEnv,
-					SESSION_SECRET: '',
-					ENCRYPTION_KEY: ''
-				})
-			).toThrow(/SESSION_SECRET/);
+				assertProductionSecrets({ NODE_ENV: nodeEnv, ENCRYPTION_KEY: '' })
+			).toThrow(/ENCRYPTION_KEY/);
 		}
 	);
 
@@ -170,11 +110,7 @@ describe('assertProductionSecrets', () => {
 	   für "prod" zu erfinden wäre eine eigene Entscheidung, die der Guard nicht treffen soll. */
 	it('behandelt NODE_ENV="prod" NICHT als Produktion', () => {
 		expect(() =>
-			assertProductionSecrets({
-				NODE_ENV: 'prod',
-				SESSION_SECRET: '',
-				ENCRYPTION_KEY: ''
-			})
+			assertProductionSecrets({ NODE_ENV: 'prod', ENCRYPTION_KEY: '' })
 		).not.toThrow();
 	});
 });
