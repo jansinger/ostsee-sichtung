@@ -758,6 +758,7 @@
 			und AT-Reihenfolge — aria-hidden allein ließe die Zoom-Buttons
 			fokussierbar (WCAG 4.1.2, axe "aria-hidden-focus").
 		-->
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 		<div
 			id={mapContainerId}
 			class="sightings-map-target h-full w-full"
