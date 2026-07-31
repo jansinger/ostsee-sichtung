@@ -26,6 +26,33 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 	const csrfState = cookies.get('csrfState');
 	const pkceVerifier = getPKCEVerifierFromCookie(cookies);
 
+	// Ein vorhandener State, der nicht passt, ist das einzige echte CSRF-Signal — nur dann
+	// darf hart abgewiesen werden.
+	const stateContradicts = !!csrfState && state !== csrfState;
+
+	// Sonst ist ein fehlendes Flow-Cookie bei vorhandenem code ein abgelaufener oder
+	// verbrauchter Flow, kein Angriff: Die Cookies leben 10 Minuten
+	// (COOKIE_AUTHORIZE_DURATION_SECONDS), Auth0 zeigt bei nicht verifizierbaren
+	// Callback-URIs wie localhost immer einen nicht abschaltbaren Consent-Screen, und der
+	// PKCE-Verifier ist Single-Use — ein zweiter Callback mit demselben code (Reload,
+	// Zurück-Taste, wiederhergestellter Tab) findet ihn nie wieder vor. Alle drei Fälle
+	// landeten bisher auf einer 403-Sackgasse statt in einem neuen Login.
+	const flowUnusable = !csrfState || !pkceVerifier;
+	// Einmaliger Neustart: ohne Marker drehte ein Client, der grundsätzlich keine Cookies
+	// annimmt, endlos zwischen Login und Callback.
+	const alreadyRetried = url.searchParams.get('authRetry') === '1';
+
+	if (!stateContradicts && flowUnusable && code && !alreadyRetried) {
+		logger.warn(
+			{ event: 'security.auth_flow_expired', returnUrl },
+			'Auth callback: Flow-Cookies abgelaufen oder verbraucht — Login wird neu gestartet'
+		);
+		const target = new URL('/api/auth/login', url);
+		target.searchParams.set('returnUrl', sanitizeReturnUrl(returnUrl));
+		target.searchParams.set('authRetry', '1');
+		redirect(302, `${target.pathname}${target.search}`);
+	}
+
 	if (state !== csrfState || !code || !pkceVerifier) {
 		logger.warn(
 			{
@@ -57,7 +84,9 @@ export async function GET({ url, cookies }: { url: URL; cookies: Cookies }) {
 			resourceType: 'auth',
 			userEmail: authUser.email
 		});
-		cookies.delete('csrfState', { path: '/' });
+		// Pfad muss mit setCsrfCookie übereinstimmen — ein delete auf '/' adressiert ein
+		// anderes Cookie und ließ das echte bis zum Ablauf stehen.
+		cookies.delete('csrfState', { path: '/api/auth' });
 		// Open-Redirect-Schutz: nur relative Same-Origin-Pfade zulassen
 		redirect(302, sanitizeReturnUrl(returnUrl));
 	} catch (err) {

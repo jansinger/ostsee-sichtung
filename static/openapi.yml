@@ -1280,11 +1280,27 @@ paths:
           schema:
             type: string
             format: uri
+        - name: authRetry
+          in: query
+          description: >-
+            Interner Marker. Wird gesetzt, wenn der Login wegen abgelaufener
+            Flow-Cookies bereits einmal neu gestartet wurde, und verhindert eine
+            Endlosschleife zwischen Login und Callback.
+          schema:
+            type: string
+            enum:
+              - '1'
       responses:
         '302':
-          description: Weiterleitung nach erfolgreichem Login
+          description: >-
+            Weiterleitung nach erfolgreichem Login zur returnUrl — oder zurück auf
+            /api/auth/login, wenn die Flow-Cookies abgelaufen oder bereits verbraucht
+            sind (dann mit authRetry=1).
         '403':
-          description: Ungültiger State oder fehlender Code
+          description: >-
+            Fehlender Code, oder vorhandener State-Cookie, der dem übergebenen state
+            widerspricht (CSRF-Verdacht). Ebenso, wenn der Login-Neustart bereits
+            erfolglos versucht wurde (authRetry=1).
         '500':
           $ref: '#/components/responses/InternalServerError'
 
