@@ -44,12 +44,13 @@ describe('validateSessionSecret', () => {
 	/* Der Kern des Befunds aus #635: Beide öffentlich bekannten Werte sind 33 Zeichen lang
 	   und bestehen jede reine Längenprüfung. Ohne diesen Test ist die naheliegende
 	   Implementierung (nur `>= 32`) grün und trotzdem falsch. */
-	it('erkennt, dass die öffentlichen Werte die Längenprüfung bestehen würden', () => {
-		for (const known of PUBLIC_SESSION_SECRETS) {
+	it.each([...PUBLIC_SESSION_SECRETS])(
+		'erkennt, dass %s die Längenprüfung bestehen würde',
+		(known) => {
 			expect(known.length).toBeGreaterThanOrEqual(MIN_SESSION_SECRET_LENGTH);
 			expect(validateSessionSecret(known)).not.toBeNull();
 		}
-	});
+	);
 });
 
 describe('validateEncryptionKey', () => {
