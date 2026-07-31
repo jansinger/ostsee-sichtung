@@ -130,12 +130,18 @@ describe('PUT /api/config — BODY_SIZE_LIMIT-Wächter (Befund I1)', () => {
 		expect(mockUpsert).toHaveBeenCalledOnce();
 	});
 
-	it('greift nicht, wenn BODY_SIZE_LIMIT nicht gesetzt ist (Plattform-Voreinstellung)', async () => {
+	it('lehnt ab, wenn BODY_SIZE_LIMIT nicht gesetzt ist — der Adapter greift dann auf 512K zurück', async () => {
+		// Ungesetzt ist NICHT "keine Grenze": node_modules/@sveltejs/adapter-node/
+		// files/handler.js:25 verwendet dann den Standardwert 512K — weit unter
+		// jeder sinnvollen Videogrenze. Der Wächter muss das wie jeden anderen
+		// zu niedrigen Wert behandeln, statt ihn stillschweigend durchzulassen.
 		const response = await PUT(
 			putEvent({ key: 'security.maxVideoFileSize', value: 500, category: 'security' })
 		);
+		const body = await response.json();
 
-		expect(response.status).toBe(200);
-		expect(mockUpsert).toHaveBeenCalledOnce();
+		expect(response.status).toBe(400);
+		expect(body.error).toContain('BODY_SIZE_LIMIT');
+		expect(mockUpsert).not.toHaveBeenCalled();
 	});
 });
