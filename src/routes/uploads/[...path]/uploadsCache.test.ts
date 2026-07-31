@@ -124,9 +124,7 @@ describe('GET /uploads/[...path] — Cache-Control', () => {
 			makeEvent('ref/unapproved.jpg', { sub: 'auth0|admin', roles: ['admin'] }) as never
 		);
 
-		const cacheControl = res.headers.get('Cache-Control') ?? '';
-		expect(cacheControl).not.toContain('public');
-		expect(cacheControl).toMatch(/\bprivate\b|\bno-store\b/);
+		expect(res.headers.get('Cache-Control')).toBe('private, no-store');
 	});
 
 	it('markiert freigegebene lokale Dateien als öffentlich cachebar', async () => {
@@ -147,8 +145,6 @@ describe('GET /uploads/[...path] — Cache-Control', () => {
 			makeEvent('ref/unapproved.jpg', { sub: 'auth0|admin', roles: ['admin'] }) as never
 		);
 
-		const cacheControl = res.headers.get('Cache-Control') ?? '';
-		expect(cacheControl).not.toContain('public');
-		expect(cacheControl).toMatch(/\bprivate\b|\bno-store\b/);
+		expect(res.headers.get('Cache-Control')).toBe('private, no-store');
 	});
 });
