@@ -1295,12 +1295,16 @@ paths:
       summary: Datei hochladen
       description: |
         Lädt eine Bild- oder Videodatei hoch.
-        
+
         Unterstützte Formate:
         - Bilder: JPEG, PNG, GIF, WebP, BMP, SVG
         - Videos: MP4, AVI, MOV, WMV, FLV, WebM, MKV, M4V
-        
-        Maximale Dateigröße: 10 MB
+
+        Maximale Dateigröße: konfigurationsabhängig und nach Medientyp getrennt
+        (Vorbelegung 10 MB für Bilder, 100 MB für Videos), im Admin-Bereich
+        änderbar über `security.maxFileSize` bzw. `security.maxVideoFileSize`.
+        Die aktuellen Werte liefert `GET /api/config/upload`. Eine Überschreitung
+        ergibt `413`, ein nicht erlaubter Dateityp `400`.
       requestBody:
         required: true
         content:
