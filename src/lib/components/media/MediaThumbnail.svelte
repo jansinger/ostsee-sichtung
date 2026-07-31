@@ -87,10 +87,14 @@
 			class="bg-base-300 relative flex aspect-square items-center justify-center overflow-hidden"
 		>
 			<!-- Video Preview (falls Browser unterstützt) -->
-			<!-- preload="none": Mit "metadata" lädt der Browser die Datei an, was
-			     ohne Range-Support die GANZE Datei war — in einer Kachelansicht
-			     einmal pro Video. Das Play-Overlay darunter zeigt ohnehin an, dass
-			     hier ein Video liegt; geladen wird erst im Modal. -->
+			<!-- preload="none": Mit "metadata" stößt der Browser für JEDE Kachel
+			     eine eigene Anfrage an, nur um Dauer und Maße zu erfahren — bei 51
+			     Videos im Bestand also 51 Verbindungen für ein Standbild, das hier
+			     gar nicht gezeigt wird. Das Play-Overlay darunter sagt bereits, dass
+			     hier ein Video liegt; geladen wird erst im Modal.
+			     (`/api/media` beantwortet seit dem Streaming-Umbau Bereichsanfragen,
+			     ein "metadata" würde also nicht mehr die ganze Datei ziehen — die
+			     überflüssigen Anfragen bleiben aber.) -->
 			<video
 				src={`/api/media/${file.filePath}`}
 				class="h-full w-full object-contain"
