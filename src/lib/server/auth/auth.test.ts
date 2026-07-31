@@ -722,6 +722,86 @@ describe('auth.ts', () => {
 		});
 	});
 
+	describe('getEncryptionKey (Trimmen)', () => {
+		/* Befund 3 (#635-Review): secretGuard.ts prüft ENCRYPTION_KEY getrimmt, auth.ts liest
+		   ihn bisher ungetrimmt (`env.ENCRYPTION_KEY ?? ''`) und reicht ihn an
+		   `Buffer.from(wert, 'hex')` weiter. Bei Leerraum drumherum (z. B. durch
+		   `openssl rand -hex 32 > datei` oder einen YAML-Blockskalar) sagt der Guard beim
+		   Start "in Ordnung", `createCipheriv` wirft dann erst beim ersten Admin-Login mit
+		   "Invalid key length". Dieser Test belegt, dass setPKCECookie denselben getrimmten
+		   Wert verwendet, den der Guard geprüft hat. */
+		it('trimmt ENCRYPTION_KEY vor der Verwendung, damit Leerraum drumherum den Guard nicht unterläuft', async () => {
+			vi.resetModules();
+			vi.doMock('$env/dynamic/private', () => ({
+				env: {
+					AUTH0_CLIENT_ID: 'test-client-id',
+					AUTH0_CLIENT_SECRET: 'test-client-secret',
+					AUTH0_DOMAIN: 'test-domain.auth0.com',
+					COOKIE_NAME: 'test-auth-cookie',
+					JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
+					SESSION_SECRET: 'test-session-secret',
+					// Leerraum drumherum, wie ihn `openssl rand -hex 32 > datei` oder ein
+					// YAML-Blockskalar erzeugen kann.
+					ENCRYPTION_KEY: '  0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n',
+					NODE_ENV: 'test'
+				}
+			}));
+
+			const { setPKCECookie } = await import('./auth');
+			const mockPKCEData = { verifier: 'test-verifier-123', challenge: 'test-challenge-456' };
+			vi.mocked(getPKCEChallengeData).mockReturnValue(mockPKCEData);
+			vi.mocked(encrypt).mockReturnValue({
+				iv: Buffer.from('00', 'hex'),
+				encryptedData: Buffer.from('00', 'hex'),
+				tag: Buffer.from('00', 'hex')
+			});
+
+			setPKCECookie(mockCookies);
+
+			expect(encrypt).toHaveBeenCalledWith(
+				'test-verifier-123',
+				Buffer.from('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'hex')
+			);
+		});
+	});
+
+	describe('getNodeEnv (Normalisierung)', () => {
+		/* Befund 1 (#668-Review): secretGuard.ts normalisiert NODE_ENV vor dem Vergleich
+		   (trimmen, Kleinbuchstaben), damit "Production" oder " production " den Startup-Guard
+		   nicht lautlos abschalten. getNodeEnv() hier verglich bisher ungetrimmt und
+		   case-sensitiv gegen 'production' — bei NODE_ENV="Production" greift der Guard, aber
+		   das secure-Flag der Cookies (setCsrfCookie, setPKCECookie) bliebe false. Zwei
+		   Sicherheitsentscheidungen aus derselben Variable liefen damit auseinander. */
+		it('setzt secure:true bei NODE_ENV="Production" (Grossschreibung)', async () => {
+			vi.resetModules();
+			vi.doMock('$env/dynamic/private', () => ({
+				env: {
+					AUTH0_CLIENT_ID: 'test-client-id',
+					AUTH0_CLIENT_SECRET: 'test-client-secret',
+					AUTH0_DOMAIN: 'test-domain.auth0.com',
+					COOKIE_NAME: 'test-auth-cookie',
+					JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
+					SESSION_SECRET: 'test-session-secret',
+					ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+					NODE_ENV: 'Production'
+				}
+			}));
+
+			const { setCsrfCookie } = await import('./auth');
+			const mockRandom = vi.spyOn(Math, 'random').mockReturnValue(0.9999);
+
+			const result = setCsrfCookie(mockCookies);
+
+			expect(mockCookies.set).toHaveBeenCalledWith(
+				'csrfState',
+				result,
+				expect.objectContaining({ secure: true })
+			);
+
+			mockRandom.mockRestore();
+		});
+	});
+
 	describe('getPKCEVerifierFromCookie', () => {
 		beforeEach(() => {
 			vi.clearAllMocks();

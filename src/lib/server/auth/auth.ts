@@ -14,10 +14,18 @@ const getAuth0ClientId = () => env.AUTH0_CLIENT_ID ?? '';
 const getAuth0ClientSecret = () => env.AUTH0_CLIENT_SECRET ?? '';
 const getAuth0Domain = () => env.AUTH0_DOMAIN ?? '';
 const getCookieName = () => env.COOKIE_NAME ?? 'auth-cookie';
-const getEncryptionKey = () => env.ENCRYPTION_KEY ?? '';
+// Getrimmt, damit Leerraum drumherum (z. B. durch `openssl rand -hex 32 > datei` oder einen
+// YAML-Blockskalar) nicht den Wert unterläuft, den secretGuard.ts beim Start bereits getrimmt
+// geprüft hat — sonst sagt der Guard "in Ordnung" und createCipheriv wirft erst beim ersten
+// Admin-Login mit "Invalid key length" (Befund 3, #635-Review).
+const getEncryptionKey = () => (env.ENCRYPTION_KEY ?? '').trim();
 const getJwksUrl = () => env.JWKS_URL ?? '';
 const getSessionSecret = () => env.SESSION_SECRET ?? '';
-const getNodeEnv = () => env.NODE_ENV ?? 'development';
+// Getrimmt und in Kleinbuchstaben, analog zur Normalisierung in secretGuard.ts
+// (assertProductionSecrets): Sonst kann NODE_ENV="Production" den Startup-Guard auslösen,
+// während hier `getNodeEnv() === 'production'` falsch bliebe — die Cookies (setCsrfCookie,
+// setPKCECookie) würden dann ohne `secure` gesetzt (Befund 1, #668-Review).
+const getNodeEnv = () => (env.NODE_ENV ?? 'development').trim().toLowerCase();
 import { error, redirect, type Cookies } from '@sveltejs/kit';
 import { createRemoteJWKSet, decodeJwt, jwtVerify, SignJWT } from 'jose';
 import { decrypt, encrypt, getPKCEChallengeData } from './crypto.js';

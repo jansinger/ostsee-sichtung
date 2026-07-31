@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { createLogger } from '$lib/logger.server';
 import { clearAuthCookie, setAuthCookie } from '$lib/server/auth/auth';
+import { assertProductionSecrets } from '$lib/server/config/secretGuard';
 import { closeDb } from '$lib/server/db';
 import { databaseCheck } from '$lib/server/middleware/databaseCheck';
 import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';
@@ -17,32 +18,12 @@ const NODE_ENV = env.NODE_ENV ?? 'development';
 const SESSION_SECRET = env.SESSION_SECRET ?? '';
 const ENCRYPTION_KEY = env.ENCRYPTION_KEY ?? '';
 
-// Platzhalter-Wert aus der Beispiel-Konfiguration (64x "0") — NIE in Produktion nutzen
-const PLACEHOLDER_ENCRYPTION_KEY = '0'.repeat(64);
-
 const logger = createLogger('hooks:server');
 
-// Guard: fail fast if SESSION_SECRET is missing in production
-if (NODE_ENV === 'production' && !SESSION_SECRET) {
-	throw new Error(
-		'SESSION_SECRET environment variable is required in production. ' +
-			'Set it to a strong random secret before starting the server.'
-	);
-}
-
-// Guard: fail fast if ENCRYPTION_KEY is missing or still the default placeholder in production.
-// ENCRYPTION_KEY schützt den PKCE-Verifier im Auth-Flow (AES-256-GCM); ein Platzhalter
-// würde die Verschlüsselung wirkungslos machen.
-if (
-	NODE_ENV === 'production' &&
-	(!ENCRYPTION_KEY || ENCRYPTION_KEY === PLACEHOLDER_ENCRYPTION_KEY)
-) {
-	throw new Error(
-		'ENCRYPTION_KEY environment variable is required in production and must not be the ' +
-			'default placeholder value. Set it to a strong random 32-byte hex secret (64 hex chars) ' +
-			'before starting the server.'
-	);
-}
+// Guard: Der Server startet in Produktion nicht mit fehlenden, zu kurzen oder öffentlich
+// bekannten Secrets. Die Prüflogik steht in secretGuard.ts, damit sie testbar ist —
+// hooks.server.ts liegt ausserhalb von src/lib/** und wird von den Server-Tests nicht erfasst.
+assertProductionSecrets({ NODE_ENV, SESSION_SECRET, ENCRYPTION_KEY });
 
 const setAdditionalHeaders: Handle = createSecurityHeadersHandler(NODE_ENV);
 

@@ -493,7 +493,7 @@ HOST_HEADER=x-forwarded-host
 
 # Security (GENERATE THESE!)
 # openssl rand -base64 32
-SESSION_SECRET=your-generated-session-secret-here
+SESSION_SECRET=<Ausgabe von openssl rand -base64 32>
 # openssl rand -hex 32
 ENCRYPTION_KEY=your-generated-64-char-hex-key-here
 # openssl rand -hex 32 — required for the orphaned-upload cleanup cron
@@ -716,7 +716,7 @@ Create a `.env` file with your configuration. See [ENVIRONMENT.md](./ENVIRONMENT
 DATABASE_POSTGRES_URL=postgresql://postgres:yourpassword@db:5432/ostsee
 
 # Security (REQUIRED - generate secure values!)
-SESSION_SECRET=your-secure-random-string-min-32-chars
+SESSION_SECRET=<Ausgabe von openssl rand -base64 32>
 ENCRYPTION_KEY=your-64-character-hexadecimal-encryption-key
 
 # Auth0 (REQUIRED)
@@ -1337,7 +1337,7 @@ DATABASE_POSTGRES_URL="postgresql://ostsee_app:your-password@localhost:5432/osts
 STORAGE_PROVIDER=local
 
 # Security
-SESSION_SECRET=your-secure-random-string-min-32-chars
+SESSION_SECRET=<Ausgabe von openssl rand -base64 32>
 ENCRYPTION_KEY=your-64-character-hexadecimal-encryption-key
 
 # Auth0 (can use test values for local testing)

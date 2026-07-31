@@ -82,7 +82,15 @@ curl -fsS -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" \
 **Required**: Yes
 **Default**: None
 **Min Length**: 32 characters
-**Description**: Secret key for encrypting session data.
+**Description**: Secret key for signing the session cookie (JWT, HS256). It does not encrypt
+the cookie's contents — anyone who reads the cookie can decode `sub`, email and roles in
+plain text; the signature only proves the server issued it (see
+`docs/SESSION_STORE_SPEC_2026-07-31.md`, Befund B16).
+
+**Wichtig**: Der Guard beim Serverstart lehnt in Production zwei öffentlich bekannte Beispielwerte ab
+(den Platzhalter aus `.env.example` und den Beispielwert dieser Dokumentation). Ein abgelehntes
+Secret verhindert, dass der Server startet. Für jede Umgebung ein eigenes, zufällig erzeugtes
+Secret verwenden.
 
 **Generate**:
 
@@ -93,8 +101,21 @@ openssl rand -base64 32
 **Example**:
 
 ```bash
-SESSION_SECRET=8K7h3L9mN2pQ4rS6tU8vW0xY2zA4bC6dE
+SESSION_SECRET=<Ausgabe von openssl rand -base64 32>
 ```
+
+**Rotation:**
+
+`SESSION_SECRET` lässt sich jederzeit wechseln — der neue Wert wird in die `.env` des
+Hosts geschrieben, danach `docker compose up -d`.
+
+**Nebenwirkung:** Jeder Wechsel beendet **alle** laufenden Sitzungen gleichzeitig. Jedes
+`jwtVerify` gegen das alte Cookie schlägt fehl, das Cookie wird gelöscht, alle Angemeldeten
+landen im Login. Das ist der Notausschalter für den Verdachtsfall („jemand könnte das
+Secret kennen") — und der einzige Weg, eine ausgestellte Session ungültig zu machen.
+
+Staging und Production müssen **verschiedene** Secrets haben. Sonst ist ein Staging-Zugang
+ein Produktions-Zugang.
 
 ---
 
@@ -115,7 +136,7 @@ openssl rand -hex 32
 **Example**:
 
 ```bash
-ENCRYPTION_KEY=f5fcd0aaabcc4bdd0a87d4b2c03203e5863c0459f89fe99dab1fe8dde1cdf181
+ENCRYPTION_KEY=<Ausgabe von openssl rand -hex 32>
 ```
 
 ---
