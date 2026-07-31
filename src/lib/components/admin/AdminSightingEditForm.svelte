@@ -82,7 +82,7 @@
 		<div class="space-y-4">
 			<div class="card bg-base-200 p-4">
 				<!-- Technische Informationen -->
-				<div class="text-sm text-base-content/70">
+				<div class="text-base-content/70 text-sm">
 					<p>Datensatz ID: {sighting.id}</p>
 					<p>Gemeldet: {formatLocalDateTime(sighting.created)}</p>
 					<p>Verifiziert: <BooleanStatus value={sighting.verified} /></p>
@@ -106,7 +106,7 @@
 			<Environment adminMode={true} />
 			<!-- Verhalten und Reaktion -->
 			<Behavior adminMode={true} />
-			<Media />
+			<Media adminMode={true} />
 			<!-- Administratives -->
 			<Administrative />
 		</div>
