@@ -16,6 +16,7 @@ import type { SightingFileInsert } from '$lib/types/sightingFile';
 import { createId } from '@paralleldrive/cuid2';
 import { and, eq, isNotNull, ne } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
+import type { Stats } from 'fs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { pathToFileURL } from 'node:url';
@@ -352,7 +353,7 @@ async function main() {
 						const targetPath = path.join(targetDir, fileName);
 
 						// Check if source file exists
-						let sourceStats;
+						let sourceStats: Stats;
 						try {
 							sourceStats = await fs.stat(sourcePath);
 						} catch {
