@@ -24,6 +24,10 @@
  * Das ist bewusst dieselbe Einschränkung wie beim bestehenden Rate Limit und
  * kein neuer Kompromiss.
  */
+import { createLogger } from '$lib/logger.server';
+
+const logger = createLogger('middleware:byteBudget');
+
 export interface ByteBudget {
 	windowMs: number;
 	maxBytes: number;
@@ -43,6 +47,14 @@ interface BudgetEntry {
 
 const budgets = new Map<string, BudgetEntry>();
 
+// Wie rateLimit.ts: periodischer Cleanup statt Voll-Scan bei jedem Aufruf.
+// `sweep()` lief ursprünglich synchron in JEDEM `consumeByteBudget()`-Aufruf —
+// beim Upload-Pfad (20 Anfragen/h) unkritisch, bei `GET /api/media/[...path]`
+// (300 Anfragen/min) ein unnötiger Voll-Scan der Map auf dem heißen Pfad.
+const CLEANUP_INTERVAL_MS = 10 * 60 * 1000; // 10 Minuten, wie rateLimit.ts
+
+let cleanupTimer: NodeJS.Timeout | undefined;
+
 /** Räumt abgelaufene Konten ab, damit die Map nicht unbegrenzt wächst. */
 function sweep(now: number): void {
 	for (const [key, entry] of budgets) {
@@ -52,13 +64,29 @@ function sweep(now: number): void {
 	}
 }
 
+function scheduleCleanup(): void {
+	cleanupTimer = setInterval(() => {
+		const sizeBefore = budgets.size;
+		sweep(Date.now());
+		const removed = sizeBefore - budgets.size;
+		if (removed > 0) {
+			logger.debug({ removed }, 'Byte budget entries cleaned up');
+		}
+	}, CLEANUP_INTERVAL_MS);
+	// Darf den Prozess nicht am Beenden hindern — anders als beim Upload-Limit
+	// läuft dieses Budget jetzt auch im Media-Pfad, und der Timer soll einen
+	// Testlauf oder ein sauberes Server-Shutdown nicht blockieren.
+	cleanupTimer.unref?.();
+}
+
+scheduleCleanup();
+
 export function consumeByteBudget(
 	identifier: string,
 	bytes: number,
 	budget: ByteBudget
 ): ByteBudgetResult {
 	const now = Date.now();
-	sweep(now);
 
 	const existing = budgets.get(identifier);
 	const entry: BudgetEntry =
@@ -92,7 +120,28 @@ export function consumeByteBudget(
 	};
 }
 
-/** Setzt alle Konten zurück. Nur für Tests. */
+/**
+ * Setzt alle Konten zurück und plant den Cleanup-Timer neu. Nur für Tests.
+ *
+ * Der Timer-Neustart ist nötig, damit Tests unter `vi.useFakeTimers()`
+ * deterministisch bleiben: Der beim Modul-Import unter der echten Uhr
+ * gestartete Timer würde sonst nie unter die Fake-Clock fallen, und
+ * `vi.advanceTimersByTime()` könnte ihn nicht auslösen.
+ */
 export function resetByteBudgets(): void {
 	budgets.clear();
+	if (cleanupTimer) {
+		clearInterval(cleanupTimer);
+	}
+	scheduleCleanup();
+}
+
+/** Anzahl der aktuell im Speicher gehaltenen Konten. Nur für Tests. */
+export function getByteBudgetEntryCountForTests(): number {
+	return budgets.size;
+}
+
+/** Zugriff auf den Cleanup-Timer, um sein unref()-Verhalten zu prüfen. Nur für Tests. */
+export function getByteBudgetCleanupTimerForTests(): NodeJS.Timeout | undefined {
+	return cleanupTimer;
 }
