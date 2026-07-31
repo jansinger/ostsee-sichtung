@@ -138,6 +138,18 @@ besteht jede reine Längenprüfung. Das ist die Falle, in die die naheliegende U
 **Warum `hooks.server.ts` und nicht `docker-entrypoint.sh`:** B11 und B12. Der Modul-Scope von
 `hooks.server.ts` ist der einzige Punkt, den jeder Startweg durchläuft.
 
+**Der `ENCRYPTION_KEY`-Guard kommt mit** (#635 verlangt ausdrücklich, ihn mitzuprüfen). Er ist
+unvollständig: `src/lib/server/auth/crypto.ts:103` nutzt `aes-256-gcm`, das exakt 32 Byte
+Schlüssel verlangt — also 64 Hex-Zeichen. Der bestehende Guard prüft nur _leer_ und
+_Platzhalter_. Ein 32-stelliger Hex-Wert (16 Byte) kommt heute durch und lässt
+`createCipheriv` erst beim ersten Login werfen, also auf dem Auth-Pfad. Die Prüfung wird um
+Länge und Hex-Zeichensatz ergänzt.
+
+**Beide Prüfungen ziehen in ein eigenes Modul** `src/lib/server/config/secretGuard.ts`.
+`hooks.server.ts` liegt ausserhalb von `src/lib/**` und wird von der Server-Test-Konfiguration
+nicht erfasst (`vitest.config.ts:9`); ausserdem hat sein Import Seiteneffekte. Reine Funktionen
+mit den Werten als Parameter sind testbar, `hooks.server.ts` ruft nur noch auf.
+
 **Warum nur `production`:** Lokale Entwicklung und CI arbeiten bewusst mit dem Platzhalter
 (B13). Der Guard darf sie nicht brechen.
 
