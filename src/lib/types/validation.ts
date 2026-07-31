@@ -17,7 +17,10 @@ export interface ValidationResult {
  */
 export interface ValidationPreset {
 	allowedTypes: readonly string[];
+	/** Grenze für Bilder und alles Übrige, in Bytes */
 	maxFileSize: number;
+	/** Grenze für `video/*`, in Bytes. Siehe $lib/constants/uploadLimits */
+	maxVideoFileSize: number;
 	maxFiles: number;
 	accept: string;
 }

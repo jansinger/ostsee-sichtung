@@ -73,9 +73,11 @@
 	let gpsPhotoConfig = $state<ValidationPreset | null>(null);
 	$effect(() => {
 		getUploadConfig().then((config) => {
+			const maxFileSize = Math.min(config.maxFileSize, 30 * 1024 * 1024);
 			gpsPhotoConfig = {
 				allowedTypes: config.allowedTypes.filter((type) => type.startsWith('image/')),
-				maxFileSize: Math.min(config.maxFileSize, 30 * 1024 * 1024),
+				maxFileSize,
+				maxVideoFileSize: maxFileSize,
 				maxFiles: 1,
 				accept: 'image/*'
 			};
@@ -238,7 +240,6 @@
 		{:else}
 			<div class="skeleton h-32 w-full"></div>
 		{/if}
-
 
 		<!-- Zustand C: Foto ohne EXIF-GPS.
 

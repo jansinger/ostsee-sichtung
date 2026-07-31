@@ -23,6 +23,8 @@ const DEFAULT_VALUES = {
 
 	// Security Settings
 	'security.maxFileSize': 10,
+	'security.maxVideoFileSize': 100,
+	'security.maxTotalUploadSize': 250,
 	'security.allowedFileTypes': [
 		'image/jpeg',
 		'image/png',
@@ -124,10 +126,18 @@ export class ServerConfigService {
 	 * Get file upload configuration
 	 */
 	static async getUploadConfig() {
+		const maxFileSize = await this.getNumber('security.maxFileSize');
+		const maxVideoFileSize = await this.getNumber('security.maxVideoFileSize');
+		const maxTotalUploadSize = await this.getNumber('security.maxTotalUploadSize');
+
 		return {
-			maxFileSize: await this.getNumber('security.maxFileSize'),
-			allowedTypes: await this.getArray<string>('security.allowedFileTypes'),
-			maxFileSizeBytes: (await this.getNumber('security.maxFileSize')) * 1024 * 1024
+			maxFileSize,
+			maxFileSizeBytes: maxFileSize * 1024 * 1024,
+			maxVideoFileSize,
+			maxVideoFileSizeBytes: maxVideoFileSize * 1024 * 1024,
+			maxTotalUploadSize,
+			maxTotalUploadSizeBytes: maxTotalUploadSize * 1024 * 1024,
+			allowedTypes: await this.getArray<string>('security.allowedFileTypes')
 		};
 	}
 

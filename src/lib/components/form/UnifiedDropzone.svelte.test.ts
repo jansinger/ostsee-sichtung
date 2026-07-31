@@ -18,6 +18,7 @@ import { validateFiles } from '$lib/utils';
 const mockConfig: ValidationPreset = {
 	allowedTypes: ['image/jpeg', 'image/png'],
 	maxFileSize: 10 * 1024 * 1024,
+	maxVideoFileSize: 10 * 1024 * 1024,
 	maxFiles: 5,
 	accept: 'image/jpeg,image/png'
 };

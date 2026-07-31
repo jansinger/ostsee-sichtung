@@ -166,10 +166,10 @@ export const quickValidation = {
 	isSafeFilename: (filename: string): boolean => {
 		return Boolean(
 			filename &&
-				filename.trim() !== '' &&
-				!filename.includes('..') &&
-				!filename.includes('/') &&
-				!filename.includes('\\')
+			filename.trim() !== '' &&
+			!filename.includes('..') &&
+			!filename.includes('/') &&
+			!filename.includes('\\')
 		);
 	}
 };
@@ -200,6 +200,7 @@ export function getValidationPreset(
 	return {
 		allowedTypes: ALLOWED_MIME_TYPES.MEDIA,
 		maxFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
+		maxVideoFileSize: UPLOAD_LIMITS.MAX_VIDEO_FILE_SIZE,
 		maxFiles: UPLOAD_LIMITS.MAX_FILES,
 		accept: 'image/*,video/*'
 	};

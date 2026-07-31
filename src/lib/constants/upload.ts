@@ -8,6 +8,9 @@ export const UPLOAD_LIMITS = {
 	/** Maximum file size for regular uploads (50MB) */
 	MAX_FILE_SIZE: 50 * 1024 * 1024,
 
+	/** Maximum video file size when no runtime configuration is available (100MB) */
+	MAX_VIDEO_FILE_SIZE: 100 * 1024 * 1024,
+
 	/** Maximum file size for GPS photos in position step (10MB) */
 	PHOTO_GPS_MAX_SIZE: 10 * 1024 * 1024,
 
@@ -15,6 +18,8 @@ export const UPLOAD_LIMITS = {
 	MAX_FILES: 20,
 
 	/** Maximum total size for all files in one session (200MB) */
+	// Bleibt vorerst bei 200 MB; Task 10 zieht den Wert auf die 250 MB der
+	// Konfiguration nach, sobald es dort ein serverseitiges Gegenstück gibt.
 	MAX_TOTAL_SIZE: 200 * 1024 * 1024
 } as const;
 
@@ -56,6 +61,7 @@ export const FILE_VALIDATION_PRESETS = {
 	MEDIA: {
 		allowedTypes: ALLOWED_MIME_TYPES.MEDIA,
 		maxFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
+		maxVideoFileSize: UPLOAD_LIMITS.MAX_VIDEO_FILE_SIZE,
 		maxFiles: UPLOAD_LIMITS.MAX_FILES,
 		accept: 'image/*,video/*'
 	},
@@ -64,6 +70,7 @@ export const FILE_VALIDATION_PRESETS = {
 	GPS_PHOTO: {
 		allowedTypes: ALLOWED_MIME_TYPES.IMAGES,
 		maxFileSize: UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE,
+		maxVideoFileSize: UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE,
 		maxFiles: 1,
 		accept: 'image/*'
 	},
@@ -72,6 +79,7 @@ export const FILE_VALIDATION_PRESETS = {
 	IMAGES_ONLY: {
 		allowedTypes: ALLOWED_MIME_TYPES.IMAGES,
 		maxFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
+		maxVideoFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
 		maxFiles: UPLOAD_LIMITS.MAX_FILES,
 		accept: 'image/*'
 	}

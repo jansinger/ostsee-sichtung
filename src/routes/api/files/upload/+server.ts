@@ -127,6 +127,7 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 		const dynamicPreset = {
 			allowedTypes: uploadConfig.allowedTypes,
 			maxFileSize: uploadConfig.maxFileSizeBytes,
+			maxVideoFileSize: uploadConfig.maxVideoFileSizeBytes,
 			maxFiles: FILE_VALIDATION_PRESETS.MEDIA.maxFiles,
 			accept: uploadConfig.allowedTypes
 				.map((type) =>

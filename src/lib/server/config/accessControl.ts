@@ -34,6 +34,8 @@ const SUPERADMIN_ONLY_CONFIG_KEYS = new Set([
 
 	// Advanced security settings
 	'security.allowedFileTypes',
+	'security.maxVideoFileSize',
+	'security.maxTotalUploadSize',
 	'security.rateLimitPerIP',
 	'security.requireEmailVerification',
 	'security.autoApproveThreshold',

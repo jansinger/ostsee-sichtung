@@ -5,7 +5,8 @@ import { browser } from '$app/environment';
 import {
 	PUBLIC_UPLOAD_ACCEPT,
 	PUBLIC_UPLOAD_ALLOWED_TYPES,
-	PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES
+	PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES,
+	PUBLIC_UPLOAD_MAX_VIDEO_FILE_SIZE_BYTES
 } from '$lib/constants/uploadDefaults';
 import { createLogger } from '$lib/logger';
 import type { ValidationPreset } from '$lib/types';
@@ -21,6 +22,7 @@ function publicUploadFallback(): ValidationPreset {
 	return {
 		allowedTypes: [...PUBLIC_UPLOAD_ALLOWED_TYPES],
 		maxFileSize: PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES,
+		maxVideoFileSize: PUBLIC_UPLOAD_MAX_VIDEO_FILE_SIZE_BYTES,
 		maxFiles: 20,
 		accept: PUBLIC_UPLOAD_ACCEPT
 	};
@@ -59,6 +61,7 @@ export async function getUploadConfig(): Promise<ValidationPreset> {
 		const validationPreset: ValidationPreset = {
 			allowedTypes: config.allowedTypes,
 			maxFileSize: config.maxFileSizeBytes, // ValidationPreset expects bytes
+			maxVideoFileSize: PUBLIC_UPLOAD_MAX_VIDEO_FILE_SIZE_BYTES,
 			maxFiles: 20, // Keep default for now
 			accept: config.accept
 		};

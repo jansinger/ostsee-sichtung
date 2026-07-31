@@ -13,23 +13,19 @@ import type { ValidationPreset } from '$lib/types';
 
 describe('fileValidation', () => {
 	// Helper function to create mock File objects
-	const createMockFile = (
-		name: string,
-		size: number,
-		type: string
-	): File => {
+	const createMockFile = (name: string, size: number, type: string): File => {
 		// Create a proper File object with exact size
 		const buffer = new ArrayBuffer(size);
 		const blob = new Blob([buffer], { type });
 		const file = new File([blob], name, { type });
-		
+
 		// Override size property to match expected size
 		Object.defineProperty(file, 'size', {
 			value: size,
 			writable: false,
 			configurable: true
 		});
-		
+
 		return file;
 	};
 
@@ -37,6 +33,7 @@ describe('fileValidation', () => {
 		const defaultPreset: ValidationPreset = {
 			allowedTypes: ALLOWED_MIME_TYPES.IMAGES,
 			maxFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
+			maxVideoFileSize: UPLOAD_LIMITS.MAX_VIDEO_FILE_SIZE,
 			maxFiles: UPLOAD_LIMITS.MAX_FILES,
 			accept: 'image/*'
 		};
@@ -44,7 +41,7 @@ describe('fileValidation', () => {
 		it('should accept valid image files', () => {
 			const file = createMockFile('test.jpg', 1000, 'image/jpeg');
 			const result = validateFile(file, defaultPreset);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toHaveLength(0);
 		});
@@ -52,7 +49,7 @@ describe('fileValidation', () => {
 		it('should reject non-File objects', () => {
 			const notAFile = { name: 'test.jpg', size: 1000 } as any;
 			const result = validateFile(notAFile, defaultPreset);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors).toContain('Ungültiges Dateiformat empfangen.');
 		});
@@ -60,9 +57,9 @@ describe('fileValidation', () => {
 		it('should reject files with empty names', () => {
 			const file = createMockFile('', 1000, 'image/jpeg');
 			const result = validateFile(file, defaultPreset);
-			
+
 			expect(result.isValid).toBe(false);
-			expect(result.errors.some(e => e.includes('Datei ohne Namen'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('Datei ohne Namen'))).toBe(true);
 		});
 
 		it('should reject files with dangerous characters in filename', () => {
@@ -73,46 +70,46 @@ describe('fileValidation', () => {
 				'..\\..\\windows\\system32\\config.sys'
 			];
 
-			dangerousNames.forEach(name => {
+			dangerousNames.forEach((name) => {
 				const file = createMockFile(name, 1000, 'image/jpeg');
 				const result = validateFile(file, defaultPreset);
-				
+
 				expect(result.isValid).toBe(false);
-				expect(result.errors.some(e => e.includes('Unsicherer Dateiname'))).toBe(true);
+				expect(result.errors.some((e) => e.includes('Unsicherer Dateiname'))).toBe(true);
 			});
 		});
 
 		it('should reject empty files', () => {
 			const file = createMockFile('empty.jpg', 0, 'image/jpeg');
 			const result = validateFile(file, defaultPreset);
-			
+
 			expect(result.isValid).toBe(false);
-			expect(result.errors.some(e => e.includes('Datei ist leer'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('Datei ist leer'))).toBe(true);
 		});
 
 		it('should reject files exceeding size limit', () => {
 			const file = createMockFile('large.jpg', UPLOAD_LIMITS.MAX_FILE_SIZE + 1, 'image/jpeg');
 			const result = validateFile(file, defaultPreset);
-			
+
 			expect(result.isValid).toBe(false);
-			expect(result.errors.some(e => e.includes('Datei zu groß'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('Datei zu groß'))).toBe(true);
 		});
 
 		it('should reject files with invalid MIME types', () => {
 			const file = createMockFile('test.exe', 1000, 'application/x-msdownload');
 			const result = validateFile(file, defaultPreset);
-			
+
 			expect(result.isValid).toBe(false);
-			expect(result.errors.some(e => e.includes('Ungültiger Dateityp'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('Ungültiger Dateityp'))).toBe(true);
 		});
 
 		it('should accept all configured image types', () => {
 			const imageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
-			
-			imageTypes.forEach(type => {
+
+			imageTypes.forEach((type) => {
 				const file = createMockFile(`test.${type.split('/')[1]}`, 1000, type);
 				const result = validateFile(file, defaultPreset);
-				
+
 				expect(result.isValid).toBe(true);
 				expect(result.errors).toHaveLength(0);
 			});
@@ -122,13 +119,14 @@ describe('fileValidation', () => {
 			const videoPreset: ValidationPreset = {
 				allowedTypes: ALLOWED_MIME_TYPES.VIDEOS,
 				maxFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
+				maxVideoFileSize: UPLOAD_LIMITS.MAX_VIDEO_FILE_SIZE,
 				maxFiles: UPLOAD_LIMITS.MAX_FILES,
 				accept: 'video/*'
 			};
 
 			const videoFile = createMockFile('test.mp4', 1000, 'video/mp4');
 			const result = validateFile(videoFile, videoPreset);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toHaveLength(0);
 		});
@@ -138,6 +136,7 @@ describe('fileValidation', () => {
 		const defaultPreset: ValidationPreset = {
 			allowedTypes: ALLOWED_MIME_TYPES.MEDIA,
 			maxFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
+			maxVideoFileSize: UPLOAD_LIMITS.MAX_VIDEO_FILE_SIZE,
 			maxFiles: 5,
 			accept: 'image/*,video/*'
 		};
@@ -148,9 +147,9 @@ describe('fileValidation', () => {
 				createMockFile('test2.png', 2000, 'image/png'),
 				createMockFile('test3.mp4', 3000, 'video/mp4')
 			];
-			
+
 			const result = validateFiles(files, defaultPreset);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toHaveLength(0);
 			expect(result.validFiles).toHaveLength(3);
@@ -160,11 +159,11 @@ describe('fileValidation', () => {
 			const files = Array.from({ length: 6 }, (_, i) =>
 				createMockFile(`test${i}.jpg`, 1000, 'image/jpeg')
 			);
-			
+
 			const result = validateFiles(files, defaultPreset);
-			
+
 			expect(result.isValid).toBe(false);
-			expect(result.errors.some(e => e.includes('Zu viele Dateien'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('Zu viele Dateien'))).toBe(true);
 		});
 
 		it('should reject when total size exceeds limit', () => {
@@ -172,11 +171,11 @@ describe('fileValidation', () => {
 				createMockFile('test1.jpg', UPLOAD_LIMITS.MAX_TOTAL_SIZE / 2, 'image/jpeg'),
 				createMockFile('test2.jpg', UPLOAD_LIMITS.MAX_TOTAL_SIZE / 2 + 1, 'image/jpeg')
 			];
-			
+
 			const result = validateFiles(files, defaultPreset);
-			
+
 			expect(result.isValid).toBe(false);
-			expect(result.errors.some(e => e.includes('Gesamtgröße überschritten'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('Gesamtgröße überschritten'))).toBe(true);
 		});
 
 		it('should collect errors from individual file validations', () => {
@@ -185,9 +184,9 @@ describe('fileValidation', () => {
 				createMockFile('empty.jpg', 0, 'image/jpeg'),
 				createMockFile('invalid.exe', 1000, 'application/x-msdownload')
 			];
-			
+
 			const result = validateFiles(files, defaultPreset);
-			
+
 			expect(result.isValid).toBe(false);
 			expect(result.errors.length).toBeGreaterThan(0);
 			expect(result.validFiles).toBeDefined();
@@ -197,7 +196,7 @@ describe('fileValidation', () => {
 
 		it('should handle empty file array', () => {
 			const result = validateFiles([], defaultPreset);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toHaveLength(0);
 			expect(result.validFiles).toHaveLength(0);
@@ -208,7 +207,7 @@ describe('fileValidation', () => {
 		it('should accept single GPS photo', () => {
 			const file = createMockFile('gps.jpg', 1000, 'image/jpeg');
 			const result = validateGPSPhotos([file]);
-			
+
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toHaveLength(0);
 		});
@@ -216,9 +215,9 @@ describe('fileValidation', () => {
 		it('should reject non-image files for GPS', () => {
 			const file = createMockFile('video.mp4', 1000, 'video/mp4');
 			const result = validateGPSPhotos([file]);
-			
+
 			expect(result.isValid).toBe(false);
-			expect(result.errors.some(e => e.includes('GPS-Upload erfordert Bilddateien'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('GPS-Upload erfordert Bilddateien'))).toBe(true);
 		});
 
 		it('should reject multiple files for GPS upload', () => {
@@ -226,11 +225,11 @@ describe('fileValidation', () => {
 				createMockFile('gps1.jpg', 1000, 'image/jpeg'),
 				createMockFile('gps2.jpg', 1000, 'image/jpeg')
 			];
-			
+
 			const result = validateGPSPhotos(files);
-			
+
 			expect(result.isValid).toBe(false);
-			expect(result.errors.some(e => e.includes('GPS-Upload erlaubt nur eine Datei'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('GPS-Upload erlaubt nur eine Datei'))).toBe(true);
 		});
 
 		it('should enforce GPS photo size limit', () => {
@@ -240,9 +239,9 @@ describe('fileValidation', () => {
 				'image/jpeg'
 			);
 			const result = validateGPSPhotos([file]);
-			
+
 			expect(result.isValid).toBe(false);
-			expect(result.errors.some(e => e.includes('Datei zu groß'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('Datei zu groß'))).toBe(true);
 		});
 	});
 
@@ -255,7 +254,7 @@ describe('fileValidation', () => {
 					createMockFile('test.gif', 1000, 'image/gif')
 				];
 
-				validImages.forEach(file => {
+				validImages.forEach((file) => {
 					expect(quickValidation.isValidImage(file)).toBe(true);
 				});
 			});
@@ -267,7 +266,7 @@ describe('fileValidation', () => {
 					createMockFile('test.txt', 1000, 'text/plain')
 				];
 
-				invalidImages.forEach(file => {
+				invalidImages.forEach((file) => {
 					expect(quickValidation.isValidImage(file)).toBe(false);
 				});
 			});
@@ -281,7 +280,7 @@ describe('fileValidation', () => {
 					createMockFile('test.webm', 1000, 'video/webm')
 				];
 
-				validVideos.forEach(file => {
+				validVideos.forEach((file) => {
 					expect(quickValidation.isValidVideo(file)).toBe(true);
 				});
 			});
@@ -292,7 +291,7 @@ describe('fileValidation', () => {
 					createMockFile('test.pdf', 1000, 'application/pdf')
 				];
 
-				invalidVideos.forEach(file => {
+				invalidVideos.forEach((file) => {
 					expect(quickValidation.isValidVideo(file)).toBe(false);
 				});
 			});
@@ -307,7 +306,7 @@ describe('fileValidation', () => {
 					createMockFile('test.webm', 1000, 'video/webm')
 				];
 
-				validMedia.forEach(file => {
+				validMedia.forEach((file) => {
 					expect(quickValidation.isValidMedia(file)).toBe(true);
 				});
 			});
@@ -319,7 +318,7 @@ describe('fileValidation', () => {
 					createMockFile('test.exe', 1000, 'application/x-msdownload')
 				];
 
-				invalidMedia.forEach(file => {
+				invalidMedia.forEach((file) => {
 					expect(quickValidation.isValidMedia(file)).toBe(false);
 				});
 			});
@@ -337,11 +336,7 @@ describe('fileValidation', () => {
 			});
 
 			it('should return false for files exceeding size limit', () => {
-				const file = createMockFile(
-					'large.jpg',
-					UPLOAD_LIMITS.MAX_FILE_SIZE + 1,
-					'image/jpeg'
-				);
+				const file = createMockFile('large.jpg', UPLOAD_LIMITS.MAX_FILE_SIZE + 1, 'image/jpeg');
 				expect(quickValidation.isValidSize(file)).toBe(false);
 			});
 
@@ -362,7 +357,7 @@ describe('fileValidation', () => {
 					'2024-08-21-photo.jpg'
 				];
 
-				safeNames.forEach(name => {
+				safeNames.forEach((name) => {
 					expect(quickValidation.isSafeFilename(name)).toBe(true);
 				});
 			});
@@ -379,7 +374,7 @@ describe('fileValidation', () => {
 					'.../'
 				];
 
-				unsafeNames.forEach(name => {
+				unsafeNames.forEach((name) => {
 					expect(quickValidation.isSafeFilename(name)).toBe(false);
 				});
 			});
@@ -425,7 +420,7 @@ describe('fileValidation', () => {
 	describe('getValidationPreset', () => {
 		it('should return a validation preset with correct structure', () => {
 			const preset = getValidationPreset('MEDIA' as any);
-			
+
 			expect(preset).toHaveProperty('allowedTypes');
 			expect(preset).toHaveProperty('maxFileSize');
 			expect(preset).toHaveProperty('maxFiles');
@@ -438,7 +433,7 @@ describe('fileValidation', () => {
 
 		it('should return media preset by default', () => {
 			const preset = getValidationPreset('UNKNOWN' as any);
-			
+
 			expect(preset.allowedTypes).toEqual(ALLOWED_MIME_TYPES.MEDIA);
 			expect(preset.maxFileSize).toBe(UPLOAD_LIMITS.MAX_FILE_SIZE);
 			expect(preset.maxFiles).toBe(UPLOAD_LIMITS.MAX_FILES);
@@ -449,28 +444,28 @@ describe('fileValidation', () => {
 		it('should generate readable file type descriptions', () => {
 			const imageTypes = ['image/jpeg', 'image/png', 'image/gif'];
 			const description = getFileTypeDescription(imageTypes);
-			
+
 			expect(description).toBe('JPG, PNG, GIF');
 		});
 
 		it('should handle JPEG special case', () => {
 			const types = ['image/jpeg'];
 			const description = getFileTypeDescription(types);
-			
+
 			expect(description).toBe('JPG');
 		});
 
 		it('should handle video types', () => {
 			const videoTypes = ['video/mp4', 'video/webm', 'video/avi'];
 			const description = getFileTypeDescription(videoTypes);
-			
+
 			expect(description).toBe('MP4, WEBM, AVI');
 		});
 
 		it('should handle mixed media types', () => {
 			const mixedTypes = ['image/jpeg', 'video/mp4', 'image/png'];
 			const description = getFileTypeDescription(mixedTypes);
-			
+
 			expect(description).toBe('JPG, MP4, PNG');
 		});
 
@@ -482,7 +477,7 @@ describe('fileValidation', () => {
 		it('should handle malformed MIME types', () => {
 			const types = ['image', 'text/plain', 'invalid'];
 			const description = getFileTypeDescription(types);
-			
+
 			expect(description).toContain('PLAIN');
 		});
 	});
@@ -492,13 +487,14 @@ describe('fileValidation', () => {
 			const preset: ValidationPreset = {
 				allowedTypes: ALLOWED_MIME_TYPES.IMAGES,
 				maxFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
+				maxVideoFileSize: UPLOAD_LIMITS.MAX_VIDEO_FILE_SIZE,
 				maxFiles: UPLOAD_LIMITS.MAX_FILES,
 				accept: 'image/*'
 			};
 
 			const nullResult = validateFile(null as any, preset);
 			expect(nullResult.isValid).toBe(false);
-			
+
 			const undefinedResult = validateFile(undefined as any, preset);
 			expect(undefinedResult.isValid).toBe(false);
 		});
@@ -508,10 +504,11 @@ describe('fileValidation', () => {
 			const preset: ValidationPreset = {
 				allowedTypes: ALLOWED_MIME_TYPES.IMAGES,
 				maxFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
+				maxVideoFileSize: UPLOAD_LIMITS.MAX_VIDEO_FILE_SIZE,
 				maxFiles: UPLOAD_LIMITS.MAX_FILES,
 				accept: 'image/*'
 			};
-			
+
 			const result = validateFile(file, preset);
 			expect(result.isValid).toBe(false);
 		});
@@ -520,6 +517,7 @@ describe('fileValidation', () => {
 			const preset: ValidationPreset = {
 				allowedTypes: ALLOWED_MIME_TYPES.IMAGES,
 				maxFileSize: 1000,
+				maxVideoFileSize: 1000,
 				maxFiles: 1,
 				accept: 'image/*'
 			};

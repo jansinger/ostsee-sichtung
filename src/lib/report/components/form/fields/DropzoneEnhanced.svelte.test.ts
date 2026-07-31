@@ -35,6 +35,7 @@ import DropzoneEnhanced from './DropzoneEnhanced.svelte';
 const CONFIG: ValidationPreset = {
 	allowedTypes: ['image/jpeg'],
 	maxFileSize: 10 * 1024 * 1024,
+	maxVideoFileSize: 10 * 1024 * 1024,
 	maxFiles: 10,
 	accept: 'image/*'
 };
