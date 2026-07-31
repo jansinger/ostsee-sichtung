@@ -10,12 +10,10 @@ export default defineConfig({
 		ignoreHTTPSErrors: true
 	},
 	testDir: 'e2e',
-	/* e2e/helpers/bannedClasses.test.ts ist ein Vitest-Unit-Test (läuft über
-	   test:unit, siehe vitest.config.ts) und hat kein Playwright-`test()`.
-	   Ohne testIgnore sammelt Playwright die Datei trotzdem ein und bricht
-	   beim ersten `describe()` mit "Cannot read properties of undefined
-	   (reading 'config')" ab — noch bevor ein einziger E2E-Test läuft. */
-	testIgnore: '**/helpers/**',
+	/* e2e/helpers/*.test.ts are vitest unit tests (collected separately by vitest.config.ts's
+	 * `server` project) that happen to live under e2e/ — Playwright's default glob would
+	 * otherwise pick them up too and crash at collection time. */
+	testIgnore: ['**/helpers/**'],
 	/* Run tests in files in parallel */
 	fullyParallel: true,
 	/* Fail the build on CI if you accidentally left test.only in the source code. */
