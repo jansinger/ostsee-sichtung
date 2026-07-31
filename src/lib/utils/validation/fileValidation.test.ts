@@ -480,6 +480,31 @@ describe('fileValidation', () => {
 
 			expect(description).toContain('PLAIN');
 		});
+
+		// Der Grund, warum diese Funktion überhaupt Sonderfälle kennt: Aus dem
+		// MIME-Subtyp abgeleitet hieße video/quicktime für den Melder
+		// "QUICKTIME" — ein Wort, das auf keinem Telefon steht. Er kennt "MOV".
+		it('nennt QuickTime beim Namen, den Melder kennen', () => {
+			expect(getFileTypeDescription(['video/quicktime'])).toBe('MOV');
+		});
+
+		it('beschreibt die öffentlich angebotene Liste vollständig lesbar', () => {
+			const description = getFileTypeDescription([
+				'image/jpeg',
+				'image/png',
+				'image/gif',
+				'image/webp',
+				'video/mp4',
+				'video/quicktime'
+			]);
+
+			expect(description).toBe('JPG, PNG, GIF, WEBP, MP4, MOV');
+		});
+
+		it('nennt ein Format nicht doppelt, wenn zwei MIME-Typen darauf zeigen', () => {
+			// image/jpeg und image/jpg sind beide JPG.
+			expect(getFileTypeDescription(['image/jpeg', 'image/jpg'])).toBe('JPG');
+		});
 	});
 
 	describe('Edge cases and error handling', () => {
