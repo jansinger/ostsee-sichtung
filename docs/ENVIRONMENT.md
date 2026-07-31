@@ -82,7 +82,10 @@ curl -fsS -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" \
 **Required**: Yes
 **Default**: None
 **Min Length**: 32 characters
-**Description**: Secret key for encrypting session data.
+**Description**: Secret key for signing the session cookie (JWT, HS256). It does not encrypt
+the cookie's contents — anyone who reads the cookie can decode `sub`, email and roles in
+plain text; the signature only proves the server issued it (see
+`docs/SESSION_STORE_SPEC_2026-07-31.md`, Befund B16).
 
 **Wichtig**: Der Guard beim Serverstart lehnt in Production zwei öffentlich bekannte Beispielwerte ab
 (den Platzhalter aus `.env.example` und den Beispielwert dieser Dokumentation). Ein abgelehntes

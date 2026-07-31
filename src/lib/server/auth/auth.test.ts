@@ -765,6 +765,43 @@ describe('auth.ts', () => {
 		});
 	});
 
+	describe('getNodeEnv (Normalisierung)', () => {
+		/* Befund 1 (#668-Review): secretGuard.ts normalisiert NODE_ENV vor dem Vergleich
+		   (trimmen, Kleinbuchstaben), damit "Production" oder " production " den Startup-Guard
+		   nicht lautlos abschalten. getNodeEnv() hier verglich bisher ungetrimmt und
+		   case-sensitiv gegen 'production' — bei NODE_ENV="Production" greift der Guard, aber
+		   das secure-Flag der Cookies (setCsrfCookie, setPKCECookie) bliebe false. Zwei
+		   Sicherheitsentscheidungen aus derselben Variable liefen damit auseinander. */
+		it('setzt secure:true bei NODE_ENV="Production" (Grossschreibung)', async () => {
+			vi.resetModules();
+			vi.doMock('$env/dynamic/private', () => ({
+				env: {
+					AUTH0_CLIENT_ID: 'test-client-id',
+					AUTH0_CLIENT_SECRET: 'test-client-secret',
+					AUTH0_DOMAIN: 'test-domain.auth0.com',
+					COOKIE_NAME: 'test-auth-cookie',
+					JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
+					SESSION_SECRET: 'test-session-secret',
+					ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+					NODE_ENV: 'Production'
+				}
+			}));
+
+			const { setCsrfCookie } = await import('./auth');
+			const mockRandom = vi.spyOn(Math, 'random').mockReturnValue(0.9999);
+
+			const result = setCsrfCookie(mockCookies);
+
+			expect(mockCookies.set).toHaveBeenCalledWith(
+				'csrfState',
+				result,
+				expect.objectContaining({ secure: true })
+			);
+
+			mockRandom.mockRestore();
+		});
+	});
+
 	describe('getPKCEVerifierFromCookie', () => {
 		beforeEach(() => {
 			vi.clearAllMocks();

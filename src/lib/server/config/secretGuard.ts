@@ -103,7 +103,10 @@ export function validateEncryptionKey(raw: string): string | null {
 		);
 	}
 	if (!HEX_ONLY.test(value)) {
-		return `ENCRYPTION_KEY muss hexadezimal sein (nur 0-9 und a-f). ${ENCRYPTION_KEY_HINT}`;
+		return (
+			'ENCRYPTION_KEY muss hexadezimal sein (nur 0-9 und a-f, Grossbuchstaben A-F sind ' +
+			`ebenfalls erlaubt). ${ENCRYPTION_KEY_HINT}`
+		);
 	}
 	return null;
 }

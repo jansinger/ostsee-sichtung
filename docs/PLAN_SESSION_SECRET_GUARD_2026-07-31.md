@@ -1,9 +1,5 @@
 # Startup-Guard für Produktions-Secrets — Implementierungsplan (PR 1 / Paket A)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
-> (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
-> checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Ein Produktions-Deployment startet nicht mehr, wenn `SESSION_SECRET` ein öffentlich
 bekannter Wert ist oder `ENCRYPTION_KEY` kein gültiger 32-Byte-Hex-Schlüssel.
 
