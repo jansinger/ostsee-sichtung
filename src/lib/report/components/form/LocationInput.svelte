@@ -13,6 +13,8 @@
 		longitude = $bindable(),
 		defaultCenter = { latitude: 54.5, longitude: 13.5 },
 		collapsibleCoordinates = false,
+		enableMapGps = true,
+		coordinatesHint = null,
 		onchange = () => {}
 	} = $props<{
 		mode?: 'dms' | 'dm' | 'dd';
@@ -24,14 +26,33 @@
 		defaultCenter?: { latitude: number; longitude: number };
 		/**
 		 * Legt Formatwahl und Eingabefelder in einen Collapse-Container.
-		 * Default `false`, damit die Admin-Maske (`sections/Location.svelte`)
-		 * unverändert bleibt; das Meldeformular übergibt `true`.
-		 *
-		 * Unterscheidet damit zugleich die beiden Einsatzorte: Nur ohne
-		 * Collapse (= Admin) trägt die Karte das GPS-Control, weil dort kein
-		 * eigener Standort-Button daneben steht (siehe `<OLMap>` unten).
+		 * Default `false` — beide Einsatzorte zeigen die Koordinaten inzwischen
+		 * direkt an (Meldeformular seit dem Museumswunsch „Koordinaten-Eingabe
+		 * dauerhaft sichtbar").
 		 */
 		collapsibleCoordinates?: boolean;
+		/**
+		 * Schaltet das OpenLayers-GPS-Control der Karte.
+		 *
+		 * Bewusst ein EIGENER Schalter und nicht mehr `!collapsibleCoordinates`:
+		 * Diese Kopplung hielt nur, solange „Felder sichtbar" und „eigenes
+		 * GPS-Control" dasselbe bedeuteten. Das Meldeformular braucht seit der
+		 * dauerhaft sichtbaren Koordinaten-Eingabe die Kombination „Felder
+		 * sichtbar, aber KEIN Control" — es stellt mit „Mein aktueller Standort"
+		 * einen eigenen Button, und zwei Bedienelemente für dieselbe Aktion
+		 * verstoßen gegen „gleiche Aktion = gleiche Variante"
+		 * (`.claude/rules/design-system.md`).
+		 *
+		 * Default `true`, damit die Admin-Maske (`sections/Location.svelte`)
+		 * unverändert bleibt.
+		 */
+		enableMapGps?: boolean;
+		/**
+		 * Optionaler Hinweis über den Koordinatenfeldern. Nur das Meldeformular
+		 * setzt ihn — in der Admin-Maske gibt es die Karten-Übernahme nicht,
+		 * auf die der Satz sich bezieht.
+		 */
+		coordinatesHint?: string | null;
 		onchange?: EventListener | null;
 	}>();
 
@@ -348,7 +369,7 @@
 		<!--
 			Das OpenLayers-GPS-Control (`FormLocationControl`) bleibt nur dort, wo es
 			die einzige Standort-Bedienung ist — also in der Admin-Maske
-			(`sections/Location.svelte`, `collapsibleCoordinates={false}`).
+			(`sections/Location.svelte`, Default `enableMapGps={true}`).
 
 			Im Meldeformular liefert `PositionPanel` bereits einen eigenen Button
 			„Mein aktueller Standort" über der Karte. Beide schreiben dieselbe
@@ -359,7 +380,7 @@
 			bind:latitude={mapLatitude}
 			bind:longitude={mapLongitude}
 			readonly={false}
-			enableGPS={!collapsibleCoordinates}
+			enableGPS={enableMapGps}
 			{hasPosition}
 			onchange={onMapChange}
 		/>
@@ -375,6 +396,11 @@
 			</div>
 		</details>
 	{:else}
+		{#if coordinatesHint}
+			<p class="text-base-content/70 text-support mb-2" data-testid="coordinates-hint">
+				{coordinatesHint}
+			</p>
+		{/if}
 		{@render coordinateFields()}
 	{/if}
 </div>

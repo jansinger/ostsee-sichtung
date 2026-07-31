@@ -239,7 +239,6 @@
 			<div class="skeleton h-32 w-full"></div>
 		{/if}
 
-
 		<!-- Zustand C: Foto ohne EXIF-GPS.
 
 		     Bewusst `'no-gps'` und nicht „kein GPS im Formular": Während der
@@ -299,15 +298,22 @@
 		</div>
 	</div>
 
-	<div class="divider text-base-content/70 text-support mt-6 mb-3">oder Position selbst setzen</div>
+	<!-- Der Standort-Button steht bewusst ÜBER dem Trenner und damit direkt
+	     neben dem Foto-Weg: Er ist für alle, die vor Ort melden, der zweite
+	     schnelle Weg zur Position — vorher stand er unter dem Trenner in einer
+	     Reihe mit der Karte und wirkte wie eine Nebensache.
 
-	<!-- Eigener Button statt des OpenLayers-GPS-Controls: Die Karte startet
+	     Eigener Button statt des OpenLayers-GPS-Controls: Die Karte startet
 	     zugeklappt, im Startzustand gäbe es sonst gar keinen sichtbaren
 	     GPS-Button. Beschriftung und Fehlerpfad liegen so außerdem in unserer
-	     Hand — beides ist im Karten-Control nicht erreichbar. -->
+	     Hand — beides ist im Karten-Control nicht erreichbar.
+
+	     NICHT `btn-primary`: Die einzige Primäraktion des Schritts ist „Weiter"
+	     (Button-Hierarchie, `.claude/rules/design-system.md`). Die Betonung
+	     kommt deshalb über Fläche und Rahmenstärke, nicht über die Farbrolle. -->
 	<button
 		type="button"
-		class="btn btn-outline min-h-11 w-full md:w-auto"
+		class="btn btn-outline btn-primary mt-4 h-auto w-full border-2 py-4 text-base"
 		onclick={useCurrentPosition}
 		aria-disabled={locating}
 		data-testid="use-current-position"
@@ -315,13 +321,13 @@
 		{#if locating}
 			<span aria-hidden="true" class="loading loading-spinner loading-sm"></span>
 		{:else}
-			<Icon aria-hidden="true" icon="lucide:crosshair" width="18" />
+			<Icon aria-hidden="true" icon="lucide:crosshair" width="22" />
 		{/if}
 		<!-- Der Spinner ist rein dekorativ; die Beschriftung trägt den Ladezustand,
 		     damit er auch angesagt wird und nicht nur zu sehen ist. -->
 		{locating ? 'Standort wird ermittelt …' : 'Mein aktueller Standort'}
 	</button>
-	<p class="text-base-content/70 text-support mt-1 mb-3">
+	<p class="text-base-content/70 text-support mt-2 mb-3">
 		Übernimmt den Standort Ihres Geräts — sinnvoll, wenn Sie die Sichtung direkt vor Ort melden.
 	</p>
 
@@ -336,6 +342,10 @@
 			<span class="text-sm">{locationError}</span>
 		</div>
 	{/if}
+
+	<div class="divider text-base-content/70 text-support mt-6 mb-3">
+		oder Position auf der Karte setzen
+	</div>
 
 	<details class="bg-base-100 collapse" bind:open={mapOpen} data-testid="map-disclosure">
 		<!-- `<summary>` ist nativ fokussierbar — kein `tabindex` nötig. -->
@@ -354,11 +364,23 @@
 				auf, sobald der Container Ausdehnung bekommt — eine im geschlossenen
 				<details> erzeugte Karte würde sich also von allein korrigieren.
 			-->
+			<!-- `collapsibleCoordinates={false}`: Die Koordinaten-Eingabe lag bis
+			     hierher hinter einer zweiten Disclosure („Koordinaten eingeben")
+			     und war damit zwei Klicks tief. Auf Wunsch des Museums steht sie
+			     jetzt offen unter der Karte.
+
+			     `enableMapGps={false}` muss dabei ausdrücklich mit: Beides hing
+			     früher an `collapsibleCoordinates`, ein `false` allein brächte
+			     also das Karten-GPS-Control zurück — neben dem Button „Mein
+			     aktueller Standort" oben wären das zwei Bedienelemente für
+			     dieselbe Aktion (design-system.md). -->
 			{#if mapOpen}
 				<LocationInput
 					{latitude}
 					{longitude}
-					collapsibleCoordinates={true}
+					collapsibleCoordinates={false}
+					enableMapGps={false}
+					coordinatesHint="Bitte tragen Sie die GPS-Koordinaten ein, wenn diese nicht automatisch über die Karte übernommen werden konnten."
 					onchange={handleLocationChange}
 				/>
 			{/if}
