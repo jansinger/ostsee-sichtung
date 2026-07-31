@@ -282,7 +282,7 @@
 			aria-describedby={rejectionErrors.length > 0 ? 'dropzone-errors' : undefined}
 			aria-invalid={rejectionErrors.length > 0}
 			type="file"
-			accept={config.allowedTypes.join(',')}
+			accept={config.accept}
 			{multiple}
 			class="hidden"
 			onchange={handleFileSelect}
