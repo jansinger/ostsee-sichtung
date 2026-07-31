@@ -398,12 +398,17 @@ export const sightingSchemaBase = yup.object().shape({
 	/**
 	 * Gesamtanzahl der gesichteten Tiere
 	 * Pflichtfeld, muss eine positive ganze Zahl sein
+	 *
+	 * Untergrenze 1: Eine Sichtung ohne Tier ist keine Sichtung. Die Grenze
+	 * gehört bewusst NUR hierher — in der Legacy-API kennzeichnet
+	 * `anzahl_gesamt = 0` einen Totfund (`docs/LEGACY_API_SPECIFICATION.md`),
+	 * dort bleibt `min(0)` stehen.
 	 */
 	totalCount: yup
 		.number()
 		.transform((value) => (isNaN(value) ? undefined : value))
 		.integer('Bitte nur ganze Zahlen eingeben')
-		.min(0, 'Die Anzahl muss 0 oder höher sein')
+		.min(1, 'Bitte geben Sie mindestens 1 Tier an')
 		.max(15, 'Bei mehr als 15 Tieren bitte 15 eintragen')
 		.required('Wie viele Tiere haben Sie gesehen?')
 		.label('Anzahl Tiere')
@@ -419,6 +424,11 @@ export const sightingSchemaBase = yup.object().shape({
 	/**
 	 * Anzahl der Jungtiere unter den gesichteten Tieren
 	 * Optional, muss eine positive ganze Zahl sein
+	 *
+	 * Jungtiere sind eine Teilmenge von `totalCount`, keine zusätzliche
+	 * Gruppe — mehr Jungtiere als Tiere insgesamt kann es nicht geben.
+	 * Beide Felder sind bei 15 gekappt; die Regel greift deshalb auch an
+	 * der Kappungsgrenze (15/15 gültig, 15 von 10 nicht).
 	 */
 	juvenileCount: yup
 		.number()
@@ -426,6 +436,22 @@ export const sightingSchemaBase = yup.object().shape({
 		.integer('Bitte nur ganze Zahlen eingeben')
 		.min(0, 'Die Anzahl muss 0 oder höher sein')
 		.max(15, 'Bei mehr als 15 bitte 15 eintragen')
+		.test(
+			'juveniles-within-total',
+			'Es können nicht mehr Jungtiere als Tiere insgesamt sein',
+			function (value) {
+				// Ohne Angabe greift die Regel nicht — das Feld bleibt optional.
+				if (value === undefined || value === null) return true;
+
+				// Fehlt oder taugt `totalCount` nicht, meldet dessen eigene
+				// Validierung den Fehler. Hier zusätzlich anzuschlagen würde
+				// denselben Sachverhalt zweimal anzeigen.
+				const total = this.parent?.totalCount;
+				if (typeof total !== 'number' || Number.isNaN(total)) return true;
+
+				return value <= total;
+			}
+		)
 		.label('Davon Jungtiere')
 		.meta({
 			placeholder: '0',
