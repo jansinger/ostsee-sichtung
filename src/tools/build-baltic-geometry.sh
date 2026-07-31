@@ -2,7 +2,7 @@
 # Baut die bereinigte Ostsee-Wasserflaeche.
 # Laeuft NICHT im Build und nicht zur Laufzeit — nur manuell.
 # Voraussetzungen: ogr2ogr, shp2pgsql, psql, PostGIS 3.x
-# Spec: docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
+# Spec: docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

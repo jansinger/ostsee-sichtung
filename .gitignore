@@ -71,3 +71,7 @@ sbom/*.xml
 # Zwischenergebnisse der Ostsee-Geometrie-Pipeline (src/tools/build-baltic-geometry.sh)
 src/tools/out/
 
+
+# Analysen mit Personen- und Compliance-Bezug gehören nicht in dieses
+# öffentliche Repository (siehe PR #676). Sie liegen außerhalb des Repos.
+docs/MEERESMUSEUM_*

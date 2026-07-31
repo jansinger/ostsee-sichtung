@@ -1,5 +1,31 @@
 # Ostsee-Geometrie bereinigen — Implementierungsplan
 
+> **ERLEDIGT — alle 10 Aufgaben umgesetzt, gemerged mit PR #647 (`ecfa4b9`).**
+> Die Haken waren bis zum 2026-07-31 nicht gesetzt, obwohl die Arbeit gelandet
+> war; das hat mindestens einmal zu der falschen Annahme geführt, die Geometrie
+> sei noch unbereinigt. Nachgeprüft am 2026-07-31 gegen `origin/main`:
+>
+> - Alle neun neuen Dateien liegen vor, `src/tools/rbush-index.json` (die
+>   Doppelkopie) ist entfernt, die vier `geo:*`-Skripte stehen in `package.json`.
+> - `balticGeometry.test.ts` läuft mit 20 Referenzpunkten grün — Bodden, Förden,
+>   Strelasund und der 200-m-Uferstreifen sind drin, Ladoga/Onega/Weichsel/
+>   West-Limfjord draußen.
+> - `BALTIC_SEA_BBOX` (9,4 / 30,25 / 53,55 / 65,95) stimmt in
+>   `checkBalticSea.ts`, `.claude/rules/geo.md` und `.claude/rules/maps.md`
+>   überein; das `boundingExtent`-Beispiel importiert die Konstante, statt Zahlen
+>   abzuschreiben.
+> - Die Migration ist gelaufen: `sichtungen_ostsee_backup` existiert in der
+>   lokalen Datenbank.
+> - `docs/OSTSEE_FLAGS.md` führt „Fehler 3 … (behoben am 2026-07-30)", die Spec
+>   ist im Kopf als umgesetzt gekennzeichnet.
+>
+> **Einzig offen ist der Abschluss-Schritt weiter unten:** Spec und Plan sind
+> point-in-time-Dokumente und gehören nach `docs/archive/`. Das ist bewusst noch
+> nicht geschehen, weil beide aus laufenden Analysen heraus verlinkt werden.
+>
+> **Produktion ist unverändert** und braucht einen eigenen Trockenlauf samt
+> eigener Freigabe (siehe „Abschluss").
+
 > **Für agentische Bearbeiter:** ERFORDERLICHES SUB-SKILL: `superpowers:subagent-driven-development` (empfohlen) oder `superpowers:executing-plans`, um diesen Plan Aufgabe für Aufgabe umzusetzen. Die Schritte nutzen Checkbox-Syntax (`- [ ]`) zur Nachverfolgung.
 
 **Ziel:** Die Ostsee-Geometrie an der Quelle bereinigen — vier Binnenwasser-Artefakte entfernen, die fehlenden Küstengewässer aufnehmen — und `BALTIC_SEA_BBOX` daraus ableiten statt von Hand zu pflegen.
@@ -8,7 +34,7 @@
 
 **Tech-Stack:** PostgreSQL 17 + PostGIS 3.6, GDAL (`ogr2ogr`), `shp2pgsql`, RBush, Turf.js (`@turf/boolean-point-in-polygon`), Vitest, Leaflet (nur für die Prüfkarte).
 
-**Spec:** `docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md` — verbindliche Referenz für alle Zahlen und Entscheidungen.
+**Spec:** `docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md` — verbindliche Referenz für alle Zahlen und Entscheidungen.
 
 ## Globale Randbedingungen
 
@@ -80,7 +106,7 @@ Legt die fachliche Messlatte fest, bevor Geometrie angefasst wird. Alle Tests m�
 - Nutzt: `checkBalticSeaFile(longitude: number, latitude: number): BalticSeaFileResult` aus `$lib/server/geo/checkBalticSeaFile` — vorhanden, liefert `{ inBaltic: boolean; inChartArea: boolean; longitude: number; latitude: number }`.
 - Liefert: nichts an spätere Aufgaben. Die Tests sind das Abnahmekriterium für Aufgabe 5.
 
-- [ ] **Schritt 1: Testdatei schreiben**
+- [x] **Schritt 1: Testdatei schreiben**
 
 ```typescript
 import { describe, expect, it } from 'vitest';
@@ -88,7 +114,7 @@ import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
 
 /**
  * Fachliche Referenzpunkte für die bereinigte Ostsee-Geometrie.
- * Herkunft und Begründung: docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
+ * Herkunft und Begründung: docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
  */
 
 /** Fehler A — Binnenwasser-Artefakte der IHO-Geometrie. Müssen draußen sein. */
@@ -176,7 +202,7 @@ describe('Ostsee-Geometrie: Uferstreifen für Strandfunde', () => {
 });
 ```
 
-- [ ] **Schritt 2: Tests laufen lassen und Fehlschlag bestätigen**
+- [x] **Schritt 2: Tests laufen lassen und Fehlschlag bestätigen**
 
 ```bash
 npm run test:unit -- src/lib/server/geo/balticGeometry.test.ts
@@ -186,7 +212,7 @@ Erwartung: Die Blöcke „Fehler A", „Fehler B" und „Uferstreifen" schlagen 
 
 Falls „Fehler A" wider Erwarten grün ist, wurde die Geometrie schon getauscht — dann stimmt etwas mit dem Arbeitsstand nicht, klären statt weitermachen.
 
-- [ ] **Schritt 3: Die zwei Uferstreifen-Koordinaten gegen die Realität prüfen**
+- [x] **Schritt 3: Die zwei Uferstreifen-Koordinaten gegen die Realität prüfen**
 
 Die beiden Prerow-Punkte sind aus der Karte abgelesen. Vor dem Commit einmal verifizieren, dass `12.5427/54.4551` tatsächlich rund 100 m landeinwärts und `12.5427/54.4110` rund 5 km landeinwärts liegt:
 
@@ -201,7 +227,7 @@ SELECT ST_Distance(
 
 Erwartung: rund 100. Weicht der Wert stark ab, die Koordinaten in der Testdatei korrigieren und den korrigierten Wert im Kommentar festhalten.
 
-- [ ] **Schritt 4: Commit**
+- [x] **Schritt 4: Commit**
 
 ```bash
 git add src/lib/server/geo/balticGeometry.test.ts
@@ -222,7 +248,7 @@ Die vier Ausschlussflächen als eigene, im Diff lesbare Datei.
 
 - Liefert: eine `FeatureCollection` mit vier `Polygon`-Features in EPSG:4326. Aufgabe 3 lädt sie als Tabelle `geo_build.artifact_mask`.
 
-- [ ] **Schritt 1: Maske schreiben**
+- [x] **Schritt 1: Maske schreiben**
 
 Die Grenzen sind so gewählt, dass sie die Artefakte vollständig erfassen und echtes Ostseewasser nicht berühren. Die Newa-Bucht endet bei 30,35° E; die Maske beginnt bei 30,40° E und lässt sie damit unberührt.
 
@@ -310,7 +336,7 @@ Die Grenzen sind so gewählt, dass sie die Artefakte vollständig erfassen und e
 }
 ```
 
-- [ ] **Schritt 2: Maske gegen die Referenzpunkte prüfen**
+- [x] **Schritt 2: Maske gegen die Referenzpunkte prüfen**
 
 Kein Punkt aus `KERNGEBIET` oder `FEHLER_B` (Aufgabe 1) darf in der Maske liegen, jeder aus `FEHLER_A` muss darin liegen.
 
@@ -333,7 +359,7 @@ process.exit(ok?0:1);
 
 Erwartung: alle fünf A-Punkte „maskiert OK", alle acht K-Punkte „frei OK", Exit-Code 0. `<worktree>` durch den tatsächlichen Verzeichnisnamen ersetzen.
 
-- [ ] **Schritt 3: Commit**
+- [x] **Schritt 3: Commit**
 
 ```bash
 git add src/tools/baltic-artifact-mask.geojson
@@ -365,7 +391,7 @@ kontinentgroß und ihre Bounding Box liefert praktisch immer einen Treffer.
 - Nutzt: `src/tools/iho.json`, `src/tools/baltic-artifact-mask.geojson` (Aufgabe 2), OSM `land_polygons.shp`.
 - Liefert: `src/tools/out/baltic-water.geojson` (subdividierte `FeatureCollection`, EPSG:4326) und `src/lib/server/geo/baltic-extent.json` mit den Schlüsseln `minLongitude`, `maxLongitude`, `minLatitude`, `maxLatitude` (alle `number`, ungerundet). Aufgabe 4, 5 und 6 lesen diese beiden Dateien.
 
-- [ ] **Schritt 1: `.gitignore` erweitern**
+- [x] **Schritt 1: `.gitignore` erweitern**
 
 Am Dateiende anhängen:
 
@@ -375,7 +401,7 @@ Am Dateiende anhängen:
 src/tools/out/
 ```
 
-- [ ] **Schritt 2: SQL-Pipeline schreiben**
+- [x] **Schritt 2: SQL-Pipeline schreiben**
 
 `src/tools/build-baltic-geometry.sql`:
 
@@ -383,7 +409,7 @@ src/tools/out/
 -- Bereinigte Ostsee-Wasserflaeche aus IHO-Seegebieten und OSM-Kuestenlinie.
 -- Aufgerufen von build-baltic-geometry.sh. Erwartet die Tabellen
 -- geo_build.iho_raw, geo_build.artifact_mask und geo_build.osm_land.
--- Begruendung aller Schritte: docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
+-- Begruendung aller Schritte: docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
 
 \set ON_ERROR_STOP on
 SET search_path TO geo_build, public;
@@ -489,7 +515,7 @@ SELECT ST_XMin(e) AS min_longitude, ST_XMax(e) AS max_longitude,
 FROM (SELECT ST_Extent(geom) AS e FROM ostsee) x;
 ```
 
-- [ ] **Schritt 3: Orchestrierungs-Skript schreiben**
+- [x] **Schritt 3: Orchestrierungs-Skript schreiben**
 
 `src/tools/build-baltic-geometry.sh`:
 
@@ -498,7 +524,7 @@ FROM (SELECT ST_Extent(geom) AS e FROM ostsee) x;
 # Baut die bereinigte Ostsee-Wasserflaeche.
 # Laeuft NICHT im Build und nicht zur Laufzeit — nur manuell.
 # Voraussetzungen: ogr2ogr, shp2pgsql, psql, PostGIS 3.x
-# Spec: docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
+# Spec: docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -568,7 +594,7 @@ echo "Naechster Schritt: npm run geo:review — die Karte MUSS freigegeben werde
 echo "bevor irgendetwas an der Datenbank geschrieben wird."
 ```
 
-- [ ] **Schritt 4: Ausführbar machen und `package.json` ergänzen**
+- [x] **Schritt 4: Ausführbar machen und `package.json` ergänzen**
 
 ```bash
 chmod +x src/tools/build-baltic-geometry.sh
@@ -580,7 +606,7 @@ In `package.json` unter `"scripts"` aufnehmen:
 "geo:build": "bash src/tools/build-baltic-geometry.sh",
 ```
 
-- [ ] **Schritt 5: Pipeline ausführen**
+- [x] **Schritt 5: Pipeline ausführen**
 
 ```bash
 npm run geo:build
@@ -590,7 +616,7 @@ Erwartung: Die Kennzahlen-Abfrage nennt Teilflächen, Stützpunkte und Fläche. 
 
 **Liegt sie deutlich darüber, ist die Nordsee-Leckage aus Schritt 6 nicht vollständig entfernt worden.** Dann nicht weitermachen, sondern in Aufgabe 4 auf der Karte nachsehen, wo die Fläche herkommt.
 
-- [ ] **Schritt 6: Extent gegen die Erwartung prüfen**
+- [x] **Schritt 6: Extent gegen die Erwartung prüfen**
 
 ```bash
 cat src/lib/server/geo/baltic-extent.json
@@ -600,7 +626,7 @@ Erwartung, grob: `minLongitude` um 9,2–9,5, `maxLongitude` um 30,3–30,6, `mi
 
 Weicht ein Wert um mehr als 0,5° ab, ist die Geometrie nicht plausibel — Ursache klären, bevor es weitergeht.
 
-- [ ] **Schritt 7: Commit**
+- [x] **Schritt 7: Commit**
 
 ```bash
 git add .gitignore package.json src/tools/build-baltic-geometry.sh \
@@ -624,7 +650,7 @@ git commit -m "feat(map): add postgis pipeline for the cleaned baltic water poly
 - Nutzt: `src/tools/out/baltic-water.geojson` und `src/lib/server/geo/baltic-extent.json` (Aufgabe 3), `src/tools/iho.json`, `src/tools/baltic-artifact-mask.geojson`.
 - Liefert: `src/tools/out/baltic-review.html` und `src/tools/out/review-data.js`. Keine spätere Aufgabe liest diese Dateien; sie dienen allein der menschlichen Prüfung.
 
-- [ ] **Schritt 1: Renderer schreiben**
+- [x] **Schritt 1: Renderer schreiben**
 
 `src/tools/render-baltic-review.ts`:
 
@@ -632,7 +658,7 @@ git commit -m "feat(map): add postgis pipeline for the cleaned baltic water poly
 /**
  * Erzeugt eine eigenstaendige Pruefkarte fuer die bereinigte Ostsee-Geometrie.
  *
- * Die Karte ist das Freigabe-Tor aus docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md,
+ * Die Karte ist das Freigabe-Tor aus docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md,
  * Abschnitt 3.3: sie laeuft nach der Pipeline und vor jedem Schreibvorgang an
  * der Datenbank.
  */
@@ -784,13 +810,13 @@ L.control.scale({ imperial: false }).addTo(map);
 main();
 ```
 
-- [ ] **Schritt 2: `package.json` ergänzen**
+- [x] **Schritt 2: `package.json` ergänzen**
 
 ```json
 "geo:review": "tsx src/tools/render-baltic-review.ts",
 ```
 
-- [ ] **Schritt 3: Karte erzeugen**
+- [x] **Schritt 3: Karte erzeugen**
 
 ```bash
 set -a && . ./.env && set +a && npm run geo:review
@@ -798,7 +824,7 @@ set -a && . ./.env && set +a && npm run geo:review
 
 Erwartung: Meldet den Pfad und rund **1.900** Marker. Weicht die Markerzahl stark von 1.901 ab, wurde auf einem anderen Datenbestand gerechnet — im Report festhalten.
 
-- [ ] **Schritt 4: Karte im Browser prüfen**
+- [x] **Schritt 4: Karte im Browser prüfen**
 
 Nach `~/.claude/CLAUDE.md` läuft die visuelle Prüfung über die `Claude_in_Chrome`-MCP, nicht über `preview_*`:
 
@@ -817,15 +843,15 @@ Screenshots von diesen fünf Ausschnitten anfertigen:
 | Bodden zwischen Rügen und Darß     | Alle violetten Marker liegen in Blau                      |
 | Newa-Bucht und Ladogasee           | Newa-Bucht blau, Ladoga gelb maskiert und nicht blau      |
 
-- [ ] **Schritt 5: Karte und Screenshots übergeben**
+- [x] **Schritt 5: Karte und Screenshots übergeben**
 
 Die HTML-Datei per `SendUserFile` übergeben, damit selbst gezoomt werden kann, zusammen mit den fünf Screenshots.
 
-- [ ] **Schritt 6: Freigabe abwarten**
+- [x] **Schritt 6: Freigabe abwarten**
 
 Explizit fragen, ob die Geometrie freigegeben ist. **Erst nach einem klaren Ja weitermachen.** Bei Beanstandungen: Artefakt-Maske oder Pufferwerte anpassen, Aufgabe 3 erneut laufen lassen, erneut vorlegen.
 
-- [ ] **Schritt 7: Commit**
+- [x] **Schritt 7: Commit**
 
 ```bash
 git add package.json src/tools/render-baltic-review.ts
@@ -851,7 +877,7 @@ Bringt die Tests aus Aufgabe 1 auf Grün.
 - Nutzt: `src/tools/out/baltic-water.geojson` (Aufgabe 3).
 - Liefert: `checkBalticSeaFile` verhält sich unverändert nach außen — gleiche Signatur, gleicher Rückgabetyp `BalticSeaFileResult`. Nur die zugrunde liegende Geometrie ändert sich.
 
-- [ ] **Schritt 1: Generator anpassen**
+- [x] **Schritt 1: Generator anpassen**
 
 In `src/tools/create-rbush-index.js` zwei Änderungen.
 
@@ -874,7 +900,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 Die bestehende `getBoundingBox`-Logik verarbeitet `Polygon` und `MultiPolygon` bereits korrekt und braucht keine Änderung — `ST_Subdivide` liefert `Polygon`.
 
-- [ ] **Schritt 2: Index bauen**
+- [x] **Schritt 2: Index bauen**
 
 ```bash
 cd src/tools && node create-rbush-index.js && cd ../..
@@ -883,13 +909,13 @@ ls -la src/lib/server/geo/rbush-index.json
 
 Erwartung: Datei existiert und ist **unter 10 MB**. Ist sie größer, in `src/tools/build-baltic-geometry.sql` die Zeile `\set simplify_m 20` auf `50` erhöhen, `npm run geo:build` und diesen Schritt wiederholen. Den letztlich verwendeten Wert für Aufgabe 10 notieren.
 
-- [ ] **Schritt 3: Doppelte Kopie entfernen**
+- [x] **Schritt 3: Doppelte Kopie entfernen**
 
 ```bash
 git rm src/tools/rbush-index.json
 ```
 
-- [ ] **Schritt 4: Statischen Import auflösen**
+- [x] **Schritt 4: Statischen Import auflösen**
 
 In `src/lib/server/geo/checkBalticSeaFile.ts` die Zeile 59 löschen:
 
@@ -940,7 +966,7 @@ Ebenfalls betroffen: **die Tests aus Aufgabe 1** rufen `checkBalticSeaFile` sync
 
 Wird der Umbau trotzdem gewünscht, gehört er hinter Aufgabe 9 als eigene Aufgabe mit eigenem Commit — dann sind die Tests bereits stabil und der Diff ist sauber trennbar.
 
-- [ ] **Schritt 5: Referenzpunkt-Tests laufen lassen**
+- [x] **Schritt 5: Referenzpunkt-Tests laufen lassen**
 
 ```bash
 npm run test:unit -- src/lib/server/geo/balticGeometry.test.ts
@@ -950,7 +976,7 @@ Erwartung: **alle** Blöcke grün — Fehler A, Fehler B, Uferstreifen, Außenpu
 
 Schlägt ein Fehler-B-Punkt fehl, ist der 20-km-Puffer an dieser Stelle zu klein oder OSM stuft das Gewässer als Binnenwasser ein. Schlägt ein Außenpunkt fehl, ist Nordseewasser durchgekommen — zurück zu Aufgabe 3, Schritt 6.
 
-- [ ] **Schritt 6: Commit**
+- [x] **Schritt 6: Commit**
 
 ```bash
 git add -A src/tools/create-rbush-index.js src/lib/server/geo/ src/tools/rbush-index.json package.json
@@ -971,7 +997,7 @@ git commit -m "feat(map): rebuild the spatial index from the cleaned baltic geom
 - Nutzt: `src/lib/server/geo/baltic-extent.json` (Aufgabe 3).
 - Liefert: `BALTIC_SEA_BBOX: BoundingBox` mit unveränderter Form — `{ minLongitude, maxLongitude, minLatitude, maxLatitude }`, alle `number`. Die vier bestehenden Verwendungsstellen bleiben unverändert.
 
-- [ ] **Schritt 1: Invarianten- und Ableitungstest schreiben**
+- [x] **Schritt 1: Invarianten- und Ableitungstest schreiben**
 
 `src/lib/utils/geo/checkBalticSea.test.ts`:
 
@@ -1026,7 +1052,7 @@ describe('Invariante: das Polygon liegt vollstaendig in der Bounding Box', () =>
 });
 ```
 
-- [ ] **Schritt 2: Test laufen lassen und Fehlschlag bestätigen**
+- [x] **Schritt 2: Test laufen lassen und Fehlschlag bestätigen**
 
 ```bash
 npm run test:unit -- src/lib/utils/geo/checkBalticSea.test.ts
@@ -1034,7 +1060,7 @@ npm run test:unit -- src/lib/utils/geo/checkBalticSea.test.ts
 
 Erwartung: Der Ableitungstest schlägt fehl, weil `BALTIC_SEA_BBOX` noch die handgepflegten Werte trägt.
 
-- [ ] **Schritt 3: Konstante nachziehen**
+- [x] **Schritt 3: Konstante nachziehen**
 
 Die gerundeten Werte ausrechnen:
 
@@ -1065,7 +1091,7 @@ In `src/lib/utils/geo/checkBalticSea.ts` den Block ab Zeile 18 ersetzen. Die vie
  * nicht dazu. Binnenwasser (Ladogasee, Onegasee, Weichsel- und
  * Torne-Flussläufe, Limfjord) ist ausgeschlossen.
  *
- * Hintergrund: `docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
+ * Hintergrund: `docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
  *
  * @constant
  */
@@ -1081,7 +1107,7 @@ Die vier Zahlenwerte durch die tatsächliche Ausgabe aus dem Befehl oben ersetze
 
 Ebenso den Doku-Block ab Zeile 48 („Koordinaten-Referenz") auf die neuen Zahlen bringen und „Skagerrak-Region" durch „Kattegat" ersetzen.
 
-- [ ] **Schritt 4: Tests laufen lassen**
+- [x] **Schritt 4: Tests laufen lassen**
 
 ```bash
 npm run test:unit -- src/lib/utils/geo/checkBalticSea.test.ts
@@ -1089,7 +1115,7 @@ npm run test:unit -- src/lib/utils/geo/checkBalticSea.test.ts
 
 Erwartung: beide Tests grün.
 
-- [ ] **Schritt 5: Commit**
+- [x] **Schritt 5: Commit**
 
 ```bash
 git add src/lib/utils/geo/checkBalticSea.ts src/lib/utils/geo/checkBalticSea.test.ts
@@ -1108,7 +1134,7 @@ git commit -m "feat(map): derive BALTIC_SEA_BBOX from the cleaned geometry"
 
 **Schnittstellen:** keine neuen. Diese Aufgabe passt nur Erwartungswerte an.
 
-- [ ] **Schritt 1: Gesamtlage aufnehmen**
+- [x] **Schritt 1: Gesamtlage aufnehmen**
 
 ```bash
 npm run test:unit 2>&1 | tail -40
@@ -1116,7 +1142,7 @@ npm run test:unit 2>&1 | tail -40
 
 Alle fehlschlagenden Tests notieren.
 
-- [ ] **Schritt 2: Box-Werte in `coordinateFilter.test.ts` anpassen**
+- [x] **Schritt 2: Box-Werte in `coordinateFilter.test.ts` anpassen**
 
 Zeile 104 prüft die Konstante hart. Die vier Zahlen auf die aus Aufgabe 6 setzen:
 
@@ -1129,11 +1155,11 @@ expect(BALTIC_SEA_BBOX).toEqual({
 });
 ```
 
-- [ ] **Schritt 3: `extentUtils.test.ts` anpassen**
+- [x] **Schritt 3: `extentUtils.test.ts` anpassen**
 
 Die Datei berechnet ihre Erwartung in den Zeilen 9–12 selbst aus `BALTIC_SEA_BBOX` und zieht dadurch automatisch mit. Schlägt sie trotzdem fehl, liegt ein hart notierter Zahlenwert weiter unten in der Datei — diesen auf den neuen Wert bringen.
 
-- [ ] **Schritt 4: `checkBalticSeaFile.comprehensive.test.ts` anpassen**
+- [x] **Schritt 4: `checkBalticSeaFile.comprehensive.test.ts` anpassen**
 
 Jeden Fehlschlag einzeln bewerten. Zwei Fälle:
 
@@ -1142,7 +1168,7 @@ Jeden Fehlschlag einzeln bewerten. Zwei Fälle:
 
 Zeile 529 (`// Test boundary coordinates that should match PostGIS CHART_AREA_ENVELOPE`) und Zeile 313 (`expect(result.inChartArea).toBe(true); // Within bounding box`) sind die wahrscheinlichsten Kandidaten für Fall 1.
 
-- [ ] **Schritt 5: Gesamtlauf**
+- [x] **Schritt 5: Gesamtlauf**
 
 ```bash
 npm run test:quick
@@ -1150,7 +1176,7 @@ npm run test:quick
 
 Erwartung: grün.
 
-- [ ] **Schritt 6: Commit**
+- [x] **Schritt 6: Commit**
 
 ```bash
 git add src/lib/server/geo/checkBalticSeaFile.comprehensive.test.ts \
@@ -1186,7 +1212,7 @@ gegen einen GiST-Index ist dort exakt und schnell.
   `alt_ostsee`, `neu_ostsee`, `alt_geo`, `neu_geo`, `region`. Aufgabe 9 schreibt
   aus genau dieser View.
 
-- [ ] **Schritt 1: Konsistenzprüfung schreiben**
+- [x] **Schritt 1: Konsistenzprüfung schreiben**
 
 Bevor irgendetwas gerechnet wird, muss belegt sein, dass PostGIS und Turf
 dasselbe Urteil fällen. Sonst weicht die Migration vom Laufzeitverhalten ab.
@@ -1196,7 +1222,7 @@ dasselbe Urteil fällen. Sonst weicht die Migration vom Laufzeitverhalten ab.
 ```sql
 -- Neuberechnung von ostsee und ostsee_geo aus der bereinigten Geometrie.
 -- Aufgerufen von recalc-baltic-flags.sh.
--- Spec: docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
+-- Spec: docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
 
 \set ON_ERROR_STOP on
 SET search_path TO geo_build, public;
@@ -1229,7 +1255,7 @@ FROM referenz r, geo_build.ostsee o
 WHERE ST_Intersects(o.geom, ST_SetSRID(ST_MakePoint(r.lon, r.lat), 4326)) IS DISTINCT FROM r.erwartet;
 ```
 
-- [ ] **Schritt 2: Konsistenzprüfung laufen lassen**
+- [x] **Schritt 2: Konsistenzprüfung laufen lassen**
 
 ```bash
 cd /Users/jansinger/Documents/Code/ostsee-sichtung && set -a && . ./.env && set +a && \
@@ -1242,7 +1268,7 @@ Datenbank und Geometrie im Index nicht überein, und es geht nicht weiter, bis d
 geklärt ist. Häufigste Ursache: `npm run geo:build` lief nach dem letzten
 Index-Bau erneut.
 
-- [ ] **Schritt 3: Änderungs-View ergänzen**
+- [x] **Schritt 3: Änderungs-View ergänzen**
 
 An `src/tools/recalc-baltic-flags.sql` anhängen. Die vier Box-Werte kommen als
 psql-Variablen aus dem Shell-Skript, damit sie nicht doppelt gepflegt werden:
@@ -1305,7 +1331,7 @@ SELECT id, lon, lat, alt_geo, region FROM flag_changes
 WHERE alt_ostsee = 1 AND neu_ostsee = 0 ORDER BY id;
 ```
 
-- [ ] **Schritt 4: Shell-Wrapper schreiben**
+- [x] **Schritt 4: Shell-Wrapper schreiben**
 
 `src/tools/recalc-baltic-flags.sh`:
 
@@ -1346,13 +1372,13 @@ fi
 psql "$DB" -v ON_ERROR_STOP=1 -P pager=off -f "$HERE/recalc-baltic-flags-write.sql"
 ```
 
-- [ ] **Schritt 5: `package.json` ergänzen**
+- [x] **Schritt 5: `package.json` ergänzen**
 
 ```json
 "geo:report": "bash src/tools/recalc-baltic-flags.sh",
 ```
 
-- [ ] **Schritt 6: Trockenlauf ausführen und vorlegen**
+- [x] **Schritt 6: Trockenlauf ausführen und vorlegen**
 
 ```bash
 chmod +x src/tools/recalc-baltic-flags.sh && npm run geo:report
@@ -1363,7 +1389,7 @@ gekürzt: **jede** Zeile, die ihren Ostsee-Status verliert, muss erklärbar sein
 (Altsystem-Müll, Nordsee, Binnenwasser). Sind darunter plausible Ostsee-Positionen,
 ist die Geometrie noch nicht richtig — zurück zu Aufgabe 3.
 
-- [ ] **Schritt 7: Commit**
+- [x] **Schritt 7: Commit**
 
 ```bash
 git add package.json src/tools/recalc-baltic-flags.sql src/tools/recalc-baltic-flags.sh
@@ -1386,7 +1412,7 @@ git commit -m "feat(db): add dry-run report for recomputing the baltic flags"
 - Nutzt: die View `geo_build.flag_changes` aus Aufgabe 8.
 - Liefert: die Tabelle `sichtungen_ostsee_backup` als Rollback-Grundlage.
 
-- [ ] **Schritt 1: Zeilenzahl vor der Migration festhalten**
+- [x] **Schritt 1: Zeilenzahl vor der Migration festhalten**
 
 ```bash
 cd /Users/jansinger/Documents/Code/ostsee-sichtung && set -a && . ./.env && set +a && \
@@ -1399,7 +1425,7 @@ FROM sichtungen;"
 
 Die drei Zahlen notieren — Schritt 4 vergleicht dagegen.
 
-- [ ] **Schritt 2: Schreib-Skript anlegen**
+- [x] **Schritt 2: Schreib-Skript anlegen**
 
 `src/tools/recalc-baltic-flags-write.sql`:
 
@@ -1446,13 +1472,13 @@ FROM sichtungen;
 COMMIT;
 ```
 
-- [ ] **Schritt 3: `package.json` ergänzen**
+- [x] **Schritt 3: `package.json` ergänzen**
 
 ```json
 "geo:migrate": "bash src/tools/recalc-baltic-flags.sh --migrate",
 ```
 
-- [ ] **Schritt 4: Migration ausführen und prüfen**
+- [x] **Schritt 4: Migration ausführen und prüfen**
 
 ```bash
 set -a && . ./.env && set +a && npm run geo:migrate
@@ -1463,7 +1489,7 @@ minus `ostsee_runter` aus dem Report verschoben, **`invariante_verletzt` = 0**.
 
 Ist `invariante_verletzt` größer als 0, sofort zurückrollen (Schritt 5).
 
-- [ ] **Schritt 5: Rollback proben**
+- [x] **Schritt 5: Rollback proben**
 
 Der Weg ist ein `UPDATE … FROM` aus der Backup-Tabelle. Einmal auf einer einzelnen
 ID proben, damit er belegt ist und nicht nur behauptet:
@@ -1492,7 +1518,7 @@ Den vollständigen Rollback in den Kopfkommentar von
 --   FROM sichtungen_ostsee_backup b WHERE s.id = b.id;
 ```
 
-- [ ] **Schritt 6: Commit**
+- [x] **Schritt 6: Commit**
 
 ```bash
 git add package.json src/tools/recalc-baltic-flags-write.sql
@@ -1508,9 +1534,9 @@ git commit -m "feat(db): recompute baltic flags with backup table and rollback p
 - Ändern: `docs/OSTSEE_FLAGS.md`
 - Ändern: `.claude/rules/geo.md`
 - Ändern: `.claude/rules/maps.md:222-240`
-- Ändern: `docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
+- Ändern: `docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
 
-- [ ] **Schritt 1: `docs/OSTSEE_FLAGS.md`, Abschnitt „Fehler 3" ersetzen**
+- [x] **Schritt 1: `docs/OSTSEE_FLAGS.md`, Abschnitt „Fehler 3" ersetzen**
 
 Der Abschnitt behauptet, die Box schneide die Ostsee im Westen ab. Das ist widerlegt. Ersetzen durch:
 
@@ -1528,10 +1554,10 @@ Ladogasee, Onegasee und Flussläufe, und ihr fehlten die inneren Küstengewässe
 bereinigten Geometrie abgeleitet.
 
 Vollständige Messung, Entscheidungen und Umsetzung:
-`docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`.
+`docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`.
 ```
 
-- [ ] **Schritt 2: `.claude/rules/geo.md` aktualisieren**
+- [x] **Schritt 2: `.claude/rules/geo.md` aktualisieren**
 
 **Zuerst der von PR #639 ergänzte Abschnitt „Persistenz: `ostsee` und `ostsee_geo`" (Zeilen 51–76).** Er enthält die widerlegte Diagnose:
 
@@ -1551,15 +1577,15 @@ Danach die Box-Werte in Zeile 19–24 auf die neuen bringen. Den Abschnitt „Pr
 
 Wurde Aufgabe 5, Schritt 4 übersprungen, den Satz „Index NICHT bundlen — Lazy Loading verwenden" auf den Ist-Zustand korrigieren und den offenen Punkt benennen, statt eine Regel stehenzulassen, die der Code nicht einhält.
 
-- [ ] **Schritt 3: `.claude/rules/maps.md` aktualisieren**
+- [x] **Schritt 3: `.claude/rules/maps.md` aktualisieren**
 
 Zwei Stellen: die Konstante ab Zeile 226 und das `View Constraint`-Beispiel in Zeile 249 mit `boundingExtent([fromLonLat([9.4, 53.0]), fromLonLat([30.2, 66.0])])`. Beide auf die neuen Werte bringen.
 
-- [ ] **Schritt 4: Spec als erledigt kennzeichnen**
+- [x] **Schritt 4: Spec als erledigt kennzeichnen**
 
-Im Kopf von `docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md` vermerken, dass die Umsetzung erfolgt ist, mit Datum und den tatsächlich verwendeten Werten für Simplify-Toleranz und Indexgröße.
+Im Kopf von `docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md` vermerken, dass die Umsetzung erfolgt ist, mit Datum und den tatsächlich verwendeten Werten für Simplify-Toleranz und Indexgröße.
 
-- [ ] **Schritt 5: Gesamtlauf**
+- [x] **Schritt 5: Gesamtlauf**
 
 ```bash
 npm run test:quick
@@ -1567,7 +1593,7 @@ npm run test:quick
 
 Erwartung: grün.
 
-- [ ] **Schritt 6: Commit**
+- [x] **Schritt 6: Commit**
 
 ```bash
 git add docs/ .claude/rules/geo.md .claude/rules/maps.md

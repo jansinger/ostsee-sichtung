@@ -7,7 +7,7 @@
 -- $lib-Alias dort nicht aufloest. Die bereinigte Geometrie liegt nach
 -- npm run geo:build ohnehin als geo_build.ostsee bereit.
 --
--- Spec: docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
+-- Spec: docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
 
 \set ON_ERROR_STOP on
 SET search_path TO geo_build, public;

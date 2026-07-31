@@ -10,7 +10,7 @@ von Produktion leicht ab (siehe `docs/WORKTREES.md` zur geteilten Dev-DB).
 > und es gibt keine Invarianten-Verletzung mehr (533 → 0). `ostsee_geo` behielt
 > seinen Altwert `2`, wo sich die Aussage nicht änderte (15.225 → 15.208).
 > Rückfallebene ist die Tabelle `sichtungen_ostsee_backup`. Details: Fehler 3
-> weiter unten und `docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`. **Produktion ist
+> weiter unten und `docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`. **Produktion ist
 > davon nicht berührt und braucht einen eigenen Lauf.**
 
 Die Tabelle `sichtungen` hat zwei Spalten, die beide „liegt in der Ostsee"
@@ -257,7 +257,7 @@ war doppelt falsch: das Skagerrak ist gar nicht Teil der Geometrie, das
 westliche IHO-Gebiet ist der **Kattegat**.
 
 Vollständige Messung, Entscheidungen und Umsetzung:
-`docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
+`docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
 
 ---
 
