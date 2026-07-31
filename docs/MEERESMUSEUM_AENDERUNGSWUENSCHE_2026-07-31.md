@@ -6,6 +6,106 @@
 
 ---
 
+## Umsetzungsstand (2026-07-31, Branch `claude/meeresmuseum-website-changes-5546fa`)
+
+Die freigegebenen Quick Wins aus Kategorie A sind gebaut. Erledigt ist alles mit ✅;
+die Punkte ohne Häkchen waren nicht Teil des Auftrags oder hängen an einer Rückfrage.
+
+| Punkt | Inhalt                                       | Stand                              |
+| ----- | -------------------------------------------- | ---------------------------------- |
+| A1.1  | Überschrift und Untertitel                   | ✅                                 |
+| A1.2  | Die vier Schritte umbenannt (drei Stellen)   | ✅                                 |
+| A1.3  | „Schritt X von 4"-Badge entfernt             | ✅                                 |
+| A2.1  | Einleitungstext Schritt 1                    | ✅                                 |
+| A2.2  | „Mein aktueller Standort" prominenter        | ✅                                 |
+| A2.3  | Koordinaten dauerhaft sichtbar + Hinweistext | ✅                                 |
+| A2.4  | Ortsbeschreibung auf ein Feld reduzieren     | offen (Rückfrage, Totfund-Bergung) |
+| A2.5  | Ortsbeschreibung-Text                        | ✅                                 |
+| A3.1  | Einleitungstext Schritt 2                    | ✅                                 |
+| A3.2  | Anderes Icon statt Fisch                     | offen (Rückfrage Icon-Set)         |
+| A3.3  | „Delfin" statt „Delphin"                     | ✅ (mit Vertragsfolge, s. u.)      |
+| A3.4  | Bestimmungshilfe herausnehmen                | **entfällt** — Begründung erledigt |
+| A3.5  | Anzahl Tiere mindestens 1                    | ✅ (Test-First)                    |
+| A3.6  | Jungtiere ≤ Anzahl Tiere                     | ✅ (Test-First)                    |
+| A3.7  | Münze/Streichholz-Tipp entfernt              | ✅                                 |
+| A4.1  | Einleitungstext Schritt 3 („Meeressäuger")   | ✅                                 |
+| A4.2  | „Verteilung der Tiere" entfernen             | offen (Rückfrage 4)                |
+| A4.3  | „Anzahl anderer Schiffe in näherer Umgebung" | ✅                                 |
+| A4.4  | „Sonstiges Verhalten" ans Ende               | ✅                                 |
+| A4.5  | „Sonstige Auffälligkeiten" entfernt          | ✅                                 |
+| A4.6  | Windrichtung entfernt                        | ✅ (Datenweg geprüft, s. u.)       |
+| A4.7  | „Sichtweite" → „Sichtbedingungen"            | ✅                                 |
+| A4.8  | Boot-/Schiffsangaben nach Schritt 3          | ✅                                 |
+| A5.1  | Adresse entfernt                             | ✅ (inkl. Speicherpfad, s. u.)     |
+| A5.2  | Datenschutztext                              | ✅ (Freigabe steht noch aus)       |
+| A5.3  | „Meldung" statt „Sichtung"                   | offen (erst mit C1)                |
+
+### Drei Befunde, die die Analyse so nicht hatte
+
+**1. `speciesLabels` ist kein reines Formular-Konstrukt (betrifft A3.3).** Abschnitt 5a a)
+nimmt an, die Legacy-API führe ihre Artenliste durchgehend als eigene Konstante. Das gilt
+nur für `kmlExport.ts`. Der Endpunkt `/rest_sichtungen/antworten.json` baut seine
+Enum-Tabelle dagegen direkt aus `speciesLabels` (`+server.ts`), und die eingefrorenen
+Dateien unter `legacy-inbox/data/` sind über drei Vertragstests daran gebunden. Die
+Umbenennung schlägt dort also durch. Nach Entscheidung wurde die Legacy-Tabelle
+mitgeändert und die Fixtures mit `npm run generate:antworten` neu erzeugt — vertretbar,
+weil die Endpunkte laut `CLAUDE.md` seit dem 2026-07-28 nicht in Betrieb sind. Die
+Vertragskonstante `"Delphin (mehrere Arten)"` in `kmlExport.ts` und in
+`docs/LEGACY_API_SPECIFICATION.md` ist unverändert. Zusätzlich musste
+`speciesIdentification.ts` mitziehen: Ein bestehender Test bindet den dortigen Artnamen
+an `speciesLabels`.
+
+**2. `collapsibleCoordinates` steuerte zwei Dinge (betrifft A2.3).** Das Prop legte nicht
+nur die Koordinatenfelder hinter eine Disclosure, sondern schaltete über
+`enableGPS={!collapsibleCoordinates}` auch das GPS-Control der Karte. Ein bloßes `false`
+hätte deshalb das Karten-Control wieder eingeschaltet — direkt neben dem eigenen Button
+„Mein aktueller Standort", also zwei Bedienelemente für dieselbe Aktion und ein Verstoß
+gegen `.claude/rules/design-system.md`. Das Karten-Control hat jetzt mit `enableMapGps`
+einen eigenen Schalter; die Admin-Maske bleibt über den Default unberührt.
+
+**3. Die Windrichtung wird nicht „automatisch" befüllt (betrifft A4.6).** A4.6 begründet
+den Wegfall damit, dass die Wetter-API das Feld weiterhin automatisch füllt. Genauer: Die
+Wetterdaten werden automatisch **geholt** (`autoFetch`), ins Formular geschrieben werden
+sie aber erst über „Daten übernehmen" — und dann gemeinsam als `WeatherFormFields`
+(`windForce`, `windDirection`, `seaState`, `visibility`). Drei dieser vier Felder stehen
+weiterhin im Formular, die Windrichtung fährt also mit. Ohne den Klick war auch vorher
+keines der vier gefüllt. Im Browser gegengeprüft: nach dem Klick steht `windDirection`
+(Wert `"N"`) im Formular-State, obwohl das Feld nicht mehr gerendert wird. **Kein
+Datenverlust**, aber die Formulierung in A4.6 ist zu stark.
+
+### Zwei bewusste Abweichungen vom Auftrag
+
+**A3.4 (Bestimmungshilfe) wurde nicht umgesetzt.** Die Analyse begründet das Ausblenden
+mit dem Fachreview vom 2026-07-27, „u. a. falsches Artfoto: Seelöwe statt Kegelrobbe".
+Dieser Befund ist erledigt: PR #568 (Commit `2efd337`, 2026-07-27) hat das Foto durch
+`grey-seal-head-profile.jpg` ersetzt — genau der in A1 des Fachreviews geforderte Fix —
+und PR #591 die Schweinswal-Atemfrequenz korrigiert. Alle 15 Bilder in `static/species/`
+wurden durchgesehen, ein bekannt falsches ist nicht darunter. Damit trägt die Begründung
+nicht mehr, und die Bestimmungshilfe bleibt an beiden Stellen sichtbar (`FormHelp` und,
+in der Analyse nicht erwähnt, `FieldRenderer` unter der Artauswahl). Wenn das Museum sie
+trotzdem für die interne Überarbeitung herausnehmen will, ist das eine reine
+Produktentscheidung — technisch sind es zwei Zeilen.
+
+**Adressdaten werden nicht mehr gespeichert (ergänzt A5.1).** Nur das Markup zu entfernen
+hätte eine Lücke gelassen: `street`/`zipCode`/`city` standen in `UserContactData` und
+wurden aus dem Local-/Session-Storage in den Formular-State gespiegelt
+(`ModernReportForm.svelte`). Ohne sichtbares Feld hätte eine früher gespeicherte Adresse
+also weiterhin bei jeder Meldung unsichtbar mitgesendet werden können. Die drei Felder
+sind deshalb aus der persistierten Struktur genommen. In `USER_CONTACT_FIELDS` bleiben
+sie, damit „Kontaktdaten löschen" einen aus einem früheren Besuch gespiegelten Wert
+weiterhin aufräumt. Schema-Einträge und DB-Spalten sind unverändert.
+
+### Prüfung
+
+`npm run test:quick` grün (186 Dateien, 2755 Tests). Zusätzlich wurden die
+Komponententests zu `LocationInput` auf den neuen Zwei-Schalter-Vertrag umgeschrieben und
+die Anzahl-Regeln test-first entwickelt. Das Formular wurde im Browser über alle vier
+Schritte durchgeklickt; beide neuen Validierungsmeldungen erscheinen dort im Klartext, die
+Karte trägt kein zweites GPS-Control, und der Datenschutzabsatz steht in der neuen
+Fassung.
+
+---
+
 ## 0. Kurzfassung
 
 Von den **43 Einzelwünschen** sind:

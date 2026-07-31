@@ -72,10 +72,21 @@
 	</div>
 
 	<!-- `windDirection` wird hier bewusst nicht mehr abgefragt (Wunsch des
-	     Deutschen Meeresmuseums), geht aber nicht verloren: Der
-	     WeatherDataFetcher unten schreibt das Feld weiterhin automatisch über
-	     `handleWeatherData`, sobald Position und Datum stehen. Schema-Eintrag
-	     und DB-Spalte `windrichtung` bleiben unverändert. -->
+	     Deutschen Meeresmuseums), geht aber nicht verloren: `applyWeatherData`
+	     im WeatherDataFetcher unten schreibt `windForce`, `windDirection`,
+	     `seaState` und `visibility` gemeinsam ins Formular
+	     (`WeatherFormFields`) — `windDirection` fährt also mit den drei
+	     Feldern mit, die hier weiterhin stehen.
+
+	     Genauer als in der Analyse notiert: Die Wetterdaten werden zwar
+	     automatisch GEHOLT (`autoFetch`), ins Formular übernommen werden sie
+	     aber erst mit „Daten übernehmen". Ohne diesen Klick blieb auch vorher
+	     schon keines der vier Felder gefüllt — die Windrichtung verliert durch
+	     das Ausblenden also nichts, was sie vorher gehabt hätte. Im Browser
+	     gegengeprüft: nach dem Klick steht `windDirection` im Formular-State,
+	     obwohl das Feld nicht mehr gerendert wird.
+
+	     Schema-Eintrag und DB-Spalte `windrichtung` bleiben unverändert. -->
 	<div class="mt-4 grid grid-cols-1 gap-4">
 		<!-- Wind Force -->
 		<FormField name="windForce" />
