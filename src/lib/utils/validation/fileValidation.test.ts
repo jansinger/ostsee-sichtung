@@ -92,7 +92,7 @@ describe('fileValidation', () => {
 			const result = validateFile(file, defaultPreset);
 
 			expect(result.isValid).toBe(false);
-			expect(result.errors.some((e) => e.includes('Datei zu groß'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('zu groß'))).toBe(true);
 		});
 
 		it('should reject files with invalid MIME types', () => {
@@ -100,7 +100,9 @@ describe('fileValidation', () => {
 			const result = validateFile(file, defaultPreset);
 
 			expect(result.isValid).toBe(false);
-			expect(result.errors.some((e) => e.includes('Ungültiger Dateityp'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('Dieses Format können wir nicht annehmen'))).toBe(
+				true
+			);
 		});
 
 		it('should accept all configured image types', () => {
@@ -241,7 +243,7 @@ describe('fileValidation', () => {
 			const result = validateGPSPhotos([file]);
 
 			expect(result.isValid).toBe(false);
-			expect(result.errors.some((e) => e.includes('Datei zu groß'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('zu groß'))).toBe(true);
 		});
 	});
 

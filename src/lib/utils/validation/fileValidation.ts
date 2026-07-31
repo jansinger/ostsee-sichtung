@@ -46,7 +46,7 @@ export function validateFile(file: File, preset: ValidationPreset): ValidationRe
 
 	const maxSize = maxUploadSizeFor(file.type, preset);
 	if (file.size > maxSize) {
-		errors.push(UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(file.name, maxSize));
+		errors.push(UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(file.name, maxSize, file.size, file.type));
 	}
 
 	// Check MIME type
@@ -114,7 +114,12 @@ export function validateGPSPhotos(files: File[]): ValidationResult {
 		// Size limit for GPS photos
 		if (file.size > UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE) {
 			errors.push(
-				UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(file.name, UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE)
+				UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(
+					file.name,
+					UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE,
+					file.size,
+					file.type
+				)
 			);
 		}
 	}

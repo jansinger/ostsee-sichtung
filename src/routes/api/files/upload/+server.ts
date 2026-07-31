@@ -1,4 +1,4 @@
-import { FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
+import { FILE_VALIDATION_PRESETS, UPLOAD_ERROR_MESSAGES } from '$lib/constants/upload';
 import { maxUploadSizeFor } from '$lib/constants/uploadLimits';
 import { createLogger } from '$lib/logger.server';
 import { getClientIp } from '$lib/server/utils/getClientIp';
@@ -96,7 +96,7 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 			);
 			throw error(
 				413,
-				`Datei zu groß: ${Math.round(file.size / 1024 / 1024)} MB. Erlaubt sind ${Math.round(maxSize / 1024 / 1024)} MB.`
+				UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(file.name, maxSize, file.size, file.type)
 			);
 		}
 
