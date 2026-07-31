@@ -8,6 +8,7 @@ import {
 	PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES,
 	PUBLIC_UPLOAD_MAX_VIDEO_FILE_SIZE_BYTES
 } from '$lib/constants/uploadDefaults';
+import { UPLOAD_LIMITS } from '$lib/constants/upload';
 import { createLogger } from '$lib/logger';
 import type { ValidationPreset } from '$lib/types';
 
@@ -24,7 +25,10 @@ function publicUploadFallback(): ValidationPreset {
 		maxFileSize: PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES,
 		maxVideoFileSize: PUBLIC_UPLOAD_MAX_VIDEO_FILE_SIZE_BYTES,
 		maxFiles: 20,
-		accept: PUBLIC_UPLOAD_ACCEPT
+		accept: PUBLIC_UPLOAD_ACCEPT,
+		// Offline-Fallback fürs Gesamtlimit je Meldung (Befund I4) — im
+		// Normalbetrieb kommt der Wert aus maxTotalUploadSizeBytes unten.
+		maxTotalSize: UPLOAD_LIMITS.MAX_TOTAL_SIZE
 	};
 }
 
@@ -65,7 +69,13 @@ export async function getUploadConfig(): Promise<ValidationPreset> {
 			// Änderung von security.maxVideoFileSize im Admin auf dem Client nicht.
 			maxVideoFileSize: config.maxVideoFileSizeBytes,
 			maxFiles: 20, // Keep default for now
-			accept: config.accept
+			accept: config.accept,
+			// Ebenso aus der Server-Antwort (Befund I4) — sonst driftet die
+			// Gesamtgrößen-Prüfung fest gegen UPLOAD_LIMITS.MAX_TOTAL_SIZE, auch
+			// wenn ein Admin security.maxTotalUploadSize ändert. Fällt die
+			// Server-Antwort das Feld nicht mit (ältere Deployments), bleibt der
+			// Offline-Fallback aus UPLOAD_LIMITS.MAX_TOTAL_SIZE bestehen.
+			maxTotalSize: config.maxTotalUploadSizeBytes ?? UPLOAD_LIMITS.MAX_TOTAL_SIZE
 		};
 
 		// Update cache

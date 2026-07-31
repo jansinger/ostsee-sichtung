@@ -80,10 +80,14 @@ export function validateFiles(files: File[], preset: ValidationPreset): Validati
 		errors.push(UPLOAD_ERROR_MESSAGES.TOO_MANY_FILES(preset.maxFiles));
 	}
 
-	// Check total size
+	// Check total size. preset.maxTotalSize kommt aus der Laufzeit-Konfiguration
+	// (security.maxTotalUploadSize über GET /api/config/upload); die Konstante
+	// ist nur noch der Offline-Fallback, wenn kein Wert mitgegeben wurde
+	// (Befund I4 — vorher driftete diese Prüfung fest gegen 250 MB).
+	const maxTotalSize = preset.maxTotalSize ?? UPLOAD_LIMITS.MAX_TOTAL_SIZE;
 	const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-	if (totalSize > UPLOAD_LIMITS.MAX_TOTAL_SIZE) {
-		errors.push(UPLOAD_ERROR_MESSAGES.TOTAL_SIZE_EXCEEDED(UPLOAD_LIMITS.MAX_TOTAL_SIZE));
+	if (totalSize > maxTotalSize) {
+		errors.push(UPLOAD_ERROR_MESSAGES.TOTAL_SIZE_EXCEEDED(maxTotalSize));
 	}
 
 	// Validate each file individually

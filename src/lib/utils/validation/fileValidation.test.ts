@@ -180,6 +180,46 @@ describe('fileValidation', () => {
 			expect(result.errors.some((e) => e.includes('Gesamtgröße überschritten'))).toBe(true);
 		});
 
+		it('nutzt preset.maxTotalSize statt der statischen Konstante, wenn gesetzt (Befund I4)', () => {
+			// Die Konstante UPLOAD_LIMITS.MAX_TOTAL_SIZE (250 MB) ist nur noch der
+			// Offline-Fallback. Liefert der Server ein kleineres Gesamtlimit (z. B.
+			// weil ein Admin es auf 50 MB gesenkt hat), muss die Validierung GEGEN
+			// DIESEN Wert prüfen — sonst verspricht die Dropzone weiterhin 250 MB.
+			const presetWithLowerTotal: ValidationPreset = {
+				...defaultPreset,
+				maxTotalSize: 50 * 1024 * 1024
+			};
+			const files = [
+				createMockFile('test1.jpg', 30 * 1024 * 1024, 'image/jpeg'),
+				createMockFile('test2.jpg', 30 * 1024 * 1024, 'image/jpeg')
+			];
+
+			const result = validateFiles(files, presetWithLowerTotal);
+
+			expect(result.isValid).toBe(false);
+			expect(result.errors.some((e) => e.includes('Gesamtgröße überschritten'))).toBe(true);
+			expect(result.errors.some((e) => e.includes('50MB'))).toBe(true);
+		});
+
+		it('erlaubt eine Gesamtgröße unter UPLOAD_LIMITS.MAX_TOTAL_SIZE, wenn preset.maxTotalSize sie zulässt', () => {
+			// Gegenprobe: Ein höheres preset.maxTotalSize darf nicht durch die
+			// statische Konstante eingeschränkt werden — Grenzfall knapp unter
+			// UPLOAD_LIMITS.MAX_TOTAL_SIZE, der ohne preset.maxTotalSize ebenfalls
+			// durchginge, hier aber bewusst mit einem höheren Wert geprüft.
+			const presetWithHigherTotal: ValidationPreset = {
+				...defaultPreset,
+				maxTotalSize: 260 * 1024 * 1024
+			};
+			const files = [
+				createMockFile('test1.jpg', 129 * 1024 * 1024, 'image/jpeg'),
+				createMockFile('test2.jpg', 129 * 1024 * 1024, 'image/jpeg')
+			];
+
+			const result = validateFiles(files, presetWithHigherTotal);
+
+			expect(result.errors.some((e) => e.includes('Gesamtgröße überschritten'))).toBe(false);
+		});
+
 		it('should collect errors from individual file validations', () => {
 			const files = [
 				createMockFile('valid.jpg', 1000, 'image/jpeg'),

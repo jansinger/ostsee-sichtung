@@ -3323,6 +3323,8 @@ components:
         - maxFileSizeBytes
         - maxVideoFileSize
         - maxVideoFileSizeBytes
+        - maxTotalUploadSize
+        - maxTotalUploadSizeBytes
         - allowedTypes
         - accept
       properties:
@@ -3342,6 +3344,19 @@ components:
           type: integer
           description: Maximale Videodateigröße in Bytes
           example: 104857600
+        maxTotalUploadSize:
+          type: integer
+          description: |
+            Gesamtlimit je Meldung in MB (`security.maxTotalUploadSize`), für
+            beide Authentifizierungsstufen identisch. Client-seitig der einzig
+            maßgebliche Wert — die Konstante `UPLOAD_LIMITS.MAX_TOTAL_SIZE` ist
+            nur noch der Offline-Fallback, wenn dieser Endpunkt nicht erreichbar
+            ist.
+          example: 250
+        maxTotalUploadSizeBytes:
+          type: integer
+          description: Gesamtlimit je Meldung in Bytes
+          example: 262144000
         allowedTypes:
           type: array
           items:

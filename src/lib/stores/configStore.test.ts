@@ -3,6 +3,7 @@ import {
 	PUBLIC_UPLOAD_ALLOWED_TYPES,
 	PUBLIC_UPLOAD_MAX_FILE_SIZE_BYTES
 } from '$lib/constants/uploadDefaults';
+import { UPLOAD_LIMITS } from '$lib/constants/upload';
 
 vi.mock('$lib/logger', () => ({
 	createLogger: () => ({
@@ -82,6 +83,27 @@ describe('configStore', () => {
 			expect(config.accept).toBe('image/jpeg');
 		});
 
+		it('übernimmt maxTotalUploadSizeBytes aus der Server-Antwort (Befund I4)', async () => {
+			// Vorher gab es dafür kein Feld — die Client-Prüfung driftete fest
+			// gegen UPLOAD_LIMITS.MAX_TOTAL_SIZE (250 MB), auch wenn der Server
+			// (z. B. nach Admin-Änderung) ein kleineres Gesamtlimit auslieferte.
+			vi.mocked(fetch).mockResolvedValueOnce({
+				ok: true,
+				json: () =>
+					Promise.resolve({
+						allowedTypes: ['image/jpeg'],
+						maxFileSizeBytes: 5 * 1024 * 1024,
+						maxTotalUploadSizeBytes: 50 * 1024 * 1024,
+						accept: 'image/jpeg'
+					})
+			} as Response);
+
+			const { getUploadConfig } = await import('./configStore');
+			const config = await getUploadConfig();
+
+			expect(config.maxTotalSize).toBe(50 * 1024 * 1024);
+		});
+
 		it('gibt den restriktiven öffentlichen Fallback zurück wenn fetch fehlschlägt', async () => {
 			vi.mocked(fetch).mockRejectedValueOnce(new Error('Network error'));
 
@@ -98,6 +120,9 @@ describe('configStore', () => {
 			expect(config.allowedTypes).toContain('video/mp4');
 			expect(config.allowedTypes).toContain('video/quicktime');
 			expect(config.allowedTypes).not.toContain('video/webm');
+			// Offline-Fallback für das Gesamtlimit: nur noch die Konstante, kein
+			// separater Sonderfall (Befund I4).
+			expect(config.maxTotalSize).toBe(UPLOAD_LIMITS.MAX_TOTAL_SIZE);
 		});
 
 		it('gibt Fallback zurück bei HTTP-Fehler-Status', async () => {

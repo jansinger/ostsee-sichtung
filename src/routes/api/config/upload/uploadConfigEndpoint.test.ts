@@ -53,4 +53,23 @@ describe('/api/config/upload GET', () => {
 		expect(body.allowedTypes).toContain('video/mp4');
 		expect(body.maxVideoFileSizeBytes).toBe(150 * 1024 * 1024);
 	});
+
+	it('liefert das Gesamtlimit je Meldung (Befund I4) — sonst driftet die Dropzone gegen UPLOAD_LIMITS.MAX_TOTAL_SIZE', async () => {
+		// Vorher lieferte dieser Endpunkt maxTotalUploadSize gar nicht aus: Senkt
+		// ein Admin security.maxTotalUploadSize auf 50, prüft der Client
+		// weiterhin gegen die statische Konstante (250 MB) und verspricht mehr,
+		// als der Server annimmt.
+		const response = await GET(createEvent(null));
+		const body = await response.json();
+
+		expect(body.maxTotalUploadSize).toBe(250);
+		expect(body.maxTotalUploadSizeBytes).toBe(250 * 1024 * 1024);
+	});
+
+	it('liefert das Gesamtlimit auch angemeldeten Nutzern', async () => {
+		const response = await GET(createEvent({ sub: 'auth0|admin' }));
+		const body = await response.json();
+
+		expect(body.maxTotalUploadSizeBytes).toBe(250 * 1024 * 1024);
+	});
 });

@@ -56,6 +56,13 @@ export const GET: RequestHandler = async ({ setHeaders, locals, request, getClie
 			maxFileSizeBytes: uploadConfig.maxFileSizeBytes,
 			maxVideoFileSize: uploadConfig.maxVideoFileSize,
 			maxVideoFileSizeBytes: uploadConfig.maxVideoFileSizeBytes,
+			// Befund I4: Gesamtlimit je Meldung — vorher lieferte dieser Endpunkt
+			// nur die Einzeldateigrößen, während der Client fest gegen
+			// UPLOAD_LIMITS.MAX_TOTAL_SIZE (250 MB) prüfte. Für beide
+			// Authentifizierungsstufen gleich, wie schon bei den Einzelgrößen —
+			// nur die Typliste unterscheidet sich zwischen anonym und angemeldet.
+			maxTotalUploadSize: uploadConfig.maxTotalUploadSize,
+			maxTotalUploadSizeBytes: uploadConfig.maxTotalUploadSizeBytes,
 			allowedTypes,
 			accept: isAuthenticated ? buildAccept(allowedTypes) : PUBLIC_UPLOAD_ACCEPT
 		});
