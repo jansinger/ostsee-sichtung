@@ -179,4 +179,50 @@ describe('/api/media GET — Byte-Budget (Befund C1)', () => {
 		// 500-Byte-Bereich muss scheitern.
 		await expectHttpError(GET(createEvent('bytes=1000-1499', clientIp)), 429);
 	});
+
+	it('bucht bei nicht geliefertem Range die volle Dateigröße nach, nicht nur die Bereichslänge', async () => {
+		// Der Storage liefert den angeforderten 1-Byte-Bereich nicht (z. B. ein
+		// CDN vor Vercel Blob, das den Range-Header ignoriert) — die Route fällt
+		// auf die Vollantwort zurück. Gebucht war vorab nur 1 Byte
+		// (`plannedDeliveryBytes` für "bytes=0-0"); ohne Nachbuchung kostet ein
+		// 100-MB-Video effektiv 1 Byte Budget. Vorbelegt wird bis auf exakt
+		// TOTAL_SIZE Rest — reicht die Nachbuchung nicht bis zur vollen Größe,
+		// bleibt hinterher Restbudget übrig und ein zweiter identischer Abruf
+		// ginge fälschlich noch durch.
+		const clientIp = '198.51.100.60';
+		const budget = RATE_LIMITS.MEDIA_BYTES_ANONYMOUS;
+		consumeByteBudget(`ip:${clientIp}`, budget.maxBytes - TOTAL_SIZE, budget);
+
+		getFileStream.mockImplementation(async () => ({
+			stream: new Response('x'.repeat(TOTAL_SIZE)).body,
+			totalSize: TOTAL_SIZE,
+			rangeDelivered: false
+		}));
+
+		const first = await GET(createEvent('bytes=0-0', clientIp));
+		expect(first.status).toBe(200);
+		expect(first.headers.get('Content-Length')).toBe(String(TOTAL_SIZE));
+
+		// Das Budget muss jetzt um die volle Dateigröße erschöpft sein — nicht
+		// nur um das eine Byte, das ursprünglich angefragt wurde.
+		await expectHttpError(GET(createEvent('bytes=0-0', clientIp)), 429);
+	});
+
+	it('lehnt mit 429 ab statt der Vollantwort, wenn die Nachbuchung das Budget sprengen würde', async () => {
+		// Vorbelegt bis auf 10 Restbytes: Der geplante 1-Byte-Bereich passt noch
+		// (Schritt 1 lässt die Anfrage durch), aber die Datei ist real 7,9 MB
+		// groß — die Nachbuchung der Differenz muss scheitern und darf dann
+		// NICHT die volle Antwort ausliefern.
+		const clientIp = '198.51.100.61';
+		const budget = RATE_LIMITS.MEDIA_BYTES_ANONYMOUS;
+		consumeByteBudget(`ip:${clientIp}`, budget.maxBytes - 10, budget);
+
+		getFileStream.mockImplementation(async () => ({
+			stream: new Response('x'.repeat(TOTAL_SIZE)).body,
+			totalSize: TOTAL_SIZE,
+			rangeDelivered: false
+		}));
+
+		await expectHttpError(GET(createEvent('bytes=0-0', clientIp)), 429);
+	});
 });

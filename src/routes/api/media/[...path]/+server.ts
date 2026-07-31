@@ -17,6 +17,9 @@ import { eq } from 'drizzle-orm';
 
 const logger = createLogger('MediaAPI');
 
+const BYTE_BUDGET_EXHAUSTED_MESSAGE =
+	'Sie haben in der letzten Stunde bereits sehr viele Daten von diesem Server geladen. Bitte versuchen Sie es später erneut.';
+
 /**
  * Secure media serving endpoint
  *
@@ -229,10 +232,7 @@ export const GET: RequestHandler = async ({ params, url, request, locals, getCli
 				},
 				'Media access rejected - hourly byte budget exhausted'
 			);
-			throw error(
-				429,
-				'Sie haben in der letzten Stunde bereits sehr viele Daten von diesem Server geladen. Bitte versuchen Sie es später erneut.'
-			);
+			throw error(429, BYTE_BUDGET_EXHAUSTED_MESSAGE);
 		}
 
 		const requestedRange =
@@ -272,6 +272,39 @@ export const GET: RequestHandler = async ({ params, url, request, locals, getCli
 				{ filePath, sightingId: file.sightingId, range, totalSize },
 				'Storage did not honor range request, falling back to full response'
 			);
+
+			// Gebucht war nur die Bereichslänge (`plannedDeliveryBytes`), tatsächlich
+			// ausgeliefert wird jetzt die volle Datei — die Differenz muss vor der
+			// Antwort nachgebucht werden. Sonst kostet `Range: bytes=0-0` bei einem
+			// Storage, der den Bereich nicht einhält, nur 1 Byte Budget für bis zu
+			// 100 MB Auslieferung (Befund C1-Bypass).
+			const shortfallBytes = totalSize - plannedDeliveryBytes;
+			if (shortfallBytes > 0) {
+				const reconciliation = consumeByteBudget(
+					rateLimitIdentifier,
+					shortfallBytes,
+					mediaByteBudget
+				);
+
+				if (!reconciliation.allowed) {
+					logger.warn(
+						{
+							action: 'media_access_rejected',
+							reason: 'byte_budget_exhausted_on_range_fallback',
+							filePath,
+							clientIp,
+							authenticated: isAuthenticated,
+							plannedDeliveryBytes,
+							shortfallBytes,
+							usedBytes: reconciliation.usedBytes,
+							remainingBytes: reconciliation.remainingBytes
+						},
+						'Media access rejected - byte budget exhausted after range fallback'
+					);
+					await result.stream?.cancel?.();
+					throw error(429, BYTE_BUDGET_EXHAUSTED_MESSAGE);
+				}
+			}
 		}
 
 		logger.debug(
