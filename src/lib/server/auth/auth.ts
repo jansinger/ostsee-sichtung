@@ -27,6 +27,7 @@ const getSessionSecret = () => env.SESSION_SECRET ?? '';
 // setPKCECookie) würden dann ohne `secure` gesetzt (Befund 1, #668-Review).
 const getNodeEnv = () => (env.NODE_ENV ?? 'development').trim().toLowerCase();
 import { error, redirect, type Cookies } from '@sveltejs/kit';
+import { randomBytes } from 'crypto';
 import { createRemoteJWKSet, decodeJwt, jwtVerify, SignJWT } from 'jose';
 import { decrypt, encrypt, getPKCEChallengeData } from './crypto.js';
 
@@ -381,7 +382,11 @@ export const requireUserRole = (
  * ```
  */
 export const setCsrfCookie = (cookies: Cookies) => {
-	const csrfState = Math.random().toString(36).substring(7);
+	// 256 Bit aus dem Krypto-Zufallsgenerator. Der frühere Ausdruck
+	// `Math.random().toString(36).substring(7)` lieferte gemessen 3–7 base36-Zeichen
+	// (~15–36 Bit) aus einem nicht-kryptografischen PRNG — unter dem OWASP-Minimum
+	// von 128 Bit und damit als CSRF-State ratbar.
+	const csrfState = randomBytes(32).toString('base64url');
 	cookies.set('csrfState', csrfState, {
 		httpOnly: true,
 		sameSite: 'lax',
