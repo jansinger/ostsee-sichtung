@@ -1,6 +1,7 @@
 import type { BrowserContext } from '@playwright/test';
 import { config as loadEnv } from 'dotenv';
-import { SignJWT } from 'jose';
+import { createHash, randomBytes } from 'node:crypto';
+import postgres from 'postgres';
 
 /**
  * adminSession.ts — ein Admin-Login für E2E-Tests, ohne Auth0 anzufassen.
@@ -13,19 +14,22 @@ import { SignJWT } from 'jose';
  * die auf Headless-Signale anspringt. Die Login-Oberfläche gehört Auth0; sie
  * in CI zu fahren testet fremden Code und bricht, wenn Auth0 ihn ändert.
  *
- * **Warum auch nicht Resource Owner Password Grant** (Auth0s dokumentierte
- * Empfehlung für „Verhalten hinter dem Login"): ROPG liefert ein *Auth0*-Token,
- * und dieses Token konsumiert die App nirgends. Ihr Flow ist Authorization
- * Code → Callback → `verifyToken` gegen JWKS → und dann stellt sie mit
- * `setAuthCookie` ihr **eigenes**, mit SESSION_SECRET signiertes JWT aus. Ab
- * da ist Auth0 raus. Ein ROPG-Token hätte hier kein Schlüsselloch, und es
- * einzurichten hieße, Password-Grant auf dem Produktions-Tenant zu aktivieren
- * (von Auth0 ausdrücklich verboten) oder einen zweiten Tenant zu betreiben.
+ * **Was sich mit dem Session-Store geändert hat (#635):** Diese Datei signierte
+ * früher ein JWT mit `SESSION_SECRET` — und war damit der laufende Beweis für
+ * das Problem: Wer das Secret kannte, stellte sich eine Admin-Session für eine
+ * Identität aus, die in keinem Auth0-Tenant und in keiner Datenbank existierte.
+ * Genau das war der Anlass für #635.
  *
- * Deshalb setzt diese Datei Auth0s Grundsatz — nichts testen, was einem nicht
- * gehört — eine Schicht weiter innen um: an der Sessiongrenze der App. Genau
- * das empfiehlt auch Playwright als Alternative zum UI-Login (per API
- * authentifizieren, Cookie setzen).
+ * Jetzt schreibt sie eine Zeile in `sessions` und legt das zugehörige Token als
+ * Cookie ab. Der entscheidende Unterschied: **In Produktion richtet dieser Weg
+ * nichts mehr aus.** Er setzt Schreibzugriff auf die Datenbank voraus — und wer
+ * den hat, braucht keine Admin-Session mehr, um Schaden anzurichten. Das ist die
+ * bewusst gezogene Grenze aus §5.6 der Spec.
+ *
+ * **Warum ein eigener `postgres`-Client** statt `$lib/server/db`: Playwright läuft
+ * als gewöhnliches Node-Programm ohne SvelteKit-Bundler — also ohne `$lib`-Alias
+ * und ohne `$env/dynamic/private`. Präzedenz dafür steht in `.github/workflows/ci.yml`,
+ * wo der PostGIS-Check bewusst das `postgres`-Paket statt `psql` nutzt.
  *
  * **Was dieser Weg NICHT prüft:** dass der Login funktioniert. Das ist Absicht.
  * Ein Test, der die Auth0-Oberfläche bedient, gehört nicht in die CI — wenn er
@@ -33,33 +37,39 @@ import { SignJWT } from 'jose';
  */
 
 /* Playwright lädt .env nicht von sich aus. Ohne diesen Aufruf wäre
-   SESSION_SECRET hier undefined, während der Dev-Server es über Vite sehr wohl
-   sieht — der Test liefe dann in einen Login-Redirect und die Ursache stünde
-   nirgends. In CI kommt die Datei aus `cp .env.example .env` (ci.yml); beide
-   Seiten lesen damit denselben Wert, der Platzhalter genügt völlig. */
+   DATABASE_POSTGRES_URL hier undefined, während der Dev-Server sie über Vite
+   sehr wohl sieht — der Test liefe dann in einen Login-Redirect und die Ursache
+   stünde nirgends. In CI kommt die Datei aus `cp .env.example .env` (ci.yml). */
 loadEnv();
 
 /* Die funktional einzigen Felder sind `roles` (hooks.server.ts leitet daraus
    locals.isAdmin ab, requireUserRole prüft es) und `sub` (Logging). Der Rest
-   füllt src/lib/types/User.ts auf, damit die Payload dem entspricht, was der
+   füllt src/lib/types/User.ts auf, damit die Zeile dem entspricht, was der
    echte Callback schreibt.
 
-   Bewusst OHNE `exp`: Ein echtes Session-JWT erbt den Claim über
-   `new SignJWT({ ...user })` aus dem ursprünglichen Auth0-Token und läuft
-   deshalb mit diesem ab. Eine Testidentität soll das nicht — ein Fixture, das
-   nach zehn Stunden anfängt zu scheitern, kostet mehr Zeit, als es Realismus
-   bringt. Fehlt der Claim, prüft `jwtVerify` ihn nicht. */
-const ADMIN_IDENTITY = {
-	sub: 'e2e|design-tokens',
+   `iss`/`aud`/`iat`/`exp` fehlen bewusst: Sie stammten aus unserem eigenen JWT
+   und stehen seit dem Session-Store nicht mehr in `user_claims` — die absolute
+   Grenze hat eine eigene Spalte. */
+const ADMIN_SUB = 'e2e|design-tokens';
+
+const ADMIN_CLAIMS = {
 	name: 'E2E Design-Tokens',
 	nickname: 'e2e',
 	email: 'e2e@example.invalid',
 	email_verified: true,
 	picture: '',
 	updated_at: '2026-01-01T00:00:00.000Z',
-	sid: 'e2e-session',
-	roles: ['admin']
+	sid: 'e2e-session'
 };
+
+/**
+ * Laufzeit der Test-Session.
+ *
+ * Großzügig gewählt, damit ein langsamer CI-Lauf nicht mitten in der Suite in einen
+ * Ablauf läuft — insbesondere gilt das Inaktivitätsfenster von einer Stunde auch hier.
+ * Die Zeile wird bei jedem Aufruf neu angelegt, ein großzügiger Wert kostet also nichts.
+ */
+const TEST_SESSION_HOURS = 12;
 
 /**
  * Legt ein gültiges Admin-Session-Cookie in den Browser-Context.
@@ -67,20 +77,42 @@ const ADMIN_IDENTITY = {
  * Muss vor dem ersten `page.goto()` auf eine geschützte Route laufen.
  */
 export async function seedAdminSession(context: BrowserContext, baseURL: string): Promise<void> {
-	const secret = process.env.SESSION_SECRET;
-	if (!secret) {
+	const databaseUrl = process.env.DATABASE_POSTGRES_URL;
+	if (!databaseUrl) {
 		throw new Error(
-			'SESSION_SECRET fehlt — ohne das Secret kann kein Session-Cookie signiert werden. ' +
-				'Lokal steht es in .env, in CI entsteht es aus .env.example (ci.yml, Schritt „Setup environment").'
+			'DATABASE_POSTGRES_URL fehlt — ohne Datenbank kann keine Session-Zeile angelegt werden. ' +
+				'Lokal steht sie in .env, in CI entsteht sie aus .env.example (ci.yml, Schritt „Setup environment").'
 		);
 	}
 
-	const token = await new SignJWT({ ...ADMIN_IDENTITY })
-		.setProtectedHeader({ alg: 'HS256' })
-		.setIssuedAt()
-		.sign(new TextEncoder().encode(secret));
+	const token = randomBytes(32).toString('base64url');
+	const tokenHash = createHash('sha256').update(token, 'utf8').digest('hex');
+	const expiresAt = new Date(Date.now() + TEST_SESSION_HOURS * 60 * 60 * 1000);
 
-	/* sameSite bewusst 'Lax' statt des 'None', das setAuthCookie produziert.
+	const sql = postgres(databaseUrl, { max: 1 });
+	try {
+		/* Alte Zeilen derselben Testidentität wegräumen. Ohne das sammelt jeder Lauf eine
+		   weitere Zeile an — in einer Datenbank, die sich laut docs/WORKTREES.md alle
+		   Worktrees teilen. */
+		await sql`DELETE FROM sessions WHERE sub = ${ADMIN_SUB}`;
+
+		await sql`
+			INSERT INTO sessions (token_hash, sub, roles, user_claims, expires_at, absolute_expires_at)
+			VALUES (
+				${tokenHash},
+				${ADMIN_SUB},
+				${sql.array(['admin'])},
+				${sql.json(ADMIN_CLAIMS)},
+				${expiresAt},
+				${expiresAt}
+			)
+		`;
+	} finally {
+		// Sonst hält der offene Pool den Playwright-Prozess am Leben.
+		await sql.end({ timeout: 5 });
+	}
+
+	/* sameSite bewusst 'Lax' statt des 'None', das die App produziert.
 	   'None' verlangt im Browser zwingend das Secure-Flag, und der CI-Dev-Server
 	   läuft über plain http (vite.config.ci.ts lässt basicSsl weg, playwright.config.ts
 	   zeigt in CI auf http://localhost:4000). 'Lax' entkoppelt das Fixture von

@@ -47,7 +47,6 @@ vi.mock('$env/dynamic/private', () => ({
 		AUTH0_DOMAIN: 'test-domain.auth0.com',
 		COOKIE_NAME: 'test-auth-cookie',
 		JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
-		SESSION_SECRET: 'test-session-secret',
 		ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
 		NODE_ENV: 'test'
 	}
@@ -71,12 +70,9 @@ import { createRemoteJWKSet, decodeJwt, jwtVerify, SignJWT } from 'jose';
 
 // Import the functions to test after mocking
 import {
-	clearAuthCookie,
-	getAuthUser,
 	getPKCEVerifierFromCookie,
 	getToken,
 	requireUserRole,
-	setAuthCookie,
 	setCsrfCookie,
 	setPKCECookie
 } from './auth';
@@ -243,109 +239,10 @@ describe('auth.ts', () => {
 		});
 	});
 
-	describe('getAuthUser', () => {
-		it('should return user from valid cookie', async () => {
-			const testUser: User = {
-				nickname: 'testuser',
-				name: 'Test User',
-				picture: 'https://example.com/avatar.jpg',
-				updated_at: '2023-01-01T00:00:00.000Z',
-				email: 'test@example.com',
-				email_verified: true,
-				iss: 'https://test-domain.auth0.com/',
-				aud: 'test-client-id',
-				iat: 1672531200,
-				exp: 1672617600,
-				sub: 'auth0|123456789',
-				sid: 'session-id',
-				roles: ['user']
-			};
-
-			vi.mocked(mockCookies.get).mockReturnValue('valid-jwt-token');
-			vi.mocked(jwtVerify).mockResolvedValue({
-				payload: testUser,
-				protectedHeader: { alg: 'HS256' }
-			} as any);
-
-			const result = await getAuthUser(mockCookies);
-
-			expect(result).toEqual(testUser);
-			expect(mockCookies.get).toHaveBeenCalledWith('test-auth-cookie');
-			expect(jwtVerify).toHaveBeenCalledWith('valid-jwt-token', expect.any(Uint8Array));
-		});
-
-		it('should return null when no cookie exists', async () => {
-			vi.mocked(mockCookies.get).mockReturnValue(undefined);
-
-			const result = await getAuthUser(mockCookies);
-
-			expect(result).toBeNull();
-			expect(jwtVerify).not.toHaveBeenCalled();
-		});
-
-		it('should return null when cookie is empty', async () => {
-			vi.mocked(mockCookies.get).mockReturnValue('');
-
-			const result = await getAuthUser(mockCookies);
-
-			expect(result).toBeNull();
-		});
-
-		it('should return null when token is invalid', async () => {
-			vi.mocked(mockCookies.get).mockReturnValue('invalid-token');
-			vi.mocked(jwtVerify).mockRejectedValue(new Error('Invalid token'));
-
-			const result = await getAuthUser(mockCookies);
-
-			expect(result).toBeNull();
-		});
-	});
-
-	describe('setAuthCookie', () => {
-		it('should set auth cookie with correct parameters', async () => {
-			const testUser: User = {
-				nickname: 'testuser',
-				name: 'Test User',
-				picture: 'https://example.com/avatar.jpg',
-				updated_at: '2023-01-01T00:00:00.000Z',
-				email: 'test@example.com',
-				email_verified: true,
-				iss: 'https://test-domain.auth0.com/',
-				aud: 'test-client-id',
-				iat: 1672531200,
-				exp: 1672617600,
-				sub: 'auth0|123456789',
-				sid: 'session-id',
-				roles: ['user']
-			};
-
-			await setAuthCookie(mockCookies, testUser);
-
-			expect(SignJWT).toHaveBeenCalledWith({ ...testUser });
-			// Session-Cookie muss SameSite=None; Secure sein (iframe-Einbettung meeresmuseum.de)
-			expect(mockCookies.set).toHaveBeenCalledWith('test-auth-cookie', 'signed-jwt-token', {
-				httpOnly: true,
-				sameSite: 'none',
-				secure: true,
-				maxAge: 60 * 60 * 24 * 1, // 1 Tag
-				path: '/'
-			});
-		});
-	});
-
-	describe('clearAuthCookie', () => {
-		it('should delete auth cookie', () => {
-			clearAuthCookie(mockCookies);
-
-			// Attribute müssen mit setAuthCookie übereinstimmen, sonst wird der Cookie nicht gelöscht
-			expect(mockCookies.delete).toHaveBeenCalledWith('test-auth-cookie', {
-				path: '/',
-				httpOnly: true,
-				sameSite: 'none',
-				secure: true
-			});
-		});
-	});
+	/* getAuthUser, setAuthCookie und clearAuthCookie sind mit dem Session-Store entfallen
+	   (#635). Die zugehoerigen Tests stehen jetzt in sessionRepository.test.ts und pruefen
+	   dort das Entscheidende mit: dass ein selbst signiertes JWT keinen Benutzer mehr
+	   ergibt. */
 
 	describe('requireUserRole', () => {
 		const testUrl = new URL('https://example.com/admin');
@@ -739,7 +636,6 @@ describe('auth.ts', () => {
 					AUTH0_DOMAIN: 'test-domain.auth0.com',
 					COOKIE_NAME: 'test-auth-cookie',
 					JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
-					SESSION_SECRET: 'test-session-secret',
 					// Leerraum drumherum, wie ihn `openssl rand -hex 32 > datei` oder ein
 					// YAML-Blockskalar erzeugen kann.
 					ENCRYPTION_KEY: '  0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n',
@@ -781,7 +677,6 @@ describe('auth.ts', () => {
 					AUTH0_DOMAIN: 'test-domain.auth0.com',
 					COOKIE_NAME: 'test-auth-cookie',
 					JWKS_URL: 'https://test-domain.auth0.com/.well-known/jwks.json',
-					SESSION_SECRET: 'test-session-secret',
 					ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
 					NODE_ENV: 'Production'
 				}

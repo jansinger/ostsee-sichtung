@@ -5,7 +5,7 @@ const {
 	mockGetToken,
 	mockVerifyToken,
 	mockGetTokenClaims,
-	mockSetAuthCookie,
+	mockCreateSession,
 	mockGetPKCEVerifier,
 	mockLoggerWarn
 } = vi.hoisted(() => ({
@@ -13,7 +13,7 @@ const {
 	mockGetToken: vi.fn(),
 	mockVerifyToken: vi.fn(),
 	mockGetTokenClaims: vi.fn(),
-	mockSetAuthCookie: vi.fn().mockResolvedValue(undefined),
+	mockCreateSession: vi.fn().mockResolvedValue(undefined),
 	mockGetPKCEVerifier: vi.fn().mockReturnValue('pkce-verifier'),
 	mockLoggerWarn: vi.fn()
 }));
@@ -38,8 +38,12 @@ vi.mock('$lib/server/auth/auth.js', () => ({
 	getPKCEVerifierFromCookie: mockGetPKCEVerifier,
 	getToken: mockGetToken,
 	getTokenClaims: mockGetTokenClaims,
-	verifyToken: mockVerifyToken,
-	setAuthCookie: mockSetAuthCookie
+	verifyToken: mockVerifyToken
+}));
+
+/* Seit dem Session-Store legt der Callback eine Zeile an, statt ein JWT zu signieren (#635). */
+vi.mock('$lib/server/auth/sessionRepository', () => ({
+	createSession: mockCreateSession
 }));
 
 import { GET } from './+server';

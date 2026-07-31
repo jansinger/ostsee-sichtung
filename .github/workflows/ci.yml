@@ -363,9 +363,10 @@ jobs:
           cache: "npm"
 
       # `.env` liest der Dev-Server (über Vite) und liest der Testprozess
-      # (e2e/helpers/adminSession.ts ruft dotenv auf, für SESSION_SECRET und
-      # COOKIE_NAME). Der Platzhalter aus .env.example genügt dafür — beide Seiten
-      # müssen nur denselben Wert sehen.
+      # (e2e/helpers/adminSession.ts ruft dotenv auf, für DATABASE_POSTGRES_URL und
+      # COOKIE_NAME). Die Fixture schreibt seit dem Session-Store eine Zeile in
+      # `sessions`, statt ein Token zu signieren — der E2E-Job hat dafür einen
+      # PostGIS-Service und führt die Migrationen aus.
       #
       # Die Zuweisungen unten sind mit `sed` gesetzt und nicht angehängt, damit
       # die Datei jede Variable genau einmal enthält: Bei zwei Zeilen mit

@@ -212,3 +212,44 @@ export const auditLogs = pgTable(
 
 export type AuditLogSelect = typeof auditLogs.$inferSelect;
 export type AuditLogInsert = typeof auditLogs.$inferInsert;
+
+/**
+ * Server-seitige Sessions (Issue #635, #634).
+ *
+ * Das Cookie trägt nur noch ein opakes Zufalls-Token; die Identität steht hier. Damit ist
+ * eine Session nicht mehr fälschbar (ein erfundenes Cookie findet keine Zeile) und Logout
+ * wirkt tatsächlich, statt nur den Cookie zu löschen.
+ *
+ * `token_hash` speichert bewusst nur den SHA-256 des Cookie-Werts: Ein Lesezugriff auf diese
+ * Tabelle händigt damit keine lebenden Sessions aus.
+ */
+export const sessions = pgTable(
+	'sessions',
+	{
+		id: serial().primaryKey().notNull(),
+		tokenHash: varchar('token_hash', { length: 64 }).notNull().unique(),
+		sub: varchar('sub', { length: 255 }).notNull(),
+		/* Snapshot des Auth0-Rollen-Claims vom Login. Eigene Spalte statt in user_claims
+		   vergraben, damit abfragbar bleibt, welche Session privilegiert ist. */
+		roles: text('roles')
+			.array()
+			.notNull()
+			.default(sql`ARRAY[]::text[]`),
+		/* Rest der Identität (Name, E-Mail, Bild, sid) für locals.user */
+		userClaims: jsonb('user_claims').notNull(),
+		/* Gleitendes Inaktivitätsfenster — wird von touchSession fortgeschrieben. */
+		expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+		/* Nicht verlängerbar: der exp des Auth0-ID-Tokens vom Login. */
+		absoluteExpiresAt: timestamp('absolute_expires_at', { withTimezone: true }).notNull(),
+		revokedAt: timestamp('revoked_at', { withTimezone: true }),
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+		lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(table) => [
+		index('idx_sessions_sub').on(table.sub),
+		index('idx_sessions_expires_at').on(table.expiresAt)
+	]
+);
+
+export type SessionSelect = typeof sessions.$inferSelect;
+export type SessionInsert = typeof sessions.$inferInsert;

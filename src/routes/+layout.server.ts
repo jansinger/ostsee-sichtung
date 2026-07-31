@@ -32,6 +32,9 @@ export const load = (async ({ locals }) => {
 
 	return {
 		user: publicUser,
+		/* Restlaufzeit der Session als ISO-String. Grundlage fuer die Ablauf-Ankuendigung
+		   aus #634; die UI dazu ist bewusst nicht Teil dieser Aenderung. */
+		sessionExpiresAt: locals.sessionExpiresAt?.toISOString() ?? null,
 		// Server-side computed admin status for UI rendering
 		showAdminMenu: isAdmin,
 		maintenanceConfig

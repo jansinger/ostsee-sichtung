@@ -13,21 +13,19 @@ const getPublicSiteUrl = () => publicEnv.PUBLIC_SITE_URL ?? 'http://localhost:30
 const getAuth0ClientId = () => env.AUTH0_CLIENT_ID ?? '';
 const getAuth0ClientSecret = () => env.AUTH0_CLIENT_SECRET ?? '';
 const getAuth0Domain = () => env.AUTH0_DOMAIN ?? '';
-const getCookieName = () => env.COOKIE_NAME ?? 'auth-cookie';
 // Getrimmt, damit Leerraum drumherum (z. B. durch `openssl rand -hex 32 > datei` oder einen
 // YAML-Blockskalar) nicht den Wert unterläuft, den secretGuard.ts beim Start bereits getrimmt
 // geprüft hat — sonst sagt der Guard "in Ordnung" und createCipheriv wirft erst beim ersten
 // Admin-Login mit "Invalid key length" (Befund 3, #635-Review).
 const getEncryptionKey = () => (env.ENCRYPTION_KEY ?? '').trim();
 const getJwksUrl = () => env.JWKS_URL ?? '';
-const getSessionSecret = () => env.SESSION_SECRET ?? '';
 // Getrimmt und in Kleinbuchstaben, analog zur Normalisierung in secretGuard.ts
 // (assertProductionSecrets): Sonst kann NODE_ENV="Production" den Startup-Guard auslösen,
 // während hier `getNodeEnv() === 'production'` falsch bliebe — die Cookies (setCsrfCookie,
 // setPKCECookie) würden dann ohne `secure` gesetzt (Befund 1, #668-Review).
 const getNodeEnv = () => (env.NODE_ENV ?? 'development').trim().toLowerCase();
 import { error, redirect, type Cookies } from '@sveltejs/kit';
-import { createRemoteJWKSet, decodeJwt, jwtVerify, SignJWT } from 'jose';
+import { createRemoteJWKSet, decodeJwt, jwtVerify } from 'jose';
 import { decrypt, encrypt, getPKCEChallengeData } from './crypto.js';
 
 /**
@@ -88,12 +86,6 @@ function getJWKS(): ReturnType<typeof createRemoteJWKSet> {
 	}
 	return jwks;
 }
-
-/**
- * Dauer der Session-Cookies in Sekunden.
- * Standard: 1 Tag (86400 Sekunden)
- */
-const COOKIE_DURATION_SECONDS = 60 * 60 * 24 * 1; // 1 Tag
 
 /**
  * Dauer der authorization code flow Cookies in Sekunden.
@@ -201,115 +193,19 @@ export async function getToken({ code, pkceVerifier }: { code: string; pkceVerif
 	return await resp.json();
 }
 
-/**
- * Holt den authentifizierten Benutzer aus dem Session-Cookie.
+/*
+ * getAuthUser, setAuthCookie und clearAuthCookie sind mit dem Session-Store entfallen
+ * (Issue #635). Cookie und Identität hängen jetzt ausschließlich an
+ * `$lib/server/auth/sessionRepository` — createSession, resolveSessionUser,
+ * destroySession.
  *
- * Diese Funktion liest das JWT-Token aus dem HTTP-Only Cookie und
- * verifiziert es mit unserem Session-Secret, um die Benutzerinformationen
- * sicher zu erhalten.
+ * `getAuthUser` wurde gelöscht statt umgebaut, weil es genau das anbot, was hier
+ * gefährlich ist: einen zweiten Weg von Cookie zu Benutzer. Ein künftiger Aufruf wäre
+ * eine stille Lücke.
  *
- * Das Session-Token wird mit unserem eigenen Secret signiert (nicht Auth0's)
- * und bei jedem Aufruf dieser Funktion erneut geprüft.
- *
- * @param cookies - SvelteKit's Cookies-Objekt
- * @returns Promise mit dem Benutzer oder null wenn nicht angemeldet/Token ungültig
- *
- * @example
- * ```typescript
- * // In einem +page.server.ts oder +server.ts
- * export async function load({ cookies }) {
- *   const user = await getAuthUser(cookies);
- *   if (!user) {
- *     throw redirect(302, '/login');
- *   }
- *   return { user };
- * }
- * ```
+ * Der JWKS-Teil dieser Datei (verifyToken, PKCE, CSRF-State) bleibt unverändert — er
+ * prüft Auth0s Token und hat mit unserer Session nichts zu tun.
  */
-export const getAuthUser = async (cookies: Cookies) => {
-	const jwtToken = cookies.get(getCookieName());
-
-	if (!jwtToken) {
-		return null;
-	}
-
-	try {
-		const secret = new TextEncoder().encode(getSessionSecret());
-		const { payload } = await jwtVerify(jwtToken, secret);
-		return payload as unknown as User;
-	} catch {
-		return null;
-	}
-};
-
-/**
- * Setzt den Authentifizierungs-Cookie mit den Benutzerdaten.
- *
- * Diese Funktion erstellt ein JWT-Token mit den Benutzerdaten, signiert
- * es mit unserem Session-Secret und speichert es als HTTP-Only Cookie.
- * Das Cookie wird verwendet, um den Benutzer bei nachfolgenden Anfragen
- * zu identifizieren.
- *
- * Sicherheitsmerkmale:
- * - httpOnly: Verhindert JavaScript-Zugriff (XSS-Schutz)
- * - sameSite: 'none' - Der Cookie muss im iframe-Kontext (meeresmuseum.de)
- *   cross-site mitgeschickt werden. SameSite=None erfordert zwingend Secure=true.
- * - secure: immer true (Prod und Dev laufen über HTTPS) — Browser-Pflicht bei SameSite=None
- * - Signiert mit eigenem Secret (nicht Auth0's)
- *
- * @param cookies - SvelteKit's Cookies-Objekt
- * @param user - Die zu speichernden Benutzerdaten
- *
- * @example
- * ```typescript
- * // Nach erfolgreicher Auth0-Authentifizierung
- * const authUser = await verifyToken<User>(idToken);
- * authUser.roles = ['user', 'admin'];
- * setAuthCookie(cookies, authUser);
- * ```
- */
-export const setAuthCookie = async (cookies: Cookies, user: User) => {
-	const secret = new TextEncoder().encode(getSessionSecret());
-	const token = await new SignJWT({ ...user }).setProtectedHeader({ alg: 'HS256' }).sign(secret);
-	cookies.set(getCookieName(), token, {
-		httpOnly: true,
-		// SameSite=None + Secure: Session-Cookie muss im cross-site iframe
-		// (meeresmuseum.de) mitgesendet werden. Secure ist bei None Browser-Pflicht.
-		sameSite: 'none',
-		secure: true,
-		maxAge: COOKIE_DURATION_SECONDS,
-		path: '/'
-	});
-};
-
-/**
- * Löscht den Authentifizierungs-Cookie (Logout).
- *
- * Diese Funktion entfernt den Session-Cookie, wodurch der Benutzer
- * effektiv ausgeloggt wird. Wichtig ist, dass der path-Parameter
- * mit dem beim Setzen des Cookies übereinstimmt.
- *
- * @param cookies - SvelteKit's Cookies-Objekt
- *
- * @example
- * ```typescript
- * // In einem Logout-Handler
- * export async function POST({ cookies }) {
- *   clearAuthCookie(cookies);
- *   throw redirect(302, '/');
- * }
- * ```
- */
-export const clearAuthCookie = (cookies: Cookies) => {
-	// Attribute müssen mit setAuthCookie übereinstimmen (SameSite=None; Secure),
-	// sonst wird der Cookie vom Browser nicht korrekt überschrieben/gelöscht.
-	cookies.delete(getCookieName(), {
-		path: '/',
-		httpOnly: true,
-		sameSite: 'none',
-		secure: true
-	});
-};
 
 /**
  * Überprüft ob ein Benutzer angemeldet ist und die erforderlichen Rollen hat.

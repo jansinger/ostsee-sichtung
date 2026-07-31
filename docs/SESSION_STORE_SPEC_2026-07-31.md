@@ -2,7 +2,7 @@
 
 **Datum:** 2026-07-31
 **Issues:** [#635](https://github.com/jansinger/ostsee-tiere/issues/635) (Sicherheit), [#634](https://github.com/jansinger/ostsee-tiere/issues/634) (stiller Session-Ablauf)
-**Status:** Entwurf, abgestimmt — noch kein Implementierungsplan
+**Status:** Umgesetzt. Paket A mit PR [#668](https://github.com/jansinger/ostsee-tiere/pull/668), Paket D mit dieser Änderung. Alle offenen Punkte aus §9 sind entschieden.
 
 ---
 
@@ -110,7 +110,7 @@ liegt genau das Risiko, um das es geht.
 | Alternative                                                                    | Warum nicht                                                                                                                                                                                                                                                                                                                                                         |
 | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **ENV-Allowlist** (`ADMIN_SUBS`, `sub` gegen eine Liste prüfen)                | Verlagert Rollenverwaltung aus Auth0 heraus und schafft eine zweite Quelle für dieselbe Aussage. Dazu: die `sub`-Werte, auf die sie baut, stehen laut B16 im Klartext im Cookie.                                                                                                                                                                                    |
-| **Auth0 Management API pro Request** (`GET /api/v2/users/{id}/roles`, gecacht) | Einziger Weg, bei dem Rollenentzug sofort greift — aber M2M-Client, zweites Secret in derselben `.env`, Auth0-Rate-Limits, und eine unangenehme Entscheidung zum Ausfallverhalten (fail-closed sperrt Admins aus, fail-open hebt den Schutz auf). Löst #634 nicht. Bleibt als **späterer Zusatz zu D** denkbar: Rollen in der Session-Zeile periodisch auffrischen. |
+| **Auth0 Management API pro Request** (`GET /api/v2/users/{id}/roles`, gecacht) | Einziger Weg, bei dem Rollenentzug sofort greift — aber M2M-Client, zweites Secret in derselben `.env`, Auth0-Rate-Limits, und eine unangenehme Entscheidung zum Ausfallverhalten (fail-closed sperrt Admins aus, fail-open hebt den Schutz auf). Löst #634 nicht. **Endgültig verworfen** (Entscheidung Jan, 2026-07-31): kein Management-API-Zugriff, auch nicht als späterer Zusatz zu D. |
 | **Auth0-Access-Token in der Session halten**, pro Request gegen JWKS prüfen    | Unfälschbar (RS256), aber Cookie-Größe und `offline_access`/Refresh-Flow nötig. Löst #634 nur teilweise.                                                                                                                                                                                                                                                            |
 | **Asymmetrisch signieren (RS256/EdDSA)** — Maßnahme 5 aus #635                 | Bringt hier **nichts**. Signierer und Verifizierer sind derselbe Prozess mit derselben `.env`; der private Schlüssel läge exakt dort, wo heute das Secret liegt. Großer Aufwand, kein Gewinn.                                                                                                                                                                       |
 | **Cookie verschlüsseln statt signieren (JWE)** — Auth0s SDK-Default            | Behebt B16 (Klartext-Claims), aber nicht das Kernproblem: dasselbe Secret ver- und entschlüsselt, Fälschung bleibt möglich.                                                                                                                                                                                                                                         |
@@ -205,10 +205,30 @@ Indizes: unique auf `token_hash` (Lookup-Pfad), `idx_sessions_sub` (Widerruf pro
 **Warum zwei Ablaufspalten.** Das ist die Antwort auf die offene Frage in #634 („Soll die
 Session überhaupt an Auth0s `exp` hängen?"): **beides**. Die gleitende Grenze hält den
 arbeitenden Admin drin, die absolute respektiert die Aussage des Identity Providers. Keine der
-beiden allein leistet das. Auth0 kennt auf Tenant-Ebene ebenfalls mehrere Grenzen
-(„Session Lifetime Limits", verlinkt aus [Sessions](https://auth0.com/docs/manage-users/sessions)).
-Die konkreten Werte sind gegen die tatsächlichen Tenant-Einstellungen abzugleichen und nicht
-frei zu wählen — siehe Abschnitt 9.
+beiden allein leistet das.
+
+**Woher die absolute Grenze kommt — und woher nicht.** `absolute_expires_at` ist der `exp` des
+**ID-Tokens**. Der stammt aus der Einstellung _ID Token Expiration_ der **Application**
+(Auth0-Dashboard → Applications → Settings → Advanced Settings → OAuth), Default 36000 s = 10 h.
+
+Das ist ausdrücklich **nicht** Auth0s Session-Konfiguration. Die beiden Tenant-Werte unter
+Settings → Advanced → _Login Session Management_ (_Inactivity timeout_, _Require log in after_)
+regeln Auth0s eigene SSO-Session und stehen in **keinem** Token — weder im ID- noch im
+Access-Token. Auslesbar wären sie nur über die Management API
+(`GET /api/v2/tenants/settings`), also über den M2M-Client, den §3.1 begründet verworfen hat.
+Ein früherer Entwurf dieser Spec verlangte an dieser Stelle einen „Abgleich mit den
+Tenant-Einstellungen"; das zielte auf die falsche Einstellung.
+
+Die Tenant-Werte bestimmen trotzdem etwas Wichtiges — aber nicht durch einen Wert in unserer
+Tabelle: Solange Auth0s SSO-Session lebt, ist die Erneuerung per Redirect auf `/authorize`
+(§5.3) für den Benutzer unsichtbar. Danach ist sie ein echter Login. Auth0 setzt die äußere
+Grenze also über das _Verhalten_ beim Ablauf, nicht über eine Zahl, die wir kopieren müssten.
+
+**Damit bleibt genau ein Wert frei: das Inaktivitätsfenster.** Festgelegt auf **1 Stunde**
+(Entscheidung Jan, 2026-07-31). Es muss kürzer sein als das ID-Token-`exp`, sonst greift es
+nie — bei 10 h Token-Laufzeit ist diese Bedingung mit deutlichem Abstand erfüllt. Der Wert
+steht als benannte Konstante in `sessionRepository.ts` und ist eine Zeile, falls sich die
+ID Token Expiration im Tenant später ändert.
 
 ### 5.2 Cookie
 
@@ -350,7 +370,8 @@ Die vier zugehörigen Tests in `auth.test.ts` entfallen mit.
   Bewusst nicht in dieser Spec.
 - **Nicht gelöst:** Rollenentzug in Auth0 wirkt erst bei der nächsten Anmeldung. Die
   Session-Zeile trägt einen Snapshot. Gegenmittel im Bedarfsfall: gezielter Widerruf, oder
-  später die verworfene Management-API-Auffrischung.
+  gezielter Widerruf über `revokeAllForSub`. Die Management-API-Auffrischung ist verworfen
+  (§3.1, §9) und kommt auch später nicht.
 
 ---
 
@@ -476,11 +497,13 @@ Betriebliche Schritte bei PR 2:
 
 ## 9. Offene Punkte
 
-| Punkt                                                          | Wer entscheidet                                 | Wann                                                                         |
-| -------------------------------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------- |
-| Herkunft und Leserechte von `SESSION_SECRET` auf dem Prod-Host | Jan, am Host                                    | vor PR 1 — bestimmt, ob PR 1 dringend oder nur richtig ist                   |
-| Konkrete Werte für Inaktivitätsfenster und absolute Laufzeit   | abzugleichen mit den Auth0-Tenant-Einstellungen | vor PR 2                                                                     |
-| Ob Rollenentzug in Auth0 sofort wirken muss                    | Jan                                             | nach PR 2 — entscheidet, ob die Management-API-Auffrischung nachgezogen wird |
+Alle drei Punkte sind beantwortet (Stand 2026-07-31).
+
+| Punkt                                                          | Antwort                                                                                                                                                                                                                         |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Herkunft und Leserechte von `SESSION_SECRET` auf dem Prod-Host | **Klartext in der `.env` des Hosts.** Die ungünstigste Annahme aus §1.2 trifft zu: Jeder mit Shell-Zugang und jedes Backup dieser Datei kann sich eine Admin-Session ausstellen. Paket A war damit dringend, nicht nur richtig. |
+| Konkrete Werte für Inaktivitätsfenster und absolute Laufzeit   | **Inaktivität 1 Stunde**, absolut = `exp` des ID-Tokens (Application-Einstellung _ID Token Expiration_, Default 10 h). Begründung und die korrigierte Herkunft stehen in §5.1.                                                  |
+| Ob Rollenentzug in Auth0 sofort wirken muss                    | **Nein.** Kein Management-API-Zugriff — der M2M-Client entfällt damit endgültig, nicht nur vorläufig. Rollenentzug wirkt bei der nächsten Anmeldung; für den Bedarfsfall bleibt der gezielte Widerruf (`revokeAllForSub`).      |
 
 ---
 

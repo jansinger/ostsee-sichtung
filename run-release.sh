@@ -278,7 +278,6 @@ docker run -d \
     -e STORAGE_PROVIDER="${STORAGE_PROVIDER:-local}" \
     -e NODE_ENV="production" \
     -e PUBLIC_SITE_URL="$APP_PUBLIC_URL" \
-    -e SESSION_SECRET="${SESSION_SECRET}" \
     -e ENCRYPTION_KEY="${ENCRYPTION_KEY}" \
     -e COOKIE_NAME="${COOKIE_NAME:-auth-cookie}" \
     -e AUTH0_CLIENT_ID="${AUTH0_CLIENT_ID}" \

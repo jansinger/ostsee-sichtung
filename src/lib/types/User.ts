@@ -12,10 +12,14 @@ export interface User {
 	updated_at: string;
 	email: string;
 	email_verified: boolean;
-	iss: string;
-	aud: string;
-	iat: number;
-	exp: number;
+	/* Token-Metadaten. Optional, seit die Session serverseitig liegt: Sie stammten aus
+	   unserem eigenen, mit SESSION_SECRET signierten JWT. Beim Login kommen sie noch aus
+	   dem Auth0-ID-Token (`exp` setzt dort `absolute_expires_at`), aus der Session-Zeile
+	   kommen sie nicht mehr zurück — dort ist `absolute_expires_at` die Autorität. */
+	iss?: string;
+	aud?: string;
+	iat?: number;
+	exp?: number;
 	sub: string;
 	sid: string;
 	roles: string[];

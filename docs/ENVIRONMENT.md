@@ -76,46 +76,21 @@ curl -fsS -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" \
   "https://<host>/api/admin/cleanup-orphans?mode=execute"
 ```
 
-### `SESSION_SECRET`
+### `SESSION_SECRET` — entfallen
 
-**Type**: `string`
-**Required**: Yes
-**Default**: None
-**Min Length**: 32 characters
-**Description**: Secret key for signing the session cookie (JWT, HS256). It does not encrypt
-the cookie's contents — anyone who reads the cookie can decode `sub`, email and roles in
-plain text; the signature only proves the server issued it (see
-`docs/SESSION_STORE_SPEC_2026-07-31.md`, Befund B16).
+Diese Variable wird **nicht mehr verwendet** und kann aus jeder `.env` entfernt werden.
 
-**Wichtig**: Der Guard beim Serverstart lehnt in Production zwei öffentlich bekannte Beispielwerte ab
-(den Platzhalter aus `.env.example` und den Beispielwert dieser Dokumentation). Ein abgelehntes
-Secret verhindert, dass der Server startet. Für jede Umgebung ein eigenes, zufällig erzeugtes
-Secret verwenden.
+Bis zum Session-Store stellte die App nach dem Auth0-Callback ihr eigenes, mit
+`SESSION_SECRET` signiertes JWT aus. Wer das Secret lesen konnte, stellte sich damit eine
+Admin-Session aus — ohne Auth0, ohne Passwort. Seit dem Umbau trägt das Cookie nur noch ein
+opakes Zufalls-Token, der Session-Zustand liegt in der Tabelle `sessions`. Ein Secret, das
+Sessions ausstellen könnte, gibt es nicht mehr.
 
-**Generate**:
+**Was an seine Stelle tritt:** Der Notausschalter „alle Sitzungen beenden" ist jetzt eine
+`UPDATE`-Anweisung (`revokeAllForSub` in `src/lib/server/auth/sessionRepository.ts`) statt
+eines Secret-Wechsels mit Kollateralschaden. Logout wirkt serverseitig.
 
-```bash
-openssl rand -base64 32
-```
-
-**Example**:
-
-```bash
-SESSION_SECRET=<Ausgabe von openssl rand -base64 32>
-```
-
-**Rotation:**
-
-`SESSION_SECRET` lässt sich jederzeit wechseln — der neue Wert wird in die `.env` des
-Hosts geschrieben, danach `docker compose up -d`.
-
-**Nebenwirkung:** Jeder Wechsel beendet **alle** laufenden Sitzungen gleichzeitig. Jedes
-`jwtVerify` gegen das alte Cookie schlägt fehl, das Cookie wird gelöscht, alle Angemeldeten
-landen im Login. Das ist der Notausschalter für den Verdachtsfall („jemand könnte das
-Secret kennen") — und der einzige Weg, eine ausgestellte Session ungültig zu machen.
-
-Staging und Production müssen **verschiedene** Secrets haben. Sonst ist ein Staging-Zugang
-ein Produktions-Zugang.
+Hintergrund und Begründung: `docs/SESSION_STORE_SPEC_2026-07-31.md`.
 
 ---
 
@@ -828,7 +803,6 @@ VITE_DEV_PORT=4005 npm run dev
 DATABASE_POSTGRES_URL=postgresql://user:pass@host:5432/dbname
 
 # Security (REQUIRED)
-SESSION_SECRET=<32+ char random string>
 ENCRYPTION_KEY=<64 char hex string>
 
 # Auth0 (REQUIRED)
@@ -858,7 +832,6 @@ See [.env.example](../.env.example) for a complete annotated example.
 Before deploying, verify:
 
 - [ ] `DATABASE_POSTGRES_URL` is set and valid
-- [ ] `SESSION_SECRET` is at least 32 characters
 - [ ] `ENCRYPTION_KEY` is exactly 64 hex characters
 - [ ] All Auth0 variables are configured
 - [ ] `PUBLIC_SITE_URL` matches your domain

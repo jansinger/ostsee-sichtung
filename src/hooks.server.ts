@@ -1,29 +1,27 @@
 import { env } from '$env/dynamic/private';
 import { createLogger } from '$lib/logger.server';
-import { clearAuthCookie, setAuthCookie } from '$lib/server/auth/auth';
+import { resolveSessionUser } from '$lib/server/auth/sessionRepository';
 import { assertProductionSecrets } from '$lib/server/config/secretGuard';
 import { closeDb } from '$lib/server/db';
 import { databaseCheck } from '$lib/server/middleware/databaseCheck';
 import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';
 import { createSecurityHeadersHandler } from '$lib/server/middleware/securityHeaders';
-import type { User } from '$lib/types/index';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { randomUUID } from 'crypto';
-import { jwtVerify } from 'jose';
 
 // Dynamic environment variables for Docker runtime
-const COOKIE_NAME = env.COOKIE_NAME ?? 'auth-cookie';
 const NODE_ENV = env.NODE_ENV ?? 'development';
-const SESSION_SECRET = env.SESSION_SECRET ?? '';
 const ENCRYPTION_KEY = env.ENCRYPTION_KEY ?? '';
 
 const logger = createLogger('hooks:server');
 
-// Guard: Der Server startet in Produktion nicht mit fehlenden, zu kurzen oder öffentlich
-// bekannten Secrets. Die Prüflogik steht in secretGuard.ts, damit sie testbar ist —
+// Guard: Der Server startet in Produktion nicht mit einem fehlenden oder unbrauchbaren
+// ENCRYPTION_KEY. Die Prüflogik steht in secretGuard.ts, damit sie testbar ist —
 // hooks.server.ts liegt ausserhalb von src/lib/** und wird von den Server-Tests nicht erfasst.
-assertProductionSecrets({ NODE_ENV, SESSION_SECRET, ENCRYPTION_KEY });
+// SESSION_SECRET wird seit dem Session-Store (#635) nicht mehr verwendet und deshalb auch
+// nicht mehr geprüft.
+assertProductionSecrets({ NODE_ENV, ENCRYPTION_KEY });
 
 const setAdditionalHeaders: Handle = createSecurityHeadersHandler(NODE_ENV);
 
@@ -46,28 +44,20 @@ const authentication: Handle = async ({ event, resolve }) => {
 	// (nirgends verwendete) Nonce-Code entfernt.
 
 	// Authentication
-	const cookie = event.cookies.get(COOKIE_NAME);
 	const url = new URL(event.request.url);
 
 	logger.debug({ pathname: url.pathname }, 'Authentication check');
 
-	let user = null;
-	if (cookie) {
-		try {
-			// Extend the cookie
-			const secret = new TextEncoder().encode(SESSION_SECRET);
-			const { payload } = await jwtVerify(cookie, secret);
-			user = payload as unknown as User;
-			logger.debug({ userSub: user?.sub }, 'Authenticated user');
-			await setAuthCookie(event.cookies, user);
-			// Set user in locals for access in components
-			event.locals.user = user;
-			// Set admin flag for easier access
-			event.locals.isAdmin = user?.roles?.includes('admin') || false;
-		} catch (error) {
-			logger.error({ event: 'security.auth_error', error }, 'Failed to verify cookie, deleting it');
-			clearAuthCookie(event.cookies);
-		}
+	/* Die Ableitung Cookie -> Benutzer steht bewusst in sessionRepository.ts und nicht hier:
+	   Der Modul-Scope dieser Datei (Startup-Guards, sequence()) macht sie sonst untestbar,
+	   und genau diese Ableitung ist der Punkt, an dem #635 bewiesen wird. */
+	const session = await resolveSessionUser(event.cookies);
+	if (session) {
+		logger.debug({ userSub: session.user.sub }, 'Authenticated user');
+		event.locals.user = session.user;
+		event.locals.isAdmin = session.user.roles?.includes('admin') || false;
+		// Grundlage für die Ablauf-Ankündigung aus #634 (siehe +layout.server.ts)
+		event.locals.sessionExpiresAt = session.expiresAt;
 	}
 
 	return resolve(event);

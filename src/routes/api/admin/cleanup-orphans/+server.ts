@@ -1,5 +1,5 @@
 /**
- * Räumt verwaiste Uploads auf.
+ * Räumt verwaiste Uploads und abgelaufene Sessions auf.
  *
  * Zwei Zugänge: angemeldete Admin-Session oder `Authorization: Bearer` mit
  * `CLEANUP_TOKEN` für einen externen Web-Cron. Ist die Variable nicht gesetzt,
@@ -17,6 +17,7 @@ import { ORPHAN_RETENTION_HOURS } from '$lib/constants/uploadRetention';
 import { createLogger } from '$lib/logger.server';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { isAdminUser } from '$lib/server/auth/auth';
+import { deleteExpiredSessions } from '$lib/server/auth/sessionRepository';
 import { MIN_TOKEN_LENGTH, isValidCleanupToken } from '$lib/server/media/cleanupAuth';
 import { createDbPorts } from '$lib/server/media/cleanupPorts';
 import { cleanupOrphans } from '$lib/server/media/orphanCleanup';
@@ -98,6 +99,19 @@ export const POST: RequestHandler = async ({ request, url, locals, getClientAddr
 			onError: (subject, error) => logger.error({ subject, error }, 'Löschen fehlgeschlagen')
 		});
 
+		/* Abgelaufene Session-Zeilen im selben Lauf wegräumen. `createSession` erwischt
+		   nur Zeilen desselben Benutzers — wer sich abmeldet und nie wiederkommt, liesse
+		   sonst Name und E-Mail dauerhaft in `sessions` stehen (DSGVO). Fehler hier
+		   duerfen den Datei-Aufraeumlauf nicht kippen, deshalb separat gefangen. */
+		let sessionsRemoved = 0;
+		if (execute) {
+			try {
+				sessionsRemoved = await deleteExpiredSessions();
+			} catch (error) {
+				logger.error({ error }, 'Aufräumen abgelaufener Sessions fehlgeschlagen');
+			}
+		}
+
 		if (execute) {
 			await logAuditEvent({
 				action: 'file.cleanup_orphans',
@@ -107,13 +121,13 @@ export const POST: RequestHandler = async ({ request, url, locals, getClientAddr
 				// Details hält fest, wer ausgelöst hat.
 				...(locals.user?.email ? { userEmail: locals.user.email } : {}),
 				ipAddress: clientIp,
-				details: { ...report, trigger: bySession ? 'session' : 'token' },
+				details: { ...report, sessionsRemoved, trigger: bySession ? 'session' : 'token' },
 				status: report.failed > 0 ? 'failure' : 'success'
 			});
 		}
 
-		logger.info({ ...report, execute }, 'Aufräum-Lauf abgeschlossen');
-		return json({ retentionHours: retentionMs / HOUR_IN_MS, ...report }, { headers });
+		logger.info({ ...report, sessionsRemoved, execute }, 'Aufräum-Lauf abgeschlossen');
+		return json({ retentionHours: retentionMs / HOUR_IN_MS, ...report, sessionsRemoved }, { headers });
 	} catch (error) {
 		logger.error({ error }, 'Aufräum-Lauf fehlgeschlagen');
 		return json({ error: 'Aufräumen fehlgeschlagen' }, { status: 500, headers });
