@@ -5,7 +5,7 @@ import { createForm } from '$lib/form/createForm';
 import { key as formContextKey } from '$lib/report/formContext';
 import { initialFormState } from '$lib/report/formConfig';
 import type { FormContext, SightingFormData, UploadedFileInfo, ValidationPreset } from '$lib/types';
-import { MediaFile, type MediaStore } from '$lib/utils/media/MediaFile';
+import { MediaFile, type MediaStore } from '$lib/utils/media/MediaFile.svelte';
 import { markPositionFile } from './positionFileOrigin';
 import DropzoneEnhanced from './DropzoneEnhanced.svelte';
 

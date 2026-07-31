@@ -2,7 +2,7 @@
  * Media-related type definitions
  */
 
-import type { MediaFile } from '$lib/utils/media/MediaFile';
+import type { MediaFile } from '$lib/utils/media/MediaFile.svelte';
 import type { ExifData } from './ExifData';
 import type { UploadedFileInfo } from './UploadedFile';
 
