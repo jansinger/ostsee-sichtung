@@ -84,10 +84,10 @@ curl -fsS -X POST -H "Authorization: Bearer $CLEANUP_TOKEN" \
 **Min Length**: 32 characters
 **Description**: Secret key for encrypting session data.
 
-**Important**: Do not use an example value that looks realistic. In production, the startup
-guard verifies that `SESSION_SECRET` is neither a well-known test value nor a default. A
-value that looks authentic will be copied — and the server will refuse to start, rejecting
-it. Generate a unique, random secret for each environment.
+**Wichtig**: Der Guard beim Serverstart lehnt in Production zwei öffentlich bekannte Beispielwerte ab
+(den Platzhalter aus `.env.example` und den Beispielwert dieser Dokumentation). Ein abgelehntes
+Secret verhindert, dass der Server startet. Erzeugen Sie für jede Umgebung ein eindeutiges,
+zufälliges Secret.
 
 **Generate**:
 
