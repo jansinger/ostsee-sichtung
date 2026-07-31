@@ -23,7 +23,7 @@ test.describe('Absenden ohne Internetverbindung', () => {
 
 		await fillStep2(formPage);
 		await formPage.clickNext();
-		await expectCurrentStep(page, /Verhalten|Beobachtung/i);
+		await expectCurrentStep(page, /Weitere Informationen/i);
 
 		await formPage.clickNext();
 		await expectCurrentStep(page, /Kontakt/i);

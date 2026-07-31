@@ -68,16 +68,16 @@ async function coordinateValue(page: Page, id: 'latitude' | 'longitude'): Promis
 }
 
 /**
- * Öffnet die Koordinaten-Disclosure innerhalb der Karte.
+ * Wartet darauf, dass die Koordinatenfelder benutzbar sind.
  *
- * Im Meldeformular liegen die Zahlenfelder hinter einem eigenen `<details>`
- * (`collapsibleCoordinates={true}`); die Karten-Disclosure darüber klappt bei
- * neuer Position von selbst auf.
+ * Seit dem 2026-07-31 stehen sie offen unter der Karte
+ * (`collapsibleCoordinates={false}`, Wunsch des Deutschen Meeresmuseums) — es
+ * gibt also nichts mehr aufzuklappen. Gemountet werden sie weiterhin erst mit
+ * offener Karten-Disclosure; die klappt bei neuer Position von selbst auf.
  */
-async function openCoordinateFields(page: Page): Promise<void> {
-	const coordinateFields = page.locator('[data-testid="coordinate-fields"]');
-	await coordinateFields.locator('summary').click();
-	await expect(coordinateFields).toHaveAttribute('open', '');
+async function awaitCoordinateFields(page: Page): Promise<void> {
+	await expect(page.locator('#latitude')).toBeVisible();
+	await expect(page.locator('#longitude')).toBeVisible();
 }
 
 test.describe('PositionPanel — Foto-Upload mit EXIF', () => {
@@ -103,7 +103,7 @@ test.describe('PositionPanel — Foto-Upload mit EXIF', () => {
 			timeout: 15000
 		});
 
-		await openCoordinateFields(page);
+		await awaitCoordinateFields(page);
 
 		// 54,31 N / 12,09 E laut EXIF. Toleranz, weil die GPS-Rationals des
 		// Fixtures als 54.309999999999995 aufgelöst werden und die App auf vier
@@ -179,7 +179,7 @@ test.describe('PositionPanel — Foto-Upload mit EXIF', () => {
 		await expect(disclosure).toHaveAttribute('open', '');
 		// Der Ausweg soll dorthin führen, wo man wirklich etwas tun kann — die
 		// Koordinatenfelder werden erst mit offener Karte gemountet.
-		await expect(page.locator('[data-testid="coordinate-fields"]')).toBeVisible();
+		await expect(page.locator('#latitude')).toBeVisible();
 	});
 
 	test('Zustand C: „Seegebiet beschreiben" fokussiert das Fahrwasser-Feld', async ({ page }) => {
@@ -200,7 +200,7 @@ test.describe('PositionPanel — Foto-Upload mit EXIF', () => {
 		await expect(page.locator('[data-testid="map-disclosure"]')).toHaveAttribute('open', '', {
 			timeout: 15000
 		});
-		await openCoordinateFields(page);
+		await awaitCoordinateFields(page);
 
 		// 41,39 N / 2,17 E (Mittelmeer) — die Position wird übernommen, das ist
 		// Absicht: Der Nutzer soll sehen, was im Foto stand, und korrigieren
