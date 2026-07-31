@@ -29,7 +29,7 @@ async function assertFileAccessAllowed(
 	filePath: string,
 	locals: App.Locals,
 	clientIp: string
-): Promise<void> {
+): Promise<boolean> {
 	const fileRecord = await db
 		.select({
 			sightingId: sightingFiles.sightingId,
@@ -69,6 +69,8 @@ async function assertFileAccessAllowed(
 			'Admin greift auf unfreigegebene Datei zu'
 		);
 	}
+
+	return isApproved;
 }
 
 export const GET: RequestHandler = async ({ params, request, locals, getClientAddress }) => {
@@ -94,7 +96,12 @@ export const GET: RequestHandler = async ({ params, request, locals, getClientAd
 	enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'upload_access');
 
 	// Freigabe-/Admin-Prüfung (analog zu /api/media)
-	await assertFileAccessAllowed(filePath, locals, clientIp);
+	const isApproved = await assertFileAccessAllowed(filePath, locals, clientIp);
+	// Unfreigegebene Dateien sind nur für Admins sichtbar — geteilte Caches dürfen sie nicht vorhalten.
+	const cacheControlCloud = isApproved
+		? 'public, max-age=31536000, immutable'
+		: 'private, no-store';
+	const cacheControlLocal = isApproved ? 'public, max-age=86400' : 'private, no-store';
 
 	// For cloud storage, redirect to the actual URL
 	if (isCloudStorage()) {
@@ -107,7 +114,7 @@ export const GET: RequestHandler = async ({ params, request, locals, getClientAd
 				status: 302,
 				headers: {
 					Location: url,
-					'Cache-Control': 'public, max-age=31536000, immutable'
+					'Cache-Control': cacheControlCloud
 				}
 			});
 		} catch (err) {
@@ -161,7 +168,7 @@ export const GET: RequestHandler = async ({ params, request, locals, getClientAd
 		status: 200,
 		headers: {
 			'Content-Type': fileInfo.mimeType,
-			'Cache-Control': 'public, max-age=86400', // 1 Tag Cache
+			'Cache-Control': cacheControlLocal,
 			'Content-Length': fileInfo.size.toString(),
 			'Last-Modified': fileInfo.lastModified.toUTCString(),
 			// Security Headers
