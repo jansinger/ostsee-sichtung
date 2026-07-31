@@ -188,6 +188,29 @@ Beim Freischalten von Videos gehört deshalb geprüft, dass
 `POST /api/admin/cleanup-orphans` tatsächlich läuft — vorher wächst der Bestand
 um Größenordnungen schneller nach als zuvor.
 
+**Lokale Entwicklung: kein Cron — nach Browser-Verifikation manuell aufräumen.**
+Der Cron oben ist ein Deployment-Schritt und läuft lokal nie. Die Foto-/
+Video-Dropzone lässt sich nicht sinnvoll ohne echten Browser prüfen — die
+vorgeschriebene visuelle Verifikation von UI-Änderungen lädt dabei reale
+Dateien in die geteilte lokale DB und nach `uploads/` hoch
+(`docs/WORKTREES.md` § Geteilte Ressourcen), jede Zeile mit `sichtung_id
+IS NULL`, bis jemand aufräumt. Befund vom 2026-07-31: sieben Waisenzeilen aus
+genau solchen Sessions, teils mit echten Fotos außerhalb der E2E-Fixtures
+(`IMG_7293.jpeg`). Die automatisierten E2E-Specs sind nicht die Ursache — sie
+mocken `/api/files/upload` (`e2e/fixtures/mockApi.ts`) oder lösen die
+Größenprüfung vor jedem Storage-Schreibzugriff aus.
+
+Nach jeder manuellen Verifikationssession, die Dateien hochgeladen hat:
+
+```bash
+npm run media:cleanup-orphans -- --older-than=1h
+```
+
+`1h` statt der Standardfrist (24h, s.o.): Ein manueller Testupload muss nicht
+die Absende-Frist eines echten Formularlaufs abwarten. `--older-than` erlaubt
+nur ganze Stunden/Tage — für Uploads der letzten Minuten vorher `--dry-run`
+gegenprüfen oder eine Stunde warten, sonst räumt der Lauf noch nichts weg.
+
 ---
 
 ## Best Practices
