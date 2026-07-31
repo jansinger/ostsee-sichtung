@@ -17,12 +17,14 @@ Regeln für die Middleware-Chain in `hooks.server.ts`.
 export const handle = sequence(
 	databaseCheck, // 1. DB-Verfügbarkeit
 	maintenanceMode, // 2. Wartungsmodus
-	authentication, // 3. JWT + Cookie-Session
+	authentication, // 3. Session-Lookup (sessionRepository)
 	setAdditionalHeaders // 4. Security Headers
 );
 ```
 
 **Reihenfolge ist wichtig** -- databaseCheck muss vor Auth kommen (Auth braucht DB).
+Seit dem Session-Store (#635) gilt das buchstäblich: `resolveSessionUser` schlägt das
+Cookie in der Tabelle `sessions` nach, Authentifizierung ohne DB gibt es nicht mehr.
 
 ---
 

@@ -6,6 +6,7 @@ import { closeDb } from '$lib/server/db';
 import { databaseCheck } from '$lib/server/middleware/databaseCheck';
 import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';
 import { createSecurityHeadersHandler } from '$lib/server/middleware/securityHeaders';
+import { buildErrorLogFields } from '$lib/server/utils/errorChain';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { randomUUID } from 'crypto';
@@ -82,6 +83,17 @@ export const handle: Handle = sequence(
  * Loggt den Fehler strukturiert über Pino (inkl. Stack, Pfad, Status und einer
  * korrelierbaren errorId) und gibt dem Client nur eine generische Meldung zurück,
  * damit keine internen Details (Stacktraces, DB-Fehler) nach außen gelangen.
+ *
+ * `causes` ist bei Datenbankfehlern das entscheidende Feld: Drizzle/postgres-js setzen
+ * als `message` immer nur "Failed query: <SQL>", die eigentliche Ursache
+ * (Verbindungsabbruch, `too many connections`, Timeout) steht ausschließlich in
+ * `error.cause`. Ohne dieses Feld ist ein Ausfall aus dem Log nicht rekonstruierbar.
+ *
+ * Alle drei Fehler-Felder kommen aus `buildErrorLogFields` — sie hier von Hand aus
+ * `error.message`/`error.stack` zusammenzusetzen hiesse, die Redigierung an genau den
+ * Feldern vorbeizuführen, die Drizzles Parameterblock tragen. Die Logik steht in
+ * `errorChain.ts`, damit sie testbar ist; `hooks.server.ts` liegt ausserhalb von
+ * `src/lib/**` und wird von den Server-Tests nicht erfasst.
  */
 export const handleError: HandleServerError = ({ error, event, status, message }) => {
 	const errorId = randomUUID();
@@ -93,8 +105,7 @@ export const handleError: HandleServerError = ({ error, event, status, message }
 			status,
 			message,
 			pathname: event.url.pathname,
-			error: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined
+			...buildErrorLogFields(error)
 		},
 		'Unerwarteter Serverfehler'
 	);

@@ -563,6 +563,28 @@ describe('auth.ts', () => {
 			expect(token1).not.toBe(token2);
 			expect(mockCookies.set).toHaveBeenCalledTimes(2);
 		});
+
+		// OWASP verlangt für Session-/CSRF-Token mindestens 128 Bit. Math.random().toString(36)
+		// .substring(7) lieferte gemessen 3–7 base36-Zeichen (~15–36 Bit) und ist zudem kein
+		// kryptografischer Zufall — beides für einen CSRF-State ungeeignet.
+		it('erzeugt einen State mit mindestens 128 Bit kryptografischer Entropie', () => {
+			const token = setCsrfCookie(mockCookies);
+
+			// base64url: 4 Zeichen je 3 Byte → 128 Bit brauchen mindestens 22 Zeichen
+			expect(token.length).toBeGreaterThanOrEqual(22);
+			expect(token).toMatch(/^[A-Za-z0-9_-]+$/);
+		});
+
+		it('bleibt zufällig, auch wenn Math.random festgenagelt ist', () => {
+			const mockRandom = vi.spyOn(Math, 'random').mockReturnValue(0.42);
+
+			const token1 = setCsrfCookie(mockCookies);
+			const token2 = setCsrfCookie(mockCookies);
+
+			expect(token1).not.toBe(token2);
+
+			mockRandom.mockRestore();
+		});
 	});
 
 	describe('setPKCECookie', () => {

@@ -10,7 +10,7 @@ import { BALTIC_SEA_BBOX, isInBalticArea } from './checkBalticSea';
  * 2. Das Polygon liegt vollständig **innerhalb** der Box — die Invariante, an der
  *    die alte, handgepflegte Box gescheitert ist.
  *
- * Hintergrund: `docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
+ * Hintergrund: `docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
  */
 
 describe('BALTIC_SEA_BBOX ist aus der Geometrie abgeleitet', () => {

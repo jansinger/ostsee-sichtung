@@ -10,8 +10,10 @@ const logger = createLogger('utils:map:openLayersHelpers');
 
 import Collection from 'ol/Collection';
 import { Control, defaults as defaultControls } from 'ol/control';
+import { all, noModifierKeys, primaryAction } from 'ol/events/condition';
 import OLFeature from 'ol/Feature';
 import OLPoint from 'ol/geom/Point';
+import { defaults as defaultInteractions, DragPan } from 'ol/interaction';
 import Translate from 'ol/interaction/Translate';
 import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
 import OLMap from 'ol/Map';
@@ -203,7 +205,72 @@ export function createMap(
 		target: target,
 		layers: [osmLayer],
 		view: view,
-		controls: controls
+		controls: controls,
+
+		/**
+		 * Interactions wie OpenLayers sie selbst baut — **nur DragPan** ist vom
+		 * Fokus-Zwang ausgenommen. Dieselbe Abwägung wie in
+		 * `src/lib/map/optimizedMapController.ts`, dort aber mit einem anderen
+		 * Ausgang für das Mausrad: Die Sichtungskarte nimmt `MouseWheelZoom`
+		 * ebenfalls aus den Defaults und lässt es außerhalb des iframes frei
+		 * zoomen (`onFocusOnly: !isNotIFrame`). Hier bleibt die Bremse — Begründung
+		 * unten. Die beiden Stellen sind bewusst nicht gekoppelt.
+		 *
+		 * `onFocusOnly: true` ist kein Zusatz, sondern die Wiederherstellung des
+		 * Verhaltens, das `ol/Map` beim Weglassen der Option verwendet: Map.js ruft
+		 * `defaultInteractions({ onFocusOnly: true })` auf. Ruft man `defaults()`
+		 * dagegen selbst auf, ist der Default `false` — wer das übersieht, hebt den
+		 * Fokus-Schutz still für **alle** Interactions auf.
+		 *
+		 * Was `onFocusOnly` bewirkt: `DragPan` und `MouseWheelZoom` — und nur diese
+		 * beiden — bekommen `all(focusWithTabindex, …)` vorgeschaltet.
+		 * `focusWithTabindex` verlangt, **nur wenn das Ziel-Element ein `tabindex`
+		 * trägt**, dass `document.activeElement` innerhalb des Ziels liegt.
+		 *
+		 * Genau dieses `tabindex="0"` setzt `OLMap.svelte` bewusst auf den
+		 * Karten-Container, damit KeyboardPan und KeyboardZoom greifen. Nebenwirkung
+		 * war der bekannte Defekt „die Karte reagiert erst nach einem Klick": ohne
+		 * Fokus war `activeElement` der `<body>`, die Condition damit `false` und die
+		 * Geste verpuffte — bei einwandfreien, trusted Events.
+		 *
+		 * **Auf dieser Karte wiegt das schwerer als auf der Sichtungskarte.** Der
+		 * Klick, mit dem man das Ziehen freischalten müsste, ist hier kein neutraler
+		 * Klick: `OLMap.svelte` hängt an `singleclick` den Handler `handleMapClick`
+		 * → `applyPosition`, der die **gemeldete Position setzt**. Wer die Karte nur
+		 * zurechtschieben wollte, hätte damit unbemerkt seine Sichtung verlegt.
+		 * Ziehen ist deshalb bedingungslos frei — eine eindeutige Absicht, die mit
+		 * nichts konkurriert. `kinetic` bleibt bewusst weg: `defaults()` setzt dort
+		 * eine Schwung-Animation, die beim Setzen einer Position eher stört.
+		 *
+		 * **Das Mausrad behält den Fokus-Zwang** — und zwar aus einem Grund, den die
+		 * Sichtungskarte nicht hat. Dort trägt die Bremse allein die iframe-
+		 * Einbettung auf meeresmuseum.de, und außerhalb des Rahmens zoomt das Rad
+		 * deshalb frei: Die Karte füllt dort die Seite. Hier ist sie ein 556×400
+		 * Element mitten in einem langen, scrollbaren Formular. Ein bedingungsloser
+		 * Rad-Zoom würde das Seiten-Scrollen auf halber Strecke abfangen
+		 * (`MouseWheelZoom` ruft `preventDefault()`), und der Melder käme über der
+		 * Karte nicht mehr zum nächsten Feld — unabhängig von jedem iframe.
+		 *
+		 * Vertretbar ist die Bremse, weil Zoomen im Gegensatz zum Schieben
+		 * **Ersatzwege hat, die keinen Fokus brauchen**: die Zoom-Buttons oben links
+		 * sind immer bedienbar. Und wer den Fokus doch will, kommt per Tab hinein —
+		 * ohne den Klick, der eine Position setzen würde. Beim Schieben gab es diesen
+		 * Ersatz nicht; das ist der ganze Unterschied.
+		 *
+		 * **Zur Reihenfolge:** `.extend()` hängt den eigenen DragPan ans Ende der
+		 * Collection, und `Map.handleMapBrowserEvent` läuft sie rückwärts durch — er
+		 * wird also zuerst gefragt. Das ist unkritisch, weil `addMarker()` seine
+		 * `Translate`-Interaktion später per `addInteraction` anhängt und damit
+		 * dahinter landet: Ein Zug, der auf dem Marker beginnt, verschiebt weiterhin
+		 * den Marker und nicht die Karte. Wer `addMarker()` vor die Karten-Erzeugung
+		 * zieht, dreht genau das um.
+		 *
+		 * Abgesichert in `e2e/form-map-pan-zoom.spec.ts` — beide Richtungen, also
+		 * auch der Rad-Schutz als Gegenprobe.
+		 */
+		interactions: defaultInteractions({ onFocusOnly: true, dragPan: false }).extend([
+			new DragPan({ condition: all(noModifierKeys, primaryAction) })
+		])
 	});
 
 	// Wichtig: Karte neu rendern, wenn das Ziel-Element sichtbar ist

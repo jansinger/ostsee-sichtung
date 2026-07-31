@@ -2,7 +2,7 @@
 -- Aufgerufen von build-baltic-geometry.sh. Erwartet die Tabellen
 -- geo_build.iho_raw, geo_build.artifact_mask, geo_build.osm_land und
 -- geo_build.inclusion_mask.
--- Begruendung aller Schritte: docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
+-- Begruendung aller Schritte: docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
 
 \set ON_ERROR_STOP on
 SET search_path TO geo_build, public;

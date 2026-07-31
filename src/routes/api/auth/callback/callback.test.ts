@@ -173,6 +173,138 @@ describe('GET /api/auth/callback — Audit Logging', () => {
 			expect.any(String)
 		);
 	});
+
+	it('löscht csrfState unter dem Pfad, unter dem es gesetzt wurde (/api/auth)', async () => {
+		mockGetToken.mockResolvedValue({ id_token: 'id-tok', access_token: 'access-tok' });
+		mockVerifyToken.mockResolvedValue({ email: 'user@test.com', sub: 'auth0|123' });
+		mockGetTokenClaims.mockResolvedValue({ 'https://api.test/roles': ['admin'] });
+
+		const cookies = makeCookies();
+		await GET({
+			url: new URL('http://localhost/api/auth/callback?code=auth-code&state=valid-csrf'),
+			cookies
+		} as never).catch(() => {});
+
+		// Gesetzt wird das Cookie in setCsrfCookie mit path: '/api/auth'. Ein delete mit
+		// path: '/' adressiert ein anderes Cookie und lässt das echte 10 Minuten stehen.
+		expect(cookies.delete).toHaveBeenCalledWith('csrfState', { path: '/api/auth' });
+	});
+});
+
+/**
+ * Der abgelaufene Flow ist kein Angriff, sondern der Normalfall: Auth0 zeigt bei
+ * localhost-Callbacks immer einen Consent-Screen (nicht abschaltbar), und die
+ * Flow-Cookies leben nur 10 Minuten. Wer dort zu lange braucht — oder den
+ * Callback-Tab wiederherstellt — landete bisher auf einer 403-Sackgasse.
+ */
+describe('GET /api/auth/callback — abgelaufener oder verbrauchter Flow', () => {
+	const noFlowCookies = () => ({
+		get: vi.fn().mockReturnValue(undefined),
+		delete: vi.fn()
+	});
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockGetPKCEVerifier.mockReturnValue(null);
+	});
+
+	it('startet den Login neu, wenn beide Flow-Cookies fehlen', async () => {
+		let thrown: unknown;
+		await GET({
+			url: new URL('http://localhost/api/auth/callback?returnUrl=/admin&code=auth-code&state=x'),
+			cookies: noFlowCookies()
+		} as never).catch((e) => {
+			thrown = e;
+		});
+
+		const r = thrown as { status?: number; location?: string };
+		expect(r?.status).toBe(302);
+		expect(r?.location).toBe('/api/auth/login?returnUrl=%2Fadmin&authRetry=1');
+	});
+
+	it('meldet den abgelaufenen Flow als eigenes Event, nicht als csrf_mismatch', async () => {
+		await GET({
+			url: new URL('http://localhost/api/auth/callback?returnUrl=/admin&code=auth-code&state=x'),
+			cookies: noFlowCookies()
+		} as never).catch(() => {});
+
+		expect(mockLoggerWarn).toHaveBeenCalledWith(
+			expect.objectContaining({ event: 'security.auth_flow_expired' }),
+			expect.any(String)
+		);
+		const csrfCalls = mockLoggerWarn.mock.calls.filter(
+			(call) => (call[0] as { event?: string })?.event === 'security.csrf_mismatch'
+		);
+		expect(csrfCalls).toHaveLength(0);
+	});
+
+	it('dreht keine Endlosschleife: nach einem Neustart wird abgebrochen', async () => {
+		let thrown: unknown;
+		await GET({
+			url: new URL(
+				'http://localhost/api/auth/callback?returnUrl=/admin&code=auth-code&state=x&authRetry=1'
+			),
+			cookies: noFlowCookies()
+		} as never).catch((e) => {
+			thrown = e;
+		});
+
+		expect((thrown as { status?: number })?.status).toBe(403);
+	});
+
+	it('bleibt bei vorhandenem, aber abweichendem State bei 403 (echter CSRF-Verdacht)', async () => {
+		mockGetPKCEVerifier.mockReturnValue('pkce-verifier');
+
+		let thrown: unknown;
+		await GET({
+			url: new URL('http://localhost/api/auth/callback?returnUrl=/admin&code=auth-code&state=böse'),
+			cookies: {
+				get: vi.fn().mockImplementation((n: string) => (n === 'csrfState' ? 'echt' : undefined)),
+				delete: vi.fn()
+			}
+		} as never).catch((e) => {
+			thrown = e;
+		});
+
+		expect((thrown as { status?: number })?.status).toBe(403);
+		expect(mockLoggerWarn).toHaveBeenCalledWith(
+			expect.objectContaining({ event: 'security.csrf_mismatch' }),
+			expect.any(String)
+		);
+	});
+
+	// Der PKCE-Verifier wird beim Lesen gelöscht (Single-Use), csrfState überlebt bis zum
+	// Ablauf. Ein zweiter Callback mit demselben code — Reload, Zurück-Taste, doppelt
+	// zugestellter Request — trifft deshalb auf „State passt, Verifier weg". Das ist ein
+	// verbrauchter Flow, kein Angriff.
+	it('startet neu, wenn nur der PKCE-Verifier verbraucht ist und der State noch passt', async () => {
+		let thrown: unknown;
+		await GET({
+			url: new URL('http://localhost/api/auth/callback?returnUrl=/admin&code=auth-code&state=echt'),
+			cookies: {
+				get: vi.fn().mockImplementation((n: string) => (n === 'csrfState' ? 'echt' : undefined)),
+				delete: vi.fn()
+			}
+		} as never).catch((e) => {
+			thrown = e;
+		});
+
+		const r = thrown as { status?: number; location?: string };
+		expect(r?.status).toBe(302);
+		expect(r?.location).toBe('/api/auth/login?returnUrl=%2Fadmin&authRetry=1');
+	});
+
+	it('startet nicht neu, wenn der code fehlt (kein Auth0-Rücklauf)', async () => {
+		let thrown: unknown;
+		await GET({
+			url: new URL('http://localhost/api/auth/callback?returnUrl=/admin'),
+			cookies: noFlowCookies()
+		} as never).catch((e) => {
+			thrown = e;
+		});
+
+		expect((thrown as { status?: number })?.status).toBe(403);
+	});
 });
 
 describe('sanitizeReturnUrl', () => {

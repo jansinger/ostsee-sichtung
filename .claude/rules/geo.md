@@ -147,7 +147,7 @@ den Hash des alten Stands in `PREVIOUS_SHIPPED_TEMPLATE_HASHES` ein.
 
 Vollständige Referenz inkl. Messwerten: `docs/OSTSEE_FLAGS.md`.
 Bereinigung, Entscheidungen und Umsetzung:
-`docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
+`docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
 
 ---
 

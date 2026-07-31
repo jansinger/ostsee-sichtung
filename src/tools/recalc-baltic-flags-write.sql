@@ -10,7 +10,7 @@
 --   FROM public.sichtungen_ostsee_backup b
 --   WHERE s.id = b.id;
 --
--- Spec: docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
+-- Spec: docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md
 
 \set ON_ERROR_STOP on
 

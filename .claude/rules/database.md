@@ -175,10 +175,10 @@ export const saveSighting = async (
 Zwei Spalten in `sichtungen` bedeuten scheinbar dasselbe. Sie tun es nicht, und ihre
 Namen legen die Bedeutungen **verkehrt herum** nahe:
 
-| Spalte       | Drizzle          | Prüfung                                           |
-| ------------ | ---------------- | ------------------------------------------------- |
-| `ostsee`     | `inBalticSea`    | exaktes Ostsee-Polygon — **streng**               |
-| `ostsee_geo` | `inBalticSeaGeo` | Bounding Box `BALTIC_SEA_BBOX` — **schwach**       |
+| Spalte       | Drizzle          | Prüfung                                      |
+| ------------ | ---------------- | -------------------------------------------- |
+| `ostsee`     | `inBalticSea`    | exaktes Ostsee-Polygon — **streng**          |
+| `ostsee_geo` | `inBalticSeaGeo` | Bounding Box `BALTIC_SEA_BBOX` — **schwach** |
 
 Das „geo" sitzt an der _groben_ Prüfung. Deren Rechteck umfasst Jütland, Schonen,
 Nordostdeutschland, Polen und das Baltikum. Die Kanten stehen in
@@ -204,7 +204,7 @@ Bearbeiten des Schemas ohnehin im Kontext.
 
 Vollständige Referenz mit Messwerten und verworfenen Hypothesen zur `2`:
 `docs/OSTSEE_FLAGS.md`. Die Geometrie-Bereinigung vom 2026-07-30 samt Migration:
-`docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
+`docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md`
 
 ---
 
