@@ -84,9 +84,9 @@ export const RATE_LIMITS = {
 	// viele kleine Bereiche derselben, bereits freigegebenen Datei an — das ist
 	// eine Wiedergabe, kein wiederholter Zugriff. Die Bremse bleibt (ein
 	// Skript kann nicht unbegrenzt saugen), sie sitzt nur eine Größenordnung
-	// höher. Ein Volumen-Limit wie das Byte-Budget aus Task 4a (consumeByteBudget,
-	// nur im Upload-Pfad) gibt es hier nicht — die einzige Bremse auf dieser
-	// Route ist die Anfragenzahl pro Minute.
+	// höher. Das reine Anfragenzahl-Limit hier deckelt nicht das Volumen — ein
+	// erfüllbarer Bereich über die ganze Datei zählt genauso wie ein einzelnes
+	// Kilobyte (Befund C1). Die Volumen-Bremse dafür ist `MEDIA_BYTES_*` unten.
 	MEDIA_RANGE_ANONYMOUS: {
 		windowMs: 60 * 1000,
 		maxRequests: 300
@@ -94,6 +94,28 @@ export const RATE_LIMITS = {
 	MEDIA_RANGE_AUTHENTICATED: {
 		windowMs: 60 * 1000,
 		maxRequests: 600
+	},
+
+	// Volumen-Bremse für die Auslieferung (Befund C1 im Abschlussreview). Das
+	// Rate Limit oben zählt nur die ANZAHL der Zugriffe — `Range: bytes=0-` ist
+	// ein erfüllbarer Bereich über die ganze Datei und bekommt dabei sogar das
+	// zehnfach höhere Range-Limit (300/min statt 30/min); bei 100-MB-Videos
+	// wären das theoretisch 30 GB pro Minute und IP, ohne Anmeldung.
+	//
+	// 1 GB/h anonym, 5 GB/h authentifiziert: großzügig für echte Nutzung — die
+	// öffentliche Karte lädt viele Fotos, ein Melder oder Admin sieht sich
+	// mehrere Videos an — und trotzdem zwei bis drei Größenordnungen unter dem,
+	// was die reine Anfragenzahl heute zulässt. Wirkt über `consumeByteBudget()`
+	// (`$lib/server/middleware/byteBudget.ts`), verbucht die tatsächlich
+	// ausgelieferte Menge (bei einer Teilanfrage die Bereichslänge, nicht die
+	// Dateigröße) und greift vor dem Streamen.
+	MEDIA_BYTES_ANONYMOUS: {
+		windowMs: 60 * 60 * 1000,
+		maxBytes: 1 * 1024 * 1024 * 1024
+	},
+	MEDIA_BYTES_AUTHENTICATED: {
+		windowMs: 60 * 60 * 1000,
+		maxBytes: 5 * 1024 * 1024 * 1024
 	},
 
 	// Aufräum-Endpunkt: ein Cron braucht wenige Aufrufe pro Tag, ein Angreifer viele

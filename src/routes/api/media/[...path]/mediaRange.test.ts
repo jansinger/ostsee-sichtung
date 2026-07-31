@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { GET } from './+server';
+import { resetByteBudgets } from '$lib/server/middleware/byteBudget';
 
 vi.mock('$lib/logger.server', () => ({
 	createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
@@ -55,6 +56,7 @@ function createEvent(rangeHeader: string | null, clientIp = '127.0.0.1') {
 }
 
 beforeEach(() => {
+	resetByteBudgets();
 	getFileStream.mockReset();
 	getMetadata.mockReset();
 	getMetadata.mockResolvedValue({

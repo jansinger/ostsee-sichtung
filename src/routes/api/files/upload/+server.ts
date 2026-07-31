@@ -15,7 +15,7 @@ import {
 	createRateLimitIdentifier,
 	buildRateLimitHeaders
 } from '$lib/server/middleware/rateLimit';
-import { consumeByteBudget, type ByteBudget } from '$lib/server/middleware/uploadByteBudget';
+import { consumeByteBudget, type ByteBudget } from '$lib/server/middleware/byteBudget';
 import { isCuid } from '@paralleldrive/cuid2';
 import { error, isHttpError, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';

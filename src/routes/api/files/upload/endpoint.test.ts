@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { POST } from './+server';
-import { resetByteBudgets } from '$lib/server/middleware/uploadByteBudget';
+import { resetByteBudgets } from '$lib/server/middleware/byteBudget';
 
 vi.mock('$lib/logger.server', () => ({
 	createLogger: () => ({

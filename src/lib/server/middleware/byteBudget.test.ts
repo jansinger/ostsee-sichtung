@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { consumeByteBudget, resetByteBudgets } from './uploadByteBudget';
+import { consumeByteBudget, resetByteBudgets } from './byteBudget';
 
 const MB = 1024 * 1024;
 const BUDGET = { windowMs: 60 * 60 * 1000, maxBytes: 300 * MB };

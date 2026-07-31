@@ -91,6 +91,19 @@ Content bzw. 416 Range Not Satisfiable. Range-Anfragen zählen gegen ein eigenes
 höheres Rate Limit (`MEDIA_RANGE_*`: 300/min anonym, 600/min authentifiziert)
 statt gegen `MEDIA_ACCESS_*` (30/min bzw. 100/min) — sonst würde Springen im
 Video das Limit sprengen, das eigentlich einzelne Zugriffe drosseln soll.
+
+**Volumen-Bremse bei der Auslieferung (seit Befund C1 im Abschlussreview):** Die
+Anfragenzahl-Limits oben deckeln nicht das Volumen — `Range: bytes=0-` ist ein
+erfüllbarer Bereich über die ganze Datei und bekam dabei sogar das zehnfach
+höhere Range-Limit. Zusätzlich gilt deshalb ein Byte-Budget je Kennung und
+Stunde: 1 GB anonym, 5 GB authentifiziert (`RATE_LIMITS.MEDIA_BYTES_*`,
+`consumeByteBudget()` aus `$lib/server/middleware/byteBudget.ts` — dasselbe
+Modul wie beim Upload-Byte-Budget oben, seit diesem Befund ohne `upload`-Präfix
+im Namen). Gebucht wird die tatsächlich ausgelieferte Menge: bei einer
+Teilanfrage die Bereichslänge, bei einer vollen Anfrage die Dateigröße — ein
+`Range`-Header über die ganze Datei bucht also genauso viel wie eine Anfrage
+ohne `Range`. Überschreitung: 429.
+
 Details: `docs/VIDEO_UPLOAD_KONZEPT_2026-07-31.md`.
 
 ---

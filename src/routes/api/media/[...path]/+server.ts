@@ -11,6 +11,7 @@ import {
 	createRateLimitIdentifier,
 	buildRateLimitHeaders
 } from '$lib/server/middleware/rateLimit';
+import { consumeByteBudget, type ByteBudget } from '$lib/server/middleware/byteBudget';
 import { error, type RequestHandler } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 
@@ -194,6 +195,44 @@ export const GET: RequestHandler = async ({ params, url, request, locals, getCli
 		const clientETag = url.searchParams.get('etag') || '';
 		if (clientETag && clientETag === baseHeaders.ETag) {
 			return new Response(null, { status: 304, headers: baseHeaders });
+		}
+
+		// Volumen-Bremse (Befund C1). Das Rate-Limit oben zählt nur die ANZAHL
+		// der Zugriffe — `Range: bytes=0-` ist ein erfüllbarer Bereich über die
+		// ganze Datei und bekam dabei sogar das höhere Range-Limit statt des
+		// engeren Nicht-Range-Limits. Gebucht wird deshalb hier die tatsächlich
+		// auszuliefernde Menge (bei einem Bereich dessen Länge, sonst die volle
+		// Dateigröße) — VOR dem Streamen, damit ein ausgeschöpftes Budget keine
+		// Bytes mehr kostet, bevor die Antwort verweigert wird.
+		const plannedDeliveryBytes =
+			range.kind === 'satisfiable' ? range.end - range.start + 1 : totalSize;
+		const mediaByteBudget: ByteBudget = isAuthenticated
+			? RATE_LIMITS.MEDIA_BYTES_AUTHENTICATED
+			: RATE_LIMITS.MEDIA_BYTES_ANONYMOUS;
+		const byteBudgetResult = consumeByteBudget(
+			rateLimitIdentifier,
+			plannedDeliveryBytes,
+			mediaByteBudget
+		);
+
+		if (!byteBudgetResult.allowed) {
+			logger.warn(
+				{
+					action: 'media_access_rejected',
+					reason: 'byte_budget_exhausted',
+					filePath,
+					clientIp,
+					authenticated: isAuthenticated,
+					plannedDeliveryBytes,
+					usedBytes: byteBudgetResult.usedBytes,
+					remainingBytes: byteBudgetResult.remainingBytes
+				},
+				'Media access rejected - hourly byte budget exhausted'
+			);
+			throw error(
+				429,
+				'Sie haben in der letzten Stunde bereits sehr viele Daten von diesem Server geladen. Bitte versuchen Sie es später erneut.'
+			);
 		}
 
 		const requestedRange =

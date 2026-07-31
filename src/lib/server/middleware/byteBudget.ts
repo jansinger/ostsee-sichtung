@@ -1,15 +1,24 @@
 /**
- * Volumen-Bremse für Datei-Uploads, zusätzlich zum Zähler-Rate-Limit.
+ * Volumen-Bremse, zusätzlich zum Zähler-Rate-Limit — für zwei Pfade.
  *
- * `FILE_UPLOAD_ANONYMOUS` begrenzt die ANZAHL der Uploads (20/h). Solange eine
- * Datei höchstens 10 MB groß sein durfte, war damit auch das Volumen gedeckelt.
- * Mit 100 MB je Video sind es 2 GB pro IP und Stunde — mehr als der gesamte
- * Medienbestand aus 13 Jahren.
+ * Ursprünglich nur für Datei-Uploads: `FILE_UPLOAD_ANONYMOUS` begrenzt die
+ * ANZAHL der Uploads (20/h). Solange eine Datei höchstens 10 MB groß sein
+ * durfte, war damit auch das Volumen gedeckelt. Mit 100 MB je Video sind es
+ * 2 GB pro IP und Stunde — mehr als der gesamte Medienbestand aus 13 Jahren.
  *
- * Das Gesamtlimit je Meldung (`security.maxTotalUploadSize`) schützt hier
- * NICHT: Die `referenceId` liefert der Client, eine neue CUID je Datei umgeht
- * es vollständig. Diese Buchführung hängt dagegen an derselben Kennung wie das
- * Rate Limit (IP bzw. `sub`).
+ * Seit dem Abschlussreview (Befund C1) bucht auch `GET /api/media/[...path]`
+ * hier ab: Dort zählte das Rate-Limit bislang nur die ANZAHL der Abrufe
+ * (`MEDIA_ACCESS_*`/`MEDIA_RANGE_*`), nicht ihr Volumen. `Range: bytes=0-` ist
+ * ein erfüllbarer Bereich über die ganze Datei und bekam dabei sogar das
+ * höhere Range-Limit (300/min statt 30/min) — bei 100-MB-Videos theoretisch
+ * 30 GB pro Minute und IP. Daher der Name ohne `upload`-Präfix: Die Bremse ist
+ * jetzt allgemein für „wie viele Bytes fließen über diese Kennung", nicht mehr
+ * upload-spezifisch.
+ *
+ * Das Gesamtlimit je Meldung (`security.maxTotalUploadSize`) schützt beim
+ * Upload-Pfad NICHT: Die `referenceId` liefert der Client, eine neue CUID je
+ * Datei umgeht es vollständig. Diese Buchführung hängt dagegen an derselben
+ * Kennung wie das Rate Limit (IP bzw. `sub`).
  *
  * In-Memory wie `rateLimit.ts` — bei mehreren Instanzen zählt jede für sich.
  * Das ist bewusst dieselbe Einschränkung wie beim bestehenden Rate Limit und
