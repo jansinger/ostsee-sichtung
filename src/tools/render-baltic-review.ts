@@ -1,7 +1,7 @@
 /**
  * Erzeugt eine eigenstaendige Pruefkarte fuer die bereinigte Ostsee-Geometrie.
  *
- * Die Karte ist das Freigabe-Tor aus docs/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md,
+ * Die Karte ist das Freigabe-Tor aus docs/archive/OSTSEE_GEOMETRIE_SPEC_2026-07-30.md,
  * Abschnitt 3.3: sie laeuft nach der Pipeline und vor jedem Schreibvorgang an
  * der Datenbank.
  *
