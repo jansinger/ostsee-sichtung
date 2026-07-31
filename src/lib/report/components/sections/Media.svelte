@@ -7,6 +7,7 @@
 	import UploadNotice from '$lib/report/components/form/UploadNotice.svelte';
 	import { getFileTypeDescription } from '$lib/utils/validation/fileValidation';
 	import type { ValidationPreset } from '$lib/types';
+	import { MEDIA_FALLBACK_EMAIL } from '$lib/constants/contact';
 	import SectionCard from './SectionCard.svelte';
 
 	// Generiere eine einfache referenceId für Upload (temporäre Lösung)
@@ -82,10 +83,12 @@
 		<div class="skeleton h-32 w-full"></div>
 	{/if}
 	<div class="alert alert-info mt-4">
-		<Icon icon="lucide:camera" width="20" aria-hidden="true" />
+		<Icon icon="lucide:mail" width="20" class="text-info-strong" aria-hidden="true" />
 		<span class="text-sm">
-			Falls Sie uns Ihre Medien auf einem anderen Weg zukommen lassen möchten, erhalten Sie
-			Instruktionen nach dem Absenden des Formulars.
+			Ist eine Aufnahme zu groß für den Upload? Senden Sie die Meldung trotzdem ab und schicken Sie
+			die Datei anschließend an <a class="link" href="mailto:{MEDIA_FALLBACK_EMAIL}"
+				>{MEDIA_FALLBACK_EMAIL}</a
+			>.
 		</span>
 	</div>
 </SectionCard>
