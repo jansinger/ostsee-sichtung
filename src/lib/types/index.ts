@@ -49,7 +49,7 @@ export type {
 } from './FormField.js';
 
 // Storage types
-export type { StorageProvider, StorageProviderType } from './Storage.js';
+export type { StorageFileStream, StorageProvider, StorageProviderType } from './Storage.js';
 
 // API response types
 export type { CreateSightingResponse, SightingResponse } from './ApiResponse.js';

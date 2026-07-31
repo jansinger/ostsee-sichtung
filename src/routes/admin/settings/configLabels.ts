@@ -45,6 +45,8 @@ export const configLabels: Record<string, string> = {
 
 	// Sicherheit und Uploads
 	'security.maxFileSize': 'Maximale Dateigröße pro Upload (MB)',
+	'security.maxVideoFileSize': 'Maximale Dateigröße für Videos (MB)',
+	'security.maxTotalUploadSize': 'Maximale Gesamtgröße je Meldung (MB)',
 	'security.allowedFileTypes': 'Erlaubte Dateitypen',
 	'security.rateLimitPerIP': 'Maximale Meldungen pro IP-Adresse',
 	'security.requireEmailVerification': 'E-Mail-Adresse bestätigen lassen',
@@ -124,5 +126,7 @@ export const ACTIVE_CONFIG_KEYS: ReadonlySet<string> = new Set([
 	'display.maxSightingsPerPage',
 
 	'security.maxFileSize',
+	'security.maxVideoFileSize',
+	'security.maxTotalUploadSize',
 	'security.allowedFileTypes'
 ]);

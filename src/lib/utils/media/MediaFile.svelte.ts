@@ -17,6 +17,10 @@ export class MediaFile {
 	isUploading: boolean = true;
 	isDeleting: boolean = false;
 	timestamp: Date | null = null;
+	/** 0–100 während der Übertragung, `undefined` sobald sie durch ist. */
+	uploadPercent = $state<number | undefined>(undefined);
+	/** Bricht eine laufende Übertragung ab. */
+	abortUpload: (() => void) | undefined;
 	/**
 	 * True, sobald die Metadaten-Auswertung durch ist. Nötig, weil `exifData` den
 	 * Zustand nicht trägt: Es ist vor der Auswertung `undefined` und danach — bei
@@ -70,12 +74,28 @@ export class MediaFile {
 			uid,
 			file.name,
 			referenceId,
-			uploadFileDirect(file, referenceId, uid),
+			// Platzhalter: `uploadFileDirect` unten braucht bereits `mediaFile.uid`
+			// (für die Fortschritts-Rückrufe), wird also erst NACH der Konstruktion
+			// aufgerufen. `uploadedFile` wird direkt danach durch die echte Promise
+			// aus dem Upload-Handle ersetzt — hier hängt niemand ab, bevor das passiert.
+			new Promise<UploadedFileInfo>(() => {}),
 			analyzeClientFile(file)
 		);
 		mediaFile.file = file;
 		mediaFile.size = file.size;
 		mediaFile.isFromPositionStep = isFromPositionStep ?? false;
+
+		// XMLHttpRequest statt fetch (Begründung in uploadUtils.ts): Nur so lässt
+		// sich der Fortschritt des Request-Bodys melden und die Übertragung
+		// abbrechen — beides nötig, damit ein 100-MB-Video über Mobilfunk nicht als
+		// hängengeblieben gilt.
+		const handle = uploadFileDirect(file, referenceId, mediaFile.uid, (progress) => {
+			mediaFile.uploadPercent = progress.percent;
+		});
+		mediaFile.abortUpload = handle.abort;
+		mediaFile.uploadedFile = handle.result.finally(() => {
+			mediaFile.uploadPercent = undefined;
+		});
 		// Beide Ketten tragen einen Rejection-Zweig. Ohne ihn erzeugt jedes
 		// `.then(...)` eine neue, abgelehnte Promise, die niemandem gehört — im
 		// Browser eine `unhandledrejection` auf der Konsole, in Node ein
@@ -141,8 +161,12 @@ export class MediaFile {
 		mediaFile.exifData = fileInfo.exifData as ExifData | null | undefined;
 		// Abgesicherte Media-Route statt direktem /uploads-Zugriff (Freigabe-/Admin-Prüfung)
 		mediaFile.thumbnail = `/api/media/${fileInfo.filePath}`;
+		// `timestamp` ist ein gewöhnliches Klassenfeld, kein `$state` — Svelte
+		// proxyt Klasseninstanzen nicht (siehe Kommentar zu `analyzed` oben), ein
+		// `SvelteDate` wäre hier also nur ein irreführendes Signal ohne Wirkung.
 		mediaFile.timestamp = mediaFile.exifData?.dateTimeOriginal
-			? new Date(mediaFile.exifData.dateTimeOriginal)
+			? // eslint-disable-next-line svelte/prefer-svelte-reactivity
+				new Date(mediaFile.exifData.dateTimeOriginal)
 			: null;
 		// Wiederhergestellte Datei: Die EXIF-Auswertung liegt bereits hinter uns,
 		// `fileInfo` trägt das Ergebnis. Bewusst sofort und zusätzlich zum

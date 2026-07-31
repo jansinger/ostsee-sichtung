@@ -1,8 +1,8 @@
-import { FILE_VALIDATION_PRESETS } from '$lib/constants/upload';
-import { ANONYMOUS_UPLOAD_MAX_SIZE_BYTES } from '$lib/constants/uploadDefaults';
+import { FILE_VALIDATION_PRESETS, UPLOAD_ERROR_MESSAGES } from '$lib/constants/upload';
+import { maxUploadSizeFor } from '$lib/constants/uploadLimits';
 import { createLogger } from '$lib/logger.server';
 import { getClientIp } from '$lib/server/utils/getClientIp';
-import { saveUploadedFile } from '$lib/server/db/sightingFilesRepository';
+import { saveUploadedFile, sumFileSizesForReference } from '$lib/server/db/sightingFilesRepository';
 import { getOrCreateUploadUid } from '$lib/server/auth/uploadOwnership';
 import { readImageExifData } from '$lib/server/media/exifUtils';
 import { getStorageProvider } from '$lib/server/storage/factory';
@@ -15,6 +15,7 @@ import {
 	createRateLimitIdentifier,
 	buildRateLimitHeaders
 } from '$lib/server/middleware/rateLimit';
+import { consumeByteBudget, type ByteBudget } from '$lib/server/middleware/byteBudget';
 import { isCuid } from '@paralleldrive/cuid2';
 import { error, isHttpError, json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
@@ -53,42 +54,109 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 			throw error(400, 'Upload ID ist erforderlich');
 		}
 
-		// Security: Stricter limits for unauthenticated users.
-		// Der anonyme Wert kommt aus derselben Quelle wie die öffentliche
-		// Upload-Konfiguration — sonst nimmt die Dropzone Dateien an, die hier
-		// mit 413 scheitern (siehe uploadLimitConsistency.test.ts).
-		const MAX_SIZE_ANONYMOUS = ANONYMOUS_UPLOAD_MAX_SIZE_BYTES;
-		const MAX_SIZE_AUTHENTICATED = 50 * 1024 * 1024; // 50MB for authenticated users
+		// Rate limiting based on authentication status. Identifier und Ergebnis
+		// werden hier (statt erst nach der Größenprüfung) ermittelt, weil die
+		// Byte-Budget-Prüfung unten denselben Identifier braucht.
+		const rateLimitConfig = isAuthenticated
+			? RATE_LIMITS.FILE_UPLOAD_AUTHENTICATED
+			: RATE_LIMITS.FILE_UPLOAD_ANONYMOUS;
 
-		if (!isAuthenticated && file.size > MAX_SIZE_ANONYMOUS) {
+		const rateLimitIdentifier = createRateLimitIdentifier(
+			userIdentifier,
+			clientIp,
+			isAuthenticated
+		);
+
+		const rateLimitResult = enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'file_upload');
+
+		// Die Konfiguration ist die einzige Autorität für Größen — dieselbe
+		// Quelle, aus der /api/config/upload die Dropzone speist. Zwei getrennte
+		// Zahlen (anonym/angemeldet) waren nur nötig, solange die öffentliche
+		// Auskunft statisch war; siehe docs/VIDEO_UPLOAD_KONZEPT_2026-07-31.md.
+		const uploadConfig = await ServerConfigService.getUploadConfig();
+		const maxSize = maxUploadSizeFor(file.type, {
+			maxFileSize: uploadConfig.maxFileSizeBytes,
+			maxVideoFileSize: uploadConfig.maxVideoFileSizeBytes
+		});
+
+		if (file.size > maxSize) {
 			logger.warn(
 				{
 					action: 'file_upload_rejected',
 					reason: 'size_limit_exceeded',
 					user: userIdentifier,
+					authenticated: isAuthenticated,
 					clientIp,
 					fileName: file.name,
+					fileType: file.type,
 					fileSize: file.size,
-					maxAllowed: MAX_SIZE_ANONYMOUS
+					maxAllowed: maxSize
 				},
-				'Anonymous upload rejected - file too large'
+				'Upload rejected - file too large'
 			);
-			throw error(413, 'Datei zu groß. Für größere Dateien bitte anmelden.');
+			throw error(
+				413,
+				UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(file.name, maxSize, file.size, file.type)
+			);
 		}
 
-		if (isAuthenticated && file.size > MAX_SIZE_AUTHENTICATED) {
+		// Gesamtlimit je Meldung. Die referenceId kommt vom Client und wird nur
+		// gegen isCuid() geprüft — dieses Limit ist deshalb KEINE Missbrauchsbremse
+		// (die übernimmt das Byte-Budget unten), sondern schützt eine ehrliche
+		// Meldung davor, unbemerkt anzuwachsen (zehn 100-MB-Videos wären sonst
+		// 1 GB pro Meldung). Bewusst VOR dem Byte-Budget geprüft: Der Melder
+		// erfährt so den konkreteren Fehler (wie viel die Meldung schon enthält),
+		// und ein Versuch, der nur das Meldungs-Limit sprengt, belastet nicht die
+		// stündliche IP-Missbrauchsbremse — die bleibt für tatsächlichen Missbrauch
+		// reserviert.
+		const alreadyUploaded = await sumFileSizesForReference(referenceId);
+		if (alreadyUploaded + file.size > uploadConfig.maxTotalUploadSizeBytes) {
 			logger.warn(
 				{
 					action: 'file_upload_rejected',
-					reason: 'size_limit_exceeded',
+					reason: 'total_size_limit_exceeded',
 					user: userIdentifier,
-					fileName: file.name,
+					clientIp,
+					referenceId,
+					alreadyUploaded,
 					fileSize: file.size,
-					maxAllowed: MAX_SIZE_AUTHENTICATED
+					maxAllowed: uploadConfig.maxTotalUploadSizeBytes
 				},
-				'Authenticated upload rejected - file too large'
+				'Upload rejected - total size for this report exceeded'
 			);
-			throw error(413, `Datei zu groß. Maximale Größe: ${MAX_SIZE_AUTHENTICATED / 1024 / 1024}MB`);
+			throw error(
+				413,
+				`Die Meldung enthält bereits ${Math.round(alreadyUploaded / 1024 / 1024)} MB. Insgesamt sind ${uploadConfig.maxTotalUploadSize} MB erlaubt.`
+			);
+		}
+
+		// Volumen-Bremse. Der Zähler oben begrenzt die Anzahl der Uploads, nicht
+		// ihr Volumen; bei 100 MB je Video wären 20 Uploads 2 GB pro Stunde und
+		// IP. Das ist die Missbrauchsbremse — anders als das Gesamtlimit oben
+		// gilt sie über alle Meldungen einer IP/eines Nutzers hinweg.
+		const byteBudget: ByteBudget = isAuthenticated
+			? RATE_LIMITS.UPLOAD_BYTES_AUTHENTICATED
+			: RATE_LIMITS.UPLOAD_BYTES_ANONYMOUS;
+		const budgetResult = consumeByteBudget(rateLimitIdentifier, file.size, byteBudget);
+
+		if (!budgetResult.allowed) {
+			logger.warn(
+				{
+					action: 'file_upload_rejected',
+					reason: 'byte_budget_exhausted',
+					user: userIdentifier,
+					authenticated: isAuthenticated,
+					clientIp,
+					fileSize: file.size,
+					usedBytes: budgetResult.usedBytes,
+					remainingBytes: budgetResult.remainingBytes
+				},
+				'Upload rejected - hourly byte budget exhausted'
+			);
+			throw error(
+				429,
+				`Sie haben in der letzten Stunde bereits ${Math.round(budgetResult.usedBytes / 1024 / 1024)} MB übertragen. Bitte versuchen Sie es später erneut.`
+			);
 		}
 
 		// Security audit logging
@@ -107,26 +175,11 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress, 
 			'File upload initiated'
 		);
 
-		// Rate limiting based on authentication status
-		const rateLimitConfig = isAuthenticated
-			? RATE_LIMITS.FILE_UPLOAD_AUTHENTICATED
-			: RATE_LIMITS.FILE_UPLOAD_ANONYMOUS;
-
-		const rateLimitIdentifier = createRateLimitIdentifier(
-			userIdentifier,
-			clientIp,
-			isAuthenticated
-		);
-
-		const rateLimitResult = enforceRateLimit(rateLimitIdentifier, rateLimitConfig, 'file_upload');
-
-		// Get upload configuration from database
-		const uploadConfig = await ServerConfigService.getUploadConfig();
-
 		// Create dynamic validation preset using configuration
 		const dynamicPreset = {
 			allowedTypes: uploadConfig.allowedTypes,
 			maxFileSize: uploadConfig.maxFileSizeBytes,
+			maxVideoFileSize: uploadConfig.maxVideoFileSizeBytes,
 			maxFiles: FILE_VALIDATION_PRESETS.MEDIA.maxFiles,
 			accept: uploadConfig.allowedTypes
 				.map((type) =>

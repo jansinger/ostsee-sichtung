@@ -1149,11 +1149,32 @@ paths:
       summary: Sichere Medien-Bereitstellung
       description: |
         Stellt Mediendateien mit Zugriffskontrolle bereit.
-        
+
         **Zugriffskontrolle:**
         - Öffentlicher Zugriff für genehmigte Sichtungen
         - Admin-Zugriff für nicht genehmigte Sichtungen
         - 404 für nicht existierende oder nicht autorisierte Dateien
+
+        **Caching:** Genehmigte Dateien sind CUID-benannt und unveränderlich
+        und bekommen `Cache-Control: public, max-age=31536000, immutable`.
+        Nicht genehmigte Dateien (nur per Admin-Zugriff erreichbar) bekommen
+        stattdessen `private, no-store` — geteilte Caches (CDN, Proxy) dürfen
+        sie nicht vorhalten, und eine spätere Ablehnung der Sichtung
+        invalidiert dadurch nichts Zwischengespeichertes.
+
+        **Range-Unterstützung:**
+        Die Route kündigt `Accept-Ranges: bytes` an und beantwortet einen
+        `Range`-Header mit `206 Partial Content`, sofern der Storage den
+        angeforderten Bereich tatsächlich liefert — sonst mit `200` und der
+        vollen Datei. Ein unerfüllbarer Bereich ergibt `416 Range Not
+        Satisfiable`. Nötig für Video-Seeking und Safari/iOS-Wiedergabe.
+
+        **Volumen-Bremse:**
+        Zusätzlich zum Anfragenzahl-Rate-Limit gilt ein stündliches
+        Byte-Budget je IP bzw. Nutzer (1 GB anonym, 5 GB authentifiziert). Es
+        bucht die tatsächlich ausgelieferte Menge — bei einer Teilanfrage die
+        Bereichslänge — und verhindert, dass ein `Range`-Header über die ganze
+        Datei das enge Anfragenzahl-Limit umgeht.
       parameters:
         - name: path
           in: path
@@ -1162,9 +1183,18 @@ paths:
           schema:
             type: string
             example: "sichtung-123/photo-abc123.jpg"
+        - name: Range
+          in: header
+          required: false
+          description: |
+            Byte-Bereich nach RFC 9110 (`bytes=start-end`), z. B. für
+            Video-Seeking. Mehrfach-Bereiche werden wie „kein Range" behandelt.
+          schema:
+            type: string
+            example: "bytes=0-1023"
       responses:
         '200':
-          description: Mediendatei erfolgreich bereitgestellt
+          description: Mediendatei erfolgreich bereitgestellt (vollständig)
           headers:
             Content-Type:
               description: MIME-Type der Datei
@@ -1182,10 +1212,10 @@ paths:
                 type: string
                 example: 'inline; filename="photo.jpg"'
             Cache-Control:
-              description: >-
-                Cache-Einstellungen. Freigegebene Medien werden langfristig
-                öffentlich gecacht; nicht freigegebene (nur für Admins
-                sichtbare) Medien dürfen nicht in geteilten Caches landen.
+              description: |
+                Cache-Einstellungen. `public, max-age=31536000, immutable` für
+                genehmigte Dateien, `private, no-store` für nicht genehmigte
+                (nur per Admin-Zugriff erreichbar).
               schema:
                 type: string
                 enum:
@@ -1196,6 +1226,11 @@ paths:
               schema:
                 type: string
                 example: '"abc123def456"'
+            Accept-Ranges:
+              description: Kündigt Range-Unterstützung an
+              schema:
+                type: string
+                example: "bytes"
           content:
             image/jpeg:
               schema:
@@ -1217,6 +1252,38 @@ paths:
               schema:
                 type: string
                 format: binary
+        '206':
+          description: |
+            Angeforderter Byte-Bereich (Partial Content). Wird nur gesendet,
+            wenn der Storage den Bereich tatsächlich liefert — antwortet der
+            Storage stattdessen mit der vollen Datei (z. B. ein CDN, das den
+            Range-Header ignoriert), sendet die Route `200` mit der vollen
+            Länge statt einer widersprüchlichen `206`-Antwort.
+          headers:
+            Content-Range:
+              description: Gelieferter Bereich und Gesamtgröße
+              schema:
+                type: string
+                example: "bytes 0-1023/1024000"
+            Content-Length:
+              description: Länge des gelieferten Bereichs in Bytes
+              schema:
+                type: integer
+                example: 1024
+            Accept-Ranges:
+              description: Kündigt Range-Unterstützung an
+              schema:
+                type: string
+                example: "bytes"
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
         '304':
           description: Not Modified (Cache-Hit)
         '404':
@@ -1227,6 +1294,29 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 message: "File not found"
+        '416':
+          description: Angeforderter Byte-Bereich ist nicht erfüllbar
+          headers:
+            Content-Range:
+              description: Gesamtgröße der Datei zur Orientierung
+              schema:
+                type: string
+                example: "bytes */1024000"
+        '429':
+          description: |
+            Stündliches Byte-Budget für die Auslieferung ausgeschöpft (1 GB/h
+            anonym, 5 GB/h authentifiziert je IP bzw. Nutzer). Gezählt wird die
+            tatsächlich ausgelieferte Menge — bei einer Teilanfrage die
+            Bereichslänge, nicht die Dateigröße. Ein `Range`-Header über die
+            ganze Datei (z. B. `bytes=0-`) bucht deshalb genauso viel wie eine
+            Anfrage ohne `Range`-Header; das reine Anfragenzahl-Limit oben
+            deckelt dieses Volumen nicht.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: "Sie haben in der letzten Stunde bereits sehr viele Daten von diesem Server geladen. Bitte versuchen Sie es später erneut."
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -1332,12 +1422,21 @@ paths:
       summary: Datei hochladen
       description: |
         Lädt eine Bild- oder Videodatei hoch.
-        
-        Unterstützte Formate:
-        - Bilder: JPEG, PNG, GIF, WebP, BMP, SVG
-        - Videos: MP4, AVI, MOV, WMV, FLV, WebM, MKV, M4V
-        
-        Maximale Dateigröße: 10 MB
+
+        Unterstützte Formate (sechs, aus `security.allowedFileTypes`):
+        - Bilder: JPEG, PNG, GIF, WebP (kein SVG — aus Sicherheitsgründen
+          ausdrücklich ausgeschlossen)
+        - Videos: MP4, QuickTime (MOV)
+
+        Maximale Dateigröße: konfigurationsabhängig und nach Medientyp getrennt
+        (Vorbelegung 10 MB für Bilder, 100 MB für Videos), im Admin-Bereich
+        änderbar über `security.maxFileSize` bzw. `security.maxVideoFileSize`.
+        Zusätzlich gilt ein Gesamtlimit je Meldung (`referenceId`, Vorbelegung
+        250 MB, `security.maxTotalUploadSize`) — es zählt die Summe aller
+        bereits für diese Meldung hochgeladenen Dateien zuzüglich der neuen.
+        Die aktuellen Werte liefert `GET /api/config/upload`. Eine Überschreitung
+        der Einzeldatei- oder der Gesamtgrenze ergibt `413`, ein nicht erlaubter
+        Dateityp `400`.
       requestBody:
         required: true
         content:
@@ -1361,7 +1460,9 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '413':
-          description: Datei zu groß
+          description: >-
+            Datei zu groß, oder die Meldung (`referenceId`) würde durch diese
+            Datei ihr Gesamtlimit überschreiten
           content:
             application/json:
               schema:
@@ -1372,6 +1473,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -1998,10 +2101,10 @@ paths:
                 type: integer
                 example: 1024000
             Cache-Control:
-              description: >-
-                Cache-Einstellungen. Freigegebene Medien werden öffentlich
-                gecacht; nicht freigegebene (nur für Admins sichtbare) Medien
-                dürfen nicht in geteilten Caches landen.
+              description: |
+                Cache-Einstellungen. `public, max-age=86400` für genehmigte
+                Dateien, `private, no-store` für nicht genehmigte (nur per
+                Admin-Zugriff erreichbar).
               schema:
                 type: string
                 enum:
@@ -3354,6 +3457,10 @@ components:
       required:
         - maxFileSize
         - maxFileSizeBytes
+        - maxVideoFileSize
+        - maxVideoFileSizeBytes
+        - maxTotalUploadSize
+        - maxTotalUploadSizeBytes
         - allowedTypes
         - accept
       properties:
@@ -3365,6 +3472,27 @@ components:
           type: integer
           description: Maximale Dateigröße in Bytes
           example: 10485760
+        maxVideoFileSize:
+          type: integer
+          description: Maximale Videodateigröße in MB
+          example: 100
+        maxVideoFileSizeBytes:
+          type: integer
+          description: Maximale Videodateigröße in Bytes
+          example: 104857600
+        maxTotalUploadSize:
+          type: integer
+          description: |
+            Gesamtlimit je Meldung in MB (`security.maxTotalUploadSize`), für
+            beide Authentifizierungsstufen identisch. Client-seitig der einzig
+            maßgebliche Wert — die Konstante `UPLOAD_LIMITS.MAX_TOTAL_SIZE` ist
+            nur noch der Offline-Fallback, wenn dieser Endpunkt nicht erreichbar
+            ist.
+          example: 250
+        maxTotalUploadSizeBytes:
+          type: integer
+          description: Gesamtlimit je Meldung in Bytes
+          example: 262144000
         allowedTypes:
           type: array
           items:

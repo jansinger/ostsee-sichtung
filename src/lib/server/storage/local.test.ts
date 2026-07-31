@@ -7,6 +7,7 @@
 import type { UploadOptions } from '$lib/types';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Readable } from 'stream';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LocalStorageProvider } from './local';
 
@@ -17,7 +18,8 @@ vi.mock('fs', () => ({
 	existsSync: vi.fn(),
 	statSync: vi.fn(),
 	readdirSync: vi.fn(),
-	mkdirSync: vi.fn()
+	mkdirSync: vi.fn(),
+	createReadStream: vi.fn()
 }));
 
 vi.mock('@paralleldrive/cuid2', () => ({
@@ -642,6 +644,55 @@ describe('LocalStorageProvider', () => {
 					'Invalid path: Directory traversal detected'
 				);
 			}
+		});
+	});
+
+	describe('getFileStream', () => {
+		/**
+		 * Die Datei nutzt vollständig gemocktes `fs` (siehe vi.mock oben) statt eines
+		 * echten Temp-Verzeichnisses — die neuen Tests folgen diesem bestehenden Muster
+		 * statt ein eigenes mit echtem Dateisystemzugriff aufzubauen.
+		 */
+		it('liefert die ganze Datei ohne Bereichsangabe', async () => {
+			const filePath = 'ref-1/uid-1.txt';
+			(fs.existsSync as any).mockReturnValue(true);
+			(fs.statSync as any).mockReturnValue({ size: 10 });
+			(fs.createReadStream as any).mockReturnValue(Readable.from([Buffer.from('0123456789')]));
+
+			const result = await provider.getFileStream(filePath);
+
+			expect(result).not.toBeNull();
+			expect(result?.totalSize).toBe(10);
+			expect(result?.rangeDelivered).toBe(true);
+			expect(await new Response(result!.stream).text()).toBe('0123456789');
+			expect(fs.createReadStream).toHaveBeenCalledWith(expect.stringContaining(filePath));
+		});
+
+		it('liefert nur den angeforderten Bereich', async () => {
+			const filePath = 'ref-2/uid-2.txt';
+			(fs.existsSync as any).mockReturnValue(true);
+			(fs.statSync as any).mockReturnValue({ size: 10 });
+			(fs.createReadStream as any).mockReturnValue(Readable.from([Buffer.from('2345')]));
+
+			const result = await provider.getFileStream(filePath, { start: 2, end: 5 });
+
+			expect(result?.totalSize).toBe(10);
+			expect(result?.rangeDelivered).toBe(true);
+			expect(await new Response(result!.stream).text()).toBe('2345');
+			expect(fs.createReadStream).toHaveBeenCalledWith(expect.stringContaining(filePath), {
+				start: 2,
+				end: 5
+			});
+		});
+
+		it('liefert null für eine fehlende Datei', async () => {
+			(fs.existsSync as any).mockReturnValue(false);
+
+			expect(await provider.getFileStream('gibt-es-nicht.txt')).toBeNull();
+		});
+
+		it('liefert null bei einem Pfad außerhalb des Basisverzeichnisses', async () => {
+			expect(await provider.getFileStream('../../etc/passwd')).toBeNull();
 		});
 	});
 });

@@ -35,10 +35,14 @@ vi.mock('$lib/services/configService', () => ({
 		getUploadConfig: vi.fn().mockResolvedValue({
 			maxFileSize: 10,
 			maxFileSizeBytes: 10 * 1024 * 1024,
+			maxVideoFileSize: 100,
+			maxVideoFileSizeBytes: 100 * 1024 * 1024,
+			maxTotalUploadSize: 200,
+			maxTotalUploadSizeBytes: 200 * 1024 * 1024,
 			allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 		})
 	},
-	DEFAULT_VALUES: {}
+	DEFAULT_CONFIG_VALUES: {}
 }));
 
 vi.mock('$lib/server/services/configInitializer', () => ({

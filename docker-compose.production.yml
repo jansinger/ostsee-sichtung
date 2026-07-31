@@ -73,7 +73,7 @@ services:
 
       # Application Settings
       PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3000}
-      BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-52428800}
+      BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-125829120}
 
       # Reverse-Proxy / Client-IP-Auflösung (adapter-node)
       # WICHTIG: Die App läuft hinter einem Reverse Proxy (Nginx/Caddy). Damit

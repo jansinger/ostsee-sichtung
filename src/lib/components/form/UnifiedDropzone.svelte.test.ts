@@ -18,6 +18,7 @@ import { validateFiles } from '$lib/utils';
 const mockConfig: ValidationPreset = {
 	allowedTypes: ['image/jpeg', 'image/png'],
 	maxFileSize: 10 * 1024 * 1024,
+	maxVideoFileSize: 10 * 1024 * 1024,
 	maxFiles: 5,
 	accept: 'image/jpeg,image/png'
 };
@@ -182,6 +183,27 @@ describe('UnifiedDropzone', () => {
 			render(UnifiedDropzone, { config: mockConfig, multiple: true });
 			const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
 			expect(fileInput.multiple).toBe(true);
+		});
+	});
+
+	describe('accept-Attribut (Befund I3)', () => {
+		it('übernimmt config.accept statt es aus allowedTypes neu zu berechnen', async () => {
+			// config.accept kommt vom Server (gruppiert zu image/*,video/*) und ist
+			// bewusst NICHT identisch mit allowedTypes.join(',') — nur so zeigt der
+			// Test, dass die Komponente das Feld tatsächlich liest statt es zu
+			// ignorieren und selbst aus allowedTypes zu bauen.
+			const configWithGroupedAccept: ValidationPreset = {
+				allowedTypes: ['image/jpeg', 'image/png', 'video/mp4'],
+				maxFileSize: 10 * 1024 * 1024,
+				maxVideoFileSize: 100 * 1024 * 1024,
+				maxFiles: 5,
+				accept: 'image/*,video/*'
+			};
+
+			render(UnifiedDropzone, { config: configWithGroupedAccept });
+
+			const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+			expect(fileInput.accept).toBe('image/*,video/*');
 		});
 	});
 

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { setFormContext } from '$lib/report/formContext';
 	import type { FormContext } from '$lib/report/types';
-	import type { MediaStore } from '$lib/utils/media/MediaFile';
+	import type { MediaStore } from '$lib/utils/media/MediaFile.svelte';
 	import { type Snippet, untrack } from 'svelte';
 
 	import { createForm, type FormProps } from '$lib/form/createForm';

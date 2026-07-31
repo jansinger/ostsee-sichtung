@@ -9,9 +9,15 @@ import {
 	UPLOAD_LIMITS,
 	type FILE_VALIDATION_PRESETS
 } from '$lib/constants/upload';
+import { maxUploadSizeFor } from '$lib/constants/uploadLimits';
 
 import type { ValidationPreset, ValidationResult } from '$lib/types';
-import { isImageFile, isMediaFile, isVideoFile } from '$lib/utils/file/fileType';
+import {
+	describeFileFormats,
+	isImageFile,
+	isMediaFile,
+	isVideoFile
+} from '$lib/utils/file/fileType';
 
 /**
  * Validates a single file against specified criteria
@@ -43,8 +49,9 @@ export function validateFile(file: File, preset: ValidationPreset): ValidationRe
 		errors.push(UPLOAD_ERROR_MESSAGES.EMPTY_FILE(file.name));
 	}
 
-	if (file.size > preset.maxFileSize) {
-		errors.push(UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(file.name, preset.maxFileSize));
+	const maxSize = maxUploadSizeFor(file.type, preset);
+	if (file.size > maxSize) {
+		errors.push(UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(file.name, maxSize, file.size, file.type));
 	}
 
 	// Check MIME type
@@ -73,10 +80,14 @@ export function validateFiles(files: File[], preset: ValidationPreset): Validati
 		errors.push(UPLOAD_ERROR_MESSAGES.TOO_MANY_FILES(preset.maxFiles));
 	}
 
-	// Check total size
+	// Check total size. preset.maxTotalSize kommt aus der Laufzeit-Konfiguration
+	// (security.maxTotalUploadSize über GET /api/config/upload); die Konstante
+	// ist nur noch der Offline-Fallback, wenn kein Wert mitgegeben wurde
+	// (Befund I4 — vorher driftete diese Prüfung fest gegen 250 MB).
+	const maxTotalSize = preset.maxTotalSize ?? UPLOAD_LIMITS.MAX_TOTAL_SIZE;
 	const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-	if (totalSize > UPLOAD_LIMITS.MAX_TOTAL_SIZE) {
-		errors.push(UPLOAD_ERROR_MESSAGES.TOTAL_SIZE_EXCEEDED(UPLOAD_LIMITS.MAX_TOTAL_SIZE));
+	if (totalSize > maxTotalSize) {
+		errors.push(UPLOAD_ERROR_MESSAGES.TOTAL_SIZE_EXCEEDED(maxTotalSize));
 	}
 
 	// Validate each file individually
@@ -112,7 +123,12 @@ export function validateGPSPhotos(files: File[]): ValidationResult {
 		// Size limit for GPS photos
 		if (file.size > UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE) {
 			errors.push(
-				UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(file.name, UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE)
+				UPLOAD_ERROR_MESSAGES.FILE_TOO_LARGE(
+					file.name,
+					UPLOAD_LIMITS.PHOTO_GPS_MAX_SIZE,
+					file.size,
+					file.type
+				)
 			);
 		}
 	}
@@ -166,10 +182,10 @@ export const quickValidation = {
 	isSafeFilename: (filename: string): boolean => {
 		return Boolean(
 			filename &&
-				filename.trim() !== '' &&
-				!filename.includes('..') &&
-				!filename.includes('/') &&
-				!filename.includes('\\')
+			filename.trim() !== '' &&
+			!filename.includes('..') &&
+			!filename.includes('/') &&
+			!filename.includes('\\')
 		);
 	}
 };
@@ -200,25 +216,20 @@ export function getValidationPreset(
 	return {
 		allowedTypes: ALLOWED_MIME_TYPES.MEDIA,
 		maxFileSize: UPLOAD_LIMITS.MAX_FILE_SIZE,
+		maxVideoFileSize: UPLOAD_LIMITS.MAX_VIDEO_FILE_SIZE,
 		maxFiles: UPLOAD_LIMITS.MAX_FILES,
 		accept: 'image/*,video/*'
 	};
 }
 
 /**
- * Generiert eine benutzerfreundliche Liste der erlaubten Dateitypen
+ * Generiert eine benutzerfreundliche Liste der erlaubten Dateitypen.
+ *
+ * Die Sonderfall-Tabelle liegt zentral in `$lib/utils/file/fileType.ts`
+ * (`describeFileFormats`) — dort auch für `UPLOAD_ERROR_MESSAGES.INVALID_TYPE`
+ * in `$lib/constants/upload.ts` genutzt, damit beide Stellen für dieselben
+ * MIME-Typen dieselben Formatnamen liefern.
  */
-export function getFileTypeDescription(allowedTypes: string[]): string {
-	const extensions = allowedTypes.map((type) => {
-		const extension = type.split('/')[1]?.toUpperCase();
-		// Spezielle Behandlung für bekannte Typen
-		switch (extension) {
-			case 'JPEG':
-				return 'JPG';
-			default:
-				return extension;
-		}
-	});
-
-	return extensions.join(', ');
+export function getFileTypeDescription(allowedTypes: readonly string[]): string {
+	return describeFileFormats(allowedTypes);
 }

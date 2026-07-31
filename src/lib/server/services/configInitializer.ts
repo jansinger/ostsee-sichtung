@@ -117,8 +117,20 @@ const defaultConfigurations: ConfigItem[] = [
 		category: 'security'
 	},
 	{
+		key: 'security.maxVideoFileSize',
+		value: 100,
+		description: 'Maximale Dateigröße für Video-Uploads in MB',
+		category: 'security'
+	},
+	{
+		key: 'security.maxTotalUploadSize',
+		value: 250,
+		description: 'Maximale Gesamtgröße aller Dateien einer Meldung in MB',
+		category: 'security'
+	},
+	{
 		key: 'security.allowedFileTypes',
-		value: ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime'],
+		value: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'],
 		description: 'Erlaubte MIME-Typen für Datei-Uploads',
 		category: 'security'
 	},

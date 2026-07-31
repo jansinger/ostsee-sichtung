@@ -27,7 +27,7 @@
 	import { splitDateTime } from '$lib/utils/format/dateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { isInBalticArea } from '$lib/utils/geo/checkBalticSea';
-	import { MediaFile } from '$lib/utils/media/MediaFile';
+	import { MediaFile } from '$lib/utils/media/MediaFile.svelte';
 	import { deleteMultipleFiles } from '$lib/utils/upload/fileProcessing';
 	import {
 		shouldResetExifPosition,
@@ -352,9 +352,19 @@
 					createToast('success', 'Datei erfolgreich hochgeladen.');
 				})
 				.catch((error) => {
-					logger.error({ error }, 'Fehler beim Hochladen der Datei.');
+					// Ein gewollter Abbruch (Abbrechen-Knopf) ist kein Fehler — dafür
+					// kein Fehler-Toast. Die Servermeldung wird sonst durchgereicht statt
+					// durch einen generischen Text ersetzt: Task 12 hat den 413-Text
+					// (tatsächliche Größe, Grenze, Ausweg per E-Mail) sorgfältig
+					// formuliert, und der wäre hier sonst verloren.
+					const wasAborted = error instanceof Error && /abgebrochen/i.test(error.message);
+					if (wasAborted) {
+						logger.info({ uid: mediaFile.uid }, 'Upload vom Melder abgebrochen');
+					} else {
+						logger.error({ error }, 'Fehler beim Hochladen der Datei.');
+						createToast('error', error instanceof Error ? error.message : 'Fehler beim Hochladen');
+					}
 					deleteFile(mediaFile.uid);
-					createToast('error', 'Fehler beim Hochladen der Datei');
 				});
 			// Trigger positionMediaFile update when metadata is ready
 			//
@@ -574,12 +584,30 @@
 												<div class="loading loading-spinner loading-sm text-on-scrim"></div>
 											</div>
 
-											<!-- Upload progress indicator -->
+											<!-- Prozent statt „Upload…": Bei einem Video von 100 MB steht der
+											     Spinner sonst minutenlang unverändert da, und der Melder hält
+											     die Übertragung für hängengeblieben. -->
 											<div
-												class="bg-info text-info-content absolute top-1 left-1 rounded px-1.5 py-0.5 text-xs"
+												class="bg-info text-info-content absolute top-1 left-1 rounded px-1.5 py-0.5 text-xs tabular-nums"
 											>
-												Upload...
+												{mediaFile.uploadPercent !== undefined
+													? `${mediaFile.uploadPercent} %`
+													: 'Upload…'}
 											</div>
+
+											{#if mediaFile.abortUpload}
+												<!-- Kein `min-h-11 min-w-11` nötig: `.btn-circle` bezieht das
+												     44-px-Touch-Target bereits zentral aus app.css
+												     (Touch-Targets-Block). -->
+												<button
+													type="button"
+													class="btn btn-circle btn-sm btn-ghost text-on-scrim absolute right-1 bottom-1"
+													onclick={() => mediaFile.abortUpload?.()}
+													aria-label={`Upload von ${mediaFile.fileName} abbrechen`}
+												>
+													<Icon icon="lucide:x" width="16" aria-hidden="true" />
+												</button>
+											{/if}
 										{:then}
 											<!-- Remove button. `min-h-11 min-w-11` hält das 44-px-Touch-Target
 											     (design-system.md); der Button ist absolut positioniert und

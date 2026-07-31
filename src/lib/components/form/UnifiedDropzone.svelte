@@ -60,8 +60,25 @@
 	let isDragOver = $state(false);
 	let fileInput: HTMLInputElement;
 
+	// Bleibender Fehlerbereich statt nur Toast: Ein Toast verschwindet nach
+	// Sekunden, und ein Validierungsfehler ohne Verknüpfung zum Bedienelement
+	// verletzt WCAG 2.1 SC 3.3.1. Der Toast bleibt zusätzlich — er meldet den
+	// Fehler denen, die gerade woanders auf der Seite sind.
+	let rejectionErrors = $state<string[]>([]);
+
+	// `role="alert"` ist assertive: Der Screenreader liest den Inhalt sofort und
+	// vollständig vor. Bei zehn abgelehnten Dateien wären das zehn Zeilen am Stück.
+	// Drei plus Zähler sagen dasselbe und bleiben hörbar.
+	const MAX_VISIBLE_ERRORS = 3;
+	let visibleRejectionErrors = $derived(rejectionErrors.slice(0, MAX_VISIBLE_ERRORS));
+	let hiddenRejectionCount = $derived(Math.max(0, rejectionErrors.length - MAX_VISIBLE_ERRORS));
+
 	// Generate unique ID for the input
 	const inputId = `dropzone-${Math.random().toString(36).substring(2, 9)}`;
+	// Von inputId abgeleitet statt einer fest verdrahteten Zeichenkette: Zwei
+	// Dropzones auf derselben Seite hatten sonst dieselbe `#dropzone-errors`-ID,
+	// und `aria-describedby` konnte auf die falsche Instanz verweisen.
+	const errorsId = `${inputId}-errors`;
 
 	function handleFileSelect(event: Event) {
 		const target = event.target as HTMLInputElement;
@@ -93,10 +110,12 @@
 		const validation = validateFiles(newFiles, config);
 
 		if (validation.errors.length > 0) {
-			// Zeige Fehler als Toast
+			rejectionErrors = validation.errors;
 			validation.errors.forEach((error) => {
 				createToast('error', error);
 			});
+		} else {
+			rejectionErrors = [];
 		}
 
 		if (validation.validFiles && validation.validFiles.length > 0) {
@@ -263,8 +282,11 @@
 		<input
 			bind:this={fileInput}
 			id={inputId}
+			data-testid="dropzone-input"
+			aria-describedby={rejectionErrors.length > 0 ? errorsId : undefined}
+			aria-invalid={rejectionErrors.length > 0}
 			type="file"
-			accept={config.allowedTypes.join(',')}
+			accept={config.accept}
 			{multiple}
 			class="hidden"
 			onchange={handleFileSelect}
@@ -306,4 +328,33 @@
 			</div>
 		{/if}
 	</div>
+
+	{#if rejectionErrors.length > 0}
+		<!-- Alerts sind in diesem Projekt Soft-Tints (app.css-Override, daisyui.md):
+		     Text ist base-content, die Statusfarbe gehört als Akzent auf das Icon.
+		     `text-error-strong`, NICHT `text-error` — design-system.md verlangt für
+		     Icons und Text durchgängig die -strong-Variante. -->
+		<div
+			id={errorsId}
+			data-testid="dropzone-errors"
+			role="alert"
+			class="alert alert-error mt-3 items-start"
+		>
+			<Icon icon="lucide:circle-alert" width="20" class="text-error-strong" aria-hidden="true" />
+			<div class="text-sm">
+				<ul class="list-inside list-disc space-y-1">
+					<!-- Position als Key, nicht der Text: Zwei gleich große Dateien mit
+					     gleichem Namen erzeugen byte-identische Meldungen, und doppelte
+					     Keys sind in Svelte ein Laufzeitfehler. Die Liste wird ohnehin
+					     immer als Ganzes ersetzt — es gibt nichts zu erhalten. -->
+					{#each visibleRejectionErrors as message, index (index)}
+						<li>{message}</li>
+					{/each}
+				</ul>
+				{#if hiddenRejectionCount > 0}
+					<p class="mt-1 opacity-80">und {hiddenRejectionCount} weitere</p>
+				{/if}
+			</div>
+		</div>
+	{/if}
 </div>

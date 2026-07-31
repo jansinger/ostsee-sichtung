@@ -17,9 +17,18 @@ export interface ValidationResult {
  */
 export interface ValidationPreset {
 	allowedTypes: readonly string[];
+	/** Grenze für Bilder und alles Übrige, in Bytes */
 	maxFileSize: number;
+	/** Grenze für `video/*`, in Bytes. Siehe $lib/constants/uploadLimits */
+	maxVideoFileSize: number;
 	maxFiles: number;
 	accept: string;
+	/**
+	 * Gesamtlimit je Meldung, in Bytes (`security.maxTotalUploadSize`).
+	 * Optional: fehlt es, fällt `validateFiles()` auf `UPLOAD_LIMITS.MAX_TOTAL_SIZE`
+	 * zurück (Offline-Fallback, siehe `$lib/constants/upload.ts`) — Befund I4.
+	 */
+	maxTotalSize?: number;
 }
 
 /**

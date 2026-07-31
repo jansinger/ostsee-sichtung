@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BrowserFileMetadata, UploadedFileInfo } from '$lib/types';
+import type { UploadHandle } from '$lib/utils/uploadUtils';
 
 /**
- * Warum dieser Test in Node und nicht im Browser läuft: `MediaFile` ist eine
- * schlichte Klasse. Die beiden Abhängigkeiten, die einen Browser bräuchten
- * (EXIF-Auswertung, Upload), werden hier ersetzt — geprüft wird ausschließlich
- * der Lebenszyklus der Klasse selbst.
+ * `MediaFile` ist eine `$state`-tragende Klasse (`uploadPercent`) und lebt
+ * deshalb seit Task 13a in einem Rune-Modul (`MediaFile.svelte.ts`) — das läuft
+ * nur im Browser-Testlauf (`npm run test:unit:client`), nicht mehr in Node. Die
+ * beiden Abhängigkeiten, die ohnehin einen Browser bräuchten (EXIF-Auswertung,
+ * Upload), werden hier weiterhin ersetzt — geprüft wird ausschließlich der
+ * Lebenszyklus der Klasse selbst.
  *
  * Warum es diesen Test überhaupt gibt: `analyzed` ist die einzige Quelle, aus
  * der das Positions-Panel „wird gerade ausgewertet" von „dieses Foto hat kein
@@ -14,12 +17,12 @@ import type { BrowserFileMetadata, UploadedFileInfo } from '$lib/types';
  * jemals umspringt, prüfte niemand.
  */
 const analyzeClientFile = vi.hoisted(() => vi.fn<(file: File) => Promise<BrowserFileMetadata>>());
-const uploadFileDirect = vi.hoisted(() => vi.fn<() => Promise<UploadedFileInfo>>());
+const uploadFileDirect = vi.hoisted(() => vi.fn<(...args: unknown[]) => UploadHandle>());
 
 vi.mock('$lib/utils/client/fileAnalysis', () => ({ analyzeClientFile }));
 vi.mock('$lib/utils/uploadUtils', () => ({ uploadFileDirect }));
 
-const { MediaFile } = await import('./MediaFile');
+const { MediaFile } = await import('./MediaFile.svelte');
 
 function imageFile(): File {
 	return new File(['x'], 'foto.jpg', { type: 'image/jpeg' });
@@ -48,7 +51,10 @@ function uploadedFileInfo(): UploadedFileInfo {
 
 beforeEach(() => {
 	vi.clearAllMocks();
-	uploadFileDirect.mockReturnValue(new Promise<UploadedFileInfo>(() => {}));
+	uploadFileDirect.mockReturnValue({
+		result: new Promise<UploadedFileInfo>(() => {}),
+		abort: vi.fn()
+	});
 });
 
 describe('MediaFile — Lebenszyklus von `analyzed`', () => {
@@ -177,29 +183,111 @@ describe('MediaFile — Markierung des Positions-Schritts', () => {
 });
 
 /**
+ * Task 13a verdrahtet `createMediaFile` mit `uploadFileDirect`: gemeldeter
+ * Fortschritt landet in `uploadPercent`, `abortUpload` zeigt auf die
+ * `abort`-Funktion des Handles, und `uploadPercent` fällt nach Abschluss —
+ * ob erfolgreich oder nicht — wieder auf `undefined`. Ohne diese Verdrahtung
+ * bliebe die Prozentanzeige stehen, während ein 100-MB-Video im Hintergrund
+ * längst fertig oder abgebrochen ist.
+ */
+describe('MediaFile — Fortschrittsanzeige und Abbruch des Uploads', () => {
+	it('übernimmt einen gemeldeten Fortschritt in uploadPercent', () => {
+		analyzeClientFile.mockResolvedValue(metadata());
+		let reportProgress:
+			| ((progress: { loadedBytes: number; totalBytes: number; percent: number }) => void)
+			| undefined;
+		uploadFileDirect.mockImplementation((...args: unknown[]) => {
+			reportProgress = args[3] as typeof reportProgress;
+			return {
+				result: new Promise<UploadedFileInfo>(() => {}),
+				abort: vi.fn()
+			};
+		});
+
+		const mediaFile = MediaFile.createMediaFile('ref', imageFile(), true);
+		reportProgress?.({ loadedBytes: 50, totalBytes: 100, percent: 50 });
+
+		expect(mediaFile.uploadPercent).toBe(50);
+	});
+
+	it('setzt uploadPercent nach erfolgreichem Abschluss wieder zurück', async () => {
+		analyzeClientFile.mockResolvedValue(metadata());
+		uploadFileDirect.mockReturnValue({
+			result: Promise.resolve(uploadedFileInfo()),
+			abort: vi.fn()
+		});
+
+		const mediaFile = MediaFile.createMediaFile('ref', imageFile(), true);
+		mediaFile.uploadPercent = 42;
+
+		await mediaFile.uploadedFile;
+
+		expect(mediaFile.uploadPercent).toBeUndefined();
+	});
+
+	/**
+	 * Sonst bliebe die Anzeige an einer Kachel kleben, die gar nicht mehr
+	 * hochlädt — genau das Fehlszenario aus dem Review zu Task 13a.
+	 */
+	it('setzt uploadPercent auch nach einem fehlgeschlagenen Upload wieder zurück', async () => {
+		analyzeClientFile.mockResolvedValue(metadata());
+		uploadFileDirect.mockReturnValue({
+			result: Promise.reject(new Error('upload kaputt')),
+			abort: vi.fn()
+		});
+
+		const mediaFile = MediaFile.createMediaFile('ref', imageFile(), true);
+		mediaFile.uploadPercent = 77;
+
+		await expect(mediaFile.uploadedFile).rejects.toThrow('upload kaputt');
+
+		expect(mediaFile.uploadPercent).toBeUndefined();
+	});
+
+	it('ruft beim Abbrechen die abort-Funktion des Upload-Handles auf', () => {
+		analyzeClientFile.mockResolvedValue(metadata());
+		const abort = vi.fn();
+		uploadFileDirect.mockReturnValue({
+			result: new Promise<UploadedFileInfo>(() => {}),
+			abort
+		});
+
+		const mediaFile = MediaFile.createMediaFile('ref', imageFile(), true);
+		mediaFile.abortUpload?.();
+
+		expect(abort).toHaveBeenCalledOnce();
+	});
+});
+
+/**
  * Ablehnende Promises dürfen nicht als unbehandelte Rejection enden.
  *
  * `createMediaFile` hängt an beide injizierten Promises je ein `.then(...)`
  * OHNE Rejection-Zweig. Jedes davon erzeugt eine neue, abgelehnte Promise, die
- * niemandem gehört: Im Browser landet sie als `unhandledrejection` auf der
- * Konsole, in Node als `unhandledRejection` am Prozess. `handleFilesAdded`
- * (`DropzoneEnhanced.svelte`) hängt sein `.catch` an eine ANDERE Kette
- * (`uploadedFile.then(...).catch(...)`) und deckt diese hier nicht ab.
+ * niemandem gehört: Im Browser landet sie als `unhandledrejection` auf dem
+ * `window`. `handleFilesAdded` (`DropzoneEnhanced.svelte`) hängt sein `.catch`
+ * an eine ANDERE Kette (`uploadedFile.then(...).catch(...)`) und deckt diese
+ * hier nicht ab.
+ *
+ * Dieser Test lief vor Task 13a in Node und nutzte `process.on('unhandledRejection', …)`.
+ * Seit `MediaFile` `$state` trägt und deshalb nur im Browser-Lauf läuft (siehe
+ * Kommentar am Dateianfang), gibt es kein `process` mehr — der Browser meldet
+ * unbehandelte Rejections stattdessen als `unhandledrejection`-Event auf `window`.
  */
 describe('MediaFile — abgelehnte Promises', () => {
 	async function collectUnhandledRejections(run: () => Promise<void>): Promise<unknown[]> {
 		const reasons: unknown[] = [];
-		const listener = (reason: unknown): void => {
-			reasons.push(reason);
+		const listener = (event: PromiseRejectionEvent): void => {
+			reasons.push(event.reason);
 		};
-		process.on('unhandledRejection', listener);
+		window.addEventListener('unhandledrejection', listener);
 		try {
 			await run();
-			// Node meldet unbehandelte Rejections erst, wenn die Microtask-Queue
+			// Der Browser meldet unbehandelte Rejections erst, wenn die Microtask-Queue
 			// leergelaufen ist — ein Makrotask später ist der Befund vollständig.
 			await new Promise((resolve) => setTimeout(resolve, 20));
 		} finally {
-			process.off('unhandledRejection', listener);
+			window.removeEventListener('unhandledrejection', listener);
 		}
 		return reasons;
 	}
@@ -219,7 +307,10 @@ describe('MediaFile — abgelehnte Promises', () => {
 
 	it('behandelt eine abgelehnte Upload-Promise vollständig', async () => {
 		analyzeClientFile.mockResolvedValue(metadata());
-		uploadFileDirect.mockRejectedValue(new Error('upload kaputt'));
+		uploadFileDirect.mockReturnValue({
+			result: Promise.reject(new Error('upload kaputt')),
+			abort: vi.fn()
+		});
 
 		let mediaFile!: InstanceType<typeof MediaFile>;
 		const reasons = await collectUnhandledRejections(async () => {

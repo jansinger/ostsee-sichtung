@@ -1,3 +1,4 @@
+import { env } from '$env/dynamic/private';
 import { createLogger } from '$lib/logger.server';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { getClientIp } from '$lib/server/utils/getClientIp';
@@ -7,8 +8,22 @@ import {
 	canUserAccessConfigKey
 } from '$lib/server/config/accessControl';
 import { requireUserRole } from '$lib/server/auth/auth';
+import { warnIfBodySizeLimitTooLow } from '$lib/server/startup/bodySizeLimit';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+
+/**
+ * Konfigurationsschlüssel, deren Wert (in MB) die Upload-Grenze bildet, gegen
+ * die `BODY_SIZE_LIMIT` mindestens groß genug sein muss (Befund I1). Beim
+ * Serverstart prüft `hooks.server.ts` das einmal; `security.maxVideoFileSize`
+ * ist aber zur Laufzeit über diese Route änderbar — ohne erneute Prüfung hier
+ * würde ein Admin unbemerkt eine Grenze setzen, die der Node-Adapter auf
+ * Plattformebene gar nicht erst durchlässt.
+ */
+const BODY_SIZE_RELEVANT_CONFIG_KEYS = new Set([
+	'security.maxFileSize',
+	'security.maxVideoFileSize'
+]);
 
 const logger = createLogger('api:config');
 
@@ -67,6 +82,29 @@ export const PUT: RequestHandler = async ({
 				},
 				{ status: 403 }
 			);
+		}
+
+		// Befund I1: Dieselbe Prüfung wie beim Serverstart (hooks.server.ts),
+		// jetzt auch beim SCHREIBEN. Ohne sie könnte ein Admin
+		// security.maxVideoFileSize über die Plattformgrenze BODY_SIZE_LIMIT
+		// heben — die Dropzone verspricht dann sofort die neue Grenze, während
+		// der Node-Adapter Uploads darüber ohne die Fehlermeldung dieser
+		// Anwendung abbricht. Bewusst eine Ablehnung (400), keine bloße Warnung:
+		// Eine Warnung würde in den Server-Logs verschwinden, die der Admin beim
+		// Ändern einer Einstellung im UI nicht sieht — die inkonsistente
+		// Konfiguration bliebe unbemerkt live, bis der erste Melder daran
+		// scheitert. Der Admin muss stattdessen zuerst BODY_SIZE_LIMIT (und den
+		// Reverse-Proxy) anheben und neu starten, bevor die Anwendung die
+		// größere Grenze übernimmt.
+		if (BODY_SIZE_RELEVANT_CONFIG_KEYS.has(key) && typeof value === 'number') {
+			const warning = warnIfBodySizeLimitTooLow(env.BODY_SIZE_LIMIT, value * 1024 * 1024);
+			if (warning) {
+				logger.warn(
+					{ key, value, action: 'config_update_rejected', reason: 'body_size_limit_too_low' },
+					warning
+				);
+				return json({ success: false, error: warning }, { status: 400 });
+			}
 		}
 
 		await ConfigRepository.upsert(

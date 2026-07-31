@@ -5,6 +5,7 @@
 	import { formatWallClockDateTime } from '$lib/utils/format/formatWallClockDateTime';
 	import { formatLocation } from '$lib/utils/format/formatLocation';
 	import { maskEmail } from '$lib/utils/privacy/emailMask';
+	import { MEDIA_FALLBACK_EMAIL } from '$lib/constants/contact';
 	import Icon from '$lib/components/Icon.svelte';
 
 	// Success state management
@@ -49,7 +50,12 @@
 
 				<div class="space-y-4">
 					<div class="flex items-start gap-3">
-						<Icon icon="lucide:check-circle" width="24" height="24" class="text-success-strong mt-1" />
+						<Icon
+							icon="lucide:check-circle"
+							width="24"
+							height="24"
+							class="text-success-strong mt-1"
+						/>
 						<div>
 							<h3 class="font-semibold">Bestätigung per E-Mail</h3>
 							<p class="text-base-content/70 text-sm">
@@ -70,22 +76,29 @@
 						</div>
 					</div>
 
-					{#if submittedData?.mediaUpload}
-						<div class="flex items-start gap-3">
-							<Icon icon="lucide:camera" width="24" height="24" class="text-accent-strong mt-1" />
-							<div>
-								<h3 class="font-semibold">Medien-Upload</h3>
-								<p class="text-base-content/70 text-sm">
-									Ihre hochgeladenen Fotos und Videos wurden übermittelt und werden gemeinsam mit
-									Ihrer Sichtung geprüft
-								</p>
-							</div>
+					<div class="flex items-start gap-3">
+						<Icon icon="lucide:camera" width="24" height="24" class="text-accent-strong mt-1" />
+						<div>
+							<h3 class="font-semibold">Fotos und Videos</h3>
+							<p class="text-base-content/70 text-sm">
+								{#if submittedData?.mediaUpload}
+									Ihre Aufnahmen wurden übermittelt und werden gemeinsam mit Ihrer Sichtung geprüft.
+								{/if}
+								Waren Aufnahmen zu groß für den Upload, senden Sie sie bitte an
+								<a class="link" href="mailto:{MEDIA_FALLBACK_EMAIL}">{MEDIA_FALLBACK_EMAIL}</a> — mit
+								Datum und Uhrzeit der Sichtung, damit wir sie zuordnen können.
+							</p>
 						</div>
-					{/if}
+					</div>
 
 					{#if submittedData?.isDead}
 						<div class="flex items-start gap-3">
-							<Icon icon="lucide:triangle-alert" width="24" height="24" class="text-warning-strong mt-1" />
+							<Icon
+								icon="lucide:triangle-alert"
+								width="24"
+								height="24"
+								class="text-warning-strong mt-1"
+							/>
 							<div>
 								<h3 class="font-semibold">Totfund gemeldet</h3>
 								<p class="text-base-content/70 text-sm">

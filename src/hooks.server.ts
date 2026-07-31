@@ -6,7 +6,9 @@ import { closeDb } from '$lib/server/db';
 import { databaseCheck } from '$lib/server/middleware/databaseCheck';
 import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';
 import { createSecurityHeadersHandler } from '$lib/server/middleware/securityHeaders';
+import { warnIfBodySizeLimitTooLow } from '$lib/server/startup/bodySizeLimit';
 import { buildErrorLogFields } from '$lib/server/utils/errorChain';
+import { ServerConfigService } from '$lib/services/configService';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { randomUUID } from 'crypto';
@@ -147,3 +149,26 @@ if (typeof process !== 'undefined' && NODE_ENV !== 'test') {
 	process.once('SIGTERM', () => void gracefulShutdown('SIGTERM'));
 	process.once('SIGINT', () => void gracefulShutdown('SIGINT'));
 }
+
+// Einmalige Prüfung beim Start: Die Plattformgrenze für Request-Bodies muss
+// über der konfigurierten Upload-Grenze liegen, sonst bricht ein zu großer
+// Upload ab, bevor die Route ihre eigene Fehlermeldung erzeugen kann.
+//
+// Bewusst ohne await und mit eigenem catch: Ohne erreichbare Datenbank soll
+// der Serverstart nicht scheitern — die Warnung ist ein Hinweis, keine
+// Betriebsvoraussetzung.
+void (async () => {
+	try {
+		const uploadConfig = await ServerConfigService.getUploadConfig();
+		const maxUploadBytes = Math.max(
+			uploadConfig.maxFileSizeBytes,
+			uploadConfig.maxVideoFileSizeBytes
+		);
+		const warning = warnIfBodySizeLimitTooLow(env.BODY_SIZE_LIMIT, maxUploadBytes);
+		if (warning) {
+			logger.warn({ action: 'body_size_limit_too_low' }, warning);
+		}
+	} catch (error) {
+		logger.debug({ error }, 'Body size limit check skipped — configuration unavailable');
+	}
+})();

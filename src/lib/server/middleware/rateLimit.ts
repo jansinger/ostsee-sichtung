@@ -55,7 +55,19 @@ export const RATE_LIMITS = {
 	},
 	FILE_UPLOAD_AUTHENTICATED: {
 		windowMs: 60 * 60 * 1000, // 1 Stunde
-		maxRequests: 50 // 25 Uploads pro Stunde für authentifizierte User
+		maxRequests: 50 // 50 Uploads pro Stunde für authentifizierte User
+	},
+
+	// Volumen-Bremse neben dem Zähler. 300 MB reichen für drei Videos an der
+	// 100-MB-Grenze oder dreißig Fotos — mehr als eine ehrliche Meldung je
+	// braucht, und zwei Größenordnungen unter dem, was 20 × 100 MB wären.
+	UPLOAD_BYTES_ANONYMOUS: {
+		windowMs: 60 * 60 * 1000,
+		maxBytes: 300 * 1024 * 1024
+	},
+	UPLOAD_BYTES_AUTHENTICATED: {
+		windowMs: 60 * 60 * 1000,
+		maxBytes: 2 * 1024 * 1024 * 1024
 	},
 
 	// Media Access - moderate Limits
@@ -66,6 +78,44 @@ export const RATE_LIMITS = {
 	MEDIA_ACCESS_AUTHENTICATED: {
 		windowMs: 60 * 1000, // 1 Minute
 		maxRequests: 100 // 100 Media-Zugriffe pro Minute für authentifizierte User
+	},
+
+	// Teilanfragen eines laufenden Videos. Ein Player fordert beim Springen
+	// viele kleine Bereiche derselben, bereits freigegebenen Datei an — das ist
+	// eine Wiedergabe, kein wiederholter Zugriff. Die Bremse bleibt (ein
+	// Skript kann nicht unbegrenzt saugen), sie sitzt nur eine Größenordnung
+	// höher. Das reine Anfragenzahl-Limit hier deckelt nicht das Volumen — ein
+	// erfüllbarer Bereich über die ganze Datei zählt genauso wie ein einzelnes
+	// Kilobyte (Befund C1). Die Volumen-Bremse dafür ist `MEDIA_BYTES_*` unten.
+	MEDIA_RANGE_ANONYMOUS: {
+		windowMs: 60 * 1000,
+		maxRequests: 300
+	},
+	MEDIA_RANGE_AUTHENTICATED: {
+		windowMs: 60 * 1000,
+		maxRequests: 600
+	},
+
+	// Volumen-Bremse für die Auslieferung (Befund C1 im Abschlussreview). Das
+	// Rate Limit oben zählt nur die ANZAHL der Zugriffe — `Range: bytes=0-` ist
+	// ein erfüllbarer Bereich über die ganze Datei und bekommt dabei sogar das
+	// zehnfach höhere Range-Limit (300/min statt 30/min); bei 100-MB-Videos
+	// wären das theoretisch 30 GB pro Minute und IP, ohne Anmeldung.
+	//
+	// 1 GB/h anonym, 5 GB/h authentifiziert: großzügig für echte Nutzung — die
+	// öffentliche Karte lädt viele Fotos, ein Melder oder Admin sieht sich
+	// mehrere Videos an — und trotzdem zwei bis drei Größenordnungen unter dem,
+	// was die reine Anfragenzahl heute zulässt. Wirkt über `consumeByteBudget()`
+	// (`$lib/server/middleware/byteBudget.ts`), verbucht die tatsächlich
+	// ausgelieferte Menge (bei einer Teilanfrage die Bereichslänge, nicht die
+	// Dateigröße) und greift vor dem Streamen.
+	MEDIA_BYTES_ANONYMOUS: {
+		windowMs: 60 * 60 * 1000,
+		maxBytes: 1 * 1024 * 1024 * 1024
+	},
+	MEDIA_BYTES_AUTHENTICATED: {
+		windowMs: 60 * 60 * 1000,
+		maxBytes: 5 * 1024 * 1024 * 1024
 	},
 
 	// Aufräum-Endpunkt: ein Cron braucht wenige Aufrufe pro Tag, ein Angreifer viele
