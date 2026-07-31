@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { version as packageVersion } from '../../../../package.json';
 
 vi.mock('$env/dynamic/private', () => ({
 	env: { APP_GIT_SHA: 'abcdef1234567890', APP_BUILD_DATE: '2026-07-31T10:00:00Z' }
@@ -80,7 +81,7 @@ describe('getBuildInfo', () => {
 
 		const info = getBuildInfo();
 
-		expect(info.version).toBe('2.7.0');
+		expect(info.version).toBe(packageVersion);
 		expect(info.gitSha).toBe('abcdef1234567890');
 		expect(info.shortGitSha).toBe('abcdef1');
 		expect(info.buildDate).toBe('2026-07-31T10:00:00Z');

@@ -5,6 +5,7 @@
  * DB nicht erreichbar oder Fehler → 503 unhealthy.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { version as packageVersion } from '../../../package.json';
 
 const testDatabaseConnection = vi.fn();
 
@@ -43,7 +44,7 @@ describe('GET /health', () => {
 		const res = await GET(event);
 		const body = await res.json();
 
-		expect(body.version).toBe('2.7.0');
+		expect(body.version).toBe(packageVersion);
 		expect(body.gitSha).toBe('abcdef1');
 		expect(body.buildDate).toBe('2026-07-31T10:00:00Z');
 	});

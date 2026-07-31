@@ -51,11 +51,14 @@ echo "║                                           ║"
 echo "╚═══════════════════════════════════════════╝"
 echo ""
 
-# APP_VERSION/APP_GIT_SHA/APP_BUILD_DATE kommen aus den Docker-Build-Args
-# VERSION/VCS_REF/BUILD_DATE (siehe Dockerfile). Ein Image, das ohne diese
-# Build-Args gebaut wurde (z.B. lokal per `docker build .`), zeigt die
-# ARG-Defaults "dev"/"unknown" statt falsche Angaben vorzutäuschen.
-log_info "Version: ${APP_VERSION:-dev}"
+# Version aus package.json lesen — dieselbe Quelle, die die App selbst über
+# getBuildInfo() (versionInfo.ts) für /health und den strukturierten Startup-Log
+# verwendet. APP_VERSION (ARG-Default "dev", siehe Dockerfile) wird hier bewusst
+# NICHT gelesen: es würde bei einem Build ohne --build-arg VERSION="dev" zeigen,
+# während App-Log und /health im selben Container die echte package.json-Version
+# melden — zwei widersprüchliche Angaben für dieselbe laufende Instanz.
+APP_VERSION=$(node -p "require('/app/package.json').version" 2>/dev/null || echo "unknown")
+log_info "Version: ${APP_VERSION}"
 log_info "Commit:  ${APP_GIT_SHA:-unknown}"
 log_info "Built:   ${APP_BUILD_DATE:-unknown}"
 echo ""

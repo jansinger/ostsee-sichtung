@@ -136,7 +136,6 @@ ENV NODE_ENV=production \
     BODY_SIZE_LIMIT=125829120 \
     STORAGE_PROVIDER=local \
     UPLOAD_PATH=/app/uploads \
-    APP_VERSION=${VERSION} \
     APP_GIT_SHA=${VCS_REF} \
     APP_BUILD_DATE=${BUILD_DATE}
 
