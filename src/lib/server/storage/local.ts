@@ -4,9 +4,24 @@
  * Implements path normalization and validation to prevent directory traversal attacks
  */
 import { createLogger } from '$lib/logger.server';
-import type { FileMetadata, StorageProvider, UploadedFileInfo, UploadOptions } from '$lib/types';
-import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'fs';
+import type {
+	FileMetadata,
+	StorageFileStream,
+	StorageProvider,
+	UploadedFileInfo,
+	UploadOptions
+} from '$lib/types';
+import {
+	createReadStream,
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	statSync,
+	unlinkSync,
+	writeFileSync
+} from 'fs';
 import { basename, extname, join, normalize, relative, resolve } from 'path';
+import { Readable } from 'stream';
 
 const logger = createLogger('storage:local');
 
@@ -265,6 +280,36 @@ export class LocalStorageProvider implements StorageProvider {
 			return content;
 		} catch (error) {
 			logger.error({ error, filePath }, 'Failed to get file content');
+			return null;
+		}
+	}
+
+	async getFileStream(
+		filePath: string,
+		range?: { start: number; end: number }
+	): Promise<StorageFileStream | null> {
+		try {
+			const safePath = this.validatePath(filePath);
+			const fullPath = join(this.resolvedBaseDir, safePath);
+
+			if (!existsSync(fullPath)) {
+				logger.warn({ filePath: safePath }, 'File not found for stream');
+				return null;
+			}
+
+			const totalSize = statSync(fullPath).size;
+			const nodeStream = range
+				? createReadStream(fullPath, { start: range.start, end: range.end })
+				: createReadStream(fullPath);
+
+			logger.debug({ filePath: safePath, totalSize, range }, 'File stream opened');
+
+			return {
+				stream: Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>,
+				totalSize
+			};
+		} catch (error) {
+			logger.error({ error, filePath }, 'Failed to open file stream');
 			return null;
 		}
 	}

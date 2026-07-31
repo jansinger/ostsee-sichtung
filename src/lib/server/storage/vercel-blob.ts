@@ -21,7 +21,13 @@
  * - Öffentliche URLs: `https://[prefix].public.blob.vercel-storage.com/[path]`
  */
 import { createLogger } from '$lib/logger.server';
-import type { FileMetadata, StorageProvider, UploadedFileInfo, UploadOptions } from '$lib/types';
+import type {
+	FileMetadata,
+	StorageFileStream,
+	StorageProvider,
+	UploadedFileInfo,
+	UploadOptions
+} from '$lib/types';
 import { env } from '$env/dynamic/private';
 import { del, head, list, put } from '@vercel/blob';
 import { basename, extname } from 'path';
@@ -418,6 +424,60 @@ export class VercelBlobStorageProvider implements StorageProvider {
 		} catch (error) {
 			logger.error({ error, filePath }, 'Failed to get file content from Vercel Blob');
 			return null; // Netzwerk- oder andere Fehler
+		}
+	}
+
+	/**
+	 * Liest die Gesamtgröße aus der Antwort.
+	 *
+	 * Bei 206 steht sie hinter dem Schrägstrich in `Content-Range`
+	 * ("bytes 2-5/10"), bei 200 im `Content-Length`.
+	 */
+	private totalSizeFromResponse(response: Response): number {
+		const contentRange = response.headers.get('content-range');
+		if (contentRange) {
+			const total = contentRange.split('/')[1];
+			if (total && total !== '*') {
+				return Number(total);
+			}
+		}
+		return Number(response.headers.get('content-length') ?? 0);
+	}
+
+	/**
+	 * Liefert den Dateiinhalt als Stream, optional begrenzt auf einen Byte-Bereich.
+	 *
+	 * Im Gegensatz zu `getFileContent()` wird die Datei nicht vollständig in den
+	 * Speicher geladen: Der `Range`-Header wird direkt an Vercel Blob durchgereicht,
+	 * sodass auch bei großen Videos nur der angeforderte Ausschnitt übertragen wird.
+	 *
+	 * @param range Inklusiver Bereich; `end` ist das letzte gelieferte Byte.
+	 */
+	async getFileStream(
+		filePath: string,
+		range?: { start: number; end: number }
+	): Promise<StorageFileStream | null> {
+		try {
+			const response = await fetch(
+				this.getUrl(filePath),
+				range ? { headers: { Range: `bytes=${range.start}-${range.end}` } } : {}
+			);
+
+			if (!response.ok || !response.body) {
+				logger.warn(
+					{ filePath, status: response.status },
+					'File not available for streaming from Vercel Blob'
+				);
+				return null;
+			}
+
+			const totalSize = this.totalSizeFromResponse(response);
+			logger.debug({ filePath, totalSize, range }, 'File stream opened from Vercel Blob');
+
+			return { stream: response.body as ReadableStream<Uint8Array>, totalSize };
+		} catch (error) {
+			logger.error({ error, filePath }, 'Failed to open file stream from Vercel Blob');
+			return null;
 		}
 	}
 

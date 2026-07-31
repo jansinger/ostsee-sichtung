@@ -502,6 +502,46 @@ describe('VercelBlobStorageProvider', () => {
 		});
 	});
 
+	describe('getFileStream', () => {
+		test('liefert die ganze Datei und ihre Größe ohne Bereichsangabe', async () => {
+			vi.mocked(global.fetch).mockResolvedValueOnce(
+				new Response('0123456789', {
+					status: 200,
+					headers: { 'content-length': '10' }
+				})
+			);
+
+			const result = await provider.getFileStream('sichtung-123/whale.mp4');
+
+			expect(result?.totalSize).toBe(10);
+			expect(await new Response(result!.stream).text()).toBe('0123456789');
+		});
+
+		test('reicht den Range durch und liest die Gesamtgröße aus Content-Range', async () => {
+			vi.mocked(global.fetch).mockResolvedValueOnce(
+				new Response('2345', {
+					status: 206,
+					headers: { 'content-range': 'bytes 2-5/10', 'content-length': '4' }
+				})
+			);
+
+			const result = await provider.getFileStream('sichtung-123/whale.mp4', {
+				start: 2,
+				end: 5
+			});
+
+			expect(result?.totalSize).toBe(10);
+			const [, init] = vi.mocked(global.fetch).mock.calls[0]!;
+			expect((init?.headers as Record<string, string>).Range).toBe('bytes=2-5');
+		});
+
+		test('liefert null, wenn die Datei nicht erreichbar ist', async () => {
+			vi.mocked(global.fetch).mockResolvedValueOnce(new Response(null, { status: 404 }));
+
+			expect(await provider.getFileStream('weg.mp4')).toBeNull();
+		});
+	});
+
 	describe('extractUidFromPathname', () => {
 		test('should extract UID from filename with original name', () => {
 			// Access private method through any cast for testing
