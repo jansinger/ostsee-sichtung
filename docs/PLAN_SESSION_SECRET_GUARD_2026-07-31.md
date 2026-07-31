@@ -8,11 +8,16 @@
 bekannter Wert ist oder `ENCRYPTION_KEY` kein gültiger 32-Byte-Hex-Schlüssel.
 
 **Architecture:** Die Prüflogik zieht aus dem Modul-Scope von `src/hooks.server.ts` in ein
-neues, reines Modul `src/lib/server/config/secretGuard.ts`. Grund: `hooks.server.ts` liegt
-außerhalb von `src/lib/**` und wird von der Server-Test-Konfiguration nicht erfasst
-(`vitest.config.ts:9`, `include: ['src/lib/**/*.ts']`); außerdem führt es beim Import
-Seiteneffekte aus (Middleware-Kette, DB-Modul, Signal-Handler). Ein reines Modul ist testbar,
-`hooks.server.ts` ruft es nur noch auf.
+neues, reines Modul `src/lib/server/config/secretGuard.ts`.
+
+Grund ist **nicht** der Dateiort — der Server-Test-Include ist
+`src/**/*.{test,spec}.{js,ts}` und würde ein `src/hooks.server.test.ts` erfassen. Der Grund
+sind die Seiteneffekte beim Import: `hooks.server.ts` zieht das DB-Modul, die
+Middleware-Kette und `process.once`-Signal-Handler mit, und die Guards laufen im Modul-Scope —
+ein Test müsste also für jeden Fall das ganze Modul mit anderen Env-Werten neu importieren.
+Dazu zählt die Coverage ohnehin nur `src/lib/**` (`vitest.config.ts`, `coverage.include`).
+Reine Funktionen mit den Werten als Parameter sind ohne all das prüfbar; `hooks.server.ts` ruft
+sie nur noch auf.
 
 **Tech Stack:** TypeScript, SvelteKit 5, Vitest (Node-Umgebung), `$env/dynamic/private`.
 
@@ -26,7 +31,10 @@ Seiteneffekte aus (Middleware-Kette, DB-Modul, Signal-Handler). Ein reines Modul
 - **Kommentare und Doku auf Deutsch**, Bezeichner und Commit-Messages auf Englisch, Subject
   lowercase (`CLAUDE.md`, Commit Conventions).
 - **Commit-Format:** `<type>(<scope>): <beschreibung>`, hier `fix(security)` bzw. `docs(security)`.
-- **`npm run test:quick` muss vor jedem Commit grün sein.**
+- **`npm run test:quick` muss vor jedem Commit grün sein.** Der Pre-Commit-Hook dieses Repos
+  führt `lint` und `type-check` ohnehin bei jedem `git commit` aus; in den Tasks 1, 2 und 4
+  genügt daher der fokussierte `vitest run`, den der jeweilige Schritt nennt. Der vollständige
+  Lauf steht in Task 3 Schritt 6 und Task 5 Schritt 1.
 - Der Guard greift **nur** bei `NODE_ENV === 'production'`. Lokale Entwicklung und CI arbeiten
   bewusst mit dem Platzhalter aus `.env.example` (`.github/workflows/ci.yml:109,261,376`) und
   dürfen nicht brechen.
@@ -43,13 +51,13 @@ Seiteneffekte aus (Middleware-Kette, DB-Modul, Signal-Handler). Ein reines Modul
 
 ## Dateistruktur
 
-| Datei                                       | Verantwortung                                                                                                                  |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `src/lib/server/config/secretGuard.ts`      | **neu.** Reine Validierung der beiden Produktions-Secrets. Kein I/O, kein Env-Zugriff — die Werte kommen als Parameter herein. |
-| `src/lib/server/config/secretGuard.test.ts` | **neu.** Vitest, Node-Umgebung.                                                                                                |
-| `src/hooks.server.ts`                       | Ruft den Guard auf; die beiden inline-Guards (Zeilen 20–45) und die Konstante `PLACEHOLDER_ENCRYPTION_KEY` entfallen.          |
-| `docs/ENVIRONMENT.md`                       | Beispielwert entschärfen, Rotations-Abschnitt ergänzen.                                                                        |
-| `docs/RELEASE_PIPELINE.md`                  | „Zwei Dinge, die getrennt sein müssen" wird zu drei.                                                                           |
+| Datei                                       | Verantwortung                                                                                                                   |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/server/config/secretGuard.ts`      | **neu.** Reine Validierung der beiden Produktions-Secrets. Kein I/O, kein Env-Zugriff — die Werte kommen als Parameter herein.  |
+| `src/lib/server/config/secretGuard.test.ts` | **neu.** Vitest, Node-Umgebung.                                                                                                 |
+| `src/hooks.server.ts`                       | Ruft den Guard auf; die beiden inline-Guards (Zeilen 20–22 und 25–45) und die Konstante `PLACEHOLDER_ENCRYPTION_KEY` entfallen. |
+| `docs/ENVIRONMENT.md`                       | Beispielwert entschärfen, Rotations-Abschnitt ergänzen.                                                                         |
+| `docs/RELEASE_PIPELINE.md`                  | „Zwei Dinge, die getrennt sein müssen" wird zu drei.                                                                            |
 
 `src/lib/server/config/` existiert bereits (`accessControl.ts`) — kein neues Verzeichnis.
 
@@ -110,6 +118,16 @@ describe('validateSessionSecret', () => {
 		expect(validateSessionSecret('8K7h3L9mN2pQ4rS6tU8vW0xY2zA4bC6dE')).toMatch(/öffentlich/);
 	});
 
+	/* Ein Leerzeichen oder Zeilenumbruch um den Platzhalter darf die Prüfung nicht
+	   aushebeln — sonst ist der Guard still wirkungslos. */
+	it('lehnt den Platzhalter auch mit Leerraum drumherum ab', () => {
+		expect(validateSessionSecret('  your-secret-key-here-min-32-chars\n')).toMatch(/öffentlich/);
+	});
+
+	it('lehnt einen Wert ab, der nur aus Leerraum besteht', () => {
+		expect(validateSessionSecret('   ')).toMatch(/erforderlich/);
+	});
+
 	/* Der Kern des Befunds aus #635: Beide öffentlich bekannten Werte sind 33 Zeichen lang
 	   und bestehen jede reine Längenprüfung. Ohne diesen Test ist die naheliegende
 	   Implementierung (nur `>= 32`) grün und trotzdem falsch. */
@@ -165,7 +183,12 @@ const GENERATE_HINT = 'Erzeugen mit: openssl rand -base64 32';
  *
  * @returns `null` wenn gültig, sonst die vollständige Fehlermeldung.
  */
-export function validateSessionSecret(value: string): string | null {
+export function validateSessionSecret(raw: string): string | null {
+	/* Trimmen vor dem Vergleich, sonst umgeht ein versehentliches Leerzeichen oder ein
+	   Zeilenumbruch (`openssl rand -base64 32 > datei`) die Prüfung gegen die bekannten
+	   Werte — der Guard wäre dann still wirkungslos. */
+	const value = raw.trim();
+
 	if (!value) {
 		return `SESSION_SECRET ist in Produktion erforderlich. ${GENERATE_HINT}`;
 	}
@@ -191,7 +214,7 @@ export function validateSessionSecret(value: string): string | null {
 npx vitest run src/lib/server/config/secretGuard.test.ts
 ```
 
-Erwartet: PASS, 6 Tests.
+Erwartet: PASS, 8 Tests.
 
 - [ ] **Step 5: Commit**
 
@@ -328,7 +351,7 @@ export function validateEncryptionKey(value: string): string | null {
 npx vitest run src/lib/server/config/secretGuard.test.ts
 ```
 
-Erwartet: PASS, 12 Tests.
+Erwartet: PASS, 14 Tests.
 
 - [ ] **Step 5: Commit**
 
@@ -470,7 +493,7 @@ export function assertProductionSecrets(env: {
 npx vitest run src/lib/server/config/secretGuard.test.ts
 ```
 
-Erwartet: PASS, 17 Tests.
+Erwartet: PASS, 19 Tests.
 
 - [ ] **Step 5: Replace the inline guards in `hooks.server.ts`**
 
@@ -480,8 +503,13 @@ In `src/hooks.server.ts` den Import ergänzen:
 import { assertProductionSecrets } from '$lib/server/config/secretGuard';
 ```
 
-Die Zeilen 20–45 — also die Konstante `PLACEHOLDER_ENCRYPTION_KEY` samt Kommentar und **beide**
-`if (NODE_ENV === 'production' && …) { throw … }`-Blöcke — vollständig ersetzen durch:
+Dann **zwei getrennte** Bereiche anfassen — die Zeile 23 dazwischen (`const logger = …`) muss
+stehen bleiben:
+
+1. **Zeilen 20–22 löschen**: der Kommentar `// Platzhalter-Wert aus der Beispiel-Konfiguration …`,
+   die Konstante `PLACEHOLDER_ENCRYPTION_KEY` und die folgende Leerzeile.
+2. **Zeilen 25–45 ersetzen**: den Kommentar `// Guard: fail fast if SESSION_SECRET …` und
+   **beide** `if (NODE_ENV === 'production' && …) { throw … }`-Blöcke durch:
 
 ```ts
 // Guard: Der Server startet in Produktion nicht mit fehlenden, zu kurzen oder öffentlich
@@ -490,10 +518,8 @@ Die Zeilen 20–45 — also die Konstante `PLACEHOLDER_ENCRYPTION_KEY` samt Komm
 assertProductionSecrets({ NODE_ENV, SESSION_SECRET, ENCRYPTION_KEY });
 ```
 
-Die Konstanten `NODE_ENV`, `SESSION_SECRET` und `ENCRYPTION_KEY` (Zeilen 16–18) bleiben, sie
-werden weiter unten noch gebraucht bzw. hier übergeben. Der `logger` (Zeile 23) muss **vor**
-dem Aufruf definiert bleiben — die Reihenfolge der Zeilen 15–23 nicht verändern, nur den Block
-danach ersetzen.
+Die Konstanten `NODE_ENV`, `SESSION_SECRET` und `ENCRYPTION_KEY` (Zeilen 16–18) bleiben — sie
+werden hier übergeben und weiter unten noch gebraucht.
 
 - [ ] **Step 6: Verify the whole suite**
 
@@ -625,7 +651,31 @@ Erwartet: die unveränderten Platzhalter. `.env.example` wird in PR 1 **nicht** 
 lokale Entwicklung und CI laufen weiter mit dem Platzhalter, weil der Guard nur bei
 `NODE_ENV === 'production'` greift.
 
-- [ ] **Step 4: PR eröffnen**
+- [ ] **Step 4: Die eigentliche Wirkung prüfen — startet der Server wirklich nicht?**
+
+Die Unit-Tests belegen, dass die Funktion wirft. Sie belegen **nicht**, dass ein Modul-Scope-
+`throw` in `hooks.server.ts` den adapter-node-Prozess tatsächlich beendet, statt nur 500er zu
+liefern. Ohne diesen Schritt ist der Guard eine Zusicherung, die nie an einem echten Server
+geprüft wurde.
+
+```bash
+npm run build
+NODE_ENV=production \
+SESSION_SECRET="your-secret-key-here-min-32-chars" \
+ENCRYPTION_KEY="$(printf '0%.0s' {1..64})" \
+DATABASE_POSTGRES_URL="postgres://invalid/invalid" \
+node build/index.js; echo "exit=$?"
+```
+
+Erwartet: Die Meldung „Ungültige Produktions-Konfiguration" mit **beiden** Punkten auf stderr,
+und `exit=` mit einem Wert ungleich 0. Der Prozess darf **nicht** auf einem Port lauschen.
+
+Kommt stattdessen ein laufender Server heraus, ist der Guard wirkungslos und der Aufruf muss
+vor den SvelteKit-Server gezogen werden (dann zusätzlich in `scripts/docker-entrypoint.sh` —
+mit dem Hinweis, dass `run-release.sh:275` das Skript per `--entrypoint ""` umgeht). Das in
+diesem Fall als eigenen Befund festhalten, nicht stillschweigend umbauen.
+
+- [ ] **Step 5: PR eröffnen**
 
 ```bash
 gh pr create --fill --base main
@@ -642,6 +692,9 @@ dann vollständig.
 - Er behebt **nicht** die Ursache aus #635. Wer das echte `SESSION_SECRET` kennt, kann sich
   weiterhin eine Admin-Session ausstellen. Der Guard schliesst nur den Fall, dass dieses
   Secret ein öffentlich bekannter Wert ist.
+- Er beurteilt **nicht die Güte** eines selbstgewählten Secrets. `passwort-passwort-passwort-1234`
+  ist 32 Zeichen lang, unbekannt und kommt durch. Entropie-Schätzung ist unzuverlässig und
+  würde falsche Sicherheit erzeugen; die Doku verweist stattdessen auf `openssl rand`.
 - Er ändert **nichts** am Verhalten eines laufenden Deployments mit einem echten Secret.
 - Er fasst `.env.example`, `docker-compose.production.yml`, `run-release.sh` und
   `scripts/docker-entrypoint.sh` nicht an. Der Guard in `hooks.server.ts` ist der einzige

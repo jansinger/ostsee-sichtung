@@ -146,8 +146,10 @@ _Platzhalter_. Ein 32-stelliger Hex-Wert (16 Byte) kommt heute durch und lässt
 Länge und Hex-Zeichensatz ergänzt.
 
 **Beide Prüfungen ziehen in ein eigenes Modul** `src/lib/server/config/secretGuard.ts`.
-`hooks.server.ts` liegt ausserhalb von `src/lib/**` und wird von der Server-Test-Konfiguration
-nicht erfasst (`vitest.config.ts:9`); ausserdem hat sein Import Seiteneffekte. Reine Funktionen
+Sein Import hat Seiteneffekte (DB-Modul, Middleware-Kette, Signal-Handler) und die Guards laufen im Modul-Scope; die Coverage erfasst zudem nur `src/lib/**`
+Sein Import hat Seiteneffekte (DB-Modul, Middleware-Kette, Signal-Handler) und die Guards
+laufen im Modul-Scope — ein Test müsste das Modul je Fall neu importieren; die Coverage erfasst
+zudem nur `src/lib/**` (`vitest.config.ts`, `coverage.include`). Reine Funktionen
 mit den Werten als Parameter sind testbar, `hooks.server.ts` ruft nur noch auf.
 
 **Warum nur `production`:** Lokale Entwicklung und CI arbeiten bewusst mit dem Platzhalter
