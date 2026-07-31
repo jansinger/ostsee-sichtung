@@ -18,6 +18,7 @@ import { and, eq, isNotNull, ne } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { pathToFileURL } from 'node:url';
 import postgres from 'postgres';
 import * as schema from '../lib/server/db/schema';
 import { sightingFiles, sightings } from '../lib/server/db/schema';
@@ -67,6 +68,15 @@ const log = {
  */
 function isImageFile(mimeType: string): boolean {
 	return mimeType.startsWith('image/') && mimeType !== 'image/svg+xml';
+}
+
+/**
+ * Erkennt eine 0-Byte-Quelldatei. `_old_uploads/` enthält vereinzelt bereits
+ * leere Dateien aus dem Altsystem — ungeprüft übernommen landen sie als
+ * kaputte Medien an veröffentlichten Sichtungen (Befund vom 2026-07-31).
+ */
+export function isEmptySourceFile(size: number): boolean {
+	return size === 0;
 }
 
 /**
@@ -313,6 +323,7 @@ async function main() {
 		// Process each sighting
 		let successCount = 0;
 		let errorCount = 0;
+		let emptySkippedCount = 0;
 
 		for (const sighting of sightingsWithUploads) {
 			try {
@@ -341,10 +352,17 @@ async function main() {
 						const targetPath = path.join(targetDir, fileName);
 
 						// Check if source file exists
+						let sourceStats;
 						try {
-							await fs.access(sourcePath);
+							sourceStats = await fs.stat(sourcePath);
 						} catch {
 							log.warning(`Source file not found, skipping: ${sourcePath}`);
+							continue;
+						}
+
+						if (isEmptySourceFile(sourceStats.size)) {
+							log.warning(`Source file is empty (0 bytes), skipping: ${sourcePath}`);
+							emptySkippedCount++;
 							continue;
 						}
 
@@ -400,6 +418,9 @@ async function main() {
 		if (errorCount > 0) {
 			log.warning(`Errors encountered: ${errorCount}`);
 		}
+		if (emptySkippedCount > 0) {
+			log.warning(`Skipped empty (0-byte) source files: ${emptySkippedCount}`);
+		}
 
 		// Summary: Files are preserved in _old_uploads for safety
 		const totalFiles = await fs.readdir(oldUploadPath);
@@ -418,8 +439,16 @@ async function main() {
 	}
 }
 
-// Run the migration
-main().catch((error) => {
-	log.error(`Unhandled error: ${error}`);
-	process.exit(1);
-});
+// `pathToFileURL` statt Zeichenkettenbau, gleiches Muster wie in
+// cleanup-orphaned-uploads.ts: verhindert, dass ein Test-Import von
+// `isEmptySourceFile` die komplette Migration ausführt.
+const isDirectRun =
+	typeof process.argv[1] === 'string' && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isDirectRun) {
+	// Run the migration
+	main().catch((error) => {
+		log.error(`Unhandled error: ${error}`);
+		process.exit(1);
+	});
+}
