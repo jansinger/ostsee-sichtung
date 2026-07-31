@@ -1,10 +1,11 @@
 import { expect, test, type Frame, type Page } from '@playwright/test';
 import { MapPage } from './pages/MapPage';
 import { mockMapSightingsWithFeatures } from './fixtures/mockApi';
+import { createMapCanvasProbe, type MapScope } from './helpers/mapCanvas';
 
 /**
  * Reproduktion des Berichts „nach Öffnen der Sidebar geht Pan und Zoom in der
- * Karte nicht, erst nach einem Klick in die Karte" (UX-Review 2026-07-30).
+ * Karte nicht, erst nach einem Klick in die Karte“ (UX-Review 2026-07-30).
  *
  * Warum dieser Test in Playwright und nicht per Browser-Automation entstand:
  * Der Befund ließ sich zwar über CDP-injizierte Eingaben nachstellen — Pan wirkte
@@ -14,159 +15,28 @@ import { mockMapSightingsWithFeatures } from './fixtures/mockApi';
  * einem unfokussierten Fenster sind damit ein möglicher Störfaktor. Playwright
  * fährt einen echten, fokussierten Browser und trennt beides.
  *
- * ── Messverfahren ────────────────────────────────────────────────────────────
- * Gemessen wird das gezeichnete Kartenbild (Canvas-Fingerprint), nicht der
- * View-Zustand: An die OpenLayers-Instanz kommt man von außen nicht heran, und
- * eine Test-Hintertür im Produktionscode wäre der falsche Preis dafür.
+ * ── Messverfahren ─────────────────────────────────────────────────────────
+ * Canvas-Fingerprint, Werkzeug und Begründung stehen in
+ * `e2e/helpers/mapCanvas.ts`. Die beiden Voraussetzungen von dort erfüllt
+ * `mockMapSightingsWithFeatures`: Es liefert feste Sichtungen (sonst wäre das
+ * Canvas leer und der Test gehaltlos) und weist die Kachel-Hosts ab (sonst
+ * veränderten nachladende Kacheln das Bild auch ohne Geste).
  *
- * Damit der Fingerprint aussagekräftig ist, blockiert
- * `mockMapSightingsWithFeatures` die externen Kacheln und liefert feste
- * Sichtungen. Sonst gäbe es zwei Fehlerquellen: ein leeres Canvas könnte sich
- * durch einen Pan gar nicht verändern (Test wäre gehaltlos), und nachladende
- * Kacheln würden es auch ohne Pan verändern (Test wäre fälschlich grün).
- *
- * ── Reihenfolge in den Kontrolltests ─────────────────────────────────────────
+ * ── Reihenfolge in den Kontrolltests ────────────────────────────────────
  * Der Klick passiert **vor** der Basismessung. Ein Klick kann die Ansicht selbst
  * verschieben (Cluster-Zoom, `autoPan` des Popups) — würde man vorher messen,
  * bestätigte der Test am Ende diesen Nebeneffekt statt des Pans.
  */
 
-/**
- * Wo die Karte lebt: im Hauptdokument (`Page`) oder — für den iframe-Fall — im
- * eingebetteten Frame. Nur das Messen ist frame-abhängig; Maus-Eingaben laufen
- * immer über die `Page`, weil Playwright Koordinaten am Viewport misst.
- */
-type MapScope = Page | Frame;
-
-/** Ein Wert, der sich ändert, sobald sich das Kartenbild ändert. */
-async function canvasState(scope: MapScope): Promise<{ hash: number; distinct: number } | null> {
-	return scope.evaluate(() => {
-		const canvases = [...document.querySelectorAll<HTMLCanvasElement>('#map canvas')];
-		if (canvases.length === 0) return null;
-
-		let hash = 0;
-		const seen = new Set<number>();
-
-		for (const canvas of canvases) {
-			const ctx = canvas.getContext('2d');
-			if (!ctx) continue;
-			// Ausschnitt statt Vollbild: bei 2752x1496 wären es 66 MB pro Messung.
-			const width = Math.min(canvas.width, 1200);
-			const height = Math.min(canvas.height, 800);
-			if (width === 0 || height === 0) continue;
-
-			const { data } = ctx.getImageData(0, 0, width, height);
-			for (let i = 0; i < data.length; i += 401) {
-				hash = (hash * 31 + data[i]) | 0;
-				if (seen.size < 64) seen.add(data[i]);
-			}
-		}
-
-		return { hash, distinct: seen.size };
-	});
-}
-
-/**
- * Wartet, bis das Kartenbild zur Ruhe gekommen ist, und gibt seinen Fingerprint
- * zurück. „Zur Ruhe gekommen" heißt: zwei aufeinanderfolgende Messungen sind
- * gleich — sonst würde eine noch laufende Erstdarstellung als Pan-Wirkung
- * durchgehen.
- */
-async function settledCanvasHash(scope: MapScope): Promise<number> {
-	let previous: number | null = null;
-	let current: number | null = null;
-
-	await expect
-		.poll(
-			async () => {
-				const state = await canvasState(scope);
-				previous = current;
-				current = state?.hash ?? null;
-				return current !== null && current === previous;
-			},
-			{
-				timeout: 15000,
-				intervals: [200, 200, 200, 400],
-				message: 'Kartenbild kam nicht zur Ruhe'
-			}
-		)
-		.toBe(true);
-
-	// Gegenprobe: Ein einfarbiges Canvas könnte sich durch einen Pan nicht
-	// verändern — der Test wäre dann gehaltlos statt aussagekräftig.
-	const state = await canvasState(scope);
-	expect(
-		state?.distinct ?? 0,
-		'Karte zeichnet nichts — Fingerprint wäre gehaltlos'
-	).toBeGreaterThan(1);
-
-	return current as number;
-}
-
-/** Erwartet, dass sich das Kartenbild binnen weniger Sekunden verändert. */
-async function expectMapToMove(scope: MapScope, before: number, hinweis: string): Promise<void> {
-	await expect
-		.poll(async () => (await canvasState(scope))?.hash ?? null, {
-			timeout: 4000,
-			intervals: [150, 250, 400, 600],
-			message: hinweis
-		})
-		.not.toBe(before);
-}
-
-/**
- * Erwartet, dass das Kartenbild **unverändert** bleibt.
- *
- * Hier ist `expect.poll` das falsche Werkzeug: Es prüft, bis eine Bedingung
- * erfüllt ist — bei „hat sich nichts geändert" wäre sie sofort erfüllt und der
- * Test damit gehaltlos. Stattdessen wird über ein Zeitfenster mehrfach gemessen
- * und jede Messung geprüft. Das Fenster ist bewusst länger als die
- * `expectMapToMove`-Toleranz, damit ein verzögerter Zoom nicht durchrutscht:
- * `MouseWheelZoom` arbeitet intern mit einem Timeout und einer Animation.
- */
-async function expectMapToStayPut(scope: MapScope, before: number, hinweis: string): Promise<void> {
-	for (let versuch = 0; versuch < 8; versuch++) {
-		await scope.waitForTimeout(200);
-		const jetzt = (await canvasState(scope))?.hash ?? null;
-		expect(jetzt, `${hinweis} (Messung ${versuch + 1} von 8)`).toBe(before);
-	}
-}
-
-/** Zieht mit echten Maus-Events über die Karte. */
-async function dragMap(page: Page, from: { x: number; y: number }, dx: number, dy: number) {
-	await page.mouse.move(from.x, from.y);
-	await page.mouse.down();
-	// Mehrere Zwischenschritte: OpenLayers braucht `pointermove` mit gedrückter
-	// Taste, ein einzelner Sprung erzeugt keine belastbare Drag-Sequenz.
-	await page.mouse.move(from.x + dx * 0.3, from.y + dy * 0.3, { steps: 5 });
-	await page.mouse.move(from.x + dx, from.y + dy, { steps: 10 });
-	await page.mouse.up();
-}
+/** Messwerkzeug für die Sichtungskarte; `scope` nur für den iframe-Fall. */
+const karte = (page: Page, scope?: MapScope) =>
+	createMapCanvasProbe(page, { selector: '#map', scope });
 
 /** Punkt in der Karte, abseits der Controls links und der Panel-Reiter rechts. */
 async function mapPoint(page: Page, relX = 0.45, relY = 0.5) {
 	const box = await page.locator('#map').boundingBox();
 	if (!box) throw new Error('#map hat keine Bounding-Box');
 	return { x: box.x + box.width * relX, y: box.y + box.height * relY };
-}
-
-/**
- * Fährt die Maus an die Gestenposition und misst **erst danach** die Basis.
- *
- * Die Reihenfolge ist wesentlich: Der Controller hat einen `pointermove`-Handler,
- * der Features unter dem Zeiger sucht und den Hover-Zustand setzt. Schon das
- * Bewegen der Maus verändert damit das Kartenbild. Wer die Basis vorher nimmt,
- * misst hinterher diesen Hover-Effekt mit — ein Test auf „hat sich bewegt" würde
- * dann auch ohne Pan grün, und ein Test auf „hat sich nicht bewegt" fälschlich rot
- * (genau so ist der Mausrad-Test beim ersten Lauf gescheitert).
- */
-async function hoverAndSettle(
-	page: Page,
-	point: { x: number; y: number },
-	scope: MapScope = page
-): Promise<number> {
-	await page.mouse.move(point.x, point.y);
-	return settledCanvasHash(scope);
 }
 
 test.describe('Sichtungskarte — Pan und Zoom', () => {
@@ -180,45 +50,46 @@ test.describe('Sichtungskarte — Pan und Zoom', () => {
 	});
 
 	test('Ziehen verschiebt die Karte ohne vorherigen Klick', async ({ page }) => {
+		const probe = karte(page);
 		const start = await mapPoint(page);
-		const before = await hoverAndSettle(page, start);
+		const before = await probe.hoverAndSettle(start);
 
-		await dragMap(page, start, -160, 110);
+		await probe.drag(start, -160, 110);
 
-		await expectMapToMove(
-			page,
+		await probe.expectToMove(
 			before,
 			'Karte reagierte auf das erste Ziehen nicht — genau der berichtete Befund'
 		);
 	});
 
 	test('Ziehen verschiebt die Karte nach einem Klick in die Karte', async ({ page }) => {
+		const probe = karte(page);
 		// Kontrollfall. Der Klick landet bewusst nicht auf einer Sichtung, damit
 		// kein Popup mit `autoPan` die Ansicht bewegt.
 		const klickPunkt = await mapPoint(page, 0.2, 0.85);
 		await page.mouse.click(klickPunkt.x, klickPunkt.y);
 
 		const start = await mapPoint(page);
-		const before = await hoverAndSettle(page, start);
+		const before = await probe.hoverAndSettle(start);
 
-		await dragMap(page, start, -160, 110);
+		await probe.drag(start, -160, 110);
 
-		await expectMapToMove(page, before, 'Karte reagierte auch nach einem Klick nicht auf Ziehen');
+		await probe.expectToMove(before, 'Karte reagierte auch nach einem Klick nicht auf Ziehen');
 	});
 
 	test('Ziehen verschiebt die Karte nach dem Öffnen des Filter-Panels', async ({ page }) => {
+		const probe = karte(page);
 		// Die Formulierung des Berichts: erst Sidebar öffnen, dann pannen.
 		await mapPage.openFilter();
 		await expect(mapPage.getFilterPanel()).toHaveJSProperty('inert', false);
 
 		// Links vom 320-px-Panel ziehen, damit die Geste auf der Karte landet.
 		const start = await mapPoint(page, 0.3, 0.5);
-		const before = await hoverAndSettle(page, start);
+		const before = await probe.hoverAndSettle(start);
 
-		await dragMap(page, start, -140, 100);
+		await probe.drag(start, -140, 100);
 
-		await expectMapToMove(
-			page,
+		await probe.expectToMove(
 			before,
 			'Karte reagierte nach dem Öffnen des Filter-Panels nicht auf Ziehen'
 		);
@@ -235,30 +106,31 @@ test.describe('Sichtungskarte — Pan und Zoom', () => {
 	// `optimizedMapController.ts`.
 
 	test('Mausrad zoomt ohne vorherigen Klick', async ({ page }) => {
+		const probe = karte(page);
 		const point = await mapPoint(page);
-		const before = await hoverAndSettle(page, point);
+		const before = await probe.hoverAndSettle(point);
 
 		await page.mouse.wheel(0, -400);
 
-		await expectMapToMove(
-			page,
+		await probe.expectToMove(
 			before,
 			'Mausrad-Zoom blieb ohne Klick wirkungslos — genau der berichtete Befund'
 		);
 	});
 
 	test('Mausrad zoomt auch nach einem Klick in die Karte', async ({ page }) => {
+		const probe = karte(page);
 		// Kontrollfall: Der Klick setzt den Fokus auf das `#map`-Div und darf am
 		// Ergebnis nichts ändern.
 		const klickPunkt = await mapPoint(page, 0.2, 0.85);
 		await page.mouse.click(klickPunkt.x, klickPunkt.y);
 
 		const point = await mapPoint(page);
-		const before = await hoverAndSettle(page, point);
+		const before = await probe.hoverAndSettle(point);
 
 		await page.mouse.wheel(0, -400);
 
-		await expectMapToMove(page, before, 'Mausrad-Zoom blieb auch mit Fokus ohne Wirkung');
+		await probe.expectToMove(before, 'Mausrad-Zoom blieb auch mit Fokus ohne Wirkung');
 	});
 });
 
@@ -332,8 +204,10 @@ test.describe('Sichtungskarte im iframe — Mausrad', () => {
 
 	test('Mausrad ohne Fokus scrollt die einbettende Seite, statt zu zoomen', async ({ page }) => {
 		const { mapFrame, box } = await embedMap(page);
+		// Gemessen wird im Frame, geklickt und gescrollt auf der Rahmenseite.
+		const probe = karte(page, mapFrame);
 
-		const before = await hoverAndSettle(page, pointInFrame(box), mapFrame);
+		const before = await probe.hoverAndSettle(pointInFrame(box));
 		expect(await page.evaluate(() => window.scrollY), 'Rahmenseite startet nicht oben').toBe(0);
 
 		// Nach unten, denn oben am Dokumentanfang gäbe es nichts zu scrollen.
@@ -347,8 +221,7 @@ test.describe('Sichtungskarte im iframe — Mausrad', () => {
 			})
 			.toBeGreaterThan(0);
 
-		await expectMapToStayPut(
-			mapFrame,
+		await probe.expectToStayPut(
 			before,
 			'Karte hat im iframe ohne Fokus gezoomt — der Scroll-Hijacking-Schutz ist weg'
 		);
@@ -357,7 +230,7 @@ test.describe('Sichtungskarte im iframe — Mausrad', () => {
 	/**
 	 * Positiv-Kontrolle zum Test darüber — und dessen Spiegelbild.
 	 *
-	 * `expectMapToStayPut` ist mit **jedem** Grund zufrieden, aus dem sich das
+	 * `expectToStayPut` ist mit **jedem** Grund zufrieden, aus dem sich das
 	 * Kartenbild nicht ändert — auch damit, dass das Mausrad den Frame nie erreicht
 	 * oder die Karte dort gar nicht zoomen kann. Erst dieser Test zeigt, dass beides
 	 * funktioniert und oben wirklich die Condition gebremst hat. Gleiche Geste,
@@ -368,17 +241,17 @@ test.describe('Sichtungskarte im iframe — Mausrad', () => {
 		page
 	}) => {
 		const { mapFrame, box } = await embedMap(page);
+		const probe = karte(page, mapFrame);
 
 		// Abseits der Sichtungen klicken, damit kein Popup mit `autoPan` die Ansicht bewegt.
 		const klickPunkt = pointInFrame(box, 0.2, 0.85);
 		await page.mouse.click(klickPunkt.x, klickPunkt.y);
 
-		const before = await hoverAndSettle(page, pointInFrame(box), mapFrame);
+		const before = await probe.hoverAndSettle(pointInFrame(box));
 
 		await page.mouse.wheel(0, 400);
 
-		await expectMapToMove(
-			mapFrame,
+		await probe.expectToMove(
 			before,
 			'Mausrad-Zoom blieb im iframe auch mit Fokus ohne Wirkung — der Test darüber wäre damit gehaltlos'
 		);
