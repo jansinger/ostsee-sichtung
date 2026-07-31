@@ -48,10 +48,15 @@ const MAGIC_BYTES: Record<string, Array<Array<{ bytes: number[]; offset: number 
 	],
 
 	// Video formats
-	'video/mp4': [
-		[{ bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 }], // ftyp
-		[{ bytes: [0x6d, 0x64, 0x61, 0x74], offset: 4 }] // mdat (alternative)
-	],
+	//
+	// MP4, QuickTime und M4V sind alle ISO Base Media File Format: eine
+	// "ftyp"-Box bei Offset 4, danach die Brand. Die Brand zu prüfen wäre
+	// falsche Genauigkeit — iPhones schreiben je nach Aufnahmemodus mp42 in
+	// eine .mov und qt in eine .mp4, und der Browser meldet dazu den MIME-Typ
+	// nach Dateiendung. Ein "ftypqt"-Zwang hat solche Dateien grundlos mit 400
+	// abgewiesen. Was hier zählt, ist die Abgrenzung gegen Nicht-Video —
+	// und die leistet die ftyp-Box.
+	'video/mp4': [[{ bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 }]],
 	'video/avi': [
 		[
 			{ bytes: [0x52, 0x49, 0x46, 0x46], offset: 0 }, // RIFF (required)
@@ -65,12 +70,8 @@ const MAGIC_BYTES: Record<string, Array<Array<{ bytes: number[]; offset: number 
 			{ bytes: [0x41, 0x56, 0x49, 0x20], offset: 8 } // AVI  (required)
 		]
 	],
-	'video/mov': [
-		[{ bytes: [0x66, 0x74, 0x79, 0x70, 0x71, 0x74], offset: 4 }] // ftypqt
-	],
-	'video/quicktime': [
-		[{ bytes: [0x66, 0x74, 0x79, 0x70, 0x71, 0x74], offset: 4 }] // ftypqt
-	],
+	'video/mov': [[{ bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 }]],
+	'video/quicktime': [[{ bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 }]],
 	'video/webm': [
 		[{ bytes: [0x1a, 0x45, 0xdf, 0xa3], offset: 0 }] // EBML header
 	],
@@ -92,9 +93,7 @@ const MAGIC_BYTES: Record<string, Array<Array<{ bytes: number[]; offset: number 
 	'video/x-flv': [
 		[{ bytes: [0x46, 0x4c, 0x56, 0x01], offset: 0 }] // FLV
 	],
-	'video/m4v': [
-		[{ bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 }] // ftyp (same as MP4)
-	]
+	'video/m4v': [[{ bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 }]]
 };
 
 /**
