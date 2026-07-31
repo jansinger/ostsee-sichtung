@@ -3,6 +3,7 @@
 	import { canNavigateToStep } from '$lib/form/validation/stepNavigation';
 	import { getFormContext } from '$lib/report/formContext';
 	import type { FormStep } from '$lib/report/types';
+	import { stepNavigationLabel } from './stepLabels';
 
 	/**
 	 * Kompakte Fortschrittsanzeige für den ortsfesten Balken unterhalb `md`.
@@ -64,13 +65,23 @@
 		{#each steps as step, index (step.id)}
 			{@const navigable = canNavigateTo(index)}
 			<li class="flex-1">
+				<!--
+					`index !== currentStep` ist nicht redundant: `canNavigateToStep`
+					liefert für den aktuellen Schritt `true` (`targetIndex <= currentStep`),
+					ein Klick darauf tut aber nichts. Ohne die Bedingung gäbe der aktuelle
+					Schritt sich als Navigationsziel aus. Der Stepper am Seitenkopf schließt
+					denselben Fall über `:not([aria-current='step'])` im CSS aus — hier
+					steht der Cursor an der Aufrufstelle, weil diese Komponente sonst
+					keinen eigenen CSS-Block hat.
+				-->
 				<button
 					type="button"
 					class="flex min-h-[var(--target-min)] w-full items-center px-0.5"
+					class:cursor-pointer={navigable && index !== currentStep}
 					class:cursor-not-allowed={!navigable}
 					aria-current={currentStep === index ? 'step' : undefined}
 					aria-disabled={!navigable ? 'true' : 'false'}
-					aria-label="Schritt {index + 1}: {step.title}"
+					aria-label={stepNavigationLabel(index, currentStep, step.title)}
 					title={navigable
 						? step.description
 						: 'Bitte füllen Sie zuerst die vorherigen Schritte aus'}
