@@ -36,7 +36,11 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 				logger.info({ sightingId }, 'Test sighting email sent successfully');
 				return json({
 					success: true,
-					message: `Test-E-Mail für Sichtung ${sightingId} wurde erfolgreich gesendet`
+					// Empfänger benennen: Die Mail geht an die interne Adresse aus
+					// `notification.email.recipient`, nicht an die meldende Person.
+					// Ohne diesen Zusatz liest sich die Erfolgsmeldung so, als wäre der
+					// Melder angeschrieben worden (#621).
+					message: `Interne Benachrichtigung zu Sichtung ${sightingId} wurde an die konfigurierte Empfänger-Adresse gesendet`
 				});
 			} else {
 				return json(

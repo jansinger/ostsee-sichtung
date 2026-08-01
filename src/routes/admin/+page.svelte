@@ -677,8 +677,8 @@
 						<button
 							class="btn btn-ghost btn-sm"
 							onclick={() => sendTestEmail(sighting.id)}
-							title="Test-E-Mail senden"
-							aria-label="Test-E-Mail senden"
+							title="Interne Benachrichtigung testweise senden"
+							aria-label="Interne Benachrichtigung testweise senden"
 						>
 							<Icon icon="lucide:mail" class="h-4 w-4" />
 						</button>
@@ -956,8 +956,8 @@
 									<button
 										class="btn btn-ghost btn-xs"
 										onclick={() => sendTestEmail(sighting.id)}
-										title="Test-E-Mail senden"
-										aria-label="Test-E-Mail senden"
+										title="Interne Benachrichtigung testweise senden"
+										aria-label="Interne Benachrichtigung testweise senden"
 									>
 										<Icon icon="lucide:mail" class="h-4 w-4" />
 									</button>

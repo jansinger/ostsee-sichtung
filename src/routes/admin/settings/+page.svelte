@@ -37,7 +37,8 @@
 	};
 
 	const categoryDescriptions: Record<string, string> = {
-		email: 'Konfigurieren Sie E-Mail-Benachrichtigungen und SMTP-Einstellungen',
+		email:
+			'Interne Benachrichtigung über neue Sichtungen und SMTP-Zugang. Meldende Personen erhalten derzeit keine E-Mail.',
 		display: 'Anpassung der Benutzeroberfläche und Kartenansichten',
 		security: 'Sicherheitseinstellungen und Upload-Beschränkungen',
 		data: 'Einstellungen für Datenverarbeitung und Validierung',

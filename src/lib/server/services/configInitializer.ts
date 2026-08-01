@@ -6,16 +6,23 @@ const logger = createLogger('configInitializer');
 
 const defaultConfigurations: ConfigItem[] = [
 	// Email Settings
+	//
+	// `notification.email.*` betrifft ausschließlich die interne Mail an das
+	// Museum. Die meldende Person wird nicht angeschrieben (#621). Die
+	// Beschreibungen sagen das jetzt ausdrücklich — sie erreichen allerdings nur
+	// Neuinstallationen, weil `initializeDefaultConfigurations()` über
+	// `insertManyIfAbsent` läuft und bestehende Zeilen unangetastet lässt. Die
+	// verlässliche Anzeigeebene ist deshalb `admin/settings/configLabels.ts`.
 	{
 		key: 'notification.email.enabled',
 		value: false,
-		description: 'E-Mail Benachrichtigungen für neue Sichtungen aktivieren',
+		description: 'Interne Benachrichtigung an das Museum bei neuer Sichtung aktivieren',
 		category: 'email'
 	},
 	{
 		key: 'notification.email.recipient',
 		value: '',
-		description: 'E-Mail Adresse für Benachrichtigungen über neue Sichtungen',
+		description: 'Interne Empfänger-Adresse für Benachrichtigungen über neue Sichtungen',
 		category: 'email'
 	},
 	// CC/BCC werden von emailService.getEmailConfig() über
@@ -49,7 +56,7 @@ const defaultConfigurations: ConfigItem[] = [
 	{
 		key: 'notification.email.template',
 		value: NOTIFICATION_EMAIL_DEFAULT_TEMPLATE,
-		description: 'HTML Template für E-Mail Benachrichtigungen (Handlebars Syntax)',
+		description: 'HTML Template für die interne Benachrichtigung (Handlebars Syntax)',
 		category: 'email'
 	},
 	{
