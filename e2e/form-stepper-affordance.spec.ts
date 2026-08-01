@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { formatRatio, measureContrast } from './helpers/contrast';
 import { FormPage } from './pages/FormPage';
 
 /**
@@ -23,6 +24,13 @@ import { FormPage } from './pages/FormPage';
  */
 
 const STEP_BUTTON = 'nav[aria-label="Formular-Schritte"]:visible .step-button';
+
+/**
+ * Ein Schritt, der noch nicht erreicht ist. `step-primary` trägt im Stepper
+ * genau die erreichten Schritte — die Negation ist damit dieselbe Menge, die
+ * auch das CSS in `app.css` adressiert, und kein zweites Regelwerk.
+ */
+const NICHT_ERREICHT = '.steps .step:not(.step-primary)';
 
 /**
  * Wartet, bis alle laufenden CSS-Transitions durch sind.
@@ -161,6 +169,51 @@ test.describe('Stepper — erkennbar als Navigation', () => {
 		await gesperrt.hover({ force: true });
 		await transitionsSettled(page);
 		expect(alphaOf(await style(gesperrt, 'background-color'))).toBe(0);
+	});
+
+	test('die Ziffer eines gesperrten Schritts liegt nicht auf dem Verbindungsbalken', async ({
+		page
+	}) => {
+		await gotoStepTwo(page);
+
+		// DaisyUI speist Kreis (`::after`) UND Verbindungsbalken (`::before`) aus
+		// derselben Variablen `--step-bg`. Für noch nicht erreichte Schritte ist
+		// das beidesmal `base-300` — der 8px-Balken läuft damit farbgleich durch
+		// den 32px-Kreis, und die Ziffer sitzt sichtbar auf dem Balken statt auf
+		// einer eigenen Fläche. Gemeldet als „Zahlen werden von den Balken
+		// überlagert"; der Kreis liegt tatsächlich davor (`z-index: 1`), er ist
+		// nur nicht von ihm zu unterscheiden.
+		//
+		// Gemessen wird über `measureContrast`, nicht mit einer eigenen Rechnung:
+		// Die Farben stehen in `oklch()` und lassen sich erst nach dem
+		// Gamut-Mapping des Browsers vergleichen, und der gesperrte Schritt trägt
+		// zusätzlich `opacity-70` — beides löst der Helfer bereits auf.
+		const [kreis, balken] = await measureContrast(page, [
+			{
+				name: 'Ziffernkreis eines nicht erreichten Schritts',
+				selector: NICHT_ERREICHT,
+				pseudo: '::after',
+				backdrop: 'var(--color-base-100)'
+			},
+			{
+				name: 'Verbindungsbalken davor',
+				selector: NICHT_ERREICHT,
+				pseudo: '::before',
+				backdrop: 'var(--color-base-100)'
+			}
+		]);
+
+		expect(
+			kreis.background,
+			`Kreis und Balken sind farbgleich (${kreis.background}) — die Ziffer steht damit auf dem Balken`
+		).not.toBe(balken.background);
+
+		// WCAG 1.4.3 für die Ziffer auf ihrer eigenen Fläche. Vor der Korrektur
+		// war die Bezugsfläche faktisch der Balken.
+		expect(
+			kreis.ratio,
+			`Ziffer ${kreis.foreground} auf ${kreis.background} misst nur ${formatRatio(kreis.ratio)}:1`
+		).toBeGreaterThanOrEqual(4.5);
 	});
 
 	test('die Schaltflächen benennen die Aktion, nicht nur den Schritt', async ({ page }) => {

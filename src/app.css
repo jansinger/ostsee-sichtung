@@ -523,6 +523,46 @@ label:has(> .toggle) {
 	grid-template-columns: minmax(0, 1fr);
 }
 
+/* ===== Der Kreis eines noch nicht erreichten Schritts ist nicht der Balken =====
+
+   DaisyUI speist beide Pseudo-Elemente aus derselben Variablen: `--step-bg`
+   färbt den Verbindungsbalken (`::before`, 8px hoch) UND den Kreis mit der
+   Ziffer (`::after`, 32px). Für erreichte Schritte trennt `step-primary` die
+   beiden; für noch nicht erreichte ist beides `base-300`, und der Balken läuft
+   damit farbgleich quer durch die Ziffer.
+
+   Gemeldet wurde das als „die Zahlen werden von den Balken überlagert" — der
+   Kreis liegt tatsächlich davor (DaisyUI gibt ihm `z-index: 1`), er ist nur
+   nicht von ihm zu unterscheiden. Eine z-index-Korrektur ginge deshalb ins
+   Leere; es fehlt der Farbunterschied.
+
+   Gefüllt statt umrandet wäre hier falsch herum: „ausgefüllt" ist im Stepper
+   die Auszeichnung des Erledigten, die `step-primary` schon trägt. Der offene
+   Kreis in der Seitenfläche (`base-100` — der Stepper sitzt im
+   Formular-Container `div.bg-base-100`) unterbricht den Balken sichtbar und
+   gibt der Ziffer ihre eigene Fläche.
+
+   Die Ziffernfarbe bleibt bewusst DaisyUIs `--step-fg`: für nicht-primäre
+   Schritte ist das ohnehin `base-content` und darauf richtig (16,53:1, durch
+   das `opacity-70` des gesperrten Schritts effektiv 7,04:1). Sie hier zu
+   wiederholen wäre ein zweiter Ort für denselben Wert.
+
+   Der Ring selbst ist Dekoration und trägt keine Information — dieselbe
+   Begründung wie bei den Segmenten in `StepProgressCompact.svelte`: Die Ansage
+   liegt in der Ziffer, im Titel darunter und in `aria-current`/`aria-label`.
+   WCAG 1.4.11 greift damit nicht, und `base-300` auf `base-100` bleibt
+   zulässig — es ist derselbe Ton, den der Balken schon hat.
+
+   Abgesichert durch `e2e/form-stepper-affordance.spec.ts` → „die Ziffer eines
+   gesperrten Schritts liegt nicht auf dem Verbindungsbalken". Der Test misst
+   Kreis, Balken und Ziffer als fertig zusammengesetzte sRGB-Werte inklusive
+   der Deckkraft — aus den Variablen allein wäre der Unterschied nicht
+   ablesbar. */
+.steps .step:not(.step-primary)::after {
+	background-color: var(--color-base-100);
+	border-color: var(--color-base-300);
+}
+
 /* ===== Der Stepper muss aussehen wie Navigation =====
 
    Er WAR immer welche — besuchte Schritte lassen sich seit jeher anspringen

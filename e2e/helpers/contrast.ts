@@ -12,6 +12,12 @@ import type { Page } from '@playwright/test';
  *
  * Transparente Elementhintergründe (z. B. `btn-outline`) werden über `backdrop`
  * komponiert, damit auch Textfarben auf durchsichtigen Flächen korrekt messen.
+ *
+ * Ebenso die `opacity` des gemessenen Elements und — bei `pseudo` — die seines
+ * Pseudo-Elements. **Nicht** berücksichtigt wird die Deckkraft von Vorfahren:
+ * dafür müsste die Kette bis zum Backdrop bekannt sein, und `backdrop` sagt
+ * gerade, dass sie es nicht ist. Sitzt das Messziel in einem abgeblendeten
+ * Container, gehört dessen Deckkraft in die `backdrop`-Farbe eingerechnet.
  */
 export interface ContrastProbe {
 	/** Beschriftung für die Fehlermeldung. */
@@ -20,6 +26,14 @@ export interface ContrastProbe {
 	className?: string;
 	/** Statt eines Probe-Elements ein echtes Element aus der Seite messen. */
 	selector?: string;
+	/**
+	 * Statt des Elements sein Pseudo-Element messen (`'::before'`, `'::after'`).
+	 *
+	 * Nötig für Komponenten, die ihre Flächen dort erzeugen — der Stepper zeichnet
+	 * Verbindungsbalken und Ziffernkreis als Pseudo-Elemente, ein Selektor kommt
+	 * dort grundsätzlich nicht hin.
+	 */
+	pseudo?: string;
 	/** CSS-Farbe der Fläche, auf der das Element liegt (z. B. `var(--color-base-200)`). */
 	backdrop: string;
 }
@@ -68,17 +82,27 @@ export async function measureContrast(
 			return value;
 		}
 
-		/** Serialisierte CSS-Farbe → sRGB-Bytes, ggf. über einen Backdrop komponiert. */
-		function toRgb(cssColor: string, backdrop?: string): [number, number, number] {
+		/**
+		 * Serialisierte CSS-Farbe → sRGB-Bytes, ggf. über einen Backdrop komponiert.
+		 *
+		 * `deckkraft` ist die `opacity` des gemessenen Elements. Sie wirkt auf die
+		 * fertig zusammengesetzte Gruppe und nicht auf die einzelnen Farben — Vorder-
+		 * und Hintergrund müssen deshalb beide damit auf den Backdrop gelegt werden,
+		 * sonst misst ein abgeblendetes Element zu gut.
+		 */
+		function toRgb(cssColor: string, backdrop?: string, deckkraft = 1): [number, number, number] {
 			ctx.clearRect(0, 0, 1, 1);
+			ctx.globalAlpha = 1;
 			ctx.fillStyle = '#000000';
 			if (backdrop) {
 				ctx.fillStyle = backdrop;
 				ctx.fillRect(0, 0, 1, 1);
 				ctx.fillStyle = '#000000';
 			}
+			ctx.globalAlpha = deckkraft;
 			ctx.fillStyle = cssColor;
 			ctx.fillRect(0, 0, 1, 1);
+			ctx.globalAlpha = 1;
 			const d = ctx.getImageData(0, 0, 1, 1).data;
 			return [d[0], d[1], d[2]];
 		}
@@ -110,9 +134,19 @@ export async function measureContrast(
 				element = temporary;
 			}
 
-			const style = getComputedStyle(element);
-			const fg = toRgb(style.color, backdrop);
-			const bg = toRgb(style.backgroundColor, backdrop);
+			// Die Deckkraft steht am Element selbst, gemessen wird ggf. sein
+			// Pseudo-Element — `opacity` ist nicht vererbbar, die Gruppe wird aber
+			// samt Pseudo-Elementen als Ganzes abgeblendet.
+			//
+			// Trägt das Pseudo-Element zusätzlich eine eigene Deckkraft, multiplizieren
+			// sich beide. Ohne `pseudo` liest `style.opacity` denselben Wert wie
+			// `hostDeckkraft` — dort darf deshalb NICHT multipliziert werden, sonst
+			// ginge die Deckkraft quadratisch ein.
+			const hostDeckkraft = Number(getComputedStyle(element).opacity);
+			const style = getComputedStyle(element, item.pseudo ?? null);
+			const deckkraft = item.pseudo ? hostDeckkraft * Number(style.opacity) : hostDeckkraft;
+			const fg = toRgb(style.color, backdrop, deckkraft);
+			const bg = toRgb(style.backgroundColor, backdrop, deckkraft);
 			temporary?.remove();
 
 			const l1 = luminance(fg);
