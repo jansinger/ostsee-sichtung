@@ -60,4 +60,16 @@ describe('Icon', () => {
 		expect(consoleErrorSpy).not.toHaveBeenCalled();
 		expect(container.querySelector('svg path')).not.toBeNull();
 	});
+
+	// `aria-hidden` an einer dekorativen Aufrufstelle wirkt nur, wenn es bis auf
+	// das <svg> durchgereicht wird. Bei den unplugin-icons-Komponenten erledigt
+	// das die Bibliothek; `Porpoise.svelte` ist handgeschrieben und verlässt sich
+	// auf ein `{...rest}` am Element — fällt das weg, verschwindet das Attribut
+	// still, und der Screenreader sagt wieder eine unbeschriftete Grafik an.
+	it('reicht aria-hidden bis auf das <svg> durch — auch beim projekteigenen Icon', async () => {
+		const { container } = render(Icon, { icon: 'custom:porpoise', 'aria-hidden': 'true' });
+		await tick();
+
+		expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+	});
 });
