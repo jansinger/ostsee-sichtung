@@ -1006,7 +1006,7 @@
 
 		<div class="join">
 			<button
-				class="btn join-item btn-sm min-h-10"
+				class="btn join-item btn-sm"
 				onclick={() => changePage(1)}
 				disabled={data.pagination.page === 1}
 				title="Erste Seite"
@@ -1014,7 +1014,7 @@
 				«
 			</button>
 			<button
-				class="btn join-item btn-sm min-h-10"
+				class="btn join-item btn-sm"
 				onclick={() => changePage(data.pagination.page - 1)}
 				disabled={data.pagination.page === 1}
 				title="Vorherige Seite"
@@ -1022,12 +1022,12 @@
 				‹
 			</button>
 
-			<button class="btn btn-active join-item btn-sm min-h-10 min-w-32 text-xs sm:text-sm">
+			<button class="btn btn-active join-item btn-sm min-w-32 text-xs sm:text-sm">
 				{data.pagination.page} / {data.pagination.totalPages}
 			</button>
 
 			<button
-				class="btn join-item btn-sm min-h-10"
+				class="btn join-item btn-sm"
 				onclick={() => changePage(data.pagination.page + 1)}
 				disabled={data.pagination.page === data.pagination.totalPages}
 				title="Nächste Seite"
@@ -1035,7 +1035,7 @@
 				›
 			</button>
 			<button
-				class="btn join-item btn-sm min-h-10"
+				class="btn join-item btn-sm"
 				onclick={() => changePage(data.pagination.totalPages)}
 				disabled={data.pagination.page === data.pagination.totalPages}
 				title="Letzte Seite"

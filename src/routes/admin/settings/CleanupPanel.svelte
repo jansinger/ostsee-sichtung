@@ -58,15 +58,11 @@
 		</p>
 
 		<div class="mt-4 flex flex-wrap gap-2">
-			<button class="btn btn-primary min-h-11" disabled={busy} onclick={() => run(false)}>
+			<button class="btn btn-primary" disabled={busy} onclick={() => run(false)}>
 				Vorschau laden
 			</button>
 			{#if hasFindings}
-				<button
-					class="btn btn-outline btn-error btn-sm min-h-11"
-					disabled={busy}
-					onclick={confirmCleanup}
-				>
+				<button class="btn btn-outline btn-error btn-sm" disabled={busy} onclick={confirmCleanup}>
 					Endgültig löschen
 				</button>
 			{/if}
