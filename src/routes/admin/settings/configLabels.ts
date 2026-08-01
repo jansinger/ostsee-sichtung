@@ -21,14 +21,23 @@
 
 /** Anzeigename pro Konfigurationsschlüssel. */
 export const configLabels: Record<string, string> = {
-	// E-Mail-Benachrichtigungen
-	'notification.email.enabled': 'E-Mail-Benachrichtigungen aktiv',
-	'notification.email.recipient': 'Empfänger-Adresse',
+	// Interne Benachrichtigung über neue Sichtungen
+	//
+	// Der Zusatz „intern“ ist nicht schmückend: `notification.email.*` steuert
+	// ausschließlich die Mail an das Museum (`emailService.ts`, `to:
+	// config.recipient`). Die meldende Person bekommt bis heute überhaupt keine
+	// Mail — es gibt im ganzen Projekt nur zwei `sendMail`-Aufrufe, beide an
+	// interne Adressen. Unter dem alten Label „E-Mail-Benachrichtigungen aktiv“
+	// war das nicht zu erkennen; die naheliegende Lesart ist, dass hier der
+	// Melder-Versand hängt. Wenn #621 kommt, bekommt der einen eigenen
+	// Schlüssel — dieser hier ist dann nicht umzudeuten, sondern abzugrenzen.
+	'notification.email.enabled': 'Interne Benachrichtigung bei neuer Sichtung',
+	'notification.email.recipient': 'Empfänger-Adresse (Museum)',
 	'notification.email.cc': 'Empfänger in Kopie (CC)',
 	'notification.email.bcc': 'Empfänger in Blindkopie (BCC)',
 	'notification.email.sender': 'Absender-Adresse',
 	'notification.email.senderName': 'Absender-Name',
-	'notification.email.template': 'HTML-Vorlage der Benachrichtigung',
+	'notification.email.template': 'HTML-Vorlage der internen Benachrichtigung',
 
 	// SMTP-Zugang
 	'email.smtp.host': 'SMTP-Server',
