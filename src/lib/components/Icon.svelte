@@ -37,7 +37,6 @@
 	import FileText from '~icons/lucide/file-text';
 	import FileType from '~icons/lucide/file-type';
 	import Filter from '~icons/lucide/filter';
-	import Fish from '~icons/lucide/fish';
 	import Gauge from '~icons/lucide/gauge';
 	import Gem from '~icons/lucide/gem';
 	import Github from '~icons/lucide/github';
@@ -104,6 +103,7 @@
 	import Wind from '~icons/lucide/wind';
 	import X from '~icons/lucide/x';
 	import Zap from '~icons/lucide/zap';
+	import Porpoise from './icons/Porpoise.svelte';
 
 	// Icon map for dynamic icon lookup
 
@@ -183,7 +183,6 @@
 		'lucide:clock': Clock,
 		'lucide:cloud-rain': CloudRain,
 		'lucide:hash': Hash,
-		'lucide:fish': Fish,
 		'lucide:globe': Globe,
 		'lucide:message-circle': MessageCircle,
 		'lucide:mouse-pointer': MousePointer,
@@ -210,7 +209,10 @@
 		'lucide:hard-drive': HardDrive,
 		'lucide:bar-chart': BarChart,
 		'lucide:braces': Braces,
-		'lucide:file-code': FileCode
+		'lucide:file-code': FileCode,
+		// Projekteigenes Icon — es gibt in keinem gängigen Satz (Lucide, Tabler,
+		// Phosphor, Iconoir, MDI) ein Robben- oder Schweinswal-Icon.
+		'custom:porpoise': Porpoise
 	};
 
 	interface Props {

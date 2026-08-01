@@ -37,7 +37,13 @@
 				class="text-base-content flex items-center justify-center gap-3 text-3xl font-bold lg:text-4xl"
 			>
 				Vielen Dank!
-				<Icon icon="lucide:fish" width="32" height="32" class="text-primary" />
+				<Icon
+					icon="custom:porpoise"
+					width="32"
+					height="32"
+					class="text-primary"
+					aria-hidden="true"
+				/>
 			</h1>
 
 			<p class="text-base-content/80 text-xl">Ihre Sichtung wurde erfolgreich gemeldet</p>

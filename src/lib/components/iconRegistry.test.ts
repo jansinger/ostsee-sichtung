@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest';
 const SOURCE_ROOT = 'src';
 const ICON_COMPONENT = 'src/lib/components/Icon.svelte';
 
-/** Alle im `iconMap` registrierten Namen. */
+/** Alle im `iconMap` registrierten Namen (Lucide und projekteigene). */
 function registeredIcons(): Set<string> {
 	const source = readFileSync(ICON_COMPONENT, 'utf-8');
 	const mapStart = source.indexOf('const iconMap');
@@ -29,14 +29,14 @@ function registeredIcons(): Set<string> {
 	// dieser Test würde mit einem TypeError abbrechen, statt die Registry zu
 	// prüfen. Ein Test, der still nicht prüft, ist schlimmer als keiner.
 	const names = Array.from(
-		source.slice(mapStart).matchAll(/'(lucide:[a-z0-9-]+)'\s*:/g),
+		source.slice(mapStart).matchAll(/'((?:lucide|custom):[a-z0-9-]+)'\s*:/g),
 		(match) => match[1] as string
 	);
 
 	return new Set(names);
 }
 
-/** Jede `icon="lucide:…"`- bzw. `icon: 'lucide:…'`-Stelle im Quelltext. */
+/** Jede `icon="lucide:…"`/`"custom:…"`-Stelle im Quelltext. */
 function usedIcons(): Map<string, string[]> {
 	const usages = new Map<string, string[]>();
 
@@ -51,7 +51,7 @@ function usedIcons(): Map<string, string[]> {
 			if (path === ICON_COMPONENT) continue;
 
 			const source = readFileSync(path, 'utf-8');
-			for (const match of source.matchAll(/["'](lucide:[a-z0-9-]+)["']/g)) {
+			for (const match of source.matchAll(/["']((?:lucide|custom):[a-z0-9-]+)["']/g)) {
 				const name = match[1] as string;
 				usages.set(name, [...(usages.get(name) ?? []), path]);
 			}
