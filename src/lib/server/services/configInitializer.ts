@@ -56,7 +56,7 @@ const defaultConfigurations: ConfigItem[] = [
 	{
 		key: 'notification.email.template',
 		value: NOTIFICATION_EMAIL_DEFAULT_TEMPLATE,
-		description: 'HTML Template für E-Mail Benachrichtigungen (Handlebars Syntax)',
+		description: 'HTML Template für die interne Benachrichtigung (Handlebars Syntax)',
 		category: 'email'
 	},
 	{
