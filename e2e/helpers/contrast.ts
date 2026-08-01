@@ -12,6 +12,12 @@ import type { Page } from '@playwright/test';
  *
  * Transparente Elementhintergründe (z. B. `btn-outline`) werden über `backdrop`
  * komponiert, damit auch Textfarben auf durchsichtigen Flächen korrekt messen.
+ *
+ * Ebenso die `opacity` des gemessenen Elements und — bei `pseudo` — die seines
+ * Pseudo-Elements. **Nicht** berücksichtigt wird die Deckkraft von Vorfahren:
+ * dafür müsste die Kette bis zum Backdrop bekannt sein, und `backdrop` sagt
+ * gerade, dass sie es nicht ist. Sitzt das Messziel in einem abgeblendeten
+ * Container, gehört dessen Deckkraft in die `backdrop`-Farbe eingerechnet.
  */
 export interface ContrastProbe {
 	/** Beschriftung für die Fehlermeldung. */
@@ -131,8 +137,14 @@ export async function measureContrast(
 			// Die Deckkraft steht am Element selbst, gemessen wird ggf. sein
 			// Pseudo-Element — `opacity` ist nicht vererbbar, die Gruppe wird aber
 			// samt Pseudo-Elementen als Ganzes abgeblendet.
-			const deckkraft = Number(getComputedStyle(element).opacity);
+			//
+			// Trägt das Pseudo-Element zusätzlich eine eigene Deckkraft, multiplizieren
+			// sich beide. Ohne `pseudo` liest `style.opacity` denselben Wert wie
+			// `hostDeckkraft` — dort darf deshalb NICHT multipliziert werden, sonst
+			// ginge die Deckkraft quadratisch ein.
+			const hostDeckkraft = Number(getComputedStyle(element).opacity);
 			const style = getComputedStyle(element, item.pseudo ?? null);
+			const deckkraft = item.pseudo ? hostDeckkraft * Number(style.opacity) : hostDeckkraft;
 			const fg = toRgb(style.color, backdrop, deckkraft);
 			const bg = toRgb(style.backgroundColor, backdrop, deckkraft);
 			temporary?.remove();
