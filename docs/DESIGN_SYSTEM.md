@@ -377,7 +377,7 @@ haben, genau wie bei einem Auth0-Redirect oder einer 403-Seite. Deshalb:
 
 | Wächter                   | Fehlerfall, den er abfängt                                   |
 | ------------------------- | ------------------------------------------------------------ |
-| Umleitung ≠ eigene Origin | Session-Zeile fehlt oder Cookie-Name passt nicht              |
+| Umleitung ≠ eigene Origin | Session-Zeile fehlt oder Cookie-Name passt nicht             |
 | Status 401/403            | Cookie gilt, aber `roles` reicht nicht für `requireUserRole` |
 | `renders`-Sonden          | Seite antwortet 200 und rendert trotzdem nichts              |
 
@@ -510,10 +510,9 @@ Vollständiger Scan über beide Verzeichnisse (nicht nur eine Teilmenge):
 Touch-Target-Block in `app.css` gegenstandslos. `.btn:not(.target-exempt)`
 steht dort ungelayert und gewinnt gegen Tailwinds `@layer utilities` — im
 Browser gemessen liefern `btn btn-xs`, `btn btn-sm` und sogar
-`btn btn-sm min-h-10` alle 44px. Umgekehrt heißt das: die zwei verbliebenen
-`min-h-11` und die vier `min-h-10` an den Paginierungs-Schaltflächen sind tote
-Utilities und können bei Gelegenheit weg — `min-h-10` ist dabei irreführend,
-weil es 40px verspricht und nichts bewirkt.
+`btn btn-sm min-h-10` alle 44px. Die vier toten `min-h-10` an den
+Paginierungs-Schaltflächen (`src/routes/admin/+page.svelte`) und die zwei
+toten `min-h-11` in `CleanupPanel.svelte` sind mit #630 entfernt.
 
 **Korrektur vom 2026-07-29: Die hier ursprünglich gelisteten „32 Statusfarben
 als Textfarbe" und „2 `opacity-50` auf Text" existieren nicht.** Beide Zahlen
