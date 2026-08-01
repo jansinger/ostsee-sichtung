@@ -225,6 +225,14 @@
 
 	// Get the icon component based on the icon name - Svelte 5 runes syntax
 	let IconComponent = $derived(iconMap[icon] || null);
+
+	$effect(() => {
+		if (!IconComponent && import.meta.env.DEV) {
+			console.error(
+				`[Icon] Unbekannter Icon-Name: "${icon}" — bitte in Icon.svelte importieren und in iconMap registrieren.`
+			);
+		}
+	});
 </script>
 
 {#if IconComponent}
