@@ -52,4 +52,12 @@ describe('Icon', () => {
 
 		expect(consoleErrorSpy).not.toHaveBeenCalled();
 	});
+
+	it('kennt das projekteigene custom:porpoise — es ersetzt das fachlich falsche Fisch-Icon', async () => {
+		const { container } = render(Icon, { icon: 'custom:porpoise' });
+		await tick();
+
+		expect(consoleErrorSpy).not.toHaveBeenCalled();
+		expect(container.querySelector('svg path')).not.toBeNull();
+	});
 });

@@ -95,7 +95,6 @@ const icons = {
 	CountIcon: 'lucide:hash',
 	Eye: 'lucide:eye',
 	FileText: 'lucide:file-text',
-	Fish: 'lucide:fish',
 	Globe: 'lucide:globe',
 	Hash: 'lucide:hash',
 	Mail: 'lucide:mail',
@@ -106,6 +105,7 @@ const icons = {
 	Navigation: 'lucide:navigation',
 	Navigation2: 'lucide:navigation-2',
 	Phone: 'lucide:phone',
+	Porpoise: 'custom:porpoise',
 	ShieldCheck: 'lucide:shield-check',
 	Ship: 'lucide:ship',
 	Skull: 'lucide:skull',
@@ -135,7 +135,6 @@ const {
 	CountIcon,
 	Eye,
 	FileText,
-	Fish,
 	Globe,
 	Hash,
 	Mail,
@@ -146,6 +145,7 @@ const {
 	Navigation,
 	Navigation2,
 	Phone,
+	Porpoise,
 	ShieldCheck,
 	Ship,
 	Skull,
@@ -379,7 +379,7 @@ export const sightingSchemaBase = yup.object().shape({
 			valueText: 'Artbestimmung hilft beim Populationsmonitoring',
 			type: 'select',
 			options: getSpeciesOptions(true),
-			icon: Fish
+			icon: Porpoise
 		}),
 
 	/**

@@ -343,6 +343,31 @@ Das Formular wird an Deck und am Strand ausgefüllt — nass, in der Sonne, mit 
 - UI-Icons ausschließlich über `src/lib/components/Icon.svelte` (unplugin-icons / lucide): `<Icon icon="lucide:map-pin" width="20" />`. Neue Icons dort einmalig importieren, nicht in Einzelkomponenten.
 - Wetter-Icons sind CSS-basiert (`src/css/weather-icons*.css`): `<i class="wi wi-day-sunny"></i>`.
 
+### Projekteigene Icons: `custom:` — eine begründete Ausnahme
+
+Es gibt genau ein Icon außerhalb von Lucide: `custom:porpoise`
+(`src/lib/components/icons/Porpoise.svelte`), registriert in `Icon.svelte` wie jedes
+andere. Die Aufrufstelle merkt keinen Unterschied — `<Icon icon="custom:porpoise" />`.
+
+**Warum die Ausnahme nötig war:** Das Tierart-Feld trug `lucide:fish`. Das Meeresmuseum
+hat das beanstandet — gemeldet werden Wale, Schweinswale und Robben, keine Fische. Ein
+Robben- oder Wal-Icon führt aber **kein** gängiger Satz: geprüft wurden Lucide, Tabler,
+Phosphor, Iconoir, MDI und Icon-Park; die dortigen `seal`-Treffer sind durchweg
+Wachssiegel. Ein zweiter Icon-Satz hätte das Motiv also nicht gelöst, aber den Stil
+gebrochen.
+
+**Es hält sich an die Lucide-Konventionen** — 24er-Raster, `fill="none"`,
+`stroke="currentColor"`, `stroke-width: 2`, runde Enden — und steht deshalb neben den
+übrigen Feld-Icons, ohne aufzufallen. Das Auge ist wie bei Lucide ein Pfad der Länge null
+(`h.01`), der über `stroke-linecap: round` als Punkt rendert; es trägt bei 16–20 px
+spürbar zur Erkennbarkeit bei. Eine gefüllte Silhouette wäre lesbarer gewesen, hätte aber
+als einziges Vollton-Icon zwischen lauter Outline-Icons gestanden.
+
+**Für neue Fälle gilt weiterhin Lucide.** Ein `custom:`-Icon ist erst dann richtig, wenn
+belegt ist, dass kein Satz das Motiv führt — nicht, wenn das vorhandene nur nicht gefällt.
+`iconRegistry.test.ts` prüft `lucide:` und `custom:` gleichermaßen, ein Tippfehler im
+Namen fällt also weiterhin im Test auf und nicht erst beim Nutzer.
+
 ---
 
 ## Keine toten Utility-Klassen

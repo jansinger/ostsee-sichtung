@@ -687,7 +687,7 @@ SOFTWARE.</pre>
 						href="/"
 						class="btn btn-primary btn-lg px-8 py-4 text-lg shadow-lg transition-all duration-300 hover:shadow-xl"
 					>
-						<Icon icon="lucide:fish" width="20" height="20" class="mr-2" />
+						<Icon icon="custom:porpoise" width="20" height="20" class="mr-2" />
 						Sichtung melden
 					</a>
 					<a
