@@ -74,6 +74,8 @@ const POSITION = { latitude: '54.123456', longitude: '13.654321' };
  */
 const SIGHTING_DATE_UTC = '2024-06-01T08:30:00.000Z';
 
+/** Derselbe Zeitpunkt, wie ihn `to_char` aus der Spalte liest. */
+const SIGHTING_DATE_STORED = '2024-06-01 08:30:00';
 
 function connect() {
 	const databaseUrl = process.env.DATABASE_POSTGRES_URL;
@@ -143,6 +145,7 @@ interface StoredSighting {
 	strasse: string | null;
 	plz: string | null;
 	ort: string | null;
+	sichtungsdatum: string;
 	sonstige_auffaelligkeiten: string | null;
 	kommentar_intern: string | null;
 	vonwo: number;
@@ -165,6 +168,7 @@ async function readSighting(id: number): Promise<StoredSighting> {
 				gps_laenge::text AS lon,
 				ST_AsText(location) AS punkt,
 				vorname, name, email, strasse, plz, ort,
+				to_char(sichtungsdatum, 'YYYY-MM-DD HH24:MI:SS') AS sichtungsdatum,
 				sonstige_auffaelligkeiten, kommentar_intern, vonwo, entfernung
 			FROM sichtungen WHERE id = ${id}
 		`;
@@ -251,6 +255,12 @@ test.describe('Admin-Bearbeitung erhält den Bestand', () => {
 		expect(stored.lon).toBe(POSITION.longitude);
 		expect(stored.punkt).toBe(`POINT(${POSITION.longitude} ${POSITION.latitude})`);
 
+		/* Der Zeitpunkt geht als deutsche Wanduhrzeit durch das Formular und muss
+		   als derselbe UTC-Zeitpunkt zurückkommen — bei einer Bearbeitung, die ihn
+		   gar nicht anfasst, erst recht. Die Zusicherung deckt beide Richtungen ab:
+		   Lesen (`postgresTypes.ts`), Anzeige in Europe/Berlin und das Zurückrechnen
+		   in `berlinWallClockToUtc`. */
+		expect(stored.sichtungsdatum).toBe(SIGHTING_DATE_STORED);
 
 		// Gegenprobe: Die eine beabsichtigte Änderung ist auch angekommen.
 		expect(stored.sonstige_auffaelligkeiten).toBe('E2E: Nachtrag zur Beobachtung');

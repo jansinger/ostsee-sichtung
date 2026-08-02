@@ -1,6 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import { TIMESTAMP_AS_TEXT } from './postgresTypes';
 import * as schema from './schema';
 
 // Error message constant for consistency
@@ -47,7 +48,12 @@ function initializeDb(): void {
 		const client = postgres(databaseUrl, {
 			max: 10,
 			idle_timeout: 20,
-			connect_timeout: 10
+			connect_timeout: 10,
+			// Zeitstempel ohne Zeitzone als Text übernehmen, damit Drizzle sie als
+			// UTC auslegt statt als Ortszeit des Prozesses — Begründung und
+			// Messwerte in `postgresTypes.ts`, abgesichert durch
+			// `timestampParsing.test.ts`.
+			types: { timestampAsText: TIMESTAMP_AS_TEXT }
 		});
 		_client = client;
 		_realDb = drizzle(client, { schema });
