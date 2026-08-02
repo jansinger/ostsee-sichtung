@@ -214,6 +214,13 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 			for (const inner of err.inner) {
 				if (inner.path) errors[inner.path] = inner.message;
 			}
+			// Nicht jeder Fehler trägt ein Feld: Ein schemaweiter `.test()` schlägt
+			// ohne `path` fehl, und je nach Aufrufweg bleibt `inner` leer. Ohne
+			// Auffangwert bekäme das Formular eine leere Karte und hätte nichts
+			// anzuzeigen — derselbe Schlüssel wie im POST-Zweig.
+			if (Object.keys(errors).length === 0) {
+				errors.allgemein = err.message;
+			}
 			logger.info({ id, errors }, 'Sichtung abgelehnt: Validierung fehlgeschlagen');
 
 			return json(

@@ -302,4 +302,30 @@ describe('PUT /api/sightings/[id] - abgelehnte Eingaben', () => {
 		// Kein Update, wenn die Eingabe nicht durchkommt.
 		expect(updateSighting).not.toHaveBeenCalled();
 	});
+
+	/**
+	 * Nicht jeder Yup-Fehler trägt ein Feld: Ein schemaweiter `.test()` schlägt
+	 * ohne `path` fehl, und je nach Aufrufweg bleibt `inner` leer. Ohne Auffangwert
+	 * käme eine leere Fehlerkarte zurück — das Formular hätte dann nichts
+	 * anzuzeigen und der Admin keinen Anhaltspunkt. `POST /api/sightings` löst das
+	 * seit jeher über denselben Schlüssel.
+	 */
+	it('nennt einen Sammelschlüssel, wenn kein Feld benannt ist', async () => {
+		const validationError = new ValidationError('Die Angaben passen nicht zusammen.');
+		validationError.inner = [];
+		vi.mocked(adminSightingSchema.validate).mockRejectedValueOnce(validationError);
+
+		const response = await PUT({
+			params: { id: '42' },
+			request: createPutRequest({ species: 1 }) as unknown as Request,
+			locals: { user: { email: 'admin@example.com', roles: ['admin'] } } as unknown as App.Locals,
+			url: new URL('http://localhost/api/sightings/42'),
+			getClientAddress: mockGetClientAddress
+		} as Parameters<typeof PUT>[0]);
+
+		expect(response.status).toBe(400);
+		await expect(response.json()).resolves.toMatchObject({
+			errors: { allgemein: 'Die Angaben passen nicht zusammen.' }
+		});
+	});
 });

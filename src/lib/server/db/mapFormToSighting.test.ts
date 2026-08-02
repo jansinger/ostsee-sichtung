@@ -115,6 +115,21 @@ describe('mapFormToSighting', () => {
 	});
 
 	/**
+	 * Setzt Rohwerte an einem Formularobjekt, wie sie zur Laufzeit tatsächlich
+	 * ankommen.
+	 *
+	 * `SightingFormData` ist aus dem Yup-Schema abgeleitet und kennt für die
+	 * Koordinaten nur `number`. Über die Legacy-REST-Grenze und aus dem
+	 * DOM-Eingabefeld kommen aber Zeichenketten — genau die Fälle, um die es in
+	 * den Tests unten geht. Der Umweg über `Record<string, unknown>` hält das
+	 * ohne `any` fest.
+	 */
+	const withRawValues = (
+		formData: SightingFormData,
+		raw: Record<string, unknown>
+	): SightingFormData => Object.assign(formData, raw);
+
+	/**
 	 * Hilfsfunktion: Erstellt vollständige Testdaten
 	 */
 	const createCompleteFormData = (): SightingFormData => ({
@@ -340,9 +355,10 @@ describe('mapFormToSighting', () => {
 		 * vorher über Yup und kam nie hier an.
 		 */
 		it('sollte eine Koordinaten-Null als Zeichenkette nicht als Position werten', () => {
-			const formData = createMinimalFormData();
-			formData.latitude = '0.0000' as any;
-			formData.longitude = '0.0000' as any;
+			const formData = withRawValues(createMinimalFormData(), {
+				latitude: '0.0000',
+				longitude: '0.0000'
+			});
 
 			const result = mapFormToSighting(formData);
 
@@ -353,9 +369,10 @@ describe('mapFormToSighting', () => {
 		});
 
 		it('sollte die volle Nachkommastellen-Genauigkeit übernehmen', () => {
-			const formData = createMinimalFormData();
-			formData.latitude = '54.123456' as any;
-			formData.longitude = '13.654321' as any;
+			const formData = withRawValues(createMinimalFormData(), {
+				latitude: '54.123456',
+				longitude: '13.654321'
+			});
 
 			const result = mapFormToSighting(formData);
 
