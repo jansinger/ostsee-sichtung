@@ -114,16 +114,18 @@ describe('Freigabestatus in Sichtungs-Statistiken', () => {
 
 	describe('Grundmenge der öffentlichen Karte', () => {
 		/**
-		 * Der Filter, wie er wörtlich in `/sichtungen/showreports.json` steht.
+		 * Der Filter, wie er bis zur Zentralisierung wörtlich in
+		 * `/sichtungen/showreports.json` stand.
 		 *
-		 * Der Legacy-Endpunkt bedient produktive Mobile Apps und wird deshalb
-		 * bewusst nicht auf den gemeinsamen Helper umgestellt. Stattdessen wird
-		 * hier festgehalten, dass beide Ausdrücke dasselbe Prädikat erzeugen —
-		 * wer eine der beiden Seiten ändert, bricht diesen Test.
+		 * Der Legacy-Endpunkt importiert inzwischen selbst `approvedOnly()` — die
+		 * Grundmenge liegt damit nur noch an einer Stelle. Der Vergleich bleibt
+		 * trotzdem stehen: Er hält fest, dass der Helper dasselbe Prädikat erzeugt
+		 * wie der Ausdruck, an den der Legacy-Vertrag gebunden ist, und schlägt an,
+		 * falls jemand `approvedOnly()` inhaltlich umbaut.
 		 */
 		const legacyKartenFilter = sql`${sightings.approvedAt} IS NOT NULL`;
 
-		it('ist identisch mit dem Filter des Legacy-Kartenendpunkts', () => {
+		it('ist identisch mit dem historischen Filter des Legacy-Kartenendpunkts', () => {
 			const normalisiert = (condition: SQL) => toSqlText(condition).toLowerCase().trim();
 
 			expect(normalisiert(approvedOnly())).toBe(normalisiert(legacyKartenFilter));

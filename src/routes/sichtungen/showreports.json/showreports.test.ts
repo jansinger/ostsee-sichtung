@@ -11,8 +11,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { GET, POST, PUT, DELETE } from './+server';
 import type { RequestEvent } from '@sveltejs/kit';
-import type { SQL } from 'drizzle-orm';
+import { sql, type SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
+import { approvedOnly } from '$lib/server/db/approvalFilter';
+import { sightings } from '$lib/server/db/schema';
 
 // Die WHERE-Bedingung wird aus dem DB-Mock herausgereicht, damit die Tests die
 // tatsächlich erzeugte SQL prüfen können statt nur den HTTP-Status. Ohne das
@@ -541,13 +543,68 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			expect(response.status).toBe(200);
 			// Database limit is tested through integration - query structure is mocked
 		});
+	});
 
-		it('should only return approved sightings', async () => {
-			const event = createMockRequestEvent();
-			const response = await GET(event);
+	describe('Freigabefilter', () => {
+		// Das Prädikat ist in `$lib/server/db/approvalFilter` **einmal** definiert,
+		// damit Karte und öffentliche Statistik nicht erneut auseinanderlaufen
+		// (19.262 vs. 19.877, Stand 2026-07-27). Dieser Endpunkt hatte es lange
+		// von Hand nachgebaut — die Zentralisierung greift nur, wenn der Aufrufer
+		// den Import wirklich hat.
 
-			expect(response.status).toBe(200);
-			// Approved filter is tested through integration - query structure is mocked
+		/**
+		 * Der Filter, wie er bis zur Umstellung wörtlich im Endpunkt stand.
+		 *
+		 * `/sichtungen/showreports.json` unterliegt dem Legacy-Vertrag
+		 * (docs/LEGACY_API_SPECIFICATION.md) und bedient seit 2026-07-30 einen
+		 * produktiven iOS-Client. Der Wechsel auf den Helper darf deshalb nur die
+		 * Schreibweise ändern, nicht die Semantik — genau das hält der Vergleich
+		 * unten fest.
+		 */
+		const historischerInlineFilter = sql`${sightings.approvedAt} IS NOT NULL`;
+
+		it('nutzt das gemeinsame Prädikat aus approvedOnly()', async () => {
+			await GET(createMockRequestEvent());
+
+			const { text } = capturedWhereQuery();
+			// Die Groß-/Kleinschreibung ist hier **absichtlich** das
+			// Unterscheidungsmerkmal und `toContain` deshalb case-sensitiv zu
+			// lassen: Der Helper rendert `is not null`, ein von Hand nachgebautes
+			// `sql`-Literal nach altem Muster `IS NOT NULL`. Nur so schlägt dieser
+			// Test an, wenn jemand den Import wieder durch Inline-SQL ersetzt.
+			// Der Test darunter zeigt, dass beide Schreibweisen für PostgreSQL
+			// dasselbe bedeuten — das gilt für den Vertrag, nicht für diese Prüfung.
+			expect(text).toContain(dialect.sqlToQuery(approvedOnly()).sql);
+		});
+
+		it('erzeugt dieselbe SQL wie der frühere Inline-Filter', () => {
+			const helper = dialect.sqlToQuery(approvedOnly());
+			const inline = dialect.sqlToQuery(historischerInlineFilter);
+
+			// SQL-Schlüsselwörter sind case-insensitiv; alles andere muss
+			// zeichengleich sein, inklusive der Tabellenqualifizierung.
+			expect(helper.sql.toLowerCase()).toBe(inline.sql.toLowerCase());
+			// Keine Parameter auf beiden Seiten — sonst verschöbe sich die
+			// Nummerierung der übrigen Platzhalter in der zusammengesetzten Query.
+			expect(helper.params).toEqual([]);
+			expect(inline.params).toEqual([]);
+		});
+
+		it('bleibt neben den übrigen Filtern erhalten', async () => {
+			await GET(createMockRequestEvent({ year: '2012', bbox: '9,53,31,66', search: 'Schneider' }));
+
+			const { text } = capturedWhereQuery();
+			expect(text).toContain(dialect.sqlToQuery(approvedOnly()).sql);
+			expect(text).toContain('sichtungsdatum');
+		});
+
+		it('filtert auch für eingeloggte Admins auf freigegebene Sichtungen', async () => {
+			// Der Endpunkt liefert Admins zwar eine weitere Suche, aber keine
+			// ungeprüften Sichtungen — die Grundmenge ist für alle dieselbe.
+			await GET(createAdminRequestEvent({ search: 'Schneider' }));
+
+			const { text } = capturedWhereQuery();
+			expect(text).toContain(dialect.sqlToQuery(approvedOnly()).sql);
 		});
 	});
 });
