@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.8.1](https://github.com/jansinger/ostsee-tiere/compare/v2.8.0...v2.8.1) (2026-08-02)
+
+
+### Bug Fixes
+
+* **build:** docker build findet die Vite-Config-Imports wieder ([#718](https://github.com/jansinger/ostsee-tiere/issues/718)) ([623e4aa](https://github.com/jansinger/ostsee-tiere/commit/623e4aa5792d054aa7cb955a157fe44a535e95e7))
+
 ## [2.8.0](https://github.com/jansinger/ostsee-tiere/compare/v2.7.0...v2.8.0) (2026-08-02)
 
 
