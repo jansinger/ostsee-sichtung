@@ -38,8 +38,8 @@ export type ResolvedSightingScope = Exclude<SightingScope, 'both'>;
  * Auch `/sichtungen/showreports.json` (Legacy-Karte) filtert hierüber, damit
  * Karte und Statistik dieselbe Menge zählen. Dieser Endpunkt ist an den
  * Legacy-Vertrag gebunden: Änderungen an diesem Prädikat ändern seine Response.
- * `statisticsApprovalScope.test.ts` pinnt es deshalb gegen den Ausdruck, der
- * dort ursprünglich wörtlich stand.
+ * `showreports.test.ts` pinnt es deshalb gegen den Ausdruck, der dort
+ * ursprünglich wörtlich stand.
  */
 export const approvedOnly = (): SQL => isNotNull(sightings.approvedAt);
 
