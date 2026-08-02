@@ -98,7 +98,79 @@ Redirect zeigt danach auf 4005). **Login funktioniert trotzdem nur**, wenn genau
 Callback-URL in den Auth0-Einstellungen als _Allowed Callback URL_ hinterlegt ist.
 Ohne Auth0-Eintrag: Dev-Server auf 4000 lassen und immer nur einen laufen lassen.
 
-E2E-Tests nutzen ohnehin Port 4001 (`npm run test:e2e`).
+Belegt ein anderer Prozess den Port, bricht `npm run dev` seit
+[`vite.config.ts`](../vite.config.ts) (`strictPort: true`) ab, statt still auf den
+nächsten freien Port auszuweichen. Läuft dort ein Dev-Server dieses Projekts, nennt die
+Meldung davor sein Arbeitsverzeichnis:
+
+```
+Port 4000 wird bereits von einem Dev-Server bedient — aus:
+  /…/.claude/worktrees/hopeful-curie-90f94e
+Dieses Verzeichnis ist:
+  /…/.claude/worktrees/auth0-prod-settings-499d2e
+```
+
+Das Ausweichen war nie eine brauchbare Rückfallebene: Ein Server auf 4001 hat wegen
+`PUBLIC_SITE_URL` einen kaputten Login — und er machte E2E-Läufe gegen fremde Worktrees
+möglich (nächster Abschnitt).
+
+## E2E-Tests: eigener Port pro Worktree, geprüfte Server-Identität
+
+**Geteilte Ports heben die Aussagekraft der Tests auf.** Das ist die schwerwiegendere
+Folge als ein kaputter Login — und sie fällt nicht auf.
+
+Vorher setzte `npm run test:e2e` für **alle** Worktrees fest `VITE_DEV_PORT=4001`, und
+`playwright.config.ts` benutzt lokal `reuseExistingServer`. Antwortete auf 4001
+irgendein Server, lief die Suite gegen ihn — ohne zu prüfen, woher der Code stammt.
+Gemessen am 2026-08-02 gehörten 4000 **und** 4001 einem fremden Worktree:
+
+```bash
+lsof -a -p $(lsof -ti:4001) -d cwd    # zeigt das ausliefernde Verzeichnis
+```
+
+Die Folge waren 32 Fehlschläge für Fundstellen, die im eigenen Branch längst behoben
+waren. Der gefährliche Fall ist aber der umgekehrte: Der fremde Worktree hat die Stelle
+zufällig sauber, der Test wird **grün**, die eigene Regression bleibt unentdeckt. Am
+Lauf ist nichts Auffälliges zu sehen. Vermutlich derselbe Ursprung: ein Paletten-Scan,
+der nach dem Beheben weiter die alten Fundstellen meldete, und zwei
+`legacy-inbox/app.test.js`-Timeouts, die als „Flakiness unter Last" abgelegt wurden.
+
+Zwei Ebenen dagegen, beide in [`src/tools/dev-server-identity.ts`](../src/tools/dev-server-identity.ts):
+
+| Ebene                                          | Wirkung                                                                                                                                                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `worktreeDevPort()` — Port aus dem Pfad-Hash   | Jeder Worktree zieht einen Port aus 41000–44999, derselbe Worktree stets denselben. Kollisionen sind damit unwahrscheinlich, nicht ausgeschlossen (Geburtstagsproblem: ~1 % bei 10 Worktrees, ~5 % bei 20) |
+| `assertServerIdentity()` in `e2e/global-setup` | Der Dev-Server meldet unter `/__dev-server-identity` sein `process.cwd()`. Weicht es ab, **bricht der Lauf ab**                                                                                            |
+
+Die zweite Ebene fängt die erste auf: Ziehen zwei Worktrees denselben Port, ist das
+kein stiller Fehler, sondern ein Abbruch mit beiden Verzeichnissen in der Meldung. Der
+zweite Worktree kann erst testen, wenn der fremde Server beendet ist — unbequem, aber
+in die richtige Richtung.
+
+Der Abbruch ist Absicht — nicht eine Warnung, die im Log untergeht. Stillschweigend
+fremden Code zu testen ist genau der Fehler, der verhindert werden soll:
+
+```
+E2E-Abbruch: Der Server liefert aus einem fremden Arbeitsverzeichnis aus.
+  URL:       https://localhost:4412
+  liefert:   /…/.claude/worktrees/hopeful-curie-90f94e
+  erwartet:  /…/.claude/worktrees/auth0-prod-settings-499d2e
+```
+
+`reuseExistingServer` bleibt lokal an: Ein übrig gebliebener Server _dieses_ Worktrees
+spart den Kaltstart, und dass er der richtige ist, ist jetzt geprüft statt geraten. Der
+Endpunkt hängt am Vite-Plugin `devServerIdentity()`, läuft also nur im Dev-Server und
+kommt nicht in den Production-Build. Ein manuell gesetztes `VITE_DEV_PORT` hat weiterhin
+Vorrang — praktisch, um den Abbruch vorzuführen:
+
+```bash
+VITE_DEV_PORT=<port eines fremden Worktrees> npx playwright test e2e/about-page.spec.ts
+```
+
+**CI ist nicht betroffen** und bleibt bei Port 4000: dort gilt `reuseExistingServer:
+false`, und der Job startet seinen eigenen Server im eigenen Container. Der
+Identitäts-Check läuft dort trotzdem mit, damit ein versehentlich entferntes Plugin
+auffällt, statt die Prüfung still abzuschalten.
 
 ## Geteilte Ressourcen — Vorsicht
 
