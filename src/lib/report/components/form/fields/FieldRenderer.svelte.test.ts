@@ -350,6 +350,31 @@ describe('FieldRenderer', () => {
 			expect(helpElement).not.toBeNull();
 			expect(helpElement?.textContent).toContain('Ihre E-Mail-Adresse für Rückfragen');
 		});
+
+		// Das Feld-Icon aus meta.icon ist rein dekorativ — die Bedeutung trägt das Label.
+		// Ohne aria-hidden meldet der Screenreader es als unbeschriftete Grafik.
+		it.each([
+			['text', 'text'],
+			['select', 'select'],
+			['textarea', 'textarea']
+		])('blendet das dekorative Feld-Icon aus (%s)', async (_name, fieldType) => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: makeFieldConfig({
+					label: 'Bemerkungen',
+					meta: {
+						type: fieldType,
+						icon: 'lucide:file-text',
+						options: [{ value: 1, label: 'Eins' }]
+					}
+				}),
+				name: 'notes',
+				value: ''
+			});
+
+			const svg = screen.container.querySelector('svg');
+			expect(svg).not.toBeNull();
+			expect(svg?.closest('[aria-hidden="true"]')).not.toBeNull();
+		});
 	});
 
 	describe('Hilfetext', () => {

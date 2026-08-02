@@ -54,7 +54,7 @@
 <div class="relative">
 	<!-- Icon (if available) -->
 	{#if icon !== undefined}
-		<div class="pointer-events-none absolute top-3 left-3 z-10">
+		<div aria-hidden="true" class="pointer-events-none absolute top-3 left-3 z-10">
 			<Icon {icon} width="16" class="text-base-content/60" />
 		</div>
 	{/if}
