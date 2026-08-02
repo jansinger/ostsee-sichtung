@@ -71,9 +71,10 @@ dass die Admin-UI nur noch `geprueft` schrieb und damit nichts mehr veröffentli
 ### 100% Kompatibilität erforderlich
 
 Die Legacy API MUSS exakt mit der Original-Spezifikation übereinstimmen.
-Stand 2026-07-28 sind keine Clients angebunden — der Vertrag gilt trotzdem,
-weil er sonst wertlos ist, sobald welche dazukommen. Einordnung und Umgang
-mit offensichtlichen Fehlern: `.claude/rules/legacy-api.md`.
+Stand 2026-07-30 ist ein Client angebunden: die iOS-App `OstSeeTiere/8` sendet
+über `POST /rest_sichtungen`. Eine Abweichung bricht damit etwas Laufendes und
+kostet echte Daten. Einordnung und Umgang mit offensichtlichen Fehlern:
+`.claude/rules/legacy-api.md`.
 
 **Referenz:** docs/LEGACY_API_SPECIFICATION.md
 
