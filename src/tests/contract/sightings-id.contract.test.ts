@@ -86,7 +86,9 @@ vi.mock('$lib/server/db/sightingRepository', () => ({
 }));
 
 vi.mock('$lib/form/validation/sightingSchema', () => ({
-	sightingSchema: { validate: vi.fn().mockResolvedValue(undefined) }
+	sightingSchema: { validate: vi.fn().mockResolvedValue(undefined) },
+	// PUT validiert gegen das Admin-Schema (siehe +server.ts).
+	adminSightingSchema: { validate: vi.fn().mockResolvedValue(undefined) }
 }));
 
 vi.mock('$lib/server/auth/auth', () => ({

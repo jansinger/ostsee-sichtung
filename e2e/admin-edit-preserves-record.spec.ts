@@ -93,14 +93,18 @@ function connect() {
  * gecastet — so steht die erwartete Genauigkeit im Test als Literal und nicht
  * als Fließkommazahl, die schon beim Schreiben wackeln könnte.
  *
- * `vonwo`, `entfernung` und `referenz_id` sind gesetzt, weil das Formular sonst
- * gar nicht erst absendet — `sightingSchema` verlangt alle drei.
+ * `referenz_id` ist gesetzt, weil `sightingSchema` sie verlangt; im Bestand
+ * trägt sie jede Zeile. `vonwo` und `entfernung` sind überschreibbar — der
+ * dritte Testfall braucht dort genau die Werte, an denen das Speichern bis
+ * 2026-08-02 scheiterte.
  */
 async function createSighting(options: {
 	latitude: string | null;
 	longitude: string | null;
 	waterway: string | null;
 	referenceId: string;
+	sightingFrom?: number;
+	distance?: number;
 }): Promise<number> {
 	const sql = connect();
 	try {
@@ -113,7 +117,9 @@ async function createSighting(options: {
 				datenschutz_einverstaendnis, kommentar_intern
 			) VALUES (
 				${SIGHTING_DATE_UTC}, NOW(), 1, 2,
-				${SightingFromEnum.LAND}, ${DistanceEnum.FROM_10_TO_50M}, ${options.referenceId},
+				${options.sightingFrom ?? SightingFromEnum.LAND},
+				${options.distance ?? DistanceEnum.FROM_10_TO_50M},
+				${options.referenceId},
 				${options.latitude}, ${options.longitude}, ${options.waterway},
 				${REPORTER.firstName}, ${REPORTER.lastName}, ${REPORTER.email},
 				${REPORTER.street}, ${REPORTER.zipCode}, ${REPORTER.city},
@@ -138,6 +144,9 @@ interface StoredSighting {
 	plz: string | null;
 	ort: string | null;
 	sonstige_auffaelligkeiten: string | null;
+	kommentar_intern: string | null;
+	vonwo: number;
+	entfernung: number;
 }
 
 /**
@@ -156,7 +165,7 @@ async function readSighting(id: number): Promise<StoredSighting> {
 				gps_laenge::text AS lon,
 				ST_AsText(location) AS punkt,
 				vorname, name, email, strasse, plz, ort,
-				sonstige_auffaelligkeiten
+				sonstige_auffaelligkeiten, kommentar_intern, vonwo, entfernung
 			FROM sichtungen WHERE id = ${id}
 		`;
 		return row;
@@ -271,4 +280,49 @@ test.describe('Admin-Bearbeitung erhält den Bestand', () => {
 		expect(stored.sonstige_auffaelligkeiten).toBe('E2E: Bearbeitung ohne Position');
 	});
 
+	/**
+	 * Der Bestandsfall, an dem das Speichern schlicht scheiterte: `entfernung = 0`
+	 * (282 Zeilen) und `vonwo = 0` ohne Freitext (1.120 Zeilen) sind keine
+	 * gültigen Eingaben am Meldeformular. Das Formular sendete deshalb gar nicht
+	 * erst — der Admin sah eine Fehlerliste zu Feldern, die er nie ausgefüllt hat.
+	 *
+	 * Dieser Fall bearbeitet den **internen Kommentar**, weil der bis 2026-08-02
+	 * nirgends ankam: `mapFormToSighting` bildete das Feld nicht ab. Die Zeile
+	 * verliert damit den Aufräum-Marker; auffindbar bleibt sie über die
+	 * `e2e-`-Referenz-ID.
+	 */
+	test('lässt eine Bestandssichtung mit unvollständigen Angaben speichern', async ({ page }) => {
+		const id = await createSighting({
+			...POSITION,
+			waterway: null,
+			referenceId: 'e2e-bestand',
+			sightingFrom: SightingFromEnum.OTHER,
+			distance: 0
+		});
+		createdIds.push(id);
+
+		await page.goto(`/admin/${id}/edit`);
+		const internalComment = page.locator('[data-testid="field-internalComment"]');
+		await expect(internalComment).toBeVisible();
+		await internalComment.fill('E2E: intern geprüft');
+
+		const [response] = await Promise.all([
+			page.waitForResponse(
+				(res) => res.url().includes(`/api/sightings/${id}`) && res.request().method() === 'PUT'
+			),
+			page.getByRole('button', { name: 'Speichern' }).click()
+		]);
+		expect(response.status()).toBe(200);
+
+		const stored = await readSighting(id);
+
+		// Der interne Kommentar kommt jetzt an …
+		expect(stored.kommentar_intern).toBe('E2E: intern geprüft');
+		// … und die unvollständigen Angaben stehen unverändert da, statt vom
+		// Formular durch erfundene Kategorien ersetzt zu werden.
+		expect(stored.vonwo).toBe(SightingFromEnum.OTHER);
+		expect(stored.entfernung).toBe(0);
+		expect(stored.strasse).toBe(REPORTER.street);
+		expect(stored.lat).toBe(POSITION.latitude);
+	});
 });

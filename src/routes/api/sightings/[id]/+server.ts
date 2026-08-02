@@ -1,4 +1,4 @@
-import { sightingSchema } from '$lib/form/validation/sightingSchema';
+import { adminSightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger.server';
 import type { SightingFormData } from '$lib/report/types';
 import { logAuditEvent } from '$lib/server/audit/auditService';
@@ -94,8 +94,15 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 
 		logger.debug({ formData, uploadedFiles }, 'Sichtung speichern');
 
-		// Validierung der Formulardaten
-		await sightingSchema.validate(formData, { abortEarly: false });
+		// Validierung der Formulardaten gegen das Admin-Schema. Dieser Endpunkt ist
+		// die Rückseite des Bearbeitungsformulars und damit der einzige, der
+		// **bestehende** Zeilen entgegennimmt — die Eingabegrenzen des
+		// Meldeformulars (Anzahlen, Entfernungskategorie, Freitext zu „Sonstiges")
+		// sperren dort 1.158 Bestandssichtungen aus. Mit `sightingSchema` blieb die
+		// Lockerung im Browser wirkungslos: Der Server warf die Meldung als 500
+		// zurück, und der Admin las „Interner Serverfehler". Neue Meldungen laufen
+		// unverändert über `POST /api/sightings` und das strenge Schema.
+		await adminSightingSchema.validate(formData, { abortEarly: false });
 
 		// Load current state for changedFields diff
 		const currentRecords = await db

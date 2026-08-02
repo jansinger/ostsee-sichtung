@@ -364,6 +364,19 @@ describe('mapFormToSighting', () => {
 		});
 	});
 
+	describe('Freitext-Felder', () => {
+		it('sollte den internen Kommentar übernehmen', () => {
+			// Das Admin-Formular bietet das Feld an (`Administrative.svelte`), der
+			// Mapper bildete es aber nicht ab — getippter Text war nach dem
+			// Speichern spurlos weg. Clients können es nicht setzen: Der öffentliche
+			// POST überschreibt es mit `undefined` (`api/sightings/+server.ts`).
+			const formData = createMinimalFormData();
+			formData.internalComment = 'Rückfrage an den Melder offen';
+
+			expect(mapFormToSighting(formData).internalComment).toBe('Rückfrage an den Melder offen');
+		});
+	});
+
 	describe('Datum/Zeit-Verarbeitung', () => {
 		it('sollte Datum und Zeit korrekt kombinieren', () => {
 			const formData = createMinimalFormData();
