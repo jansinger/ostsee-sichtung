@@ -115,6 +115,21 @@ describe('mapFormToSighting', () => {
 	});
 
 	/**
+	 * Setzt Rohwerte an einem Formularobjekt, wie sie zur Laufzeit tatsächlich
+	 * ankommen.
+	 *
+	 * `SightingFormData` ist aus dem Yup-Schema abgeleitet und kennt für die
+	 * Koordinaten nur `number`. Über die Legacy-REST-Grenze und aus dem
+	 * DOM-Eingabefeld kommen aber Zeichenketten — genau die Fälle, um die es in
+	 * den Tests unten geht. Der Umweg über `Record<string, unknown>` hält das
+	 * ohne `any` fest.
+	 */
+	const withRawValues = (
+		formData: SightingFormData,
+		raw: Record<string, unknown>
+	): SightingFormData => Object.assign(formData, raw);
+
+	/**
 	 * Hilfsfunktion: Erstellt vollständige Testdaten
 	 */
 	const createCompleteFormData = (): SightingFormData => ({
@@ -325,6 +340,57 @@ describe('mapFormToSighting', () => {
 			expect(result.latitude).toBeNull();
 			expect(result.longitude).toBeNull();
 			expect(checkBalticSeaFile).not.toHaveBeenCalled();
+		});
+
+		/**
+		 * Eine Null als **Zeichenkette** ist keine Position.
+		 *
+		 * Die Prüfung lief bis 2026-08-02 über die Truthiness des Rohwerts. Für
+		 * eine Zahl stimmt das — `0` ist falsy —, für den String `'0.0000'` nicht:
+		 * er ist truthy und hätte einen PostGIS-Punkt bei 0°/0° erzeugt.
+		 *
+		 * Erreichbar ist dieser Eingang über die Legacy-REST-Grenze:
+		 * `mapLegacyToCurrentSchema` reicht `gps_breite` weiter, wie es ankommt,
+		 * und die Spezifikation sieht dort Strings vor. Der Formularpfad castet
+		 * vorher über Yup und kam nie hier an.
+		 */
+		it('sollte eine Koordinaten-Null als Zeichenkette nicht als Position werten', () => {
+			const formData = withRawValues(createMinimalFormData(), {
+				latitude: '0.0000',
+				longitude: '0.0000'
+			});
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.location).toBeNull();
+			expect(result.latitude).toBeNull();
+			expect(result.longitude).toBeNull();
+			expect(checkBalticSeaFile).not.toHaveBeenCalled();
+		});
+
+		it('sollte die volle Nachkommastellen-Genauigkeit übernehmen', () => {
+			const formData = withRawValues(createMinimalFormData(), {
+				latitude: '54.123456',
+				longitude: '13.654321'
+			});
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.latitude).toBe('54.123456');
+			expect(result.longitude).toBe('13.654321');
+		});
+	});
+
+	describe('Freitext-Felder', () => {
+		it('sollte den internen Kommentar übernehmen', () => {
+			// Das Admin-Formular bietet das Feld an (`Administrative.svelte`), der
+			// Mapper bildete es aber nicht ab — getippter Text war nach dem
+			// Speichern spurlos weg. Clients können es nicht setzen: Der öffentliche
+			// POST überschreibt es mit `undefined` (`api/sightings/+server.ts`).
+			const formData = createMinimalFormData();
+			formData.internalComment = 'Rückfrage an den Melder offen';
+
+			expect(mapFormToSighting(formData).internalComment).toBe('Rückfrage an den Melder offen');
 		});
 	});
 

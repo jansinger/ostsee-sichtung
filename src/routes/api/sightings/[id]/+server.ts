@@ -1,4 +1,4 @@
-import { sightingSchema } from '$lib/form/validation/sightingSchema';
+import { adminSightingSchema } from '$lib/form/validation/sightingSchema';
 import { createLogger } from '$lib/logger.server';
 import type { SightingFormData } from '$lib/report/types';
 import { logAuditEvent } from '$lib/server/audit/auditService';
@@ -16,6 +16,7 @@ import {
 import type { ExifData } from '$lib/types';
 import { createId } from '@paralleldrive/cuid2';
 import { error, isHttpError, json } from '@sveltejs/kit';
+import { ValidationError } from 'yup';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -94,8 +95,15 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 
 		logger.debug({ formData, uploadedFiles }, 'Sichtung speichern');
 
-		// Validierung der Formulardaten
-		await sightingSchema.validate(formData, { abortEarly: false });
+		// Validierung der Formulardaten gegen das Admin-Schema. Dieser Endpunkt ist
+		// die Rückseite des Bearbeitungsformulars und damit der einzige, der
+		// **bestehende** Zeilen entgegennimmt — die Eingabegrenzen des
+		// Meldeformulars (Anzahlen, Entfernungskategorie, Freitext zu „Sonstiges")
+		// sperren dort 1.158 Bestandssichtungen aus. Mit `sightingSchema` blieb die
+		// Lockerung im Browser wirkungslos: Der Server warf die Meldung als 500
+		// zurück, und der Admin las „Interner Serverfehler". Neue Meldungen laufen
+		// unverändert über `POST /api/sightings` und das strenge Schema.
+		await adminSightingSchema.validate(formData, { abortEarly: false });
 
 		// Load current state for changedFields diff
 		const currentRecords = await db
@@ -191,6 +199,41 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 		return json(updatedSighting);
 	} catch (err) {
 		if (isHttpError(err)) throw err;
+
+		// Eine abgelehnte Eingabe ist kein Serverfehler. Als 500 las der Admin
+		// „Interner Serverfehler" und hatte keinen Anhaltspunkt, welches Feld ihn
+		// blockiert — die Meldung log genau dann, wenn sie hätte helfen können.
+		if (err instanceof ValidationError) {
+			// Gleiche Hülle wie `POST /api/sightings` (`success`/`code`/`message`/
+			// `errors`) — dieselbe Ressource soll denselben Fehler nicht in zwei
+			// Formen melden. `message` trägt hier den ersten konkreten Fehler statt
+			// eines Sammelbegriffs: Das Bearbeitungsformular zeigt genau dieses Feld
+			// an, und ein Admin korrigiert eine bestehende Zeile, keine Eingabe von
+			// Grund auf.
+			const errors: Record<string, string> = {};
+			for (const inner of err.inner) {
+				if (inner.path) errors[inner.path] = inner.message;
+			}
+			// Nicht jeder Fehler trägt ein Feld: Ein schemaweiter `.test()` schlägt
+			// ohne `path` fehl, und je nach Aufrufweg bleibt `inner` leer. Ohne
+			// Auffangwert bekäme das Formular eine leere Karte und hätte nichts
+			// anzuzeigen — derselbe Schlüssel wie im POST-Zweig.
+			if (Object.keys(errors).length === 0) {
+				errors.allgemein = err.message;
+			}
+			logger.info({ id, errors }, 'Sichtung abgelehnt: Validierung fehlgeschlagen');
+
+			return json(
+				{
+					success: false,
+					code: 'VALIDATION_ERROR',
+					message: err.errors[0] ?? 'Die Angaben sind unvollständig oder ungültig.',
+					errors
+				},
+				{ status: 400 }
+			);
+		}
+
 		logger.error({ err }, 'Fehler beim Aktualisieren der Sichtung:');
 		throw error(500, 'Interner Serverfehler');
 	}

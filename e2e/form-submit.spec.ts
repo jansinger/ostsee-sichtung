@@ -1,4 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
+import { config as loadEnv } from 'dotenv';
+import postgres from 'postgres';
 import { FormPage } from './pages/FormPage';
 import {
 	fillStep1,
@@ -7,6 +9,36 @@ import {
 	expectCurrentStep,
 	waitForNextEnabled
 } from './helpers/form-helpers';
+
+/* Playwright lädt .env nicht von sich aus — dieselbe Begründung wie in
+   e2e/helpers/adminSession.ts. */
+loadEnv();
+
+/**
+ * Entfernt eine vom Test angelegte Sichtung wieder.
+ *
+ * Der Submit-Test unten schreibt eine **echte** Meldung, und zwar in dieselbe
+ * Datenbank, die lokal über alle Worktrees geteilt wird. Ohne dieses Aufräumen
+ * sammeln sich dort „Max Mustermann"-Zeilen an, die in jeder Auswertung über
+ * Melderzahlen mitzählen — am 2026-08-02 stand eine davon zwischen den echten
+ * Meldungen und ist niemandem aufgefallen.
+ *
+ * Den Test stattdessen zu mocken wäre der falsche Weg: Er ist der einzige, der
+ * den echten Schreibpfad bis in die Spalte prüft. Die übrigen Fälle in dieser
+ * Datei fangen den Endpunkt bewusst ab.
+ */
+async function deleteSighting(id: number): Promise<void> {
+	const databaseUrl = process.env.DATABASE_POSTGRES_URL;
+	if (!databaseUrl) return;
+
+	const sql = postgres(databaseUrl, { max: 1 });
+	try {
+		await sql`DELETE FROM sichtungen WHERE id = ${id}`;
+	} finally {
+		// Sonst hält der offene Pool den Playwright-Prozess am Leben.
+		await sql.end({ timeout: 5 });
+	}
+}
 
 // ── Navigation Tests ────────────────────────────────────────────────────────
 
@@ -175,6 +207,14 @@ test.describe('Sichtung melden — Formular absenden', () => {
 		await expect(submitButton).toBeEnabled({ timeout: 3000 });
 	});
 
+	const createdSightingIds: number[] = [];
+
+	test.afterEach(async () => {
+		while (createdSightingIds.length > 0) {
+			await deleteSighting(createdSightingIds.pop()!);
+		}
+	});
+
 	/* Braucht eine echte Datenbank — der Test schreibt eine Sichtung.
 	   Läuft seit dem 2026-07-30 auch in CI: Der `e2e`-Job fährt einen
 	   Postgres-Service und setzt DATABASE_POSTGRES_URL auf Job-Ebene (ci.yml).
@@ -202,7 +242,19 @@ test.describe('Sichtung melden — Formular absenden', () => {
 		await formPage.skipStep();
 		await fillStep4(formPage);
 
-		await formPage.clickSubmit();
+		const [response] = await Promise.all([
+			page.waitForResponse(
+				(res) => res.url().includes('/api/sightings') && res.request().method() === 'POST'
+			),
+			formPage.clickSubmit()
+		]);
+
+		// Die angelegte Zeile sofort merken — auch ein danach fehlschlagender Test
+		// darf sie nicht in der Datenbank stehen lassen.
+		const created = (await response.json().catch(() => null)) as { id?: number } | null;
+		if (typeof created?.id === 'number') {
+			createdSightingIds.push(created.id);
+		}
 
 		await expect(page.getByRole('heading', { name: /Vielen Dank/i })).toBeVisible({
 			timeout: 10000
