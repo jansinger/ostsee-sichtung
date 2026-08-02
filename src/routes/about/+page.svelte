@@ -257,7 +257,37 @@
 	     - „Modernste Sicherheitstechnologien" ist ein Superlativ ohne Beleg.
 
 	     Der Hosting-Standort steht jetzt konkret da (GECKO, Rostock) statt als
-	     Himmelsrichtung „Deutschland/EU". Ein Anbieter mit Ort ist überprüfbar. -->
+	     Himmelsrichtung „Deutschland/EU". Ein Anbieter mit Ort ist überprüfbar.
+
+	     Zwei weitere Aussagen sind am 2026-08-02 korrigiert worden, beide beim
+	     Abgleich gegen die verlinkte DMM-Erklärung aufgefallen
+	     (docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md):
+
+	     - „Ihre Kontaktdaten sind freiwillig. Eine Sichtung lässt sich auch ohne
+	       sie melden." war falsch. `firstName`, `lastName` und `email` sind in
+	       sightingSchema.ts unbedingt `.required()` und im JSDoc als Pflichtfeld
+	       geführt; POST /api/sightings validiert dasselbe Schema, eine Meldung
+	       ohne sie wird also auch serverseitig abgewiesen. Freiwillig sind
+	       Telefon, Anschrift und Fax — das steht jetzt da.
+	     - Der Schlussabsatz sagte zu, in der DMM-Erklärung stehe „vollständig",
+	       auch „wie lange sie gespeichert bleiben". Für Sichtungsmeldungen nennt
+	       sie keine Frist (nur für Tickets, Kontaktformular, Bewerbungen), und im
+	       Code gibt es außer den 24 h für verwaiste Uploads keine. Die Zusage
+	       nennt deshalb nur noch, was dort tatsächlich steht — Betroffenenrechte
+	       und Ansprechpartner — und verweist für die Zwecke auf die
+	       Einwilligungstexte im Formular, wo sie stehen.
+
+	     Der Schlussabsatz zählt die Betroffenenrechte bewusst NICHT auf. Eine
+	     erste Fassung nannte „Auskunft, Berichtigung, Löschung, Widerspruch" —
+	     vier von sieben, ohne Einschränkung (Art. 18), Datenübertragbarkeit
+	     (Art. 20) und Beschwerderecht (Art. 77). Das ist derselbe Fehler wie in
+	     der oben gestrichenen Rechte-Kachel, nur ohne die
+	     Vollständigkeitsbehauptung: eine unmarkierte Aufzählung liest sich als
+	     abschließend und veraltet mit jeder Änderung. Die verlinkte Erklärung
+	     führt sie vollständig — ein Klick entfernt. (PR #714, Review-Hinweis)
+
+	     Sobald das Museum eine Löschfrist festgelegt hat, gehört sie hierher
+	     zurück — dann aber mit der Frist im Text, nicht als Verweis. -->
 	<div class="mb-16">
 		<h2 class="text-title mb-8 flex items-center justify-center gap-3 text-center font-bold">
 			<Icon icon="lucide:shield-check" width="30" class="text-success-strong" />
@@ -279,8 +309,8 @@
 							aria-hidden="true"
 						/>
 						<span>
-							Ihre Kontaktdaten sind <strong>freiwillig</strong>. Eine Sichtung lässt sich auch ohne
-							sie melden.
+							Für Rückfragen zu Ihrer Meldung brauchen wir Name und E-Mail.
+							<strong>Anschrift und Telefonnummer sind freiwillig.</strong>
 						</span>
 					</li>
 					<li class="flex items-start gap-2">
@@ -321,9 +351,9 @@
 					</li>
 				</ul>
 				<p class="text-base-content/80 mt-4 text-sm">
-					Welche Daten wozu verarbeitet werden, wie lange sie gespeichert bleiben, welche Rechte Sie
-					haben und an wen Sie sich damit wenden: das steht vollständig in der Datenschutzerklärung
-					des Deutschen Meeresmuseums.
+					Welche Rechte Sie haben und an wen Sie sich damit wenden, steht in der
+					Datenschutzerklärung des Deutschen Meeresmuseums. Wozu wir die einzelnen Angaben Ihrer
+					Meldung verwenden, steht bei den Einwilligungen im Formular.
 				</p>
 				<div class="card-actions mt-4">
 					<a
