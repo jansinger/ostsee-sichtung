@@ -94,15 +94,15 @@ function isFilledText(value: unknown): boolean {
 }
 
 /**
- * Die Ortsbeschreibung klappt nur zu, wenn Koordinaten vorliegen UND beide Felder
- * leer sind. Wer erst das Seegebiet beschreibt und danach ein Foto mit GPS
+ * Die Ortsbeschreibung klappt nur zu, wenn Koordinaten vorliegen UND das Feld
+ * leer ist. Wer erst das Seegebiet beschreibt und danach ein Foto mit GPS
  * hochlädt, darf seinen Text nicht verlieren.
+ *
+ * Ein Parameter, nicht zwei: Seit A2.4 steht im Meldeformular nur noch
+ * `waterway` im Block — Seegebiet, Fahrwasser und Orientierungspunkte laufen
+ * durch dasselbe Feld. `seaMark` gibt es dort nicht mehr zu bewerten.
  */
-export function descriptionCollapsed(
-	hasCoordinates: boolean,
-	waterway: unknown,
-	seaMark: unknown
-): boolean {
+export function descriptionCollapsed(hasCoordinates: boolean, waterway: unknown): boolean {
 	if (!hasCoordinates) return false;
-	return !isFilledText(waterway) && !isFilledText(seaMark);
+	return !isFilledText(waterway);
 }

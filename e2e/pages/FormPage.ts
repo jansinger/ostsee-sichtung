@@ -64,12 +64,13 @@ export class FormPage {
 	}
 
 	/**
-	 * Fahrwasser/Seegebiet — Pflichtfeld solange keine GPS-Position vorliegt
-	 * (`hasPosition !== true`). Es gibt keine Methodenwahl mehr: Das Feld steht
-	 * immer im Block „Ortsbeschreibung" (`LocationDescription.svelte`) und ist
-	 * ohne Koordinaten von Anfang an aufgeklappt. Mit Koordinaten und leeren
-	 * Beschreibungsfeldern startet der Block zugeklappt — dann vorher die
-	 * `<summary>` klicken, sonst greift `fill()` ins Leere.
+	 * Ortsbeschreibung („Wo ungefähr?", Feldname weiterhin `waterway`) —
+	 * Pflichtfeld solange keine GPS-Position vorliegt (`hasPosition !== true`).
+	 * Es gibt keine Methodenwahl mehr und seit A2.4 auch kein zweites Feld für
+	 * das Seezeichen: Das eine Feld steht immer im Block „Ortsbeschreibung"
+	 * (`LocationDescription.svelte`) und ist ohne Koordinaten von Anfang an
+	 * aufgeklappt. Mit Koordinaten und leerem Feld startet der Block zugeklappt —
+	 * dann vorher die `<summary>` klicken, sonst greift `fill()` ins Leere.
 	 */
 	async fillWaterway(value: string) {
 		await this.page.locator('[data-testid="field-waterway"]').fill(value);

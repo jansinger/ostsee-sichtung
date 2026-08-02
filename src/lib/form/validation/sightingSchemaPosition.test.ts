@@ -24,8 +24,7 @@ import { validateStep } from './stepValidation';
 const step1 = {
 	sightingDate: '2026-07-31',
 	sightingTime: '12:00',
-	waterway: '',
-	seaMark: ''
+	waterway: ''
 };
 
 describe('Position außerhalb der Ostsee blockiert Schritt 1 nicht', () => {
