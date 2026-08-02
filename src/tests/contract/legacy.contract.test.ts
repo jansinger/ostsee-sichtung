@@ -125,6 +125,14 @@ vi.mock('$lib/server/db/schema', () => ({
 // Bewusst nur die tatsächlich aufgerufenen Helper (YAGNI, empirisch geprüft):
 // `gte`/`lt` etwa nutzt der Endpunkt für den `year`-Filter, den hier kein Test
 // setzt. Wer einen solchen Test ergänzt, muss sie nachtragen.
+//
+// Die Rückgabetypen sind absichtlich uneinheitlich, weil es die Originale auch
+// sind: `and`/`between` sind Kombinatoren (Array/Objekt), `sql` und `isNotNull`
+// bauen SQL-Fragmente und geben deshalb beide einen String zurück — im echten
+// drizzle ist `isNotNull(value)` nichts anderes als ein sql-Template mit dem
+// Suffix "is not null". Die Form ist hier ohnehin inert: Die Bedingungen wandern
+// über `and(...)` in `.where()`, und der `db`-Mock unten wertet dieses Argument
+// nicht aus.
 vi.mock('drizzle-orm', () => ({
 	and: vi.fn((...args) => args),
 	between: vi.fn((a, b, c) => ({ a, b, c })),
