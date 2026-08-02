@@ -16,6 +16,7 @@ import {
 import type { ExifData } from '$lib/types';
 import { createId } from '@paralleldrive/cuid2';
 import { error, isHttpError, json } from '@sveltejs/kit';
+import { ValidationError } from 'yup';
 import { eq } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 
@@ -198,6 +199,34 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 		return json(updatedSighting);
 	} catch (err) {
 		if (isHttpError(err)) throw err;
+
+		// Eine abgelehnte Eingabe ist kein Serverfehler. Als 500 las der Admin
+		// „Interner Serverfehler" und hatte keinen Anhaltspunkt, welches Feld ihn
+		// blockiert — die Meldung log genau dann, wenn sie hätte helfen können.
+		if (err instanceof ValidationError) {
+			// Gleiche Hülle wie `POST /api/sightings` (`success`/`code`/`message`/
+			// `errors`) — dieselbe Ressource soll denselben Fehler nicht in zwei
+			// Formen melden. `message` trägt hier den ersten konkreten Fehler statt
+			// eines Sammelbegriffs: Das Bearbeitungsformular zeigt genau dieses Feld
+			// an, und ein Admin korrigiert eine bestehende Zeile, keine Eingabe von
+			// Grund auf.
+			const errors: Record<string, string> = {};
+			for (const inner of err.inner) {
+				if (inner.path) errors[inner.path] = inner.message;
+			}
+			logger.info({ id, errors }, 'Sichtung abgelehnt: Validierung fehlgeschlagen');
+
+			return json(
+				{
+					success: false,
+					code: 'VALIDATION_ERROR',
+					message: err.errors[0] ?? 'Die Angaben sind unvollständig oder ungültig.',
+					errors
+				},
+				{ status: 400 }
+			);
+		}
+
 		logger.error({ err }, 'Fehler beim Aktualisieren der Sichtung:');
 		throw error(500, 'Interner Serverfehler');
 	}
