@@ -6,6 +6,8 @@
 	import SpeciesIdentificationHelp from './form/fields/SpeciesIdentificationHelp.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import StatusBlock from '$lib/components/StatusBlock.svelte';
+	import DataUsageNotice from '$lib/components/info/DataUsageNotice.svelte';
+	import DeadFindingNotice from '$lib/components/info/DeadFindingNotice.svelte';
 
 	// Keine Platzhalter-Zahlen: Statistiken werden erst angezeigt, wenn sie
 	// tatsächlich geladen wurden. Erfundene Fallback-Werte würden Bürgern sonst
@@ -249,48 +251,29 @@
 						</div>
 					</div>
 
-					<div class="alert alert-warning">
-						<div>
-							<h4 class="flex items-center gap-2 font-semibold">
-								<Icon icon="lucide:triangle-alert" width="16" class="text-warning-strong" />
-								Totfunde - Besonders wichtig!
-							</h4>
-							<p class="mt-1 text-xs">
-								Tote Tiere liefern wichtige Erkenntnisse über Todesursachen und Gesundheit der
-								Population.
-								<strong>Bitte nicht berühren!</strong> Melden Sie den Fund auch an die örtlichen Behörden
-								(Wasserschutzpolizei, Nationalparkamt).
-							</p>
-							<div class="bg-warning/10 mt-3 rounded-lg p-3">
-								<div class="text-center">
-									<div class="text-warning-strong mb-1 text-xl font-bold">
-										{#if loading}
-											<span class="loading loading-dots loading-sm"></span>
-										{:else}
-											{statistics?.deadAnimalsFound.toLocaleString('de-DE') ?? '–'}
-										{/if}
-									</div>
-									<div class="text-base-content text-xs">
-										freigegebene Totfunde bereits für die Wissenschaft dokumentiert
-									</div>
+					<!--
+						Text und Fachaussage liegen seit /bestimmungshilfe in geteilten
+						Komponenten; hier kommt nur die Kennzahl dazu, die es auf der
+						Bestimmungshilfe bewusst nicht gibt (die Seite lädt keine Statistiken).
+					-->
+					<DeadFindingNotice>
+						<div class="bg-warning/10 mt-3 rounded-lg p-3">
+							<div class="text-center">
+								<div class="text-warning-strong mb-1 text-xl font-bold">
+									{#if loading}
+										<span class="loading loading-dots loading-sm"></span>
+									{:else}
+										{statistics?.deadAnimalsFound.toLocaleString('de-DE') ?? '–'}
+									{/if}
+								</div>
+								<div class="text-base-content text-xs">
+									freigegebene Totfunde bereits für die Wissenschaft dokumentiert
 								</div>
 							</div>
 						</div>
-					</div>
+					</DeadFindingNotice>
 
-					<div class="alert alert-info">
-						<Icon icon="lucide:info" class="shrink-0" aria-hidden="true" />
-						<div>
-							<h4 class="font-semibold">Wofür die Daten gebraucht werden</h4>
-							<p class="mt-1 text-xs">
-								Ihre Meldung wird vom Deutschen Meeresmuseum wissenschaftlich ausgewertet und direkt
-								an die internationalen Gremien für den Schutz der Ostsee-Schweinswale weitergegeben:
-								an <strong>HELCOM</strong>, die Helsinki-Kommission zum Schutz der Ostsee, und an
-								<strong>ASCOBANS</strong>, das internationale Abkommen zum Schutz der Kleinwale. So
-								trägt Ihre Beobachtung zum Bild von Verbreitung und Vorkommen der Tiere bei.
-							</p>
-						</div>
-					</div>
+					<DataUsageNotice />
 				</div>
 			</div>
 		</details>

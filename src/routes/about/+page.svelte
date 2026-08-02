@@ -484,14 +484,21 @@
 						<Icon icon="lucide:map" width="20" height="20" class="mr-2" />
 						Karte erkunden
 					</a>
-					<!-- Der dritte Knopf „Mehr erfahren" zeigte auf /docs — die
+					<!-- Der dritte Knopf hieß „Mehr erfahren" und zeigte auf /docs — die
 					     OpenAPI-Dokumentation („Testen Sie alle Endpunkte direkt im
 					     Browser"). Für die Zielgruppe dieser Schaltflächen das falsche
-					     Ziel. Er ist vorerst ersatzlos entfallen statt auf /map
-					     umgehängt zu werden: daneben steht bereits „Karte erkunden",
-					     und zwei Knöpfe auf dasselbe Ziel sind schlechter als zwei
-					     Knöpfe. Sobald es eine Bestimmungshilfen-Seite gibt, gehört er
-					     dorthin zurück. -->
+					     Ziel; #700 hat ihn deshalb ersatzlos entfernt, ausdrücklich mit
+					     dem Vermerk, er gehöre zurück, sobald es eine
+					     Bestimmungshilfen-Seite gibt. Die gibt es jetzt — er ist hier
+					     wieder, mit dem Ziel, das an dieser Stelle immer gemeint war,
+					     und mit einer Beschriftung, die es benennt statt zu umschreiben. -->
+					<a
+						href="/bestimmungshilfe"
+						class="btn btn-accent btn-outline btn-lg px-8 py-4 text-lg shadow-lg transition-all duration-300 hover:shadow-xl"
+					>
+						<Icon icon="lucide:book-open" width="20" height="20" class="mr-2" />
+						Tiere bestimmen
+					</a>
 				</div>
 			</div>
 		</div>

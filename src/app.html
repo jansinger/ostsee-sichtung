@@ -25,15 +25,29 @@
 		<link rel="apple-touch-icon" sizes="180x180" href="%sveltekit.assets%/apple-touch-icon.png" />
 		<link rel="manifest" href="%sveltekit.assets%/manifest.json" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Ostsee-Tiere - Marine Tiere melden</title>
-		<meta
-			name="description"
-			content="Ostsee-Tiere - Melden Sie Ihre Wal- und Robbensichtung in der Ostsee. Helfen Sie der Meeresforschung mit Ihren Beobachtungen."
-		/>
-		<meta
-			name="keywords"
-			content="Ostsee-Tiere, Wal, Robbe, Sichtung, Ostsee, Meeresforschung, Schweinswal, Kegelrobbe, Baltic Sea, Marine Animals"
-		/>
+
+		<!--
+			HIER STEHEN NUR SEITENUNABHÄNGIGE TAGS.
+
+			Titel, Description, Keywords und die seitenbezogenen og:/twitter:-Tags
+			gehören in den Kopf-Block der jeweiligen Route; jede +page.svelte im
+			Projekt hat einen. Sie hier zusätzlich als "Vorgabe" zu setzen war
+			keine: Der SvelteKit-Kopf-Platzhalter steht weiter unten, und SvelteKit
+			dedupliziert Meta-Tags nicht. Jede Seite lieferte dadurch zwei Titel,
+			zwei Descriptions und zwei og:title mit verschiedenem Inhalt aus, und
+			welche davon eine Suchmaschine nimmt, ist nicht garantiert — die
+			seitenspezifische Fassung konnte still ignoriert werden.
+
+			ACHTUNG beim Ergänzen dieses Kommentars: Der Kopf-Platzhalter wird auch
+			INNERHALB eines HTML-Kommentars ersetzt (reine String-Ersetzung). Der
+			eingefügte Block enthält selbst einen Kommentar, dessen Ende diesen hier
+			vorzeitig schließt — alles danach wird zu echtem Markup, inklusive eines
+			zweiten Titel-Elements im Body. Deshalb steht hier weder der Platzhalter
+			noch Tag-Syntax in spitzen Klammern.
+
+			Abgesichert durch e2e/seo-meta.spec.ts. Wer hier einen
+			seitenbeschreibenden Tag ergänzt, macht den Test rot.
+		-->
 		<meta name="language" content="de" />
 		<meta name="robots" content="index, follow" />
 		<meta name="author" content="Deutsches Meeresmuseum" />
@@ -52,24 +66,20 @@
 		<link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
 		<link rel="preconnect" href="https://tiles.openseamap.org" crossorigin />
 
-		<!-- Open Graph / Facebook -->
-		<meta property="og:type" content="website" />
-		<meta property="og:title" content="Ostsee-Tiere - Marine Tiere melden" />
-		<meta property="og:site_name" content="Ostsee-Tiere" />
-		<meta
-			property="og:description"
-			content="Ostsee-Tiere - Melden Sie Ihre Wal- und Robbensichtung in der Ostsee. Jede Beobachtung hilft der Meeresforschung."
-		/>
-		<meta property="og:image" content="/ostsee-tiere-256.png" />
+		<!-- Open Graph / Twitter — nur was auf jeder Seite gleich ist.
+		     og:type, og:title, og:description und twitter:card/title/description
+		     setzt die jeweilige Route.
 
-		<!-- Twitter -->
-		<meta property="twitter:card" content="summary" />
-		<meta property="twitter:title" content="Ostsee-Tiere - Marine Tiere melden" />
-		<meta
-			property="twitter:description"
-			content="Ostsee-Tiere - Melden Sie Ihre Wal- und Robbensichtung in der Ostsee."
-		/>
-		<meta property="twitter:image" content="/ostsee-tiere-256.png" />
+		     og: nutzt `property` (RDFa, so schreibt es das Open-Graph-Protokoll
+		     vor), twitter: nutzt `name` (so dokumentiert es Twitter/X). Das ist
+		     kein Flüchtigkeitsfehler in der Zeile darunter, sondern der
+		     Unterschied zwischen zwei Spezifikationen. Vor 2026-08-02 stand hier
+		     der ganze twitter:-Satz fälschlich auf `property` — beim Aufräumen
+		     der Tag-Dopplung ist `twitter:image` als einziges übrig geblieben und
+		     wich damit von den `name`-Tags der Routen ab. -->
+		<meta property="og:site_name" content="Ostsee-Tiere" />
+		<meta property="og:image" content="/ostsee-tiere-256.png" />
+		<meta name="twitter:image" content="/ostsee-tiere-256.png" />
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover" data-theme="meeresmuseum">

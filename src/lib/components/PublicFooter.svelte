@@ -19,6 +19,7 @@
 			<a href="/about" class="link link-hover text-sm sm:text-base">Über uns</a>
 			<a href="/docs" class="link link-hover text-sm sm:text-base">Dokumentation</a>
 			<a href="/map" class="link link-hover text-sm sm:text-base">Sichtungskarte</a>
+			<a href="/bestimmungshilfe" class="link link-hover text-sm sm:text-base">Bestimmungshilfe</a>
 			<!--
 				Anbieterkennzeichnung nach § 5 DDG und Datenschutzhinweis nach Art. 13 DSGVO.
 				Beides fehlte bis 2026-07-30 vollständig: es gab weder eine Route noch einen
