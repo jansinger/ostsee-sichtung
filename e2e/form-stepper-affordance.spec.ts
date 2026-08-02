@@ -33,6 +33,13 @@ const STEP_BUTTON = 'nav[aria-label="Formular-Schritte"]:visible .step-button';
 const NICHT_ERREICHT = '.steps .step:not(.step-primary)';
 
 /**
+ * Die Leiste selbst. Sie ist zugleich Bildausschnitt und Koordinaten-Ursprung
+ * der Pixelmessung weiter unten — beides muss dasselbe Element sein, sonst
+ * verschiebt die Zeilenhöhe des umgebenden `nav` die Messpunkte.
+ */
+const STEPPER_LEISTE = 'nav[aria-label="Formular-Schritte"] .steps';
+
+/**
  * Wartet, bis alle laufenden CSS-Transitions durch sind.
  *
  * Ohne das misst dieser Test sich selbst blind: Der Schrittwechsel färbt den
@@ -214,6 +221,122 @@ test.describe('Stepper — erkennbar als Navigation', () => {
 			kreis.ratio,
 			`Ziffer ${kreis.foreground} auf ${kreis.background} misst nur ${formatRatio(kreis.ratio)}:1`
 		).toBeGreaterThanOrEqual(4.5);
+	});
+
+	test('der Verbindungsbalken wird vor dem Ziffernkreis wirklich abgeschnitten', async ({
+		page
+	}) => {
+		await gotoStepTwo(page);
+
+		// Der Test darüber prüft, welche Farben Kreis und Balken DEKLARIEREN. Das
+		// war zu wenig: Die Farben unterschieden sich, sichtbar lag der Balken
+		// trotzdem quer durch die Ziffer. Grund ist DaisyUIs Geometrie — der
+		// Balken eines Schritts spannt von der Kreis*mitte* des vorherigen bis zur
+		// eigenen und verlässt sich darauf, dass die beiden Kreise (`z-index: 1`)
+		// die Enden verdecken. Sobald ein `<li>` einen eigenen Stacking-Context
+		// aufmacht — `opacity-70` am gesperrten Schritt tut genau das —, bleibt
+		// das `z-index: 1` darin gefangen, und der Balken des FOLGENDEN Schritts
+		// malt über den Kreis davor.
+		//
+		// Deshalb wird hier gemessen, was tatsächlich gemalt wurde, nicht was
+		// berechnet ist: Screenshot in ein Canvas, Pixel auslesen. Eine
+		// Geometrie-Rechnung im Test wäre keine Alternative — sie müsste DaisyUIs
+		// Zusammenspiel aus `width: 100%`, negativem `margin-inline-start` und
+		// `justify-self: center` nachbauen und damit genau das duplizieren, was
+		// sie prüfen soll.
+		const nav = page.locator(STEPPER_LEISTE);
+		// An den Seitenanfang, NICHT `scrollIntoViewIfNeeded`: Das schiebt die
+		// Leiste gerade eben in den Viewport — und damit unter die feststehende
+		// Navbar. Der Ausschnitt zeigte dann deren Fläche, und weil die überall
+		// dieselbe Farbe hat, waren Kreis- und Balkenprobe gleich: ein Befund, der
+		// nur die Verdeckung gemessen hätte.
+		await page.evaluate(() => window.scrollTo(0, 0));
+		// Aufnahme über den Locator, nicht über `page.screenshot({clip})`: Der
+		// Stepper steht am Seitenkopf und ist nach dem Schrittwechsel oft aus dem
+		// Bild gescrollt — ein Clip mit negativem `y` bricht ab.
+		const bild = (await nav.screenshot()).toString('base64');
+
+		const { verdeckt, befunde } = await page.evaluate(
+			async ({ bild, navSelektor, selektor }) => {
+				const img = new Image();
+				img.src = `data:image/png;base64,${bild}`;
+				await img.decode();
+				const canvas = document.createElement('canvas');
+				canvas.width = img.width;
+				canvas.height = img.height;
+				const ctx = canvas.getContext('2d')!;
+				ctx.drawImage(img, 0, 0);
+
+				// Ursprung ist die Ecke des Stepper-Ausschnitts; der Faktor fängt
+				// einen konfigurierten `deviceScaleFactor` ab.
+				const ursprung = document.querySelector(navSelektor)!.getBoundingClientRect();
+				const faktor = img.width / ursprung.width;
+				const pixel = (x: number, y: number): string => {
+					const d = ctx.getImageData(
+						Math.round((x - ursprung.left) * faktor),
+						Math.round((y - ursprung.top) * faktor),
+						1,
+						1
+					).data;
+					return `${d[0]},${d[1]},${d[2]}`;
+				};
+
+				// Nur Schritte, deren Kreis base-100 trägt und deren Nachfolger einen
+				// base-300-Balken hat. Bei zwei aufeinanderfolgenden `step-primary`
+				// sind Kreis und Balken bewusst dieselbe Farbe — dort wäre die
+				// Gleichheit kein Befund, sondern das gewünschte Bild.
+				const leiste = document.querySelector(navSelektor)!;
+				const messpunkte = [...document.querySelectorAll<HTMLElement>(selektor)]
+					.filter((li) => li.nextElementSibling?.classList.contains('step'))
+					.map((li) => {
+						const r = li.getBoundingClientRect();
+						const nachbar = (li.nextElementSibling as HTMLElement).getBoundingClientRect();
+						const mitteX = r.left + r.width / 2;
+						// Zeile 1 des `.step`-Grids ist 40px hoch und trägt Kreis (32px)
+						// und Balken (8px); beide sind darin zentriert.
+						const mitteY = r.top + 20;
+						return {
+							schritt: li.textContent?.trim().slice(0, 30) ?? '',
+							// 12px aus der Mitte: sicher innerhalb des 16px-Radius und
+							// neben der Ziffer, die nur ~8px breit ist.
+							kreisPunkt: [mitteX + 12, mitteY] as const,
+							// Mitte zwischen den beiden Kreisen — dort ist unstrittig Balken.
+							balkenPunkt: [(mitteX + nachbar.left + nachbar.width / 2) / 2, mitteY] as const
+						};
+					});
+
+				// Liegt an einem Messpunkt etwas anderes obenauf als die Leiste selbst
+				// — die feststehende Navbar etwa —, misst die Probe dessen Farbe.
+				// Beide Punkte wären dann gleich und der Test meldete einen Fehler,
+				// den es nicht gibt. Deshalb hier abfangen und benennen.
+				const verdeckt = messpunkte
+					.flatMap((p) => [p.kreisPunkt, p.balkenPunkt].map((q) => ({ schritt: p.schritt, q })))
+					.filter(({ q }) => !leiste.contains(document.elementFromPoint(q[0], q[1])))
+					.map(({ schritt, q }) => `${schritt} bei ${Math.round(q[0])}/${Math.round(q[1])}`);
+
+				const befunde = messpunkte.map((p) => ({
+					schritt: p.schritt,
+					imKreis: pixel(...p.kreisPunkt),
+					aufBalken: pixel(...p.balkenPunkt)
+				}));
+
+				return { verdeckt, befunde };
+			},
+			{ bild, navSelektor: STEPPER_LEISTE, selektor: NICHT_ERREICHT }
+		);
+
+		expect(
+			verdeckt,
+			`Messpunkte sind verdeckt, die Probe misst fremde Fläche: ${verdeckt.join(', ')}`
+		).toEqual([]);
+		expect(befunde.length, 'Es muss überhaupt etwas gemessen worden sein').toBeGreaterThan(0);
+
+		expect(
+			befunde.filter((b) => b.imKreis === b.aufBalken),
+			`Der Balken ist im Kreis dieser Schritte sichtbar: ${befunde
+				.map((b) => `${b.schritt} (${b.imKreis})`)
+				.join(', ')}`
+		).toEqual([]);
 	});
 
 	test('die Schaltflächen benennen die Aktion, nicht nur den Schritt', async ({ page }) => {

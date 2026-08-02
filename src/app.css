@@ -523,6 +523,38 @@ label:has(> .toggle) {
 	grid-template-columns: minmax(0, 1fr);
 }
 
+/* ===== Der Verbindungsbalken endet an den Kreisen, statt sie zu unterlaufen =====
+
+   DaisyUIs Balken (`::before`) spannt von der Kreis*mitte* des vorherigen
+   Schritts bis zur eigenen — `width: 100%` plus `margin-inline-start: -100%`
+   ergibt zusammen mit `justify-self: center` genau diese Strecke. Beide Enden
+   liegen damit UNTER einem Kreis, und dass man sie nicht sieht, hängt allein
+   daran, dass der Kreis (`::after`, `z-index: 1`) darüber malt.
+
+   Diese Zusage hält nicht: `opacity-70` am gesperrten Schritt (`FormSteps.svelte`)
+   macht aus dem `<li>` einen eigenen Stacking-Context. Das `z-index: 1` seines
+   Kreises reicht dann nur noch bis zum `<li>`-Rand, während der Balken des
+   FOLGENDEN Schritts als späteres Geschwister darüber liegt — er malt quer
+   durch die Ziffer davor. Genau so war „die Zahlen werden von den Balken
+   überlagert" gemeint; die Korrektur in #691 (eigene Kreisfläche, siehe unten)
+   hat die Farben getrennt, den Balken aber weiterhin obenauf gelassen.
+
+   `calc(100% - 2rem)` nimmt dem Balken die beiden Kreisdurchmesser-Hälften an
+   seinen Enden. Da die Kreise 2rem breit sind und `justify-self: center` den
+   Balken mittig hält, stößt er danach exakt an ihre Ränder — bei JEDER
+   Spaltenbreite, denn beide Größen wachsen mit derselben Hälfte. Das Bild
+   bleibt dasselbe wie bisher beabsichtigt; es hängt nur nicht mehr an der
+   Malreihenfolge.
+
+   Abgesichert durch `e2e/form-stepper-affordance.spec.ts` → „der
+   Verbindungsbalken wird vor dem Ziffernkreis wirklich abgeschnitten". Der Test
+   liest Pixel aus einem Screenshot statt `getComputedStyle` — an berechneten
+   Werten war der Fehler nicht zu sehen, Kreis und Balken deklarierten längst
+   verschiedene Farben. */
+.steps .step::before {
+	width: calc(100% - 2rem);
+}
+
 /* ===== Der Kreis eines noch nicht erreichten Schritts ist nicht der Balken =====
 
    DaisyUI speist beide Pseudo-Elemente aus derselben Variablen: `--step-bg`
@@ -531,10 +563,11 @@ label:has(> .toggle) {
    beiden; für noch nicht erreichte ist beides `base-300`, und der Balken läuft
    damit farbgleich quer durch die Ziffer.
 
-   Gemeldet wurde das als „die Zahlen werden von den Balken überlagert" — der
-   Kreis liegt tatsächlich davor (DaisyUI gibt ihm `z-index: 1`), er ist nur
-   nicht von ihm zu unterscheiden. Eine z-index-Korrektur ginge deshalb ins
-   Leere; es fehlt der Farbunterschied.
+   Gemeldet wurde das als „die Zahlen werden von den Balken überlagert". Der
+   Farbunterschied fehlte tatsächlich — er war aber nur die halbe Ursache: Beim
+   gesperrten Schritt lag der Balken auch wirklich obenauf. Warum das so ist und
+   was daran hängt, steht im Block darüber; der Kreis hier bekommt seine eigene
+   Farbe, damit er sich vom Balken abhebt, wo die beiden aneinanderstoßen.
 
    Gefüllt statt umrandet wäre hier falsch herum: „ausgefüllt" ist im Stepper
    die Auszeichnung des Erledigten, die `step-primary` schon trägt. Der offene
