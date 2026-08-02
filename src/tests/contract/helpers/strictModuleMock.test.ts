@@ -35,7 +35,28 @@ describe('strictModuleMock', () => {
 		}
 
 		expect(message).toContain('ggf. mittelbar');
-		expect(message).toContain('Ergänze den Helper in der Attrappe');
+		expect(message).toContain('Ergänze den Export in der Attrappe');
+
+		drainMissingMockExports();
+	});
+
+	// Die Attrappe deckt zwei Modularten ab: `drizzle-orm` exportiert Funktionen,
+	// `$lib/server/db/schema` Tabellen. Eine Tabelle wie `auditLogs` wird nicht
+	// „aufgerufen" — die Meldung muss für beides stimmen.
+	it('formuliert die Meldung neutral, also auch für Tabellen statt Funktionen', () => {
+		const mock = strictModuleMock('$lib/server/db/schema', { sightings: { id: 'id' } });
+
+		let message = '';
+		try {
+			void (mock as Record<string, unknown>).auditLogs;
+		} catch (e) {
+			message = (e as Error).message;
+		}
+
+		expect(message).toContain('$lib/server/db/schema-Attrappe');
+		expect(message).toContain('`auditLogs` nicht');
+		expect(message).not.toContain('ruft');
+		expect(message).not.toContain('Helper');
 
 		drainMissingMockExports();
 	});

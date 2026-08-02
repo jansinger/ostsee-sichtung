@@ -2,8 +2,10 @@
  * @fileoverview Modul-Attrappen, die einen fehlenden Export laut melden.
  *
  * Die Contract-Tests ersetzen `drizzle-orm` und `$lib/server/db/schema`
- * **vollständig**. Ein Helper, den der getestete Code aufruft, hier aber fehlt,
- * ist damit zur Laufzeit nicht vorhanden. Das passiert auch **mittelbar**: Seit
+ * **vollständig**. Ein Export, den der getestete Code verwendet, hier aber
+ * fehlt — eine Funktion wie `isNotNull` ebenso wie eine Tabelle wie
+ * `auditLogs` —, ist damit zur Laufzeit nicht da. Das passiert auch
+ * **mittelbar**: Seit
  * `/sichtungen/showreports.json` sein Freigabe-Prädikat über `approvedOnly()`
  * aus `$lib/server/db/approvalFilter` bezieht, hängt der Endpunkt an
  * `isNotNull`, ohne es selbst zu importieren (PR #701).
@@ -16,7 +18,7 @@
  *
  * Ein Proxy allein löst das also nicht. Deshalb tut dieser hier beides:
  *
- * 1. **werfen** — damit der Code nicht mit einem fehlenden Helper weiterläuft;
+ * 1. **werfen** — damit der Code nicht mit einem fehlenden Export weiterläuft;
  * 2. **den Fehlgriff vermerken** — damit er den `catch`-Block der Route
  *    überlebt. `vitest-setup-server.ts` prüft den Vermerk nach jedem Test und
  *    lässt ihn scheitern, auch wenn der Wurf unterwegs verschluckt wurde.
@@ -55,11 +57,16 @@ function currentTestFile(): string {
 	return testPath ? basename(testPath) : 'dieser Testdatei';
 }
 
+/**
+ * Bewusst neutral formuliert: Die Attrappe deckt zwei Modularten ab. Bei
+ * `drizzle-orm` fehlt eine Funktion, bei `$lib/server/db/schema` eine Tabelle
+ * wie `auditLogs` — die wird verwendet, nicht „aufgerufen".
+ */
 function describeMiss({ moduleName, exportName, testFile }: MissingMockExport): string {
 	return (
 		`${moduleName}-Attrappe in ${testFile} exportiert \`${exportName}\` nicht — ` +
-		`der getestete Code ruft es (ggf. mittelbar) auf. ` +
-		`Ergänze den Helper in der Attrappe.`
+		`der getestete Code verwendet es (ggf. mittelbar). ` +
+		`Ergänze den Export in der Attrappe.`
 	);
 }
 
