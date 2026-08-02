@@ -119,7 +119,7 @@ describe('Contract: GET /api/map/sightings', () => {
 		expect(Array.isArray(body.features)).toBe(true);
 	});
 
-	it('filtert auf approvedAt IS NOT NULL statt auf verified=1 (gleiche Grundmenge wie Legacy-API)', async () => {
+	it('filtert über approvedOnly() auf approvedAt statt auf verified=1 (gleiche Grundmenge wie Legacy-API)', async () => {
 		const { isNotNull, eq } = vi.mocked(await import('drizzle-orm'));
 		const event = createEvent('/api/map/sightings', {
 			locals: { user: mockAdminUser }
