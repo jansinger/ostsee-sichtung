@@ -26,6 +26,7 @@
 	} from '$lib/storage/localStorage';
 	import type { FormContext, SightingFormData, UserContactData } from '$lib/types';
 	import type { SightingFormValues } from '$lib/types/Form';
+	import { discardFormUploads } from '$lib/report/discardFormUploads';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 	import { scrollToFirstError } from '$lib/utils/fieldNavigation';
 	import { createId } from '@paralleldrive/cuid2';
@@ -344,8 +345,23 @@
 		return formContext.handleSubmit(e);
 	}
 
+	/**
+	 * Verwirft das Formular — samt der bereits hochgeladenen Dateien.
+	 *
+	 * `discardFormUploads` steht **vor** dem Aufräumen des Client-Zustands, und
+	 * das ist keine Stilfrage: Danach ist `uploadedFiles` leer, und niemand weiß
+	 * mehr, was zu löschen war. Die Dateien lägen dauerhaft unter
+	 * `uploads/<referenceId>/` und als Zeile in `sichtungen_dateien`, ohne dass je
+	 * eine Sichtung entsteht, zu der sie gehören.
+	 *
+	 * Es wird bewusst nicht gewartet: Warum, und warum der Medien-Store dabei ganz
+	 * geleert wird, steht in `discardFormUploads.ts`.
+	 */
 	function onReset() {
 		logger.info('Resetting form:');
+
+		discardFormUploads($form.uploadedFiles, formContext.mediaStore);
+
 		// Lösche alle gespeicherten Daten
 		clearFormDataOnly();
 		clearStorage();
