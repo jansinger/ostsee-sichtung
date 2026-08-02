@@ -1,5 +1,10 @@
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
 import http from 'node:http';
+import https from 'node:https';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
 	DEV_IDENTITY_PATH,
@@ -7,8 +12,29 @@ import {
 	createNodeIdentityFetch,
 	describePortOwner,
 	devServerIdentity,
+	devTrustAnchors,
 	worktreeDevPort
 } from './dev-server-identity';
+
+/**
+ * Stellt ein selbstsigniertes Zertifikat aus, dem kein lokaler Anker traut.
+ * Gibt `null` zurück, wenn kein `openssl` verfügbar ist — dann entfällt die Gegenprobe,
+ * statt sie vorzutäuschen.
+ */
+function selfSignedCert(): { cert: Buffer; key: Buffer } | null {
+	const dir = mkdtempSync(path.join(tmpdir(), 'dsi-cert-'));
+	const certFile = path.join(dir, 'cert.pem');
+	const keyFile = path.join(dir, 'key.pem');
+	const result = spawnSync(
+		'openssl',
+		// prettier-ignore
+		['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1',
+		 '-subj', '/CN=localhost', '-keyout', keyFile, '-out', certFile],
+		{ encoding: 'utf8' }
+	);
+	if (result.status !== 0 || !existsSync(certFile)) return null;
+	return { cert: readFileSync(certFile), key: readFileSync(keyFile) };
+}
 
 const MAIN_REPO = '/Users/dev/Code/ostsee-sichtung';
 const WORKTREE_A = '/Users/dev/Code/ostsee-sichtung/.claude/worktrees/hopeful-curie-90f94e';
@@ -122,6 +148,14 @@ describe('describePortOwner', () => {
 	});
 });
 
+/**
+ * Diese Tests machen echtes Netz-I/O (TLS-Handshake, Socket-Auf- und Abbau). Unter der
+ * Last der vollen Suite reichen die 5 s Default nicht: gemessen fiel der HTTPS-Test in
+ * 1 von 3 Gesamtläufen in den Timeout, isoliert nie. Die Arbeit ist echt, nicht hängend —
+ * deshalb mehr Zeit statt Test entschärfen.
+ */
+const IO_TIMEOUT = 20_000;
+
 describe('createNodeIdentityFetch', () => {
 	/**
 	 * Das einzige Stück mit echtem I/O — deshalb gegen einen echten Server geprüft.
@@ -142,65 +176,145 @@ describe('createNodeIdentityFetch', () => {
 		}
 	}
 
-	it('liest JSON über http und meldet ok', async () => {
-		await withServer(
-			(_req, res) => res.end(JSON.stringify({ root: '/irgendwo' })),
-			async (origin) => {
-				const response = await createNodeIdentityFetch()(`${origin}${DEV_IDENTITY_PATH}`);
+	it(
+		'liest JSON über http und meldet ok',
+		async () => {
+			await withServer(
+				(_req, res) => res.end(JSON.stringify({ root: '/irgendwo' })),
+				async (origin) => {
+					const response = await createNodeIdentityFetch()(`${origin}${DEV_IDENTITY_PATH}`);
+					expect(response.ok).toBe(true);
+					await expect(response.json()).resolves.toEqual({ root: '/irgendwo' });
+				}
+			);
+		},
+		IO_TIMEOUT
+	);
+
+	it(
+		'meldet ok=false für Status außerhalb 2xx',
+		async () => {
+			await withServer(
+				(_req, res) => {
+					res.statusCode = 404;
+					res.end('not found');
+				},
+				async (origin) => {
+					const response = await createNodeIdentityFetch()(`${origin}${DEV_IDENTITY_PATH}`);
+					expect(response.ok).toBe(false);
+				}
+			);
+		},
+		IO_TIMEOUT
+	);
+
+	it(
+		'lässt json() scheitern, wenn die Antwort kein JSON ist',
+		async () => {
+			// Genau der Fall „auf dem Port läuft etwas ganz anderes": HTML statt JSON.
+			await withServer(
+				(_req, res) => res.end('<!doctype html><h1>fremder Dienst</h1>'),
+				async (origin) => {
+					const response = await createNodeIdentityFetch()(`${origin}${DEV_IDENTITY_PATH}`);
+					await expect(response.json()).rejects.toThrow();
+				}
+			);
+		},
+		IO_TIMEOUT
+	);
+
+	it(
+		'bricht bei einem hängenden Server nach dem Timeout ab',
+		async () => {
+			await withServer(
+				() => {
+					/* antwortet absichtlich nie */
+				},
+				async (origin) => {
+					await expect(
+						createNodeIdentityFetch(150)(`${origin}${DEV_IDENTITY_PATH}`)
+					).rejects.toThrow(/Zeitüberschreitung/);
+				}
+			);
+		},
+		IO_TIMEOUT
+	);
+
+	it(
+		'spricht mit einem echten HTTPS-Dev-Zertifikat — mit aktiver Prüfung',
+		async () => {
+			/**
+			 * Bewusst das `basic-ssl`-Zertifikat und nicht das von mkcert: Die mkcert-CA
+			 * liegt im System-Store, den Node ab 24 in seinen Default-Store mischt — der
+			 * Test liefe dort auch ohne die Anker durch und bewiese nichts. Das
+			 * selbstsignierte `basic-ssl`-Zertifikat kennt kein Store; es geht
+			 * ausschließlich über `devTrustAnchors()` durch. (Verifiziert per
+			 * Mutationsprobe: ohne Anker schlägt dieser Test fehl.)
+			 *
+			 * Die Datei enthält Schlüssel und Zertifikat in einem PEM. Fehlt sie — etwa in
+			 * CI, wo nie ein Dev-Server lief —, entfällt der Test, statt etwas anderes zu
+			 * prüfen als draufsteht.
+			 */
+			const pem = path.join(process.cwd(), 'certs', 'basic-ssl', '_cert.pem');
+			if (!existsSync(pem) || devTrustAnchors().length === 0) return;
+			const material = readFileSync(pem);
+
+			const server = https.createServer({ cert: material, key: material }, (_req, res) =>
+				res.end(JSON.stringify({ root: '/irgendwo' }))
+			);
+			await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+			const { port } = server.address() as AddressInfo;
+			try {
+				// Über `localhost`, nicht 127.0.0.1: Der Hostname wird mitgeprüft.
+				const response = await createNodeIdentityFetch()(
+					`https://localhost:${port}${DEV_IDENTITY_PATH}`
+				);
 				expect(response.ok).toBe(true);
 				await expect(response.json()).resolves.toEqual({ root: '/irgendwo' });
+			} finally {
+				await new Promise((resolve) => server.close(resolve));
 			}
-		);
-	});
+		},
+		IO_TIMEOUT
+	);
 
-	it('meldet ok=false für Status außerhalb 2xx', async () => {
-		await withServer(
-			(_req, res) => {
-				res.statusCode = 404;
-				res.end('not found');
-			},
-			async (origin) => {
-				const response = await createNodeIdentityFetch()(`${origin}${DEV_IDENTITY_PATH}`);
-				expect(response.ok).toBe(false);
+	it(
+		'weist ein Zertifikat zurück, dem kein Anker deckt',
+		async () => {
+			// Gegenprobe zum vorigen Test: Ein fremdes, selbstsigniertes Zertifikat darf
+			// nicht durchgehen — sonst wäre die Prüfung faktisch abgeschaltet.
+			const material = selfSignedCert();
+			if (!material || devTrustAnchors().length === 0) return;
+
+			const server = https.createServer(material, (_req, res) => res.end('{}'));
+			await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+			const { port } = server.address() as AddressInfo;
+			try {
+				await expect(
+					createNodeIdentityFetch(2000)(`https://localhost:${port}${DEV_IDENTITY_PATH}`)
+				).rejects.toThrow();
+			} finally {
+				await new Promise((resolve) => server.close(resolve));
 			}
-		);
-	});
+		},
+		IO_TIMEOUT
+	);
 
-	it('lässt json() scheitern, wenn die Antwort kein JSON ist', async () => {
-		// Genau der Fall „auf dem Port läuft etwas ganz anderes": HTML statt JSON.
-		await withServer(
-			(_req, res) => res.end('<!doctype html><h1>fremder Dienst</h1>'),
-			async (origin) => {
-				const response = await createNodeIdentityFetch()(`${origin}${DEV_IDENTITY_PATH}`);
-				await expect(response.json()).rejects.toThrow();
-			}
-		);
-	});
+	it(
+		'meldet einen freien Port als Fehler statt zu hängen',
+		async () => {
+			// Erst einen Port belegen, dann freigeben — so ist er sicher unbenutzt.
+			const probe = http.createServer();
+			await new Promise<void>((resolve) => probe.listen(0, '127.0.0.1', resolve));
+			const { port } = probe.address() as AddressInfo;
+			await new Promise((resolve) => probe.close(resolve));
 
-	it('bricht bei einem hängenden Server nach dem Timeout ab', async () => {
-		await withServer(
-			() => {
-				/* antwortet absichtlich nie */
-			},
-			async (origin) => {
-				await expect(createNodeIdentityFetch(150)(`${origin}${DEV_IDENTITY_PATH}`)).rejects.toThrow(
-					/Zeitüberschreitung/
-				);
-			}
-		);
-	});
-
-	it('meldet einen freien Port als Fehler statt zu hängen', async () => {
-		// Erst einen Port belegen, dann freigeben — so ist er sicher unbenutzt.
-		const probe = http.createServer();
-		await new Promise<void>((resolve) => probe.listen(0, '127.0.0.1', resolve));
-		const { port } = probe.address() as AddressInfo;
-		await new Promise((resolve) => probe.close(resolve));
-
-		await expect(
-			createNodeIdentityFetch(1000)(`http://127.0.0.1:${port}${DEV_IDENTITY_PATH}`)
-		).rejects.toThrow();
-	});
+			await expect(
+				createNodeIdentityFetch(1000)(`http://127.0.0.1:${port}${DEV_IDENTITY_PATH}`)
+			).rejects.toThrow();
+		},
+		IO_TIMEOUT
+	);
 });
 
 describe('devServerIdentity plugin', () => {

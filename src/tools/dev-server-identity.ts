@@ -16,9 +16,12 @@
  *     Code zu testen ist der Fehler, der verhindert werden soll — eine Warnung, die im
  *     Log untergeht, reicht dafür nicht.
  */
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
+import path from 'node:path';
 import type { Plugin } from 'vite';
 
 /** Pfad, unter dem der Dev-Server sein Wurzelverzeichnis meldet. */
@@ -51,29 +54,68 @@ export function worktreeDevPort(root: string): number {
 }
 
 /**
- * `fetch`-Ersatz auf Basis von `node:https`.
+ * Vertrauensanker für die lokalen Dev-Zertifikate.
  *
- * Das lokale Dev-Zertifikat ist selbstsigniert und wird von der mkcert-CA im
- * System-Store gedeckt. Ob das globale `fetch` diesen Store liest, hängt an der
- * Node-Version — auf den in `engines` erlaubten 20/22 nicht. Dort bräche die Prüfung
- * am Zertifikat ab und meldete „nicht erreichbar", obwohl der Server läuft: genau die
- * irreführende Diagnose, gegen die dieses Modul geschrieben ist. Deshalb hier
- * unabhängig von der Node-Version explizit. Bewusst ohne `undici` — das Paket liegt
- * nur transitiv im Abhängigkeitsbaum.
+ * Bewusst **keine** abgeschaltete Zertifikatsprüfung: Die mkcert-CA liegt einmal pro
+ * Maschine und deckt damit die Zertifikate *aller* Worktrees ab — sie zu pinnen leistet
+ * dasselbe wie `rejectUnauthorized: false`, ohne das Muster in die Codebasis zu tragen.
+ * Ergänzt um das eigene `basic-ssl`-Zertifikat für den Fall, dass mkcert fehlt
+ * (`vite.config.ts` fällt dann auf `@vitejs/plugin-basic-ssl` zurück).
+ *
+ * Ist gar kein Anker zu finden, bleibt der System-Store aktiv und der Handshake
+ * scheitert — der E2E-Lauf bricht dann mit „nicht erreichbar" ab statt fremden Code zu
+ * testen. Fail-closed ist hier die richtige Richtung.
+ */
+let cachedAnchors: Buffer[] | undefined;
+
+export function devTrustAnchors(): Buffer[] {
+	if (cachedAnchors) return cachedAnchors;
+
+	const anchors: Buffer[] = [];
+	// Gleiche Auflösung wie scripts/setup-dev-certs.mjs — mkcert kennt seinen CA-Pfad selbst.
+	const caRoot = spawnSync('mkcert', ['-CAROOT'], { encoding: 'utf8' });
+	if (caRoot.status === 0) {
+		const rootCa = path.join(caRoot.stdout.trim(), 'rootCA.pem');
+		if (existsSync(rootCa)) anchors.push(readFileSync(rootCa));
+	}
+
+	const basicSsl = path.join(process.cwd(), 'certs', 'basic-ssl', '_cert.pem');
+	if (existsSync(basicSsl)) anchors.push(readFileSync(basicSsl));
+
+	cachedAnchors = anchors;
+	return anchors;
+}
+
+/**
+ * `fetch`-Ersatz auf Basis von `node:https`, der den lokalen Dev-Zertifikaten traut —
+ * und sonst nichts nachlässt.
+ *
+ * Warum nicht das globale `fetch`: Ob es den System-Trust-Store (und damit die
+ * mkcert-CA) liest, hängt an der Node-Version — auf den in `engines` erlaubten 20/22
+ * nicht. Dort bräche die Prüfung am Zertifikat ab und meldete „nicht erreichbar",
+ * obwohl der Server läuft: genau die irreführende Diagnose, gegen die dieses Modul
+ * geschrieben ist. Mit explizit gesetzten Ankern ist das Verhalten von der
+ * Node-Version unabhängig. Bewusst ohne `undici` — das Paket liegt nur transitiv im
+ * Abhängigkeitsbaum.
  */
 export function createNodeIdentityFetch(timeoutMs = 10_000): IdentityFetch {
 	return (url, init) =>
 		new Promise((resolve, reject) => {
 			const { request } = url.startsWith('https:') ? https : http;
-			const req = request(url, { rejectUnauthorized: false, timeout: timeoutMs }, (res) => {
-				let body = '';
-				res.setEncoding('utf8');
-				res.on('data', (chunk) => (body += chunk));
-				res.on('end', () => {
-					const status = res.statusCode ?? 0;
-					resolve({ ok: status >= 200 && status < 300, json: async () => JSON.parse(body) });
-				});
-			});
+			const anchors = devTrustAnchors();
+			const req = request(
+				url,
+				{ timeout: timeoutMs, ...(anchors.length ? { ca: anchors } : {}) },
+				(res) => {
+					let body = '';
+					res.setEncoding('utf8');
+					res.on('data', (chunk) => (body += chunk));
+					res.on('end', () => {
+						const status = res.statusCode ?? 0;
+						resolve({ ok: status >= 200 && status < 300, json: async () => JSON.parse(body) });
+					});
+				}
+			);
 			req.on('timeout', () => req.destroy(new Error(`Zeitüberschreitung nach ${timeoutMs} ms`)));
 			req.on('error', reject);
 			// Ein übergebenes Signal muss wirken — sonst gäbe es zwei Timeouts, von denen
@@ -195,7 +237,12 @@ export async function assertServerIdentity({
 		const response = await fetchImpl(identityUrl, { signal: AbortSignal.timeout(10_000) });
 		if (response.ok) payload = (await response.json().catch(() => ({}))) as { root?: unknown };
 	} catch (error) {
-		throw new Error(`Der Dev-Server unter ${url} ist nicht erreichbar (${identityUrl}).`, {
+		// Ein TLS-Fehler sieht sonst aus wie „Server läuft nicht" — der häufigste Grund
+		// ist aber ein Dev-Zertifikat ohne passenden Anker (mkcert nicht installiert).
+		const hint = /certificate|self.signed|CERT_/i.test(String(error))
+			? '\nDas Zertifikat ist keinem lokalen Anker zuzuordnen — läuft `npm run certs:setup`?'
+			: '';
+		throw new Error(`Der Dev-Server unter ${url} ist nicht erreichbar (${identityUrl}).${hint}`, {
 			cause: error
 		});
 	}
