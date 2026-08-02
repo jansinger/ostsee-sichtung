@@ -392,10 +392,36 @@
    Responsive Anpassungen
    =========================== */
 @media (max-width: 768px) {
-	h1 {
-		font-size: 1.25rem !important;
-		padding: 0.5rem !important;
-	}
+	/* Die `h1`-Regel ist hier ersatzlos entfallen (2026-08-02). Sie lautete
+	   `h1 { font-size: 1.25rem !important; padding: 0.5rem !important }` und war
+	   auf zwei Ebenen falsch.
+
+	   **Sie galt nicht nur für die Karte.** Diese Datei wird über `app.css`
+	   global importiert (dort Zeile 31), der Selektor war aber ein nacktes
+	   Element ohne Karten-Kontext. Er traf damit jede `h1` der Anwendung —
+	   `/about`, `/docs`, `/styleguide`, `/maintenance`, die Fehlerseite, das
+	   Sichtungsformular und vier Admin-Seiten. Auf `/about` rendert der
+	   Seitentitel dadurch mit 20px, während die Zwischenüberschriften darunter
+	   30–48px groß waren: die wichtigste Überschrift der Seite war die
+	   kleinste.
+
+	   Das `!important` hat das nicht abgemildert, sondern erst ermöglicht.
+	   Tailwind legt seine Utilities in `@layer utilities`; diese Datei ist
+	   ungelayert und gewinnt die Kaskade ohnehin (dieselbe Mechanik wie beim
+	   Fokus-Override, siehe `.claude/rules/daisyui.md`). Das `!important` schlug
+	   zusätzlich noch jede Angabe am Element selbst.
+
+	   **Für die Karte war sie ebenfalls falsch.** Die einzige `h1` im
+	   Kartenkontext ist der Glass-Badge in `SightingsMapView.svelte` (Zeile 673),
+	   und sein `titleClass` (Zeile 44) bringt `text-sm` sowie `px-3 py-1.5`
+	   bereits mit. Die Regel hat diese Angaben überschrieben und den Badge auf
+	   20px samt 0.5rem Innenabstand aufgezogen — sie hat die Karte also nicht
+	   geschützt, sondern deren eigene Gestaltung ausgehebelt.
+
+	   Kein Ersatz nötig: Der Badge ist danach so groß, wie seine Klassen sagen.
+	   Abgesichert durch `e2e/design-tokens.spec.ts` → „Größen-Utilities an
+	   Überschriften greifen"; ein Test über die CSS-Quelle hätte den Fall nicht
+	   gesehen, weil hier eine plausible Regel in einer plausiblen Datei stand. */
 
 	/* QW8: .w-90-Regel entfernt — die Panels heißen inzwischen w-100 (siehe
 	   FilterPanel.svelte/LegendPanel.svelte), diese Regel griff nie mehr. */
