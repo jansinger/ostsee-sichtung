@@ -18,14 +18,16 @@ import Location from './Location.svelte';
  * (`position/LocationDescription.svelte` vs. diese) — dieser Test hält fest,
  * dass das so bleibt.
  *
- * **Grenze, die dieser Test bewusst nicht überschreitet:** Die Komponente
- * rendert beide Ortsfelder nur im `{:else}`-Zweig von `{#if hasPosition}`, und
- * `adminEditInitialValues.ts:46` leitet `hasPosition` aus den Koordinaten ab.
- * Eine Sichtung MIT Koordinaten zeigt deshalb weder `waterway` noch `seaMark`
- * — im Bestand betrifft das 902 der 1.033 Datensätze mit Seezeichen (gemessen
- * am 2026-08-02). Das ist Verhalten von vor dieser Änderung und keine Folge des
- * Zusammenlegens; es hier festzuschreiben wäre falsch, es zu verschweigen auch.
- * Die Tests unten prüfen deshalb ausdrücklich den Fall ohne GPS-Position.
+ * **Beide Felder stehen unabhängig von der GPS-Position.** Vorher lagen sie im
+ * `{:else}`-Zweig von `{#if hasPosition}`, und `adminEditInitialValues.ts:46`
+ * leitet `hasPosition` aus den Koordinaten ab — eine Sichtung MIT Koordinaten
+ * zeigte deshalb weder `waterway` noch `seaMark`. Im Bestand betraf das 902 der
+ * 1.033 Datensätze mit Seezeichen und 1.191 mit Fahrwasser (gemessen am
+ * 2026-08-02): genau die Altmeldungen, die zu korrigieren der Grund ist, aus dem
+ * `seaMark` überhaupt im Schema bleibt. Die Kopplung an `hasPosition` war im
+ * Meldeformular sinnvoll (dort ist die Beschreibung die Alternative zur
+ * Position), in der Admin-Maske ist sie es nie gewesen: Dort wird ein
+ * vorhandener Datensatz korrigiert, nicht eine Meldung erfasst.
  */
 function renderAdminLocation(overrides: Partial<SightingFormData> = {}): void {
 	const context = {
@@ -58,5 +60,32 @@ describe('sections/Location — Admin-Maske', () => {
 		expect(seaMark?.value).toBe('Tonne 14');
 		expect(seaMark?.disabled).toBe(false);
 		expect(seaMark?.readOnly).toBe(false);
+	});
+
+	/**
+	 * Der praktisch wichtigere Fall: 902 der 1.033 Datensätze mit Seezeichen
+	 * tragen zugleich Koordinaten. Blieben die Felder an `hasPosition` gekoppelt,
+	 * wäre genau dieser Altbestand nicht erreichbar.
+	 */
+	it('zeigt beide Ortsfelder AUCH mit GPS-Position', () => {
+		renderAdminLocation({
+			hasPosition: true,
+			latitude: 54.5,
+			longitude: 13.5,
+			waterway: 'Greifswalder Bodden',
+			seaMark: 'Leuchtturm Warnemünde'
+		});
+
+		expect(field('waterway')?.value).toBe('Greifswalder Bodden');
+		expect(field('seaMark')?.value).toBe('Leuchtturm Warnemünde');
+	});
+
+	it('lässt beide Felder mit GPS-Position bearbeiten', () => {
+		renderAdminLocation({ hasPosition: true, latitude: 54.5, longitude: 13.5 });
+
+		for (const name of ['waterway', 'seaMark']) {
+			expect(field(name)?.disabled, name).toBe(false);
+			expect(field(name)?.readOnly, name).toBe(false);
+		}
 	});
 });

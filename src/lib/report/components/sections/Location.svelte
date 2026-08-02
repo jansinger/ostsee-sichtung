@@ -33,10 +33,24 @@
 				<VerifyLocation {longitude} {latitude} />
 			{/if}
 		</div>
-	{:else}
-		<!-- Waterway Input (shown when hasPosition = false) -->
-		<FormField name="waterway" />
-		<!-- Sea Mark (always optional) -->
-		<FormField name="seaMark" />
 	{/if}
+
+	<!--
+		Ortsbeschreibung und Seezeichen stehen UNABHÄNGIG von `hasPosition` — anders
+		als im Meldeformular, wo die Beschreibung die Alternative zur Position ist.
+		Hier wird ein vorhandener Datensatz korrigiert, nicht eine Meldung erfasst:
+		Koordinaten und Ortstext schließen einander nicht aus, sie stehen im
+		Altbestand regelmäßig nebeneinander.
+
+		Vorher lagen beide Felder im `{:else}`-Zweig, und `adminEditInitialValues`
+		leitet `hasPosition` aus den Koordinaten ab. Damit war ausgerechnet der
+		Altbestand unerreichbar, dessentwegen `seaMark` überhaupt im Schema bleibt:
+		902 der 1.033 Datensätze mit Seezeichen tragen zugleich Koordinaten, bei
+		`fahrwasser` sind es 1.191 (gemessen am 2026-08-02).
+
+		Das Meldeformular ist davon nicht betroffen — es nutzt
+		`position/LocationDescription.svelte` und zeigt seit A2.4 nur `waterway`.
+	-->
+	<FormField name="waterway" />
+	<FormField name="seaMark" />
 </SectionCard>
