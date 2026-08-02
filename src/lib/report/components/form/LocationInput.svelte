@@ -340,13 +340,19 @@
 		<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 			<div>
 				<label class="label" for="latitude">Breite (N)</label>
+				<!-- step deckt die volle Spaltengenauigkeit ab: `gps_breite` ist
+				     numeric(8,6). Mit dem früheren step="0.0001" wies die
+				     Constraint-Validierung des Browsers jede Bestandskoordinate mit
+				     mehr als vier Nachkommastellen ab — und zwar lautlos: Das
+				     Formular sendet dann nicht, ohne dass die App einen Fehler
+				     anzeigt, weil das submit-Ereignis gar nicht erst entsteht. -->
 				<input
 					id="latitude"
 					class="input w-full"
 					type="number"
 					min="-90"
 					max="90"
-					step="0.0001"
+					step="0.000001"
 					placeholder="Dezimalgrad"
 					bind:value={ddLatitude}
 					onchange={onDecimalChange}
@@ -360,7 +366,7 @@
 					type="number"
 					min="-180"
 					max="180"
-					step="0.0001"
+					step="0.000001"
 					placeholder="Dezimalgrad"
 					bind:value={ddLongitude}
 					onchange={onDecimalChange}

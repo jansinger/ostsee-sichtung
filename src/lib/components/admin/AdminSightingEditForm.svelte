@@ -14,8 +14,10 @@
 	import Media from '$lib/report/components/sections/Media.svelte';
 	import SightingDetails from '$lib/report/components/sections/SightingDetails.svelte';
 	import type { FrontendSighting } from '$lib/types';
-	import { formatLocalDateTime, splitDateTime } from '$lib/utils/format/dateTime';
+	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import { untrack } from 'svelte';
+
+	import { buildAdminEditInitialValues } from './adminEditInitialValues';
 
 	let {
 		sighting = {} as FrontendSighting,
@@ -57,21 +59,11 @@
 	}
 
 	// Initialisiere das Formular mit den vorhandenen Daten (one-time, untracked)
-	const initProps = untrack(() => {
-		const { date, time } = splitDateTime(sighting.sightingDate);
-		return {
-			initialValues: {
-				...sighting,
-				sightingDate: date,
-				sightingTime: time,
-				longitude: Number(sighting.longitude)?.toFixed(4) || 0,
-				latitude: Number(sighting.latitude)?.toFixed(4) || 0,
-				hasPosition: Boolean(sighting.longitude && sighting.latitude)
-			},
-			validationSchema: adminSightingSchema,
-			onSubmit: submitForm
-		};
-	});
+	const initProps = untrack(() => ({
+		initialValues: buildAdminEditInitialValues(sighting),
+		validationSchema: adminSightingSchema,
+		onSubmit: submitForm
+	}));
 	let isValid = $derived(formContext.isValid);
 	let isSubmitting = $derived(formContext.isSubmitting);
 	let errors = $derived(formContext.errors);

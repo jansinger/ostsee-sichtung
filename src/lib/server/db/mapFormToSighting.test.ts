@@ -326,6 +326,42 @@ describe('mapFormToSighting', () => {
 			expect(result.longitude).toBeNull();
 			expect(checkBalticSeaFile).not.toHaveBeenCalled();
 		});
+
+		/**
+		 * Eine Null als **Zeichenkette** ist keine Position.
+		 *
+		 * Die Prüfung lief bis 2026-08-02 über die Truthiness des Rohwerts. Für
+		 * eine Zahl stimmt das — `0` ist falsy —, für den String `'0.0000'` nicht:
+		 * er ist truthy und hätte einen PostGIS-Punkt bei 0°/0° erzeugt.
+		 *
+		 * Erreichbar ist dieser Eingang über die Legacy-REST-Grenze:
+		 * `mapLegacyToCurrentSchema` reicht `gps_breite` weiter, wie es ankommt,
+		 * und die Spezifikation sieht dort Strings vor. Der Formularpfad castet
+		 * vorher über Yup und kam nie hier an.
+		 */
+		it('sollte eine Koordinaten-Null als Zeichenkette nicht als Position werten', () => {
+			const formData = createMinimalFormData();
+			formData.latitude = '0.0000' as any;
+			formData.longitude = '0.0000' as any;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.location).toBeNull();
+			expect(result.latitude).toBeNull();
+			expect(result.longitude).toBeNull();
+			expect(checkBalticSeaFile).not.toHaveBeenCalled();
+		});
+
+		it('sollte die volle Nachkommastellen-Genauigkeit übernehmen', () => {
+			const formData = createMinimalFormData();
+			formData.latitude = '54.123456' as any;
+			formData.longitude = '13.654321' as any;
+
+			const result = mapFormToSighting(formData);
+
+			expect(result.latitude).toBe('54.123456');
+			expect(result.longitude).toBe('13.654321');
+		});
 	});
 
 	describe('Datum/Zeit-Verarbeitung', () => {
