@@ -277,6 +277,15 @@
 	       und Ansprechpartner — und verweist für die Zwecke auf die
 	       Einwilligungstexte im Formular, wo sie stehen.
 
+	     Der Schlussabsatz zählt die Betroffenenrechte bewusst NICHT auf. Eine
+	     erste Fassung nannte „Auskunft, Berichtigung, Löschung, Widerspruch" —
+	     vier von sieben, ohne Einschränkung (Art. 18), Datenübertragbarkeit
+	     (Art. 20) und Beschwerderecht (Art. 77). Das ist derselbe Fehler wie in
+	     der oben gestrichenen Rechte-Kachel, nur ohne die
+	     Vollständigkeitsbehauptung: eine unmarkierte Aufzählung liest sich als
+	     abschließend und veraltet mit jeder Änderung. Die verlinkte Erklärung
+	     führt sie vollständig — ein Klick entfernt. (PR #714, Review-Hinweis)
+
 	     Sobald das Museum eine Löschfrist festgelegt hat, gehört sie hierher
 	     zurück — dann aber mit der Frist im Text, nicht als Verweis. -->
 	<div class="mb-16">
@@ -342,9 +351,9 @@
 					</li>
 				</ul>
 				<p class="text-base-content/80 mt-4 text-sm">
-					Welche Rechte Sie haben — Auskunft, Berichtigung, Löschung, Widerspruch — und an wen Sie
-					sich damit wenden, steht in der Datenschutzerklärung des Deutschen Meeresmuseums. Wozu wir
-					die einzelnen Angaben Ihrer Meldung verwenden, steht bei den Einwilligungen im Formular.
+					Welche Rechte Sie haben und an wen Sie sich damit wenden, steht in der
+					Datenschutzerklärung des Deutschen Meeresmuseums. Wozu wir die einzelnen Angaben Ihrer
+					Meldung verwenden, steht bei den Einwilligungen im Formular.
 				</p>
 				<div class="card-actions mt-4">
 					<a
