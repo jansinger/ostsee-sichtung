@@ -69,15 +69,29 @@ vi.mock('$lib/server/db', () => ({
 	}
 }));
 
-vi.mock('$lib/server/db/schema', () => mockSchema);
+vi.mock('$lib/server/db/schema', async () => {
+	const { strictModuleMock } = await import('./helpers/strictModuleMock');
+	return strictModuleMock('$lib/server/db/schema', mockSchema);
+});
+
+// PUT und DELETE schreiben einen Audit-Eintrag. Ohne diese Attrappe liefe der
+// echte `auditService` gegen die db-Attrappe, scheiterte still in seinem
+// eigenen catch und zöge `auditLogs` aus der Schema-Attrappe — dort fehlte es
+// unbemerkt, bis `strictModuleMock` es meldete.
+vi.mock('$lib/server/audit/auditService', () => ({
+	logAuditEvent: vi.fn().mockResolvedValue(undefined)
+}));
 
 vi.mock('$lib/server/storage/factory', () => ({
 	getStorageProvider: vi.fn(() => ({ delete: vi.fn().mockResolvedValue(undefined) }))
 }));
 
-vi.mock('drizzle-orm', () => ({
-	eq: vi.fn((a, b) => ({ a, b }))
-}));
+vi.mock('drizzle-orm', async () => {
+	const { strictModuleMock } = await import('./helpers/strictModuleMock');
+	return strictModuleMock('drizzle-orm', {
+		eq: vi.fn((a, b) => ({ a, b }))
+	});
+});
 
 vi.mock('$lib/server/db/sightingRepository', () => ({
 	loadSightingFiles: vi.fn().mockResolvedValue([]),
