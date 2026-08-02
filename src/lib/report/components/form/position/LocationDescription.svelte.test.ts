@@ -8,13 +8,17 @@ import type { FormContext, SightingFormData } from '$lib/types';
 import LocationDescription from './LocationDescription.svelte';
 
 /**
- * Der Block darf die Felder, in denen gerade getippt wird, nicht neu aufbauen.
+ * Der Block darf das Feld, in dem gerade getippt wird, nicht neu aufbauen.
  *
- * Vorher rendert die Komponente `waterway`/`seaMark` in zwei Zweigen eines
- * `{#if collapsed}` — und `collapsed` hängt an genau diesen Feldern. Der erste
- * Tastendruck, der `waterway` füllt, riss deshalb den gesamten Teilbaum ab: Das
- * gerade fokussierte Feld wurde ersetzt, `document.activeElement` fiel auf
- * `<body>` zurück und der nächste Tab begann wieder oben auf der Seite.
+ * Ursprünglich rendert die Komponente die Beschreibungsfelder in zwei Zweigen
+ * eines `{#if collapsed}` — und `collapsed` hängt an genau diesen Feldern. Der
+ * erste Tastendruck, der `waterway` füllt, riss deshalb den gesamten Teilbaum
+ * ab: Das gerade fokussierte Feld wurde ersetzt, `document.activeElement` fiel
+ * auf `<body>` zurück und der nächste Tab begann wieder oben auf der Seite.
+ *
+ * Seit dem Zusammenlegen der Ortsbeschreibung (A2.4) steht dort genau ein Feld;
+ * die Teardown-Gefahr bleibt dieselbe, weil `startsOpen` weiterhin aus dem
+ * Feldwert abgeleitet wird.
  */
 function renderWithForm(overrides: Partial<SightingFormData> = {}): void {
 	const context = {
@@ -54,11 +58,23 @@ const WITH_COORDINATES: Partial<SightingFormData> = {
 	latitude: 54.5,
 	longitude: 13.5,
 	hasPosition: true,
-	waterway: '',
-	seaMark: ''
+	waterway: ''
 };
 
 describe('LocationDescription', () => {
+	/**
+	 * Wunsch des Deutschen Meeresmuseums (A2.4): eine Ortsbeschreibung als **ein**
+	 * Freitextfeld. `seaMark` bleibt im Schema und in der Admin-Maske, hier darf es
+	 * aber nicht mehr auftauchen.
+	 */
+	it('zeigt genau ein Beschreibungsfeld — kein separates Seezeichen-Feld', async () => {
+		renderWithForm({ latitude: undefined, longitude: undefined, waterway: '' });
+
+		expect(document.querySelectorAll('[data-testid^="field-"]')).toHaveLength(1);
+		expect(document.querySelector('[data-testid="field-seaMark"]')).toBeNull();
+		expect(field('waterway')).toBeTruthy();
+	});
+
 	it('behält Fokus und Feld-Knoten, wenn waterway seinen ersten Wert bekommt', async () => {
 		renderWithForm(WITH_COORDINATES);
 
@@ -66,14 +82,14 @@ describe('LocationDescription', () => {
 		block().open = true;
 		await tick();
 
-		const seaMarkBefore = field('seaMark');
-		seaMarkBefore.focus();
-		expect(document.activeElement).toBe(seaMarkBefore);
+		const waterwayBefore = field('waterway');
+		waterwayBefore.focus();
+		expect(document.activeElement).toBe(waterwayBefore);
 
-		await fireChange(field('waterway'), 'Kieler Bucht');
+		await fireChange(waterwayBefore, 'Kieler Bucht');
 
-		expect(document.activeElement).toBe(seaMarkBefore);
-		expect(field('seaMark')).toBe(seaMarkBefore);
+		expect(document.activeElement).toBe(waterwayBefore);
+		expect(field('waterway')).toBe(waterwayBefore);
 	});
 
 	it('verliert den getippten Text nicht, wenn waterway wieder geleert wird', async () => {
@@ -92,12 +108,29 @@ describe('LocationDescription', () => {
 	});
 
 	it('ist ohne Koordinaten von Anfang an offen', async () => {
-		renderWithForm({ latitude: undefined, longitude: undefined, waterway: '', seaMark: '' });
+		renderWithForm({ latitude: undefined, longitude: undefined, waterway: '' });
 
 		expect(block().open).toBe(true);
 	});
 
-	it('startet mit Koordinaten und leeren Feldern zugeklappt, bleibt aber erreichbar', async () => {
+	/**
+	 * Die konditionale Pflicht (`waterway.when('hasPosition', …)`) ist aus
+	 * `describe()` nicht ableitbar — sie hängt am `required`-Override der
+	 * Komponente. Ohne ihn widersprächen Sternchen und Validierung einander.
+	 */
+	it('markiert die Ortsbeschreibung ohne GPS-Position als Pflichtfeld', async () => {
+		renderWithForm({ latitude: undefined, longitude: undefined, hasPosition: false, waterway: '' });
+
+		expect(field('waterway').getAttribute('aria-required')).toBe('true');
+	});
+
+	it('nimmt der Ortsbeschreibung die Pflicht, sobald Koordinaten vorliegen', async () => {
+		renderWithForm(WITH_COORDINATES);
+
+		expect(field('waterway').getAttribute('aria-required')).not.toBe('true');
+	});
+
+	it('startet mit Koordinaten und leerem Feld zugeklappt, bleibt aber erreichbar', async () => {
 		renderWithForm(WITH_COORDINATES);
 
 		expect(block().open).toBe(false);

@@ -39,9 +39,13 @@ test.describe('PositionAndTime — Single-Panel-Positionseingabe', () => {
 
 	test('Ortsbeschreibung ist ohne Moduswechsel erreichbar und Pflicht', async ({ page }) => {
 		await expect(page.locator('[data-testid="field-waterway"]')).toBeVisible({ timeout: 3000 });
-		await expect(page.locator('[data-testid="field-seaMark"]')).toBeVisible({ timeout: 3000 });
 
-		// Ohne Koordinaten ist das Fahrwasser Pflicht — sichtbar am Sternchen
+		// Seit A2.4 (Wunsch des Deutschen Meeresmuseums) ist die Ortsbeschreibung
+		// EIN Freitextfeld. `seaMark` bleibt im Schema und in der Admin-Maske,
+		// steht im Meldeformular aber nicht mehr.
+		await expect(page.locator('[data-testid="field-seaMark"]')).toHaveCount(0);
+
+		// Ohne Koordinaten ist die Ortsbeschreibung Pflicht — sichtbar am Sternchen
 		// und semantisch an aria-required. Kein nachgestelltes ` input`: das
 		// data-testid hängt bereits am Input (FieldRenderer.svelte:188).
 		await expect(page.locator('[data-testid="field-waterway"]')).toHaveAttribute(

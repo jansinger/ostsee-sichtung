@@ -55,8 +55,11 @@ export const formStepsConfig: FormStep[] = [
 			'hasPosition',
 			'latitude',
 			'longitude',
+			// `seaMark` steht hier bewusst NICHT mehr: Die Ortsbeschreibung ist seit
+			// A2.4 ein einziges Freitextfeld (`waterway`). Schema-Eintrag und
+			// DB-Spalte `seezeichen` bleiben — die Admin-Maske und die Legacy-API
+			// schreiben es weiter.
 			'waterway',
-			'seaMark',
 			'sightingDate',
 			'sightingTime'
 		]

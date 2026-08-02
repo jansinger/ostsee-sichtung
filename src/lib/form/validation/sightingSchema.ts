@@ -275,41 +275,53 @@ export const sightingSchemaBase = yup.object().shape({
 		}),
 
 	/**
-	 * Fahrwasser oder Meeresgebiet, in dem die Sichtung erfolgte
+	 * Ortsbeschreibung in Freitext — Seegebiet, Fahrwasser oder Orientierungspunkte.
 	 * Alternative zur GPS-Position: erforderlich, wenn keine GPS-Position vorliegt
 	 * (hasPosition !== true), damit ein leeres Formular Schritt 1 nicht passieren kann.
+	 *
+	 * **Deckt seit A2.4 auch `seaMark` mit ab.** Das Meldeformular zeigt die
+	 * Ortsbeschreibung als EIN Freitextfeld (Wunsch des Deutschen Meeresmuseums:
+	 * „User beschreibt im Freitext"); `seaMark` ist dort nur aus `formStepsConfig`
+	 * und dem Markup genommen. Beschriftung, Hilfetext und Platzhalter müssen
+	 * deshalb beide Aspekte nennen — sonst verliert das Formular die
+	 * Orientierungspunkte. Abgesichert in `src/lib/report/formConfig.test.ts`.
 	 */
 	waterway: yup
 		.string()
-		.max(255, 'Der Name des Fahrwassers/Seegebiets ist zu lang (maximal 255 Zeichen)')
-		.label('Fahrwasser/Seegebiet')
+		.max(255, 'Die Ortsbeschreibung ist zu lang (maximal 255 Zeichen)')
+		.label('Wo ungefähr?')
 		.meta({
-			placeholder: 'z.B. Kieler Bucht, Fehmarnbelt, Greifswalder Bodden',
-			helpText: 'In welchem Gewässer oder Gebiet befanden Sie sich?',
+			placeholder: 'z. B. Kieler Bucht, Fehmarnbelt, vor Leuchtturm Dahmeshöved',
+			helpText: 'Seegebiet, Fahrwasser oder Orientierungspunkte in der Nähe',
 			valueText:
-				'Gewässerbezeichnungen helfen bei der regionalen Populationsverteilung - auch ungefähre Angaben sind wissenschaftlich wertvoll',
+				'Gewässerbezeichnungen und Orientierungspunkte helfen bei der regionalen Populationsverteilung - auch ungefähre Angaben sind wissenschaftlich wertvoll',
 			icon: Waves
 		})
 		.when('hasPosition', {
 			is: (value: unknown) => value !== true,
 			then: (schema) =>
-				schema.required(
-					'Bitte beschreiben Sie das Fahrwasser/Seegebiet oder wählen Sie eine GPS-Position'
-				),
+				schema.required('Bitte beschreiben Sie den Ort oder wählen Sie eine GPS-Position'),
 			otherwise: (schema) => schema.notRequired()
 		}),
 
 	/**
 	 * Seezeichen in der Nähe der Sichtung
 	 * Optionale Zusatzinformation zur genaueren Ortsbestimmung
+	 *
+	 * **Nur noch in der Admin-Maske** (`sections/Location.svelte`) und über die
+	 * Legacy-API (`seezeichen`) erreichbar — im Meldeformular ist der Aspekt in
+	 * `waterway` aufgegangen (A2.4). Feld und DB-Spalte bleiben, damit der
+	 * Altbestand angezeigt und korrigiert werden kann; `meta` deshalb NICHT
+	 * entfernen — `FormField` wirft ohne.
 	 */
 	seaMark: yup
 		.string()
-		.max(255, 'Der Name des Seezeichensist zu lang (maximal 255 Zeichen)')
-		.label('Seezeichen in der Nähe')
+		.max(255, 'Der Name des Seezeichens ist zu lang (maximal 255 Zeichen)')
+		.label('Seezeichen (nur Altbestand)')
 		.meta({
 			placeholder: 'z.B. Leuchtturm Dahmeshöved, Tonne 14, Ansteuerungstonne',
-			helpText: 'Gab es markante Orientierungspunkte in der Nähe?',
+			helpText:
+				'Wird im Meldeformular nicht mehr erfasst — neue Meldungen beschreiben den Ort im Feld darüber. Bleibt für Altmeldungen und die Legacy-Schnittstelle bearbeitbar.',
 			valueText:
 				'Seezeichen helfen Wissenschaftlern bei der Positionsverifizierung und schaffen Vertrauen in die Datenqualität',
 			icon: Anchor

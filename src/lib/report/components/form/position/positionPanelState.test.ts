@@ -102,27 +102,35 @@ describe('shouldOpenMapOnCoordinateChange', () => {
 	});
 });
 
+/**
+ * Seit dem Zusammenlegen der Ortsbeschreibung (Wunsch des Deutschen
+ * Meeresmuseums, A2.4) steht im Meldeformular nur noch `waterway` im Block —
+ * `seaMark` ist aus dem Melde-Schritt genommen. Die Regel urteilt deshalb über
+ * genau ein Feld; ein zweiter Parameter hätte nichts mehr zu bewerten.
+ */
 describe('descriptionCollapsed', () => {
 	it('bleibt offen, solange keine Koordinaten vorliegen', () => {
-		expect(descriptionCollapsed(false, '', '')).toBe(false);
-		expect(descriptionCollapsed(false, 'Kieler Bucht', '')).toBe(false);
+		expect(descriptionCollapsed(false, '')).toBe(false);
+		expect(descriptionCollapsed(false, 'Kieler Bucht')).toBe(false);
 	});
 
-	it('klappt zu, wenn Koordinaten vorliegen und beide Felder leer sind', () => {
-		expect(descriptionCollapsed(true, '', '')).toBe(true);
-		expect(descriptionCollapsed(true, undefined, undefined)).toBe(true);
+	it('klappt zu, wenn Koordinaten vorliegen und das Feld leer ist', () => {
+		expect(descriptionCollapsed(true, '')).toBe(true);
+		expect(descriptionCollapsed(true, undefined)).toBe(true);
 	});
 
-	it('klappt zu, wenn die Felder nur Leerzeichen enthalten', () => {
-		expect(descriptionCollapsed(true, '   ', '\t')).toBe(true);
+	it('klappt zu, wenn das Feld nur Leerzeichen enthält', () => {
+		expect(descriptionCollapsed(true, '   ')).toBe(true);
 	});
 
-	it('bleibt offen, wenn das Fahrwasser bereits eingegeben wurde', () => {
-		expect(descriptionCollapsed(true, 'Kieler Bucht', '')).toBe(false);
+	it('bleibt offen, wenn die Ortsbeschreibung bereits eingegeben wurde', () => {
+		expect(descriptionCollapsed(true, 'Kieler Bucht')).toBe(false);
 	});
 
-	it('bleibt offen, wenn ein Seezeichen bereits eingegeben wurde', () => {
-		expect(descriptionCollapsed(true, '', 'Tonne 14')).toBe(false);
+	it('bleibt offen, wenn nur ein Orientierungspunkt eingetragen wurde', () => {
+		// Beide bisherigen Aspekte laufen jetzt durch dasselbe Feld — auch ein
+		// reiner Seezeichen-Text darf nicht hinter einer Disclosure verschwinden.
+		expect(descriptionCollapsed(true, 'vor Leuchtturm Dahmeshöved')).toBe(false);
 	});
 });
 
