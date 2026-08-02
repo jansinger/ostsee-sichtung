@@ -38,7 +38,24 @@
 		 *
 		 * Ohne die Prop bleibt alles wie bisher (Schritt 3, Admin-Maske).
 		 */
-		actionLabel = undefined
+		actionLabel = undefined,
+		/**
+		 * Dichte Variante für Aufrufer, die bereits eine eigene Überschrift über
+		 * der Fläche haben.
+		 *
+		 * Auf Schritt 1 des Sichtungsformulars standen drei Beschriftungen
+		 * derselben Handlung übereinander — die Karten-Überschrift „Foto mit GPS
+		 * hochladen", der Dropzone-Titel „Foto hochladen" und der Button „Foto
+		 * auswählen" — und die Fläche kostete 212 px, bevor die Karte überhaupt
+		 * begann. `compact` streicht die mittlere Beschriftung samt dekorativem
+		 * Icon und nimmt den Innenabstand von `p-6` auf `p-4` zurück.
+		 *
+		 * Der Titel entfällt NUR zusammen mit einem `actionLabel`: Ohne Button ist
+		 * er über `zoneTriggerAttributes` der zugängliche Name der Fläche, und ein
+		 * Bedienelement ohne Beschriftung bliebe zurück (WCAG 4.1.2). Festgehalten
+		 * in `UnifiedDropzone.svelte.test.ts` → „compact".
+		 */
+		compact = false
 	} = $props<{
 		config: ValidationPreset;
 		files?: File[];
@@ -55,7 +72,11 @@
 		loadingText?: string;
 		showPreview?: boolean;
 		actionLabel?: string;
+		compact?: boolean;
 	}>();
+
+	// Der Titel darf nur weichen, wenn der Button den Namen trägt — siehe Prop.
+	const showZoneTitle = $derived(!(compact && actionLabel));
 
 	let isDragOver = $state(false);
 	let fileInput: HTMLInputElement;
@@ -269,7 +290,8 @@
 	<!-- Mit `actionLabel` ist diese Fläche nur noch Drop-Ziel; Rolle, Fokus und
 	     Handler wandern auf den Button darin (siehe Prop-Dokumentation). -->
 	<div
-		class="rounded-lg border-2 border-dashed p-6 transition-all duration-200
+		class="rounded-lg border-2 border-dashed transition-all duration-200
+			{compact ? 'p-4' : 'p-6'}
 			{actionLabel ? '' : 'cursor-pointer'}
 			{isDragOver
 			? 'border-primary bg-primary/10 scale-[1.02]'
@@ -301,17 +323,30 @@
 			</div>
 		{:else}
 			<div class="flex flex-col items-center">
-				<Icon
-					icon="lucide:upload"
-					class="mb-2 h-8 w-8 transition-colors {isDragOver
-						? 'text-primary'
-						: 'text-base-content/70'}"
-				/>
-				<p class="text-sm font-medium {isDragOver ? 'text-primary' : ''}">
-					{isDragOver ? `${multiple ? 'Dateien' : 'Datei'} hier ablegen!` : title}
-				</p>
+				{#if showZoneTitle}
+					<Icon
+						icon="lucide:upload"
+						class="mb-2 h-8 w-8 transition-colors {isDragOver
+							? 'text-primary'
+							: 'text-base-content/70'}"
+					/>
+				{/if}
+				<!-- In der dichten Variante bleibt die Zeile für die Ablage-Rückmeldung
+				     trotzdem erreichbar: Der Rahmenwechsel allein sagt nicht, dass jetzt
+				     losgelassen werden darf. -->
+				{#if showZoneTitle || isDragOver}
+					<p class="text-sm font-medium {isDragOver ? 'text-primary' : ''}">
+						{isDragOver ? `${multiple ? 'Dateien' : 'Datei'} hier ablegen!` : title}
+					</p>
+				{/if}
 				{#if actionLabel}
-					<button type="button" class="btn btn-primary mt-3 min-h-11" onclick={openFileDialog}>
+					<!-- Ohne Titelzeile darüber steht der Button oben in der Fläche; ein
+					     `mt-3` wäre dann Abstand zu nichts. -->
+					<button
+						type="button"
+						class="btn btn-primary min-h-11 {showZoneTitle ? 'mt-3' : ''}"
+						onclick={openFileDialog}
+					>
 						<Icon aria-hidden="true" icon="lucide:camera" width="18" />
 						{actionLabel}
 					</button>

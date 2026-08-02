@@ -204,9 +204,9 @@
 </script>
 
 <SectionCard title="Positionsangabe" icon="lucide:map-pin" variant="inset">
-	<p class="text-base-content/70 mb-6 text-sm">
-		Wo haben Sie das Tier gesehen? Ein Foto mit GPS-Daten ist der schnellste Weg.
-	</p>
+	<!-- Nur noch die Frage: „Ein Foto mit GPS-Daten ist der schnellste Weg" stand
+	     zwei Zeilen später in der Hero-Karte fast wörtlich noch einmal. -->
+	<p class="text-base-content/70 mb-4 text-sm">Wo haben Sie das Tier gesehen?</p>
 
 	<!-- Hero: Foto mit GPS. Tint-Fläche trägt bewusst text-base-content,
 	     NICHT text-primary-content (weiß auf hellblau ≈ 1,3:1). -->
@@ -218,14 +218,20 @@
 			<Icon aria-hidden="true" icon="lucide:camera" width="20" class="text-primary" />
 			Foto mit GPS hochladen
 		</h4>
-		<p class="text-base-content/70 mb-4 text-sm">
+		<p class="text-base-content/70 mb-3 text-sm">
 			Der schnellste Weg: Position, Datum und Uhrzeit werden automatisch übernommen.
 		</p>
 
 		{#if gpsPhotoConfig}
 			<!-- `showNoGpsWarning={false}`: Der Fall wird unten ausführlicher erklärt
 			     (Zustand C). Ohne das Abschalten stünden zwei Warn-Alerts mit
-			     derselben Aussage direkt übereinander. -->
+			     derselben Aussage direkt übereinander.
+
+			     `compact` + leerer `additionalText`: Die Überschrift dieser Karte
+			     und der Satz darüber sagen bereits, worum es geht und dass GPS
+			     ausgelesen wird. Der Dropzone-Titel „Foto hochladen" und der
+			     Default-Zusatz „GPS-Daten werden beim Upload verarbeitet" waren
+			     die dritte und vierte Formulierung derselben Aussage. -->
 			<DropzoneEnhanced
 				{referenceId}
 				maxFiles={1}
@@ -235,7 +241,8 @@
 				showPositionMap={false}
 				onExifDateTimeApplied={(applied) => (exifDateTimeApplied = applied)}
 				actionLabel="Foto auswählen"
-				additionalText="GPS-Daten werden automatisch ausgelesen"
+				compact={true}
+				additionalText=""
 			/>
 		{:else}
 			<div class="skeleton h-32 w-full"></div>
@@ -291,11 +298,12 @@
 			</div>
 		{/if}
 
-		<!-- BEWUSST unter der Dropzone: Die Hero-Karte begann auf einem 812-px-Gerät
-		     erst bei 659 px, und dazwischen standen ~150 px Datenschutz-Prosa
-		     zwischen „Der schnellste Weg …" und dem Auslöser. Der Hinweis bleibt
-		     vollständig, nur nicht mehr im Weg. -->
-		<div class="mt-4">
+		<!-- BEWUSST unter der Dropzone und bewusst als Auslöser statt als Alert:
+		     Die Hero-Karte begann auf einem 812-px-Gerät erst bei 659 px, und
+		     dazwischen standen ~150 px Datenschutz-Prosa. Der Wortlaut ist
+		     unverkürzt eine Ebene tiefer erreichbar (`UploadNotice.svelte`) und
+		     kostet hier nur noch eine Zeile. -->
+		<div class="mt-2">
 			<UploadNotice />
 		</div>
 	</div>
