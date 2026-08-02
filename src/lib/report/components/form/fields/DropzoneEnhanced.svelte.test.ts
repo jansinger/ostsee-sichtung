@@ -1,6 +1,26 @@
 import { render } from 'vitest-browser-svelte';
 import { describe, expect, it, vi } from 'vitest';
 import { get } from 'svelte/store';
+
+/**
+ * Der Upload bleibt in der Schwebe, statt gegen einen Server zu laufen, den es
+ * hier nicht gibt: Eine abgelehnte Upload-Promise ließe `handleFilesAdded` die
+ * gerade angelegte Datei über `deleteFile` sofort wieder aus dem Store nehmen —
+ * ein Wettlauf mit jeder Zusicherung über den Store-Inhalt.
+ */
+vi.mock('$lib/utils/uploadUtils', () => ({
+	uploadFileDirect: () => ({ result: new Promise<never>(() => {}), abort: () => undefined }),
+	deleteFileDirect: async () => undefined
+}));
+
+vi.mock('$lib/utils/client/fileAnalysis', () => ({
+	analyzeClientFile: async (file: File) => ({
+		fileName: file.name,
+		size: file.size,
+		mimeType: file.type,
+		exifData: undefined
+	})
+}));
 import { createForm } from '$lib/form/createForm';
 import { key as formContextKey } from '$lib/report/formContext';
 import { initialFormState } from '$lib/report/formConfig';
@@ -193,6 +213,55 @@ describe('DropzoneEnhanced — Eingrenzung auf den Positions-Schritt', () => {
 
 		await expect.poll(() => mediaStore.mediaFiles.map((file) => file.uid)).toEqual(['media-uid']);
 		expect(get(form).uploadedFiles.map((file) => file.uid)).toEqual(['media-uid']);
+	});
+});
+
+/**
+ * Das Datei-Limit gehört zur selben Eingrenzung wie `ownedMediaFiles`.
+ *
+ * `mediaStore` gehört dem ganzen Formular. `positionMediaFile` und `handleClear`
+ * rechnen deshalb nur mit den Dateien DIESES Schritts — `handleFilesAdded` zählte
+ * dagegen den ganzen Store gegen `maxFiles`. Im Positions-Schritt (`maxFiles: 1`)
+ * belegte damit jedes Medium aus Schritt 3 den einzigen Platz: Der Ersetzen-Zweig
+ * löschte nichts (die fremde Datei gehört ihm nicht), und der Upload endete in
+ * „Nur 0 von 1 Dateien können hinzugefügt werden (Maximum: 1)". Sichtbar wurde
+ * das nach „Neu auswählen" — das Positions-Foto war weg, der Platz blieb belegt.
+ */
+describe('DropzoneEnhanced — Datei-Limit im Positions-Schritt', () => {
+	it('nimmt ein Foto an, obwohl ein Medium aus Schritt 3 im Store liegt', async () => {
+		const { mediaStore } = renderDropzone(
+			[uploadedFile('media-uid')],
+			{ maxFiles: 1, enableGPSExtraction: true },
+			[restoredMediaFile('media-uid', false)]
+		);
+
+		const input = await vi.waitUntil(() =>
+			document.querySelector<HTMLInputElement>('input[data-testid="dropzone-input"]')
+		);
+		const transfer = new DataTransfer();
+		transfer.items.add(new File(['x'], 'position.jpg', { type: 'image/jpeg' }));
+		input.files = transfer.files;
+		input.dispatchEvent(new Event('change', { bubbles: true }));
+
+		await expect
+			.poll(() => mediaStore.mediaFiles.filter((file) => file.isFromPositionStep).length)
+			.toBe(1);
+	});
+
+	/**
+	 * Dieselbe Eingrenzung gilt für die Beschriftung der Fläche: Sie ist über
+	 * `zoneTriggerAttributes` auch ihr zugänglicher Name (WCAG 4.1.2). Mit einem
+	 * fremden Medium im Store hieß sie „Foto ersetzen", obwohl dieser Schritt kein
+	 * Foto hat, das er ersetzen könnte — und der Klick öffnet dann auch nichts
+	 * anderes als sonst.
+	 */
+	it('nennt die Fläche nicht „Foto ersetzen", wenn nur eine fremde Datei im Store liegt', async () => {
+		renderDropzone([uploadedFile('media-uid')], { maxFiles: 1, enableGPSExtraction: true }, [
+			restoredMediaFile('media-uid', false)
+		]);
+
+		await vi.waitUntil(() => document.querySelector('input[data-testid="dropzone-input"]'));
+		expect(document.body.textContent).not.toContain('Foto ersetzen');
 	});
 });
 

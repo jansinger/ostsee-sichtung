@@ -81,6 +81,25 @@
 	let isDragOver = $state(false);
 	let fileInput: HTMLInputElement;
 
+	/**
+	 * Verschachtelungstiefe des Zeigers über der Fläche.
+	 *
+	 * `dragleave` feuert nicht nur beim Verlassen der Fläche, sondern auch, wenn
+	 * der Zeiger von ihr auf eines ihrer Kinder wechselt — und ihre Kinder sind
+	 * die Textzeilen im unteren Teil. Mit einem bloßen `isDragOver = false`
+	 * schaltete die Rückmeldung dort bei jeder Bewegung an und aus: Wer eine Datei
+	 * von unten heranzog, sah ein Flackern und traf den unteren Bereich praktisch
+	 * nicht.
+	 *
+	 * Jedes `dragenter` eines Nachfahren bubbelt hierher und zählt hoch, jedes
+	 * `dragleave` zählt herunter. Erst bei 0 hat der Zeiger die Fläche wirklich
+	 * verlassen. Kein `$state`: Der Wert steuert nur die Entscheidung unten,
+	 * gerendert wird `isDragOver`.
+	 */
+	let dragDepth = 0;
+
+	const dropPrompt = $derived(`${multiple ? 'Dateien' : 'Datei'} hier ablegen!`);
+
 	// Bleibender Fehlerbereich statt nur Toast: Ein Toast verschwindet nach
 	// Sekunden, und ein Validierungsfehler ohne Verknüpfung zum Bedienelement
 	// verletzt WCAG 2.1 SC 3.3.1. Der Toast bleibt zusätzlich — er meldet den
@@ -110,6 +129,7 @@
 
 	function handleDrop(event: DragEvent) {
 		event.preventDefault();
+		dragDepth = 0;
 		isDragOver = false;
 
 		if (event.dataTransfer?.files) {
@@ -117,14 +137,26 @@
 		}
 	}
 
+	function handleDragEnter(event: DragEvent) {
+		event.preventDefault();
+		dragDepth += 1;
+		isDragOver = true;
+	}
+
 	function handleDragOver(event: DragEvent) {
+		// `preventDefault` ist Pflicht — ohne es lehnt der Browser die Ablage ab.
+		// Setzt zusätzlich `isDragOver`: Geht der Zähler durch ein verpasstes
+		// `dragenter` einmal daneben, holt das die Rückmeldung wieder ein.
 		event.preventDefault();
 		isDragOver = true;
 	}
 
 	function handleDragLeave(event: DragEvent) {
 		event.preventDefault();
-		isDragOver = false;
+		dragDepth = Math.max(0, dragDepth - 1);
+		if (dragDepth === 0) {
+			isDragOver = false;
+		}
 	}
 
 	function processFiles(newFiles: File[]) {
@@ -289,14 +321,18 @@
 	<!-- Dropzone -->
 	<!-- Mit `actionLabel` ist diese Fläche nur noch Drop-Ziel; Rolle, Fokus und
 	     Handler wandern auf den Button darin (siehe Prop-Dokumentation). -->
+	<!-- Ohne `scale-[1.02]`: Der Transform verschob beim Ansprechen beide Kanten
+	     der Fläche — und damit das Ziel unter dem Zeiger, der es gerade erst
+	     getroffen hatte. Rahmen und Tint melden die Bereitschaft genauso. -->
 	<div
 		class="rounded-lg border-2 border-dashed transition-all duration-200
 			{compact ? 'p-4' : 'p-6'}
 			{actionLabel ? '' : 'cursor-pointer'}
 			{isDragOver
-			? 'border-primary bg-primary/10 scale-[1.02]'
+			? 'border-primary bg-primary/10'
 			: 'border-base-300 hover:border-primary hover:bg-primary/5'}"
 		ondrop={handleDrop}
+		ondragenter={handleDragEnter}
 		ondragover={handleDragOver}
 		ondragleave={handleDragLeave}
 		{...zoneTriggerAttributes}
@@ -330,13 +366,8 @@
 							? 'text-primary'
 							: 'text-base-content/70'}"
 					/>
-				{/if}
-				<!-- In der dichten Variante bleibt die Zeile für die Ablage-Rückmeldung
-				     trotzdem erreichbar: Der Rahmenwechsel allein sagt nicht, dass jetzt
-				     losgelassen werden darf. -->
-				{#if showZoneTitle || isDragOver}
 					<p class="text-sm font-medium {isDragOver ? 'text-primary' : ''}">
-						{isDragOver ? `${multiple ? 'Dateien' : 'Datei'} hier ablegen!` : title}
+						{isDragOver ? dropPrompt : title}
 					</p>
 				{/if}
 				{#if actionLabel}
@@ -353,9 +384,22 @@
 				{/if}
 				<!-- Ein Steuerelement überall, nur der Hinweis ist responsiv: Ziehen gibt
 				     es auf einem Telefon nicht, der Satz beschriebe dort eine unmögliche
-				     Handlung. -->
-				<p class="text-base-content/70 text-support mt-1 {actionLabel ? 'hidden md:inline' : ''}">
-					{emptyText}
+				     Handlung.
+
+				     In der dichten Variante trägt diese Zeile zusätzlich die
+				     Ablage-Rückmeldung — der Rahmenwechsel allein sagt nicht, dass jetzt
+				     losgelassen werden darf. Sie ERSETZT den Hinweis, statt eine Zeile
+				     zu ergänzen: Eine zusätzliche Zeile ließ die Fläche unter dem Zeiger
+				     wachsen, und wer von unten heranzog, verlor sein Ziel wieder. Dass
+				     der Satz unterhalb `md` fehlt, ist derselbe Grund wie oben — dort
+				     wird nicht gezogen. -->
+				<p
+					class="text-support mt-1 {actionLabel ? 'hidden md:inline' : ''} {!showZoneTitle &&
+					isDragOver
+						? 'text-primary font-medium'
+						: 'text-base-content/70'}"
+				>
+					{!showZoneTitle && isDragOver ? dropPrompt : emptyText}
 				</p>
 				<p class="text-base-content/70 text-support mt-1">
 					{subtitle}{additionalText ? ` - ${additionalText}` : ''}

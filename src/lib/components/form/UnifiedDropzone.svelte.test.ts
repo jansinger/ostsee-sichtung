@@ -368,6 +368,75 @@ describe('UnifiedDropzone', () => {
 				expect(onFilesAdded).toHaveBeenCalledWith([file]);
 			});
 		});
+
+		/**
+		 * `dragleave` feuert auch dann, wenn der Zeiger die Fläche gar nicht
+		 * verlässt, sondern nur auf eines ihrer Kinder wechselt — und die Kinder
+		 * sind hier die Textzeilen im unteren Teil der Fläche. Mit einem bloßen
+		 * `isDragOver = false` schaltete die Rückmeldung deshalb bei jeder Bewegung
+		 * über diesen Zeilen an und aus; wer eine Datei von unten heranzog, sah ein
+		 * Flackern und traf den unteren Bereich praktisch nicht.
+		 */
+		it('bleibt bereit, wenn der Zeiger von der Fläche auf eine ihrer Textzeilen wechselt', async () => {
+			render(UnifiedDropzone, { config: mockConfig, title: 'Foto hochladen', multiple: false });
+
+			const zone = document.querySelector<HTMLElement>('.border-dashed');
+			if (!zone) throw new Error('Dropzone-Fläche nicht im DOM');
+			zone.dispatchEvent(new DragEvent('dragenter', { bubbles: true, cancelable: true }));
+			await expect.element(page.getByText('Datei hier ablegen!')).toBeVisible();
+
+			// Zeiger wandert auf ein Kind: dessen `dragenter` bubbelt zur Fläche, und
+			// die Fläche bekommt zusätzlich ihr eigenes `dragleave`.
+			const line = zone.querySelector('p');
+			if (!line) throw new Error('Textzeile nicht im DOM');
+			line.dispatchEvent(new DragEvent('dragenter', { bubbles: true, cancelable: true }));
+			zone.dispatchEvent(new DragEvent('dragleave', { bubbles: true, relatedTarget: line }));
+
+			await expect.element(page.getByText('Datei hier ablegen!')).toBeVisible();
+		});
+
+		it('gibt die Fläche wieder frei, wenn der Zeiger sie wirklich verlässt', async () => {
+			render(UnifiedDropzone, { config: mockConfig, title: 'Foto hochladen', multiple: false });
+
+			const zone = document.querySelector<HTMLElement>('.border-dashed');
+			if (!zone) throw new Error('Dropzone-Fläche nicht im DOM');
+			zone.dispatchEvent(new DragEvent('dragenter', { bubbles: true, cancelable: true }));
+			await expect.element(page.getByText('Datei hier ablegen!')).toBeVisible();
+
+			zone.dispatchEvent(new DragEvent('dragleave', { bubbles: true, relatedTarget: null }));
+
+			await expect.element(page.getByText('Datei hier ablegen!')).not.toBeInTheDocument();
+		});
+
+		/**
+		 * Die Fläche darf unter dem Zeiger nicht wachsen. Sie tat es zweifach: In
+		 * der dichten Variante kam die Zeile „Datei hier ablegen!" beim Ziehen als
+		 * ZUSÄTZLICHE Zeile dazu, und `scale-[1.02]` verschob zusätzlich beide
+		 * Kanten. Wer von unten heranzog, verlor das Ziel dadurch wieder unter dem
+		 * Zeiger, sobald es einmal ansprang.
+		 */
+		it('meldet die Ablage-Bereitschaft, ohne die Fläche zu vergrößern', async () => {
+			render(UnifiedDropzone, {
+				config: mockConfig,
+				title: 'Foto hochladen',
+				actionLabel: 'Foto auswählen',
+				multiple: false,
+				compact: true
+			});
+			await expect.element(page.getByRole('button', { name: 'Foto auswählen' })).toBeVisible();
+
+			const zone = document.querySelector<HTMLElement>('.border-dashed');
+			if (!zone) throw new Error('Dropzone-Fläche nicht im DOM');
+			const heightBefore = zone.getBoundingClientRect().height;
+
+			zone.dispatchEvent(new DragEvent('dragenter', { bubbles: true, cancelable: true }));
+			await expect.element(page.getByText('Datei hier ablegen!')).toBeVisible();
+
+			expect(zone.getBoundingClientRect().height).toBe(heightBefore);
+			// Der Transform ist im Test-DOM nicht messbar (kein app.css, siehe
+			// „Vorschau-Buttons"), die Klasse ist aber der Mechanismus dahinter.
+			expect(zone.className).not.toMatch(/\bscale-/);
+		});
 	});
 
 	/**

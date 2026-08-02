@@ -325,13 +325,22 @@
 		if (newFiles.length === 0) return;
 
 		// Single-File-Modus: Bestehende Datei ersetzen
-		if (isSingleFileMode && mediaFiles.length > 0) {
+		//
+		// Gezählt wird über `ownedMediaFiles` und nicht über den ganzen Store —
+		// dieselbe Eingrenzung, mit der `positionMediaFile` und `handleClear` schon
+		// arbeiten. Vorher zählte hier der ganze `mediaStore` gegen `maxFiles`: Im
+		// Positions-Schritt (`maxFiles: 1`) belegte damit jedes Medium aus Schritt 3
+		// den einzigen Platz, der Ersetzen-Zweig löschte nichts (die fremde Datei
+		// gehört ihm nicht) und der Upload endete in „Nur 0 von 1 Dateien können
+		// hinzugefügt werden (Maximum: 1)". Im Medien-Schritt sind beide Mengen
+		// identisch, dort ändert sich nichts.
+		if (isSingleFileMode && ownedMediaFiles.length > 0) {
 			createToast('info', 'Nur eine Datei erlaubt. Bestehende Datei wird ersetzt.');
 			await handleClear();
 		}
 
 		// Datei-Limit prüfen und ggf. beschränken
-		const currentCount = mediaFiles?.length || 0;
+		const currentCount = ownedMediaFiles.length;
 		const allowedCount = Math.min(newFiles.length, maxFiles - currentCount);
 		const filesToProcess = newFiles.slice(0, allowedCount);
 
@@ -947,7 +956,14 @@
 			</div>
 		{/await}
 	{:else}
-		<!-- Unified Dropzone -->
+		<!-- Unified Dropzone
+
+		     `title` rechnet mit `ownedMediaFiles` wie das Datei-Limit oben: Über den
+		     ganzen Store gezählt hieß die Fläche im Positions-Schritt „Foto
+		     ersetzen", sobald irgendwo ein Medium aus Schritt 3 lag — auch wenn
+		     dieser Schritt gar kein Foto hat. Das trifft nicht nur die Beschriftung,
+		     sondern über `zoneTriggerAttributes` auch den zugänglichen Namen der
+		     Fläche (WCAG 4.1.2). -->
 		<UnifiedDropzone
 			{config}
 			{actionLabel}
@@ -958,7 +974,7 @@
 			onClear={handleClear}
 			multiple={!isSingleFileMode}
 			title={title ||
-				(mediaFiles && mediaFiles.length > 0
+				(ownedMediaFiles.length > 0
 					? isSingleFileMode
 						? 'Foto ersetzen'
 						: 'Weitere Dateien hinzufügen'
