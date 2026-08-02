@@ -667,11 +667,12 @@ immer noch 7.383 (38 %).
 
 **Grund 2 — `.claude/rules/api.md` verbietet es.** Dort ist die öffentliche
 Grundmenge verbindlich auf `approvedAt IS NOT NULL` festgelegt, ausdrücklich für
-die Legacy-API **und** die moderne Karte (`/api/map/sightings`, via
-`approvedOnly()` aus `src/lib/server/db/approvalFilter.ts`), mit der Begründung,
-dass zwei verschiedene Filter für zwei öffentliche Flächen zwangsläufig
-auseinanderlaufen. Ein zusätzlicher Marker-Filter nur hier wäre genau dieser
-Fall.
+die Legacy-API **und** die moderne Karte, mit der Begründung, dass zwei
+verschiedene Filter für zwei öffentliche Flächen zwangsläufig auseinanderlaufen.
+Beide Flächen beziehen das Prädikat inzwischen aus derselben Quelle —
+`approvedOnly()` in `src/lib/server/db/approvalFilter.ts` —, dieser Endpunkt
+ebenso wie `/api/map/sightings`. Ein zusätzlicher Marker-Filter nur hier wäre
+genau der Divergenzfall, den das verhindern soll.
 
 **Was das für Clients heißt:** Die Ergebnismenge ist eine Obermenge dessen, was
 die Spec beschreibt. Ein Client bekommt zusätzliche Meldungen, keine fehlenden —

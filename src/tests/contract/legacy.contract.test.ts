@@ -109,9 +109,26 @@ vi.mock('$lib/server/db/schema', () => ({
 	}
 }));
 
+// Attrappe für `drizzle-orm`: Die Contract-Tests prüfen ausschließlich die
+// Response gegen static/openapi.yml, nicht die erzeugte SQL — deshalb genügen
+// Platzhalter.
+//
+// FALLE: Diese Attrappe ersetzt das Modul vollständig. Ein Helper, den die
+// getesteten Routen aufrufen, hier aber fehlt, ist zur Laufzeit `undefined`;
+// der Aufruf wirft, die Route fängt das in ihrem catch-Block und antwortet mit
+// **500 statt 200**. Der Test meldet dann einen Statuscode-Mismatch und nennt
+// die Ursache nicht. Das gilt auch für **mittelbare** Aufrufe: Seit
+// `/sichtungen/showreports.json` sein Freigabe-Prädikat über `approvedOnly()`
+// aus `$lib/server/db/approvalFilter` bezieht, hängt der Endpunkt an
+// `isNotNull`, ohne es selbst zu importieren.
+//
+// Bewusst nur die tatsächlich aufgerufenen Helper (YAGNI, empirisch geprüft):
+// `gte`/`lt` etwa nutzt der Endpunkt für den `year`-Filter, den hier kein Test
+// setzt. Wer einen solchen Test ergänzt, muss sie nachtragen.
 vi.mock('drizzle-orm', () => ({
 	and: vi.fn((...args) => args),
 	between: vi.fn((a, b, c) => ({ a, b, c })),
+	isNotNull: vi.fn((column) => `${String(column)} is not null`),
 	sql: Object.assign(
 		vi.fn((strings: TemplateStringsArray) => String(strings.raw[0])),
 		{
