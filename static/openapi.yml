@@ -66,17 +66,20 @@ paths:
       summary: Sichtungen abrufen
       description: |
         Ruft öffentlich verfügbare Sichtungen für ein bestimmtes Jahr ab.
-        Standardmäßig werden nur genehmigte Sichtungen zurückgegeben.
+        Es werden ausschließlich freigegebene Sichtungen zurückgegeben
+        (`freigegeben_am IS NOT NULL`) — dieselbe öffentliche Grundmenge wie
+        die Karte. Es gibt keinen Parameter, der ungeprüfte Meldungen einschließt.
       parameters:
         - name: year
           in: query
-          description: Jahr der Sichtungen
+          description: >-
+            Jahr der Sichtungen. Ohne Angabe wird das laufende Kalenderjahr
+            verwendet (kein fester Default-Wert).
           required: false
           schema:
             type: integer
             minimum: 2000
             maximum: 2030
-            default: 2024
             example: 2024
       responses:
         '200':
