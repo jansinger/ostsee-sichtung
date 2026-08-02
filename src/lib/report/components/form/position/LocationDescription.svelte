@@ -45,9 +45,16 @@
 	<!-- `<summary>` ist nativ fokussierbar — kein `tabindex` nötig. -->
 	<summary class="collapse-title flex min-h-11 items-center gap-2 py-3 text-sm font-medium">
 		<Icon aria-hidden="true" icon="lucide:waves" width="16" class="text-primary shrink-0" />
+		<!--
+			„den Ort", nicht „das Seegebiet": Das Feld darunter deckt seit A2.4 auch
+			Fahrwasser und Orientierungspunkte ab — eine engere Aufforderung legt
+			Melder unnötig auf eine Gewässerbezeichnung fest. Gleiche Wortwahl wie
+			in der Pflicht-Fehlermeldung des Schemas („Bitte beschreiben Sie den Ort
+			oder wählen Sie eine GPS-Position").
+		-->
 		{coordinatesPresent
 			? 'Ortsbeschreibung ergänzen (optional)'
-			: 'Kein GPS? Beschreiben Sie das Seegebiet'}
+			: 'Kein GPS? Beschreiben Sie den Ort'}
 	</summary>
 	<div class="collapse-content">
 		<p class="text-base-content/70 text-support mb-3">
