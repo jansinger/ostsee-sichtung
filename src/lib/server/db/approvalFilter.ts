@@ -14,8 +14,10 @@
  * hat das Prädikat monatelang als `sql`-Literal nachgebaut, und niemand hat es
  * bemerkt (behoben in PR #701). Die Regel hängt deshalb nicht mehr an der
  * Aufmerksamkeit des Reviewers, sondern an `approvalPredicateScan.test.ts`: Der
- * Test durchsucht `src/` nach selbstgebauten Prädikaten auf `freigegeben_am` und
- * nennt in der Fehlermeldung `approvedOnly()`/`pendingOnly()` als Ersatz.
+ * Test durchsucht `src/` nach selbstgebauten Freigabeprüfungen — auf die Spalte
+ * in **beiden** Schreibweisen (`freigegeben_am` wie `approvedAt`), in SQL wie in
+ * JavaScript — und nennt in der Fehlermeldung `approvedOnly()`, `pendingOnly()`
+ * bzw. `isSightingApproved()` als Ersatz.
  *
  * Dieselbe Regel wird an drei Stellen nicht in SQL, sondern in JavaScript über
  * einer bereits geladenen Zeile ausgewertet (`/uploads/[...path]`,
