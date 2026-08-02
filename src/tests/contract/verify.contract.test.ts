@@ -33,17 +33,23 @@ vi.mock('$lib/server/db', () => ({
 	}
 }));
 
-vi.mock('$lib/server/db/schema', () => ({
-	sightings: {
-		id: 'id',
-		approvedAt: 'approvedAt',
-		verified: 'verified'
-	}
-}));
+vi.mock('$lib/server/db/schema', async () => {
+	const { strictModuleMock } = await import('./helpers/strictModuleMock');
+	return strictModuleMock('$lib/server/db/schema', {
+		sightings: {
+			id: 'id',
+			approvedAt: 'approvedAt',
+			verified: 'verified'
+		}
+	});
+});
 
-vi.mock('drizzle-orm', () => ({
-	eq: vi.fn((a, b) => ({ a, b }))
-}));
+vi.mock('drizzle-orm', async () => {
+	const { strictModuleMock } = await import('./helpers/strictModuleMock');
+	return strictModuleMock('drizzle-orm', {
+		eq: vi.fn((a, b) => ({ a, b }))
+	});
+});
 
 vi.mock('$lib/server/auth/auth', () => ({
 	requireUserRole: vi.fn()
