@@ -48,6 +48,18 @@ describe('sightingSchema — seaMark bleibt erhalten', () => {
 		// nicht mehr rendern, und der Altbestand wäre nicht korrigierbar.
 		expect(meta('seaMark')).not.toEqual({});
 	});
+
+	/**
+	 * `seaMark` steht nur noch in der Admin-Maske — dort direkt unter `waterway`,
+	 * dessen Hilfetext ebenfalls Orientierungspunkte nennt. Ohne einen Hinweis auf
+	 * den Altbestand beanspruchen beide Felder sichtbar dasselbe, und wer den
+	 * Datensatz korrigiert, weiß nicht, in welches der beiden er schreiben soll.
+	 */
+	it('weist seaMark als Altbestands-Feld aus', () => {
+		const copy = [describeField('seaMark').label, meta('seaMark').helpText].join(' ').toLowerCase();
+
+		expect(copy).toContain('altbestand');
+	});
 });
 
 /**

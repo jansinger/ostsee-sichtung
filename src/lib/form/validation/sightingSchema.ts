@@ -316,11 +316,12 @@ export const sightingSchemaBase = yup.object().shape({
 	 */
 	seaMark: yup
 		.string()
-		.max(255, 'Der Name des Seezeichensist zu lang (maximal 255 Zeichen)')
-		.label('Seezeichen in der Nähe')
+		.max(255, 'Der Name des Seezeichens ist zu lang (maximal 255 Zeichen)')
+		.label('Seezeichen (nur Altbestand)')
 		.meta({
 			placeholder: 'z.B. Leuchtturm Dahmeshöved, Tonne 14, Ansteuerungstonne',
-			helpText: 'Gab es markante Orientierungspunkte in der Nähe?',
+			helpText:
+				'Wird im Meldeformular nicht mehr erfasst — neue Meldungen beschreiben den Ort im Feld darüber. Bleibt für Altmeldungen und die Legacy-Schnittstelle bearbeitbar.',
 			valueText:
 				'Seezeichen helfen Wissenschaftlern bei der Positionsverifizierung und schaffen Vertrauen in die Datenqualität',
 			icon: Anchor
