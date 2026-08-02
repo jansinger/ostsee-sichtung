@@ -50,9 +50,16 @@ describe('erstelleRateLimit', () => {
 			jetzt: () => zeit
 		});
 
-		for (let i = 0; i < 5000; i++) {
+		// 500 IPs, nicht mehr: pruefeIp() räumt bei jedem Aufruf die ganze Map auf,
+		// die Schleife ist also quadratisch (5000 IPs ≙ 584 ms auf einer unbelasteten
+		// Maschine, unter Volllast über dem 5-s-Timeout von Vitest). Die Aussage hängt
+		// nicht an der Größe — sie steckt in den beiden expect() unten: Die Map wächst
+		// mit jeder neuen IP und ist nach dem Stundenwechsel wieder leer.
+		for (let i = 0; i < 500; i++) {
 			limit.pruefeIp(`10.0.${Math.floor(i / 256)}.${i % 256}`);
 		}
+		expect(limit.anzahlBeobachteterIps()).toBe(500);
+
 		zeit = 3_600_001;
 		limit.pruefeIp('1.1.1.1');
 
