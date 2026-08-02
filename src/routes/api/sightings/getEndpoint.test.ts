@@ -37,7 +37,8 @@ vi.mock('$lib/server/db/schema', () => ({
 		lastName: 'lastName',
 		waterway: 'waterway',
 		shipNameConsent: 'shipNameConsent',
-		shipName: 'shipName'
+		shipName: 'shipName',
+		approvedAt: 'approvedAt'
 	}
 }));
 
@@ -48,6 +49,8 @@ vi.mock('drizzle-orm', () => ({
 	and: vi.fn((...conditions) => conditions),
 	gte: vi.fn((column, value) => ({ op: 'gte', column, value })),
 	lt: vi.fn((column, value) => ({ op: 'lt', column, value })),
+	isNotNull: vi.fn((column) => ({ op: 'isNotNull', column })),
+	isNull: vi.fn((column) => ({ op: 'isNull', column })),
 	sql: Object.assign(
 		vi.fn(() => 'sql-fragment'),
 		{ raw: vi.fn((s: string) => s) }
@@ -64,6 +67,14 @@ vi.mock('$lib/legacy-api/date-utils', () => ({
 vi.mock('$lib/server/db/sqlTimeZone', () => ({
 	berlinToChar: vi.fn((column: string, pattern: string) => `berlinToChar(${column},${pattern})`)
 }));
+
+// Spy um die *echte* Implementierung: die WHERE-Bedingung bleibt damit real
+// geprüft, gleichzeitig ist nachweisbar, dass der Endpunkt den Helper benutzt
+// und das Prädikat nicht selbst zusammenbaut.
+vi.mock('$lib/server/db/approvalFilter', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('$lib/server/db/approvalFilter')>();
+	return { ...actual, approvedOnly: vi.fn(actual.approvedOnly) };
+});
 
 vi.mock('$lib/logger.server', () => ({
 	createLogger: () => ({
@@ -98,10 +109,12 @@ describe('GET /api/sightings', () => {
 
 		expect(getYearRange).toHaveBeenCalledWith(2024);
 
-		const conditions = mockWhere.mock.calls.at(-1)?.[0] as Condition[];
-		expect(conditions.map((c) => c.op)).toEqual(['gte', 'lt']);
-		expect(conditions[0]?.value?.toISOString()).toBe('2023-12-31T23:00:00.000Z');
-		expect(conditions[1]?.value?.toISOString()).toBe('2024-12-31T23:00:00.000Z');
+		const dateConditions = (mockWhere.mock.calls.at(-1)?.[0] as Condition[]).filter(
+			(c) => c.column === 'sightingDate'
+		);
+		expect(dateConditions.map((c) => c.op)).toEqual(['gte', 'lt']);
+		expect(dateConditions[0]?.value?.toISOString()).toBe('2023-12-31T23:00:00.000Z');
+		expect(dateConditions[1]?.value?.toISOString()).toBe('2024-12-31T23:00:00.000Z');
 	});
 
 	it('formatiert dt/ti über berlinToChar (Europe/Berlin), nicht über rohes to_char', async () => {
@@ -119,5 +132,70 @@ describe('GET /api/sightings', () => {
 		};
 		expect(selectArg.dt).toBe('berlinToChar(sightingDate,DD.MM.YYYY)');
 		expect(selectArg.ti).toBe('berlinToChar(sightingDate,HH24:MI)');
+	});
+});
+
+/**
+ * Der Endpunkt filterte ausschließlich auf den Jahreszeitraum und war ohne
+ * Session erreichbar — damit war jede eingegangene Meldung abrufbar, bevor sie
+ * jemand gesichtet hatte, inklusive Klarname (`na`) und Schiffsname (`sh`), wo
+ * eine Einwilligung vorliegt. Die Einwilligung erlaubt die Veröffentlichung des
+ * Namens, nicht die Veröffentlichung einer ungeprüften Meldung.
+ *
+ * Gemessen am 2026-08-02 gegen die lokale Datenbank: `?year=2018` lieferte 2.394
+ * Datensätze, davon 162 ungeprüft und 92 davon mit Namens- oder
+ * Schiffsnamens-Einwilligung; `?year=2026` lieferte 8 Datensätze, von denen
+ * *alle* ungeprüft waren. Nach dem Fix: 2.232 bzw. 0, jeweils 0 ungeprüfte.
+ *
+ * Verbindliche Regel (`CLAUDE.md`, `.claude/rules/api.md`): „Öffentliche
+ * Grundmenge überall: `freigegeben_am IS NOT NULL`."
+ */
+describe('GET /api/sightings — öffentliche Grundmenge', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockWhere.mockReturnValue({ orderBy: mockOrderBy });
+		mockOrderBy.mockResolvedValue([]);
+	});
+
+	const approvalConditions = () =>
+		(mockWhere.mock.calls.at(-1)?.[0] as Condition[]).filter((c) => c.column === 'approvedAt');
+
+	it('liefert ohne Session ausschließlich freigegebene Sichtungen', async () => {
+		// Bewusst ohne `locals.user`: der Endpunkt ist öffentlich erreichbar, der
+		// Schutz liegt also allein im Freigabe-Filter.
+		await GET(createMockGetEvent('http://localhost/api/sightings'));
+
+		expect(approvalConditions()).toEqual([{ op: 'isNotNull', column: 'approvedAt' }]);
+	});
+
+	it('behält den Freigabe-Filter auch mit year-Parameter', async () => {
+		await GET(createMockGetEvent('http://localhost/api/sightings?year=2018'));
+
+		expect(approvalConditions()).toEqual([{ op: 'isNotNull', column: 'approvedAt' }]);
+	});
+
+	it('cached höchstens 5 Minuten, damit Freigaben zeitnah sichtbar werden', async () => {
+		// Die Antwortmenge hängt am Freigabestatus: eine frisch freigegebene
+		// Sichtung bleibt so lange unsichtbar, wie die alte Antwort gecached ist.
+		// Eine Stunde war dafür zu lang.
+		const event = createMockGetEvent('http://localhost/api/sightings?year=2018');
+		await GET(event);
+
+		expect(vi.mocked(event.setHeaders)).toHaveBeenCalledWith(
+			expect.objectContaining({ 'Cache-Control': 'max-age=300' })
+		);
+	});
+
+	it('nutzt den gemeinsamen Helper statt einer eigenen Bedingung', async () => {
+		// `approvedOnly()` ist die einzige Definition des Prädikats (siehe
+		// approvalFilter.ts). Der Spy umschließt die echte Implementierung — die
+		// Bedingung oben bleibt also real geprüft, und ein handgeschriebenes
+		// `isNotNull(sightings.approvedAt)` im Endpunkt fällt hier auf, weil der
+		// Helper dann nicht aufgerufen wird.
+		const { approvedOnly } = await import('$lib/server/db/approvalFilter');
+
+		await GET(createMockGetEvent('http://localhost/api/sightings?year=2018'));
+
+		expect(vi.mocked(approvedOnly)).toHaveBeenCalled();
 	});
 });

@@ -16,13 +16,22 @@ vi.mock('$lib/server/db', () => ({
 }));
 
 vi.mock('$lib/server/db/schema', () => ({
-	sightings: { id: 'id', sightingDate: 'sightingDate', created: 'created' }
+	// `approvedAt` wird von `approvedOnly()` gebraucht — GET filtert die
+	// öffentliche Grundmenge, siehe ../../routes/api/sightings/getEndpoint.test.ts
+	sightings: {
+		id: 'id',
+		sightingDate: 'sightingDate',
+		created: 'created',
+		approvedAt: 'approvedAt'
+	}
 }));
 
 vi.mock('drizzle-orm', () => ({
 	and: vi.fn((...args) => args),
 	gte: vi.fn((a, b) => ({ a, b })),
 	lt: vi.fn((a, b) => ({ a, b })),
+	isNotNull: vi.fn((column) => ({ op: 'isNotNull', column })),
+	isNull: vi.fn((column) => ({ op: 'isNull', column })),
 	sql: Object.assign(
 		vi.fn((strings: TemplateStringsArray, ..._values: unknown[]) => String(strings.raw[0])),
 		{

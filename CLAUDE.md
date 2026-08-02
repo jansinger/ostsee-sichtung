@@ -30,7 +30,7 @@ Beim Erstellen oder Ändern von `.ts`/`.svelte`-Dateien mit Business-Logik MUSS 
 
 ### Legacy REST API — 100 % Kompatibilität
 
-Die Legacy-Endpunkte (`/rest_sichtungen`, `/sichtungen/showreports.json`) implementieren den Vertrag der Vorgänger-API für Mobile Clients. Stand 2026-07-28 sind sie **nicht in Betrieb** — eine Abweichung bricht also nichts Laufendes, entwertet aber den Vertrag, sobald Clients angebunden werden. Feldnamen, URL-Pfade und Datentypen deshalb nur bewusst und dokumentiert ändern. Details laden automatisch beim Bearbeiten der betroffenen Routen (`.claude/rules/legacy-api.md`); verbindliche Referenz ist `docs/LEGACY_API_SPECIFICATION.md`.
+Die Legacy-Endpunkte (`/rest_sichtungen`, `/sichtungen/showreports.json`) implementieren den Vertrag der Vorgänger-API für Mobile Clients. **Stand 2026-07-30 ist ein Client angebunden:** eine neu gebaute iOS-App (`OstSeeTiere/8`) sendet Sichtungen über `POST /rest_sichtungen`. Eine Abweichung kostet damit echte Daten und ist von hier aus nicht reparierbar — der alte Client ist nicht mehr testbar. Feldnamen, URL-Pfade und Datentypen deshalb nur bewusst und dokumentiert ändern; offensichtliche Fehler nur ergänzend beheben, nie einen bestehenden Codepfad ersetzen. Das ist ein datierter Stand, keine Dauerzusage — vor größeren Änderungen prüfen, ob weitere Clients dazugekommen sind. Details laden automatisch beim Bearbeiten der betroffenen Routen (`.claude/rules/legacy-api.md`); verbindliche Referenz ist `docs/LEGACY_API_SPECIFICATION.md`.
 
 ### Sichtungs-Status — genau zwei Zustände
 
