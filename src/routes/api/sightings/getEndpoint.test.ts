@@ -174,6 +174,18 @@ describe('GET /api/sightings — öffentliche Grundmenge', () => {
 		expect(approvalConditions()).toEqual([{ op: 'isNotNull', column: 'approvedAt' }]);
 	});
 
+	it('cached höchstens 5 Minuten, damit Freigaben zeitnah sichtbar werden', async () => {
+		// Die Antwortmenge hängt am Freigabestatus: eine frisch freigegebene
+		// Sichtung bleibt so lange unsichtbar, wie die alte Antwort gecached ist.
+		// Eine Stunde war dafür zu lang.
+		const event = createMockGetEvent('http://localhost/api/sightings?year=2018');
+		await GET(event);
+
+		expect(vi.mocked(event.setHeaders)).toHaveBeenCalledWith(
+			expect.objectContaining({ 'Cache-Control': 'max-age=300' })
+		);
+	});
+
 	it('nutzt den gemeinsamen Helper statt einer eigenen Bedingung', async () => {
 		// `approvedOnly()` ist die einzige Definition des Prädikats (siehe
 		// approvalFilter.ts). Der Spy umschließt die echte Implementierung — die

@@ -90,9 +90,11 @@ export async function GET(event: RequestEvent) {
 
 		logger.info({ year, count: result.length }, 'Sichtungen erfolgreich abgerufen');
 
-		// Cache-Header setzen (1 Stunde)
+		// Cache-Header setzen (5 Minuten). Kurz gehalten, weil die Antwortmenge am
+		// Freigabestatus hängt: eine frisch freigegebene Sichtung bleibt so lange
+		// unsichtbar, wie die alte Antwort gecached ist.
 		event.setHeaders({
-			'Cache-Control': 'max-age=3600',
+			'Cache-Control': 'max-age=300',
 			'Content-Type': 'application/json'
 		});
 
