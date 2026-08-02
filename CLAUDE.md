@@ -78,7 +78,13 @@ per `SessionStart`-Hook). Drei Dinge, die dabei erfahrungsgemäß schiefgehen:
   eigene Installation kostet ~800 MB ohne Gegenwert. Ausnahme: Der Branch ändert
   `package-lock.json`.
 - **Nur ein Dev-Server auf Port 4000.** `PUBLIC_SITE_URL` ist fest auf 4000 und baut die
-  Auth0-Callback-URL; ein anderer Port bricht den Login.
+  Auth0-Callback-URL; ein anderer Port bricht den Login. Bei belegtem Port bricht
+  `npm run dev` ab (`strictPort`), statt still auszuweichen.
+- **E2E-Tests laufen auf einem Port pro Worktree.** Vorher benutzten alle Worktrees fest
+  4001 und Playwright verwendete lokal jeden Server wieder, der dort antwortete — Läufe
+  gegen einen fremden Branch waren die Folge, im schlimmsten Fall **grün**. Der Port
+  kommt jetzt aus dem Pfad-Hash, und `e2e/global-setup.ts` bricht ab, wenn der Server
+  aus einem anderen Verzeichnis ausliefert.
 - **Datenbank und `uploads/` sind geteilt.** `db:push` und `media:cleanup-orphans`
   wirken auf alle Worktrees.
 
