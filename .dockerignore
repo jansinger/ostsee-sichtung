@@ -114,7 +114,9 @@ src/tools
 # Datei im Kontext, bricht schon das Laden der Vite-Config ab (UNRESOLVED_IMPORT),
 # lange bevor irgendetwas gebaut wird. Wer einen weiteren Import in eine
 # Vite-Config aufnimmt, muss ihn hier eintragen; dockerignore-build-context.test.ts
-# prüft das. Die zugehörigen Tests bleiben über das *.test.ts-Muster draußen.
+# prüft das. Die zugehörigen Tests bleiben draußen, weil sie unter src/tools
+# liegen — NICHT über das *.test.ts-Muster: dessen `*` überschreitet keinen `/`
+# und greift damit nur im Wurzelverzeichnis.
 !src/tools/vite-stable-dep-hash.ts
 !src/tools/dev-server-identity.ts
 scripts/*

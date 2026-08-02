@@ -28,12 +28,17 @@ function exists(relativePath: string): boolean {
 
 /**
  * Sammelt die Repo-eigenen Imports einer Config — also die mit `./`, im
- * Gegensatz zu Paketen aus node_modules.
+ * Gegensatz zu Paketen aus node_modules. Erfasst beide Formen: mit Bindung
+ * (`import x from './y'`) und als reinen Side-Effect-Import (`import './y'`).
+ * Beide landen im gebündelten Config-Modul und brauchen die Datei im Kontext.
  */
-function localImportsOf(configFile: string): string[] {
-	const source = read(configFile);
-	const matches = source.matchAll(/^import\s[^'"]*from\s+'(\.\/[^']+)'/gm);
+function localImportsIn(source: string): string[] {
+	const matches = source.matchAll(/^import\s+(?:[^'"]*\sfrom\s+)?'(\.\/[^']+)'/gm);
 	return [...matches].map((match) => match[1] as string);
+}
+
+function localImportsOf(configFile: string): string[] {
+	return localImportsIn(read(configFile));
 }
 
 /** Löst einen Import-Specifier auf den Pfad relativ zum Repo-Root auf. */
@@ -65,6 +70,9 @@ function patternToRegExp(pattern: string): RegExp {
 /**
  * Docker prüft jedes Muster gegen den Pfad und gegen jedes seiner
  * Elternverzeichnisse — `src/tools` schließt damit alles darunter aus.
+ * Ein `*` überschreitet dabei keinen `/` (Go-`filepath.Match` gegen den vollen
+ * Pfad, kein git-artiges Basename-Matching): `*.test.ts` greift nur auf
+ * Dateien im Repo-Wurzelverzeichnis. Die Tests unten pinnen das fest.
  */
 function patternMatches(pattern: string, path: string): boolean {
 	const regExp = patternToRegExp(pattern);
@@ -91,11 +99,55 @@ function isInBuildContext(path: string): boolean {
 	return included;
 }
 
+describe('Import-Erkennung in den Vite-Configs', () => {
+	it('erfasst benannte, Default-, Namespace- und Side-Effect-Imports', () => {
+		const source = [
+			"import { a } from './src/tools/named';",
+			"import b from './src/tools/default';",
+			"import * as c from './src/tools/namespace';",
+			"import './src/tools/side-effect';",
+			"import {\n\td\n} from './src/tools/multiline';"
+		].join('\n');
+
+		expect(localImportsIn(source)).toEqual([
+			'./src/tools/named',
+			'./src/tools/default',
+			'./src/tools/namespace',
+			'./src/tools/side-effect',
+			'./src/tools/multiline'
+		]);
+	});
+
+	it('ignoriert Pakete aus node_modules', () => {
+		const source =
+			"import { defineConfig } from 'vite';\nimport tailwindcss from '@tailwindcss/vite';";
+
+		expect(localImportsIn(source)).toEqual([]);
+	});
+});
+
 describe('.dockerignore und die Vite-Configs', () => {
 	it('erkennt ausgeschlossene Dateien überhaupt', () => {
 		// Absicherung des Matchers: ohne diesen Fall wäre ein immer-true-Matcher grün.
 		expect(isInBuildContext('src/tools/analyse-legacy-inbox.js')).toBe(false);
 		expect(isInBuildContext('node_modules/vite/index.js')).toBe(false);
+	});
+
+	it('lässt ein `*` keinen `/` überschreiten', () => {
+		// Gegen einen Matcher abgesichert, der Wildcards git-artig auf den
+		// Dateinamen anwendet — der würde hier alles ausschließen und den
+		// eigentlichen Test damit wertlos machen.
+		// Gegengeprüft an einem echten `docker build`: `find /ctx/src/lib
+		// -name '*.test.ts'` liefert Treffer, `ls /ctx/vitest*` nicht.
+		expect(isInBuildContext('src/lib/form/validation/stepNavigation.test.ts')).toBe(true);
+		expect(isInBuildContext('vitest-setup-client.ts')).toBe(false);
+	});
+
+	it('hält die Tests der Vite-Config-Module draußen', () => {
+		// Nicht über `*.test.ts` — das greift nur im Wurzelverzeichnis —,
+		// sondern weil `src/tools` alles ausschließt, was keine Ausnahme hat.
+		expect(isInBuildContext('src/tools/dev-server-identity.test.ts')).toBe(false);
+		expect(isInBuildContext('src/tools/vite-stable-dep-hash.test.ts')).toBe(false);
 	});
 
 	it.each(VITE_CONFIGS)('hält %s selbst im Build-Kontext', (configFile) => {
