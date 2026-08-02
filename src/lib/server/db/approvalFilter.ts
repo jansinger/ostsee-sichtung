@@ -11,9 +11,10 @@
  * Aufrufer, der den Freigabestatus ignoriert, fällt beim Review auf, weil er
  * diesen Import nicht hat.
  *
- * Dieselbe Regel wird an zwei Stellen nicht in SQL, sondern in JavaScript über
+ * Dieselbe Regel wird an drei Stellen nicht in SQL, sondern in JavaScript über
  * einer bereits geladenen Zeile ausgewertet (`/uploads/[...path]`,
- * `/api/media/[...path]`). Dafür steht `isSightingApproved()` weiter unten —
+ * `/api/media/[...path]`, `PATCH /api/sightings/[id]/verify`). Dafür steht
+ * `isSightingApproved()` weiter unten —
  * bewusst in **dieser** Datei und nicht in einer eigenen: Eine Regel, die je
  * nach Auswertungsort in zwei Dateien steht, ist genau der Zustand, den dieses
  * Modul beseitigen soll. Wer eine der beiden Formen ändert, sieht die andere.
@@ -71,8 +72,11 @@ export type SightingApprovalState = { approvedAt: Date | null | undefined };
  *
  * Genutzt von `/uploads/[...path]` und `/api/media/[...path]`: Beide haben die
  * Sichtung wegen des Joins ohnehin in der Hand und entscheiden anhand dieses
- * Werts, ob eine Datei **ohne Anmeldung** ausgeliefert wird. Vorher trug jede
- * Route dafür ein eigenes `!!file.approvedAt`.
+ * Werts, ob eine Datei **ohne Anmeldung** ausgeliefert wird — das sind die
+ * Aufrufer, bei denen ein Fehlurteil weh tut. `PATCH /api/sightings/[id]/verify`
+ * hält damit zusätzlich den Vorzustand im Audit-Log fest; dort entscheidet der
+ * Wert über keinen Zugriff. Vorher trug jede der drei Routen ihre eigene
+ * Inline-Prüfung.
  *
  * Bewusst die Truthy-Prüfung und nicht `!= null`: Für den deklarierten Typ sind
  * beide identisch (ein `Date` ist immer truthy, auch `new Date(0)`), aber bei
