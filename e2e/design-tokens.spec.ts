@@ -562,6 +562,112 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 			const elements = await scanRoute({ page, context, request, baseURL }, route);
 			expect(findOffenders(TAILWIND_PALETTE, elements), TAILWIND_PALETTE.hint).toEqual([]);
 		});
+
+		/* Überschrift trägt eine Größen-Utility und rendert trotzdem anders.
+
+		   **Warum das ein eigener Test ist und nicht Teil des Klassen-Scans oben.**
+		   Die drei Regeln darüber lesen Klassennamen und entscheiden daraus. Der
+		   Fehler hier ist genau der, den man an der Klassenliste *nicht* sieht:
+		   `class="… text-6xl …"` steht korrekt im Markup, und der Scan meldet zu
+		   Recht nichts — die Utility greift nur nicht. Nachweisbar ist das erst am
+		   berechneten Wert.
+
+		   **Warum bei 375px.** Der gefundene Fall saß in einem
+		   `@media (max-width: 768px)`. Unterhalb `md` greift außerdem keine
+		   `md:`/`lg:`-Variante, die Basis-Utility ist dort also allein zuständig —
+		   der Vergleich unten braucht deshalb keine Breakpoint-Auflösung.
+
+		   **Was der Test wirklich prüft:** dass keine ungelayerte Element-Regel die
+		   Utilities schlägt. Tailwind legt sie in `@layer utilities`, und eine
+		   ungelayerte Regel gewinnt gegen jede gelayerte — unabhängig von der
+		   Spezifität (dieselbe Mechanik wie beim Fokus-Override, `daisyui.md`). Ein
+		   `h1 { font-size: … !important }` in einer beliebigen importierten CSS-Datei
+		   schlägt damit jede Größenangabe im Markup, auf jeder Seite.
+
+		   Gefunden wurde so `mapStyles.css`, das über `app.css` global importiert
+		   wird und dessen Mobil-Block jede `h1` der Anwendung auf 20px zwang — auf
+		   `/about` war der Seitentitel damit kleiner als jede Zwischenüberschrift.
+		   Ein Test über die CSS-Quelle hätte das nicht gesehen: dort steht eine
+		   plausible Regel in einer plausiblen Datei. */
+		test(`${route.path}: Größen-Utilities an Überschriften greifen`, async ({
+			page,
+			context,
+			request,
+			baseURL
+		}) => {
+			await page.setViewportSize({ width: 375, height: 812 });
+			await openRoute({ page, context, request, baseURL }, route);
+
+			/* Vor dem Messen auf die Hydration warten — sonst misst der Test die
+			   Einbettungs-Darstellung und nicht die, die ein Besucher sieht.
+
+			   `+layout.svelte` rendert `<div class:iframe-mode={!isNotIFrame}>`, und
+			   `isNotIFrame` ist eine Modulkonstante mit `browser && window === window.top`
+			   (`src/lib/utils/client/isNotIFrame.ts`). Beim Server-Rendering steht sie
+			   auf `false`, das Markup trägt also zunächst `.iframe-mode` — und der Block
+			   dazu in `app.css` setzt `h1` auf `--text-title` und `h2` auf
+			   `--text-section`, ungelayert und damit vor jeder Utility. Erst die
+			   Hydration nimmt die Klasse weg.
+
+			   Ohne dieses Warten meldet der Test jede Überschrift der Anwendung als
+			   Verstoß und sieht dabei aus wie ein Produktfehler. Genau das ist beim
+			   ersten Lauf passiert. */
+			await page.waitForFunction(() => !document.querySelector('.iframe-mode'));
+
+			const mismatches = await page.evaluate(() => {
+				const root = getComputedStyle(document.documentElement);
+				const remBase = parseFloat(root.fontSize) || 16;
+
+				const toPx = (value: string): number | null => {
+					const match = /^([\d.]+)(rem|px)$/.exec(value.trim());
+					if (!match) return null;
+					return Number(match[1]) * (match[2] === 'rem' ? remBase : 1);
+				};
+
+				const found: string[] = [];
+
+				for (const el of document.querySelectorAll('h1, h2, h3, h4, h5, h6')) {
+					/* Nur unpräfigierte Klassen: `md:text-3xl` greift bei 375px nicht.
+					   Ob eine `text-*`-Klasse eine Größe ist, entscheidet nicht eine
+					   gepflegte Liste, sondern das Theme selbst — `--text-6xl` existiert,
+					   `--text-primary` (Farbe) und `--text-center` (Ausrichtung) nicht.
+					   Damit deckt der Test auch die eigenen Rollen-Utilities ab
+					   (`text-display`, `text-title`, …) ohne Zweitpflege. */
+					const sizeUtilities = (el.getAttribute('class') ?? '')
+						.split(/\s+/)
+						.filter((name) => /^text-[a-z0-9]+$/.test(name))
+						.filter((name) => root.getPropertyValue(`--${name}`).trim() !== '');
+
+					/* Keine Größenangabe (z. B. nur `card-title`) — nichts zu prüfen.
+					   Mehrere widersprechen sich; das ist ein eigener Fehler und gehört
+					   nicht in diese Regel. */
+					if (sizeUtilities.length !== 1) continue;
+
+					const utility = sizeUtilities[0];
+					const declared = toPx(root.getPropertyValue(`--${utility}`));
+					const computed = toPx(getComputedStyle(el).fontSize);
+					if (declared === null || computed === null) continue;
+
+					if (Math.abs(declared - computed) > 0.5) {
+						const label = (el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40);
+						found.push(
+							`<${el.tagName.toLowerCase()} class="${utility}"> „${label}" — ` +
+								`erwartet ${declared}px, gerendert ${computed}px`
+						);
+					}
+				}
+
+				return found;
+			});
+
+			expect(
+				mismatches,
+				'Eine Überschrift rendert nicht in der Größe, die ihre Utility angibt. ' +
+					'Ursache ist fast immer eine ungelayerte Element-Regel (oft mit !important) in einer ' +
+					'global importierten CSS-Datei — sie schlägt jede Utility aus @layer utilities. ' +
+					'Die Regel gehört auf ihren Kontext gescopt, nicht die Utility an der Aufrufstelle erhöht.'
+			).toEqual([]);
+		});
 	}
 });
 

@@ -40,7 +40,12 @@
 			<OstseeTiereLogo size="lg" showText={true} />
 		</div>
 
-		<h1 class="text-primary mb-8 text-6xl font-bold tracking-tight">Über Ostsee-Tiere</h1>
+		<!-- Größen aus der Rollen-Tabelle in design-system.md, nicht frei gewählt:
+		     Seitentitel ist `display`, Abschnittstitel `title`, Titel in Karten
+		     `section`. Vorher standen hier text-6xl/5xl/4xl/3xl/2xl/xl — dass das
+		     nie auffiel, lag an der globalen h1-Regel aus mapStyles.css, die den
+		     Titel auf Mobil auf 20px zwang und die Staffelung damit verdeckte. -->
+		<h1 class="text-primary text-display mb-8 font-bold tracking-tight">Über Ostsee-Tiere</h1>
 		<div class="mx-auto max-w-4xl">
 			<p class="text-base-content/80 mb-6 text-2xl leading-relaxed">
 				Die Ostsee-Tiere Plattform ermöglicht es <strong class="text-primary"
@@ -57,7 +62,7 @@
 	<div class="mb-20">
 		<div class="grid items-center gap-12 md:grid-cols-2">
 			<div>
-				<h2 class="text-primary mb-6 flex items-center gap-3 text-4xl font-bold">
+				<h2 class="text-primary text-title mb-6 flex items-center gap-3 font-bold">
 					<Icon icon="lucide:zap" width="36" class="text-primary" />
 					Unsere Mission
 				</h2>
@@ -83,7 +88,7 @@
 					<div class="mb-6 flex justify-center">
 						<Icon icon="lucide:activity" width="60" class="text-primary opacity-80" />
 					</div>
-					<h3 class="text-primary mb-4 text-2xl font-bold">Citizen Science</h3>
+					<h3 class="text-primary text-section mb-4 font-bold">Citizen Science</h3>
 					<p class="text-base-content/70 text-lg leading-relaxed">
 						Bürgerwissenschaft macht <strong>jeden zum Forscher</strong> und trägt zu wichtigen wissenschaftlichen
 						Erkenntnissen bei.
@@ -107,7 +112,7 @@
 	<!-- Features Section -->
 	<div class="mb-20">
 		<div class="mb-12 text-center">
-			<h2 class="text-primary mb-4 flex items-center justify-center gap-3 text-4xl font-bold">
+			<h2 class="text-primary text-title mb-4 flex items-center justify-center gap-3 font-bold">
 				<Icon icon="lucide:zap" width="36" class="text-primary" />
 				Unsere Plattform
 			</h2>
@@ -124,7 +129,7 @@
 					>
 						<Icon icon="lucide:pen-line" width="48" class="text-primary" />
 					</div>
-					<h3 class="card-title text-primary mb-4 justify-center text-xl">Einfaches Melden</h3>
+					<h3 class="card-title text-primary text-section mb-4 justify-center">Einfaches Melden</h3>
 					<p class="text-base-content/80 text-base leading-relaxed">
 						<strong>Intuitive Formulare</strong> führen Sie Schritt für Schritt durch die Erfassung
 						Ihrer Sichtung mit <em>GPS-genauer Lokalisierung</em>.
@@ -142,7 +147,7 @@
 					>
 						<Icon icon="lucide:map" width="48" class="text-secondary-strong" />
 					</div>
-					<h3 class="card-title text-secondary-strong mb-4 justify-center text-xl">
+					<h3 class="card-title text-secondary-strong text-section mb-4 justify-center">
 						Interaktive Karte
 					</h3>
 					<!-- „alle Sichtungen" traf nicht zu: die Karte zeigt ausschließlich
@@ -164,7 +169,7 @@
 					>
 						<Icon icon="lucide:chart-pie" width="48" class="text-accent-strong" />
 					</div>
-					<h3 class="card-title text-accent-strong mb-4 justify-center text-xl">Offene Daten</h3>
+					<h3 class="card-title text-accent-strong text-section mb-4 justify-center">Offene Daten</h3>
 					<!-- Vorher: „Alle Daten sind für Forschungszwecke verfügbar und können in
 					     verschiedenen Formaten exportiert werden." Der Export in mehrere
 					     Formate ist eine Funktion des Admin-Bereichs, nicht der Öffentlichkeit
@@ -221,7 +226,7 @@
 
 	<!-- Data Protection & Security Section -->
 	<div class="mb-16">
-		<h2 class="mb-8 flex items-center justify-center gap-3 text-center text-3xl font-bold">
+		<h2 class="text-title mb-8 flex items-center justify-center gap-3 text-center font-bold">
 			<Icon icon="lucide:shield-check" width="30" class="text-success-strong" />
 			Datenschutz & Sicherheit
 		</h2>
@@ -382,7 +387,7 @@
 	<!-- Technology Section -->
 	<div class="bg-base-200 mb-16 rounded-lg p-8">
 		<div class="mb-6 flex flex-col items-center justify-center gap-2">
-			<h2 class="flex items-center gap-3 text-center text-3xl font-bold">
+			<h2 class="text-title flex items-center gap-3 text-center font-bold">
 				<Icon icon="lucide:zap" width="30" class="text-warning-strong" />
 				Technologie
 			</h2>
@@ -414,7 +419,7 @@
 
 	<!-- Open Source & Licensing Section -->
 	<div class="mb-16">
-		<h2 class="mb-8 flex items-center justify-center gap-3 text-center text-3xl font-bold">
+		<h2 class="text-title mb-8 flex items-center justify-center gap-3 text-center font-bold">
 			<Icon icon="lucide:scale" width="32" height="32" class="text-primary" />
 			Open Source & Lizenzen
 		</h2>
@@ -629,7 +634,7 @@ SOFTWARE.</pre>
 							<OstseeTiereLogo size="lg" showText={false} />
 						</div>
 					</div>
-					<h2 class="text-primary mb-6 text-5xl font-bold tracking-tight">
+					<h2 class="text-primary text-title mb-6 font-bold tracking-tight">
 						Werden Sie Teil der Bewegung
 					</h2>
 					<p class="text-base-content/80 mb-8 text-xl leading-relaxed">
