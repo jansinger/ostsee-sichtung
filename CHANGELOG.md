@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.8.0](https://github.com/jansinger/ostsee-tiere/compare/v2.7.0...v2.8.0) (2026-08-02)
+
+
+### Features
+
+* **build:** show version/commit on startup, health check, admin footer ([#689](https://github.com/jansinger/ostsee-tiere/issues/689)) ([fb667fc](https://github.com/jansinger/ostsee-tiere/commit/fb667fc75eea576c2dedb15e14f691fafd86b874))
+* **report:** Ortsbeschreibung im Meldeformular als ein Freitextfeld ([#715](https://github.com/jansinger/ostsee-tiere/issues/715)) ([0f50450](https://github.com/jansinger/ostsee-tiere/commit/0f504503ed649d25a19d90a3675e9f70f0a0644c))
+* **ui:** Bestimmungshilfe als eigenständige Seite unter /bestimmungshilfe ([#710](https://github.com/jansinger/ostsee-tiere/issues/710)) ([cc08aff](https://github.com/jansinger/ostsee-tiere/commit/cc08affdf080b514895f049dbff0db5b636f85b5))
+* **ui:** Datenschutzhinweis als Dialog und kompakter Schritt-1-Kopf ([#713](https://github.com/jansinger/ostsee-tiere/issues/713)) ([324e33d](https://github.com/jansinger/ostsee-tiere/commit/324e33dc60a992fec4955f743fe14e58ae367982))
+* **ui:** Schweinswal-Icon ersetzt den Fisch an der Tierart ([#695](https://github.com/jansinger/ostsee-tiere/issues/695)) ([422abbc](https://github.com/jansinger/ostsee-tiere/commit/422abbce082a7eeffc13d6f90ddaffadf9da2cd2))
+
+
+### Bug Fixes
+
+* **a11y:** decorative textarea icon is hidden from screen readers ([#696](https://github.com/jansinger/ostsee-tiere/issues/696)) ([d7eb584](https://github.com/jansinger/ostsee-tiere/commit/d7eb584c4b5382e96c4814418ff4841c50ced2bf))
+* **admin:** Bearbeiten einer Sichtung lässt den Bestand unversehrt ([#706](https://github.com/jansinger/ostsee-tiere/issues/706)) ([8c0fd7f](https://github.com/jansinger/ostsee-tiere/commit/8c0fd7fc751762f22d7d3c90dd01580d62a37237))
+* **admin:** interne Benachrichtigung als solche benennen ([#694](https://github.com/jansinger/ostsee-tiere/issues/694)) ([1eaa634](https://github.com/jansinger/ostsee-tiere/commit/1eaa63421e675aa07d07e2f084dc2e53f4af4931))
+* **api:** GET /api/sightings liefert nur freigegebene Sichtungen ([#699](https://github.com/jansinger/ostsee-tiere/issues/699)) ([c0a8a61](https://github.com/jansinger/ostsee-tiere/commit/c0a8a61e710308f7d68837af4f53e42ff7d8713d))
+* **media:** reset deletes the uploaded files from the server ([#717](https://github.com/jansinger/ostsee-tiere/issues/717)) ([7279f9d](https://github.com/jansinger/ostsee-tiere/commit/7279f9d745d8ba9ef7148d38ea1319ae199e7cbe))
+* **test:** eigener E2E-Port pro Worktree und geprüfte Server-Identität ([#707](https://github.com/jansinger/ostsee-tiere/issues/707)) ([357a897](https://github.com/jansinger/ostsee-tiere/commit/357a897bdf87b4b3ee68c6bc2fc72d151766cbf1))
+* **test:** Gradient-Stops in der Paletten-Regel erfassen ([#698](https://github.com/jansinger/ostsee-tiere/issues/698)) ([cb3b87e](https://github.com/jansinger/ostsee-tiere/commit/cb3b87ee4cb177c77f9a883b7c8c16909c923b4c))
+* **test:** legacy-inbox/app.test.js deterministisch machen ([#709](https://github.com/jansinger/ostsee-tiere/issues/709)) ([050efaf](https://github.com/jansinger/ostsee-tiere/commit/050efafe093988562dab958f348212074a4261d2))
+* **test:** rateLimit-Speichertest von CPU-Hunger befreien ([#711](https://github.com/jansinger/ostsee-tiere/issues/711)) ([f1903ce](https://github.com/jansinger/ostsee-tiere/commit/f1903ce79000d0934f7050f6020b47e68f4fadc8))
+* **ui:** /about verspricht nur noch, was die verlinkte Datenschutzerklärung deckt ([#714](https://github.com/jansinger/ostsee-tiere/issues/714)) ([3caa55d](https://github.com/jansinger/ostsee-tiere/commit/3caa55df7741585777c3fb2ae248d94035280db8))
+* **ui:** cut the stepper bar at the circles instead of under them ([#712](https://github.com/jansinger/ostsee-tiere/issues/712)) ([65907d3](https://github.com/jansinger/ostsee-tiere/commit/65907d3ccdec2b83dd8715cd819aee5eacad65ab))
+* **ui:** globale h1-Regel aus dem Karten-CSS entfernen ([#697](https://github.com/jansinger/ostsee-tiere/issues/697)) ([c62ccae](https://github.com/jansinger/ostsee-tiere/commit/c62ccaec922fe100b955ab7693dcb9071ea840c7))
+* **ui:** Positions-Dropzone rechnet nur noch mit ihren eigenen Dateien ([#716](https://github.com/jansinger/ostsee-tiere/issues/716)) ([1fb6105](https://github.com/jansinger/ostsee-tiere/commit/1fb610576dbc9cd7f7794b63e8acb63b18363f0a))
+* **ui:** tote min-h-10/min-h-11 Utilities entfernen ([#630](https://github.com/jansinger/ostsee-tiere/issues/630)) ([#692](https://github.com/jansinger/ostsee-tiere/issues/692)) ([d6e2646](https://github.com/jansinger/ostsee-tiere/commit/d6e2646ff2612f099ba8f735b73545bd52abb514))
+* **ui:** unbekannte Icon-Namen scheitern laut in dev ([#693](https://github.com/jansinger/ostsee-tiere/issues/693)) ([9273195](https://github.com/jansinger/ostsee-tiere/commit/92731951fbd91299dc324786d69842e1f2c2f448)), closes [#629](https://github.com/jansinger/ostsee-tiere/issues/629)
+* **ui:** Ziffernkreis im Stepper bekommt eine eigene Fläche ([#691](https://github.com/jansinger/ostsee-tiere/issues/691)) ([bb97a39](https://github.com/jansinger/ostsee-tiere/commit/bb97a395b2494029cfe2a107073f946c4e082cb7))
+
+
+### Code Refactoring
+
+* **api:** JS-seitige Freigabeprüfung über einen gemeinsamen Helper ([#704](https://github.com/jansinger/ostsee-tiere/issues/704)) ([aee7505](https://github.com/jansinger/ostsee-tiere/commit/aee75057e8e0f5cd3471d5a98dad03cd8f1be182))
+* **api:** use shared approvedOnly() filter in showreports.json ([#701](https://github.com/jansinger/ostsee-tiere/issues/701)) ([2092133](https://github.com/jansinger/ostsee-tiere/commit/2092133d64f15cdd2ae86f30d623313843b38da8))
+* **ui:** About-Seite auf ihre Kernaussage kuerzen ([#700](https://github.com/jansinger/ostsee-tiere/issues/700)) ([eb20809](https://github.com/jansinger/ostsee-tiere/commit/eb208094bb88d83f945e3b34de5689df037f82ff))
+
 ## [2.7.0](https://github.com/jansinger/ostsee-tiere/compare/v2.6.2...v2.7.0) (2026-07-31)
 
 
