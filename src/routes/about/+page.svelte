@@ -697,12 +697,16 @@ SOFTWARE.</pre>
 						<Icon icon="lucide:map" width="20" height="20" class="mr-2" />
 						Karte erkunden
 					</a>
+					<!-- Zeigte bis 2026-08-02 auf /docs — die OpenAPI-Referenz. „Mehr
+					     erfahren" führte damit vom Werbeblock für Bürger direkt in die
+					     Entwicklerdokumentation. Die Bestimmungshilfe ist das, was an
+					     dieser Stelle tatsächlich gemeint war. -->
 					<a
-						href="/docs"
+						href="/bestimmungshilfe"
 						class="btn btn-accent btn-outline btn-lg px-8 py-4 text-lg shadow-lg transition-all duration-300 hover:shadow-xl"
 					>
 						<Icon icon="lucide:book-open" width="20" height="20" class="mr-2" />
-						Mehr erfahren
+						Tiere bestimmen
 					</a>
 				</div>
 			</div>

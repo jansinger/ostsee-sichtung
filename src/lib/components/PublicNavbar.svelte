@@ -32,6 +32,14 @@
 	<li>
 		<a href="/map" class={currentPath === '/map' ? 'active font-medium' : ''}> Karte </a>
 	</li>
+	<li>
+		<a
+			href="/bestimmungshilfe"
+			class={currentPath === '/bestimmungshilfe' ? 'active font-medium' : ''}
+		>
+			Bestimmungshilfe
+		</a>
+	</li>
 	{#if isAdmin}
 		<li>
 			<a href="/admin" class={currentPath === '/admin' ? 'active font-medium' : ''}> Verwalten </a>

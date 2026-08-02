@@ -341,6 +341,7 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 		{ path: '/', auth: false, needsDb: false },
 		{ path: '/map', auth: false, needsDb: false },
 		{ path: '/about', auth: false, needsDb: false },
+		{ path: '/bestimmungshilfe', auth: false, needsDb: false },
 		/* Die `renders`-Sonden sind für die beiden datengetriebenen Seiten keine
 		   Zugabe, sondern der Kern ihrer Aussagekraft: Eine leere Tabelle liefert
 		   ein DOM ohne eine einzige verbotene Kombination und wäre damit
