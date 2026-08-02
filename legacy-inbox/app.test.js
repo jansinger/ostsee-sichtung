@@ -91,7 +91,7 @@ function fuehreAus({ argumente, umgebung, fertigWenn }) {
 			if (erledigt) return;
 			erledigt = true;
 			clearTimeout(wecker);
-			lehneAb(new Error(`app.js liess sich nicht starten: ${fehler.message}`));
+			lehneAb(new Error(`app.js ließ sich nicht starten: ${fehler.message}`));
 		});
 
 		const pruefeSignal = () => {
