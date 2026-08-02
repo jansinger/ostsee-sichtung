@@ -57,13 +57,18 @@ test.describe('About Page', () => {
 
 	   Der Test prüft beides: dass er eine eigene Überschrift trägt, und dass er
 	   vor den übrigen Abschnitten steht. Die Reihenfolge über die Position im
-	   DOM, nicht über Pixel — das ist unabhängig vom Layout. */
+	   DOM, nicht über Pixel — das ist unabhängig vom Layout.
+
+	   `level: 2` und `main h2` sind kein Zierrat: Ohne Ebene würde der Locator
+	   auch eine h3 „… Meeresmuseum" treffen, und ohne `main` zählten Überschriften
+	   aus Navbar und Footer in den Index mit. Beides trifft heute nicht zu — aber
+	   der Test würde dann das Falsche prüfen, ohne rot zu werden. */
 	test('der Betreiber steht mit eigener Überschrift an erster Stelle', async ({ page }) => {
-		const betreiber = page.getByRole('heading', { name: /Meeresmuseum/ });
+		const betreiber = page.getByRole('heading', { name: /Meeresmuseum/, level: 2 });
 		await expect(betreiber).toBeVisible();
 
 		const reihenfolge = await page.evaluate(() =>
-			[...document.querySelectorAll('h2')].map((h) => h.textContent?.trim() ?? '')
+			[...document.querySelectorAll('main h2')].map((h) => h.textContent?.trim() ?? '')
 		);
 
 		expect(

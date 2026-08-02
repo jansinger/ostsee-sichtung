@@ -36,8 +36,11 @@
 <div class="mx-auto max-w-5xl p-6">
 	<!-- Hero Section -->
 	<div class="mb-16 text-center">
+		<!-- Wortmarke aus: direkt darunter steht „Über Ostsee-Tiere". Mit Text las
+		     das Logo den Namen ein zweites Mal — einmal als Grafik, einmal als
+		     Überschrift. -->
 		<div class="mb-8 flex flex-1 justify-center">
-			<OstseeTiereLogo size="lg" showText={true} />
+			<OstseeTiereLogo size="lg" showText={false} />
 		</div>
 
 		<!-- Größen aus der Rollen-Tabelle in design-system.md, nicht frei gewählt:
@@ -91,7 +94,7 @@
 					rel="noopener noreferrer"
 					class="btn btn-outline btn-sm"
 				>
-					<Icon icon="lucide:globe" width="16" class="mr-1" />
+					<Icon icon="lucide:globe" width="16" class="mr-1" aria-hidden="true" />
 					Meeresmuseum.de
 				</a>
 				<a
@@ -100,7 +103,7 @@
 					rel="noopener noreferrer"
 					class="btn btn-outline btn-sm"
 				>
-					<Icon icon="lucide:file-text" width="16" class="mr-1" />
+					<Icon icon="lucide:file-text" width="16" class="mr-1" aria-hidden="true" />
 					Mehr über Sichtungen
 				</a>
 			</div>
