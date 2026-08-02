@@ -9,8 +9,9 @@
  * Stelle zufällig sauber, der Test wird grün, die eigene Regression bleibt unentdeckt.
  *
  * Zwei Ebenen dagegen:
- *  1. `worktreeDevPort` gibt jedem Arbeitsverzeichnis einen eigenen Port — Kollisionen
- *     entstehen erst gar nicht.
+ *  1. `worktreeDevPort` gibt jedem Arbeitsverzeichnis seinen eigenen Port und macht den
+ *     Zusammenstoß damit unwahrscheinlich — nicht unmöglich (Hash auf ein endliches
+ *     Fenster, siehe `PORT_RANGE_SIZE`).
  *  2. `assertServerIdentity` prüft vor den Tests, ob der Server aus dem eigenen
  *     Verzeichnis ausliefert, und **bricht ab**, wenn nicht. Stillschweigend fremden
  *     Code zu testen ist der Fehler, der verhindert werden soll — eine Warnung, die im
@@ -28,12 +29,20 @@ import type { Plugin } from 'vite';
 export const DEV_IDENTITY_PATH = '/__dev-server-identity';
 
 /**
- * Port-Fenster für Dev-Server. Beginnt bewusst oberhalb von 4000 (fester Dev-Port, an
- * dem `PUBLIC_SITE_URL` und die Auth0-Callback-URL hängen) und 4001 (der frühere,
- * für alle Worktrees identische E2E-Port).
+ * Port-Fenster für Dev-Server: 41000–44999.
+ *
+ * Deutlich oberhalb von 4000 (fester Dev-Port, an dem `PUBLIC_SITE_URL` und die
+ * Auth0-Callback-URL hängen) und 4001 (der frühere, für alle Worktrees identische
+ * E2E-Port), unterhalb des ephemeren Bereichs (ab 49152 auf macOS) und abseits der
+ * üblichen Dienste in den 3000ern/4000ern/5000ern (5000 belegt macOS für AirPlay).
+ *
+ * Die Breite bestimmt, wie oft zwei Worktrees denselben Port ziehen — ein
+ * Geburtstagsproblem, kein „kann nicht passieren". Mit 4000 Plätzen: ~1 % bei 10
+ * Worktrees, ~5 % bei 20. Tritt es ein, ist es **nicht** stillschweigend falsch,
+ * sondern laut: `assertServerIdentity` bricht ab und nennt beide Verzeichnisse.
  */
-const PORT_RANGE_START = 4100;
-const PORT_RANGE_SIZE = 400;
+const PORT_RANGE_START = 41_000;
+const PORT_RANGE_SIZE = 4_000;
 
 /** Entfernt abschließende Schrägstriche, damit Pfadvarianten denselben Port ergeben. */
 function normalizeRoot(root: string): string {
@@ -103,9 +112,16 @@ export function createNodeIdentityFetch(timeoutMs = 10_000): IdentityFetch {
 		new Promise((resolve, reject) => {
 			const { request } = url.startsWith('https:') ? https : http;
 			const anchors = devTrustAnchors();
+			const signal = init?.signal;
+			/**
+			 * Genau **eine** Frist. Bringt der Aufrufer ein Signal mit (in
+			 * `assertServerIdentity` ein `AbortSignal.timeout`), gilt dessen Deadline und
+			 * der Socket-Timeout entfällt — sonst liefen zwei Uhren, von denen die eine
+			 * die andere überholen kann und die Fehlermeldung davon abhinge, wer zuerst war.
+			 */
 			const req = request(
 				url,
-				{ timeout: timeoutMs, ...(anchors.length ? { ca: anchors } : {}) },
+				{ ...(signal ? {} : { timeout: timeoutMs }), ...(anchors.length ? { ca: anchors } : {}) },
 				(res) => {
 					let body = '';
 					res.setEncoding('utf8');
@@ -118,11 +134,14 @@ export function createNodeIdentityFetch(timeoutMs = 10_000): IdentityFetch {
 			);
 			req.on('timeout', () => req.destroy(new Error(`Zeitüberschreitung nach ${timeoutMs} ms`)));
 			req.on('error', reject);
-			// Ein übergebenes Signal muss wirken — sonst gäbe es zwei Timeouts, von denen
-			// nur einer greift.
-			init?.signal?.addEventListener('abort', () => req.destroy(new Error('Abgebrochen')), {
-				once: true
-			});
+
+			const onAbort = () => req.destroy(new Error('Abgebrochen'));
+			signal?.addEventListener('abort', onAbort);
+			// `close` deckt alle Ausgänge ab (Antwort, Fehler, destroy). Ohne dieses
+			// Abmelden feuerte ein `AbortSignal.timeout` auch noch Sekunden nach der
+			// fertigen Antwort und zerstörte einen längst abgeschlossenen Request; bis
+			// dahin hielte der Listener ihn zudem am Leben.
+			req.on('close', () => signal?.removeEventListener('abort', onAbort));
 			req.end();
 		});
 }

@@ -45,9 +45,20 @@ describe('worktreeDevPort', () => {
 		expect(worktreeDevPort(WORKTREE_A)).toBe(worktreeDevPort(WORKTREE_A));
 	});
 
-	it('vergibt unterschiedliche Ports an Haupt-Repo und Worktrees', () => {
+	it('trennt Haupt-Repo und Worktrees', () => {
+		// Stichprobe auf realistischen Pfaden, keine Zusicherung: Der Hash bildet auf ein
+		// endliches Fenster ab, Kollisionen sind möglich. Was hier abgesichert wird, ist
+		// der grobe Fehler — etwa ein Port, der gar nicht vom Pfad abhängt.
 		const ports = [MAIN_REPO, WORKTREE_A, WORKTREE_B].map(worktreeDevPort);
 		expect(new Set(ports).size).toBe(3);
+	});
+
+	it('streut breit genug, dass Kollisionen selten bleiben', () => {
+		// Die eigentlich zugesicherte Eigenschaft: gute Streuung, nicht Eindeutigkeit.
+		// Bei 200 Pfaden auf 4000 Plätzen sind ~5 Kollisionen zu erwarten; ein Hash, der
+		// etwa nur die Pfadlänge auswertete, fiele hier klar durch.
+		const ports = Array.from({ length: 200 }, (_, i) => worktreeDevPort(`${WORKTREE_A}-${i}`));
+		expect(new Set(ports).size).toBeGreaterThanOrEqual(185);
 	});
 
 	it('ignoriert einen abschließenden Schrägstrich', () => {
@@ -58,8 +69,8 @@ describe('worktreeDevPort', () => {
 		// Auch über viele synthetische Pfade darf nie der Dev-Port getroffen werden.
 		for (let i = 0; i < 500; i++) {
 			const port = worktreeDevPort(`${WORKTREE_A}-${i}`);
-			expect(port).toBeGreaterThanOrEqual(4100);
-			expect(port).toBeLessThanOrEqual(4499);
+			expect(port).toBeGreaterThanOrEqual(41_000);
+			expect(port).toBeLessThanOrEqual(44_999);
 		}
 	});
 });

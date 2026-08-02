@@ -137,10 +137,15 @@ der nach dem Beheben weiter die alten Fundstellen meldete, und zwei
 
 Zwei Ebenen dagegen, beide in [`src/tools/dev-server-identity.ts`](../src/tools/dev-server-identity.ts):
 
-| Ebene                                          | Wirkung                                                                                                                                       |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `worktreeDevPort()` — Port aus dem Pfad-Hash   | Jeder Worktree bekommt einen eigenen Port aus 4100–4499. Kollisionen entstehen gar nicht erst; derselbe Worktree bekommt stets denselben Port |
-| `assertServerIdentity()` in `e2e/global-setup` | Der Dev-Server meldet unter `/__dev-server-identity` sein `process.cwd()`. Weicht es ab, **bricht der Lauf ab**                               |
+| Ebene                                          | Wirkung                                                                                                                                                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `worktreeDevPort()` — Port aus dem Pfad-Hash   | Jeder Worktree zieht einen Port aus 41000–44999, derselbe Worktree stets denselben. Kollisionen sind damit unwahrscheinlich, nicht ausgeschlossen (Geburtstagsproblem: ~1 % bei 10 Worktrees, ~5 % bei 20) |
+| `assertServerIdentity()` in `e2e/global-setup` | Der Dev-Server meldet unter `/__dev-server-identity` sein `process.cwd()`. Weicht es ab, **bricht der Lauf ab**                                                                                            |
+
+Die zweite Ebene fängt die erste auf: Ziehen zwei Worktrees denselben Port, ist das
+kein stiller Fehler, sondern ein Abbruch mit beiden Verzeichnissen in der Meldung. Der
+zweite Worktree kann erst testen, wenn der fremde Server beendet ist — unbequem, aber
+in die richtige Richtung.
 
 Der Abbruch ist Absicht — nicht eine Warnung, die im Log untergeht. Stillschweigend
 fremden Code zu testen ist genau der Fehler, der verhindert werden soll:
