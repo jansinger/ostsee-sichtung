@@ -67,11 +67,19 @@
 		<link rel="preconnect" href="https://tiles.openseamap.org" crossorigin />
 
 		<!-- Open Graph / Twitter — nur was auf jeder Seite gleich ist.
-		     og:type, og:title, og:description und twitter:title/description
-		     setzt die jeweilige Route. -->
+		     og:type, og:title, og:description und twitter:card/title/description
+		     setzt die jeweilige Route.
+
+		     og: nutzt `property` (RDFa, so schreibt es das Open-Graph-Protokoll
+		     vor), twitter: nutzt `name` (so dokumentiert es Twitter/X). Das ist
+		     kein Flüchtigkeitsfehler in der Zeile darunter, sondern der
+		     Unterschied zwischen zwei Spezifikationen. Vor 2026-08-02 stand hier
+		     der ganze twitter:-Satz fälschlich auf `property` — beim Aufräumen
+		     der Tag-Dopplung ist `twitter:image` als einziges übrig geblieben und
+		     wich damit von den `name`-Tags der Routen ab. -->
 		<meta property="og:site_name" content="Ostsee-Tiere" />
 		<meta property="og:image" content="/ostsee-tiere-256.png" />
-		<meta property="twitter:image" content="/ostsee-tiere-256.png" />
+		<meta name="twitter:image" content="/ostsee-tiere-256.png" />
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover" data-theme="meeresmuseum">
