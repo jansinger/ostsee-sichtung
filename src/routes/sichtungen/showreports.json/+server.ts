@@ -27,6 +27,7 @@ import { createLogger } from '$lib/logger.server';
 import { getSpeciesLabel } from '$lib/report/formOptions/species.js';
 import { isAdminUser } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
+import { approvedOnly } from '$lib/server/db/approvalFilter';
 import { consentGatedNameSearch, containsPattern } from '$lib/server/db/consentGatedSearch';
 import { sightings } from '$lib/server/db/schema';
 import { getClientIp } from '$lib/server/utils/getClientIp';
@@ -97,11 +98,17 @@ export async function GET(event: RequestEvent): Promise<Response> {
 		const whereConditions = [];
 
 		// Only show approved sightings (as per PDF: "freigegeben").
-		// Deliberately kept as inline SQL — this legacy endpoint must not change.
-		// The public statistics use `approvedOnly()` from `$lib/server/db/approvalFilter`;
-		// `statisticsApprovalScope.test.ts` pins both to the same predicate so map
-		// and numbers cannot drift apart again.
-		whereConditions.push(sql`${sightings.approvedAt} IS NOT NULL`);
+		// Bewusst der gemeinsame Helper und kein nachgebautes Inline-SQL: Das
+		// Prädikat ist in `$lib/server/db/approvalFilter` einmal definiert, damit
+		// Karte und öffentliche Statistik nicht erneut auseinanderlaufen.
+		//
+		// Der Wechsel ist rein syntaktisch und damit vertragsneutral: Der Helper
+		// kompiliert zu demselben qualifizierten Prädikat auf `freigegeben_am` wie
+		// das frühere Inline-SQL — nur mit klein geschriebenen SQL-Schlüsselwörtern,
+		// die PostgreSQL nicht unterscheidet — und trägt keine Parameter, die die
+		// Platzhalter-Nummerierung der übrigen Filter verschieben könnten.
+		// Festgehalten in `showreports.test.ts`, describe „Freigabefilter".
+		whereConditions.push(approvedOnly());
 
 		// Year filter - PDF specification behavior
 		if (year) {

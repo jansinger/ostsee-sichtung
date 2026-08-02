@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
+import { devServerIdentity } from './src/tools/dev-server-identity';
 import { stableDepHash } from './src/tools/vite-stable-dep-hash';
 
 const certFile = fileURLToPath(new URL('./certs/localhost.pem', import.meta.url));
@@ -47,12 +48,23 @@ export default defineConfig({
 						certDir: './certs/basic-ssl'
 					})
 				]),
+		// Meldet unter /__dev-server-identity, aus welchem Verzeichnis ausgeliefert wird.
+		devServerIdentity(),
 		// Zuletzt: sortiert resolve.external/noExternal nach allen anderen Plugins.
 		stableDepHash()
 	],
 	server: {
 		host: 'localhost',
 		port: parseInt(process.env.VITE_DEV_PORT || '4000'),
+		/**
+		 * Ohne `strictPort` weicht Vite bei belegtem Port still auf den nächsten aus.
+		 * Das ist hier immer ein Fehlerzustand, nie eine brauchbare Rückfallebene:
+		 * `PUBLIC_SITE_URL` steht fest auf 4000 und baut daraus die Auth0-Callback-URL,
+		 * ein Server auf 4001 hat also einen kaputten Login. Und weil Playwright lokal
+		 * einen vorhandenen Server wiederverwendet, machte genau dieses Ausweichen
+		 * E2E-Läufe gegen fremde Worktrees möglich. Abbruch mit Meldung ist richtig.
+		 */
+		strictPort: true,
 		...(devCert ? { https: devCert } : {}),
 		hmr: {
 			overlay: true

@@ -15,21 +15,36 @@ vi.mock('$lib/server/db', () => ({
 	}
 }));
 
-vi.mock('$lib/server/db/schema', () => ({
-	sightings: { id: 'id', sightingDate: 'sightingDate', created: 'created' }
-}));
-
-vi.mock('drizzle-orm', () => ({
-	and: vi.fn((...args) => args),
-	gte: vi.fn((a, b) => ({ a, b })),
-	lt: vi.fn((a, b) => ({ a, b })),
-	sql: Object.assign(
-		vi.fn((strings: TemplateStringsArray, ..._values: unknown[]) => String(strings.raw[0])),
-		{
-			raw: vi.fn((s: string) => s)
+vi.mock('$lib/server/db/schema', async () => {
+	const { strictModuleMock } = await import('./helpers/strictModuleMock');
+	return strictModuleMock('$lib/server/db/schema', {
+		// `approvedAt` wird von `approvedOnly()` gebraucht — GET filtert die
+		// öffentliche Grundmenge, siehe ../../routes/api/sightings/getEndpoint.test.ts
+		sightings: {
+			id: 'id',
+			sightingDate: 'sightingDate',
+			created: 'created',
+			approvedAt: 'approvedAt'
 		}
-	)
-}));
+	});
+});
+
+vi.mock('drizzle-orm', async () => {
+	const { strictModuleMock } = await import('./helpers/strictModuleMock');
+	return strictModuleMock('drizzle-orm', {
+		and: vi.fn((...args) => args),
+		gte: vi.fn((a, b) => ({ a, b })),
+		lt: vi.fn((a, b) => ({ a, b })),
+		isNotNull: vi.fn((column) => ({ op: 'isNotNull', column })),
+		isNull: vi.fn((column) => ({ op: 'isNull', column })),
+		sql: Object.assign(
+			vi.fn((strings: TemplateStringsArray, ..._values: unknown[]) => String(strings.raw[0])),
+			{
+				raw: vi.fn((s: string) => s)
+			}
+		)
+	});
+});
 
 vi.mock('$lib/server/db/sightingRepository', () => ({
 	saveSighting: vi.fn().mockResolvedValue({ id: 123 })

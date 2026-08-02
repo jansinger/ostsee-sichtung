@@ -4,8 +4,10 @@ import {
 	SHIP_NAME_CONSENT_VERSION
 } from '$lib/form/consent/consentVersions';
 import { MEDIA_CONSENT_VERSION } from '$lib/form/consent/mediaConsentVersion';
+import { toCoordinate } from '$lib/report/components/form/coordinateValue';
 import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
 import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
+import { DISTANCE_UNSPECIFIED } from '$lib/report/formOptions/distance';
 import { DistributionEnum } from '$lib/report/formOptions/distribution';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
@@ -14,17 +16,6 @@ import type { NewSighting } from '$lib/types/sighting';
 import { sql } from 'drizzle-orm';
 import { berlinWallClockToUtc } from '$lib/server/datetime/berlinWallClockToUtc';
 import { checkBalticSeaFile } from '$lib/server/geo/checkBalticSeaFile';
-
-/**
- * Sentinel für eine fehlende Entfernungsangabe.
- *
- * `DistanceEnum` geht von 1 bis 5 — die `0` der Spalte `entfernung` ist damit
- * keine Kategorie, sondern liegt bewusst außerhalb und wird von
- * `getDistanceLabel` als "Unbekannt" aufgelöst. Anders als bei `tierart`,
- * `verteilung` oder `verhalten` behauptet diese Null also nichts Falsches und
- * braucht keinen eigenen Enum-Wert.
- */
-const DISTANCE_UNSPECIFIED = 0;
 
 /**
  * Prüft, ob für ein numerisches Auswahlfeld eine verwertbare Angabe vorliegt.
@@ -179,21 +170,25 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 	let inBaltic = false,
 		inChartArea = false;
 
-	if (
-		formData.latitude &&
-		formData.longitude &&
-		!isNaN(formData.latitude) &&
-		!isNaN(formData.longitude)
-	) {
+	// Erst in eine Zahl umwandeln, dann prüfen. Die Regel bleibt dieselbe wie
+	// zuvor — eine Null ist keine Position —, sie hängt nur nicht mehr an der
+	// Truthiness des Rohwerts: `0` ist falsy, die Zeichenkette `'0.0000'` nicht.
+	//
+	// Über das Formular kam dieser Unterschied nie an, weil `handleSubmit` das
+	// von Yup gecastete Objekt weiterreicht und dort jede Koordinate eine Zahl
+	// ist. Die Legacy-REST-Grenze castet nicht: `mapLegacyToCurrentSchema` gibt
+	// die Werte des Clients weiter, wie sie ankommen. Ein `"0.0000"` von dort
+	// hätte einen PostGIS-Punkt bei 0°/0° erzeugt.
+	const latitude = toCoordinate(formData.latitude) || null;
+	const longitude = toCoordinate(formData.longitude) || null;
+
+	if (latitude !== null && longitude !== null) {
 		// PostGIS erwartet SRID 4326 für WGS84 (GPS-Koordinaten)
 		// ST_MakePoint(longitude, latitude) - Achtung: X=Longitude, Y=Latitude!
-		location = sql`ST_SetSRID(ST_MakePoint(${formData.longitude}, ${formData.latitude}), 4326)`;
+		location = sql`ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)`;
 
 		// Geografische Validierung: Prüfe ob Koordinaten in der Ostsee liegen
-		({ inBaltic, inChartArea } = checkBalticSeaFile(
-			Number(formData.longitude),
-			Number(formData.latitude)
-		));
+		({ inBaltic, inChartArea } = checkBalticSeaFile(longitude, latitude));
 	}
 
 	/**
@@ -216,9 +211,11 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 		created: new Date(), // Erstellungszeitpunkt
 
 		// === GEOGRAFISCHE DATEN ===
-		// Koordinaten als Strings für Datenbankkompatibilität
-		latitude: formData.latitude ? String(formData.latitude) : null,
-		longitude: formData.longitude ? String(formData.longitude) : null,
+		// Koordinaten als Strings für Datenbankkompatibilität. Die Zahl geht dabei
+		// ungekürzt in den String — die Spalten sind `numeric(8,6)`, eine
+		// Anzeige-Rundung gehört ins Eingabefeld und nicht in den Bestand.
+		latitude: latitude !== null ? String(latitude) : null,
+		longitude: longitude !== null ? String(longitude) : null,
 		// PostGIS-Geometrie für räumliche Abfragen
 		location,
 		// Gewässer und Seezeichen
@@ -344,6 +341,15 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 		// === FREITEXT-FELDER ===
 		// Admin-Notizen (nur im Admin-Bereich sichtbar)
 		notes: formData.notes,
+		// Interner Kommentar. Das Admin-Formular bietet ihn an
+		// (`Administrative.svelte`), hier fehlte er — getippter Text war nach dem
+		// Speichern spurlos weg, ohne Fehlermeldung.
+		//
+		// Über den öffentlichen Weg kann niemand hier hineinschreiben:
+		// `POST /api/sightings` überschreibt das Feld mit `undefined`, und der
+		// Legacy-Eingang kennt es nicht. Ein `undefined` erreicht die Spalte nie —
+		// Drizzle lässt es beim Insert wie beim Update aus.
+		internalComment: formData.internalComment,
 		// Weitere Beobachtungen durch Melder*in
 		otherObservations: formData.otherObservations,
 

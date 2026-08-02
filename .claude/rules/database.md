@@ -239,6 +239,26 @@ kennt die Spalte nicht — dort ist ein Join auf `sichtungen` nötig. Der Epoch-
 (`EARLIEST_PLAUSIBLE_SIGHTING_DATE`) gilt zusätzlich, nicht statt dessen.
 Abgesichert durch `src/lib/server/db/statisticsApprovalScope.test.ts`.
 
+Wird der Status nicht in SQL, sondern über einer **bereits geladenen Zeile** ausgewertet,
+gilt `isSightingApproved(sighting)` aus demselben Modul — nicht ein neues `!!row.approvedAt`.
+Die beiden Medien-Endpunkte (`/uploads/[...path]`, `/api/media/[...path]`) entscheiden damit,
+ob eine Datei ohne Anmeldung ausgeliefert wird, `PATCH /api/sightings/[id]/verify` hält damit
+den Vorzustand im Audit-Log fest. `approvalFilter.test.ts` prüft beides: dass beide
+Schreibweisen dieselbe Grundmenge meinen, und dass die drei Routen keine der bekannten
+Inline-Schreibweisen zurückbekommen.
+
+Dass beide Formen **nur** dort stehen, prüft `src/lib/server/db/approvalPredicateScan.test.ts`
+mechanisch über den gesamten Quelltext unter `src/`: das SQL-Prädikat
+(`freigegeben_am`/`approvedAt` mit `IS [NOT] NULL`, `IS [NOT] DISTINCT FROM NULL` oder
+`isNull(`/`isNotNull(`) und die drei eindeutigen JavaScript-Schreibweisen (`!!`, `Boolean(`,
+`!== null`). `IS DISTINCT FROM NULL` steht im Muster, obwohl es im Bestand nicht vorkommt —
+es ist die SQL-Standard-Schreibweise desselben Tests, und „gibt es hier nicht" hat schon
+mehrfach eine Lücke offengehalten. Er ergänzt damit den
+Routen-Guard in `approvalFilter.test.ts`, dessen Liste die drei heute bekannten Endpunkte
+nennt — eine **vierte** Route fiele nur dem Scan auf. Nötig wurde er, weil die vorige
+Kontrolle — „ein fehlender Import fällt beim Review auf" — bei
+`/sichtungen/showreports.json` monatelang versagt hat (PR #701).
+
 ---
 
 ## PostGIS Patterns

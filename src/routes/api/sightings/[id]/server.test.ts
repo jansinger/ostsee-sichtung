@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { ValidationError } from 'yup';
 
 // Mock all external dependencies
 vi.mock('$lib/server/auth/auth', () => ({
@@ -25,6 +26,10 @@ vi.mock('$lib/server/audit/auditService', () => ({
 vi.mock('$lib/form/validation/sightingSchema', () => ({
 	sightingSchema: {
 		validate: vi.fn().mockResolvedValue(undefined)
+	},
+	// PUT validiert gegen das Admin-Schema (siehe +server.ts).
+	adminSightingSchema: {
+		validate: vi.fn().mockResolvedValue(undefined)
 	}
 }));
 
@@ -47,6 +52,7 @@ vi.mock('$lib/logger', () => ({
 }));
 
 import { db } from '$lib/server/db';
+import { adminSightingSchema } from '$lib/form/validation/sightingSchema';
 import { updateSighting } from '$lib/server/db/sightingRepository';
 import { logAuditEvent } from '$lib/server/audit/auditService';
 import { PUT } from './+server';
@@ -250,5 +256,76 @@ describe('PUT /api/sightings/[id] - changedFields Audit-Diff', () => {
 		const changedFields: string[] = auditCall?.details?.changedFields as string[];
 
 		expect(changedFields.length).toBe(0);
+	});
+});
+
+describe('PUT /api/sightings/[id] - abgelehnte Eingaben', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	/**
+	 * Eine abgelehnte Eingabe ist kein Serverfehler.
+	 *
+	 * Vorher lief die Yup-`ValidationError` in den 500er-Zweig, und der Admin las
+	 * „Interner Serverfehler" — ausgerechnet in dem Fall, in dem die Meldung ihm
+	 * hätte sagen können, welches Feld ihn blockiert.
+	 */
+	it('antwortet mit 400 und nennt die betroffenen Felder', async () => {
+		const validationError = new ValidationError('Bitte geben Sie eine Entfernung an.');
+		validationError.inner = [
+			Object.assign(new ValidationError('Bitte geben Sie eine Entfernung an.'), {
+				path: 'distance'
+			}),
+			Object.assign(new ValidationError('Tierart fehlt'), { path: 'species' })
+		];
+		vi.mocked(adminSightingSchema.validate).mockRejectedValueOnce(validationError);
+
+		const mockRequest = createPutRequest({ species: 1 });
+		const response = await PUT({
+			params: { id: '42' },
+			request: mockRequest as unknown as Request,
+			locals: { user: { email: 'admin@example.com', roles: ['admin'] } } as unknown as App.Locals,
+			url: new URL('http://localhost/api/sightings/42'),
+			getClientAddress: mockGetClientAddress
+		} as Parameters<typeof PUT>[0]);
+
+		expect(response.status).toBe(400);
+		// Dieselbe Hülle wie bei POST /api/sightings — eine Ressource, ein Format.
+		await expect(response.json()).resolves.toEqual({
+			success: false,
+			code: 'VALIDATION_ERROR',
+			message: 'Bitte geben Sie eine Entfernung an.',
+			errors: { distance: 'Bitte geben Sie eine Entfernung an.', species: 'Tierart fehlt' }
+		});
+
+		// Kein Update, wenn die Eingabe nicht durchkommt.
+		expect(updateSighting).not.toHaveBeenCalled();
+	});
+
+	/**
+	 * Nicht jeder Yup-Fehler trägt ein Feld: Ein schemaweiter `.test()` schlägt
+	 * ohne `path` fehl, und je nach Aufrufweg bleibt `inner` leer. Ohne Auffangwert
+	 * käme eine leere Fehlerkarte zurück — das Formular hätte dann nichts
+	 * anzuzeigen und der Admin keinen Anhaltspunkt. `POST /api/sightings` löst das
+	 * seit jeher über denselben Schlüssel.
+	 */
+	it('nennt einen Sammelschlüssel, wenn kein Feld benannt ist', async () => {
+		const validationError = new ValidationError('Die Angaben passen nicht zusammen.');
+		validationError.inner = [];
+		vi.mocked(adminSightingSchema.validate).mockRejectedValueOnce(validationError);
+
+		const response = await PUT({
+			params: { id: '42' },
+			request: createPutRequest({ species: 1 }) as unknown as Request,
+			locals: { user: { email: 'admin@example.com', roles: ['admin'] } } as unknown as App.Locals,
+			url: new URL('http://localhost/api/sightings/42'),
+			getClientAddress: mockGetClientAddress
+		} as Parameters<typeof PUT>[0]);
+
+		expect(response.status).toBe(400);
+		await expect(response.json()).resolves.toMatchObject({
+			errors: { allgemein: 'Die Angaben passen nicht zusammen.' }
+		});
 	});
 });

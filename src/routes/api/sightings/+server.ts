@@ -4,6 +4,7 @@ import { createLogger } from '$lib/logger.server';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { db } from '$lib/server/db';
+import { approvedOnly } from '$lib/server/db/approvalFilter';
 import { sightings } from '$lib/server/db/schema';
 import { berlinToChar } from '$lib/server/db/sqlTimeZone';
 import { getYearRange } from '$lib/legacy-api/date-utils';
@@ -72,14 +73,28 @@ export async function GET(event: RequestEvent) {
                      ELSE NULL END`
 			})
 			.from(sightings)
-			.where(and(gte(sightings.sightingDate, startDate), lt(sightings.sightingDate, endDate)))
+			// Der Endpunkt ist ohne Session erreichbar, also gilt die öffentliche
+			// Grundmenge: nur freigegebene Sichtungen. `na`/`sh` prüfen zwar die
+			// Einwilligung, aber eine Einwilligung erlaubt die Veröffentlichung des
+			// Namens — nicht die Veröffentlichung einer ungeprüften Meldung.
+			// `approvedOnly()` statt eigener Bedingung, damit das Prädikat genau
+			// einmal definiert bleibt (siehe approvalFilter.ts).
+			.where(
+				and(
+					approvedOnly(),
+					gte(sightings.sightingDate, startDate),
+					lt(sightings.sightingDate, endDate)
+				)
+			)
 			.orderBy(sightings.sightingDate);
 
 		logger.info({ year, count: result.length }, 'Sichtungen erfolgreich abgerufen');
 
-		// Cache-Header setzen (1 Stunde)
+		// Cache-Header setzen (5 Minuten). Kurz gehalten, weil die Antwortmenge am
+		// Freigabestatus hängt: eine frisch freigegebene Sichtung bleibt so lange
+		// unsichtbar, wie die alte Antwort gecached ist.
 		event.setHeaders({
-			'Cache-Control': 'max-age=3600',
+			'Cache-Control': 'max-age=300',
 			'Content-Type': 'application/json'
 		});
 

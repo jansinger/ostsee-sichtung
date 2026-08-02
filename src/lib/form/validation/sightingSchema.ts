@@ -22,7 +22,11 @@ import {
 	isValidAnimalCondition
 } from '$lib/report/formOptions/animalCondition';
 import { getBoatDriveOptions, isValidBoatDrive } from '$lib/report/formOptions/boatDrive';
-import { getDistanceOptions, isValidDistance } from '$lib/report/formOptions/distance';
+import {
+	DISTANCE_UNSPECIFIED,
+	getDistanceOptions,
+	isValidDistance
+} from '$lib/report/formOptions/distance';
 import { getDistributionOptions, isValidDistribution } from '$lib/report/formOptions/distribution';
 import { getEntryChannelOptions, isValidEntryChannel } from '$lib/report/formOptions/entryChannel';
 import { getSeaStateOptions, isValidSeaState } from '$lib/report/formOptions/seaState';
@@ -1291,28 +1295,41 @@ export const sightingSchema = yup
 	.concat(sightingSchemaBase);
 
 /**
- * Schema der Admin-Maske: dasselbe Formular, aber ohne die Eingabegrenzen für
- * die Anzahlen.
+ * Schema der Admin-Maske: dasselbe Formular, aber ohne die Eingabegrenzen, die
+ * nur für **neue** Meldungen gelten.
  *
- * Die Grenzen in `sightingSchema` sind **Eingaberegeln für neue Meldungen** —
- * mindestens ein Tier, höchstens 15, Jungtiere nicht mehr als Tiere insgesamt.
- * Auf den Bestand angewendet sperren sie die Korrektur genau der Datensätze,
- * die eine Korrektur am ehesten brauchen (Stand 2026-07-31, 19.880 Zeilen):
+ * Die Grenzen in `sightingSchema` sind Eingaberegeln am Meldeformular —
+ * mindestens ein Tier, höchstens 15, Jungtiere nicht mehr als Tiere insgesamt,
+ * eine Entfernungskategorie, ein Freitext zu „Sonstiges". Auf den Bestand
+ * angewendet sperren sie die Korrektur genau der Datensätze, die eine Korrektur
+ * am ehesten brauchen (Messung 2026-08-02, 19.881 Zeilen):
  *
- * | Bedingung                    | Zeilen | Herkunft                          |
- * | ---------------------------- | -----: | --------------------------------- |
- * | `anzahl_gesamt = 0`          |      5 | Legacy-Konvention „0 = Totfund"   |
- * | `anzahl_jung > anzahl_gesamt`|      8 | Altbestand                        |
- * | `anzahl_gesamt > 15`         |     22 | Altbestand, Kappung kam später    |
+ * | Bedingung                             | Zeilen | Herkunft                        |
+ * | ------------------------------------- | -----: | ------------------------------- |
+ * | `anzahl_gesamt = 0`                   |      5 | Legacy-Konvention „0 = Totfund" |
+ * | `anzahl_jung > anzahl_gesamt`         |      8 | Altbestand                      |
+ * | `anzahl_gesamt > 15`                  |     22 | Altbestand, Kappung kam später  |
+ * | `entfernung = 0`                      |    282 | Sentinel „nicht angegeben"      |
+ * | `vonwo = 0` ohne `vonwo_text`         |  1.120 | Altbestand ohne Nachfrage       |
  *
  * Ohne diese Lockerung könnte ein Admin eine solche Zeile nicht mehr speichern
  * — auch dann nicht, wenn er an einem ganz anderen Feld etwas richtigstellt.
+ * Beim Melden bleibt jede dieser Regeln unverändert in Kraft.
  *
  * Abgeleitet statt neu geschrieben: `.min()`/`.max()` und ein `.test()` mit
  * gleichem Namen ersetzen in Yup den vorhandenen Eintrag. Label und `meta`
  * bleiben damit erhalten — die Feld-Pipeline (`FieldRenderer`) liest sie aus
  * `describe()`, eine Kopie würde beim nächsten Textwechsel auseinanderlaufen.
+ *
+ * Nur `sightingFromText` geht diesen Weg nicht: Seine Pflicht steckt in einem
+ * `when()`, und Yup kennt keinen Weg, eine gesetzte Bedingung wieder zu
+ * entfernen — sie wird bei jedem Lauf **nach** allem angewandt, was hier
+ * überschrieben würde. Das Feld wird deshalb neu aufgebaut, holt Beschriftung
+ * und `meta` aber ausdrücklich aus dem Basis-Schema, damit die Texte weiterhin
+ * an genau einer Stelle stehen (abgesichert in `adminSightingSchemaLegacy.test.ts`).
  */
+const sightingFromTextBase = sightingSchema.fields.sightingFromText as yup.StringSchema;
+
 export const adminSightingSchema = sightingSchema.shape({
 	totalCount: (sightingSchema.fields.totalCount as yup.NumberSchema)
 		.min(0, 'Die Anzahl darf nicht negativ sein')
@@ -1329,5 +1346,23 @@ export const adminSightingSchema = sightingSchema.shape({
 			exclusive: true,
 			message: '',
 			test: () => true
-		})
+		}),
+
+	// Lässt den Sentinel `0` ("nicht angegeben") zu, ohne die Kategorien
+	// aufzuweichen: Ein erfundener Wert wie 99 fällt weiterhin durch.
+	distance: (sightingSchema.fields.distance as yup.NumberSchema).test({
+		name: 'is-valid-distance',
+		exclusive: true,
+		message: 'Bitte wählen Sie eine gültige Entfernungskategorie.',
+		test: (value) =>
+			value === undefined || value === DISTANCE_UNSPECIFIED || isValidDistance(String(value))
+	}),
+
+	// Der Freitext bleibt begrenzt, aber nicht mehr Pflicht — siehe oben.
+	sightingFromText: yup
+		.string()
+		.max(255, 'Die Angabe darf nicht länger als 255 Zeichen sein.')
+		.label(sightingFromTextBase.spec.label ?? 'Sonstiger Ort')
+		.meta(sightingFromTextBase.spec.meta ?? {})
+		.notRequired()
 });

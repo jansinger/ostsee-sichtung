@@ -66,17 +66,20 @@ paths:
       summary: Sichtungen abrufen
       description: |
         Ruft öffentlich verfügbare Sichtungen für ein bestimmtes Jahr ab.
-        Standardmäßig werden nur genehmigte Sichtungen zurückgegeben.
+        Es werden ausschließlich freigegebene Sichtungen zurückgegeben
+        (`freigegeben_am IS NOT NULL`) — dieselbe öffentliche Grundmenge wie
+        die Karte. Es gibt keinen Parameter, der ungeprüfte Meldungen einschließt.
       parameters:
         - name: year
           in: query
-          description: Jahr der Sichtungen
+          description: >-
+            Jahr der Sichtungen. Ohne Angabe wird das laufende Kalenderjahr
+            verwendet (kein fester Default-Wert).
           required: false
           schema:
             type: integer
             minimum: 2000
             maximum: 2030
-            default: 2024
             example: 2024
       responses:
         '200':
@@ -2928,28 +2931,42 @@ components:
 
     ValidationErrorResponse:
       type: object
+      description: |
+        Abgelehnte Eingabe. Beide Endpunkte, die darauf verweisen
+        (`POST /api/sightings` und `PUT /api/sightings/{id}`), liefern genau
+        diese Hülle.
+
+        Der Feldschlüssel entspricht dem Namen im `SightingFormData`-Schema und
+        trägt **eine** Meldung, nicht mehrere: Yup läuft mit `abortEarly: false`
+        und behält je Feld die zuletzt gefundene.
       required:
         - success
-        - error
-        - validationErrors
+        - code
+        - message
+        - errors
       properties:
         success:
           type: boolean
           example: false
-        error:
+        code:
           type: string
-          description: Allgemeine Fehlermeldung
-          example: "Validierungsfehler"
-        validationErrors:
+          description: Maschinenlesbare Fehlerkennung
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: |
+            Menschenlesbare Meldung. `POST` nennt hier den Sammelbegriff,
+            `PUT` den ersten konkreten Feldfehler — das Bearbeitungsformular
+            zeigt genau diesen Text an.
+          example: "Bitte wählen Sie eine gültige Entfernungskategorie."
+        errors:
           type: object
           description: Feldspezifische Validierungsfehler
           additionalProperties:
-            type: array
-            items:
-              type: string
+            type: string
           example:
-            email: ["E-Mail ist erforderlich", "Ungültiges E-Mail-Format"]
-            latitude: ["Breitengrad muss zwischen -90 und 90 liegen"]
+            distance: "Bitte wählen Sie eine gültige Entfernungskategorie."
+            email: "Bitte geben Sie eine gültige E-Mail-Adresse ein."
 
     LegacySightingRequest:
       type: object

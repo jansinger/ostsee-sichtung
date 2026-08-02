@@ -11,6 +11,21 @@ export enum DistanceEnum {
 }
 
 /**
+ * Sentinel für eine fehlende Entfernungsangabe.
+ *
+ * `DistanceEnum` geht von 1 bis 5 — die `0` der Spalte `entfernung` ist damit
+ * keine Kategorie, sondern liegt bewusst außerhalb und wird von
+ * `getDistanceLabel` als "Unbekannt" aufgelöst. Anders als bei `tierart`,
+ * `verteilung` oder `verhalten` behauptet diese Null also nichts Falsches und
+ * braucht keinen eigenen Enum-Wert.
+ *
+ * Steht hier und nicht bei den Schreibpfaden, weil zwei Stellen sie brauchen:
+ * `mapFormToSighting` schreibt sie, und `adminSightingSchema` muss sie beim
+ * Bearbeiten von Bestandsdaten wieder annehmen (282 Zeilen).
+ */
+export const DISTANCE_UNSPECIFIED = 0;
+
+/**
  * Deutsche Bezeichnungen für die Entfernungen
  */
 export const distanceLabels: Record<DistanceEnum, string> = {

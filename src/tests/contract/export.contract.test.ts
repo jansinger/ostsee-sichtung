@@ -24,24 +24,30 @@ vi.mock('$lib/server/db', () => ({
 	}
 }));
 
-vi.mock('$lib/server/db/schema', () => ({
-	sightings: {
-		id: 'id',
-		sightingDate: 'sightingDate',
-		verified: 'verified',
-		entryChannel: 'entryChannel',
-		mediaUpload: 'mediaUpload'
-	}
-}));
+vi.mock('$lib/server/db/schema', async () => {
+	const { strictModuleMock } = await import('./helpers/strictModuleMock');
+	return strictModuleMock('$lib/server/db/schema', {
+		sightings: {
+			id: 'id',
+			sightingDate: 'sightingDate',
+			verified: 'verified',
+			entryChannel: 'entryChannel',
+			mediaUpload: 'mediaUpload'
+		}
+	});
+});
 
-vi.mock('drizzle-orm', () => ({
-	and: vi.fn((...args) => args),
-	between: vi.fn((a, b, c) => ({ a, b, c })),
-	gte: vi.fn((a, b) => ({ a, b })),
-	lt: vi.fn((a, b) => ({ a, b })),
-	eq: vi.fn((a, b) => ({ a, b })),
-	isNotNull: vi.fn((a) => ({ a }))
-}));
+vi.mock('drizzle-orm', async () => {
+	const { strictModuleMock } = await import('./helpers/strictModuleMock');
+	return strictModuleMock('drizzle-orm', {
+		and: vi.fn((...args) => args),
+		between: vi.fn((a, b, c) => ({ a, b, c })),
+		gte: vi.fn((a, b) => ({ a, b })),
+		lt: vi.fn((a, b) => ({ a, b })),
+		eq: vi.fn((a, b) => ({ a, b })),
+		isNotNull: vi.fn((a) => ({ a }))
+	});
+});
 
 vi.mock('$lib/server/auth/auth', () => ({
 	requireUserRole: vi.fn()

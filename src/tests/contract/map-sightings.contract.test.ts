@@ -21,43 +21,49 @@ vi.mock('$lib/server/db', () => ({
 	}
 }));
 
-vi.mock('$lib/server/db/schema', () => ({
-	sightings: {
-		id: 'id',
-		sightingDate: 'sightingDate',
-		verified: 'verified',
-		approvedAt: 'approvedAt',
-		firstName: 'firstName',
-		lastName: 'lastName',
-		nameConsent: 'nameConsent',
-		shipName: 'shipName',
-		shipNameConsent: 'shipNameConsent',
-		waterway: 'waterway',
-		seaMark: 'seaMark',
-		longitude: 'longitude',
-		latitude: 'latitude',
-		species: 'species',
-		totalCount: 'totalCount',
-		juvenileCount: 'juvenileCount',
-		isDead: 'isDead'
-	}
-}));
-
-vi.mock('drizzle-orm', () => ({
-	and: vi.fn((...args) => args),
-	between: vi.fn((a, b, c) => ({ a, b, c })),
-	gte: vi.fn((a, b) => ({ a, b })),
-	lte: vi.fn((a, b) => ({ a, b })),
-	lt: vi.fn((a, b) => ({ a, b })),
-	eq: vi.fn((a, b) => ({ a, b })),
-	isNotNull: vi.fn((a) => ({ isNotNull: a })),
-	sql: Object.assign(
-		vi.fn((strings: TemplateStringsArray) => String(strings.raw[0])),
-		{
-			raw: vi.fn((s: string) => s)
+vi.mock('$lib/server/db/schema', async () => {
+	const { strictModuleMock } = await import('./helpers/strictModuleMock');
+	return strictModuleMock('$lib/server/db/schema', {
+		sightings: {
+			id: 'id',
+			sightingDate: 'sightingDate',
+			verified: 'verified',
+			approvedAt: 'approvedAt',
+			firstName: 'firstName',
+			lastName: 'lastName',
+			nameConsent: 'nameConsent',
+			shipName: 'shipName',
+			shipNameConsent: 'shipNameConsent',
+			waterway: 'waterway',
+			seaMark: 'seaMark',
+			longitude: 'longitude',
+			latitude: 'latitude',
+			species: 'species',
+			totalCount: 'totalCount',
+			juvenileCount: 'juvenileCount',
+			isDead: 'isDead'
 		}
-	)
-}));
+	});
+});
+
+vi.mock('drizzle-orm', async () => {
+	const { strictModuleMock } = await import('./helpers/strictModuleMock');
+	return strictModuleMock('drizzle-orm', {
+		and: vi.fn((...args) => args),
+		between: vi.fn((a, b, c) => ({ a, b, c })),
+		gte: vi.fn((a, b) => ({ a, b })),
+		lte: vi.fn((a, b) => ({ a, b })),
+		lt: vi.fn((a, b) => ({ a, b })),
+		eq: vi.fn((a, b) => ({ a, b })),
+		isNotNull: vi.fn((a) => ({ isNotNull: a })),
+		sql: Object.assign(
+			vi.fn((strings: TemplateStringsArray) => String(strings.raw[0])),
+			{
+				raw: vi.fn((s: string) => s)
+			}
+		)
+	});
+});
 
 vi.mock('$lib/map/mapUtils', () => ({
 	sightingsToGeoJSON: vi.fn().mockReturnValue({
@@ -113,7 +119,7 @@ describe('Contract: GET /api/map/sightings', () => {
 		expect(Array.isArray(body.features)).toBe(true);
 	});
 
-	it('filtert auf approvedAt IS NOT NULL statt auf verified=1 (gleiche Grundmenge wie Legacy-API)', async () => {
+	it('filtert über approvedOnly() auf approvedAt statt auf verified=1 (gleiche Grundmenge wie Legacy-API)', async () => {
 		const { isNotNull, eq } = vi.mocked(await import('drizzle-orm'));
 		const event = createEvent('/api/map/sightings', {
 			locals: { user: mockAdminUser }

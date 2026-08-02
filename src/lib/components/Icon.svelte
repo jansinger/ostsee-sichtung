@@ -27,7 +27,10 @@
 	import Clock from '~icons/lucide/clock';
 	import Cloud from '~icons/lucide/cloud';
 	import CloudRain from '~icons/lucide/cloud-rain';
+	import Code from '~icons/lucide/code';
 	import Columns from '~icons/lucide/columns';
+	import Compass from '~icons/lucide/compass';
+	import Cpu from '~icons/lucide/cpu';
 	import Crosshair from '~icons/lucide/crosshair';
 	import Download from '~icons/lucide/download';
 	import Eye from '~icons/lucide/eye';
@@ -48,6 +51,7 @@
 	import Image from '~icons/lucide/image';
 	import Images from '~icons/lucide/images';
 	import Info from '~icons/lucide/info';
+	import LayoutGrid from '~icons/lucide/layout-grid';
 	import List from '~icons/lucide/list';
 	import Loader2 from '~icons/lucide/loader-2';
 	import LoaderPinwheel from '~icons/lucide/loader-pinwheel';
@@ -124,7 +128,10 @@
 		'lucide:chevron-up': ChevronUp,
 		'lucide:filter': Filter,
 		'lucide:download': Download,
+		'lucide:code': Code,
 		'lucide:columns': Columns,
+		'lucide:compass': Compass,
+		'lucide:cpu': Cpu,
 		'lucide:crosshair': Crosshair,
 		'lucide:user': User,
 		'lucide:log-out': LogOut,
@@ -153,6 +160,7 @@
 		'lucide:circle-check': CircleCheck,
 		'lucide:circle-x': CircleX,
 		'lucide:square-x': SquareX,
+		'lucide:layout-grid': LayoutGrid,
 		'lucide:list': List,
 		'lucide:triangle-alert': TriangleAlert,
 		'lucide:square-pen': SquarePen,

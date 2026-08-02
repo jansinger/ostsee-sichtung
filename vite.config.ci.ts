@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig, searchForWorkspaceRoot } from 'vite';
+import { devServerIdentity } from './src/tools/dev-server-identity';
 import { stableDepHash } from './src/tools/vite-stable-dep-hash';
 
 /**
@@ -40,6 +41,9 @@ export default defineConfig({
 		}),
 		sveltekit(),
 		// No basicSsl plugin for CI to avoid HTTPS certificate issues
+		// Auch in CI: Der Identitäts-Check in e2e/global-setup.ts läuft unbedingt, damit
+		// ein versehentlich entferntes Plugin auffällt statt still die Prüfung abzuschalten.
+		devServerIdentity(),
 		// Zuletzt: sortiert resolve.external/noExternal nach allen anderen Plugins.
 		stableDepHash()
 	],

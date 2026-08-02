@@ -435,6 +435,17 @@ All timestamp columns hold **true UTC instants**. Drizzle pins both directions
 explicitly (`toISOString()` on write, `+0000` on read), so storage does not
 depend on `TZ` either.
 
+The read half of that sentence needed help to be true. Drizzle only appends
+`+0000` when the driver hands it a **string**, and `postgres.js` parses
+`timestamp without time zone` itself — as local time of the process. Measured
+with a standalone client under `TZ=Europe/Berlin`: a column holding
+`2026-08-02 12:30:00` comes back as a `Date` at `10:30Z`. Since 2026-08-02 the
+driver is told to pass OID 1114 through as text
+(`src/lib/server/db/postgresTypes.ts`, covered by `timestampParsing.test.ts`),
+so the mapping no longer depends on the process timezone. The running
+application was never affected — its process runs in UTC — but the guarantee now
+rests on code rather than on this variable.
+
 This was not always true. The columns are `timestamp without time zone`, and the
 data inherited from the PHP predecessor held German wall-clock time — that system
 ran on a server in Europe/Berlin. A one-off migration converted it before launch:

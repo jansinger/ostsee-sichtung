@@ -220,8 +220,33 @@ const PALETTE_HUES = [
  * Die Verankerung trägt `white`/`black` als ganzes Wort: `bg-whitesmoke` (oder
  * eine eigene Utility mit diesem Präfix) ist kein Verstoß.
  */
+/**
+ * Präfixe, über die eine Farbe ins Layout kommt.
+ *
+ * `from`, `via` und `to` sind die Gradient-Stops und stehen seit 2026-08-02
+ * dabei. Sie fehlten, und zwar wieder aus dem Grund, den diese Datei zweimal
+ * beschreibt: Die Lücke saß in der **Grammatik** des Musters, nicht in der
+ * Aufzählung der Farben. `from-green-50` umgeht das Theme exakt so vollständig
+ * wie `bg-green-50` — dieselbe Farbe auf derselben Fläche, nur über eine andere
+ * Utility gesetzt.
+ *
+ * Anders als bei `white`/`black` war der Fall auch nicht theoretisch:
+ * `src/routes/about/+page.svelte` trug zwei solche Verläufe, und `/about` steht
+ * seit jeher in der Scanliste von `design-tokens.spec.ts`. Die Route war also
+ * abgedeckt, der Scan lief grün, und die Fundstellen standen trotzdem im DOM.
+ * Das ist die unangenehmste Sorte Lücke — sie erzeugt Deckung, die es nicht
+ * gibt.
+ *
+ * `outline`, `ring`, `divide`, `accent` und `caret` fehlen weiterhin bewusst
+ * **nicht** aus Bestandsgründen, sondern weil sie im Projekt keine Farbe
+ * tragen — wer die erste solche Aufrufstelle anlegt, ergänzt hier eine Zeile.
+ * Das Argument „gibt es im Bestand nicht" allein trägt nach den drei
+ * Vorfällen oben nicht mehr.
+ */
+const PALETTE_PREFIXES = ['bg', 'text', 'border', 'from', 'via', 'to'] as const;
+
 const TAILWIND_PALETTE_PATTERN = new RegExp(
-	String.raw`^(?:bg|text|border)-(?:(?:${PALETTE_HUES.join('|')})-\d{2,3}|white|black)${OPACITY_SUFFIX}$`
+	String.raw`^(?:${PALETTE_PREFIXES.join('|')})-(?:(?:${PALETTE_HUES.join('|')})-\d{2,3}|white|black)${OPACITY_SUFFIX}$`
 );
 
 /** Tailwind-Paletten-Farbe statt Theme-Token. */

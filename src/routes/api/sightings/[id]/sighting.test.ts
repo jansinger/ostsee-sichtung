@@ -27,7 +27,10 @@ vi.mock('$lib/logger', () => ({
 }));
 
 vi.mock('$lib/form/validation/sightingSchema', () => ({
-	sightingSchema: { validate: vi.fn().mockResolvedValue(true) }
+	// PUT validiert gegen das Admin-Schema (Bestandssichtungen), POST gegen das
+	// strenge — beide mocken, sonst hängt der Test am Import.
+	sightingSchema: { validate: vi.fn().mockResolvedValue(true) },
+	adminSightingSchema: { validate: vi.fn().mockResolvedValue(true) }
 }));
 
 vi.mock('$lib/server/db', () => ({

@@ -30,7 +30,7 @@ Beim Erstellen oder Ändern von `.ts`/`.svelte`-Dateien mit Business-Logik MUSS 
 
 ### Legacy REST API — 100 % Kompatibilität
 
-Die Legacy-Endpunkte (`/rest_sichtungen`, `/sichtungen/showreports.json`) implementieren den Vertrag der Vorgänger-API für Mobile Clients. Stand 2026-07-28 sind sie **nicht in Betrieb** — eine Abweichung bricht also nichts Laufendes, entwertet aber den Vertrag, sobald Clients angebunden werden. Feldnamen, URL-Pfade und Datentypen deshalb nur bewusst und dokumentiert ändern. Details laden automatisch beim Bearbeiten der betroffenen Routen (`.claude/rules/legacy-api.md`); verbindliche Referenz ist `docs/LEGACY_API_SPECIFICATION.md`.
+Die Legacy-Endpunkte (`/rest_sichtungen`, `/sichtungen/showreports.json`) implementieren den Vertrag der Vorgänger-API für Mobile Clients. **Stand 2026-07-30 ist ein Client angebunden:** eine neu gebaute iOS-App (`OstSeeTiere/8`) sendet Sichtungen über `POST /rest_sichtungen`. Eine Abweichung kostet damit echte Daten und ist von hier aus nicht reparierbar — der alte Client ist nicht mehr testbar. Feldnamen, URL-Pfade und Datentypen deshalb nur bewusst und dokumentiert ändern; offensichtliche Fehler nur ergänzend beheben, nie einen bestehenden Codepfad ersetzen. Das ist ein datierter Stand, keine Dauerzusage — vor größeren Änderungen prüfen, ob weitere Clients dazugekommen sind. Details laden automatisch beim Bearbeiten der betroffenen Routen (`.claude/rules/legacy-api.md`); verbindliche Referenz ist `docs/LEGACY_API_SPECIFICATION.md`.
 
 ### Sichtungs-Status — genau zwei Zustände
 
@@ -78,7 +78,13 @@ per `SessionStart`-Hook). Drei Dinge, die dabei erfahrungsgemäß schiefgehen:
   eigene Installation kostet ~800 MB ohne Gegenwert. Ausnahme: Der Branch ändert
   `package-lock.json`.
 - **Nur ein Dev-Server auf Port 4000.** `PUBLIC_SITE_URL` ist fest auf 4000 und baut die
-  Auth0-Callback-URL; ein anderer Port bricht den Login.
+  Auth0-Callback-URL; ein anderer Port bricht den Login. Bei belegtem Port bricht
+  `npm run dev` ab (`strictPort`), statt still auszuweichen.
+- **E2E-Tests laufen auf einem Port pro Worktree.** Vorher benutzten alle Worktrees fest
+  4001 und Playwright verwendete lokal jeden Server wieder, der dort antwortete — Läufe
+  gegen einen fremden Branch waren die Folge, im schlimmsten Fall **grün**. Der Port
+  kommt jetzt aus dem Pfad-Hash, und `e2e/global-setup.ts` bricht ab, wenn der Server
+  aus einem anderen Verzeichnis ausliefert.
 - **Datenbank und `uploads/` sind geteilt.** `db:push` und `media:cleanup-orphans`
   wirken auf alle Worktrees.
 

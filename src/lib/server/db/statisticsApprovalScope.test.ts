@@ -21,10 +21,9 @@
  */
 
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { sql, type SQL } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { approvedOnly, pendingOnly } from './approvalFilter';
-import { sightings } from './schema';
 
 const dialect = new PgDialect();
 const toSqlText = (condition: SQL): string => dialect.sqlToQuery(condition).sql;
@@ -113,22 +112,12 @@ describe('Freigabestatus in Sichtungs-Statistiken', () => {
 	});
 
 	describe('Grundmenge der öffentlichen Karte', () => {
-		/**
-		 * Der Filter, wie er wörtlich in `/sichtungen/showreports.json` steht.
-		 *
-		 * Der Legacy-Endpunkt bedient produktive Mobile Apps und wird deshalb
-		 * bewusst nicht auf den gemeinsamen Helper umgestellt. Stattdessen wird
-		 * hier festgehalten, dass beide Ausdrücke dasselbe Prädikat erzeugen —
-		 * wer eine der beiden Seiten ändert, bricht diesen Test.
-		 */
-		const legacyKartenFilter = sql`${sightings.approvedAt} IS NOT NULL`;
-
-		it('ist identisch mit dem Filter des Legacy-Kartenendpunkts', () => {
-			const normalisiert = (condition: SQL) => toSqlText(condition).toLowerCase().trim();
-
-			expect(normalisiert(approvedOnly())).toBe(normalisiert(legacyKartenFilter));
-		});
-
+		// Dass `approvedOnly()` dasselbe Prädikat erzeugt wie der Ausdruck, der bis
+		// zur Zentralisierung wörtlich im Legacy-Endpunkt stand, prüft
+		// `src/routes/sichtungen/showreports.json/showreports.test.ts`
+		// („erzeugt dieselbe SQL wie der frühere Inline-Filter"). Diese Zusicherung
+		// stand hier zweimal; sie gehört an den Legacy-Vertrag, der an das Prädikat
+		// gebunden ist, und prüft dort zusätzlich die leere Parameterliste.
 		it('bezieht sich auf die Spalte freigegeben_am', () => {
 			expect(toSqlText(approvedOnly())).toContain('freigegeben_am');
 			expect(toSqlText(pendingOnly())).toContain('freigegeben_am');
