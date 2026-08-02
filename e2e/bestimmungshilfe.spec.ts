@@ -83,7 +83,17 @@ test.describe('Bestimmungshilfe', () => {
 		const cta = page.getByRole('link', { name: /Sichtung melden/i }).first();
 		await expect(cta).toBeVisible();
 		await cta.click();
-		await expect(page).toHaveURL(/\/$/);
+
+		/* `waitForURL` statt `toHaveURL`: Das Ziel ist das Mehrschritt-Formular,
+		   die schwerste Seite der Anwendung. Im vollen Suite-Lauf hat diese
+		   Navigation die Standard-Assertionsfrist einmal gerissen, isoliert nie —
+		   `waitForURL` wartet auf das Navigationsereignis statt auf ein Zeitfenster.
+
+		   Und die Überschrift zusätzlich zur URL: Ein Pfadwechsel allein belegt
+		   nicht, dass der Melder beim Formular angekommen ist. Genau das soll der
+		   Rückweg leisten. */
+		await page.waitForURL((url) => url.pathname === '/');
+		await expect(page.getByRole('heading', { name: /Sichtung.*melden/i }).first()).toBeVisible();
 	});
 
 	test.describe('Verlinkung', () => {
