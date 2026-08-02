@@ -123,7 +123,13 @@
 		 * `UnifiedDropzone` durchgereicht (dort dokumentiert). Ohne Angabe bleibt
 		 * die gestrichelte Fläche selbst der Auslöser.
 		 */
-		actionLabel = undefined
+		actionLabel = undefined,
+		/**
+		 * Dichte Dropzone-Fläche — wird unverändert an `UnifiedDropzone`
+		 * durchgereicht (dort dokumentiert). Nur sinnvoll zusammen mit
+		 * `actionLabel` und einer eigenen Überschrift über der Fläche.
+		 */
+		compact = false
 	} = $props<{
 		referenceId: string;
 		maxFiles?: number;
@@ -135,6 +141,7 @@
 		onExifDateTimeApplied?: (applied: boolean) => void;
 		showPositionMap?: boolean;
 		actionLabel?: string;
+		compact?: boolean;
 	}>();
 
 	// Lokaler State für Dropzone-Dateien (temporär während des Drag & Drop)
@@ -944,6 +951,7 @@
 		<UnifiedDropzone
 			{config}
 			{actionLabel}
+			{compact}
 			bind:files={dropzoneFiles}
 			onFilesAdded={handleFilesAdded}
 			onFileRemoved={handleFileRemoved}

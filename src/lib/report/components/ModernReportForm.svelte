@@ -377,8 +377,12 @@
 <Form {...formProps} bind:context={formContext}>
 	{#if isNotIFrame}
 		<!-- Form Title -->
-		<div class="mb-4 text-center md:mb-8">
-			<h1 class="text-base-content mb-2 text-2xl font-bold md:text-3xl lg:text-4xl">
+		<!-- Enger unterhalb `md`: Auf 375 px kostete der Kopf 376 px, bevor das
+		     Formular begann — die Schriftgrößen bleiben, gekürzt werden die
+		     Abstände. Kleinere Schrift wäre hier das falsche Mittel: Das Formular
+		     wird an Deck und bei Sonnenlicht ausgefüllt (design-system.md). -->
+		<div class="mb-3 text-center md:mb-8">
+			<h1 class="text-base-content mb-1 text-2xl font-bold md:mb-2 md:text-3xl lg:text-4xl">
 				Sichtung von Meeressäugetieren melden
 			</h1>
 			<p class="text-base-content/70 px-2 text-sm md:text-lg">

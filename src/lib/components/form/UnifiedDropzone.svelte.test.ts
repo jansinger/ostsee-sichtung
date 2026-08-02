@@ -426,4 +426,89 @@ describe('UnifiedDropzone', () => {
 			expect(rawColorClasses).toEqual([]);
 		});
 	});
+
+	/**
+	 * `compact` ist die Variante für eine Dropzone, die bereits eine Überschrift
+	 * über sich hat — im Sichtungsformular die Hero-Karte „Foto mit GPS
+	 * hochladen" auf Schritt 1. Dort standen drei Beschriftungen derselben
+	 * Handlung übereinander (Karten-Überschrift, Dropzone-Titel, Button), und die
+	 * Fläche kostete 212 px, bevor die Karte überhaupt begann.
+	 *
+	 * Weggelassen werden darf der Titel deshalb nur, wenn ein `actionLabel` den
+	 * zugänglichen Namen trägt. Ohne Button IST der Titel der Name der Fläche
+	 * (`zoneTriggerAttributes`) — ihn dort zu entfernen ließe ein Bedienelement
+	 * ohne Beschriftung zurück.
+	 */
+	describe('compact', () => {
+		it('lässt Titelzeile und dekoratives Icon weg, wenn ein Button die Beschriftung trägt', async () => {
+			render(UnifiedDropzone, {
+				config: mockConfig,
+				title: 'Foto hochladen',
+				actionLabel: 'Foto auswählen',
+				compact: true
+			});
+
+			await expect.element(page.getByRole('button', { name: 'Foto auswählen' })).toBeVisible();
+			expect(document.body.textContent).not.toContain('Foto hochladen');
+		});
+
+		it('behält die Titelzeile ohne actionLabel — sie ist dann der Name der Fläche', async () => {
+			render(UnifiedDropzone, {
+				config: mockConfig,
+				title: 'Foto hochladen',
+				compact: true
+			});
+
+			await expect
+				.element(page.getByRole('button', { name: /Foto hochladen per Drag & Drop oder Klick/i }))
+				.toBeVisible();
+			expect(document.body.textContent).toContain('Foto hochladen');
+		});
+
+		it('zeigt die Titelzeile in der Standardvariante weiterhin an', async () => {
+			render(UnifiedDropzone, {
+				config: mockConfig,
+				title: 'Foto hochladen',
+				actionLabel: 'Foto auswählen'
+			});
+
+			await expect.element(page.getByText('Foto hochladen')).toBeVisible();
+		});
+
+		it('meldet die Ablage-Bereitschaft trotz fehlender Titelzeile', async () => {
+			// Der Rahmenwechsel allein sagt nicht, dass jetzt losgelassen werden darf.
+			// Die Zeile ist im Ruhezustand weg, beim Ziehen aber wieder da.
+			render(UnifiedDropzone, {
+				config: mockConfig,
+				title: 'Foto hochladen',
+				actionLabel: 'Foto auswählen',
+				multiple: false,
+				compact: true
+			});
+
+			await expect.element(page.getByRole('button', { name: 'Foto auswählen' })).toBeVisible();
+
+			const zone = document.querySelector<HTMLElement>('.border-dashed');
+			if (!zone) throw new Error('Dropzone-Fläche nicht im DOM');
+			zone.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true }));
+
+			await expect.element(page.getByText('Datei hier ablegen!')).toBeVisible();
+		});
+
+		it('nimmt der Fläche Innenabstand', async () => {
+			render(UnifiedDropzone, {
+				config: mockConfig,
+				title: 'Foto hochladen',
+				actionLabel: 'Foto auswählen',
+				compact: true
+			});
+
+			await expect.element(page.getByRole('button', { name: 'Foto auswählen' })).toBeVisible();
+
+			const zone = document.querySelector<HTMLElement>('.border-dashed');
+			if (!zone) throw new Error('Dropzone-Fläche nicht im DOM');
+			expect(zone.className).toContain('p-4');
+			expect(zone.className).not.toContain('p-6');
+		});
+	});
 });

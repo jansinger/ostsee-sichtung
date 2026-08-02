@@ -26,10 +26,11 @@
 	}
 </script>
 
-<div class="space-y-8">
+<div class="space-y-6 md:space-y-8">
 	<!-- Step Header -->
 	<div class="space-y-2 px-2 text-center md:px-0">
-		<div class="flex justify-center">
+		<!-- Unterhalb `md` ausgeblendet: dekorativ, siehe Step1LocationTime.svelte. -->
+		<div class="hidden justify-center md:flex">
 			<div
 				class="bg-primary/20 flex h-10 w-10 items-center justify-center rounded-full md:h-12 md:w-12"
 			>
