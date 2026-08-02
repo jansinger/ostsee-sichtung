@@ -326,9 +326,13 @@
 		</div>
 
 		<!-- GDPR Compliance Notice -->
-		<div
-			class="border-success/10 mt-8 rounded-lg border bg-gradient-to-r from-green-50 to-emerald-50 p-6"
-		>
+		<!-- Verlauf aus der Tailwind-Palette ersetzt (2026-08-02). `from-green-50
+		     to-emerald-50` umging das Theme genauso vollständig wie ein
+		     `bg-green-50` — der Klassen-Scan hat es nur nicht gemeldet, weil sein
+		     Muster die Gradient-Stops nicht kannte. Der Tint trägt hier dieselbe
+		     Aussage, kommt aber aus dem Theme; die Rahmen-Deckkraft ist auf /20
+		     gezogen wie an der Datenschutz-Karte weiter oben. -->
+		<div class="border-success/20 bg-success/5 mt-8 rounded-lg border p-6">
 			<div class="flex items-start gap-4">
 				<Icon icon="lucide:file-text" width="24" class="text-success-strong" />
 				<div class="flex-1">
@@ -524,9 +528,21 @@ SOFTWARE.</pre>
 		</div>
 
 		<!-- Contribution & Issues -->
-		<div
-			class="border-purple/10 mt-8 rounded-lg border bg-gradient-to-r from-purple-50 to-indigo-50 p-6"
-		>
+		<!-- Vorher: `border-purple/10 border bg-gradient-to-r from-purple-50
+		     to-indigo-50`. Zwei Fehler in einer Klassenliste.
+
+		     Der Verlauf kam aus der Tailwind-Palette und umging das Theme. Und
+		     `border-purple/10` existierte als Utility überhaupt nicht — Tailwind
+		     führt `purple` nur mit Farbstufe, der Name erzeugt also nichts. Die
+		     Box trug damit die Default-Rahmenfarbe statt des gedachten Tints, und
+		     zwar unbemerkt, weil eine tote Klasse im Markup aussieht wie eine
+		     wirksame.
+
+		     Ersatz ist `bg-base-200` ohne Rahmen — dieselbe Fläche wie die
+		     Danksagungs- und die Kontakt-Box weiter unten. Kein Statusfarbton:
+		     „Fehler gefunden oder Verbesserungsvorschlag?" ist eine Einladung,
+		     keine Warnung; die Bedeutung trägt das Icon. -->
+		<div class="bg-base-200 mt-8 rounded-lg p-6">
 			<div class="flex items-start gap-4">
 				<Icon icon="lucide:circle-alert" width="32" height="32" class="text-warning-strong mt-1" />
 				<div class="flex-1">

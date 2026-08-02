@@ -233,6 +233,61 @@ describe('TAILWIND_PALETTE', () => {
 			expect(TAILWIND_PALETTE.offends(className)).toBe(false);
 		}
 	);
+
+	/* Die dritte strukturelle Lücke derselben Regel — und wieder eine in der
+	   Grammatik, nicht in den Daten: Das Muster kannte die Präfixe `bg`, `text`
+	   und `border`. Ein Verlauf trägt seine Farben aber an `from-`, `via-` und
+	   `to-`, und `from-green-50` umgeht das Theme exakt so vollständig wie
+	   `bg-green-50` — es ist dieselbe Farbe an derselben Fläche, nur über eine
+	   andere Utility gesetzt.
+
+	   Der Fall ist nicht hypothetisch: `src/routes/about/+page.svelte` trug zwei
+	   solche Verläufe (`from-green-50 to-emerald-50` und
+	   `from-purple-50 to-indigo-50`), und `/about` steht seit jeher in der
+	   Scanliste von `design-tokens.spec.ts`. Die Route war also abgedeckt, der
+	   Scan lief grün, und die Fundstellen standen trotzdem im DOM. */
+	it.each([
+		'from-green-50',
+		'via-sky-200',
+		'to-emerald-50',
+		'from-purple-50',
+		'to-indigo-50',
+		'from-gray-900/80'
+	])('meldet den Gradient-Stop %s', (className) => {
+		expect(TAILWIND_PALETTE.offends(className)).toBe(true);
+	});
+
+	/* `white`/`black` gelten an Gradient-Stops aus demselben Grund wie oben. */
+	it.each(['from-white', 'to-black/40', 'via-black'])(
+		'meldet den Gradient-Stop %s',
+		(className) => {
+			expect(TAILWIND_PALETTE.offends(className)).toBe(true);
+		}
+	);
+
+	/* Die Gegenprobe trägt hier mehr Gewicht als sonst: Verläufe aus
+	   Theme-Tokens sind im Bestand die Regel, nicht die Ausnahme (Mission-Card
+	   und CTA auf /about, beide mit `from-primary/5 via-secondary/5
+	   to-accent/5`). Eine Regel, die diese mitnimmt, wäre unerfüllbar und würde
+	   beim ersten roten Lauf aufgeweicht statt befolgt. */
+	it.each([
+		'from-primary/5',
+		'via-secondary/5',
+		'to-accent/5',
+		'from-base-100',
+		'to-base-200',
+		'via-scrim/40'
+	])('lässt den Theme-Gradient-Stop %s durch', (className) => {
+		expect(TAILWIND_PALETTE.offends(className)).toBe(false);
+	});
+
+	/* Verankerung: Die neuen Präfixe dürfen nicht als Teilwort greifen.
+	   `to-` steckt in `photo-`, `from-` in Wörtern wie `fromage` — beides keine
+	   Tailwind-Utilities, aber der Beleg dafür, dass das Muster am Wortanfang
+	   verankert bleibt und nicht irgendwo in der Klasse sucht. */
+	it.each(['photo-red-500', 'chromatic-white', 'shadow-raised'])('lässt %s durch', (className) => {
+		expect(TAILWIND_PALETTE.offends(className)).toBe(false);
+	});
 });
 
 describe('findOffenders', () => {
