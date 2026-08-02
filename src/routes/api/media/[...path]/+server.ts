@@ -2,6 +2,7 @@ import { createLogger } from '$lib/logger.server';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { isAdminUser } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
+import { isSightingApproved } from '$lib/server/db/approvalFilter';
 import { sightingFiles, sightings } from '$lib/server/db/schema';
 import { getStorageProvider } from '$lib/server/storage/factory';
 import { isRangeHeaderSyntaxValid, parseRangeHeader } from '$lib/server/media/rangeHeader';
@@ -126,7 +127,7 @@ export const GET: RequestHandler = async ({ params, url, request, locals, getCli
 			throw error(404, 'File not found');
 		}
 
-		const isApproved = !!file.approvedAt; // File is approved if approvedAt is not null
+		const isApproved = isSightingApproved(file);
 
 		// Check permissions
 		if (!isApproved) {

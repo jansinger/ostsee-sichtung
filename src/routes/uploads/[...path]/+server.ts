@@ -5,6 +5,7 @@ import { createReadStream } from 'fs';
 import { getStorageProvider, isCloudStorage } from '$lib/server/storage/factory';
 import { isAdminUser } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
+import { isSightingApproved } from '$lib/server/db/approvalFilter';
 import { sightingFiles, sightings } from '$lib/server/db/schema';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import {
@@ -46,7 +47,7 @@ async function assertFileAccessAllowed(
 		throw error(404, 'Datei nicht gefunden');
 	}
 
-	const isApproved = !!file.approvedAt;
+	const isApproved = isSightingApproved(file);
 	if (!isApproved) {
 		const user = locals.user;
 		if (!isAdminUser(user)) {

@@ -239,6 +239,14 @@ kennt die Spalte nicht — dort ist ein Join auf `sichtungen` nötig. Der Epoch-
 (`EARLIEST_PLAUSIBLE_SIGHTING_DATE`) gilt zusätzlich, nicht statt dessen.
 Abgesichert durch `src/lib/server/db/statisticsApprovalScope.test.ts`.
 
+Wird der Status nicht in SQL, sondern über einer **bereits geladenen Zeile** ausgewertet,
+gilt `isSightingApproved(sighting)` aus demselben Modul — nicht ein neues `!!row.approvedAt`.
+Die beiden Medien-Endpunkte (`/uploads/[...path]`, `/api/media/[...path]`) entscheiden damit,
+ob eine Datei ohne Anmeldung ausgeliefert wird, `PATCH /api/sightings/[id]/verify` hält damit
+den Vorzustand im Audit-Log fest. `approvalFilter.test.ts` prüft beides: dass beide
+Schreibweisen dieselbe Grundmenge meinen, und dass die drei Routen keine der bekannten
+Inline-Schreibweisen zurückbekommen.
+
 ---
 
 ## PostGIS Patterns

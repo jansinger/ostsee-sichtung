@@ -232,6 +232,32 @@ describe('Contract: PATCH /api/sightings/{id}/verify', () => {
 		);
 	});
 
+	it('protokolliert eine noch nicht freigegebene Sichtung als previouslyApproved=false', async () => {
+		// Gegenstück zum Test darüber: Der Vorzustand muss auch dann korrekt im
+		// Audit-Log stehen, wenn `freigegeben_am` NULL ist. Dieser Zweig war vor
+		// der Zentralisierung der Freigabeprüfung nicht abgedeckt.
+		const { logAuditEvent } = vi.mocked(await import('$lib/server/audit/auditService'));
+		mockSelectLimit.mockResolvedValueOnce([{ id: 1, verified: 0, approvedAt: null }]);
+		const event = createEvent('/api/sightings/1/verify', {
+			method: 'PATCH',
+			params: { id: '1' },
+			locals: { user: mockAdminUser },
+			body: { verified: 1 }
+		});
+
+		await verifyPATCH(event);
+
+		expect(logAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				action: 'sighting.verify',
+				details: expect.objectContaining({
+					previousVerified: 0,
+					previouslyApproved: false
+				})
+			})
+		);
+	});
+
 	it('throws 400 for invalid verified value', async () => {
 		const event = createEvent('/api/sightings/1/verify', {
 			method: 'PATCH',
