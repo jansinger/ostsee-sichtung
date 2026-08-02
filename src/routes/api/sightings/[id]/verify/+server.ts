@@ -3,6 +3,7 @@ import { logAuditEvent } from '$lib/server/audit/auditService';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { db } from '$lib/server/db';
+import { isSightingApproved } from '$lib/server/db/approvalFilter';
 import { sightings } from '$lib/server/db/schema';
 import type { RequestHandler } from '@sveltejs/kit';
 import { error, isHttpError, json } from '@sveltejs/kit';
@@ -55,7 +56,8 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url, getC
 			.where(eq(sightings.id, Number(id)))
 			.limit(1);
 
-		if (existingSighting.length === 0) {
+		const existing = existingSighting[0];
+		if (!existing) {
 			logger.warn({ id }, 'Sichtung zum Prüfen nicht gefunden');
 			throw error(404, 'Sichtung nicht gefunden');
 		}
@@ -83,15 +85,15 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url, getC
 			details: {
 				verified,
 				approved,
-				previousVerified: existingSighting[0]?.verified,
-				previouslyApproved: !!existingSighting[0]?.approvedAt
+				previousVerified: existing.verified,
+				previouslyApproved: isSightingApproved(existing)
 			}
 		});
 
 		logger.info(
 			{
 				id,
-				previousStatus: existingSighting[0]?.verified,
+				previousStatus: existing.verified,
 				newStatus: verified,
 				approvedAt,
 				verifiedBy: locals.user?.email
