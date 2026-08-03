@@ -1,88 +1,103 @@
-<script>
-	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
+<script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
+	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 </script>
 
 <!-- Footer with navigation (versteckt in iFrame) -->
 {#if isNotIFrame}
-	<footer class="footer footer-center bg-base-200 text-base-content mt-8 rounded-t-lg p-4 sm:p-6">
-		<!-- Navigation Links — umbrechende Flexbox, kein Grid -->
+	<footer class="bg-base-200 text-base-content mt-8 rounded-t-lg">
 		<!--
-			Bewusst KEIN `md:grid md:grid-flow-col`: Das zwang die fünf Links ab 768px
-			in eine einzige Grid-Zeile, die nicht umbrechen kann. Zwischen 768 und
-			~890px passte sie nicht mehr — das Dokument wurde dadurch breiter als der
-			Viewport (gemessen 891px bei 768px Breite), die ganze Seite ließ sich
-			seitlich schieben und der Schritt-Stepper darüber wurde mit angeschnitten.
-			`flex flex-wrap` trägt jede Breite und braucht keine Ausnahme.
+			`footer sm:footer-horizontal` statt `footer-center`.
+
+			`footer-center` ist in DaisyUI 5 auf JEDEM Breakpoint
+			`grid-auto-flow: column dense` — es gibt dazu keine responsive Variante.
+			Die drei Blöcke standen deshalb auch auf 390px nebeneinander, jeder rund
+			130px breit, und die Linkliste wurde darin zu einer sechszeiligen Spalte
+			gequetscht. Umgekehrt drängten sich auf 1280px dieselben Links zweizeilig
+			ins linke Drittel, während rechts Platz frei blieb.
+
+			Ein früherer Anlauf (2026-07-30) hatte nur das `md:grid-flow-col` der
+			inneren `<nav>` entfernt. Das behob den horizontalen Überlauf, ließ die
+			äußere Spaltenanordnung aber unberührt — die kommt aus `footer-center`
+			selbst. Abgesichert in `e2e/footer-layout.spec.ts`.
 		-->
-		<nav class="flex flex-wrap justify-center gap-2 sm:gap-4">
-			<a href="/about" class="link link-hover text-sm sm:text-base">Über uns</a>
-			<a href="/docs" class="link link-hover text-sm sm:text-base">Dokumentation</a>
-			<a href="/map" class="link link-hover text-sm sm:text-base">Sichtungskarte</a>
-			<a href="/bestimmungshilfe" class="link link-hover text-sm sm:text-base">Bestimmungshilfe</a>
+		<!--
+			`aria-labelledby` statt `aria-label`: Der Gruppenname steht ohnehin als
+			sichtbare Überschrift da, und zwei Quellen für denselben String laufen
+			auseinander. Der Accessible Name bleibt identisch — die E2E-Tests
+			greifen die Gruppen weiterhin über ihn ab.
+		-->
+		<div class="footer sm:footer-horizontal container mx-auto p-6 sm:p-8">
+			<nav aria-labelledby="footer-navigation">
+				<h2 id="footer-navigation" class="footer-title">Navigation</h2>
+				<a href="/" class="link link-hover py-3">Meldung</a>
+				<a href="/map" class="link link-hover py-3">Sichtungskarte</a>
+				<a href="/bestimmungshilfe" class="link link-hover py-3">Bestimmungshilfe</a>
+				<a href="/about" class="link link-hover py-3">Über uns</a>
+			</nav>
+
 			<!--
-				Anbieterkennzeichnung nach § 5 DDG und Datenschutzhinweis nach Art. 13 DSGVO.
-				Beides fehlte bis 2026-07-30 vollständig: es gab weder eine Route noch einen
-				Link, und unter eigener Domain deckt die iframe-Einbettung auf
+				Anbieterkennzeichnung nach § 5 DDG und Datenschutzhinweis nach Art. 13
+				DSGVO. Beides fehlte bis 2026-07-30 vollständig: es gab weder eine Route
+				noch einen Link, und unter eigener Domain deckt die iframe-Einbettung auf
 				meeresmuseum.de die Pflicht nicht ab.
 
-				Verlinkt werden bewusst die Seiten des Betreibers (Deutsches Meeresmuseum)
-				statt einer eigenen Kopie — eine zweite, separat zu pflegende Fassung
-				derselben Rechtstexte würde nur auseinanderlaufen. „Ständig verfügbar" ist
-				gegeben, weil dieser Footer auf jeder Seite steht; im iframe-Modus ist er
-				ausgeblendet, dort trägt die einbettende Seite ihre eigene Kennzeichnung.
-			-->
-			<a
-				href="https://www.deutsches-meeresmuseum.de/impressum"
-				target="_blank"
-				rel="noopener noreferrer"
-				class="link link-hover text-sm sm:text-base">Impressum</a
-			>
-			<a
-				href="https://www.deutsches-meeresmuseum.de/datenschutz"
-				target="_blank"
-				rel="noopener noreferrer"
-				class="link link-hover text-sm sm:text-base">Datenschutz</a
-			>
-		</nav>
+				Verlinkt werden bewusst die Seiten des Betreibers (Deutsches
+				Meeresmuseum) statt einer eigenen Kopie — eine zweite, separat zu
+				pflegende Fassung derselben Rechtstexte würde nur auseinanderlaufen.
+				„Ständig verfügbar" ist gegeben, weil dieser Footer auf jeder Seite
+				steht; im iframe-Modus ist er ausgeblendet, dort trägt die einbettende
+				Seite ihre eigene Kennzeichnung.
 
-		<!-- External Links - Stack on Mobile, Inline on Desktop -->
-		<nav>
-			<div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
+				Seit 2026-08-03 stehen sie in einer eigenen Gruppe statt auf Platz 5 und
+				6 einer Linkzeile — auffindbar ist Teil der Pflicht.
+			-->
+			<nav aria-labelledby="footer-rechtliches">
+				<h2 id="footer-rechtliches" class="footer-title">Rechtliches</h2>
+				<a
+					href="https://www.deutsches-meeresmuseum.de/impressum"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="link link-hover py-3">Impressum</a
+				>
+				<a
+					href="https://www.deutsches-meeresmuseum.de/datenschutz"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="link link-hover py-3">Datenschutz</a
+				>
+			</nav>
+
+			<nav aria-labelledby="footer-projekt">
+				<h2 id="footer-projekt" class="footer-title">Projekt</h2>
+				<a href="/docs" class="link link-hover py-3">Dokumentation</a>
 				<a
 					href="https://github.com/jansinger/ostsee-tiere"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="btn btn-ghost btn-xs sm:btn-sm text-xs sm:text-sm"
-					aria-label="GitHub Repository"
+					class="link link-hover inline-flex items-center gap-2 py-3"
 				>
-					<Icon icon="lucide:github" width="16" height="16" class="h-3 w-3 sm:h-5 sm:w-5" />
-					<span class="xs:inline hidden">GitHub</span>
-					<span class="xs:hidden">Code</span>
+					<Icon icon="lucide:github" width="16" height="16" aria-hidden="true" />
+					GitHub
 				</a>
 				<a
 					href="https://deutsches-meeresmuseum.de"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="btn btn-ghost btn-xs sm:btn-sm text-xs sm:text-sm"
+					class="link link-hover py-3">Deutsches Meeresmuseum</a
 				>
-					<span class="hidden sm:inline">Deutsches Meeresmuseum</span>
-					<span class="sm:hidden">Meeresmuseum</span>
-				</a>
-			</div>
-		</nav>
+			</nav>
+		</div>
 
-		<!-- Copyright - Mobile Optimized -->
-		<aside class="text-center">
-			<p class="text-xs opacity-70 sm:text-sm">
-				© 2025–2026
-				<span class="hidden sm:inline">Deutsches Meeresmuseum, Stralsund, Deutschland</span>
-				<span class="sm:hidden">Deutsches Meeresmuseum</span>
-			</p>
-			<p class="mt-1 text-xs opacity-70">
-				<span class="hidden sm:inline">Meldeplattform für Meerestiere in der Ostsee</span>
-				<span class="sm:hidden">Ostsee Sichtungen</span>
-			</p>
-		</aside>
+		<!-- Copyright als eigene Zeile über die volle Breite, nicht als dritte
+		     Spalte: es ist keine Navigation und konkurrierte dort mit den Links. -->
+		<div class="border-base-300 border-t">
+			<div class="container mx-auto px-6 py-4 sm:px-8">
+				<p class="text-base-content/70 text-support">
+					© 2025–2026 Deutsches Meeresmuseum, Stralsund, Deutschland · Meldeplattform für
+					Meerestiere in der Ostsee
+				</p>
+			</div>
+		</div>
 	</footer>
 {/if}

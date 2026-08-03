@@ -746,8 +746,15 @@
 		</div>
 	{/if}
 
-	<!-- Vollbild-Karte -->
-	<div class="relative h-full w-full">
+	<!-- Vollbild-Karte — `absolute inset-0` statt `h-full w-full`:
+	     Der Container ist seit 2026-08-03 ein Flex-Item (`flex-1`) statt einer
+	     ausgerechneten Höhe. Seine *benutzte* Höhe stimmt damit zwar, seine
+	     berechnete `height` bleibt aber `auto` — und `height: 100%` löst gegen
+	     `auto` zu 0 auf. Die Kette brach still: OpenLayers meldete nur
+	     „No map visible because the map container's width or height are 0",
+	     die Seite blieb leer. `inset-0` hängt sich an den Rand des
+	     positionierten Containers und braucht keine Höhenkette. -->
+	<div class="absolute inset-0">
 		<!--
 			K3: tabindex="0" macht das OL-Target fokussierbar — damit greifen die
 			OpenLayers-Default-Interactions KeyboardPan (Pfeiltasten) und

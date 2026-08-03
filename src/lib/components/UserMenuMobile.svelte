@@ -2,13 +2,10 @@
 	import type { PublicUser } from '$lib/types/User';
 	import Icon from '$lib/components/Icon.svelte';
 
-	let {
-		user,
-		isAdmin = false
-	}: {
-		user: PublicUser | null;
-		isAdmin?: boolean;
-	} = $props();
+	/* `isAdmin` ist hier bewusst weggefallen — Begründung in `UserMenu.svelte`:
+	   Der Eintrag „Admin-Bereich" dupliziert „Verwaltung → Sichtungen" aus dem
+	   Burger-Menü, das direkt darüber steht. */
+	let { user }: { user: PublicUser | null } = $props();
 </script>
 
 {#if user}
@@ -40,15 +37,6 @@
 	</div>
 
 	<!-- User Menu Items for Mobile -->
-	{#if isAdmin}
-		<li>
-			<a href="/admin" class="flex items-center gap-2">
-				<Icon icon="lucide:settings" width="16" class="h-4 w-4" />
-				Admin-Bereich
-			</a>
-		</li>
-	{/if}
-
 	<li>
 		<a href="/api/auth/logout" class="text-error hover:bg-error/10 flex items-center gap-2">
 			<Icon icon="lucide:log-out" width="16" class="h-4 w-4" />
