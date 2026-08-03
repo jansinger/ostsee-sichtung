@@ -35,6 +35,7 @@
 	let verified = $state(page.url.searchParams.get('verified') || '');
 	let selectedChannel = $state(page.url.searchParams.get('entryChannel') || 'all');
 	let mediaUpload = $state(page.url.searchParams.get('mediaUpload') || '');
+	let balticSea = $state(page.url.searchParams.get('balticSea') || '');
 	let showDeleteDialog = $state(false);
 	let sightingToDelete = $state<FrontendSighting | null>(null);
 	let isFilterPanelOpen = $state(false);
@@ -92,7 +93,8 @@
 			toDate ||
 			verified ||
 			(selectedChannel && selectedChannel !== 'all') ||
-			mediaUpload
+			mediaUpload ||
+			balticSea
 		)
 	);
 
@@ -102,7 +104,8 @@
 		toDate: toDate || '',
 		verified: verified || '',
 		entryChannel: selectedChannel !== 'all' ? selectedChannel : '',
-		mediaUpload: mediaUpload || ''
+		mediaUpload: mediaUpload || '',
+		balticSea: balticSea || ''
 	}));
 
 	function updateSort(column: string): void {
@@ -142,6 +145,10 @@
 		if (mediaUpload) url.searchParams.set('mediaUpload', mediaUpload);
 		else url.searchParams.delete('mediaUpload');
 
+		// Ostsee-Status-Filter
+		if (balticSea) url.searchParams.set('balticSea', balticSea);
+		else url.searchParams.delete('balticSea');
+
 		url.searchParams.set('page', '1');
 		goto(url);
 	}
@@ -164,6 +171,7 @@
 		verified = '';
 		selectedChannel = 'all';
 		mediaUpload = '';
+		balticSea = '';
 
 		const url = new URL(page.url);
 		url.searchParams.delete('fromDate');
@@ -171,6 +179,7 @@
 		url.searchParams.delete('verified');
 		url.searchParams.delete('entryChannel');
 		url.searchParams.delete('mediaUpload');
+		url.searchParams.delete('balticSea');
 		url.searchParams.set('page', '1');
 		goto(url);
 	}
@@ -565,7 +574,7 @@
 					<Icon icon="lucide:x" class="h-4 w-4" />
 				</button>
 			</div>
-			<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+			<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
 				<div class="fieldset w-full">
 					<label for="fromDate" class="label py-0">
 						<span class="text-xs">Von</span>
@@ -635,6 +644,22 @@
 						<option value="1">Mit</option>
 						<option value="0">Ohne</option>
 						<option value={MEDIA_UPLOAD_ANNOUNCED_MISSING}>Angekündigt, fehlt noch</option>
+					</select>
+				</div>
+				<div class="fieldset w-full">
+					<label for="balticSea" class="label py-0">
+						<span class="text-xs">Ostsee</span>
+					</label>
+					<select
+						id="balticSea"
+						name="balticSea"
+						class="select select-sm w-full text-sm"
+						bind:value={balticSea}
+					>
+						<option value="">Alle</option>
+						{#each Object.entries(BALTIC_SEA_STATUS_PRESENTATION) as [value, presentation] (value)}
+							<option {value}>{presentation.label}</option>
+						{/each}
 					</select>
 				</div>
 			</div>

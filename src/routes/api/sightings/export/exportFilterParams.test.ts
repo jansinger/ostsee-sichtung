@@ -2,12 +2,19 @@ import { describe, expect, it, vi } from 'vitest';
 
 // Drizzle wird durch Marker-Objekte ersetzt, damit die erzeugten Grenz-Instants
 // direkt geprüft werden können statt über generiertes SQL.
+// `or`/`gt`/`lte`/`isNull`/`isNotNull` braucht `balticSeaCondition` — ohne sie
+// stünde dort `undefined(...)`, sobald ein Ostsee-Filter gesetzt ist.
 vi.mock('drizzle-orm', () => ({
 	and: vi.fn((...conditions) => ({ op: 'and', conditions })),
+	or: vi.fn((...conditions) => ({ op: 'or', conditions })),
 	between: vi.fn((column, from, to) => ({ op: 'between', column, from, to })),
 	gte: vi.fn((column, value) => ({ op: 'gte', column, value })),
+	gt: vi.fn((column, value) => ({ op: 'gt', column, value })),
 	lt: vi.fn((column, value) => ({ op: 'lt', column, value })),
-	eq: vi.fn((column, value) => ({ op: 'eq', column, value }))
+	lte: vi.fn((column, value) => ({ op: 'lte', column, value })),
+	eq: vi.fn((column, value) => ({ op: 'eq', column, value })),
+	isNull: vi.fn((column) => ({ op: 'isNull', column })),
+	isNotNull: vi.fn((column) => ({ op: 'isNotNull', column }))
 }));
 
 vi.mock('$lib/server/db/schema', () => ({
@@ -15,11 +22,15 @@ vi.mock('$lib/server/db/schema', () => ({
 		sightingDate: 'sightingDate',
 		verified: 'verified',
 		entryChannel: 'entryChannel',
-		mediaUpload: 'mediaUpload'
+		mediaUpload: 'mediaUpload',
+		inBalticSea: 'inBalticSea',
+		inBalticSeaGeo: 'inBalticSeaGeo',
+		latitude: 'latitude',
+		longitude: 'longitude'
 	}
 }));
 
-import { buildExportConditions } from './exportFilterParams';
+import { buildExportConditions, parseExportFilterParams } from './exportFilterParams';
 
 type Condition = { op: string; column: string; value?: Date; from?: Date; to?: Date };
 
@@ -29,7 +40,8 @@ function dateRange(fromDate: string, toDate: string): { start: Date; endExclusiv
 		toDate,
 		verified: null,
 		entryChannel: null,
-		mediaUpload: null
+		mediaUpload: null,
+		balticSea: null
 	}) as unknown as Condition[];
 
 	const onDate = conditions.filter((condition) => condition.column === 'sightingDate');
@@ -54,7 +66,8 @@ describe('buildExportConditions — Datumsfilter meint Berliner Kalendertage', (
 			toDate: '2024-06-30',
 			verified: null,
 			entryChannel: null,
-			mediaUpload: null
+			mediaUpload: null,
+			balticSea: null
 		});
 
 		expect(between).not.toHaveBeenCalled();
@@ -113,9 +126,70 @@ describe('buildExportConditions — Datumsfilter meint Berliner Kalendertage', (
 			toDate: '',
 			verified: null,
 			entryChannel: null,
-			mediaUpload: null
+			mediaUpload: null,
+			balticSea: null
 		}) as unknown as Condition[];
 
 		expect(conditions).toHaveLength(0);
+	});
+});
+
+/**
+ * Der Ostsee-Filter selbst ist in `$lib/server/db/balticSeaFilter.test.ts` gegen
+ * `getBalticSeaStatus()` abgesichert. Hier geht es nur um die Verdrahtung: dass
+ * `?balticSea=…` gelesen wird und die Bedingung im Export tatsächlich ankommt.
+ * Ohne das könnte der Export stillschweigend mehr Zeilen liefern als die
+ * Admin-Liste anzeigt — genau die Falle, die bei `mediaUpload` vermieden wurde.
+ */
+describe('Export-Filter — Ostsee-Status', () => {
+	const noFilters = {
+		fromDate: '',
+		toDate: '',
+		verified: null,
+		entryChannel: null,
+		mediaUpload: null
+	};
+
+	it('parseExportFilterParams liest balticSea aus der URL', () => {
+		const result = parseExportFilterParams(
+			new URL('https://example.com/api/sightings/export?format=json&balticSea=noPosition')
+		);
+
+		expect(result).toHaveProperty('params');
+		expect((result as { params: { balticSea: string | null } }).params.balticSea).toBe(
+			'noPosition'
+		);
+	});
+
+	it('parseExportFilterParams liefert null, wenn der Parameter fehlt', () => {
+		const result = parseExportFilterParams(
+			new URL('https://example.com/api/sightings/export?format=json')
+		);
+
+		expect((result as { params: { balticSea: string | null } }).params.balticSea).toBeNull();
+	});
+
+	it.each(['baltic', 'edge', 'outside', 'noPosition'])(
+		'buildExportConditions hängt für balticSea=%s eine Bedingung an',
+		(status) => {
+			const conditions = buildExportConditions({ ...noFilters, balticSea: status });
+
+			expect(conditions).toHaveLength(1);
+		}
+	);
+
+	it('hängt ohne Ostsee-Filter keine Bedingung an', () => {
+		expect(buildExportConditions({ ...noFilters, balticSea: null })).toHaveLength(0);
+		expect(buildExportConditions({ ...noFilters, balticSea: 'quatsch' })).toHaveLength(0);
+	});
+
+	it('kombiniert den Ostsee-Filter mit anderen Filtern, statt sie zu ersetzen', () => {
+		const conditions = buildExportConditions({
+			...noFilters,
+			verified: '1',
+			balticSea: 'baltic'
+		});
+
+		expect(conditions).toHaveLength(2);
 	});
 });

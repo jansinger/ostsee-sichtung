@@ -5,6 +5,7 @@ import {
 	MEDIA_UPLOAD_ANNOUNCED_MISSING,
 	mediaUploadCondition
 } from '$lib/server/db/mediaUploadFilter';
+import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
@@ -27,6 +28,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	const verified = url.searchParams.get('verified');
 	const entryChannel = url.searchParams.get('entryChannel');
 	const mediaUpload = url.searchParams.get('mediaUpload');
+	const balticSea = url.searchParams.get('balticSea');
 
 	// Bedingungen für die SQL-Abfrage sammeln
 	const conditions = [];
@@ -62,6 +64,13 @@ export const load: PageServerLoad = async ({ url }) => {
 	const mediaCondition = mediaUploadCondition(mediaUpload);
 	if (mediaCondition) {
 		conditions.push(mediaCondition);
+	}
+
+	// Ostsee-Status-Filter — dieselbe Fallunterscheidung wie die Anzeige in
+	// getBalticSeaStatus(), siehe balticSeaFilter.ts.
+	const balticSeaFilterCondition = balticSeaCondition(balticSea);
+	if (balticSeaFilterCondition) {
+		conditions.push(balticSeaFilterCondition);
 	}
 
 	// Kombinierte WHERE-Bedingung erstellen

@@ -26,7 +26,12 @@ Regeln für CSV, JSON, KML und XML Export.
 
 **Auth:** Alle Endpoints erfordern `requireUserRole(url, locals.user, ['admin'])`
 
-**Query-Parameter:** `fromDate`, `toDate`, `verified`, `entryChannel`, `mediaUpload`
+**Query-Parameter:** `fromDate`, `toDate`, `verified`, `entryChannel`, `mediaUpload`, `balticSea`
+
+`balticSea` nimmt einen der vier Werte aus `BalticSeaStatus` (`baltic`, `edge`,
+`outside`, `noPosition`) und übersetzt ihn über `$lib/server/db/balticSeaFilter`
+— dieselbe Fallunterscheidung, die die Admin-Liste anzeigt. Die Flag-Logik nicht
+hier nachbauen, sondern von dort importieren.
 
 ---
 
