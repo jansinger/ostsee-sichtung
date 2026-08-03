@@ -21,7 +21,10 @@ CREATE INDEX IF NOT EXISTS ostsee_geom_gix ON geo_build.ostsee USING GIST (geom)
 
 -- Die Punkte stehen an EINER Stelle. Anzeige und harter Abbruch lesen dieselbe
 -- Tabelle — zwei Kopien derselben Liste wuerden auseinanderlaufen.
-DROP TABLE IF EXISTS geo_build.referenzpunkte;
+-- CASCADE: die View referenz_abweichungen aus einem frueheren Lauf haengt
+-- an der Tabelle und blockiert den DROP sonst (gleiche Falle wie bei
+-- geo_build.ostsee / flag_changes in build-baltic-geometry.sql).
+DROP TABLE IF EXISTS geo_build.referenzpunkte CASCADE;
 CREATE TABLE geo_build.referenzpunkte (name text, lon float8, lat float8, erwartet boolean);
 INSERT INTO geo_build.referenzpunkte VALUES
   -- Fehler A: Binnenwasser, muss aussen sein
@@ -43,8 +46,11 @@ INSERT INTO geo_build.referenzpunkte VALUES
   ('Greifswalder Bodden',       13.66281,  54.28838,  true),
   -- Einschlussmaske
   ('Schlei Schleimuende',       10.030,    54.676,    true),
-  ('Schlei Missunde',            9.755,    54.545,    true),
-  ('Schlei Schleswig',           9.585,    54.518,    true),
+  -- Beide Punkte 2026-08-03 neu belegt (ST_PointOnSurface der finalen
+  -- Geometrie): die alten Koordinaten lagen im breiten Alt-Korridor auf
+  -- Land und scheitern an der engen Wasserumriss-Maske (+200 m).
+  ('Schlei Missunde',            9.7434,   54.5439,   true),
+  ('Schlei Schleswig',           9.6035,   54.5152,   true),
   ('Trave Travemuende',         10.875,    53.960,    true),
   ('Warnow Warnemuende',        12.098,    54.180,    true),
   ('Stettiner Haff',            14.100,    53.780,    true),

@@ -101,7 +101,9 @@ SELECT ST_Union(
        ) AS geom;
 
 \echo '== 8: Vereinfachung, metrisch in EPSG:3035'
-DROP TABLE IF EXISTS ostsee;
+-- CASCADE: recalc-baltic-flags.sql legt die View flag_changes auf ostsee an;
+-- nach einem frueheren Recalc-Lauf blockiert sie den DROP sonst.
+DROP TABLE IF EXISTS ostsee CASCADE;
 CREATE TABLE ostsee AS
 SELECT ST_Transform(
          ST_SimplifyPreserveTopology(
@@ -113,7 +115,7 @@ SELECT ST_Transform(
 FROM included;
 
 \echo '== 9: Subdivide fuer den RBush-Index'
-DROP TABLE IF EXISTS ostsee_parts;
+DROP TABLE IF EXISTS ostsee_parts CASCADE;
 CREATE TABLE ostsee_parts AS
 SELECT row_number() OVER () AS id, geom
 FROM (SELECT ST_Subdivide(geom, 256) AS geom FROM ostsee) s
