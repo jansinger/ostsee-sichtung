@@ -18,18 +18,38 @@
 		Zum Hauptinhalt springen
 	</a>
 
-	<PublicNavbar user={data.user} isAdmin={data.showAdminMenu} />
+	<!--
+		Kopfbereich und Inhalt bilden zusammen genau einen Viewport (`min-h-dvh`),
+		der Footer steht bewusst AUSSERHALB dieser Box.
 
-	<!-- Maintenance Mode Banner for Admins -->
-	{#if data.maintenanceConfig?.enabled && data.showAdminMenu && isNotIFrame}
-		<div class="container mx-auto px-4 py-2">
-			<MaintenanceBanner isAdmin={true} maintenanceMessage={data.maintenanceConfig.message} />
-		</div>
-	{/if}
+		Damit ergibt sich die Höhe des Inhalts aus dem, was der Header tatsächlich
+		einnimmt — Seiten müssen sie nicht mehr schätzen. `/map` rechnete vorher
+		`calc(100dvh - 4rem)` und lag damit immer daneben: der Header misst
+		einzeilig 66px, als Admin mit umbrechendem Menü 99px, und der
+		Wartungsbanner darunter kam in der Rechnung gar nicht vor. Die Karte ragte
+		entsprechend unter den Fensterrand, ihre unteren Bedienelemente lagen
+		außerhalb des Fensters (abgesichert in `e2e/app-shell-height.spec.ts`).
 
-	<main id="main-content">
-		{@render children()}
-	</main>
+		Der Footer bleibt draußen, damit die Karte weiterhin das ganze sichtbare
+		Fenster füllt und der Footer wie bisher erst beim Scrollen erscheint —
+		innerhalb der Box würde er auf `/map` dauerhaft ~130px Kartenfläche kosten.
+	-->
+	<div class="flex min-h-dvh flex-col">
+		<PublicNavbar user={data.user} isAdmin={data.showAdminMenu} />
+
+		<!-- Maintenance Mode Banner for Admins -->
+		{#if data.maintenanceConfig?.enabled && data.showAdminMenu && isNotIFrame}
+			<div class="container mx-auto shrink-0 px-4 py-2">
+				<MaintenanceBanner isAdmin={true} maintenanceMessage={data.maintenanceConfig.message} />
+			</div>
+		{/if}
+
+		<!-- flex-col + min-h-0: Seiten können ihren Inhalt mit `flex-1` auf die
+		     verbleibende Höhe strecken, ohne sie zu kennen. -->
+		<main id="main-content" class="flex min-h-0 flex-1 flex-col">
+			{@render children()}
+		</main>
+	</div>
 
 	<PublicFooter />
 

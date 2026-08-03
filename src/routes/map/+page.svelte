@@ -39,5 +39,5 @@
 	title="Sichtungskarte"
 	showTitle={true}
 	showLogo={true}
-	containerClass="relative h-[calc(100dvh-4rem)] w-screen overflow-hidden"
+	containerClass="relative min-h-0 w-full flex-1 overflow-hidden"
 />
