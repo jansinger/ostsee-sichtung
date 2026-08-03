@@ -944,42 +944,45 @@
 								</td>
 							{/if}
 							{#if columnVisibility.actions}
-								<td class="space-x-1">
-									<button
-										class="btn btn-ghost btn-xs"
-										onclick={() => viewSightingDetails(sighting)}
-										title="Details anzeigen"
-										aria-label="Details anzeigen"
-									>
-										<Icon icon="lucide:eye" class="h-4 w-4" />
-									</button>
-									<button
-										class="btn btn-ghost btn-xs"
-										onclick={() => sendTestEmail(sighting.id)}
-										title="Interne Benachrichtigung testweise senden"
-										aria-label="Interne Benachrichtigung testweise senden"
-									>
-										<Icon icon="lucide:mail" class="h-4 w-4" />
-									</button>
-									<button
-										class="btn btn-ghost btn-xs"
-										onclick={() => checkSpam(sighting.id)}
-										title="Spam-Check"
-										aria-label="Spam-Check durchführen"
-									>
-										<Icon icon="lucide:shield-alert" class="h-4 w-4" />
-									</button>
-									<button
-										class="btn text-error btn-ghost btn-xs"
-										onclick={() => {
-											sightingToDelete = sighting;
-											showDeleteDialog = true;
-										}}
-										title="Eintrag löschen"
-										aria-label="Eintrag löschen"
-									>
-										<Icon icon="lucide:trash-2" class="h-4 w-4" />
-									</button>
+								<td class="w-px whitespace-nowrap">
+									<!-- flex-nowrap: sonst brechen die 44px hohen Buttons um und ziehen die Zeile auf -->
+									<div class="flex flex-nowrap items-center gap-1">
+										<button
+											class="btn btn-ghost btn-xs"
+											onclick={() => viewSightingDetails(sighting)}
+											title="Details anzeigen"
+											aria-label="Details anzeigen"
+										>
+											<Icon icon="lucide:eye" class="h-4 w-4" />
+										</button>
+										<button
+											class="btn btn-ghost btn-xs"
+											onclick={() => sendTestEmail(sighting.id)}
+											title="Interne Benachrichtigung testweise senden"
+											aria-label="Interne Benachrichtigung testweise senden"
+										>
+											<Icon icon="lucide:mail" class="h-4 w-4" />
+										</button>
+										<button
+											class="btn btn-ghost btn-xs"
+											onclick={() => checkSpam(sighting.id)}
+											title="Spam-Check"
+											aria-label="Spam-Check durchführen"
+										>
+											<Icon icon="lucide:shield-alert" class="h-4 w-4" />
+										</button>
+										<button
+											class="btn text-error btn-ghost btn-xs"
+											onclick={() => {
+												sightingToDelete = sighting;
+												showDeleteDialog = true;
+											}}
+											title="Eintrag löschen"
+											aria-label="Eintrag löschen"
+										>
+											<Icon icon="lucide:trash-2" class="h-4 w-4" />
+										</button>
+									</div>
 								</td>
 							{/if}
 						</tr>
