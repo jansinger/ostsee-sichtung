@@ -72,9 +72,11 @@ wären diese Gewässer nicht aufnehmbar (OSM führt sie als Binnenwasser). Seit 
 Umbau auf Wasserumrisse beschränkt sich das auf den ~200-m-Uferstreifen — vorher
 schlugen die Korridore rund **98 km² Festland** zu, und Kappeln, Arnis,
 Travemünde, Priwall, Warnemünde samt Rostocker Hafen lieferten `inBaltic = true`.
-Der gebaute Index (`rbush-index.json`) enthält die alten Korridore noch, bis
-`npm run geo:build` erneut läuft; beim anschließenden Recalc kippen 9 Altzeilen
-mit `ostsee = 1` im ehemaligen Landstreifen auf 0 (gemessen 2026-08-03).
+Index und Flags sind seit dem 2026-08-03 auf diesem Stand (Freigabe der
+Review-Karte, `geo:migrate`: 73 Zeilen — 70× `ostsee` 0→1 u.a. Trave bei
+Lübeck und Dassower See, 3× 1→0 im ehemaligen Korridor-Landstreifen).
+Rollback-Ebenen: `sichtungen_ostsee_backup` (Stand vor diesem Recalc) und
+`sichtungen_ostsee_backup_20260730` (Stand vor der Juli-Bereinigung).
 
 Für die OSM-Küstenlinie ist zwingend die **ungeteilte** Variante
 `land-polygons-complete-4326` zu verwenden. Punkt-in-Polygon-Stichproben gegen
