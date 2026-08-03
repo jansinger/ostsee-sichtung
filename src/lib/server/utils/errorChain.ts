@@ -300,10 +300,11 @@ export function buildErrorLogFields(
 }
 
 /**
- * Ab dieser Länge werden `userAgent` und `referer` gekürzt.
+ * Ab dieser Länge werden `clientIp`, `userAgent` und `referer` gekürzt.
  *
- * Beide Werte wählt der Client frei. Ein Bot mit 8-KB-User-Agent würde sonst pro
- * 404 dieselbe Menge ins Log schreiben — und 404er kommen in Serien.
+ * Alle drei wählt der Client frei — die IP im Fallback-Zweig von `getClientIp`, wo sie
+ * aus einem gesetzten `X-Forwarded-For` stammt. Ein Bot mit 8-KB-User-Agent würde sonst
+ * pro 404 dieselbe Menge ins Log schreiben, und 404er kommen in Serien.
  */
 export const MAX_REQUEST_HEADER_LENGTH = 300;
 
@@ -357,8 +358,12 @@ function requestHeaderField(value: string | null): string | undefined {
  * welcher Seite kam die Anfrage") steckt vollständig in Herkunft und Pfad.
  *
  * `URL.origin` lässt Zugangsdaten der Form `https://benutzer:passwort@host` mit wegfallen.
- * Ein nicht zerlegbarer Wert bleibt erhalten — dass ein Client Unsinn schickt, ist selbst
- * ein Hinweis, und ohne URL-Struktur gibt es auch keinen Query-Teil.
+ *
+ * Der Referer ist laut Spezifikation absolut — ein Client kann trotzdem senden, was er
+ * will. Was `new URL()` nicht zerlegt, behält deshalb seinen Wert als Hinweis (dass da
+ * Unsinn ankommt, ist selbst diagnostisch), verliert aber alles ab dem ersten `?` oder
+ * `#`: Ein relativer `/admin?suche=…` scheitert am Parser und trüge sonst genau den
+ * Suchbegriff ins Log, den diese Funktion fernhalten soll.
  */
 function refererField(value: string | null): string | undefined {
 	const trimmed = value?.trim();
@@ -370,10 +375,10 @@ function refererField(value: string | null): string | undefined {
 			return requestHeaderField(`${url.origin}${url.pathname}`);
 		}
 	} catch {
-		// Kein zerlegbarer Wert — unten unverändert (nur redigiert und gekürzt) übernommen.
+		// Kein zerlegbarer Wert — dann greift der Schnitt an `?`/`#` unten.
 	}
 
-	return requestHeaderField(trimmed);
+	return requestHeaderField(trimmed.split(/[?#]/).at(0) ?? '');
 }
 
 /**

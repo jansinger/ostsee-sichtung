@@ -506,3 +506,31 @@ describe('buildErrorLogEntry — Client-IP', () => {
 		);
 	});
 });
+
+/*
+ * Nachtrag aus dem PR-Review (#727): Der Fallback für nicht zerlegbare Referer liess
+ * Query und Fragment stehen. Ein Client darf senden, was er will — `/admin?suche=…`
+ * scheitert an `new URL()` und wäre samt Suchbegriff im Log gelandet, also genau der
+ * Fall, den refererField verhindern soll.
+ */
+describe('buildErrorLogEntry — Referer ohne Query, Fallback-Pfad', () => {
+	function refererOf(referer: string): unknown {
+		return buildErrorLogEntry(input({ referer })).fields.referer;
+	}
+
+	it('schneidet den Query auch bei einem relativen Referer ab', () => {
+		expect(refererOf('/admin?suche=Mustermann')).toBe('/admin');
+	});
+
+	it('schneidet Fragment und Query bei fremdem Schema ab', () => {
+		expect(refererOf('android-app://de.example/admin?suche=Mustermann#tabelle')).toBe(
+			'android-app://de.example/admin'
+		);
+	});
+
+	it('lässt das Feld weg, wenn nach dem Schnitt nichts übrig bleibt', () => {
+		expect(buildErrorLogEntry(input({ referer: '?suche=Mustermann' })).fields).not.toHaveProperty(
+			'referer'
+		);
+	});
+});
