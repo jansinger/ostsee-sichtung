@@ -86,10 +86,14 @@ SELECT json_build_object(
   -- Die gerundete Box wird HIER berechnet und ist damit die einzige Stelle mit
   -- der Rundungsregel. BALTIC_SEA_BBOX, checkBalticSea.test.ts und
   -- recalc-baltic-flags.sh lesen sie, statt sie nachzurechnen.
-  'boxMinLongitude', floor(ST_XMin(e) / 0.05) * 0.05,
-  'boxMaxLongitude', ceil(ST_XMax(e) / 0.05) * 0.05,
-  'boxMinLatitude',  floor(ST_YMin(e) / 0.05) * 0.05,
-  'boxMaxLatitude',  ceil(ST_YMax(e) / 0.05) * 0.05,
+  -- ::numeric mit round(…, 2): float8-Arithmetik liefert sonst Werte wie
+  -- 53.550000000000004 (floor(53.598/0.05)*0.05), an denen der
+  -- Konstanten-Vergleich in checkBalticSea.test.ts scheitert. Das
+  -- 0,05-Grad-Raster hat exakt zwei Nachkommastellen.
+  'boxMinLongitude', round((floor(ST_XMin(e) / 0.05) * 0.05)::numeric, 2),
+  'boxMaxLongitude', round((ceil(ST_XMax(e) / 0.05) * 0.05)::numeric, 2),
+  'boxMinLatitude',  round((floor(ST_YMin(e) / 0.05) * 0.05)::numeric, 2),
+  'boxMaxLatitude',  round((ceil(ST_YMax(e) / 0.05) * 0.05)::numeric, 2),
   'boxRoundingDegrees', 0.05,
   'bufferRegionMeters', $BUF_REGION, 'bufferShoreMeters', $BUF_SHORE, 'simplifyMeters', $SIMPLIFY,
   'landPolygonsDate', '$LAND_DATE', 'ihoSource', 'MarineRegions IHO Sea Areas v3 (src/tools/iho.json)',
