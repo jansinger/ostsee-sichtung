@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.8.2](https://github.com/jansinger/ostsee-tiere/compare/v2.8.1...v2.8.2) (2026-08-03)
+
+
+### Bug Fixes
+
+* **security:** 404 nicht mehr als Serverfehler loggen, Absender benennen ([#727](https://github.com/jansinger/ostsee-tiere/issues/727)) ([4b7f87c](https://github.com/jansinger/ostsee-tiere/commit/4b7f87ca263a8622d0a4925a3a4d96b5ae51bbba))
+* **ui:** navigation ordnen und die Karte nicht mehr abschneiden ([#726](https://github.com/jansinger/ostsee-tiere/issues/726)) ([b4c8a6f](https://github.com/jansinger/ostsee-tiere/commit/b4c8a6f7419e535318afdedf8dc1281a4f958cc8))
+
+
+### Dependencies
+
+* **deps:** bump @iconify/json from 2.2.506 to 2.2.508 ([#723](https://github.com/jansinger/ostsee-tiere/issues/723)) ([2105928](https://github.com/jansinger/ostsee-tiere/commit/21059286e86959c307b587e513b64fb47483442b))
+* **deps:** bump @scalar/sveltekit from 0.3.11 to 0.3.12 ([#724](https://github.com/jansinger/ostsee-tiere/issues/724)) ([c8f13c7](https://github.com/jansinger/ostsee-tiere/commit/c8f13c785089aa17689026dafad7290bf96135c7))
+* **deps:** bump the dev-tooling group with 2 updates ([#721](https://github.com/jansinger/ostsee-tiere/issues/721)) ([d3cfb52](https://github.com/jansinger/ostsee-tiere/commit/d3cfb523bc2389133aeae93957893ff9bfc63858))
+* **deps:** bump the github-actions group with 2 updates ([#725](https://github.com/jansinger/ostsee-tiere/issues/725)) ([0067e42](https://github.com/jansinger/ostsee-tiere/commit/0067e426c368fa47f91bc74656798462c05443dc))
+* **deps:** bump the production-dependencies group with 2 updates ([#720](https://github.com/jansinger/ostsee-tiere/issues/720)) ([02cbb67](https://github.com/jansinger/ostsee-tiere/commit/02cbb6798fee58f4fe43c1cf785dec3279e6c77d))
+* **deps:** bump the svelte-framework group with 2 updates ([#722](https://github.com/jansinger/ostsee-tiere/issues/722)) ([373aeef](https://github.com/jansinger/ostsee-tiere/commit/373aeef5bba52ae5bd60d9ae6f172542726e7ba2))
+
 ## [2.8.1](https://github.com/jansinger/ostsee-tiere/compare/v2.8.0...v2.8.1) (2026-08-02)
 
 
