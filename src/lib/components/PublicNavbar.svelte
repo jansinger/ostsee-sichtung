@@ -3,6 +3,7 @@
 	import ConnectionBadge from '$lib/components/ConnectionBadge.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 
+	import { ADMIN_BEREICHE, istAdminPfad } from '$lib/config/adminNav';
 	import type { PublicUser } from '$lib/types/User';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 	import OstseeTiereLogo from './OstseeTiereLogo.svelte';
@@ -13,9 +14,9 @@
 
 	const currentPath = $derived(page.url.pathname);
 
-	/* Detailseiten (/admin/123) gehören zur Sichtungsverwaltung, nicht zu
-	   Statistiken oder Einstellungen — deshalb kein reines `startsWith`. */
-	const istAdminBereich = $derived(currentPath === '/admin' || currentPath.startsWith('/admin/'));
+	/* Die Gruppe fasst den ganzen Verwaltungs-Teilbaum zusammen — welcher der
+	   drei Bereiche darin aktiv ist, zeigt erst die Unternavigation. */
+	const istAdminBereich = $derived(istAdminPfad(currentPath));
 
 	let mobileMenuElement = $state<HTMLDetailsElement | null>(null);
 	let adminMenuElement = $state<HTMLDetailsElement | null>(null);
@@ -50,22 +51,13 @@
 {/snippet}
 
 {#snippet adminItems()}
-	<li>
-		<a href="/admin" class={currentPath === '/admin' ? 'active font-medium' : ''}> Sichtungen </a>
-	</li>
-	<li>
-		<a
-			href="/admin/statistics"
-			class={currentPath === '/admin/statistics' ? 'active font-medium' : ''}
-		>
-			Statistiken
-		</a>
-	</li>
-	<li>
-		<a href="/admin/settings" class={currentPath === '/admin/settings' ? 'active font-medium' : ''}>
-			Einstellungen
-		</a>
-	</li>
+	{#each ADMIN_BEREICHE as bereich (bereich.href)}
+		<li>
+			<a href={bereich.href} class={currentPath === bereich.href ? 'active font-medium' : ''}>
+				{bereich.label}
+			</a>
+		</li>
+	{/each}
 {/snippet}
 
 {#if isNotIFrame}
@@ -112,7 +104,13 @@
 										<summary class={istAdminBereich ? 'active font-medium' : ''}>
 											Verwaltung
 										</summary>
-										<ul class="rounded-box bg-base-100 z-50 w-52 p-2 shadow">
+										<!-- Kein eigenes `z-*`: Der Header trägt bereits einen
+										     z-index und bildet damit einen Stacking-Context —
+										     alles darin liegt über dem Seiteninhalt. Freie
+										     `z-*`-Utilities verbietet design-system.md, und ein
+										     Token wäre hier eine Zahl ohne Wirkung. Schatten aus
+										     dem Token, nicht aus DaisyUIs `shadow`. -->
+										<ul class="rounded-box bg-base-100 shadow-floating w-52 p-2">
 											{@render adminItems()}
 										</ul>
 									</details>
@@ -121,7 +119,7 @@
 						</ul>
 
 						<!-- User Menu - Desktop -->
-						<UserMenu user={user || null} position="right" />
+						<UserMenu {user} />
 					</div>
 
 					<!-- Mobile menu -->
@@ -147,7 +145,7 @@
 
 							<!-- User Menu - Mobile -->
 							<div class="divider my-2"></div>
-							<UserMenuMobile user={user || null} />
+							<UserMenuMobile {user} />
 						</ul>
 					</details>
 				</div>

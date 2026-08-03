@@ -213,9 +213,16 @@ body {
 }
 
 /* Im eingebetteten Zustand trägt die Elternseite die Marke — die App darf
-   keine zweite Navigation und keine zweite Wortmarke zeigen. */
+   keine zweite Navigation und keine zweite Wortmarke zeigen.
+
+   Das Element, nicht die Klasse: `.footer` sitzt seit der Footer-Neuordnung
+   (2026-08-03) am inneren Raster-`div`, nicht mehr am `<footer>`. Ein Selektor
+   auf die Klasse ließe Fläche, Abstand und die Copyright-Zeile stehen. Heute
+   deckt `{#if isNotIFrame}` den Fall ohnehin ab — diese Regel ist das
+   Sicherheitsnetz für die serverseitige Variante über `data-embed`, die der
+   Kommentar oben offenhält, und muss deshalb selbst tragfähig bleiben. */
 .iframe-mode .navbar,
-.iframe-mode .footer {
+.iframe-mode footer {
 	display: none;
 }
 
@@ -271,11 +278,26 @@ h6 {
    Ungelayert, gewinnt damit gegen DaisyUIs @layer utilities — sonst käme die
    Regel gegen `.tab:is(.tabs > .tab)` (0,2,0) nicht an.
 
-   `:not(.tab-active)` ist nicht kosmetisch: Ohne die Einschränkung schlägt der
-   Override auch DaisyUIs Aktiv-Regel, und der aktive Reiter verliert seinen
-   Farbunterschied — er bliebe nur noch am Unterstrich erkennbar.
+   Die Ausschlussliste ist nicht kosmetisch, sie spiegelt DaisyUIs eigene:
+   - `.tab-active` und die vier ARIA-/Checked-Varianten sind dort gleichwertig
+     „aktiv". Ohne sie schlägt der Override auch die Aktiv-Regel, und der
+     aktive Reiter verliert seinen Farbunterschied — er bliebe nur noch am
+     Unterstrich erkennbar.
+   - `:hover` nimmt DaisyUI ausdrücklich von der Abdunklung aus und setzt
+     daneben `color: var(--color-base-content)`. Der ungelayerte Override
+     gewinnt gegen beides; `tabs-border` animiert nur `--tab-border-color`,
+     das für inaktive Reiter konstant base-300 ist. Übrig bliebe gar keine
+     Hover-Rückmeldung.
    Abgesichert in e2e/navbar-structure.spec.ts. */
-.tabs > .tab:not(.tab-active) {
+.tabs
+	> .tab:not(
+		.tab-active,
+		:hover,
+		[aria-current='page'],
+		[aria-selected='true'],
+		:checked,
+		label:has(:checked)
+	) {
 	color: color-mix(in oklab, var(--color-base-content) 70%, transparent);
 }
 
@@ -317,6 +339,14 @@ summary.btn {
 
 .btn-circle:not(.target-exempt) {
 	min-width: var(--target-min);
+}
+
+/* Reiter: DaisyUI setzt `height: calc(var(--size-field) * 10)` — eine feste
+   Höhe von 40px, die Inhalt nicht aufziehen kann; `min-height` klemmt sie
+   korrekt hoch. Ohne diese Regel unterschreitet jeder `tabs`-Eintrag die
+   44px, im Feldmodus um 16px. Abgesichert in e2e/navbar-structure.spec.ts. */
+.tabs > .tab:not(.target-exempt) {
+	min-height: var(--target-min);
 }
 
 /* Checkbox, Radio und Toggle über --size statt über min-height.

@@ -5,14 +5,12 @@
 	/* `isAdmin` ist hier bewusst weggefallen: Das Menü führte einen Eintrag
 	   „Admin-Bereich" auf /admin, den die TopBar seit 2026-08-03 als Gruppe
 	   „Verwaltung → Sichtungen" trägt. Zwei Wege zum selben Ziel, einer davon
-	   hinter dem Profilbild versteckt — das Profilmenü ist für das Konto da. */
-	let {
-		user,
-		position = 'right'
-	}: {
-		user: PublicUser | null;
-		position?: 'left' | 'right';
-	} = $props();
+	   hinter dem Profilbild versteckt — das Profilmenü ist für das Konto da.
+
+	   `position` ebenso: Der Default war 'right', die einzige Aufrufstelle
+	   setzte genau das noch einmal explizit. Eine Wahlmöglichkeit, die nie
+	   jemand gewählt hat. */
+	let { user }: { user: PublicUser | null } = $props();
 
 	let detailsElement = $state<HTMLDetailsElement | null>(null);
 
@@ -47,10 +45,7 @@
 </script>
 
 {#if user}
-	<details
-		bind:this={detailsElement}
-		class="dropdown {position === 'right' ? 'dropdown-end' : 'dropdown-start'}"
-	>
+	<details bind:this={detailsElement} class="dropdown dropdown-end">
 		<!-- User Picture Button -->
 		<summary class="btn btn-ghost btn-circle" aria-label="Benutzer-Menü">
 			{#if user.picture}

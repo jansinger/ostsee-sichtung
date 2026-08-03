@@ -54,6 +54,16 @@ test.describe('TopBar — Struktur und Umbruchfreiheit', () => {
 				await expect(page.locator('header ul.menu-horizontal')).toBeVisible();
 
 				expect(await menueZeilen(page), `Menü bricht bei ${breite}px um`).toBe(1);
+
+				/* `flex-nowrap` verhindert den Umbruch — der Ersatz-Fehlerfall wäre
+				   ein Dokument breiter als das Fenster, also die seitlich
+				   verschiebbare Seite, gegen die `footer-layout.spec.ts` schützt.
+				   Dieser Test ist der einzige mit Admin-Menü und muss sie deshalb
+				   hier mitprüfen. */
+				const ueberlauf = await page.evaluate(
+					() => document.documentElement.scrollWidth - document.documentElement.clientWidth
+				);
+				expect(ueberlauf, `horizontaler Überlauf bei ${breite}px`).toBeLessThanOrEqual(0);
 			}
 		} finally {
 			await context.close();
@@ -144,6 +154,37 @@ test.describe('TopBar — Struktur und Umbruchfreiheit', () => {
 				'aria-current',
 				'page'
 			);
+		} finally {
+			await context.close();
+		}
+	});
+
+	/**
+	 * DaisyUI setzt `.tab { height: calc(var(--size-field) * 10) }` — eine feste
+	 * `height` von 40px, die Inhalt nicht aufziehen kann. Der zentrale
+	 * Touch-Target-Block in `app.css` zielte auf `.btn` und die Control-Labels
+	 * und ließ `.tab` aus; der Reiter unterschritt damit die 44px aus
+	 * `design-system.md`, im Feldmodus um 16px.
+	 */
+	test('die Reiter der Unternavigation erfüllen das 44px-Ziel', async ({ browser, baseURL }) => {
+		if (!baseURL) throw new Error('baseURL fehlt — playwright.config.ts setzt sie normalerweise');
+
+		const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+		await seedAdminSession(context, baseURL);
+		const page = await context.newPage();
+
+		try {
+			await page.goto('/admin/statistics');
+			const reiter = page.getByRole('navigation', { name: 'Verwaltung' }).getByRole('link');
+			await expect(reiter.first()).toBeVisible();
+
+			for (const einzeln of await reiter.all()) {
+				const kasten = await einzeln.boundingBox();
+				expect(
+					kasten?.height ?? 0,
+					`Reiter „${await einzeln.innerText()}" ist nur ${Math.round(kasten?.height ?? 0)}px hoch`
+				).toBeGreaterThanOrEqual(44);
+			}
 		} finally {
 			await context.close();
 		}

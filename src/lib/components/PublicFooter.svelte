@@ -21,13 +21,19 @@
 			äußere Spaltenanordnung aber unberührt — die kommt aus `footer-center`
 			selbst. Abgesichert in `e2e/footer-layout.spec.ts`.
 		-->
+		<!--
+			`aria-labelledby` statt `aria-label`: Der Gruppenname steht ohnehin als
+			sichtbare Überschrift da, und zwei Quellen für denselben String laufen
+			auseinander. Der Accessible Name bleibt identisch — die E2E-Tests
+			greifen die Gruppen weiterhin über ihn ab.
+		-->
 		<div class="footer sm:footer-horizontal container mx-auto p-6 sm:p-8">
-			<nav aria-label="Navigation">
-				<h2 class="footer-title">Navigation</h2>
-				<a href="/" class="link link-hover py-1.5">Meldung</a>
-				<a href="/map" class="link link-hover py-1.5">Sichtungskarte</a>
-				<a href="/bestimmungshilfe" class="link link-hover py-1.5">Bestimmungshilfe</a>
-				<a href="/about" class="link link-hover py-1.5">Über uns</a>
+			<nav aria-labelledby="footer-navigation">
+				<h2 id="footer-navigation" class="footer-title">Navigation</h2>
+				<a href="/" class="link link-hover py-3">Meldung</a>
+				<a href="/map" class="link link-hover py-3">Sichtungskarte</a>
+				<a href="/bestimmungshilfe" class="link link-hover py-3">Bestimmungshilfe</a>
+				<a href="/about" class="link link-hover py-3">Über uns</a>
 			</nav>
 
 			<!--
@@ -46,30 +52,30 @@
 				Seit 2026-08-03 stehen sie in einer eigenen Gruppe statt auf Platz 5 und
 				6 einer Linkzeile — auffindbar ist Teil der Pflicht.
 			-->
-			<nav aria-label="Rechtliches">
-				<h2 class="footer-title">Rechtliches</h2>
+			<nav aria-labelledby="footer-rechtliches">
+				<h2 id="footer-rechtliches" class="footer-title">Rechtliches</h2>
 				<a
 					href="https://www.deutsches-meeresmuseum.de/impressum"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="link link-hover py-1.5">Impressum</a
+					class="link link-hover py-3">Impressum</a
 				>
 				<a
 					href="https://www.deutsches-meeresmuseum.de/datenschutz"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="link link-hover py-1.5">Datenschutz</a
+					class="link link-hover py-3">Datenschutz</a
 				>
 			</nav>
 
-			<nav aria-label="Projekt">
-				<h2 class="footer-title">Projekt</h2>
-				<a href="/docs" class="link link-hover py-1.5">Dokumentation</a>
+			<nav aria-labelledby="footer-projekt">
+				<h2 id="footer-projekt" class="footer-title">Projekt</h2>
+				<a href="/docs" class="link link-hover py-3">Dokumentation</a>
 				<a
 					href="https://github.com/jansinger/ostsee-tiere"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="link link-hover inline-flex items-center gap-2 py-1.5"
+					class="link link-hover inline-flex items-center gap-2 py-3"
 				>
 					<Icon icon="lucide:github" width="16" height="16" aria-hidden="true" />
 					GitHub
@@ -78,7 +84,7 @@
 					href="https://deutsches-meeresmuseum.de"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="link link-hover py-1.5">Deutsches Meeresmuseum</a
+					class="link link-hover py-3">Deutsches Meeresmuseum</a
 				>
 			</nav>
 		</div>

@@ -1,29 +1,16 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { ADMIN_BEREICHE, aktiverAdminBereich } from '$lib/config/adminNav';
 	import AdminFooter from '$lib/components/admin/AdminFooter.svelte';
 	import type { LayoutData } from './$types';
 
 	let { children, data }: { children: import('svelte').Snippet; data: LayoutData } = $props();
 
-	const pfad = $derived(page.url.pathname);
-
-	/* „Sichtungen" deckt neben der Liste auch Detail-, Bearbeiten- und
-	   Referenz-Seiten ab — sie sind Teil derselben Aufgabe. Deshalb per
-	   Ausschluss bestimmt und nicht über `pfad === '/admin'`: sonst hätte
-	   /admin/123 gar keinen aktiven Eintrag, und der Reiter würde beim
-	   Öffnen einer Sichtung ohne erkennbaren Grund seine Markierung verlieren.
-	   /admin/docs bleibt bewusst außen vor — es ist keiner der drei Bereiche. */
-	const istStatistiken = $derived(pfad.startsWith('/admin/statistics'));
-	const istEinstellungen = $derived(pfad.startsWith('/admin/settings'));
-	const istSichtungen = $derived(
-		!istStatistiken && !istEinstellungen && !pfad.startsWith('/admin/docs')
-	);
-
-	const bereiche = $derived([
-		{ href: '/admin', label: 'Sichtungen', aktiv: istSichtungen },
-		{ href: '/admin/statistics', label: 'Statistiken', aktiv: istStatistiken },
-		{ href: '/admin/settings', label: 'Einstellungen', aktiv: istEinstellungen }
-	]);
+	/* Liste und Zuordnung liegen in `$lib/config/adminNav` — dieselbe Quelle,
+	   aus der die Gruppe „Verwaltung" in der TopBar entsteht. Zwei Listen von
+	   Hand zu pflegen hieße, dass eine neue Sektion an einer der beiden
+	   Stellen fehlt, ohne dass es auffällt. */
+	const aktiv = $derived(aktiverAdminBereich(page.url.pathname));
 </script>
 
 <!-- Kein eigenes <main>: Root-Layout stellt bereits <main id="main-content"> bereit -->
@@ -44,11 +31,11 @@
 			absichert. Der Header misst 66px, nicht 64px.
 		-->
 		<nav aria-label="Verwaltung" class="border-base-300 bg-base-100 tabs tabs-border border-b px-4">
-			{#each bereiche as bereich (bereich.href)}
+			{#each ADMIN_BEREICHE as bereich (bereich.href)}
 				<a
 					href={bereich.href}
-					class="tab {bereich.aktiv ? 'tab-active font-medium' : ''}"
-					aria-current={bereich.aktiv ? 'page' : undefined}
+					class="tab {bereich.href === aktiv ? 'tab-active font-medium' : ''}"
+					aria-current={bereich.href === aktiv ? 'page' : undefined}
 				>
 					{bereich.label}
 				</a>

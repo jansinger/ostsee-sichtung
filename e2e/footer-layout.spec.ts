@@ -64,6 +64,29 @@ test.describe('Footer — Anordnung', () => {
 		}
 	});
 
+	/**
+	 * GitHub und „Deutsches Meeresmuseum" waren `btn btn-ghost btn-xs` und
+	 * bekamen ihre 44px über den Touch-Target-Block in `app.css` — der greift
+	 * auf `.btn`, nicht auf `.link`. Beim Umbau auf einheitliche Textlinks wäre
+	 * das still verlorengegangen; die übrigen Footer-Links hatten die Größe
+	 * ohnehin nie.
+	 */
+	test('Footer-Links erfüllen das 44px-Ziel', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.goto('/');
+
+		const links = page.locator('footer nav a');
+		await expect(links.first()).toBeAttached();
+
+		for (const link of await links.all()) {
+			const kasten = await link.boundingBox();
+			expect(
+				kasten?.height ?? 0,
+				`„${await link.innerText()}" ist nur ${Math.round(kasten?.height ?? 0)}px hoch`
+			).toBeGreaterThanOrEqual(44);
+		}
+	});
+
 	test('die Pflichtangaben stehen in einer eigenen, benannten Gruppe', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 900 });
 		await page.goto('/');
