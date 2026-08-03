@@ -4,6 +4,8 @@ import { DistributionEnum } from '$lib/report/formOptions/distribution';
 import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import { SpeciesEnum } from '$lib/report/formOptions/species';
+import { mapLegacyToCurrentSchema } from '$lib/legacy-api/field-mapping';
+import type { LegacySightingRequest } from '$lib/legacy-api/types';
 import type { SightingFormData } from '$lib/report/types';
 import type { SightingFormValues } from '$lib/types/Form';
 import { TEST_TIME_ZONES, withTimeZone } from '$lib/server/datetime/withTimeZone.testutil';
@@ -914,6 +916,84 @@ describe('mapFormToSighting', () => {
 
 			expect(result.distribution).toBe(DistributionEnum.SCHOOLS);
 			expect(result.behavior).toBe(AnimalBehaviorEnum.VARYING_COURSE);
+		});
+	});
+
+	describe('Windstärke — die Null ist Windstille', () => {
+		/**
+		 * `windstaerke` ist die Ausnahme unter den drei Umweltfeldern: Bei
+		 * `seegang` und `sichtweite` heißt `0` laut `antworten.json` tatsächlich
+		 * "Keine Angabe", bei der Windstärke ist es die Beaufort-Stufe
+		 * "Windstille" — ein gemessener Wert.
+		 *
+		 * Ein `formData.windForce ? … : null` machte daraus `NULL` und damit im
+		 * Admin und im CSV-Export "Nicht angegeben". Aufgefallen am 2026-08-03
+		 * an einer echten App-Meldung aus dem Legacy-Posteingang; im Bestand
+		 * gibt es 7 Zeilen mit `'0'`, das Altsystem konnte es also.
+		 */
+		it('speichert eine gemeldete Windstille als "0" statt als NULL', () => {
+			const formData = createMinimalFormData();
+			formData.windForce = 0;
+
+			expect(mapFormToSighting(formData).windForce).toBe('0');
+		});
+
+		it('speichert die Windstille auch als String, wie sie aus Formulardaten kommt', () => {
+			const formData = createMinimalFormData();
+			formData.windForce = '0' as unknown as number;
+
+			expect(mapFormToSighting(formData).windForce).toBe('0');
+		});
+
+		it('schreibt NULL, wenn keine Windstärke übermittelt wurde', () => {
+			for (const value of [undefined, null, '', '   ']) {
+				const formData = createMinimalFormData();
+				formData.windForce = value as unknown as number;
+
+				expect(mapFormToSighting(formData).windForce).toBeNull();
+			}
+		});
+
+		it('reicht übrige Windstärken unverändert durch, als Zahl wie als String', () => {
+			const numeric = createMinimalFormData();
+			numeric.windForce = 5;
+			expect(mapFormToSighting(numeric).windForce).toBe('5');
+
+			const asString = createMinimalFormData();
+			asString.windForce = '5' as unknown as number;
+			expect(mapFormToSighting(asString).windForce).toBe('5');
+		});
+
+		/**
+		 * Die Spalte ist nur zwei Zeichen breit — ein durchgereichtes `NaN`
+		 * würde als `'NaN'` gar nicht hineinpassen und den Insert sprengen.
+		 */
+		it('schreibt NULL statt "NaN", wenn die Angabe keine Zahl ist', () => {
+			const formData = createMinimalFormData();
+			formData.windForce = NaN;
+
+			expect(mapFormToSighting(formData).windForce).toBeNull();
+		});
+
+		/**
+		 * Der Weg, auf dem der Verlust aufgefallen ist: `parseWindForce` in
+		 * `field-mapping.ts` reicht die 0 ausdrücklich durch — eine Ebene
+		 * tiefer wurde sie trotzdem verworfen. Beide Hälften einzeln grün, die
+		 * Kette rot; deshalb steht hier ein Test über beide.
+		 */
+		it('hält die Windstille über die ganze Legacy-Kette durch', () => {
+			const legacy = mapLegacyToCurrentSchema({
+				sichtungsdatum: '2026-07-30 15:33',
+				gps_breite: '54.359396',
+				gps_laenge: '10.618121',
+				anzahl_gesamt: 2,
+				windstaerke: 0,
+				windrichtung: 'N',
+				email: 'melder@example.com'
+			} as unknown as LegacySightingRequest);
+
+			expect(legacy.windForce).toBe(0);
+			expect(mapFormToSighting(legacy as unknown as SightingFormValues).windForce).toBe('0');
 		});
 	});
 
