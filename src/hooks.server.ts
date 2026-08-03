@@ -8,7 +8,8 @@ import { maintenanceMode } from '$lib/server/middleware/maintenanceMode';
 import { createSecurityHeadersHandler } from '$lib/server/middleware/securityHeaders';
 import { warnIfBodySizeLimitTooLow } from '$lib/server/startup/bodySizeLimit';
 import { formatStartupBanner, getBuildInfo } from '$lib/server/startup/versionInfo';
-import { buildErrorLogFields } from '$lib/server/utils/errorChain';
+import { buildErrorLogEntry } from '$lib/server/utils/errorChain';
+import { getClientIp } from '$lib/server/utils/getClientIp';
 import { ServerConfigService } from '$lib/services/configService';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
@@ -99,26 +100,34 @@ export const handle: Handle = sequence(
  * (Verbindungsabbruch, `too many connections`, Timeout) steht ausschließlich in
  * `error.cause`. Ohne dieses Feld ist ein Ausfall aus dem Log nicht rekonstruierbar.
  *
- * Alle drei Fehler-Felder kommen aus `buildErrorLogFields` — sie hier von Hand aus
- * `error.message`/`error.stack` zusammenzusetzen hiesse, die Redigierung an genau den
- * Feldern vorbeizuführen, die Drizzles Parameterblock tragen. Die Logik steht in
+ * Der gesamte Eintrag — Stufe, Meldung und Felder — kommt aus `buildErrorLogEntry`.
+ * Ihn hier von Hand zusammenzusetzen hiesse, die Redigierung an genau den Feldern
+ * vorbeizuführen, die Drizzles Parameterblock tragen. Die Logik steht in
  * `errorChain.ts`, damit sie testbar ist; `hooks.server.ts` liegt ausserhalb von
  * `src/lib/**` und wird von den Server-Tests nicht erfasst.
+ *
+ * Die Client-Antwort ist bewusst für jeden Status dieselbe generische Meldung: Was der
+ * Nutzer sieht, ist die Fehlerseite; die Unterscheidung 404/500 gehört ins Log, nicht
+ * in eine zweite Textvariante.
  */
 export const handleError: HandleServerError = ({ error, event, status, message }) => {
 	const errorId = randomUUID();
 
-	logger.error(
-		{
-			event: 'unhandled_error',
-			errorId,
-			status,
-			message,
-			pathname: event.url.pathname,
-			...buildErrorLogFields(error)
-		},
-		'Unerwarteter Serverfehler'
-	);
+	const entry = buildErrorLogEntry({
+		error,
+		errorId,
+		status,
+		message,
+		pathname: event.url.pathname,
+		method: event.request.method,
+		// getClientAddress() wirft, wenn ADDRESS_HEADER gesetzt, der Header aber nicht da ist —
+		// im Error-Hook wäre das ein Fehler beim Loggen eines Fehlers. getClientIp fängt das ab.
+		clientIp: getClientIp(event.getClientAddress, event.request),
+		userAgent: event.request.headers.get('user-agent'),
+		referer: event.request.headers.get('referer')
+	});
+
+	logger[entry.level](entry.fields, entry.msg);
 
 	return {
 		message: 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.',

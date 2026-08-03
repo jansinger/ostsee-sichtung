@@ -3,10 +3,13 @@ import {
 	MAX_AGGREGATE_ERRORS,
 	MAX_CAUSE_DEPTH,
 	MAX_MESSAGE_LENGTH,
+	MAX_REQUEST_HEADER_LENGTH,
+	buildErrorLogEntry,
 	buildErrorLogFields,
 	describeErrorCauses,
 	redactSecrets,
 	serializeErrorChain,
+	type ErrorLogEntryInput,
 	type SerializedError
 } from '$lib/server/utils/errorChain';
 
@@ -335,5 +338,171 @@ describe('buildErrorLogFields', () => {
 
 		expect(fields.stack).toBeUndefined();
 		expect(fields.causes).toBeUndefined();
+	});
+});
+
+/**
+ * Grundfall: ein 500er. Von hier weichen die 4xx-Tests jeweils in genau einem Feld ab.
+ */
+function input(overrides: Partial<ErrorLogEntryInput> = {}): ErrorLogEntryInput {
+	return {
+		error: new Error('boom'),
+		errorId: 'test-id',
+		status: 500,
+		message: 'Internal Error',
+		pathname: '/admin',
+		method: 'GET',
+		clientIp: '203.0.113.7',
+		userAgent: 'Mozilla/5.0',
+		referer: 'https://ostsee-tiere.de/admin',
+		...overrides
+	};
+}
+
+describe('buildErrorLogEntry', () => {
+	/* Der Anlass: SvelteKit ruft handleError auch für nicht gematchte Routen auf
+	   (respond.js, state.depth === 0). Jeder Bot-Scan auf /api/login landete deshalb
+	   als level 50 samt Stacktrace im Log und war von einem echten Ausfall nicht zu
+	   unterscheiden. */
+	it('stuft einen 404 zur Warnung herab und lässt den Stack weg', () => {
+		const entry = buildErrorLogEntry(
+			input({ status: 404, message: 'Not Found', pathname: '/api/login' })
+		);
+
+		expect(entry.level).toBe('warn');
+		expect(entry.fields.event).toBe('client_error');
+		expect(entry.msg).toBe('Nicht gefunden');
+		expect(entry.fields.stack).toBeUndefined();
+		expect(entry.fields.causes).toBeUndefined();
+	});
+
+	it('behält für 5xx Fehlerstufe, Stack und Ursachenkette', () => {
+		const entry = buildErrorLogEntry(
+			input({
+				error: new Error('Failed query: select 1', { cause: new Error('CONNECTION_ENDED') })
+			})
+		);
+
+		expect(entry.level).toBe('error');
+		expect(entry.fields.event).toBe('unhandled_error');
+		expect(entry.msg).toBe('Unerwarteter Serverfehler');
+		expect(entry.fields.stack).toBeDefined();
+		expect(entry.fields.causes).toEqual([{ name: 'Error', message: 'CONNECTION_ENDED' }]);
+	});
+
+	it('unterscheidet andere 4xx vom 404', () => {
+		const entry = buildErrorLogEntry(input({ status: 403, message: 'Forbidden' }));
+
+		expect(entry.level).toBe('warn');
+		expect(entry.msg).toBe('Anfrage nicht beantwortet');
+	});
+
+	/* Ohne diese Felder war am 2026-08-03 nicht zu klären, wer /api/login anfragt. */
+	it('nimmt Methode, Client-IP, User-Agent und Referer ins Log', () => {
+		const entry = buildErrorLogEntry(input({ status: 404 }));
+
+		expect(entry.fields).toMatchObject({
+			method: 'GET',
+			clientIp: '203.0.113.7',
+			userAgent: 'Mozilla/5.0',
+			referer: 'https://ostsee-tiere.de/admin'
+		});
+	});
+
+	it('übernimmt die bisherigen Felder unverändert', () => {
+		const entry = buildErrorLogEntry(input({ status: 404, message: 'Not Found' }));
+
+		expect(entry.fields).toMatchObject({
+			errorId: 'test-id',
+			status: 404,
+			message: 'Not Found',
+			pathname: '/admin'
+		});
+	});
+
+	/* `clientIp: null` im Log wäre eine Aussage über den Absender, die nicht getroffen
+	   wurde — getClientIp liefert in Dev ohne X-Forwarded-For legitim null. */
+	it('lässt nicht ermittelbare Felder weg, statt null zu loggen', () => {
+		const entry = buildErrorLogEntry(input({ clientIp: null, userAgent: null, referer: null }));
+
+		expect(entry.fields).not.toHaveProperty('clientIp');
+		expect(entry.fields).not.toHaveProperty('userAgent');
+		expect(entry.fields).not.toHaveProperty('referer');
+	});
+
+	it('behandelt leere Header wie fehlende', () => {
+		const entry = buildErrorLogEntry(input({ userAgent: '   ', referer: '' }));
+
+		expect(entry.fields).not.toHaveProperty('userAgent');
+		expect(entry.fields).not.toHaveProperty('referer');
+	});
+
+	/* User-Agent und Referer sind vom Client frei wählbar und unbegrenzt lang. */
+	it('kürzt überlange Header', () => {
+		const entry = buildErrorLogEntry(
+			input({ userAgent: 'x'.repeat(MAX_REQUEST_HEADER_LENGTH + 50) })
+		);
+
+		expect(String(entry.fields.userAgent).length).toBeLessThanOrEqual(
+			MAX_REQUEST_HEADER_LENGTH + 12
+		);
+		expect(entry.fields.userAgent).toContain('[gekürzt]');
+	});
+
+	it('redigiert Zugangsdaten im Referer', () => {
+		const entry = buildErrorLogEntry(
+			input({ referer: 'https://admin:geheim@ostsee-tiere.de/x?token=abc123' })
+		);
+
+		expect(entry.fields.referer).not.toContain('geheim');
+		expect(entry.fields.referer).not.toContain('abc123');
+	});
+});
+
+/*
+ * Nachtrag aus dem Review: `redactSecrets` greift bei Query-Parametern nur, wenn der
+ * Schlüssel nach einem Geheimnis aussieht — `?code=`, `?state=`, `?email=`, `?search=`
+ * blieben stehen. `Referrer-Policy: strict-origin-when-cross-origin` schneidet den Query
+ * nur bei fremder Herkunft ab; ein Same-Origin-Referer aus einer gefilterten Admin-Liste
+ * hätte den Suchbegriff — womöglich einen Personennamen — ins Log getragen.
+ */
+describe('buildErrorLogEntry — Referer ohne Query', () => {
+	function refererOf(referer: string): unknown {
+		return buildErrorLogEntry(input({ referer })).fields.referer;
+	}
+
+	it('reduziert den Referer auf Herkunft und Pfad', () => {
+		expect(refererOf('https://ostsee-tiere.de/admin?suche=Mustermann&seite=2')).toBe(
+			'https://ostsee-tiere.de/admin'
+		);
+	});
+
+	it('entfernt auch Fragment und Zugangsdaten', () => {
+		expect(refererOf('https://admin:geheim@ostsee-tiere.de/admin#tabelle')).toBe(
+			'https://ostsee-tiere.de/admin'
+		);
+	});
+
+	it('behält einen nicht zerlegbaren Referer als Hinweis, statt ihn zu verwerfen', () => {
+		expect(refererOf('kein-url-wert')).toBe('kein-url-wert');
+	});
+});
+
+/*
+ * Ebenfalls aus dem Review: Im Fallback-Zweig von getClientIp ist die IP das erste
+ * Segment eines client-gesetzten X-Forwarded-For — also dieselbe Art Eingabe wie die
+ * beiden Header und ohne Grund von deren Begrenzung ausgenommen.
+ */
+describe('buildErrorLogEntry — Client-IP', () => {
+	it('kürzt eine überlange Client-IP', () => {
+		const entry = buildErrorLogEntry(input({ clientIp: 'x'.repeat(MAX_REQUEST_HEADER_LENGTH + 50) }));
+
+		expect(entry.fields.clientIp).toContain('[gekürzt]');
+	});
+
+	it('lässt eine echte Adresse unverändert', () => {
+		expect(buildErrorLogEntry(input({ clientIp: '2001:db8::1' })).fields.clientIp).toBe(
+			'2001:db8::1'
+		);
 	});
 });
