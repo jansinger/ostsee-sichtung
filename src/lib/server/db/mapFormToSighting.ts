@@ -277,10 +277,14 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 		// dort ausdrücklich durchreicht.
 		//
 		// `isProvided` und nicht bloß eine Leerprüfung: Ein `NaN` würde sonst
-		// als `'NaN'` in die zwei Zeichen breite Spalte laufen. Andere
-		// Ausreißer fängt es nicht ab — `999` oder `3.5` kämen weiterhin
-		// durch, weil weder `yup-validation.ts` noch `sightingSchema` den
-		// Wertebereich der Spalte prüfen. Das war vorher genauso.
+		// als `'NaN'` in die zwei Zeichen breite Spalte laufen.
+		//
+		// Gegen zu lange Werte schützt es nicht, und die vorgelagerte
+		// Validierung tut es nur halb: `sightingSchema` begrenzt `windForce`
+		// auf 0 bis 12, aber ohne `.integer()` — ein `3.5` käme als `'3.5'`
+		// durch. Die Legacy-API prüft `windstaerke` überhaupt nicht auf einen
+		// Bereich (`yup.string().nullable().optional()`), dort passiert auch
+		// ein `999`. Beides war vorher genauso.
 		windForce: isProvided(formData.windForce) ? String(formData.windForce) : null,
 		// Windrichtung (N, NW, W, etc.)
 		windDirection: formData.windDirection,
