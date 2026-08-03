@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.9.0](https://github.com/jansinger/ostsee-tiere/compare/v2.8.2...v2.9.0) (2026-08-03)
+
+
+### Features
+
+* **map:** rebuild baltic geometry with water-outline inclusion mask ([#731](https://github.com/jansinger/ostsee-tiere/issues/731)) ([458ef85](https://github.com/jansinger/ostsee-tiere/commit/458ef854eed2557565168da91b5fed5bf5f89927))
+
+
+### Bug Fixes
+
+* **db:** keep reported wind force 0 instead of storing NULL ([#729](https://github.com/jansinger/ostsee-tiere/issues/729)) ([ab8daca](https://github.com/jansinger/ostsee-tiere/commit/ab8dacad92e073d1b6c63d0bba04be477983bee7))
+
 ## [2.8.2](https://github.com/jansinger/ostsee-tiere/compare/v2.8.1...v2.8.2) (2026-08-03)
 
 
