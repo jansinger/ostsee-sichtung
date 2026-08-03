@@ -351,23 +351,36 @@ Kritische Admin-Aktionen werden in der `audit_logs` PostgreSQL-Tabelle gespeiche
 
 **Events in der DB:**
 
-| Action               | Wann                                                    | Details                       |
-| -------------------- | ------------------------------------------------------- | ----------------------------- |
-| `sighting.approve`   | Admin genehmigt Sichtung                                | `{ previousStatus }`          |
-| `sighting.reject`    | Admin lehnt Sichtung ab                                 | `{ previousStatus }`          |
-| `sighting.edit`      | Admin bearbeitet Sichtung                               | `{ changedFields: string[] }` |
-| `sighting.delete`    | Admin löscht Sichtung                                   | —                             |
-| `file.delete`        | Admin löscht Datei                                      | —                             |
-| `config.update`      | Einstellung geändert                                    | `{ key, category }`           |
-| `auth.login_success` | Erfolgreicher Admin-Login                               | —                             |
-| `auth.login_failure` | Fehlgeschlagener Login                                  | status: 'failure'             |
-| `auth.logout`        | Benutzer meldet sich ab (Session wird widerrufen)       | —                             |
-| `auth.session_revoked` | Sessions eines Benutzers gezielt widerrufen           | `{ sub }`                     |
-| `export.download`    | Admin startet Daten-Export über `/api/sightings/export` | `{ format }`                  |
+| Action                 | Wann                                                    | Details                       |
+| ---------------------- | ------------------------------------------------------- | ----------------------------- |
+| `sighting.approve`     | Admin genehmigt Sichtung                                | `{ previousStatus }`          |
+| `sighting.reject`      | Admin lehnt Sichtung ab                                 | `{ previousStatus }`          |
+| `sighting.edit`        | Admin bearbeitet Sichtung                               | `{ changedFields: string[] }` |
+| `sighting.delete`      | Admin löscht Sichtung                                   | —                             |
+| `file.delete`          | Admin löscht Datei                                      | —                             |
+| `config.update`        | Einstellung geändert                                    | `{ key, category }`           |
+| `auth.login_success`   | Erfolgreicher Admin-Login                               | —                             |
+| `auth.login_failure`   | Fehlgeschlagener Login                                  | status: 'failure'             |
+| `auth.logout`          | Benutzer meldet sich ab (Session wird widerrufen)       | —                             |
+| `auth.session_revoked` | Sessions eines Benutzers gezielt widerrufen             | `{ sub }`                     |
+| `export.download`      | Admin startet Daten-Export über `/api/sightings/export` | `{ format }`                  |
 
 **Pino stdout (nicht in DB):**
 
 - `security.rate_limit_hit` — Rate Limit überschritten (`rateLimit.ts`)
 - `security.auth_error` — Authentifizierungs-/Autorisierungsfehler, z. B. ungültiges Auth-Cookie (`hooks.server.ts`), fehlende Berechtigung (`requireUserRole`) oder Auth0-Callback-Fehler
+- `unhandled_error` — 5xx aus `handleError`, `level: 50`, mit `stack` und `causes`
+- `client_error` — 4xx aus `handleError`, `level: 40`, ohne Stack
+
+Die Trennung der beiden letzten ist der Punkt: SvelteKit ruft `handleError` auch für jede
+nicht gematchte Route auf (`respond.js`, Zweig `state.depth === 0`). Vorher ging damit
+jeder Bot-Scan als `level: 50` samt Stacktrace ins Log und war von einem echten Ausfall
+nicht zu unterscheiden. Beide Einträge tragen jetzt `method`, `clientIp`, `userAgent` und
+`referer` — ohne die war am 2026-08-03 nicht zu klären, wer wiederholt `/api/login`
+anfragte (ein Pfad, den kein Codepfad dieser Anwendung erzeugt). Diese Werte sind
+Client-Eingaben und laufen deshalb durch `redactSecrets` und eine Längenbegrenzung. Der
+Referer wird zusätzlich auf Herkunft und Pfad reduziert: `redactSecrets` redigiert nur
+Schlüssel, die nach einem Geheimnis aussehen — ein Same-Origin-Referer aus einer
+gefilterten Admin-Liste hätte den Suchbegriff (ggf. einen Personennamen) mitgeloggt.
 
 **Auswertung:** Drizzle Studio oder `docker compose logs app | grep '"event":"security.'`

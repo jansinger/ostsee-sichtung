@@ -298,3 +298,142 @@ export function buildErrorLogFields(
 
 	return fields;
 }
+
+/**
+ * Ab dieser Länge werden `clientIp`, `userAgent` und `referer` gekürzt.
+ *
+ * Alle drei wählt der Client frei — die IP im Fallback-Zweig von `getClientIp`, wo sie
+ * aus einem gesetzten `X-Forwarded-For` stammt. Ein Bot mit 8-KB-User-Agent würde sonst
+ * pro 404 dieselbe Menge ins Log schreiben, und 404er kommen in Serien.
+ */
+export const MAX_REQUEST_HEADER_LENGTH = 300;
+
+/** Was `handleError` über die Anfrage weiß. `null`, wo es nichts zu wissen gibt. */
+export interface ErrorLogEntryInput {
+	error: unknown;
+	errorId: string;
+	status: number;
+	message: string;
+	pathname: string;
+	method: string;
+	/** Aus `getClientIp` — in Dev ohne `X-Forwarded-For` legitim `null`. */
+	clientIp: string | null;
+	userAgent: string | null;
+	referer: string | null;
+}
+
+/** Ein fertiger Log-Aufruf: `logger[level](fields, msg)`. */
+export interface ErrorLogEntry {
+	level: 'warn' | 'error';
+	msg: string;
+	fields: Record<string, unknown>;
+}
+
+/**
+ * Ab diesem Status ist der Fehler unserer — darunter der des Clients.
+ *
+ * SvelteKit ruft `handleError` nicht nur bei geworfenen Ausnahmen auf, sondern auch
+ * für jede nicht gematchte Route (`respond.js`, Zweig `state.depth === 0`). Praktisch
+ * kommen hier also 500er und 404er an.
+ */
+const SERVER_ERROR_STATUS = 500;
+
+function requestHeaderField(value: string | null): string | undefined {
+	const trimmed = value?.trim();
+	if (!trimmed) return undefined;
+
+	const redacted = redactSecrets(trimmed);
+	return redacted.length <= MAX_REQUEST_HEADER_LENGTH
+		? redacted
+		: `${redacted.slice(0, MAX_REQUEST_HEADER_LENGTH)}… [gekürzt]`;
+}
+
+/**
+ * Der Referer, reduziert auf Herkunft und Pfad — ohne Query und Fragment.
+ *
+ * `redactSecrets` allein reicht hier nicht: Seine Regel für Schlüssel-Wert-Paare greift
+ * nur bei Schlüsseln, die nach einem Geheimnis aussehen. `?suche=`, `?code=`, `?email=`
+ * blieben stehen, und ein Same-Origin-Referer aus einer gefilterten Admin-Liste trägt
+ * genau solche Werte — womöglich einen Personennamen. Der diagnostische Zweck ("von
+ * welcher Seite kam die Anfrage") steckt vollständig in Herkunft und Pfad.
+ *
+ * `URL.origin` lässt Zugangsdaten der Form `https://benutzer:passwort@host` mit wegfallen.
+ *
+ * Der Referer ist laut Spezifikation absolut — ein Client kann trotzdem senden, was er
+ * will. Was `new URL()` nicht zerlegt, behält deshalb seinen Wert als Hinweis (dass da
+ * Unsinn ankommt, ist selbst diagnostisch), verliert aber alles ab dem ersten `?` oder
+ * `#`: Ein relativer `/admin?suche=…` scheitert am Parser und trüge sonst genau den
+ * Suchbegriff ins Log, den diese Funktion fernhalten soll.
+ */
+function refererField(value: string | null): string | undefined {
+	const trimmed = value?.trim();
+	if (!trimmed) return undefined;
+
+	try {
+		const url = new URL(trimmed);
+		if (url.protocol === 'http:' || url.protocol === 'https:') {
+			return requestHeaderField(`${url.origin}${url.pathname}`);
+		}
+	} catch {
+		// Kein zerlegbarer Wert — dann greift der Schnitt an `?`/`#` unten.
+	}
+
+	return requestHeaderField(trimmed.split(/[?#]/).at(0) ?? '');
+}
+
+/**
+ * Baut den vollständigen Log-Eintrag für `handleError` — Stufe, Meldung und Felder.
+ *
+ * Zwei Dinge, die diese Funktion regelt und die vorher fehlten:
+ *
+ * **Die Stufe hängt am Status.** Bis 2026-08-03 ging jeder 404 als `level: 50` mit
+ * vollem Stacktrace ins Log. In Produktion sah damit jeder Bot-Scan auf `/api/login`
+ * aus wie ein Serverausfall; ein echter 500er ging in dem Rauschen unter. Ein 404 ist
+ * kein unerwarteter Fehler, sein Stack zeigt immer dieselbe SvelteKit-interne Stelle
+ * und kostet nur Platz — beides entfällt jetzt unterhalb von 500.
+ *
+ * **Methode, IP, User-Agent und Referer stehen im Eintrag.** Ohne sie war am selben Tag
+ * nicht zu klären, wer `/api/login` anfragt — kein Codepfad der Anwendung tut es, und
+ * der Log-Eintrag nannte nur den Pfad. Die beiden Header sind Client-Eingaben: `redactSecrets`
+ * und die Längenbegrenzung gelten deshalb auch für sie, nicht nur für Fehlermeldungen.
+ */
+export function buildErrorLogEntry(input: ErrorLogEntryInput): ErrorLogEntry {
+	const isServerError = input.status >= SERVER_ERROR_STATUS;
+	const { error, stack, causes } = buildErrorLogFields(input.error);
+
+	// Auch die IP läuft durch die Begrenzung: Im Fallback-Zweig von `getClientIp` ist sie
+	// das erste Segment eines client-gesetzten `X-Forwarded-For` und damit unbegrenzt lang.
+	const clientIp = requestHeaderField(input.clientIp);
+	const userAgent = requestHeaderField(input.userAgent);
+	const referer = refererField(input.referer);
+
+	const fields: Record<string, unknown> = {
+		event: isServerError ? 'unhandled_error' : 'client_error',
+		errorId: input.errorId,
+		status: input.status,
+		message: input.message,
+		pathname: input.pathname,
+		method: input.method,
+		error
+	};
+
+	if (clientIp) fields.clientIp = clientIp;
+	if (userAgent) fields.userAgent = userAgent;
+	if (referer) fields.referer = referer;
+
+	// Der Stack eines 404 zeigt immer dieselbe SvelteKit-interne Stelle, Ursachen hat er keine.
+	if (isServerError) {
+		if (stack) fields.stack = stack;
+		if (causes) fields.causes = causes;
+	}
+
+	return {
+		level: isServerError ? 'error' : 'warn',
+		msg: isServerError
+			? 'Unerwarteter Serverfehler'
+			: input.status === 404
+				? 'Nicht gefunden'
+				: 'Anfrage nicht beantwortet',
+		fields
+	};
+}
