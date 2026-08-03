@@ -223,7 +223,11 @@ test.describe('Styleguide — Bedienung', () => {
 		await page.getByRole('button', { name: /Feldmodus/ }).click();
 		await expect.poll(() => densityAttribute(page)).toBe('field');
 
-		await page.getByRole('link', { name: 'Meldung' }).click();
+		/* Auf den Header eingegrenzt: Seit der Footer-Neuordnung (2026-08-03)
+		   führt auch die Gruppe „Navigation" im Footer einen Link „Meldung",
+		   ein ungebundener Rollen-Selektor ist damit mehrdeutig. Gemeint ist
+		   hier die TopBar — ein Klick im Footer würde erst dorthin scrollen. */
+		await page.locator('header').getByRole('link', { name: 'Meldung' }).click();
 		await expect(page).toHaveURL(/\/$/);
 
 		await expect
