@@ -55,14 +55,26 @@ per `baltic-artifact-mask.geojson`: Ladogasee, Onegasee, Weichsel- und
 Torne-Flussläufe, Oder oberhalb des Stettiner Haffs, **westlicher** Limfjord
 (damit ist die Nordsee-Passage bei Thyborøn zu; der östliche Limfjord bei
 Aalborg und Hals bleibt als Kattegat-Zufahrt drin). Eingeschlossen
-per `baltic-inclusion-mask.geojson`: Schlei, Trave- und Warnow-Mündung.
+per `baltic-inclusion-mask.geojson` — seit 2026-08-03 echte OSM-Wasserumrisse
++200 m (Overpass-Abzug, je Feature in `grund` belegt) statt grober
+Korridor-Vierecke: Schlei inkl. Noore, Untertrave von Lübeck bis Travemünde
+inkl. Pötenitzer Wiek und Dassower See, Unterwarnow ab Mühlendamm inkl.
+Breitling, Saaler Bodden sowie — defensiv, heute schon seewärts der
+Küstenlinie in der Wasserfläche — Salzhaff, Achterwasser und Krumminer Wiek.
+Der Peenestrom liegt komplett seewärts der Küstenlinie und braucht keinen
+Korridor. Referenz- und Ausschlusspunkte: `src/tools/baltic-inclusion-mask.test.ts`
+(Punkte nur per `ST_PointOnSurface` aus OSM-Wasserflächen ableiten — von Hand
+geschätzte Koordinaten lagen mehrfach auf Land und haben falsche
+Lücken-Diagnosen erzeugt).
 
 **Einschränkung:** In den Einschluss-Korridoren greift der Landabzug nicht, sonst
-wären diese Gewässer nicht aufnehmbar (OSM führt sie als Binnenwasser). Die
-Korridore sind breiter als das Wasser und schlagen rund **165 km² Festland** der
-Ostsee zu. Kappeln, Arnis, Travemünde, Priwall, Warnemünde und der Rostocker
-Hafen liefern deshalb `inBaltic = true`. Wer `ostsee` als Plausibilitätssignal
-verwendet, muss das wissen — dort trägt es nicht. Offener Punkt.
+wären diese Gewässer nicht aufnehmbar (OSM führt sie als Binnenwasser). Seit dem
+Umbau auf Wasserumrisse beschränkt sich das auf den ~200-m-Uferstreifen — vorher
+schlugen die Korridore rund **98 km² Festland** zu, und Kappeln, Arnis,
+Travemünde, Priwall, Warnemünde samt Rostocker Hafen lieferten `inBaltic = true`.
+Der gebaute Index (`rbush-index.json`) enthält die alten Korridore noch, bis
+`npm run geo:build` erneut läuft; beim anschließenden Recalc kippen 9 Altzeilen
+mit `ostsee = 1` im ehemaligen Landstreifen auf 0 (gemessen 2026-08-03).
 
 Für die OSM-Küstenlinie ist zwingend die **ungeteilte** Variante
 `land-polygons-complete-4326` zu verwenden. Punkt-in-Polygon-Stichproben gegen
@@ -153,14 +165,16 @@ Bereinigung, Entscheidungen und Umsetzung:
 
 ## Schlüsseldateien
 
-| Datei                                      | Zweck                              |
-| ------------------------------------------ | ---------------------------------- |
-| `src/lib/server/geo/checkBalticSeaFile.ts` | RBush + Turf.js Server-Validierung |
-| `src/lib/server/geo/rbush-index.json`      | Spatial Index, 3,9 MB (erzeugt)    |
-| `src/lib/server/geo/baltic-extent.json`    | Extent — Quelle der Box            |
-| `src/tools/build-baltic-geometry.sql`      | Geometrie-Pipeline                 |
-| `src/lib/utils/geo/checkBalticSea.ts`      | Client-Bounding-Box                |
-| `src/routes/api/geo/inBaltic/+server.ts`   | HTTP Endpoint                      |
+| Datei                                      | Zweck                                |
+| ------------------------------------------ | ------------------------------------ |
+| `src/lib/server/geo/checkBalticSeaFile.ts` | RBush + Turf.js Server-Validierung   |
+| `src/lib/server/geo/rbush-index.json`      | Spatial Index, 3,9 MB (erzeugt)      |
+| `src/lib/server/geo/baltic-extent.json`    | Extent — Quelle der Box              |
+| `src/tools/build-baltic-geometry.sql`      | Geometrie-Pipeline                   |
+| `src/tools/baltic-inclusion-mask.geojson`  | Einschluss-Korridore (Wasserumrisse) |
+| `src/tools/baltic-inclusion-mask.test.ts`  | Referenzpunkte der Maske             |
+| `src/lib/utils/geo/checkBalticSea.ts`      | Client-Bounding-Box                  |
+| `src/routes/api/geo/inBaltic/+server.ts`   | HTTP Endpoint                        |
 
 ---
 
