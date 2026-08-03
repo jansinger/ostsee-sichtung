@@ -266,8 +266,26 @@ export function mapFormToSighting(formData: SightingFormValues): NewSighting {
 		seaState: formData.seaState ? Number(formData.seaState) : 0,
 		// Sichtweite
 		visibility: formData.visibility ? Number(formData.visibility) : 0,
-		// Windstärke als String (kann Bereiche enthalten)
-		windForce: formData.windForce ? String(formData.windForce) : null,
+		// Windstärke — Beaufort 0 bis 12, aus historischen Gründen als String
+		// gespeichert (`varchar(2)`).
+		//
+		// Anders als bei `seegang` und `sichtweite` darüber ist die `0` hier
+		// keine "Keine Angabe", sondern die Stufe Windstille. Ein
+		// `formData.windForce ? … : null` machte daraus NULL und im Admin wie
+		// im CSV-Export "Nicht angegeben" — über die Legacy-API ging damit die
+		// Windstille jeder App-Meldung verloren, obwohl `parseWindForce` sie
+		// dort ausdrücklich durchreicht.
+		//
+		// `isProvided` und nicht bloß eine Leerprüfung: Ein `NaN` würde sonst
+		// als `'NaN'` in die zwei Zeichen breite Spalte laufen.
+		//
+		// Gegen zu lange Werte schützt es nicht, und die vorgelagerte
+		// Validierung tut es nur halb: `sightingSchema` begrenzt `windForce`
+		// auf 0 bis 12, aber ohne `.integer()` — ein `3.5` käme als `'3.5'`
+		// durch. Die Legacy-API prüft `windstaerke` überhaupt nicht auf einen
+		// Bereich (`yup.string().nullable().optional()`), dort passiert auch
+		// ein `999`. Beides war vorher genauso.
+		windForce: isProvided(formData.windForce) ? String(formData.windForce) : null,
 		// Windrichtung (N, NW, W, etc.)
 		windDirection: formData.windDirection,
 
