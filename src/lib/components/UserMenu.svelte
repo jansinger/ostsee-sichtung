@@ -2,14 +2,16 @@
 	import type { PublicUser } from '$lib/types/User';
 	import Icon from '$lib/components/Icon.svelte';
 
+	/* `isAdmin` ist hier bewusst weggefallen: Das Menü führte einen Eintrag
+	   „Admin-Bereich" auf /admin, den die TopBar seit 2026-08-03 als Gruppe
+	   „Verwaltung → Sichtungen" trägt. Zwei Wege zum selben Ziel, einer davon
+	   hinter dem Profilbild versteckt — das Profilmenü ist für das Konto da. */
 	let {
 		user,
-		position = 'right',
-		isAdmin = false
+		position = 'right'
 	}: {
 		user: PublicUser | null;
 		position?: 'left' | 'right';
-		isAdmin?: boolean;
 	} = $props();
 
 	let detailsElement = $state<HTMLDetailsElement | null>(null);
@@ -99,17 +101,6 @@
 
 			<!-- Menu Items -->
 			<div class="py-2">
-				{#if isAdmin}
-					<a
-						href="/admin"
-						class="hover:bg-base-200 flex items-center gap-2 rounded px-4 py-2"
-						onclick={closeMenu}
-					>
-						<Icon icon="lucide:settings" width="16" class="h-4 w-4" />
-						Admin-Bereich
-					</a>
-				{/if}
-
 				<a
 					href="/api/auth/logout"
 					class="text-error hover:bg-error/10 flex items-center gap-2 rounded px-4 py-2"

@@ -260,6 +260,25 @@ h6 {
 	border-left-width: 4px;
 }
 
+/* Reiter: inaktive Beschriftung von /50 auf /70.
+   DaisyUI setzt dafür fest
+   `color-mix(in oklab, var(--color-base-content) 50%, transparent)` — ohne
+   Theme-Variable, also nur per Override erreichbar. Auf base-100 sind das im
+   Browser gemessene 3,54:1 und damit unter WCAG 1.4.3; es ist genau die
+   /50-Zeile aus der Deckkraft-Tabelle in design-system.md, die dort als
+   unzulässig steht. /70 misst 7,04:1 und hält den Reiter trotzdem sichtbar
+   schwächer als den aktiven (16,50:1).
+   Ungelayert, gewinnt damit gegen DaisyUIs @layer utilities — sonst käme die
+   Regel gegen `.tab:is(.tabs > .tab)` (0,2,0) nicht an.
+
+   `:not(.tab-active)` ist nicht kosmetisch: Ohne die Einschränkung schlägt der
+   Override auch DaisyUIs Aktiv-Regel, und der aktive Reiter verliert seinen
+   Farbunterschied — er bliebe nur noch am Unterstrich erkennbar.
+   Abgesichert in e2e/navbar-structure.spec.ts. */
+.tabs > .tab:not(.tab-active) {
+	color: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+}
+
 /* Enhanced form focus - WCAG AA konform.
    Ungelayert, gewinnt damit gegen DaisyUIs @layer utilities. */
 .input:focus,
