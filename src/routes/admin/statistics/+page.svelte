@@ -107,8 +107,21 @@
 		-->
 
 		<!-- Key Metrics Grid -->
-		<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
-			<div class="stats shadow">
+		<!-- Spaltenzahl bewusst < 5: `.stat` setzt `white-space: nowrap` auf Titel, Wert und
+		     Beschreibung (daisyui stat.css) und kann deshalb nie umbrechen; `.stats` selbst ist
+		     `inline-grid` mit `overflow-x: auto`. Bei lg:grid-cols-5 war jede Spalte nur ~175px
+		     breit, die Karte scrollte intern, und das rechts sitzende stat-figure-Icon lag außerhalb
+		     des sichtbaren Bereichs. Nachgerechnet (Container = min(Viewport, Breakpoint) minus
+		     `p-4`, gap-6 = 24px, .stat-Padding 24px je Seite, Icon 32px, Spalten-Gap 16px): die
+		     breiteste Karte „Unique Nutzer" („… Wiederholungs-Nutzer (12,3%)") braucht ~320-335px.
+		     Bei 5 Spalten liefert selbst 2xl (Container 1536px − 32px Padding = 1504px Inhalt) nur
+		     ~282px/Spalte — 5 Spalten passen bei keinem Standard-Breakpoint verlustfrei. Deshalb
+		     2 Spalten ab md (356px/Spalte) und 3 ab xl. Bei xl bleiben 400px/Spalte, ab 2xl 485px
+		     (der Container ist ohne eigenen 3xl-Breakpoint bei 1536px gedeckelt, breiter wird es
+		     also nicht). Bei 3 Spalten ordnen sich die fünf Karten als 3+2 an — gegenüber 4+1 die
+		     ruhigere Aufteilung, deshalb keine vierte Spalte ab 2xl. -->
+		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+			<div class="stats w-full shadow">
 				<div class="stat">
 					<div class="stat-figure text-primary">
 						<Icon icon="lucide:users" class="h-8 w-8" />
@@ -125,7 +138,7 @@
 				</div>
 			</div>
 
-			<div class="stats shadow">
+			<div class="stats w-full shadow">
 				<div class="stat">
 					<div class="stat-figure text-secondary-strong">
 						<Icon icon="lucide:activity" class="h-8 w-8" />
@@ -142,7 +155,7 @@
 				</div>
 			</div>
 
-			<div class="stats shadow">
+			<div class="stats w-full shadow">
 				<div class="stat">
 					<div class="stat-figure text-warning-strong">
 						<Icon icon="lucide:trending-up" class="h-8 w-8" />
@@ -165,7 +178,7 @@
 				</div>
 			</div>
 
-			<div class="stats shadow">
+			<div class="stats w-full shadow">
 				<div class="stat">
 					<div class="stat-figure text-accent-strong">
 						<Icon icon="lucide:calendar" class="h-8 w-8" />
@@ -184,7 +197,7 @@
 				</div>
 			</div>
 
-			<div class="stats shadow">
+			<div class="stats w-full shadow">
 				<div class="stat">
 					<div class="stat-figure text-info-strong">
 						<Icon icon="lucide:users" class="h-8 w-8" />
