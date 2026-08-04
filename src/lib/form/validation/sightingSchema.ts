@@ -1248,7 +1248,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.label('Kontaktdaten dauerhaft speichern')
 		.meta({
 			helpText:
-				'Ich stimme zu, dass meine Kontaktdaten dauerhaft auf diesem Gerät gespeichert werden, um sie bei zukünftigen Sichtungsmeldungen automatisch zu verwenden. Ohne diese Zustimmung werden die Daten beim Schließen des Browsers gelöscht.',
+				'Ich stimme zu, dass meine Kontaktdaten dauerhaft auf diesem Gerät gespeichert werden, um sie bei zukünftigen Meldungen automatisch zu verwenden. Ohne diese Zustimmung werden die Daten beim Schließen des Browsers gelöscht.',
 			valueText: 'Ermöglicht automatisches Ausfüllen bei zukünftigen Meldungen',
 			icon: Archive,
 			type: 'checkbox'

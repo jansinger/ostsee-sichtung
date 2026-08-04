@@ -295,7 +295,7 @@ test.describe('Sichtung melden — Submit mit API-Mock', () => {
 		await expect(page.getByRole('heading', { name: /Vielen Dank/i })).toBeVisible({
 			timeout: 10000
 		});
-		await expect(page.getByText(/erfolgreich gemeldet/i)).toBeVisible();
+		await expect(page.getByText(/erfolgreich übermittelt/i)).toBeVisible();
 	});
 
 	test('API-Fehler: Server gibt 500 zurück — Formular bleibt auf Step 4', async ({ page }) => {

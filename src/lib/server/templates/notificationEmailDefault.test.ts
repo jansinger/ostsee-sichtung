@@ -157,10 +157,11 @@ describe('NOTIFICATION_EMAIL_DEFAULT_TEMPLATE — Ostsee-Status', () => {
 	 * Sichtung. Ein Totfund ist der Fall, der eine Rückmeldung braucht (Bergung,
 	 * Beprobung).
 	 *
-	 * Der Betreff bleibt unverändert „Neue Sichtung: <REF>" — erkennbar ist der
-	 * Totfund also erst beim Öffnen der Mail, nicht schon in der Übersicht des
-	 * Posteingangs. Ein Betreff-Präfix wäre eine eigene Entscheidung (Mailfilter
-	 * beim DMM) und gehört nicht in diese Vorlage.
+	 * Der Betreff nennt den Totfund nicht („Neue Meldung: <REF>", seit A5.3
+	 * — davor „Neue Sichtung: <REF>") — erkennbar ist der Totfund also erst beim
+	 * Öffnen der Mail, nicht schon in der Übersicht des Posteingangs. Ein
+	 * Betreff-Präfix wäre eine eigene Entscheidung (Mailfilter beim DMM) und
+	 * gehört nicht in diese Vorlage.
 	 */
 	describe('Totfund', () => {
 		function renderDeadFind(dead: {
@@ -277,6 +278,49 @@ describe('NOTIFICATION_EMAIL_DEFAULT_TEMPLATE — Ostsee-Status', () => {
 	});
 });
 
+/**
+ * Wortwahl (Änderungswunsch A5.3 des Deutschen Meeresmuseums).
+ *
+ * Die Mail beschreibt einen **Vorgang**, der genauso von einem Totfund
+ * ausgelöst wird wie von der Beobachtung eines lebenden Tieres. „Neue Sichtung
+ * eingegangen" schloss den Totfund sprachlich aus — und zwar an der Stelle, die
+ * der Empfänger zuerst liest.
+ *
+ * Gemeint ist ausschließlich diese Bedeutung. Wo das Wort für die Beobachtung
+ * selbst steht (`sightingDate` → „Datum", die Sichtungskarte, die
+ * Sichtungsdaten), bleibt es stehen; dieser Test verlangt deshalb kein
+ * vollständiges Verschwinden von „Sichtung", sondern prüft die konkreten
+ * Textbausteine.
+ *
+ * **Die Überschrift „🔍 Sichtungsdetails" bleibt bewusst stehen.** Darunter
+ * stehen Datum, Tierart, Anzahl, Entfernung und Verhalten — die Beobachtung,
+ * nicht der Vorgang. Sie trägt denselben Namen wie die gleichnamige Sektion im
+ * Meldeformular (`sections/SightingDetails.svelte`), und beide gehören
+ * zusammen umbenannt oder gar nicht. Der Totfund steht in dieser Mail ohnehin
+ * als eigener Block darunter. Sollte das Museum die Überschrift dennoch
+ * anders wollen, ist das ein eigener Vorgang inkl. Fassungs-Hash und
+ * SQL-Nachzug (`scripts/migrations/`).
+ */
+describe('Wortwahl — „Meldung" für den Vorgang', () => {
+	const VORGANGS_TEXTE = [
+		'Neue Meldung eingegangen',
+		'Bitte prüfen Sie diese Meldung besonders sorgfältig.',
+		'Meldung im Admin-Bereich prüfen'
+	];
+
+	it.each(VORGANGS_TEXTE)('nennt den Vorgang „Meldung": %s', (text) => {
+		expect(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE).toContain(text);
+	});
+
+	it.each([
+		'Neue Sichtung eingegangen',
+		'diese Sichtung besonders sorgfältig',
+		'Sichtung im Admin-Bereich prüfen'
+	])('bezeichnet den Vorgang nicht mehr als „Sichtung": %s', (text) => {
+		expect(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE).not.toContain(text);
+	});
+});
+
 describe('Fingerabdruck des ausgelieferten Stands', () => {
 	/**
 	 * Dieser Test ist ein **Zwang, keine Zusicherung über den Inhalt**: Der Seed
@@ -296,7 +340,7 @@ describe('Fingerabdruck des ausgelieferten Stands', () => {
 			.update(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE, 'utf8')
 			.digest('hex');
 
-		expect(hash).toBe('aed55e5b04055cc8b30a86bab9e91d3d64f982fbb63c3c202d732bcd87480763');
+		expect(hash).toBe('2527b475241de0f1039f9cca27c920997f6e14bed4bc6ce087689dc6617ed392');
 	});
 
 	it('führt den aktuellen Stand nicht als früheren Stand', () => {

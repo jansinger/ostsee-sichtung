@@ -27,5 +27,18 @@ export const NAME_CONSENT_VERSION = '2025-08-12';
 /** Fassung des Textes zu `shipNameConsent` (Veröffentlichung des Schiffsnamens). */
 export const SHIP_NAME_CONSENT_VERSION = '2025-08-12';
 
-/** Fassung des Textes zu `privacyConsent` (Pflicht-Einwilligung der Meldung). */
-export const PRIVACY_CONSENT_VERSION = '2026-07-28';
+/**
+ * Fassung des Textes zu `privacyConsent` (Pflicht-Einwilligung der Meldung).
+ *
+ * Auf 2026-08-04 gehoben, obwohl der **Ankreuztext** (`meta.helpText`)
+ * unverändert ist: Geändert wurde der Rahmentext in `RequiredConsent.svelte`
+ * („um Ihre Meldung zu speichern", „Ohne diese Zustimmung kann Ihre Meldung
+ * nicht gespeichert werden" — vorher jeweils „Sichtung", Änderungswunsch A5.3).
+ * Der Geltungsbereich der Kennung ist die gelesene Einwilligungsfläche, nicht
+ * die Zeichenkette im Schema; `consentTextVersions.test.ts` sagt das im
+ * Kopfkommentar ausdrücklich, kann es aber nicht prüfen.
+ *
+ * Der gepinnte Hash in jenem Test bleibt deshalb korrekt und unverändert — er
+ * deckt nur den `helpText` ab.
+ */
+export const PRIVACY_CONSENT_VERSION = '2026-08-04';
