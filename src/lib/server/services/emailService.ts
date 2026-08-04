@@ -72,6 +72,40 @@ async function configOrEnv(key: string, envValue: string): Promise<string> {
 	return (await ConfigRepository.getString(key, '')) || envValue;
 }
 
+/**
+ * Macht aus einer Empfängerliste den Wert, den nodemailer erwartet: die
+ * bereinigte Liste, oder `undefined` wenn nichts konfiguriert ist.
+ *
+ * Ein leeres Array als `cc`/`bcc` wäre für nodemailer zwar unschädlich, taucht
+ * aber im Mail-Header und in den Logs als gesetztes Feld auf — „nicht
+ * konfiguriert" und „konfiguriert, aber leer" sollen unterscheidbar bleiben.
+ *
+ * Leereinträge fliegen raus: `ConfigRepository.getArray()` reicht den
+ * JSONB-Wert ungeprüft durch. Die Settings-Oberfläche filtert sie zwar schon
+ * beim Eingeben, `PUT /api/config` nimmt aber jedes Array entgegen — ein
+ * Leerstring landete sonst als leere Adresse im Header.
+ */
+/**
+ * Escapt einen Wert für die Einbettung in den HTML-Body der Test-Mail.
+ *
+ * Empfänger und CC stammen aus Eingaben: CC aus den Einstellungen, der
+ * Empfänger aus dem Request-Body von `POST /api/config/test-email` — der ihn,
+ * anders als die Admin-Route, gar nicht gegen ein E-Mail-Muster prüft. Beides
+ * ist zwar Admin-beschränkt, roh interpoliertes HTML bleibt es trotzdem.
+ */
+function escape(value: string): string {
+	return Handlebars.escapeExpression(value);
+}
+
+function recipientsOrUndefined(recipients: string[] | undefined): string[] | undefined {
+	const cleaned = (recipients ?? [])
+		.filter((entry): entry is string => typeof entry === 'string')
+		.map((entry) => entry.trim())
+		.filter((entry) => entry.length > 0);
+
+	return cleaned.length > 0 ? cleaned : undefined;
+}
+
 export interface EmailConfig {
 	enabled: boolean;
 	recipient: string;
@@ -89,6 +123,8 @@ export interface EmailConfig {
 
 export class EmailService {
 	private static transporter: Transporter | null = null;
+	/** Läuft gerade ein Aufbau? Siehe `ensureTransporter()`. */
+	private static initialization: Promise<void> | null = null;
 	private static templateCache = new Map<string, HandlebarsTemplateDelegate>();
 	private static configCache: { config: EmailConfig; timestamp: number } | null = null;
 	private static readonly CONFIG_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -134,9 +170,17 @@ export class EmailService {
 			const smtpSecure = await ConfigRepository.getBoolean('email.smtp.secure', false);
 
 			if (!smtpHost) {
+				// Auch einen bestehenden Transporter verwerfen: Wird der Host in den
+				// Einstellungen geleert, wäre „kein Host konfiguriert" sonst ein
+				// Zustand, in dem trotzdem noch über die alte Verbindung versendet wird.
+				this.resetTransporter();
 				logger.warn('Email service not initialized: SMTP host not configured');
 				return;
 			}
+
+			// Vor dem Neuaufbau die alte Verbindung schließen, sonst bleibt bei jeder
+			// Konfigurationsänderung ein Socket-Pool zurück.
+			this.resetTransporter();
 
 			// Create transporter mit expliziten Timeouts, damit ein hängender SMTP-Server
 			// den Request/Prozess nicht blockiert (Single-Container-Docker-Betrieb).
@@ -160,6 +204,68 @@ export class EmailService {
 			logger.error({ error }, 'Failed to initialize email service');
 			this.transporter = null;
 		}
+	}
+
+	/**
+	 * Verwirft den Transporter samt offener SMTP-Verbindung.
+	 *
+	 * Aufzurufen, wenn sich `email.smtp.*` geändert hat. Der Transporter ist ein
+	 * Singleton, das beim Modulstart einmal gebaut wird — ohne diesen Aufruf
+	 * erreichten geänderte Verbindungsdaten ihn erst beim nächsten Neustart des
+	 * Containers. Die Test-Mail prüfte damit die *alte* Verbindung und
+	 * bescheinigte eine Konfiguration als funktionierend, die so gar nicht
+	 * gespeichert war.
+	 *
+	 * Kein Neuaufbau an dieser Stelle: Der nächste Versand erledigt das über
+	 * `ensureTransporter()`. So kostet eine Konfigurationsänderung keine
+	 * SMTP-Verbindung, wenn danach gar keine Mail ansteht.
+	 */
+	static resetTransporter(): void {
+		if (!this.transporter) {
+			return;
+		}
+
+		// Das Schließen der ALTEN Verbindung darf den Aufbau der neuen nicht
+		// verhindern — `resetTransporter()` läuft direkt vor `createTransport()`.
+		// Ein Fehler hier kostet höchstens einen Socket, ein Abbruch dagegen den
+		// gesamten Mailversand.
+		try {
+			this.transporter.close();
+		} catch (error) {
+			logger.warn({ error }, 'Failed to close previous SMTP transporter');
+		}
+
+		this.transporter = null;
+		logger.info('SMTP transporter discarded, will be rebuilt on next send');
+	}
+
+	/**
+	 * Liefert einen einsatzbereiten Transporter und baut ihn bei Bedarf auf.
+	 *
+	 * Der Neuaufbau ist nicht nur für Konfigurationsänderungen da: Schlug
+	 * `verify()` beim Serverstart fehl (SMTP-Server kurz nicht erreichbar),
+	 * blieb der Transporter `null` — und der Versand gab dauerhaft `false`
+	 * zurück, bis jemand den Container neu startete. Ein Zustand, den niemand
+	 * bemerkt, weil eine ausbleibende Benachrichtigung nichts anzeigt.
+	 */
+	private static async ensureTransporter(test = false): Promise<Transporter | null> {
+		if (this.transporter) {
+			return this.transporter;
+		}
+
+		// Nur ein Aufbau gleichzeitig. Ohne diese Klammer liefen zwei zeitgleich
+		// eingehende Meldungen beide in `initialize()`, und der zweite Lauf schloss
+		// über `resetTransporter()` die Verbindung, die der erste gerade aufgebaut
+		// hatte. Der Fall wurde erst dadurch realistisch, dass ein fehlender
+		// Transporter überhaupt neu aufgebaut wird — etwa nach einer SMTP-Störung,
+		// wenn mehrere Meldungen gleichzeitig anstehen.
+		this.initialization ??= this.initialize(test).finally(() => {
+			this.initialization = null;
+		});
+
+		await this.initialization;
+
+		return this.transporter;
 	}
 
 	/**
@@ -294,8 +400,15 @@ export class EmailService {
 		try {
 			const enabled = await ConfigRepository.getBoolean('notification.email.enabled', false);
 
-			if (!enabled || !this.transporter) {
-				logger.debug('Email notifications disabled or service not initialized');
+			if (!enabled) {
+				logger.debug('Email notifications disabled');
+				return false;
+			}
+
+			const transporter = await this.ensureTransporter();
+
+			if (!transporter) {
+				logger.warn('Email service not available, notification not sent');
 				return false;
 			}
 
@@ -349,15 +462,15 @@ export class EmailService {
 					address: config.sender
 				},
 				to: config.recipient,
-				cc: config.recipient ? undefined : config.cc, // Don't use cc/bcc for test emails
-				bcc: config.recipient ? undefined : config.bcc,
+				cc: recipientsOrUndefined(config.cc),
+				bcc: recipientsOrUndefined(config.bcc),
 				subject: `Neue Sichtung: ${referenceId}`,
 				html: htmlContent,
 				text: this.htmlToText(htmlContent)
 			};
 
 			// Send email
-			const info = await this.transporter.sendMail(mailOptions);
+			const info = await transporter.sendMail(mailOptions);
 
 			logger.info(
 				{
@@ -380,11 +493,12 @@ export class EmailService {
 	 */
 	static async sendTestEmail(recipient?: string): Promise<boolean> {
 		try {
-			if (!this.transporter) {
-				await this.initialize(true);
-			}
+			// `test = true`: Eine Test-Mail muss auch dann gehen, wenn die
+			// Benachrichtigungen selbst noch abgeschaltet sind — genau so prüft man
+			// die Konfiguration, bevor man sie scharf schaltet.
+			const transporter = await this.ensureTransporter(true);
 
-			if (!this.transporter) {
+			if (!transporter) {
 				throw new Error('Email service not available');
 			}
 
@@ -395,28 +509,43 @@ export class EmailService {
 				throw new Error('No recipient specified');
 			}
 
+			// CC/BCC gehören zur Konfiguration, die diese Mail prüfen soll — auch
+			// bei explizit übergebenem Empfänger. Der Knopf in `/admin/settings`
+			// schickt den konfigurierten Empfänger immer explizit mit; ein
+			// Override-Sonderfall würde CC/BCC genau auf dem einzigen Weg
+			// auslassen, auf dem eine Test-Mail überhaupt ausgelöst wird.
+			const cc = recipientsOrUndefined(config.cc);
+			const bcc = recipientsOrUndefined(config.bcc);
+
 			const mailOptions: SendMailOptions = {
 				from: {
 					name: config.senderName,
 					address: config.sender
 				},
 				to: testRecipient,
+				cc,
+				bcc,
 				subject: 'Test E-Mail - Ostsee-Tiere Konfiguration',
 				html: `
 					<h2>Test E-Mail</h2>
 					<p>Diese Test-E-Mail wurde erfolgreich von der Ostsee-Tiere Anwendung gesendet.</p>
 					<p><strong>Zeitpunkt:</strong> ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}</p>
 					<p><strong>Konfiguration:</strong> Funktioniert korrekt ✅</p>
+					<p><strong>Empfänger:</strong> ${escape(testRecipient)}${
+						cc ? `, Kopie an ${escape(cc.join(', '))}` : ''
+					}</p>
 				`,
 				text: 'Test E-Mail - Die Ostsee-Tiere E-Mail Konfiguration funktioniert korrekt.'
 			};
 
-			const info = await this.transporter.sendMail(mailOptions);
+			const info = await transporter.sendMail(mailOptions);
 
 			logger.info(
 				{
 					messageId: info.messageId,
-					recipient: testRecipient
+					recipient: testRecipient,
+					cc,
+					bcc
 				},
 				'Simple test email sent successfully'
 			);
