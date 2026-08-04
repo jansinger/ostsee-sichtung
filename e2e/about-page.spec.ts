@@ -66,3 +66,51 @@ test.describe('About Page', () => {
 		).toHaveCount(0);
 	});
 });
+
+/**
+ * Eigenes `describe`, weil der Viewport *vor* dem `goto` stehen muss — das
+ * `beforeEach` oben navigiert bereits in der Standardgröße.
+ *
+ * Gemessen am 2026-08-04 bei 360px: `scrollWidth` 411 gegen `clientWidth` 360.
+ * Die Seite ließ sich damit auf jedem verbreiteten Telefon seitlich schieben,
+ * und zwar über die volle Höhe — nicht nur an dem Element, das zu breit war.
+ * Derselbe Fehler wie in `footer-layout.spec.ts` („das Dokument wird auf keiner
+ * Breite breiter als das Fenster"), nur auf einer anderen Route; der Test ist
+ * bewusst gleich gebaut, damit beide Stellen dieselbe Zusage tragen.
+ *
+ * Die 411px waren eine **feste Untergrenze**, kein Verhalten bei 360px: Der Wert
+ * stand bei jedem Viewport, auch bei 320px. Vier Ursachen, alle in
+ * `src/routes/about/+page.svelte` behoben und dort einzeln begründet — jede war
+ * erst sichtbar, nachdem die vorherige weg war (Messung: `width: min-content` pro
+ * Element, weil jedes Blockkind auf die Elternbreite gestreckt wird und die
+ * gemessene Breite deshalb nichts über den Bedarf aussagt):
+ *
+ * | # | Ursache                                            | Untergrenze danach |
+ * | - | -------------------------------------------------- | ------------------ |
+ * | 1 | Partner-Linkzeile ohne `flex-wrap` (299px)         | 411 → 363          |
+ * | 2 | Handlungsaufforderung pauschal `p-12` + `border-2` | 363 → 338          |
+ * | 3 | DaisyUI-`nowrap` auf `.stat-desc` (158px)          | 338 → 326          |
+ * | 4 | Seitencontainer pauschal `p-6`                     | 326 → 310          |
+ *
+ * **Untergrenze jetzt 310px.** Die 320px stehen deshalb in der Liste — mit rund
+ * 10px Luft, nicht auf der Schwelle balancierend. Nach unten ist damit Schluss:
+ * Die nächste Grenze wäre der Knopf „Tiere bestimmen" mit 194px min-content, und
+ * die ließe sich nur noch durch Eingriffe in die Beschriftung oder die
+ * Button-Größe verschieben.
+ */
+test.describe('About Page — Layout in schmalen Viewports', () => {
+	test('das Dokument wird auf keiner Breite breiter als das Fenster', async ({ page }) => {
+		for (const breite of [320, 360, 390, 414]) {
+			await page.setViewportSize({ width: breite, height: 780 });
+			await page.goto('/about', { waitUntil: 'networkidle' });
+			await expect(page.getByRole('heading', { name: 'Über Ostsee-Tiere', level: 1 })).toBeVisible({
+				timeout: 15000
+			});
+
+			const ueberlauf = await page.evaluate(
+				() => document.documentElement.scrollWidth - document.documentElement.clientWidth
+			);
+			expect(ueberlauf, `horizontaler Überlauf bei ${breite}px`).toBeLessThanOrEqual(0);
+		}
+	});
+});

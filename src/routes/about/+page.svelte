@@ -33,7 +33,14 @@
 	/>
 </svelte:head>
 
-<div class="mx-auto max-w-5xl p-6">
+<!-- Innenabstand schaltet bei `md` (Breakpoint-Vertrag in
+     .claude/rules/design-system.md). Bei 320px zählt das: die Seite stapelt drei
+     Innenabstände übereinander — dieser hier, der des Handlungsaufforderungs-
+     Blocks und die 16px, die DaisyUI dem `hero-content` mitgibt. Zusammen blieben
+     von 320px nur 192px für den Inhalt. Die 8px pro Seite, die `p-4` hier spart,
+     kommen jedem Abschnitt der Seite zugute, nicht nur dem einen, der gerade die
+     Untergrenze bestimmt. -->
+<div class="mx-auto max-w-5xl p-4 md:p-6">
 	<!-- Hero Section -->
 	<div class="mb-16 text-center">
 		<div class="mb-8 flex flex-1 justify-center">
@@ -107,7 +114,12 @@
 							<div class="stat">
 								<div class="stat-title text-xs">Sichtungen seit</div>
 								<div class="stat-value text-primary text-2xl">{data.earliestSightingYear}</div>
-								<div class="stat-desc">in unserer Datenbank</div>
+								<!-- Umbrechbar aus demselben Grund wie die Kacheln im
+								     Handlungsaufforderungs-Block weiter unten. Diese hier bestimmt die
+								     Untergrenze der Seite derzeit nicht — aber sie steht unter
+								     derselben DaisyUI-Regel, und die nächste Textänderung würde den
+								     Überlauf sonst erneut aufmachen. -->
+								<div class="stat-desc whitespace-normal">in unserer Datenbank</div>
 							</div>
 						</div>
 					{/if}
@@ -210,7 +222,15 @@
 				Zentren für Meeresforschung und -bildung in Deutschland. Seit über 70 Jahren widmen wir uns
 				der Erforschung und dem Schutz der marinen Lebensräume.
 			</p>
-			<div class="flex justify-center gap-4">
+			<!-- `flex-wrap` ist hier nicht Kosmetik, sondern der Grund für einen
+			     Überlauf der ganzen Seite: Buttons tragen `white-space: nowrap`, zwei
+			     davon nebeneinander ergaben eine min-content-Breite von 299px. Mit den
+			     64px `p-8` dieser Fläche und den 48px `p-6` des Seitencontainers war das
+			     Dokument damit auf *jedem* Viewport mindestens 411px breit — bei 360px
+			     ließ sich die Seite über ihre volle Höhe seitlich schieben. Die beiden
+			     anderen Linkzeilen der Seite (Technik, Handlungsaufforderungen) haben
+			     `flex-wrap` von Anfang an; nur diese hier fehlte. -->
+			<div class="flex flex-wrap justify-center gap-4">
 				<a
 					href="https://www.deutsches-meeresmuseum.de"
 					target="_blank"
@@ -434,8 +454,14 @@
 		</div>
 	</div>
 	<!-- Call to Action -->
+	<!-- Innenabstand schaltet bei `md`, nicht pauschal `p-12`: Die 48px pro Seite
+	     waren der zweite Grund für den Überlauf bei 360px — zusammen mit den 4px
+	     `border-2` blieben von 312px verfügbarer Breite nur 208px für den Inhalt,
+	     der aber 238px braucht. Die Grenze ist `md` gemäß Breakpoint-Vertrag in
+	     .claude/rules/design-system.md (dort schalten die Innenabstände), und `p-6`
+	     entspricht dem Seitencontainer. -->
 	<div
-		class="hero from-primary/10 via-secondary/10 to-accent/10 border-primary/20 rounded-2xl border-2 bg-gradient-to-br p-12"
+		class="hero from-primary/10 via-secondary/10 to-accent/10 border-primary/20 rounded-2xl border-2 bg-gradient-to-br p-6 md:p-12"
 	>
 		<div class="hero-content text-center">
 			<div class="max-w-4xl">
@@ -481,7 +507,13 @@
 							<div class="stat-value text-primary">
 								{new Intl.NumberFormat('de-DE').format(data.totalSightings)}
 							</div>
-							<div class="stat-desc">freigegebene Sichtungen</div>
+							<!-- `whitespace-normal` hebt DaisyUIs `white-space: nowrap` auf den
+							     Kachel-Zeilen auf. Das ist für kurze Labels gedacht; „Melder-Adressen
+							     insgesamt" in der Kachel darunter misst so 158px und war zusammen mit
+							     dem `padding-inline` der `.stat` (48px) die Untergrenze der ganzen
+							     Seite bei 320px. Wo Platz ist, ändert sich nichts — umbrechbarer Text
+							     bricht erst, wenn er muss. -->
+							<div class="stat-desc whitespace-normal">freigegebene Sichtungen</div>
 						</div>
 					{/if}
 					{#if data.totalObservers != null}
@@ -490,7 +522,7 @@
 							<div class="stat-value text-secondary-strong">
 								{new Intl.NumberFormat('de-DE').format(data.totalObservers)}
 							</div>
-							<div class="stat-desc">Melder-Adressen insgesamt</div>
+							<div class="stat-desc whitespace-normal">Melder-Adressen insgesamt</div>
 						</div>
 					{/if}
 					<!-- Die dritte Kachel („Für die / Wissenschaft / verfügbar") ist
