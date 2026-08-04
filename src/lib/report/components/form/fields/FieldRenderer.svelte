@@ -27,7 +27,8 @@
 		required: requiredOverride = undefined,
 		label: labelOverride = undefined,
 		type: typeOverride = undefined,
-		options: optionsOverride = undefined
+		options: optionsOverride = undefined,
+		helpText: helpTextOverride = undefined
 	}: {
 		fieldConfig: yup.SchemaDescription;
 		name?: string;
@@ -65,6 +66,16 @@
 		 * `undefined` = Ableitung aus dem Schema (Default).
 		 */
 		options?: FieldOption[] | undefined;
+		/**
+		 * Überschreibt den aus `meta.helpText` abgeleiteten Hilfetext. Nötig,
+		 * wenn ein `label`/`type`-Override die Frage so verändert, dass der
+		 * Schema-Hilfetext sie nicht mehr beantwortet — z.B. `boatDrive`:
+		 * „Welcher Antrieb wurde verwendet?" passt zur Admin-Auswahl, nicht zur
+		 * Ja/Nein-Motorfrage im Meldeformular.
+		 * `null` = bewusst kein Hilfetext (dann auch nicht in
+		 * `aria-describedby`), `undefined` = Ableitung aus dem Schema (Default).
+		 */
+		helpText?: string | null | undefined;
 	} = $props();
 
 	// Bindable values for different component types
@@ -156,7 +167,9 @@
 		const meta = fieldConfig.meta || {};
 		return {
 			options: optionsOverride ?? meta.options,
-			helpText: meta.helpText,
+			// Kein `??`: `null` ist hier die ausdrückliche Ansage „kein Hilfetext"
+			// und darf nicht auf den Schema-Text zurückfallen.
+			helpText: helpTextOverride === undefined ? meta.helpText : helpTextOverride,
 			valueText: meta.valueText,
 			type: typeOverride ?? meta.type ?? fieldConfig.type,
 			icon: meta.icon,
@@ -261,8 +274,12 @@
 	});
 
 	let radioProps = $derived.by(() => {
+		// Ohne `icon`: Eine Radiogruppe hat kein einzelnes Control, an dem das
+		// Feld-Icon sitzen könnte — es steht deshalb an der Legende (siehe
+		// caption-Snippet). `BaseRadio` würde es sonst pro Option ausgeben.
+		const { icon: _icon, ...withoutIcon } = commonFieldProps;
 		const props = {
-			...commonFieldProps,
+			...withoutIcon,
 			options: metaValues.options ?? []
 		};
 		return props;
@@ -293,6 +310,14 @@
 		class="text-base-content block font-medium"
 		style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
 	>
+		<!-- Feld-Icon der Radiogruppe. BaseInput und BaseSelect setzen es links
+		     ins Control; eine Radiogruppe hat kein solches Control, also steht es
+		     hier an der Legende — einmal pro Feld, nicht einmal pro Option. -->
+		{#if isRadioGroup && metaValues.icon}
+			<span class="mr-1.5 inline-flex align-middle" aria-hidden="true">
+				<Icon icon={metaValues.icon} width="16" class="text-base-content/60" />
+			</span>
+		{/if}
 		{label}
 		{#if required}
 			<span class="text-error ml-1 text-sm" aria-label="Pflichtfeld">*</span>

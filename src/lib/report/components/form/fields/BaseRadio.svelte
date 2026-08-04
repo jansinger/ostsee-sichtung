@@ -1,16 +1,19 @@
 <!--
   Base radio button group component
   Independent of form context, accepts all props directly
+
+  Kein `icon`-Prop: Das Feld-Icon gehört einmal an die Gruppe und wird von
+  `FieldRenderer` in die Legende gesetzt. Hier stand es innerhalb der
+  Options-Schleife — bei der Motorfrage mit ihren zwei Optionen also zweimal
+  derselbe Blitz untereinander.
 -->
 <script lang="ts">
 	import type { FieldOption, FieldSize } from '$lib/types';
-	import Icon from '$lib/components/Icon.svelte';
 
 	interface Props {
 		value?: string | number;
 		options?: FieldOption[];
 		size?: FieldSize;
-		icon?: string;
 		onchange?: (event: Event) => void;
 		// Common input attributes
 		id?: string;
@@ -25,7 +28,6 @@
 		value = $bindable(),
 		options = [],
 		size = 'md',
-		icon = undefined,
 		onchange = undefined,
 		id,
 		name,
@@ -51,9 +53,6 @@
 			<label
 				class="hover:bg-base-200/50 flex cursor-pointer justify-start gap-3 rounded-lg py-2 transition-colors"
 			>
-				{#if icon !== undefined}
-					<Icon aria-hidden="true" {icon} width="16" class="text-base-content/60 flex-shrink-0" />
-				{/if}
 				<input
 					type="radio"
 					name={name || id || `radio-group-${index}`}
