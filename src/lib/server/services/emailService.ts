@@ -73,6 +73,18 @@ async function configOrEnv(key: string, envValue: string): Promise<string> {
 }
 
 /**
+ * Escapt einen Wert für die Einbettung in den HTML-Body der Test-Mail.
+ *
+ * Empfänger und CC stammen aus Eingaben: CC aus den Einstellungen, der
+ * Empfänger aus dem Request-Body von `POST /api/config/test-email` — der ihn,
+ * anders als die Admin-Route, gar nicht gegen ein E-Mail-Muster prüft. Beides
+ * ist zwar Admin-beschränkt, roh interpoliertes HTML bleibt es trotzdem.
+ */
+function escape(value: string): string {
+	return Handlebars.escapeExpression(value);
+}
+
+/**
  * Macht aus einer Empfängerliste den Wert, den nodemailer erwartet: die
  * bereinigte Liste, oder `undefined` wenn nichts konfiguriert ist.
  *
@@ -85,18 +97,6 @@ async function configOrEnv(key: string, envValue: string): Promise<string> {
  * beim Eingeben, `PUT /api/config` nimmt aber jedes Array entgegen — ein
  * Leerstring landete sonst als leere Adresse im Header.
  */
-/**
- * Escapt einen Wert für die Einbettung in den HTML-Body der Test-Mail.
- *
- * Empfänger und CC stammen aus Eingaben: CC aus den Einstellungen, der
- * Empfänger aus dem Request-Body von `POST /api/config/test-email` — der ihn,
- * anders als die Admin-Route, gar nicht gegen ein E-Mail-Muster prüft. Beides
- * ist zwar Admin-beschränkt, roh interpoliertes HTML bleibt es trotzdem.
- */
-function escape(value: string): string {
-	return Handlebars.escapeExpression(value);
-}
-
 function recipientsOrUndefined(recipients: string[] | undefined): string[] | undefined {
 	const cleaned = (recipients ?? [])
 		.filter((entry): entry is string => typeof entry === 'string')
