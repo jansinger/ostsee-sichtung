@@ -140,6 +140,58 @@ describe('formStepsConfig — boatDriveText nur in der Admin-Maske (PR 4)', () =
 	});
 });
 
+/**
+ * Der Medien-Upload steht seit dem 2026-08-04 auf Schritt 2 (Wunsch des
+ * Museums: „Foto hochladen als erste Abfrage noch vor Tierinformation").
+ *
+ * Der Grund wiegt schwerer als die Reihenfolge: Schritt 3 trägt ganz oben einen
+ * prominenten „Schritt überspringen"-Knopf, der direkt zu den Kontaktdaten
+ * springt — der Upload stand darunter. Wer den Knopf nutzte, bekam die
+ * Foto-Frage nie zu sehen, obwohl Aufnahmen die wertvollste Einzelangabe der
+ * Meldung sind. Schritt 2 ist Pflichtschritt und nicht überspringbar.
+ *
+ * Geprüft wird die Zuordnung in `formStepsConfig`, nicht nur das Markup: An ihr
+ * hängen Schritt-Validierung (`validateStep`) und Fehler-Navigation
+ * (`findStepForErrors`). Stünde das Feld im Markup auf Schritt 2, in der Config
+ * aber auf Schritt 3, spränge die Fehlernavigation auf den falschen Schritt.
+ */
+describe('formStepsConfig — Medien-Upload auf Schritt 2', () => {
+	const sightingDetailsStep = formStepsConfig.find((step) => step.id === 'sighting-details');
+	const observationsStep = formStepsConfig.find((step) => step.id === 'observations');
+
+	it.each(['mediaFile', 'mediaUpload', 'mediaConsent'])(
+		'führt %s im Schritt "sighting-details"',
+		(name) => {
+			expect(sightingDetailsStep?.fields).toContain(name);
+		}
+	);
+
+	it.each(['mediaFile', 'mediaUpload', 'mediaConsent'])(
+		'führt %s nicht mehr im Schritt "observations"',
+		(name) => {
+			expect(observationsStep?.fields).not.toContain(name);
+		}
+	);
+
+	// Der Upload steht VOR den Tierangaben: Wer unsicher ist, welche Art er
+	// gesehen hat, soll das Bild hochladen können, statt zu raten. Die
+	// Reihenfolge im Markup prüft `Step2SightingDetails.svelte.test.ts`; hier
+	// zählt, dass die Config dieselbe Geschichte erzählt — sie bestimmt die
+	// Reihenfolge, in der `findStepForErrors` Felder abläuft.
+	it('listet die Medien-Felder vor species', () => {
+		const fields = sightingDetailsStep?.fields ?? [];
+		const mediaIndex = fields.indexOf('mediaConsent');
+		const speciesIndex = fields.indexOf('species');
+
+		// Beide Fundstellen ausdrücklich absichern: `indexOf` liefert für ein
+		// fehlendes Feld -1, und -1 ist kleiner als jeder gültige Index — der
+		// Vergleich allein liefe grün durch, gerade wenn das Feld ganz fehlt.
+		expect(mediaIndex).toBeGreaterThanOrEqual(0);
+		expect(speciesIndex).toBeGreaterThanOrEqual(0);
+		expect(mediaIndex).toBeLessThan(speciesIndex);
+	});
+});
+
 describe('waterway — Beschriftung deckt beide bisherigen Felder ab', () => {
 	const waterwayMeta = meta('waterway');
 	const copy = [describeField('waterway').label, waterwayMeta.helpText, waterwayMeta.placeholder]

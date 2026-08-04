@@ -66,3 +66,80 @@ describe('Media — Einwilligung zur Veröffentlichung', () => {
 		expect(document.body.textContent).toMatch(/meldende|melderin|melder|betroffene/i);
 	});
 });
+
+/**
+ * Der Einleitungstext folgt der Fassung des Museums — mit einer bewussten
+ * Auslassung.
+ *
+ * Das Dokument schlägt vor: „Mit dem Hochladen Ihrer Fotos stimmen Sie deren
+ * Speicherung durch das Deutsche Meeresmuseum zu." Genau das steht schon an
+ * jeder Dropzone, und zwar genauer: `UPLOAD_NOTICE` nennt die sofortige
+ * Übertragung, die Zweckbindung auf die fachliche Prüfung, die automatische
+ * Löschung nicht abgeschickter Meldungen und die spätere eigene Entscheidung
+ * über eine Veröffentlichung. Eine zweite, kürzere Fassung daneben wäre keine
+ * Zusammenfassung, sondern eine abweichende Aussage über denselben Vorgang —
+ * dieselbe Begründung, aus der `UploadNotice.svelte` den vollen Wortlaut in
+ * einem Dialog hält statt ihn zu kürzen.
+ *
+ * Übernommen sind deshalb Titel, Einladungssatz und der Verweis auf die
+ * Einwilligung darunter. Die zweite Einwilligung („ausschließlich intern"),
+ * die das Dokument zusätzlich vorsieht, ist bewusst nicht gebaut: Sie bräuchte
+ * ein Schema-Feld, eine DB-Spalte und zwei Nachweisspalten. Ohne sie ist der
+ * unangekreuzte Zustand die interne Nutzung — was `mediaConsent.valueText`
+ * bereits sagt.
+ */
+describe('Media — Einleitungstext nach der Fassung des Museums', () => {
+	it('kündigt den Abschnitt als optional an', () => {
+		renderMedia();
+
+		expect(document.body.textContent).toContain('Fotos/Videos hochladen (optional)');
+	});
+
+	it('lädt zum Hochladen ein', () => {
+		renderMedia();
+
+		expect(document.body.textContent).toMatch(/Sie können Aufnahmen zu Ihrer Meldung hochladen/i);
+	});
+
+	/**
+	 * Auf einen Ausschnitt des neuen Satzes geprüft, nicht auf das Wort
+	 * „Veröffentlichung" allein: Das steht bereits im Schema-Label von
+	 * `mediaConsent` („Veröffentlichung meiner Aufnahmen"), ein Test darauf wäre
+	 * auch ohne den neuen Absatz grün.
+	 */
+	it('verweist auf die Auswahl zur Veröffentlichung darunter', () => {
+		renderMedia();
+
+		expect(document.body.textContent).toMatch(/Bitte wählen Sie unten aus/i);
+	});
+
+	/**
+	 * Der Absatz gilt nur im Meldeformular. In der Admin-Maske fordert
+	 * „Bitte wählen Sie unten aus …" zu etwas auf, das direkt darunter gesperrt
+	 * ist — und widerspricht damit dem Hinweis, dass nur die meldende Person
+	 * diese Einwilligung erteilen kann.
+	 */
+	it('fordert den Admin nicht zu einer Auswahl auf, die dort gesperrt ist', () => {
+		renderMedia({ adminMode: true });
+
+		expect(document.body.textContent).not.toMatch(/Bitte wählen Sie unten aus/i);
+	});
+
+	/**
+	 * Der Kern der Auslassung: Der Einwilligungssatz gehört in den
+	 * Datenschutzhinweis, nicht ein zweites Mal in den Fließtext. Bräche das
+	 * auf, stünden zwei unterschiedlich formulierte Aussagen über die
+	 * Speicherung im selben Abschnitt.
+	 */
+	it('behauptet keine Einwilligung durch das Hochladen selbst', () => {
+		renderMedia();
+
+		expect(document.body.textContent).not.toMatch(/Mit dem Hochladen .*stimmen Sie/i);
+	});
+
+	it('behält den Datenschutzhinweis an der Dropzone', () => {
+		renderMedia();
+
+		expect(document.querySelector('[data-testid="upload-notice-trigger"]')).not.toBeNull();
+	});
+});

@@ -56,7 +56,47 @@
 </script>
 
 <!-- Media Section -->
-<SectionCard title="Fotos und Videos" icon="lucide:camera">
+<!-- „(optional)" steht im Titel, weil der Abschnitt seit dem 2026-08-04 auf dem
+     Pflichtschritt 2 liegt: Zwischen lauter Pflichtfeldern liest sich eine
+     Dropzone sonst wie eine weitere Bedingung fürs Weiterkommen. Wortlaut aus
+     der Vorlage des Museums.
+
+     Der Titel nennt Videos fest, obwohl `allowsVideo` unten prüft, ob die
+     Konfiguration sie zulässt: Er ist eine Überschrift, kein Versprechen — was
+     tatsächlich angenommen wird, sagt `formatDescription` eine Zeile tiefer und
+     passt sich an. Der Fließtext daneben ist bewusst formatneutral gehalten. -->
+<SectionCard title="Fotos/Videos hochladen (optional)" icon="lucide:camera">
+	<!-- Der Einwilligungssatz der Vorlage („Mit dem Hochladen … stimmen Sie deren
+	     Speicherung zu") steht hier bewusst NICHT: Denselben Vorgang beschreibt
+	     `UPLOAD_NOTICE` an der Dropzone darunter genauer — sofortige Übertragung,
+	     Zweckbindung auf die fachliche Prüfung, automatische Löschung nicht
+	     abgeschickter Meldungen, spätere eigene Entscheidung über eine
+	     Veröffentlichung. Eine zweite, kürzere Fassung daneben wäre keine
+	     Zusammenfassung, sondern eine abweichende Aussage; aus demselben Grund
+	     hält `UploadNotice.svelte` den Wortlaut unverkürzt im Dialog.
+
+	     Die zweite Einwilligung der Vorlage („ausschließlich intern") ist nicht
+	     gebaut — sie bräuchte Schema-Feld, DB-Spalte und zwei Nachweisspalten.
+	     Ohne sie IST der unangekreuzte Zustand die interne Nutzung, was
+	     `mediaConsent.valueText` bereits sagt.
+
+	     Nur im Meldeformular: In der Admin-Maske (`AdminSightingEditForm.svelte`
+	     rendert `<Media adminMode={true} />`) fordert „Bitte wählen Sie unten
+	     aus …" zu etwas auf, das das Feld darunter mit `disabled={adminMode}`
+	     gerade sperrt — und widerspräche dem Hinweis, dass nur die meldende
+	     Person diese Einwilligung erteilen kann.
+
+	     „Aufnahmen" statt „Fotos und Videos": Welche Formate tatsächlich
+	     angenommen werden, hängt an der Laufzeit-Konfiguration und steht in der
+	     Liste darunter (`formatDescription`). Ein fester Satz im Fließtext würde
+	     Videos auch dann versprechen, wenn `allowedTypes` keine enthält. Das
+	     Wort ist zugleich das, was der Abschnitt sonst durchgehend verwendet. -->
+	{#if !adminMode}
+		<p class="text-base-content/70 mb-4 text-sm">
+			Sie können Aufnahmen zu Ihrer Meldung hochladen. Bitte wählen Sie unten aus, ob wir sie
+			zusätzlich für Veröffentlichungen nutzen dürfen.
+		</p>
+	{/if}
 	<div class="text-base-content/70 mb-4 text-sm">
 		<p class="mb-2 flex items-center gap-2 font-medium">
 			<Icon icon="lucide:camera" width="16" class="text-primary" aria-hidden="true" />
