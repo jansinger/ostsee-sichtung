@@ -91,6 +91,9 @@ describe('Einwilligungstexte', () => {
 		});
 
 		it('nennt ihn in keinem der beiden „Sichtungsmeldung"', () => {
+			// Kleingeschrieben, weil `textOf` den Text bereits normalisiert — wie in
+			// den Blöcken darüber. Der Regex greift damit auf „Sichtungsmeldung"
+			// und „Sichtungsmeldungen" gleichermaßen.
 			expect(textOf('persistentDataConsent')).not.toMatch(/sichtungsmeldung/);
 		});
 	});

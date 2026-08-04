@@ -276,7 +276,7 @@ WHERE key = 'notification.email.template'
 -- 3. Ergebnis im Klartext
 SELECT CASE
 	WHEN h = '2527b475241de0f1039f9cca27c920997f6e14bed4bc6ce087689dc6617ed392'
-		THEN 'OK — Vorlage ist auf dem aktuellen Stand (Vorgang heisst Meldung).'
+		THEN 'OK — Vorlage ist auf dem aktuellen Stand (Vorgang wird als Meldung bezeichnet).'
 	ELSE 'ACHTUNG — kein bekannter Seed, es wurde nichts geaendert. Angepasster Text, Hash: ' || h
 END AS ergebnis
 FROM (
