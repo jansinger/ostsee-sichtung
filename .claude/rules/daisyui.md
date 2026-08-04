@@ -250,9 +250,18 @@ translateZ(0) }` in `app.css`: alle drei Routen rot, alle sechs Dialoge benannt.
 setzen, nach jedem Schritt `document.documentElement.scrollWidth` messen und in
 den Teilbaum absteigen, dessen Ausblenden den Überlauf beseitigt. Das liefert
 den kleinsten Verursacher statt einer Liste mitgezogener Elternelemente.
-Messen muss man dafür in einem echten 360-px-Viewport (Playwright-Skript
-**im Repo-Verzeichnis**, sonst fehlt `@playwright/test`); Chrome selbst lässt
-sich nicht so schmal ziehen.
+Messen muss man dafür in einem echten 360-px-Viewport; Chrome selbst lässt sich
+nicht so schmal ziehen.
+
+**Das Verfahren steht als `findHorizontalOverflow` in `e2e/helpers/overflow.ts`**
+— kein Wegwerf-Skript mehr nötig. `expectNoHorizontalOverflow(page, kontext)`
+misst und benennt bei einem Befund den Verursacher samt Pfad. Ein Detail, das
+beim Nachbauen von Hand regelmäßig fehlt: Ein einzelnes Kind auszublenden
+genügt nicht, sobald zwei Bereiche unabhängig voneinander zu breit sind — dann
+endet der Abstieg am gemeinsamen Elternelement. Der Helfer blendet deshalb im
+zweiten Durchgang alle Geschwister aus und steigt in jeden Zweig ab, der für
+sich allein noch überläuft. Angewendet in `e2e/horizontal-overflow.spec.ts`
+(Meldeformular, alle vier Schritte, ab 320 px).
 
 ---
 

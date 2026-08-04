@@ -305,11 +305,15 @@
 </script>
 
 <!-- Caption-Inhalt (Label-Text, Pflichtfeld-Markierung, Status, Info-Tooltip) -->
+<!-- `overflow-wrap: anywhere` statt des früheren `break-word` (ebenso in
+     BaseCheckbox, BaseToggle und Checkbox): Nur `anywhere` senkt die
+     Mindestbreite des Textes und macht das Layout damit unabhängig davon, ob
+     `hyphens: auto` greift. Chromes Trennmuster hängen an Wörterbüchern, die auf
+     Headless-CI-Images fehlen — nachgestellt lief Schritt 3 auf 320px sonst um
+     11px über. Ausführliche Begründung am `.label`-Block in `src/app.css`;
+     abgesichert durch `e2e/horizontal-overflow.spec.ts`. -->
 {#snippet caption()}
-	<span
-		class="text-base-content block font-medium"
-		style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
-	>
+	<span class="text-base-content block font-medium" style="overflow-wrap: anywhere; hyphens: auto;">
 		<!-- Feld-Icon der Radiogruppe. BaseInput und BaseSelect setzen es links
 		     ins Control; eine Radiogruppe hat kein solches Control, also steht es
 		     hier an der Legende — einmal pro Feld, nicht einmal pro Option. -->
@@ -345,7 +349,8 @@
 		     Damit das trägt, darf am Label/Legend kein `overflow-hidden` stehen:
 		     es klippt nicht nur den überstehenden Teil der Trefferfläche, sondern
 		     auch die Tooltip-Blase selbst. Horizontal hält `w-full` zusammen mit
-		     dem `overflow-wrap: break-word` der Caption-Span. -->
+		     dem `overflow-wrap` der Caption-Span (seit 2026-08-04 `anywhere`,
+		     Begründung dort). -->
 		{#if metaValues.valueText}
 			<span class="tooltip tooltip-left ml-2 inline-block" data-tip={metaValues.valueText}>
 				<button

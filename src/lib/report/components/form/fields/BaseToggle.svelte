@@ -73,7 +73,7 @@
 		/>
 		<span
 			class="min-w-0 flex-1 text-left font-medium"
-			style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+			style="overflow-wrap: anywhere; hyphens: auto;"
 		>
 			{label}
 			{#if required}

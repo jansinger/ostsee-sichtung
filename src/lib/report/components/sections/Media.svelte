@@ -105,9 +105,13 @@
 		<Icon icon="lucide:mail" width="20" class="text-info-strong" aria-hidden="true" />
 		<span class="text-sm">
 			Ist eine Aufnahme zu groß für den Upload? Senden Sie die Meldung trotzdem ab und schicken Sie
-			die Datei anschließend an <a class="link" href="mailto:{MEDIA_FALLBACK_EMAIL}"
-				>{MEDIA_FALLBACK_EMAIL}</a
-			>.
+			<!-- `wrap-anywhere`: Die Adresse ist ein einziges Wort von 207px und damit
+			     die Mindestbreite dieses Alerts. Auf 320px schob sie das Dokument um
+			     60px über den Fensterrand hinaus (`e2e/horizontal-overflow.spec.ts`) —
+			     ein Alert kann seinem Inhalt nicht ausweichen, und der Seiten-Wrapper
+			     wächst als Flex-Item mit `mx-auto` mit. -->
+			die Datei anschließend an
+			<a class="link wrap-anywhere" href="mailto:{MEDIA_FALLBACK_EMAIL}">{MEDIA_FALLBACK_EMAIL}</a>.
 		</span>
 	</div>
 </SectionCard>

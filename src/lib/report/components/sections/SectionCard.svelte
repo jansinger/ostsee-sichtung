@@ -28,7 +28,19 @@
 {#if variant === 'card'}
 	<div class="card bg-base-200 shadow-raised">
 		<div class="card-body">
-			<h3 class="card-title text-section flex items-center gap-2">
+			<!-- `wrap-anywhere`: Der Titel steht als anonymes Flex-Item neben dem
+			     Icon und kann deshalb nicht unter seine Mindestbreite schrumpfen.
+			     „Boot-/Schiffsinformationen" misst so 229px und drückte die ganze
+			     Seite auf 320px um 60px auseinander — der Seiten-Wrapper ist ein
+			     Flex-Item mit `mx-auto` und wächst mit seinem Inhalt statt mit dem
+			     Fenster. `wrap-anywhere` senkt die Mindestbreite auf ein Zeichen;
+			     gebrochen wird trotzdem nur, wenn der Titel sonst nicht passt (ab
+			     360px also gar nicht). `hyphens: auto` allein würde hier nicht
+			     genügen: Chromes Trennmuster hängen an Wörterbüchern, die auf
+			     Headless-CI-Images fehlen können, und eine Layoutgrenze darf davon
+			     nicht abhängen (dieselbe Begründung wie am `.label`-Block in
+			     `src/app.css`). Gefunden von `e2e/horizontal-overflow.spec.ts`. -->
+			<h3 class="card-title text-section flex items-center gap-2 wrap-anywhere">
 				<Icon {icon} width="20" class="text-primary" aria-hidden="true" />
 				{title}
 			</h3>
@@ -37,7 +49,8 @@
 	</div>
 {:else}
 	<div class="border-base-300 bg-base-200/50 rounded-box border p-3 md:p-4">
-		<h3 class="text-section mb-3 flex items-center gap-2 font-semibold">
+		<!-- `wrap-anywhere` wie in der `card`-Variante oben. -->
+		<h3 class="text-section mb-3 flex items-center gap-2 font-semibold wrap-anywhere">
 			<Icon {icon} width="20" class="text-primary" aria-hidden="true" />
 			{title}
 		</h3>

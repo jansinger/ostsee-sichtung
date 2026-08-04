@@ -957,9 +957,10 @@
 								</td>
 							{/if}
 							{#if columnVisibility.verified}
-								<!-- whitespace-nowrap: BaseToggle gibt seinem Label `overflow-wrap: break-word`
-								     und `hyphens: auto` mit — im Formular richtig, hier nicht: Die Tabelle
-								     staucht die Spalte damit unter die Wortbreite und trennt „Ge-/prüft".
+								<!-- whitespace-nowrap: BaseToggle gibt seinem Label `overflow-wrap: anywhere`
+								     und `hyphens: auto` mit (bis 2026-08-04 `break-word`) — im Formular
+								     richtig, hier nicht: Die Tabelle staucht die Spalte damit unter die
+								     Wortbreite und trennt „Ge-/prüft".
 								     Die Sperre steht an der Zelle und nicht in der Komponente, damit lange
 								     Labels in der Bearbeitungsmaske weiter umbrechen dürfen. -->
 								<td class="whitespace-nowrap">
