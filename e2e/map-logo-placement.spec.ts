@@ -10,9 +10,10 @@ import { mockMapSightingsSuccess } from './fixtures/mockApi';
  * umgestellt (`/logo_dmm_positiv.svg`). Die ist zweizeilig ohne „Stralsund" und
  * damit 2,09:1 breit statt 1,33:1 wie das abgelöste `dmm-logo.png` — bei `h-12`
  * sind das 100px Bildbreite (110px Platte) statt 64px (74px). Mit dem alten
- * `bottom-6` lag die Platte ab 360px Breite über dem „Liste"-Button (-2px bei
- * 360, -22px bei 320). Ein reiner Sichtprüfungs-Screenshot hätte das nur bei
- * genau der getesteten Breite gezeigt.
+ * `bottom-6` lag die Platte bei 360px Breite und darunter über dem
+ * „Liste"-Button (-2px bei 360, -22px bei 320). Ein reiner
+ * Sichtprüfungs-Screenshot hätte das nur bei genau der getesteten Breite
+ * gezeigt.
  *
  * Der Test misst deshalb die Geometrie und nicht das Aussehen: Er schlägt
  * genauso an, wenn jemand später das Logo tauscht, `h-12` erhöht oder die
@@ -34,8 +35,10 @@ test.describe('Karte — Platzierung des Museumslogos', () => {
 			const logo = page.locator('#dmm');
 			await expect(logo).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.defaultUi });
 
-			// Die Platte ist der sichtbare Kasten: img → flex-Wrapper → Platte.
-			const platte = logo.locator('xpath=../..');
+			// Über data-testid statt über die Verschachtelung: ein positionelles
+			// `xpath=../..` würde beim Umbau des Markups still auf ein anderes
+			// Element zeigen und trotzdem grün laufen.
+			const platte = page.getByTestId('map-logo-plate');
 			const umschaltung = page.getByRole('button', { name: 'Liste', exact: true });
 			await expect(umschaltung).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.defaultUi });
 

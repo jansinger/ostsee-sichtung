@@ -943,9 +943,10 @@
 		     Logo ist zweizeilig ohne „Stralsund" und damit 2,09:1 breit statt 1,33:1
 		     wie das abgelöste dmm-logo.png — bei h-12 sind das 100px Bildbreite (110px
 		     Platte) gegenüber vorher 64px (74px). Nachgemessen kollidiert die Platte
-		     deshalb ab 360px Breite mit dem „Liste"-Button (-2px bei 360, -22px bei
-		     320); bei 375px blieben nur 5px. Die Umschaltung belegt 16–60px über der
-		     Unterkante, bottom-20 setzt die Platte auf 80px und räumt sie. -->
+		     deshalb bei 360px Breite und darunter mit dem „Liste"-Button (-2px bei
+		     360, -22px bei 320); bei 375px blieben nur 5px übrig. Die Umschaltung
+		     belegt 16–60px über der Unterkante, bottom-20 setzt die Platte auf 80px
+		     und räumt sie. -->
 		<div class="group absolute right-1 bottom-20 z-30 md:bottom-6">
 			<!-- Helle Platte, weil /logo_dmm_positiv.svg einfarbig im Markenblau
 			     #003777 zeichnet (relative Luminanz 0,041 — auf Weiß 11,6:1, über
@@ -956,16 +957,19 @@
 			     weiß) — das nutzt die About-Seite auf bg-primary. -->
 			<div
 				class="border-primary/10 bg-base-100/95 rounded-xl border p-1 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+				data-testid="map-logo-plate"
 			>
-				<div class="flex flex-col items-center">
-					<img
-						src="/logo_dmm_positiv.svg"
-						alt="Logo des Deutschen Meeresmuseums - wissenschaftliche Einrichtung für Meeresforschung und Meeresschutz"
-						class="h-12 w-auto"
-						id="dmm"
-						title="Deutsches Meeresmuseum"
-					/>
-				</div>
+				<!-- Kein flex-Wrapper um das Bild: Tailwinds Preflight setzt img auf
+				     display:block, es gibt hier also keine Baseline-Unterlänge zu
+				     bändigen. Nachgemessen bleibt die Platte mit und ohne Wrapper
+				     exakt 58px hoch. -->
+				<img
+					src="/logo_dmm_positiv.svg"
+					alt="Logo des Deutschen Meeresmuseums - wissenschaftliche Einrichtung für Meeresforschung und Meeresschutz"
+					class="h-12 w-auto"
+					id="dmm"
+					title="Deutsches Meeresmuseum"
+				/>
 			</div>
 		</div>
 	{/if}
