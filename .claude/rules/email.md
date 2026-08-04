@@ -101,8 +101,23 @@ war konstant `undefined`. Abgesichert durch `emailService.test.ts`
 
 ## Template
 
-Handlebars-Template in `src/lib/server/templates/sightingNotificationTemplate.html`.
-Fallback auf inline `DEFAULT_EMAIL_TEMPLATE` wenn Datei nicht lesbar.
+**Es gibt genau eine Quelle:** `NOTIFICATION_EMAIL_DEFAULT_TEMPLATE` in
+`src/lib/server/templates/notificationEmailDefault.ts`. Sie wird nach `app_config`
+geseedet und ist zugleich der Code-Default in
+`ConfigRepository.getString('notification.email.template', …)`. Der DB-Wert
+gewinnt; wer die Konstante ändert, zieht den Seed mit
+`src/tools/refresh-email-template.ts` nach.
+
+**Keine Vorlage aus dem Dateisystem lesen.** Bis 2026-08-04 gab es zwei weitere
+Kopien: die Datei `templates/sightingNotificationTemplate.html`, die
+`getDefaultTemplate()` per `readFileSync` las, und die Inline-Konstante
+`DEFAULT_EMAIL_TEMPLATE` als deren Rückfall. Die `.html` liegt in `src/`, wird
+vom Bundler nicht nach `build/` ausgegeben, und das Image kopiert nur `build/` —
+in Produktion schlug der Lesevorgang deshalb immer fehl. Weil der Default als
+Argument eifrig ausgewertet wird, passierte das bei jedem Config-Cache-Miss und
+schrieb alle fünf Minuten eine `level:50`-Zeile ins Log, obwohl der DB-Wert das
+Ergebnis ohnehin bestimmte. Abgesichert durch `emailService.test.ts`
+(„Vorlagen-Default kommt aus dem Bundle, nicht vom Dateisystem").
 
 ---
 

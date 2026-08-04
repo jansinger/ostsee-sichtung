@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import Handlebars from 'handlebars';
 import { describe, expect, it } from 'vitest';
 import { getDefaultConfigurationsByCategory } from '$lib/server/services/configInitializer';
@@ -10,10 +7,8 @@ import { EMAIL_COLORS, emailColorContext } from './emailTokens';
  * Der Guard für die E-Mail-Seite des Design Systems.
  *
  * Warum kein DOM-Scan wie bei `e2e/design-tokens.spec.ts`: E-Mail-HTML wird nie
- * in einem Browser dieses Projekts gerendert. Die Prüfung muss deshalb über die
- * Vorlagen-Quelltexte laufen — über **beide** ausgelieferten Vorlagen: die Datei
- * `sightingNotificationTemplate.html` (Code-Default) und den Seed, der nach
- * `app_config` geschrieben wird.
+ * in einem Browser dieses Projekts gerendert. Die Prüfung muss deshalb über den
+ * Vorlagen-Quelltext laufen.
  *
  * Der Seed wurde bei der Einführung dieses Tests übersehen, weil er als
  * Template-Literal mitten in `configInitializer.ts` stand. Seit dem 2026-07-30
@@ -21,11 +16,14 @@ import { EMAIL_COLORS, emailColorContext } from './emailTokens';
  * `getDefaultConfigurationsByCategory()` gelesen — also über den Weg, auf dem er
  * tatsächlich in der Datenbank landet. Ein direkter Import der Konstante würde
  * nicht bemerken, wenn der Seed-Eintrag versehentlich auf etwas anderes zeigt.
+ *
+ * Bis 2026-08-04 lief die Schleife über **zwei** Vorlagen: zusätzlich über die
+ * Datei `sightingNotificationTemplate.html`, den damaligen Code-Default. Die
+ * Datei ist ersatzlos entfallen — sie wurde vom Bundler nie nach `build/`
+ * ausgegeben und fehlte damit in jedem Docker-Image, während der Seed sie in
+ * jeder Installation ohnehin schlug. Code-Default und Seed sind seitdem
+ * dieselbe Konstante; die Schleife bleibt, weil sie die Testnamen trägt.
  */
-
-const templateDir = dirname(fileURLToPath(import.meta.url));
-
-const fileTemplate = readFileSync(join(templateDir, 'sightingNotificationTemplate.html'), 'utf-8');
 
 const dbDefaultTemplate = String(
 	getDefaultConfigurationsByCategory()['email']?.find(
@@ -33,10 +31,7 @@ const dbDefaultTemplate = String(
 	)?.value ?? ''
 );
 
-const TEMPLATES = [
-	['sightingNotificationTemplate.html', fileTemplate],
-	['configInitializer: notification.email.template', dbDefaultTemplate]
-] as const;
+const TEMPLATES = [['configInitializer: notification.email.template', dbDefaultTemplate]] as const;
 
 describe('E-Mail-Vorlagen — Farben kommen aus emailTokens', () => {
 	for (const [name, template] of TEMPLATES) {
@@ -74,15 +69,14 @@ describe('E-Mail-Vorlagen — Farben kommen aus emailTokens', () => {
 		 *
 		 * `ostsee_geo` ist die grobe Bounding Box; wer darüber verzweigt, weist
 		 * eine Meldung aus dem Hamburger Hafen als Ostsee-Sichtung aus. Genau das
-		 * ist beiden Vorlagen passiert (Fehler 4 in `docs/OSTSEE_FLAGS.md`) — der
+		 * ist der Vorlage passiert (Fehler 4 in `docs/OSTSEE_FLAGS.md`) — der
 		 * Status kommt seit dem 2026-07-30 vorberechnet als `sighting.balticSea`
 		 * aus `balticSeaEmailContext.ts`.
 		 *
-		 * Die Prüfung sitzt bewusst in dieser Schleife und nicht in
-		 * `notificationEmailDefault.test.ts`: dort deckte sie nur den Seed ab,
-		 * während die Datei-Vorlage — die ausgeliefert wird, solange `app_config`
-		 * den Schlüssel nicht hat — unbewacht blieb. Ein Guard, der nur eine von
-		 * zwei Kopien kennt, ist der Fehler eine Ebene höher.
+		 * Die Prüfung sitzt hier und nicht in `notificationEmailDefault.test.ts`,
+		 * weil sie über `getDefaultConfigurationsByCategory()` den Seed-Eintrag
+		 * selbst liest — also den Weg, auf dem der Text in `app_config` landet,
+		 * und nicht nur die Konstante, auf die er gerade zeigt.
 		 */
 		it(`${name}: verzweigt nicht über die Ostsee-Rohflags`, () => {
 			const rawFlagBlocks = [...template.matchAll(/\{\{#(?:if|unless)\s+sighting\.(\w+)/g)]

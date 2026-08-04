@@ -17,7 +17,7 @@
  *
  * **Wer diese Vorlage ändert, muss den Seed nachziehen.** Der in `app_config`
  * gespeicherte Wert gewinnt gegen diesen Default
- * (`ConfigRepository.getString(…, getDefaultTemplate())`) — eine Änderung hier
+ * (`ConfigRepository.getString(…, NOTIFICATION_EMAIL_DEFAULT_TEMPLATE)`) — eine Änderung hier
  * wirkt auf keine bestehende Installation. Ablauf und Fingerabdruck-Liste:
  * `src/tools/refresh-email-template.ts`.
  */

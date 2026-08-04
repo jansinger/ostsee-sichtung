@@ -6,8 +6,9 @@
  * color-mix() noch CSS-Variablen zuverlässig. E-Mail braucht sRGB-Hex,
  * inline gesetzt.
  *
- * Was diese Datei ersetzt: rund 40 hartcodierte Hex-Werte in
- * sightingNotificationTemplate.html und configInitializer.ts, die aus der
+ * Was diese Datei ersetzt: rund 40 hartcodierte Hex-Werte in den damaligen
+ * zwei Vorlagen-Kopien (sightingNotificationTemplate.html, seit 2026-08-04
+ * entfallen, und configInitializer.ts), die aus der
  * Tailwind-Default-Palette stammten (#0ea5e9 als Kopffarbe, #1d4ed8 als
  * Button, #f59e0b, #10b981, #dc2626) — das Meeresmuseum-Blau kam in keiner
  * E-Mail vor. Ebenfalls entfallen: zwei linear-gradient-Flächen, die dem
