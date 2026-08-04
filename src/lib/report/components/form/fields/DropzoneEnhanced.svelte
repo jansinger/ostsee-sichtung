@@ -69,7 +69,20 @@
 		config, // Datei-Validierungskonfiguration (Größe, Typen, etc.)
 		enableGPSExtraction = false, // GPS-Extraktionsmodus aktivieren (für Position-Schritt)
 		title, // Optionaler Titel für die Dropzone
-		additionalText = 'GPS-Daten werden beim Upload verarbeitet',
+		/**
+		 * Zusatz unter dem Dropzone-Titel.
+		 *
+		 * Default bewusst leer: Bis zum 2026-08-04 stand hier „GPS-Daten werden
+		 * beim Upload verarbeitet" — eine Aussage, die genau der Aufrufer NICHT
+		 * erbte, der sie einlöst (`PositionPanel` überschreibt sie), während sie
+		 * `sections/Media.svelte` mit `enableGPSExtraction={false}` versprach.
+		 * Dort führt kein Codepfad zu `applyExifPosition`, die Position blieb
+		 * also unberührt.
+		 *
+		 * Was der Aufrufer mit den Daten tut, kann diese Komponente nicht wissen —
+		 * ein Zusatz dazu gehört deshalb an die Aufrufstelle, nicht in den Default.
+		 */
+		additionalText = '',
 		/**
 		 * Eigener Warnhinweis „Keine GPS-Daten im Foto" (nur im GPS-Modus sichtbar).
 		 *

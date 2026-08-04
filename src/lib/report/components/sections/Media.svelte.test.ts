@@ -143,3 +143,47 @@ describe('Media — Einleitungstext nach der Fassung des Museums', () => {
 		expect(document.querySelector('[data-testid="upload-notice-trigger"]')).not.toBeNull();
 	});
 });
+
+/**
+ * Dieser Abschnitt versprach bis zum 2026-08-04 an zwei Stellen eine
+ * Positionsübernahme, die er nicht leistet: „Automatische Positionserkennung aus
+ * Fotos" in der Vorteilsliste und „GPS-Daten werden beim Upload verarbeitet" als
+ * Default-Zusatz aus `DropzoneEnhanced`.
+ *
+ * Eingelöst wird beides nicht: Die Dropzone hier läuft mit
+ * `enableGPSExtraction={false}`, und `applyExifPosition` hängt in
+ * `DropzoneEnhanced` am selben Wächter (`isPositionStep`). Die Koordinaten aus
+ * Schritt 1 bleiben unberührt — GPS übernimmt ausschließlich `PositionPanel`.
+ *
+ * Geprüft wird deshalb die **Abwesenheit** der Zusage, nicht der neue Wortlaut:
+ * Wie der Abschnitt seinen Nutzen beschreibt, darf das Museum jederzeit
+ * umformulieren; dass er dabei keine Positionsübernahme behauptet, nicht. Das
+ * Muster fängt bewusst die Sache und nicht den alten Satz — eine Assertion auf
+ * dessen Wortlaut wäre grün, sobald jemand dasselbe Versprechen anders
+ * formuliert.
+ *
+ * Den zweiten Satz deckt dieser Test NICHT ab, und der Versuch wäre eine Falle:
+ * Die Dropzone hängt an `{#if uploadConfig}` und damit an `getUploadConfig()`,
+ * das hier nie auflöst — eine Assertion auf ihren Zusatz wäre auch mit dem alten
+ * Default grün (vorgeführt am 2026-08-04). Sie steht deshalb dort, wo sie beißt:
+ * `DropzoneEnhanced.svelte.test.ts` → „Default-Zusatz verspricht kein GPS".
+ */
+describe('Media — keine Zusage einer Positionsübernahme', () => {
+	it('kündigt keine automatische Positionserkennung an', () => {
+		renderMedia();
+
+		expect(document.body.textContent).not.toMatch(/automatisch\w*\s+Position/i);
+	});
+
+	/**
+	 * Die Gegenprobe zu den beiden Verboten: Ohne sie wären sie auch dann grün,
+	 * wenn der Abschnitt gar nichts mehr zu Metadaten sagt — und der Hinweis,
+	 * dass die eigene Eingabe unangetastet bleibt, ist genau der Satz, der die
+	 * Sorge „ein Foto überschreibt meine Position" ausräumt.
+	 */
+	it('sagt stattdessen, dass die eigene Positionsangabe unberührt bleibt', () => {
+		renderMedia();
+
+		expect(document.body.textContent).toMatch(/Schritt 1 bleiben davon unberührt/i);
+	});
+});

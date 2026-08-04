@@ -336,3 +336,32 @@ describe('DropzoneEnhanced — sichtbarer Auslöser', () => {
 		openDialog.mockRestore();
 	});
 });
+
+/**
+ * Der Zusatz unter dem Dropzone-Titel darf keine Positionsübernahme versprechen,
+ * die der Aufrufer nicht leistet.
+ *
+ * Bis zum 2026-08-04 war „GPS-Daten werden beim Upload verarbeitet" der Default
+ * dieser Komponente. Sie erbte damit ausgerechnet der Aufrufer, der GPS NICHT
+ * auswertet (`sections/Media.svelte`, `enableGPSExtraction={false}` — dort führt
+ * kein Pfad zu `applyExifPosition`), während `PositionPanel` als einziger echter
+ * GPS-Aufrufer den Zusatz mit `additionalText=""` überschrieb.
+ *
+ * Geprüft wird deshalb der Default, nicht ein durchgereichter Wert: Ein Aufrufer,
+ * der nichts angibt, darf nichts versprechen. Was er selbst hineinschreibt, ist
+ * seine Aussage und seine Verantwortung.
+ */
+describe('DropzoneEnhanced — Default-Zusatz verspricht kein GPS', () => {
+	it('rendert ohne eigenen Zusatz keine Aussage über GPS-Daten', async () => {
+		renderDropzone([], { maxFiles: 10, enableGPSExtraction: false });
+
+		// Auf die gerenderte Fläche gewartet, sonst wäre die Assertion leer-grün.
+		await vi.waitUntil(() =>
+			Array.from(document.querySelectorAll('*')).find((candidate) =>
+				candidate.textContent?.includes('Klicken oder Drag & Drop')
+			)
+		);
+
+		expect(document.body.textContent).not.toMatch(/GPS/i);
+	});
+});
