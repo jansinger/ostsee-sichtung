@@ -7,12 +7,16 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
+	CI_DEV_HOST,
 	DEV_IDENTITY_PATH,
 	assertServerIdentity,
+	ciDevPort,
 	createNodeIdentityFetch,
 	describePortOwner,
+	devPortFromEnv,
 	devServerIdentity,
 	devTrustAnchors,
+	loopbackHostFor,
 	worktreeDevPort
 } from './dev-server-identity';
 
@@ -159,6 +163,80 @@ describe('describePortOwner', () => {
 	});
 });
 
+describe('loopbackHostFor', () => {
+	it('übersetzt Wildcard-Binds in eine Loopback-Adresse derselben Familie', () => {
+		expect(loopbackHostFor('0.0.0.0')).toBe('127.0.0.1');
+		expect(loopbackHostFor('::')).toBe('[::1]');
+	});
+
+	it('lässt bereits konkrete Hosts unangetastet', () => {
+		expect(loopbackHostFor('localhost')).toBe('localhost');
+		expect(loopbackHostFor('127.0.0.1')).toBe('127.0.0.1');
+	});
+
+	/**
+	 * Beide Aufrufer setzen das Ergebnis direkt in eine URL ein. Ein nacktes
+	 * IPv6-Literal ergäbe dort `http://::1:4000` — die Klammern gehören deshalb hierher
+	 * und nicht an die Aufrufstellen.
+	 */
+	it('klammert IPv6-Literale für den Einsatz in einer URL', () => {
+		expect(loopbackHostFor('::1')).toBe('[::1]');
+		expect(loopbackHostFor('fe80::1')).toBe('[fe80::1]');
+		expect(loopbackHostFor('[::1]')).toBe('[::1]');
+	});
+
+	/**
+	 * Der Kern des Befunds vom 2026-08-04: `localhost` ist **keine** gültige Antwort für
+	 * einen Bind auf `0.0.0.0`. Auf macOS löst `localhost` zuerst nach `::1` auf — einer
+	 * Adresse, die der IPv4-Wildcard nie bedient.
+	 */
+	it('gibt für 0.0.0.0 nicht localhost zurück', () => {
+		expect(loopbackHostFor('0.0.0.0')).not.toBe('localhost');
+	});
+});
+
+describe('devPortFromEnv', () => {
+	/**
+	 * Die eine Stelle, an der `VITE_DEV_PORT` gelesen wird. Vorher parsten drei Aufrufer
+	 * die Variable verschieden: `parseInt('4300abc')` ergab 4300, `Number(…)` ergibt
+	 * `NaN`. Dass der Wert überall gleich verstanden wird, ist hier keine Kosmetik — der
+	 * Port muss auf beiden Seiten derselbe sein.
+	 */
+	it('gibt null zurück, wenn nichts Brauchbares dasteht', () => {
+		expect(devPortFromEnv({})).toBeNull();
+		expect(devPortFromEnv({ VITE_DEV_PORT: '' })).toBeNull();
+		expect(devPortFromEnv({ VITE_DEV_PORT: 'auto' })).toBeNull();
+		expect(devPortFromEnv({ VITE_DEV_PORT: '0' })).toBeNull();
+		expect(devPortFromEnv({ VITE_DEV_PORT: '4300abc' })).toBeNull();
+	});
+
+	it('liefert einen gesetzten Port', () => {
+		expect(devPortFromEnv({ VITE_DEV_PORT: '4123' })).toBe(4123);
+	});
+});
+
+describe('ciDevPort', () => {
+	it('nimmt 4000, solange nichts anderes gesetzt ist', () => {
+		expect(ciDevPort({})).toBe(4000);
+	});
+
+	/**
+	 * `playwright.config.ts` reicht `VITE_DEV_PORT` an den webServer durch. Solange
+	 * `vite.config.ci.ts` den Port hart auf 4000 setzte, war diese Übergabe wirkungslos —
+	 * ein stiller Widerspruch zwischen dem Port, auf den Playwright wartet, und dem, auf
+	 * dem der Server steht.
+	 */
+	it('folgt VITE_DEV_PORT', () => {
+		expect(ciDevPort({ VITE_DEV_PORT: '4123' })).toBe(4123);
+	});
+
+	it('ignoriert unbrauchbare Werte statt NaN weiterzureichen', () => {
+		expect(ciDevPort({ VITE_DEV_PORT: '' })).toBe(4000);
+		expect(ciDevPort({ VITE_DEV_PORT: 'auto' })).toBe(4000);
+		expect(ciDevPort({ VITE_DEV_PORT: '0' })).toBe(4000);
+	});
+});
+
 /**
  * Diese Tests machen echtes Netz-I/O (TLS-Handshake, Socket-Auf- und Abbau). Unter der
  * Last der vollen Suite reichen die 5 s Default nicht: gemessen fiel der HTTPS-Test in
@@ -166,6 +244,86 @@ describe('describePortOwner', () => {
  * deshalb mehr Zeit statt Test entschärfen.
  */
 const IO_TIMEOUT = 20_000;
+
+/**
+ * Die Regressionstests zum webServer-Timeout vom 2026-08-04.
+ *
+ * Der Fehler entstand daran, dass ein E2E-Server auf `CI_DEV_HOST` (IPv4-Wildcard) band,
+ * Playwright aber `localhost` abfragte — auf macOS zuerst `[::1]`, wo der HTTPS-Dev-Server
+ * lag. Zwei Adressfamilien heißt: kein Zusammenstoß, `strictPort` schlägt nie an. Genau
+ * deshalb half die Portvergabe pro Worktree nicht — es gab nie eine Kollision, die sie
+ * hätte entschärfen können.
+ *
+ * Bewusst **ohne** `listen(…, 'localhost')` im Aufbau: Welche Familie daraus wird, ist
+ * betriebssystemabhängig (macOS liefert `::1` zuerst, Linux üblicherweise `127.0.0.1`).
+ * Ein Test, der darauf baut, prüfte je nach Host etwas anderes — und wäre in CI auf
+ * `ubuntu-latest` rot. Die Adressfamilien stehen deshalb explizit da.
+ */
+describe('Dev-Server und E2E-Server auf demselben Port', () => {
+	/** Bindet einen Server, der seinen Namen zurückgibt. */
+	async function listen(name: string, host: string, port = 0): Promise<http.Server> {
+		const server = http.createServer((_req, res) => res.end(name));
+		await new Promise<void>((resolve, reject) => {
+			server.once('error', reject);
+			server.listen(port, host, resolve);
+		});
+		return server;
+	}
+
+	/**
+	 * Die Eigenschaft, auf der die Behebung beruht — gilt auf jedem Host, unabhängig von
+	 * Namensauflösung und IPv6-Verfügbarkeit.
+	 */
+	it(
+		'erreicht einen Server auf CI_DEV_HOST unter loopbackHostFor(CI_DEV_HOST)',
+		async () => {
+			const e2e = await listen('E2E', CI_DEV_HOST);
+			const { port } = e2e.address() as AddressInfo;
+			try {
+				const response = await fetch(`http://${loopbackHostFor(CI_DEV_HOST)}:${port}/`);
+				expect(await response.text()).toBe('E2E');
+			} finally {
+				await new Promise((resolve) => e2e.close(resolve));
+			}
+		},
+		IO_TIMEOUT
+	);
+
+	it(
+		'teilt sich den Port mit einem Dev-Server auf [::1] und trifft trotzdem den eigenen',
+		async (ctx) => {
+			// Zuerst der Dev-Server auf Port 0: Der Kernel wählt, die Nummer wird
+			// zurückgelesen. Kein Schließen-und-neu-Binden, damit dazwischen niemand den
+			// Port wegschnappen kann (vgl. die Flakiness der legacy-inbox-Tests).
+			let dev: http.Server;
+			try {
+				dev = await listen('DEV', '::1');
+			} catch {
+				// Ohne IPv6-Loopback ist die Konstellation nicht herstellbar. Überspringen
+				// statt eine Prüfung vortäuschen, die gar nicht stattgefunden hat.
+				ctx.skip();
+				return;
+			}
+			const { port } = dev.address() as AddressInfo;
+
+			let e2e: http.Server | undefined;
+			try {
+				// Der zweite Bind muss durchgehen — er ist der Kern des Befunds.
+				e2e = await listen('E2E', CI_DEV_HOST, port);
+
+				const response = await fetch(`http://${loopbackHostFor(CI_DEV_HOST)}:${port}/`);
+				expect(await response.text()).toBe('E2E');
+			} finally {
+				// Über eine Konstante, weil TypeScript die Prüfung sonst nicht in den
+				// Callback hinein verengt (`e2e` ist ein `let`).
+				const started = e2e;
+				if (started) await new Promise((resolve) => started.close(resolve));
+				await new Promise((resolve) => dev.close(resolve));
+			}
+		},
+		IO_TIMEOUT
+	);
+});
 
 describe('createNodeIdentityFetch', () => {
 	/**

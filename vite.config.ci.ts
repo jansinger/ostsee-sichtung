@@ -8,7 +8,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig, searchForWorkspaceRoot } from 'vite';
-import { devServerIdentity } from './src/tools/dev-server-identity';
+import { CI_DEV_HOST, ciDevPort, devServerIdentity } from './src/tools/dev-server-identity';
 import { stableDepHash } from './src/tools/vite-stable-dep-hash';
 
 /**
@@ -48,8 +48,16 @@ export default defineConfig({
 		stableDepHash()
 	],
 	server: {
-		host: '0.0.0.0',
-		port: 4000,
+		/*
+		 * Host und Port kommen aus `src/tools/dev-server-identity.ts`, weil
+		 * `playwright.config.ts` daraus die Adresse ableitet, an der es auf den Server
+		 * wartet. Standen sie hier als Literale, konnten Bind-Adresse und Abfrage-Adresse
+		 * auseinanderlaufen — genau das war die Ursache des webServer-Timeouts vom
+		 * 2026-08-04 (`0.0.0.0` gebunden, `localhost` → `::1` abgefragt).
+		 */
+		host: CI_DEV_HOST,
+		// Vorher hart 4000 — das von playwright.config.ts gesetzte VITE_DEV_PORT lief damit ins Leere.
+		port: ciDevPort(),
 		strictPort: true,
 		// Disable HMR overlay for CI
 		hmr: false,

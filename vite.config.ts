@@ -9,7 +9,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
-import { devServerIdentity } from './src/tools/dev-server-identity';
+import { devPortFromEnv, devServerIdentity } from './src/tools/dev-server-identity';
 import { stableDepHash } from './src/tools/vite-stable-dep-hash';
 
 const certFile = fileURLToPath(new URL('./certs/localhost.pem', import.meta.url));
@@ -55,7 +55,9 @@ export default defineConfig({
 	],
 	server: {
 		host: 'localhost',
-		port: parseInt(process.env.VITE_DEV_PORT || '4000'),
+		// Über `devPortFromEnv`, damit `VITE_DEV_PORT` hier nicht anders verstanden wird
+		// als in playwright.config.ts (`parseInt('4300abc')` ergab 4300, `Number` NaN).
+		port: devPortFromEnv() ?? 4000,
 		/**
 		 * Ohne `strictPort` weicht Vite bei belegtem Port still auf den nächsten aus.
 		 * Das ist hier immer ein Fehlerzustand, nie eine brauchbare Rückfallebene:
