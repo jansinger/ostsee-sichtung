@@ -242,6 +242,10 @@ describe('LocationInput — Pflicht-Markierung der Koordinaten', () => {
 	 * Begründung über `COORDINATE_FIELDS`. Ohne diese Gegenprobe wäre ein
 	 * pauschales `aria-required` auf allen sechs Inputs vom Test nicht zu
 	 * unterscheiden.
+	 *
+	 * `toBeNull()` wie im Nein-Fall oben: Diese Inputs sollen das Attribut gar
+	 * nicht tragen. Ein eingeschlichenes `aria-required="false"` wäre zwar
+	 * harmlos, würde die Parität zu `BaseInput.svelte` aber unbemerkt aufgeben.
 	 */
 	it('lässt Minuten und Sekunden auch bei required ohne Pflicht-Ansage', async () => {
 		render(LocationInput, { mode: 'dms', required: true, enableMapGps: false });
@@ -252,7 +256,7 @@ describe('LocationInput — Pflicht-Markierung der Koordinaten', () => {
 
 		for (const label of ['Breite Minuten', 'Breite Sekunden', 'Länge Minuten', 'Länge Sekunden']) {
 			const input = document.querySelector(`[aria-label="${label}"]`);
-			expect(input?.getAttribute('aria-required'), label).not.toBe('true');
+			expect(input?.getAttribute('aria-required') ?? null, label).toBeNull();
 		}
 	});
 });

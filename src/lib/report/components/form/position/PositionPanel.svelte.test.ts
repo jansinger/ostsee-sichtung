@@ -56,6 +56,13 @@ describe('PositionPanel — Pflicht-Markierung der Koordinaten', () => {
 	 * Ohne Position ist die Ortsbeschreibung die Alternative — dann tragen die
 	 * Koordinaten keine Pflicht, sondern `waterway` (siehe
 	 * `LocationDescription.svelte.test.ts`).
+	 *
+	 * `toBeNull()` und nicht `.not.toBe('true')`: Im Nein-Fall soll das Attribut
+	 * ganz fehlen statt als `aria-required="false"` dazustehen — so hält es
+	 * `BaseInput.svelte` (`restProps.required || undefined`) für jedes andere
+	 * Feld. Dieselbe Assertion wie in `LocationInput.svelte.test.ts`; eine
+	 * laxere hier ließe die Verdrahtung ein `false` durchreichen, das die
+	 * Komponententests längst verbieten.
 	 */
 	it('lässt die Koordinaten ohne Position unmarkiert', async () => {
 		renderPositionPanel({ hasPosition: false, latitude: undefined, longitude: undefined });
@@ -64,7 +71,7 @@ describe('PositionPanel — Pflicht-Markierung der Koordinaten', () => {
 
 		for (const inputId of ['latitude', 'longitude']) {
 			expect(requiredMarkIn(inputId), `Sternchen an ${inputId}`).toBeNull();
-			expect(ariaRequiredOf(inputId), `aria-required an ${inputId}`).not.toBe('true');
+			expect(ariaRequiredOf(inputId), `aria-required an ${inputId}`).toBeNull();
 		}
 	});
 });
