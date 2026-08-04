@@ -44,6 +44,73 @@ export const DEV_IDENTITY_PATH = '/__dev-server-identity';
 const PORT_RANGE_START = 41_000;
 const PORT_RANGE_SIZE = 4_000;
 
+/**
+ * Host, auf den der E2E-Dev-Server bindet (`vite.config.ci.ts`).
+ *
+ * Der Wildcard ist dort gewollt — in CI muss der Server auch von außerhalb des
+ * Containers erreichbar sein. Er steht hier und nicht in der Vite-Config, damit
+ * `playwright.config.ts` die Gegenstelle daraus ableiten kann statt sie zu wiederholen:
+ * Bind-Adresse und Abfrage-Adresse müssen zusammenpassen, und genau das ist am
+ * 2026-08-04 auseinandergelaufen (siehe `loopbackHostFor`).
+ */
+export const CI_DEV_HOST = '0.0.0.0';
+
+/** Fallback-Port des E2E-Dev-Servers, wenn `VITE_DEV_PORT` nichts vorgibt. */
+const CI_DEV_PORT_DEFAULT = 4000;
+
+/**
+ * Liest `VITE_DEV_PORT` — oder `null`, wenn dort nichts Brauchbares steht.
+ *
+ * Die **eine** Stelle, an der die Variable ausgewertet wird. Vorher taten das drei
+ * Aufrufer verschieden (`parseInt` in `vite.config.ts`, `Number(…) ||` in
+ * `playwright.config.ts`, gar nicht in `vite.config.ci.ts`), und `parseInt('4300abc')`
+ * ergibt 4300, wo `Number` `NaN` liefert. Bei einem Wert, der auf beiden Seiten
+ * derselbe sein muss, ist das kein Stilproblem: Auseinanderlaufende Ports sind genau
+ * der Fehler, der am 2026-08-04 120 s Timeout ohne Meldung gekostet hat.
+ */
+export function devPortFromEnv(env: NodeJS.ProcessEnv = process.env): number | null {
+	const explicit = Number(env.VITE_DEV_PORT);
+	return Number.isInteger(explicit) && explicit > 0 ? explicit : null;
+}
+
+/**
+ * Port des E2E-Dev-Servers.
+ *
+ * `playwright.config.ts` reicht `VITE_DEV_PORT` an den webServer durch; `vite.config.ci.ts`
+ * setzte den Port aber hart auf 4000 und ignorierte die Übergabe. Beide Seiten lesen
+ * jetzt denselben Wert, damit der Port, auf den Playwright wartet, und der Port, auf dem
+ * der Server steht, nicht auseinanderlaufen können.
+ */
+export function ciDevPort(env: NodeJS.ProcessEnv = process.env): number {
+	return devPortFromEnv(env) ?? CI_DEV_PORT_DEFAULT;
+}
+
+/**
+ * Adresse, unter der ein auf `bindHost` gebundener Server tatsächlich antwortet.
+ *
+ * Hintergrund — der webServer-Timeout vom 2026-08-04, zweimal fehldiagnostiziert:
+ * `npm run dev` bindet über `host: 'localhost'` nur `[::1]`, der E2E-Server über
+ * `CI_DEV_HOST` nur den IPv4-Wildcard. Zwei Adressfamilien, **keine** Kollision — beide
+ * Server starten, `strictPort` schlägt nie an. Playwright fragte aber
+ * `http://localhost:4000` ab, und `localhost` löst auf macOS zuerst nach `::1` auf: Der
+ * Readiness-Poll landete beim fremden HTTPS-Dev-Server, bekam auf Klartext-HTTP nie eine
+ * gültige Antwort und lief 120 s in den Timeout — ohne jeden Hinweis auf die Ursache.
+ *
+ * Deshalb wird der Wildcard hier explizit auf eine Loopback-Adresse **derselben Familie**
+ * abgebildet. `localhost` ist für `0.0.0.0` die falsche Antwort: Die Auflösung hängt an
+ * DNS-Reihenfolge und Betriebssystem, nicht an dem, was der Server gebunden hat. Dasselbe
+ * Muster ist unter Node ≥ 17 auch in Dual-Stack-Containern eine bekannte Falle — die
+ * Festlegung härtet CI also mit, statt nur lokal zu reparieren.
+ */
+export function loopbackHostFor(bindHost: string): string {
+	if (bindHost === '0.0.0.0') return '127.0.0.1';
+	if (bindHost === '::') return '[::1]';
+	// Beide Aufrufer setzen das Ergebnis direkt in eine URL ein — ein nacktes
+	// IPv6-Literal ergäbe dort `http://::1:4000`. Die Klammern gehören deshalb hierher.
+	if (bindHost.includes(':') && !bindHost.startsWith('[')) return `[${bindHost}]`;
+	return bindHost;
+}
+
 /** Entfernt abschließende Schrägstriche, damit Pfadvarianten denselben Port ergeben. */
 function normalizeRoot(root: string): string {
 	return root.replace(/\/+$/, '');
@@ -194,13 +261,30 @@ export function devServerIdentity(): Plugin {
 			 * `configureServer` *zurückgegebene* Post-Hook-Funktion wäre dafür untauglich:
 			 * Vite ruft sie synchron auf und wartet ein Promise nicht ab.)
 			 *
-			 * Bewusst nur ausgeben, nie selbst werfen: Die Garantie liefert `strictPort`.
+			 * Bewusst nur ausgeben, nie selbst werfen — den Abbruch leistet `strictPort`.
+			 * Dessen Reichweite ist allerdings kleiner als lange angenommen: Er greift nur
+			 * innerhalb *einer* Adressfamilie. Ein Dev-Server auf `[::1]` und ein
+			 * E2E-Server auf dem IPv4-Wildcard teilen sich denselben Port völlig
+			 * geräuschlos (siehe `loopbackHostFor`) — dort gibt es keinen Zusammenstoß,
+			 * den eine Meldung ankündigen könnte.
+			 *
 			 * Und bewusst nicht unter Vitest — dessen Vite-Server bindet den Port gar
 			 * nicht, jede Meldung wäre dort ein Fehlalarm im Testlauf.
 			 */
 			if (process.env.VITEST) return;
-			const { port, https: useHttps } = server.config.server;
-			const origin = `${useHttps ? 'https' : 'http'}://localhost:${port}`;
+			const { port, https: useHttps, host } = server.config.server;
+			/*
+			 * Über `loopbackHostFor`, nicht fest über `localhost`: Sonst fragte der
+			 * E2E-Server (Bind auf `CI_DEV_HOST`) ausgerechnet `::1` ab — eine Adresse, die
+			 * er nie bedient. Die Diagnose liefe dann am eigentlichen Konkurrenten vorbei.
+			 *
+			 * `host: true` heißt bei Vite „alle Schnittstellen": Es reicht `undefined` an
+			 * `listen` durch, womit Node `::` bindet (Dual-Stack, bedient auch IPv4).
+			 * Deshalb hier `'::'` und nicht `CI_DEV_HOST` — sonst zöge eine spätere
+			 * Änderung an der Konstanten diesen Zweig stillschweigend mit.
+			 */
+			const bindHost = host === true ? '::' : typeof host === 'string' ? host : 'localhost';
+			const origin = `${useHttps ? 'https' : 'http'}://${loopbackHostFor(bindHost)}:${port}`;
 			// Kurzer Timeout: Ist der Port frei, antwortet der Connect sofort mit
 			// ECONNREFUSED — der Wert greift nur bei einem hängenden Fremdprozess.
 			const owner = await describePortOwner(origin, createNodeIdentityFetch(1500));

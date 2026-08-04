@@ -139,11 +139,12 @@ export async function seedAdminSession(context: BrowserContext, baseURL: string)
 
 	/* sameSite bewusst 'Lax' statt des 'None', das die App produziert.
 	   'None' verlangt im Browser zwingend das Secure-Flag, und der CI-Dev-Server
-	   läuft über plain http (vite.config.ci.ts lässt basicSsl weg, playwright.config.ts
-	   zeigt in CI auf http://localhost:4000). 'Lax' entkoppelt das Fixture von
-	   dieser Frage und reicht vollständig aus: Die Attribute steuern nur, WANN
-	   der Browser den Cookie mitsendet, und die Tests navigieren ausschließlich
-	   direkt auf die eigene Origin. Der Server liest nur den Wert.
+	   läuft über plain http (vite.config.ci.ts lässt basicSsl weg). Entscheidend ist
+	   allein das Schema — Host und Port stehen hier bewusst nicht, sie kommen aus
+	   playwright.config.ts und sind über VITE_DEV_PORT verschiebbar. 'Lax' entkoppelt
+	   das Fixture von dieser Frage und reicht vollständig aus: Die Attribute steuern
+	   nur, WANN der Browser den Cookie mitsendet, und die Tests navigieren
+	   ausschließlich direkt auf die eigene Origin. Der Server liest nur den Wert.
 
 	   Dass die App selbst 'None' braucht, ist eine Anforderung der
 	   iframe-Einbettung auf meeresmuseum.de und wird hier nicht mitgetestet. */

@@ -172,6 +172,66 @@ false`, und der Job startet seinen eigenen Server im eigenen Container. Der
 Identitäts-Check läuft dort trotzdem mit, damit ein versehentlich entferntes Plugin
 auffällt, statt die Prüfung still abzuschalten.
 
+## `CI=1` lokal: Adressfamilie, nicht Port (behoben 2026-08-04)
+
+Bis zum 2026-08-04 brach `CI=1 npx playwright test` bei parallel laufendem
+`npm run dev` mit `Timed out waiting 120000ms from config.webServer` ab — ohne jeden
+Hinweis auf die Ursache. Es hat zweimal zu Fehldiagnosen geführt: einmal wurde der
+Timeout für einen Testfehler gehalten, einmal wurde ein `git stash`-Vergleich wertlos,
+weil der Lauf gar nicht erst startete.
+
+**Es war keine Portkollision** — deshalb half die Portvergabe pro Worktree hier nicht:
+
+| Prozess                                        | Bind                             |
+| ---------------------------------------------- | -------------------------------- |
+| `npm run dev` (`vite.config.ts`, `localhost`)  | nur `[::1]:4000` (IPv6-Loopback) |
+| E2E-webServer (`vite.config.ci.ts`, `0.0.0.0`) | nur `*:4000` (IPv4-Wildcard)     |
+
+Zwei Adressfamilien, kein Zusammenstoß: **beide** Server binden erfolgreich, `strictPort`
+schlägt nie an. `strictPort` schützt nur innerhalb _einer_ Familie — die stille Annahme,
+es decke jede Doppelbelegung ab, war falsch.
+
+Der Fehler steckte in der Gegenrichtung: `playwright.config.ts` wartete auf
+`http://localhost:4000`, und `localhost` löst auf macOS zuerst nach `::1` auf. Der
+Readiness-Poll landete also beim fremden **HTTPS**-Dev-Server, bekam auf Klartext-HTTP nie
+eine gültige Antwort — und lief die vollen 120 s. Der eigene E2E-Server stand die ganze
+Zeit fertig daneben, nur unter `127.0.0.1` statt unter `localhost`.
+
+Nachmessen lässt sich das so — die Spalte hinter `TCP` ist der Punkt:
+
+```bash
+lsof -nP -iTCP:4000 -sTCP:LISTEN
+```
+
+Behoben in [`src/tools/dev-server-identity.ts`](../src/tools/dev-server-identity.ts):
+`CI_DEV_HOST` und `ciDevPort()` sind jetzt die **eine** Quelle, aus der
+`vite.config.ci.ts` seinen Bind und `playwright.config.ts` seine Warte-Adresse beziehen;
+`loopbackHostFor()` leitet die Loopback-Adresse aus dem Bind ab, statt `localhost` zu
+raten. Beide Server laufen seitdem nebeneinander — verifiziert: `npm run dev` auf
+`[::1]:4000` und `CI=1 npx playwright test --project=chromium e2e/homepage.test.ts`
+gleichzeitig, 7 passed. Nebeneffekt: Weil Playwright jetzt die Adresse abfragt, die der
+Server auch bedient, greift dessen eigene Vorabprüfung wieder und meldet eine echte
+Doppelbelegung **sofort** statt nach 120 s:
+
+```
+Error: http://127.0.0.1:4000 is already used, make sure that nothing is running
+on the port/url or set reuseExistingServer:true in config.webServer.
+```
+
+Zwei Dinge, die dabei auffielen und beim nächsten Mal Zeit sparen:
+
+- **`e2e/global-setup.ts` kann diesen Fall nicht abfangen.** Playwright startet den
+  webServer **vor** dem `globalSetup`; bei einem webServer-Timeout läuft `globalSetup`
+  nie an (nachgemessen: keine seiner Ausgaben erscheint). Die Identitätsprüfung dort
+  bleibt für den lokalen `reuseExistingServer`-Pfad richtig und wichtig — als Wache gegen
+  webServer-Timeouts ist sie strukturell zu spät.
+- **`vite.config.ci.ts` ignorierte `VITE_DEV_PORT`**, obwohl `playwright.config.ts` es an
+  den webServer durchreicht. Der Port ist jetzt über `ciDevPort()` wirklich steuerbar:
+
+```bash
+CI=1 VITE_DEV_PORT=4300 npx playwright test --project=chromium
+```
+
 ## Geteilte Ressourcen — Vorsicht
 
 Alle Worktrees zeigen über den `.env`-Symlink auf **dieselbe** Datenbank und dieselben

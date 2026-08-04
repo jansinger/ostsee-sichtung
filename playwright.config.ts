@@ -1,5 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
-import { worktreeDevPort } from './src/tools/dev-server-identity';
+import {
+	CI_DEV_HOST,
+	ciDevPort,
+	devPortFromEnv,
+	loopbackHostFor,
+	worktreeDevPort
+} from './src/tools/dev-server-identity';
 
 /**
  * Lokal bekommt jedes Arbeitsverzeichnis seinen eigenen Port.
@@ -10,17 +16,28 @@ import { worktreeDevPort } from './src/tools/dev-server-identity';
  * 4000 *und* 4001 einem fremden Branch gehörten. Ein manuell gesetztes `VITE_DEV_PORT`
  * hat weiterhin Vorrang (nützlich, um den Abbruch in `e2e/global-setup.ts` vorzuführen).
  *
- * CI bleibt bei 4000: dort läuft genau ein Job in einem eigenen Container. Der Port
- * steht dort bewusst *hier* und wird nicht aus dem Hash abgeleitet — sonst bekäme der
- * Server ein `VITE_DEV_PORT`, das nur deshalb folgenlos bleibt, weil
- * `vite.config.ci.ts` den Port hart auf 4000 setzt. Zieht jemand die CI-Config später
- * mit `vite.config.ts` gleich, liefe der Server auf dem Hash-Port, während Playwright
- * auf 4000 wartet — Ausgang wäre ein webServer-Timeout ohne verwertbare Meldung.
+ * CI bleibt bei 4000: dort läuft genau ein Job in einem eigenen Container. Port und Host
+ * kommen aus `dev-server-identity` — derselben Quelle, aus der `vite.config.ci.ts` seinen
+ * Bind bezieht. Beide Seiten aus einer Quelle zu speisen ist hier keine Kosmetik: Der
+ * webServer-Timeout vom 2026-08-04 entstand genau daran, dass sie es nicht waren.
  */
-const devPort = process.env.CI
-	? 4000
-	: Number(process.env.VITE_DEV_PORT) || worktreeDevPort(process.cwd());
-const baseURL = `${process.env.CI ? 'http' : 'https'}://localhost:${devPort}`;
+const devPort = process.env.CI ? ciDevPort() : (devPortFromEnv() ?? worktreeDevPort(process.cwd()));
+
+/**
+ * Der Host, unter dem Playwright auf den Server wartet, muss zu dessen Bind passen.
+ *
+ * In CI bindet `vite.config.ci.ts` auf `CI_DEV_HOST` (IPv4-Wildcard); `localhost` löst auf
+ * macOS aber zuerst nach `::1` auf und traf damit nicht den eigenen Server, sondern einen
+ * dort zufällig lauschenden — bei parallelem `npm run dev` den fremden HTTPS-Dev-Server.
+ * Auf dessen Klartext-HTTP-Antwort wartete Playwright die vollen 120 s. `loopbackHostFor`
+ * leitet die Adresse aus dem Bind ab, statt sie zu raten.
+ *
+ * Lokal bleibt es bei `localhost`: Dort bindet `vite.config.ts` selbst auf `localhost`,
+ * und das Dev-Zertifikat ist auf diesen Namen ausgestellt.
+ */
+const baseURL = process.env.CI
+	? `http://${loopbackHostFor(CI_DEV_HOST)}:${devPort}`
+	: `https://localhost:${devPort}`;
 
 export default defineConfig({
 	globalSetup: './e2e/global-setup.ts',
