@@ -243,8 +243,43 @@ Spezifikation und altert mit ihr. Er misst die Wirkung: Dialog auf 3000 px
 aufblasen, `scrollWidth` vorher/nachher vergleichen. Jede Route fährt zusätzlich
 eine Gegenprobe, die dem Elternelement ein `transform` verpasst und verlangt,
 dass der Überlauf dann **auftritt** — sonst wäre das Grün eines konformen
-Bestands ohne Aussage. Vorgeführt am 2026-08-04 mit einem `main { transform:
+Bestands ohne Aussage. Davor klappt er jede Disclosure auf und wartet auf deren
+Endzustand (Begründung im Abschnitt darunter); bleibt eine Dialogposition
+dauerhaft abgeschnitten, bricht er ab, statt sie trivial zu bestehen.
+Vorgeführt am 2026-08-04 mit einem `main { transform:
 translateZ(0) }` in `app.css`: alle drei Routen rot, alle sechs Dialoge benannt.
+
+### Ein `.collapse` schluckt den Überlauf, solange die Animation läuft
+
+Wer im Teilbaum einer DaisyUI-Disclosure misst, misst unter Umständen gar
+nichts. `.collapse-content` trägt **für die gesamte Dauer** der
+Aufklapp-Animation `overflow-x: clip` und schaltet erst im Endzustand auf
+`visible`. Gemessen auf `/` bei 360 px (2026-08-04, Foto-Disclosure aus
+`PositionPanel.svelte`):
+
+| Zustand                         | `grid-template-rows` (2. Spur) | `overflow-x` | `de.scrollWidth` |
+| ------------------------------- | ------------------------------ | ------------ | ---------------- |
+| zugeklappt                      | `0px`                          | `clip`       | 360              |
+| direkt nach `details.open=true` | `7.3px`                        | `clip`       | 360              |
+| nach Animationsende (~800 ms)   | `304px`                        | `visible`    | **3053**         |
+
+In diesem Fenster kann **kein** Element darin `documentElement.scrollWidth`
+bewegen — auch kein gewöhnliches `div` mit `width: 3000px` im Fluss. Wer direkt
+nach `open = true` misst, landet immer darin und hält das Ergebnis
+fälschlich für eine Aussage über das gemessene Element. Genau so verlor
+`modal-overflow.spec.ts` seine Gegenprobe, als der `upload-notice-dialog` mit
+PR #746 in diese Disclosure zog.
+
+**Konsequenz für jede Überlauf-Suche, auch für `e2e/helpers/overflow.ts`:** Der
+Bisect-Abstieg endet an der `.collapse` und misst darunter ins Leere — ein
+Verursacher im Inneren bleibt unsichtbar, solange die Animation läuft oder die
+Disclosure zu ist. Vor dem Messen deshalb aufklappen **und auf den Endzustand
+warten**. Belastbar ist dabei nur die _Wirkung_: per `expect.poll` ein
+3000-px-`div` im Fluss an die fragliche Stelle hängen und warten, bis es
+`scrollWidth` bewegt. Die Höhe von `.collapse-content` taugt als Bedingung
+nicht — sie wächst früher, als das `clip` verschwindet. Ein globales
+`transition: none !important` per `addStyleTag` hat den Endzustand ebenfalls
+nicht hergestellt.
 
 **Was stattdessen funktioniert:** Teilbäume nacheinander auf `display: none`
 setzen, nach jedem Schritt `document.documentElement.scrollWidth` messen und in

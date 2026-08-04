@@ -54,6 +54,34 @@ import { seedAdminSession } from './helpers/adminSession';
  * Wäre die Sonde stumpf (Dialog nicht gefunden, Stil nicht angekommen,
  * `scrollWidth` an einem anderen Element gelesen), bliebe sie auch dabei
  * still und der Test fiele auf.
+ *
+ * **Warum vorher jede Disclosure aufgeklappt wird:** Seit PR #746 steht der
+ * `upload-notice-dialog` auf `/` in der Foto-Disclosure von
+ * `PositionPanel.svelte`. DaisyUIs `.collapse-content` trägt für die **gesamte
+ * Dauer** der Aufklapp-Animation `overflow-x: clip` und schaltet erst im
+ * Endzustand auf `visible` — gemessen bei 360 px: zugeklappt `clip`, direkt
+ * nach `open = true` `clip` (2. Grid-Spur bereits 7,3 px), nach ~800 ms
+ * `visible` und `scrollWidth` 360 → 3053. In diesem Fenster kann **kein**
+ * Element im Teilbaum `documentElement.scrollWidth` bewegen: Ein gewöhnliches
+ * `div` mit 3000 px an der Dialogposition bleibt dort genauso still wie der
+ * `position: fixed`-Dialog. Die Gegenprobe schlug deshalb nicht mehr an, und
+ * das Grün der Hauptprüfung war wertlos — nicht weil die Regel brach, sondern
+ * weil der Teilbaum nichts durchließ.
+ *
+ * **Worauf gewartet wird — die Wirkung, nicht eine Hilfsgröße:** Gewartet wird
+ * per `expect.poll` darauf, dass ein im Fluss eingehängtes 3000-px-`div` an der
+ * Dialogposition `scrollWidth` **bewegt**. Das ist genau die Fähigkeit, die die
+ * Gegenprobe danach braucht. Ein Warten auf die Höhe von `.collapse-content`
+ * wäre zu schwach (sie wächst früher, als das `clip` verschwindet), ein
+ * `waitForTimeout` verboten (`.claude/rules/testing.md`), und das Abschalten
+ * aller Transitions per `addStyleTag` hat den Zustand nicht hergestellt. Die
+ * Wirkungs-Sonde hält außerdem, falls DaisyUI den Mechanismus austauscht.
+ *
+ * **Und sie ist zugleich die Vakuum-Sperre:** Ein Dialog in einem
+ * abgeschnittenen Teilbaum erfüllt „zählt nicht in `scrollWidth` mit" trivial —
+ * dort belegt das Grün der Hauptprüfung nichts über `position: fixed`. Bewegt
+ * die Sonde `scrollWidth` an einer Dialogposition dauerhaft nicht, bricht der
+ * Test deshalb mit Nennung dieser Position ab, statt still grün zu werden.
  */
 
 /* Der Fall ist ein Mobil-Fall: 360 px ist die Breite, bei der die Frage
@@ -162,13 +190,36 @@ const openRoute = async ({ page, context, request, baseURL }: Fixtures, route: G
 	}
 };
 
+interface Probe {
+	readonly label: string;
+	readonly before: number;
+	readonly after: number;
+}
+
 interface Measurement {
 	readonly dialogCount: number;
+	/**
+	 * Dialogpositionen, an denen ein gewöhnliches 3000-px-`div` **im Fluss**
+	 * `scrollWidth` nicht bewegt — dort ist die Hauptprüfung ohne Aussage.
+	 * Erwartet: leer, sobald die Aufklapp-Animationen durch sind.
+	 */
+	readonly deadPositions: readonly Probe[];
 	/** Ein Eintrag je Dialog, der `scrollWidth` bewegt hat — erwartet: leer. */
-	readonly contributing: readonly { label: string; before: number; after: number }[];
+	readonly contributing: readonly Probe[];
 	/** Gegenprobe: `scrollWidth` mit `transform` am Elternelement. */
-	readonly control: { label: string; before: number; after: number } | null;
+	readonly control: Probe | null;
 }
+
+/**
+ * Klappt jede Disclosure der Seite auf.
+ *
+ * Ohne das steht der `upload-notice-dialog` auf `/` in einer zugeklappten
+ * `.collapse` und kann von dort aus nichts bewegen — siehe Kopfkommentar.
+ */
+const openDisclosures = (page: Page): Promise<void> =>
+	page.evaluate(() => {
+		for (const d of document.querySelectorAll<HTMLDetailsElement>('details')) d.open = true;
+	});
 
 const measure = (page: Page): Promise<Measurement> =>
 	page.evaluate(() => {
@@ -192,8 +243,32 @@ const measure = (page: Page): Promise<Measurement> =>
 			return { before, after };
 		};
 
-		const contributing: { label: string; before: number; after: number }[] = [];
+		/* Dieselbe Breite, aber an einem gewöhnlichen `div` im Fluss und an
+		   derselben Stelle im Baum. Was hier still bleibt, kann auch der Dialog
+		   nicht bewegen — dann misst die Hauptprüfung nichts. */
+		const probeFlow = (d: HTMLDialogElement) => {
+			const parent = d.parentElement;
+			if (!parent) return { before: de.scrollWidth, after: de.scrollWidth };
+			const probe = document.createElement('div');
+			/* `min-width` und `flex: none` zusätzlich zur `width`: In einem Flex-
+			   oder Grid-Container schrumpft eine reine Breitenangabe auf den
+			   verfügbaren Platz, und die Sonde wäre aus dem falschen Grund still. */
+			probe.style.cssText = 'width:3000px;min-width:3000px;height:1px;flex:none';
+			const before = de.scrollWidth;
+			parent.insertBefore(probe, d);
+			const after = de.scrollWidth;
+			probe.remove();
+			return { before, after };
+		};
+
+		const deadPositions: Probe[] = [];
+		const contributing: Probe[] = [];
 		dialogs.forEach((d, i) => {
+			const flow = probeFlow(d);
+			if (flow.after <= flow.before) {
+				deadPositions.push({ label: label(d, i), ...flow });
+				return;
+			}
 			const { before, after } = blowUp(d);
 			if (after > before) contributing.push({ label: label(d, i), before, after });
 		});
@@ -211,7 +286,7 @@ const measure = (page: Page): Promise<Measurement> =>
 			control = { label: label(first, 0), before, after };
 		}
 
-		return { dialogCount: dialogs.length, contributing, control };
+		return { dialogCount: dialogs.length, deadPositions, contributing, control };
 	});
 
 test.describe('Modal-Dialoge — kein Beitrag zum horizontalen Überlauf', () => {
@@ -224,7 +299,38 @@ test.describe('Modal-Dialoge — kein Beitrag zum horizontalen Überlauf', () =>
 		}) => {
 			await openRoute({ page, context, request, baseURL }, route);
 
-			const { dialogCount, contributing, control } = await measure(page);
+			/* Gewartet wird auf die Wirkung: Erst wenn ein 3000-px-`div` im Fluss
+			   an *jeder* Dialogposition `scrollWidth` bewegt, hat die Messung
+			   darunter überhaupt eine Aussage. Solange eine Aufklapp-Animation
+			   läuft, klippt `.collapse-content` und die Sonde bleibt still.
+
+			   Das Aufklappen steht mit *in* der Schleife und nicht davor: Eine
+			   Disclosure, die erst nach der Hydration dazukommt, bliebe sonst zu,
+			   und der Poll könnte nur noch ins Timeout laufen. Auf ein bereits
+			   offenes `<details>` wirkt der Handgriff nicht — er startet keine
+			   Animation neu. */
+			let last: Measurement | undefined;
+			await expect
+				.poll(
+					async () => {
+						await openDisclosures(page);
+						return (last = await measure(page)).deadPositions.map((p) => p.label);
+					},
+					{
+						message:
+							`${route.path}: An diesen Dialogpositionen bewegt selbst ein gewöhnliches ` +
+							'3000-px-`div` im Fluss `documentElement.scrollWidth` nicht. Der Teilbaum ' +
+							'schneidet also ab (`overflow-x: clip|hidden|auto`) — dort erfüllt jeder Dialog ' +
+							'„zählt nicht mit" trivial, und ein Grün wäre ohne Aussage. Häufigste Ursache: ' +
+							'eine `.collapse` mitten in der Aufklapp-Animation (dann ist es ein Timing-' +
+							'Problem dieses Tests), sonst ein dauerhaft klippender Vorfahr (dann gehört der ' +
+							'Dialog dort heraus oder die Route hier ausgetragen).',
+						timeout: 10_000
+					}
+				)
+				.toEqual([]);
+
+			const { dialogCount, contributing, control } = last!;
 
 			expect(
 				dialogCount,
