@@ -52,7 +52,7 @@
 		<details class="collapse">
 			<summary class="collapse-title flex cursor-pointer items-center gap-2 text-sm font-medium">
 				<Icon icon="lucide:circle-help" width="16" class="text-info-strong" />
-				Hilfe & Tipps für eine wertvolle Sichtungsmeldung
+				Hilfe & Tipps für eine wertvolle Meldung
 			</summary>
 			<div class="collapse-content text-base-content/80 text-sm">
 				<div class="space-y-4 pt-4">
@@ -63,7 +63,7 @@
 								Warum ist Ihre Meldung wichtig?
 							</h4>
 							<p class="mt-1">
-								Jede Sichtung hilft Wissenschaftlern dabei, Wanderrouten zu verstehen, Populationen
+								Jede Meldung hilft Wissenschaftlern dabei, Wanderrouten zu verstehen, Populationen
 								zu überwachen und Schutzmaßnahmen zu entwickeln. Ihre Beobachtung trägt direkt zum
 								Artenschutz bei!
 							</p>

@@ -68,4 +68,33 @@ describe('Einwilligungstexte', () => {
 			expect(field && 'optional' in field ? field.optional : false).toBe(true);
 		});
 	});
+
+	/**
+	 * `persistentDataConsent` beschreibt denselben Vorgang zweimal — einmal im
+	 * Ankreuztext (`helpText`), einmal im Tooltip (`valueText`). Beide standen
+	 * bis A5.3 auseinander: „bei zukünftigen **Sichtungs**meldungen" gegen „bei
+	 * zukünftigen **Meldungen**".
+	 *
+	 * Anders als die vier Einwilligungen mit Fassungskennung trägt dieses Feld
+	 * **keinen** Nachweis nach Art. 7 DSGVO: Es kommt weder in
+	 * `consentVersions.ts` noch in `mapFormToSighting.ts` oder `schema.ts` vor
+	 * und steuert allein, ob die Kontaktdaten im Browser-Speicher überleben
+	 * (`localStorage.ts`). Eine Umformulierung entwertet hier also keine
+	 * gespeicherte Kennung — es gibt keine.
+	 */
+	describe('persistentDataConsent — Ankreuztext und Tooltip sagen dasselbe', () => {
+		it('nennt den Vorgang in beiden Texten „Meldung"', () => {
+			const meta = metaOf('persistentDataConsent');
+
+			expect(meta.helpText).toMatch(/zukünftigen Meldungen/);
+			expect(meta.valueText).toMatch(/zukünftigen Meldungen/);
+		});
+
+		it('nennt ihn in keinem der beiden „Sichtungsmeldung"', () => {
+			// Kleingeschrieben, weil `textOf` den Text bereits normalisiert — wie in
+			// den Blöcken darüber. Der Regex greift damit auf „Sichtungsmeldung"
+			// und „Sichtungsmeldungen" gleichermaßen.
+			expect(textOf('persistentDataConsent')).not.toMatch(/sichtungsmeldung/);
+		});
+	});
 });

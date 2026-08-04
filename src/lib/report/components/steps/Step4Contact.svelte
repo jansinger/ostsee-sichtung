@@ -80,7 +80,7 @@
 				Ihre E-Mail-Adresse ist erforderlich für:
 			</p>
 			<ul class="list-inside list-disc space-y-1 text-xs">
-				<li>Bestätigung Ihrer Sichtungsmeldung</li>
+				<li>Bestätigung Ihrer Meldung</li>
 				<li>Wichtige Rückfragen zur Datenqualität</li>
 				<li>Information über wissenschaftliche Ergebnisse (optional)</li>
 			</ul>
@@ -93,7 +93,7 @@
 					</p>
 					<p>
 						Ihre Kontaktdaten werden nach erfolgreicher Übermittlung lokal gespeichert und bei der
-						nächsten Sichtungsmeldung automatisch ausgefüllt.
+						nächsten Meldung automatisch ausgefüllt.
 					</p>
 
 					{#if hasSavedContactData}
@@ -162,7 +162,7 @@
 				Optionale Veröffentlichung Ihres Namens
 			</h4>
 			<p class="text-base-content/70 mb-4 text-sm">
-				Diese Einverständniserklärungen sind <strong>optional</strong>. Ihre Sichtung wird auch ohne
+				Diese Einverständniserklärungen sind <strong>optional</strong>. Ihre Meldung wird auch ohne
 				diese Zustimmungen gespeichert.
 			</p>
 
@@ -179,7 +179,7 @@
 			</h4>
 			<p class="text-base-content/70 mb-4 text-sm">
 				Möchten Sie, dass Ihre Kontaktdaten auch nach dem Schließen des Browser-Fensters erhalten
-				bleiben? Dies erspart Ihnen das erneute Eingeben bei zukünftigen Sichtungsmeldungen.
+				bleiben? Dies erspart Ihnen das erneute Eingeben bei zukünftigen Meldungen.
 			</p>
 
 			<div class="space-y-3">

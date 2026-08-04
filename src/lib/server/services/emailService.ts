@@ -437,7 +437,11 @@ export class EmailService {
 				to: config.recipient,
 				cc: recipientsOrUndefined(config.cc),
 				bcc: recipientsOrUndefined(config.bcc),
-				subject: `Neue Sichtung: ${referenceId}`,
+				// „Meldung", nicht „Sichtung": Derselbe Vorgang entsteht bei einem
+				// Totfund wie bei einem lebenden Tier (A5.3). Der Betreff ist die
+				// einzige Zeile, die im Posteingang ohne Öffnen sichtbar ist — er
+				// darf den Totfund nicht sprachlich ausschließen.
+				subject: `Neue Meldung: ${referenceId}`,
 				html: htmlContent,
 				text: this.htmlToText(htmlContent)
 			};

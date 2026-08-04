@@ -46,7 +46,11 @@
 				/>
 			</h1>
 
-			<p class="text-base-content/80 text-xl">Ihre Sichtung wurde erfolgreich gemeldet</p>
+			<!-- „Meldung … übermittelt" statt „Sichtung … gemeldet" (A5.3): Über
+			     dieses Formular wird auch ein Totfund gemeldet, und „Sichtung"
+			     schloss diesen Fall sprachlich aus. „Übermittelt" statt
+			     „gemeldet", weil „Ihre Meldung wurde gemeldet" doppelt sagt. -->
+			<p class="text-base-content/80 text-xl">Ihre Meldung wurde erfolgreich übermittelt</p>
 		</div>
 
 		<!-- Success Details -->
@@ -88,11 +92,11 @@
 							<h3 class="font-semibold">Fotos und Videos</h3>
 							<p class="text-base-content/70 text-sm">
 								{#if submittedData?.mediaUpload}
-									Ihre Aufnahmen wurden übermittelt und werden gemeinsam mit Ihrer Sichtung geprüft.
+									Ihre Aufnahmen wurden übermittelt und werden gemeinsam mit Ihrer Meldung geprüft.
 								{/if}
 								Waren Aufnahmen zu groß für den Upload, senden Sie sie bitte an
 								<a class="link" href="mailto:{MEDIA_FALLBACK_EMAIL}">{MEDIA_FALLBACK_EMAIL}</a> — mit
-								Datum und Uhrzeit der Sichtung, damit wir sie zuordnen können.
+								Datum und Uhrzeit Ihrer Beobachtung, damit wir sie zuordnen können.
 							</p>
 						</div>
 					</div>
@@ -119,7 +123,7 @@
 						<div>
 							<h3 class="font-semibold">Daten einsehen</h3>
 							<p class="text-base-content/70 text-sm">
-								Ihre Sichtung erscheint nach Prüfung auf der
+								Ihre Meldung erscheint nach Prüfung auf der
 								<a href="/map" class="link link-primary">interaktiven Karte</a>
 							</p>
 						</div>
@@ -132,7 +136,7 @@
 		{#if submittedData}
 			<div class="card bg-base-100 mb-8 shadow-lg">
 				<div class="card-body">
-					<h2 class="card-title mb-4">Ihre gemeldete Sichtung</h2>
+					<h2 class="card-title mb-4">Ihre Meldung</h2>
 					<div class="mb-4 grid grid-cols-1 gap-1 text-sm">
 						<div>
 							<span class="font-medium">Referenz-ID:</span>
@@ -140,7 +144,7 @@
 						</div>
 						<span class="text-base-content/70 text-xs">
 							(Bitte geben Sie die ID bei Rückfragen an unser Team an. Die ID hilft bei der
-							Zuordnung Ihrer Sichtung)
+							Zuordnung Ihrer Meldung)
 						</span>
 					</div>
 					<div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
@@ -170,7 +174,7 @@
 		<!-- Action Buttons -->
 		<div class="flex flex-col justify-center gap-4 md:flex-row">
 			<button onclick={handleNewReport} class="btn btn-primary btn-lg">
-				Weitere Sichtung melden
+				Weitere Meldung abgeben
 			</button>
 
 			<button onclick={handleReturnHome} class="btn btn-outline btn-lg">

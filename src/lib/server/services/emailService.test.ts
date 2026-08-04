@@ -385,7 +385,11 @@ describe('EmailService', () => {
 			expect(mockTransporter.sendMail).toHaveBeenCalledWith(
 				expect.objectContaining({
 					to: 'admin@ostsee-tiere.de',
-					subject: expect.stringContaining('REF-42')
+					// Der Betreff nennt den Vorgang „Meldung" (A5.3): derselbe
+					// Vorgang entsteht bei einem Totfund wie bei einem lebenden
+					// Tier, und der Betreff ist die einzige Zeile, die im
+					// Posteingang ohne Öffnen sichtbar ist.
+					subject: 'Neue Meldung: REF-42'
 				})
 			);
 		});

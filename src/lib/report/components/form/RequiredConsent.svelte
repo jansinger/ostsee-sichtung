@@ -20,8 +20,8 @@
 				Erforderliche Zustimmung zur Datenverwendung
 			</h4>
 			<p class="text-base-content/80 text-sm">
-				<strong>Diese Zustimmung ist erforderlich</strong>, um Ihre Sichtung zu speichern und für
-				die wissenschaftliche Forschung zu nutzen.
+				<strong>Diese Zustimmung ist erforderlich</strong>, um Ihre Meldung zu speichern und für die
+				wissenschaftliche Forschung zu nutzen.
 			</p>
 		</div>
 
@@ -58,7 +58,14 @@
 		<div class="border-primary/30 bg-primary/5 rounded-lg border p-4">
 			<FormField name="privacyConsent" />
 			<p class="text-primary/70 mt-2 text-xs">
-				<strong>Ohne diese Zustimmung kann Ihre Sichtung nicht gespeichert werden.</strong>
+				<!--
+					„Meldung", nicht „Sichtung" (A5.3): Über dieses Formular wird auch ein
+					Totfund gemeldet. Diese Fläche ist Rahmentext um die Einwilligung, nicht
+					der Ankreuztext selbst — sie hängt trotzdem an der Fassungskennung
+					(consentTextVersions.test.ts erklärt, warum kein Test das erzwingt).
+					PRIVACY_CONSENT_VERSION steht deshalb auf 2026-08-04.
+				-->
+				<strong>Ohne diese Zustimmung kann Ihre Meldung nicht gespeichert werden.</strong>
 				Sie können diese Zustimmung jederzeit per E-Mail an datenschutz@meeresmuseum.de widerrufen.
 				<!--
 					Art. 13 DSGVO verlangt die Datenschutzhinweise dort, wo die Daten erhoben
