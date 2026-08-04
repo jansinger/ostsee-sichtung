@@ -217,13 +217,31 @@ describe('NOTIFICATION_EMAIL_DEFAULT_TEMPLATE — Ostsee-Status', () => {
 		});
 
 		/**
+		 * Gegenstück zu `sightingFormatter.test.ts` („unterdrückt deadCondition
+		 * beim UNKNOWN-Wert 0"): Dort endet der Enum-Wert 0 als `undefined`, hier
+		 * zählt, dass die Vorlage daraus keine Zeile macht. Ein leerer String
+		 * wäre der Fall, den `{{#if}}` allein nicht abfängt.
+		 */
+		it('lässt die Zustandszeile bei unbekanntem Zustand weg', () => {
+			const html = renderDeadFind({ isDead: true, deadCondition: '' });
+
+			expect(html).toContain('Totfund');
+			expect(html).not.toContain('Zustand:');
+		});
+
+		/**
 		 * `deadPhoneContact` beantwortet die Frage, ob das Meeresmuseum schon
 		 * telefonisch von dem Fund weiß. **Beide** Antworten sind eine Handlung:
 		 * „ja" heißt, dass die Bergung womöglich schon läuft und ein zweiter
-		 * Rückruf eine Doppelmeldung wäre; „nein" heißt, dass sich niemand
-		 * gemeldet hat. Ein Block, der nur den Ja-Fall zeigt, ließe den
-		 * Empfänger im Nein-Fall im Unklaren, ob die Angabe fehlt oder verneint
-		 * wurde — deshalb hier als einziges Feld mit `{{else}}`-Zweig.
+		 * Rückruf eine Doppelmeldung wäre; „nein" heißt, dass ein Rückruf nötig
+		 * sein kann. Ein Block, der nur den Ja-Fall zeigt, ließe den Empfänger
+		 * im Nein-Fall im Unklaren, ob die Angabe fehlt oder verneint wurde —
+		 * deshalb hier als einziges Feld mit `{{else}}`-Zweig.
+		 *
+		 * Der Nein-Text bleibt bei „nicht als … gemeldet". Die Quelle ist ein
+		 * Kontrollkästchen mit Vorgabe „aus" (`totfund_telefon`, Standard 0);
+		 * ein „nicht informiert" behauptete über die Welt, was die Meldung nur
+		 * über sich selbst sagt.
 		 */
 		it('nennt eine bereits erfolgte telefonische Meldung', () => {
 			const html = renderDeadFind({ isDead: true, deadPhoneContact: true });
@@ -237,7 +255,9 @@ describe('NOTIFICATION_EMAIL_DEFAULT_TEMPLATE — Ostsee-Status', () => {
 
 			expect(html).toContain('Meeresmuseum');
 			expect(html).not.toContain('bereits telefonisch');
-			expect(html).toContain('keine telefonische Meldung');
+			expect(html).toContain('nicht als telefonisch informiert gemeldet');
+			// Der Empfänger soll wissen, was zu tun ist, nicht nur was fehlt.
+			expect(html).toContain('Rückruf');
 		});
 	});
 
@@ -276,7 +296,7 @@ describe('Fingerabdruck des ausgelieferten Stands', () => {
 			.update(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE, 'utf8')
 			.digest('hex');
 
-		expect(hash).toBe('32d2355c29f5800ece131f19746243cdb5962b0d884f6d50042bc0e3c80ea47e');
+		expect(hash).toBe('aed55e5b04055cc8b30a86bab9e91d3d64f982fbb63c3c202d732bcd87480763');
 	});
 
 	it('führt den aktuellen Stand nicht als früheren Stand', () => {

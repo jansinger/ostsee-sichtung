@@ -103,6 +103,21 @@ describe('sightingFormatter', () => {
 			expect(result.deadConditionRaw).toBe(AnimalConditionEnum.MEDIUM_DECOMPOSITION);
 		});
 
+		/**
+		 * `deadCondition` ist `notNull` mit Vorgabe 0 — „nicht ausgefüllt" kommt
+		 * aus der Datenbank also als `UNKNOWN` und nicht als `null` zurück.
+		 * Übersetzt ergäbe das die Zeile „Zustand: Unbekannt", die nichts
+		 * aussagt; unterdrückt bleibt der Abschnitt still. Das ist der Grund für
+		 * `if (deadCondition)` statt `if (deadCondition !== undefined)`.
+		 */
+		it('unterdrückt deadCondition beim UNKNOWN-Wert 0', () => {
+			const result = formatSightingForDisplay(
+				makeSighting({ isDead: true, deadCondition: AnimalConditionEnum.UNKNOWN })
+			);
+			expect(result.deadCondition).toBeUndefined();
+			expect(result.deadConditionRaw).toBeUndefined();
+		});
+
 		it('lässt deadCondition weg wenn nicht gesetzt', () => {
 			const sighting = makeSighting({});
 			delete (sighting as Record<string, unknown>).deadCondition;

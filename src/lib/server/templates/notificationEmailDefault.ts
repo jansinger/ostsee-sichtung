@@ -167,9 +167,17 @@ export const NOTIFICATION_EMAIL_DEFAULT_TEMPLATE = `<!DOCTYPE html>
 		gehört deshalb in die Vorlage.
 
 		Die Zeile zum Meeresmuseum steht als einzige in **beiden** Fällen da: ein
-		„ja" warnt vor der Doppelmeldung, ein „nein" sagt, dass sich niemand
-		gemeldet hat. Ein weggelassener Nein-Fall wäre von einer fehlenden Angabe
-		nicht zu unterscheiden.
+		„ja" warnt vor der Doppelmeldung, ein „nein" heißt, dass ein Rückruf
+		nötig sein kann. Ein weggelassener Nein-Fall wäre für den Empfänger von
+		einer fehlenden Angabe nicht zu unterscheiden.
+
+		Der Nein-Zweig sagt bewusst „nicht als telefonisch informiert gemeldet"
+		und nicht „nicht informiert": Die Quelle ist ein Kontrollkästchen mit
+		Vorgabe „aus" (Spalte totfund_telefon, Standard 0). Ein nicht gesetztes
+		Häkchen bedeutet, dass die Meldung dazu nichts aussagt — ein Anruf am
+		Telefon vorbei an diesem Formular ist damit nicht ausgeschlossen. Die
+		Vorlage darf deshalb den Zustand der Meldung wiedergeben, nicht den der
+		Welt.
 	--}}
 	{{#if sighting.isDead}}
 	<div style="background: {{colors.errorSurface}}; border-left: 4px solid {{colors.errorStrong}}; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -181,7 +189,7 @@ export const NOTIFICATION_EMAIL_DEFAULT_TEMPLATE = `<!DOCTYPE html>
 		{{#if sighting.deadSize}}
 		<p style="margin: 8px 0 0 0;"><strong>Körperlänge:</strong> {{sighting.deadSize}} cm</p>
 		{{/if}}
-		<p style="margin: 8px 0 0 0;"><strong>Meeresmuseum:</strong> {{#if sighting.deadPhoneContact}}laut Melder bereits telefonisch informiert — vor einem Rückruf bitte den Stand abgleichen, sonst entsteht eine Doppelmeldung.{{else}}keine telefonische Meldung angegeben.{{/if}}</p>
+		<p style="margin: 8px 0 0 0;"><strong>Meeresmuseum:</strong> {{#if sighting.deadPhoneContact}}laut Melder bereits telefonisch informiert — vor einem Rückruf bitte den Stand abgleichen, sonst entsteht eine Doppelmeldung.{{else}}nicht als telefonisch informiert gemeldet — ein Rückruf beim Melder kann nötig sein.{{/if}}</p>
 	</div>
 	{{/if}}
 
