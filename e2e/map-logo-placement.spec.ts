@@ -18,6 +18,19 @@ import { mockMapSightingsSuccess } from './fixtures/mockApi';
  * Der Test misst deshalb die Geometrie und nicht das Aussehen: Er schlägt
  * genauso an, wenn jemand später das Logo tauscht, `h-12` erhöht oder die
  * Umschaltung verbreitert.
+ *
+ * Bewusst nur die Breite variiert, nicht die Höhe: In Querlage überlappt die
+ * Platte den Legenden-Reiter am rechten Rand (`fixed right-0 top-52 h-32`).
+ * Das ist kein Befund dieser Änderung — nachgemessen mit dem alten `bottom-6`
+ * überlappt sie bei 667×375, 736×414, 812×375 und 844×390 ebenso, und ab `md`
+ * ist die Lage unverändert. Es ist auch kein Bedienproblem: der Reiter liegt
+ * auf `z-50`, die Platte auf `z-30`, seine Mitte bleibt frei und anklickbar —
+ * verdeckt wird das dekorative Logo, nicht der Knopf. `bottom-20` vergrößert
+ * die verdeckte Fläche unterhalb `md` allerdings (bei 736×414 von 4px auf
+ * 58px). Eine Assertion „keine Überlappung mit dem Legenden-Reiter" wäre
+ * deshalb heute rot und ließe sich nur durch eine Neuordnung der
+ * Karten-Bedienelemente grün bekommen — das gehört nicht in einen Logo-Tausch.
+ * Wer das aufräumt, findet hier die Messwerte.
  */
 test.describe('Karte — Platzierung des Museumslogos', () => {
 	// 320 ist die schmalste real vorkommende Breite, 768 der md-Breakpoint
@@ -72,7 +85,15 @@ test.describe('Karte — Platzierung des Museumslogos', () => {
 
 		const logo = page.locator('#dmm');
 		await expect(logo).toBeVisible({ timeout: MAP_TEST_TIMEOUTS.defaultUi });
-		await expect(logo).toHaveAttribute('src', '/logo_dmm_positiv.svg');
+
+		// Der Dateiname ist hier Absicht und kein Versehen: Die Karte hing zuvor am
+		// überholten /dmm-logo.png, und genau das soll nicht zurückkommen. Wer das
+		// Logo bewusst tauscht, ändert diese Zeile mit — die Meldung sagt, warum.
+		await expect(
+			logo,
+			'Die Karte muss das aktuelle Logo zeigen. Bei einem bewussten Logo-Wechsel ' +
+				'diese Erwartung und die Seitenverhältnis-Prüfung unten mit anpassen.'
+		).toHaveAttribute('src', '/logo_dmm_positiv.svg');
 
 		const mass = await logo.evaluate((el: HTMLImageElement) => ({
 			geladen: el.complete && el.naturalWidth > 0,
