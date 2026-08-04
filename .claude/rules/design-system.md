@@ -358,12 +358,91 @@ Das Formular wird an Deck und am Strand ausgefüllt — nass, in der Sonne, mit 
   `hasError` → `radio-error` (`BaseRadio.svelte`). Die native `required`-Angabe bleibt am
   Input: sie ist dort gültig und trägt die Constraint-Validierung.
 
-  `radio-error`/`radio-success` **ersetzen** dabei `radio-primary`, sie ergänzen es nicht —
-  alle drei setzen dieselbe DaisyUI-Variable (`--input-color`) auf derselben Ebene und mit
-  derselben Spezifität. Stünden zwei am Element, entschiede die Reihenfolge im
-  DaisyUI-Stylesheet statt der im `class`-Attribut.
+  Wie `radio-error`/`radio-success` gebaut werden, steht im Abschnitt „Zustands-Optik der
+  Auswahl-Controls" unten — die Regel gilt für Checkbox und Toggle genauso.
 
 - Fehlermeldungen mit `role="alert"` und `aria-live="polite"`, referenziert über `aria-describedby` — und nur dann referenziert, wenn das Element tatsächlich gerendert ist.
+
+---
+
+## Zustands-Optik der Auswahl-Controls
+
+Checkbox, Radio und Toggle zeigen den Validierungszustand über eine DaisyUI-Zustandsklasse.
+`FieldRenderer` reicht dafür `hasError`/`isValid` durch; die Komponente baut daraus **genau
+eine** Klasse, aufgebaut wie das `stateClass` in `BaseRadio`:
+
+```js
+const stateClass = hasError ? 'checkbox-error' : isValid ? 'checkbox-success' : 'checkbox-primary';
+```
+
+**Die Zustandsklasse ersetzt `*-primary`, sie ergänzt es nicht.** Alle drei setzen dieselbe
+DaisyUI-Variable (`--input-color`) auf derselben Ebene (`daisyui.l1.l2`) und mit derselben
+Spezifität. Stünden zwei am Element, entschiede die Reihenfolge im DaisyUI-Stylesheet statt
+der im `class`-Attribut.
+
+Der Neutralfall unterscheidet sich dabei bewusst von den Textfeldern: `BaseInput`/`BaseSelect`
+setzen dort `''`, die Auswahl-Controls `*-primary`. Das ist keine Inkonsistenz zum
+Aufräumen — ein Feld ohne Zustandsklasse sieht bei DaisyUI richtig aus, eine Checkbox ohne
+`checkbox-primary` verlöre dagegen ihre Markenfarbe.
+
+**Ein Prop, das die Komponente nicht annimmt, fällt still weg.** Genau so entstand der Fall:
+`hasError`/`isValid` standen seit jeher in `commonFieldProps` und gingen über
+`checkboxProps`/`toggleProps` hinaus — `BaseCheckbox` und `BaseToggle` deklarierten sie nur
+nie, ihre Klasse stand hart auf `checkbox checkbox-primary` bzw. `toggle toggle-primary`. Ein
+Feld mit Validierungsfehler sah dadurch aus wie ein fehlerfreies, ohne dass irgendwo etwas
+brach. Ein Test an der Komponente allein bemerkt das nicht — er merkt nicht, wenn der Renderer
+aufhört, die Props zu setzen. Die Strecke gehört deshalb in `FieldRenderer.svelte.test.ts`
+mitgetestet.
+
+### Der Toggle braucht zusätzlich einen `app.css`-Override
+
+`checkbox-*` und `radio-*` setzen `--input-color` unbedingt; ihr Rahmen ist damit in **beiden**
+Zuständen gefärbt. `toggle-error` und `toggle-success` tun das nicht — verifiziert in
+`node_modules/daisyui/daisyui.css` (5.7.4) und im Browser nachgemessen:
+
+```css
+.toggle-error {
+	@layer daisyui.l1.l2 {
+		&:checked,
+		&[aria-checked='true'] {
+			--input-color: var(--color-error);
+		}
+	}
+}
+```
+
+Die Farbe greift also nur im **eingeschalteten** Zustand. Der wahrscheinlichste Fehlerfall
+eines Pflicht-Toggles ist aber der ausgeschaltete („muss zugestimmt werden") — dort rendert
+ein `toggle-error` byte-identisch zu einem nackten `toggle`. Das Radio-Muster blind zu
+übernehmen wäre für genau den Fall, um den es geht, optisch wirkungslos.
+
+Den ausgeschalteten Zustand färbt deshalb ein Override in `src/app.css` (ungelayert, schlägt
+damit DaisyUIs `@layer` — dieselbe Mechanik wie beim Fokus-Override):
+
+```css
+.toggle-error:not(:checked) {
+	--input-color: var(--color-error);
+}
+```
+
+Drei Punkte dazu:
+
+- **Theme-Token, kein Hex und keine Palettenfarbe.** `e2e/design-tokens.spec.ts` scannt aktiv
+  dagegen; der Override gehört nach `app.css` (einzige Source of Truth für DaisyUI-Overrides),
+  nicht in die Komponente.
+- **Ein roter AUS-Toggle liest sich nicht als „an".** Die Unterscheidung trägt die
+  Knopfposition (`grid-template-columns` 0fr 1fr 1fr ↔ 1fr 1fr 0fr) und der Track-Hintergrund
+  (transparent ↔ base-100), nicht die Farbe. Beides bleibt unangetastet.
+- **Kontrast:** auf `base-100` misst `--color-error` 6,05:1 und `--color-success` 3,81:1.
+  Rahmen und Knopf sind grafische Objekte — WCAG 1.4.11 verlangt dort 3:1, nicht die 4,5:1 für
+  Text. Für **Text** reicht `--color-success` weiterhin nicht.
+
+Abgesichert durch `e2e/form-a11y.spec.ts` → „Fehler-Optik am ausgeschalteten Toggle". Der Test
+misst die **Wirkung** (welche Farbe kommt heraus) statt die Existenz einer CSS-Regel — eine
+Regel-Assertion wäre eine zweite Quelle neben `app.css` und würde mit ihr altern. Er enthält
+eine Gegenprobe, die DaisyUIs Default zurückholt und verlangt, dass Fehler- und Normalzustand
+dann ununterscheidbar werden; ohne sie belegte das Grün nur, dass zwei Farben verschieden sind
+— nicht, dass der Override das bewirkt.
 
 ---
 

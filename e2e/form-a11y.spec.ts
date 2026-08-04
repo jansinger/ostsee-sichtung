@@ -449,6 +449,148 @@ test.describe('Accessibility — text-error auf Buttons', () => {
 	});
 });
 
+// ── Zustands-Optik am ausgeschalteten Toggle ───────────────────────────────
+
+/**
+ * `toggle-error` und `toggle-success` färben von sich aus **nur den
+ * eingeschalteten** Toggle — verifiziert in `daisyui.css` (5.7.4) und im
+ * Browser gemessen:
+ *
+ *     .toggle-error{@layer daisyui.l1.l2{&:checked,&[aria-checked=true]{…}}}
+ *
+ * Der wahrscheinlichste Fehlerfall eines Pflicht-Toggles ist aber der
+ * **ausgeschaltete** („muss zugestimmt werden"). Ohne Nachhilfe wäre die
+ * Fehler-Optik dort also wirkungslos — ein `toggle-error` am ausgeschalteten
+ * Element rendert byte-identisch zu einem nackten `toggle`. Den Unterschied
+ * macht der Override in `src/app.css`.
+ *
+ * Der Test muss im Browser laufen: `--input-color` ist ein `color-mix(in oklab,
+ * …)` über `oklch()`-Werten und wird erst nach dem Gamut-Mapping nach sRGB als
+ * Farbe lesbar. Und er misst die **Wirkung** (welche Farbe kommt heraus), nicht
+ * die Existenz einer CSS-Regel — eine Regel-Assertion wäre eine zweite Quelle
+ * neben `app.css` und würde mit ihr altern.
+ */
+const AUSGESCHALTETE_TOGGLES = [
+	{ zustand: 'error', klasse: 'toggle toggle-error' },
+	{ zustand: 'success', klasse: 'toggle toggle-success' }
+] as const;
+
+/** Legt die Proben als echte, ausgeschaltete `<input type="checkbox">` in die Seite. */
+async function toggleProbenAnlegen(page: import('@playwright/test').Page) {
+	await page.evaluate(
+		(klassen: string[]) => {
+			const host = document.createElement('div');
+			host.id = 'toggle-proben';
+			host.style.cssText = 'position:fixed;top:0;left:0;visibility:hidden;pointer-events:none';
+			for (const klasse of ['toggle toggle-primary', ...klassen]) {
+				const el = document.createElement('input');
+				el.type = 'checkbox';
+				el.className = klasse;
+				el.checked = false;
+				el.dataset.probe = klasse.split(' ')[1];
+				host.appendChild(el);
+			}
+			document.body.appendChild(host);
+		},
+		AUSGESCHALTETE_TOGGLES.map((t) => t.klasse)
+	);
+}
+
+test.describe('Accessibility — Fehler-Optik am ausgeschalteten Toggle', () => {
+	for (const { zustand, klasse } of AUSGESCHALTETE_TOGGLES) {
+		test(`toggle-${zustand} färbt den ausgeschalteten Toggle`, async ({ page }) => {
+			const formPage = new FormPage(page);
+			await formPage.goto();
+			await toggleProbenAnlegen(page);
+
+			// `.toggle` setzt `border: … solid currentColor` und `color:
+			// var(--input-color)` — die gemessene Vordergrundfarbe IST damit die
+			// Farbe von Rahmen und Knopf.
+			const [zustandsFarbe, primaryFarbe] = await measureContrast(page, [
+				{
+					name: `${klasse} ausgeschaltet`,
+					selector: `[data-probe="toggle-${zustand}"]`,
+					backdrop: 'var(--color-base-100)'
+				},
+				{
+					name: 'toggle-primary ausgeschaltet',
+					selector: '[data-probe="toggle-primary"]',
+					backdrop: 'var(--color-base-100)'
+				}
+			]);
+
+			// Das ist der eigentliche Regressionsschutz: Ohne den Override in
+			// `app.css` sind beide Farben identisch, und der Nutzer sieht am
+			// fehlerhaften Feld exakt dasselbe wie am fehlerfreien.
+			expect(
+				zustandsFarbe.foreground,
+				`toggle-${zustand} ausgeschaltet misst ${zustandsFarbe.foreground}, ` +
+					`toggle-primary ${primaryFarbe.foreground} — der Zustand ist unsichtbar`
+			).not.toBe(primaryFarbe.foreground);
+		});
+
+		test(`toggle-${zustand} erreicht ausgeschaltet WCAG 1.4.11 auf base-100`, async ({ page }) => {
+			const formPage = new FormPage(page);
+			await formPage.goto();
+			await toggleProbenAnlegen(page);
+
+			// 3:1 für grafische Objekte und Begrenzungen von Bedienelementen —
+			// nicht 4,5:1: Rahmen und Knopf eines Toggles sind kein Text.
+			const [gemessen] = await measureContrast(page, [
+				{
+					name: `${klasse} ausgeschaltet auf base-100`,
+					selector: `[data-probe="toggle-${zustand}"]`,
+					backdrop: 'var(--color-base-100)'
+				}
+			]);
+
+			expect(
+				gemessen.ratio,
+				`${gemessen.name}: ${gemessen.foreground} auf ${gemessen.background} = ${formatRatio(gemessen.ratio)}:1`
+			).toBeGreaterThanOrEqual(3);
+		});
+	}
+
+	/**
+	 * Gegenprobe. Ohne sie wäre das Grün der Tests oben ohne Aussage: Es belegte
+	 * nur, dass zwei Farben verschieden sind — nicht, dass der Override das
+	 * bewirkt. Hier wird DaisyUIs Default per `addStyleTag` (ebenfalls ungelayert,
+	 * später im Dokument, gewinnt damit) zurückgeholt; die Ungleichheit MUSS dann
+	 * verschwinden.
+	 */
+	test('ohne den Override wären Fehler- und Normalzustand ununterscheidbar', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+		await page.addStyleTag({
+			content: `.toggle-error:not(:checked), .toggle-success:not(:checked) {
+				--input-color: color-mix(in oklab, var(--color-base-content) 50%, #0000);
+			}`
+		});
+		await toggleProbenAnlegen(page);
+
+		const [fehler, erfolg, primary] = await measureContrast(page, [
+			{
+				name: 'toggle-error ohne Override',
+				selector: '[data-probe="toggle-error"]',
+				backdrop: 'var(--color-base-100)'
+			},
+			{
+				name: 'toggle-success ohne Override',
+				selector: '[data-probe="toggle-success"]',
+				backdrop: 'var(--color-base-100)'
+			},
+			{
+				name: 'toggle-primary',
+				selector: '[data-probe="toggle-primary"]',
+				backdrop: 'var(--color-base-100)'
+			}
+		]);
+
+		expect(fehler.foreground).toBe(primary.foreground);
+		expect(erfolg.foreground).toBe(primary.foreground);
+	});
+});
+
 // ── Touch-Target der Hinweis-Buttons in der Feld-Pipeline ──────────────────
 
 /**
