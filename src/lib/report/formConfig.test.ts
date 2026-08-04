@@ -67,6 +67,25 @@ describe('sightingSchema — seaMark bleibt erhalten', () => {
  * Fahrwasser-Beschriftung zurück, verlöre das zusammengelegte Feld genau den
  * Aspekt, für den `seaMark` da war — die Orientierungspunkte.
  */
+/**
+ * `distribution` (Verteilung der Tiere) bleibt nur in der Admin-Maske —
+ * `sections/OptionalSightingDetails.svelte` zeigt das Feld dort ausschließlich
+ * hinter `adminMode` (wie schon `shipCount`). Schema-Eintrag, DB-Spalte
+ * (`verteilung`) und `formOptions/distribution.ts` bleiben unverändert; hier
+ * wird nur geprüft, dass der Melde-Schritt das Feld nicht mehr führt.
+ */
+describe('formStepsConfig — Verteilung nur in der Admin-Maske', () => {
+	const observationsStep = formStepsConfig.find((step) => step.id === 'observations');
+
+	it('führt distribution nicht mehr im Schritt "observations"', () => {
+		expect(observationsStep?.fields).not.toContain('distribution');
+	});
+
+	it('führt distributionText nicht mehr im Schritt "observations"', () => {
+		expect(observationsStep?.fields).not.toContain('distributionText');
+	});
+});
+
 describe('waterway — Beschriftung deckt beide bisherigen Felder ab', () => {
 	const waterwayMeta = meta('waterway');
 	const copy = [describeField('waterway').label, waterwayMeta.helpText, waterwayMeta.placeholder]

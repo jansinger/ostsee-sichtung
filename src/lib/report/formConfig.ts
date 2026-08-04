@@ -89,8 +89,10 @@ export const formStepsConfig: FormStep[] = [
 		title: 'Weitere Informationen',
 		description: 'Details zu Verhalten und Umweltbedingungen',
 		fields: [
-			'distribution',
-			'distributionText',
+			// `distribution`/`distributionText` stehen hier bewusst NICHT mehr: Das
+			// Museum hat das Feld am 2026-08-04 aus dem Meldeformular abbestellt —
+			// es lässt sich aus der Anzahl der Tiere erschließen. Schema-Eintrag und
+			// DB-Spalte `verteilung` bleiben — die Admin-Maske schreibt es weiter.
 			'behavior',
 			'behaviorText',
 			'reaction',
