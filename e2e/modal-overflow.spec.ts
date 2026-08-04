@@ -137,10 +137,27 @@ const openRoute = async ({ page, context, request, baseURL }: Fixtures, route: G
 		throw new Error(`${route.path} antwortet mit ${status} — hier stimmt etwas anderes nicht.`);
 	}
 
-	if (route.auth && (status === 401 || status === 403)) {
+	if (!route.auth) return;
+
+	/* Ein Auth0-Redirect landet auf einer fremden Origin und antwortet dabei mit
+	   200 — der Statuscode oben sieht das nicht. Ohne diese Prüfung liefe der
+	   Test auf der Login-Seite, fände dort null Dialoge und fiele über
+	   `minDialogs` mit „zu wenige Dialoge" statt mit der Ursache. */
+	if (!page.url().startsWith(baseURL ?? '')) {
+		throw new Error(
+			`${route.path} hat auf ${page.url()} umgeleitet — das Session-Cookie wurde nicht akzeptiert. ` +
+				'Prüfe DATABASE_POSTGRES_URL und COOKIE_NAME in .env und ob die sessions-Tabelle ' +
+				'migriert ist (siehe e2e/helpers/adminSession.ts).'
+		);
+	}
+
+	/* 401/403 bleiben auf derselben URL und liefern Status < 500 — die Prüfung
+	   oben greift dafür nicht. Cookie akzeptiert, aber `roles` reicht nicht. */
+	if (status === 401 || status === 403) {
 		throw new Error(
 			`${route.path} antwortet mit ${status} — die Session gilt, aber die Rolle reicht nicht. ` +
-				'Siehe e2e/helpers/adminSession.ts.'
+				'Die roles-Spalte der Session-Zeile aus e2e/helpers/adminSession.ts muss die von ' +
+				'requireUserRole geforderte Rolle enthalten.'
 		);
 	}
 };
