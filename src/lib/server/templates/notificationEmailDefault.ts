@@ -34,6 +34,11 @@
  * aktuellen Stands und schlägt bei jeder Änderung fehl.
  */
 export const PREVIOUS_SHIPPED_TEMPLATE_HASHES = [
+	// Stand bis 2026-08-04: ohne Totfund-Abschnitt. `isDead`, `deadCondition`
+	// und `deadSize` lagen im Kontext, wurden aber von keiner ausgelieferten
+	// Vorlage gerendert — die Mail zu einem Totfund war von der zu einer
+	// lebenden Sichtung nicht zu unterscheiden.
+	'2444299392fe83096f5a2ebbcd4806c20f4fc1866dd0d13c105066ccfc0dd7f0',
 	// Stand bis 2026-07-30: Foto-Hinweis wortidentisch, aber „rebuilter
 	// iOS-Client" statt der im Projekt sonst üblichen Formulierung „neu
 	// gebauter iOS-Client" (siehe .claude/rules/legacy-api.md).
@@ -154,6 +159,31 @@ export const NOTIFICATION_EMAIL_DEFAULT_TEMPLATE = `<!DOCTYPE html>
 			{{/if}}
 		</table>
 	</div>
+
+	{{!--
+		Totfund. Der Zustand kommt als **Label** aus formatSightingForDisplay() —
+		der Rohwert ist ein Enum-Code und stünde hier als „Zustand: 3". Die Größe
+		ist eine Zahl in Zentimetern (Schema: „Körperlänge (cm)"), die Einheit
+		gehört deshalb in die Vorlage.
+
+		Die Zeile zum Meeresmuseum steht als einzige in **beiden** Fällen da: ein
+		„ja" warnt vor der Doppelmeldung, ein „nein" sagt, dass sich niemand
+		gemeldet hat. Ein weggelassener Nein-Fall wäre von einer fehlenden Angabe
+		nicht zu unterscheiden.
+	--}}
+	{{#if sighting.isDead}}
+	<div style="background: {{colors.errorSurface}}; border-left: 4px solid {{colors.errorStrong}}; padding: 20px; border-radius: 8px; margin: 20px 0;">
+		<h3 style="margin: 0 0 12px 0; color: {{colors.errorStrong}};">💀 Totfund</h3>
+		<p style="margin: 0;">Diese Meldung betrifft ein totes Tier.</p>
+		{{#if sighting.deadCondition}}
+		<p style="margin: 8px 0 0 0;"><strong>Zustand:</strong> {{sighting.deadCondition}}</p>
+		{{/if}}
+		{{#if sighting.deadSize}}
+		<p style="margin: 8px 0 0 0;"><strong>Körperlänge:</strong> {{sighting.deadSize}} cm</p>
+		{{/if}}
+		<p style="margin: 8px 0 0 0;"><strong>Meeresmuseum:</strong> {{#if sighting.deadPhoneContact}}laut Melder bereits telefonisch informiert — vor einem Rückruf bitte den Stand abgleichen, sonst entsteht eine Doppelmeldung.{{else}}keine telefonische Meldung angegeben.{{/if}}</p>
+	</div>
+	{{/if}}
 
 	{{!--
 		Foto-Ankündigung: Der neu gebaute iOS-Client (OstSeeTiere/8, Stand

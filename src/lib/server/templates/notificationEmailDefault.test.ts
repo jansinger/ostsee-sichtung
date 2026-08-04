@@ -151,6 +151,97 @@ describe('NOTIFICATION_EMAIL_DEFAULT_TEMPLATE — Ostsee-Status', () => {
 	});
 
 	/**
+	 * Totfund: `isDead`, `deadCondition` und `deadSize` lagen bis 2026-08-04 im
+	 * Kontext, ohne dass eine ausgelieferte Vorlage sie je gerendert hätte — die
+	 * Mail zu einem Totfund unterschied sich in nichts von der zu einer lebenden
+	 * Sichtung. Ein Totfund ist der Fall, der eine Rückmeldung braucht (Bergung,
+	 * Beprobung).
+	 *
+	 * Der Betreff bleibt unverändert „Neue Sichtung: <REF>" — erkennbar ist der
+	 * Totfund also erst beim Öffnen der Mail, nicht schon in der Übersicht des
+	 * Posteingangs. Ein Betreff-Präfix wäre eine eigene Entscheidung (Mailfilter
+	 * beim DMM) und gehört nicht in diese Vorlage.
+	 */
+	describe('Totfund', () => {
+		function renderDeadFind(dead: {
+			isDead: boolean;
+			deadCondition?: string;
+			deadSize?: number | null;
+			deadPhoneContact?: boolean;
+		}) {
+			return render({
+				referenceId: 'REF-42',
+				adminUrl: 'https://example.com/admin/1',
+				currentDate: '04.08.2026',
+				currentTime: '12:00',
+				spamCheck: { score: 0, isHighRisk: false, indicators: [] },
+				sighting: {
+					species: 'Schweinswal',
+					sightingDate: '04.08.2026',
+					coordinatesFormatted: null,
+					balticSea: balticSeaEmailContext({}),
+					...dead
+				},
+				...emailColorContext()
+			});
+		}
+
+		it('weist einen Totfund aus und nennt Zustand und Körperlänge', () => {
+			const html = renderDeadFind({
+				isDead: true,
+				deadCondition: 'Mittlere Verwesung',
+				deadSize: 150
+			});
+
+			expect(html).toContain('Totfund');
+			expect(html).toContain('Mittlere Verwesung');
+			expect(html).toContain('150 cm');
+		});
+
+		it('lässt den Block bei einer lebenden Sichtung weg', () => {
+			const html = renderDeadFind({ isDead: false });
+
+			expect(html).not.toContain('Totfund');
+		});
+
+		// Zustand und Größe sind optional (`deadSize` ist in der Datenbank
+		// nullable). Ohne beides muss der Totfund trotzdem als solcher dastehen.
+		it('weist den Totfund auch ohne Zustand und Körperlänge aus', () => {
+			const html = renderDeadFind({ isDead: true, deadSize: null });
+
+			expect(html).toContain('Totfund');
+			expect(html).not.toContain('Zustand:');
+			// Nicht auf 'cm' prüfen: zwei Zeichen gegen das ganze Dokument wären
+			// bei jedem künftigen „cm" im Text falsch-rot.
+			expect(html).not.toContain('Körperlänge');
+		});
+
+		/**
+		 * `deadPhoneContact` beantwortet die Frage, ob das Meeresmuseum schon
+		 * telefonisch von dem Fund weiß. **Beide** Antworten sind eine Handlung:
+		 * „ja" heißt, dass die Bergung womöglich schon läuft und ein zweiter
+		 * Rückruf eine Doppelmeldung wäre; „nein" heißt, dass sich niemand
+		 * gemeldet hat. Ein Block, der nur den Ja-Fall zeigt, ließe den
+		 * Empfänger im Nein-Fall im Unklaren, ob die Angabe fehlt oder verneint
+		 * wurde — deshalb hier als einziges Feld mit `{{else}}`-Zweig.
+		 */
+		it('nennt eine bereits erfolgte telefonische Meldung', () => {
+			const html = renderDeadFind({ isDead: true, deadPhoneContact: true });
+
+			expect(html).toContain('Meeresmuseum');
+			expect(html).toContain('bereits telefonisch');
+		});
+
+		it('weist eine fehlende telefonische Meldung ebenfalls aus', () => {
+			const html = renderDeadFind({ isDead: true, deadPhoneContact: false });
+
+			expect(html).toContain('Meeresmuseum');
+			expect(html).not.toContain('bereits telefonisch');
+			expect(html).toContain('keine telefonische Meldung');
+		});
+	});
+
+	/**
 	 * Ein `<!-- … -->` mit `{{#if …}}` darin wird von Handlebars **ausgewertet**,
 	 * nicht zitiert — genau daran ist diese Vorlage beim Umbau einmal
 	 * unbalanciert geworden (Parse-Fehler erst zur Laufzeit). Erklärende Notizen
@@ -185,7 +276,7 @@ describe('Fingerabdruck des ausgelieferten Stands', () => {
 			.update(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE, 'utf8')
 			.digest('hex');
 
-		expect(hash).toBe('2444299392fe83096f5a2ebbcd4806c20f4fc1866dd0d13c105066ccfc0dd7f0');
+		expect(hash).toBe('32d2355c29f5800ece131f19746243cdb5962b0d884f6d50042bc0e3c80ea47e');
 	});
 
 	it('führt den aktuellen Stand nicht als früheren Stand', () => {

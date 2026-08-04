@@ -169,6 +169,15 @@ async function run(sql: postgres.Sql, connectionString: string): Promise<number>
 		console.error('    Bounding Box (z. B. Hamburger Hafen) weiterhin als Ostsee aus.');
 		console.error('    Details: docs/OSTSEE_FLAGS.md (Fehler 4)');
 		console.error('');
+		console.error('    Ebenfalls nachzutragen ist der Totfund-Abschnitt — ohne ihn ist eine');
+		console.error('    Totfund-Meldung in der Mail von einer lebenden Sichtung nicht zu');
+		console.error('    unterscheiden:');
+		console.error('      {{#if sighting.isDead}} … {{/if}}');
+		console.error('        ├ {{sighting.deadCondition}} — Zustand (fertiges Label)');
+		console.error('        ├ {{sighting.deadSize}} cm   — Körperlänge in Zentimetern');
+		console.error('        └ {{#if sighting.deadPhoneContact}} … {{else}} … {{/if}}');
+		console.error('            └ Meeresmuseum telefonisch informiert (beide Fälle nennen)');
+		console.error('');
 		console.error('    Bewusst verwerfen: erneut mit --force aufrufen.');
 		return 1;
 	}
