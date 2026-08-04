@@ -141,6 +141,12 @@
 							</h4>
 							<ul class="space-y-1 text-xs">
 								<li>
+									<!-- Kein Duplikat zu /bestimmungshilfe und FieldRenderer.svelte: Auf
+									     meeresmuseum.de läuft die App im iframe, dort blenden PublicNavbar und
+									     PublicFooter per `{#if isNotIFrame}` aus — und damit jeden Link auf die
+									     eigenständige Seite. Für die Mehrheit der Nutzer ist sie so nicht
+									     erreichbar, der iframe bleibt (Museum, 2026-08-04).
+									     Belege: docs/IFRAME_EINBETTUNG.md -->
 									<strong>Tierart:</strong> Bei Unsicherheit „Unbekannte Walart" oder „Unbekannte
 									Robbenart" wählen <SpeciesIdentificationHelp />
 								</li>

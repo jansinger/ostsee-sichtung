@@ -152,19 +152,20 @@ Erst der manuelle Workflow **Promote to Production** (mit Approval am Environmen
 
 ## Weitere Dokumentation
 
-| Dokument                           | Inhalt                                                                |
-| ---------------------------------- | --------------------------------------------------------------------- |
-| `.claude/README.md`                | Aufbau der Claude-Konfiguration                                       |
-| `docs/DESIGN_GUIDE.md`             | Design-Prinzipien, Ist-Zustand, Grenzen                               |
-| `docs/CONFIGURATION_USAGE.md`      | ConfigService (Laufzeit-Konfiguration)                                |
-| `docs/LEGACY_API_SPECIFICATION.md` | Legacy API (KRITISCH)                                                 |
-| `docs/OSTSEE_FLAGS.md`             | `ostsee` vs. `ostsee_geo` — Namen sind irreführend, `2` im Altbestand |
-| `docs/RELEASE_PIPELINE.md`         | Release → Staging → Production, Image-Tags, Promotion, Rollback       |
-| `docs/PRODUCTION_DEPLOYMENT.md`    | Production Deployment (Schnellanleitung)                              |
-| `docs/DOCKER_DEPLOYMENT.md`        | Docker Setup (Vollständige Referenz)                                  |
-| `docs/ENVIRONMENT.md`              | Umgebungsvariablen, inkl. Zeitzonen-Konvention (Abschnitt `TZ`)       |
-| `docs/WORKTREES.md`                | Worktree-Setup, geteilte Ressourcen, Ports                            |
-| `docs/DATABASE_MIGRATION.md`       | DB Migrationen                                                        |
+| Dokument                           | Inhalt                                                                             |
+| ---------------------------------- | ---------------------------------------------------------------------------------- |
+| `.claude/README.md`                | Aufbau der Claude-Konfiguration                                                    |
+| `docs/DESIGN_GUIDE.md`             | Design-Prinzipien, Ist-Zustand, Grenzen                                            |
+| `docs/CONFIGURATION_USAGE.md`      | ConfigService (Laufzeit-Konfiguration)                                             |
+| `docs/LEGACY_API_SPECIFICATION.md` | Legacy API (KRITISCH)                                                              |
+| `docs/OSTSEE_FLAGS.md`             | `ostsee` vs. `ostsee_geo` — Namen sind irreführend, `2` im Altbestand              |
+| `docs/IFRAME_EINBETTUNG.md`        | iframe auf meeresmuseum.de: warum `/bestimmungshilfe` eingebettet unerreichbar ist |
+| `docs/RELEASE_PIPELINE.md`         | Release → Staging → Production, Image-Tags, Promotion, Rollback                    |
+| `docs/PRODUCTION_DEPLOYMENT.md`    | Production Deployment (Schnellanleitung)                                           |
+| `docs/DOCKER_DEPLOYMENT.md`        | Docker Setup (Vollständige Referenz)                                               |
+| `docs/ENVIRONMENT.md`              | Umgebungsvariablen, inkl. Zeitzonen-Konvention (Abschnitt `TZ`)                    |
+| `docs/WORKTREES.md`                | Worktree-Setup, geteilte Ressourcen, Ports                                         |
+| `docs/DATABASE_MIGRATION.md`       | DB Migrationen                                                                     |
 
 Themenspezifische Regeln in `.claude/rules/` laden automatisch, sobald passende Dateien bearbeitet werden — sie müssen hier nicht aufgezählt werden.
 

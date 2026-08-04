@@ -358,6 +358,11 @@
 	{/if}
 
 	<!-- Species Identification Help (only for species field) -->
+	<!-- Kein Duplikat zu /bestimmungshilfe und FormHelp.svelte: Auf meeresmuseum.de läuft die
+	     App im iframe, dort blenden PublicNavbar und PublicFooter per `{#if isNotIFrame}` aus —
+	     und damit jeden Link auf die eigenständige Seite. Für die Mehrheit der Nutzer ist sie so
+	     nicht erreichbar, der iframe bleibt (Museum, 2026-08-04).
+	     Belege: docs/IFRAME_EINBETTUNG.md -->
 	{#if name === 'species' && normalizedType === 'select'}
 		<SpeciesIdentificationHelp currentValue={value} />
 	{/if}
