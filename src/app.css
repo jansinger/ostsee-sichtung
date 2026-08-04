@@ -178,6 +178,50 @@ body {
 	font-size: var(--text-body);
 }
 
+/* Feld-Beschriftungen dürfen umbrechen.
+
+   DaisyUI gibt `.label` ein `white-space: nowrap`. Das passt zu kurzen
+   Beschriftungen neben einem Eingabefeld — die Beschriftungen hier sind aber
+   ganze Fragen („Von wo aus wurde die Sichtung gemacht?", aus `.label()` im
+   Yup-Schema), dazu Pflicht-Sternchen und Hilfe-Schaltfläche in derselben
+   Zeile. Ohne Umbruch ist die Mindestbreite eines Felds damit die Breite seines
+   längsten Satzes: gemessen 309px für die Frage oben, plus 48px Karten- und
+   48px Seitenpolster.
+
+   Sichtbar wird das als Überlauf des ganzen Dokuments, nicht als abgeschnittene
+   Beschriftung: Der Seiten-Wrapper ist ein Flex-Item mit `mx-auto`, und ein
+   Flex-Item mit automatischem Rand streckt sich nicht auf die Containerbreite,
+   sondern auf seinen Inhalt. Die Mindestbreite des breitesten Labels drückt
+   sich so bis zum `<html>` durch — auf 320px um 48px, auf 360px um 8px. Gefunden
+   von `e2e/horizontal-overflow.spec.ts`.
+
+   `anywhere` und nicht `break-word`: Nur `anywhere` senkt auch die
+   **Mindest**breite, und genau die ist hier das Problem. Sichtbar wird der
+   Unterschied erst ohne Silbentrennung: `FieldRenderer` und `BaseToggle` geben
+   dem Beschriftungstext `hyphens: auto` mit, und Chromes Trennmuster hängen an
+   Wörterbüchern, die auf Headless-CI-Images fehlen können. Nachgestellt (alle
+   Elemente auf `hyphens: manual`) läuft Schritt 3 auf 320px mit `break-word`
+   um 11px über, mit `anywhere` nicht. Eine Layoutgrenze darf nicht davon
+   abhängen, ob ein Trennmuster-Wörterbuch installiert ist.
+
+   Im Normalfall ist der Unterschied unsichtbar: Trennstellen aus `hyphens: auto`
+   werden zuerst genutzt, `anywhere` greift erst, wenn ein Wort auch dann nicht
+   passt.
+
+   Die Regel gilt bewusst app-weit und nicht nur für das Meldeformular: Sie
+   erreicht rund 40 Fundstellen, darunter die Admin-Filter, die Karten-Panels und
+   `/styleguide`. Die Admin-Maske läuft über dieselbe Feld-Pipeline und trägt
+   dieselben langen Beschriftungen — eine Eingrenzung auf `/` würde ausgerechnet
+   das Formular auslassen, in dem sie korrigiert werden. Für kurze Labels
+   („Zeitraum von") ändert sich nichts, solange ihre Spalte breit genug ist;
+   `anywhere` bricht erst, wenn sonst nichts mehr geht. Abgesichert ist bisher
+   nur `/` (`e2e/horizontal-overflow.spec.ts`) — Admin und Karte sind auf 320px
+   ungeprüft. */
+.label {
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
 /* ===== Einbettungs-Modi =====
    Vorher ein Boolean (isNotIFrame). Drei benannte Modi machen die Absicht
    lesbar und erlauben eine serverseitige Entscheidung über data-embed. */

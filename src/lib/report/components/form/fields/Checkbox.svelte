@@ -25,14 +25,14 @@
 		<div class="min-w-0 flex-1 text-left">
 			<span
 				class="font-medium"
-				style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+				style="overflow-wrap: anywhere; hyphens: auto;"
 			>
 				{label}
 			</span>
 			{#if helpText}
 				<p
 					class="text-base-content/60 mt-1 text-left text-xs"
-					style="word-wrap: break-word; overflow-wrap: break-word; hyphens: auto;"
+					style="overflow-wrap: anywhere; hyphens: auto;"
 				>
 					{helpText}
 				</p>

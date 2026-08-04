@@ -49,20 +49,13 @@ test.describe('Footer — Anordnung', () => {
 		expect(await gruppenZeilen(page), 'Gruppen stapeln sich, obwohl Platz da ist').toBe(1);
 	});
 
-	/* Der Auslöser des Vorgänger-Bugs: zwischen 768px und ~890px passte die
+	/* Der Auslöser des Vorgänger-Bugs — zwischen 768px und ~890px passte die
 	   Linkzeile nicht mehr, das Dokument wurde breiter als der Viewport und die
-	   ganze Seite ließ sich seitlich schieben — der Schritt-Stepper darüber
-	   wurde mit angeschnitten. */
-	test('das Dokument wird auf keiner Breite breiter als das Fenster', async ({ page }) => {
-		for (const breite of [360, 390, 640, 768, 890, 1024, 1280]) {
-			await page.setViewportSize({ width: breite, height: 900 });
-			await page.goto('/');
-			const ueberlauf = await page.evaluate(
-				() => document.documentElement.scrollWidth - document.documentElement.clientWidth
-			);
-			expect(ueberlauf, `horizontaler Überlauf bei ${breite}px`).toBeLessThanOrEqual(0);
-		}
-	});
+	   ganze Seite ließ sich seitlich schieben — wird seit dem 2026-08-04 in
+	   `e2e/horizontal-overflow.spec.ts` geprüft. Der Wächter stand hier, deckte
+	   aber nur Schritt 1 im Grundzustand ab und ließ genau deshalb einen echten
+	   Überlauf durch (Begründung im neuen Spec). Er gehört nicht mehr zum
+	   Footer: geprüft werden alle vier Schritte, aufgeklappt, ab 320px. */
 
 	/**
 	 * GitHub und „Deutsches Meeresmuseum" waren `btn btn-ghost btn-xs` und
