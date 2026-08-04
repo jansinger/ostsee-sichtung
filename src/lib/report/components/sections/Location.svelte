@@ -51,6 +51,22 @@
 		Das Meldeformular ist davon nicht betroffen — es nutzt
 		`position/LocationDescription.svelte` und zeigt seit A2.4 nur `waterway`.
 	-->
-	<FormField name="waterway" />
+	<!--
+		`required` als Override, weil die Pflicht im Schema in einem
+		`when('hasPosition')` steckt und `describe()` das nicht sieht — dieselbe
+		Aufrufstelle-für-Aufrufstelle-Pflicht wie im Meldeformular
+		(`position/LocationDescription.svelte`), und `adminSightingSchema` lockert
+		das Feld nicht.
+
+		Hier muss der Override KONDITIONAL sein, anders als bei `deadCondition` oder
+		`boatDrive`: Dort rendert der umgebende Zweig ohnehin nur unter der
+		Schema-Bedingung, hier steht das Feld nach dem Kommentar oben bewusst
+		unabhängig von `hasPosition` im Markup. Ein festes `true` zeigte also auch
+		dann ein Sternchen, wenn Koordinaten vorliegen und niemand eine Beschreibung
+		verlangt.
+
+		`seaMark` bleibt ohne Override — es hat kein `when()` und ist nie Pflicht.
+	-->
+	<FormField name="waterway" required={hasPosition !== true} />
 	<FormField name="seaMark" />
 </SectionCard>
