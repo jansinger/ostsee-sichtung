@@ -2,6 +2,10 @@ import {
 	getAnimalBehaviorLabel,
 	type AnimalBehaviorEnum
 } from '$lib/report/formOptions/animalBehavior';
+import {
+	getAnimalConditionLabel,
+	type AnimalConditionEnum
+} from '$lib/report/formOptions/animalCondition';
 import { getDistanceLabel, type DistanceEnum } from '$lib/report/formOptions/distance';
 import { getSpeciesLabel, isValidSpecies, type SpeciesEnum } from '$lib/report/formOptions/species';
 import type { SightingFormValues } from '$lib/types/Form';
@@ -13,7 +17,7 @@ import { formatLocation } from './formatLocation';
  */
 export interface FormattedSightingData extends Omit<
 	SightingFormValues,
-	'species' | 'behavior' | 'distance'
+	'species' | 'behavior' | 'distance' | 'deadCondition'
 > {
 	species: string;
 	speciesRaw?: SpeciesEnum | number;
@@ -21,6 +25,8 @@ export interface FormattedSightingData extends Omit<
 	behaviorRaw?: AnimalBehaviorEnum | number;
 	distance?: string;
 	distanceRaw?: DistanceEnum | number;
+	deadCondition?: string;
+	deadConditionRaw?: AnimalConditionEnum | number;
 	sightingDate: string;
 	coordinatesFormatted: string | null;
 }
@@ -31,7 +37,7 @@ export interface FormattedSightingData extends Omit<
  */
 export function formatSightingForDisplay(sighting: SightingFormValues): FormattedSightingData {
 	// Destructure and omit the properties we'll replace
-	const { species, behavior, distance, ...restSighting } = sighting;
+	const { species, behavior, distance, deadCondition, ...restSighting } = sighting;
 
 	const formatted: FormattedSightingData = {
 		...restSighting,
@@ -59,6 +65,13 @@ export function formatSightingForDisplay(sighting: SightingFormValues): Formatte
 	if (distance) {
 		formatted.distance = getDistanceLabel(distance as DistanceEnum);
 		formatted.distanceRaw = distance as DistanceEnum;
+	}
+
+	// Zustand eines Totfunds. Wie oben nur bei gesetztem Wert: 0 ist
+	// `UNKNOWN` und liefert „Unbekannt" — eine Zeile, die nichts aussagt.
+	if (deadCondition) {
+		formatted.deadCondition = getAnimalConditionLabel(deadCondition as AnimalConditionEnum);
+		formatted.deadConditionRaw = deadCondition as AnimalConditionEnum;
 	}
 
 	return formatted;

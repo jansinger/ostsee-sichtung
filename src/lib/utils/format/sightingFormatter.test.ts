@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { AnimalConditionEnum } from '$lib/report/formOptions/animalCondition';
 import { SpeciesEnum } from '$lib/report/formOptions/species';
 import type { SightingFormValues } from '$lib/types/Form';
 import { formatSightingForDisplay, isUnknownOrMissingSpecies } from './sightingFormatter';
@@ -87,6 +88,42 @@ describe('sightingFormatter', () => {
 			const result = formatSightingForDisplay(sighting);
 			expect(result.distance).toBeUndefined();
 			expect(result.distanceRaw).toBeUndefined();
+		});
+
+		/**
+		 * Der Zustand eines Totfunds ist ein Enum-Code. Ungefiltert stünde in der
+		 * Benachrichtigungs-Mail „Zustand: 3" — die Vorlage kann ihn nicht
+		 * auflösen, hier ist die einzige Stelle, an der die Übersetzung passiert.
+		 */
+		it('übersetzt deadCondition-Enum wenn vorhanden', () => {
+			const result = formatSightingForDisplay(
+				makeSighting({ isDead: true, deadCondition: AnimalConditionEnum.MEDIUM_DECOMPOSITION })
+			);
+			expect(result.deadCondition).toBe('Mittlere Verwesung');
+			expect(result.deadConditionRaw).toBe(AnimalConditionEnum.MEDIUM_DECOMPOSITION);
+		});
+
+		/**
+		 * `deadCondition` ist `notNull` mit Vorgabe 0 — „nicht ausgefüllt" kommt
+		 * aus der Datenbank also als `UNKNOWN` und nicht als `null` zurück.
+		 * Übersetzt ergäbe das die Zeile „Zustand: Unbekannt", die nichts
+		 * aussagt; unterdrückt bleibt der Abschnitt still. Das ist der Grund für
+		 * `if (deadCondition)` statt `if (deadCondition !== undefined)`.
+		 */
+		it('unterdrückt deadCondition beim UNKNOWN-Wert 0', () => {
+			const result = formatSightingForDisplay(
+				makeSighting({ isDead: true, deadCondition: AnimalConditionEnum.UNKNOWN })
+			);
+			expect(result.deadCondition).toBeUndefined();
+			expect(result.deadConditionRaw).toBeUndefined();
+		});
+
+		it('lässt deadCondition weg wenn nicht gesetzt', () => {
+			const sighting = makeSighting({});
+			delete (sighting as Record<string, unknown>).deadCondition;
+			const result = formatSightingForDisplay(sighting);
+			expect(result.deadCondition).toBeUndefined();
+			expect(result.deadConditionRaw).toBeUndefined();
 		});
 
 		it('enthält restliche Felder unverändert', () => {
