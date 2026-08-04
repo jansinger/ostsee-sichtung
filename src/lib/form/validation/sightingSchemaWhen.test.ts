@@ -13,6 +13,7 @@ import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import { DistributionEnum } from '$lib/report/formOptions/distribution';
 import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
 import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
+import { AnimalConditionEnum } from '$lib/report/formOptions/animalCondition';
 
 // Kein Mock nötig — sightingSchema importiert weder $lib/logger noch $lib/report/formConfig
 
@@ -232,6 +233,93 @@ describe('sightingSchema - Sonstiges-Textfeld-Validierung', () => {
 				boatDriveText: null
 			});
 			expect(hatFehler).toBe(false);
+		});
+	});
+
+	// ── deadSex — Analyse-Punkt C4 ────────────────────────────────────────────
+	//
+	// Das Deutsche Meeresmuseum hat das Geschlecht beim Totfund am 2026-08-04
+	// aus dem Meldeformular abbestellt (PR 2, Teil b, siehe
+	// docs/MEERESMUSEUM_FORMULAR_PLAN_2026-08-04.md). Der technische Blocker:
+	// `deadSex` ist heute über `.when('isDead', { is: true, then: required })`
+	// Pflichtfeld, sobald `isDead` gesetzt ist. Würde nur das Markup entfernt
+	// (`<FormField name="deadSex" />` hinter `{#if adminMode}`), wäre danach
+	// KEINE Totfund-Meldung mehr absendbar — das Feld existiert im DOM des
+	// Meldeformulars nicht mehr, die Validierung verlangt es aber weiterhin.
+	//
+	// Dieser Test ist deshalb VOR der Schema-Änderung absichtlich ROT: Ein
+	// sonst gültiger Datensatz mit `isDead: true` und ohne `deadSex` muss die
+	// Validierung bestehen. Grün wird er erst, wenn der `.when('isDead', …)`
+	// Block bei `deadSex` in sightingSchema.ts ersatzlos entfernt ist (Feld
+	// bleibt optional, `.test('is-valid-dead-sex')`, Label und `meta` bleiben
+	// unverändert — die Admin-Maske rendert daraus weiter).
+	describe('deadSex — entfällt als Pflichtfeld bei Totfund (C4, 2026-08-04)', () => {
+		const validesteBasis = {
+			referenceId: 'test-ref-dead-sex',
+			firstName: 'Jane',
+			lastName: 'Doe',
+			email: 'jane@example.com',
+			privacyConsent: true,
+			species: 0,
+			totalCount: 1,
+			distance: 1,
+			sightingFrom: SightingFromEnum.SAILBOAT,
+			boatDrive: BoatDriveEnum.MOTOR,
+			entryChannel: 0,
+			hasPosition: true,
+			latitude: 54.5,
+			longitude: 13.5,
+			sightingDate: new Date().toISOString().split('T')[0]
+		};
+
+		async function validatesFully(formData: Record<string, unknown>): Promise<boolean> {
+			try {
+				await sightingSchema.validate(formData, { abortEarly: false });
+				return true;
+			} catch {
+				return false;
+			}
+		}
+
+		it('validiert einen sonst gültigen Totfund OHNE deadSex erfolgreich (der Blocker)', async () => {
+			const totfundOhneGeschlecht = {
+				...validesteBasis,
+				isDead: true,
+				deadCondition: AnimalConditionEnum.FRESH_BEGINNING_DECOMPOSITION
+				// deadSex bewusst NICHT gesetzt — genau der Fall, den das
+				// entfernte Markup danach erzeugt.
+			};
+
+			expect(await validatesFully(totfundOhneGeschlecht)).toBe(true);
+		});
+
+		it('validiert deadSex jetzt einzeln (validateAt) ohne Fehler — Schema-Änderung gelandet', async () => {
+			// Vor der Schema-Änderung warf dieselbe Zeile mit /Geschlecht/ (siehe
+			// Git-Historie dieser Datei) — genau das war der Blocker, den der Test
+			// oben in dieser describe-Gruppe reproduziert. Nach dem Entfernen des
+			// `.when('isDead', …)`-Blocks bei `deadSex` validiert das Feld einzeln
+			// erfolgreich, wie hier festgehalten.
+			await expect(sightingSchema.validateAt('deadSex', { isDead: true })).resolves.not.toThrow();
+		});
+
+		it('deadCondition bleibt bei isDead=true weiterhin Pflichtfeld', async () => {
+			// Gegenprobe zum Blocker-Test: Die Schema-Änderung darf ausschließlich
+			// `deadSex` betreffen. Würde `deadCondition` versehentlich mit
+			// entschärft, wiche die Änderung weiter auf als vom Museum verlangt.
+			const totfundOhneZustand = {
+				...validesteBasis,
+				isDead: true,
+				deadSex: 1
+				// deadCondition bewusst NICHT gesetzt
+			};
+
+			expect(await validatesFully(totfundOhneZustand)).toBe(false);
+		});
+
+		it('deadCondition-Fehler bleibt am eigenen Feld bestehen (validateAt)', async () => {
+			await expect(sightingSchema.validateAt('deadCondition', { isDead: true })).rejects.toThrow(
+				/Zustand/
+			);
 		});
 	});
 });

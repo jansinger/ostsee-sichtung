@@ -1,0 +1,50 @@
+import { render } from 'vitest-browser-svelte';
+import { describe, expect, it } from 'vitest';
+import { createForm } from '$lib/form/createForm';
+import { key as formContextKey } from '$lib/report/formContext';
+import { initialFormState } from '$lib/report/formConfig';
+import type { FormContext, SightingFormData } from '$lib/types';
+import OptionalSightingDetails from './OptionalSightingDetails.svelte';
+
+/**
+ * `distribution` (Verteilung der Tiere) verlässt den Melde-Schritt `observations`
+ * und bleibt nur in der **Admin-Maske**. Der Test hält denselben Präzedenzfall fest
+ * wie `Location.svelte.test.ts`: In PR #669 hat eine Feld-Entfernung im
+ * Meldeformular der Admin-Maske drei Felder mit weggenommen, weil beide dieselbe
+ * Komponente teilten — hier ist es dieselbe Komponente (`OptionalSightingDetails`),
+ * die per `adminMode`-Flag unterscheidet. Die Admin-Maske braucht das Feld, um den
+ * kompletten Bestand pflegen zu können: `verteilung` (DB-Spalte, `integer` `.default(0)`
+ * `.notNull()`) trägt auf allen 19.887 Zeilen einen Wert; auf 4.758 davon weicht er
+ * vom Default `0` ab (gemessen 2026-08-04, `verteilung != 0`).
+ */
+function renderDetails(props: { adminMode?: boolean } = {}): void {
+	const context = {
+		...createForm<SightingFormData>({
+			initialValues: { ...initialFormState } as SightingFormData,
+			onSubmit: () => undefined
+		}),
+		mediaStore: { mediaFiles: [] }
+	} as unknown as FormContext;
+
+	// Sobald `context` mitgegeben wird, verlangt die Render-API die Props unter
+	// dem `props`-Schlüssel — sonst gelten sie als unbekannte Svelte-Optionen.
+	render(OptionalSightingDetails, { props, context: new Map([[formContextKey, context]]) });
+}
+
+function field(name: string): HTMLElement | null {
+	return document.querySelector<HTMLElement>(`[data-testid="field-${name}"]`);
+}
+
+describe('sections/OptionalSightingDetails — Verteilung nur im Admin-Modus', () => {
+	it('zeigt das Verteilungsfeld NICHT im Meldeformular (ohne adminMode)', () => {
+		renderDetails();
+
+		expect(field('distribution')).toBeNull();
+	});
+
+	it('zeigt das Verteilungsfeld in der Admin-Maske (adminMode)', () => {
+		renderDetails({ adminMode: true });
+
+		expect(field('distribution')).not.toBeNull();
+	});
+});

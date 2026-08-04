@@ -507,21 +507,18 @@ export const sightingSchemaBase = yup.object().shape({
 
 	/**
 	 * Geschlecht des toten Tieres
-	 * Erforderlich, wenn isDead = true
+	 * Das Museum hat das Geschlecht am 2026-08-04 aus dem Meldeformular abbestellt
+	 * (Analyse-Punkt C4): Laien können es am Strand kaum bestimmen, das Feld
+	 * lieferte überwiegend „Unbekannt". Die Pflicht musste dabei zwingend mit weg —
+	 * sonst wäre nach dem Entfernen des Markups keine Totfund-Meldung mehr
+	 * absendbar gewesen. Das Feld bleibt optional für die Admin-Maske im Schema.
 	 */
 	deadSex: yup
 		.number()
 		.transform((value) => (isNaN(value) ? undefined : value))
-		.when('isDead', {
-			is: true,
-			then: (schema) =>
-				schema
-					.required('Bitte geben Sie das Geschlecht des toten Tieres an.')
-					.test('is-valid-dead-sex', 'Bitte wählen Sie ein gültiges Geschlecht.', (value) =>
-						isValidSex(String(value))
-					),
-			otherwise: (schema) => schema.notRequired()
-		})
+		.test('is-valid-dead-sex', 'Bitte wählen Sie ein gültiges Geschlecht.', (value) =>
+			value === undefined ? true : isValidSex(String(value))
+		)
 		.label('Geschlecht (Totfund)')
 		.meta({
 			helpText: 'Falls erkennbar',

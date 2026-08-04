@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
 	import { get } from 'svelte/store';
 	import { getFormContext } from '$lib/report/formContext';
 	import { getUploadConfig } from '$lib/stores/configStore';
@@ -14,11 +13,7 @@
 	import SectionCard from '$lib/report/components/sections/SectionCard.svelte';
 	import LocationDescription from './LocationDescription.svelte';
 	import { requestCurrentPosition } from './geolocation';
-	import {
-		photoStatus,
-		shouldOpenMapOnCoordinateChange,
-		shouldWarnAboutMissingGps
-	} from './positionPanelState';
+	import { photoStatus, shouldWarnAboutMissingGps } from './positionPanelState';
 
 	const { form, handleChange, mediaStore } = getFormContext();
 
@@ -40,34 +35,13 @@
 	const longitude = $derived(toCoordinate($form.longitude));
 	const latitude = $derived(toCoordinate($form.latitude));
 
-	// Nur für die Karten-Automatik. Bewusst NICHT als Guard für VerifyLocation:
-	// Ein separater Boolean verengt die Typen im Template nicht (svelte-check
-	// kennt kein Aliased-Narrowing über `$derived`), VerifyLocation bekäme also
-	// `number | undefined` und fiele still auf seine Default-Koordinaten
-	// (54.5/13.5) zurück. Der Guard unten prüft deshalb direkt auf `undefined`.
+	// Nur für `shouldWarnAboutMissingGps`. Bewusst NICHT als Guard für
+	// VerifyLocation: Ein separater Boolean verengt die Typen im Template nicht
+	// (svelte-check kennt kein Aliased-Narrowing über `$derived`), VerifyLocation
+	// bekäme also `number | undefined` und fiele still auf seine
+	// Default-Koordinaten (54.5/13.5) zurück. Der Guard unten prüft deshalb
+	// direkt auf `undefined`.
 	const coordinatesPresent = $derived(latitude !== undefined && longitude !== undefined);
-
-	// Karte: automatisch aufklappen, sobald eine Position NEU entsteht — danach
-	// gehört der Zustand dem Nutzer (er darf zuklappen, ohne dass es zurückspringt).
-	let mapOpen = $state(false);
-	// `hadCoordinates` ist reiner Vorzustands-Speicher, keine Eingabe des Effects.
-	// Würde es hier normal gelesen, wäre es Abhängigkeit DES Effects, der es selbst
-	// schreibt — der Effect liefe ein zweites Mal und die steigende Flanke wäre
-	// nicht mehr eindeutig. `untrack` hält die einzige Abhängigkeit bei
-	// `coordinatesPresent` (gleiches Muster wie LocationInput.svelte:41-48).
-	let hadCoordinates = $state(false);
-	$effect(() => {
-		const present = coordinatesPresent;
-		if (
-			shouldOpenMapOnCoordinateChange(
-				present,
-				untrack(() => hadCoordinates)
-			)
-		) {
-			mapOpen = true;
-		}
-		hadCoordinates = present;
-	});
 
 	// GPS-Foto-Konfiguration: Server-Config, aber nur Bilder und genau eine Datei.
 	let gpsPhotoConfig = $state<ValidationPreset | null>(null);
@@ -131,15 +105,6 @@
 		syncHasPosition();
 	}
 
-	let mapSummary = $state<HTMLElement | null>(null);
-
-	/** Öffnet die Karte und setzt den Fokus dorthin — nicht nur scrollen. */
-	function openMap(): void {
-		mapOpen = true;
-		mapSummary?.focus();
-		mapSummary?.scrollIntoView({ block: 'center' });
-	}
-
 	/**
 	 * Springt zur Ortsbeschreibung und fokussiert das Fahrwasser-Feld.
 	 *
@@ -174,7 +139,7 @@
 	let locationError = $state<string | null>(null);
 
 	/**
-	 * Übernimmt den Gerätestandort und öffnet die Karte zur Kontrolle.
+	 * Übernimmt den Gerätestandort ins Formular.
 	 *
 	 * Der Button bleibt währenddessen fokussierbar (nur `aria-disabled`), weil
 	 * `disabled` ihn aus der Tab-Reihenfolge nimmt und der Browser den Fokus
@@ -199,7 +164,6 @@
 		setField('latitude', result.latitude);
 		setField('longitude', result.longitude);
 		syncHasPosition();
-		mapOpen = true;
 	}
 </script>
 
@@ -208,115 +172,15 @@
 	     zwei Zeilen später in der Hero-Karte fast wörtlich noch einmal. -->
 	<p class="text-base-content/70 mb-4 text-sm">Wo haben Sie das Tier gesehen?</p>
 
-	<!-- Hero: Foto mit GPS. Tint-Fläche trägt bewusst text-base-content,
-	     NICHT text-primary-content (weiß auf hellblau ≈ 1,3:1). -->
-	<div
-		class="border-primary bg-primary/5 text-base-content rounded-lg border-2 p-4 md:p-6"
-		data-testid="photo-position-card"
-	>
-		<h4 class="mb-1 flex items-center gap-2 font-semibold">
-			<Icon aria-hidden="true" icon="lucide:camera" width="20" class="text-primary" />
-			Foto mit GPS hochladen
-		</h4>
-		<p class="text-base-content/70 mb-3 text-sm">
-			Der schnellste Weg: Position, Datum und Uhrzeit werden automatisch übernommen.
-		</p>
+	<!-- Der Standort-Button steht bewusst ganz oben: Er ist der schnellste Weg
+	     für alle, die vor Ort melden, und braucht anders als die Karte darunter
+	     keine Feinarbeit mit dem Finger.
 
-		{#if gpsPhotoConfig}
-			<!-- `showNoGpsWarning={false}`: Der Fall wird unten ausführlicher erklärt
-			     (Zustand C). Ohne das Abschalten stünden zwei Warn-Alerts mit
-			     derselben Aussage direkt übereinander.
-
-			     `compact` + leerer `additionalText`: Die Überschrift dieser Karte
-			     und der Satz darüber sagen bereits, worum es geht und dass GPS
-			     ausgelesen wird. Der Dropzone-Titel „Foto hochladen" und der
-			     Default-Zusatz „GPS-Daten werden beim Upload verarbeitet" waren
-			     die dritte und vierte Formulierung derselben Aussage. -->
-			<DropzoneEnhanced
-				{referenceId}
-				maxFiles={1}
-				config={gpsPhotoConfig}
-				enableGPSExtraction={true}
-				showNoGpsWarning={false}
-				showPositionMap={false}
-				onExifDateTimeApplied={(applied) => (exifDateTimeApplied = applied)}
-				actionLabel="Foto auswählen"
-				compact={true}
-				additionalText=""
-			/>
-		{:else}
-			<div class="skeleton h-32 w-full"></div>
-		{/if}
-
-		<!-- Zustand C: Foto ohne EXIF-GPS.
-
-		     Bewusst `'no-gps'` und nicht „kein GPS im Formular": Während der
-		     Auswertung meldet `photoStatus` `'analyzing'` und hier steht nichts.
-		     Sonst würde ein Foto MIT GPS im Moment des Drops für GPS-los erklärt
-		     und die Behauptung Sekundenbruchteile später zurückgenommen — mit
-		     `role="status"` sagt ein Screenreader sie inzwischen an.
-
-		     Die zweite Bedingung (`coordinatesPresent`) steckt in
-		     `shouldWarnAboutMissingGps`: Solange das Panel Koordinaten anzeigt,
-		     darf es ihr Fehlen nicht behaupten. -->
-		{#if shouldWarnAboutMissingGps(status, coordinatesPresent)}
-			<div class="alert alert-warning mt-4" role="status" data-testid="photo-no-gps">
-				<Icon aria-hidden="true" icon="lucide:circle-alert" width="20" class="shrink-0" />
-				<div>
-					<p class="text-sm">
-						In diesem Foto sind keine GPS-Daten gespeichert. Das ist häufig — viele Kameras und
-						weitergeleitete Bilder enthalten keine Position. Das Foto ist trotzdem wertvoll und
-						bleibt erhalten.
-					</p>
-					<!-- Nur wenn es wirklich passiert ist: `exifDateTimeApplied` kommt aus
-					     DropzoneEnhanced. Ein Gate auf `$form.sightingDate` wäre immer wahr
-					     (Schema-Default `berlinToday()`). -->
-					{#if exifDateTimeApplied}
-						<p class="mt-2 text-sm" data-testid="photo-datetime-applied">
-							Datum und Uhrzeit konnten übernommen werden.
-						</p>
-					{/if}
-					<div class="mt-3 flex flex-wrap gap-2">
-						<button
-							type="button"
-							class="btn btn-outline btn-sm min-h-11"
-							onclick={openMap}
-							data-testid="exit-to-map"
-						>
-							Auf Karte wählen
-						</button>
-						<button
-							type="button"
-							class="btn btn-outline btn-sm min-h-11"
-							onclick={focusDescription}
-							data-testid="exit-to-description"
-						>
-							Seegebiet beschreiben
-						</button>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- BEWUSST unter der Dropzone und bewusst als Auslöser statt als Alert:
-		     Die Hero-Karte begann auf einem 812-px-Gerät erst bei 659 px, und
-		     dazwischen standen ~150 px Datenschutz-Prosa. Der Wortlaut ist
-		     unverkürzt eine Ebene tiefer erreichbar (`UploadNotice.svelte`) und
-		     kostet hier nur noch eine Zeile. -->
-		<div class="mt-2">
-			<UploadNotice />
-		</div>
-	</div>
-
-	<!-- Der Standort-Button steht bewusst ÜBER dem Trenner und damit direkt
-	     neben dem Foto-Weg: Er ist für alle, die vor Ort melden, der zweite
-	     schnelle Weg zur Position — vorher stand er unter dem Trenner in einer
-	     Reihe mit der Karte und wirkte wie eine Nebensache.
-
-	     Eigener Button statt des OpenLayers-GPS-Controls: Die Karte startet
-	     zugeklappt, im Startzustand gäbe es sonst gar keinen sichtbaren
-	     GPS-Button. Beschriftung und Fehlerpfad liegen so außerdem in unserer
-	     Hand — beides ist im Karten-Control nicht erreichbar.
+	     Eigener Button statt des OpenLayers-GPS-Controls: Beschriftung und
+	     Fehlerpfad liegen so in unserer Hand — beides ist im Karten-Control nicht
+	     erreichbar. (Der frühere Grund, die zugeklappte Karte hätte im
+	     Startzustand gar keinen sichtbaren GPS-Button, ist mit der dauerhaft
+	     sichtbaren Karte entfallen; der Rest der Begründung trägt weiterhin.)
 
 	     NICHT `btn-primary`: Die einzige Primäraktion des Schritts ist „Weiter"
 	     (Button-Hierarchie, `.claude/rules/design-system.md`). Die Betonung
@@ -325,7 +189,7 @@
 	     `py-4`/`text-base` an dieser einen Aufrufstelle. -->
 	<button
 		type="button"
-		class="btn btn-outline btn-lg mt-4 w-full"
+		class="btn btn-outline btn-lg w-full"
 		onclick={useCurrentPosition}
 		aria-disabled={locating}
 		data-testid="use-current-position"
@@ -355,55 +219,161 @@
 		</div>
 	{/if}
 
-	<div class="divider text-base-content/70 text-support mt-6 mb-3">
-		oder Position auf der Karte setzen
-	</div>
+	<!-- „oder" trennt hier zwei gleichrangige Wege zur Position: den Standort des
+	     Geräts darüber und die Karte darunter. Der Trenner hieß bis zum Umbau
+	     „oder Position auf der Karte setzen" — das war eine Ankündigung dessen,
+	     was hinter der zugeklappten Disclosure lag. Die Karte steht jetzt offen
+	     darunter und kündigt sich selbst an; übrig bleiben muss nur noch das
+	     „oder". -->
+	<div class="divider text-base-content/70 text-support mt-6 mb-3">oder</div>
 
-	<details class="bg-base-100 collapse" bind:open={mapOpen} data-testid="map-disclosure">
-		<!-- `<summary>` ist nativ fokussierbar — kein `tabindex` nötig. -->
-		<summary bind:this={mapSummary} class="collapse-title min-h-11 py-3 text-sm font-medium">
-			Position auf Karte wählen
-		</summary>
-		<div class="collapse-content">
-			<!--
-				Erst mounten, wenn die Disclosure offen ist: Für die Mehrheit, die die
-				Karte nie aufklappt, entsteht so keine OpenLayers-Instanz und es werden
-				keine Kacheln geladen.
+	<!--
+		Karte und Koordinatenfelder stehen dauerhaft offen — auf Wunsch des
+		Museums ist die Karte das Haupt-Bedienelement dieses Schritts und liegt
+		nicht mehr hinter einer Disclosure.
 
-				Nicht der Grund: eine „leer rendernde" Karte. OpenLayers beobachtet das
-				Ziel-Element seit jeher mit einem ResizeObserver
-				(node_modules/ol/Map.js:449 in ol 10.9.0) und ruft `updateSize()` selbst
-				auf, sobald der Container Ausdehnung bekommt — eine im geschlossenen
-				<details> erzeugte Karte würde sich also von allein korrigieren.
-			-->
-			<!-- `collapsibleCoordinates={false}`: Die Koordinaten-Eingabe lag bis
-			     hierher hinter einer zweiten Disclosure („Koordinaten eingeben")
-			     und war damit zwei Klicks tief. Auf Wunsch des Museums steht sie
-			     jetzt offen unter der Karte.
+		Damit entfällt auch der frühere Grund für das Lazy-Mounting: Solange die
+		Karte zugeklappt startete, sparte das `if`-Gate auf `mapOpen` für die
+		Mehrheit die OpenLayers-Instanz und die Kacheln. Jetzt baut jeder Aufruf
+		von Schritt 1 die Karte auf, auch auf Mobilfunk. Das ist die Konsequenz des
+		Wunsches, kein Versehen — falls die Last auffällt, ist der nächste Schritt
+		ein Mount beim ersten Sichtbarwerden (`IntersectionObserver`) und nicht
+		die Rückkehr zur Disclosure.
+	-->
+	<!-- `collapsibleCoordinates={false}`: Die Koordinaten-Eingabe lag bis
+	     zum 2026-07-31 hinter einer zweiten Disclosure („Koordinaten eingeben")
+	     und war damit zwei Klicks tief. Auf Wunsch des Museums steht sie
+	     offen unter der Karte.
 
-			     `enableMapGps={false}` muss dabei ausdrücklich mit: Beides hing
-			     früher an `collapsibleCoordinates`, ein `false` allein brächte
-			     also das Karten-GPS-Control zurück — neben dem Button „Mein
-			     aktueller Standort" oben wären das zwei Bedienelemente für
-			     dieselbe Aktion (design-system.md). -->
-			{#if mapOpen}
-				<LocationInput
-					{latitude}
-					{longitude}
-					collapsibleCoordinates={false}
-					enableMapGps={false}
-					coordinatesHint="Bitte tragen Sie die GPS-Koordinaten ein, wenn diese nicht automatisch über die Karte übernommen werden konnten."
-					onchange={handleLocationChange}
-				/>
-			{/if}
-		</div>
-	</details>
+	     `enableMapGps={false}` muss dabei ausdrücklich mit: Beides hing
+	     früher an `collapsibleCoordinates`, ein `false` allein brächte
+	     also das Karten-GPS-Control zurück — neben dem Button „Mein
+	     aktueller Standort" oben wären das zwei Bedienelemente für
+	     dieselbe Aktion (design-system.md). -->
+	<LocationInput
+		{latitude}
+		{longitude}
+		collapsibleCoordinates={false}
+		enableMapGps={false}
+		coordinatesHint="Bitte tragen Sie die GPS-Koordinaten ein, wenn diese nicht automatisch über die Karte übernommen werden konnten."
+		onchange={handleLocationChange}
+	/>
 
-	<!-- Bewusst AUSSERHALB der Disclosure: Klappt der Nutzer die Karte zu, während
-	     Koordinaten gesetzt sind, muss die Ostsee-Prüfung sichtbar bleiben. -->
 	{#if latitude !== undefined && longitude !== undefined}
 		<VerifyLocation {longitude} {latitude} />
 	{/if}
+
+	<!-- Der Foto-Weg bleibt, aber eingeklappt: Er ist für die Position ein
+	     Sonderfall (nur Bilder mit GPS-EXIF liefern etwas), stand aber als
+	     Hero-Karte über allem anderen.
+
+	     Bewusst KEIN `bind:open` — ein gebundener Zustand schriebe ein von außen
+	     gesetztes `open` sofort zurück, und die Disclosure ließe sich später
+	     nicht mehr aufklappen (dieselbe Begründung wie bei `LocationDescription`,
+	     siehe `focusDescription`). -->
+	<!-- `collapse-arrow`: Ohne den Pfeil ist die zugeklappte Zeile eine graue
+	     Fläche mit Text und sieht nicht nach Bedienelement aus. Die alte
+	     Karten-Disclosure kam ohne aus, weil sie sich bei jeder neu entstandenen
+	     Position selbst öffnete — dieser Aufklapper tut das nicht und muss
+	     deshalb von sich aus als bedienbar erkennbar sein. -->
+	<details class="bg-base-100 collapse-arrow collapse mt-6" data-testid="photo-position-disclosure">
+		<!-- `<summary>` ist nativ fokussierbar — kein `tabindex` nötig. -->
+		<summary class="collapse-title min-h-11 py-3 text-sm font-medium">
+			GPS-Position und Zeit aus einem Bild übernehmen
+		</summary>
+		<div class="collapse-content">
+			<!-- `data-testid="photo-position-card"` bleibt: `form-position-photo.spec.ts`
+			     grenzt darüber den File-Input gegen die Medien-Dropzone aus Schritt 3
+			     ab. Die Hero-Optik (`border-primary bg-primary/5`) ist dagegen weg —
+			     der Foto-Weg ist nicht mehr die Hauptaktion. -->
+			<div class="text-base-content" data-testid="photo-position-card">
+				<p class="text-base-content/70 mb-3 text-sm">
+					Wenn Ihr Foto GPS-Daten enthält, übernehmen wir daraus Position, Datum und Uhrzeit. Das
+					Bild dient hier nur der Positionsbestimmung — weitere Fotos und Videos können Sie in
+					Schritt 3 hochladen.
+				</p>
+
+				{#if gpsPhotoConfig}
+					<!-- `showNoGpsWarning={false}`: Der Fall wird unten ausführlicher erklärt
+					     (Zustand C). Ohne das Abschalten stünden zwei Warn-Alerts mit
+					     derselben Aussage direkt übereinander.
+
+					     `compact` + leerer `additionalText`: Die Beschriftung der Disclosure
+					     und der Satz darüber sagen bereits, worum es geht und dass GPS
+					     ausgelesen wird. Der Dropzone-Titel „Foto hochladen" und der
+					     Default-Zusatz „GPS-Daten werden beim Upload verarbeitet" waren
+					     die dritte und vierte Formulierung derselben Aussage. -->
+					<DropzoneEnhanced
+						{referenceId}
+						maxFiles={1}
+						config={gpsPhotoConfig}
+						enableGPSExtraction={true}
+						showNoGpsWarning={false}
+						showPositionMap={false}
+						onExifDateTimeApplied={(applied) => (exifDateTimeApplied = applied)}
+						actionLabel="Foto auswählen"
+						compact={true}
+						additionalText=""
+					/>
+				{:else}
+					<div class="skeleton h-32 w-full"></div>
+				{/if}
+
+				<!-- Zustand C: Foto ohne EXIF-GPS.
+
+				     Bewusst `'no-gps'` und nicht „kein GPS im Formular": Während der
+				     Auswertung meldet `photoStatus` `'analyzing'` und hier steht nichts.
+				     Sonst würde ein Foto MIT GPS im Moment des Drops für GPS-los erklärt
+				     und die Behauptung Sekundenbruchteile später zurückgenommen — mit
+				     `role="status"` sagt ein Screenreader sie inzwischen an.
+
+				     Die zweite Bedingung (`coordinatesPresent`) steckt in
+				     `shouldWarnAboutMissingGps`: Solange das Panel Koordinaten anzeigt,
+				     darf es ihr Fehlen nicht behaupten. -->
+				{#if shouldWarnAboutMissingGps(status, coordinatesPresent)}
+					<div class="alert alert-warning mt-4" role="status" data-testid="photo-no-gps">
+						<Icon aria-hidden="true" icon="lucide:circle-alert" width="20" class="shrink-0" />
+						<div>
+							<p class="text-sm">
+								In diesem Foto sind keine GPS-Daten gespeichert. Das ist häufig — viele Kameras und
+								weitergeleitete Bilder enthalten keine Position. Das Foto ist trotzdem wertvoll und
+								bleibt erhalten.
+							</p>
+							<!-- Nur wenn es wirklich passiert ist: `exifDateTimeApplied` kommt aus
+							     DropzoneEnhanced. Ein Gate auf `$form.sightingDate` wäre immer wahr
+							     (Schema-Default `berlinToday()`). -->
+							{#if exifDateTimeApplied}
+								<p class="mt-2 text-sm" data-testid="photo-datetime-applied">
+									Datum und Uhrzeit konnten übernommen werden.
+								</p>
+							{/if}
+							<!-- Nur noch ein Ausweg: „Auf Karte wählen" führte in eine Disclosure,
+							     die es nicht mehr gibt — die Karte steht sichtbar darüber, der
+							     Button hätte nichts mehr bewirkt (design-system.md). -->
+							<div class="mt-3">
+								<button
+									type="button"
+									class="btn btn-outline btn-sm min-h-11"
+									onclick={focusDescription}
+									data-testid="exit-to-description"
+								>
+									Seegebiet beschreiben
+								</button>
+							</div>
+						</div>
+					</div>
+				{/if}
+
+				<!-- BEWUSST unter der Dropzone und bewusst als Auslöser statt als Alert:
+				     Der Wortlaut ist unverkürzt eine Ebene tiefer erreichbar
+				     (`UploadNotice.svelte`) und kostet hier nur noch eine Zeile —
+				     ausgeschrieben standen an dieser Stelle ~150 px Datenschutz-Prosa. -->
+				<div class="mt-2">
+					<UploadNotice />
+				</div>
+			</div>
+		</div>
+	</details>
 </SectionCard>
 
 <LocationDescription />

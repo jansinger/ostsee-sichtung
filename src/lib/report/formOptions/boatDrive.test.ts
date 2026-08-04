@@ -4,7 +4,8 @@ import {
 	boatDriveLabels,
 	getBoatDriveLabel,
 	getBoatDriveOptions,
-	isValidBoatDrive
+	isValidBoatDrive,
+	PUBLIC_BOAT_DRIVE_OPTIONS
 } from './boatDrive';
 
 /**
@@ -49,8 +50,66 @@ describe('BoatDriveEnum.NONE', () => {
 			BoatDriveEnum.MOTOR,
 			BoatDriveEnum.SAIL,
 			BoatDriveEnum.DRIFTING,
-			BoatDriveEnum.ANCHORED
+			BoatDriveEnum.ANCHORED,
+			BoatDriveEnum.MOTOR_OFF
 		]);
+	});
+});
+
+/**
+ * Hintergrund (PR 4, Museum am 2026-08-04): Bei Motorboot/Segelschiff wird die
+ * Folgefrage zum Antrieb auf "Motor an / Motor aus" verengt. "Motor an" bleibt
+ * `MOTOR = 1`; "Motor aus" bekommt einen eigenen Wert `MOTOR_OFF = 6`, weil
+ * DRIFTING/ANCHORED etwas fachlich anderes behaupten (treibend/vor Anker), was
+ * ein Melder mit "Motor aus" nie gesagt hat.
+ */
+describe('BoatDriveEnum.MOTOR_OFF (PR 4 — Motor an/aus)', () => {
+	it('existiert als eigener Wert 6', () => {
+		expect(BoatDriveEnum.MOTOR_OFF).toBe(6);
+	});
+
+	it('gilt als gültiger Wert (Yup-Validierung, Legacy-Antworten-Tabelle)', () => {
+		expect(isValidBoatDrive(BoatDriveEnum.MOTOR_OFF)).toBe(true);
+		expect(isValidBoatDrive(String(BoatDriveEnum.MOTOR_OFF))).toBe(true);
+	});
+
+	it('wird von getBoatDriveLabel als "Motor aus" aufgelöst statt als "Unbekannt" zu enden', () => {
+		expect(getBoatDriveLabel(BoatDriveEnum.MOTOR_OFF)).toBe('Motor aus');
+	});
+
+	it('erscheint in den auswählbaren Optionen (Admin-Auswahl leitet sich aus Object.values ab)', () => {
+		const values = getBoatDriveOptions().map((option) => option.value);
+		expect(values).toContain(BoatDriveEnum.MOTOR_OFF);
+
+		const entry = getBoatDriveOptions().find((option) => option.value === BoatDriveEnum.MOTOR_OFF);
+		expect(entry?.label).toBe('Motor aus');
+	});
+
+	it('lässt NONE (5) weiterhin außerhalb der auswählbaren Optionen — kein neuer dritter Zustand', () => {
+		const values = getBoatDriveOptions().map((option) => option.value);
+		expect(values).not.toContain(BoatDriveEnum.NONE);
+	});
+});
+
+/**
+ * Die öffentliche Zweier-Auswahl im Meldeformular. Sie ist bewusst eine eigene
+ * Konstante und keine gefilterte Sicht auf `getBoatDriveOptions()`: die Labels
+ * ("Motor lief" statt "Motor") sind auf die Frage zugeschnitten.
+ */
+describe('PUBLIC_BOAT_DRIVE_OPTIONS (Meldeformular)', () => {
+	it('bietet genau zwei Antworten an — Motor an und Motor aus', () => {
+		expect(PUBLIC_BOAT_DRIVE_OPTIONS).toEqual([
+			{ value: BoatDriveEnum.MOTOR, label: 'Motor lief' },
+			{ value: BoatDriveEnum.MOTOR_OFF, label: 'Motor lief nicht' }
+		]);
+	});
+
+	it('enthält keinen der feineren Alt-Werte, die nur die Admin-Maske führt', () => {
+		const values = PUBLIC_BOAT_DRIVE_OPTIONS.map((option) => option.value);
+		expect(values).not.toContain(BoatDriveEnum.OTHER);
+		expect(values).not.toContain(BoatDriveEnum.SAIL);
+		expect(values).not.toContain(BoatDriveEnum.DRIFTING);
+		expect(values).not.toContain(BoatDriveEnum.ANCHORED);
 	});
 });
 

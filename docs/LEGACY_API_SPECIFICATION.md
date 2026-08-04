@@ -54,7 +54,7 @@ This is a dated status, not a standing guarantee — re-check whether further cl
 | `schiffsname`               | Ship name                                                                                                    | String (64)                         | No, Yes if schiffnamensnennung = 1 |
 | `heimathafen`               | Home port                                                                                                    | String (64)                         | No                                 |
 | `bootstyp`                  | Boat type                                                                                                    | String (64)                         | No                                 |
-| `bootsantrieb`              | Boat drive (5 = no boat, see note below)                                                                     | Integer-Range, 0-5                  | No                                 |
+| `bootsantrieb`              | Boat drive (5 = no boat, 6 = motor off, see notes below)                                                     | Integer-Range, 0-6                  | No                                 |
 | `bootsantrieb_text`         | Other boat drive (when bootsantrieb = 0)                                                                     | Text                                | No                                 |
 | `strasse`                   | Street                                                                                                       | String (64)                         | No                                 |
 | `plz`                       | ZIP code                                                                                                     | String (5)                          | No                                 |
@@ -148,7 +148,8 @@ JSON Object with the following structure:
 		"2": "Segel",
 		"3": "treibend",
 		"4": "vor Anker",
-		"5": "Kein Boot"
+		"5": "Kein Boot",
+		"6": "Motor aus"
 	},
 	"eingangskanal": {
 		"0": "Web",
@@ -473,6 +474,42 @@ Antrieb nur niemand angegeben hat — dort ist `5` streng genommen zu stark.
 Bewusst in Kauf genommen: Ein eigener Wert „Antrieb unbekannt" wäre eine dritte
 Vertragsänderung an derselben Spalte, und eine erfundene Antriebsart wiegt
 schwerer als „kein Boot" bei einem Kajak.
+
+## Abweichung von der Ursprungs-PDF: `bootsantrieb = 6`
+
+Die Original-Spezifikation kennt für `bootsantrieb` nur den Bereich **0–4**.
+Seit dem 2026-08-04 gibt es zusätzlich **`6` = „Motor aus"**.
+
+**Warum:** Das Deutsche Meeresmuseum hat die Folgefrage zum Antrieb im
+Meldeformular auf „Motor an / Motor aus" verengt — es geht dort allein um
+Motorgeräusche, und Laien können den Antrieb eines fremden Bootes ohnehin selten
+benennen. „Motor an" bleibt `1` („Motor") und ist damit vergleichbar zum
+Altbestand. Für „Motor aus" gab es **keinen** passenden vorhandenen Wert:
+`3` („treibend") und `4` („vor Anker") behaupten fachlich etwas anderes als ein
+Motorboot mit abgeschaltetem Motor, und für die Einordnung von Unterwasserlärm
+ist das ein Unterschied. Einen dieser Werte wiederzuverwenden hieße, dem Melder
+eine Aussage unterzuschieben, die er nie gemacht hat.
+
+**Auswirkung auf Clients:**
+
+- `GET /rest_sichtungen/antworten.json` liefert einen zusätzlichen Schlüssel
+  `"6": "Motor aus"`. Clients, die die Liste dynamisch rendern, brauchen keine
+  Änderung; Clients mit fest verdrahteter Tabelle zeigen für `6` keinen Text an
+  und müssen den Wert nachtragen.
+- `POST /rest_sichtungen` bleibt unverändert: Der Schreibpfad validiert
+  `bootsantrieb` ohne Bereichsprüfung (`yup.number().nullable().optional()` in
+  `src/lib/legacy-api/yup-validation.ts`), nimmt `6` also ohne Anpassung an.
+  Bestehende Werte behalten ihre Bedeutung — es wurde nichts umnummeriert.
+- `GET /sichtungen/showreports.json` **liefert `bootsantrieb` gar nicht aus**.
+  Eine `6` in der Datenbank erreicht die angebundene iOS-App (`OstSeeTiere/8`)
+  also nie; auch `isLegacyFlagSet` wertet den Wert nicht aus. **Kein laufender
+  Client bricht.**
+
+**Die Werte 0–4 bleiben auswählbar** — allerdings nur noch in der Admin-Maske.
+Das öffentliche Meldeformular bietet ausschließlich `1` und `6` an; `5` entsteht
+weiterhin ausschließlich serverseitig. `bootsantrieb_text` hängt an `0` und ist
+damit ebenfalls auf die Admin-Maske beschränkt, bleibt für den Altbestand und
+den Legacy-Schreibpfad aber unverändert erhalten.
 
 ## Abweichung von der Ursprungs-PDF: `windrichtung` akzeptiert englische Abkürzungen
 

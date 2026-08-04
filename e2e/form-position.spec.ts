@@ -20,16 +20,19 @@ test.describe('PositionAndTime — Single-Panel-Positionseingabe', () => {
 		await expect(page.locator('[data-testid="field-sightingTime"]')).toBeVisible();
 	});
 
-	test('zeigt den Foto-Weg prominent und ohne Methodenwahl', async ({ page }) => {
-		await expect(page.locator('[data-testid="photo-position-card"]')).toBeVisible();
+	test('zeigt den Foto-Weg aufklappbar und ohne Methodenwahl', async ({ page }) => {
+		// Seit PR 3 liegt der Foto-Weg in einer zugeklappten Disclosure; die
+		// Karte darüber ist die Hauptaktion. Der Inhalt existiert im DOM, ist
+		// aber erst nach dem Aufklappen sichtbar.
+		await expect(page.locator('[data-testid="photo-position-disclosure"]')).toBeVisible();
 
 		// Die Methodenwahl ist ersatzlos entfallen.
 		await expect(page.locator('#method-photo')).toHaveCount(0);
 		await expect(page.locator('#method-map')).toHaveCount(0);
 		await expect(page.locator('#method-manual')).toHaveCount(0);
 
-		// Der Standort-Button ist im Startzustand sichtbar — er darf nicht in der
-		// zugeklappten Karte verschwinden (Spec, Zustand A).
+		// Der Standort-Button ist im Startzustand sichtbar — er darf in keiner
+		// Disclosure verschwinden (Spec, Zustand A).
 		await expect(page.locator('[data-testid="use-current-position"]')).toBeVisible();
 
 		// Zustand C (Foto ohne GPS) ist nur nach einem Upload erreichbar — im
@@ -54,22 +57,11 @@ test.describe('PositionAndTime — Single-Panel-Positionseingabe', () => {
 		);
 	});
 
-	test('Karte ist initial zugeklappt und lässt sich öffnen', async ({ page }) => {
-		const disclosure = page.locator('[data-testid="map-disclosure"]');
-		await expect(disclosure).toBeVisible();
-		// Korrektur ggü. Brief: ein zugeklapptes <details> ist selbst weiterhin
-		// sichtbar (nur der Inhalt ist per content-visibility versteckt) — der
-		// Zustand gehört ans `open`-Attribut, nicht an toBeVisible().
-		await expect(disclosure).not.toHaveAttribute('open', '');
-
-		// LocationInput (und damit die Koordinatenfelder-Disclosure) wird erst
-		// gemountet, wenn die Karten-Disclosure offen ist
-		// (PositionPanel.svelte: `{#if mapOpen}` im collapse-content). Vor dem
-		// Öffnen existiert das Element also gar nicht.
-		await expect(page.locator('[data-testid="coordinate-fields"]')).toHaveCount(0);
-
-		await disclosure.locator('summary').click();
-		await expect(disclosure).toHaveAttribute('open', '');
+	test('Koordinatenfelder liegen offen unter der Karte', async ({ page }) => {
+		// Die Karten-Disclosure ist mit PR 3 entfallen — die Karte steht
+		// dauerhaft offen. Dass sie ohne Klick da ist, prüft die Gruppe
+		// „Karte oben, Foto-GPS in der Disclosure" weiter unten.
+		await expect(page.locator('[data-testid="map-disclosure"]')).toHaveCount(0);
 
 		// Die Koordinatenfelder stehen seit dem 2026-07-31 offen unter der Karte
 		// (`collapsibleCoordinates={false}`, Wunsch des Deutschen Meeresmuseums).
@@ -107,6 +99,62 @@ test.describe('PositionAndTime — Single-Panel-Positionseingabe', () => {
 	});
 });
 
+// ── PR 3: Karte nach oben, Foto-GPS in eine Disclosure ─────────────────────
+//
+// Der Foto-Weg war bis hierher die Hero-Karte des Schritts und die Karte lag
+// eingeklappt darunter. Auf Wunsch des Museums ist es jetzt umgekehrt: Karte
+// und Koordinatenfelder stehen dauerhaft offen, der Foto-Weg liegt in einer
+// zugeklappten Disclosure. Diese Gruppe deckt genau die neue Zusicherung ab.
+
+test.describe('PositionAndTime — Karte oben, Foto-GPS in der Disclosure', () => {
+	test.beforeEach(async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+	});
+
+	test('Karte und Koordinatenfelder sind ohne Klick sichtbar', async ({ page }) => {
+		await expect(page.locator('.ol-map-container')).toBeVisible();
+		await expect(page.locator('#latitude')).toBeVisible();
+		await expect(page.locator('#longitude')).toBeVisible();
+	});
+
+	test('die Foto-Disclosure ist zugeklappt und lässt sich öffnen', async ({ page }) => {
+		const disclosure = page.locator('[data-testid="photo-position-disclosure"]');
+		await expect(disclosure).toBeVisible();
+		// Ein zugeklapptes <details> ist selbst weiterhin sichtbar — der Zustand
+		// gehört ans `open`-Attribut, nicht an toBeVisible().
+		await expect(disclosure).not.toHaveAttribute('open', '');
+
+		await disclosure.locator('summary').click();
+		await expect(disclosure).toHaveAttribute('open', '');
+		await expect(page.locator('[data-testid="photo-position-card"]')).toBeVisible();
+	});
+
+	test('DOM-Reihenfolge: Standort-Button vor Karte vor Foto-Disclosure', async ({ page }) => {
+		await expect(page.locator('.ol-map-container')).toBeVisible();
+
+		const reihenfolge = await page.evaluate(() => {
+			const selektoren = [
+				'[data-testid="use-current-position"]',
+				'.ol-map-container',
+				'[data-testid="photo-position-disclosure"]'
+			];
+			const knoten = selektoren.map((selektor) => document.querySelector(selektor));
+			if (knoten.some((element) => element === null)) return null;
+			// Paarweise: folgt Element n+1 im Dokument auf Element n?
+			return knoten
+				.slice(1)
+				.map((element, index) =>
+					Boolean(
+						knoten[index]!.compareDocumentPosition(element!) & Node.DOCUMENT_POSITION_FOLLOWING
+					)
+				);
+		});
+
+		expect(reihenfolge).toEqual([true, true]);
+	});
+});
+
 // ── Karte: Tippen setzt die Position ───────────────────────────────────────
 //
 // Vor diesem Test setzte nur das Ziehen des Markers eine Koordinate. Auf dem
@@ -123,11 +171,7 @@ test.describe('PositionAndTime — Karte reagiert auf Tippen', () => {
 	});
 
 	test('Karte startet ohne Marker und ein Tippen setzt die Koordinaten', async ({ page }) => {
-		const disclosure = page.locator('[data-testid="map-disclosure"]');
-		await disclosure.locator('summary').click();
-		await expect(disclosure).toHaveAttribute('open', '');
-
-		const map = disclosure.locator('.ol-map-container');
+		const map = page.locator('.ol-map-container');
 		await expect(map).toBeVisible();
 
 		// Zustand A: keine Position gewählt — kein Marker, und der Hinweis sagt es.
@@ -157,10 +201,9 @@ test.describe('PositionAndTime — Karte reagiert auf Tippen', () => {
 	test('Hinweis unter der Karte nennt keinen GPS-Button (den es hier nicht gibt)', async ({
 		page
 	}) => {
-		const disclosure = page.locator('[data-testid="map-disclosure"]');
-		await disclosure.locator('summary').click();
+		await expect(page.locator('.ol-map-container')).toBeVisible();
 
-		await expect(disclosure.locator('.gps-control')).toHaveCount(0);
+		await expect(page.locator('.gps-control')).toHaveCount(0);
 		await expect(page.locator('[data-testid="map-hint"]')).not.toContainText(/GPS/i);
 	});
 });

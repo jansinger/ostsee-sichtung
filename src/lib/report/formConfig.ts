@@ -76,10 +76,16 @@ export const formStepsConfig: FormStep[] = [
 			'sightingFrom',
 			'sightingFromText',
 			'boatDrive',
-			'boatDriveText',
+			// `boatDriveText` steht hier bewusst NICHT mehr: Es hängt an
+			// `BoatDriveEnum.OTHER`, und das Meldeformular bietet seit dem 2026-08-04
+			// nur noch "Motor lief"/"Motor lief nicht" an (PR 4). Schema-Eintrag und
+			// DB-Spalte `bootsantrieb_text` bleiben — die Admin-Maske schreibt es weiter.
 			'isDead',
 			'deadCondition',
-			'deadSex',
+			// `deadSex` steht hier bewusst NICHT mehr: Das Museum hat das Geschlecht
+			// beim Totfund am 2026-08-04 aus dem Meldeformular abbestellt (C4) —
+			// Laien können es am Strand kaum bestimmen. Schema-Eintrag und DB-Spalte
+			// `totfund_geschlecht` bleiben — die Admin-Maske schreibt es weiter.
 			'deadSize',
 			'deadPhoneContact'
 		]
@@ -89,8 +95,10 @@ export const formStepsConfig: FormStep[] = [
 		title: 'Weitere Informationen',
 		description: 'Details zu Verhalten und Umweltbedingungen',
 		fields: [
-			'distribution',
-			'distributionText',
+			// `distribution`/`distributionText` stehen hier bewusst NICHT mehr: Das
+			// Museum hat das Feld am 2026-08-04 aus dem Meldeformular abbestellt —
+			// es lässt sich aus der Anzahl der Tiere erschließen. Schema-Eintrag und
+			// DB-Spalte `verteilung` bleiben — die Admin-Maske schreibt es weiter.
 			'behavior',
 			'behaviorText',
 			'reaction',

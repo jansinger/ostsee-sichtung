@@ -67,6 +67,79 @@ describe('sightingSchema — seaMark bleibt erhalten', () => {
  * Fahrwasser-Beschriftung zurück, verlöre das zusammengelegte Feld genau den
  * Aspekt, für den `seaMark` da war — die Orientierungspunkte.
  */
+/**
+ * `distribution` (Verteilung der Tiere) bleibt nur in der Admin-Maske —
+ * `sections/OptionalSightingDetails.svelte` zeigt das Feld dort ausschließlich
+ * hinter `adminMode` (wie schon `shipCount`). Schema-Eintrag, DB-Spalte
+ * (`verteilung`) und `formOptions/distribution.ts` bleiben unverändert; hier
+ * wird nur geprüft, dass der Melde-Schritt das Feld nicht mehr führt.
+ */
+describe('formStepsConfig — Verteilung nur in der Admin-Maske', () => {
+	const observationsStep = formStepsConfig.find((step) => step.id === 'observations');
+
+	it('führt distribution nicht mehr im Schritt "observations"', () => {
+		expect(observationsStep?.fields).not.toContain('distribution');
+	});
+
+	it('führt distributionText nicht mehr im Schritt "observations"', () => {
+		expect(observationsStep?.fields).not.toContain('distributionText');
+	});
+});
+
+/**
+ * `deadSex` (Geschlecht beim Totfund) bleibt nur in der Admin-Maske —
+ * `sections/DeadAnimal.svelte` zeigt das Feld dort ausschließlich hinter
+ * `adminMode` (PR 2, Teil b — Analyse-Punkt C4, Museum am 2026-08-04
+ * abbestellt). Schema-Eintrag, DB-Spalte (`totfund_geschlecht`) und
+ * `formOptions/sex.ts` bleiben unverändert; hier wird nur geprüft, dass der
+ * Melde-Schritt "sighting-details" das Feld nicht mehr führt.
+ */
+describe('formStepsConfig — Geschlecht beim Totfund nur in der Admin-Maske', () => {
+	const sightingDetailsStep = formStepsConfig.find((step) => step.id === 'sighting-details');
+
+	it('führt deadSex nicht mehr im Schritt "sighting-details"', () => {
+		expect(sightingDetailsStep?.fields).not.toContain('deadSex');
+	});
+
+	// Gegenprobe: Nur `deadSex` verschwindet, die übrigen Totfund-Felder
+	// bleiben Teil des Melde-Schritts.
+	it.each(['isDead', 'deadCondition', 'deadSize', 'deadPhoneContact'])(
+		'behält %s im Schritt "sighting-details"',
+		(name) => {
+			expect(sightingDetailsStep?.fields).toContain(name);
+		}
+	);
+
+	it('kennt deadSex im Schema weiterhin, damit die Admin-Maske es schreiben kann', () => {
+		expect(sightingSchemaFields.deadSex).toBeDefined();
+	});
+});
+
+/**
+ * `boatDriveText` (Beschreibung eines "sonstigen" Antriebs) hängt an
+ * `BoatDriveEnum.OTHER`, das im Meldeformular nach PR 4 (Museum, 2026-08-04)
+ * nicht mehr wählbar ist — dort gibt es nur noch "Motor an" (`MOTOR = 1`) und
+ * "Motor aus" (`MOTOR_OFF = 6`). Schema-Eintrag und DB-Spalte bleiben
+ * unverändert — die Admin-Maske zeigt weiterhin den vollen Bootsantrieb
+ * inklusive `boatDriveText`; hier wird nur geprüft, dass der Melde-Schritt
+ * "sighting-details" das Feld nicht mehr führt.
+ */
+describe('formStepsConfig — boatDriveText nur in der Admin-Maske (PR 4)', () => {
+	const sightingDetailsStep = formStepsConfig.find((step) => step.id === 'sighting-details');
+
+	it('führt boatDriveText nicht mehr im Schritt "sighting-details"', () => {
+		expect(sightingDetailsStep?.fields).not.toContain('boatDriveText');
+	});
+
+	it('behält boatDrive im Schritt "sighting-details" — nur die Textbeschreibung entfällt', () => {
+		expect(sightingDetailsStep?.fields).toContain('boatDrive');
+	});
+
+	it('kennt boatDriveText im Schema weiterhin, damit die Admin-Maske es schreiben kann', () => {
+		expect(sightingSchemaFields.boatDriveText).toBeDefined();
+	});
+});
+
 describe('waterway — Beschriftung deckt beide bisherigen Felder ab', () => {
 	const waterwayMeta = meta('waterway');
 	const copy = [describeField('waterway').label, waterwayMeta.helpText, waterwayMeta.placeholder]

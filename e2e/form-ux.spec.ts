@@ -107,6 +107,51 @@ test.describe('StepNavigation — Error-UX', () => {
 	});
 });
 
+// ── PR 4: Bootsantrieb als Motor-an/aus-Frage ───────────────────────────────
+
+/**
+ * `fillStep2` wählt bewusst „Land", damit die Antriebsfrage gar nicht erscheint —
+ * dadurch lief bis PR 4 kein E2E-Fall durch den Boot-Pfad. Dieser Test schließt
+ * die Lücke: Bei Motorboot ist `boatDrive` Pflicht, und seit dem 2026-08-04 wird
+ * die Frage als Zwei-Optionen-Radiogruppe gestellt („Motor lief" = 1,
+ * „Motor lief nicht" = 6) statt als Select mit fünf Antriebsarten.
+ */
+test.describe('SightingDetails — Motorfrage bei Motorboot', () => {
+	test('Motorboot fragt nach dem Motor und lässt den Schritt danach abschließen', async ({
+		page
+	}) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		await fillStep1(formPage);
+		await waitForNextEnabled(page);
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Angaben zum Tier/i);
+
+		await formPage.selectSpecies(0);
+		await formPage.fillTotalCount(2);
+		await formPage.selectDistance(1);
+
+		// Solange „Land" gewählt ist, gibt es keine Antriebsfrage.
+		await expect(page.locator('[data-field="boatDrive"]')).not.toBeVisible();
+
+		await formPage.selectSightingFrom(2); // Motorboot
+		await expect(page.locator('[data-field="boatDrive"]')).toBeVisible({ timeout: 3000 });
+
+		// Genau zwei Antworten, keine Auswahlliste, kein Freitext für „Sonstiger Antrieb".
+		await expect(page.locator('[data-field="boatDrive"] input[type="radio"]')).toHaveCount(2);
+		await expect(page.locator('[data-testid="field-boatDrive"]')).toHaveCount(0);
+		await expect(page.locator('[data-field="boatDriveText"]')).not.toBeVisible();
+
+		await formPage.selectBoatDrive(6); // Motor lief nicht
+		await expect(page.locator('[data-testid="field-boatDrive-6"]')).toBeChecked();
+
+		await waitForNextEnabled(page);
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Weitere Informationen/i);
+	});
+});
+
 // ── Phase 2C: isDead Conditional Rendering ──────────────────────────────────
 
 test.describe('AnimalInfo — isDead Conditional Rendering', () => {
@@ -128,15 +173,21 @@ test.describe('AnimalInfo — isDead Conditional Rendering', () => {
 		await expect(page.locator('[data-field="deadSize"]')).not.toBeVisible();
 	});
 
-	test('isDead=true zeigt DeadAnimal-Felder', async ({ page }) => {
+	test('isDead=true zeigt DeadAnimal-Felder, aber nicht deadSex (Museum hat das Feld am 2026-08-04 abbestellt — C4)', async ({
+		page
+	}) => {
 		// Toggle isDead
 		const toggle = page.locator('[data-testid="field-isDead"]');
 		await toggle.check();
 
 		// Dead animal fields should appear
 		await expect(page.locator('[data-field="deadCondition"]')).toBeVisible({ timeout: 3000 });
-		await expect(page.locator('[data-field="deadSex"]')).toBeVisible();
 		await expect(page.locator('[data-field="deadSize"]')).toBeVisible();
+
+		// deadSex bleibt Schema-Feld für die Admin-Maske, ist im Meldeformular
+		// aber auch bei isDead=true nicht mehr erreichbar — anders als
+		// deadCondition/deadSize, die weiterhin sichtbar werden.
+		await expect(page.locator('[data-field="deadSex"]')).not.toBeVisible();
 	});
 
 	test('isDead zurück auf false versteckt DeadAnimal-Felder', async ({ page }) => {

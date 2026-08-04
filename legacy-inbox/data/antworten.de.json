@@ -88,7 +88,8 @@
 		"2": "Segel",
 		"3": "Treibend",
 		"4": "Vor Anker",
-		"5": "Kein Boot"
+		"5": "Kein Boot",
+		"6": "Motor aus"
 	},
 	"eingangskanal": {
 		"0": "Web",

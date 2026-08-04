@@ -8,8 +8,12 @@
 
 <!-- Sighting Details Section -->
 <SectionCard title="Weitere Sichtungsdetails" icon="lucide:activity">
-	<!-- Distribution -->
-	<FormField name="distribution" />
+	<!-- Das Museum hat „Verteilung der Tiere" am 2026-08-04 aus dem Meldeformular
+	     abbestellt: Sie lässt sich aus der Anzahl der Tiere erschließen. Die
+	     Admin-Maske behält das Feld, weil dort der Bestand korrigiert wird. -->
+	{#if adminMode}
+		<FormField name="distribution" />
+	{/if}
 
 	<!-- `shipCount` steht im Meldeformular jetzt in `BoatInfo.svelte`: Die Anzahl
 	     umliegender Schiffe gehört zu den Boot-/Schiffsangaben, nicht zwischen

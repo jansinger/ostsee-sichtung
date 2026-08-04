@@ -54,12 +54,34 @@ const fixture = (name: string): string =>
  * `click()` auf die Dropzone würde dagegen den nativen Dateidialog öffnen.
  * Eingegrenzt auf `photo-position-card`, damit der Selektor nicht versehentlich
  * die Medien-Dropzone aus Schritt 3 trifft.
+ *
+ * Seit PR 3 liegt die Dropzone in einer zugeklappten Disclosure. Das stört
+ * `setInputFiles` nicht — der Input ist im DOM, nur nicht sichtbar, und
+ * Sichtbarkeit braucht die Methode ohnehin nicht. Dass der Weg auch nach
+ * echtem Aufklappen funktioniert, prüft ein eigener Test weiter unten.
  */
 async function uploadPositionPhoto(page: Page, fileName: string): Promise<void> {
 	const input = page.locator('[data-testid="photo-position-card"] input[type="file"]');
 	// Die Dropzone erscheint erst, wenn `getUploadConfig()` beantwortet ist.
 	await input.waitFor({ state: 'attached' });
 	await input.setInputFiles(fixture(fileName));
+}
+
+/**
+ * Klappt die Foto-Disclosure auf, falls sie noch zu ist.
+ *
+ * Nötig für jede Assertion auf `toBeVisible()` innerhalb der Disclosure: Der
+ * Inhalt eines geschlossenen `<details>` hat keine Layout-Box und gilt damit
+ * als unsichtbar. Idempotent, damit Tests den Helfer auch dann aufrufen können,
+ * wenn sie vorher schon selbst aufgeklappt haben — ein zweiter Klick auf das
+ * `<summary>` würde sonst wieder zuklappen.
+ */
+async function oeffnePhotoDisclosure(page: Page): Promise<void> {
+	const disclosure = page.locator('[data-testid="photo-position-disclosure"]');
+	if ((await disclosure.getAttribute('open')) === null) {
+		await disclosure.locator('summary').click();
+	}
+	await expect(disclosure).toHaveAttribute('open', '');
 }
 
 /** Liest den Wert eines Koordinatenfeldes als Zahl (leer → NaN). */
@@ -72,8 +94,9 @@ async function coordinateValue(page: Page, id: 'latitude' | 'longitude'): Promis
  *
  * Seit dem 2026-07-31 stehen sie offen unter der Karte
  * (`collapsibleCoordinates={false}`, Wunsch des Deutschen Meeresmuseums) — es
- * gibt also nichts mehr aufzuklappen. Gemountet werden sie weiterhin erst mit
- * offener Karten-Disclosure; die klappt bei neuer Position von selbst auf.
+ * gibt also nichts mehr aufzuklappen. Seit PR 3 gilt das auch für die Karte
+ * selbst: Sie ist dauerhaft gemountet, die frühere Karten-Disclosure gibt es
+ * nicht mehr.
  */
 async function awaitCoordinateFields(page: Page): Promise<void> {
 	await expect(page.locator('#latitude')).toBeVisible();
@@ -97,9 +120,10 @@ test.describe('PositionPanel — Foto-Upload mit EXIF', () => {
 	test('Zustand B: Foto mit GPS übernimmt Position, Datum und Uhrzeit', async ({ page }) => {
 		await uploadPositionPhoto(page, 'photo-with-gps.jpg');
 
-		// Die Karte klappt auf der steigenden Flanke von selbst auf — erstes
-		// beobachtbares Zeichen, dass Koordinaten im Formular angekommen sind.
-		await expect(page.locator('[data-testid="map-disclosure"]')).toHaveAttribute('open', '', {
+		// Der Marker erscheint, sobald `hasPosition` steht — erstes beobachtbares
+		// Zeichen, dass Koordinaten im Formular angekommen sind. Vor PR 3 war es
+		// das Aufklappen der Karten-Disclosure; die gibt es nicht mehr.
+		await expect(page.locator('.ol-map-container')).toHaveAttribute('data-position', 'set', {
 			timeout: 15000
 		});
 
@@ -134,7 +158,8 @@ test.describe('PositionPanel — Foto-Upload mit EXIF', () => {
 		await expect(page.locator('[data-testid="photo-no-gps"]')).toHaveCount(0);
 	});
 
-	test('Zustand C: Foto ohne GPS zeigt den Hinweis mit beiden Auswegen', async ({ page }) => {
+	test('Zustand C: Foto ohne GPS zeigt den Hinweis mit dem Ausweg', async ({ page }) => {
+		await oeffnePhotoDisclosure(page);
 		await uploadPositionPhoto(page, 'photo-without-gps.jpg');
 
 		// Der Hinweis entsteht ausschließlich dadurch, dass `DropzoneEnhanced`
@@ -145,7 +170,9 @@ test.describe('PositionPanel — Foto-Upload mit EXIF', () => {
 		const noGps = page.locator('[data-testid="photo-no-gps"]');
 		await expect(noGps).toBeVisible({ timeout: 15000 });
 
-		await expect(page.locator('[data-testid="exit-to-map"]')).toBeVisible();
+		// Nur noch ein Ausweg: „Auf Karte wählen" ist mit PR 3 entfallen, weil die
+		// Karte sichtbar darüber steht und der Button nichts mehr bewirkt hätte.
+		await expect(page.locator('[data-testid="exit-to-map"]')).toHaveCount(0);
 		await expect(page.locator('[data-testid="exit-to-description"]')).toBeVisible();
 
 		// Ohne GPS ist die Aufnahmezeit das Einzige, was EXIF noch beisteuern
@@ -158,31 +185,29 @@ test.describe('PositionPanel — Foto-Upload mit EXIF', () => {
 		await expect(page.locator('[data-testid="field-sightingTime"]')).toHaveValue(EXIF_TIME);
 		await expect(page.locator('[data-testid="photo-datetime-applied"]')).toBeVisible();
 
-		// Ohne GPS bleibt die Position leer: Die Karte klappt nicht von selbst
-		// auf, und das Fahrwasser bleibt Pflichtfeld.
-		await expect(page.locator('[data-testid="map-disclosure"]')).not.toHaveAttribute('open', '');
+		// Ohne GPS bleibt die Position leer: Die Karte zeigt keinen Marker, und
+		// das Fahrwasser bleibt Pflichtfeld.
+		await expect(page.locator('.ol-map-container')).toHaveAttribute('data-position', 'unset');
 		await expect(page.locator('[data-testid="field-waterway"]')).toHaveAttribute(
 			'aria-required',
 			'true'
 		);
 	});
 
-	test('Zustand C: „Auf Karte wählen" öffnet die Karte', async ({ page }) => {
+	test('Zustand C: die Karte steht bereits sichtbar über dem Hinweis', async ({ page }) => {
+		await oeffnePhotoDisclosure(page);
 		await uploadPositionPhoto(page, 'photo-without-gps.jpg');
 		await expect(page.locator('[data-testid="photo-no-gps"]')).toBeVisible({ timeout: 15000 });
 
-		const disclosure = page.locator('[data-testid="map-disclosure"]');
-		await expect(disclosure).not.toHaveAttribute('open', '');
-
-		await page.locator('[data-testid="exit-to-map"]').click();
-
-		await expect(disclosure).toHaveAttribute('open', '');
-		// Der Ausweg soll dorthin führen, wo man wirklich etwas tun kann — die
-		// Koordinatenfelder werden erst mit offener Karte gemountet.
+		// Der frühere Ausweg „Auf Karte wählen" führte in eine Disclosure, die es
+		// nicht mehr gibt. Die Karte und die Koordinatenfelder liegen offen über
+		// dem Hinweis — es gibt nichts mehr zu öffnen.
+		await expect(page.locator('.ol-map-container')).toBeVisible();
 		await expect(page.locator('#latitude')).toBeVisible();
 	});
 
 	test('Zustand C: „Seegebiet beschreiben" fokussiert das Fahrwasser-Feld', async ({ page }) => {
+		await oeffnePhotoDisclosure(page);
 		await uploadPositionPhoto(page, 'photo-without-gps.jpg');
 		await expect(page.locator('[data-testid="photo-no-gps"]')).toBeVisible({ timeout: 15000 });
 
@@ -194,10 +219,39 @@ test.describe('PositionPanel — Foto-Upload mit EXIF', () => {
 		await expect(page.locator('[data-testid="location-description"]')).toBeVisible();
 	});
 
+	// ── PR 3: Der Foto-Weg liegt jetzt in einer zugeklappten Disclosure ───────
+	//
+	// Der Umbau verschiebt Dropzone, „kein GPS"-Zustand und UploadNotice in ein
+	// <details>. Das ist die einzige Zusicherung, die dabei wirklich neu ist:
+	// hinter der Disclosure funktioniert der EXIF-Pfad unverändert weiter.
+	test('nach dem Aufklappen setzt ein Foto mit GPS weiterhin Koordinaten und hasPosition', async ({
+		page
+	}) => {
+		await oeffnePhotoDisclosure(page);
+
+		await uploadPositionPhoto(page, 'photo-with-gps.jpg');
+
+		// `data-position` hängt an `hasPosition` — erstes beobachtbares Zeichen,
+		// dass die EXIF-Auswertung durch ist und beide Werte im Formular stehen.
+		await expect(page.locator('.ol-map-container')).toHaveAttribute('data-position', 'set', {
+			timeout: 15000
+		});
+
+		expect(await coordinateValue(page, 'latitude')).toBeCloseTo(54.31, 3);
+		expect(await coordinateValue(page, 'longitude')).toBeCloseTo(12.09, 3);
+
+		// Gegenprobe auf `hasPosition` im Formular statt nur auf der Karte: Das
+		// Fahrwasser verliert seine Pflicht (`waterway.when('hasPosition', …)`),
+		// und `BaseInput.svelte:65` entfernt das Attribut dabei ganz.
+		await expect
+			.poll(() => page.locator('[data-testid="field-waterway"]').getAttribute('aria-required'))
+			.toBeNull();
+	});
+
 	test('Foto mit GPS außerhalb der Ostsee löst die Bereichsprüfung aus', async ({ page }) => {
 		await uploadPositionPhoto(page, 'photo-gps-outside-baltic.jpg');
 
-		await expect(page.locator('[data-testid="map-disclosure"]')).toHaveAttribute('open', '', {
+		await expect(page.locator('.ol-map-container')).toHaveAttribute('data-position', 'set', {
 			timeout: 15000
 		});
 		await awaitCoordinateFields(page);

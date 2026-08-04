@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
 import { GET } from './+server';
 
 /**
@@ -33,5 +34,24 @@ describe('Frozen antworten.json', () => {
 		expect(await frozenFile('antworten.en.json')).toEqual(
 			await routeResponse('/en/rest_sichtungen/antworten.json')
 		);
+	});
+});
+
+/**
+ * PR 4 (Museum, 2026-08-04): `BoatDriveEnum` bekommt einen sechsten Wert
+ * `MOTOR_OFF = 6` ("Motor aus"). Dieser Endpunkt baut `bootsantrieb` direkt aus
+ * `BoatDriveEnum` (`+server.ts:152`) — ein neuer Enum-Wert erscheint dort also
+ * automatisch als zusätzlicher Eintrag "6".
+ *
+ * Merke für künftige Enum-Erweiterungen: Ein neuer Wert macht auch die beiden
+ * `toEqual`-Verträge oben ("Frozen antworten.json") rot, bis
+ * `npm run generate:antworten` gelaufen ist und die Fixtures
+ * (`legacy-inbox/data/antworten.de.json` / `.en.json`) mit committet wurden.
+ * Die Fixtures werden nie von Hand editiert.
+ */
+describe('antworten.json — bootsantrieb "Motor aus" (PR 4)', () => {
+	it('führt einen Eintrag "6" mit dem Label "Motor aus"', async () => {
+		const response = await routeResponse('/rest_sichtungen/antworten.json');
+		expect(response.bootsantrieb[String(BoatDriveEnum.MOTOR_OFF)]).toBe('Motor aus');
 	});
 });

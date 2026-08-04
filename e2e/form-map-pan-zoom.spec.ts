@@ -81,17 +81,18 @@ async function mapPoint(page: Page, relX = 0.25, relY = 0.78) {
 }
 
 /**
- * Öffnet die Karte und setzt eine Position **über die Koordinatenfelder**.
+ * Setzt eine Position **über die Koordinatenfelder**.
  *
  * Bewusst nicht per Klick in die Karte: Der würde den Fokus ins Ziel-Element
  * legen und damit genau die Bedingung herstellen, die diese Tests als fehlend
  * nachweisen wollen. Der Wert ist der Kartenmittelpunkt, damit `setMapCenter`
  * die Ansicht nicht zusätzlich verschiebt.
+ *
+ * Aufzuklappen gibt es seit PR 3 nichts mehr — Karte und Koordinatenfelder
+ * stehen auf Schritt 1 dauerhaft offen.
  */
 async function oeffneKarteMitMarker(page: Page): Promise<void> {
-	const disclosure = page.locator('[data-testid="map-disclosure"]');
-	await disclosure.locator('summary').click();
-	await expect(disclosure).toHaveAttribute('open', '');
+	await expect(page.locator('.ol-map-container')).toBeVisible();
 
 	// `press('Tab')` gehört dazu: `LocationInput.svelte` übernimmt die Zahl im
 	// `onchange`-Handler, und der feuert an einem `type="number"`-Feld erst beim

@@ -107,6 +107,54 @@ describe('sightingSchema - boatDrive (Befund U3)', () => {
 	});
 });
 
+/**
+ * PR 4 (Museum, 2026-08-04): "Motor an / Motor aus" ersetzt im Meldeformular die
+ * fünf Antriebsarten bei Motorboot/Segelschiff. "Motor aus" bekommt einen neuen
+ * Enum-Wert `BoatDriveEnum.MOTOR_OFF = 6`.
+ *
+ * Die Pflicht bei Segelschiff/Motorboot und die Optionalität bei Land/Fähre/
+ * Sonstiges bleiben unverändert bestehen — siehe die Tests oben, die genau das
+ * bereits mit dem alten Wertebereich (0-5) absichern. Hier wird nur ergänzt,
+ * dass der neue Wert `6` dieselbe Validierung besteht.
+ */
+describe('sightingSchema - boatDrive (PR 4 — Motor an/aus, Wert 6)', () => {
+	it('besteht die Validierung mit MOTOR_OFF ("Motor aus"), wenn von einem Motorboot gemeldet wird', async () => {
+		const fehler = await fieldError('boatDrive', {
+			sightingFrom: SightingFromEnum.MOTORBOAT,
+			boatDrive: BoatDriveEnum.MOTOR_OFF
+		});
+		expect(fehler).toBeNull();
+	});
+
+	it('besteht die Validierung mit MOTOR_OFF, wenn von einem Segelschiff gemeldet wird', async () => {
+		const fehler = await fieldError('boatDrive', {
+			sightingFrom: SightingFromEnum.SAILBOAT,
+			boatDrive: BoatDriveEnum.MOTOR_OFF
+		});
+		expect(fehler).toBeNull();
+	});
+
+	it('bleibt bei Motorboot/Segelschiff ohne Wert weiterhin Pflicht — auch nach Einführung von 6', async () => {
+		const fehler = await fieldError('boatDrive', {
+			sightingFrom: SightingFromEnum.MOTORBOAT,
+			boatDrive: undefined
+		});
+		expect(fehler).toBe('Bitte wählen Sie den Bootsantrieb aus.');
+	});
+
+	it.each([
+		['Land', SightingFromEnum.LAND],
+		['Fähre', SightingFromEnum.FERRY],
+		['Sonstiges', SightingFromEnum.OTHER]
+	])('bleibt bei "%s" optional — auch nach Einführung von 6', async (_label, sightingFrom) => {
+		const fehler = await fieldError('boatDrive', {
+			sightingFrom,
+			boatDrive: undefined
+		});
+		expect(fehler).toBeNull();
+	});
+});
+
 describe('sightingSchema - Schritt-2-Validierung (Zusammenspiel boatDrive/sightingFrom)', () => {
 	it('Schritt 2 ist gültig ohne boatDrive, wenn von Land gemeldet wird', async () => {
 		const pickedSchema = sightingSchema.pick(['sightingFrom', 'boatDrive']);
