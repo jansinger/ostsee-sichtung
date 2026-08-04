@@ -48,3 +48,38 @@ describe('sections/OptionalSightingDetails — Verteilung nur im Admin-Modus', (
 		expect(field('distribution')).not.toBeNull();
 	});
 });
+
+/**
+ * Beide Felder dieser Sektion sind inzwischen `adminMode`-only — `distribution`
+ * seit PR #746, `shipCount` seit dem Umzug nach `BoatInfo.svelte`. Übrig blieb im
+ * Meldeformular eine Karte mit Überschrift, Rahmen und Abstand, in der nichts
+ * stand: `SectionCard` rendert seinen Titel unbedingt und kennt keinen
+ * Leer-Zustand.
+ *
+ * Der Fehler ist nicht bei der einzelnen Feld-Entfernung entstanden, sondern
+ * beim Zusammentreffen von zweien — genau die Klasse, die eine Feld-Prüfung
+ * nicht sieht: `field('distribution') === null` war die ganze Zeit erfüllt,
+ * während der Nutzer eine leere Karte vor sich hatte. Geprüft wird deshalb die
+ * **Hülle**, nicht der Inhalt.
+ */
+describe('sections/OptionalSightingDetails — keine leere Karte im Meldeformular', () => {
+	function cardHeading(): HTMLElement | null {
+		return (
+			Array.from(document.querySelectorAll<HTMLElement>('h3')).find((heading) =>
+				heading.textContent?.includes('Weitere Sichtungsdetails')
+			) ?? null
+		);
+	}
+
+	it('rendert ohne adminMode gar keine Karte', () => {
+		renderDetails();
+
+		expect(cardHeading()).toBeNull();
+	});
+
+	it('rendert mit adminMode die Karte samt Überschrift', () => {
+		renderDetails({ adminMode: true });
+
+		expect(cardHeading()).not.toBeNull();
+	});
+});
