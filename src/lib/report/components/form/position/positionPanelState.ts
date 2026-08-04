@@ -75,19 +75,6 @@ export function shouldWarnAboutMissingGps(
 	return status === 'no-gps' && !coordinatesPresent;
 }
 
-/**
- * True auf der steigenden Flanke: genau dann, wenn eine Position NEU entsteht.
- *
- * Nicht `hasCoordinates || wasEverExpanded` — das würde `open` erzwingen und dem
- * Nutzer das Zuklappen der Karte unmöglich machen.
- */
-export function shouldOpenMapOnCoordinateChange(
-	hasCoordinates: boolean,
-	hadCoordinates: boolean
-): boolean {
-	return hasCoordinates && !hadCoordinates;
-}
-
 /** True, wenn der Wert ein nicht-leerer (getrimmter) String ist. */
 function isFilledText(value: unknown): boolean {
 	return typeof value === 'string' && value.trim().length > 0;

@@ -191,9 +191,24 @@
 </script>
 
 {#snippet coordinateFields()}
-	<div class="mb-4 flex items-center justify-between">
+	<!-- Unterhalb `md` stehen Beschriftung und Auswahl untereinander, darüber
+	     nebeneinander. Als einzeilige Flex-Zeile setzte dieser Block die
+	     Mindestbreite der ganzen Seite: Ein `<select>` ist so breit wie seine
+	     längste Option („Grad, Minute, Sekunde (z.B. 54° 30' 15\" N)"), und als
+	     Flex-Item mit `min-width: auto` schrumpft es nicht darunter. Zusammen mit
+	     dem Label ergab das rund 420 px — auf einem 360-px-Telefon lief das
+	     Dokument dadurch um gut 100 px über und die ganze Seite ließ sich seitlich
+	     schieben (`e2e/footer-layout.spec.ts`).
+
+	     Aufgefallen ist es erst, als die Koordinateneingabe dauerhaft sichtbar
+	     wurde. Vorher lag sie in einem zugeklappten `<details>` und hatte gar
+	     keine Layout-Box — der Überlauf war die ganze Zeit da, nur unsichtbar.
+
+	     `min-w-0` gehört zwingend dazu: Ohne das Aufheben von `min-width: auto`
+	     bleibt das Select auch in der gestapelten Fassung zu breit. -->
+	<div class="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
 		<label class="label" for="gps-format">GPS-Eingabeformat</label>
-		<select id="gps-format" class="select ml-auto w-auto" bind:value={mode}>
+		<select id="gps-format" class="select w-full min-w-0 md:ml-auto md:w-auto" bind:value={mode}>
 			<option value="dd">Dezimalgrad (z.B. 54.5042° N)</option>
 			<option value="dm">Grad, Dezimalminute (z.B. 54° 30.25' N)</option>
 			<option value="dms">Grad, Minute, Sekunde (z.B. 54° 30' 15" N)</option>

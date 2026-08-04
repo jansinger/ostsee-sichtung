@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
 	descriptionCollapsed,
 	photoStatus,
-	shouldOpenMapOnCoordinateChange,
 	shouldWarnAboutMissingGps,
 	type PositionCapableFile
 } from './positionPanelState';
@@ -88,19 +87,9 @@ describe('photoStatus — Eingrenzung auf den Positions-Schritt', () => {
 	});
 });
 
-describe('shouldOpenMapOnCoordinateChange', () => {
-	it('öffnet, wenn eine Position neu entsteht', () => {
-		expect(shouldOpenMapOnCoordinateChange(true, false)).toBe(true);
-	});
-
-	it('öffnet nicht erneut, solange die Position bestehen bleibt', () => {
-		expect(shouldOpenMapOnCoordinateChange(true, true)).toBe(false);
-	});
-
-	it('öffnet nicht, wenn die Position entfällt', () => {
-		expect(shouldOpenMapOnCoordinateChange(false, true)).toBe(false);
-	});
-});
+// `shouldOpenMapOnCoordinateChange` ist mit PR 3 entfallen: Die Karte steht
+// dauerhaft offen, es gibt keine Disclosure mehr, die auf der steigenden Flanke
+// aufklappen könnte.
 
 /**
  * Seit dem Zusammenlegen der Ortsbeschreibung (Wunsch des Deutschen
