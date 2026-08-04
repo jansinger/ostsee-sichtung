@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.10.0](https://github.com/jansinger/ostsee-tiere/compare/v2.9.0...v2.10.0) (2026-08-04)
+
+
+### Features
+
+* **admin:** Ostsee-Filter, plus zwei Layout-Korrekturen im Admin ([#732](https://github.com/jansinger/ostsee-tiere/issues/732)) ([efde0a0](https://github.com/jansinger/ostsee-tiere/commit/efde0a04c1d47f9bb8724f9fb87e6ad5136350a5))
+
+
+### Bug Fixes
+
+* **admin:** keep the "Geprüft" toggle label on one line ([#737](https://github.com/jansinger/ostsee-tiere/issues/737)) ([0680351](https://github.com/jansinger/ostsee-tiere/commit/068035154dfaec286e5f3519c528fe291d8fd16b))
+* **admin:** send notification and test mails to CC/BCC recipients ([#738](https://github.com/jansinger/ostsee-tiere/issues/738)) ([00747fe](https://github.com/jansinger/ostsee-tiere/commit/00747fef734c512bc89831f6855dbeb3ae707bd2))
+
+
+### Dependencies
+
+* **deps:** bump fast-uri from 3.1.4 to 3.1.5 ([#736](https://github.com/jansinger/ostsee-tiere/issues/736)) ([3ac4776](https://github.com/jansinger/ostsee-tiere/commit/3ac4776261d7de124109eeffdbcffae7c2c1d840))
+* **deps:** bump ip-address from 10.2.0 to 10.4.0 ([#733](https://github.com/jansinger/ostsee-tiere/issues/733)) ([a7f1781](https://github.com/jansinger/ostsee-tiere/commit/a7f178112fba4a26865e8bebe4170a2970c2332c))
+* **deps:** bump undici from 6.27.0 to 6.28.0 ([#735](https://github.com/jansinger/ostsee-tiere/issues/735)) ([31188f3](https://github.com/jansinger/ostsee-tiere/commit/31188f3a3b74d5d84546c34857c9fa98a543356f))
+
 ## [2.9.0](https://github.com/jansinger/ostsee-tiere/compare/v2.8.2...v2.9.0) (2026-08-03)
 
 
