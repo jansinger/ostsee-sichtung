@@ -27,7 +27,12 @@
 	<!-- GPS Coordinates (shown when hasPosition = true) -->
 	{#if hasPosition}
 		<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-1">
-			<LocationInput {latitude} {longitude} onchange={handleChange} />
+			<!-- `required={hasPosition}` statt eines festen `true`: Das Sternchen an
+			     den Koordinaten und die Schema-Regel
+			     (`latitude.when('hasPosition', …)`) sollen aus derselben Größe
+			     kommen wie das `{#if}` darüber. Wer die Bedingung des Blocks später
+			     ändert, ändert damit auch die Pflicht-Markierung mit. -->
+			<LocationInput {latitude} {longitude} required={hasPosition} onchange={handleChange} />
 
 			{#if latitude !== undefined && longitude !== undefined}
 				<VerifyLocation {longitude} {latitude} />

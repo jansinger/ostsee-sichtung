@@ -292,9 +292,20 @@ Schritt unvollständig ist".
 
 Alle Felder laufen über `FormField` → `FieldRenderer` (`src/lib/report/components/form/fields/`). Kein Feld baut Label, Fehleranzeige oder ARIA selbst.
 
+**Genau eine Ausnahme: die Koordinaten.** `latitude`/`longitude` sind in `LocationInput.svelte` handgebaute Inputs — je nach GPS-Eingabeformat zwei bis sechs Stück, für die es kein einzelnes Schema-Feld gäbe. Die Pipeline kann diesen Fall nicht abdecken, die Regeln unten gelten dort aber trotzdem: Das `required`-Prop der Komponente ist die eine Quelle für Sternchen **und** `aria-required`, in allen drei Formaten. Wer dort ein Feld ergänzt, muss beides mitbringen.
+
+**Was der Marker dort jeweils leistet, unterscheidet sich zwischen den zwei Aufrufstellen** — nicht aus Versehen, sondern weil `hasPosition` an beiden Orten etwas anderes ist:
+
+| Aufrufstelle                                    | `hasPosition`                                             | Wirkung des Sternchens                                                       |
+| ----------------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Admin-Maske (`sections/Location.svelte`)        | echtes Bedienelement (`<FormField name="hasPosition" />`) | steht am noch leeren Feld und kündigt die Pflicht an                         |
+| Meldeformular (`position/PositionPanel.svelte`) | aus den Koordinaten abgeleitet (`syncHasPosition`)        | erscheint erst, wenn beide Koordinaten gefüllt sind, und bestätigt sie damit |
+
+Im Meldeformular geht der Marker einem Validierungsfehler also nie voraus. Das ist die richtige Aussage und keine Lücke: Ohne Position ist die Ortsbeschreibung die gleichwertige Alternative — ein Sternchen am leeren Koordinatenfeld behauptete eine Pflicht, die dort nicht besteht. Die Pflicht liegt dann sichtbar auf `waterway` (`LocationDescription.svelte`). Wer hier „repariert", dass der Marker zu spät kommt, macht aus zwei Wegen einen.
+
 - Label, Hilfetext, Platzhalter, Icon, Optionen und Feldtyp kommen aus dem Yup-Schema (`.label()` / `.meta({...})` in `src/lib/form/validation/sightingSchema.ts`), nicht aus dem Template.
 - Pflicht-Markierung (`*`) und `aria-required` stammen aus **derselben** Variable in `FieldRenderer`. Nie eines von beidem separat setzen — sonst driften optische und semantische Pflicht auseinander.
-- **Konditionale Pflichten** (Yup `when()`) sind aus `describe()` nicht ableitbar. Dafür den `required`-Override an `FormField` setzen — Beispiel `waterway` in `src/lib/report/components/form/position/LocationDescription.svelte`: `<FormField name="waterway" required={waterwayRequired} />`.
+- **Konditionale Pflichten** (Yup `when()`) sind aus `describe()` nicht ableitbar. Dafür den `required`-Override an `FormField` setzen — Beispiel `waterway` in `src/lib/report/components/form/position/LocationDescription.svelte`: `<FormField name="waterway" required={waterwayRequired} />`. Für die Koordinaten übernimmt das `required`-Prop von `LocationInput` dieselbe Rolle; gesetzt wird es an beiden Aufrufstellen aus `hasPosition` — der Bedingung, an der auch `latitude.when(...)` hängt.
 - Neues Feld: im Schema definieren **und** in `formStepsConfig` (`src/lib/report/formConfig.ts`) dem richtigen Schritt zuordnen — sonst greift weder Schritt-Validierung noch Fehler-Navigation.
 - `data-testid="field-<name>"` entsteht automatisch; keine eigenen Test-IDs an Feldern vergeben.
 - Fehler **nie** beim Betreten eines Schritts anzeigen — erst nach einem gescheiterten „Weiter"-Versuch (`StepNavigation.svelte` / `stepNavigationState.ts`).

@@ -88,4 +88,29 @@ describe('sections/Location — Admin-Maske', () => {
 			expect(field(name)?.readOnly, name).toBe(false);
 		}
 	});
+
+	/**
+	 * Die Koordinaten sind laut Schema Pflicht, sobald `hasPosition` gesetzt ist
+	 * (`latitude.when('hasPosition', { is: true, … })`). Sie laufen aber nicht
+	 * über `FormField` → `FieldRenderer`, das Sternchen und `aria-required` sonst
+	 * zentral setzt — `LocationInput` bekommt die Pflicht deshalb als Prop
+	 * durchgereicht. Dieser Test hält die Verdrahtung fest; die Darstellung in
+	 * allen drei Eingabeformaten prüft `LocationInput.svelte.test.ts`.
+	 */
+	it('markiert die Koordinaten als Pflicht, sobald die Position angegeben wird', async () => {
+		renderAdminLocation({ hasPosition: true, latitude: 54.5, longitude: 13.5 });
+
+		await expect.poll(() => document.getElementById('latitude'), { timeout: 5000 }).not.toBeNull();
+
+		for (const inputId of ['latitude', 'longitude']) {
+			expect(
+				document.querySelector(`label[for="${inputId}"] [aria-label="Pflichtfeld"]`),
+				`Sternchen an ${inputId}`
+			).not.toBeNull();
+			expect(
+				document.getElementById(inputId)?.getAttribute('aria-required'),
+				`aria-required an ${inputId}`
+			).toBe('true');
+		}
+	});
 });

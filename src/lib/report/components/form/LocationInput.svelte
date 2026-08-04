@@ -15,6 +15,7 @@
 		collapsibleCoordinates = false,
 		enableMapGps = true,
 		coordinatesHint = null,
+		required = false,
 		onchange = () => {}
 	} = $props<{
 		mode?: 'dms' | 'dm' | 'dd';
@@ -53,6 +54,22 @@
 		 * auf die der Satz sich bezieht.
 		 */
 		coordinatesHint?: string | null;
+		/**
+		 * Sind die Koordinaten hier Pflichtfelder?
+		 *
+		 * Im Yup-Schema hängt das an `hasPosition`
+		 * (`latitude.when('hasPosition', { is: true, … })`) — eine konditionale
+		 * Regel, die aus `describe()` nicht ableitbar ist. Diese Felder laufen
+		 * zudem als einzige des Formulars nicht über `FormField` →
+		 * `FieldRenderer`, das Sternchen und `aria-required` sonst zentral aus
+		 * EINER Variablen erzeugt. Das Prop ist deshalb hier die eine Quelle für
+		 * beides (`.claude/rules/design-system.md`, „Formularfeld-Muster");
+		 * gesetzt wird es an den Aufrufstellen aus `hasPosition`.
+		 *
+		 * Default `false`: Ohne Aussage über `hasPosition` behauptet die
+		 * Komponente keine Pflicht.
+		 */
+		required?: boolean;
 		onchange?: EventListener | null;
 	}>();
 
@@ -190,6 +207,32 @@
 	}
 </script>
 
+<!-- Pflicht-Markierung für die beschrifteten Koordinatenfelder.
+
+     Bewusst EIN Snippet für alle drei Eingabeformate: Jedes Format rendert
+     eigene Labels, und ein Sternchen, das nur im Dezimalgrad-Zweig steht, wäre
+     für jeden weg, der auf „Grad, Minute, Sekunde" umstellt. Markup und
+     `aria-label` sind absichtlich identisch mit `FieldRenderer.svelte` — für
+     Nutzer wie für Tests darf sich die Pflicht hier nicht anders anfühlen als
+     an jedem anderen Feld, auch wenn die Pipeline eine andere ist.
+
+     Zwei Punkte, an denen die Nachbildung bewusst genau bleibt bzw. bewusst
+     abweicht:
+
+     - `aria-required={required || undefined}` lässt das Attribut im Nein-Fall
+       ganz weg statt `aria-required="false"` zu schreiben — genau wie
+       `BaseInput.svelte` es für jedes andere Feld tut.
+     - Das NATIVE `required`-Attribut setzen wir hier absichtlich NICHT, obwohl
+       `FieldRenderer` es durchreicht. Es aktivierte die Constraint-Validierung
+       des Browsers, und die verweigert das Absenden lautlos — dieselbe Falle,
+       an der `step="0.0001"` an diesen Feldern schon einmal hing (Kommentar am
+       Dezimalgrad-Feld unten). Ob eine Koordinate fehlt, entscheidet Yup. -->
+{#snippet requiredMark()}
+	{#if required}
+		<span class="text-error ml-1 text-sm" aria-label="Pflichtfeld">*</span>
+	{/if}
+{/snippet}
+
 {#snippet coordinateFields()}
 	<!-- Unterhalb `md` stehen Beschriftung und Auswahl untereinander, darüber
 	     nebeneinander. Als einzeilige Flex-Zeile setzte dieser Block die
@@ -216,9 +259,14 @@
 	</div>
 
 	{#if mode === 'dms'}
+		<!-- `aria-required` sitzt nur am Grad-Feld, nicht an Minuten und Sekunden:
+		     Das Label mit dem Sternchen gehört über `for` genau zu diesem Feld, und
+		     die beiden anderen dürfen leer bleiben — `part()` reicht sie als NaN
+		     weiter, die Konverter lesen das als 0. Eine Pflicht-Ansage dort wäre
+		     eine falsche Aussage. Gilt genauso im Format „Grad, Dezimalminute". -->
 		<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 			<div>
-				<label class="label" for="dms-lat-deg">Breite (N)</label>
+				<label class="label" for="dms-lat-deg">Breite (N){@render requiredMark()}</label>
 				<div class="flex gap-2">
 					<div>
 						<input
@@ -228,6 +276,7 @@
 							min="0"
 							max="90"
 							placeholder="Grad"
+							aria-required={required || undefined}
 							bind:value={dms.latitude.deg}
 							onchange={updateFromFields}
 						/>
@@ -255,7 +304,7 @@
 				</div>
 			</div>
 			<div>
-				<label class="label" for="dms-lon-deg">Länge (E)</label>
+				<label class="label" for="dms-lon-deg">Länge (E){@render requiredMark()}</label>
 				<div class="flex gap-2">
 					<div>
 						<input
@@ -265,6 +314,7 @@
 							min="0"
 							max="180"
 							placeholder="Grad"
+							aria-required={required || undefined}
 							bind:value={dms.longitude.deg}
 							onchange={updateFromFields}
 						/>
@@ -295,7 +345,7 @@
 	{:else if mode === 'dm'}
 		<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 			<div>
-				<label class="label" for="dm-lat-deg">Breite (N)</label>
+				<label class="label" for="dm-lat-deg">Breite (N){@render requiredMark()}</label>
 				<div class="flex gap-2">
 					<div>
 						<input
@@ -305,6 +355,7 @@
 							min="0"
 							max="90"
 							placeholder="Grad"
+							aria-required={required || undefined}
 							bind:value={dm.latitude.deg}
 							onchange={updateFromFields}
 						/>
@@ -323,7 +374,7 @@
 				</div>
 			</div>
 			<div>
-				<label class="label" for="dm-lon-deg">Länge (E)</label>
+				<label class="label" for="dm-lon-deg">Länge (E){@render requiredMark()}</label>
 				<div class="flex gap-2">
 					<div>
 						<input
@@ -333,6 +384,7 @@
 							min="0"
 							max="180"
 							placeholder="Grad"
+							aria-required={required || undefined}
 							bind:value={dm.longitude.deg}
 							onchange={updateFromFields}
 						/>
@@ -354,7 +406,7 @@
 	{:else}
 		<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 			<div>
-				<label class="label" for="latitude">Breite (N)</label>
+				<label class="label" for="latitude">Breite (N){@render requiredMark()}</label>
 				<!-- step deckt die volle Spaltengenauigkeit ab: `gps_breite` ist
 				     numeric(8,6). Mit dem früheren step="0.0001" wies die
 				     Constraint-Validierung des Browsers jede Bestandskoordinate mit
@@ -369,12 +421,13 @@
 					max="90"
 					step="0.000001"
 					placeholder="Dezimalgrad"
+					aria-required={required || undefined}
 					bind:value={ddLatitude}
 					onchange={onDecimalChange}
 				/>
 			</div>
 			<div>
-				<label class="label" for="longitude">Länge (E)</label>
+				<label class="label" for="longitude">Länge (E){@render requiredMark()}</label>
 				<input
 					id="longitude"
 					class="input w-full"
@@ -383,6 +436,7 @@
 					max="180"
 					step="0.000001"
 					placeholder="Dezimalgrad"
+					aria-required={required || undefined}
 					bind:value={ddLongitude}
 					onchange={onDecimalChange}
 				/>
