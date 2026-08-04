@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { getFormContext } from '$lib/report/formContext';
-	import { BoatDriveEnum } from '$lib/report/formOptions/boatDrive';
+	import { BoatDriveEnum, PUBLIC_BOAT_DRIVE_OPTIONS } from '$lib/report/formOptions/boatDrive';
 	import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 	import { slide } from 'svelte/transition';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
@@ -11,6 +11,8 @@
 		shouldResetBoatDrive,
 		type TrackedSightingFromValue
 	} from './boatDriveReset';
+
+	const { adminMode = false }: { adminMode?: boolean } = $props();
 
 	const { form, updateField } = getFormContext();
 
@@ -56,11 +58,41 @@
 	</div>
 	{#if showsBoatDrive}
 		<div class="mt-2 grid grid-cols-1 gap-4 md:grid-cols-1" transition:slide>
-			<FormField name="boatDrive" />
-			{#if String($form.boatDrive) === String(BoatDriveEnum.OTHER)}
-				<div transition:slide>
-					<FormField name="boatDriveText" />
-				</div>
+			{#if adminMode}
+				<!-- Admin-Maske: volle Antriebsauswahl aus dem Schema. Die feinere
+				     Bedeutung von "Segel", "Treibend" und "Vor Anker" bleibt hier
+				     erhalten, damit Altbestand unverändert nachbearbeitet werden kann. -->
+				<FormField name="boatDrive" />
+				{#if String($form.boatDrive) === String(BoatDriveEnum.OTHER)}
+					<!-- Freitext nur in der Admin-Maske: `OTHER` ist im Meldeformular
+					     seit PR 4 nicht mehr wählbar, kann aber im Altbestand stehen. -->
+					<div transition:slide>
+						<FormField name="boatDriveText" />
+					</div>
+				{/if}
+			{:else}
+				<!-- Meldeformular: nur noch "Motor lief / Motor lief nicht" (PR 4,
+				     Museum 2026-08-04) — es geht allein um Motorgeräusche. Radio statt
+				     Schalter, weil ein Toggle keinen unbeantworteten Zustand kennt und
+				     `boatDrive` bei Segelschiff/Motorboot Pflichtfeld ist. Label, Stern,
+				     ARIA und `data-testid` kommen weiterhin aus der Feld-Pipeline.
+
+				     `required` als Override, weil die Pflicht im Schema in einem
+				     `when('sightingFrom')` steckt und `describe()` das nicht sieht —
+				     derselbe Fall wie `waterway` in LocationDescription.svelte. Hier
+				     ist es unbedingt `true`: Dieser Zweig rendert ausschließlich bei
+				     Segelschiff oder Motorboot, also genau dann, wenn das Schema den
+				     Wert verlangt. Ohne den Override liefe ein Melder ohne Sternchen
+				     und ohne `aria-required` in „Bitte wählen Sie den Bootsantrieb
+				     aus." — die Admin-Maske hat dasselbe Loch, dort aber mit
+				     vorbefülltem Wert. -->
+				<FormField
+					name="boatDrive"
+					label="Lief während der Sichtung ein Motor?"
+					type="radio"
+					options={PUBLIC_BOAT_DRIVE_OPTIONS}
+					required={true}
+				/>
 			{/if}
 		</div>
 	{/if}

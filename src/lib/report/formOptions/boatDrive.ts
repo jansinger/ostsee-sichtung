@@ -20,7 +20,19 @@ export enum BoatDriveEnum {
 	 * (`mapFormToSighting`) und ist bewusst **nicht** auswählbar — im Formular
 	 * erscheint das Antriebsfeld nur bei Segelschiff/Motorboot.
 	 */
-	NONE = 5
+	NONE = 5,
+	/**
+	 * Motor war während der Sichtung abgeschaltet.
+	 *
+	 * **Warum ein neuer Wert und nicht `DRIFTING`/`ANCHORED`:** Ein Motorboot mit
+	 * abgeschaltetem Motor als "treibend" zu speichern wäre eine Aussage, die der
+	 * Melder nie gemacht hat — für die Einordnung von Unterwasserlärm ist
+	 * "treibend" etwas anderes als "vor Anker". Die Alt-Werte 0–4 behalten
+	 * deshalb ihre feinere Bedeutung und bleiben in der Admin-Maske wählbar; im
+	 * Meldeformular gibt es seit PR 4 (Museum, 2026-08-04) nur noch
+	 * `MOTOR`/`MOTOR_OFF` (siehe `PUBLIC_BOAT_DRIVE_OPTIONS`).
+	 */
+	MOTOR_OFF = 6
 }
 
 /**
@@ -32,7 +44,8 @@ export const boatDriveLabels: Record<BoatDriveEnum, string> = {
 	[BoatDriveEnum.SAIL]: 'Segel',
 	[BoatDriveEnum.DRIFTING]: 'Treibend',
 	[BoatDriveEnum.ANCHORED]: 'Vor Anker',
-	[BoatDriveEnum.NONE]: 'Kein Boot'
+	[BoatDriveEnum.NONE]: 'Kein Boot',
+	[BoatDriveEnum.MOTOR_OFF]: 'Motor aus'
 };
 
 export type BoatDrive = BoatDriveEnum;
@@ -56,6 +69,18 @@ const boatDriveOptions: Array<{ value: number; label: string }> = SELECTABLE_BOA
 	(value) => ({ value, label: boatDriveLabels[value] })
 );
 export const getBoatDriveOptions = (): Array<{ value: number; label: string }> => boatDriveOptions;
+
+/**
+ * Die im **Meldeformular** angebotene Zweier-Auswahl (PR 4, Museum 2026-08-04).
+ *
+ * Es geht dort allein um Motorgeräusche; die feinere Unterscheidung der
+ * Alt-Werte bleibt der Admin-Maske vorbehalten, die weiterhin
+ * `getBoatDriveOptions()` verwendet.
+ */
+export const PUBLIC_BOAT_DRIVE_OPTIONS = [
+	{ value: BoatDriveEnum.MOTOR, label: 'Motor lief' },
+	{ value: BoatDriveEnum.MOTOR_OFF, label: 'Motor lief nicht' }
+];
 
 /**
  * Hilfsfunktion zum Abrufen des Labels für einen bestimmten Enum-Wert

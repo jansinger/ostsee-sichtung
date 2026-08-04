@@ -115,6 +115,31 @@ describe('formStepsConfig — Geschlecht beim Totfund nur in der Admin-Maske', (
 	});
 });
 
+/**
+ * `boatDriveText` (Beschreibung eines "sonstigen" Antriebs) hängt an
+ * `BoatDriveEnum.OTHER`, das im Meldeformular nach PR 4 (Museum, 2026-08-04)
+ * nicht mehr wählbar ist — dort gibt es nur noch "Motor an" (`MOTOR = 1`) und
+ * "Motor aus" (`MOTOR_OFF = 6`). Schema-Eintrag und DB-Spalte bleiben
+ * unverändert — die Admin-Maske zeigt weiterhin den vollen Bootsantrieb
+ * inklusive `boatDriveText`; hier wird nur geprüft, dass der Melde-Schritt
+ * "sighting-details" das Feld nicht mehr führt.
+ */
+describe('formStepsConfig — boatDriveText nur in der Admin-Maske (PR 4)', () => {
+	const sightingDetailsStep = formStepsConfig.find((step) => step.id === 'sighting-details');
+
+	it('führt boatDriveText nicht mehr im Schritt "sighting-details"', () => {
+		expect(sightingDetailsStep?.fields).not.toContain('boatDriveText');
+	});
+
+	it('behält boatDrive im Schritt "sighting-details" — nur die Textbeschreibung entfällt', () => {
+		expect(sightingDetailsStep?.fields).toContain('boatDrive');
+	});
+
+	it('kennt boatDriveText im Schema weiterhin, damit die Admin-Maske es schreiben kann', () => {
+		expect(sightingSchemaFields.boatDriveText).toBeDefined();
+	});
+});
+
 describe('waterway — Beschriftung deckt beide bisherigen Felder ab', () => {
 	const waterwayMeta = meta('waterway');
 	const copy = [describeField('waterway').label, waterwayMeta.helpText, waterwayMeta.placeholder]

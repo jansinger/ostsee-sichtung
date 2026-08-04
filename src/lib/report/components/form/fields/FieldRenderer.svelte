@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
-	import type { FieldSize, FieldVariant } from '$lib/types';
+	import type { FieldOption, FieldSize, FieldVariant } from '$lib/types';
 	import * as yup from 'yup';
 	import BaseCheckbox from './BaseCheckbox.svelte';
 	import BaseInput from './BaseInput.svelte';
@@ -24,7 +24,10 @@
 		size = 'md',
 		variant = 'default',
 		onchange = undefined,
-		required: requiredOverride = undefined
+		required: requiredOverride = undefined,
+		label: labelOverride = undefined,
+		type: typeOverride = undefined,
+		options: optionsOverride = undefined
 	}: {
 		fieldConfig: yup.SchemaDescription;
 		name?: string;
@@ -42,6 +45,26 @@
 		 * `undefined` = Ableitung aus dem Schema (Default).
 		 */
 		required?: boolean | undefined;
+		/**
+		 * Überschreibt die aus `fieldConfig.label` abgeleitete Beschriftung, wenn
+		 * dieselbe Schema-Spalte in zwei Kontexten unterschiedlich gefragt wird.
+		 * `undefined` = Ableitung aus dem Schema (Default).
+		 */
+		label?: string | undefined;
+		/**
+		 * Überschreibt den aus `meta.type` abgeleiteten Feldtyp. Nötig, wenn
+		 * dasselbe Schema-Feld je nach Kontext anders bedient wird — z.B.
+		 * `boatDrive`: Select mit allen Antriebsarten in der Admin-Maske,
+		 * Zwei-Optionen-Radiogruppe im Meldeformular.
+		 * `undefined` = Ableitung aus dem Schema (Default).
+		 */
+		type?: string | undefined;
+		/**
+		 * Überschreibt die aus `meta.options` abgeleitete Optionsliste. Gehört
+		 * fachlich zum `type`-Override und wird meist zusammen mit ihm gesetzt.
+		 * `undefined` = Ableitung aus dem Schema (Default).
+		 */
+		options?: FieldOption[] | undefined;
 	} = $props();
 
 	// Bindable values for different component types
@@ -69,7 +92,25 @@
 				'radio'
 			].includes(normalizedType)
 		) {
-			numberValue = typeof value === 'boolean' ? '' : (value ?? '');
+			const next = typeof value === 'boolean' ? '' : (value ?? '');
+
+			// Radiogruppen brauchen den Wert als ZAHL, alle anderen nicht.
+			//
+			// `BaseRadio` bindet per `bind:group`, und das vergleicht strikt gegen
+			// die Optionswerte — die sind Zahlen. Der Formular-Store trägt aber
+			// nach `handleChange` den String aus dem DOM-Event ("6"), weil
+			// `createForm` das Event liest und nicht den hier gesetzten Wert.
+			// Ohne Angleichung findet die Gruppe ihren eigenen gerade gesetzten
+			// Wert nicht wieder und springt zurück auf „nichts gewählt": Der
+			// Melder klickt, und der Punkt bleibt leer.
+			//
+			// Beim `<select>` fällt dieselbe Verkettung nicht auf, weil dessen
+			// DOM-Wert ohnehin ein String ist und der Browser die Auswahl hält —
+			// deshalb ist das erst mit dem ersten Radiofeld des Formulars
+			// aufgetreten (`boatDrive`, PR 4). `next !== ''` schützt davor, dass
+			// „nichts gewählt" über `Number('')` zu einer echten 0 wird — bei
+			// `BoatDriveEnum.OTHER = 0` wäre das eine falsche Antwort.
+			numberValue = normalizedType === 'radio' && next !== '' ? Number(next) : next;
 		}
 	});
 
@@ -114,10 +155,10 @@
 	let metaValues = $derived.by(() => {
 		const meta = fieldConfig.meta || {};
 		return {
-			options: meta.options,
+			options: optionsOverride ?? meta.options,
 			helpText: meta.helpText,
 			valueText: meta.valueText,
-			type: meta.type || fieldConfig.type,
+			type: typeOverride ?? meta.type ?? fieldConfig.type,
 			icon: meta.icon,
 			rows: meta.rows,
 			placeholder: meta.placeholder,
@@ -127,7 +168,7 @@
 		};
 	});
 	let hasOptions = $derived(metaValues.options && metaValues.options.length > 0);
-	let label = $derived(fieldConfig.label);
+	let label = $derived(labelOverride ?? fieldConfig.label);
 
 	// State computations
 	let hasError = $derived(!!error && error.length > 0);

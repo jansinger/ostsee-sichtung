@@ -2,6 +2,7 @@ import { render } from 'vitest-browser-svelte';
 import { describe, it, expect } from 'vitest';
 import { page } from 'vitest/browser';
 import FieldRenderer from './FieldRenderer.svelte';
+import { PUBLIC_BOAT_DRIVE_OPTIONS } from '$lib/report/formOptions/boatDrive';
 import type * as yup from 'yup';
 
 // Mock field configs that mirror the real schema's .describe() output
@@ -199,6 +200,118 @@ describe('FieldRenderer', () => {
 			});
 
 			await expect.element(page.getByLabelText('Pflichtfeld')).not.toBeInTheDocument();
+		});
+	});
+
+	/**
+	 * PR 4 (Museum, 2026-08-04): `boatDrive` bleibt im Schema ein 6-Werte-Select
+	 * (für die Admin-Maske), soll im Meldeformular aber nur noch als
+	 * Zwei-Optionen-Radiogruppe ("Motor lief" / "Motor lief nicht") erscheinen —
+	 * ohne eigenes Markup in der Section (design-system.md: Label,
+	 * Pflicht-Sternchen, `aria-describedby` müssen aus der Feld-Pipeline kommen).
+	 * Dafür bekommen `FormField`/`FieldRenderer` zwei neue Overrides, analog zum
+	 * bereits vorhandenen `required`-Override: `type` und `options`.
+	 */
+	describe('type/options-Override (PR 4 — Bootsantrieb "Motor an/aus")', () => {
+		// Bootsantrieb, wie ihn das Schema für die Admin-Maske beschreibt: ein
+		// Select mit allen fünf/sechs Werten.
+		const boatDriveSelectFieldConfig = makeFieldConfig({
+			label: 'Bootsantrieb',
+			optional: false,
+			meta: {
+				type: 'select',
+				helpText: 'Welcher Antrieb wurde während der Sichtung verwendet?',
+				selectPlaceholder: 'Bitte wählen...',
+				options: [
+					{ value: 0, label: 'Sonstiger Bootsantrieb' },
+					{ value: 1, label: 'Motor' },
+					{ value: 2, label: 'Segel' },
+					{ value: 3, label: 'Treibend' },
+					{ value: 4, label: 'Vor Anker' }
+				]
+			}
+		});
+
+		// Die echte Konstante, nicht eine Kopie: So fällt hier auf, wenn die
+		// öffentliche Auswahl aus `formOptions/boatDrive.ts` wegdriftet.
+		const publicBoatDriveOptions = PUBLIC_BOAT_DRIVE_OPTIONS;
+
+		it('rendert bei type="radio" + eigenen options eine Radiogruppe mit genau diesen Optionen', async () => {
+			render(FieldRenderer, {
+				fieldConfig: boatDriveSelectFieldConfig,
+				name: 'boatDrive',
+				value: null,
+				type: 'radio',
+				options: publicBoatDriveOptions
+			});
+
+			await expect.element(page.getByText('Motor lief nicht')).toBeVisible();
+			await expect.element(page.getByRole('radio').first()).toBeVisible();
+		});
+
+		it('zeigt die Schema-Select-Optionen NICHT mehr, wenn options überschrieben wurde', async () => {
+			render(FieldRenderer, {
+				fieldConfig: boatDriveSelectFieldConfig,
+				name: 'boatDrive',
+				value: null,
+				type: 'radio',
+				options: publicBoatDriveOptions
+			});
+
+			await expect.element(page.getByText('Treibend')).not.toBeInTheDocument();
+			await expect.element(page.getByText('Vor Anker')).not.toBeInTheDocument();
+			await expect.element(page.getByRole('combobox')).not.toBeInTheDocument();
+		});
+
+		it('behält Label und Pflicht-Sternchen aus dem Schema, auch mit Override', async () => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: boatDriveSelectFieldConfig,
+				name: 'boatDrive',
+				value: null,
+				type: 'radio',
+				options: publicBoatDriveOptions
+			});
+
+			// Gezielt die Legend der Radiogruppe (nicht per getByText('Bootsantrieb'),
+			// das mit "Sonstiger Bootsantrieb" mehrdeutig würde, solange der
+			// Options-Override noch nicht greift und das Schema-Select weiterhin
+			// mitrendert wird).
+			const legend = screen.container.querySelector('legend');
+			expect(legend?.textContent).toContain('Bootsantrieb');
+			await expect.element(page.getByLabelText('Pflichtfeld')).toBeVisible();
+		});
+
+		it('verknüpft aria-describedby weiterhin mit dem Hilfetext, auch mit Override', async () => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: boatDriveSelectFieldConfig,
+				name: 'boatDrive',
+				value: null,
+				type: 'radio',
+				options: publicBoatDriveOptions
+			});
+
+			const helpElement = screen.container.querySelector('#field-boatDrive-help');
+			expect(helpElement).not.toBeNull();
+			expect(helpElement?.textContent).toContain(
+				'Welcher Antrieb wurde während der Sichtung verwendet?'
+			);
+
+			const radios = screen.container.querySelectorAll('input[type="radio"]');
+			expect(radios.length).toBeGreaterThan(0);
+			radios.forEach((radio) => {
+				expect(radio.getAttribute('aria-describedby')).toContain('field-boatDrive-help');
+			});
+		});
+
+		it('rendert ohne Override weiterhin das Schema-Select (Admin-Maske)', async () => {
+			render(FieldRenderer, {
+				fieldConfig: boatDriveSelectFieldConfig,
+				name: 'boatDrive',
+				value: null
+			});
+
+			await expect.element(page.getByRole('combobox')).toBeVisible();
+			await expect.element(page.getByText('Motor lief nicht')).not.toBeInTheDocument();
 		});
 	});
 

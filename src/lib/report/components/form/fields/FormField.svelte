@@ -6,6 +6,7 @@
 	import { createLogger } from '$lib/logger';
 	import { sightingSchemaFields } from '$lib/report/formConfig';
 	import { getFormContext } from '$lib/report/formContext';
+	import type { FieldOption } from '$lib/types';
 	import type { SightingFormData } from '$lib/types/Form';
 	import { untrack } from 'svelte';
 	import * as yup from 'yup';
@@ -18,7 +19,10 @@
 		disabled = false,
 		size = 'md',
 		variant = 'default',
-		required = undefined
+		required = undefined,
+		label = undefined,
+		type = undefined,
+		options = undefined
 	}: {
 		name: keyof Omit<SightingFormData, 'uploadedFiles'>;
 		disabled?: boolean;
@@ -30,6 +34,22 @@
 		 * Ohne Angabe gilt weiterhin die Ableitung aus dem Yup-Schema.
 		 */
 		required?: boolean | undefined;
+		/**
+		 * Optionaler Override der Beschriftung, wenn dieselbe Schema-Spalte in
+		 * zwei Kontexten unterschiedlich gefragt wird (Meldeformular vs.
+		 * Admin-Maske). Ohne Angabe gilt weiterhin das `.label()` des Schemas.
+		 */
+		label?: string | undefined;
+		/**
+		 * Optionaler Override des Feldtyps (z.B. `'radio'` statt des
+		 * Schema-`'select'`). Ohne Angabe gilt weiterhin `meta.type`.
+		 */
+		type?: string | undefined;
+		/**
+		 * Optionaler Override der Optionsliste — gehört fachlich zum
+		 * `type`-Override. Ohne Angabe gilt weiterhin `meta.options`.
+		 */
+		options?: FieldOption[] | undefined;
 	} = $props();
 
 	const context = getFormContext();
@@ -85,6 +105,9 @@
 		{size}
 		{variant}
 		{required}
+		{label}
+		{type}
+		{options}
 		onchange={handleChange}
 	/>
 </div>

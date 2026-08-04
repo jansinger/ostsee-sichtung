@@ -68,7 +68,7 @@ export interface LegacySightingRequest {
 	schiffsname?: string; // Ship name
 	heimathafen?: string; // Home port
 	bootstyp?: string; // Boat type
-	bootsantrieb?: number; // Boat drive (0-4)
+	bootsantrieb?: number; // Boat drive (0-6; 5 = no boat, 6 = motor off — see LEGACY_API_SPECIFICATION.md)
 	bootsantrieb_text?: string; // Other boat drive text (when bootsantrieb = 0)
 
 	// Contact information

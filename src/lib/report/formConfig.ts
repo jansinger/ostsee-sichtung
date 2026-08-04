@@ -76,7 +76,10 @@ export const formStepsConfig: FormStep[] = [
 			'sightingFrom',
 			'sightingFromText',
 			'boatDrive',
-			'boatDriveText',
+			// `boatDriveText` steht hier bewusst NICHT mehr: Es hängt an
+			// `BoatDriveEnum.OTHER`, und das Meldeformular bietet seit dem 2026-08-04
+			// nur noch "Motor lief"/"Motor lief nicht" an (PR 4). Schema-Eintrag und
+			// DB-Spalte `bootsantrieb_text` bleiben — die Admin-Maske schreibt es weiter.
 			'isDead',
 			'deadCondition',
 			// `deadSex` steht hier bewusst NICHT mehr: Das Museum hat das Geschlecht

@@ -98,8 +98,16 @@ export class FormPage {
 		await this.page.locator('[data-testid="field-sightingFrom"]').selectOption(String(index));
 	}
 
-	async selectBoatDrive(index: number) {
-		await this.page.locator('[data-testid="field-boatDrive"]').selectOption(String(index));
+	/**
+	 * Answers the motor question that appears for Segelschiff/Motorboot.
+	 *
+	 * Since PR 4 (2026-08-04) this is a two-option radio group, not a select —
+	 * BaseRadio.svelte suffixes the testid per option (`field-boatDrive-<value>`).
+	 * The argument is therefore the stored `BoatDriveEnum` value: `1` = Motor
+	 * lief, `6` = Motor lief nicht. The full drive list stays in the admin form.
+	 */
+	async selectBoatDrive(value: number) {
+		await this.page.locator(`[data-testid="field-boatDrive-${value}"]`).check();
 	}
 
 	// ── Step 4: Kontaktdaten ─────────────────────────────────────────────────
