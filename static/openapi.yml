@@ -430,6 +430,9 @@ paths:
           schema:
             type: boolean
             example: true
+        - $ref: '#/components/parameters/ExportEntryChannel'
+        - $ref: '#/components/parameters/ExportMediaUpload'
+        - $ref: '#/components/parameters/ExportBalticSea'
       responses:
         '200':
           description: Exportdatei
@@ -469,6 +472,7 @@ paths:
         - $ref: '#/components/parameters/ExportVerified'
         - $ref: '#/components/parameters/ExportEntryChannel'
         - $ref: '#/components/parameters/ExportMediaUpload'
+        - $ref: '#/components/parameters/ExportBalticSea'
       responses:
         '200':
           description: JSON-Datei mit Sichtungen
@@ -538,6 +542,7 @@ paths:
         - $ref: '#/components/parameters/ExportVerified'
         - $ref: '#/components/parameters/ExportEntryChannel'
         - $ref: '#/components/parameters/ExportMediaUpload'
+        - $ref: '#/components/parameters/ExportBalticSea'
       responses:
         '200':
           description: CSV-Datei mit Sichtungen
@@ -570,6 +575,7 @@ paths:
         - $ref: '#/components/parameters/ExportVerified'
         - $ref: '#/components/parameters/ExportEntryChannel'
         - $ref: '#/components/parameters/ExportMediaUpload'
+        - $ref: '#/components/parameters/ExportBalticSea'
       responses:
         '200':
           description: XML-Datei mit Sichtungen
@@ -602,6 +608,7 @@ paths:
         - $ref: '#/components/parameters/ExportVerified'
         - $ref: '#/components/parameters/ExportEntryChannel'
         - $ref: '#/components/parameters/ExportMediaUpload'
+        - $ref: '#/components/parameters/ExportBalticSea'
       responses:
         '200':
           description: KML-Datei mit Sichtungen
@@ -2284,6 +2291,19 @@ components:
       schema:
         type: boolean
         example: true
+
+    ExportBalticSea:
+      name: balticSea
+      in: query
+      description: >-
+        Ostsee-Status filtern (baltic=Ostsee, edge=Widerspruch zwischen den
+        Flags, outside=außerhalb, noPosition=ohne Position; siehe
+        getBalticSeaStatus() in $lib/utils/geo/balticSeaStatus.ts; leer = kein
+        Filter)
+      schema:
+        type: string
+        enum: ["baltic", "edge", "outside", "noPosition"]
+        example: "baltic"
 
   schemas:
     CleanupReport:

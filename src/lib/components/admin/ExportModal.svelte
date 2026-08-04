@@ -6,6 +6,10 @@
 	import { formatFileSize } from '$lib/utils/file/fileSize';
 	import { formatWallClockDateTime } from '$lib/utils/format/formatWallClockDateTime';
 	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
+	import {
+		BALTIC_SEA_STATUS_PRESENTATION,
+		isBalticSeaStatus
+	} from '$lib/utils/geo/balticSeaStatus';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('ExportModal');
@@ -92,6 +96,12 @@
 			filterDisplays.push('Nur ohne Aufnahmen');
 		} else if (currentFilters.mediaUpload === MEDIA_UPLOAD_ANNOUNCED_MISSING) {
 			filterDisplays.push('Nur angekündigt, Foto fehlt noch');
+		}
+		if (isBalticSeaStatus(currentFilters.balticSea)) {
+			// Label aus BALTIC_SEA_STATUS_PRESENTATION statt neu formuliert, damit
+			// Filter-Panel und Export-Zusammenfassung nie auseinanderlaufen.
+			const presentation = BALTIC_SEA_STATUS_PRESENTATION[currentFilters.balticSea];
+			filterDisplays.push(`Ostsee-Status: ${presentation.label}`);
 		}
 
 		return filterDisplays.length > 0 ? filterDisplays : ['Keine Filter aktiv'];

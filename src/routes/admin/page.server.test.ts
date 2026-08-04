@@ -23,6 +23,7 @@ import {
 	MEDIA_UPLOAD_ANNOUNCED_MISSING,
 	mediaUploadCondition
 } from '$lib/server/db/mediaUploadFilter';
+import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 
 const dialect = new PgDialect();
 const toSqlText = (condition: SQLWrapper): string => dialect.sqlToQuery(condition.getSQL()).sql;
@@ -119,5 +120,30 @@ describe('admin/+page.server load() — Foto-Ankündigungs-Arbeitsliste', () => 
 		// müssen jetzt dieselbe Bedingung tragen wie die Arbeitslisten-Abfrage.
 		expect(recordedSelects[0]?.whereSql).toBe(expected);
 		expect(recordedSelects[1]?.whereSql).toBe(expected);
+	});
+
+	// Der Filter selbst ist in `balticSeaFilter.test.ts` gegen `getBalticSeaStatus()`
+	// abgesichert. Hier geht es nur um die Verdrahtung: dass `?balticSea=…`
+	// überhaupt bis in die WHERE-Klausel durchschlägt. Alle vier Werte, damit ein
+	// vergessener `switch`-Zweig nicht durchrutscht.
+	it.each(['baltic', 'edge', 'outside', 'noPosition'] as const)(
+		'?balticSea=%s filtert die Hauptliste mit derselben Bedingung',
+		async (status) => {
+			await load({
+				url: makeUrl({ balticSea: status })
+			} as unknown as Parameters<typeof load>[0]);
+
+			const expected = toSqlText(balticSeaCondition(status) as unknown as SQLWrapper);
+			expect(recordedSelects[0]?.whereSql).toBe(expected);
+			expect(recordedSelects[1]?.whereSql).toBe(expected);
+		}
+	);
+
+	it('ein unbekannter balticSea-Wert filtert die Hauptliste gar nicht', async () => {
+		await load({
+			url: makeUrl({ balticSea: 'quatsch' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		expect(recordedSelects[0]?.whereSql).toBeUndefined();
 	});
 });

@@ -3,6 +3,7 @@ import { eq, gte, lt } from 'drizzle-orm';
 import { berlinDayRangeUtc } from '$lib/server/datetime/berlinDayRange';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { mediaUploadCondition } from '$lib/server/db/mediaUploadFilter';
+import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 
 export function xmlEscape(str: string | null | undefined): string {
 	if (!str) return '';
@@ -20,6 +21,7 @@ export type ExportFilterParams = {
 	verified: string | null;
 	entryChannel: string | null;
 	mediaUpload: string | null;
+	balticSea: string | null;
 };
 
 type ValidationError = { field: 'fromDate' | 'toDate'; message: string };
@@ -31,6 +33,7 @@ export function parseExportFilterParams(url: URL): ParseExportFilterResult {
 	const verified = url.searchParams.get('verified');
 	const entryChannel = url.searchParams.get('entryChannel');
 	const mediaUpload = url.searchParams.get('mediaUpload');
+	const balticSea = url.searchParams.get('balticSea');
 
 	if (fromDate && !isValidDateParam(fromDate)) {
 		return {
@@ -43,11 +46,11 @@ export function parseExportFilterParams(url: URL): ParseExportFilterResult {
 		};
 	}
 
-	return { params: { fromDate, toDate, verified, entryChannel, mediaUpload } };
+	return { params: { fromDate, toDate, verified, entryChannel, mediaUpload, balticSea } };
 }
 
 export function buildExportConditions(params: ExportFilterParams) {
-	const { fromDate, toDate, verified, entryChannel, mediaUpload } = params;
+	const { fromDate, toDate, verified, entryChannel, mediaUpload, balticSea } = params;
 	const conditions = [];
 
 	if (isValidDateParam(fromDate) && isValidDateParam(toDate)) {
@@ -74,6 +77,11 @@ export function buildExportConditions(params: ExportFilterParams) {
 	const mediaCondition = mediaUploadCondition(mediaUpload);
 	if (mediaCondition) {
 		conditions.push(mediaCondition);
+	}
+	// Dieselbe Ostsee-Status-Bedingung wie die Admin-Liste, siehe balticSeaFilter.ts.
+	const balticSeaFilterCondition = balticSeaCondition(balticSea);
+	if (balticSeaFilterCondition) {
+		conditions.push(balticSeaFilterCondition);
 	}
 
 	return conditions;

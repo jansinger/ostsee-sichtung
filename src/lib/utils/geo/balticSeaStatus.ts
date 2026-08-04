@@ -121,3 +121,24 @@ export const BALTIC_SEA_STATUS_PRESENTATION: Record<BalticSeaStatus, BalticSeaSt
 			title: 'Keine verwertbaren Koordinaten — eine Ostsee-Zuordnung ist nicht möglich.'
 		}
 	};
+
+/**
+ * Type Guard für einen rohen Query-/Filter-Wert. Leitet die gültigen Werte aus
+ * den Schlüsseln von `BALTIC_SEA_STATUS_PRESENTATION` ab, statt sie in einer
+ * zweiten Liste zu wiederholen — der Record ist bereits als
+ * `Record<BalticSeaStatus, …>` exhaustiv typisiert, ein fünfter Status würde
+ * hier also einen Typfehler auslösen, nicht erst zur Laufzeit stillschweigend
+ * durchrutschen.
+ *
+ * Nimmt bewusst `unknown` — Aufrufer wie `ExportModal.svelte` lesen den Wert aus
+ * einem gemischt typisierten Filter-Objekt (`Record<string, string | boolean>`),
+ * ein engerer Parametertyp würde dort einen weiteren Cast erzwingen.
+ */
+export function isBalticSeaStatus(value: unknown): value is BalticSeaStatus {
+	if (typeof value !== 'string') {
+		return false;
+	}
+	return (Object.keys(BALTIC_SEA_STATUS_PRESENTATION) as BalticSeaStatus[]).includes(
+		value as BalticSeaStatus
+	);
+}
