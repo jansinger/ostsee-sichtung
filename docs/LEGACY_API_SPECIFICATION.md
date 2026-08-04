@@ -72,6 +72,49 @@ This is a dated status, not a standing guarantee — re-check whether further cl
 | `totfund_groesse`           | Size of animal in cm                                                                                         | Integer                             | No                                 |
 | `totfund_telefon`           | DMM already informed by phone                                                                                | Boolean, 0 = false, 1 = true        | No                                 |
 
+### Umfang der serverseitigen Validierung
+
+**Die Wertebereiche und Längenangaben der Tabelle oben beschreiben den Vertrag —
+nicht das, was der Endpunkt erzwingt.** `POST /rest_sichtungen` validiert gegen
+`legacyApiSchema` (`src/lib/legacy-api/yup-validation.ts`), und dieses Schema
+prüft **keinen einzigen Wertebereich der Aufzählungsfelder**. Bis auf
+`gps_breite` und `gps_laenge` steht dort jedes optionale Feld als
+`yup.number().nullable().optional()` bzw. `yup.string().nullable().optional()`.
+
+Tatsächlich geprüft wird nur:
+
+| Prüfung                    | Felder                                                               |
+| -------------------------- | -------------------------------------------------------------------- |
+| Pflichtfeld vorhanden      | `sichtungsdatum`, `vorname`, `name`, `email`, `anzahl_gesamt`        |
+| Format                     | `sichtungsdatum` (`YYYY-MM-DD HH:MI`), `email`                       |
+| Maximallänge 64            | `vorname`, `name`, `email`                                           |
+| Zahl, ganzzahlig, ≥ 0      | `anzahl_gesamt`                                                      |
+| Wertebereich               | ausschließlich `gps_breite` (−90 – 90) und `gps_laenge` (−180 – 180) |
+| Datentyp der Zahlen-Felder | `"abc"` wird abgelehnt; Ziffern-Strings wie `"6"` werden angenommen  |
+
+Alles Übrige passiert die Validierung: `bootsantrieb: 99`, `vonwo: 42`,
+`seegang: 99`, `namensnennung: 5`, ein `schiffsname` mit 300 Zeichen und
+unbekannte Felder ebenso wie ein `bootsantrieb: -3` oder `2.7` (am 2026-08-04
+direkt gegen `legacyApiSchema` geprüft). Auch `String (64)` und `String (255)`
+sind außerhalb von `vorname`/`name`/`email` nirgends erzwungen.
+
+**Ausnahme bei der Typprüfung: `windstaerke`.** Die Tabelle oben nennt das Feld
+mit `0-12`, im Schema steht es aber als `yup.string()` — ein `windstaerke: "abc"`
+wird deshalb **nicht** abgelehnt, anders als dasselbe `"abc"` in `seegang` oder
+`sichtweite`. Aus dem Feld wird erst in `parseWindForce`
+(`src/lib/legacy-api/field-mapping.ts`) eine Zahl.
+
+**Das ist ein Befund, keine Aufgabe.** Die fehlende Bereichsprüfung ist der
+Bestandszustand dieses Endpunkts. Sie nachzuschärfen wäre eine Vertragsänderung
+gegenüber dem angebundenen iOS-Client (`OstSeeTiere/8`) und darf nicht nebenbei
+passieren.
+
+**Für die Abweichungs-Abschnitte weiter unten heißt das:** Wenn dort steht, ein
+neuer Aufzählungswert werde „zusätzlich akzeptiert", ist damit seine **Bedeutung**
+gemeint, nicht eine gelockerte Validierung. Der Schreibpfad nahm denselben Wert
+schon vorher an — nur ohne definierte Bedeutung, und `antworten.json` lieferte
+keinen Text dazu.
+
 ### Response
 
 #### Successful Creation
@@ -381,6 +424,8 @@ JSON Array with JSON Objects:
 
 6. **Backward Compatibility**: Any changes that break existing mobile app functionality are strictly forbidden.
 
+7. **Value Ranges**: The ranges in the request body table are the contract, not an enforced check — `POST /rest_sichtungen` validates no enumeration range at all. See [Umfang der serverseitigen Validierung](#umfang-der-serverseitigen-validierung) before assuming the endpoint rejects an out-of-range value.
+
 ## Abweichung von der Ursprungs-PDF: `verteilung = 4` und `verhalten = 4`
 
 Beide Felder kannten ursprünglich nur **0–3**. Seit dem 2026-07-29 gibt es
@@ -408,8 +453,10 @@ hervorginge, welche nie beantwortet wurden. `4` verhindert nur, dass **neue**
 Zeilen dieselbe Doppeldeutigkeit erben.
 
 **Auswirkung auf Clients:** `antworten.json` liefert je einen zusätzlichen
-Schlüssel, `POST` akzeptiert `4` zusätzlich, bestehende Werte bleiben
-unverändert. Im Formular ist `4` nicht auswählbar.
+Schlüssel. `POST` bleibt unverändert: Beide Felder werden ohne Bereichsprüfung
+validiert ([Umfang der serverseitigen Validierung](#umfang-der-serverseitigen-validierung)),
+eine `4` kam also schon vorher durch, neu ist nur ihre Bedeutung. Bestehende
+Werte bleiben unverändert. Im Formular ist `4` nicht auswählbar.
 
 ## Abweichung von der Ursprungs-PDF: `vonwo = 5`
 
@@ -434,9 +481,12 @@ der hervorginge, wo jemand stand. `5` verhindert deshalb nur, dass **neue**
 Zeilen dieselbe Doppeldeutigkeit erben.
 
 **Auswirkung auf Clients:** analog zu `bootsantrieb = 5` (siehe unten) —
-`antworten.json` liefert einen zusätzlichen Schlüssel, `POST` akzeptiert den
-Wert zusätzlich, bestehende Werte bleiben unverändert. `5` ist im Formular nicht
-auswählbar und entsteht ausschließlich serverseitig.
+`antworten.json` liefert einen zusätzlichen Schlüssel. `POST` bleibt unverändert:
+`vonwo` wird ohne Bereichsprüfung validiert
+([Umfang der serverseitigen Validierung](#umfang-der-serverseitigen-validierung)),
+eine `5` kam also schon vorher durch, neu ist nur ihre Bedeutung. Bestehende
+Werte bleiben unverändert. `5` ist im Formular nicht auswählbar und entsteht
+ausschließlich serverseitig.
 
 ## Abweichung von der Ursprungs-PDF: `bootsantrieb = 5`
 
@@ -456,8 +506,12 @@ die häufigste Kategorie, vor Motor und Segel.
   `"5": "Kein Boot"`. Clients, die die Liste dynamisch rendern, brauchen keine
   Änderung; Clients mit fest verdrahteter 0–4-Tabelle zeigen für `5` keinen
   Text an und müssen den Wert nachtragen.
-- `POST /rest_sichtungen` akzeptiert `5` zusätzlich zu 0–4. Bestehende Werte
-  behalten ihre Bedeutung unverändert — es wurde nichts umnummeriert.
+- `POST /rest_sichtungen` bleibt unverändert: Der Schreibpfad prüft
+  `bootsantrieb` gegen keinen Wertebereich (`yup.number().nullable().optional()`,
+  siehe [Umfang der serverseitigen Validierung](#umfang-der-serverseitigen-validierung)).
+  Eine `5` kam also schon vorher durch — neu ist allein ihre Bedeutung.
+  Bestehende Werte behalten ihre Bedeutung unverändert; es wurde nichts
+  umnummeriert.
 - `GET /sichtungen/showreports.json` kann `5` in Bestandsdaten zurückgeben.
 
 **Nicht auswählbar im Formular:** `5` entsteht ausschließlich serverseitig
@@ -497,9 +551,10 @@ eine Aussage unterzuschieben, die er nie gemacht hat.
   Änderung; Clients mit fest verdrahteter Tabelle zeigen für `6` keinen Text an
   und müssen den Wert nachtragen.
 - `POST /rest_sichtungen` bleibt unverändert: Der Schreibpfad validiert
-  `bootsantrieb` ohne Bereichsprüfung (`yup.number().nullable().optional()` in
-  `src/lib/legacy-api/yup-validation.ts`), nimmt `6` also ohne Anpassung an.
-  Bestehende Werte behalten ihre Bedeutung — es wurde nichts umnummeriert.
+  `bootsantrieb` ohne Bereichsprüfung
+  ([Umfang der serverseitigen Validierung](#umfang-der-serverseitigen-validierung))
+  und nimmt `6` deshalb ohne Anpassung an. Bestehende Werte behalten ihre
+  Bedeutung — es wurde nichts umnummeriert.
 - `GET /sichtungen/showreports.json` **liefert `bootsantrieb` gar nicht aus**.
   Eine `6` in der Datenbank erreicht die angebundene iOS-App (`OstSeeTiere/8`)
   also nie; auch `isLegacyFlagSet` wertet den Wert nicht aus. **Kein laufender
