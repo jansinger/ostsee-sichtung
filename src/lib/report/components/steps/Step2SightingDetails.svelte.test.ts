@@ -1,9 +1,6 @@
-import { render } from 'vitest-browser-svelte';
 import { describe, expect, it } from 'vitest';
-import { createForm } from '$lib/form/createForm';
-import { key as formContextKey } from '$lib/report/formContext';
-import { initialFormState } from '$lib/report/formConfig';
-import type { FormContext, SightingFormData } from '$lib/types';
+import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
+import type { SightingFormData } from '$lib/types';
 import Step2SightingDetails from './Step2SightingDetails.svelte';
 
 /**
@@ -18,15 +15,7 @@ import Step2SightingDetails from './Step2SightingDetails.svelte';
  *    Beobachtung.** Die Entscheidung dazu steht in `$lib/report/wording`.
  */
 function renderStep2(overrides: Partial<SightingFormData> = {}): void {
-	const context = {
-		...createForm<SightingFormData>({
-			initialValues: { ...initialFormState, ...overrides } as SightingFormData,
-			onSubmit: () => undefined
-		}),
-		mediaStore: { mediaFiles: [] }
-	} as unknown as FormContext;
-
-	render(Step2SightingDetails, { context: new Map([[formContextKey, context]]) });
+	renderWithFormContext(Step2SightingDetails, { overrides });
 }
 
 /**

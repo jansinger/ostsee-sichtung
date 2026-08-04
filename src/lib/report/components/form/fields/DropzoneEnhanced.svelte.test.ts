@@ -1,4 +1,3 @@
-import { render } from 'vitest-browser-svelte';
 import { describe, expect, it, vi } from 'vitest';
 import { get } from 'svelte/store';
 
@@ -21,10 +20,8 @@ vi.mock('$lib/utils/client/fileAnalysis', () => ({
 		exifData: undefined
 	})
 }));
-import { createForm } from '$lib/form/createForm';
-import { key as formContextKey } from '$lib/report/formContext';
-import { initialFormState } from '$lib/report/formConfig';
-import type { FormContext, SightingFormData, UploadedFileInfo, ValidationPreset } from '$lib/types';
+import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
+import type { FormContext, UploadedFileInfo, ValidationPreset } from '$lib/types';
 import { MediaFile, type MediaStore } from '$lib/utils/media/MediaFile.svelte';
 import { markPositionFile } from './positionFileOrigin';
 import DropzoneEnhanced from './DropzoneEnhanced.svelte';
@@ -82,17 +79,11 @@ function renderDropzone(
 	seededMediaFiles: MediaFile[] = []
 ): { mediaStore: MediaStore; form: FormContext['form'] } {
 	const mediaStore: MediaStore = { mediaFiles: seededMediaFiles };
-	const context = {
-		...createForm<SightingFormData>({
-			initialValues: { ...initialFormState, uploadedFiles: files } as SightingFormData,
-			onSubmit: () => undefined
-		}),
-		mediaStore
-	} as unknown as FormContext;
 
-	render(DropzoneEnhanced, {
+	const context = renderWithFormContext(DropzoneEnhanced, {
+		overrides: { uploadedFiles: files },
 		props: { referenceId: 'ref-1', config: CONFIG, ...props },
-		context: new Map([[formContextKey, context]])
+		mediaStore
 	});
 
 	return { mediaStore, form: context.form };

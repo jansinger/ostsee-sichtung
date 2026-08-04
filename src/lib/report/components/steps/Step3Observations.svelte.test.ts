@@ -1,9 +1,5 @@
-import { render } from 'vitest-browser-svelte';
 import { describe, expect, it } from 'vitest';
-import { createForm } from '$lib/form/createForm';
-import { key as formContextKey } from '$lib/report/formContext';
-import { initialFormState } from '$lib/report/formConfig';
-import type { FormContext, SightingFormData } from '$lib/types';
+import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
 import Step3Observations from './Step3Observations.svelte';
 
 /**
@@ -17,15 +13,7 @@ import Step3Observations from './Step3Observations.svelte';
  * „Schritt überspringen"-Knopf.
  */
 function renderStep3(): void {
-	const context = {
-		...createForm<SightingFormData>({
-			initialValues: { ...initialFormState } as SightingFormData,
-			onSubmit: () => undefined
-		}),
-		mediaStore: { mediaFiles: [] }
-	} as unknown as FormContext;
-
-	render(Step3Observations, { context: new Map([[formContextKey, context]]) });
+	renderWithFormContext(Step3Observations);
 }
 
 describe('Step3Observations — Medien sind auf Schritt 2 gewandert', () => {

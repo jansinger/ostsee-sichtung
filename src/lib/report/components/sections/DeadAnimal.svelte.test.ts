@@ -1,9 +1,5 @@
-import { render } from 'vitest-browser-svelte';
 import { describe, expect, it } from 'vitest';
-import { createForm } from '$lib/form/createForm';
-import { key as formContextKey } from '$lib/report/formContext';
-import { initialFormState } from '$lib/report/formConfig';
-import type { FormContext, SightingFormData } from '$lib/types';
+import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
 import DeadAnimal from './DeadAnimal.svelte';
 
 /**
@@ -19,17 +15,7 @@ import DeadAnimal from './DeadAnimal.svelte';
  * setzt `adminMode={true}`.
  */
 function renderDeadAnimal(props: { adminMode?: boolean } = {}): void {
-	const context = {
-		...createForm<SightingFormData>({
-			initialValues: { ...initialFormState, isDead: true } as SightingFormData,
-			onSubmit: () => undefined
-		}),
-		mediaStore: { mediaFiles: [] }
-	} as unknown as FormContext;
-
-	// Sobald `context` mitgegeben wird, verlangt die Render-API die Props unter
-	// dem `props`-Schlüssel — sonst gelten sie als unbekannte Svelte-Optionen.
-	render(DeadAnimal, { props, context: new Map([[formContextKey, context]]) });
+	renderWithFormContext(DeadAnimal, { overrides: { isDead: true }, props });
 }
 
 function field(name: string): HTMLElement | null {

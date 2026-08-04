@@ -64,6 +64,32 @@ describe('Button', () => {
 **Hinweis:** Projekt nutzt `vitest-browser-svelte` v2 + `page` API, NICHT `@testing-library/svelte`.
 In v2 werden Props direkt als zweites Argument übergeben — **kein `{ props: {...} }` Wrapper** (v1-Syntax).
 
+**Ausnahme: sobald ein `context` mitgegeben wird.** Dann ist das zweite Argument das
+Optionen-Objekt, und die Props müssen wieder unter den `props`-Schlüssel — sonst gelten
+sie als unbekannte Svelte-Optionen und kommen nie an der Komponente an.
+
+### Formular-Komponenten: `renderWithFormContext`
+
+Jede Komponente unterhalb von `Form.svelte` braucht den Form-Context (`FormField` wirft
+ohne ihn beim ersten Feld). Den Aufbau nicht abschreiben, sondern
+`src/lib/report/components/testing/renderWithFormContext.testutil.ts` nutzen — er kapselt
+auch die `props`-Ausnahme von oben:
+
+```typescript
+import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
+
+// Startwerte über `overrides`, Props typgeprüft über `props`
+renderWithFormContext(DeadAnimal, { overrides: { isDead: true }, props: { adminMode: true } });
+
+// Rückgabe ist der gebaute Context — für Tests, die danach `form`/`mediaStore` prüfen
+const context = renderWithFormContext(DropzoneEnhanced, { props, mediaStore });
+```
+
+Der Helper heißt `.testutil.ts`, nicht `.ts`: `vitest.config.ts` nimmt `src/lib/**/*.ts`
+in die Coverage auf und schließt nur `**/*.testutil.ts` aus. Ohne das Suffix zählt ein
+Test-Helfer als ungedeckter Produktionscode (Präzedenz:
+`src/lib/server/datetime/withTimeZone.testutil.ts`).
+
 ### Mocking
 
 ```typescript
