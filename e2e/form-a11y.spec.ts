@@ -336,12 +336,11 @@ test.describe('Accessibility — Alert-Kontrast', () => {
 		await formPage.clickNext();
 		await expectCurrentStep(page, /Angaben zum Tier/i);
 
+		// Der Test bleibt auf Schritt 2. Die Medien-Dropzone lag bis zum
+		// 2026-08-04 auf Schritt 3; seit dem Umzug (Wunsch des Museums) gibt es
+		// dort keine mehr, und `ModernReportForm` rendert immer nur den aktuellen
+		// Schritt — ein weiteres `clickNext()` liefe hier in einen Timeout.
 		await fillStep2(formPage);
-		await expect(page.getByRole('button', { name: /Nächster Schritt/i })).toBeEnabled({
-			timeout: 3000
-		});
-		await formPage.clickNext();
-		await expectCurrentStep(page, /Weitere Informationen/i);
 
 		// Grenze aus der Laufzeit-Konfiguration lesen statt eine feste Byte-Zahl zu
 		// raten — dieselbe Quelle, die `videoUpload.spec.ts` schon nutzt.

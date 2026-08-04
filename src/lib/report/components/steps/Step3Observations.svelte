@@ -7,12 +7,10 @@
 	import Behavior from '$lib/report/components/sections/Behavior.svelte';
 	import BoatInfo from '$lib/report/components/sections/BoatInfo.svelte';
 	import Environment from '$lib/report/components/sections/Environment.svelte';
-	import Media from '$lib/report/components/sections/Media.svelte';
 	import { getFormContext } from '$lib/report/formContext';
 	import { scrollToElement } from '$lib/utils/fieldNavigation';
 
 	import Icon from '$lib/components/Icon.svelte';
-	import OptionalSightingDetails from '$lib/report/components/sections/OptionalSightingDetails.svelte';
 
 	const logger = createLogger('report:Step3Observations');
 	const formContext = getFormContext();
@@ -52,10 +50,13 @@
 			</div>
 		</div>
 		<h2 class="text-base-content text-xl font-bold md:text-2xl">Weitere Informationen</h2>
+		<!-- „Fotos/Videos" stand hier, solange der Upload auf diesem Schritt lag.
+		     Seit dem 2026-08-04 steht er auf Schritt 2 — der Halbsatz verspräche
+		     sonst etwas, das einen Schritt weiter vorne liegt, und das ausgerechnet
+		     direkt über dem „Schritt überspringen"-Knopf. -->
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
-			Diese Details sind <strong>optional, aber extrem wertvoll</strong> für die Forschung!
-			Verhaltensinformationen, Umweltbedingungen und <strong>Fotos/Videos</strong> helfen bei der Artbestimmung
-			und dem Verständnis der Meeressäuger.
+			Diese Details sind <strong>optional, aber extrem wertvoll</strong> für die Forschung! Verhaltensinformationen
+			und Umweltbedingungen helfen bei der Artbestimmung und dem Verständnis der Meeressäuger.
 		</p>
 
 		<!-- Skip Button prominent oben platziert -->
@@ -75,10 +76,12 @@
 		<div class="divider text-xs opacity-70">oder Details hinzufügen</div>
 	</div>
 
-	<Media></Media>
+	<!-- `Media` steht seit dem 2026-08-04 auf Schritt 2 (`Step2SightingDetails`).
 
-	<OptionalSightingDetails></OptionalSightingDetails>
-
+	     `OptionalSightingDetails` ist hier ersatzlos entfallen: Beide Felder der
+	     Sektion sind admin-only, sie hätte im Meldeformular nur noch eine leere
+	     Karte mit Überschrift beigetragen. Die Komponente selbst bleibt — die
+	     Admin-Maske bindet sie ein und braucht beide Felder für den Bestand. -->
 	<Behavior></Behavior>
 
 	<Environment></Environment>

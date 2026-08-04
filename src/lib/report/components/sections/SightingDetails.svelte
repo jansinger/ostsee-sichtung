@@ -5,6 +5,7 @@
 	import { slide } from 'svelte/transition';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import SectionCard from './SectionCard.svelte';
+	import { detailsSectionTitle } from '$lib/report/wording';
 	import {
 		NOT_YET_TRACKED,
 		isBoatSightingFrom,
@@ -15,6 +16,11 @@
 	const { adminMode = false }: { adminMode?: boolean } = $props();
 
 	const { form, updateField } = getFormContext();
+
+	// „Statt Sichtungsdetails ‚Funddetails' einfügen" (Wunsch des Museums für den
+	// Totfund). Gilt auch in der Admin-Maske — dort kommt `isDead` aus dem
+	// geladenen Datensatz, und ein Totfund heißt auch dort ein Fund.
+	const cardTitle = $derived(detailsSectionTitle($form.isDead));
 
 	/** Sichtung erfolgte von einem Boot mit Antrieb (Segelschiff/Motorboot) aus. */
 	const showsBoatDrive = $derived(isBoatSightingFrom($form.sightingFrom));
@@ -47,7 +53,7 @@
 </script>
 
 <!-- Sighting Details Section -->
-<SectionCard title="Sichtungsdetails" icon="lucide:activity">
+<SectionCard title={cardTitle} icon="lucide:activity">
 	<div class="mt-2 grid grid-cols-1 gap-4 md:grid-cols-1">
 		<FormField name="sightingFrom" />
 		{#if String($form.sightingFrom) === String(SightingFromEnum.OTHER)}

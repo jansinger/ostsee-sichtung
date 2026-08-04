@@ -53,7 +53,9 @@ const fixture = (name: string): string =>
  * (`UnifiedDropzone.svelte`) — `setInputFiles` braucht keine Sichtbarkeit, ein
  * `click()` auf die Dropzone würde dagegen den nativen Dateidialog öffnen.
  * Eingegrenzt auf `photo-position-card`, damit der Selektor nicht versehentlich
- * die Medien-Dropzone aus Schritt 3 trifft.
+ * die Medien-Dropzone trifft (die liegt seit dem 2026-08-04 auf Schritt 2, davor
+ * auf Schritt 3 — für diesen Selektor ändert das nichts, beide Schritte sind
+ * nicht Schritt 1).
  *
  * Seit PR 3 liegt die Dropzone in einer zugeklappten Disclosure. Das stört
  * `setInputFiles` nicht — der Input ist im DOM, nur nicht sichtbar, und

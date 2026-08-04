@@ -69,6 +69,19 @@ export const formStepsConfig: FormStep[] = [
 		title: 'Angaben zum Tier',
 		description: 'Was haben Sie genau beobachtet?',
 		fields: [
+			// Die Medien-Felder stehen seit dem 2026-08-04 hier und VOR den
+			// Tierangaben (Wunsch des Museums: „Foto hochladen als erste Abfrage noch
+			// vor Tierinformation"). Der Grund wiegt schwerer als die Reihenfolge: Auf
+			// Schritt 3 stand der Upload unter dem prominenten „Schritt
+			// überspringen"-Knopf und blieb damit für jeden unsichtbar, der ihn
+			// benutzte — obwohl Aufnahmen die wertvollste Einzelangabe der Meldung
+			// sind. Schritt 2 ist Pflichtschritt.
+			//
+			// Die Reihenfolge in dieser Liste ist nicht kosmetisch: `findStepForErrors`
+			// läuft sie ab, um zum ersten fehlerhaften Feld zu springen.
+			'mediaFile',
+			'mediaUpload',
+			'mediaConsent',
 			'species',
 			'totalCount',
 			'juvenileCount',
@@ -108,10 +121,9 @@ export const formStepsConfig: FormStep[] = [
 			'windForce',
 			'shipName',
 			'homePort',
-			'boatType',
-			'mediaFile',
-			'mediaUpload',
-			'mediaConsent'
+			'boatType'
+			// `mediaFile`/`mediaUpload`/`mediaConsent` stehen seit dem 2026-08-04 im
+			// Schritt „sighting-details" — Begründung dort.
 		],
 		isOptional: true
 	},

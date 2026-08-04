@@ -1,7 +1,14 @@
 <script lang="ts">
 	import AnimalInfo from '$lib/report/components/sections/AnimalInfo.svelte';
+	import Media from '$lib/report/components/sections/Media.svelte';
 	import SightingDetails from '$lib/report/components/sections/SightingDetails.svelte';
 	import Icon from '$lib/components/Icon.svelte';
+	import { getFormContext } from '$lib/report/formContext';
+	import { observationQuestion } from '$lib/report/wording';
+
+	const { form } = getFormContext();
+
+	const question = $derived(observationQuestion($form.isDead));
 </script>
 
 <div class="space-y-6 md:space-y-8">
@@ -16,8 +23,13 @@
 			</div>
 		</div>
 		<h2 class="text-base-content text-xl font-bold md:text-2xl">Angaben zum Tier</h2>
+		<!-- Beim Totfund fragt der Kopf nach einem Fund statt nach einer Beobachtung
+		     (Wunsch des Museums). Der Rest des Satzes gilt für beide Fälle — er
+		     nennt Tierart und Anzahl, nicht den Vorgang. Die Zuordnung steht in
+		     `$lib/report/wording`, damit sie beim Bau der getrennten Formulare
+		     nicht an drei Stellen auseinanderläuft. -->
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
-			<strong>Was haben Sie beobachtet?</strong> Bitte geben Sie
+			<strong>{question}</strong> Bitte geben Sie
 			<strong>Tierart und Anzahl</strong>
 			an. Bei Unsicherheit wählen Sie „Unbekannte Walart" bzw. „Unbekannte Robbenart" — auch Schätzungen
 			sind wertvoll und unterstützen die Populationsforschung.
@@ -25,6 +37,12 @@
 	</div>
 
 	<!-- Step Content -->
+	<!-- Der Medien-Upload steht VOR den Tierangaben (Wunsch des Museums): Wer
+	     unsicher ist, welche Art er gesehen hat, soll das Bild hochladen können,
+	     statt zu raten. Er lag bis zum 2026-08-04 auf Schritt 3 unter dem
+	     „Schritt überspringen"-Knopf und war damit für jeden unsichtbar, der ihn
+	     benutzte. -->
+	<Media />
 	<AnimalInfo />
 	<SightingDetails />
 </div>

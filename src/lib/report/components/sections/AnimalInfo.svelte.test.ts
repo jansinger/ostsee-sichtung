@@ -88,6 +88,35 @@ describe('sections/AnimalInfo — Totfund prominent platziert (PR 2, Teil a)', (
 });
 
 /**
+ * „Welche Tierart haben Sie gefunden?" — Wunsch des Museums für den Totfund.
+ * Das Artfeld liegt in derselben Karte wie der Totfund-Schalter und kann ihm
+ * deshalb folgen; die Zuordnung selbst steht in `$lib/report/wording`.
+ *
+ * Geprüft wird das gerenderte `<label>`, nicht das Schema-`.label()`: Der
+ * Wortlaut kommt hier über den `label`-Override an `FormField` (derselbe Weg,
+ * den PR 4 für den Bootsantrieb gebaut hat), das Schema bleibt unverändert.
+ */
+describe('sections/AnimalInfo — Artfrage folgt dem Totfund-Schalter', () => {
+	function speciesLabel(): string {
+		const field = document.querySelector<HTMLElement>('[data-field="species"]');
+		if (!field) throw new Error('Feld "species" nicht im DOM');
+		return field.querySelector('label')?.textContent ?? '';
+	}
+
+	it('fragt bei einer Sichtung, was gesehen wurde', () => {
+		renderAnimalInfo({ isDead: false });
+
+		expect(speciesLabel()).toContain('Welche Tierart haben Sie gesehen?');
+	});
+
+	it('fragt beim Totfund, was gefunden wurde', () => {
+		renderAnimalInfo({ isDead: true, deadCondition: 1 });
+
+		expect(speciesLabel()).toContain('Welche Tierart haben Sie gefunden?');
+	});
+});
+
+/**
  * `adminMode` wird von `AnimalInfo` nur durchgereicht (PR 2, Teil b) — die
  * Fach-Entscheidung, ob `deadSex` erscheint, trifft `DeadAnimal` selbst
  * (siehe DeadAnimal.svelte.test.ts). Hier wird nur die Weitergabe geprüft,
