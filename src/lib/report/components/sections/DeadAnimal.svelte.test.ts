@@ -36,6 +36,11 @@ function field(name: string): HTMLElement | null {
 	return document.querySelector<HTMLElement>(`[data-testid="field-${name}"]`);
 }
 
+/** Das Pflicht-Sternchen der Feld-Pipeline, auf ein Feld eingegrenzt. */
+function requiredMark(name: string): HTMLElement | null {
+	return document.querySelector<HTMLElement>(`[data-field="${name}"] [aria-label="Pflichtfeld"]`);
+}
+
 describe('sections/DeadAnimal — Geschlecht nur im Admin-Modus', () => {
 	it('zeigt das Geschlecht-Feld NICHT im Meldeformular (ohne adminMode)', () => {
 		renderDeadAnimal();
@@ -73,4 +78,42 @@ describe('sections/DeadAnimal — Geschlecht nur im Admin-Modus', () => {
 			expect(field(name)).not.toBeNull();
 		}
 	);
+});
+
+/**
+ * `deadCondition` ist laut Schema Pflicht, sobald `isDead` gesetzt ist
+ * (`.when('isDead', { is: true, then: … required(…) })`). `FieldRenderer` sieht
+ * das nicht: Es liest `required` aus `sightingSchema.describe()`, und dort ist
+ * ein `when()` nicht abgebildet. Ohne den `required`-Override an `FormField`
+ * steht das Feld ohne Sternchen und ohne `aria-required` da — bis der Melder
+ * „Weiter" drückt und „Bitte geben Sie den Zustand des toten Tieres an."
+ * bekommt.
+ *
+ * Der Override ist hier unbedingt `true`: Diese Section rendert ausschließlich
+ * innerhalb von `{#if $form.isDead}` (`AnimalInfo.svelte`), also genau unter der
+ * Bedingung, die das Schema prüft. Und sie gilt in **beiden** Masken —
+ * `adminSightingSchema` lockert `deadCondition` nicht.
+ */
+describe('sections/DeadAnimal — Zustand als konditionales Pflichtfeld', () => {
+	it.each([
+		['Meldeformular', undefined],
+		['Admin-Maske', true]
+	])('markiert den Zustand im %s als Pflichtfeld', (_label, adminMode) => {
+		renderDeadAnimal(adminMode === undefined ? {} : { adminMode });
+
+		expect(requiredMark('deadCondition')).not.toBeNull();
+		expect(field('deadCondition')?.getAttribute('aria-required')).toBe('true');
+	});
+
+	/**
+	 * Gegenprobe: Die beiden Nachbarfelder sind unter denselben Bedingungen
+	 * ausdrücklich optional (`deadSize` hat ein `when()`, das in beiden Zweigen
+	 * `notRequired()` setzt; `deadSex` hat das Museum am 2026-08-04 samt Pflicht
+	 * abbestellt). Ein pauschal auf die Section gesetzter Override fiele hier auf.
+	 */
+	it.each(['deadSize', 'deadSex'])('markiert %s weiterhin NICHT als Pflichtfeld', (name) => {
+		renderDeadAnimal({ adminMode: true });
+
+		expect(requiredMark(name)).toBeNull();
+	});
 });

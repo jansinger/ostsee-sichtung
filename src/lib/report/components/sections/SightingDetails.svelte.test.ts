@@ -1,0 +1,99 @@
+import { render } from 'vitest-browser-svelte';
+import { describe, expect, it } from 'vitest';
+import { createForm } from '$lib/form/createForm';
+import { key as formContextKey } from '$lib/report/formContext';
+import { initialFormState } from '$lib/report/formConfig';
+import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
+import type { FormContext, SightingFormData } from '$lib/types';
+import SightingDetails from './SightingDetails.svelte';
+
+/**
+ * Konditionale Pflichtfelder: `sightingFromText` und `boatDrive` sind im
+ * Yup-Schema nur unter einer Bedingung Pflicht (`when('sightingFrom')`).
+ * `FieldRenderer` leitet die Markierung aber aus `describe()` ab, und dort ist
+ * ein `when()` nicht sichtbar — ohne den `required`-Override an `FormField`
+ * zeigt das Feld weder Sternchen noch `aria-required`, obwohl „Weiter" daran
+ * scheitert (design-system.md, „Formularfeld-Muster").
+ *
+ * **Die beiden Felder liegen dabei unterschiedlich:**
+ *
+ * - `boatDrive` ist in **beiden** Masken Pflicht, sobald von Segelschiff oder
+ *   Motorboot gemeldet wird — `adminSightingSchema` lockert es nicht. Der
+ *   Meldeformular-Zweig hat den Override seit `479ef33c`; der Admin-Zweig
+ *   rendert unter derselben Bedingung und braucht ihn genauso.
+ * - `sightingFromText` ist **nur im Meldeformular** Pflicht.
+ *   `adminSightingSchema` baut das Feld ausdrücklich als `notRequired()` neu
+ *   auf, weil 1.120 Bestandszeilen `vonwo = 0` ohne Freitext tragen. Ein
+ *   unbedingtes `required={true}` wäre in der Admin-Maske also eine Lüge über
+ *   die Validierung — der Override hängt hier an `adminMode`.
+ */
+function renderSightingDetails(
+	overrides: Partial<SightingFormData> = {},
+	props: { adminMode?: boolean } = {}
+): void {
+	const context = {
+		...createForm<SightingFormData>({
+			initialValues: { ...initialFormState, ...overrides } as SightingFormData,
+			onSubmit: () => undefined
+		}),
+		mediaStore: { mediaFiles: [] }
+	} as unknown as FormContext;
+
+	render(SightingDetails, { props, context: new Map([[formContextKey, context]]) });
+}
+
+/** Das Pflicht-Sternchen der Feld-Pipeline, auf ein Feld eingegrenzt. */
+function requiredMark(name: string): HTMLElement | null {
+	return document.querySelector<HTMLElement>(`[data-field="${name}"] [aria-label="Pflichtfeld"]`);
+}
+
+function field(name: string): HTMLElement | null {
+	return document.querySelector<HTMLElement>(`[data-testid="field-${name}"]`);
+}
+
+describe('sections/SightingDetails — sightingFromText als konditionales Pflichtfeld', () => {
+	it('markiert den Freitext im Meldeformular als Pflicht, wenn "Sonstiges" gewählt ist', () => {
+		renderSightingDetails({ sightingFrom: SightingFromEnum.OTHER });
+
+		expect(field('sightingFromText')).not.toBeNull();
+		expect(requiredMark('sightingFromText')).not.toBeNull();
+		expect(field('sightingFromText')?.getAttribute('aria-required')).toBe('true');
+	});
+
+	/**
+	 * Der Gegenprobe-Fall: In der Admin-Maske gilt `adminSightingSchema`, dort
+	 * ist der Freitext optional. Ein Sternchen würde hier eine Pflicht behaupten,
+	 * die beim Speichern niemand prüft.
+	 */
+	it('markiert den Freitext in der Admin-Maske NICHT als Pflicht', () => {
+		renderSightingDetails({ sightingFrom: SightingFromEnum.OTHER }, { adminMode: true });
+
+		expect(field('sightingFromText')).not.toBeNull();
+		expect(requiredMark('sightingFromText')).toBeNull();
+		expect(field('sightingFromText')?.getAttribute('aria-required')).toBeNull();
+	});
+});
+
+describe('sections/SightingDetails — boatDrive in der Admin-Maske', () => {
+	it.each([
+		['Segelschiff', SightingFromEnum.SAILBOAT],
+		['Motorboot', SightingFromEnum.MOTORBOAT]
+	])('markiert den Bootsantrieb bei "%s" als Pflicht', (_label, sightingFrom) => {
+		renderSightingDetails({ sightingFrom }, { adminMode: true });
+
+		expect(field('boatDrive')).not.toBeNull();
+		expect(requiredMark('boatDrive')).not.toBeNull();
+		expect(field('boatDrive')?.getAttribute('aria-required')).toBe('true');
+	});
+
+	/**
+	 * Bei Land/Fähre/Sonstiges verlangt das Schema keinen Antrieb — der ganze
+	 * Block rendert dann gar nicht, es kann also auch keine falsche Markierung
+	 * stehenbleiben.
+	 */
+	it('zeigt den Bootsantrieb bei "Land" gar nicht erst', () => {
+		renderSightingDetails({ sightingFrom: SightingFromEnum.LAND }, { adminMode: true });
+
+		expect(document.querySelector('[data-field="boatDrive"]')).toBeNull();
+	});
+});

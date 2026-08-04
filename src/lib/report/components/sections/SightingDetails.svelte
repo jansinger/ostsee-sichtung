@@ -51,8 +51,18 @@
 	<div class="mt-2 grid grid-cols-1 gap-4 md:grid-cols-1">
 		<FormField name="sightingFrom" />
 		{#if String($form.sightingFrom) === String(SightingFromEnum.OTHER)}
+			<!-- `required` als Override, weil die Pflicht im Schema in einem
+			     `when('sightingFrom')` steckt und `describe()` das nicht sieht —
+			     derselbe Fall wie `boatDrive` unten.
+
+			     Anders als dort ist der Wert hier NICHT unbedingt `true`, obwohl
+			     dieser Zweig nur bei „Sonstiges" rendert: `adminSightingSchema` baut
+			     das Feld ausdrücklich als `notRequired()` neu auf, weil 1.120
+			     Bestandszeilen `vonwo = 0` ohne Freitext tragen und sonst nicht mehr
+			     speicherbar wären. In der Admin-Maske würde ein Sternchen also eine
+			     Pflicht behaupten, die beim Speichern niemand prüft. -->
 			<div transition:slide>
-				<FormField name="sightingFromText" />
+				<FormField name="sightingFromText" required={!adminMode} />
 			</div>
 		{/if}
 	</div>
@@ -61,8 +71,16 @@
 			{#if adminMode}
 				<!-- Admin-Maske: volle Antriebsauswahl aus dem Schema. Die feinere
 				     Bedeutung von "Segel", "Treibend" und "Vor Anker" bleibt hier
-				     erhalten, damit Altbestand unverändert nachbearbeitet werden kann. -->
-				<FormField name="boatDrive" />
+				     erhalten, damit Altbestand unverändert nachbearbeitet werden kann.
+
+				     `required` wie im Meldeformular-Zweig unten und aus demselben
+				     Grund: Die Pflicht steckt in einem `when('sightingFrom')`, das
+				     `describe()` nicht sieht, und `adminSightingSchema` lockert sie
+				     nicht. Unbedingt `true`, weil dieser Zweig ausschließlich bei
+				     Segelschiff oder Motorboot rendert. Dass der Wert beim Bearbeiten
+				     meist vorbefüllt ist, ändert daran nichts — im Altbestand steht
+				     `bootsantrieb` auch bei Bootsmeldungen leer. -->
+				<FormField name="boatDrive" required={true} />
 				{#if String($form.boatDrive) === String(BoatDriveEnum.OTHER)}
 					<!-- Freitext nur in der Admin-Maske: `OTHER` ist im Meldeformular
 					     seit PR 4 nicht mehr wählbar, kann aber im Altbestand stehen. -->

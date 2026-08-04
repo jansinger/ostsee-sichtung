@@ -45,6 +45,11 @@ function field(name: string): HTMLInputElement | null {
 	return document.querySelector<HTMLInputElement>(`[data-testid="field-${name}"]`);
 }
 
+/** Das Pflicht-Sternchen der Feld-Pipeline, auf ein Feld eingegrenzt. */
+function requiredMark(name: string): HTMLElement | null {
+	return document.querySelector<HTMLElement>(`[data-field="${name}"] [aria-label="Pflichtfeld"]`);
+}
+
 describe('sections/Location — Admin-Maske', () => {
 	it('zeigt ohne GPS-Position weiterhin BEIDE Ortsfelder', () => {
 		renderAdminLocation({ hasPosition: false });
@@ -87,5 +92,44 @@ describe('sections/Location — Admin-Maske', () => {
 			expect(field(name)?.disabled, name).toBe(false);
 			expect(field(name)?.readOnly, name).toBe(false);
 		}
+	});
+});
+
+/**
+ * Die Ortsbeschreibung ist Pflicht, solange keine GPS-Position vorliegt
+ * (`waterway.when('hasPosition', { is: (v) => v !== true, … })`) — und zwar in
+ * beiden Masken, `adminSightingSchema` lockert das Feld nicht.
+ *
+ * `FieldRenderer` sieht ein `when()` in `describe()` nicht, deshalb braucht jede
+ * Aufrufstelle den `required`-Override. Im Meldeformular ist er gesetzt
+ * (`position/LocationDescription.svelte`); hier fehlte er.
+ *
+ * **Anders als bei `deadCondition` oder `boatDrive` muss er konditional sein.**
+ * Dort rendert der umgebende Zweig ohnehin nur unter der Schema-Bedingung, hier
+ * steht das Feld seit dem 2026-08-02 bewusst unabhängig von `hasPosition` im
+ * Markup (Kommentar in `Location.svelte`). Ein festes `required={true}` würde
+ * also auch dann ein Sternchen zeigen, wenn Koordinaten vorliegen und niemand
+ * eine Beschreibung verlangt.
+ */
+describe('sections/Location — Ortsbeschreibung als konditionales Pflichtfeld', () => {
+	it('markiert die Ortsbeschreibung ohne GPS-Position als Pflicht', () => {
+		renderAdminLocation({ hasPosition: false });
+
+		expect(requiredMark('waterway')).not.toBeNull();
+		expect(field('waterway')?.getAttribute('aria-required')).toBe('true');
+	});
+
+	it('markiert sie MIT GPS-Position nicht als Pflicht', () => {
+		renderAdminLocation({ hasPosition: true, latitude: 54.5, longitude: 13.5 });
+
+		expect(requiredMark('waterway')).toBeNull();
+		expect(field('waterway')?.getAttribute('aria-required')).toBeNull();
+	});
+
+	/** Das Seezeichen ist in keinem Fall Pflicht — es hat gar kein `when()`. */
+	it.each([true, false])('lässt das Seezeichen bei hasPosition=%s optional', (hasPosition) => {
+		renderAdminLocation({ hasPosition });
+
+		expect(requiredMark('seaMark')).toBeNull();
 	});
 });
