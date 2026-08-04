@@ -526,17 +526,34 @@ jobs:
           )
 
           # Ein Spec, der in keiner der vier Listen steht, ist neu und beim
-          # Anlegen vergessen worden. Die Dateimuster sind dieselben, die
-          # playwright.config.ts fährt (testDir: 'e2e', testIgnore:
-          # '**/helpers/**') — deshalb ohne Rekursion.
+          # Anlegen vergessen worden.
+          #
+          # Gesucht wird **rekursiv** und mit denselben Endungen, die Playwright
+          # per Default sammelt — `testDir: 'e2e'` steigt in Unterordner ab, und
+          # ein Spec in `e2e/irgendwas/` liefe lokal, in CI aber nirgends und
+          # fiele einem Abgleich nur über `e2e/*.spec.ts` nicht auf. `helpers/`
+          # bleibt außen vor, weil playwright.config.ts es per `testIgnore`
+          # ausnimmt: Die Dateien dort sind Vitest-Tests, die vitest.config.ts
+          # einsammelt.
+          # `find` und kein Glob: Ein `**`-Muster bräuchte `shopt -s globstar`
+          # und die Endungsliste `extglob` — und extglob wirkt erst zur
+          # Laufzeit, womit `bash -n` das Skript nicht mehr prüfen kann.
           known=" ${form[*]} ${map[*]} ${smoke[*]} ${unassigned[*]} "
           missing=()
-          for spec in e2e/*.spec.ts e2e/*.test.ts; do
+          while IFS= read -r spec; do
             case "$known" in
               *" $spec "*) ;;
               *) missing+=("$spec") ;;
             esac
-          done
+          done < <(
+            find e2e -type f \
+              \( -name '*.spec.ts' -o -name '*.test.ts' \
+                 -o -name '*.spec.tsx' -o -name '*.test.tsx' \
+                 -o -name '*.spec.js' -o -name '*.test.js' \
+                 -o -name '*.spec.jsx' -o -name '*.test.jsx' \) \
+              -not -path 'e2e/helpers/*' \
+              | sort
+          )
           if [ ${#missing[@]} -gt 0 ]; then
             echo "::error::Diese Specs stehen in keinem Shard und würden nirgends laufen: ${missing[*]}"
             echo "Bitte in .github/workflows/ci.yml einem Shard (form/map/smoke) zuordnen."
