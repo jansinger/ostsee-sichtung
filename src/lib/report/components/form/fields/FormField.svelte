@@ -22,7 +22,8 @@
 		required = undefined,
 		label = undefined,
 		type = undefined,
-		options = undefined
+		options = undefined,
+		helpText = undefined
 	}: {
 		name: keyof Omit<SightingFormData, 'uploadedFiles'>;
 		disabled?: boolean;
@@ -50,6 +51,13 @@
 		 * `type`-Override. Ohne Angabe gilt weiterhin `meta.options`.
 		 */
 		options?: FieldOption[] | undefined;
+		/**
+		 * Optionaler Override des Hilfetexts — nötig, wenn ein `label`/`type`-
+		 * Override die Frage so verändert, dass der Schema-Hilfetext sie nicht
+		 * mehr beantwortet. `null` unterdrückt den Hilfetext ganz; ohne Angabe
+		 * gilt weiterhin `meta.helpText`.
+		 */
+		helpText?: string | null | undefined;
 	} = $props();
 
 	const context = getFormContext();
@@ -108,6 +116,7 @@
 		{label}
 		{type}
 		{options}
+		{helpText}
 		onchange={handleChange}
 	/>
 </div>

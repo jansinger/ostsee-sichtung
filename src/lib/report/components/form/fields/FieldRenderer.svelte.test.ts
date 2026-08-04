@@ -313,6 +313,136 @@ describe('FieldRenderer', () => {
 			await expect.element(page.getByRole('combobox')).toBeVisible();
 			await expect.element(page.getByText('Motor lief nicht')).not.toBeInTheDocument();
 		});
+
+		/**
+		 * Nacharbeit zu PR 4: Der Schema-Hilfetext ("Welcher Antrieb wurde
+		 * während der Sichtung verwendet?") gehört zur Admin-Maske mit ihrer
+		 * vollen Antriebsauswahl. Im Meldeformular steht darüber eine
+		 * Ja/Nein-Frage — der Text beantwortet dort etwas, das gar nicht gefragt
+		 * wird. `undefined` erbt weiterhin aus dem Schema, ein String ersetzt,
+		 * `null` unterdrückt.
+		 */
+		describe('helpText-Override', () => {
+			it('unterdrückt den Schema-Hilfetext bei helpText={null}', async () => {
+				const screen = render(FieldRenderer, {
+					fieldConfig: boatDriveSelectFieldConfig,
+					name: 'boatDrive',
+					value: null,
+					type: 'radio',
+					options: publicBoatDriveOptions,
+					helpText: null
+				});
+
+				expect(screen.container.querySelector('#field-boatDrive-help')).toBeNull();
+				await expect
+					.element(page.getByText('Welcher Antrieb wurde während der Sichtung verwendet?'))
+					.not.toBeInTheDocument();
+			});
+
+			it('nimmt den unterdrückten Hilfetext auch aus aria-describedby heraus', async () => {
+				const screen = render(FieldRenderer, {
+					fieldConfig: boatDriveSelectFieldConfig,
+					name: 'boatDrive',
+					value: null,
+					type: 'radio',
+					options: publicBoatDriveOptions,
+					helpText: null
+				});
+
+				const radios = screen.container.querySelectorAll('input[type="radio"]');
+				expect(radios.length).toBeGreaterThan(0);
+				radios.forEach((radio) => {
+					expect(radio.getAttribute('aria-describedby') ?? '').not.toContain(
+						'field-boatDrive-help'
+					);
+				});
+			});
+
+			it('ersetzt den Schema-Hilfetext durch einen übergebenen String', async () => {
+				const screen = render(FieldRenderer, {
+					fieldConfig: boatDriveSelectFieldConfig,
+					name: 'boatDrive',
+					value: null,
+					type: 'radio',
+					options: publicBoatDriveOptions,
+					helpText: 'Nur Motorgeräusche zählen.'
+				});
+
+				const helpElement = screen.container.querySelector('#field-boatDrive-help');
+				expect(helpElement?.textContent).toContain('Nur Motorgeräusche zählen.');
+				expect(helpElement?.textContent).not.toContain('Welcher Antrieb');
+			});
+
+			it('nutzt ohne Override weiterhin den Schema-Hilfetext', async () => {
+				const screen = render(FieldRenderer, {
+					fieldConfig: boatDriveSelectFieldConfig,
+					name: 'boatDrive',
+					value: null,
+					type: 'radio',
+					options: publicBoatDriveOptions
+				});
+
+				const helpElement = screen.container.querySelector('#field-boatDrive-help');
+				expect(helpElement?.textContent).toContain(
+					'Welcher Antrieb wurde während der Sichtung verwendet?'
+				);
+			});
+		});
+
+		/**
+		 * Nacharbeit zu PR 4: `BaseRadio` gab das Feld-Icon innerhalb der
+		 * Options-Schleife aus — bei zwei Optionen stand derselbe Blitz zweimal
+		 * untereinander. Das Icon gehört einmal an die Gruppe, so wie es bei
+		 * Select und Text einmal am Feld steht.
+		 */
+		describe('Feld-Icon bei Radiogruppen', () => {
+			const boatDriveRadioFieldConfig = makeFieldConfig({
+				label: 'Bootsantrieb',
+				optional: false,
+				type: 'number',
+				meta: {
+					type: 'radio',
+					icon: 'lucide:zap',
+					options: PUBLIC_BOAT_DRIVE_OPTIONS
+				}
+			});
+
+			it('rendert das Feld-Icon genau einmal, nicht pro Option', async () => {
+				const screen = render(FieldRenderer, {
+					fieldConfig: boatDriveRadioFieldConfig,
+					name: 'boatDrive',
+					value: null
+				});
+
+				// Zwei Optionen, aber nur ein Icon im gesamten Feld.
+				expect(screen.container.querySelectorAll('input[type="radio"]')).toHaveLength(2);
+				expect(screen.container.querySelectorAll('svg')).toHaveLength(1);
+			});
+
+			it('setzt das Icon in die Legende der Gruppe', async () => {
+				const screen = render(FieldRenderer, {
+					fieldConfig: boatDriveRadioFieldConfig,
+					name: 'boatDrive',
+					value: null
+				});
+
+				expect(screen.container.querySelector('legend svg')).not.toBeNull();
+			});
+
+			it('rendert kein Icon in den Optionszeilen', async () => {
+				const screen = render(FieldRenderer, {
+					fieldConfig: boatDriveRadioFieldConfig,
+					name: 'boatDrive',
+					value: null
+				});
+
+				const optionRows = screen.container.querySelectorAll('label:has(input[type="radio"])');
+				expect(optionRows.length).toBe(2);
+				optionRows.forEach((row) => {
+					expect(row.querySelector('svg')).toBeNull();
+				});
+			});
+		});
 	});
 
 	describe('Häkchen nur bei berührten Feldern', () => {
@@ -469,7 +599,8 @@ describe('FieldRenderer', () => {
 		it.each([
 			['text', 'text'],
 			['select', 'select'],
-			['textarea', 'textarea']
+			['textarea', 'textarea'],
+			['radio', 'radio']
 		])('blendet das dekorative Feld-Icon aus (%s)', async (_name, fieldType) => {
 			const screen = render(FieldRenderer, {
 				fieldConfig: makeFieldConfig({

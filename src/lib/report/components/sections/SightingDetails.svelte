@@ -85,12 +85,20 @@
 				     Wert verlangt. Ohne den Override liefe ein Melder ohne Sternchen
 				     und ohne `aria-required` in „Bitte wählen Sie den Bootsantrieb
 				     aus." — die Admin-Maske hat dasselbe Loch, dort aber mit
-				     vorbefülltem Wert. -->
+				     vorbefülltem Wert.
+
+				     `helpText={null}`, weil der Schema-Hilfetext („Welcher Antrieb
+				     wurde während der Sichtung verwendet?") zur vollen Auswahl der
+				     Admin-Maske gehört und die Ja/Nein-Frage hier nicht beantwortet.
+				     Ein Ersatztext wäre überflüssig: Die Frage ist mit ihren zwei
+				     Optionen selbsterklärend, und dass es um Unterwasserlärm geht,
+				     steht bereits im `valueText`-Tooltip desselben Feldes. -->
 				<FormField
 					name="boatDrive"
 					label="Lief während der Sichtung ein Motor?"
 					type="radio"
 					options={PUBLIC_BOAT_DRIVE_OPTIONS}
+					helpText={null}
 					required={true}
 				/>
 			{/if}
