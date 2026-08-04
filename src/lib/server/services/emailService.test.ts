@@ -65,6 +65,9 @@ vi.mock('nodemailer', () => ({
 	}
 }));
 
+// Der Service liest seit dem 2026-08-04 keine Datei mehr. Der Mock bleibt
+// trotzdem — er ist der Angriffspunkt des Guards „liest dafür keine Datei",
+// der einen Rückfall auf `readFileSync` bemerken soll.
 vi.mock('fs', () => ({
 	readFileSync: vi.fn()
 }));
@@ -95,8 +98,8 @@ import {
 	isUnknownOrMissingSpecies
 } from '$lib/utils/format/sightingFormatter';
 import { formatLocalDateTime } from '$lib/utils/format/dateTime';
-import Handlebars from 'handlebars';
-import { DEFAULT_EMAIL_TEMPLATE, EmailService } from './emailService';
+import { NOTIFICATION_EMAIL_DEFAULT_TEMPLATE } from '$lib/server/templates/notificationEmailDefault';
+import { EmailService } from './emailService';
 
 // Hilfsfunktionen zum Erstellen von Mocks
 function createMockTransporter(sendMailResult = { messageId: 'test-id-123' }) {
@@ -212,11 +215,6 @@ describe('EmailService', () => {
 		// Standard-Transporter-Mock
 		mockTransporter = createMockTransporter();
 		vi.mocked(nodemailer.createTransport).mockReturnValue(mockTransporter as any);
-
-		// fs.readFileSync wirft standardmäßig Fehler (kein Template-File im Test)
-		vi.mocked(readFileSync).mockImplementation(() => {
-			throw new Error('ENOENT: no such file or directory');
-		});
 
 		// Formatter-Mocks
 		vi.mocked(formatSightingForDisplay).mockReturnValue({
@@ -1013,8 +1011,7 @@ describe('EmailService', () => {
 			expect(sendMailCall?.html).toContain('REF-42');
 		});
 
-		it('verwendet Fallback-Template wenn Template-Datei nicht lesbar', async () => {
-			// readFileSync wirft bereits standardmäßig Fehler im beforeEach
+		it('versendet mit dem Seed-Default, wenn kein eigener Text hinterlegt ist', async () => {
 			const mockSighting = createMockSighting();
 			vi.mocked(db.select).mockReturnValue({
 				from: vi.fn().mockReturnValue({
@@ -1024,75 +1021,63 @@ describe('EmailService', () => {
 				})
 			} as any);
 
-			// Kein custom Template → getDefaultTemplate() wird aufgerufen
 			setupConfigRepositoryMocks({
 				enabled: true,
 				smtpHost: 'smtp.example.com',
-				template: DEFAULT_EMAIL_FALLBACK_TEMPLATE
+				template: NOTIFICATION_EMAIL_DEFAULT_TEMPLATE
 			});
 
 			await EmailService.initialize(false);
 			const result = await EmailService.sendNewSightingNotification(42);
 
 			expect(result).toBe(true);
+			const sendMailCall = mockTransporter.sendMail.mock.calls[0]?.[0] as any;
+			expect(sendMailCall?.html).toContain('REF-42');
 		});
 
 		// ------------------------------------------------------------------
-		// DEFAULT_EMAIL_TEMPLATE ist der letzte Rückfall, wenn sowohl die
-		// DB-Konfiguration als auch die Datei `sightingNotificationTemplate.html`
-		// nicht lesbar sind. Direkter Handlebars-Test statt über den Service:
-		// `getEmailConfig()` liefert im Test immer einen konfigurierten
-		// `template`-Wert (siehe `setupConfigRepositoryMocks`) und erreicht
-		// `getDefaultTemplate()` deshalb nie — dieser Pfad ist nur so prüfbar.
-		describe('DEFAULT_EMAIL_TEMPLATE — Foto-Ankündigung', () => {
-			const render = Handlebars.compile(DEFAULT_EMAIL_TEMPLATE);
+		// Der Code-Default der Vorlage ist `NOTIFICATION_EMAIL_DEFAULT_TEMPLATE`
+		// — dieselbe Konstante, die `configInitializer.ts` nach `app_config`
+		// seedet. Bis 2026-08-04 las `getDefaultTemplate()` stattdessen
+		// `templates/sightingNotificationTemplate.html` per `readFileSync`.
+		// Diese Datei liegt in `src/` und wird vom Bundler nie nach `build/`
+		// ausgegeben; das Docker-Image kopiert nur `build/`. In Produktion
+		// schlug der Lesevorgang deshalb immer fehl. Weil der Default als
+		// Argument von `ConfigRepository.getString(…)` eifrig ausgewertet
+		// wird, passierte das bei jedem Config-Cache-Miss — auch wenn der
+		// DB-Wert den Default ohnehin schlägt. Ergebnis: eine `level:50`-Zeile
+		// im Produktions-Log alle fünf Minuten, ohne dass etwas kaputt war.
+		describe('Vorlagen-Default kommt aus dem Bundle, nicht vom Dateisystem', () => {
+			async function sendAndCaptureTemplateDefault() {
+				vi.mocked(db.select).mockReturnValue({
+					from: vi.fn().mockReturnValue({
+						where: vi.fn().mockReturnValue({
+							limit: vi.fn().mockResolvedValue([createMockSighting()])
+						})
+					})
+				} as any);
+				setupConfigRepositoryMocks({ enabled: true, smtpHost: 'smtp.example.com' });
 
-			function renderWithMediaUpload(mediaUpload: boolean) {
-				return render({
-					referenceId: 'REF-99',
-					adminUrl: 'https://example.com/admin/1',
-					sighting: {
-						species: 'Schweinswal',
-						sightingDate: '30.07.2026',
-						coordinatesFormatted: '54.5000° N, 12.3000° O',
-						mediaUpload,
-						balticSea: { label: 'Ostsee' }
-					}
-				});
+				await EmailService.initialize(false);
+				await EmailService.sendNewSightingNotification(42);
+
+				return vi
+					.mocked(ConfigRepository.getString)
+					.mock.calls.find(([key]) => key === 'notification.email.template');
 			}
 
-			it('weist auch im letzten Rückfall auf das nachfolgende Foto hin', () => {
-				const html = renderWithMediaUpload(true);
+			it('reicht den Seed-Default an ConfigRepository durch', async () => {
+				const call = await sendAndCaptureTemplateDefault();
 
-				expect(html).toContain('Foto angekündigt');
-				expect(html).toContain('REF-99');
+				expect(call, 'notification.email.template wurde überhaupt gelesen').toBeDefined();
+				expect(call?.[1]).toBe(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE);
 			});
 
-			it('lässt den Hinweis weg, wenn kein Foto angekündigt wurde', () => {
-				const html = renderWithMediaUpload(false);
+			it('liest dafür keine Datei', async () => {
+				await sendAndCaptureTemplateDefault();
 
-				expect(html).not.toContain('Foto angekündigt');
-			});
-
-			it('ist gültiges Handlebars und rendert ohne Ausnahme', () => {
-				expect(() => renderWithMediaUpload(true)).not.toThrow();
+				expect(readFileSync).not.toHaveBeenCalled();
 			});
 		});
 	});
 });
-
-// Fallback-Template aus dem Service (als Referenz für Tests)
-const DEFAULT_EMAIL_FALLBACK_TEMPLATE = `<!DOCTYPE html>
-<html lang="de">
-<head>
-	<meta charset="UTF-8">
-	<title>Neue Sichtung - {{referenceId}}</title>
-</head>
-<body style="font-family: Arial, sans-serif; padding: 20px;">
-	<h1>🐋 Neue Sichtung: {{referenceId}}</h1>
-	<p><strong>Tierart:</strong> {{sighting.species}}</p>
-	<p><strong>Datum:</strong> {{sighting.sightingDate}}</p>
-	<p><strong>Position:</strong> {{sighting.coordinatesFormatted}}</p>
-	<p><a href="{{adminUrl}}">Sichtung im Admin-Bereich anzeigen</a></p>
-</body>
-</html>`;

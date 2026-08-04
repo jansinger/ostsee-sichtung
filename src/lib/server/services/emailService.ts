@@ -11,18 +11,16 @@ import type { SightingFormValues } from '$lib/types/Form';
 import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 import { formatSightingForDisplay } from '$lib/utils/format/sightingFormatter';
 import { eq } from 'drizzle-orm';
-import { readFileSync } from 'fs';
 import Handlebars from 'handlebars';
 import { htmlToText as htmlToPlainText } from 'html-to-text';
 import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
 import { ConfigRepository } from '$lib/server/db/configRepository';
 import {
 	balticSeaEmailContext,
 	type BalticSeaEmailContext
 } from '$lib/server/templates/balticSeaEmailContext';
 import { emailColorContext } from '$lib/server/templates/emailTokens';
+import { NOTIFICATION_EMAIL_DEFAULT_TEMPLATE } from '$lib/server/templates/notificationEmailDefault';
 
 // Dynamic environment variables for Docker runtime
 const NODE_ENV = env.NODE_ENV ?? 'development';
@@ -31,32 +29,7 @@ const SMTP_PORT = env.SMTP_PORT ?? '587';
 const SMTP_USER = env.SMTP_USER ?? '';
 const SMTP_PASSWORD = env.SMTP_PASSWORD ?? '';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 const logger = createLogger('emailService');
-
-// Default email template as constant to avoid inline HTML
-// Exportiert, damit dieser letzte Rückfallpfad (DB **und** Datei nicht
-// lesbar) direkt mit Handlebars getestet werden kann — siehe
-// emailService.test.ts, "DEFAULT_EMAIL_TEMPLATE — Foto-Ankündigung".
-export const DEFAULT_EMAIL_TEMPLATE = `<!DOCTYPE html>
-<html lang="de">
-<head>
-	<meta charset="UTF-8">
-	<title>Neue Sichtung - {{referenceId}}</title>
-</head>
-<body style="font-family: Arial, sans-serif; padding: 20px;">
-	<h1>🐋 Neue Sichtung: {{referenceId}}</h1>
-	<p><strong>Tierart:</strong> {{sighting.species}}</p>
-	<p><strong>Datum:</strong> {{sighting.sightingDate}}</p>
-	<p><strong>Position:</strong> {{sighting.coordinatesFormatted}} ({{sighting.balticSea.label}})</p>
-	{{#if sighting.mediaUpload}}
-	<p><strong>📷 Foto angekündigt:</strong> Der Melder hat laut App ein Foto, kann es aber nicht direkt hochladen — es kommt separat per E-Mail nach. Beim Eintreffen bitte anhand der Referenz-ID {{referenceId}} zuordnen.</p>
-	{{/if}}
-	<p><a href="{{adminUrl}}">Sichtung im Admin-Bereich anzeigen</a></p>
-</body>
-</html>`;
 
 /**
  * Liest einen Konfigurationswert und fällt bei **leerem** DB-Wert auf die
@@ -581,7 +554,7 @@ export class EmailService {
 			senderName: await ConfigRepository.getString('notification.email.senderName', 'Ostsee-Tiere'),
 			template: await ConfigRepository.getString(
 				'notification.email.template',
-				this.getDefaultTemplate()
+				NOTIFICATION_EMAIL_DEFAULT_TEMPLATE
 			)
 		};
 
@@ -609,7 +582,7 @@ export class EmailService {
 			return template;
 		} catch (error) {
 			logger.error({ error }, 'Failed to compile email template, using default');
-			const defaultTemplate = Handlebars.compile(this.getDefaultTemplate());
+			const defaultTemplate = Handlebars.compile(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE);
 			return defaultTemplate;
 		}
 	}
@@ -634,20 +607,6 @@ export class EmailService {
 		return htmlToPlainText(html, {
 			wordwrap: false
 		}).trim();
-	}
-
-	/**
-	 * Get default email template from file
-	 */
-	private static getDefaultTemplate(): string {
-		try {
-			const templatePath = join(__dirname, '../templates/sightingNotificationTemplate.html');
-			return readFileSync(templatePath, 'utf-8');
-		} catch (error) {
-			logger.error({ error }, 'Failed to load email template file, using fallback');
-			// Return fallback template constant
-			return DEFAULT_EMAIL_TEMPLATE;
-		}
 	}
 
 	/**

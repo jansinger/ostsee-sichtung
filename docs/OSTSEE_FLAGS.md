@@ -306,7 +306,13 @@ nachbaute:
 | `templates/sightingNotificationTemplate.html`     | wenn kein Seed existiert (Code-Default) | Verzweigung ohne Koordinaten-Guard: behauptete ohne Position „liegt außerhalb" |
 | `DEFAULT_EMAIL_TEMPLATE` in `emailService.ts`     | wenn zusätzlich die Datei unlesbar ist  | nannte den Status gar nicht                                                    |
 
-Alle drei verzweigen jetzt über **einen** Wert aus
+Seit dem 2026-08-04 ist nur noch die erste Zeile übrig: Code-Default und Seed
+sind dieselbe Konstante (`templates/notificationEmailDefault.ts`). Die
+`.html`-Datei wurde vom Bundler nie nach `build/` ausgegeben und fehlte damit in
+jedem Docker-Image; `DEFAULT_EMAIL_TEMPLATE` war der Rückfall dahinter und
+deshalb ebenso unerreichbar. Beide sind ersatzlos entfallen.
+
+Die verbliebene Vorlage verzweigt über **einen** Wert aus
 `server/templates/balticSeaEmailContext.ts`:
 
 ```handlebars
@@ -329,7 +335,8 @@ verschachtelt.
 
 Die wirksame Vorlage kommt nicht aus dem Code, sondern aus `app_config` unter dem
 Key `notification.email.template` (`ConfigRepository.getString(…,
-getDefaultTemplate())` — der DB-Wert gewinnt, der Default ist nur Fallback). Den
+NOTIFICATION_EMAIL_DEFAULT_TEMPLATE)` — der DB-Wert gewinnt, der Default ist nur
+Fallback). Den
 Default zu ändern wirkt auf **keine** bestehende Installation.
 
 Dafür gibt es `src/tools/refresh-email-template.ts`:

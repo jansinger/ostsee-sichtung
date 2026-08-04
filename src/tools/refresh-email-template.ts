@@ -6,7 +6,7 @@
  * **Warum es dieses Werkzeug gibt:** Die Vorlage wird beim ersten Start nach
  * `app_config` geschrieben (`initializeDefaultConfigurations()` →
  * `insertManyIfAbsent`), und `emailService` liest sie von dort:
- * `ConfigRepository.getString('notification.email.template', getDefaultTemplate())`.
+ * `ConfigRepository.getString('notification.email.template', NOTIFICATION_EMAIL_DEFAULT_TEMPLATE)`.
  * Der DB-Wert gewinnt, der Code-Default ist nur Fallback. Eine Änderung am
  * Default wirkt deshalb auf **keine** bestehende Installation — der Seed muss
  * ausdrücklich nachgezogen werden.
