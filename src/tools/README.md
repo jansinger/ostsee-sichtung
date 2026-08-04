@@ -123,7 +123,7 @@ Pulls the seeded notification email template in `app_config` up to the current c
 **Purpose:**
 
 - The template is seeded once (`initializeDefaultConfigurations()` → `insertManyIfAbsent`) and read from the database afterwards: `ConfigRepository.getString('notification.email.template', NOTIFICATION_EMAIL_DEFAULT_TEMPLATE)`
-- The database value **wins** over the code default, so editing `templates/notificationEmailDefault.ts` has no effect on any existing installation
+- The database value **wins** over the code default, so editing `src/lib/server/templates/notificationEmailDefault.ts` has no effect on any existing installation
 - Without this tool the only way to update a seeded template would be `resetToDefaultConfigurations()`, which overwrites **every** key — including recipients and SMTP credentials
 
 **Usage:**

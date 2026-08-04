@@ -306,11 +306,15 @@ nachbaute:
 | `templates/sightingNotificationTemplate.html`     | wenn kein Seed existiert (Code-Default) | Verzweigung ohne Koordinaten-Guard: behauptete ohne Position „liegt außerhalb" |
 | `DEFAULT_EMAIL_TEMPLATE` in `emailService.ts`     | wenn zusätzlich die Datei unlesbar ist  | nannte den Status gar nicht                                                    |
 
-Seit dem 2026-08-04 ist nur noch die erste Zeile übrig: Code-Default und Seed
-sind dieselbe Konstante (`templates/notificationEmailDefault.ts`). Die
-`.html`-Datei wurde vom Bundler nie nach `build/` ausgegeben und fehlte damit in
-jedem Docker-Image; `DEFAULT_EMAIL_TEMPLATE` war der Rückfall dahinter und
-deshalb ebenso unerreichbar. Beide sind ersatzlos entfallen.
+Seit dem 2026-08-04 gibt es diese Unterscheidung nicht mehr: Zeile 2 und 3 sind
+ersatzlos entfallen, und was in Zeile 1 als Seed nach `app_config` geht, ist
+zugleich der Code-Default — beides liest dieselbe Konstante
+`NOTIFICATION_EMAIL_DEFAULT_TEMPLATE` aus
+`src/lib/server/templates/notificationEmailDefault.ts`. Die Spalte „wirksam
+wann" hat damit nur noch einen Wert. Grund für den Wegfall: Die `.html`-Datei
+wurde vom Bundler nie nach `build/` ausgegeben und fehlte deshalb in jedem
+Docker-Image, und `DEFAULT_EMAIL_TEMPLATE` war der Rückfall dahinter und damit
+ebenso unerreichbar.
 
 Die verbliebene Vorlage verzweigt über **einen** Wert aus
 `server/templates/balticSeaEmailContext.ts`:
