@@ -35,7 +35,25 @@ vi.mock('$lib/server/config/accessControl', () => ({
 	canUserAccessConfigKey: vi.fn().mockReturnValue(true)
 }));
 
+vi.mock('$lib/server/services/emailService', () => ({
+	EmailService: { clearCaches: vi.fn(), resetTransporter: vi.fn() }
+}));
+
+import { EmailService } from '$lib/server/services/emailService';
 import { PUT, DELETE } from './+server';
+
+function putEvent(key: string, value: unknown, category: string) {
+	return {
+		request: new Request('http://localhost/api/config', {
+			method: 'PUT',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ key, value, category })
+		}),
+		locals: { user: { email: 'admin@test.com', sub: 'auth0|admin', roles: ['admin'] } },
+		url: new URL('http://localhost/api/config'),
+		getClientAddress: () => '127.0.0.1'
+	};
+}
 
 describe('PUT /api/config — Audit Logging', () => {
 	beforeEach(() => {
@@ -65,6 +83,55 @@ describe('PUT /api/config — Audit Logging', () => {
 				details: expect.objectContaining({ key: 'maintenance_mode', category: 'system' })
 			})
 		);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// E-Mail-Cache
+//
+// `EmailService` hält seine eigene Kopie der Mail-Konfiguration fünf Minuten
+// lang. `ConfigRepository.clearCache()` erreicht die nicht. Wer also CC/BCC
+// speicherte und danach eine Test-Mail auslöste, bekam bis zu fünf Minuten lang
+// die alte Empfängerliste — die frisch eingetragene Adresse blieb aus, ohne
+// dass irgendwo ein Fehler erschien.
+// ---------------------------------------------------------------------------
+describe('PUT /api/config — E-Mail-Cache', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('verwirft den EmailService-Cache bei notification.email.*', async () => {
+		await PUT(putEvent('notification.email.cc', ['kopie@example.com'], 'email') as never);
+
+		expect(EmailService.clearCaches).toHaveBeenCalledOnce();
+	});
+
+	it('verwirft den EmailService-Cache bei email.smtp.*', async () => {
+		await PUT(putEvent('email.smtp.host', 'smtp.example.com', 'email') as never);
+
+		expect(EmailService.clearCaches).toHaveBeenCalledOnce();
+	});
+
+	it('rührt den EmailService-Cache bei fremden Schlüsseln nicht an', async () => {
+		await PUT(putEvent('display.maintenanceMode', true, 'display') as never);
+
+		expect(EmailService.clearCaches).not.toHaveBeenCalled();
+	});
+
+	// Der Transporter hält eine offene SMTP-Verbindung. Er muss neu aufgebaut
+	// werden, wenn sich die Verbindungsdaten ändern — aber auch nur dann: eine
+	// geänderte Empfängerliste ist kein Grund, eine funktionierende Verbindung
+	// wegzuwerfen.
+	it('verwirft den Transporter bei email.smtp.*', async () => {
+		await PUT(putEvent('email.smtp.host', 'smtp.example.com', 'email') as never);
+
+		expect(EmailService.resetTransporter).toHaveBeenCalledOnce();
+	});
+
+	it('verwirft den Transporter NICHT bei notification.email.*', async () => {
+		await PUT(putEvent('notification.email.cc', ['kopie@example.com'], 'email') as never);
+
+		expect(EmailService.resetTransporter).not.toHaveBeenCalled();
 	});
 });
 

@@ -8,6 +8,7 @@ import {
 	canUserAccessConfigKey
 } from '$lib/server/config/accessControl';
 import { requireUserRole } from '$lib/server/auth/auth';
+import { EmailService } from '$lib/server/services/emailService';
 import { warnIfBodySizeLimitTooLow } from '$lib/server/startup/bodySizeLimit';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
@@ -24,6 +25,32 @@ const BODY_SIZE_RELEVANT_CONFIG_KEYS = new Set([
 	'security.maxFileSize',
 	'security.maxVideoFileSize'
 ]);
+
+/**
+ * Verwirft die Kopie der Mail-Konfiguration im `EmailService`, wenn ein
+ * Schlüssel geändert wurde, den er liest.
+ *
+ * `ConfigRepository.clearCache()` reicht dafür nicht: Der `EmailService` hält
+ * seine eigene, fünf Minuten gültige Kopie (`getEmailConfig()`). Wer CC/BCC
+ * eintrug und direkt danach eine Test-Mail auslöste, bekam bis zu fünf Minuten
+ * lang die alte Empfängerliste — ohne Fehlermeldung, die Mail kam ja an, nur
+ * eben nicht bei den neuen Empfängern.
+ */
+function invalidateEmailCacheIfNeeded(key: string): void {
+	if (!key.startsWith('notification.email.') && !key.startsWith('email.smtp.')) {
+		return;
+	}
+
+	EmailService.clearCaches();
+
+	// Nur die SMTP-Schlüssel beschreiben die Verbindung selbst. Eine geänderte
+	// Empfängerliste ist kein Grund, eine funktionierende Verbindung wegzuwerfen
+	// — der Transporter wird sonst bei jedem Speichern in den Einstellungen neu
+	// aufgebaut.
+	if (key.startsWith('email.smtp.')) {
+		EmailService.resetTransporter();
+	}
+}
 
 const logger = createLogger('api:config');
 
@@ -119,6 +146,7 @@ export const PUT: RequestHandler = async ({
 
 		// Clear entire cache for configuration changes
 		ConfigRepository.clearCache();
+		invalidateEmailCacheIfNeeded(key);
 
 		const clientIp = getClientIp(getClientAddress, request);
 		await logAuditEvent({
@@ -170,6 +198,7 @@ export const DELETE: RequestHandler = async ({
 
 		// Clear entire cache for configuration changes
 		ConfigRepository.clearCache();
+		invalidateEmailCacheIfNeeded(key);
 
 		const clientIp = getClientIp(getClientAddress, request);
 		await logAuditEvent({

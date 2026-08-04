@@ -30,6 +30,7 @@ vi.mock('$lib/server/services/emailService', () => ({
 		sendNewSightingNotification: vi.fn().mockResolvedValue(true),
 		sendTestEmail: vi.fn().mockResolvedValue(true),
 		initialize: vi.fn().mockResolvedValue(undefined),
+		clearCaches: vi.fn(),
 		clearTemplateCache: vi.fn(),
 		// Static methods that might be called
 		getEmailConfig: vi.fn().mockResolvedValue({

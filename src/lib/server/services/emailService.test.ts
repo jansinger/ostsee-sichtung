@@ -102,7 +102,8 @@ import { DEFAULT_EMAIL_TEMPLATE, EmailService } from './emailService';
 function createMockTransporter(sendMailResult = { messageId: 'test-id-123' }) {
 	return {
 		verify: vi.fn().mockResolvedValue(true),
-		sendMail: vi.fn().mockResolvedValue(sendMailResult)
+		sendMail: vi.fn().mockResolvedValue(sendMailResult),
+		close: vi.fn()
 	};
 }
 
@@ -202,6 +203,11 @@ describe('EmailService', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		EmailService.clearCaches();
+		// Der Transporter ist statisch und überlebt sonst den einzelnen Test —
+		// ein in Test A aufgebauter Transporter ließ Test B versenden, obwohl der
+		// dort gar keinen aufgebaut hatte. Die Reihenfolge der Tests entschied
+		// damit über ihr Ergebnis.
+		EmailService.resetTransporter();
 
 		// Standard-Transporter-Mock
 		mockTransporter = createMockTransporter();
@@ -334,7 +340,14 @@ describe('EmailService', () => {
 			expect(result).toBe(false);
 		});
 
-		it('gibt false zurück wenn Transporter nicht initialisiert', async () => {
+		// Bis 2026-08-04 war das Gegenteil zugesichert („kein Transporter → false"),
+		// und genau daran starb der Versand: Ein beim Start fehlgeschlagenes
+		// verify() ließ den Transporter dauerhaft `null`, ohne dass je ein neuer
+		// Versuch stattfand. Ein fehlender Transporter ist ein Grund, ihn
+		// aufzubauen — kein Grund, die Benachrichtigung zu verwerfen. Dass ein
+		// **gescheiterter** Aufbau weiterhin `false` liefert, sichert der Test
+		// „gibt false zurück wenn der Neuaufbau ebenfalls scheitert" ab.
+		it('baut einen fehlenden Transporter auf statt die Mail zu verwerfen', async () => {
 			const mockSighting = createMockSighting();
 			vi.mocked(db.select).mockReturnValue({
 				from: vi.fn().mockReturnValue({
@@ -349,8 +362,8 @@ describe('EmailService', () => {
 
 			const result = await EmailService.sendNewSightingNotification(42);
 
-			// Kein Transporter → false
-			expect(result).toBe(false);
+			expect(result).toBe(true);
+			expect(nodemailer.createTransport).toHaveBeenCalledOnce();
 		});
 
 		it('sendet E-Mail und gibt true zurück wenn alles korrekt konfiguriert', async () => {
@@ -682,6 +695,257 @@ describe('EmailService', () => {
 			const result = await EmailService.sendTestEmail();
 
 			expect(result).toBe(false);
+		});
+	});
+
+	// ---------------------------------------------------------------------------
+	// CC/BCC-Empfänger
+	//
+	// `notification.email.cc` und `.bcc` sind seit 2026-07-30 in den Einstellungen
+	// pflegbar, wurden aber von **keinem** Versandweg tatsächlich gesetzt:
+	//
+	// - `sendEmailNotification()` schrieb `config.recipient ? undefined : config.cc`.
+	//   Der Empfänger ist an dieser Stelle durch die Prüfung darüber garantiert
+	//   gesetzt — der Ausdruck war also konstant `undefined`. Der Kommentar
+	//   („nicht für Test-Mails") beschrieb einen Pfad, der hier gar nicht liegt.
+	// - `sendTestEmail()` kannte CC/BCC überhaupt nicht.
+	//
+	// Beides fiel nicht auf, weil eine Mail an den Hauptempfänger ankommt und
+	// niemand die stillen Mitleser vermisst.
+	// ---------------------------------------------------------------------------
+	describe('CC/BCC-Empfänger', () => {
+		async function sendNotificationWith(cc: string[], bcc: string[]) {
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						limit: vi.fn().mockResolvedValue([createMockSighting()])
+					})
+				})
+			} as any);
+
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'smtp.example.com', cc, bcc });
+			await EmailService.initialize(false);
+			await EmailService.sendNewSightingNotification(42);
+
+			return mockTransporter.sendMail.mock.calls[0]?.[0] as {
+				cc?: string[];
+				bcc?: string[];
+			};
+		}
+
+		async function sendTestMailWith(cc: string[], bcc: string[], recipient?: string) {
+			setupConfigRepositoryMocks({
+				enabled: true,
+				smtpHost: 'smtp.example.com',
+				recipient: 'admin@ostsee-tiere.de',
+				cc,
+				bcc
+			});
+			await EmailService.initialize(false);
+			await EmailService.sendTestEmail(recipient);
+
+			return mockTransporter.sendMail.mock.calls[0]?.[0] as {
+				cc?: string[];
+				bcc?: string[];
+			};
+		}
+
+		it('setzt CC und BCC bei der Sichtungs-Benachrichtigung', async () => {
+			const mailOptions = await sendNotificationWith(['kopie@example.com'], ['blind@example.com']);
+
+			expect(mailOptions.cc).toEqual(['kopie@example.com']);
+			expect(mailOptions.bcc).toEqual(['blind@example.com']);
+		});
+
+		it('setzt CC und BCC bei der Test-E-Mail', async () => {
+			const mailOptions = await sendTestMailWith(
+				['kopie@example.com', 'zweite@example.com'],
+				['blind@example.com']
+			);
+
+			expect(mailOptions.cc).toEqual(['kopie@example.com', 'zweite@example.com']);
+			expect(mailOptions.bcc).toEqual(['blind@example.com']);
+		});
+
+		// Der Knopf in `/admin/settings` schickt den konfigurierten Empfänger
+		// **explizit** mit. Ein Override darf CC/BCC deshalb nicht abschalten,
+		// sonst wäre der einzige Weg, eine Test-Mail auszulösen, genau der Weg,
+		// der die Mitleser wieder verliert.
+		it('setzt CC und BCC auch bei explizit übergebenem Empfänger', async () => {
+			const mailOptions = await sendTestMailWith(
+				['kopie@example.com'],
+				['blind@example.com'],
+				'abweichend@example.com'
+			);
+
+			expect(mailOptions.cc).toEqual(['kopie@example.com']);
+			expect(mailOptions.bcc).toEqual(['blind@example.com']);
+		});
+
+		it('lässt CC und BCC weg wenn nichts konfiguriert ist', async () => {
+			const mailOptions = await sendNotificationWith([], []);
+
+			expect(mailOptions.cc).toBeUndefined();
+			expect(mailOptions.bcc).toBeUndefined();
+		});
+
+		it('lässt CC und BCC in der Test-E-Mail weg wenn nichts konfiguriert ist', async () => {
+			const mailOptions = await sendTestMailWith([], []);
+
+			expect(mailOptions.cc).toBeUndefined();
+			expect(mailOptions.bcc).toBeUndefined();
+		});
+
+		// `getArray` liefert den JSONB-Wert ungeprüft. Die Settings-Oberfläche
+		// filtert Leereinträge zwar heraus, `PUT /api/config` nimmt aber jedes
+		// Array entgegen — ein Leerstring würde als leere Adresse im Header landen.
+		it('verwirft leere Einträge in CC und BCC', async () => {
+			const mailOptions = await sendNotificationWith(['', '  ', 'kopie@example.com'], ['', '   ']);
+
+			expect(mailOptions.cc).toEqual(['kopie@example.com']);
+			expect(mailOptions.bcc).toBeUndefined();
+		});
+	});
+
+	// ---------------------------------------------------------------------------
+	// HTML-Escaping in der Test-E-Mail
+	//
+	// Die Test-Mail nennt Empfänger und CC im Fließtext. Beide stammen aus
+	// Eingaben: CC aus den Einstellungen, der Empfänger aus dem Request-Body von
+	// `POST /api/config/test-email`, der ihn — anders als die Admin-Route — gar
+	// nicht validiert. Ohne Escaping landet der Wert roh im HTML-Body.
+	// ---------------------------------------------------------------------------
+	describe('HTML-Escaping in der Test-E-Mail', () => {
+		it('escapt Empfänger und CC im Mail-Text', async () => {
+			setupConfigRepositoryMocks({
+				enabled: true,
+				smtpHost: 'smtp.example.com',
+				cc: ['<img src=x onerror=alert(1)>@example.com']
+			});
+			await EmailService.initialize(false);
+
+			await EmailService.sendTestEmail('"><script>alert(1)</script>@example.com');
+
+			const { html } = mockTransporter.sendMail.mock.calls[0]?.[0] as { html: string };
+
+			expect(html).not.toContain('<script>');
+			expect(html).not.toContain('<img src=x');
+			expect(html).toContain('&lt;script&gt;');
+		});
+	});
+
+	// ---------------------------------------------------------------------------
+	// Transporter-Lebenszyklus
+	//
+	// Der Transporter ist ein Singleton, das beim Modulstart einmal gebaut wird.
+	// Zwei Folgen davon waren falsch:
+	//
+	// - Geänderte SMTP-Einstellungen erreichten ihn nie. Die Test-Mail prüfte
+	//   damit die alte Verbindung und bescheinigte eine Konfiguration als
+	//   funktionierend, die so gar nicht gespeichert war.
+	// - War der SMTP-Server beim Serverstart kurz nicht erreichbar, schlug
+	//   `verify()` fehl, der Transporter blieb `null` — und die
+	//   Sichtungs-Benachrichtigung gab von da an dauerhaft `false` zurück, bis
+	//   jemand den Container neu startete. Nur `sendTestEmail()` versuchte es
+	//   erneut.
+	// ---------------------------------------------------------------------------
+	describe('Transporter-Lebenszyklus', () => {
+		function mockSightingRow() {
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						limit: vi.fn().mockResolvedValue([createMockSighting()])
+					})
+				})
+			} as any);
+		}
+
+		it('schließt die alte Verbindung bei resetTransporter()', async () => {
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'alt.example.com' });
+			await EmailService.initialize(false);
+
+			EmailService.resetTransporter();
+
+			expect(mockTransporter.close).toHaveBeenCalledOnce();
+		});
+
+		it('baut den Transporter nach resetTransporter() mit dem neuen SMTP-Host neu auf', async () => {
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'alt.example.com' });
+			await EmailService.initialize(false);
+			expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+
+			// Admin speichert einen neuen Host — die Route verwirft den Transporter.
+			EmailService.resetTransporter();
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'neu.example.com' });
+
+			const result = await EmailService.sendTestEmail('test@example.com');
+
+			expect(result).toBe(true);
+			expect(nodemailer.createTransport).toHaveBeenCalledTimes(2);
+			expect(nodemailer.createTransport).toHaveBeenLastCalledWith(
+				expect.objectContaining({ host: 'neu.example.com' })
+			);
+		});
+
+		it('baut den Transporter für die Sichtungs-Benachrichtigung bei Bedarf neu auf', async () => {
+			mockSightingRow();
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'smtp.example.com' });
+			await EmailService.initialize(false);
+
+			EmailService.resetTransporter();
+
+			const result = await EmailService.sendNewSightingNotification(42);
+
+			expect(result).toBe(true);
+			expect(mockTransporter.sendMail).toHaveBeenCalledOnce();
+		});
+
+		// Der eigentliche Betriebsfall: SMTP beim Serverstart nicht erreichbar.
+		it('erholt sich von einem beim Start fehlgeschlagenen verify()', async () => {
+			mockSightingRow();
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'smtp.example.com' });
+			mockTransporter.verify.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+
+			// Serverstart: verify() scheitert, der Transporter bleibt null.
+			await EmailService.initialize(false);
+			expect(nodemailer.createTransport).toHaveBeenCalledOnce();
+
+			// SMTP ist wieder erreichbar. Die nächste Sichtung baut die Verbindung
+			// selbst neu auf — früher blieb sie bis zum Container-Neustart tot.
+			const result = await EmailService.sendNewSightingNotification(42);
+
+			expect(result).toBe(true);
+			expect(nodemailer.createTransport).toHaveBeenCalledTimes(2);
+		});
+
+		// Zwei gleichzeitig eingehende Meldungen sehen beide `transporter === null`
+		// und liefen beide in `initialize()`. Der zweite Lauf schloss dabei über
+		// `resetTransporter()` die Verbindung, die der erste gerade aufgebaut
+		// hatte. Realistisch wird das nach einer SMTP-Störung, seit ein fehlender
+		// Transporter überhaupt neu aufgebaut wird.
+		it('baut bei gleichzeitigem Versand nur einen Transporter auf', async () => {
+			mockSightingRow();
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'smtp.example.com' });
+
+			const results = await Promise.all([
+				EmailService.sendNewSightingNotification(42),
+				EmailService.sendNewSightingNotification(42),
+				EmailService.sendNewSightingNotification(42)
+			]);
+
+			expect(results).toEqual([true, true, true]);
+			expect(nodemailer.createTransport).toHaveBeenCalledOnce();
+			expect(mockTransporter.close).not.toHaveBeenCalled();
+		});
+
+		it('gibt false zurück wenn der Neuaufbau ebenfalls scheitert', async () => {
+			mockSightingRow();
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: '' });
+
+			const result = await EmailService.sendNewSightingNotification(42);
+
+			expect(result).toBe(false);
+			expect(mockTransporter.sendMail).not.toHaveBeenCalled();
 		});
 	});
 

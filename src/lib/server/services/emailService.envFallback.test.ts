@@ -109,8 +109,11 @@ describe('EmailService — SMTP-Konfiguration aus der Umgebung', () => {
 		vi.clearAllMocks();
 		vi.mocked(nodemailer.createTransport).mockReturnValue({
 			sendMail: vi.fn(),
-			verify: vi.fn().mockResolvedValue(true)
+			verify: vi.fn().mockResolvedValue(true),
+			close: vi.fn()
 		} as unknown as ReturnType<typeof nodemailer.createTransport>);
+		// Der Transporter ist statisch und überlebt den einzelnen Test.
+		EmailService.resetTransporter();
 	});
 
 	it('nimmt die ENV-Werte, wenn die DB-Einträge leer sind', async () => {
