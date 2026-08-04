@@ -43,6 +43,18 @@
 	// direkt auf `undefined`.
 	const coordinatesPresent = $derived(latitude !== undefined && longitude !== undefined);
 
+	/**
+	 * Pflicht-Markierung der Koordinatenfelder.
+	 *
+	 * Liest `hasPosition` und NICHT `coordinatesPresent`, obwohl beide in diesem
+	 * Panel dasselbe bedeuten (`syncHasPosition`): Die Schema-Regel lautet
+	 * `latitude.when('hasPosition', { is: true, … })`, und das Sternchen soll
+	 * genau die Bedingung spiegeln, an der die Validierung hängt — sonst driften
+	 * die beiden auseinander, sobald ein weiterer Schreiber des Flags dazukommt
+	 * (die EXIF-Auswertung in `DropzoneEnhanced` ist bereits einer).
+	 */
+	const positionRequired = $derived($form.hasPosition === true);
+
 	// GPS-Foto-Konfiguration: Server-Config, aber nur Bilder und genau eine Datei.
 	let gpsPhotoConfig = $state<ValidationPreset | null>(null);
 	$effect(() => {
@@ -255,6 +267,7 @@
 		{longitude}
 		collapsibleCoordinates={false}
 		enableMapGps={false}
+		required={positionRequired}
 		coordinatesHint="Bitte tragen Sie die GPS-Koordinaten ein, wenn diese nicht automatisch über die Karte übernommen werden konnten."
 		onchange={handleLocationChange}
 	/>

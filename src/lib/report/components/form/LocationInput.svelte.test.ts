@@ -150,3 +150,113 @@ describe('LocationInput — Hinweistext nennt den GPS-Button nur wenn er da ist'
 		expect(mapHintText()).toMatch(/GPS-Button/i);
 	});
 });
+
+/**
+ * Pflicht-Markierung der Koordinaten.
+ *
+ * `latitude`/`longitude` sind im Yup-Schema konditionale Pflichtfelder
+ * (`.when('hasPosition', { is: true, … })`). Anders als jedes andere Feld laufen
+ * sie NICHT über `FormField` → `FieldRenderer`, das Sternchen und
+ * `aria-required` sonst zentral aus einer Variablen erzeugt — es sind rohe
+ * Inputs. Ohne das `required`-Prop hier trüge die Koordinaten-Eingabe deshalb
+ * weder eine sichtbare noch eine maschinenlesbare Pflicht, während die
+ * Validierung sie einfordert.
+ *
+ * Geprüft wird über ALLE drei Eingabeformate, weil jedes seine eigenen Labels
+ * und Inputs rendert: Ein Sternchen nur im Dezimalgrad-Zweig wäre für jeden,
+ * der auf „Grad, Minute, Sekunde" umstellt, wieder weg.
+ *
+ * Das Attribut sitzt am beschrifteten Feld — dem Grad-Feld bzw. dem
+ * Dezimalgrad-Feld. Minuten und Sekunden bleiben ohne: sie dürfen leer bleiben
+ * (`part()` reicht sie als NaN weiter, die Konverter lesen das als 0), eine
+ * Pflicht-Ansage dort wäre schlicht falsch.
+ */
+const COORDINATE_FIELDS = [
+	{ mode: 'dd' as const, latitude: 'latitude', longitude: 'longitude' },
+	{ mode: 'dm' as const, latitude: 'dm-lat-deg', longitude: 'dm-lon-deg' },
+	{ mode: 'dms' as const, latitude: 'dms-lat-deg', longitude: 'dms-lon-deg' }
+];
+
+function requiredMarkIn(inputId: string): Element | null {
+	return document.querySelector(`label[for="${inputId}"] [aria-label="Pflichtfeld"]`);
+}
+
+function ariaRequiredOf(inputId: string): string | null {
+	return document.getElementById(inputId)?.getAttribute('aria-required') ?? null;
+}
+
+describe('LocationInput — Pflicht-Markierung der Koordinaten', () => {
+	for (const { mode, latitude, longitude } of COORDINATE_FIELDS) {
+		it(`markiert Breite und Länge im Format "${mode}" als Pflicht, wenn required gesetzt ist`, async () => {
+			render(LocationInput, { mode, required: true, enableMapGps: false });
+
+			await expect.poll(() => document.getElementById(latitude), { timeout: 5000 }).not.toBeNull();
+
+			for (const inputId of [latitude, longitude]) {
+				expect(requiredMarkIn(inputId), `Sternchen an ${inputId}`).not.toBeNull();
+				expect(ariaRequiredOf(inputId), `aria-required an ${inputId}`).toBe('true');
+			}
+		});
+
+		/**
+		 * `toBeNull()` und nicht `.not.toBe('true')`: Im Nein-Fall soll das
+		 * Attribut ganz fehlen, nicht als `aria-required="false"` dastehen — so
+		 * hält es `BaseInput.svelte` (`restProps.required || undefined`) für jedes
+		 * andere Feld des Formulars. Beides wäre gültiges ARIA; die schärfere
+		 * Assertion hält die Gleichheit fest, statt sie nur zu behaupten.
+		 */
+		it(`lässt Breite und Länge im Format "${mode}" ohne required unmarkiert`, async () => {
+			render(LocationInput, { mode, enableMapGps: false });
+
+			await expect.poll(() => document.getElementById(latitude), { timeout: 5000 }).not.toBeNull();
+
+			for (const inputId of [latitude, longitude]) {
+				expect(requiredMarkIn(inputId), `Sternchen an ${inputId}`).toBeNull();
+				expect(ariaRequiredOf(inputId), `aria-required an ${inputId}`).toBeNull();
+			}
+		});
+	}
+
+	/**
+	 * Sternchen und `aria-required` stammen aus derselben Variable
+	 * (`.claude/rules/design-system.md`: „Nie eines von beidem separat setzen").
+	 * Der Test hält fest, dass es keinen Zwischenzustand gibt, in dem nur eines
+	 * von beidem gesetzt ist — die häufigste Art, wie die zwei auseinanderdriften.
+	 */
+	it('setzt Sternchen und aria-required immer gemeinsam', async () => {
+		render(LocationInput, { mode: 'dms', required: true, enableMapGps: false });
+
+		await expect
+			.poll(() => document.getElementById('dms-lat-deg'), { timeout: 5000 })
+			.not.toBeNull();
+
+		const marks = document.querySelectorAll('[aria-label="Pflichtfeld"]').length;
+		const flagged = document.querySelectorAll('input[aria-required="true"]').length;
+
+		expect(marks).toBe(2);
+		expect(flagged).toBe(2);
+	});
+
+	/**
+	 * Die Minuten- und Sekundenfelder tragen keine eigene Pflicht — siehe die
+	 * Begründung über `COORDINATE_FIELDS`. Ohne diese Gegenprobe wäre ein
+	 * pauschales `aria-required` auf allen sechs Inputs vom Test nicht zu
+	 * unterscheiden.
+	 *
+	 * `toBeNull()` wie im Nein-Fall oben: Diese Inputs sollen das Attribut gar
+	 * nicht tragen. Ein eingeschlichenes `aria-required="false"` wäre zwar
+	 * harmlos, würde die Parität zu `BaseInput.svelte` aber unbemerkt aufgeben.
+	 */
+	it('lässt Minuten und Sekunden auch bei required ohne Pflicht-Ansage', async () => {
+		render(LocationInput, { mode: 'dms', required: true, enableMapGps: false });
+
+		await expect
+			.poll(() => document.querySelector('[aria-label="Breite Minuten"]'), { timeout: 5000 })
+			.not.toBeNull();
+
+		for (const label of ['Breite Minuten', 'Breite Sekunden', 'Länge Minuten', 'Länge Sekunden']) {
+			const input = document.querySelector(`[aria-label="${label}"]`);
+			expect(input?.getAttribute('aria-required') ?? null, label).toBeNull();
+		}
+	});
+});
