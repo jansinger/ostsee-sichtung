@@ -97,3 +97,35 @@ describe('sections/SightingDetails — boatDrive in der Admin-Maske', () => {
 		expect(document.querySelector('[data-field="boatDrive"]')).toBeNull();
 	});
 });
+
+/**
+ * „Statt Sichtungsdetails ‚Funddetails' einfügen" — Wunsch des Museums für den
+ * Totfund. Die Karte reagiert auf den Totfund-Schalter, der auf Schritt 2 über
+ * ihr steht; die Zuordnung selbst liegt in `$lib/report/wording`.
+ *
+ * Gilt auch in der Admin-Maske: Dort kommt `isDead` aus dem geladenen
+ * Datensatz, und ein Totfund heißt auch dort ein Fund.
+ */
+describe('sections/SightingDetails — Kartentitel folgt dem Totfund-Schalter', () => {
+	it('heißt bei einer Sichtung „Sichtungsdetails"', () => {
+		renderSightingDetails({ isDead: false });
+
+		expect(document.body.textContent).toContain('Sichtungsdetails');
+	});
+
+	it('heißt beim Totfund „Funddetails"', () => {
+		renderSightingDetails({ isDead: true });
+
+		const text = document.body.textContent ?? '';
+		expect(text).toContain('Funddetails');
+		expect(text).not.toContain('Sichtungsdetails');
+	});
+
+	// Gegenprobe über die Admin-Maske: Der Titel hängt am Datensatz, nicht am
+	// Modus — sonst führe die Sachbearbeitung einen Totfund unter „Sichtung".
+	it('heißt beim Totfund auch in der Admin-Maske „Funddetails"', () => {
+		renderSightingDetails({ isDead: true }, { adminMode: true });
+
+		expect(document.body.textContent).toContain('Funddetails');
+	});
+});

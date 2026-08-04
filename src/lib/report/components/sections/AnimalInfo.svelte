@@ -4,10 +4,17 @@
 	import { getFormContext } from '$lib/report/formContext';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import SectionCard from './SectionCard.svelte';
+	import { speciesQuestion } from '$lib/report/wording';
 
 	let { adminMode = false }: { adminMode?: boolean } = $props();
 
 	const { form } = getFormContext();
+
+	// Beim Totfund fragt das Artfeld nach dem, was gefunden wurde (Wunsch des
+	// Museums). Über den `label`-Override an `FormField` — derselbe Weg, den PR 4
+	// für den Bootsantrieb gebaut hat: Eine Schema-Spalte, in zwei Zuständen
+	// unterschiedlich gefragt, ohne das `.label()` des Schemas anzufassen.
+	const speciesLabel = $derived(speciesQuestion($form.isDead));
 </script>
 
 <!-- Animal Information Section -->
@@ -40,7 +47,7 @@
 
 	<!-- Species Selection -->
 	<div class="mt-4">
-		<FormField name="species" />
+		<FormField name="species" label={speciesLabel} />
 	</div>
 
 	<!-- Animal Count -->
