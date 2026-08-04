@@ -215,6 +215,7 @@
 	let helpId = $derived(`${fieldId}-help`);
 	let errorId = $derived(`${fieldId}-error`);
 	let descriptionId = $derived(`${fieldId}-desc`);
+	let legendId = $derived(`${fieldId}-legend`);
 
 	// ARIA attributes
 	let ariaDescribedBy = $derived.by(() => {
@@ -273,16 +274,24 @@
 		return props;
 	});
 
+	// Die beiden ARIA-Zustände trägt das `fieldset[role="radiogroup"]`, nicht das
+	// einzelne Radio (Begründung am fieldset im Markup). Sie werden hier bewusst
+	// wieder entfernt, damit sie nicht als tote Props an `BaseRadio` gehen — genau
+	// dort sind sie vorher still verschwunden, weil die Komponente sie nie annahm.
 	let radioProps = $derived.by(() => {
 		// Ohne `icon`: Eine Radiogruppe hat kein einzelnes Control, an dem das
 		// Feld-Icon sitzen könnte — es steht deshalb an der Legende (siehe
 		// caption-Snippet). `BaseRadio` würde es sonst pro Option ausgeben.
-		const { icon: _icon, ...withoutIcon } = commonFieldProps;
-		const props = {
-			...withoutIcon,
+		const {
+			icon: _icon,
+			'aria-invalid': _ariaInvalid,
+			'aria-required': _ariaRequired,
+			...rest
+		} = commonFieldProps;
+		return {
+			...rest,
 			options: metaValues.options ?? []
 		};
-		return props;
 	});
 
 	let checkboxProps = $derived.by(() => {
@@ -393,9 +402,27 @@
 
 <div class={containerClasses}>
 	{#if isRadioGroup}
-		<!-- Radiogruppe: fieldset+legend statt label[for], das ins Leere zeigen würde -->
-		<fieldset class="w-full">
-			<legend class="label w-full pb-1">{@render caption()}</legend>
+		<!-- Radiogruppe: fieldset+legend statt label[for], das ins Leere zeigen würde.
+
+		     `role="radiogroup"` überschreibt die implizite Rolle `group` des
+		     fieldset — nur die Radiogruppe unterstützt `aria-invalid` und
+		     `aria-required`. Beide gehören hierher und NICHT an die einzelnen
+		     Radios: ARIA 1.2 hat sie aus den globalen Zuständen genommen, seither
+		     unterstützt `role="radio"` sie nicht mehr (`svelte-check` meldet es).
+		     Der Fehler-Zustand erreicht die Radios stattdessen als Optik über
+		     `hasError` → `radio-error` in `BaseRadio`.
+
+		     Das `aria-labelledby` auf die Legend ist bewusst explizit: Die
+		     Namensgebung aus dem `<legend>` hängt am fieldset-Element, und mit
+		     überschriebener Rolle ist sie nicht mehr selbstverständlich. -->
+		<fieldset
+			class="w-full"
+			role="radiogroup"
+			aria-labelledby={legendId}
+			aria-invalid={hasError || undefined}
+			aria-required={required || undefined}
+		>
+			<legend id={legendId} class="label w-full pb-1">{@render caption()}</legend>
 			{@render description()}
 			{@render fieldControl()}
 		</fieldset>

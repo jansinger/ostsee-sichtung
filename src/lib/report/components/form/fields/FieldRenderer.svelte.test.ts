@@ -303,6 +303,136 @@ describe('FieldRenderer', () => {
 			});
 		});
 
+		/**
+		 * Die ARIA-Zustände der Radiogruppe liegen am `fieldset`, nicht an den
+		 * einzelnen Radios: ARIA 1.2 hat `aria-invalid`/`aria-required` aus den
+		 * globalen Zuständen genommen, `role="radio"` unterstützt sie seither
+		 * nicht mehr. Damit das fieldset sie tragen darf, überschreibt es seine
+		 * implizite Rolle `group` mit `radiogroup`.
+		 *
+		 * Ein Test an `BaseRadio` allein bemerkt nicht, wenn `FieldRenderer`
+		 * aufhört, den Zustand zu setzen — deshalb steht das hier.
+		 */
+		it('macht das fieldset zur radiogroup und benennt es über die Legend', async () => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: boatDriveSelectFieldConfig,
+				name: 'boatDrive',
+				value: null,
+				type: 'radio',
+				options: publicBoatDriveOptions
+			});
+
+			const group = screen.container.querySelector('fieldset');
+			expect(group?.getAttribute('role')).toBe('radiogroup');
+
+			const legend = screen.container.querySelector('legend');
+			expect(legend?.id).toBeTruthy();
+			expect(group?.getAttribute('aria-labelledby')).toBe(legend?.id);
+		});
+
+		it('setzt aria-invalid=true an der Radiogruppe, wenn ein Fehler anliegt', async () => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: boatDriveSelectFieldConfig,
+				name: 'boatDrive',
+				value: null,
+				type: 'radio',
+				options: publicBoatDriveOptions,
+				error: 'Bitte wählen Sie den Bootsantrieb aus.'
+			});
+
+			expect(screen.container.querySelector('fieldset')?.getAttribute('aria-invalid')).toBe('true');
+		});
+
+		it('setzt kein aria-invalid an der Radiogruppe ohne Fehler', async () => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: boatDriveSelectFieldConfig,
+				name: 'boatDrive',
+				value: null,
+				type: 'radio',
+				options: publicBoatDriveOptions
+			});
+
+			expect(screen.container.querySelector('fieldset')?.getAttribute('aria-invalid')).not.toBe(
+				'true'
+			);
+		});
+
+		it('setzt aria-required=true an der Radiogruppe (Schema-Pflichtfeld)', async () => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: boatDriveSelectFieldConfig,
+				name: 'boatDrive',
+				value: null,
+				type: 'radio',
+				options: publicBoatDriveOptions
+			});
+
+			expect(screen.container.querySelector('fieldset')?.getAttribute('aria-required')).toBe(
+				'true'
+			);
+		});
+
+		/**
+		 * Sternchen und `aria-required` müssen laut `design-system.md` aus
+		 * derselben Variable kommen. Vorher rendete die Caption das Sternchen,
+		 * während die Gruppe kein `aria-required` trug — genau das Driften, das
+		 * die Regel verbietet.
+		 */
+		it('hält Pflicht-Sternchen und aria-required der Radiogruppe zusammen', async () => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: boatDriveSelectFieldConfig,
+				name: 'boatDrive',
+				value: null,
+				type: 'radio',
+				options: publicBoatDriveOptions,
+				required: false
+			});
+
+			expect(screen.container.querySelector('[aria-label="Pflichtfeld"]')).toBeNull();
+			expect(screen.container.querySelector('fieldset')?.getAttribute('aria-required')).not.toBe(
+				'true'
+			);
+		});
+
+		/**
+		 * Gegenprobe zur Entscheidung oben: Die Attribute stehen aus
+		 * `commonFieldProps` zwar bereit, dürfen aber nicht an den Radios landen.
+		 */
+		it('setzt die ARIA-Zustände NICHT an den einzelnen Radios', async () => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: boatDriveSelectFieldConfig,
+				name: 'boatDrive',
+				value: null,
+				type: 'radio',
+				options: publicBoatDriveOptions,
+				error: 'Bitte wählen Sie den Bootsantrieb aus.'
+			});
+
+			const radios = screen.container.querySelectorAll('input[type="radio"]');
+			expect(radios.length).toBeGreaterThan(0);
+			radios.forEach((radio) => {
+				expect(radio.hasAttribute('aria-invalid')).toBe(false);
+				expect(radio.hasAttribute('aria-required')).toBe(false);
+			});
+		});
+
+		it('gibt der Radiogruppe bei Fehler die Fehler-Optik statt radio-primary', async () => {
+			const screen = render(FieldRenderer, {
+				fieldConfig: boatDriveSelectFieldConfig,
+				name: 'boatDrive',
+				value: null,
+				type: 'radio',
+				options: publicBoatDriveOptions,
+				error: 'Bitte wählen Sie den Bootsantrieb aus.'
+			});
+
+			const radios = screen.container.querySelectorAll('input[type="radio"]');
+			expect(radios.length).toBeGreaterThan(0);
+			radios.forEach((radio) => {
+				expect(radio.classList.contains('radio-error')).toBe(true);
+				expect(radio.classList.contains('radio-primary')).toBe(false);
+			});
+		});
+
 		it('rendert ohne Override weiterhin das Schema-Select (Admin-Maske)', async () => {
 			render(FieldRenderer, {
 				fieldConfig: boatDriveSelectFieldConfig,

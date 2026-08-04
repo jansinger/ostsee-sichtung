@@ -334,6 +334,24 @@ Das Formular wird an Deck und am Strand ausgefüllt — nass, in der Sonne, mit 
 - Labels statt Platzhaltertexte. Ein `placeholder` ist Beispiel, nie Ersatz für das Label.
 - Dekorative Icons bekommen `aria-hidden="true"`; informationstragende Icons brauchen ein `aria-label` am fokussierbaren Element.
 - Radiogruppen als `fieldset`/`legend`, nicht als `label[for]` auf mehrere Inputs.
+- **`aria-invalid` und `aria-required` einer Radiogruppe gehören an die Gruppe, nicht an die
+  einzelnen Radios.** ARIA 1.2 hat beide aus den globalen Zuständen entfernt; `role="radio"`
+  unterstützt sie seither nicht — `svelte-check` meldet sie am `<input type="radio">` als
+  a11y-Warnung. Getragen werden sie vom `fieldset`, das dafür seine implizite Rolle `group`
+  (die sie ebenfalls nicht unterstützt) mit `role="radiogroup"` überschreibt und sich per
+  `aria-labelledby` an seiner Legend benennt. So umgesetzt in `FieldRenderer.svelte`.
+
+  Das ist die Ausnahme von der Regel „Pflicht-Sternchen und `aria-required` aus derselben
+  Variable": Dieselbe Variable, aber zwei Elemente — Sternchen in der Caption, `aria-required`
+  am fieldset. Den Fehler-**Zustand** bekommen die Radios trotzdem, nur als Optik über
+  `hasError` → `radio-error` (`BaseRadio.svelte`). Die native `required`-Angabe bleibt am
+  Input: sie ist dort gültig und trägt die Constraint-Validierung.
+
+  `radio-error`/`radio-success` **ersetzen** dabei `radio-primary`, sie ergänzen es nicht —
+  alle drei setzen dieselbe DaisyUI-Variable (`--input-color`) auf derselben Ebene und mit
+  derselben Spezifität. Stünden zwei am Element, entschiede die Reihenfolge im
+  DaisyUI-Stylesheet statt der im `class`-Attribut.
+
 - Fehlermeldungen mit `role="alert"` und `aria-live="polite"`, referenziert über `aria-describedby` — und nur dann referenziert, wenn das Element tatsächlich gerendert ist.
 
 ---
