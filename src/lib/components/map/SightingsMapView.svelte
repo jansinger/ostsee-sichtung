@@ -947,7 +947,7 @@
 		     360, -22px bei 320); bei 375px blieben nur 5px übrig. Die Umschaltung
 		     belegt 16–60px über der Unterkante, bottom-20 setzt die Platte auf 80px
 		     und räumt sie. -->
-		<div class="group absolute right-1 bottom-20 z-30 md:bottom-6">
+		<div class="absolute right-1 bottom-20 z-30 md:bottom-6">
 			<!-- Helle Platte, weil /logo_dmm_positiv.svg einfarbig im Markenblau
 			     #003777 zeichnet (relative Luminanz 0,041 — auf Weiß 11,6:1, über
 			     einer dunklen Kachel nur noch ~1,2:1) und dort sonst verschwindet.
