@@ -45,6 +45,16 @@
 	<span>Datenschutzhinweis</span>
 </button>
 
+<!-- Dieser Dialog misst sich im DOM breiter als sein Elternelement, auch
+     geschlossen: DaisyUI blendet `.modal` über `visibility` aus, nicht über
+     `display`. Bei der Suche nach horizontalem Überlauf sieht das nach einem
+     Verursacher aus — ist aber keiner. `.modal` ist `position: fixed; inset: 0`
+     und zählt nicht in `documentElement.scrollWidth`; am 2026-08-04 mit 3000 px
+     Breite gegengemessen, der Wert blieb bei 360. Die Breite hier an den
+     Elternkontext zu binden wäre wirkungslos. Messwerte, die eine Ausnahme
+     bilden, und das Verfahren, das den echten Verursacher findet:
+     `.claude/rules/daisyui.md` → „Geschlossene `.modal`-Dialoge sind kein
+     Überlauf-Verdacht". -->
 <dialog
 	bind:this={dialogElement}
 	class="modal"
