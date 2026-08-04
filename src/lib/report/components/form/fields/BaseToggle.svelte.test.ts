@@ -101,10 +101,16 @@ describe('BaseToggle', () => {
 	});
 
 	/**
-	 * Anders als beim Radio sind `aria-invalid`/`aria-required` hier gültig:
-	 * `role="switch"` unterstützt beide, `svelte-check` akzeptiert sie. Sie
-	 * bleiben deshalb am Input — die Zustands-Klasse tritt daneben, nicht an
-	 * ihre Stelle.
+	 * Anders als beim Radio sind `aria-invalid`/`aria-required` hier gültig und
+	 * `svelte-check` akzeptiert sie. Sie bleiben deshalb am Input — die
+	 * Zustands-Klasse tritt daneben, nicht an ihre Stelle.
+	 *
+	 * Der Toggle ist eine gestylte Checkbox: `<input type="checkbox">` ohne
+	 * `role`-Attribut, seine implizite Rolle ist damit `checkbox` — nicht
+	 * `switch`. Für die Aussage oben ändert das nichts, beide Rollen
+	 * unterstützen die zwei Attribute. Wer den Toggle später auf
+	 * `role="switch"` umstellt (was `aria-checked` nach sich zöge), muss diese
+	 * Zeilen deshalb nicht anfassen.
 	 */
 	describe('ARIA bleibt am Input', () => {
 		it('setzt aria-invalid und behält daneben die Fehler-Optik', async () => {
