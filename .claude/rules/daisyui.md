@@ -201,6 +201,61 @@ Ein `alert-soft` zusätzlich zu setzen ist überflüssig; die Klassen `alert-inf
 
 ---
 
+## Geschlossene `.modal`-Dialoge sind kein Überlauf-Verdacht
+
+Wer horizontalen Überlauf sucht und die Breiten im DOM misst, stolpert
+zuverlässig über die Dialoge: DaisyUI blendet `.modal` **nicht** per
+`display: none` aus, sondern über `visibility: hidden` — ein geschlossener
+Dialog steht also weiter im DOM, hat eine Box und ist regelmäßig breiter als
+sein Elternelement. Gemessen auf `/` bei 360 px (2026-08-04): der
+`upload-notice-dialog` 360 px bei 250 px Elternbreite, das Bild-Modal aus
+`SpeciesIdentificationHelp` 294 px bei 230 px.
+
+**Das ist folgenlos.** `.modal` ist `position: fixed; inset: 0` — der Dialog ist
+aus dem Fluss genommen, sein umschließender Block ist der Viewport, und er
+zählt damit nicht in `documentElement.scrollWidth`. Belegt statt vermutet: der
+Dialog per `style.width = '3000px'` aufgeblasen und zusätzlich um 2000 px nach
+rechts geschoben — `scrollWidth` blieb in beiden Fällen bei 360. Ein
+Kontroll-`div` derselben Breite **im** Fluss hob ihn sofort auf 3000. Dasselbe
+gilt für den geöffneten Dialog (Top-Layer, weiterhin `fixed`).
+
+Die Breite an den Elternkontext zu binden wäre also eine wirkungslose Änderung.
+Beim Überlauf-Suchen gehören Dialoge übersprungen.
+
+**Die eine Bedingung, die das umdreht:** Bekommt ein _Vorfahr_ eine Eigenschaft,
+die einen umschließenden Block für `position: fixed` aufspannt — `transform`,
+`filter`, `backdrop-filter`, `perspective`, `will-change`, `contain`,
+`container-type` —, wird der Dialog flussrelativ und zählt mit. Derselbe
+3000-px-Dialog trieb `scrollWidth` mit einem `transform: translateZ(0)` am
+Elternelement auf 3055. `backdrop-filter` kommt in `SpeciesIdentificationHelp`
+nur am `.modal-backdrop` vor, also an einem Nachfahren, und ist damit
+unkritisch.
+
+**Abgesichert ist das durch `e2e/modal-overflow.spec.ts`** — auf `/`,
+`/bestimmungshilfe` und `/admin`, also an fünf der sechs
+`class="modal"`-Fundstellen (`MediaModal` hängt hinter `{#if selectedMedia}` an
+der Sichtungs-Detailansicht und steht auf keiner Route im Ruhezustand im DOM).
+Ebenfalls nicht abgedeckt sind `hover:`-Zustände — der Test misst den
+Ruhezustand, derselbe Vorbehalt wie beim Token-Scan in `design-system.md`.
+Der Test fragt **nicht** die
+sieben Eigenschaften ab — eine solche Liste wäre eine zweite Quelle neben der
+Spezifikation und altert mit ihr. Er misst die Wirkung: Dialog auf 3000 px
+aufblasen, `scrollWidth` vorher/nachher vergleichen. Jede Route fährt zusätzlich
+eine Gegenprobe, die dem Elternelement ein `transform` verpasst und verlangt,
+dass der Überlauf dann **auftritt** — sonst wäre das Grün eines konformen
+Bestands ohne Aussage. Vorgeführt am 2026-08-04 mit einem `main { transform:
+translateZ(0) }` in `app.css`: alle drei Routen rot, alle sechs Dialoge benannt.
+
+**Was stattdessen funktioniert:** Teilbäume nacheinander auf `display: none`
+setzen, nach jedem Schritt `document.documentElement.scrollWidth` messen und in
+den Teilbaum absteigen, dessen Ausblenden den Überlauf beseitigt. Das liefert
+den kleinsten Verursacher statt einer Liste mitgezogener Elternelemente.
+Messen muss man dafür in einem echten 360-px-Viewport (Playwright-Skript
+**im Repo-Verzeichnis**, sonst fehlt `@playwright/test`); Chrome selbst lässt
+sich nicht so schmal ziehen.
+
+---
+
 ## Layout-Variablen
 
 Radien und Größen kommen aus dem Theme, nicht aus Utility-Klassen:
