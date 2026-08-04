@@ -246,8 +246,8 @@ dass der Überlauf dann **auftritt** — sonst wäre das Grün eines konformen
 Bestands ohne Aussage. Davor klappt er jede Disclosure auf und wartet auf deren
 Endzustand (Begründung im Abschnitt darunter); bleibt eine Dialogposition
 dauerhaft abgeschnitten, bricht er ab, statt sie trivial zu bestehen.
-Vorgeführt am 2026-08-04 mit einem `main { transform:
-translateZ(0) }` in `app.css`: alle drei Routen rot, alle sechs Dialoge benannt.
+Vorgeführt am 2026-08-04 mit einem `main { transform: translateZ(0) }` in
+`app.css`: alle drei Routen rot, alle sechs Dialoge benannt.
 
 ### Ein `.collapse` schluckt den Überlauf, solange die Animation läuft
 
