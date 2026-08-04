@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
+
+	let { adminMode = false }: { adminMode?: boolean } = $props();
 </script>
 
 <div class="bg-warning/10 border-warning/20 mt-6 rounded-lg border p-4">
@@ -29,10 +31,18 @@
 	<div class="space-y-4">
 		<FormField name="deadCondition" />
 
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-			<FormField name="deadSex" />
+		<!-- Das Geschlecht beim Totfund ist seit 2026-08-04 nur noch in der
+		     Admin-Maske sichtbar (C4) — ohne adminMode steht deadSize allein und
+		     zieht auf die volle Breite, statt in der leeren Zweier-Spalte zu
+		     hängen. -->
+		{#if adminMode}
+			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+				<FormField name="deadSex" />
+				<FormField name="deadSize" />
+			</div>
+		{:else}
 			<FormField name="deadSize" />
-		</div>
+		{/if}
 
 		<FormField name="deadPhoneContact" />
 	</div>

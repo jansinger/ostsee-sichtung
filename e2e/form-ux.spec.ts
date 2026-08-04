@@ -128,15 +128,21 @@ test.describe('AnimalInfo — isDead Conditional Rendering', () => {
 		await expect(page.locator('[data-field="deadSize"]')).not.toBeVisible();
 	});
 
-	test('isDead=true zeigt DeadAnimal-Felder', async ({ page }) => {
+	test('isDead=true zeigt DeadAnimal-Felder, aber nicht deadSex (Museum hat das Feld am 2026-08-04 abbestellt — C4)', async ({
+		page
+	}) => {
 		// Toggle isDead
 		const toggle = page.locator('[data-testid="field-isDead"]');
 		await toggle.check();
 
 		// Dead animal fields should appear
 		await expect(page.locator('[data-field="deadCondition"]')).toBeVisible({ timeout: 3000 });
-		await expect(page.locator('[data-field="deadSex"]')).toBeVisible();
 		await expect(page.locator('[data-field="deadSize"]')).toBeVisible();
+
+		// deadSex bleibt Schema-Feld für die Admin-Maske, ist im Meldeformular
+		// aber auch bei isDead=true nicht mehr erreichbar — anders als
+		// deadCondition/deadSize, die weiterhin sichtbar werden.
+		await expect(page.locator('[data-field="deadSex"]')).not.toBeVisible();
 	});
 
 	test('isDead zurück auf false versteckt DeadAnimal-Felder', async ({ page }) => {

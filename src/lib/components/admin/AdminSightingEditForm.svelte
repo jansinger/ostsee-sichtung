@@ -86,7 +86,7 @@
 
 			<Location />
 			<DateTime />
-			<AnimalInfo />
+			<AnimalInfo adminMode={true} />
 			<SightingDetails />
 		</div>
 

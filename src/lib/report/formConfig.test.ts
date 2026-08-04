@@ -86,6 +86,35 @@ describe('formStepsConfig — Verteilung nur in der Admin-Maske', () => {
 	});
 });
 
+/**
+ * `deadSex` (Geschlecht beim Totfund) bleibt nur in der Admin-Maske —
+ * `sections/DeadAnimal.svelte` zeigt das Feld dort ausschließlich hinter
+ * `adminMode` (PR 2, Teil b — Analyse-Punkt C4, Museum am 2026-08-04
+ * abbestellt). Schema-Eintrag, DB-Spalte (`totfund_geschlecht`) und
+ * `formOptions/sex.ts` bleiben unverändert; hier wird nur geprüft, dass der
+ * Melde-Schritt "sighting-details" das Feld nicht mehr führt.
+ */
+describe('formStepsConfig — Geschlecht beim Totfund nur in der Admin-Maske', () => {
+	const sightingDetailsStep = formStepsConfig.find((step) => step.id === 'sighting-details');
+
+	it('führt deadSex nicht mehr im Schritt "sighting-details"', () => {
+		expect(sightingDetailsStep?.fields).not.toContain('deadSex');
+	});
+
+	// Gegenprobe: Nur `deadSex` verschwindet, die übrigen Totfund-Felder
+	// bleiben Teil des Melde-Schritts.
+	it.each(['isDead', 'deadCondition', 'deadSize', 'deadPhoneContact'])(
+		'behält %s im Schritt "sighting-details"',
+		(name) => {
+			expect(sightingDetailsStep?.fields).toContain(name);
+		}
+	);
+
+	it('kennt deadSex im Schema weiterhin, damit die Admin-Maske es schreiben kann', () => {
+		expect(sightingSchemaFields.deadSex).toBeDefined();
+	});
+});
+
 describe('waterway — Beschriftung deckt beide bisherigen Felder ab', () => {
 	const waterwayMeta = meta('waterway');
 	const copy = [describeField('waterway').label, waterwayMeta.helpText, waterwayMeta.placeholder]
