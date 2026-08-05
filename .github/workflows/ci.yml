@@ -488,7 +488,16 @@ jobs:
             e2e/form-field-mode.spec.ts
           )
 
-          map=(e2e/map-*.spec.ts)
+          # form-map-pan-zoom.spec.ts steht hier trotz `form`-Präfix: Es prüft
+          # Pan und Zoom der Positions-Karte und teilt sich mit dem
+          # Schwester-Spec e2e/map-pan-zoom.spec.ts das Messwerkzeug
+          # (e2e/helpers/mapCanvas.ts). Es fällt nicht unter das Glob und muss
+          # deshalb einzeln stehen.
+          #
+          # Zeitbudget: Der Shard lag bei 153 s seriell, der Spec kostet ~17 s.
+          # Mit 170 s bleibt `map` unter `form` (190 s) — die Wanduhr des Jobs
+          # ist die des längsten Shards und ändert sich dadurch nicht.
+          map=(e2e/map-*.spec.ts e2e/form-map-pan-zoom.spec.ts)
 
           # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das
           # Theme, nicht das Formular. Läuft gegen /styleguide, das der
@@ -513,16 +522,24 @@ jobs:
           # **nicht** weil ihr Ausschluss geprüft wäre.
           #
           # Wer einen davon in einen Shard zieht, lässt ihn vorher laufen.
-          # form-map-pan-zoom.spec.ts ist der bekannte Sonderfall: von sich aus
-          # flaky (Subpixel-Vergleiche nach Pan/Zoom), gehört erst nach einer
-          # Stabilisierung in einen Shard.
+          #
+          # form-map-pan-zoom.spec.ts stand hier als „von sich aus flaky
+          # (Subpixel-Vergleiche nach Pan/Zoom)" und läuft seit dem
+          # 2026-08-05 im `map`-Shard. Der Befund stimmte, die Diagnose war
+          # ungenau: Verglichen wurde nicht nach der Geste, sondern **davor** —
+          # eine Vorprüfung `box.y >= 0` auf der Oberkante des Karten-Containers.
+          # `scrollIntoViewIfNeeded` zentriert die Karte, der Sub-Pixel-Rest
+          # daraus macht `box.y` minimal negativ, sobald die 400px hohe Karte die
+          # Fensterhöhe ausfüllt (reproduziert bei 1280×400: `box.y = -0.40625`,
+          # Vorprüfung rot, Geste bei `y = 311.6` und einwandfrei). Sie prüft
+          # jetzt per `elementFromPoint`, ob die Geste die Karte trifft — dieselbe
+          # Frage ohne Fließkomma-Rand. 10 aufeinanderfolgende Läufe grün.
           unassigned=(
             e2e/admin-edit-preserves-record.spec.ts
             e2e/admin-table-verified-column.spec.ts
             e2e/app-shell-height.spec.ts
             e2e/bestimmungshilfe.spec.ts
             e2e/footer-layout.spec.ts
-            e2e/form-map-pan-zoom.spec.ts
             e2e/form-stepper-affordance.spec.ts
             e2e/form-stepper.spec.ts
             e2e/horizontal-overflow.spec.ts

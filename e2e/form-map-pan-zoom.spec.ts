@@ -41,6 +41,37 @@ const DEFAULT_CENTER = { latitude: '54.5', longitude: '13.5' };
 const karte = (page: Page) =>
 	createMapCanvasProbe(page, { selector: '.ol-map-container', stride: 97 });
 
+/** Verschiebung einer Zeige-Geste in CSS-Pixeln; `{0,0}` für Rad und Hover. */
+type Geste = { dx: number; dy: number };
+
+/**
+ * Zwei Messungen gelten als dieselbe Position, wenn sie um weniger als das hier
+ * auseinanderliegen.
+ *
+ * Ein exakter Vergleich taugt nicht: Die Bounding-Box der Karte trägt einen
+ * Sub-Pixel-Rest aus dem Layout (gemessen `x.59375`, also 19/32), und schon eine
+ * Neuberechnung derselben unveränderten Ansicht kann die letzte Nachkommastelle
+ * kippen. Ein halber Pixel ist für eine Maus-Geste ohne Belang — die Schranke
+ * trennt „steht" von „scrollt noch", nicht Pixel von Pixel.
+ */
+const RUHE_TOLERANZ_PX = 0.5;
+
+/**
+ * Prüft per Treffer-Test, ob ein Viewport-Punkt tatsächlich auf der Karte landet.
+ *
+ * Bewusst `elementFromPoint` und kein Koordinaten-Vergleich: Der Test will
+ * wissen, ob die Geste die Karte trifft, und das ist genau diese Frage. Ein
+ * Punkt außerhalb des Fensters liefert `null`, ein von der Sticky-Leiste
+ * verdeckter Punkt liefert die Leiste — beides fällt hier auf, ohne dass
+ * irgendwo eine Fließkommazahl verglichen werden müsste.
+ */
+async function trifftKarte(page: Page, punkt: { x: number; y: number }): Promise<boolean> {
+	return page.evaluate(
+		({ x, y }) => document.elementFromPoint(x, y)?.closest('.ol-map-container') != null,
+		punkt
+	);
+}
+
 /**
  * Punkt in der Karte — abseits der Zoom-Controls (oben links), der Attribution
  * (unten rechts) und vor allem abseits des Markers in der Mitte: Ein Zug, der
@@ -48,36 +79,78 @@ const karte = (page: Page) =>
  * ihn, statt die Karte zu schieben.
  *
  * **Die Karte wird vorher ins Bild geholt und der Scroll abgewartet.** Das
- * Formular scrollt an mehreren Stellen von selbst — `PositionPanel.openMap()`
- * ruft `scrollIntoView`, und jedes fokussierte Feld zieht die Ansicht nach. Wer
- * die Bounding-Box mitten in diese Bewegung liest, bekommt eine Position, die
- * beim Ziehen schon nicht mehr stimmt: Beim Entwickeln dieses Tests lag der
+ * Formular scrollt an mehreren Stellen von selbst — `PositionPanel` ruft
+ * `scrollIntoView`, `scrollToElement` scrollt sogar animiert (`behavior:
+ * 'smooth'`), und jedes fokussierte Feld zieht die Ansicht nach. Wer die
+ * Bounding-Box mitten in diese Bewegung liest, bekommt eine Position, die beim
+ * Ziehen schon nicht mehr stimmt: Beim Entwickeln dieses Tests lag der
  * Startpunkt einmal bei `y = -36`, also außerhalb des Fensters — die Geste ging
  * ins Leere und sah aus wie der Defekt, den der Test sucht.
+ *
+ * `gesture` ist die Verschiebung, die der Aufrufer anschließend zieht. Geprüft
+ * werden **Anfang und Ende** des Zugs: Nur wenn beide auf der Karte liegen,
+ * beweist ein „hat sich bewegt" etwas über die Karte.
+ *
+ * ── Warum hier nicht mehr `box.y >= 0` steht ────────────────────────────────
+ * Diese Datei stand als „von sich aus flaky" in keinem CI-Shard. Der Grund war
+ * genau jene Schranke: `scrollIntoViewIfNeeded` **zentriert** die Karte, und der
+ * dabei entstehende Sub-Pixel-Rest macht `box.y` minimal negativ, sobald die
+ * 400px hohe Karte die Fensterhöhe ausfüllt (gemessen bei 1280×400:
+ * `box.y = -0.40625`, die Schranke schlug an). Der Startpunkt lag dabei bei
+ * `y = 311.6`, mitten im Bild, und der Zug bewegte die Karte einwandfrei — die
+ * Schranke maß also die Oberkante des Containers, während es ihr um die Geste
+ * ging. Der dokumentierte Fehlschlag `-1.125` ist derselbe Rest ein Layout
+ * weiter. Der Treffer-Test oben stellt dieselbe Frage ohne Fließkomma-Rand.
  */
-async function mapPoint(page: Page, relX = 0.25, relY = 0.78) {
+async function mapPoint(
+	page: Page,
+	gesture: Geste = { dx: 0, dy: 0 },
+	relX = 0.25,
+	relY = 0.78
+): Promise<{ x: number; y: number }> {
 	const map = page.locator('.ol-map-container');
 	await map.scrollIntoViewIfNeeded();
 
-	let previous: string | null = null;
-	let current: string | null = null;
+	// Holder-Objekt statt `let`: Eine Zuweisung in der Poll-Closure sieht
+	// TypeScript nicht, eine lokale Variable gälte hinter dem `await` weiterhin
+	// als `null` und bräuchte einen Cast, der die Prüfung nur stillstellt.
+	const ruhig: { box: { x: number; y: number; width: number; height: number } | null } = {
+		box: null
+	};
+	let vorherige: { x: number; y: number } | null = null;
+
 	await expect
 		.poll(
 			async () => {
 				const box = await map.boundingBox();
-				previous = current;
-				current = box ? `${Math.round(box.x)}/${Math.round(box.y)}` : null;
-				return current !== null && current === previous;
+				// `height > 0` gehört dazu: Vor dem Layout der Karte ist die Box da,
+				// aber leer — ein Punkt darin träfe nichts.
+				const steht =
+					box !== null &&
+					box.height > 0 &&
+					vorherige !== null &&
+					Math.abs(box.x - vorherige.x) < RUHE_TOLERANZ_PX &&
+					Math.abs(box.y - vorherige.y) < RUHE_TOLERANZ_PX;
+				vorherige = box;
+				if (steht) ruhig.box = box;
+				return steht;
 			},
 			{ timeout: 10000, intervals: [100, 100, 200, 300], message: 'Karte scrollt noch' }
 		)
 		.toBe(true);
 
-	const box = await map.boundingBox();
-	if (!box) throw new Error('.ol-map-container hat keine Bounding-Box');
-	// Gegenprobe zum Fall oben: Eine Geste außerhalb des Fensters beweist nichts.
-	expect(box.y, 'Karte liegt oberhalb des sichtbaren Bereichs').toBeGreaterThanOrEqual(0);
-	return { x: box.x + box.width * relX, y: box.y + box.height * relY };
+	// Die als ruhig gemessene Box und keine vierte Messung: Ein erneutes
+	// `boundingBox()` läge wieder außerhalb dessen, was der Poll geprüft hat.
+	const box = ruhig.box;
+	if (!box) throw new Error('.ol-map-container hat keine ruhige Bounding-Box');
+
+	const start = { x: box.x + box.width * relX, y: box.y + box.height * relY };
+	const ende = { x: start.x + gesture.dx, y: start.y + gesture.dy };
+
+	expect(await trifftKarte(page, start), 'Geste beginnt nicht auf der Karte').toBe(true);
+	expect(await trifftKarte(page, ende), 'Geste endet nicht auf der Karte').toBe(true);
+
+	return start;
 }
 
 /**
@@ -117,6 +190,9 @@ async function position(page: Page): Promise<{ lat: string; lon: string }> {
 	};
 }
 
+/** Der Zug, den beide Ziehen-Tests fahren — Vorprüfung und Geste aus einer Quelle. */
+const ZUG: Geste = { dx: 120, dy: -90 };
+
 test.describe('Positions-Karte im Formular — Pan und Zoom', () => {
 	test.beforeEach(async ({ page }) => {
 		await blockTileHosts(page, FORM_TILE_HOSTS);
@@ -127,10 +203,10 @@ test.describe('Positions-Karte im Formular — Pan und Zoom', () => {
 
 	test('Ziehen verschiebt die Karte ohne vorherigen Klick', async ({ page }) => {
 		const probe = karte(page);
-		const start = await mapPoint(page);
+		const start = await mapPoint(page, ZUG);
 		const before = await probe.hoverAndSettle(start);
 
-		await probe.drag(start, 120, -90);
+		await probe.drag(start, ZUG.dx, ZUG.dy);
 
 		await probe.expectToMove(
 			before,
@@ -144,9 +220,9 @@ test.describe('Positions-Karte im Formular — Pan und Zoom', () => {
 		const probe = karte(page);
 		const vorher = await position(page);
 
-		const start = await mapPoint(page);
+		const start = await mapPoint(page, ZUG);
 		await probe.hoverAndSettle(start);
-		await probe.drag(start, 120, -90);
+		await probe.drag(start, ZUG.dx, ZUG.dy);
 
 		// `singleclick` feuert nach einem Zug nicht — die Position muss stehen
 		// bleiben, sonst hätte das Schieben die Sichtung verschoben.
