@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.11.0](https://github.com/jansinger/ostsee-tiere/compare/v2.10.0...v2.11.0) (2026-08-05)
+
+
+### Features
+
+* **admin:** show dead-animal finds in the notification email ([#741](https://github.com/jansinger/ostsee-tiere/issues/741)) ([44f887d](https://github.com/jansinger/ostsee-tiere/commit/44f887d86b885b4ddacc7ea5becaf9c03cb7037b))
+* **report:** rework step 2 from the museum's feedback — media upload, dead-find wording ([#755](https://github.com/jansinger/ostsee-tiere/issues/755)) ([d407ea3](https://github.com/jansinger/ostsee-tiere/commit/d407ea3f5e388863c8cbf15aed747469c1a3e607))
+* **report:** rework the report form from the museum's feedback ([#746](https://github.com/jansinger/ostsee-tiere/issues/746)) ([00c1b89](https://github.com/jansinger/ostsee-tiere/commit/00c1b89ede012d5c688c78b8398e3813a85d8ec6))
+* **ui:** reach the background page from the menu, named as the museum asked ([#765](https://github.com/jansinger/ostsee-tiere/issues/765)) ([3ad6f63](https://github.com/jansinger/ostsee-tiere/commit/3ad6f63961902ffbe93d72a7a7b2500664b56644))
+
+
+### Bug Fixes
+
+* **a11y:** give the species image modal an accessible name (WCAG 4.1.2) ([#763](https://github.com/jansinger/ostsee-tiere/issues/763)) ([2d4d702](https://github.com/jansinger/ostsee-tiere/commit/2d4d702fe66cc6330ac540ee21d6f333aea1fdf1))
+* **a11y:** mark the coordinates as required when a position is given ([#753](https://github.com/jansinger/ostsee-tiere/issues/753)) ([4e6719d](https://github.com/jansinger/ostsee-tiere/commit/4e6719d4e98adca8ee5864fff4bda43c48775a84))
+* **a11y:** mark the remaining conditionally required fields as required ([#750](https://github.com/jansinger/ostsee-tiere/issues/750)) ([75c9620](https://github.com/jansinger/ostsee-tiere/commit/75c9620292bc70c136b32992929926b0d6fd00e3))
+* **a11y:** move radio group aria-invalid/aria-required to the group ([#752](https://github.com/jansinger/ostsee-tiere/issues/752)) ([ab76efa](https://github.com/jansinger/ostsee-tiere/commit/ab76efa7e3b9bbcca705cd152ef70cfe1f832c4f))
+* **a11y:** show the validation state on checkbox and toggle fields ([#758](https://github.com/jansinger/ostsee-tiere/issues/758)) ([dabafe4](https://github.com/jansinger/ostsee-tiere/commit/dabafe42385f86ca4cc64a8099eff46b06f87a76))
+* **admin:** stop reading the email template from disk ([#739](https://github.com/jansinger/ostsee-tiere/issues/739)) ([7689a21](https://github.com/jansinger/ostsee-tiere/commit/7689a21694e9cee10c9cb157e4c3aa2916243f53))
+* **ci:** ask Playwright which e2e specs exist instead of rebuilding its rule ([#767](https://github.com/jansinger/ostsee-tiere/issues/767)) ([67db3f2](https://github.com/jansinger/ostsee-tiere/commit/67db3f216809f302504c902054553286722ccb4d))
+* **ci:** assign the 14 leftover e2e specs to shards ([#766](https://github.com/jansinger/ostsee-tiere/issues/766)) ([1deca8e](https://github.com/jansinger/ostsee-tiere/commit/1deca8eafb9f74d32b95c6bac6d8864f4c2bb929))
+* **ci:** balance the e2e shards on measured step duration ([#769](https://github.com/jansinger/ostsee-tiere/issues/769)) ([f381388](https://github.com/jansinger/ostsee-tiere/commit/f38138859c443eeec48a611f6c7b2560d701c01c))
+* **ci:** stop E2E specs from silently running in no shard ([#761](https://github.com/jansinger/ostsee-tiere/issues/761)) ([5e568a0](https://github.com/jansinger/ostsee-tiere/commit/5e568a06a450be311c1612ee5689fcd7688fe2d5))
+* **map:** replace the outdated museum logo on the map ([#745](https://github.com/jansinger/ostsee-tiere/issues/745)) ([5917311](https://github.com/jansinger/ostsee-tiere/commit/5917311227c60131ffe489c3311d217801e43db3))
+* **report:** drop the stale help text and the doubled icon on the motor question ([#748](https://github.com/jansinger/ostsee-tiere/issues/748)) ([9230afc](https://github.com/jansinger/ostsee-tiere/commit/9230afc918d38a9b4934ec5a50a9691a9bbd9821))
+* **report:** stop step 2 promising a GPS position transfer it never does ([#759](https://github.com/jansinger/ostsee-tiere/issues/759)) ([0ba3445](https://github.com/jansinger/ostsee-tiere/commit/0ba3445c146f37c0def7178257fddec3379bea7e))
+* **test:** let the E2E webServer and a local dev server share port 4000 ([#754](https://github.com/jansinger/ostsee-tiere/issues/754)) ([53458bd](https://github.com/jansinger/ostsee-tiere/commit/53458bdf380703ccd5620c56ae72b9413917b228))
+* **ui:** let labels and titles wrap instead of widening the whole page ([#751](https://github.com/jansinger/ostsee-tiere/issues/751)) ([db2579a](https://github.com/jansinger/ostsee-tiere/commit/db2579a2230aef51eaeb114e9509c497e16fd1d2))
+* **ui:** stop the about page forcing a 411px document on every viewport ([#756](https://github.com/jansinger/ostsee-tiere/issues/756)) ([8ff5069](https://github.com/jansinger/ostsee-tiere/commit/8ff506959e75176fece7a9a69d46d2f60c3a8999))
+
+
+### Documentation
+
+* **api:** say plainly that the legacy POST validates no value ranges ([#747](https://github.com/jansinger/ostsee-tiere/issues/747)) ([13c6877](https://github.com/jansinger/ostsee-tiere/commit/13c6877251d13c53f8e02cdbc843e45c05519694))
+* **report:** move the media comments from step 3 to step 2 ([#764](https://github.com/jansinger/ostsee-tiere/issues/764)) ([8157461](https://github.com/jansinger/ostsee-tiere/commit/8157461aa761c6bb38d12b8537c1c9224b3937ce))
+* **report:** record why the species help stays in the form ([#743](https://github.com/jansinger/ostsee-tiere/issues/743)) ([6ffe0fc](https://github.com/jansinger/ostsee-tiere/commit/6ffe0fc365003cc0998b4178736ed8434704ec4c))
+
+
+### Code Refactoring
+
+* **ui:** drop the unused Checkbox field component ([#762](https://github.com/jansinger/ostsee-tiere/issues/762)) ([e12ae38](https://github.com/jansinger/ostsee-tiere/commit/e12ae388596c997ad3466d3449ae6041283ee9d1))
+
 ## [2.10.0](https://github.com/jansinger/ostsee-tiere/compare/v2.9.0...v2.10.0) (2026-08-04)
 
 
