@@ -63,11 +63,19 @@ jobs:
             # `*.config.ts` heute schon einfängt — dieser Filter soll die
             # E2E-Eingaben vollständig benennen, nicht auf einen Zufallstreffer
             # bauen.
+            #
+            # `.github/workflows/ci.yml` gehört aus demselben Grund dazu: Der
+            # `e2e`-Job trägt die Shard-Aufteilung selbst, und eine Änderung
+            # daran ist eine Änderung an den E2E-Eingaben. Ohne diesen Eintrag
+            # überspringt ein PR, der nur die Shards umbaut, ausgerechnet den
+            # Job, den er umbaut — die Zuordnung eines Specs wäre dann erst nach
+            # dem Merge auf `main` das erste Mal gelaufen.
             e2e:
               - 'e2e/**'
               - 'playwright.config.ts'
               - 'vite.config.ci.ts'
               - 'scripts/seed-e2e.ts'
+              - '.github/workflows/ci.yml'
             docs:
               - '*.md'
               - 'docs/**'
@@ -457,39 +465,128 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
+      # Die Specs stehen einzeln da, weil die drei Shards parallel laufen und
+      # ähnlich lang brauchen sollen — ein Verzeichnis je Shard gäbe das nicht
+      # her. Der Preis war bisher, dass ein neu angelegter Spec in keiner Liste
+      # stand und damit **nirgends** lief. Genau so konnte #749 einen roten
+      # Wächter auf `main` hinterlassen, ohne dass eine Prüfung anschlug; beim
+      # Aufräumen fielen 14 weitere Specs auf, die nie in CI gelaufen sind.
+      # Der Vollständigkeits-Abgleich unten macht aus „vergessen" einen
+      # Fehlschlag — die Aufzählung bleibt, ihr stiller Ausfall nicht.
       - name: Run E2E tests
         run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          form=(
+            e2e/form-submit.spec.ts
+            e2e/form-ux.spec.ts
+            e2e/form-a11y.spec.ts
+            e2e/form-position.spec.ts
+            e2e/form-position-photo.spec.ts
+            e2e/form-autosave.spec.ts
+            e2e/form-field-mode.spec.ts
+          )
+
+          map=(e2e/map-*.spec.ts)
+
+          # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das
+          # Theme, nicht das Formular. Läuft gegen /styleguide, das der
+          # dev-Guard nur im Entwicklungsmodus freigibt — der Shard startet
+          # ohnehin `vite dev` (playwright.config.ts).
+          #
+          # modal-overflow.spec.ts aus demselben Grund: Es prüft Layout über
+          # /, /bestimmungshilfe und /admin, nicht das Formular.
+          smoke=(
+            e2e/basic.test.ts
+            e2e/homepage.test.ts
+            e2e/about-page.spec.ts
+            e2e/auth.spec.ts
+            e2e/design-tokens.spec.ts
+            e2e/modal-overflow.spec.ts
+          )
+
+          # Specs, die bis heute in keinem Shard standen. Das war kein Beschluss,
+          # sondern ein Versehen — die Listen oben muss man beim Anlegen eines
+          # Specs von Hand pflegen, und das ist hier 14-mal unterblieben. Sie
+          # stehen als Rückstand hier, damit der Abgleich darunter greifen kann,
+          # **nicht** weil ihr Ausschluss geprüft wäre.
+          #
+          # Wer einen davon in einen Shard zieht, lässt ihn vorher laufen.
+          # form-map-pan-zoom.spec.ts ist der bekannte Sonderfall: von sich aus
+          # flaky (Subpixel-Vergleiche nach Pan/Zoom), gehört erst nach einer
+          # Stabilisierung in einen Shard.
+          unassigned=(
+            e2e/admin-edit-preserves-record.spec.ts
+            e2e/admin-table-verified-column.spec.ts
+            e2e/app-shell-height.spec.ts
+            e2e/bestimmungshilfe.spec.ts
+            e2e/footer-layout.spec.ts
+            e2e/form-map-pan-zoom.spec.ts
+            e2e/form-stepper-affordance.spec.ts
+            e2e/form-stepper.spec.ts
+            e2e/horizontal-overflow.spec.ts
+            e2e/meldung-wording.spec.ts
+            e2e/navbar-structure.spec.ts
+            e2e/seo-meta.spec.ts
+            e2e/submit-offline.spec.ts
+            e2e/videoUpload.spec.ts
+          )
+
+          # Ein Spec, der in keiner der vier Listen steht, ist neu und beim
+          # Anlegen vergessen worden.
+          #
+          # Gesucht wird **rekursiv** und mit denselben Endungen, die Playwright
+          # per Default sammelt — `testDir: 'e2e'` steigt in Unterordner ab, und
+          # ein Spec in `e2e/irgendwas/` liefe lokal, in CI aber nirgends und
+          # fiele einem Abgleich nur über `e2e/*.spec.ts` nicht auf. `helpers/`
+          # bleibt außen vor, weil playwright.config.ts es per `testIgnore`
+          # ausnimmt: Die Dateien dort sind Vitest-Tests, die vitest.config.ts
+          # einsammelt.
+          # `find` und kein Glob: Ein `**`-Muster bräuchte `shopt -s globstar`
+          # und die Endungsliste `extglob` — und extglob wirkt erst zur
+          # Laufzeit, womit `bash -n` das Skript nicht mehr prüfen kann.
+          known=" ${form[*]} ${map[*]} ${smoke[*]} ${unassigned[*]} "
+          missing=()
+          while IFS= read -r spec; do
+            case "$known" in
+              *" $spec "*) ;;
+              *) missing+=("$spec") ;;
+            esac
+          done < <(
+            find e2e -type f \
+              \( -name '*.spec.ts' -o -name '*.test.ts' \
+                 -o -name '*.spec.tsx' -o -name '*.test.tsx' \
+                 -o -name '*.spec.js' -o -name '*.test.js' \
+                 -o -name '*.spec.jsx' -o -name '*.test.jsx' \) \
+              -not -path 'e2e/helpers/*' \
+              | sort
+          )
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Diese Specs stehen in keinem Shard und würden nirgends laufen: ${missing[*]}"
+            echo "Bitte in .github/workflows/ci.yml einem Shard (form/map/smoke) zuordnen."
+            exit 1
+          fi
+
           case "${{ matrix.shard }}" in
-            form)
-              npm run test:e2e -- \
-                e2e/form-submit.spec.ts \
-                e2e/form-ux.spec.ts \
-                e2e/form-a11y.spec.ts \
-                e2e/form-position.spec.ts \
-                e2e/form-position-photo.spec.ts \
-                e2e/form-autosave.spec.ts \
-                e2e/form-field-mode.spec.ts
-              ;;
-            map)
-              npm run test:e2e -- e2e/map-*.spec.ts
-              ;;
-            smoke)
-              # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das
-              # Theme, nicht das Formular. Läuft gegen /styleguide, das der
-              # dev-Guard nur im Entwicklungsmodus freigibt — der Shard startet
-              # ohnehin `vite dev` (playwright.config.ts).
-              npm run test:e2e -- \
-                e2e/basic.test.ts \
-                e2e/homepage.test.ts \
-                e2e/about-page.spec.ts \
-                e2e/auth.spec.ts \
-                e2e/design-tokens.spec.ts
-              ;;
+            form) specs=("${form[@]}") ;;
+            map) specs=("${map[@]}") ;;
+            smoke) specs=("${smoke[@]}") ;;
             *)
               echo "Unknown shard: ${{ matrix.shard }}"
               exit 1
               ;;
           esac
+
+          # Ohne diese Schranke wäre ein leer gelaufenes Glob (nullglob) ein
+          # `npm run test:e2e --` ohne Argumente — und das startet die gesamte
+          # Suite statt des Shards.
+          if [ ${#specs[@]} -eq 0 ]; then
+            echo "::error::Shard ${{ matrix.shard }} hat keine Specs ermittelt."
+            exit 1
+          fi
+
+          npm run test:e2e -- "${specs[@]}"
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v7
