@@ -12,10 +12,10 @@ vi.mock('$lib/logger', () => ({
 	})
 }));
 
-// Mock formStepsConfig to decouple from runtime config
+// Mock formStepsConfig/getFormSteps to decouple from runtime config
 // (sightingSchema itself is NOT mocked — real validation logic is tested)
-vi.mock('$lib/report/formConfig', () => ({
-	formStepsConfig: [
+vi.mock('$lib/report/formConfig', () => {
+	const formStepsConfig = [
 		{
 			id: 'location-time',
 			title: 'Position & Zeit',
@@ -37,8 +37,27 @@ vi.mock('$lib/report/formConfig', () => ({
 			title: 'Kontaktdaten',
 			fields: ['firstName', 'lastName', 'email', 'privacyConsent']
 		}
-	]
-}));
+	];
+
+	// Spiegelt formConfig.ts's HIDDEN_WHEN_DEAD auf dem eingedampften Testbestand:
+	// stepValidation ruft getFormSteps(data) statt der statischen Konstante auf —
+	// der Mock muss diese Verzweigung nachbilden, sonst testet er sie nicht.
+	const isDeadFinding = (value: unknown): boolean =>
+		value === true || value === 1 || value === '1' || value === 'true';
+
+	const getFormSteps = (data: { isDead?: unknown }) => {
+		if (!isDeadFinding(data?.isDead)) {
+			return formStepsConfig;
+		}
+		const hidden = new Set(['behavior', 'behaviorText', 'reaction']);
+		return formStepsConfig.map((step) => ({
+			...step,
+			fields: step.fields.filter((field) => !hidden.has(field))
+		}));
+	};
+
+	return { formStepsConfig, getFormSteps };
+});
 
 // ── Test data ────────────────────────────────────────────────────────────────
 
@@ -291,5 +310,31 @@ describe('validateStep', () => {
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toEqual({});
 		});
+	});
+});
+
+describe('stepValidation im Totfund-Zweig', () => {
+	it('validiert ausgeblendete Felder nicht mehr', async () => {
+		// Der wichtigste Test des Vorhabens: Würde `behavior` weiter validiert,
+		// säße der Melder in einer Sackgasse — das Feld ist nicht sichtbar, der
+		// Fehler nicht behebbar.
+		//
+		// `behavior` bekommt hier bewusst den ungültigen Enum-Wert 999 statt
+		// `undefined` (wie in der ursprünglichen Formulierung des Tasks): Das
+		// Feld ist im echten Schema `.notRequired()`, ein `undefined`-Wert löst
+		// also so oder so nie einen Fehler aus — der Test wäre unabhängig vom
+		// Seam immer grün gewesen (empirisch geprüft: `behavior: undefined`
+		// erzeugt weder vor noch nach der Umstellung einen Fehler). Der
+		// ungültige Wert macht den Unterschied sichtbar: Vor der Umstellung
+		// wird `behavior` trotz Totfund weiter geprüft und schlägt fehl; nach
+		// der Umstellung blendet `getFormSteps` das Feld aus, bevor `pick()`
+		// es überhaupt sieht.
+		const schrittMitVerhalten = 2; // 0-basiert: „Weitere Informationen"
+		const daten = { isDead: true, behavior: 999, behaviorText: undefined };
+
+		const ergebnis = await validateStep(schrittMitVerhalten, daten);
+
+		expect(Object.keys(ergebnis.errors ?? {})).not.toContain('behavior');
+		expect(Object.keys(ergebnis.errors ?? {})).not.toContain('reaction');
 	});
 });

@@ -1,5 +1,5 @@
 import { createLogger } from '$lib/logger';
-import { formStepsConfig } from '$lib/report/formConfig';
+import { getFormSteps } from '$lib/report/formConfig';
 import type { SightingFormData } from '$lib/report/types';
 import { ValidationError } from 'yup';
 import { sightingSchema } from './sightingSchema';
@@ -14,11 +14,8 @@ const logger = createLogger('stepValidation');
  * @param formData - Die aktuellen Formulardaten
  * @returns Boolean, ob der aktuelle Schritt valide ist
  */
-export function isStepValid(
-	currentStep: number,
-	formData: Partial<SightingFormData>
-): boolean {
-	const validateFields = formStepsConfig[currentStep]?.fields;
+export function isStepValid(currentStep: number, formData: Partial<SightingFormData>): boolean {
+	const validateFields = getFormSteps(formData)[currentStep]?.fields;
 
 	if (!validateFields) {
 		return true;
@@ -49,9 +46,9 @@ export function validateStep(
 	currentStep: number,
 	formData: Partial<SightingFormData>
 ): { isValid: boolean; errors: Record<string, string> } {
-	const validateFields = formStepsConfig[currentStep]?.fields;
+	const validateFields = getFormSteps(formData)[currentStep]?.fields;
 	const errors: Record<string, string> = {};
-	
+
 	if (!validateFields) {
 		return { isValid: true, errors };
 	}
