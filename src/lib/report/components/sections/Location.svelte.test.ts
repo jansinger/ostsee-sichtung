@@ -1,9 +1,6 @@
-import { render } from 'vitest-browser-svelte';
 import { describe, expect, it } from 'vitest';
-import { createForm } from '$lib/form/createForm';
-import { key as formContextKey } from '$lib/report/formContext';
-import { initialFormState } from '$lib/report/formConfig';
-import type { FormContext, SightingFormData } from '$lib/types';
+import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
+import type { SightingFormData } from '$lib/types';
 import Location from './Location.svelte';
 
 /**
@@ -30,15 +27,7 @@ import Location from './Location.svelte';
  * vorhandener Datensatz korrigiert, nicht eine Meldung erfasst.
  */
 function renderAdminLocation(overrides: Partial<SightingFormData> = {}): void {
-	const context = {
-		...createForm<SightingFormData>({
-			initialValues: { ...initialFormState, ...overrides } as SightingFormData,
-			onSubmit: () => undefined
-		}),
-		mediaStore: { mediaFiles: [] }
-	} as unknown as FormContext;
-
-	render(Location, { context: new Map([[formContextKey, context]]) });
+	renderWithFormContext(Location, { overrides });
 }
 
 function field(name: string): HTMLInputElement | null {

@@ -1,9 +1,6 @@
-import { render } from 'vitest-browser-svelte';
 import { describe, expect, it } from 'vitest';
-import { createForm } from '$lib/form/createForm';
-import { key as formContextKey } from '$lib/report/formContext';
-import { initialFormState } from '$lib/report/formConfig';
-import type { FormContext, SightingFormData } from '$lib/types';
+import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
+import type { SightingFormData } from '$lib/types';
 import AnimalInfo from './AnimalInfo.svelte';
 
 /**
@@ -23,15 +20,7 @@ import AnimalInfo from './AnimalInfo.svelte';
  * Namensliste statt einer Bitmaske liefert.
  */
 function renderAnimalInfo(overrides: Partial<SightingFormData> = {}): void {
-	const context = {
-		...createForm<SightingFormData>({
-			initialValues: { ...initialFormState, ...overrides } as SightingFormData,
-			onSubmit: () => undefined
-		}),
-		mediaStore: { mediaFiles: [] }
-	} as unknown as FormContext;
-
-	render(AnimalInfo, { context: new Map([[formContextKey, context]]) });
+	renderWithFormContext(AnimalInfo, { overrides });
 }
 
 function fieldOrder(): string[] {
@@ -124,15 +113,10 @@ describe('sections/AnimalInfo — Artfrage folgt dem Totfund-Schalter', () => {
  */
 describe('sections/AnimalInfo — adminMode wird an DeadAnimal durchgereicht', () => {
 	function renderWithAdminMode(adminMode: boolean): void {
-		const context = {
-			...createForm<SightingFormData>({
-				initialValues: { ...initialFormState, isDead: true, deadCondition: 1 } as SightingFormData,
-				onSubmit: () => undefined
-			}),
-			mediaStore: { mediaFiles: [] }
-		} as unknown as FormContext;
-
-		render(AnimalInfo, { props: { adminMode }, context: new Map([[formContextKey, context]]) });
+		renderWithFormContext(AnimalInfo, {
+			overrides: { isDead: true, deadCondition: 1 },
+			props: { adminMode }
+		});
 	}
 
 	it('zeigt deadSex NICHT ohne adminMode', () => {
