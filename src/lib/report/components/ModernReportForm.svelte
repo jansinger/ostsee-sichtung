@@ -46,10 +46,17 @@
 		onSubmit = async (value) => {
 			logger.info({ value }, 'Form submitted:');
 		},
-		onCancel = () => {}
+		onCancel = () => {},
+		initialIsDead
 	}: {
 		onSubmit?: (data: SightingFormValues) => Promise<void>;
 		onCancel?: () => void;
+		/**
+		 * Zweig aus der Einstiegsseite (`ReportKindChoice`). Bleibt das Prop weg
+		 * (andere Aufrufstellen), passiert nichts — `undefined` ist bewusst kein
+		 * gültiger Totfund-Wert.
+		 */
+		initialIsDead?: boolean;
 	} = $props();
 
 	// Lade gespeicherte Benutzer-Kontaktdaten
@@ -67,6 +74,17 @@
 	const savedFormData: SightingFormData = loadFromStorage(STORAGE_KEYS.FORM_DATA, {
 		...initialFormData
 	});
+
+	// `initialIsDead` überschreibt `isDead` aus dem Formular-State. Fehlten
+	// gespeicherte Formulardaten, steht dort ohnehin nur der Schema-Default —
+	// die Zuweisung ist dann gleichbedeutend mit „erstmalig setzen". Lagen
+	// Formulardaten vor, ist ein Unterschied zu `initialIsDead` genau der Fall
+	// „Zweig hat sich seit dem letzten Stand geändert"; stimmen beide bereits
+	// überein, ist die Zuweisung ein No-op. Ein `undefined`-Prop (Aufrufstellen
+	// ohne Einstiegsseite) lässt `isDead` unangetastet.
+	if (initialIsDead !== undefined) {
+		savedFormData.isDead = initialIsDead;
+	}
 
 	// Zeige Feedback wenn vorherige Eingaben wiederhergestellt wurden
 	if (hadSavedFormData) {

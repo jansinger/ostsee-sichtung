@@ -535,6 +535,9 @@ jobs:
             e2e/form-stepper.spec.ts
             e2e/form-stepper-affordance.spec.ts
             e2e/videoUpload.spec.ts
+            # Neu seit Task 5 (Einstiegsseite `/`): 5 Tests, ~9 s lokal, ohne
+            # Kartenbezug — passt hier eher als in den ohnehin längsten `form`.
+            e2e/report-kind-choice.spec.ts
           )
 
           # Der Rückstand von 14 Specs ist abgearbeitet: 13 davon liefen am
