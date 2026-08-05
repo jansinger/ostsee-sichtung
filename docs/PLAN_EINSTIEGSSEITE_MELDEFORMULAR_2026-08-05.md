@@ -78,10 +78,19 @@ Sie haben keine Bedingung, an die sie sich hängen könnten:
 
 | Datei                                                                                       | Heute                                     | Beim Totfund            |
 | ------------------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------- |
-| [DateTime.svelte:7](../src/lib/report/components/sections/DateTime.svelte)                  | Kartentitel „Zeitpunkt der Sichtung"      | „Funddatum"             |
+| [PositionAndTime.svelte](../src/lib/report/components/sections/PositionAndTime.svelte)      | Kartentitel „Datum und Uhrzeit"           | „Funddatum"             |
 | [VerifyLocation.svelte:~154](../src/lib/report/components/form/VerifyLocation.svelte)       | Ostsee-Hinweis in Lebendtier-Fassung      | eigener Text, siehe 7.3 |
 | [PositionPanel.svelte:185](../src/lib/report/components/form/position/PositionPanel.svelte) | „Wo haben Sie das Tier gesehen?"          | „…gefunden?"            |
 | [OLMap.svelte:55–63](../src/lib/components/map/OLMap.svelte)                                | Marker-Erklärung, zweimal „gesehen haben" | „gefunden haben"        |
+
+**Korrektur vom 2026-08-05 (bei der Umsetzung aufgefallen):** Die erste Zeile nannte
+ursprünglich `DateTime.svelte:7` mit dem Titel „Zeitpunkt der Sichtung". Diese Datei
+importiert **ausschließlich** die Admin-Bearbeitungsmaske; der Bürger sieht seine
+Datumskarte aus `PositionAndTime.svelte`, und sie heißt dort „Datum und Uhrzeit".
+Wer der ursprünglichen Zeile folgt, ändert die Admin-Maske und lässt das Bürgerformular
+unberührt — also genau das Gegenteil der Absicht. **Der Lebend-Zweig behält
+„Datum und Uhrzeit"** (Entscheidung des Auftraggebers); nur der Totfund bekommt
+„Funddatum" samt Einleitungszeile.
 
 **Wichtig zu `OLMap.svelte`:** Der Text steht dort in einem `$derived.by`-Block fest
 verdrahtet, und die Komponente wird auch von der Admin-Ansicht und der Foto-EXIF-Karte
