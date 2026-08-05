@@ -503,6 +503,12 @@ jobs:
             e2e/app-shell-height.spec.ts
             e2e/submit-offline.spec.ts
             e2e/meldung-wording.spec.ts
+            # Trotz `form`-Präfix hier: teilt sich mit dem Schwester-Spec
+            # map-pan-zoom.spec.ts das Messwerkzeug (e2e/helpers/mapCanvas.ts).
+            # Fällt nicht unter das Glob und steht deshalb einzeln. Kostet ~17 s;
+            # `map` bleibt damit bei rund 170 s und unter `form` (190 s), die
+            # Job-Laufzeit ändert sich also nicht.
+            e2e/form-map-pan-zoom.spec.ts
           )
 
           # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das
@@ -542,15 +548,27 @@ jobs:
           # der längste, und die Job-Laufzeit ist die des längsten. Wer dort
           # etwas hinzufügt, misst vorher.
           #
-          # Was hier bleibt, bleibt aus einem Grund, nicht aus Versehen:
-          # form-map-pan-zoom.spec.ts vergleicht Subpixel-Koordinaten nach Pan
-          # und Zoom und war in 3 von 4 Baseline-Läufen rot, ohne dass sich am
-          # Code etwas geändert hätte. In CI wäre das ein Rotlicht, das niemand
-          # mehr liest. Ein einzelner grüner Lauf reicht als Nachweis nicht —
-          # der Spec gehört erst nach einer Stabilisierung in einen Shard.
-          unassigned=(
-            e2e/form-map-pan-zoom.spec.ts
-          )
+          # Der Rückstand ist damit vollständig abgearbeitet: form-map-pan-zoom
+          # .spec.ts, der letzte verbliebene Eintrag, steht seit dem 2026-08-05
+          # in `map`.
+          #
+          # Der Befund („in 3 von 4 Baseline-Läufen rot") stimmte, die Diagnose
+          # war ungenau: Verglichen wurde nicht **nach** der Geste — die
+          # Canvas-Fingerprints dort hängen an `expect.poll` und sind robust —,
+          # sondern **davor**, in einer Vorprüfung `box.y >= 0` auf der Oberkante
+          # des Karten-Containers. `scrollIntoViewIfNeeded` zentriert die Karte,
+          # und der Sub-Pixel-Rest daraus macht `box.y` minimal negativ, sobald
+          # die 400px hohe Karte die Fensterhöhe ausfüllt. Reproduziert bei
+          # 1280×400: `box.y = -0.40625`, Vorprüfung rot, während die Geste bei
+          # `y = 311.6` mitten im Bild lag und die Karte einwandfrei schob. Die
+          # Vorprüfung fragt jetzt per `elementFromPoint`, ob die Geste die Karte
+          # trifft — dieselbe Frage ohne Fließkomma-Rand. 10 aufeinanderfolgende
+          # Läufe grün, dazu 4 von 4 bei 1280×400.
+          #
+          # Die Liste bleibt als leeres Array stehen, damit der Abgleich unten
+          # unverändert über vier Listen läuft. Sie ist **kein Parkplatz**: Ein
+          # neuer Spec gehört in einen Shard, und was hier landet, läuft nirgends.
+          unassigned=()
 
           # Die Soll-Liste kommt von Playwright selbst, nicht von einem `find`,
           # das dessen Auswahlregel nachbaut. Der Nachbau war in beide
