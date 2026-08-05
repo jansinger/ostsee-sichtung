@@ -63,11 +63,19 @@ jobs:
             # `*.config.ts` heute schon einfängt — dieser Filter soll die
             # E2E-Eingaben vollständig benennen, nicht auf einen Zufallstreffer
             # bauen.
+            #
+            # `.github/workflows/ci.yml` gehört aus demselben Grund dazu: Der
+            # `e2e`-Job trägt die Shard-Aufteilung selbst, und eine Änderung
+            # daran ist eine Änderung an den E2E-Eingaben. Ohne diesen Eintrag
+            # überspringt ein PR, der nur die Shards umbaut, ausgerechnet den
+            # Job, den er umbaut — die Zuordnung eines Specs wäre dann erst nach
+            # dem Merge auf `main` das erste Mal gelaufen.
             e2e:
               - 'e2e/**'
               - 'playwright.config.ts'
               - 'vite.config.ci.ts'
               - 'scripts/seed-e2e.ts'
+              - '.github/workflows/ci.yml'
             docs:
               - '*.md'
               - 'docs/**'
