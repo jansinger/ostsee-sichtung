@@ -8,13 +8,14 @@
 	import BoatInfo from '$lib/report/components/sections/BoatInfo.svelte';
 	import Environment from '$lib/report/components/sections/Environment.svelte';
 	import { getFormContext } from '$lib/report/formContext';
+	import { isDeadFinding } from '$lib/report/formConfig';
 	import { scrollToElement } from '$lib/utils/fieldNavigation';
 
 	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('report:Step3Observations');
 	const formContext = getFormContext();
-	const { isSubmitting } = formContext;
+	const { form, isSubmitting } = formContext;
 
 	// Props für currentStep - wird vom Parent (ModernReportForm) übergeben
 	let { currentStep = $bindable(2) }: { currentStep?: number } = $props();
@@ -82,7 +83,16 @@
 	     Sektion sind admin-only, sie hätte im Meldeformular nur noch eine leere
 	     Karte mit Überschrift beigetragen. Die Komponente selbst bleibt — die
 	     Admin-Maske bindet sie ein und braucht beide Felder für den Bestand. -->
-	<Behavior></Behavior>
+	{#if !isDeadFinding($form.isDead)}
+		<!-- Ein totes Tier zeigt kein Verhalten und reagiert nicht auf ein Boot —
+		     `getFormSteps` (formConfig.ts) nimmt `behavior`/`behaviorText`/`reaction`
+		     beim Totfund bereits aus der Validierung. Ohne dieselbe Bedingung hier
+		     bliebe die Karte sichtbar, aber unvalidiert ausgefüllt — sichtbar UND
+		     validiert müssen zusammen entschieden werden, sonst geht ein unvalidierter
+		     Wert ans Backend. `isDeadFinding` ist die einzige gültige Normalisierung
+		     von `isDead`, siehe formConfig.ts. -->
+		<Behavior></Behavior>
+	{/if}
 
 	<Environment></Environment>
 
