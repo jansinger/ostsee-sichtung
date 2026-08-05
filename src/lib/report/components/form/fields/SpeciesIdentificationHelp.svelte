@@ -79,9 +79,18 @@
 	const styles = $derived(isPage ? PAGE_STYLE : INLINE_STYLE);
 
 	// Die Komponente wird mehrfach gerendert (Tierart-Feld und generisches
-	// Hilfe-Panel). Eine feste ID wäre im DOM doppelt und würde aria-controls
-	// unbrauchbar machen.
-	const helpContentId = $props.id();
+	// Hilfe-Panel). Feste IDs wären im DOM doppelt und würden `aria-controls` und
+	// `aria-labelledby` unbrauchbar machen.
+	//
+	// `$props.id()` darf pro Komponente nur EINMAL aufgerufen werden (Svelte:
+	// `props_duplicate`) — der Rückgabewert ist das Instanz-Präfix, aus dem alle
+	// weiteren IDs abgeleitet werden.
+	const uid = $props.id();
+	const helpContentId = `${uid}-content`;
+	// WCAG 2.1 4.1.2: Ohne Namen meldet der Screenreader das Bild-Modal nur als
+	// „Dialog". Den Namen trägt die Überschrift im Dialog, nicht ein zweiter,
+	// eigenständig alternder `aria-label`-Text.
+	const modalTitleId = `${uid}-modal-title`;
 
 	// Auf der eigenen Seite gibt es nichts aufzuklappen — der Inhalt IST die Seite.
 	let isExpanded = $state(false);
@@ -480,13 +489,28 @@
 </div>
 
 <!-- Image Modal für Vollbildansicht -->
-<dialog bind:this={modalElement} class="modal" onclose={handleDialogClose}>
+<!-- `aria-labelledby` nur, solange der Titel auch im DOM steht: Der Dialogtitel
+     hängt an `modalImageSrc`, DaisyUI lässt den geschlossenen Dialog aber stehen
+     (`visibility: hidden`, siehe .claude/rules/daisyui.md). Unbedingt gesetzt
+     zeigte das Attribut nach dem 250-ms-Reset in `handleDialogClose` auf eine
+     nicht existierende ID — ein ungültiger ARIA-IDREF. Ohne Bild hat der Dialog
+     tatsächlich keinen Namen, und er ist dann auch nicht offen.
+     Das `data-testid` ist deshalb kein Beiwerk: `e2e/modal-overflow.spec.ts`
+     benennt Dialoge über `data-testid ?? aria-labelledby ?? dialog[i]` und misst
+     den Ruhezustand — ohne es stünde diese Position dort wieder als `dialog[0]`. -->
+<dialog
+	bind:this={modalElement}
+	class="modal"
+	aria-labelledby={modalImageSrc ? modalTitleId : undefined}
+	data-testid="species-image-dialog"
+	onclose={handleDialogClose}
+>
 	<div class="modal-box w-11/12 max-w-5xl p-0">
 		{#if modalImageSrc}
 			<div class="relative">
 				<!-- Modal Header -->
 				<div class="bg-base-200 flex items-center justify-between p-4">
-					<h3 class="text-base-content text-lg font-bold">{modalImageAlt}</h3>
+					<h3 id={modalTitleId} class="text-base-content text-lg font-bold">{modalImageAlt}</h3>
 					<button
 						type="button"
 						class="btn btn-circle btn-ghost btn-sm"
