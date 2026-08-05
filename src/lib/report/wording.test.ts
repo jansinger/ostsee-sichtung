@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { detailsSectionTitle, observationQuestion, speciesQuestion } from './wording';
+import {
+	dateSectionIntro,
+	dateSectionTitle,
+	detailsSectionTitle,
+	mapHint,
+	observationQuestion,
+	outsideBalticNotice,
+	outsideBalticSeverity,
+	positionQuestion,
+	speciesQuestion
+} from './wording';
 
 /**
  * Das Museum will für den Totfund eine eigene Ansprache („Was haben Sie
@@ -77,5 +87,48 @@ describe('wording — Totfund-Ansprache auf Schritt 2', () => {
 		it.each([true, 'true', '1'])('behandelt %o als Totfund', (value) => {
 			expect(observationQuestion(value)).toBe('Was haben Sie gefunden?');
 		});
+	});
+});
+
+describe('Schritt-1-Texte am Zweig', () => {
+	it('benennt die Datumskarte je nach Zweig', () => {
+		expect(dateSectionTitle(false)).toBe('Zeitpunkt der Sichtung');
+		expect(dateSectionTitle(true)).toBe('Funddatum');
+	});
+
+	it('ergänzt die Einleitung nur beim Totfund', () => {
+		// Die Karte hat heute gar keine Einleitungszeile — beim Lebend-Zweig
+		// darf deshalb keine entstehen (null = nichts rendern).
+		expect(dateSectionIntro(false)).toBeNull();
+		expect(dateSectionIntro(true)).toBe('An welchem Tag war der Fund?');
+	});
+
+	it('fragt beim Totfund nach „gefunden", sonst nach „gesehen"', () => {
+		expect(positionQuestion(false)).toContain('gesehen');
+		expect(positionQuestion(true)).toContain('gefunden');
+	});
+
+	it('dreht auch die Marker-Erklärung um', () => {
+		expect(mapHint(true, true, false)).toContain('gefunden haben');
+		expect(mapHint(true, false, false)).toContain('gefunden haben');
+		expect(mapHint(false, true, false)).toContain('gesehen haben');
+	});
+
+	it('behält den GPS-Zusatz in beiden Zweigen', () => {
+		expect(mapHint(true, true, true)).toContain('GPS-Button');
+	});
+
+	it('senkt beim Totfund die Dringlichkeit des Ostsee-Hinweises', () => {
+		// Am Strand ist eine Position außerhalb des Polygons der Normalfall.
+		// Eine Warnung, die immer kommt, wird weggeklickt.
+		expect(outsideBalticSeverity(false)).toBe('warning');
+		expect(outsideBalticSeverity(true)).toBe('info');
+		expect(outsideBalticNotice(true)).toContain('Stränden oder Küstenabschnitten');
+	});
+
+	it('behandelt isDead aus allen Quellen gleich', () => {
+		expect(dateSectionTitle(1)).toBe('Funddatum');
+		expect(dateSectionTitle('1')).toBe('Funddatum');
+		expect(dateSectionTitle(undefined)).toBe('Zeitpunkt der Sichtung');
 	});
 });

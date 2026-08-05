@@ -14,6 +14,7 @@
 	import LocationDescription from './LocationDescription.svelte';
 	import { requestCurrentPosition } from './geolocation';
 	import { photoStatus, shouldWarnAboutMissingGps } from './positionPanelState';
+	import { mapHint, positionQuestion } from '$lib/report/wording';
 
 	const { form, handleChange, mediaStore } = getFormContext();
 
@@ -42,6 +43,15 @@
 	// Default-Koordinaten (54.5/13.5) zurück. Der Guard unten prüft deshalb
 	// direkt auf `undefined`.
 	const coordinatesPresent = $derived(latitude !== undefined && longitude !== undefined);
+
+	/**
+	 * Frage über der Positionsangabe und Marker-Erklärung auf der Karte — beide
+	 * hängen am Totfund-Zweig (`wording.ts`). `enableGPS` ist hier immer `false`:
+	 * `LocationInput` bekommt unten `enableMapGps={false}`, das Kartenhinweis-Wort
+	 * muss dasselbe melden wie das tatsächlich gerenderte GPS-Control.
+	 */
+	const positionLabel = $derived(positionQuestion($form.isDead));
+	const mapHintText = $derived(mapHint($form.isDead, coordinatesPresent, false));
 
 	/**
 	 * Pflicht-Markierung der Koordinatenfelder.
@@ -182,7 +192,7 @@
 <SectionCard title="Positionsangabe" icon="lucide:map-pin" variant="inset">
 	<!-- Nur noch die Frage: „Ein Foto mit GPS-Daten ist der schnellste Weg" stand
 	     zwei Zeilen später in der Hero-Karte fast wörtlich noch einmal. -->
-	<p class="text-base-content/70 mb-4 text-sm">Wo haben Sie das Tier gesehen?</p>
+	<p class="text-base-content/70 mb-4 text-sm">{positionLabel}</p>
 
 	<!-- Der Standort-Button steht bewusst ganz oben: Er ist der schnellste Weg
 	     für alle, die vor Ort melden, und braucht anders als die Karte darunter
@@ -269,6 +279,7 @@
 		enableMapGps={false}
 		required={positionRequired}
 		coordinatesHint="Bitte tragen Sie die GPS-Koordinaten ein, wenn diese nicht automatisch über die Karte übernommen werden konnten."
+		mapHintOverride={mapHintText}
 		onchange={handleLocationChange}
 	/>
 

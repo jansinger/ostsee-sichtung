@@ -41,3 +41,51 @@ export function observationQuestion(isDead: unknown): string {
 export function detailsSectionTitle(isDead: unknown): string {
 	return isDeadFinding(isDead) ? 'Funddetails' : 'Sichtungsdetails';
 }
+
+/** Titel der Datumskarte auf Schritt 1. */
+export function dateSectionTitle(isDead: unknown): string {
+	return isDeadFinding(isDead) ? 'Funddatum' : 'Zeitpunkt der Sichtung';
+}
+
+/**
+ * Einleitungszeile über den Datumsfeldern. Die Karte hat heute keine
+ * Einleitung — beim Lebend-Zweig bleibt es deshalb bei `null`, statt einen
+ * Satz zu erfinden, der vorher nicht da war.
+ */
+export function dateSectionIntro(isDead: unknown): string | null {
+	return isDeadFinding(isDead) ? 'An welchem Tag war der Fund?' : null;
+}
+
+/** Frage über der Positionsangabe auf Schritt 1. */
+export function positionQuestion(isDead: unknown): string {
+	return isDeadFinding(isDead)
+		? 'Wo haben Sie das Tier gefunden?'
+		: 'Wo haben Sie das Tier gesehen?';
+}
+
+/** Erklärtext unter der Karte auf Schritt 1: sagt, wofür der Marker steht. */
+export function mapHint(isDead: unknown, hasPosition: boolean, enableGPS: boolean): string {
+	const verb = isDeadFinding(isDead) ? 'gefunden haben' : 'gesehen haben';
+	if (!hasPosition) {
+		return `Noch keine Position gewählt. Tippen Sie auf die Karte, um die Stelle zu markieren, an der Sie das Tier ${verb}.`;
+	}
+	const base = `Tippen Sie auf die Karte oder ziehen Sie den Marker an die Stelle, an der Sie das Tier ${verb}.`;
+	return enableGPS ? `${base} Der GPS-Button übernimmt Ihre aktuelle Position.` : base;
+}
+
+/**
+ * Hinweistext, wenn die gewählte Position außerhalb der Ostsee liegt.
+ *
+ * Beim Totfund ist eine Position an Land der Normalfall (Strandfund) — der
+ * strengere Sichtungs-Wortlaut würde dort ständig aufscheinen.
+ */
+export function outsideBalticNotice(isDead: unknown): string {
+	return isDeadFinding(isDead)
+		? 'Bitte prüfen Sie die Position. Totfunde werden meist an Stränden oder Küstenabschnitten gefunden.'
+		: 'Die Koordinaten liegen scheinbar außerhalb der Ostsee. Bitte prüfen Sie die Position. Bei Sichtungen von Land und küstennahen Sichtungen kann dieser Hinweis erscheinen, die Daten werden trotzdem gespeichert.';
+}
+
+/** Dringlichkeit des Ostsee-Hinweises: beim Totfund niedriger (siehe oben). */
+export function outsideBalticSeverity(isDead: unknown): 'warning' | 'info' {
+	return isDeadFinding(isDead) ? 'info' : 'warning';
+}

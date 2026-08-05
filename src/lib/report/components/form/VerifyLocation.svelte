@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import Icon from '$lib/components/Icon.svelte';
+	import { getFormContext } from '$lib/report/formContext';
+	import { outsideBalticNotice, outsideBalticSeverity } from '$lib/report/wording';
 
 	import { SvelteMap } from 'svelte/reactivity';
 	import { slide } from 'svelte/transition';
@@ -19,6 +21,13 @@
 		longitude?: number;
 		latitude?: number;
 	} = $props();
+
+	const { form } = getFormContext();
+
+	// Am Strand ist eine Position außerhalb der Ostsee der Normalfall (Totfund) —
+	// der Hinweis fällt dort auf `info` zurück, statt bei jeder Meldung zu warnen.
+	const outsideNoticeText = $derived(outsideBalticNotice($form.isDead));
+	const outsideNoticeSeverity = $derived(outsideBalticSeverity($form.isDead));
 
 	let isLoading = $state(false);
 	let error = $state<string | undefined>(undefined);
@@ -133,7 +142,11 @@
 			</div>
 		{:else if error}
 			<!-- Error state -->
-			<div class="alert alert-error mt-0 mb-4" data-testid="verify-location-failed" transition:slide>
+			<div
+				class="alert alert-error mt-0 mb-4"
+				data-testid="verify-location-failed"
+				transition:slide
+			>
 				<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
 				<span>Fehler beim Prüfen der Position: {error}</span>
 			</div>
@@ -147,15 +160,20 @@
 						<span>Die Koordinaten liegen innerhalb der Ostsee.</span>
 					</div>
 				{:else if currentResult.inChartArea}
-					<!-- Outside Baltic Sea (only show in browser) -->
-					<div class="alert alert-warning mt-0 mb-4" data-testid="verify-location-outside">
-						<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
-						<span>
-							Die Koordinaten liegen scheinbar außerhalb der Ostsee. Bitte prüfen Sie die Position.
-							Bei Sichtungen von Land und küstennahen Sichtungen kann dieser Hinweis erscheinen, die
-							Daten werden trotzdem gespeichert.
-						</span>
-					</div>
+					<!-- Outside Baltic Sea (only show in browser). Klasse und Text hängen am
+					     Totfund-Zweig (`wording.ts`): Beim Totfund ist eine Position an Land
+					     der Normalfall, die Dringlichkeit sinkt deshalb auf `info`. -->
+					{#if outsideNoticeSeverity === 'info'}
+						<div class="alert alert-info mt-0 mb-4" data-testid="verify-location-outside">
+							<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
+							<span>{outsideNoticeText}</span>
+						</div>
+					{:else}
+						<div class="alert alert-warning mt-0 mb-4" data-testid="verify-location-outside">
+							<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
+							<span>{outsideNoticeText}</span>
+						</div>
+					{/if}
 				{:else}
 					<!-- Invalid coordinates -->
 					<div class="alert alert-error mt-0 mb-4" data-testid="verify-location-invalid">
