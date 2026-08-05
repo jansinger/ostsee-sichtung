@@ -2,6 +2,11 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import ExportModal from '$lib/components/admin/ExportModal.svelte';
+	import {
+		deleteSighting,
+		sendTestEmail,
+		TEST_EMAIL_HINT
+	} from '$lib/components/admin/sightingActions';
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
 	import { createLogger } from '$lib/logger';
 	import BaseToggle from '$lib/report/components/form/fields/BaseToggle.svelte';
@@ -210,76 +215,10 @@
 		goto(detailUrl.toString());
 	}
 
-	async function sendTestEmail(sightingId: number) {
-		try {
-			// Show loading toast
-			const loadingToastId = toast.info('E-Mail wird gesendet...', { duration: 0 });
-
-			const response = await fetch('/api/admin/test-email', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					sightingId,
-					testType: 'sighting'
-				})
-			});
-
-			// Remove loading toast
-			toast.remove(loadingToastId);
-
-			const result = await response.json();
-
-			if (result.success) {
-				toast.success(result.message || 'Test-E-Mail wurde erfolgreich gesendet', {
-					title: 'E-Mail gesendet',
-					duration: 5000
-				});
-			} else {
-				toast.error(result.error || 'Fehler beim Senden der Test-E-Mail', {
-					title: 'Fehler',
-					dismissible: true
-				});
-			}
-		} catch (error) {
-			logger.error({ error }, 'Error sending test email');
-			toast.error('Netzwerkfehler beim Senden der Test-E-Mail', {
-				title: 'Verbindungsfehler',
-				dismissible: true
-			});
-		}
-	}
-
-	async function deleteSighting(id: number): Promise<void> {
-		try {
-			const response = await fetch(`/api/sightings/${id}`, {
-				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json'
-				}
-			});
-
-			if (response.ok) {
-				const result = await response.json();
-				logger.info({ id, result }, 'Sichtung erfolgreich gelöscht');
-				toast.success('Sichtung wurde gelöscht', { duration: 5000 });
-				// Reload data via SvelteKit's invalidation instead of full page reload
-				await invalidateAll();
-			} else {
-				const error = await response.json();
-				logger.error({ id, error }, 'Fehler beim Löschen der Sichtung');
-				toast.error(error.error || 'Sichtung konnte nicht gelöscht werden', {
-					title: 'Fehler',
-					dismissible: true
-				});
-			}
-		} catch (error) {
-			logger.error({ id, error }, 'Netzwerkfehler beim Löschen');
-			toast.error('Netzwerkfehler beim Löschen der Sichtung', {
-				title: 'Verbindungsfehler',
-				dismissible: true
-			});
+	async function removeSighting(id: number): Promise<void> {
+		if (await deleteSighting(id)) {
+			// Reload data via SvelteKit's invalidation instead of full page reload
+			await invalidateAll();
 		}
 	}
 
@@ -699,14 +638,19 @@
 						>
 							<Icon icon="lucide:eye" class="h-4 w-4" />
 						</button>
-						<button
-							class="btn btn-ghost btn-sm"
-							onclick={() => sendTestEmail(sighting.id)}
-							title="Interne Benachrichtigung testweise senden"
-							aria-label="Interne Benachrichtigung testweise senden"
-						>
-							<Icon icon="lucide:mail" class="h-4 w-4" />
-						</button>
+						<!-- Nur Superadmins: Der Klick erzeugt im Team-Postfach eine Mail, die
+						     von einer echten Neu-Meldung nicht zu unterscheiden ist. Das Gate
+						     steht zusätzlich am Endpunkt — hier verschwindet nur das Bedienelement. -->
+						{#if data.isSuperAdmin}
+							<button
+								class="btn btn-ghost btn-sm"
+								onclick={() => sendTestEmail(sighting.id)}
+								title={TEST_EMAIL_HINT}
+								aria-label="Benachrichtigung zu dieser Sichtung an das Team senden"
+							>
+								<Icon icon="lucide:mail" class="h-4 w-4" />
+							</button>
+						{/if}
 						<button
 							class="btn btn-ghost btn-sm"
 							onclick={() => checkSpam(sighting.id)}
@@ -986,14 +930,17 @@
 										>
 											<Icon icon="lucide:eye" class="h-4 w-4" />
 										</button>
-										<button
-											class="btn btn-ghost btn-xs"
-											onclick={() => sendTestEmail(sighting.id)}
-											title="Interne Benachrichtigung testweise senden"
-											aria-label="Interne Benachrichtigung testweise senden"
-										>
-											<Icon icon="lucide:mail" class="h-4 w-4" />
-										</button>
+										<!-- Nur Superadmins — Begründung an der Kartenansicht weiter oben. -->
+										{#if data.isSuperAdmin}
+											<button
+												class="btn btn-ghost btn-xs"
+												onclick={() => sendTestEmail(sighting.id)}
+												title={TEST_EMAIL_HINT}
+												aria-label="Benachrichtigung zu dieser Sichtung an das Team senden"
+											>
+												<Icon icon="lucide:mail" class="h-4 w-4" />
+											</button>
+										{/if}
 										<button
 											class="btn btn-ghost btn-xs"
 											onclick={() => checkSpam(sighting.id)}
@@ -1087,7 +1034,7 @@
 		bind:show={showDeleteDialog}
 		onConfirm={() => {
 			if (sightingToDelete) {
-				deleteSighting(sightingToDelete.id);
+				removeSighting(sightingToDelete.id);
 			}
 		}}
 		onCancel={() => {

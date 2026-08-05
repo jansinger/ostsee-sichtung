@@ -306,6 +306,56 @@ describe('EmailService', () => {
 	// ---------------------------------------------------------------------------
 	// sendNewSightingNotification
 	// ---------------------------------------------------------------------------
+	/**
+	 * Warum es diese Funktion gibt: `sendNewSightingNotification` gibt bei allen
+	 * drei Abbruchgründen dasselbe `false` zurück, und der Grund stand nur im
+	 * Log — der Abschalter sogar nur auf `debug`. Ein Admin sah „Fehler beim
+	 * Senden" und fand nichts. Besonders irreführend, weil die Test-Mail in den
+	 * Einstellungen mit `test = true` an genau diesen Sperren vorbeigeht: Sie
+	 * kommt an, während die Sichtungs-Benachrichtigung stumm scheitert.
+	 *
+	 * Die Reihenfolge ist dieselbe wie im Versand, weil beide dieselbe Funktion
+	 * benutzen — sonst nennte die Diagnose einen anderen Grund als den, an dem
+	 * der Versand tatsächlich abbrach.
+	 */
+	describe('findNotificationBlocker()', () => {
+		it('meldet den Abschalter, wenn Benachrichtigungen deaktiviert sind', async () => {
+			setupConfigRepositoryMocks({ enabled: false });
+
+			await expect(EmailService.findNotificationBlocker()).resolves.toBe('disabled');
+		});
+
+		it('meldet den fehlenden Empfänger', async () => {
+			setupConfigRepositoryMocks({ enabled: true, recipient: '' });
+
+			await expect(EmailService.findNotificationBlocker()).resolves.toBe('recipient-missing');
+		});
+
+		it('meldet die fehlende SMTP-Verbindung', async () => {
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: '' });
+
+			await expect(EmailService.findNotificationBlocker()).resolves.toBe('transport-unavailable');
+		});
+
+		it('meldet null, wenn nichts im Weg steht', async () => {
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'smtp.example.com' });
+			await EmailService.initialize(false);
+
+			await expect(EmailService.findNotificationBlocker()).resolves.toBeNull();
+		});
+
+		/**
+		 * Der Abschalter zuerst: Ist er aus, sagt ein zusätzlich fehlender
+		 * Empfänger nichts über die Ursache — er ist dann nur noch nicht
+		 * eingetragen worden.
+		 */
+		it('nennt den Abschalter vor dem fehlenden Empfänger', async () => {
+			setupConfigRepositoryMocks({ enabled: false, recipient: '' });
+
+			await expect(EmailService.findNotificationBlocker()).resolves.toBe('disabled');
+		});
+	});
+
 	describe('sendNewSightingNotification()', () => {
 		it('gibt false zurück wenn Sichtung nicht in DB gefunden', async () => {
 			vi.mocked(db.select).mockReturnValue({

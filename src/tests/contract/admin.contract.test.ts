@@ -7,7 +7,8 @@ import { asApiResponse } from './helpers/asApiResponse';
 vi.mock('$lib/server/services/emailService', () => ({
 	EmailService: {
 		sendTestEmail: vi.fn().mockResolvedValue(true),
-		sendNewSightingNotification: vi.fn().mockResolvedValue(true)
+		sendNewSightingNotification: vi.fn().mockResolvedValue(true),
+		findNotificationBlocker: vi.fn().mockResolvedValue(null)
 	}
 }));
 
@@ -78,6 +79,49 @@ describe('Contract: POST /api/admin/test-email', () => {
 		const apiRes = await asApiResponse(res, event);
 
 		expect(apiRes.status).toBe(400);
+		expect(apiRes).toSatisfyApiSpec();
+	});
+
+	/**
+	 * Der Endpunkt verschickt eine Mail, die im Team-Postfach von einer echten
+	 * Neu-Meldung nicht zu unterscheiden ist — er ist Diagnose der
+	 * Mail-Konfiguration und gehört damit zu `/api/config/init` und
+	 * `/api/config/reset`, nicht zum Tagesgeschäft eines Admins.
+	 */
+	it('verlangt die Rolle superadmin', async () => {
+		const { requireUserRole } = vi.mocked(await import('$lib/server/auth/auth'));
+		const event = createEvent('/api/admin/test-email', {
+			method: 'POST',
+			locals: { user: mockAdminUser },
+			body: { testType: 'simple', recipient: 'test@example.com' }
+		});
+
+		await testEmailPOST(event);
+
+		expect(requireUserRole).toHaveBeenCalledWith(expect.anything(), mockAdminUser, ['superadmin']);
+	});
+
+	/**
+	 * Der Abschalter ist die häufigste Ursache und zugleich die verwirrendste:
+	 * Die Test-Mail in den Einstellungen geht an ihm vorbei und kommt an. Wer
+	 * dann „E-Mail konnte nicht gesendet werden. Bitte prüfen Sie die
+	 * Konfiguration." liest, sucht am falschen Ende.
+	 */
+	it('nennt den Abschalter als Grund, statt pauschal auf die Konfiguration zu verweisen', async () => {
+		const { EmailService } = vi.mocked(await import('$lib/server/services/emailService'));
+		vi.mocked(EmailService.sendNewSightingNotification).mockResolvedValueOnce(false);
+		vi.mocked(EmailService.findNotificationBlocker).mockResolvedValueOnce('disabled');
+
+		const event = createEvent('/api/admin/test-email', {
+			method: 'POST',
+			locals: { user: mockAdminUser },
+			body: { testType: 'sighting', sightingId: 42 }
+		});
+		const res = await testEmailPOST(event);
+		const apiRes = await asApiResponse(res, event);
+
+		expect(apiRes.status).toBe(500);
+		expect((apiRes.body as { error: string }).error).toMatch(/abgeschaltet/);
 		expect(apiRes).toSatisfyApiSpec();
 	});
 

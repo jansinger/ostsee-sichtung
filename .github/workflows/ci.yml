@@ -483,6 +483,13 @@ jobs:
             e2e/form-ux.spec.ts
             e2e/form-a11y.spec.ts
             e2e/form-autosave.spec.ts
+            # Thematisch bei den beiden anderen Admin-Specs in `map` — steht
+            # hier nach derselben Regel, die die dort begründet: Nach #769 misst
+            # `form` 152 s und ist damit der kürzeste Shard, `map` mit 169 s der
+            # längste. Der Spec wiegt lokal 9 s; er gehört an den kurzen Shard.
+            # Der Aufschlag für die kalt kompilierte /admin-Route ist dabei
+            # eingeplant (Begründung weiter unten bei `smoke`).
+            e2e/admin-detail-actions.spec.ts
           )
 
           # Die drei Shards laufen parallel; die Laufzeit des Jobs ist die des

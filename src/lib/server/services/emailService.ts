@@ -58,6 +58,15 @@ function escape(value: string): string {
 }
 
 /**
+ * Grund, aus dem eine Sichtungs-Benachrichtigung nicht verschickt wird.
+ *
+ * `disabled` ist der Schalter `notification.email.enabled`, an dem
+ * `sendTestEmail()` bewusst vorbeigeht — die häufigste Ursache dafür, dass die
+ * Test-Mail ankommt und die Benachrichtigung nicht.
+ */
+export type NotificationBlocker = 'disabled' | 'transport-unavailable' | 'recipient-missing';
+
+/**
  * Macht aus einer Empfängerliste den Wert, den nodemailer erwartet: die
  * bereinigte Liste, oder `undefined` wenn nichts konfiguriert ist.
  *
@@ -362,6 +371,37 @@ export class EmailService {
 	}
 
 	/**
+	 * Prüft die drei Voraussetzungen des Benachrichtigungs-Versands und benennt
+	 * die erste, die fehlt. `null` heißt: nichts steht im Weg.
+	 *
+	 * Der Versand selbst benutzt dieselbe Funktion — die Reihenfolge der Gründe
+	 * ist damit garantiert dieselbe, und eine Diagnose kann nicht auf einen
+	 * anderen Grund zeigen als den, an dem der Versand abbrach.
+	 *
+	 * **Warum das nötig wurde:** Alle drei Abbrüche gaben nach außen dasselbe
+	 * `false`, und der häufigste — der Abschalter — stand nur auf `debug` im Log.
+	 * Für einen Admin war das ununterscheidbar von einem SMTP-Fehler. Verschärft
+	 * dadurch, dass `sendTestEmail()` mit `test = true` bewusst an Abschalter und
+	 * Transporter-Gate vorbeigeht: Die Test-Mail aus `/admin/settings` kommt an,
+	 * während die Sichtungs-Benachrichtigung stumm scheitert.
+	 */
+	static async findNotificationBlocker(): Promise<NotificationBlocker | null> {
+		const enabled = await ConfigRepository.getBoolean('notification.email.enabled', false);
+
+		if (!enabled) {
+			return 'disabled';
+		}
+
+		if (!(await this.ensureTransporter())) {
+			return 'transport-unavailable';
+		}
+
+		const config = await this.getEmailConfig();
+
+		return config.recipient ? null : 'recipient-missing';
+	}
+
+	/**
 	 * Consolidated email sending logic
 	 */
 	private static async sendEmailNotification(
@@ -371,25 +411,23 @@ export class EmailService {
 		balticSea: BalticSeaEmailContext
 	): Promise<boolean> {
 		try {
-			const enabled = await ConfigRepository.getBoolean('notification.email.enabled', false);
+			const blocker = await this.findNotificationBlocker();
 
-			if (!enabled) {
-				logger.debug('Email notifications disabled');
+			if (blocker) {
+				// `warn` auch für den Abschalter: Bis 2026-08-05 stand er auf
+				// `debug` und war im Normalbetrieb unsichtbar — eine ausbleibende
+				// Benachrichtigung zeigt sonst nirgends etwas an.
+				logger.warn({ blocker, referenceId }, 'Sighting notification not sent');
 				return false;
 			}
 
 			const transporter = await this.ensureTransporter();
-
-			if (!transporter) {
-				logger.warn('Email service not available, notification not sent');
-				return false;
-			}
-
-			// Get email configuration
 			const config = await this.getEmailConfig();
 
-			if (!config.recipient) {
-				logger.warn('Email notification recipient not configured');
+			if (!transporter) {
+				// Kann nach der Prüfung oben nur eintreten, wenn die Verbindung
+				// dazwischen verworfen wurde. TypeScript braucht die Klammer ohnehin.
+				logger.warn('Email service not available, notification not sent');
 				return false;
 			}
 

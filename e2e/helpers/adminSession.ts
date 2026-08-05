@@ -86,8 +86,17 @@ const ABSOLUTE_HOURS = 12;
  * Legt ein gültiges Admin-Session-Cookie in den Browser-Context.
  *
  * Muss vor dem ersten `page.goto()` auf eine geschützte Route laufen.
+ *
+ * `roles` ist überschreibbar, weil einzelne Bedienelemente `superadmin`
+ * verlangen (die Mail-Aktion in `/admin`, siehe admin-detail-actions.spec.ts).
+ * Der Default bleibt `['admin']` — die Rolle, in der der Admin-Bereich täglich
+ * benutzt wird, und damit die richtige Grundannahme für jeden anderen Spec.
  */
-export async function seedAdminSession(context: BrowserContext, baseURL: string): Promise<void> {
+export async function seedAdminSession(
+	context: BrowserContext,
+	baseURL: string,
+	roles: string[] = ['admin']
+): Promise<void> {
 	const databaseUrl = process.env.DATABASE_POSTGRES_URL;
 	if (!databaseUrl) {
 		throw new Error(
@@ -126,7 +135,7 @@ export async function seedAdminSession(context: BrowserContext, baseURL: string)
 			VALUES (
 				${tokenHash},
 				${ADMIN_SUB},
-				${sql.array(['admin'])},
+				${sql.array(roles)},
 				${sql.json(ADMIN_CLAIMS)},
 				${expiresAt},
 				${absoluteExpiresAt}
