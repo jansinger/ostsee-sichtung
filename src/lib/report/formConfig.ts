@@ -193,10 +193,18 @@ export function isDeadFinding(value: unknown): boolean {
  * Felder, die beim Totfund entfallen. Ein totes Tier zeigt kein Verhalten und
  * reagiert nicht — die Angaben wären für den Melder unbeantwortbar.
  *
- * WICHTIG: Die Ausblendung gehört hierher und NICHT in ein `{#if}` im Markup.
- * `stepValidation` liest seine Feldliste aus dieser Funktion; ein nur optisch
- * verstecktes Feld würde weiter validiert, und der Melder säße in einer
- * Sackgasse ohne sichtbare Fehlermeldung.
+ * WICHTIG: Diese Liste ist die halbe Miete, nicht die ganze. Sie steuert
+ * ausschließlich die Validierung — gelesen wird sie nur von `stepValidation`,
+ * gerendert wird aus ihr nichts. Wer ein Feld nur hier entfernt, bekommt ein
+ * sichtbares, aber unvalidiertes Feld, dessen Wert trotzdem mit ans Backend
+ * geht. Wer es nur im Markup versteckt, bekommt die Umkehrung: ein unsichtbares
+ * Feld, das weiter validiert wird, und einen Melder in einer Sackgasse ohne
+ * sichtbare Fehlermeldung.
+ *
+ * Beides gehört deshalb zusammen entschieden: Eintrag hier UND eine Bedingung
+ * an der Aufrufstelle im Markup, beide über `isDeadFinding` — nie eine zweite,
+ * eigene Regel daneben. Für diese drei Felder sitzt die Markup-Seite in
+ * `steps/Step3Observations.svelte`.
  */
 const HIDDEN_WHEN_DEAD = ['behavior', 'behaviorText', 'reaction'] as const;
 
