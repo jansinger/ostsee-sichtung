@@ -84,14 +84,28 @@ test.describe('TopBar — Struktur und Umbruchfreiheit', () => {
 			await page.goto('/');
 			const menu = page.locator('header ul.menu-horizontal');
 
-			/* Vier statt sieben: Meldung, Karte, Bestimmungshilfe + „Verwaltung".
-			   API-Docs sind kein Ziel für Museumsbesuchende und stehen als
-			   „Dokumentation" weiterhin im Footer. */
-			await expect(menu.locator('> li')).toHaveCount(4);
+			/* Fünf statt sieben: Meldung, Karte, Bestimmungshilfe, Hintergrund +
+			   „Verwaltung". API-Docs sind kein Ziel für Museumsbesuchende und stehen
+			   als „Dokumentation" weiterhin im Footer.
+
+			   „Hintergrund" kam am 2026-08-05 dazu (Wunsch des Museums nach einer
+			   Seite mit den Erklärtexten). Die Zahl steht hier ausdrücklich und wird
+			   nicht gelockert: Ein vierter Produktlink ist genau die Last, die den
+			   Umbruch dieser Navigation ausgelöst hatte — der Umbruchtest über
+			   1024/1280/1440px darüber ist der eigentliche Wächter dafür. */
+			await expect(menu.locator('> li')).toHaveCount(5);
 			await expect(menu.getByRole('link', { name: 'Meldung' })).toBeVisible();
 			await expect(menu.getByRole('link', { name: 'Karte' })).toBeVisible();
 			await expect(menu.getByRole('link', { name: 'Bestimmungshilfe' })).toBeVisible();
+			await expect(menu.getByRole('link', { name: 'Hintergrund' })).toBeVisible();
 			await expect(menu.getByRole('link', { name: 'API-Docs' })).toHaveCount(0);
+
+			/* Ein Ziel, ein Name: Der Footer führt dieselbe Seite: Stünde dort
+			   weiterhin „Über uns", trüge `/about` zwei Namen. */
+			await expect(menu.getByRole('link', { name: 'Hintergrund' })).toHaveAttribute(
+				'href',
+				'/about'
+			);
 
 			/* Die drei Admin-Ziele sind erreichbar — aber erst nach dem Aufklappen,
 			   damit sie die oberste Ebene nicht mehr belasten. */
@@ -247,7 +261,9 @@ test.describe('TopBar — Struktur und Umbruchfreiheit', () => {
 		await page.goto('/');
 
 		const menu = page.locator('header ul.menu-horizontal');
-		await expect(menu.locator('> li')).toHaveCount(3);
+		/* Die vier Produktlinks ohne die Admin-Gruppe: Meldung, Karte,
+		   Bestimmungshilfe, Hintergrund. */
+		await expect(menu.locator('> li')).toHaveCount(4);
 		await expect(menu.getByRole('group')).toHaveCount(0);
 		expect(await menueZeilen(page)).toBe(1);
 	});

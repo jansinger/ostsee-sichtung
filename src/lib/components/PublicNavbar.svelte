@@ -48,6 +48,26 @@
 			Bestimmungshilfe
 		</a>
 	</li>
+	<!--
+		„Hintergrund" statt „Über uns" (Wunsch des Museums, 2026-08-05): Die Seite
+		soll die Erklärtexte zur Arbeit tragen, und genau das steht dort bereits —
+		Citizen Science, Mission, Datenschutz. Eine eigene Route `/hintergrund`
+		wäre eine zweite Seite mit demselben Inhalt gewesen.
+
+		Der Footer führt dieselbe Seite unter demselben Namen; ein Ziel trägt
+		einen Namen. Der Wortlaut ist bewusst der des Menüs und nicht der der
+		Seitenüberschrift („Über Ostsee-Tiere") — das Museum hat den Begriff
+		vorgegeben, und beide Formulierungen meinen dasselbe.
+
+		Was der Link NICHT löst: Im iframe auf meeresmuseum.de ist diese
+		Navigation ausgeblendet (`isNotIFrame` unten), die Seite ist dort also
+		weiterhin unerreichbar. Deshalb bleiben die Erklärtexte zusätzlich im
+		Formular (`FormHelp.svelte`) — dieselbe Abwägung wie bei der
+		Bestimmungshilfe. Belege: docs/IFRAME_EINBETTUNG.md
+	-->
+	<li>
+		<a href="/about" class={currentPath === '/about' ? 'active font-medium' : ''}> Hintergrund </a>
+	</li>
 {/snippet}
 
 {#snippet adminItems()}
