@@ -93,7 +93,15 @@ export const formStepsConfig: FormStep[] = [
 			// `BoatDriveEnum.OTHER`, und das Meldeformular bietet seit dem 2026-08-04
 			// nur noch "Motor lief"/"Motor lief nicht" an (PR 4). Schema-Eintrag und
 			// DB-Spalte `bootsantrieb_text` bleiben — die Admin-Maske schreibt es weiter.
-			'isDead',
+			//
+			// `isDead` steht hier bewusst NICHT mehr: Die Einstiegsseite („Was
+			// möchten Sie melden?") beantwortet Sichtung/Totfund bereits vor dem
+			// Formular und schreibt den Wert über `initialIsDead` in den State
+			// (Task 6/7). Der Schalter auf Schritt 2 ist im Meldeformular durch eine
+			// Rückmeldung ersetzt (`AnimalInfo.svelte`) — ein Feld, das dort nicht
+			// mehr bedient wird, braucht auch keine Schritt-Validierung. Schema-
+			// Eintrag und DB-Spalte `totfund` bleiben — die Admin-Maske zeigt den
+			// Schalter weiterhin und schreibt ihn.
 			'deadCondition',
 			// `deadSex` steht hier bewusst NICHT mehr: Das Museum hat das Geschlecht
 			// beim Totfund am 2026-08-04 aus dem Meldeformular abbestellt (C4) —

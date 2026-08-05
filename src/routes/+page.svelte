@@ -11,6 +11,7 @@
 	import ReportKindChoice from '$lib/report/components/ReportKindChoice.svelte';
 	import SubmissionSuccess from '$lib/report/components/SubmissionSuccess.svelte';
 	import {
+		clearReportKind,
 		readReportKind,
 		reportKindToIsDead,
 		reportKindToParam,
@@ -61,6 +62,30 @@
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const params = new URLSearchParams(window.location.search);
 		params.set('meldung', reportKindToParam(kind));
+		pushState(`/?${params.toString()}`, {});
+	}
+
+	/**
+	 * Gegenstück zu `choose()`, ausgelöst vom „Ändern"-Knopf in `AnimalInfo`
+	 * (Schritt 2, über `ModernReportForm` → `Step2SightingDetails`
+	 * durchgereicht): zurück zur Auswahlseite. `history.back()` wäre hier keine
+	 * Alternative — wer über den `localStorage` direkt im Formular landet, hat
+	 * keinen History-Eintrag dafür, und im meeresmuseum.de-iframe navigierte
+	 * `back()` die Elternseite weg statt nur den Zweig zurückzusetzen.
+	 *
+	 * `clearReportKind()` räumt den persistierten Zweig mit auf — sonst würde
+	 * ein Reload auf der frisch gezeigten Auswahlseite über
+	 * `resolveReportKind`s `stored`-Zweig sofort in den alten Zweig zurückfallen,
+	 * noch bevor eine neue Auswahl getroffen wurde.
+	 */
+	function changeKind() {
+		reportKind = null;
+		clearReportKind();
+		// Bestehende Query-Parameter bleiben erhalten — nur `meldung` entfällt.
+		// Gleiches Muster wie in `choose()`.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
+		const params = new URLSearchParams(window.location.search);
+		params.delete('meldung');
 		pushState(`/?${params.toString()}`, {});
 	}
 
@@ -139,7 +164,11 @@
 		{:else if submissionSuccess && submittedData}
 			<SubmissionSuccess {submittedData} {handleNewReport} />
 		{:else}
-			<ModernReportForm onSubmit={handleSubmit} initialIsDead={reportKindToIsDead(reportKind)} />
+			<ModernReportForm
+				onSubmit={handleSubmit}
+				initialIsDead={reportKindToIsDead(reportKind)}
+				onchangekind={changeKind}
+			/>
 		{/if}
 	</div>
 </div>

@@ -102,8 +102,9 @@ describe('formStepsConfig — Geschlecht beim Totfund nur in der Admin-Maske', (
 	});
 
 	// Gegenprobe: Nur `deadSex` verschwindet, die übrigen Totfund-Felder
-	// bleiben Teil des Melde-Schritts.
-	it.each(['isDead', 'deadCondition', 'deadSize', 'deadPhoneContact'])(
+	// bleiben Teil des Melde-Schritts. `isDead` steht hier NICHT mehr —
+	// Task 7 nimmt es ebenfalls heraus, siehe die eigene Beschreibung unten.
+	it.each(['deadCondition', 'deadSize', 'deadPhoneContact'])(
 		'behält %s im Schritt "sighting-details"',
 		(name) => {
 			expect(sightingDetailsStep?.fields).toContain(name);
@@ -112,6 +113,28 @@ describe('formStepsConfig — Geschlecht beim Totfund nur in der Admin-Maske', (
 
 	it('kennt deadSex im Schema weiterhin, damit die Admin-Maske es schreiben kann', () => {
 		expect(sightingSchemaFields.deadSex).toBeDefined();
+	});
+});
+
+/**
+ * `isDead` (der Totfund-Schalter) bleibt nur in der Admin-Maske —
+ * `sections/AnimalInfo.svelte` zeigt das Feld dort ausschließlich hinter
+ * `adminMode`, im Meldeformular tritt eine Rückmeldung an seine Stelle
+ * (Task 7). Grund: Die Einstiegsseite „Was möchten Sie melden?" beantwortet
+ * Sichtung/Totfund bereits vor dem Formular; ein zweiter Schalter auf
+ * Schritt 2 könnte dieselbe Frage abweichend beantworten. Schema-Eintrag und
+ * DB-Spalte (`totfund`) bleiben unverändert; hier wird nur geprüft, dass der
+ * Melde-Schritt "sighting-details" das Feld nicht mehr führt.
+ */
+describe('formStepsConfig — Totfund-Schalter nur in der Admin-Maske (Task 7)', () => {
+	const sightingDetailsStep = formStepsConfig.find((step) => step.id === 'sighting-details');
+
+	it('führt isDead nicht mehr im Schritt "sighting-details"', () => {
+		expect(sightingDetailsStep?.fields).not.toContain('isDead');
+	});
+
+	it('kennt isDead im Schema weiterhin, damit die Admin-Maske es schreiben kann', () => {
+		expect(sightingSchemaFields.isDead).toBeDefined();
 	});
 });
 

@@ -1,4 +1,5 @@
 import { render } from 'vitest-browser-svelte';
+import { page } from 'vitest/browser';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -102,5 +103,25 @@ describe('ModernReportForm — Zurücksetzen räumt die Uploads mit auf', () => 
 
 		await vi.waitFor(() => expect(persistedUploads()).toEqual([UPLOAD]));
 		expect(deleteMultipleFiles).not.toHaveBeenCalled();
+	});
+});
+
+/**
+ * Zweiter Hop der Task-7-Kette (`+page.svelte` → `ModernReportForm` →
+ * `Step2SightingDetails` → `AnimalInfo`): `ModernReportForm` muss ein
+ * mitgegebenes `onchangekind` bis zum „Ändern"-Knopf auf Schritt 2
+ * durchreichen. Ohne diesen Test bliebe ein versehentlich entfernter
+ * Prop-Hop unbemerkt — der Knopf sähe im DOM unverändert aus, wäre aber
+ * wirkungslos (die Lücke, an der Task 6 schon einmal scheiterte).
+ */
+describe('ModernReportForm — „Ändern" auf Schritt 2 erreicht die Kette', () => {
+	it('reicht onchangekind bis zu AnimalInfo durch', async () => {
+		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(1));
+		const onchangekind = vi.fn();
+		render(ModernReportForm, { onchangekind });
+
+		await page.getByRole('button', { name: /ändern/i }).click();
+
+		expect(onchangekind).toHaveBeenCalledOnce();
 	});
 });

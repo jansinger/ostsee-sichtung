@@ -48,7 +48,10 @@
 			logger.info({ value }, 'Form submitted:');
 		},
 		onCancel = () => {},
-		initialIsDead
+		initialIsDead,
+		// Default-Noop wie `onCancel` oben: `exactOptionalPropertyTypes` verbietet sonst das
+		// Weiterreichen als `{onchangekind}` an `Step2SightingDetails`.
+		onchangekind = () => {}
 	}: {
 		onSubmit?: (data: SightingFormValues) => Promise<void>;
 		onCancel?: () => void;
@@ -58,6 +61,12 @@
 		 * gültiger Totfund-Wert.
 		 */
 		initialIsDead?: boolean;
+		/**
+		 * Reicht den „Ändern"-Knopf aus `AnimalInfo` (Schritt 2, über
+		 * `Step2SightingDetails`) bis zur Aufrufstelle durch — nur `+page.svelte`
+		 * kennt die Einstiegsseite, zu der er zurückführt.
+		 */
+		onchangekind?: () => void;
 	} = $props();
 
 	// Lade gespeicherte Benutzer-Kontaktdaten
@@ -448,7 +457,7 @@
 				{#if currentStep === 0}
 					<Step1LocationTime />
 				{:else if currentStep === 1}
-					<Step2SightingDetails />
+					<Step2SightingDetails {onchangekind} />
 				{:else if currentStep === 2}
 					<Step3Observations bind:currentStep />
 				{:else if currentStep === 3}
