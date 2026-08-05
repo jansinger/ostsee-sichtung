@@ -177,8 +177,14 @@
 					     `noticeOverride`/`severityOverride` (Props, s.o.) — ohne sie bleibt es
 					     beim bisherigen Sichtungs-Wortlaut in `alert-warning`. -->
 					{#if outsideNoticeSeverity === 'info'}
+						<!-- `lucide:info`, nicht `circle-alert`: Die Alerts sind auf Soft-Style
+						     umgestellt (Text in `base-content`), die Bedeutung trägt deshalb das
+						     Icon (`.claude/rules/daisyui.md`). `alert-warning` daneben nutzt
+						     weiterhin `circle-alert` — beide Varianten mit demselben Zeichen waren
+						     sonst praktisch ununterscheidbar (Review Task 6, Befund 3). `OLMap.svelte`
+						     hält für seinen eigenen `alert-info` dieselbe Zuordnung. -->
 						<div class="alert alert-info mt-0 mb-4" data-testid="verify-location-outside">
-							<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
+							<Icon icon="lucide:info" class="h-6 w-6 shrink-0" />
 							<span>{outsideNoticeText}</span>
 						</div>
 					{:else}

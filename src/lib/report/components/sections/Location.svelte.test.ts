@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
 import type { SightingFormData } from '$lib/types';
@@ -162,6 +162,21 @@ describe('sections/Location — Ortsbeschreibung als konditionales Pflichtfeld',
  * Totfund-Datensatz genau so bleibt wie beim Lebend-Datensatz.
  */
 describe('sections/Location — Ostsee-Hinweis bleibt admin-seitig unverändert', () => {
+	/**
+	 * Review Task 6, Befund 2: Der `fetch`-Stub unten überschreibt
+	 * `globalThis.fetch` ohne Rücknahme. Bisher folgenlos, weil dieser Block der
+	 * letzte in der Datei war — ein später angehängter Test hätte den Stub sonst
+	 * unbemerkt erhalten. `globalThis.fetch = vi.fn()` ist eine reine Zuweisung,
+	 * kein `vi.spyOn` — `vi.restoreAllMocks()` kennt deshalb kein Original, zu
+	 * dem es zurückkehren könnte, und ließe die Zuweisung stehen. Die echte
+	 * Referenz wird deshalb hier selbst festgehalten und zurückgeschrieben.
+	 */
+	const originalFetch = globalThis.fetch;
+
+	afterEach(() => {
+		globalThis.fetch = originalFetch;
+	});
+
 	it('zeigt beim Bearbeiten eines Totfund-Datensatzes weiterhin den bisherigen Sichtungs-Wortlaut in alert-warning', async () => {
 		globalThis.fetch = vi.fn().mockResolvedValue({
 			ok: true,
