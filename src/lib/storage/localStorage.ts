@@ -45,7 +45,10 @@ export const STORAGE_KEYS = {
 	// Gehört zu FORM_DATA und muss dessen Lebensdauer teilen — sonst verlöre eine
 	// wiederhergestellte Datei ihre Herkunft.
 	POSITION_FILE_UIDS: 'sichtungen_position_file_uids',
-	USER_CONTACT_DATA: 'sichtungen_user_contact_data' // Benutzer-Kontaktdaten
+	USER_CONTACT_DATA: 'sichtungen_user_contact_data', // Benutzer-Kontaktdaten
+	// 'alive' | 'dead'. Fehlt der Schlüssel, wurde die Frage noch nie gestellt —
+	// `isDead` kann das nicht ausdrücken, weil es als Boolean auf `false` steht.
+	REPORT_KIND: 'sichtungen_report_kind'
 };
 
 /**
