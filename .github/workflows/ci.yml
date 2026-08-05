@@ -488,7 +488,22 @@ jobs:
             e2e/form-field-mode.spec.ts
           )
 
-          map=(e2e/map-*.spec.ts)
+          # Die drei Shards laufen parallel; die Laufzeit des Jobs ist die des
+          # längsten. Ab hier folgt die Zuordnung deshalb der gemessenen Dauer
+          # und erst danach dem Thema — `map` trägt sichtbar Specs, die mit der
+          # Karte nichts zu tun haben. app-shell-height fährt immerhin die
+          # MapPage mit, der Rest ist Admin- und Formular-Verhalten. Alle Shards
+          # bekommen denselben Unterbau (PostGIS-Service, Migrationen, Seed),
+          # DB-Specs sind hier also genauso zu Hause wie anderswo.
+          map=(
+            e2e/map-*.spec.ts
+            e2e/horizontal-overflow.spec.ts
+            e2e/admin-edit-preserves-record.spec.ts
+            e2e/admin-table-verified-column.spec.ts
+            e2e/app-shell-height.spec.ts
+            e2e/submit-offline.spec.ts
+            e2e/meldung-wording.spec.ts
+          )
 
           # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das
           # Theme, nicht das Formular. Läuft gegen /styleguide, das der
@@ -504,33 +519,37 @@ jobs:
             e2e/auth.spec.ts
             e2e/design-tokens.spec.ts
             e2e/modal-overflow.spec.ts
-          )
-
-          # Specs, die bis heute in keinem Shard standen. Das war kein Beschluss,
-          # sondern ein Versehen — die Listen oben muss man beim Anlegen eines
-          # Specs von Hand pflegen, und das ist hier 14-mal unterblieben. Sie
-          # stehen als Rückstand hier, damit der Abgleich darunter greifen kann,
-          # **nicht** weil ihr Ausschluss geprüft wäre.
-          #
-          # Wer einen davon in einen Shard zieht, lässt ihn vorher laufen.
-          # form-map-pan-zoom.spec.ts ist der bekannte Sonderfall: von sich aus
-          # flaky (Subpixel-Vergleiche nach Pan/Zoom), gehört erst nach einer
-          # Stabilisierung in einen Shard.
-          unassigned=(
-            e2e/admin-edit-preserves-record.spec.ts
-            e2e/admin-table-verified-column.spec.ts
-            e2e/app-shell-height.spec.ts
             e2e/bestimmungshilfe.spec.ts
-            e2e/footer-layout.spec.ts
-            e2e/form-map-pan-zoom.spec.ts
-            e2e/form-stepper-affordance.spec.ts
-            e2e/form-stepper.spec.ts
-            e2e/horizontal-overflow.spec.ts
-            e2e/meldung-wording.spec.ts
             e2e/navbar-structure.spec.ts
             e2e/seo-meta.spec.ts
-            e2e/submit-offline.spec.ts
+            e2e/footer-layout.spec.ts
+            # Die beiden Stepper-Specs stünden thematisch bei `form`. Sie liegen
+            # hier, weil `form` der längste Shard ist und sie zusammen 44 s
+            # wiegen.
+            e2e/form-stepper.spec.ts
+            e2e/form-stepper-affordance.spec.ts
             e2e/videoUpload.spec.ts
+          )
+
+          # Der Rückstand von 14 Specs ist abgearbeitet: 13 davon liefen am
+          # 2026-08-05 lokal dreimal hintereinander durch (82 Tests je Lauf,
+          # kein Fehlschlag, kein Flake) und stehen jetzt in `map` bzw. `smoke`.
+          #
+          # Verteilt wurde nach gemessener Dauer, nicht nach Thema. Maßgeblich
+          # ist die Summe der Test-Laufzeiten, weil der Job seriell fährt
+          # (`workers: 1`): form 190 s, map 153 s, smoke 152 s — vorher
+          # 190/78/75. `form` hat bewusst nichts abbekommen; der Shard war schon
+          # der längste, und die Job-Laufzeit ist die des längsten. Wer dort
+          # etwas hinzufügt, misst vorher.
+          #
+          # Was hier bleibt, bleibt aus einem Grund, nicht aus Versehen:
+          # form-map-pan-zoom.spec.ts vergleicht Subpixel-Koordinaten nach Pan
+          # und Zoom und war in 3 von 4 Baseline-Läufen rot, ohne dass sich am
+          # Code etwas geändert hätte. In CI wäre das ein Rotlicht, das niemand
+          # mehr liest. Ein einzelner grüner Lauf reicht als Nachweis nicht —
+          # der Spec gehört erst nach einer Stabilisierung in einen Shard.
+          unassigned=(
+            e2e/form-map-pan-zoom.spec.ts
           )
 
           # Die Soll-Liste kommt von Playwright selbst, nicht von einem `find`,
