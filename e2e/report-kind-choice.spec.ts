@@ -42,8 +42,9 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 		await page.getByRole('button', { name: /Nächster Schritt/i }).click();
 
 		// Schritt 2: Der Totfund-Block (`DeadAnimal.svelte`) rendert
-		// ausschließlich innerhalb von `{#if $form.isDead}` — sichtbar genau
-		// dann, wenn die Wahl „Totfund" tatsächlich als `isDead` ankam.
+		// ausschließlich innerhalb von `{#if isDeadFinding($form.isDead)}` —
+		// sichtbar genau dann, wenn die Wahl „Totfund" tatsächlich als `isDead`
+		// ankam.
 		await expect(page.getByTestId('field-deadCondition')).toBeVisible();
 	});
 
@@ -134,6 +135,19 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 		// Storage-Quellen nachträgt. Ohne das Warten bestünde der Test allein
 		// durch diesen kurzen SSR-Flash, unabhängig vom eigentlichen Fehler.
 		await page.waitForLoadState('networkidle');
+
+		// `networkidle` sagt nur „keine Netzwerkaktivität mehr" — nicht „Svelte hat
+		// hydratisiert". Ein `toBeVisible()` allein bestünde deshalb auch dann, wenn
+		// `networkidle` noch VOR der Hydration aufläuft (langsamerer Runner,
+		// gecachte Module, andere Bundling-Strategie): Die statische SSR-Auswahlseite
+		// steht testidentisch im DOM, egal ob Svelte sie schon übernommen hat. Der
+		// folgende Schritt kann ohne Hydration nicht funktionieren — `aria-disabled`
+		// an `report-kind-submit` ist reaktiver Svelte-State (`selected`), der erst
+		// über das `onchange` eines hydratisierten Clients von `true` auf `false`
+		// kippt. Erst danach ist belegt, dass die Auswahlseite tatsächlich bedienbar
+		// (und nicht nur sichtbar) stehen geblieben ist.
+		await page.getByRole('radio', { name: /lebenden Tieres/i }).check();
+		await expect(page.getByTestId('report-kind-submit')).toHaveAttribute('aria-disabled', 'false');
 
 		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
 	});

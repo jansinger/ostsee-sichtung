@@ -81,12 +81,20 @@
 	 * `$effect`, das `$form` verfolgt) — ohne die dritte Quelle ebenfalls zu
 	 * neutralisieren, fiele ein Reload auf der frisch gezeigten Auswahlseite
 	 * sofort in den verlassenen Zweig zurück, noch bevor eine neue Auswahl
-	 * getroffen wurde. Neutralisiert wird deshalb NUR `isDead` selbst (auf
-	 * `null`, damit `resolveReportKind`s `savedIsDead` wieder `null` ergibt,
-	 * statt `false`/`true` zu bleiben) — die übrigen Formulardaten (Position,
-	 * Datum, Medien, Kontakt) bleiben unangetastet, sie sind der aufwendigste
-	 * Teil der Eingabe. Das Leeren der zweigspezifischen Felder (z. B.
-	 * `deadCondition`) ist Task 8.
+	 * getroffen wurde. Neutralisiert wird deshalb NUR `isDead` selbst — die
+	 * übrigen Formulardaten (Position, Datum, Medien, Kontakt) bleiben
+	 * unangetastet, sie sind der aufwendigste Teil der Eingabe. Das Leeren der
+	 * zweigspezifischen Felder (z. B. `deadCondition`) ist Task 8.
+	 *
+	 * Der Schlüssel wird dabei ENTFERNT, nicht auf `null` gesetzt:
+	 * `sightingSchema.isDead` ist `yup.boolean().default(false)` und nicht
+	 * nullable — der Default greift nur bei `undefined`, nicht bei `null`. Ein
+	 * fehlender Schlüssel ergibt für `resolveReportKind`s `savedIsDead` über
+	 * `?.isDead ?? null` denselben `null` wie ein explizites `null` — UND
+	 * lässt `ModernReportForm.svelte` beim nächsten Laden (dortige
+	 * `loadFromStorage`-Whitelist gegen `initialFormData`) den Schema-Default
+	 * `false` wiederherstellen, statt ein `null` durchzureichen, das das Schema
+	 * nicht kennt.
 	 */
 	function changeKind() {
 		reportKind = null;
@@ -97,7 +105,8 @@
 				null
 			);
 			if (savedFormData) {
-				saveToStorage(STORAGE_KEYS.FORM_DATA, { ...savedFormData, isDead: null });
+				const { isDead, ...formDataWithoutIsDead } = savedFormData;
+				saveToStorage(STORAGE_KEYS.FORM_DATA, formDataWithoutIsDead);
 			}
 		}
 		// Bestehende Query-Parameter bleiben erhalten — nur `meldung` entfällt.

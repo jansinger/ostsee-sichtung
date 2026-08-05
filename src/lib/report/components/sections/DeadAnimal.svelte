@@ -32,11 +32,11 @@
 		<!-- `required` als Override, weil die Pflicht im Schema in einem
 		     `when('isDead')` steckt und `describe()` das nicht sieht — derselbe Fall
 		     wie `waterway` in LocationDescription.svelte. Unbedingt `true`: Diese
-		     Section rendert ausschließlich innerhalb von `{#if $form.isDead}`
-		     (AnimalInfo.svelte), also genau unter der Bedingung, die das Schema
-		     prüft — und `adminSightingSchema` lockert sie nicht. Ohne den Override
-		     lief der Melder ohne Sternchen und ohne `aria-required` in „Bitte geben
-		     Sie den Zustand des toten Tieres an.".
+		     Section rendert ausschließlich innerhalb von
+		     `{#if isDeadFinding($form.isDead)}` (AnimalInfo.svelte), also genau unter
+		     der Bedingung, die das Schema prüft — und `adminSightingSchema` lockert
+		     sie nicht. Ohne den Override lief der Melder ohne Sternchen und ohne
+		     `aria-required` in „Bitte geben Sie den Zustand des toten Tieres an.".
 
 		     Die beiden Nachbarfelder bekommen ihn bewusst NICHT: `deadSize` hat zwar
 		     ein `when()`, setzt darin aber beide Zweige auf `notRequired()`, und
