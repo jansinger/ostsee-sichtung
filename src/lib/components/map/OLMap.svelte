@@ -61,7 +61,7 @@
 	 * verschwindet, wenn der Melder die Koordinatenfelder später leert.
 	 */
 	let mapHint = $derived.by(() => {
-		if (hintOverride) return hintOverride;
+		if (hintOverride !== undefined) return hintOverride;
 		if (!hasPosition) {
 			return 'Noch keine Position gewählt. Tippen Sie auf die Karte, um die Stelle zu markieren, an der Sie das Tier gesehen haben.';
 		}

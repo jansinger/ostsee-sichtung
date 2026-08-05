@@ -11,10 +11,11 @@
  * steht diese Karte allerdings nicht mehr ganz oben, sondern hinter dem
  * Upload-Abschnitt. Für die Ansprache reicht das: Der Schalter steht weiterhin
  * vor allem, was auf ihn reagiert (Artfrage, Detail-Karte), und der Schritt-Kopf
- * darüber wird von Svelte ohnehin reaktiv nachgezogen. Das deckt
- * genau die Stellen ab, die das Dokument für Seite 2 nennt — die Totfund-Texte
- * für Seite 1 („Funddatum", die umgedrehte Marker-Erklärung) bleiben offen,
- * weil `isDead` dort noch nicht beantwortet ist.
+ * darüber wird von Svelte ohnehin reaktiv nachgezogen. Das deckt die Stellen
+ * ab, die das Dokument für Seite 2 nennt. Die Totfund-Texte für Seite 1
+ * („Funddatum", die umgedrehte Marker-Erklärung, der entschärfte
+ * Ostsee-Hinweis) stehen weiter unten in dieser Datei — `isDead` ist dort über
+ * `initialIsDead` bereits auf Schritt 1 beantwortet.
  *
  * Die Zuordnung steht hier an EINER Stelle statt als Ternär in drei
  * Komponenten: Sie wird beim Bau der getrennten Formulare wieder gebraucht, und
@@ -42,9 +43,15 @@ export function detailsSectionTitle(isDead: unknown): string {
 	return isDeadFinding(isDead) ? 'Funddetails' : 'Sichtungsdetails';
 }
 
-/** Titel der Datumskarte auf Schritt 1. */
+/**
+ * Titel der Datumskarte auf Schritt 1.
+ *
+ * Verbindliche Entscheidung des Auftraggebers (Review Task 6, Befund 1): Der
+ * Lebend-Zweig behält wörtlich „Datum und Uhrzeit" — der bestehende Weg für
+ * Lebend-Melder darf sich durch die Totfund-Ansprache nicht sichtbar ändern.
+ */
 export function dateSectionTitle(isDead: unknown): string {
-	return isDeadFinding(isDead) ? 'Funddatum' : 'Zeitpunkt der Sichtung';
+	return isDeadFinding(isDead) ? 'Funddatum' : 'Datum und Uhrzeit';
 }
 
 /**

@@ -14,7 +14,12 @@
 	import LocationDescription from './LocationDescription.svelte';
 	import { requestCurrentPosition } from './geolocation';
 	import { photoStatus, shouldWarnAboutMissingGps } from './positionPanelState';
-	import { mapHint, positionQuestion } from '$lib/report/wording';
+	import {
+		mapHint,
+		outsideBalticNotice,
+		outsideBalticSeverity,
+		positionQuestion
+	} from '$lib/report/wording';
 
 	const { form, handleChange, mediaStore } = getFormContext();
 
@@ -52,6 +57,16 @@
 	 */
 	const positionLabel = $derived(positionQuestion($form.isDead));
 	const mapHintText = $derived(mapHint($form.isDead, coordinatesPresent, false));
+
+	/**
+	 * Ostsee-Hinweis von `VerifyLocation` (Review Task 6, Befund A): Nur dieser
+	 * Bürger-Aufrufer übergibt Text und Dringlichkeit — der Admin-Pfad
+	 * (`sections/Location.svelte`) tut das nicht und bleibt dadurch unverändert.
+	 * Am Strand ist eine Position außerhalb der Ostsee der Normalfall (Totfund),
+	 * die Dringlichkeit sinkt dort deshalb auf `info`.
+	 */
+	const outsideNoticeText = $derived(outsideBalticNotice($form.isDead));
+	const outsideNoticeSeverity = $derived(outsideBalticSeverity($form.isDead));
 
 	/**
 	 * Pflicht-Markierung der Koordinatenfelder.
@@ -284,7 +299,12 @@
 	/>
 
 	{#if latitude !== undefined && longitude !== undefined}
-		<VerifyLocation {longitude} {latitude} />
+		<VerifyLocation
+			{longitude}
+			{latitude}
+			noticeOverride={outsideNoticeText}
+			severityOverride={outsideNoticeSeverity}
+		/>
 	{/if}
 
 	<!-- Der Foto-Weg bleibt, aber eingeklappt: Er ist für die Position ein

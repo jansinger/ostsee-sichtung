@@ -92,7 +92,10 @@ describe('wording — Totfund-Ansprache auf Schritt 2', () => {
 
 describe('Schritt-1-Texte am Zweig', () => {
 	it('benennt die Datumskarte je nach Zweig', () => {
-		expect(dateSectionTitle(false)).toBe('Zeitpunkt der Sichtung');
+		// Verbindliche Entscheidung des Auftraggebers (Review Task 6, Befund 1):
+		// Der Lebend-Zweig behält wörtlich „Datum und Uhrzeit" — der bestehende
+		// Weg für Lebend-Melder darf sich nicht sichtbar ändern.
+		expect(dateSectionTitle(false)).toBe('Datum und Uhrzeit');
 		expect(dateSectionTitle(true)).toBe('Funddatum');
 	});
 
@@ -129,6 +132,6 @@ describe('Schritt-1-Texte am Zweig', () => {
 	it('behandelt isDead aus allen Quellen gleich', () => {
 		expect(dateSectionTitle(1)).toBe('Funddatum');
 		expect(dateSectionTitle('1')).toBe('Funddatum');
-		expect(dateSectionTitle(undefined)).toBe('Zeitpunkt der Sichtung');
+		expect(dateSectionTitle(undefined)).toBe('Datum und Uhrzeit');
 	});
 });

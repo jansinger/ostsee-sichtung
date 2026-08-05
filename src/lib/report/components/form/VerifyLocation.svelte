@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import Icon from '$lib/components/Icon.svelte';
-	import { getFormContext } from '$lib/report/formContext';
 	import { outsideBalticNotice, outsideBalticSeverity } from '$lib/report/wording';
 
 	import { SvelteMap } from 'svelte/reactivity';
@@ -16,18 +15,32 @@
 
 	let {
 		longitude = $bindable(13.5),
-		latitude = $bindable(54.5)
+		latitude = $bindable(54.5),
+		noticeOverride = undefined,
+		severityOverride = undefined
 	}: {
 		longitude?: number;
 		latitude?: number;
+		/**
+		 * Überschreibt den Text des Ostsee-Hinweises. Ohne Wert bleibt der
+		 * bisherige Sichtungs-Wortlaut — Admin-Maske und Admin-Ansicht ändern
+		 * sich dadurch nicht (dasselbe Muster wie `OLMap`s `hintOverride`).
+		 */
+		noticeOverride?: string;
+		/** Überschreibt die Dringlichkeit des Hinweises (`alert-warning`/`alert-info`). */
+		severityOverride?: 'info' | 'warning';
 	} = $props();
 
-	const { form } = getFormContext();
-
 	// Am Strand ist eine Position außerhalb der Ostsee der Normalfall (Totfund) —
-	// der Hinweis fällt dort auf `info` zurück, statt bei jeder Meldung zu warnen.
-	const outsideNoticeText = $derived(outsideBalticNotice($form.isDead));
-	const outsideNoticeSeverity = $derived(outsideBalticSeverity($form.isDead));
+	// nur der Bürger-Aufrufer (`PositionPanel.svelte`) übergibt die Overrides und
+	// fällt dort auf `info` zurück. Ohne Override (Admin-Pfad, `Location.svelte`)
+	// bleibt es beim bisherigen Sichtungs-Wortlaut: `outsideBalticNotice(false)`/
+	// `outsideBalticSeverity(false)` liefern genau den Text und die Farbe, die
+	// diese Komponente vor Task 6 fest codiert hatte — hier mit fixem `false`
+	// aufgerufen, nicht aus dem Formular-Kontext, damit kein zweiter isDead-Zweig
+	// entsteht.
+	const outsideNoticeText = $derived(noticeOverride ?? outsideBalticNotice(false));
+	const outsideNoticeSeverity = $derived(severityOverride ?? outsideBalticSeverity(false));
 
 	let isLoading = $state(false);
 	let error = $state<string | undefined>(undefined);
@@ -160,9 +173,9 @@
 						<span>Die Koordinaten liegen innerhalb der Ostsee.</span>
 					</div>
 				{:else if currentResult.inChartArea}
-					<!-- Outside Baltic Sea (only show in browser). Klasse und Text hängen am
-					     Totfund-Zweig (`wording.ts`): Beim Totfund ist eine Position an Land
-					     der Normalfall, die Dringlichkeit sinkt deshalb auf `info`. -->
+					<!-- Outside Baltic Sea (only show in browser). Klasse und Text kommen aus
+					     `noticeOverride`/`severityOverride` (Props, s.o.) — ohne sie bleibt es
+					     beim bisherigen Sichtungs-Wortlaut in `alert-warning`. -->
 					{#if outsideNoticeSeverity === 'info'}
 						<div class="alert alert-info mt-0 mb-4" data-testid="verify-location-outside">
 							<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
