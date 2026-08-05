@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type * as yup from 'yup';
-import { formStepsConfig, sightingSchemaFields } from './formConfig';
+import { formStepsConfig, getFormSteps, sightingSchemaFields } from './formConfig';
 
 /**
  * Die Ortsbeschreibung im **Meldeformular** ist seit dem Wunsch des Deutschen
@@ -212,5 +212,51 @@ describe('waterway — Beschriftung deckt beide bisherigen Felder ab', () => {
 
 	it('bietet im Platzhalter ein Beispiel für einen Orientierungspunkt', () => {
 		expect(String(waterwayMeta.placeholder).toLowerCase()).toContain('leuchtturm');
+	});
+});
+
+describe('getFormSteps', () => {
+	const fieldsOf = (steps: ReturnType<typeof getFormSteps>) => steps.flatMap((s) => s.fields);
+
+	it('behält für den Lebend-Zweig alle bisherigen Felder', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false }));
+		expect(fields).toContain('behavior');
+		expect(fields).toContain('behaviorText');
+		expect(fields).toContain('reaction');
+	});
+
+	it('entfernt beim Totfund genau die drei Verhaltensfelder', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: true }));
+		expect(fields).not.toContain('behavior');
+		expect(fields).not.toContain('behaviorText');
+		expect(fields).not.toContain('reaction');
+	});
+
+	it('lässt beim Totfund Wetter, Anzahl anderer Schiffe und Entfernung stehen', () => {
+		// Achse C der Spezifikation: Diese Felder hängen nicht am Zustand des
+		// Tieres. `shipCount` fragt nach ANDEREN Schiffen, `distance` ist auch
+		// vom Strand aus sinnvoll.
+		const fields = fieldsOf(getFormSteps({ isDead: true }));
+		expect(fields).toEqual(
+			expect.arrayContaining(['seaState', 'visibility', 'windForce', 'shipCount', 'distance'])
+		);
+	});
+
+	it('behält in beiden Zweigen vier Schritte — kein Schritt wird leer', () => {
+		for (const isDead of [false, true]) {
+			const steps = getFormSteps({ isDead });
+			expect(steps).toHaveLength(4);
+			for (const step of steps) {
+				expect(step.fields.length).toBeGreaterThan(0);
+			}
+		}
+	});
+
+	it('nimmt isDead auch als Zahl oder String entgegen', () => {
+		// Aus dem localStorage und der Legacy-API kommt `isDead` nicht immer als
+		// Boolean zurück.
+		expect(fieldsOf(getFormSteps({ isDead: 1 }))).not.toContain('behavior');
+		expect(fieldsOf(getFormSteps({ isDead: '1' }))).not.toContain('behavior');
+		expect(fieldsOf(getFormSteps({ isDead: 0 }))).toContain('behavior');
 	});
 });

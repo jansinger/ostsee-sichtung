@@ -144,3 +144,48 @@ export const formStepsConfig: FormStep[] = [
 		]
 	}
 ];
+
+/**
+ * Eingabe für `getFormSteps`. Bewusst das Formularobjekt statt einzelner Flags:
+ * Kommt eine dritte Bedingung dazu, ändert sich die Signatur nicht mehr.
+ */
+export type FormStepsInput = {
+	isDead?: boolean | number | string | null;
+	sightingFrom?: number | string | null;
+};
+
+/**
+ * Normalisiert `isDead` aus allen Quellen, in denen es auftaucht: Boolean aus dem
+ * Formular, `0`/`1` aus der Datenbank, String aus dem localStorage.
+ * Gleiche Regel wie `isDeadFinding` in `wording.ts`.
+ */
+function isDeadFinding(value: FormStepsInput['isDead']): boolean {
+	return value === true || value === 1 || value === '1' || value === 'true';
+}
+
+/**
+ * Felder, die beim Totfund entfallen. Ein totes Tier zeigt kein Verhalten und
+ * reagiert nicht — die Angaben wären für den Melder unbeantwortbar.
+ *
+ * WICHTIG: Die Ausblendung gehört hierher und NICHT in ein `{#if}` im Markup.
+ * `stepValidation` liest seine Feldliste aus dieser Funktion; ein nur optisch
+ * verstecktes Feld würde weiter validiert, und der Melder säße in einer
+ * Sackgasse ohne sichtbare Fehlermeldung.
+ */
+const HIDDEN_WHEN_DEAD = ['behavior', 'behaviorText', 'reaction'] as const;
+
+export function getFormSteps(data: FormStepsInput): FormStep[] {
+	const hidden = new Set<string>();
+	if (isDeadFinding(data.isDead)) {
+		HIDDEN_WHEN_DEAD.forEach((field) => hidden.add(field));
+	}
+
+	if (hidden.size === 0) {
+		return formStepsConfig;
+	}
+
+	return formStepsConfig.map((step) => ({
+		...step,
+		fields: step.fields.filter((field) => !hidden.has(field))
+	}));
+}
