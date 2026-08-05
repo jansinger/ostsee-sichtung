@@ -1,12 +1,45 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import AdminSightingView from '$lib/components/admin/AdminSightingView.svelte';
+	import {
+		deleteSighting,
+		sendTestEmail,
+		TEST_EMAIL_HINT
+	} from '$lib/components/admin/sightingActions';
 	import Icon from '$lib/components/Icon.svelte';
+	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
 	import type { SpamCheckResult } from '$lib/types/spam';
 
 	let { data } = $props();
 
 	let sighting = $derived(data.sighting);
+
+	let showDeleteDialog = $state(false);
+	let emailPending = $state(false);
+
+	function editSighting() {
+		goto(`/admin/${sighting.id}/edit`);
+	}
+
+	async function handleTestEmail() {
+		// Wächter statt `disabled`: Die Schaltfläche bleibt fokussierbar, wer per
+		// Tastatur arbeitet verliert seine Position nicht (design-system.md).
+		if (emailPending) return;
+		emailPending = true;
+		try {
+			await sendTestEmail(sighting.id);
+		} finally {
+			emailPending = false;
+		}
+	}
+
+	async function handleDelete() {
+		// Die Sichtung, die diese Seite anzeigt, existiert nach dem Löschen nicht
+		// mehr — zurück zur Tabelle statt auf einen 404 zu warten.
+		if (await deleteSighting(sighting.id)) {
+			await goto('/admin');
+		}
+	}
 
 	let spamCheck = $state<{
 		loading: boolean;
@@ -17,11 +50,6 @@
 		result: null,
 		error: null
 	});
-
-	function editSighting() {
-		// Logic to edit the sighting
-		goto(`/admin/${sighting.id}/edit`);
-	}
 
 	async function runSpamCheck() {
 		spamCheck.loading = true;
@@ -71,9 +99,9 @@
 	/>
 </svelte:head>
 
-<div class="mb-0 flex items-center justify-between">
+<div class="mb-0 flex flex-wrap items-center justify-between gap-2">
 	<h2 class="text-xl font-bold">Sichtung Details</h2>
-	<div class="flex gap-2">
+	<div class="flex flex-wrap gap-2">
 		<button
 			class="btn btn-ghost btn-sm"
 			onclick={runSpamCheck}
@@ -88,6 +116,34 @@
 			{/if}
 			Spam-Check
 		</button>
+		<!-- Nur Superadmins: Der Klick erzeugt im Team-Postfach eine Mail, die von
+		     einer echten Neu-Meldung nicht zu unterscheiden ist. Das Gate steht
+		     zusätzlich am Endpunkt — hier verschwindet nur das Bedienelement. -->
+		{#if data.isSuperAdmin}
+			<button
+				class="btn btn-ghost btn-sm"
+				onclick={handleTestEmail}
+				aria-disabled={emailPending}
+				title={TEST_EMAIL_HINT}
+				aria-label="Benachrichtigung zu dieser Sichtung an das Team senden"
+			>
+				{#if emailPending}
+					<span class="loading loading-spinner loading-xs"></span>
+				{:else}
+					<Icon icon="lucide:mail" class="mr-1 h-4 w-4" />
+				{/if}
+				Benachrichtigung an Team
+			</button>
+		{/if}
+		<button
+			class="btn btn-outline btn-error btn-sm"
+			onclick={() => (showDeleteDialog = true)}
+			title="Eintrag löschen"
+			aria-label="Sichtung löschen"
+		>
+			<Icon icon="lucide:trash-2" class="mr-1 h-4 w-4" />
+			Löschen
+		</button>
 		<button
 			class="btn btn-primary btn-sm"
 			onclick={editSighting}
@@ -99,7 +155,13 @@
 		</button>
 	</div>
 </div>
-<div class="mb-4 text-sm text-base-content/70">
+
+<DeleteDialog
+	bind:show={showDeleteDialog}
+	onConfirm={handleDelete}
+	onCancel={() => (showDeleteDialog = false)}
+/>
+<div class="text-base-content/70 mb-4 text-sm">
 	Referenz-ID: {sighting.referenceId}
 </div>
 

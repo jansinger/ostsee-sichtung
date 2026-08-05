@@ -1,14 +1,45 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { EmailService } from '$lib/server/services/emailService';
+import { EmailService, type NotificationBlocker } from '$lib/server/services/emailService';
 import { createLogger } from '$lib/logger.server';
 import { requireUserRole } from '$lib/server/auth/auth';
 
 const logger = createLogger('api:test-email');
 
+/**
+ * Übersetzt den Abbruchgrund in einen Satz, der sagt, was zu tun ist.
+ *
+ * Der Abschalter braucht dabei den Zusatz zur Test-Mail: Dass die eine ankommt
+ * und die andere nicht, ist kein Widerspruch, sondern Absicht —
+ * `sendTestEmail()` geht mit `test = true` bewusst an diesem Schalter vorbei,
+ * damit sich SMTP prüfen lässt, bevor man die Benachrichtigungen scharf
+ * schaltet.
+ */
+function describeBlocker(blocker: NotificationBlocker | null): string {
+	switch (blocker) {
+		case 'disabled':
+			return 'E-Mail-Benachrichtigungen sind abgeschaltet (Einstellungen → „E-Mail-Benachrichtigungen aktiviert"). Die Test-Mail in den Einstellungen geht trotzdem — sie umgeht diesen Schalter bewusst.';
+		case 'recipient-missing':
+			return 'Es ist keine Empfänger-Adresse konfiguriert (Einstellungen → „Empfänger-Adresse").';
+		case 'transport-unavailable':
+			return 'Keine SMTP-Verbindung. Bitte SMTP-Einstellungen prüfen und dort die Test-Mail auslösen.';
+		default:
+			// Kein Blocker, trotzdem kein Versand: Sichtung nicht gefunden, oder der
+			// SMTP-Versand selbst ist gescheitert. Beides steht als `error` im Log.
+			return 'Die Sichtung wurde nicht gefunden, oder der Versand ist fehlgeschlagen. Details stehen im Server-Log.';
+	}
+}
+
 export const POST: RequestHandler = async ({ request, locals, url }) => {
 	// SECURITY: Must be outside try/catch so redirect(302) propagates correctly
-	requireUserRole(url, locals.user, ['admin', 'superadmin']);
+	//
+	// Nur `superadmin`, obwohl der Rest von /api/admin bei ['admin','superadmin']
+	// liegt: Dieser Endpunkt verschickt in `testType: 'sighting'` dieselbe interne
+	// Benachrichtigung wie eine echte Neu-Meldung — im Team-Postfach ist sie von
+	// einer solchen nicht zu unterscheiden. Er diagnostiziert die
+	// Mail-Konfiguration und gehört damit zu /api/config/init und
+	// /api/config/reset, nicht zum Tagesgeschäft.
+	requireUserRole(url, locals.user, ['superadmin']);
 
 	try {
 		logger.debug(
@@ -43,13 +74,13 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 					message: `Interne Benachrichtigung zu Sichtung ${sightingId} wurde an die konfigurierte Empfänger-Adresse gesendet`
 				});
 			} else {
-				return json(
-					{
-						success: false,
-						error: 'E-Mail konnte nicht gesendet werden. Bitte prüfen Sie die Konfiguration.'
-					},
-					{ status: 500 }
-				);
+				// Ohne diese Abfrage bekam der Admin denselben Satz für drei völlig
+				// verschiedene Ursachen, und die häufigste (der Abschalter) stand
+				// nur auf `debug` im Log — „Fehlermeldung, aber nichts im Log".
+				const blocker = await EmailService.findNotificationBlocker();
+				logger.warn({ sightingId, blocker }, 'Test sighting email not sent');
+
+				return json({ success: false, error: describeBlocker(blocker) }, { status: 500 });
 			}
 		} else {
 			// Validate recipient email format

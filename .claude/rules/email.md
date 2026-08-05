@@ -19,9 +19,33 @@ Regeln für den Email-Versand via nodemailer.
 // Hauptfunktionen
 EmailService.sendNewSightingNotification(sightingId: number): Promise<boolean>
 EmailService.sendTestEmail(recipient?: string): Promise<boolean>
+EmailService.findNotificationBlocker(): Promise<NotificationBlocker | null>
 EmailService.initialize(test = false): Promise<void>
 EmailService.resetTransporter(): void
 ```
+
+### Die Test-Mail beweist nichts über die Benachrichtigung
+
+`sendTestEmail()` ruft `ensureTransporter(true)` und geht damit bewusst an zwei
+Sperren vorbei, die für die Sichtungs-Benachrichtigung gelten. Die beiden Wege
+sind deshalb **nicht** austauschbar:
+
+| Voraussetzung                  | Benachrichtigung | Test-Mail (`/admin/settings`) |
+| ------------------------------ | ---------------- | ----------------------------- |
+| `notification.email.enabled`   | erforderlich     | **umgangen** (`test = true`)  |
+| SMTP-Verbindung                | erforderlich     | erforderlich                  |
+| `notification.email.recipient` | erforderlich     | Formularfeld schlägt ihn      |
+
+Eine ankommende Test-Mail bei stiller Benachrichtigung ist also der
+Normalzustand, solange der Schalter aus ist — kein Widerspruch und kein Bug.
+Genau daran ist der Button „Benachrichtigung an Team" in `/admin` gescheitert.
+
+**`findNotificationBlocker()` benennt die erste fehlende Voraussetzung** und ist
+die einzige Stelle, an der die drei Gates stehen — `sendEmailNotification()`
+benutzt sie selbst, damit Diagnose und Abbruch nicht auseinanderlaufen können.
+`POST /api/admin/test-email` übersetzt das Ergebnis in die Fehlermeldung. Alle
+drei Gründe werden auf `warn` geloggt, der Abschalter stand bis 2026-08-05 auf
+`debug` und war im Normalbetrieb unsichtbar.
 
 ### Transporter-Lebenszyklus
 

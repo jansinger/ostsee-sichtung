@@ -22,4 +22,11 @@ export interface PageData {
 	 * Filter, damit er im Dashboard-Kopf immer sichtbar ist.
 	 */
 	pendingPhotoAnnouncements?: number;
+	/**
+	 * Kommt aus `admin/+layout.server.ts` und liegt damit an jeder Admin-Seite
+	 * an. Steuert die Bedienelemente für `POST /api/admin/test-email`, das
+	 * `superadmin` verlangt. Optional, weil der Typ auch außerhalb des
+	 * Admin-Layouts verwendet wird.
+	 */
+	isSuperAdmin?: boolean;
 }
