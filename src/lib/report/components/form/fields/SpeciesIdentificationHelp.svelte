@@ -489,10 +489,20 @@
 </div>
 
 <!-- Image Modal für Vollbildansicht -->
+<!-- `aria-labelledby` nur, solange der Titel auch im DOM steht: Der Dialogtitel
+     hängt an `modalImageSrc`, DaisyUI lässt den geschlossenen Dialog aber stehen
+     (`visibility: hidden`, siehe .claude/rules/daisyui.md). Unbedingt gesetzt
+     zeigte das Attribut nach dem 250-ms-Reset in `handleDialogClose` auf eine
+     nicht existierende ID — ein ungültiger ARIA-IDREF. Ohne Bild hat der Dialog
+     tatsächlich keinen Namen, und er ist dann auch nicht offen.
+     Das `data-testid` ist deshalb kein Beiwerk: `e2e/modal-overflow.spec.ts`
+     benennt Dialoge über `data-testid ?? aria-labelledby ?? dialog[i]` und misst
+     den Ruhezustand — ohne es stünde diese Position dort wieder als `dialog[0]`. -->
 <dialog
 	bind:this={modalElement}
 	class="modal"
-	aria-labelledby={modalTitleId}
+	aria-labelledby={modalImageSrc ? modalTitleId : undefined}
+	data-testid="species-image-dialog"
 	onclose={handleDialogClose}
 >
 	<div class="modal-box w-11/12 max-w-5xl p-0">

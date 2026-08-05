@@ -84,53 +84,82 @@ describe('SpeciesIdentificationHelp', () => {
 	 * `aria-labelledby` referenziert, statt ihn als `aria-label` zu doppeln.
 	 */
 	describe('Bild-Modal', () => {
-		function imageDialog(): HTMLDialogElement {
-			const element = document.querySelector<HTMLDialogElement>('dialog.modal');
-			if (!element) throw new Error('Bild-Modal nicht im DOM');
-			return element;
+		const TRIGGER_SELECTOR = 'button[aria-label$="in Originalgröße anzeigen"]';
+
+		function imageDialogs(): HTMLDialogElement[] {
+			return Array.from(
+				document.querySelectorAll<HTMLDialogElement>('[data-testid="species-image-dialog"]')
+			);
 		}
 
-		function firstImageTrigger(): HTMLButtonElement {
-			const element = document.querySelector<HTMLButtonElement>(
-				'button[aria-label$="in Originalgröße anzeigen"]'
-			);
-			if (!element) throw new Error('Kein Bild-Auslöser im DOM');
-			return element;
+		function firstImageDialog(): HTMLDialogElement {
+			const dialog = imageDialogs()[0];
+			if (!dialog) throw new Error('Bild-Modal nicht im DOM');
+			return dialog;
+		}
+
+		/** Öffnet in jeder Instanz das erste Artfoto. */
+		async function openFirstImageIn(dialog: HTMLDialogElement): Promise<HTMLButtonElement> {
+			// Der Auslöser liegt neben dem Dialog im selben Render-Container — über
+			// `document` gesucht träfe man bei zwei Instanzen immer die erste.
+			const trigger = dialog.parentElement?.querySelector<HTMLButtonElement>(TRIGGER_SELECTOR);
+			if (!trigger) throw new Error('Kein Bild-Auslöser in dieser Instanz');
+			trigger.click();
+			// Die Überschrift hängt an `modalImageSrc` und entsteht erst mit dem
+			// nächsten Render — direkt nach dem Klick ist der Dialog noch leer.
+			await new Promise((resolve) => setTimeout(resolve, 0));
+			return trigger;
 		}
 
 		it('benennt den geöffneten Dialog über seine Überschrift', async () => {
 			render(SpeciesIdentificationHelp, { variant: 'page' });
 
-			const trigger = firstImageTrigger();
-			trigger.click();
-			// Die Überschrift hängt an `modalImageSrc` und entsteht erst mit dem
-			// nächsten Render — direkt nach dem Klick ist der Dialog noch leer.
-			await new Promise((resolve) => setTimeout(resolve, 0));
+			const dialog = firstImageDialog();
+			const trigger = await openFirstImageIn(dialog);
 
-			const dialog = imageDialog();
 			const labelId = dialog.getAttribute('aria-labelledby');
 			expect(labelId).toBeTruthy();
 
 			const heading = dialog.querySelector(`#${CSS.escape(labelId as string)}`);
 			expect(heading).not.toBeNull();
+
+			// Erst auf Inhalt prüfen, dann vergleichen: `toContain('')` ginge sonst
+			// immer durch und der Test bestünde auch bei namenlosem Dialog.
+			const headingText = heading?.textContent?.trim() ?? '';
+			expect(headingText.length).toBeGreaterThan(0);
 			// Der Auslöser trägt denselben Bildtitel („<alt> in Originalgröße
 			// anzeigen"): Name des Dialogs und Name des Auslösers gehören zusammen.
-			expect(trigger.getAttribute('aria-label')).toContain(heading?.textContent?.trim());
+			expect(trigger.getAttribute('aria-label')).toContain(headingText);
 		});
 
-		it('benennt zwei gleichzeitige Instanzen getrennt', () => {
+		it('nennt den geschlossenen Dialog keinen Titel, den es nicht gibt', () => {
+			// Ohne Bild steht die Überschrift nicht im DOM. Ein dann gesetztes
+			// `aria-labelledby` wäre ein ungültiger IDREF — DaisyUI blendet den
+			// Dialog nur per `visibility` aus, er bleibt also stehen.
+			render(SpeciesIdentificationHelp, { variant: 'page' });
+
+			const dialog = firstImageDialog();
+
+			expect(dialog.open).toBe(false);
+			expect(dialog.hasAttribute('aria-labelledby')).toBe(false);
+		});
+
+		it('benennt zwei gleichzeitige Instanzen getrennt', async () => {
 			// Die Hilfe steht im Formular am Tierart-Feld und zusätzlich als
 			// eigenständige Seite. Eine feste ID wäre im DOM doppelt und machte
 			// `aria-labelledby` unbrauchbar.
 			render(SpeciesIdentificationHelp, { variant: 'page' });
 			render(SpeciesIdentificationHelp, { variant: 'page' });
 
-			const labels = Array.from(document.querySelectorAll<HTMLDialogElement>('dialog.modal')).map(
-				(element) => element.getAttribute('aria-labelledby')
-			);
+			const dialogs = imageDialogs();
+			expect(dialogs).toHaveLength(2);
+			for (const dialog of dialogs) await openFirstImageIn(dialog);
 
-			expect(labels).toHaveLength(2);
-			expect(labels[0]).toBeTruthy();
+			const labels = dialogs.map((element) => element.getAttribute('aria-labelledby'));
+
+			// Jeden Wert einzeln prüfen: `new Set(['id', null]).size` ist ebenfalls 2 —
+			// eine Instanz ganz ohne Attribut käme sonst als „getrennt" durch.
+			for (const label of labels) expect(label).toBeTruthy();
 			expect(new Set(labels).size).toBe(2);
 		});
 	});
