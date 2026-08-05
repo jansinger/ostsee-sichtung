@@ -488,16 +488,28 @@ jobs:
             e2e/form-field-mode.spec.ts
           )
 
-          # form-map-pan-zoom.spec.ts steht hier trotz `form`-Präfix: Es prüft
-          # Pan und Zoom der Positions-Karte und teilt sich mit dem
-          # Schwester-Spec e2e/map-pan-zoom.spec.ts das Messwerkzeug
-          # (e2e/helpers/mapCanvas.ts). Es fällt nicht unter das Glob und muss
-          # deshalb einzeln stehen.
-          #
-          # Zeitbudget: Der Shard lag bei 153 s seriell, der Spec kostet ~17 s.
-          # Mit 170 s bleibt `map` unter `form` (190 s) — die Wanduhr des Jobs
-          # ist die des längsten Shards und ändert sich dadurch nicht.
-          map=(e2e/map-*.spec.ts e2e/form-map-pan-zoom.spec.ts)
+          # Die drei Shards laufen parallel; die Laufzeit des Jobs ist die des
+          # längsten. Ab hier folgt die Zuordnung deshalb der gemessenen Dauer
+          # und erst danach dem Thema — `map` trägt sichtbar Specs, die mit der
+          # Karte nichts zu tun haben. app-shell-height fährt immerhin die
+          # MapPage mit, der Rest ist Admin- und Formular-Verhalten. Alle Shards
+          # bekommen denselben Unterbau (PostGIS-Service, Migrationen, Seed),
+          # DB-Specs sind hier also genauso zu Hause wie anderswo.
+          map=(
+            e2e/map-*.spec.ts
+            e2e/horizontal-overflow.spec.ts
+            e2e/admin-edit-preserves-record.spec.ts
+            e2e/admin-table-verified-column.spec.ts
+            e2e/app-shell-height.spec.ts
+            e2e/submit-offline.spec.ts
+            e2e/meldung-wording.spec.ts
+            # Trotz `form`-Präfix hier: teilt sich mit dem Schwester-Spec
+            # map-pan-zoom.spec.ts das Messwerkzeug (e2e/helpers/mapCanvas.ts).
+            # Fällt nicht unter das Glob und steht deshalb einzeln. Kostet ~17 s;
+            # `map` bleibt damit bei rund 170 s und unter `form` (190 s), die
+            # Job-Laufzeit ändert sich also nicht.
+            e2e/form-map-pan-zoom.spec.ts
+          )
 
           # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das
           # Theme, nicht das Formular. Läuft gegen /styleguide, das der
@@ -513,75 +525,127 @@ jobs:
             e2e/auth.spec.ts
             e2e/design-tokens.spec.ts
             e2e/modal-overflow.spec.ts
-          )
-
-          # Specs, die bis heute in keinem Shard standen. Das war kein Beschluss,
-          # sondern ein Versehen — die Listen oben muss man beim Anlegen eines
-          # Specs von Hand pflegen, und das ist hier 14-mal unterblieben. Sie
-          # stehen als Rückstand hier, damit der Abgleich darunter greifen kann,
-          # **nicht** weil ihr Ausschluss geprüft wäre.
-          #
-          # Wer einen davon in einen Shard zieht, lässt ihn vorher laufen.
-          #
-          # form-map-pan-zoom.spec.ts stand hier als „von sich aus flaky
-          # (Subpixel-Vergleiche nach Pan/Zoom)" und läuft seit dem
-          # 2026-08-05 im `map`-Shard. Der Befund stimmte, die Diagnose war
-          # ungenau: Verglichen wurde nicht nach der Geste, sondern **davor** —
-          # eine Vorprüfung `box.y >= 0` auf der Oberkante des Karten-Containers.
-          # `scrollIntoViewIfNeeded` zentriert die Karte, der Sub-Pixel-Rest
-          # daraus macht `box.y` minimal negativ, sobald die 400px hohe Karte die
-          # Fensterhöhe ausfüllt (reproduziert bei 1280×400: `box.y = -0.40625`,
-          # Vorprüfung rot, Geste bei `y = 311.6` und einwandfrei). Sie prüft
-          # jetzt per `elementFromPoint`, ob die Geste die Karte trifft — dieselbe
-          # Frage ohne Fließkomma-Rand. 10 aufeinanderfolgende Läufe grün.
-          unassigned=(
-            e2e/admin-edit-preserves-record.spec.ts
-            e2e/admin-table-verified-column.spec.ts
-            e2e/app-shell-height.spec.ts
             e2e/bestimmungshilfe.spec.ts
-            e2e/footer-layout.spec.ts
-            e2e/form-stepper-affordance.spec.ts
-            e2e/form-stepper.spec.ts
-            e2e/horizontal-overflow.spec.ts
-            e2e/meldung-wording.spec.ts
             e2e/navbar-structure.spec.ts
             e2e/seo-meta.spec.ts
-            e2e/submit-offline.spec.ts
+            e2e/footer-layout.spec.ts
+            # Die beiden Stepper-Specs stünden thematisch bei `form`. Sie liegen
+            # hier, weil `form` der längste Shard ist und sie zusammen 44 s
+            # wiegen.
+            e2e/form-stepper.spec.ts
+            e2e/form-stepper-affordance.spec.ts
             e2e/videoUpload.spec.ts
           )
 
+          # Der Rückstand von 14 Specs ist abgearbeitet: 13 davon liefen am
+          # 2026-08-05 lokal dreimal hintereinander durch (82 Tests je Lauf,
+          # kein Fehlschlag, kein Flake) und stehen jetzt in `map` bzw. `smoke`.
+          #
+          # Verteilt wurde nach gemessener Dauer, nicht nach Thema. Maßgeblich
+          # ist die Summe der Test-Laufzeiten, weil der Job seriell fährt
+          # (`workers: 1`): form 190 s, map 153 s, smoke 152 s — vorher
+          # 190/78/75. `form` hat bewusst nichts abbekommen; der Shard war schon
+          # der längste, und die Job-Laufzeit ist die des längsten. Wer dort
+          # etwas hinzufügt, misst vorher.
+          #
+          # Der Rückstand ist damit vollständig abgearbeitet: form-map-pan-zoom
+          # .spec.ts, der letzte verbliebene Eintrag, steht seit dem 2026-08-05
+          # in `map`.
+          #
+          # Der Befund („in 3 von 4 Baseline-Läufen rot") stimmte, die Diagnose
+          # war ungenau: Verglichen wurde nicht **nach** der Geste — die
+          # Canvas-Fingerprints dort hängen an `expect.poll` und sind robust —,
+          # sondern **davor**, in einer Vorprüfung `box.y >= 0` auf der Oberkante
+          # des Karten-Containers. `scrollIntoViewIfNeeded` zentriert die Karte,
+          # und der Sub-Pixel-Rest daraus macht `box.y` minimal negativ, sobald
+          # die 400px hohe Karte die Fensterhöhe ausfüllt. Reproduziert bei
+          # 1280×400: `box.y = -0.40625`, Vorprüfung rot, während die Geste bei
+          # `y = 311.6` mitten im Bild lag und die Karte einwandfrei schob. Die
+          # Vorprüfung fragt jetzt per `elementFromPoint`, ob die Geste die Karte
+          # trifft — dieselbe Frage ohne Fließkomma-Rand. 10 aufeinanderfolgende
+          # Läufe grün, dazu 4 von 4 bei 1280×400.
+          #
+          # Die Liste bleibt als leeres Array stehen, damit der Abgleich unten
+          # unverändert über vier Listen läuft. Sie ist **kein Parkplatz**: Ein
+          # neuer Spec gehört in einen Shard, und was hier landet, läuft nirgends.
+          unassigned=()
+
+          # Die Soll-Liste kommt von Playwright selbst, nicht von einem `find`,
+          # das dessen Auswahlregel nachbaut. Der Nachbau war in beide
+          # Richtungen falsch: Er kannte nur `.ts/.tsx/.js/.jsx`, während der
+          # Default-`testMatch` auch `.mts/.cts/.mjs/.cjs` einsammelt — eine
+          # `foo.spec.mts` hätte den Abgleich bestanden und wäre trotzdem in
+          # keinem Shard gelaufen, also genau der stille Ausfall, gegen den er
+          # gebaut wurde. Umgekehrt gilt `testIgnore: ['**/helpers/**']` auf
+          # jeder Ebene, `-not -path 'e2e/helpers/*'` nur auf der obersten; eine
+          # Datei unter `e2e/pages/helpers/` hätte CI rot gemacht und eine
+          # Zuordnung verlangt, die Playwright nie ausführt.
+          #
+          # `--list` braucht weder Dev-Server noch Datenbank (kein `webServer`,
+          # kein `globalSetup`) und läuft in rund zwei Sekunden. Der Bericht geht
+          # über `PLAYWRIGHT_JSON_OUTPUT_NAME` in eine Datei statt über stdout:
+          # dort steht eine dotenv-Präambel davor, an der jedes JSON.parse
+          # scheitert. `suite.file` ist relativ zu `config.rootDir` — und das ist
+          # das testDir (`e2e/`), nicht das Repo-Wurzelverzeichnis.
+          #
+          # Ein Unterprozess statt eines `**`-Musters hält außerdem die Zusage aus
+          # #761 ein: Das Skript bleibt mit `bash -n` prüfbar, weil weder
+          # `globstar` noch `extglob` nötig sind.
+          playwright_report=$(mktemp)
+          trap 'rm -f "$playwright_report"' EXIT
+          PLAYWRIGHT_JSON_OUTPUT_NAME="$playwright_report" \
+            npx playwright test --list --reporter=json > /dev/null
+
+          collect='
+            const { readFileSync } = require("node:fs");
+            const { relative, resolve } = require("node:path");
+            const report = JSON.parse(readFileSync(process.argv[1], "utf8"));
+            for (const suite of report.suites) {
+              console.log(relative(process.cwd(), resolve(report.config.rootDir, suite.file)));
+            }
+          '
+          mapfile -t collected < <(node -e "$collect" "$playwright_report" | sort -u)
+
+          # Ohne diese Schranke ginge eine leere Auswahl — umbenanntes testDir,
+          # kaputte Config — als „alles zugeordnet" durch.
+          if [ ${#collected[@]} -eq 0 ]; then
+            echo "::error::Playwright hat keine Specs gemeldet; der Abgleich wäre wertlos."
+            exit 1
+          fi
+
+          known=" ${form[*]} ${map[*]} ${smoke[*]} ${unassigned[*]} "
+          selected=" ${collected[*]} "
+
           # Ein Spec, der in keiner der vier Listen steht, ist neu und beim
           # Anlegen vergessen worden.
-          #
-          # Gesucht wird **rekursiv** und mit denselben Endungen, die Playwright
-          # per Default sammelt — `testDir: 'e2e'` steigt in Unterordner ab, und
-          # ein Spec in `e2e/irgendwas/` liefe lokal, in CI aber nirgends und
-          # fiele einem Abgleich nur über `e2e/*.spec.ts` nicht auf. `helpers/`
-          # bleibt außen vor, weil playwright.config.ts es per `testIgnore`
-          # ausnimmt: Die Dateien dort sind Vitest-Tests, die vitest.config.ts
-          # einsammelt.
-          # `find` und kein Glob: Ein `**`-Muster bräuchte `shopt -s globstar`
-          # und die Endungsliste `extglob` — und extglob wirkt erst zur
-          # Laufzeit, womit `bash -n` das Skript nicht mehr prüfen kann.
-          known=" ${form[*]} ${map[*]} ${smoke[*]} ${unassigned[*]} "
           missing=()
-          while IFS= read -r spec; do
+          for spec in "${collected[@]}"; do
             case "$known" in
               *" $spec "*) ;;
               *) missing+=("$spec") ;;
             esac
-          done < <(
-            find e2e -type f \
-              \( -name '*.spec.ts' -o -name '*.test.ts' \
-                 -o -name '*.spec.tsx' -o -name '*.test.tsx' \
-                 -o -name '*.spec.js' -o -name '*.test.js' \
-                 -o -name '*.spec.jsx' -o -name '*.test.jsx' \) \
-              -not -path 'e2e/helpers/*' \
-              | sort
-          )
+          done
           if [ ${#missing[@]} -gt 0 ]; then
             echo "::error::Diese Specs stehen in keinem Shard und würden nirgends laufen: ${missing[*]}"
             echo "Bitte in .github/workflows/ci.yml einem Shard (form/map/smoke) zuordnen."
+            exit 1
+          fi
+
+          # Die Gegenrichtung: Ein Eintrag, den Playwright nicht auswählt — weil
+          # die Datei umbenannt wurde oder der Pfad sich vertippt hat — läuft
+          # stillschweigend nicht. Playwright bricht nur ab, wenn **kein**
+          # Argument trifft; ein einzelner toter Eintrag neben lebenden fällt
+          # sonst nirgends auf.
+          dead=()
+          for spec in "${form[@]}" "${map[@]}" "${smoke[@]}" "${unassigned[@]}"; do
+            case "$selected" in
+              *" $spec "*) ;;
+              *) dead+=("$spec") ;;
+            esac
+          done
+          if [ ${#dead[@]} -gt 0 ]; then
+            echo "::error::Diese Einträge wählt Playwright nicht aus und liefen damit nie: ${dead[*]}"
+            echo "Bitte in .github/workflows/ci.yml korrigieren oder entfernen."
             exit 1
           fi
 
