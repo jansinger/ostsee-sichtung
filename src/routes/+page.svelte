@@ -13,6 +13,7 @@
 	import {
 		readReportKind,
 		reportKindToIsDead,
+		reportKindToParam,
 		resolveReportKind,
 		writeReportKind,
 		type ReportKind
@@ -29,53 +30,50 @@
 
 	// Komponenten-lokal, NICHT als globaler $state in einem .ts-Modul: dort
 	// leckt er auf dem Server zwischen Requests.
+	//
+	// `page.url` steht auch im SSR zur Verfügung (aus der Request-URL) —
+	// der Parameter wird deshalb auf Server und Client gleichermaßen
+	// ausgewertet. Nur die `localStorage`-Quellen (gespeicherter Zweig,
+	// gespeichertes `isDead`) bleiben hinter `browser`: Ohne das Gatter
+	// rendert der Server bei jeder Anfrage per Direktlink kurz die
+	// Auswahlseite, bevor die Hydration den localStorage-Stand nachträgt —
+	// ein Klick in diesem Fenster ginge verloren (natives `checked` springt
+	// an, Sveltes State bleibt `null`).
 	let reportKind = $state<ReportKind | null>(
-		browser
-			? resolveReportKind(
-					page.url.searchParams.get('meldung'),
-					readReportKind(),
-					(loadFromStorage(STORAGE_KEYS.FORM_DATA, null) as { isDead?: boolean } | null)?.isDead ??
-						null
-				)
-			: null
+		resolveReportKind(
+			page.url.searchParams.get('meldung'),
+			browser ? readReportKind() : null,
+			browser
+				? ((loadFromStorage(STORAGE_KEYS.FORM_DATA, null) as { isDead?: boolean } | null)?.isDead ??
+						null)
+				: null
+		)
 	);
 
 	function choose(kind: ReportKind) {
 		reportKind = kind;
 		writeReportKind(kind);
 		// History-Eintrag, damit „Zurück" auf die Auswahl führt statt aus der App.
-		pushState(`/?meldung=${kind === 'dead' ? 'totfund' : 'lebend'}`, {});
+		// Bestehende Query-Parameter (z. B. Kampagnen-Marker aus einem
+		// Museums-Link) bleiben erhalten — nur `meldung` wird gesetzt/ersetzt.
+		// Wirft weg, keine Komponenten-Reaktivität nötig — dasselbe Muster wie in
+		// ExportModal.svelte.
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
+		const params = new URLSearchParams(window.location.search);
+		params.set('meldung', reportKindToParam(kind));
+		pushState(`/?${params.toString()}`, {});
 	}
 
-	/**
-	 * Der Nutzer navigiert mit „Zurück" auf einen Stand ohne Parameter — dann
-	 * gehört die Auswahl wieder gezeigt.
-	 *
-	 * **Abweichung vom Plan:** Der Plan sah dafür einen `$effect` auf
-	 * `page.url`/`page.state` (`$app/state`) vor. Gemessen (Playwright,
-	 * Konsolen-Log im Effekt): `pushState()` mit einer geänderten URL
-	 * aktualisiert `page.url` in dieser SvelteKit-Version NIE — auch nicht
-	 * verzögert. Grund ist die Zweckbestimmung von Shallow Routing selbst:
-	 * `pushState` erzeugt einen History-Eintrag „ohne zu navigieren", und
-	 * SvelteKit hält `page.url` deshalb bewusst auf der zuletzt tatsächlich
-	 * navigierten Seite — hier `/`. Ein `$effect`, der auf `reportKind`
-	 * reagiert, sah dadurch **immer** „kein Parameter" und setzte die gerade
-	 * getroffene Auswahl sofort wieder zurück; die Reihenfolge von
-	 * `pushState`/Zuweisung änderte daran nichts (beide Varianten geprüft).
-	 *
-	 * Der native `popstate`-Handler liest stattdessen `window.location.search`
-	 * direkt — dieselbe Frage („steht der Parameter noch in der aktuellen
-	 * URL?"), nur ohne den Umweg über `page.url`. `popstate` feuert genau bei
-	 * Browser-Zurück/Vor, nicht bei `pushState` selbst.
-	 */
+	// `popstate` statt `page.url`, weil `pushState` `page.url` nicht
+	// aktualisiert (Shallow Routing). Läuft bidirektional durch denselben
+	// Resolver wie die Initialisierung; `stored`/`savedIsDead` bleiben `null`,
+	// sonst belebte der gespeicherte Zweig die Auswahl beim Zurückgehen wieder.
 	$effect(() => {
 		if (!browser) return;
 
 		function onPopState() {
 			const params = new URLSearchParams(window.location.search);
-			if (!params.get('meldung')) {
-				reportKind = null;
-			}
+			reportKind = resolveReportKind(params.get('meldung'), null, null);
 		}
 
 		window.addEventListener('popstate', onPopState);

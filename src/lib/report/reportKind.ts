@@ -26,6 +26,15 @@ export function reportKindToIsDead(kind: ReportKind): boolean {
 }
 
 /**
+ * Kehrt `PARAM_TO_KIND` um — der Query-Parameter-Wert für einen Zweig.
+ * Einzige Quelle für diese Zuordnung, damit `choose()` in `+page.svelte`
+ * sie nicht ein zweites Mal von Hand invertiert.
+ */
+export function reportKindToParam(kind: ReportKind): string {
+	return kind === 'dead' ? 'totfund' : 'lebend';
+}
+
+/**
  * Entscheidet, welcher Zweig gilt — und ob die Auswahlseite überhaupt erscheint.
  *
  * Rein und ohne Browser-Zugriff, damit die Zustandsmaschine inklusive

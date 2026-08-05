@@ -5,6 +5,7 @@ import {
 	readReportKind,
 	resolveReportKind,
 	reportKindToIsDead,
+	reportKindToParam,
 	writeReportKind
 } from './reportKind';
 
@@ -78,6 +79,13 @@ describe('reportKindToIsDead', () => {
 	it('bildet die zwei Zweige auf isDead ab', () => {
 		expect(reportKindToIsDead('alive')).toBe(false);
 		expect(reportKindToIsDead('dead')).toBe(true);
+	});
+});
+
+describe('reportKindToParam', () => {
+	it('bildet die zwei Zweige auf den Query-Parameter-Wert ab — die Umkehrung von PARAM_TO_KIND', () => {
+		expect(reportKindToParam('alive')).toBe('lebend');
+		expect(reportKindToParam('dead')).toBe('totfund');
 	});
 });
 

@@ -31,6 +31,7 @@
 	import { scrollToFirstError } from '$lib/utils/fieldNavigation';
 	import { createId } from '@paralleldrive/cuid2';
 	import { formStepsConfig } from '$lib/report/formConfig';
+	import { untrack } from 'svelte';
 	import { ValidationError } from 'yup';
 	import Form from './form/Form.svelte';
 	import FormSteps from './form/FormSteps.svelte';
@@ -82,8 +83,24 @@
 	// „Zweig hat sich seit dem letzten Stand geändert"; stimmen beide bereits
 	// überein, ist die Zuweisung ein No-op. Ein `undefined`-Prop (Aufrufstellen
 	// ohne Einstiegsseite) lässt `isDead` unangetastet.
+	//
+	// `untrack`, weil nur der Anfangswert gemeint ist — dieser Code läuft
+	// einmalig beim Aufbau der Komponente, nicht reaktiv bei jeder Änderung
+	// von `initialIsDead`. Das war zuvor mit „Komponente wird beim
+	// Zweigwechsel neu instanziiert" begründet — das stimmt nur an der
+	// heutigen Aufrufstelle (`+page.svelte` erzeugt beim Wechsel `null` →
+	// Zweig eine neue Instanz). Ein Prop-Update auf derselben Instanz (z. B.
+	// ein späterer Wechsel `alive`→`dead` innerhalb desselben `{:else}`-Zweigs)
+	// wäre davon nicht gedeckt; `untrack` macht „nur der Anfangswert" explizit
+	// und unabhängig vom Aufrufer.
+	//
+	// `untrack` allein lässt die Compiler-Warnung stehen (geprüft mit
+	// `svelte-autofixer`) — sie greift nur bei einer Lesung innerhalb eines
+	// `$derived`/`$effect`. Der `svelte-ignore`-Kommentar ist deshalb zusätzlich
+	// nötig und muss unmittelbar über dem `if` stehen, nicht über der Zuweisung.
+	// svelte-ignore state_referenced_locally
 	if (initialIsDead !== undefined) {
-		savedFormData.isDead = initialIsDead;
+		savedFormData.isDead = untrack(() => initialIsDead);
 	}
 
 	// Zeige Feedback wenn vorherige Eingaben wiederhergestellt wurden
