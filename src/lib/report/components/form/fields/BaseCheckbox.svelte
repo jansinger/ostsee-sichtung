@@ -10,6 +10,8 @@
 		checked?: boolean;
 		label?: string;
 		size?: FieldSize;
+		hasError?: boolean;
+		isValid?: boolean;
 		icon?: string;
 		valueText?: string;
 		onchange?: (event: Event) => void;
@@ -29,6 +31,8 @@
 		checked = $bindable(),
 		label = '',
 		size = 'md',
+		hasError = false,
+		isValid = false,
 		icon = undefined,
 		valueText = undefined,
 		onchange = undefined,
@@ -44,10 +48,25 @@
 	}: Props = $props();
 
 	// Dynamic CSS classes - pure DaisyUI
+	//
+	// Der Zustand ersetzt `checkbox-primary`, er ergänzt es nicht: Alle drei
+	// Klassen setzen dieselbe DaisyUI-Variable (`--input-color`) auf derselben
+	// Ebene und mit derselben Spezifität. Stünden zwei davon am Element,
+	// entschiede die Reihenfolge im DaisyUI-Stylesheet, welche gewinnt — nicht
+	// die im `class`-Attribut. Aufbau deshalb wie `stateClass` in BaseRadio.
+	//
+	// Anders als beim Toggle greift das hier in beiden Zuständen: `.checkbox`
+	// bezieht seinen Rahmen unbedingt aus `var(--input-color)`, eine nicht
+	// angehakte Pflicht-Checkbox zeigt den Fehler also von selbst.
 	let checkboxClasses = $derived.by(() => {
-		const base = 'checkbox checkbox-primary';
+		const base = 'checkbox';
+		const stateClass = hasError
+			? 'checkbox-error'
+			: isValid
+				? 'checkbox-success'
+				: 'checkbox-primary';
 		const sizeClass = size === 'sm' ? 'checkbox-sm' : size === 'lg' ? 'checkbox-lg' : '';
-		return [base, sizeClass].filter(Boolean).join(' ');
+		return [base, stateClass, sizeClass].filter(Boolean).join(' ');
 	});
 </script>
 

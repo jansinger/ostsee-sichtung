@@ -409,6 +409,48 @@ summary.btn {
 	--size: var(--control-size);
 }
 
+/* Zustands-Optik am AUSGESCHALTETEN Toggle.
+
+   DaisyUI färbt `toggle-error`/`toggle-success` ausschließlich im
+   eingeschalteten Zustand — nachgelesen in node_modules/daisyui/daisyui.css
+   (5.7.4) und im Browser nachgemessen:
+
+     .toggle-error{@layer daisyui.l1.l2{&:checked,&[aria-checked=true]{
+       --input-color:var(--color-error)}}}
+
+   Ein ausgeschalteter `toggle-error` rendert damit byte-identisch zu einem
+   nackten `toggle` (Rahmen und Knopf `oklab(0.15 … / 0.5)`). Für Checkbox und
+   Radio stimmt das nicht — die beziehen ihren Rahmen unbedingt aus
+   `--input-color` und brauchen deshalb keinen Override.
+
+   Der wahrscheinlichste Fehlerfall eines Pflicht-Toggles ist aber gerade der
+   ausgeschaltete („muss zugestimmt werden"). Ohne diese Regel wäre die
+   Fehler-Optik dort wirkungslos: `BaseToggle` emittierte `toggle-error`, und
+   der Nutzer sähe am fehlerhaften Feld exakt dasselbe wie am fehlerfreien.
+
+   Ungelayert und deshalb stärker als DaisyUIs `@layer daisyui.l1.l2` — dieselbe
+   Mechanik wie beim Fokus-Override oben. Im eingeschalteten Zustand greift die
+   Regel nicht, dort bleibt DaisyUI zuständig.
+
+   Dass ein roter AUS-Toggle nicht als „an" missverstanden wird, trägt nicht die
+   Farbe, sondern die Knopfposition: `.toggle` schaltet dafür
+   `grid-template-columns` (0fr 1fr 1fr ↔ 1fr 1fr 0fr) und den Track-Hintergrund
+   (transparent ↔ base-100). Beides bleibt hier unangetastet.
+
+   Kontrast auf base-100: error 6,05:1, success 3,81:1 — Rahmen und Knopf sind
+   grafische Objekte, für die WCAG 1.4.11 3:1 verlangt.
+
+   Abgesichert durch e2e/form-a11y.spec.ts → „Fehler-Optik am ausgeschalteten
+   Toggle", inklusive Gegenprobe, die DaisyUIs Default zurückholt und verlangt,
+   dass die Zustände dann ununterscheidbar werden. */
+.toggle-error:not(:checked) {
+	--input-color: var(--color-error);
+}
+
+.toggle-success:not(:checked) {
+	--input-color: var(--color-success);
+}
+
 /* Die 44px trägt das umschließende <label>, nicht das Control.
    WCAG 2.5.5 verlangt ein Ziel dieser Größe, kein Bedienelement dieser Größe
    — und das Label ist in BaseCheckbox/BaseToggle ohnehin der Klickbereich

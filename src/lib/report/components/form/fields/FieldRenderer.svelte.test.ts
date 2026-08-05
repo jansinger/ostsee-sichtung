@@ -653,6 +653,92 @@ describe('FieldRenderer', () => {
 		});
 	});
 
+	/**
+	 * `hasError`/`isValid` stehen seit jeher in `commonFieldProps` und gingen über
+	 * `checkboxProps`/`toggleProps` hinaus — nur nahmen `BaseCheckbox` und
+	 * `BaseToggle` sie nicht an, und sie fielen still weg. Genau deshalb reichen
+	 * die Tests an den Komponenten nicht: Sie merken nicht, wenn der Renderer
+	 * aufhört, die Props zu setzen. Diese Gruppe prüft die Strecke.
+	 */
+	describe('Fehler-Optik erreicht Checkbox und Toggle', () => {
+		function controlOf(testId: string): HTMLInputElement {
+			const el = document.querySelector<HTMLInputElement>(`[data-testid="${testId}"]`);
+			if (!el) throw new Error(`Kein Control mit data-testid="${testId}"`);
+			return el;
+		}
+
+		it('reicht hasError als checkbox-error durch', async () => {
+			render(FieldRenderer, {
+				fieldConfig: deadConfirmedFieldConfig,
+				name: 'deadConfirmed',
+				value: false,
+				error: 'Bitte bestätigen'
+			});
+
+			await expect.element(page.getByRole('checkbox')).toBeVisible();
+			const box = controlOf('field-deadConfirmed');
+			expect(box.classList.contains('checkbox-error')).toBe(true);
+			expect(box.classList.contains('checkbox-primary')).toBe(false);
+		});
+
+		it('reicht hasError als toggle-error durch', async () => {
+			render(FieldRenderer, {
+				fieldConfig: isDeadFieldConfig,
+				name: 'isDead',
+				value: false,
+				error: 'Bitte bestätigen'
+			});
+
+			await expect.element(page.getByTestId('field-isDead')).toBeVisible();
+			const toggle = controlOf('field-isDead');
+			expect(toggle.classList.contains('toggle-error')).toBe(true);
+			expect(toggle.classList.contains('toggle-primary')).toBe(false);
+		});
+
+		/** `isValid` = `touched && hasValue && !hasError` (siehe FieldRenderer). */
+		it('reicht isValid als checkbox-success durch', async () => {
+			render(FieldRenderer, {
+				fieldConfig: deadConfirmedFieldConfig,
+				name: 'deadConfirmed',
+				value: true,
+				touched: true
+			});
+
+			await expect.element(page.getByRole('checkbox')).toBeVisible();
+			const box = controlOf('field-deadConfirmed');
+			expect(box.classList.contains('checkbox-success')).toBe(true);
+			expect(box.classList.contains('checkbox-primary')).toBe(false);
+		});
+
+		it('reicht isValid als toggle-success durch', async () => {
+			render(FieldRenderer, {
+				fieldConfig: isDeadFieldConfig,
+				name: 'isDead',
+				value: true,
+				touched: true
+			});
+
+			await expect.element(page.getByTestId('field-isDead')).toBeVisible();
+			const toggle = controlOf('field-isDead');
+			expect(toggle.classList.contains('toggle-success')).toBe(true);
+			expect(toggle.classList.contains('toggle-primary')).toBe(false);
+		});
+
+		it('bleibt im Normalfall auf der primary-Variante', async () => {
+			render(FieldRenderer, {
+				fieldConfig: isDeadFieldConfig,
+				name: 'isDead',
+				value: false
+			});
+
+			await expect.element(page.getByTestId('field-isDead')).toBeVisible();
+			const toggle = controlOf('field-isDead');
+			expect(toggle.classList.contains('toggle-primary')).toBe(true);
+			expect(toggle.classList.contains('toggle-error')).toBe(false);
+			expect(toggle.classList.contains('toggle-success')).toBe(false);
+		});
+	});
+
 	describe('ARIA-Attribute', () => {
 		it('setzt aria-invalid=true bei Fehler', async () => {
 			render(FieldRenderer, {

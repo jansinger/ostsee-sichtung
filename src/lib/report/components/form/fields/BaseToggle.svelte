@@ -10,6 +10,8 @@
 		checked?: boolean;
 		label?: string;
 		size?: FieldSize;
+		hasError?: boolean;
+		isValid?: boolean;
 		icon?: string;
 		valueText?: string;
 		onchange?: (event: Event) => void;
@@ -29,6 +31,8 @@
 		checked = $bindable(),
 		label = '',
 		size = 'md',
+		hasError = false,
+		isValid = false,
 		icon = undefined,
 		valueText = undefined,
 		onchange = undefined,
@@ -44,10 +48,24 @@
 	}: Props = $props();
 
 	// Dynamic CSS classes
+	//
+	// Der Zustand ersetzt `toggle-primary`, er ergänzt es nicht: Alle drei
+	// Klassen setzen dieselbe DaisyUI-Variable (`--input-color`) auf derselben
+	// Ebene und mit derselben Spezifität. Stünden zwei davon am Element,
+	// entschiede die Reihenfolge im DaisyUI-Stylesheet, welche gewinnt — nicht
+	// die im `class`-Attribut. Aufbau deshalb wie `stateClass` in BaseRadio.
+	//
+	// Achtung, hier weicht der Toggle von Radio und Checkbox ab: `toggle-error`
+	// und `toggle-success` greifen bei DaisyUI NUR unter `:checked`. Die Klasse
+	// allein ließe damit ausgerechnet den wahrscheinlichsten Fehlerfall — den
+	// ausgeschalteten Pflicht-Toggle — unverändert grau. Den ausgeschalteten
+	// Zustand färbt deshalb ein Override in `src/app.css` (dort begründet,
+	// gemessen in `e2e/form-a11y.spec.ts`).
 	let toggleClasses = $derived.by(() => {
-		const base = 'toggle toggle-primary';
+		const base = 'toggle';
+		const stateClass = hasError ? 'toggle-error' : isValid ? 'toggle-success' : 'toggle-primary';
 		const sizeClass = size === 'sm' ? 'toggle-sm' : size === 'lg' ? 'toggle-lg' : '';
-		return [base, sizeClass].filter(Boolean).join(' ');
+		return [base, stateClass, sizeClass].filter(Boolean).join(' ');
 	});
 </script>
 
