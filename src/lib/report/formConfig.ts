@@ -157,9 +157,27 @@ export type FormStepsInput = {
 /**
  * Normalisiert `isDead` aus allen Quellen, in denen es auftaucht: Boolean aus dem
  * Formular, `0`/`1` aus der Datenbank, String aus dem localStorage.
- * Gleiche Regel wie `isDeadFinding` in `wording.ts`.
+ *
+ * Einzige Definition im Projekt — auch `wording.ts` importiert sie für die
+ * Totfund-Ansprache auf Schritt 2, statt eine eigene Kopie zu pflegen. Genau
+ * das war vorher nicht der Fall: Eine zweite, enger rechnende Kopie in
+ * `wording.ts` prüfte Strings nur gegen `'true'` und wertete den DB-Wert
+ * `'1'` fälschlich als Sichtung — das Formular hätte dann die
+ * Verhaltensfelder ausgeblendet, während die Überschrift weiter „Was haben
+ * Sie beobachtet?" fragte.
+ *
+ * Für den Totfund-Schalter selbst liefert `createForm.handleChange` einen
+ * echten Boolean (`target.checked`); der String-Fall entsteht dort nicht.
+ * `undefined` kommt trotzdem vor: Die Admin-Maske füllt das Formular aus
+ * einem geladenen Datensatz. Ein String an einer solchen Stelle war in
+ * dieser Codebasis schon einmal ein echter Fehler (`BaseRadio` verglich
+ * strikt gegen Zahlen, im State lag der String aus dem DOM-Event — PR 4).
+ *
+ * Nimmt `unknown` an (nicht nur `FormStepsInput['isDead']`), weil
+ * `wording.ts`s öffentliche Funktionen `isDead` ebenfalls als `unknown`
+ * führen — der Wert kommt dort teils direkt aus reaktivem Formular-State.
  */
-function isDeadFinding(value: FormStepsInput['isDead']): boolean {
+export function isDeadFinding(value: unknown): boolean {
 	return value === true || value === 1 || value === '1' || value === 'true';
 }
 

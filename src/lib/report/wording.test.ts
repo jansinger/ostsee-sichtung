@@ -21,6 +21,19 @@ describe('wording — Totfund-Ansprache auf Schritt 2', () => {
 		it('fragt beim Totfund nach dem, was gefunden wurde', () => {
 			expect(speciesQuestion(true)).toBe('Welche Tierart haben Sie gefunden?');
 		});
+
+		/**
+		 * `'1'` ist der Wert, den die Datenbank und die Legacy-API für `isDead`
+		 * liefern. `formConfig.ts`s `isDeadFinding` behandelt ihn als Totfund;
+		 * die frühere, separate Kopie hier in `wording.ts` prüfte nur auf den
+		 * String `'true'` und hätte `'1'` fälschlich als Sichtung gewertet —
+		 * mit der Folge, dass das Formular die Verhaltensfelder ausblendet
+		 * (`getFormSteps` in `formConfig.ts`), während die Überschrift hier
+		 * weiterhin nach einer Sichtung fragt.
+		 */
+		it('behandelt den String "1" (DB-Wert) wie einen Totfund', () => {
+			expect(speciesQuestion('1')).toBe('Welche Tierart haben Sie gefunden?');
+		});
 	});
 
 	describe('observationQuestion', () => {
@@ -61,7 +74,7 @@ describe('wording — Totfund-Ansprache auf Schritt 2', () => {
 			expect(observationQuestion(value)).toBe('Was haben Sie beobachtet?');
 		});
 
-		it.each([true, 'true'])('behandelt %o als Totfund', (value) => {
+		it.each([true, 'true', '1'])('behandelt %o als Totfund', (value) => {
 			expect(observationQuestion(value)).toBe('Was haben Sie gefunden?');
 		});
 	});

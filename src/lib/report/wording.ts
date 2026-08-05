@@ -21,20 +21,9 @@
  * drei Kopien liefen bis dahin auseinander.
  */
 
-/**
- * `isDead` als Wahrheitswert — ohne die klassische String-Falle.
- *
- * Für den Schalter selbst liefert `createForm.handleChange` einen echten
- * Boolean (`target.checked`). `undefined` kommt trotzdem vor: Die Admin-Maske
- * füllt das Formular aus einem geladenen Datensatz. Und ein String an einer
- * solchen Stelle war in dieser Codebasis schon einmal ein echter Fehler
- * (`BaseRadio` verglich strikt gegen Zahlen, im State lag der String aus dem
- * DOM-Event — PR 4).
- */
-function isDeadFinding(isDead: unknown): boolean {
-	if (typeof isDead === 'string') return isDead === 'true';
-	return Boolean(isDead);
-}
+// `isDeadFinding` lebt in `formConfig.ts` — Begründung und Herkunft der Regel
+// stehen dort an der Definition.
+import { isDeadFinding } from '$lib/report/formConfig';
 
 /** Beschriftung des Artfeldes auf Schritt 2. */
 export function speciesQuestion(isDead: unknown): string {
