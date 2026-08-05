@@ -84,23 +84,11 @@
 	// überein, ist die Zuweisung ein No-op. Ein `undefined`-Prop (Aufrufstellen
 	// ohne Einstiegsseite) lässt `isDead` unangetastet.
 	//
-	// `untrack`, weil nur der Anfangswert gemeint ist — dieser Code läuft
-	// einmalig beim Aufbau der Komponente, nicht reaktiv bei jeder Änderung
-	// von `initialIsDead`. Das war zuvor mit „Komponente wird beim
-	// Zweigwechsel neu instanziiert" begründet — das stimmt nur an der
-	// heutigen Aufrufstelle (`+page.svelte` erzeugt beim Wechsel `null` →
-	// Zweig eine neue Instanz). Ein Prop-Update auf derselben Instanz (z. B.
-	// ein späterer Wechsel `alive`→`dead` innerhalb desselben `{:else}`-Zweigs)
-	// wäre davon nicht gedeckt; `untrack` macht „nur der Anfangswert" explizit
-	// und unabhängig vom Aufrufer.
-	//
-	// `untrack` allein lässt die Compiler-Warnung stehen (geprüft mit
-	// `svelte-autofixer`) — sie greift nur bei einer Lesung innerhalb eines
-	// `$derived`/`$effect`. Der `svelte-ignore`-Kommentar ist deshalb zusätzlich
-	// nötig und muss unmittelbar über dem `if` stehen, nicht über der Zuweisung.
-	// svelte-ignore state_referenced_locally
-	if (initialIsDead !== undefined) {
-		savedFormData.isDead = untrack(() => initialIsDead);
+	// Nur der Anfangswert des Props zählt, nicht reaktiv nachgezogen — deshalb
+	// einmalig per `untrack` in eine Konstante gelesen, vor der Prüfung.
+	const initialIsDeadAtMount = untrack(() => initialIsDead);
+	if (initialIsDeadAtMount !== undefined) {
+		savedFormData.isDead = initialIsDeadAtMount;
 	}
 
 	// Zeige Feedback wenn vorherige Eingaben wiederhergestellt wurden

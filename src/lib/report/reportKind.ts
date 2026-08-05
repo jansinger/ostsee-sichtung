@@ -26,12 +26,19 @@ export function reportKindToIsDead(kind: ReportKind): boolean {
 }
 
 /**
- * Kehrt `PARAM_TO_KIND` um — der Query-Parameter-Wert für einen Zweig.
- * Einzige Quelle für diese Zuordnung, damit `choose()` in `+page.svelte`
- * sie nicht ein zweites Mal von Hand invertiert.
+ * Der Query-Parameter-Wert für einen Zweig. Eigenständige, über `ReportKind`
+ * erschöpfende Zuordnung — kein Aufruf von `PARAM_TO_KIND.get()` in
+ * Gegenrichtung, weil eine `Map` dafür keinen erschöpfenden Zugriff bietet.
+ * Ein `switch` über `ReportKind` lässt TypeScript meckern, sobald ein
+ * dritter Zweig hinzukommt, statt still `'lebend'` zu liefern.
  */
-export function reportKindToParam(kind: ReportKind): string {
-	return kind === 'dead' ? 'totfund' : 'lebend';
+export function reportKindToParam(kind: ReportKind): 'lebend' | 'totfund' {
+	switch (kind) {
+		case 'alive':
+			return 'lebend';
+		case 'dead':
+			return 'totfund';
+	}
 }
 
 /**
