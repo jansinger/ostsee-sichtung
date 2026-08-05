@@ -5,6 +5,7 @@ import type { UploadedFileInfo } from '$lib/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sightingFiles } from './schema';
 import {
+	countFilesForSighting,
 	deleteFileByPath,
 	saveUploadedFile,
 	setSightingIdForReferenceId,
@@ -213,6 +214,38 @@ describe('sightingFilesRepository', () => {
 			mockDb.select.mockReturnValue({ from: fromMock });
 
 			const result = await sumFileSizesForReference('ref-leer');
+
+			expect(result).toBe(0);
+			expect(result).not.toBeNaN();
+		});
+	});
+
+	/**
+	 * Zählt die an einer Sichtung hängenden Dateien. Die Benachrichtigungs-Mail
+	 * entscheidet damit, ob der Hinweis „Foto angekündigt, kommt per E-Mail
+	 * nach" überhaupt zutrifft — bei einer Meldung über das Web-Formular ist die
+	 * Datei zum Versandzeitpunkt bereits verknüpft.
+	 */
+	describe('countFilesForSighting', () => {
+		it('sollte die Anzahl der verknüpften Dateien zurückgeben', async () => {
+			const mockDb = db as any;
+			const whereMock = vi.fn().mockResolvedValue([{ count: 2 }]);
+			const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+			mockDb.select.mockReturnValue({ from: fromMock });
+
+			const result = await countFilesForSighting(42);
+
+			expect(result).toBe(2);
+			expect(fromMock).toHaveBeenCalledWith(sightingFiles);
+		});
+
+		it('sollte 0 zurückgeben, wenn keine Zeile zurückkommt', async () => {
+			const mockDb = db as any;
+			const whereMock = vi.fn().mockResolvedValue([]);
+			const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+			mockDb.select.mockReturnValue({ from: fromMock });
+
+			const result = await countFilesForSighting(42);
 
 			expect(result).toBe(0);
 			expect(result).not.toBeNaN();

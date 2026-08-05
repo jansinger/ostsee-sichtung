@@ -1,6 +1,6 @@
 import { createLogger } from '$lib/logger.server';
 import type { UploadedFileInfo } from '$lib/types';
-import { eq, sum } from 'drizzle-orm';
+import { count, eq, sum } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { db } from '.';
 import { sightingFiles } from './schema';
@@ -66,6 +66,23 @@ export async function sumFileSizesForReference(referenceId: string): Promise<num
 		.where(eq(sightingFiles.referenceId, referenceId));
 
 	return Number(row?.total ?? 0);
+}
+
+/**
+ * Anzahl der an einer Sichtung hängenden Dateien.
+ *
+ * Aufrufer ist die Benachrichtigungs-Mail: Sie entscheidet damit, ob der
+ * Hinweis „Foto angekündigt, kommt per E-Mail nach" überhaupt zutrifft
+ * (`$lib/utils/media/photoAnnouncement.ts`). Bewusst nicht `loadSightingFiles`
+ * — das lädt EXIF-Daten und baut URLs, für eine Zahl ist das der falsche Weg.
+ */
+export async function countFilesForSighting(sightingId: number): Promise<number> {
+	const [row] = await db
+		.select({ count: count() })
+		.from(sightingFiles)
+		.where(eq(sightingFiles.sightingId, sightingId));
+
+	return Number(row?.count ?? 0);
 }
 
 export async function setSightingIdForReferenceId(

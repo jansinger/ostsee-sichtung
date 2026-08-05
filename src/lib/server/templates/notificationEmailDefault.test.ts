@@ -114,15 +114,22 @@ describe('NOTIFICATION_EMAIL_DEFAULT_TEMPLATE — Ostsee-Status', () => {
 	 * hochladen — es kommt separat per E-Mail nach. Ohne einen Hinweis in
 	 * dieser Mail lässt sich eine später eintreffende Foto-Mail keiner
 	 * Sichtung zuordnen.
+	 *
+	 * **Die Vorlage verzweigt über `photoAnnouncementPending`, nicht über
+	 * `sighting.mediaUpload`.** Das Web-Formular setzt dasselbe Flag, sobald
+	 * eine Datei hochgeladen wurde (`ModernReportForm.svelte`) — über das rohe
+	 * Flag behauptete die Mail dann bei einem angehängten Foto, es käme noch
+	 * eines per E-Mail nach.
 	 */
 	describe('Foto-Ankündigung', () => {
-		function renderWithMediaUpload(mediaUpload: boolean) {
+		function renderWithAnnouncement(photoAnnouncementPending: boolean, mediaUpload = true) {
 			return render({
 				referenceId: 'REF-77',
 				adminUrl: 'https://example.com/admin/1',
 				currentDate: '30.07.2026',
 				currentTime: '12:00',
 				spamCheck: { score: 0, isHighRisk: false, indicators: [] },
+				photoAnnouncementPending,
 				sighting: {
 					species: 'Schweinswal',
 					sightingDate: '30.07.2026',
@@ -135,7 +142,7 @@ describe('NOTIFICATION_EMAIL_DEFAULT_TEMPLATE — Ostsee-Status', () => {
 		}
 
 		it('weist beim Empfänger auf das nachfolgende Foto hin und nennt die Referenz-ID', () => {
-			const html = renderWithMediaUpload(true);
+			const html = renderWithAnnouncement(true);
 
 			expect(html).toContain('Foto angekündigt');
 			// Referenz-ID steht bereits im Kopfbereich — hier zählt, dass sie
@@ -144,7 +151,16 @@ describe('NOTIFICATION_EMAIL_DEFAULT_TEMPLATE — Ostsee-Status', () => {
 		});
 
 		it('lässt den Hinweis weg, wenn kein Foto angekündigt wurde', () => {
-			const html = renderWithMediaUpload(false);
+			const html = renderWithAnnouncement(false, false);
+
+			expect(html).not.toContain('Foto angekündigt');
+		});
+
+		// Der Fehlerfall aus preprod: Meldung über das Web-Formular mit
+		// hochgeladenem Bild. `mediaUpload` ist gesetzt, das Foto liegt aber
+		// bereits vor — es kommt keines mehr per E-Mail nach.
+		it('lässt den Hinweis weg, wenn das Foto bereits angehängt ist', () => {
+			const html = renderWithAnnouncement(false, true);
 
 			expect(html).not.toContain('Foto angekündigt');
 		});
@@ -340,7 +356,7 @@ describe('Fingerabdruck des ausgelieferten Stands', () => {
 			.update(NOTIFICATION_EMAIL_DEFAULT_TEMPLATE, 'utf8')
 			.digest('hex');
 
-		expect(hash).toBe('2527b475241de0f1039f9cca27c920997f6e14bed4bc6ce087689dc6617ed392');
+		expect(hash).toBe('72c4ef86b59a8477be01ab701541369a4a75055b645b79654ecb3d155c4ab46d');
 	});
 
 	it('führt den aktuellen Stand nicht als früheren Stand', () => {
