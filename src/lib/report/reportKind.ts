@@ -1,4 +1,9 @@
-import { loadFromStorage, saveToStorage, STORAGE_KEYS } from '$lib/storage/localStorage';
+import {
+	loadFromStorage,
+	removeFromStorage,
+	saveToStorage,
+	STORAGE_KEYS
+} from '$lib/storage/localStorage';
 
 /** Die zwei Zweige des Meldeformulars. */
 export type ReportKind = 'alive' | 'dead';
@@ -6,11 +11,15 @@ export type ReportKind = 'alive' | 'dead';
 /**
  * Der Query-Parameter ist bewusst deutsch: Er steht in Links, die das Museum
  * selbst setzt und liest.
+ *
+ * Map statt Objektliteral: Der Parameterwert kommt fremdkontrolliert aus der
+ * URL. Ein Objektliteral als Lookup-Tabelle würde für geerbte Property-Namen
+ * wie `constructor` oder `__proto__` truthy Werte statt `undefined` liefern.
  */
-const PARAM_TO_KIND: Record<string, ReportKind> = {
-	lebend: 'alive',
-	totfund: 'dead'
-};
+const PARAM_TO_KIND = new Map<string, ReportKind>([
+	['lebend', 'alive'],
+	['totfund', 'dead']
+]);
 
 export function reportKindToIsDead(kind: ReportKind): boolean {
 	return kind === 'dead';
@@ -35,7 +44,7 @@ export function resolveReportKind(
 	stored: ReportKind | null,
 	savedIsDead: boolean | null
 ): ReportKind | null {
-	const fromParam = param ? PARAM_TO_KIND[param] : undefined;
+	const fromParam = param ? PARAM_TO_KIND.get(param) : undefined;
 	if (fromParam) {
 		return fromParam;
 	}
@@ -57,5 +66,5 @@ export function writeReportKind(kind: ReportKind): void {
 }
 
 export function clearReportKind(): void {
-	saveToStorage(STORAGE_KEYS.REPORT_KIND, null);
+	removeFromStorage(STORAGE_KEYS.REPORT_KIND);
 }

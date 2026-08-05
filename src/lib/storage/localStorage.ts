@@ -41,14 +41,14 @@ const USER_CONTACT_DEFAULTS: UserContactData = {
 export const STORAGE_KEYS = {
 	CURRENT_STEP: 'sichtungen_current_step', // Aktueller Formular-Schritt
 	FORM_DATA: 'sichtungen_form_data', // Hauptformulardaten
+	// 'alive' | 'dead'. Fehlt der Schlüssel, wurde die Frage noch nie gestellt —
+	// `isDead` kann das nicht ausdrücken, weil es als Boolean auf `false` steht.
+	REPORT_KIND: 'sichtungen_report_kind',
 	// uids der Dateien aus dem Positions-Schritt (siehe positionFileOrigin.ts).
 	// Gehört zu FORM_DATA und muss dessen Lebensdauer teilen — sonst verlöre eine
 	// wiederhergestellte Datei ihre Herkunft.
 	POSITION_FILE_UIDS: 'sichtungen_position_file_uids',
-	USER_CONTACT_DATA: 'sichtungen_user_contact_data', // Benutzer-Kontaktdaten
-	// 'alive' | 'dead'. Fehlt der Schlüssel, wurde die Frage noch nie gestellt —
-	// `isDead` kann das nicht ausdrücken, weil es als Boolean auf `false` steht.
-	REPORT_KIND: 'sichtungen_report_kind'
+	USER_CONTACT_DATA: 'sichtungen_user_contact_data' // Benutzer-Kontaktdaten
 };
 
 /**
@@ -170,6 +170,29 @@ export function saveToStorage<T>(key: string, value: T): void {
 	if (!browser) return;
 
 	setItem(key, JSON.stringify(value)); // JSON-Serialisierung für komplexe Objekte
+}
+
+/**
+ * Entfernt einen Schlüssel vollständig aus dem passenden Storage-Typ.
+ *
+ * Nutzt denselben session-vs-local-Dispatch wie `getItem`/`setItem`. Anders
+ * als `saveToStorage(key, null)` — das den String "null" ablegen würde —
+ * verschwindet der Schlüssel dabei tatsächlich aus dem Storage.
+ *
+ * @param key Storage-Schlüssel aus STORAGE_KEYS
+ *
+ * @example
+ * removeFromStorage(STORAGE_KEYS.REPORT_KIND);
+ */
+export function removeFromStorage(key: string): void {
+	// Server-side Rendering Schutz
+	if (!browser) return;
+
+	if (sessionKeys.includes(key)) {
+		sessionStorage.removeItem(key);
+	} else {
+		localStorage.removeItem(key);
+	}
 }
 
 /**
