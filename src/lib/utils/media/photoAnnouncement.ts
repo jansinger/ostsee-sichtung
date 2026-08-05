@@ -19,12 +19,19 @@
  *
  * **Einzige Stelle, an der dieser Zustand entsteht** — analog zu
  * `getBalticSeaStatus()` in `$lib/utils/geo/balticSeaStatus.ts`. Angeschlossen
- * sind die Admin-Detailansicht (`AdminSightingView.svelte`) und der
+ * sind die Admin-Detailansicht (`AdminSightingView.svelte`), der
  * Datenbank-Filter für die Admin-Arbeitsliste
- * (`$lib/server/db/mediaUploadFilter.ts`). Die Benachrichtigungs-Mail prüft
- * dagegen nur das rohe Flag: beim Versand — unmittelbar nach dem Anlegen der
- * Sichtung — kann noch keine Datei angehängt sein, der Dateizähler wäre dort
- * immer 0 und träfe keine zusätzliche Aussage.
+ * (`$lib/server/db/mediaUploadFilter.ts`) und die Benachrichtigungs-Mail
+ * (`emailService.loadSightingForEmail()`).
+ *
+ * **Die Mail prüfte bis 2026-08-05 nur das rohe Flag**, mit der Begründung,
+ * beim Versand könne noch keine Datei angehängt sein. Das ist falsch: Das
+ * Web-Formular setzt `mediaUpload` genau dann, wenn eine Datei hochgeladen
+ * wurde (`ModernReportForm.svelte`), und `saveSighting` verknüpft sie in
+ * derselben Transaktion, bevor der fire-and-forget-Versand startet. Der
+ * Dateizähler ist dort also gerade nicht 0 — die Mail kündigte bei jedem über
+ * das Formular hochgeladenen Foto ein noch nachkommendes an (in preprod
+ * aufgefallen).
  */
 
 /** Zählt als „gesetzt", egal ob DB-Integer (0/1) oder Formular-Boolean. */

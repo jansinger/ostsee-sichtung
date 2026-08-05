@@ -1,70 +1,66 @@
-/**
- * notificationEmailDefault.ts — Standard-Vorlage der Benachrichtigungs-Mail
- *
- * **Warum als eigenes Modul und nicht als Literal in `configInitializer.ts`:**
- * Dieselbe Zeichenkette wird an zwei Stellen gebraucht — beim Seeden nach
- * `app_config` und vom Nachzieh-Werkzeug `src/tools/refresh-email-template.ts`,
- * das einen unveränderten Seed in einer bestehenden Installation auf den
- * aktuellen Stand hebt. Das Modul hat deshalb bewusst **keine Importe**: so lässt
- * es sich aus einem `tsx`-Skript ohne SvelteKit-Alias-Auflösung laden.
- *
- * **Der Ostsee-Status kommt aus dem Kontext, nicht aus den Flags.** Die Vorlage
- * verzweigt über `sighting.balticSea` (siehe `balticSeaEmailContext.ts`) — ein
- * Wert, der aus derselben Funktion stammt wie die Anzeige im Admin-Bereich.
- * Wer hier wieder `{{#if sighting.inBalticSeaGeo}}` einbaut, prüft die grobe
- * Bounding Box und weist damit Meldungen aus dem Hamburger Hafen als Ostsee aus
- * (Fehler 4 in `docs/OSTSEE_FLAGS.md`).
- *
- * **Wer diese Vorlage ändert, muss den Seed nachziehen.** Der in `app_config`
- * gespeicherte Wert gewinnt gegen diesen Default
- * (`ConfigRepository.getString(…, NOTIFICATION_EMAIL_DEFAULT_TEMPLATE)`) — eine Änderung hier
- * wirkt auf keine bestehende Installation. Ablauf und Fingerabdruck-Liste:
- * `src/tools/refresh-email-template.ts`.
- */
-/**
- * SHA-256 aller Vorlagen, die dieses Projekt jemals als Default **ausgeliefert**
- * hat — jüngste zuerst. Ein in `app_config` gespeicherter Wert, dessen Hash hier
- * steht, ist ein unveränderter Seed und darf nachgezogen werden; jeder andere
- * Wert ist ein angepasster Kundentext und wird nicht angefasst.
- *
- * **Wer `NOTIFICATION_EMAIL_DEFAULT_TEMPLATE` ändert, trägt den Hash des alten
- * Stands hier oben ein.** Fehlt er, hält `src/tools/refresh-email-template.ts`
- * jeden frisch geseedeten Bestand für angepasst und zieht ihn nie wieder nach.
- * `notificationEmailDefault.test.ts` erzwingt das: der Test pinnt den Hash des
- * aktuellen Stands und schlägt bei jeder Änderung fehl.
- */
-export const PREVIOUS_SHIPPED_TEMPLATE_HASHES = [
-	// Stand bis 2026-08-05: verzweigte den Foto-Hinweis über
-	// `sighting.mediaUpload`. Das Web-Formular setzt dieses Flag genau dann,
-	// wenn eine Datei hochgeladen wurde — die Mail kündigte deshalb bei jedem
-	// angehängten Foto ein noch nachkommendes an (in preprod aufgefallen).
-	'2527b475241de0f1039f9cca27c920997f6e14bed4bc6ce087689dc6617ed392',
-	// Stand bis 2026-08-04: nannte den Vorgang durchgehend „Sichtung"
-	// („Neue Sichtung eingegangen", „diese Sichtung besonders sorgfältig",
-	// „Sichtung im Admin-Bereich prüfen"). Über dasselbe Formular wird auch ein
-	// Totfund gemeldet — Änderungswunsch A5.3 des Deutschen Meeresmuseums.
-	'aed55e5b04055cc8b30a86bab9e91d3d64f982fbb63c3c202d732bcd87480763',
-	// Stand bis 2026-08-04: ohne Totfund-Abschnitt. `isDead`, `deadCondition`
-	// und `deadSize` lagen im Kontext, wurden aber von keiner ausgelieferten
-	// Vorlage gerendert — die Mail zu einem Totfund war von der zu einer
-	// lebenden Sichtung nicht zu unterscheiden.
-	'2444299392fe83096f5a2ebbcd4806c20f4fc1866dd0d13c105066ccfc0dd7f0',
-	// Stand bis 2026-07-30: Foto-Hinweis wortidentisch, aber „rebuilter
-	// iOS-Client" statt der im Projekt sonst üblichen Formulierung „neu
-	// gebauter iOS-Client" (siehe .claude/rules/legacy-api.md).
-	'e40a8d357f37192aa47c71cf1883514110b50ed773e98620bbd9110aa3e17390',
-	// Stand bis 2026-07-30: ohne Hinweis auf ein per E-Mail nachgereichtes
-	// Foto (neu gebauter iOS-Client `OstSeeTiere/8` setzt `aufnahmeHochladen`,
-	// kann aber keine Datei hochladen).
-	'7f55d293b7799debff9908e074e8e22c2b87323c98bf7b76cc7ba86186e95a8e',
-	// Stand bis 2026-07-30: verzweigte über `inBalticSeaGeo` (Bounding Box) und
-	// zeigte einer Meldung aus dem Hamburger Hafen „Ostsee ✓".
-	'28cc78828fb2383bf92a3738dc75fc83f57ae041884d790ca877e6f46b9a1c72',
-	// Stand vor der Umstellung auf emailTokens.ts (hartcodierte Hex-Farben).
-	'ba2a26024338b19b441c6b5aa2d6b8d66aea611fa474952952d859b0c40d46bc'
-] as const;
+-- Zieht die geseedete Benachrichtigungs-Vorlage auf den Stand, in dem der
+-- Foto-Hinweis über `photoAnnouncementPending` verzweigt statt über
+-- `sighting.mediaUpload`.
+--
+-- Hintergrund: Das Web-Formular setzt `aufnahmeHochladen` genau dann, wenn eine
+-- Datei hochgeladen wurde (`ModernReportForm.svelte`), und `saveSighting`
+-- verknüpft sie in derselben Transaktion — vor dem Versand der Mail. Die alte
+-- Vorlage verzweigte über dieses Flag und kündigte deshalb bei **jedem** über
+-- das Formular hochgeladenen Foto ein noch per E-Mail nachkommendes an
+-- („📷 Foto angekündigt … es kommt separat per E-Mail nach"). Aufgefallen an
+-- zwei Testmeldungen in preprod, die ihr Bild angehängt hatten.
+--
+-- Der Kontextwert `photoAnnouncementPending` steht im Code (`emailService.ts`)
+-- und zieht mit dem Deployment automatisch mit. Ohne diesen Lauf verzweigt die
+-- gespeicherte Vorlage aber weiter über `sighting.mediaUpload` — der Hinweis
+-- bliebe also falsch.
+--
+-- Das Gegenstück zu `npm run config:refresh-email-template`, für Hosts, auf denen
+-- kein Checkout liegt (das Runtime-Image enthält `src/tools/` nicht).
+--
+-- Aufruf auf dem DMM-Host: Die Datenbank veröffentlicht dort keinen Port, sie
+-- hängt nur im internen Docker-Netz `ostsee_internal`. Weder ein psql vom Host
+-- noch ein SSH-Tunnel erreichen sie — der Weg führt durch den Container:
+--
+--   scp scripts/migrations/2026-08-05-notification-email-foto-ankuendigung.sql dmm:/tmp/
+--   ssh dmm
+--   cd /opt/ostsee-tiere
+--   sudo -v   # Passwort vorab, damit die Eingabeumleitung unten nicht mit dem
+--             # Prompt konkurriert
+--   sudo docker compose exec -T db psql -U postgres -d ostsee \
+--     < /tmp/2026-08-05-notification-email-foto-ankuendigung.sql
+--
+-- `psql -U postgres` im Container braucht kein Passwort (lokale Socket-
+-- Verbindung, `trust` in der pg_hba des Images). Erwartete Ausgabe: `UPDATE 1`
+-- und die OK-Meldung; bei `UPDATE 0` entscheidet die Schluss-Abfrage, ob der
+-- Stand schon aktuell oder der Text angepasst ist.
+--
+-- Sicherheit: Die UPDATE-Bedingung prüft den SHA-256 des gespeicherten Werts gegen
+-- die Liste der jemals ausgelieferten Stände. Ein im Admin-Bereich angepasster
+-- Text trifft keinen Eintrag und bleibt unangetastet — der Lauf meldet dann
+-- `UPDATE 0` und die Schluss-Abfrage sagt es im Klartext.
+--
+-- Idempotent: Ein zweiter Lauf ändert nichts (der aktuelle Stand steht bewusst
+-- nicht in der Liste der erlaubten Ausgangswerte).
+--
+-- Diese Datei ist aus `NOTIFICATION_EMAIL_DEFAULT_TEMPLATE` erzeugt; die Nutzlast
+-- ist byte-identisch mit der Konstante.
 
-export const NOTIFICATION_EMAIL_DEFAULT_TEMPLATE = `<!DOCTYPE html>
+BEGIN;
+
+-- 1. Ist-Zustand vor der Änderung
+SELECT
+	updated_by,
+	updated_at,
+	length(value #>> '{}') AS zeichen,
+	encode(sha256(convert_to(value #>> '{}', 'UTF8')), 'hex') AS hash_vorher
+FROM app_config
+WHERE key = 'notification.email.template';
+
+-- 2. Nachziehen — nur, wenn der gespeicherte Wert ein unveränderter Seed ist
+UPDATE app_config
+SET
+	value = to_jsonb($tpl$<!DOCTYPE html>
 <html lang="de">
 <head>
 	<meta charset="UTF-8">
@@ -274,4 +270,32 @@ export const NOTIFICATION_EMAIL_DEFAULT_TEMPLATE = `<!DOCTYPE html>
 		<p style="margin: 8px 0 0 0;">Diese E-Mail wurde automatisch generiert am {{currentDate}} um {{currentTime}}</p>
 	</div>
 </body>
-</html>`;
+</html>$tpl$::text),
+	updated_by = 'refresh-email-template-sql',
+	updated_at = NOW()
+WHERE key = 'notification.email.template'
+	AND encode(sha256(convert_to(value #>> '{}', 'UTF8')), 'hex') = ANY (ARRAY[
+		'2527b475241de0f1039f9cca27c920997f6e14bed4bc6ce087689dc6617ed392',
+		'aed55e5b04055cc8b30a86bab9e91d3d64f982fbb63c3c202d732bcd87480763',
+		'2444299392fe83096f5a2ebbcd4806c20f4fc1866dd0d13c105066ccfc0dd7f0',
+		'e40a8d357f37192aa47c71cf1883514110b50ed773e98620bbd9110aa3e17390',
+		'7f55d293b7799debff9908e074e8e22c2b87323c98bf7b76cc7ba86186e95a8e',
+		'28cc78828fb2383bf92a3738dc75fc83f57ae041884d790ca877e6f46b9a1c72',
+		'ba2a26024338b19b441c6b5aa2d6b8d66aea611fa474952952d859b0c40d46bc'
+	]);
+
+-- 3. Ergebnis im Klartext
+SELECT CASE
+	WHEN h = '72c4ef86b59a8477be01ab701541369a4a75055b645b79654ecb3d155c4ab46d'
+		THEN 'OK — Vorlage ist auf dem aktuellen Stand (Foto-Hinweis nur bei fehlender Datei).'
+	ELSE 'ACHTUNG — kein bekannter Seed, es wurde nichts geaendert. Angepasster Text, Hash: ' || h
+END AS ergebnis
+FROM (
+	SELECT encode(sha256(convert_to(value #>> '{}', 'UTF8')), 'hex') AS h
+	FROM app_config
+	WHERE key = 'notification.email.template'
+) t;
+
+COMMIT;
+
+-- Laufende Instanzen halten die alte Vorlage bis zu 5 Minuten im Config-Cache.

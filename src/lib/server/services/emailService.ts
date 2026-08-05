@@ -21,6 +21,8 @@ import {
 } from '$lib/server/templates/balticSeaEmailContext';
 import { emailColorContext } from '$lib/server/templates/emailTokens';
 import { NOTIFICATION_EMAIL_DEFAULT_TEMPLATE } from '$lib/server/templates/notificationEmailDefault';
+import { countFilesForSighting } from '$lib/server/db/sightingFilesRepository';
+import { isPhotoAnnouncementPending } from '$lib/utils/media/photoAnnouncement';
 
 // Dynamic environment variables for Docker runtime
 const NODE_ENV = env.NODE_ENV ?? 'development';
@@ -264,7 +266,8 @@ export class EmailService {
 			sightingData.sightingFormValues,
 			sightingData.referenceId,
 			sightingData.adminUrl,
-			sightingData.balticSea
+			sightingData.balticSea,
+			sightingData.photoAnnouncementPending
 		);
 	}
 
@@ -277,6 +280,7 @@ export class EmailService {
 		referenceId: string;
 		adminUrl: string;
 		balticSea: BalticSeaEmailContext;
+		photoAnnouncementPending: boolean;
 	} | null> {
 		try {
 			const sightingResult = await db
@@ -354,10 +358,26 @@ export class EmailService {
 			const adminUrl = `${getPublicSiteUrl()}/admin/${sightingId}`;
 			const referenceId = sighting.referenceId || `REF-${sightingId}`;
 
+			// Nur zählen, wenn überhaupt ein Foto angekündigt ist — ohne Flag
+			// trägt die Zahl keine Aussage und die Abfrage keinen Zweck.
+			const attachedFileCount = sighting.mediaUpload ? await countFilesForSighting(sightingId) : 0;
+
 			return {
 				sightingFormValues,
 				referenceId,
 				adminUrl,
+				// Dieselbe Aussage wie in der Admin-Detailansicht: „angekündigt und
+				// noch nichts da". Das rohe Flag genügt hier **nicht** — das
+				// Web-Formular setzt es genau dann, wenn eine Datei hochgeladen
+				// wurde (`ModernReportForm.svelte`), und die hängt beim Versand
+				// bereits an der Sichtung (`saveSighting` verknüpft sie in
+				// derselben Transaktion). Über das Flag allein behauptete die Mail
+				// bei jedem angehängten Foto, es käme noch eines per E-Mail nach.
+				photoAnnouncementPending: isPhotoAnnouncementPending(
+					sighting.mediaUpload,
+					attachedFileCount,
+					sighting.created
+				),
 				// Aus der **Rohzeile**, nicht aus `sightingFormValues`: das `!!` oben
 				// verliert den Altsystem-Wert 2 und macht `noPosition` unerreichbar.
 				// Derselbe Aufruf wie in der Admin-Übersicht — der Status entsteht
@@ -408,7 +428,8 @@ export class EmailService {
 		sightingFormValues: SightingFormValues,
 		referenceId: string,
 		adminUrl: string,
-		balticSea: BalticSeaEmailContext
+		balticSea: BalticSeaEmailContext,
+		photoAnnouncementPending: boolean
 	): Promise<boolean> {
 		try {
 			const blocker = await this.findNotificationBlocker();
@@ -452,6 +473,10 @@ export class EmailService {
 				// Der Ostsee-Status liegt unter `sighting.balticSea` — die Vorlage
 				// verzweigt darüber und nicht mehr über die beiden Rohflags.
 				sighting: { ...formattedSighting, balticSea },
+				// Auf oberster Ebene und nicht unter `sighting`: Der Wert steht
+				// für keine Spalte, sondern für den Zustand „angekündigt, noch
+				// nichts da" (siehe `loadSightingForEmail`).
+				photoAnnouncementPending,
 				adminUrl,
 				currentDate: formatLocalDateTime(new Date(), 'date'),
 				currentTime: formatLocalDateTime(new Date(), 'time'),
