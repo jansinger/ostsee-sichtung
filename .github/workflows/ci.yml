@@ -552,38 +552,82 @@ jobs:
             e2e/form-map-pan-zoom.spec.ts
           )
 
+          # Die Soll-Liste kommt von Playwright selbst, nicht von einem `find`,
+          # das dessen Auswahlregel nachbaut. Der Nachbau war in beide
+          # Richtungen falsch: Er kannte nur `.ts/.tsx/.js/.jsx`, während der
+          # Default-`testMatch` auch `.mts/.cts/.mjs/.cjs` einsammelt — eine
+          # `foo.spec.mts` hätte den Abgleich bestanden und wäre trotzdem in
+          # keinem Shard gelaufen, also genau der stille Ausfall, gegen den er
+          # gebaut wurde. Umgekehrt gilt `testIgnore: ['**/helpers/**']` auf
+          # jeder Ebene, `-not -path 'e2e/helpers/*'` nur auf der obersten; eine
+          # Datei unter `e2e/pages/helpers/` hätte CI rot gemacht und eine
+          # Zuordnung verlangt, die Playwright nie ausführt.
+          #
+          # `--list` braucht weder Dev-Server noch Datenbank (kein `webServer`,
+          # kein `globalSetup`) und läuft in rund zwei Sekunden. Der Bericht geht
+          # über `PLAYWRIGHT_JSON_OUTPUT_NAME` in eine Datei statt über stdout:
+          # dort steht eine dotenv-Präambel davor, an der jedes JSON.parse
+          # scheitert. `suite.file` ist relativ zu `config.rootDir` — und das ist
+          # das testDir (`e2e/`), nicht das Repo-Wurzelverzeichnis.
+          #
+          # Ein Unterprozess statt eines `**`-Musters hält außerdem die Zusage aus
+          # #761 ein: Das Skript bleibt mit `bash -n` prüfbar, weil weder
+          # `globstar` noch `extglob` nötig sind.
+          playwright_report=$(mktemp)
+          trap 'rm -f "$playwright_report"' EXIT
+          PLAYWRIGHT_JSON_OUTPUT_NAME="$playwright_report" \
+            npx playwright test --list --reporter=json > /dev/null
+
+          collect='
+            const { readFileSync } = require("node:fs");
+            const { relative, resolve } = require("node:path");
+            const report = JSON.parse(readFileSync(process.argv[1], "utf8"));
+            for (const suite of report.suites) {
+              console.log(relative(process.cwd(), resolve(report.config.rootDir, suite.file)));
+            }
+          '
+          mapfile -t collected < <(node -e "$collect" "$playwright_report" | sort -u)
+
+          # Ohne diese Schranke ginge eine leere Auswahl — umbenanntes testDir,
+          # kaputte Config — als „alles zugeordnet" durch.
+          if [ ${#collected[@]} -eq 0 ]; then
+            echo "::error::Playwright hat keine Specs gemeldet; der Abgleich wäre wertlos."
+            exit 1
+          fi
+
+          known=" ${form[*]} ${map[*]} ${smoke[*]} ${unassigned[*]} "
+          selected=" ${collected[*]} "
+
           # Ein Spec, der in keiner der vier Listen steht, ist neu und beim
           # Anlegen vergessen worden.
-          #
-          # Gesucht wird **rekursiv** und mit denselben Endungen, die Playwright
-          # per Default sammelt — `testDir: 'e2e'` steigt in Unterordner ab, und
-          # ein Spec in `e2e/irgendwas/` liefe lokal, in CI aber nirgends und
-          # fiele einem Abgleich nur über `e2e/*.spec.ts` nicht auf. `helpers/`
-          # bleibt außen vor, weil playwright.config.ts es per `testIgnore`
-          # ausnimmt: Die Dateien dort sind Vitest-Tests, die vitest.config.ts
-          # einsammelt.
-          # `find` und kein Glob: Ein `**`-Muster bräuchte `shopt -s globstar`
-          # und die Endungsliste `extglob` — und extglob wirkt erst zur
-          # Laufzeit, womit `bash -n` das Skript nicht mehr prüfen kann.
-          known=" ${form[*]} ${map[*]} ${smoke[*]} ${unassigned[*]} "
           missing=()
-          while IFS= read -r spec; do
+          for spec in "${collected[@]}"; do
             case "$known" in
               *" $spec "*) ;;
               *) missing+=("$spec") ;;
             esac
-          done < <(
-            find e2e -type f \
-              \( -name '*.spec.ts' -o -name '*.test.ts' \
-                 -o -name '*.spec.tsx' -o -name '*.test.tsx' \
-                 -o -name '*.spec.js' -o -name '*.test.js' \
-                 -o -name '*.spec.jsx' -o -name '*.test.jsx' \) \
-              -not -path 'e2e/helpers/*' \
-              | sort
-          )
+          done
           if [ ${#missing[@]} -gt 0 ]; then
             echo "::error::Diese Specs stehen in keinem Shard und würden nirgends laufen: ${missing[*]}"
             echo "Bitte in .github/workflows/ci.yml einem Shard (form/map/smoke) zuordnen."
+            exit 1
+          fi
+
+          # Die Gegenrichtung: Ein Eintrag, den Playwright nicht auswählt — weil
+          # die Datei umbenannt wurde oder der Pfad sich vertippt hat — läuft
+          # stillschweigend nicht. Playwright bricht nur ab, wenn **kein**
+          # Argument trifft; ein einzelner toter Eintrag neben lebenden fällt
+          # sonst nirgends auf.
+          dead=()
+          for spec in "${form[@]}" "${map[@]}" "${smoke[@]}" "${unassigned[@]}"; do
+            case "$selected" in
+              *" $spec "*) ;;
+              *) dead+=("$spec") ;;
+            esac
+          done
+          if [ ${#dead[@]} -gt 0 ]; then
+            echo "::error::Diese Einträge wählt Playwright nicht aus und liefen damit nie: ${dead[*]}"
+            echo "Bitte in .github/workflows/ci.yml korrigieren oder entfernen."
             exit 1
           fi
 
