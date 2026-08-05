@@ -482,10 +482,7 @@ jobs:
             e2e/form-submit.spec.ts
             e2e/form-ux.spec.ts
             e2e/form-a11y.spec.ts
-            e2e/form-position.spec.ts
-            e2e/form-position-photo.spec.ts
             e2e/form-autosave.spec.ts
-            e2e/form-field-mode.spec.ts
           )
 
           # Die drei Shards laufen parallel; die Laufzeit des Jobs ist die des
@@ -505,10 +502,16 @@ jobs:
             e2e/meldung-wording.spec.ts
             # Trotz `form`-Präfix hier: teilt sich mit dem Schwester-Spec
             # map-pan-zoom.spec.ts das Messwerkzeug (e2e/helpers/mapCanvas.ts).
-            # Fällt nicht unter das Glob und steht deshalb einzeln. Kostet ~17 s;
-            # `map` bleibt damit bei rund 170 s und unter `form` (190 s), die
-            # Job-Laufzeit ändert sich also nicht.
+            # Fällt nicht unter das Glob und steht deshalb einzeln.
             e2e/form-map-pan-zoom.spec.ts
+            # Ebenfalls trotz `form`-Präfix hier, aber aus dem Laufzeit-Grund
+            # oben und nicht wegen geteilten Werkzeugs: Beide prüfen die Karte
+            # im Meldeformular — ein Tippen setzt die Koordinaten, ein Foto mit
+            # EXIF-GPS setzt Position, Datum und Uhrzeit, und die
+            # Bereichsprüfung schlägt außerhalb der Ostsee an. Das ist dieselbe
+            # Komponente, die die map-*-Specs fahren.
+            e2e/form-position.spec.ts
+            e2e/form-position-photo.spec.ts
           )
 
           # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das
@@ -535,18 +538,56 @@ jobs:
             e2e/form-stepper.spec.ts
             e2e/form-stepper-affordance.spec.ts
             e2e/videoUpload.spec.ts
+            # Aus demselben Laufzeit-Grund, und thematisch bei modal-overflow
+            # zu Hause: Der Spec prüft den ortsfesten Balken gegen Viewport und
+            # scroll-padding — Layout, nicht Formularlogik.
+            e2e/form-field-mode.spec.ts
           )
 
           # Der Rückstand von 14 Specs ist abgearbeitet: 13 davon liefen am
           # 2026-08-05 lokal dreimal hintereinander durch (82 Tests je Lauf,
           # kein Fehlschlag, kein Flake) und stehen jetzt in `map` bzw. `smoke`.
           #
-          # Verteilt wurde nach gemessener Dauer, nicht nach Thema. Maßgeblich
-          # ist die Summe der Test-Laufzeiten, weil der Job seriell fährt
-          # (`workers: 1`): form 190 s, map 153 s, smoke 152 s — vorher
-          # 190/78/75. `form` hat bewusst nichts abbekommen; der Shard war schon
-          # der längste, und die Job-Laufzeit ist die des längsten. Wer dort
-          # etwas hinzufügt, misst vorher.
+          # Verteilt wurde nach gemessener Dauer, nicht nach Thema. `form` hat
+          # dabei bewusst nichts abbekommen; der Shard war schon der längste,
+          # und die Job-Laufzeit ist die des längsten.
+          #
+          # **Womit gemessen wird.** Maßgeblich ist die Schrittdauer „Run E2E
+          # tests" aus GitHub Actions selbst:
+          #
+          #   gh api "repos/jansinger/ostsee-tiere/actions/runs/<id>/jobs" --jq \
+          #     '.jobs[] | select(.name|startswith("E2E Tests")) | [.name,
+          #      ((.steps[]|select(.name=="Run E2E tests")
+          #        |(((.completed_at|fromdate)-(.started_at|fromdate))|tostring)))]|@tsv'
+          #
+          # **Nicht** die Summe der `result.duration` aus `--reporter=json`, mit
+          # der die Aufteilung bis hierher gerechnet wurde. Playwright rechnet
+          # `beforeAll` keinem Test zu, und fast alle map-Specs bauen ihre Seite
+          # genau dort auf (`test.describe.serial` + geteilte Page, siehe
+          # map-accessibility.spec.ts: 0,4 s für 18 Tests). Die Summe lässt
+          # `map` dadurch um ein Vielfaches zu billig aussehen. Gemessen an den
+          # echten Schrittdauern stand hier nicht 190/153/152, sondern nach #766
+          # form 205 s, smoke 128 s, map 122 s — und E2E Tests (form) war mit
+          # 258 s die Wanduhr des **gesamten** Workflows, nächstlängster Job
+          # 171 s.
+          #
+          # Ein einziger lokaler Lauf über alle Shards misst die Shards übrigens
+          # nicht: In CI ist jeder Shard ein eigener Job mit kaltem
+          # `node_modules/.vite`, lokal ist der Dep-Cache warm — die erste Datei
+          # trägt sonst die Kaltstartkosten aller anderen. Pro Shard mit eigenem,
+          # frisch gestartetem Dev-Server messen; lokale Wanduhr × Shard-Faktor
+          # (gemessen: form 1,35 · map 1,29 · smoke 1,37) trifft die
+          # CI-Schrittdauer eines **unveränderten** Shards gut.
+          #
+          # Was dieser Faktor **nicht** kann: die Kosten eines verschobenen Specs
+          # vorhersagen. Die Verschiebung hier war auf 157/158/155 geschätzt und
+          # kam bei 152/169/161 heraus — `form` fast genau, beide aufnehmenden
+          # Shards rund 10 s darüber. Der Grund ist derselbe wie oben: Der
+          # aufnehmende Shard zahlt die Vite-Kaltkompilierung der Routen, die er
+          # vorher nicht gefahren ist, noch einmal. Wer verschiebt, plant den
+          # Aufschlag ein und prüft danach an der echten Schrittdauer nach.
+          #
+          # Wer hier etwas hinzufügt oder verschiebt, misst vorher — so.
           #
           # Der Rückstand ist damit vollständig abgearbeitet: form-map-pan-zoom
           # .spec.ts, der letzte verbliebene Eintrag, steht seit dem 2026-08-05
