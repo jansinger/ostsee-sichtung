@@ -618,7 +618,7 @@ Grundlage: verifizierte Aufrufstellen. Angaben in Personentagen.
 | `reportKind.ts` — Zustandsmaschine, Migration, Query-Parameter              | 0,3     |
 | `+page.svelte` — Verzweigung, `$state`, Reset-Pfad, History (6.8)           | 0,25    |
 | `formConfig.ts` — `formStepsConfig` → `getFormSteps(isDead)`                | 0,15    |
-| 14 Fundstellen umstellen (4 Dateien, 6.3.3)                               | 0,3     |
+| 14 Fundstellen umstellen (4 Dateien, 6.3.3)                                 | 0,3     |
 | `wording.ts` erweitern (4 Funktionen)                                       | 0,1     |
 | Schritt-1-Texte anschließen (`DateTime`, `VerifyLocation`, `PositionPanel`) | 0,2     |
 | `OLMap.svelte` — Hinweis als Prop                                           | 0,1     |
@@ -853,6 +853,18 @@ Die Umsetzung gilt als fertig, wenn:
     _oder_ von Land) — die Bedingungen überschreiben sich nicht gegenseitig.
 14. Das Umschalten von `sightingFrom` auf „Land" blendet `boatDrive` **im selben Schritt**
     live aus, ohne den Schritt ungültig zu machen.
+
+**Zusätzlich für Paket 3 — Einwilligungen bündeln:**
+
+15. `mediaConsent` steht auf Schritt 4 bei den übrigen Einwilligungen. Alle vier Felder
+    mit Nachweisspalten (`nameConsent`, `shipNameConsent`, `mediaConsent`,
+    `privacyConsent`) stehen damit an einer Stelle.
+16. Die Datei-Felder `mediaFile` und `mediaUpload` stehen weiterhin auf **Schritt 2** —
+    der Upload gehört unverändert vor die Tierangaben (Wunsch des Museums, 2026-08-04).
+17. Ohne hochgeladene Aufnahme erscheint `mediaConsent` nicht und wird nicht validiert.
+18. Wird die letzte Aufnahme entfernt, fällt `mediaConsent` auf `false` zurück, sodass
+    `mapFormToSighting` keinen datierten, versionierten Nachweis ohne Bezugsgegenstand
+    stempelt.
 
 ---
 

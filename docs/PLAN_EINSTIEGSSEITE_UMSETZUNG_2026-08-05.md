@@ -1787,14 +1787,8 @@ eingeführt und in den Tasks 3, 8, 11, 14 und 15 mit derselben Signatur benutzt;
 `FormStepsInput` wächst dabei um `sightingFrom` (Task 11) und `hasMedia` (Task 15), ohne
 dass frühere Aufrufer brechen.
 
-**PR-3-Nachtrag zur Definition of Done** — diese vier Punkte gehören in Abschnitt 12 der
-Spezifikation nachgezogen:
-
-15. `mediaConsent` steht auf Schritt 4 bei den übrigen Einwilligungen.
-16. Die Datei-Felder (`mediaFile`, `mediaUpload`) stehen weiterhin auf Schritt 2.
-17. Ohne hochgeladene Aufnahme erscheint `mediaConsent` nicht — und wird nicht validiert.
-18. Wird die letzte Aufnahme entfernt, fällt `mediaConsent` auf `false` zurück, sodass
-    `mapFormToSighting` keinen Nachweis ohne Gegenstand stempelt.
+**Definition of Done für PR 3:** Punkte 15–18 in Abschnitt 12 der Spezifikation — dort
+nachgetragen, nicht hier gedoppelt.
 
 **Abdeckung der Spezifikation:** Alle 14 Punkte der Definition of Done haben einen Task —
 Punkte 1–3 → Task 5, Punkt 4 → Task 6, Punkt 5 → Tasks 2/3, Punkt 6 → Task 8, Punkt 7 →
