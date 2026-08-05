@@ -26,8 +26,16 @@ const ACTIVE_STEP = '[aria-current="step"]:visible';
 export class FormPage {
 	constructor(private page: Page) {}
 
-	async goto() {
-		await this.page.goto('/');
+	/**
+	 * Der Zweig-Parameter überspringt die Einstiegsseite („Was möchten Sie
+	 * melden?"). Ohne ihn müsste jeder Spec sie erst durchklicken; die
+	 * Auswahlseite selbst wird eigens in `e2e/report-kind-choice.spec.ts`
+	 * abgedeckt. Default `lebend`, weil die meisten Specs, die über dieses
+	 * Page-Object laufen, Formularmechanik prüfen, die mit dem Zweig nichts
+	 * zu tun hat — Totfund-Verhalten fordert den Parameter explizit an.
+	 */
+	async goto(kind: 'lebend' | 'totfund' = 'lebend') {
+		await this.page.goto(`/?meldung=${kind}`);
 		// Wait for Svelte to fully hydrate before interacting with form elements
 		await this.page.waitForLoadState('networkidle');
 		// Ensure the step indicator (Svelte component) is rendered and interactive

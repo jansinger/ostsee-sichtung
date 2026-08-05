@@ -31,7 +31,7 @@ async function gruppenZeilen(page: Page): Promise<number> {
 test.describe('Footer — Anordnung', () => {
 	test('auf 390px stehen die Gruppen untereinander', async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
-		await page.goto('/');
+		await page.goto('/?meldung=lebend');
 
 		const footer = page.locator('footer');
 		await expect(footer).toBeAttached();
@@ -43,7 +43,7 @@ test.describe('Footer — Anordnung', () => {
 
 	test('ab 1024px stehen die Gruppen nebeneinander', async ({ page }) => {
 		await page.setViewportSize({ width: 1024, height: 900 });
-		await page.goto('/');
+		await page.goto('/?meldung=lebend');
 		await expect(page.locator('footer nav').first()).toBeAttached();
 
 		expect(await gruppenZeilen(page), 'Gruppen stapeln sich, obwohl Platz da ist').toBe(1);
@@ -66,7 +66,7 @@ test.describe('Footer — Anordnung', () => {
 	 */
 	test('Footer-Links erfüllen das 44px-Ziel', async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
-		await page.goto('/');
+		await page.goto('/?meldung=lebend');
 
 		const links = page.locator('footer nav a');
 		await expect(links.first()).toBeAttached();
@@ -82,7 +82,7 @@ test.describe('Footer — Anordnung', () => {
 
 	test('die Pflichtangaben stehen in einer eigenen, benannten Gruppe', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 900 });
-		await page.goto('/');
+		await page.goto('/?meldung=lebend');
 
 		for (const name of GRUPPEN) {
 			await expect(page.getByRole('navigation', { name })).toBeVisible();

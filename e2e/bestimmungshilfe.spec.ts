@@ -77,7 +77,12 @@ test.describe('Bestimmungshilfe', () => {
 		);
 	});
 
-	test('führt zurück zum Meldeformular', async ({ page }) => {
+	test('führt ohne vorherige Zweigwahl über die Einstiegsseite ins Formular', async ({ page }) => {
+		/* Der CTA ist ein schlichtes `href="/"` (bestimmungshilfe/+page.svelte).
+		   Seit der Einstiegsseite ("Was möchten Sie melden?") ist das fachlich
+		   richtig: Wer hier landet und noch nie gewählt hat, gehört auf die Auswahl,
+		   nicht direkt ins Formular — sonst würde die Wahl übersprungen, die der
+		   Rest der Anwendung von jedem Erstbesucher verlangt. */
 		await page.goto('/bestimmungshilfe');
 
 		const cta = page.getByRole('link', { name: /Sichtung melden/i }).first();
@@ -87,18 +92,44 @@ test.describe('Bestimmungshilfe', () => {
 		/* `waitForURL` statt `toHaveURL`: Das Ziel ist das Mehrschritt-Formular,
 		   die schwerste Seite der Anwendung. Im vollen Suite-Lauf hat diese
 		   Navigation die Standard-Assertionsfrist einmal gerissen, isoliert nie —
-		   `waitForURL` wartet auf das Navigationsereignis statt auf ein Zeitfenster.
-
-		   Und die Überschrift zusätzlich zur URL: Ein Pfadwechsel allein belegt
-		   nicht, dass der Melder beim Formular angekommen ist. Genau das soll der
-		   Rückweg leisten. */
+		   `waitForURL` wartet auf das Navigationsereignis statt auf ein Zeitfenster. */
 		await page.waitForURL((url) => url.pathname === '/');
-		await expect(page.getByRole('heading', { name: /Sichtung.*melden/i }).first()).toBeVisible();
+		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
+
+		/* Der Rückweg ist erst belegt, wenn der Melder von der Einstiegsseite aus
+		   auch tatsächlich im Formular ankommt — ein Abbruch an der Auswahl wäre
+		   sonst nicht von einem echten Rückweg zu unterscheiden. */
+		await page.waitForLoadState('networkidle');
+		await page.getByRole('radio', { name: /lebenden Tieres/i }).check();
+		await page.getByTestId('report-kind-submit').click();
+		await expect(page.getByRole('heading', { name: 'Position & Zeitpunkt' })).toBeVisible();
+	});
+
+	/**
+	 * Gegenprobe zum Test oben: Ein Melder, der schon mitten im Ausfüllen
+	 * steckt (Zweig bereits gewählt und in `sichtungen_report_kind` gespeichert)
+	 * und nur kurz auf der Bestimmungshilfe nachschaut, darf beim Rückweg nicht
+	 * noch einmal auf der Auswahl landen — sonst verlöre er seinen Fortschritt
+	 * für eine Frage, die schon beantwortet ist.
+	 */
+	test('mit bereits gewähltem Zweig führt der Rückweg direkt ins Formular', async ({ page }) => {
+		await page.addInitScript(() => {
+			localStorage.setItem('sichtungen_report_kind', JSON.stringify('alive'));
+		});
+		await page.goto('/bestimmungshilfe');
+
+		const cta = page.getByRole('link', { name: /Sichtung melden/i }).first();
+		await expect(cta).toBeVisible();
+		await cta.click();
+
+		await page.waitForURL((url) => url.pathname === '/');
+		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
+		await expect(page.getByRole('heading', { name: 'Position & Zeitpunkt' })).toBeVisible();
 	});
 
 	test.describe('Verlinkung', () => {
 		test('ist über die Navigation erreichbar', async ({ page }) => {
-			await page.goto('/');
+			await page.goto('/?meldung=lebend');
 
 			// Unterhalb lg liegt das Menü hinter dem Burger; auf Desktop-Viewport
 			// steht es direkt in der Navbar.
@@ -109,7 +140,7 @@ test.describe('Bestimmungshilfe', () => {
 		});
 
 		test('ist über den Footer erreichbar', async ({ page }) => {
-			await page.goto('/');
+			await page.goto('/?meldung=lebend');
 
 			const footerLink = page.locator('footer').getByRole('link', { name: 'Bestimmungshilfe' });
 			await expect(footerLink).toBeVisible();
@@ -124,7 +155,7 @@ test.describe('Bestimmungshilfe', () => {
 	 * Tierart-Feld und alles darunter.
 	 */
 	test('bleibt im Formular zugeklappt', async ({ page }) => {
-		await page.goto('/');
+		await page.goto('/?meldung=lebend');
 
 		await expect(page.getByText('Wal oder Robbe?')).toHaveCount(0);
 	});

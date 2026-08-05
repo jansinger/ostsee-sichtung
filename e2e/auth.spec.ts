@@ -59,7 +59,9 @@ test.describe('Authentifizierung — Geschützte Routen', () => {
 	});
 
 	test('Homepage ist ohne Authentifizierung zugänglich', async ({ page }) => {
-		const response = await page.goto('/');
+		// Zweig-Parameter überspringt die Einstiegsseite — geprüft wird hier der
+		// Zugriff auf das Formular, nicht die Auswahl davor.
+		const response = await page.goto('/?meldung=lebend');
 		expect(response?.status()).toBe(200);
 		await expect(page.locator('form').first()).toBeVisible();
 	});

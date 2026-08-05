@@ -2,17 +2,17 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Basic Application Tests', () => {
 	test('server responds with 200', async ({ page }) => {
-		const response = await page.goto('/');
+		const response = await page.goto('/?meldung=lebend');
 		expect(response?.status()).toBe(200);
 	});
 
 	test('page has correct title', async ({ page }) => {
-		await page.goto('/');
+		await page.goto('/?meldung=lebend');
 		await expect(page).toHaveTitle(/Ostsee/);
 	});
 
 	test('page has visible content', async ({ page }) => {
-		await page.goto('/');
+		await page.goto('/?meldung=lebend');
 
 		// Body should be visible
 		await expect(page.locator('body')).toBeVisible();
@@ -23,7 +23,7 @@ test.describe('Basic Application Tests', () => {
 	});
 
 	test('form is accessible', async ({ page }) => {
-		await page.goto('/');
+		await page.goto('/?meldung=lebend');
 
 		// Main form should be present
 		const form = page.locator('form').first();
