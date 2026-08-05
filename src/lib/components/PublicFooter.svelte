@@ -33,7 +33,10 @@
 				<a href="/" class="link link-hover py-3">Meldung</a>
 				<a href="/map" class="link link-hover py-3">Sichtungskarte</a>
 				<a href="/bestimmungshilfe" class="link link-hover py-3">Bestimmungshilfe</a>
-				<a href="/about" class="link link-hover py-3">Über uns</a>
+				<!-- „Hintergrund" wie in der Navigation: Ein Ziel trägt einen Namen —
+				     „Über uns" hier und „Hintergrund" oben wären zwei Namen für
+				     dieselbe Seite. -->
+				<a href="/about" class="link link-hover py-3">Hintergrund</a>
 			</nav>
 
 			<!--
