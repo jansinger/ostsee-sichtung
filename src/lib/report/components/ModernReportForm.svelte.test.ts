@@ -125,3 +125,89 @@ describe('ModernReportForm — „Ändern" auf Schritt 2 erreicht die Kette', ()
 		expect(onchangekind).toHaveBeenCalledOnce();
 	});
 });
+
+/**
+ * Task 8: Zweigfremde Felder leeren.
+ *
+ * Reiner Funktionstest an `fieldsOutsideReportKind` allein hätte diese Lücke
+ * nicht gefunden — er beschreibt nur, WELCHE Felder zweigfremd sind, nicht ob
+ * `ModernReportForm` die Liste beim Start auch tatsächlich anwendet. Genau das
+ * ist der Fehler, an dem dieses Vorhaben laut Auftrag schon zweimal
+ * vorbeigelaufen ist: eine richtige Funktion, aber nicht verdrahtet.
+ *
+ * Beide Tests seeden `FORM_DATA`, wie es eine ÄLTERE Sitzung hinterlassen
+ * hätte — ohne Rücksicht darauf, ob ein Wechsel stattfand. Das ist bewusst:
+ * Korrektur 1 dreht die Semantik um „was gehört nicht in den Zweig, in dem ich
+ * JETZT bin", gerade weil ein vorheriger Zweig nach `changeKind()` nicht mehr
+ * rekonstruierbar ist.
+ */
+describe('ModernReportForm — zweigfremde Felder werden beim Start geleert', () => {
+	function persistedFormData(): Record<string, unknown> {
+		const stored = sessionStorage.getItem(STORAGE_KEYS.FORM_DATA);
+		if (!stored) throw new Error('FORM_DATA wurde noch nicht persistiert');
+		return JSON.parse(stored);
+	}
+
+	it('leert die Totfund-Felder, wenn das Formular jetzt im Lebend-Zweig startet', async () => {
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-alt-totfund',
+				isDead: true,
+				deadCondition: 2,
+				deadSize: 150,
+				deadPhoneContact: true,
+				// gemeinsame Felder — müssen unangetastet bleiben
+				species: 7,
+				latitude: 54.5,
+				longitude: 12.1
+			})
+		);
+
+		render(ModernReportForm, { initialIsDead: false });
+
+		await vi.waitFor(() => {
+			const data = persistedFormData();
+			expect(data.deadCondition).toBeUndefined();
+			expect(data.deadSize).toBeUndefined();
+			expect(data.deadPhoneContact).toBe(false);
+		});
+
+		const data = persistedFormData();
+		expect(data.species).toBe(7);
+		expect(data.latitude).toBe(54.5);
+		expect(data.longitude).toBe(12.1);
+	});
+
+	it('leert die Verhaltensfelder, wenn das Formular jetzt im Totfund-Zweig startet', async () => {
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-alt-lebend',
+				isDead: false,
+				behavior: 3,
+				behaviorText: 'ruhiges Schwimmen',
+				reaction: 'neugierig genähert',
+				species: 7,
+				latitude: 54.5,
+				longitude: 12.1
+			})
+		);
+
+		render(ModernReportForm, { initialIsDead: true });
+
+		await vi.waitFor(() => {
+			const data = persistedFormData();
+			expect(data.behavior).toBeUndefined();
+			expect(data.behaviorText).toBeUndefined();
+			expect(data.reaction).toBeUndefined();
+		});
+
+		const data = persistedFormData();
+		expect(data.species).toBe(7);
+		expect(data.latitude).toBe(54.5);
+		expect(data.longitude).toBe(12.1);
+	});
+});

@@ -11,9 +11,10 @@
 	import { describeSubmitFailure, submitSightingForm } from '$lib/form/submitSightingForm';
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
+	import { fieldsOutsideReportKind } from '$lib/report/fieldsOutsideReportKind';
 	import { findStepForErrors } from '$lib/report/findStepForErrors';
 	import { resolveServerFieldErrors } from '$lib/report/serverFieldErrors';
-	import { initialFormState } from '$lib/report/formConfig';
+	import { initialFormState, isDeadFinding } from '$lib/report/formConfig';
 	import { toast } from '$lib/stores/toastState.svelte';
 	import {
 		clearFormDataOnly,
@@ -98,6 +99,28 @@
 	const initialIsDeadAtMount = untrack(() => initialIsDead);
 	if (initialIsDeadAtMount !== undefined) {
 		savedFormData.isDead = initialIsDeadAtMount;
+	}
+
+	// Task 8: Zweigfremde Felder leeren. Maßgeblich ist NICHT, ob sich der Zweig
+	// gegenüber einer vorherigen Sitzung geändert hat — das ist seit `changeKind()`
+	// (`reportKind.ts` entfernt `isDead` aus den gespeicherten `FORM_DATA`) nicht
+	// mehr rekonstruierbar. Maßgeblich ist einzig, was in den Zweig gehört, in dem
+	// das Formular JETZT startet (`savedFormData.isDead`, nach der Überschreibung
+	// oben). Das räumt auch zweigfremde Daten aus einer ÄLTEREN Sitzung auf, die
+	// mit dem aktuellen `initialIsDead`-Prop nie etwas zu tun hatten.
+	//
+	// `resetField` bindet den Schlüsseltyp pro Aufruf an einen einzigen generischen
+	// Parameter — eine direkte `savedFormData[field] = initialFormState[field]` in
+	// der Schleife lässt TypeScript nicht zu (`field` ist `keyof SightingFormData`
+	// als Union, kein einzelner Schlüssel; `svelte-check` meldet dort einen echten
+	// Typfehler, keine Falschmeldung).
+	function resetField<K extends keyof SightingFormData>(key: K): void {
+		savedFormData[key] = initialFormState[key];
+	}
+	for (const field of fieldsOutsideReportKind(
+		isDeadFinding(savedFormData.isDead) ? 'dead' : 'alive'
+	)) {
+		resetField(field);
 	}
 
 	// Zeige Feedback wenn vorherige Eingaben wiederhergestellt wurden
