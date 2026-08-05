@@ -7,7 +7,7 @@
  * `deleteSighting` meldet den Ausgang zurück, statt selbst zu navigieren — die
  * Tabelle lädt neu, die Detailansicht muss die gelöschte Sichtung verlassen.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const toastCalls = vi.hoisted(() => ({
 	info: vi.fn(() => 'toast-id'),
@@ -23,17 +23,32 @@ vi.mock('$lib/logger', () => ({
 
 import { deleteSighting, sendTestEmail } from './sightingActions';
 
+/*
+ * `vi.stubGlobal` statt einer Zuweisung an `globalThis.fetch`: Vitest merkt sich
+ * den Originalwert, `vi.unstubAllGlobals()` unten stellt ihn wieder her. Eine
+ * Zuweisung bliebe für die ganze Worker-Instanz stehen und wirkte in jede
+ * nachfolgende Testdatei hinein. Dieselbe Form wie in submitSightingForm.test.ts
+ * und configStore.test.ts.
+ */
 function mockFetch(response: { ok: boolean; body: unknown }) {
 	const fetchMock = vi.fn().mockResolvedValue({
 		ok: response.ok,
 		json: async () => response.body
 	});
-	globalThis.fetch = fetchMock as unknown as typeof fetch;
+	vi.stubGlobal('fetch', fetchMock);
 	return fetchMock;
+}
+
+function failingFetch() {
+	vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
 }
 
 beforeEach(() => {
 	vi.clearAllMocks();
+});
+
+afterEach(() => {
+	vi.unstubAllGlobals();
 });
 
 describe('sendTestEmail', () => {
@@ -65,7 +80,7 @@ describe('sendTestEmail', () => {
 	});
 
 	it('meldet einen Netzwerkfehler, statt ihn zu verschlucken', async () => {
-		globalThis.fetch = vi.fn().mockRejectedValue(new Error('offline')) as unknown as typeof fetch;
+		failingFetch();
 
 		await sendTestEmail(42);
 
@@ -99,7 +114,7 @@ describe('deleteSighting', () => {
 	});
 
 	it('meldet false bei einem Netzwerkfehler', async () => {
-		globalThis.fetch = vi.fn().mockRejectedValue(new Error('offline')) as unknown as typeof fetch;
+		failingFetch();
 
 		await expect(deleteSighting(7)).resolves.toBe(false);
 
