@@ -22,7 +22,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { UPLOAD_NOTICE } from '$lib/form/consent/uploadNotice';
 
-	// Die Komponente steht zweimal im Formular (Schritt 1 und Schritt 3). Eine
+	// Die Komponente steht zweimal im Formular (Schritt 1 und Schritt 2). Eine
 	// feste ID wäre im DOM doppelt und machte `aria-labelledby` unbrauchbar.
 	const titleId = $props.id();
 

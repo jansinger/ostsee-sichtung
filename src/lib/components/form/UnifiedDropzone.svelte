@@ -36,7 +36,7 @@
 		 * einem Button (verschachtelte Interaktion) und ein Klick öffnete den
 		 * Dateidialog zweimal.
 		 *
-		 * Ohne die Prop bleibt alles wie bisher (Schritt 3, Admin-Maske).
+		 * Ohne die Prop bleibt alles wie bisher (Schritt 2, Admin-Maske).
 		 */
 		actionLabel = undefined,
 		/**

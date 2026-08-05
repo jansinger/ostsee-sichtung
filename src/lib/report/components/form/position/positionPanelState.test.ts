@@ -15,7 +15,7 @@ function makeMediaFile(withGps: boolean, analyzed: boolean = true): PositionCapa
 	return { hasPosition: () => withGps, isAnalyzed: () => analyzed, isFromPositionStep: true };
 }
 
-/** Datei aus Schritt 3 (Medien) — liegt im selben Store, gehört aber nicht hierher. */
+/** Datei aus Schritt 2 (Medien) — liegt im selben Store, gehört aber nicht hierher. */
 function makeMediaStepFile(withGps: boolean, analyzed: boolean = true): PositionCapableFile {
 	return { hasPosition: () => withGps, isAnalyzed: () => analyzed, isFromPositionStep: false };
 }
@@ -64,7 +64,7 @@ describe('photoStatus', () => {
 
 /**
  * `mediaStore` wird einmal pro Formular angelegt (Form.svelte:40) und von allen
- * Schritten geteilt. Ohne Eingrenzung entschiede ein Foto aus Schritt 3
+ * Schritten geteilt. Ohne Eingrenzung entschiede ein Foto aus Schritt 2
  * (Medien) mit darüber, was das Panel in Schritt 1 über „dieses Foto" behauptet.
  */
 describe('photoStatus — Eingrenzung auf den Positions-Schritt', () => {

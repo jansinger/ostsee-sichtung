@@ -7,7 +7,7 @@
  * trägt die Herkunft nicht. Vorher wurde sie deshalb aus der Mount-Reihenfolge
  * geraten: Die zuerst gemountete Dropzone stempelte ihre eigene Herkunft auf
  * ALLE wiederhergestellten Dateien. Beide Richtungen waren falsch — ein Reload
- * auf Schritt 1 machte Schritt-3-Medien zum „Positions-Foto ohne GPS", ein
+ * auf Schritt 1 machte Schritt-2-Medien zum „Positions-Foto ohne GPS", ein
  * Reload auf Schritt 2+ nahm dem echten Positions-Foto seinen Hinweis.
  *
  * Bewusst **neben** den Formulardaten und nicht in ihnen: `uploadedFiles` ist
