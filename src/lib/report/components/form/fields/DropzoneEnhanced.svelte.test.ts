@@ -35,10 +35,10 @@ import DropzoneEnhanced from './DropzoneEnhanced.svelte';
  * bereits vorhandene Dateien übersprungen werden, gewann schlicht die Dropzone,
  * die zuerst mountete:
  *
- * - Reload auf Schritt 1 mit Medien aus Schritt 3 → alle galten als
+ * - Reload auf Schritt 1 mit Medien aus Schritt 2 → alle galten als
  *   Positions-Foto, und das Panel behauptete „In diesem Foto sind keine
  *   GPS-Daten gespeichert", obwohl in Schritt 1 nie eines lag.
- * - Reload auf Schritt 2+ → das echte Positions-Foto galt als Schritt-3-Medium
+ * - Reload auf Schritt 2+ → das echte Positions-Foto galt als Schritt-2-Medium
  *   und der Hinweis war weg.
  *
  * Die Herkunft wird deshalb neben den Formulardaten persistiert (uid-Menge in
@@ -174,12 +174,12 @@ function restoredMediaFile(uid: string, fromPositionStep: boolean): MediaFile {
  * `mediaStore` gehört dem ganzen Formular. `photoStatus` grenzt deshalb auf
  * `isFromPositionStep` ein — sein Geschwister `positionMediaFile` tat es nicht
  * und fiel auf `mediaFiles[0]` zurück. Nach einem Reload auf Schritt 1, mit
- * Medien nur aus Schritt 3, zeigte Schritt 1 damit ein fremdes Foto als „das
+ * Medien nur aus Schritt 2, zeigte Schritt 1 damit ein fremdes Foto als „das
  * Positions-Foto" und ersetzte die Dropzone vollständig. Einziger Ausweg war
  * „Neu auswählen" — und das löschte serverseitig alle Medien aller Schritte.
  */
 describe('DropzoneEnhanced — Eingrenzung auf den Positions-Schritt', () => {
-	it('zeigt im Positions-Schritt die Dropzone, wenn nur Medien aus Schritt 3 vorliegen', async () => {
+	it('zeigt im Positions-Schritt die Dropzone, wenn nur Medien aus Schritt 2 vorliegen', async () => {
 		renderDropzone([], { maxFiles: 1, enableGPSExtraction: true }, [
 			restoredMediaFile('media-uid', false)
 		]);
@@ -213,13 +213,13 @@ describe('DropzoneEnhanced — Eingrenzung auf den Positions-Schritt', () => {
  * `mediaStore` gehört dem ganzen Formular. `positionMediaFile` und `handleClear`
  * rechnen deshalb nur mit den Dateien DIESES Schritts — `handleFilesAdded` zählte
  * dagegen den ganzen Store gegen `maxFiles`. Im Positions-Schritt (`maxFiles: 1`)
- * belegte damit jedes Medium aus Schritt 3 den einzigen Platz: Der Ersetzen-Zweig
+ * belegte damit jedes Medium aus Schritt 2 den einzigen Platz: Der Ersetzen-Zweig
  * löschte nichts (die fremde Datei gehört ihm nicht), und der Upload endete in
  * „Nur 0 von 1 Dateien können hinzugefügt werden (Maximum: 1)". Sichtbar wurde
  * das nach „Neu auswählen" — das Positions-Foto war weg, der Platz blieb belegt.
  */
 describe('DropzoneEnhanced — Datei-Limit im Positions-Schritt', () => {
-	it('nimmt ein Foto an, obwohl ein Medium aus Schritt 3 im Store liegt', async () => {
+	it('nimmt ein Foto an, obwohl ein Medium aus Schritt 2 im Store liegt', async () => {
 		const { mediaStore } = renderDropzone(
 			[uploadedFile('media-uid')],
 			{ maxFiles: 1, enableGPSExtraction: true },
@@ -267,7 +267,7 @@ describe('DropzoneEnhanced — Datei-Limit im Positions-Schritt', () => {
  * EINE Karte vor: die interaktive.
  *
  * Wie bei `showNoGpsWarning` steckt die Entscheidung in einer Prop mit dem
- * bisherigen Verhalten als Default — Schritt 3 und die Admin-Maske
+ * bisherigen Verhalten als Default — Schritt 2 und die Admin-Maske
  * (`sections/Media.svelte`, beide mit `enableGPSExtraction={false}`) erreichen
  * diesen Zweig ohnehin nicht.
  */

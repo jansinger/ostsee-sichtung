@@ -71,7 +71,7 @@ describe('UploadNotice', () => {
 	});
 
 	it('benennt zwei gleichzeitige Instanzen getrennt', () => {
-		// Die Komponente steht im Formular zweimal (Schritt 1 und Schritt 3). Mit
+		// Die Komponente steht im Formular zweimal (Schritt 1 und Schritt 2). Mit
 		// einer festen ID zeigten beide `aria-labelledby` auf dasselbe Element.
 		render(UploadNotice);
 		render(UploadNotice);

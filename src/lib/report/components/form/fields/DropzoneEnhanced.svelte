@@ -126,7 +126,7 @@
 		 * ~600 px Karte, ohne erkennbaren Unterschied, welche bedienbar ist. Ohne
 		 * Karte tritt an ihre Stelle die kompakte Bestätigungszeile.
 		 *
-		 * Default `true` wie bisher; `sections/Media.svelte` (Schritt 3 und
+		 * Default `true` wie bisher; `sections/Media.svelte` (Schritt 2 und
 		 * Admin-Maske) erreicht diesen Zweig mit `enableGPSExtraction={false}`
 		 * ohnehin nicht. Gleiches Muster wie `showNoGpsWarning`.
 		 */
@@ -185,7 +185,7 @@
 		// Positions-Schritts (positionPanelState.ts). Mit `isPositionStep`
 		// stempelte die zuerst gemountete Dropzone ihre eigene Herkunft auf alle
 		// wiederhergestellten Dateien — nach einem Reload auf Schritt 1 galten
-		// Schritt-3-Medien als Positions-Foto, nach einem Reload auf Schritt 2+
+		// Schritt-2-Medien als Positions-Foto, nach einem Reload auf Schritt 2+
 		// verlor das echte Positions-Foto seinen Hinweis (positionFileOrigin.ts).
 		const positionUids = loadPositionUids();
 
@@ -210,7 +210,7 @@
 	 * Schritten geteilt. Im Positions-Schritt zählen deshalb nur die Dateien
 	 * dieses Schritts — dieselbe Eingrenzung, die `photoStatus`
 	 * (`positionPanelState.ts`) für das Panel vornimmt. Ohne sie zeigte Schritt 1
-	 * nach einem Reload ein Foto aus Schritt 3 als „das Positions-Foto" und
+	 * nach einem Reload ein Foto aus Schritt 2 als „das Positions-Foto" und
 	 * ersetzte die Dropzone damit vollständig.
 	 *
 	 * Im Medien-Schritt bleibt es beim ganzen Store: Dort ist die Galerie
@@ -342,7 +342,7 @@
 		// Gezählt wird über `ownedMediaFiles` und nicht über den ganzen Store —
 		// dieselbe Eingrenzung, mit der `positionMediaFile` und `handleClear` schon
 		// arbeiten. Vorher zählte hier der ganze `mediaStore` gegen `maxFiles`: Im
-		// Positions-Schritt (`maxFiles: 1`) belegte damit jedes Medium aus Schritt 3
+		// Positions-Schritt (`maxFiles: 1`) belegte damit jedes Medium aus Schritt 2
 		// den einzigen Platz, der Ersetzen-Zweig löschte nichts (die fremde Datei
 		// gehört ihm nicht) und der Upload endete in „Nur 0 von 1 Dateien können
 		// hinzugefügt werden (Maximum: 1)". Im Medien-Schritt sind beide Mengen
@@ -512,7 +512,7 @@
 
 			// Nur die eigenen Dateien (siehe `ownedMediaFiles`). Im Positions-Schritt
 			// ist „Neu auswählen" der einzige Ausweg aus der Foto-Karte; unbegrenzt
-			// gedacht löschte dieser eine Klick auch die Medien aus Schritt 3 —
+			// gedacht löschte dieser eine Klick auch die Medien aus Schritt 2 —
 			// serverseitig und ohne Rückfrage. Im Medien-Schritt bleibt „Alle
 			// löschen" unverändert alles.
 			const removed = ownedMediaFiles;
@@ -640,7 +640,7 @@
 										{:then}
 											<!-- Remove button. `min-h-11 min-w-11` hält das 44-px-Touch-Target
 											     (design-system.md); der Button ist absolut positioniert und
-											     kann das Datei-Grid in Schritt 3 deshalb nicht umbrechen.
+											     kann das Datei-Grid in Schritt 2 deshalb nicht umbrechen.
 											     `btn-error:hover` war eine tote Klasse — diese Schreibweise
 											     erzeugt Tailwind nicht (Variante wäre `hover:…`). -->
 											<button
@@ -973,7 +973,7 @@
 
 		     `title` rechnet mit `ownedMediaFiles` wie das Datei-Limit oben: Über den
 		     ganzen Store gezählt hieß die Fläche im Positions-Schritt „Foto
-		     ersetzen", sobald irgendwo ein Medium aus Schritt 3 lag — auch wenn
+		     ersetzen", sobald irgendwo ein Medium aus Schritt 2 lag — auch wenn
 		     dieser Schritt gar kein Foto hat. Das trifft nicht nur die Beschriftung,
 		     sondern über `zoneTriggerAttributes` auch den zugänglichen Namen der
 		     Fläche (WCAG 4.1.2). -->

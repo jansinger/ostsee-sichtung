@@ -33,7 +33,7 @@ export interface PositionCapableFile {
  *
  * **Nur Dateien des Positions-Schritts zählen.** `mediaStore` wird einmal pro
  * Formular angelegt (Form.svelte:40) und von allen Schritten geteilt; ohne diese
- * Eingrenzung entschieden die Fotos aus Schritt 3 (Medien) darüber mit, was das
+ * Eingrenzung entschieden die Fotos aus Schritt 2 (Medien) darüber mit, was das
  * Panel über „dieses Foto" behauptet — bis hin zur Meldung „In diesem Foto sind
  * keine GPS-Daten gespeichert", obwohl in Schritt 1 gar kein Foto liegt.
  *

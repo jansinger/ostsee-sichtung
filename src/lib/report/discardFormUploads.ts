@@ -37,7 +37,7 @@ export interface DiscardFormUploadsOptions {
  *
  * **Der Store wird ganz geleert, nicht gefiltert.** Anders als `handleClear` in
  * `DropzoneEnhanced` (PR #716), das sich auf `ownedMediaFiles` beschränkt, weil
- * ein Klick in Schritt 1 nicht die Medien aus Schritt 3 mitnehmen darf: Der
+ * ein Klick in Schritt 1 nicht die Medien aus Schritt 2 mitnehmen darf: Der
  * Reset verwirft ausdrücklich alle Schritte. Ohne das Leeren blieben die
  * Vorschaubilder der gerade gelöschten Dateien stehen — `mediaStore` hängt an
  * `Form.svelte` und überlebt `updateInitialValues`.
