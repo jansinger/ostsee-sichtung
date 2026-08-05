@@ -19,7 +19,7 @@
 		writeReportKind,
 		type ReportKind
 	} from '$lib/report/reportKind';
-	import { loadFromStorage, STORAGE_KEYS } from '$lib/storage/localStorage';
+	import { loadFromStorage, saveToStorage, STORAGE_KEYS } from '$lib/storage/localStorage';
 	import type { SightingFormValues } from '$lib/types/Form';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 
@@ -73,14 +73,33 @@
 	 * keinen History-Eintrag dafür, und im meeresmuseum.de-iframe navigierte
 	 * `back()` die Elternseite weg statt nur den Zweig zurückzusetzen.
 	 *
-	 * `clearReportKind()` räumt den persistierten Zweig mit auf — sonst würde
-	 * ein Reload auf der frisch gezeigten Auswahlseite über
-	 * `resolveReportKind`s `stored`-Zweig sofort in den alten Zweig zurückfallen,
-	 * noch bevor eine neue Auswahl getroffen wurde.
+	 * `resolveReportKind` hat DREI Quellen, nicht zwei: Query-Parameter,
+	 * gespeicherter Zweig — UND `isDead` aus den persistierten Formulardaten
+	 * (Migrationspfad für den Altbestand ohne `reportKind`). `clearReportKind()`
+	 * räumt nur die zweite Quelle. `ModernReportForm` schreibt `isDead` aber
+	 * bereits beim bloßen Öffnen des Formulars nach `FORM_DATA` (siehe dessen
+	 * `$effect`, das `$form` verfolgt) — ohne die dritte Quelle ebenfalls zu
+	 * neutralisieren, fiele ein Reload auf der frisch gezeigten Auswahlseite
+	 * sofort in den verlassenen Zweig zurück, noch bevor eine neue Auswahl
+	 * getroffen wurde. Neutralisiert wird deshalb NUR `isDead` selbst (auf
+	 * `null`, damit `resolveReportKind`s `savedIsDead` wieder `null` ergibt,
+	 * statt `false`/`true` zu bleiben) — die übrigen Formulardaten (Position,
+	 * Datum, Medien, Kontakt) bleiben unangetastet, sie sind der aufwendigste
+	 * Teil der Eingabe. Das Leeren der zweigspezifischen Felder (z. B.
+	 * `deadCondition`) ist Task 8.
 	 */
 	function changeKind() {
 		reportKind = null;
 		clearReportKind();
+		if (browser) {
+			const savedFormData = loadFromStorage<Record<string, unknown> | null>(
+				STORAGE_KEYS.FORM_DATA,
+				null
+			);
+			if (savedFormData) {
+				saveToStorage(STORAGE_KEYS.FORM_DATA, { ...savedFormData, isDead: null });
+			}
+		}
 		// Bestehende Query-Parameter bleiben erhalten — nur `meldung` entfällt.
 		// Gleiches Muster wie in `choose()`.
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity

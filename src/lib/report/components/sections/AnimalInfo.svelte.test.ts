@@ -36,6 +36,17 @@ function fieldOrder(): string[] {
 }
 
 /**
+ * Modul-Ebene statt lokal in einem `describe`, damit sowohl der Admin- als
+ * auch der Melder-Pfad (Review-Befund 5) denselben Helfer nutzen — keine
+ * zweite Kopie pflegen.
+ */
+function speciesLabel(): string {
+	const field = document.querySelector<HTMLElement>('[data-field="species"]');
+	if (!field) throw new Error('Feld "species" nicht im DOM');
+	return field.querySelector('label')?.textContent ?? '';
+}
+
+/**
  * Modul-Ebene statt lokal in einem `describe`, damit sowohl die
  * adminMode-Weiterreichungs-Tests unten als auch die Totfund-Schalter-Tests
  * (PR 2, Teil c) denselben Wrapper nutzen — keine zweite Kopie pflegen.
@@ -104,12 +115,6 @@ describe('sections/AnimalInfo — Totfund prominent platziert (PR 2, Teil a)', (
  * den PR 4 für den Bootsantrieb gebaut hat), das Schema bleibt unverändert.
  */
 describe('sections/AnimalInfo — Artfrage folgt dem Totfund-Schalter', () => {
-	function speciesLabel(): string {
-		const field = document.querySelector<HTMLElement>('[data-field="species"]');
-		if (!field) throw new Error('Feld "species" nicht im DOM');
-		return field.querySelector('label')?.textContent ?? '';
-	}
-
 	it('fragt bei einer Sichtung, was gesehen wurde', () => {
 		renderAnimalInfo({ isDead: false });
 
@@ -200,6 +205,21 @@ describe('AnimalInfo — Rückmeldung normalisiert isDead (Task 7, Korrektur 1)'
 });
 
 /**
+ * Review-Befund 3 (Task 7): `{#if $form.isDead}` unter der Rückmeldung steuerte
+ * den Totfund-Detailblock (`DeadAnimal`) weiter per rohem JS-Truthiness — drei
+ * Zeilen unter der Stelle, die für genau diesen Wert bereits `isDeadFinding`
+ * nutzt und „lebend" ausgibt. Für `isDead: '0'` widersprachen sich Rückmeldung
+ * („lebend", siehe Test oben) und Detailblock (rendert trotzdem) sichtbar.
+ */
+describe('AnimalInfo — Totfund-Detailblock folgt derselben Normalisierung (Review-Befund 3)', () => {
+	it('blendet den Totfund-Detailblock trotz truthy String "0" aus', () => {
+		renderAnimalInfo({ isDead: '0' as unknown as boolean }, false);
+
+		expect(document.querySelector('[data-testid="field-deadCondition"]')).toBeNull();
+	});
+});
+
+/**
  * Korrektur 2 (Task 7): Ein Button ohne Wirkung gehört laut Design-Regel
  * entfernt, nicht dekorativ stehen gelassen — deshalb muss „Ändern" das
  * Callback tatsächlich auslösen. Dies ist der letzte Hop der Durchreich-Kette
@@ -218,5 +238,63 @@ describe('AnimalInfo — „Ändern" ruft das Callback auf', () => {
 		await page.getByRole('button', { name: /ändern/i }).click();
 
 		expect(onchangekind).toHaveBeenCalledOnce();
+	});
+});
+
+/**
+ * Review-Befund 5 (Task 7): Der Wrapper `renderAnimalInfo` rendert per Default
+ * mit `adminMode={true}`, seit der Totfund-Schalter dort das echte
+ * Bedienelement bleibt (siehe Kommentar an `renderAnimalInfo` oben). Die
+ * Gruppen „Totfund prominent platziert" und „Artfrage folgt dem
+ * Totfund-Schalter" testen seither ausschließlich den Admin-Pfad — für das
+ * Meldeformular (`adminMode=false`, der fachlich gemeinte Weg) deckte danach
+ * kein Test mehr ab, dass species/totalCount/juvenileCount in der richtigen
+ * Reihenfolge stehen und der Totfund-Detailblock progressiv erscheint.
+ *
+ * Im Meldeformular gibt es keinen `isDead`-Schalter mehr, an dem sich „davor"/
+ * „danach" festmachen ließe — der Detailblock ist dort schlicht das erste
+ * Feld der Karte, wenn er erscheint (unmittelbar unter der textlichen
+ * Rückmeldung, die kein `data-field` trägt).
+ */
+describe('sections/AnimalInfo — Feldreihenfolge und progressive Anzeige im Meldeformular (Review-Befund 5)', () => {
+	it('rendert den Totfund-Detailblock bei einem Totfund als erstes Feld', () => {
+		renderAnimalInfo({ isDead: true, deadCondition: 1 }, false);
+
+		expect(fieldOrder()[0]).toBe('deadCondition');
+	});
+
+	it('blendet den Totfund-Detailblock bei einer Sichtung komplett aus', () => {
+		renderAnimalInfo({ isDead: false }, false);
+
+		const order = fieldOrder();
+		expect(order).not.toContain('deadCondition');
+		expect(order[0]).toBe('species');
+	});
+
+	it('lässt species und die Zähler-Felder in ihrer bisherigen Reihenfolge', () => {
+		renderAnimalInfo({ isDead: false }, false);
+
+		const order = fieldOrder();
+		expect(order.indexOf('species')).toBeLessThan(order.indexOf('totalCount'));
+		expect(order.indexOf('totalCount')).toBeLessThan(order.indexOf('juvenileCount'));
+	});
+});
+
+/**
+ * Review-Befund 5, Fortsetzung: dieselbe Lücke für die Artfrage — im
+ * Admin-Pfad bereits durch „Artfrage folgt dem Totfund-Schalter" oben
+ * abgedeckt, im Meldeformular seit Task 7 ungetestet.
+ */
+describe('sections/AnimalInfo — Artfrage im Meldeformular (Review-Befund 5)', () => {
+	it('fragt bei einer Sichtung, was gesehen wurde', () => {
+		renderAnimalInfo({ isDead: false }, false);
+
+		expect(speciesLabel()).toContain('Welche Tierart haben Sie gesehen?');
+	});
+
+	it('fragt beim Totfund, was gefunden wurde', () => {
+		renderAnimalInfo({ isDead: true, deadCondition: 1 }, false);
+
+		expect(speciesLabel()).toContain('Welche Tierart haben Sie gefunden?');
 	});
 });

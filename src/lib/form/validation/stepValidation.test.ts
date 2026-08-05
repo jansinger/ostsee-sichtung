@@ -24,7 +24,12 @@ vi.mock('$lib/report/formConfig', () => {
 		{
 			id: 'sighting-details',
 			title: 'Sichtungsdetails',
-			fields: ['species', 'totalCount', 'distance']
+			// `deadCondition` steht hier absichtlich neben `species`/`totalCount`/
+			// `distance`, OHNE `isDead` — spiegelt den echten `formConfig.ts`-Stand
+			// nach Task 7: `isDead` ist aus der Feldliste des Schritts entfernt,
+			// `deadCondition` hängt aber weiterhin per `.when('isDead', …)` daran.
+			// Review-Befund 4 prüft genau diese Kombination.
+			fields: ['species', 'totalCount', 'distance', 'deadCondition']
 		},
 		{
 			id: 'observations',
@@ -310,6 +315,42 @@ describe('validateStep', () => {
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toEqual({});
 		});
+	});
+});
+
+/**
+ * Review-Befund 4 (Task 7): `deadCondition` hängt im Schema per
+ * `.when('isDead', …)` an einem Feld, das seit Task 7 NICHT mehr in der
+ * gepickten Feldliste von Schritt 2 steht (`isDead` wird auf der
+ * Einstiegsseite beantwortet, nicht mehr auf Schritt 2 — siehe
+ * `formConfig.ts`). `isStepValid`/`validateStep` übergeben `sightingSchema
+ * .pick(validateFields)` trotzdem die VOLLEN `formData` zur Validierung, nicht
+ * nur die gepickten Felder — die Annahme ist, dass Yup den Sibling-Ref
+ * `isDead` aus diesem vollen Wertobjekt auflöst, obwohl `isDead` selbst nicht
+ * Teil des gepickten (Teil-)Schemas ist. Ungetestet war das plausibel, aber
+ * unbelegt; dieser Block nagelt die Annahme fest.
+ */
+describe('stepValidation — Totfund ohne Zustand macht Schritt 2 ungültig (Review-Befund 4)', () => {
+	it('isStepValid: Schritt 2 ist ungültig, wenn isDead gesetzt ist, aber deadCondition fehlt', () => {
+		expect(isStepValid(1, { ...validSightingData, isDead: true })).toBe(false);
+	});
+
+	it('validateStep: Schritt 2 meldet den fehlenden deadCondition-Fehler', () => {
+		const result = validateStep(1, { ...validSightingData, isDead: true });
+
+		expect(result.isValid).toBe(false);
+		expect(result.errors).toHaveProperty('deadCondition');
+	});
+
+	it('isStepValid: Schritt 2 bleibt gültig, wenn isDead gesetzt ist und deadCondition vorliegt', () => {
+		expect(isStepValid(1, { ...validSightingData, isDead: true, deadCondition: 1 })).toBe(true);
+	});
+
+	it('isStepValid: deadCondition bleibt ohne Totfund weiterhin unnötig', () => {
+		// Gegenprobe: Ohne `isDead` bleibt Schritt 2 gültig, obwohl `deadCondition`
+		// jetzt Teil der gepickten Feldliste ist — der `.when()`-Zweig greift nur
+		// bei `isDead === true`.
+		expect(isStepValid(1, validSightingData)).toBe(true);
 	});
 });
 

@@ -64,7 +64,7 @@
 			</strong>
 			<button
 				type="button"
-				class="btn btn-ghost btn-sm"
+				class="btn btn-outline btn-sm"
 				onclick={onchangekind}
 				aria-label="Art der Meldung ändern"
 			>
@@ -74,8 +74,13 @@
 	{/if}
 
 	<!-- Dead Animal Additional Fields — unmittelbar unter dem Schalter, nicht
-	     mehr am Kartenende. -->
-	{#if $form.isDead}
+	     mehr am Kartenende. isDeadFinding statt eines rohen Booleans, aus
+	     demselben Grund wie an der Rückmeldung drei Zeilen darüber: `isDead`
+	     kommt hier über dieselben drei Quellen an (Storage-String, DB-Zahl,
+	     echter Boolean) — ein roher Ternär (`$form.isDead`) zeigte den Block
+	     bei einem falsy-wirkenden String wie '0' trotzdem, während die
+	     Rückmeldung darüber schon korrekt „lebend" auswies. -->
+	{#if isDeadFinding($form.isDead)}
 		<DeadAnimal {adminMode} />
 	{/if}
 
