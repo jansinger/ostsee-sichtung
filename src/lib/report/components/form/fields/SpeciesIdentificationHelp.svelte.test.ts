@@ -78,6 +78,64 @@ describe('SpeciesIdentificationHelp', () => {
 	});
 
 	/**
+	 * WCAG 2.1 4.1.2: Ein modaler Dialog braucht einen zugänglichen Namen, sonst
+	 * meldet der Screenreader beim Öffnen nur „Dialog". Der Name ist hier der
+	 * Bildtitel — er steht bereits als Überschrift im Dialog und wird per
+	 * `aria-labelledby` referenziert, statt ihn als `aria-label` zu doppeln.
+	 */
+	describe('Bild-Modal', () => {
+		function imageDialog(): HTMLDialogElement {
+			const element = document.querySelector<HTMLDialogElement>('dialog.modal');
+			if (!element) throw new Error('Bild-Modal nicht im DOM');
+			return element;
+		}
+
+		function firstImageTrigger(): HTMLButtonElement {
+			const element = document.querySelector<HTMLButtonElement>(
+				'button[aria-label$="in Originalgröße anzeigen"]'
+			);
+			if (!element) throw new Error('Kein Bild-Auslöser im DOM');
+			return element;
+		}
+
+		it('benennt den geöffneten Dialog über seine Überschrift', async () => {
+			render(SpeciesIdentificationHelp, { variant: 'page' });
+
+			const trigger = firstImageTrigger();
+			trigger.click();
+			// Die Überschrift hängt an `modalImageSrc` und entsteht erst mit dem
+			// nächsten Render — direkt nach dem Klick ist der Dialog noch leer.
+			await new Promise((resolve) => setTimeout(resolve, 0));
+
+			const dialog = imageDialog();
+			const labelId = dialog.getAttribute('aria-labelledby');
+			expect(labelId).toBeTruthy();
+
+			const heading = dialog.querySelector(`#${CSS.escape(labelId as string)}`);
+			expect(heading).not.toBeNull();
+			// Der Auslöser trägt denselben Bildtitel („<alt> in Originalgröße
+			// anzeigen"): Name des Dialogs und Name des Auslösers gehören zusammen.
+			expect(trigger.getAttribute('aria-label')).toContain(heading?.textContent?.trim());
+		});
+
+		it('benennt zwei gleichzeitige Instanzen getrennt', () => {
+			// Die Hilfe steht im Formular am Tierart-Feld und zusätzlich als
+			// eigenständige Seite. Eine feste ID wäre im DOM doppelt und machte
+			// `aria-labelledby` unbrauchbar.
+			render(SpeciesIdentificationHelp, { variant: 'page' });
+			render(SpeciesIdentificationHelp, { variant: 'page' });
+
+			const labels = Array.from(document.querySelectorAll<HTMLDialogElement>('dialog.modal')).map(
+				(element) => element.getAttribute('aria-labelledby')
+			);
+
+			expect(labels).toHaveLength(2);
+			expect(labels[0]).toBeTruthy();
+			expect(new Set(labels).size).toBe(2);
+		});
+	});
+
+	/**
 	 * Die zwölf Arten bleiben in beiden Varianten zugeklappt: aufgeklappt wären es
 	 * zwölf Steckbriefe mit je ein bis zwei Fotos auf einer Seite.
 	 */

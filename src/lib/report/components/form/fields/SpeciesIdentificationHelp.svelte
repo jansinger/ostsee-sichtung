@@ -79,9 +79,18 @@
 	const styles = $derived(isPage ? PAGE_STYLE : INLINE_STYLE);
 
 	// Die Komponente wird mehrfach gerendert (Tierart-Feld und generisches
-	// Hilfe-Panel). Eine feste ID wäre im DOM doppelt und würde aria-controls
-	// unbrauchbar machen.
-	const helpContentId = $props.id();
+	// Hilfe-Panel). Feste IDs wären im DOM doppelt und würden `aria-controls` und
+	// `aria-labelledby` unbrauchbar machen.
+	//
+	// `$props.id()` darf pro Komponente nur EINMAL aufgerufen werden (Svelte:
+	// `props_duplicate`) — der Rückgabewert ist das Instanz-Präfix, aus dem alle
+	// weiteren IDs abgeleitet werden.
+	const uid = $props.id();
+	const helpContentId = `${uid}-content`;
+	// WCAG 2.1 4.1.2: Ohne Namen meldet der Screenreader das Bild-Modal nur als
+	// „Dialog". Den Namen trägt die Überschrift im Dialog, nicht ein zweiter,
+	// eigenständig alternder `aria-label`-Text.
+	const modalTitleId = `${uid}-modal-title`;
 
 	// Auf der eigenen Seite gibt es nichts aufzuklappen — der Inhalt IST die Seite.
 	let isExpanded = $state(false);
@@ -480,13 +489,18 @@
 </div>
 
 <!-- Image Modal für Vollbildansicht -->
-<dialog bind:this={modalElement} class="modal" onclose={handleDialogClose}>
+<dialog
+	bind:this={modalElement}
+	class="modal"
+	aria-labelledby={modalTitleId}
+	onclose={handleDialogClose}
+>
 	<div class="modal-box w-11/12 max-w-5xl p-0">
 		{#if modalImageSrc}
 			<div class="relative">
 				<!-- Modal Header -->
 				<div class="bg-base-200 flex items-center justify-between p-4">
-					<h3 class="text-base-content text-lg font-bold">{modalImageAlt}</h3>
+					<h3 id={modalTitleId} class="text-base-content text-lg font-bold">{modalImageAlt}</h3>
 					<button
 						type="button"
 						class="btn btn-circle btn-ghost btn-sm"
