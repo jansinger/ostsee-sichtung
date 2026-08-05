@@ -296,14 +296,14 @@
 		</summary>
 		<div class="collapse-content">
 			<!-- `data-testid="photo-position-card"` bleibt: `form-position-photo.spec.ts`
-			     grenzt darüber den File-Input gegen die Medien-Dropzone aus Schritt 3
+			     grenzt darüber den File-Input gegen die Medien-Dropzone aus Schritt 2
 			     ab. Die Hero-Optik (`border-primary bg-primary/5`) ist dagegen weg —
 			     der Foto-Weg ist nicht mehr die Hauptaktion. -->
 			<div class="text-base-content" data-testid="photo-position-card">
 				<p class="text-base-content/70 mb-3 text-sm">
 					Wenn Ihr Foto GPS-Daten enthält, übernehmen wir daraus Position, Datum und Uhrzeit. Das
 					Bild dient hier nur der Positionsbestimmung — weitere Fotos und Videos können Sie in
-					Schritt 3 hochladen.
+					Schritt 2 hochladen.
 				</p>
 
 				{#if gpsPhotoConfig}
@@ -313,9 +313,11 @@
 
 					     `compact` + leerer `additionalText`: Die Beschriftung der Disclosure
 					     und der Satz darüber sagen bereits, worum es geht und dass GPS
-					     ausgelesen wird. Der Dropzone-Titel „Foto hochladen" und der
-					     Default-Zusatz „GPS-Daten werden beim Upload verarbeitet" waren
-					     die dritte und vierte Formulierung derselben Aussage. -->
+					     ausgelesen wird — ein Zusatz an der Dropzone wäre die dritte
+					     Formulierung derselben Aussage. Bleibt explizit stehen, obwohl der
+					     Default seit dem 2026-08-04 ebenfalls leer ist: Diese Stelle ist die
+					     einzige, die GPS wirklich übernimmt, und soll ihren Text selbst
+					     bestimmen statt ihn von einem Default zu erben. -->
 					<DropzoneEnhanced
 						{referenceId}
 						maxFiles={1}

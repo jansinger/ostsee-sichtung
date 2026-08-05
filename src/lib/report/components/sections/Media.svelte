@@ -104,7 +104,21 @@
 		</p>
 		<ul class="list-inside list-disc space-y-1 text-xs">
 			<li><strong>Artbestimmung:</strong> Auch unscharfe Aufnahmen können helfen</li>
-			<li><strong>GPS-Daten:</strong> Automatische Positionserkennung aus Fotos</li>
+			<!-- Bis zum 2026-08-04 stand hier „Automatische Positionserkennung aus
+			     Fotos". Das löst dieser Schritt nicht ein: Die Dropzone unten läuft mit
+			     `enableGPSExtraction={false}`, und `applyExifPosition` hängt in
+			     `DropzoneEnhanced` am selben Wächter — die Positionsangabe aus Schritt 1
+			     bleibt also unberührt. Ausgelesen und gespeichert werden die Metadaten
+			     trotzdem (client-seitig für die Anzeige, serverseitig nach
+			     `sichtungen_dateien.exif_daten`), und genau das sagt der Satz jetzt.
+
+			     Der zweite Halbsatz ist kein Beiwerk: Ohne ihn liest sich der erste als
+			     Ankündigung, dass ein beliebiges der zehn Fotos die eigene Eingabe
+			     überschreibt. -->
+			<li>
+				<strong>Metadaten:</strong> GPS-Position und Aufnahmezeit aus dem Foto helfen bei der Einordnung
+				— Ihre Angaben aus Schritt 1 bleiben davon unberührt
+			</li>
 			<li>
 				<strong>Formate:</strong>
 				{formatDescription} ({maxSizeDescription})
