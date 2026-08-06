@@ -9,9 +9,13 @@ import Media from './Media.svelte';
  * Zeitstempel würde die Bearbeitungszeit tragen und damit eine Zustimmung
  * behaupten, die nie stattgefunden hat.
  *
- * Im Admin-Formular bleibt das Feld deshalb sichtbar (der Zustand ist für die
- * Sachbearbeitung relevant), aber gesperrt. Im öffentlichen Formular muss es
- * bedienbar bleiben — sonst kann niemand mehr einwilligen.
+ * Im Admin-Formular bleibt das Feld deshalb HIER sichtbar (der Zustand ist für
+ * die Sachbearbeitung relevant), aber gesperrt. Im öffentlichen Formular
+ * rendert diese Komponente das Feld seit Task 14 (2026-08-05) NICHT mehr — es
+ * steht dort auf Schritt 4 bei den übrigen Einwilligungen
+ * (`steps/Step4Contact.svelte.test.ts` deckt die Bedienbarkeit dort ab), weil
+ * die Admin-Maske `Step4Contact.svelte` nicht einbindet und das Feld sonst aus
+ * ihr verschwände.
  */
 function renderMedia(props: { adminMode?: boolean } = {}): void {
 	renderWithFormContext(Media, { props });
@@ -24,10 +28,10 @@ function consentInput(): HTMLInputElement {
 }
 
 describe('Media — Einwilligung zur Veröffentlichung', () => {
-	it('ist im öffentlichen Formular bedienbar', () => {
+	it('rendert das Feld im öffentlichen Formular nicht mehr — es steht seit Task 14 auf Schritt 4', () => {
 		renderMedia();
 
-		expect(consentInput().disabled).toBe(false);
+		expect(document.querySelector('[data-testid="field-mediaConsent"]')).toBeNull();
 	});
 
 	it('ist im Admin-Formular gesperrt', () => {
@@ -92,23 +96,27 @@ describe('Media — Einleitungstext nach der Fassung des Museums', () => {
 	 * „Veröffentlichung" allein: Das steht bereits im Schema-Label von
 	 * `mediaConsent` („Veröffentlichung meiner Aufnahmen"), ein Test darauf wäre
 	 * auch ohne den neuen Absatz grün.
+	 *
+	 * Bis Task 14 (2026-08-05) verwies der Satz mit „Bitte wählen Sie unten
+	 * aus …" auf das Feld direkt darunter. Die Einwilligung steht seither auf
+	 * Schritt 4 — der Verweis musste mitziehen, sonst würde auf eine Auswahl
+	 * verwiesen, die hier gar nicht mehr steht.
 	 */
-	it('verweist auf die Auswahl zur Veröffentlichung darunter', () => {
+	it('verweist auf die Kontaktdaten, wo die Veröffentlichung entschieden wird', () => {
 		renderMedia();
 
-		expect(document.body.textContent).toMatch(/Bitte wählen Sie unten aus/i);
+		expect(document.body.textContent).toMatch(/fragen wir bei Ihren Kontaktdaten/i);
 	});
 
 	/**
-	 * Der Absatz gilt nur im Meldeformular. In der Admin-Maske fordert
-	 * „Bitte wählen Sie unten aus …" zu etwas auf, das direkt darunter gesperrt
-	 * ist — und widerspricht damit dem Hinweis, dass nur die meldende Person
-	 * diese Einwilligung erteilen kann.
+	 * Der Absatz gilt nur im Meldeformular. In der Admin-Maske hat der Verweis
+	 * auf Schritt 4 keinen Sinn — die Admin-Maske kennt keine Schritte, und das
+	 * Feld bleibt dort ohnehin bei der Dropzone stehen (gesperrt).
 	 */
-	it('fordert den Admin nicht zu einer Auswahl auf, die dort gesperrt ist', () => {
+	it('zeigt den Verweis auf die Kontaktdaten nicht im Admin-Formular', () => {
 		renderMedia({ adminMode: true });
 
-		expect(document.body.textContent).not.toMatch(/Bitte wählen Sie unten aus/i);
+		expect(document.body.textContent).not.toMatch(/fragen wir bei Ihren Kontaktdaten/i);
 	});
 
 	/**

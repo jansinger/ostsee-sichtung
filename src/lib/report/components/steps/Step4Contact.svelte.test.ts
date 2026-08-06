@@ -48,3 +48,25 @@ describe('Step4Contact — Einwilligung zum Schiffsnamen entfällt bei Land', ()
 		expect(field('nameConsent')).not.toBeNull();
 	});
 });
+
+/**
+ * Task 14: `mediaConsent` steht seit dem 2026-08-05 hier bei den übrigen
+ * Einwilligungen, nicht mehr bei der Dropzone auf Schritt 2 —
+ * `sections/Media.svelte.test.ts` deckt ab, dass es dort im öffentlichen
+ * Formular nicht mehr rendert. Anders als `shipNameConsent` hängt es hier an
+ * keiner Bedingung; das Ausblenden ohne vorliegende Aufnahme ist Task 15.
+ */
+describe('Step4Contact — Medien-Einwilligung bei den übrigen Einwilligungen (Task 14)', () => {
+	it('rendert mediaConsent', () => {
+		renderStep4();
+
+		expect(field('mediaConsent')).not.toBeNull();
+	});
+
+	it('rendert mediaConsent bedienbar — anders als in der Admin-Maske ist hier nichts gesperrt', () => {
+		renderStep4();
+
+		const input = document.querySelector<HTMLInputElement>('[data-testid="field-mediaConsent"]');
+		expect(input?.disabled).toBe(false);
+	});
+});

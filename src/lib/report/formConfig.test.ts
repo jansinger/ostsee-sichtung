@@ -165,14 +165,19 @@ describe('formStepsConfig — boatDriveText nur in der Admin-Maske (PR 4)', () =
 });
 
 /**
- * Der Medien-Upload steht seit dem 2026-08-04 auf Schritt 2 (Wunsch des
- * Museums: „Foto hochladen als erste Abfrage noch vor Tierinformation").
+ * Der Medien-UPLOAD (die Datei-Felder) steht seit dem 2026-08-04 auf Schritt 2
+ * (Wunsch des Museums: „Foto hochladen als erste Abfrage noch vor
+ * Tierinformation"). Die Medien-EINWILLIGUNG (`mediaConsent`) ist seit Task 14
+ * (2026-08-05) davon getrennt und steht auf Schritt 4 bei den übrigen
+ * Einwilligungen — eigene Tests weiter unten
+ * ("Einwilligungen stehen zusammen auf Schritt 4").
  *
- * Der Grund wiegt schwerer als die Reihenfolge: Schritt 3 trägt ganz oben einen
- * prominenten „Schritt überspringen"-Knopf, der direkt zu den Kontaktdaten
- * springt — der Upload stand darunter. Wer den Knopf nutzte, bekam die
- * Foto-Frage nie zu sehen, obwohl Aufnahmen die wertvollste Einzelangabe der
- * Meldung sind. Schritt 2 ist Pflichtschritt und nicht überspringbar.
+ * Der Grund für die Position der Datei-Felder wiegt schwerer als die
+ * Reihenfolge: Schritt 3 trägt ganz oben einen prominenten „Schritt
+ * überspringen"-Knopf, der direkt zu den Kontaktdaten springt — der Upload
+ * stand darunter. Wer den Knopf nutzte, bekam die Foto-Frage nie zu sehen,
+ * obwohl Aufnahmen die wertvollste Einzelangabe der Meldung sind. Schritt 2
+ * ist Pflichtschritt und nicht überspringbar.
  *
  * Geprüft wird die Zuordnung in `formStepsConfig`, nicht nur das Markup: An ihr
  * hängen Schritt-Validierung (`validateStep`) und Fehler-Navigation
@@ -183,28 +188,22 @@ describe('formStepsConfig — Medien-Upload auf Schritt 2', () => {
 	const sightingDetailsStep = formStepsConfig.find((step) => step.id === 'sighting-details');
 	const observationsStep = formStepsConfig.find((step) => step.id === 'observations');
 
-	it.each(['mediaFile', 'mediaUpload', 'mediaConsent'])(
-		'führt %s im Schritt "sighting-details"',
-		(name) => {
-			expect(sightingDetailsStep?.fields).toContain(name);
-		}
-	);
+	it.each(['mediaFile', 'mediaUpload'])('führt %s im Schritt "sighting-details"', (name) => {
+		expect(sightingDetailsStep?.fields).toContain(name);
+	});
 
-	it.each(['mediaFile', 'mediaUpload', 'mediaConsent'])(
-		'führt %s nicht mehr im Schritt "observations"',
-		(name) => {
-			expect(observationsStep?.fields).not.toContain(name);
-		}
-	);
+	it.each(['mediaFile', 'mediaUpload'])('führt %s nicht mehr im Schritt "observations"', (name) => {
+		expect(observationsStep?.fields).not.toContain(name);
+	});
 
 	// Der Upload steht VOR den Tierangaben: Wer unsicher ist, welche Art er
 	// gesehen hat, soll das Bild hochladen können, statt zu raten. Die
 	// Reihenfolge im Markup prüft `Step2SightingDetails.svelte.test.ts`; hier
 	// zählt, dass die Config dieselbe Geschichte erzählt — sie bestimmt die
 	// Reihenfolge, in der `findStepForErrors` Felder abläuft.
-	it('listet die Medien-Felder vor species', () => {
+	it('listet die Medien-Dateifelder vor species', () => {
 		const fields = sightingDetailsStep?.fields ?? [];
-		const mediaIndex = fields.indexOf('mediaConsent');
+		const mediaIndex = fields.indexOf('mediaFile');
 		const speciesIndex = fields.indexOf('species');
 
 		// Beide Fundstellen ausdrücklich absichern: `indexOf` liefert für ein
@@ -213,6 +212,41 @@ describe('formStepsConfig — Medien-Upload auf Schritt 2', () => {
 		expect(mediaIndex).toBeGreaterThanOrEqual(0);
 		expect(speciesIndex).toBeGreaterThanOrEqual(0);
 		expect(mediaIndex).toBeLessThan(speciesIndex);
+	});
+});
+
+/**
+ * Task 14: `mediaConsent` steht seit dem 2026-08-05 nicht mehr bei der
+ * Dropzone auf Schritt 2, sondern auf Schritt 4 bei den übrigen drei
+ * Nachweis-Einwilligungen (`nameConsent`, `shipNameConsent`,
+ * `privacyConsent`). Alle vier tragen Nachweisspalten (`…_am`/`…_version`
+ * in `schema.ts`) und sollen an einer Stelle im Formular stehen.
+ */
+describe('Einwilligungen stehen zusammen auf Schritt 4', () => {
+	it('führt mediaConsent nicht mehr bei den Tierangaben', () => {
+		const steps = getFormSteps({ isDead: false });
+		const schrittZwei = steps.find((s) => s.id === 'sighting-details');
+		expect(schrittZwei?.fields).not.toContain('mediaConsent');
+	});
+
+	it('führt mediaConsent bei den Kontaktdaten', () => {
+		const steps = getFormSteps({ isDead: false });
+		const schrittVier = steps.find((s) => s.id === 'contact');
+		expect(schrittVier?.fields).toContain('mediaConsent');
+	});
+
+	it('lässt die Datei-Felder auf Schritt 2 stehen', () => {
+		// Nur die Einwilligung zieht um. Der Upload bleibt, wo das Museum ihn
+		// am 2026-08-04 haben wollte — vor den Tierangaben.
+		const schrittZwei = getFormSteps({ isDead: false }).find((s) => s.id === 'sighting-details');
+		expect(schrittZwei?.fields).toEqual(expect.arrayContaining(['mediaFile', 'mediaUpload']));
+	});
+
+	it('hält alle vier Nachweis-Einwilligungen auf demselben Schritt', () => {
+		const schrittVier = getFormSteps({ isDead: false }).find((s) => s.id === 'contact');
+		expect(schrittVier?.fields).toEqual(
+			expect.arrayContaining(['nameConsent', 'shipNameConsent', 'mediaConsent', 'privacyConsent'])
+		);
 	});
 });
 

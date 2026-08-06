@@ -179,6 +179,14 @@
 				{#if !isFromLand($form.sightingFrom)}
 					<FormField name="shipNameConsent" />
 				{/if}
+				<!-- `mediaConsent` steht seit dem 2026-08-05 hier bei den übrigen
+				     Einwilligungen, nicht mehr bei der Dropzone auf Schritt 2
+				     (`sections/Media.svelte`). Alle vier Felder mit Nachweisspalten
+				     (`…_am`/`…_version` in `schema.ts`) stehen damit an einer Stelle;
+				     die Datei-Felder selbst bleiben auf Schritt 2. In der Admin-Maske
+				     bleibt das Feld dagegen bei der Dropzone stehen — sie bindet diese
+				     Komponente hier nicht ein. -->
+				<FormField name="mediaConsent" />
 			</div>
 		</div>
 

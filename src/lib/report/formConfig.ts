@@ -76,7 +76,7 @@ export const formStepsConfig: FormStep[] = [
 		title: 'Angaben zum Tier',
 		description: 'Was haben Sie genau beobachtet?',
 		fields: [
-			// Die Medien-Felder stehen seit dem 2026-08-04 hier und VOR den
+			// Die Medien-DATEI-Felder stehen seit dem 2026-08-04 hier und VOR den
 			// Tierangaben (Wunsch des Museums: „Foto hochladen als erste Abfrage noch
 			// vor Tierinformation"). Der Grund wiegt schwerer als die Reihenfolge: Auf
 			// Schritt 3 stand der Upload unter dem prominenten „Schritt
@@ -88,7 +88,9 @@ export const formStepsConfig: FormStep[] = [
 			// läuft sie ab, um zum ersten fehlerhaften Feld zu springen.
 			'mediaFile',
 			'mediaUpload',
-			'mediaConsent',
+			// `mediaConsent` steht hier bewusst NICHT mehr: Es steht seit dem
+			// 2026-08-05 auf Schritt 4 bei den übrigen Einwilligungen — Begründung
+			// dort, bei der `contact`-Feldliste. Die DATEI-Felder bleiben hier.
 			'species',
 			'totalCount',
 			'juvenileCount',
@@ -137,8 +139,9 @@ export const formStepsConfig: FormStep[] = [
 			'shipName',
 			'homePort',
 			'boatType'
-			// `mediaFile`/`mediaUpload`/`mediaConsent` stehen seit dem 2026-08-04 im
-			// Schritt „sighting-details" — Begründung dort.
+			// `mediaFile`/`mediaUpload` stehen seit dem 2026-08-04 im Schritt
+			// „sighting-details" — Begründung dort. `mediaConsent` steht seit dem
+			// 2026-08-05 im Schritt „contact" — Begründung dort.
 		],
 		isOptional: true
 	},
@@ -153,6 +156,12 @@ export const formStepsConfig: FormStep[] = [
 			'phone',
 			'nameConsent',
 			'shipNameConsent',
+			// `mediaConsent` steht seit dem 2026-08-05 auf Schritt 4 bei den
+			// übrigen Einwilligungen. Alle vier Felder mit Nachweisspalten (`…_am`,
+			// `…_version` in `schema.ts`) stehen damit an einer Stelle. Die
+			// DATEI-Felder bleiben hier — der Upload gehört weiterhin vor die
+			// Tierangaben (Wunsch des Museums, 2026-08-04).
+			'mediaConsent',
 			'notes',
 			'privacyConsent',
 			'persistentDataConsent'
