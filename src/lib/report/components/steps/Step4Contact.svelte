@@ -6,7 +6,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { confirmAndClearContactData } from '$lib/report/clearContactData';
 	import { getFormContext } from '$lib/report/formContext';
-	import { isFromLand } from '$lib/report/formConfig';
+	import { hasUploadedMedia, isFromLand } from '$lib/report/formConfig';
 	import { loadUserContactData } from '$lib/storage/localStorage';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 
@@ -15,11 +15,15 @@
 	// Task 15: `mediaConsent` fragt nach der Freigabe von Aufnahmen — ohne
 	// mindestens eine abgeschlossen hochgeladene Aufnahme ist das eine Frage
 	// ohne Bezugsgegenstand (dieselbe Fehlerklasse wie `shipNameConsent` bei
-	// Land unten). Geprüft gegen `$form.uploadedFiles`, nicht gegen den
-	// client-seitigen Medien-Store: Der gehört den Dropzone-Instanzen auf
-	// Schritt 1/2 und bleibt leer, solange keine von beiden gemountet ist —
-	// bei einem Reload direkt auf diesem Schritt sonst fälschlich leer.
-	let hasMedia = $derived(($form.uploadedFiles?.length ?? 0) > 0);
+	// Land unten). `hasUploadedMedia` (formConfig.ts) ist dieselbe Funktion,
+	// die `getFormSteps` für die Validierung dieses Feldes aufruft — beide
+	// Seiten (Markup hier, Validierung dort) lesen also garantiert dasselbe
+	// Ergebnis, statt zwei eigene Bedingungen zu pflegen. Geprüft gegen
+	// `$form.uploadedFiles`, nicht gegen den client-seitigen Medien-Store: Der
+	// gehört den Dropzone-Instanzen auf Schritt 1/2 und bleibt leer, solange
+	// keine von beiden gemountet ist — bei einem Reload direkt auf diesem
+	// Schritt sonst fälschlich leer.
+	let hasMedia = $derived(hasUploadedMedia($form.uploadedFiles));
 
 	// Check if user has saved contact data
 	let hasSavedContactData = $state(false);
@@ -202,9 +206,12 @@
 				     Eine Einwilligung zur Veröffentlichung von Aufnahmen, die es nicht
 				     gibt, ist eine Frage ohne Bezugsgegenstand — dieselbe Fehlerklasse
 				     wie `shipNameConsent` oben bei einer Land-Meldung. `getFormSteps`
-				     (formConfig.ts) nimmt `mediaConsent` bereits ohne Aufnahme aus der
-				     Validierung; dieselbe Bedingung (`hasMedia`) hier, sonst bliebe
-				     das Feld sichtbar, aber unvalidiert ausgefüllt. -->
+				     (formConfig.ts) nimmt `mediaConsent` bei fehlender Aufnahme aus der
+				     Validierung — über dieselbe Funktion `hasUploadedMedia`, die auch
+				     `hasMedia` hier oben berechnet, statt einer zweiten, separat
+				     gepflegten Bedingung. Ohne diese Klammer hier bliebe das Feld
+				     sichtbar, aber unvalidiert ausgefüllt (die „halbe Miete" aus der
+				     Doku dort). -->
 				{#if hasMedia}
 					<FormField name="mediaConsent" />
 				{/if}

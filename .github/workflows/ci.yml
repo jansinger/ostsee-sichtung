@@ -546,6 +546,14 @@ jobs:
             # smoke wächst damit von 152 s auf ~178 s — weiterhin unter `form`
             # (190 s).
             e2e/form-from-land.spec.ts
+            # Task 15 (Review-Befund 2, zweite Runde): fehlte hier bisher ganz —
+            # der Vollständigkeits-Abgleich unten hätte alle drei E2E-Jobs vor dem
+            # ersten Test abbrechen lassen. Dieselbe Begründung wie bei
+            # form-from-land.spec.ts direkt darüber: inhaltlich näher an `form`
+            # (Meldeformular, Schritt 4), aber `form` bleibt der längste Shard.
+            # 2 Tests, ~10 s. smoke wächst damit von ~178 s auf ~188 s — weiterhin
+            # unter `form` (190 s).
+            e2e/media-consent-placement.spec.ts
           )
 
           # Der Rückstand von 14 Specs ist abgearbeitet: 13 davon liefen am

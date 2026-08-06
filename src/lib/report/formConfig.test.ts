@@ -2,6 +2,21 @@ import { describe, expect, it } from 'vitest';
 import type * as yup from 'yup';
 import { SightingFromEnum } from './formOptions/sightingFrom';
 import { formStepsConfig, getFormSteps, sightingSchemaFields } from './formConfig';
+import type { UploadedFileInfo } from '$lib/types';
+
+/**
+ * Ein abgeschlossen hochgeladenes File, wie es `$form.uploadedFiles`
+ * (dieselbe Größe, die `getFormSteps` seit Task 15 (Review-Befund 1, zweite
+ * Runde) direkt entgegennimmt) nach einem erfolgreichen Upload enthält.
+ */
+const UPLOADED_FILE: UploadedFileInfo = {
+	uid: 'uid-1',
+	filePath: 'ref-1/uid-1.jpg',
+	originalName: 'foto.jpg',
+	fileName: 'uid-1.jpg',
+	mimeType: 'image/jpeg',
+	size: 1234
+} as UploadedFileInfo;
 
 /**
  * Die Ortsbeschreibung im **Meldeformular** ist seit dem Wunsch des Deutschen
@@ -229,8 +244,11 @@ describe('Einwilligungen stehen zusammen auf Schritt 4', () => {
 		expect(schrittZwei?.fields).not.toContain('mediaConsent');
 	});
 
+	// Braucht eine vorliegende Aufnahme (Task 15) — sonst blendet `getFormSteps`
+	// `mediaConsent` aus, und dieser Test prüft die Position, nicht das
+	// Ausblenden selbst (das steht in „mediaConsent ohne Aufnahme" unten).
 	it('führt mediaConsent bei den Kontaktdaten', () => {
-		const steps = getFormSteps({ isDead: false });
+		const steps = getFormSteps({ isDead: false, uploadedFiles: [UPLOADED_FILE] });
 		const schrittVier = steps.find((s) => s.id === 'contact');
 		expect(schrittVier?.fields).toContain('mediaConsent');
 	});
@@ -243,7 +261,9 @@ describe('Einwilligungen stehen zusammen auf Schritt 4', () => {
 	});
 
 	it('hält alle vier Nachweis-Einwilligungen auf demselben Schritt', () => {
-		const schrittVier = getFormSteps({ isDead: false }).find((s) => s.id === 'contact');
+		const schrittVier = getFormSteps({ isDead: false, uploadedFiles: [UPLOADED_FILE] }).find(
+			(s) => s.id === 'contact'
+		);
 		expect(schrittVier?.fields).toEqual(
 			expect.arrayContaining(['nameConsent', 'shipNameConsent', 'mediaConsent', 'privacyConsent'])
 		);
@@ -254,34 +274,44 @@ describe('Einwilligungen stehen zusammen auf Schritt 4', () => {
  * Task 15: `mediaConsent` fragt nach der Freigabe von Aufnahmen. Ohne
  * mindestens eine vorliegende Aufnahme ist das eine Frage ohne
  * Bezugsgegenstand — dieselbe Fehlerklasse wie `shipNameConsent` bei einer
- * Land-Meldung (siehe „getFormSteps mit Beobachtungsort" unten). `hasMedia`
- * kommt aus dem Medien-Store (`mediaStore.mediaFiles.length > 0`,
- * `Step4Contact.svelte`), nicht aus `$form` — die Datei-Felder auf Schritt 2
- * tragen nur, OB der Melder etwas hochladen möchte, nicht ob dort schon
- * tatsächlich etwas liegt.
+ * Land-Meldung (siehe „getFormSteps mit Beobachtungsort" unten).
+ *
+ * Review-Befund 1 (zweite Runde, 2026-08-06): Eine frühere Fassung übergab
+ * dafür ein separates `hasMedia`-Flag — das keine Aufrufstelle je gesetzt
+ * hat. `stepValidation.ts` ruft `getFormSteps(formData)` mit dem echten
+ * (Partial-)Formularobjekt auf, das kein `hasMedia` kennt, nur
+ * `uploadedFiles`. Die Tests hier rufen `getFormSteps` deshalb genau in DER
+ * Form auf, in der die Validierung es tatsächlich tut: mit `uploadedFiles`
+ * im übergebenen Objekt — dieselbe Größe, die auch `$form.uploadedFiles`
+ * trägt, nicht ein zusätzliches, separat zu pflegendes Flag.
  */
 describe('mediaConsent ohne Aufnahme', () => {
 	const fieldsOf = (steps: ReturnType<typeof getFormSteps>) => steps.flatMap((s) => s.fields);
 
-	it('erscheint nicht, solange keine Aufnahme vorliegt', () => {
-		const fields = fieldsOf(getFormSteps({ isDead: false, hasMedia: false }));
+	it('erscheint nicht, solange getFormSteps mit leeren uploadedFiles aufgerufen wird — die tatsächliche Aufrufform aus stepValidation.ts', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false, uploadedFiles: [] }));
 		expect(fields).not.toContain('mediaConsent');
 	});
 
-	it('erscheint, sobald eine Aufnahme vorliegt', () => {
-		const fields = fieldsOf(getFormSteps({ isDead: false, hasMedia: true }));
+	it('erscheint, sobald uploadedFiles mindestens eine abgeschlossen hochgeladene Datei enthält', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false, uploadedFiles: [UPLOADED_FILE] }));
 		expect(fields).toContain('mediaConsent');
 	});
 
-	// `undefined` bedeutet „unbekannt", nicht „keine Aufnahme" — die Admin-Maske
-	// kennt den Medienstand nicht und ruft `getFormSteps` ohne `hasMedia` auf.
-	it('erscheint, wenn der Medienstand unbekannt ist', () => {
+	// Anders als `sightingFrom`/`isDead` gibt es hier keinen praktischen
+	// Aufrufer, der den Medienstand tatsächlich nicht kennt (Admin-Maske ruft
+	// `getFormSteps` nicht auf) — ein fehlendes `uploadedFiles` verhält sich
+	// deshalb wie eine leere Liste: kein Nachweis einer Aufnahme, Feld bleibt
+	// ausgeblendet. Genau das ist der sichere Default: Ein zukünftiger
+	// Aufrufer, der das Feld schlicht wegließe, zeigt `mediaConsent` nie
+	// versehentlich sichtbar UND unvalidiert.
+	it('bleibt ausgeblendet, wenn uploadedFiles gar nicht im übergebenen Objekt steht', () => {
 		const fields = fieldsOf(getFormSteps({ isDead: false }));
-		expect(fields).toContain('mediaConsent');
+		expect(fields).not.toContain('mediaConsent');
 	});
 
 	it('blendet ohne Aufnahme keinen anderen Consent mit aus', () => {
-		const fields = fieldsOf(getFormSteps({ isDead: false, hasMedia: false }));
+		const fields = fieldsOf(getFormSteps({ isDead: false, uploadedFiles: [] }));
 		expect(fields).toEqual(
 			expect.arrayContaining([
 				'nameConsent',
@@ -292,10 +322,11 @@ describe('mediaConsent ohne Aufnahme', () => {
 		);
 	});
 
-	it('lässt die Datei-Felder auf Schritt 2 stehen, unabhängig von hasMedia', () => {
-		// Nur die Einwilligung reagiert auf `hasMedia`. Der Upload-Einstieg selbst
-		// bleibt sichtbar — sonst könnte man nie eine erste Aufnahme hinzufügen.
-		const schrittZwei = getFormSteps({ isDead: false, hasMedia: false }).find(
+	it('lässt die Datei-Felder auf Schritt 2 stehen, unabhängig von uploadedFiles', () => {
+		// Nur die Einwilligung reagiert auf den Medienstand. Der Upload-Einstieg
+		// selbst bleibt sichtbar — sonst könnte man nie eine erste Aufnahme
+		// hinzufügen.
+		const schrittZwei = getFormSteps({ isDead: false, uploadedFiles: [] }).find(
 			(s) => s.id === 'sighting-details'
 		);
 		expect(schrittZwei?.fields).toEqual(expect.arrayContaining(['mediaFile', 'mediaUpload']));

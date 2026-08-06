@@ -183,17 +183,19 @@ export type FormStepsInput = {
 	// Datensatzes) und muss zuweisbar bleiben.
 	sightingFrom?: number | string | null | undefined;
 	/**
-	 * Ob mindestens eine Aufnahme vorliegt. Steuert `mediaConsent`: Eine
-	 * Einwilligung zur Veröffentlichung von Aufnahmen ohne Aufnahmen ist eine
-	 * Frage ohne Bezugsgegenstand — dieselbe Fehlerklasse wie
-	 * `shipNameConsent` bei einer Land-Meldung (siehe `HIDDEN_WHEN_FROM_LAND`
-	 * oben). Ohne den Riegel würde `mapFormToSighting` dafür einen datierten,
-	 * versionierten Nachweis stempeln, sobald `mediaConsent` wahr ist.
-	 *
-	 * `undefined` bedeutet „unbekannt" und zeigt das Feld: Aufrufer, die den
-	 * Medienstand nicht kennen (Admin-Maske), sollen nichts verlieren.
+	 * Dieselbe Größe, mit der `$form.uploadedFiles` im Formular geführt wird —
+	 * bewusst KEIN separates `hasMedia`-Flag. Ein früherer Versuch mit einem
+	 * eigenen Boolean-Flag war totes Beiwerk: `stepValidation.ts` ruft
+	 * `getFormSteps(formData)` mit dem echten (Partial-)Formularobjekt auf,
+	 * das kein `hasMedia` kennt — das Flag blieb zur Laufzeit immer
+	 * `undefined`, und `mediaConsent` wurde nie ausgeblendet, obwohl das
+	 * Markup (`Step4Contact.svelte`) es schon tat (Review-Befund, Task 15,
+	 * zweite Runde). Wie bei `sightingFrom` oben gilt deshalb: dasselbe
+	 * Formularfeld direkt entgegennehmen, aus dem `getFormSteps` selbst
+	 * ableitet — dann kann keine Aufrufstelle vergessen werden, ein Wert zu
+	 * setzen, den es gar nicht mehr gibt. Siehe `hasUploadedMedia` unten.
 	 */
-	hasMedia?: boolean;
+	uploadedFiles?: SightingFormData['uploadedFiles'];
 };
 
 /**
@@ -320,17 +322,44 @@ export function isFromLand(value: SightingFromValue): boolean {
 }
 
 /**
+ * Ob mindestens eine Aufnahme abgeschlossen hochgeladen wurde. Steuert
+ * `mediaConsent`: Eine Einwilligung zur Veröffentlichung von Aufnahmen ohne
+ * Aufnahmen ist eine Frage ohne Bezugsgegenstand.
+ *
+ * **Einzige Definition im Projekt**, geteilt zwischen `getFormSteps` unten,
+ * `Step4Contact.svelte` (Markup-Bedingung) und `ModernReportForm.svelte`
+ * (Reset-Effekt und Absende-Riegel) — dasselbe Muster wie `isFromLand`, das
+ * ebenfalls von Markup UND Config-Funktion aus derselben Stelle aufgerufen
+ * wird, statt die Bedingung an jeder Aufrufstelle einzeln auszuschreiben.
+ *
+ * `| undefined` explizit dabei (wie bei `FormStepsInput.sightingFrom` oben):
+ * `FormStepsInput.uploadedFiles` ist optional, und `exactOptionalPropertyTypes`
+ * lässt den Aufruf mit einem möglicherweise fehlenden Wert sonst nicht zu.
+ */
+export function hasUploadedMedia(
+	uploadedFiles: SightingFormData['uploadedFiles'] | undefined
+): boolean {
+	return (uploadedFiles?.length ?? 0) > 0;
+}
+
+/**
  * `mediaConsent` entfällt, wenn keine Aufnahme vorliegt. Anders als
  * `HIDDEN_WHEN_DEAD`/`HIDDEN_WHEN_FROM_LAND` ist das kein eigenes Feld-Array
- * mit einer Roh-Bedingung, die erst normalisiert werden müsste — `hasMedia`
- * ist bereits ein fertiger Boolean, und es betrifft nur dieses eine Feld.
+ * mit einer Roh-Bedingung, die erst normalisiert werden müsste — `hasUploadedMedia`
+ * liefert bereits einen fertigen Boolean, und es betrifft nur dieses eine Feld.
  *
  * Dieselbe „halbe Miete"-Warnung wie bei `HIDDEN_WHEN_DEAD` gilt trotzdem:
  * Eintrag hier UND eine Bedingung an der Aufrufstelle im Markup —
- * `steps/Step4Contact.svelte`, geprüft gegen `$form.uploadedFiles` (nicht
- * gegen den client-seitigen Medien-Store, der nur solange gefüllt ist, wie
- * eine Dropzone auf Schritt 1 oder Schritt 2 gemountet ist — bei einem
- * Reload direkt auf Schritt 4 wäre er sonst fälschlich leer).
+ * `steps/Step4Contact.svelte`, geprüft (über `hasUploadedMedia`) gegen
+ * `$form.uploadedFiles` (nicht gegen den client-seitigen Medien-Store, der
+ * nur solange gefüllt ist, wie eine Dropzone auf Schritt 1 oder Schritt 2
+ * gemountet ist — bei einem Reload direkt auf Schritt 4 wäre er sonst
+ * fälschlich leer). Beide Stellen rufen dieselbe Funktion auf `data.uploadedFiles`
+ * auf — es gibt kein separates Flag mehr, das eine Aufrufstelle vergessen
+ * könnte zu setzen (Review-Befund, Task 15, zweite Runde: genau das war der
+ * vorherige Fehler — `getFormSteps` erwartete ein `hasMedia`, das
+ * `stepValidation.ts` nie übergab, `mediaConsent` blieb dadurch validiert,
+ * obwohl das Markup es längst ausblendete).
  *
  * **Dritte Stelle, wie bei `HIDDEN_WHEN_FROM_LAND`:** Ausblenden allein
  * reicht nicht — ein `mediaConsent: true`, das der Nutzer setzt und dessen
@@ -338,9 +367,9 @@ export function isFromLand(value: SightingFromValue): boolean {
  * stehen und ginge beim Absenden mit ans Backend, wo `mapFormToSighting`
  * daraus einen datierten, versionierten Nachweis ohne Bezugsgegenstand
  * stempelt. Der Riegel dafür sitzt in `ModernReportForm.svelte`s `onSubmit`,
- * geprüft gegen dasselbe `uploadedFiles` — nur eine zum Absende-Zeitpunkt
- * tatsächlich abgeschlossene Übertragung hat serverseitig ein Gegenstück,
- * für das ein Nachweis Sinn ergäbe.
+ * ebenfalls über `hasUploadedMedia` gegen dasselbe `uploadedFiles` geprüft —
+ * nur eine zum Absende-Zeitpunkt tatsächlich abgeschlossene Übertragung hat
+ * serverseitig ein Gegenstück, für das ein Nachweis Sinn ergäbe.
  */
 export function getFormSteps(data: FormStepsInput): FormStep[] {
 	const hidden = new Set<string>();
@@ -350,7 +379,7 @@ export function getFormSteps(data: FormStepsInput): FormStep[] {
 	if (isFromLand(data.sightingFrom)) {
 		HIDDEN_WHEN_FROM_LAND.forEach((field) => hidden.add(field));
 	}
-	if (data.hasMedia === false) {
+	if (!hasUploadedMedia(data.uploadedFiles)) {
 		hidden.add('mediaConsent');
 	}
 

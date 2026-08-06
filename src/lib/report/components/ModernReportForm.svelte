@@ -16,6 +16,7 @@
 	import { resolveServerFieldErrors } from '$lib/report/serverFieldErrors';
 	import {
 		HIDDEN_WHEN_FROM_LAND,
+		hasUploadedMedia,
 		initialFormState,
 		isDeadFinding,
 		isFromLand
@@ -204,6 +205,13 @@
 		(field) => field !== 'boatDrive'
 	) as Exclude<(typeof HIDDEN_WHEN_FROM_LAND)[number], 'boatDrive'>[];
 
+	/**
+	 * Task 15 (Review-Befund 3): benannte Konstante statt eines Inline-Literals
+	 * an der Aufrufstelle unten — demselben Muster wie `OWN_VESSEL_FIELDS`
+	 * folgend, statt eines Stilbruchs im selben Block.
+	 */
+	const MEDIA_CONSENT_FIELDS = ['mediaConsent'] as const;
+
 	// Formular initialisieren
 	const formProps = {
 		initialValues: { ...savedFormData },
@@ -227,25 +235,26 @@
 				// Zeitpunkt bildet ausschließlich der Server, sonst ginge die Zeitzone
 				// des Browsers in den gespeicherten Instant ein.
 				// set mediaUpload indicator
-				const hasCompletedUpload = uploadedFiles ? uploadedFiles.length > 0 : false;
+				const hasCompletedUpload = hasUploadedMedia(uploadedFiles);
 				submitValues.mediaUpload = hasCompletedUpload;
 
 				// Task 15: Keine Einwilligung ohne Gegenstand. `mediaConsent` fragt
 				// nach der Freigabe von Aufnahmen — ohne eine zum Absende-Zeitpunkt
 				// tatsächlich abgeschlossene Übertragung ist das eine Frage ohne
 				// Bezugsgegenstand, dieselbe Fehlerklasse wie `shipNameConsent` bei
-				// einer Land-Meldung oben. Absichtlich gegen `uploadedFiles` geprüft,
-				// nicht gegen den Medien-Store: Nur eine hier abgeschlossene
-				// Übertragung hat serverseitig ein Gegenstück, für das
-				// `mapFormToSighting` einen Nachweis (`…_am`/`…_version`) stempeln
-				// könnte. Das ist der Riegel, der auch dann greift, wenn der
-				// Reset-Effekt weiter unten aus irgendeinem Grund übersehen wurde —
-				// `mapFormToSighting` liest ein fehlendes Feld ohnehin als falsy
-				// (`formData.mediaConsent ? 1 : 0`), Weglassen statt `false` setzen
-				// spart deshalb keinen Fall, hält sich aber an dasselbe Muster wie
-				// `OWN_VESSEL_FIELDS` oben.
+				// einer Land-Meldung oben. `hasUploadedMedia` (formConfig.ts) ist
+				// dieselbe Funktion, die auch `getFormSteps` und `Step4Contact.svelte`
+				// aufrufen — absichtlich gegen `uploadedFiles` geprüft, nicht gegen
+				// den Medien-Store: Nur eine hier abgeschlossene Übertragung hat
+				// serverseitig ein Gegenstück, für das `mapFormToSighting` einen
+				// Nachweis (`…_am`/`…_version`) stempeln könnte. Das ist der Riegel,
+				// der auch dann greift, wenn der Reset-Effekt weiter unten aus
+				// irgendeinem Grund übersehen wurde — `mapFormToSighting` liest ein
+				// fehlendes Feld ohnehin als falsy (`formData.mediaConsent ? 1 : 0`),
+				// Weglassen statt `false` setzen spart deshalb keinen Fall, hält sich
+				// aber an dasselbe Muster wie `OWN_VESSEL_FIELDS` oben.
 				if (!hasCompletedUpload) {
-					submitValues = omitFields(submitValues, ['mediaConsent'] as const) as SightingFormValues;
+					submitValues = omitFields(submitValues, MEDIA_CONSENT_FIELDS) as SightingFormValues;
 				}
 
 				submitAttempt += 1;
@@ -501,13 +510,13 @@
 	 * dort) und das der Server dennoch stempeln würde, käme bis zum Absenden
 	 * doch noch eine Aufnahme zustande.
 	 *
-	 * Geprüft gegen `$form.uploadedFiles`, dieselbe Größe wie `hasMedia` in
-	 * `Step4Contact.svelte` und wie der Riegel oben in `onSubmit` — nicht
-	 * gegen den client-seitigen Medien-Store, der nur gefüllt ist, solange
-	 * eine Dropzone (Schritt 1 oder 2) gemountet ist.
+	 * Geprüft über `hasUploadedMedia($form.uploadedFiles)` — dieselbe Funktion,
+	 * die `hasMedia` in `Step4Contact.svelte` und der Riegel oben in `onSubmit`
+	 * ebenfalls aufrufen — nicht gegen den client-seitigen Medien-Store, der
+	 * nur gefüllt ist, solange eine Dropzone (Schritt 1 oder 2) gemountet ist.
 	 */
 	$effect(() => {
-		if (($form.uploadedFiles?.length ?? 0) === 0 && $form.mediaConsent) {
+		if (!hasUploadedMedia($form.uploadedFiles) && $form.mediaConsent) {
 			formContext.updateField('mediaConsent', false);
 		}
 	});
