@@ -117,9 +117,17 @@ describe('formStepsConfig — Geschlecht beim Totfund nur in der Admin-Maske', (
 		expect(sightingDetailsStep?.fields).not.toContain('deadSex');
 	});
 
-	// Gegenprobe: Nur `deadSex` verschwindet, die übrigen Totfund-Felder
-	// bleiben Teil des Melde-Schritts. `isDead` steht hier NICHT mehr —
-	// Task 7 nimmt es ebenfalls heraus, siehe die eigene Beschreibung unten.
+	// Gegenprobe: Nur `deadSex` verschwindet aus der Schritt-Konfiguration, die
+	// übrigen Totfund-Felder bleiben Teil des Melde-Schritts. `isDead` steht
+	// hier NICHT mehr — Task 7 nimmt es ebenfalls heraus, siehe die eigene
+	// Beschreibung unten.
+	//
+	// Geprüft wird `formStepsConfig`, also der ungefilterte Bestand: Ob die drei
+	// Felder im konkreten Zweig auch validiert werden, entscheidet seit
+	// `HIDDEN_WHEN_ALIVE` erst `getFormSteps` — dazu die eigene Beschreibung
+	// „getFormSteps — Totfund-Felder nur im Totfund-Zweig" weiter unten. Der
+	// Unterschied ist der springende Punkt dieser Gegenprobe: `deadSex` ist
+	// dauerhaft draußen, die drei hier nur zweigabhängig.
 	it.each(['deadCondition', 'deadSize', 'deadPhoneContact'])(
 		'behält %s im Schritt "sighting-details"',
 		(name) => {
@@ -371,6 +379,40 @@ describe('getFormSteps', () => {
 		expect(fields).not.toContain('behavior');
 		expect(fields).not.toContain('behaviorText');
 		expect(fields).not.toContain('reaction');
+	});
+
+	/**
+	 * Gegenrichtung zu `HIDDEN_WHEN_DEAD`: Ein lebendes Tier hat keinen
+	 * Verwesungszustand und keine Bergungslänge. Die drei Felder waren bis
+	 * hierher NUR im Markup ausgeblendet (`AnimalInfo.svelte`, `{#if
+	 * isDeadFinding($form.isDead)}`) und blieben im Lebend-Zweig trotzdem
+	 * validiert — genau die Hälfte-ohne-die-andere, vor der die Kopfkommentare
+	 * von `HIDDEN_WHEN_DEAD`/`HIDDEN_WHEN_FROM_LAND` warnen. Praktisch spürbar
+	 * wurde das bei `deadSize`: Dessen `min(0)`/`max(300)`/`integer()` hängen
+	 * NICHT an `isDead` und hätten „Weiter" auf Schritt 2 wegen eines Feldes
+	 * gesperrt, das der Melder im Lebend-Zweig nicht sehen und nicht
+	 * korrigieren kann.
+	 */
+	it('entfernt im Lebend-Zweig genau die drei Totfund-Felder', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false }));
+		expect(fields).not.toContain('deadCondition');
+		expect(fields).not.toContain('deadSize');
+		expect(fields).not.toContain('deadPhoneContact');
+	});
+
+	it('behält die drei Totfund-Felder beim Totfund', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: true }));
+		expect(fields).toEqual(
+			expect.arrayContaining(['deadCondition', 'deadSize', 'deadPhoneContact'])
+		);
+	});
+
+	// Wie bei den Verhaltensfeldern: Der Zweig kommt auch als DB-Zahl oder
+	// Storage-String an. Ein `'1'` darf die Totfund-Felder nicht wegräumen.
+	it('behält die Totfund-Felder auch bei isDead als Zahl oder String', () => {
+		expect(fieldsOf(getFormSteps({ isDead: 1 }))).toContain('deadCondition');
+		expect(fieldsOf(getFormSteps({ isDead: '1' }))).toContain('deadCondition');
+		expect(fieldsOf(getFormSteps({ isDead: 0 }))).not.toContain('deadCondition');
 	});
 
 	it('lässt beim Totfund Wetter, Anzahl anderer Schiffe und Entfernung stehen', () => {
