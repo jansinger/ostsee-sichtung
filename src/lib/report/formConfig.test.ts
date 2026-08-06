@@ -250,6 +250,58 @@ describe('Einwilligungen stehen zusammen auf Schritt 4', () => {
 	});
 });
 
+/**
+ * Task 15: `mediaConsent` fragt nach der Freigabe von Aufnahmen. Ohne
+ * mindestens eine vorliegende Aufnahme ist das eine Frage ohne
+ * Bezugsgegenstand — dieselbe Fehlerklasse wie `shipNameConsent` bei einer
+ * Land-Meldung (siehe „getFormSteps mit Beobachtungsort" unten). `hasMedia`
+ * kommt aus dem Medien-Store (`mediaStore.mediaFiles.length > 0`,
+ * `Step4Contact.svelte`), nicht aus `$form` — die Datei-Felder auf Schritt 2
+ * tragen nur, OB der Melder etwas hochladen möchte, nicht ob dort schon
+ * tatsächlich etwas liegt.
+ */
+describe('mediaConsent ohne Aufnahme', () => {
+	const fieldsOf = (steps: ReturnType<typeof getFormSteps>) => steps.flatMap((s) => s.fields);
+
+	it('erscheint nicht, solange keine Aufnahme vorliegt', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false, hasMedia: false }));
+		expect(fields).not.toContain('mediaConsent');
+	});
+
+	it('erscheint, sobald eine Aufnahme vorliegt', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false, hasMedia: true }));
+		expect(fields).toContain('mediaConsent');
+	});
+
+	// `undefined` bedeutet „unbekannt", nicht „keine Aufnahme" — die Admin-Maske
+	// kennt den Medienstand nicht und ruft `getFormSteps` ohne `hasMedia` auf.
+	it('erscheint, wenn der Medienstand unbekannt ist', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false }));
+		expect(fields).toContain('mediaConsent');
+	});
+
+	it('blendet ohne Aufnahme keinen anderen Consent mit aus', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false, hasMedia: false }));
+		expect(fields).toEqual(
+			expect.arrayContaining([
+				'nameConsent',
+				'shipNameConsent',
+				'privacyConsent',
+				'persistentDataConsent'
+			])
+		);
+	});
+
+	it('lässt die Datei-Felder auf Schritt 2 stehen, unabhängig von hasMedia', () => {
+		// Nur die Einwilligung reagiert auf `hasMedia`. Der Upload-Einstieg selbst
+		// bleibt sichtbar — sonst könnte man nie eine erste Aufnahme hinzufügen.
+		const schrittZwei = getFormSteps({ isDead: false, hasMedia: false }).find(
+			(s) => s.id === 'sighting-details'
+		);
+		expect(schrittZwei?.fields).toEqual(expect.arrayContaining(['mediaFile', 'mediaUpload']));
+	});
+});
+
 describe('waterway — Beschriftung deckt beide bisherigen Felder ab', () => {
 	const waterwayMeta = meta('waterway');
 	const copy = [describeField('waterway').label, waterwayMeta.helpText, waterwayMeta.placeholder]

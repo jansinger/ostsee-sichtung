@@ -182,6 +182,18 @@ export type FormStepsInput = {
 	// kommt so aber tatsächlich vor (Admin-Maske vor dem Laden eines
 	// Datensatzes) und muss zuweisbar bleiben.
 	sightingFrom?: number | string | null | undefined;
+	/**
+	 * Ob mindestens eine Aufnahme vorliegt. Steuert `mediaConsent`: Eine
+	 * Einwilligung zur Veröffentlichung von Aufnahmen ohne Aufnahmen ist eine
+	 * Frage ohne Bezugsgegenstand — dieselbe Fehlerklasse wie
+	 * `shipNameConsent` bei einer Land-Meldung (siehe `HIDDEN_WHEN_FROM_LAND`
+	 * oben). Ohne den Riegel würde `mapFormToSighting` dafür einen datierten,
+	 * versionierten Nachweis stempeln, sobald `mediaConsent` wahr ist.
+	 *
+	 * `undefined` bedeutet „unbekannt" und zeigt das Feld: Aufrufer, die den
+	 * Medienstand nicht kennen (Admin-Maske), sollen nichts verlieren.
+	 */
+	hasMedia?: boolean;
 };
 
 /**
@@ -307,6 +319,29 @@ export function isFromLand(value: SightingFromValue): boolean {
 	return Number(value) === SightingFromEnum.LAND;
 }
 
+/**
+ * `mediaConsent` entfällt, wenn keine Aufnahme vorliegt. Anders als
+ * `HIDDEN_WHEN_DEAD`/`HIDDEN_WHEN_FROM_LAND` ist das kein eigenes Feld-Array
+ * mit einer Roh-Bedingung, die erst normalisiert werden müsste — `hasMedia`
+ * ist bereits ein fertiger Boolean, und es betrifft nur dieses eine Feld.
+ *
+ * Dieselbe „halbe Miete"-Warnung wie bei `HIDDEN_WHEN_DEAD` gilt trotzdem:
+ * Eintrag hier UND eine Bedingung an der Aufrufstelle im Markup —
+ * `steps/Step4Contact.svelte`, geprüft gegen `$form.uploadedFiles` (nicht
+ * gegen den client-seitigen Medien-Store, der nur solange gefüllt ist, wie
+ * eine Dropzone auf Schritt 1 oder Schritt 2 gemountet ist — bei einem
+ * Reload direkt auf Schritt 4 wäre er sonst fälschlich leer).
+ *
+ * **Dritte Stelle, wie bei `HIDDEN_WHEN_FROM_LAND`:** Ausblenden allein
+ * reicht nicht — ein `mediaConsent: true`, das der Nutzer setzt und dessen
+ * Aufnahme danach wieder entfernt wird, bliebe sonst im `$form`-Zustand
+ * stehen und ginge beim Absenden mit ans Backend, wo `mapFormToSighting`
+ * daraus einen datierten, versionierten Nachweis ohne Bezugsgegenstand
+ * stempelt. Der Riegel dafür sitzt in `ModernReportForm.svelte`s `onSubmit`,
+ * geprüft gegen dasselbe `uploadedFiles` — nur eine zum Absende-Zeitpunkt
+ * tatsächlich abgeschlossene Übertragung hat serverseitig ein Gegenstück,
+ * für das ein Nachweis Sinn ergäbe.
+ */
 export function getFormSteps(data: FormStepsInput): FormStep[] {
 	const hidden = new Set<string>();
 	if (isDeadFinding(data.isDead)) {
@@ -314,6 +349,9 @@ export function getFormSteps(data: FormStepsInput): FormStep[] {
 	}
 	if (isFromLand(data.sightingFrom)) {
 		HIDDEN_WHEN_FROM_LAND.forEach((field) => hidden.add(field));
+	}
+	if (data.hasMedia === false) {
+		hidden.add('mediaConsent');
 	}
 
 	if (hidden.size === 0) {

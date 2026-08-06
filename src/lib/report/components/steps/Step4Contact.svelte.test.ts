@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
-import type { SightingFormData } from '$lib/types';
+import type { SightingFormData, UploadedFileInfo } from '$lib/types';
 import Step4Contact from './Step4Contact.svelte';
 
 /**
@@ -16,6 +16,20 @@ import Step4Contact from './Step4Contact.svelte';
 function renderStep4(overrides: Partial<SightingFormData> = {}): void {
 	renderWithFormContext(Step4Contact, { overrides });
 }
+
+/**
+ * Ein abgeschlossen hochgeladenes File, wie es `$form.uploadedFiles` nach
+ * einem erfolgreichen Upload enthält. Genügt, um `hasMedia` (Task 15) zu
+ * erfüllen.
+ */
+const UPLOADED_FILE: UploadedFileInfo = {
+	uid: 'uid-1',
+	filePath: 'ref-1/uid-1.jpg',
+	originalName: 'foto.jpg',
+	fileName: 'uid-1.jpg',
+	mimeType: 'image/jpeg',
+	size: 1234
+} as UploadedFileInfo;
 
 function field(name: string): HTMLElement | null {
 	return document.querySelector<HTMLElement>(`[data-testid="field-${name}"]`);
@@ -53,21 +67,65 @@ describe('Step4Contact — Einwilligung zum Schiffsnamen entfällt bei Land', ()
  * Task 14: `mediaConsent` steht seit dem 2026-08-05 hier bei den übrigen
  * Einwilligungen, nicht mehr bei der Dropzone auf Schritt 2 —
  * `sections/Media.svelte.test.ts` deckt ab, dass es dort im öffentlichen
- * Formular nicht mehr rendert. Anders als `shipNameConsent` hängt es hier an
- * keiner Bedingung; das Ausblenden ohne vorliegende Aufnahme ist Task 15.
+ * Formular nicht mehr rendert. Seit Task 15 hängt es an einer Bedingung wie
+ * `shipNameConsent` oben — hier deshalb mit vorliegender Aufnahme gerendert
+ * (`uploadedFiles`); der Fall ohne Aufnahme steht in der eigenen Beschreibung
+ * weiter unten.
  */
 describe('Step4Contact — Medien-Einwilligung bei den übrigen Einwilligungen (Task 14)', () => {
 	it('rendert mediaConsent', () => {
-		renderStep4();
+		renderStep4({ uploadedFiles: [UPLOADED_FILE] });
 
 		expect(field('mediaConsent')).not.toBeNull();
 	});
 
 	it('rendert mediaConsent bedienbar — anders als in der Admin-Maske ist hier nichts gesperrt', () => {
-		renderStep4();
+		renderStep4({ uploadedFiles: [UPLOADED_FILE] });
 
 		const input = document.querySelector<HTMLInputElement>('[data-testid="field-mediaConsent"]');
 		expect(input?.disabled).toBe(false);
+	});
+});
+
+/**
+ * Task 15: Eine Einwilligung zur Veröffentlichung von Aufnahmen, die es nicht
+ * gibt, ist eine Frage ohne Bezugsgegenstand — dieselbe Fehlerklasse wie
+ * `shipNameConsent` bei einer Land-Meldung oben.
+ *
+ * Geprüft wird gegen `$form.uploadedFiles` (abgeschlossene Uploads), nicht
+ * gegen den client-seitigen Medien-Store: Der Store gehört den Dropzone-
+ * Instanzen auf Schritt 1 und Schritt 2 und bleibt leer, solange keine von
+ * beiden gemountet ist — genau der Fall, wenn `Step4Contact` alleine steht
+ * (auch beim Reload direkt auf Schritt 4). `uploadedFiles` ist dagegen ein
+ * persistiertes Formularfeld und unabhängig davon korrekt.
+ */
+describe('Step4Contact — Medien-Einwilligung ohne vorliegende Aufnahme (Task 15)', () => {
+	it('blendet mediaConsent aus, solange keine Aufnahme vorliegt', () => {
+		renderStep4();
+
+		expect(field('mediaConsent')).toBeNull();
+	});
+
+	it('blendet mediaConsent auch bei einer leeren uploadedFiles-Liste aus', () => {
+		renderStep4({ uploadedFiles: [] });
+
+		expect(field('mediaConsent')).toBeNull();
+	});
+
+	it('zeigt mediaConsent, sobald eine Aufnahme abgeschlossen hochgeladen ist', () => {
+		renderStep4({ uploadedFiles: [UPLOADED_FILE] });
+
+		expect(field('mediaConsent')).not.toBeNull();
+	});
+
+	// Gegenprobe: Nur mediaConsent reagiert auf den Medienstand, die übrigen
+	// Einwilligungen bleiben unabhängig davon stehen. `privacyConsent` steht
+	// nicht hier, sondern in `RequiredConsent.svelte` (eigene Komponente).
+	it('lässt die übrigen Einwilligungen unabhängig vom Medienstand stehen', () => {
+		renderStep4();
+
+		expect(field('nameConsent')).not.toBeNull();
+		expect(field('persistentDataConsent')).not.toBeNull();
 	});
 });
 
@@ -86,7 +144,9 @@ describe('Step4Contact — Gruppen-Überschrift deckt alle Einwilligungen ab (Re
 	}
 
 	it('nennt in der Überschrift auch die Veröffentlichung von Aufnahmen, nicht nur des Namens', () => {
-		renderStep4();
+		// Braucht eine vorliegende Aufnahme (Task 15) — sonst rendert
+		// mediaConsent gar nicht und `consentGroupHeading()` liefert `null`.
+		renderStep4({ uploadedFiles: [UPLOADED_FILE] });
 
 		expect(consentGroupHeading()).toMatch(/Aufnahmen/i);
 	});
@@ -104,7 +164,9 @@ describe('Step4Contact — Gruppen-Überschrift deckt alle Einwilligungen ab (Re
  */
 describe('Step4Contact — mediaConsent steht in der Einwilligungsgruppe, nicht irgendwo im Schritt (Review-Befund 4)', () => {
 	it('teilt sich mit nameConsent dieselbe Einwilligungsgruppe unter der Überschrift', () => {
-		renderStep4();
+		// Braucht eine vorliegende Aufnahme (Task 15) — sonst rendert
+		// mediaConsent gar nicht und `mediaGroup` bliebe `null`.
+		renderStep4({ uploadedFiles: [UPLOADED_FILE] });
 
 		const mediaGroup = field('mediaConsent')?.closest('.space-y-4');
 		const nameGroup = field('nameConsent')?.closest('.space-y-4');

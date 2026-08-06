@@ -12,6 +12,15 @@
 
 	const { form, updateField } = getFormContext();
 
+	// Task 15: `mediaConsent` fragt nach der Freigabe von Aufnahmen — ohne
+	// mindestens eine abgeschlossen hochgeladene Aufnahme ist das eine Frage
+	// ohne Bezugsgegenstand (dieselbe Fehlerklasse wie `shipNameConsent` bei
+	// Land unten). Geprüft gegen `$form.uploadedFiles`, nicht gegen den
+	// client-seitigen Medien-Store: Der gehört den Dropzone-Instanzen auf
+	// Schritt 1/2 und bleibt leer, solange keine von beiden gemountet ist —
+	// bei einem Reload direkt auf diesem Schritt sonst fälschlich leer.
+	let hasMedia = $derived(($form.uploadedFiles?.length ?? 0) > 0);
+
 	// Check if user has saved contact data
 	let hasSavedContactData = $state(false);
 
@@ -188,8 +197,17 @@
 				     (`…_am`/`…_version` in `schema.ts`) stehen damit an einer Stelle;
 				     die Datei-Felder selbst bleiben auf Schritt 2. In der Admin-Maske
 				     bleibt das Feld dagegen bei der Dropzone stehen — sie bindet diese
-				     Komponente hier nicht ein. -->
-				<FormField name="mediaConsent" />
+				     Komponente hier nicht ein.
+
+				     Eine Einwilligung zur Veröffentlichung von Aufnahmen, die es nicht
+				     gibt, ist eine Frage ohne Bezugsgegenstand — dieselbe Fehlerklasse
+				     wie `shipNameConsent` oben bei einer Land-Meldung. `getFormSteps`
+				     (formConfig.ts) nimmt `mediaConsent` bereits ohne Aufnahme aus der
+				     Validierung; dieselbe Bedingung (`hasMedia`) hier, sonst bliebe
+				     das Feld sichtbar, aber unvalidiert ausgefüllt. -->
+				{#if hasMedia}
+					<FormField name="mediaConsent" />
+				{/if}
 			</div>
 		</div>
 

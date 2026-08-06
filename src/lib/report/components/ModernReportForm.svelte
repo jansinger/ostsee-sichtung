@@ -227,7 +227,26 @@
 				// Zeitpunkt bildet ausschließlich der Server, sonst ginge die Zeitzone
 				// des Browsers in den gespeicherten Instant ein.
 				// set mediaUpload indicator
-				submitValues.mediaUpload = uploadedFiles ? uploadedFiles.length > 0 : false;
+				const hasCompletedUpload = uploadedFiles ? uploadedFiles.length > 0 : false;
+				submitValues.mediaUpload = hasCompletedUpload;
+
+				// Task 15: Keine Einwilligung ohne Gegenstand. `mediaConsent` fragt
+				// nach der Freigabe von Aufnahmen — ohne eine zum Absende-Zeitpunkt
+				// tatsächlich abgeschlossene Übertragung ist das eine Frage ohne
+				// Bezugsgegenstand, dieselbe Fehlerklasse wie `shipNameConsent` bei
+				// einer Land-Meldung oben. Absichtlich gegen `uploadedFiles` geprüft,
+				// nicht gegen den Medien-Store: Nur eine hier abgeschlossene
+				// Übertragung hat serverseitig ein Gegenstück, für das
+				// `mapFormToSighting` einen Nachweis (`…_am`/`…_version`) stempeln
+				// könnte. Das ist der Riegel, der auch dann greift, wenn der
+				// Reset-Effekt weiter unten aus irgendeinem Grund übersehen wurde —
+				// `mapFormToSighting` liest ein fehlendes Feld ohnehin als falsy
+				// (`formData.mediaConsent ? 1 : 0`), Weglassen statt `false` setzen
+				// spart deshalb keinen Fall, hält sich aber an dasselbe Muster wie
+				// `OWN_VESSEL_FIELDS` oben.
+				if (!hasCompletedUpload) {
+					submitValues = omitFields(submitValues, ['mediaConsent'] as const) as SightingFormValues;
+				}
 
 				submitAttempt += 1;
 				submitState = 'submitting';
@@ -470,6 +489,28 @@
 	let currentStep: number = $state(loadFromStorage(STORAGE_KEYS.CURRENT_STEP, 0));
 
 	const form = $derived(formContext.form);
+
+	/**
+	 * Task 15: Keine Einwilligung ohne Gegenstand. Hält die Invariante „kein
+	 * `mediaConsent: true` ohne mindestens eine abgeschlossen hochgeladene
+	 * Aufnahme" durchgehend ein — nicht nur beim Entfernen der letzten
+	 * Aufnahme, sondern auch für einen mit `mediaConsent: true`, aber ohne
+	 * `uploadedFiles` gestarteten Formularzustand (z. B. Altbestand aus dem
+	 * `localStorage`, von vor diesem Task). Sonst bliebe ein `true` stehen,
+	 * das `Step4Contact.svelte` niemandem mehr zeigt (`hasMedia`-Bedingung
+	 * dort) und das der Server dennoch stempeln würde, käme bis zum Absenden
+	 * doch noch eine Aufnahme zustande.
+	 *
+	 * Geprüft gegen `$form.uploadedFiles`, dieselbe Größe wie `hasMedia` in
+	 * `Step4Contact.svelte` und wie der Riegel oben in `onSubmit` — nicht
+	 * gegen den client-seitigen Medien-Store, der nur gefüllt ist, solange
+	 * eine Dropzone (Schritt 1 oder 2) gemountet ist.
+	 */
+	$effect(() => {
+		if (($form.uploadedFiles?.length ?? 0) === 0 && $form.mediaConsent) {
+			formContext.updateField('mediaConsent', false);
+		}
+	});
 
 	// Speichere currentStep direkt bei Änderungen
 	$effect(() => {

@@ -424,3 +424,152 @@ describe('ModernReportForm — Bootsangaben werden beim Absenden entfernt, die K
 		expect(contact.shipNameConsent).toBe(true);
 	});
 });
+
+/**
+ * Task 15: Keine Einwilligung ohne Gegenstand. `mediaConsent` fragt nach der
+ * Freigabe von Aufnahmen — ohne mindestens eine sitzt die Frage ohne
+ * Bezugsgegenstand, und `mapFormToSighting` würde dafür trotzdem einen
+ * datierten, versionierten Nachweis stempeln, käme das Feld als `true` beim
+ * Server an.
+ *
+ * Erster Block: die gute Bedienführung — ein `$effect` in `ModernReportForm`
+ * hält die Invariante „kein `mediaConsent: true` ohne `uploadedFiles`"
+ * durchgehend ein, nicht nur bei einem bestimmten Klick. Das deckt sowohl
+ * das Entfernen der letzten Aufnahme als auch einen mit `mediaConsent: true`
+ * gestarteten, aber medienlosen Formularzustand ab (z. B. Altbestand aus
+ * `localStorage`, von vor diesem Task).
+ */
+describe('ModernReportForm — mediaConsent ohne Aufnahme wird zurückgesetzt (Task 15)', () => {
+	function persistedFormData(): Record<string, unknown> {
+		const stored = sessionStorage.getItem(STORAGE_KEYS.FORM_DATA);
+		if (!stored) throw new Error('FORM_DATA wurde noch nicht persistiert');
+		return JSON.parse(stored);
+	}
+
+	it('setzt mediaConsent zurück, wenn keine Aufnahme vorliegt', async () => {
+		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(3));
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-media-keine-aufnahme',
+				mediaConsent: true,
+				uploadedFiles: []
+			})
+		);
+
+		render(ModernReportForm);
+
+		await vi.waitFor(() => {
+			expect(persistedFormData().mediaConsent).toBe(false);
+		});
+	});
+
+	it('lässt mediaConsent stehen, solange eine Aufnahme vorliegt', async () => {
+		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(3));
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-media-vorhanden',
+				mediaConsent: true,
+				uploadedFiles: [UPLOAD]
+			})
+		);
+
+		render(ModernReportForm);
+
+		// Auf denselben Aufbau warten wie im Reset-Fall, damit ein fälschlich
+		// greifender Reset Zeit hätte, sich zu zeigen.
+		await vi.waitFor(() => {
+			expect(persistedFormData().referenceId).toBe('ref-media-vorhanden');
+		});
+		expect(persistedFormData().mediaConsent).toBe(true);
+	});
+});
+
+/**
+ * Zweiter Block: der Riegel am Absende-Rand — derselbe Mechanismus wie
+ * `OWN_VESSEL_FIELDS` oben (`omitFields` auf das Submit-Objekt), diesmal für
+ * `mediaConsent`. Geprüft gegen das tatsächlich an `submitSightingForm`
+ * übergebene Objekt, nicht gegen `$form` — genau die Naht, an der Review-
+ * Befund 1 (Task 11, zweite Runde) saß.
+ */
+describe('ModernReportForm — mediaConsent ohne fertigen Upload erreicht den Server nicht (Task 15)', () => {
+	const today = new Date().toISOString().split('T')[0];
+
+	async function submit(): Promise<Record<string, unknown>> {
+		await page.getByRole('button', { name: 'Formular absenden' }).click();
+		await vi.waitFor(() => expect(submitSightingFormMock).toHaveBeenCalled());
+		return submitSightingFormMock.mock.calls[0]?.[0] as Record<string, unknown>;
+	}
+
+	beforeEach(() => {
+		submitSightingFormMock.mockClear();
+		submitSightingFormMock.mockResolvedValue({ status: 'ok', id: 1 });
+	});
+
+	it('entfernt mediaConsent aus der Absende-Anfrage, wenn kein Upload abgeschlossen ist', async () => {
+		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(3));
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-submit-ohne-upload',
+				entryChannel: 0,
+				species: 0,
+				totalCount: 1,
+				distance: 1,
+				sightingFrom: SightingFromEnum.LAND,
+				hasPosition: true,
+				latitude: 54.5,
+				longitude: 13.5,
+				sightingDate: today,
+				firstName: 'Max',
+				lastName: 'Mustermann',
+				email: 'max@example.com',
+				privacyConsent: true,
+				mediaConsent: true,
+				uploadedFiles: []
+			})
+		);
+
+		render(ModernReportForm);
+
+		const sent = await submit();
+
+		expect('mediaConsent' in sent).toBe(false);
+	});
+
+	it('sendet mediaConsent, wenn ein Upload abgeschlossen ist', async () => {
+		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(3));
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-submit-mit-upload',
+				entryChannel: 0,
+				species: 0,
+				totalCount: 1,
+				distance: 1,
+				sightingFrom: SightingFromEnum.LAND,
+				hasPosition: true,
+				latitude: 54.5,
+				longitude: 13.5,
+				sightingDate: today,
+				firstName: 'Max',
+				lastName: 'Mustermann',
+				email: 'max@example.com',
+				privacyConsent: true,
+				mediaConsent: true,
+				uploadedFiles: [UPLOAD]
+			})
+		);
+
+		render(ModernReportForm);
+
+		const sent = await submit();
+
+		expect(sent.mediaConsent).toBe(true);
+	});
+});
