@@ -70,10 +70,16 @@ describe('sections/Behavior — Reaktion aufs Boot entfällt bei Land', () => {
  * wird. „Ihr Boot" ist für die drei schlicht falsch; die Frage selbst bleibt
  * sinnvoll.
  *
- * Verallgemeinert wird deshalb das Label — und zwar im Yup-Schema, der einzigen
- * Quelle für Feldbeschriftungen (`design-system.md`, Formularfeld-Muster). Die
- * Admin-Maske liest dasselbe Label; das ist gewollt, sie editiert dieselbe
- * Spalte `reaktion` und hatte den Boot-Bezug genauso wenig verdient.
+ * Verallgemeinert wird das Label ausschließlich im Meldeformular, über den
+ * `label`-Override von `FormField` — den es genau für diesen Fall gibt
+ * („dieselbe Schema-Spalte in zwei Kontexten unterschiedlich gefragt",
+ * Präzedenz: `species` in `AnimalInfo.svelte`). Die Admin-Maske behält das
+ * Schema-Label „Reaktion auf Ihr Boot"; sie ist ausdrücklich unverändert zu
+ * lassen.
+ *
+ * Beide Richtungen gehören deshalb geprüft: Ein Override, der versehentlich
+ * auch im Admin-Zweig gesetzt wird, fiele sonst nicht auf — und ein
+ * versehentlich entfernter Override im Meldeformular genauso wenig.
  */
 describe('sections/Behavior — die Reaktionsfrage setzt kein Boot voraus (UX-Review Punkt 4)', () => {
 	/**
@@ -86,16 +92,18 @@ describe('sections/Behavior — die Reaktionsfrage setzt kein Boot voraus (UX-Re
 		return field('reaction')?.closest('.fieldset')?.querySelector('label')?.textContent ?? '';
 	}
 
-	it('spricht von „Sie oder Ihr Fahrzeug", nicht von „Ihr Boot"', () => {
+	it('spricht im Meldeformular von „Sie oder Ihr Fahrzeug", nicht von „Ihr Boot"', () => {
 		renderBehavior({ sightingFrom: SightingFromEnum.OTHER });
 
 		expect(reactionLabel()).toMatch(/Reaktion auf Sie oder Ihr Fahrzeug/i);
 		expect(reactionLabel()).not.toMatch(/Ihr Boot/i);
 	});
 
-	it('trägt dasselbe Label in der Admin-Maske — ein Feld, eine Beschriftung', () => {
+	// Gegenprobe: Die Admin-Maske bleibt beim Schema-Label. Ohne diese
+	// Feststellung könnte der Override unbemerkt in beide Zweige rutschen.
+	it('lässt die Admin-Maske beim Schema-Label „Reaktion auf Ihr Boot"', () => {
 		renderBehavior({ sightingFrom: SightingFromEnum.LAND }, { adminMode: true });
 
-		expect(reactionLabel()).toMatch(/Reaktion auf Sie oder Ihr Fahrzeug/i);
+		expect(reactionLabel()).toMatch(/Reaktion auf Ihr Boot/i);
 	});
 });

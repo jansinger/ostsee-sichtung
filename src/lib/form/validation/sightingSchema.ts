@@ -717,12 +717,14 @@ export const sightingSchemaBase = yup.object().shape({
 	reaction: yup
 		.string()
 		.max(1000, 'Die Reaktion darf nicht länger als 1000 Zeichen sein.')
-		// UX-Review (2026-08-06, Punkt 4): „Ihr Boot" setzt ein Boot voraus, das
-		// `isFromLand` bewusst nicht verlangt — `sightingFrom = 0` heißt
-		// gleichzeitig „Sonstiges" (Kajak, SUP, Seebrücke) und „noch nicht
-		// beantwortet", das Feld steht für diese Melder also zu Recht da. Die
-		// Frage bleibt sinnvoll, nur die Beschriftung war zu eng.
-		.label('Reaktion auf Sie oder Ihr Fahrzeug')
+		// Das Schema-Label ist die Beschriftung der ADMIN-Maske. Das Meldeformular
+		// fragt seit dem UX-Review (2026-08-06, Punkt 4) allgemeiner — „Reaktion
+		// auf Sie oder Ihr Fahrzeug" —, weil `isFromLand` nur ein ausdrückliches
+		// „Land" ausblendet und Kajak, SUP und Seebrücke unter „Sonstiges" hier
+		// stehen bleiben. Gesetzt wird das als `label`-Override an der
+		// Aufrufstelle in `sections/Behavior.svelte`; die Sachbearbeitung behält
+		// ihren gewohnten Wortlaut.
+		.label('Reaktion auf Ihr Boot')
 		.meta({
 			placeholder: 'z.B. neugierig genähert, geflohen, ignoriert...',
 			helpText: 'Wie haben die Tiere auf Ihre Anwesenheit reagiert?',
