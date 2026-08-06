@@ -530,7 +530,15 @@ export const sightingSchemaBase = yup.object().shape({
 
 	/**
 	 * Größe des toten Tieres in cm
-	 * Erforderlich, wenn isDead = true
+	 *
+	 * **Optional, in beiden Zweigen** — anders als `deadCondition` darüber. Eine
+	 * am Strand geschätzte Körperlänge ist eine Zusatzangabe, keine Bedingung
+	 * für die Meldung; die DB-Spalte `totfund_groesse` ist entsprechend nullable.
+	 * Bewusst **kein** `when('isDead')`: Am Zweig hängt hier nichts, und ein
+	 * `when()`, das in beiden Ästen dasselbe tut, behauptet optisch das Gegenteil
+	 * (Hergang und Nachweis in `sightingSchemaWhen.test.ts`, Gruppe „deadSize —
+	 * in KEINEM Zweig Pflichtfeld"). Die drei Zusagen darunter gelten unbedingt
+	 * und sind die einzige Validierung des Feldes.
 	 */
 	deadSize: yup
 		.number()
@@ -538,11 +546,6 @@ export const sightingSchemaBase = yup.object().shape({
 		.transform((value) => (isNaN(value) ? undefined : value))
 		.min(0, 'Die Größe muss positiv sein.')
 		.max(300, 'Die Größe darf 300 nicht überschreiten.')
-		.when('isDead', {
-			is: true,
-			then: (schema) => schema.notRequired(),
-			otherwise: (schema) => schema.notRequired()
-		})
 		.label('Körperlänge (cm)')
 		.meta({
 			placeholder: 'z.B. 150',

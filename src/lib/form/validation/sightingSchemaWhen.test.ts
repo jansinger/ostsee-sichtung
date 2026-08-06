@@ -322,4 +322,52 @@ describe('sightingSchema - Sonstiges-Textfeld-Validierung', () => {
 			);
 		});
 	});
+
+	// ── deadSize — der Zweig entscheidet hier über gar nichts ─────────────────
+	//
+	// `deadSize` trug bis zum 2026-08-06 ein `.when('isDead', …)`, das in BEIDEN
+	// Zweigen `notRequired()` setzte — ein No-op. Es las sich wie das `when()`
+	// bei `deadCondition` direkt darüber und legte damit nahe, die Körperlänge
+	// sei beim Totfund Pflicht; der JSDoc über dem Feld behauptete das sogar.
+	// Beides stimmte nie.
+	//
+	// Diese Gruppe hält den Ist-Zustand fest, damit das Entfernen des Blocks
+	// nachweislich nichts ändert: Sie ist vor UND nach der Änderung grün. Was
+	// unbedingt gilt — `integer()`, `min(0)`, `max(300)` — steht deshalb hier
+	// mit drin; genau diese Zusagen dürfen beim Aufräumen nicht mitverschwinden.
+	describe('deadSize — in KEINEM Zweig Pflichtfeld (No-op-when entfernt, 2026-08-06)', () => {
+		it('ist nicht required bei isDead=true', async () => {
+			expect(await fieldHasError('deadSize', { isDead: true })).toBe(false);
+		});
+
+		it('ist nicht required bei isDead=false', async () => {
+			expect(await fieldHasError('deadSize', { isDead: false })).toBe(false);
+		});
+
+		it('ist nicht required, wenn isDead gar nicht gesetzt ist', async () => {
+			expect(await fieldHasError('deadSize', {})).toBe(false);
+		});
+
+		it.each([true, false])(
+			'akzeptiert einen gültigen Wert unverändert in beiden Zweigen (isDead=%s)',
+			async (isDead) => {
+				expect(await fieldHasError('deadSize', { isDead, deadSize: 150 })).toBe(false);
+			}
+		);
+
+		// Die drei unbedingten Zusagen — sie hängen NICHT am `when()` und müssen
+		// das Entfernen überleben. Jeweils in beiden Zweigen geprüft, weil ein
+		// versehentlich zu weit gefasstes Aufräumen sie nur in einem träfe.
+		it.each([true, false])('lehnt Nachkommastellen ab (isDead=%s)', async (isDead) => {
+			expect(await fieldHasError('deadSize', { isDead, deadSize: 150.5 })).toBe(true);
+		});
+
+		it.each([true, false])('lehnt negative Werte ab (isDead=%s)', async (isDead) => {
+			expect(await fieldHasError('deadSize', { isDead, deadSize: -1 })).toBe(true);
+		});
+
+		it.each([true, false])('lehnt Werte über 300 ab (isDead=%s)', async (isDead) => {
+			expect(await fieldHasError('deadSize', { isDead, deadSize: 301 })).toBe(true);
+		});
+	});
 });
