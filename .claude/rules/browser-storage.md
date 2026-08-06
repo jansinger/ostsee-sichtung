@@ -16,7 +16,8 @@ STORAGE_KEYS = {
 	CURRENT_STEP: 'sichtungen_current_step', // sessionStorage
 	FORM_DATA: 'sichtungen_form_data', // sessionStorage
 	POSITION_FILE_UIDS: 'sichtungen_position_file_uids', // sessionStorage
-	USER_CONTACT_DATA: 'sichtungen_user_contact_data' // localStorage ODER sessionStorage
+	USER_CONTACT_DATA: 'sichtungen_user_contact_data', // localStorage ODER sessionStorage
+	REPORT_KIND: 'sichtungen_report_kind' // localStorage — 'alive' | 'dead', überlebt den Tab
 };
 ```
 
@@ -44,14 +45,15 @@ persistentDataConsent = false → sessionStorage (gelöscht bei Tab-Schließung)
 
 ## Schlüsselfunktionen (`src/lib/storage/localStorage.ts`)
 
-| Funktion                               | Zweck                                      |
-| -------------------------------------- | ------------------------------------------ |
-| `loadFromStorage(key, default)`        | Type-safe JSON Deserialisierung            |
-| `saveToStorage(key, value)`            | Automatische Storage-Typ-Wahl              |
-| `loadUserContactData()`                | sessionStorage → localStorage Fallback     |
-| `saveUserContactDataWithConsent(data)` | GDPR: Consent steuert Storage-Typ          |
-| `clearFormDataOnly()`                  | Nur Formulardaten löschen                  |
-| `clearAllStorage()`                    | Komplette GDPR-Löschung inkl. Kontaktdaten |
+| Funktion                               | Zweck                                                              |
+| -------------------------------------- | ------------------------------------------------------------------ |
+| `loadFromStorage(key, default)`        | Type-safe JSON Deserialisierung                                    |
+| `saveToStorage(key, value)`            | Automatische Storage-Typ-Wahl                                      |
+| `removeFromStorage(key)`               | Schlüssel vollständig entfernen (nicht `saveToStorage(key, null)`) |
+| `loadUserContactData()`                | sessionStorage → localStorage Fallback                             |
+| `saveUserContactDataWithConsent(data)` | GDPR: Consent steuert Storage-Typ                                  |
+| `clearFormDataOnly()`                  | Nur Formulardaten löschen                                          |
+| `clearAllStorage()`                    | Komplette GDPR-Löschung inkl. Kontaktdaten                         |
 
 ---
 
