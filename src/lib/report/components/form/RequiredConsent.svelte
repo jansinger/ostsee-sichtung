@@ -1,14 +1,26 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import FormField from './fields/FormField.svelte';
-	import { formStepsConfig } from '$lib/report/formConfig';
+	import { getFormSteps } from '$lib/report/formConfig';
+	import { getFormContext } from '$lib/report/formContext';
 
 	let { currentStep } = $props<{
 		currentStep: number;
 	}>();
 
+	// Die Komponente steht ohnehin nur unterhalb von `<Form>` — `FormField`
+	// unten wirft ohne Context.
+	const { form } = getFormContext();
+
 	// Only show on the last step (0-indexed)
-	const isLastStep = $derived(currentStep === formStepsConfig.length - 1);
+	//
+	// Gezählt wird die Schritt-Konfiguration des aktuellen Zweigs, nicht die
+	// statische `formStepsConfig`: eine Quelle für alle Stellen, die über
+	// Schritte rechnen. Heute liefern beide dieselbe Zahl — `getFormSteps`
+	// filtert Felder, nie ganze Schritte —, und genau deshalb ist das hier
+	// kein Verhaltenswechsel, sondern nur der Verzicht auf eine zweite Liste,
+	// deren Gleichlauf niemand erzwingt.
+	const isLastStep = $derived(currentStep === getFormSteps($form).length - 1);
 </script>
 
 {#if isLastStep}

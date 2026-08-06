@@ -94,14 +94,26 @@ Titles, descriptions and the per-step validated fields live in `formStepsConfig`
 
 Three distinct layers — see `.claude/rules/forms.md` for the full table:
 
-| Layer          | Where                                  | Effect                                          |
-| -------------- | -------------------------------------- | ----------------------------------------------- |
-| **Per step**   | `../form/validation/stepValidation.ts` | Gates "Next"; blocks navigation                 |
-| **Pre-submit** | `ModernReportForm.handleFinalSubmit`   | Logging only — does **not** block               |
-| **Submit**     | `createForm.handleSubmit`              | Authoritative; sets `$errors`, calls `onSubmit` |
+| Layer          | Where                                  | Effect                                                 |
+| -------------- | -------------------------------------- | ------------------------------------------------------ |
+| **Per step**   | `../form/validation/stepValidation.ts` | Gates "Next"; blocks navigation                        |
+| **Pre-submit** | `ModernReportForm.handleFinalSubmit`   | Blocks; sets `$errors`, jumps to the earliest bad step |
+| **Submit**     | `createForm.handleSubmit`              | Authoritative; sets `$errors`, calls `onSubmit`        |
 
 `isStepValid(currentStep, formData)` and `validateStep(currentStep, formData)` take **two**
-arguments and validate `sightingSchema.pick(formStepsConfig[currentStep].fields)`.
+arguments and validate `sightingSchema.pick(getFormSteps(formData)[currentStep].fields)`.
+
+The pre-submit layer covers all steps at once (a field can go invalid after its step was
+left) and validates `sightingSchema.omit(hiddenFormFields(formValues))` — the full schema
+minus what the current branch hides. Without that subtraction, a leftover value in a hidden
+field blocks the submit behind an error nobody can see, and drags the jump target onto a
+step that shows nothing.
+
+**Known gap:** the authoritative layer below still validates the _full_ schema
+(`validationSchema` is handed to `createForm` once and cannot be branch-aware), so that same
+leftover value still stops the submit there — silently, without a toast or a jump. Closing it
+means deciding what a hidden field's leftover value should do on submit, which is a separate
+change.
 
 There is no debouncing. `createForm` exposes
 `{ form, errors, touched, isSubmitting, isValid, handleSubmit, handleChange, updateField, updateInitialValues }`

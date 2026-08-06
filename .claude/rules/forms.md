@@ -164,9 +164,16 @@ Rohwert wie `$form.isDead` direkt:
 
 ### Die Zwei-Hälften-Regel — der teuerste Fehler in diesem Formular
 
-`getFormSteps` (`formConfig.ts`) steuert **ausschließlich die Validierung** — gelesen wird
-es nur von `stepValidation.ts`, gerendert wird daraus **nichts**. Ein Feld dort aus den
-`fields` eines Schritts zu entfernen macht es unvalidiert, aber nicht unsichtbar.
+`getFormSteps` (`formConfig.ts`) steuert **Validierung und Fehler-Navigation** — gerendert
+wird daraus **nichts**. Ein Feld dort aus den `fields` eines Schritts zu entfernen macht es
+unvalidiert, aber nicht unsichtbar.
+
+Gelesen wird es von `stepValidation.ts` (Schritt-Gate), von `StepNavigation.svelte`
+(Feldreihenfolge für `scrollToFirstError`), von `ModernReportForm.svelte`
+(`resolveServerFieldErrors`, `findStepForErrors`, Vorab-Prüfung über `hiddenFormFields`)
+und von `RequiredConsent.svelte` (letzter Schritt). Alle rechnen über Schritte, keiner
+rendert daraus — wer eine dieser Stellen auf `formStepsConfig` zurückdreht, führt zu einem
+Feld, das im aktuellen Zweig kein DOM-Element hat, und der Sprung fällt still aus.
 
 Jede Ausblendung eines Feldes braucht deshalb **beide Hälften**, über **dasselbe** benannte
 Prädikat:
