@@ -22,5 +22,13 @@
  * `PRIVACY_CONSENT_VERSION` in `consentVersions.ts`.
  * `consentTextVersions.test.ts` sagt das im Kopfkommentar ausdrücklich, kann
  * es aber nicht prüfen.
+ *
+ * **Am selben Tag ein zweites Mal geändert** (UX-Review, Punkt 2): Über dem
+ * Ankreuzfeld stehen seither die hochgeladenen Aufnahmen namentlich („Ihre 2
+ * hochgeladenen Aufnahmen: …", `Step4Contact.svelte`) — bis dahin musste der
+ * Melder zwei Schritte nach dem Upload aus dem Gedächtnis wissen, worüber er
+ * entscheidet. Die Kennung bleibt `2026-08-06`, weil beide Änderungen an
+ * dieselbe Fassung gehen; wäre die vorherige an einem früheren Tag gewesen,
+ * müsste hier gehoben werden.
  */
 export const MEDIA_CONSENT_VERSION = '2026-08-06';

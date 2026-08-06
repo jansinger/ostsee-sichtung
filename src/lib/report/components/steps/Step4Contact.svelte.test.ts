@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { page } from 'vitest/browser';
 import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import type { SightingFormData, UploadedFileInfo } from '$lib/types';
@@ -29,6 +30,14 @@ const UPLOADED_FILE: UploadedFileInfo = {
 	fileName: 'uid-1.jpg',
 	mimeType: 'image/jpeg',
 	size: 1234
+} as UploadedFileInfo;
+
+const SECOND_UPLOADED_FILE: UploadedFileInfo = {
+	...UPLOADED_FILE,
+	uid: 'uid-2',
+	filePath: 'ref-1/uid-2.jpg',
+	originalName: 'robbe-am-strand.jpg',
+	fileName: 'uid-2.jpg'
 } as UploadedFileInfo;
 
 function field(name: string): HTMLElement | null {
@@ -162,6 +171,52 @@ describe('Step4Contact — Gruppen-Überschrift deckt alle Einwilligungen ab (Re
  * irgendwo sonst im Schritt (z. B. bei „Zusätzliche Informationen" oder bei
  * der „Dauerhafte Speicherung"-Gruppe, die ebenfalls `.space-y-4` trägt).
  */
+/**
+ * UX-Review (2026-08-06, Punkt 2): `mediaConsent` steht zwei Schritte nach dem
+ * Upload. Wer hier zustimmt, musste bis dahin aus dem Gedächtnis wissen,
+ * worüber er entscheidet — die Dateien selbst liegen auf Schritt 2.
+ *
+ * Benannt wird `originalName` aus `$form.uploadedFiles`, also der Dateiname, den
+ * der Melder selbst kennt — nicht der interne `fileName`.
+ */
+describe('Step4Contact — die Medien-Einwilligung benennt die Aufnahmen (UX-Review Punkt 2)', () => {
+	it('nennt die einzelne Aufnahme im Singular und mit ihrem Namen', async () => {
+		renderStep4({ uploadedFiles: [UPLOADED_FILE] });
+
+		await expect.element(page.getByText(/Ihre hochgeladene Aufnahme/i)).toBeInTheDocument();
+		await expect.element(page.getByText('foto.jpg')).toBeInTheDocument();
+	});
+
+	it('zählt mehrere Aufnahmen und benennt jede einzeln', async () => {
+		renderStep4({ uploadedFiles: [UPLOADED_FILE, SECOND_UPLOADED_FILE] });
+
+		await expect.element(page.getByText(/Ihre 2 hochgeladenen Aufnahmen/i)).toBeInTheDocument();
+		await expect.element(page.getByText('foto.jpg')).toBeInTheDocument();
+		await expect.element(page.getByText('robbe-am-strand.jpg')).toBeInTheDocument();
+	});
+
+	it('stellt die Aufzählung VOR das Ankreuzfeld, nicht dahinter', () => {
+		renderStep4({ uploadedFiles: [UPLOADED_FILE] });
+
+		const liste = document.querySelector('[data-testid="uploaded-media-summary"]');
+		const feld = field('mediaConsent');
+		expect(liste).not.toBeNull();
+		expect(feld).not.toBeNull();
+		// DOCUMENT_POSITION_FOLLOWING: das Feld steht im Dokument NACH der Liste.
+		expect(
+			(liste as Element).compareDocumentPosition(feld as Node) & Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy();
+	});
+
+	// Gegenprobe: Ohne Aufnahme gibt es weder Einwilligung noch Aufzählung —
+	// sonst stünde eine leere Überschrift „Ihre 0 hochgeladenen Aufnahmen" da.
+	it('zeigt ohne Aufnahme auch keine Aufzählung', () => {
+		renderStep4();
+
+		expect(document.querySelector('[data-testid="uploaded-media-summary"]')).toBeNull();
+	});
+});
+
 describe('Step4Contact — mediaConsent steht in der Einwilligungsgruppe, nicht irgendwo im Schritt (Review-Befund 4)', () => {
 	it('teilt sich mit nameConsent dieselbe Einwilligungsgruppe unter der Überschrift', () => {
 		// Braucht eine vorliegende Aufnahme (Task 15) — sonst rendert

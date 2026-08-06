@@ -25,6 +25,21 @@
 	// Schritt sonst fälschlich leer.
 	let hasMedia = $derived(hasUploadedMedia($form.uploadedFiles));
 
+	/**
+	 * UX-Review (2026-08-06, Punkt 2): Worüber der Melder hier entscheidet, liegt
+	 * zwei Schritte zurück — die Dateien selbst stehen auf Schritt 2. Ohne diese
+	 * Aufzählung müsste er aus dem Gedächtnis wissen, was er freigibt.
+	 *
+	 * Benannt wird `originalName` (der Name, unter dem der Melder die Datei
+	 * kennt), nicht der interne `fileName`.
+	 */
+	let uploadedMedia = $derived($form.uploadedFiles ?? []);
+	let uploadedMediaCaption = $derived(
+		uploadedMedia.length === 1
+			? 'Ihre hochgeladene Aufnahme:'
+			: `Ihre ${uploadedMedia.length} hochgeladenen Aufnahmen:`
+	);
+
 	// Check if user has saved contact data
 	let hasSavedContactData = $state(false);
 
@@ -213,7 +228,21 @@
 				     sichtbar, aber unvalidiert ausgefüllt (die „halbe Miete" aus der
 				     Doku dort). -->
 				{#if hasMedia}
-					<FormField name="mediaConsent" />
+					<!-- Aufzählung und Ankreuzfeld bilden eine Einheit und stehen
+					     deshalb enger beieinander als die Geschwister der Gruppe
+					     (`space-y-3` außen). Die Aufzählung steht bewusst VOR dem
+					     Feld: Sie ist die Frage, das Feld die Antwort. -->
+					<div class="space-y-1">
+						<div class="text-base-content/70 text-support" data-testid="uploaded-media-summary">
+							<p class="font-medium">{uploadedMediaCaption}</p>
+							<ul class="list-inside list-disc">
+								{#each uploadedMedia as file (file.uid)}
+									<li class="break-all">{file.originalName}</li>
+								{/each}
+							</ul>
+						</div>
+						<FormField name="mediaConsent" />
+					</div>
 				{/if}
 			</div>
 		</div>
