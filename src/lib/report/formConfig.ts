@@ -84,8 +84,10 @@ export const formStepsConfig: FormStep[] = [
 			// benutzte — obwohl Aufnahmen die wertvollste Einzelangabe der Meldung
 			// sind. Schritt 2 ist Pflichtschritt.
 			//
-			// Die Reihenfolge in dieser Liste ist nicht kosmetisch: `findStepForErrors`
-			// läuft sie ab, um zum ersten fehlerhaften Feld zu springen.
+			// Die Reihenfolge in dieser Liste ist nicht kosmetisch: `scrollToFirstError`
+			// läuft sie ab, um zum ersten fehlerhaften Feld zu springen. (Nicht
+			// `findStepForErrors` — das liest nur die Zugehörigkeit zum Schritt,
+			// siehe die Feldliste von `observations` weiter unten.)
 			'mediaFile',
 			'mediaUpload',
 			// `mediaConsent` steht hier bewusst NICHT mehr: Es steht seit dem
@@ -132,10 +134,18 @@ export const formStepsConfig: FormStep[] = [
 			'behavior',
 			'behaviorText',
 			'reaction',
-			'shipCount',
+			// Die Reihenfolge dieser vier folgt `Environment.svelte` und ist nicht
+			// kosmetisch: `scrollToFirstError` läuft die Liste ab, um zum ersten
+			// fehlerhaften Feld zu springen (`fieldNavigation.ts` — die Aufrufstelle
+			// baut `fieldOrder` in `StepNavigation.svelte` aus genau dieser Config).
+			// `findStepForErrors` liest daraus dagegen nur die Zugehörigkeit zum
+			// Schritt, nicht die Position darin.
 			'seaState',
 			'visibility',
 			'windForce',
+			// Hinter der Windstärke, nicht davor: das einzige Feld der Karte, das
+			// der Wetter-Abruf nie füllt — Begründung in `Environment.svelte`.
+			'shipCount',
 			'shipName',
 			'homePort',
 			'boatType'

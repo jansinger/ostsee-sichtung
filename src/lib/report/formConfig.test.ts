@@ -223,7 +223,9 @@ describe('formStepsConfig — Medien-Upload auf Schritt 2', () => {
 	// gesehen hat, soll das Bild hochladen können, statt zu raten. Die
 	// Reihenfolge im Markup prüft `Step2SightingDetails.svelte.test.ts`; hier
 	// zählt, dass die Config dieselbe Geschichte erzählt — sie bestimmt die
-	// Reihenfolge, in der `findStepForErrors` Felder abläuft.
+	// Reihenfolge, in der `scrollToFirstError` Felder abläuft. (Nicht
+	// `findStepForErrors` — das liest nur die Zugehörigkeit zum Schritt, wie
+	// im Block „Umweltfelder in Render-Reihenfolge" unten ausgeführt.)
 	it('listet die Medien-Dateifelder vor species', () => {
 		const fields = sightingDetailsStep?.fields ?? [];
 		const mediaIndex = fields.indexOf('mediaFile');
@@ -507,5 +509,38 @@ describe('getFormSteps mit Beobachtungsort', () => {
 		for (const step of steps) {
 			expect(step.fields.length).toBeGreaterThan(0);
 		}
+	});
+});
+
+/**
+ * `shipCount` zog mit Task 12 aus „Boot-/Schiffsinformationen" in die Karte
+ * „Umweltbedingungen" — fachlich richtig, es ist Störungskontext wie Seegang
+ * und Sichtweite. Es landete dabei aber an der ERSTEN Stelle der Karte, direkt
+ * unter dem Satz „Sobald Position und Datum gesetzt sind, werden Wetterdaten
+ * automatisch vorgeschlagen." — als einziges Feld, das der Wetter-Abruf nie
+ * füllt. Es steht deshalb jetzt hinter `windForce`.
+ *
+ * Diese Liste ist dabei nicht kosmetisch: `scrollToFirstError`
+ * (`$lib/utils/fieldNavigation`) läuft sie ab, um zum ersten fehlerhaften Feld
+ * zu springen — `StepNavigation.svelte` baut das `fieldOrder`-Argument aus
+ * genau dieser Config. Weicht sie von der Render-Reihenfolge ab, springt die
+ * Navigation an ein anderes Feld als das oberste sichtbare. `findStepForErrors`
+ * ist davon NICHT betroffen: es prüft mit `fields.includes(...)` nur die
+ * Zugehörigkeit zum Schritt und ist gegenüber der Position darin unempfindlich.
+ *
+ * Die Render-Reihenfolge selbst prüft `Environment.svelte.test.ts`.
+ */
+describe('formStepsConfig — Umweltfelder in Render-Reihenfolge', () => {
+	const observationsStep = formStepsConfig.find((step) => step.id === 'observations');
+
+	// Ein `toEqual` auf die gefilterte Liste statt zweier Index-Vergleiche: Es
+	// belegt Vorhandensein UND Reihenfolge in einem. Fehlt ein Feld ganz, ist
+	// die gefilterte Liste kürzer und der Vergleich schlägt fehl — die sonst
+	// nötigen `indexOf`-Wächter gegen die stille -1 erübrigen sich damit.
+	it('führt die Umweltfelder in der Reihenfolge der Karte', () => {
+		const fields = observationsStep?.fields ?? [];
+		const umwelt = ['seaState', 'visibility', 'windForce', 'shipCount'];
+
+		expect(fields.filter((name) => umwelt.includes(name))).toEqual(umwelt);
 	});
 });
