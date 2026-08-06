@@ -6,6 +6,12 @@
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
 import { SightingFromEnum } from './formOptions/sightingFrom';
 import type { FormStep, SightingFormData } from './types';
+// Typ-Import, kein Laufzeit-Import — der Zyklus formConfig.ts →
+// components/sections/boatDriveReset.ts → formOptions/sightingFrom.ts bleibt
+// damit unkritisch: `boatDriveReset.ts` importiert nichts, das seinerseits
+// formConfig.ts lädt, und ein reiner Typ-Import wird beim Bundling ohnehin
+// vollständig entfernt.
+import type { SightingFromValue } from './components/sections/boatDriveReset';
 
 export const sightingSchemaDescription = sightingSchema.describe();
 
@@ -235,8 +241,16 @@ const HIDDEN_WHEN_DEAD = ['behavior', 'behaviorText', 'reaction'] as const;
  * (`shipNameConsent`). `boatDrive` braucht dort KEINE eigene Bedingung —
  * `sections/SightingDetails.svelte` zeigt es ohnehin nur bei Segelschiff/
  * Motorboot (`isBoatSightingFrom`), eine Teilmenge von „nicht Land".
+ *
+ * **Exportiert**, weil `ModernReportForm.svelte` dieselbe Liste noch für eine
+ * DRITTE Sache braucht (Review-Befund 1, Task 11): Ausblenden allein reicht
+ * nicht — ein ausgeblendetes Feld bleibt sonst unsichtbar, aber weiter im
+ * `$form`-Zustand stehen und geht beim Absenden mit ans Backend. Dort wird
+ * dieselbe Liste (ohne `boatDrive`, das einen eigenen, gezielteren
+ * Reset-Mechanismus hat — Begründung dort) benutzt, um den Formular-Zustand
+ * selbst zu räumen, statt eine zweite, von Hand gepflegte Liste zu pflegen.
  */
-const HIDDEN_WHEN_FROM_LAND = [
+export const HIDDEN_WHEN_FROM_LAND = [
 	'boatDrive',
 	'boatType',
 	'shipName',
@@ -253,8 +267,19 @@ const HIDDEN_WHEN_FROM_LAND = [
  * Eine Regel „zeige nur bei Segelschiff/Motorboot/Fähre" würde die Felder
  * deshalb vor der Beantwortung ausblenden und für alle Sonstiges-Melder
  * dauerhaft.
+ *
+ * Nimmt `SightingFromValue` (aus `boatDriveReset.ts`) statt
+ * `FormStepsInput['sightingFrom']` an: Drei Komponenten (`BoatInfo.svelte`,
+ * `Behavior.svelte`, `Step4Contact.svelte`) rufen diese Funktion aus dem
+ * Markup heraus mit `$form.sightingFrom` auf und haben mit `getFormSteps`s
+ * Validierungs-Eingabe nichts zu tun — der Parametertyp sollte das nicht
+ * vortäuschen. `SightingFromValue` beschreibt denselben Wertebereich (String
+ * vom HTML-Select oder Number aus dem Yup-Schema), ist aber an der Stelle
+ * definiert, die auch die Markup-Aufrufer schon kennen — kein Import-Zyklus,
+ * da `boatDriveReset.ts` nichts importiert, das seinerseits `formConfig.ts`
+ * lädt, und es sich hier um einen reinen Typ-Import handelt.
  */
-export function isFromLand(value: FormStepsInput['sightingFrom']): boolean {
+export function isFromLand(value: SightingFromValue): boolean {
 	return Number(value) === SightingFromEnum.LAND;
 }
 

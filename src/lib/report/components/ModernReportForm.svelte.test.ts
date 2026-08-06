@@ -23,6 +23,7 @@ const { deleteMultipleFiles } = vi.hoisted(() => ({
 vi.mock('$lib/utils/upload/fileProcessing', () => ({ deleteMultipleFiles }));
 
 import { initialFormState } from '$lib/report/formConfig';
+import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import { STORAGE_KEYS } from '$lib/storage/localStorage';
 import type { UploadedFileInfo } from '$lib/types';
 import ModernReportForm from './ModernReportForm.svelte';
@@ -206,6 +207,127 @@ describe('ModernReportForm — zweigfremde Felder werden beim Start geleert', ()
 		});
 
 		const data = persistedFormData();
+		expect(data.species).toBe(7);
+		expect(data.latitude).toBe(54.5);
+		expect(data.longitude).toBe(12.1);
+	});
+});
+
+/**
+ * Review-Befund 1 (Task 11, Nachbesserung): Ausgeblendete Bootsangaben wurden
+ * trotzdem abgesendet. `HIDDEN_WHEN_FROM_LAND` (`formConfig.ts`) nimmt die
+ * Felder zwar aus `getFormSteps()`, und dieselbe Bedingung blendet sie im
+ * Markup aus (`BoatInfo.svelte`, `Behavior.svelte`, `Step4Contact.svelte`) —
+ * beides ändert nichts am `$form`-Zustand. Ein unsichtbares Feld mit stehen
+ * gebliebenem Wert geht beim Absenden trotzdem mit: `onSubmit` in
+ * `ModernReportForm.svelte` reicht `$form` fast unverändert weiter (nur
+ * `verified`/`internalComment`/`uploadedFiles` fallen weg).
+ *
+ * Ein reiner Funktionstest an `formConfig.ts` hätte diese Lücke nicht
+ * gefunden — dieselbe Fehlerklasse wie beim Totfund-Test oben („zweigfremde
+ * Felder"): eine richtige Feldliste, aber nicht bis zum Absendeweg
+ * verdrahtet. Beide Tests hier lesen den Zustand deshalb über die
+ * persistierten `FORM_DATA` — denselben Weg, über den auch der spätere
+ * Submit tatsächlich sendet.
+ *
+ * Zwei Leckquellen, beide hier abgedeckt:
+ * - `loadUserContactData()` befüllt `shipName`/`homePort`/`boatType`/
+ *   `shipNameConsent` schon beim Formularstart aus einer FRÜHEREN
+ *   Bootsmeldung — der Melder hat diese Werte in DIESER Meldung nie gesehen.
+ * - Ein Wechsel MITTEN im Formular (Boot ausgefüllt, dann auf Land
+ *   umgestellt) hinterlässt eigene Eingaben unsichtbar im State.
+ */
+describe('ModernReportForm — Bootsfelder überleben eine Land-Meldung nicht', () => {
+	function persistedFormData(): Record<string, unknown> {
+		const stored = sessionStorage.getItem(STORAGE_KEYS.FORM_DATA);
+		if (!stored) throw new Error('FORM_DATA wurde noch nicht persistiert');
+		return JSON.parse(stored);
+	}
+
+	it('räumt vorbefüllte Kontaktdaten auf, sobald der Melder "Land" wählt', async () => {
+		// Wiederkehrender Melder: eine frühere Bootsmeldung hat mit Einwilligung
+		// Kontaktdaten hinterlassen (`persistentDataConsent` -> localStorage).
+		// `FORM_DATA` (sessionStorage) ist dagegen leer — eine neue Sitzung, der
+		// Melder hat diese Werte hier noch nicht gesehen.
+		localStorage.setItem(
+			STORAGE_KEYS.USER_CONTACT_DATA,
+			JSON.stringify({
+				firstName: 'Max',
+				lastName: 'Mustermann',
+				email: 'max@example.com',
+				phone: '',
+				shipName: 'MS Seelöwe',
+				homePort: 'Kiel',
+				boatType: 'Segelboot',
+				nameConsent: false,
+				shipNameConsent: true,
+				persistentDataConsent: true
+			})
+		);
+		// Direkt auf Schritt 2 ("Angaben zum Tier") starten — dort steht
+		// `sightingFrom`.
+		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(1));
+
+		render(ModernReportForm);
+
+		await page.getByTestId('field-sightingFrom').selectOptions(String(SightingFromEnum.LAND));
+
+		await vi.waitFor(() => {
+			const data = persistedFormData();
+			expect(data.shipName).toBeUndefined();
+			expect(data.homePort).toBeUndefined();
+			expect(data.boatType).toBeUndefined();
+			expect(data.shipNameConsent).toBe(false);
+		});
+
+		// Der Reset betrifft nur DIESE Meldung (`$form`/`FORM_DATA`) — die
+		// dauerhaft gespeicherten Kontaktdaten bleiben unangetastet, damit der
+		// Melder sie beim nächsten Mal, wenn er wieder vom Boot meldet, zurückbekommt.
+		const contactData = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA) ?? '{}');
+		expect(contactData.shipName).toBe('MS Seelöwe');
+		expect(contactData.homePort).toBe('Kiel');
+		expect(contactData.boatType).toBe('Segelboot');
+		expect(contactData.shipNameConsent).toBe(true);
+	});
+
+	it('räumt eigene Eingaben auf, wenn mitten im Formular von Boot auf Land gewechselt wird', async () => {
+		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(1));
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-boot-zu-land',
+				sightingFrom: SightingFromEnum.SAILBOAT,
+				shipName: 'MS Testboot',
+				homePort: 'Rostock',
+				boatType: 'Segelboot',
+				reaction: 'neugierig genähert',
+				shipNameConsent: true,
+				shipCount: 2,
+				distance: 50,
+				species: 7,
+				latitude: 54.5,
+				longitude: 12.1
+			})
+		);
+
+		render(ModernReportForm);
+
+		await page.getByTestId('field-sightingFrom').selectOptions(String(SightingFromEnum.LAND));
+
+		await vi.waitFor(() => {
+			const data = persistedFormData();
+			expect(data.shipName).toBeUndefined();
+			expect(data.homePort).toBeUndefined();
+			expect(data.boatType).toBeUndefined();
+			expect(data.reaction).toBeUndefined();
+			expect(data.shipNameConsent).toBe(false);
+		});
+
+		const data = persistedFormData();
+		// Unbeteiligte Felder bleiben stehen — keine Kollateralschäden.
+		expect(data.shipCount).toBe(2);
+		expect(data.distance).toBe(50);
 		expect(data.species).toBe(7);
 		expect(data.latitude).toBe(54.5);
 		expect(data.longitude).toBe(12.1);

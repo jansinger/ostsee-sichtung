@@ -85,6 +85,20 @@ describe('sections/SightingDetails — boatDrive in der Admin-Maske', () => {
 
 		expect(document.querySelector('[data-field="boatDrive"]')).toBeNull();
 	});
+
+	/**
+	 * Review-Befund 2 (Task 11): Der vorherige Test rendert ausschließlich mit
+	 * `adminMode: true` — „war schon vorher grün" belegte damit nur den
+	 * Admin-Zweig. `showsBoatDrive` (`isBoatSightingFrom`) kennt `adminMode`
+	 * gar nicht, trotzdem war der Bürger-Zweig bis hierhin ungetestet.
+	 * Gegenprobe ohne `adminMode` (Standardwert `false`, siehe
+	 * `renderSightingDetails`).
+	 */
+	it('zeigt den Bootsantrieb bei "Land" auch im Meldeformular gar nicht erst', () => {
+		renderSightingDetails({ sightingFrom: SightingFromEnum.LAND });
+
+		expect(document.querySelector('[data-field="boatDrive"]')).toBeNull();
+	});
 });
 
 /**

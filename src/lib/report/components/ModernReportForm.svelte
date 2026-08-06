@@ -14,7 +14,12 @@
 	import { fieldsOutsideReportKind } from '$lib/report/fieldsOutsideReportKind';
 	import { findStepForErrors } from '$lib/report/findStepForErrors';
 	import { resolveServerFieldErrors } from '$lib/report/serverFieldErrors';
-	import { initialFormState, isDeadFinding } from '$lib/report/formConfig';
+	import {
+		HIDDEN_WHEN_FROM_LAND,
+		initialFormState,
+		isDeadFinding,
+		isFromLand
+	} from '$lib/report/formConfig';
 	import { toast } from '$lib/stores/toastState.svelte';
 	import {
 		clearFormDataOnly,
@@ -430,6 +435,63 @@
 	let currentStep: number = $state(loadFromStorage(STORAGE_KEYS.CURRENT_STEP, 0));
 
 	const form = $derived(formContext.form);
+
+	/**
+	 * Review-Befund 1 (Task 11): Felder zum eigenen Wasserfahrzeug räumen,
+	 * sobald „Land" gilt — nicht nur ausblenden.
+	 *
+	 * `HIDDEN_WHEN_FROM_LAND` (`formConfig.ts`) nimmt die Felder aus der
+	 * Validierung, und dieselbe Bedingung im Markup blendet sie aus
+	 * (`BoatInfo.svelte`, `Behavior.svelte`, `Step4Contact.svelte`). Beides
+	 * ändert nichts am `$form`-ZUSTAND: Ein unsichtbares Feld mit stehen
+	 * gebliebenem Wert geht beim Absenden trotzdem mit, weil `onSubmit` unten
+	 * (Zeile ~186) `$form` fast unverändert weiterreicht.
+	 *
+	 * Zwei Leckquellen, ein Mechanismus:
+	 * - `loadUserContactData()` (oben) befüllt `shipName`/`homePort`/
+	 *   `boatType`/`shipNameConsent` schon beim Start aus einer FRÜHEREN
+	 *   Bootsmeldung — der Melder hat diese Werte in DIESER Meldung nie
+	 *   gesehen, sobald er diesmal „Land" wählt.
+	 * - Ein Wechsel MITTEN im Formular (Boot ausgefüllt, dann auf Land
+	 *   umgestellt) hinterlässt eigene Eingaben unsichtbar im State.
+	 *
+	 * Ein reiner „beim Mount"-Reset (wie `fieldsOutsideReportKind` es für die
+	 * Totfund-Achse macht, oben ab Zeile 116) deckt nur die erste Quelle ab:
+	 * Der Totfund-Zweig steht beim Betreten fest, `sightingFrom` dagegen ist
+	 * ein Feld IM Formular und ändert sich jederzeit. Deshalb hier ein
+	 * `$effect` statt einer einmaligen Schleife — es prüft bei JEDER
+	 * `$form`-Änderung neu, ob `isFromLand` gilt, und räumt dann auf. Das
+	 * deckt automatisch auch den Mount-Fall ab (erster Effect-Lauf), ohne
+	 * `shouldResetBoatDrive`s Übergangs-Tracking (`boatDriveReset.ts`)
+	 * nachzubauen — dessen „nicht beim Mount"-Ausnahme gilt nur für
+	 * `boatDrive`, weil DAS Feld auch von der Admin-Maske über
+	 * `SightingDetails.svelte` gepflegt wird und ein Mount-Reset dort einen
+	 * gespeicherten Altbestandswert löschen würde. Diese fünf Felder betreffen
+	 * ausschließlich das Meldeformular — `BoatInfo.svelte` und
+	 * `Step4Contact.svelte` werden von `AdminSightingEditForm.svelte` gar
+	 * nicht eingebunden, und `Behavior.svelte` zeigt `reaction` dort ohnehin
+	 * unbedingt (`adminMode`-Zweig). Ein Mount-Reset kann in der Admin-Maske
+	 * deshalb gar nicht greifen — sie rendert diesen Effect-Code-Pfad nie.
+	 *
+	 * OHNE `boatDrive` aus `HIDDEN_WHEN_FROM_LAND`: Das Feld hat mit
+	 * `shouldResetBoatDrive` bereits einen eigenen, gezielteren Mechanismus
+	 * (verdrahtet in `SightingDetails.svelte`), der zusätzlich
+	 * `boatDriveText` mitnimmt. `boatDrive` ist außerdem kein Feld aus
+	 * `loadUserContactData()` — die erste Leckquelle betrifft es gar nicht.
+	 */
+	const RESET_WHEN_FROM_LAND = HIDDEN_WHEN_FROM_LAND.filter(
+		(field) => field !== 'boatDrive'
+	) as Exclude<(typeof HIDDEN_WHEN_FROM_LAND)[number], 'boatDrive'>[];
+
+	$effect(() => {
+		if (!isFromLand($form.sightingFrom)) return;
+
+		for (const field of RESET_WHEN_FROM_LAND) {
+			if ($form[field] !== initialFormState[field]) {
+				formContext.updateField(field, initialFormState[field]);
+			}
+		}
+	});
 
 	// Speichere currentStep direkt bei Änderungen
 	$effect(() => {
