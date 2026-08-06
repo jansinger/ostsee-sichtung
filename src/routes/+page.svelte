@@ -54,8 +54,7 @@
 			page.url.searchParams.get('meldung'),
 			browser ? readReportKind() : null,
 			browser
-				? ((loadFromStorage(STORAGE_KEYS.FORM_DATA, null) as { isDead?: boolean } | null)?.isDead ??
-						null)
+				? (loadFromStorage(STORAGE_KEYS.FORM_DATA, null) as { isDead?: unknown } | null)?.isDead
 				: null
 		)
 	);

@@ -59,6 +59,28 @@ describe('resolveReportKind', () => {
 		expect(resolveReportKind(null, null, true)).toBe('dead');
 	});
 
+	it('normalisiert gespeichertes isDead, statt es roh auf Wahrheit zu prüfen', () => {
+		// `FORM_DATA` kommt ungeprüft aus dem Storage — `loadFromStorage` mit
+		// Default `null` reicht das geparste JSON durch, ohne zu sanitisieren.
+		// Ein `'0'` von dort ist in JS wahr; eine rohe Prüfung machte daraus
+		// einen Totfund. `isDeadFinding` ist die eine gültige Normalisierung
+		// im Projekt (`formConfig.ts`) und gilt auch hier.
+		for (const alsLebend of ['0', 'false', 0, '']) {
+			expect(resolveReportKind(null, null, alsLebend)).toBe('alive');
+		}
+		for (const alsTot of ['1', 'true', 1, true]) {
+			expect(resolveReportKind(null, null, alsTot)).toBe('dead');
+		}
+	});
+
+	it('fragt nur dann, wenn gar kein gespeichertes isDead vorliegt', () => {
+		// Die Unterscheidung „nicht vorhanden" gegen „vorhanden und falsch"
+		// trägt die Migration: Ein Melder mitten im Formular soll nicht auf die
+		// Auswahlseite zurückgeworfen werden, nur weil sein Zweig `alive` ist.
+		expect(resolveReportKind(null, null, null)).toBeNull();
+		expect(resolveReportKind(null, null, undefined)).toBeNull();
+	});
+
 	it('lässt den Query-Parameter gegen den gespeicherten Zweig gewinnen', () => {
 		expect(resolveReportKind('totfund', 'alive', null)).toBe('dead');
 		expect(resolveReportKind('lebend', 'dead', null)).toBe('alive');

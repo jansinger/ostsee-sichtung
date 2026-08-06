@@ -1,3 +1,4 @@
+import { isDeadFinding } from '$lib/report/formConfig';
 import {
 	loadFromStorage,
 	removeFromStorage,
@@ -58,7 +59,7 @@ export function reportKindToParam(kind: ReportKind): 'lebend' | 'totfund' {
 export function resolveReportKind(
 	param: string | null,
 	stored: ReportKind | null,
-	savedIsDead: boolean | null
+	savedIsDead: unknown
 ): ReportKind | null {
 	const fromParam = param ? PARAM_TO_KIND.get(param) : undefined;
 	if (fromParam) {
@@ -67,8 +68,8 @@ export function resolveReportKind(
 	if (stored) {
 		return stored;
 	}
-	if (savedIsDead !== null) {
-		return savedIsDead ? 'dead' : 'alive';
+	if (savedIsDead !== null && savedIsDead !== undefined) {
+		return isDeadFinding(savedIsDead) ? 'dead' : 'alive';
 	}
 	return null;
 }
