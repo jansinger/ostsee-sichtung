@@ -476,32 +476,27 @@ describe('getFormSteps mit Beobachtungsort', () => {
  * automatisch vorgeschlagen." — als einziges Feld, das der Wetter-Abruf nie
  * füllt. Es steht deshalb jetzt hinter `windForce`.
  *
- * Diese Liste ist dabei nicht kosmetisch: `scrollToFirstError` und
- * `findStepForErrors` laufen sie ab, um zum ersten fehlerhaften Feld zu
- * springen. Weicht sie von der Render-Reihenfolge ab, springt die Navigation
- * an ein anderes Feld als das oberste sichtbare. Die Render-Reihenfolge selbst
- * prüft `Environment.svelte.test.ts`.
+ * Diese Liste ist dabei nicht kosmetisch: `scrollToFirstError`
+ * (`$lib/utils/fieldNavigation`) läuft sie ab, um zum ersten fehlerhaften Feld
+ * zu springen — `StepNavigation.svelte` baut das `fieldOrder`-Argument aus
+ * genau dieser Config. Weicht sie von der Render-Reihenfolge ab, springt die
+ * Navigation an ein anderes Feld als das oberste sichtbare. `findStepForErrors`
+ * ist davon NICHT betroffen: es prüft mit `fields.includes(...)` nur die
+ * Zugehörigkeit zum Schritt und ist gegenüber der Position darin unempfindlich.
+ *
+ * Die Render-Reihenfolge selbst prüft `Environment.svelte.test.ts`.
  */
 describe('formStepsConfig — Umweltfelder in Render-Reihenfolge', () => {
 	const observationsStep = formStepsConfig.find((step) => step.id === 'observations');
 
+	// Ein `toEqual` auf die gefilterte Liste statt zweier Index-Vergleiche: Es
+	// belegt Vorhandensein UND Reihenfolge in einem. Fehlt ein Feld ganz, ist
+	// die gefilterte Liste kürzer und der Vergleich schlägt fehl — die sonst
+	// nötigen `indexOf`-Wächter gegen die stille -1 erübrigen sich damit.
 	it('führt die Umweltfelder in der Reihenfolge der Karte', () => {
 		const fields = observationsStep?.fields ?? [];
 		const umwelt = ['seaState', 'visibility', 'windForce', 'shipCount'];
 
 		expect(fields.filter((name) => umwelt.includes(name))).toEqual(umwelt);
-	});
-
-	it('listet shipCount hinter windForce', () => {
-		const fields = observationsStep?.fields ?? [];
-		const windIndex = fields.indexOf('windForce');
-		const shipCountIndex = fields.indexOf('shipCount');
-
-		// Beide Fundstellen ausdrücklich absichern: `indexOf` liefert für ein
-		// fehlendes Feld -1, und -1 ist kleiner als jeder gültige Index — der
-		// Vergleich allein liefe grün durch, gerade wenn das Feld ganz fehlt.
-		expect(windIndex).toBeGreaterThanOrEqual(0);
-		expect(shipCountIndex).toBeGreaterThanOrEqual(0);
-		expect(windIndex).toBeLessThan(shipCountIndex);
 	});
 });

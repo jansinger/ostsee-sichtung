@@ -115,8 +115,8 @@
 	     werden, und `shipCount` ist das einzige Feld darin, das der Abruf nie
 	     füllt. Direkt unter diesem Satz las es sich wie ein Wetterfeld. Die
 	     Feldliste in `formConfig.ts` (Schritt `observations`) trägt dieselbe
-	     Reihenfolge — `scrollToFirstError` und `findStepForErrors` laufen sie
-	     ab, um zum ersten fehlerhaften Feld zu springen. -->
+	     Reihenfolge — `scrollToFirstError` läuft sie ab, um zum ersten
+	     fehlerhaften Feld zu springen. -->
 	{#if !adminMode}
 		<div class="mt-4 grid grid-cols-1 gap-4">
 			<FormField name="shipCount" />

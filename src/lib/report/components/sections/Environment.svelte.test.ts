@@ -56,9 +56,9 @@ describe('sections/Environment — shipCount als Störungskontext', () => {
  * `windForce`, also ans Ende der vom Abruf befüllten Felder.
  *
  * Die Liste in `formConfig.ts` (Schritt `observations`) muss dieselbe
- * Reihenfolge tragen — `scrollToFirstError` und `findStepForErrors` laufen sie
- * ab, um zum ersten fehlerhaften Feld zu springen. Geprüft wird das in
- * `formConfig.test.ts`; hier zählt, was der Melder wirklich sieht.
+ * Reihenfolge tragen — `scrollToFirstError` läuft sie ab, um zum ersten
+ * fehlerhaften Feld zu springen. Geprüft wird das in `formConfig.test.ts`;
+ * hier zählt, was der Melder wirklich sieht.
  */
 describe('sections/Environment — Feldreihenfolge in der Karte', () => {
 	it('stellt shipCount hinter die vom Wetter-Abruf befüllten Felder', () => {
