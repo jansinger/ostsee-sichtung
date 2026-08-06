@@ -9,9 +9,15 @@ import {
 	writeReportKind
 } from './reportKind';
 
-// Mock localStorage für Node.js Tests — REPORT_KIND liegt nicht in sessionKeys,
-// landet also immer in localStorage (siehe localStorage.ts).
-const localStorageMock = (() => {
+/**
+ * Mock für Node.js-Tests. REPORT_KIND liegt in `sessionKeys` (Abschlussreview
+ * B3, 2026-08-06) — derselbe Speicher wie FORM_DATA, dessen Lebensdauer der
+ * Zweig jetzt teilt. Zwei getrennte Instanzen, weil `localStorage.ts` beide
+ * unabhängig anspricht; `createStorageMock()` statt einer geteilten Fabrik
+ * hält das offensichtlich, ohne dass ein Test versehentlich in den falschen
+ * Speicher schreibt.
+ */
+function createStorageMock() {
 	let store: Record<string, string> = {};
 	return {
 		getItem: (key: string) => store[key] || null,
@@ -27,13 +33,14 @@ const localStorageMock = (() => {
 		length: Object.keys(store).length,
 		key: (index: number) => Object.keys(store)[index] || null
 	};
-})();
+}
 
 vi.mock('$app/environment', () => ({
 	browser: true
 }));
 
-Object.defineProperty(global, 'localStorage', { value: localStorageMock });
+Object.defineProperty(global, 'localStorage', { value: createStorageMock() });
+Object.defineProperty(global, 'sessionStorage', { value: createStorageMock() });
 Object.defineProperty(global, 'window', { value: global });
 
 describe('resolveReportKind', () => {
@@ -91,18 +98,18 @@ describe('reportKindToParam', () => {
 
 describe('reportKind storage roundtrip', () => {
 	beforeEach(() => {
-		localStorage.clear();
+		sessionStorage.clear();
 	});
 
 	it('clearReportKind entfernt den Schlüssel statt "null" zu speichern', () => {
 		writeReportKind('dead');
-		expect(localStorage.getItem(STORAGE_KEYS.REPORT_KIND)).not.toBeNull();
+		expect(sessionStorage.getItem(STORAGE_KEYS.REPORT_KIND)).not.toBeNull();
 
 		clearReportKind();
 
 		// saveToStorage(key, null) würde den String "null" ablegen — der Schlüssel
 		// muss stattdessen vollständig verschwinden, wie bei clearUserContactData.
-		expect(localStorage.getItem(STORAGE_KEYS.REPORT_KIND)).toBeNull();
+		expect(sessionStorage.getItem(STORAGE_KEYS.REPORT_KIND)).toBeNull();
 		expect(readReportKind()).toBeNull();
 	});
 });

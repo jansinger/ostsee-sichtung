@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { FormPage } from './pages/FormPage';
+import { fillStep1, fillStep4, waitForNextEnabled } from './helpers/form-helpers';
 
 test.describe('Einstiegsseite des Meldeformulars', () => {
 	test('Erstbesucher sieht die Auswahl und kommt ohne sie nicht weiter', async ({ page }) => {
@@ -150,5 +152,137 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 		await expect(page.getByTestId('report-kind-submit')).toHaveAttribute('aria-disabled', 'false');
 
 		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
+	});
+});
+
+/**
+ * B1 (Abschlussreview, kritisch): „Formular zurücksetzen" setzte den
+ * Formular-Zustand auf `initialFormData` zurück (`isDead: false`) und räumte
+ * per `clearStorage()` zwar `REPORT_KIND` weg — der Zweig-`$state` in
+ * `+page.svelte` blieb davon aber unberührt. Die Auswahlseite erschien nie
+ * wieder, Schritt 1/2 zeigten unbemerkt den Lebend-Wortlaut, und die Pflicht-
+ * frage nach dem Zustand des toten Tieres verschwand ersatzlos — ein
+ * Strandfund ließ sich nach dem Reset lautlos als Lebendsichtung absenden,
+ * während die URL weiterhin `?meldung=totfund` trug.
+ */
+test.describe('„Formular zurücksetzen" kehrt zur Auswahl zurück (B1)', () => {
+	test('nach dem Reset erscheint die Auswahlseite, nicht der verlassene Totfund-Zweig', async ({
+		page
+	}) => {
+		await page.goto('/?meldung=totfund');
+		await page.waitForLoadState('networkidle');
+		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
+
+		await page.getByTestId('field-waterway').fill('Kieler Bucht');
+		await page.getByRole('button', { name: /Nächster Schritt/i }).click();
+		// Belegt, dass der Zweig zu diesem Zeitpunkt tatsächlich „dead" ist —
+		// der Totfund-Block rendert ausschließlich dafür.
+		await expect(page.getByTestId('field-deadCondition')).toBeVisible();
+
+		page.once('dialog', (dialog) => dialog.accept());
+		await page.getByRole('button', { name: 'Formular zurücksetzen' }).click();
+
+		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
+		// Ohne das holte ein Reload denselben verlassenen Zweig sofort zurück —
+		// `resolveReportKind` gibt der URL Vorrang vor dem gespeicherten Stand.
+		await expect(page).not.toHaveURL(/meldung=totfund/);
+
+		// Gegenprobe gegen einen Rücksprung über die dritte Quelle
+		// (`isDead` aus persistierten Formulardaten, siehe `resolveReportKind`):
+		// Die Auswahl muss auch ein Reload überstehen.
+		await page.reload();
+		await page.waitForLoadState('networkidle');
+		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
+	});
+});
+
+/**
+ * B2 (Abschlussreview, wichtig) + B3 (Abschlussreview, wichtig): Nach
+ * erfolgreichem Absenden setzte „Weitere Meldung abgeben" nur
+ * `submissionSuccess`/`submittedData` zurück — der Zweig-`$state` blieb
+ * stehen, wer gerade einen Totfund gemeldet hatte, landete ungefragt wieder
+ * im Totfund-Formular (B2). Unabhängig davon überlebte `REPORT_KIND` im
+ * `localStorage` auch die Formulardaten selbst, die in `sessionStorage`
+ * liegen — die Einstiegsfrage wurde pro Browser nur einmal gestellt, auch
+ * Wochen später für ein anderes Tier (B3).
+ */
+test.describe('Nach dem Absenden verlässt der Zweig den Speicher, und „Weitere Meldung" fragt neu (B2, B3)', () => {
+	test('Storage vergisst den Zweig sofort nach dem Absenden, „Weitere Meldung" zeigt die Auswahl', async ({
+		page
+	}) => {
+		await page.route('**/api/sightings', (route) => {
+			route.fulfill({
+				status: 201,
+				contentType: 'application/json',
+				body: JSON.stringify({ success: true, id: 999, referenceId: 'REF-999' })
+			});
+		});
+
+		const formPage = new FormPage(page);
+		await formPage.goto('totfund');
+		await fillStep1(formPage);
+		await waitForNextEnabled(page);
+		await formPage.clickNext();
+
+		await formPage.selectSpecies(0);
+		await formPage.fillTotalCount(1);
+		await formPage.selectDistance(1);
+		await formPage.selectSightingFrom(3); // Land
+		await formPage.selectDeadCondition(1);
+		await waitForNextEnabled(page);
+		await formPage.clickNext();
+
+		await formPage.skipStep(); // Schritt 3 ist optional
+		await fillStep4(formPage);
+		await formPage.clickSubmit();
+
+		await expect(page.getByRole('heading', { name: /Vielen Dank/i })).toBeVisible({
+			timeout: 10000
+		});
+
+		// B3: Der gemerkte Zweig ist mit den Formulardaten aus dem Storage
+		// verschwunden — nicht erst, wenn „Weitere Meldung" geklickt wird.
+		const storedKind = await page.evaluate(() => sessionStorage.getItem('sichtungen_report_kind'));
+		expect(storedKind).toBeNull();
+		const persistedKind = await page.evaluate(() => localStorage.getItem('sichtungen_report_kind'));
+		expect(persistedKind).toBeNull();
+
+		// B2: Der In-Memory-Zweig in `+page.svelte` überlebt bis hierher trotzdem —
+		// erst der Klick auf „Weitere Meldung" muss ihn im UI zurücksetzen.
+		await page.getByRole('button', { name: /Weitere Meldung abgeben/i }).click();
+		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
+		await expect(page).not.toHaveURL(/meldung=totfund/);
+	});
+});
+
+/**
+ * B5 (Abschlussreview, wichtig): Ohne `?meldung=` liefert der Server immer
+ * die Auswahlseite aus — er kennt `sessionStorage` nicht. Ein Wiederkehrer,
+ * dessen Zweig ausschließlich aus dem Storage aufgelöst wird (Lesezeichen auf
+ * `/`, iframe-Reload der Elternseite auf meeresmuseum.de), sieht die
+ * Auswahlseite deshalb bei jedem Reload kurz aufflackern, bevor die
+ * Hydration den gespeicherten Zweig nachträgt. Der `$effect`, der den
+ * aufgelösten Zweig in die URL nachträgt, macht daraus „nur beim ersten Mal
+ * nach Verlust des Parameters" — das NÄCHSTE Reload löst dann bereits
+ * serverseitig richtig auf.
+ */
+test.describe('Der aus dem Storage aufgelöste Zweig wird in die URL nachgetragen (B5)', () => {
+	test('ein Reload ohne Parameter trägt den gespeicherten Zweig in die URL nach', async ({
+		page
+	}) => {
+		await page.goto('/');
+		await page.waitForLoadState('networkidle');
+		await page.getByRole('radio', { name: /toten Tieres/i }).check();
+		await page.getByTestId('report-kind-submit').click();
+		await expect(page).toHaveURL(/meldung=totfund/);
+
+		// Simuliert einen Wiederkehrer in derselben Sitzung, dessen URL den
+		// Parameter nicht (mehr) trägt — z. B. ein Lesezeichen auf die
+		// bloße Startseite. `sessionStorage` bleibt dabei erhalten.
+		await page.goto('/');
+		await page.waitForLoadState('networkidle');
+
+		await expect(page).toHaveURL(/meldung=totfund/);
+		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
 	});
 });

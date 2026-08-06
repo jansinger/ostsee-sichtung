@@ -38,7 +38,7 @@
 	import { scrollToFirstError } from '$lib/utils/fieldNavigation';
 	import { createId } from '@paralleldrive/cuid2';
 	import { formStepsConfig } from '$lib/report/formConfig';
-	import { untrack } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { ValidationError } from 'yup';
 	import Form from './form/Form.svelte';
 	import FormSteps from './form/FormSteps.svelte';
@@ -58,7 +58,10 @@
 		initialIsDead,
 		// Default-Noop wie `onCancel` oben: `exactOptionalPropertyTypes` verbietet sonst das
 		// Weiterreichen als `{onchangekind}` an `Step2SightingDetails`.
-		onchangekind = () => {}
+		onchangekind = () => {},
+		// Default-Noop aus demselben Grund wie `onchangekind` — hier gibt es
+		// aber keine weitere Aufrufstelle, an die durchgereicht werden müsste.
+		onreset = () => {}
 	}: {
 		onSubmit?: (data: SightingFormValues) => Promise<void>;
 		onCancel?: () => void;
@@ -74,6 +77,15 @@
 		 * kennt die Einstiegsseite, zu der er zurückführt.
 		 */
 		onchangekind?: () => void;
+		/**
+		 * Abschlussreview B1: „Formular zurücksetzen" (`onReset()` unten) räumt
+		 * Storage und Formular-Zustand clientseitig auf, kann den Zweig-`$state`
+		 * in `+page.svelte` aber nicht selbst anfassen — der lebt eine Ebene
+		 * höher. Ohne dieses Prop bliebe die Auswahlseite nach einem Reset
+		 * unsichtbar: `isDead` fiele im Formular still auf den Schema-Default
+		 * `false` zurück, während `+page.svelte` weiter den alten Zweig zeigt.
+		 */
+		onreset?: () => void;
 	} = $props();
 
 	// Lade gespeicherte Benutzer-Kontaktdaten
@@ -480,7 +492,7 @@
 	 * Es wird bewusst nicht gewartet: Warum, und warum der Medien-Store dabei ganz
 	 * geleert wird, steht in `discardFormUploads.ts`.
 	 */
-	function onReset() {
+	async function onReset() {
 		logger.info('Resetting form:');
 
 		discardFormUploads($form.uploadedFiles, formContext.mediaStore);
@@ -492,6 +504,17 @@
 		// Stelle sicher, dass currentStep auch im localStorage zurückgesetzt wird
 		saveToStorage(STORAGE_KEYS.CURRENT_STEP, 0);
 		formContext.updateInitialValues(initialFormData);
+
+		// B1: `onreset` schaltet in `+page.svelte` den Zweig zurück auf die
+		// Auswahlseite (Spec §6.2: „Zurücksetzen → reportKind löschen → Seite
+		// erscheint wieder"). `await tick()` zuerst, weil `updateInitialValues`
+		// oben `$form` ändert — der `$effect` weiter unten, der `$form` nach
+		// `FORM_DATA` spiegelt, läuft erst im nächsten Svelte-Flush. Ohne das
+		// Warten läse der Aufrufer entweder noch die soeben gelöschten Daten,
+		// oder der Effekt schriebe NACH dem Aufräumen dort unten ein frisches
+		// `isDead: false` zurück, das ihm entginge.
+		await tick();
+		onreset();
 	}
 
 	// Lade currentStep aus localStorage oder starte bei 0

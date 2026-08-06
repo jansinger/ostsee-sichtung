@@ -43,7 +43,7 @@ vi.mock('$lib/form/submitSightingForm', () => ({
 
 import { initialFormState } from '$lib/report/formConfig';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
-import { STORAGE_KEYS } from '$lib/storage/localStorage';
+import { loadFromStorage, saveToStorage, STORAGE_KEYS } from '$lib/storage/localStorage';
 import type { UploadedFileInfo } from '$lib/types';
 import ModernReportForm from './ModernReportForm.svelte';
 
@@ -123,6 +123,96 @@ describe('ModernReportForm — Zurücksetzen räumt die Uploads mit auf', () => 
 
 		await vi.waitFor(() => expect(persistedUploads()).toEqual([UPLOAD]));
 		expect(deleteMultipleFiles).not.toHaveBeenCalled();
+	});
+});
+
+/**
+ * B1 (Abschlussreview, kritisch): `onReset()` räumte Storage und
+ * Formular-Zustand auf, informierte den Aufrufer aber nie darüber, dass der
+ * Zweig aus `+page.svelte` mit zurückgesetzt werden muss — die Auswahlseite
+ * erschien nach einem Reset nie wieder. Die Strecke bis zur sichtbar wieder
+ * eingeblendeten Auswahlseite steht in `e2e/report-kind-choice.spec.ts`; hier
+ * wird nur die neue Naht selbst geprüft: Ruft der Reset das `onreset`-Prop
+ * auf, sobald der Formular-Zustand aufgeräumt ist?
+ */
+describe('ModernReportForm — Reset meldet den Zweig-Reset an den Aufrufer (B1)', () => {
+	it('ruft onreset auf, nachdem der Formular-Zustand aufgeräumt ist', async () => {
+		seedFormWithUpload();
+		vi.spyOn(window, 'confirm').mockReturnValue(true);
+		const onreset = vi.fn();
+		render(ModernReportForm, { onreset });
+
+		resetButton().click();
+
+		await vi.waitFor(() => expect(onreset).toHaveBeenCalledOnce());
+	});
+
+	it('ruft onreset nicht auf, wenn die Rückfrage abgelehnt wird', async () => {
+		seedFormWithUpload();
+		vi.spyOn(window, 'confirm').mockReturnValue(false);
+		const onreset = vi.fn();
+		render(ModernReportForm, { onreset });
+
+		resetButton().click();
+
+		await vi.waitFor(() => expect(persistedUploads()).toEqual([UPLOAD]));
+		expect(onreset).not.toHaveBeenCalled();
+	});
+});
+
+/**
+ * B3 (Abschlussreview, wichtig): `REPORT_KIND` lag im `localStorage`, während
+ * `clearFormDataOnly()` — läuft direkt nach jedem erfolgreichen Absenden — nur
+ * `FORM_DATA`/`POSITION_FILE_UIDS` räumte. Der Zweig überlebte damit die
+ * Formulardaten, die er beschreibt, teils um Wochen. Geprüft wird über
+ * `loadFromStorage`/`saveToStorage` (storage-agnostisch): Der Test bleibt
+ * unabhängig davon rot bzw. grün, ob der Schlüssel in session- oder
+ * localStorage liegt — er belegt die Wirkung, nicht die Fundstelle.
+ */
+describe('ModernReportForm — der Zweig verlässt den Speicher mit den Formulardaten (B3)', () => {
+	const today = new Date().toISOString().split('T')[0];
+
+	async function submit(): Promise<void> {
+		await page.getByRole('button', { name: 'Formular absenden' }).click();
+		await vi.waitFor(() => expect(submitSightingFormMock).toHaveBeenCalled());
+	}
+
+	beforeEach(() => {
+		submitSightingFormMock.mockClear();
+		submitSightingFormMock.mockResolvedValue({ status: 'ok', id: 1 });
+	});
+
+	it('räumt den gemerkten Zweig weg, sobald erfolgreich abgesendet wurde', async () => {
+		saveToStorage(STORAGE_KEYS.REPORT_KIND, 'dead');
+		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(3));
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-b3-zweig',
+				entryChannel: 0,
+				isDead: true,
+				deadCondition: 1,
+				species: 0,
+				totalCount: 1,
+				distance: 1,
+				sightingFrom: SightingFromEnum.LAND,
+				hasPosition: true,
+				latitude: 54.5,
+				longitude: 13.5,
+				sightingDate: today,
+				firstName: 'Max',
+				lastName: 'Mustermann',
+				email: 'max@example.com',
+				privacyConsent: true
+			})
+		);
+
+		render(ModernReportForm, { initialIsDead: true });
+
+		await submit();
+
+		expect(loadFromStorage<string | null>(STORAGE_KEYS.REPORT_KIND, null)).toBeNull();
 	});
 });
 
