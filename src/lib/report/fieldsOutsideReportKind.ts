@@ -3,23 +3,6 @@ import type { ReportKind } from '$lib/report/reportKind';
 import type { SightingFormData } from '$lib/types';
 
 /**
- * Totfund-Felder, die im Lebend-Zweig nicht hingehören.
- *
- * Ohne Gegenstück in `getFormSteps`: Die Felder werden dort in keinem Zweig
- * aus der Schritt-Konfiguration entfernt — im Meldeformular blendet einzig
- * `AnimalInfo.svelte` den `DeadAnimal`-Block per
- * `{#if isDeadFinding($form.isDead)}` optisch aus. Eine einzige Quelle für
- * beide Richtungen (siehe unten) ist deshalb hier nicht möglich, ohne
- * `getFormSteps` mit anzufassen — das wäre eine Änderung an der
- * Schritt-Validierung, die dieser Task nicht verlangt.
- */
-const FOREIGN_TO_ALIVE: (keyof SightingFormData)[] = [
-	'deadCondition',
-	'deadSize',
-	'deadPhoneContact'
-];
-
-/**
  * Felder, die NICHT in den angegebenen Zweig gehören — unabhängig davon, ob
  * und wie oft vorher gewechselt wurde. Ein `behavior`, das im Formularzustand
  * steht, während der Melder im Totfund-Zweig ist, ginge beim Absenden mit ans
@@ -36,12 +19,18 @@ const FOREIGN_TO_ALIVE: (keyof SightingFormData)[] = [
  * zweigfremde Daten aus einer älteren Sitzung im localStorage liegen, den ein
  * Wechsel-Vergleich nie sähe, und ist idempotent.
  *
- * Für den Totfund-Zweig aus `getFormSteps` abgeleitet (einzige Quelle: genau
- * die Felder, die dort beim Totfund aus der Schritt-Konfiguration verschwinden)
- * statt einer zweiten, von Hand gepflegten Liste.
+ * Für BEIDE Zweige aus `getFormSteps` abgeleitet (einzige Quelle: genau die
+ * Felder, die dort im jeweils anderen Zweig aus der Schritt-Konfiguration
+ * verschwinden) statt einer zweiten, von Hand gepflegten Liste. Bis zum
+ * 2026-08-06 ging das nur für den Totfund-Zweig: `getFormSteps` kannte nur
+ * `HIDDEN_WHEN_DEAD`, die Totfund-Felder blendete allein das Markup aus, und
+ * `FOREIGN_TO_ALIVE` stand hier als handgepflegtes Literal daneben. Mit
+ * `HIDDEN_WHEN_ALIVE` (`formConfig.ts`) ist die Schritt-Konfiguration in beide
+ * Richtungen symmetrisch — und die Liste hier fällt in beide Richtungen aus
+ * derselben Quelle an.
  *
- * Abschlussreview B4: Der Vergleich läuft bewusst gegen `getFormSteps({ isDead: false })`
- * und NICHT gegen `formStepsConfig` direkt. `getFormSteps` bildet mittlerweile
+ * Abschlussreview B4: Der Vergleich läuft bewusst zwischen den beiden
+ * `getFormSteps`-Aufrufen und NICHT gegen `formStepsConfig` direkt. `getFormSteps` bildet mittlerweile
  * drei Achsen ab — Totfund (`isDead`), Beobachtungsort (`sightingFrom`) und
  * Medien-Upload (`uploadedFiles`, über `hasUploadedMedia`) — und diese Funktion
  * darf ausschließlich die erste beantworten. Ein Diff gegen `formStepsConfig`
@@ -57,11 +46,14 @@ const FOREIGN_TO_ALIVE: (keyof SightingFormData)[] = [
  * außen vor, solange sie nicht von `isDead` abhängt — keine Anpassung hier nötig.
  */
 export function fieldsOutsideReportKind(kind: ReportKind): (keyof SightingFormData)[] {
-	if (kind === 'alive') {
-		return [...FOREIGN_TO_ALIVE];
-	}
-
 	const keptWhenAlive = getFormSteps({ isDead: false }).flatMap((step) => step.fields);
-	const keptWhenDead = new Set(getFormSteps({ isDead: true }).flatMap((step) => step.fields));
-	return keptWhenAlive.filter((field) => !keptWhenDead.has(field)) as (keyof SightingFormData)[];
+	const keptWhenDead = getFormSteps({ isDead: true }).flatMap((step) => step.fields);
+
+	// Was der ANDERE Zweig führt und dieser nicht: die Felder, die im aktuellen
+	// Zweig nichts verloren haben.
+	const [kept, foreign] =
+		kind === 'alive' ? [keptWhenAlive, keptWhenDead] : [keptWhenDead, keptWhenAlive];
+	const keptSet = new Set(kept);
+
+	return foreign.filter((field) => !keptSet.has(field)) as (keyof SightingFormData)[];
 }
