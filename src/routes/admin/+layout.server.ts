@@ -1,4 +1,4 @@
-import { requireUserRole } from '$lib/server/auth/auth';
+import { isSuperAdminUser, requireUserRole } from '$lib/server/auth/auth';
 import { getBuildInfo } from '$lib/server/startup/versionInfo';
 import type { PublicUser } from '$lib/types/User';
 import type { LayoutServerLoad } from './$types';
@@ -22,6 +22,11 @@ export const load = (async ({ locals, url }) => {
 		user: adminUser,
 		// Server-computed admin status - no client-side role checking needed
 		isAdmin: true, // We know user is admin since requireUserRole passed
+		// Ein einzelnes Flag statt der Rollenliste: Die Bedienelemente für
+		// `POST /api/admin/test-email` sollen nur Superadmins sehen, und das
+		// Frontend bekommt weiterhin keine Rollen (siehe oben). Dieselbe Form
+		// wie in admin/settings/+page.server.ts.
+		isSuperAdmin: isSuperAdminUser(locals.user),
 		buildInfo: getBuildInfo()
 	};
 }) satisfies LayoutServerLoad;

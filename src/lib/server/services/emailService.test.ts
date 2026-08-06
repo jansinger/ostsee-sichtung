@@ -59,6 +59,10 @@ vi.mock('$lib/server/db', () => ({
 	}
 }));
 
+vi.mock('$lib/server/db/sightingFilesRepository', () => ({
+	countFilesForSighting: vi.fn().mockResolvedValue(0)
+}));
+
 vi.mock('nodemailer', () => ({
 	default: {
 		createTransport: vi.fn()
@@ -91,6 +95,7 @@ vi.mock('$lib/utils/format/dateTime', () => ({
 
 import { ConfigRepository } from '$lib/server/db/configRepository';
 import { db } from '$lib/server/db';
+import { countFilesForSighting } from '$lib/server/db/sightingFilesRepository';
 import nodemailer from 'nodemailer';
 import { readFileSync } from 'fs';
 import {
@@ -170,6 +175,9 @@ function createMockSighting(overrides = {}) {
 		latitude: '54.5',
 		longitude: '12.3',
 		sightingDate: new Date('2024-06-15'),
+		// Nach `NEW_IOS_CLIENT_LAUNCH_DATE` — sonst schlösse die Foto-Ankündigung
+		// schon an der Zeitgrenze aus, und die Tests darüber prüften nichts.
+		created: new Date('2026-08-03T10:00:00.000Z'),
 		juvenileCount: 0,
 		sightingFrom: 1,
 		mediaUpload: null,
@@ -224,6 +232,10 @@ describe('EmailService', () => {
 		} as any);
 		vi.mocked(isUnknownOrMissingSpecies).mockReturnValue(false);
 		vi.mocked(formatLocalDateTime).mockReturnValue('15.06.2024');
+
+		// `clearAllMocks` nimmt auch den Rückgabewert aus der Mock-Fabrik —
+		// ohne diese Zeile liefert der Zähler `undefined` statt einer Zahl.
+		vi.mocked(countFilesForSighting).mockResolvedValue(0);
 	});
 
 	afterEach(() => {
@@ -306,6 +318,56 @@ describe('EmailService', () => {
 	// ---------------------------------------------------------------------------
 	// sendNewSightingNotification
 	// ---------------------------------------------------------------------------
+	/**
+	 * Warum es diese Funktion gibt: `sendNewSightingNotification` gibt bei allen
+	 * drei Abbruchgründen dasselbe `false` zurück, und der Grund stand nur im
+	 * Log — der Abschalter sogar nur auf `debug`. Ein Admin sah „Fehler beim
+	 * Senden" und fand nichts. Besonders irreführend, weil die Test-Mail in den
+	 * Einstellungen mit `test = true` an genau diesen Sperren vorbeigeht: Sie
+	 * kommt an, während die Sichtungs-Benachrichtigung stumm scheitert.
+	 *
+	 * Die Reihenfolge ist dieselbe wie im Versand, weil beide dieselbe Funktion
+	 * benutzen — sonst nennte die Diagnose einen anderen Grund als den, an dem
+	 * der Versand tatsächlich abbrach.
+	 */
+	describe('findNotificationBlocker()', () => {
+		it('meldet den Abschalter, wenn Benachrichtigungen deaktiviert sind', async () => {
+			setupConfigRepositoryMocks({ enabled: false });
+
+			await expect(EmailService.findNotificationBlocker()).resolves.toBe('disabled');
+		});
+
+		it('meldet den fehlenden Empfänger', async () => {
+			setupConfigRepositoryMocks({ enabled: true, recipient: '' });
+
+			await expect(EmailService.findNotificationBlocker()).resolves.toBe('recipient-missing');
+		});
+
+		it('meldet die fehlende SMTP-Verbindung', async () => {
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: '' });
+
+			await expect(EmailService.findNotificationBlocker()).resolves.toBe('transport-unavailable');
+		});
+
+		it('meldet null, wenn nichts im Weg steht', async () => {
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'smtp.example.com' });
+			await EmailService.initialize(false);
+
+			await expect(EmailService.findNotificationBlocker()).resolves.toBeNull();
+		});
+
+		/**
+		 * Der Abschalter zuerst: Ist er aus, sagt ein zusätzlich fehlender
+		 * Empfänger nichts über die Ursache — er ist dann nur noch nicht
+		 * eingetragen worden.
+		 */
+		it('nennt den Abschalter vor dem fehlenden Empfänger', async () => {
+			setupConfigRepositoryMocks({ enabled: false, recipient: '' });
+
+			await expect(EmailService.findNotificationBlocker()).resolves.toBe('disabled');
+		});
+	});
+
 	describe('sendNewSightingNotification()', () => {
 		it('gibt false zurück wenn Sichtung nicht in DB gefunden', async () => {
 			vi.mocked(db.select).mockReturnValue({
@@ -545,29 +607,23 @@ describe('EmailService', () => {
 		// eintreffende Foto-Mail zuzuordnen ist.
 		// ------------------------------------------------------------------
 		describe('Foto-Ankündigung im Template-Kontext', () => {
-			async function renderMailFor(mediaUpload: unknown): Promise<string> {
+			async function renderMailFor({
+				mediaUpload,
+				attachedFiles = 0,
+				created = new Date('2026-08-03T10:00:00.000Z')
+			}: {
+				mediaUpload: unknown;
+				attachedFiles?: number;
+				created?: Date;
+			}): Promise<string> {
 				vi.mocked(db.select).mockReturnValue({
 					from: vi.fn().mockReturnValue({
 						where: vi.fn().mockReturnValue({
-							limit: vi.fn().mockResolvedValue([createMockSighting({ mediaUpload })])
+							limit: vi.fn().mockResolvedValue([createMockSighting({ mediaUpload, created })])
 						})
 					})
 				} as any);
-
-				// Der globale Mock in `beforeEach` liefert ein festes Objekt ohne
-				// `mediaUpload`. Hier stattdessen wie die echte Implementierung
-				// das Feld unverändert durchreichen (`...restSighting` in
-				// `formatSightingForDisplay`) — sonst prüfte der Test nur den
-				// eigenen Mock, nicht die Verdrahtung von `loadSightingForEmail`.
-				vi.mocked(formatSightingForDisplay).mockImplementation(
-					(input) =>
-						({
-							species: 'Schweinswal',
-							sightingDate: '15.06.2024',
-							coordinatesFormatted: '54.5000° N, 12.3000° O',
-							mediaUpload: input.mediaUpload
-						}) as any
-				);
+				vi.mocked(countFilesForSighting).mockResolvedValue(attachedFiles);
 
 				setupConfigRepositoryMocks({
 					enabled: true,
@@ -575,7 +631,7 @@ describe('EmailService', () => {
 					// Minimale Vorlage — prüft die Verdrahtung, nicht das Layout des
 					// ausgelieferten Textes (das übernimmt notificationEmailDefault.test.ts).
 					template:
-						'<html>{{#if sighting.mediaUpload}}foto-angekuendigt:{{referenceId}}{{/if}}</html>'
+						'<html>{{#if photoAnnouncementPending}}foto-angekuendigt:{{referenceId}}{{/if}}</html>'
 				});
 				await EmailService.initialize(false);
 
@@ -585,22 +641,50 @@ describe('EmailService', () => {
 				return (mailOptions as { html: string }).html;
 			}
 
-			it('reicht ein gesetztes Flag als sighting.mediaUpload an die Vorlage durch', async () => {
-				const html = await renderMailFor(1);
+			it('kündigt das Foto an, wenn das Flag gesetzt und keine Datei angehängt ist', async () => {
+				const html = await renderMailFor({ mediaUpload: 1 });
 
 				expect(html).toContain('foto-angekuendigt:REF-42');
 			});
 
+			// Der Fehlerfall aus preprod: Meldung über das Web-Formular. Dort
+			// setzt `ModernReportForm.svelte` `mediaUpload` genau dann, wenn eine
+			// Datei hochgeladen wurde — und die hängt beim Versand bereits an der
+			// Sichtung (`saveSighting` verknüpft sie in derselben Transaktion).
+			it('lässt den Block weg, wenn bereits eine Datei angehängt ist', async () => {
+				const html = await renderMailFor({ mediaUpload: 1, attachedFiles: 1 });
+
+				expect(html).not.toContain('foto-angekuendigt');
+			});
+
 			it('lässt den Block weg, wenn kein Foto angekündigt wurde', async () => {
-				const html = await renderMailFor(0);
+				const html = await renderMailFor({ mediaUpload: 0 });
 
 				expect(html).not.toContain('foto-angekuendigt');
 			});
 
 			it('lässt den Block bei null (kein Wert in der Zeile) ebenfalls weg', async () => {
-				const html = await renderMailFor(null);
+				const html = await renderMailFor({ mediaUpload: null });
 
 				expect(html).not.toContain('foto-angekuendigt');
+			});
+
+			// Vor dem Start des neuen iOS-Clients bedeutete das Flag nur „der
+			// Melder hatte ein Foto" — siehe photoAnnouncement.ts. Erreichbar ist
+			// der Fall über `import-legacy-inbox.js` und die Admin-Test-Mail.
+			it('lässt den Block bei einer Sichtung aus der Zeit vor dem Client weg', async () => {
+				const html = await renderMailFor({
+					mediaUpload: 1,
+					created: new Date('2024-06-15T10:00:00.000Z')
+				});
+
+				expect(html).not.toContain('foto-angekuendigt');
+			});
+
+			it('zählt die Dateien der geladenen Sichtung', async () => {
+				await renderMailFor({ mediaUpload: 1 });
+
+				expect(countFilesForSighting).toHaveBeenCalledWith(42);
 			});
 		});
 

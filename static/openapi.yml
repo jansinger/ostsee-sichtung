@@ -1037,7 +1037,14 @@ paths:
       tags:
         - admin
       summary: Admin Test-E-Mail senden
-      description: Sendet eine Test-E-Mail für eine Sichtung oder eine einfache Test-E-Mail (Admin-Berechtigung erforderlich)
+      description: |
+        Sendet eine Test-E-Mail für eine Sichtung oder eine einfache Test-E-Mail.
+
+        **Erfordert die Rolle `superadmin`** — anders als der übrige `/api/admin`-Bereich,
+        der `admin` genügen lässt. Mit `testType: sighting` verschickt der Endpunkt
+        dieselbe interne Benachrichtigung wie eine echte Neu-Meldung; im Team-Postfach
+        ist sie von einer solchen nicht zu unterscheiden. Empfänger ist immer die
+        konfigurierte Adresse aus `notification.email.recipient`, nie die meldende Person.
       security:
         - adminAuth: []
       requestBody:

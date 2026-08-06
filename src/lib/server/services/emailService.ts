@@ -21,6 +21,8 @@ import {
 } from '$lib/server/templates/balticSeaEmailContext';
 import { emailColorContext } from '$lib/server/templates/emailTokens';
 import { NOTIFICATION_EMAIL_DEFAULT_TEMPLATE } from '$lib/server/templates/notificationEmailDefault';
+import { countFilesForSighting } from '$lib/server/db/sightingFilesRepository';
+import { isPhotoAnnouncementPending } from '$lib/utils/media/photoAnnouncement';
 
 // Dynamic environment variables for Docker runtime
 const NODE_ENV = env.NODE_ENV ?? 'development';
@@ -56,6 +58,15 @@ async function configOrEnv(key: string, envValue: string): Promise<string> {
 function escape(value: string): string {
 	return Handlebars.escapeExpression(value);
 }
+
+/**
+ * Grund, aus dem eine Sichtungs-Benachrichtigung nicht verschickt wird.
+ *
+ * `disabled` ist der Schalter `notification.email.enabled`, an dem
+ * `sendTestEmail()` bewusst vorbeigeht — die häufigste Ursache dafür, dass die
+ * Test-Mail ankommt und die Benachrichtigung nicht.
+ */
+export type NotificationBlocker = 'disabled' | 'transport-unavailable' | 'recipient-missing';
 
 /**
  * Macht aus einer Empfängerliste den Wert, den nodemailer erwartet: die
@@ -255,7 +266,8 @@ export class EmailService {
 			sightingData.sightingFormValues,
 			sightingData.referenceId,
 			sightingData.adminUrl,
-			sightingData.balticSea
+			sightingData.balticSea,
+			sightingData.photoAnnouncementPending
 		);
 	}
 
@@ -268,6 +280,7 @@ export class EmailService {
 		referenceId: string;
 		adminUrl: string;
 		balticSea: BalticSeaEmailContext;
+		photoAnnouncementPending: boolean;
 	} | null> {
 		try {
 			const sightingResult = await db
@@ -345,10 +358,26 @@ export class EmailService {
 			const adminUrl = `${getPublicSiteUrl()}/admin/${sightingId}`;
 			const referenceId = sighting.referenceId || `REF-${sightingId}`;
 
+			// Nur zählen, wenn überhaupt ein Foto angekündigt ist — ohne Flag
+			// trägt die Zahl keine Aussage und die Abfrage keinen Zweck.
+			const attachedFileCount = sighting.mediaUpload ? await countFilesForSighting(sightingId) : 0;
+
 			return {
 				sightingFormValues,
 				referenceId,
 				adminUrl,
+				// Dieselbe Aussage wie in der Admin-Detailansicht: „angekündigt und
+				// noch nichts da". Das rohe Flag genügt hier **nicht** — das
+				// Web-Formular setzt es genau dann, wenn eine Datei hochgeladen
+				// wurde (`ModernReportForm.svelte`), und die hängt beim Versand
+				// bereits an der Sichtung (`saveSighting` verknüpft sie in
+				// derselben Transaktion). Über das Flag allein behauptete die Mail
+				// bei jedem angehängten Foto, es käme noch eines per E-Mail nach.
+				photoAnnouncementPending: isPhotoAnnouncementPending(
+					sighting.mediaUpload,
+					attachedFileCount,
+					sighting.created
+				),
 				// Aus der **Rohzeile**, nicht aus `sightingFormValues`: das `!!` oben
 				// verliert den Altsystem-Wert 2 und macht `noPosition` unerreichbar.
 				// Derselbe Aufruf wie in der Admin-Übersicht — der Status entsteht
@@ -362,34 +391,64 @@ export class EmailService {
 	}
 
 	/**
+	 * Prüft die drei Voraussetzungen des Benachrichtigungs-Versands und benennt
+	 * die erste, die fehlt. `null` heißt: nichts steht im Weg.
+	 *
+	 * Der Versand selbst benutzt dieselbe Funktion — die Reihenfolge der Gründe
+	 * ist damit garantiert dieselbe, und eine Diagnose kann nicht auf einen
+	 * anderen Grund zeigen als den, an dem der Versand abbrach.
+	 *
+	 * **Warum das nötig wurde:** Alle drei Abbrüche gaben nach außen dasselbe
+	 * `false`, und der häufigste — der Abschalter — stand nur auf `debug` im Log.
+	 * Für einen Admin war das ununterscheidbar von einem SMTP-Fehler. Verschärft
+	 * dadurch, dass `sendTestEmail()` mit `test = true` bewusst an Abschalter und
+	 * Transporter-Gate vorbeigeht: Die Test-Mail aus `/admin/settings` kommt an,
+	 * während die Sichtungs-Benachrichtigung stumm scheitert.
+	 */
+	static async findNotificationBlocker(): Promise<NotificationBlocker | null> {
+		const enabled = await ConfigRepository.getBoolean('notification.email.enabled', false);
+
+		if (!enabled) {
+			return 'disabled';
+		}
+
+		if (!(await this.ensureTransporter())) {
+			return 'transport-unavailable';
+		}
+
+		const config = await this.getEmailConfig();
+
+		return config.recipient ? null : 'recipient-missing';
+	}
+
+	/**
 	 * Consolidated email sending logic
 	 */
 	private static async sendEmailNotification(
 		sightingFormValues: SightingFormValues,
 		referenceId: string,
 		adminUrl: string,
-		balticSea: BalticSeaEmailContext
+		balticSea: BalticSeaEmailContext,
+		photoAnnouncementPending: boolean
 	): Promise<boolean> {
 		try {
-			const enabled = await ConfigRepository.getBoolean('notification.email.enabled', false);
+			const blocker = await this.findNotificationBlocker();
 
-			if (!enabled) {
-				logger.debug('Email notifications disabled');
+			if (blocker) {
+				// `warn` auch für den Abschalter: Bis 2026-08-05 stand er auf
+				// `debug` und war im Normalbetrieb unsichtbar — eine ausbleibende
+				// Benachrichtigung zeigt sonst nirgends etwas an.
+				logger.warn({ blocker, referenceId }, 'Sighting notification not sent');
 				return false;
 			}
 
 			const transporter = await this.ensureTransporter();
-
-			if (!transporter) {
-				logger.warn('Email service not available, notification not sent');
-				return false;
-			}
-
-			// Get email configuration
 			const config = await this.getEmailConfig();
 
-			if (!config.recipient) {
-				logger.warn('Email notification recipient not configured');
+			if (!transporter) {
+				// Kann nach der Prüfung oben nur eintreten, wenn die Verbindung
+				// dazwischen verworfen wurde. TypeScript braucht die Klammer ohnehin.
+				logger.warn('Email service not available, notification not sent');
 				return false;
 			}
 
@@ -414,6 +473,10 @@ export class EmailService {
 				// Der Ostsee-Status liegt unter `sighting.balticSea` — die Vorlage
 				// verzweigt darüber und nicht mehr über die beiden Rohflags.
 				sighting: { ...formattedSighting, balticSea },
+				// Auf oberster Ebene und nicht unter `sighting`: Der Wert steht
+				// für keine Spalte, sondern für den Zustand „angekündigt, noch
+				// nichts da" (siehe `loadSightingForEmail`).
+				photoAnnouncementPending,
 				adminUrl,
 				currentDate: formatLocalDateTime(new Date(), 'date'),
 				currentTime: formatLocalDateTime(new Date(), 'time'),
