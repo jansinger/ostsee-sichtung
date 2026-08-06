@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import Icon from '$lib/components/Icon.svelte';
+	import { outsideBalticNotice, outsideBalticSeverity } from '$lib/report/wording';
 
 	import { SvelteMap } from 'svelte/reactivity';
 	import { slide } from 'svelte/transition';
@@ -14,11 +15,32 @@
 
 	let {
 		longitude = $bindable(13.5),
-		latitude = $bindable(54.5)
+		latitude = $bindable(54.5),
+		noticeOverride = undefined,
+		severityOverride = undefined
 	}: {
 		longitude?: number;
 		latitude?: number;
+		/**
+		 * Überschreibt den Text des Ostsee-Hinweises. Ohne Wert bleibt der
+		 * bisherige Sichtungs-Wortlaut — Admin-Maske und Admin-Ansicht ändern
+		 * sich dadurch nicht (dasselbe Muster wie `OLMap`s `hintOverride`).
+		 */
+		noticeOverride?: string;
+		/** Überschreibt die Dringlichkeit des Hinweises (`alert-warning`/`alert-info`). */
+		severityOverride?: 'info' | 'warning';
 	} = $props();
+
+	// Am Strand ist eine Position außerhalb der Ostsee der Normalfall (Totfund) —
+	// nur der Bürger-Aufrufer (`PositionPanel.svelte`) übergibt die Overrides und
+	// fällt dort auf `info` zurück. Ohne Override (Admin-Pfad, `Location.svelte`)
+	// bleibt es beim bisherigen Sichtungs-Wortlaut: `outsideBalticNotice(false)`/
+	// `outsideBalticSeverity(false)` liefern genau den Text und die Farbe, die
+	// diese Komponente vor Task 6 fest codiert hatte — hier mit fixem `false`
+	// aufgerufen, nicht aus dem Formular-Kontext, damit kein zweiter isDead-Zweig
+	// entsteht.
+	const outsideNoticeText = $derived(noticeOverride ?? outsideBalticNotice(false));
+	const outsideNoticeSeverity = $derived(severityOverride ?? outsideBalticSeverity(false));
 
 	let isLoading = $state(false);
 	let error = $state<string | undefined>(undefined);
@@ -133,7 +155,11 @@
 			</div>
 		{:else if error}
 			<!-- Error state -->
-			<div class="alert alert-error mt-0 mb-4" data-testid="verify-location-failed" transition:slide>
+			<div
+				class="alert alert-error mt-0 mb-4"
+				data-testid="verify-location-failed"
+				transition:slide
+			>
 				<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
 				<span>Fehler beim Prüfen der Position: {error}</span>
 			</div>
@@ -147,15 +173,26 @@
 						<span>Die Koordinaten liegen innerhalb der Ostsee.</span>
 					</div>
 				{:else if currentResult.inChartArea}
-					<!-- Outside Baltic Sea (only show in browser) -->
-					<div class="alert alert-warning mt-0 mb-4" data-testid="verify-location-outside">
-						<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
-						<span>
-							Die Koordinaten liegen scheinbar außerhalb der Ostsee. Bitte prüfen Sie die Position.
-							Bei Sichtungen von Land und küstennahen Sichtungen kann dieser Hinweis erscheinen, die
-							Daten werden trotzdem gespeichert.
-						</span>
-					</div>
+					<!-- Outside Baltic Sea (only show in browser). Klasse und Text kommen aus
+					     `noticeOverride`/`severityOverride` (Props, s.o.) — ohne sie bleibt es
+					     beim bisherigen Sichtungs-Wortlaut in `alert-warning`. -->
+					{#if outsideNoticeSeverity === 'info'}
+						<!-- `lucide:info`, nicht `circle-alert`: Die Alerts sind auf Soft-Style
+						     umgestellt (Text in `base-content`), die Bedeutung trägt deshalb das
+						     Icon (`.claude/rules/daisyui.md`). `alert-warning` daneben nutzt
+						     weiterhin `circle-alert` — beide Varianten mit demselben Zeichen waren
+						     sonst praktisch ununterscheidbar (Review Task 6, Befund 3). `OLMap.svelte`
+						     hält für seinen eigenen `alert-info` dieselbe Zuordnung. -->
+						<div class="alert alert-info mt-0 mb-4" data-testid="verify-location-outside">
+							<Icon icon="lucide:info" class="h-6 w-6 shrink-0" />
+							<span>{outsideNoticeText}</span>
+						</div>
+					{:else}
+						<div class="alert alert-warning mt-0 mb-4" data-testid="verify-location-outside">
+							<Icon icon="lucide:circle-alert" class="h-6 w-6 shrink-0" />
+							<span>{outsideNoticeText}</span>
+						</div>
+					{/if}
 				{:else}
 					<!-- Invalid coordinates -->
 					<div class="alert alert-error mt-0 mb-4" data-testid="verify-location-invalid">

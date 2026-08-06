@@ -26,7 +26,7 @@ async function gotoStep(page: Page, step: number): Promise<void> {
 	await page.addInitScript((s) => {
 		sessionStorage.setItem('sichtungen_current_step', String(s));
 	}, step);
-	await page.goto('/');
+	await page.goto('/?meldung=lebend');
 	await page.waitForLoadState('networkidle');
 }
 
@@ -119,7 +119,7 @@ test.describe('Feldmodus — ortsfeste Schritt-Navigation', () => {
 				})
 			);
 		});
-		await page.goto('/');
+		await page.goto('/?meldung=lebend');
 		await page.waitForLoadState('networkidle');
 		await page.getByRole('button', { name: 'Nächster Schritt' }).click();
 		await expect(

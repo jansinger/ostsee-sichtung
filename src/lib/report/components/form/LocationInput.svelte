@@ -16,6 +16,7 @@
 		enableMapGps = true,
 		coordinatesHint = null,
 		required = false,
+		mapHintOverride = undefined,
 		onchange = () => {}
 	} = $props<{
 		mode?: 'dms' | 'dm' | 'dd';
@@ -70,6 +71,12 @@
 		 * Komponente keine Pflicht.
 		 */
 		required?: boolean;
+		/**
+		 * Reicht `OLMap`s `hintOverride` durch. Nur `PositionPanel` setzt ihn (Totfund-
+		 * Wortlaut auf Schritt 1) — die Admin-Maske (`sections/Location.svelte`) lässt
+		 * ihn weg und bekommt damit unverändert den bisherigen Marker-Text.
+		 */
+		mapHintOverride?: string;
 		onchange?: EventListener | null;
 	}>();
 
@@ -463,6 +470,7 @@
 			readonly={false}
 			enableGPS={enableMapGps}
 			{hasPosition}
+			hintOverride={mapHintOverride}
 			onchange={onMapChange}
 		/>
 	</div>

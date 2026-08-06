@@ -43,7 +43,10 @@ test.describe('Layout — horizontaler Überlauf', () => {
 		test(`kein Überlauf auf ${breite}px — alle Schritte, alles aufgeklappt`, async ({ page }) => {
 			await page.setViewportSize({ width: breite, height: 900 });
 			const formPage = new FormPage(page);
-			await formPage.goto();
+			/* Totfund über den Einstiegs-Zweig statt über den seit d7767383
+			   entfallenen Schalter auf Schritt 2 (Begründung unten bei „Totfund-Block
+			   und Motorfrage"). */
+			await formPage.goto('totfund');
 
 			// ── Schritt 1: Position & Zeitpunkt ────────────────────────────────
 			await expectNoHorizontalOverflow(page, `${breite}px · Schritt 1`);
@@ -69,20 +72,30 @@ test.describe('Layout — horizontaler Überlauf', () => {
 			await openAllDetails(page);
 			await expectNoHorizontalOverflow(page, `${breite}px · Schritt 2`);
 
-			/* Totfund-Block und Motorfrage sind an Formularwerte gebunden, nicht an
-			   ein `<details>` — sie existieren im Grundzustand gar nicht im DOM. */
-			await fillStep2(formPage);
-			await page.locator('[data-testid="field-isDead"]').check();
+			/* Motorfrage ist an einen Formularwert gebunden, nicht an ein `<details>`
+			   — sie existiert im Grundzustand gar nicht im DOM. Der Totfund-Block
+			   dagegen steht hier bereits: anders als vor d7767383 hängt er nicht mehr
+			   an einem Schalter auf diesem Schritt, sondern am Einstiegs-Zweig
+			   (`formPage.goto('totfund')` oben) — der Schalter `[data-testid="field-
+			   isDead"]` existiert im Bürgerformular nicht mehr, nur noch in der
+			   Admin-Maske. */
+			await formPage.selectSpecies(0); // Schweinswal
+			await formPage.fillTotalCount(2);
+			await formPage.selectDistance(1);
 			await formPage.selectSightingFrom(SightingFromEnum.MOTORBOAT);
 			await expect(page.locator('[data-testid="field-deadCondition"]')).toBeVisible();
 			await expect(page.locator('[data-testid="field-boatDrive-1"]')).toBeVisible();
 			await openAllDetails(page);
 			await expectNoHorizontalOverflow(page, `${breite}px · Schritt 2, Totfund + Motorfrage`);
 
-			/* Zurück in den gültigen Zustand: `deadCondition` und `boatDrive` sind in
-			   dieser Kombination Pflicht und hielten den Schritt sonst fest. */
-			await page.locator('[data-testid="field-isDead"]').uncheck();
-			await formPage.selectSightingFrom(SightingFromEnum.LAND);
+			/* `deadCondition` und `boatDrive` sind in dieser Kombination Pflicht
+			   (Schema: `when('isDead')` bzw. `when('sightingFrom')`). Anders als vor
+			   d7767383 lässt sich der Totfund-Zweig im Bürgerformular nicht mehr durch
+			   Zurückschalten verlassen — für den Übergang zu Schritt 3 werden die
+			   Felder deshalb jetzt tatsächlich befüllt statt den Schritt durch einen
+			   gültigeren Zustand zu verlassen. */
+			await page.locator('[data-testid="field-deadCondition"]').selectOption('1'); // Extrem frisch
+			await formPage.selectBoatDrive(1); // Motor lief
 
 			// ── Schritt 3: Weitere Informationen ───────────────────────────────
 			await formPage.clickNext();
@@ -101,6 +114,43 @@ test.describe('Layout — horizontaler Überlauf', () => {
 			await expectNoHorizontalOverflow(page, `${breite}px · Schritt 4, alles aufgeklappt`);
 		});
 	}
+
+	/**
+	 * Verhaltens-Karte im Lebend-Zweig — eigens nachgezogen.
+	 *
+	 * Der parametrisierte Durchlauf oben fährt seit `cc87ea3e` (Totfund über den
+	 * Einstiegs-Zweig statt über den entfallenen Schalter auf Schritt 2)
+	 * vollständig im Totfund-Zweig — `Step3Observations.svelte` blendet dort
+	 * `Behavior.svelte` aus (Task 8b, `isDeadFinding`). Vorher lief derselbe
+	 * Durchlauf für Schritt 3/4 zurück im Lebend-Zustand; die Karte wurde also
+	 * bei jeder der acht Breiten mitgeprüft. Ohne diesen Test bliebe sie bei
+	 * keiner Breite mehr abgedeckt. Eine Stichprobe genügt: Die Karte hat kein
+	 * eigenes breitenabhängiges Layout (nur `FormField`-Standardfelder), das
+	 * eine zweite Breite rechtfertigen würde — 320px ist die engste und damit
+	 * die aussagekräftigste.
+	 */
+	test('kein Überlauf auf 320px — Verhaltens-Karte im Lebend-Zweig, Schritt 3', async ({
+		page
+	}) => {
+		await page.setViewportSize({ width: 320, height: 900 });
+		const formPage = new FormPage(page);
+		await formPage.goto('lebend');
+
+		await fillStep1(formPage);
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Angaben zum Tier/i);
+
+		await fillStep2(formPage);
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Weitere Informationen/i);
+
+		// Beleg, dass die Karte tatsächlich im DOM steht — sonst prüfte der
+		// Überlauf-Check anschließend unbemerkt ins Leere.
+		await expect(page.locator('[data-testid="field-behavior"]')).toBeVisible();
+
+		await openAllDetails(page);
+		await expectNoHorizontalOverflow(page, '320px · Schritt 3, Lebend-Zweig, Verhaltens-Karte');
+	});
 
 	/**
 	 * Dieselbe Prüfung ohne Silbentrennung.

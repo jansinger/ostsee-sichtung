@@ -26,8 +26,16 @@ const ACTIVE_STEP = '[aria-current="step"]:visible';
 export class FormPage {
 	constructor(private page: Page) {}
 
-	async goto() {
-		await this.page.goto('/');
+	/**
+	 * Der Zweig-Parameter überspringt die Einstiegsseite („Was möchten Sie
+	 * melden?"). Ohne ihn müsste jeder Spec sie erst durchklicken; die
+	 * Auswahlseite selbst wird eigens in `e2e/report-kind-choice.spec.ts`
+	 * abgedeckt. Default `lebend`, weil die meisten Specs, die über dieses
+	 * Page-Object laufen, Formularmechanik prüfen, die mit dem Zweig nichts
+	 * zu tun hat — Totfund-Verhalten fordert den Parameter explizit an.
+	 */
+	async goto(kind: 'lebend' | 'totfund' = 'lebend') {
+		await this.page.goto(`/?meldung=${kind}`);
 		// Wait for Svelte to fully hydrate before interacting with form elements
 		await this.page.waitForLoadState('networkidle');
 		// Ensure the step indicator (Svelte component) is rendered and interactive
@@ -99,6 +107,15 @@ export class FormPage {
 	}
 
 	/**
+	 * Nur sichtbar UND Pflicht, solange `sightingFrom` = 0 (Sonstiges) —
+	 * `SightingDetails.svelte` rendert es hinter `{#if sightingFrom === OTHER}`,
+	 * das Schema macht es über `.when('sightingFrom', …)` genau dort required.
+	 */
+	async fillSightingFromText(value: string) {
+		await this.page.locator('[data-testid="field-sightingFromText"]').fill(value);
+	}
+
+	/**
 	 * Answers the motor question that appears for Segelschiff/Motorboot.
 	 *
 	 * Since PR 4 (2026-08-04) this is a two-option radio group, not a select —
@@ -110,7 +127,34 @@ export class FormPage {
 		await this.page.locator(`[data-testid="field-boatDrive-${value}"]`).check();
 	}
 
+	/**
+	 * Zustand des toten Tieres (`AnimalConditionEnum`) — Pflichtfeld auf Schritt 2,
+	 * sobald `isDead` gesetzt ist (siehe `sightingSchema.ts`, `deadCondition.when('isDead', …)`).
+	 * Ohne diese Angabe bleibt „Weiter" bei einer Totfund-Meldung gesperrt.
+	 */
+	async selectDeadCondition(value: number) {
+		await this.page.locator('[data-testid="field-deadCondition"]').selectOption(String(value));
+	}
+
+	// ── Step 3: Weitere Informationen (Boot/Verhalten) ───────────────────────
+
+	async fillShipName(value: string) {
+		await this.page.locator('[data-testid="field-shipName"]').fill(value);
+	}
+
+	async fillHomePort(value: string) {
+		await this.page.locator('[data-testid="field-homePort"]').fill(value);
+	}
+
+	async fillReaction(value: string) {
+		await this.page.locator('[data-testid="field-reaction"]').fill(value);
+	}
+
 	// ── Step 4: Kontaktdaten ─────────────────────────────────────────────────
+
+	async checkShipNameConsent() {
+		await this.page.locator('[data-testid="field-shipNameConsent"]').check();
+	}
 
 	async fillFirstName(value: string) {
 		await this.page.locator('[data-testid="field-firstName"]').fill(value);

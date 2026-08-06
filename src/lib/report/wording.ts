@@ -11,30 +11,20 @@
  * steht diese Karte allerdings nicht mehr ganz oben, sondern hinter dem
  * Upload-Abschnitt. Für die Ansprache reicht das: Der Schalter steht weiterhin
  * vor allem, was auf ihn reagiert (Artfrage, Detail-Karte), und der Schritt-Kopf
- * darüber wird von Svelte ohnehin reaktiv nachgezogen. Das deckt
- * genau die Stellen ab, die das Dokument für Seite 2 nennt — die Totfund-Texte
- * für Seite 1 („Funddatum", die umgedrehte Marker-Erklärung) bleiben offen,
- * weil `isDead` dort noch nicht beantwortet ist.
+ * darüber wird von Svelte ohnehin reaktiv nachgezogen. Das deckt die Stellen
+ * ab, die das Dokument für Seite 2 nennt. Die Totfund-Texte für Seite 1
+ * („Funddatum", die umgedrehte Marker-Erklärung, der entschärfte
+ * Ostsee-Hinweis) stehen weiter unten in dieser Datei — `isDead` ist dort über
+ * `initialIsDead` bereits auf Schritt 1 beantwortet.
  *
  * Die Zuordnung steht hier an EINER Stelle statt als Ternär in drei
  * Komponenten: Sie wird beim Bau der getrennten Formulare wieder gebraucht, und
  * drei Kopien liefen bis dahin auseinander.
  */
 
-/**
- * `isDead` als Wahrheitswert — ohne die klassische String-Falle.
- *
- * Für den Schalter selbst liefert `createForm.handleChange` einen echten
- * Boolean (`target.checked`). `undefined` kommt trotzdem vor: Die Admin-Maske
- * füllt das Formular aus einem geladenen Datensatz. Und ein String an einer
- * solchen Stelle war in dieser Codebasis schon einmal ein echter Fehler
- * (`BaseRadio` verglich strikt gegen Zahlen, im State lag der String aus dem
- * DOM-Event — PR 4).
- */
-function isDeadFinding(isDead: unknown): boolean {
-	if (typeof isDead === 'string') return isDead === 'true';
-	return Boolean(isDead);
-}
+// `isDeadFinding` lebt in `formConfig.ts` — Begründung und Herkunft der Regel
+// stehen dort an der Definition.
+import { isDeadFinding } from '$lib/report/formConfig';
 
 /** Beschriftung des Artfeldes auf Schritt 2. */
 export function speciesQuestion(isDead: unknown): string {
@@ -51,4 +41,74 @@ export function observationQuestion(isDead: unknown): string {
 /** Titel der Karte unter den Tierangaben auf Schritt 2. */
 export function detailsSectionTitle(isDead: unknown): string {
 	return isDeadFinding(isDead) ? 'Funddetails' : 'Sichtungsdetails';
+}
+
+/**
+ * Titel der Datumskarte auf Schritt 1.
+ *
+ * Verbindliche Entscheidung des Auftraggebers (Review Task 6, Befund 1): Der
+ * Lebend-Zweig behält wörtlich „Datum und Uhrzeit" — der bestehende Weg für
+ * Lebend-Melder darf sich durch die Totfund-Ansprache nicht sichtbar ändern.
+ */
+export function dateSectionTitle(isDead: unknown): string {
+	return isDeadFinding(isDead) ? 'Funddatum' : 'Datum und Uhrzeit';
+}
+
+/**
+ * Einleitungszeile über den Datumsfeldern. Die Karte hat heute keine
+ * Einleitung — beim Lebend-Zweig bleibt es deshalb bei `null`, statt einen
+ * Satz zu erfinden, der vorher nicht da war.
+ */
+export function dateSectionIntro(isDead: unknown): string | null {
+	return isDeadFinding(isDead) ? 'An welchem Tag war der Fund?' : null;
+}
+
+/** Frage über der Positionsangabe auf Schritt 1. */
+export function positionQuestion(isDead: unknown): string {
+	return isDeadFinding(isDead)
+		? 'Wo haben Sie das Tier gefunden?'
+		: 'Wo haben Sie das Tier gesehen?';
+}
+
+/** Erklärtext unter der Karte auf Schritt 1: sagt, wofür der Marker steht. */
+export function mapHint(isDead: unknown, hasPosition: boolean, enableGPS: boolean): string {
+	const verb = isDeadFinding(isDead) ? 'gefunden haben' : 'gesehen haben';
+	if (!hasPosition) {
+		return `Noch keine Position gewählt. Tippen Sie auf die Karte, um die Stelle zu markieren, an der Sie das Tier ${verb}.`;
+	}
+	const base = `Tippen Sie auf die Karte oder ziehen Sie den Marker an die Stelle, an der Sie das Tier ${verb}.`;
+	return enableGPS ? `${base} Der GPS-Button übernimmt Ihre aktuelle Position.` : base;
+}
+
+/**
+ * Hinweistext, wenn die gewählte Position außerhalb der Ostsee liegt.
+ *
+ * Beim Totfund ist eine Position an Land der Normalfall (Strandfund) — der
+ * strengere Sichtungs-Wortlaut würde dort ständig aufscheinen.
+ */
+export function outsideBalticNotice(isDead: unknown): string {
+	return isDeadFinding(isDead)
+		? 'Bitte prüfen Sie die Position. Totfunde werden meist an Stränden oder Küstenabschnitten gefunden.'
+		: 'Die Koordinaten liegen scheinbar außerhalb der Ostsee. Bitte prüfen Sie die Position. Bei Sichtungen von Land und küstennahen Sichtungen kann dieser Hinweis erscheinen, die Daten werden trotzdem gespeichert.';
+}
+
+/** Dringlichkeit des Ostsee-Hinweises: beim Totfund niedriger (siehe oben). */
+export function outsideBalticSeverity(isDead: unknown): 'warning' | 'info' {
+	return isDeadFinding(isDead) ? 'info' : 'warning';
+}
+
+/**
+ * Zweiter Satz der Einleitung auf Schritt 3 („Weitere Informationen").
+ *
+ * Der Satz warb bislang unbedingt mit „Verhaltensinformationen … helfen bei
+ * der Artbestimmung" — die Verhaltens-Karte (`Behavior.svelte`) ist beim
+ * Totfund aber ausgeblendet (`Step3Observations.svelte`, `isDeadFinding`).
+ * Ein totes Tier zeigt kein Verhalten mehr; der Kopf darf deshalb nichts
+ * versprechen, das die Karte darunter nicht einlöst (Abschlussreview,
+ * nicht blockierend).
+ */
+export function step3ObservationsIntro(isDead: unknown): string {
+	return isDeadFinding(isDead)
+		? 'Umweltbedingungen helfen beim Verständnis der Fundumstände.'
+		: 'Verhaltensinformationen und Umweltbedingungen helfen bei der Artbestimmung und dem Verständnis der Meeressäuger.';
 }

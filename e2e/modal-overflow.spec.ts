@@ -112,7 +112,10 @@ interface GuardRoute {
    SpeciesIdentificationHelp auf `/`, DeleteDialog, ExportModal und die
    Spam-Analyse auf `/admin`. */
 const ROUTES: readonly GuardRoute[] = [
-	{ path: '/', auth: false, needsDb: false, minDialogs: 2 },
+	// Zweig-Parameter überspringt die Einstiegsseite ("Was möchten Sie melden?")
+	// — ohne ihn zeigt `/` nur die Auswahl, ohne UploadNotice/SpeciesIdentificationHelp,
+	// und die minDialogs-Schranke unten schlägt fehl, obwohl das Formular selbst intakt ist.
+	{ path: '/?meldung=lebend', auth: false, needsDb: false, minDialogs: 2 },
 	{ path: '/bestimmungshilfe', auth: false, needsDb: false, minDialogs: 1 },
 	{ path: '/admin', auth: true, needsDb: true, minDialogs: 3 }
 ];

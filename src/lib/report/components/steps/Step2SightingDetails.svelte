@@ -6,6 +6,17 @@
 	import { getFormContext } from '$lib/report/formContext';
 	import { observationQuestion } from '$lib/report/wording';
 
+	let {
+		// Default-Noop wie `onCancel` in `ModernReportForm.svelte`: `exactOptionalPropertyTypes`
+		// verbietet sonst das Weiterreichen als `{onchangekind}` an `AnimalInfo`, weil ein
+		// undefaulteter optionaler Prop dort explizit `undefined` zuwiese.
+		onchangekind = () => {}
+	}: {
+		/** Reicht den „Ändern"-Knopf aus `AnimalInfo` unverändert weiter — nur
+		 *  `+page.svelte` kennt die Einstiegsseite, zu der er zurückführt. */
+		onchangekind?: () => void;
+	} = $props();
+
 	const { form } = getFormContext();
 
 	const question = $derived(observationQuestion($form.isDead));
@@ -43,6 +54,6 @@
 	     „Schritt überspringen"-Knopf und war damit für jeden unsichtbar, der ihn
 	     benutzte. -->
 	<Media />
-	<AnimalInfo />
+	<AnimalInfo {onchangekind} />
 	<SightingDetails />
 </div>

@@ -88,6 +88,22 @@ describe('sections/SightingDetails — boatDrive in der Admin-Maske', () => {
 });
 
 /**
+ * Review-Befund 2 (Task 11, zweite Runde): Der „Land"-Test oben rendert
+ * ausschließlich mit `adminMode: true` und stand außerdem selbst in dieser
+ * Admin-Gruppe — „war schon vorher grün" belegte damit nur den Admin-Zweig.
+ * `showsBoatDrive` (`isBoatSightingFrom`) kennt `adminMode` gar nicht,
+ * trotzdem war der Bürger-Zweig bis hierhin ungetestet. Eigene Gruppe statt
+ * eines weiteren Falls in „… in der Admin-Maske", damit der Name stimmt.
+ */
+describe('sections/SightingDetails — boatDrive im Meldeformular', () => {
+	it('zeigt den Bootsantrieb bei "Land" auch im Meldeformular gar nicht erst', () => {
+		renderSightingDetails({ sightingFrom: SightingFromEnum.LAND });
+
+		expect(document.querySelector('[data-field="boatDrive"]')).toBeNull();
+	});
+});
+
+/**
  * „Statt Sichtungsdetails ‚Funddetails' einfügen" — Wunsch des Museums für den
  * Totfund. Die Karte reagiert auf den Totfund-Schalter, der auf Schritt 2 über
  * ihr steht; die Zuordnung selbst liegt in `$lib/report/wording`.

@@ -12,8 +12,8 @@ vi.mock('$lib/logger', () => ({
 }));
 
 // Use same mock config as stepValidation.test.ts
-vi.mock('$lib/report/formConfig', () => ({
-	formStepsConfig: [
+vi.mock('$lib/report/formConfig', () => {
+	const formStepsConfig = [
 		{
 			id: 'location-time',
 			title: 'Position & Zeit',
@@ -35,8 +35,27 @@ vi.mock('$lib/report/formConfig', () => ({
 			title: 'Kontaktdaten',
 			fields: ['firstName', 'lastName', 'email', 'privacyConsent']
 		}
-	]
-}));
+	];
+
+	// isStepValid (aufgerufen von canNavigateToStep) liest seit Task 3 über
+	// getFormSteps(data) statt der statischen Konstante — der Mock muss diese
+	// Funktion deshalb mit anbieten, auch wenn kein Test hier isDead setzt.
+	const isDeadFinding = (value: unknown): boolean =>
+		value === true || value === 1 || value === '1' || value === 'true';
+
+	const getFormSteps = (data: { isDead?: unknown }) => {
+		if (!isDeadFinding(data?.isDead)) {
+			return formStepsConfig;
+		}
+		const hidden = new Set(['behavior', 'behaviorText', 'reaction']);
+		return formStepsConfig.map((step) => ({
+			...step,
+			fields: step.fields.filter((field) => !hidden.has(field))
+		}));
+	};
+
+	return { formStepsConfig, getFormSteps };
+});
 
 const today = new Date().toISOString().substring(0, 10);
 

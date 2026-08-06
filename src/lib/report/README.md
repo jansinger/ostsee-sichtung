@@ -1,8 +1,19 @@
 # `src/lib/report` — Sighting Report Form
 
-This directory contains the **production** multi-step sighting form. It is mounted by
-[`src/routes/+page.svelte`](../../routes/+page.svelte) via `ModernReportForm` — there is no
-second or "legacy" form implementation.
+This directory contains the **production** multi-step sighting form, plus the entry page in
+front of it. [`src/routes/+page.svelte`](../../routes/+page.svelte) renders either
+`ReportKindChoice` (no branch chosen yet) or `ModernReportForm` (branch resolved) — there is
+no second or "legacy" form implementation.
+
+## Entry page: which branch, before the form mounts
+
+[`ReportKindChoice.svelte`](components/ReportKindChoice.svelte) asks "Was möchten Sie
+melden?" (living animal vs. dead find) before any form step renders.
+[`reportKind.ts`](reportKind.ts) is the pure state machine behind it —
+`resolveReportKind(param, stored, savedIsDead)` decides whether the choice page is skipped
+(`?meldung=` link, a stored branch, or legacy data with `isDead` already set) or shown
+(`null`). `+page.svelte` owns the `reportKind` state and calls this on mount, in the
+`popstate` handler, and after "Ändern".
 
 The binding rules for working on this code are in
 [`.claude/rules/forms.md`](../../../.claude/rules/forms.md); UX rationale is in
@@ -23,12 +34,14 @@ which field to render.
 
 ```
 src/lib/report/
-├── formConfig.ts                    # formStepsConfig, initialFormState, USER_CONTACT_FIELDS
+├── formConfig.ts                    # formStepsConfig, getFormSteps, initialFormState, USER_CONTACT_FIELDS
 ├── formContext.ts                   # set/getFormContext (Symbol key)
+├── reportKind.ts                    # ReportKind state machine (entry page, before the form)
 ├── types.ts                         # @deprecated re-export shim → import from $lib/types
 ├── formOptions/                     # Enum + option helpers (16 files)
 └── components/
-    ├── ModernReportForm.svelte      # Entry point; owns currentStep + persistence
+    ├── ReportKindChoice.svelte      # Entry page: "Was möchten Sie melden?"
+    ├── ModernReportForm.svelte      # Form entry point; owns currentStep + persistence
     ├── steps/
     │   ├── Step1LocationTime.svelte
     │   ├── Step2SightingDetails.svelte
@@ -104,6 +117,17 @@ and clear when the field changes.
 Progressive disclosure is done inline in the section components with `{#if}` against
 `$form` plus `transition:slide`. There is no config object and no `CombinedField`
 component.
+
+**`getFormSteps` (`formConfig.ts`) controls validation only — it renders nothing.** It
+derives per-step `fields` from `formStepsConfig` by removing entries for the current branch
+(`isDeadFinding`), reporting location (`isFromLand`), or missing media (`hasUploadedMedia`),
+and `stepValidation.ts` reads the result. Hiding a field there does **not** hide it in the
+DOM. Every hidden field needs **both halves**: the entry removed from `getFormSteps` _and_ a
+matching `{#if}` at the markup call site, both driven by the same named predicate
+(`isDeadFinding`, `isFromLand`, `hasUploadedMedia` — all exported from `formConfig.ts`).
+Doing only one half is worse than doing neither: a visible-but-unvalidated field submits an
+unchecked value to the backend; a hidden-but-still-validated field blocks "Weiter" on a field
+the user can no longer see or fix, with no way out.
 
 The "OTHER selected → reveal a free-text field" pattern compares against the option enum
 and shows a `<field>Text` companion — see

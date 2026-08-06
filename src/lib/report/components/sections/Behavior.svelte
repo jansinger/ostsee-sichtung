@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getFormContext } from '$lib/report/formContext';
+	import { isFromLand } from '$lib/report/formConfig';
 	import { AnimalBehaviorEnum } from '$lib/report/formOptions/animalBehavior';
 	import { slide } from 'svelte/transition';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
@@ -35,7 +36,17 @@
 		</div>
 	{/if}
 
-	<FormField name="reaction" />
+	<!-- „Reaktion auf Ihr Boot" ist für einen Landbeobachter unbeantwortbar — er
+	     hat kein Boot, auf das die Tiere reagieren könnten. `getFormSteps`
+	     (formConfig.ts) nimmt `reaction` bereits bei einer Land-Meldung aus der
+	     Validierung; dieselbe Bedingung (`isFromLand`) hier, sonst bliebe das
+	     Feld sichtbar, aber unvalidiert ausgefüllt.
+
+	     Nur außerhalb von `adminMode`: Die Admin-Maske muss `reaction` auch an
+	     Altbestands-Datensätzen mit `vonwo = Land` korrigieren können. -->
+	{#if adminMode || !isFromLand($form.sightingFrom)}
+		<FormField name="reaction" />
+	{/if}
 
 	<!-- `otherObservations` ist aus dem Meldeformular genommen (Überschneidung
 	     mit „Bemerkungen"), bleibt im Admin aber editierbar: 844 Datensätze

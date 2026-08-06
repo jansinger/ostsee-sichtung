@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { FormPage } from './pages/FormPage';
 import {
 	fillStep1,
@@ -154,55 +154,66 @@ test.describe('SightingDetails — Motorfrage bei Motorboot', () => {
 
 // ── Phase 2C: isDead Conditional Rendering ──────────────────────────────────
 
+/**
+ * Der Totfund-Schalter auf Schritt 2 ist seit Commit d7767383 entfallen: Die
+ * Frage „lebendes Tier oder Totfund?" beantwortet seither die Einstiegsseite
+ * (`/?meldung=lebend|totfund`, s. `AnimalInfo.svelte`), bevor das Formular
+ * überhaupt erscheint — Schritt 2 zeigt stattdessen nur noch die Rückmeldung
+ * „Sie melden: … · [Ändern]". `isDead` kommt dadurch bereits über den
+ * Einstiegs-Zweig fest ins Formular, es gibt keinen Weg mehr, es innerhalb des
+ * Bürgerformulars umzuschalten — jeder Test wählt den Zweig deshalb über
+ * `FormPage.goto()`, nicht mehr über `[data-testid="field-isDead"]` (das
+ * existiert nur noch in der Admin-Maske, `adminMode=true`).
+ */
 test.describe('AnimalInfo — isDead Conditional Rendering', () => {
-	test.beforeEach(async ({ page }) => {
+	async function gotoStep2(page: Page, kind: 'lebend' | 'totfund') {
 		const formPage = new FormPage(page);
-		await formPage.goto();
-
-		// Navigate to Step 2
+		await formPage.goto(kind);
 		await fillStep1(formPage);
 		await waitForNextEnabled(page);
 		await formPage.clickNext();
 		await expectCurrentStep(page, /Angaben zum Tier/i);
-	});
+	}
 
-	test('DeadAnimal-Section ist initial nicht sichtbar', async ({ page }) => {
+	test('DeadAnimal-Section ist im Lebend-Zweig nicht sichtbar', async ({ page }) => {
+		await gotoStep2(page, 'lebend');
+
 		// Dead animal fields should not be visible
 		await expect(page.locator('[data-field="deadCondition"]')).not.toBeVisible();
 		await expect(page.locator('[data-field="deadSex"]')).not.toBeVisible();
 		await expect(page.locator('[data-field="deadSize"]')).not.toBeVisible();
 	});
 
-	test('isDead=true zeigt DeadAnimal-Felder, aber nicht deadSex (Museum hat das Feld am 2026-08-04 abbestellt — C4)', async ({
+	test('Totfund-Zweig zeigt DeadAnimal-Felder, aber nicht deadSex (Museum hat das Feld am 2026-08-04 abbestellt — C4)', async ({
 		page
 	}) => {
-		// Toggle isDead
-		const toggle = page.locator('[data-testid="field-isDead"]');
-		await toggle.check();
+		await gotoStep2(page, 'totfund');
 
 		// Dead animal fields should appear
 		await expect(page.locator('[data-field="deadCondition"]')).toBeVisible({ timeout: 3000 });
 		await expect(page.locator('[data-field="deadSize"]')).toBeVisible();
 
 		// deadSex bleibt Schema-Feld für die Admin-Maske, ist im Meldeformular
-		// aber auch bei isDead=true nicht mehr erreichbar — anders als
+		// aber auch im Totfund-Zweig nicht mehr erreichbar — anders als
 		// deadCondition/deadSize, die weiterhin sichtbar werden.
 		await expect(page.locator('[data-field="deadSex"]')).not.toBeVisible();
 	});
 
-	test('isDead zurück auf false versteckt DeadAnimal-Felder', async ({ page }) => {
-		const toggle = page.locator('[data-testid="field-isDead"]');
-
-		// Toggle on
-		await toggle.check();
-		await expect(page.locator('[data-field="deadCondition"]')).toBeVisible({ timeout: 3000 });
-
-		// Toggle off
-		await toggle.uncheck();
+	test('Lebend-Zweig zeigt DeadAnimal-Felder gar nicht erst (kein Zurückschalten mehr im Bürgerformular)', async ({
+		page
+	}) => {
+		// Vormals: isDead per Toggle an- und wieder ausschalten. Diesen Weg gibt es
+		// im Bürgerformular nicht mehr — der Zweig steht seit der Einstiegsseite
+		// fest, ein „Zurückschalten" existiert nur noch über „Ändern" zurück zur
+		// Auswahlseite (abgedeckt in `report-kind-choice.spec.ts`). Die verbleibende
+		// Aussage: im Lebend-Zweig sind die Felder von Anfang an nie im DOM.
+		await gotoStep2(page, 'lebend');
 		await expect(page.locator('[data-field="deadCondition"]')).not.toBeVisible({ timeout: 3000 });
 	});
 
 	test('Species-Select rendert alle Haupttierarten', async ({ page }) => {
+		await gotoStep2(page, 'lebend');
+
 		const speciesSelect = page.locator('[data-testid="field-species"]');
 		await expect(speciesSelect).toBeVisible();
 
@@ -214,6 +225,8 @@ test.describe('AnimalInfo — isDead Conditional Rendering', () => {
 	});
 
 	test('totalCount und juvenileCount Felder sind vorhanden', async ({ page }) => {
+		await gotoStep2(page, 'lebend');
+
 		await expect(page.locator('[data-testid="field-totalCount"]')).toBeVisible();
 		await expect(page.locator('[data-testid="field-juvenileCount"]')).toBeVisible();
 	});

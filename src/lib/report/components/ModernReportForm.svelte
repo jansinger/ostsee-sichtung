@@ -11,9 +11,16 @@
 	import { describeSubmitFailure, submitSightingForm } from '$lib/form/submitSightingForm';
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
+	import { fieldsOutsideReportKind } from '$lib/report/fieldsOutsideReportKind';
 	import { findStepForErrors } from '$lib/report/findStepForErrors';
 	import { resolveServerFieldErrors } from '$lib/report/serverFieldErrors';
-	import { initialFormState } from '$lib/report/formConfig';
+	import {
+		HIDDEN_WHEN_FROM_LAND,
+		hasUploadedMedia,
+		initialFormState,
+		isDeadFinding,
+		isFromLand
+	} from '$lib/report/formConfig';
 	import { toast } from '$lib/stores/toastState.svelte';
 	import {
 		clearFormDataOnly,
@@ -31,6 +38,7 @@
 	import { scrollToFirstError } from '$lib/utils/fieldNavigation';
 	import { createId } from '@paralleldrive/cuid2';
 	import { formStepsConfig } from '$lib/report/formConfig';
+	import { tick, untrack } from 'svelte';
 	import { ValidationError } from 'yup';
 	import Form from './form/Form.svelte';
 	import FormSteps from './form/FormSteps.svelte';
@@ -46,10 +54,40 @@
 		onSubmit = async (value) => {
 			logger.info({ value }, 'Form submitted:');
 		},
-		onCancel = () => {}
+		onCancel = () => {},
+		initialIsDead,
+		// Default-Noop wie `onCancel` oben: `exactOptionalPropertyTypes` verbietet sonst das
+		// Weiterreichen als `{onchangekind}` an `Step2SightingDetails`.
+		onchangekind = () => {},
+		// Default-Noop aus demselben Grund wie `onchangekind` — hier gibt es
+		// aber keine weitere Aufrufstelle, an die durchgereicht werden müsste.
+		onreset = () => {}
 	}: {
 		onSubmit?: (data: SightingFormValues) => Promise<void>;
 		onCancel?: () => void;
+		/**
+		 * Zweig aus der Einstiegsseite (`ReportKindChoice`). Bleibt das Prop weg
+		 * (andere Aufrufstellen), passiert nichts — `undefined` ist bewusst kein
+		 * gültiger Totfund-Wert.
+		 */
+		initialIsDead?: boolean;
+		/**
+		 * Reicht den „Ändern"-Knopf aus `ReportKindFeedback` bis zur Aufrufstelle
+		 * durch — nur `+page.svelte` kennt die Einstiegsseite, zu der er
+		 * zurückführt. Seit B6 (Abschlussreview) steht die Rückmeldung an ZWEI
+		 * Stellen: Schritt 1 (`Step1LocationTime`) und Schritt 2 (`AnimalInfo`,
+		 * über `Step2SightingDetails`).
+		 */
+		onchangekind?: () => void;
+		/**
+		 * Abschlussreview B1: „Formular zurücksetzen" (`onReset()` unten) räumt
+		 * Storage und Formular-Zustand clientseitig auf, kann den Zweig-`$state`
+		 * in `+page.svelte` aber nicht selbst anfassen — der lebt eine Ebene
+		 * höher. Ohne dieses Prop bliebe die Auswahlseite nach einem Reset
+		 * unsichtbar: `isDead` fiele im Formular still auf den Schema-Default
+		 * `false` zurück, während `+page.svelte` weiter den alten Zweig zeigt.
+		 */
+		onreset?: () => void;
 	} = $props();
 
 	// Lade gespeicherte Benutzer-Kontaktdaten
@@ -67,6 +105,43 @@
 	const savedFormData: SightingFormData = loadFromStorage(STORAGE_KEYS.FORM_DATA, {
 		...initialFormData
 	});
+
+	// `initialIsDead` überschreibt `isDead` aus dem Formular-State. Fehlten
+	// gespeicherte Formulardaten, steht dort ohnehin nur der Schema-Default —
+	// die Zuweisung ist dann gleichbedeutend mit „erstmalig setzen". Lagen
+	// Formulardaten vor, ist ein Unterschied zu `initialIsDead` genau der Fall
+	// „Zweig hat sich seit dem letzten Stand geändert"; stimmen beide bereits
+	// überein, ist die Zuweisung ein No-op. Ein `undefined`-Prop (Aufrufstellen
+	// ohne Einstiegsseite) lässt `isDead` unangetastet.
+	//
+	// Nur der Anfangswert des Props zählt, nicht reaktiv nachgezogen — deshalb
+	// einmalig per `untrack` in eine Konstante gelesen, vor der Prüfung.
+	const initialIsDeadAtMount = untrack(() => initialIsDead);
+	if (initialIsDeadAtMount !== undefined) {
+		savedFormData.isDead = initialIsDeadAtMount;
+	}
+
+	// Task 8: Zweigfremde Felder leeren. Maßgeblich ist NICHT, ob sich der Zweig
+	// gegenüber einer vorherigen Sitzung geändert hat — das ist seit `changeKind()`
+	// (`reportKind.ts` entfernt `isDead` aus den gespeicherten `FORM_DATA`) nicht
+	// mehr rekonstruierbar. Maßgeblich ist einzig, was in den Zweig gehört, in dem
+	// das Formular JETZT startet (`savedFormData.isDead`, nach der Überschreibung
+	// oben). Das räumt auch zweigfremde Daten aus einer ÄLTEREN Sitzung auf, die
+	// mit dem aktuellen `initialIsDead`-Prop nie etwas zu tun hatten.
+	//
+	// `resetField` bindet den Schlüsseltyp pro Aufruf an einen einzigen generischen
+	// Parameter — eine direkte `savedFormData[field] = initialFormState[field]` in
+	// der Schleife lässt TypeScript nicht zu (`field` ist `keyof SightingFormData`
+	// als Union, kein einzelner Schlüssel; `svelte-check` meldet dort einen echten
+	// Typfehler, keine Falschmeldung).
+	function resetField<K extends keyof SightingFormData>(key: K): void {
+		savedFormData[key] = initialFormState[key];
+	}
+	for (const field of fieldsOutsideReportKind(
+		isDeadFinding(savedFormData.isDead) ? 'dead' : 'alive'
+	)) {
+		resetField(field);
+	}
 
 	// Zeige Feedback wenn vorherige Eingaben wiederhergestellt wurden
 	if (hadSavedFormData) {
@@ -119,6 +194,38 @@
 	 */
 	const submitBlocked = $derived(submitState === 'offline' && connection.isInterfaceDown);
 
+	/**
+	 * Entfernt eine Liste von Schlüsseln aus einem Objekt, unabhängig davon, ob
+	 * `T` sie als optional führt. `shipNameConsent` ist wegen `.default(false)`
+	 * im Schema z. B. NICHT optional inferiert — `delete obj[key]` direkt auf
+	 * `T` wäre dort unter `exactOptionalPropertyTypes` ein Typfehler. Der Weg
+	 * über `Partial<T>` umgeht das, ohne die Feldliste ein zweites Mal als
+	 * Typ-Literal zu pflegen.
+	 */
+	function omitFields<T extends object, K extends keyof T>(obj: T, keys: readonly K[]): Omit<T, K> {
+		const result: Partial<T> = { ...obj };
+		for (const key of keys) {
+			delete result[key];
+		}
+		return result as Omit<T, K>;
+	}
+
+	/**
+	 * Dieselbe Feldliste wie `HIDDEN_WHEN_FROM_LAND` (formConfig.ts, dort die
+	 * volle Begründung), ohne `boatDrive` — das hat mit `shouldResetBoatDrive`
+	 * (`boatDriveReset.ts`) einen eigenen, gezielteren Mechanismus.
+	 */
+	const OWN_VESSEL_FIELDS = HIDDEN_WHEN_FROM_LAND.filter(
+		(field) => field !== 'boatDrive'
+	) as Exclude<(typeof HIDDEN_WHEN_FROM_LAND)[number], 'boatDrive'>[];
+
+	/**
+	 * Task 15 (Review-Befund 3): benannte Konstante statt eines Inline-Literals
+	 * an der Aufrufstelle unten — demselben Muster wie `OWN_VESSEL_FIELDS`
+	 * folgend, statt eines Stilbruchs im selben Block.
+	 */
+	const MEDIA_CONSENT_FIELDS = ['mediaConsent'] as const;
+
 	// Formular initialisieren
 	const formProps = {
 		initialValues: { ...savedFormData },
@@ -128,11 +235,41 @@
 				// Remove admin only attributes and uploaded files (already uploaded)
 				const { verified, internalComment, uploadedFiles, ...submitValuesTemp } = values;
 				let submitValues: SightingFormValues = submitValuesTemp as SightingFormValues;
+
+				// Ausgeblendete Bootsangaben nicht absenden — entfernt am
+				// Absende-Rand, statt `$form` vorher zu leeren. Begründung samt
+				// verworfenem ersten Ansatz: `HIDDEN_WHEN_FROM_LAND` in
+				// formConfig.ts. `values` bleibt unangetastet — die
+				// Kontaktdaten unten werden bewusst daraus gebaut, nicht aus
+				// `submitValues`.
+				if (isFromLand(values.sightingFrom)) {
+					submitValues = omitFields(submitValues, OWN_VESSEL_FIELDS) as SightingFormValues;
+				}
 				// Datum und Uhrzeit gehen als Strings (deutsche Wanduhrzeit) raus — den
 				// Zeitpunkt bildet ausschließlich der Server, sonst ginge die Zeitzone
 				// des Browsers in den gespeicherten Instant ein.
 				// set mediaUpload indicator
-				submitValues.mediaUpload = uploadedFiles ? uploadedFiles.length > 0 : false;
+				const hasCompletedUpload = hasUploadedMedia(uploadedFiles);
+				submitValues.mediaUpload = hasCompletedUpload;
+
+				// Task 15: Keine Einwilligung ohne Gegenstand. `mediaConsent` fragt
+				// nach der Freigabe von Aufnahmen — ohne eine zum Absende-Zeitpunkt
+				// tatsächlich abgeschlossene Übertragung ist das eine Frage ohne
+				// Bezugsgegenstand, dieselbe Fehlerklasse wie `shipNameConsent` bei
+				// einer Land-Meldung oben. `hasUploadedMedia` (formConfig.ts) ist
+				// dieselbe Funktion, die auch `getFormSteps` und `Step4Contact.svelte`
+				// aufrufen — absichtlich gegen `uploadedFiles` geprüft, nicht gegen
+				// den Medien-Store: Nur eine hier abgeschlossene Übertragung hat
+				// serverseitig ein Gegenstück, für das `mapFormToSighting` einen
+				// Nachweis (`…_am`/`…_version`) stempeln könnte. Das ist der Riegel,
+				// der auch dann greift, wenn der Reset-Effekt weiter unten aus
+				// irgendeinem Grund übersehen wurde — `mapFormToSighting` liest ein
+				// fehlendes Feld ohnehin als falsy (`formData.mediaConsent ? 1 : 0`),
+				// Weglassen statt `false` setzen spart deshalb keinen Fall, hält sich
+				// aber an dasselbe Muster wie `OWN_VESSEL_FIELDS` oben.
+				if (!hasCompletedUpload) {
+					submitValues = omitFields(submitValues, MEDIA_CONSENT_FIELDS) as SightingFormValues;
+				}
 
 				submitAttempt += 1;
 				submitState = 'submitting';
@@ -357,7 +494,7 @@
 	 * Es wird bewusst nicht gewartet: Warum, und warum der Medien-Store dabei ganz
 	 * geleert wird, steht in `discardFormUploads.ts`.
 	 */
-	function onReset() {
+	async function onReset() {
 		logger.info('Resetting form:');
 
 		discardFormUploads($form.uploadedFiles, formContext.mediaStore);
@@ -369,12 +506,45 @@
 		// Stelle sicher, dass currentStep auch im localStorage zurückgesetzt wird
 		saveToStorage(STORAGE_KEYS.CURRENT_STEP, 0);
 		formContext.updateInitialValues(initialFormData);
+
+		// B1: `onreset` schaltet in `+page.svelte` den Zweig zurück auf die
+		// Auswahlseite (Spec §6.2: „Zurücksetzen → reportKind löschen → Seite
+		// erscheint wieder"). `await tick()` zuerst, weil `updateInitialValues`
+		// oben `$form` ändert — der `$effect` weiter unten, der `$form` nach
+		// `FORM_DATA` spiegelt, läuft erst im nächsten Svelte-Flush. Ohne das
+		// Warten läse der Aufrufer entweder noch die soeben gelöschten Daten,
+		// oder der Effekt schriebe NACH dem Aufräumen dort unten ein frisches
+		// `isDead: false` zurück, das ihm entginge.
+		await tick();
+		onreset();
 	}
 
 	// Lade currentStep aus localStorage oder starte bei 0
 	let currentStep: number = $state(loadFromStorage(STORAGE_KEYS.CURRENT_STEP, 0));
 
 	const form = $derived(formContext.form);
+
+	/**
+	 * Task 15: Keine Einwilligung ohne Gegenstand. Hält die Invariante „kein
+	 * `mediaConsent: true` ohne mindestens eine abgeschlossen hochgeladene
+	 * Aufnahme" durchgehend ein — nicht nur beim Entfernen der letzten
+	 * Aufnahme, sondern auch für einen mit `mediaConsent: true`, aber ohne
+	 * `uploadedFiles` gestarteten Formularzustand (z. B. Altbestand aus dem
+	 * `localStorage`, von vor diesem Task). Sonst bliebe ein `true` stehen,
+	 * das `Step4Contact.svelte` niemandem mehr zeigt (`hasMedia`-Bedingung
+	 * dort) und das der Server dennoch stempeln würde, käme bis zum Absenden
+	 * doch noch eine Aufnahme zustande.
+	 *
+	 * Geprüft über `hasUploadedMedia($form.uploadedFiles)` — dieselbe Funktion,
+	 * die `hasMedia` in `Step4Contact.svelte` und der Riegel oben in `onSubmit`
+	 * ebenfalls aufrufen — nicht gegen den client-seitigen Medien-Store, der
+	 * nur gefüllt ist, solange eine Dropzone (Schritt 1 oder 2) gemountet ist.
+	 */
+	$effect(() => {
+		if (!hasUploadedMedia($form.uploadedFiles) && $form.mediaConsent) {
+			formContext.updateField('mediaConsent', false);
+		}
+	});
 
 	// Speichere currentStep direkt bei Änderungen
 	$effect(() => {
@@ -423,9 +593,9 @@
 			<!-- Step Content -->
 			<div class="min-h-[400px]">
 				{#if currentStep === 0}
-					<Step1LocationTime />
+					<Step1LocationTime {onchangekind} />
 				{:else if currentStep === 1}
-					<Step2SightingDetails />
+					<Step2SightingDetails {onchangekind} />
 				{:else if currentStep === 2}
 					<Step3Observations bind:currentStep />
 				{:else if currentStep === 3}

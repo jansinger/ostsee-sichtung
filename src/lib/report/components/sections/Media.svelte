@@ -80,11 +80,14 @@
 	     Ohne sie IST der unangekreuzte Zustand die interne Nutzung, was
 	     `mediaConsent.valueText` bereits sagt.
 
-	     Nur im Meldeformular: In der Admin-Maske (`AdminSightingEditForm.svelte`
-	     rendert `<Media adminMode={true} />`) fordert „Bitte wählen Sie unten
-	     aus …" zu etwas auf, das das Feld darunter mit `disabled={adminMode}`
-	     gerade sperrt — und widerspräche dem Hinweis, dass nur die meldende
-	     Person diese Einwilligung erteilen kann.
+	     `mediaConsent` steht seit dem 2026-08-05 nicht mehr hier, sondern auf
+	     Schritt 4 bei den übrigen Einwilligungen (`steps/Step4Contact.svelte`,
+	     Begründung in `formConfig.ts`). Nur in der Admin-Maske
+	     (`AdminSightingEditForm.svelte` rendert `<Media adminMode={true} />`)
+	     bleibt das Feld hier stehen — sie bindet `Step4Contact.svelte` nicht
+	     ein —, dort gesperrt (`disabled`, dieser ganze Block steht bereits
+	     hinter `{#if adminMode}`) mit eigener Erklärung, dass nur die
+	     meldende Person diese Einwilligung erteilen kann.
 
 	     „Aufnahmen" statt „Fotos und Videos": Welche Formate tatsächlich
 	     angenommen werden, hängt an der Laufzeit-Konfiguration und steht in der
@@ -93,8 +96,8 @@
 	     Wort ist zugleich das, was der Abschnitt sonst durchgehend verwendet. -->
 	{#if !adminMode}
 		<p class="text-base-content/70 mb-4 text-sm">
-			Sie können Aufnahmen zu Ihrer Meldung hochladen. Bitte wählen Sie unten aus, ob wir sie
-			zusätzlich für Veröffentlichungen nutzen dürfen.
+			Sie können Aufnahmen zu Ihrer Meldung hochladen. Ob wir sie zusätzlich für Veröffentlichungen
+			nutzen dürfen, fragen wir Sie im Schritt Kontaktdaten.
 		</p>
 	{/if}
 	<div class="text-base-content/70 mb-4 text-sm">
@@ -132,8 +135,24 @@
 		</ul>
 	</div>
 	<UploadNotice />
-	<FormField name="mediaConsent" disabled={adminMode} />
 	{#if adminMode}
+		<!--
+			Nur hier, nicht auch im Meldeformular: `mediaConsent` steht dort seit
+			dem 2026-08-05 auf Schritt 4 (`Step4Contact.svelte`). Diese Maske
+			bindet die Komponente nicht ein, deshalb bleibt das Feld an dieser
+			Stelle stehen — gesperrt, weil ein Admin die Einwilligung weder
+			stellvertretend erteilen noch nachweisen kann.
+
+			`disabled` statt `disabled={adminMode}`: Dieser ganze Block steht
+			bereits hinter `{#if adminMode}`, die Bedingung war also konstant
+			wahr. Kein Fall für `aria-disabled` (Projektregel für gesperrte
+			SCHALTFLÄCHEN, die eine laufende Aktion blockieren) — dieses Feld ist
+			dauerhaft und unabhängig von jeder Aktion gesperrt, weil ein Admin die
+			Einwilligung grundsätzlich nicht stellvertretend abgeben kann; die
+			Feld-Pipeline (`FieldRenderer`) kennt für Formularfelder ohnehin nur
+			ein natives `disabled`, kein `aria-disabled`.
+		-->
+		<FormField name="mediaConsent" disabled />
 		<!--
 			Bewusst ohne `aria-describedby`: Ein `disabled` Control ist nicht
 			fokussierbar, eine Beschreibung daran würde im Formularmodus nie

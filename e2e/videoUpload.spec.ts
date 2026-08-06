@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  */
 test.describe('Video-Upload im Meldeformular', () => {
 	test('der Datei-Dialog bietet Videos an', async ({ page }) => {
-		await page.goto('/');
+		await page.goto('/?meldung=lebend');
 
 		const response = await page.request.get('/api/config/upload');
 		expect(response.ok()).toBe(true);

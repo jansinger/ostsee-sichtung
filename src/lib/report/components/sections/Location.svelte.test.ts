@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
 import type { SightingFormData } from '$lib/types';
 import Location from './Location.svelte';
@@ -145,5 +146,50 @@ describe('sections/Location — Ortsbeschreibung als konditionales Pflichtfeld',
 		renderAdminLocation({ hasPosition });
 
 		expect(requiredMark('seaMark')).toBeNull();
+	});
+});
+
+/**
+ * Review Task 6, Befund A: `VerifyLocation.svelte` las den Zweig bisher selbst
+ * aus `getFormContext()`. `buildAdminEditInitialValues` spreadet den
+ * bearbeiteten Datensatz in `$form` — beim Öffnen eines Totfund-Datensatzes
+ * trug `$form.isDead` also den echten Wert, und der Ostsee-Hinweis wechselte
+ * in der Admin-Maske unbeabsichtigt Farbe (`alert-warning` → `alert-info`) und
+ * Wortlaut. `AdminSightingEditForm.svelte` darf sich dadurch nicht verändern.
+ *
+ * `Location.svelte` (dieser Admin-Pfad) setzt bewusst keine Override-Props an
+ * `VerifyLocation` — der Test hält fest, dass der Hinweis dadurch beim
+ * Totfund-Datensatz genau so bleibt wie beim Lebend-Datensatz.
+ */
+describe('sections/Location — Ostsee-Hinweis bleibt admin-seitig unverändert', () => {
+	/**
+	 * Review Task 6, Befund 2: Der `fetch`-Stub unten überschreibt
+	 * `globalThis.fetch` ohne Rücknahme. Bisher folgenlos, weil dieser Block der
+	 * letzte in der Datei war — ein später angehängter Test hätte den Stub sonst
+	 * unbemerkt erhalten. `globalThis.fetch = vi.fn()` ist eine reine Zuweisung,
+	 * kein `vi.spyOn` — `vi.restoreAllMocks()` kennt deshalb kein Original, zu
+	 * dem es zurückkehren könnte, und ließe die Zuweisung stehen. Die echte
+	 * Referenz wird deshalb hier selbst festgehalten und zurückgeschrieben.
+	 */
+	const originalFetch = globalThis.fetch;
+
+	afterEach(() => {
+		globalThis.fetch = originalFetch;
+	});
+
+	it('zeigt beim Bearbeiten eines Totfund-Datensatzes weiterhin den bisherigen Sichtungs-Wortlaut in alert-warning', async () => {
+		globalThis.fetch = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({ inBaltic: false, inChartArea: true, longitude: 10, latitude: 54 })
+		}) as unknown as typeof fetch;
+
+		renderAdminLocation({ hasPosition: true, isDead: true, latitude: 54, longitude: 10 });
+
+		const outsideNotice = page.getByTestId('verify-location-outside');
+		await expect.element(outsideNotice).toBeVisible();
+		await expect.element(outsideNotice).toHaveClass(/alert-warning/);
+		await expect
+			.element(outsideNotice)
+			.toHaveTextContent('Die Koordinaten liegen scheinbar außerhalb der Ostsee.');
 	});
 });

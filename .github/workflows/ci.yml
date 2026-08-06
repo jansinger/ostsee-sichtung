@@ -549,6 +549,25 @@ jobs:
             # zu Hause: Der Spec prüft den ortsfesten Balken gegen Viewport und
             # scroll-padding — Layout, nicht Formularlogik.
             e2e/form-field-mode.spec.ts
+            # Die folgenden drei kamen mit der Einstiegsseite („Was möchten Sie
+            # melden?") dazu. Sie stünden thematisch bei `form` und liegen hier,
+            # weil `form` zum Zeitpunkt ihrer Zuordnung der längste Shard war.
+            #
+            # ACHTUNG: Diese Begründung ist seit #769 überholt — dort wurde nach
+            # echten CI-Schrittdauern neu verteilt, und `form` ist seither der
+            # kürzeste Shard. Neu gemessen wurde nach dem Merge noch nicht.
+            # Wer das nächste Mal ausbalanciert, prüft diese drei zuerst: Sie
+            # gehören thematisch zu `form` und dürften nach der aktuellen Regel
+            # („Zuordnung folgt der gemessenen Dauer und erst danach dem Thema")
+            # ohnehin dorthin. Lokal wiegen sie zusammen rund 45 s — lokale
+            # Zahlen sind aber genau die, vor denen der Block weiter unten
+            # warnt; maßgeblich ist die Schrittdauer aus GitHub Actions.
+            e2e/report-kind-choice.spec.ts
+            # Zweite Ausblende-Achse: `sightingFrom` auf Schritt 2, nicht die
+            # Einstiegsseite. Der schwerste der drei.
+            e2e/form-from-land.spec.ts
+            # `mediaConsent` auf Schritt 4, nur bei vorhandener Aufnahme.
+            e2e/media-consent-placement.spec.ts
           )
 
           # Der Rückstand von 14 Specs ist abgearbeitet: 13 davon liefen am

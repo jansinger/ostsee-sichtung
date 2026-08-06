@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
 import type { SightingFormData } from '$lib/types';
 import AnimalInfo from './AnimalInfo.svelte';
@@ -18,15 +19,43 @@ import AnimalInfo from './AnimalInfo.svelte';
  * robuster als `compareDocumentPosition` an zwei Einzelknoten, weil es die
  * volle Kette auf einmal prüft und bei einer Regression eine lesbare
  * Namensliste statt einer Bitmaske liefert.
+ *
+ * Seit Task 7 (Einstiegsseite ersetzt den Schalter im Meldeformular) gilt
+ * diese Reihenfolgeaussage nur noch in der Admin-Maske — dort ist `isDead`
+ * weiterhin ein echtes Bedienelement. Der Wrapper rendert deshalb per Default
+ * mit `adminMode`, statt zwei Kopien mit und ohne Schalter zu pflegen.
  */
-function renderAnimalInfo(overrides: Partial<SightingFormData> = {}): void {
-	renderWithFormContext(AnimalInfo, { overrides });
+function renderAnimalInfo(overrides: Partial<SightingFormData> = {}, adminMode = true): void {
+	renderWithFormContext(AnimalInfo, { overrides, props: { adminMode } });
 }
 
 function fieldOrder(): string[] {
 	return Array.from(document.querySelectorAll<HTMLElement>('[data-field]')).map(
 		(el) => el.dataset.field ?? ''
 	);
+}
+
+/**
+ * Modul-Ebene statt lokal in einem `describe`, damit sowohl der Admin- als
+ * auch der Melder-Pfad (Review-Befund 5) denselben Helfer nutzen — keine
+ * zweite Kopie pflegen.
+ */
+function speciesLabel(): string {
+	const field = document.querySelector<HTMLElement>('[data-field="species"]');
+	if (!field) throw new Error('Feld "species" nicht im DOM');
+	return field.querySelector('label')?.textContent ?? '';
+}
+
+/**
+ * Modul-Ebene statt lokal in einem `describe`, damit sowohl die
+ * adminMode-Weiterreichungs-Tests unten als auch die Totfund-Schalter-Tests
+ * (PR 2, Teil c) denselben Wrapper nutzen — keine zweite Kopie pflegen.
+ */
+function renderWithAdminMode(adminMode: boolean): void {
+	renderWithFormContext(AnimalInfo, {
+		overrides: { isDead: true, deadCondition: 1 },
+		props: { adminMode }
+	});
 }
 
 describe('sections/AnimalInfo — Totfund prominent platziert (PR 2, Teil a)', () => {
@@ -86,12 +115,6 @@ describe('sections/AnimalInfo — Totfund prominent platziert (PR 2, Teil a)', (
  * den PR 4 für den Bootsantrieb gebaut hat), das Schema bleibt unverändert.
  */
 describe('sections/AnimalInfo — Artfrage folgt dem Totfund-Schalter', () => {
-	function speciesLabel(): string {
-		const field = document.querySelector<HTMLElement>('[data-field="species"]');
-		if (!field) throw new Error('Feld "species" nicht im DOM');
-		return field.querySelector('label')?.textContent ?? '';
-	}
-
 	it('fragt bei einer Sichtung, was gesehen wurde', () => {
 		renderAnimalInfo({ isDead: false });
 
@@ -112,13 +135,6 @@ describe('sections/AnimalInfo — Artfrage folgt dem Totfund-Schalter', () => {
  * analog zu OptionalSightingDetails.svelte.test.ts / Location.svelte.test.ts.
  */
 describe('sections/AnimalInfo — adminMode wird an DeadAnimal durchgereicht', () => {
-	function renderWithAdminMode(adminMode: boolean): void {
-		renderWithFormContext(AnimalInfo, {
-			overrides: { isDead: true, deadCondition: 1 },
-			props: { adminMode }
-		});
-	}
-
 	it('zeigt deadSex NICHT ohne adminMode', () => {
 		renderWithAdminMode(false);
 
@@ -129,5 +145,156 @@ describe('sections/AnimalInfo — adminMode wird an DeadAnimal durchgereicht', (
 		renderWithAdminMode(true);
 
 		expect(document.querySelector('[data-testid="field-deadSex"]')).not.toBeNull();
+	});
+});
+
+/**
+ * Die Einstiegsseite („Was möchten Sie melden?") beantwortet Sichtung/Totfund
+ * bereits vor dem Formular. Der Totfund-Schalter auf Schritt 2 würde dieselbe
+ * Frage ein zweites Mal stellen — mit dem Risiko, dass beide Antworten
+ * auseinanderlaufen. Im Meldeformular (adminMode=false) tritt deshalb eine
+ * reine Rückmeldung an seine Stelle. In der Admin-Maske (adminMode=true) gibt
+ * es keine Einstiegsseite — der Schalter bleibt dort das einzige Bedienelement,
+ * mit dem eine Bearbeiterin den Status korrigieren kann.
+ */
+describe('AnimalInfo — Totfund-Schalter', () => {
+	it('zeigt im Meldeformular keinen Schalter mehr, sondern die Rückmeldung', async () => {
+		renderWithAdminMode(false);
+		await expect.element(page.getByText(/Sie melden/i)).toBeInTheDocument();
+		await expect.element(page.getByTestId('field-isDead')).not.toBeInTheDocument();
+	});
+
+	it('behält den Schalter in der Admin-Maske', async () => {
+		// Dort kommt isDead aus dem Datensatz, es gibt keine Einstiegsseite —
+		// ohne Schalter könnten Admins den Status nicht mehr korrigieren.
+		renderWithAdminMode(true);
+		await expect.element(page.getByTestId('field-isDead')).toBeInTheDocument();
+	});
+});
+
+/**
+ * Korrektur 1 (Task 7): Ein roher Ternär (`$form.isDead ? … : …`) genügt
+ * hier nicht — `isDead` kommt beim Wiederaufsetzen aus dem Storage als String
+ * und in der Admin-Maske als Zahl aus der DB. `isDeadFinding` (`formConfig.ts`)
+ * ist die einzige gültige Normalisierung dafür.
+ *
+ * Die Werte 1 und '1' sind in JS bereits truthy — ein roher Ternär trifft für
+ * sie zufällig dieselbe Antwort wie `isDeadFinding` und beweist den Fehler
+ * deshalb NICHT. Der String '0' zeigt den Unterschied dagegen zuverlässig:
+ * JS wertet ihn als truthy (nicht-leerer String) und ein roher Ternär zeigte
+ * fälschlich „Fund eines toten Tieres", während `isDeadFinding('0')` korrekt
+ * `false` liefert. Alle drei Werte stehen hier trotzdem — 1 und '1' als der
+ * im Auftrag wörtlich verlangte Beleg, '0' als der Test, der bei einer
+ * Rückkehr zum rohen Ternär tatsächlich rot wird.
+ */
+describe('AnimalInfo — Rückmeldung normalisiert isDead (Task 7, Korrektur 1)', () => {
+	it.each([1, '1'] as const)(
+		'zeigt „Fund eines toten Tieres", wenn isDead als %s ankommt',
+		async (value) => {
+			renderAnimalInfo({ isDead: value as unknown as boolean }, false);
+
+			await expect.element(page.getByText(/Fund eines toten Tieres/i)).toBeInTheDocument();
+		}
+	);
+
+	it('zeigt „Beobachtung eines lebenden Tieres", wenn isDead der String "0" ist', async () => {
+		renderAnimalInfo({ isDead: '0' as unknown as boolean }, false);
+
+		await expect.element(page.getByText(/Beobachtung eines lebenden Tieres/i)).toBeInTheDocument();
+	});
+});
+
+/**
+ * Review-Befund 3 (Task 7): `{#if $form.isDead}` unter der Rückmeldung steuerte
+ * den Totfund-Detailblock (`DeadAnimal`) weiter per rohem JS-Truthiness — drei
+ * Zeilen unter der Stelle, die für genau diesen Wert bereits `isDeadFinding`
+ * nutzt und „lebend" ausgibt. Für `isDead: '0'` widersprachen sich Rückmeldung
+ * („lebend", siehe Test oben) und Detailblock (rendert trotzdem) sichtbar.
+ */
+describe('AnimalInfo — Totfund-Detailblock folgt derselben Normalisierung (Review-Befund 3)', () => {
+	it('blendet den Totfund-Detailblock trotz truthy String "0" aus', () => {
+		renderAnimalInfo({ isDead: '0' as unknown as boolean }, false);
+
+		expect(document.querySelector('[data-testid="field-deadCondition"]')).toBeNull();
+	});
+});
+
+/**
+ * Korrektur 2 (Task 7): Ein Button ohne Wirkung gehört laut Design-Regel
+ * entfernt, nicht dekorativ stehen gelassen — deshalb muss „Ändern" das
+ * Callback tatsächlich auslösen. Dies ist der letzte Hop der Durchreich-Kette
+ * (`+page.svelte` → `ModernReportForm` → `Step2SightingDetails` →
+ * `AnimalInfo`); die beiden vorgelagerten Hops stehen in den Component-Tests
+ * von `ModernReportForm` und `Step2SightingDetails`.
+ */
+describe('AnimalInfo — „Ändern" ruft das Callback auf', () => {
+	it('ruft onchangekind auf, wenn im Meldeformular auf „Ändern" geklickt wird', async () => {
+		const onchangekind = vi.fn();
+		renderWithFormContext(AnimalInfo, {
+			overrides: { isDead: true },
+			props: { adminMode: false, onchangekind }
+		});
+
+		await page.getByRole('button', { name: /ändern/i }).click();
+
+		expect(onchangekind).toHaveBeenCalledOnce();
+	});
+});
+
+/**
+ * Review-Befund 5 (Task 7): Der Wrapper `renderAnimalInfo` rendert per Default
+ * mit `adminMode={true}`, seit der Totfund-Schalter dort das echte
+ * Bedienelement bleibt (siehe Kommentar an `renderAnimalInfo` oben). Die
+ * Gruppen „Totfund prominent platziert" und „Artfrage folgt dem
+ * Totfund-Schalter" testen seither ausschließlich den Admin-Pfad — für das
+ * Meldeformular (`adminMode=false`, der fachlich gemeinte Weg) deckte danach
+ * kein Test mehr ab, dass species/totalCount/juvenileCount in der richtigen
+ * Reihenfolge stehen und der Totfund-Detailblock progressiv erscheint.
+ *
+ * Im Meldeformular gibt es keinen `isDead`-Schalter mehr, an dem sich „davor"/
+ * „danach" festmachen ließe — der Detailblock ist dort schlicht das erste
+ * Feld der Karte, wenn er erscheint (unmittelbar unter der textlichen
+ * Rückmeldung, die kein `data-field` trägt).
+ */
+describe('sections/AnimalInfo — Feldreihenfolge und progressive Anzeige im Meldeformular (Review-Befund 5)', () => {
+	it('rendert den Totfund-Detailblock bei einem Totfund als erstes Feld', () => {
+		renderAnimalInfo({ isDead: true, deadCondition: 1 }, false);
+
+		expect(fieldOrder()[0]).toBe('deadCondition');
+	});
+
+	it('blendet den Totfund-Detailblock bei einer Sichtung komplett aus', () => {
+		renderAnimalInfo({ isDead: false }, false);
+
+		const order = fieldOrder();
+		expect(order).not.toContain('deadCondition');
+		expect(order[0]).toBe('species');
+	});
+
+	it('lässt species und die Zähler-Felder in ihrer bisherigen Reihenfolge', () => {
+		renderAnimalInfo({ isDead: false }, false);
+
+		const order = fieldOrder();
+		expect(order.indexOf('species')).toBeLessThan(order.indexOf('totalCount'));
+		expect(order.indexOf('totalCount')).toBeLessThan(order.indexOf('juvenileCount'));
+	});
+});
+
+/**
+ * Review-Befund 5, Fortsetzung: dieselbe Lücke für die Artfrage — im
+ * Admin-Pfad bereits durch „Artfrage folgt dem Totfund-Schalter" oben
+ * abgedeckt, im Meldeformular seit Task 7 ungetestet.
+ */
+describe('sections/AnimalInfo — Artfrage im Meldeformular (Review-Befund 5)', () => {
+	it('fragt bei einer Sichtung, was gesehen wurde', () => {
+		renderAnimalInfo({ isDead: false }, false);
+
+		expect(speciesLabel()).toContain('Welche Tierart haben Sie gesehen?');
+	});
+
+	it('fragt beim Totfund, was gefunden wurde', () => {
+		renderAnimalInfo({ isDead: true, deadCondition: 1 }, false);
+
+		expect(speciesLabel()).toContain('Welche Tierart haben Sie gefunden?');
 	});
 });

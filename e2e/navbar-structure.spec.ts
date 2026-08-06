@@ -50,7 +50,7 @@ test.describe('TopBar — Struktur und Umbruchfreiheit', () => {
 		try {
 			for (const breite of DESKTOP_BREITEN) {
 				await page.setViewportSize({ width: breite, height: 900 });
-				await page.goto('/');
+				await page.goto('/?meldung=lebend');
 				await expect(page.locator('header ul.menu-horizontal')).toBeVisible();
 
 				expect(await menueZeilen(page), `Menü bricht bei ${breite}px um`).toBe(1);
@@ -81,7 +81,7 @@ test.describe('TopBar — Struktur und Umbruchfreiheit', () => {
 		const page = await context.newPage();
 
 		try {
-			await page.goto('/');
+			await page.goto('/?meldung=lebend');
 			const menu = page.locator('header ul.menu-horizontal');
 
 			/* Fünf statt sieben: Meldung, Karte, Bestimmungshilfe, Hintergrund +
@@ -258,7 +258,7 @@ test.describe('TopBar — Struktur und Umbruchfreiheit', () => {
 
 	test('ohne Admin-Rechte gibt es keine Verwaltungsgruppe', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 900 });
-		await page.goto('/');
+		await page.goto('/?meldung=lebend');
 
 		const menu = page.locator('header ul.menu-horizontal');
 		/* Die vier Produktlinks ohne die Admin-Gruppe: Meldung, Karte,

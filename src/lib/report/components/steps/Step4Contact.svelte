@@ -6,10 +6,24 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { confirmAndClearContactData } from '$lib/report/clearContactData';
 	import { getFormContext } from '$lib/report/formContext';
+	import { hasUploadedMedia, isFromLand } from '$lib/report/formConfig';
 	import { loadUserContactData } from '$lib/storage/localStorage';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 
 	const { form, updateField } = getFormContext();
+
+	// Task 15: `mediaConsent` fragt nach der Freigabe von Aufnahmen — ohne
+	// mindestens eine abgeschlossen hochgeladene Aufnahme ist das eine Frage
+	// ohne Bezugsgegenstand (dieselbe Fehlerklasse wie `shipNameConsent` bei
+	// Land unten). `hasUploadedMedia` (formConfig.ts) ist dieselbe Funktion,
+	// die `getFormSteps` für die Validierung dieses Feldes aufruft — beide
+	// Seiten (Markup hier, Validierung dort) lesen also garantiert dasselbe
+	// Ergebnis, statt zwei eigene Bedingungen zu pflegen. Geprüft gegen
+	// `$form.uploadedFiles`, nicht gegen den client-seitigen Medien-Store: Der
+	// gehört den Dropzone-Instanzen auf Schritt 1/2 und bleibt leer, solange
+	// keine von beiden gemountet ist — bei einem Reload direkt auf diesem
+	// Schritt sonst fälschlich leer.
+	let hasMedia = $derived(hasUploadedMedia($form.uploadedFiles));
 
 	// Check if user has saved contact data
 	let hasSavedContactData = $state(false);
@@ -155,11 +169,14 @@
 			Datenschutz und Einverständnis
 		</h3>
 
-		<!-- Optional Consents für Namensnennung -->
+		<!-- Optionale Einwilligungen: Namensnennung (eigener Name, Schiffsname)
+		     und Veröffentlichung von Aufnahmen. Die Überschrift muss alle drei
+		     Felder darunter tragen — `mediaConsent` ist keine Namensnennung, hier
+		     stand bis zum Review von Task 14 (2026-08-06) noch „…Ihres Namens". -->
 		<div class="mt-6 space-y-4">
 			<h4 class="flex items-center gap-2 text-base font-semibold">
 				<Icon icon="lucide:pen-line" width="16" class="text-primary" />
-				Optionale Veröffentlichung Ihres Namens
+				Optionale Veröffentlichung von Namen und Aufnahmen
 			</h4>
 			<p class="text-base-content/70 mb-4 text-sm">
 				Diese Einverständniserklärungen sind <strong>optional</strong>. Ihre Meldung wird auch ohne
@@ -168,7 +185,36 @@
 
 			<div class="space-y-3">
 				<FormField name="nameConsent" />
-				<FormField name="shipNameConsent" />
+				<!-- Einwilligung zur Veröffentlichung eines Schiffsnamens, den bei
+				     einer Land-Meldung nie jemand erhoben hat (`BoatInfo.svelte`
+				     blendet `shipName` dort aus) — eine Frage ohne
+				     Bezugsgegenstand. `getFormSteps` (formConfig.ts) nimmt
+				     `shipNameConsent` bereits bei Land aus der Validierung;
+				     dieselbe Bedingung (`isFromLand`) hier, sonst bliebe das Feld
+				     sichtbar, aber unvalidiert ausgefüllt. -->
+				{#if !isFromLand($form.sightingFrom)}
+					<FormField name="shipNameConsent" />
+				{/if}
+				<!-- `mediaConsent` steht seit dem 2026-08-05 hier bei den übrigen
+				     Einwilligungen, nicht mehr bei der Dropzone auf Schritt 2
+				     (`sections/Media.svelte`). Alle vier Felder mit Nachweisspalten
+				     (`…_am`/`…_version` in `schema.ts`) stehen damit an einer Stelle;
+				     die Datei-Felder selbst bleiben auf Schritt 2. In der Admin-Maske
+				     bleibt das Feld dagegen bei der Dropzone stehen — sie bindet diese
+				     Komponente hier nicht ein.
+
+				     Eine Einwilligung zur Veröffentlichung von Aufnahmen, die es nicht
+				     gibt, ist eine Frage ohne Bezugsgegenstand — dieselbe Fehlerklasse
+				     wie `shipNameConsent` oben bei einer Land-Meldung. `getFormSteps`
+				     (formConfig.ts) nimmt `mediaConsent` bei fehlender Aufnahme aus der
+				     Validierung — über dieselbe Funktion `hasUploadedMedia`, die auch
+				     `hasMedia` hier oben berechnet, statt einer zweiten, separat
+				     gepflegten Bedingung. Ohne diese Klammer hier bliebe das Feld
+				     sichtbar, aber unvalidiert ausgefüllt (die „halbe Miete" aus der
+				     Doku dort). -->
+				{#if hasMedia}
+					<FormField name="mediaConsent" />
+				{/if}
 			</div>
 		</div>
 

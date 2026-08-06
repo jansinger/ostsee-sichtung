@@ -1,6 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import type * as yup from 'yup';
-import { formStepsConfig, sightingSchemaFields } from './formConfig';
+import { SightingFromEnum } from './formOptions/sightingFrom';
+import { formStepsConfig, getFormSteps, sightingSchemaFields } from './formConfig';
+import type { UploadedFileInfo } from '$lib/types';
+
+/**
+ * Ein abgeschlossen hochgeladenes File, wie es `$form.uploadedFiles`
+ * (dieselbe Größe, die `getFormSteps` seit Task 15 (Review-Befund 1, zweite
+ * Runde) direkt entgegennimmt) nach einem erfolgreichen Upload enthält.
+ */
+const UPLOADED_FILE: UploadedFileInfo = {
+	uid: 'uid-1',
+	filePath: 'ref-1/uid-1.jpg',
+	originalName: 'foto.jpg',
+	fileName: 'uid-1.jpg',
+	mimeType: 'image/jpeg',
+	size: 1234
+} as UploadedFileInfo;
 
 /**
  * Die Ortsbeschreibung im **Meldeformular** ist seit dem Wunsch des Deutschen
@@ -102,8 +118,9 @@ describe('formStepsConfig — Geschlecht beim Totfund nur in der Admin-Maske', (
 	});
 
 	// Gegenprobe: Nur `deadSex` verschwindet, die übrigen Totfund-Felder
-	// bleiben Teil des Melde-Schritts.
-	it.each(['isDead', 'deadCondition', 'deadSize', 'deadPhoneContact'])(
+	// bleiben Teil des Melde-Schritts. `isDead` steht hier NICHT mehr —
+	// Task 7 nimmt es ebenfalls heraus, siehe die eigene Beschreibung unten.
+	it.each(['deadCondition', 'deadSize', 'deadPhoneContact'])(
 		'behält %s im Schritt "sighting-details"',
 		(name) => {
 			expect(sightingDetailsStep?.fields).toContain(name);
@@ -112,6 +129,28 @@ describe('formStepsConfig — Geschlecht beim Totfund nur in der Admin-Maske', (
 
 	it('kennt deadSex im Schema weiterhin, damit die Admin-Maske es schreiben kann', () => {
 		expect(sightingSchemaFields.deadSex).toBeDefined();
+	});
+});
+
+/**
+ * `isDead` (der Totfund-Schalter) bleibt nur in der Admin-Maske —
+ * `sections/AnimalInfo.svelte` zeigt das Feld dort ausschließlich hinter
+ * `adminMode`, im Meldeformular tritt eine Rückmeldung an seine Stelle
+ * (Task 7). Grund: Die Einstiegsseite „Was möchten Sie melden?" beantwortet
+ * Sichtung/Totfund bereits vor dem Formular; ein zweiter Schalter auf
+ * Schritt 2 könnte dieselbe Frage abweichend beantworten. Schema-Eintrag und
+ * DB-Spalte (`totfund`) bleiben unverändert; hier wird nur geprüft, dass der
+ * Melde-Schritt "sighting-details" das Feld nicht mehr führt.
+ */
+describe('formStepsConfig — Totfund-Schalter nur in der Admin-Maske (Task 7)', () => {
+	const sightingDetailsStep = formStepsConfig.find((step) => step.id === 'sighting-details');
+
+	it('führt isDead nicht mehr im Schritt "sighting-details"', () => {
+		expect(sightingDetailsStep?.fields).not.toContain('isDead');
+	});
+
+	it('kennt isDead im Schema weiterhin, damit die Admin-Maske es schreiben kann', () => {
+		expect(sightingSchemaFields.isDead).toBeDefined();
 	});
 });
 
@@ -141,14 +180,19 @@ describe('formStepsConfig — boatDriveText nur in der Admin-Maske (PR 4)', () =
 });
 
 /**
- * Der Medien-Upload steht seit dem 2026-08-04 auf Schritt 2 (Wunsch des
- * Museums: „Foto hochladen als erste Abfrage noch vor Tierinformation").
+ * Der Medien-UPLOAD (die Datei-Felder) steht seit dem 2026-08-04 auf Schritt 2
+ * (Wunsch des Museums: „Foto hochladen als erste Abfrage noch vor
+ * Tierinformation"). Die Medien-EINWILLIGUNG (`mediaConsent`) ist seit Task 14
+ * (2026-08-05) davon getrennt und steht auf Schritt 4 bei den übrigen
+ * Einwilligungen — eigene Tests weiter unten
+ * ("Einwilligungen stehen zusammen auf Schritt 4").
  *
- * Der Grund wiegt schwerer als die Reihenfolge: Schritt 3 trägt ganz oben einen
- * prominenten „Schritt überspringen"-Knopf, der direkt zu den Kontaktdaten
- * springt — der Upload stand darunter. Wer den Knopf nutzte, bekam die
- * Foto-Frage nie zu sehen, obwohl Aufnahmen die wertvollste Einzelangabe der
- * Meldung sind. Schritt 2 ist Pflichtschritt und nicht überspringbar.
+ * Der Grund für die Position der Datei-Felder wiegt schwerer als die
+ * Reihenfolge: Schritt 3 trägt ganz oben einen prominenten „Schritt
+ * überspringen"-Knopf, der direkt zu den Kontaktdaten springt — der Upload
+ * stand darunter. Wer den Knopf nutzte, bekam die Foto-Frage nie zu sehen,
+ * obwohl Aufnahmen die wertvollste Einzelangabe der Meldung sind. Schritt 2
+ * ist Pflichtschritt und nicht überspringbar.
  *
  * Geprüft wird die Zuordnung in `formStepsConfig`, nicht nur das Markup: An ihr
  * hängen Schritt-Validierung (`validateStep`) und Fehler-Navigation
@@ -159,28 +203,22 @@ describe('formStepsConfig — Medien-Upload auf Schritt 2', () => {
 	const sightingDetailsStep = formStepsConfig.find((step) => step.id === 'sighting-details');
 	const observationsStep = formStepsConfig.find((step) => step.id === 'observations');
 
-	it.each(['mediaFile', 'mediaUpload', 'mediaConsent'])(
-		'führt %s im Schritt "sighting-details"',
-		(name) => {
-			expect(sightingDetailsStep?.fields).toContain(name);
-		}
-	);
+	it.each(['mediaFile', 'mediaUpload'])('führt %s im Schritt "sighting-details"', (name) => {
+		expect(sightingDetailsStep?.fields).toContain(name);
+	});
 
-	it.each(['mediaFile', 'mediaUpload', 'mediaConsent'])(
-		'führt %s nicht mehr im Schritt "observations"',
-		(name) => {
-			expect(observationsStep?.fields).not.toContain(name);
-		}
-	);
+	it.each(['mediaFile', 'mediaUpload'])('führt %s nicht mehr im Schritt "observations"', (name) => {
+		expect(observationsStep?.fields).not.toContain(name);
+	});
 
 	// Der Upload steht VOR den Tierangaben: Wer unsicher ist, welche Art er
 	// gesehen hat, soll das Bild hochladen können, statt zu raten. Die
 	// Reihenfolge im Markup prüft `Step2SightingDetails.svelte.test.ts`; hier
 	// zählt, dass die Config dieselbe Geschichte erzählt — sie bestimmt die
 	// Reihenfolge, in der `findStepForErrors` Felder abläuft.
-	it('listet die Medien-Felder vor species', () => {
+	it('listet die Medien-Dateifelder vor species', () => {
 		const fields = sightingDetailsStep?.fields ?? [];
-		const mediaIndex = fields.indexOf('mediaConsent');
+		const mediaIndex = fields.indexOf('mediaFile');
 		const speciesIndex = fields.indexOf('species');
 
 		// Beide Fundstellen ausdrücklich absichern: `indexOf` liefert für ein
@@ -189,6 +227,109 @@ describe('formStepsConfig — Medien-Upload auf Schritt 2', () => {
 		expect(mediaIndex).toBeGreaterThanOrEqual(0);
 		expect(speciesIndex).toBeGreaterThanOrEqual(0);
 		expect(mediaIndex).toBeLessThan(speciesIndex);
+	});
+});
+
+/**
+ * Task 14: `mediaConsent` steht seit dem 2026-08-05 nicht mehr bei der
+ * Dropzone auf Schritt 2, sondern auf Schritt 4 bei den übrigen drei
+ * Nachweis-Einwilligungen (`nameConsent`, `shipNameConsent`,
+ * `privacyConsent`). Alle vier tragen Nachweisspalten (`…_am`/`…_version`
+ * in `schema.ts`) und sollen an einer Stelle im Formular stehen.
+ */
+describe('Einwilligungen stehen zusammen auf Schritt 4', () => {
+	it('führt mediaConsent nicht mehr bei den Tierangaben', () => {
+		const steps = getFormSteps({ isDead: false });
+		const schrittZwei = steps.find((s) => s.id === 'sighting-details');
+		expect(schrittZwei?.fields).not.toContain('mediaConsent');
+	});
+
+	// Braucht eine vorliegende Aufnahme (Task 15) — sonst blendet `getFormSteps`
+	// `mediaConsent` aus, und dieser Test prüft die Position, nicht das
+	// Ausblenden selbst (das steht in „mediaConsent ohne Aufnahme" unten).
+	it('führt mediaConsent bei den Kontaktdaten', () => {
+		const steps = getFormSteps({ isDead: false, uploadedFiles: [UPLOADED_FILE] });
+		const schrittVier = steps.find((s) => s.id === 'contact');
+		expect(schrittVier?.fields).toContain('mediaConsent');
+	});
+
+	it('lässt die Datei-Felder auf Schritt 2 stehen', () => {
+		// Nur die Einwilligung zieht um. Der Upload bleibt, wo das Museum ihn
+		// am 2026-08-04 haben wollte — vor den Tierangaben.
+		const schrittZwei = getFormSteps({ isDead: false }).find((s) => s.id === 'sighting-details');
+		expect(schrittZwei?.fields).toEqual(expect.arrayContaining(['mediaFile', 'mediaUpload']));
+	});
+
+	it('hält alle vier Nachweis-Einwilligungen auf demselben Schritt', () => {
+		const schrittVier = getFormSteps({ isDead: false, uploadedFiles: [UPLOADED_FILE] }).find(
+			(s) => s.id === 'contact'
+		);
+		expect(schrittVier?.fields).toEqual(
+			expect.arrayContaining(['nameConsent', 'shipNameConsent', 'mediaConsent', 'privacyConsent'])
+		);
+	});
+});
+
+/**
+ * Task 15: `mediaConsent` fragt nach der Freigabe von Aufnahmen. Ohne
+ * mindestens eine vorliegende Aufnahme ist das eine Frage ohne
+ * Bezugsgegenstand — dieselbe Fehlerklasse wie `shipNameConsent` bei einer
+ * Land-Meldung (siehe „getFormSteps mit Beobachtungsort" unten).
+ *
+ * Review-Befund 1 (zweite Runde, 2026-08-06): Eine frühere Fassung übergab
+ * dafür ein separates `hasMedia`-Flag — das keine Aufrufstelle je gesetzt
+ * hat. `stepValidation.ts` ruft `getFormSteps(formData)` mit dem echten
+ * (Partial-)Formularobjekt auf, das kein `hasMedia` kennt, nur
+ * `uploadedFiles`. Die Tests hier rufen `getFormSteps` deshalb genau in DER
+ * Form auf, in der die Validierung es tatsächlich tut: mit `uploadedFiles`
+ * im übergebenen Objekt — dieselbe Größe, die auch `$form.uploadedFiles`
+ * trägt, nicht ein zusätzliches, separat zu pflegendes Flag.
+ */
+describe('mediaConsent ohne Aufnahme', () => {
+	const fieldsOf = (steps: ReturnType<typeof getFormSteps>) => steps.flatMap((s) => s.fields);
+
+	it('erscheint nicht, solange getFormSteps mit leeren uploadedFiles aufgerufen wird — die tatsächliche Aufrufform aus stepValidation.ts', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false, uploadedFiles: [] }));
+		expect(fields).not.toContain('mediaConsent');
+	});
+
+	it('erscheint, sobald uploadedFiles mindestens eine abgeschlossen hochgeladene Datei enthält', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false, uploadedFiles: [UPLOADED_FILE] }));
+		expect(fields).toContain('mediaConsent');
+	});
+
+	// Anders als `sightingFrom`/`isDead` gibt es hier keinen praktischen
+	// Aufrufer, der den Medienstand tatsächlich nicht kennt (Admin-Maske ruft
+	// `getFormSteps` nicht auf) — ein fehlendes `uploadedFiles` verhält sich
+	// deshalb wie eine leere Liste: kein Nachweis einer Aufnahme, Feld bleibt
+	// ausgeblendet. Genau das ist der sichere Default: Ein zukünftiger
+	// Aufrufer, der das Feld schlicht wegließe, zeigt `mediaConsent` nie
+	// versehentlich sichtbar UND unvalidiert.
+	it('bleibt ausgeblendet, wenn uploadedFiles gar nicht im übergebenen Objekt steht', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false }));
+		expect(fields).not.toContain('mediaConsent');
+	});
+
+	it('blendet ohne Aufnahme keinen anderen Consent mit aus', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false, uploadedFiles: [] }));
+		expect(fields).toEqual(
+			expect.arrayContaining([
+				'nameConsent',
+				'shipNameConsent',
+				'privacyConsent',
+				'persistentDataConsent'
+			])
+		);
+	});
+
+	it('lässt die Datei-Felder auf Schritt 2 stehen, unabhängig von uploadedFiles', () => {
+		// Nur die Einwilligung reagiert auf den Medienstand. Der Upload-Einstieg
+		// selbst bleibt sichtbar — sonst könnte man nie eine erste Aufnahme
+		// hinzufügen.
+		const schrittZwei = getFormSteps({ isDead: false, uploadedFiles: [] }).find(
+			(s) => s.id === 'sighting-details'
+		);
+		expect(schrittZwei?.fields).toEqual(expect.arrayContaining(['mediaFile', 'mediaUpload']));
 	});
 });
 
@@ -212,5 +353,117 @@ describe('waterway — Beschriftung deckt beide bisherigen Felder ab', () => {
 
 	it('bietet im Platzhalter ein Beispiel für einen Orientierungspunkt', () => {
 		expect(String(waterwayMeta.placeholder).toLowerCase()).toContain('leuchtturm');
+	});
+});
+
+describe('getFormSteps', () => {
+	const fieldsOf = (steps: ReturnType<typeof getFormSteps>) => steps.flatMap((s) => s.fields);
+
+	it('behält für den Lebend-Zweig alle bisherigen Felder', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false }));
+		expect(fields).toContain('behavior');
+		expect(fields).toContain('behaviorText');
+		expect(fields).toContain('reaction');
+	});
+
+	it('entfernt beim Totfund genau die drei Verhaltensfelder', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: true }));
+		expect(fields).not.toContain('behavior');
+		expect(fields).not.toContain('behaviorText');
+		expect(fields).not.toContain('reaction');
+	});
+
+	it('lässt beim Totfund Wetter, Anzahl anderer Schiffe und Entfernung stehen', () => {
+		// Achse C der Spezifikation: Diese Felder hängen nicht am Zustand des
+		// Tieres. `shipCount` fragt nach ANDEREN Schiffen, `distance` ist auch
+		// vom Strand aus sinnvoll.
+		const fields = fieldsOf(getFormSteps({ isDead: true }));
+		expect(fields).toEqual(
+			expect.arrayContaining(['seaState', 'visibility', 'windForce', 'shipCount', 'distance'])
+		);
+	});
+
+	it('behält in beiden Zweigen vier Schritte — kein Schritt wird leer', () => {
+		for (const isDead of [false, true]) {
+			const steps = getFormSteps({ isDead });
+			expect(steps).toHaveLength(4);
+			for (const step of steps) {
+				expect(step.fields.length).toBeGreaterThan(0);
+			}
+		}
+	});
+
+	it('nimmt isDead auch als Zahl oder String entgegen', () => {
+		// Aus dem localStorage und der Legacy-API kommt `isDead` nicht immer als
+		// Boolean zurück.
+		expect(fieldsOf(getFormSteps({ isDead: 1 }))).not.toContain('behavior');
+		expect(fieldsOf(getFormSteps({ isDead: '1' }))).not.toContain('behavior');
+		expect(fieldsOf(getFormSteps({ isDead: 0 }))).toContain('behavior');
+	});
+});
+
+/**
+ * Task 11: Felder zum eigenen Wasserfahrzeug entfallen, wenn ausdrücklich von
+ * Land gemeldet wird. `sightingFrom` ist `integer default(0) notNull`, und `0`
+ * bedeutet gleichzeitig „noch nicht beantwortet" UND „Sonstiges" (Kajak, SUP,
+ * Seebrücke — 1.893 Zeilen im Bestand) — nur `LAND` ist eine eindeutige Aussage.
+ */
+describe('getFormSteps mit Beobachtungsort', () => {
+	const fieldsOf = (steps: ReturnType<typeof getFormSteps>) => steps.flatMap((s) => s.fields);
+
+	it('blendet die Felder zum eigenen Boot aus, wenn von Land gemeldet wird', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false, sightingFrom: SightingFromEnum.LAND }));
+		for (const feld of ['boatDrive', 'boatType', 'shipName', 'homePort', 'reaction']) {
+			expect(fields).not.toContain(feld);
+		}
+	});
+
+	it('blendet die Einwilligung zum Schiffsnamen mit aus', () => {
+		// Sonst fragt Schritt 4 nach der Freigabe für einen Schiffsnamen, den
+		// nie jemand erhoben hat.
+		const fields = fieldsOf(getFormSteps({ isDead: false, sightingFrom: SightingFromEnum.LAND }));
+		expect(fields).not.toContain('shipNameConsent');
+	});
+
+	it('lässt Anzahl anderer Schiffe und Entfernung auch bei Land stehen', () => {
+		// `shipCount` fragt nach ANDEREN Schiffen — Störungskontext, von Land
+		// aus genauso beobachtbar. `distance` ist auch vom Strand sinnvoll.
+		const fields = fieldsOf(getFormSteps({ isDead: false, sightingFrom: SightingFromEnum.LAND }));
+		expect(fields).toContain('shipCount');
+		expect(fields).toContain('distance');
+	});
+
+	it('zeigt die Bootsfelder bei „Sonstiges" — und vor der Beantwortung', () => {
+		// `sightingFrom` ist `default(0)`, und 0 heißt gleichzeitig „noch nicht
+		// beantwortet" UND „Sonstiges" (Kajak, SUP, Seebrücke — 1.893 Zeilen im
+		// Bestand). Nur LAND ist eine eindeutige Aussage.
+		for (const von of [SightingFromEnum.OTHER, undefined, null]) {
+			const fields = fieldsOf(getFormSteps({ isDead: false, sightingFrom: von }));
+			expect(fields).toContain('boatDrive');
+			expect(fields).toContain('shipName');
+		}
+	});
+
+	it('verknüpft beide Achsen, statt sie gegeneinander zu setzen', () => {
+		// `reaction` entfällt beim Totfund UND bei Land — eine Bedingung darf
+		// die andere nicht überschreiben.
+		const totUndLand = fieldsOf(
+			getFormSteps({ isDead: true, sightingFrom: SightingFromEnum.LAND })
+		);
+		expect(totUndLand).not.toContain('reaction');
+		expect(totUndLand).not.toContain('behavior');
+		expect(totUndLand).not.toContain('shipName');
+		// und die vier Felder, die bleiben müssen:
+		expect(totUndLand).toEqual(
+			expect.arrayContaining(['shipCount', 'seaState', 'visibility', 'windForce'])
+		);
+	});
+
+	it('behält auch in der knappsten Kombination vier nicht-leere Schritte', () => {
+		const steps = getFormSteps({ isDead: true, sightingFrom: SightingFromEnum.LAND });
+		expect(steps).toHaveLength(4);
+		for (const step of steps) {
+			expect(step.fields.length).toBeGreaterThan(0);
+		}
 	});
 });

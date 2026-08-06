@@ -43,7 +43,8 @@ describe('Step3Observations — Medien sind auf Schritt 2 gewandert', () => {
 /**
  * Die Karte „Weitere Sichtungsdetails" stand im Meldeformular leer da: Beide
  * Felder sind `adminMode`-only (`distribution` seit PR #746, `shipCount` seit
- * dem Umzug nach `BoatInfo`), die Karte selbst wurde aber unbedingt gerendert.
+ * dem Umzug nach `BoatInfo` — inzwischen, Task 12, weiter nach
+ * `Environment.svelte`), die Karte selbst wurde aber unbedingt gerendert.
  *
  * Der Test sitzt bewusst **auch** hier und nicht nur an der Sektion selbst: Die
  * Sektion schützt sich inzwischen zwar selbst, aber der Fehler war ein Fehler
@@ -55,5 +56,49 @@ describe('Step3Observations — keine leere Sichtungsdetail-Karte', () => {
 		renderStep3();
 
 		expect(document.body.textContent).not.toContain('Weitere Sichtungsdetails');
+	});
+});
+
+/**
+ * Review-Befund zu Task 8: `getFormSteps` entfernt `behavior`/`behaviorText`/
+ * `reaction` beim Totfund nur aus der Validierung (`stepValidation.ts` liest
+ * ausschließlich daraus). Gerendert wurde die Karte „Verhalten der Tiere"
+ * bislang unbedingt — ein Totfund-Melder sah die Fragen weiterhin, konnte sie
+ * ausfüllen, und die Werte gingen unvalidiert ans Backend. Sichtbarkeit und
+ * Validierung müssen dieselbe Bedingung teilen (`isDeadFinding($form.isDead)`),
+ * sonst entsteht genau diese Lücke wieder — nur mit vertauschten Vorzeichen.
+ */
+describe('Step3Observations — Verhaltens-Karte folgt dem Totfund-Zweig', () => {
+	it('blendet „Verhalten der Tiere" beim Totfund aus', () => {
+		renderWithFormContext(Step3Observations, { overrides: { isDead: true } });
+
+		expect(document.body.textContent).not.toContain('Verhalten der Tiere');
+	});
+
+	it('zeigt „Verhalten der Tiere" bei einer Lebendbeobachtung', () => {
+		renderWithFormContext(Step3Observations, { overrides: { isDead: false } });
+
+		expect(document.body.textContent).toContain('Verhalten der Tiere');
+	});
+
+	it('behält Umweltbedingungen und Bootsangaben, wenn die Verhaltens-Karte beim Totfund fehlt', () => {
+		renderWithFormContext(Step3Observations, { overrides: { isDead: true } });
+
+		const text = document.body.textContent ?? '';
+		expect(text).toContain('Umweltbedingungen');
+		expect(text).toContain('Boot-/Schiffsinformationen');
+	});
+
+	/**
+	 * Abschlussreview (nicht blockierend): Der Einleitungssatz warb beim
+	 * Totfund weiterhin mit „Verhaltensinformationen … helfen bei der
+	 * Artbestimmung", obwohl die Karte direkt darunter fehlt — ein Versprechen,
+	 * das der Schritt nicht einlöst. `step3ObservationsIntro` (`wording.ts`)
+	 * hängt den Satz an denselben Zweig wie die Karte selbst.
+	 */
+	it('verspricht Verhaltensinformationen im Kopf nicht mehr, wenn die Karte beim Totfund fehlt', () => {
+		renderWithFormContext(Step3Observations, { overrides: { isDead: true } });
+
+		expect(document.body.textContent).not.toContain('Verhaltensinformationen');
 	});
 });

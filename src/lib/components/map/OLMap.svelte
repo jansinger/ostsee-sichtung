@@ -16,6 +16,7 @@
 		readonly = false,
 		enableGPS = false,
 		hasPosition = true,
+		hintOverride = undefined,
 		onchange = () => {}
 	} = $props<{
 		latitude?: number;
@@ -34,6 +35,11 @@
 		 * bis der Nutzer eine Stelle wählt.
 		 */
 		hasPosition?: boolean;
+		/**
+		 * Überschreibt die Marker-Erklärung. Ohne Wert bleibt der bisherige Wortlaut —
+		 * Admin-Ansicht und Foto-EXIF-Karte ändern sich dadurch nicht.
+		 */
+		hintOverride?: string;
 		onchange?: (longitude: number, latitude: number) => void;
 	}>();
 
@@ -55,6 +61,7 @@
 	 * verschwindet, wenn der Melder die Koordinatenfelder später leert.
 	 */
 	let mapHint = $derived.by(() => {
+		if (hintOverride !== undefined) return hintOverride;
 		if (!hasPosition) {
 			return 'Noch keine Position gewählt. Tippen Sie auf die Karte, um die Stelle zu markieren, an der Sie das Tier gesehen haben.';
 		}

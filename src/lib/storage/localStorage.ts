@@ -41,6 +41,16 @@ const USER_CONTACT_DEFAULTS: UserContactData = {
 export const STORAGE_KEYS = {
 	CURRENT_STEP: 'sichtungen_current_step', // Aktueller Formular-Schritt
 	FORM_DATA: 'sichtungen_form_data', // Hauptformulardaten
+	// 'alive' | 'dead'. Fehlt der Schlüssel, wurde die Frage noch nie gestellt —
+	// `isDead` kann das nicht ausdrücken, weil es als Boolean auf `false` steht.
+	//
+	// sessionStorage, nicht localStorage (Abschlussreview B3, 2026-08-06): Der
+	// Zweig beschreibt DIESE Formulardaten und darf ihre Lebensdauer nicht
+	// überdauern — sonst wird die Einstiegsfrage pro Browser nur einmal
+	// gestellt, auch Wochen später für ein anderes Tier. `sessionKeys` unten
+	// entscheidet den tatsächlichen Storage-Typ; dieser Kommentar beschreibt
+	// nur noch die Semantik, nicht mehr den Ort.
+	REPORT_KIND: 'sichtungen_report_kind',
 	// uids der Dateien aus dem Positions-Schritt (siehe positionFileOrigin.ts).
 	// Gehört zu FORM_DATA und muss dessen Lebensdauer teilen — sonst verlöre eine
 	// wiederhergestellte Datei ihre Herkunft.
@@ -55,7 +65,8 @@ export const STORAGE_KEYS = {
 const sessionKeys = [
 	STORAGE_KEYS.FORM_DATA,
 	STORAGE_KEYS.CURRENT_STEP,
-	STORAGE_KEYS.POSITION_FILE_UIDS
+	STORAGE_KEYS.POSITION_FILE_UIDS,
+	STORAGE_KEYS.REPORT_KIND
 ];
 
 /**
@@ -170,6 +181,29 @@ export function saveToStorage<T>(key: string, value: T): void {
 }
 
 /**
+ * Entfernt einen Schlüssel vollständig aus dem passenden Storage-Typ.
+ *
+ * Nutzt denselben session-vs-local-Dispatch wie `getItem`/`setItem`. Anders
+ * als `saveToStorage(key, null)` — das den String "null" ablegen würde —
+ * verschwindet der Schlüssel dabei tatsächlich aus dem Storage.
+ *
+ * @param key Storage-Schlüssel aus STORAGE_KEYS
+ *
+ * @example
+ * removeFromStorage(STORAGE_KEYS.REPORT_KIND);
+ */
+export function removeFromStorage(key: string): void {
+	// Server-side Rendering Schutz
+	if (!browser) return;
+
+	if (sessionKeys.includes(key)) {
+		sessionStorage.removeItem(key);
+	} else {
+		localStorage.removeItem(key);
+	}
+}
+
+/**
  * Bereinigt formular-relevante Daten bei Formular-Abschluss
  *
  * Löscht alle temporären Formulardaten aber behält Benutzer-Kontaktdaten
@@ -219,6 +253,10 @@ export function clearFormDataOnly(): void {
 	// bleibt sie stehen, erbt eine später hochgeladene Datei mit derselben uid
 	// eine fremde Herkunft.
 	sessionStorage.removeItem(STORAGE_KEYS.POSITION_FILE_UIDS);
+	// Der Zweig (Abschlussreview B3) beschreibt genau diese Formulardaten und
+	// räumt deshalb mit ihnen auf — nicht erst, wenn ein Aufrufer explizit
+	// `removeFromStorage(STORAGE_KEYS.REPORT_KIND)` nachholt.
+	sessionStorage.removeItem(STORAGE_KEYS.REPORT_KIND);
 }
 
 /**

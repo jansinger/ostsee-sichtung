@@ -1,0 +1,67 @@
+import { getFormSteps } from '$lib/report/formConfig';
+import type { ReportKind } from '$lib/report/reportKind';
+import type { SightingFormData } from '$lib/types';
+
+/**
+ * Totfund-Felder, die im Lebend-Zweig nicht hingehören.
+ *
+ * Ohne Gegenstück in `getFormSteps`: Die Felder werden dort in keinem Zweig
+ * aus der Schritt-Konfiguration entfernt — im Meldeformular blendet einzig
+ * `AnimalInfo.svelte` den `DeadAnimal`-Block per
+ * `{#if isDeadFinding($form.isDead)}` optisch aus. Eine einzige Quelle für
+ * beide Richtungen (siehe unten) ist deshalb hier nicht möglich, ohne
+ * `getFormSteps` mit anzufassen — das wäre eine Änderung an der
+ * Schritt-Validierung, die dieser Task nicht verlangt.
+ */
+const FOREIGN_TO_ALIVE: (keyof SightingFormData)[] = [
+	'deadCondition',
+	'deadSize',
+	'deadPhoneContact'
+];
+
+/**
+ * Felder, die NICHT in den angegebenen Zweig gehören — unabhängig davon, ob
+ * und wie oft vorher gewechselt wurde. Ein `behavior`, das im Formularzustand
+ * steht, während der Melder im Totfund-Zweig ist, ginge beim Absenden mit ans
+ * Backend — und die Schritt-Validierung prüft es nicht mehr, weil es aus
+ * `getFormSteps()` verschwunden ist. Umgekehrt genauso mit `deadCondition` im
+ * Lebend-Zweig.
+ *
+ * Bewusst nicht als „beim Wechsel zu leerende Felder" formuliert: Seit
+ * `changeKind()` (`reportKind.ts`) `isDead` aus den gespeicherten `FORM_DATA`
+ * entfernt, ist ein vorheriger Zweig beim erneuten Betreten des Formulars
+ * nicht mehr rekonstruierbar — dort steht dann nur noch der Schema-Default.
+ * Die Funktion beantwortet deshalb ausschließlich „was gehört nicht in den
+ * Zweig, in dem ich JETZT bin" — das deckt zusätzlich den Fall ab, dass
+ * zweigfremde Daten aus einer älteren Sitzung im localStorage liegen, den ein
+ * Wechsel-Vergleich nie sähe, und ist idempotent.
+ *
+ * Für den Totfund-Zweig aus `getFormSteps` abgeleitet (einzige Quelle: genau
+ * die Felder, die dort beim Totfund aus der Schritt-Konfiguration verschwinden)
+ * statt einer zweiten, von Hand gepflegten Liste.
+ *
+ * Abschlussreview B4: Der Vergleich läuft bewusst gegen `getFormSteps({ isDead: false })`
+ * und NICHT gegen `formStepsConfig` direkt. `getFormSteps` bildet mittlerweile
+ * drei Achsen ab — Totfund (`isDead`), Beobachtungsort (`sightingFrom`) und
+ * Medien-Upload (`uploadedFiles`, über `hasUploadedMedia`) — und diese Funktion
+ * darf ausschließlich die erste beantworten. Ein Diff gegen `formStepsConfig`
+ * zieht JEDE Bedingung mit herein, die `getFormSteps` unabhängig von `isDead`
+ * anwendet: Beide Aufrufe unten lassen `sightingFrom` und `uploadedFiles`
+ * bewusst weg (bleiben `undefined`), sodass `mediaConsent` — hier `hasUploadedMedia(undefined)`
+ * ist `false` — in BEIDEN Aufrufen gleichermaßen fehlt und sich beim Differenzbilden
+ * gegenseitig aufhebt, statt fälschlich als „gehört nicht in den Totfund-Zweig" zu erscheinen.
+ * Genau das war der Fehler: Der vorherige Vergleich gegen `formStepsConfig` (das
+ * `mediaConsent` uneingeschränkt führt) ließ `getFormSteps({ isDead: true })`s
+ * Medien-bedingtes Entfernen von `mediaConsent` wie eine Totfund-Bedingung aussehen.
+ * Eine künftige vierte Achse in `getFormSteps` bleibt aus demselben Grund automatisch
+ * außen vor, solange sie nicht von `isDead` abhängt — keine Anpassung hier nötig.
+ */
+export function fieldsOutsideReportKind(kind: ReportKind): (keyof SightingFormData)[] {
+	if (kind === 'alive') {
+		return [...FOREIGN_TO_ALIVE];
+	}
+
+	const keptWhenAlive = getFormSteps({ isDead: false }).flatMap((step) => step.fields);
+	const keptWhenDead = new Set(getFormSteps({ isDead: true }).flatMap((step) => step.fields));
+	return keptWhenAlive.filter((field) => !keptWhenDead.has(field)) as (keyof SightingFormData)[];
+}

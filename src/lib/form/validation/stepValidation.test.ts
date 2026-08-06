@@ -12,10 +12,10 @@ vi.mock('$lib/logger', () => ({
 	})
 }));
 
-// Mock formStepsConfig to decouple from runtime config
+// Mock formStepsConfig/getFormSteps to decouple from runtime config
 // (sightingSchema itself is NOT mocked — real validation logic is tested)
-vi.mock('$lib/report/formConfig', () => ({
-	formStepsConfig: [
+vi.mock('$lib/report/formConfig', () => {
+	const formStepsConfig = [
 		{
 			id: 'location-time',
 			title: 'Position & Zeit',
@@ -24,12 +24,22 @@ vi.mock('$lib/report/formConfig', () => ({
 		{
 			id: 'sighting-details',
 			title: 'Sichtungsdetails',
-			fields: ['species', 'totalCount', 'distance']
+			// `deadCondition` steht hier absichtlich neben `species`/`totalCount`/
+			// `distance`, OHNE `isDead` — spiegelt den echten `formConfig.ts`-Stand
+			// nach Task 7: `isDead` ist aus der Feldliste des Schritts entfernt,
+			// `deadCondition` hängt aber weiterhin per `.when('isDead', …)` daran.
+			// Review-Befund 4 prüft genau diese Kombination.
+			fields: ['species', 'totalCount', 'distance', 'deadCondition']
 		},
 		{
 			id: 'observations',
 			title: 'Beobachtungen',
-			fields: ['behavior'],
+			// `reaction` steht absichtlich mit im eingedampften Testbestand: Ohne sie
+			// wäre `not.toContain('reaction')` weiter unten (Totfund-Block) immer
+			// erfüllt, unabhängig davon, ob `getFormSteps` sie beim Totfund
+			// tatsächlich entfernt — der Mock-Schritt hätte das Feld nie enthalten.
+			// Abschlussreview-Befund aus Task 3, hier behoben statt gestrichen.
+			fields: ['behavior', 'reaction'],
 			isOptional: true
 		},
 		{
@@ -37,8 +47,27 @@ vi.mock('$lib/report/formConfig', () => ({
 			title: 'Kontaktdaten',
 			fields: ['firstName', 'lastName', 'email', 'privacyConsent']
 		}
-	]
-}));
+	];
+
+	// Spiegelt formConfig.ts's HIDDEN_WHEN_DEAD auf dem eingedampften Testbestand:
+	// stepValidation ruft getFormSteps(data) statt der statischen Konstante auf —
+	// der Mock muss diese Verzweigung nachbilden, sonst testet er sie nicht.
+	const isDeadFinding = (value: unknown): boolean =>
+		value === true || value === 1 || value === '1' || value === 'true';
+
+	const getFormSteps = (data: { isDead?: unknown }) => {
+		if (!isDeadFinding(data?.isDead)) {
+			return formStepsConfig;
+		}
+		const hidden = new Set(['behavior', 'behaviorText', 'reaction']);
+		return formStepsConfig.map((step) => ({
+			...step,
+			fields: step.fields.filter((field) => !hidden.has(field))
+		}));
+	};
+
+	return { formStepsConfig, getFormSteps };
+});
 
 // ── Test data ────────────────────────────────────────────────────────────────
 
@@ -291,5 +320,82 @@ describe('validateStep', () => {
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toEqual({});
 		});
+	});
+});
+
+/**
+ * Review-Befund 4 (Task 7): `deadCondition` hängt im Schema per
+ * `.when('isDead', …)` an einem Feld, das seit Task 7 NICHT mehr in der
+ * gepickten Feldliste von Schritt 2 steht (`isDead` wird auf der
+ * Einstiegsseite beantwortet, nicht mehr auf Schritt 2 — siehe
+ * `formConfig.ts`). `isStepValid`/`validateStep` übergeben `sightingSchema
+ * .pick(validateFields)` trotzdem die VOLLEN `formData` zur Validierung, nicht
+ * nur die gepickten Felder — die Annahme ist, dass Yup den Sibling-Ref
+ * `isDead` aus diesem vollen Wertobjekt auflöst, obwohl `isDead` selbst nicht
+ * Teil des gepickten (Teil-)Schemas ist. Ungetestet war das plausibel, aber
+ * unbelegt; dieser Block nagelt die Annahme fest.
+ */
+describe('stepValidation — Totfund ohne Zustand macht Schritt 2 ungültig (Review-Befund 4)', () => {
+	it('isStepValid: Schritt 2 ist ungültig, wenn isDead gesetzt ist, aber deadCondition fehlt', () => {
+		expect(isStepValid(1, { ...validSightingData, isDead: true })).toBe(false);
+	});
+
+	it('validateStep: Schritt 2 meldet den fehlenden deadCondition-Fehler', () => {
+		const result = validateStep(1, { ...validSightingData, isDead: true });
+
+		expect(result.isValid).toBe(false);
+		expect(result.errors).toHaveProperty('deadCondition');
+	});
+
+	it('isStepValid: Schritt 2 bleibt gültig, wenn isDead gesetzt ist und deadCondition vorliegt', () => {
+		expect(isStepValid(1, { ...validSightingData, isDead: true, deadCondition: 1 })).toBe(true);
+	});
+
+	it('isStepValid: deadCondition bleibt ohne Totfund weiterhin unnötig', () => {
+		// Gegenprobe: Ohne `isDead` bleibt Schritt 2 gültig, obwohl `deadCondition`
+		// jetzt Teil der gepickten Feldliste ist — der `.when()`-Zweig greift nur
+		// bei `isDead === true`.
+		expect(isStepValid(1, validSightingData)).toBe(true);
+	});
+});
+
+describe('stepValidation im Totfund-Zweig', () => {
+	it('validiert ausgeblendete Felder nicht mehr', async () => {
+		// Der wichtigste Test des Vorhabens: Würde `behavior` weiter validiert,
+		// säße der Melder in einer Sackgasse — das Feld ist nicht sichtbar, der
+		// Fehler nicht behebbar.
+		//
+		// `behavior` bekommt hier bewusst den ungültigen Enum-Wert 999 statt
+		// `undefined` (wie in der ursprünglichen Formulierung des Tasks): Das
+		// Feld ist im echten Schema `.notRequired()`, ein `undefined`-Wert löst
+		// also so oder so nie einen Fehler aus — der Test wäre unabhängig vom
+		// Seam immer grün gewesen (empirisch geprüft: `behavior: undefined`
+		// erzeugt weder vor noch nach der Umstellung einen Fehler). Der
+		// ungültige Wert macht den Unterschied sichtbar: Vor der Umstellung
+		// wird `behavior` trotz Totfund weiter geprüft und schlägt fehl; nach
+		// der Umstellung blendet `getFormSteps` das Feld aus, bevor `pick()`
+		// es überhaupt sieht.
+		//
+		// `reaction` bekommt aus demselben Grund einen ungültigen Wert statt
+		// `undefined`: Auch dieses Feld ist `.notRequired()`, nur mit einer
+		// `.max(1000)`-Schranke statt eines Enums — ein zu langer String verletzt
+		// sie zuverlässig. Ohne diesen Wert wäre `not.toContain('reaction')`
+		// unten immer erfüllt gewesen, unabhängig davon, ob `getFormSteps` das
+		// Feld beim Totfund tatsächlich entfernt (Abschlussreview-Befund aus
+		// Task 3 — empirisch geprüft: mit `undefined` blieb die Assertion auch
+		// grün, nachdem `reaction` testweise aus `HIDDEN_WHEN_DEAD` entfernt
+		// wurde).
+		const schrittMitVerhalten = 2; // 0-basiert: „Weitere Informationen"
+		const daten = {
+			isDead: true,
+			behavior: 999,
+			behaviorText: undefined,
+			reaction: 'x'.repeat(1001)
+		};
+
+		const ergebnis = await validateStep(schrittMitVerhalten, daten);
+
+		expect(Object.keys(ergebnis.errors ?? {})).not.toContain('behavior');
+		expect(Object.keys(ergebnis.errors ?? {})).not.toContain('reaction');
 	});
 });

@@ -14,7 +14,7 @@ test.describe('Homepage', () => {
 	});
 
 	test('should have proper meta tags', async ({ page }) => {
-		await page.goto('/');
+		await page.goto('/?meldung=lebend');
 
 		await expect(page).toHaveTitle(/Ostsee-Tiere/);
 		const metaDescription = page.locator('meta[name="description"]').first();
