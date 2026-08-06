@@ -320,6 +320,45 @@ describe('ModernReportForm — zweigfremde Felder werden beim Start geleert', ()
 		expect(data.latitude).toBe(54.5);
 		expect(data.longitude).toBe(12.1);
 	});
+
+	/**
+	 * Abschlussreview B4: `fieldsOutsideReportKind('dead')` leitete sich aus
+	 * `getFormSteps({ isDead: true })` ab — ohne `uploadedFiles`, wodurch
+	 * `getFormSteps` zusätzlich `mediaConsent` entfernte (formConfig.ts,
+	 * `hasUploadedMedia(undefined)` ist `false`). Die Liste trug damit vier
+	 * Felder statt der drei Verhaltensfelder, und der Aufräum-Block oben
+	 * (Zeile ~138) setzte `mediaConsent` bei JEDEM Mount im Totfund-Zweig auf
+	 * den Schema-Default zurück — auch dann, wenn eine Aufnahme vorlag und der
+	 * Melder die Veröffentlichung bereits erlaubt hatte. `mediaConsent` ist
+	 * eine dritte, von Zweig UND Beobachtungsort unabhängige Achse (Medien-
+	 * Upload) und gehört nicht in diese Zweig-Bereinigung.
+	 */
+	it('lässt eine erteilte Medien-Einwilligung samt Aufnahme unangetastet, wenn das Formular im Totfund-Zweig startet (B4)', async () => {
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-totfund-medien',
+				isDead: true,
+				mediaConsent: true,
+				uploadedFiles: [UPLOAD],
+				species: 7,
+				latitude: 54.5,
+				longitude: 12.1
+			})
+		);
+
+		render(ModernReportForm, { initialIsDead: true });
+
+		await vi.waitFor(() => {
+			const data = persistedFormData();
+			expect(data.species).toBe(7);
+		});
+
+		const data = persistedFormData();
+		expect(data.mediaConsent).toBe(true);
+		expect(data.uploadedFiles).toEqual([UPLOAD]);
+	});
 });
 
 /**

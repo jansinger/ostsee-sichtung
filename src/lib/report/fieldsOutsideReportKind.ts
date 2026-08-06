@@ -1,4 +1,4 @@
-import { formStepsConfig, getFormSteps } from '$lib/report/formConfig';
+import { getFormSteps } from '$lib/report/formConfig';
 import type { ReportKind } from '$lib/report/reportKind';
 import type { SightingFormData } from '$lib/types';
 
@@ -38,15 +38,30 @@ const FOREIGN_TO_ALIVE: (keyof SightingFormData)[] = [
  *
  * Für den Totfund-Zweig aus `getFormSteps` abgeleitet (einzige Quelle: genau
  * die Felder, die dort beim Totfund aus der Schritt-Konfiguration verschwinden)
- * statt einer zweiten, von Hand gepflegten Liste — siehe den Cross-Check in
- * `fieldsOutsideReportKind.test.ts`.
+ * statt einer zweiten, von Hand gepflegten Liste.
+ *
+ * Abschlussreview B4: Der Vergleich läuft bewusst gegen `getFormSteps({ isDead: false })`
+ * und NICHT gegen `formStepsConfig` direkt. `getFormSteps` bildet mittlerweile
+ * drei Achsen ab — Totfund (`isDead`), Beobachtungsort (`sightingFrom`) und
+ * Medien-Upload (`uploadedFiles`, über `hasUploadedMedia`) — und diese Funktion
+ * darf ausschließlich die erste beantworten. Ein Diff gegen `formStepsConfig`
+ * zieht JEDE Bedingung mit herein, die `getFormSteps` unabhängig von `isDead`
+ * anwendet: Beide Aufrufe unten lassen `sightingFrom` und `uploadedFiles`
+ * bewusst weg (bleiben `undefined`), sodass `mediaConsent` — hier `hasUploadedMedia(undefined)`
+ * ist `false` — in BEIDEN Aufrufen gleichermaßen fehlt und sich beim Differenzbilden
+ * gegenseitig aufhebt, statt fälschlich als „gehört nicht in den Totfund-Zweig" zu erscheinen.
+ * Genau das war der Fehler: Der vorherige Vergleich gegen `formStepsConfig` (das
+ * `mediaConsent` uneingeschränkt führt) ließ `getFormSteps({ isDead: true })`s
+ * Medien-bedingtes Entfernen von `mediaConsent` wie eine Totfund-Bedingung aussehen.
+ * Eine künftige vierte Achse in `getFormSteps` bleibt aus demselben Grund automatisch
+ * außen vor, solange sie nicht von `isDead` abhängt — keine Anpassung hier nötig.
  */
 export function fieldsOutsideReportKind(kind: ReportKind): (keyof SightingFormData)[] {
 	if (kind === 'alive') {
 		return [...FOREIGN_TO_ALIVE];
 	}
 
-	const allFields = formStepsConfig.flatMap((step) => step.fields);
+	const keptWhenAlive = getFormSteps({ isDead: false }).flatMap((step) => step.fields);
 	const keptWhenDead = new Set(getFormSteps({ isDead: true }).flatMap((step) => step.fields));
-	return allFields.filter((field) => !keptWhenDead.has(field)) as (keyof SightingFormData)[];
+	return keptWhenAlive.filter((field) => !keptWhenDead.has(field)) as (keyof SightingFormData)[];
 }
