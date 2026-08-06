@@ -55,8 +55,9 @@ test.describe('Meldeformular — Beobachtung von Land', () => {
 		// Feld darin — sonst stünde eine leere Karte mit Titel und Einleitung im
 		// Formular.
 		await expect(page.getByText('Boot-/Schiffsinformationen')).toBeHidden();
-		// „Reaktion auf Ihr Boot" ist für einen Landbeobachter unbeantwortbar
-		// (Behavior.svelte); der Rest der Karte („Verhalten der Tiere") bleibt.
+		// „Reaktion auf Sie oder Ihr Fahrzeug" ist für einen Landbeobachter
+		// unbeantwortbar (Behavior.svelte); der Rest der Karte („Verhalten der
+		// Tiere") bleibt.
 		// Über die Rolle statt `getByText`: Der Kartentitel steht als `<h3>`,
 		// derselbe Text kommt aber zusätzlich als Feld-Hilfetext und -Begründung
 		// vor (`getByText` träfe dort auf drei Treffer statt einem).

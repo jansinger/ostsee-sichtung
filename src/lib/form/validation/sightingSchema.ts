@@ -717,7 +717,12 @@ export const sightingSchemaBase = yup.object().shape({
 	reaction: yup
 		.string()
 		.max(1000, 'Die Reaktion darf nicht länger als 1000 Zeichen sein.')
-		.label('Reaktion auf Ihr Boot')
+		// UX-Review (2026-08-06, Punkt 4): „Ihr Boot" setzt ein Boot voraus, das
+		// `isFromLand` bewusst nicht verlangt — `sightingFrom = 0` heißt
+		// gleichzeitig „Sonstiges" (Kajak, SUP, Seebrücke) und „noch nicht
+		// beantwortet", das Feld steht für diese Melder also zu Recht da. Die
+		// Frage bleibt sinnvoll, nur die Beschriftung war zu eng.
+		.label('Reaktion auf Sie oder Ihr Fahrzeug')
 		.meta({
 			placeholder: 'z.B. neugierig genähert, geflohen, ignoriert...',
 			helpText: 'Wie haben die Tiere auf Ihre Anwesenheit reagiert?',

@@ -36,8 +36,12 @@
 		</div>
 	{/if}
 
-	<!-- „Reaktion auf Ihr Boot" ist für einen Landbeobachter unbeantwortbar — er
-	     hat kein Boot, auf das die Tiere reagieren könnten. `getFormSteps`
+	<!-- „Reaktion auf Sie oder Ihr Fahrzeug" ist für einen Landbeobachter
+	     unbeantwortbar — er steht am Ufer, die Tiere reagieren nicht auf ihn.
+	     Das Label ist seit dem UX-Review (2026-08-06, Punkt 4) verallgemeinert,
+	     weil `isFromLand` bewusst nur ein ausdrückliches „Land" ausblendet und
+	     Kajak, SUP und Seebrücke unter „Sonstiges" hier stehen bleiben.
+	     `getFormSteps`
 	     (formConfig.ts) nimmt `reaction` bereits bei einer Land-Meldung aus der
 	     Validierung; dieselbe Bedingung (`isFromLand`) hier, sonst bliebe das
 	     Feld sichtbar, aber unvalidiert ausgefüllt.

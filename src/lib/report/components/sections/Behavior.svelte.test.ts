@@ -60,3 +60,42 @@ describe('sections/Behavior — Reaktion aufs Boot entfällt bei Land', () => {
 		expect(field('reaction')).not.toBeNull();
 	});
 });
+
+/**
+ * UX-Review (2026-08-06, Punkt 4): `isFromLand` greift bewusst nur bei einem
+ * ausdrücklichen „Land", weil `sightingFrom = 0` gleichzeitig „Sonstiges" und
+ * „noch nicht beantwortet" bedeutet (Begründung an `isFromLand` in
+ * `formConfig.ts`). Das ist richtig — bedeutet aber, dass die Frage auch dem
+ * Kajakfahrer, dem SUP-Paddler und dem Besucher auf der Seebrücke gestellt
+ * wird. „Ihr Boot" ist für die drei schlicht falsch; die Frage selbst bleibt
+ * sinnvoll.
+ *
+ * Verallgemeinert wird deshalb das Label — und zwar im Yup-Schema, der einzigen
+ * Quelle für Feldbeschriftungen (`design-system.md`, Formularfeld-Muster). Die
+ * Admin-Maske liest dasselbe Label; das ist gewollt, sie editiert dieselbe
+ * Spalte `reaktion` und hatte den Boot-Bezug genauso wenig verdient.
+ */
+describe('sections/Behavior — die Reaktionsfrage setzt kein Boot voraus (UX-Review Punkt 4)', () => {
+	/**
+	 * `.fieldset` ist hier die DaisyUI-KLASSE am Wrapper-`div`, das
+	 * `FieldRenderer` um jedes Feld legt — nicht das Element `<fieldset>`. Das
+	 * gibt es nur bei Radiogruppen; `reaction` ist ein Textfeld und trägt sein
+	 * `<label for>` als Geschwister des Controls.
+	 */
+	function reactionLabel(): string {
+		return field('reaction')?.closest('.fieldset')?.querySelector('label')?.textContent ?? '';
+	}
+
+	it('spricht von „Sie oder Ihr Fahrzeug", nicht von „Ihr Boot"', () => {
+		renderBehavior({ sightingFrom: SightingFromEnum.OTHER });
+
+		expect(reactionLabel()).toMatch(/Reaktion auf Sie oder Ihr Fahrzeug/i);
+		expect(reactionLabel()).not.toMatch(/Ihr Boot/i);
+	});
+
+	it('trägt dasselbe Label in der Admin-Maske — ein Feld, eine Beschriftung', () => {
+		renderBehavior({ sightingFrom: SightingFromEnum.LAND }, { adminMode: true });
+
+		expect(reactionLabel()).toMatch(/Reaktion auf Sie oder Ihr Fahrzeug/i);
+	});
+});
