@@ -16,16 +16,35 @@
  * Hashes der Texte — ein Kommentar allein trägt diese Zusicherung nicht.
  *
  * Die Datumswerte stammen aus der Historie des Wortlauts, nicht aus dem Tag der
- * Einführung dieser Spalten: `nameConsent` und `shipNameConsent` sind seit
- * f7f9c10d (2025-08-12) unverändert, `privacyConsent` wurde zuletzt mit der
- * Medien-Einwilligung überarbeitet (6ec70dc4, 2026-07-28).
+ * Einführung dieser Spalten: `privacyConsent` wurde zuletzt mit der
+ * Medien-Einwilligung überarbeitet (6ec70dc4, 2026-07-28), `nameConsent` und
+ * `shipNameConsent` zuletzt mit der Einstiegsseiten-Einführung (2026-08-06,
+ * siehe unten).
  */
 
-/** Fassung des Textes zu `nameConsent` (Veröffentlichung von Vor- und Nachname). */
-export const NAME_CONSENT_VERSION = '2025-08-12';
+/**
+ * Fassung des Textes zu `nameConsent` (Veröffentlichung von Vor- und Nachname).
+ *
+ * Auf 2026-08-06 gehoben, obwohl der **Ankreuztext** (`meta.helpText`)
+ * unverändert ist: `nameConsent` teilt sich auf Schritt 4 seither eine
+ * gemeinsame Überschrift mit `shipNameConsent` und `mediaConsent`
+ * (`Step4Contact.svelte`, „Optionale Veröffentlichung von Namen und
+ * Aufnahmen" statt vorher „… Ihres Namens"). Der Geltungsbereich der Kennung
+ * ist die gelesene Einwilligungsfläche, nicht die Zeichenkette im Schema —
+ * wie bei `PRIVACY_CONSENT_VERSION` unten. `consentTextVersions.test.ts` sagt
+ * das im Kopfkommentar ausdrücklich, kann es aber nicht prüfen.
+ */
+export const NAME_CONSENT_VERSION = '2026-08-06';
 
-/** Fassung des Textes zu `shipNameConsent` (Veröffentlichung des Schiffsnamens). */
-export const SHIP_NAME_CONSENT_VERSION = '2025-08-12';
+/**
+ * Fassung des Textes zu `shipNameConsent` (Veröffentlichung des Schiffsnamens).
+ *
+ * Auf 2026-08-06 gehoben — dieselbe Überschriften-Änderung wie bei
+ * `NAME_CONSENT_VERSION` oben, plus: `shipNameConsent` wird seither
+ * bedingt ausgeblendet, sobald von Land gemeldet wird (`isFromLand`,
+ * `Step4Contact.svelte`). Der Ankreuztext selbst ist unverändert.
+ */
+export const SHIP_NAME_CONSENT_VERSION = '2026-08-06';
 
 /**
  * Fassung des Textes zu `privacyConsent` (Pflicht-Einwilligung der Meldung).
