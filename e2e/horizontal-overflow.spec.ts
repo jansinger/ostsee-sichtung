@@ -43,7 +43,10 @@ test.describe('Layout — horizontaler Überlauf', () => {
 		test(`kein Überlauf auf ${breite}px — alle Schritte, alles aufgeklappt`, async ({ page }) => {
 			await page.setViewportSize({ width: breite, height: 900 });
 			const formPage = new FormPage(page);
-			await formPage.goto();
+			/* Totfund über den Einstiegs-Zweig statt über den seit d7767383
+			   entfallenen Schalter auf Schritt 2 (Begründung unten bei „Totfund-Block
+			   und Motorfrage"). */
+			await formPage.goto('totfund');
 
 			// ── Schritt 1: Position & Zeitpunkt ────────────────────────────────
 			await expectNoHorizontalOverflow(page, `${breite}px · Schritt 1`);
@@ -69,20 +72,30 @@ test.describe('Layout — horizontaler Überlauf', () => {
 			await openAllDetails(page);
 			await expectNoHorizontalOverflow(page, `${breite}px · Schritt 2`);
 
-			/* Totfund-Block und Motorfrage sind an Formularwerte gebunden, nicht an
-			   ein `<details>` — sie existieren im Grundzustand gar nicht im DOM. */
-			await fillStep2(formPage);
-			await page.locator('[data-testid="field-isDead"]').check();
+			/* Motorfrage ist an einen Formularwert gebunden, nicht an ein `<details>`
+			   — sie existiert im Grundzustand gar nicht im DOM. Der Totfund-Block
+			   dagegen steht hier bereits: anders als vor d7767383 hängt er nicht mehr
+			   an einem Schalter auf diesem Schritt, sondern am Einstiegs-Zweig
+			   (`formPage.goto('totfund')` oben) — der Schalter `[data-testid="field-
+			   isDead"]` existiert im Bürgerformular nicht mehr, nur noch in der
+			   Admin-Maske. */
+			await formPage.selectSpecies(0); // Schweinswal
+			await formPage.fillTotalCount(2);
+			await formPage.selectDistance(1);
 			await formPage.selectSightingFrom(SightingFromEnum.MOTORBOAT);
 			await expect(page.locator('[data-testid="field-deadCondition"]')).toBeVisible();
 			await expect(page.locator('[data-testid="field-boatDrive-1"]')).toBeVisible();
 			await openAllDetails(page);
 			await expectNoHorizontalOverflow(page, `${breite}px · Schritt 2, Totfund + Motorfrage`);
 
-			/* Zurück in den gültigen Zustand: `deadCondition` und `boatDrive` sind in
-			   dieser Kombination Pflicht und hielten den Schritt sonst fest. */
-			await page.locator('[data-testid="field-isDead"]').uncheck();
-			await formPage.selectSightingFrom(SightingFromEnum.LAND);
+			/* `deadCondition` und `boatDrive` sind in dieser Kombination Pflicht
+			   (Schema: `when('isDead')` bzw. `when('sightingFrom')`). Anders als vor
+			   d7767383 lässt sich der Totfund-Zweig im Bürgerformular nicht mehr durch
+			   Zurückschalten verlassen — für den Übergang zu Schritt 3 werden die
+			   Felder deshalb jetzt tatsächlich befüllt statt den Schritt durch einen
+			   gültigeren Zustand zu verlassen. */
+			await page.locator('[data-testid="field-deadCondition"]').selectOption('1'); // Extrem frisch
+			await formPage.selectBoatDrive(1); // Motor lief
 
 			// ── Schritt 3: Weitere Informationen ───────────────────────────────
 			await formPage.clickNext();
