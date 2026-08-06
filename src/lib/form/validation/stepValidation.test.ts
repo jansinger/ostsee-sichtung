@@ -34,7 +34,12 @@ vi.mock('$lib/report/formConfig', () => {
 		{
 			id: 'observations',
 			title: 'Beobachtungen',
-			fields: ['behavior'],
+			// `reaction` steht absichtlich mit im eingedampften Testbestand: Ohne sie
+			// wäre `not.toContain('reaction')` weiter unten (Totfund-Block) immer
+			// erfüllt, unabhängig davon, ob `getFormSteps` sie beim Totfund
+			// tatsächlich entfernt — der Mock-Schritt hätte das Feld nie enthalten.
+			// Abschlussreview-Befund aus Task 3, hier behoben statt gestrichen.
+			fields: ['behavior', 'reaction'],
 			isOptional: true
 		},
 		{
@@ -370,8 +375,23 @@ describe('stepValidation im Totfund-Zweig', () => {
 		// wird `behavior` trotz Totfund weiter geprüft und schlägt fehl; nach
 		// der Umstellung blendet `getFormSteps` das Feld aus, bevor `pick()`
 		// es überhaupt sieht.
+		//
+		// `reaction` bekommt aus demselben Grund einen ungültigen Wert statt
+		// `undefined`: Auch dieses Feld ist `.notRequired()`, nur mit einer
+		// `.max(1000)`-Schranke statt eines Enums — ein zu langer String verletzt
+		// sie zuverlässig. Ohne diesen Wert wäre `not.toContain('reaction')`
+		// unten immer erfüllt gewesen, unabhängig davon, ob `getFormSteps` das
+		// Feld beim Totfund tatsächlich entfernt (Abschlussreview-Befund aus
+		// Task 3 — empirisch geprüft: mit `undefined` blieb die Assertion auch
+		// grün, nachdem `reaction` testweise aus `HIDDEN_WHEN_DEAD` entfernt
+		// wurde).
 		const schrittMitVerhalten = 2; // 0-basiert: „Weitere Informationen"
-		const daten = { isDead: true, behavior: 999, behaviorText: undefined };
+		const daten = {
+			isDead: true,
+			behavior: 999,
+			behaviorText: undefined,
+			reaction: 'x'.repeat(1001)
+		};
 
 		const ergebnis = await validateStep(schrittMitVerhalten, daten);
 
