@@ -24,7 +24,14 @@ Regeln für Formular-Entwicklung mit der projekteigenen `createForm`-Implementie
 
 ## Multi-Step Architektur
 
-Das Hauptformular (`/src/routes/+page.svelte`) nutzt 4 Schritte:
+Vor dem Formular steht eine **Einstiegsseite**: `ReportKindChoice.svelte` fragt „Was
+möchten Sie melden?" (lebendes Tier oder Totfund) und legt den Zweig (`ReportKind`,
+`src/lib/report/reportKind.ts`) fest, bevor `ModernReportForm` überhaupt mountet.
+`+page.svelte` rendert je nach `resolveReportKind(...)` entweder die Auswahlseite oder das
+Formular — `?meldung=lebend`/`?meldung=totfund`, ein gespeicherter Zweig und
+Altbestands-`isDead` überspringen sie.
+
+Das Hauptformular selbst (`ModernReportForm`, gemountet nach der Zweigwahl) nutzt 4 Schritte:
 
 1. **Position & Zeitpunkt** - Ort, Datum, Uhrzeit
 2. **Angaben zum Tier** - Tierart, Anzahl, Entfernung
@@ -35,12 +42,15 @@ Das Hauptformular (`/src/routes/+page.svelte`) nutzt 4 Schritte:
 
 ```
 src/
-├── routes/+page.svelte                          # Multi-Step Container
+├── routes/+page.svelte                          # Einstiegsseite ↔ Multi-Step Container
 └── lib/
     ├── form/validation/
     │   └── sightingSchema.ts                    # Yup Validation Schema
     ├── report/
+    │   ├── reportKind.ts                        # ReportKind-Zustandsmaschine (Einstiegsseite)
+    │   ├── formConfig.ts                        # formStepsConfig, getFormSteps (nur Validierung!)
     │   ├── components/
+    │   │   ├── ReportKindChoice.svelte           # Einstiegsseite: „Was möchten Sie melden?"
     │   │   ├── ModernReportForm.svelte           # Haupt-Formular
     │   │   ├── steps/                            # Step Components
     │   │   │   ├── Step1LocationTime.svelte      # Position & Zeit
@@ -135,14 +145,15 @@ von `<Form>` verwendet wird.
 
 ## Progressive Disclosure
 
-Zeige Felder nur wenn relevant:
+Zeige Felder nur wenn relevant — die Bedingung kommt aus einem benannten Prädikat in
+`formConfig.ts` (`isDeadFinding`, `isFromLand`, `hasUploadedMedia`), nicht aus einem
+Rohwert wie `$form.isDead` direkt:
 
 ```svelte
-{#if $form.isDead}
+{#if isDeadFinding($form.isDead)}
 	<div class="space-y-4">
 		<FormField name="deadCondition" label="Zustand des Tieres" />
-		<FormField name="deadSex" label="Geschlecht" />
-		<FormField name="deadSize" label="Größe (cm)" />
+		<FormField name="deadPhoneContact" label="Telefonisch erreichbar?" />
 	</div>
 {/if}
 
@@ -150,6 +161,32 @@ Zeige Felder nur wenn relevant:
 	<FormField name="dorsal" label="Rückenflosse sichtbar?" type="checkbox" />
 {/if}
 ```
+
+### Die Zwei-Hälften-Regel — der teuerste Fehler in diesem Formular
+
+`getFormSteps` (`formConfig.ts`) steuert **ausschließlich die Validierung** — gelesen wird
+es nur von `stepValidation.ts`, gerendert wird daraus **nichts**. Ein Feld dort aus den
+`fields` eines Schritts zu entfernen macht es unvalidiert, aber nicht unsichtbar.
+
+Jede Ausblendung eines Feldes braucht deshalb **beide Hälften**, über **dasselbe** benannte
+Prädikat:
+
+1. den Eintrag in `getFormSteps` (`formConfig.ts`), und
+2. eine `{#if}`-Bedingung an der Markup-Aufrufstelle der Section-Komponente.
+
+Nur eine Hälfte ist schlimmer als keine:
+
+- **Nur Markup ausgeblendet, `getFormSteps` unverändert:** Das Feld bleibt validiert — der
+  Melder sitzt vor einem gesperrten „Weiter" wegen eines Feldes, das er nicht mehr sehen
+  und nicht mehr korrigieren kann. Keine Fehlermeldung erklärt, warum.
+- **Nur `getFormSteps` geändert, Markup unverändert:** Das Feld bleibt sichtbar und
+  ausfüllbar, aber ungeprüft — sein Wert geht unvalidiert mit ans Backend.
+
+Beispiel für ein korrekt ausgeblendetes Feld: `mediaConsent` entfällt in
+`getFormSteps`, sobald `hasUploadedMedia(data.uploadedFiles)` falsch ist, und dieselbe
+Funktion steht als `{#if hasMedia}`-Bedingung in `Step4Contact.svelte` — beide Seiten rufen
+dieselbe Funktion auf demselben Wert auf, statt zwei getrennt gepflegte Bedingungen zu
+riskieren.
 
 ---
 

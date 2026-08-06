@@ -100,7 +100,9 @@ Tech-Stack-Details, Projektstruktur, Clean-Code-Prinzipien und Namenskonventione
 
 ### Schlüsseldateien
 
-- `src/routes/+page.svelte` — Multi-Step Form
+- `src/routes/+page.svelte` — Einstiegsseite ↔ Multi-Step Form
+- `src/lib/report/reportKind.ts` — Zweig-Zustandsmaschine der Einstiegsseite (lebend/Totfund)
+- `src/lib/report/components/ReportKindChoice.svelte` — Einstiegsseite „Was möchten Sie melden?"
 - `src/lib/form/createForm.ts` — Form State Management
 - `src/lib/form/validation/sightingSchema.ts` — Yup Validation
 - `src/lib/report/components/` — Form Step & Section Components

@@ -2,7 +2,8 @@
 
 **Stand:** 2026-08-05 · **Fassung 2** (nach Review, siehe Abschnitt 14)
 **Vorlage:** `Sichtungs-Webseite_SL.docx` des Deutschen Meeresmuseums, Punkt C1
-**Status:** Spezifikation. Nicht implementiert.
+**Status:** Umgesetzt (Branch `claude/bold-dhawan-5373e7`, 15 Tasks + Task 8b, Abschlussreview
+2026-08-06 abgeschlossen).
 
 ---
 
@@ -518,10 +519,14 @@ werde ich das gefragt?" an genau der Stelle, an der sie anfällt.
 
 ### 7.2 Schritt 1 — Datum
 
-|             | Sichtung (heute)       | Totfund (neu)                |
-| ----------- | ---------------------- | ---------------------------- |
-| Kartentitel | Zeitpunkt der Sichtung | Funddatum                    |
-| Einleitung  | _(keine)_              | An welchem Tag war der Fund? |
+|             | Sichtung (heute)  | Totfund (neu)                |
+| ----------- | ----------------- | ---------------------------- |
+| Kartentitel | Datum und Uhrzeit | Funddatum                    |
+| Einleitung  | _(keine)_         | An welchem Tag war der Fund? |
+
+> Ist-Zustand korrigiert gemäß 3.1: Der Lebend-Zweig behält „Datum und Uhrzeit" —
+> „Zeitpunkt der Sichtung" stand nur in `DateTime.svelte` (Admin-Maske), nie im
+> Bürgerformular.
 
 > **Umsetzungshinweis:** `DateTime.svelte` hat heute **nur** einen `SectionCard`-Titel und
 > keinen Platz für eine Einleitung (Z. 7). Die zweite Zeile ist also ein neues Element,
