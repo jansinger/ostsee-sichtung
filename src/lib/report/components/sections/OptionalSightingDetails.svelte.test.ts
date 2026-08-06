@@ -37,7 +37,7 @@ describe('sections/OptionalSightingDetails — Verteilung nur im Admin-Modus', (
 
 /**
  * Beide Felder dieser Sektion sind inzwischen `adminMode`-only — `distribution`
- * seit PR #746, `shipCount` seit dem Umzug nach `BoatInfo.svelte`. Übrig blieb im
+ * seit PR #746, `shipCount` seit dem Umzug nach `Environment.svelte`. Übrig blieb im
  * Meldeformular eine Karte mit Überschrift, Rahmen und Abstand, in der nichts
  * stand: `SectionCard` rendert seinen Titel unbedingt und kennt keinen
  * Leer-Zustand.

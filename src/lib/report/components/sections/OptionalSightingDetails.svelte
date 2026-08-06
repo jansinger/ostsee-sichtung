@@ -9,7 +9,7 @@
 <!-- Sighting Details Section -->
 <!-- Die Karte als Ganzes hängt an `adminMode`, nicht mehr nur ihre Felder: Beide
      Felder sind inzwischen admin-only — `distribution` seit dem 2026-08-04,
-     `shipCount` seit dem Umzug nach `BoatInfo.svelte`. Im Meldeformular blieb
+     `shipCount` seit dem Umzug nach `Environment.svelte`. Im Meldeformular blieb
      dadurch eine Karte mit Überschrift, Rahmen und Abstand übrig, in der nichts
      stand; `SectionCard` rendert seinen Titel unbedingt und kennt keinen
      Leer-Zustand.
