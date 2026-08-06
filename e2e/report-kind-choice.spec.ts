@@ -16,9 +16,21 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
 
 		await expect(page.getByTestId('report-kind-submit')).not.toHaveAttribute('aria-disabled');
-		await page.getByTestId('report-kind-submit').click();
 
-		await expect(page.getByRole('alert')).toContainText(/Bitte wählen Sie aus/i);
+		// `toPass` statt eines einzelnen Klicks: `networkidle` sagt nur „keine
+		// Netzwerkaktivität mehr", nicht „Svelte hat hydratisiert". Trifft der
+		// Klick das Zeitfenster davor, schickt der Browser das Formular nativ ab
+		// und lädt die Seite ohne Auswahl neu (`/?`) — die Meldung entsteht dann
+		// nie, und der Test wäre flaky statt aussagekräftig. Der Klick ist
+		// idempotent, also darf er wiederholt werden; nach dem Reload ist
+		// hydratisiert.
+		await expect(async () => {
+			await page.getByTestId('report-kind-submit').click();
+			await expect(page.getByRole('alert')).toContainText(/Bitte wählen Sie aus/i, {
+				timeout: 2000
+			});
+		}).toPass();
+
 		await expect(page.getByRole('radiogroup')).toHaveAttribute('aria-invalid', 'true');
 		// Weitergegangen wird trotzdem nicht.
 		await expect(page.getByTestId('report-kind-choice')).toBeVisible();

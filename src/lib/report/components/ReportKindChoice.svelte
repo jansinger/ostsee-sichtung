@@ -1,6 +1,11 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
-	import { resolveReportKind, reportKindToParam, type ReportKind } from '$lib/report/reportKind';
+	import {
+		REPORT_KIND_PARAM,
+		reportKindToParam,
+		resolveReportKind,
+		type ReportKind
+	} from '$lib/report/reportKind';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 	import { scrollToElement } from '$lib/utils/fieldNavigation';
 
@@ -24,21 +29,29 @@
 	let selectionMissing = $state(false);
 	let legendEl: HTMLElement | undefined = $state();
 
-	/**
-	 * Der Feldname ist zugleich der Query-Parameter der Seite, die Optionswerte
-	 * sind dessen deutsche Werte (`reportKindToParam`). Das ist keine Kosmetik:
-	 * Ein Klick auf „Weiter" VOR der Hydration schickt das Formular nativ per GET
-	 * ab — `onsubmit` hängt dann noch nicht am DOM. Mit diesen Namen landet der
-	 * Melder auf `/?meldung=totfund`, und `+page.svelte` löst den Zweig über
-	 * `resolveReportKind` bereits serverseitig auf, statt nur neu zu laden.
+	/*
+	 * Die Radios heißen wie der Query-Parameter der Seite (`REPORT_KIND_PARAM`)
+	 * und tragen dessen deutsche Werte (`reportKindToParam`). Warum das ein
+	 * Vertrag und keine Kosmetik ist, steht an der Konstante in `reportKind.ts`.
 	 *
-	 * Was dieser Weg NICHT kann: bestehende Query-Parameter erhalten (ein
-	 * GET-Submit ersetzt die gesamte Query). `choose()` in `+page.svelte` tut das
-	 * für den JS-Pfad; ohne JS wäre dafür je ein verstecktes Feld nötig, dessen
-	 * Wert nur `$app/state` kennt. Bewusst nicht gebaut — auf diesem Weg passierte
-	 * bisher überhaupt nichts.
+	 * Zwei Dinge, die dieser Weg NICHT leistet:
+	 *
+	 * 1. **Bestehende Query-Parameter überleben ihn nicht** — ein GET-Submit
+	 *    ersetzt die gesamte Query. `choose()` in `+page.svelte` hält sie im
+	 *    JS-Pfad erhalten (Kampagnen-Marker aus einem Museums-Link); ohne JS
+	 *    bräuchte es dafür je ein verstecktes Feld, dessen Wert nur
+	 *    `$app/state` kennt.
+	 * 2. **Ohne Auswahl bleibt er stumm.** Vor der Hydration führt „Weiter"
+	 *    ohne angekreuzte Option zu `/?` — einem vollständigen Reload ohne
+	 *    Erklärung statt der Meldung unten. Ein `required` an den Radios löste
+	 *    das nativ, verdrängte aber im JS-Pfad die eigene Meldung durch die
+	 *    Browser-Blase, die nicht barrierefrei ist und nicht stehen bleibt. Der
+	 *    Zielkonflikt ist zugunsten des JS-Pfads entschieden: Er ist der
+	 *    Regelfall, der andere ein Zeitfenster von Sekunden.
+	 *
+	 * Beides ist bewusst in Kauf genommen — auf diesem Weg passierte vorher
+	 * überhaupt nichts (der Knopf war per `pointer-events: none` unerreichbar).
 	 */
-	const KIND_FIELD_NAME = 'meldung';
 
 	/**
 	 * B7: „Ändern" tauschte bislang den gesamten Formularbaum gegen diese Seite
@@ -74,7 +87,7 @@
 	function submit(event: SubmitEvent & { currentTarget: HTMLFormElement }): void {
 		event.preventDefault();
 
-		const submitted = new FormData(event.currentTarget).get(KIND_FIELD_NAME);
+		const submitted = new FormData(event.currentTarget).get(REPORT_KIND_PARAM);
 		const chosen = resolveReportKind(typeof submitted === 'string' ? submitted : null, null, null);
 
 		if (!chosen) {
@@ -124,9 +137,15 @@
 	     nur so sagt ein Screenreader „1 von 2" an und verknüpft die Legend mit
 	     den Optionen. Gleiche Mechanik wie in FieldRenderer.svelte. -->
 	<!-- aria-invalid und aria-describedby tragen die Gruppe, nicht die einzelnen
-	     Radios: ARIA 1.2 hat beide aus den globalen Zuständen entfernt, und
-	     `role="radio"` unterstützt sie nicht (design-system.md, A11y-Minima).
-	     Dasselbe Muster wie in FieldRenderer.svelte. -->
+	     Radios — aber aus zwei verschiedenen Gründen, die sich leicht
+	     verwechseln lassen:
+
+	     `aria-invalid` MUSS hierher: ARIA 1.2 hat es (wie `aria-required`) aus
+	     den globalen Zuständen entfernt, `role="radio"` unterstützt es seither
+	     nicht (design-system.md, A11y-Minima). `aria-describedby` ist dagegen
+	     weiterhin global und stünde an einem Radio nicht falsch — es steht
+	     hier, weil die Meldung die GRUPPE beanstandet und nicht eine der beiden
+	     Optionen. Dasselbe Muster wie in FieldRenderer.svelte. -->
 	<fieldset
 		role="radiogroup"
 		aria-labelledby="report-kind-legend"
@@ -145,7 +164,7 @@
 				>
 					<input
 						type="radio"
-						name={KIND_FIELD_NAME}
+						name={REPORT_KIND_PARAM}
 						class="radio radio-primary mt-1"
 						value={reportKindToParam(option.value)}
 						onchange={() => (selectionMissing = false)}

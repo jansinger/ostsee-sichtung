@@ -33,6 +33,8 @@
 	 * Benannt wird `originalName` (der Name, unter dem der Melder die Datei
 	 * kennt), nicht der interne `fileName`.
 	 */
+	const UPLOADED_MEDIA_SUMMARY_ID = 'uploaded-media-summary';
+
 	let uploadedMedia = $derived($form.uploadedFiles ?? []);
 	let uploadedMediaCaption = $derived(
 		uploadedMedia.length === 1
@@ -233,7 +235,16 @@
 					     (`space-y-3` außen). Die Aufzählung steht bewusst VOR dem
 					     Feld: Sie ist die Frage, das Feld die Antwort. -->
 					<div class="space-y-1">
-						<div class="text-base-content/70 text-support" data-testid="uploaded-media-summary">
+						<!-- `id` + `describedBy` am Feld: Optisch steht die Aufzählung über
+						     dem Ankreuzfeld, für einen Screenreader wäre sie ohne die
+						     Verknüpfung aber nicht Teil der Frage — wer direkt aufs Feld
+						     tabbt, hörte den Einwilligungstext ohne die Dateinamen, also
+						     genau das Problem, das die Aufzählung beheben soll. -->
+						<div
+							id={UPLOADED_MEDIA_SUMMARY_ID}
+							class="text-base-content/70 text-support"
+							data-testid="uploaded-media-summary"
+						>
 							<p class="font-medium">{uploadedMediaCaption}</p>
 							<ul class="list-inside list-disc">
 								{#each uploadedMedia as file (file.uid)}
@@ -241,7 +252,7 @@
 								{/each}
 							</ul>
 						</div>
-						<FormField name="mediaConsent" />
+						<FormField name="mediaConsent" describedBy={UPLOADED_MEDIA_SUMMARY_ID} />
 					</div>
 				{/if}
 			</div>

@@ -271,6 +271,39 @@ nicht erreichbare Schritte). Nebeneffekt, der das Muster zusätzlich trägt: der
 `title` mit der Begründung („Bitte füllen Sie zuerst die vorherigen Schritte
 aus") ist an einem `disabled`-Element per Tastatur nicht erreichbar.
 
+### Der Vorbehalt: an einem `.btn` sperrt `aria-disabled` härter als gedacht
+
+Die Regel gilt weiter — ihre Begründung trägt an einem DaisyUI-**Button** aber
+nur zur Hälfte. `daisyui/components/button.css` (5.7.4, nachgemessen am
+2026-08-06) legt an `.btn:is(:disabled, [disabled], .btn-disabled,
+[aria-disabled=true])` ein `pointer-events: none`. Daraus folgt:
+
+- **Der Wächter in der Handler-Funktion ist per Maus unerreichbar.** Der Klick
+  kommt nie am Element an — er kann also auch nichts melden.
+- **Der `title` mit der Begründung erscheint beim Hovern nie**, aus demselben
+  Grund. Das Argument oben gilt nur für den Tastaturweg.
+- Per Tastatur läuft Enter dagegen durch, landet im Wächter — und dort endete
+  es bis zum UX-Review still.
+
+`ReportKindChoice.svelte` (Einstiegsseite) hat deshalb **keine** gesperrte
+Schaltfläche mehr: Der Knopf ist immer frei, und die Sperre ist eine
+Fehlermeldung an der Radiogruppe (`aria-invalid` + `role="alert"`). Das ist
+die richtige Form überall dort, wo die Sperre eine **fehlende Eingabe** meint —
+sie hat dann etwas zu sagen, und eine unerreichbare Schaltfläche sagt es nicht.
+
+`aria-disabled` bleibt richtig, wo die Sperre einen **laufenden oder noch nicht
+erreichten Zustand** meint, den der Nutzer nicht durch Eingabe auflösen kann
+(Ortung läuft, Schritt noch nicht erreicht) — dort gibt es keine Meldung, die
+weiterhülfe. Bei den drei genannten Aufrufstellen ist das der Fall;
+`FormSteps.svelte` und `StepProgressCompact.svelte` sind zudem keine `.btn`
+und vom `pointer-events`-Befund gar nicht betroffen.
+
+**Offen (außerhalb des Scopes, an dem das auffiel):** `StepNavigation.svelte`
+sperrt „Absenden" bei fehlender Verbindung als `.btn` mit `aria-disabled` und
+`title` — per Maus unerreichbar, per Tastatur meldet der Wächter nur in den
+Logger. Wer dort das nächste Mal hinfasst, sollte es auf dasselbe Muster
+umstellen.
+
 **Konsequenz für Tests — leicht zu übersehen:** Playwright wertet
 `aria-disabled="true"` selbst als „nicht bedienbar" und klickt gar nicht erst.
 Ein Test, der die Sperre prüfen will, läuft ohne `force: true` in einen Timeout

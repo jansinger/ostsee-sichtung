@@ -28,7 +28,8 @@
 		label: labelOverride = undefined,
 		type: typeOverride = undefined,
 		options: optionsOverride = undefined,
-		helpText: helpTextOverride = undefined
+		helpText: helpTextOverride = undefined,
+		describedBy = undefined
 	}: {
 		fieldConfig: yup.SchemaDescription;
 		name?: string;
@@ -76,6 +77,21 @@
 		 * `aria-describedby`), `undefined` = Ableitung aus dem Schema (Default).
 		 */
 		helpText?: string | null | undefined;
+		/**
+		 * `id` eines Elements, das der Aufrufer selbst neben das Feld gestellt
+		 * hat und das mitvorgelesen werden soll — zusätzlich zu Hilfetext,
+		 * Beschreibung und Fehler, die diese Pipeline ohnehin verknüpft.
+		 *
+		 * Gebraucht, wenn der Kontext einer Frage nicht im Schema stehen kann,
+		 * weil er aus dem Formularzustand kommt: `mediaConsent` auf Schritt 4
+		 * nennt die hochgeladenen Aufnahmen namentlich (`Step4Contact.svelte`,
+		 * UX-Review 2026-08-06, Punkt 2). Ohne diese Verknüpfung sieht ein
+		 * Sehender die Dateinamen, wer direkt aufs Ankreuzfeld tabbt aber nicht.
+		 *
+		 * Bewusst nur die `id` und kein Text: Der Inhalt steht im Markup des
+		 * Aufrufers, nicht in dieser Pipeline — sonst gäbe es ihn zweimal.
+		 */
+		describedBy?: string | undefined;
 	} = $props();
 
 	// Bindable values for different component types
@@ -220,6 +236,9 @@
 	// ARIA attributes
 	let ariaDescribedBy = $derived.by(() => {
 		const ids = [];
+		// Zuerst: Was der Aufrufer neben das Feld gestellt hat, steht dort auch
+		// optisch VOR ihm — die Vorlesereihenfolge soll der gesehenen folgen.
+		if (describedBy) ids.push(describedBy);
 		if (metaValues.helpText) ids.push(helpId);
 		if (metaValues.description && metaValues.description !== metaValues.helpText)
 			ids.push(descriptionId);

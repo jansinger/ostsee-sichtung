@@ -215,6 +215,23 @@ describe('Step4Contact — die Medien-Einwilligung benennt die Aufnahmen (UX-Rev
 
 		expect(document.querySelector('[data-testid="uploaded-media-summary"]')).toBeNull();
 	});
+
+	/**
+	 * Review-Befund: Optisch stand die Aufzählung über dem Feld, programmatisch
+	 * war sie nicht damit verknüpft — wer direkt auf das Ankreuzfeld tabbt,
+	 * hörte den Einwilligungstext ohne die Dateinamen und damit genau das
+	 * Problem, das die Aufzählung beheben soll. `FormField`/`FieldRenderer`
+	 * reichen dafür seither ein `describedBy` durch.
+	 */
+	it('verknüpft die Aufzählung als Beschreibung mit dem Ankreuzfeld', () => {
+		renderStep4({ uploadedFiles: [UPLOADED_FILE] });
+
+		const beschreibung = field('mediaConsent')?.getAttribute('aria-describedby') ?? '';
+		expect(beschreibung.split(/\s+/)).toContain('uploaded-media-summary');
+		// Der Hilfetext des Feldes darf dabei nicht verloren gehen — die
+		// Verknüpfung ergänzt die Pipeline, sie ersetzt sie nicht.
+		expect(beschreibung.split(/\s+/).length).toBeGreaterThan(1);
+	});
 });
 
 describe('Step4Contact — mediaConsent steht in der Einwilligungsgruppe, nicht irgendwo im Schritt (Review-Befund 4)', () => {
