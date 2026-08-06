@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
-	import type { ReportKind } from '$lib/report/reportKind';
+	import { resolveReportKind, reportKindToParam, type ReportKind } from '$lib/report/reportKind';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 	import { scrollToElement } from '$lib/utils/fieldNavigation';
 
@@ -15,8 +15,30 @@
 		autofocusHeading = false
 	}: { onchoose: (kind: ReportKind) => void; autofocusHeading?: boolean } = $props();
 
-	let selected = $state<ReportKind | null>(null);
+	/**
+	 * UX-Review (2026-08-06, Punkt 1): Steht auf `true`, sobald einmal ohne
+	 * Auswahl bestätigt wurde. Ersetzt die frühere `aria-disabled`-Sperre am
+	 * „Weiter"-Knopf, die zwei Wege still ins Leere laufen ließ — Begründung an
+	 * der Aufrufstelle des Knopfes unten.
+	 */
+	let selectionMissing = $state(false);
 	let legendEl: HTMLElement | undefined = $state();
+
+	/**
+	 * Der Feldname ist zugleich der Query-Parameter der Seite, die Optionswerte
+	 * sind dessen deutsche Werte (`reportKindToParam`). Das ist keine Kosmetik:
+	 * Ein Klick auf „Weiter" VOR der Hydration schickt das Formular nativ per GET
+	 * ab — `onsubmit` hängt dann noch nicht am DOM. Mit diesen Namen landet der
+	 * Melder auf `/?meldung=totfund`, und `+page.svelte` löst den Zweig über
+	 * `resolveReportKind` bereits serverseitig auf, statt nur neu zu laden.
+	 *
+	 * Was dieser Weg NICHT kann: bestehende Query-Parameter erhalten (ein
+	 * GET-Submit ersetzt die gesamte Query). `choose()` in `+page.svelte` tut das
+	 * für den JS-Pfad; ohne JS wäre dafür je ein verstecktes Feld nötig, dessen
+	 * Wert nur `$app/state` kennt. Bewusst nicht gebaut — auf diesem Weg passierte
+	 * bisher überhaupt nichts.
+	 */
+	const KIND_FIELD_NAME = 'meldung';
 
 	/**
 	 * B7: „Ändern" tauschte bislang den gesamten Formularbaum gegen diese Seite
@@ -38,10 +60,34 @@
 		legendEl.focus({ preventScroll: true });
 	});
 
-	function submit(event: SubmitEvent): void {
+	/**
+	 * Die Auswahl wird aus dem abgeschickten Formular gelesen, nicht aus einem
+	 * eigenen `$state`. Der Grund ist derselbe wie beim Feldnamen oben: Wer vor
+	 * der Hydration eine Option ankreuzt, tut das im DOM — ein `$state` wüsste
+	 * davon nichts und meldete danach „nichts gewählt", obwohl sichtbar etwas
+	 * angekreuzt ist.
+	 *
+	 * `resolveReportKind(param, null, null)` ist hier die Parameter-Zuordnung
+	 * ohne Storage-Quellen — dieselbe Aufrufform wie im `popstate`-Handler in
+	 * `+page.svelte`.
+	 */
+	function submit(event: SubmitEvent & { currentTarget: HTMLFormElement }): void {
 		event.preventDefault();
-		if (!selected) return;
-		onchoose(selected);
+
+		const submitted = new FormData(event.currentTarget).get(KIND_FIELD_NAME);
+		const chosen = resolveReportKind(typeof submitted === 'string' ? submitted : null, null, null);
+
+		if (!chosen) {
+			selectionMissing = true;
+			// Fokus zur Gruppe, zu der die Meldung gehört — er stünde sonst auf dem
+			// Knopf, und ein Screenreader-Nutzer müsste rückwärts suchen, was
+			// beanstandet wird. Das Fokussieren eines Radios wählt es nicht aus.
+			event.currentTarget.querySelector<HTMLInputElement>('input[type="radio"]')?.focus();
+			return;
+		}
+
+		selectionMissing = false;
+		onchoose(chosen);
 	}
 
 	const OPTIONS: Array<{ value: ReportKind; label: string; hint: string; icon: string }> = [
@@ -77,7 +123,17 @@
 	<!-- role="radiogroup" überschreibt die implizite Rolle `group` des fieldset:
 	     nur so sagt ein Screenreader „1 von 2" an und verknüpft die Legend mit
 	     den Optionen. Gleiche Mechanik wie in FieldRenderer.svelte. -->
-	<fieldset role="radiogroup" aria-labelledby="report-kind-legend" aria-required="true">
+	<!-- aria-invalid und aria-describedby tragen die Gruppe, nicht die einzelnen
+	     Radios: ARIA 1.2 hat beide aus den globalen Zuständen entfernt, und
+	     `role="radio"` unterstützt sie nicht (design-system.md, A11y-Minima).
+	     Dasselbe Muster wie in FieldRenderer.svelte. -->
+	<fieldset
+		role="radiogroup"
+		aria-labelledby="report-kind-legend"
+		aria-required="true"
+		aria-invalid={selectionMissing ? 'true' : undefined}
+		aria-describedby={selectionMissing ? 'report-kind-error' : undefined}
+	>
 		<legend id="report-kind-legend" class="text-section mb-3" bind:this={legendEl}
 			>Was möchten Sie melden?</legend
 		>
@@ -89,11 +145,10 @@
 				>
 					<input
 						type="radio"
-						name="reportKind"
+						name={KIND_FIELD_NAME}
 						class="radio radio-primary mt-1"
-						value={option.value}
-						checked={selected === option.value}
-						onchange={() => (selected = option.value)}
+						value={reportKindToParam(option.value)}
+						onchange={() => (selectionMissing = false)}
 					/>
 					<span class="flex flex-col gap-1">
 						<span class="flex items-center gap-2 font-medium">
@@ -105,17 +160,27 @@
 				</label>
 			{/each}
 		</div>
+
+		<!-- Gleiche Fehler-Optik wie an jedem Formularfeld (FieldRenderer.svelte),
+		     damit die Meldung hier nicht wie ein Fremdkörper aussieht. -->
+		{#if selectionMissing}
+			<div id="report-kind-error" class="mt-3 text-left" role="alert" aria-live="polite">
+				<span class="text-error text-support flex items-center gap-1 font-medium">
+					<Icon icon="lucide:triangle-alert" width="14" class="text-error flex-shrink-0" />
+					Bitte wählen Sie aus, was Sie melden möchten.
+				</span>
+			</div>
+		{/if}
 	</fieldset>
 
-	<!-- aria-disabled statt disabled: Die Schaltfläche bleibt fokussierbar, der
-	     Tastaturfokus geht beim Sperren nicht verloren. Die Sperre trägt der
-	     Wächter in `submit`. -->
-	<button
-		type="submit"
-		class="btn btn-primary mt-6 w-full"
-		aria-disabled={selected === null}
-		data-testid="report-kind-submit"
-	>
+	<!-- Kein `aria-disabled` (und erst recht kein `disabled`): Eine gesperrte
+	     Schaltfläche sagte nicht, was fehlt. DaisyUI legt an
+	     `.btn[aria-disabled=true]` ein `pointer-events: none` — vor der Hydration
+	     erreichte ein Klick das Element damit gar nicht, und per Tastatur lief das
+	     Enter durch, ohne dass der stille Wächter in `submit` etwas meldete
+	     (UX-Review 2026-08-06, Punkt 1). Die Sperre ist jetzt die Meldung an der
+	     Radiogruppe oben. -->
+	<button type="submit" class="btn btn-primary mt-6 w-full" data-testid="report-kind-submit">
 		Weiter
 	</button>
 </form>
