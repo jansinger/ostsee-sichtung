@@ -1,42 +1,30 @@
 /**
- * Bindet die Fassungskennungen an die tatsächlichen Einwilligungstexte.
+ * Formregeln für die Fassungskennungen der Einwilligungstexte.
  *
  * Die Kennung ist der zweite Teil des Nachweises nach Art. 7 Abs. 1 DSGVO: Der
- * Zeitstempel sagt **wann**, die Kennung sagt **wozu** eingewilligt wurde. Sie
- * taugt dafür aber nur, solange sie sich mit dem Text ändert — eine Kennung, die
- * beim Umformulieren stehen bleibt, weist der Einwilligung rückwirkend einen
- * Text zu, den die Meldenden nie gesehen haben.
+ * Zeitstempel sagt **wann**, die Kennung sagt **wozu** eingewilligt wurde.
  *
- * Ein Kommentar allein trägt diese Zusicherung nicht. Deshalb pinnt dieser Test
- * den Hash jedes Textes — wie `notificationEmailDefault.test.ts` es für die
- * E-Mail-Vorlage tut.
+ * **Die Bindung an den Wortlaut steht nicht mehr hier, sondern in
+ * `consentSurfaces.svelte.test.ts`.** Dieser Test pinnte bis zum 2026-08-06 den
+ * Hash des `meta.helpText` aus `sightingSchema.ts` — und sagte in seinem eigenen
+ * Kopfkommentar, dass der Geltungsbereich einer Kennung die gelesene
+ * Einwilligungsfläche ist, also auch Überschrift und umgebender Text. Beides
+ * zusammen ging nicht auf: In PR #773 wechselte die Überschrift über
+ * `nameConsent`/`shipNameConsent`, und `mediaConsent` zog samt Erklärtext in
+ * einen anderen Kontext zwei Schritte weiter — der Test blieb grün, die
+ * Kennungen wurden erst nachträglich durch ein Review gehoben.
  *
- * **Geltungsbereich — bewusst enger, als es zunächst wirkt:** Gepinnt wird
- * ausschließlich `meta.helpText` aus `sightingSchema.ts`. **Nicht** erfasst sind
- * `.label()` und der gesamte umgebende Text in
- * `src/lib/report/components/form/RequiredConsent.svelte` — Überschrift,
- * Verarbeitungs-Kacheln, Widerrufshinweis, Verweis auf die
- * Datenschutzerklärung. Gerade bei `privacyConsent` ist das ein erheblicher Teil
- * dessen, was die meldende Person tatsächlich liest: Wer dort umformuliert,
- * lässt diesen Test grün.
+ * Der Wortlaut wird deshalb jetzt an der gerenderten Fläche gepinnt (Browser-
+ * Test, `npm run test:unit:client`); der Ankreuztext ist dort mitgehasht. Ein
+ * zweiter Hash über denselben Text hätte nur doppelte Buchführung erzeugt.
  *
- * Der Hash über die gerenderte Einwilligungsfläche zu ziehen wäre die
- * vollständige Lösung; sie braucht einen Browser-Test und ist hier bewusst
- * nicht gebaut. Bis dahin gilt: **Eine Änderung an `RequiredConsent.svelte`
- * erfordert die Fassungskennung genauso wie eine am `helpText`** — nur erinnert
- * daran kein Test.
- *
- * **Schlägt der Test fehl, wurde ein Einwilligungstext geändert. Dann beides tun:**
- *   1. die Fassungskennung in `consentVersions.ts` bzw. `mediaConsentVersion.ts`
- *      auf das Datum der Änderung setzen,
- *   2. den neuen Hash aus der Fehlermeldung hier eintragen.
- *
- * Wer nur (2) macht, hat den Nachweis entwertet: Alle Altbestände tragen dann
- * eine Kennung, hinter der ein anderer Wortlaut steht.
+ * Was hier bleibt, braucht keinen Browser und läuft damit in `npm run
+ * test:quick`: dass jede Kennung ein Datum im erwarteten Format trägt und keine
+ * in der Zukunft liegt. **Die Wortlaut-Prüfung ist damit aber nicht mehr Teil
+ * von `test:quick`** — wer an einem Einwilligungstext arbeitet, fährt zusätzlich
+ * `npm run test:unit:client`.
  */
-import { createHash } from 'crypto';
 import { describe, expect, it } from 'vitest';
-import { sightingSchema } from '$lib/form/validation/sightingSchema';
 import { MEDIA_CONSENT_VERSION } from './mediaConsentVersion';
 import {
 	NAME_CONSENT_VERSION,
@@ -44,52 +32,23 @@ import {
 	SHIP_NAME_CONSENT_VERSION
 } from './consentVersions';
 
-function helpTextOf(field: string): string {
-	const described = sightingSchema.describe().fields[field];
-	if (!described || !('meta' in described)) {
-		throw new Error(`Feld ${field} hat keine Beschreibung`);
-	}
-	const helpText = ((described.meta ?? {}) as { helpText?: string }).helpText;
-	if (!helpText) {
-		throw new Error(`Feld ${field} hat keinen Einwilligungstext`);
-	}
-	return helpText;
-}
-
-const PINNED_CONSENT_TEXTS = [
-	{
-		field: 'nameConsent',
-		version: NAME_CONSENT_VERSION,
-		hash: 'eb46f8a140808245a3f8de9a65917a69452ae212a80a738339405e091b0210d1'
-	},
-	{
-		field: 'shipNameConsent',
-		version: SHIP_NAME_CONSENT_VERSION,
-		hash: 'ad612652de32e9a21b272fd878dfc2509a5ae96308a1dd05365e484c5ff256b6'
-	},
-	{
-		field: 'privacyConsent',
-		version: PRIVACY_CONSENT_VERSION,
-		hash: '73445d9c1ac5e29d803efe505d830951dd296cbeff21ccc0042a223003527c01'
-	},
-	{
-		field: 'mediaConsent',
-		version: MEDIA_CONSENT_VERSION,
-		hash: '55294e0730f56023ef0e4eb3a3c907bf799996ddffecdaaa3af07e72ff4847f9'
-	}
+/**
+ * Die vier Einwilligungen mit Nachweisspalten (`…_am`/`…_version` in
+ * `schema.ts`). `persistentDataConsent` steht bewusst nicht dabei: Diese
+ * Zustimmung erlaubt das Speichern der Kontaktdaten im Browser des Melders und
+ * wird nirgends serverseitig nachgewiesen — es gibt also keine Spalte, die eine
+ * Fassung tragen könnte. Ihr Wortlaut ist trotzdem gepinnt
+ * (`consentSurfaces.svelte.test.ts`).
+ */
+const CONSENT_VERSIONS = [
+	{ field: 'nameConsent', version: NAME_CONSENT_VERSION },
+	{ field: 'shipNameConsent', version: SHIP_NAME_CONSENT_VERSION },
+	{ field: 'privacyConsent', version: PRIVACY_CONSENT_VERSION },
+	{ field: 'mediaConsent', version: MEDIA_CONSENT_VERSION }
 ] as const;
 
 describe('Fassungskennungen der Einwilligungstexte', () => {
-	it.each(PINNED_CONSENT_TEXTS)(
-		'$field entspricht dem gepinnten Hash der Fassung $version',
-		({ field, hash }) => {
-			const actual = createHash('sha256').update(helpTextOf(field), 'utf8').digest('hex');
-
-			expect(actual).toBe(hash);
-		}
-	);
-
-	it.each(PINNED_CONSENT_TEXTS)(
+	it.each(CONSENT_VERSIONS)(
 		'$field trägt eine Fassungskennung im Format JJJJ-MM-TT',
 		({ version }) => {
 			expect(version).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -109,7 +68,7 @@ describe('Fassungskennungen der Einwilligungstexte', () => {
 			month: '2-digit',
 			day: '2-digit'
 		}).format(new Date());
-		for (const { field, version } of PINNED_CONSENT_TEXTS) {
+		for (const { field, version } of CONSENT_VERSIONS) {
 			expect(version <= today, `${field}: ${version} liegt in der Zukunft`).toBe(true);
 		}
 	});

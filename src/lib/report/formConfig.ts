@@ -84,8 +84,10 @@ export const formStepsConfig: FormStep[] = [
 			// benutzte — obwohl Aufnahmen die wertvollste Einzelangabe der Meldung
 			// sind. Schritt 2 ist Pflichtschritt.
 			//
-			// Die Reihenfolge in dieser Liste ist nicht kosmetisch: `findStepForErrors`
-			// läuft sie ab, um zum ersten fehlerhaften Feld zu springen.
+			// Die Reihenfolge in dieser Liste ist nicht kosmetisch: `scrollToFirstError`
+			// läuft sie ab, um zum ersten fehlerhaften Feld zu springen. (Nicht
+			// `findStepForErrors` — das liest nur die Zugehörigkeit zum Schritt,
+			// siehe die Feldliste von `observations` weiter unten.)
 			'mediaFile',
 			'mediaUpload',
 			// `mediaConsent` steht hier bewusst NICHT mehr: Es steht seit dem
@@ -132,10 +134,18 @@ export const formStepsConfig: FormStep[] = [
 			'behavior',
 			'behaviorText',
 			'reaction',
-			'shipCount',
+			// Die Reihenfolge dieser vier folgt `Environment.svelte` und ist nicht
+			// kosmetisch: `scrollToFirstError` läuft die Liste ab, um zum ersten
+			// fehlerhaften Feld zu springen (`fieldNavigation.ts` — die Aufrufstelle
+			// baut `fieldOrder` in `StepNavigation.svelte` aus genau dieser Config).
+			// `findStepForErrors` liest daraus dagegen nur die Zugehörigkeit zum
+			// Schritt, nicht die Position darin.
 			'seaState',
 			'visibility',
 			'windForce',
+			// Hinter der Windstärke, nicht davor: das einzige Feld der Karte, das
+			// der Wetter-Abruf nie füllt — Begründung in `Environment.svelte`.
+			'shipCount',
 			'shipName',
 			'homePort',
 			'boatType'
@@ -243,6 +253,47 @@ export function isDeadFinding(value: unknown): boolean {
  * `steps/Step3Observations.svelte`.
  */
 const HIDDEN_WHEN_DEAD = ['behavior', 'behaviorText', 'reaction'] as const;
+
+/**
+ * Die Gegenrichtung: Felder, die im Lebend-Zweig entfallen. Ein lebendes Tier
+ * hat keinen Verwesungszustand, keine am Strand gemessene Körperlänge und
+ * niemanden, der deswegen schon beim Meeresmuseum angerufen hätte.
+ *
+ * Nachgezogen am 2026-08-06. Bis dahin blendete diese Felder ausschließlich
+ * das Markup aus (`sections/AnimalInfo.svelte`, `{#if isDeadFinding($form.isDead)}`
+ * um den `DeadAnimal`-Block) — die Schritt-Konfiguration führte sie in BEIDEN
+ * Zweigen. Das ist genau die „nur eine Hälfte"-Lage, vor der der Kopf von
+ * `HIDDEN_WHEN_DEAD` oben warnt, nur in der selteneren Richtung: sichtbar
+ * nichts, validiert trotzdem.
+ *
+ * Folgenlos war das nicht bloß theoretisch. `deadSize` trägt
+ * `integer()`/`min(0)`/`max(300)` UNBEDINGT — sein `when('isDead')` ist ein
+ * No-op (`notRequired()` in beiden Zweigen), am Zustand des Tieres hängt bei
+ * diesem Feld also gar nichts. Ein zweigfremder Wert im Formular-Zustand (aus
+ * dem localStorage einer früheren Sitzung) hätte damit „Weiter" auf Schritt 2
+ * gesperrt, mit einem Fehler an einem Feld, das der Melder im Lebend-Zweig
+ * weder sieht noch erreichen kann. Praktisch abgefangen hat das bisher
+ * `fieldsOutsideReportKind` (räumt dieselben Felder beim Start aus dem
+ * Zustand) — aber als zweite, unabhängig gepflegte Absicherung, nicht als
+ * Regel an der Stelle, an der die Validierung entsteht.
+ *
+ * Dieselbe „halbe Miete"-Warnung gilt hier deshalb weiter: Eintrag hier UND die
+ * Bedingung im Markup, beide über `isDeadFinding` — Markup-Seite ist
+ * `sections/AnimalInfo.svelte`. Die Felder selbst liegen in
+ * `sections/DeadAnimal.svelte` und bleiben unverändert, die Admin-Maske zeigt
+ * sie über denselben Block weiter (sie ruft `getFormSteps` gar nicht auf,
+ * sondern validiert gegen `adminSightingSchema`).
+ *
+ * `deadSex` und `isDead` fehlen in der Liste, weil sie in `formStepsConfig`
+ * ohnehin nicht mehr stehen (Begründungen dort) — ein Eintrag hier wäre
+ * wirkungslos.
+ *
+ * **Nicht exportiert**, anders als `HIDDEN_WHEN_FROM_LAND`: Der zweite
+ * Interessent, `fieldsOutsideReportKind.ts`, leitet seit dieser Änderung BEIDE
+ * Zweige aus `getFormSteps` ab (Differenz der beiden Aufrufe) statt aus den
+ * Listen selbst. Ein Export wäre eine zweite Quelle für dieselbe Aussage.
+ */
+const HIDDEN_WHEN_ALIVE = ['deadCondition', 'deadSize', 'deadPhoneContact'] as const;
 
 /**
  * Felder, die das EIGENE Wasserfahrzeug betreffen. Sie entfallen, wenn von Land
@@ -374,10 +425,11 @@ export function hasUploadedMedia(
 export function getFormSteps(data: FormStepsInput): FormStep[] {
 	const hidden = new Set<string>(hiddenFormFields(data));
 
-	if (hidden.size === 0) {
-		return formStepsConfig;
-	}
-
+	// Kein `if (hidden.size === 0) return formStepsConfig` mehr: Seit
+	// `HIDDEN_WHEN_ALIVE` beantwortet der Totfund-Zweig in `hiddenFormFields`
+	// BEIDE Richtungen, und damit ist die Menge nie leer — der Schnellpfad war
+	// ab da toter Code, der in dieser Datei wie eine begründete Entscheidung
+	// gelesen worden wäre.
 	return formStepsConfig.map((step) => ({
 		...step,
 		fields: step.fields.filter((field) => !hidden.has(field))
@@ -385,9 +437,9 @@ export function getFormSteps(data: FormStepsInput): FormStep[] {
 }
 
 /**
- * Die Felder, die im übergebenen Zustand nicht bedienbar sind — die drei Achsen
+ * Die Felder, die im übergebenen Zustand nicht bedienbar sind — alle Achsen
  * aus `getFormSteps` an einer Stelle, damit niemand sie ein zweites Mal
- * ausschreibt.
+ * ausschreibt. Eine neue Achse gehört hierher, nicht in `getFormSteps`.
  *
  * `getFormSteps` beantwortet „welche Felder validiert dieser Schritt", und das
  * ist für die Schritt-Navigation genau richtig. Für die Vorab-Prüfung beim
@@ -400,11 +452,16 @@ export function getFormSteps(data: FormStepsInput): FormStep[] {
  *
  * Ohne Duplikate: `reaction` steht in `HIDDEN_WHEN_DEAD` UND in
  * `HIDDEN_WHEN_FROM_LAND` — ein Totfund von Land trifft beide Bedingungen.
+ *
+ * Der Zweig beantwortet BEIDE Richtungen (`else`-Zweig), die Menge ist deshalb
+ * nie leer — siehe die Notiz zum entfallenen Schnellpfad in `getFormSteps`.
  */
 export function hiddenFormFields(data: FormStepsInput): Array<keyof SightingFormData> {
 	const hidden = new Set<keyof SightingFormData>();
 	if (isDeadFinding(data.isDead)) {
 		HIDDEN_WHEN_DEAD.forEach((field) => hidden.add(field));
+	} else {
+		HIDDEN_WHEN_ALIVE.forEach((field) => hidden.add(field));
 	}
 	if (isFromLand(data.sightingFrom)) {
 		HIDDEN_WHEN_FROM_LAND.forEach((field) => hidden.add(field));
