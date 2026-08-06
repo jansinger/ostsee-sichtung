@@ -9,10 +9,11 @@ import BoatInfo from './BoatInfo.svelte';
  * Fragen zum eigenen Boot mehr gestellt — `shipName`, `homePort` und `boatType`
  * betreffen ein Wasserfahrzeug, das ein Landbeobachter nicht hat.
  *
- * `shipCount` bleibt stehen: Es fragt nach ANDEREN Schiffen in der Umgebung
- * (Störungskontext), das ist auch von Land aus zu beobachten. Ein Folge-Task
- * verschiebt `shipCount` fachlich in die Umweltbedingungen — hier nicht
- * vorweggenommen.
+ * Task 12: `shipCount` ist ausgezogen (jetzt `Environment.svelte` — es fragt
+ * nach ANDEREN Schiffen, Störungskontext, nicht nach dem eigenen Boot). Damit
+ * blieb für Land-Melder kein Feld mehr in dieser Karte übrig; die ganze Karte
+ * hängt seither an derselben `isFromLand`-Bedingung wie zuvor nur ihr Inhalt,
+ * statt mit Titel und Einleitung leer stehenzubleiben.
  *
  * `BoatInfo` wird ausschließlich vom Meldeformular eingebunden
  * (`Step3Observations.svelte`), nicht von der Admin-Maske — anders als
@@ -54,9 +55,15 @@ describe('sections/BoatInfo — Bootsfelder entfallen bei Land', () => {
 		}
 	);
 
-	it('lässt shipCount auch bei Land stehen — es fragt nach ANDEREN Schiffen', () => {
+	it('zeigt shipCount nicht mehr — das Feld steht seit Task 12 in Environment.svelte', () => {
+		renderBoatInfo({ sightingFrom: SightingFromEnum.SAILBOAT });
+
+		expect(field('shipCount')).toBeNull();
+	});
+
+	it('blendet die ganze Karte aus, wenn von Land gemeldet wird — sonst bliebe sie leer', () => {
 		renderBoatInfo({ sightingFrom: SightingFromEnum.LAND });
 
-		expect(field('shipCount')).not.toBeNull();
+		expect(document.querySelector('.card')).toBeNull();
 	});
 });

@@ -24,11 +24,12 @@
 		     Admin-Maske behält das Feld, weil dort der Bestand korrigiert wird. -->
 		<FormField name="distribution" />
 
-		<!-- `shipCount` steht im Meldeformular jetzt in `BoatInfo.svelte`: Die Anzahl
-		     umliegender Schiffe gehört zu den Boot-/Schiffsangaben, nicht zwischen
-		     die Beobachtungsdetails. Die Admin-Maske bindet `BoatInfo` nicht ein und
-		     bekommt das Feld deshalb hier — sonst wäre es dort ersatzlos weg
-		     (5.539 Datensätze mit Inhalt). -->
+		<!-- `shipCount` steht im Meldeformular jetzt in `Environment.svelte`
+		     (Task 12 — die Anzahl ANDERER Schiffe ist Störungskontext, keine
+		     Angabe zum eigenen Boot). Die Admin-Maske bindet `Environment` zwar
+		     ein, zeigt das Feld dort aber nur außerhalb von `adminMode` — hier
+		     bekommt sie es deshalb weiterhin, sonst wäre es admin-seitig
+		     ersatzlos weg (5.539 Datensätze mit Inhalt). -->
 		<FormField name="shipCount" />
 	</SectionCard>
 {/if}

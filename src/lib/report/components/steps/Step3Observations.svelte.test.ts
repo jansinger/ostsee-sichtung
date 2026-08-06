@@ -43,7 +43,8 @@ describe('Step3Observations — Medien sind auf Schritt 2 gewandert', () => {
 /**
  * Die Karte „Weitere Sichtungsdetails" stand im Meldeformular leer da: Beide
  * Felder sind `adminMode`-only (`distribution` seit PR #746, `shipCount` seit
- * dem Umzug nach `BoatInfo`), die Karte selbst wurde aber unbedingt gerendert.
+ * dem Umzug nach `BoatInfo` — inzwischen, Task 12, weiter nach
+ * `Environment.svelte`), die Karte selbst wurde aber unbedingt gerendert.
  *
  * Der Test sitzt bewusst **auch** hier und nicht nur an der Sektion selbst: Die
  * Sektion schützt sich inzwischen zwar selbst, aber der Fehler war ein Fehler

@@ -66,6 +66,19 @@
 		Sobald Position und Datum gesetzt sind, werden Wetterdaten automatisch vorgeschlagen.
 	</p>
 
+	<!-- `shipCount` fragt laut Schema nach der Anzahl ANDERER Schiffe in näherer
+	     Umgebung — Störungskontext wie Seegang und Sichtweite, keine Angabe zum
+	     eigenen Boot des Melders (Task 12, zog aus `BoatInfo.svelte` hierher
+	     um). Nur im Meldeformular: Die Admin-Maske zeigt das Feld bereits
+	     admin-only in `OptionalSightingDetails.svelte` — `BoatInfo` bindet sie
+	     nicht ein, `Environment` dagegen schon, ein zweites `shipCount` stünde
+	     hier doppelt im selben Formular. -->
+	{#if !adminMode}
+		<div class="mb-4 grid grid-cols-1 gap-4">
+			<FormField name="shipCount" />
+		</div>
+	{/if}
+
 	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 		<!-- Sea State -->
 		<FormField name="seaState" />
