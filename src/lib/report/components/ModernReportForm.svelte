@@ -179,6 +179,31 @@
 	 */
 	const submitBlocked = $derived(submitState === 'offline' && connection.isInterfaceDown);
 
+	/**
+	 * Entfernt eine Liste von Schlüsseln aus einem Objekt, unabhängig davon, ob
+	 * `T` sie als optional führt. `shipNameConsent` ist wegen `.default(false)`
+	 * im Schema z. B. NICHT optional inferiert — `delete obj[key]` direkt auf
+	 * `T` wäre dort unter `exactOptionalPropertyTypes` ein Typfehler. Der Weg
+	 * über `Partial<T>` umgeht das, ohne die Feldliste ein zweites Mal als
+	 * Typ-Literal zu pflegen.
+	 */
+	function omitFields<T extends object, K extends keyof T>(obj: T, keys: readonly K[]): Omit<T, K> {
+		const result: Partial<T> = { ...obj };
+		for (const key of keys) {
+			delete result[key];
+		}
+		return result as Omit<T, K>;
+	}
+
+	/**
+	 * Dieselbe Feldliste wie `HIDDEN_WHEN_FROM_LAND` (formConfig.ts, dort die
+	 * volle Begründung), ohne `boatDrive` — das hat mit `shouldResetBoatDrive`
+	 * (`boatDriveReset.ts`) einen eigenen, gezielteren Mechanismus.
+	 */
+	const OWN_VESSEL_FIELDS = HIDDEN_WHEN_FROM_LAND.filter(
+		(field) => field !== 'boatDrive'
+	) as Exclude<(typeof HIDDEN_WHEN_FROM_LAND)[number], 'boatDrive'>[];
+
 	// Formular initialisieren
 	const formProps = {
 		initialValues: { ...savedFormData },
@@ -188,6 +213,16 @@
 				// Remove admin only attributes and uploaded files (already uploaded)
 				const { verified, internalComment, uploadedFiles, ...submitValuesTemp } = values;
 				let submitValues: SightingFormValues = submitValuesTemp as SightingFormValues;
+
+				// Ausgeblendete Bootsangaben nicht absenden — entfernt am
+				// Absende-Rand, statt `$form` vorher zu leeren. Begründung samt
+				// verworfenem ersten Ansatz: `HIDDEN_WHEN_FROM_LAND` in
+				// formConfig.ts. `values` bleibt unangetastet — die
+				// Kontaktdaten unten werden bewusst daraus gebaut, nicht aus
+				// `submitValues`.
+				if (isFromLand(values.sightingFrom)) {
+					submitValues = omitFields(submitValues, OWN_VESSEL_FIELDS) as SightingFormValues;
+				}
 				// Datum und Uhrzeit gehen als Strings (deutsche Wanduhrzeit) raus — den
 				// Zeitpunkt bildet ausschließlich der Server, sonst ginge die Zeitzone
 				// des Browsers in den gespeicherten Instant ein.
@@ -435,63 +470,6 @@
 	let currentStep: number = $state(loadFromStorage(STORAGE_KEYS.CURRENT_STEP, 0));
 
 	const form = $derived(formContext.form);
-
-	/**
-	 * Review-Befund 1 (Task 11): Felder zum eigenen Wasserfahrzeug räumen,
-	 * sobald „Land" gilt — nicht nur ausblenden.
-	 *
-	 * `HIDDEN_WHEN_FROM_LAND` (`formConfig.ts`) nimmt die Felder aus der
-	 * Validierung, und dieselbe Bedingung im Markup blendet sie aus
-	 * (`BoatInfo.svelte`, `Behavior.svelte`, `Step4Contact.svelte`). Beides
-	 * ändert nichts am `$form`-ZUSTAND: Ein unsichtbares Feld mit stehen
-	 * gebliebenem Wert geht beim Absenden trotzdem mit, weil `onSubmit` unten
-	 * (Zeile ~186) `$form` fast unverändert weiterreicht.
-	 *
-	 * Zwei Leckquellen, ein Mechanismus:
-	 * - `loadUserContactData()` (oben) befüllt `shipName`/`homePort`/
-	 *   `boatType`/`shipNameConsent` schon beim Start aus einer FRÜHEREN
-	 *   Bootsmeldung — der Melder hat diese Werte in DIESER Meldung nie
-	 *   gesehen, sobald er diesmal „Land" wählt.
-	 * - Ein Wechsel MITTEN im Formular (Boot ausgefüllt, dann auf Land
-	 *   umgestellt) hinterlässt eigene Eingaben unsichtbar im State.
-	 *
-	 * Ein reiner „beim Mount"-Reset (wie `fieldsOutsideReportKind` es für die
-	 * Totfund-Achse macht, oben ab Zeile 116) deckt nur die erste Quelle ab:
-	 * Der Totfund-Zweig steht beim Betreten fest, `sightingFrom` dagegen ist
-	 * ein Feld IM Formular und ändert sich jederzeit. Deshalb hier ein
-	 * `$effect` statt einer einmaligen Schleife — es prüft bei JEDER
-	 * `$form`-Änderung neu, ob `isFromLand` gilt, und räumt dann auf. Das
-	 * deckt automatisch auch den Mount-Fall ab (erster Effect-Lauf), ohne
-	 * `shouldResetBoatDrive`s Übergangs-Tracking (`boatDriveReset.ts`)
-	 * nachzubauen — dessen „nicht beim Mount"-Ausnahme gilt nur für
-	 * `boatDrive`, weil DAS Feld auch von der Admin-Maske über
-	 * `SightingDetails.svelte` gepflegt wird und ein Mount-Reset dort einen
-	 * gespeicherten Altbestandswert löschen würde. Diese fünf Felder betreffen
-	 * ausschließlich das Meldeformular — `BoatInfo.svelte` und
-	 * `Step4Contact.svelte` werden von `AdminSightingEditForm.svelte` gar
-	 * nicht eingebunden, und `Behavior.svelte` zeigt `reaction` dort ohnehin
-	 * unbedingt (`adminMode`-Zweig). Ein Mount-Reset kann in der Admin-Maske
-	 * deshalb gar nicht greifen — sie rendert diesen Effect-Code-Pfad nie.
-	 *
-	 * OHNE `boatDrive` aus `HIDDEN_WHEN_FROM_LAND`: Das Feld hat mit
-	 * `shouldResetBoatDrive` bereits einen eigenen, gezielteren Mechanismus
-	 * (verdrahtet in `SightingDetails.svelte`), der zusätzlich
-	 * `boatDriveText` mitnimmt. `boatDrive` ist außerdem kein Feld aus
-	 * `loadUserContactData()` — die erste Leckquelle betrifft es gar nicht.
-	 */
-	const RESET_WHEN_FROM_LAND = HIDDEN_WHEN_FROM_LAND.filter(
-		(field) => field !== 'boatDrive'
-	) as Exclude<(typeof HIDDEN_WHEN_FROM_LAND)[number], 'boatDrive'>[];
-
-	$effect(() => {
-		if (!isFromLand($form.sightingFrom)) return;
-
-		for (const field of RESET_WHEN_FROM_LAND) {
-			if ($form[field] !== initialFormState[field]) {
-				formContext.updateField(field, initialFormState[field]);
-			}
-		}
-	});
 
 	// Speichere currentStep direkt bei Änderungen
 	$effect(() => {

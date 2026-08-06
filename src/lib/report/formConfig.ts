@@ -243,12 +243,27 @@ const HIDDEN_WHEN_DEAD = ['behavior', 'behaviorText', 'reaction'] as const;
  * Motorboot (`isBoatSightingFrom`), eine Teilmenge von „nicht Land".
  *
  * **Exportiert**, weil `ModernReportForm.svelte` dieselbe Liste noch für eine
- * DRITTE Sache braucht (Review-Befund 1, Task 11): Ausblenden allein reicht
- * nicht — ein ausgeblendetes Feld bleibt sonst unsichtbar, aber weiter im
- * `$form`-Zustand stehen und geht beim Absenden mit ans Backend. Dort wird
- * dieselbe Liste (ohne `boatDrive`, das einen eigenen, gezielteren
- * Reset-Mechanismus hat — Begründung dort) benutzt, um den Formular-Zustand
- * selbst zu räumen, statt eine zweite, von Hand gepflegte Liste zu pflegen.
+ * DRITTE Sache braucht (Review-Befund, Task 11, zweite Runde): Ausblenden
+ * allein reicht nicht — ein ausgeblendetes Feld bleibt sonst unsichtbar, aber
+ * weiter im `$form`-Zustand stehen und ginge beim Absenden mit ans Backend.
+ *
+ * Ein erster Versuch räumte dafür `$form` per `$effect` leer, sobald „Land"
+ * galt — das löste GENAU DAS aus, was es verhindern sollte: `onSubmit`
+ * baut aus denselben (jetzt geleerten) Werten auch die dauerhaft zu
+ * speichernden Kontaktdaten (`shipName`/`homePort`/`boatType`/
+ * `shipNameConsent`), und `saveUserContactDataWithConsent` überschreibt den
+ * gespeicherten Datensatz vollständig, ohne Merge
+ * (`src/lib/storage/localStorage.ts`). Ein wiederkehrender Melder, dessen
+ * Bootsdaten gespeichert waren, verlor sie beim nächsten Land-Bericht.
+ *
+ * Der Fix sitzt deshalb NICHT im Formular-Zustand, sondern am Absende-Rand:
+ * `ModernReportForm.svelte`s `onSubmit` entfernt dieselbe Liste (ohne
+ * `boatDrive`, das einen eigenen, gezielteren Reset-Mechanismus hat —
+ * Begründung dort) nur aus dem Objekt, das tatsächlich an den Server geht.
+ * `$form` selbst bleibt unangetastet: Die persistierten Kontaktdaten werden
+ * aus `values` (dem UNGEKÜRZTEN Submit-Objekt) gebaut und bleiben deshalb
+ * unverändert stehen, und ein Melder, der versehentlich auf „Land" stellt und
+ * zurückwechselt, findet seinen getippten Schiffsnamen noch vor.
  */
 export const HIDDEN_WHEN_FROM_LAND = [
 	'boatDrive',

@@ -22,6 +22,25 @@ const { deleteMultipleFiles } = vi.hoisted(() => ({
 
 vi.mock('$lib/utils/upload/fileProcessing', () => ({ deleteMultipleFiles }));
 
+/**
+ * Für die Tests unten, die tatsächlich bis zum Absenden laufen: `submitSightingForm`
+ * ist der einzige Ort, an dem das reale Absende-Objekt als Ganzes sichtbar wird —
+ * genau die Naht, an der Review-Befund 1 (Task 11, zweite Runde) saß. Ein Test, der
+ * stattdessen nur den Autosave-Schnappschuss `FORM_DATA` liest (wie die vorherige
+ * Fassung dieser Datei), sieht den `$form`-Zustand, aber nie das tatsächlich
+ * übergebene Objekt — dort klaffte die Lücke.
+ */
+const { submitSightingFormMock } = vi.hoisted(() => ({
+	submitSightingFormMock: vi.fn<
+		(values: Record<string, unknown>) => Promise<{ status: 'ok'; id: number }>
+	>(async () => ({ status: 'ok', id: 1 }))
+}));
+
+vi.mock('$lib/form/submitSightingForm', () => ({
+	submitSightingForm: submitSightingFormMock,
+	describeSubmitFailure: () => 'Die Sichtung konnte nicht gespeichert werden'
+}));
+
 import { initialFormState } from '$lib/report/formConfig';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import { STORAGE_KEYS } from '$lib/storage/localStorage';
@@ -214,41 +233,62 @@ describe('ModernReportForm — zweigfremde Felder werden beim Start geleert', ()
 });
 
 /**
- * Review-Befund 1 (Task 11, Nachbesserung): Ausgeblendete Bootsangaben wurden
- * trotzdem abgesendet. `HIDDEN_WHEN_FROM_LAND` (`formConfig.ts`) nimmt die
- * Felder zwar aus `getFormSteps()`, und dieselbe Bedingung blendet sie im
- * Markup aus (`BoatInfo.svelte`, `Behavior.svelte`, `Step4Contact.svelte`) —
- * beides ändert nichts am `$form`-Zustand. Ein unsichtbares Feld mit stehen
- * gebliebenem Wert geht beim Absenden trotzdem mit: `onSubmit` in
- * `ModernReportForm.svelte` reicht `$form` fast unverändert weiter (nur
- * `verified`/`internalComment`/`uploadedFiles` fallen weg).
+ * Review-Befund 1 (Task 11, zweite Runde): Ausgeblendete Bootsangaben wurden
+ * trotzdem abgesendet — UND der erste Fix dafür (ein `$effect`, das `$form`
+ * leerte, sobald „Land" galt) hat einen zweiten, schwereren Schaden angerichtet:
+ * `onSubmit` baut die dauerhaft zu speichernden Kontaktdaten aus denselben
+ * (dann geleerten) Werten, und `saveUserContactDataWithConsent` überschreibt
+ * den gespeicherten Datensatz vollständig, ohne Merge
+ * (`src/lib/storage/localStorage.ts`). Ein wiederkehrender Melder verlor seine
+ * gespeicherten Bootsdaten beim nächsten Land-Bericht.
  *
- * Ein reiner Funktionstest an `formConfig.ts` hätte diese Lücke nicht
- * gefunden — dieselbe Fehlerklasse wie beim Totfund-Test oben („zweigfremde
- * Felder"): eine richtige Feldliste, aber nicht bis zum Absendeweg
- * verdrahtet. Beide Tests hier lesen den Zustand deshalb über die
- * persistierten `FORM_DATA` — denselben Weg, über den auch der spätere
- * Submit tatsächlich sendet.
+ * Der jetzige Fix entfernt die Felder deshalb NICHT im Formular-Zustand,
+ * sondern erst am Absende-Rand (`HIDDEN_WHEN_FROM_LAND` in `formConfig.ts`,
+ * dort die volle Begründung samt verworfenem `$effect`-Ansatz).
  *
- * Zwei Leckquellen, beide hier abgedeckt:
- * - `loadUserContactData()` befüllt `shipName`/`homePort`/`boatType`/
- *   `shipNameConsent` schon beim Formularstart aus einer FRÜHEREN
- *   Bootsmeldung — der Melder hat diese Werte in DIESER Meldung nie gesehen.
- * - Ein Wechsel MITTEN im Formular (Boot ausgefüllt, dann auf Land
- *   umgestellt) hinterlässt eigene Eingaben unsichtbar im State.
+ * Der vorherige Test hier las nur den Autosave-Schnappschuss `FORM_DATA` —
+ * genau in der Lücke zwischen ihm und dem tatsächlich an den Server gehenden
+ * Objekt saß der Befund: `FORM_DATA` konnte die Felder korrekt NICHT mehr
+ * enthalten (weil der `$effect` sie geleert hatte), während gleichzeitig der
+ * gespeicherte Kontaktdatensatz kaputtging. Die Tests unten laufen deshalb
+ * bis zum echten Absende-Aufruf (`submitSightingForm`, gemockt oben) und
+ * prüfen dort das tatsächlich übergebene Objekt — nicht `FORM_DATA`.
  */
-describe('ModernReportForm — Bootsfelder überleben eine Land-Meldung nicht', () => {
+describe('ModernReportForm — Bootsangaben werden beim Absenden entfernt, die Kontaktdaten überleben', () => {
+	const today = new Date().toISOString().split('T')[0];
+
 	function persistedFormData(): Record<string, unknown> {
 		const stored = sessionStorage.getItem(STORAGE_KEYS.FORM_DATA);
 		if (!stored) throw new Error('FORM_DATA wurde noch nicht persistiert');
 		return JSON.parse(stored);
 	}
 
-	it('räumt vorbefüllte Kontaktdaten auf, sobald der Melder "Land" wählt', async () => {
+	function contactData(): Record<string, unknown> {
+		return JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA) ?? '{}');
+	}
+
+	async function submit(): Promise<Record<string, unknown>> {
+		await page.getByRole('button', { name: 'Formular absenden' }).click();
+		await vi.waitFor(() => expect(submitSightingFormMock).toHaveBeenCalled());
+		return submitSightingFormMock.mock.calls[0]?.[0] as Record<string, unknown>;
+	}
+
+	beforeEach(() => {
+		submitSightingFormMock.mockClear();
+		submitSightingFormMock.mockResolvedValue({ status: 'ok', id: 1 });
+	});
+
+	/**
+	 * Der reine Mount-Fall (Review, Punkt „Der reine Mount-Fall ist
+	 * ungetestet"): `sightingFrom` steht schon beim Laden auf „Land" — kein
+	 * Bedienschritt wählt es. `shipName`/`homePort`/`boatType`/
+	 * `shipNameConsent` fehlen in `FORM_DATA` absichtlich: Sie kommen aus der
+	 * Kontaktdaten-Vorbefüllung (`loadUserContactData()`), der eigentlichen
+	 * Leckquelle aus dem Review.
+	 */
+	it('sendet keine Bootsangaben, wenn das Formular schon mit sightingFrom=Land startet — kein Bedienschritt', async () => {
 		// Wiederkehrender Melder: eine frühere Bootsmeldung hat mit Einwilligung
 		// Kontaktdaten hinterlassen (`persistentDataConsent` -> localStorage).
-		// `FORM_DATA` (sessionStorage) ist dagegen leer — eine neue Sitzung, der
-		// Melder hat diese Werte hier noch nicht gesehen.
 		localStorage.setItem(
 			STORAGE_KEYS.USER_CONTACT_DATA,
 			JSON.stringify({
@@ -264,50 +304,84 @@ describe('ModernReportForm — Bootsfelder überleben eine Land-Meldung nicht', 
 				persistentDataConsent: true
 			})
 		);
-		// Direkt auf Schritt 2 ("Angaben zum Tier") starten — dort steht
-		// `sightingFrom`.
-		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(1));
+
+		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(3));
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				referenceId: 'ref-mount-land',
+				entryChannel: 0,
+				species: 0,
+				totalCount: 1,
+				distance: 1,
+				shipCount: 2,
+				hasPosition: true,
+				latitude: 54.5,
+				longitude: 13.5,
+				sightingDate: today,
+				sightingFrom: SightingFromEnum.LAND,
+				privacyConsent: true
+			})
+		);
 
 		render(ModernReportForm);
 
-		await page.getByTestId('field-sightingFrom').selectOptions(String(SightingFromEnum.LAND));
+		const sent = await submit();
 
-		await vi.waitFor(() => {
-			const data = persistedFormData();
-			expect(data.shipName).toBeUndefined();
-			expect(data.homePort).toBeUndefined();
-			expect(data.boatType).toBeUndefined();
-			expect(data.shipNameConsent).toBe(false);
-		});
+		expect('shipName' in sent).toBe(false);
+		expect('homePort' in sent).toBe(false);
+		expect('boatType' in sent).toBe(false);
+		expect('shipNameConsent' in sent).toBe(false);
+		expect('reaction' in sent).toBe(false);
+		// Unbeteiligte Felder bleiben im Absende-Objekt stehen.
+		expect(sent.shipCount).toBe(2);
+		expect(sent.distance).toBe(1);
 
-		// Der Reset betrifft nur DIESE Meldung (`$form`/`FORM_DATA`) — die
-		// dauerhaft gespeicherten Kontaktdaten bleiben unangetastet, damit der
-		// Melder sie beim nächsten Mal, wenn er wieder vom Boot meldet, zurückbekommt.
-		const contactData = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_CONTACT_DATA) ?? '{}');
-		expect(contactData.shipName).toBe('MS Seelöwe');
-		expect(contactData.homePort).toBe('Kiel');
-		expect(contactData.boatType).toBe('Segelboot');
-		expect(contactData.shipNameConsent).toBe(true);
+		// Die dauerhaft gespeicherten Kontaktdaten wurden nie berührt — sie
+		// kommen aus `values` (dem UNGEKÜRZTEN Objekt), nicht aus dem
+		// bereinigten `submitValues`.
+		const contact = contactData();
+		expect(contact.shipName).toBe('MS Seelöwe');
+		expect(contact.homePort).toBe('Kiel');
+		expect(contact.boatType).toBe('Segelboot');
+		expect(contact.shipNameConsent).toBe(true);
 	});
 
-	it('räumt eigene Eingaben auf, wenn mitten im Formular von Boot auf Land gewechselt wird', async () => {
+	/**
+	 * Der Nutzen des gewählten Wegs gegenüber dem verworfenen `$effect`: ein
+	 * MITTEN im Formular getippter Schiffsname geht beim Wechsel auf „Land"
+	 * nicht verloren — er bleibt im Formular-Zustand (`FORM_DATA`) stehen und
+	 * wird erst beim tatsächlichen Absenden aus dem gesendeten Objekt
+	 * entfernt. Ein Melder, der versehentlich auf „Land" stellt und
+	 * zurückwechselt, findet seine Eingabe unverändert vor.
+	 */
+	it('behält eine mitten im Formular getippte Bootsangabe im Zustand, entfernt sie aber beim Absenden', async () => {
 		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(1));
 		sessionStorage.setItem(
 			STORAGE_KEYS.FORM_DATA,
 			JSON.stringify({
 				...initialFormState,
 				referenceId: 'ref-boot-zu-land',
+				entryChannel: 0,
+				species: 0,
+				totalCount: 1,
+				distance: 1,
+				shipCount: 2,
+				hasPosition: true,
+				latitude: 54.5,
+				longitude: 13.5,
+				sightingDate: today,
 				sightingFrom: SightingFromEnum.SAILBOAT,
 				shipName: 'MS Testboot',
 				homePort: 'Rostock',
 				boatType: 'Segelboot',
 				reaction: 'neugierig genähert',
 				shipNameConsent: true,
-				shipCount: 2,
-				distance: 50,
-				species: 7,
-				latitude: 54.5,
-				longitude: 12.1
+				firstName: 'Erika',
+				lastName: 'Musterfrau',
+				email: 'erika@example.com',
+				privacyConsent: true,
+				persistentDataConsent: true
 			})
 		);
 
@@ -315,21 +389,38 @@ describe('ModernReportForm — Bootsfelder überleben eine Land-Meldung nicht', 
 
 		await page.getByTestId('field-sightingFrom').selectOptions(String(SightingFromEnum.LAND));
 
+		// Der Formular-ZUSTAND bleibt unangetastet — anders als beim
+		// verworfenen `$effect`-Ansatz.
 		await vi.waitFor(() => {
 			const data = persistedFormData();
-			expect(data.shipName).toBeUndefined();
-			expect(data.homePort).toBeUndefined();
-			expect(data.boatType).toBeUndefined();
-			expect(data.reaction).toBeUndefined();
-			expect(data.shipNameConsent).toBe(false);
+			// `selectOptions` liefert den DOM-Wert als String — dieselbe Umwandlung,
+			// die `isFromLand` selbst vornimmt (`Number(value)`).
+			expect(Number(data.sightingFrom)).toBe(SightingFromEnum.LAND);
+			expect(data.shipName).toBe('MS Testboot');
+			expect(data.homePort).toBe('Rostock');
+			expect(data.boatType).toBe('Segelboot');
+			expect(data.reaction).toBe('neugierig genähert');
+			expect(data.shipNameConsent).toBe(true);
 		});
 
-		const data = persistedFormData();
-		// Unbeteiligte Felder bleiben stehen — keine Kollateralschäden.
-		expect(data.shipCount).toBe(2);
-		expect(data.distance).toBe(50);
-		expect(data.species).toBe(7);
-		expect(data.latitude).toBe(54.5);
-		expect(data.longitude).toBe(12.1);
+		// Weiter bis zum letzten Schritt und absenden.
+		await page.getByRole('button', { name: 'Nächster Schritt' }).click();
+		await page.getByRole('button', { name: 'Nächster Schritt' }).click();
+		const sent = await submit();
+
+		expect('shipName' in sent).toBe(false);
+		expect('homePort' in sent).toBe(false);
+		expect('boatType' in sent).toBe(false);
+		expect('reaction' in sent).toBe(false);
+		expect('shipNameConsent' in sent).toBe(false);
+		expect(sent.shipCount).toBe(2);
+
+		// Die (unangetasteten) getippten Werte wurden mit Einwilligung
+		// gespeichert — kein Datenverlust gegenüber dem vorherigen Zustand.
+		const contact = contactData();
+		expect(contact.shipName).toBe('MS Testboot');
+		expect(contact.homePort).toBe('Rostock');
+		expect(contact.boatType).toBe('Segelboot');
+		expect(contact.shipNameConsent).toBe(true);
 	});
 });
