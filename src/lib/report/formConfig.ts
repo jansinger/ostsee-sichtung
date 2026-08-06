@@ -132,10 +132,15 @@ export const formStepsConfig: FormStep[] = [
 			'behavior',
 			'behaviorText',
 			'reaction',
-			'shipCount',
+			// Reihenfolge wie in `Environment.svelte`: `shipCount` steht hinter der
+			// Windstärke, nicht davor — es ist das einzige Feld der Karte, das der
+			// Wetter-Abruf nie füllt (Begründung dort). Diese Liste ist nicht
+			// kosmetisch: `scrollToFirstError` und `findStepForErrors` laufen sie ab,
+			// um zum ersten fehlerhaften Feld zu springen.
 			'seaState',
 			'visibility',
 			'windForce',
+			'shipCount',
 			'shipName',
 			'homePort',
 			'boatType'

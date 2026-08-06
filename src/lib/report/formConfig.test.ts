@@ -467,3 +467,41 @@ describe('getFormSteps mit Beobachtungsort', () => {
 		}
 	});
 });
+
+/**
+ * `shipCount` zog mit Task 12 aus „Boot-/Schiffsinformationen" in die Karte
+ * „Umweltbedingungen" — fachlich richtig, es ist Störungskontext wie Seegang
+ * und Sichtweite. Es landete dabei aber an der ERSTEN Stelle der Karte, direkt
+ * unter dem Satz „Sobald Position und Datum gesetzt sind, werden Wetterdaten
+ * automatisch vorgeschlagen." — als einziges Feld, das der Wetter-Abruf nie
+ * füllt. Es steht deshalb jetzt hinter `windForce`.
+ *
+ * Diese Liste ist dabei nicht kosmetisch: `scrollToFirstError` und
+ * `findStepForErrors` laufen sie ab, um zum ersten fehlerhaften Feld zu
+ * springen. Weicht sie von der Render-Reihenfolge ab, springt die Navigation
+ * an ein anderes Feld als das oberste sichtbare. Die Render-Reihenfolge selbst
+ * prüft `Environment.svelte.test.ts`.
+ */
+describe('formStepsConfig — Umweltfelder in Render-Reihenfolge', () => {
+	const observationsStep = formStepsConfig.find((step) => step.id === 'observations');
+
+	it('führt die Umweltfelder in der Reihenfolge der Karte', () => {
+		const fields = observationsStep?.fields ?? [];
+		const umwelt = ['seaState', 'visibility', 'windForce', 'shipCount'];
+
+		expect(fields.filter((name) => umwelt.includes(name))).toEqual(umwelt);
+	});
+
+	it('listet shipCount hinter windForce', () => {
+		const fields = observationsStep?.fields ?? [];
+		const windIndex = fields.indexOf('windForce');
+		const shipCountIndex = fields.indexOf('shipCount');
+
+		// Beide Fundstellen ausdrücklich absichern: `indexOf` liefert für ein
+		// fehlendes Feld -1, und -1 ist kleiner als jeder gültige Index — der
+		// Vergleich allein liefe grün durch, gerade wenn das Feld ganz fehlt.
+		expect(windIndex).toBeGreaterThanOrEqual(0);
+		expect(shipCountIndex).toBeGreaterThanOrEqual(0);
+		expect(windIndex).toBeLessThan(shipCountIndex);
+	});
+});
