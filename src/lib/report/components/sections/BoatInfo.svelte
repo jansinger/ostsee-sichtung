@@ -13,8 +13,12 @@
   Melders, die beim nächsten Mal wieder vorausgefüllt werden sollen.
 -->
 <script lang="ts">
+	import { getFormContext } from '$lib/report/formContext';
+	import { isFromLand } from '$lib/report/formConfig';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import SectionCard from './SectionCard.svelte';
+
+	const { form } = getFormContext();
 </script>
 
 <SectionCard title="Boot-/Schiffsinformationen" icon="lucide:anchor">
@@ -22,15 +26,26 @@
 		Falls Sie von einem Boot aus beobachtet haben — diese Angaben helfen, die Sichtung einzuordnen.
 	</p>
 
-	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-		<FormField name="shipName" />
+	<!-- `shipName`/`homePort`/`boatType` betreffen das EIGENE Wasserfahrzeug und
+	     entfallen deshalb bei einer ausdrücklichen Land-Meldung — ein
+	     Landbeobachter hat kein Boot, dessen Name oder Heimathafen er nennen
+	     könnte. `getFormSteps` (formConfig.ts) nimmt dieselben drei Felder
+	     bereits aus der Validierung; dieselbe Bedingung (`isFromLand`) hier,
+	     sonst bliebe die Karte sichtbar, aber unvalidiert ausgefüllt (siehe die
+	     Begründung bei `HIDDEN_WHEN_FROM_LAND`). `shipCount` bleibt außerhalb
+	     des Blocks stehen — es fragt nach ANDEREN Schiffen in der Umgebung, das
+	     ist auch von Land aus zu beobachten. -->
+	{#if !isFromLand($form.sightingFrom)}
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+			<FormField name="shipName" />
 
-		<FormField name="homePort" />
-	</div>
+			<FormField name="homePort" />
+		</div>
 
-	<div class="mt-4 grid grid-cols-1 gap-4">
-		<FormField name="boatType" />
-	</div>
+		<div class="mt-4 grid grid-cols-1 gap-4">
+			<FormField name="boatType" />
+		</div>
+	{/if}
 
 	<div class="mt-4 grid grid-cols-1 gap-4">
 		<FormField name="shipCount" />

@@ -6,6 +6,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { confirmAndClearContactData } from '$lib/report/clearContactData';
 	import { getFormContext } from '$lib/report/formContext';
+	import { isFromLand } from '$lib/report/formConfig';
 	import { loadUserContactData } from '$lib/storage/localStorage';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 
@@ -168,7 +169,16 @@
 
 			<div class="space-y-3">
 				<FormField name="nameConsent" />
-				<FormField name="shipNameConsent" />
+				<!-- Einwilligung zur Veröffentlichung eines Schiffsnamens, den bei
+				     einer Land-Meldung nie jemand erhoben hat (`BoatInfo.svelte`
+				     blendet `shipName` dort aus) — eine Frage ohne
+				     Bezugsgegenstand. `getFormSteps` (formConfig.ts) nimmt
+				     `shipNameConsent` bereits bei Land aus der Validierung;
+				     dieselbe Bedingung (`isFromLand`) hier, sonst bliebe das Feld
+				     sichtbar, aber unvalidiert ausgefüllt. -->
+				{#if !isFromLand($form.sightingFrom)}
+					<FormField name="shipNameConsent" />
+				{/if}
 			</div>
 		</div>
 

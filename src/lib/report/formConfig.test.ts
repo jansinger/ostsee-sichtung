@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type * as yup from 'yup';
+import { SightingFromEnum } from './formOptions/sightingFrom';
 import { formStepsConfig, getFormSteps, sightingSchemaFields } from './formConfig';
 
 /**
@@ -281,5 +282,71 @@ describe('getFormSteps', () => {
 		expect(fieldsOf(getFormSteps({ isDead: 1 }))).not.toContain('behavior');
 		expect(fieldsOf(getFormSteps({ isDead: '1' }))).not.toContain('behavior');
 		expect(fieldsOf(getFormSteps({ isDead: 0 }))).toContain('behavior');
+	});
+});
+
+/**
+ * Task 11: Felder zum eigenen Wasserfahrzeug entfallen, wenn ausdrücklich von
+ * Land gemeldet wird. `sightingFrom` ist `integer default(0) notNull`, und `0`
+ * bedeutet gleichzeitig „noch nicht beantwortet" UND „Sonstiges" (Kajak, SUP,
+ * Seebrücke — 1.893 Zeilen im Bestand) — nur `LAND` ist eine eindeutige Aussage.
+ */
+describe('getFormSteps mit Beobachtungsort', () => {
+	const fieldsOf = (steps: ReturnType<typeof getFormSteps>) => steps.flatMap((s) => s.fields);
+
+	it('blendet die Felder zum eigenen Boot aus, wenn von Land gemeldet wird', () => {
+		const fields = fieldsOf(getFormSteps({ isDead: false, sightingFrom: SightingFromEnum.LAND }));
+		for (const feld of ['boatDrive', 'boatType', 'shipName', 'homePort', 'reaction']) {
+			expect(fields).not.toContain(feld);
+		}
+	});
+
+	it('blendet die Einwilligung zum Schiffsnamen mit aus', () => {
+		// Sonst fragt Schritt 4 nach der Freigabe für einen Schiffsnamen, den
+		// nie jemand erhoben hat.
+		const fields = fieldsOf(getFormSteps({ isDead: false, sightingFrom: SightingFromEnum.LAND }));
+		expect(fields).not.toContain('shipNameConsent');
+	});
+
+	it('lässt Anzahl anderer Schiffe und Entfernung auch bei Land stehen', () => {
+		// `shipCount` fragt nach ANDEREN Schiffen — Störungskontext, von Land
+		// aus genauso beobachtbar. `distance` ist auch vom Strand sinnvoll.
+		const fields = fieldsOf(getFormSteps({ isDead: false, sightingFrom: SightingFromEnum.LAND }));
+		expect(fields).toContain('shipCount');
+		expect(fields).toContain('distance');
+	});
+
+	it('zeigt die Bootsfelder bei „Sonstiges" — und vor der Beantwortung', () => {
+		// `sightingFrom` ist `default(0)`, und 0 heißt gleichzeitig „noch nicht
+		// beantwortet" UND „Sonstiges" (Kajak, SUP, Seebrücke — 1.893 Zeilen im
+		// Bestand). Nur LAND ist eine eindeutige Aussage.
+		for (const von of [SightingFromEnum.OTHER, undefined, null]) {
+			const fields = fieldsOf(getFormSteps({ isDead: false, sightingFrom: von }));
+			expect(fields).toContain('boatDrive');
+			expect(fields).toContain('shipName');
+		}
+	});
+
+	it('verknüpft beide Achsen, statt sie gegeneinander zu setzen', () => {
+		// `reaction` entfällt beim Totfund UND bei Land — eine Bedingung darf
+		// die andere nicht überschreiben.
+		const totUndLand = fieldsOf(
+			getFormSteps({ isDead: true, sightingFrom: SightingFromEnum.LAND })
+		);
+		expect(totUndLand).not.toContain('reaction');
+		expect(totUndLand).not.toContain('behavior');
+		expect(totUndLand).not.toContain('shipName');
+		// und die vier Felder, die bleiben müssen:
+		expect(totUndLand).toEqual(
+			expect.arrayContaining(['shipCount', 'seaState', 'visibility', 'windForce'])
+		);
+	});
+
+	it('behält auch in der knappsten Kombination vier nicht-leere Schritte', () => {
+		const steps = getFormSteps({ isDead: true, sightingFrom: SightingFromEnum.LAND });
+		expect(steps).toHaveLength(4);
+		for (const step of steps) {
+			expect(step.fields.length).toBeGreaterThan(0);
+		}
 	});
 });

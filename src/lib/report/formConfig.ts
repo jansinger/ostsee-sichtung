@@ -4,6 +4,7 @@
  */
 
 import { sightingSchema } from '$lib/form/validation/sightingSchema';
+import { SightingFromEnum } from './formOptions/sightingFrom';
 import type { FormStep, SightingFormData } from './types';
 
 export const sightingSchemaDescription = sightingSchema.describe();
@@ -159,7 +160,13 @@ export const formStepsConfig: FormStep[] = [
  */
 export type FormStepsInput = {
 	isDead?: boolean | number | string | null;
-	sightingFrom?: number | string | null;
+	// `| undefined` steht explizit dabei (nicht nur implizit über `?:`): Das
+	// Projekt fährt `exactOptionalPropertyTypes: true` — ohne den expliziten
+	// Zusatz lässt sich `undefined` einem Objektliteral nicht als Wert
+	// zuweisen, nur weglassen. `getFormSteps({ sightingFrom: undefined })`
+	// kommt so aber tatsächlich vor (Admin-Maske vor dem Laden eines
+	// Datensatzes) und muss zuweisbar bleiben.
+	sightingFrom?: number | string | null | undefined;
 };
 
 /**
@@ -208,10 +215,56 @@ export function isDeadFinding(value: unknown): boolean {
  */
 const HIDDEN_WHEN_DEAD = ['behavior', 'behaviorText', 'reaction'] as const;
 
+/**
+ * Felder, die das EIGENE Wasserfahrzeug betreffen. Sie entfallen, wenn von Land
+ * gemeldet wurde.
+ *
+ * `shipNameConsent` steht bewusst mit in der Liste: Eine Einwilligung zur
+ * Veröffentlichung des Schiffsnamens ohne erhobenen Schiffsnamen ist eine Frage
+ * ohne Bezugsgegenstand.
+ *
+ * NICHT enthalten: `shipCount` („Anzahl ANDERER Schiffe in näherer Umgebung" —
+ * Störungskontext, von Land aus genauso beobachtbar) und `distance`
+ * („Entfernung zum Tier" — auch vom Strand aus sinnvoll).
+ *
+ * Dieselbe „halbe Miete"-Warnung wie bei `HIDDEN_WHEN_DEAD` gilt hier genauso:
+ * Eintrag hier UND eine Bedingung an der Aufrufstelle im Markup, beide über
+ * `isFromLand` — nie eine zweite, eigene Regel daneben. Markup-Seite:
+ * `sections/BoatInfo.svelte` (`shipName`, `homePort`, `boatType`),
+ * `sections/Behavior.svelte` (`reaction`) und `steps/Step4Contact.svelte`
+ * (`shipNameConsent`). `boatDrive` braucht dort KEINE eigene Bedingung —
+ * `sections/SightingDetails.svelte` zeigt es ohnehin nur bei Segelschiff/
+ * Motorboot (`isBoatSightingFrom`), eine Teilmenge von „nicht Land".
+ */
+const HIDDEN_WHEN_FROM_LAND = [
+	'boatDrive',
+	'boatType',
+	'shipName',
+	'homePort',
+	'shipNameConsent',
+	'reaction'
+] as const;
+
+/**
+ * Nur ein ausdrückliches „Land" blendet aus.
+ *
+ * `sightingFrom` ist `integer default(0) notNull`, und `0` bedeutet
+ * GLEICHZEITIG „noch nicht beantwortet" und „Sonstiges" (Kajak, SUP, Seebrücke).
+ * Eine Regel „zeige nur bei Segelschiff/Motorboot/Fähre" würde die Felder
+ * deshalb vor der Beantwortung ausblenden und für alle Sonstiges-Melder
+ * dauerhaft.
+ */
+export function isFromLand(value: FormStepsInput['sightingFrom']): boolean {
+	return Number(value) === SightingFromEnum.LAND;
+}
+
 export function getFormSteps(data: FormStepsInput): FormStep[] {
 	const hidden = new Set<string>();
 	if (isDeadFinding(data.isDead)) {
 		HIDDEN_WHEN_DEAD.forEach((field) => hidden.add(field));
+	}
+	if (isFromLand(data.sightingFrom)) {
+		HIDDEN_WHEN_FROM_LAND.forEach((field) => hidden.add(field));
 	}
 
 	if (hidden.size === 0) {

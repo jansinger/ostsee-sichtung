@@ -72,6 +72,15 @@
 			</div>
 		{/if}
 	</div>
+	<!-- `boatDrive` braucht KEINE eigene isFromLand-Bedingung für Task 11
+	     („Bootsfelder entfallen bei Land"): `showsBoatDrive` zeigt den Block
+	     ohnehin nur bei Segelschiff/Motorboot — das schließt Land (und auch
+	     Fähre/Sonstiges) bereits ein, in beiden Zweigen (Admin wie Meldeformular),
+	     weil `{#if showsBoatDrive}` außen um beide `{#if adminMode}`-Zweige
+	     steht. `getFormSteps` (formConfig.ts, `HIDDEN_WHEN_FROM_LAND`) nimmt
+	     `boatDrive` aus demselben Grund aus der Validierung — beide Seiten
+	     bleiben damit konsistent, ohne eine zweite Regel neben
+	     `isBoatSightingFrom` einzuführen. -->
 	{#if showsBoatDrive}
 		<div class="mt-2 grid grid-cols-1 gap-4 md:grid-cols-1" transition:slide>
 			{#if adminMode}
