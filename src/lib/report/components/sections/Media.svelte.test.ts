@@ -105,7 +105,7 @@ describe('Media — Einleitungstext nach der Fassung des Museums', () => {
 	it('verweist auf die Kontaktdaten, wo die Veröffentlichung entschieden wird', () => {
 		renderMedia();
 
-		expect(document.body.textContent).toMatch(/fragen wir bei Ihren Kontaktdaten/i);
+		expect(document.body.textContent).toMatch(/fragen wir Sie im Schritt Kontaktdaten/i);
 	});
 
 	/**
@@ -116,7 +116,7 @@ describe('Media — Einleitungstext nach der Fassung des Museums', () => {
 	it('zeigt den Verweis auf die Kontaktdaten nicht im Admin-Formular', () => {
 		renderMedia({ adminMode: true });
 
-		expect(document.body.textContent).not.toMatch(/fragen wir bei Ihren Kontaktdaten/i);
+		expect(document.body.textContent).not.toMatch(/fragen wir Sie im Schritt Kontaktdaten/i);
 	});
 
 	/**

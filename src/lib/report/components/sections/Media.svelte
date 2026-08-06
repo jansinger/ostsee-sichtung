@@ -85,8 +85,9 @@
 	     Begründung in `formConfig.ts`). Nur in der Admin-Maske
 	     (`AdminSightingEditForm.svelte` rendert `<Media adminMode={true} />`)
 	     bleibt das Feld hier stehen — sie bindet `Step4Contact.svelte` nicht
-	     ein —, dort gesperrt (`disabled={adminMode}`) mit eigener Erklärung,
-	     dass nur die meldende Person diese Einwilligung erteilen kann.
+	     ein —, dort gesperrt (`disabled`, dieser ganze Block steht bereits
+	     hinter `{#if adminMode}`) mit eigener Erklärung, dass nur die
+	     meldende Person diese Einwilligung erteilen kann.
 
 	     „Aufnahmen" statt „Fotos und Videos": Welche Formate tatsächlich
 	     angenommen werden, hängt an der Laufzeit-Konfiguration und steht in der
@@ -96,7 +97,7 @@
 	{#if !adminMode}
 		<p class="text-base-content/70 mb-4 text-sm">
 			Sie können Aufnahmen zu Ihrer Meldung hochladen. Ob wir sie zusätzlich für Veröffentlichungen
-			nutzen dürfen, fragen wir bei Ihren Kontaktdaten.
+			nutzen dürfen, fragen wir Sie im Schritt Kontaktdaten.
 		</p>
 	{/if}
 	<div class="text-base-content/70 mb-4 text-sm">
@@ -141,8 +142,17 @@
 			bindet die Komponente nicht ein, deshalb bleibt das Feld an dieser
 			Stelle stehen — gesperrt, weil ein Admin die Einwilligung weder
 			stellvertretend erteilen noch nachweisen kann.
+
+			`disabled` statt `disabled={adminMode}`: Dieser ganze Block steht
+			bereits hinter `{#if adminMode}`, die Bedingung war also konstant
+			wahr. Kein Fall für `aria-disabled` (Projektregel für gesperrte
+			SCHALTFLÄCHEN, die eine laufende Aktion blockieren) — dieses Feld ist
+			dauerhaft und unabhängig von jeder Aktion gesperrt, weil ein Admin die
+			Einwilligung grundsätzlich nicht stellvertretend abgeben kann; die
+			Feld-Pipeline (`FieldRenderer`) kennt für Formularfelder ohnehin nur
+			ein natives `disabled`, kein `aria-disabled`.
 		-->
-		<FormField name="mediaConsent" disabled={adminMode} />
+		<FormField name="mediaConsent" disabled />
 		<!--
 			Bewusst ohne `aria-describedby`: Ein `disabled` Control ist nicht
 			fokussierbar, eine Beschreibung daran würde im Formularmodus nie

@@ -156,11 +156,14 @@
 			Datenschutz und Einverständnis
 		</h3>
 
-		<!-- Optional Consents für Namensnennung -->
+		<!-- Optionale Einwilligungen: Namensnennung (eigener Name, Schiffsname)
+		     und Veröffentlichung von Aufnahmen. Die Überschrift muss alle drei
+		     Felder darunter tragen — `mediaConsent` ist keine Namensnennung, hier
+		     stand bis zum Review von Task 14 (2026-08-06) noch „…Ihres Namens". -->
 		<div class="mt-6 space-y-4">
 			<h4 class="flex items-center gap-2 text-base font-semibold">
 				<Icon icon="lucide:pen-line" width="16" class="text-primary" />
-				Optionale Veröffentlichung Ihres Namens
+				Optionale Veröffentlichung von Namen und Aufnahmen
 			</h4>
 			<p class="text-base-content/70 mb-4 text-sm">
 				Diese Einverständniserklärungen sind <strong>optional</strong>. Ihre Meldung wird auch ohne

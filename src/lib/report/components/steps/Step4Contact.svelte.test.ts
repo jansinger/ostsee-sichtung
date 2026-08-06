@@ -70,3 +70,47 @@ describe('Step4Contact — Medien-Einwilligung bei den übrigen Einwilligungen (
 		expect(input?.disabled).toBe(false);
 	});
 });
+
+/**
+ * Review-Befund 1 (Task 14, 2026-08-06): Die Gruppen-Überschrift blieb beim
+ * Umzug auf „Optionale Veröffentlichung Ihres Namens" stehen. Darunter steht
+ * seither aber auch `mediaConsent` — die Veröffentlichung von AUFNAHMEN ist
+ * keine Namensnennung. Wer per Überschrift navigiert (Screenreader) oder die
+ * Seite überfliegt, bekommt für die Medien-Einwilligung den falschen Rahmen.
+ */
+describe('Step4Contact — Gruppen-Überschrift deckt alle Einwilligungen ab (Review-Befund 1)', () => {
+	function consentGroupHeading(): string | null {
+		const mediaField = field('mediaConsent');
+		const group = mediaField?.closest('.space-y-4');
+		return group?.querySelector('h4')?.textContent ?? null;
+	}
+
+	it('nennt in der Überschrift auch die Veröffentlichung von Aufnahmen, nicht nur des Namens', () => {
+		renderStep4();
+
+		expect(consentGroupHeading()).toMatch(/Aufnahmen/i);
+	});
+});
+
+/**
+ * Review-Befund 4 (Task 14, 2026-08-06): Die bisherigen Tests prüften nur
+ * Existenz und Bedienbarkeit von `mediaConsent`, nicht seine Position. Ein
+ * Feld, das versehentlich am Kopf des Schritts oder außerhalb der
+ * Einwilligungsgruppe landete, wäre damit unbemerkt geblieben. Diese
+ * Feststellung prüft, dass `mediaConsent` in derselben Gruppe steht wie die
+ * übrigen Nachweis-Einwilligungen — unter derselben Überschrift, nicht
+ * irgendwo sonst im Schritt (z. B. bei „Zusätzliche Informationen" oder bei
+ * der „Dauerhafte Speicherung"-Gruppe, die ebenfalls `.space-y-4` trägt).
+ */
+describe('Step4Contact — mediaConsent steht in der Einwilligungsgruppe, nicht irgendwo im Schritt (Review-Befund 4)', () => {
+	it('teilt sich mit nameConsent dieselbe Einwilligungsgruppe unter der Überschrift', () => {
+		renderStep4();
+
+		const mediaGroup = field('mediaConsent')?.closest('.space-y-4');
+		const nameGroup = field('nameConsent')?.closest('.space-y-4');
+
+		expect(mediaGroup).not.toBeNull();
+		expect(mediaGroup?.querySelector('h4')).not.toBeNull();
+		expect(mediaGroup).toBe(nameGroup);
+	});
+});
