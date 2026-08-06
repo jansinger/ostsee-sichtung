@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { formStepsConfig } from './formConfig';
-import { fieldsOutsideReportKind } from './fieldsOutsideReportKind';
+import { fieldsOutsideReportKind, reportKindClearedNotice } from './fieldsOutsideReportKind';
 
 /**
  * Task 8, korrigierte Fassung: Es gibt keinen „vorherigen Zweig" mehr, gegen
@@ -78,5 +78,43 @@ describe('fieldsOutsideReportKind', () => {
 
 	it('ist rein — zweimaliger Aufruf mit demselben Zweig liefert dieselbe Liste', () => {
 		expect(fieldsOutsideReportKind('alive')).toEqual(fieldsOutsideReportKind('alive'));
+	});
+});
+
+/**
+ * UX-Review (2026-08-06, Punkt 3): Der Zweigwechsel über „Ändern" räumt die
+ * Felder des verlassenen Zweigs aus dem Formular-Zustand — bis dahin still.
+ * Wer auf Schritt 2 „Zustand des Tieres" und „Größe" ausgefüllt hatte und
+ * zurück auf „lebendes Tier" wechselt, findet sie danach kommentarlos nicht
+ * mehr vor und kann nicht wissen, ob auch Position, Datum und Fotos betroffen
+ * sind. Genau diese Sorge beantwortet der zweite Halbsatz.
+ *
+ * Die Meldung hängt an dem Zweig, in dem das Formular JETZT steht — sie sagt,
+ * was WEG ist, nicht was bleibt: Im Lebend-Zweig sind das die Totfund-Angaben,
+ * im Totfund-Zweig die Verhaltensangaben. Dieselbe Blickrichtung wie
+ * `fieldsOutsideReportKind` oben.
+ */
+describe('reportKindClearedNotice', () => {
+	it('nennt im Lebend-Zweig die entfernten Totfund-Angaben', () => {
+		expect(reportKindClearedNotice('alive', 2)).toBe(
+			'Ihre Angaben zum Totfund wurden entfernt, alles Übrige bleibt erhalten.'
+		);
+	});
+
+	it('nennt im Totfund-Zweig die entfernten Verhaltensangaben', () => {
+		expect(reportKindClearedNotice('dead', 1)).toBe(
+			'Ihre Angaben zum Verhalten der Tiere wurden entfernt, alles Übrige bleibt erhalten.'
+		);
+	});
+
+	/**
+	 * Der wichtigste Fall: Ohne diese Bedingung meldete JEDER Start des
+	 * Formulars eine Entfernung — auch der allererste, bei dem es nichts zu
+	 * entfernen gab, und der Wechsel zurück in denselben Zweig. Eine Meldung
+	 * über eine Änderung, die nicht stattgefunden hat, ist schlimmer als keine.
+	 */
+	it('schweigt, wenn tatsächlich nichts entfernt wurde', () => {
+		expect(reportKindClearedNotice('alive', 0)).toBeNull();
+		expect(reportKindClearedNotice('dead', 0)).toBeNull();
 	});
 });

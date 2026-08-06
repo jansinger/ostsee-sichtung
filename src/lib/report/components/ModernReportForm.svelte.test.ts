@@ -44,6 +44,7 @@ vi.mock('$lib/form/submitSightingForm', () => ({
 import { initialFormState } from '$lib/report/formConfig';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import { loadFromStorage, saveToStorage, STORAGE_KEYS } from '$lib/storage/localStorage';
+import { clearAllToasts, toasts } from '$lib/stores/toastState.svelte';
 import type { UploadedFileInfo } from '$lib/types';
 import ModernReportForm from './ModernReportForm.svelte';
 
@@ -379,6 +380,93 @@ describe('ModernReportForm — zweigfremde Felder werden beim Start geleert', ()
 		const data = persistedFormData();
 		expect(data.mediaConsent).toBe(true);
 		expect(data.uploadedFiles).toEqual([UPLOAD]);
+	});
+});
+
+/**
+ * UX-Review (2026-08-06, Punkt 3): Der Aufräum-Block oben räumte still. Wer
+ * über „Ändern" den Zweig wechselt, sieht seine Totfund- bzw. Verhaltensangaben
+ * Schritte später kommentarlos fehlen — und kann nicht wissen, ob Position,
+ * Datum und Fotos ebenfalls betroffen sind. Der Wortlaut selbst steht in
+ * `reportKindClearedNotice` (`fieldsOutsideReportKind.ts`) und ist dort in Node
+ * getestet; hier geht es um die Strecke: Räumt der Block wirklich etwas, kommt
+ * die Meldung — und schweigt sie sonst.
+ */
+describe('ModernReportForm — der Zweigwechsel meldet, was er geräumt hat (UX-Review Punkt 3)', () => {
+	beforeEach(() => {
+		clearAllToasts();
+	});
+
+	function toastMessages(): string[] {
+		return toasts.map((entry) => entry.message);
+	}
+
+	it('meldet die entfernten Totfund-Angaben nach dem Wechsel in den Lebend-Zweig', async () => {
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-wechsel-lebend',
+				deadCondition: 2,
+				deadSize: 150,
+				species: 7
+			})
+		);
+
+		render(ModernReportForm, { initialIsDead: false });
+
+		await vi.waitFor(() => {
+			expect(toastMessages()).toContain(
+				'Ihre Angaben zum Totfund wurden entfernt, alles Übrige bleibt erhalten.'
+			);
+		});
+	});
+
+	it('meldet die entfernten Verhaltensangaben nach dem Wechsel in den Totfund-Zweig', async () => {
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-wechsel-totfund',
+				behavior: 3,
+				reaction: 'neugierig genähert',
+				species: 7
+			})
+		);
+
+		render(ModernReportForm, { initialIsDead: true });
+
+		await vi.waitFor(() => {
+			expect(toastMessages()).toContain(
+				'Ihre Angaben zum Verhalten der Tiere wurden entfernt, alles Übrige bleibt erhalten.'
+			);
+		});
+	});
+
+	/**
+	 * Der häufigste Fall — und der, an dem eine unbedingte Meldung peinlich
+	 * würde: Wer auf „Ändern" tippt und denselben Zweig erneut wählt, hat nichts
+	 * verloren und darf das auch nicht erzählt bekommen.
+	 */
+	it('schweigt, wenn im verlassenen Zweig gar nichts ausgefüllt war', async () => {
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-wechsel-leer',
+				species: 7
+			})
+		);
+
+		render(ModernReportForm, { initialIsDead: false });
+
+		// Auf den Wiederherstellungs-Hinweis warten: Er läuft über dasselbe
+		// `queueMicrotask` und ist damit der Beleg, dass die Meldung, auf die es
+		// hier ankommt, ebenfalls schon gefallen WÄRE.
+		await vi.waitFor(() => {
+			expect(toastMessages()).toContain('Ihre vorherigen Eingaben wurden wiederhergestellt.');
+		});
+		expect(toastMessages().some((message) => message.includes('wurden entfernt'))).toBe(false);
 	});
 });
 
