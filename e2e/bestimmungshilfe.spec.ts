@@ -111,10 +111,16 @@ test.describe('Bestimmungshilfe', () => {
 	 * und nur kurz auf der Bestimmungshilfe nachschaut, darf beim Rückweg nicht
 	 * noch einmal auf der Auswahl landen — sonst verlöre er seinen Fortschritt
 	 * für eine Frage, die schon beantwortet ist.
+	 *
+	 * `sessionStorage`, nicht `localStorage`: Seit dem Abschlussreview (B3) liegt
+	 * `REPORT_KIND` im `sessionStorage`, mit derselben Lebensdauer wie die übrigen
+	 * Formulardaten (`src/lib/storage/localStorage.ts`, `sessionKeys`). Ein
+	 * `addInitScript`, das `localStorage` schreibt, träfe damit keinen Ort mehr,
+	 * den die App liest — dieselbe Auswahl wie unten in `resolveReportKind`.
 	 */
 	test('mit bereits gewähltem Zweig führt der Rückweg direkt ins Formular', async ({ page }) => {
 		await page.addInitScript(() => {
-			localStorage.setItem('sichtungen_report_kind', JSON.stringify('alive'));
+			sessionStorage.setItem('sichtungen_report_kind', JSON.stringify('alive'));
 		});
 		await page.goto('/bestimmungshilfe');
 

@@ -66,6 +66,15 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		});
 	});
 
+	/**
+	 * Abschlussreview B1/B3 (2026-08-06): „Formular zurücksetzen" räumt seither
+	 * nicht nur die Formulardaten weg, sondern auch den Zweig (`reportKind`) —
+	 * danach erscheint die Einstiegsseite ("Was möchten Sie melden?"), nicht
+	 * mehr Schritt 1 direkt (Spec §6.2). Die Zusage „löscht alle gespeicherten
+	 * Daten" gilt weiterhin für den Speicher selbst; sie wird hier getrennt von
+	 * der Anzeige geprüft, damit ein zukünftiger Regressions-Fund an der
+	 * richtigen Stelle rot wird — Speicher oder Darstellung.
+	 */
 	test('Formular zurücksetzen löscht alle gespeicherten Daten', async ({ page }) => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
@@ -88,17 +97,36 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		page.once('dialog', (dialog) => dialog.accept());
 		await resetBtn.click();
 
-		// After reset, should be back on Step 1
-		await expectCurrentStep(page, /Position & Zeitpunkt/i);
+		// B1: nach dem Reset erscheint die Einstiegsseite, nicht mehr Schritt 1 —
+		// der Zweig ist Teil dessen, was "zurückgesetzt" bedeutet.
+		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
 
-		// Date should be reset (either empty or today's default)
-		// Reload to verify storage was cleared
+		// Der eigentliche Speicher-Beleg für "alle gespeicherten Daten": Der Zweig ist
+		// aus dem sessionStorage verschwunden. `sichtungen_form_data` selbst bleibt
+		// gesetzt — der `$effect`, der `$form` nach `FORM_DATA` spiegelt (siehe
+		// `ModernReportForm.svelte`), schreibt direkt nach `updateInitialValues(...)`
+		// die frischen Default-Werte zurück; das ist gewollt (Auto-Save) und keine
+		// Lücke im Reset. Entscheidend ist, dass der eingegebene Wert nicht mehr
+		// darin steht.
+		const formData = await page.evaluate(() => sessionStorage.getItem('sichtungen_form_data'));
+		const reportKind = await page.evaluate(() => sessionStorage.getItem('sichtungen_report_kind'));
+		expect(formData ?? '').not.toContain('Kieler Bucht');
+		expect(reportKind).toBeNull();
+
+		// Reload zur Gegenprobe gegen den Migrationspfad (`resolveReportKind`s dritte
+		// Quelle): Auch nach einem Reload bleibt die Einstiegsseite stehen, kein
+		// Restore-Toast erscheint, und kein Formular-Schritt springt aus dem Storage
+		// zurück.
 		await page.reload();
 		await page.waitForLoadState('networkidle');
-		await page.locator('[aria-current="step"]:visible').waitFor({ state: 'visible' });
-
-		// Should start fresh on Step 1 with no restore toast
-		await expectCurrentStep(page, /Position & Zeitpunkt/i);
+		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
 		await expect(page.getByText(/vorherigen Eingaben.*wiederhergestellt/i)).not.toBeVisible();
+
+		// Erneute Wahl darf nicht die vor dem Reset eingegebenen Werte zurückholen —
+		// sonst wäre "alle gespeicherten Daten" nur für den Zweig eingelöst.
+		await page.getByRole('radio', { name: /lebenden Tieres/i }).check();
+		await page.getByTestId('report-kind-submit').click();
+		await expectCurrentStep(page, /Position & Zeitpunkt/i);
+		await expect(page.locator('[data-testid="field-waterway"]')).toHaveValue('');
 	});
 });
