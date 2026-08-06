@@ -60,6 +60,18 @@
 		)
 	);
 
+	/**
+	 * B7 (Abschlussreview): Steuert, ob `ReportKindChoice` beim nächsten Mount
+	 * ihre Legend fokussiert. `false` bleibt es genau einmal — für den
+	 * allerersten Aufruf dieser Seite, an dem die Auswahlseite kein „Wechsel"
+	 * ist, sondern der normale Seiteneinstieg. Sobald einmal eine
+	 * Formularansicht sichtbar war und der Melder über „Ändern", „Formular
+	 * zurücksetzen" oder Browser-Zurück zur Auswahl zurückkehrt, wird `true`
+	 * gesetzt und bleibt es — jeder weitere Rücksprung bekommt denselben
+	 * Fokus-Sprung.
+	 */
+	let returnedToSelection = $state(false);
+
 	function choose(kind: ReportKind) {
 		reportKind = kind;
 		writeReportKind(kind);
@@ -103,6 +115,11 @@
 	 * nicht kennt.
 	 */
 	function returnToSelection() {
+		// B7: Dieser Rücksprung ist immer ein „Wechsel" — ausgelöst durch
+		// „Ändern" (`changeKind()`) oder „Formular zurücksetzen"
+		// (`resetReportKind()`), nie der allererste Seitenaufruf. `ReportKindChoice`
+		// fokussiert deshalb bei ihrem nächsten Mount ihre Legend.
+		returnedToSelection = true;
 		reportKind = null;
 		clearReportKind();
 		if (browser) {
@@ -124,12 +141,13 @@
 	}
 
 	/**
-	 * Ausgelöst vom „Ändern"-Knopf in `AnimalInfo` (Schritt 2, über
-	 * `ModernReportForm` → `Step2SightingDetails` durchgereicht): zurück zur
-	 * Auswahlseite. `history.back()` wäre hier keine Alternative — wer über den
-	 * Storage direkt im Formular landet, hat keinen History-Eintrag dafür, und
-	 * im meeresmuseum.de-iframe navigierte `back()` die Elternseite weg statt
-	 * nur den Zweig zurückzusetzen.
+	 * Ausgelöst vom „Ändern"-Knopf in `ReportKindFeedback` — seit B6
+	 * (Abschlussreview) an zwei Stellen im Formular verdrahtet (Schritt 1 über
+	 * `Step1LocationTime`, Schritt 2 über `Step2SightingDetails` →
+	 * `AnimalInfo`): zurück zur Auswahlseite. `history.back()` wäre hier keine
+	 * Alternative — wer über den Storage direkt im Formular landet, hat keinen
+	 * History-Eintrag dafür, und im meeresmuseum.de-iframe navigierte `back()`
+	 * die Elternseite weg statt nur den Zweig zurückzusetzen.
 	 */
 	function changeKind() {
 		returnToSelection();
@@ -165,7 +183,17 @@
 
 		function onPopState() {
 			const params = new URLSearchParams(window.location.search);
-			reportKind = resolveReportKind(params.get('meldung'), null, null);
+			const nextReportKind = resolveReportKind(params.get('meldung'), null, null);
+			// B7: Browser-Zurück auf die Auswahl ist derselbe „Wechsel" wie
+			// „Ändern" — nur ausgelöst über die History statt über einen Klick.
+			// Die Bedingung `reportKind !== null` grenzt das gegen den Fall ab, in
+			// dem die Auswahlseite ohnehin schon sichtbar war (z. B. Vorwärts von
+			// einem Zustand zum nächsten, der wieder auf null zeigt) — dort ist
+			// kein Fokus-Sprung nötig, es hat sich nichts sichtbar geändert.
+			if (nextReportKind === null && reportKind !== null) {
+				returnedToSelection = true;
+			}
+			reportKind = nextReportKind;
 		}
 
 		window.addEventListener('popstate', onPopState);
@@ -270,7 +298,7 @@
 	<div class="mb-8">
 		<!-- Form Content -->
 		{#if reportKind === null}
-			<ReportKindChoice onchoose={choose} />
+			<ReportKindChoice onchoose={choose} autofocusHeading={returnedToSelection} />
 		{:else if submissionSuccess && submittedData}
 			<SubmissionSuccess {submittedData} {handleNewReport} />
 		{:else}

@@ -3,12 +3,20 @@
 
 	import { getFormContext } from '$lib/report/formContext';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
+	import ReportKindFeedback from '$lib/report/components/ReportKindFeedback.svelte';
 	import SectionCard from './SectionCard.svelte';
 	import { isDeadFinding } from '$lib/report/formConfig';
 	import { speciesQuestion } from '$lib/report/wording';
 
-	let { adminMode = false, onchangekind }: { adminMode?: boolean; onchangekind?: () => void } =
-		$props();
+	let {
+		adminMode = false,
+		// Default-Noop wie an den übrigen `onchangekind`-Aufrufstellen:
+		// `exactOptionalPropertyTypes` verbietet sonst das Weiterreichen als
+		// `{onchangekind}` an `ReportKindFeedback`, dessen eigener Default
+		// (`= () => {}`) den externen Proptyp auf `() => void` ohne `undefined`
+		// verengt.
+		onchangekind = () => {}
+	}: { adminMode?: boolean; onchangekind?: () => void } = $props();
 
 	const { form } = getFormContext();
 
@@ -49,28 +57,11 @@
 			<FormField name="isDead" />
 		</div>
 	{:else}
-		<!-- isDeadFinding statt eines rohen Booleans: `isDead` kommt beim
-		     Wiederaufsetzen aus dem Storage als String und in der Admin-Maske als
-		     Zahl aus der DB. Ein roher Ternär (`$form.isDead ? … : …`) träfe bei
-		     einem falsy-wirkenden, aber nicht-leeren String wie '0' die falsche
-		     Antwort — die Rückmeldung würde dann vom Totfund-Zweig abweichen, den
-		     der Rest des Formulars tatsächlich fährt. -->
-		<p class="text-base-content/70 text-support mb-4">
-			Sie melden:
-			<strong class="text-base-content">
-				{isDeadFinding($form.isDead)
-					? 'Fund eines toten Tieres'
-					: 'Beobachtung eines lebenden Tieres'}
-			</strong>
-			<button
-				type="button"
-				class="btn btn-outline btn-sm"
-				onclick={onchangekind}
-				aria-label="Art der Meldung ändern"
-			>
-				Ändern
-			</button>
-		</p>
+		<!-- Ausgelagert nach `ReportKindFeedback.svelte` (Abschlussreview B6):
+		     dieselbe Rückmeldung steht seither auch am Kopf von Schritt 1
+		     (`steps/Step1LocationTime.svelte`), damit ein Melder auch dort ohne
+		     Umweg zurück zur Einstiegsseite kommt. -->
+		<ReportKindFeedback {onchangekind} />
 	{/if}
 
 	<!-- Dead Animal Additional Fields — unmittelbar unter dem Schalter, nicht

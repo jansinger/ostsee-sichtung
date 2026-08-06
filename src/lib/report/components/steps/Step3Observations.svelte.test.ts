@@ -88,4 +88,17 @@ describe('Step3Observations — Verhaltens-Karte folgt dem Totfund-Zweig', () =>
 		expect(text).toContain('Umweltbedingungen');
 		expect(text).toContain('Boot-/Schiffsinformationen');
 	});
+
+	/**
+	 * Abschlussreview (nicht blockierend): Der Einleitungssatz warb beim
+	 * Totfund weiterhin mit „Verhaltensinformationen … helfen bei der
+	 * Artbestimmung", obwohl die Karte direkt darunter fehlt — ein Versprechen,
+	 * das der Schritt nicht einlöst. `step3ObservationsIntro` (`wording.ts`)
+	 * hängt den Satz an denselben Zweig wie die Karte selbst.
+	 */
+	it('verspricht Verhaltensinformationen im Kopf nicht mehr, wenn die Karte beim Totfund fehlt', () => {
+		renderWithFormContext(Step3Observations, { overrides: { isDead: true } });
+
+		expect(document.body.textContent).not.toContain('Verhaltensinformationen');
+	});
 });

@@ -237,6 +237,27 @@ describe('ModernReportForm — „Ändern" auf Schritt 2 erreicht die Kette', ()
 });
 
 /**
+ * B6 (Abschlussreview): Auf Schritt 1 fehlte bislang jeder Weg zurück zur
+ * Einstiegsseite — „Zurück" ist dort hart gesperrt, die einzige Korrektur lag
+ * einen Schritt weiter unter der Upload-Karte. Die Rückmeldung aus
+ * `AnimalInfo.svelte` steht jetzt auch am Kopf von Schritt 1
+ * (`ReportKindFeedback.svelte`, über `Step1LocationTime`). Derselbe Hop-Test
+ * wie oben für Schritt 2, nur ohne den `CURRENT_STEP`-Sprung — Schritt 1 ist
+ * der Startzustand.
+ */
+describe('ModernReportForm — „Ändern" auf Schritt 1 erreicht die Kette (B6)', () => {
+	it('reicht onchangekind bis zur Rückmeldung auf Schritt 1 durch', async () => {
+		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(0));
+		const onchangekind = vi.fn();
+		render(ModernReportForm, { onchangekind });
+
+		await page.getByRole('button', { name: /ändern/i }).click();
+
+		expect(onchangekind).toHaveBeenCalledOnce();
+	});
+});
+
+/**
  * Task 8: Zweigfremde Felder leeren.
  *
  * Reiner Funktionstest an `fieldsOutsideReportKind` allein hätte diese Lücke

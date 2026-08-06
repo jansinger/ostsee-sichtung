@@ -72,9 +72,11 @@
 		 */
 		initialIsDead?: boolean;
 		/**
-		 * Reicht den „Ändern"-Knopf aus `AnimalInfo` (Schritt 2, über
-		 * `Step2SightingDetails`) bis zur Aufrufstelle durch — nur `+page.svelte`
-		 * kennt die Einstiegsseite, zu der er zurückführt.
+		 * Reicht den „Ändern"-Knopf aus `ReportKindFeedback` bis zur Aufrufstelle
+		 * durch — nur `+page.svelte` kennt die Einstiegsseite, zu der er
+		 * zurückführt. Seit B6 (Abschlussreview) steht die Rückmeldung an ZWEI
+		 * Stellen: Schritt 1 (`Step1LocationTime`) und Schritt 2 (`AnimalInfo`,
+		 * über `Step2SightingDetails`).
 		 */
 		onchangekind?: () => void;
 		/**
@@ -591,7 +593,7 @@
 			<!-- Step Content -->
 			<div class="min-h-[400px]">
 				{#if currentStep === 0}
-					<Step1LocationTime />
+					<Step1LocationTime {onchangekind} />
 				{:else if currentStep === 1}
 					<Step2SightingDetails {onchangekind} />
 				{:else if currentStep === 2}

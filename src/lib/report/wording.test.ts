@@ -8,7 +8,8 @@ import {
 	outsideBalticNotice,
 	outsideBalticSeverity,
 	positionQuestion,
-	speciesQuestion
+	speciesQuestion,
+	step3ObservationsIntro
 } from './wording';
 
 /**
@@ -133,5 +134,25 @@ describe('Schritt-1-Texte am Zweig', () => {
 		expect(dateSectionTitle(1)).toBe('Funddatum');
 		expect(dateSectionTitle('1')).toBe('Funddatum');
 		expect(dateSectionTitle(undefined)).toBe('Datum und Uhrzeit');
+	});
+});
+
+/**
+ * Abschlussreview (nicht blockierend): `Step3Observations.svelte` versprach im
+ * Totfund-Zweig „Verhaltensinformationen … helfen bei der Artbestimmung" — die
+ * Verhaltenskarte (`Behavior.svelte`) ist dort seit Task 8b aber ausgeblendet
+ * (`isDeadFinding($form.isDead)` in der Komponente). Wie die übrigen
+ * Zweigtexte gehört die Entscheidung hierher, nicht als Ternär in die
+ * Step-Komponente.
+ */
+describe('step3ObservationsIntro', () => {
+	it('wirbt bei einer Sichtung mit Verhalten UND Umweltbedingungen', () => {
+		expect(step3ObservationsIntro(false)).toContain('Verhaltensinformationen');
+		expect(step3ObservationsIntro(false)).toContain('Umweltbedingungen');
+	});
+
+	it('nennt Verhalten beim Totfund nicht mehr — die Karte fehlt dort', () => {
+		expect(step3ObservationsIntro(true)).not.toContain('Verhalten');
+		expect(step3ObservationsIntro(true)).toContain('Umweltbedingungen');
 	});
 });

@@ -96,3 +96,19 @@ export function outsideBalticNotice(isDead: unknown): string {
 export function outsideBalticSeverity(isDead: unknown): 'warning' | 'info' {
 	return isDeadFinding(isDead) ? 'info' : 'warning';
 }
+
+/**
+ * Zweiter Satz der Einleitung auf Schritt 3 („Weitere Informationen").
+ *
+ * Der Satz warb bislang unbedingt mit „Verhaltensinformationen … helfen bei
+ * der Artbestimmung" — die Verhaltens-Karte (`Behavior.svelte`) ist beim
+ * Totfund aber ausgeblendet (`Step3Observations.svelte`, `isDeadFinding`).
+ * Ein totes Tier zeigt kein Verhalten mehr; der Kopf darf deshalb nichts
+ * versprechen, das die Karte darunter nicht einlöst (Abschlussreview,
+ * nicht blockierend).
+ */
+export function step3ObservationsIntro(isDead: unknown): string {
+	return isDeadFinding(isDead)
+		? 'Umweltbedingungen helfen beim Verständnis der Fundumstände.'
+		: 'Verhaltensinformationen und Umweltbedingungen helfen bei der Artbestimmung und dem Verständnis der Meeressäuger.';
+}

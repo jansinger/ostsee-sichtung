@@ -36,3 +36,25 @@ describe('PositionAndTime — Kartentitel der Datumskarte am Zweig (Bürgerformu
 			.toBeVisible();
 	});
 });
+
+/**
+ * Abschlussreview (nicht blockierend): Die Einleitung der Datumskarte nutzte
+ * `text-sm` (14px) statt der Rollen-Utility `text-support` (13px) —
+ * `design-system.md` nennt genau dieses Muster als zu vermeiden: dieselbe
+ * semantische Ebene (Sekundärtext) darf nicht in zwei Größen auftauchen.
+ */
+describe('PositionAndTime — Einleitungszeile nutzt die Rollen-Utility', () => {
+	it('setzt die Totfund-Einleitung auf text-support statt text-sm', () => {
+		renderPositionAndTime({ isDead: true });
+
+		// Gezielt über den Text statt über die Klasse gesucht: `PositionPanel`
+		// (vor der Datumskarte im DOM) trägt selbst mehrere `<p class="text-base-content/70 …">`
+		// — ein Klassenselektor träfe dort das erste, falsche Element.
+		const intro = Array.from(document.querySelectorAll('p')).find((el) =>
+			el.textContent?.includes('An welchem Tag war der Fund?')
+		);
+		expect(intro).toBeDefined();
+		expect(intro?.classList.contains('text-support')).toBe(true);
+		expect(intro?.classList.contains('text-sm')).toBe(false);
+	});
+});

@@ -105,6 +105,51 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 	});
 
 	/**
+	 * B6 (Abschlussreview, wichtig): Bis dahin gab es auf Schritt 1 keinen Weg
+	 * zurück zur Auswahl — „Zurück" ist dort hart gesperrt, und die einzige
+	 * Korrektur lag einen Schritt weiter, unterhalb der Upload-Karte. Genau auf
+	 * Schritt 1 merkt ein Melder aber am ehesten, dass er falsch abgebogen ist
+	 * („Funddatum" statt „Datum und Uhrzeit"). Die Rückmeldung steht seither
+	 * auch am Kopf von Schritt 1.
+	 */
+	test('„Ändern" auf Schritt 1 führt zurück auf die Auswahlseite (B6)', async ({ page }) => {
+		await page.goto('/');
+		await page.waitForLoadState('networkidle');
+		await page.getByRole('radio', { name: /toten Tieres/i }).check();
+		await page.getByTestId('report-kind-submit').click();
+		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
+
+		// Schon auf Schritt 1 sichtbar, ohne dass ein Feld ausgefüllt werden muss.
+		await expect(page.getByRole('heading', { name: 'Funddatum' })).toBeVisible();
+		await expect(page.getByText(/Fund eines toten Tieres/i)).toBeVisible();
+
+		await page.getByRole('button', { name: /ändern/i }).click();
+
+		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
+	});
+
+	/**
+	 * B7 (Abschlussreview, wichtig): „Ändern" tauschte den ganzen Formularbaum
+	 * gegen die Auswahlseite aus, ohne den Fokus mitzunehmen — er fiel auf
+	 * `<body>`, angesagt wurde nichts. `ReportKindChoice` fokussiert seither
+	 * beim Rücksprung ihre Legend, dieselbe Mechanik wie beim Schrittwechsel im
+	 * Formular (`scrollAndFocusStep`).
+	 */
+	test('„Ändern" setzt den Fokus auf die Auswahlfrage (B7)', async ({ page }) => {
+		await page.goto('/');
+		await page.waitForLoadState('networkidle');
+		await page.getByRole('radio', { name: /lebenden Tieres/i }).check();
+		await page.getByTestId('report-kind-submit').click();
+		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
+
+		await page.getByRole('button', { name: /ändern/i }).click();
+
+		const legend = page.locator('#report-kind-legend');
+		await expect(legend).toBeVisible();
+		await expect(legend).toBeFocused();
+	});
+
+	/**
 	 * Review-Befund 1 (Task 7): `resolveReportKind` hat eine DRITTE Quelle
 	 * neben Query-Parameter und gespeichertem Zweig — `isDead` aus den
 	 * persistierten Formulardaten. `ModernReportForm` schreibt `isDead` bereits

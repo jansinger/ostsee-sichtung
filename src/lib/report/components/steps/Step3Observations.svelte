@@ -10,12 +10,19 @@
 	import { getFormContext } from '$lib/report/formContext';
 	import { isDeadFinding } from '$lib/report/formConfig';
 	import { scrollToElement } from '$lib/utils/fieldNavigation';
+	import { step3ObservationsIntro } from '$lib/report/wording';
 
 	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('report:Step3Observations');
 	const formContext = getFormContext();
 	const { form, isSubmitting } = formContext;
+
+	// Abschlussreview (nicht blockierend): Der zweite Satz nannte beim Totfund
+	// weiterhin „Verhaltensinformationen", obwohl die Karte darunter für diesen
+	// Zweig ausgeblendet ist (`isDeadFinding`-Bedingung an `<Behavior>` unten) —
+	// die Entscheidung steht wie die übrigen Zweigtexte in `wording.ts`.
+	const introSecondSentence = $derived(step3ObservationsIntro($form.isDead));
 
 	// Props für currentStep - wird vom Parent (ModernReportForm) übergeben
 	let { currentStep = $bindable(2) }: { currentStep?: number } = $props();
@@ -56,8 +63,7 @@
 		     sonst etwas, das einen Schritt weiter vorne liegt, und das ausgerechnet
 		     direkt über dem „Schritt überspringen"-Knopf. -->
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
-			Diese Details sind <strong>optional, aber extrem wertvoll</strong> für die Forschung! Verhaltensinformationen
-			und Umweltbedingungen helfen bei der Artbestimmung und dem Verständnis der Meeressäuger.
+			Diese Details sind <strong>optional, aber extrem wertvoll</strong> für die Forschung! {introSecondSentence}
 		</p>
 
 		<!-- Skip Button prominent oben platziert -->
