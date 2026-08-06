@@ -84,8 +84,10 @@ export const formStepsConfig: FormStep[] = [
 			// benutzte — obwohl Aufnahmen die wertvollste Einzelangabe der Meldung
 			// sind. Schritt 2 ist Pflichtschritt.
 			//
-			// Die Reihenfolge in dieser Liste ist nicht kosmetisch: `findStepForErrors`
-			// läuft sie ab, um zum ersten fehlerhaften Feld zu springen.
+			// Die Reihenfolge in dieser Liste ist nicht kosmetisch: `scrollToFirstError`
+			// läuft sie ab, um zum ersten fehlerhaften Feld zu springen. (Nicht
+			// `findStepForErrors` — das liest nur die Zugehörigkeit zum Schritt,
+			// siehe die Feldliste von `observations` weiter unten.)
 			'mediaFile',
 			'mediaUpload',
 			// `mediaConsent` steht hier bewusst NICHT mehr: Es steht seit dem

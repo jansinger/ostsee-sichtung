@@ -215,7 +215,9 @@ describe('formStepsConfig — Medien-Upload auf Schritt 2', () => {
 	// gesehen hat, soll das Bild hochladen können, statt zu raten. Die
 	// Reihenfolge im Markup prüft `Step2SightingDetails.svelte.test.ts`; hier
 	// zählt, dass die Config dieselbe Geschichte erzählt — sie bestimmt die
-	// Reihenfolge, in der `findStepForErrors` Felder abläuft.
+	// Reihenfolge, in der `scrollToFirstError` Felder abläuft. (Nicht
+	// `findStepForErrors` — das liest nur die Zugehörigkeit zum Schritt, wie
+	// im Block „Umweltfelder in Render-Reihenfolge" unten ausgeführt.)
 	it('listet die Medien-Dateifelder vor species', () => {
 		const fields = sightingDetailsStep?.fields ?? [];
 		const mediaIndex = fields.indexOf('mediaFile');
