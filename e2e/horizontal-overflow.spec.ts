@@ -116,6 +116,43 @@ test.describe('Layout — horizontaler Überlauf', () => {
 	}
 
 	/**
+	 * Verhaltens-Karte im Lebend-Zweig — eigens nachgezogen.
+	 *
+	 * Der parametrisierte Durchlauf oben fährt seit `cc87ea3e` (Totfund über den
+	 * Einstiegs-Zweig statt über den entfallenen Schalter auf Schritt 2)
+	 * vollständig im Totfund-Zweig — `Step3Observations.svelte` blendet dort
+	 * `Behavior.svelte` aus (Task 8b, `isDeadFinding`). Vorher lief derselbe
+	 * Durchlauf für Schritt 3/4 zurück im Lebend-Zustand; die Karte wurde also
+	 * bei jeder der acht Breiten mitgeprüft. Ohne diesen Test bliebe sie bei
+	 * keiner Breite mehr abgedeckt. Eine Stichprobe genügt: Die Karte hat kein
+	 * eigenes breitenabhängiges Layout (nur `FormField`-Standardfelder), das
+	 * eine zweite Breite rechtfertigen würde — 320px ist die engste und damit
+	 * die aussagekräftigste.
+	 */
+	test('kein Überlauf auf 320px — Verhaltens-Karte im Lebend-Zweig, Schritt 3', async ({
+		page
+	}) => {
+		await page.setViewportSize({ width: 320, height: 900 });
+		const formPage = new FormPage(page);
+		await formPage.goto('lebend');
+
+		await fillStep1(formPage);
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Angaben zum Tier/i);
+
+		await fillStep2(formPage);
+		await formPage.clickNext();
+		await expectCurrentStep(page, /Weitere Informationen/i);
+
+		// Beleg, dass die Karte tatsächlich im DOM steht — sonst prüfte der
+		// Überlauf-Check anschließend unbemerkt ins Leere.
+		await expect(page.locator('[data-testid="field-behavior"]')).toBeVisible();
+
+		await openAllDetails(page);
+		await expectNoHorizontalOverflow(page, '320px · Schritt 3, Lebend-Zweig, Verhaltens-Karte');
+	});
+
+	/**
 	 * Dieselbe Prüfung ohne Silbentrennung.
 	 *
 	 * Die Feld-Beschriftungen tragen `hyphens: auto` (`FieldRenderer.svelte`,
