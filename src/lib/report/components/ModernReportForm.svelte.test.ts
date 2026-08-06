@@ -819,9 +819,16 @@ describe('ModernReportForm — die Fehler-Navigation kennt den Zweig', () => {
 	 *
 	 * `boatDrive` (Schritt 2, Index 1) ist bei einer Land-Meldung ausgeblendet —
 	 * `sections/SightingDetails.svelte` zeigt es nur bei Segelschiff/Motorboot.
-	 * Ein Restwert entsteht real: Wer erst „Motorboot" wählt, den Antrieb setzt
-	 * und dann auf „Land" wechselt, lässt ihn im Formular-Zustand stehen (der
-	 * Zustand wird bewusst nicht geleert, siehe `HIDDEN_WHEN_FROM_LAND`).
+	 * Es steht hier als gesetzter Wert im Zustand, weil es das ausgeblendete
+	 * Feld im FRÜHESTEN Schritt ist und die Verwechslung damit am Sprungziel
+	 * sichtbar macht. Der Weg dorthin ist gestellt: Beim Übergang Boot→Land
+	 * räumt `shouldResetBoatDrive` (`sections/boatDriveReset.ts`) es real ab.
+	 * Ungestellt erreichbar ist dieselbe Lage über die Felder, die
+	 * `HIDDEN_WHEN_FROM_LAND` bewusst stehen lässt (`reaction`, `shipName`,
+	 * `homePort`) — die liegen nur alle auf Schritt 3 und trügen den Fehler
+	 * damit auf demselben Schritt wie `shipCount`, was den Sprung nicht
+	 * unterscheidbar machte.
+	 *
 	 * `shipCount` (Schritt 3, Index 2) ist dagegen sichtbar und trägt hier den
 	 * einzigen Fehler, den der Melder auch beheben kann.
 	 */

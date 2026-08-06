@@ -372,7 +372,7 @@ export function hasUploadedMedia(
  * serverseitig ein Gegenstück, für das ein Nachweis Sinn ergäbe.
  */
 export function getFormSteps(data: FormStepsInput): FormStep[] {
-	const hidden = new Set(hiddenFormFields(data));
+	const hidden = new Set<string>(hiddenFormFields(data));
 
 	if (hidden.size === 0) {
 		return formStepsConfig;
@@ -401,8 +401,8 @@ export function getFormSteps(data: FormStepsInput): FormStep[] {
  * Ohne Duplikate: `reaction` steht in `HIDDEN_WHEN_DEAD` UND in
  * `HIDDEN_WHEN_FROM_LAND` — ein Totfund von Land trifft beide Bedingungen.
  */
-export function hiddenFormFields(data: FormStepsInput): string[] {
-	const hidden = new Set<string>();
+export function hiddenFormFields(data: FormStepsInput): Array<keyof SightingFormData> {
+	const hidden = new Set<keyof SightingFormData>();
 	if (isDeadFinding(data.isDead)) {
 		HIDDEN_WHEN_DEAD.forEach((field) => hidden.add(field));
 	}

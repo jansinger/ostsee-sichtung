@@ -458,14 +458,21 @@
 		});
 
 		// Geprüft wird das volle Schema OHNE die Felder, die der aktuelle Zweig
-		// ausblendet. Ein ausgeblendetes Feld behält seinen Wert (`$form` wird
-		// bewusst nicht geleert — Begründung samt verworfenem Ansatz bei
-		// `HIDDEN_WHEN_FROM_LAND` in formConfig.ts), und ein ungültiger Restwert
-		// darin brächte hier beides zum Stillstand: Der Sprung landete auf einem
-		// Schritt, auf dem nichts markiert ist, und das Absenden bliebe mit einer
-		// Meldung an einem Feld hängen, das niemand sieht und niemand korrigieren
-		// kann. Real erreichbar z. B. so: „Motorboot" wählen, Antrieb setzen,
-		// auf „Land" wechseln.
+		// ausblendet. Ein ungültiger Restwert darin brächte hier beides zum
+		// Stillstand: Der Sprung landete auf einem Schritt, auf dem nichts
+		// markiert ist, und das Absenden bliebe mit einer Meldung an einem Feld
+		// hängen, das niemand sieht und niemand korrigieren kann.
+		//
+		// Erreichbar ist das über den Beobachtungsort, nicht über den Zweig:
+		// `HIDDEN_WHEN_FROM_LAND` lässt `$form` bewusst stehen (Begründung samt
+		// verworfenem Ansatz dort), also überlebt ein zu langer `reaction`- oder
+		// `shipName`-Text den Wechsel auf „Land" — kein `maxlength` im
+		// Feld-Renderer hält ihn vorher auf. Über den Zweig entsteht kein
+		// Restwert: `boatDrive` räumt `shouldResetBoatDrive` beim Übergang
+		// Boot→Land ab (`sections/boatDriveReset.ts`), und die drei
+		// `HIDDEN_WHEN_DEAD`-Felder leert der Mount-Aufräumer oben über
+		// `fieldsOutsideReportKind` — ein Zweigwechsel geht immer über die
+		// Einstiegsseite und mountet dieses Formular neu (`+page.svelte`).
 		//
 		// `omit` statt einer aus den Schritt-Feldern gebauten Positivliste
 		// (`pick`): Das Schema führt auch Felder, die in keinem Schritt stehen
@@ -475,8 +482,7 @@
 		// in `when()`-Beziehungen ausschließlich die abhängige Seite; die
 		// Bedingungsfelder (`hasPosition`, `isDead`, `sightingFrom`) bleiben
 		// sämtlich im Schema.
-		const hidden = hiddenFormFields(formValues) as Array<keyof SightingFormData>;
-		const reachableSchema = hidden.length > 0 ? sightingSchema.omit(hidden) : sightingSchema;
+		const reachableSchema = sightingSchema.omit(hiddenFormFields(formValues));
 
 		try {
 			await reachableSchema.validate(formValues, { abortEarly: false });
