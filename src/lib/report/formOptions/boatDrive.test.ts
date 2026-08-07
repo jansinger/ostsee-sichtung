@@ -113,6 +113,49 @@ describe('PUBLIC_BOAT_DRIVE_OPTIONS (Meldeformular)', () => {
 	});
 });
 
+/**
+ * Gemeldet am 2026-08-06: Im Meldeformular sei die Option „Motor lief" mit
+ * `value="undefined"` im DOM gelandet, und „Weiter" habe die rohe Yup-Meldung
+ * „Bootsantrieb must be a `number` type, but the final value was: `NaN` (cast
+ * from the value `"undefined"`)" gezeigt. Am Bestand ließ sich das nicht
+ * nachstellen (Browser-Prüfung gegen den Dev-Server, beide Radios trugen
+ * `value="1"` bzw. `value="6"`).
+ *
+ * Warum trotzdem ein Test: `PUBLIC_BOAT_DRIVE_OPTIONS` ist zwar per `toEqual`
+ * oben festgenagelt, die aus `Object.values(BoatDriveEnum)` **abgeleitete**
+ * Admin-Liste aber nur auf Vollständigkeit geprüft, nie auf die Beschaffenheit
+ * ihrer Werte. Der Optionswert macht auf dem Weg zur Validierung eine DOM-Runde
+ * (`value`-Attribut → `handleChange` liest `target.value` als String → Yup
+ * castet zurück); ein nicht-numerischer Eintrag überlebt `toBeDefined()`
+ * problemlos und wird erst dort zu NaN. Geprüft wird deshalb der String-Zustand,
+ * nicht der Startwert.
+ */
+describe('Optionswerte überstehen die DOM-Runde (value-Attribut → Yup-Cast)', () => {
+	const optionsListen = [
+		['PUBLIC_BOAT_DRIVE_OPTIONS (Meldeformular)', PUBLIC_BOAT_DRIVE_OPTIONS],
+		['getBoatDriveOptions() (Admin-Maske)', getBoatDriveOptions()]
+	] as const;
+
+	it.each(optionsListen)('%s trägt in jedem Eintrag eine endliche Zahl', (_name, options) => {
+		expect(options.length).toBeGreaterThan(0);
+
+		for (const option of options) {
+			expect(typeof option.value, `Option "${option.label}"`).toBe('number');
+			expect(Number.isFinite(option.value), `Option "${option.label}"`).toBe(true);
+		}
+	});
+
+	// Der Test mit Aussagekraft: `isValidBoatDrive` prüft die Enum-Zugehörigkeit,
+	// und zwar am String — also an dem, was aus dem DOM zurückkommt. Ein
+	// `Number(String(n)) === n` daneben wäre tautologisch (gilt für jede endliche
+	// Zahl) und ist deshalb bewusst nicht da.
+	it.each(optionsListen)('%s gilt auch als String noch als gültiger Antrieb', (_name, options) => {
+		for (const option of options) {
+			expect(isValidBoatDrive(String(option.value)), `Option "${option.label}"`).toBe(true);
+		}
+	});
+});
+
 describe('getBoatDriveLabel — bestehende Werte bleiben unverändert', () => {
 	it('löst alle Alt-Werte weiterhin auf', () => {
 		expect(getBoatDriveLabel(0)).toBe('Sonstiger Bootsantrieb');
