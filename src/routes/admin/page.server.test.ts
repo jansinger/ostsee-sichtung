@@ -29,7 +29,11 @@ const dialect = new PgDialect();
 const toSqlText = (condition: SQLWrapper): string => dialect.sqlToQuery(condition.getSQL()).sql;
 
 /** Ein `db.select(...)`-Aufruf, wie ihn `load()` erzeugt. */
-type RecordedSelect = { columns: Record<string, unknown> | undefined; whereSql?: string };
+type RecordedSelect = {
+	columns: Record<string, unknown> | undefined;
+	whereSql?: string;
+	orderBySql?: string;
+};
 
 let recordedSelects: RecordedSelect[] = [];
 /** Rückgabewerte in Aufrufreihenfolge — `load()` ruft `db.select` dreimal auf. */
@@ -42,7 +46,10 @@ function createRecordingBuilder(record: RecordedSelect) {
 			if (predicate) record.whereSql = toSqlText(predicate);
 			return builder;
 		},
-		orderBy: () => builder,
+		orderBy: (expression?: SQLWrapper) => {
+			if (expression) record.orderBySql = toSqlText(expression);
+			return builder;
+		},
 		limit: () => builder,
 		offset: () => builder,
 		then: (resolve: (rows: unknown[]) => unknown, reject?: (error: unknown) => unknown) =>
@@ -94,6 +101,24 @@ describe('admin/+page.server load() — Foto-Ankündigungs-Arbeitsliste', () => 
 		} as unknown as Parameters<typeof load>[0])) as { pendingPhotoAnnouncements: number };
 
 		expect(result.pendingPhotoAnnouncements).toBe(2);
+	});
+
+	it('sortiert die Spam-Spalte absteigend mit NULLS LAST (sonst stünde Altbestand oben)', async () => {
+		await load({
+			url: makeUrl({ sort: 'spamScore', order: 'desc' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		// Erstes select() ist die Hauptliste. Postgres sortiert DESC per Default
+		// NULLS FIRST — die 19.000+ unbewerteten Zeilen lägen vor den Treffern.
+		expect(recordedSelects[0]?.orderBySql).toMatch(/nulls last/i);
+	});
+
+	it('sortiert auch aufsteigend explizit mit NULLS LAST', async () => {
+		await load({
+			url: makeUrl({ sort: 'spamScore', order: 'asc' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		expect(recordedSelects[0]?.orderBySql).toMatch(/nulls last/i);
 	});
 
 	it('das dritte select() trägt exakt die Bedingung von mediaUploadCondition(announced_missing)', async () => {

@@ -239,6 +239,26 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 			expect(spamInput?.submission).toBeUndefined();
 		});
 
+		it('übergibt ohne GPS-Angabe keine Koordinaten an die Spam-Prüfung', async () => {
+			// mapLegacyToCurrentSchema mappt fehlendes GPS auf 0 — ginge das roh in
+			// den Detektor, entstünde mit ostsee_geo = 0 der falsche Indikator
+			// „Position weit außerhalb der Ostsee" für jede Meldung ohne Position.
+			const { detectSpamIndicators } = await import('$lib/server/spam/spamDetector');
+			const event = createMockRequestEvent({
+				sichtungsdatum: '2024-03-15 12:00',
+				anzahl_gesamt: 1,
+				vorname: 'Ohne',
+				name: 'Position',
+				email: 'ohne-gps@example.com'
+			});
+			const response = await POST(event);
+
+			expect(response.status).toBe(201);
+			const spamInput = vi.mocked(detectSpamIndicators).mock.calls[0]?.[0];
+			expect(spamInput?.latitude ?? null).toBeNull();
+			expect(spamInput?.longitude ?? null).toBeNull();
+		});
+
 		it('should handle death finding (anzahl_gesamt = 0) as per PDF', async () => {
 			const deathRequest: LegacySightingRequest = {
 				sichtungsdatum: '2024-03-15 12:00',

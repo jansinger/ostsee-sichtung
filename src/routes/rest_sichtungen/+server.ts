@@ -162,14 +162,19 @@ export async function POST(event: RequestEvent): Promise<Response> {
 		// Spam-Heuristik wie an der Web-API — aber OHNE Token-Kontext: Der
 		// Legacy-Vertrag kennt kein Formular-Token, ein 'missing'-Malus würde
 		// jede App-Meldung bestrafen. Rein additiv, Response bleibt unverändert.
-		const { inBalticSeaGeo } = mapFormToSighting(transformedData);
+		// Koordinaten aus der Abbildung, nicht roh aus transformedData:
+		// mapLegacyToCurrentSchema setzt fehlendes GPS auf 0, erst
+		// mapFormToSighting normalisiert das zu null. Rohwerte ergäben mit
+		// ostsee_geo = 0 für jede Meldung ohne Position den falschen Indikator
+		// „Position weit außerhalb der Ostsee".
+		const mappedSighting = mapFormToSighting(transformedData);
 		const recentDuplicates = await countRecentDuplicateSignals({
 			email: transformedData.email,
 			notes: transformedData.notes
 		});
 		const spamCheck = await detectSpamIndicators({
-			latitude: transformedData.latitude ?? undefined,
-			longitude: transformedData.longitude ?? undefined,
+			latitude: mappedSighting.latitude != null ? Number(mappedSighting.latitude) : undefined,
+			longitude: mappedSighting.longitude != null ? Number(mappedSighting.longitude) : undefined,
 			species: transformedData.species,
 			firstName: transformedData.firstName || undefined,
 			lastName: transformedData.lastName || undefined,
@@ -177,7 +182,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
 			waterway: transformedData.waterway || undefined,
 			seaMark: transformedData.seaMark || undefined,
 			notes: transformedData.notes || undefined,
-			inBalticSeaGeo,
+			inBalticSeaGeo: mappedSighting.inBalticSeaGeo,
 			recentDuplicates
 		});
 

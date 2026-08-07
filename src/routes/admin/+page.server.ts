@@ -6,7 +6,7 @@ import {
 	mediaUploadCondition
 } from '$lib/server/db/mediaUploadFilter';
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 import { ServerConfigService } from '$lib/services/configService';
@@ -100,10 +100,15 @@ export const load: PageServerLoad = async ({ url }) => {
 	// WHERE-Klausel hinzufügen, wenn Bedingungen vorhanden sind
 	const query = whereCondition ? baseQuery.where(whereCondition) : baseQuery;
 
-	// Sortierung hinzufügen
+	// Sortierung hinzufügen. NULLS LAST explizit in beide Richtungen: Postgres
+	// sortiert DESC per Default NULLS FIRST — bei der nullbaren Spam-Spalte
+	// stünden sonst die 19.000+ unbewerteten Altzeilen VOR den Treffern. Für
+	// NOT-NULL-Spalten ist der Zusatz wirkungslos.
 	const sortField = sortingMap[sortBy as keyof typeof sortingMap] || sightings.sightingDate;
 	const sortedQuery =
-		sortOrder === 'desc' ? query.orderBy(desc(sortField)) : query.orderBy(asc(sortField));
+		sortOrder === 'desc'
+			? query.orderBy(sql`${sortField} desc nulls last`)
+			: query.orderBy(sql`${sortField} asc nulls last`);
 
 	// Paginierung hinzufügen
 	const paginatedQuery = sortedQuery.limit(perPage).offset((page - 1) * perPage);
