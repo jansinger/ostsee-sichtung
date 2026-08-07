@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test';
 import { seedAdminSession } from './helpers/adminSession';
-import { expectNoHorizontalOverflow } from './helpers/overflow';
 
 /**
  * admin-table-mobile-status-overflow.spec.ts — Mobilkarte der Sichtungstabelle
@@ -36,6 +35,15 @@ import { expectNoHorizontalOverflow } from './helpers/overflow';
  * Status-Control über den rechten Rand des Viewports hinaus? Das ist genau
  * die Wirkung, die `size="md"` hatte, und bleibt unempfindlich gegenüber der
  * fremden Referenz-ID-Ursache.
+ *
+ * **Rohmessung des vollen Seiten-Überlaufs vor der `size="sm"`-Behebung**
+ * (`expectNoHorizontalOverflow` auf die ganze Seite, nicht nur das
+ * Status-Control): 155px bei 320px, 100px bei 375px — identisch mit der
+ * Tabelle oben, weil das Status-Control zu diesem Zeitpunkt der einzige
+ * Verursacher war. Nach der Behebung bleibt ein *zweiter*, unabhängiger
+ * Seitenüberlauf (97px/42px, Verursacher `a.font-mono`, eine lange
+ * Referenz-ID ohne Umbruch) — vorbestehend, nicht Teil dieses Befunds, hier
+ * nur zur Einordnung festgehalten.
  */
 test.describe('Admin-Sichtungstabelle — Mobilkarte bei schmalen Viewports', () => {
 	for (const width of [320, 375]) {
@@ -71,26 +79,52 @@ test.describe('Admin-Sichtungstabelle — Mobilkarte bei schmalen Viewports', ()
 				await context.close();
 			}
 		});
-	}
-});
 
-/**
- * Hält den vollständigen Messwert von Befund 2 fest (Seiten-Gesamtüberlauf vor
- * dem Fix) — bewusst `.skip`, damit er nicht dauerhaft an der fremden
- * Referenz-ID-Ursache rot bleibt. Dient als Beleg im Review-Bericht, nicht als
- * laufender Guard; der laufende Guard ist der Test oben.
- */
-test.describe
-	.skip('Befund-2-Rohmessung (Dokumentation, siehe .superpowers/sdd/task-5-report.md)', () => {
-	for (const width of [320, 375]) {
-		test(`voller Seiten-Überlauf bei ${width}px`, async ({ browser, baseURL }) => {
-			if (!baseURL) throw new Error('baseURL fehlt');
+		/**
+		 * Review-Befund 1: Prüft die Trefferfläche der einzelnen `sm`-Segmente,
+		 * nicht nur die Gesamtbreite der Gruppe. Gemessen am 2026-08-07 (dieselbe
+		 * Mobilkarte, `label.btn` innerhalb des Status-Control): 50×44px pro
+		 * Segment — bereits über der 44px-Grenze aus `design-system.md`
+		 * („Feldmodus und Touch-Targets"). Grund, warum das trotz `btn-sm`
+		 * nicht auf ~40px absackt: `.btn` setzt `--btn-p` (Innenabstand) in der
+		 * CSS-Layer-Schicht `daisyui.l1.l2.l3`, `.btn-sm` versucht denselben
+		 * Wert in `daisyui.l1.l2` zu überschreiben — bei `@layer` entscheidet die
+		 * Deklarationsreihenfolge der Schicht, nicht die Selektor-Spezifität oder
+		 * Quellreihenfolge, `.btn-sm` verliert also strukturell gegen `.btn` und
+		 * der Innenabstand bleibt bei `1rem`. Kein Fix nötig — dieser Test hält
+		 * den Ist-Zustand als Regressionsschutz fest, falls ein künftiges
+		 * DaisyUI-Update oder ein Utility-Override (`px-*`) die Breite wieder
+		 * unter 44px drückt.
+		 */
+		test(`Segmente des Status-Control sind bei ${width}px mindestens 44px breit`, async ({
+			browser,
+			baseURL
+		}) => {
+			if (!baseURL) throw new Error('baseURL fehlt — playwright.config.ts setzt sie normalerweise');
+
 			const context = await browser.newContext({ viewport: { width, height: 900 } });
 			await seedAdminSession(context, baseURL);
 			const page = await context.newPage();
+
 			try {
 				await page.goto('/admin/sichtungen');
-				await expectNoHorizontalOverflow(page, `/admin/sichtungen bei ${width}px`);
+				await expect(page.getByRole('heading', { name: 'Sichtungen' })).toBeVisible();
+
+				const segmentWidths = await page.evaluate(() => {
+					return Array.from(
+						document.querySelectorAll('.md\\:hidden fieldset[role="radiogroup"] label.btn')
+					).map((el) => el.getBoundingClientRect().width);
+				});
+
+				expect(segmentWidths.length, 'Keine Segmente im Status-Control gefunden').toBeGreaterThan(
+					0
+				);
+				for (const w of segmentWidths) {
+					expect(
+						w,
+						`Segmentbreite ${w}px unterschreitet die 44px-Touch-Target-Grenze`
+					).toBeGreaterThanOrEqual(44);
+				}
 			} finally {
 				await context.close();
 			}

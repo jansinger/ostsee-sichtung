@@ -128,10 +128,11 @@
 	{:else}
 		<ul class="flex flex-col gap-3">
 			{#each data.open as sighting (sighting.id)}
+				{@const verdict = done[sighting.id]}
 				{#if !abgelaufen.has(sighting.id)}
 					<li>
-						{#if done[sighting.id]}
-							{@const status = SIGHTING_STATUS_PRESENTATION[verdictToStatus(done[sighting.id]!)]}
+						{#if verdict}
+							{@const status = SIGHTING_STATUS_PRESENTATION[verdictToStatus(verdict)]}
 							<div class="alert py-2" role="status">
 								<span>
 									Sichtung #{sighting.id}

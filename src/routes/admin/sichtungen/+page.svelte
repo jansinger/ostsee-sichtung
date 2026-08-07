@@ -799,8 +799,11 @@
 					     drei beschrifteten Segmenten (`.btn` hat `flex-shrink: 0`, DaisyUI kann
 					     die Gruppe also nicht stauchen) um bis zu 155px horizontal über —
 					     `e2e/admin-table-mobile-status-overflow.spec.ts` hält das als
-					     Regressionstest fest. "sm" zeigt wie die Desktop-Spalte nur Icons; der
-					     `title` am Segment trägt die Bedeutung weiter für Maus/Screenreader.
+					     Regressionstest fest. "sm" zeigt wie die Desktop-Spalte nur Icons; die
+					     Bedeutung tragen dann Icon-Form und Füllung plus das `aria-label` am
+					     Radio-Input (`SightingStatusControl.svelte`) — das erreicht auch
+					     Screenreader. Der `title` am Segment ist eine Zugabe nur für die Maus,
+					     er wirkt bei Tastatur- und Touch-Bedienung nicht.
 					     `groupSuffix="-mobile"`: Ohne ihn teilt sich dieses Control den
 					     Radio-`name` mit dem gleich benannten Control der Desktop-Tabelle
 					     weiter unten — beide stehen für dieselbe Sichtung gleichzeitig im DOM,
