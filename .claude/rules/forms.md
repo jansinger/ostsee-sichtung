@@ -106,6 +106,7 @@ Schema-Beschreibung, in der ein `when()` nicht sichtbar ist — siehe den
 
 - **`touched`** (`Record<string, boolean>`) wird von `handleChange`/`updateField` gesetzt und von `updateInitialValues` zurückgesetzt. Es steuert ausschließlich die Anzeige (grünes Häkchen nur an Feldern, die der Nutzer wirklich berührt hat) — nicht die Validierung.
 - **Kein `validateField`**: Validiert wird beim Submit (`abortEarly: false`, sammelt alle Fehler) sowie schrittweise über `validateStep` (`src/lib/form/validation/stepValidation.ts`, nutzt `sightingSchema.pick(...)`). `updateField` löscht den Fehler des geänderten Feldes.
+- **`validationSchema` darf eine Funktion sein** (`(values) => Schema`, Typ `ValidationSchemaOption`). Sie wird bei JEDEM Submit mit den aktuellen Werten aufgelöst — nötig, weil `createForm` nur einmal beim Mount läuft, das Formular Felder aber zur Laufzeit ausblendet. Das Meldeformular übergibt `reachableSchema` (= `sightingSchema.omit(hiddenFormFields(values))`), die Admin-Maske ein festes Schema.
 - **Fehler-Timing**: Fehler erscheinen erst nach einem gescheiterten „Weiter"-Versuch, nie beim Betreten eines Schritts (siehe `stepNavigationState.ts`).
 
 API — vollständig, das ist alles was `createForm` zurückgibt:
@@ -194,6 +195,31 @@ Beispiel für ein korrekt ausgeblendetes Feld: `mediaConsent` entfällt in
 Funktion steht als `{#if hasMedia}`-Bedingung in `Step4Contact.svelte` — beide Seiten rufen
 dieselbe Funktion auf demselben Wert auf, statt zwei getrennt gepflegte Bedingungen zu
 riskieren.
+
+### Ausgeblendet heißt: nicht Teil dieser Meldung
+
+Die beiden Hälften oben regeln Sichtbarkeit und Schritt-Validierung. Beim **Absenden**
+gilt dieselbe Aussage, und zwar für beides zugleich (entschieden am 2026-08-07):
+
+- **Validiert** wird `sightingSchema.omit(hiddenFormFields(values))` — in der Vorab-Prüfung
+  (`handleFinalSubmit`) UND in der maßgeblichen Prüfung (`createForm`, über den Resolver
+  oben). Zwei Ebenen mit verschiedenen Regeln ergaben eine stille Sackgasse: Die eine ließ
+  durch, was die andere aufhielt, und `handleSubmit` meldet einen Validierungs-Abbruch nicht
+  an seinen Aufrufer — kein Toast, kein Sprung, keine Markierung an einem Feld ohne DOM.
+- **Gesendet** wird ebenfalls ohne `hiddenFormFields(values)` (`onSubmit` in
+  `ModernReportForm`). Sonst ginge ein Wert raus, den Yups `omit` ungeprüft und ungecastet
+  hat durchlaufen lassen.
+
+Ein neu ausgeblendetes Feld braucht deshalb **keine** dritte Stelle mehr — es genügt der
+Eintrag in `hiddenFormFields`. Feldlisten am Absende-Rand (früher `OWN_VESSEL_FIELDS`,
+`MEDIA_CONSENT_FIELDS`) nicht wieder einführen.
+
+Was dabei **nicht** angetastet werden darf: `$form` selbst und das an `onSubmit` übergebene
+`values`. Aus Letzterem werden die dauerhaft gespeicherten Kontaktdaten gebaut, und
+`saveUserContactDataWithConsent` überschreibt ohne Merge — ein wiederkehrender Melder verlöre
+bei einer Land-Meldung sonst seine Bootsdaten. Dass `values` vollständig bleibt, hängt daran,
+dass Yups `omit` den Schlüssel im Ergebnis stehen lässt; ein `stripUnknown`/`noUnknown` an
+dieser Validierung bricht es.
 
 ---
 

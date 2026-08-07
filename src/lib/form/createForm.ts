@@ -2,11 +2,30 @@ import { derived, get, writable } from 'svelte/store';
 import { ValidationError } from 'yup';
 import type { AnyObjectSchema } from 'yup';
 
+/**
+ * Das Schema, gegen das beim Absenden geprüft wird — entweder fest oder pro
+ * Submit aus den aktuellen Werten abgeleitet.
+ *
+ * Die Funktions-Fassung gibt es, weil das Sichtungsformular Felder zur
+ * LAUFZEIT ausblendet (Zweig, Beobachtungsort, vorhandene Aufnahme), während
+ * `createForm` genau einmal beim Mount aufgerufen wird. Ein fest übergebenes
+ * Schema prüft deshalb weiter Felder, die der Melder längst nicht mehr sieht —
+ * und ein ungültiger Restwert darin hielt das Absenden auf, ohne dass ihn
+ * jemand korrigieren konnte (das Feld hat kein DOM-Element mehr). Der Resolver
+ * wird bei jedem Submit mit `get(form)` aufgerufen und darf daraus ein anderes
+ * Schema bauen.
+ *
+ * Die Admin-Maske übergibt weiterhin ein Schema-Objekt und läuft unverändert
+ * durch denselben Zweig.
+ */
+export type ValidationSchemaOption<T extends Record<string, unknown>> =
+	AnyObjectSchema | ((values: T) => AnyObjectSchema);
+
 export interface FormProps<T extends Record<string, unknown> = Record<string, unknown>> {
 	initialValues: T;
 	// Return type is unknown — callers may return values (e.g. admin form returns FrontendSighting)
 	onSubmit: (values: T) => unknown;
-	validationSchema?: AnyObjectSchema | null;
+	validationSchema?: ValidationSchemaOption<T> | null;
 	validate?: ((values: T) => Record<string, string> | Promise<Record<string, string>>) | null;
 }
 
@@ -69,8 +88,13 @@ export function createForm<T extends Record<string, unknown>>(options: FormProps
 			}
 
 			if (validationSchema) {
+				// Ein Resolver wird pro Submit aufgelöst — siehe `ValidationSchemaOption`.
+				// Yup-Schemas sind Objekte, `typeof === 'function'` unterscheidet die
+				// beiden Fassungen also zuverlässig.
+				const schema =
+					typeof validationSchema === 'function' ? validationSchema(values) : validationSchema;
 				// validate() with abortEarly: false returns all errors + applies .transform()
-				const validated = await validationSchema.validate(values, { abortEarly: false });
+				const validated = await schema.validate(values, { abortEarly: false });
 				await onSubmit(validated as T);
 			} else {
 				await onSubmit(values);

@@ -940,3 +940,181 @@ describe('ModernReportForm — die Fehler-Navigation kennt den Zweig', () => {
 			.toBeVisible();
 	});
 });
+
+/**
+ * Ausgeblendet heißt: nicht Teil dieser Meldung — für die Validierung UND für
+ * das, was rausgeht.
+ *
+ * Bis hierher galt das nur halb. Die Vorab-Prüfung in `handleFinalSubmit`
+ * ließ die ausgeblendeten Felder korrekt aus, die maßgebliche Prüfung in
+ * `createForm.handleSubmit` danach aber nicht: `validationSchema` geht einmal
+ * beim Mount an `createForm` und kannte den Zweig nicht. Ein ungültiger
+ * Restwert in einem ausgeblendeten Feld hielt das Absenden damit auf — und
+ * zwar STILL. `handleSubmit` fängt den `ValidationError`, schreibt ihn in den
+ * `errors`-Store und kehrt zurück; `StepNavigation.handleFormSubmission` sieht
+ * keinen Fehler und loggt „Form submitted successfully". Kein Toast, kein
+ * Sprung, keine Markierung — das Feld ist ja nicht gerendert. Der Melder
+ * klickte „Absenden" und nichts geschah.
+ *
+ * Der Weg dorthin führt über den BEOBACHTUNGSORT, nicht über den Zweig:
+ * `HIDDEN_WHEN_FROM_LAND` lässt die Felder bewusst im `$form` stehen
+ * (Begründung dort), und die Feld-Pipeline setzt kein `maxlength`. Auf einer
+ * Boots-Meldung mehr als 1000 Zeichen in `reaction` tippen, dann auf „Land"
+ * stellen — fertig. Über den Zweig entsteht kein Restwert (`boatDrive` räumt
+ * `shouldResetBoatDrive` ab, die Totfund-Felder der Mount-Aufräumer).
+ */
+describe('ModernReportForm — ausgeblendete Felder halten das Absenden nicht auf', () => {
+	const today = new Date().toISOString().split('T')[0];
+
+	function seedReport(overrides: Record<string, unknown> = {}): void {
+		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(3));
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-ausgeblendet',
+				entryChannel: 0,
+				species: 0,
+				totalCount: 1,
+				distance: 1,
+				shipCount: 2,
+				sightingFrom: SightingFromEnum.LAND,
+				hasPosition: true,
+				latitude: 54.5,
+				longitude: 13.5,
+				sightingDate: today,
+				firstName: 'Max',
+				lastName: 'Mustermann',
+				email: 'max@example.com',
+				privacyConsent: true,
+				...overrides
+			})
+		);
+	}
+
+	async function submit(): Promise<Record<string, unknown>> {
+		await page.getByRole('button', { name: 'Formular absenden' }).click();
+		await vi.waitFor(() => expect(submitSightingFormMock).toHaveBeenCalled(), { timeout: 4000 });
+		return submitSightingFormMock.mock.calls[0]?.[0] as Record<string, unknown>;
+	}
+
+	beforeEach(() => {
+		submitSightingFormMock.mockClear();
+		submitSightingFormMock.mockResolvedValue({ status: 'ok', id: 1 });
+	});
+
+	/**
+	 * Der reproduzierte Befund selbst. `reaction` ist bei einer Land-Meldung
+	 * ausgeblendet und wird beim Absenden ohnehin verworfen — der Restwert
+	 * blockierte also eine Übermittlung, aus der er gar nicht mit hinausging.
+	 */
+	it('sendet trotz eines zu langen Restwerts in `reaction` ab', async () => {
+		seedReport({ reaction: 'x'.repeat(1001) });
+
+		render(ModernReportForm);
+
+		const sent = await submit();
+
+		expect('reaction' in sent).toBe(false);
+		expect(sent.shipCount).toBe(2);
+	});
+
+	/**
+	 * Dieselbe Lage an einem Feld mit anderer Grenze — damit der Test nicht an
+	 * einer einzelnen Schema-Regel hängt. `shipName` erlaubt 64 Zeichen.
+	 */
+	it('sendet trotz eines zu langen Restwerts in `shipName` ab', async () => {
+		seedReport({ shipName: 'M'.repeat(65) });
+
+		render(ModernReportForm);
+
+		const sent = await submit();
+
+		expect('shipName' in sent).toBe(false);
+	});
+
+	/**
+	 * Die Gegenprobe. Ein SICHTBARES Feld mit ungültigem Wert muss weiterhin
+	 * aufhalten — sonst belegte das Grün oben nur, dass die Prüfung insgesamt
+	 * ausgefallen ist. `shipCount` steht auf Schritt 3 und ist auch von Land
+	 * aus bedienbar (Störungskontext).
+	 */
+	it('hält weiterhin auf, wenn ein SICHTBARES Feld ungültig ist', async () => {
+		seedReport({ shipCount: 99 });
+
+		render(ModernReportForm);
+
+		await page.getByRole('button', { name: 'Formular absenden' }).click();
+
+		await vi.waitFor(() =>
+			expect(
+				document.querySelector('[data-testid="field-shipCount"]')?.getAttribute('aria-invalid')
+			).toBe('true')
+		);
+		expect(submitSightingFormMock).not.toHaveBeenCalled();
+	});
+
+	/**
+	 * Die zweite Hälfte der Entscheidung: Was ausgeblendet ist, geht auch nicht
+	 * raus. Vorher entschieden das zwei Sonderfälle am Absende-Rand
+	 * (`OWN_VESSEL_FIELDS`, `MEDIA_CONSENT_FIELDS`), während `boatDrive` (Land)
+	 * und die Zweig-Felder mitgingen — teils gewollt, teils nur historisch.
+	 * Jetzt entscheidet `hiddenFormFields` beides.
+	 *
+	 * Für `boatDrive` ist das Weglassen sogar die korrektere Angabe:
+	 * `resolveBoatDrive` (`mapFormToSighting.ts`) schreibt ohne Angabe `NONE`,
+	 * während der Default `0` „Sonstiger Antrieb" bedeutet — genau die
+	 * Kategorie, die durch dieselbe Verwechslung schon einmal 5.858 Zeilen
+	 * falsch gefüllt hat.
+	 */
+	it('sendet `boatDrive` bei einer Land-Meldung nicht mit', async () => {
+		seedReport({ boatDrive: 1 });
+
+		render(ModernReportForm);
+
+		const sent = await submit();
+
+		expect('boatDrive' in sent).toBe(false);
+	});
+
+	it('sendet die Totfund-Felder bei einer Lebend-Meldung nicht mit', async () => {
+		seedReport({ isDead: false, deadCondition: 2, deadSize: 150, deadPhoneContact: true });
+
+		render(ModernReportForm, { initialIsDead: false });
+
+		const sent = await submit();
+
+		expect('deadCondition' in sent).toBe(false);
+		expect('deadSize' in sent).toBe(false);
+		expect('deadPhoneContact' in sent).toBe(false);
+	});
+
+	/**
+	 * Die Gegenrichtung. Gesetzt wird der Zweig über `initialIsDead`; der
+	 * Mount-Aufräumer (`fieldsOutsideReportKind`) leert `behavior`/
+	 * `behaviorText`/`reaction` dabei ohnehin schon aus dem Zustand — hier
+	 * geht es darum, dass sie auch dann nicht im Absende-Objekt stehen, wenn
+	 * sie es täten. Der Zustand wird deshalb nach dem Mount nicht erneut
+	 * gesetzt, sondern nur das Ergebnis geprüft.
+	 */
+	it('sendet die Verhaltensfelder bei einer Totfund-Meldung nicht mit', async () => {
+		seedReport({
+			isDead: true,
+			deadCondition: 1,
+			behavior: 3,
+			behaviorText: 'ruhiges Schwimmen',
+			sightingFrom: SightingFromEnum.SAILBOAT,
+			boatDrive: 1
+		});
+
+		render(ModernReportForm, { initialIsDead: true });
+
+		const sent = await submit();
+
+		expect('behavior' in sent).toBe(false);
+		expect('behaviorText' in sent).toBe(false);
+		expect('reaction' in sent).toBe(false);
+		// Der Beobachtungsort ist hier ein Boot — die Bootsangaben bleiben.
+		expect(sent.boatDrive).toBe(1);
+	});
+});

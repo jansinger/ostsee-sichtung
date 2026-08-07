@@ -103,17 +103,29 @@ Three distinct layers — see `.claude/rules/forms.md` for the full table:
 `isStepValid(currentStep, formData)` and `validateStep(currentStep, formData)` take **two**
 arguments and validate `sightingSchema.pick(getFormSteps(formData)[currentStep].fields)`.
 
-The pre-submit layer covers all steps at once (a field can go invalid after its step was
-left) and validates `sightingSchema.omit(hiddenFormFields(formValues))` — the full schema
-minus what the current branch hides. Without that subtraction, a leftover value in a hidden
-field blocks the submit behind an error nobody can see, and drags the jump target onto a
-step that shows nothing.
+**Both submit layers validate the same thing:** `reachableSchema(values)` in
+`ModernReportForm` — `sightingSchema.omit(hiddenFormFields(values))`, the full schema minus
+what the current branch hides. The pre-submit layer additionally covers all steps at once (a
+field can go invalid after its step was left) and jumps to the earliest affected step.
 
-**Known gap:** the authoritative layer below still validates the _full_ schema
-(`validationSchema` is handed to `createForm` once and cannot be branch-aware), so that same
-leftover value still stops the submit there — silently, without a toast or a jump. Closing it
-means deciding what a hidden field's leftover value should do on submit, which is a separate
-change.
+The authoritative layer gets there via a **schema resolver**: `validationSchema` accepts
+`(values) => AnyObjectSchema` as well as a schema (`ValidationSchemaOption` in
+`createForm.ts`), resolved on every submit. It has to be a function — `createForm` runs once
+at mount, while the reporting location changes at runtime. Until 2026-08-07 it validated the
+full schema, so a leftover value in a hidden field stopped the submit **silently**:
+`handleSubmit` catches the `ValidationError`, writes it to `$errors` and returns, so
+`StepNavigation` sees no failure and logs "Form submitted successfully" — no toast, no jump,
+no marking, because the field has no DOM element. Reproducible by typing more than 1000
+characters into `reaction` on a boat report and then switching `sightingFrom` to land.
+
+**Hidden means: not part of this report** — for validation and for what goes out. The
+submit edge drops `hiddenFormFields(values)` from the submitted object (`onSubmit` in
+`ModernReportForm`), so nothing that slipped past the schema unvalidated ever reaches the
+server. Yup's `omit` does **not** strip the key from its result — hidden fields pass through
+uncast, which is what keeps `values` complete enough to build the persisted contact data
+(`shipName`, `homePort`, …) on a land report. Switching that validate call to
+`stripUnknown`/`noUnknown` would wipe a returning reporter's saved boat details; pinned by
+`createForm.test.ts` → "lässt den Wert des ausgenommenen Feldes trotzdem an onSubmit durch".
 
 There is no debouncing. `createForm` exposes
 `{ form, errors, touched, isSubmitting, isValid, handleSubmit, handleChange, updateField, updateInitialValues }`
