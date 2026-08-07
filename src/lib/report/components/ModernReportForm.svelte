@@ -62,7 +62,7 @@
 		onCancel = () => {},
 		initialIsDead,
 		// Default-Noop wie `onCancel` oben: `exactOptionalPropertyTypes` verbietet sonst das
-		// Weiterreichen als `{onchangekind}` an `Step2SightingDetails`.
+		// Weiterreichen als `{onchangekind}` an `FormActions`.
 		onchangekind = () => {},
 		// Default-Noop aus demselben Grund wie `onchangekind` — hier gibt es
 		// aber keine weitere Aufrufstelle, an die durchgereicht werden müsste.
@@ -79,9 +79,9 @@
 		/**
 		 * Reicht den „Ändern"-Knopf aus `ReportKindFeedback` bis zur Aufrufstelle
 		 * durch — nur `+page.svelte` kennt die Einstiegsseite, zu der er
-		 * zurückführt. Seit B6 (Abschlussreview) steht die Rückmeldung an ZWEI
-		 * Stellen: Schritt 1 (`Step1LocationTime`) und Schritt 2 (`AnimalInfo`,
-		 * über `Step2SightingDetails`).
+		 * zurückführt. Empfänger ist seit dem Umzug in die Aktionszeile nur noch
+		 * `FormActions`; die Rückmeldung stand vorher doppelt am Kopf von
+		 * Schritt 1 und Schritt 2.
 		 */
 		onchangekind?: () => void;
 		/**
@@ -666,9 +666,9 @@
 			<!-- Step Content -->
 			<div class="min-h-[400px]">
 				{#if currentStep === 0}
-					<Step1LocationTime {onchangekind} />
+					<Step1LocationTime />
 				{:else if currentStep === 1}
-					<Step2SightingDetails {onchangekind} />
+					<Step2SightingDetails />
 				{:else if currentStep === 2}
 					<Step3Observations bind:currentStep />
 				{:else if currentStep === 3}
@@ -697,7 +697,7 @@
 		</div>
 	</div>
 
-	<FormActions {onCancel} {onReset}></FormActions>
+	<FormActions {onCancel} {onReset} {onchangekind}></FormActions>
 
 	<FormHelp />
 </Form>

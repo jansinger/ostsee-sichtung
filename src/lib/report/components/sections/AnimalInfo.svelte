@@ -3,20 +3,11 @@
 
 	import { getFormContext } from '$lib/report/formContext';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
-	import ReportKindFeedback from '$lib/report/components/ReportKindFeedback.svelte';
 	import SectionCard from './SectionCard.svelte';
 	import { isDeadFinding } from '$lib/report/formConfig';
 	import { speciesQuestion } from '$lib/report/wording';
 
-	let {
-		adminMode = false,
-		// Default-Noop wie an den übrigen `onchangekind`-Aufrufstellen:
-		// `exactOptionalPropertyTypes` verbietet sonst das Weiterreichen als
-		// `{onchangekind}` an `ReportKindFeedback`, dessen eigener Default
-		// (`= () => {}`) den externen Proptyp auf `() => void` ohne `undefined`
-		// verengt.
-		onchangekind = () => {}
-	}: { adminMode?: boolean; onchangekind?: () => void } = $props();
+	let { adminMode = false }: { adminMode?: boolean } = $props();
 
 	const { form } = getFormContext();
 
@@ -47,30 +38,27 @@
 		     Nur in der Admin-Maske: Hier korrigiert eine Bearbeiterin einen
 		     bestehenden Datensatz, es gibt keine vorgeschaltete Einstiegsseite. Im
 		     Meldeformular beantwortet die Einstiegsseite „Was möchten Sie melden?"
-		     dieselbe Frage bereits — der Schalter entfällt dort zugunsten der
-		     Rückmeldung im else-Zweig, damit die beiden Antworten nicht
-		     auseinanderlaufen können. -->
+		     dieselbe Frage bereits — der Schalter entfällt dort ersatzlos, damit
+		     die beiden Antworten nicht auseinanderlaufen können. Die Rückmeldung
+		     „Sie melden: … · [Ändern]", die hier als else-Zweig stand, sitzt seit
+		     dem Umzug einmal in der Aktionszeile unter dem Formular
+		     (`form/FormActions.svelte`) und gilt von dort für alle vier
+		     Schritte. -->
 		<div
 			class="bg-base-100 border-base-300 rounded-lg border p-4"
 			style="box-shadow: var(--shadow-raised)"
 		>
 			<FormField name="isDead" />
 		</div>
-	{:else}
-		<!-- Ausgelagert nach `ReportKindFeedback.svelte` (Abschlussreview B6):
-		     dieselbe Rückmeldung steht seither auch am Kopf von Schritt 1
-		     (`steps/Step1LocationTime.svelte`), damit ein Melder auch dort ohne
-		     Umweg zurück zur Einstiegsseite kommt. -->
-		<ReportKindFeedback {onchangekind} />
 	{/if}
 
 	<!-- Dead Animal Additional Fields — unmittelbar unter dem Schalter, nicht
 	     mehr am Kartenende. isDeadFinding statt eines rohen Booleans, aus
-	     demselben Grund wie an der Rückmeldung drei Zeilen darüber: `isDead`
-	     kommt hier über dieselben drei Quellen an (Storage-String, DB-Zahl,
-	     echter Boolean) — ein roher Ternär (`$form.isDead`) zeigte den Block
-	     bei einem falsy-wirkenden String wie '0' trotzdem, während die
-	     Rückmeldung darüber schon korrekt „lebend" auswies. -->
+	     demselben Grund wie in `ReportKindFeedback.svelte`: `isDead` kommt hier
+	     über dieselben drei Quellen an (Storage-String, DB-Zahl, echter
+	     Boolean) — ein roher Ternär (`$form.isDead`) zeigte den Block bei einem
+	     falsy-wirkenden String wie '0' trotzdem, während die Rückmeldung in der
+	     Aktionszeile schon korrekt „lebend" auswies. -->
 	{#if isDeadFinding($form.isDead)}
 		<DeadAnimal {adminMode} />
 	{/if}

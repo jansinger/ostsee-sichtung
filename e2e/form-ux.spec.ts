@@ -158,8 +158,10 @@ test.describe('SightingDetails — Motorfrage bei Motorboot', () => {
  * Der Totfund-Schalter auf Schritt 2 ist seit Commit d7767383 entfallen: Die
  * Frage „lebendes Tier oder Totfund?" beantwortet seither die Einstiegsseite
  * (`/?meldung=lebend|totfund`, s. `AnimalInfo.svelte`), bevor das Formular
- * überhaupt erscheint — Schritt 2 zeigt stattdessen nur noch die Rückmeldung
- * „Sie melden: … · [Ändern]". `isDead` kommt dadurch bereits über den
+ * überhaupt erscheint. Die Rückmeldung „Sie melden: … · [Ändern]", die an
+ * seine Stelle getreten war, steht seit dem Umzug in der Aktionszeile unter
+ * dem Formular (`form/FormActions.svelte`) und gilt dort für alle vier
+ * Schritte. `isDead` kommt dadurch bereits über den
  * Einstiegs-Zweig fest ins Formular, es gibt keinen Weg mehr, es innerhalb des
  * Bürgerformulars umzuschalten — jeder Test wählt den Zweig deshalb über
  * `FormPage.goto()`, nicht mehr über `[data-testid="field-isDead"]` (das

@@ -12,21 +12,22 @@
 </script>
 
 <!--
-  Abschlussreview B6: Diese Rückmeldung stand bis dahin ausschließlich in
-  `sections/AnimalInfo.svelte` (Schritt 2) — auf Schritt 1 gab es damit keinen
-  Korrekturweg zurück zur Einstiegsseite, obwohl der Melder genau dort am
-  ehesten merkt, falsch abgebogen zu sein („Funddatum" statt „Datum und
-  Uhrzeit"). Ausgelagert hierher, damit dieselbe Zeile an zwei Stellen
-  (`AnimalInfo.svelte`, `steps/Step1LocationTime.svelte`) stehen kann, ohne
-  dass die Regel zweimal gepflegt wird und beide Antworten auseinanderlaufen
-  können.
+  Einzige Aufrufstelle ist `form/FormActions.svelte` — die Aktionszeile unter
+  dem Formular, neben „Formular zurücksetzen". Vorher stand die Zeile doppelt
+  und jeweils oben: am Kopf von Schritt 1 und in der Karte „Tierinformationen"
+  auf Schritt 2. Dort kostete sie den knappsten Platz des Telefons, obwohl sie
+  weder Eingabe noch Schritt-Kontext ist, sondern eine Korrektur an der Meldung
+  als Ganzes — wie das Zurücksetzen daneben. Aus der Aktionszeile heraus gilt
+  sie für alle vier Schritte statt nur für zwei; der Korrekturweg zurück zur
+  Einstiegsseite (Abschlussreview B6) ist damit an mehr Stellen erreichbar als
+  vorher, nicht an weniger.
 
   isDeadFinding statt eines rohen Booleans: `isDead` kommt beim Wiederaufsetzen
   aus dem Storage als String und in der Admin-Maske als Zahl aus der DB. Ein
   roher Ternär (`$form.isDead ? … : …`) träfe bei einem falsy-wirkenden, aber
   nicht-leeren String wie '0' die falsche Antwort.
 -->
-<p class="text-base-content/70 text-support mb-4">
+<p class="text-base-content/70 text-support">
 	Sie melden:
 	<strong class="text-base-content">
 		{isDeadFinding($form.isDead) ? 'Fund eines toten Tieres' : 'Beobachtung eines lebenden Tieres'}
@@ -40,6 +41,7 @@
 		class="btn btn-outline btn-sm"
 		onclick={onchangekind}
 		aria-label="Art der Meldung ändern"
+		data-testid="report-kind-change"
 	>
 		Ändern
 	</button>

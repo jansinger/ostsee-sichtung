@@ -218,15 +218,18 @@ describe('ModernReportForm — der Zweig verlässt den Speicher mit den Formular
 });
 
 /**
- * Zweiter Hop der Task-7-Kette (`+page.svelte` → `ModernReportForm` →
- * `Step2SightingDetails` → `AnimalInfo`): `ModernReportForm` muss ein
- * mitgegebenes `onchangekind` bis zum „Ändern"-Knopf auf Schritt 2
- * durchreichen. Ohne diesen Test bliebe ein versehentlich entfernter
- * Prop-Hop unbemerkt — der Knopf sähe im DOM unverändert aus, wäre aber
- * wirkungslos (die Lücke, an der Task 6 schon einmal scheiterte).
+ * Letzter Hop der Kette (`+page.svelte` → `ModernReportForm` → `FormActions`):
+ * `ModernReportForm` muss ein mitgegebenes `onchangekind` bis zum
+ * „Ändern"-Knopf durchreichen. Ohne diesen Test bliebe ein versehentlich
+ * entfernter Prop-Hop unbemerkt — der Knopf sähe im DOM unverändert aus, wäre
+ * aber wirkungslos (die Lücke, an der Task 6 schon einmal scheiterte).
+ *
+ * Geprüft auf Schritt 2 und Schritt 1, weil die Aktionszeile seit dem Umzug
+ * für alle Schritte gilt: Der Knopf muss auf jedem erreichbar sein, nicht nur
+ * auf dem, auf dem er früher stand.
  */
 describe('ModernReportForm — „Ändern" auf Schritt 2 erreicht die Kette', () => {
-	it('reicht onchangekind bis zu AnimalInfo durch', async () => {
+	it('reicht onchangekind bis zur Aktionszeile durch', async () => {
 		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(1));
 		const onchangekind = vi.fn();
 		render(ModernReportForm, { onchangekind });
@@ -238,16 +241,13 @@ describe('ModernReportForm — „Ändern" auf Schritt 2 erreicht die Kette', ()
 });
 
 /**
- * B6 (Abschlussreview): Auf Schritt 1 fehlte bislang jeder Weg zurück zur
- * Einstiegsseite — „Zurück" ist dort hart gesperrt, die einzige Korrektur lag
- * einen Schritt weiter unter der Upload-Karte. Die Rückmeldung aus
- * `AnimalInfo.svelte` steht jetzt auch am Kopf von Schritt 1
- * (`ReportKindFeedback.svelte`, über `Step1LocationTime`). Derselbe Hop-Test
- * wie oben für Schritt 2, nur ohne den `CURRENT_STEP`-Sprung — Schritt 1 ist
- * der Startzustand.
+ * B6 (Abschlussreview): Auf Schritt 1 fehlte einmal jeder Weg zurück zur
+ * Einstiegsseite — „Zurück" ist dort hart gesperrt. Derselbe Hop-Test wie oben
+ * für Schritt 2, nur ohne den `CURRENT_STEP`-Sprung; Schritt 1 ist der
+ * Startzustand.
  */
 describe('ModernReportForm — „Ändern" auf Schritt 1 erreicht die Kette (B6)', () => {
-	it('reicht onchangekind bis zur Rückmeldung auf Schritt 1 durch', async () => {
+	it('reicht onchangekind auch auf Schritt 1 durch', async () => {
 		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(0));
 		const onchangekind = vi.fn();
 		render(ModernReportForm, { onchangekind });
