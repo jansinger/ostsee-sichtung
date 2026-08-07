@@ -30,9 +30,14 @@ import { WindDirectionEnum, getWindDirectionOptions } from './windDirection';
  * unten): Das Feld ist im Totfund-Zweig Pflicht, dort braucht "Unbekannt"
  * einen Platz — nur eben den letzten.
  *
- * Bereits vor dieser Runde umgesetzt und deshalb hier nicht wiederholt:
- * `animalBehavior` und `sightingFrom`/`distribution` (siehe
- * `unspecifiedDefaults.test.ts` und `sightingFrom.test.ts`).
+ * **Diese Datei deckt nicht alle betroffenen Listen ab.** Drei Felder haben
+ * bereits einen eigenen Test, der ihre Reihenfolge festnagelt — sie hier ein
+ * zweites Mal zu prüfen ergäbe zwei Quellen für dieselbe Erwartung:
+ *
+ *  - `sightingFrom` → `sightingFrom.test.ts` (in dieser Runde mit geändert)
+ *  - `distribution` → `unspecifiedDefaults.test.ts` (dito)
+ *  - `animalBehavior` → `unspecifiedDefaults.test.ts` (schon vorher umgestellt,
+ *    2026-07; von dieser Runde unberührt und hier nur als Vorbild genannt)
  */
 describe('Auffangkategorie steht am Ende', () => {
 	it('animalCondition: "Unbekannt" zuletzt — das Feld ist Pflicht, der Ausweg bleibt', () => {
