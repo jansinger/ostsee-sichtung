@@ -21,7 +21,8 @@ export interface ToastMessage {
 	/**
 	 * Optionale Handlung im Toast — heute das „Rückgängig" nach einem
 	 * Statuswechsel im Admin-Bereich. Der Toast schließt sich beim Klick selbst;
-	 * ohne das lüde ein zweiter Klick dazu ein, den Wechsel erneut zurückzunehmen.
+	 * ohne das würde ein zweiter Klick dazu einladen, den Wechsel erneut
+	 * zurückzunehmen.
 	 */
 	action?: { label: string; onClick: () => void };
 }
