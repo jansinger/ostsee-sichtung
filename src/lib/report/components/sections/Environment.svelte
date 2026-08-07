@@ -66,19 +66,6 @@
 		Sobald Position und Datum gesetzt sind, werden Wetterdaten automatisch vorgeschlagen.
 	</p>
 
-	<!-- `shipCount` fragt laut Schema nach der Anzahl ANDERER Schiffe in näherer
-	     Umgebung — Störungskontext wie Seegang und Sichtweite, keine Angabe zum
-	     eigenen Boot des Melders (Task 12, zog aus `BoatInfo.svelte` hierher
-	     um). Nur im Meldeformular: Die Admin-Maske zeigt das Feld bereits
-	     admin-only in `OptionalSightingDetails.svelte` — `BoatInfo` bindet sie
-	     nicht ein, `Environment` dagegen schon, ein zweites `shipCount` stünde
-	     hier doppelt im selben Formular. -->
-	{#if !adminMode}
-		<div class="mb-4 grid grid-cols-1 gap-4">
-			<FormField name="shipCount" />
-		</div>
-	{/if}
-
 	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 		<!-- Sea State -->
 		<FormField name="seaState" />
@@ -114,6 +101,27 @@
 			<FormField name="windDirection" />
 		{/if}
 	</div>
+
+	<!-- `shipCount` fragt laut Schema nach der Anzahl ANDERER Schiffe in näherer
+	     Umgebung — Störungskontext wie Seegang und Sichtweite, keine Angabe zum
+	     eigenen Boot des Melders (Task 12, zog aus `BoatInfo.svelte` hierher
+	     um). Nur im Meldeformular: Die Admin-Maske zeigt das Feld bereits
+	     admin-only in `OptionalSightingDetails.svelte` — `BoatInfo` bindet sie
+	     nicht ein, `Environment` dagegen schon, ein zweites `shipCount` stünde
+	     hier doppelt im selben Formular.
+
+	     Es steht hinter der Windstärke und nicht mehr an erster Stelle: Die
+	     Karte kündigt oben an, dass Wetterdaten automatisch vorgeschlagen
+	     werden, und `shipCount` ist das einzige Feld darin, das der Abruf nie
+	     füllt. Direkt unter diesem Satz las es sich wie ein Wetterfeld. Die
+	     Feldliste in `formConfig.ts` (Schritt `observations`) trägt dieselbe
+	     Reihenfolge — `scrollToFirstError` läuft sie ab, um zum ersten
+	     fehlerhaften Feld zu springen. -->
+	{#if !adminMode}
+		<div class="mt-4 grid grid-cols-1 gap-4">
+			<FormField name="shipCount" />
+		</div>
+	{/if}
 
 	<!-- Weather Data Fetcher - Auto-fetch when environment section is visible -->
 	{#if latitude && longitude && sightingDate}

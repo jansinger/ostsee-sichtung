@@ -9,11 +9,13 @@
  * Die Medien-Einwilligung führt denselben Nachweis seit dem 2026-07-28, hat aber
  * einen eigenen Lebenszyklus und bleibt deshalb in `mediaConsentVersion.ts`.
  *
- * **Regel:** Wird der Wortlaut einer Einwilligung in `sightingSchema.ts`
- * inhaltlich geändert, muss die zugehörige Kennung auf das Datum der Änderung
- * gesetzt werden. Altbestände behalten dadurch die Fassung, der sie tatsächlich
- * zugestimmt haben. `consentTextVersions.test.ts` erzwingt das über gepinnte
- * Hashes der Texte — ein Kommentar allein trägt diese Zusicherung nicht.
+ * **Regel:** Wird der Wortlaut einer Einwilligung inhaltlich geändert, muss die
+ * zugehörige Kennung auf das Datum der Änderung gesetzt werden. Altbestände
+ * behalten dadurch die Fassung, der sie tatsächlich zugestimmt haben. Gemeint
+ * ist die **gelesene Fläche** — Überschrift und umgebender Text im Markup
+ * genauso wie der Ankreuztext in `sightingSchema.ts`.
+ * `consentSurfaces.svelte.test.ts` erzwingt das über gepinnte Hashes der
+ * gerenderten Flächen — ein Kommentar allein trägt diese Zusicherung nicht.
  *
  * Die Datumswerte stammen aus der Historie des Wortlauts, nicht aus dem Tag der
  * Einführung dieser Spalten: `privacyConsent` wurde zuletzt mit der
@@ -31,8 +33,9 @@
  * (`Step4Contact.svelte`, „Optionale Veröffentlichung von Namen und
  * Aufnahmen" statt vorher „… Ihres Namens"). Der Geltungsbereich der Kennung
  * ist die gelesene Einwilligungsfläche, nicht die Zeichenkette im Schema —
- * wie bei `PRIVACY_CONSENT_VERSION` unten. `consentTextVersions.test.ts` sagt
- * das im Kopfkommentar ausdrücklich, kann es aber nicht prüfen.
+ * wie bei `PRIVACY_CONSENT_VERSION` unten. Seit dem 2026-08-06 ist genau das
+ * gepinnt (`consentSurfaces.svelte.test.ts`); zur Zeit dieser Änderung war es
+ * nur ein Kommentar, und die Kennung fiel deshalb erst einem Review auf.
  */
 export const NAME_CONSENT_VERSION = '2026-08-06';
 
@@ -54,10 +57,8 @@ export const SHIP_NAME_CONSENT_VERSION = '2026-08-06';
  * („um Ihre Meldung zu speichern", „Ohne diese Zustimmung kann Ihre Meldung
  * nicht gespeichert werden" — vorher jeweils „Sichtung", Änderungswunsch A5.3).
  * Der Geltungsbereich der Kennung ist die gelesene Einwilligungsfläche, nicht
- * die Zeichenkette im Schema; `consentTextVersions.test.ts` sagt das im
- * Kopfkommentar ausdrücklich, kann es aber nicht prüfen.
- *
- * Der gepinnte Hash in jenem Test bleibt deshalb korrekt und unverändert — er
- * deckt nur den `helpText` ab.
+ * die Zeichenkette im Schema. Seit dem 2026-08-06 deckt der gepinnte Hash in
+ * `consentSurfaces.svelte.test.ts` genau diese Fläche ab; der frühere Hash über
+ * den bloßen `helpText` hätte diese Änderung nicht bemerkt.
  */
 export const PRIVACY_CONSENT_VERSION = '2026-08-04';

@@ -180,7 +180,15 @@
 	</div>
 
 	<!-- Privacy and Consent Section -->
-	<div class="border-primary/20 bg-base-200/50 rounded-lg border p-3 md:p-4">
+	<!-- `data-consent-surface` grenzt die Fläche ab, die die Fassungskennungen
+	     bezeugen — hier die äußere, gemeinsame: Die Überschrift „Datenschutz und
+	     Einverständnis" rahmt alle vier Einwilligungen darunter. Die beiden
+	     Gruppen tragen je eine eigene, innere Fläche; `consentSurfaces.svelte.test.ts`
+	     hasht pro Feld die äußere Fläche, die eigene Gruppe und den eigenen
+	     Ankreuztext getrennt, sodass eine Gruppen-Überschrift nur die Kennungen
+	     ihrer eigenen Gruppe bewegt. Text, der zu einer Einwilligung gehört,
+	     gehört deshalb INNERHALB der passenden Fläche. -->
+	<div class="border-primary/20 bg-base-200/50 rounded-lg border p-3 md:p-4" data-consent-surface>
 		<h3 class="mb-3 flex gap-2 text-base font-semibold md:text-lg">
 			<Icon icon="lucide:lock" width="20" class="text-primary" />
 			Datenschutz und Einverständnis
@@ -190,7 +198,7 @@
 		     und Veröffentlichung von Aufnahmen. Die Überschrift muss alle drei
 		     Felder darunter tragen — `mediaConsent` ist keine Namensnennung, hier
 		     stand bis zum Review von Task 14 (2026-08-06) noch „…Ihres Namens". -->
-		<div class="mt-6 space-y-4">
+		<div class="mt-6 space-y-4" data-consent-surface>
 			<h4 class="flex items-center gap-2 text-base font-semibold">
 				<Icon icon="lucide:pen-line" width="16" class="text-primary" />
 				Optionale Veröffentlichung von Namen und Aufnahmen
@@ -239,11 +247,21 @@
 						     dem Ankreuzfeld, für einen Screenreader wäre sie ohne die
 						     Verknüpfung aber nicht Teil der Frage — wer direkt aufs Feld
 						     tabbt, hörte den Einwilligungstext ohne die Dateinamen, also
-						     genau das Problem, das die Aufzählung beheben soll. -->
+						     genau das Problem, das die Aufzählung beheben soll.
+
+						     `data-consent-surface-exclude`: Der Block steht INNERHALB der
+						     Einwilligungsfläche, gehört aber nicht in deren Hash — Anzahl
+						     und Dateinamen kommen aus dem Formularzustand, nicht aus einem
+						     Wortlaut, dem jemand zustimmt. Ohne die Auszeichnung stünde die
+						     Fixture aus `consentSurfaces.svelte.test.ts` (`foto.jpg`) in
+						     den Fassungskennungen, und ein umbenanntes Testbild verleitete
+						     dazu, eine Kennung zu heben, obwohl sich kein gelesener Satz
+						     geändert hat. Grenzen der Auszeichnung: ebenda. -->
 						<div
 							id={UPLOADED_MEDIA_SUMMARY_ID}
 							class="text-base-content/70 text-support"
 							data-testid="uploaded-media-summary"
+							data-consent-surface-exclude
 						>
 							<p class="font-medium">{uploadedMediaCaption}</p>
 							<ul class="list-inside list-disc">
@@ -259,7 +277,7 @@
 		</div>
 
 		<!-- Persistent Data Storage Consent -->
-		<div class="mt-6 space-y-4">
+		<div class="mt-6 space-y-4" data-consent-surface>
 			<h4 class="text-base font-semibold">
 				<Icon icon="lucide:save" width="16" class="inline" /> Dauerhafte Speicherung der Kontaktdaten
 			</h4>

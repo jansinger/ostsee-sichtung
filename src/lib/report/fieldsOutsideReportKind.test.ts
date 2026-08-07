@@ -57,24 +57,31 @@ describe('fieldsOutsideReportKind', () => {
 	});
 
 	/**
-	 * Kein Vollständigkeits-Cross-Check über `getFormSteps` für die `'alive'`-
-	 * Richtung: `FOREIGN_TO_ALIVE` ist eine handgepflegte Liste, weil
-	 * `getFormSteps` die Totfund-Felder in keinem Zweig aus der Schritt-
-	 * Konfiguration entfernt (Begründung im Kopf von `fieldsOutsideReportKind.ts`)
-	 * — es gibt dort keine einzige Quelle, gegen die sich das ohne Umbau von
-	 * `formConfig.ts` prüfen ließe. Diese Prüfung ist deshalb die billigere,
-	 * erreichbare Absicherung: Jedes Feld aus der handgepflegten Liste muss
-	 * wenigstens ein echtes Schema-Feld sein, das in der Schritt-Konfiguration
-	 * auch tatsächlich vorkommt — ein Tippfehler oder eine spätere Umbenennung
-	 * in `formConfig.ts` fällt damit auf. Eine Aussage über VOLLSTÄNDIGKEIT
-	 * (fehlt dort ein Feld, das eigentlich dazugehört) trifft sie nicht.
+	 * Seit dem 2026-08-06 gibt es die handgepflegte `FOREIGN_TO_ALIVE`-Liste
+	 * nicht mehr: `getFormSteps` entfernt die Totfund-Felder über
+	 * `HIDDEN_WHEN_ALIVE` selbst aus dem Lebend-Zweig, und beide Richtungen
+	 * fallen hier aus derselben Quelle an. Die Erwartungswerte oben bleiben
+	 * trotzdem feste Literale (B4) — nachgerechnet mit der Formel der
+	 * Implementierung könnten sie per Konstruktion nie rot werden.
+	 *
+	 * Diese Prüfung bleibt als billige Zusatzabsicherung: Was hier
+	 * herausfällt, muss in beiden Richtungen ein Feld sein, das in der
+	 * Schritt-Konfiguration überhaupt vorkommt. Ein Tippfehler in einer der
+	 * `HIDDEN_WHEN_*`-Listen — die `getFormSteps` still ignorieren würde, weil
+	 * sie nur filtert — fällt damit auf.
 	 */
-	it('jedes im Lebend-Zweig ausgeblendete Feld existiert tatsächlich in der Schritt-Konfiguration', () => {
-		const allFields = new Set(formStepsConfig.flatMap((step) => step.fields));
-		for (const field of fieldsOutsideReportKind('alive')) {
-			expect(allFields.has(field)).toBe(true);
+	it.each(['alive', 'dead'] as const)(
+		'jedes im Zweig "%s" ausgeblendete Feld existiert tatsächlich in der Schritt-Konfiguration',
+		(kind) => {
+			const allFields = new Set(formStepsConfig.flatMap((step) => step.fields));
+			const foreign = fieldsOutsideReportKind(kind);
+
+			expect(foreign.length).toBeGreaterThan(0);
+			for (const field of foreign) {
+				expect(allFields.has(field)).toBe(true);
+			}
 		}
-	});
+	);
 
 	it('ist rein — zweimaliger Aufruf mit demselben Zweig liefert dieselbe Liste', () => {
 		expect(fieldsOutsideReportKind('alive')).toEqual(fieldsOutsideReportKind('alive'));
