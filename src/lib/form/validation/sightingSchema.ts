@@ -531,14 +531,24 @@ export const sightingSchemaBase = yup.object().shape({
 	/**
 	 * Größe des toten Tieres in cm
 	 *
-	 * **Optional, in beiden Zweigen** — anders als `deadCondition` darüber. Eine
-	 * am Strand geschätzte Körperlänge ist eine Zusatzangabe, keine Bedingung
-	 * für die Meldung; die DB-Spalte `totfund_groesse` ist entsprechend nullable.
-	 * Bewusst **kein** `when('isDead')`: Am Zweig hängt hier nichts, und ein
-	 * `when()`, das in beiden Ästen dasselbe tut, behauptet optisch das Gegenteil
-	 * (Hergang und Nachweis in `sightingSchemaWhen.test.ts`, Gruppe „deadSize —
-	 * in KEINEM Zweig Pflichtfeld"). Die drei Zusagen darunter gelten unbedingt
-	 * und sind die einzige Validierung des Feldes.
+	 * **Optional und nullable, in beiden Zweigen** — anders als `deadCondition`
+	 * darüber. Eine am Strand geschätzte Körperlänge ist eine Zusatzangabe, keine
+	 * Bedingung für die Meldung.
+	 *
+	 * Das `.nullable()` ist nicht kosmetisch: `totfund_groesse` ist in der DB
+	 * nullable und bei jeder Nicht-Totfund-Sichtung tatsächlich `NULL`. Die
+	 * Admin-Maske lädt diesen Wert in den Formular-Zustand; ohne `nullable()`
+	 * scheitert dort die Validierung mit „deadSize cannot be null", und ein
+	 * Bestandsdatensatz ließe sich nicht mehr speichern.
+	 *
+	 * Bis zum 2026-08-06 stand hier statt `.nullable()` ein `when('isDead')` mit
+	 * `notRequired()` in beiden Zweigen. Das sah wie ein No-op aus und war keines:
+	 * In yup 1.x hebt `notRequired()` auch die Null-Sperre auf, die Nullbarkeit
+	 * hing also unsichtbar an einer Verzweigung, die sonst nichts tat. Ersetzt
+	 * durch das explizite `.nullable()` — identisches Verhalten in allen
+	 * geprüften Fällen, aber dort lesbar, wo es gilt. Die Null-Fälle stehen
+	 * seitdem in `sightingSchemaWhen.test.ts`; sie fehlten vorher und genau
+	 * deshalb fiel die Änderung erst in den Admin-E2E-Tests auf.
 	 */
 	deadSize: yup
 		.number()
@@ -546,6 +556,7 @@ export const sightingSchemaBase = yup.object().shape({
 		.transform((value) => (isNaN(value) ? undefined : value))
 		.min(0, 'Die Größe muss positiv sein.')
 		.max(300, 'Die Größe darf 300 nicht überschreiten.')
+		.nullable()
 		.label('Körperlänge (cm)')
 		.meta({
 			placeholder: 'z.B. 150',

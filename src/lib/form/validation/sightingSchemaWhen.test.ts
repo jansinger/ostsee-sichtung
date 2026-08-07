@@ -323,19 +323,26 @@ describe('sightingSchema - Sonstiges-Textfeld-Validierung', () => {
 		});
 	});
 
-	// ── deadSize — der Zweig entscheidet hier über gar nichts ─────────────────
+	// ── deadSize — optional UND nullable, in beiden Zweigen ───────────────────
 	//
-	// `deadSize` trug bis zum 2026-08-06 ein `.when('isDead', …)`, das in BEIDEN
-	// Zweigen `notRequired()` setzte — ein No-op. Es las sich wie das `when()`
-	// bei `deadCondition` direkt darüber und legte damit nahe, die Körperlänge
-	// sei beim Totfund Pflicht; der JSDoc über dem Feld behauptete das sogar.
-	// Beides stimmte nie.
+	// `deadSize` trug bis zum 2026-08-06 ein `.when('isDead', …)` mit
+	// `notRequired()` in BEIDEN Zweigen. Das sah wie ein No-op aus — war aber
+	// keines: In yup 1.x hebt `notRequired()` zusätzlich die Null-Sperre auf.
+	// Die Verzweigung trug also die Nullbarkeit des Feldes, ohne das irgendwo zu
+	// sagen. Sie ist jetzt durch ein explizites `.nullable()` ersetzt.
 	//
-	// Diese Gruppe hält den Ist-Zustand fest, damit das Entfernen des Blocks
-	// nachweislich nichts ändert: Sie ist vor UND nach der Änderung grün. Was
-	// unbedingt gilt — `integer()`, `min(0)`, `max(300)` — steht deshalb hier
-	// mit drin; genau diese Zusagen dürfen beim Aufräumen nicht mitverschwinden.
-	describe('deadSize — in KEINEM Zweig Pflichtfeld (No-op-when entfernt, 2026-08-06)', () => {
+	// Die Null-Fälle unten sind der eigentliche Grund für diese Gruppe. Sie
+	// fehlten beim ersten Anlauf, und weil `deadSize` bei jeder Nicht-Totfund-
+	// Sichtung als `NULL` aus der DB kommt, fiel der Unterschied erst in
+	// `e2e/admin-edit-preserves-record.spec.ts` auf — dort ließ sich ein
+	// Bestandsdatensatz nicht mehr speichern, weil die Validierung mit
+	// „deadSize cannot be null" abbrach und der Request nie rausging.
+	// Die Nachbarfelder oben tragen aus demselben Grund je einen
+	// „akzeptiert null (Legacy-DB-Wert)"-Fall.
+	//
+	// `integer()`, `min(0)` und `max(300)` stehen mit drin, weil sie unbedingt
+	// gelten und beim Umbau nicht mitverschwinden dürfen.
+	describe('deadSize — optional und nullable in beiden Zweigen (2026-08-06)', () => {
 		it('ist nicht required bei isDead=true', async () => {
 			expect(await fieldHasError('deadSize', { isDead: true })).toBe(false);
 		});
@@ -346,6 +353,18 @@ describe('sightingSchema - Sonstiges-Textfeld-Validierung', () => {
 
 		it('ist nicht required, wenn isDead gar nicht gesetzt ist', async () => {
 			expect(await fieldHasError('deadSize', {})).toBe(false);
+		});
+
+		// Der Regressionsfall: So kommt das Feld für JEDE Nicht-Totfund-Sichtung
+		// aus der DB in die Admin-Maske. Ohne `.nullable()` bricht hier die
+		// Validierung ab und der Speichern-Request geht nie raus.
+		it.each([
+			['isDead=true', true],
+			['isDead=false', false],
+			['isDead nicht gesetzt', undefined]
+		])('akzeptiert null (Legacy-DB-Wert) bei %s', async (_label, isDead) => {
+			const data = isDead === undefined ? { deadSize: null } : { isDead, deadSize: null };
+			expect(await fieldHasError('deadSize', data)).toBe(false);
 		});
 
 		it.each([true, false])(
