@@ -22,6 +22,7 @@
 import type { SQL, SQLWrapper } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { openOnly } from '$lib/server/db/approvalFilter';
 
 const dialect = new PgDialect();
 const toSqlText = (condition: SQLWrapper): string => dialect.sqlToQuery(condition.getSQL()).sql;
@@ -174,6 +175,26 @@ describe('Eingangs-Load', () => {
 		expect(result.openTotal).toBe(7);
 		expect(result.pendingPhotoAnnouncements).toBe(3);
 		expect(result.open).toHaveLength(2);
+	});
+
+	/**
+	 * Der Hinweis steht auf einer **Arbeitsliste**, also über Meldungen, die
+	 * noch zu tun sind. Übernommen war er aus dem alten Tabellen-Dashboard, wo
+	 * er bewusst über den gesamten Bestand zählte — dort war das richtig, hier
+	 * nicht: Auf der lokalen DB nannte er vier Meldungen, von denen zwei längst
+	 * freigegeben waren. Erledigte Arbeit als offen auszuweisen ist genau die
+	 * Sorte Zahl, die man nach dem dritten Mal ignoriert.
+	 */
+	it('zählt nur offene Meldungen als ausstehende Foto-Ankündigung', async () => {
+		await runLoad(makeUrl());
+
+		// Gegen `openOnly()` selbst geprüft und nicht gegen abgetippte
+		// Spaltennamen: Ein Literal hier wäre ein zweites, stumm alterndes
+		// Freigabe-Prädikat — genau das, was `approvalPredicateScan.test.ts`
+		// im ganzen Quelltext verbietet.
+		const fotoZaehler = recordedSelects[2]?.whereSql ?? '';
+		expect(fotoZaehler).toContain('"aufnahmeHochladen"');
+		expect(fotoZaehler).toContain(toSqlText(openOnly()));
 	});
 
 	it('begrenzt die Liste, der Zähler bleibt ungekappt', async () => {

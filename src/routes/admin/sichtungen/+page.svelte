@@ -10,6 +10,8 @@
 	} from '$lib/components/admin/sightingActions';
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
 	import { createLogger } from '$lib/logger';
+	import { SvelteSet } from 'svelte/reactivity';
+	import { submitVerdict } from '$lib/components/admin/sightingVerdict';
 	import BaseToggle from '$lib/report/components/form/fields/BaseToggle.svelte';
 	import { getAnimalBehaviorLabel } from '$lib/report/formOptions/animalBehavior';
 	import { getDistanceLabel } from '$lib/report/formOptions/distance';
@@ -279,6 +281,37 @@
 				spamCheckModal.loading = false;
 			}
 		}
+	}
+
+	/**
+	 * Hebt eine Ablehnung auf: zurück auf „offen", damit die Meldung wieder im
+	 * Eingang erscheint.
+	 *
+	 * Ohne dieses Bedienelement gab es dafür keinen Weg. Der „Geprüft"-Toggle
+	 * hat zwei Stellungen, die Ablehnung ist die dritte Information — an einer
+	 * abgelehnten Zeile steht er bereits auf „aus" und lässt sich nicht noch
+	 * einmal ausschalten. Wer einen Fehlklick korrigieren wollte, musste die
+	 * Meldung erst **freigeben** (also veröffentlichen) und dann zurückziehen.
+	 */
+	/**
+	 * Die Zeilen, deren Reset gerade läuft — **je Zeile**, nicht global.
+	 *
+	 * Ein einzelner Wert hätte hier zwei Zustände vermischt: Der Wächter hätte
+	 * jeden weiteren Klick abgewiesen, während `disabled` nur am Knopf der
+	 * laufenden Zeile hing. Die übrigen Knöpfe sahen damit bedienbar aus und
+	 * taten nichts — schlimmer als ein sichtbar gesperrter Knopf, weil der
+	 * Nutzer den Fehlschlag nicht sieht. Zwei verschiedene Zeilen dürfen ohne
+	 * Weiteres gleichzeitig zurückgesetzt werden; zu verhindern ist allein der
+	 * Doppelklick auf dieselbe.
+	 */
+	const resettingRejection = new SvelteSet<number>();
+
+	async function resetRejection(id: number): Promise<void> {
+		if (resettingRejection.has(id)) return;
+		resettingRejection.add(id);
+		const ok = await submitVerdict(id, 'reset');
+		resettingRejection.delete(id);
+		if (ok) await invalidateAll();
 	}
 
 	async function toggleVerifiedStatus(id: number, currentState: boolean): Promise<void> {
@@ -761,6 +794,14 @@
 					<div class="flex items-center gap-2">
 						{#if sighting.rejectedAt}
 							<span class="badge badge-ghost badge-sm">Abgelehnt</span>
+							<button
+								type="button"
+								class="btn btn-ghost btn-xs"
+								disabled={resettingRejection.has(sighting.id)}
+								onclick={() => resetRejection(sighting.id)}
+							>
+								Ablehnung aufheben
+							</button>
 						{/if}
 						<BaseToggle
 							label="Geprüft"
@@ -1009,6 +1050,14 @@
 									<div class="flex items-center gap-2">
 										{#if sighting.rejectedAt}
 											<span class="badge badge-ghost badge-sm">Abgelehnt</span>
+											<button
+												type="button"
+												class="btn btn-ghost btn-xs"
+												disabled={resettingRejection.has(sighting.id)}
+												onclick={() => resetRejection(sighting.id)}
+											>
+												Aufheben
+											</button>
 										{/if}
 										<BaseToggle
 											label="Geprüft"

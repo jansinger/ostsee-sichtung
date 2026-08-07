@@ -136,11 +136,12 @@
 		const attachedFileCount = currentSighting.uploadedFiles?.length ?? 0;
 
 		if (
-			isPhotoAnnouncementPending(
-				currentSighting.mediaUpload,
+			isPhotoAnnouncementPending({
+				mediaUpload: currentSighting.mediaUpload,
 				attachedFileCount,
-				currentSighting.created
-			)
+				createdAt: currentSighting.created,
+				entryChannel: currentSighting.entryChannel
+			})
 		) {
 			return {
 				label: 'Upload',
@@ -177,6 +178,37 @@
 			value: '', // Wird nicht verwendet, da wir eine Status-Komponente rendern
 			isBoolean: true,
 			booleanValue: Boolean(value)
+		};
+	}
+
+	/**
+	 * „Abgelehnt am …" — nur, wenn die Meldung abgelehnt wurde.
+	 *
+	 * Als Badge und nicht als Ja/Nein-Zeile: Der Regelfall ist „nicht
+	 * abgelehnt", und ein zweites „Nein" neben „Verifiziert: Nein" hätte den
+	 * Unterschied eingeebnet, um den es hier gerade geht.
+	 */
+	function rejectionRow(): DataRowType | undefined {
+		// `hasValue` und nicht `isSightingRejected` aus `approvalFilter.ts`: Das
+		// Modul importiert `$lib/server/db/schema` und ist damit server-only —
+		// ein Import hier bricht den Build (`npm run check` bemerkt es nicht,
+		// nur `npm run build`). Dieselbe Lösung wie die Zeile „Freigegeben am"
+		// weiter unten, die den Freigabe-Zeitpunkt genauso prüft.
+		if (!hasValue(currentSighting.rejectedAt)) return undefined;
+
+		const wer = currentSighting.rejectedBy ? ` durch ${currentSighting.rejectedBy}` : '';
+		return {
+			label: 'Abgelehnt',
+			value: `${formatLocalDateTime(currentSighting.rejectedAt, 'datetime')}${wer}`,
+			// `badge-outline` und nicht `badge-ghost`: Die Statuskarte hat selbst
+			// eine graue Fläche — eine Ghost-Pille darauf ist unsichtbar
+			// (nachgemessen am 2026-08-07). Der Rahmen macht sie erkennbar, so
+			// wie beim „ohne Position"-Badge zwei Karten weiter oben. Das ist
+			// zugleich die Bedingung dafür, dass der `title` erreichbar ist:
+			// `DataTableRow` rendert ihn nur am Badge.
+			badgeClass: 'badge-outline',
+			title:
+				'Gesichtet und bewusst nicht veröffentlicht. Aufheben lässt sich das in der Sichtungstabelle.'
 		};
 	}
 
@@ -367,6 +399,12 @@
 			BooleanDataRow('Namensnennung', currentSighting.nameConsent),
 			BooleanDataRow('Schiffsnennung', currentSighting.shipNameConsent),
 			BooleanDataRow('Verifiziert', currentSighting.verified),
+			// Nur bei abgelehnten Meldungen. Ohne diese Zeile sah eine
+			// abgelehnte Sichtung hier exakt aus wie eine ungeprüfte — die
+			// Triage-Entscheidung war aus der Detailansicht nicht erkennbar.
+			// Aufgehoben wird sie in der Tabelle (`/admin/sichtungen`); diese
+			// Ansicht zeigt Status an und ändert ihn nicht.
+			rejectionRow(),
 			DataRow('Eingangskanal', getEntryChannelLabel(currentSighting.entryChannel))
 		].filter((row): row is DataRowType => row !== undefined)
 	);

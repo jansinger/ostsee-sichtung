@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { submitVerdict } from './inboxVerdict';
+import { submitVerdict } from './sightingVerdict';
 
 vi.mock('$lib/stores/toastState.svelte', () => ({
 	toast: { error: vi.fn(), success: vi.fn() }
@@ -25,6 +25,18 @@ describe('submitVerdict', () => {
 				method: 'PATCH',
 				body: JSON.stringify({ verdict: 'approve' })
 			})
+		);
+	});
+
+	it("schickt 'reset' unverändert durch — die Tabelle hebt damit eine Ablehnung auf", async () => {
+		const fetchMock = vi
+			.spyOn(globalThis, 'fetch')
+			.mockResolvedValue(new Response(JSON.stringify({ success: true }), { status: 200 }));
+
+		expect(await submitVerdict(42, 'reset')).toBe(true);
+		expect(fetchMock).toHaveBeenCalledWith(
+			'/api/sightings/42/verify',
+			expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ verdict: 'reset' }) })
 		);
 	});
 

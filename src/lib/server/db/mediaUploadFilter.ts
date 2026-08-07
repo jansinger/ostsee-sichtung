@@ -9,6 +9,7 @@
  * `and(...)`-Bedingungsliste.
  */
 import { and, eq, gte, sql, type SQL } from 'drizzle-orm';
+import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import {
 	MEDIA_UPLOAD_ANNOUNCED_MISSING,
 	NEW_IOS_CLIENT_LAUNCH_DATE
@@ -50,7 +51,12 @@ export function mediaUploadCondition(mediaUpload: string | null | undefined): SQ
 			// Flag nur „der Melder hatte ein Foto", nicht „der neue Client
 			// konnte es nicht hochladen". Ohne diese Grenze meldete die
 			// Arbeitsliste 2.539 nie einlösbare „ausstehende" Fotos.
-			gte(sightings.created, NEW_IOS_CLIENT_LAUNCH_DATE)
+			gte(sightings.created, NEW_IOS_CLIENT_LAUNCH_DATE),
+			// Zweite Achse desselben Missverständnisses: Nur die App kündigt
+			// ein Foto an, ohne es übertragen zu können. Bei Post-, E-Mail-,
+			// Fax- und Telefonmeldungen setzt der Admin das Flag, weil ihm ein
+			// Foto vorliegt — dort wartet niemand auf eine Nachlieferung.
+			eq(sightings.entryChannel, EntryChannelEnum.APP)
 		);
 	}
 	return undefined;

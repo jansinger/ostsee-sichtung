@@ -378,11 +378,12 @@ export class EmailService {
 				// bereits an der Sichtung (`saveSighting` verknüpft sie in
 				// derselben Transaktion). Über das Flag allein behauptete die Mail
 				// bei jedem angehängten Foto, es käme noch eines per E-Mail nach.
-				photoAnnouncementPending: isPhotoAnnouncementPending(
-					sighting.mediaUpload,
+				photoAnnouncementPending: isPhotoAnnouncementPending({
+					mediaUpload: sighting.mediaUpload,
 					attachedFileCount,
-					sighting.created
-				),
+					createdAt: sighting.created,
+					entryChannel: sighting.entryChannel
+				}),
 				// Aus der **Rohzeile**, nicht aus `sightingFormValues`: das `!!` oben
 				// verliert den Altsystem-Wert 2 und macht `noPosition` unerreichbar.
 				// Derselbe Aufruf wie in der Admin-Übersicht — der Status entsteht
