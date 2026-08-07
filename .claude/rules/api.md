@@ -64,6 +64,23 @@ Beim Neubau entstand kurzzeitig je ein Endpunkt pro Spalte — eine mechanische
 Abbildung der Tabelle, die den Fachprozess falsch modellierte und dazu führte,
 dass die Admin-UI nur noch `geprueft` schrieb und damit nichts mehr veröffentlichte.
 
+### Triage „abgelehnt" (seit 2026-08)
+
+Zusätzlich zur Prüfung gibt es die Triage-Entscheidung **abgelehnt** =
+gesichtet und bewusst nicht veröffentlicht (Spam, Testeintrag, unplausibel).
+Sie ist **kein dritter Freigabe-Zustand**: `abgelehnt_am`/`abgelehnt_von`
+(Drizzle `rejectedAt`/`rejectedBy`) sind nie gleichzeitig mit `freigegeben_am`
+gesetzt, und die öffentliche Grundmenge bleibt unverändert
+`freigegeben_am IS NOT NULL`.
+
+- Geschrieben werden auch diese Spalten **nur** von
+  `PATCH /api/sightings/[id]/verify` (Body `{ verdict: 'approve' | 'reject'
+| 'reset' }`; der alte Body `{ verified: 0|1 }` bleibt Alias für
+  approve/reset). Alle Status-Spalten in **einem** Update.
+- Grundmenge der Eingangsseite (`/admin`): `openOnly()` = weder freigegeben
+  noch abgelehnt. `pendingOnly()` bedeutet weiterhin „nicht freigegeben"
+  (inkl. abgelehnter) und bleibt die Gegenmenge der Statistik.
+
 ---
 
 ## Legacy API - KRITISCH
