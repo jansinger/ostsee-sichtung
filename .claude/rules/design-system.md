@@ -285,11 +285,19 @@ nur zur Hälfte. `daisyui/components/button.css` (5.7.4, nachgemessen am
 - Per Tastatur läuft Enter dagegen durch, landet im Wächter — und dort endete
   es bis zum UX-Review still.
 
-`ReportKindChoice.svelte` (Einstiegsseite) hat deshalb **keine** gesperrte
-Schaltfläche mehr: Der Knopf ist immer frei, und die Sperre ist eine
-Fehlermeldung an der Radiogruppe (`aria-invalid` + `role="alert"`). Das ist
-die richtige Form überall dort, wo die Sperre eine **fehlende Eingabe** meint —
-sie hat dann etwas zu sagen, und eine unerreichbare Schaltfläche sagt es nicht.
+Wo die Sperre eine **fehlende Eingabe** meint, ist eine Fehlermeldung die
+richtige Form — sie hat dann etwas zu sagen, und eine unerreichbare
+Schaltfläche sagt es nicht.
+
+**Der beste Fall ist allerdings, dass es nichts zu sperren gibt.**
+`ReportKindChoice.svelte` (Einstiegsseite) war die Aufrufstelle, an der dieser
+Befund entstand: erst ein `aria-disabled`-Knopf, dann ein freier Knopf mit
+Fehlermeldung an der Radiogruppe. Seit dem UX-Review 2026-08-07 hat sie
+**gar keine Schaltfläche mehr** — die Frage ist eine Weiche mit zwei Zielen,
+also zwei Links, und der Zustand „bestätigt, ohne etwas gewählt zu haben" ist
+strukturell nicht mehr herstellbar. Wer vor einem gesperrten Knopf steht,
+sollte deshalb zuerst prüfen, ob die Auswahl davor überhaupt eine Auswahl ist
+oder in Wahrheit eine Navigation (Begründung im Markup dort).
 
 `aria-disabled` bleibt richtig, wo die Sperre einen **laufenden oder noch nicht
 erreichten Zustand** meint, den der Nutzer nicht durch Eingabe auflösen kann

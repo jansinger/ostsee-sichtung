@@ -124,8 +124,7 @@ test.describe('Formular — Auto-Save & Restore', () => {
 
 		// Erneute Wahl darf nicht die vor dem Reset eingegebenen Werte zurückholen —
 		// sonst wäre "alle gespeicherten Daten" nur für den Zweig eingelöst.
-		await page.getByRole('radio', { name: /lebenden Tieres/i }).check();
-		await page.getByTestId('report-kind-submit').click();
+		await page.getByTestId('report-kind-option-lebend').click();
 		await expectCurrentStep(page, /Position & Zeitpunkt/i);
 		await expect(page.locator('[data-testid="field-waterway"]')).toHaveValue('');
 	});

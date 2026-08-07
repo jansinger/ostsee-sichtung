@@ -1,11 +1,6 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
-	import {
-		REPORT_KIND_PARAM,
-		reportKindToParam,
-		resolveReportKind,
-		type ReportKind
-	} from '$lib/report/reportKind';
+	import { REPORT_KIND_PARAM, reportKindToParam, type ReportKind } from '$lib/report/reportKind';
 	import { isNotIFrame } from '$lib/utils/client/isNotIFrame';
 	import { scrollToElement } from '$lib/utils/fieldNavigation';
 
@@ -17,41 +12,24 @@
 		// ersten Tab-Stopp hinter die Navigation, ohne Nutzen. `+page.svelte`
 		// setzt das Prop gezielt nur für den Rücksprung aus dem Formular (Ändern,
 		// Reset, Browser-Zurück).
-		autofocusHeading = false
-	}: { onchoose: (kind: ReportKind) => void; autofocusHeading?: boolean } = $props();
+		autofocusHeading = false,
+		/*
+		 * Das Ziel der beiden Links — der JS-lose Pfad, siehe Kommentar am Markup.
+		 * Der Default reicht für die Startseite ohne weitere Query-Parameter;
+		 * `+page.svelte` überschreibt ihn, um bestehende Parameter (Kampagnen-
+		 * Marker aus einem Museums-Link) zu erhalten. Die Komponente baut den
+		 * Wert bewusst nicht selbst aus `$app/state`: Sie bliebe damit ohne
+		 * SvelteKit-Umgebung nicht mehr renderbar, und die Stelle, die die URL
+		 * ohnehin schon hält, ist `+page.svelte`.
+		 */
+		buildHref = (kind: ReportKind) => `?${REPORT_KIND_PARAM}=${reportKindToParam(kind)}`
+	}: {
+		onchoose: (kind: ReportKind) => void;
+		autofocusHeading?: boolean;
+		buildHref?: (kind: ReportKind) => string;
+	} = $props();
 
-	/**
-	 * UX-Review (2026-08-06, Punkt 1): Steht auf `true`, sobald einmal ohne
-	 * Auswahl bestätigt wurde. Ersetzt die frühere `aria-disabled`-Sperre am
-	 * „Weiter"-Knopf, die zwei Wege still ins Leere laufen ließ — Begründung an
-	 * der Aufrufstelle des Knopfes unten.
-	 */
-	let selectionMissing = $state(false);
-	let legendEl: HTMLElement | undefined = $state();
-
-	/*
-	 * Die Radios heißen wie der Query-Parameter der Seite (`REPORT_KIND_PARAM`)
-	 * und tragen dessen deutsche Werte (`reportKindToParam`). Warum das ein
-	 * Vertrag und keine Kosmetik ist, steht an der Konstante in `reportKind.ts`.
-	 *
-	 * Zwei Dinge, die dieser Weg NICHT leistet:
-	 *
-	 * 1. **Bestehende Query-Parameter überleben ihn nicht** — ein GET-Submit
-	 *    ersetzt die gesamte Query. `choose()` in `+page.svelte` hält sie im
-	 *    JS-Pfad erhalten (Kampagnen-Marker aus einem Museums-Link); ohne JS
-	 *    bräuchte es dafür je ein verstecktes Feld, dessen Wert nur
-	 *    `$app/state` kennt.
-	 * 2. **Ohne Auswahl bleibt er stumm.** Vor der Hydration führt „Weiter"
-	 *    ohne angekreuzte Option zu `/?` — einem vollständigen Reload ohne
-	 *    Erklärung statt der Meldung unten. Ein `required` an den Radios löste
-	 *    das nativ, verdrängte aber im JS-Pfad die eigene Meldung durch die
-	 *    Browser-Blase, die nicht barrierefrei ist und nicht stehen bleibt. Der
-	 *    Zielkonflikt ist zugunsten des JS-Pfads entschieden: Er ist der
-	 *    Regelfall, der andere ein Zeitfenster von Sekunden.
-	 *
-	 * Beides ist bewusst in Kauf genommen — auf diesem Weg passierte vorher
-	 * überhaupt nichts (der Knopf war per `pointer-events: none` unerreichbar).
-	 */
+	let questionEl: HTMLElement | undefined = $state();
 
 	/**
 	 * B7: „Ändern" tauschte bislang den gesamten Formularbaum gegen diese Seite
@@ -59,48 +37,37 @@
 	 * nichts. Dieselbe Mechanik wie beim Schrittwechsel (`scrollAndFocusStep` in
 	 * `form/StepNavigation.svelte`): Kopf des neuen Inhalts fokussieren.
 	 *
-	 * Fokussiert wird die `<legend>`, nicht die `<h1>` darüber — die
-	 * Überschrift ist im iframe bewusst ausgeblendet (siehe unten), die Legend
-	 * dagegen immer vorhanden. Anders als bei den Formular-Schritten braucht es
-	 * kein `requestAnimationFrame`: Diese Komponente ist beim ersten Lauf des
-	 * Effekts bereits vollständig gerendert, es gibt keinen „alten Inhalt", der
-	 * noch im Weg stehen könnte.
+	 * Fokussiert wird die Frage, nicht die `<h1>` darüber — die Seitenüberschrift
+	 * ist im iframe bewusst ausgeblendet (siehe unten), die Frage dagegen immer
+	 * vorhanden. Anders als bei den Formular-Schritten braucht es kein
+	 * `requestAnimationFrame`: Diese Komponente ist beim ersten Lauf des Effekts
+	 * bereits vollständig gerendert, es gibt keinen „alten Inhalt", der noch im
+	 * Weg stehen könnte.
 	 */
 	$effect(() => {
-		if (!autofocusHeading || !legendEl) return;
-		scrollToElement(legendEl);
-		legendEl.setAttribute('tabindex', '-1');
-		legendEl.focus({ preventScroll: true });
+		if (!autofocusHeading || !questionEl) return;
+		scrollToElement(questionEl);
+		questionEl.setAttribute('tabindex', '-1');
+		questionEl.focus({ preventScroll: true });
 	});
 
 	/**
-	 * Die Auswahl wird aus dem abgeschickten Formular gelesen, nicht aus einem
-	 * eigenen `$state`. Der Grund ist derselbe wie beim Feldnamen oben: Wer vor
-	 * der Hydration eine Option ankreuzt, tut das im DOM — ein `$state` wüsste
-	 * davon nichts und meldete danach „nichts gewählt", obwohl sichtbar etwas
-	 * angekreuzt ist.
+	 * Der Regelweg: Klick abfangen, Zweig melden, statt die Seite neu zu laden.
+	 * `+page.svelte` setzt daraufhin selbst die URL (inklusive History-Eintrag,
+	 * damit „Zurück" auf die Auswahl führt statt aus der App).
 	 *
-	 * `resolveReportKind(param, null, null)` ist hier die Parameter-Zuordnung
-	 * ohne Storage-Quellen — dieselbe Aufrufform wie im `popstate`-Handler in
-	 * `+page.svelte`.
+	 * Modifizierte Klicks bleiben dem Browser überlassen — Strg/Cmd öffnet einen
+	 * neuen Tab, Shift ein neues Fenster. Würde der Handler auch sie abfangen,
+	 * bliebe der Nutzer im alten Tab zurück, während der neue leer bleibt.
+	 * `button !== 0` deckt Klicks ab, die manche Browser als `click` melden,
+	 * ohne dass die primäre Taste gedrückt war.
 	 */
-	function submit(event: SubmitEvent & { currentTarget: HTMLFormElement }): void {
-		event.preventDefault();
-
-		const submitted = new FormData(event.currentTarget).get(REPORT_KIND_PARAM);
-		const chosen = resolveReportKind(typeof submitted === 'string' ? submitted : null, null, null);
-
-		if (!chosen) {
-			selectionMissing = true;
-			// Fokus zur Gruppe, zu der die Meldung gehört — er stünde sonst auf dem
-			// Knopf, und ein Screenreader-Nutzer müsste rückwärts suchen, was
-			// beanstandet wird. Das Fokussieren eines Radios wählt es nicht aus.
-			event.currentTarget.querySelector<HTMLInputElement>('input[type="radio"]')?.focus();
+	function select(event: MouseEvent, kind: ReportKind): void {
+		if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
 			return;
 		}
-
-		selectionMissing = false;
-		onchoose(chosen);
+		event.preventDefault();
+		onchoose(kind);
 	}
 
 	const OPTIONS: Array<{ value: ReportKind; label: string; hint: string; icon: string }> = [
@@ -119,7 +86,7 @@
 	];
 </script>
 
-<form class="mx-auto max-w-2xl px-4 py-8" onsubmit={submit} data-testid="report-kind-choice">
+<div class="mx-auto max-w-2xl px-4 py-8" data-testid="report-kind-choice">
 	{#if isNotIFrame}
 		<!-- Nur außerhalb des meeresmuseum.de-iframe: Die Museumsseite trägt dort
 		     ihre eigene Überschrift „Meerestier melden" — dieselbe Bedingung wie
@@ -130,76 +97,67 @@
 		<h1 class="text-display mb-2">Meerestier melden</h1>
 	{/if}
 	<!-- Beantwortet die naheliegende Frage „warum werde ich das gefragt?" genau
-	     dort, wo sie anfällt — das ist die Begründung für den zusätzlichen Klick. -->
+	     dort, wo sie anfällt. -->
 	<p class="text-base-content/70 mb-6">Damit wir Ihnen die passenden Fragen stellen können.</p>
 
-	<!-- role="radiogroup" überschreibt die implizite Rolle `group` des fieldset:
-	     nur so sagt ein Screenreader „1 von 2" an und verknüpft die Legend mit
-	     den Optionen. Gleiche Mechanik wie in FieldRenderer.svelte. -->
-	<!-- aria-invalid und aria-describedby tragen die Gruppe, nicht die einzelnen
-	     Radios — aber aus zwei verschiedenen Gründen, die sich leicht
-	     verwechseln lassen:
+	<h2 id="report-kind-question" class="text-section mb-3" bind:this={questionEl}>
+		Was möchten Sie melden?
+	</h2>
 
-	     `aria-invalid` MUSS hierher: ARIA 1.2 hat es (wie `aria-required`) aus
-	     den globalen Zuständen entfernt, `role="radio"` unterstützt es seither
-	     nicht (design-system.md, A11y-Minima). `aria-describedby` ist dagegen
-	     weiterhin global und stünde an einem Radio nicht falsch — es steht
-	     hier, weil die Meldung die GRUPPE beanstandet und nicht eine der beiden
-	     Optionen. Dasselbe Muster wie in FieldRenderer.svelte. -->
-	<fieldset
-		role="radiogroup"
-		aria-labelledby="report-kind-legend"
-		aria-required="true"
-		aria-invalid={selectionMissing ? 'true' : undefined}
-		aria-describedby={selectionMissing ? 'report-kind-error' : undefined}
-	>
-		<legend id="report-kind-legend" class="text-section mb-3" bind:this={legendEl}
-			>Was möchten Sie melden?</legend
-		>
+	<!-- Zwei Links, keine Radiogruppe mit „Weiter": Jede Antwort führt sofort
+	     woanders hin und hat eine eigene URL — das ist eine Navigation, keine
+	     Auswahl, die noch bestätigt werden müsste. Eine Radio-Karte, die beim
+	     Ankreuzen selbst weiterschickt, wäre kein Ersatz, sondern ein
+	     Anti-Pattern: Wer per Pfeiltaste durch eine Radiogruppe geht, wählt
+	     zwangsläufig die erste Option aus (WCAG 3.2.2).
 
-		<div class="flex flex-col gap-3">
+	     Der `href` trägt das Ziel und macht den Weg ohne JS trivial: Ein Klick
+	     vor der Hydration navigiert nativ auf `/?meldung=totfund`, wo
+	     `resolveReportKind` den Zweig schon serverseitig auflöst. Der frühere
+	     GET-Submit konnte das nur unter zwei Vorbehalten — er ersetzte die
+	     gesamte Query (Kampagnen-Marker gingen verloren) und lud ohne Auswahl
+	     stumm `/?` nach. Beides entfällt hier, ebenso der ganze Fehlerzustand
+	     „nichts gewählt": Er ist strukturell nicht mehr herstellbar.
+
+	     `<nav>` mit `aria-labelledby` statt einer Liste loser Links: So findet
+	     ein Screenreader-Nutzer die beiden Ziele als benannte Gruppe („Was
+	     möchten Sie melden?") wieder, ohne dass es eine Auswahl-Semantik
+	     vortäuscht. -->
+	<nav aria-labelledby="report-kind-question">
+		<ul class="flex list-none flex-col gap-3 p-0">
 			{#each OPTIONS as option (option.value)}
-				<label
-					class="border-base-300 hover:bg-base-200 rounded-box flex cursor-pointer items-start gap-3 border p-4"
-				>
-					<input
-						type="radio"
-						name={REPORT_KIND_PARAM}
-						class="radio radio-primary mt-1"
-						value={reportKindToParam(option.value)}
-						onchange={() => (selectionMissing = false)}
-					/>
-					<span class="flex flex-col gap-1">
-						<span class="flex items-center gap-2 font-medium">
-							<Icon icon={option.icon} width="20" aria-hidden="true" />
-							{option.label}
+				<li>
+					<!-- Label UND Hinweis stehen INNERHALB des Links: Der Hinweis ist die
+					     eigentliche Unterscheidungshilfe; außerhalb gelassen hörte ein
+					     Screenreader-Nutzer beim Durchgehen der Links nur die beiden
+					     ähnlich klingenden Überschriften. -->
+					<a
+						href={buildHref(option.value)}
+						onclick={(event) => select(event, option.value)}
+						data-testid="report-kind-option-{reportKindToParam(option.value)}"
+						class="border-base-300 hover:bg-base-200 hover:border-primary rounded-box flex w-full items-center gap-3 border p-4 no-underline transition-colors"
+					>
+						<Icon
+							icon={option.icon}
+							width="24"
+							class="text-primary flex-shrink-0"
+							aria-hidden="true"
+						/>
+						<span class="flex flex-1 flex-col gap-1">
+							<span class="text-base-content font-medium">{option.label}</span>
+							<span class="text-base-content/70 text-support">{option.hint}</span>
 						</span>
-						<span class="text-base-content/70 text-support">{option.hint}</span>
-					</span>
-				</label>
+						<!-- Macht die Karte auf den ersten Blick als „führt weiter" lesbar —
+						     die Aufgabe, die vorher der „Weiter"-Knopf übernahm. -->
+						<Icon
+							icon="lucide:chevron-right"
+							width="20"
+							class="text-base-content/70 flex-shrink-0"
+							aria-hidden="true"
+						/>
+					</a>
+				</li>
 			{/each}
-		</div>
-
-		<!-- Gleiche Fehler-Optik wie an jedem Formularfeld (FieldRenderer.svelte),
-		     damit die Meldung hier nicht wie ein Fremdkörper aussieht. -->
-		{#if selectionMissing}
-			<div id="report-kind-error" class="mt-3 text-left" role="alert" aria-live="polite">
-				<span class="text-error text-support flex items-center gap-1 font-medium">
-					<Icon icon="lucide:triangle-alert" width="14" class="text-error flex-shrink-0" />
-					Bitte wählen Sie aus, was Sie melden möchten.
-				</span>
-			</div>
-		{/if}
-	</fieldset>
-
-	<!-- Kein `aria-disabled` (und erst recht kein `disabled`): Eine gesperrte
-	     Schaltfläche sagte nicht, was fehlt. DaisyUI legt an
-	     `.btn[aria-disabled=true]` ein `pointer-events: none` — vor der Hydration
-	     erreichte ein Klick das Element damit gar nicht, und per Tastatur lief das
-	     Enter durch, ohne dass der stille Wächter in `submit` etwas meldete
-	     (UX-Review 2026-08-06, Punkt 1). Die Sperre ist jetzt die Meldung an der
-	     Radiogruppe oben. -->
-	<button type="submit" class="btn btn-primary mt-6 w-full" data-testid="report-kind-submit">
-		Weiter
-	</button>
-</form>
+		</ul>
+	</nav>
+</div>

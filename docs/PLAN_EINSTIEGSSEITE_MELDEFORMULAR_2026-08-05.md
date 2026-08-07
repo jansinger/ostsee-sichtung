@@ -1,5 +1,14 @@
 # Einstiegsseite des Meldeformulars — Konzept und Spezifikation
 
+> **Überholt am 2026-08-07 (Auswahlmechanik):** Die Einstiegsseite ist keine
+> Radiogruppe mit „Weiter" mehr, sondern zwei Link-Karten — jede Antwort ist
+> eine Navigation mit eigener URL, keine Auswahl, die noch bestätigt werden
+> müsste. Alles zur Radiogruppe, zum „Weiter"-Knopf und zum Fehlerzustand
+> „nichts gewählt" in diesem Dokument beschreibt den damaligen, nicht den
+> heutigen Stand. Zweig-Semantik, Query-Parameter-Vertrag und Fokus-Verhalten
+> gelten unverändert. Begründung: `ReportKindChoice.svelte` und der
+> `aria-disabled`-Abschnitt in `.claude/rules/design-system.md`.
+
 **Stand:** 2026-08-05 · **Fassung 2** (nach Review, siehe Abschnitt 14)
 **Vorlage:** `Sichtungs-Webseite_SL.docx` des Deutschen Meeresmuseums, Punkt C1
 **Status:** Umgesetzt (Branch `claude/bold-dhawan-5373e7`, 15 Tasks + Task 8b, Abschlussreview
