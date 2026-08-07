@@ -2,7 +2,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import SightingInboxCard from '$lib/components/admin/SightingInboxCard.svelte';
-	import { submitVerdict, type SightingVerdict } from '$lib/components/admin/inboxVerdict';
+	import { submitVerdict, type SightingVerdict } from '$lib/components/admin/sightingVerdict';
 	import { onDestroy } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import ArrowDown from '~icons/lucide/arrow-down';

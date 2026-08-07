@@ -12,6 +12,7 @@ import { render } from 'vitest-browser-svelte';
 import AdminSightingView from './AdminSightingView.svelte';
 import { DEAD_FINDING_PRESENTATION } from './deadFinding';
 import type { FrontendSighting } from '$lib/types';
+import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 import {
 	PHOTO_ANNOUNCEMENT_LABEL,
 	PHOTO_ANNOUNCEMENT_TITLE
@@ -33,6 +34,10 @@ function baseSighting(overrides: Record<string, unknown> = {}): FrontendSighting
 		mediaFile: null,
 		mediaUpload: 0,
 		mediaConsent: 0,
+		// App-Kanal: Nur dort kann ein Client ein Foto ankündigen, ohne es zu
+		// übertragen (`photoAnnouncement.ts`). Ein eigener Test unten deckt die
+		// übrigen Kanäle ab.
+		entryChannel: EntryChannelEnum.APP,
 		uploadedFiles: [],
 		...overrides
 	} as unknown as FrontendSighting;
@@ -141,5 +146,47 @@ describe('AdminSightingView — Totfund-Auszeichnung', () => {
 		expect(document.body.textContent).not.toContain(DEAD_FINDING_PRESENTATION.description);
 		expect(page.getByRole('heading', { name: 'Totfund' }).elements()).toHaveLength(0);
 		expect(page.getByRole('row', { name: 'Totfund Nein' }).elements()).toHaveLength(0);
+	});
+});
+
+describe('AdminSightingView — Eingangskanal der Foto-Ankündigung', () => {
+	it.each([
+		['Web', EntryChannelEnum.WEB],
+		['E-Mail', EntryChannelEnum.EMAIL],
+		['Post', EntryChannelEnum.MAIL]
+	])(
+		'zeigt bei einer über %s eingegangenen Meldung keinen Ankündigungs-Hinweis — dort liegt das Foto bereits vor',
+		async (_kanal, entryChannel) => {
+			render(AdminSightingView, {
+				sighting: baseSighting({ mediaUpload: 1, uploadedFiles: [], entryChannel })
+			});
+
+			await expect.element(page.getByRole('row', { name: 'Upload Ja' })).toBeVisible();
+			expect(document.body.textContent).not.toContain(PHOTO_ANNOUNCEMENT_LABEL);
+		}
+	);
+});
+
+describe('AdminSightingView — Ablehnung', () => {
+	it('zeigt Zeitpunkt und Urheber der Ablehnung', async () => {
+		render(AdminSightingView, {
+			sighting: baseSighting({
+				rejectedAt: new Date('2026-08-06T14:30:00Z'),
+				rejectedBy: 'admin@example.com'
+			})
+		});
+
+		const zeile = page.getByRole('row', { name: /^Abgelehnt/ });
+		await expect.element(zeile).toBeVisible();
+		expect((await zeile.element()).textContent).toContain('admin@example.com');
+	});
+
+	it('zeigt gar keine Ablehnungs-Zeile, solange nicht abgelehnt wurde', async () => {
+		render(AdminSightingView, { sighting: baseSighting({ rejectedAt: null }) });
+
+		// Nicht über den Text „Abgelehnt" prüfen: Der Regelfall darf hier keine
+		// Zeile erzeugen, auch keine mit „Nein" — sonst steht neben
+		// „Verifiziert: Nein" ein zweites Nein und der Unterschied verschwindet.
+		expect(document.body.textContent).not.toContain('Abgelehnt');
 	});
 });

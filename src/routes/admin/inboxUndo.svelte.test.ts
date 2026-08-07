@@ -13,7 +13,7 @@ vi.mock('$app/navigation', () => ({
 vi.mock('$app/state', () => ({
 	page: { url: new URL('https://localhost:4000/admin') }
 }));
-vi.mock('$lib/components/admin/inboxVerdict', () => ({
+vi.mock('$lib/components/admin/sightingVerdict', () => ({
 	submitVerdict
 }));
 

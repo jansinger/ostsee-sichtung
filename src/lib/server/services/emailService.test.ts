@@ -4,6 +4,7 @@
  * Testet das Verhalten des E-Mail-Benachrichtigungsdienstes für neue Meeressäuger-Sichtungen.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { EntryChannelEnum } from '$lib/report/formOptions/entryChannel';
 
 // Das globale Setup in vitest-setup-server.ts mockt emailService — hier aufheben
 // damit wir die echte Implementierung testen
@@ -611,16 +612,23 @@ describe('EmailService', () => {
 			async function renderMailFor({
 				mediaUpload,
 				attachedFiles = 0,
-				created = new Date('2026-08-03T10:00:00.000Z')
+				created = new Date('2026-08-03T10:00:00.000Z'),
+				// Nur die App kündigt ein Foto an, ohne es übertragen zu können
+				// (`$lib/utils/media/photoAnnouncement.ts`) — bei den manuell
+				// erfassten Kanälen liegt dem Admin das Foto bereits vor.
+				entryChannel = EntryChannelEnum.APP
 			}: {
 				mediaUpload: unknown;
 				attachedFiles?: number;
 				created?: Date;
+				entryChannel?: number;
 			}): Promise<string> {
 				vi.mocked(db.select).mockReturnValue({
 					from: vi.fn().mockReturnValue({
 						where: vi.fn().mockReturnValue({
-							limit: vi.fn().mockResolvedValue([createMockSighting({ mediaUpload, created })])
+							limit: vi
+								.fn()
+								.mockResolvedValue([createMockSighting({ mediaUpload, created, entryChannel })])
 						})
 					})
 				} as any);
@@ -652,6 +660,15 @@ describe('EmailService', () => {
 			// setzt `ModernReportForm.svelte` `mediaUpload` genau dann, wenn eine
 			// Datei hochgeladen wurde — und die hängt beim Versand bereits an der
 			// Sichtung (`saveSighting` verknüpft sie in derselben Transaktion).
+			it('lässt den Block weg bei einer nicht über die App eingegangenen Meldung', async () => {
+				const html = await renderMailFor({
+					mediaUpload: 1,
+					entryChannel: EntryChannelEnum.MAIL
+				});
+
+				expect(html).not.toContain('foto-angekuendigt');
+			});
+
 			it('lässt den Block weg, wenn bereits eine Datei angehängt ist', async () => {
 				const html = await renderMailFor({ mediaUpload: 1, attachedFiles: 1 });
 

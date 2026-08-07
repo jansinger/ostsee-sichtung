@@ -48,9 +48,13 @@ Ausdruck zweier Arbeitsschritte, sondern zwei Felder desselben Vorgangs:
   Er setzt beide immer gemeinsam in **einem** `db.update(...).set(...)`.
   Es gibt bewusst keinen zweiten Endpunkt dafür — ein früherer
   `/api/sightings/[id]/approve` wurde 2026-07 ersatzlos entfernt.
-- **Eine Bedienoberfläche** je Kontext: der Toggle „Geprüft" in Tabelle und
-  Detailansicht, die Verdict-Aktionen (Freigeben/Ablehnen/Rückgängig) der
-  Eingangsseite — alle rufen denselben Verify-Endpunkt.
+- **Alle Bedienelemente rufen denselben Verify-Endpunkt.** Es gibt drei, und
+  wo sie sitzen, steht hier, weil die Aufzählung schon einmal falsch war:
+  der Toggle „Geprüft" **in der Tabelle** (`/admin/sichtungen`), dort
+  zusätzlich „Ablehnung aufheben" an einer abgelehnten Zeile, und die
+  Verdict-Aktionen der Eingangsseite (Freigeben/Ablehnen/Rückgängig).
+  Die **Detailansicht** (`/admin/[id]`) zeigt den Status nur an und ändert
+  ihn nicht.
 - **Öffentliche Grundmenge ist `approvedAt IS NOT NULL`** — sowohl in der
   Legacy-API (`/sichtungen/showreports.json`) als auch auf der modernen Karte
   (`/api/map/sightings`). Nicht auf `verified` filtern: die Legacy-API ist an
