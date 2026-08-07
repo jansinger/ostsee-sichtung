@@ -90,7 +90,8 @@ export const load: PageServerLoad = async ({ url }) => {
 		totalCount: sightings.totalCount,
 		distance: sightings.distance,
 		juvenileCount: sightings.juvenileCount,
-		distribution: sightings.distribution
+		distribution: sightings.distribution,
+		spamScore: sightings.spamScore
 	};
 
 	// Abfrage bauen

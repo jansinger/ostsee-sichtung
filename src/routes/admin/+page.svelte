@@ -64,6 +64,7 @@
 		wind: false,
 		visibility: false,
 		mediaUpload: true,
+		spamScore: true,
 		balticSea: true,
 		verified: true,
 		actions: true
@@ -89,6 +90,7 @@
 		// (Ja/Nein)"-Spalte am rechten Rand war sie genau dann weg, wenn man
 		// viele Spalten eingeschaltet hatte und am wenigsten hinsah.
 		{ key: 'mediaUpload', label: 'Aufnahme', sortKey: null },
+		{ key: 'spamScore', label: 'Spam', sortKey: 'spamScore' },
 		{ key: 'balticSea', label: 'Ostsee', sortKey: null },
 		{ key: 'verified', label: 'Geprüft', sortKey: null },
 		{ key: 'actions', label: 'Aktionen', sortKey: null }
@@ -814,6 +816,9 @@
 						{#if columnVisibility.mediaUpload}
 							<th class="hover:bg-base-300">Aufnahme</th>
 						{/if}
+						{#if columnVisibility.spamScore}
+							{@render sortableTh('Spam', 'spamScore')}
+						{/if}
 						{#if columnVisibility.balticSea}
 							<th class="hover:bg-base-300">Ostsee</th>
 						{/if}
@@ -916,6 +921,37 @@
 										<span class="badge badge-success badge-sm">Ja</span>
 									{:else}
 										<span class="badge badge-ghost badge-sm">Nein</span>
+									{/if}
+								</td>
+							{/if}
+							{#if columnVisibility.spamScore}
+								<td class="text-center">
+									{#if sighting.spamScore == null}
+										<!-- NULL heißt „nie bewertet" (Altbestand, Legacy-Eingang) —
+										     bewusst kein Badge, sonst läse es sich wie „geprüft, sauber". -->
+										<span class="text-base-content/70">—</span>
+									{:else}
+										<span
+											class="badge badge-sm whitespace-nowrap {sighting.spamScore >= 5
+												? 'badge-error'
+												: sighting.spamScore >= 2
+													? 'badge-warning'
+													: 'badge-ghost'}"
+											title={Array.isArray(sighting.spamIndicators) &&
+											sighting.spamIndicators.length > 0
+												? sighting.spamIndicators.join(', ')
+												: 'Keine Auffälligkeiten'}
+										>
+											{sighting.spamScore}
+											<!-- title ist nur per Maus erreichbar — derselbe Text
+											     zusätzlich für Screenreader. -->
+											<span class="sr-only">
+												{Array.isArray(sighting.spamIndicators) &&
+												sighting.spamIndicators.length > 0
+													? `Spam-Indikatoren: ${sighting.spamIndicators.join(', ')}`
+													: 'Keine Auffälligkeiten'}
+											</span>
+										</span>
 									{/if}
 								</td>
 							{/if}

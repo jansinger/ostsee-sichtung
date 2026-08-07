@@ -2,6 +2,7 @@ import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
 import { createLogger } from '$lib/logger.server';
 import { detectSpamIndicators } from '$lib/server/spam/spamDetector';
+import { HIGH_RISK_THRESHOLD, type SpamCheckResult } from '$lib/types/spam';
 import { db } from '$lib/server/db';
 
 // Helper to get PUBLIC_SITE_URL dynamically (runtime, not build-time)
@@ -267,7 +268,9 @@ export class EmailService {
 			sightingData.referenceId,
 			sightingData.adminUrl,
 			sightingData.balticSea,
-			sightingData.photoAnnouncementPending
+			sightingData.photoAnnouncementPending,
+			sightingData.persistedSpam,
+			sightingData.inBalticSeaGeo
 		);
 	}
 
@@ -281,6 +284,8 @@ export class EmailService {
 		adminUrl: string;
 		balticSea: BalticSeaEmailContext;
 		photoAnnouncementPending: boolean;
+		persistedSpam: SpamCheckResult | null;
+		inBalticSeaGeo: number | null;
 	} | null> {
 		try {
 			const sightingResult = await db
@@ -382,7 +387,23 @@ export class EmailService {
 				// verliert den Altsystem-Wert 2 und macht `noPosition` unerreichbar.
 				// Derselbe Aufruf wie in der Admin-Übersicht — der Status entsteht
 				// genau einmal (`$lib/utils/geo/balticSeaStatus.ts`).
-				balticSea: balticSeaEmailContext(sighting)
+				balticSea: balticSeaEmailContext(sighting),
+				// Spam-Bewertung zum Meldezeitpunkt (inkl. Token-Kontext, den eine
+				// Neuberechnung hier nicht mehr hätte). NULL = Altbestand → der
+				// Versand rechnet dann als Fallback neu.
+				persistedSpam:
+					sighting.spamScore != null
+						? {
+								score: sighting.spamScore,
+								isHighRisk: sighting.spamScore >= HIGH_RISK_THRESHOLD,
+								indicators: Array.isArray(sighting.spamIndicators)
+									? (sighting.spamIndicators as string[])
+									: []
+							}
+						: null,
+				// Rohwert der Spalte für den Fallback — das `!!` in den FormValues
+				// oben verliert 0 vs. >0 nicht, aber den Zahlwert schon.
+				inBalticSeaGeo: sighting.inBalticSeaGeo
 			};
 		} catch (error) {
 			logger.error({ error, sightingId }, 'Failed to load sighting from database');
@@ -429,7 +450,9 @@ export class EmailService {
 		referenceId: string,
 		adminUrl: string,
 		balticSea: BalticSeaEmailContext,
-		photoAnnouncementPending: boolean
+		photoAnnouncementPending: boolean,
+		persistedSpam: SpamCheckResult | null = null,
+		inBalticSeaGeo: number | null = null
 	): Promise<boolean> {
 		try {
 			const blocker = await this.findNotificationBlocker();
@@ -452,19 +475,24 @@ export class EmailService {
 				return false;
 			}
 
-			// Spam detection (heuristics)
-			const spamInput = {
-				latitude: sightingFormValues.latitude ?? undefined,
-				longitude: sightingFormValues.longitude ?? undefined,
-				species: sightingFormValues.species,
-				firstName: sightingFormValues.firstName || undefined,
-				lastName: sightingFormValues.lastName || undefined,
-				email: sightingFormValues.email || undefined,
-				waterway: sightingFormValues.waterway || undefined,
-				seaMark: sightingFormValues.seaMark || undefined,
-				notes: sightingFormValues.notes || undefined
-			};
-			const spamIndicators = await detectSpamIndicators(spamInput);
+			// Spam-Bewertung: bevorzugt der zum Meldezeitpunkt persistierte Score
+			// (kennt Token-Kontext und Duplikate). Neuberechnung nur als Fallback
+			// für Altbestand ohne gespeicherte Bewertung — mit dem DB-Ostsee-Flag
+			// statt eigener Geografie.
+			const spamIndicators =
+				persistedSpam ??
+				(await detectSpamIndicators({
+					latitude: sightingFormValues.latitude ?? undefined,
+					longitude: sightingFormValues.longitude ?? undefined,
+					species: sightingFormValues.species,
+					firstName: sightingFormValues.firstName || undefined,
+					lastName: sightingFormValues.lastName || undefined,
+					email: sightingFormValues.email || undefined,
+					waterway: sightingFormValues.waterway || undefined,
+					seaMark: sightingFormValues.seaMark || undefined,
+					notes: sightingFormValues.notes || undefined,
+					inBalticSeaGeo
+				}));
 
 			// Prepare template data with formatted enum values
 			const formattedSighting = formatSightingForDisplay(sightingFormValues);

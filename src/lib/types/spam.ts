@@ -1,7 +1,32 @@
+/**
+ * Kontext, der nur zum Meldezeitpunkt existiert (Zeit-Token aus dem Formular).
+ * Nachträgliche Prüfungen (Admin-Modal, E-Mail-Versand) haben ihn nicht —
+ * der persistierte Score zum Meldezeitpunkt kann deshalb höher liegen.
+ */
+export interface SpamSubmissionContext {
+	tokenStatus: 'valid' | 'missing' | 'invalid';
+	ageSeconds?: number | undefined;
+}
+
+/**
+ * Ab diesem Score gilt eine Meldung als Hochrisiko. Auch der E-Mail-Versand
+ * rekonstruiert `isHighRisk` aus dem persistierten Score über diese Konstante —
+ * die Schwelle existiert genau einmal. Sie liegt hier (und nicht im Detektor),
+ * damit Verbraucher sie importieren können, ohne dass Test-Mocks des Detektors
+ * sie verschlucken.
+ */
+export const HIGH_RISK_THRESHOLD = 5;
+
 export interface SpamCheckResult {
 	score: number;
 	isHighRisk: boolean;
 	indicators: string[];
+	/**
+	 * Die Prüfung selbst ist fehlgeschlagen (Fail-Safe-Zweig). Ein solches
+	 * Ergebnis darf NICHT als spamScore persistiert werden — score 0 läse
+	 * sich in der DB als „geprüft, sauber", das Gegenteil der Aussage.
+	 */
+	failed?: true | undefined;
 }
 
 /**
@@ -23,4 +48,14 @@ export interface SpamDetectionInput {
 	species?: number | null | undefined;
 	latitude?: number | null | undefined;
 	longitude?: number | null | undefined;
+	/**
+	 * DB-Spalte `ostsee_geo` (Bounding-Box-Prüfung): 0 = außerhalb des
+	 * Kartenbereichs, >0 = drin (2 = Altbestand). Der Detektor rechnet die
+	 * Geografie nicht selbst — der Wert kommt aus derselben Quelle, die auch
+	 * die Spalte füllt (mapFormToSighting bzw. die gespeicherte Zeile).
+	 */
+	inBalticSeaGeo?: number | null | undefined;
+	/** Vom Aufrufer gezählte Duplikat-Signale (countRecentDuplicateSignals). */
+	recentDuplicates?: { sameEmail: number; sameNotes: number } | undefined;
+	submission?: SpamSubmissionContext | undefined;
 }

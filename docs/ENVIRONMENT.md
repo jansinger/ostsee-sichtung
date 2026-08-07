@@ -390,6 +390,21 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ## Application Settings
 
+### `FORM_TOKEN_SECRET`
+
+**Type**: `string`
+**Required**: No
+**Default**: random per process
+**Description**: HMAC secret for the anti-spam form timing token
+(`src/lib/server/spam/formToken.ts`). The report page issues a signed
+timestamp on load; the submit endpoint reads how long the form was open and
+scores suspiciously fast submissions. Without this variable a random secret is
+generated at process start — tokens issued before a restart then verify as
+`invalid`, which only adds spam-score points and never blocks a submission.
+Set it in production if you want tokens to survive restarts.
+
+---
+
 ### `NODE_ENV`
 
 **Type**: `enum`

@@ -194,17 +194,22 @@ function parseRetryAfter(response: Response, message: string | undefined): numbe
  * @note Räumt den Browser-Speicher **nicht** auf. Zuständig dafür ist
  *   `ModernReportForm.svelte`, siehe Hinweis unten.
  */
-export async function submitSightingForm(values: SightingFormValues): Promise<SubmitResult> {
+export async function submitSightingForm(
+	values: SightingFormValues,
+	formToken?: string
+): Promise<SubmitResult> {
 	let response: Response;
 
-	// HTTP POST-Anfrage an die Sichtungs-API mit JSON-Payload
+	// HTTP POST-Anfrage an die Sichtungs-API mit JSON-Payload. Das Zeit-Token
+	// (`_formToken`) ist kein Formularfeld — der Server entfernt es vor der
+	// Feld-Validierung und wertet es nur für den Spam-Score aus.
 	try {
 		response = await fetch('/api/sightings', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify(values) // Serialisiere komplette Formulardaten
+			body: JSON.stringify(formToken ? { ...values, _formToken: formToken } : values)
 		});
 	} catch (cause) {
 		if (isNetworkFailure(cause)) return { status: 'offline' };

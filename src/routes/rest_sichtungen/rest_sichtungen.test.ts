@@ -15,7 +15,14 @@ import { DELETE, GET, POST, PUT } from './+server';
 
 // Mock dependencies - these need to be hoisted before any imports
 vi.mock('$lib/server/db/sightingRepository', () => ({
-	saveSighting: vi.fn()
+	saveSighting: vi.fn(),
+	countRecentDuplicateSignals: vi.fn().mockResolvedValue({ sameEmail: 0, sameNotes: 0 })
+}));
+
+// Spam-Detektor mocken: verhindert echte MX-DNS-Lookups im Test und macht
+// das an saveSighting übergebene Ergebnis deterministisch.
+vi.mock('$lib/server/spam/spamDetector', () => ({
+	detectSpamIndicators: vi.fn().mockResolvedValue({ score: 0, isHighRisk: false, indicators: [] })
 }));
 
 vi.mock('$lib/server/geo/checkBalticSeaFile', () => ({
@@ -125,7 +132,9 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 					email: 'max@example.com',
 					totalCount: 3,
 					entryChannel: 4 // APP channel
-				})
+				}),
+				undefined,
+				expect.objectContaining({ score: expect.any(Number) })
 			);
 		});
 
@@ -183,7 +192,9 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 					mediaFile: 'photo123.jpg',
 					windDirection: 'SO', // Critical: Must support 'SO'
 					otherObservations: 'Perfect weather conditions'
-				})
+				}),
+				undefined,
+				expect.objectContaining({ score: expect.any(Number) })
 			);
 		});
 
@@ -203,8 +214,29 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 
 			expect(response.status).toBe(201);
 			expect(mockSave).toHaveBeenCalledWith(
-				expect.objectContaining({ otherObservations: 'Auffälliges Verhalten' })
+				expect.objectContaining({ otherObservations: 'Auffälliges Verhalten' }),
+				undefined,
+				expect.objectContaining({ score: expect.any(Number) })
 			);
+		});
+
+		it('bewertet Legacy-Meldungen ohne Formular-Token-Malus (App kennt kein Token)', async () => {
+			const { detectSpamIndicators } = await import('$lib/server/spam/spamDetector');
+			const event = createMockRequestEvent({
+				sichtungsdatum: '2024-03-15 12:00',
+				anzahl_gesamt: 1,
+				vorname: 'App',
+				name: 'Client',
+				email: 'app@example.com'
+			});
+			const response = await POST(event);
+
+			expect(response.status).toBe(201);
+			expect(detectSpamIndicators).toHaveBeenCalledOnce();
+			const spamInput = vi.mocked(detectSpamIndicators).mock.calls[0]?.[0];
+			// Kein `submission`-Kontext: 'missing' würde jede App-Meldung bestrafen,
+			// obwohl der Legacy-Vertrag gar kein Token vorsieht.
+			expect(spamInput?.submission).toBeUndefined();
 		});
 
 		it('should handle death finding (anzahl_gesamt = 0) as per PDF', async () => {
@@ -230,7 +262,9 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 					deadSize: 180,
 					deadCondition: 2,
 					deadSex: 1
-				})
+				}),
+				undefined,
+				expect.objectContaining({ score: expect.any(Number) })
 			);
 		});
 	});

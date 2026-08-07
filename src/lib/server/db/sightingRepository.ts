@@ -23,6 +23,7 @@ import { getUploadPath } from '$lib/server/uploads';
 import type { ExifData, UploadedFileInfo } from '$lib/types';
 import type { SightingFormValues } from '$lib/types/Form';
 import type { NewSighting, UpdateSighting } from '$lib/types/sighting';
+import type { SpamCheckResult } from '$lib/types/spam';
 import type { SightingFileInsert } from '$lib/types/sightingFile';
 import { isImageFile } from '$lib/utils';
 import { and, count, countDistinct, eq, gte, isNotNull, ne, sql, type SQL } from 'drizzle-orm';
@@ -48,6 +49,7 @@ const logger = createLogger('db:sightingRepository');
  *
  * @param formData Validierte Formulardaten aus dem Sichtungs-Formular
  * @param weatherData Optional: Wetterdaten für diese Sichtung (Issue #110)
+ * @param spamCheck Optional: Spam-Heuristik zum Meldezeitpunkt (wird persistiert)
  * @returns Objekt mit der generierten Sichtungs-ID
  *
  * @example
@@ -58,10 +60,19 @@ const logger = createLogger('db:sightingRepository');
  */
 export const saveSighting = async (
 	formData: SightingFormValues,
-	weatherData?: StoredWeatherData
+	weatherData?: StoredWeatherData,
+	spamCheck?: SpamCheckResult
 ): Promise<{ id: number | undefined }> => {
 	// Konvertiere Formulardaten in das normalisierte Datenbankschema
 	const sightingData: NewSighting = mapFormToSighting(formData);
+
+	// Spam-Heuristik zum Meldezeitpunkt festhalten. NULL bleibt für Altbestand,
+	// Eingänge ohne Bewertung UND fehlgeschlagene Prüfungen — deren Fail-Safe-
+	// Score 0 läse sich sonst als „geprüft, sauber".
+	if (spamCheck && !spamCheck.failed) {
+		sightingData.spamScore = spamCheck.score;
+		sightingData.spamIndicators = spamCheck.indicators;
+	}
 
 	// Add weather data fields if provided (Issue #110)
 	if (weatherData) {
@@ -109,6 +120,61 @@ export const saveSighting = async (
 
 	return { id: sightingId };
 };
+
+/**
+ * Zählt Duplikat-Signale für die Spam-Heuristik zum Meldezeitpunkt.
+ *
+ * `sameEmail`: Meldungen der letzten 24 h mit derselben E-Mail-Adresse
+ * (case-insensitiv). `sameNotes`: Meldungen der letzten 7 Tage mit exakt
+ * demselben Bemerkungstext (getrimmt) — nur geprüft, wenn der Text
+ * mindestens 20 Zeichen hat, sonst zählte „schön" jede zweite Meldung.
+ *
+ * Fail-open: Ein DB-Fehler liefert `{ 0, 0 }` und wirft nicht — die
+ * Duplikatzählung darf das Speichern einer Meldung nie verhindern.
+ */
+export async function countRecentDuplicateSignals(params: {
+	email?: string | null | undefined;
+	notes?: string | null | undefined;
+}): Promise<{ sameEmail: number; sameNotes: number }> {
+	const MIN_NOTES_LENGTH = 20;
+	const EMAIL_WINDOW_MS = 24 * 60 * 60 * 1000;
+	const NOTES_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+	try {
+		let sameEmail = 0;
+		let sameNotes = 0;
+
+		const email = params.email?.trim();
+		if (email) {
+			const since = new Date(Date.now() - EMAIL_WINDOW_MS);
+			const [row] = await db
+				.select({ count: count() })
+				.from(sightings)
+				.where(
+					and(
+						gte(sightings.created, since),
+						sql`lower(${sightings.email}) = ${email.toLowerCase()}`
+					)
+				);
+			sameEmail = Number(row?.count ?? 0);
+		}
+
+		const notes = params.notes?.trim();
+		if (notes && notes.length >= MIN_NOTES_LENGTH) {
+			const since = new Date(Date.now() - NOTES_WINDOW_MS);
+			const [row] = await db
+				.select({ count: count() })
+				.from(sightings)
+				.where(and(gte(sightings.created, since), sql`trim(${sightings.notes}) = ${notes}`));
+			sameNotes = Number(row?.count ?? 0);
+		}
+
+		return { sameEmail, sameNotes };
+	} catch (error: unknown) {
+		logger.warn({ error }, 'Duplikatzählung fehlgeschlagen – ohne Duplikat-Signale fortfahren');
+		return { sameEmail: 0, sameNotes: 0 };
+	}
+}
 
 /**
  * Aktualisiert eine bestehende Sichtung in der Datenbank

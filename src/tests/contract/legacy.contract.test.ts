@@ -17,9 +17,15 @@ const { mockSaveSighting, mockValidate, mockCreateError, mockSelectLimit } = vi.
 // ─── POST /rest_sichtungen mocks ────────────────────────────────────────────
 
 vi.mock('$lib/server/db/sightingRepository', () => ({
-	saveSighting: mockSaveSighting
+	saveSighting: mockSaveSighting,
+	countRecentDuplicateSignals: vi.fn().mockResolvedValue({ sameEmail: 0, sameNotes: 0 })
 }));
 
+
+// Spam-Detektor mocken: verhindert echte MX-DNS-Lookups im Contract-Test.
+vi.mock('$lib/server/spam/spamDetector', () => ({
+	detectSpamIndicators: vi.fn().mockResolvedValue({ score: 0, isHighRisk: false, indicators: [] })
+}));
 vi.mock('$lib/server/services/emailService', () => ({
 	EmailService: {
 		sendNewSightingNotification: vi.fn().mockResolvedValue(undefined)
