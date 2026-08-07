@@ -30,12 +30,24 @@ export const mediaTypeLabels: Record<MediaTypeEnum, string> = {
 export type MediaType = MediaTypeEnum;
 
 /**
+ * Medienformate, die im Formular auswählbar sind — "Sonstiges Medienformat"
+ * am Ende. Auffangkategorie hinter die konkreten Antworten; der gespeicherte
+ * Wert bleibt `0`.
+ */
+const SELECTABLE_MEDIA_TYPES: readonly MediaTypeEnum[] = [
+	...Object.values(MediaTypeEnum).filter(
+		(value): value is MediaTypeEnum => typeof value === 'number' && value !== MediaTypeEnum.OTHER
+	),
+	MediaTypeEnum.OTHER
+];
+
+/**
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-const mediaTypeOptions: Array<{ value: number; label: string }> = Object.entries(
-	mediaTypeLabels
-).map(([value, label]) => ({ value: Number(value), label }));
+const mediaTypeOptions: Array<{ value: number; label: string }> = SELECTABLE_MEDIA_TYPES.map(
+	(value) => ({ value, label: mediaTypeLabels[value] })
+);
 export const getMediaTypeOptions = (): Array<{ value: number; label: string }> => mediaTypeOptions;
 
 /**

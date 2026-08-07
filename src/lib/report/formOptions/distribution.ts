@@ -35,15 +35,21 @@ export const distributionLabels: Record<DistributionEnum, string> = {
 };
 
 /**
- * Verteilungen, die im Formular auswählbar sind.
+ * Verteilungen, die im Formular auswählbar sind — in dieser Reihenfolge.
  * `UNKNOWN` ist bewusst ausgenommen (siehe Enum-Kommentar).
  *
- * Abgeleitet statt aufgezählt: Ein später ergänzter echter Wert erscheint
- * dadurch automatisch im Formular, statt still zu fehlen.
+ * Aufgezählt statt abgeleitet, aus zwei Gründen: `OTHER` ist die
+ * Auffangkategorie und gehört ans Ende (sein Enum-Wert `0` hätte es nach vorn
+ * sortiert), und die konkreten Antworten stehen nach gemessener Häufigkeit
+ * (2026-08-07): Einzeln 3.066, Deutliche Schulen 1.096, Mutter mit Jungtier
+ * 644. Der gespeicherte Wert bleibt jeweils unverändert.
  */
-const SELECTABLE_DISTRIBUTIONS: readonly DistributionEnum[] = Object.values(DistributionEnum).filter(
-	(value): value is DistributionEnum => typeof value === 'number' && value !== DistributionEnum.UNKNOWN
-);
+const SELECTABLE_DISTRIBUTIONS: readonly DistributionEnum[] = [
+	DistributionEnum.SINGLE,
+	DistributionEnum.SCHOOLS,
+	DistributionEnum.MOTHER_WITH_YOUNG,
+	DistributionEnum.OTHER
+];
 
 export type Distribution = DistributionEnum;
 

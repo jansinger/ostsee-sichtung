@@ -56,10 +56,19 @@ export type BoatDrive = BoatDriveEnum;
  *
  * Abgeleitet statt aufgezählt: Ein später ergänzter echter Wert erscheint
  * dadurch automatisch im Formular, statt still zu fehlen.
+ *
+ * `OTHER` wandert dabei ans Ende — Auffangkategorie hinter die konkreten
+ * Antworten, statt durch seinen Enum-Wert `0` davor. Der gespeicherte Wert
+ * bleibt `0`. Diese Liste versorgt nur noch die Admin-Maske; das
+ * Meldeformular nutzt `PUBLIC_BOAT_DRIVE_OPTIONS` (siehe unten).
  */
-const SELECTABLE_BOAT_DRIVES: readonly BoatDriveEnum[] = Object.values(BoatDriveEnum).filter(
-	(value): value is BoatDriveEnum => typeof value === 'number' && value !== BoatDriveEnum.NONE
-);
+const SELECTABLE_BOAT_DRIVES: readonly BoatDriveEnum[] = [
+	...Object.values(BoatDriveEnum).filter(
+		(value): value is BoatDriveEnum =>
+			typeof value === 'number' && value !== BoatDriveEnum.NONE && value !== BoatDriveEnum.OTHER
+	),
+	BoatDriveEnum.OTHER
+];
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten

@@ -20,12 +20,27 @@ export const sexLabels: Record<SexEnum, string> = {
 export type Sex = SexEnum;
 
 /**
+ * Geschlechter, die im Formular auswählbar sind.
+ *
+ * `UNKNOWN` ("Unbekannt") ist bewusst ausgenommen: `deadSex` ist optional
+ * (das Museum hat das Feld am 2026-08-04 aus dem Meldeformular abbestellt, es
+ * steht nur noch in der Admin-Maske), und der Platzhalter von `BaseSelect`
+ * sagt "nicht angegeben" bereits. Der Enum-Wert `0` hätte "Unbekannt"
+ * außerdem vor die beiden echten Antworten sortiert.
+ *
+ * `totfund_geschlecht` ist `not null default 0`; der Wert bleibt für
+ * Bestandsdaten gültig und wird von `getSexLabel` weiterhin aufgelöst.
+ */
+const SELECTABLE_SEXES: readonly SexEnum[] = [SexEnum.FEMALE, SexEnum.MALE];
+
+/**
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-const sexOptions: Array<{ value: number; label: string }> = Object.entries(sexLabels).map(
-	([value, label]) => ({ value: Number(value), label })
-);
+const sexOptions: Array<{ value: number; label: string }> = SELECTABLE_SEXES.map((value) => ({
+	value,
+	label: sexLabels[value]
+}));
 export const getSexOptions = (): Array<{ value: number; label: string }> => sexOptions;
 
 /**

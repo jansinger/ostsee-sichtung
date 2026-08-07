@@ -26,11 +26,31 @@ export const seaStateLabels: Record<SeaStateEnum, string> = {
 export type SeaState = SeaStateEnum;
 
 /**
+ * Seegang-Stufen, die im Formular auswählbar sind.
+ *
+ * `NONE` ("Keine Angabe") ist bewusst ausgenommen: Das Feld ist optional, und
+ * `BaseSelect` rendert ohnehin einen Platzhalter ("Bitte wählen…"), solange
+ * nichts gewählt ist. Eine zweite Formulierung derselben Aussage stiftet nur
+ * Verwirrung — und sie stand durch den Enum-Wert `0` auch noch an erster
+ * Stelle, vor allen echten Kategorien.
+ *
+ * Der Wert selbst bleibt gültig: `seegang` ist `not null default 0`, im
+ * Bestand steht diese `0` also millionenfach und wird von `getSeaStateLabel`
+ * weiterhin aufgelöst.
+ *
+ * Abgeleitet statt aufgezählt: Die Stufen sind ordinal (glatt → hohe See), die
+ * Enum-Reihenfolge ist damit die fachlich richtige.
+ */
+const SELECTABLE_SEA_STATES: readonly SeaStateEnum[] = Object.values(SeaStateEnum).filter(
+	(value): value is SeaStateEnum => typeof value === 'number' && value !== SeaStateEnum.NONE
+);
+
+/**
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-const seaStateOptions: Array<{ value: number; label: string }> = Object.entries(seaStateLabels).map(
-	([value, label]) => ({ value: Number(value), label })
+const seaStateOptions: Array<{ value: number; label: string }> = SELECTABLE_SEA_STATES.map(
+	(value) => ({ value, label: seaStateLabels[value] })
 );
 export const getSeaStateOptions = (): Array<{ value: number; label: string }> => seaStateOptions;
 
