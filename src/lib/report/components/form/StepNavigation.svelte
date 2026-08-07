@@ -21,6 +21,16 @@
 
 	const logger = createLogger('report:StepNavigation');
 
+	/**
+	 * Stabiler Toast-Key für den Validierungshinweis dieser Navigation. Ein
+	 * erneuter „Weiter"-Klick auf demselben Schritt ERSETZT den Toast statt sich
+	 * daneben zu stapeln (UX-Review: 4 identische Toasts bei viermal „Weiter"),
+	 * und der Schrittwechsel-Effect unten schließt ihn aktiv — sonst stünde die
+	 * Meldung des alten Schritts bis zu 5s auf dem neuen und widerspräche dem
+	 * sichtbaren Zustand.
+	 */
+	const VALIDATION_TOAST_KEY = 'step-validation';
+
 	let {
 		currentStep = $bindable(0),
 		totalSteps = $bindable(formStepsConfig.length),
@@ -76,6 +86,11 @@
 	$effect(() => {
 		if (attemptedStep !== null && attemptedStep !== currentStep) {
 			attemptedStep = null;
+			// Ein Validierungs-Toast kann nur entstehen, während `attemptedStep`
+			// gesetzt ist (siehe `showValidationError`) — hier ist deshalb genau
+			// der Moment, in dem ein noch aktiver Toast den VERLASSENEN Schritt
+			// beschreibt und nicht mehr zum sichtbaren (neuen) Schritt passt.
+			toast.removeByKey(VALIDATION_TOAST_KEY);
 		}
 	});
 
@@ -236,10 +251,13 @@
 			errorMessage = `Bitte beheben Sie die ${errorCount} Fehler in "${currentStepName}" bevor Sie fortfahren.`;
 		}
 
-		// Show toast notification
+		// Show toast notification — per key statt zu stapeln: ein erneuter
+		// „Weiter"-Klick auf demselben invaliden Schritt ersetzt den bestehenden
+		// Toast (inkl. neuer Anzeigedauer) statt einen weiteren daneben zu zeigen.
 		toast.error(errorMessage, {
 			title: 'Validierungsfehler',
-			duration: 5000
+			duration: 5000,
+			key: VALIDATION_TOAST_KEY
 		});
 
 		// Navigate to first error field

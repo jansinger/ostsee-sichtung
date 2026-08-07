@@ -5,7 +5,8 @@
 	import { slide } from 'svelte/transition';
 	import FormField from '$lib/report/components/form/fields/FormField.svelte';
 	import SectionCard from './SectionCard.svelte';
-	import { detailsSectionTitle } from '$lib/report/wording';
+	import { detailsSectionTitle, sightingFromQuestion } from '$lib/report/wording';
+	import { isDeadFinding } from '$lib/report/formConfig';
 	import {
 		NOT_YET_TRACKED,
 		isBoatSightingFrom,
@@ -21,6 +22,17 @@
 	// Totfund). Gilt auch in der Admin-Maske — dort kommt `isDead` aus dem
 	// geladenen Datensatz, und ein Totfund heißt auch dort ein Fund.
 	const cardTitle = $derived(detailsSectionTitle($form.isDead));
+
+	// Die Frage über der Herkunftsauswahl folgt demselben Zweig wie der
+	// Kartentitel — „Funddetails" mit „Von wo aus wurde die SICHTUNG gemacht?"
+	// darunter war der auffälligste Rest der alten Ansprache (UX-Review
+	// 2026-08-07). In der Admin-Maske bleibt es beim Schema-Label: Dort wird ein
+	// Datensatz bearbeitet, und die Beschriftung ist dieselbe wie in Export und
+	// Detailansicht — `sightingFromQuestion(false)` IST dieses Label (in
+	// `wording.test.ts` gegen das Schema geprüft), deshalb ein unbedingter
+	// String statt eines `undefined`, das `exactOptionalPropertyTypes` an einem
+	// optionalen Prop ohnehin nicht zuließe.
+	const sightingFromLabel = $derived(sightingFromQuestion(adminMode ? false : $form.isDead));
 
 	/** Sichtung erfolgte von einem Boot mit Antrieb (Segelschiff/Motorboot) aus. */
 	const showsBoatDrive = $derived(isBoatSightingFrom($form.sightingFrom));
@@ -55,7 +67,7 @@
 <!-- Sighting Details Section -->
 <SectionCard title={cardTitle} icon="lucide:activity">
 	<div class="mt-2 grid grid-cols-1 gap-4 md:grid-cols-1">
-		<FormField name="sightingFrom" />
+		<FormField name="sightingFrom" label={sightingFromLabel} />
 		{#if String($form.sightingFrom) === String(SightingFromEnum.OTHER)}
 			<!-- `required` als Override, weil die Pflicht im Schema in einem
 			     `when('sightingFrom')` steckt und `describe()` das nicht sieht —
@@ -138,5 +150,13 @@
 		</div>
 	{/if}
 
-	<FormField name="distance" />
+	<!-- Markup-Hälfte zu `HIDDEN_WHEN_DEAD` (formConfig.ts): Beim Totfund steht
+	     der Melder neben dem Tier — „Entfernung zum Tier" ist dort nicht
+	     beantwortbar und war als Pflichtfeld eine Sperre ohne Ausweg. Die
+	     Admin-Maske behält das Feld: 282 Bestandszeilen tragen den Sentinel `0`
+	     („nicht angegeben"), und ein Totfund muss dort weiter nachbearbeitbar
+	     bleiben — dieselbe Struktur wie bei `deadSex` in `DeadAnimal.svelte`. -->
+	{#if adminMode || !isDeadFinding($form.isDead)}
+		<FormField name="distance" />
+	{/if}
 </SectionCard>

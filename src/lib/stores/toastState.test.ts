@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
 	addToast,
 	removeToast,
+	removeToastByKey,
 	clearAllToasts,
 	getToasts,
 	successToast,
@@ -195,6 +196,76 @@ describe('Toast State Management (Svelte 5 Runes)', () => {
 
 			toast.clear();
 			expect(toast.current).toHaveLength(0);
+		});
+	});
+
+	describe('Ersetzen per key (Validierungs-Toast stapelt nicht)', () => {
+		it('ersetzt einen bestehenden Toast mit demselben key statt ihn zu stapeln', () => {
+			addToast({ type: 'error', message: 'Erster Versuch', key: 'step-validation' });
+			addToast({ type: 'error', message: 'Zweiter Versuch', key: 'step-validation' });
+			addToast({ type: 'error', message: 'Dritter Versuch', key: 'step-validation' });
+			addToast({ type: 'error', message: 'Vierter Versuch', key: 'step-validation' });
+
+			const toasts = getToasts();
+			expect(toasts).toHaveLength(1);
+			expect(toasts[0]!.message).toBe('Vierter Versuch');
+		});
+
+		it('vergibt beim Ersetzen eine neue id, damit die Anzeigedauer neu startet', () => {
+			const id1 = addToast({ type: 'error', message: 'Erster Versuch', key: 'step-validation' });
+			const id2 = addToast({ type: 'error', message: 'Zweiter Versuch', key: 'step-validation' });
+
+			expect(id2).not.toBe(id1);
+		});
+
+		it('lässt Toasts ohne key unangetastet, auch wenn ein neuer Toast denselben key trägt wie keiner von ihnen', () => {
+			addToast({ type: 'info', message: 'Unabhängiger Toast' });
+			addToast({ type: 'error', message: 'Validierungsfehler', key: 'step-validation' });
+
+			expect(getToasts()).toHaveLength(2);
+		});
+
+		it('stapelt Toasts mit unterschiedlichem key weiterhin normal', () => {
+			addToast({ type: 'error', message: 'Fehler A', key: 'step-validation' });
+			addToast({ type: 'error', message: 'Fehler B', key: 'other-key' });
+
+			expect(getToasts()).toHaveLength(2);
+		});
+
+		it('bestehende Aufrufer ohne key verhalten sich unverändert (mehrere Toasts stapeln)', () => {
+			addToast({ type: 'error', message: 'Ohne key 1' });
+			addToast({ type: 'error', message: 'Ohne key 2' });
+
+			expect(getToasts()).toHaveLength(2);
+		});
+	});
+
+	describe('removeToastByKey', () => {
+		it('entfernt den Toast mit dem angegebenen key', () => {
+			addToast({ type: 'error', message: 'Validierungsfehler', key: 'step-validation' });
+
+			removeToastByKey('step-validation');
+
+			expect(getToasts()).toHaveLength(0);
+		});
+
+		it('lässt Toasts mit anderem oder ohne key unberührt', () => {
+			addToast({ type: 'error', message: 'Validierungsfehler', key: 'step-validation' });
+			addToast({ type: 'info', message: 'Unabhängig' });
+
+			removeToastByKey('step-validation');
+
+			const toasts = getToasts();
+			expect(toasts).toHaveLength(1);
+			expect(toasts[0]!.message).toBe('Unabhängig');
+		});
+
+		it('ist ein No-Op, wenn kein Toast mit diesem key existiert', () => {
+			addToast({ type: 'info', message: 'Unabhängig' });
+
+			removeToastByKey('nicht-vorhanden');
+
+			expect(getToasts()).toHaveLength(1);
 		});
 	});
 

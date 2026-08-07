@@ -81,7 +81,9 @@ test.describe('Layout — horizontaler Überlauf', () => {
 			   Admin-Maske. */
 			await formPage.selectSpecies(0); // Schweinswal
 			await formPage.fillTotalCount(2);
-			await formPage.selectDistance(1);
+			/* Kein `selectDistance`: Die Entfernung entfällt im Totfund-Zweig
+			   vollständig (`HIDDEN_WHEN_DEAD` in `formConfig.ts`, UX-Review
+			   2026-08-07) — das Feld existiert hier gar nicht mehr im DOM. */
 			await formPage.selectSightingFrom(SightingFromEnum.MOTORBOAT);
 			await expect(page.locator('[data-testid="field-deadCondition"]')).toBeVisible();
 			await expect(page.locator('[data-testid="field-boatDrive-1"]')).toBeVisible();

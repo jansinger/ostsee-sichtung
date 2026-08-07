@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import type { SightingFormValues } from '$lib/types/Form';
 	import { formatWallClockDateTime } from '$lib/utils/format/formatWallClockDateTime';
@@ -13,13 +12,6 @@
 		submittedData: SightingFormValues | null;
 		handleNewReport: () => void;
 	}>();
-
-	/**
-	 * Handle returning to main page
-	 */
-	function handleReturnHome() {
-		goto('/');
-	}
 </script>
 
 <!-- Success Page -->
@@ -54,7 +46,7 @@
 		</div>
 
 		<!-- Success Details -->
-		<div class="card bg-base-200 mb-8 shadow-xl">
+		<div class="card bg-base-200 shadow-raised mb-8">
 			<div class="card-body">
 				<h2 class="card-title text-success-strong mb-4">Was passiert als Nächstes?</h2>
 
@@ -134,7 +126,7 @@
 
 		<!-- Submission Summary -->
 		{#if submittedData}
-			<div class="card bg-base-100 mb-8 shadow-lg">
+			<div class="card bg-base-100 shadow-raised mb-8">
 				<div class="card-body">
 					<h2 class="card-title mb-4">Ihre Meldung</h2>
 					<div class="mb-4 grid grid-cols-1 gap-1 text-sm">
@@ -172,20 +164,19 @@
 		{/if}
 
 		<!-- Action Buttons -->
+		<!-- Nur noch ein Button: „Zur Startseite" landete wegen des gespeicherten
+		     Zweigs (ReportKind) faktisch im leeren Formular des alten Zweigs statt
+		     auf der Einstiegsseite — fast dieselbe Wirkung wie „Weitere Meldung
+		     abgeben", nur ohne den sauberen Zweig-Reset (UX-Review 2026-08-07). -->
 		<div class="flex flex-col justify-center gap-4 md:flex-row">
 			<button onclick={handleNewReport} class="btn btn-primary btn-lg">
 				Weitere Meldung abgeben
-			</button>
-
-			<button onclick={handleReturnHome} class="btn btn-outline btn-lg">
-				<Icon icon="lucide:arrow-left" width="20" />
-				Zur Startseite
 			</button>
 		</div>
 
 		<!-- Additional Resources -->
 		<div class="mt-12">
-			<div class="card bg-base-200 shadow-sm">
+			<div class="card bg-base-200">
 				<div class="card-body text-center">
 					<h3 class="mb-4 text-lg font-semibold">Interessiert an mehr?</h3>
 
@@ -220,15 +211,6 @@
 		max-width: 768px;
 	}
 
-	.card {
-		transition: all 0.2s ease;
-	}
-
-	.card:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 12px 28px -8px var(--color-base-300);
-	}
-
 	/* Link styling */
 	.link {
 		text-decoration: underline;
@@ -237,15 +219,6 @@
 
 	.link:hover {
 		text-decoration-thickness: 2px;
-	}
-
-	/* Button animations */
-	.btn {
-		transition: all 0.2s ease;
-	}
-
-	.btn:hover {
-		transform: translateY(-1px);
 	}
 
 	/* Mobile-first responsive adjustments */

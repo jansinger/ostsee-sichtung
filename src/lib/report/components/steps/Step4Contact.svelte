@@ -69,10 +69,6 @@
 			</div>
 		</div>
 		<h2 class="text-base-content text-xl font-bold md:text-2xl">Kontaktdaten</h2>
-		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
-			Ihre <strong>E-Mail-Adresse</strong> ist erforderlich für die Bestätigung. Kontaktdaten ermöglichen
-			wichtige Rückfragen zur Datenqualität.
-		</p>
 		<!-- Der frühere Satz „Ihre persönlichen Daten werden nie öffentlich
 		     angezeigt!" war nachweislich falsch: Direkt darunter stehen die
 		     Einwilligungen zur Namensnennung, und `/api/map/sightings` liefert
@@ -134,7 +130,7 @@
 							>
 							<button
 								type="button"
-								class="btn btn-outline btn-error btn-sm min-h-11"
+								class="btn btn-outline btn-error btn-sm"
 								onclick={clearContactData}
 							>
 								<Icon icon="lucide:trash-2" width="14" />

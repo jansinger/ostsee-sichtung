@@ -38,6 +38,26 @@ export function observationQuestion(isDead: unknown): string {
 	return isDeadFinding(isDead) ? 'Was haben Sie gefunden?' : 'Was haben Sie beobachtet?';
 }
 
+/**
+ * Beschriftung des Herkunftsfeldes (`sightingFrom`) auf Schritt 2.
+ *
+ * Die Karte darüber heißt beim Totfund „Funddetails" (`detailsSectionTitle`),
+ * das erste Feld darin fragte trotzdem weiter nach der Sichtung — das
+ * Schema-Label kennt nur den Lebend-Zweig.
+ *
+ * Der Lebend-Zweig gibt wörtlich das Schema-Label zurück (verbindliche
+ * Auftraggeber-Regel, siehe `dateSectionTitle`): Die Aufrufstelle kann die
+ * Beschriftung deshalb unbedingt überschreiben, ohne im Lebend-Zweig etwas zu
+ * verändern — nötig, weil `exactOptionalPropertyTypes` kein `undefined` an ein
+ * optionales Prop erlaubt. Dass beide Texte übereinstimmen, prüft
+ * `wording.test.ts` gegen das Schema selbst.
+ */
+export function sightingFromQuestion(isDead: unknown): string {
+	return isDeadFinding(isDead)
+		? 'Von wo aus haben Sie das Tier gefunden?'
+		: 'Von wo aus wurde die Sichtung gemacht?';
+}
+
 /** Titel der Karte unter den Tierangaben auf Schritt 2. */
 export function detailsSectionTitle(isDead: unknown): string {
 	return isDeadFinding(isDead) ? 'Funddetails' : 'Sichtungsdetails';

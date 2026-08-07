@@ -239,6 +239,16 @@ export function isDeadFinding(value: unknown): boolean {
  * Felder, die beim Totfund entfallen. Ein totes Tier zeigt kein Verhalten und
  * reagiert nicht — die Angaben wären für den Melder unbeantwortbar.
  *
+ * `distance` steht seit dem UX-Review 2026-08-07 mit in der Liste, aus
+ * derselben Begründung: Ein Totfund wird am Strand gefunden, der Melder steht
+ * neben dem Tier. „Entfernung zum Tier" ist dort keine Schätzung mehr, sondern
+ * eine Frage ohne sinnvolle Antwort — und im Meldeformular Pflicht, sie sperrte
+ * „Weiter", bis irgendeine Kategorie geraten war. Anders als bei den
+ * Verhaltensfeldern reicht der Eintrag hier nicht: `distance` ist im vollen
+ * `sightingSchema` unbedingt `.required()`, und der Endpunkt validiert dagegen
+ * — die Pflicht hängt dort jetzt über `when('isDead')` am selben Zweig
+ * (Begründung im Schema, gleiche Lage wie bei `deadSex` 2026-08-04).
+ *
  * WICHTIG: Diese Liste ist die halbe Miete, nicht die ganze. Sie steuert
  * ausschließlich die Validierung — gelesen wird sie nur von `stepValidation`,
  * gerendert wird aus ihr nichts. Wer ein Feld nur hier entfernt, bekommt ein
@@ -249,10 +259,11 @@ export function isDeadFinding(value: unknown): boolean {
  *
  * Beides gehört deshalb zusammen entschieden: Eintrag hier UND eine Bedingung
  * an der Aufrufstelle im Markup, beide über `isDeadFinding` — nie eine zweite,
- * eigene Regel daneben. Für diese drei Felder sitzt die Markup-Seite in
- * `steps/Step3Observations.svelte`.
+ * eigene Regel daneben. Für die drei Verhaltensfelder sitzt die Markup-Seite in
+ * `steps/Step3Observations.svelte`, für `distance` in
+ * `sections/SightingDetails.svelte`.
  */
-const HIDDEN_WHEN_DEAD = ['behavior', 'behaviorText', 'reaction'] as const;
+const HIDDEN_WHEN_DEAD = ['distance', 'behavior', 'behaviorText', 'reaction'] as const;
 
 /**
  * Die Gegenrichtung: Felder, die im Lebend-Zweig entfallen. Ein lebendes Tier

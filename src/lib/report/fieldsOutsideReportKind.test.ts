@@ -28,8 +28,24 @@ describe('fieldsOutsideReportKind', () => {
 		]);
 	});
 
-	it('nennt für den Zweig "dead" genau die drei Verhaltensfelder, die dort nicht hingehören', () => {
-		expect(fieldsOutsideReportKind('dead')).toEqual(['behavior', 'behaviorText', 'reaction']);
+	/**
+	 * Seit dem UX-Review 2026-08-07 steht `distance` mit in der Liste: Die
+	 * Entfernung zum Tier entfällt im Totfund-Zweig (`HIDDEN_WHEN_DEAD`), und
+	 * die Reihenfolge folgt der Schritt-Konfiguration — `distance` steht auf
+	 * Schritt 2 und damit vor den Verhaltensfeldern auf Schritt 3.
+	 *
+	 * Praktisch heißt das: Wer im Lebend-Zweig eine Entfernung gewählt hat und
+	 * danach im Totfund-Zweig startet, findet den Wert nicht mehr im
+	 * Formular-Zustand — er ginge sonst unvalidiert und unsichtbar mit ans
+	 * Backend.
+	 */
+	it('nennt für den Zweig "dead" die Entfernung und die drei Verhaltensfelder', () => {
+		expect(fieldsOutsideReportKind('dead')).toEqual([
+			'distance',
+			'behavior',
+			'behaviorText',
+			'reaction'
+		]);
 	});
 
 	/**
@@ -108,9 +124,11 @@ describe('reportKindClearedNotice', () => {
 		);
 	});
 
-	it('nennt im Totfund-Zweig die entfernten Verhaltensangaben', () => {
+	it('nennt im Totfund-Zweig die entfernten Verhaltens- und Entfernungsangaben', () => {
+		// Seit `distance` beim Totfund entfällt (UX-Review 2026-08-07), räumt der
+		// Start im Totfund-Zweig auch die Entfernung — der Text muss beides nennen.
 		expect(reportKindClearedNotice('dead', 1)).toBe(
-			'Ihre Angaben zum Verhalten der Tiere wurden entfernt, alles Übrige bleibt erhalten.'
+			'Ihre Angaben zum Verhalten und zur Entfernung wurden entfernt, alles Übrige bleibt erhalten.'
 		);
 	});
 

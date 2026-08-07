@@ -438,7 +438,7 @@ describe('ModernReportForm — der Zweigwechsel meldet, was er geräumt hat (UX-
 
 		await vi.waitFor(() => {
 			expect(toastMessages()).toContain(
-				'Ihre Angaben zum Verhalten der Tiere wurden entfernt, alles Übrige bleibt erhalten.'
+				'Ihre Angaben zum Verhalten und zur Entfernung wurden entfernt, alles Übrige bleibt erhalten.'
 			);
 		});
 	});
