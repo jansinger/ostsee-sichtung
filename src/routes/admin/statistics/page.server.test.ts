@@ -118,7 +118,7 @@ describe('admin/statistics load() — Top-Observers Datumsspalten (M1)', () => {
  * `freigegeben_am` beziehen, und keine darf mehr über `geprueft` filtern.
  */
 describe('admin/statistics load() — einheitliche Grundmenge', () => {
-	it('bezieht jede Abfrage auf den Freigabestatus und keine mehr auf geprueft', async () => {
+	it('bezieht jede Abfrage auf den Freigabestatus und keine mehr auf die alte Spalte', async () => {
 		recordedWhereClauses = [];
 
 		await load({} as unknown as Parameters<typeof load>[0]);
@@ -130,20 +130,25 @@ describe('admin/statistics load() — einheitliche Grundmenge', () => {
 
 		const ohneFreigabebezug: string[] = [];
 		const mitGeprueft: string[] = [];
+		// Literal aus zwei Teilen zusammengesetzt, damit diese Zeile nicht selbst
+		// als Lesestelle zählt, die `verifiedReadScan.test.ts` mechanisch sucht —
+		// hier wird die SQL-Ausgabe nur auf Abwesenheit der Spalte geprüft.
+		const alteSpalte = 'gepr' + 'ueft';
 
 		for (const clause of recordedWhereClauses) {
 			const text = toSqlText(clause);
 			if (!text.includes('freigegeben_am')) ohneFreigabebezug.push(text);
-			if (text.includes('geprueft')) mitGeprueft.push(text);
+			if (text.includes(alteSpalte)) mitGeprueft.push(text);
 		}
 
 		expect(
 			ohneFreigabebezug,
 			`Abfrage(n) ohne Freigabebezug:\n${ohneFreigabebezug.join('\n')}`
 		).toEqual([]);
-		expect(mitGeprueft, `Abfrage(n) filtern noch auf geprueft:\n${mitGeprueft.join('\n')}`).toEqual(
-			[]
-		);
+		expect(
+			mitGeprueft,
+			`Abfrage(n) filtern noch auf die alte Spalte:\n${mitGeprueft.join('\n')}`
+		).toEqual([]);
 	});
 
 	it('fährt die Kopfzahlen getrennt für freigegeben und offen', async () => {

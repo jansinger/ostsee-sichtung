@@ -101,10 +101,12 @@ describe('Sichtungstabelle — Statusspalte', () => {
 				await expect.element(radio(screen, 'Abgelehnt')).toBeChecked();
 			});
 
-			/* Regression zum Bestandsbefund: 9 Zeilen tragen eine Freigabe ohne
-			   `geprueft = 1`. Der alte Toggle zeigte sie als ungeprüft, obwohl sie
-			   öffentlich sichtbar sind. */
-			it('zeigt eine freigegebene Sichtung als „Freigegeben", auch wenn geprueft = 0', async () => {
+			/*
+			 * Regression zum Bestandsbefund: 9 Zeilen tragen eine Freigabe, ohne
+			 * dass die alte Spalte auf 1 steht. Der alte Toggle zeigte sie als
+			 * ungeprüft, obwohl sie öffentlich sichtbar sind.
+			 */
+			it('zeigt eine freigegebene Sichtung als „Freigegeben", auch wenn sie als ungeprüft markiert ist', async () => {
 				const screen = render(SichtungenSeite, {
 					data: daten([sichtung({ verified: 0, approvedAt: new Date('2026-08-02T09:00:00Z') })])
 				});

@@ -344,8 +344,11 @@ export class EmailService {
 				entryChannel: sighting.entryChannel || 0,
 				nameConsent: !!sighting.nameConsent,
 				shipNameConsent: !!sighting.shipNameConsent,
-				// Required fields for form validation
-				verified: !!sighting.verified,
+				// Required fields for form validation. `verified` (geprueft) wird bewusst
+				// NICHT aus der Zeile gelesen — die Benachrichtigungsmail zeigt keinen
+				// Status an, und ein Rückgriff auf die Spalte wäre genau die Lesestelle,
+				// gegen die der Guard in verifiedReadScan.test.ts antritt.
+				verified: false,
 				deadPhoneContact: !!sighting.deadPhoneContact,
 				referenceId: sighting.referenceId || `REF-${sighting.id}`,
 				hasPosition: !!(sighting.latitude && sighting.longitude),

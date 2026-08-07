@@ -216,7 +216,7 @@ describe('PATCH mit verdict', () => {
 		mockLimit.mockResolvedValue([{ id: 1, verified: 0, approvedAt: null, rejectedAt: null }]);
 	});
 
-	it('approve setzt geprueft=1, freigegeben_am und löscht die Ablehnung', async () => {
+	it('approve markiert die Sichtung als geprüft, setzt freigegeben_am und löscht die Ablehnung', async () => {
 		await PATCH(patchEvent('1', { verdict: 'approve' }));
 		expect(mockSet).toHaveBeenCalledWith({
 			verified: 1,
