@@ -8,7 +8,7 @@ import {
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
 import { rejectedOnly } from '$lib/server/db/approvalFilter';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, sql, type SQL } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 import { ServerConfigService } from '$lib/services/configService';
@@ -34,7 +34,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	const deadFinding = url.searchParams.get('deadFinding');
 
 	// Bedingungen für die SQL-Abfrage sammeln
-	const conditions = [];
+	const conditions: SQL[] = [];
 
 	// Datums-Filter (nur mit validiertem YYYY-MM-DD Format)
 	if (isValidDateParam(fromDate) && isValidDateParam(toDate)) {

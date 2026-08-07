@@ -20,7 +20,7 @@ const INBOX_LIMIT = 50;
 export const load: PageServerLoad = async ({ url }) => {
 	// Bookmarks der früheren Tabellen-URL (/admin?page=…) weiterleiten.
 	if (istTabellenUrl(url)) {
-		redirect(301, `/admin/sichtungen?${url.searchParams.toString()}`);
+		throw redirect(301, `/admin/sichtungen?${url.searchParams.toString()}`);
 	}
 
 	// Sortierrichtung nach Meldedatum. Default älteste zuerst (FIFO — nichts
