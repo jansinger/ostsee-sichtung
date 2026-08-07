@@ -84,6 +84,6 @@ export function reportKindClearedNotice(kind: ReportKind, clearedCount: number):
 	// „Verhalten und Entfernung": Seit dem UX-Review 2026-08-07 entfällt beim
 	// Totfund auch `distance` (HIDDEN_WHEN_DEAD) — der Text muss mitziehen,
 	// sonst verschweigt er einen Teil dessen, was gerade geräumt wurde.
-	const removed = kind === 'alive' ? 'zum Totfund' : 'zu Verhalten und Entfernung';
+	const removed = kind === 'alive' ? 'zum Totfund' : 'zum Verhalten und zur Entfernung';
 	return `Ihre Angaben ${removed} wurden entfernt, alles Übrige bleibt erhalten.`;
 }

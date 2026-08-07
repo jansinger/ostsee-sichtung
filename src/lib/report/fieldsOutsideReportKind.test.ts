@@ -128,7 +128,7 @@ describe('reportKindClearedNotice', () => {
 		// Seit `distance` beim Totfund entfällt (UX-Review 2026-08-07), räumt der
 		// Start im Totfund-Zweig auch die Entfernung — der Text muss beides nennen.
 		expect(reportKindClearedNotice('dead', 1)).toBe(
-			'Ihre Angaben zu Verhalten und Entfernung wurden entfernt, alles Übrige bleibt erhalten.'
+			'Ihre Angaben zum Verhalten und zur Entfernung wurden entfernt, alles Übrige bleibt erhalten.'
 		);
 	});
 
