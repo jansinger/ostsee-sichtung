@@ -6,6 +6,7 @@ import {
 	mediaUploadCondition
 } from '$lib/server/db/mediaUploadFilter';
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
+import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
@@ -29,6 +30,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	const entryChannel = url.searchParams.get('entryChannel');
 	const mediaUpload = url.searchParams.get('mediaUpload');
 	const balticSea = url.searchParams.get('balticSea');
+	const deadFinding = url.searchParams.get('deadFinding');
 
 	// Bedingungen für die SQL-Abfrage sammeln
 	const conditions = [];
@@ -71,6 +73,13 @@ export const load: PageServerLoad = async ({ url }) => {
 	const balticSeaFilterCondition = balticSeaCondition(balticSea);
 	if (balticSeaFilterCondition) {
 		conditions.push(balticSeaFilterCondition);
+	}
+
+	// Meldeart-Filter (Totfund/Lebendsichtung) — dieselbe Boolean-Semantik wie
+	// das Badge in der Tabelle, siehe deadFindingFilter.ts.
+	const deadFindingFilterCondition = deadFindingCondition(deadFinding);
+	if (deadFindingFilterCondition) {
+		conditions.push(deadFindingFilterCondition);
 	}
 
 	// Kombinierte WHERE-Bedingung erstellen

@@ -433,6 +433,7 @@ paths:
         - $ref: '#/components/parameters/ExportEntryChannel'
         - $ref: '#/components/parameters/ExportMediaUpload'
         - $ref: '#/components/parameters/ExportBalticSea'
+        - $ref: '#/components/parameters/ExportDeadFinding'
       responses:
         '200':
           description: Exportdatei
@@ -473,6 +474,7 @@ paths:
         - $ref: '#/components/parameters/ExportEntryChannel'
         - $ref: '#/components/parameters/ExportMediaUpload'
         - $ref: '#/components/parameters/ExportBalticSea'
+        - $ref: '#/components/parameters/ExportDeadFinding'
       responses:
         '200':
           description: JSON-Datei mit Sichtungen
@@ -543,6 +545,7 @@ paths:
         - $ref: '#/components/parameters/ExportEntryChannel'
         - $ref: '#/components/parameters/ExportMediaUpload'
         - $ref: '#/components/parameters/ExportBalticSea'
+        - $ref: '#/components/parameters/ExportDeadFinding'
       responses:
         '200':
           description: CSV-Datei mit Sichtungen
@@ -576,6 +579,7 @@ paths:
         - $ref: '#/components/parameters/ExportEntryChannel'
         - $ref: '#/components/parameters/ExportMediaUpload'
         - $ref: '#/components/parameters/ExportBalticSea'
+        - $ref: '#/components/parameters/ExportDeadFinding'
       responses:
         '200':
           description: XML-Datei mit Sichtungen
@@ -609,6 +613,7 @@ paths:
         - $ref: '#/components/parameters/ExportEntryChannel'
         - $ref: '#/components/parameters/ExportMediaUpload'
         - $ref: '#/components/parameters/ExportBalticSea'
+        - $ref: '#/components/parameters/ExportDeadFinding'
       responses:
         '200':
           description: KML-Datei mit Sichtungen
@@ -2311,6 +2316,18 @@ components:
         type: string
         enum: ["baltic", "edge", "outside", "noPosition"]
         example: "baltic"
+
+    ExportDeadFinding:
+      name: deadFinding
+      in: query
+      description: >-
+        Meldeart filtern (1=Totfund, 0=Lebendsichtung; leer = kein Filter).
+        Totfund heißt totfund <> 0 — dieselbe Boolean-Semantik wie die
+        Kennzeichnung in der Admin-Tabelle (deadFindingFilter.ts).
+      schema:
+        type: string
+        enum: ["0", "1"]
+        example: "1"
 
   schemas:
     CleanupReport:

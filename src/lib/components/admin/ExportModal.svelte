@@ -10,6 +10,7 @@
 		BALTIC_SEA_STATUS_PRESENTATION,
 		isBalticSeaStatus
 	} from '$lib/utils/geo/balticSeaStatus';
+	import { DEAD_FINDING_PRESENTATION } from '$lib/components/admin/deadFinding';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('ExportModal');
@@ -102,6 +103,13 @@
 			// Filter-Panel und Export-Zusammenfassung nie auseinanderlaufen.
 			const presentation = BALTIC_SEA_STATUS_PRESENTATION[currentFilters.balticSea];
 			filterDisplays.push(`Ostsee-Status: ${presentation.label}`);
+		}
+		if (currentFilters.deadFinding === '1') {
+			// Label aus DEAD_FINDING_PRESENTATION statt neu formuliert, damit
+			// Filter-Panel und Export-Zusammenfassung nie auseinanderlaufen.
+			filterDisplays.push(`Meldeart: ${DEAD_FINDING_PRESENTATION.label}`);
+		} else if (currentFilters.deadFinding === '0') {
+			filterDisplays.push('Meldeart: Lebendsichtung');
 		}
 
 		return filterDisplays.length > 0 ? filterDisplays : ['Keine Filter aktiv'];
