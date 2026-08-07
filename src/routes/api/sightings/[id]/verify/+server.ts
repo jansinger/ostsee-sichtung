@@ -61,7 +61,10 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url, getC
 			verdict = 'reset';
 		} else {
 			logger.warn({ body }, 'Ungültiger Prüfstatus');
-			throw error(400, 'Ungültiger Prüfstatus. Muss 0 oder 1 sein.');
+			throw error(
+				400,
+				'Ungültiger Request-Body. Erwartet { verdict: "approve" | "reject" | "reset" } oder den Alias { verified: 0 | 1 }.'
+			);
 		}
 
 		// Prüfen ob die Sichtung existiert
