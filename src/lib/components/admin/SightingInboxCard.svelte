@@ -89,6 +89,12 @@
 			</div>
 		{/if}
 
+		{#if sighting.waterway}
+			<!-- Fahrwasser ist der Orts-Text der Meldung — neben dem Ostsee-Badge die
+			     einzige Ortsangabe, die ohne Klick in die Detailansicht lesbar ist. -->
+			<p class="text-base-content/80 line-clamp-1 text-sm">Ort: {sighting.waterway}</p>
+		{/if}
+
 		{#if sighting.notes}
 			<p class="text-base-content/80 line-clamp-2 text-sm">{sighting.notes}</p>
 		{/if}

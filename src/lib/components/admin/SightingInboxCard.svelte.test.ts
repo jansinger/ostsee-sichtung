@@ -34,6 +34,17 @@ describe('SightingInboxCard', () => {
 		await expect.element(screen.getByText('melder@example.com')).toBeInTheDocument();
 	});
 
+	it('zeigt Fahrwasser/Ort, wenn angegeben', async () => {
+		const screen = render(SightingInboxCard, {
+			sighting: { ...basisSichtung, waterway: 'Kieler Förde, Höhe Laboe' } as SightingSelect,
+			images: [],
+			busy: false,
+			onApprove: noop,
+			onReject: noop
+		});
+		await expect.element(screen.getByText(/Kieler Förde, Höhe Laboe/)).toBeInTheDocument();
+	});
+
 	it('zeichnet einen Totfund aus, eine Lebendsichtung nicht', async () => {
 		const tot = render(SightingInboxCard, {
 			sighting: { ...basisSichtung, isDead: 1 } as SightingSelect,
