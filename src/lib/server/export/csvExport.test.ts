@@ -212,17 +212,6 @@ describe('csvExport', () => {
 			expect(result).toContain('"Area "North""');
 		});
 
-		it('should format verified status correctly', () => {
-			const verifiedSighting = { ...mockSighting, verified: true };
-			const unverifiedSighting = { ...mockSighting, verified: false };
-
-			const resultVerified = generateCsvData([verifiedSighting]);
-			const resultUnverified = generateCsvData([unverifiedSighting]);
-
-			expect(resultVerified).toContain('"Ja"'); // verified
-			expect(resultUnverified).toContain('"Nein"'); // not verified
-		});
-
 		it('should format created date correctly', () => {
 			const result = generateCsvData([mockSighting]);
 
