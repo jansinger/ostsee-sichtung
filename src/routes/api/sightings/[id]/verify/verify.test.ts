@@ -5,7 +5,9 @@ const { mockWhere, mockSet, mockUpdate, mockLimit } = vi.hoisted(() => {
 	const mockWhere = vi.fn().mockResolvedValue(undefined);
 	const mockSet = vi.fn().mockReturnValue({ where: mockWhere });
 	const mockUpdate = vi.fn().mockReturnValue({ set: mockSet });
-	const mockLimit = vi.fn().mockResolvedValue([{ id: 1, verified: 0 }]);
+	const mockLimit = vi
+		.fn()
+		.mockResolvedValue([{ id: 1, verified: 0, approvedAt: null, rejectedAt: null }]);
 	return { mockWhere, mockSet, mockUpdate, mockLimit };
 });
 
@@ -49,11 +51,28 @@ vi.mock('$lib/server/db', () => ({
 }));
 
 vi.mock('$lib/server/db/schema', () => ({
-	sightings: { id: 'id', verified: 'verified' }
+	sightings: {
+		id: 'id',
+		verified: 'verified',
+		approvedAt: 'approvedAt',
+		rejectedAt: 'rejectedAt',
+		rejectedBy: 'rejectedBy'
+	}
 }));
 
+// `$lib/server/db/approvalFilter` wird bewusst NICHT gemockt: Ein nachgebautes
+// `!!s.approvedAt` wäre genau das Inline-Prädikat, das
+// `approvalPredicateScan.test.ts` im gesamten Quelltext verbietet — und ein
+// abweichender Nachbau in der Testhilfe erzeugt die Divergenz, gegen die die
+// Regel existiert. Das echte Modul ist rein und baut sein SQL erst beim Aufruf,
+// deshalb genügt der Schema-Mock oben.
+
 vi.mock('drizzle-orm', () => ({
-	eq: vi.fn((a, b) => ({ a, b }))
+	eq: vi.fn((a, b) => ({ a, b })),
+	// von approvalFilter importiert; im Endpunkt-Test nie aufgerufen
+	and: vi.fn((...args) => ({ and: args })),
+	isNull: vi.fn((a) => ({ isNull: a })),
+	isNotNull: vi.fn((a) => ({ isNotNull: a }))
 }));
 
 const createMockEvent = (
@@ -84,7 +103,7 @@ describe('/api/sightings/[id]/verify PATCH endpoint', () => {
 		mockWhere.mockResolvedValue(undefined);
 		mockSet.mockReturnValue({ where: mockWhere });
 		mockUpdate.mockReturnValue({ set: mockSet });
-		mockLimit.mockResolvedValue([{ id: 1, verified: 0 }]);
+		mockLimit.mockResolvedValue([{ id: 1, verified: 0, approvedAt: null, rejectedAt: null }]);
 	});
 
 	it('gibt erfolgreiche Antwort zurück bei verified=1', async () => {
@@ -185,10 +204,95 @@ describe('/api/sightings/[id]/verify PATCH endpoint', () => {
 	});
 });
 
+describe('PATCH mit verdict', () => {
+	const patchEvent = (id: string, body: Record<string, unknown>) =>
+		createMockEvent(id, body, { userEmail: 'admin@example.com' }) as Parameters<typeof PATCH>[0];
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockWhere.mockResolvedValue(undefined);
+		mockSet.mockReturnValue({ where: mockWhere });
+		mockUpdate.mockReturnValue({ set: mockSet });
+		mockLimit.mockResolvedValue([{ id: 1, verified: 0, approvedAt: null, rejectedAt: null }]);
+	});
+
+	it('approve setzt geprueft=1, freigegeben_am und löscht die Ablehnung', async () => {
+		await PATCH(patchEvent('1', { verdict: 'approve' }));
+		expect(mockSet).toHaveBeenCalledWith({
+			verified: 1,
+			approvedAt: expect.any(Date),
+			rejectedAt: null,
+			rejectedBy: null
+		});
+	});
+
+	it('reject setzt abgelehnt_am/_von und zieht die Freigabe zurück', async () => {
+		await PATCH(patchEvent('1', { verdict: 'reject' }));
+		expect(mockSet).toHaveBeenCalledWith({
+			verified: 0,
+			approvedAt: null,
+			rejectedAt: expect.any(Date),
+			rejectedBy: 'admin@example.com'
+		});
+	});
+
+	it('reset nullt alle Status-Spalten', async () => {
+		await PATCH(patchEvent('1', { verdict: 'reset' }));
+		expect(mockSet).toHaveBeenCalledWith({
+			verified: 0,
+			approvedAt: null,
+			rejectedAt: null,
+			rejectedBy: null
+		});
+	});
+
+	it('unbekanntes verdict → 400', async () => {
+		await expect(PATCH(patchEvent('1', { verdict: 'maybe' }))).rejects.toMatchObject({
+			status: 400
+		});
+	});
+
+	it('Alias-Body: verified=1 wirkt wie approve, verified=0 wie reset', async () => {
+		await PATCH(patchEvent('1', { verified: 1 }));
+		expect(mockSet).toHaveBeenLastCalledWith(
+			expect.objectContaining({ verified: 1, rejectedAt: null })
+		);
+		await PATCH(patchEvent('1', { verified: 0 }));
+		expect(mockSet).toHaveBeenLastCalledWith(
+			expect.objectContaining({ verified: 0, approvedAt: null, rejectedAt: null })
+		);
+	});
+
+	it('meldet verdict und rejectedAt in der Response zurück', async () => {
+		const response = await PATCH(patchEvent('1', { verdict: 'reject' }));
+		const body = await response.json();
+
+		expect(body.verdict).toBe('reject');
+		expect(body.verified).toBe(0);
+		expect(body.approvedAt).toBeNull();
+		expect(body.rejectedAt).toEqual(expect.any(String));
+	});
+
+	it('hält den Vorzustand previouslyRejected im Audit fest', async () => {
+		const { logAuditEvent } = await import('$lib/server/audit/auditService');
+		mockLimit.mockResolvedValueOnce([
+			{ id: 1, verified: 0, approvedAt: null, rejectedAt: new Date('2026-01-01') }
+		]);
+
+		await PATCH(patchEvent('1', { verdict: 'approve' }));
+
+		expect(logAuditEvent).toHaveBeenCalledWith(
+			expect.objectContaining({
+				details: expect.objectContaining({ verdict: 'approve', previouslyRejected: true })
+			})
+		);
+	});
+});
+
 describe('/api/sightings/[id]/verify GET endpoint', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mockLimit.mockResolvedValue([{ id: 1, verified: 1 }]);
+		mockLimit.mockResolvedValue([{ id: 1, verified: 1, approvedAt: null, rejectedAt: null }]);
 	});
 
 	it('gibt Verifizierungsstatus zurück', async () => {
@@ -199,6 +303,17 @@ describe('/api/sightings/[id]/verify GET endpoint', () => {
 		expect(response.status).toBe(200);
 		expect(body.id).toBe(1);
 		expect(body.verified).toBe(1);
+	});
+
+	it('gibt rejectedAt mit zurück', async () => {
+		mockLimit.mockResolvedValueOnce([
+			{ id: 1, verified: 0, approvedAt: null, rejectedAt: new Date('2026-01-01T00:00:00.000Z') }
+		]);
+		const event = createMockEvent('1', {});
+		const response = await GET(event as Parameters<typeof GET>[0]);
+		const body = await response.json();
+
+		expect(body.rejectedAt).toBe('2026-01-01T00:00:00.000Z');
 	});
 
 	it('wirft 404 wenn Sichtung nicht existiert', async () => {
