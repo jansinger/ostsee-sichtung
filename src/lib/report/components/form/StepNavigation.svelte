@@ -1,12 +1,14 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import StepProgressCompact from './StepProgressCompact.svelte';
+	import { SUBMIT_STATUS_OFFLINE_ID } from './submitStatusIds';
 	import { validateStep } from '$lib/form/validation/stepValidation';
 	import { createLogger } from '$lib/logger';
 	import { getFormContext } from '$lib/report/formContext';
 	import { toast } from '$lib/stores/toastState.svelte';
 	import {
 		getErrorCount,
+		scrollToElement,
 		scrollToFirstError,
 		scrollToStepHeader
 	} from '$lib/utils/fieldNavigation';
@@ -108,12 +110,38 @@
 	/** Absenden ist gesperrt — nur auf dem letzten Schritt relevant. */
 	const isSubmitBlocked = $derived(isLastStep && submitBlocked);
 
+	/**
+	 * Führt zur bereits stehenden Begründung über der Navigation.
+	 *
+	 * UX-Review-Nachgang (2026-08-06): Der Knopf trug für diese Sperre
+	 * `aria-disabled` + `btn-disabled`, und DaisyUI legt darauf ein
+	 * `pointer-events: none` (design-system.md, „Der Vorbehalt"). Ein Klick kam
+	 * damit nie an, per Tastatur endete er in einem `logger.info` — beides ohne
+	 * jede Rückmeldung. Der `title` mit dem Grund erschien aus demselben Grund
+	 * beim Hovern nie.
+	 *
+	 * Erklärt werden muss hier nichts Neues: `SubmitStatus` steht mit dem vollen
+	 * Grund und der Datenzusage direkt über dieser Navigation. Nur ist die
+	 * Navigation unterhalb `md` ein ortsfester Balken am unteren Rand — die
+	 * Begründung kann also weggescrollt sein, während der Knopf sichtbar bleibt.
+	 * Genau dorthin führt dieser Sprung, und der Fokus sorgt für die Ansage.
+	 */
+	function revealSubmitBlockedReason(): void {
+		const reason = document.getElementById(SUBMIT_STATUS_OFFLINE_ID);
+		if (!reason) return;
+		scrollToElement(reason);
+		reason.setAttribute('tabindex', '-1');
+		reason.focus({ preventScroll: true });
+	}
+
 	async function nextStep(): Promise<void> {
 		try {
-			// Wächter zur `aria-disabled`-Sperre am Button: Das Element bleibt
-			// fokussierbar (siehe design-system.md), die eigentliche Sperre sitzt hier.
+			// Der Knopf ist NICHT als deaktiviert ausgezeichnet (Begründung an
+			// `revealSubmitBlockedReason`) — die Sperre sitzt allein hier, und sie
+			// antwortet, statt still auszusteigen.
 			if (isSubmitBlocked) {
 				logger.info('Absenden gesperrt — keine Verbindung');
+				revealSubmitBlockedReason();
 				return;
 			}
 
@@ -295,21 +323,29 @@
 		{/if}
 
 		<!--
-			`aria-disabled` statt `disabled` für die Verbindungssperre: Das Element
-			bleibt fokussierbar, damit die Tastaturposition erhalten bleibt und der
-			Grund erreichbar ist (design-system.md). Der laufende Submit sperrt
-			weiterhin hart über `disabled` — dort ist der Zustand von sehr kurzer
-			Dauer und ein Doppelklick hätte echte Folgen.
+			Die Verbindungssperre zeichnet den Knopf NICHT mehr als deaktiviert aus
+			(kein `aria-disabled`, kein `btn-disabled`, kein `title`): DaisyUI legt
+			auf jede dieser Auszeichnungen ein `pointer-events: none`, wodurch der
+			Klick nie ankam, der Wächter nichts melden konnte und der `title` beim
+			Hovern nie erschien (design-system.md, „Der Vorbehalt"). Stattdessen
+			führt ein Klick zur Begründung, die ohnehin über der Navigation steht —
+			`revealSubmitBlockedReason`.
+
+			`aria-describedby` auf dieselbe Fläche: So trägt der Knopf den Grund
+			auch für Screenreader, ohne dass er dafür angeklickt werden muss. Das
+			ersetzt den `title`, der ohnehin nur am Zeigegerät hing.
+
+			Der laufende Submit sperrt weiterhin hart über `disabled` — dort ist der
+			Zustand von sehr kurzer Dauer, es gibt nichts zu erklären, und ein
+			Doppelklick hätte echte Folgen.
 		-->
 		<button
 			type="button"
 			onclick={nextStep}
 			disabled={$isSubmitting}
-			aria-disabled={isSubmitBlocked}
 			class="btn btn-primary"
-			class:btn-disabled={isSubmitBlocked}
 			aria-label={isLastStep ? 'Formular absenden' : 'Nächster Schritt'}
-			title={isSubmitBlocked ? 'Ohne Internetverbindung kann nicht abgesendet werden' : undefined}
+			aria-describedby={isSubmitBlocked ? SUBMIT_STATUS_OFFLINE_ID : undefined}
 		>
 			{#if $isSubmitting}
 				<span class="loading loading-spinner loading-sm"></span>

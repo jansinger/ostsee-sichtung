@@ -35,8 +35,113 @@ describe('ReportKindChoice', () => {
 	it('lässt sich nicht ohne Auswahl bestätigen', async () => {
 		const onchoose = vi.fn();
 		const screen = render(ReportKindChoice, { onchoose });
-		await screen.getByRole('button', { name: /Weiter/i }).click({ force: true });
+		await screen.getByRole('button', { name: /Weiter/i }).click();
 		expect(onchoose).not.toHaveBeenCalled();
+	});
+});
+
+/**
+ * UX-Review (2026-08-06, Punkt 1): Der Knopf trug `aria-disabled`, solange nichts
+ * gewählt war — und sagte nicht, warum. Zwei Wege liefen damit ins Leere:
+ *
+ * - **Maus, vor der Hydration.** DaisyUI setzt an `.btn[aria-disabled=true]`
+ *   ein `pointer-events: none` (verifiziert in `node_modules/daisyui/components/
+ *   button.css`, 5.7.4). Der Klick erreichte das Element also gar nicht. Auf einer
+ *   schlechten Mobilverbindung am Strand sind das Sekunden, in denen die Seite
+ *   kaputt wirkt.
+ * - **Tastatur, nach der Hydration.** `pointer-events` bremst keine
+ *   Enter-Taste — der Submit lief, der Wächter in `submit()` stieg still aus,
+ *   angesagt wurde nichts.
+ *
+ * Der Knopf ist deshalb immer freigegeben; die Sperre ist eine Fehlermeldung an
+ * der Gruppe. `aria-invalid` und `aria-describedby` gehören dabei ans
+ * `fieldset` mit `role="radiogroup"`, nicht an die einzelnen Radios — ARIA 1.2
+ * kennt beide an `role="radio"` nicht (`design-system.md`, A11y-Minima).
+ */
+describe('ReportKindChoice — Sperre ohne Auswahl ist eine Meldung, kein toter Knopf', () => {
+	it('gibt den Weiter-Knopf frei, auch ohne Auswahl', async () => {
+		const screen = render(ReportKindChoice, { onchoose: vi.fn() });
+
+		const weiter = screen.getByRole('button', { name: /Weiter/i });
+		await expect.element(weiter).not.toHaveAttribute('aria-disabled', 'true');
+		await expect.element(weiter).not.toBeDisabled();
+	});
+
+	it('meldet die fehlende Auswahl beim Bestätigen', async () => {
+		const screen = render(ReportKindChoice, { onchoose: vi.fn() });
+
+		await screen.getByRole('button', { name: /Weiter/i }).click();
+
+		await expect.element(screen.getByRole('alert')).toHaveTextContent(/Bitte wählen Sie aus/i);
+	});
+
+	it('markiert die Radiogruppe als fehlerhaft und verweist auf die Meldung', async () => {
+		const screen = render(ReportKindChoice, { onchoose: vi.fn() });
+
+		await screen.getByRole('button', { name: /Weiter/i }).click();
+
+		const gruppe = screen.getByRole('radiogroup', { name: /Was möchten Sie melden/i });
+		await expect.element(gruppe).toHaveAttribute('aria-invalid', 'true');
+
+		const beschreibung = (await gruppe.element()).getAttribute('aria-describedby');
+		expect(beschreibung).not.toBeNull();
+		expect(document.getElementById(beschreibung as string)?.textContent).toMatch(
+			/Bitte wählen Sie aus/i
+		);
+	});
+
+	it('trägt die Fehlermarkierung nicht schon vor dem ersten Versuch', async () => {
+		const screen = render(ReportKindChoice, { onchoose: vi.fn() });
+
+		const gruppe = screen.getByRole('radiogroup', { name: /Was möchten Sie melden/i });
+		await expect.element(gruppe).not.toHaveAttribute('aria-invalid');
+		expect(document.querySelector('[role="alert"]')).toBeNull();
+	});
+
+	it('nimmt die Meldung zurück, sobald etwas gewählt wird', async () => {
+		const screen = render(ReportKindChoice, { onchoose: vi.fn() });
+
+		await screen.getByRole('button', { name: /Weiter/i }).click();
+		await screen.getByRole('radio', { name: /toten Tieres/i }).click();
+
+		const gruppe = screen.getByRole('radiogroup', { name: /Was möchten Sie melden/i });
+		await expect.element(gruppe).not.toHaveAttribute('aria-invalid');
+		expect(document.querySelector('[role="alert"]')).toBeNull();
+	});
+
+	it('führt den Fokus zur Gruppe, statt ihn beim Knopf zu lassen', async () => {
+		const screen = render(ReportKindChoice, { onchoose: vi.fn() });
+
+		await screen.getByRole('button', { name: /Weiter/i }).click();
+
+		const ersteOption = document.querySelector('input[type="radio"]');
+		expect(document.activeElement).toBe(ersteOption);
+	});
+});
+
+/**
+ * UX-Review (2026-08-06, Punkt 1), zweite Hälfte: Ein freigegebener Submit-Knopf
+ * heißt, dass ein Klick VOR der Hydration den Browser das Formular nativ
+ * abschicken lässt — der `onsubmit`-Wächter hängt zu diesem Zeitpunkt noch nicht
+ * am DOM. Genau dieser Weg soll etwas Sinnvolles tun statt eines
+ * Leerlauf-Reloads: Die Radios heißen deshalb `meldung` und tragen die
+ * deutschen Parameterwerte aus `reportKindToParam` — ein nativer GET-Submit
+ * landet damit auf `/?meldung=totfund`, und `resolveReportKind` löst das schon
+ * serverseitig in den richtigen Zweig auf (`+page.svelte`).
+ *
+ * Nicht abgedeckt bleibt dabei, dass ein nativer GET-Submit die übrigen
+ * Query-Parameter (Kampagnen-Marker aus einem Museums-Link) ersetzt — der
+ * JS-Pfad hält sie in `choose()` erhalten, der JS-lose kann es ohne versteckte
+ * Felder nicht. Bewusst in Kauf genommen: bisher passierte auf diesem Weg
+ * überhaupt nichts.
+ */
+describe('ReportKindChoice — der Submit trägt ohne JS bereits den Zweig', () => {
+	it('benennt die Radios nach dem Query-Parameter der Seite', () => {
+		render(ReportKindChoice, { onchoose: vi.fn() });
+
+		const radios = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="radio"]'));
+		expect(radios.map((radio) => radio.name)).toEqual(['meldung', 'meldung']);
+		expect(radios.map((radio) => radio.value)).toEqual(['lebend', 'totfund']);
 	});
 });
 

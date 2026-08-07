@@ -38,18 +38,27 @@ test.describe('Absenden ohne Internetverbindung', () => {
 		await expect(status).toContainText('Keine Internetverbindung');
 		await expect(status).toContainText('Eingaben bleiben vollständig gespeichert');
 
-		// Der Button bleibt fokussierbar (`aria-disabled` statt `disabled`), damit
-		// die Tastaturposition erhalten bleibt — die Sperre sitzt im Handler.
+		// Der Knopf ist NICHT als deaktiviert ausgezeichnet: `aria-disabled` und
+		// `btn-disabled` ziehen an einem DaisyUI-`.btn` ein `pointer-events: none`
+		// nach sich, der Klick käme also gar nicht an und der Wächter könnte
+		// nichts melden (design-system.md, „Der Vorbehalt"). Er trägt den Grund
+		// stattdessen per `aria-describedby` und führt beim Klick dorthin.
 		const submit = page.getByRole('button', { name: /Formular absenden/i });
-		await expect(submit).toHaveAttribute('aria-disabled', 'true');
+		await expect(submit).not.toHaveAttribute('aria-disabled', 'true');
+		await expect(submit).toHaveAttribute('aria-describedby', 'submit-status-offline');
 
-		// Ohne `force` würde Playwright wegen `aria-disabled` gar nicht erst
-		// klicken und nur die eigene Actionability-Prüfung bestätigen.
-		await submit.click({ force: true });
+		// Kein `force` nötig — und das ist die eigentliche Aussage: Der Klick
+		// erreicht die Anwendung, statt an Playwrights Actionability-Prüfung zu
+		// enden.
+		await submit.click();
 
 		// Immer noch auf dem Kontaktschritt — es wurde nichts abgeschickt.
 		await expectCurrentStep(page, /Kontakt/i);
 		await expect(status).toBeVisible();
+		// Und der Klick blieb nicht folgenlos: Er führt zur Begründung. Unterhalb
+		// `md` ist die Navigation ein ortsfester Balken, die Begründung kann also
+		// weggescrollt sein, während der Knopf sichtbar bleibt.
+		await expect(status).toBeFocused();
 
 		// Zusage einlösen: Nach einem Neuladen sind die Eingaben noch da.
 		// Erst wieder online gehen — ein Reload ohne Netz lädt das Dokument nicht.
@@ -110,9 +119,12 @@ test.describe('Absenden ohne Internetverbindung', () => {
 		await context.setOffline(false);
 
 		await expect(page.locator('[data-testid="submit-status-offline"]')).toBeHidden();
+		// Der Knopf trägt den Verweis auf die Begründung nur, solange gesperrt ist —
+		// ein `aria-disabled`-Vergleich wäre hier seit dem Umbau in BEIDEN
+		// Zuständen erfüllt und damit keine Aussage mehr.
 		await expect(page.getByRole('button', { name: /Formular absenden/i })).not.toHaveAttribute(
-			'aria-disabled',
-			'true'
+			'aria-describedby',
+			'submit-status-offline'
 		);
 	});
 });

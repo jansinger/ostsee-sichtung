@@ -3,6 +3,7 @@ import { tick } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-svelte';
 import SubmitStatus from './SubmitStatus.svelte';
+import { SUBMIT_STATUS_OFFLINE_ID } from './submitStatusIds';
 
 /** Findet den Statusblock im gerenderten Dokument. */
 function block(testid: string): HTMLElement | null {
@@ -38,6 +39,19 @@ describe('SubmitStatus', () => {
 
 			expect(block('submit-status-offline')?.getAttribute('role')).toBe('status');
 			expect(document.querySelector('[role="alert"]')).toBeNull();
+		});
+
+		/**
+		 * Die Fläche wird seit dem UX-Review-Nachgang (2026-08-06) von außen
+		 * referenziert: `StepNavigation.svelte` hängt sie bei gesperrtem Absenden
+		 * als `aria-describedby` an den Absenden-Knopf und springt bei einem Klick
+		 * darauf hierher. Verschwände die `id`, zeigte das `aria-describedby` ins
+		 * Leere und der Sprung fände nichts — beides meldet niemand von selbst.
+		 */
+		it('trägt die exportierte id, auf die StepNavigation verweist', () => {
+			render(SubmitStatus, { state: 'offline' });
+
+			expect(block('submit-status-offline')?.id).toBe(SUBMIT_STATUS_OFFLINE_ID);
 		});
 	});
 

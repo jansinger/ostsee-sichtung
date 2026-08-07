@@ -57,3 +57,30 @@ export function fieldsOutsideReportKind(kind: ReportKind): (keyof SightingFormDa
 
 	return foreign.filter((field) => !keptSet.has(field)) as (keyof SightingFormData)[];
 }
+
+/**
+ * Was der Melder darüber erfahren soll, dass `fieldsOutsideReportKind`
+ * tatsächlich etwas geräumt hat — oder `null`, wenn nichts zu melden ist.
+ *
+ * UX-Review (2026-08-06, Punkt 3): Der Wechsel über „Ändern" nahm die Felder
+ * des verlassenen Zweigs kommentarlos mit. Sichtbar wird das erst Schritte
+ * später, und ohne Erklärung liegt die Vermutung nahe, dass auch Position,
+ * Datum und Fotos betroffen sind — genau die teuersten Eingaben. Der zweite
+ * Halbsatz beantwortet das mit.
+ *
+ * `clearedCount` statt der Feldliste: Welche Felder es einzeln waren, ist für
+ * den Melder ohne Belang — er hat sie unter „Angaben zum Totfund" bzw.
+ * „Verhalten" ausgefüllt, nicht unter `deadPhoneContact`. Gebraucht wird nur
+ * die Unterscheidung „es wurde etwas geräumt" von „es war nichts da": Eine
+ * Meldung über eine Änderung, die nicht stattgefunden hat, ist schlimmer als
+ * keine — und dieser Fall ist der häufigere (jeder gewöhnliche Formularstart,
+ * und der Wechsel zurück in denselben Zweig).
+ */
+export function reportKindClearedNotice(kind: ReportKind, clearedCount: number): string | null {
+	if (clearedCount === 0) {
+		return null;
+	}
+
+	const removed = kind === 'alive' ? 'zum Totfund' : 'zum Verhalten der Tiere';
+	return `Ihre Angaben ${removed} wurden entfernt, alles Übrige bleibt erhalten.`;
+}

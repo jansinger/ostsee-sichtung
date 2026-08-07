@@ -10,6 +10,20 @@ import {
 export type ReportKind = 'alive' | 'dead';
 
 /**
+ * Name des Query-Parameters — und, seit dem UX-Review (2026-08-06, Punkt 1),
+ * zugleich der `name` der Radios auf der Einstiegsseite.
+ *
+ * Das ist kein Zufall, sondern ein tragender Vertrag: Ein Klick auf „Weiter"
+ * VOR der Hydration schickt das Formular nativ per GET ab. Nur weil die Radios
+ * `meldung` heißen und `lebend`/`totfund` tragen, landet der Melder dabei auf
+ * `/?meldung=totfund`, wo `resolveReportKind` den Zweig schon serverseitig
+ * auflöst. Stünde der Name auf beiden Seiten als Literal, machte eine
+ * einseitige Umbenennung den JS-losen Pfad still wieder zum Leerlauf-Reload —
+ * ohne dass ein Test rot würde.
+ */
+export const REPORT_KIND_PARAM = 'meldung';
+
+/**
  * Der Query-Parameter ist bewusst deutsch: Er steht in Links, die das Museum
  * selbst setzt und liest.
  *

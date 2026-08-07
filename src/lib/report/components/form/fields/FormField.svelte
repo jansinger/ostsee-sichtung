@@ -23,7 +23,8 @@
 		label = undefined,
 		type = undefined,
 		options = undefined,
-		helpText = undefined
+		helpText = undefined,
+		describedBy = undefined
 	}: {
 		name: keyof Omit<SightingFormData, 'uploadedFiles'>;
 		disabled?: boolean;
@@ -58,6 +59,13 @@
 		 * gilt weiterhin `meta.helpText`.
 		 */
 		helpText?: string | null | undefined;
+		/**
+		 * `id` eines Elements, das der Aufrufer selbst neben das Feld gestellt
+		 * hat und das mitvorgelesen werden soll. Für Kontext, der nicht im Schema
+		 * stehen kann, weil er aus dem Formularzustand kommt — Beispiel und volle
+		 * Begründung an derselben Prop in `FieldRenderer.svelte`.
+		 */
+		describedBy?: string | undefined;
 	} = $props();
 
 	const context = getFormContext();
@@ -117,6 +125,7 @@
 		{type}
 		{options}
 		{helpText}
+		{describedBy}
 		onchange={handleChange}
 	/>
 </div>

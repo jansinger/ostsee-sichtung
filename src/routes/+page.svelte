@@ -14,6 +14,7 @@
 	import {
 		clearReportKind,
 		readReportKind,
+		REPORT_KIND_PARAM,
 		reportKindToIsDead,
 		reportKindToParam,
 		resolveReportKind,
@@ -51,7 +52,7 @@
 	// NÄCHSTE Reload serverseitig sofort richtig auflöst.
 	let reportKind = $state<ReportKind | null>(
 		resolveReportKind(
-			page.url.searchParams.get('meldung'),
+			page.url.searchParams.get(REPORT_KIND_PARAM),
 			browser ? readReportKind() : null,
 			browser
 				? (loadFromStorage(STORAGE_KEYS.FORM_DATA, null) as { isDead?: unknown } | null)?.isDead
@@ -81,7 +82,7 @@
 		// ExportModal.svelte.
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const params = new URLSearchParams(window.location.search);
-		params.set('meldung', reportKindToParam(kind));
+		params.set(REPORT_KIND_PARAM, reportKindToParam(kind));
 		pushState(`/?${params.toString()}`, {});
 	}
 
@@ -135,7 +136,7 @@
 		// Gleiches Muster wie in `choose()`.
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const params = new URLSearchParams(window.location.search);
-		params.delete('meldung');
+		params.delete(REPORT_KIND_PARAM);
 		pushState(`/?${params.toString()}`, {});
 	}
 
@@ -182,7 +183,7 @@
 
 		function onPopState() {
 			const params = new URLSearchParams(window.location.search);
-			const nextReportKind = resolveReportKind(params.get('meldung'), null, null);
+			const nextReportKind = resolveReportKind(params.get(REPORT_KIND_PARAM), null, null);
 			// B7: Browser-Zurück auf die Auswahl ist derselbe „Wechsel" wie
 			// „Ändern" — nur ausgelöst über die History statt über einen Klick.
 			// Die Bedingung `reportKind !== null` grenzt das gegen den Fall ab, in
@@ -228,9 +229,9 @@
 		const target = reportKindToParam(reportKind);
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const params = new URLSearchParams(window.location.search);
-		if (params.get('meldung') === target) return;
+		if (params.get(REPORT_KIND_PARAM) === target) return;
 		tick().then(() => {
-			params.set('meldung', target);
+			params.set(REPORT_KIND_PARAM, target);
 			replaceState(`/?${params.toString()}`, {});
 		});
 	});

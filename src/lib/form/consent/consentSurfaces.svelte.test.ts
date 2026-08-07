@@ -120,9 +120,30 @@ function fieldWrapper(field: string): Element {
 	return wrapper;
 }
 
-/** Grenze zwischen zwei Ebenen: eine eigene Fläche oder ein anderes Feld. */
+/**
+ * Grenze zwischen zwei Ebenen: eine eigene Fläche, ein anderes Feld — oder ein
+ * Block, der ausdrücklich Nutzerdaten statt Einwilligungstext trägt.
+ *
+ * `data-consent-surface-exclude` gibt es seit dem 2026-08-06 für genau einen
+ * Fall: Über `mediaConsent` stehen die hochgeladenen Aufnahmen namentlich
+ * („Ihre 2 hochgeladenen Aufnahmen: foto.jpg", `Step4Contact.svelte`, UX-Review
+ * Punkt 2). Das ist die Bestandsaufnahme der eigenen Dateien, kein Wortlaut,
+ * dem jemand zustimmt — und beides, die Anzahl und die Dateinamen, kommt aus
+ * dem Formularzustand. Im Hash stünde damit die Fixture dieser Testdatei: Ein
+ * umbenanntes `foto.jpg` ließe den Test rot werden und verleitete dazu, eine
+ * Fassungskennung zu heben, obwohl sich kein gelesener Satz geändert hat.
+ *
+ * Die Auszeichnung ist deshalb ausdrücklich KEIN Freibrief für „Text, den ich
+ * nicht pinnen will". Sie gilt für Blöcke, deren Inhalt vollständig aus
+ * Nutzerdaten besteht. Alles, was den Melder darüber belehrt, wozu er
+ * zustimmt, gehört in die Fläche — auch wenn es unbequem ist.
+ */
 function isOwnLevel(element: Element): boolean {
-	return element.hasAttribute('data-consent-surface') || element.hasAttribute('data-field');
+	return (
+		element.hasAttribute('data-consent-surface') ||
+		element.hasAttribute('data-consent-surface-exclude') ||
+		element.hasAttribute('data-field')
+	);
 }
 
 /**

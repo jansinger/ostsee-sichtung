@@ -11,7 +11,10 @@
 	import { describeSubmitFailure, submitSightingForm } from '$lib/form/submitSightingForm';
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
 	import { createLogger } from '$lib/logger';
-	import { fieldsOutsideReportKind } from '$lib/report/fieldsOutsideReportKind';
+	import {
+		fieldsOutsideReportKind,
+		reportKindClearedNotice
+	} from '$lib/report/fieldsOutsideReportKind';
 	import { findStepForErrors } from '$lib/report/findStepForErrors';
 	import { resolveServerFieldErrors } from '$lib/report/serverFieldErrors';
 	import {
@@ -137,9 +140,16 @@
 	function resetField<K extends keyof SightingFormData>(key: K): void {
 		savedFormData[key] = initialFormState[key];
 	}
-	for (const field of fieldsOutsideReportKind(
-		isDeadFinding(savedFormData.isDead) ? 'dead' : 'alive'
-	)) {
+	const reportKindAtMount = isDeadFinding(savedFormData.isDead) ? 'dead' : 'alive';
+	const fieldsToClear = fieldsOutsideReportKind(reportKindAtMount);
+	// UX-Review (2026-08-06, Punkt 3): Nur die Felder zählen, die WIRKLICH einen
+	// Wert trugen. Die Schleife darunter läuft unverändert über alle — sie ist
+	// idempotent, und ein Reset auf den bereits geltenden Default kostet nichts.
+	// Gezählt wird VOR dem Reset, sonst wäre die Antwort immer null.
+	const clearedCount = fieldsToClear.filter(
+		(field) => savedFormData[field] !== initialFormState[field]
+	).length;
+	for (const field of fieldsToClear) {
 		resetField(field);
 	}
 
@@ -148,6 +158,24 @@
 		// Defer toast to after Svelte hydration
 		queueMicrotask(() => {
 			toast.info('Ihre vorherigen Eingaben wurden wiederhergestellt.', { duration: 4000 });
+		});
+	}
+
+	/**
+	 * UX-Review (2026-08-06, Punkt 3): Der Zweigwechsel über „Ändern" nahm die
+	 * Felder des verlassenen Zweigs oben kommentarlos mit. Steht direkt hinter
+	 * dem Wiederherstellungs-Hinweis, weil beide Meldungen dasselbe Ereignis
+	 * betreffen und in dieser Reihenfolge zusammen gelesen werden: „Ihre
+	 * vorherigen Eingaben wurden wiederhergestellt." — „Ihre Angaben zum Totfund
+	 * wurden entfernt, alles Übrige bleibt erhalten."
+	 *
+	 * Dasselbe `queueMicrotask` wie oben: ein Toast, der während des Aufbaus der
+	 * Komponente in den `$state`-Store schreibt, käme vor der Hydration.
+	 */
+	const clearedNotice = reportKindClearedNotice(reportKindAtMount, clearedCount);
+	if (clearedNotice) {
+		queueMicrotask(() => {
+			toast.info(clearedNotice, { duration: 6000 });
 		});
 	}
 

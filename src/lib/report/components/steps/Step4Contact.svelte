@@ -25,6 +25,23 @@
 	// Schritt sonst fälschlich leer.
 	let hasMedia = $derived(hasUploadedMedia($form.uploadedFiles));
 
+	/**
+	 * UX-Review (2026-08-06, Punkt 2): Worüber der Melder hier entscheidet, liegt
+	 * zwei Schritte zurück — die Dateien selbst stehen auf Schritt 2. Ohne diese
+	 * Aufzählung müsste er aus dem Gedächtnis wissen, was er freigibt.
+	 *
+	 * Benannt wird `originalName` (der Name, unter dem der Melder die Datei
+	 * kennt), nicht der interne `fileName`.
+	 */
+	const UPLOADED_MEDIA_SUMMARY_ID = 'uploaded-media-summary';
+
+	let uploadedMedia = $derived($form.uploadedFiles ?? []);
+	let uploadedMediaCaption = $derived(
+		uploadedMedia.length === 1
+			? 'Ihre hochgeladene Aufnahme:'
+			: `Ihre ${uploadedMedia.length} hochgeladenen Aufnahmen:`
+	);
+
 	// Check if user has saved contact data
 	let hasSavedContactData = $state(false);
 
@@ -221,7 +238,40 @@
 				     sichtbar, aber unvalidiert ausgefüllt (die „halbe Miete" aus der
 				     Doku dort). -->
 				{#if hasMedia}
-					<FormField name="mediaConsent" />
+					<!-- Aufzählung und Ankreuzfeld bilden eine Einheit und stehen
+					     deshalb enger beieinander als die Geschwister der Gruppe
+					     (`space-y-3` außen). Die Aufzählung steht bewusst VOR dem
+					     Feld: Sie ist die Frage, das Feld die Antwort. -->
+					<div class="space-y-1">
+						<!-- `id` + `describedBy` am Feld: Optisch steht die Aufzählung über
+						     dem Ankreuzfeld, für einen Screenreader wäre sie ohne die
+						     Verknüpfung aber nicht Teil der Frage — wer direkt aufs Feld
+						     tabbt, hörte den Einwilligungstext ohne die Dateinamen, also
+						     genau das Problem, das die Aufzählung beheben soll.
+
+						     `data-consent-surface-exclude`: Der Block steht INNERHALB der
+						     Einwilligungsfläche, gehört aber nicht in deren Hash — Anzahl
+						     und Dateinamen kommen aus dem Formularzustand, nicht aus einem
+						     Wortlaut, dem jemand zustimmt. Ohne die Auszeichnung stünde die
+						     Fixture aus `consentSurfaces.svelte.test.ts` (`foto.jpg`) in
+						     den Fassungskennungen, und ein umbenanntes Testbild verleitete
+						     dazu, eine Kennung zu heben, obwohl sich kein gelesener Satz
+						     geändert hat. Grenzen der Auszeichnung: ebenda. -->
+						<div
+							id={UPLOADED_MEDIA_SUMMARY_ID}
+							class="text-base-content/70 text-support"
+							data-testid="uploaded-media-summary"
+							data-consent-surface-exclude
+						>
+							<p class="font-medium">{uploadedMediaCaption}</p>
+							<ul class="list-inside list-disc">
+								{#each uploadedMedia as file (file.uid)}
+									<li class="break-all">{file.originalName}</li>
+								{/each}
+							</ul>
+						</div>
+						<FormField name="mediaConsent" describedBy={UPLOADED_MEDIA_SUMMARY_ID} />
+					</div>
 				{/if}
 			</div>
 		</div>

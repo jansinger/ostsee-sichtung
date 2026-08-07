@@ -271,6 +271,59 @@ nicht erreichbare Schritte). Nebeneffekt, der das Muster zusätzlich trägt: der
 `title` mit der Begründung („Bitte füllen Sie zuerst die vorherigen Schritte
 aus") ist an einem `disabled`-Element per Tastatur nicht erreichbar.
 
+### Der Vorbehalt: an einem `.btn` sperrt `aria-disabled` härter als gedacht
+
+Die Regel gilt weiter — ihre Begründung trägt an einem DaisyUI-**Button** aber
+nur zur Hälfte. `daisyui/components/button.css` (5.7.4, nachgemessen am
+2026-08-06) legt an `.btn:is(:disabled, [disabled], .btn-disabled,
+[aria-disabled=true])` ein `pointer-events: none`. Daraus folgt:
+
+- **Der Wächter in der Handler-Funktion ist per Maus unerreichbar.** Der Klick
+  kommt nie am Element an — er kann also auch nichts melden.
+- **Der `title` mit der Begründung erscheint beim Hovern nie**, aus demselben
+  Grund. Das Argument oben gilt nur für den Tastaturweg.
+- Per Tastatur läuft Enter dagegen durch, landet im Wächter — und dort endete
+  es bis zum UX-Review still.
+
+`ReportKindChoice.svelte` (Einstiegsseite) hat deshalb **keine** gesperrte
+Schaltfläche mehr: Der Knopf ist immer frei, und die Sperre ist eine
+Fehlermeldung an der Radiogruppe (`aria-invalid` + `role="alert"`). Das ist
+die richtige Form überall dort, wo die Sperre eine **fehlende Eingabe** meint —
+sie hat dann etwas zu sagen, und eine unerreichbare Schaltfläche sagt es nicht.
+
+`aria-disabled` bleibt richtig, wo die Sperre einen **laufenden oder noch nicht
+erreichten Zustand** meint, den der Nutzer nicht durch Eingabe auflösen kann
+(Ortung läuft, Schritt noch nicht erreicht) — dort gibt es keine Meldung, die
+weiterhülfe. Bei den drei genannten Aufrufstellen ist das der Fall;
+`FormSteps.svelte` und `StepProgressCompact.svelte` sind zudem keine `.btn`
+und vom `pointer-events`-Befund gar nicht betroffen.
+
+**Der dritte Fall: Die Begründung steht schon da.** `StepNavigation.svelte`
+sperrt „Absenden" bei fehlender Verbindung — auflösen kann der Nutzer das nicht
+durch Eingabe, eine neue Meldung wäre also fehl am Platz. `SubmitStatus` trägt
+den Grund samt Datenzusage bereits dauerhaft **über** der Navigation. Trotzdem
+ist `aria-disabled` hier falsch, und zwar aus einem Grund, der leicht übersehen
+wird: Unterhalb `md` ist die Navigation ein ortsfester Balken am unteren Rand
+(`.form-step-nav`) — die Begründung kann weggescrollt sein, während der Knopf
+sichtbar bleibt. Wer dann drückt, bekam gar nichts.
+
+Das Muster dort ist deshalb:
+
+- **kein** `aria-disabled`/`btn-disabled`/`title` am Knopf — jede dieser
+  Auszeichnungen zieht das `pointer-events: none` nach sich,
+- `aria-describedby` auf die Begründungsfläche, damit der Grund am Knopf
+  anliegt, ohne dass er angeklickt werden muss (das ersetzt den `title`, der
+  ohnehin nur am Zeigegerät hing),
+- der Wächter im Handler **springt zur Begründung und fokussiert sie**, statt
+  still auszusteigen.
+
+Die `id` der Fläche wird dafür aus `SubmitStatus.svelte` exportiert und nicht
+auf beiden Seiten als Literal gepflegt — ein `aria-describedby` ins Leere meldet
+niemand.
+
+Hart über `disabled` gesperrt bleibt dort einzig der **laufende** Submit: sehr
+kurz, nichts zu erklären, und ein Doppelklick hätte echte Folgen.
+
 **Konsequenz für Tests — leicht zu übersehen:** Playwright wertet
 `aria-disabled="true"` selbst als „nicht bedienbar" und klickt gar nicht erst.
 Ein Test, der die Sperre prüfen will, läuft ohne `force: true` in einen Timeout

@@ -3,18 +3,47 @@ import { FormPage } from './pages/FormPage';
 import { fillStep1, fillStep4, waitForNextEnabled } from './helpers/form-helpers';
 
 test.describe('Einstiegsseite des Meldeformulars', () => {
+	/**
+	 * UX-Review (2026-08-06, Punkt 1): Der Knopf war gesperrt und sagte nicht,
+	 * warum — per Maus war er wegen DaisyUIs `pointer-events: none` an
+	 * `[aria-disabled=true]` gar nicht erreichbar, per Tastatur lief das Enter
+	 * still ins Leere. Die Sperre ist seither eine Meldung an der Radiogruppe;
+	 * geprüft wird deshalb nicht mehr das Attribut, sondern die Wirkung.
+	 */
 	test('Erstbesucher sieht die Auswahl und kommt ohne sie nicht weiter', async ({ page }) => {
 		await page.goto('/');
+		await page.waitForLoadState('networkidle');
 		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
-		await expect(page.getByTestId('report-kind-submit')).toHaveAttribute('aria-disabled', 'true');
+
+		await expect(page.getByTestId('report-kind-submit')).not.toHaveAttribute('aria-disabled');
+
+		// `toPass` statt eines einzelnen Klicks: `networkidle` sagt nur „keine
+		// Netzwerkaktivität mehr", nicht „Svelte hat hydratisiert". Trifft der
+		// Klick das Zeitfenster davor, schickt der Browser das Formular nativ ab
+		// und lädt die Seite ohne Auswahl neu (`/?`) — die Meldung entsteht dann
+		// nie, und der Test wäre flaky statt aussagekräftig. Der Klick ist
+		// idempotent, also darf er wiederholt werden; nach dem Reload ist
+		// hydratisiert.
+		await expect(async () => {
+			await page.getByTestId('report-kind-submit').click();
+			await expect(page.getByRole('alert')).toContainText(/Bitte wählen Sie aus/i, {
+				timeout: 2000
+			});
+		}).toPass();
+
+		await expect(page.getByRole('radiogroup')).toHaveAttribute('aria-invalid', 'true');
+		// Weitergegangen wird trotzdem nicht.
+		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
 	});
 
 	test('nach der Auswahl erscheint Schritt 1', async ({ page }) => {
 		await page.goto('/');
 		// Wie FormPage.goto(): Playwrights Actionability-Check wartet nur auf
-		// Sichtbarkeit, nicht auf Hydration. Das radio's native `checked`
-		// springt sonst an, bevor Sveltes `onchange` überhaupt verdrahtet ist —
-		// die Auswahl bliebe dann unbemerkt und „Weiter" gesperrt.
+		// Sichtbarkeit, nicht auf Hydration. Ein Klick auf „Weiter" davor schickt
+		// das Formular nativ per GET ab (UX-Review 2026-08-06, Punkt 1: genau
+		// dafür heißen die Radios `meldung` und tragen `lebend`/`totfund`) — der
+		// Melder käme zwar richtig an, aber über eine Navigation statt über den
+		// Klick-Pfad, den dieser Test prüfen soll.
 		await page.waitForLoadState('networkidle');
 		await page.getByRole('radio', { name: /toten Tieres/i }).check();
 		await page.getByTestId('report-kind-submit').click();
@@ -187,14 +216,16 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 		// hydratisiert". Ein `toBeVisible()` allein bestünde deshalb auch dann, wenn
 		// `networkidle` noch VOR der Hydration aufläuft (langsamerer Runner,
 		// gecachte Module, andere Bundling-Strategie): Die statische SSR-Auswahlseite
-		// steht testidentisch im DOM, egal ob Svelte sie schon übernommen hat. Der
-		// folgende Schritt kann ohne Hydration nicht funktionieren — `aria-disabled`
-		// an `report-kind-submit` ist reaktiver Svelte-State (`selected`), der erst
-		// über das `onchange` eines hydratisierten Clients von `true` auf `false`
-		// kippt. Erst danach ist belegt, dass die Auswahlseite tatsächlich bedienbar
-		// (und nicht nur sichtbar) stehen geblieben ist.
-		await page.getByRole('radio', { name: /lebenden Tieres/i }).check();
-		await expect(page.getByTestId('report-kind-submit')).toHaveAttribute('aria-disabled', 'false');
+		// steht testidentisch im DOM, egal ob Svelte sie schon übernommen hat.
+		//
+		// Der Beleg war früher der Wechsel von `aria-disabled` am „Weiter"-Knopf;
+		// den gibt es seit dem UX-Review (2026-08-06, Punkt 1) nicht mehr. An seine
+		// Stelle tritt die Fehlermeldung an der Radiogruppe: Sie entsteht
+		// ausschließlich aus Svelte-State. Ohne Hydration schickte derselbe Klick
+		// das Formular nativ ab und lüde die Seite neu, statt eine Meldung
+		// einzublenden — der Test wäre dann rot, nicht trivial grün.
+		await page.getByTestId('report-kind-submit').click();
+		await expect(page.getByRole('alert')).toContainText(/Bitte wählen Sie aus/i);
 
 		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
 	});

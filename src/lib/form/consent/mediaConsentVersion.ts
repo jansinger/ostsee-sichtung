@@ -24,5 +24,19 @@
  * `PRIVACY_CONSENT_VERSION` in `consentVersions.ts`. Seit dem 2026-08-06 ist
  * genau das gepinnt (`consentSurfaces.svelte.test.ts`); zur Zeit dieses Umzugs
  * war es nur ein Kommentar, und die Kennung fiel deshalb erst einem Review auf.
+ *
+ * **Am selben Tag ein zweites Mal geändert** (UX-Review, Punkt 2): Über dem
+ * Ankreuzfeld stehen seither die hochgeladenen Aufnahmen namentlich („Ihre 2
+ * hochgeladenen Aufnahmen: …", `Step4Contact.svelte`) — bis dahin musste der
+ * Melder zwei Schritte nach dem Upload aus dem Gedächtnis wissen, worüber er
+ * entscheidet. Die Kennung bleibt `2026-08-06`, weil beide Änderungen an
+ * dieselbe Fassung gehen; wäre die vorherige an einem früheren Tag gewesen,
+ * müsste hier gehoben werden.
+ *
+ * Die Aufzählung selbst steht bewusst NICHT im Flächen-Hash
+ * (`data-consent-surface-exclude`, Begründung im Markup): Anzahl und
+ * Dateinamen sind Nutzerdaten, kein Wortlaut, dem jemand zustimmt. Der Satz,
+ * der sie einleitet, ändert sich mit ihnen — im Hash stünde damit die Fixture
+ * der Testdatei.
  */
 export const MEDIA_CONSENT_VERSION = '2026-08-06';
