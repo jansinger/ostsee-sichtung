@@ -201,6 +201,9 @@ describe('AdminSightingView — Statusleiste im Kopfbereich', () => {
 
 		await expect.element(screen.getByRole('radio', { name: 'Abgelehnt' })).toBeChecked();
 		expect(screen.container.textContent).toContain('anna@example.org');
+		// Dieselbe Information darf nicht doppelt stehen — die alte Tabellenzeile
+		// „Abgelehnt" (Status-Karte) ist entfernt, wie „Freigegeben am" oben.
+		expect(screen.getByRole('row', { name: /^Abgelehnt/ }).elements()).toHaveLength(0);
 	});
 
 	it('meldet den Wechsel als Verdict', async () => {
