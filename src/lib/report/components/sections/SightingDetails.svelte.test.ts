@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { page } from 'vitest/browser';
+import { get } from 'svelte/store';
 import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
+import { sightingSchema } from '$lib/form/validation/sightingSchema';
+import { PUBLIC_BOAT_DRIVE_OPTIONS } from '$lib/report/formOptions/boatDrive';
 import { SightingFromEnum } from '$lib/report/formOptions/sightingFrom';
 import type { SightingFormData } from '$lib/types';
 import SightingDetails from './SightingDetails.svelte';
@@ -101,6 +105,45 @@ describe('sections/SightingDetails — boatDrive im Meldeformular', () => {
 
 		expect(document.querySelector('[data-field="boatDrive"]')).toBeNull();
 	});
+});
+
+/**
+ * Gemeldet am 2026-08-06: „Motor lief" wählen und „Weiter" klicken habe die rohe
+ * Yup-Meldung „Bootsantrieb must be a `number` type, but the final value was:
+ * `NaN` (cast from the value `\"undefined\"`)" gezeigt. Nachstellen ließ sich das
+ * am Bestand nicht — die Strecke war aber ungetestet, und zwar genau die, auf
+ * der ein solcher Fehler entsteht.
+ *
+ * **Was hier anders geprüft wird als in `BaseRadio.svelte.test.ts`:** Dort steht
+ * der Auswahl-Zustand (`checked`) bei vorgegebenem Wert. Der Weg in die
+ * Gegenrichtung — Klick → `handleChange` → Formular-Store → Yup — kommt darin
+ * nicht vor: Kein Test der Feld-Pipeline klickt. Ein `onchange`, das
+ * `FieldRenderer` für Radiogruppen nicht mehr durchreicht, bliebe damit
+ * unbemerkt, obwohl der Melder danach vor einem gesperrten „Weiter" säße.
+ *
+ * Der Umweg über den String ist dabei kein Testartefakt, sondern der
+ * Produktivpfad: `createForm.handleChange` liest `target.value`, legt also einen
+ * String in den Store, und erst Yup castet ihn zurück zur Zahl.
+ */
+describe('sections/SightingDetails — der gewählte Antrieb übersteht den Weg zur Validierung', () => {
+	// Nur die beiden Felder, um die es geht: `boatDrive` hängt über
+	// `when('sightingFrom')` an der Herkunft, alles Weitere des Schritts wäre
+	// hier Beiwerk.
+	const antriebsSchema = sightingSchema.pick(['sightingFrom', 'boatDrive']);
+
+	it.each(PUBLIC_BOAT_DRIVE_OPTIONS.map((option) => [option.label, option.value] as const))(
+		'„%s" landet als validierbare Zahl im Formular-Store',
+		async (label, erwartet) => {
+			const { form } = renderWithFormContext(SightingDetails, {
+				overrides: { sightingFrom: SightingFromEnum.MOTORBOAT }
+			});
+
+			await page.getByRole('radio', { name: label, exact: true }).click();
+
+			const geprueft = await antriebsSchema.validate(get(form));
+			expect(geprueft.boatDrive).toBe(erwartet);
+		}
+	);
 });
 
 /**
