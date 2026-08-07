@@ -169,8 +169,12 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 	 * B7 (Abschlussreview, wichtig): „Ändern" tauschte den ganzen Formularbaum
 	 * gegen die Auswahlseite aus, ohne den Fokus mitzunehmen — er fiel auf
 	 * `<body>`, angesagt wurde nichts. `ReportKindChoice` fokussiert seither
-	 * beim Rücksprung ihre Legend, dieselbe Mechanik wie beim Schrittwechsel im
-	 * Formular (`scrollAndFocusStep`).
+	 * beim Rücksprung ihre Auswahlfrage, dieselbe Mechanik wie beim
+	 * Schrittwechsel im Formular (`scrollAndFocusStep`).
+	 *
+	 * Bis zum Umbau auf Links war diese Frage eine `<legend>`; seither ist sie
+	 * die `<h2>` über den beiden Karten. Die Rolle im Fokus-Muster ist
+	 * unverändert.
 	 */
 	test('„Ändern" setzt den Fokus auf die Auswahlfrage (B7)', async ({ page }) => {
 		await page.goto('/');
@@ -180,9 +184,9 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 
 		await page.getByRole('button', { name: /ändern/i }).click();
 
-		const legend = page.locator('#report-kind-question');
-		await expect(legend).toBeVisible();
-		await expect(legend).toBeFocused();
+		const auswahlfrage = page.locator('#report-kind-question');
+		await expect(auswahlfrage).toBeVisible();
+		await expect(auswahlfrage).toBeFocused();
 	});
 
 	/**
