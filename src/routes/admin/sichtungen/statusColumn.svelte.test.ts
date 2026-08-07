@@ -53,64 +53,87 @@ function daten(rows: SightingSelect[]): PageData {
 	} as unknown as PageData;
 }
 
+/**
+ * Die Bereiche, in denen `SightingStatusControl` für dieselbe Sichtung
+ * gleichzeitig im DOM steht — Mobilkarte und Desktop-Tabelle, nur per CSS
+ * (`md:hidden`/`hidden md:block`) getrennt, die Client-Testumgebung lädt kein
+ * `app.css` (Tailwind hängt nur am Root-Layout). Beide tragen ein
+ * `SightingStatusControl` mit identischem `aria-label` — ein
+ * `getByRole('radio', {name})` ohne Scope trifft auf beide und meldet „strict
+ * mode violation".
+ *
+ * Zuvor lief nur die Tabelle mit, die Mobilkarte blieb ungeprüft (Befund 9,
+ * Review Task 5) — dabei ist sie das Layout, das bei 320–767px tatsächlich
+ * bedient wird. Beide Bereiche parametrisiert, statt einen zu bevorzugen.
+ */
+const BEREICHE = [
+	{
+		name: 'Desktop-Tabelle',
+		radio: (screen: ReturnType<typeof render>, name: string) =>
+			screen.getByRole('table').getByRole('radio', { name })
+	},
+	{
+		/* Die Mobilkarte hat kein eigenes ARIA-Landmark, das sie von der Tabelle
+		   unterscheidet — anders als die Tabelle über `getByRole('table')`. Die
+		   Mobilkarten-Auszeichnung steht im Markup vor der Desktop-Tabelle
+		   (`+page.svelte`: „Mobile Card Layout" vor „Desktop Table Layout"), bei
+		   genau einer Sichtung pro Test gibt es je Name nur zwei Treffer im
+		   ganzen Dokument — `.first()` ist damit verlässlich die Mobilkarte. */
+		name: 'Mobilkarte',
+		radio: (screen: ReturnType<typeof render>, name: string) =>
+			screen.getByRole('radio', { name }).first()
+	}
+];
+
 describe('Sichtungstabelle — Statusspalte', () => {
 	beforeEach(() => {
 		submitVerdict.mockClear();
 		invalidateAll.mockClear();
 	});
 
-	/**
-	 * Abweichung vom Brief-Vorbild: Die Seite rendert Mobilkarte UND
-	 * Desktop-Tabelle gleichzeitig ins DOM (nur per `md:hidden`/`hidden
-	 * md:block` per CSS getrennt) — beide tragen für dieselbe Sichtung
-	 * dasselbe `SightingStatusControl` mit identischem `aria-label`. Die
-	 * Komponententests laden `+page.svelte` isoliert ohne `app.css`
-	 * (Tailwind hängt nur am Root-Layout), ein `getByRole('radio', {name})`
-	 * ohne Scope trifft deshalb auf beide Layouts und meldet „strict mode
-	 * violation". Skopiert wird deshalb auf die Desktop-Tabelle — das
-	 * einzige `<table>`-Element der Seite.
-	 */
-	function desktopRadio(screen: ReturnType<typeof render>, name: string) {
-		return screen.getByRole('table').getByRole('radio', { name });
+	for (const { name: bereichName, radio } of BEREICHE) {
+		describe(`Bereich: ${bereichName}`, () => {
+			it('zeigt eine abgelehnte Sichtung als „Abgelehnt", nicht als ungeprüft', async () => {
+				const screen = render(SichtungenSeite, {
+					data: daten([sichtung({ rejectedAt: new Date('2026-08-02T09:00:00Z') })])
+				});
+
+				await expect.element(radio(screen, 'Abgelehnt')).toBeChecked();
+			});
+
+			/* Regression zum Bestandsbefund: 9 Zeilen tragen eine Freigabe ohne
+			   `geprueft = 1`. Der alte Toggle zeigte sie als ungeprüft, obwohl sie
+			   öffentlich sichtbar sind. */
+			it('zeigt eine freigegebene Sichtung als „Freigegeben", auch wenn geprueft = 0', async () => {
+				const screen = render(SichtungenSeite, {
+					data: daten([sichtung({ verified: 0, approvedAt: new Date('2026-08-02T09:00:00Z') })])
+				});
+
+				await expect.element(radio(screen, 'Freigegeben')).toBeChecked();
+			});
+
+			it('schickt beim Wechsel das passende Verdict', async () => {
+				const screen = render(SichtungenSeite, { data: daten([sichtung({ id: 7 })]) });
+
+				await radio(screen, 'Freigegeben').click();
+				expect(submitVerdict).toHaveBeenCalledWith(7, 'approve');
+			});
+
+			it('hebt eine Ablehnung über das Segment „Offen" auf', async () => {
+				const screen = render(SichtungenSeite, {
+					data: daten([sichtung({ id: 8, rejectedAt: new Date('2026-08-02T09:00:00Z') })])
+				});
+
+				await radio(screen, 'Offen').click();
+				expect(submitVerdict).toHaveBeenCalledWith(8, 'reset');
+			});
+		});
 	}
 
-	it('zeigt eine abgelehnte Sichtung als „Abgelehnt", nicht als ungeprüft', async () => {
-		const screen = render(SichtungenSeite, {
-			data: daten([sichtung({ rejectedAt: new Date('2026-08-02T09:00:00Z') })])
-		});
-
-		await expect.element(desktopRadio(screen, 'Abgelehnt')).toBeChecked();
-	});
-
-	/* Regression zum Bestandsbefund: 9 Zeilen tragen eine Freigabe ohne
-	   `geprueft = 1`. Der alte Toggle zeigte sie als ungeprüft, obwohl sie
-	   öffentlich sichtbar sind. */
-	it('zeigt eine freigegebene Sichtung als „Freigegeben", auch wenn geprueft = 0', async () => {
-		const screen = render(SichtungenSeite, {
-			data: daten([sichtung({ verified: 0, approvedAt: new Date('2026-08-02T09:00:00Z') })])
-		});
-
-		await expect.element(desktopRadio(screen, 'Freigegeben')).toBeChecked();
-	});
-
-	it('schickt beim Wechsel das passende Verdict', async () => {
-		const screen = render(SichtungenSeite, { data: daten([sichtung({ id: 7 })]) });
-
-		await desktopRadio(screen, 'Freigegeben').click();
-		expect(submitVerdict).toHaveBeenCalledWith(7, 'approve');
-	});
-
-	it('hebt eine Ablehnung über das Segment „Offen" auf', async () => {
-		const screen = render(SichtungenSeite, {
-			data: daten([sichtung({ id: 8, rejectedAt: new Date('2026-08-02T09:00:00Z') })])
-		});
-
-		await desktopRadio(screen, 'Offen').click();
-		expect(submitVerdict).toHaveBeenCalledWith(8, 'reset');
-	});
-
 	/* Der Knopf „Ablehnung aufheben" existierte nur, weil ein Toggle mit zwei
-	   Stellungen den dritten Zustand nicht herstellen konnte. */
+	   Stellungen den dritten Zustand nicht herstellen konnte. Bereichsunabhängig
+	   — es gibt ihn in keinem Layout mehr, eine Parametrisierung liefe hier nur
+	   auf denselben Textinhalt zweimal geprüft hinaus. */
 	it('hat keinen separaten Knopf „Aufheben" mehr', async () => {
 		const screen = render(SichtungenSeite, {
 			data: daten([sichtung({ rejectedAt: new Date('2026-08-02T09:00:00Z') })])

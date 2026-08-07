@@ -48,6 +48,15 @@ describe('getSightingStatus', () => {
 			'approved'
 		);
 	});
+
+	/* Regression zu Befund 4 (Review Task 5): `FrontendSighting` führt beide
+	   Felder als `Date | null | undefined`, `SightingStatusSource` bislang nur
+	   `Date | string | null` — die Aufrufstellen in `+page.svelte` normalisierten
+	   deshalb mit `?? null`. Das Interface erlaubt `undefined` jetzt direkt; die
+	   Truthiness-Prüfung oben behandelt es wie `null`. */
+	it('meldet „offen", wenn beide Felder undefined sind', () => {
+		expect(getSightingStatus({ approvedAt: undefined, rejectedAt: undefined })).toBe('open');
+	});
 });
 
 describe('SIGHTING_STATUS_PRESENTATION', () => {

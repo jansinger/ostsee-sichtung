@@ -14,12 +14,31 @@
 		busy?: boolean;
 		/** `sm` für die Tabellenspalte (nur Icons), `md` für Karten und Detailansicht. */
 		size?: 'sm' | 'md';
+		/**
+		 * Zusätzliche Eindeutigkeit für den Gruppennamen, wenn dieselbe Sichtung
+		 * gleichzeitig in zwei Layouts im DOM steht (`/admin/sichtungen`:
+		 * Mobilkarte UND Desktop-Tabelle, nur per CSS getrennt). HTML-Radios mit
+		 * demselben `name` bilden EINE Auswahlgruppe über das ganze Dokument,
+		 * unabhängig vom umschließenden `fieldset` — ohne diesen Zusatz hob das
+		 * später gerenderte Control (die Tabelle) den `checked`-Zustand der
+		 * Mobilkarte silent auf. Aufgefallen an
+		 * `statusColumn.svelte.test.ts`, das dieselbe Sichtung in beiden
+		 * Bereichen prüft.
+		 */
+		groupSuffix?: string;
 		onchange: (verdict: SightingVerdict) => void;
 	}
 
-	let { status, sightingId, busy = false, size = 'md', onchange }: Props = $props();
+	let {
+		status,
+		sightingId,
+		busy = false,
+		size = 'md',
+		groupSuffix = '',
+		onchange
+	}: Props = $props();
 
-	const groupName = $derived(`sighting-status-${sightingId}`);
+	const groupName = $derived(`sighting-status-${sightingId}${groupSuffix}`);
 
 	function select(target: SightingStatus): void {
 		/**

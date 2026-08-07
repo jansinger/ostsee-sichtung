@@ -27,6 +27,16 @@ import type { SightingVerdict } from '$lib/components/admin/sightingVerdict';
 export type SightingStatus = 'open' | 'approved' | 'rejected';
 
 /**
+ * Dauer des Undo-Fensters nach einem Statuswechsel — Eingangsseite (`/admin`,
+ * Undo-Zeile einer Karte) und Tabelle (`/admin/sichtungen`, Toast-Action)
+ * zeigen dieselbe Sekundenzahl, damit ein Wechsel des Werkzeugs sich nicht wie
+ * ein Wechsel der Regel anfühlt. Eine gemeinsame Konstante statt zweier
+ * Literale, die zufällig gleich lauten — sonst driften sie beim nächsten
+ * Bearbeiten einer der beiden Stellen unbemerkt auseinander.
+ */
+export const SIGHTING_STATUS_UNDO_MS = 8000;
+
+/**
  * Die Reihenfolge der Segmente im Bedienelement: vom unbearbeiteten zum
  * bearbeiteten Zustand, Freigabe vor Ablehnung (der häufigere Ausgang zuerst).
  */
@@ -42,11 +52,15 @@ export const SIGHTING_STATUS_ORDER = [
  * sagt zugleich, dass mehr nicht gelesen wird.
  *
  * `string` neben `Date`, weil die Zeitstempel über `+page.server.ts` als JSON
- * serialisiert im Client ankommen können.
+ * serialisiert im Client ankommen können. `undefined` zusätzlich zu `null`,
+ * weil `FrontendSighting` die beiden Felder optional führt — die
+ * Truthiness-Prüfungen unten in `getSightingStatus` behandeln `undefined`
+ * bereits wie `null`, ein `?? null` an den Aufrufstellen war deshalb
+ * überflüssige Normalisierung.
  */
 export interface SightingStatusSource {
-	approvedAt: Date | string | null;
-	rejectedAt: Date | string | null;
+	approvedAt: Date | string | null | undefined;
+	rejectedAt: Date | string | null | undefined;
 }
 
 export interface SightingStatusPresentation {

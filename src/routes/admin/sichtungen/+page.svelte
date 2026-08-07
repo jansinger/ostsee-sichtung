@@ -16,6 +16,7 @@
 	import {
 		getSightingStatus,
 		SIGHTING_STATUS_PRESENTATION,
+		SIGHTING_STATUS_UNDO_MS,
 		verdictToStatus,
 		type SightingStatus
 	} from '$lib/components/admin/sightingStatus';
@@ -37,6 +38,7 @@
 		getBalticSeaStatus
 	} from '$lib/utils/geo/balticSeaStatus';
 	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
+	import { normalizeStatusParam } from '$lib/components/admin/sightingStatusFilter';
 
 	const logger = createLogger('SichtungenPage');
 
@@ -46,7 +48,12 @@
 	let sightings = $derived(data.sightings);
 	let fromDate = $state(page.url.searchParams.get('fromDate') || '');
 	let toDate = $state(page.url.searchParams.get('toDate') || '');
-	let verified = $state(page.url.searchParams.get('verified') || '');
+	/* `normalizeStatusParam`, nicht der Rohwert: Der Server versteht die alten
+	   Aliase `verified=1`/`verified=0` weiterhin (Lesezeichen, verlinkte
+	   Filteransichten), aber das `<select>` unten kennt nur `open`/`approved`/
+	   `rejected` — ohne die Normalisierung kam die gefilterte Liste zurück,
+	   während das Feld selbst leer stand. */
+	let verified = $state(normalizeStatusParam(page.url.searchParams.get('verified')) ?? '');
 	let selectedChannel = $state(page.url.searchParams.get('entryChannel') || 'all');
 	let mediaUpload = $state(page.url.searchParams.get('mediaUpload') || '');
 	let balticSea = $state(page.url.searchParams.get('balticSea') || '');
@@ -308,29 +315,50 @@
 	): Promise<void> {
 		if (statusPending.has(id)) return;
 		statusPending.add(id);
-		const ok = await submitVerdict(id, verdict);
-		statusPending.delete(id);
-		if (!ok) return;
+		/* `finally` statt eines Löschens direkt nach `submitVerdict`: Zwischen dem
+		   Entsperren und dem Abschluss von `invalidateAll()` zeigte das Control
+		   schon wieder bedienbar, aber noch die alten Daten — ein Klick in diesem
+		   Fenster hätte `previous` aus einem veralteten Stand berechnet. Der
+		   `finally`-Block deckt zugleich den Fehlerfall (`!ok`) ab, sonst bliebe
+		   die Zeile nach einem gescheiterten Versuch dauerhaft gesperrt. */
+		try {
+			const ok = await submitVerdict(id, verdict);
+			if (!ok) return;
 
-		await invalidateAll();
+			await invalidateAll();
 
-		/* Kein Bestätigungsdialog, auch nicht beim Entzug einer Freigabe: Er
-		   bremste jeden regulären Vorgang aus. Stattdessen ist der Fehlklick in
-		   einem Klick geheilt. 8 s wie das Undo-Fenster der Eingangsseite. */
-		const nach = SIGHTING_STATUS_PRESENTATION[verdictToStatus(verdict)];
-		toast.success(`Status: ${nach.label}`, {
-			duration: 8000,
-			action: {
-				label: 'Rückgängig',
-				onClick: () => {
-					void changeStatus(
-						id,
-						SIGHTING_STATUS_PRESENTATION[previous].verdict,
-						verdictToStatus(verdict)
-					);
+			/* Kein Bestätigungsdialog, auch nicht beim Entzug einer Freigabe: Er
+			   bremste jeden regulären Vorgang aus. Stattdessen ist der Fehlklick in
+			   einem Klick geheilt. Dieselbe Dauer wie das Undo-Fenster der
+			   Eingangsseite (`SIGHTING_STATUS_UNDO_MS`). */
+			const nach = SIGHTING_STATUS_PRESENTATION[verdictToStatus(verdict)];
+			toast.success(`Status: ${nach.label}`, {
+				duration: SIGHTING_STATUS_UNDO_MS,
+				action: {
+					label: 'Rückgängig',
+					onClick: () => {
+						/* Ohne diese Prüfung griff bei einem Klick während eine andere
+						   Aktion auf derselben Zeile noch läuft die `busy`-Wache am Anfang
+						   dieser Funktion: Der Toast schloss sich, `changeStatus` kehrte
+						   sofort zurück, und nichts geschah — ohne jede Rückmeldung. */
+						if (statusPending.has(id)) {
+							toast.error('Diese Zeile wird gerade noch bearbeitet — bitte kurz warten.', {
+								title: 'Rückgängig nicht möglich',
+								dismissible: true
+							});
+							return;
+						}
+						void changeStatus(
+							id,
+							SIGHTING_STATUS_PRESENTATION[previous].verdict,
+							verdictToStatus(verdict)
+						);
+					}
 				}
-			}
-		});
+			});
+		} finally {
+			statusPending.delete(id);
+		}
 	}
 </script>
 
@@ -650,8 +678,8 @@
 		{#each sightings as sighting (sighting.id)}
 			{@const balticSea = BALTIC_SEA_STATUS_PRESENTATION[getBalticSeaStatus(sighting)]}
 			{@const status = getSightingStatus({
-				approvedAt: sighting.approvedAt ?? null,
-				rejectedAt: sighting.rejectedAt ?? null
+				approvedAt: sighting.approvedAt,
+				rejectedAt: sighting.rejectedAt
 			})}
 			<div class="bg-base-100 border-base-300 rounded-lg border p-4 shadow-sm">
 				<div class="mb-3 flex items-start justify-between">
@@ -767,10 +795,22 @@
 					<span class="text-base-content/70 text-xs">
 						Gemeldet: {formatLocalDateTime(sighting.created)}
 					</span>
+					<!-- size="sm" statt "md": Gemessen bei 320px/375px lief die Karte mit den
+					     drei beschrifteten Segmenten (`.btn` hat `flex-shrink: 0`, DaisyUI kann
+					     die Gruppe also nicht stauchen) um bis zu 155px horizontal über —
+					     `e2e/admin-table-mobile-status-overflow.spec.ts` hält das als
+					     Regressionstest fest. "sm" zeigt wie die Desktop-Spalte nur Icons; der
+					     `title` am Segment trägt die Bedeutung weiter für Maus/Screenreader.
+					     `groupSuffix="-mobile"`: Ohne ihn teilt sich dieses Control den
+					     Radio-`name` mit dem gleich benannten Control der Desktop-Tabelle
+					     weiter unten — beide stehen für dieselbe Sichtung gleichzeitig im DOM,
+					     nur per CSS getrennt, und HTML gruppiert Radios über den ganzen
+					     Dokumentbaum, nicht pro `fieldset` (siehe `SightingStatusControl.svelte`). -->
 					<SightingStatusControl
 						{status}
 						sightingId={sighting.id}
-						size="md"
+						size="sm"
+						groupSuffix="-mobile"
 						busy={statusPending.has(sighting.id)}
 						onchange={(verdict) => changeStatus(sighting.id, verdict, status)}
 					/>
@@ -1003,10 +1043,10 @@
 							{/if}
 							{#if columnVisibility.verified}
 								{@const status = getSightingStatus({
-									approvedAt: sighting.approvedAt ?? null,
-									rejectedAt: sighting.rejectedAt ?? null
+									approvedAt: sighting.approvedAt,
+									rejectedAt: sighting.rejectedAt
 								})}
-								<td class="whitespace-nowrap">
+								<td>
 									<SightingStatusControl
 										{status}
 										sightingId={sighting.id}
