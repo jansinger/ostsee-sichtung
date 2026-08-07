@@ -136,11 +136,12 @@
 		const attachedFileCount = currentSighting.uploadedFiles?.length ?? 0;
 
 		if (
-			isPhotoAnnouncementPending(
-				currentSighting.mediaUpload,
+			isPhotoAnnouncementPending({
+				mediaUpload: currentSighting.mediaUpload,
 				attachedFileCount,
-				currentSighting.created
-			)
+				createdAt: currentSighting.created,
+				entryChannel: currentSighting.entryChannel
+			})
 		) {
 			return {
 				label: 'Upload',

@@ -39,10 +39,14 @@ export const load: PageServerLoad = async ({ url }) => {
 		.from(sightings)
 		.where(openOnly());
 
+	// Nur **offene** Meldungen: Der Hinweis steht über einer Arbeitsliste und
+	// benennt damit ausstehende Arbeit. Aus dem alten Tabellen-Dashboard
+	// übernommen zählte er über den gesamten Bestand — auf der lokalen DB
+	// nannte er vier Meldungen, von denen zwei längst freigegeben waren.
 	const pendingPhotoQuery = db
 		.select({ count: sql<number>`count(*)` })
 		.from(sightings)
-		.where(mediaUploadCondition(MEDIA_UPLOAD_ANNOUNCED_MISSING));
+		.where(and(mediaUploadCondition(MEDIA_UPLOAD_ANNOUNCED_MISSING), openOnly()));
 
 	// Bild-Vorschauen für genau die gelisteten Sichtungen — ein Query, in JS
 	// gruppiert. Nur Bilder: Videos brauchen einen Player, das leistet die

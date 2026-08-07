@@ -72,8 +72,27 @@ describe('mediaUploadCondition', () => {
 		expect(text).toContain('"created" >=');
 	});
 
-	it('lässt "mit"/"ohne Aufnahme" unverändert — keine Datumsgrenze für diese beiden Werte', () => {
-		expect(toSqlText(mediaUploadCondition('1') as SQL)).not.toContain('"created"');
-		expect(toSqlText(mediaUploadCondition('0') as SQL)).not.toContain('"created"');
+	/**
+	 * Zweiter Befund derselben Art, 2026-08-07 auf der lokalen DB: Die
+	 * Zeitgrenze allein genügt nicht. Ein Foto **ankündigen, ohne es liefern zu
+	 * können**, ist eine Eigenschaft des App-Clients; bei Post-, E-Mail-, Fax-
+	 * und Telefonmeldungen setzt der Admin das Flag, weil ihm ein Foto
+	 * vorliegt. Drei von vier Treffern der Arbeitsliste waren genau das —
+	 * Meldungen, für die nie jemand etwas nachreichen wird. Dieselbe
+	 * Einschränkung wie `isPhotoAnnouncementPending()`
+	 * (`$lib/utils/media/photoAnnouncement.ts`), hier in SQL.
+	 */
+	it('grenzt "angekündigt, aber keine Datei" zusätzlich auf den App-Eingangskanal ein', () => {
+		const text = toSqlText(mediaUploadCondition(MEDIA_UPLOAD_ANNOUNCED_MISSING) as SQL);
+
+		expect(text).toContain('"eingangskanal" = ');
+	});
+
+	it('lässt "mit"/"ohne Aufnahme" unverändert — weder Datums- noch Kanalgrenze', () => {
+		for (const wert of ['1', '0']) {
+			const text = toSqlText(mediaUploadCondition(wert) as SQL);
+			expect(text).not.toContain('"created"');
+			expect(text).not.toContain('"eingangskanal"');
+		}
 	});
 });
