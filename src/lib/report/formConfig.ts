@@ -267,12 +267,12 @@ const HIDDEN_WHEN_DEAD = ['behavior', 'behaviorText', 'reaction'] as const;
  * nichts, validiert trotzdem.
  *
  * Folgenlos war das nicht bloß theoretisch. `deadSize` trägt
- * `integer()`/`min(0)`/`max(300)` UNBEDINGT — sein `when('isDead')` ist ein
- * No-op (`notRequired()` in beiden Zweigen), am Zustand des Tieres hängt bei
- * diesem Feld also gar nichts. Ein zweigfremder Wert im Formular-Zustand (aus
- * dem localStorage einer früheren Sitzung) hätte damit „Weiter" auf Schritt 2
- * gesperrt, mit einem Fehler an einem Feld, das der Melder im Lebend-Zweig
- * weder sieht noch erreichen kann. Praktisch abgefangen hat das bisher
+ * `integer()`/`min(0)`/`max(300)` UNBEDINGT und ist in keinem Zweig Pflicht —
+ * am Zustand des Tieres hängt bei diesem Feld also gar nichts. Ein zweigfremder
+ * Wert im Formular-Zustand (aus dem localStorage einer früheren Sitzung) hätte
+ * damit „Weiter" auf Schritt 2 gesperrt, mit einem Fehler an einem Feld, das
+ * der Melder im Lebend-Zweig weder sieht noch erreichen kann. Praktisch
+ * abgefangen hat das bisher
  * `fieldsOutsideReportKind` (räumt dieselben Felder beim Start aus dem
  * Zustand) — aber als zweite, unabhängig gepflegte Absicherung, nicht als
  * Regel an der Stelle, an der die Validierung entsteht.

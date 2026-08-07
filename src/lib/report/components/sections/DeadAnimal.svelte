@@ -38,9 +38,10 @@
 		     sie nicht. Ohne den Override lief der Melder ohne Sternchen und ohne
 		     `aria-required` in „Bitte geben Sie den Zustand des toten Tieres an.".
 
-		     Die beiden Nachbarfelder bekommen ihn bewusst NICHT: `deadSize` hat zwar
-		     ein `when()`, setzt darin aber beide Zweige auf `notRequired()`, und
-		     `deadSex` hat das Museum am 2026-08-04 samt Pflicht abbestellt. -->
+		     Die beiden Nachbarfelder bekommen ihn bewusst NICHT: `deadSize` ist im
+		     Schema unbedingt optional (die Körperlänge ist eine Zusatzangabe, keine
+		     Bedingung für die Meldung), und `deadSex` hat das Museum am 2026-08-04
+		     samt Pflicht abbestellt. -->
 		<FormField name="deadCondition" required={true} />
 
 		<!-- Das Geschlecht beim Totfund ist seit 2026-08-04 nur noch in der

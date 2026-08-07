@@ -93,9 +93,9 @@ describe('sections/DeadAnimal — Zustand als konditionales Pflichtfeld', () => 
 
 	/**
 	 * Gegenprobe: Die beiden Nachbarfelder sind unter denselben Bedingungen
-	 * ausdrücklich optional (`deadSize` hat ein `when()`, das in beiden Zweigen
-	 * `notRequired()` setzt; `deadSex` hat das Museum am 2026-08-04 samt Pflicht
-	 * abbestellt). Ein pauschal auf die Section gesetzter Override fiele hier auf.
+	 * ausdrücklich optional (`deadSize` ist im Schema unbedingt optional;
+	 * `deadSex` hat das Museum am 2026-08-04 samt Pflicht abbestellt). Ein
+	 * pauschal auf die Section gesetzter Override fiele hier auf.
 	 */
 	it.each(['deadSize', 'deadSex'])('markiert %s weiterhin NICHT als Pflichtfeld', (name) => {
 		renderDeadAnimal({ adminMode: true });

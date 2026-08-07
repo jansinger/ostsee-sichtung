@@ -322,4 +322,71 @@ describe('sightingSchema - Sonstiges-Textfeld-Validierung', () => {
 			);
 		});
 	});
+
+	// ── deadSize — optional UND nullable, in beiden Zweigen ───────────────────
+	//
+	// `deadSize` trug bis zum 2026-08-06 ein `.when('isDead', …)` mit
+	// `notRequired()` in BEIDEN Zweigen. Das sah wie ein No-op aus — war aber
+	// keines: In yup 1.x hebt `notRequired()` zusätzlich die Null-Sperre auf.
+	// Die Verzweigung trug also die Nullbarkeit des Feldes, ohne das irgendwo zu
+	// sagen. Sie ist jetzt durch ein explizites `.nullable()` ersetzt.
+	//
+	// Die Null-Fälle unten sind der eigentliche Grund für diese Gruppe. Sie
+	// fehlten beim ersten Anlauf, und weil `deadSize` bei jeder Nicht-Totfund-
+	// Sichtung als `NULL` aus der DB kommt, fiel der Unterschied erst in
+	// `e2e/admin-edit-preserves-record.spec.ts` auf — dort ließ sich ein
+	// Bestandsdatensatz nicht mehr speichern, weil die Validierung mit
+	// „deadSize cannot be null" abbrach und der Request nie rausging.
+	// Die Nachbarfelder oben tragen aus demselben Grund je einen
+	// „akzeptiert null (Legacy-DB-Wert)"-Fall.
+	//
+	// `integer()`, `min(0)` und `max(300)` stehen mit drin, weil sie unbedingt
+	// gelten und beim Umbau nicht mitverschwinden dürfen.
+	describe('deadSize — optional und nullable in beiden Zweigen (2026-08-06)', () => {
+		it('ist nicht required bei isDead=true', async () => {
+			expect(await fieldHasError('deadSize', { isDead: true })).toBe(false);
+		});
+
+		it('ist nicht required bei isDead=false', async () => {
+			expect(await fieldHasError('deadSize', { isDead: false })).toBe(false);
+		});
+
+		it('ist nicht required, wenn isDead gar nicht gesetzt ist', async () => {
+			expect(await fieldHasError('deadSize', {})).toBe(false);
+		});
+
+		// Der Regressionsfall: So kommt das Feld für JEDE Nicht-Totfund-Sichtung
+		// aus der DB in die Admin-Maske. Ohne `.nullable()` bricht hier die
+		// Validierung ab und der Speichern-Request geht nie raus.
+		it.each([
+			['isDead=true', true],
+			['isDead=false', false],
+			['isDead nicht gesetzt', undefined]
+		])('akzeptiert null (Legacy-DB-Wert) bei %s', async (_label, isDead) => {
+			const data = isDead === undefined ? { deadSize: null } : { isDead, deadSize: null };
+			expect(await fieldHasError('deadSize', data)).toBe(false);
+		});
+
+		it.each([true, false])(
+			'akzeptiert einen gültigen Wert unverändert in beiden Zweigen (isDead=%s)',
+			async (isDead) => {
+				expect(await fieldHasError('deadSize', { isDead, deadSize: 150 })).toBe(false);
+			}
+		);
+
+		// Die drei unbedingten Zusagen — sie hängen NICHT am `when()` und müssen
+		// das Entfernen überleben. Jeweils in beiden Zweigen geprüft, weil ein
+		// versehentlich zu weit gefasstes Aufräumen sie nur in einem träfe.
+		it.each([true, false])('lehnt Nachkommastellen ab (isDead=%s)', async (isDead) => {
+			expect(await fieldHasError('deadSize', { isDead, deadSize: 150.5 })).toBe(true);
+		});
+
+		it.each([true, false])('lehnt negative Werte ab (isDead=%s)', async (isDead) => {
+			expect(await fieldHasError('deadSize', { isDead, deadSize: -1 })).toBe(true);
+		});
+
+		it.each([true, false])('lehnt Werte über 300 ab (isDead=%s)', async (isDead) => {
+			expect(await fieldHasError('deadSize', { isDead, deadSize: 301 })).toBe(true);
+		});
+	});
 });
