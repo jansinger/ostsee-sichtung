@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.12.0](https://github.com/jansinger/ostsee-tiere/compare/v2.11.0...v2.12.0) (2026-08-07)
+
+
+### Features
+
+* **admin:** add dead-finding filter to the sightings table ([#786](https://github.com/jansinger/ostsee-tiere/issues/786)) ([0c80199](https://github.com/jansinger/ostsee-tiere/commit/0c801990095e4a02f811fae5685ab744d1b7ecdf))
+* **admin:** distinguish dead findings from live sightings ([#784](https://github.com/jansinger/ostsee-tiere/issues/784)) ([f76f714](https://github.com/jansinger/ostsee-tiere/commit/f76f7140bbf93b54370cec5ce1e45c697d664c50))
+* **admin:** give the sighting detail view the same actions as the table ([#770](https://github.com/jansinger/ostsee-tiere/issues/770)) ([9d3c28a](https://github.com/jansinger/ostsee-tiere/commit/9d3c28accd88fcf7414dbd5803eda7705479d5de))
+* **api:** spam detection for sighting submissions — score, persist, triage ([#787](https://github.com/jansinger/ostsee-tiere/issues/787)) ([58c1b9b](https://github.com/jansinger/ostsee-tiere/commit/58c1b9b2505ccf4f69da0b8ea28e2c0a89215bda))
+* **report:** add the entry choice before the report form ([#773](https://github.com/jansinger/ostsee-tiere/issues/773)) ([0f23623](https://github.com/jansinger/ostsee-tiere/commit/0f23623dc1e04ad50e802a736581dfd45ef30267))
+
+
+### Bug Fixes
+
+* **admin:** let multi-line badge values grow instead of overflowing the pill ([#785](https://github.com/jansinger/ostsee-tiere/issues/785)) ([6274aa4](https://github.com/jansinger/ostsee-tiere/commit/6274aa4c842d2397221180b6d2af3fb318b08b9d))
+* **report:** announce a photo only when none is attached yet ([#772](https://github.com/jansinger/ostsee-tiere/issues/772)) ([541f4b0](https://github.com/jansinger/ostsee-tiere/commit/541f4b0fcfa9ba61cdde0d32aecd38fbb9741f81))
+* **report:** hide the dead-find fields from step validation in the alive branch ([#774](https://github.com/jansinger/ostsee-tiere/issues/774)) ([b5536fd](https://github.com/jansinger/ostsee-tiere/commit/b5536fdd35c6c597dfa1d7fd29e6c4376b581b74))
+* **report:** move the ship count below the weather fields ([#775](https://github.com/jansinger/ostsee-tiere/issues/775)) ([1b57d9c](https://github.com/jansinger/ostsee-tiere/commit/1b57d9ca45758c4aea1c99e5d3c10065ca1beaa4))
+* **report:** stop hidden fields from silently blocking the submit ([#783](https://github.com/jansinger/ostsee-tiere/issues/783)) ([96bd2b6](https://github.com/jansinger/ostsee-tiere/commit/96bd2b688e715279bc426fd700aea491ce81edc6))
+* **report:** vier UX-Befunde zur Einstiegsseite und zum Meldeformular ([#780](https://github.com/jansinger/ostsee-tiere/issues/780)) ([c132a69](https://github.com/jansinger/ostsee-tiere/commit/c132a698a25234b9c9aaa8965759e02b24802f1e))
+
+
+### Code Refactoring
+
+* **report:** drop the no-op when() from deadSize ([#779](https://github.com/jansinger/ostsee-tiere/issues/779)) ([0f3c8a5](https://github.com/jansinger/ostsee-tiere/commit/0f3c8a52538c4621d620cd473474249239b04e6f))
+* **report:** move the report-kind feedback into the action row ([#782](https://github.com/jansinger/ostsee-tiere/issues/782)) ([23b4657](https://github.com/jansinger/ostsee-tiere/commit/23b4657dc7083c08fd03e07b7c9cec7a5ee292e6))
+
 ## [2.11.0](https://github.com/jansinger/ostsee-tiere/compare/v2.10.0...v2.11.0) (2026-08-05)
 
 
