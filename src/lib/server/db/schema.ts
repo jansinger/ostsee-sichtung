@@ -116,7 +116,15 @@ export const sightings = pgTable(
 		// bzw. Eingang an der Web-API vorbei — nicht mit Score 0 („geprüft, sauber")
 		// verwechselbar. Die Indikatoren sind ein String-Array (jsonb).
 		spamScore: smallint('spam_score'),
-		spamIndicators: jsonb('spam_indicators')
+		spamIndicators: jsonb('spam_indicators'),
+		// Triage „abgelehnt": gesichtet und bewusst NICHT veröffentlicht (Spam,
+		// Testeintrag, unplausibel). KEIN dritter Freigabe-Zustand: öffentliche
+		// Flächen filtern weiterhin ausschließlich auf freigegeben_am. Nie
+		// gleichzeitig mit freigegeben_am gesetzt — geschrieben ausschließlich von
+		// PATCH /api/sightings/[id]/verify (ein Update, alle Status-Spalten).
+		// Regeln: .claude/rules/api.md „Prüfstatus einer Sichtung".
+		rejectedAt: timestamp('abgelehnt_am', { mode: 'date' }),
+		rejectedBy: varchar('abgelehnt_von', { length: 255 })
 	},
 	(table) => [
 		index('geom_sichtungen').using(
