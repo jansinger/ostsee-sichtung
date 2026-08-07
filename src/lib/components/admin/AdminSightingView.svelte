@@ -31,6 +31,7 @@
 		PHOTO_ANNOUNCEMENT_TITLE
 	} from '$lib/utils/media/photoAnnouncement';
 	import Icon from '$lib/components/Icon.svelte';
+	import { DEAD_FINDING_PRESENTATION, isDeadFinding } from './deadFinding';
 	import { untrack } from 'svelte';
 
 	// Definiere die Struktur einer Datenzeile
@@ -215,27 +216,30 @@
 		].filter((row): row is DataRowType => row !== undefined)
 	);
 
-	// Totfund
+	const isDead = $derived(isDeadFinding(currentSighting.isDead));
+
+	// Totfund — die Zeilen der Karte, ohne eine eigene Zeile „Totfund: Ja".
+	// Die trüge nichts bei: Gezeigt wird die Karte ausschließlich bei einem
+	// Totfund, und ihre Überschrift sagt es bereits. Vorher stand die Zeile
+	// hier unbedingt und zog damit die ganze Karte auch über jede
+	// Lebendsichtung — mit dem Inhalt „Totfund: Nein".
 	const deadAnimalRows = $derived(
-		[
-			BooleanDataRow('Totfund', currentSighting.isDead),
-			...(currentSighting.isDead
-				? [
-						DataRow(
-							'Zustand',
-							getAnimalConditionLabel(currentSighting.deadCondition),
-							hasValue(currentSighting.deadCondition)
-						),
-						DataRow(
-							'Geschlecht',
-							getSexLabel(currentSighting.deadSex),
-							hasValue(currentSighting.deadSex)
-						),
-						DataRow('Größe', `${currentSighting.deadSize} cm`, hasValue(currentSighting.deadSize)),
-						BooleanDataRow('Telefonischer Kontakt', currentSighting.deadPhoneContact)
-					]
-				: [])
-		].filter((row): row is DataRowType => row !== undefined)
+		isDead
+			? [
+					DataRow(
+						'Zustand',
+						getAnimalConditionLabel(currentSighting.deadCondition),
+						hasValue(currentSighting.deadCondition)
+					),
+					DataRow(
+						'Geschlecht',
+						getSexLabel(currentSighting.deadSex),
+						hasValue(currentSighting.deadSex)
+					),
+					DataRow('Größe', `${currentSighting.deadSize} cm`, hasValue(currentSighting.deadSize)),
+					BooleanDataRow('Telefonischer Kontakt', currentSighting.deadPhoneContact)
+				].filter((row): row is DataRowType => row !== undefined)
+			: []
 	);
 
 	// Sichtungsdetails
@@ -447,6 +451,18 @@
 		</div>
 	</div>
 {:else}
+	{#if isDead}
+		<!-- Steht über allen Angaben und nicht zwischen den Karten: Die Art der
+		     Meldung entscheidet, wie der Datensatz gelesen wird, und muss deshalb
+		     vor dem ersten Detail feststehen. `role="note"` statt `role="alert"` —
+		     es ist eine dauerhafte Einordnung des Datensatzes, kein Ereignis, das
+		     einen Screenreader unterbrechen sollte. -->
+		<div class="alert alert-warning mb-4" role="note">
+			<Icon icon={DEAD_FINDING_PRESENTATION.icon} class="shrink-0" aria-hidden="true" />
+			<span>{DEAD_FINDING_PRESENTATION.description}</span>
+		</div>
+	{/if}
+
 	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 		<div class="space-y-4">
 			<!-- Datum & Zeit -->
@@ -488,12 +504,21 @@
 			</div>
 
 			<!-- Totfund-Details -->
-			{#if deadAnimalRows.length > 0}
-				<div class="card bg-base-200 shadow-sm">
+			{#if isDead}
+				<!-- Linke Kante und Icon in der Fehlerfarbe: Alle anderen Karten
+				     tragen `text-primary` am Icon, diese hob sich damit in nichts
+				     ab. Die Kante trägt die Farbe, das Icon zusätzlich die Form —
+				     Farbe allein wäre kein Merkmal (WCAG 1.4.1). -->
+				<div class="card bg-base-200 border-error border-l-4 shadow-sm">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
-							<Icon icon="lucide:triangle-alert" width="20" class="text-primary" />
-							Totfund
+							<Icon
+								icon={DEAD_FINDING_PRESENTATION.icon}
+								width="20"
+								class="text-error"
+								aria-hidden="true"
+							/>
+							{DEAD_FINDING_PRESENTATION.label}
 						</h3>
 						<div class="overflow-x-auto">
 							<table class="table-zebra table-sm table w-full">
