@@ -22,7 +22,16 @@
 	const groupName = $derived(`sighting-status-${sightingId}`);
 
 	function select(target: SightingStatus): void {
-		if (busy || target === status) return;
+		/**
+		 * Bewusst kein `target === status`-Vergleich: Ein erneuter Klick auf ein
+		 * bereits gewähltes Radio feuert in keinem Browser ein `change` — die
+		 * Wache wäre über den DOM nie erreichbar. Schlimmer, sie würde nach einem
+		 * fehlgeschlagenen Wechsel genau die Korrektur verschlucken: Scheitert
+		 * `submitVerdict`, lädt die aufrufende Seite nicht neu, das Radio steht
+		 * im DOM auf dem neuen Wert, `status` bleibt auf dem alten — ein Klick auf
+		 * das ursprüngliche Segment müsste dann durchgehen.
+		 */
+		if (busy) return;
 		onchange(SIGHTING_STATUS_PRESENTATION[target].verdict);
 	}
 

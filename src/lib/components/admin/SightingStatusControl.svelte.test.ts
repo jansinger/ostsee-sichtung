@@ -39,12 +39,24 @@ describe('SightingStatusControl', () => {
 		expect(onchange).toHaveBeenCalledWith('reject');
 	});
 
-	it('meldet nichts, wenn der aktuelle Zustand erneut gewählt wird', async () => {
+	/* Reproduziert den Fall aus dem Review: Nach einem fehlgeschlagenen
+	   Statuswechsel lädt die aufrufende Seite nicht neu (`submitVerdict` gibt
+	   `false` zurück) — das angeklickte Radio steht im DOM auf dem neuen Wert,
+	   `status` bleibt auf dem alten. Ein Klick auf das ursprüngliche Segment
+	   ist dann eine Korrektur und muss durchgehen, nicht verschluckt werden. */
+	it('meldet die Korrektur, wenn DOM und status-Prop auseinanderlaufen', async () => {
 		const onchange = vi.fn();
-		const screen = render(SightingStatusControl, { status: 'approved', sightingId: 1, onchange });
+		const screen = render(SightingStatusControl, { status: 'open', sightingId: 1, onchange });
 
+		// Simuliert den gescheiterten Wechsel: Der Klick setzt das DOM-Radio auf
+		// "Freigegeben", das onchange-Callback (analog zum fehlschlagenden
+		// submitVerdict) aktualisiert das status-Prop aber nicht.
 		await screen.getByRole('radio', { name: 'Freigegeben' }).click();
-		expect(onchange).not.toHaveBeenCalled();
+		onchange.mockClear();
+
+		// Die Korrektur: zurück auf das Segment, das dem status-Prop entspricht.
+		await screen.getByRole('radio', { name: 'Offen' }).click();
+		expect(onchange).toHaveBeenCalledWith('reset');
 	});
 
 	it('sperrt alle Segmente, solange ein Wechsel läuft', async () => {
@@ -56,7 +68,10 @@ describe('SightingStatusControl', () => {
 			onchange
 		});
 
+		await expect.element(screen.getByRole('radio', { name: 'Offen' })).toBeDisabled();
 		await expect.element(screen.getByRole('radio', { name: 'Freigegeben' })).toBeDisabled();
+		await expect.element(screen.getByRole('radio', { name: 'Abgelehnt' })).toBeDisabled();
+
 		await screen.getByRole('radio', { name: 'Freigegeben' }).click({ force: true });
 		expect(onchange).not.toHaveBeenCalled();
 	});
