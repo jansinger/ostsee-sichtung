@@ -35,7 +35,7 @@
  */
 
 import { sightings } from '$lib/server/db/schema';
-import { isNotNull, isNull, type SQL } from 'drizzle-orm';
+import { and, isNotNull, isNull, type SQL } from 'drizzle-orm';
 
 /**
  * Freigabestatus einer Auswertung.
@@ -96,3 +96,29 @@ export type SightingApprovalState = { approvedAt: Date | null | undefined };
  */
 export const isSightingApproved = (sighting: SightingApprovalState): boolean =>
 	!!sighting.approvedAt;
+
+/**
+ * Offene Sichtungen — die Grundmenge der Admin-Eingangsseite (`/admin`).
+ *
+ * „Offen" heißt: weder freigegeben noch abgelehnt. Die Ablehnung ist eine
+ * Triage-Dimension und KEIN dritter Freigabe-Zustand — öffentliche Flächen
+ * filtern weiterhin ausschließlich über `approvedOnly()`. `pendingOnly()`
+ * bleibt davon unberührt: Es meint „nicht freigegeben" (inkl. abgelehnter)
+ * und ist die Gegenmenge der öffentlichen Statistik.
+ */
+export const openOnly = (): SQL =>
+	and(isNull(sightings.approvedAt), isNull(sightings.rejectedAt)) as SQL;
+
+/** Nur abgelehnte Sichtungen — Filter der Admin-Tabelle. */
+export const rejectedOnly = (): SQL => isNotNull(sightings.rejectedAt);
+
+/** Der Teil einer geladenen Sichtung, der über ihren Ablehnungsstatus entscheidet. */
+export type SightingRejectionState = { rejectedAt: Date | null | undefined };
+
+/**
+ * `rejectedOnly()` für eine bereits geladene Zeile. Gleiche Truthy-Begründung
+ * wie `isSightingApproved()` (siehe dort). Genutzt vom Verify-Endpunkt für den
+ * Vorzustand im Audit-Log.
+ */
+export const isSightingRejected = (sighting: SightingRejectionState): boolean =>
+	!!sighting.rejectedAt;

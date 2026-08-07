@@ -43,12 +43,14 @@ const REMEDIATION = [
 	"  import { approvedOnly, pendingOnly } from '$lib/server/db/approvalFilter';",
 	'  .where(approvedOnly())   // öffentlich: nur freigegebene Sichtungen',
 	'  .where(pendingOnly())    // Admin: nur noch nicht freigegebene',
-	'Ein zweiter Scope neben diesen beiden wäre ein Widerspruch zu api.md',
-	'(„genau zwei Zustände") und darf nicht entstehen.',
+	'  .where(openOnly())       // Eingangsseite: weder freigegeben noch abgelehnt',
+	'  .where(rejectedOnly())   // Admin-Tabelle: nur abgelehnte',
+	'Die Ablehnung ist eine Triage-Dimension, kein dritter Freigabe-Zustand (api.md).',
 	'',
 	'Über einer bereits geladenen Zeile gilt derselbe Helper in JavaScript:',
-	"  import { isSightingApproved } from '$lib/server/db/approvalFilter';",
-	'  if (!isSightingApproved(file)) { /* nicht freigegeben */ }'
+	"  import { isSightingApproved, isSightingRejected } from '$lib/server/db/approvalFilter';",
+	'  if (!isSightingApproved(file)) { /* nicht freigegeben */ }',
+	'  if (isSightingRejected(sighting)) { /* abgelehnt */ }'
 ].join('\n');
 
 /**
@@ -59,7 +61,7 @@ const REMEDIATION = [
  * Aufzählung der Präfixe wäre genau die Sorte Liste, die nur kennt, was schon
  * jemand geschrieben hat.
  */
-const COLUMN = String.raw`(?:approvedAt|freigegeben_am)`;
+const COLUMN = String.raw`(?:approvedAt|freigegeben_am|rejectedAt|abgelehnt_am)`;
 
 /**
  * Was zwischen Spalte und `IS NULL` stehen darf.
@@ -309,6 +311,11 @@ describe('Mustererkennung', () => {
 		expect(findApprovalPredicates(code)).toHaveLength(1);
 	});
 
+	it('erkennt das SQL-Muster auf der Ablehnungs-Spalte', () => {
+		expect('${sightings.rejectedAt} IS NOT NULL').toMatch(SQL_ORDER);
+		expect('isNull(sightings.rejectedAt)').toMatch(FUNCTION_ORDER);
+	});
+
 	/* Die Lücke, an der ein zeilenweiser Scan gescheitert wäre — und zwar nicht
 	   an einem Sonderfall, sondern an Prettier: Sobald die where-Klausel lang
 	   genug wird, bricht der Formatter genau so um. Das ist dieselbe Bauart wie
@@ -533,7 +540,9 @@ describe('Bestand', () => {
 		expect(findApprovalPredicates(definition).map((hit) => hit.text)).toEqual([
 			'isNotNull(sightings.approvedAt',
 			'isNull(sightings.approvedAt',
-			'!!sighting.approvedAt'
+			'!!sighting.approvedAt',
+			'isNull(sightings.approvedAt',
+			'isNotNull(sightings.rejectedAt'
 		]);
 	});
 

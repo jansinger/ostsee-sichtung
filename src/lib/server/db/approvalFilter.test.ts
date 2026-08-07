@@ -27,7 +27,13 @@ import { PgDialect } from 'drizzle-orm/pg-core';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { approvedOnly, isSightingApproved } from './approvalFilter';
+import {
+	approvedOnly,
+	isSightingApproved,
+	isSightingRejected,
+	openOnly,
+	rejectedOnly
+} from './approvalFilter';
 
 const dialect = new PgDialect();
 
@@ -155,4 +161,27 @@ describe('Endpunkte mit JavaScript-seitiger Freigabeprüfung', () => {
 			}
 		});
 	}
+});
+
+describe('Triage „abgelehnt" — openOnly / rejectedOnly / isSightingRejected', () => {
+	const dialect = new PgDialect();
+
+	it('openOnly verlangt beide Spalten als NULL (offen = weder freigegeben noch abgelehnt)', () => {
+		const sql = dialect.sqlToQuery(openOnly()).sql;
+		expect(sql).toContain('"freigegeben_am" is null');
+		expect(sql).toContain('"abgelehnt_am" is null');
+		expect(sql).toContain(' and ');
+	});
+
+	it('rejectedOnly filtert auf abgelehnt_am IS NOT NULL', () => {
+		const sql = dialect.sqlToQuery(rejectedOnly()).sql;
+		expect(sql).toContain('"abgelehnt_am" is not null');
+		expect(sql).not.toContain('freigegeben_am');
+	});
+
+	it('isSightingRejected spiegelt die Truthy-Semantik von isSightingApproved', () => {
+		expect(isSightingRejected({ rejectedAt: new Date() })).toBe(true);
+		expect(isSightingRejected({ rejectedAt: null })).toBe(false);
+		expect(isSightingRejected({ rejectedAt: undefined })).toBe(false);
+	});
 });
