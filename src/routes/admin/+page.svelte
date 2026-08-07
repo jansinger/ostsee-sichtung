@@ -3,7 +3,11 @@
 	import { page } from '$app/state';
 	import SightingInboxCard from '$lib/components/admin/SightingInboxCard.svelte';
 	import { submitVerdict, type SightingVerdict } from '$lib/components/admin/sightingVerdict';
-	import { SIGHTING_STATUS_UNDO_MS } from '$lib/components/admin/sightingStatus';
+	import {
+		SIGHTING_STATUS_PRESENTATION,
+		SIGHTING_STATUS_UNDO_MS,
+		verdictToStatus
+	} from '$lib/components/admin/sightingStatus';
 	import { onDestroy } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import ArrowDown from '~icons/lucide/arrow-down';
@@ -127,10 +131,13 @@
 				{#if !abgelaufen.has(sighting.id)}
 					<li>
 						{#if done[sighting.id]}
+							{@const status = SIGHTING_STATUS_PRESENTATION[verdictToStatus(done[sighting.id]!)]}
 							<div class="alert py-2" role="status">
 								<span>
 									Sichtung #{sighting.id}
-									{done[sighting.id] === 'approve' ? 'freigegeben' : 'abgelehnt'}.
+									<span class="badge {status.badgeClass}">
+										{status.label}
+									</span>
 								</span>
 								<button
 									type="button"

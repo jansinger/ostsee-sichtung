@@ -1,6 +1,7 @@
 import { render } from 'vitest-browser-svelte';
 import { describe, expect, it, vi } from 'vitest';
 import SightingInboxCard from './SightingInboxCard.svelte';
+import { SIGHTING_STATUS_PRESENTATION } from './sightingStatus';
 import type { SightingSelect } from '$lib/server/db/schema';
 
 const basisSichtung = {
@@ -82,6 +83,31 @@ describe('SightingInboxCard', () => {
 		expect(onApprove).toHaveBeenCalledOnce();
 		await screen.getByRole('button', { name: 'Ablehnen' }).click();
 		expect(onReject).toHaveBeenCalledOnce();
+	});
+
+	/* Die Karte benennt die Triage-Ziele wie Tabelle und Detailansicht — sonst
+	   heißt derselbe Vorgang je nach Seite anders. Zustandswort und
+	   Handlungswort sind verschieden: Das Segment heißt „Freigegeben", der
+	   Knopf „Freigeben". */
+	it('beschriftet die Aktionen aus der gemeinsamen Statusquelle', async () => {
+		const screen = render(SightingInboxCard, {
+			sighting: basisSichtung,
+			images: [],
+			busy: false,
+			onApprove: vi.fn(),
+			onReject: vi.fn()
+		});
+
+		await expect
+			.element(
+				screen.getByRole('button', { name: SIGHTING_STATUS_PRESENTATION.approved.actionLabel })
+			)
+			.toBeInTheDocument();
+		await expect
+			.element(
+				screen.getByRole('button', { name: SIGHTING_STATUS_PRESENTATION.rejected.actionLabel })
+			)
+			.toBeInTheDocument();
 	});
 
 	it('rendert Bild-Vorschauen über /api/media', async () => {
