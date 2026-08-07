@@ -1,6 +1,6 @@
 /**
  * Gemeinsames Meldeart-Filterprädikat (Totfund/Lebendsichtung) für die
- * Admin-Übersicht (`routes/admin/+page.server.ts`) und den Export
+ * Admin-Übersicht (`routes/admin/sichtungen/+page.server.ts`) und den Export
  * (`routes/api/sightings/export/exportFilterParams.ts`) — dieselbe Trennung
  * wie `mediaUploadFilter.ts`: reine, DB-lose Funktion, die ein Drizzle-Prädikat
  * baut und es dem Aufrufer für dessen `and(...)`-Liste überlässt.

@@ -7,7 +7,7 @@ import { MapPage } from './pages/MapPage';
    einzige kurze Seite im Admin-Bereich. Nur an ihr bindet eine zu groß
    geratene Mindesthöhe überhaupt; auf den langen Seiten (Statistiken,
    Einstellungen, Sichtungsliste) bliebe sie unsichtbar. */
-const KURZE_ADMIN_SEITE = '/admin?fromDate=2099-01-01&toDate=2099-01-02';
+const KURZE_ADMIN_SEITE = '/admin/sichtungen?fromDate=2099-01-01&toDate=2099-01-02';
 
 /**
  * app-shell-height.spec.ts — die Karte muss unter *jedem* Header passen.

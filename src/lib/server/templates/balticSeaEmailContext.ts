@@ -33,7 +33,7 @@ import { EMAIL_COLORS } from './emailTokens';
  *
  * **Nicht mit `BALTIC_SEA_STATUS_PRESENTATION` zusammenlegen**, auch wenn beide
  * Records denselben Schlüssel haben und die Doppelung nach Aufräumbedarf
- * aussieht: `balticSeaStatus.ts` wird von `routes/admin/+page.svelte` importiert
+ * aussieht: `balticSeaStatus.ts` wird von `routes/admin/sichtungen/+page.svelte` importiert
  * und landet damit im Client-Bundle. Ein gemeinsamer Record zöge `EMAIL_COLORS`
  * dorthin mit — eine Palette, die im Browser niemand braucht.
  *

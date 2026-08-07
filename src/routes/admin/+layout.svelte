@@ -30,7 +30,7 @@
 -->
 <div class="flex min-h-0 w-full flex-1 flex-col">
 	<!--
-		Unternavigation der Verwaltung. In der TopBar liegen dieselben drei Ziele
+		Unternavigation der Verwaltung. In der TopBar liegen dieselben vier Ziele
 		hinter einem Aufklapper — der ist der Einstieg von außen, taugt aber nicht
 		zum Wechseln innerhalb des Bereichs (zwei Klicks pro Wechsel).
 

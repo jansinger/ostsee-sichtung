@@ -8,7 +8,7 @@
 	function handleClose() {
 		// Preserve only the filter-related search parameters
 		const searchParams = page.url.searchParams;
-		const adminUrl = new URL('/admin', page.url.origin);
+		const adminUrl = new URL('/admin/sichtungen', page.url.origin);
 
 		// List of filter parameters to preserve
 		const filterParams = [

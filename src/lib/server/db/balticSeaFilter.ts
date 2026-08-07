@@ -1,6 +1,6 @@
 /**
  * Gemeinsames `balticSea`-Filterprädikat für die Admin-Übersicht
- * (`routes/admin/+page.server.ts`) und den Export
+ * (`routes/admin/sichtungen/+page.server.ts`) und den Export
  * (`routes/api/sightings/export/exportFilterParams.ts`).
  *
  * Bewusst als reine, DB-lose Funktion: Sie baut ein Drizzle-Prädikat über die

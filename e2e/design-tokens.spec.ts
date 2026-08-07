@@ -353,7 +353,7 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 		   wären, gegen die die Wächter unten stehen. Status < 500 ist dafür kein
 		   Beleg. */
 		{
-			path: '/admin',
+			path: '/admin/sichtungen',
 			auth: true,
 			needsDb: true,
 			renders: [

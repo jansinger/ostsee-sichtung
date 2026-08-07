@@ -1,5 +1,5 @@
 /**
- * Sichtungs-Aktionen des Admin-Bereichs, geteilt zwischen Tabelle (`/admin`) und
+ * Sichtungs-Aktionen des Admin-Bereichs, geteilt zwischen Tabelle (`/admin/sichtungen`) und
  * Detailansicht (`/admin/[id]`).
  *
  * Beide Funktionen erledigen Toast und Logging selbst — was danach passiert, ist

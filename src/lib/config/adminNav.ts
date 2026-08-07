@@ -1,5 +1,5 @@
 /**
- * Die drei Bereiche der Verwaltung — an genau einer Stelle.
+ * Die vier Bereiche der Verwaltung — an genau einer Stelle.
  *
  * Sie erscheinen zweimal: als Gruppe „Verwaltung" in der TopBar
  * (`PublicNavbar.svelte`, der Einstieg von außen) und als Unternavigation
@@ -14,7 +14,8 @@ export interface AdminBereich {
 }
 
 export const ADMIN_BEREICHE: readonly AdminBereich[] = [
-	{ href: '/admin', label: 'Sichtungen' },
+	{ href: '/admin', label: 'Eingang' },
+	{ href: '/admin/sichtungen', label: 'Sichtungen' },
 	{ href: '/admin/statistics', label: 'Statistiken' },
 	{ href: '/admin/settings', label: 'Einstellungen' }
 ] as const;
@@ -22,10 +23,12 @@ export const ADMIN_BEREICHE: readonly AdminBereich[] = [
 /**
  * Welcher Bereich zu einem Pfad gehört.
  *
- * „Sichtungen" per Ausschluss statt über `pfad === '/admin'`: Detail-,
- * Bearbeiten- und Referenzseiten (`/admin/123`, `/admin/ref/…`) sind Teil
- * derselben Aufgabe. Ohne den Ausschluss verlöre die Markierung beim Öffnen
- * einer Sichtung ohne erkennbaren Grund ihren aktiven Eintrag.
+ * „Sichtungen" per Ausschluss statt nur über `pfad === '/admin/sichtungen'`:
+ * Detail-, Bearbeiten- und Referenzseiten (`/admin/123`, `/admin/ref/…`) sind
+ * Arbeit AN einer Sichtung und damit Teil derselben Aufgabe. Ohne den
+ * Ausschluss verlöre die Markierung beim Öffnen einer Sichtung ohne
+ * erkennbaren Grund ihren aktiven Eintrag — und der Eingang stünde markiert
+ * da, obwohl man ihn verlassen hat.
  *
  * Die Kehrseite ist bewusst in Kauf genommen: Eine künftige Sektion unter
  * `/admin/` fällt hier automatisch unter „Sichtungen", bis sie in
@@ -35,14 +38,15 @@ export const ADMIN_BEREICHE: readonly AdminBereich[] = [
  */
 export function aktiverAdminBereich(pfad: string): string | null {
 	if (!istAdminPfad(pfad)) return null;
+	if (pfad === '/admin') return '/admin';
 
 	const treffer = ADMIN_BEREICHE.find(
 		(bereich) => bereich.href !== '/admin' && pfad.startsWith(bereich.href)
 	);
 	if (treffer) return treffer.href;
 
-	/* /admin/docs ist keiner der drei Bereiche — dort ist kein Eintrag aktiv. */
-	return pfad.startsWith('/admin/docs') ? null : '/admin';
+	/* /admin/docs ist keiner der vier Bereiche — dort ist kein Eintrag aktiv. */
+	return pfad.startsWith('/admin/docs') ? null : '/admin/sichtungen';
 }
 
 /**
