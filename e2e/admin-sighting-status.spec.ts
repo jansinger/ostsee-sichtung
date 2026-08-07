@@ -47,16 +47,30 @@ test('Statuswechsel in der Tabelle ist in der Detailansicht sichtbar', async ({
 
 	const ersteZeile = page.locator('tbody tr[data-sighting-id]').first();
 	const id = await ersteZeile.getAttribute('data-sighting-id');
+	// Ohne diese Prüfung navigiert der Test bei leerer Tabelle nach `/admin/null`
+	// und scheitert dort mit einer Meldung über eine unbekannte Sichtung — statt
+	// mit der Ursache, dass `?verified=open` keine Zeile geliefert hat.
+	if (!id) throw new Error('keine offene Sichtung in der Tabelle — Seed prüfen');
 
-	const freigebenRadio = ersteZeile.getByRole('radio', { name: 'Freigegeben' });
-	await freigebenRadio.evaluate((el: HTMLInputElement) => el.click());
-	await expect(page.getByText('Status: Freigegeben')).toBeVisible();
+	try {
+		const freigebenRadio = ersteZeile.getByRole('radio', { name: 'Freigegeben' });
+		await freigebenRadio.evaluate((el: HTMLInputElement) => el.click());
+		// Auf den Toast eingegrenzt: Ohne die Eingrenzung würde derselbe Text auch
+		// von einer Statusanzeige in der Zeile erfüllt, und der Test bestätigte die
+		// Rückmeldung des Endpunkts nicht mehr.
+		await expect(page.locator('.toast').getByText('Status: Freigegeben')).toBeVisible();
 
-	await page.goto(`/admin/${id}`);
-	await expect(page.getByRole('radio', { name: 'Freigegeben' })).toBeChecked();
-
-	// Aufräumen: Zustand zurücksetzen, damit der Lauf wiederholbar bleibt.
-	const offenRadio = page.getByRole('radio', { name: 'Offen' });
-	await offenRadio.evaluate((el: HTMLInputElement) => el.click());
-	await expect(offenRadio).toBeChecked();
+		await page.goto(`/admin/${id}`);
+		await expect(page.getByRole('radio', { name: 'Freigegeben' })).toBeChecked();
+	} finally {
+		// Aufräumen im `finally`: Die Datenbank ist zwischen Worktrees geteilt
+		// (docs/WORKTREES.md). Stand der Reset am Ende des Testkörpers, blieb die
+		// Zeile nach jedem gescheiterten Assert freigegeben — und die im Docblock
+		// zugesagte Wiederholbarkeit galt ausgerechnet im Fehlerfall nicht.
+		await page.goto(`/admin/${id}`);
+		await page.waitForLoadState('networkidle');
+		const offenRadio = page.getByRole('radio', { name: 'Offen' });
+		await offenRadio.evaluate((el: HTMLInputElement) => el.click());
+		await expect(offenRadio).toBeChecked();
+	}
 });

@@ -28,13 +28,9 @@ describe('statusCondition', () => {
 	 * Spalte auf 1 ohne Freigabe, 9 eine Freigabe ohne die alte Spalte auf 1.
 	 * Der alte Filter las diese Spalte und lieferte damit beide Gruppen falsch.
 	 */
-	it('filtert nie über die alte Spalte', () => {
-		// Literal aus zwei Teilen zusammengesetzt, damit diese Zeile nicht selbst
-		// als Lesestelle zählt, die `verifiedReadScan.test.ts` mechanisch sucht —
-		// hier wird die SQL-Ausgabe nur auf Abwesenheit der Spalte geprüft.
-		const alteSpalte = 'gepr' + 'ueft';
+	it('filtert nie über geprueft', () => {
 		for (const wert of ['open', 'approved', 'rejected', '1', '0']) {
-			expect(toSqlText(statusCondition(wert) as SQLWrapper)).not.toContain(alteSpalte);
+			expect(toSqlText(statusCondition(wert) as SQLWrapper)).not.toContain('geprueft');
 		}
 	});
 

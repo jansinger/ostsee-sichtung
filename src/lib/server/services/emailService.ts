@@ -344,11 +344,13 @@ export class EmailService {
 				entryChannel: sighting.entryChannel || 0,
 				nameConsent: !!sighting.nameConsent,
 				shipNameConsent: !!sighting.shipNameConsent,
-				// Required fields for form validation. `verified` (geprueft) wird bewusst
-				// NICHT aus der Zeile gelesen — die Benachrichtigungsmail zeigt keinen
-				// Status an, und ein Rückgriff auf die Spalte wäre genau die Lesestelle,
-				// gegen die der Guard in verifiedReadScan.test.ts antritt.
-				verified: false,
+				// `verified` fehlt hier absichtlich und wird auch nicht durch ein
+				// hartkodiertes `false` ersetzt. Der Kontext dieses Objekts geht über
+				// `...restSighting` (sightingFormatter.ts) unverändert in die Vorlage,
+				// und die Vorlage liegt in `app_config` — sie kann im Betrieb angepasst
+				// sein und `{{sighting.verified}}` referenzieren. Ein fehlender
+				// Schlüssel rendert dort leer; ein `false` behauptete mit voller
+				// Überzeugung einen Prüfstatus, den diese Zeile gar nicht gelesen hat.
 				deadPhoneContact: !!sighting.deadPhoneContact,
 				referenceId: sighting.referenceId || `REF-${sighting.id}`,
 				hasPosition: !!(sighting.latitude && sighting.longitude),
