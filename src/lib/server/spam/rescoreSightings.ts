@@ -34,8 +34,14 @@ export interface RescoreReport {
 	lastId: number | null;
 	/** Noch unbewertete Zeilen NACH diesem Lauf. */
 	remaining: number;
-	/** true, wenn dieser Lauf die Menge geleert hat (weniger Zeilen als Limit). */
+	/** true, wenn der Aufrufer aufhören soll — Menge geleert ODER kein Fortschritt. */
 	done: boolean;
+	/**
+	 * true, wenn ein voller Batch gar nichts geschrieben hat. Dann bleibt
+	 * `remaining` unverändert stehen und weitere Aufrufe würden dieselben
+	 * Zeilen laden — der Aufrufer muss aufhören und ins Log schauen.
+	 */
+	stalled: boolean;
 	/** Score → Anzahl, für einen schnellen Blick auf die Verteilung. */
 	distribution: Record<string, number>;
 }
@@ -120,15 +126,28 @@ export async function rescoreSightings(options: RescoreOptions): Promise<Rescore
 		.where(isNull(sightings.spamScore));
 	const remaining = Number(remainingRow?.count ?? 0);
 
-	// `done` aus der Batch-Größe, nicht aus `remaining === 0`: Zeilen mit
-	// fehlgeschlagener Prüfung bleiben NULL und würden `remaining` sonst nie
-	// auf 0 fallen lassen — der Aufrufer liefe endlos weiter.
-	const done = rows.length < limit;
+	// Zwei Abbruchgründe, und beide werden gebraucht:
+	//
+	// 1. Weniger Zeilen als das Limit — die Menge ist leer. `remaining === 0`
+	//    taugt dafür nicht: Zeilen mit fehlgeschlagener Prüfung bleiben NULL
+	//    und würden `remaining` nie auf 0 fallen lassen.
+	// 2. Ein voller Batch, der nichts geschrieben hat. Dann sind genau die
+	//    geladenen Zeilen alle gescheitert, der nächste Aufruf lädt dieselben
+	//    wieder, und (1) allein liefe endlos weiter.
+	const stalled = rows.length > 0 && scored === 0;
+	const done = rows.length < limit || stalled;
+
+	if (stalled) {
+		logger.error(
+			{ skippedFailed, lastId, remaining },
+			'Spam-Rescore kommt nicht voran — ganzer Batch fehlgeschlagen, Lauf beendet'
+		);
+	}
 
 	logger.info(
-		{ scored, skippedFailed, lastId, remaining, done },
+		{ scored, skippedFailed, lastId, remaining, done, stalled },
 		'Spam-Rescore-Batch abgeschlossen'
 	);
 
-	return { scored, skippedFailed, lastId, remaining, done, distribution };
+	return { scored, skippedFailed, lastId, remaining, done, stalled, distribution };
 }

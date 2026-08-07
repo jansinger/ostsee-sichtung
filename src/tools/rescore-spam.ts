@@ -59,6 +59,15 @@ for (;;) {
 
 	console.log(`  ${scored} bewertet, ${report.remaining} offen …`);
 
+	if (report.stalled) {
+		// Ganzer Batch gescheitert — weitere Läufe würden dieselben Zeilen laden.
+		console.error(
+			`\nAbbruch: Der letzte Batch hat nichts geschrieben (${report.skippedFailed} Prüfungen ` +
+				`fehlgeschlagen, ${report.remaining} Zeilen weiterhin ohne Bewertung). Ursache im Log suchen.`
+		);
+		process.exit(1);
+	}
+
 	if (report.done) break;
 }
 

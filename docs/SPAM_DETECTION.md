@@ -153,6 +153,7 @@ Antwort (`SpamRescoreReport`):
 	"lastId": 8123,
 	"remaining": 19396,
 	"done": false,
+	"stalled": false,
 	"distribution": { "0": 487, "2": 11, "10": 2 }
 }
 ```
@@ -166,6 +167,12 @@ while true; do
   echo "$r" | grep -q '"done":true' && break
 done
 ```
+
+`done` heißt „hör auf", nicht zwingend „alles bewertet". Es wird auch gesetzt,
+wenn ein **voller Batch gar nichts geschrieben hat** (`stalled: true`) — dann
+sind alle geladenen Zeilen an der Prüfung gescheitert, und weitere Aufrufe
+würden dieselben Zeilen laden. In dem Fall steht die Ursache im Server-Log; ein
+Blick auf `remaining` zeigt, wie viele Zeilen noch offen sind.
 
 Zugang wahlweise über eine angemeldete Admin-Session (dann ohne Header, z. B.
 aus dem Browser) oder das `CLEANUP_TOKEN` — dieselbe Regelung wie bei

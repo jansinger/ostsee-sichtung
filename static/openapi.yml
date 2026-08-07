@@ -1078,7 +1078,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/SpamRescoreReport'
         '401':
-          description: Kein oder falsches Token
+          description: >-
+            Nicht autorisiert — erforderlich ist eine angemeldete Admin-Session
+            oder ein gültiges `CLEANUP_TOKEN`. Eine Session ohne Admin-Rolle
+            wird ebenso abgewiesen wie ein fehlendes oder falsches Token.
         '429':
           description: Rate Limit überschritten
         '500':
@@ -2379,7 +2382,7 @@ components:
   schemas:
     SpamRescoreReport:
       type: object
-      required: [scored, skippedFailed, lastId, remaining, done, distribution]
+      required: [scored, skippedFailed, lastId, remaining, done, stalled, distribution]
       properties:
         scored:
           type: integer
@@ -2399,9 +2402,16 @@ components:
         done:
           type: boolean
           description: >-
-            true, wenn dieser Lauf die Menge geleert hat. Aus der Batch-Größe
-            abgeleitet, nicht aus remaining — übersprungene Zeilen bleiben NULL
-            und würden remaining sonst nie auf 0 fallen lassen.
+            true, wenn der Aufrufer aufhören soll: Menge geleert (weniger
+            Zeilen als das Limit) ODER stalled. Nicht aus remaining abgeleitet
+            — übersprungene Zeilen bleiben NULL und würden remaining nie auf 0
+            fallen lassen.
+        stalled:
+          type: boolean
+          description: >-
+            true, wenn ein voller Batch gar nichts geschrieben hat (alle
+            Prüfungen fehlgeschlagen). Weitere Aufrufe würden dieselben Zeilen
+            laden; done ist dann ebenfalls true. Ursache im Server-Log suchen.
         distribution:
           type: object
           additionalProperties:

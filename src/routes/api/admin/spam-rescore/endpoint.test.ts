@@ -51,6 +51,7 @@ describe('POST /api/admin/spam-rescore', () => {
 			lastId: 42,
 			remaining: 0,
 			done: true,
+			stalled: false,
 			distribution: { '0': 2 }
 		});
 	});

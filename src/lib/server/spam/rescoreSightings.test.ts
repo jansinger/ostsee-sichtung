@@ -130,6 +130,52 @@ describe('rescoreSightings', () => {
 		expect(report.done).toBe(false);
 	});
 
+	it('bricht ab, wenn ein voller Batch gar nichts schreibt (sonst Endlosschleife)', async () => {
+		// Scheitert die Prüfung für JEDE Zeile eines vollen Batches, bleibt
+		// spam_score NULL — derselbe Batch käme beim nächsten Lauf erneut, und
+		// `done` aus der Batch-Größe bliebe für immer false.
+		primeDb([buildRow(1), buildRow(2)], 2);
+		mockDetect.mockResolvedValue({
+			score: 0,
+			isHighRisk: true,
+			indicators: ['Spam-Prüfung fehlgeschlagen'],
+			failed: true
+		});
+
+		const report = await rescoreSightings({ limit: 2 });
+
+		expect(report.scored).toBe(0);
+		expect(report.skippedFailed).toBe(2);
+		expect(report.stalled).toBe(true);
+		expect(report.done).toBe(true);
+	});
+
+	it('läuft weiter, solange ein voller Batch wenigstens eine Zeile schreibt', async () => {
+		primeDb([buildRow(1), buildRow(2)], 5);
+		mockDetect
+			.mockResolvedValueOnce({
+				score: 0,
+				isHighRisk: true,
+				indicators: ['Spam-Prüfung fehlgeschlagen'],
+				failed: true
+			})
+			.mockResolvedValueOnce({ score: 3, isHighRisk: false, indicators: [] });
+
+		const report = await rescoreSightings({ limit: 2 });
+
+		expect(report.stalled).toBe(false);
+		expect(report.done).toBe(false);
+	});
+
+	it('meldet auf leerer Menge kein stalled', async () => {
+		primeDb([], 0);
+
+		const report = await rescoreSightings({ limit: 10 });
+
+		expect(report.stalled).toBe(false);
+		expect(report.done).toBe(true);
+	});
+
 	it('klemmt das Limit auf höchstens 1000', async () => {
 		primeDb([], 0);
 		await rescoreSightings({ limit: 99999 });
