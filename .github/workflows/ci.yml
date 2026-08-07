@@ -500,6 +500,23 @@ jobs:
             # /admin und die Tabelle /admin/sichtungen — letztere kompiliert
             # der dead-finding-Spec darüber bereits kalt. Lokal 3 Tests, ~9 s.
             e2e/admin-inbox.spec.ts
+            # Die folgenden drei kamen mit der Vereinheitlichung des
+            # Sichtungs-Status dazu und stehen aus demselben Grund hier wie die
+            # drei Admin-Specs darüber: `form` war nach #769 der kürzeste Shard,
+            # und /admin wie /admin/sichtungen kompilieren die Specs darüber
+            # bereits kalt — der Aufschlag fällt hier kein weiteres Mal an.
+            #
+            # ACHTUNG beim nächsten Ausbalancieren: Diese drei kamen zusammen
+            # mit dem Wegfall von admin-table-verified-column.spec.ts aus `map`.
+            # `form` wächst also um drei Specs, während `map` einen verliert —
+            # ob `form` damit noch der kürzeste Shard ist, wurde NICHT neu
+            # gemessen. Maßgeblich sind die Schrittdauern aus GitHub Actions,
+            # nicht lokale Zahlen (Begründung im Warnblock bei `smoke`).
+            e2e/admin-sighting-status.spec.ts
+            e2e/admin-table-mobile-status-overflow.spec.ts
+            # Fährt /admin/[id]/edit statt der Tabelle — der einzige der drei
+            # mit einer eigenen kalt zu kompilierenden Route.
+            e2e/admin-edit-toggle-no-wrap-lock.spec.ts
           )
 
           # Die drei Shards laufen parallel; die Laufzeit des Jobs ist die des
@@ -513,7 +530,6 @@ jobs:
             e2e/map-*.spec.ts
             e2e/horizontal-overflow.spec.ts
             e2e/admin-edit-preserves-record.spec.ts
-            e2e/admin-table-verified-column.spec.ts
             e2e/app-shell-height.spec.ts
             e2e/submit-offline.spec.ts
             e2e/meldung-wording.spec.ts
