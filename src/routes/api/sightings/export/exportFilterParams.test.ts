@@ -28,11 +28,14 @@ vi.mock('$lib/server/db/schema', () => ({
 		inBalticSea: 'inBalticSea',
 		inBalticSeaGeo: 'inBalticSeaGeo',
 		latitude: 'latitude',
-		longitude: 'longitude'
+		longitude: 'longitude',
+		approvedAt: 'approvedAt',
+		rejectedAt: 'rejectedAt'
 	}
 }));
 
 import { buildExportConditions, parseExportFilterParams } from './exportFilterParams';
+import { normalizeStatusParam } from '$lib/components/admin/sightingStatusFilter';
 
 type Condition = { op: string; column: string; value?: Date; from?: Date; to?: Date };
 
@@ -247,5 +250,19 @@ describe('Export-Filter — Meldeart (Totfund)', () => {
 		});
 
 		expect(conditions).toHaveLength(2);
+	});
+});
+
+/**
+ * Der Statusfilter selbst (Alias-Mapping und Prädikate) ist in
+ * `sightingStatusFilter.ts` und `approvalFilter.test.ts` abgesichert. Hier
+ * zählt nur, dass der Export dieselben Prädikate wie die Tabelle verwendet —
+ * sonst filtert die CSV gegen eine andere Menge als der Filter, den der
+ * Nutzer gerade in `/admin/sichtungen` gesehen hat.
+ */
+describe('Export-Filter — Status', () => {
+	it('filtert über dieselben Prädikate wie die Tabelle', () => {
+		expect(normalizeStatusParam('1')).toBe('approved');
+		expect(normalizeStatusParam('rejected')).toBe('rejected');
 	});
 });

@@ -11,6 +11,7 @@
 		isBalticSeaStatus
 	} from '$lib/utils/geo/balticSeaStatus';
 	import { DEAD_FINDING_PRESENTATION } from '$lib/components/admin/deadFinding';
+	import { normalizeStatusParam } from '$lib/components/admin/sightingStatusFilter';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('ExportModal');
@@ -83,10 +84,14 @@
 		if (currentFilters.toDate) {
 			filterDisplays.push(`Bis: ${formatWallClockDateTime(currentFilters.toDate as string)}`);
 		}
-		if (currentFilters.verified === '1') {
-			filterDisplays.push('Nur geprüfte Sichtungen');
-		} else if (currentFilters.verified === '0') {
-			filterDisplays.push('Nur ungeprüfte Sichtungen');
+		const statusFilter = normalizeStatusParam(currentFilters.verified as string | null);
+		if (statusFilter) {
+			const statusLabel = {
+				open: 'Nur offene Sichtungen',
+				approved: 'Nur freigegebene Sichtungen',
+				rejected: 'Nur abgelehnte Sichtungen'
+			}[statusFilter];
+			filterDisplays.push(statusLabel);
 		}
 		if (currentFilters.entryChannel && currentFilters.entryChannel !== 'all') {
 			filterDisplays.push(`Kanal: ${currentFilters.entryChannel}`);
