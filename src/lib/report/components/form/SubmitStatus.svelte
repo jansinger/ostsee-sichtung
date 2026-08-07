@@ -27,6 +27,7 @@
 <script lang="ts">
 	import Icon from '$lib/components/Icon.svelte';
 	import { ORPHAN_RETENTION_HOURS } from '$lib/constants/uploadRetention';
+	import { SUBMIT_STATUS_OFFLINE_ID } from './submitStatusIds';
 
 	let {
 		state = 'idle',
@@ -115,6 +116,7 @@
 		Satz unterbrechen, ohne dass etwas passiert wäre.
 	-->
 	<div
+		id={SUBMIT_STATUS_OFFLINE_ID}
 		class="alert alert-warning mb-2 items-start"
 		role="status"
 		aria-live="polite"

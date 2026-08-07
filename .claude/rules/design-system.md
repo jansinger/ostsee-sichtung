@@ -298,11 +298,31 @@ weiterhülfe. Bei den drei genannten Aufrufstellen ist das der Fall;
 `FormSteps.svelte` und `StepProgressCompact.svelte` sind zudem keine `.btn`
 und vom `pointer-events`-Befund gar nicht betroffen.
 
-**Offen (außerhalb des Scopes, an dem das auffiel):** `StepNavigation.svelte`
-sperrt „Absenden" bei fehlender Verbindung als `.btn` mit `aria-disabled` und
-`title` — per Maus unerreichbar, per Tastatur meldet der Wächter nur in den
-Logger. Wer dort das nächste Mal hinfasst, sollte es auf dasselbe Muster
-umstellen.
+**Der dritte Fall: Die Begründung steht schon da.** `StepNavigation.svelte`
+sperrt „Absenden" bei fehlender Verbindung — auflösen kann der Nutzer das nicht
+durch Eingabe, eine neue Meldung wäre also fehl am Platz. `SubmitStatus` trägt
+den Grund samt Datenzusage bereits dauerhaft **über** der Navigation. Trotzdem
+ist `aria-disabled` hier falsch, und zwar aus einem Grund, der leicht übersehen
+wird: Unterhalb `md` ist die Navigation ein ortsfester Balken am unteren Rand
+(`.form-step-nav`) — die Begründung kann weggescrollt sein, während der Knopf
+sichtbar bleibt. Wer dann drückt, bekam gar nichts.
+
+Das Muster dort ist deshalb:
+
+- **kein** `aria-disabled`/`btn-disabled`/`title` am Knopf — jede dieser
+  Auszeichnungen zieht das `pointer-events: none` nach sich,
+- `aria-describedby` auf die Begründungsfläche, damit der Grund am Knopf
+  anliegt, ohne dass er angeklickt werden muss (das ersetzt den `title`, der
+  ohnehin nur am Zeigegerät hing),
+- der Wächter im Handler **springt zur Begründung und fokussiert sie**, statt
+  still auszusteigen.
+
+Die `id` der Fläche wird dafür aus `SubmitStatus.svelte` exportiert und nicht
+auf beiden Seiten als Literal gepflegt — ein `aria-describedby` ins Leere meldet
+niemand.
+
+Hart über `disabled` gesperrt bleibt dort einzig der **laufende** Submit: sehr
+kurz, nichts zu erklären, und ein Doppelklick hätte echte Folgen.
 
 **Konsequenz für Tests — leicht zu übersehen:** Playwright wertet
 `aria-disabled="true"` selbst als „nicht bedienbar" und klickt gar nicht erst.

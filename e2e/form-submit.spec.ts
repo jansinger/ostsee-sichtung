@@ -456,9 +456,15 @@ test.describe('Sichtung melden — Submit mit API-Mock', () => {
 		// `online`-Ereignis würde ihn nichts wieder aufheben. Eine harte Sperre
 		// hielte den Nutzer bis zum Neuladen fest. Gesperrt wird nur beim sicheren
 		// Nein des Browsers (siehe e2e/submit-offline.spec.ts).
+		//
+		// Geprüft wird das über `aria-describedby`: Seit die Sperre den Knopf nicht
+		// mehr als deaktiviert auszeichnet (design-system.md, „Der Vorbehalt"),
+		// wäre ein `aria-disabled`-Vergleich in BEIDEN Zuständen erfüllt und damit
+		// keine Aussage mehr. Der Verweis auf die Begründung hängt dagegen genau
+		// an der Sperre.
 		await expect(page.getByRole('button', { name: /Formular absenden/i })).not.toHaveAttribute(
-			'aria-disabled',
-			'true'
+			'aria-describedby',
+			'submit-status-offline'
 		);
 		await expect(status.getByRole('button', { name: /Trotzdem versuchen/i })).toBeVisible();
 	});
