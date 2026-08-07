@@ -1,5 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
-import { page } from 'vitest/browser';
+import { describe, expect, it } from 'vitest';
 import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
 import type { SightingFormData } from '$lib/types';
 import Step2SightingDetails from './Step2SightingDetails.svelte';
@@ -84,23 +83,17 @@ describe('Step2SightingDetails — Ansprache bei Sichtung und Totfund', () => {
 });
 
 /**
- * Task 7 ersetzt den Totfund-Schalter im Meldeformular durch eine Rückmeldung
- * mit „Ändern"-Knopf (`AnimalInfo.svelte`). Der Knopf braucht dafür ein
- * Callback bis zur Einstiegsseite (`+page.svelte`) hoch — dieser Schritt prüft
- * den mittleren Hop der Kette: `Step2SightingDetails` reicht `onchangekind`
- * unverändert an `AnimalInfo` weiter, statt es fallen zu lassen. Ohne diesen
- * Test würde ein versehentlich entfernter Prop-Hop nicht auffallen, obwohl der
- * Knopf danach wirkungslos wäre (genau der Fehler, den Task 6 schon einmal
- * unbemerkt ließ, weil nur die Textfunktion, nicht das Rendering getestet
- * war).
+ * Der „Ändern"-Knopf stand bis zum Umzug in `AnimalInfo` und wurde über diesen
+ * Schritt durchgereicht. Er sitzt jetzt in der Aktionszeile unter dem Formular
+ * (`form/FormActions.svelte`, dort getestet) — die Durchreich-Kette endet damit
+ * bei `ModernReportForm`, und `Step2SightingDetails` kennt `onchangekind` nicht
+ * mehr.
  */
-describe('Step2SightingDetails — „Ändern" erreicht AnimalInfo', () => {
-	it('reicht onchangekind unverändert an AnimalInfo weiter', async () => {
-		const onchangekind = vi.fn();
-		renderWithFormContext(Step2SightingDetails, { props: { onchangekind } });
+describe('Step2SightingDetails — kein „Ändern"-Knopf mehr im Schritt', () => {
+	it('rendert die Rückmeldung nicht', () => {
+		renderStep2({ isDead: true });
 
-		await page.getByRole('button', { name: /ändern/i }).click();
-
-		expect(onchangekind).toHaveBeenCalledOnce();
+		expect(document.body.textContent).not.toContain('Sie melden');
+		expect(document.querySelector('[data-testid="report-kind-change"]')).toBeNull();
 	});
 });

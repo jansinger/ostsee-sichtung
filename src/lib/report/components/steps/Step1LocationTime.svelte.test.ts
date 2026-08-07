@@ -1,50 +1,34 @@
-import { describe, expect, it, vi } from 'vitest';
-import { page } from 'vitest/browser';
+import { describe, expect, it } from 'vitest';
 import { renderWithFormContext } from '$lib/report/components/testing/renderWithFormContext.testutil';
 import type { SightingFormData } from '$lib/types';
 import Step1LocationTime from './Step1LocationTime.svelte';
 
 /**
- * B6 (Abschlussreview, wichtig): Auf Schritt 1 gab es keinen Weg zurück zur
- * Einstiegsseite — genau dort merkt der Melder am ehesten, dass er falsch
- * abgebogen ist („Funddatum" statt „Datum und Uhrzeit"). Der einzige
- * Korrekturweg lag auf Schritt 2, unterhalb der Upload-Karte. Die Rückmeldung
- * „Sie melden: … · [Ändern]" (bisher nur in `sections/AnimalInfo.svelte`)
- * steht jetzt zusätzlich am Kopf von Schritt 1 — dieselbe Komponente
- * (`ReportKindFeedback.svelte`), damit die Regel nicht zweimal existiert.
+ * B6 (Abschlussreview) hatte die Rückmeldung „Sie melden: … · [Ändern]" an den
+ * Kopf von Schritt 1 gestellt, damit es dort überhaupt einen Korrekturweg
+ * zurück zur Einstiegsseite gibt. Der Weg bleibt — die Zeile steht nur nicht
+ * mehr hier oben, wo sie vor dem ersten Feld Platz kostet, sondern einmal in
+ * der Aktionszeile unter dem Formular (`form/FormActions.svelte`) und gilt von
+ * dort für alle vier Schritte.
+ *
+ * Der Test prüft die Abwesenheit, weil das die eigentliche Aussage ist: Ein
+ * Test über die neue Stelle allein (`FormActions.svelte.test.ts`) bliebe grün,
+ * wenn die Zeile zusätzlich wieder nach oben wanderte.
  */
-function renderStep1(
-	overrides: Partial<SightingFormData> = {},
-	onchangekind = vi.fn()
-): ReturnType<typeof vi.fn> {
-	renderWithFormContext(Step1LocationTime, { overrides, props: { onchangekind } });
-	return onchangekind;
+function renderStep1(overrides: Partial<SightingFormData> = {}): void {
+	renderWithFormContext(Step1LocationTime, { overrides });
 }
 
-describe('Step1LocationTime — Rückmeldung zum gewählten Zweig (B6)', () => {
-	it('zeigt die Rückmeldung „Sie melden" bereits auf Schritt 1', async () => {
+describe('Step1LocationTime — Rückmeldung steht nicht mehr im Schritt-Kopf', () => {
+	it('rendert die Zeile „Sie melden" nicht', () => {
 		renderStep1({ isDead: false });
 
-		await expect.element(page.getByText(/Sie melden/i)).toBeInTheDocument();
+		expect(document.body.textContent).not.toContain('Sie melden');
 	});
 
-	it('nennt den Totfund-Zweig korrekt', async () => {
+	it('rendert keinen „Ändern"-Knopf im Schritt', () => {
 		renderStep1({ isDead: true });
 
-		await expect.element(page.getByText(/Fund eines toten Tieres/i)).toBeInTheDocument();
-	});
-
-	it('nennt den Lebend-Zweig korrekt', async () => {
-		renderStep1({ isDead: false });
-
-		await expect.element(page.getByText(/Beobachtung eines lebenden Tieres/i)).toBeInTheDocument();
-	});
-
-	it('ruft onchangekind auf, wenn „Ändern" auf Schritt 1 geklickt wird', async () => {
-		const onchangekind = renderStep1({ isDead: false });
-
-		await page.getByRole('button', { name: /ändern/i }).click();
-
-		expect(onchangekind).toHaveBeenCalledOnce();
+		expect(document.querySelector('[data-testid="report-kind-change"]')).toBeNull();
 	});
 });

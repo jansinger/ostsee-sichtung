@@ -110,11 +110,11 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 	});
 
 	/**
-	 * Review-Befund 2 (Task 7): Der vierte Hop der Durchreich-Kette
-	 * (`+page.svelte` → `ModernReportForm` → `Step2SightingDetails` →
-	 * `AnimalInfo`) hatte keinen Test, der rot wird, wenn `onchangekind` an
-	 * irgendeiner Stelle nicht mehr durchgereicht wird. Dieser Test fährt die
-	 * volle Strecke bis zum Klick.
+	 * Review-Befund 2 (Task 7): Die Durchreich-Kette von `onchangekind` hatte
+	 * keinen Test, der rot wird, wenn das Callback an irgendeiner Stelle nicht
+	 * mehr weitergereicht wird. Dieser Test fährt die volle Strecke bis zum
+	 * Klick — seit dem Umzug der Rückmeldung in die Aktionszeile ist die Kette
+	 * `+page.svelte` → `ModernReportForm` → `FormActions`.
 	 */
 	test('„Ändern" auf Schritt 2 führt zurück auf die Auswahlseite', async ({ page }) => {
 		await page.goto('/');
@@ -138,8 +138,9 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 	 * zurück zur Auswahl — „Zurück" ist dort hart gesperrt, und die einzige
 	 * Korrektur lag einen Schritt weiter, unterhalb der Upload-Karte. Genau auf
 	 * Schritt 1 merkt ein Melder aber am ehesten, dass er falsch abgebogen ist
-	 * („Funddatum" statt „Datum und Uhrzeit"). Die Rückmeldung steht seither
-	 * auch am Kopf von Schritt 1.
+	 * („Funddatum" statt „Datum und Uhrzeit"). Die Rückmeldung stand seither am
+	 * Kopf von Schritt 1 und sitzt inzwischen in der Aktionszeile unter dem
+	 * Formular — sie gilt damit für alle vier Schritte, dieser eingeschlossen.
 	 */
 	test('„Ändern" auf Schritt 1 führt zurück auf die Auswahlseite (B6)', async ({ page }) => {
 		await page.goto('/');
