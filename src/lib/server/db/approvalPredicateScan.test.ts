@@ -124,7 +124,7 @@ const FUNCTION_ORDER = new RegExp(String.raw`\bis(?:not)?null\s*\(\s*[\w.$\s]*?$
  * die diese Datei antritt.
  */
 const JS_ORDER = new RegExp(
-	String.raw`(?:!!|Boolean\()[\w.$\[\]\s]*approvedAt|approvedAt\s*[!=]==?\s*null`,
+	String.raw`(?:!!|Boolean\()[\w.$\[\]\s]*${COLUMN}|${COLUMN}\s*[!=]==?\s*null`,
 	'g'
 );
 
@@ -490,12 +490,36 @@ describe('JavaScript-Schreibweisen', () => {
 		expect(findApprovalPredicates(code)).toHaveLength(1);
 	});
 
+	/* Dieselben drei Schreibweisen, jetzt auf der Ablehnungs-Spalte — spiegelbildlich
+	   zum approvedAt-Block oben. Ohne diese Beispiele wäre COLUMN in JS_ORDER zwar
+	   erweitert, aber unbelegt: Der Scan könnte weiterhin nur approvedAt erkennen und
+	   der Test bliebe grün. */
+	it.each([
+		'const isRejected = !!file.rejectedAt;',
+		'const isRejected = !!row.rejectedAt;',
+		'const isRejected = Boolean(file.rejectedAt);',
+		'const isRejected = file.rejectedAt !== null;',
+		'const isRejected = file.rejectedAt != null;',
+		'if (sighting.rejectedAt !== null) triage();'
+	])('meldet %s', (code) => {
+		expect(findApprovalPredicates(code)).toHaveLength(1);
+	});
+
 	/* Der Ersatz muss durchkommen, sonst ist die Regel unerfüllbar — und der
 	   Import gleich mit, sonst meldet die Regel ihre eigene Lösung. */
 	it.each([
 		"import { isSightingApproved } from '$lib/server/db/approvalFilter';",
 		'if (!isSightingApproved(file)) throw error(403);',
 		'const isApproved = isSightingApproved(file);'
+	])('lässt den vorgeschriebenen Weg %s durch', (code) => {
+		expect(findApprovalPredicates(code)).toEqual([]);
+	});
+
+	/* Derselbe Ersatz für die Ablehnungs-Spalte. */
+	it.each([
+		"import { isSightingRejected } from '$lib/server/db/approvalFilter';",
+		'if (isSightingRejected(sighting)) return;',
+		'const isRejected = isSightingRejected(sighting);'
 	])('lässt den vorgeschriebenen Weg %s durch', (code) => {
 		expect(findApprovalPredicates(code)).toEqual([]);
 	});
@@ -542,7 +566,8 @@ describe('Bestand', () => {
 			'isNull(sightings.approvedAt',
 			'!!sighting.approvedAt',
 			'isNull(sightings.approvedAt',
-			'isNotNull(sightings.rejectedAt'
+			'isNotNull(sightings.rejectedAt',
+			'!!sighting.rejectedAt'
 		]);
 	});
 
