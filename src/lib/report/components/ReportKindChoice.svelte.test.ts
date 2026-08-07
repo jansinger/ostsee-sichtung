@@ -113,20 +113,67 @@ describe('ReportKindChoice — der Link trägt den Zweig ohne JS', () => {
  * neue zeigt nichts — der klassische Fehler beim „Aufwerten" eines Links per JS.
  */
 describe('ReportKindChoice — modifizierte Klicks bleiben Browser-Sache', () => {
+	/**
+	 * Genau das Verhalten, das hier geprüft wird, macht den Test gefährlich: Ein
+	 * Klick, den die Komponente absichtlich NICHT abfängt, aktiviert den Link —
+	 * und Vitests Browser-Mode rendert jede Testdatei in einem eigenen iframe.
+	 * Der navigiert dann weg, und der Lauf bricht mit „Cannot connect to the
+	 * iframe" ab, ohne dass eine einzige Assertion fehlschlägt (in CI so
+	 * passiert, lokal nicht — es ist ein Rennen gegen die Navigation).
+	 *
+	 * Der Helfer hängt deshalb einen eigenen Listener ans `document`. Er läuft in
+	 * der Bubbling-Phase, also NACH dem Handler am Link: Er liest zuerst ab, ob
+	 * die Komponente den Klick abgefangen hat, und unterbindet danach die
+	 * Navigation. Ein `preventDefault` in der Capture-Phase wäre kein Ersatz — es
+	 * verdeckte genau die Frage, um die es geht.
+	 */
+	function klickenOhneNavigation(
+		link: Element,
+		modifier: MouseEventInit
+	): { vonKomponenteAbgefangen: boolean } {
+		let vonKomponenteAbgefangen = false;
+		const wächter = (event: Event) => {
+			vonKomponenteAbgefangen = event.defaultPrevented;
+			event.preventDefault();
+		};
+		document.addEventListener('click', wächter);
+		try {
+			link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ...modifier }));
+		} finally {
+			document.removeEventListener('click', wächter);
+		}
+		return { vonKomponenteAbgefangen };
+	}
+
 	it.each([
 		['Strg', { ctrlKey: true }],
 		['Cmd', { metaKey: true }],
-		['Shift', { shiftKey: true }]
+		['Shift', { shiftKey: true }],
+		['Alt', { altKey: true }]
 	])('%s-Klick wird nicht abgefangen', (_name, modifier) => {
 		const onchoose = vi.fn();
 		render(ReportKindChoice, { onchoose });
 
 		const link = document.querySelector('a[data-testid="report-kind-option-totfund"]');
-		const event = new MouseEvent('click', { bubbles: true, cancelable: true, ...modifier });
-		link?.dispatchEvent(event);
+		expect(link).not.toBeNull();
+		const { vonKomponenteAbgefangen } = klickenOhneNavigation(link as Element, modifier);
 
 		expect(onchoose).not.toHaveBeenCalled();
-		expect(event.defaultPrevented).toBe(false);
+		expect(vonKomponenteAbgefangen).toBe(false);
+	});
+
+	it('fängt den gewöhnlichen Klick dagegen ab — die Gegenprobe zum Helfer', () => {
+		// Ohne sie belegte das Grün oben nur, dass `vonKomponenteAbgefangen`
+		// irgendwie `false` wird: Ein Helfer, der die Flanke gar nicht misst, wäre
+		// für alle vier Modifier genauso grün.
+		const onchoose = vi.fn();
+		render(ReportKindChoice, { onchoose });
+
+		const link = document.querySelector('a[data-testid="report-kind-option-totfund"]');
+		const { vonKomponenteAbgefangen } = klickenOhneNavigation(link as Element, {});
+
+		expect(onchoose).toHaveBeenCalledWith('dead');
+		expect(vonKomponenteAbgefangen).toBe(true);
 	});
 });
 
