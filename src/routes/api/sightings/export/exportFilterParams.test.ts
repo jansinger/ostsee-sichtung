@@ -13,6 +13,7 @@ vi.mock('drizzle-orm', () => ({
 	lt: vi.fn((column, value) => ({ op: 'lt', column, value })),
 	lte: vi.fn((column, value) => ({ op: 'lte', column, value })),
 	eq: vi.fn((column, value) => ({ op: 'eq', column, value })),
+	ne: vi.fn((column, value) => ({ op: 'ne', column, value })),
 	isNull: vi.fn((column) => ({ op: 'isNull', column })),
 	isNotNull: vi.fn((column) => ({ op: 'isNotNull', column }))
 }));
@@ -23,6 +24,7 @@ vi.mock('$lib/server/db/schema', () => ({
 		verified: 'verified',
 		entryChannel: 'entryChannel',
 		mediaUpload: 'mediaUpload',
+		isDead: 'isDead',
 		inBalticSea: 'inBalticSea',
 		inBalticSeaGeo: 'inBalticSeaGeo',
 		latitude: 'latitude',
@@ -41,6 +43,7 @@ function dateRange(fromDate: string, toDate: string): { start: Date; endExclusiv
 		verified: null,
 		entryChannel: null,
 		mediaUpload: null,
+		deadFinding: null,
 		balticSea: null
 	}) as unknown as Condition[];
 
@@ -67,6 +70,7 @@ describe('buildExportConditions — Datumsfilter meint Berliner Kalendertage', (
 			verified: null,
 			entryChannel: null,
 			mediaUpload: null,
+			deadFinding: null,
 			balticSea: null
 		});
 
@@ -127,6 +131,7 @@ describe('buildExportConditions — Datumsfilter meint Berliner Kalendertage', (
 			verified: null,
 			entryChannel: null,
 			mediaUpload: null,
+			deadFinding: null,
 			balticSea: null
 		}) as unknown as Condition[];
 
@@ -147,7 +152,8 @@ describe('Export-Filter — Ostsee-Status', () => {
 		toDate: '',
 		verified: null,
 		entryChannel: null,
-		mediaUpload: null
+		mediaUpload: null,
+		deadFinding: null
 	};
 
 	it('parseExportFilterParams liest balticSea aus der URL', () => {
@@ -188,6 +194,56 @@ describe('Export-Filter — Ostsee-Status', () => {
 			...noFilters,
 			verified: '1',
 			balticSea: 'baltic'
+		});
+
+		expect(conditions).toHaveLength(2);
+	});
+});
+
+/**
+ * Wie beim Ostsee-Status: Die Bedingung selbst ist in
+ * `$lib/server/db/deadFindingFilter.test.ts` abgesichert, hier zählt nur die
+ * Verdrahtung — sonst zeigte die Admin-Liste gefiltert Totfunde, der Export
+ * lieferte aber still alles.
+ */
+describe('Export-Filter — Meldeart (Totfund)', () => {
+	const noFilters = {
+		fromDate: '',
+		toDate: '',
+		verified: null,
+		entryChannel: null,
+		mediaUpload: null,
+		balticSea: null
+	};
+
+	it('parseExportFilterParams liest deadFinding aus der URL', () => {
+		const result = parseExportFilterParams(
+			new URL('https://example.com/api/sightings/export?format=json&deadFinding=1')
+		);
+
+		expect(result).toHaveProperty('params');
+		expect((result as { params: { deadFinding: string | null } }).params.deadFinding).toBe('1');
+	});
+
+	it.each(['1', '0'])(
+		'buildExportConditions hängt für deadFinding=%s eine Bedingung an',
+		(value) => {
+			const conditions = buildExportConditions({ ...noFilters, deadFinding: value });
+
+			expect(conditions).toHaveLength(1);
+		}
+	);
+
+	it('hängt ohne Meldeart-Filter keine Bedingung an', () => {
+		expect(buildExportConditions({ ...noFilters, deadFinding: null })).toHaveLength(0);
+		expect(buildExportConditions({ ...noFilters, deadFinding: 'quatsch' })).toHaveLength(0);
+	});
+
+	it('kombiniert den Meldeart-Filter mit anderen Filtern, statt sie zu ersetzen', () => {
+		const conditions = buildExportConditions({
+			...noFilters,
+			verified: '1',
+			deadFinding: '1'
 		});
 
 		expect(conditions).toHaveLength(2);
