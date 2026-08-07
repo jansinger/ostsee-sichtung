@@ -62,7 +62,7 @@
 
 	/**
 	 * B7 (Abschlussreview): Steuert, ob `ReportKindChoice` beim nächsten Mount
-	 * ihre Legend fokussiert. `false` bleibt es genau einmal — für den
+	 * ihre Auswahlfrage fokussiert. `false` bleibt es genau einmal — für den
 	 * allerersten Aufruf dieser Seite, an dem die Auswahlseite kein „Wechsel"
 	 * ist, sondern der normale Seiteneinstieg. Sobald einmal eine
 	 * Formularansicht sichtbar war und der Melder über „Ändern", „Formular
@@ -76,14 +76,35 @@
 		reportKind = kind;
 		writeReportKind(kind);
 		// History-Eintrag, damit „Zurück" auf die Auswahl führt statt aus der App.
-		// Bestehende Query-Parameter (z. B. Kampagnen-Marker aus einem
-		// Museums-Link) bleiben erhalten — nur `meldung` wird gesetzt/ersetzt.
+		//
+		// Dasselbe Ziel wie im `href` der Karte, aus derselben Funktion: Der
+		// JS-Pfad und der JS-lose Pfad müssen an derselben Stelle landen. Zwei
+		// getrennte Aufbauten drifteten still auseinander — die Zusage „bestehende
+		// Query-Parameter bleiben erhalten" (Kampagnen-Marker aus einem
+		// Museums-Link) gälte dann nur noch auf einem der beiden Wege, ohne dass
+		// ein Test rot würde.
+		pushState(reportKindHref(kind), {});
+	}
+
+	/**
+	 * Ziel der beiden Links auf der Einstiegsseite — der Weg, den ein Klick VOR
+	 * der Hydration nimmt, und zugleich das Ziel, das `choose()` oben nach der
+	 * Hydration per `pushState` setzt. Bestehende Query-Parameter (Kampagnen-
+	 * Marker aus einem Museums-Link) bleiben dabei erhalten; nur `meldung` wird
+	 * gesetzt. Das ist die Zusage, die der frühere native GET-Submit nicht
+	 * einlösen konnte — er ersetzte die gesamte Query.
+	 *
+	 * `page.url` statt `window.location`: Diese Funktion läuft auch im SSR, wo es
+	 * kein `window` gibt. Der ausgelieferte `href` ist damit von Anfang an
+	 * richtig und nicht erst nach der Hydration.
+	 */
+	function reportKindHref(kind: ReportKind): string {
 		// Wirft weg, keine Komponenten-Reaktivität nötig — dasselbe Muster wie in
 		// ExportModal.svelte.
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity
-		const params = new URLSearchParams(window.location.search);
+		const params = new URLSearchParams(page.url.searchParams);
 		params.set(REPORT_KIND_PARAM, reportKindToParam(kind));
-		pushState(`/?${params.toString()}`, {});
+		return `/?${params.toString()}`;
 	}
 
 	/**
@@ -118,7 +139,7 @@
 		// B7: Dieser Rücksprung ist immer ein „Wechsel" — ausgelöst durch
 		// „Ändern" (`changeKind()`) oder „Formular zurücksetzen"
 		// (`resetReportKind()`), nie der allererste Seitenaufruf. `ReportKindChoice`
-		// fokussiert deshalb bei ihrem nächsten Mount ihre Legend.
+		// fokussiert deshalb bei ihrem nächsten Mount ihre Auswahlfrage.
 		returnedToSelection = true;
 		reportKind = null;
 		clearReportKind();
@@ -298,7 +319,11 @@
 	<div class="mb-8">
 		<!-- Form Content -->
 		{#if reportKind === null}
-			<ReportKindChoice onchoose={choose} autofocusHeading={returnedToSelection} />
+			<ReportKindChoice
+				onchoose={choose}
+				autofocusHeading={returnedToSelection}
+				buildHref={reportKindHref}
+			/>
 		{:else if submissionSuccess && submittedData}
 			<SubmissionSuccess {submittedData} {handleNewReport} />
 		{:else}

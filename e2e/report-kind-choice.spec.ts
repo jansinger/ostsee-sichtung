@@ -4,49 +4,61 @@ import { fillStep1, fillStep4, waitForNextEnabled } from './helpers/form-helpers
 
 test.describe('Einstiegsseite des Meldeformulars', () => {
 	/**
-	 * UX-Review (2026-08-06, Punkt 1): Der Knopf war gesperrt und sagte nicht,
-	 * warum — per Maus war er wegen DaisyUIs `pointer-events: none` an
-	 * `[aria-disabled=true]` gar nicht erreichbar, per Tastatur lief das Enter
-	 * still ins Leere. Die Sperre ist seither eine Meldung an der Radiogruppe;
-	 * geprüft wird deshalb nicht mehr das Attribut, sondern die Wirkung.
+	 * UX-Review (2026-08-07): Die Seite ist keine Radiogruppe mit „Weiter" mehr,
+	 * sondern zwei Links. Der Zustand „bestätigt, ohne etwas gewählt zu haben" —
+	 * und mit ihm der ganze Fehler-Apparat, den der vorherige Test hier prüfte —
+	 * ist damit strukturell nicht mehr herstellbar.
+	 *
+	 * Was stattdessen zu sichern ist: Der Weg VOR der Hydration darf nicht ins
+	 * Leere laufen. Er hängt jetzt allein am `href` — und zwar am serverseitig
+	 * ausgelieferten, weshalb dieser Test bewusst NICHT auf `networkidle`
+	 * wartet: Die Aussage gilt für das rohe SSR-Markup.
 	 */
-	test('Erstbesucher sieht die Auswahl und kommt ohne sie nicht weiter', async ({ page }) => {
+	test('Erstbesucher sieht die Auswahl, beide Karten tragen ihr Ziel im href', async ({ page }) => {
 		await page.goto('/');
-		await page.waitForLoadState('networkidle');
 		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
 
-		await expect(page.getByTestId('report-kind-submit')).not.toHaveAttribute('aria-disabled');
+		await expect(page.getByTestId('report-kind-option-lebend')).toHaveAttribute(
+			'href',
+			/[?&]meldung=lebend/
+		);
+		await expect(page.getByTestId('report-kind-option-totfund')).toHaveAttribute(
+			'href',
+			/[?&]meldung=totfund/
+		);
+	});
 
-		// `toPass` statt eines einzelnen Klicks: `networkidle` sagt nur „keine
-		// Netzwerkaktivität mehr", nicht „Svelte hat hydratisiert". Trifft der
-		// Klick das Zeitfenster davor, schickt der Browser das Formular nativ ab
-		// und lädt die Seite ohne Auswahl neu (`/?`) — die Meldung entsteht dann
-		// nie, und der Test wäre flaky statt aussagekräftig. Der Klick ist
-		// idempotent, also darf er wiederholt werden; nach dem Reload ist
-		// hydratisiert.
-		await expect(async () => {
-			await page.getByTestId('report-kind-submit').click();
-			await expect(page.getByRole('alert')).toContainText(/Bitte wählen Sie aus/i, {
-				timeout: 2000
-			});
-		}).toPass();
+	/**
+	 * Die Gegenprobe zum Test oben: Der `href` allein belegt nur, dass das Ziel
+	 * dasteht — nicht, dass ein Melder ohne JS dort auch ankommt. Hier wird die
+	 * Navigation tatsächlich gefahren, mit abgeschaltetem JavaScript.
+	 */
+	test('ohne JavaScript führt die Karte per Navigation in den richtigen Zweig', async ({
+		browser
+	}) => {
+		const context = await browser.newContext({ javaScriptEnabled: false });
+		const page = await context.newPage();
+		await page.goto('/');
 
-		await expect(page.getByRole('radiogroup')).toHaveAttribute('aria-invalid', 'true');
-		// Weitergegangen wird trotzdem nicht.
-		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
+		await page.getByTestId('report-kind-option-totfund').click();
+
+		await expect(page).toHaveURL(/meldung=totfund/);
+		// Ohne JS bleibt das Formular statisch, die serverseitig aufgelöste
+		// Verzweigung ist aber sichtbar — Schritt 1 trägt im Totfund-Zweig
+		// „Funddatum" statt „Datum und Uhrzeit".
+		await expect(page.getByRole('heading', { name: 'Funddatum' })).toBeVisible();
+
+		await context.close();
 	});
 
 	test('nach der Auswahl erscheint Schritt 1', async ({ page }) => {
 		await page.goto('/');
 		// Wie FormPage.goto(): Playwrights Actionability-Check wartet nur auf
-		// Sichtbarkeit, nicht auf Hydration. Ein Klick auf „Weiter" davor schickt
-		// das Formular nativ per GET ab (UX-Review 2026-08-06, Punkt 1: genau
-		// dafür heißen die Radios `meldung` und tragen `lebend`/`totfund`) — der
-		// Melder käme zwar richtig an, aber über eine Navigation statt über den
-		// Klick-Pfad, den dieser Test prüfen soll.
+		// Sichtbarkeit, nicht auf Hydration. Ein Klick davor navigiert nativ über
+		// den `href` — der Melder käme zwar richtig an, aber über eine
+		// Seitennavigation statt über den Klick-Pfad, den dieser Test prüfen soll.
 		await page.waitForLoadState('networkidle');
-		await page.getByRole('radio', { name: /toten Tieres/i }).check();
-		await page.getByTestId('report-kind-submit').click();
+		await page.getByTestId('report-kind-option-totfund').click();
 		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
 		// toBeHidden() allein wäre auch für ein gar nicht existentes Element
 		// erfüllt — erst diese Zeile belegt, dass tatsächlich Schritt 1 da ist.
@@ -65,8 +77,7 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 		// irgendeine Seite hinter der Auswahl anzeigen.
 		await page.goto('/');
 		await page.waitForLoadState('networkidle');
-		await page.getByRole('radio', { name: /toten Tieres/i }).check();
-		await page.getByTestId('report-kind-submit').click();
+		await page.getByTestId('report-kind-option-totfund').click();
 
 		// Schritt 1: ohne GPS-Position ist die Ortsbeschreibung Pflicht.
 		await page.getByTestId('field-waterway').fill('Kieler Bucht');
@@ -84,8 +95,7 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 		// navigiert das die Museumsseite weg.
 		await page.goto('/');
 		await page.waitForLoadState('networkidle');
-		await page.getByRole('radio', { name: /lebenden Tieres/i }).check();
-		await page.getByTestId('report-kind-submit').click();
+		await page.getByTestId('report-kind-option-lebend').click();
 		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
 
 		await page.goBack();
@@ -102,8 +112,7 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 	test('Wiederkehrer mit gespeichertem Stand wird nicht erneut gefragt', async ({ page }) => {
 		await page.goto('/');
 		await page.waitForLoadState('networkidle');
-		await page.getByRole('radio', { name: /lebenden Tieres/i }).check();
-		await page.getByTestId('report-kind-submit').click();
+		await page.getByTestId('report-kind-option-lebend').click();
 		await page.reload();
 		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
 		await expect(page.getByRole('heading', { name: 'Position & Zeitpunkt' })).toBeVisible();
@@ -119,8 +128,7 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 	test('„Ändern" auf Schritt 2 führt zurück auf die Auswahlseite', async ({ page }) => {
 		await page.goto('/');
 		await page.waitForLoadState('networkidle');
-		await page.getByRole('radio', { name: /lebenden Tieres/i }).check();
-		await page.getByTestId('report-kind-submit').click();
+		await page.getByTestId('report-kind-option-lebend').click();
 		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
 
 		// Schritt 1 → Schritt 2, wie im Test „Totfund-Wahl kommt als isDead an".
@@ -145,8 +153,7 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 	test('„Ändern" auf Schritt 1 führt zurück auf die Auswahlseite (B6)', async ({ page }) => {
 		await page.goto('/');
 		await page.waitForLoadState('networkidle');
-		await page.getByRole('radio', { name: /toten Tieres/i }).check();
-		await page.getByTestId('report-kind-submit').click();
+		await page.getByTestId('report-kind-option-totfund').click();
 		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
 
 		// Schon auf Schritt 1 sichtbar, ohne dass ein Feld ausgefüllt werden muss.
@@ -168,13 +175,12 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 	test('„Ändern" setzt den Fokus auf die Auswahlfrage (B7)', async ({ page }) => {
 		await page.goto('/');
 		await page.waitForLoadState('networkidle');
-		await page.getByRole('radio', { name: /lebenden Tieres/i }).check();
-		await page.getByTestId('report-kind-submit').click();
+		await page.getByTestId('report-kind-option-lebend').click();
 		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
 
 		await page.getByRole('button', { name: /ändern/i }).click();
 
-		const legend = page.locator('#report-kind-legend');
+		const legend = page.locator('#report-kind-question');
 		await expect(legend).toBeVisible();
 		await expect(legend).toBeFocused();
 	});
@@ -194,8 +200,7 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 	}) => {
 		await page.goto('/');
 		await page.waitForLoadState('networkidle');
-		await page.getByRole('radio', { name: /toten Tieres/i }).check();
-		await page.getByTestId('report-kind-submit').click();
+		await page.getByTestId('report-kind-option-totfund').click();
 		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
 
 		await page.getByTestId('field-waterway').fill('Kieler Bucht');
@@ -213,22 +218,41 @@ test.describe('Einstiegsseite des Meldeformulars', () => {
 		// durch diesen kurzen SSR-Flash, unabhängig vom eigentlichen Fehler.
 		await page.waitForLoadState('networkidle');
 
-		// `networkidle` sagt nur „keine Netzwerkaktivität mehr" — nicht „Svelte hat
-		// hydratisiert". Ein `toBeVisible()` allein bestünde deshalb auch dann, wenn
-		// `networkidle` noch VOR der Hydration aufläuft (langsamerer Runner,
-		// gecachte Module, andere Bundling-Strategie): Die statische SSR-Auswahlseite
-		// steht testidentisch im DOM, egal ob Svelte sie schon übernommen hat.
-		//
-		// Der Beleg war früher der Wechsel von `aria-disabled` am „Weiter"-Knopf;
-		// den gibt es seit dem UX-Review (2026-08-06, Punkt 1) nicht mehr. An seine
-		// Stelle tritt die Fehlermeldung an der Radiogruppe: Sie entsteht
-		// ausschließlich aus Svelte-State. Ohne Hydration schickte derselbe Klick
-		// das Formular nativ ab und lüde die Seite neu, statt eine Meldung
-		// einzublenden — der Test wäre dann rot, nicht trivial grün.
-		await page.getByTestId('report-kind-submit').click();
-		await expect(page.getByRole('alert')).toContainText(/Bitte wählen Sie aus/i);
-
 		await expect(page.getByTestId('report-kind-choice')).toBeVisible();
+
+		// `networkidle` sagt nur „keine Netzwerkaktivität mehr" — nicht „Svelte hat
+		// hydratisiert". Die Zeile darüber bestünde deshalb auch dann, wenn
+		// `networkidle` noch VOR der Hydration aufläuft (langsamerer Runner,
+		// gecachte Module, andere Bundling-Strategie): Die statische
+		// SSR-Auswahlseite steht testidentisch im DOM, egal ob Svelte sie schon
+		// übernommen hat.
+		//
+		// Der Beleg war früher der Wechsel von `aria-disabled` am „Weiter"-Knopf,
+		// danach die Fehlermeldung an der Radiogruppe — beides gibt es seit dem
+		// Umbau auf Links (UX-Review 2026-08-07) nicht mehr. An ihre Stelle tritt
+		// das Shallow Routing: Ein hydratisierter Klick fängt den Link ab und
+		// wechselt per `pushState` in den Zweig, OHNE das Dokument neu zu laden —
+		// die Markierung am `window` überlebt das. Ohne Hydration navigierte
+		// derselbe Klick nativ über den `href`, und sie wäre weg.
+		//
+		// Dass diese Karte überhaupt noch klickbar ist, ist zugleich der
+		// eigentliche Befund: Wäre der verlassene Zweig über `resolveReportKind`s
+		// dritte Quelle zurückgekehrt, stünde hier längst das Formular.
+		await page.evaluate(() => {
+			(window as unknown as Record<string, unknown>).__vorDemKlick = true;
+		});
+		await page.getByTestId('report-kind-option-lebend').click();
+		// Nicht auf Schritt 1 prüfen: `currentStep` kommt aus dem Storage, und
+		// dieser Test war vor dem „Ändern" bereits auf Schritt 2 — das Formular
+		// kehrt dorthin zurück. Die Aussage hier ist „die Auswahl ist durch", nicht
+		// „ein bestimmter Schritt steht".
+		await expect(page.getByTestId('report-kind-choice')).toBeHidden();
+		await expect(page.getByRole('navigation', { name: 'Formular-Schritte' })).toBeVisible();
+
+		const dokumentUeberlebte = await page.evaluate(
+			() => (window as unknown as Record<string, unknown>).__vorDemKlick === true
+		);
+		expect(dokumentUeberlebte).toBe(true);
 	});
 });
 
@@ -349,8 +373,7 @@ test.describe('Der aus dem Storage aufgelöste Zweig wird in die URL nachgetrage
 	}) => {
 		await page.goto('/');
 		await page.waitForLoadState('networkidle');
-		await page.getByRole('radio', { name: /toten Tieres/i }).check();
-		await page.getByTestId('report-kind-submit').click();
+		await page.getByTestId('report-kind-option-totfund').click();
 		await expect(page).toHaveURL(/meldung=totfund/);
 
 		// Simuliert einen Wiederkehrer in derselben Sitzung, dessen URL den

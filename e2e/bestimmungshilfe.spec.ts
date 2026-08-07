@@ -100,8 +100,7 @@ test.describe('Bestimmungshilfe', () => {
 		   auch tatsächlich im Formular ankommt — ein Abbruch an der Auswahl wäre
 		   sonst nicht von einem echten Rückweg zu unterscheiden. */
 		await page.waitForLoadState('networkidle');
-		await page.getByRole('radio', { name: /lebenden Tieres/i }).check();
-		await page.getByTestId('report-kind-submit').click();
+		await page.getByTestId('report-kind-option-lebend').click();
 		await expect(page.getByRole('heading', { name: 'Position & Zeitpunkt' })).toBeVisible();
 	});
 

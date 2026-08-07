@@ -10,16 +10,19 @@ import {
 export type ReportKind = 'alive' | 'dead';
 
 /**
- * Name des Query-Parameters — und, seit dem UX-Review (2026-08-06, Punkt 1),
- * zugleich der `name` der Radios auf der Einstiegsseite.
+ * Name des Query-Parameters — und zugleich der Bestandteil des `href`, den die
+ * beiden Karten auf der Einstiegsseite tragen.
  *
- * Das ist kein Zufall, sondern ein tragender Vertrag: Ein Klick auf „Weiter"
- * VOR der Hydration schickt das Formular nativ per GET ab. Nur weil die Radios
- * `meldung` heißen und `lebend`/`totfund` tragen, landet der Melder dabei auf
- * `/?meldung=totfund`, wo `resolveReportKind` den Zweig schon serverseitig
- * auflöst. Stünde der Name auf beiden Seiten als Literal, machte eine
- * einseitige Umbenennung den JS-losen Pfad still wieder zum Leerlauf-Reload —
- * ohne dass ein Test rot würde.
+ * Das ist kein Zufall, sondern ein tragender Vertrag: Ein Klick VOR der
+ * Hydration navigiert nativ über den `href`. Nur weil dieser `meldung` heißt
+ * und `lebend`/`totfund` trägt, landet der Melder dabei auf `/?meldung=totfund`,
+ * wo `resolveReportKind` den Zweig schon serverseitig auflöst. Stünde der Name
+ * auf beiden Seiten als Literal, machte eine einseitige Umbenennung den JS-losen
+ * Pfad still wieder wirkungslos — ohne dass ein Test rot würde.
+ *
+ * Bis zum UX-Review 2026-08-07 hing derselbe Vertrag am `name` zweier Radios
+ * und einem nativen GET-Submit; der Weg trug den Zweig zwar auch, ersetzte
+ * dabei aber die gesamte Query. Der `href` erhält sie (`+page.svelte`).
  */
 export const REPORT_KIND_PARAM = 'meldung';
 
