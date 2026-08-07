@@ -4,7 +4,7 @@
 	import SightingInboxCard from '$lib/components/admin/SightingInboxCard.svelte';
 	import { submitVerdict, type SightingVerdict } from '$lib/components/admin/inboxVerdict';
 	import { onDestroy } from 'svelte';
-	import { SvelteMap } from 'svelte/reactivity';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import ArrowDown from '~icons/lucide/arrow-down';
 	import ArrowUp from '~icons/lucide/arrow-up';
 	import Info from '~icons/lucide/info';
@@ -18,6 +18,11 @@
 	let done = $state<Record<number, SightingVerdict>>({});
 	let busy = $state<Record<number, boolean>>({});
 	const timers = new SvelteMap<number, ReturnType<typeof setTimeout>>();
+	/* Undo-Fenster abgelaufen, aber noch nicht durch einen Reload bestätigt.
+	   Getrennt von `done`, weil ein Aufräumen von `done[id]` die Karte sofort
+	   zurückholen würde — die Sichtung steht bis zum Reload weiter in
+	   `data.open`. Erst nach dem Reload ist der Server die Wahrheit. */
+	const abgelaufen = new SvelteSet<number>();
 	const UNDO_MS = 8000;
 
 	/* Der Zähler kommt je nach Treiber als String aus `count(*)` — ohne Number()
@@ -40,10 +45,25 @@
 		done[id] = verdict;
 		timers.set(
 			id,
-			setTimeout(() => {
+			setTimeout(async () => {
 				timers.delete(id);
+				abgelaufen.add(id);
+				/* Nur nachladen, wenn kein Undo-Fenster mehr offen ist: `invalidateAll`
+				   baut die Liste neu auf und schnitte sonst die noch laufenden Fenster
+				   anderer Sichtungen ab (freigeben A, 3 s später B → bei t=8 s wäre
+				   B's Undo-Zeile nach 5 s statt 8 s weg). Spart nebenbei die
+				   Mehrfach-Reloads beim schnellen Abarbeiten. */
+				if (timers.size > 0) return;
 				// Endgültig aus der Liste — Server-Daten neu laden hält den Zähler frisch.
-				invalidateAll();
+				await invalidateAll();
+				/* Nach dem Reload sind die abgearbeiteten IDs aus `data.open` heraus;
+				   die Merker dürfen weg. Taucht eine ID wider Erwarten wieder auf,
+				   erscheint sie so als Karte und nicht als tote Undo-Zeile. */
+				for (const erledigteId of abgelaufen) {
+					delete done[erledigteId];
+					delete busy[erledigteId];
+				}
+				abgelaufen.clear();
 			}, UNDO_MS)
 		);
 	}
@@ -104,32 +124,34 @@
 	{:else}
 		<ul class="flex flex-col gap-3">
 			{#each data.open as sighting (sighting.id)}
-				<li>
-					{#if done[sighting.id]}
-						<div class="alert py-2" role="status">
-							<span>
-								Sichtung #{sighting.id}
-								{done[sighting.id] === 'approve' ? 'freigegeben' : 'abgelehnt'}.
-							</span>
-							<button
-								type="button"
-								class="btn btn-ghost btn-sm"
-								disabled={busy[sighting.id]}
-								onclick={() => rueckgaengig(sighting.id)}
-							>
-								Rückgängig
-							</button>
-						</div>
-					{:else}
-						<SightingInboxCard
-							{sighting}
-							images={data.imagesBySighting[sighting.id] ?? []}
-							busy={busy[sighting.id] ?? false}
-							onApprove={() => entscheiden(sighting.id, 'approve')}
-							onReject={() => entscheiden(sighting.id, 'reject')}
-						/>
-					{/if}
-				</li>
+				{#if !abgelaufen.has(sighting.id)}
+					<li>
+						{#if done[sighting.id]}
+							<div class="alert py-2" role="status">
+								<span>
+									Sichtung #{sighting.id}
+									{done[sighting.id] === 'approve' ? 'freigegeben' : 'abgelehnt'}.
+								</span>
+								<button
+									type="button"
+									class="btn btn-ghost btn-sm"
+									disabled={busy[sighting.id]}
+									onclick={() => rueckgaengig(sighting.id)}
+								>
+									Rückgängig
+								</button>
+							</div>
+						{:else}
+							<SightingInboxCard
+								{sighting}
+								images={data.imagesBySighting[sighting.id] ?? []}
+								busy={busy[sighting.id] ?? false}
+								onApprove={() => entscheiden(sighting.id, 'approve')}
+								onReject={() => entscheiden(sighting.id, 'reject')}
+							/>
+						{/if}
+					</li>
+				{/if}
 			{/each}
 		</ul>
 		{#if openTotal > data.open.length}
