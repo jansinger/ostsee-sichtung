@@ -51,19 +51,28 @@
 				<h2 class="card-title text-success-strong mb-4">Was passiert als Nächstes?</h2>
 
 				<div class="space-y-4">
+					<!-- Kein automatischer Mailversand an die meldende Person — weder beim
+					     Absenden noch bei der Freigabe; `notification.email.*` steuert
+					     ausschließlich die interne Mail ans Museum. Zugesagt wird deshalb
+					     nur, dass die Kontaktdaten angekommen sind — nicht, dass etwas
+					     zurückkommt. Eine persönliche Rückmeldung des Museums bleibt damit
+					     möglich, ohne dass die Seite sie versprochen hätte, und der Kanal
+					     bleibt offen (Rückfragen laufen auch telefonisch). -->
 					<div class="flex items-start gap-3">
 						<Icon
-							icon="lucide:check-circle"
+							icon="lucide:message-circle"
 							width="24"
 							height="24"
-							class="text-success-strong mt-1"
+							class="text-info-strong mt-1"
 						/>
 						<div>
-							<h3 class="font-semibold">Bestätigung per E-Mail</h3>
+							<h3 class="font-semibold">Rückfragen zu Ihrer Meldung</h3>
 							<p class="text-base-content/70 text-sm">
-								Sie erhalten in Kürze eine Bestätigung an <strong
+								Eine automatische Bestätigungsmail versenden wir nicht. Falls zu Ihrer Meldung etwas
+								offen bleibt, melden wir uns bei Ihnen — per E-Mail an <strong
 									>{submittedData?.email ? maskEmail(submittedData.email) : '***@***.***'}</strong
-								>
+								>{#if submittedData?.phone}
+									oder telefonisch{/if}.
 							</p>
 						</div>
 					</div>
