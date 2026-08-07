@@ -21,7 +21,7 @@
 		<div class="mb-8 space-y-6 text-center">
 			<div class="flex justify-center">
 				<div class="bg-success/20 flex h-20 w-20 items-center justify-center rounded-full">
-					<Icon icon="lucide:check" width="40" class="text-success-strong" />
+					<Icon icon="lucide:check" width="40" class="text-success-strong" aria-hidden="true" />
 				</div>
 			</div>
 
@@ -51,25 +51,41 @@
 				<h2 class="card-title text-success-strong mb-4">Was passiert als Nächstes?</h2>
 
 				<div class="space-y-4">
+					<!-- Kein automatischer Mailversand an die meldende Person — weder beim
+					     Absenden noch bei der Freigabe; `notification.email.*` steuert
+					     ausschließlich die interne Mail ans Museum. Zugesagt wird deshalb
+					     nur, dass die Kontaktdaten angekommen sind — nicht, dass etwas
+					     zurückkommt. Eine persönliche Rückmeldung des Museums bleibt damit
+					     möglich, ohne dass die Seite sie versprochen hätte, und der Kanal
+					     bleibt offen (Rückfragen laufen auch telefonisch). -->
 					<div class="flex items-start gap-3">
 						<Icon
-							icon="lucide:check-circle"
+							icon="lucide:message-circle"
 							width="24"
 							height="24"
-							class="text-success-strong mt-1"
+							class="text-info-strong mt-1"
+							aria-hidden="true"
 						/>
 						<div>
-							<h3 class="font-semibold">Bestätigung per E-Mail</h3>
+							<h3 class="font-semibold">Rückfragen zu Ihrer Meldung</h3>
 							<p class="text-base-content/70 text-sm">
-								Sie erhalten in Kürze eine Bestätigung an <strong
+								Eine automatische Bestätigungsmail versenden wir nicht. Falls zu Ihrer Meldung etwas
+								offen bleibt, melden wir uns bei Ihnen — per E-Mail an <strong
 									>{submittedData?.email ? maskEmail(submittedData.email) : '***@***.***'}</strong
-								>
+								>{#if submittedData?.phone}
+									oder telefonisch{/if}.
 							</p>
 						</div>
 					</div>
 
 					<div class="flex items-start gap-3">
-						<Icon icon="lucide:activity" width="24" height="24" class="text-info-strong mt-1" />
+						<Icon
+							icon="lucide:activity"
+							width="24"
+							height="24"
+							class="text-info-strong mt-1"
+							aria-hidden="true"
+						/>
 						<div>
 							<h3 class="font-semibold">Wissenschaftliche Auswertung</h3>
 							<p class="text-base-content/70 text-sm">
@@ -79,7 +95,13 @@
 					</div>
 
 					<div class="flex items-start gap-3">
-						<Icon icon="lucide:camera" width="24" height="24" class="text-accent-strong mt-1" />
+						<Icon
+							icon="lucide:camera"
+							width="24"
+							height="24"
+							class="text-accent-strong mt-1"
+							aria-hidden="true"
+						/>
 						<div>
 							<h3 class="font-semibold">Fotos und Videos</h3>
 							<p class="text-base-content/70 text-sm">
@@ -100,6 +122,7 @@
 								width="24"
 								height="24"
 								class="text-warning-strong mt-1"
+								aria-hidden="true"
 							/>
 							<div>
 								<h3 class="font-semibold">Totfund gemeldet</h3>
@@ -111,7 +134,13 @@
 					{/if}
 
 					<div class="flex items-start gap-3">
-						<Icon icon="lucide:chart-pie" width="24" height="24" class="text-primary mt-1" />
+						<Icon
+							icon="lucide:chart-pie"
+							width="24"
+							height="24"
+							class="text-primary mt-1"
+							aria-hidden="true"
+						/>
 						<div>
 							<h3 class="font-semibold">Daten einsehen</h3>
 							<p class="text-base-content/70 text-sm">
@@ -182,7 +211,7 @@
 
 					<div class="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
 						<a href="/map" class="btn btn-outline btn-sm flex items-center gap-2">
-							<Icon icon="lucide:map" width="16" height="16" />
+							<Icon icon="lucide:map" width="16" height="16" aria-hidden="true" />
 							Alle Sichtungen auf der Karte
 						</a>
 						<a
@@ -191,7 +220,7 @@
 							rel="noopener"
 							class="btn btn-outline btn-sm flex items-center gap-2"
 						>
-							<Icon icon="lucide:shield-check" width="16" height="16" />
+							<Icon icon="lucide:shield-check" width="16" height="16" aria-hidden="true" />
 							Deutsches Meeresmuseum
 						</a>
 					</div>
