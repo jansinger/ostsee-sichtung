@@ -3,7 +3,7 @@ import { logAuditEvent } from '$lib/server/audit/auditService';
 import { requireUserRole } from '$lib/server/auth/auth';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { db } from '$lib/server/db';
-import { isSightingApproved } from '$lib/server/db/approvalFilter';
+import { isSightingApproved, isSightingRejected } from '$lib/server/db/approvalFilter';
 import { sightings } from '$lib/server/db/schema';
 import type { RequestHandler } from '@sveltejs/kit';
 import { error, isHttpError, json } from '@sveltejs/kit';
@@ -22,6 +22,12 @@ const logger = createLogger('api:sightings:verify');
  * gemeinsam geschrieben: `freigegeben_am` trägt den Zeitpunkt der Prüfung,
  * `geprueft` das Kennzeichen. Die öffentlichen Flächen (Legacy-API und
  * Karte) filtern auf `freigegeben_am`.
+ *
+ * Die Ablehnung (`abgelehnt_am`/`abgelehnt_von`) ist kein dritter
+ * Veröffentlichungszustand, sondern eine Triage-Markierung: abgelehnt heißt
+ * ungeprüft und nicht veröffentlicht, nur mit festgehaltener Entscheidung.
+ * Deshalb schreibt dieser Endpunkt alle vier Spalten in EINEM Update —
+ * `freigegeben_am` und `abgelehnt_am` sind nie gleichzeitig gesetzt.
  */
 export const PATCH: RequestHandler = async ({ params, request, locals, url, getClientAddress }) => {
 	// Authorization check - nur Admins dürfen prüfen und damit freigeben
@@ -37,12 +43,28 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url, getC
 	try {
 		// Request body für neuen Status parsen
 		const body = await request.json();
-		const { verified } = body;
 
-		// Validierung des Prüfstatus
-		if (verified !== 0 && verified !== 1) {
-			logger.warn({ verified }, 'Ungültiger Prüfstatus');
-			throw error(400, 'Ungültiger Prüfstatus. Muss 0 oder 1 sein.');
+		// Verdict bestimmen. `{ verified: 0|1 }` bleibt als Alias bestehen —
+		// bestehende Aufrufer (Tabelle, Detailansicht) senden ihn weiterhin.
+		// `verified: 0` bedeutete schon immer „zurückziehen auf ungeprüft" = reset.
+		type Verdict = 'approve' | 'reject' | 'reset';
+		let verdict: Verdict;
+		if (body.verdict !== undefined) {
+			if (body.verdict !== 'approve' && body.verdict !== 'reject' && body.verdict !== 'reset') {
+				logger.warn({ verdict: body.verdict }, 'Ungültiges Verdict');
+				throw error(400, "Ungültiges Verdict. Muss 'approve', 'reject' oder 'reset' sein.");
+			}
+			verdict = body.verdict;
+		} else if (body.verified === 1) {
+			verdict = 'approve';
+		} else if (body.verified === 0) {
+			verdict = 'reset';
+		} else {
+			logger.warn({ body }, 'Ungültiger Prüfstatus');
+			throw error(
+				400,
+				'Ungültiger Request-Body. Erwartet { verdict: "approve" | "reject" | "reset" } oder den Alias { verified: 0 | 1 }.'
+			);
 		}
 
 		// Prüfen ob die Sichtung existiert
@@ -50,7 +72,8 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url, getC
 			.select({
 				id: sightings.id,
 				verified: sightings.verified,
-				approvedAt: sightings.approvedAt
+				approvedAt: sightings.approvedAt,
+				rejectedAt: sightings.rejectedAt
 			})
 			.from(sightings)
 			.where(eq(sightings.id, Number(id)))
@@ -62,17 +85,25 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url, getC
 			throw error(404, 'Sichtung nicht gefunden');
 		}
 
-		const approved = verified === 1;
-		// Freigabezeitpunkt: beim Prüfen setzen, beim Zurücknehmen löschen
-		const approvedAt = approved ? new Date() : null;
+		const approved = verdict === 'approve';
+		const now = new Date();
+		// Alle Status-Spalten in EINEM Update, damit sie nie auseinanderlaufen —
+		// insbesondere sind freigegeben_am und abgelehnt_am nie gleichzeitig gesetzt.
+		const statusColumns =
+			verdict === 'approve'
+				? { verified: 1, approvedAt: now, rejectedAt: null, rejectedBy: null }
+				: verdict === 'reject'
+					? {
+							verified: 0,
+							approvedAt: null,
+							rejectedAt: now,
+							rejectedBy: locals.user?.email ?? null
+						}
+					: { verified: 0, approvedAt: null, rejectedAt: null, rejectedBy: null };
 
-		// Beide Spalten in einem einzigen Update, damit sie nicht auseinanderlaufen
 		await db
 			.update(sightings)
-			.set({
-				verified,
-				approvedAt
-			})
+			.set(statusColumns)
 			.where(eq(sightings.id, Number(id)));
 
 		const ipAddress = getClientIp(getClientAddress, request);
@@ -83,30 +114,42 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url, getC
 			...(locals.user?.email ? { userEmail: locals.user.email } : {}),
 			...(ipAddress ? { ipAddress } : {}),
 			details: {
-				verified,
+				verdict,
+				verified: statusColumns.verified,
 				approved,
 				previousVerified: existing.verified,
-				previouslyApproved: isSightingApproved(existing)
+				previouslyApproved: isSightingApproved(existing),
+				previouslyRejected: isSightingRejected(existing)
 			}
 		});
 
 		logger.info(
 			{
 				id,
+				verdict,
 				previousStatus: existing.verified,
-				newStatus: verified,
-				approvedAt,
+				newStatus: statusColumns.verified,
+				approvedAt: statusColumns.approvedAt,
+				rejectedAt: statusColumns.rejectedAt,
 				verifiedBy: locals.user?.email
 			},
 			'Prüfstatus erfolgreich geändert'
 		);
 
+		const messages: Record<Verdict, string> = {
+			approve: 'Sichtung wurde geprüft und freigegeben',
+			reject: 'Sichtung wurde abgelehnt',
+			reset: 'Sichtung wurde als ungeprüft markiert und zurückgezogen'
+		};
+
 		return json({
 			success: true,
 			id: Number(id),
-			verified,
-			approvedAt,
-			message: `Sichtung wurde ${approved ? 'geprüft und freigegeben' : 'als ungeprüft markiert und zurückgezogen'}`
+			verdict,
+			verified: statusColumns.verified,
+			approvedAt: statusColumns.approvedAt,
+			rejectedAt: statusColumns.rejectedAt,
+			message: messages[verdict]
 		});
 	} catch (err) {
 		if (isHttpError(err)) {
@@ -132,7 +175,8 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 			.select({
 				id: sightings.id,
 				verified: sightings.verified,
-				approvedAt: sightings.approvedAt
+				approvedAt: sightings.approvedAt,
+				rejectedAt: sightings.rejectedAt
 			})
 			.from(sightings)
 			.where(eq(sightings.id, Number(id)))
@@ -146,7 +190,8 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 		return json({
 			id: sighting[0]?.id,
 			verified: sighting[0]?.verified,
-			approvedAt: sighting[0]?.approvedAt ?? null
+			approvedAt: sighting[0]?.approvedAt ?? null,
+			rejectedAt: sighting[0]?.rejectedAt ?? null
 		});
 	} catch (err) {
 		if (isHttpError(err)) {

@@ -2,7 +2,7 @@
  * Ostsee-Status einer Sichtung — **die einzige Stelle**, an der dieser Status
  * entsteht.
  *
- * Angeschlossen sind die Admin-Übersicht (`routes/admin/+page.svelte`), die
+ * Angeschlossen sind die Admin-Übersicht (`routes/admin/sichtungen/+page.svelte`), die
  * Detailansicht (`components/admin/AdminSightingView.svelte`) und die
  * Benachrichtigungs-Mail (über `server/templates/balticSeaEmailContext.ts`, weil
  * Handlebars keine TypeScript-Funktion aufrufen kann). Wer eine vierte

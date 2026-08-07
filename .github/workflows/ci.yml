@@ -495,6 +495,11 @@ jobs:
             # Spec darüber ohnehin schon kalt kompiliert — der Aufschlag fällt
             # hier also kein zweites Mal an. Lokal 13 s für zwei Tests.
             e2e/admin-table-dead-finding.spec.ts
+            # Bei den beiden Admin-Specs darüber, nach derselben Laufzeit-Regel:
+            # `form` ist der kürzeste Shard. Der Spec fährt die Eingangsseite
+            # /admin und die Tabelle /admin/sichtungen — letztere kompiliert
+            # der dead-finding-Spec darüber bereits kalt. Lokal 3 Tests, ~9 s.
+            e2e/admin-inbox.spec.ts
           )
 
           # Die drei Shards laufen parallel; die Laufzeit des Jobs ist die des

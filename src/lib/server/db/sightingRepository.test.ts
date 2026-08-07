@@ -440,10 +440,17 @@ describe('sightingRepository', () => {
 
 		/**
 		 * Test: Der Prüfstatus darf NUR über /api/sightings/[id]/verify geändert
-		 * werden, damit `geprueft` und `freigegeben_am` nicht auseinanderlaufen.
-		 * Ein Update über das Admin-Bearbeitungsformular darf ihn nicht anfassen.
+		 * werden, damit `geprueft`, `freigegeben_am` und `abgelehnt_am` nicht
+		 * auseinanderlaufen. Ein Update über das Admin-Bearbeitungsformular darf
+		 * ihn nicht anfassen.
+		 *
+		 * `abgelehnt_am`/`abgelehnt_von` gehören zum selben Vorgang: Der
+		 * Verify-Endpunkt schreibt alle vier Spalten in EINEM Update und hält so
+		 * die Invariante, dass Freigabe und Ablehnung nie gleichzeitig gesetzt
+		 * sind. Ein zweiter Schreiber, der nur eine davon setzt, bricht sie —
+		 * deshalb stehen sie hier gemeinsam in der Ausschlussliste.
 		 */
-		it('sollte verified und approvedAt vom Update ausschließen', async () => {
+		it('sollte verified, approvedAt und die Ablehnungsspalten vom Update ausschließen', async () => {
 			// Arrange
 			const mockDb = db as any;
 			const setMock = vi.fn().mockReturnValue({
@@ -453,14 +460,22 @@ describe('sightingRepository', () => {
 			});
 			mockDb.update.mockReturnValue({ set: setMock });
 
-			// Act: Formular liefert einen gesetzten Prüfstatus mit
-			await updateSighting(42, { ...mockFormData, verified: true } as any);
+			// Act: Formular liefert einen gesetzten Prüf- und Ablehnungsstatus mit
+			await updateSighting(42, {
+				...mockFormData,
+				verified: true,
+				approvedAt: new Date('2026-01-01T00:00:00.000Z'),
+				rejectedAt: new Date('2026-01-02T00:00:00.000Z'),
+				rejectedBy: 'angreifer@example.com'
+			} as any);
 
 			// Assert
 			const updatePayload = setMock.mock.calls[0]?.[0];
 			expect(updatePayload).toBeDefined();
 			expect(updatePayload).not.toHaveProperty('verified');
 			expect(updatePayload).not.toHaveProperty('approvedAt');
+			expect(updatePayload).not.toHaveProperty('rejectedAt');
+			expect(updatePayload).not.toHaveProperty('rejectedBy');
 		});
 
 		/**

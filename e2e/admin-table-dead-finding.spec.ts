@@ -94,7 +94,7 @@ test.describe('Admin-Sichtungstabelle — Totfund-Marker', () => {
 		createdIds.push(await createSighting('e2e-lebend', false));
 
 		await page.setViewportSize({ width: 1280, height: 900 });
-		await page.goto('/admin');
+		await page.goto('/admin/sichtungen');
 
 		const totfundZeile = page.getByRole('row').filter({ hasText: 'e2e-tot' });
 		const lebendZeile = page.getByRole('row').filter({ hasText: 'e2e-lebend' });
@@ -125,7 +125,7 @@ test.describe('Admin-Sichtungstabelle — Totfund-Marker', () => {
 		await seedAdminSession(context, baseURL!, ['admin']);
 
 		await page.setViewportSize({ width: 1280, height: 900 });
-		await page.goto('/admin');
+		await page.goto('/admin/sichtungen');
 
 		await expect(page.getByRole('columnheader', { name: 'Tierart' })).toBeVisible();
 		await expect(page.getByLabel('Totfund', { exact: true })).toHaveCount(0);

@@ -28,7 +28,8 @@ requireUserRole(url, locals.user, ['admin']);
 ```
 src/routes/admin/
 ├── +layout.server.ts      # Auth Guard (requireUserRole)
-├── +page.server.ts        # Dashboard (Sichtungsliste, Filter, Sortierung)
+├── +page.server.ts        # Eingang (Task-Liste offener Sichtungen, Sortierung nur per `order`-Param)
+├── sichtungen/              # Tabelle (alle Sichtungen, Filter inkl. `verified=rejected`)
 ├── [id]/
 │   ├── +page.svelte       # Sichtung anzeigen
 │   └── edit/+page.svelte  # Sichtung bearbeiten
@@ -38,16 +39,24 @@ src/routes/admin/
 └── docs/                   # Dokumentation
 ```
 
+`/admin` ist die Eingangsseite: eine Task-Liste der offenen (weder freigegebenen
+noch abgelehnten) Sichtungen. Alte Tabellen-URLs mit `page`/`sort`/`verified`/…
+werden per 301 auf `/admin/sichtungen` umgeleitet. **Die Eingangsseite ist eine
+Task-Liste — keine Filter/Spalten dorthin bauen, dafür gibt es
+`/admin/sichtungen`.**
+
 ## Admin-Komponenten
 
-| Komponente                     | Zweck                         |
-| ------------------------------ | ----------------------------- |
-| `AdminSightingEditForm.svelte` | Sichtung bearbeiten           |
-| `AdminSightingView.svelte`     | Sichtung anzeigen (read-only) |
-| `DataTableRow.svelte`          | Tabellen-Zeile                |
-| `BooleanStatus.svelte`         | Boolean-Status Anzeige        |
-| `ExportModal.svelte`           | Export-Dialog                 |
-| `deadFinding.ts`               | Totfund-Auszeichnung          |
+| Komponente                     | Zweck                              |
+| ------------------------------ | ---------------------------------- |
+| `AdminSightingEditForm.svelte` | Sichtung bearbeiten                |
+| `AdminSightingView.svelte`     | Sichtung anzeigen (read-only)      |
+| `SightingInboxCard.svelte`     | Karte der Eingangsseite (`/admin`) |
+| `inboxVerdict.ts`              | Verdict-Logik der Eingangsseite    |
+| `DataTableRow.svelte`          | Tabellen-Zeile                     |
+| `BooleanStatus.svelte`         | Boolean-Status Anzeige             |
+| `ExportModal.svelte`           | Export-Dialog                      |
+| `deadFinding.ts`               | Totfund-Auszeichnung               |
 
 ### Totfund vs. Lebendsichtung
 

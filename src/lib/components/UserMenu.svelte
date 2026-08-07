@@ -4,8 +4,10 @@
 
 	/* `isAdmin` ist hier bewusst weggefallen: Das Menü führte einen Eintrag
 	   „Admin-Bereich" auf /admin, den die TopBar seit 2026-08-03 als Gruppe
-	   „Verwaltung → Sichtungen" trägt. Zwei Wege zum selben Ziel, einer davon
-	   hinter dem Profilbild versteckt — das Profilmenü ist für das Konto da.
+	   „Verwaltung" trägt — seit dem Umzug der Tabelle mit „Eingang" (/admin)
+	   und „Sichtungen" (/admin/sichtungen) als getrennten Zielen. Zwei Wege
+	   zum selben Ziel, einer davon hinter dem Profilbild versteckt — das
+	   Profilmenü ist für das Konto da.
 
 	   `position` ebenso: Der Default war 'right', die einzige Aufrufstelle
 	   setzte genau das noch einmal explizit. Eine Wahlmöglichkeit, die nie

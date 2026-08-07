@@ -25,6 +25,7 @@ import {
 } from '$lib/server/db/mediaUploadFilter';
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
+import { rejectedOnly } from '$lib/server/db/approvalFilter';
 
 const dialect = new PgDialect();
 const toSqlText = (condition: SQLWrapper): string => dialect.sqlToQuery(condition.getSQL()).sql;
@@ -194,5 +195,21 @@ describe('admin/+page.server load() — Foto-Ankündigungs-Arbeitsliste', () => 
 		} as unknown as Parameters<typeof load>[0]);
 
 		expect(recordedSelects[0]?.whereSql).toBeUndefined();
+	});
+
+	// verified=rejected ist die Triage-Sicht auf abgelehnte Sichtungen und muss
+	// exakt die Bedingung von rejectedOnly() tragen — analog zu den beiden
+	// verified=0/1-Fällen, die als Integer-Vergleich direkt in +page.server.ts
+	// gebaut werden. Anders als dort ist rejected KEIN Inline-Prädikat: die
+	// approvalPredicateScan.test.ts verbietet ein selbstgebautes "abgelehnt_am
+	// is not null" außerhalb von approvalFilter.ts.
+	it('verified=rejected filtert über rejectedOnly()', async () => {
+		await load({
+			url: makeUrl({ verified: 'rejected' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		const expected = toSqlText(rejectedOnly());
+		expect(recordedSelects[0]?.whereSql).toBe(expected);
+		expect(recordedSelects[1]?.whereSql).toBe(expected);
 	});
 });

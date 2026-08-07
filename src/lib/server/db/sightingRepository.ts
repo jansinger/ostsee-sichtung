@@ -227,6 +227,13 @@ export const updateSighting = async (
 		created: _created,
 		approvedAt: _approvedAt,
 		verified: _verified,
+		// Gleiche Regel wie für `verified`/`approvedAt`: Die Ablehnung ist Teil
+		// desselben Statusvorgangs. `PATCH /api/sightings/[id]/verify` schreibt
+		// alle vier Spalten in EINEM Update und hält damit die Invariante, dass
+		// Freigabe und Ablehnung nie gleichzeitig gesetzt sind. Ein zweiter
+		// Schreiber, der nur eine Spalte setzt, bricht sie.
+		rejectedAt: _rejectedAt,
+		rejectedBy: _rejectedBy,
 		nameConsent: _nameConsent,
 		shipNameConsent: _shipNameConsent,
 		privacyConsent: _privacyConsent,

@@ -107,7 +107,7 @@ test.describe('TopBar — Struktur und Umbruchfreiheit', () => {
 				'/about'
 			);
 
-			/* Die drei Admin-Ziele sind erreichbar — aber erst nach dem Aufklappen,
+			/* Die vier Admin-Ziele sind erreichbar — aber erst nach dem Aufklappen,
 			   damit sie die oberste Ebene nicht mehr belasten. */
 			/* `getByRole('group', { name })` greift hier nicht: `<details>` bildet auf
 			   `group` ab, bekommt aus dem `<summary>` aber keinen Accessible Name —

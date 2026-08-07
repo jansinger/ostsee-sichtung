@@ -39,7 +39,9 @@ dritter Zustand. Die zwei DB-Spalten (`geprueft`, `freigegeben_am`) gehören zu
 **einem** Vorgang und werden ausschließlich von `PATCH /api/sightings/[id]/verify`
 gemeinsam geschrieben. Öffentliche Grundmenge überall: `freigegeben_am IS NOT NULL`.
 Keinen zweiten Freigabe-Endpunkt und kein zweites Bedienelement einführen.
-Details: `.claude/rules/api.md`
+Derselbe Endpunkt schreibt seit 2026-08 per Verdict (`approve`/`reject`/`reset`)
+auch `abgelehnt_am`/`abgelehnt_von` — das ist Triage, kein dritter
+Freigabe-Zustand. Details: `.claude/rules/api.md`
 
 ### Design System — PFLICHT bei UI-Änderungen
 

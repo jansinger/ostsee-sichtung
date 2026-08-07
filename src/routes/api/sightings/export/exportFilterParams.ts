@@ -1,4 +1,4 @@
-import { isValidDateParam } from '../../../admin/dateParam';
+import { isValidDateParam } from '../../../admin/sichtungen/dateParam';
 import { eq, gte, lt } from 'drizzle-orm';
 import { berlinDayRangeUtc } from '$lib/server/datetime/berlinDayRange';
 import { sightings as sightingsTable } from '$lib/server/db/schema';

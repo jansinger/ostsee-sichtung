@@ -39,7 +39,9 @@ vi.mock('$lib/server/db/schema', async () => {
 		sightings: {
 			id: 'id',
 			approvedAt: 'approvedAt',
-			verified: 'verified'
+			verified: 'verified',
+			rejectedAt: 'rejectedAt',
+			rejectedBy: 'rejectedBy'
 		}
 	});
 });
@@ -372,7 +374,7 @@ describe('Contract: GET /api/sightings/{id}/verify', () => {
 		expect(apiRes).toSatisfyApiSpec();
 	});
 
-	it('gibt id, verified und approvedAt zurück', async () => {
+	it('gibt id, verified, approvedAt und rejectedAt zurück', async () => {
 		const event = createEvent('/api/sightings/1/verify', {
 			params: { id: '1' },
 			locals: { user: mockAdminUser }
@@ -383,7 +385,8 @@ describe('Contract: GET /api/sightings/{id}/verify', () => {
 		expect(body).toEqual({
 			id: 1,
 			verified: 1,
-			approvedAt: '2026-01-01T00:00:00.000Z'
+			approvedAt: '2026-01-01T00:00:00.000Z',
+			rejectedAt: null
 		});
 	});
 

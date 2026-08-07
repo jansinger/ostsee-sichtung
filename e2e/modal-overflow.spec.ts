@@ -110,14 +110,14 @@ interface GuardRoute {
    keiner Route im Ruhezustand im DOM. Die übrigen fünf
    `class="modal"`-Fundstellen sind abgedeckt: UploadNotice und
    SpeciesIdentificationHelp auf `/`, DeleteDialog, ExportModal und die
-   Spam-Analyse auf `/admin`. */
+   Spam-Analyse auf `/admin/sichtungen`. */
 const ROUTES: readonly GuardRoute[] = [
 	// Zweig-Parameter überspringt die Einstiegsseite ("Was möchten Sie melden?")
 	// — ohne ihn zeigt `/` nur die Auswahl, ohne UploadNotice/SpeciesIdentificationHelp,
 	// und die minDialogs-Schranke unten schlägt fehl, obwohl das Formular selbst intakt ist.
 	{ path: '/?meldung=lebend', auth: false, needsDb: false, minDialogs: 2 },
 	{ path: '/bestimmungshilfe', auth: false, needsDb: false, minDialogs: 1 },
-	{ path: '/admin', auth: true, needsDb: true, minDialogs: 3 }
+	{ path: '/admin/sichtungen', auth: true, needsDb: true, minDialogs: 3 }
 ];
 
 type Fixtures = {

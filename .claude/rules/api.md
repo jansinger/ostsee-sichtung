@@ -48,7 +48,9 @@ Ausdruck zweier Arbeitsschritte, sondern zwei Felder desselben Vorgangs:
   Er setzt beide immer gemeinsam in **einem** `db.update(...).set(...)`.
   Es gibt bewusst keinen zweiten Endpunkt dafür — ein früherer
   `/api/sightings/[id]/approve` wurde 2026-07 ersatzlos entfernt.
-- **Ein Bedienelement** in der Admin-UI: der Toggle „Geprüft".
+- **Eine Bedienoberfläche** je Kontext: der Toggle „Geprüft" in Tabelle und
+  Detailansicht, die Verdict-Aktionen (Freigeben/Ablehnen/Rückgängig) der
+  Eingangsseite — alle rufen denselben Verify-Endpunkt.
 - **Öffentliche Grundmenge ist `approvedAt IS NOT NULL`** — sowohl in der
   Legacy-API (`/sichtungen/showreports.json`) als auch auf der modernen Karte
   (`/api/map/sightings`). Nicht auf `verified` filtern: die Legacy-API ist an
@@ -63,6 +65,24 @@ gibt es **keinen einzigen** Datensatz, der geprüft, aber nicht freigegeben ist.
 Beim Neubau entstand kurzzeitig je ein Endpunkt pro Spalte — eine mechanische
 Abbildung der Tabelle, die den Fachprozess falsch modellierte und dazu führte,
 dass die Admin-UI nur noch `geprueft` schrieb und damit nichts mehr veröffentlichte.
+
+### Triage „abgelehnt" (seit 2026-08)
+
+Zusätzlich zur Prüfung gibt es die Triage-Entscheidung **abgelehnt** =
+gesichtet und bewusst nicht veröffentlicht (Spam, Testeintrag, unplausibel).
+Sie ist **kein dritter Freigabe-Zustand**: `abgelehnt_am`/`abgelehnt_von`
+(Drizzle `rejectedAt`/`rejectedBy`) sind nie gleichzeitig mit `freigegeben_am`
+gesetzt, und die öffentliche Grundmenge bleibt unverändert
+`freigegeben_am IS NOT NULL`.
+
+- Geschrieben werden auch diese Spalten **nur** von
+  `PATCH /api/sightings/[id]/verify` (Body
+  `{ verdict: 'approve' | 'reject' | 'reset' }`; der alte Body
+  `{ verified: 0|1 }` bleibt Alias für approve/reset). Alle Status-Spalten in
+  **einem** Update.
+- Grundmenge der Eingangsseite (`/admin`): `openOnly()` = weder freigegeben
+  noch abgelehnt. `pendingOnly()` bedeutet weiterhin „nicht freigegeben"
+  (inkl. abgelehnter) und bleibt die Gegenmenge der Statistik.
 
 ---
 

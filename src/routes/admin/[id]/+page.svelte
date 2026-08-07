@@ -37,7 +37,7 @@
 		// Die Sichtung, die diese Seite anzeigt, existiert nach dem Löschen nicht
 		// mehr — zurück zur Tabelle statt auf einen 404 zu warten.
 		if (await deleteSighting(sighting.id)) {
-			await goto('/admin');
+			await goto('/admin/sichtungen');
 		}
 	}
 

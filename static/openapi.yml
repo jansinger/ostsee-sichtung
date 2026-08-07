@@ -264,15 +264,20 @@ paths:
     patch:
       tags:
         - sightings
-      summary: Sichtung prüfen und freigeben
+      summary: Sichtung prüfen, ablehnen oder zurücksetzen
       description: |
         Setzt den Prüfstatus einer Sichtung (Admin-Berechtigung erforderlich).
 
-        Eine Sichtung kennt genau zwei Zustände: ungeprüft und geprüft.
-        Geprüft bedeutet zugleich veröffentlicht — einen dritten Zustand
-        "geprüft, aber nicht freigegeben" gibt es nicht. Der Endpunkt schreibt
-        deshalb immer beide Datenbankspalten gemeinsam: `verified` und
-        `approvedAt`.
+        Eine Sichtung kennt genau zwei Veröffentlichungszustände: ungeprüft und
+        geprüft. Geprüft bedeutet zugleich veröffentlicht — einen dritten Zustand
+        "geprüft, aber nicht freigegeben" gibt es nicht. Die Ablehnung ist keine
+        dritte Veröffentlichungsstufe, sondern eine Triage-Markierung: abgelehnt
+        heißt ungeprüft und nicht veröffentlicht, nur mit festgehaltener
+        Entscheidung.
+
+        Der Endpunkt schreibt deshalb alle Statusspalten immer gemeinsam in einem
+        Update: `verified`, `approvedAt`, `rejectedAt` und `rejectedBy`.
+        `approvedAt` und `rejectedAt` sind nie gleichzeitig gesetzt.
       security:
         - adminAuth: []
       parameters:
@@ -289,15 +294,26 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - verified
-              properties:
-                verified:
-                  type: integer
-                  enum: [0, 1]
-                  description: 1 für geprüft und freigegeben, 0 für ungeprüft und zurückgezogen
-                  example: 1
+              anyOf:
+                - type: object
+                  required: [verdict]
+                  properties:
+                    verdict:
+                      type: string
+                      enum: [approve, reject, reset]
+                      description: >
+                        approve = prüfen und veröffentlichen, reject = Triage
+                        „abgelehnt" (nicht veröffentlicht), reset = auf
+                        ungeprüft zurückziehen.
+                      example: approve
+                - type: object
+                  required: [verified]
+                  properties:
+                    verified:
+                      type: integer
+                      enum: [0, 1]
+                      description: 'Alias: 1 = approve, 0 = reset.'
+                      example: 1
       responses:
         '200':
           description: Prüfstatus erfolgreich aktualisiert
@@ -308,8 +324,10 @@ paths:
                 required:
                   - success
                   - id
+                  - verdict
                   - verified
                   - approvedAt
+                  - rejectedAt
                   - message
                 properties:
                   success:
@@ -318,6 +336,11 @@ paths:
                   id:
                     type: integer
                     example: 1840
+                  verdict:
+                    type: string
+                    enum: [approve, reject, reset]
+                    description: Angewendete Entscheidung (bei Alias-Body abgeleitet)
+                    example: approve
                   verified:
                     type: integer
                     enum: [0, 1]
@@ -328,6 +351,12 @@ paths:
                     nullable: true
                     description: Zeitpunkt der Freigabe; null wenn ungeprüft
                     example: "2026-07-28T09:12:44.000Z"
+                  rejectedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: Zeitpunkt der Ablehnung; null wenn nicht abgelehnt
+                    example: null
                   message:
                     type: string
                     example: "Sichtung wurde geprüft und freigegeben"
@@ -368,6 +397,7 @@ paths:
                   - id
                   - verified
                   - approvedAt
+                  - rejectedAt
                 properties:
                   id:
                     type: integer
@@ -382,6 +412,12 @@ paths:
                     nullable: true
                     description: Zeitpunkt der Freigabe; null wenn ungeprüft
                     example: "2026-07-28T09:12:44.000Z"
+                  rejectedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: Zeitpunkt der Ablehnung; null wenn nicht abgelehnt
+                    example: null
         '400':
           $ref: '#/components/responses/BadRequest'
         '302':

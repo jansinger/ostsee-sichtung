@@ -40,7 +40,7 @@ export const handle = sequence(
 ### Protected Routes
 
 ```typescript
-// src/routes/admin/+page.server.ts
+// src/routes/admin/sichtungen/+page.server.ts
 import { redirect } from '@sveltejs/kit';
 
 export const load = async ({ locals }) => {

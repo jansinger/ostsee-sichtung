@@ -435,17 +435,17 @@ welche Zustände fehlen, und wo das Theme verletzt wird.
 
 | Muster                   | Wo                                                                                                                                                                                            | Varianten | Kanonisch sollte sein                                                     |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------- |
-| Datentabelle             | `src/routes/admin/+page.svelte:722`, `src/lib/components/admin/AdminSightingView.svelte` (9×), `src/routes/admin/statistics/+page.svelte:289`, `src/lib/components/admin/DataTableRow.svelte` | **4**     | Zwei Komponenten: `DataTable` (Liste) und `DataTableRow` (Schlüssel/Wert) |
-| Filter + Sortierung      | `src/routes/admin/+page.svelte` (URL-Parameter, `sortableTh`-Snippet)                                                                                                                         | 1         | bleibt — aber ohne Bezug zum `FilterPanel` der Karte                      |
+| Datentabelle             | `src/routes/admin/sichtungen/+page.svelte:722`, `src/lib/components/admin/AdminSightingView.svelte` (9×), `src/routes/admin/statistics/+page.svelte:289`, `src/lib/components/admin/DataTableRow.svelte` | **4**     | Zwei Komponenten: `DataTable` (Liste) und `DataTableRow` (Schlüssel/Wert) |
+| Filter + Sortierung      | `src/routes/admin/sichtungen/+page.svelte` (URL-Parameter, `sortableTh`-Snippet)                                                                                                                         | 1         | bleibt — aber ohne Bezug zum `FilterPanel` der Karte                      |
 | Detail- gegen Edit-Sicht | `src/lib/components/admin/AdminSightingView.svelte` / `src/lib/components/admin/AdminSightingEditForm.svelte`                                                                                 | 2         | bleibt getrennt (siehe unten)                                             |
-| Dialog                   | `src/lib/components/admin/ExportModal.svelte`, Spam-Check in `src/routes/admin/+page.svelte:1011`, `src/lib/components/ui/Dialog/DeleteDialog.svelte`                                         | **3**     | `DeleteDialog`s Grundgerüst als `Modal` verallgemeinern                   |
+| Dialog                   | `src/lib/components/admin/ExportModal.svelte`, Spam-Check in `src/routes/admin/sichtungen/+page.svelte:1011`, `src/lib/components/ui/Dialog/DeleteDialog.svelte`                                         | **3**     | `DeleteDialog`s Grundgerüst als `Modal` verallgemeinern                   |
 | Statusbadge              | `src/lib/components/admin/BooleanStatus.svelte` + 5 handgebaute Stellen                                                                                                                       | **6**     | `BooleanStatus` erweitern statt `badge-*` an der Aufrufstelle             |
-| Paginierung              | `src/routes/admin/+page.svelte:945`                                                                                                                                                           | 1         | bleibt — einzige Aufrufstelle                                             |
-| Spalten-Sichtbarkeit     | `src/routes/admin/+page.svelte:440`                                                                                                                                                           | 1         | admin-spezifisch, kein Formular-Gegenstück                                |
+| Paginierung              | `src/routes/admin/sichtungen/+page.svelte:945`                                                                                                                                                           | 1         | bleibt — einzige Aufrufstelle                                             |
+| Spalten-Sichtbarkeit     | `src/routes/admin/sichtungen/+page.svelte:440`                                                                                                                                                           | 1         | admin-spezifisch, kein Formular-Gegenstück                                |
 
 **Zwei Korrekturen an der erwarteten Liste:**
 
-- **Massenaktionen gibt es nicht.** Die Checkboxen in `src/routes/admin/+page.svelte:459`
+- **Massenaktionen gibt es nicht.** Die Checkboxen in `src/routes/admin/sichtungen/+page.svelte:459`
   steuern ausschließlich die Spalten-Sichtbarkeit, keine Zeilenauswahl. Es gibt
   keinen Weg, mehrere Sichtungen gemeinsam zu prüfen, freizugeben oder zu
   löschen — jede Aktion läuft einzeln über ihre Zeile.
@@ -454,7 +454,7 @@ welche Zustände fehlen, und wo das Theme verletzt wird.
   `showModal()`/`close()`-Synchronisation per `$effect` selbst nach.
 
 **Dafür ein achtes Muster, das in der Liste fehlte: Datentabelle in zwei
-Gestalten.** `src/routes/admin/+page.svelte` rendert dieselben Daten zweimal — als
+Gestalten.** `src/routes/admin/sichtungen/+page.svelte` rendert dieselben Daten zweimal — als
 Kartenliste (Zeile 599, `md:hidden`) und als Tabelle (Zeile 722,
 `hidden md:block`). Beide Schleifen sind getrennt gepflegt; die Spalten-
 Sichtbarkeit wirkt nur auf die Tabelle.
@@ -480,7 +480,7 @@ Dieselbe Matrix wie im Meldeformular:
 | **leer**       | **Fehlt vollständig.** Beide `{#each sightings}` (Zeile 600 und 782) haben keinen `{:else}`-Zweig.                                  |
 | **lädt**       | Nur in `src/lib/components/admin/AdminSightingView.svelte:346` (`loading`-Prop). Liste, Statistiken und Einstellungen haben keinen. |
 | **teilweise**  | Fehlt vollständig.                                                                                                                  |
-| fehlgeschlagen | Nur als Toast (`src/routes/admin/+page.svelte`: Löschen, Prüfstatus, Test-Mail) plus ein `alert-error` in `admin/[id]`.             |
+| fehlgeschlagen | Nur als Toast (`src/routes/admin/sichtungen/+page.svelte`: Löschen, Prüfstatus, Test-Mail) plus ein `alert-error` in `admin/[id]`.             |
 | **offline**    | Fehlt vollständig.                                                                                                                  |
 
 **Der wahrscheinlichste Fall ist auch der ungedeckte:** Ein Filter ohne Treffer
@@ -511,7 +511,7 @@ Touch-Target-Block in `app.css` gegenstandslos. `.btn:not(.target-exempt)`
 steht dort ungelayert und gewinnt gegen Tailwinds `@layer utilities` — im
 Browser gemessen liefern `btn btn-xs`, `btn btn-sm` und sogar
 `btn btn-sm min-h-10` alle 44px. Die vier toten `min-h-10` an den
-Paginierungs-Schaltflächen (`src/routes/admin/+page.svelte`) und die zwei
+Paginierungs-Schaltflächen (`src/routes/admin/sichtungen/+page.svelte`) und die zwei
 toten `min-h-11` in `CleanupPanel.svelte` sind mit #630 entfernt.
 
 **Korrektur vom 2026-07-29: Die hier ursprünglich gelisteten „32 Statusfarben

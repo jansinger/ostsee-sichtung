@@ -62,7 +62,7 @@ test.describe('Admin-Sichtungstabelle — Spalte „Geprüft"', () => {
 		const page = await context.newPage();
 
 		try {
-			await page.goto('/admin');
+			await page.goto('/admin/sichtungen');
 			await expect(page.getByRole('navigation', { name: 'Verwaltung' })).toBeVisible();
 
 			/* Die Tabelle erscheint erst ab `md`; darunter rendert dieselbe Seite
@@ -106,7 +106,7 @@ test.describe('Admin-Sichtungstabelle — Spalte „Geprüft"', () => {
 		const page = await context.newPage();
 
 		try {
-			await page.goto('/admin');
+			await page.goto('/admin/sichtungen');
 			const label = page.locator('input[name^="verified-mobile-"] ~ span').first();
 			await expect(label).toBeVisible();
 
