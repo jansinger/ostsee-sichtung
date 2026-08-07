@@ -212,7 +212,7 @@ const ALLOWED_FILES: ReadonlyMap<string, string> = new Map([
 	],
 	[
 		'src/lib/server/export/jsonExport.test.ts',
-		'Pinnt das Feld verified im JSON-Export. Der Export bildet die Zeile ab und ist damit ein Datenpfad, keine Statusanzeige — die Zusicherung muss das Feld nennen.'
+		'Pinnt das Feld verified im JSON-Export. Der Export bildet die Zeile ab und ist damit ein Datenpfad, keine Statusanzeige — die Zusicherung muss das Feld nennen. Dass die CSV seit 2026-08 stattdessen den abgeleiteten Status führt, ist eine bewusste Entscheidung: Die JSON-Struktur ist ein Vertrag mit ihren Weiterverarbeitern, die CSV ist Lesestoff für Menschen. Kein Grund zum Angleichen.'
 	]
 ]);
 
