@@ -1037,6 +1037,56 @@ paths:
         '500':
           description: Unerwarteter Fehler
 
+  /api/admin/spam-rescore:
+    post:
+      tags:
+        - Admin
+      summary: Bestehende Sichtungen nachträglich auf Spam bewerten
+      description: >
+        Bewertet Sichtungen ohne gespeicherten Spam-Score (`spam_score IS NULL`)
+        und schreibt `spam_score`/`spam_indicators`. Idempotent und
+        wiederholbar: Ein abgebrochener Lauf macht beim nächsten Aufruf dort
+        weiter. Arbeitet in Batches — bei `done: false` erneut aufrufen.
+
+
+        Der Endpunkt existiert, weil die Datenbank auf den deployten Hosts von
+        außen nicht erreichbar ist und die Bewertung MX-DNS-Lookups braucht,
+        also nicht als SQL-Skript läuft.
+
+
+        Nachträgliche Scores sind systematisch milder als die einer echten
+        Einreichung: Formular-Token und Duplikat-Fenster existieren nur zum
+        Meldezeitpunkt. Zugang über Admin-Session oder Bearer-Token
+        (`CLEANUP_TOKEN`).
+      security:
+        - adminAuth: []
+        - cleanupToken: []
+      parameters:
+        - name: limit
+          in: query
+          description: Zeilen pro Aufruf. Unlesbare Werte fallen auf die Vorgabe zurück.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 200
+      responses:
+        '200':
+          description: Batch bewertet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpamRescoreReport'
+        '401':
+          description: >-
+            Nicht autorisiert — erforderlich ist eine angemeldete Admin-Session
+            oder ein gültiges `CLEANUP_TOKEN`. Eine Session ohne Admin-Rolle
+            wird ebenso abgewiesen wie ein fehlendes oder falsches Token.
+        '429':
+          description: Rate Limit überschritten
+        '500':
+          description: Unerwarteter Fehler
+
   /api/admin/test-email:
     post:
       tags:
@@ -2330,6 +2380,45 @@ components:
         example: "1"
 
   schemas:
+    SpamRescoreReport:
+      type: object
+      required: [scored, skippedFailed, lastId, remaining, done, stalled, distribution]
+      properties:
+        scored:
+          type: integer
+          description: Zeilen, die in diesem Lauf einen Score bekommen haben.
+        skippedFailed:
+          type: integer
+          description: >-
+            Zeilen mit fehlgeschlagener Prüfung. Sie bleiben NULL — ein Score 0
+            läse sich als "geprüft, sauber" und wäre die falsche Aussage.
+        lastId:
+          type: integer
+          nullable: true
+          description: Höchste in diesem Lauf bearbeitete Sichtungs-ID.
+        remaining:
+          type: integer
+          description: Noch unbewertete Zeilen nach diesem Lauf.
+        done:
+          type: boolean
+          description: >-
+            true, wenn der Aufrufer aufhören soll: Menge geleert (weniger
+            Zeilen als das Limit) ODER stalled. Nicht aus remaining abgeleitet
+            — übersprungene Zeilen bleiben NULL und würden remaining nie auf 0
+            fallen lassen.
+        stalled:
+          type: boolean
+          description: >-
+            true, wenn ein voller Batch gar nichts geschrieben hat (alle
+            Prüfungen fehlgeschlagen). Weitere Aufrufe würden dieselben Zeilen
+            laden; done ist dann ebenfalls true. Ursache im Server-Log suchen.
+        distribution:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Score → Anzahl in diesem Lauf.
+          example: { '0': 187, '2': 11, '10': 2 }
+
     CleanupReport:
       type: object
       description: Ergebnis eines Aufräum-Laufs für verwaiste Uploads.

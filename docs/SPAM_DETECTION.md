@@ -1,0 +1,204 @@
+# Spam-Erkennung für Sichtungsmeldungen
+
+Die Spam-Erkennung ist eine **Triage-Hilfe, kein Türsteher**. Jede Meldung wird
+gespeichert; der Score priorisiert nur die Reihenfolge, in der Admins prüfen.
+Das ist bewusst so: Jede Sichtung wird ohnehin manuell freigegeben, bevor sie
+öffentlich wird — Spam erreicht die Öffentlichkeit also nie, er kostet nur
+Prüfzeit. Ein fälschlich abgewiesener Melder wäre dagegen ein echter
+Datenverlust, den niemand bemerkt.
+
+---
+
+## Was bewertet wird
+
+`detectSpamIndicators` (`src/lib/server/spam/spamDetector.ts`) liefert
+`score` (0–10), `isHighRisk` (ab `HIGH_RISK_THRESHOLD` = 5) und die Liste der
+ausgelösten Indikatoren.
+
+| Signal                                   | Punkte | Anmerkung                                             |
+| ---------------------------------------- | ------ | ----------------------------------------------------- |
+| URLs/Links im Text                       | 3      | inkl. Shortener ohne Schema und HTML-kodierter Formen |
+| Spam-Keywords (DE/EN)                    | 2 je   | **Wortgrenzen**, nicht Substring                      |
+| Übermäßige Satzzeichen/Großbuchstaben    | 2      |                                                       |
+| Wegwerf-E-Mail-Domain                    | 3      | gepflegte Liste, s. u.                                |
+| `noreply@`/`donotreply@`                 | 2      |                                                       |
+| ≥ 5 Ziffern vor dem `@`                  | 1      |                                                       |
+| E-Mail-Domain ohne MX-Record             | 3      | DNS-Lookup, fail-open                                 |
+| Position außerhalb des Kartenbereichs    | 2      | aus `ostsee_geo`, s. u.                               |
+| Unbekannte/fehlende Tierart              | 1      |                                                       |
+| Identischer Bemerkungstext (7 Tage)      | 2      | ab dem ersten Wiederauftreten                         |
+| ≥ 5 Meldungen derselben E-Mail (24 h)    | 2      | Schwelle bewusst hoch, s. u.                          |
+| Formular-Token fehlt/ungültig/zu schnell | 2      | nur an der Web-API                                    |
+
+### Entscheidungen, die man leicht zurückdreht
+
+- **Wortgrenzen statt Substring.** „win" matchte in „Wind", „free" in **jeder**
+  `freenet.de`-Adresse. Deshalb matcht die Keyword-Prüfung mit `\b` — und die
+  **E-Mail-Adresse ist aus dem Keyword-Text herausgenommen** (sie hat ihre
+  eigenen Prüfungen). Grenze des Ansatzes: `\b` ist ASCII, ein Keyword direkt
+  vor einem Umlaut matcht trotzdem.
+- **Die Geografie wird nicht neu gerechnet.** Der Positions-Indikator kommt aus
+  der DB-Spalte `ostsee_geo` (`> 0` = drin, inklusive Altbestandswert `2` —
+  siehe `docs/OSTSEE_FLAGS.md`), gefüllt von `mapFormToSighting`. Die
+  **Polygon-Spalte `ostsee` fließt bewusst nicht ein**: Ein Totfund am Strand
+  liegt legitim außerhalb des Wasser-Polygons, und das sind genau die
+  Meldungen, die man nicht bestrafen darf.
+- **Duplikat-Schwellen sind asymmetrisch.** Mehrere Meldungen derselben Person
+  an einem Tag sind bei Citizen Science normal (eine Bootstour, fünf
+  Schweinswale) — deshalb erst ab 5. Ein **identischer Bemerkungstext** ist
+  dagegen schon beim ersten Mal auffällig, ab 20 Zeichen Länge (kürzer wäre
+  „schön" jede zweite Meldung).
+- **MX-Lookup ist fail-open.** Nur ein eindeutiges „Domain existiert nicht" bzw.
+  „keine MX-Records" zählt. Timeouts und DNS-Serverfehler ergeben `unknown` und
+  erhöhen den Score nicht — sonst machte ein DNS-Ausfall jede Meldung
+  verdächtig. Ergebnisse werden 1 h gecacht (`unknown` nie), der Cache ist auf
+  5.000 Einträge begrenzt.
+- **Mailserver-_Reputation_ ist bewusst nicht implementiert.** DNSBLs bewerten
+  IPs, die Mail _versenden_ — der Melder sendet aber keine Mail, er tippt eine
+  Adresse in ein Formular. `gmail.com` hat exzellente Reputation und ist die
+  häufigste Absenderdomain in Formular-Spam.
+
+### Wegwerf-Domain-Liste
+
+`src/lib/server/spam/disposableEmailDomains.ts` ist **generiert** aus der
+Community-Liste
+[disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains)
+(`disposable_email_blocklist.conf`, CC0). Zum Aktualisieren die Datei neu
+herunterladen und das Modul neu erzeugen; `tempmail.com` steht als Ergänzung
+oben in der Liste (war in der früheren Hartkodierung enthalten, fehlt in der
+Community-Liste).
+
+### Zeit-Token
+
+`src/routes/+page.server.ts` stellt beim Laden der Meldeseite ein signiertes
+`<timestampMs>.<hmac>` aus, das Formular schickt es als `_formToken` mit. Der
+Endpunkt entfernt es **vor** der Feld-Validierung (es ist kein Formularfeld)
+und wertet nur aus, wie lange das Formular offen war.
+
+`FORM_TOKEN_SECRET` ist optional (siehe `docs/ENVIRONMENT.md`). Ohne die
+Variable gilt ein Zufallswert pro Prozess — nach einem Neustart werden alte
+Tokens ungültig, was ausschließlich Score-Punkte kostet und nichts blockiert.
+
+---
+
+## Wo bewertet wird
+
+| Eingang                       | Bewertung                         | Token-Kontext                  |
+| ----------------------------- | --------------------------------- | ------------------------------ |
+| `POST /api/sightings` (Web)   | ja, beim Speichern                | ja                             |
+| `POST /rest_sichtungen` (App) | ja, beim Speichern (rein additiv) | **nein** — Vertrag kennt keins |
+| Admin-Modal „Spam prüfen"     | on demand, nicht gespeichert      | nein                           |
+| Benachrichtigungs-E-Mail      | zeigt den gespeicherten Score     | —                              |
+
+Der Legacy-Endpunkt bekommt bewusst **keinen** `submission`-Kontext: Ein
+„Token fehlt"-Malus würde jede App-Meldung pauschal bestrafen, obwohl der
+Legacy-Vertrag gar kein Token vorsieht.
+
+---
+
+## Persistenz
+
+Zwei Spalten in `sichtungen`:
+
+- `spam_score` (`smallint`) — `NULL` heißt **„nie bewertet"** (Altbestand). Das
+  ist nicht dasselbe wie `0` („geprüft, unauffällig"). Auch eine
+  **fehlgeschlagene** Prüfung wird nicht persistiert: Ihr Fail-Safe-Ergebnis
+  trägt `failed: true` und Score 0, und als 0 gespeichert läse es sich als das
+  Gegenteil dessen, was es aussagt.
+- `spam_indicators` (`jsonb`) — Array der ausgelösten Indikatortexte.
+
+In der Admin-Liste gibt es dafür eine sortierbare Spalte „Spam". Die Sortierung
+verwendet explizit `NULLS LAST` in **beiden** Richtungen: PostgreSQL sortiert
+`DESC` per Vorgabe `NULLS FIRST`, sonst stünde der unbewertete Altbestand über
+den Treffern.
+
+---
+
+## Backfill bestehender Daten
+
+Die Bewertungslogik steht einmal in `$lib/server/spam/rescoreSightings.ts` und
+wird von beiden Wegen benutzt. Sie lädt ausschließlich Zeilen mit
+`spam_score IS NULL` und ist damit idempotent — ein abgebrochener Lauf macht
+beim nächsten Aufruf dort weiter.
+
+> **Nachträgliche Scores sind systematisch milder** als die einer echten
+> Einreichung: Formular-Token und Duplikat-Fenster („letzte 24 h") existieren
+> nur zum Meldezeitpunkt. Das ist gewollt und kein Fehler.
+
+### Lokal (Entwicklungs-DB)
+
+```bash
+npm run spam:rescore            # bis fertig, Batches à 1000
+npm run spam:rescore -- --batch 100
+```
+
+### Deployte Umgebungen — nur über den Admin-Endpunkt
+
+Auf **hawking** (Preprod) und **dmm** (Produktion) ist die Datenbank von außen
+nicht erreichbar, und `src/tools/` liegt nicht im Runtime-Image. Ein
+SQL-Skript scheidet ebenfalls aus, weil die Heuristik MX-DNS-Lookups und
+TypeScript-Logik braucht. Deshalb:
+
+```bash
+curl -sS -X POST "https://<host>/api/admin/spam-rescore?limit=500" \
+  -H "Authorization: Bearer $CLEANUP_TOKEN"
+```
+
+Antwort (`SpamRescoreReport`):
+
+```json
+{
+	"scored": 500,
+	"skippedFailed": 0,
+	"lastId": 8123,
+	"remaining": 19396,
+	"done": false,
+	"stalled": false,
+	"distribution": { "0": 487, "2": 11, "10": 2 }
+}
+```
+
+**Bei `done: false` erneut aufrufen**, bis `done: true` kommt — z. B.:
+
+```bash
+while true; do
+  r=$(curl -sS -X POST "https://<host>/api/admin/spam-rescore?limit=500" -H "Authorization: Bearer $CLEANUP_TOKEN")
+  echo "$r"
+  echo "$r" | grep -q '"done":true' && break
+done
+```
+
+`done` heißt „hör auf", nicht zwingend „alles bewertet". Es wird auch gesetzt,
+wenn ein **voller Batch gar nichts geschrieben hat** (`stalled: true`) — dann
+sind alle geladenen Zeilen an der Prüfung gescheitert, und weitere Aufrufe
+würden dieselben Zeilen laden. In dem Fall steht die Ursache im Server-Log; ein
+Blick auf `remaining` zeigt, wie viele Zeilen noch offen sind.
+
+Zugang wahlweise über eine angemeldete Admin-Session (dann ohne Header, z. B.
+aus dem Browser) oder das `CLEANUP_TOKEN` — dieselbe Regelung wie bei
+`/api/admin/cleanup-orphans`. Jeder Lauf schreibt einen Audit-Eintrag
+(`sighting.spam_rescore`).
+
+**Warum keine Tunnel-Variante dokumentiert ist:** Auf dmm gibt das Compose des
+Servers für `db` keinen Port frei (die Repo-Datei
+`docker-compose.production.yml` tut das und führt hier in die Irre); auf
+hawking meldet `sshd -T` ein `allowtcpforwarding no`, wodurch jeder
+`LocalForward` zwar lokal bindet, die Verbindung aber serverseitig sofort
+geschlossen wird — das Fehlerbild sieht aus wie eine abstürzende Datenbank und
+ist keine.
+
+---
+
+## Grenzen und bewusst Nicht-Umgesetztes
+
+- **Kein Captcha, keine E-Mail-Bestätigung.** Beides kostet Conversion bei
+  einem Formular, bei dem jede echte Meldung zählt. Erst sinnvoll, wenn
+  nennenswert Spam mit Score < 5 durchrutscht — dann wären Friendly Captcha
+  (DSGVO-freundlich) oder Turnstile die Kandidaten.
+- **Keine Drittanbieter-Abfragen** (StopForumSpam o. ä.). Sie wären für
+  Formular-Spam zwar gebaut, würden aber personenbezogene Daten an Dritte
+  geben — eine DSGVO-Abwägung, die sich ohne akutes Problem nicht lohnt.
+- **Die Duplikat-Abfragen laufen ohne passenden Index** (`lower(email)`,
+  `trim(bemerkungen)`). Bei der aktuellen Datenmenge (~20.000 Zeilen)
+  unkritisch; bei deutlichem Wachstum wären Ausdrucksindizes der nächste
+  Schritt.

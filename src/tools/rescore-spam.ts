@@ -2,16 +2,17 @@
  * Bewertet bestehende Sichtungen nachträglich mit der Spam-Heuristik und
  * schreibt `spam_score`/`spam_indicators`.
  *
- * Aufruf: npm run spam:rescore [-- --all] [-- --limit <n>]
+ * Aufruf: npm run spam:rescore [-- --batch <n>]
  *
- *   (ohne Flags)  nur Zeilen ohne Bewertung (spam_score IS NULL)
- *   --all         auch bereits bewertete Zeilen neu bewerten
- *   --limit <n>   höchstens n Zeilen (zum Ausprobieren)
+ * **Nur für Datenbanken, die von hier aus erreichbar sind** — also die lokale
+ * Entwicklungs-DB. Auf den deployten Hosts geht das nicht: dmm gibt den
+ * DB-Port nicht frei, hawking hat `allowtcpforwarding no`, und `src/tools/`
+ * liegt gar nicht erst im Runtime-Image. Dort führt der Weg über
+ * `POST /api/admin/spam-rescore` (siehe docs/SPAM_DETECTION.md).
  *
- * Was der Backfill NICHT kann: Die Signale, die nur zum Meldezeitpunkt
- * existieren — Formular-Token und Duplikat-Fenster („letzte 24 h") — fehlen
- * hier. Nachträglich vergebene Scores fallen deshalb systematisch milder aus
- * als die einer echten Einreichung; das ist gewollt und kein Fehler.
+ * Die Bewertung selbst steht in `$lib/server/spam/rescoreSightings` — beide
+ * Wege rechnen damit identisch, und die Logik ist dort getestet. Dieses
+ * Werkzeug ist nur die Schleife drumherum plus Fortschrittsausgabe.
  *
  * Der npm-Eintrag setzt `TEST=true` vor den vite-node-Aufruf — dasselbe
  * Ventil wie bei generate-antworten-json.js, damit der Server-Import-Guard
@@ -24,92 +25,54 @@
  * importiertes Modul liest die Verbindungszeichenfolge schon beim Laden.
  */
 import 'dotenv/config';
-import { isNull, eq } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { sightings } from '$lib/server/db/schema';
-import { detectSpamIndicators } from '$lib/server/spam/spamDetector';
-import { resolveConnectionString, maskConnection } from './dbConnection';
+import { MAX_RESCORE_BATCH, rescoreSightings } from '$lib/server/spam/rescoreSightings';
+import { maskConnection, resolveConnectionString } from './dbConnection';
 
-function parseArgs(argv: string[]): { all: boolean; limit: number | null } {
-	const all = argv.includes('--all');
-	const limitIndex = argv.indexOf('--limit');
-	const limit = limitIndex >= 0 ? Number(argv[limitIndex + 1]) : null;
-	if (limit !== null && (!Number.isInteger(limit) || limit <= 0)) {
-		throw new Error('--limit erwartet eine positive ganze Zahl');
+function parseBatch(argv: string[]): number {
+	const index = argv.indexOf('--batch');
+	if (index < 0) return MAX_RESCORE_BATCH;
+	const value = Number(argv[index + 1]);
+	if (!Number.isInteger(value) || value <= 0) {
+		throw new Error('--batch erwartet eine positive ganze Zahl');
 	}
-	return { all, limit };
+	return Math.min(value, MAX_RESCORE_BATCH);
 }
 
-const { all, limit } = parseArgs(process.argv.slice(2));
+const batch = parseBatch(process.argv.slice(2));
 
 console.log(`Datenbank: ${maskConnection(resolveConnectionString(process.env))}`);
-console.log(`Modus: ${all ? 'ALLE Zeilen neu bewerten' : 'nur unbewertete Zeilen'}`);
 
-const baseQuery = db
-	.select({
-		id: sightings.id,
-		notes: sightings.notes,
-		firstName: sightings.firstName,
-		lastName: sightings.lastName,
-		email: sightings.email,
-		waterway: sightings.waterway,
-		seaMark: sightings.seaMark,
-		species: sightings.species,
-		latitude: sightings.latitude,
-		longitude: sightings.longitude,
-		inBalticSeaGeo: sightings.inBalticSeaGeo
-	})
-	.from(sightings)
-	.orderBy(sightings.id);
-
-const filtered = all ? baseQuery : baseQuery.where(isNull(sightings.spamScore));
-const rows = await (limit ? filtered.limit(limit) : filtered);
-
-console.log(`${rows.length} Sichtungen zu bewerten …`);
-
-let written = 0;
+let scored = 0;
 let skippedFailed = 0;
 const distribution = new Map<number, number>();
-const startedAt = Date.now();
 
-for (const row of rows) {
-	const result = await detectSpamIndicators({
-		notes: row.notes,
-		firstName: row.firstName,
-		lastName: row.lastName,
-		email: row.email,
-		waterway: row.waterway,
-		seaMark: row.seaMark,
-		species: row.species,
-		latitude: row.latitude != null ? Number(row.latitude) : null,
-		longitude: row.longitude != null ? Number(row.longitude) : null,
-		inBalticSeaGeo: row.inBalticSeaGeo
-	});
+// Batch-weise bis `done` — dieselbe Schleife, die ein Aufrufer auch gegen den
+// Admin-Endpunkt fahren würde.
+for (;;) {
+	const report = await rescoreSightings({ limit: batch });
 
-	if (result.failed) {
-		// Fail-Safe-Ergebnisse nicht persistieren — NULL heißt „nicht bewertet",
-		// dieselbe Regel wie in saveSighting.
-		skippedFailed++;
-		continue;
+	scored += report.scored;
+	skippedFailed += report.skippedFailed;
+	for (const [score, count] of Object.entries(report.distribution)) {
+		distribution.set(Number(score), (distribution.get(Number(score)) ?? 0) + count);
 	}
 
-	await db
-		.update(sightings)
-		.set({ spamScore: result.score, spamIndicators: result.indicators })
-		.where(eq(sightings.id, row.id));
+	console.log(`  ${scored} bewertet, ${report.remaining} offen …`);
 
-	written++;
-	distribution.set(result.score, (distribution.get(result.score) ?? 0) + 1);
-
-	if (written % 500 === 0) {
-		const perRow = (Date.now() - startedAt) / written;
-		const remaining = Math.round(((rows.length - written) * perRow) / 1000);
-		console.log(`  ${written}/${rows.length} … (Rest ~${remaining}s)`);
+	if (report.stalled) {
+		// Ganzer Batch gescheitert — weitere Läufe würden dieselben Zeilen laden.
+		console.error(
+			`\nAbbruch: Der letzte Batch hat nichts geschrieben (${report.skippedFailed} Prüfungen ` +
+				`fehlgeschlagen, ${report.remaining} Zeilen weiterhin ohne Bewertung). Ursache im Log suchen.`
+		);
+		process.exit(1);
 	}
+
+	if (report.done) break;
 }
 
 console.log(
-	`\nFertig: ${written} bewertet, ${skippedFailed} übersprungen (Prüfung fehlgeschlagen).`
+	`\nFertig: ${scored} bewertet, ${skippedFailed} übersprungen (Prüfung fehlgeschlagen).`
 );
 console.log('Score-Verteilung:');
 for (const [score, count] of [...distribution.entries()].sort(([a], [b]) => a - b)) {

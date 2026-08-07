@@ -9,6 +9,7 @@ export type AuditAction =
 	| 'sighting.delete'
 	| 'sighting.verify'
 	| 'sighting.weather.refresh'
+	| 'sighting.spam_rescore'
 	| 'file.delete'
 	| 'file.cleanup_orphans'
 	| 'config.update'
