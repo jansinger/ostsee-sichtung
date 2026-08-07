@@ -42,6 +42,7 @@
 	let selectedChannel = $state(page.url.searchParams.get('entryChannel') || 'all');
 	let mediaUpload = $state(page.url.searchParams.get('mediaUpload') || '');
 	let balticSea = $state(page.url.searchParams.get('balticSea') || '');
+	let deadFinding = $state(page.url.searchParams.get('deadFinding') || '');
 	let showDeleteDialog = $state(false);
 	let sightingToDelete = $state<FrontendSighting | null>(null);
 	let isFilterPanelOpen = $state(false);
@@ -104,7 +105,8 @@
 			verified ||
 			(selectedChannel && selectedChannel !== 'all') ||
 			mediaUpload ||
-			balticSea
+			balticSea ||
+			deadFinding
 		)
 	);
 
@@ -115,7 +117,8 @@
 		verified: verified || '',
 		entryChannel: selectedChannel !== 'all' ? selectedChannel : '',
 		mediaUpload: mediaUpload || '',
-		balticSea: balticSea || ''
+		balticSea: balticSea || '',
+		deadFinding: deadFinding || ''
 	}));
 
 	function updateSort(column: string): void {
@@ -159,6 +162,10 @@
 		if (balticSea) url.searchParams.set('balticSea', balticSea);
 		else url.searchParams.delete('balticSea');
 
+		// Meldeart-Filter (Totfund/Lebendsichtung)
+		if (deadFinding) url.searchParams.set('deadFinding', deadFinding);
+		else url.searchParams.delete('deadFinding');
+
 		url.searchParams.set('page', '1');
 		goto(url);
 	}
@@ -182,6 +189,7 @@
 		selectedChannel = 'all';
 		mediaUpload = '';
 		balticSea = '';
+		deadFinding = '';
 
 		const url = new URL(page.url);
 		url.searchParams.delete('fromDate');
@@ -190,6 +198,7 @@
 		url.searchParams.delete('entryChannel');
 		url.searchParams.delete('mediaUpload');
 		url.searchParams.delete('balticSea');
+		url.searchParams.delete('deadFinding');
 		url.searchParams.set('page', '1');
 		goto(url);
 	}
@@ -556,6 +565,21 @@
 						<option value="">Alle</option>
 						<option value="1">Geprüft</option>
 						<option value="0">Ungeprüft</option>
+					</select>
+				</div>
+				<div class="fieldset w-full">
+					<label for="deadFinding" class="label py-0">
+						<span class="text-xs">Meldeart</span>
+					</label>
+					<select
+						id="deadFinding"
+						name="deadFinding"
+						class="select select-sm w-full text-sm"
+						bind:value={deadFinding}
+					>
+						<option value="">Alle</option>
+						<option value="1">{DEAD_FINDING_PRESENTATION.label}</option>
+						<option value="0">Lebendsichtung</option>
 					</select>
 				</div>
 				<div class="fieldset w-full">

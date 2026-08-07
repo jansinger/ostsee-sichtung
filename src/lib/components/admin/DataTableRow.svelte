@@ -35,7 +35,11 @@
 		{#if isBoolean}
 			<BooleanStatus value={booleanValue} />
 		{:else if badgeClass}
-			<span class="badge {badgeClass}" {title}>{value}</span>
+			<!-- h-auto/min-h-6/py-1: DaisyUI gibt .badge eine feste Höhe (height: var(--size)).
+			     Bricht ein langer Wert in der schmalen Spalte um, läuft der Text sonst über
+			     die Pille hinaus. min-h-6 entspricht dem --size-Default, einzeilige Badges
+			     sehen also unverändert aus. -->
+			<span class="badge {badgeClass} h-auto min-h-6 py-1" {title}>{value}</span>
 		{:else}
 			{value}
 		{/if}

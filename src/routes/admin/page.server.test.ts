@@ -24,6 +24,7 @@ import {
 	mediaUploadCondition
 } from '$lib/server/db/mediaUploadFilter';
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
+import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
 
 const dialect = new PgDialect();
 const toSqlText = (condition: SQLWrapper): string => dialect.sqlToQuery(condition.getSQL()).sql;
@@ -163,6 +164,29 @@ describe('admin/+page.server load() — Foto-Ankündigungs-Arbeitsliste', () => 
 			expect(recordedSelects[1]?.whereSql).toBe(expected);
 		}
 	);
+
+	// Wie beim Ostsee-Status: Die Bedingung selbst ist in `deadFindingFilter.test.ts`
+	// abgesichert, hier zählt nur die Verdrahtung von `?deadFinding=…` in die WHERE-Klausel.
+	it.each(['1', '0'] as const)(
+		'?deadFinding=%s filtert die Hauptliste mit derselben Bedingung',
+		async (value) => {
+			await load({
+				url: makeUrl({ deadFinding: value })
+			} as unknown as Parameters<typeof load>[0]);
+
+			const expected = toSqlText(deadFindingCondition(value) as unknown as SQLWrapper);
+			expect(recordedSelects[0]?.whereSql).toBe(expected);
+			expect(recordedSelects[1]?.whereSql).toBe(expected);
+		}
+	);
+
+	it('ein unbekannter deadFinding-Wert filtert die Hauptliste gar nicht', async () => {
+		await load({
+			url: makeUrl({ deadFinding: 'quatsch' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		expect(recordedSelects[0]?.whereSql).toBeUndefined();
+	});
 
 	it('ein unbekannter balticSea-Wert filtert die Hauptliste gar nicht', async () => {
 		await load({

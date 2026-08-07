@@ -4,6 +4,7 @@ import { berlinDayRangeUtc } from '$lib/server/datetime/berlinDayRange';
 import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { mediaUploadCondition } from '$lib/server/db/mediaUploadFilter';
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
+import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
 
 export function xmlEscape(str: string | null | undefined): string {
 	if (!str) return '';
@@ -21,6 +22,7 @@ export type ExportFilterParams = {
 	verified: string | null;
 	entryChannel: string | null;
 	mediaUpload: string | null;
+	deadFinding: string | null;
 	balticSea: string | null;
 };
 
@@ -33,6 +35,7 @@ export function parseExportFilterParams(url: URL): ParseExportFilterResult {
 	const verified = url.searchParams.get('verified');
 	const entryChannel = url.searchParams.get('entryChannel');
 	const mediaUpload = url.searchParams.get('mediaUpload');
+	const deadFinding = url.searchParams.get('deadFinding');
 	const balticSea = url.searchParams.get('balticSea');
 
 	if (fromDate && !isValidDateParam(fromDate)) {
@@ -46,11 +49,13 @@ export function parseExportFilterParams(url: URL): ParseExportFilterResult {
 		};
 	}
 
-	return { params: { fromDate, toDate, verified, entryChannel, mediaUpload, balticSea } };
+	return {
+		params: { fromDate, toDate, verified, entryChannel, mediaUpload, deadFinding, balticSea }
+	};
 }
 
 export function buildExportConditions(params: ExportFilterParams) {
-	const { fromDate, toDate, verified, entryChannel, mediaUpload, balticSea } = params;
+	const { fromDate, toDate, verified, entryChannel, mediaUpload, deadFinding, balticSea } = params;
 	const conditions = [];
 
 	if (isValidDateParam(fromDate) && isValidDateParam(toDate)) {
@@ -77,6 +82,12 @@ export function buildExportConditions(params: ExportFilterParams) {
 	const mediaCondition = mediaUploadCondition(mediaUpload);
 	if (mediaCondition) {
 		conditions.push(mediaCondition);
+	}
+	// Dieselbe Meldeart-Bedingung (Totfund/Lebendsichtung) wie die Admin-Liste,
+	// siehe deadFindingFilter.ts.
+	const deadFindingFilterCondition = deadFindingCondition(deadFinding);
+	if (deadFindingFilterCondition) {
+		conditions.push(deadFindingFilterCondition);
 	}
 	// Dieselbe Ostsee-Status-Bedingung wie die Admin-Liste, siehe balticSeaFilter.ts.
 	const balticSeaFilterCondition = balticSeaCondition(balticSea);

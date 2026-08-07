@@ -26,12 +26,16 @@ Regeln für CSV, JSON, KML und XML Export.
 
 **Auth:** Alle Endpoints erfordern `requireUserRole(url, locals.user, ['admin'])`
 
-**Query-Parameter:** `fromDate`, `toDate`, `verified`, `entryChannel`, `mediaUpload`, `balticSea`
+**Query-Parameter:** `fromDate`, `toDate`, `verified`, `entryChannel`, `mediaUpload`, `balticSea`, `deadFinding`
 
 `balticSea` nimmt einen der vier Werte aus `BalticSeaStatus` (`baltic`, `edge`,
 `outside`, `noPosition`) und übersetzt ihn über `$lib/server/db/balticSeaFilter`
 — dieselbe Fallunterscheidung, die die Admin-Liste anzeigt. Die Flag-Logik nicht
 hier nachbauen, sondern von dort importieren.
+
+`deadFinding` (`1`=Totfund, `0`=Lebendsichtung) läuft über
+`$lib/server/db/deadFindingFilter` — Totfund heißt dort `totfund <> 0`, dieselbe
+Boolean-Semantik wie das Badge (`isDeadFinding()`).
 
 ---
 
