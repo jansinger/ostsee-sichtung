@@ -143,7 +143,11 @@ test.describe('Admin-Detailansicht — Aktionen', () => {
 		await expect(dialog).toBeVisible();
 		await dialog.getByRole('button', { name: 'Löschen' }).click();
 
-		await expect(page).toHaveURL(/\/admin$/);
+		/* Ziel ist die Tabelle, und die liegt seit dem Umbau der Verwaltung auf
+		   `/admin/sichtungen` — `/admin` ist jetzt der Eingang. Ein gelöschter
+		   Datensatz gehört in die Liste zurück, aus der man ihn geöffnet hat,
+		   nicht in die Task-Liste der offenen Meldungen. */
+		await expect(page).toHaveURL(/\/admin\/sichtungen$/);
 		expect(await countSighting(id)).toBe(0);
 	});
 });
