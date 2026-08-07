@@ -48,14 +48,17 @@ describe('DistributionEnum.UNKNOWN', () => {
 		expect(isValidDistribution('4')).toBe(true);
 	});
 
-	it('erscheint NICHT in den auswählbaren Optionen', () => {
+	// Wie bei `animalBehavior` unten steht `OTHER` am ENDE, obwohl sein
+	// Enum-Wert `0` ist. Die konkreten Antworten stehen nach gemessener
+	// Häufigkeit — Begründung an `SELECTABLE_DISTRIBUTIONS` in `distribution.ts`.
+	it('erscheint NICHT in den auswählbaren Optionen, "Sonstige" steht am Ende', () => {
 		const values = getDistributionOptions().map((option) => option.value);
 		expect(values).not.toContain(DistributionEnum.UNKNOWN);
 		expect(values).toEqual([
-			DistributionEnum.OTHER,
 			DistributionEnum.SINGLE,
+			DistributionEnum.SCHOOLS,
 			DistributionEnum.MOTHER_WITH_YOUNG,
-			DistributionEnum.SCHOOLS
+			DistributionEnum.OTHER
 		]);
 	});
 

@@ -36,11 +36,25 @@ export const boatTypeLabels: Record<BoatTypeEnum, string> = {
 export type BoatType = BoatTypeEnum;
 
 /**
+ * Bootstypen, die im Formular auswählbar sind — "Sonstiger Bootstyp" am Ende.
+ *
+ * `OTHER` ist die Auffangkategorie und gehört hinter die konkreten Antworten;
+ * sein Enum-Wert `0` hatte es davor sortiert. Der gespeicherte Wert bleibt
+ * `0`, nur die Reihenfolge der Optionen ändert sich.
+ */
+const SELECTABLE_BOAT_TYPES: readonly BoatTypeEnum[] = [
+	...Object.values(BoatTypeEnum).filter(
+		(value): value is BoatTypeEnum => typeof value === 'number' && value !== BoatTypeEnum.OTHER
+	),
+	BoatTypeEnum.OTHER
+];
+
+/**
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-const boatTypeOptions: Array<{ value: number; label: string }> = Object.entries(boatTypeLabels).map(
-	([value, label]) => ({ value: Number(value), label })
+const boatTypeOptions: Array<{ value: number; label: string }> = SELECTABLE_BOAT_TYPES.map(
+	(value) => ({ value, label: boatTypeLabels[value] })
 );
 export const getBoatTypeOptions = (): Array<{ value: number; label: string }> => boatTypeOptions;
 

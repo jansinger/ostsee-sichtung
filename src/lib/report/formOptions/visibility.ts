@@ -24,12 +24,27 @@ export const visibilityLabels: Record<VisibilityEnum, string> = {
 export type Visibility = VisibilityEnum;
 
 /**
+ * Sichtweiten-Kategorien, die im Formular auswählbar sind.
+ *
+ * `NONE` ("Keine Angabe") ist bewusst ausgenommen — dieselbe Begründung wie
+ * beim Seegang (`seaState.ts`): optionales Feld, der Platzhalter von
+ * `BaseSelect` sagt es bereits, und der Enum-Wert `0` hätte die Nicht-Antwort
+ * an die erste Stelle sortiert. `sichtweite` ist `not null default 0`, der
+ * Wert bleibt für Bestandsdaten gültig und anzeigbar.
+ *
+ * Abgeleitet statt aufgezählt: Die Kategorien sind ordinal (klar → Nebel).
+ */
+const SELECTABLE_VISIBILITIES: readonly VisibilityEnum[] = Object.values(VisibilityEnum).filter(
+	(value): value is VisibilityEnum => typeof value === 'number' && value !== VisibilityEnum.NONE
+);
+
+/**
  * Generiert eine Array-Struktur für Select-Komponenten
  * @returns Array von Objekten mit value und label
  */
-const visibilityOptions: Array<{ value: number; label: string }> = Object.entries(
-	visibilityLabels
-).map(([value, label]) => ({ value: Number(value), label }));
+const visibilityOptions: Array<{ value: number; label: string }> = SELECTABLE_VISIBILITIES.map(
+	(value) => ({ value, label: visibilityLabels[value] })
+);
 export const getVisibilityOptions = (): Array<{ value: number; label: string }> =>
 	visibilityOptions;
 

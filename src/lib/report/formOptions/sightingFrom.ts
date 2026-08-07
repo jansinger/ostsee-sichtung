@@ -40,15 +40,27 @@ export const sightingFromLabels: Record<SightingFromEnum, string> = {
 export type SightingFrom = SightingFromEnum;
 
 /**
- * Beobachtungsorte, die im Formular auswählbar sind.
+ * Beobachtungsorte, die im Formular auswählbar sind — in dieser Reihenfolge.
  * `UNKNOWN` ist bewusst ausgenommen (siehe Enum-Kommentar).
  *
- * Abgeleitet statt aufgezählt: Ein später ergänzter echter Wert erscheint
- * dadurch automatisch im Formular, statt still zu fehlen.
+ * **Die Reihenfolge ist aufgezählt und nicht abgeleitet**, anders als bei den
+ * übrigen Listen. Sie folgt der gemessenen Häufigkeit im Bestand
+ * (2026-08-07, 19.947 Zeilen): Segelschiff 10.362, Land 5.937, Motorboot 1.479,
+ * Fähre 281. `OTHER` steht trotz seiner 1.888 Zeilen am Ende — es ist die
+ * Auffangkategorie und gehört hinter die konkreten Antworten.
+ *
+ * Ein neu ergänzter Wert erscheint dadurch NICHT automatisch; er muss hier
+ * einsortiert werden. Das ist der Preis dafür, dass die Reihenfolge eine
+ * Aussage trifft — `Object.values()` hätte sie nach Enum-Wert sortiert, also
+ * nach einer Zahl ohne fachliche Bedeutung.
  */
-const SELECTABLE_SIGHTING_FROM: readonly SightingFromEnum[] = Object.values(SightingFromEnum).filter(
-	(value): value is SightingFromEnum => typeof value === 'number' && value !== SightingFromEnum.UNKNOWN
-);
+const SELECTABLE_SIGHTING_FROM: readonly SightingFromEnum[] = [
+	SightingFromEnum.SAILBOAT,
+	SightingFromEnum.LAND,
+	SightingFromEnum.MOTORBOAT,
+	SightingFromEnum.FERRY,
+	SightingFromEnum.OTHER
+];
 
 /**
  * Generiert eine Array-Struktur für Select-Komponenten

@@ -45,13 +45,15 @@ describe('BoatDriveEnum.NONE', () => {
 		// serverseitig beim Speichern einer Land-Sichtung.
 		const values = getBoatDriveOptions().map((option) => option.value);
 		expect(values).not.toContain(BoatDriveEnum.NONE);
+		// `OTHER` steht am Ende, obwohl sein Enum-Wert `0` ist — Auffangkategorie
+		// hinter die konkreten Antworten (siehe `SELECTABLE_BOAT_DRIVES`).
 		expect(values).toEqual([
-			BoatDriveEnum.OTHER,
 			BoatDriveEnum.MOTOR,
 			BoatDriveEnum.SAIL,
 			BoatDriveEnum.DRIFTING,
 			BoatDriveEnum.ANCHORED,
-			BoatDriveEnum.MOTOR_OFF
+			BoatDriveEnum.MOTOR_OFF,
+			BoatDriveEnum.OTHER
 		]);
 	});
 });

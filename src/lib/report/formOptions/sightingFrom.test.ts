@@ -46,17 +46,19 @@ describe('SightingFromEnum.UNKNOWN', () => {
 		expect(isValidSightingFrom('5')).toBe(true);
 	});
 
+	// Reihenfolge nach gemessener Häufigkeit, "Sonstiges" ans Ende — Begründung
+	// und Messwerte stehen an `SELECTABLE_SIGHTING_FROM` in `sightingFrom.ts`.
 	it('erscheint NICHT in den auswählbaren Optionen', () => {
 		// "Keine Angabe" ist keine Wahl, die ein Melder trifft — der Wert
 		// entsteht ausschließlich serverseitig in `mapFormToSighting`.
 		const values = getSightingFromOptions().map((option) => option.value);
 		expect(values).not.toContain(SightingFromEnum.UNKNOWN);
 		expect(values).toEqual([
-			SightingFromEnum.OTHER,
 			SightingFromEnum.SAILBOAT,
-			SightingFromEnum.MOTORBOAT,
 			SightingFromEnum.LAND,
-			SightingFromEnum.FERRY
+			SightingFromEnum.MOTORBOAT,
+			SightingFromEnum.FERRY,
+			SightingFromEnum.OTHER
 		]);
 	});
 });
