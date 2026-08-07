@@ -1,0 +1,68 @@
+<script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
+	import {
+		SIGHTING_STATUS_ORDER,
+		SIGHTING_STATUS_PRESENTATION,
+		type SightingStatus
+	} from './sightingStatus';
+	import type { SightingVerdict } from './sightingVerdict';
+
+	interface Props {
+		status: SightingStatus;
+		/** Macht den Gruppennamen eindeutig — mehrere Controls je Seite. */
+		sightingId: number;
+		busy?: boolean;
+		/** `sm` für die Tabellenspalte (nur Icons), `md` für Karten und Detailansicht. */
+		size?: 'sm' | 'md';
+		onchange: (verdict: SightingVerdict) => void;
+	}
+
+	let { status, sightingId, busy = false, size = 'md', onchange }: Props = $props();
+
+	const groupName = $derived(`sighting-status-${sightingId}`);
+
+	function select(target: SightingStatus): void {
+		if (busy || target === status) return;
+		onchange(SIGHTING_STATUS_PRESENTATION[target].verdict);
+	}
+
+	/**
+	 * Die Flächenfarbe des aktiven Segments. Vollständige Klassennamen statt
+	 * `btn-${…}`: Tailwind 4 erzeugt eine Utility nur, wenn ihr Name als
+	 * kompletter String im Quelltext steht (`.claude/rules/daisyui.md`).
+	 */
+	const ACTIVE_CLASS: Record<SightingStatus, string> = {
+		open: 'btn-warning',
+		approved: 'btn-success',
+		rejected: 'btn-neutral'
+	};
+</script>
+
+<fieldset class="join" aria-labelledby={`${groupName}-legend`} role="radiogroup">
+	<legend id={`${groupName}-legend`} class="sr-only">Status</legend>
+	{#each SIGHTING_STATUS_ORDER as option (option)}
+		{@const presentation = SIGHTING_STATUS_PRESENTATION[option]}
+		{@const active = option === status}
+		<label
+			class="btn join-item {size === 'sm' ? 'btn-sm' : ''} {active
+				? ACTIVE_CLASS[option]
+				: 'btn-ghost'}"
+			title={presentation.description}
+		>
+			<input
+				type="radio"
+				class="sr-only"
+				name={groupName}
+				value={option}
+				checked={active}
+				disabled={busy}
+				aria-label={presentation.label}
+				onchange={() => select(option)}
+			/>
+			<Icon icon={presentation.icon} width="16" aria-hidden="true" />
+			{#if size === 'md'}
+				<span>{presentation.label}</span>
+			{/if}
+		</label>
+	{/each}
+</fieldset>
