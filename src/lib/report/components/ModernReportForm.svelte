@@ -18,13 +18,11 @@
 	import { findStepForErrors } from '$lib/report/findStepForErrors';
 	import { resolveServerFieldErrors } from '$lib/report/serverFieldErrors';
 	import {
-		HIDDEN_WHEN_FROM_LAND,
 		getFormSteps,
 		hasUploadedMedia,
 		hiddenFormFields,
 		initialFormState,
-		isDeadFinding,
-		isFromLand
+		isDeadFinding
 	} from '$lib/report/formConfig';
 	import { toast } from '$lib/stores/toastState.svelte';
 	import {
@@ -241,65 +239,90 @@
 	}
 
 	/**
-	 * Dieselbe Feldliste wie `HIDDEN_WHEN_FROM_LAND` (formConfig.ts, dort die
-	 * volle Begründung), ohne `boatDrive` — das hat mit `shouldResetBoatDrive`
-	 * (`boatDriveReset.ts`) einen eigenen, gezielteren Mechanismus.
+	 * Das Schema dieses Absende-Versuchs: das volle, minus der Felder, die der
+	 * aktuelle Zweig ausblendet.
+	 *
+	 * Als **Resolver** übergeben und nicht als fertiges Schema, weil sich der
+	 * Beobachtungsort zur Laufzeit ändert, `createForm` aber nur einmal beim
+	 * Mount läuft (`ValidationSchemaOption` in `createForm.ts`). Vorher prüfte
+	 * die maßgebliche Validierung deshalb weiter gegen das volle Schema: Ein zu
+	 * langer `reaction`-Text, der den Wechsel auf „Land" überlebt hat, hielt das
+	 * Absenden auf — und zwar STILL. `handleSubmit` fängt den `ValidationError`
+	 * und kehrt zurück, `StepNavigation` sieht keinen Fehler und loggt „Form
+	 * submitted successfully". Kein Toast, kein Sprung, keine Markierung; das
+	 * Feld ist nicht gerendert. Der Melder drückte „Absenden" und nichts geschah.
+	 *
+	 * Dieselbe Zeile steht in `handleFinalSubmit` als Vorab-Prüfung — beide
+	 * Ebenen rechnen jetzt mit derselben Regel, statt dass die eine durchlässt,
+	 * was die andere aufhält.
+	 *
+	 * **Was der Resolver NICHT tut:** Er entfernt die Felder nicht aus dem
+	 * Ergebnis. Yups `omit` lässt unbekannte Schlüssel durchlaufen (nur
+	 * ungeprüft und ungecastet) — `values` in `onSubmit` unten trägt deshalb
+	 * weiterhin `shipName`/`homePort`/`boatType`/`shipNameConsent`, aus denen
+	 * die dauerhaft gespeicherten Kontaktdaten gebaut werden. Genau daran hing
+	 * die Regression aus Task 11 (zweite Runde): `saveUserContactDataWithConsent`
+	 * überschreibt ohne Merge, ein wiederkehrender Melder verlöre bei einer
+	 * Land-Meldung seine Bootsdaten. Abgesichert in `createForm.test.ts`
+	 * („lässt den Wert des ausgenommenen Feldes trotzdem an onSubmit durch") —
+	 * wer dort auf `stripUnknown`/`noUnknown` umstellt, bricht das hier.
 	 */
-	const OWN_VESSEL_FIELDS = HIDDEN_WHEN_FROM_LAND.filter(
-		(field) => field !== 'boatDrive'
-	) as Exclude<(typeof HIDDEN_WHEN_FROM_LAND)[number], 'boatDrive'>[];
-
-	/**
-	 * Task 15 (Review-Befund 3): benannte Konstante statt eines Inline-Literals
-	 * an der Aufrufstelle unten — demselben Muster wie `OWN_VESSEL_FIELDS`
-	 * folgend, statt eines Stilbruchs im selben Block.
-	 */
-	const MEDIA_CONSENT_FIELDS = ['mediaConsent'] as const;
+	function reachableSchema(values: SightingFormData) {
+		return sightingSchema.omit(hiddenFormFields(values));
+	}
 
 	// Formular initialisieren
 	const formProps = {
 		initialValues: { ...savedFormData },
-		validationSchema: sightingSchema,
+		validationSchema: reachableSchema,
 		onSubmit: async (values: SightingFormData) => {
 			try {
 				// Remove admin only attributes and uploaded files (already uploaded)
 				const { verified, internalComment, uploadedFiles, ...submitValuesTemp } = values;
 				let submitValues: SightingFormValues = submitValuesTemp as SightingFormValues;
 
-				// Ausgeblendete Bootsangaben nicht absenden — entfernt am
-				// Absende-Rand, statt `$form` vorher zu leeren. Begründung samt
-				// verworfenem ersten Ansatz: `HIDDEN_WHEN_FROM_LAND` in
-				// formConfig.ts. `values` bleibt unangetastet — die
-				// Kontaktdaten unten werden bewusst daraus gebaut, nicht aus
-				// `submitValues`.
-				if (isFromLand(values.sightingFrom)) {
-					submitValues = omitFields(submitValues, OWN_VESSEL_FIELDS) as SightingFormValues;
-				}
+				// Was der aktuelle Zweig ausblendet, geht auch nicht raus —
+				// ausgeblendet heißt: nicht Teil dieser Meldung. Dieselbe Größe,
+				// gegen die oben validiert wird (`reachableSchema`), sodass nie
+				// etwas gesendet wird, das ungeprüft und ungecastet durch Yups
+				// `omit` gelaufen ist.
+				//
+				// Entfernt wird am Absende-Rand, NICHT vorher aus `$form`.
+				// Begründung samt verworfenem ersten Ansatz (ein `$effect`, der
+				// `$form` leerte, und die Kontaktdaten-Regression daraus):
+				// `HIDDEN_WHEN_FROM_LAND` in formConfig.ts. `values` bleibt
+				// unangetastet — die Kontaktdaten unten werden bewusst daraus
+				// gebaut, nicht aus `submitValues`.
+				//
+				// Bis hierher standen an dieser Stelle ZWEI Sonderfälle
+				// (`OWN_VESSEL_FIELDS` und `mediaConsent`), während `boatDrive`
+				// bei einer Land-Meldung und `behavior`/`behaviorText` beim
+				// Totfund mitgingen — teils gewollt, teils nur historisch. Kein
+				// Feld verliert dabei Aussage: `mapFormToSighting` bildet alle
+				// sechs neu entfallenden auf denselben Wert ab wie ihren Default
+				// (`deadCondition`→0, `deadSize`→null, `deadPhoneContact`→0,
+				// `behavior`→`UNKNOWN`, `reaction`/`behaviorText` durchgereicht).
+				// Bei `boatDrive` ist das Weglassen sogar die korrektere Angabe:
+				// `resolveBoatDrive` schreibt ohne Angabe `NONE`, während der
+				// Default `0` „Sonstiger Antrieb" bedeutet — die Kategorie, die
+				// durch dieselbe Verwechslung schon einmal 5.858 Zeilen falsch
+				// gefüllt hat.
+				submitValues = omitFields(
+					submitValues,
+					hiddenFormFields(values) as (keyof SightingFormValues)[]
+				) as SightingFormValues;
+
 				// Datum und Uhrzeit gehen als Strings (deutsche Wanduhrzeit) raus — den
 				// Zeitpunkt bildet ausschließlich der Server, sonst ginge die Zeitzone
 				// des Browsers in den gespeicherten Instant ein.
 				// set mediaUpload indicator
-				const hasCompletedUpload = hasUploadedMedia(uploadedFiles);
-				submitValues.mediaUpload = hasCompletedUpload;
-
-				// Task 15: Keine Einwilligung ohne Gegenstand. `mediaConsent` fragt
-				// nach der Freigabe von Aufnahmen — ohne eine zum Absende-Zeitpunkt
-				// tatsächlich abgeschlossene Übertragung ist das eine Frage ohne
-				// Bezugsgegenstand, dieselbe Fehlerklasse wie `shipNameConsent` bei
-				// einer Land-Meldung oben. `hasUploadedMedia` (formConfig.ts) ist
-				// dieselbe Funktion, die auch `getFormSteps` und `Step4Contact.svelte`
-				// aufrufen — absichtlich gegen `uploadedFiles` geprüft, nicht gegen
-				// den Medien-Store: Nur eine hier abgeschlossene Übertragung hat
-				// serverseitig ein Gegenstück, für das `mapFormToSighting` einen
-				// Nachweis (`…_am`/`…_version`) stempeln könnte. Das ist der Riegel,
-				// der auch dann greift, wenn der Reset-Effekt weiter unten aus
-				// irgendeinem Grund übersehen wurde — `mapFormToSighting` liest ein
-				// fehlendes Feld ohnehin als falsy (`formData.mediaConsent ? 1 : 0`),
-				// Weglassen statt `false` setzen spart deshalb keinen Fall, hält sich
-				// aber an dasselbe Muster wie `OWN_VESSEL_FIELDS` oben.
-				if (!hasCompletedUpload) {
-					submitValues = omitFields(submitValues, MEDIA_CONSENT_FIELDS) as SightingFormValues;
-				}
+				// `mediaConsent` ist dabei schon durch die Zeile oben entfallen, falls
+				// keine Aufnahme vorliegt: `hiddenFormFields` prüft es über dieselbe
+				// `hasUploadedMedia`-Funktion (Task 15 — keine Einwilligung ohne
+				// Gegenstand; ohne abgeschlossene Übertragung gibt es serverseitig
+				// nichts, wofür `mapFormToSighting` einen Nachweis `…_am`/`…_version`
+				// stempeln könnte).
+				submitValues.mediaUpload = hasUploadedMedia(uploadedFiles);
 
 				submitAttempt += 1;
 				submitState = 'submitting';
@@ -486,10 +509,12 @@
 		});
 
 		// Geprüft wird das volle Schema OHNE die Felder, die der aktuelle Zweig
-		// ausblendet. Ein ungültiger Restwert darin brächte hier beides zum
-		// Stillstand: Der Sprung landete auf einem Schritt, auf dem nichts
-		// markiert ist, und das Absenden bliebe mit einer Meldung an einem Feld
-		// hängen, das niemand sieht und niemand korrigieren kann.
+		// ausblendet — `reachableSchema` oben, dieselbe Funktion, mit der auch
+		// `createForm` gleich darunter prüft. Ein ungültiger Restwert darin
+		// brächte hier beides zum Stillstand: Der Sprung landete auf einem
+		// Schritt, auf dem nichts markiert ist, und das Absenden bliebe mit
+		// einer Meldung an einem Feld hängen, das niemand sieht und niemand
+		// korrigieren kann.
 		//
 		// Erreichbar ist das über den Beobachtungsort, nicht über den Zweig:
 		// `HIDDEN_WHEN_FROM_LAND` lässt `$form` bewusst stehen (Begründung samt
@@ -502,18 +527,12 @@
 		// `fieldsOutsideReportKind` — ein Zweigwechsel geht immer über die
 		// Einstiegsseite und mountet dieses Formular neu (`+page.svelte`).
 		//
-		// `omit` statt einer aus den Schritt-Feldern gebauten Positivliste
-		// (`pick`): Das Schema führt auch Felder, die in keinem Schritt stehen
-		// (`referenceId`, `entryChannel`, `weatherData.*`) — die sollen weiter
-		// geprüft werden. Warum das Komplement die richtige Größe ist, steht bei
-		// `hiddenFormFields`. Unkritisch für Yup: Alle ausgeblendeten Felder sind
-		// in `when()`-Beziehungen ausschließlich die abhängige Seite; die
-		// Bedingungsfelder (`hasPosition`, `isDead`, `sightingFrom`) bleiben
-		// sämtlich im Schema.
-		const reachableSchema = sightingSchema.omit(hiddenFormFields(formValues));
-
+		// Diese Prüfung ist damit keine Absicherung mehr gegen die Ebene
+		// darunter, sondern nur noch das, wozu sie da ist: Sie prüft ALLE
+		// Schritte auf einmal (ein Feld kann ungültig werden, nachdem sein
+		// Schritt verlassen wurde) und führt zum frühesten betroffenen Schritt.
 		try {
-			await reachableSchema.validate(formValues, { abortEarly: false });
+			await reachableSchema(formValues).validate(formValues, { abortEarly: false });
 			logger.info('Pre-submit validation: all fields OK');
 		} catch (yupError) {
 			if (!(yupError instanceof ValidationError)) {

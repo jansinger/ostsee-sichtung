@@ -365,3 +365,102 @@ describe('createForm — field-level error clearing', () => {
 		expect(get(isValid)).toBe(true);
 	});
 });
+
+/**
+ * Das Sichtungsformular blendet Felder je nach Zweig und Beobachtungsort aus,
+ * und zwar zur LAUFZEIT — `validationSchema` geht dagegen genau einmal beim
+ * Mount an `createForm` (über `Form.svelte`). Ein ungültiger Restwert in einem
+ * inzwischen ausgeblendeten Feld blockierte damit das Absenden, ohne dass
+ * irgendjemand ihn korrigieren könnte: Das Feld hat kein DOM-Element mehr.
+ *
+ * Ein Schema-Resolver löst genau das — er wird bei JEDEM Submit mit den
+ * aktuellen Werten aufgerufen und darf daraus ein anderes Schema bauen. Die
+ * Admin-Maske übergibt weiterhin ein Schema-Objekt und läuft unverändert durch
+ * denselben Zweig; die Fassung mit Objekt ist deshalb hier mitgetestet.
+ */
+describe('createForm — validationSchema als Resolver', () => {
+	const branchSchema = yup.object({
+		name: yup.string().required('Name ist erforderlich'),
+		hint: yup.string().max(3, 'Höchstens 3 Zeichen')
+	});
+
+	it('ruft den Resolver mit den AKTUELLEN Werten auf, nicht mit den initialen', async () => {
+		// Parameter explizit typisiert: Ohne ihn leitet `vi.fn` eine leere
+		// Argumentliste ab, und `mock.calls[0][0]` wäre schon zur Übersetzungszeit
+		// ein Tupel-Zugriff ins Leere.
+		const resolver = vi.fn((_values: { name: string; hint: string }) => branchSchema);
+		const { handleSubmit, updateField } = createForm({
+			initialValues: { name: 'Max', hint: 'ok' },
+			validationSchema: resolver,
+			onSubmit: vi.fn().mockResolvedValue(undefined)
+		});
+
+		updateField('name', 'Elke');
+		await handleSubmit(new Event('submit'));
+
+		expect(resolver).toHaveBeenCalledOnce();
+		expect(resolver.mock.calls[0]?.[0]).toMatchObject({ name: 'Elke' });
+	});
+
+	it('sendet ab, wenn der Resolver das ungültige Feld aus dem Schema nimmt', async () => {
+		const onSubmit = vi.fn().mockResolvedValue(undefined);
+		const { handleSubmit, errors } = createForm({
+			initialValues: { name: 'Max', hint: 'viel zu lang' },
+			validationSchema: () => branchSchema.omit(['hint']),
+			onSubmit
+		});
+
+		await handleSubmit(new Event('submit'));
+
+		expect(onSubmit).toHaveBeenCalledOnce();
+		expect(get(errors)).toEqual({});
+	});
+
+	it('lässt den Wert des ausgenommenen Feldes trotzdem an onSubmit durch', async () => {
+		// Yups `omit` entfernt den Schlüssel NICHT aus dem Ergebnis — er läuft
+		// nur ungeprüft und ungecastet durch. Darauf beruht, dass das
+		// Meldeformular seine dauerhaft gespeicherten Kontaktdaten
+		// (`shipName`, `homePort`, …) weiterhin aus dem Submit-Objekt bauen
+		// kann, obwohl eine Land-Meldung genau diese Felder ausblendet. Wer
+		// hier auf `stripUnknown`/`noUnknown` umstellt, nimmt einem
+		// wiederkehrenden Melder seine gespeicherten Bootsdaten.
+		const onSubmit = vi.fn().mockResolvedValue(undefined);
+		const { handleSubmit } = createForm({
+			initialValues: { name: 'Max', hint: 'viel zu lang' },
+			validationSchema: () => branchSchema.omit(['hint']),
+			onSubmit
+		});
+
+		await handleSubmit(new Event('submit'));
+
+		expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ hint: 'viel zu lang' });
+	});
+
+	it('blockiert weiterhin, wenn ein im Schema VERBLIEBENES Feld ungültig ist', async () => {
+		const onSubmit = vi.fn();
+		const { handleSubmit, errors } = createForm({
+			initialValues: { name: '', hint: 'ok' },
+			validationSchema: () => branchSchema.omit(['hint']),
+			onSubmit
+		});
+
+		await handleSubmit(new Event('submit'));
+
+		expect(onSubmit).not.toHaveBeenCalled();
+		expect(get(errors)['name']).toBe('Name ist erforderlich');
+	});
+
+	it('behandelt ein übergebenes Schema-Objekt unverändert (Admin-Maske)', async () => {
+		const onSubmit = vi.fn();
+		const { handleSubmit, errors } = createForm({
+			initialValues: { name: 'Max', hint: 'viel zu lang' },
+			validationSchema: branchSchema,
+			onSubmit
+		});
+
+		await handleSubmit(new Event('submit'));
+
+		expect(onSubmit).not.toHaveBeenCalled();
+		expect(get(errors)['hint']).toBe('Höchstens 3 Zeichen');
+	});
+});

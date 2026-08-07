@@ -288,10 +288,10 @@ const HIDDEN_WHEN_DEAD = ['behavior', 'behaviorText', 'reaction'] as const;
  * ohnehin nicht mehr stehen (Begründungen dort) — ein Eintrag hier wäre
  * wirkungslos.
  *
- * **Nicht exportiert**, anders als `HIDDEN_WHEN_FROM_LAND`: Der zweite
- * Interessent, `fieldsOutsideReportKind.ts`, leitet seit dieser Änderung BEIDE
- * Zweige aus `getFormSteps` ab (Differenz der beiden Aufrufe) statt aus den
- * Listen selbst. Ein Export wäre eine zweite Quelle für dieselbe Aussage.
+ * **Nicht exportiert:** Der zweite Interessent, `fieldsOutsideReportKind.ts`,
+ * leitet seit dieser Änderung BEIDE Zweige aus `getFormSteps` ab (Differenz
+ * der beiden Aufrufe) statt aus den Listen selbst. Ein Export wäre eine
+ * zweite Quelle für dieselbe Aussage.
  */
 const HIDDEN_WHEN_ALIVE = ['deadCondition', 'deadSize', 'deadPhoneContact'] as const;
 
@@ -316,10 +316,9 @@ const HIDDEN_WHEN_ALIVE = ['deadCondition', 'deadSize', 'deadPhoneContact'] as c
  * `sections/SightingDetails.svelte` zeigt es ohnehin nur bei Segelschiff/
  * Motorboot (`isBoatSightingFrom`), eine Teilmenge von „nicht Land".
  *
- * **Exportiert**, weil `ModernReportForm.svelte` dieselbe Liste noch für eine
- * DRITTE Sache braucht (Review-Befund, Task 11, zweite Runde): Ausblenden
- * allein reicht nicht — ein ausgeblendetes Feld bleibt sonst unsichtbar, aber
- * weiter im `$form`-Zustand stehen und ginge beim Absenden mit ans Backend.
+ * Ausblenden allein reicht nicht (Review-Befund, Task 11, zweite Runde) — ein
+ * ausgeblendetes Feld bleibt sonst unsichtbar, aber weiter im `$form`-Zustand
+ * stehen und ginge beim Absenden mit ans Backend.
  *
  * Ein erster Versuch räumte dafür `$form` per `$effect` leer, sobald „Land"
  * galt — das löste GENAU DAS aus, was es verhindern sollte: `onSubmit`
@@ -331,15 +330,22 @@ const HIDDEN_WHEN_ALIVE = ['deadCondition', 'deadSize', 'deadPhoneContact'] as c
  * Bootsdaten gespeichert waren, verlor sie beim nächsten Land-Bericht.
  *
  * Der Fix sitzt deshalb NICHT im Formular-Zustand, sondern am Absende-Rand:
- * `ModernReportForm.svelte`s `onSubmit` entfernt dieselbe Liste (ohne
- * `boatDrive`, das einen eigenen, gezielteren Reset-Mechanismus hat —
- * Begründung dort) nur aus dem Objekt, das tatsächlich an den Server geht.
- * `$form` selbst bleibt unangetastet: Die persistierten Kontaktdaten werden
- * aus `values` (dem UNGEKÜRZTEN Submit-Objekt) gebaut und bleiben deshalb
- * unverändert stehen, und ein Melder, der versehentlich auf „Land" stellt und
- * zurückwechselt, findet seinen getippten Schiffsnamen noch vor.
+ * `ModernReportForm.svelte`s `onSubmit` entfernt nur aus dem Objekt, das
+ * tatsächlich an den Server geht. `$form` selbst bleibt unangetastet: Die
+ * persistierten Kontaktdaten werden aus `values` (dem UNGEKÜRZTEN
+ * Submit-Objekt) gebaut und bleiben deshalb unverändert stehen, und ein
+ * Melder, der versehentlich auf „Land" stellt und zurückwechselt, findet
+ * seinen getippten Schiffsnamen noch vor.
+ *
+ * **Nicht mehr exportiert** (2026-08-07): `ModernReportForm` führte davon
+ * lange eine eigene Fassung (`OWN_VESSEL_FIELDS`, dieselbe Liste ohne
+ * `boatDrive`) für genau diese Entfernung. Seit dort einheitlich
+ * `hiddenFormFields` entscheidet — was ausgeblendet ist, geht auch nicht raus
+ * —, gibt es keinen zweiten Interessenten mehr, und die Liste bleibt eine
+ * reine Zutat von `hiddenFormFields`. Dasselbe gilt für `HIDDEN_WHEN_ALIVE`
+ * und `HIDDEN_WHEN_DEAD` darüber.
  */
-export const HIDDEN_WHEN_FROM_LAND = [
+const HIDDEN_WHEN_FROM_LAND = [
 	'boatDrive',
 	'boatType',
 	'shipName',
@@ -412,15 +418,16 @@ export function hasUploadedMedia(
  * `stepValidation.ts` nie übergab, `mediaConsent` blieb dadurch validiert,
  * obwohl das Markup es längst ausblendete).
  *
- * **Dritte Stelle, wie bei `HIDDEN_WHEN_FROM_LAND`:** Ausblenden allein
- * reicht nicht — ein `mediaConsent: true`, das der Nutzer setzt und dessen
- * Aufnahme danach wieder entfernt wird, bliebe sonst im `$form`-Zustand
- * stehen und ginge beim Absenden mit ans Backend, wo `mapFormToSighting`
- * daraus einen datierten, versionierten Nachweis ohne Bezugsgegenstand
- * stempelt. Der Riegel dafür sitzt in `ModernReportForm.svelte`s `onSubmit`,
- * ebenfalls über `hasUploadedMedia` gegen dasselbe `uploadedFiles` geprüft —
- * nur eine zum Absende-Zeitpunkt tatsächlich abgeschlossene Übertragung hat
- * serverseitig ein Gegenstück, für das ein Nachweis Sinn ergäbe.
+ * **Dritte Stelle:** Ausblenden allein reicht nicht — ein `mediaConsent: true`,
+ * das der Nutzer setzt und dessen Aufnahme danach wieder entfernt wird, bliebe
+ * sonst im `$form`-Zustand stehen und ginge beim Absenden mit ans Backend, wo
+ * `mapFormToSighting` daraus einen datierten, versionierten Nachweis ohne
+ * Bezugsgegenstand stempelt. Der Riegel dafür sitzt in
+ * `ModernReportForm.svelte`s `onSubmit` — seit dem 2026-08-07 nicht mehr als
+ * eigene `hasUploadedMedia`-Abfrage, sondern über `hiddenFormFields` unten,
+ * das dieselbe Funktion auf demselben `uploadedFiles` auswertet. Nur eine zum
+ * Absende-Zeitpunkt tatsächlich abgeschlossene Übertragung hat serverseitig
+ * ein Gegenstück, für das ein Nachweis Sinn ergäbe.
  */
 export function getFormSteps(data: FormStepsInput): FormStep[] {
 	const hidden = new Set<string>(hiddenFormFields(data));
