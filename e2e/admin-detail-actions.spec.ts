@@ -9,7 +9,7 @@ import { seedAdminSession } from './helpers/adminSession';
  * admin-detail-actions.spec.ts — die Detailansicht trägt dieselben Aktionen wie
  * die Tabellenzeile.
  *
- * **Der Anlass:** In `/admin` hat jede Zeile vier Aktionen (Details, Test-E-Mail,
+ * **Der Anlass:** In `/admin/sichtungen` hat jede Zeile vier Aktionen (Details, Test-E-Mail,
  * Spam-Check, Löschen). Öffnete man die Sichtung, blieben davon nur Spam-Check
  * und Bearbeiten — zum Löschen musste man zurück in die Tabelle und die Zeile
  * dort wiederfinden. Genau dabei erwischt man die falsche.

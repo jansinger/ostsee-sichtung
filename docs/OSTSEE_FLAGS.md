@@ -133,7 +133,7 @@ Eine Neufassung muss `> 0` statt `= 1` prüfen.
 
 ## Fehler 2: Die Admin-Übersicht zeigte die falsche Spalte (behoben am 2026-07-30)
 
-`src/routes/admin/+page.svelte` beschriftete die Spalte mit **„Ostsee"**, renderte
+`src/routes/admin/sichtungen/+page.svelte` beschriftete die Spalte mit **„Ostsee"**, renderte
 darin aber `inBalticSeaGeo`:
 
 ```svelte
@@ -201,7 +201,7 @@ eine Client-Komponente ist. Angeschlossen sind:
 
 | Stelle                                  | bezieht Status über                         |
 | --------------------------------------- | ------------------------------------------- |
-| `routes/admin/+page.svelte` (Übersicht) | `getBalticSeaStatus()` direkt               |
+| `routes/admin/sichtungen/+page.svelte` (Übersicht) | `getBalticSeaStatus()` direkt               |
 | `components/admin/AdminSightingView`    | `getBalticSeaStatus()` direkt               |
 | Benachrichtigungs-Mail                  | `server/templates/balticSeaEmailContext.ts` |
 

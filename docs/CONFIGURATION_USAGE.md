@@ -51,7 +51,7 @@ const DEFAULT_VALUES = {
 - **Fallback**: 50 Sichtungen pro Seite
 
 ```typescript
-// src/routes/admin/+page.server.ts
+// src/routes/admin/sichtungen/+page.server.ts
 const paginationConfig = await ServerConfigService.getPaginationConfig();
 const perPage = Number(url.searchParams.get('perPage')) || paginationConfig.defaultPageSize;
 ```
