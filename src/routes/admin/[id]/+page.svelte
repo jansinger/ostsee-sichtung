@@ -1,13 +1,21 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import AdminSightingView from '$lib/components/admin/AdminSightingView.svelte';
 	import {
 		deleteSighting,
 		sendTestEmail,
 		TEST_EMAIL_HINT
 	} from '$lib/components/admin/sightingActions';
+	import {
+		getSightingStatus,
+		SIGHTING_STATUS_PRESENTATION,
+		SIGHTING_STATUS_UNDO_MS,
+		verdictToStatus
+	} from '$lib/components/admin/sightingStatus';
+	import { submitVerdict, type SightingVerdict } from '$lib/components/admin/sightingVerdict';
 	import Icon from '$lib/components/Icon.svelte';
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
+	import { toast } from '$lib/stores/toastState.svelte';
 	import type { SpamCheckResult } from '$lib/types/spam';
 
 	let { data } = $props();
@@ -16,6 +24,31 @@
 
 	let showDeleteDialog = $state(false);
 	let emailPending = $state(false);
+	let statusBusy = $state(false);
+
+	async function handleStatusChange(verdict: SightingVerdict): Promise<void> {
+		if (statusBusy) return;
+		const previous = getSightingStatus(sighting);
+		statusBusy = true;
+		try {
+			const ok = await submitVerdict(sighting.id, verdict);
+			if (!ok) return;
+
+			await invalidateAll();
+			const nach = SIGHTING_STATUS_PRESENTATION[verdictToStatus(verdict)];
+			toast.success(`Status: ${nach.label}`, {
+				duration: SIGHTING_STATUS_UNDO_MS,
+				action: {
+					label: 'Rückgängig',
+					onClick: () => {
+						void handleStatusChange(SIGHTING_STATUS_PRESENTATION[previous].verdict);
+					}
+				}
+			});
+		} finally {
+			statusBusy = false;
+		}
+	}
 
 	function editSighting() {
 		goto(`/admin/${sighting.id}/edit`);
@@ -223,4 +256,4 @@
 	</div>
 {/if}
 
-<AdminSightingView {sighting} />
+<AdminSightingView {sighting} onStatusChange={handleStatusChange} {statusBusy} />

@@ -6,7 +6,7 @@
  * Detailansicht dafür nur „Upload: Ja" ohne jede Datei, was wie ein defekter
  * Datensatz aussieht. Siehe `$lib/utils/media/photoAnnouncement.ts`.
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import AdminSightingView from './AdminSightingView.svelte';
@@ -167,26 +167,54 @@ describe('AdminSightingView — Eingangskanal der Foto-Ankündigung', () => {
 	);
 });
 
-describe('AdminSightingView — Ablehnung', () => {
-	it('zeigt Zeitpunkt und Urheber der Ablehnung', async () => {
-		render(AdminSightingView, {
-			sighting: baseSighting({
-				rejectedAt: new Date('2026-08-06T14:30:00Z'),
-				rejectedBy: 'admin@example.com'
-			})
+/**
+ * Statusleiste im Kopfbereich (Task 7).
+ *
+ * Der Status stand vorher an drei verstreuten Stellen — „Verifiziert: Ja/Nein"
+ * in der Status-Karte, „Abgelehnt am …" daneben, „Freigegeben am …" in der
+ * Datum-Karte — und ließ sich nirgends ändern. Jetzt steht er als eine
+ * Segmented-Control-Leiste im Kopfbereich und ist dort auch änderbar.
+ */
+describe('AdminSightingView — Statusleiste im Kopfbereich', () => {
+	it('zeigt den Status im Kopfbereich statt in drei verstreuten Zeilen', async () => {
+		const screen = render(AdminSightingView, {
+			sighting: baseSighting({ approvedAt: new Date('2026-03-12T09:00:00Z') }),
+			onStatusChange: vi.fn()
 		});
 
-		const zeile = page.getByRole('row', { name: /^Abgelehnt/ });
-		await expect.element(zeile).toBeVisible();
-		expect((await zeile.element()).textContent).toContain('admin@example.com');
+		await expect.element(screen.getByRole('radio', { name: 'Freigegeben' })).toBeChecked();
+		expect(screen.container.textContent).not.toContain('Verifiziert');
+		// Der Zeitpunkt zieht in die Statusleiste um (als Fließtext neben den
+		// Radios) — geprüft ist hier, dass er nicht mehr als eigene Tabellenzeile
+		// in der Datum-Karte auftaucht, wie vorher unter „Datum & Zeit".
+		expect(screen.getByRole('row', { name: /^Freigegeben am/ }).elements()).toHaveLength(0);
 	});
 
-	it('zeigt gar keine Ablehnungs-Zeile, solange nicht abgelehnt wurde', async () => {
-		render(AdminSightingView, { sighting: baseSighting({ rejectedAt: null }) });
+	it('nennt Zeitpunkt und Bearbeiter der Ablehnung', async () => {
+		const screen = render(AdminSightingView, {
+			sighting: baseSighting({
+				rejectedAt: new Date('2026-03-12T09:00:00Z'),
+				rejectedBy: 'anna@example.org'
+			}),
+			onStatusChange: vi.fn()
+		});
 
-		// Nicht über den Text „Abgelehnt" prüfen: Der Regelfall darf hier keine
-		// Zeile erzeugen, auch keine mit „Nein" — sonst steht neben
-		// „Verifiziert: Nein" ein zweites Nein und der Unterschied verschwindet.
-		expect(document.body.textContent).not.toContain('Abgelehnt');
+		await expect.element(screen.getByRole('radio', { name: 'Abgelehnt' })).toBeChecked();
+		expect(screen.container.textContent).toContain('anna@example.org');
+	});
+
+	it('meldet den Wechsel als Verdict', async () => {
+		const onStatusChange = vi.fn();
+		const screen = render(AdminSightingView, { sighting: baseSighting({}), onStatusChange });
+
+		await screen.getByRole('radio', { name: 'Abgelehnt' }).click();
+		expect(onStatusChange).toHaveBeenCalledWith('reject');
+	});
+
+	it('rendert ohne Bedienelement — nur die Pille —, wenn onStatusChange fehlt', async () => {
+		const screen = render(AdminSightingView, { sighting: baseSighting({}) });
+
+		expect(screen.getByRole('radiogroup').elements()).toHaveLength(0);
+		await expect.element(screen.getByText('Offen')).toBeVisible();
 	});
 });
