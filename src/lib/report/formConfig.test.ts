@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type * as yup from 'yup';
 import { SightingFromEnum } from './formOptions/sightingFrom';
-import { formStepsConfig, getFormSteps, sightingSchemaFields } from './formConfig';
+import {
+	formStepsConfig,
+	getFormSteps,
+	hiddenFormFields,
+	sightingSchemaFields,
+	type FormStepsInput
+} from './formConfig';
+import { sightingSchema } from '$lib/form/validation/sightingSchema';
+import type { SightingFormData } from './types';
 import type { UploadedFileInfo } from '$lib/types';
 
 /**
@@ -542,5 +550,130 @@ describe('formStepsConfig — Umweltfelder in Render-Reihenfolge', () => {
 		const umwelt = ['seaState', 'visibility', 'windForce', 'shipCount'];
 
 		expect(fields.filter((name) => umwelt.includes(name))).toEqual(umwelt);
+	});
+});
+
+/**
+ * Der Vertrag zwischen dem Absende-Rand und dem Server.
+ *
+ * `ModernReportForm.onSubmit` entfernt `hiddenFormFields(values)` aus dem
+ * Objekt, das an `POST /api/sightings` geht — ausgeblendet heißt: nicht Teil
+ * dieser Meldung. Der Endpunkt validiert die Nutzlast danach gegen das
+ * **volle** `sightingSchema` (`src/routes/api/sightings/+server.ts`, Schritt 3).
+ * Ein Feld, das der Client weglässt und der Server verlangt, wäre damit eine
+ * Ablehnung, die kein Melder auflösen kann — sein Formular ist ja vollständig.
+ *
+ * Die Unit-Tests am Formular sehen das nicht: Sie mocken `submitSightingForm`.
+ * Die E2E-Tests ebenfalls nicht: `form-from-land.spec.ts` und
+ * `form-submit.spec.ts` fangen die Route mit `page.route` ab, um die Nutzlast
+ * zu lesen. Die Naht wird deshalb hier geprüft — dort, wo die Auslassung
+ * entsteht.
+ *
+ * Geprüft wird jede Achse einzeln, damit ein Fehlschlag benennt, welche
+ * Auslassung der Server nicht verträgt.
+ */
+describe('hiddenFormFields — der Server akzeptiert, was der Client weglässt', () => {
+	/** Vollständige, in jedem Zweig gültige Meldung. */
+	const baseReport = {
+		referenceId: 'ref-vertrag',
+		entryChannel: 0,
+		firstName: 'Max',
+		lastName: 'Mustermann',
+		email: 'max@example.com',
+		species: 0,
+		totalCount: 1,
+		distance: 1,
+		shipCount: 2,
+		hasPosition: true,
+		latitude: 54.5,
+		longitude: 13.5,
+		sightingDate: '2024-01-15',
+		privacyConsent: true
+	};
+
+	async function expectServerAccepts(report: Record<string, unknown>): Promise<void> {
+		const hidden = hiddenFormFields(report as FormStepsInput);
+		const sent = Object.fromEntries(
+			Object.entries(report).filter(([key]) => !hidden.includes(key as keyof SightingFormData))
+		);
+
+		// Dieselbe Prüfung wie im Endpunkt: volles Schema, alle Fehler sammeln.
+		await expect(sightingSchema.validate(sent, { abortEarly: false })).resolves.toBeDefined();
+	}
+
+	it('Lebend-Meldung von Land — ohne Bootsangaben, `reaction` und die Totfund-Felder', async () => {
+		await expectServerAccepts({
+			...baseReport,
+			isDead: false,
+			sightingFrom: SightingFromEnum.LAND,
+			boatDrive: 1,
+			shipName: 'MS Seelöwe',
+			homePort: 'Kiel',
+			boatType: 'Segelboot',
+			shipNameConsent: true,
+			reaction: 'neugierig genähert',
+			deadCondition: 2,
+			deadSize: 150,
+			deadPhoneContact: true
+		});
+	});
+
+	it('Totfund vom Segelboot — ohne die Verhaltensfelder', async () => {
+		await expectServerAccepts({
+			...baseReport,
+			isDead: true,
+			deadCondition: 2,
+			sightingFrom: SightingFromEnum.SAILBOAT,
+			boatDrive: 1,
+			behavior: 3,
+			behaviorText: 'ruhiges Schwimmen',
+			reaction: 'neugierig genähert'
+		});
+	});
+
+	it('Lebend-Meldung vom Segelboot — ohne die Totfund-Felder, Bootsangaben bleiben', async () => {
+		await expectServerAccepts({
+			...baseReport,
+			isDead: false,
+			sightingFrom: SightingFromEnum.SAILBOAT,
+			boatDrive: 1,
+			shipName: 'MS Seelöwe',
+			deadCondition: 2,
+			deadSize: 150,
+			deadPhoneContact: true
+		});
+	});
+
+	/**
+	 * Ohne Aufnahme entfällt `mediaConsent` — die einzige Achse, die weder am
+	 * Zweig noch am Beobachtungsort hängt.
+	 */
+	it('Meldung ohne Aufnahme — ohne `mediaConsent`', async () => {
+		await expectServerAccepts({
+			...baseReport,
+			isDead: false,
+			sightingFrom: SightingFromEnum.LAND,
+			mediaConsent: true
+		});
+	});
+
+	/**
+	 * Gegenprobe. Ohne sie belegten die vier Tests oben nur, dass
+	 * `sightingSchema.validate` irgendetwas durchlässt — nicht, dass es die
+	 * Auslassungen des Clients verträgt. Geprüft wird an einem Feld, das die
+	 * Auslassungsregel NIE anfasst: `privacyConsent` steht in keiner der
+	 * `HIDDEN_*`-Listen und ist unbedingt Pflicht.
+	 */
+	it('lehnt dagegen ab, wenn ein wirklich verlangtes Feld fehlt', async () => {
+		const { privacyConsent, ...ohneEinwilligung } = {
+			...baseReport,
+			isDead: false,
+			sightingFrom: SightingFromEnum.LAND
+		};
+		void privacyConsent;
+
+		await expect(
+			sightingSchema.validate(ohneEinwilligung, { abortEarly: false })
+		).rejects.toThrow();
 	});
 });

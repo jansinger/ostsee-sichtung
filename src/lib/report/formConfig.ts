@@ -418,15 +418,16 @@ export function hasUploadedMedia(
  * `stepValidation.ts` nie übergab, `mediaConsent` blieb dadurch validiert,
  * obwohl das Markup es längst ausblendete).
  *
- * **Dritte Stelle, wie bei `HIDDEN_WHEN_FROM_LAND`:** Ausblenden allein
- * reicht nicht — ein `mediaConsent: true`, das der Nutzer setzt und dessen
- * Aufnahme danach wieder entfernt wird, bliebe sonst im `$form`-Zustand
- * stehen und ginge beim Absenden mit ans Backend, wo `mapFormToSighting`
- * daraus einen datierten, versionierten Nachweis ohne Bezugsgegenstand
- * stempelt. Der Riegel dafür sitzt in `ModernReportForm.svelte`s `onSubmit`,
- * ebenfalls über `hasUploadedMedia` gegen dasselbe `uploadedFiles` geprüft —
- * nur eine zum Absende-Zeitpunkt tatsächlich abgeschlossene Übertragung hat
- * serverseitig ein Gegenstück, für das ein Nachweis Sinn ergäbe.
+ * **Dritte Stelle:** Ausblenden allein reicht nicht — ein `mediaConsent: true`,
+ * das der Nutzer setzt und dessen Aufnahme danach wieder entfernt wird, bliebe
+ * sonst im `$form`-Zustand stehen und ginge beim Absenden mit ans Backend, wo
+ * `mapFormToSighting` daraus einen datierten, versionierten Nachweis ohne
+ * Bezugsgegenstand stempelt. Der Riegel dafür sitzt in
+ * `ModernReportForm.svelte`s `onSubmit` — seit dem 2026-08-07 nicht mehr als
+ * eigene `hasUploadedMedia`-Abfrage, sondern über `hiddenFormFields` unten,
+ * das dieselbe Funktion auf demselben `uploadedFiles` auswertet. Nur eine zum
+ * Absende-Zeitpunkt tatsächlich abgeschlossene Übertragung hat serverseitig
+ * ein Gegenstück, für das ein Nachweis Sinn ergäbe.
  */
 export function getFormSteps(data: FormStepsInput): FormStep[] {
 	const hidden = new Set<string>(hiddenFormFields(data));

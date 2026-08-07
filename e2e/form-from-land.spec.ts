@@ -277,15 +277,20 @@ test.describe('Meldeformular — Beobachtung von Land', () => {
 		});
 
 		expect(capturedBody).toBeDefined();
-		// `OWN_VESSEL_FIELDS` — dieselbe Liste wie `HIDDEN_WHEN_FROM_LAND` in
-		// formConfig.ts, ohne `boatDrive` (eigener Reset-Mechanismus, siehe
-		// `boatDriveReset.ts` — es wird beim Wechsel weg vom Boot bereits im
-		// `$form`-Zustand geleert und ist deshalb hier nicht separat zu prüfen).
+		// Was der Beobachtungsort ausblendet, geht nicht mit — seit dem
+		// 2026-08-07 entscheidet das einheitlich `hiddenFormFields`
+		// (formConfig.ts) statt der früheren Teilliste `OWN_VESSEL_FIELDS`.
+		// `boatDrive` steht deshalb jetzt mit in der Prüfung: Vorher war es
+		// ausgenommen, weil `shouldResetBoatDrive` (`boatDriveReset.ts`) es
+		// beim Wechsel weg vom Boot ohnehin im `$form`-Zustand leert. Das
+		// bleibt richtig und ist der Grund, warum hier nichts anderes
+		// herauskommt als vorher — verlassen wird sich darauf aber nicht mehr.
 		expect(capturedBody?.boatType).toBeUndefined();
 		expect(capturedBody?.shipName).toBeUndefined();
 		expect(capturedBody?.homePort).toBeUndefined();
 		expect(capturedBody?.shipNameConsent).toBeUndefined();
 		expect(capturedBody?.reaction).toBeUndefined();
+		expect(capturedBody?.boatDrive).toBeUndefined();
 
 		// Der Beobachtungsort selbst geht weiterhin mit — nur die vom Boot
 		// abhängigen Felder entfallen.
