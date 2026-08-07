@@ -19,7 +19,9 @@
 	import { resolveServerFieldErrors } from '$lib/report/serverFieldErrors';
 	import {
 		HIDDEN_WHEN_FROM_LAND,
+		getFormSteps,
 		hasUploadedMedia,
+		hiddenFormFields,
 		initialFormState,
 		isDeadFinding,
 		isFromLand
@@ -422,15 +424,27 @@
 	 * in `StepNavigation.handleFormSubmission` der Catch-Zweig mit
 	 * `showValidationError()`, das einen ZWEITEN `scrollToFirstError` samt
 	 * eigenem Fokus-Timeout auslöst. Zwei konkurrierende Sprünge entstehen daraus
-	 * heute nicht, weil `handleFinalSubmit` gegen das volle Schema vorvalidiert:
-	 * Der Server wird nur mit client-seitig gültigen Daten erreicht, `validateStep`
-	 * findet dort nichts und `showValidationError` steigt sofort wieder aus. Wer
-	 * dieses Vorab-Gate lockert, muss die beiden Sprünge gegeneinander absichern.
+	 * heute nicht, weil `handleFinalSubmit` vorvalidiert: Der Server wird nur mit
+	 * client-seitig gültigen Daten erreicht, `validateStep` findet dort nichts und
+	 * `showValidationError` steigt sofort wieder aus. Dass die Vorab-Prüfung die
+	 * im Zweig ausgeblendeten Felder auslässt, ändert daran nichts — `validateStep`
+	 * lässt über `getFormSteps` genau dieselben aus. Wer das Vorab-Gate weiter
+	 * lockert, muss die beiden Sprünge gegeneinander absichern.
 	 */
 	function applyServerFieldErrors(serverFields: Record<string, string>): void {
+		// `getFormSteps($form)`, nicht `formStepsConfig`: Die statische Liste führt
+		// auch Felder, die im aktuellen Zweig nicht gerendert werden. Benennt der
+		// Server eines davon, hätte es hier zwei Wirkungen, die beide falsch sind
+		// — es käme als unbehebbarer Fehler in den Store (`updateField` löscht nur
+		// den Fehler des GEÄNDERTEN Feldes, und dieses Feld hat kein
+		// Bedienelement), und es stünde in der Feldreihenfolge vor dem sichtbaren
+		// Feld, sodass `scrollToFirstError` kein Element fände und der Sprung ganz
+		// ausfiele. Die Zweig-Fassung filtert es an derselben Stelle weg, an der
+		// `resolveServerFieldErrors` schon die schrittlosen Felder (`allgemein`,
+		// `referenceId`, …) aussortiert — dieselbe Begründung, dieselbe Naht.
 		const { fields, targetStep, fieldOrder } = resolveServerFieldErrors(
 			serverFields,
-			formStepsConfig,
+			getFormSteps($form),
 			currentStep
 		);
 
@@ -455,7 +469,7 @@
 	async function handleFinalSubmit(e: Event): Promise<void> {
 		logger.info('Final submission:');
 
-		// Pre-submit: validate against the FULL Schema. A step's own
+		// Pre-submit: validate across ALL steps at once. A step's own
 		// validation only covers ITS OWN fields — a field can become invalid
 		// after its step was already left (e.g. a value depends on another
 		// step). Submitting despite that must never look like "nothing
@@ -466,13 +480,40 @@
 		// 3. abort BEFORE calling formContext.handleSubmit — and rethrow so
 		//    StepNavigation's existing submit-catch (toast + showValidationError)
 		//    takes over, exactly like it already does for real submit errors.
-		const formValues = await new Promise<unknown>((resolve) => {
+		const formValues = await new Promise<SightingFormData>((resolve) => {
 			const unsub = formContext.form.subscribe((v) => resolve(v));
 			unsub();
 		});
 
+		// Geprüft wird das volle Schema OHNE die Felder, die der aktuelle Zweig
+		// ausblendet. Ein ungültiger Restwert darin brächte hier beides zum
+		// Stillstand: Der Sprung landete auf einem Schritt, auf dem nichts
+		// markiert ist, und das Absenden bliebe mit einer Meldung an einem Feld
+		// hängen, das niemand sieht und niemand korrigieren kann.
+		//
+		// Erreichbar ist das über den Beobachtungsort, nicht über den Zweig:
+		// `HIDDEN_WHEN_FROM_LAND` lässt `$form` bewusst stehen (Begründung samt
+		// verworfenem Ansatz dort), also überlebt ein zu langer `reaction`- oder
+		// `shipName`-Text den Wechsel auf „Land" — kein `maxlength` im
+		// Feld-Renderer hält ihn vorher auf. Über den Zweig entsteht kein
+		// Restwert: `boatDrive` räumt `shouldResetBoatDrive` beim Übergang
+		// Boot→Land ab (`sections/boatDriveReset.ts`), und die drei
+		// `HIDDEN_WHEN_DEAD`-Felder leert der Mount-Aufräumer oben über
+		// `fieldsOutsideReportKind` — ein Zweigwechsel geht immer über die
+		// Einstiegsseite und mountet dieses Formular neu (`+page.svelte`).
+		//
+		// `omit` statt einer aus den Schritt-Feldern gebauten Positivliste
+		// (`pick`): Das Schema führt auch Felder, die in keinem Schritt stehen
+		// (`referenceId`, `entryChannel`, `weatherData.*`) — die sollen weiter
+		// geprüft werden. Warum das Komplement die richtige Größe ist, steht bei
+		// `hiddenFormFields`. Unkritisch für Yup: Alle ausgeblendeten Felder sind
+		// in `when()`-Beziehungen ausschließlich die abhängige Seite; die
+		// Bedingungsfelder (`hasPosition`, `isDead`, `sightingFrom`) bleiben
+		// sämtlich im Schema.
+		const reachableSchema = sightingSchema.omit(hiddenFormFields(formValues));
+
 		try {
-			await sightingSchema.validate(formValues, { abortEarly: false });
+			await reachableSchema.validate(formValues, { abortEarly: false });
 			logger.info('Pre-submit validation: all fields OK');
 		} catch (yupError) {
 			if (!(yupError instanceof ValidationError)) {
@@ -493,9 +534,13 @@
 
 			// Jump to the earliest step that actually contains an error —
 			// no-op if the errors are already visible on the current step
+			// Zweig-Fassung, aus demselben Grund wie in `applyServerFieldErrors`:
+			// `findStepForErrors` liefert den frühesten Schritt, der eines der
+			// Felder führt — aus der statischen Liste könnte das ein Schritt sein,
+			// auf dem das Feld gar nicht gerendert wird.
 			const targetStep = findStepForErrors(
 				Object.keys(validationErrors),
-				formStepsConfig,
+				getFormSteps(formValues),
 				currentStep
 			);
 			if (targetStep !== null) {

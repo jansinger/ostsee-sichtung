@@ -811,3 +811,132 @@ describe('ModernReportForm — mediaConsent ohne fertigen Upload erreicht den Se
 		expect(sent.mediaConsent).toBe(true);
 	});
 });
+
+/**
+ * Die Fehler-Navigation lief bis hierher gegen `formStepsConfig` — die
+ * STATISCHE Feldliste ohne Zweigfilter. `scrollToFirstError` und
+ * `findStepForErrors` laufen diese Liste ab, um zum ersten fehlerhaften Feld
+ * bzw. zum frühesten betroffenen Schritt zu führen; ein im aktuellen Zweig
+ * ausgeblendetes Feld steht dort aber weiterhin drin. Beide landeten damit an
+ * einem Feld, das gar nicht gerendert ist — der Melder sieht einen Sprung ohne
+ * erkennbaren Anlass und findet nichts zu korrigieren. Genau die Sackgasse, vor
+ * der die Zwei-Hälften-Regel in `.claude/rules/forms.md` warnt, nur eine Ebene
+ * weiter: nicht das Feld selbst, sondern der WEG dorthin kannte den Zweig nicht.
+ *
+ * Beide Tests fahren die Land-Meldung (`sightingFrom = LAND`), weil dort mit
+ * `reaction` und `boatDrive` ausgeblendete Felder in ZWEI verschiedenen
+ * Schritten liegen — die Verwechslung wird dadurch am Sprungziel sichtbar und
+ * nicht nur an der Feldreihenfolge.
+ */
+describe('ModernReportForm — die Fehler-Navigation kennt den Zweig', () => {
+	const today = new Date().toISOString().split('T')[0];
+
+	/** Vollständig gültige Land-Meldung auf Schritt 4 (Index 3). */
+	function seedValidLandReport(overrides: Record<string, unknown> = {}): void {
+		sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, JSON.stringify(3));
+		sessionStorage.setItem(
+			STORAGE_KEYS.FORM_DATA,
+			JSON.stringify({
+				...initialFormState,
+				referenceId: 'ref-fehler-navigation',
+				entryChannel: 0,
+				species: 0,
+				totalCount: 1,
+				distance: 1,
+				shipCount: 2,
+				sightingFrom: SightingFromEnum.LAND,
+				hasPosition: true,
+				latitude: 54.5,
+				longitude: 13.5,
+				sightingDate: today,
+				firstName: 'Max',
+				lastName: 'Mustermann',
+				email: 'max@example.com',
+				privacyConsent: true,
+				...overrides
+			})
+		);
+	}
+
+	beforeEach(() => {
+		submitSightingFormMock.mockClear();
+		submitSightingFormMock.mockResolvedValue({ status: 'ok', id: 1 });
+	});
+
+	/**
+	 * Server-Ablehnung: `resolveServerFieldErrors` bekommt die Feldreihenfolge
+	 * des Zielschritts. Steht darin ein ausgeblendetes Feld VOR dem sichtbaren,
+	 * wählt `scrollToFirstError` das ausgeblendete, findet dafür kein Element
+	 * und springt gar nicht — der Melder bleibt ohne Fokus und ohne Hinweis
+	 * zurück, während die Meldung „Validierungsfehler bei der Eingabe" über der
+	 * Navigation steht.
+	 *
+	 * `reaction` steht in `formStepsConfig` auf Schritt 3 (Index 2) vor
+	 * `shipCount`, ist bei einer Land-Meldung aber ausgeblendet
+	 * (`sections/Behavior.svelte`).
+	 */
+	it('springt bei einer Server-Ablehnung zum ersten SICHTBAREN Feld des Zielschritts', async () => {
+		seedValidLandReport();
+		submitSightingFormMock.mockResolvedValue({
+			status: 'rejected',
+			message: 'Validierungsfehler bei der Eingabe',
+			fields: {
+				reaction: 'Die Reaktion darf nicht länger als 1000 Zeichen sein.',
+				shipCount: 'Die Anzahl der Schiffe darf 15 nicht überschreiten.'
+			}
+		} as never);
+
+		render(ModernReportForm);
+
+		await page.getByRole('button', { name: 'Formular absenden' }).click();
+
+		// `scrollToFirstError` fokussiert verzögert (500 ms in `fieldNavigation.ts`),
+		// davor läuft noch ein `requestAnimationFrame` — großzügig warten.
+		await vi.waitFor(() => expect(document.activeElement?.getAttribute('name')).toBe('shipCount'), {
+			timeout: 4000
+		});
+	});
+
+	/**
+	 * Vorab-Prüfung beim Absenden: `handleFinalSubmit` validiert gegen das
+	 * Schema und lässt `findStepForErrors` den frühesten betroffenen Schritt
+	 * bestimmen. Ein ausgeblendetes Feld mit ungültigem Restwert zieht dieses
+	 * Sprungziel nach vorne — der Melder landet auf einem Schritt, auf dem gar
+	 * nichts markiert ist, und das eigentliche Problem liegt einen Schritt
+	 * weiter hinten.
+	 *
+	 * `boatDrive` (Schritt 2, Index 1) ist bei einer Land-Meldung ausgeblendet —
+	 * `sections/SightingDetails.svelte` zeigt es nur bei Segelschiff/Motorboot.
+	 * Es steht hier als gesetzter Wert im Zustand, weil es das ausgeblendete
+	 * Feld im FRÜHESTEN Schritt ist und die Verwechslung damit am Sprungziel
+	 * sichtbar macht. Der Weg dorthin ist gestellt: Beim Übergang Boot→Land
+	 * räumt `shouldResetBoatDrive` (`sections/boatDriveReset.ts`) es real ab.
+	 * Ungestellt erreichbar ist dieselbe Lage über die Felder, die
+	 * `HIDDEN_WHEN_FROM_LAND` bewusst stehen lässt (`reaction`, `shipName`,
+	 * `homePort`) — die liegen nur alle auf Schritt 3 und trügen den Fehler
+	 * damit auf demselben Schritt wie `shipCount`, was den Sprung nicht
+	 * unterscheidbar machte.
+	 *
+	 * `shipCount` (Schritt 3, Index 2) ist dagegen sichtbar und trägt hier den
+	 * einzigen Fehler, den der Melder auch beheben kann.
+	 */
+	it('bestimmt das Sprungziel nur aus Feldern, die im aktuellen Zweig bedienbar sind', async () => {
+		seedValidLandReport({ boatDrive: 99, shipCount: 99 });
+
+		render(ModernReportForm);
+
+		await page.getByRole('button', { name: 'Formular absenden' }).click();
+
+		// Gelandet wird auf „Weitere Informationen" (Index 2) — nicht auf
+		// „Angaben zum Tier" (Index 1), wo `boatDrive` steht, aber niemandem
+		// angezeigt wird.
+		await vi.waitFor(() =>
+			expect(
+				document.querySelector('[data-testid="field-shipCount"]')?.getAttribute('aria-invalid')
+			).toBe('true')
+		);
+		await expect
+			.element(page.getByRole('heading', { name: 'Weitere Informationen' }))
+			.toBeVisible();
+	});
+});

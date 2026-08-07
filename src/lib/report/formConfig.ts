@@ -423,7 +423,41 @@ export function hasUploadedMedia(
  * serverseitig ein Gegenstück, für das ein Nachweis Sinn ergäbe.
  */
 export function getFormSteps(data: FormStepsInput): FormStep[] {
-	const hidden = new Set<string>();
+	const hidden = new Set<string>(hiddenFormFields(data));
+
+	// Kein `if (hidden.size === 0) return formStepsConfig` mehr: Seit
+	// `HIDDEN_WHEN_ALIVE` beantwortet der Totfund-Zweig in `hiddenFormFields`
+	// BEIDE Richtungen, und damit ist die Menge nie leer — der Schnellpfad war
+	// ab da toter Code, der in dieser Datei wie eine begründete Entscheidung
+	// gelesen worden wäre.
+	return formStepsConfig.map((step) => ({
+		...step,
+		fields: step.fields.filter((field) => !hidden.has(field))
+	}));
+}
+
+/**
+ * Die Felder, die im übergebenen Zustand nicht bedienbar sind — alle Achsen
+ * aus `getFormSteps` an einer Stelle, damit niemand sie ein zweites Mal
+ * ausschreibt. Eine neue Achse gehört hierher, nicht in `getFormSteps`.
+ *
+ * `getFormSteps` beantwortet „welche Felder validiert dieser Schritt", und das
+ * ist für die Schritt-Navigation genau richtig. Für die Vorab-Prüfung beim
+ * Absenden (`ModernReportForm.handleFinalSubmit`) reicht es nicht: Die prüft
+ * gegen das ganze Schema, also auch gegen Felder, die in KEINEM Schritt stehen
+ * (`referenceId`, `entryChannel`, `weatherData.*`). Aus den Schritt-Feldern
+ * eine Positivliste zu bauen, würde die stillschweigend mit ausschließen; das
+ * Komplement ist deshalb die richtige Größe — es nimmt genau das weg, was der
+ * Melder im aktuellen Zweig nicht sieht, und lässt alles andere in Kraft.
+ *
+ * Ohne Duplikate: `reaction` steht in `HIDDEN_WHEN_DEAD` UND in
+ * `HIDDEN_WHEN_FROM_LAND` — ein Totfund von Land trifft beide Bedingungen.
+ *
+ * Der Zweig beantwortet BEIDE Richtungen (`else`-Zweig), die Menge ist deshalb
+ * nie leer — siehe die Notiz zum entfallenen Schnellpfad in `getFormSteps`.
+ */
+export function hiddenFormFields(data: FormStepsInput): Array<keyof SightingFormData> {
+	const hidden = new Set<keyof SightingFormData>();
 	if (isDeadFinding(data.isDead)) {
 		HIDDEN_WHEN_DEAD.forEach((field) => hidden.add(field));
 	} else {
@@ -435,13 +469,5 @@ export function getFormSteps(data: FormStepsInput): FormStep[] {
 	if (!hasUploadedMedia(data.uploadedFiles)) {
 		hidden.add('mediaConsent');
 	}
-
-	// Kein `if (hidden.size === 0) return formStepsConfig` mehr: Seit
-	// `HIDDEN_WHEN_ALIVE` beantwortet der Totfund-Zweig oben BEIDE Richtungen,
-	// und damit ist die Menge nie leer — der Schnellpfad war ab da toter Code,
-	// der in dieser Datei wie eine begründete Entscheidung gelesen worden wäre.
-	return formStepsConfig.map((step) => ({
-		...step,
-		fields: step.fields.filter((field) => !hidden.has(field))
-	}));
+	return [...hidden];
 }

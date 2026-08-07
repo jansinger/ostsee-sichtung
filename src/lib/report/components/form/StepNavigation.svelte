@@ -12,7 +12,7 @@
 		scrollToFirstError,
 		scrollToStepHeader
 	} from '$lib/utils/fieldNavigation';
-	import { formStepsConfig } from '$lib/report/formConfig';
+	import { formStepsConfig, getFormSteps } from '$lib/report/formConfig';
 	import {
 		getStepAlertMessages,
 		shouldShowStepAlert,
@@ -41,8 +41,23 @@
 	const formContext = getFormContext();
 	const { isSubmitting, form, errors } = formContext;
 
+	/**
+	 * Schritt-Konfiguration des AKTUELLEN Zweigs — dieselbe Quelle, aus der
+	 * `validateStep` unten seine Felder nimmt. `formStepsConfig` (statisch)
+	 * führt auch Felder, die im aktuellen Zweig gar nicht gerendert werden.
+	 *
+	 * Für die Feldreihenfolge unten ist das heute folgenlos: `scrollToFirstError`
+	 * sucht in ihr das erste Feld, das in den Fehlern vorkommt — und die Fehler
+	 * stammen ausschließlich aus `validateStep`, das ausgeblendete Felder gar
+	 * nicht erst prüft. Trotzdem dieselbe Quelle, statt zwei Listen, deren
+	 * Gleichlauf niemand erzwingt: Sobald hier eine zweite Fehlerquelle
+	 * dazukäme (Server-Felder etwa, wie in `ModernReportForm`), zeigte die
+	 * statische Liste auf ein Feld ohne DOM-Element und der Sprung fiele aus.
+	 */
+	const formSteps = $derived(getFormSteps($form));
+
 	// Get field orders from form configuration
-	const stepFieldOrders = formStepsConfig.map((step) => step.fields);
+	const stepFieldOrders = $derived(formSteps.map((step) => step.fields));
 
 	// Single validation pass — used for both canGoNext and stepErrorMessages
 	const stepValidation = $derived.by(() => validateStep(currentStep, $form));
@@ -202,7 +217,7 @@
 		// Use the validation function that collects errors
 		const { errors: stepErrors } = validateStep(currentStep, $form);
 		const errorCount = getErrorCount(stepErrors);
-		const currentStepName = formStepsConfig[currentStep]?.title || `Schritt ${currentStep + 1}`;
+		const currentStepName = formSteps[currentStep]?.title || `Schritt ${currentStep + 1}`;
 
 		if (errorCount === 0) {
 			return;
