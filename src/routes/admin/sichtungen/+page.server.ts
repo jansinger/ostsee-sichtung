@@ -7,6 +7,7 @@ import {
 } from '$lib/server/db/mediaUploadFilter';
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
+import { rejectedOnly } from '$lib/server/db/approvalFilter';
 import { and, eq, sql } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
@@ -46,11 +47,16 @@ export const load: PageServerLoad = async ({ url }) => {
 		);
 	}
 
-	// Verifizierungs-Filter (als Integer 0/1)
+	// Verifizierungs-Filter: 0/1 auf geprueft; 'rejected' ist die Triage-Sicht
+	// (abgelehnt_am gesetzt). Abgelehnte haben geprueft=0 und erscheinen damit
+	// auch unter verified=0 — das ist gewollt: „ungeprüft" heißt dort
+	// „nicht freigegeben", die Eingangsseite dagegen zeigt nur wirklich Offene.
 	if (verified === '1') {
 		conditions.push(eq(sightings.verified, 1));
 	} else if (verified === '0') {
 		conditions.push(eq(sightings.verified, 0));
+	} else if (verified === 'rejected') {
+		conditions.push(rejectedOnly());
 	}
 
 	// Eingangskanal-Filter

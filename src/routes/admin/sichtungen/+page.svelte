@@ -565,6 +565,7 @@
 						<option value="">Alle</option>
 						<option value="1">Geprüft</option>
 						<option value="0">Ungeprüft</option>
+						<option value="rejected">Abgelehnt</option>
 					</select>
 				</div>
 				<div class="fieldset w-full">
@@ -757,14 +758,19 @@
 					<span class="text-base-content/70 text-xs">
 						Gemeldet: {formatLocalDateTime(sighting.created)}
 					</span>
-					<BaseToggle
-						label="Geprüft"
-						name={`verified-mobile-${sighting.id}`}
-						checked={!!sighting.verified}
-						onchange={() => {
-							toggleVerifiedStatus(sighting.id, !!sighting.verified);
-						}}
-					/>
+					<div class="flex items-center gap-2">
+						{#if sighting.rejectedAt}
+							<span class="badge badge-ghost badge-sm">Abgelehnt</span>
+						{/if}
+						<BaseToggle
+							label="Geprüft"
+							name={`verified-mobile-${sighting.id}`}
+							checked={!!sighting.verified}
+							onchange={() => {
+								toggleVerifiedStatus(sighting.id, !!sighting.verified);
+							}}
+						/>
+					</div>
 				</div>
 			</div>
 		{/each}
@@ -1000,14 +1006,19 @@
 								     Die Sperre steht an der Zelle und nicht in der Komponente, damit lange
 								     Labels in der Bearbeitungsmaske weiter umbrechen dürfen. -->
 								<td class="whitespace-nowrap">
-									<BaseToggle
-										label="Geprüft"
-										name={`verified-${sighting.id}`}
-										checked={!!sighting.verified}
-										onchange={() => {
-											toggleVerifiedStatus(sighting.id, !!sighting.verified);
-										}}
-									/>
+									<div class="flex items-center gap-2">
+										{#if sighting.rejectedAt}
+											<span class="badge badge-ghost badge-sm">Abgelehnt</span>
+										{/if}
+										<BaseToggle
+											label="Geprüft"
+											name={`verified-${sighting.id}`}
+											checked={!!sighting.verified}
+											onchange={() => {
+												toggleVerifiedStatus(sighting.id, !!sighting.verified);
+											}}
+										/>
+									</div>
 								</td>
 							{/if}
 							{#if columnVisibility.actions}
