@@ -31,8 +31,7 @@
 		<p class="text-base-content/70 mx-auto max-w-2xl text-sm md:text-base">
 			<strong>{question}</strong> Bitte geben Sie
 			<strong>Tierart und Anzahl</strong>
-			an. Bei Unsicherheit wählen Sie „Unbekannte Walart" bzw. „Unbekannte Robbenart" — auch Schätzungen
-			sind wertvoll und unterstützen die Populationsforschung.
+			an.
 		</p>
 	</div>
 

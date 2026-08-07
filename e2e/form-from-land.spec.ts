@@ -20,11 +20,23 @@ import {
  * aus `$lib`): 0 Sonstiges, 1 Segelschiff, 2 Motorboot, 3 Land, 4 Fähre.
  */
 
-/** Minimal gültiger Schritt 2, mit frei wählbarem Beobachtungsort. */
-async function fillStep2From(formPage: FormPage, sightingFrom: number) {
+/**
+ * Minimal gültiger Schritt 2, mit frei wählbarem Beobachtungsort.
+ *
+ * `totfund: true` lässt die Entfernung aus: Sie entfällt seit dem UX-Review
+ * 2026-08-07 im Totfund-Zweig vollständig (`HIDDEN_WHEN_DEAD` in
+ * `formConfig.ts`) — ein `selectDistance` liefe dort in einen Timeout.
+ */
+async function fillStep2From(
+	formPage: FormPage,
+	sightingFrom: number,
+	options: { totfund?: boolean } = {}
+) {
 	await formPage.selectSpecies(0); // Schweinswal
 	await formPage.fillTotalCount(2);
-	await formPage.selectDistance(1);
+	if (!options.totfund) {
+		await formPage.selectDistance(1);
+	}
 	await formPage.selectSightingFrom(sightingFrom);
 }
 
@@ -143,7 +155,10 @@ test.describe('Meldeformular — Beobachtung von Land', () => {
 		await formPage.clickNext();
 		await expectCurrentStep(page, /Angaben zum Tier/i);
 
-		await fillStep2From(formPage, 3); // Land
+		await fillStep2From(formPage, 3, { totfund: true }); // Land
+		// Die Entfernung entfällt im Totfund-Zweig ganz — am Strand steht der
+		// Melder neben dem Tier (UX-Review 2026-08-07).
+		await expect(page.getByTestId('field-distance')).toHaveCount(0);
 		// Pflicht bei Totfund (Schema: deadCondition.when('isDead', …)); ohne
 		// diese Angabe bleibt „Weiter" gesperrt.
 		await formPage.selectDeadCondition(1); // Extrem frisch

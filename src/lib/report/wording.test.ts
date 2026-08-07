@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import * as yup from 'yup';
+import { sightingSchema } from '$lib/form/validation/sightingSchema';
 import {
 	dateSectionIntro,
 	dateSectionTitle,
@@ -8,6 +10,7 @@ import {
 	outsideBalticNotice,
 	outsideBalticSeverity,
 	positionQuestion,
+	sightingFromQuestion,
 	speciesQuestion,
 	step3ObservationsIntro
 } from './wording';
@@ -64,6 +67,36 @@ describe('wording — Totfund-Ansprache auf Schritt 2', () => {
 
 		it('nennt die Karte beim Totfund „Funddetails"', () => {
 			expect(detailsSectionTitle(true)).toBe('Funddetails');
+		});
+	});
+
+	/**
+	 * Die Karte heißt beim Totfund „Funddetails" (`detailsSectionTitle`), das
+	 * erste Feld darunter fragte aber weiter „Von wo aus wurde die Sichtung
+	 * gemacht?" — das Schema-Label, das nur den Lebend-Zweig kennt.
+	 */
+	describe('sightingFromQuestion', () => {
+		/**
+		 * Verbindliche Entscheidung des Auftraggebers (siehe Kopf von
+		 * `dateSectionTitle`): Der Lebend-Weg darf sich nicht sichtbar ändern.
+		 * Verglichen wird deshalb gegen das Schema-Label selbst und nicht gegen
+		 * ein Literal — ein Textwechsel im Schema würde sonst still auseinander
+		 * laufen, und die Admin-Maske zeigt weiterhin genau diesen Text.
+		 */
+		it('behält im Lebend-Zweig wörtlich das Schema-Label', () => {
+			// `fields` ist bei Yup als `ISchema | Reference` typisiert; das Label
+			// steht nur an der Schema-Variante.
+			const schemaLabel = (sightingSchema.fields.sightingFrom as yup.NumberSchema).spec.label;
+			expect(sightingFromQuestion(false)).toBe(schemaLabel);
+			expect(sightingFromQuestion(false)).toBe('Von wo aus wurde die Sichtung gemacht?');
+		});
+
+		it('fragt beim Totfund nach dem Fund statt nach der Sichtung', () => {
+			expect(sightingFromQuestion(true)).toBe('Von wo aus haben Sie das Tier gefunden?');
+		});
+
+		it('behandelt den String "1" (DB-Wert) wie einen Totfund', () => {
+			expect(sightingFromQuestion('1')).toBe('Von wo aus haben Sie das Tier gefunden?');
 		});
 	});
 

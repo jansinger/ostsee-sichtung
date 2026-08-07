@@ -625,11 +625,37 @@ export const sightingSchemaBase = yup.object().shape({
 
 	/**
 	 * Entfernung zum gesichteten Tier
-	 * Pflichtfeld, muss einer gültigen Entfernungskategorie entsprechen
+	 * Pflichtfeld bei einer Sichtung, muss einer gültigen Entfernungskategorie
+	 * entsprechen.
+	 *
+	 * **Beim Totfund ist die Pflicht aufgehoben** (UX-Review 2026-08-07): Wer ein
+	 * totes Tier meldet, steht am Strand daneben — die Frage ist dort nicht
+	 * beantwortbar, und das Meldeformular zeigt sie im Totfund-Zweig seither gar
+	 * nicht mehr (`HIDDEN_WHEN_DEAD` in `formConfig.ts`). Die Lockerung ist dabei
+	 * keine Kür: Der Endpunkt validiert die Nutzlast gegen das **volle** Schema
+	 * (`routes/api/sightings/+server.ts`, Schritt 3), und der Client lässt
+	 * ausgeblendete Felder weg — ohne sie lehnte der Server jede Totfund-Meldung
+	 * mit einer Meldung an einem unsichtbaren Feld ab. Genau derselbe Zwang stand
+	 * am 2026-08-04 bei `deadSex` (Kommentar dort).
+	 *
+	 * `is: true` wie bei `deadCondition` oben: `isDead` kommt aus dem Zweig der
+	 * Einstiegsseite bzw. aus `field-mapping.ts` immer als echter Boolean. Ein
+	 * anderer Wahrheitswert ließe die Pflicht bestehen — die konservative
+	 * Richtung.
+	 *
+	 * Der Basis-Aufbau bleibt `.required()`, die Bedingung kommt erst danach:
+	 * `describe()` sieht ein `when()` nicht und beschreibt das Basis-Schema —
+	 * Pflicht-Sternchen und `aria-required` bleiben damit im Lebend-Zweig und in
+	 * der Admin-Maske unverändert stehen (`FieldRenderer`).
 	 */
 	distance: yup
 		.number()
 		.required('Bitte geben Sie eine Entfernung an.')
+		.when('isDead', {
+			is: true,
+			then: (schema) => schema.notRequired(),
+			otherwise: (schema) => schema
+		})
 		.test(
 			'is-valid-distance',
 			'Bitte wählen Sie eine gültige Entfernungskategorie.',

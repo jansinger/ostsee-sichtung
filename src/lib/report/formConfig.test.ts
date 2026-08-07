@@ -425,14 +425,26 @@ describe('getFormSteps', () => {
 		expect(fieldsOf(getFormSteps({ isDead: 0 }))).not.toContain('deadCondition');
 	});
 
-	it('lässt beim Totfund Wetter, Anzahl anderer Schiffe und Entfernung stehen', () => {
+	it('lässt beim Totfund Wetter und die Anzahl anderer Schiffe stehen', () => {
 		// Achse C der Spezifikation: Diese Felder hängen nicht am Zustand des
-		// Tieres. `shipCount` fragt nach ANDEREN Schiffen, `distance` ist auch
-		// vom Strand aus sinnvoll.
+		// Tieres. `shipCount` fragt nach ANDEREN Schiffen — Störungskontext, der
+		// auch am Fundort gilt.
 		const fields = fieldsOf(getFormSteps({ isDead: true }));
 		expect(fields).toEqual(
-			expect.arrayContaining(['seaState', 'visibility', 'windForce', 'shipCount', 'distance'])
+			expect.arrayContaining(['seaState', 'visibility', 'windForce', 'shipCount'])
 		);
+	});
+
+	/**
+	 * UX-Review 2026-08-07: „Entfernung zum Tier" war auch beim Totfund
+	 * Pflichtfeld — an einem Strandfund steht der Melder aber neben dem Tier.
+	 * Die Frage ist dort nicht bloß entbehrlich, sie ist unbeantwortbar, und
+	 * `distance` ist im Meldeformular Pflicht: Sie sperrte „Weiter", bis
+	 * irgendeine Kategorie geraten war.
+	 */
+	it('entfernt die Entfernung beim Totfund, behält sie im Lebend-Zweig', () => {
+		expect(fieldsOf(getFormSteps({ isDead: true }))).not.toContain('distance');
+		expect(fieldsOf(getFormSteps({ isDead: false }))).toContain('distance');
 	});
 
 	it('behält in beiden Zweigen vier Schritte — kein Schritt wird leer', () => {
@@ -616,6 +628,40 @@ describe('hiddenFormFields — der Server akzeptiert, was der Client weglässt',
 			deadSize: 150,
 			deadPhoneContact: true
 		});
+	});
+
+	/**
+	 * Der teuerste Teil des Entfernungs-Befunds: `distance` ist im vollen
+	 * `sightingSchema` `.required()`. Ein Feld aus dem Totfund-Zweig zu nehmen
+	 * heißt deshalb zwingend, seine Pflicht im Schema an denselben Zweig zu
+	 * binden — sonst lehnt der Endpunkt jede Totfund-Meldung mit „Bitte geben
+	 * Sie eine Entfernung an." ab, und zwar an einem Feld, das der Melder gar
+	 * nicht mehr sieht. Genau derselbe Zwang stand 2026-08-04 schon bei
+	 * `deadSex` (Kommentar im Schema).
+	 */
+	it('Totfund ohne jede Entfernungsangabe', async () => {
+		const { distance: _weggelassen, ...ohneEntfernung } = baseReport;
+		await expectServerAccepts({
+			...ohneEntfernung,
+			isDead: true,
+			deadCondition: 2,
+			sightingFrom: SightingFromEnum.LAND
+		});
+	});
+
+	/**
+	 * Die Gegenprobe dazu: Im Lebend-Zweig bleibt die Entfernung Pflicht — sonst
+	 * hätte die Lockerung oben das Feld für ALLE Meldungen entwertet, und der
+	 * Lebend-Weg darf sich nicht ändern.
+	 */
+	it('verlangt die Entfernung im Lebend-Zweig unverändert', async () => {
+		const { distance: _weggelassen, ...ohneEntfernung } = baseReport;
+		await expect(
+			sightingSchema.validate(
+				{ ...ohneEntfernung, isDead: false, sightingFrom: SightingFromEnum.LAND },
+				{ abortEarly: false }
+			)
+		).rejects.toThrow(/Entfernung/);
 	});
 
 	it('Totfund vom Segelboot — ohne die Verhaltensfelder', async () => {

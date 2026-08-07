@@ -17,6 +17,7 @@
 		reportKindClearedNotice
 	} from '$lib/report/fieldsOutsideReportKind';
 	import { findStepForErrors } from '$lib/report/findStepForErrors';
+	import { hasMeaningfulSavedData } from '$lib/report/hasMeaningfulSavedData';
 	import { resolveServerFieldErrors } from '$lib/report/serverFieldErrors';
 	import {
 		getFormSteps,
@@ -110,6 +111,19 @@
 		...initialFormData
 	});
 
+	// UX-Review (2026-08-07, Befund 6): Schnappschuss VOR der `initialIsDead`-
+	// Überschreibung und VOR dem Zweig-Aufräumen weiter unten — das ist der
+	// ehrlichste Vergleichszustand. `savedFormData` wird direkt im Anschluss
+	// mutiert (Zeile mit `savedFormData.isDead = …` und der `resetField`-
+	// Schleife); ein Vergleich NACH diesen Schritten sähe zweigfremde, aber
+	// echt vom Nutzer eingegebene Werte (z. B. `deadCondition` aus einer
+	// Totfund-Sitzung, wenn jetzt der Lebend-Zweig startet) nicht mehr — sie
+	// wurden zu diesem Zeitpunkt schon auf den Default zurückgesetzt. Der
+	// Wiederherstellungs-Hinweis soll aber genau das sagen: Es LAG etwas vor,
+	// unabhängig davon, ob es zum aktuellen Zweig passt (dafür gibt es
+	// `clearedNotice` weiter unten, als eigene, zusätzliche Meldung).
+	const savedFormDataAtLoad: SightingFormData = { ...savedFormData };
+
 	// `initialIsDead` überschreibt `isDead` aus dem Formular-State. Fehlten
 	// gespeicherte Formulardaten, steht dort ohnehin nur der Schema-Default —
 	// die Zuweisung ist dann gleichbedeutend mit „erstmalig setzen". Lagen
@@ -154,8 +168,16 @@
 		resetField(field);
 	}
 
-	// Zeige Feedback wenn vorherige Eingaben wiederhergestellt wurden
-	if (hadSavedFormData) {
+	// Zeige Feedback wenn vorherige Eingaben wiederhergestellt wurden.
+	//
+	// UX-Review (2026-08-07, Befund 6): `hadSavedFormData` allein sagt nur, DASS
+	// der Schlüssel `FORM_DATA` in `sessionStorage` stand — und den schreibt der
+	// `$effect` weiter unten schon beim bloßen Öffnen des Formulars, ohne dass
+	// der Nutzer etwas eingegeben hat. Auswahlseite → Formular → „Ändern" →
+	// Formular zeigte den Hinweis dadurch auch dann, wenn nichts wiederherzustellen
+	// war. `hasMeaningfulSavedData` prüft zusätzlich, ob sich die geladenen Daten
+	// TATSÄCHLICH vom Initialzustand unterscheiden (Ausnahmen und Begründung dort).
+	if (hadSavedFormData && hasMeaningfulSavedData(savedFormDataAtLoad, initialFormData)) {
 		// Defer toast to after Svelte hydration
 		queueMicrotask(() => {
 			toast.info('Ihre vorherigen Eingaben wurden wiederhergestellt.', { duration: 4000 });

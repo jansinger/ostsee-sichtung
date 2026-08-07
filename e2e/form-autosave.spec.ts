@@ -51,11 +51,23 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		const formPage = new FormPage(page);
 		await formPage.goto();
 
-		// Fill some data
+		// Eine ECHTE Eingabe, nicht nur das Datum: `sightingDate` steht per
+		// Schema-Default ohnehin auf heute — ein mit dem heutigen Datum
+		// „gefülltes" Formular unterscheidet sich nicht vom Initialzustand, und
+		// seit dem Gate `hasMeaningfulSavedData` (UX-Review 2026-08-07) meldet
+		// der Toast nur noch tatsächlich abweichende Daten.
 		await formPage.fillDate(today);
+		await formPage.fillWaterway('Kieler Bucht');
+		// Der Wert erreicht den Form-State erst mit dem `change`-Event — `fill()`
+		// blurt nicht. In den übrigen Specs übernimmt das der nächste Klick auf
+		// „Weiter"; hier gibt es keinen, also explizit.
+		await page.locator('[data-testid="field-waterway"]').blur();
 
 		// Wait for auto-save to persist to sessionStorage
-		await page.waitForFunction(() => !!sessionStorage.getItem('sichtungen_form_data'));
+		await page.waitForFunction(() => {
+			const raw = sessionStorage.getItem('sichtungen_form_data');
+			return !!raw && raw.includes('Kieler Bucht');
+		});
 
 		// Reload — should show restore toast
 		await page.reload();
@@ -64,6 +76,28 @@ test.describe('Formular — Auto-Save & Restore', () => {
 		await expect(page.getByText(/vorherigen Eingaben.*wiederhergestellt/i)).toBeVisible({
 			timeout: 5000
 		});
+	});
+
+	/**
+	 * Gegenprobe zum Gate `hasMeaningfulSavedData` (UX-Review 2026-08-07,
+	 * Befund 6): Das bloße Öffnen des Formulars schreibt `FORM_DATA` bereits in
+	 * den Storage — vor dem Gate meldete deshalb JEDES Reload „wiederhergestellt",
+	 * auch wenn nie etwas eingegeben wurde.
+	 */
+	test('Ohne echte Eingaben kein Restore-Toast', async ({ page }) => {
+		const formPage = new FormPage(page);
+		await formPage.goto();
+
+		// Der Mount-Effekt hat den (unveränderten) Zustand persistiert
+		await page.waitForFunction(() => !!sessionStorage.getItem('sichtungen_form_data'));
+
+		await page.reload();
+		await page.waitForLoadState('networkidle');
+
+		// Erst sicherstellen, dass das Formular wieder steht, DANN die Abwesenheit
+		// prüfen — sonst wäre ein zu früh ausgewerteter Nicht-Befund wertlos.
+		await expect(page.getByTestId('form-actions')).toBeVisible();
+		await expect(page.getByText(/vorherigen Eingaben.*wiederhergestellt/i)).not.toBeVisible();
 	});
 
 	/**

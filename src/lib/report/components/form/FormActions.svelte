@@ -57,7 +57,7 @@
 
 	<button
 		type="button"
-		class="btn btn-outline btn-error btn-sm min-h-11 w-full md:w-auto"
+		class="btn btn-outline btn-error btn-sm w-full md:w-auto"
 		onclick={handleReset}
 		disabled={$isSubmitting}
 	>

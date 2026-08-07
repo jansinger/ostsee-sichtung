@@ -331,7 +331,8 @@ test.describe('Nach dem Absenden verlässt der Zweig den Speicher, und „Weiter
 
 		await formPage.selectSpecies(0);
 		await formPage.fillTotalCount(1);
-		await formPage.selectDistance(1);
+		// Kein `selectDistance`: Die Entfernung entfällt im Totfund-Zweig
+		// vollständig (`HIDDEN_WHEN_DEAD`, UX-Review 2026-08-07).
 		await formPage.selectSightingFrom(3); // Land
 		await formPage.selectDeadCondition(1);
 		await waitForNextEnabled(page);

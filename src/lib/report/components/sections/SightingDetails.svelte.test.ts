@@ -177,3 +177,69 @@ describe('sections/SightingDetails — Kartentitel folgt dem Totfund-Schalter', 
 		expect(document.body.textContent).toContain('Funddetails');
 	});
 });
+
+/**
+ * UX-Review 2026-08-07, Befund A: Die Karte hieß beim Totfund bereits
+ * „Funddetails", das erste Feld darunter fragte aber weiter „Von wo aus wurde
+ * die Sichtung gemacht?" — das Schema-Label kennt nur den Lebend-Zweig. Die
+ * Zuordnung liegt wie alle Zweigtexte in `$lib/report/wording`.
+ */
+describe('sections/SightingDetails — die Herkunftsfrage folgt dem Zweig', () => {
+	it('fragt im Lebend-Zweig unverändert nach der Sichtung', () => {
+		renderSightingDetails({ isDead: false });
+
+		expect(document.body.textContent).toContain('Von wo aus wurde die Sichtung gemacht?');
+	});
+
+	it('fragt beim Totfund nach dem Fund', () => {
+		renderSightingDetails({ isDead: true });
+
+		const text = document.body.textContent ?? '';
+		expect(text).toContain('Von wo aus haben Sie das Tier gefunden?');
+		expect(text).not.toContain('Von wo aus wurde die Sichtung gemacht?');
+	});
+
+	/**
+	 * Anders als der Kartentitel bleibt die Feldbeschriftung in der Admin-Maske
+	 * am Schema-Label: Dort wird ein Datensatz bearbeitet, nicht gemeldet — die
+	 * Sachbearbeitung liest dieselbe Beschriftung wie im Export und in der
+	 * Detailansicht.
+	 */
+	it('behält in der Admin-Maske auch beim Totfund das Schema-Label', () => {
+		renderSightingDetails({ isDead: true }, { adminMode: true });
+
+		expect(document.body.textContent).toContain('Von wo aus wurde die Sichtung gemacht?');
+	});
+});
+
+/**
+ * UX-Review 2026-08-07, Befund B: „Entfernung zum Tier" war auch beim Totfund
+ * Pflichtfeld — wer am Strand neben dem Tier steht, kann die Frage nicht
+ * beantworten und kam ohne geratene Kategorie nicht weiter. Die Markup-Hälfte
+ * zur Aufnahme in `HIDDEN_WHEN_DEAD` (`formConfig.ts`); dieselbe Struktur wie
+ * bei `deadSex` in `DeadAnimal.svelte`.
+ */
+describe('sections/SightingDetails — Entfernung entfällt beim Totfund', () => {
+	it('zeigt die Entfernung im Lebend-Zweig', () => {
+		renderSightingDetails({ isDead: false });
+
+		expect(field('distance')).not.toBeNull();
+	});
+
+	it('zeigt die Entfernung beim Totfund gar nicht erst', () => {
+		renderSightingDetails({ isDead: true });
+
+		expect(document.querySelector('[data-field="distance"]')).toBeNull();
+	});
+
+	/**
+	 * Die Admin-Maske muss die Entfernung an Totfund-Altbeständen weiter
+	 * bearbeiten können — 282 Bestandszeilen tragen dort den Sentinel `0`
+	 * („nicht angegeben", siehe `adminSightingSchema`).
+	 */
+	it('behält die Entfernung in der Admin-Maske auch beim Totfund', () => {
+		renderSightingDetails({ isDead: true }, { adminMode: true });
+
+		expect(field('distance')).not.toBeNull();
+	});
+});
