@@ -1,8 +1,25 @@
 import { render } from 'vitest-browser-svelte';
 import { describe, expect, it, vi } from 'vitest';
 import SightingInboxCard from './SightingInboxCard.svelte';
-import { SIGHTING_STATUS_PRESENTATION } from './sightingStatus';
 import type { SightingSelect } from '$lib/server/db/schema';
+
+/* actionLabel ('Freigeben'/'Ablehnen') trägt zufällig dieselben Wörter wie die
+   frühere, fest verdrahtete Beschriftung — ein Test gegen die echte Quelle
+   bewiese damit nicht, dass die Karte aus ihr liest. Der Mock trägt bewusst
+   abweichende Werte, damit ein Rückfall auf feste Strings den Test rot macht. */
+vi.mock('./sightingStatus', async () => {
+	const actual = await vi.importActual<typeof import('./sightingStatus')>('./sightingStatus');
+	return {
+		...actual,
+		SIGHTING_STATUS_PRESENTATION: {
+			...actual.SIGHTING_STATUS_PRESENTATION,
+			approved: { ...actual.SIGHTING_STATUS_PRESENTATION.approved, actionLabel: 'TESTFREIGABE' },
+			rejected: { ...actual.SIGHTING_STATUS_PRESENTATION.rejected, actionLabel: 'TESTABLEHNUNG' }
+		}
+	};
+});
+
+const { SIGHTING_STATUS_PRESENTATION } = await import('./sightingStatus');
 
 const basisSichtung = {
 	id: 42,
@@ -79,9 +96,13 @@ describe('SightingInboxCard', () => {
 			onApprove,
 			onReject
 		});
-		await screen.getByRole('button', { name: 'Freigeben' }).click();
+		await screen
+			.getByRole('button', { name: SIGHTING_STATUS_PRESENTATION.approved.actionLabel })
+			.click();
 		expect(onApprove).toHaveBeenCalledOnce();
-		await screen.getByRole('button', { name: 'Ablehnen' }).click();
+		await screen
+			.getByRole('button', { name: SIGHTING_STATUS_PRESENTATION.rejected.actionLabel })
+			.click();
 		expect(onReject).toHaveBeenCalledOnce();
 	});
 

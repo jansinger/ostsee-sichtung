@@ -102,11 +102,21 @@
 		<div class="card-actions justify-end">
 			<a href={`/admin/${sighting.id}`} class="btn btn-ghost btn-sm">Details</a>
 			<button type="button" class="btn btn-outline btn-sm" disabled={busy} onclick={onReject}>
-				<Icon icon={SIGHTING_STATUS_PRESENTATION.rejected.icon} width="16" aria-hidden="true" />
+				<Icon
+					icon={SIGHTING_STATUS_PRESENTATION.rejected.icon}
+					width="16"
+					height="16"
+					aria-hidden="true"
+				/>
 				{SIGHTING_STATUS_PRESENTATION.rejected.actionLabel}
 			</button>
 			<button type="button" class="btn btn-primary btn-sm" disabled={busy} onclick={onApprove}>
-				<Icon icon={SIGHTING_STATUS_PRESENTATION.approved.icon} width="16" aria-hidden="true" />
+				<Icon
+					icon={SIGHTING_STATUS_PRESENTATION.approved.icon}
+					width="16"
+					height="16"
+					aria-hidden="true"
+				/>
 				{SIGHTING_STATUS_PRESENTATION.approved.actionLabel}
 			</button>
 		</div>

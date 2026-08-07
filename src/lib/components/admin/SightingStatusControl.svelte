@@ -87,7 +87,7 @@
 				aria-label={presentation.label}
 				onchange={() => select(option)}
 			/>
-			<Icon icon={presentation.icon} width="16" aria-hidden="true" />
+			<Icon icon={presentation.icon} width="16" height="16" aria-hidden="true" />
 			{#if size === 'md'}
 				<span>{presentation.label}</span>
 			{/if}
