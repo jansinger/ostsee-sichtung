@@ -99,9 +99,9 @@
 		</h1>
 		<button type="button" class="btn btn-ghost btn-sm" onclick={sortierungUmschalten}>
 			{#if data.order === 'asc'}
-				<ArrowUp width="16" height="16" /> Älteste zuerst
+				<ArrowUp width="16" height="16" aria-hidden="true" /> Älteste zuerst
 			{:else}
-				<ArrowDown width="16" height="16" /> Neueste zuerst
+				<ArrowDown width="16" height="16" aria-hidden="true" /> Neueste zuerst
 			{/if}
 		</button>
 	</div>

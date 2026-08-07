@@ -101,10 +101,10 @@
 				disabled={busy}
 				onclick={onReject}
 			>
-				<X width="16" height="16" /> Ablehnen
+				<X width="16" height="16" aria-hidden="true" /> Ablehnen
 			</button>
 			<button type="button" class="btn btn-primary btn-sm" disabled={busy} onclick={onApprove}>
-				<Check width="16" height="16" /> Freigeben
+				<Check width="16" height="16" aria-hidden="true" /> Freigeben
 			</button>
 		</div>
 	</div>

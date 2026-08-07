@@ -44,27 +44,34 @@ export const load: PageServerLoad = async ({ url }) => {
 		.from(sightings)
 		.where(mediaUploadCondition(MEDIA_UPLOAD_ANNOUNCED_MISSING));
 
-	const [open, openCountResult, pendingPhotoResult] = await Promise.all([
-		openQuery,
+	// Bild-Vorschauen für genau die gelisteten Sichtungen — ein Query, in JS
+	// gruppiert. Nur Bilder: Videos brauchen einen Player, das leistet die
+	// Detailansicht. Per `.then()` an die Liste gekettet statt danach awaited:
+	// so überlappt der Bild-Query mit den beiden Count-Queries, statt auf sie
+	// zu warten (er hängt nur von der Liste ab).
+	const openWithImagesQuery = openQuery.then(async (open) => {
+		const ids = open.map((s) => s.id);
+		const imageRows = ids.length
+			? await db
+					.select({
+						id: sightingFiles.id,
+						sightingId: sightingFiles.sightingId,
+						filePath: sightingFiles.filePath,
+						originalName: sightingFiles.originalName
+					})
+					.from(sightingFiles)
+					.where(
+						and(inArray(sightingFiles.sightingId, ids), like(sightingFiles.mimeType, 'image/%'))
+					)
+			: [];
+		return { open, imageRows };
+	});
+
+	const [{ open, imageRows }, openCountResult, pendingPhotoResult] = await Promise.all([
+		openWithImagesQuery,
 		openCountQuery,
 		pendingPhotoQuery
 	]);
-
-	// Bild-Vorschauen für genau die gelisteten Sichtungen — ein Query, in JS
-	// gruppiert. Nur Bilder: Videos brauchen einen Player, das leistet die
-	// Detailansicht.
-	const ids = open.map((s) => s.id);
-	const imageRows = ids.length
-		? await db
-				.select({
-					id: sightingFiles.id,
-					sightingId: sightingFiles.sightingId,
-					filePath: sightingFiles.filePath,
-					originalName: sightingFiles.originalName
-				})
-				.from(sightingFiles)
-				.where(and(inArray(sightingFiles.sightingId, ids), like(sightingFiles.mimeType, 'image/%')))
-		: [];
 
 	const imagesBySighting: Record<number, { id: number; filePath: string; originalName: string }[]> =
 		{};
