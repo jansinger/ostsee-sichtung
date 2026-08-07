@@ -490,6 +490,11 @@ jobs:
             # Der Aufschlag für die kalt kompilierte /admin-Route ist dabei
             # eingeplant (Begründung weiter unten bei `smoke`).
             e2e/admin-detail-actions.spec.ts
+            # Aus demselben Grund hier und nicht bei den Admin-Specs in `map`:
+            # `form` ist der kürzeste Shard, und die /admin-Route wird durch den
+            # Spec darüber ohnehin schon kalt kompiliert — der Aufschlag fällt
+            # hier also kein zweites Mal an. Lokal 13 s für zwei Tests.
+            e2e/admin-table-dead-finding.spec.ts
           )
 
           # Die drei Shards laufen parallel; die Laufzeit des Jobs ist die des

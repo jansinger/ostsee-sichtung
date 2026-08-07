@@ -2,6 +2,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import ExportModal from '$lib/components/admin/ExportModal.svelte';
+	import { DEAD_FINDING_PRESENTATION, isDeadFinding } from '$lib/components/admin/deadFinding';
 	import {
 		deleteSighting,
 		sendTestEmail,
@@ -63,7 +64,6 @@
 		wind: false,
 		visibility: false,
 		mediaUpload: true,
-		isDead: true,
 		balticSea: true,
 		verified: true,
 		actions: true
@@ -84,8 +84,11 @@
 		{ key: 'seaState', label: 'Seegang', sortKey: 'seaState' },
 		{ key: 'wind', label: 'Wind', sortKey: 'wind' },
 		{ key: 'visibility', label: 'Sichtweite', sortKey: 'visibility' },
+		// Kein Eintrag für den Totfund: Seine Kennzeichnung steht in einer festen
+		// Spalte ganz links und ist bewusst nicht abschaltbar — als „Totfund
+		// (Ja/Nein)"-Spalte am rechten Rand war sie genau dann weg, wenn man
+		// viele Spalten eingeschaltet hatte und am wenigsten hinsah.
 		{ key: 'mediaUpload', label: 'Aufnahme', sortKey: null },
-		{ key: 'isDead', label: 'Totfund', sortKey: null },
 		{ key: 'balticSea', label: 'Ostsee', sortKey: null },
 		{ key: 'verified', label: 'Geprüft', sortKey: null },
 		{ key: 'actions', label: 'Aktionen', sortKey: null }
@@ -617,16 +620,35 @@
 			<div class="bg-base-100 border-base-300 rounded-lg border p-4 shadow-sm">
 				<div class="mb-3 flex items-start justify-between">
 					<div class="flex-1">
-						{#if sighting.referenceId}
-							<a
-								href="/admin/ref/{sighting.referenceId}"
-								class="link link-primary link-hover font-mono text-sm"
-							>
-								{sighting.referenceId}
-							</a>
-						{:else}
-							<span class="text-base-content/70 text-sm">Keine Referenz</span>
-						{/if}
+						<!-- Referenz und Kennzeichen als eigene Flex-Zeile: Nebeneinander,
+						     solange der Platz reicht, und darunter, wenn nicht — ein
+						     Inline-Badge mit `ml-2` stand nach dem Umbruch eingerückt da. -->
+						<div class="flex flex-wrap items-center gap-2">
+							{#if sighting.referenceId}
+								<a
+									href="/admin/ref/{sighting.referenceId}"
+									class="link link-primary link-hover font-mono text-sm"
+								>
+									{sighting.referenceId}
+								</a>
+							{:else}
+								<span class="text-base-content/70 text-sm">Keine Referenz</span>
+							{/if}
+							<!-- In der Kopfzeile und nicht unten in der Badge-Reihe: Dort stand
+							     der Totfund gleichrangig neben „Mit Aufnahme" und dem
+							     Ostsee-Status und ging zwischen ihnen unter. Die Art der Meldung
+							     ist keine Eigenschaft unter anderen. -->
+							{#if isDeadFinding(sighting.isDead)}
+								<span class="badge badge-sm {DEAD_FINDING_PRESENTATION.badgeClass} gap-1">
+									<Icon
+										icon={DEAD_FINDING_PRESENTATION.icon}
+										class="h-3.5 w-3.5"
+										aria-hidden="true"
+									/>
+									{DEAD_FINDING_PRESENTATION.label}
+								</span>
+							{/if}
+						</div>
 						<h3 class="mt-1 text-base font-semibold">{getSpeciesLabel(sighting.species)}</h3>
 					</div>
 					<div class="ml-2 flex gap-1">
@@ -694,10 +716,7 @@
 					{#if sighting.mediaUpload}
 						<span class="badge badge-success badge-sm">Mit Aufnahme</span>
 					{/if}
-					{#if sighting.isDead}
-						<span class="badge badge-error badge-sm">Totfund</span>
-					{/if}
-					<!-- Anders als Aufnahme/Totfund immer sichtbar: „außerhalb" und „ohne
+					<!-- Anders als die Aufnahme immer sichtbar: „außerhalb" und „ohne
 					     Position" sind für die Triage genauso relevant wie „Ostsee", ein
 					     fehlendes Badge wäre hier also keine Aussage. -->
 					<span
@@ -749,6 +768,10 @@
 			<table class="table-zebra table w-full">
 				<thead class="bg-base-200 text-base-content">
 					<tr>
+						<!-- Feste Markerspalte, nicht in der Spaltenauswahl: Sie steht vor
+						     allen konfigurierbaren Spalten und überlebt damit sowohl jede
+						     Spaltenwahl als auch das horizontale Scrollen der Tabelle. -->
+						<th class="w-px p-0"><span class="sr-only">Art der Meldung</span></th>
 						{#if columnVisibility.referenceId}
 							<th class="hover:bg-base-300">Referenz-ID</th>
 						{/if}
@@ -791,9 +814,6 @@
 						{#if columnVisibility.mediaUpload}
 							<th class="hover:bg-base-300">Aufnahme</th>
 						{/if}
-						{#if columnVisibility.isDead}
-							<th class="hover:bg-base-300">Totfund</th>
-						{/if}
 						{#if columnVisibility.balticSea}
 							<th class="hover:bg-base-300">Ostsee</th>
 						{/if}
@@ -808,6 +828,27 @@
 				<tbody>
 					{#each sightings as sighting (sighting.id)}
 						<tr class="hover:bg-base-200">
+							<!-- Kante und Icon zusammen: Die Kante wirkt beim Überfliegen, das
+							     Icon trägt zusätzlich eine Form — Farbe allein wäre kein
+							     Merkmal (WCAG 1.4.1). Der `sr-only`-Text benennt beides, sonst
+							     bliebe die Zelle für Screenreader leer.
+							     Die Kante steht an der Zelle und nicht am `<tr>`: unter
+							     `border-collapse` entscheidet dort sonst die Konfliktauflösung
+							     der Nachbarkanten, ob sie überhaupt gezeichnet wird. -->
+							<td
+								class="w-px p-0 {isDeadFinding(sighting.isDead) ? 'border-error border-l-4' : ''}"
+							>
+								{#if isDeadFinding(sighting.isDead)}
+									<span class="flex items-center justify-center px-2">
+										<Icon
+											icon={DEAD_FINDING_PRESENTATION.icon}
+											class="text-error h-4 w-4"
+											aria-hidden="true"
+										/>
+										<span class="sr-only">{DEAD_FINDING_PRESENTATION.label}</span>
+									</span>
+								{/if}
+							</td>
 							{#if columnVisibility.referenceId}
 								<td>
 									{#if sighting.referenceId}
@@ -873,15 +914,6 @@
 								<td class="text-center">
 									{#if sighting.mediaUpload}
 										<span class="badge badge-success badge-sm">Ja</span>
-									{:else}
-										<span class="badge badge-ghost badge-sm">Nein</span>
-									{/if}
-								</td>
-							{/if}
-							{#if columnVisibility.isDead}
-								<td class="text-center">
-									{#if sighting.isDead}
-										<span class="badge badge-error badge-sm">Ja</span>
 									{:else}
 										<span class="badge badge-ghost badge-sm">Nein</span>
 									{/if}

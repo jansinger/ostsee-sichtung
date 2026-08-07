@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import AdminSightingView from './AdminSightingView.svelte';
+import { DEAD_FINDING_PRESENTATION } from './deadFinding';
 import type { FrontendSighting } from '$lib/types';
 import {
 	PHOTO_ANNOUNCEMENT_LABEL,
@@ -54,8 +55,8 @@ describe('AdminSightingView — Foto-Ankündigung', () => {
 			sighting: baseSighting({ mediaUpload: 0, uploadedFiles: [] })
 		});
 
-		// Mehrere Zeilen zeigen „Nein" (Totfund, Namensnennung, …) — deshalb
-		// gezielt die Upload-Zeile über ihre Beschriftung greifen.
+		// Mehrere Zeilen zeigen „Nein" (Namensnennung, Schiffsnennung, …) —
+		// deshalb gezielt die Upload-Zeile über ihre Beschriftung greifen.
 		await expect.element(page.getByRole('row', { name: 'Upload Nein' })).toBeVisible();
 		expect(document.body.textContent).not.toContain(PHOTO_ANNOUNCEMENT_LABEL);
 	});
@@ -95,5 +96,50 @@ describe('AdminSightingView — Foto-Ankündigung', () => {
 
 		await expect.element(page.getByRole('row', { name: 'Upload Ja' })).toBeVisible();
 		expect(document.body.textContent).not.toContain(PHOTO_ANNOUNCEMENT_LABEL);
+	});
+});
+
+/**
+ * Totfund vs. Lebendsichtung.
+ *
+ * **Der Befund:** Die Karte „Totfund" wurde bei *jeder* Sichtung gerendert —
+ * `deadAnimalRows` enthielt immer mindestens die Zeile „Totfund: Nein". Eine
+ * Lebendsichtung behauptete damit optisch einen Totfund-Abschnitt, und beim
+ * Überfliegen sahen beide Arten gleich aus.
+ */
+describe('AdminSightingView — Totfund-Auszeichnung', () => {
+	it('zeichnet einen Totfund über allen Angaben aus und zeigt die Totfund-Karte', async () => {
+		render(AdminSightingView, {
+			sighting: baseSighting({ isDead: 1, deadCondition: 1, deadSize: 142 })
+		});
+
+		await expect.element(page.getByText(DEAD_FINDING_PRESENTATION.description)).toBeVisible();
+		await expect.element(page.getByRole('heading', { name: 'Totfund' })).toBeVisible();
+		await expect.element(page.getByRole('row', { name: 'Größe 142 cm' })).toBeVisible();
+	});
+
+	// Die Überschrift der Karte sagt es bereits — die Zeile darunter wiederholte
+	// sie nur und kostete eine Zeile in einer ohnehin dichten Ansicht.
+	it('wiederholt „Totfund" nicht als eigene Ja-Zeile in der Karte', async () => {
+		render(AdminSightingView, {
+			sighting: baseSighting({ isDead: 1, deadCondition: 1 })
+		});
+
+		await expect.element(page.getByRole('heading', { name: 'Totfund' })).toBeVisible();
+		expect(page.getByRole('row', { name: 'Totfund Ja' }).elements()).toHaveLength(0);
+	});
+
+	it('zeigt bei einer Lebendsichtung weder Kennzeichen noch Totfund-Karte', async () => {
+		render(AdminSightingView, {
+			sighting: baseSighting({ isDead: 0 })
+		});
+
+		// Erst auf etwas warten, das sicher gerendert ist — sonst prüfte die
+		// Abwesenheit unter Umständen einen noch leeren Baum und wäre grün,
+		// ohne etwas zu belegen.
+		await expect.element(page.getByRole('heading', { name: 'Tierinformationen' })).toBeVisible();
+		expect(document.body.textContent).not.toContain(DEAD_FINDING_PRESENTATION.description);
+		expect(page.getByRole('heading', { name: 'Totfund' }).elements()).toHaveLength(0);
+		expect(page.getByRole('row', { name: 'Totfund Nein' }).elements()).toHaveLength(0);
 	});
 });
