@@ -17,6 +17,7 @@
 			message={toast.message}
 			duration={toast.duration ?? 5000}
 			dismissible={!!toast.dismissible}
+			action={toast.action}
 			onDismiss={() => removeToast(toast.id)}
 		/>
 	{/each}
