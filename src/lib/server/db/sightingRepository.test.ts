@@ -179,6 +179,64 @@ describe('sightingRepository', () => {
 			expect(mockDb.insert).toHaveBeenCalledWith(schema.sightings);
 		});
 
+		it('persistiert das Spam-Ergebnis in den Spalten spamScore/spamIndicators', async () => {
+			const mockDb = db as any;
+			let capturedValues: Record<string, unknown> | undefined;
+			mockDb.insert.mockReturnValue({
+				values: vi.fn().mockImplementation((data) => {
+					capturedValues = data;
+					return { returning: vi.fn().mockResolvedValue([{ id: 42 }]) };
+				})
+			});
+			mockDb.update.mockReturnValue({
+				set: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						returning: vi.fn().mockResolvedValue([{ id: 42 }])
+					})
+				})
+			});
+
+			await saveSighting(mockFormData, undefined, {
+				score: 7,
+				isHighRisk: true,
+				indicators: ['Testindikator']
+			});
+
+			expect(capturedValues?.spamScore).toBe(7);
+			expect(capturedValues?.spamIndicators).toEqual(['Testindikator']);
+		});
+
+		it('lässt die Spam-Spalten bei fehlgeschlagener Prüfung auf NULL statt Score 0', async () => {
+			// Der Fail-Safe des Detektors liefert score 0 + isHighRisk true. Als
+			// spamScore = 0 persistiert läse sich das als „geprüft, sauber" —
+			// genau die Verwechslung, vor der der Schema-Kommentar warnt.
+			const mockDb = db as any;
+			let capturedValues: Record<string, unknown> | undefined;
+			mockDb.insert.mockReturnValue({
+				values: vi.fn().mockImplementation((data) => {
+					capturedValues = data;
+					return { returning: vi.fn().mockResolvedValue([{ id: 42 }]) };
+				})
+			});
+			mockDb.update.mockReturnValue({
+				set: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						returning: vi.fn().mockResolvedValue([{ id: 42 }])
+					})
+				})
+			});
+
+			await saveSighting(mockFormData, undefined, {
+				score: 0,
+				isHighRisk: true,
+				indicators: ['Spam-Prüfung fehlgeschlagen'],
+				failed: true
+			});
+
+			expect(capturedValues?.spamScore).toBeUndefined();
+			expect(capturedValues?.spamIndicators).toBeUndefined();
+		});
+
 		/**
 		 * Test: Erfolgreiche Speicherung mit Dateien
 		 */

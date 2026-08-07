@@ -16,10 +16,18 @@ vi.mock('$lib/utils/format/sightingFormatter', () => ({
 	isUnknownOrMissingSpecies: vi.fn().mockReturnValue(false)
 }));
 
+// Mock MX-Record-Prüfung (kein echtes DNS in Unit Tests)
+vi.mock('./mxCheck', () => ({
+	checkMxRecords: vi.fn().mockResolvedValue('unknown')
+}));
+
 import { detectSpamIndicators } from './spamDetector';
 import { isUnknownOrMissingSpecies } from '$lib/utils/format/sightingFormatter';
+import { checkMxRecords } from './mxCheck';
+import { DISPOSABLE_EMAIL_DOMAINS } from './disposableEmailDomains';
 
 const mockIsUnknownOrMissingSpecies = vi.mocked(isUnknownOrMissingSpecies);
+const mockCheckMxRecords = vi.mocked(checkMxRecords);
 
 function buildSighting(overrides: Partial<SpamDetectionInput> = {}): SpamDetectionInput {
 	return {
@@ -40,6 +48,7 @@ describe('detectSpamIndicators', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockIsUnknownOrMissingSpecies.mockReturnValue(false);
+		mockCheckMxRecords.mockResolvedValue('unknown');
 	});
 
 	describe('URL-Erkennung', () => {
@@ -118,7 +127,7 @@ describe('detectSpamIndicators', () => {
 		});
 
 		it('erkennt "gratis" in firstName', async () => {
-			const sighting = buildSighting({ firstName: 'GratisAngebot' });
+			const sighting = buildSighting({ firstName: 'Gratis Angebot' });
 			const result = await detectSpamIndicators(sighting);
 			expect(result.score).toBeGreaterThanOrEqual(2);
 		});
@@ -201,23 +210,99 @@ describe('detectSpamIndicators', () => {
 	});
 
 	describe('Position außerhalb Ostsee', () => {
-		it('erkennt Koordinaten außerhalb Ostsee und gibt score +2', async () => {
-			const sighting = buildSighting({ latitude: 10.0, longitude: 50.0 });
+		// Der Detektor rechnet die Bounding Box nicht mehr selbst aus lat/lng,
+		// sondern nutzt den übergebenen DB-Wert `inBalticSeaGeo` (Spalte ostsee_geo:
+		// 0 = außerhalb des Kartenbereichs, > 0 = drin).
+		it('erkennt Position mit inBalticSeaGeo 0 als außerhalb und gibt score +2', async () => {
+			const sighting = buildSighting({ latitude: 10.0, longitude: 50.0, inBalticSeaGeo: 0 });
 			const result = await detectSpamIndicators(sighting);
 			expect(result.score).toBeGreaterThanOrEqual(2);
 			expect(result.indicators).toContain('Position weit außerhalb der Ostsee');
 		});
 
-		it('akzeptiert gültige Ostsee-Koordinaten', async () => {
-			const sighting = buildSighting({ latitude: 54.5, longitude: 12.0 });
+		it('akzeptiert Position mit inBalticSeaGeo 1', async () => {
+			const sighting = buildSighting({ latitude: 54.5, longitude: 12.0, inBalticSeaGeo: 1 });
 			const result = await detectSpamIndicators(sighting);
 			expect(result.indicators).not.toContain('Position weit außerhalb der Ostsee');
 		});
 
-		it('erkennt zu hohe Breite als außerhalb Ostsee', async () => {
-			const sighting = buildSighting({ latitude: 70.0, longitude: 20.0 });
+		it('akzeptiert Altbestand-Wert inBalticSeaGeo 2 als „drin" (Regel: > 0)', async () => {
+			const sighting = buildSighting({ latitude: 54.5, longitude: 12.0, inBalticSeaGeo: 2 });
 			const result = await detectSpamIndicators(sighting);
-			expect(result.indicators).toContain('Position weit außerhalb der Ostsee');
+			expect(result.indicators).not.toContain('Position weit außerhalb der Ostsee');
+		});
+
+		it('gibt keinen Indikator ohne Position, auch bei inBalticSeaGeo 0', async () => {
+			const sighting = buildSighting({
+				latitude: undefined,
+				longitude: undefined,
+				inBalticSeaGeo: 0
+			});
+			const result = await detectSpamIndicators(sighting);
+			expect(result.indicators).not.toContain('Position weit außerhalb der Ostsee');
+		});
+
+		it('gibt keinen Indikator ohne inBalticSeaGeo — keine eigene Bounding-Box-Rechnung mehr', async () => {
+			// Kern der Änderung: Aufrufer ohne DB-Wert bekommen keine Aussage,
+			// die alte eigene Rechnung darf NICHT mehr anspringen.
+			const sighting = buildSighting({ latitude: 54.5, longitude: 12.0 });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.indicators).not.toContain('Position weit außerhalb der Ostsee');
+		});
+	});
+
+	describe('Duplikat-Signale', () => {
+		// Werte liefert der Aufrufer per `recentDuplicates` — der Detektor macht keine DB-Abfragen.
+		it('gibt score +2 und Indikator bei identischem Bemerkungstext', async () => {
+			const sighting = buildSighting({ recentDuplicates: { sameEmail: 0, sameNotes: 1 } });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBeGreaterThanOrEqual(2);
+			expect(result.indicators).toContain(
+				'Identischer Bemerkungstext wie bei einer früheren Meldung'
+			);
+		});
+
+		it('gibt score +2 und Indikator bei 5 Meldungen mit derselben E-Mail in 24 Stunden', async () => {
+			const sighting = buildSighting({ recentDuplicates: { sameEmail: 5, sameNotes: 0 } });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBeGreaterThanOrEqual(2);
+			expect(result.indicators).toContain(
+				'Auffällig viele Meldungen mit derselben E-Mail-Adresse in 24 Stunden'
+			);
+		});
+
+		it('gibt keinen Duplikat-Indikator bei nur 4 Meldungen mit derselben E-Mail', async () => {
+			const sighting = buildSighting({ recentDuplicates: { sameEmail: 4, sameNotes: 0 } });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.indicators).not.toContain(
+				'Auffällig viele Meldungen mit derselben E-Mail-Adresse in 24 Stunden'
+			);
+			expect(result.indicators).not.toContain(
+				'Identischer Bemerkungstext wie bei einer früheren Meldung'
+			);
+		});
+
+		it('gibt beide Indikatoren und score >= 4 bei E-Mail- und Notes-Duplikaten', async () => {
+			const sighting = buildSighting({ recentDuplicates: { sameEmail: 5, sameNotes: 2 } });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBeGreaterThanOrEqual(4);
+			expect(result.indicators).toContain(
+				'Auffällig viele Meldungen mit derselben E-Mail-Adresse in 24 Stunden'
+			);
+			expect(result.indicators).toContain(
+				'Identischer Bemerkungstext wie bei einer früheren Meldung'
+			);
+		});
+
+		it('gibt keinen Duplikat-Indikator ohne recentDuplicates', async () => {
+			const sighting = buildSighting({});
+			const result = await detectSpamIndicators(sighting);
+			expect(result.indicators).not.toContain(
+				'Auffällig viele Meldungen mit derselben E-Mail-Adresse in 24 Stunden'
+			);
+			expect(result.indicators).not.toContain(
+				'Identischer Bemerkungstext wie bei einer früheren Meldung'
+			);
 		});
 	});
 
@@ -287,6 +372,159 @@ describe('detectSpamIndicators', () => {
 			expect(typeof result.score).toBe('number');
 			expect(typeof result.isHighRisk).toBe('boolean');
 			expect(Array.isArray(result.indicators)).toBe(true);
+		});
+	});
+
+	describe('Wortgrenzen bei Keywords', () => {
+		it('matcht "win" nicht als Substring in "Wind"', async () => {
+			const sighting = buildSighting({ notes: 'starker Wind aus West' });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBe(0);
+			expect(result.indicators.some((i) => i.includes('Keyword'))).toBe(false);
+		});
+
+		it('matcht "win" nicht als Substring in "Winter"', async () => {
+			const sighting = buildSighting({ notes: 'Winter an der Küste' });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.indicators.some((i) => i.includes('Keyword'))).toBe(false);
+		});
+
+		it('matcht "gewinn" nicht als Substring in "Gewinnspiel"', async () => {
+			const sighting = buildSighting({ notes: 'tolles Gewinnspiel' });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.indicators.some((i) => i.includes('gewinn'))).toBe(false);
+		});
+
+		it('erkennt "gewinn" als eigenständiges Wort', async () => {
+			const sighting = buildSighting({ notes: 'jetzt gewinn sichern' });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBeGreaterThanOrEqual(2);
+			expect(result.indicators.some((i) => i.includes('gewinn'))).toBe(true);
+		});
+	});
+
+	describe('E-Mail-Adresse nicht im Keyword-Text', () => {
+		it('matcht "free" nicht in der E-Mail-Domain freenet.de', async () => {
+			const sighting = buildSighting({
+				firstName: '',
+				lastName: '',
+				email: 'info@freenet.de',
+				notes: '',
+				waterway: '',
+				seaMark: ''
+			});
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBe(0);
+			expect(result.indicators.some((i) => i.includes('free'))).toBe(false);
+		});
+
+		it('matcht "gewinn" nicht im Local-Part der E-Mail', async () => {
+			const sighting = buildSighting({ email: 'gewinn@example.com' });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.indicators.some((i) => i.includes('Keyword'))).toBe(false);
+		});
+	});
+
+	describe('MX-Prüfung der E-Mail-Domain', () => {
+		it('gibt score +3 und Indikator wenn Domain keinen MX-Record hat', async () => {
+			mockCheckMxRecords.mockResolvedValue('no-mx');
+			const sighting = buildSighting({ email: 'max@example.com' });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBeGreaterThanOrEqual(3);
+			expect(result.indicators).toContain(
+				'E-Mail-Domain ohne MX-Record (kann keine Mails empfangen)'
+			);
+		});
+
+		it('gibt keinen Indikator wenn Domain MX-Records hat', async () => {
+			mockCheckMxRecords.mockResolvedValue('has-mx');
+			const sighting = buildSighting({ email: 'max@example.com' });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.indicators).not.toContain(
+				'E-Mail-Domain ohne MX-Record (kann keine Mails empfangen)'
+			);
+		});
+
+		it('gibt keinen Indikator bei unbekanntem MX-Status (fail-open)', async () => {
+			mockCheckMxRecords.mockResolvedValue('unknown');
+			const sighting = buildSighting({ email: 'max@example.com' });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.indicators).not.toContain(
+				'E-Mail-Domain ohne MX-Record (kann keine Mails empfangen)'
+			);
+		});
+
+		it('ruft checkMxRecords mit kleingeschriebener Domain auf', async () => {
+			const sighting = buildSighting({ email: 'Max@Example.COM' });
+			await detectSpamIndicators(sighting);
+			expect(mockCheckMxRecords).toHaveBeenCalledWith('example.com');
+		});
+
+		it('ruft checkMxRecords ohne E-Mail nicht auf', async () => {
+			const sighting = buildSighting({ email: '' });
+			await detectSpamIndicators(sighting);
+			expect(mockCheckMxRecords).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('Submission-Kontext (Formular-Token)', () => {
+		it('gibt score +2 und Indikator bei fehlendem Token', async () => {
+			const sighting = buildSighting({ submission: { tokenStatus: 'missing' } });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBeGreaterThanOrEqual(2);
+			expect(result.indicators).toContain('Formular-Token fehlt');
+		});
+
+		it('gibt score +2 und Indikator bei ungültigem Token', async () => {
+			const sighting = buildSighting({ submission: { tokenStatus: 'invalid' } });
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBeGreaterThanOrEqual(2);
+			expect(result.indicators).toContain('Formular-Token ungültig');
+		});
+
+		it('gibt score +2 und Indikator bei verdächtig schneller Absendung', async () => {
+			const sighting = buildSighting({
+				submission: { tokenStatus: 'valid', ageSeconds: 2 }
+			});
+			const result = await detectSpamIndicators(sighting);
+			expect(result.score).toBeGreaterThanOrEqual(2);
+			expect(result.indicators).toContain('Formular verdächtig schnell abgeschickt');
+		});
+
+		it('gibt keinen Token-Indikator bei gültigem Token und normaler Ausfüllzeit', async () => {
+			const sighting = buildSighting({
+				submission: { tokenStatus: 'valid', ageSeconds: 60 }
+			});
+			const result = await detectSpamIndicators(sighting);
+			expect(result.indicators).not.toContain('Formular-Token fehlt');
+			expect(result.indicators).not.toContain('Formular-Token ungültig');
+			expect(result.indicators).not.toContain('Formular verdächtig schnell abgeschickt');
+		});
+
+		it('gibt keinen Token-Indikator ohne submission-Feld', async () => {
+			const sighting = buildSighting({});
+			const result = await detectSpamIndicators(sighting);
+			expect(result.indicators).not.toContain('Formular-Token fehlt');
+			expect(result.indicators).not.toContain('Formular-Token ungültig');
+			expect(result.indicators).not.toContain('Formular verdächtig schnell abgeschickt');
+		});
+	});
+
+	describe('Wegwerf-Domain-Liste (vendored)', () => {
+		it('enthält mailinator.com', () => {
+			expect(DISPOSABLE_EMAIL_DOMAINS.has('mailinator.com')).toBe(true);
+		});
+
+		it('enthält 10minutemail.com', () => {
+			expect(DISPOSABLE_EMAIL_DOMAINS.has('10minutemail.com')).toBe(true);
+		});
+
+		it('enthält gmail.com nicht', () => {
+			expect(DISPOSABLE_EMAIL_DOMAINS.has('gmail.com')).toBe(false);
+		});
+
+		it('umfasst mehr als 1000 Domains', () => {
+			expect(DISPOSABLE_EMAIL_DOMAINS.size).toBeGreaterThan(1000);
 		});
 	});
 });

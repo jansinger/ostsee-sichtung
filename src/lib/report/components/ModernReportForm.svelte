@@ -7,6 +7,7 @@
 	import SubmitStatus, { type SubmitState } from './form/SubmitStatus.svelte';
 
 	import { browser } from '$app/environment';
+	import { page } from '$app/state';
 	import { connection, watchConnection } from '$lib/stores/connectionState.svelte';
 	import { describeSubmitFailure, submitSightingForm } from '$lib/form/submitSightingForm';
 	import { sightingSchema } from '$lib/form/validation/sightingSchema';
@@ -327,7 +328,13 @@
 				submitAttempt += 1;
 				submitState = 'submitting';
 
-				const result = await submitSightingForm(submitValues);
+				// Zeit-Token aus dem Seiten-Load (nur Spam-Score, siehe
+				// src/routes/+page.server.ts). Fehlt es — etwa weil die Komponente
+				// außerhalb der Startseite gerendert wird — geht die Meldung
+				// trotzdem raus; der Server wertet das Fehlen nur als Indikator.
+				const formToken = typeof page.data.formToken === 'string' ? page.data.formToken : undefined;
+
+				const result = await submitSightingForm(submitValues, formToken);
 
 				if (result.status !== 'ok') {
 					// Jede Fehlerart bekommt ihren eigenen Zustand: `offline` sperrt das

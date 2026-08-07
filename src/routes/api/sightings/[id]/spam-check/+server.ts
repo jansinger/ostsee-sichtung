@@ -46,7 +46,9 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 			email: sighting.email ?? undefined,
 			waterway: sighting.waterway ?? undefined,
 			seaMark: sighting.seaMark ?? undefined,
-			notes: sighting.notes ?? undefined
+			notes: sighting.notes ?? undefined,
+			// DB-Wert statt eigener Geografie-Rechnung (ostsee_geo, >0 = drin)
+			inBalticSeaGeo: sighting.inBalticSeaGeo
 		};
 
 		const result = await detectSpamIndicators(spamInput);

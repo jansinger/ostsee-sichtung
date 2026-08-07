@@ -8,7 +8,11 @@ import { approvedOnly } from '$lib/server/db/approvalFilter';
 import { sightings } from '$lib/server/db/schema';
 import { berlinToChar } from '$lib/server/db/sqlTimeZone';
 import { getYearRange } from '$lib/legacy-api/date-utils';
-import { saveSighting } from '$lib/server/db/sightingRepository';
+import { countRecentDuplicateSignals, saveSighting } from '$lib/server/db/sightingRepository';
+import { mapFormToSighting } from '$lib/server/db/mapFormToSighting';
+import { detectSpamIndicators } from '$lib/server/spam/spamDetector';
+import { verifyFormToken } from '$lib/server/spam/formToken';
+import type { SpamSubmissionContext } from '$lib/types/spam';
 import { EmailService } from '$lib/server/services/emailService';
 import type { StoredWeatherData } from '$lib/services/weatherService';
 import {
@@ -147,6 +151,15 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 			throw new ValidationError('Invalid form submission');
 		}
 
+		// Zeit-Token VOR der Feld-Validierung herausnehmen: Es ist kein
+		// Formularfeld und würde sonst an der Whitelist scheitern. Es fließt
+		// nur in den Spam-Score ein und blockiert bewusst nichts.
+		let rawFormToken: unknown;
+		if (requestBody && typeof requestBody === 'object') {
+			rawFormToken = (requestBody as Record<string, unknown>)._formToken;
+			delete (requestBody as Record<string, unknown>)._formToken;
+		}
+
 		logger.debug({ requestBody }, 'Sichtung speichern - Request empfangen');
 
 		// 1. Prüfe auf verbotene Admin-Felder
@@ -228,7 +241,49 @@ export const POST: RequestHandler = async ({ request, locals, getClientAddress }
 			);
 		}
 
-		const { id } = await saveSighting(formDataWithDefaults, weatherData);
+		// Spam-Heuristik zum Meldezeitpunkt — inklusive Zeit-Token-Kontext, den
+		// nachträgliche Prüfungen (Admin-Modal, E-Mail) nicht mehr haben. Das
+		// Ergebnis wird persistiert; abgelehnt wird hier nichts (Triage im Admin).
+		const tokenCheck = verifyFormToken(rawFormToken);
+		const submission: SpamSubmissionContext =
+			tokenCheck.status === 'valid'
+				? { tokenStatus: 'valid', ageSeconds: tokenCheck.ageSeconds }
+				: { tokenStatus: tokenCheck.status };
+		// Ostsee-Flag aus derselben Abbildung, die auch die DB-Spalte füllt —
+		// der Detektor rechnet keine eigene Geografie. `saveSighting` mappt
+		// gleich noch einmal; mapFormToSighting ist pur, das Ergebnis identisch.
+		const { inBalticSeaGeo } = mapFormToSighting(formDataWithDefaults);
+		const recentDuplicates = await countRecentDuplicateSignals({
+			email: formDataWithDefaults.email,
+			notes: formDataWithDefaults.notes
+		});
+		const spamCheck = await detectSpamIndicators({
+			latitude: formDataWithDefaults.latitude ?? undefined,
+			longitude: formDataWithDefaults.longitude ?? undefined,
+			species: formDataWithDefaults.species,
+			firstName: formDataWithDefaults.firstName || undefined,
+			lastName: formDataWithDefaults.lastName || undefined,
+			email: formDataWithDefaults.email || undefined,
+			waterway: formDataWithDefaults.waterway || undefined,
+			seaMark: formDataWithDefaults.seaMark || undefined,
+			notes: formDataWithDefaults.notes || undefined,
+			inBalticSeaGeo,
+			recentDuplicates,
+			submission
+		});
+		if (spamCheck.isHighRisk) {
+			logger.warn(
+				{
+					event: 'security.spam_suspect',
+					clientIp,
+					score: spamCheck.score,
+					indicators: spamCheck.indicators
+				},
+				'Sichtung mit hohem Spam-Score eingegangen'
+			);
+		}
+
+		const { id } = await saveSighting(formDataWithDefaults, weatherData, spamCheck);
 		const referenceId = formDataWithDefaults.referenceId || `REF-${id}`;
 
 		logger.info({ id, referenceId }, 'Sichtung erfolgreich gespeichert');

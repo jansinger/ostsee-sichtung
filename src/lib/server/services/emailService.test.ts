@@ -104,6 +104,7 @@ import {
 } from '$lib/utils/format/sightingFormatter';
 import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 import { NOTIFICATION_EMAIL_DEFAULT_TEMPLATE } from '$lib/server/templates/notificationEmailDefault';
+import { detectSpamIndicators } from '$lib/server/spam/spamDetector';
 import { EmailService } from './emailService';
 
 // Hilfsfunktionen zum Erstellen von Mocks
@@ -1067,6 +1068,61 @@ describe('EmailService', () => {
 		it('sendet E-Mail auch bei Position außerhalb der Ostsee', async () => {
 			const result = await setupAndSend({ latitude: '40.0', longitude: '2.0' });
 			expect(result).toBe(true);
+		});
+
+		it('nutzt den persistierten Spam-Score aus der Datenbank statt neu zu rechnen', async () => {
+			const mockSighting = createMockSighting({
+				spamScore: 7,
+				spamIndicators: ['Testindikator']
+			});
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						limit: vi.fn().mockResolvedValue([mockSighting])
+					})
+				})
+			} as any);
+
+			setupConfigRepositoryMocks({
+				enabled: true,
+				smtpHost: 'smtp.example.com',
+				template:
+					'<p>Spam: {{spamCheck.score}}{{#if spamCheck.isHighRisk}} HOCHRISIKO{{/if}} {{#each spamCheck.indicators}}{{this}}{{/each}}</p>'
+			});
+
+			await EmailService.initialize(false);
+			const result = await EmailService.sendNewSightingNotification(42);
+
+			expect(result).toBe(true);
+			expect(detectSpamIndicators).not.toHaveBeenCalled();
+			const sendMailCall = mockTransporter.sendMail.mock.calls[0]?.[0] as any;
+			expect(sendMailCall?.html).toContain('Spam: 7');
+			expect(sendMailCall?.html).toContain('HOCHRISIKO');
+			expect(sendMailCall?.html).toContain('Testindikator');
+		});
+
+		it('rechnet nur beim Altbestand ohne persistierten Score neu — mit dem DB-Ostsee-Flag', async () => {
+			const mockSighting = createMockSighting({
+				spamScore: null,
+				spamIndicators: null,
+				inBalticSeaGeo: 1
+			});
+			vi.mocked(db.select).mockReturnValue({
+				from: vi.fn().mockReturnValue({
+					where: vi.fn().mockReturnValue({
+						limit: vi.fn().mockResolvedValue([mockSighting])
+					})
+				})
+			} as any);
+
+			setupConfigRepositoryMocks({ enabled: true, smtpHost: 'smtp.example.com' });
+			await EmailService.initialize(false);
+			const result = await EmailService.sendNewSightingNotification(42);
+
+			expect(result).toBe(true);
+			expect(detectSpamIndicators).toHaveBeenCalledWith(
+				expect.objectContaining({ inBalticSeaGeo: 1 })
+			);
 		});
 	});
 

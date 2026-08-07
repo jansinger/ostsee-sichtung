@@ -111,7 +111,12 @@ export const sightings = pgTable(
 		weatherFetchedAt: timestamp('weather_fetched_at', { mode: 'date' }),
 		weatherProvider: varchar('weather_provider', { length: 50 }).default('open-meteo'),
 		weatherApiVersion: varchar('weather_api_version', { length: 20 }),
-		weatherDataType: varchar('weather_data_type', { length: 20 }).default('historical')
+		weatherDataType: varchar('weather_data_type', { length: 20 }).default('historical'),
+		// Spam-Heuristik zum Meldezeitpunkt (detectSpamIndicators). NULL = Altbestand
+		// bzw. Eingang an der Web-API vorbei — nicht mit Score 0 („geprüft, sauber")
+		// verwechselbar. Die Indikatoren sind ein String-Array (jsonb).
+		spamScore: smallint('spam_score'),
+		spamIndicators: jsonb('spam_indicators')
 	},
 	(table) => [
 		index('geom_sichtungen').using(

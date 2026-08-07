@@ -47,9 +47,15 @@ vi.mock('drizzle-orm', async () => {
 });
 
 vi.mock('$lib/server/db/sightingRepository', () => ({
-	saveSighting: vi.fn().mockResolvedValue({ id: 123 })
+	saveSighting: vi.fn().mockResolvedValue({ id: 123 }),
+	countRecentDuplicateSignals: vi.fn().mockResolvedValue({ sameEmail: 0, sameNotes: 0 })
 }));
 
+
+// Spam-Detektor mocken: verhindert echte MX-DNS-Lookups im Contract-Test.
+vi.mock('$lib/server/spam/spamDetector', () => ({
+	detectSpamIndicators: vi.fn().mockResolvedValue({ score: 0, isHighRisk: false, indicators: [] })
+}));
 vi.mock('$lib/server/auth/auth', () => ({
 	requireUserRole: vi.fn()
 }));

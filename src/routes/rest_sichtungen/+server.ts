@@ -23,7 +23,9 @@ import {
 	validateLegacySightingWithYup
 } from '$lib/legacy-api/yup-validation.js';
 import { createLogger } from '$lib/logger.server';
-import { saveSighting } from '$lib/server/db/sightingRepository';
+import { countRecentDuplicateSignals, saveSighting } from '$lib/server/db/sightingRepository';
+import { mapFormToSighting } from '$lib/server/db/mapFormToSighting';
+import { detectSpamIndicators } from '$lib/server/spam/spamDetector';
 import { EmailService } from '$lib/server/services/emailService';
 import { ServerConfigService } from '$lib/services/configService';
 import { json, isHttpError, type RequestEvent } from '@sveltejs/kit';
@@ -157,10 +159,37 @@ export async function POST(event: RequestEvent): Promise<Response> {
 			return json(errorResponse, { status: 400 });
 		}
 
+		// Spam-Heuristik wie an der Web-API — aber OHNE Token-Kontext: Der
+		// Legacy-Vertrag kennt kein Formular-Token, ein 'missing'-Malus würde
+		// jede App-Meldung bestrafen. Rein additiv, Response bleibt unverändert.
+		// Koordinaten aus der Abbildung, nicht roh aus transformedData:
+		// mapLegacyToCurrentSchema setzt fehlendes GPS auf 0, erst
+		// mapFormToSighting normalisiert das zu null. Rohwerte ergäben mit
+		// ostsee_geo = 0 für jede Meldung ohne Position den falschen Indikator
+		// „Position weit außerhalb der Ostsee".
+		const mappedSighting = mapFormToSighting(transformedData);
+		const recentDuplicates = await countRecentDuplicateSignals({
+			email: transformedData.email,
+			notes: transformedData.notes
+		});
+		const spamCheck = await detectSpamIndicators({
+			latitude: mappedSighting.latitude != null ? Number(mappedSighting.latitude) : undefined,
+			longitude: mappedSighting.longitude != null ? Number(mappedSighting.longitude) : undefined,
+			species: transformedData.species,
+			firstName: transformedData.firstName || undefined,
+			lastName: transformedData.lastName || undefined,
+			email: transformedData.email || undefined,
+			waterway: transformedData.waterway || undefined,
+			seaMark: transformedData.seaMark || undefined,
+			notes: transformedData.notes || undefined,
+			inBalticSeaGeo: mappedSighting.inBalticSeaGeo,
+			recentDuplicates
+		});
+
 		// Save sighting using existing repository
 		let savedSighting;
 		try {
-			savedSighting = await saveSighting(transformedData);
+			savedSighting = await saveSighting(transformedData, undefined, spamCheck);
 
 			logger.info(
 				{

@@ -2664,6 +2664,15 @@ components:
         - totalCount
         - email
       properties:
+        _formToken:
+          type: string
+          description: >-
+            Signiertes Zeit-Token aus dem Seiten-Load der Meldeseite
+            (Spam-Heuristik). Kein Formularfeld: Der Server entfernt es vor
+            der Feld-Validierung. Fehlt es oder ist es ungültig, wird die
+            Meldung trotzdem angenommen — es fließt nur in den gespeicherten
+            Spam-Score ein.
+          example: "1754550000000.9f2c…"
         sightingDate:
           type: string
           format: date-time

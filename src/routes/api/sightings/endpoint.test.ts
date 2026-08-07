@@ -1,10 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from './+server';
 import { saveSighting } from '$lib/server/db/sightingRepository';
+import { detectSpamIndicators } from '$lib/server/spam/spamDetector';
+import { issueFormToken } from '$lib/server/spam/formToken';
 
 // Mock dependencies
 vi.mock('$lib/server/db/sightingRepository', () => ({
-	saveSighting: vi.fn().mockResolvedValue({ id: 123 })
+	saveSighting: vi.fn().mockResolvedValue({ id: 123 }),
+	countRecentDuplicateSignals: vi.fn().mockResolvedValue({ sameEmail: 0, sameNotes: 0 })
+}));
+
+// Spam-Detektor mocken: verhindert echte MX-DNS-Lookups im Test und macht
+// das übergebene Ergebnis deterministisch prüfbar.
+vi.mock('$lib/server/spam/spamDetector', () => ({
+	detectSpamIndicators: vi.fn().mockResolvedValue({ score: 0, isHighRisk: false, indicators: [] })
 }));
 
 vi.mock('$lib/logger.server', () => ({
@@ -48,11 +57,13 @@ vi.mock('$lib/services/configService', () => ({
 }));
 
 const mockedSaveSighting = vi.mocked(saveSighting);
+const mockedDetectSpam = vi.mocked(detectSpamIndicators);
 
 describe('/api/sightings POST endpoint', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockedSaveSighting.mockResolvedValue({ id: 123 });
+		mockedDetectSpam.mockResolvedValue({ score: 0, isHighRisk: false, indicators: [] });
 	});
 
 	const createMockRequestEvent = (body: unknown) => {
@@ -315,4 +326,73 @@ describe('/api/sightings POST endpoint', () => {
 		const formData = vi.mocked(saveSighting).mock.calls[0]?.[0];
 		expect(formData).toHaveProperty('referenceId', 'ref-test-456');
 	}, 15000);
+
+	describe('Spam-Score bei der Meldung', () => {
+		const validBody = (): Record<string, unknown> => ({
+			referenceId: 'spam-ref-1',
+			firstName: 'Test',
+			lastName: 'User',
+			email: 'test@example.com',
+			species: 0,
+			totalCount: 1,
+			sightingDate: '2024-01-15',
+			hasPosition: true,
+			latitude: 54.5,
+			longitude: 13.5,
+			privacyConsent: true,
+			entryChannel: 0,
+			boatDrive: 1,
+			sightingFrom: 1,
+			distance: 1,
+			isDead: false
+		});
+
+		it('entfernt _formToken vor der Feld-Validierung und akzeptiert die Meldung', async () => {
+			const request = createMockRequestEvent({ ...validBody(), _formToken: 'kein-echtes-token' });
+
+			const response = await POST(request);
+
+			expect(response.status).toBe(201);
+			expect(saveSighting).toHaveBeenCalledOnce();
+		}, 15000);
+
+		it('übergibt das Spam-Ergebnis als dritten Parameter an saveSighting', async () => {
+			const spamResult = { score: 7, isHighRisk: true, indicators: ['Testindikator'] };
+			mockedDetectSpam.mockResolvedValue(spamResult);
+
+			const response = await POST(createMockRequestEvent(validBody()));
+
+			expect(response.status).toBe(201);
+			expect(mockedSaveSighting.mock.calls[0]?.[2]).toEqual(spamResult);
+		}, 15000);
+
+		it('meldet fehlendes Token als tokenStatus missing', async () => {
+			await POST(createMockRequestEvent(validBody()));
+
+			expect(mockedDetectSpam).toHaveBeenCalledWith(
+				expect.objectContaining({ submission: { tokenStatus: 'missing' } })
+			);
+		}, 15000);
+
+		it('meldet unbrauchbares Token als tokenStatus invalid', async () => {
+			await POST(createMockRequestEvent({ ...validBody(), _formToken: 'kein-echtes-token' }));
+
+			expect(mockedDetectSpam).toHaveBeenCalledWith(
+				expect.objectContaining({ submission: { tokenStatus: 'invalid' } })
+			);
+		}, 15000);
+
+		it('meldet ein gültiges Token als tokenStatus valid mit Formular-Alter', async () => {
+			await POST(createMockRequestEvent({ ...validBody(), _formToken: issueFormToken() }));
+
+			expect(mockedDetectSpam).toHaveBeenCalledWith(
+				expect.objectContaining({
+					submission: expect.objectContaining({
+						tokenStatus: 'valid',
+						ageSeconds: expect.any(Number)
+					})
+				})
+			);
+		}, 15000);
+	});
 });
