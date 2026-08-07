@@ -55,9 +55,10 @@ type MediaUploadFlag = number | boolean | null | undefined;
 /**
  * Die vier Angaben, aus denen der Zustand entsteht.
  *
- * Bewusst ein Objekt und keine vier Positionsparameter: Zwei davon sind
- * nullable Zahlen (`attachedFileCount`, `entryChannel`), und zwei vertauschte
- * Zahlen fielen weder dem Compiler noch dem Leser auf.
+ * Bewusst ein Objekt und keine vier Positionsparameter: `attachedFileCount`
+ * und `entryChannel` nehmen beide eine Zahl entgegen. Vertauscht ergäbe das
+ * einen Aufruf, den weder der Compiler noch ein Leser beanstandet — und der
+ * still das Falsche antwortet.
  */
 export interface PhotoAnnouncementInput {
 	mediaUpload: MediaUploadFlag;
