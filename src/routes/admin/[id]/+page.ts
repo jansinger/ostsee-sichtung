@@ -1,4 +1,5 @@
 import { HERKUNFT_EINGANG, HERKUNFT_PARAMETER } from '$lib/components/admin/adminReturn';
+import { resolveQueueOrder } from '$lib/components/admin/queueOrder';
 import type { SightingQueue } from '$lib/components/admin/sightingQueue';
 import type { SightingStatusLogEntry } from '$lib/components/admin/sightingStatusLog';
 import type { PageLoad } from './$types';
@@ -36,11 +37,6 @@ interface QueueResult {
  *
  * Eine Antwort ohne `history` zählt dabei als Fehlschlag und nicht als leere
  * Historie: Sie ist ein Vertragsbruch des Endpunkts, kein Altbestand.
- *
- * Seit dem Warteschlangen-Modus lädt dieselbe Funktion die Nachbarn im Stapel
- * offener Meldungen — aber nur bei `?from=inbox`. Aus der Tabelle heraus gibt
- * es keine Warteschlange, und ein Aufruf „für alle Fälle" wäre eine Abfrage,
- * deren Ergebnis niemand anzeigt.
  */
 async function ladeStatusLog(fetchFn: FetchFn, id: string): Promise<StatusLogResult> {
 	try {
@@ -87,9 +83,20 @@ async function ladeQueue(
 	}
 }
 
+/**
+ * Lädt Status-Historie und, aus dem Eingang heraus, die Nachbarn im Stapel
+ * offener Meldungen — aber nur bei `?from=inbox`. Aus der Tabelle heraus gibt
+ * es keine Warteschlange, und ein Aufruf „für alle Fälle" wäre eine Abfrage,
+ * deren Ergebnis niemand anzeigt.
+ *
+ * `queueOrder` kommt aus `resolveQueueOrder` — derselben Regel wie im Eingang
+ * (`/admin`) und im Queue-Endpunkt. Eine eigene Auswertung hier würde die
+ * Warteschlange in einer anderen Reihenfolge blättern als der Eingang sie
+ * anzeigt, und der Auto-Advance überspränge dabei still eine Meldung.
+ */
 export const load: PageLoad = async ({ params, fetch, url }) => {
 	const ausEingang = url.searchParams.get(HERKUNFT_PARAMETER) === HERKUNFT_EINGANG;
-	const queueOrder: 'asc' | 'desc' = url.searchParams.get('order') === 'asc' ? 'asc' : 'desc';
+	const queueOrder = resolveQueueOrder(url.searchParams.get('order'));
 
 	const [statusLogResult, queueResult] = await Promise.all([
 		ladeStatusLog(fetch, params.id),

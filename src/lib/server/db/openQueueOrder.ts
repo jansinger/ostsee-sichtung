@@ -21,24 +21,21 @@
 import { sightings } from '$lib/server/db/schema';
 import { asc, desc, sql, type SQL } from 'drizzle-orm';
 
-/** Sortierrichtung des Stapels nach Meldedatum. */
-export type QueueOrder = 'asc' | 'desc';
+/**
+ * `QueueOrder` und `resolveQueueOrder` sind in `$lib/components/admin/queueOrder`
+ * definiert und werden hier nur durchgereicht: Der universelle Loader der
+ * Detailansicht (`/admin/[id]/+page.ts`) läuft auch im Browser und darf dieses
+ * Modul nicht importieren (`schema.ts` hängt dran) — die reine Auswertung
+ * durfte deshalb nicht hier bleiben. Bestehende Importe von hier bleiben
+ * gültig, damit der Umbau kein Aufrufer-Update erzwingt.
+ */
+export { type QueueOrder, resolveQueueOrder } from '$lib/components/admin/queueOrder';
+import type { QueueOrder } from '$lib/components/admin/queueOrder';
 
 /** Die Position einer Sichtung im Stapel, so weit die Ordnung sie braucht. */
 export interface QueueAnchor {
 	created: Date;
 	id: number;
-}
-
-/**
- * Auswertung des `?order`-Parameters.
- *
- * Default `desc` (neueste zuerst, Entscheidung Jan 2026-08-08): Der Altbestand
- * ab 2013 macht FIFO als Default unbrauchbar. Alles außer `asc` fällt zurück,
- * statt in die SQL zu wandern.
- */
-export function resolveQueueOrder(value: string | null): QueueOrder {
-	return value === 'asc' ? 'asc' : 'desc';
 }
 
 /** Sortierausdrücke für `.orderBy(...)` — inklusive Tiebreaker. */
