@@ -471,36 +471,33 @@
 		class="border-base-300 bg-base-100 rounded-box mb-4 flex flex-wrap items-center gap-3 border p-3"
 	>
 		{#if onStatusChange}
-			<!-- `{#key}` statt eines einfachen Props-Updates: In der Detailansicht
-			     durchläuft `AdminSightingView` beim Advance/Undo im Warteschlangen-
-			     Modus mehrere Navigationen hintereinander (`+layout.ts` mit
-			     `ssr = false`, jede Navigation lädt frisch). Reines Props-Update
-			     verließ sich auf Svelte-Reaktivität über mehrere Ebenen hinweg
-			     (`data.sighting` → `currentSighting` → `status`-Const →
-			     `SightingStatusControl`s eigener `bind:group`-Spiegel), und ein
-			     E2E-Nachweis zeigte: Bei zwei Navigationen kurz hintereinander
-			     zurück zu **demselben** Status ('open' → 'approved' → 'open', nach
-			     Freigeben und sofortigem Rückgängigmachen) blieb die Anzeige auf
-			     „Freigegeben" hängen, obwohl jede Netzwerkantwort bereits korrekt
-			     `approvedAt: null` trug (per Mitschnitt verifiziert) — derselbe
-			     Fehlermodus wie der behobene `checked={active}` in
-			     `SightingStatusControl.svelte`, nur eine Ebene höher und nicht
-			     durch den dortigen Komponententest erreichbar, der die Komponente
-			     isoliert und nicht über echte Navigationen prüft. `{#key}` erzwingt
-			     einen kompletten Neu-Mount, sobald sich Sichtung ODER Status ändern
-			     — unabhängig davon, an welcher Zwischenstufe die Reaktivitätskette
-			     sonst hängen bliebe. Abgesichert durch
-			     `e2e/admin-queue.spec.ts` → „springt nach einer Freigabe zur
-			     nächsten und nimmt sie zurück" (ohne Reload-Workaround). -->
-			{#key `${currentSighting.id}:${status}`}
-				<SightingStatusControl
-					{status}
-					sightingId={currentSighting.id}
-					size="md"
-					busy={statusBusy}
-					onchange={onStatusChange}
-				/>
-			{/key}
+			<!-- Kein `{#key}`-Remount mehr nötig. `status` wird hier über ein
+			     `{@const}` berechnet, das Svelte 5 zu einem `$derived` kompiliert:
+			     Ein `$derived` benachrichtigt Konsumenten nur, wenn sein NEUER
+			     Wert vom vorherigen abweicht. Beim Sprung von einer offenen auf
+			     eine andere offene Sichtung im Warteschlangen-Modus bleibt der
+			     Wert aber `'open'` → `'open'` — die Write-Version wird nicht
+			     erhöht, also erreicht die Änderung weder den `status`-Prop der
+			     Kindkomponente noch einen davon abhängigen `$effect` (per E2E
+			     nachgewiesen: `name`-Attribut/`sightingId` kommen bereits korrekt
+			     an, nur der wertgleiche `status` nicht — `currentSighting` und der
+			     `{#await data.sighting}` in `+layout.svelte` sind beide
+			     unbeteiligt). Ein `{#key}` bräche diesen Stillstand nur durch
+			     kompletten Neu-Mount — teuer und mit zwei Folgeschäden (Fokus auf
+			     `<body>`, siehe frühere Fassung dieses Kommentars).
+			     Der eigentliche Fix sitzt deshalb dort, wo der Wert verbraucht
+			     wird: `SightingStatusControl` synchronisiert seinen lokalen
+			     `selected`-Spiegel über `sightingId` (ändert sich bei jedem
+			     Sprung garantiert) statt über `status` selbst — siehe Docblock
+			     dort. Abgesichert durch `e2e/admin-queue.spec.ts` → „springt
+			     nach einer Freigabe zur nächsten und nimmt sie zurück". -->
+			<SightingStatusControl
+				{status}
+				sightingId={currentSighting.id}
+				size="md"
+				busy={statusBusy}
+				onchange={onStatusChange}
+			/>
 		{:else}
 			<span class="badge {SIGHTING_STATUS_PRESENTATION[status].badgeClass}">
 				{SIGHTING_STATUS_PRESENTATION[status].label}

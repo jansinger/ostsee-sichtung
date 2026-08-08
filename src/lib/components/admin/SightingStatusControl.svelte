@@ -43,54 +43,72 @@
 
 	/**
 	 * Lokaler, beschreibbarer Spiegel des `status`-Props für `bind:group`
-	 * unten. Nötig, weil `checked={active}` (ein unkontrolliertes Attribut)
-	 * den DOM-Zustand nach einem Advance im Warteschlangen-Modus stehen ließ:
-	 * `+page.svelte` springt dort ohne `invalidateAll()` zur nächsten
-	 * Sichtung, die Komponente bekommt dieselbe Instanz mit neuer
-	 * `sightingId`, aber erneut `status: 'open'` — der Stapel liefert nur
-	 * offene Sichtungen. Der berechnete `active`-Wert für das Segment „Offen"
-	 * ändert sich dabei NICHT (vorher wie nachher `true`), Svelte löste also
-	 * kein DOM-Update aus, und ein zuvor angeklicktes „Freigegeben"-Radio
-	 * blieb im DOM `checked` — ein zweiter Klick darauf feuerte danach kein
-	 * `change` mehr (Test: „meldet einen zweiten Klick nach einem Advance …").
+	 * unten — nötig, weil `status` selbst als Prop nicht zuverlässig
+	 * "ankommt". **Präzisierte Ursache (Review, siehe Docblock in
+	 * `AdminSightingView.svelte` an der Aufrufstelle):** Der Aufrufer
+	 * berechnet `status` über ein `{@const}`, das Svelte 5 zu einem
+	 * `$derived` kompiliert. Ein `$derived` benachrichtigt seine Konsumenten
+	 * nur, wenn sein **neuer Wert vom vorherigen abweicht** — beim Sprung
+	 * von einer offenen auf eine andere offene Sichtung im
+	 * Warteschlangen-Modus bleibt der Wert aber `'open'` → `'open'`. Die
+	 * Write-Version wird nicht erhöht, also läuft weder der `status`-Prop
+	 * dieser Komponente noch ein davon abhängiger `$effect` erneut — und
+	 * zwar unabhängig davon, ob als Konsument ein `checked={active}` (das
+	 * ursprüngliche, unkontrollierte Attribut) oder ein `bind:group` steht.
+	 * `bind:group` allein löst das Problem also **nicht**; siehe die zweite
+	 * Begründung unten, warum es trotzdem bleibt.
 	 *
-	 * `bind:group` erzwingt den DOM-Zustand direkt aus dem gebundenen Wert,
-	 * unabhängig davon, ob sich der Wert seit dem letzten Render geändert hat.
-	 * Als **beschreibbares** `$derived` bleibt `selected` mit `status`
-	 * synchron, sobald sich das Prop ändert (die Zuweisung in `bind:group`
-	 * überschreibt es nur bis zur nächsten Neuberechnung) — und genau das
-	 * passiert beim Advance immer dann, wenn zuvor tatsächlich etwas anderes
-	 * ausgewählt war (die Warteschlange zeigt nie eine bereits entschiedene
-	 * Sichtung), der Fall greift also gerade dort, wo die Korrektur nötig ist.
+	 * **Widerlegt:** dass `currentSighting` in `AdminSightingView.svelte`
+	 * hängen bliebe, oder dass der `{#await data.sighting}` in
+	 * `+layout.svelte` beteiligt wäre — beide gemessen und ausgeschlossen.
+	 * `sightingId` (ein garantiert unterschiedlicher Wert je Sichtung) kommt
+	 * im DOM bereits korrekt an (`name`-Attribut), nur der wertgleiche
+	 * `status` nicht.
 	 *
-	 * Alternativen verworfen:
+	 * **Der Fix hängt deshalb bewusst NICHT an `status` selbst**, sondern
+	 * erzwingt die Neusynchronisierung unten über zwei Signale, die niemals
+	 * wertgleich "kollabieren" können:
 	 *
-	 * - Ein **beschreibbares `$derived`** (`let selected = $derived(status)`,
-	 *   von der ESLint-Regel `svelte/prefer-writable-derived` vorgeschlagen)
-	 *   sieht nach der naheliegenden Wahl aus, hat den reproduzierten Test
-	 *   aber **nicht** grün gemacht: Der überschriebene Wert eines
-	 *   beschreibbaren `$derived` wird verworfen, sobald die Quelle (`status`)
-	 *   als geändert markiert wird — und genau das bleibt aus, wenn der neue
-	 *   Wert (`'open'`) gleich dem alten ist, derselbe Vergleichsfehler wie
-	 *   beim ursprünglichen `checked={active}`. Ein `$effect`, das `selected`
-	 *   unbedingt zuweist, lief dagegen bei jedem Props-Update erneut und hat
-	 *   den Test bestanden — deshalb hier bewusst `$state` + `$effect` statt
-	 *   der ESLint-Empfehlung.
-	 * - Ein `invalidateAll()` auch im Advance-Pfad behöbe nur den Undo-Teil
-	 *   (dort navigiert `+page.svelte` ohnehin auf eine andere Route und lädt
-	 *   frisch) — der Advance auf eine ebenfalls offene Sichtung bliebe kaputt,
-	 *   weil dort gar keine Navigation mit Neu-Mount stattfindet, sondern
-	 *   derselbe DOM-Baum mit neuen Props wiederverwendet wird. Und
-	 *   `invalidateAll()` kostet genau die Ladezeit, die der Advance-Pfad
-	 *   bewusst spart (siehe Kommentar dort).
+	 * - `sightingId` ändert sich bei jedem Sprung garantiert. Ihn im Effekt
+	 *   zu lesen erzwingt dessen erneuten Lauf, unabhängig davon, ob der
+	 *   frisch gelesene `status` zufällig mit dem alten übereinstimmt.
+	 * - Der Übergang von `busy: true` auf `busy: false` markiert das Ende
+	 *   eines Verdict-Versuchs — Erfolg **und** Fehlschlag. Ohne dieses
+	 *   zweite Signal bliebe `selected` nach einem gescheiterten
+	 *   `submitVerdict` (kein Sprung, `sightingId` unverändert) auf dem
+	 *   optimistisch angeklickten Wert stehen, obwohl der Server nichts
+	 *   übernommen hat — die Fläche zeigte dann "Freigegeben" für eine
+	 *   weiterhin offene Sichtung (siehe Test unten).
+	 *
+	 * Der Effekt reagiert bewusst NICHT auf die steigende Flanke von `busy`
+	 * (`false` → `true`, der Moment des Klicks): Sonst überschriebe die
+	 * Synchronisierung die gerade per `bind:group` gesetzte, optimistische
+	 * Auswahl, noch bevor die Anfrage überhaupt losgeschickt wurde.
+	 *
+	 * **Warum `bind:group` + `$state` trotzdem bleibt, statt auf das
+	 * ursprüngliche `checked={active}` zurückzugehen:** `bind:group`
+	 * schreibt den DOM-Zustand beim Klick sofort und zweiwegig — das ist die
+	 * einzige Stelle, an der die Komponente überhaupt "weiß", was der Nutzer
+	 * gerade angeklickt hat (für die optimistische Anzeige während der
+	 * laufenden Anfrage). Ein reines `checked={active}` hätte dafür keinen
+	 * Mechanismus, unabhängig vom Gleichheits-Gate.
 	 */
-	/* Ein beschreibbares $derived verwirft den überschriebenen Wert nicht
-	   zuverlässig (siehe oben, mit fehlschlagendem Test belegt) — $effect
-	   weist unbedingt zu. */
 	// eslint-disable-next-line svelte/prefer-writable-derived
 	let selected = $state(untrack(() => status));
+	/** Zuletzt synchronisierte `sightingId` — Vergleichsbasis für den Effekt unten. */
+	let letzteSyncSightingId = untrack(() => sightingId);
+	/** Zuletzt gesehener `busy`-Wert — Vergleichsbasis, um nur die fallende Flanke zu erkennen. */
+	let warZuvorBusy = untrack(() => busy);
 	$effect(() => {
-		selected = status;
+		const istBusy = busy;
+		const aktuelleSightingId = sightingId;
+		const verdictAbgeschlossen = warZuvorBusy && !istBusy;
+		const sprungZuAndererSichtung = aktuelleSightingId !== letzteSyncSightingId;
+		warZuvorBusy = istBusy;
+		letzteSyncSightingId = aktuelleSightingId;
+		if (sprungZuAndererSichtung || verdictAbgeschlossen) {
+			selected = status;
+		}
 	});
 
 	function select(target: SightingStatus): void {
@@ -123,11 +141,16 @@
 	<legend id={`${groupName}-legend`} class="sr-only">Status</legend>
 	{#each SIGHTING_STATUS_ORDER as option (option)}
 		{@const presentation = SIGHTING_STATUS_PRESENTATION[option]}
-		<!-- Gegen `selected`, nicht gegen `status`: `selected` ist über `bind:group`
-		     und den `$effect` oben die verlässlich aktualisierte Quelle (siehe
-		     Docblock dort). Gegen `status` gemessen hätte die Flächenfarbe densel-
-		     ben Stillstand wie das frühere `checked={active}` — bei unverändertem
-		     Wahrheitswert löst Svelte kein Update aus, auch nicht für `class`. -->
+		<!-- Gegen `selected`, nicht gegen `status`: `status` ist genau das
+		     wertgleiche Prop, dessen Gleichheits-Gate den ganzen Fehler
+		     verursacht (Docblock oben an `selected`) — dagegen zu vergleichen
+		     brächte den ursprünglichen Advance-Bug zurück. `selected` ist die
+		     Stelle, an der dieses Gate bereits aufgelöst ist: Der `$effect`
+		     oben synchronisiert es zuverlässig bei jedem Sprung (`sightingId`)
+		     UND nach jedem abgeschlossenen Verdict-Versuch, Erfolg wie
+		     Fehlschlag (`busy`-Flanke) — Letzteres ist neu und schließt die
+		     Regression, bei der ein gescheitertes `submitVerdict` die Fläche
+		     auf dem optimistisch angeklickten Segment stehen ließ. -->
 		{@const active = option === selected}
 		<label
 			class="btn join-item {size === 'sm' ? 'btn-sm' : ''} {active

@@ -122,6 +122,54 @@ describe('SightingStatusControl', () => {
 		expect(onchange).toHaveBeenCalledWith('approve');
 	});
 
+	/* Regression A (Fix-Runde 2, Review-Befund): Der Sync-Effekt reagierte
+	   bislang nur auf einen Wechsel von `sightingId` — nach einem
+	   gescheiterten Verdict (kein Sprung, `status` bleibt unverändert
+	   `'open'`, `submitVerdict` liefert `false`) blieb die Fläche deshalb auf
+	   dem optimistisch angeklickten Segment stehen, obwohl der Server nichts
+	   übernommen hatte. `busy: true → false` ohne Sprung bildet genau diesen
+	   Fehlschlag nach (dieselbe Flanke, die `+page.svelte` durchläuft, wenn
+	   `submitVerdict` `false` liefert). */
+	it('setzt die Fläche nach einem gescheiterten Verdict auf den tatsächlichen Status zurück', async () => {
+		const onchange = vi.fn();
+		const screen = render(SightingStatusControl, { status: 'open', sightingId: 1, onchange });
+
+		await screen.getByRole('radio', { name: 'Freigegeben' }).click();
+		expect(onchange).toHaveBeenCalledWith('approve');
+		// Optimistisch angeklickt — bind:group setzt das DOM sofort.
+		await expect.element(screen.getByRole('radio', { name: 'Freigegeben' })).toBeChecked();
+
+		// Anfrage läuft: `status` bleibt vorerst 'open', der Server hat noch
+		// nicht geantwortet.
+		await screen.rerender({ status: 'open', sightingId: 1, busy: true, onchange });
+		await expect.element(screen.getByRole('radio', { name: 'Freigegeben' })).toBeChecked();
+
+		// Anfrage scheitert: `busy` geht zurück auf `false`, `status` bleibt
+		// unverändert 'open' — der Server hat nichts übernommen.
+		await screen.rerender({ status: 'open', sightingId: 1, busy: false, onchange });
+
+		await expect.element(screen.getByRole('radio', { name: 'Offen' })).toBeChecked();
+		await expect.element(screen.getByRole('radio', { name: 'Freigegeben' })).not.toBeChecked();
+	});
+
+	/* Springt die Warteschlange über die Tastatur weiter (`focusNext`), ändert
+	   sich `sightingId` NIE begleitet von einer `busy`-Flanke — `+page.svelte`
+	   navigiert dort direkt über `goto()`, ohne `statusBusy` zu setzen. Der
+	   Sync-Effekt muss den Sprung deshalb allein über `sightingId` erkennen. */
+	it('synchronisiert auch ohne begleitende busy-Flanke, wenn nur sightingId springt', async () => {
+		const onchange = vi.fn();
+		const screen = render(SightingStatusControl, { status: 'open', sightingId: 1, onchange });
+
+		await screen.getByRole('radio', { name: 'Freigegeben' }).click();
+		await expect.element(screen.getByRole('radio', { name: 'Freigegeben' })).toBeChecked();
+
+		// Sprung ohne busy-Flanke — wie bei einem Tastatur-Advance.
+		await screen.rerender({ status: 'open', sightingId: 2, onchange });
+
+		await expect.element(screen.getByRole('radio', { name: 'Offen' })).toBeChecked();
+		await expect.element(screen.getByRole('radio', { name: 'Freigegeben' })).not.toBeChecked();
+	});
+
 	it('zeigt in der kompakten Größe keinen sichtbaren Text', async () => {
 		const screen = render(SightingStatusControl, {
 			status: 'open',

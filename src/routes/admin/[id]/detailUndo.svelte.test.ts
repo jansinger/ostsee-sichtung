@@ -179,10 +179,13 @@ describe('Detailansicht — Rückgängig', () => {
 		await vi.advanceTimersByTimeAsync(0);
 
 		expect(submitVerdict).toHaveBeenLastCalledWith(42, 'reset');
-		// Kein Erfolg → keine Navigation/Neuladen, und (Befund 3) der Toast
-		// darf trotzdem entfernt worden sein: Der Versuch ist tatsächlich
-		// angelaufen, nur der Server hat abgelehnt.
+		// Kein Erfolg → keine Navigation/Neuladen.
 		expect(invalidateAll).not.toHaveBeenCalled();
+		/* Fix-Runde 2: `toast.removeByKey` lief zuvor VOR dem `submitVerdict`-
+		   Aufruf, unabhängig vom Ausgang. Scheitert der Request, bleibt der
+		   Toast mit dem einzigen sichtbaren „Rückgängig"-Knopf jetzt stehen —
+		   ohne ihn ginge ein zweiter Versuch nur noch über die Taste `U`. */
+		expect(toastRemoveByKey).not.toHaveBeenCalled();
 
 		// Zweiter Versuch, diesmal erfolgreich — die Erinnerung war noch da,
 		// sonst fände `zurueckNehmen` hier `undoMemory.current === null` und
@@ -192,6 +195,8 @@ describe('Detailansicht — Rückgängig', () => {
 
 		expect(submitVerdict).toHaveBeenLastCalledWith(42, 'reset');
 		expect(invalidateAll).toHaveBeenCalled();
+		// Erst nach dem erfolgreichen zweiten Versuch darf der Toast weg sein.
+		expect(toastRemoveByKey).toHaveBeenCalledWith('sighting-verdict-undo');
 	});
 
 	/* Befund 3: `statusBusy` bleibt im Advance-Pfad während des `await

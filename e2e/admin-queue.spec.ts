@@ -106,9 +106,15 @@ test.describe('Admin-Warteschlange', () => {
 		await page.waitForLoadState('networkidle');
 
 		/* Die Freigabe ist tatsächlich zurückgenommen — geprüft über die
-		   laufende SPA-Session, ohne Reload. `SightingStatusControl.svelte`
-		   spiegelt `status` seit Befund 1 (Merge-Blocker) über `bind:group` +
-		   einen `$effect` statt über ein unkontrolliertes `checked={active}`;
+		   laufende SPA-Session, ohne Reload. Die eigentliche Ursache des
+		   Merge-Blockers (Befund 1) sitzt in `AdminSightingView.svelte`: Der
+		   dort per `{@const}` berechnete `status` kompiliert zu einem
+		   `$derived`, das seine Konsumenten nur bei einer Wertänderung
+		   benachrichtigt — beim Sprung zwischen zwei offenen Sichtungen bleibt
+		   der Wert `'open'` → `'open'`, `bind:group` allein löst das nicht.
+		   `SightingStatusControl.svelte` synchronisiert seinen lokalen
+		   `selected`-Spiegel deshalb über `sightingId` (ändert sich bei jedem
+		   Sprung garantiert, siehe Docblock dort) statt über `status` selbst;
 		   das Radio zeigt den richtigen Zustand deshalb sofort, auch wenn der
 		   berechnete Wahrheitswert für „Offen" zwischen den Sichtungen der
 		   Warteschlange unverändert `true` bleibt. */

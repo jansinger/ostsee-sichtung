@@ -184,18 +184,8 @@
 		   einer hängenden Undo-Anfrage eine weitere Statusänderung anlaufen —
 		   beide griffen dann parallel auf `sighting`/`imArbeitsmodus` zu, die
 		   sich zwischenzeitlich per `invalidateAll()`/`goto()` ändern.
-		   Bewusst VOR jedem unwiederbringlichen Schritt geprüft — insbesondere
-		   vor dem Toast-Entfernen unten: Die Taste `U` hat kein eigenes
-		   Dismiss-Signal wie ein Mausklick (`Toast.svelte` ruft `dismiss()`
-		   dabei selbst auf); entfernte man den Toast schon vor dieser Prüfung,
-		   wäre ein während des `await goto(...)` im Advance-Pfad blockiertes
-		   Undo unwiederbringlich weg, ohne dass etwas passiert wäre — der
-		   Toast-Knopf mit der einzigen sichtbaren Möglichkeit, es erneut zu
-		   versuchen, wäre bereits verschwunden. */
+		   Bewusst VOR jedem unwiederbringlichen Schritt geprüft. */
 		if (statusBusy) return;
-		/* Erst ab hier steht fest, dass das Undo tatsächlich anläuft — jetzt
-		   darf der Toast weg. */
-		toast.removeByKey('sighting-verdict-undo');
 		statusBusy = true;
 		try {
 			/* Der Verdict geht an die **gemerkte** ID und nicht an `sighting.id`:
@@ -204,15 +194,20 @@
 			   ändern. Erst zurücksetzen, dann navigieren — in dieser Reihenfolge
 			   hängt nichts an der Ladezeit der Seite. */
 			if (await submitVerdict(id, verdict)) {
-				/* Erst nach einem erfolgreichen Request vergessen — nicht davor:
-				   Scheitert `submitVerdict` (Netzwerkfehler, 5xx), bliebe die
-				   Erinnerung sonst bereits geräumt, obwohl nichts zurückgesetzt
-				   wurde. Der weiterhin sichtbare „Rückgängig"-Knopf wäre dann tot
-				   — ein zweiter Versuch fände `undoMemory.current === null` und
-				   täte nichts. `vergiss` ist zusätzlich an die ID gebunden und
-				   räumt deshalb nur die eigene Entscheidung, auch wenn dieser aus
-				   irgendeinem Grund verzögerte Aufruf erst zurückkehrt, nachdem
-				   bereits eine neuere Entscheidung gemerkt wurde. */
+				/* Toast UND Erinnerung erst nach einem erfolgreichen Request räumen
+				   — nicht davor. Ein früherer Stand rief `toast.removeByKey` schon
+				   vor dem `submitVerdict`-Aufruf auf: Scheiterte die Anfrage (Netz-
+				   werkfehler, 5xx), war der Toast mit dem einzigen sichtbaren
+				   „Rückgängig"-Knopf danach weg, obwohl nichts zurückgesetzt wurde
+				   — ein zweiter Versuch ging nur noch über die Taste `U`, die den
+				   Callback direkt aus `undoMemory` liest statt über den Toast. Mit
+				   dem Räumen erst hier bleibt der Knopf bei einem Fehlschlag
+				   sichtbar und klickbar, ein zweiter Versuch geht über beide Wege.
+				   `vergiss` ist zusätzlich an die ID gebunden und räumt deshalb nur
+				   die eigene Entscheidung, auch wenn dieser aus irgendeinem Grund
+				   verzögerte Aufruf erst zurückkehrt, nachdem bereits eine neuere
+				   Entscheidung gemerkt wurde. */
+				toast.removeByKey('sighting-verdict-undo');
 				undoMemory.vergiss(id);
 				/* `href` ist `null` außerhalb des Warteschlangen-Modus (Tabelle):
 				   Dort hat kein Advance stattgefunden, man steht bereits auf der
