@@ -46,6 +46,20 @@ function ziel(tagName: string, extra: Partial<ShortcutTarget> = {}): ShortcutTar
 	return { tagName, isContentEditable: false, closest: () => null, ...extra };
 }
 
+/**
+ * Ein Ziel innerhalb eines Dialogs. `closest` antwortet **selektorgenau** und
+ * nicht auf alles: Ein Fixture, das jeden Selektor bejaht, gilt gleichzeitig als
+ * contenteditable — und lässt damit die Dialog-Sperre richtig aussehen, obwohl
+ * in Wahrheit die Eingabefeld-Sperre gegriffen hat.
+ */
+function zielImDialog(tagName = 'BUTTON'): ShortcutTarget {
+	return {
+		tagName,
+		isContentEditable: false,
+		closest: (selector: string) => (selector.includes('dialog') ? {} : null)
+	};
+}
+
 describe('resolveInboxShortcut', () => {
 	it.each([
 		['j', 'focusNext'],
@@ -93,13 +107,22 @@ describe('resolveInboxShortcut', () => {
 	it('bleibt still, wenn der Fokus in einem Dialog steht', () => {
 		/* Der Hilfe-Overlay ist selbst ein Dialog: Ohne diese Sperre würde ein „a"
 		   im offenen Overlay die Sichtung im Hintergrund freigeben. */
-		const imDialog = ziel('BUTTON', { closest: (selektor: string) => (selektor ? {} : null) });
-		expect(resolveInboxShortcut(taste('a', { target: imDialog }))).toBeNull();
+		expect(resolveInboxShortcut(taste('a', { target: zielImDialog() }))).toBeNull();
+	});
+
+	it('lässt ? aus einem Dialog durch — die Taste blendet die Hilfe auch aus', () => {
+		/* Sonst wäre `toggleHelp` eine Einbahnstraße: Im offenen Overlay steht der
+		   Fokus im Dialog, und die Sperre schluckte genau den Tastendruck, der es
+		   wieder schließen soll. */
+		expect(resolveInboxShortcut(taste('?', { target: zielImDialog() }))).toBe('toggleHelp');
+	});
+
+	it('lässt ? im Eingabefeld liegen — dort ist es ein Satzzeichen', () => {
+		expect(resolveInboxShortcut(taste('?', { target: ziel('INPUT') }))).toBeNull();
 	});
 
 	it('lässt Escape auch aus einem Dialog und aus einem Eingabefeld durch', () => {
-		const imDialog = ziel('BUTTON', { closest: () => ({}) });
-		expect(resolveInboxShortcut(taste('Escape', { target: imDialog }))).toBe('closeHelp');
+		expect(resolveInboxShortcut(taste('Escape', { target: zielImDialog() }))).toBe('closeHelp');
 		expect(resolveInboxShortcut(taste('Escape', { target: ziel('INPUT') }))).toBe('closeHelp');
 	});
 });

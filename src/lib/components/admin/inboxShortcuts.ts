@@ -66,23 +66,28 @@ const KEY_ACTIONS: Record<string, InboxShortcutAction> = {
 	k: 'focusPrevious',
 	a: 'approve',
 	r: 'reject',
-	u: 'undo',
-	'?': 'toggleHelp'
+	u: 'undo'
 };
 
 const TYPING_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 
-/**
- * Steht der Fokus dort, wo eine Taste etwas anderes bedeutet? Das sind
- * Eingabefelder — und Dialoge, denn im offenen Hilfe-Overlay dürfte ein „a"
- * nicht die Meldung dahinter freigeben.
- */
-function isGuardedTarget(eventTarget: EventTarget | ShortcutTarget | null): boolean {
+/** Wo eine Taste ein Zeichen ist und kein Befehl. */
+function isTypingTarget(eventTarget: EventTarget | ShortcutTarget | null): boolean {
 	if (!eventTarget) return false;
 	const target = eventTarget as ShortcutTarget;
 	if (target.tagName && TYPING_TAGS.has(target.tagName)) return true;
 	if (target.isContentEditable) return true;
-	return Boolean(target.closest?.('dialog, [role="dialog"], [contenteditable="true"]'));
+	return Boolean(target.closest?.('[contenteditable="true"]'));
+}
+
+/**
+ * Steht der Fokus in einem Dialog? Dort darf kein Kürzel die Seite dahinter
+ * bedienen — ein „a" im offenen Hilfe-Overlay würde sonst die Meldung
+ * darunter freigeben.
+ */
+function isDialogTarget(eventTarget: EventTarget | ShortcutTarget | null): boolean {
+	if (!eventTarget) return false;
+	return Boolean((eventTarget as ShortcutTarget).closest?.('dialog, [role="dialog"]'));
 }
 
 export function resolveInboxShortcut(event: InboxShortcutEvent): InboxShortcutAction | null {
@@ -91,7 +96,13 @@ export function resolveInboxShortcut(event: InboxShortcutEvent): InboxShortcutAc
 	if (event.ctrlKey || event.metaKey || event.altKey) return null;
 	// Escape schließt die Hilfe von überall, auch aus dem Overlay selbst.
 	if (event.key === 'Escape') return 'closeHelp';
-	if (isGuardedTarget(event.target)) return null;
+	if (isTypingTarget(event.target)) return null;
+	/* „?" steht bewusst VOR der Dialog-Sperre: Es blendet die Übersicht auch
+	   wieder aus, und im offenen Overlay liegt der Fokus im Dialog. Hinter der
+	   Sperre wäre `toggleHelp` eine Einbahnstraße — der Name behauptete ein
+	   Umschalten, das nie eintritt. */
+	if (event.key === '?') return 'toggleHelp';
+	if (isDialogTarget(event.target)) return null;
 	return KEY_ACTIONS[event.key.toLowerCase()] ?? null;
 }
 

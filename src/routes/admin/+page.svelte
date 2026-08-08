@@ -38,7 +38,12 @@
 	/* Tastatur-Triage (Spec B1). Die Fokusposition ist ein Index und keine ID:
 	   Nachrücken heißt „die nächste Karte in der Liste", und das ist eine Aussage
 	   über Positionen. Die Zuordnung Taste → Aktion und die Fokusarithmetik
-	   stehen in `inboxShortcuts.ts`. */
+	   stehen in `inboxShortcuts.ts`.
+
+	   **Sie folgt dem echten DOM-Fokus** (`onfocusin`/`onfocusout` an der Liste)
+	   und nicht nur J und K. Sonst entschiede A über eine Karte, die niemand
+	   sieht: Der Ring hängt am DOM-Fokus, und wer nach einem J per Tab oder Klick
+	   in eine andere Karte wandert, hätte eine Freigabe an der ersten ausgelöst. */
 	let fokusIndex = $state<number | null>(null);
 	let hilfeOffen = $state(false);
 	/* Die letzte Entscheidung für U. Sie wird auch beim Klick gesetzt — wer mit
@@ -48,6 +53,8 @@
 	   Array schreibt zwar, warnt aber zur Laufzeit (`binding_property_non_reactive`)
 	   — und die Zuweisung wäre nicht nachvollziehbar, wenn die Liste sich ändert. */
 	let kartenElemente = $state<(HTMLLIElement | null)[]>([]);
+	/** Ziel des Fokus-Rückwegs, wenn das Overlay ohne fokussierte Karte geöffnet wurde. */
+	let hinweisKnopf = $state<HTMLButtonElement | null>(null);
 
 	/** Welche Positionen noch eine Entscheidung brauchen — Grundlage des Nachrückens. */
 	const bedienbar = $derived(
@@ -61,6 +68,27 @@
 		// gerade ihren Inhalt, und ein Fokus davor landet am alten Knoten.
 		await tick();
 		kartenElemente[index]?.focus();
+	}
+
+	/** Der Fokus ist irgendwo in der Liste angekommen — welche Karte trägt ihn? */
+	function fokusAufgenommen(event: FocusEvent) {
+		const karte = (event.target as Element | null)?.closest('[data-inbox-index]');
+		const index = Number(karte?.getAttribute('data-inbox-index'));
+		if (Number.isInteger(index)) fokusIndex = index;
+	}
+
+	/**
+	 * Verlässt der Fokus die Liste ganz, gibt es keine Karte mehr, auf die A oder
+	 * R wirken dürften. `relatedTarget` ist das Element, das den Fokus bekommt —
+	 * `null` heißt „gar keines" (Klick ins Leere, Wechsel des Fensters).
+	 */
+	function fokusAbgegeben(event: FocusEvent) {
+		const ziel = event.relatedTarget as Node | null;
+		if (ziel && event.currentTarget instanceof Node && event.currentTarget.contains(ziel)) return;
+		// Nicht während das Overlay offen ist: Dessen Fokuswechsel darf die Position
+		// nicht vergessen, sonst fällt der Fokus beim Schließen ins Nichts.
+		if (hilfeOffen) return;
+		fokusIndex = null;
 	}
 
 	async function entscheidenPerTaste(verdict: Exclude<SightingVerdict, 'reset'>) {
@@ -85,6 +113,17 @@
 		if (index >= 0) await fokussiere(index);
 	}
 
+	/**
+	 * Beim Schließen wandert der Fokus zurück — auf die Karte, die ihn vorher
+	 * hatte, sonst auf den Knopf, der das Overlay geöffnet hat. Ohne das fällt er
+	 * auf `<body>`, und die J/K-Position wäre danach unsichtbar.
+	 */
+	function hilfeSchliessen() {
+		hilfeOffen = false;
+		if (fokusIndex !== null) void fokussiere(fokusIndex);
+		else hinweisKnopf?.focus();
+	}
+
 	function aufTaste(event: KeyboardEvent) {
 		const aktion = resolveInboxShortcut(event);
 		if (!aktion) return;
@@ -93,7 +132,7 @@
 			// Escape anderen Bedienelementen weg.
 			if (!hilfeOffen) return;
 			event.preventDefault();
-			hilfeOffen = false;
+			hilfeSchliessen();
 			return;
 		}
 		event.preventDefault();
@@ -114,7 +153,8 @@
 				void rueckgaengigPerTaste();
 				return;
 			case 'toggleHelp':
-				hilfeOffen = !hilfeOffen;
+				if (hilfeOffen) hilfeSchliessen();
+				else hilfeOffen = true;
 				return;
 		}
 	}
@@ -212,7 +252,12 @@
 			Tastatur: <kbd class="kbd kbd-sm">J</kbd> / <kbd class="kbd kbd-sm">K</kbd> blättern,
 			<kbd class="kbd kbd-sm">A</kbd> freigeben, <kbd class="kbd kbd-sm">R</kbd> ablehnen
 		</span>
-		<button type="button" class="btn btn-ghost btn-xs" onclick={() => (hilfeOffen = true)}>
+		<button
+			type="button"
+			class="btn btn-ghost btn-xs"
+			bind:this={hinweisKnopf}
+			onclick={() => (hilfeOffen = true)}
+		>
 			alle Kürzel <kbd class="kbd kbd-xs">?</kbd>
 		</button>
 	</p>
@@ -233,7 +278,10 @@
 			<p class="text-base-content/70 mt-1 text-sm">Keine offenen Sichtungen.</p>
 		</div>
 	{:else}
-		<ul class="flex flex-col gap-3">
+		<!-- Die Fokus-Handler sitzen an der Liste und nicht an jeder Karte: `focusin`
+		     und `focusout` steigen auf, und nur hier ist entscheidbar, ob der Fokus
+		     die Liste ganz verlassen hat. -->
+		<ul class="flex flex-col gap-3" onfocusin={fokusAufgenommen} onfocusout={fokusAbgegeben}>
 			{#each data.open as sighting, index (sighting.id)}
 				{@const verdict = done[sighting.id]}
 				{#if !abgelaufen.has(sighting.id)}
@@ -295,8 +343,13 @@
 <style>
 	/* Der Fokus-Ring gehört an die Karte selbst: Bei J/K ist sie das bewegte
 	   Element, und ohne sichtbaren Ring wüsste niemand, welche Meldung ein
-	   folgendes A entscheidet. Maße und Farbe aus den Tokens. */
-	.inbox-card:focus-visible {
+	   folgendes A entscheidet. Maße und Farbe aus den Tokens.
+
+	   `:has(:focus-visible)` gehört dazu, weil der Fokus per Tab auch auf einer
+	   Schaltfläche *innerhalb* der Karte landet — A wirkt dann auf diese Karte,
+	   und der Ring muss das zeigen. */
+	.inbox-card:focus-visible,
+	.inbox-card:has(:global(:focus-visible)) {
 		outline: 3px solid var(--color-primary);
 		outline-offset: 3px;
 		border-radius: var(--radius-box);

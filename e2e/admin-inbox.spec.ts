@@ -98,6 +98,63 @@ test.describe('Admin-Eingangsseite', () => {
 		}
 	});
 
+	test('Fokus-Ring liegt an der Karte, auch wenn eine Schaltfläche darin den Fokus hat', async ({
+		browser,
+		baseURL
+	}) => {
+		if (!baseURL) throw new Error('baseURL fehlt — playwright.config.ts setzt sie normalerweise');
+
+		/**
+		 * Warum das ein E2E-Test ist und kein Komponententest: Die Zusage steckt in
+		 * einer CSS-Regel (`.inbox-card:has(:global(:focus-visible))`), und der
+		 * Browser-Runner der Unit-Tests liefert die Seite ohne Tailwind und ohne
+		 * Svelte-Scoping-Klassen aus — dort ist keine Outline messbar.
+		 *
+		 * **Die Regel braucht ein `:global()` im `:has()`.** Ohne es hängt Svelte
+		 * die Scope-Klasse der Seite an das Argument; die Schaltflächen liegen aber
+		 * in `SightingInboxCard.svelte` und tragen eine andere Scope-Klasse — der
+		 * Ring blieb dann aus, während A und R sehr wohl auf die Karte wirkten.
+		 * Dieser Test ist rot, wenn das `:global()` fehlt (nachgestellt 2026-08-08).
+		 *
+		 * **Gemessen wird `outline-style`, nicht `outline-width`.** Ohne passende
+		 * Regel rechnet der Browser `outline-width` auf den Initialwert `medium`
+		 * — und der ist ausgerechnet `3px`. Eine Breiten-Assertion ist damit auch
+		 * ohne jede Regel grün; genau so war die erste Fassung dieses Tests
+		 * wirkungslos. `outline-style` steht ohne Regel auf `none`.
+		 *
+		 * Zustandsunabhängig: Es wird nur navigiert und fokussiert, nichts
+		 * entschieden — die Datenbank ist zwischen den Worktrees geteilt.
+		 */
+		const context = await browser.newContext();
+		await seedAdminSession(context, baseURL);
+		const page = await context.newPage();
+
+		try {
+			await page.goto('/admin?order=asc');
+			await page.waitForLoadState('networkidle');
+
+			const ersteKarte = page.locator('li.inbox-card').first();
+			if ((await ersteKarte.count()) === 0) {
+				// Leerer Eingang: Es gibt keine Karte, an der etwas zu messen wäre.
+				test.skip(true, 'Kein offener Eingang im geteilten Bestand');
+			}
+
+			const ringStil = () => ersteKarte.evaluate((el) => getComputedStyle(el).outlineStyle);
+			await expect.poll(ringStil).toBe('none');
+
+			await page.keyboard.press('j');
+			await expect.poll(ringStil).toBe('solid');
+
+			/* Vier Tabs führen von der Karte über „Details", „Ablehnen" bis
+			   „Freigeben" — der Ring muss die ganze Zeit an der Karte bleiben. */
+			for (let schritt = 0; schritt < 4; schritt++) await page.keyboard.press('Tab');
+			await expect(page.getByRole('button', { name: /Freigeben/ }).first()).toBeFocused();
+			await expect.poll(ringStil).toBe('solid');
+		} finally {
+			await context.close();
+		}
+	});
+
 	test('Navigation führt Eingang und Sichtungen als eigene Reiter', async ({
 		browser,
 		baseURL

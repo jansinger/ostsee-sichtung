@@ -131,6 +131,59 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 		expect(submitVerdict).not.toHaveBeenCalled();
 	});
 
+	it('entscheidet über die Karte, die den Fokus sichtbar hat', async () => {
+		/* Ohne diese Kopplung entschied A über eine Karte, die niemand sieht: Der
+		   Ring folgt dem DOM-Fokus, die gemerkte Position folgte nur J und K. Wer
+		   nach einem J per Tab oder Klick in eine andere Karte wandert und dann A
+		   drückt, gibt sonst die erste frei. */
+		const screen = render(AdminInbox, { data: daten([81, 82]) });
+
+		await userEvent.keyboard('j');
+		const zweiteFreigabe = screen.getByRole('button', { name: 'Freigeben' }).elements()[1];
+		(zweiteFreigabe as HTMLElement).focus();
+
+		await userEvent.keyboard('a');
+
+		expect(submitVerdict).toHaveBeenCalledWith(82, 'approve');
+	});
+
+	it('entscheidet nichts, wenn der Fokus die Liste verlassen hat', async () => {
+		const screen = render(AdminInbox, { data: daten([91]) });
+
+		await userEvent.keyboard('j');
+		/* Der Sortier-Umschalter steht außerhalb der Liste — er ist der kürzeste
+		   echte Weg aus ihr heraus. `document.body.focus()` taugt dafür nicht: Der
+		   Body ist nicht fokussierbar, der Fokus bliebe auf der Karte, und der Test
+		   prüfte am Ende nichts. */
+		(screen.getByRole('button', { name: /zuerst/ }).element() as HTMLElement).focus();
+
+		await userEvent.keyboard('a');
+
+		expect(submitVerdict).not.toHaveBeenCalled();
+	});
+
+	it('blendet die Übersicht mit einem zweiten ? wieder aus', async () => {
+		const screen = render(AdminInbox, { data: daten([101]) });
+
+		await userEvent.keyboard('?');
+		const overlay = screen.getByRole('dialog', { name: /Tastaturkürzel/ });
+		await expect.element(overlay).toBeInTheDocument();
+
+		await userEvent.keyboard('?');
+		await expect.element(overlay).not.toBeInTheDocument();
+	});
+
+	it('gibt den Fokus nach dem Schließen an die Karte zurück', async () => {
+		render(AdminInbox, { data: daten([111, 112]) });
+
+		await userEvent.keyboard('j');
+		await userEvent.keyboard('j');
+		await userEvent.keyboard('?');
+		await userEvent.keyboard('{Escape}');
+
+		await vi.waitFor(() => expect(fokussierteKarte()).toBe('1'));
+	});
+
 	it('macht die Shortcuts ohne Overlay entdeckbar', async () => {
 		const screen = render(AdminInbox, { data: daten([51]) });
 
