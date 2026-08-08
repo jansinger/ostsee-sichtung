@@ -105,24 +105,13 @@ test.describe('Admin-Warteschlange', () => {
 		await expect(page).toHaveURL(vorherigeUrl);
 		await page.waitForLoadState('networkidle');
 
-		/* Die Freigabe ist tatsächlich zurückgenommen — geprüft über einen
-		   Reload statt über die laufende SPA-Session.
-		   **Befund während dieses Tasks:** Ohne den Reload zeigt das
-		   `SightingStatusControl`-Radio nach diesem Undo weiterhin „Freigegeben"
-		   an, obwohl der Server bereits korrekt zurückgesetzt hat (per
-		   Netzwerk-Mitschnitt verifiziert: die letzte `GET
-		   /api/sightings/{id}`-Antwort nach dem Undo trägt `approvedAt: null`).
-		   Ein Reload zeigt sofort den richtigen Zustand — die Daten sind also
-		   korrekt, nur die Anzeige hängt fest. Das ist eine Anzeige-Altlast von
-		   `checked={active}` in Kombination mit dem programmatischen Klick
-		   (`el.click()`, siehe oben) auf einer über die SPA-Navigation hinweg
-		   wiederverwendeten Radiogruppe — kein Regressionsrisiko dieses Tasks,
-		   aber ein echter, hier erstmals sichtbarer Befund, weil kein
-		   bestehender Test einen Entscheiden→Undo-Zyklus ohne harte Navigation
-		   dazwischen fährt. Für Task 9 (E2E + Doku) bewusst nicht behoben —
-		   flankierend als Folgeaufgabe gemeldet. */
-		await page.reload();
-		await page.waitForLoadState('networkidle');
+		/* Die Freigabe ist tatsächlich zurückgenommen — geprüft über die
+		   laufende SPA-Session, ohne Reload. `SightingStatusControl.svelte`
+		   spiegelt `status` seit Befund 1 (Merge-Blocker) über `bind:group` +
+		   einen `$effect` statt über ein unkontrolliertes `checked={active}`;
+		   das Radio zeigt den richtigen Zustand deshalb sofort, auch wenn der
+		   berechnete Wahrheitswert für „Offen" zwischen den Sichtungen der
+		   Warteschlange unverändert `true` bleibt. */
 		await expect(page.getByRole('radio', { name: 'Offen' })).toBeChecked();
 	});
 

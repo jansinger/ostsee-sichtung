@@ -89,6 +89,39 @@ describe('SightingStatusControl', () => {
 		await expect.element(radio).toHaveAttribute('name', 'sighting-status-42');
 	});
 
+	/* Merge-Blocker (Befund 1): `checked={active}` war unkontrolliert. Nach
+	   einem Advance im Warteschlangen-Modus (`+page.svelte` springt ohne
+	   `invalidateAll()` zur nächsten offenen Sichtung) bekommt die Komponente
+	   dieselbe Instanz mit neuer `sightingId`, aber erneut `status: 'open'` —
+	   der Stapel liefert nur offene Sichtungen. Der berechnete `active`-Wert
+	   für das Segment "Offen" ändert sich dabei NICHT (vorher wie nachher
+	   `true`), also löste Svelte kein DOM-Update aus, und das zuvor
+	   angeklickte "Freigegeben"-Radio blieb im DOM `checked` stehen. Ein
+	   zweiter Klick auf "Freigegeben" feuerte dadurch kein `change` — die
+	   zweite Freigabe in Folge wurde ohne jede Rückmeldung verschluckt.
+	   `rerender` mit gleichem `status`, neuer `sightingId` bildet den
+	   Advance-Sprung nach. */
+	it('meldet einen zweiten Klick nach einem Advance auf eine andere, ebenfalls offene Sichtung', async () => {
+		const onchange = vi.fn();
+		const screen = render(SightingStatusControl, { status: 'open', sightingId: 42, onchange });
+
+		await screen.getByRole('radio', { name: 'Freigegeben' }).click();
+		expect(onchange).toHaveBeenCalledWith('approve');
+		onchange.mockClear();
+
+		// Advance: neue Sichtung, die Warteschlange liefert nur offene.
+		await screen.rerender({ status: 'open', sightingId: 43, onchange });
+
+		// Das DOM muss die neue Sichtung als "Offen" zeigen — nicht mehr als
+		// "Freigegeben" hängen bleiben, obwohl `active` für 'open' unverändert
+		// `true` war.
+		await expect.element(screen.getByRole('radio', { name: 'Offen' })).toBeChecked();
+		await expect.element(screen.getByRole('radio', { name: 'Freigegeben' })).not.toBeChecked();
+
+		await screen.getByRole('radio', { name: 'Freigegeben' }).click();
+		expect(onchange).toHaveBeenCalledWith('approve');
+	});
+
 	it('zeigt in der kompakten Größe keinen sichtbaren Text', async () => {
 		const screen = render(SightingStatusControl, {
 			status: 'open',
