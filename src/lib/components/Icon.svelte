@@ -51,6 +51,7 @@
 	import Image from '~icons/lucide/image';
 	import Images from '~icons/lucide/images';
 	import Inbox from '~icons/lucide/inbox';
+	import Copy from '~icons/lucide/copy';
 	import Info from '~icons/lucide/info';
 	import LayoutGrid from '~icons/lucide/layout-grid';
 	import List from '~icons/lucide/list';
@@ -140,6 +141,7 @@
 		'lucide:github': Github,
 		'lucide:upload': Upload,
 		'lucide:loader-2': Loader2,
+		'lucide:copy': Copy,
 		'lucide:info': Info,
 		'lucide:shield-alert': ShieldAlert,
 		'lucide:waves': Waves,

@@ -149,6 +149,7 @@
 							<SightingInboxCard
 								{sighting}
 								images={data.imagesBySighting[sighting.id] ?? []}
+								duplicates={data.duplicatesBySighting[sighting.id] ?? []}
 								busy={busy[sighting.id] ?? false}
 								onApprove={() => entscheiden(sighting.id, 'approve')}
 								onReject={() => entscheiden(sighting.id, 'reject')}
@@ -160,8 +161,8 @@
 		</ul>
 		{#if data.openTotal > data.open.length}
 			<p class="text-base-content/70 mt-4 text-center text-sm">
-				{data.open.length} von {data.openTotal} offenen Sichtungen angezeigt — die Liste füllt sich beim Abarbeiten
-				nach.
+				{data.open.length} von {data.openTotal} offenen Sichtungen angezeigt — die Liste füllt sich beim
+				Abarbeiten nach.
 			</p>
 		{/if}
 	{/if}
