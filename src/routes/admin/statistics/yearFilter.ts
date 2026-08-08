@@ -2,8 +2,8 @@
  * @fileoverview Jahresauswahl der Admin-Statistik (`?jahr=`)
  *
  * Der Wert kommt aus der URL und ist damit Fremdeingabe. Geprüft wird er gegen
- * den plausiblen Bereich — von der ältesten echten Sichtung bis zum laufenden
- * Jahr — und **nicht** gegen die Liste der tatsächlich belegten Jahre. Diese
+ * den plausiblen Bereich — von `EARLIEST_PLAUSIBLE_SIGHTING_DATE` bis zum
+ * laufenden Jahr — und **nicht** gegen die Liste der tatsächlich belegten Jahre. Diese
  * Liste entsteht erst im Loader durch eine eigene Abfrage; sie hier zusätzlich
  * als Gültigkeitsquelle heranzuziehen hieße, dieselbe Regel an zwei Orten zu
  * pflegen. Ein belegloses, aber plausibles Jahr liefert eine leere, korrekt
@@ -39,9 +39,13 @@ export interface YearRange {
 /**
  * Plausibler Jahresbereich zum Zeitpunkt `jetzt`.
  *
- * Die Untergrenze ist dieselbe Konstante, mit der die Statistiken die
- * Epoch-Platzhalter aus dem Altbestand ausschließen (`sightingRepository.ts`) —
- * ein Jahr davor gibt es in den Daten nicht, es steht nur in kaputten Importen.
+ * Die Untergrenze ist `EARLIEST_PLAUSIBLE_SIGHTING_DATE` — die Konstante, mit der
+ * die Statistiken die Epoch-Platzhalter aus dem Altbestand ausschließen
+ * (`sightingRepository.ts`). Sie ist **nicht** die älteste echte Sichtung: Die
+ * stammt von 2002, die Grenze liegt bewusst davor (1990), damit sie eine
+ * Plausibilitätsschwelle bleibt und nicht bei jedem Fund einer älteren Meldung
+ * nachgezogen werden muss. Für die Auswahl heißt das: Die Jahre 1990–2001 sind
+ * formal zulässig, stehen aber mangels Daten gar nicht in der Liste.
  *
  * Die Obergrenze wird in **deutscher Ortszeit** bestimmt, weil die ganze Seite
  * kalendarisch in Ortszeit gruppiert (`berlinDatePart`). Am 31.12. um 23:30 UTC

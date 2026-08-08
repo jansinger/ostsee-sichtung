@@ -554,14 +554,18 @@
 				<div class="card-body">
 					<h2 class="card-title">
 						<Icon icon="lucide:calendar" class="h-6 w-6" />
-						Eingang der letzten 30 Tage (freigegebene Sichtungen{yearSuffix})
+						Eingang der letzten 30 Tage (freigegebene Sichtungen, alle Jahre)
 					</h2>
-					<!-- Die Überschrift sagte bis 2026-08-08 „unabhängig vom Freigabestatus",
-					     und der Kommentar daneben begründete das mit dem Posteingang. Beides
-					     war seit dem Freigabe-Durchgriff auf alle Abfragen falsch: Der Loader
-					     filtert hier über `approvedOnly()`. Eine Überschrift, die eine andere
-					     Grundmenge verspricht als die Zahl darunter zählt, ist genau der
-					     Fehler, den die Museumsvorgabe verhindern soll. -->
+					<!-- Zwei Korrekturen an dieser Zeile, beide aus derselben Regel: Eine
+					     Überschrift darf keine andere Menge versprechen, als die Zahl
+					     darunter zählt.
+					     1. Sie sagte bis 2026-08-08 „unabhängig vom Freigabestatus", während
+					        der Loader längst über `approvedOnly()` filtert.
+					     2. Sie trug kurzzeitig die Jahresauswahl mit — „letzte 30 Tage 2025"
+					        liest sich als „die letzten 30 Tage des Jahres 2025" und meinte in
+					        Wahrheit den Schnitt aus laufendem Fenster und Sichtungsjahr.
+					        Dieser Abschnitt bringt seinen Zeitraum selbst mit und ist von der
+					        Auswahl deshalb ausgenommen (Begründung an der Abfrage). -->
 
 					<!-- Activity Heatmap -->
 					<div class="mb-4">

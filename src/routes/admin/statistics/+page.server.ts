@@ -82,8 +82,23 @@ const jahresfilter = (jahr: number): SQL =>
  * Datensätze mit plausiblem Sichtungsdatum.
  *
  * 280 Zeilen des Altbestands liegen auf dem Epoch-Platzhalter (1970-01-01) —
- * sie sind fehlerhafte Importe und würden der Jahresauswahl ein Jahr 1970
- * unterschieben, das es fachlich nie gab (`statisticsEpochExclusion.test.ts`).
+ * fehlerhafte Importe, die der Jahresauswahl ein Jahr 1970 unterschöben, das es
+ * fachlich nie gab (`statisticsEpochExclusion.test.ts`).
+ *
+ * **Bewusst nur an den Kalenderauswertungen** (Jahres-, Monatsverteilung,
+ * Jahresliste) und nicht an den Kopfzahlen. Das sieht nach einer Inkonsistenz
+ * aus, ist aber die einzig richtige Aufteilung — gemessen am 2026-08-08 sind von
+ * den 280 Zeilen **0 freigegeben und alle 280 offen**:
+ *
+ * - Auf der freigegebenen Seite gibt es deshalb gar keine Divergenz zwischen
+ *   Kopfzahl und Verteilung; die Menge, um die sie abweichen könnten, ist leer.
+ * - Die Kopfzahl „noch offen" muss dieselbe Menge zählen wie der Eingang auf
+ *   `/admin`, und der filtert `openOnly()` ohne Datumsgrenze. Mit Ausschluss
+ *   stünden hier 377 gegen 657 dort — dieselbe Klasse Divergenz, die #800
+ *   beseitigt hat, nur um 280 statt um 6 Zeilen.
+ *
+ * Festgehalten in `page.server.test.ts` („Epoch-Ausschluss nur in den
+ * Kalenderauswertungen") in beide Richtungen.
  */
 const plausiblesDatum = (): SQL => gte(sightings.sightingDate, EARLIEST_PLAUSIBLE_SIGHTING_DATE);
 
@@ -219,12 +234,17 @@ export const load: PageServerLoad = async ({ url }) => {
 			// Freigabebezug wie überall sonst auf dieser Seite: vorher war dies die
 			// einzige Abfrage ohne Filter und zählte damit als Einzige die gesamte
 			// Tabelle inklusive noch offener Meldungen (Vorgabe 3 in approvalFilter.ts).
+			//
+			// Dritte Ausnahme von der Jahresauswahl, und zwar aus dem umgekehrten
+			// Grund wie die beiden anderen: Dieser Abschnitt bringt seinen Zeitraum
+			// bereits mit. Mit Jahresauswahl entstünde der Schnitt aus „in den
+			// letzten 30 Tagen eingegangen" und „Sichtungsdatum im Jahr X" — für
+			// jedes vergangene Jahr leer, und die Überschrift läse sich als „die
+			// letzten 30 Tage des Jahres X", was etwas ganz anderes wäre.
 			.where(
-				mitJahr(
-					and(
-						approvedOnly(),
-						sql`${sightings.created} >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days'`
-					) as SQL
+				and(
+					approvedOnly(),
+					sql`${sightings.created} >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '30 days'`
 				)
 			)
 			.groupBy(berlinCalendarDate(sightings.created))

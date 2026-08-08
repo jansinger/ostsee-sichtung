@@ -15,11 +15,12 @@
  */
 
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { sql, type SQL, type SQLWrapper } from 'drizzle-orm';
+import { gte, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
 import { sightings } from '$lib/server/db/schema';
 import { berlinCalendarDate } from '$lib/server/db/sqlTimeZone';
 import { openOnly } from '$lib/server/db/approvalFilter';
+import { EARLIEST_PLAUSIBLE_SIGHTING_DATE } from '$lib/server/db/sightingRepository';
 
 const dialect = new PgDialect();
 const toSqlText = (expression: SQLWrapper): string => dialect.sqlToQuery(expression.getSQL()).sql;
@@ -302,6 +303,18 @@ describe('admin/statistics load() — Jahresauswahl', () => {
 		expect(hatJahresfilter(jahrestrend!), 'Jahrestrend auf ein Jahr eingedampft').toBe(false);
 	});
 
+	it('lässt den Eingang der letzten 30 Tage unabhängig von der Jahresauswahl', async () => {
+		recordedQueries = [];
+
+		await ladeSeite('?jahr=2020');
+
+		const eingang = recordedQueries.find(
+			(eintrag) => 'date' in eintrag.columns && 'count' in eintrag.columns
+		);
+		expect(eingang, 'Eingangs-Abfrage nicht gefunden').toBeDefined();
+		expect(hatJahresfilter(eingang!), 'Eingang trägt die Jahresauswahl').toBe(false);
+	});
+
 	it('fällt bei einem unplausiblen Jahr auf „Alle Jahre" zurück', async () => {
 		recordedQueries = [];
 
@@ -328,6 +341,56 @@ describe('admin/statistics load() — Jahresauswahl', () => {
 		for (const abfrage of jahresListen) {
 			expect(abfrage.where, 'Jahresliste ohne Freigabebezug').toBeDefined();
 			expect(toSqlText(abfrage.where!)).toContain('freigegeben_am');
+		}
+	});
+});
+
+/**
+ * Der Epoch-Ausschluss gehört an die Kalenderauswertungen — und an sonst nichts.
+ *
+ * In `sichtungen` liegen 280 Zeilen auf dem Platzhalter 1970-01-01. Gemessen am
+ * 2026-08-08 auf der Entwicklungs-DB sind davon **0 freigegeben und alle 280
+ * offen**. Daraus folgt beides:
+ *
+ * - Für die freigegebene Seite gibt es keine Divergenz zwischen Kopfzahl und
+ *   Jahres-/Monatsverteilung — die Menge, um die sie sich unterscheiden könnten,
+ *   ist leer.
+ * - Die Kopfzahl „noch offen" **darf** ihn nicht tragen: Sie muss dieselbe Menge
+ *   zählen wie der Eingang auf `/admin` (`openOnly()`, ohne Datumsgrenze). Mit
+ *   Ausschluss stünden hier 377 gegen 657 dort — exakt die Klasse Divergenz, die
+ *   #800 beseitigt hat, nur um 280 statt um 6 Zeilen.
+ */
+describe('admin/statistics load() — Epoch-Ausschluss nur in den Kalenderauswertungen', () => {
+	const epochGrenze = toSqlText(gte(sightings.sightingDate, EARLIEST_PLAUSIBLE_SIGHTING_DATE));
+
+	it('hält die Kopfzahlen deckungsgleich mit dem Eingang', async () => {
+		recordedQueries = [];
+
+		await ladeSeite();
+
+		const kopfzahlen = recordedQueries.filter((eintrag) => 'totalSightings' in eintrag.columns);
+		expect(kopfzahlen.length).toBe(2);
+		for (const abfrage of kopfzahlen) {
+			expect(
+				toSqlText(abfrage.where!),
+				'Kopfzahl grenzt das Datum ein und weicht damit vom Eingang ab'
+			).not.toContain(epochGrenze);
+		}
+	});
+
+	it('hält die Epoch-Platzhalter aus Jahres- und Monatsverteilung heraus', async () => {
+		recordedQueries = [];
+
+		await ladeSeite();
+
+		const kalender = recordedQueries.filter(
+			(eintrag) => 'year' in eintrag.columns || 'month' in eintrag.columns
+		);
+		expect(kalender.length, 'Kalenderauswertungen nicht gefunden').toBeGreaterThanOrEqual(3);
+		for (const abfrage of kalender) {
+			expect(toSqlText(abfrage.where!), 'Kalenderauswertung ohne Epoch-Ausschluss').toContain(
+				epochGrenze
+			);
 		}
 	});
 });
