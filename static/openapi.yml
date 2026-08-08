@@ -445,6 +445,84 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/sightings/{id}/queue:
+    get:
+      tags:
+        - sightings
+      summary: Nachbarn im Stapel der offenen Sichtungen
+      description: |
+        Beantwortet „wer liegt vor und hinter dieser Sichtung" im Stapel der
+        offenen (weder freigegebenen noch abgelehnten) Meldungen
+        (Admin-Berechtigung erforderlich). Trägt den Auto-Advance der
+        Detailansicht: Nach einer Entscheidung springt sie direkt zu `next`,
+        ohne Umweg über die Liste.
+
+        Die Nachbarn werden per Keyset-Vergleich gegen `(created, id)` der
+        aktuellen Sichtung gesucht, nicht per Offset — ein Offset wäre nach
+        jeder Entscheidung um eins falsch, weil die entschiedene Sichtung den
+        Stapel verlässt. Deshalb bleibt `next`/`prev` auch für eine bereits
+        entschiedene Sichtung beantwortbar; nur `position` wird dann `null`,
+        weil sie keinen Rang im offenen Stapel mehr hat.
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Sichtung
+          schema:
+            type: integer
+            minimum: 1
+            example: 1840
+        - name: order
+          in: query
+          description: >
+            Sortierrichtung des Stapels nach Meldedatum. Alles außer `asc`
+            fällt auf `desc` zurück.
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+            example: desc
+      responses:
+        '200':
+          description: Nachbarn, Position und Gesamtzahl im offenen Stapel
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - next
+                  - prev
+                  - position
+                  - total
+                properties:
+                  next:
+                    $ref: '#/components/schemas/QueueNeighbor'
+                  prev:
+                    $ref: '#/components/schemas/QueueNeighbor'
+                  position:
+                    type: integer
+                    nullable: true
+                    description: >
+                      1-basierter Rang im offenen Stapel; null, wenn die
+                      Sichtung nicht mehr offen ist.
+                    example: 17
+                  total:
+                    type: integer
+                    description: Gesamtzahl offener Sichtungen
+                    example: 653
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '302':
+          $ref: '#/components/responses/LoginRedirect'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/sightings/export:
     get:
       tags:
@@ -2481,6 +2559,25 @@ components:
           type: string
           format: date-time
           example: "2026-08-08T09:12:44.000Z"
+    QueueNeighbor:
+      type: object
+      nullable: true
+      description: >
+        Ein Nachbar im Stapel der offenen Sichtungen, oder null am Stapelende.
+      required:
+        - id
+        - referenceId
+      properties:
+        id:
+          type: integer
+          example: 501
+        referenceId:
+          type: string
+          nullable: true
+          description: >
+            Fachliche Referenz-ID; null bei Altbestand ohne Referenz-ID
+            (Spalte `referenz_id` ist nicht `notNull`).
+          example: REF-501
     SpamRescoreReport:
       type: object
       required: [scored, skippedFailed, lastId, remaining, done, stalled, distribution]
