@@ -226,6 +226,9 @@ export const updateSighting = async (
 		id: _id,
 		created: _created,
 		approvedAt: _approvedAt,
+		// `freigegeben_von` gehört zum Zeitstempel wie `abgelehnt_von` zu seinem —
+		// derselbe Vorgang, derselbe alleinige Schreiber (Verify-Endpunkt).
+		approvedBy: _approvedBy,
 		verified: _verified,
 		// Gleiche Regel wie für `verified`/`approvedAt`: Die Ablehnung ist Teil
 		// desselben Statusvorgangs. `PATCH /api/sightings/[id]/verify` schreibt

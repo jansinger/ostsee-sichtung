@@ -39,6 +39,13 @@
 	} from '$lib/utils/geo/balticSeaStatus';
 	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
 	import { normalizeStatusParam } from '$lib/components/admin/sightingStatusFilter';
+	import {
+		COLUMN_PREFERENCES_STORAGE_KEY,
+		loadColumnPreferences,
+		serializeColumnPreferences
+	} from './columnPreferences';
+	import { getHeaderState, isSameIdList, setAllSelected, toggleSelection } from './bulkSelection';
+	import { buildBulkSummary, runBulkVerdict } from './bulkVerdict';
 
 	const logger = createLogger('SichtungenPage');
 
@@ -64,17 +71,25 @@
 	let showExportModal = $state(false);
 	let showColumnDropdown = $state(false);
 
-	// Column visibility configuration
-	let columnVisibility = $state({
+	/* Column visibility configuration
+	   `email`, `distance` und `distribution` starten aus: Mit ihnen war die
+	   Tabelle in der Default-Auswahl 1456 px breit, und aus dem Viewport liefen
+	   ausgerechnet Status und Aktionen — die Spalten, wegen derer man die
+	   Tabelle öffnet. Abgeschaltet sind sie nicht weg, sondern eine
+	   Checkbox im „Spalten"-Dropdown entfernt.
+	   Als eigene Konstante (statt inline in $state): `loadColumnPreferences`
+	   merged einen gespeicherten Stand gegen genau diese Werte, siehe
+	   `columnPreferences.ts`. */
+	const DEFAULT_COLUMN_VISIBILITY = {
 		referenceId: true,
 		sightingDate: true,
 		created: true,
-		email: true,
+		email: false,
 		species: true,
-		distance: true,
+		distance: false,
 		totalCount: true,
 		juvenileCount: true,
-		distribution: true,
+		distribution: false,
 		behavior: false,
 		seaState: false,
 		wind: false,
@@ -84,6 +99,56 @@
 		balticSea: true,
 		verified: true,
 		actions: true
+	};
+	/* SSR rendert immer mit dem Default — `localStorage` existiert dort nicht
+	   (architecture.md: kein window-Zugriff beim SSR-Rendern). Der `$effect`
+	   unten übernimmt den gespeicherten Stand direkt nach der Hydration; ein
+	   kurzes Umspringen der Spaltenauswahl im ersten Frame im Browser ist dabei
+	   bewusst in Kauf genommen.
+
+	   Direkter `localStorage`-Zugriff statt `$lib/storage/localStorage`: Dessen
+	   Helfer gehören zum Lebenszyklus des Meldeformulars — `STORAGE_KEYS` trägt
+	   den `sichtungen_`-Namespace und `clearStorage()` räumt diese Schlüssel
+	   beim Verwerfen des Formulars ab. Eine Admin-UI-Präferenz darf daran nicht
+	   hängen; Versionierung und tolerantes Parsen kapselt hier stattdessen
+	   `columnPreferences.ts`. */
+	let columnVisibility = $state({ ...DEFAULT_COLUMN_VISIBILITY });
+	let hatGespeicherteSpaltenGeladen = false;
+
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		/* try/catch um beide Zugriffe: `localStorage` selbst kann werfen
+		   (Storage per Policy deaktiviert → SecurityError) und `setItem`
+		   ebenso (volle Quota, Safari im privaten Modus). Die Spaltenauswahl
+		   ist eine Bequemlichkeit — ohne Storage läuft die Seite einfach ohne
+		   Persistenz weiter, statt beim Hydratisieren zu crashen. */
+		try {
+			if (!hatGespeicherteSpaltenGeladen) {
+				// Einmaliges Laden beim Mount. Kaputtes/altes JSON und unbekannte
+				// Schlüssel fallen in `loadColumnPreferences` still auf den Default
+				// zurück; neue Spalten erscheinen mit ihrem eigenen Default-Wert.
+				columnVisibility = loadColumnPreferences(
+					window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY),
+					DEFAULT_COLUMN_VISIBILITY
+				);
+				return; // Diesen Durchlauf nicht sofort wieder zurückschreiben.
+			}
+			// Jede weitere Änderung (Checkbox im „Spalten"-Dropdown) wird persistiert.
+			window.localStorage.setItem(
+				COLUMN_PREFERENCES_STORAGE_KEY,
+				serializeColumnPreferences(columnVisibility)
+			);
+		} catch (err) {
+			logger.warn(
+				{ err },
+				'Spaltenauswahl kann nicht gespeichert werden — Storage nicht verfügbar'
+			);
+		} finally {
+			/* Im finally, damit auch ein geworfenes `getItem` den Lade-Versuch
+			   abschließt — sonst überschriebe der nächste Durchlauf jede
+			   Nutzerauswahl erneut mit dem (dann fehlgeschlagenen) Laden. */
+			hatGespeicherteSpaltenGeladen = true;
+		}
 	});
 
 	// Available columns configuration
@@ -111,6 +176,15 @@
 		{ key: 'verified', label: 'Status', sortKey: null },
 		{ key: 'actions', label: 'Aktionen', sortKey: null }
 	];
+
+	/* Gemessene Breite der Aktionsspalte — die Statusspalte rastet links davon
+	   ein. Ein fester Wert ginge nicht: die Zahl der Aktions-Buttons hängt an
+	   `isSuperAdmin`, und der Spaltenkopf trägt dieselbe Breite wie die Zellen
+	   darunter (gleiche Tabellenspalte). */
+	let actionsColumnWidth = $state(0);
+	/* Ohne Aktionsspalte gehört die Statusspalte selbst an den Rand — sonst
+	   bliebe die zuletzt gemessene Breite als Lücke stehen. */
+	let stickyStatusRight = $derived(columnVisibility.actions ? actionsColumnWidth : 0);
 
 	// Prüft ob irgendwelche Filter aktiv sind
 	let hasActiveFilters = $derived(
@@ -359,6 +433,127 @@
 		} finally {
 			statusPending.delete(id);
 		}
+	}
+
+	/* ---------------------------------------------------------------------- */
+	/* Bulk-Aktionen (nur Desktop-Tabelle)                                      */
+	/* ---------------------------------------------------------------------- */
+
+	/**
+	 * Die gewählten Zeilen — immer nur aus der **aktuell sichtbaren** Seite.
+	 * Ein Cross-Page-Gedächtnis wäre gefährlich: „Freigeben" löste dann Zeilen
+	 * aus, die niemand mehr vor sich hat. Die Rechenregeln stehen in
+	 * `bulkSelection.ts`, hier liegt nur der Zustand.
+	 */
+	let selectedIds = $state<number[]>([]);
+	let visibleIds = $derived(sightings.map((sighting) => sighting.id));
+	let headerState = $derived(getHeaderState(selectedIds, visibleIds));
+
+	/* Zuletzt gesehene Liste als einfache Variable und nicht als `$state`: Sie ist
+	   nur Vergleichsgrundlage des Effekts unten; als reaktiver Wert löste ihr
+	   Schreiben denselben Effekt erneut aus. */
+	let zuletztGeseheneIds: number[] = [];
+	$effect(() => {
+		const ids = visibleIds;
+		if (isSameIdList(zuletztGeseheneIds, ids)) return;
+		// Seitenwechsel, Filterwechsel oder Neuladen nach einer Aktion — die
+		// Auswahl gehört geleert, sie bezog sich auf eine andere Liste.
+		zuletztGeseheneIds = ids;
+		selectedIds = [];
+	});
+
+	/** Läuft gerade eine Bulk-Ausführung? Sperrt die Leiste hart (siehe unten). */
+	let bulkPending = $state(false);
+	let bulkProgress = $state<{ done: number; total: number } | null>(null);
+
+	/* `indeterminate` ist eine reine DOM-Eigenschaft ohne HTML-Attribut — als
+	   `indeterminate={…}` im Markup wäre nicht verlässlich, dass Svelte sie als
+	   Property und nicht als Attribut setzt. Deshalb explizit über eine
+	   Referenz. */
+	let headerCheckbox = $state<HTMLInputElement | null>(null);
+	$effect(() => {
+		if (headerCheckbox) headerCheckbox.indeterminate = headerState === 'partial';
+	});
+
+	async function runBulkSequence(
+		ids: number[],
+		verdict: SightingVerdict,
+		options: { skipped?: number; allowUndo: boolean }
+	): Promise<void> {
+		bulkPending = true;
+		bulkProgress = { done: 0, total: ids.length };
+		/* Die Zeilen für die Dauer der Schleife sperren — dieselbe Wache wie beim
+		   Einzelwechsel. Sonst könnte ein Klick auf das Status-Control einer
+		   gerade laufenden Zeile ein zweites Verdict hinterherschicken. */
+		for (const id of ids) statusPending.add(id);
+		try {
+			const outcome = await runBulkVerdict(ids, verdict, {
+				/* `silent`: Sonst käme ein Fehler-Toast pro Zeile — bei 40 Zeilen eine
+				   Wand statt einer Rückmeldung. Gemeldet wird einmal, unten. */
+				submit: (id, v) => submitVerdict(id, v, { silent: true }),
+				onProgress: (done, total) => (bulkProgress = { done, total })
+			});
+
+			selectedIds = [];
+			await invalidateAll();
+
+			const summary = buildBulkSummary(outcome, verdict, options.skipped ?? 0);
+			/* Ein Toast statt N — `warning` bei Teilfehlern, damit die Fehlerzahl
+			   nicht in einem grünen Erfolgs-Toast untergeht. */
+			const zeigeToast = summary.hasFailures ? toast.warning : toast.success;
+			/* Die Aktion wird per Spread ergänzt statt als `action: … : undefined`
+			   gesetzt: Unter `exactOptionalPropertyTypes` ist ein explizites
+			   `undefined` nicht dasselbe wie ein fehlendes Feld. */
+			const undoAktion =
+				options.allowUndo && outcome.succeeded.length > 0
+					? {
+							label: 'Rückgängig',
+							/* Nur die Erfolge: Ein `reset` auf eine Zeile, deren Wechsel nie
+							   ankam, überschriebe einen fremden Zustand. */
+							onClick: () => void undoBulk(outcome.succeeded)
+						}
+					: null;
+			zeigeToast(summary.message, {
+				duration: SIGHTING_STATUS_UNDO_MS,
+				dismissible: true,
+				...(undoAktion ? { action: undoAktion } : {})
+			});
+		} finally {
+			for (const id of ids) statusPending.delete(id);
+			bulkPending = false;
+			bulkProgress = null;
+		}
+	}
+
+	async function runBulk(verdict: SightingVerdict): Promise<void> {
+		if (bulkPending) return;
+		const auswahl = [...selectedIds];
+		/* Zeilen mit laufender Einzelaktion bleiben außen vor: Ihr Vorgänger-Zustand
+		   ist gerade in Bewegung, ein zweites Verdict darüber wäre ein Rennen. */
+		const auszufuehren = auswahl.filter((id) => !statusPending.has(id));
+		const uebersprungen = auswahl.length - auszufuehren.length;
+
+		if (auszufuehren.length === 0) {
+			toast.error('Die gewählten Zeilen werden gerade noch bearbeitet — bitte kurz warten.', {
+				title: 'Aktion nicht möglich',
+				dismissible: true
+			});
+			return;
+		}
+
+		await runBulkSequence(auszufuehren, verdict, { skipped: uebersprungen, allowUndo: true });
+	}
+
+	/** Das Rückgängig des Bulk-Toasts — kein eigenes Undo darauf, sonst pendelt es. */
+	async function undoBulk(ids: number[]): Promise<void> {
+		if (bulkPending) {
+			toast.error('Es läuft noch eine Aktion — bitte kurz warten.', {
+				title: 'Rückgängig nicht möglich',
+				dismissible: true
+			});
+			return;
+		}
+		await runBulkSequence(ids, 'reset', { allowUndo: false });
 	}
 </script>
 
@@ -848,16 +1043,97 @@
 
 	<!-- Desktop Table Layout -->
 	<div class="hidden px-2 sm:px-4 md:block">
+		<!--
+			Aktionsleiste der Bulk-Auswahl. Sie erscheint nur bei Auswahl > 0 und steht
+			über der Tabelle, nicht als schwebender Balken: Bezugspunkt sind die
+			Checkboxen darunter, und ein Overlay verdeckte auf kurzen Listen die
+			erste Zeile.
+			„Freigeben" ist hier `btn-primary`, obwohl „Export" im Seitenkopf ebenfalls
+			primär ist — die Leiste ist ein eigener, temporärer Handlungsbereich mit
+			genau einer Primäraktion (Button-Hierarchie: eine pro Bereich). „Ablehnen"
+			bleibt `btn-outline`, „Auswahl aufheben" als reine Rücknahme `btn-ghost`.
+			`disabled` und nicht `aria-disabled` während des Laufs — mit offenem
+			Vorbehalt: Der Lauf ist bei vielen Zeilen NICHT kurz, Tastaturnutzer
+			verlieren für seine Dauer den Fokus. Trotzdem `disabled`, weil ein frei
+			fokussierbarer Knopf während eines Laufs, der gerade dutzende Zeilen
+			schreibt, Bedienbarkeit behauptete, die es nicht gibt (`runBulk` wiese
+			den Klick nur still ab); den Zustand erklärt die aria-live-Fortschritts-
+			anzeige daneben. Ein Doppelklick hätte hier echte Folgen.
+		-->
+		{#if selectedIds.length > 0}
+			<div
+				class="bg-base-200 border-base-300 mb-3 flex flex-wrap items-center gap-3 rounded-lg border p-3"
+				role="group"
+				aria-label="Aktionen für die ausgewählten Sichtungen"
+			>
+				<span class="font-semibold">{selectedIds.length} ausgewählt</span>
+				{#if bulkProgress}
+					<span class="text-base-content/70 flex items-center gap-2 text-sm" aria-live="polite">
+						<span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
+						{bulkProgress.done}/{bulkProgress.total} verarbeitet
+					</span>
+				{/if}
+				<div class="ml-auto flex flex-wrap items-center gap-2">
+					<button
+						class="btn btn-sm btn-primary"
+						onclick={() => runBulk('approve')}
+						disabled={bulkPending}
+					>
+						<Icon icon={SIGHTING_STATUS_PRESENTATION.approved.icon} class="mr-1 h-4 w-4" />
+						Freigeben
+					</button>
+					<button
+						class="btn btn-sm btn-outline"
+						onclick={() => runBulk('reject')}
+						disabled={bulkPending}
+					>
+						<Icon icon={SIGHTING_STATUS_PRESENTATION.rejected.icon} class="mr-1 h-4 w-4" />
+						Ablehnen
+					</button>
+					<button
+						class="btn btn-sm btn-ghost"
+						onclick={() => (selectedIds = [])}
+						disabled={bulkPending}
+					>
+						Auswahl aufheben
+					</button>
+				</div>
+			</div>
+		{/if}
 		<div class="border-base-300 bg-base-100 w-full overflow-x-auto rounded-lg border shadow-sm">
 			<table class="table-zebra table w-full">
 				<thead class="bg-base-200 text-base-content">
 					<tr>
+						<!-- Auswahlspalte, ganz links und wie die Markerspalte daneben fest:
+						     Sie steht bewusst nicht in `availableColumns`. Abschaltbar wäre die
+						     Bulk-Funktion je nach gespeicherter Spaltenwahl unerreichbar — und
+						     der gespeicherte Stand überlebt seit U2 den Reload.
+						     Nicht `sticky-col`: Der fixierte Bereich liegt rechts (Status,
+						     Aktionen); eine zweite fixierte Kante links stahl auf schmalen
+						     Fenstern zusätzlich Platz vom scrollenden Mittelteil. -->
+						<th class="w-px p-0">
+							<label class="flex cursor-pointer items-center justify-center px-2">
+								<input
+									type="checkbox"
+									class="checkbox checkbox-sm"
+									bind:this={headerCheckbox}
+									checked={headerState === 'all'}
+									disabled={bulkPending}
+									onchange={(e) =>
+										(selectedIds = setAllSelected(visibleIds, e.currentTarget.checked))}
+									aria-label="Alle Sichtungen auf dieser Seite auswählen"
+								/>
+							</label>
+						</th>
 						<!-- Feste Markerspalte, nicht in der Spaltenauswahl: Sie steht vor
 						     allen konfigurierbaren Spalten und überlebt damit sowohl jede
 						     Spaltenwahl als auch das horizontale Scrollen der Tabelle. -->
 						<th class="w-px p-0"><span class="sr-only">Art der Meldung</span></th>
+						<!-- Kein `hover:bg-base-300` an den nicht sortierbaren Köpfen: Die
+						     Aufhellung unter dem Zeiger versprach eine Sortierung, die es hier
+						     nicht gibt — sortierbare Köpfe tragen sie am <button> in `sortableTh`. -->
 						{#if columnVisibility.referenceId}
-							<th class="hover:bg-base-300">Referenz-ID</th>
+							<th>Referenz-ID</th>
 						{/if}
 						{#if columnVisibility.sightingDate}
 							{@render sortableTh('Sichtungsdatum', 'sightingDate')}
@@ -896,25 +1172,51 @@
 							{@render sortableTh('Sichtweite', 'visibility')}
 						{/if}
 						{#if columnVisibility.mediaUpload}
-							<th class="hover:bg-base-300">Aufnahme</th>
+							<th>Aufnahme</th>
 						{/if}
 						{#if columnVisibility.spamScore}
 							{@render sortableTh('Spam', 'spamScore')}
 						{/if}
 						{#if columnVisibility.balticSea}
-							<th class="hover:bg-base-300">Ostsee</th>
+							<th>Ostsee</th>
 						{/if}
+						<!-- Status und Aktionen bleiben beim horizontalen Scrollen stehen: Sie
+						     sind der Grund, aus dem die Tabelle geöffnet wird, standen aber bei
+						     vielen aktiven Spalten außerhalb des Viewports. Die Trennkante an der
+						     linken Sticky-Zelle macht sichtbar, dass hier ein fixierter Bereich
+						     beginnt — ohne sie sieht der Durchlauf darunter nach einem Fehler aus. -->
 						{#if columnVisibility.verified}
-							<th class="hover:bg-base-300">Status</th>
+							<th class="sticky-col sticky-edge" style="right: {stickyStatusRight}px">Status</th>
 						{/if}
 						{#if columnVisibility.actions}
-							<th class="hover:bg-base-300">Aktionen</th>
+							<th
+								class="sticky-col {columnVisibility.verified ? '' : 'sticky-edge'}"
+								style="right: 0"
+								bind:clientWidth={actionsColumnWidth}
+							>
+								Aktionen
+							</th>
 						{/if}
 					</tr>
 				</thead>
 				<tbody>
 					{#each sightings as sighting (sighting.id)}
 						<tr class="hover:bg-base-200" data-sighting-id={sighting.id}>
+							<!-- Auswahl-Checkbox, Gegenstück zur Kopfspalte oben. Das `aria-label`
+							     nennt die Referenz-ID und nicht nur „Zeile 3": Beim Vorlesen ist
+							     die Nummer der Meldung das, woran die Zeile erkennbar ist. -->
+							<td class="w-px p-0">
+								<label class="flex cursor-pointer items-center justify-center px-2">
+									<input
+										type="checkbox"
+										class="checkbox checkbox-sm"
+										checked={selectedIds.includes(sighting.id)}
+										disabled={bulkPending}
+										onchange={() => (selectedIds = toggleSelection(selectedIds, sighting.id))}
+										aria-label="Sichtung {sighting.referenceId ?? sighting.id} auswählen"
+									/>
+								</label>
+							</td>
 							<!-- Kante und Icon zusammen: Die Kante wirkt beim Überfliegen, das
 							     Icon trägt zusätzlich eine Form — Farbe allein wäre kein
 							     Merkmal (WCAG 1.4.1). Der `sr-only`-Text benennt beides, sonst
@@ -1055,7 +1357,7 @@
 									approvedAt: sighting.approvedAt,
 									rejectedAt: sighting.rejectedAt
 								})}
-								<td>
+								<td class="sticky-col sticky-edge" style="right: {stickyStatusRight}px">
 									<SightingStatusControl
 										{status}
 										sightingId={sighting.id}
@@ -1066,7 +1368,12 @@
 								</td>
 							{/if}
 							{#if columnVisibility.actions}
-								<td class="w-px whitespace-nowrap">
+								<td
+									class="sticky-col w-px whitespace-nowrap {columnVisibility.verified
+										? ''
+										: 'sticky-edge'}"
+									style="right: 0"
+								>
 									<!-- flex-nowrap: sonst brechen die 44px hohen Buttons um und ziehen die Zeile auf -->
 									<div class="flex flex-nowrap items-center gap-1">
 										<button
@@ -1257,3 +1564,39 @@
 		</button>
 	</form>
 </dialog>
+
+<style>
+	/* Fixierte Spalten (Status, Aktionen) im horizontal scrollenden Container.
+	   Warum die Hintergründe hier von Hand stehen: `table-zebra` und der
+	   Zeilen-Hover färben das <tr>, nicht die Zellen — eine sticky-Zelle bliebe
+	   damit durchsichtig, und der wegscrollende Inhalt liefe sichtbar darunter
+	   durch. DaisyUIs Tabellenregeln setzen an `:where(th, td)` keinen
+	   Hintergrund und stehen zudem in `:where()` ohne Spezifität; diese
+	   ungelayerten Regeln gewinnen also. Farben nur als Theme-Token. */
+	.sticky-col {
+		position: sticky;
+		background-color: var(--color-base-100);
+	}
+
+	/* Zebra: `tbody tr:nth-child(even)` trägt base-200 — die fixierte Zelle muss
+	   dieselbe Fläche mitbringen, sonst blitzt sie beim Scrollen heller auf. */
+	tbody tr:nth-child(even) .sticky-col {
+		background-color: var(--color-base-200);
+	}
+
+	/* Zeilen-Hover (`hover:bg-base-200` am <tr>) — deckungsgleich für gerade und
+	   ungerade Zeilen, weil beide Zustände auf base-200 laufen. */
+	tbody tr:hover .sticky-col {
+		background-color: var(--color-base-200);
+	}
+
+	/* Der Tabellenkopf steht auf `bg-base-200` (am <thead>, nicht an den Zellen). */
+	thead .sticky-col {
+		background-color: var(--color-base-200);
+	}
+
+	/* Trennkante an der linken Kante des fixierten Bereichs. */
+	.sticky-edge {
+		border-left: var(--border, 1px) solid var(--color-base-300);
+	}
+</style>

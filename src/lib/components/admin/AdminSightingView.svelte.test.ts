@@ -190,6 +190,32 @@ describe('AdminSightingView — Statusleiste im Kopfbereich', () => {
 		expect(screen.getByRole('row', { name: /^Freigegeben am/ }).elements()).toHaveLength(0);
 	});
 
+	it('nennt Zeitpunkt und Bearbeiter der Freigabe', async () => {
+		const screen = render(AdminSightingView, {
+			sighting: baseSighting({
+				approvedAt: new Date('2026-03-12T09:00:00Z'),
+				approvedBy: 'bernd@example.org'
+			}),
+			onStatusChange: vi.fn()
+		});
+
+		await expect.element(screen.getByRole('radio', { name: 'Freigegeben' })).toBeChecked();
+		expect(screen.container.textContent).toContain('bernd@example.org');
+	});
+
+	// Altbestand aus dem Altsystem trägt `freigegeben_von` = NULL. Ein „durch
+	// null" wäre die sichtbare Folge eines naiven Templates.
+	it('zeigt bei Altbestand ohne Person nur das Freigabedatum', async () => {
+		const screen = render(AdminSightingView, {
+			sighting: baseSighting({ approvedAt: new Date('2026-03-12T09:00:00Z'), approvedBy: null }),
+			onStatusChange: vi.fn()
+		});
+
+		await expect.element(screen.getByRole('radio', { name: 'Freigegeben' })).toBeChecked();
+		expect(screen.container.textContent).toContain('Freigegeben am');
+		expect(screen.container.textContent).not.toContain('durch');
+	});
+
 	it('nennt Zeitpunkt und Bearbeiter der Ablehnung', async () => {
 		const screen = render(AdminSightingView, {
 			sighting: baseSighting({

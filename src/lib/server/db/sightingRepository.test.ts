@@ -465,6 +465,7 @@ describe('sightingRepository', () => {
 				...mockFormData,
 				verified: true,
 				approvedAt: new Date('2026-01-01T00:00:00.000Z'),
+				approvedBy: 'angreifer@example.com',
 				rejectedAt: new Date('2026-01-02T00:00:00.000Z'),
 				rejectedBy: 'angreifer@example.com'
 			} as any);
@@ -474,6 +475,7 @@ describe('sightingRepository', () => {
 			expect(updatePayload).toBeDefined();
 			expect(updatePayload).not.toHaveProperty('verified');
 			expect(updatePayload).not.toHaveProperty('approvedAt');
+			expect(updatePayload).not.toHaveProperty('approvedBy');
 			expect(updatePayload).not.toHaveProperty('rejectedAt');
 			expect(updatePayload).not.toHaveProperty('rejectedBy');
 		});
