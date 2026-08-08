@@ -373,8 +373,16 @@ paths:
     get:
       tags:
         - sightings
-      summary: Prüfstatus abrufen
-      description: Gibt den aktuellen Prüf- und Freigabestatus einer Sichtung zurück (Admin-Berechtigung erforderlich)
+      summary: Prüfstatus und Status-Historie abrufen
+      description: |
+        Gibt den aktuellen Prüf- und Freigabestatus einer Sichtung zurück sowie
+        die Historie aller über diesen Endpunkt getroffenen Entscheidungen
+        (Admin-Berechtigung erforderlich).
+
+        Die Historie beginnt mit ihrer Einführung: Sichtungen, deren Status aus
+        dem Altsystem stammt, liefern eine leere Liste. Das ist kein Fehler und
+        bedeutet nicht, dass nie entschieden wurde — der aktuelle Zustand steht
+        in `approvedAt`/`rejectedAt`.
       security:
         - adminAuth: []
       parameters:
@@ -398,6 +406,7 @@ paths:
                   - verified
                   - approvedAt
                   - rejectedAt
+                  - history
                 properties:
                   id:
                     type: integer
@@ -418,6 +427,13 @@ paths:
                     nullable: true
                     description: Zeitpunkt der Ablehnung; null wenn nicht abgelehnt
                     example: null
+                  history:
+                    type: array
+                    description: >
+                      Alle Statusentscheidungen, älteste zuerst. Leer für
+                      Sichtungen aus dem Altsystem.
+                    items:
+                      $ref: '#/components/schemas/SightingStatusLogEntry'
         '400':
           $ref: '#/components/responses/BadRequest'
         '302':
@@ -2416,6 +2432,38 @@ components:
         example: "1"
 
   schemas:
+    SightingStatusLogEntry:
+      type: object
+      description: >
+        Ein Eintrag der Status-Historie (`sichtung_status_log`). Geschrieben
+        ausschließlich von PATCH /api/sightings/{id}/verify, in derselben
+        Transaktion wie die Statusspalten.
+      required:
+        - id
+        - verdict
+        - editor
+        - recordedAt
+      properties:
+        id:
+          type: integer
+          example: 17
+        verdict:
+          type: string
+          enum: [approve, reject, reset]
+          description: Die getroffene Entscheidung
+          example: approve
+        editor:
+          type: string
+          nullable: true
+          description: >
+            Kennung des Bearbeiters — dieselbe wie in `freigegeben_von` /
+            `abgelehnt_von` (E-Mail-Adresse aus der Anmeldung). null, wenn keine
+            Identität bekannt war; es wird kein Platzhalter erfunden.
+          example: pruefer@example.com
+        recordedAt:
+          type: string
+          format: date-time
+          example: "2026-08-08T09:12:44.000Z"
     SpamRescoreReport:
       type: object
       required: [scored, skippedFailed, lastId, remaining, done, stalled, distribution]

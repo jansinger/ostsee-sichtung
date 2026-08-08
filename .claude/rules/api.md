@@ -89,6 +89,27 @@ gesetzt, und die öffentliche Grundmenge bleibt unverändert
   noch abgelehnt. `pendingOnly()` bedeutet weiterhin „nicht freigegeben"
   (inkl. abgelehnter) und bleibt die Gegenmenge der Statistik.
 
+### Status-Historie (seit 2026-08)
+
+`sichtung_status_log` hält jede über den Verify-Endpunkt getroffene Entscheidung
+fest (`sichtung_id`, `verdict`, `bearbeiter`, `zeitpunkt`). Sie **ergänzt** die
+Statusspalten und ersetzt sie nicht — das Altsystem liegt auf derselben
+Datenbank und liest sie weiterhin.
+
+- **Geschrieben wird sie ausschließlich von demselben Endpunkt**, in derselben
+  Transaktion wie die Statusspalten. Eine Historie mit Lücke sieht vollständig
+  aus und ist es nicht. Mechanisch abgesichert durch
+  `src/lib/server/db/statusLogWriteScan.test.ts` — Lesen ist überall erlaubt.
+- **Gelesen wird sie über `GET /api/sightings/[id]/verify`** (Feld `history`,
+  aufsteigend). Sie enthält Bearbeiter-Kennungen und bleibt deshalb hinter der
+  Admin-Prüfung; sie gehört nicht in `/api/sightings/[id]`.
+- **Eine leere Historie ist der Normalfall des Altbestands**, kein Fehler.
+  Entscheidungen vor der Einführung existieren nur als aktueller Status.
+
+Datenschutz und Aufbewahrung sind am Tabellen-Docblock in
+`src/lib/server/db/schema.ts` begründet, die Entscheidung selbst in
+`docs/ADMIN_IMPROVEMENTS_SPEC.md` (B3).
+
 ---
 
 ## Legacy API - KRITISCH

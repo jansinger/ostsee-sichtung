@@ -273,6 +273,37 @@ geschrieben ausschließlich vom verify-Endpunkt. Anzeige als Zeitleiste in der
 Detailansicht. Ersetzt perspektivisch die Einzelfelder nicht (Legacy-DB!),
 ergänzt sie. Aufbewahrung/Datenschutz klären (Bearbeiter-Identität).
 
+**Entscheidungen (2026-08-08).**
+
+- **Bearbeiter-Identität: dieselbe Kennung wie `abgelehnt_von`** — die
+  E-Mail-Adresse aus der Auth0-Anmeldung (`locals.user.email`). Es entsteht
+  damit keine neue Datenkategorie, nur eine längere Reihe derselben. Ohne
+  angemeldete Identität bleibt die Spalte `NULL`; ein Platzhalter behauptete
+  eine Person, die es nie gab (dieselbe Begründung wie bei `freigegeben_von`).
+  Sichtbar ist die Historie ausschließlich im Admin-Bereich, nie öffentlich.
+- **Keine eigene Aufbewahrungsgrenze.** Die Einträge hängen per
+  `ON DELETE CASCADE` an der Sichtung und teilen deren Schicksal. Eine kürzere
+  Frist würde die Historie genau dann leeren, wenn die Sichtung noch öffentlich
+  steht — und die Frage „wer hat das freigegeben" unbeantwortbar machen,
+  obwohl `freigegeben_von` sie weiterhin beantwortet. Eine eigene Frist wird
+  erst sinnvoll, wenn die Sichtungen selbst eine bekommen; das ist der offene
+  Punkt §2.1 in `docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md`.
+- **Eigene Tabelle statt `audit_logs`.** Das Audit-Log hält denselben Vorgang
+  fest, taugt aber nicht als Anzeigequelle: `logAuditEvent` schluckt
+  Schreibfehler bewusst, `details` ist formloses JSONB, und es gibt keinen
+  Index auf `resource_id` — die Historie einer Sichtung wäre ein Full Scan über
+  alle Aktionen aller Ressourcen.
+- **Spalten und Eintrag in einer Transaktion.** Eine Historie, die einen
+  stattgefundenen Wechsel verschweigt, sieht vollständig aus und ist es nicht —
+  sie wäre damit schlechter als gar keine.
+- **Leere Historie wird erklärt, nicht wortlos gezeigt.** Der Altbestand
+  (19.262 Freigaben aus dem Altsystem) hat keine Einträge; ohne Hinweis liest
+  sich das als „nie bearbeitet".
+
+Der einzige Schreibweg ist mechanisch abgesichert:
+`src/lib/server/db/statusLogWriteScan.test.ts` meldet jeden Schreibzugriff auf
+die Tabelle außerhalb des Verify-Endpunkts.
+
 ### B4 — Gespeicherte Filteransichten
 
 Benannte Filter-Presets als Chips über der Tabelle. Persistenz zunächst

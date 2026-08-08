@@ -1,15 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PATCH, GET } from './+server';
 
-const { mockWhere, mockSet, mockUpdate, mockLimit } = vi.hoisted(() => {
-	const mockWhere = vi.fn().mockResolvedValue(undefined);
-	const mockSet = vi.fn().mockReturnValue({ where: mockWhere });
-	const mockUpdate = vi.fn().mockReturnValue({ set: mockSet });
-	const mockLimit = vi
-		.fn()
-		.mockResolvedValue([{ id: 1, verified: 0, approvedAt: null, rejectedAt: null }]);
-	return { mockWhere, mockSet, mockUpdate, mockLimit };
-});
+const { mockWhere, mockSet, mockUpdate, mockLimit, mockOrderBy, mockLogValues, mockLogInsert } =
+	vi.hoisted(() => {
+		const mockWhere = vi.fn().mockResolvedValue(undefined);
+		const mockSet = vi.fn().mockReturnValue({ where: mockWhere });
+		const mockUpdate = vi.fn().mockReturnValue({ set: mockSet });
+		const mockLimit = vi
+			.fn()
+			.mockResolvedValue([{ id: 1, verified: 0, approvedAt: null, rejectedAt: null }]);
+		// Historien-Abfrage des GET: select().from().where().orderBy()
+		const mockOrderBy = vi.fn().mockResolvedValue([]);
+		// Historien-Eintrag des PATCH: tx.insert().values()
+		const mockLogValues = vi.fn().mockResolvedValue(undefined);
+		const mockLogInsert = vi.fn().mockReturnValue({ values: mockLogValues });
+		return { mockWhere, mockSet, mockUpdate, mockLimit, mockOrderBy, mockLogValues, mockLogInsert };
+	});
 
 vi.mock('$lib/server/audit/auditService', () => ({
 	logAuditEvent: vi.fn().mockResolvedValue(undefined)
@@ -42,11 +48,18 @@ vi.mock('$lib/server/db', () => ({
 		select: vi.fn().mockReturnValue({
 			from: vi.fn().mockReturnValue({
 				where: vi.fn().mockReturnValue({
-					limit: mockLimit
+					limit: mockLimit,
+					orderBy: mockOrderBy
 				})
 			})
 		}),
-		update: mockUpdate
+		update: mockUpdate,
+		// Statusspalten und Historien-Eintrag gehören in eine Transaktion — der
+		// Mock reicht dieselben Doubles durch, damit die bestehenden
+		// Update-Erwartungen unverändert gelten.
+		transaction: vi.fn((callback: (tx: unknown) => unknown) =>
+			callback({ update: mockUpdate, insert: mockLogInsert })
+		)
 	}
 }));
 
@@ -58,6 +71,13 @@ vi.mock('$lib/server/db/schema', () => ({
 		approvedBy: 'approvedBy',
 		rejectedAt: 'rejectedAt',
 		rejectedBy: 'rejectedBy'
+	},
+	sightingStatusLog: {
+		id: 'id',
+		sightingId: 'sightingId',
+		verdict: 'verdict',
+		editor: 'editor',
+		recordedAt: 'recordedAt'
 	}
 }));
 
@@ -70,6 +90,8 @@ vi.mock('$lib/server/db/schema', () => ({
 
 vi.mock('drizzle-orm', () => ({
 	eq: vi.fn((a, b) => ({ a, b })),
+	// Sortierung der Historie im GET
+	asc: vi.fn((a) => ({ asc: a })),
 	// von approvalFilter importiert; im Endpunkt-Test nie aufgerufen
 	and: vi.fn((...args) => ({ and: args })),
 	isNull: vi.fn((a) => ({ isNull: a })),
@@ -339,5 +361,109 @@ describe('/api/sightings/[id]/verify GET endpoint', () => {
 		} catch (e: unknown) {
 			expect((e as { status: number }).status).toBe(404);
 		}
+	});
+});
+
+/**
+ * Status-Historie (Spec B3).
+ *
+ * Der Verify-Endpunkt ist laut `.claude/rules/api.md` der einzige Schreibweg
+ * für Statusänderungen — die Historie hängt deshalb hier und nirgends sonst.
+ * Geprüft wird beides: dass jeder Verdict genau einen Eintrag erzeugt, und
+ * dass Spaltenschreibung und Eintrag in **einer** Transaktion laufen. Ohne die
+ * Transaktion könnte die Historie eine Änderung verschweigen, die stattgefunden
+ * hat — und eine lückenhafte Historie ist schlimmer als keine, weil sie so
+ * aussieht, als wäre sie vollständig.
+ */
+describe('PATCH schreibt die Status-Historie', () => {
+	const patchEvent = (id: string, body: Record<string, unknown>, userEmail?: string) =>
+		createMockEvent(id, body, userEmail ? { userEmail } : undefined) as Parameters<typeof PATCH>[0];
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockWhere.mockResolvedValue(undefined);
+		mockSet.mockReturnValue({ where: mockWhere });
+		mockUpdate.mockReturnValue({ set: mockSet });
+		mockLogInsert.mockReturnValue({ values: mockLogValues });
+		mockLogValues.mockResolvedValue(undefined);
+		mockLimit.mockResolvedValue([{ id: 1, verified: 0, approvedAt: null, rejectedAt: null }]);
+	});
+
+	it.each([
+		['approve', { verdict: 'approve' }],
+		['reject', { verdict: 'reject' }],
+		['reset', { verdict: 'reset' }]
+	])('legt für %s genau einen Eintrag an', async (verdict, body) => {
+		await PATCH(patchEvent('42', body, 'pruefer@example.com'));
+
+		expect(mockLogValues).toHaveBeenCalledOnce();
+		expect(mockLogValues).toHaveBeenCalledWith(
+			expect.objectContaining({
+				sightingId: 42,
+				verdict,
+				editor: 'pruefer@example.com'
+			})
+		);
+	});
+
+	it('hält den Alias { verified: 1 } als approve fest', async () => {
+		await PATCH(patchEvent('7', { verified: 1 }));
+
+		expect(mockLogValues).toHaveBeenCalledWith(expect.objectContaining({ verdict: 'approve' }));
+	});
+
+	it('schreibt Spalten und Historie in derselben Transaktion', async () => {
+		const { db } = await import('$lib/server/db');
+		await PATCH(patchEvent('1', { verdict: 'approve' }));
+
+		expect(db.transaction).toHaveBeenCalledOnce();
+		expect(mockSet).toHaveBeenCalledOnce();
+		expect(mockLogValues).toHaveBeenCalledOnce();
+	});
+
+	it('speichert ohne angemeldete Identität kein Bearbeiter-Kennzeichen', async () => {
+		// Kein Platzhalter, sondern NULL — dieselbe Regel wie bei
+		// `freigegeben_von`/`abgelehnt_von`: ein erfundener Name behauptete eine
+		// Person, die es nie gab.
+		const event = createMockEvent('1', { verdict: 'reject' });
+		(event.locals as { user?: unknown }).user = undefined;
+
+		await PATCH(event as Parameters<typeof PATCH>[0]);
+
+		expect(mockLogValues).toHaveBeenCalledWith(expect.objectContaining({ editor: null }));
+	});
+});
+
+describe('GET liefert die Status-Historie', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockLimit.mockResolvedValue([{ id: 1, verified: 1, approvedAt: new Date(), rejectedAt: null }]);
+		mockOrderBy.mockResolvedValue([]);
+	});
+
+	it('gibt die Einträge aufsteigend nach Zeitpunkt zurück', async () => {
+		const erster = new Date('2026-08-01T10:00:00Z');
+		const zweiter = new Date('2026-08-02T10:00:00Z');
+		mockOrderBy.mockResolvedValueOnce([
+			{ id: 1, verdict: 'reject', editor: 'a@example.com', recordedAt: erster },
+			{ id: 2, verdict: 'approve', editor: 'b@example.com', recordedAt: zweiter }
+		]);
+
+		const event = createMockEvent('1', {});
+		const response = await GET(event as Parameters<typeof GET>[0]);
+		const body = await response.json();
+
+		expect(body.history).toHaveLength(2);
+		expect(body.history[0]).toMatchObject({ verdict: 'reject', editor: 'a@example.com' });
+		expect(body.history[1]).toMatchObject({ verdict: 'approve', editor: 'b@example.com' });
+	});
+
+	it('gibt für den Altbestand eine leere Historie zurück, keinen Fehler', async () => {
+		const event = createMockEvent('1', {});
+		const response = await GET(event as Parameters<typeof GET>[0]);
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body.history).toEqual([]);
 	});
 });

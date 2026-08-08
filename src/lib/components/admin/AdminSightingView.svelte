@@ -36,6 +36,8 @@
 	import { getSightingStatus, SIGHTING_STATUS_PRESENTATION } from './sightingStatus';
 	import type { SightingVerdict } from './sightingVerdict';
 	import SightingStatusControl from './SightingStatusControl.svelte';
+	import SightingStatusTimeline from './SightingStatusTimeline.svelte';
+	import type { SightingStatusLogEntry } from './sightingStatusLog';
 
 	// Definiere die Struktur einer Datenzeile
 	interface DataRowType {
@@ -51,12 +53,18 @@
 		sighting,
 		loading = false,
 		onStatusChange,
-		statusBusy = false
+		statusBusy = false,
+		statusLog = [],
+		statusLogFailed = false
 	} = $props<{
 		sighting: FrontendSighting;
 		loading?: boolean;
 		onStatusChange?: ((verdict: SightingVerdict) => void) | undefined;
 		statusBusy?: boolean;
+		/** Status-Historie (Spec B3) — leer für den Altbestand, siehe Zeitleiste. */
+		statusLog?: SightingStatusLogEntry[];
+		/** Die Historie konnte nicht geladen werden — von „leer" zu unterscheiden. */
+		statusLogFailed?: boolean;
 	}>();
 
 	// State für die aktuellen Sichtungsdaten mit reaktiver Wetterdaten-Aktualisierung
@@ -494,6 +502,24 @@
 			</span>
 		{/if}
 	</div>
+
+	<!-- Zugeklappt und direkt unter der Statusleiste: Die Historie gehört fachlich
+	     zum Status, wird aber selten gebraucht — aufgeklappt schöbe sie alle
+	     Sichtungsdaten nach unten. `summary` als eigenes Bedienelement, damit der
+	     Zustand per Tastatur erreichbar bleibt. -->
+	{@const historyLabel = `Bearbeitungs-Historie${statusLog.length > 0 ? ` (${statusLog.length})` : ''}`}
+	<!-- `aria-label` am `details`: Ein `summary` mit `collapse-title` wird als
+	     namenloses `group` exponiert, die Zusammenfassung selbst als `generic` —
+	     ein Screenreader meldete den Bereich damit gar nicht. Der Text ist
+	     derselbe wie der sichtbare, sonst bräche WCAG 2.5.3 (Label in Name). -->
+	<details class="collapse-arrow bg-base-200 rounded-box collapse mb-4" aria-label={historyLabel}>
+		<summary class="collapse-title text-base font-medium">
+			{historyLabel}
+		</summary>
+		<div class="collapse-content">
+			<SightingStatusTimeline entries={statusLog} failed={statusLogFailed} />
+		</div>
+	</details>
 
 	{#if isDead}
 		<!-- Steht über allen Angaben und nicht zwischen den Karten: Die Art der

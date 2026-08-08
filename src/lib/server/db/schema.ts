@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { berlinCalendarDate, berlinDatePart } from './sqlTimeZone';
 import {
 	bigint,
+	check,
 	geometry,
 	index,
 	integer,
@@ -164,6 +165,69 @@ export const sightings = pgTable(
 
 // Type for selecting from sightings table
 export type SightingSelect = typeof sightings.$inferSelect;
+
+/**
+ * Status-Historie einer Sichtung (Spec B3).
+ *
+ * **Ergänzt die Statusspalten, ersetzt sie nicht.** `freigegeben_am`,
+ * `abgelehnt_am` und `abgelehnt_von` bleiben unverändert die Wahrheit über den
+ * *aktuellen* Zustand — das Altsystem liegt auf derselben Datenbank und liest
+ * sie. Diese Tabelle beantwortet die andere Frage: wie der Zustand zustande kam.
+ *
+ * **Geschrieben ausschließlich von `PATCH /api/sightings/[id]/verify`,** in
+ * derselben Transaktion wie die Statusspalten. Das ist keine Stilfrage: Eine
+ * Historie, die einen Wechsel verschweigt, sieht vollständig aus und ist es
+ * nicht. Mechanisch abgesichert durch `statusLogWriteScan.test.ts`.
+ *
+ * **Warum eine eigene Tabelle neben `audit_logs`.** Das Audit-Log hält denselben
+ * Vorgang bereits fest, taugt aber nicht als Anzeigequelle: Es ist bewusst
+ * bestbemüht (`logAuditEvent` schluckt Schreibfehler), sein `details`-JSONB hat
+ * keine feste Form, und es hat keinen Index auf `resource_id` — die Historie
+ * einer Sichtung wäre ein Full Scan über alle Aktionen aller Ressourcen.
+ *
+ * **Bearbeiter-Identität (DSGVO).** `bearbeiter` trägt dieselbe Kennung wie
+ * `freigegeben_von`/`abgelehnt_von`: die E-Mail-Adresse aus der
+ * Auth0-Anmeldung. Es entsteht damit keine neue Datenkategorie, nur eine
+ * längere Reihe derselben. Ohne angemeldete Identität bleibt die Spalte `NULL`
+ * statt einen Platzhalter zu behaupten. Sichtbar ist die Historie nur im
+ * Admin-Bereich (`requireUserRole`), nie auf einer öffentlichen Fläche.
+ *
+ * **Aufbewahrung.** Keine eigene Frist. Die Einträge sind über
+ * `ON DELETE CASCADE` an die Sichtung gebunden und teilen deren Schicksal —
+ * eine kürzere Frist würde die Historie genau dann leeren, wenn die Sichtung
+ * noch öffentlich steht, und die Frage „wer hat das freigegeben" unbeantwortbar
+ * machen, obwohl `freigegeben_von` sie weiterhin beantwortet. Eine eigene Frist
+ * wäre erst dann sinnvoll, wenn die Sichtungen selbst eine bekommen — die steht
+ * als offener Punkt in `docs/DATENSCHUTZ_ABGLEICH_DMM_2026-08-02.md` (§2.1).
+ */
+export const sightingStatusLog = pgTable(
+	'sichtung_status_log',
+	{
+		id: serial().primaryKey().notNull(),
+		sightingId: bigint('sichtung_id', { mode: 'number' })
+			.references(() => sightings.id, { onDelete: 'cascade' })
+			.notNull(),
+		/* 'approve' | 'reject' | 'reset' — dieselben drei Werte, die der
+		   Verify-Endpunkt annimmt. Bewusst kein pgEnum: Ein Enum-Typ ist in
+		   einer Datenbank, die ein zweites System mitbenutzt, nur mit
+		   ALTER TYPE erweiterbar. Den Wertebereich hält stattdessen der
+		   CHECK unten — ohne ihn käme ein Fremdwert (manuelles SQL, Altsystem)
+		   ungeprüft bis in die Zeitleiste und fiele dort auf „Offen" zurück:
+		   Eine abgelehnte Sichtung sähe aus wie eine unbearbeitete. */
+		verdict: varchar('verdict', { length: 16 }).notNull(),
+		editor: varchar('bearbeiter', { length: 255 }),
+		recordedAt: timestamp('zeitpunkt', { withTimezone: true }).notNull().defaultNow()
+	},
+	(table) => [
+		// Die einzige Abfrage: alle Einträge einer Sichtung in zeitlicher
+		// Reihenfolge. Deshalb zusammengesetzt und nicht zwei einzelne Indizes.
+		index('idx_sichtung_status_log_sichtung').on(table.sightingId, table.recordedAt),
+		check('sichtung_status_log_verdict_check', sql`${table.verdict} IN ('approve', 'reject', 'reset')`)
+	]
+);
+
+export type SightingStatusLogSelect = typeof sightingStatusLog.$inferSelect;
+export type SightingStatusLogInsert = typeof sightingStatusLog.$inferInsert;
 
 // Table for storing file references linked to sightings
 export const sightingFiles = pgTable(
