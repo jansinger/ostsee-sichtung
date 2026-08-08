@@ -40,18 +40,16 @@
 	let imArbeitsmodus = $derived(Boolean(queue) || queueFailed);
 
 	/**
-	 * Die letzte Entscheidung — Ziel von `U` und vom Toast-Knopf. Der Toast-Knopf
-	 * (unten in `handleStatusChange`) liest die Werte direkt aus der lokalen
-	 * `entschiedeneId`/`plan`, nicht aus diesem State — er wird erst mit dem
-	 * Tastenkürzel `U` (Task 8) zum Lesezugriff. Bis dahin bleibt er bewusst
-	 * geschrieben, aber ungelesen: Ihn erst mit Task 8 einzuführen würde
-	 * `zurueckNehmen` von einer noch nicht existenten ID-Quelle abhängig machen,
-	 * statt die beiden Tasks unabhängig testbar zu halten.
+	 * Die letzte Entscheidung — einzige Quelle für „Rückgängig", gelesen sowohl
+	 * vom Toast-Knopf (unten in `handleStatusChange`) als auch vom Tastenkürzel
+	 * `U` (Task 8). Zwei Lesestellen auf denselben State statt zweier Kopien
+	 * derselben Angabe — sonst sagt ein Test des einen Pfads nichts über den
+	 * anderen. Nach erfolgreichem Undo wird er auf `null` gesetzt, sonst würde
+	 * ein zweites `U` dieselbe Entscheidung erneut anwenden.
 	 */
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Lesezugriff kommt mit Task 8 (Tastenkürzel „U")
 	let letzteEntscheidung = $state<{
 		id: number;
-		href: string;
+		href: string | null;
 		verdict: SightingVerdict;
 	} | null>(null);
 
@@ -66,6 +64,12 @@
 		   `$derived` und zeigt nach dem Sprung die nächste Meldung. Ein Undo,
 		   der `sighting.id` erst beim Klick liest, träfe die falsche. */
 		const entschiedeneId = sighting.id;
+		/* Ebenso vor dem `await` festgehalten: `imArbeitsmodus` ist `$derived`
+		   und könnte sich während des Requests ändern (z. B. wenn `queue` durch
+		   ein `invalidateAll()` an anderer Stelle neu lädt). Die Toast-Aussage
+		   soll den Modus zeigen, in dem entschieden wurde — nicht den, der beim
+		   Auflösen des Requests zufällig gilt. */
+		const warArbeitsmodus = imArbeitsmodus;
 		const plan = planAdvance({
 			sightingId: entschiedeneId,
 			verdict,
@@ -75,7 +79,7 @@
 		});
 		statusBusy = true;
 		try {
-			const ok = await submitVerdict(sighting.id, verdict);
+			const ok = await submitVerdict(entschiedeneId, verdict);
 			if (!ok) return;
 
 			/* Die letzte Entscheidung wird festgehalten, damit die Taste `U`
@@ -90,23 +94,29 @@
 			};
 
 			const nach = SIGHTING_STATUS_PRESENTATION[verdictToStatus(verdict)];
-			const meldung = imArbeitsmodus ? plan.toastMessage : `Status: ${nach.label}`;
+			const meldung = warArbeitsmodus ? plan.toastMessage : `Status: ${nach.label}`;
 			toast.success(meldung, {
 				duration: SIGHTING_STATUS_UNDO_MS,
-				/* Fester Key: Im Arbeitsmodus fällt ein Toast pro Meldung an, jeder
-				   fünf Sekunden lang. Ohne Dedupe stünden bei zügiger Arbeit zwei
-				   bis drei „Rückgängig"-Knöpfe übereinander — für verschiedene
-				   Sichtungen, ohne dass der oberste zur zuletzt entschiedenen
-				   gehören muss. `addToast` entfernt den vorherigen Toast mit
-				   demselben Key, es bleibt also immer genau der aktuelle. */
+				/* Fester Key: Im Arbeitsmodus fällt ein Toast pro Meldung an, für
+				   die Dauer von `SIGHTING_STATUS_UNDO_MS`. Ohne Dedupe stünden bei
+				   zügiger Arbeit zwei bis drei „Rückgängig"-Knöpfe übereinander —
+				   für verschiedene Sichtungen, ohne dass der oberste zur zuletzt
+				   entschiedenen gehören muss. `addToast` entfernt den vorherigen
+				   Toast mit demselben Key, es bleibt also immer genau der
+				   aktuelle. */
 				key: 'sighting-verdict-undo',
 				action: {
 					label: 'Rückgängig',
 					onClick: () => {
+						/* Liest denselben State wie die Taste `U` (siehe Docblock
+						   an `letzteEntscheidung`) statt der lokalen
+						   `entschiedeneId`/`plan` — ein Pfad statt zweier Kopien
+						   derselben Aussage. */
+						if (!letzteEntscheidung) return;
 						void zurueckNehmen(
-							entschiedeneId,
-							plan.undoHref,
-							SIGHTING_STATUS_PRESENTATION[previous].verdict
+							letzteEntscheidung.id,
+							letzteEntscheidung.href,
+							letzteEntscheidung.verdict
 						);
 					}
 				}
@@ -130,20 +140,36 @@
 		}
 	}
 
-	async function zurueckNehmen(id: number, href: string, verdict: SightingVerdict): Promise<void> {
+	async function zurueckNehmen(
+		id: number,
+		href: string | null,
+		verdict: SightingVerdict
+	): Promise<void> {
 		/* Der Verdict geht an die **gemerkte** ID und nicht an `sighting.id`:
 		   Nach dem Auto-Advance zeigt die Seite eine andere Sichtung, und ein
 		   `handleStatusChange()` hier würde den Status der falschen Meldung
 		   ändern. Erst zurücksetzen, dann navigieren — in dieser Reihenfolge
 		   hängt nichts an der Ladezeit der Seite. */
 		if (await submitVerdict(id, verdict)) {
-			await goto(href);
+			/* `href` ist `null` außerhalb des Warteschlangen-Modus (Tabelle):
+			   Dort hat kein Advance stattgefunden, man steht bereits auf der
+			   entschiedenen Sichtung — ein `goto` wäre ein Sprung auf die
+			   aktuelle Seite und schriebe die Herkunft auf `?from=inbox` um. */
+			if (href) await goto(href);
 			await invalidateAll();
+			letzteEntscheidung = null;
 		}
 	}
 
+	/* Über den Href statt über `queue.next` derivieren: `queue` bekommt nach
+	   jedem `invalidateAll()` (Reset- und Undo-Pfad) eine neue Objekt-Identität,
+	   auch wenn der Nachbar derselbe bleibt. Ein Effect an `queue.next` liefe
+	   dann bei jeder Neu-Identität erneut und lüde denselben Nachbarn nochmal —
+	   `nextHref` ist dagegen wertgleich vergleichbar. */
+	let nextHref = $derived(queue?.next ? queueHref(queue.next, queueOrder) : null);
+
 	$effect(() => {
-		if (queue?.next) void preloadData(queueHref(queue.next, queueOrder));
+		if (nextHref) void preloadData(nextHref).catch(() => {});
 	});
 
 	function editSighting() {
