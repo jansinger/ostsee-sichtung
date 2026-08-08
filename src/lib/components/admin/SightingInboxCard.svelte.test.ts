@@ -1,6 +1,7 @@
 import { render } from 'vitest-browser-svelte';
 import { describe, expect, it, vi } from 'vitest';
 import SightingInboxCard from './SightingInboxCard.svelte';
+import { inboxDetailHref } from './adminReturn';
 import type { SightingSelect } from '$lib/server/db/schema';
 
 /* actionLabel ('Freigeben'/'Ablehnen') trägt zufällig dieselben Wörter wie die
@@ -194,11 +195,50 @@ describe('SightingInboxCard', () => {
 
 			await expect
 				.element(screen.getByRole('link', { name: /#101/ }))
-				.toHaveAttribute('href', '/admin/101');
+				.toHaveAttribute('href', inboxDetailHref(101));
 			await expect
 				.element(screen.getByRole('link', { name: /#102/ }))
-				.toHaveAttribute('href', '/admin/102');
+				.toHaveAttribute('href', inboxDetailHref(102));
 		});
+	});
+
+	/* Ohne den Herkunfts-Marker führt der Zurück-Knopf der Detailansicht in die
+	   Tabelle statt in den Eingang — das Abarbeiten der Liste reißt dann bei
+	   jedem Blick ins Detail ab. Der Marker gehört an *jeden* Link der Karte,
+	   nicht nur an den auffälligsten. */
+	it('markiert jeden Detail-Link mit der Herkunft „Eingang"', async () => {
+		const screen = render(SightingInboxCard, {
+			sighting: basisSichtung,
+			images: [],
+			busy: false,
+			onApprove: noop,
+			onReject: noop
+		});
+
+		await expect
+			.element(screen.getByRole('link', { name: 'Details' }))
+			.toHaveAttribute('href', inboxDetailHref(42));
+		await expect
+			.element(screen.getByRole('link', { name: /Schweinswal/ }))
+			.toHaveAttribute('href', inboxDetailHref(42));
+	});
+
+	/* Die Sortierung muss mit auf die Reise: Sie gehört dem Eingang, nicht der
+	   Tabelle, und ohne sie steht die Liste nach dem Rückweg wieder auf `desc`. */
+	it('nimmt die Sortierung des Eingangs in den Detail-Link auf', async () => {
+		const screen = render(SightingInboxCard, {
+			sighting: basisSichtung,
+			images: [],
+			order: 'asc' as const,
+			busy: false,
+			onApprove: noop,
+			onReject: noop
+		});
+
+		await expect
+			.element(screen.getByRole('link', { name: 'Details' }))
+			.toHaveAttribute('href', inboxDetailHref(42, 'asc'));
+		expect(inboxDetailHref(42, 'asc')).toContain('order=asc');
 	});
 
 	it('rendert Bild-Vorschauen über /api/media', async () => {

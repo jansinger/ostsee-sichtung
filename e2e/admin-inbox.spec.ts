@@ -98,6 +98,96 @@ test.describe('Admin-Eingangsseite', () => {
 		}
 	});
 
+	/* Der Rundweg Eingang → Detail → zurück. Bis 2026-08 führte der Zurück-Knopf
+	   der Detailansicht immer in die Tabelle: Die Eingangskarte verlinkte ohne
+	   jeden Parameter, und `tableReturnUrl` kannte nur ein Ziel. Wer eine Meldung
+	   prüfen wollte, verlor damit bei jedem Blick ins Detail seine Arbeitsliste.
+
+	   Lesend und ohne Fremdwirkung — es wird navigiert, nicht entschieden (siehe
+	   Kopf dieser Datei). */
+	test('führt aus der Detailansicht zurück in den Eingang, nicht in die Tabelle', async ({
+		browser,
+		baseURL
+	}) => {
+		if (!baseURL) throw new Error('baseURL fehlt — playwright.config.ts setzt sie normalerweise');
+
+		const context = await browser.newContext();
+		await seedAdminSession(context, baseURL);
+		const page = await context.newPage();
+
+		try {
+			/* `order=asc` statt des Defaults: Die Sortierung gehört dem Eingang und
+			   muss den Rundweg überleben — ohne sie stünde die Liste danach wieder
+			   auf `desc`, und der Anker träfe dieselbe Karte an anderer Stelle. Mit
+			   dem Default `desc` wäre dieser Teil der Assertion wirkungslos. */
+			await page.goto('/admin?order=asc');
+			await page.waitForLoadState('networkidle');
+
+			const details = page.getByRole('link', { name: 'Details' }).first();
+			/* Der Eingang kann am geteilten Bestand leer sein — dann ist hier nichts
+			   zu prüfen. Ein Fehlschlag wäre eine Aussage über die Daten, nicht über
+			   die Navigation. */
+			test.skip((await details.count()) === 0, 'Eingang ist leer — kein Detail zum Öffnen');
+
+			await details.click();
+			await expect(page).toHaveURL(/\/admin\/\d+\?.*from=inbox/);
+
+			const zurueck = page.getByRole('button', { name: /Zurück/ });
+			await expect(zurueck).toHaveText(/Zurück zum Eingang/);
+
+			await zurueck.click();
+			await expect(page).toHaveURL(/\/admin\?order=asc#sichtung-\d+$/);
+			await expect(page.getByRole('heading', { name: /Eingang/ })).toBeVisible();
+			await expect(page.getByRole('button', { name: /zuerst/ })).toHaveText(/Älteste zuerst/);
+		} finally {
+			await context.close();
+		}
+	});
+
+	/* Gegenprobe: Ohne Herkunfts-Marker bleibt es beim alten Ziel. Ohne sie
+	   belegte der Test oben nur, dass irgendein Rückweg funktioniert — nicht,
+	   dass er die Herkunft auswertet. */
+	test('führt aus der Tabelle heraus weiterhin in die Tabelle zurück', async ({
+		browser,
+		baseURL
+	}) => {
+		if (!baseURL) throw new Error('baseURL fehlt — playwright.config.ts setzt sie normalerweise');
+
+		const context = await browser.newContext();
+		await seedAdminSession(context, baseURL);
+		const page = await context.newPage();
+
+		try {
+			await page.goto('/admin');
+			await page.waitForLoadState('networkidle');
+
+			const details = page.getByRole('link', { name: 'Details' }).first();
+			test.skip((await details.count()) === 0, 'Eingang ist leer — kein Detail zum Öffnen');
+			const href = await details.getAttribute('href');
+			const id = href?.match(/\/admin\/(\d+)/)?.[1];
+			expect(id).toBeTruthy();
+
+			await page.goto(`/admin/${id}?verified=open`);
+			/* Der Zurück-Knopf ist ein Client-Handler: vor der Hydration ein
+			   sichtbarer Knopf ohne `onclick`, der Klick läuft ins Leere und die URL
+			   bleibt stehen — genau so ist dieser Test beim ersten Lauf rot gewesen
+			   (dieselbe Falle wie beim Sortier-Umschalter oben). */
+			await page.waitForLoadState('networkidle');
+			const zurueck = page.getByRole('button', { name: /Zurück/ });
+			await expect(zurueck).toHaveText(/Zurück zur Tabelle/);
+
+			await zurueck.click();
+			/* Erst auf die Client-Navigation warten: `page.url()` direkt nach dem
+			   Klick liefert noch die Detail-URL. Danach den Query-String einzeln
+			   prüfen statt als Ganzes — die Reihenfolge der Parameter ist eine
+			   Eigenschaft von URLSearchParams.toString(), keine Zusage. */
+			await expect(page).toHaveURL(/\/admin\/sichtungen\?/);
+			expect(new URL(page.url()).searchParams.get('verified')).toBe('open');
+		} finally {
+			await context.close();
+		}
+	});
+
 	test('Navigation führt Eingang und Sichtungen als eigene Reiter', async ({
 		browser,
 		baseURL

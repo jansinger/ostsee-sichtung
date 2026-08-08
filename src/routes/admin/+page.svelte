@@ -2,6 +2,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import SightingInboxCard from '$lib/components/admin/SightingInboxCard.svelte';
+	import { inboxAnchor } from '$lib/components/admin/adminReturn';
 	import { submitVerdict, type SightingVerdict } from '$lib/components/admin/sightingVerdict';
 	import {
 		SIGHTING_STATUS_PRESENTATION,
@@ -126,7 +127,10 @@
 			{#each data.open as sighting (sighting.id)}
 				{@const verdict = done[sighting.id]}
 				{#if !abgelaufen.has(sighting.id)}
-					<li>
+					<!-- Sprungziel für den Rückweg aus der Detailansicht: Wer eine Karte
+					     öffnet und zurückgeht, steigt an derselben Stelle wieder ein statt
+					     oben in der Liste. -->
+					<li id={inboxAnchor(sighting.id)}>
 						{#if verdict}
 							{@const status = SIGHTING_STATUS_PRESENTATION[verdictToStatus(verdict)]}
 							<div class="alert py-2" role="status">
@@ -150,6 +154,7 @@
 								{sighting}
 								images={data.imagesBySighting[sighting.id] ?? []}
 								duplicates={data.duplicatesBySighting[sighting.id] ?? []}
+								order={data.order}
 								busy={busy[sighting.id] ?? false}
 								onApprove={() => entscheiden(sighting.id, 'approve')}
 								onReject={() => entscheiden(sighting.id, 'reject')}
