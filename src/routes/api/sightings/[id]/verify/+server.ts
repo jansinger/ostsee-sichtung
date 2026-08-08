@@ -4,10 +4,10 @@ import { requireUserRole } from '$lib/server/auth/auth';
 import { getClientIp } from '$lib/server/utils/getClientIp';
 import { db } from '$lib/server/db';
 import { isSightingApproved, isSightingRejected } from '$lib/server/db/approvalFilter';
-import { sightings } from '$lib/server/db/schema';
+import { sightings, sightingStatusLog } from '$lib/server/db/schema';
 import type { RequestHandler } from '@sveltejs/kit';
 import { error, isHttpError, json } from '@sveltejs/kit';
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 
 // Logger für diesen API-Endpunkt erstellen
 const logger = createLogger('api:sightings:verify');
@@ -118,10 +118,26 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url, getC
 							rejectedBy: null
 						};
 
-		await db
-			.update(sightings)
-			.set(statusColumns)
-			.where(eq(sightings.id, Number(id)));
+		// Spalten und Historien-Eintrag in EINER Transaktion. Eine Historie, die
+		// einen stattgefundenen Wechsel verschweigt, sieht vollständig aus und ist
+		// es nicht — sie wäre damit schlechter als gar keine. Der Eintrag hält
+		// bewusst nur fest, WAS entschieden wurde; der Zustand davor steht in der
+		// jeweils vorherigen Zeile bzw. ist für den Altbestand unbekannt.
+		await db.transaction(async (tx) => {
+			await tx
+				.update(sightings)
+				.set(statusColumns)
+				.where(eq(sightings.id, Number(id)));
+
+			await tx.insert(sightingStatusLog).values({
+				sightingId: Number(id),
+				verdict,
+				// Dieselbe Kennung wie in `freigegeben_von`/`abgelehnt_von` — keine
+				// neue Datenkategorie. Ohne Anmeldung NULL statt Platzhalter.
+				editor: locals.user?.email ?? null,
+				recordedAt: now
+			});
+		});
 
 		const ipAddress = getClientIp(getClientAddress, request);
 		await logAuditEvent({
@@ -204,11 +220,26 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 			throw error(404, 'Sichtung nicht gefunden');
 		}
 
+		// Aufsteigend: Die Zeitleiste wird von oben nach unten gelesen, älteste
+		// Entscheidung zuerst. Der Altbestand liefert hier eine leere Liste — die
+		// Aufzeichnung beginnt mit dieser Tabelle, nicht mit der Sichtung.
+		const history = await db
+			.select({
+				id: sightingStatusLog.id,
+				verdict: sightingStatusLog.verdict,
+				editor: sightingStatusLog.editor,
+				recordedAt: sightingStatusLog.recordedAt
+			})
+			.from(sightingStatusLog)
+			.where(eq(sightingStatusLog.sightingId, Number(id)))
+			.orderBy(asc(sightingStatusLog.recordedAt));
+
 		return json({
 			id: sighting[0]?.id,
 			verified: sighting[0]?.verified,
 			approvedAt: sighting[0]?.approvedAt ?? null,
-			rejectedAt: sighting[0]?.rejectedAt ?? null
+			rejectedAt: sighting[0]?.rejectedAt ?? null,
+			history
 		});
 	} catch (err) {
 		if (isHttpError(err)) {

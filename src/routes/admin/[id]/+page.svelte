@@ -256,4 +256,10 @@
 	</div>
 {/if}
 
-<AdminSightingView {sighting} onStatusChange={handleStatusChange} {statusBusy} />
+<AdminSightingView
+	{sighting}
+	onStatusChange={handleStatusChange}
+	{statusBusy}
+	statusLog={data.statusLog}
+	statusLogFailed={data.statusLogFailed}
+/>

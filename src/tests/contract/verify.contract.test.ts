@@ -11,11 +11,29 @@ import { asApiResponse } from './helpers/asApiResponse';
 // einzigen db.update(...).set(...)-Aufruf. Ein dritter Zustand "geprüft aber nicht
 // veröffentlicht" existiert nicht mehr. Der separate /approve-Endpunkt entfällt.
 
-const { mockSelectLimit, mockUpdateSet, mockUpdateWhere } = vi.hoisted(() => {
+const {
+	mockSelectLimit,
+	mockSelectOrderBy,
+	mockUpdate,
+	mockUpdateSet,
+	mockUpdateWhere,
+	mockLogValues
+} = vi.hoisted(() => {
 	const mockSelectLimit = vi.fn().mockResolvedValue([{ id: 1, verified: 0, approvedAt: null }]);
+	// Status-Historie des GET (B3): select().from().where().orderBy()
+	const mockSelectOrderBy = vi.fn().mockResolvedValue([]);
 	const mockUpdateWhere = vi.fn().mockResolvedValue(undefined);
 	const mockUpdateSet = vi.fn().mockReturnValue({ where: mockUpdateWhere });
-	return { mockSelectLimit, mockUpdateSet, mockUpdateWhere };
+	const mockUpdate = vi.fn().mockReturnValue({ set: mockUpdateSet });
+	const mockLogValues = vi.fn().mockResolvedValue(undefined);
+	return {
+		mockSelectLimit,
+		mockSelectOrderBy,
+		mockUpdate,
+		mockUpdateSet,
+		mockUpdateWhere,
+		mockLogValues
+	};
 });
 
 vi.mock('$lib/server/db', () => ({
@@ -23,13 +41,21 @@ vi.mock('$lib/server/db', () => ({
 		select: vi.fn().mockReturnValue({
 			from: vi.fn().mockReturnValue({
 				where: vi.fn().mockReturnValue({
-					limit: mockSelectLimit
+					limit: mockSelectLimit,
+					orderBy: mockSelectOrderBy
 				})
 			})
 		}),
-		update: vi.fn().mockReturnValue({
-			set: mockUpdateSet
-		})
+		update: mockUpdate,
+		// Statusspalten und Historien-Eintrag laufen in einer Transaktion (B3) —
+		// die Attrappe reicht dieselben Doubles durch, damit die Erwartung
+		// „genau ein set()" unverändert gilt.
+		transaction: vi.fn((callback: (tx: unknown) => unknown) =>
+			callback({
+				update: mockUpdate,
+				insert: vi.fn().mockReturnValue({ values: mockLogValues })
+			})
+		)
 	}
 }));
 
@@ -42,6 +68,13 @@ vi.mock('$lib/server/db/schema', async () => {
 			verified: 'verified',
 			rejectedAt: 'rejectedAt',
 			rejectedBy: 'rejectedBy'
+		},
+		sightingStatusLog: {
+			id: 'id',
+			sightingId: 'sightingId',
+			verdict: 'verdict',
+			editor: 'editor',
+			recordedAt: 'recordedAt'
 		}
 	});
 });
@@ -49,7 +82,8 @@ vi.mock('$lib/server/db/schema', async () => {
 vi.mock('drizzle-orm', async () => {
 	const { strictModuleMock } = await import('./helpers/strictModuleMock');
 	return strictModuleMock('drizzle-orm', {
-		eq: vi.fn((a, b) => ({ a, b }))
+		eq: vi.fn((a, b) => ({ a, b })),
+		asc: vi.fn((a) => ({ asc: a }))
 	});
 });
 
@@ -75,6 +109,8 @@ describe('Contract: PATCH /api/sightings/{id}/verify', () => {
 		mockSelectLimit.mockResolvedValue([{ id: 1, verified: 0, approvedAt: null }]);
 		mockUpdateWhere.mockResolvedValue(undefined);
 		mockUpdateSet.mockReturnValue({ where: mockUpdateWhere });
+		mockUpdate.mockReturnValue({ set: mockUpdateSet });
+		mockSelectOrderBy.mockResolvedValue([]);
 	});
 
 	it('returns 200 verified=1 and satisfies the OpenAPI spec', async () => {
@@ -374,7 +410,7 @@ describe('Contract: GET /api/sightings/{id}/verify', () => {
 		expect(apiRes).toSatisfyApiSpec();
 	});
 
-	it('gibt id, verified, approvedAt und rejectedAt zurück', async () => {
+	it('gibt id, verified, approvedAt, rejectedAt und die Status-Historie zurück', async () => {
 		const event = createEvent('/api/sightings/1/verify', {
 			params: { id: '1' },
 			locals: { user: mockAdminUser }
@@ -386,7 +422,10 @@ describe('Contract: GET /api/sightings/{id}/verify', () => {
 			id: 1,
 			verified: 1,
 			approvedAt: '2026-01-01T00:00:00.000Z',
-			rejectedAt: null
+			rejectedAt: null,
+			// Leer ist der Normalfall des Altbestands (B3): Die Aufzeichnung
+			// beginnt mit der Tabelle, nicht mit der Sichtung.
+			history: []
 		});
 	});
 
