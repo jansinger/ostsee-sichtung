@@ -471,13 +471,36 @@
 		class="border-base-300 bg-base-100 rounded-box mb-4 flex flex-wrap items-center gap-3 border p-3"
 	>
 		{#if onStatusChange}
-			<SightingStatusControl
-				{status}
-				sightingId={currentSighting.id}
-				size="md"
-				busy={statusBusy}
-				onchange={onStatusChange}
-			/>
+			<!-- `{#key}` statt eines einfachen Props-Updates: In der Detailansicht
+			     durchläuft `AdminSightingView` beim Advance/Undo im Warteschlangen-
+			     Modus mehrere Navigationen hintereinander (`+layout.ts` mit
+			     `ssr = false`, jede Navigation lädt frisch). Reines Props-Update
+			     verließ sich auf Svelte-Reaktivität über mehrere Ebenen hinweg
+			     (`data.sighting` → `currentSighting` → `status`-Const →
+			     `SightingStatusControl`s eigener `bind:group`-Spiegel), und ein
+			     E2E-Nachweis zeigte: Bei zwei Navigationen kurz hintereinander
+			     zurück zu **demselben** Status ('open' → 'approved' → 'open', nach
+			     Freigeben und sofortigem Rückgängigmachen) blieb die Anzeige auf
+			     „Freigegeben" hängen, obwohl jede Netzwerkantwort bereits korrekt
+			     `approvedAt: null` trug (per Mitschnitt verifiziert) — derselbe
+			     Fehlermodus wie der behobene `checked={active}` in
+			     `SightingStatusControl.svelte`, nur eine Ebene höher und nicht
+			     durch den dortigen Komponententest erreichbar, der die Komponente
+			     isoliert und nicht über echte Navigationen prüft. `{#key}` erzwingt
+			     einen kompletten Neu-Mount, sobald sich Sichtung ODER Status ändern
+			     — unabhängig davon, an welcher Zwischenstufe die Reaktivitätskette
+			     sonst hängen bliebe. Abgesichert durch
+			     `e2e/admin-queue.spec.ts` → „springt nach einer Freigabe zur
+			     nächsten und nimmt sie zurück" (ohne Reload-Workaround). -->
+			{#key `${currentSighting.id}:${status}`}
+				<SightingStatusControl
+					{status}
+					sightingId={currentSighting.id}
+					size="md"
+					busy={statusBusy}
+					onchange={onStatusChange}
+				/>
+			{/key}
 		{:else}
 			<span class="badge {SIGHTING_STATUS_PRESENTATION[status].badgeClass}">
 				{SIGHTING_STATUS_PRESENTATION[status].label}
