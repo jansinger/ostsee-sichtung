@@ -19,6 +19,11 @@
 	} from '$lib/components/admin/sightingStatus';
 	import { submitVerdict, type SightingVerdict } from '$lib/components/admin/sightingVerdict';
 	import { createUndoMemory } from '$lib/components/admin/undoMemory.svelte';
+	import {
+		resolveInboxShortcut,
+		type InboxShortcutAction
+	} from '$lib/components/admin/adminTriageShortcuts';
+	import InboxShortcutHelp from '$lib/components/admin/InboxShortcutHelp.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { onDestroy } from 'svelte';
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
@@ -65,6 +70,7 @@
 	let showDeleteDialog = $state(false);
 	let emailPending = $state(false);
 	let statusBusy = $state(false);
+	let hilfeOffen = $state(false);
 
 	async function handleStatusChange(verdict: SightingVerdict): Promise<void> {
 		if (statusBusy) return;
@@ -181,6 +187,61 @@
 		}
 	}
 
+	/**
+	 * Tastatur-Triage der Detailansicht (Task 8) — dieselbe Zuordnung wie im
+	 * Eingang (`resolveInboxShortcut`), nur wandert nicht der Fokus, sondern die
+	 * Seite: `focusNext`/`focusPrevious` springen über `queueHref` zum Nachbarn.
+	 *
+	 * Nur im Arbeitsmodus aktiv: Aus der Tabelle heraus gibt es keine
+	 * Warteschlange, und ein „a" dort träfe zwar dieselbe Sichtung, aber ohne den
+	 * Sprung-Kontext, den die restlichen Tasten voraussetzen.
+	 */
+	function aufTaste(event: KeyboardEvent): void {
+		if (!imArbeitsmodus) return;
+		const aktion: InboxShortcutAction | null = resolveInboxShortcut(event);
+		if (!aktion) return;
+
+		switch (aktion) {
+			case 'toggleHelp':
+				hilfeOffen = !hilfeOffen;
+				return;
+			case 'closeHelp':
+				hilfeOffen = false;
+				return;
+			case 'focusNext':
+				if (queue?.next) void goto(queueHref(queue.next, queueOrder));
+				return;
+			case 'focusPrevious':
+				if (queue?.prev) void goto(queueHref(queue.prev, queueOrder));
+				return;
+			case 'approve':
+				void handleStatusChange('approve');
+				return;
+			case 'reject':
+				void handleStatusChange('reject');
+				return;
+			case 'undo': {
+				/* `U` nimmt die **letzte Entscheidung** zurück — dieselbe Bedeutung
+				   wie im Eingang und dasselbe Ziel wie der Toast-Knopf. Ein
+				   `handleStatusChange('reset')` hieße dagegen „setze die gerade
+				   angezeigte Sichtung zurück", und das ist nach dem Auto-Advance eine
+				   andere Meldung: eine, die nie entschieden wurde — oder schlimmer,
+				   eine fremde Freigabe, die dabei verloren ginge. Gelesen wird
+				   deshalb `undoMemory.current`, derselbe State wie der Toast-Knopf
+				   (siehe Docblock dort), nicht der Status von `sighting`. */
+				const eintrag = undoMemory.current;
+				if (!eintrag) return;
+				/* Kein expliziter `vergiss` hier: `zurueckNehmen` räumt den Eintrag
+				   selbst, im selben Zug wie beim Toast-Knopf. Nur das Entfernen des
+				   Toasts muss hier nachgeholt werden — ein Mausklick löscht ihn über
+				   `dismiss()` in `Toast.svelte`, ein Tastendruck hat dieses Signal
+				   nicht. */
+				toast.removeByKey('sighting-verdict-undo');
+				void zurueckNehmen(eintrag.id, eintrag.href, eintrag.verdict);
+			}
+		}
+	}
+
 	/* Über den Href statt über `queue.next` derivieren: `queue` bekommt nach
 	   jedem `invalidateAll()` (Reset- und Undo-Pfad) eine neue Objekt-Identität,
 	   auch wenn der Nachbar derselbe bleibt. Ein Effect an `queue.next` liefe
@@ -277,6 +338,15 @@
 	/>
 </svelte:head>
 
+<!-- Tastatur-Triage (Task 8): dieselbe Zuordnung wie im Eingang, `aufTaste`
+     wirkt nur im Arbeitsmodus und schweigt in Eingabefeldern und Dialogen
+     (`MediaModal`, `DeleteDialog`) — siehe `adminTriageShortcuts.ts`. -->
+<svelte:window onkeydown={aufTaste} />
+
+{#if hilfeOffen}
+	<InboxShortcutHelp onClose={() => (hilfeOffen = false)} />
+{/if}
+
 {#if imArbeitsmodus}
 	<!-- Eigener Außenabstand hier: `SightingQueueNav` trägt seit dem Umbau kein
 	     `mb-4` mehr, und ohne Bedingung stünde bei `queue === null &&
@@ -290,7 +360,17 @@
 {/if}
 
 <div class="mb-0 flex flex-wrap items-center justify-between gap-2">
-	<h2 class="text-xl font-bold">Sichtung Details</h2>
+	<!-- Die ID im Text statt eines separaten `aria-live`: SvelteKit kündigt eine
+	     Client-Navigation selbst an (über `<title>`, das in `svelte:head` oben
+	     bereits die ID trägt) — eine zusätzliche Live-Region an dieser
+	     Überschrift bekäme dasselbe Problem, an dem der Zähler in
+	     `SightingQueueNav` bereits gescheitert ist: Nach dem `goto()` steht hier
+	     ein neu eingefügter Knoten, keine Aktualisierung eines bestehenden, und
+	     eine frisch eingefügte Live-Region wird von Screenreadern nicht
+	     zuverlässig vorgelesen. Der Text selbst bleibt aber die Quelle für alle
+	     — auch für Sehende, die nach dem Sprung sonst nur „Sichtung Details"
+	     ohne Bezug zur vorherigen Karte sähen. -->
+	<h2 class="text-xl font-bold">Sichtung Details #{sighting.id}</h2>
 	<div class="flex flex-wrap gap-2">
 		<button
 			class="btn btn-ghost btn-sm"

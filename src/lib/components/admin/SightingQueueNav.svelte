@@ -59,7 +59,20 @@
 				</span>
 			{/if}
 
-			<p class="text-base-content/70 text-support">{zaehler}</p>
+			<!-- `role="status"` statt eines expliziten `aria-live="polite"`: Die Rolle
+			     trägt die Live-Region-Semantik bereits implizit (ARIA 1.2), ein
+			     zusätzliches Attribut wäre redundant. Wirksam ist beides ohnehin nur,
+			     solange der Knoten bestehen bleibt und sich sein Inhalt ändert — nach
+			     einem Sprung über die Tastatur (Task 8, `admin/[id]/+page.svelte`)
+			     wird dieser Absatz neu eingefügt statt aktualisiert, und eine frisch
+			     eingefügte Live-Region wird von Screenreadern nicht zuverlässig
+			     vorgelesen. Das Kürzel bleibt deshalb dauerhaft sichtbar statt nur
+			     angesagt — dieselbe Begründung wie beim Eingang (`admin/+page.svelte`):
+			     ein unsichtbares Kürzel ist keines. -->
+			<p class="text-base-content/70 text-support" role="status" aria-label="Warteschlange">
+				{zaehler}
+				<span class="ml-2">alle Kürzel <kbd class="kbd kbd-xs">?</kbd></span>
+			</p>
 
 			{#if nextHref}
 				<a class="btn btn-ghost btn-sm" href={nextHref} data-sveltekit-preload-data="hover">

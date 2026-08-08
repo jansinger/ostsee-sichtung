@@ -22,7 +22,9 @@ describe('SightingQueueNav', () => {
 	it('nennt Position und Gesamtzahl', async () => {
 		const screen = render(SightingQueueNav, { queue: QUEUE, queueFailed: false, order: 'desc' });
 
-		await expect.element(screen.getByText('17 von 653 offen')).toBeInTheDocument();
+		await expect
+			.element(screen.getByRole('status', { name: 'Warteschlange' }))
+			.toHaveTextContent('17 von 653 offen');
 	});
 
 	it('verlinkt beide Nachbarn mit Herkunft und Sortierung — order: asc', async () => {
@@ -92,7 +94,9 @@ describe('SightingQueueNav', () => {
 			order: 'desc'
 		});
 
-		await expect.element(screen.getByText('653 offen')).toBeInTheDocument();
+		await expect
+			.element(screen.getByRole('status', { name: 'Warteschlange' }))
+			.toHaveTextContent('653 offen');
 		await expect.element(screen.getByRole('link', { name: /Nächste/ })).toBeInTheDocument();
 	});
 
