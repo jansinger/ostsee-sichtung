@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type BrowserContext } from '@playwright/test';
 import { seedAdminSession } from './helpers/adminSession';
 import { expectNoHorizontalOverflow } from './helpers/overflow';
 import { deleteSighting, seedSighting } from './helpers/seedSighting';
@@ -68,11 +68,18 @@ test.describe('Admin-Sichtungstabelle — lange Referenz-ID in der Mobilkarte', 
 				sightingDate: new Date('2099-01-01T12:00:00Z')
 			});
 
-			const context = await browser.newContext({ viewport: { width, height: 900 } });
-			await seedAdminSession(context, baseURL);
-			const page = await context.newPage();
+			/* Der `try` beginnt unmittelbar nach dem Seed und nicht erst nach dem
+			   Seitenaufbau: Wirft `seedAdminSession` oder `newContext` — fehlende
+			   DATABASE_POSTGRES_URL, ausgelasteter Browser —, bliebe die Zeile sonst
+			   in der geteilten Entwicklungs-DB liegen. `context` ist deshalb `let`
+			   und im `finally` optional. */
+			let context: BrowserContext | undefined;
 
 			try {
+				context = await browser.newContext({ viewport: { width, height: 900 } });
+				await seedAdminSession(context, baseURL);
+				const page = await context.newPage();
+
 				await page.goto('/admin/sichtungen?perPage=1');
 				await expect(page.getByRole('heading', { name: 'Sichtungen' })).toBeVisible();
 
@@ -87,7 +94,7 @@ test.describe('Admin-Sichtungstabelle — lange Referenz-ID in der Mobilkarte', 
 				/* Eigenes try/finally, damit ein Fehler beim Schließen des Kontexts
 				   nicht die Zeile in der geteilten Entwicklungs-DB stehen lässt. */
 				try {
-					await context.close();
+					await context?.close();
 				} finally {
 					await deleteSighting(sightingId);
 				}

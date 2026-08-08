@@ -74,11 +74,21 @@ export async function seedSighting(daten: {
 	}
 }
 
-/** Entfernt eine mit `seedSighting` angelegte Zeile wieder. */
+/**
+ * Entfernt eine mit `seedSighting` angelegte Zeile wieder.
+ *
+ * Die `id` allein reicht als Bedingung **nicht**: Die Entwicklungs-DB ist über
+ * alle Worktrees geteilt und enthält echte Meldungen. Eine falsch übergebene
+ * `id` — vertauschte Variable, Wert aus einem früheren Lauf — löschte sonst
+ * eine fremde Zeile, und zwar unbemerkt. Der Marker begrenzt den Schaden auf
+ * das, was dieser Helfer selbst angelegt hat; dasselbe Muster fahren die
+ * bestehenden Seeds in `admin-table-dead-finding.spec.ts` und
+ * `admin-detail-actions.spec.ts`.
+ */
 export async function deleteSighting(id: number): Promise<void> {
 	const sql = verbindung();
 	try {
-		await sql`DELETE FROM sichtungen WHERE id = ${id}`;
+		await sql`DELETE FROM sichtungen WHERE id = ${id} AND kommentar_intern = ${SEED_MARKER}`;
 	} finally {
 		await sql.end({ timeout: 5 });
 	}
