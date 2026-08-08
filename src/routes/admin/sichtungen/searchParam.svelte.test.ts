@@ -60,6 +60,35 @@ describe('Sichtungstabelle — Freitext-Suche', () => {
 		expect(ziel.searchParams.get('page')).toBe('1');
 	});
 
+	it('übernimmt den getrimmten Begriff auch ins Feld zurück', async () => {
+		// Nur die URL zu trimmen genügt nicht: Das Feld zeigte danach weiter die
+		// ungetrimmte Eingabe, und ein Feld aus lauter Leerzeichen zählte in
+		// `hasActiveFilters` als aktiver Filter — die Filter-Schaltfläche stünde
+		// also markiert da, während die URL gar keine Suche trägt.
+		goto.mockClear();
+		const screen = render(SichtungenSeite, { data: daten([]) });
+
+		const feld = screen.getByRole('searchbox', { name: /suche/i });
+		await feld.fill('  ostsee  ');
+		await screen.getByRole('button', { name: 'Suchen' }).click();
+
+		await expect.element(feld).toHaveValue('ostsee');
+	});
+
+	it('leert ein Feld aus lauter Leerzeichen beim Suchen', async () => {
+		goto.mockClear();
+		const screen = render(SichtungenSeite, { data: daten([]) });
+
+		const feld = screen.getByRole('searchbox', { name: /suche/i });
+		await feld.fill('   ');
+		await screen.getByRole('button', { name: 'Suchen' }).click();
+
+		await expect.element(feld).toHaveValue('');
+		const ziel = goto.mock.lastCall?.[0];
+		if (!ziel) throw new Error('goto wurde nicht aufgerufen');
+		expect(ziel.searchParams.has('q')).toBe(false);
+	});
+
 	it('entfernt den Parameter, wenn das Feld geleert wird', async () => {
 		goto.mockClear();
 		const screen = render(SichtungenSeite, { data: daten([]) });

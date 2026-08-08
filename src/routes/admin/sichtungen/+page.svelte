@@ -65,10 +65,6 @@
 	let mediaUpload = $state(page.url.searchParams.get('mediaUpload') || '');
 	let balticSea = $state(page.url.searchParams.get('balticSea') || '');
 	let deadFinding = $state(page.url.searchParams.get('deadFinding') || '');
-	/* Die Freitext-Suche steht bewusst außerhalb des Filter-Panels — sie ist der
-	   Weg für eine hereinkommende Rückfrage („meine Meldung von gestern", eine
-	   weitergeleitete Bestätigungsmail) und soll ohne Aufklappen erreichbar sein.
-	   Serverseitig läuft sie über `sightingSearchFilter.ts`. */
 	let searchTerm = $state(page.url.searchParams.get('q') || '');
 	let showDeleteDialog = $state(false);
 	let sightingToDelete = $state<FrontendSighting | null>(null);
@@ -269,9 +265,14 @@
 
 		// Freitext-Suche. Getrimmt, damit ein versehentliches Leerzeichen nicht
 		// als aktive Suche in der URL stehen bleibt — der Server verwirft es
-		// ohnehin (normalizeSearchTerm).
-		const begriff = searchTerm.trim();
-		if (begriff) url.searchParams.set('q', begriff);
+		// ohnehin (normalizeSearchTerm). Der getrimmte Wert geht zurück in den
+		// State, nicht nur in die URL: Sonst zeigte das Feld nach dem Suchen
+		// weiter die ungetrimmte Eingabe, und ein Feld aus lauter Leerzeichen
+		// zählte in `hasActiveFilters` als aktiver Filter — die
+		// Filter-Schaltfläche stünde markiert da, während die URL gar keine
+		// Suche trägt.
+		searchTerm = searchTerm.trim();
+		if (searchTerm) url.searchParams.set('q', searchTerm);
 		else url.searchParams.delete('q');
 
 		url.searchParams.set('page', '1');
@@ -770,6 +771,11 @@
 		</div>
 
 		<!--
+			Die Freitext-Suche steht bewusst außerhalb des Filter-Panels — sie ist
+			der Weg für eine hereinkommende Rückfrage („meine Meldung von gestern",
+			eine weitergeleitete Bestätigungsmail) und soll ohne Aufklappen
+			erreichbar sein. Serverseitig läuft sie über `sightingSearchFilter.ts`.
+
 			Eigene Zeile unter beiden Kopf-Layouts statt zweier Kopien: Das Feld ist
 			in jeder Breite gleich breit nützlich, und ein zweites Exemplar im DOM
 			hätte zwei Elemente mit demselben Label (`getByRole('searchbox')` wäre
