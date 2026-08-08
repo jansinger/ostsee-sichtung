@@ -8,9 +8,11 @@
  * 1. Gemerkte Tabellen-URLs (`/admin?page=…`) landen per 301 auf
  *    `/admin/sichtungen` — mitsamt Query, sonst verlieren geteilte Filter-Links
  *    ihren Inhalt.
- * 2. Default-Sortierung ist `created` **aufsteigend** (FIFO): Die älteste offene
- *    Meldung steht oben, damit nichts liegen bleibt.
- * 3. `?order=` kennt genau zwei gültige Werte; alles andere fällt auf `asc`
+ * 2. Default-Sortierung ist `created` **absteigend** (neueste zuerst):
+ *    Entscheidung Jan, 2026-08-08 — der Altbestand ab 2013 macht FIFO als
+ *    Default unbrauchbar, ein Bearbeiter sähe sonst zuerst 13 Jahre alte
+ *    Meldungen. `?order=asc` bleibt als bewusste Wahl erhalten.
+ * 3. `?order=` kennt genau zwei gültige Werte; alles andere fällt auf `desc`
  *    zurück statt in die SQL zu wandern.
  * 4. Bildvorschauen kommen aus **einem** Query und werden in JS nach
  *    Sichtungs-ID gruppiert.
@@ -117,23 +119,23 @@ describe('Eingangs-Load', () => {
 		expect(recordedSelects).toHaveLength(0);
 	});
 
-	it('Default-Sortierung ist created aufsteigend (älteste zuerst)', async () => {
+	it('Default-Sortierung ist created absteigend (neueste zuerst)', async () => {
 		const result = await runLoad(makeUrl());
 
-		expect(result.order).toBe('asc');
+		expect(result.order).toBe('desc');
 		expect(recordedSelects[0]?.orderBySql).toMatch(/"created"/);
-		expect(recordedSelects[0]?.orderBySql).toMatch(/\basc\b/i);
+		expect(recordedSelects[0]?.orderBySql).toMatch(/\bdesc\b/i);
 	});
 
-	it('?order=desc dreht die Richtung, alles andere fällt auf asc zurück', async () => {
-		const absteigend = await runLoad(makeUrl({ order: 'desc' }));
-		expect(absteigend.order).toBe('desc');
-		expect(recordedSelects[0]?.orderBySql).toMatch(/\bdesc\b/i);
+	it('?order=asc dreht die Richtung, alles andere fällt auf desc zurück', async () => {
+		const aufsteigend = await runLoad(makeUrl({ order: 'asc' }));
+		expect(aufsteigend.order).toBe('asc');
+		expect(recordedSelects[0]?.orderBySql).toMatch(/\basc\b/i);
 
 		recordedSelects = [];
 		const kaputt = await runLoad(makeUrl({ order: 'kaputt' }));
-		expect(kaputt.order).toBe('asc');
-		expect(recordedSelects[0]?.orderBySql).toMatch(/\basc\b/i);
+		expect(kaputt.order).toBe('desc');
+		expect(recordedSelects[0]?.orderBySql).toMatch(/\bdesc\b/i);
 	});
 
 	it('gruppiert Bilddateien nach Sichtungs-ID', async () => {

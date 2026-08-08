@@ -5,6 +5,7 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { untrack } from 'svelte';
 	import CleanupPanel from './CleanupPanel.svelte';
+	import ResetSettingsButton from './ResetSettingsButton.svelte';
 	import { ACTIVE_CONFIG_KEYS, getConfigLabel } from './configLabels';
 
 	const logger = createLogger('admin:settings');
@@ -199,10 +200,6 @@
 	}
 
 	async function resetToDefaults() {
-		if (!confirm('Möchten Sie wirklich alle Einstellungen auf die Standardwerte zurücksetzen?')) {
-			return;
-		}
-
 		try {
 			const response = await fetch('/api/config/reset', {
 				method: 'POST',
@@ -328,11 +325,6 @@
 					Alle Änderungen speichern ({changedConfigs.size})
 				</button>
 			{/if}
-
-			<button onclick={resetToDefaults} class="btn btn-warning gap-2">
-				<Icon icon="lucide:refresh-cw" class="size-5" />
-				Zurücksetzen
-			</button>
 		</div>
 	</div>
 
@@ -564,5 +556,11 @@
 
 	<div class="mt-6">
 		<CleanupPanel />
+	</div>
+
+	<!-- Destruktive Aktion ans Seitenende, weg vom prominentesten Platz oben rechts
+	     (X2 im Admin-Improvements-Spec): eigener Bestätigungsdialog statt confirm(). -->
+	<div class="mt-6 flex justify-end">
+		<ResetSettingsButton onReset={resetToDefaults} />
 	</div>
 </div>

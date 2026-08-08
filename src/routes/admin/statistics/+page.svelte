@@ -3,21 +3,14 @@
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
 	import Icon from '$lib/components/Icon.svelte';
+	import { formatNumber, formatPercentage } from './statisticsFormat';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
-	// Helper function to format numbers
-	function formatNumber(num: number | string | null | undefined): string {
-		const numValue = typeof num === 'string' ? parseFloat(num) : num || 0;
-		return new Intl.NumberFormat('de-DE').format(numValue);
-	}
-
-	// Helper function to format percentages
-	function formatPercentage(num: number | string | null | undefined): string {
-		const numValue = typeof num === 'string' ? parseFloat(num) : num || 0;
-		return `${numValue.toFixed(1)}%`;
-	}
+	/* Die Zahlformatierer kommen aus `statisticsFormat.ts` (Import oben) —
+	   die früheren Inline-Helfer hatten den Dezimalpunkt-Bruch („9.2%" neben
+	   „19.284") und rendeten nicht-numerische Eingaben als „NaN". */
 
 	/** Kurzformen für die Achse — „September" passt bei zwölf Balken nicht. */
 	const monthLabelsShort = [
@@ -286,7 +279,11 @@
 									<th>Sichtungen</th>
 									<th>Anteil</th>
 									<th>Ø Gruppe</th>
-									<th>Mortalität</th>
+									<!-- „Totfund-Anteil", nicht „Mortalität": die Kennzahl ist der Anteil der
+									     Totfund-MELDUNGEN an allen Meldungen einer Art, keine Mortalitätsrate —
+									     dafür fehlen Population und Beobachtungsaufwand. Begründung im großen
+									     Kommentar oben in dieser Datei. Die Schwellwerte (30 %/15 %) bleiben. -->
+									<th>Totfund-Anteil</th>
 								</tr>
 							</thead>
 							<tbody>

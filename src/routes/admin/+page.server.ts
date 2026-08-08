@@ -23,9 +23,12 @@ export const load: PageServerLoad = async ({ url }) => {
 		throw redirect(301, `/admin/sichtungen?${url.searchParams.toString()}`);
 	}
 
-	// Sortierrichtung nach Meldedatum. Default älteste zuerst (FIFO — nichts
-	// bleibt liegen); per ?order=desc umkehrbar, gehalten in der URL.
-	const order: 'asc' | 'desc' = url.searchParams.get('order') === 'desc' ? 'desc' : 'asc';
+	// Sortierrichtung nach Meldedatum. Default neueste zuerst (Entscheidung
+	// Jan, 2026-08-08): der Altbestand ab 2013 macht FIFO als Default
+	// unbrauchbar — ~650 offene Meldungen, ein Bearbeiter sähe sonst zuerst
+	// 13 Jahre alte Fälle. `?order=asc` bleibt als bewusste Wahl erhalten,
+	// gehalten in der URL.
+	const order: 'asc' | 'desc' = url.searchParams.get('order') === 'asc' ? 'asc' : 'desc';
 
 	const openQuery = db
 		.select()
