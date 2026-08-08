@@ -18,6 +18,7 @@
 	import Check from '~icons/lucide/check';
 	import CheckCircle from '~icons/lucide/check-circle';
 	import ChevronDown from '~icons/lucide/chevron-down';
+	import ChevronLeft from '~icons/lucide/chevron-left';
 	import ChevronRight from '~icons/lucide/chevron-right';
 	import ChevronUp from '~icons/lucide/chevron-up';
 	import CircleAlert from '~icons/lucide/circle-alert';
@@ -103,6 +104,7 @@
 	import Trash2 from '~icons/lucide/trash-2';
 	import TrendingUp from '~icons/lucide/trending-up';
 	import TriangleAlert from '~icons/lucide/triangle-alert';
+	import Unlink from '~icons/lucide/unlink';
 	import Upload from '~icons/lucide/upload';
 	import User from '~icons/lucide/user';
 	import UserCheck from '~icons/lucide/user-check';
@@ -133,6 +135,7 @@
 		'lucide:inbox': Inbox,
 		'lucide:x': X,
 		'lucide:chevron-down': ChevronDown,
+		'lucide:chevron-left': ChevronLeft,
 		'lucide:chevron-right': ChevronRight,
 		'lucide:chevron-up': ChevronUp,
 		'lucide:filter': Filter,
@@ -173,6 +176,7 @@
 		'lucide:layout-grid': LayoutGrid,
 		'lucide:list': List,
 		'lucide:triangle-alert': TriangleAlert,
+		'lucide:unlink': Unlink,
 		'lucide:square-pen': SquarePen,
 		'lucide:pen-line': PenLine,
 		'lucide:pen-off': PenOff,
