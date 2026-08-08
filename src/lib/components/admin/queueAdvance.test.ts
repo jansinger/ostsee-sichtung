@@ -41,14 +41,21 @@ describe('planAdvance', () => {
 		);
 	});
 
-	it('bleibt beim Zurücksetzen stehen — es verlässt den Stapel nicht', () => {
-		expect(planAdvance({ ...BASIS, verdict: 'reset' }).target).toEqual({ kind: 'stay' });
+	it('bleibt beim Zurücksetzen stehen — es verlässt den Stapel nicht — und vergibt keinen Rückweg', () => {
+		// Kein Advance, also kein Sprung zum Zurücknehmen: ein gesetzter Href
+		// zeigte auf die bereits angezeigte Sichtung und ein Klick auf
+		// „Rückgängig" lüde nur unnötig neu (Minor 3, Review-Runde 2).
+		const plan = planAdvance({ ...BASIS, verdict: 'reset' });
+
+		expect(plan.target).toEqual({ kind: 'stay' });
+		expect(plan.undoHref).toBeNull();
 	});
 
-	it('bleibt bei unbekannter Warteschlange stehen', () => {
-		expect(planAdvance({ ...BASIS, verdict: 'approve', queueFailed: true }).target).toEqual({
-			kind: 'stay'
-		});
+	it('bleibt bei unbekannter Warteschlange stehen — und vergibt keinen Rückweg', () => {
+		const plan = planAdvance({ ...BASIS, verdict: 'approve', queueFailed: true });
+
+		expect(plan.target).toEqual({ kind: 'stay' });
+		expect(plan.undoHref).toBeNull();
 	});
 
 	it('geht am Stapelende in den Eingang', () => {
@@ -73,12 +80,5 @@ describe('planAdvance', () => {
 
 		expect(plan.target).toEqual({ kind: 'stay' });
 		expect(plan.undoHref).toBeNull();
-	});
-
-	it('vergibt einen Rückweg, wenn die Warteschlange nur fehlgeschlagen ist', () => {
-		const plan = planAdvance({ ...BASIS, verdict: 'approve', queueFailed: true });
-
-		expect(plan.target).toEqual({ kind: 'stay' });
-		expect(plan.undoHref).toBe('/admin/500?from=inbox&order=desc');
 	});
 });

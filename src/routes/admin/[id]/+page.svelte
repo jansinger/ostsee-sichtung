@@ -19,6 +19,7 @@
 	} from '$lib/components/admin/sightingStatus';
 	import { submitVerdict, type SightingVerdict } from '$lib/components/admin/sightingVerdict';
 	import Icon from '$lib/components/Icon.svelte';
+	import { onDestroy } from 'svelte';
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
 	import { toast } from '$lib/stores/toastState.svelte';
 	import type { SpamCheckResult } from '$lib/types/spam';
@@ -46,12 +47,42 @@
 	 * derselben Angabe — sonst sagt ein Test des einen Pfads nichts über den
 	 * anderen. Nach erfolgreichem Undo wird er auf `null` gesetzt, sonst würde
 	 * ein zweites `U` dieselbe Entscheidung erneut anwenden.
+	 *
+	 * **Verfällt nach `SIGHTING_STATUS_UNDO_MS`** — demselben Fenster, das der
+	 * Toast anzeigt (`rueckgaengigPerTaste` im Eingang, `src/routes/admin/+page.svelte`,
+	 * ist das Vorbild). Ohne Verfall nähme `U` auch Minuten später noch eine
+	 * längst unsichtbare Entscheidung zurück. `entscheidungsTimer` hält den
+	 * Timer, damit eine neue Entscheidung den alten Timer ablösen kann statt
+	 * zwei nebenläufige zu haben.
 	 */
 	let letzteEntscheidung = $state<{
 		id: number;
 		href: string | null;
 		verdict: SightingVerdict;
 	} | null>(null);
+	let entscheidungsTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function verwerfeEntscheidungNach(ms: number): void {
+		if (entscheidungsTimer) clearTimeout(entscheidungsTimer);
+		entscheidungsTimer = setTimeout(() => {
+			letzteEntscheidung = null;
+			entscheidungsTimer = null;
+		}, ms);
+	}
+
+	function vergisEntscheidung(): void {
+		if (entscheidungsTimer) {
+			clearTimeout(entscheidungsTimer);
+			entscheidungsTimer = null;
+		}
+		letzteEntscheidung = null;
+	}
+
+	onDestroy(() => {
+		// Ohne dieses Aufräumen setzt ein noch laufender Timer nach dem Verlassen
+		// der Seite `letzteEntscheidung` einer bereits zerstörten Komponente zurück.
+		if (entscheidungsTimer) clearTimeout(entscheidungsTimer);
+	});
 
 	let showDeleteDialog = $state(false);
 	let emailPending = $state(false);
@@ -92,6 +123,7 @@
 				href: plan.undoHref,
 				verdict: SIGHTING_STATUS_PRESENTATION[previous].verdict
 			};
+			verwerfeEntscheidungNach(SIGHTING_STATUS_UNDO_MS);
 
 			const nach = SIGHTING_STATUS_PRESENTATION[verdictToStatus(verdict)];
 			const meldung = warArbeitsmodus ? plan.toastMessage : `Status: ${nach.label}`;
@@ -157,7 +189,10 @@
 			   aktuelle Seite und schriebe die Herkunft auf `?from=inbox` um. */
 			if (href) await goto(href);
 			await invalidateAll();
-			letzteEntscheidung = null;
+			// Löscht auch den Verfalls-Timer — sonst nullte er kurz darauf ein
+			// `letzteEntscheidung`, das durch die nächste Entscheidung längst
+			// überschrieben sein könnte.
+			vergisEntscheidung();
 		}
 	}
 
