@@ -29,10 +29,6 @@
 	   `data.open`. Erst nach dem Reload ist der Server die Wahrheit. */
 	const abgelaufen = new SvelteSet<number>();
 
-	/* Der Zähler kommt je nach Treiber als String aus `count(*)` — ohne Number()
-	   vergleicht `>` lexikografisch ("9" > "50"). */
-	const openTotal = $derived(Number(data.openTotal));
-
 	onDestroy(() => {
 		// Ohne dieses Aufräumen feuert ein laufender Undo-Timer nach dem Verlassen
 		// der Seite noch invalidateAll() und lädt fremde Routen neu.
@@ -99,7 +95,7 @@
 	<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
 		<h1 class="text-2xl font-bold">
 			Eingang
-			<span class="badge badge-outline align-middle">{openTotal} offen</span>
+			<span class="badge badge-outline align-middle">{data.openTotal} offen</span>
 		</h1>
 		<button type="button" class="btn btn-ghost btn-sm" onclick={sortierungUmschalten}>
 			{#if data.order === 'asc'}
@@ -162,9 +158,9 @@
 				{/if}
 			{/each}
 		</ul>
-		{#if openTotal > data.open.length}
+		{#if data.openTotal > data.open.length}
 			<p class="text-base-content/70 mt-4 text-center text-sm">
-				{data.open.length} von {openTotal} offenen Sichtungen angezeigt — die Liste füllt sich beim Abarbeiten
+				{data.open.length} von {data.openTotal} offenen Sichtungen angezeigt — die Liste füllt sich beim Abarbeiten
 				nach.
 			</p>
 		{/if}

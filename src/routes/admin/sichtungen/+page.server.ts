@@ -36,15 +36,23 @@ export const load: PageServerLoad = async ({ url }) => {
 	// Bedingungen für die SQL-Abfrage sammeln
 	const conditions: SQL[] = [];
 
-	// Datums-Filter (nur mit validiertem YYYY-MM-DD Format)
+	// Datums-Filter (nur mit validiertem YYYY-MM-DD Format). Beide Grenzen sind
+	// unabhängig voneinander optional: „alles ab dem 01.06." ist der erwartete
+	// Fall, nicht die Ausnahme. Vorher griff der Filter nur, wenn beide Felder
+	// gesetzt waren — wer eines ausfüllte, bekam kommentarlos die ungefilterte
+	// Liste und hielt sie für gefiltert.
+	//
+	// Kalendertag in deutscher Ortszeit: `fromDate`/`toDate` kommen als lokales
+	// "YYYY-MM-DD" aus der Admin-UI, `sichtungsdatum` hält seit der UTC-Migration
+	// echte Zeitpunkte. Ohne Umrechnung fiele eine Sichtung vom 15.07. um 00:30
+	// Ortszeit (= 14.07. 22:30 UTC) aus dem Filter.
+	const sightingCalendarDate = berlinCalendarDate(sightings.sightingDate);
 	if (isValidDateParam(fromDate) && isValidDateParam(toDate)) {
-		// Kalendertag in deutscher Ortszeit: `fromDate`/`toDate` kommen als lokales
-		// "YYYY-MM-DD" aus der Admin-UI, `sichtungsdatum` hält seit der UTC-Migration
-		// echte Zeitpunkte. Ohne Umrechnung fiele eine Sichtung vom 15.07. um 00:30
-		// Ortszeit (= 14.07. 22:30 UTC) aus dem Filter.
-		conditions.push(
-			sql`${berlinCalendarDate(sightings.sightingDate)} BETWEEN ${fromDate} AND ${toDate}`
-		);
+		conditions.push(sql`${sightingCalendarDate} BETWEEN ${fromDate} AND ${toDate}`);
+	} else if (isValidDateParam(fromDate)) {
+		conditions.push(sql`${sightingCalendarDate} >= ${fromDate}`);
+	} else if (isValidDateParam(toDate)) {
+		conditions.push(sql`${sightingCalendarDate} <= ${toDate}`);
 	}
 
 	// Statusfilter über dieselben Prädikate wie die öffentlichen Flächen —
@@ -144,8 +152,12 @@ export const load: PageServerLoad = async ({ url }) => {
 		countQuery,
 		pendingPhotoQuery
 	]);
-	const count = countResult[0]?.count || 0;
-	const pendingPhotoAnnouncements = pendingPhotoResult[0]?.count || 0;
+	// `count(*)` ist bigint und kommt je nach PG-Treiber als String zurück. Der
+	// Loader-Vertrag sagt `number`, also wird hier normalisiert und nicht in
+	// jeder Aufrufstelle einzeln: `"1" === 1` ist falsch und ergab in der
+	// Kopfzeile „1 Fotos ausstehend".
+	const count = Number(countResult[0]?.count ?? 0);
+	const pendingPhotoAnnouncements = Number(pendingPhotoResult[0]?.count ?? 0);
 
 	return {
 		sightings: data,

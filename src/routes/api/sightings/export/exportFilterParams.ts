@@ -59,13 +59,20 @@ export function buildExportConditions(params: ExportFilterParams) {
 	const { fromDate, toDate, verified, entryChannel, mediaUpload, deadFinding, balticSea } = params;
 	const conditions = [];
 
-	if (isValidDateParam(fromDate) && isValidDateParam(toDate)) {
-		// fromDate/toDate meinen Berliner Kalendertage, die Spalte hält UTC.
-		// Halboffenes Intervall statt BETWEEN, damit der letzte Tag vollständig
-		// enthalten ist; beide Grenzen treffen den Index auf der rohen Spalte.
-		const { start, endExclusive } = berlinDayRangeUtc(fromDate, toDate);
-		conditions.push(gte(sightingsTable.sightingDate, start));
-		conditions.push(lt(sightingsTable.sightingDate, endExclusive));
+	// fromDate/toDate meinen Berliner Kalendertage, die Spalte hält UTC.
+	// Halboffenes Intervall statt BETWEEN, damit der letzte Tag vollständig
+	// enthalten ist; beide Grenzen treffen den Index auf der rohen Spalte.
+	//
+	// Jede Grenze gilt für sich: Der Export erbt die Filter der Tabelle
+	// (`/admin/sichtungen`), die seit 2026-08 ebenfalls offene Grenzen kennt —
+	// sonst enthielte die Datei mehr Zeilen, als der Nutzer gesehen hat.
+	if (isValidDateParam(fromDate)) {
+		conditions.push(gte(sightingsTable.sightingDate, berlinDayRangeUtc(fromDate, fromDate).start));
+	}
+	if (isValidDateParam(toDate)) {
+		conditions.push(
+			lt(sightingsTable.sightingDate, berlinDayRangeUtc(toDate, toDate).endExclusive)
+		);
 	}
 	// Dieselbe Logik wie die Tabelle — sonst enthält die CSV eine andere Menge,
 	// als der Nutzer im Filter gesehen hat.
