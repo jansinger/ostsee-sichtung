@@ -6,6 +6,7 @@ import { mediaUploadCondition } from '$lib/server/db/mediaUploadFilter';
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
 import { statusCondition } from '../../../admin/sichtungen/statusFilter';
+import { searchCondition } from '$lib/server/db/sightingSearchFilter';
 
 export function xmlEscape(str: string | null | undefined): string {
 	if (!str) return '';
@@ -25,6 +26,7 @@ export type ExportFilterParams = {
 	mediaUpload: string | null;
 	deadFinding: string | null;
 	balticSea: string | null;
+	q: string | null;
 };
 
 type ValidationError = { field: 'fromDate' | 'toDate'; message: string };
@@ -38,6 +40,7 @@ export function parseExportFilterParams(url: URL): ParseExportFilterResult {
 	const mediaUpload = url.searchParams.get('mediaUpload');
 	const deadFinding = url.searchParams.get('deadFinding');
 	const balticSea = url.searchParams.get('balticSea');
+	const q = url.searchParams.get('q');
 
 	if (fromDate && !isValidDateParam(fromDate)) {
 		return {
@@ -51,12 +54,13 @@ export function parseExportFilterParams(url: URL): ParseExportFilterResult {
 	}
 
 	return {
-		params: { fromDate, toDate, verified, entryChannel, mediaUpload, deadFinding, balticSea }
+		params: { fromDate, toDate, verified, entryChannel, mediaUpload, deadFinding, balticSea, q }
 	};
 }
 
 export function buildExportConditions(params: ExportFilterParams) {
-	const { fromDate, toDate, verified, entryChannel, mediaUpload, deadFinding, balticSea } = params;
+	const { fromDate, toDate, verified, entryChannel, mediaUpload, deadFinding, balticSea, q } =
+		params;
 	const conditions = [];
 
 	// fromDate/toDate meinen Berliner Kalendertage, die Spalte hält UTC.
@@ -102,6 +106,12 @@ export function buildExportConditions(params: ExportFilterParams) {
 	const balticSeaFilterCondition = balticSeaCondition(balticSea);
 	if (balticSeaFilterCondition) {
 		conditions.push(balticSeaFilterCondition);
+	}
+
+	// Dieselbe Freitext-Suche wie die Admin-Liste, siehe sightingSearchFilter.ts.
+	const searchFilterCondition = searchCondition(q);
+	if (searchFilterCondition) {
+		conditions.push(searchFilterCondition);
 	}
 
 	return conditions;

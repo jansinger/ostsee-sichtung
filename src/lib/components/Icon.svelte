@@ -62,6 +62,7 @@
 	import Mail from '~icons/lucide/mail';
 	import Map from '~icons/lucide/map';
 	import MapPin from '~icons/lucide/map-pin';
+	import Search from '~icons/lucide/search';
 	import MessageCircle from '~icons/lucide/message-circle';
 	import MessageSquare from '~icons/lucide/message-square';
 	import Mountain from '~icons/lucide/mountain';
@@ -115,6 +116,7 @@
 
 	const iconMap: Record<string, Component> = {
 		'lucide:map-pin': MapPin,
+		'lucide:search': Search,
 		'lucide:calendar': Calendar,
 		'lucide:wind': Wind,
 		'lucide:cloud': Cloud,

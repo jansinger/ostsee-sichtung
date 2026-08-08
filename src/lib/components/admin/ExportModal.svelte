@@ -4,14 +4,7 @@
 	import { downloadHandlers, createTimestampedFilename } from '$lib/utils/download';
 	import type { FrontendSighting } from '$lib/types';
 	import { formatFileSize } from '$lib/utils/file/fileSize';
-	import { formatWallClockDateTime } from '$lib/utils/format/formatWallClockDateTime';
-	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
-	import {
-		BALTIC_SEA_STATUS_PRESENTATION,
-		isBalticSeaStatus
-	} from '$lib/utils/geo/balticSeaStatus';
-	import { DEAD_FINDING_PRESENTATION } from '$lib/components/admin/deadFinding';
-	import { normalizeStatusParam } from '$lib/components/admin/sightingStatusFilter';
+	import { getActiveFiltersDisplay } from '$lib/components/admin/exportFilterDisplay';
 	import Icon from '$lib/components/Icon.svelte';
 
 	const logger = createLogger('ExportModal');
@@ -25,6 +18,10 @@
 		currentFilters: Record<string, string | boolean>;
 		totalRecords: number;
 	} = $props();
+
+	// Reine Funktion (exportFilterDisplay.ts), deshalb $derived statt eines
+	// Aufrufs im Markup — sonst liefe sie bei jedem Render erneut.
+	let aktiveFilter = $derived(getActiveFiltersDisplay(currentFilters));
 
 	let selectedFormat = $state('csv');
 	let isLoading = $state(false);
@@ -69,55 +66,6 @@
 		};
 
 		return recordCount * (bytesPerRecord[format as keyof typeof bytesPerRecord] || 500);
-	}
-
-	// Aktive Filter als lesbare Strings formatieren. `fromDate`/`toDate` sind
-	// reine Kalendertag-Strings ("YYYY-MM-DD") aus dem Datumsfilter, kein
-	// Zeitpunkt — formatWallClockDateTime sortiert nur um, ohne Date-Objekt
-	// (sonst bestimmt die Browser-Zone den Tag mit, bis zu ±1 Tag).
-	function getActiveFiltersDisplay(): string[] {
-		const filterDisplays: string[] = [];
-
-		if (currentFilters.fromDate) {
-			filterDisplays.push(`Von: ${formatWallClockDateTime(currentFilters.fromDate as string)}`);
-		}
-		if (currentFilters.toDate) {
-			filterDisplays.push(`Bis: ${formatWallClockDateTime(currentFilters.toDate as string)}`);
-		}
-		const statusFilter = normalizeStatusParam(currentFilters.verified as string | null);
-		if (statusFilter) {
-			const statusLabel = {
-				open: 'Nur offene Sichtungen',
-				approved: 'Nur freigegebene Sichtungen',
-				rejected: 'Nur abgelehnte Sichtungen'
-			}[statusFilter];
-			filterDisplays.push(statusLabel);
-		}
-		if (currentFilters.entryChannel && currentFilters.entryChannel !== 'all') {
-			filterDisplays.push(`Kanal: ${currentFilters.entryChannel}`);
-		}
-		if (currentFilters.mediaUpload === '1') {
-			filterDisplays.push('Nur mit Aufnahmen');
-		} else if (currentFilters.mediaUpload === '0') {
-			filterDisplays.push('Nur ohne Aufnahmen');
-		} else if (currentFilters.mediaUpload === MEDIA_UPLOAD_ANNOUNCED_MISSING) {
-			filterDisplays.push('Nur angekündigt, Foto fehlt noch');
-		}
-		if (isBalticSeaStatus(currentFilters.balticSea)) {
-			// Label aus BALTIC_SEA_STATUS_PRESENTATION statt neu formuliert, damit
-			// Filter-Panel und Export-Zusammenfassung nie auseinanderlaufen.
-			const presentation = BALTIC_SEA_STATUS_PRESENTATION[currentFilters.balticSea];
-			filterDisplays.push(`Ostsee-Status: ${presentation.label}`);
-		}
-		if (currentFilters.deadFinding === '1') {
-			// Label aus DEAD_FINDING_PRESENTATION statt neu formuliert, damit
-			// Filter-Panel und Export-Zusammenfassung nie auseinanderlaufen.
-			filterDisplays.push(`Meldeart: ${DEAD_FINDING_PRESENTATION.label}`);
-		} else if (currentFilters.deadFinding === '0') {
-			filterDisplays.push('Meldeart: Lebendsichtung');
-		}
-
-		return filterDisplays.length > 0 ? filterDisplays : ['Keine Filter aktiv'];
 	}
 
 	// Export-Daten laden mit aktuellen Filtern
@@ -263,7 +211,7 @@
 			<div class="bg-base-200 rounded-lg p-4">
 				<h4 class="mb-2 text-sm font-medium">Aktuelle Filter:</h4>
 				<div class="flex flex-wrap gap-2">
-					{#each getActiveFiltersDisplay() as filter, index (index)}
+					{#each aktiveFilter as filter, index (index)}
 						<span class="badge badge-outline badge-sm">{filter}</span>
 					{/each}
 				</div>

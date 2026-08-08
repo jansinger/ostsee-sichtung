@@ -15,7 +15,8 @@ vi.mock('drizzle-orm', () => ({
 	eq: vi.fn((column, value) => ({ op: 'eq', column, value })),
 	ne: vi.fn((column, value) => ({ op: 'ne', column, value })),
 	isNull: vi.fn((column) => ({ op: 'isNull', column })),
-	isNotNull: vi.fn((column) => ({ op: 'isNotNull', column }))
+	isNotNull: vi.fn((column) => ({ op: 'isNotNull', column })),
+	ilike: vi.fn((column, value) => ({ op: 'ilike', column, value }))
 }));
 
 vi.mock('$lib/server/db/schema', () => ({
@@ -30,7 +31,12 @@ vi.mock('$lib/server/db/schema', () => ({
 		latitude: 'latitude',
 		longitude: 'longitude',
 		approvedAt: 'approvedAt',
-		rejectedAt: 'rejectedAt'
+		rejectedAt: 'rejectedAt',
+		referenceId: 'referenceId',
+		email: 'email',
+		firstName: 'firstName',
+		lastName: 'lastName',
+		waterway: 'waterway'
 	}
 }));
 
@@ -47,7 +53,8 @@ function dateRange(fromDate: string, toDate: string): { start: Date; endExclusiv
 		entryChannel: null,
 		mediaUpload: null,
 		deadFinding: null,
-		balticSea: null
+		balticSea: null,
+		q: null
 	}) as unknown as Condition[];
 
 	const onDate = conditions.filter((condition) => condition.column === 'sightingDate');
@@ -74,7 +81,8 @@ describe('buildExportConditions — Datumsfilter meint Berliner Kalendertage', (
 			entryChannel: null,
 			mediaUpload: null,
 			deadFinding: null,
-			balticSea: null
+			balticSea: null,
+			q: null
 		});
 
 		expect(between).not.toHaveBeenCalled();
@@ -142,7 +150,8 @@ describe('buildExportConditions — Datumsfilter meint Berliner Kalendertage', (
 			entryChannel: null,
 			mediaUpload: null,
 			deadFinding: null,
-			balticSea: null
+			balticSea: null,
+			q: null
 		}) as unknown as Condition[];
 
 		expect(conditions.map((condition) => condition.op)).toEqual(['gte']);
@@ -157,7 +166,8 @@ describe('buildExportConditions — Datumsfilter meint Berliner Kalendertage', (
 			entryChannel: null,
 			mediaUpload: null,
 			deadFinding: null,
-			balticSea: null
+			balticSea: null,
+			q: null
 		}) as unknown as Condition[];
 
 		expect(conditions.map((condition) => condition.op)).toEqual(['lt']);
@@ -173,7 +183,8 @@ describe('buildExportConditions — Datumsfilter meint Berliner Kalendertage', (
 			entryChannel: null,
 			mediaUpload: null,
 			deadFinding: null,
-			balticSea: null
+			balticSea: null,
+			q: null
 		}) as unknown as Condition[];
 
 		expect(conditions).toHaveLength(0);
@@ -194,7 +205,8 @@ describe('Export-Filter — Ostsee-Status', () => {
 		verified: null,
 		entryChannel: null,
 		mediaUpload: null,
-		deadFinding: null
+		deadFinding: null,
+		q: null
 	};
 
 	it('parseExportFilterParams liest balticSea aus der URL', () => {
@@ -254,7 +266,8 @@ describe('Export-Filter — Meldeart (Totfund)', () => {
 		verified: null,
 		entryChannel: null,
 		mediaUpload: null,
-		balticSea: null
+		balticSea: null,
+		q: null
 	};
 
 	it('parseExportFilterParams liest deadFinding aus der URL', () => {
@@ -302,5 +315,42 @@ describe('Export-Filter — Status', () => {
 	it('filtert über dieselben Prädikate wie die Tabelle', () => {
 		expect(normalizeStatusParam('1')).toBe('approved');
 		expect(normalizeStatusParam('rejected')).toBe('rejected');
+	});
+});
+
+/**
+ * Die Freitext-Suche der Tabelle (`?q=`) muss der Export mitfiltern — sonst
+ * enthielte die Datei mehr Zeilen, als der Nutzer gesehen hat. Dieselbe Falle
+ * wie bei `mediaUpload` und `balticSea`; die Bedingung selbst ist in
+ * `$lib/server/db/sightingSearchFilter.test.ts` abgesichert.
+ */
+describe('Export-Filter — Freitext-Suche', () => {
+	const noFilters = {
+		fromDate: '',
+		toDate: '',
+		verified: null,
+		entryChannel: null,
+		mediaUpload: null,
+		deadFinding: null,
+		balticSea: null,
+		q: null
+	};
+
+	it('parseExportFilterParams liest q aus der URL', () => {
+		const result = parseExportFilterParams(
+			new URL('https://example.com/api/sightings/export?format=json&q=m%C3%BCller')
+		);
+
+		expect(result).toHaveProperty('params');
+		expect((result as { params: { q: string | null } }).params.q).toBe('müller');
+	});
+
+	it('buildExportConditions hängt für einen Suchbegriff eine Bedingung an', () => {
+		expect(buildExportConditions({ ...noFilters, q: 'müller' })).toHaveLength(1);
+	});
+
+	it('ein leerer Suchbegriff erzeugt keine Bedingung', () => {
+		expect(buildExportConditions({ ...noFilters, q: null })).toHaveLength(0);
+		expect(buildExportConditions({ ...noFilters, q: '   ' })).toHaveLength(0);
 	});
 });

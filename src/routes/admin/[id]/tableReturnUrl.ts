@@ -19,6 +19,7 @@ export const TABELLEN_PARAMETER = [
 	'mediaUpload',
 	'balticSea',
 	'deadFinding',
+	'q',
 	'sort',
 	'order',
 	'page',

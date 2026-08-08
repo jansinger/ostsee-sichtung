@@ -65,6 +65,7 @@
 	let mediaUpload = $state(page.url.searchParams.get('mediaUpload') || '');
 	let balticSea = $state(page.url.searchParams.get('balticSea') || '');
 	let deadFinding = $state(page.url.searchParams.get('deadFinding') || '');
+	let searchTerm = $state(page.url.searchParams.get('q') || '');
 	let showDeleteDialog = $state(false);
 	let sightingToDelete = $state<FrontendSighting | null>(null);
 	let isFilterPanelOpen = $state(false);
@@ -195,7 +196,8 @@
 			(selectedChannel && selectedChannel !== 'all') ||
 			mediaUpload ||
 			balticSea ||
-			deadFinding
+			deadFinding ||
+			searchTerm
 		)
 	);
 
@@ -207,7 +209,13 @@
 		entryChannel: selectedChannel !== 'all' ? selectedChannel : '',
 		mediaUpload: mediaUpload || '',
 		balticSea: balticSea || '',
-		deadFinding: deadFinding || ''
+		deadFinding: deadFinding || '',
+		/* Aus der URL, nicht aus dem Feld-State: Das Suchfeld steht dauerhaft im
+		   Kopf, ein getippter, aber nicht abgeschickter Begriff ist damit leicht
+		   stehengelassen. Aus dem Feld gelesen, exportierte der Dialog dann eine
+		   Menge, die die sichtbare Tabelle gar nicht anwendet — und die Badges
+		   versprächen sie obendrein. */
+		q: page.url.searchParams.get('q') ?? ''
 	}));
 
 	function updateSort(column: string): void {
@@ -255,6 +263,18 @@
 		if (deadFinding) url.searchParams.set('deadFinding', deadFinding);
 		else url.searchParams.delete('deadFinding');
 
+		// Freitext-Suche. Getrimmt, damit ein versehentliches Leerzeichen nicht
+		// als aktive Suche in der URL stehen bleibt — der Server verwirft es
+		// ohnehin (normalizeSearchTerm). Der getrimmte Wert geht zurück in den
+		// State, nicht nur in die URL: Sonst zeigte das Feld nach dem Suchen
+		// weiter die ungetrimmte Eingabe, und ein Feld aus lauter Leerzeichen
+		// zählte in `hasActiveFilters` als aktiver Filter — die
+		// Filter-Schaltfläche stünde markiert da, während die URL gar keine
+		// Suche trägt.
+		searchTerm = searchTerm.trim();
+		if (searchTerm) url.searchParams.set('q', searchTerm);
+		else url.searchParams.delete('q');
+
 		url.searchParams.set('page', '1');
 		goto(url);
 	}
@@ -271,6 +291,16 @@
 		applyFilters();
 	}
 
+	/**
+	 * Absenden der Suche. Läuft über `applyFilters()`, damit ein aktiver
+	 * Filter erhalten bleibt und die Seitenzahl auf 1 zurückspringt — sonst
+	 * stünde man mit einer frischen Suche auf einer leeren Seite 7.
+	 */
+	function submitSearch(event: SubmitEvent): void {
+		event.preventDefault();
+		applyFilters();
+	}
+
 	function resetFilters(): void {
 		fromDate = '';
 		toDate = '';
@@ -279,6 +309,7 @@
 		mediaUpload = '';
 		balticSea = '';
 		deadFinding = '';
+		searchTerm = '';
 
 		const url = new URL(page.url);
 		url.searchParams.delete('fromDate');
@@ -288,6 +319,7 @@
 		url.searchParams.delete('mediaUpload');
 		url.searchParams.delete('balticSea');
 		url.searchParams.delete('deadFinding');
+		url.searchParams.delete('q');
 		url.searchParams.set('page', '1');
 		goto(url);
 	}
@@ -737,6 +769,33 @@
 				{/if}
 			</div>
 		</div>
+
+		<!--
+			Die Freitext-Suche steht bewusst außerhalb des Filter-Panels — sie ist
+			der Weg für eine hereinkommende Rückfrage („meine Meldung von gestern",
+			eine weitergeleitete Bestätigungsmail) und soll ohne Aufklappen
+			erreichbar sein. Serverseitig läuft sie über `sightingSearchFilter.ts`.
+
+			Eigene Zeile unter beiden Kopf-Layouts statt zweier Kopien: Das Feld ist
+			in jeder Breite gleich breit nützlich, und ein zweites Exemplar im DOM
+			hätte zwei Elemente mit demselben Label (`getByRole('searchbox')` wäre
+			mehrdeutig, und Screenreader läsen die Suche doppelt).
+			`type="search"` statt `text`: liefert die Rolle `searchbox` und auf
+			Mobilgeräten die passende Tastatur mit „Suchen"-Taste.
+		-->
+		<form class="mt-3 flex items-center gap-2" onsubmit={submitSearch} role="search">
+			<label class="input input-sm flex flex-1 items-center gap-2">
+				<Icon icon="lucide:search" class="h-4 w-4 opacity-70" aria-hidden="true" />
+				<span class="sr-only">Suche nach Referenz-ID, E-Mail, Name oder Fahrwasser</span>
+				<input
+					type="search"
+					class="grow"
+					bind:value={searchTerm}
+					placeholder="Referenz-ID, E-Mail, Name oder Fahrwasser"
+				/>
+			</label>
+			<button type="submit" class="btn btn-sm btn-outline">Suchen</button>
+		</form>
 	</div>
 
 	<!-- Filter Panel -->
