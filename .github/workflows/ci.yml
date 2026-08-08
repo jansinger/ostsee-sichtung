@@ -506,12 +506,13 @@ jobs:
             # und /admin wie /admin/sichtungen kompilieren die Specs darüber
             # bereits kalt — der Aufschlag fällt hier kein weiteres Mal an.
             #
-            # ACHTUNG beim nächsten Ausbalancieren: Diese drei kamen zusammen
-            # mit dem Wegfall von admin-table-verified-column.spec.ts aus `map`.
-            # `form` wächst also um drei Specs, während `map` einen verliert —
-            # ob `form` damit noch der kürzeste Shard ist, wurde NICHT neu
-            # gemessen. Maßgeblich sind die Schrittdauern aus GitHub Actions,
-            # nicht lokale Zahlen (Begründung im Warnblock bei `smoke`).
+            # Die offene Frage von hier ist am 2026-08-08 beantwortet: über die
+            # letzten drei erfolgreichen main-Läufe misst `form` 188/192/207 s,
+            # `map` 211/215/216 s, `smoke` 247/260/273 s. `form` ist also auch
+            # nach dem Zuwachs weiterhin der kürzeste Shard — die Zuordnungen
+            # oben und unten bleiben damit gültig. Maßgeblich sind wie gehabt
+            # die Schrittdauern aus GitHub Actions, nicht lokale Zahlen
+            # (Begründung im Warnblock bei `smoke`).
             e2e/admin-sighting-status.spec.ts
             e2e/admin-table-mobile-status-overflow.spec.ts
             # Direkt beim Schwester-Spec darüber: dieselbe Route
@@ -523,6 +524,12 @@ jobs:
             # Fährt /admin/[id]/edit statt der Tabelle — der einzige der drei
             # mit einer eigenen kalt zu kompilierenden Route.
             e2e/admin-edit-toggle-no-wrap-lock.spec.ts
+            # Direkt beim Schwester-Spec admin-detail-actions oben: dieselbe
+            # Route (/admin/[id]), die dieser damit bereits kalt kompiliert
+            # hat. `form` ist laut der Messung oben weiterhin der kürzeste
+            # Shard. Lokal 1 Test, ~2 s — er legt sich seine Sichtung selbst an
+            # und räumt sie per ON DELETE CASCADE wieder weg.
+            e2e/admin-status-history.spec.ts
           )
 
           # Die drei Shards laufen parallel; die Laufzeit des Jobs ist die des
