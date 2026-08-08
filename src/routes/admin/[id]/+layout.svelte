@@ -2,36 +2,12 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import Icon from '$lib/components/Icon.svelte';
+	import { tableReturnUrl } from './tableReturnUrl';
 
 	let { children, data } = $props();
 
 	function handleClose() {
-		// Preserve only the filter-related search parameters
-		const searchParams = page.url.searchParams;
-		const adminUrl = new URL('/admin/sichtungen', page.url.origin);
-
-		// List of filter parameters to preserve
-		const filterParams = [
-			'fromDate',
-			'toDate',
-			'verified',
-			'entryChannel',
-			'mediaUpload',
-			'sort',
-			'order',
-			'page',
-			'perPage'
-		];
-
-		// Copy only filter-related parameters to maintain filters
-		for (const param of filterParams) {
-			const value = searchParams.get(param);
-			if (value) {
-				adminUrl.searchParams.set(param, value);
-			}
-		}
-
-		goto(adminUrl.toString());
+		goto(tableReturnUrl(page.url));
 	}
 </script>
 

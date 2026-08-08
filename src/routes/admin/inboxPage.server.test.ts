@@ -203,4 +203,21 @@ describe('Eingangs-Load', () => {
 		expect(recordedSelects[0]?.limit).toBeGreaterThan(0);
 		expect(recordedSelects[1]?.limit).toBeUndefined();
 	});
+
+	/**
+	 * `count(*)` ist bigint und kommt je nach Treiber als **String** zurück. Die
+	 * Seite verglich damit lexikografisch (`"9" > "50"`) bzw. auf Identität
+	 * (`"1" === 1` ist falsch → „1 Fotos ausstehend"). Der Loader-Vertrag sagt
+	 * `number`, also normalisiert der Loader — nicht jede Aufrufstelle einzeln.
+	 */
+	it('liefert beide Zähler als Zahl, auch wenn der Treiber Strings liefert', async () => {
+		resolvedRows = [[{ id: 1 }, { id: 2 }], [{ count: '50' }], [{ count: '1' }], []];
+
+		const result = await runLoad(makeUrl());
+
+		expect(result.openTotal).toBe(50);
+		expect(typeof result.openTotal).toBe('number');
+		expect(result.pendingPhotoAnnouncements).toBe(1);
+		expect(typeof result.pendingPhotoAnnouncements).toBe('number');
+	});
 });

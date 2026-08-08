@@ -1,13 +1,9 @@
 import { createLogger } from '$lib/logger.server';
 import { db } from '$lib/server/db';
-import {
-	approvalFilter,
-	approvedOnly,
-	type ResolvedSightingScope
-} from '$lib/server/db/approvalFilter';
+import { approvedOnly, openOnly } from '$lib/server/db/approvalFilter';
 import { sightings } from '$lib/server/db/schema';
 import { berlinCalendarDate, berlinDatePart } from '$lib/server/db/sqlTimeZone';
-import { and, isNotNull, ne, sql } from 'drizzle-orm';
+import { and, isNotNull, ne, sql, type SQL } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 const logger = createLogger('admin:statistics:page');
@@ -43,14 +39,19 @@ const EMPTY_BASIC_STATS: AdminBasicStats = {
 };
 
 /**
- * Basis-Kennzahlen für **einen** Freigabestatus
+ * Basis-Kennzahlen für **eine** Grundmenge
  *
  * Vorgabe des Meeresmuseums: Nicht freigegebene Sichtungen dürfen in der
  * Admin-Statistik vorkommen, aber niemals mit freigegebenen zu einer Zahl
  * verschmelzen. Zwei getrennte Läufe statt einer Abfrage über die ganze
  * Tabelle machen eine vermischte Summe strukturell unmöglich.
+ *
+ * Die Grundmenge kommt als fertiges Prädikat herein statt als Scope-Name: Diese
+ * Seite fährt seit 2026-08-08 `approvedOnly()` gegen `openOnly()` und damit
+ * keine der beiden Hälften von `approvalFilter()` (Begründung an der
+ * Aufrufstelle in `load()`).
  */
-async function loadBasicStats(scope: ResolvedSightingScope): Promise<AdminBasicStats> {
+async function loadBasicStats(grundmenge: SQL): Promise<AdminBasicStats> {
 	const [row] = await db
 		.select({
 			totalSightings: sql<number>`COUNT(*)::integer`,
@@ -60,19 +61,33 @@ async function loadBasicStats(scope: ResolvedSightingScope): Promise<AdminBasicS
 			withMedia: sql<number>`COUNT(CASE WHEN ${sightings.mediaUpload} != 0 THEN 1 END)::integer`
 		})
 		.from(sightings)
-		.where(approvalFilter(scope));
+		.where(grundmenge);
 
 	return row ?? EMPTY_BASIC_STATS;
 }
 
 export const load: PageServerLoad = async () => {
 	try {
-		// Basis-Kennzahlen getrennt nach Freigabestatus
-		const [approvedStats, pendingStats] = await Promise.all([
-			loadBasicStats('approved'),
-			loadBasicStats('pending')
+		// Basis-Kennzahlen getrennt nach Grundmenge: freigegeben und offen.
+		//
+		// Die zweite Menge lief bis 2026-08-08 über `pendingOnly()` („nicht
+		// freigegeben") und zählte damit die abgelehnten Sichtungen mit, obwohl die
+		// Anzeige sie an jeder Stelle „noch offen" nennt. Der Eingang (`/admin`)
+		// zählt seit der Rejection-Triage über `openOnly()` — beide Seiten wichen
+		// dadurch sichtbar voneinander ab (gemessen 663 hier gegen 657 dort, die
+		// Differenz waren die 6 Abgelehnten). Abgelehnt ist erledigt, nicht offen.
+		//
+		// `approvalFilter()` bleibt davon unberührt: Sein `'pending'` meint weiter
+		// „nicht freigegeben" und ist die Gegenmenge der öffentlichen Statistik
+		// (`getSightingStatistics`) — dort wäre der Ausschluss der Abgelehnten
+		// falsch, weil er eine dritte Menge neben freigegeben/nicht freigegeben
+		// aufmachte. Deshalb ändert sich hier die Aufrufstelle und nicht das
+		// gemeinsame Prädikat.
+		const [approvedStats, openStats] = await Promise.all([
+			loadBasicStats(approvedOnly()),
+			loadBasicStats(openOnly())
 		]);
-		const basicStats = { approved: approvedStats, pending: pendingStats };
+		const basicStats = { approved: approvedStats, open: openStats };
 
 		// Species distribution
 		const speciesStats = await db

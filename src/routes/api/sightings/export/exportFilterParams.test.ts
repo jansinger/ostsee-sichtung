@@ -127,9 +127,47 @@ describe('buildExportConditions — Datumsfilter meint Berliner Kalendertage', (
 		expect(includes(range, '2024-12-31T23:30:00.000Z')).toBe(false);
 	});
 
-	it('lässt den Datumsfilter weg, wenn nur eine Grenze gesetzt ist', () => {
+	/**
+	 * Offene Grenzen wie in der Tabelle (`/admin/sichtungen`): Der Export erbt
+	 * die Filter der Ansicht, aus der er ausgelöst wird. Ließe er eine einzeln
+	 * gesetzte Grenze weg, enthielte die Datei mehr Zeilen, als der Nutzer
+	 * gerade gesehen hat — genau die Falle, die bei `mediaUpload` und
+	 * `balticSea` schon einmal vermieden wurde.
+	 */
+	it('filtert mit nur „Von" ab Berliner Mitternacht dieses Tages, ohne Obergrenze', () => {
 		const conditions = buildExportConditions({
 			fromDate: '2024-06-01',
+			toDate: '',
+			verified: null,
+			entryChannel: null,
+			mediaUpload: null,
+			deadFinding: null,
+			balticSea: null
+		}) as unknown as Condition[];
+
+		expect(conditions.map((condition) => condition.op)).toEqual(['gte']);
+		expect((conditions[0]!.value as Date).toISOString()).toBe('2024-05-31T22:00:00.000Z');
+	});
+
+	it('filtert mit nur „Bis" bis vor Berliner Mitternacht des Folgetags, ohne Untergrenze', () => {
+		const conditions = buildExportConditions({
+			fromDate: '',
+			toDate: '2024-06-30',
+			verified: null,
+			entryChannel: null,
+			mediaUpload: null,
+			deadFinding: null,
+			balticSea: null
+		}) as unknown as Condition[];
+
+		expect(conditions.map((condition) => condition.op)).toEqual(['lt']);
+		// Der letzte Tag gehört vollständig dazu: 30.06. 23:30 Berlin = 21:30Z.
+		expect((conditions[0]!.value as Date).toISOString()).toBe('2024-06-30T22:00:00.000Z');
+	});
+
+	it('lässt den Datumsfilter weg, wenn keine Grenze gesetzt ist', () => {
+		const conditions = buildExportConditions({
+			fromDate: '',
 			toDate: '',
 			verified: null,
 			entryChannel: null,

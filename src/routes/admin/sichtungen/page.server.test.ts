@@ -17,7 +17,7 @@
  * kompiliert.
  */
 import { PgDialect } from 'drizzle-orm/pg-core';
-import type { SQL, SQLWrapper } from 'drizzle-orm';
+import { sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	MEDIA_UPLOAD_ANNOUNCED_MISSING,
@@ -26,6 +26,8 @@ import {
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
 import { rejectedOnly } from '$lib/server/db/approvalFilter';
+import { berlinCalendarDate } from '$lib/server/db/sqlTimeZone';
+import { sightings } from '$lib/server/db/schema';
 
 const dialect = new PgDialect();
 const toSqlText = (condition: SQLWrapper): string => dialect.sqlToQuery(condition.getSQL()).sql;
@@ -210,5 +212,105 @@ describe('admin/+page.server load() — Foto-Ankündigungs-Arbeitsliste', () => 
 		const expected = toSqlText(rejectedOnly());
 		expect(recordedSelects[0]?.whereSql).toBe(expected);
 		expect(recordedSelects[1]?.whereSql).toBe(expected);
+	});
+});
+
+/**
+ * Der Datumsfilter der Tabelle hat zwei unabhängige Felder — „Von" und „Bis".
+ * Bis 2026-08 griff er nur, wenn **beide** gültig gesetzt waren: Wer nur eine
+ * Grenze eintrug, bekam kommentarlos die ungefilterte Liste zurück und hielt
+ * das Ergebnis für gefiltert. Offene Grenzen sind der erwartete Fall („alles
+ * ab dem 01.06."), nicht die Ausnahme.
+ */
+describe('admin/sichtungen/+page.server load() — Datumsfilter mit offenen Grenzen', () => {
+	/** Kalendertag-Ausdruck der Abfrage — derselbe wie in `load()`. */
+	const kalendertag = berlinCalendarDate(sightings.sightingDate);
+
+	beforeEach(() => {
+		recordedSelects = [];
+		resolvedRows = [[{ id: 1 }], [{ count: 5 }], [{ count: 2 }]];
+	});
+
+	it('filtert mit beiden Grenzen weiterhin über BETWEEN', async () => {
+		await load({
+			url: makeUrl({ fromDate: '2024-06-01', toDate: '2024-06-30' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		const expected = toSqlText(
+			sql`${kalendertag} BETWEEN ${'2024-06-01'} AND ${'2024-06-30'}` as unknown as SQLWrapper
+		);
+		expect(recordedSelects[0]?.whereSql).toBe(expected);
+		expect(recordedSelects[1]?.whereSql).toBe(expected);
+	});
+
+	it('filtert mit nur „Von" ab diesem Kalendertag', async () => {
+		await load({
+			url: makeUrl({ fromDate: '2024-06-01' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		const expected = toSqlText(sql`${kalendertag} >= ${'2024-06-01'}` as unknown as SQLWrapper);
+		expect(recordedSelects[0]?.whereSql).toBe(expected);
+		expect(recordedSelects[1]?.whereSql).toBe(expected);
+	});
+
+	it('filtert mit nur „Bis" bis zu diesem Kalendertag', async () => {
+		await load({
+			url: makeUrl({ toDate: '2024-06-30' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		const expected = toSqlText(sql`${kalendertag} <= ${'2024-06-30'}` as unknown as SQLWrapper);
+		expect(recordedSelects[0]?.whereSql).toBe(expected);
+		expect(recordedSelects[1]?.whereSql).toBe(expected);
+	});
+
+	it('ignoriert eine ungültige Grenze, statt sie in die Abfrage zu tragen', async () => {
+		await load({
+			url: makeUrl({ fromDate: 'quatsch', toDate: '2024-06-30' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		const expected = toSqlText(sql`${kalendertag} <= ${'2024-06-30'}` as unknown as SQLWrapper);
+		expect(recordedSelects[0]?.whereSql).toBe(expected);
+	});
+
+	it('filtert ohne gültige Grenze gar nicht', async () => {
+		await load({
+			url: makeUrl({ fromDate: 'quatsch', toDate: '2024-13-99' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		expect(recordedSelects[0]?.whereSql).toBeUndefined();
+	});
+});
+
+/**
+ * `count(*)` kommt je nach PG-Treiber als **String** zurück (bigint). Die Seite
+ * verglich `pendingPhotoAnnouncements === 1` und zeigte deshalb „1 Fotos
+ * ausstehend". Die Normalisierung gehört in den Loader, nicht in jede
+ * Aufrufstelle: Ein Loader-Vertrag mit `number` gilt für alle.
+ */
+describe('admin/sichtungen/+page.server load() — Zähler sind Zahlen, keine Strings', () => {
+	beforeEach(() => {
+		recordedSelects = [];
+		resolvedRows = [[{ id: 1 }], [{ count: '42' }], [{ count: '1' }]];
+	});
+
+	it('liefert pendingPhotoAnnouncements als Zahl, auch wenn der Treiber einen String liefert', async () => {
+		const result = (await load({
+			url: makeUrl()
+		} as unknown as Parameters<typeof load>[0])) as { pendingPhotoAnnouncements: number };
+
+		expect(result.pendingPhotoAnnouncements).toBe(1);
+		expect(typeof result.pendingPhotoAnnouncements).toBe('number');
+	});
+
+	it('liefert pagination.total als Zahl und rechnet totalPages daraus', async () => {
+		const result = (await load({
+			url: makeUrl({ perPage: '20' })
+		} as unknown as Parameters<typeof load>[0])) as {
+			pagination: { total: number; totalPages: number };
+		};
+
+		expect(result.pagination.total).toBe(42);
+		expect(typeof result.pagination.total).toBe('number');
+		expect(result.pagination.totalPages).toBe(3);
 	});
 });

@@ -19,6 +19,7 @@ import { sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
 import { sightings } from '$lib/server/db/schema';
 import { berlinCalendarDate } from '$lib/server/db/sqlTimeZone';
+import { openOnly } from '$lib/server/db/approvalFilter';
 
 const dialect = new PgDialect();
 const toSqlText = (expression: SQLWrapper): string => dialect.sqlToQuery(expression.getSQL()).sql;
@@ -153,9 +154,43 @@ describe('admin/statistics load() — einheitliche Grundmenge', () => {
 
 		const texte = recordedWhereClauses.map(toSqlText);
 
-		// `loadBasicStats` läuft zweimal — einmal je Freigabestatus. Eine vermischte
+		// `loadBasicStats` läuft zweimal — einmal je Grundmenge. Eine vermischte
 		// Summe über beide soll strukturell unmöglich bleiben (Vorgabe 2).
 		expect(texte.some((t) => /freigegeben_am"? is not null/i.test(t))).toBe(true);
 		expect(texte.some((t) => /freigegeben_am"? is null/i.test(t))).toBe(true);
+	});
+});
+
+/**
+ * „Noch offen" muss auf dieser Seite dasselbe heißen wie im Eingang (`/admin`).
+ *
+ * Bug: Die zweite Kopfzahl lief über `pendingOnly()` (`freigegeben_am IS NULL`)
+ * und zählte damit die **abgelehnten** Sichtungen mit, während die Beschriftung
+ * an drei Stellen „noch offen" bzw. „noch nicht freigegeben" sagte. Der Eingang
+ * zählt seit der Rejection-Triage (#793/#794/#797) über `openOnly()` — gemessen
+ * am Produktionsstand ergab das 663 hier gegen 657 dort, die Differenz waren
+ * genau die 6 Abgelehnten. Abgelehnt ist erledigt, nicht offen.
+ *
+ * Der Test vergleicht gegen `openOnly()` selbst statt gegen abgetipptes SQL:
+ * Eine nachgebaute Zeichenkette wäre eine zweite Quelle neben dem Prädikat.
+ */
+describe('admin/statistics load() — „noch offen" schließt Abgelehnte aus', () => {
+	it('zählt die offene Kopfzahl über openOnly() statt über pendingOnly()', async () => {
+		recordedWhereClauses = [];
+
+		await load({} as unknown as Parameters<typeof load>[0]);
+
+		const texte = recordedWhereClauses.map(toSqlText);
+		const offeneAbfragen = texte.filter((t) => /freigegeben_am"? is null/i.test(t));
+
+		expect(
+			offeneAbfragen.length,
+			'keine Abfrage auf die nicht freigegebene Menge gefunden'
+		).toBeGreaterThan(0);
+
+		const erwartet = toSqlText(openOnly());
+		for (const text of offeneAbfragen) {
+			expect(text, `Abfrage zählt Abgelehnte als „noch offen" mit:\n${text}`).toBe(erwartet);
+		}
 	});
 });

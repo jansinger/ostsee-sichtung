@@ -88,11 +88,15 @@ export const load: PageServerLoad = async ({ url }) => {
 		});
 	}
 
+	// `count(*)` ist bigint und kommt je nach PG-Treiber als String zurück. Der
+	// Loader-Vertrag sagt `number`, also wird hier normalisiert und nicht in
+	// jeder Aufrufstelle einzeln: `>` verglich sonst lexikografisch ("9" > "50")
+	// und `=== 1` traf nie.
 	return {
 		open,
-		openTotal: openCountResult[0]?.count || 0,
+		openTotal: Number(openCountResult[0]?.count ?? 0),
 		order,
 		imagesBySighting,
-		pendingPhotoAnnouncements: pendingPhotoResult[0]?.count || 0
+		pendingPhotoAnnouncements: Number(pendingPhotoResult[0]?.count ?? 0)
 	};
 };
