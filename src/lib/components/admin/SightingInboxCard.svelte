@@ -9,6 +9,7 @@
 	import type { SightingSelect } from '$lib/server/db/schema';
 	import type { DuplicateCandidate } from '$lib/server/db/duplicateCandidates';
 	import Icon from '$lib/components/Icon.svelte';
+	import { inboxDetailHref } from './adminReturn';
 	import { SIGHTING_STATUS_PRESENTATION } from './sightingStatus';
 
 	interface Props {
@@ -16,12 +17,14 @@
 		images: { id: number; filePath: string; originalName: string }[];
 		/** Mögliche Doppelmeldungen (Spec B2) — reiner Hinweis, kein Merge. */
 		duplicates?: DuplicateCandidate[];
+		/** Sortierung des Eingangs — reist mit in die Detailansicht und zurück. */
+		order?: 'asc' | 'desc';
 		busy: boolean;
 		onApprove: () => void;
 		onReject: () => void;
 	}
 
-	let { sighting, images, duplicates = [], busy, onApprove, onReject }: Props = $props();
+	let { sighting, images, duplicates = [], order, busy, onApprove, onReject }: Props = $props();
 
 	/* „1 ähnliche Meldung" statt „1 ähnliche Meldungen": Die Karte ist die
 	   Arbeitsfläche des Museums, nicht eine Log-Zeile. */
@@ -88,7 +91,7 @@
 				<ul class="border-warning/30 mt-2 ml-2 space-y-1 border-l pl-3">
 					{#each duplicates as candidate (candidate.id)}
 						<li>
-							<a href={`/admin/${candidate.id}`} class="link link-hover font-medium">
+							<a href={inboxDetailHref(candidate.id, order)} class="link link-hover font-medium">
 								#{candidate.id}
 							</a>
 							<span class="text-base-content/70">
@@ -105,7 +108,7 @@
 
 		<div class="flex flex-wrap items-baseline justify-between gap-2">
 			<h3 class="text-base font-semibold">
-				<a href={`/admin/${sighting.id}`} class="link-hover">
+				<a href={inboxDetailHref(sighting.id, order)} class="link-hover">
 					{getSpeciesLabel(sighting.species)} — {sighting.totalCount}
 					{#if sighting.juvenileCount > 0}(davon {sighting.juvenileCount} Jungtiere){/if}
 				</a>
@@ -147,7 +150,7 @@
 		{/if}
 
 		<div class="card-actions justify-end">
-			<a href={`/admin/${sighting.id}`} class="btn btn-ghost btn-sm">Details</a>
+			<a href={inboxDetailHref(sighting.id, order)} class="btn btn-ghost btn-sm">Details</a>
 			<button type="button" class="btn btn-outline btn-sm" disabled={busy} onclick={onReject}>
 				<Icon
 					icon={SIGHTING_STATUS_PRESENTATION.rejected.icon}

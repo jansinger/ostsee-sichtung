@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import AdminSightingView from '$lib/components/admin/AdminSightingView.svelte';
+	import { carryReturnParams, returnTarget } from './tableReturnUrl';
 	import {
 		deleteSighting,
 		sendTestEmail,
@@ -51,7 +53,9 @@
 	}
 
 	function editSighting() {
-		goto(`/admin/${sighting.id}/edit`);
+		// Herkunft und Tabellenfilter reisen mit — sonst endet der Rückweg nach
+		// „Bearbeiten" in der ungefilterten Tabelle statt dort, wo man herkam.
+		goto(`/admin/${sighting.id}/edit${carryReturnParams(page.url)}`);
 	}
 
 	async function handleTestEmail() {
@@ -68,9 +72,10 @@
 
 	async function handleDelete() {
 		// Die Sichtung, die diese Seite anzeigt, existiert nach dem Löschen nicht
-		// mehr — zurück zur Tabelle statt auf einen 404 zu warten.
+		// mehr — zurück, woher man kam, statt auf einen 404 zu warten. Ohne
+		// `sighting.id`: Der Anker zeigte auf eine Karte, die es nicht mehr gibt.
 		if (await deleteSighting(sighting.id)) {
-			await goto('/admin/sichtungen');
+			await goto(returnTarget(page.url).href);
 		}
 	}
 

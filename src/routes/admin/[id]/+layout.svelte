@@ -2,12 +2,14 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import Icon from '$lib/components/Icon.svelte';
-	import { tableReturnUrl } from './tableReturnUrl';
+	import { returnTarget } from './tableReturnUrl';
 
 	let { children, data } = $props();
 
+	const zurueck = $derived(returnTarget(page.url, page.params.id));
+
 	function handleClose() {
-		goto(tableReturnUrl(page.url));
+		goto(zurueck.href);
 	}
 </script>
 
@@ -15,7 +17,7 @@
 	<div class="mb-2 flex justify-end">
 		<button class="btn btn-ghost btn-sm" onclick={handleClose}>
 			<Icon icon="lucide:arrow-left" class="mr-2 h-4 w-4" />
-			Zurück zur Tabelle
+			{zurueck.label}
 		</button>
 	</div>
 

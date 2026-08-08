@@ -45,6 +45,36 @@ werden per 301 auf `/admin/sichtungen` umgeleitet. **Die Eingangsseite ist eine
 Task-Liste — keine Filter/Spalten dorthin bauen, dafür gibt es
 `/admin/sichtungen`.**
 
+### Der Rückweg aus der Detailansicht kennt zwei Ziele
+
+`/admin/[id]` wird aus der Tabelle **und** aus dem Eingang geöffnet. Woher,
+steht in der URL: Die Tabelle verrät sich über ihre Filter-Parameter, der
+Eingang über `?from=inbox` (`$lib/components/admin/adminReturn.ts`).
+`returnTarget()` in `[id]/tableReturnUrl.ts` wertet beides aus und liefert Ziel
+**und** Beschriftung; der Rückweg in den Eingang trägt zusätzlich den Anker
+`#sichtung-<id>` auf die Karte, von der man kam.
+
+Zwei Dinge dabei nicht zurückdrehen:
+
+- **Kein `history.back()`.** Die Detailansicht lädt per `invalidateAll()` neu,
+  löscht ggf. den Datensatz und führt über „Bearbeiten" weiter — der Eintrag
+  hinter uns ist danach nicht verlässlich derselbe. Ein URL-Parameter überlebt
+  Reload, Bookmark und Direktaufruf.
+- **Jede weiterführende Route reicht die Parameter durch** (`carryReturnParams`).
+  `edit/` sprang bis 2026-08 auf `/admin/${id}` ohne Query-String; damit verlor
+  schon der Weg Tabelle → Detail → Bearbeiten → zurück die Filter. Wer eine
+  weitere Unterroute anlegt, muss dasselbe tun — sonst endet der Rückweg dort.
+
+**Bekannte Ausnahme:** `/admin/ref/[refId]` leitet auf `/admin/${id}` ohne
+Query-String um und verwirft damit den Kontext. Das war vor dem Rückweg-Umbau
+schon so; der Einstieg dorthin kommt aus der Tabelle, deren Filter der Umweg
+ohnehin nicht kennt. Wer den Lookup anfasst, kann es mitziehen.
+
+Der Eingang führt außerdem **einen eigenen** Parameter: `order`. Er steht
+bewusst nicht in `istTabellenUrl` (`admin/tableRedirect.ts`) und darf beim
+Rückweg nach `/admin` als einziger mitgegeben werden — die übrigen
+TABELLEN_PARAMETER lösten dort sofort die 301 auf die Tabelle aus.
+
 ## Admin-Komponenten
 
 | Komponente                     | Zweck                                     |
@@ -53,6 +83,7 @@ Task-Liste — keine Filter/Spalten dorthin bauen, dafür gibt es
 | `AdminSightingView.svelte`     | Sichtung anzeigen (read-only)             |
 | `SightingInboxCard.svelte`     | Karte der Eingangsseite (`/admin`)        |
 | `inboxVerdict.ts`              | Verdict-Logik der Eingangsseite           |
+| `adminReturn.ts`               | Herkunft `?from=inbox` + Karten-Anker     |
 | `DataTableRow.svelte`          | Tabellen-Zeile                            |
 | `BooleanStatus.svelte`         | Boolean-Status Anzeige                    |
 | `ExportModal.svelte`           | Export-Dialog                             |
