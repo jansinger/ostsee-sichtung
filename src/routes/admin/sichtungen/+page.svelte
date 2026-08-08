@@ -44,6 +44,18 @@
 		loadColumnPreferences,
 		serializeColumnPreferences
 	} from './columnPreferences';
+	import {
+		addFilterPreset,
+		capturePresetParams,
+		FILTER_PRESETS_STORAGE_KEY,
+		loadFilterPresets,
+		matchesPreset,
+		presetUrl,
+		removeFilterPreset,
+		renameFilterPreset,
+		serializeFilterPresets,
+		type FilterPreset
+	} from './filterPresets';
 	import { getHeaderState, isSameIdList, setAllSelected, toggleSelection } from './bulkSelection';
 	import { buildBulkSummary, runBulkVerdict } from './bulkVerdict';
 
@@ -151,6 +163,124 @@
 			hatGespeicherteSpaltenGeladen = true;
 		}
 	});
+
+	/* Gespeicherte Filteransichten (Spec B4). Persistenz wie bei der
+	   Spaltenauswahl in `localStorage`, aber ohne Rückschreib-`$effect`:
+	   Ansichten ändern sich nur durch eine ausdrückliche Bedienung (anlegen,
+	   umbenennen, löschen), und jede dieser Funktionen speichert selbst. Ein
+	   Effect müsste stattdessen einen ersten Durchlauf ausklammern, um den
+	   geladenen Stand nicht sofort zurückzuschreiben — die Sonderregel, die bei
+	   den Spalten nötig ist, weil dort jede Checkbox den State ändert. */
+	let filterPresets = $state<FilterPreset[]>([]);
+	/* Nicht per `bind:open` an ein `details`: Nach dem Speichern soll das
+	   Formular zugehen, und dafür braucht es einen State, den der Handler
+	   setzen kann. */
+	let zeigeAnsichtFormular = $state(false);
+	let neueAnsichtName = $state('');
+	/* id der Ansicht, die gerade umbenannt wird — `null` heißt: keine. */
+	let umbenennenId = $state<string | null>(null);
+	let umbenennenName = $state('');
+	/* Element-Referenzen, um den Fokus in die frisch eingeblendete Eingabezeile
+	   zu setzen: Ohne das bliebe er am verschwundenen Auslöser hängen, und wer
+	   per Tastatur arbeitet, müsste sich zurück zum Feld tabben. */
+	let neueAnsichtFeld = $state<HTMLInputElement | null>(null);
+	let umbenennenFeld = $state<HTMLInputElement | null>(null);
+
+	/* Ohne Lade-Wächter: Der Effect liest keinen reaktiven Wert, läuft also
+	   genau einmal. Ein `typeof window`-Guard entfällt aus demselben Grund —
+	   Effects laufen im SSR-Durchlauf nicht.
+
+	   try/catch aus demselben Grund wie bei der Spaltenauswahl: `localStorage`
+	   kann per Browser-Policy werfen. Ohne Storage läuft die Seite dann ohne
+	   gespeicherte Ansichten weiter, statt beim Hydratisieren zu crashen. */
+	$effect(() => {
+		try {
+			filterPresets = loadFilterPresets(window.localStorage.getItem(FILTER_PRESETS_STORAGE_KEY));
+		} catch (err) {
+			logger.warn({ err }, 'Filteransichten können nicht gelesen werden — Storage nicht verfügbar');
+		}
+	});
+
+	$effect(() => {
+		neueAnsichtFeld?.focus();
+	});
+
+	$effect(() => {
+		umbenennenFeld?.focus();
+	});
+
+	function speichereAnsichten(): void {
+		if (typeof window === 'undefined') return;
+		try {
+			window.localStorage.setItem(
+				FILTER_PRESETS_STORAGE_KEY,
+				serializeFilterPresets(filterPresets)
+			);
+		} catch (err) {
+			logger.warn(
+				{ err },
+				'Filteransichten können nicht gespeichert werden — Storage nicht verfügbar'
+			);
+			toast.error('Die Ansicht konnte nicht dauerhaft gespeichert werden.');
+		}
+	}
+
+	/* Aktive Ansicht aus der URL abgeleitet, nicht als eigener State: Der
+	   Filterzustand steht in der URL, und ein zweiter gemerkter „zuletzt
+	   geklickter Chip" liefe bei jedem Filterwechsel, Zurück-Button oder
+	   geteilten Link daneben. */
+	let aktiveAnsichtId = $derived(
+		filterPresets.find((preset) => matchesPreset(preset, page.url))?.id ?? null
+	);
+
+	function ansichtAnwenden(preset: FilterPreset): void {
+		goto(presetUrl(preset, page.url));
+	}
+
+	function ansichtSpeichern(event: SubmitEvent): void {
+		event.preventDefault();
+		/* Aus der URL, nicht aus den Feld-States: Gespeichert gehört die Menge,
+		   die die Tabelle gerade zeigt — nicht eine im Filter-Panel getippte,
+		   aber nie angewendete. Derselbe Grund wie bei `currentFilters`. */
+		const neu = addFilterPreset(filterPresets, neueAnsichtName, capturePresetParams(page.url));
+		/* Unveränderte Liste heißt: Name schon vergeben. Der leere Name kann hier
+		   nicht mehr ankommen — den fängt das `required` am Feld ab, samt
+		   Browser-Meldung am Feld selbst. Ein stilles `return` wäre an beiden
+		   Stellen falsch: Der Knopf täte dann sichtbar nichts. */
+		if (neu === filterPresets) {
+			toast.error(`Es gibt bereits eine Ansicht „${neueAnsichtName.trim()}".`);
+			return;
+		}
+		filterPresets = neu;
+		speichereAnsichten();
+		neueAnsichtName = '';
+		zeigeAnsichtFormular = false;
+	}
+
+	function umbenennenStarten(preset: FilterPreset): void {
+		umbenennenId = preset.id;
+		umbenennenName = preset.name;
+	}
+
+	function umbenennenBestaetigen(event: SubmitEvent): void {
+		event.preventDefault();
+		if (!umbenennenId) return;
+		const neu = renameFilterPreset(filterPresets, umbenennenId, umbenennenName);
+		// Gleiche Begründung wie beim Anlegen: unverändert = Name schon vergeben.
+		if (neu === filterPresets) {
+			toast.error(`Es gibt bereits eine Ansicht „${umbenennenName.trim()}".`);
+			return;
+		}
+		filterPresets = neu;
+		speichereAnsichten();
+		umbenennenId = null;
+	}
+
+	function ansichtLoeschen(preset: FilterPreset): void {
+		filterPresets = removeFilterPreset(filterPresets, preset.id);
+		speichereAnsichten();
+		if (umbenennenId === preset.id) umbenennenId = null;
+	}
 
 	// Available columns configuration
 	const availableColumns = [
@@ -796,6 +926,129 @@
 			</label>
 			<button type="submit" class="btn btn-sm btn-outline">Suchen</button>
 		</form>
+
+		<!--
+			Gespeicherte Filteransichten (Spec B4). Über der Tabelle statt im
+			Filter-Panel: Eine Ansicht anzuwenden ist ein Sprung, kein
+			Filter-Detail — sie muss ohne Aufklappen erreichbar sein, wie die
+			Freitext-Suche darüber.
+
+			Echte `btn` statt klickbar gemachter `badge`: Nur `.btn` bekommt über
+			app.css die 44px-Touch-Target-Mindestgröße (design-system.md
+			„Feldmodus und Touch-Targets"); ein `badge` bliebe bei ~24px.
+			Die aktive Ansicht trägt `btn-primary` — sie ist die einzige
+			Vollton-Fläche der Leiste, alle übrigen sind `btn-outline`, damit
+			„aktiv" nicht mit „auswählbar" verschwimmt (Button-Hierarchie).
+			`aria-current="true"` sagt dasselbe für Screenreader, die die Farbe
+			nicht sehen.
+		-->
+		<div class="mt-3 flex flex-wrap items-center gap-2">
+			<span class="text-support text-base-content/70">Ansichten:</span>
+
+			{#each filterPresets as preset (preset.id)}
+				{#if umbenennenId === preset.id}
+					<form class="flex items-center gap-1" onsubmit={umbenennenBestaetigen}>
+						<label class="sr-only" for="ansicht-umbenennen">Ansicht umbenennen</label>
+						<input
+							id="ansicht-umbenennen"
+							class="input input-sm w-40"
+							bind:this={umbenennenFeld}
+							bind:value={umbenennenName}
+							maxlength="40"
+							required
+						/>
+						<button type="submit" class="btn btn-sm btn-primary">Übernehmen</button>
+						<button
+							type="button"
+							class="btn btn-sm btn-ghost"
+							onclick={() => (umbenennenId = null)}
+						>
+							Abbrechen
+						</button>
+					</form>
+				{:else}
+					<div class="join">
+						<button
+							type="button"
+							class="btn btn-sm join-item {aktiveAnsichtId === preset.id
+								? 'btn-primary'
+								: 'btn-outline'}"
+							aria-current={aktiveAnsichtId === preset.id ? 'true' : undefined}
+							onclick={() => ansichtAnwenden(preset)}
+						>
+							{preset.name}
+						</button>
+						<!-- Verwalten im Dropdown, nicht als zwei weitere Chips: Umbenennen und
+						     Löschen sind seltene Aktionen und würden die Leiste sonst mit jeder
+						     gespeicherten Ansicht verdreifachen. -->
+						<details class="dropdown dropdown-end join-item">
+							<summary
+								class="btn btn-sm btn-outline join-item"
+								aria-label="Ansicht „{preset.name}“ verwalten"
+								title="Umbenennen oder löschen"
+							>
+								<Icon icon="lucide:ellipsis-vertical" class="h-4 w-4" aria-hidden="true" />
+							</summary>
+							<ul
+								class="dropdown-content menu bg-base-100 rounded-box border-base-300 z-[1] mt-1 w-44 border p-2 shadow-lg"
+							>
+								<li>
+									<button type="button" onclick={() => umbenennenStarten(preset)}>
+										<Icon icon="lucide:square-pen" class="h-4 w-4" aria-hidden="true" />
+										Umbenennen
+									</button>
+								</li>
+								<li>
+									<button type="button" class="text-error" onclick={() => ansichtLoeschen(preset)}>
+										<Icon icon="lucide:trash-2" class="h-4 w-4" aria-hidden="true" />
+										Löschen
+									</button>
+								</li>
+							</ul>
+						</details>
+					</div>
+				{/if}
+			{/each}
+
+			{#if zeigeAnsichtFormular}
+				<form class="flex items-center gap-1" onsubmit={ansichtSpeichern}>
+					<label class="sr-only" for="ansicht-name">Name der Ansicht</label>
+					<!-- `required` statt einer eigenen Prüfung: Die Browser-Constraint-
+					     Validierung meldet den leeren Namen am Feld selbst, dort wo er
+					     entsteht. Ohne sie täte der Speichern-Knopf sichtbar nichts. -->
+					<input
+						id="ansicht-name"
+						class="input input-sm w-44"
+						bind:this={neueAnsichtFeld}
+						bind:value={neueAnsichtName}
+						placeholder="z. B. Offene Totfunde"
+						maxlength="40"
+						required
+					/>
+					<button type="submit" class="btn btn-sm btn-primary">Speichern</button>
+					<button
+						type="button"
+						class="btn btn-sm btn-ghost"
+						onclick={() => {
+							zeigeAnsichtFormular = false;
+							neueAnsichtName = '';
+						}}
+					>
+						Abbrechen
+					</button>
+				</form>
+			{:else}
+				<button
+					type="button"
+					class="btn btn-sm btn-ghost"
+					onclick={() => (zeigeAnsichtFormular = true)}
+					title="Aktuelle Filter als benannte Ansicht speichern"
+				>
+					<Icon icon="lucide:bookmark-plus" class="mr-1 h-4 w-4" aria-hidden="true" />
+					Ansicht speichern
+				</button>
+			{/if}
+		</div>
 	</div>
 
 	<!-- Filter Panel -->

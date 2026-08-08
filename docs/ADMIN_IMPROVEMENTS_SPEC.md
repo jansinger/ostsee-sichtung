@@ -312,6 +312,30 @@ Query-String-Teilmenge aus `tableReturnUrl.ts`-Parameterliste. Verwaltung:
 anlegen aus aktuellem Zustand, umbenennen, löschen. Später optional
 serverseitig teilbar.
 
+**Umgesetzt (2026-08-08)** in `src/routes/admin/sichtungen/filterPresets.ts`
+(Logik, unit-getestet) plus Chip-Leiste in `+page.svelte`; E2E in
+`e2e/admin-filter-presets.spec.ts`.
+
+Drei Festlegungen, die die Spec offenlässt:
+
+- **`page` gehört nicht ins Preset.** `PRESET_PARAMETER` leitet sich aus
+  `TABELLEN_PARAMETER` ab und lässt genau diesen einen aus: Eine Ansicht
+  beschreibt eine Menge, keine Position darin — gespeichert stünde man beim
+  Anwenden auf Seite 7 einer inzwischen dreiseitigen Liste.
+- **Anwenden ersetzt den Filterzustand, es ergänzt ihn nicht.** Die Ziel-URL
+  wird von `/admin/sichtungen` aus neu gebaut; sonst bliebe ein davor aktiver
+  Filter (typisch: die Freitext-Suche) heimlich stehen, und die angezeigte
+  Menge wäre eine andere als die, auf deren Chip man geklickt hat.
+- **Aktiv ist abgeleitet, nicht gemerkt.** Der markierte Chip ergibt sich aus
+  dem Vergleich mit der aktuellen URL. Ein gemerkter „zuletzt geklickter Chip"
+  liefe bei Filterwechsel, Zurück-Button und geteiltem Link daneben.
+- **Namen sind eindeutig, ohne Rücksicht auf Groß-/Kleinschreibung.** Der Name
+  ist das einzige Unterscheidungsmerkmal der Chips; bei zwei gleichnamigen
+  entschiede die Reihenfolge, welche man anwendet. Abgelehnt wird sichtbar per
+  Toast — ein stilles `return` ließe den Knopf wirkungslos aussehen. Den leeren
+  Namen fängt das `required` am Feld ab, also die Browser-Meldung dort, wo die
+  Eingabe entsteht.
+
 ### B5 — Statistik: Jahresfilter + echte Charts
 
 Jahres-Auswahl (URL-Parameter) für alle Abschnitte; Saisonalität und
