@@ -18,6 +18,7 @@
 		verdictToStatus
 	} from '$lib/components/admin/sightingStatus';
 	import { submitVerdict, type SightingVerdict } from '$lib/components/admin/sightingVerdict';
+	import { createUndoMemory } from '$lib/components/admin/undoMemory.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { onDestroy } from 'svelte';
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
@@ -45,43 +46,20 @@
 	 * vom Toast-Knopf (unten in `handleStatusChange`) als auch vom Tastenkürzel
 	 * `U` (Task 8). Zwei Lesestellen auf denselben State statt zweier Kopien
 	 * derselben Angabe — sonst sagt ein Test des einen Pfads nichts über den
-	 * anderen. Nach erfolgreichem Undo wird er auf `null` gesetzt, sonst würde
-	 * ein zweites `U` dieselbe Entscheidung erneut anwenden.
+	 * anderen.
 	 *
-	 * **Verfällt nach `SIGHTING_STATUS_UNDO_MS`** — demselben Fenster, das der
-	 * Toast anzeigt (`rueckgaengigPerTaste` im Eingang, `src/routes/admin/+page.svelte`,
-	 * ist das Vorbild). Ohne Verfall nähme `U` auch Minuten später noch eine
-	 * längst unsichtbare Entscheidung zurück. `entscheidungsTimer` hält den
-	 * Timer, damit eine neue Entscheidung den alten Timer ablösen kann statt
-	 * zwei nebenläufige zu haben.
+	 * State und Verfalls-Timer stecken in `undoMemory.svelte.ts` (`createUndoMemory`),
+	 * nicht hier direkt: `vergiss(id)` dort räumt nur, wenn `id` zur gemerkten
+	 * Entscheidung passt — ein spät zurückkehrendes Undo (z. B. nach einer
+	 * hängenden Anfrage in `zurueckNehmen`) darf eine inzwischen neuere
+	 * Entscheidung nicht löschen.
 	 */
-	let letzteEntscheidung = $state<{
-		id: number;
-		href: string | null;
-		verdict: SightingVerdict;
-	} | null>(null);
-	let entscheidungsTimer: ReturnType<typeof setTimeout> | null = null;
-
-	function verwerfeEntscheidungNach(ms: number): void {
-		if (entscheidungsTimer) clearTimeout(entscheidungsTimer);
-		entscheidungsTimer = setTimeout(() => {
-			letzteEntscheidung = null;
-			entscheidungsTimer = null;
-		}, ms);
-	}
-
-	function vergisEntscheidung(): void {
-		if (entscheidungsTimer) {
-			clearTimeout(entscheidungsTimer);
-			entscheidungsTimer = null;
-		}
-		letzteEntscheidung = null;
-	}
+	const undoMemory = createUndoMemory(SIGHTING_STATUS_UNDO_MS);
 
 	onDestroy(() => {
 		// Ohne dieses Aufräumen setzt ein noch laufender Timer nach dem Verlassen
-		// der Seite `letzteEntscheidung` einer bereits zerstörten Komponente zurück.
-		if (entscheidungsTimer) clearTimeout(entscheidungsTimer);
+		// der Seite die Entscheidung einer bereits zerstörten Komponente zurück.
+		undoMemory.dispose();
 	});
 
 	let showDeleteDialog = $state(false);
@@ -118,12 +96,11 @@
 			   zurücknehmen — nicht den Status der gerade angezeigten Sichtung.
 			   Nach dem Auto-Advance sind das zwei verschiedene Meldungen, und
 			   die zweite Lesart würde eine unbeteiligte Sichtung anfassen. */
-			letzteEntscheidung = {
+			undoMemory.merken({
 				id: entschiedeneId,
 				href: plan.undoHref,
 				verdict: SIGHTING_STATUS_PRESENTATION[previous].verdict
-			};
-			verwerfeEntscheidungNach(SIGHTING_STATUS_UNDO_MS);
+			});
 
 			const nach = SIGHTING_STATUS_PRESENTATION[verdictToStatus(verdict)];
 			const meldung = warArbeitsmodus ? plan.toastMessage : `Status: ${nach.label}`;
@@ -141,15 +118,11 @@
 					label: 'Rückgängig',
 					onClick: () => {
 						/* Liest denselben State wie die Taste `U` (siehe Docblock
-						   an `letzteEntscheidung`) statt der lokalen
-						   `entschiedeneId`/`plan` — ein Pfad statt zweier Kopien
-						   derselben Aussage. */
-						if (!letzteEntscheidung) return;
-						void zurueckNehmen(
-							letzteEntscheidung.id,
-							letzteEntscheidung.href,
-							letzteEntscheidung.verdict
-						);
+						   an `undoMemory`) statt der lokalen `entschiedeneId`/`plan`
+						   — ein Pfad statt zweier Kopien derselben Aussage. */
+						const eintrag = undoMemory.current;
+						if (!eintrag) return;
+						void zurueckNehmen(eintrag.id, eintrag.href, eintrag.verdict);
 					}
 				}
 			});
@@ -177,22 +150,34 @@
 		href: string | null,
 		verdict: SightingVerdict
 	): Promise<void> {
-		/* Der Verdict geht an die **gemerkte** ID und nicht an `sighting.id`:
-		   Nach dem Auto-Advance zeigt die Seite eine andere Sichtung, und ein
-		   `handleStatusChange()` hier würde den Status der falschen Meldung
-		   ändern. Erst zurücksetzen, dann navigieren — in dieser Reihenfolge
-		   hängt nichts an der Ladezeit der Seite. */
-		if (await submitVerdict(id, verdict)) {
-			/* `href` ist `null` außerhalb des Warteschlangen-Modus (Tabelle):
-			   Dort hat kein Advance stattgefunden, man steht bereits auf der
-			   entschiedenen Sichtung — ein `goto` wäre ein Sprung auf die
-			   aktuelle Seite und schriebe die Herkunft auf `?from=inbox` um. */
-			if (href) await goto(href);
-			await invalidateAll();
-			// Löscht auch den Verfalls-Timer — sonst nullte er kurz darauf ein
-			// `letzteEntscheidung`, das durch die nächste Entscheidung längst
-			// überschrieben sein könnte.
-			vergisEntscheidung();
+		/* Derselbe Wächter wie in `handleStatusChange`: Ohne ihn könnte während
+		   einer hängenden Undo-Anfrage eine weitere Statusänderung anlaufen —
+		   beide griffen dann parallel auf `sighting`/`imArbeitsmodus` zu, die
+		   sich zwischenzeitlich per `invalidateAll()`/`goto()` ändern. */
+		if (statusBusy) return;
+		/* Timer sofort weg, noch vor dem Request — nicht erst danach: Bleibt er
+		   während des `await` aktiv, kann er die Entscheidung eines mittlerweile
+		   erledigten neueren Toasts löschen, sobald diese Anfrage zurückkehrt.
+		   `vergiss` ist an die ID gebunden, räumt also nur die eigene
+		   Entscheidung und lässt eine inzwischen neuere stehen. */
+		undoMemory.vergiss(id);
+		statusBusy = true;
+		try {
+			/* Der Verdict geht an die **gemerkte** ID und nicht an `sighting.id`:
+			   Nach dem Auto-Advance zeigt die Seite eine andere Sichtung, und ein
+			   `handleStatusChange()` hier würde den Status der falschen Meldung
+			   ändern. Erst zurücksetzen, dann navigieren — in dieser Reihenfolge
+			   hängt nichts an der Ladezeit der Seite. */
+			if (await submitVerdict(id, verdict)) {
+				/* `href` ist `null` außerhalb des Warteschlangen-Modus (Tabelle):
+				   Dort hat kein Advance stattgefunden, man steht bereits auf der
+				   entschiedenen Sichtung — ein `goto` wäre ein Sprung auf die
+				   aktuelle Seite und schriebe die Herkunft auf `?from=inbox` um. */
+				if (href) await goto(href);
+				await invalidateAll();
+			}
+		} finally {
+			statusBusy = false;
 		}
 	}
 
