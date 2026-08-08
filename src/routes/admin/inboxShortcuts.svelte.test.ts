@@ -184,6 +184,50 @@ describe('Eingangsseite — Tastatur-Triage', () => {
 		await vi.waitFor(() => expect(fokussierteKarte()).toBe('1'));
 	});
 
+	it('gibt den Fokus auch beim Schließen per Schaltfläche zurück', async () => {
+		/* Der Knopf und der Hintergrund laufen über `onClose` und nicht über den
+		   Escape-Zweig — genau dort wird der Fokus-Rückweg leicht vergessen. Ohne
+		   ihn bliebe die gemerkte Position gesetzt, während keine Karte den Fokus
+		   sichtbar trägt: A und R wirkten dann wieder auf eine unsichtbare Karte. */
+		const screen = render(AdminInbox, { data: daten([121, 122]) });
+
+		await userEvent.keyboard('j');
+		await userEvent.keyboard('j');
+		await userEvent.keyboard('?');
+		await screen.getByRole('button', { name: 'Schließen', exact: true }).click();
+
+		await vi.waitFor(() => expect(fokussierteKarte()).toBe('1'));
+	});
+
+	it('gibt den Fokus beim Klick auf den Hintergrund zurück', async () => {
+		const screen = render(AdminInbox, { data: daten([131]) });
+
+		await userEvent.keyboard('j');
+		await userEvent.keyboard('?');
+		await screen.getByRole('button', { name: /Tastaturkürzel schließen/ }).click();
+
+		await vi.waitFor(() => expect(fokussierteKarte()).toBe('0'));
+	});
+
+	it('gibt den Fokus an den Hinweis-Knopf, wenn keine Karte ihn hatte', async () => {
+		/* Geöffnet wird hier per Taste und nicht per Klick auf den Hinweis-Knopf:
+		   Nach einem Klick trägt der Knopf den Fokus schon, und Chromium stellt ihn
+		   beim Entfernen des Dialogs von selbst wieder her — der Test wäre auch ohne
+		   den Rückweg im Code grün. Über die Taste gibt es kein solches Vorher, und
+		   ohne den Rückweg landet der Fokus auf `<body>`.
+
+		   Verglichen wird das **Element** und nicht sein `textContent`: Fällt der
+		   Fokus auf `<body>`, enthält deren Textinhalt den ganzen Seitentext und
+		   damit auch „alle Kürzel" — eine Text-Assertion wäre hier immer grün. */
+		const screen = render(AdminInbox, { data: daten([141]) });
+		const knopf = screen.getByRole('button', { name: /alle Kürzel/ }).element();
+
+		await userEvent.keyboard('?');
+		await userEvent.keyboard('{Escape}');
+
+		await vi.waitFor(() => expect(document.activeElement).toBe(knopf));
+	});
+
 	it('macht die Shortcuts ohne Overlay entdeckbar', async () => {
 		const screen = render(AdminInbox, { data: daten([51]) });
 

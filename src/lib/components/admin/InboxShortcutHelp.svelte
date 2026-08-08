@@ -29,8 +29,12 @@
 		bind:this={box}
 	>
 		<h2 id="inbox-shortcut-help-title" class="text-lg font-semibold">Tastaturkürzel</h2>
+		<!-- Der Satz nennt nur das Eingabefeld und nicht mehr „kein Dialog": Esc und
+		     ? wirken auch hier im Overlay, sonst ließe es sich per Tastatur nicht
+		     schließen. Die frühere Fassung beschrieb damit eine Sperre, die für die
+		     zwei Tasten, die man gerade braucht, nicht gilt. -->
 		<p class="text-base-content/70 mt-1 text-sm">
-			Gültig, solange kein Eingabefeld und kein Dialog den Fokus hat.
+			Gültig, solange kein Eingabefeld den Fokus hat. Esc und ? wirken auch hier.
 		</p>
 
 		<dl class="mt-4 grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2">

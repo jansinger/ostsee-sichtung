@@ -337,7 +337,11 @@
 </div>
 
 {#if hilfeOffen}
-	<InboxShortcutHelp onClose={() => (hilfeOffen = false)} />
+	<!-- `hilfeSchliessen` und nicht `hilfeOffen = false`: Knopf und Hintergrund
+	     brauchen denselben Fokus-Rückweg wie Escape. Sonst bliebe die gemerkte
+	     Position gesetzt, ohne dass eine Karte den Fokus sichtbar trägt — A und R
+	     wirkten dann auf eine Karte, die niemand sieht. -->
+	<InboxShortcutHelp onClose={hilfeSchliessen} />
 {/if}
 
 <style>
