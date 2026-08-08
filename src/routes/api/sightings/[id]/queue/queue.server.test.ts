@@ -88,7 +88,7 @@ function aufrufen(order = 'desc', id = '500') {
 		params: { id },
 		locals: { user: { email: 'admin@example.org', roles: ['admin'] } },
 		url: new URL(`https://localhost:4000/api/sightings/${id}/queue?order=${order}`)
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		 
 	} as any);
 }
 

@@ -93,7 +93,6 @@
 	 * laufenden Anfrage). Ein reines `checked={active}` hätte dafür keinen
 	 * Mechanismus, unabhängig vom Gleichheits-Gate.
 	 */
-	// eslint-disable-next-line svelte/prefer-writable-derived
 	let selected = $state(untrack(() => status));
 	/** Zuletzt synchronisierte `sightingId` — Vergleichsbasis für den Effekt unten. */
 	let letzteSyncSightingId = untrack(() => sightingId);
@@ -106,7 +105,19 @@
 		const sprungZuAndererSichtung = aktuelleSightingId !== letzteSyncSightingId;
 		warZuvorBusy = istBusy;
 		letzteSyncSightingId = aktuelleSightingId;
-		if (sprungZuAndererSichtung || verdictAbgeschlossen) {
+		/* Der dritte Zweig ist der Auffangfall und kein Beiwerk: Die beiden
+		   ersten setzen voraus, dass jede Statusänderung entweder die Sichtung
+		   wechselt oder durch `busy` läuft. Das trifft für die heutigen drei
+		   Aufrufstellen zu — `busy` ist aber ein optionales Prop mit Default
+		   `false`. Eine künftige Aufrufstelle, die es weglässt, bekäme sonst
+		   ein Control, dessen Farbe nach dem ersten Klick dauerhaft von den
+		   Daten abweicht, ohne dass irgendwo etwas bricht. Ausgenommen bleibt
+		   die laufende Anfrage: Dort ist die Abweichung die beabsichtigte
+		   optimistische Anzeige. */
+		/* `selected` wird hier per `untrack` gelesen: Der Effekt schreibt es
+		   selbst, eine Abhängigkeit darauf machte ihn von sich selbst abhängig. */
+		const datenHabenSichGeaendert = !istBusy && status !== untrack(() => selected);
+		if (sprungZuAndererSichtung || verdictAbgeschlossen || datenHabenSichGeaendert) {
 			selected = status;
 		}
 	});

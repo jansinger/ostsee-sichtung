@@ -201,8 +201,14 @@
 				   „Rückgängig"-Knopf danach weg, obwohl nichts zurückgesetzt wurde
 				   — ein zweiter Versuch ging nur noch über die Taste `U`, die den
 				   Callback direkt aus `undoMemory` liest statt über den Toast. Mit
-				   dem Räumen erst hier bleibt der Knopf bei einem Fehlschlag
-				   sichtbar und klickbar, ein zweiter Versuch geht über beide Wege.
+				   dem Räumen erst hier überlebt die Erinnerung den Fehlschlag, und
+				   `U` bleibt ein voller zweiter Versuch. Für den Mausweg gilt das
+				   nicht: `Toast.runAction` (`components/Toast.svelte`) ruft nach
+				   jedem Aktions-Klick `dismiss()` — unabhängig vom Ausgang. Wer
+				   also klickt und dessen Undo scheitert, verliert den sichtbaren
+				   Knopf trotzdem und muss auf `U` ausweichen. Das hier zu ändern
+				   hieße, `Toast` einen Erfolgsbegriff beizubringen, den es bewusst
+				   nicht hat.
 				   `vergiss` ist zusätzlich an die ID gebunden und räumt deshalb nur
 				   die eigene Entscheidung, auch wenn dieser aus irgendeinem Grund
 				   verzögerte Aufruf erst zurückkehrt, nachdem bereits eine neuere

@@ -483,8 +483,8 @@
 			     an, nur der wertgleiche `status` nicht — `currentSighting` und der
 			     `{#await data.sighting}` in `+layout.svelte` sind beide
 			     unbeteiligt). Ein `{#key}` bräche diesen Stillstand nur durch
-			     kompletten Neu-Mount — teuer und mit zwei Folgeschäden (Fokus auf
-			     `<body>`, siehe frühere Fassung dieses Kommentars).
+			     kompletten Neu-Mount — teuer, und er wirft den Fokus auf `<body>`,
+			     was den Fokus-Fix aus demselben Branch wieder aufhöbe.
 			     Der eigentliche Fix sitzt deshalb dort, wo der Wert verbraucht
 			     wird: `SightingStatusControl` synchronisiert seinen lokalen
 			     `selected`-Spiegel über `sightingId` (ändert sich bei jedem
