@@ -1,9 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { config as loadEnv } from 'dotenv';
-import postgres from 'postgres';
-import { DistanceEnum } from '../src/lib/report/formOptions/distance';
-import { SightingFromEnum } from '../src/lib/report/formOptions/sightingFrom';
 import { seedAdminSession } from './helpers/adminSession';
+import { deleteSighting, FIRST_PAGE_DATE, seedSighting } from './helpers/seedSighting';
 
 /**
  * admin-table-dead-finding.spec.ts — der Totfund ist in der Tabelle erkennbar,
@@ -19,60 +16,22 @@ import { seedAdminSession } from './helpers/adminSession';
  * *keine* Spalte um — er verlässt sich darauf, dass es keinen Schalter gibt, und
  * die zweite Assertion belegt genau das.
  *
- * Eigene Testzeilen mit `kommentar_intern = 'e2e-seed'` und einem
+ * Eigene Testzeilen über `e2e/helpers/seedSighting.ts`, mit einem
  * Sichtungsdatum in der Zukunft: Die Tabelle sortiert per Vorgabe nach
  * `sichtungsdatum desc`, damit stehen beide Zeilen sicher auf Seite 1 — sonst
  * hinge der Test daran, wie viele Sichtungen die Datenbank sonst noch trägt.
  */
 
-/* Playwright lädt .env nicht von sich aus — dieselbe Begründung wie in
-   e2e/helpers/adminSession.ts. */
-loadEnv();
-
-const SEED_MARKER = 'e2e-seed';
-
-function connect() {
-	const databaseUrl = process.env.DATABASE_POSTGRES_URL;
-	if (!databaseUrl) {
-		throw new Error(
-			'DATABASE_POSTGRES_URL fehlt — ohne Datenbank lässt sich keine Testsichtung anlegen. ' +
-				'Lokal steht sie in .env, in CI entsteht sie aus .env.example (ci.yml).'
-		);
-	}
-	return postgres(databaseUrl, { max: 1 });
-}
-
-async function createSighting(referenceId: string, dead: boolean): Promise<number> {
-	const sql = connect();
-	try {
-		const [row] = await sql<{ id: number }[]>`
-			INSERT INTO sichtungen (
-				sichtungsdatum, created, tierart, anzahl_gesamt,
-				vonwo, entfernung, referenz_id, totfund,
-				vorname, name, email,
-				datenschutz_einverstaendnis, kommentar_intern
-			) VALUES (
-				'2099-06-01T08:30:00.000Z', NOW(), 1, 2,
-				${SightingFromEnum.LAND}, ${DistanceEnum.FROM_10_TO_50M}, ${referenceId},
-				${dead ? 1 : 0},
-				'Erika', 'Mustermann', 'erika.e2e@example.invalid',
-				1, ${SEED_MARKER}
-			)
-			RETURNING id
-		`;
-		return Number(row!.id);
-	} finally {
-		await sql.end({ timeout: 5 });
-	}
-}
-
-async function removeSighting(id: number): Promise<void> {
-	const sql = connect();
-	try {
-		await sql`DELETE FROM sichtungen WHERE id = ${id} AND kommentar_intern = ${SEED_MARKER}`;
-	} finally {
-		await sql.end({ timeout: 5 });
-	}
+/**
+ * Gesetzt wird nur `totfund` — der Marker soll allein daran hängen. Trüge der
+ * Seed zusätzlich Art und Melderdaten, bliebe offen, ob die Tabelle nicht
+ * daraus schließt.
+ *
+ * `FIRST_PAGE_DATE`, weil beiden Zeilen „auf Seite 1" genügt; die neueste Zeile
+ * ist reserviert (siehe `seedSighting.ts`).
+ */
+function seedDeadFinding(referenceId: string, isDead: boolean): Promise<number> {
+	return seedSighting({ referenceId, sightingDate: FIRST_PAGE_DATE, isDead });
 }
 
 test.describe('Admin-Sichtungstabelle — Totfund-Marker', () => {
@@ -80,7 +39,7 @@ test.describe('Admin-Sichtungstabelle — Totfund-Marker', () => {
 
 	test.afterEach(async () => {
 		while (createdIds.length > 0) {
-			await removeSighting(createdIds.pop()!);
+			await deleteSighting(createdIds.pop()!);
 		}
 	});
 
@@ -90,8 +49,8 @@ test.describe('Admin-Sichtungstabelle — Totfund-Marker', () => {
 		baseURL
 	}) => {
 		await seedAdminSession(context, baseURL!, ['admin']);
-		createdIds.push(await createSighting('e2e-tot', true));
-		createdIds.push(await createSighting('e2e-lebend', false));
+		createdIds.push(await seedDeadFinding('e2e-tot', true));
+		createdIds.push(await seedDeadFinding('e2e-lebend', false));
 
 		await page.setViewportSize({ width: 1280, height: 900 });
 		await page.goto('/admin/sichtungen');

@@ -1,9 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { config as loadEnv } from 'dotenv';
-import postgres from 'postgres';
 import { DistanceEnum } from '../src/lib/report/formOptions/distance';
 import { SightingFromEnum } from '../src/lib/report/formOptions/sightingFrom';
 import { seedAdminSession } from './helpers/adminSession';
+import { deleteSighting, openTestDatabase, seedSighting } from './helpers/seedSighting';
 
 /**
  * admin-edit-preserves-record.spec.ts — was eine Admin-Bearbeitung am Bestand
@@ -32,18 +31,12 @@ import { seedAdminSession } from './helpers/adminSession';
  *
  * **Eigene Datensätze statt Bestandsdaten.** Die lokale Datenbank ist laut
  * `docs/WORKTREES.md` über alle Worktrees geteilt; ein Test, der eine echte
- * Meldung speichert, änderte echte Daten. Jeder Testfall legt deshalb seine
- * eigene Zeile an und räumt sie wieder weg. Sie trägt denselben Marker wie
- * `scripts/seed-e2e.ts` (`kommentar_intern = 'e2e-seed'`), damit ein Abbruch
+ * Meldung speichert, änderte echte Daten. Jeder Testfall legt deshalb über
+ * `e2e/helpers/seedSighting.ts` seine eigene Zeile an und räumt sie wieder weg.
+ * Sie trägt denselben Marker wie `scripts/seed-e2e.ts`, damit ein Abbruch
  * mitten im Lauf nichts hinterlässt, was `npm run db:seed:e2e -- --purge` nicht
  * findet.
  */
-
-/* Playwright lädt .env nicht von sich aus — dieselbe Begründung wie in
-   e2e/helpers/adminSession.ts. */
-loadEnv();
-
-const SEED_MARKER = 'e2e-seed';
 
 /** Melderdaten, die keine der beiden Bearbeitungen anfassen darf. */
 const REPORTER = {
@@ -62,45 +55,30 @@ const REPORTER = {
 const POSITION = { latitude: '54.123456', longitude: '13.654321' };
 
 /**
- * Zeitpunkt der Sichtung, als ISO-UTC **mit `Z`** — im Formular erscheint er als
+ * Zeitpunkt der Sichtung, aus ISO-UTC **mit `Z`** — im Formular erscheint er als
  * 10:30 MESZ.
  *
- * Die Schreibweise ist nicht Geschmackssache: `postgres.js` serialisiert einen
- * String-Parameter über `new Date(x).toISOString()`. Ohne `Z` legt Node den Wert
- * als **Ortszeit** aus, und die Testzeile läge auf einem Rechner in Europe/Berlin
- * zwei Stunden neben der Absicht — der Test misst dann seine eigene Zeitzone
- * statt der Anwendung. Genau so ist der erste Anlauf dieses Tests gescheitert.
- * Drizzle schreibt aus demselben Grund `toISOString()`.
+ * Das `Z` ist nicht Geschmackssache: Ohne es legt Node den Wert als **Ortszeit**
+ * aus, und die Testzeile läge auf einem Rechner in Europe/Berlin zwei Stunden
+ * neben der Absicht — der Test misst dann seine eigene Zeitzone statt der
+ * Anwendung. Genau so ist der erste Anlauf dieses Tests gescheitert.
  */
-const SIGHTING_DATE_UTC = '2024-06-01T08:30:00.000Z';
+const SIGHTING_DATE_UTC = new Date('2024-06-01T08:30:00.000Z');
 
 /** Derselbe Zeitpunkt, wie ihn `to_char` aus der Spalte liest. */
 const SIGHTING_DATE_STORED = '2024-06-01 08:30:00';
 
-function connect() {
-	const databaseUrl = process.env.DATABASE_POSTGRES_URL;
-	if (!databaseUrl) {
-		throw new Error(
-			'DATABASE_POSTGRES_URL fehlt — ohne Datenbank lässt sich keine Testsichtung anlegen. ' +
-				'Lokal steht sie in .env, in CI entsteht sie aus .env.example (ci.yml).'
-		);
-	}
-	return postgres(databaseUrl, { max: 1 });
-}
-
 /**
  * Legt eine Sichtung an und liefert ihre ID.
  *
- * `gps_breite`/`gps_laenge` kommen als Text herein und werden von Postgres
- * gecastet — so steht die erwartete Genauigkeit im Test als Literal und nicht
- * als Fließkommazahl, die schon beim Schreiben wackeln könnte.
- *
- * `referenz_id` ist gesetzt, weil `sightingSchema` sie verlangt; im Bestand
- * trägt sie jede Zeile. `vonwo` und `entfernung` sind überschreibbar — der
+ * `referenceId` ist gesetzt, weil `sightingSchema` sie verlangt; im Bestand
+ * trägt sie jede Zeile. `sightingFrom` und `distance` sind überschreibbar — der
  * dritte Testfall braucht dort genau die Werte, an denen das Speichern bis
- * 2026-08-02 scheiterte.
+ * 2026-08-02 scheiterte. Art, Anzahl und Einwilligung stehen mit, damit die
+ * Zeile eine vollständige Meldung ist: Geprüft wird hier eine Bearbeitung, die
+ * durch die Formularvalidierung muss.
  */
-async function createSighting(options: {
+function createSighting(options: {
 	latitude: string | null;
 	longitude: string | null;
 	waterway: string | null;
@@ -108,31 +86,19 @@ async function createSighting(options: {
 	sightingFrom?: number;
 	distance?: number;
 }): Promise<number> {
-	const sql = connect();
-	try {
-		const [row] = await sql<{ id: number }[]>`
-			INSERT INTO sichtungen (
-				sichtungsdatum, created, tierart, anzahl_gesamt,
-				vonwo, entfernung, referenz_id,
-				gps_breite, gps_laenge, fahrwasser,
-				vorname, name, email, strasse, plz, ort,
-				datenschutz_einverstaendnis, kommentar_intern
-			) VALUES (
-				${SIGHTING_DATE_UTC}, NOW(), 1, 2,
-				${options.sightingFrom ?? SightingFromEnum.LAND},
-				${options.distance ?? DistanceEnum.FROM_10_TO_50M},
-				${options.referenceId},
-				${options.latitude}, ${options.longitude}, ${options.waterway},
-				${REPORTER.firstName}, ${REPORTER.lastName}, ${REPORTER.email},
-				${REPORTER.street}, ${REPORTER.zipCode}, ${REPORTER.city},
-				1, ${SEED_MARKER}
-			)
-			RETURNING id
-		`;
-		return Number(row.id);
-	} finally {
-		await sql.end({ timeout: 5 });
-	}
+	return seedSighting({
+		referenceId: options.referenceId,
+		sightingDate: SIGHTING_DATE_UTC,
+		species: 1,
+		totalCount: 2,
+		sightingFrom: options.sightingFrom ?? SightingFromEnum.LAND,
+		distance: options.distance ?? DistanceEnum.FROM_10_TO_50M,
+		latitude: options.latitude,
+		longitude: options.longitude,
+		waterway: options.waterway,
+		reporter: REPORTER,
+		privacyConsent: true
+	});
 }
 
 interface StoredSighting {
@@ -160,7 +126,7 @@ interface StoredSighting {
  * Treibers — und misst damit nicht dieselbe Annahme, die er prüfen soll.
  */
 async function readSighting(id: number): Promise<StoredSighting> {
-	const sql = connect();
+	const sql = openTestDatabase();
 	try {
 		const [row] = await sql<StoredSighting[]>`
 			SELECT
@@ -173,15 +139,6 @@ async function readSighting(id: number): Promise<StoredSighting> {
 			FROM sichtungen WHERE id = ${id}
 		`;
 		return row;
-	} finally {
-		await sql.end({ timeout: 5 });
-	}
-}
-
-async function deleteSighting(id: number): Promise<void> {
-	const sql = connect();
-	try {
-		await sql`DELETE FROM sichtungen WHERE id = ${id}`;
 	} finally {
 		await sql.end({ timeout: 5 });
 	}
@@ -218,25 +175,26 @@ async function editAndSave(
 }
 
 test.describe('Admin-Bearbeitung erhält den Bestand', () => {
-	const createdIds: number[] = [];
+	/* Mit Referenz-ID, weil der dritte Testfall den Aufräum-Marker über die
+	   Oberfläche überschreibt — sie ist dann das einzige Merkmal, an dem
+	   `deleteSighting` die Zeile noch als eigene erkennt. */
+	const created: { id: number; referenceId: string }[] = [];
 
 	test.beforeEach(async ({ context, baseURL }) => {
 		await seedAdminSession(context, baseURL!);
 	});
 
 	test.afterEach(async () => {
-		while (createdIds.length > 0) {
-			await deleteSighting(createdIds.pop()!);
+		while (created.length > 0) {
+			const { id, referenceId } = created.pop()!;
+			await deleteSighting(id, { referenceId });
 		}
 	});
 
 	test('Adresse, Kontaktdaten und Koordinaten überstehen eine Bearbeitung', async ({ page }) => {
-		const id = await createSighting({
-			...POSITION,
-			waterway: null,
-			referenceId: 'e2e-mit-position'
-		});
-		createdIds.push(id);
+		const referenceId = 'e2e-mit-position';
+		const id = await createSighting({ ...POSITION, waterway: null, referenceId });
+		created.push({ id, referenceId });
 
 		await editAndSave(page, id, 'E2E: Nachtrag zur Beobachtung');
 
@@ -267,13 +225,14 @@ test.describe('Admin-Bearbeitung erhält den Bestand', () => {
 	});
 
 	test('Sichtung ohne Position bekommt keine erfundenen Koordinaten', async ({ page }) => {
+		const referenceId = 'e2e-ohne-position';
 		const id = await createSighting({
 			latitude: null,
 			longitude: null,
 			waterway: 'Strelasund',
-			referenceId: 'e2e-ohne-position'
+			referenceId
 		});
-		createdIds.push(id);
+		created.push({ id, referenceId });
 
 		await editAndSave(page, id, 'E2E: Bearbeitung ohne Position');
 
@@ -302,14 +261,15 @@ test.describe('Admin-Bearbeitung erhält den Bestand', () => {
 	 * `e2e-`-Referenz-ID.
 	 */
 	test('lässt eine Bestandssichtung mit unvollständigen Angaben speichern', async ({ page }) => {
+		const referenceId = 'e2e-bestand';
 		const id = await createSighting({
 			...POSITION,
 			waterway: null,
-			referenceId: 'e2e-bestand',
+			referenceId,
 			sightingFrom: SightingFromEnum.OTHER,
 			distance: 0
 		});
-		createdIds.push(id);
+		created.push({ id, referenceId });
 
 		await page.goto(`/admin/${id}/edit`);
 		const internalComment = page.locator('[data-testid="field-internalComment"]');

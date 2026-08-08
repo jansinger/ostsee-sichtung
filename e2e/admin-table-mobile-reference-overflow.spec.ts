@@ -1,7 +1,7 @@
 import { expect, test, type BrowserContext } from '@playwright/test';
 import { seedAdminSession } from './helpers/adminSession';
 import { expectNoHorizontalOverflow } from './helpers/overflow';
-import { deleteSighting, seedSighting } from './helpers/seedSighting';
+import { deleteSighting, NEWEST_ROW_DATE, seedSighting } from './helpers/seedSighting';
 
 /**
  * admin-table-mobile-reference-overflow.spec.ts — die Referenz-ID in der
@@ -62,10 +62,12 @@ test.describe('Admin-Sichtungstabelle — lange Referenz-ID in der Mobilkarte', 
 			   einer ab, bevor er aufräumt, kollidiert der andere sonst mit der
 			   liegengebliebenen Zeile statt sauber durchzulaufen. */
 			const referenceId = `${LANGE_REFERENZ}${width}`;
-			/* In der Zukunft, damit die Zeile bei `sichtungsdatum desc` ganz vorn steht. */
+			/* `NEWEST_ROW_DATE`: `?perPage=1` rendert genau die neueste Zeile, und
+			   dieser Wert ist dafür reserviert — kein anderer Seed liegt darüber
+			   (abgesichert in `helpers/seedSighting.test.ts`). */
 			const sightingId = await seedSighting({
 				referenceId,
-				sightingDate: new Date('2099-01-01T12:00:00Z')
+				sightingDate: NEWEST_ROW_DATE
 			});
 
 			/* Der `try` beginnt unmittelbar nach dem Seed und nicht erst nach dem
