@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { FIRST_PAGE_DATE, NEWEST_ROW_DATE } from './seedSighting';
+import {
+	deleteSighting,
+	E2E_REFERENCE_PREFIX,
+	FIRST_PAGE_DATE,
+	NEWEST_ROW_DATE
+} from './seedSighting';
 
 /**
  * seedSighting.test.ts — hält die Reihenfolge der Seed-Datumswerte fest.
@@ -37,5 +42,33 @@ describe('Seed-Datumswerte', () => {
 			const zeitpunkt = datum.getTime();
 			expect(zeitpunkt < fensterStart || zeitpunkt >= fensterEnde).toBe(true);
 		}
+	});
+});
+
+/**
+ * `deleteSighting` erlaubt als zweites Erkennungsmerkmal eine Referenz-ID —
+ * für den einen Test, der den Aufräum-Marker über die Oberfläche überschreibt.
+ * Ohne Schranke wäre das ein Weg am Marker-Guard vorbei: Die Referenz-ID einer
+ * echten Meldung, versehentlich übergeben, löschte sie.
+ *
+ * Die Prüfung liegt vor dem Verbindungsaufbau — deshalb kommen diese Fälle
+ * ohne Datenbank aus.
+ */
+describe('deleteSighting — Schranke für die Referenz-ID', () => {
+	it('weist eine Referenz-ID ohne E2E-Präfix ab', async () => {
+		await expect(deleteSighting(157, { referenceId: 'clx8k2p9q000108l4h3v2b1c7' })).rejects.toThrow(
+			/Präfix/
+		);
+	});
+
+	it('nennt die abgelehnte Referenz-ID, damit der Fehler auffindbar ist', async () => {
+		await expect(deleteSighting(157, { referenceId: 'fremde-id' })).rejects.toThrow('fremde-id');
+	});
+
+	/* Die Gegenprobe — eine zugelassene Referenz-ID — braucht eine Datenbank und
+	   läuft in `admin-edit-preserves-record.spec.ts`: Dessen Zeilen tragen das
+	   Präfix und werden nach jedem Fall entfernt. */
+	it('kennt das Präfix, das die Specs verwenden', () => {
+		expect(E2E_REFERENCE_PREFIX).toBe('e2e-');
 	});
 });

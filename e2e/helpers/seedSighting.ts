@@ -43,6 +43,14 @@ loadEnv();
 const SEED_MARKER = 'e2e-seed';
 
 /**
+ * Präfix, an dem `deleteSighting` eine Referenz-ID als selbst vergeben erkennt.
+ *
+ * Nur für den Löschpfad verbindlich, nicht für den Seed: Die App vergibt
+ * Referenz-IDs als cuid2, ein `e2e-` davor kommt im Bestand nicht vor.
+ */
+export const E2E_REFERENCE_PREFIX = 'e2e-';
+
+/**
  * Öffnet eine Verbindung zur Entwicklungs-Datenbank.
  *
  * Exportiert für Tests, die die geschriebene Zeile anschließend mit einer
@@ -201,13 +209,27 @@ export async function seedSighting(data: SeedSightingData): Promise<number> {
  * `referenceId` ist für den einen Fall gedacht, in dem der Test den Marker
  * selbst überschreibt: `admin-edit-preserves-record.spec.ts` bearbeitet den
  * internen Kommentar über die Oberfläche. Die Zeile bleibt danach über ihre
- * `e2e-`-Referenz-ID auffindbar — ein zweites Erkennungsmerkmal, statt die
- * Bedingung ersatzlos fallen zu lassen.
+ * Referenz-ID auffindbar — ein zweites Erkennungsmerkmal, statt die Bedingung
+ * ersatzlos fallen zu lassen.
+ *
+ * Damit dieser Ausweg den Marker-Guard nicht aushebelt, muss die Referenz-ID
+ * das Präfix `e2e-` tragen. Sonst genügte die Referenz-ID einer *echten*
+ * Meldung, um sie zu löschen — versehentlich übergeben, unbemerkt weg. Die
+ * Bedingung steht vor dem Verbindungsaufbau: Ein Aufruf, der so nicht gemeint
+ * sein kann, soll scheitern und nicht erst eine Verbindung öffnen.
  */
 export async function deleteSighting(
 	id: number,
 	options: { referenceId?: string } = {}
 ): Promise<void> {
+	if (options.referenceId !== undefined && !options.referenceId.startsWith(E2E_REFERENCE_PREFIX)) {
+		throw new Error(
+			`deleteSighting: referenz_id „${options.referenceId}" trägt nicht das Präfix ` +
+				`„${E2E_REFERENCE_PREFIX}" — als zweites Erkennungsmerkmal taugt nur eine ` +
+				'Referenz-ID, die dieser Helfer selbst vergeben haben kann.'
+		);
+	}
+
 	const sql = openTestDatabase();
 	try {
 		const byReference = options.referenceId ? sql`OR referenz_id = ${options.referenceId}` : sql``;
