@@ -65,11 +65,13 @@ const EIGENE_SORTIERUNG = /\b(?:asc|desc)\(\s*sightings\.created\b/g;
  * `sql\`…created… (asc|desc)…\`` — die im Projekt gelebte Sortier-Schreibweise.
  * Zwei Lookaheads statt einer festen Reihenfolge, weil `created` in den
  * bestehenden Belegen mal vor, mal (über eine Hilfsfunktion) nach dem
- * Richtungswort steht; beide Lookaheads laufen über denselben, mit dem
- * schließenden Backtick lazy begrenzten Template-Inhalt.
+ * Richtungswort steht. Die Lookaheads selbst sind mit `[^\`]*` auf den
+ * Template-Inhalt begrenzt — `[\s\S]*?` ignoriert innerhalb eines Lookaheads
+ * die lazy-Begrenzung des konsumierenden Teils und läse bis zum Dateiende
+ * weiter; ein beliebiges `sql\`…\`` ohne Generic, gefolgt (irgendwo in der
+ * Datei) von `created` und `asc`/`desc`, wäre dann fälschlich ein Treffer.
  */
-const SQL_TEMPLATE_SORTIERUNG =
-	/sql`(?=[\s\S]*?\bcreated\b)(?=[\s\S]*?\b(?:asc|desc)\b)[\s\S]*?`/gi;
+const SQL_TEMPLATE_SORTIERUNG = /sql`(?=[^`]*\bcreated\b)(?=[^`]*\b(?:asc|desc)\b)[^`]*`/gi;
 
 const EIGENBAU_MUSTER = [EIGENE_SORTIERUNG, SQL_TEMPLATE_SORTIERUNG] as const;
 
@@ -93,7 +95,11 @@ describe('Ordnung des offenen Stapels', () => {
 			const bereinigt = stripComments(quelltext);
 
 			it('importiert die gemeinsame Ordnung', () => {
-				expect(bereinigt).toContain('openQueueOrder');
+				// Prüft den Importpfad, nicht nur den Bezeichner: Eine lokal
+				// definierte Funktion namens `openQueueOrderBy` hielte
+				// `toContain('openQueueOrder')` grün, ohne dass der Import
+				// existiert.
+				expect(bereinigt).toMatch(/from ['"]\$lib\/server\/db\/openQueueOrder['"]/);
 			});
 
 			it('baut keine eigene Sortierung auf created', () => {
