@@ -19,6 +19,7 @@
 import type { SQL, SQLWrapper } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { openOnly } from '$lib/server/db/approvalFilter';
 
 const dialect = new PgDialect();
 const toSqlText = (condition: SQLWrapper): string => dialect.sqlToQuery(condition.getSQL()).sql;
@@ -163,6 +164,90 @@ describe('GET /api/sightings/[id]/queue', () => {
 
 		expect(body.next).toBeNull();
 		expect(body.prev).toEqual({ id: 499, referenceId: 'REF-499' });
+	});
+
+	it('filtert alle vier Abfragen über openOnly() auf offene Sichtungen', async () => {
+		resolvedRows = [
+			[OFFENE_SICHTUNG],
+			[{ id: 501, referenceId: 'REF-501' }], // next
+			[{ id: 499, referenceId: 'REF-499' }], // prev
+			[{ count: 16 }], // Vorgänger im Stapel
+			[{ count: 653 }] // offene insgesamt
+		];
+
+		await aufrufen();
+
+		const [, next, prev, rank, total] = recordedSelects;
+		// Über denselben Helper kompiliert statt als Literal hingeschrieben — ein
+		// hartcodiertes SQL-Fragment hier wäre selbst das selbstgebaute
+		// Freigabe-Prädikat, das approvalPredicateScan.test.ts verbietet.
+		const openOnlySql = toSqlText(openOnly());
+		expect(next?.whereSql).toContain(openOnlySql);
+		expect(prev?.whereSql).toContain(openOnlySql);
+		expect(rank?.whereSql).toContain(openOnlySql);
+		expect(total?.whereSql).toContain(openOnlySql);
+	});
+
+	it('zählt die Rangzählung in Vorgänger-Richtung, nicht in Nachfolger-Richtung', async () => {
+		resolvedRows = [
+			[OFFENE_SICHTUNG],
+			[], // next
+			[], // prev
+			[{ count: 16 }], // Vorgänger im Stapel
+			[{ count: 653 }] // offene insgesamt
+		];
+
+		await aufrufen('desc');
+
+		const [, , , rank] = recordedSelects;
+		// order=desc + Vorgänger-Richtung ergibt laut queueNeighborCondition den
+		// ">"-Vergleich (kleinerAlsAnker = (order==='desc') === (direction==='next') = false).
+		// Ein ins Gegenteil verdrehtes Vorzeichen zählte Nachfolger statt Vorgänger.
+		expect(rank?.whereSql).toMatch(/\)\s*>\s*\(/);
+	});
+
+	it('verdrahtet order=asc bis in orderBy und die Keyset-Richtung', async () => {
+		resolvedRows = [
+			[OFFENE_SICHTUNG],
+			[{ id: 501, referenceId: 'REF-501' }], // next
+			[{ id: 499, referenceId: 'REF-499' }], // prev
+			[{ count: 16 }], // Vorgänger im Stapel
+			[{ count: 653 }] // offene insgesamt
+		];
+
+		await aufrufen('asc');
+
+		const [, next, prev, rank] = recordedSelects;
+		expect(next?.orderBySql).toMatch(/"created" asc/);
+		expect(prev?.orderBySql).toMatch(/"created" desc/);
+		// Bei order=asc kehrt sich auch die Keyset-Richtung um: "next" sucht jetzt
+		// per ">"-Vergleich, die Vorgänger-Rangzählung weiterhin per "<".
+		expect(next?.whereSql).toMatch(/\)\s*>\s*\(/);
+		expect(rank?.whereSql).toMatch(/\)\s*<\s*\(/);
+	});
+
+	it('macht ein leeres Rang-Zählergebnis sichtbar statt eine Position zu erfinden', async () => {
+		resolvedRows = [
+			[OFFENE_SICHTUNG],
+			[], // next
+			[], // prev
+			[], // leeres Zählergebnis statt einer count(*)-Zeile
+			[{ count: 653 }]
+		];
+
+		await expect(aufrufen()).rejects.toMatchObject({ status: 500 });
+	});
+
+	it('macht ein leeres Gesamt-Zählergebnis sichtbar statt eine Zahl zu erfinden', async () => {
+		resolvedRows = [
+			[OFFENE_SICHTUNG],
+			[], // next
+			[], // prev
+			[{ count: 16 }],
+			[] // leeres Zählergebnis statt einer count(*)-Zeile
+		];
+
+		await expect(aufrufen()).rejects.toMatchObject({ status: 500 });
 	});
 
 	it('lehnt eine unbrauchbare ID ab, bevor sie in die Datenbank geht', async () => {

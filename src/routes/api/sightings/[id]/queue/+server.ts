@@ -114,12 +114,32 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 			.where(openOnly())
 	]);
 
+	/* `count(*)` liefert in Postgres immer genau eine Zeile — auch bei null
+	   Treffern steht dort `{ count: 0 }`, nie ein leeres Ergebnis. Eine leere
+	   Zeilenliste ist deshalb kein „keine Vorgänger"/„keine Sichtungen", sondern
+	   ein gebrochener Vertrag der Abfrage (z. B. ein kaputter Mock in einem
+	   Testaufbau). `?? 0` würde das zu einer plausiblen Zahl glätten — genau die
+	   Art stiller Fehlanzeige, gegen die dieser Endpunkt laut Docblock antritt.
+	   Analog zu `+page.ts` der Detailansicht (`statusLogFailed`): ein Fehlschlag
+	   bekommt einen eigenen, sichtbaren Fall statt eines beschönigten Werts —
+	   hier als 500, weil es keinen sinnvollen Rückfallwert für eine Position
+	   oder eine Gesamtzahl gibt, die die Oberfläche stattdessen anzeigen könnte. */
+	const rankRow = rankResult?.[0];
+	if (rankResult && !rankRow) {
+		throw error(500, 'Rangzählung im offenen Stapel lieferte keine Ergebniszeile');
+	}
+
+	const totalRow = totalResult[0];
+	if (!totalRow) {
+		throw error(500, 'Zählung der offenen Sichtungen lieferte keine Ergebniszeile');
+	}
+
 	// `count(*)` ist bigint und kommt je nach Treiber als String zurück —
 	// normalisiert wird hier, nicht in jeder Aufrufstelle einzeln.
 	return json({
 		next,
 		prev,
-		position: rankResult ? Number(rankResult[0]?.count ?? 0) + 1 : null,
-		total: Number(totalResult[0]?.count ?? 0)
+		position: rankRow ? Number(rankRow.count) + 1 : null,
+		total: Number(totalRow.count)
 	});
 };
