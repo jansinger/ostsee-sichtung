@@ -288,3 +288,31 @@ Jahrestrends als richtige Diagramme statt Progress-Balken. Vorher klären:
 Chart-Bibliothek vs. handgebautes SVG (Projekt hat bisher keine
 Chart-Dependency — Bundle-Abwägung dokumentieren). Museums-Regel beachten:
 keine vermischten Freigabe-Mengen, jede Zahl mit Freigabebezug.
+
+**Entscheidung (2026-08-08): handgebautes SVG, keine Chart-Abhängigkeit.**
+Gebraucht werden zwei Diagramme derselben Form — kategoriale Balken über einer
+linearen Achse. Chart.js (~60 kB gzip), ApexCharts (~130 kB) oder LayerChart
+(zieht d3-Module nach) wären dafür die größte Einzelabhängigkeit im Bundle,
+obwohl nur eine Admin-Seite sie braucht. Drei Punkte gaben zusätzlich den
+Ausschlag:
+
+- **Theme-Tokens statt Canvas-Farben.** Die Bibliotheken zeichnen überwiegend
+  auf Canvas und brauchen Farben als Zeichenketten — genau der Fall, für den
+  `mapTokens.ts` bei OpenLayers Hex-Werte am Theme vorbei pflegen muss
+  (`design-system.md`, „Randbereiche"). SVG-Elemente tragen Utility-Klassen und
+  damit dieselben Tokens wie der Rest der Seite; ein vierter Hex-Randbereich
+  entsteht nicht.
+- **Serverseitig gerendert.** Das Markup entsteht im SSR-Durchlauf, das
+  Diagramm ist ohne JavaScript da.
+- **Textalternative aus denselben Daten** (WCAG 1.1.1): eine aufklappbare
+  Wertetabelle aus derselben Datenreihe statt einer zweiten, driftenden
+  Aufbereitung.
+
+Umgesetzt in `src/lib/components/charts/` — Geometrie als reine Funktionen
+(`barChartScale.ts`, unit-getestet), Darstellung in `BarChart.svelte`.
+
+**Zwei Abfragen tragen die Jahresauswahl bewusst nicht:** die Jahrestrends (auf
+ein Jahr gefiltert bliebe ein einzelner Balken — das gewählte Jahr wird darin
+stattdessen hervorgehoben) und die Liste der auswählbaren Jahre (sonst ließe
+sich die Auswahl nach dem ersten Wechsel nicht mehr verlassen). Beides ist an
+den Abfragen begründet und in `page.server.test.ts` festgehalten.
