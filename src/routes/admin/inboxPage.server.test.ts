@@ -48,8 +48,8 @@ function createRecordingBuilder(record: RecordedSelect) {
 			if (predicate) record.whereSql = toSqlText(predicate);
 			return builder;
 		},
-		orderBy: (expression?: SQLWrapper) => {
-			if (expression) record.orderBySql = toSqlText(expression);
+		orderBy: (...expressions: SQLWrapper[]) => {
+			if (expressions.length) record.orderBySql = expressions.map(toSqlText).join(', ');
 			return builder;
 		},
 		limit: (value: number) => {
@@ -172,6 +172,14 @@ describe('Eingangs-Load', () => {
 		const kaputt = await runLoad(makeUrl({ order: 'kaputt' }));
 		expect(kaputt.order).toBe('desc');
 		expect(recordedSelects[0]?.orderBySql).toMatch(/\bdesc\b/i);
+	});
+
+	it('sortiert mit id als Tiebreaker — sonst kann die Nachbar-Query eine Meldung überspringen', async () => {
+		await runLoad(makeUrl());
+
+		const liste = recordedSelects[0];
+		expect(liste?.orderBySql).toMatch(/"created" desc/);
+		expect(liste?.orderBySql).toMatch(/"id" desc/);
 	});
 
 	it('gruppiert Bilddateien nach Sichtungs-ID', async () => {
