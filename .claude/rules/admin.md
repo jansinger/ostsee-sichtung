@@ -75,24 +75,68 @@ bewusst nicht in `istTabellenUrl` (`admin/tableRedirect.ts`) und darf beim
 Rückweg nach `/admin` als einziger mitgegeben werden — die übrigen
 TABELLEN_PARAMETER lösten dort sofort die 301 auf die Tabelle aus.
 
+### Der Arbeitsmodus: Warteschlange in der Detailansicht
+
+Aus dem Eingang geöffnet (`?from=inbox`) blättert die Detailansicht durch **alle**
+offenen Sichtungen und springt nach einer Entscheidung direkt zur nächsten. Aus der
+Tabelle heraus gibt es das bewusst nicht — dort sind Filter, Sortierung und
+Paginierung im Spiel, und die Queue wäre ein anderes Feature.
+
+Drei Dinge dabei nicht zurückdrehen:
+
+- **Die Ordnung ist `(created, id)` und steht in `$lib/server/db/openQueueOrder.ts`.**
+  `created` ist nicht eindeutig; ohne den Tiebreaker liefern Eingangsliste und
+  Nachbar-Query bei gleichem Zeitstempel unterschiedliche Reihenfolgen, und beim
+  Abarbeiten fällt still eine Meldung durch. `openQueueOrderScan.test.ts` meldet
+  jede selbstgebaute Sortierung auf `created`.
+- **Nachbarn per Keyset, nie per Offset.** Der Vergleich hängt an den Werten der
+  aktuellen Zeile, nicht an ihrer Mitgliedschaft in der offenen Menge — deshalb
+  bleibt „wer kommt danach" beantwortbar, nachdem die Sichtung entschieden wurde.
+  Ein mitgeführter Offset wäre nach jeder Entscheidung um eins falsch.
+- **`next: null` und ein fehlgeschlagener Queue-Aufruf sind nicht dasselbe.**
+  Ersteres heißt „Stapel zu Ende", letzteres „unbekannt". Dafür gibt es
+  `queueFailed`; bei einem Fehlschlag unterbleibt der Auto-Advance, statt in den
+  Eingang zu springen und den Stapel für abgearbeitet zu halten. Gleiche
+  Konstruktion und gleiche Begründung wie beim Status-Log.
+
+**Der Undo-Href gehört ausschließlich dem Arbeitsmodus.** `planAdvance()`
+(`queueAdvance.ts`) liefert `undoHref` nur, wenn tatsächlich ein Advance
+stattgefunden hat (`queue !== null || queueFailed`). Aus der Tabelle heraus
+(`queue === null && !queueFailed`) bleibt er `null`, und der „Rückgängig"-Knopf
+setzt dann nur den Status zurück, ohne zu navigieren. Der Grund: `queueHref()`
+stempelt über `inboxDetailHref` bedingungslos `?from=inbox` auf die Ziel-URL —
+ein unbedingt vergebener Undo-Href hätte damit auf eine aus der Tabelle
+geöffnete Sichtung die Herkunft des Eingangs geschrieben, und ein Klick darauf
+hätte die Tabellenfilter verworfen und im Eingang statt in der gefilterten
+Tabelle geendet.
+
+Die Tastenzuordnung liegt für beide Flächen in `adminTriageShortcuts.ts`. Im Eingang
+schiebt `focusNext` den Fokus, in der Detailansicht navigiert es — die Absicht ist
+dieselbe, deshalb steht sie einmal.
+
 ## Admin-Komponenten
 
-| Komponente                     | Zweck                                      |
-| ------------------------------ | ------------------------------------------ |
-| `AdminSightingEditForm.svelte` | Sichtung bearbeiten                        |
-| `AdminSightingView.svelte`     | Sichtung anzeigen (read-only)              |
-| `SightingInboxCard.svelte`     | Karte der Eingangsseite (`/admin`)         |
-| `inboxVerdict.ts`              | Verdict-Logik der Eingangsseite            |
-| `inboxShortcuts.ts`            | Tastatur-Triage des Eingangs (J/K/A/R/U/?) |
-| `InboxShortcutHelp.svelte`     | Overlay mit der Kürzel-Übersicht           |
-| `adminReturn.ts`               | Herkunft `?from=inbox` + Karten-Anker      |
-| `DataTableRow.svelte`          | Tabellen-Zeile                             |
-| `BooleanStatus.svelte`         | Boolean-Status Anzeige                     |
-| `ExportModal.svelte`           | Export-Dialog                              |
-| `deadFinding.ts`               | Totfund-Auszeichnung                       |
-| `sightingStatus.ts`            | Statusableitung + Wort/Farbe/Icon/Verdict  |
-| `sightingStatusFilter.ts`      | Statuswert ↔ Filter-Query (`?verified=`)   |
-| `SightingStatusControl.svelte` | Segmented Control für den Statuswechsel    |
+| Komponente                     | Zweck                                       |
+| ------------------------------ | ------------------------------------------- |
+| `AdminSightingEditForm.svelte` | Sichtung bearbeiten                         |
+| `AdminSightingView.svelte`     | Sichtung anzeigen (read-only)               |
+| `SightingInboxCard.svelte`     | Karte der Eingangsseite (`/admin`)          |
+| `inboxVerdict.ts`              | Verdict-Logik der Eingangsseite             |
+| `adminTriageShortcuts.ts`      | Tastatur-Triage (Eingang + Detailansicht)   |
+| `InboxShortcutHelp.svelte`     | Overlay mit der Kürzel-Übersicht            |
+| `adminReturn.ts`               | Herkunft `?from=inbox` + Karten-Anker       |
+| `SightingQueueNav.svelte`      | Navigationsleiste des Arbeitsmodus          |
+| `sightingQueue.ts`             | Queue-Typen, Ziel-Href, Advance-Ziel        |
+| `queueAdvance.ts`              | Sprung + Undo-Toast nach einer Entscheidung |
+| `queueOrder.ts`                | Client-sichere Auswertung von `?order`      |
+| `undoMemory.svelte.ts`         | Zustand hinter „Rückgängig" (Detailansicht) |
+| `DataTableRow.svelte`          | Tabellen-Zeile                              |
+| `BooleanStatus.svelte`         | Boolean-Status Anzeige                      |
+| `ExportModal.svelte`           | Export-Dialog                               |
+| `deadFinding.ts`               | Totfund-Auszeichnung                        |
+| `sightingStatus.ts`            | Statusableitung + Wort/Farbe/Icon/Verdict   |
+| `sightingStatusFilter.ts`      | Statuswert ↔ Filter-Query (`?verified=`)    |
+| `SightingStatusControl.svelte` | Segmented Control für den Statuswechsel     |
 
 ### Totfund vs. Lebendsichtung
 
