@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import InboxShortcutHelp from '$lib/components/admin/InboxShortcutHelp.svelte';
 	import SightingInboxCard from '$lib/components/admin/SightingInboxCard.svelte';
+	import { inboxAnchor } from '$lib/components/admin/adminReturn';
 	import {
 		nextActionableIndex,
 		resolveInboxShortcut,
@@ -285,12 +286,16 @@
 			{#each data.open as sighting, index (sighting.id)}
 				{@const verdict = done[sighting.id]}
 				{#if !abgelaufen.has(sighting.id)}
-					<!-- `tabindex="-1"` macht die Karte für J/K anfokussierbar, ohne sie in
-					     die Tab-Reihenfolge zu hängen — dort stehen die Schaltflächen
-					     darin, und ein zusätzlicher Halt vor jeder Karte verdoppelte den
-					     Weg für alle, die ohne die Kürzel arbeiten. -->
+					<!-- Zwei Zusagen an derselben Stelle: `id` ist das Sprungziel für den
+					     Rückweg aus der Detailansicht (wer eine Karte öffnet und zurückgeht,
+					     steigt an derselben Stelle wieder ein), `tabindex="-1"` macht die
+					     Karte für J/K anfokussierbar, ohne sie in die Tab-Reihenfolge zu
+					     hängen — dort stehen die Schaltflächen darin, und ein zusätzlicher
+					     Halt vor jeder Karte verdoppelte den Weg für alle, die ohne die
+					     Kürzel arbeiten. -->
 					<li
 						bind:this={kartenElemente[index]}
+						id={inboxAnchor(sighting.id)}
 						data-inbox-index={index}
 						tabindex="-1"
 						class="inbox-card"
@@ -318,6 +323,7 @@
 								{sighting}
 								images={data.imagesBySighting[sighting.id] ?? []}
 								duplicates={data.duplicatesBySighting[sighting.id] ?? []}
+								order={data.order}
 								busy={busy[sighting.id] ?? false}
 								onApprove={() => entscheiden(sighting.id, 'approve')}
 								onReject={() => entscheiden(sighting.id, 'reject')}

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import AdminSightingEditForm from '$lib/components/admin/AdminSightingEditForm.svelte';
+	import { carryReturnParams } from '../tableReturnUrl';
 	import { createLogger } from '$lib/logger';
 	import type { FrontendSighting } from '$lib/types/FrontendSighting.js';
 	import Icon from '$lib/components/Icon.svelte';
@@ -9,18 +11,21 @@
 
 	let { data } = $props();
 
+	let sighting = $derived(data.sighting);
+
+	/* Herkunft und Tabellenfilter zurück an die Detailansicht reichen — ohne sie
+	   endet deren Zurück-Knopf in der ungefilterten Tabelle, egal wo der
+	   Rundweg begonnen hat. */
+	const detailHref = $derived(`/admin/${sighting.id}${carryReturnParams(page.url)}`);
+
 	function onCancel() {
-		// Logic to handle cancel action
-		goto(`/admin/${sighting.id}`);
+		goto(detailHref);
 	}
 
 	function handleSave(updatedSighting: FrontendSighting) {
 		logger.info({ updatedSighting }, 'Sichtung gespeichert');
-		// Logic to save the updated sighting
-		goto(`/admin/${sighting.id}`, { invalidateAll: true });
+		goto(detailHref, { invalidateAll: true });
 	}
-
-	let sighting = $derived(data.sighting);
 </script>
 
 <svelte:head>
