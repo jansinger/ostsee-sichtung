@@ -185,7 +185,14 @@ describe('GET /api/sightings/[id]/queue', () => {
 		expect(next?.whereSql).toContain(openOnlySql);
 		expect(prev?.whereSql).toContain(openOnlySql);
 		expect(rank?.whereSql).toContain(openOnlySql);
-		expect(total?.whereSql).toContain(openOnlySql);
+		/* `toBe`, nicht `toContain`: Die Gesamtzahl-Abfrage filtert AUSSCHLIESSLICH
+		   auf `openOnly()` — anders als `next`/`prev`/`rank`, die zusätzlich die
+		   Keyset-Bedingung tragen. `toContain` prüft nur, dass `openOnlySql`
+		   irgendwo im WHERE steht; kopierte jemand die Keyset-Bedingung der
+		   direkt darüberstehenden Rang-Abfrage per Copy-Paste auch hierher, zählte
+		   `total` nur einen Teilstapel — unbemerkt, weil `openOnlySql` weiterhin
+		   enthalten wäre. `toBe` verlangt Gleichheit und deckt genau das auf. */
+		expect(total?.whereSql).toBe(openOnlySql);
 	});
 
 	it('zählt die Rangzählung in Vorgänger-Richtung, nicht in Nachfolger-Richtung', async () => {

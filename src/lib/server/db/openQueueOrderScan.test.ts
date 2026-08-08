@@ -1,7 +1,8 @@
 /**
- * @fileoverview Wächter: Eingangsliste und Queue-Endpunkt sortieren gleich.
+ * @fileoverview Wächter: Eingangsliste, Queue-Endpunkt und der universelle
+ * Loader der Detailansicht sortieren/werten gleich aus.
  *
- * Die beiden Stellen müssen dieselbe Reihenfolge liefern, sonst überspringt der
+ * Die drei Stellen müssen dieselbe Reihenfolge liefern, sonst überspringt der
  * Auto-Advance still eine Meldung. Ein Review bemerkt das nicht — die Zeilen
  * stehen in verschiedenen Dateien und sehen einzeln jeweils richtig aus.
  *
@@ -42,18 +43,6 @@ import { describe, expect, it } from 'vitest';
 import { collectHits, stripComments } from '$lib/testing/sourceScan.testutil';
 
 /**
- * Die beiden Stellen, die dieselbe Ordnung teilen müssen — Pfad relativ zu
- * dieser Datei, damit die Auflösung unabhängig vom Arbeitsverzeichnis ist.
- */
-const QUELLEN = [
-	{ name: 'src/routes/admin/+page.server.ts', path: '../../../routes/admin/+page.server.ts' },
-	{
-		name: 'src/routes/api/sightings/[id]/queue/+server.ts',
-		path: '../../../routes/api/sightings/[id]/queue/+server.ts'
-	}
-] as const;
-
-/**
  * `(asc|desc)(sightings.created` irgendwo in der Datei — bewusst ohne
  * `orderBy(`-Anker. Deckt die Ternär-Form aus der Vorgeschichte, die Array-Form
  * (`[asc(sightings.created), asc(sightings.id)]`) und eine Zuweisung an eine
@@ -73,7 +62,54 @@ const EIGENE_SORTIERUNG = /\b(?:asc|desc)\(\s*sightings\.created\b/g;
  */
 const SQL_TEMPLATE_SORTIERUNG = /sql`(?=[^`]*\bcreated\b)(?=[^`]*\b(?:asc|desc)\b)[^`]*`/gi;
 
-const EIGENBAU_MUSTER = [EIGENE_SORTIERUNG, SQL_TEMPLATE_SORTIERUNG] as const;
+/**
+ * `=== 'asc' ? 'asc' : 'desc'` — der Ternary-Körper von `resolveQueueOrder`
+ * selbst (`$lib/components/admin/queueOrder.ts`), lokal nachgebaut statt
+ * importiert. Nur für den universellen Loader relevant (siehe unten): Der
+ * baut keine SQL, sein Regressionsrisiko ist eine eigene Auswertung des
+ * `order`-Parameters statt eines Aufrufs von `resolveQueueOrder`.
+ */
+const EIGENE_ORDER_TERNARY = /===\s*['"]asc['"]\s*\?\s*['"]asc['"]\s*:\s*['"]desc['"]/g;
+
+const EIGENBAU_MUSTER_SQL = [EIGENE_SORTIERUNG, SQL_TEMPLATE_SORTIERUNG] as const;
+const EIGENBAU_MUSTER_ORDER_PARAM = [EIGENE_ORDER_TERNARY] as const;
+
+/**
+ * Die drei Stellen, die dieselbe Ordnung teilen müssen — Pfad relativ zu
+ * dieser Datei, damit die Auflösung unabhängig vom Arbeitsverzeichnis ist.
+ * Zwei bauen die `created`-Sortierung tatsächlich in SQL, die dritte reicht
+ * nur den ausgewerteten `order`-Parameter weiter — deshalb unterscheiden sich
+ * sowohl der erwartete Importpfad als auch das gesuchte Eigenbau-Muster
+ * (Docblock in `$lib/components/admin/queueOrder.ts` begründet, warum der
+ * universelle Loader nicht `$lib/server/db/openQueueOrder` importieren darf:
+ * das Modul zieht das DB-Schema mit, der Loader läuft auch im Browser).
+ */
+const QUELLEN = [
+	{
+		name: 'src/routes/admin/+page.server.ts',
+		path: '../../../routes/admin/+page.server.ts',
+		importPattern: /from ['"]\$lib\/server\/db\/openQueueOrder['"]/,
+		eigenbauMuster: EIGENBAU_MUSTER_SQL
+	},
+	{
+		name: 'src/routes/api/sightings/[id]/queue/+server.ts',
+		path: '../../../routes/api/sightings/[id]/queue/+server.ts',
+		importPattern: /from ['"]\$lib\/server\/db\/openQueueOrder['"]/,
+		eigenbauMuster: EIGENBAU_MUSTER_SQL
+	},
+	/* Dritte Stelle, die dieselbe Ordnung kennen muss: `resolveQueueOrder` in
+	   `[id]/+page.ts` bestimmt, in welcher Richtung die Detailansicht ihre
+	   Nachbarn abfragt (`?order=…` an den Queue-Endpunkt). Eine dort wieder
+	   eingesetzte Inline-Ternary bliebe vom Guard unbemerkt, solange nur die
+	   beiden anderen Quellen geprüft werden — der Guard wäre dann selbst die
+	   Lücke, die er verhindern soll. */
+	{
+		name: 'src/routes/admin/[id]/+page.ts',
+		path: '../../../routes/admin/[id]/+page.ts',
+		importPattern: /from ['"]\$lib\/components\/admin\/queueOrder['"]/,
+		eigenbauMuster: EIGENBAU_MUSTER_ORDER_PARAM
+	}
+] as const;
 
 /** Liest die Route und meldet einen verschobenen Pfad als solchen. */
 function leseQuelle(name: string, path: string): string {
@@ -89,27 +125,27 @@ function leseQuelle(name: string, path: string): string {
 }
 
 describe('Ordnung des offenen Stapels', () => {
-	for (const { name, path } of QUELLEN) {
+	for (const { name, path, importPattern, eigenbauMuster } of QUELLEN) {
 		describe(name, () => {
 			const quelltext = leseQuelle(name, path);
 			const bereinigt = stripComments(quelltext);
 
 			it('importiert die gemeinsame Ordnung', () => {
 				// Prüft den Importpfad, nicht nur den Bezeichner: Eine lokal
-				// definierte Funktion namens `openQueueOrderBy` hielte
-				// `toContain('openQueueOrder')` grün, ohne dass der Import
+				// definierte Funktion namens `openQueueOrderBy`/`resolveQueueOrder`
+				// hielte `toContain('openQueueOrder')` grün, ohne dass der Import
 				// existiert.
-				expect(bereinigt).toMatch(/from ['"]\$lib\/server\/db\/openQueueOrder['"]/);
+				expect(bereinigt).toMatch(importPattern);
 			});
 
-			it('baut keine eigene Sortierung auf created', () => {
-				const treffer = collectHits(bereinigt, EIGENBAU_MUSTER);
+			it('baut keine eigene Sortierung/Auswertung', () => {
+				const treffer = collectHits(bereinigt, eigenbauMuster);
 
 				expect(
 					treffer,
-					`${name} sortiert selbst auf created. Nutze openQueueOrderBy(order) aus ` +
-						'$lib/server/db/openQueueOrder — sonst laufen Eingangsliste und ' +
-						'Warteschlange auseinander, und der Auto-Advance überspringt eine Meldung.\n\n' +
+					`${name} wertet die Ordnung selbst aus, statt die gemeinsame Regel zu ` +
+						'nutzen — sonst laufen Eingangsliste, Warteschlange und Detailansicht ' +
+						'auseinander, und der Auto-Advance überspringt eine Meldung.\n\n' +
 						treffer.map((hit) => `  Zeile ${hit.line}: ${hit.text}`).join('\n')
 				).toEqual([]);
 			});

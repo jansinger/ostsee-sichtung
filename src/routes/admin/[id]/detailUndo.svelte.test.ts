@@ -7,6 +7,7 @@
  * selbst wird an dieser Stelle nicht gerendert), und `zurueckNehmen` über den
  * echten Ablauf treiben — nicht durch direkten Aufruf einer internen Funktion.
  */
+import { userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import { page } from 'vitest/browser';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -20,6 +21,7 @@ const invalidateAll = vi.fn(() => Promise.resolve());
 const preloadData = vi.fn(() => Promise.resolve());
 const submitVerdict = vi.fn(() => Promise.resolve(true));
 const toastSuccess = vi.fn();
+const toastRemoveByKey = vi.fn();
 
 vi.mock('$app/navigation', () => ({
 	goto,
@@ -35,7 +37,8 @@ vi.mock('$lib/components/admin/sightingVerdict', () => ({
 vi.mock('$lib/stores/toastState.svelte', () => ({
 	toast: {
 		success: (...args: unknown[]) => toastSuccess(...args),
-		info: vi.fn()
+		info: vi.fn(),
+		removeByKey: (...args: unknown[]) => toastRemoveByKey(...args)
 	}
 }));
 
@@ -93,10 +96,13 @@ function loeseUndoAus() {
 describe('Detailansicht — Rückgängig', () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
-		goto.mockClear();
+		goto.mockReset();
+		goto.mockImplementation(() => Promise.resolve());
 		invalidateAll.mockClear();
-		submitVerdict.mockClear();
+		submitVerdict.mockReset();
+		submitVerdict.mockImplementation(() => Promise.resolve(true));
 		toastSuccess.mockClear();
+		toastRemoveByKey.mockClear();
 	});
 
 	afterEach(() => {
@@ -152,5 +158,93 @@ describe('Detailansicht — Rückgängig', () => {
 		expect(submitVerdict).not.toHaveBeenCalledWith(43, 'reset');
 		// Und die Navigation führt zurück zur entschiedenen Sichtung.
 		expect(goto).toHaveBeenLastCalledWith(expect.stringContaining('/admin/42'));
+	});
+
+	/* Befund 2: `vergiss(id)` lief bislang VOR dem `submitVerdict`-Request.
+	   Scheiterte der Request (Netzwerkfehler, 5xx), war die Erinnerung schon
+	   weg, obwohl nichts zurückgesetzt wurde — der weiterhin sichtbare
+	   „Rückgängig"-Knopf war danach tot. Der Fix verschiebt `vergiss(id)` in
+	   den Erfolgszweig: Ein gescheiterter Versuch lässt die Erinnerung stehen,
+	   ein zweiter Versuch kann es erneut probieren. */
+	it('ein gescheiterter Undo-Request räumt die Erinnerung nicht — ein zweiter Versuch geht noch', async () => {
+		render(AdminSightingDetail, { data: daten(sichtung({ id: 42 })) });
+
+		await freigeben();
+		expect(submitVerdict).toHaveBeenCalledWith(42, 'approve');
+		invalidateAll.mockClear();
+
+		// Erster Versuch scheitert.
+		submitVerdict.mockImplementationOnce(() => Promise.resolve(false));
+		loeseUndoAus();
+		await vi.advanceTimersByTimeAsync(0);
+
+		expect(submitVerdict).toHaveBeenLastCalledWith(42, 'reset');
+		// Kein Erfolg → keine Navigation/Neuladen, und (Befund 3) der Toast
+		// darf trotzdem entfernt worden sein: Der Versuch ist tatsächlich
+		// angelaufen, nur der Server hat abgelehnt.
+		expect(invalidateAll).not.toHaveBeenCalled();
+
+		// Zweiter Versuch, diesmal erfolgreich — die Erinnerung war noch da,
+		// sonst fände `zurueckNehmen` hier `undoMemory.current === null` und
+		// der zweite `submitVerdict('reset')`-Aufruf bliebe aus.
+		loeseUndoAus();
+		await vi.advanceTimersByTimeAsync(0);
+
+		expect(submitVerdict).toHaveBeenLastCalledWith(42, 'reset');
+		expect(invalidateAll).toHaveBeenCalled();
+	});
+
+	/* Befund 3: `statusBusy` bleibt im Advance-Pfad während des `await
+	   goto(...)` aktiv gesperrt. Die Taste `U` entfernte den Toast bisher VOR
+	   der `statusBusy`-Prüfung in `zurueckNehmen` — ein Tastendruck in diesem
+	   Fenster hätte den Toast (die einzige sichtbare Undo-Möglichkeit)
+	   unwiederbringlich gelöscht, ohne dass der Undo selbst durchging. Der Fix
+	   entfernt den Toast erst INNERHALB von `zurueckNehmen`, nachdem der
+	   Wächter bereits grünes Licht gegeben hat — ein blockierter Versuch lässt
+	   Toast und Erinnerung deshalb unangetastet, ein späterer Versuch geht
+	   noch. */
+	it('U während eines laufenden Advance verliert weder Toast noch Erinnerung — ein späterer Versuch geht noch', async () => {
+		const queue: SightingQueue = {
+			prev: null,
+			next: { id: 43, referenceId: 'REF-43' },
+			position: 1,
+			total: 2
+		};
+		let freigebenGoto: () => void = () => {};
+		goto.mockImplementationOnce(
+			() =>
+				new Promise<void>((resolve) => {
+					freigebenGoto = resolve;
+				})
+		);
+
+		render(AdminSightingDetail, {
+			data: daten(sichtung({ id: 42 }), { queue, queueFailed: false })
+		});
+
+		// Freigeben startet den Advance-Pfad; das `goto()` hängt absichtlich —
+		// `statusBusy` bleibt dadurch aktiv gesperrt.
+		await page.getByRole('radio', { name: 'Freigegeben' }).click();
+		await vi.advanceTimersByTimeAsync(0);
+		expect(submitVerdict).toHaveBeenCalledWith(42, 'approve');
+
+		// U drücken, während `statusBusy` noch gesperrt ist.
+		await userEvent.keyboard('u');
+		await vi.advanceTimersByTimeAsync(0);
+
+		// Blockiert — kein zweiter `submitVerdict`-Aufruf, und (das ist der
+		// eigentliche Befund) der Toast wurde NICHT entfernt: Ein späterer
+		// Versuch muss noch funktionieren.
+		expect(submitVerdict).not.toHaveBeenCalledWith(42, 'reset');
+		expect(toastRemoveByKey).not.toHaveBeenCalled();
+
+		// Das hängende `goto()` löst auf, `statusBusy` wird wieder frei.
+		freigebenGoto();
+		await vi.advanceTimersByTimeAsync(0);
+
+		// Jetzt geht der Undo noch — Toast und Erinnerung waren nicht verloren.
+		loeseUndoAus();
+		await vi.advanceTimersByTimeAsync(0);
+		expect(submitVerdict).toHaveBeenCalledWith(42, 'reset');
 	});
 });

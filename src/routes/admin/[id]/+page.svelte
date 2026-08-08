@@ -73,16 +73,28 @@
 	let hilfeOffen = $state(false);
 	/**
 	 * Das Element, das den Fokus trug, bevor `?` das Kürzel-Overlay öffnete —
-	 * einzige Quelle für den Fokus-Rückweg in `hilfeSchliessen`. Anders als im
-	 * Eingang (`admin/+page.svelte`) gibt es hier kein festes Ziel (dort die
-	 * fokussierte Karte oder der Hinweis-Knopf): Wer per Tastatur arbeitet, kann
-	 * beim Öffnen auf `body`, einem Link der Warteschlangen-Leiste oder einer
-	 * Schaltfläche stehen. Ohne diesen Merker fiele der Fokus beim Schließen auf
-	 * `<body>`, und Tab würde danach am Seitenanfang statt an der Arbeitsposition
-	 * fortsetzen — derselbe Fehler, den `InboxShortcutHelp` selbst nicht behebt:
-	 * Sie setzt den Fokus nur *hinein* (`box?.focus()`), nie zurück.
+	 * Quelle für den Fokus-Rückweg in `hilfeSchliessen`, zusammen mit
+	 * `ueberschrift` unten als Ersatzziel. Anders als im Eingang
+	 * (`admin/+page.svelte`) gibt es hier kein Bedienelement, das nur eine
+	 * begrenzte Auswahl bekannter Positionen kennt (dort die fokussierte
+	 * Karte oder der Hinweis-Knopf): Wer per Tastatur arbeitet, kann beim
+	 * Öffnen auf `body`, einem Link der Warteschlangen-Leiste oder einer
+	 * Schaltfläche stehen.
+	 *
+	 * **`document.body` ist dabei kein Grenzfall, sondern der häufigste Fall**
+	 * direkt nach einem `goto()` aus dem Eingang — der Browser setzt den Fokus
+	 * dort automatisch zurück, wenn keine Seite ihn explizit setzt.
+	 * `body.focus()` ist ein No-op (der `body` ist nicht fokussierbar), der
+	 * Fokus bliebe also genau dort stehen, wo dieser Fix ihn nicht haben will.
+	 * `hilfeSchliessen` weicht deshalb auf `ueberschrift` aus, sobald der
+	 * gemerkte Fokus fehlt oder `document.body` ist — dasselbe Muster wie
+	 * `hinweisKnopf?.focus()` im Eingang, nur mit der Überschrift als
+	 * Ersatzziel statt eines Knopfes, weil diese Seite keinen Knopf hat, der
+	 * das Overlay öffnet (nur die Taste `?`).
 	 */
 	let vorherigerFokus: HTMLElement | null = null;
+	/** Ersatzziel für `hilfeSchliessen`, siehe Docblock an `vorherigerFokus`. */
+	let ueberschrift = $state<HTMLHeadingElement | null>(null);
 
 	async function handleStatusChange(verdict: SightingVerdict): Promise<void> {
 		if (statusBusy) return;
@@ -171,14 +183,19 @@
 		/* Derselbe Wächter wie in `handleStatusChange`: Ohne ihn könnte während
 		   einer hängenden Undo-Anfrage eine weitere Statusänderung anlaufen —
 		   beide griffen dann parallel auf `sighting`/`imArbeitsmodus` zu, die
-		   sich zwischenzeitlich per `invalidateAll()`/`goto()` ändern. */
+		   sich zwischenzeitlich per `invalidateAll()`/`goto()` ändern.
+		   Bewusst VOR jedem unwiederbringlichen Schritt geprüft — insbesondere
+		   vor dem Toast-Entfernen unten: Die Taste `U` hat kein eigenes
+		   Dismiss-Signal wie ein Mausklick (`Toast.svelte` ruft `dismiss()`
+		   dabei selbst auf); entfernte man den Toast schon vor dieser Prüfung,
+		   wäre ein während des `await goto(...)` im Advance-Pfad blockiertes
+		   Undo unwiederbringlich weg, ohne dass etwas passiert wäre — der
+		   Toast-Knopf mit der einzigen sichtbaren Möglichkeit, es erneut zu
+		   versuchen, wäre bereits verschwunden. */
 		if (statusBusy) return;
-		/* Timer sofort weg, noch vor dem Request — nicht erst danach: Bleibt er
-		   während des `await` aktiv, kann er die Entscheidung eines mittlerweile
-		   erledigten neueren Toasts löschen, sobald diese Anfrage zurückkehrt.
-		   `vergiss` ist an die ID gebunden, räumt also nur die eigene
-		   Entscheidung und lässt eine inzwischen neuere stehen. */
-		undoMemory.vergiss(id);
+		/* Erst ab hier steht fest, dass das Undo tatsächlich anläuft — jetzt
+		   darf der Toast weg. */
+		toast.removeByKey('sighting-verdict-undo');
 		statusBusy = true;
 		try {
 			/* Der Verdict geht an die **gemerkte** ID und nicht an `sighting.id`:
@@ -187,6 +204,16 @@
 			   ändern. Erst zurücksetzen, dann navigieren — in dieser Reihenfolge
 			   hängt nichts an der Ladezeit der Seite. */
 			if (await submitVerdict(id, verdict)) {
+				/* Erst nach einem erfolgreichen Request vergessen — nicht davor:
+				   Scheitert `submitVerdict` (Netzwerkfehler, 5xx), bliebe die
+				   Erinnerung sonst bereits geräumt, obwohl nichts zurückgesetzt
+				   wurde. Der weiterhin sichtbare „Rückgängig"-Knopf wäre dann tot
+				   — ein zweiter Versuch fände `undoMemory.current === null` und
+				   täte nichts. `vergiss` ist zusätzlich an die ID gebunden und
+				   räumt deshalb nur die eigene Entscheidung, auch wenn dieser aus
+				   irgendeinem Grund verzögerte Aufruf erst zurückkehrt, nachdem
+				   bereits eine neuere Entscheidung gemerkt wurde. */
+				undoMemory.vergiss(id);
 				/* `href` ist `null` außerhalb des Warteschlangen-Modus (Tabelle):
 				   Dort hat kein Advance stattgefunden, man steht bereits auf der
 				   entschiedenen Sichtung — ein `goto` wäre ein Sprung auf die
@@ -204,12 +231,19 @@
 	 * fällt er auf `<body>`, und wer gerade per Tastatur einen Stapel abarbeitet,
 	 * verliert seine Position: Tab setzt danach am Seitenanfang fort statt an der
 	 * Stelle, von der aus `?` gedrückt wurde. Übernommen aus `hilfeSchliessen` in
-	 * `admin/+page.svelte` (dort mit Karten-Index statt Element-Referenz, weil
-	 * die Eingangsseite ein festes Fokusziel kennt und diese Seite nicht).
+	 * `admin/+page.svelte` (dort mit Karten-Index statt Element-Referenz).
+	 *
+	 * Ist der gemerkte Fokus selbst `document.body` — der häufigste Fall direkt
+	 * nach einem `goto()` aus dem Eingang, siehe Docblock an `vorherigerFokus`
+	 * —, ist `body.focus()` ein wirkungsloser No-op und der Fokus bliebe genau
+	 * dort stehen, wo dieser Fix ihn nicht haben will. Ersatzziel ist dann
+	 * `ueberschrift`, analog zu `hinweisKnopf?.focus()` im Eingang.
 	 */
 	function hilfeSchliessen(): void {
 		hilfeOffen = false;
-		vorherigerFokus?.focus();
+		const ziel =
+			vorherigerFokus && vorherigerFokus !== document.body ? vorherigerFokus : ueberschrift;
+		ziel?.focus();
 		vorherigerFokus = null;
 	}
 
@@ -278,12 +312,13 @@
 				   (siehe Docblock dort), nicht der Status von `sighting`. */
 				const eintrag = undoMemory.current;
 				if (!eintrag) return;
-				/* Kein expliziter `vergiss` hier: `zurueckNehmen` räumt den Eintrag
-				   selbst, im selben Zug wie beim Toast-Knopf. Nur das Entfernen des
-				   Toasts muss hier nachgeholt werden — ein Mausklick löscht ihn über
-				   `dismiss()` in `Toast.svelte`, ein Tastendruck hat dieses Signal
-				   nicht. */
-				toast.removeByKey('sighting-verdict-undo');
+				/* Weder `vergiss` noch das Toast-Entfernen stehen hier: Beides
+				   erledigt `zurueckNehmen` selbst, und zwar erst, sobald der
+				   `statusBusy`-Wächter dort tatsächlich grünes Licht gibt — siehe
+				   Docblock dort. Ein Mausklick braucht diesen Umweg nicht, weil
+				   `Toast.svelte` bei jedem Aktions-Klick selbst `dismiss()` aufruft;
+				   ein Tastendruck hat dieses Signal nicht und muss es deshalb über
+				   denselben Weg wie der Mausklick erhalten, statt es vorwegzunehmen. */
 				void zurueckNehmen(eintrag.id, eintrag.href, eintrag.verdict);
 			}
 		}
@@ -421,7 +456,12 @@
 	     zuverlässig vorgelesen. Der Text selbst bleibt aber die Quelle für alle
 	     — auch für Sehende, die nach dem Sprung sonst nur „Sichtung Details"
 	     ohne Bezug zur vorherigen Karte sähen. -->
-	<h2 class="text-xl font-bold">Sichtung Details #{sighting.id}</h2>
+	<!-- `tabindex="-1"` macht die Überschrift programmatisch fokussierbar, ohne
+	     sie in die Tab-Reihenfolge aufzunehmen — Ersatzziel für
+	     `hilfeSchliessen`, siehe Docblock an `vorherigerFokus`. -->
+	<h2 class="text-xl font-bold" tabindex="-1" bind:this={ueberschrift}>
+		Sichtung Details #{sighting.id}
+	</h2>
 	<div class="flex flex-wrap gap-2">
 		<button
 			class="btn btn-ghost btn-sm"

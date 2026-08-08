@@ -13,7 +13,7 @@
  * zum Effekt) und `detailUndo.svelte.test.ts` (Advance-Sprung per `rerender`
  * nachgebildet, weil SvelteKit dieselbe Routen-Komponente wiederverwendet).
  */
-import { userEvent } from 'vitest/browser';
+import { page, userEvent } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FrontendSighting } from '$lib/types';
@@ -112,6 +112,17 @@ describe('Detailansicht — Tastatur-Triage: Verdrahtung von U', () => {
 			data: daten(sichtung({ id: 43 }), { queue: null, queueFailed: true })
 		});
 
+		/* Befund 5: Ohne diese Assertion beweist der Test nichts. Reicht
+		   `rerender` die Props nicht durch, bleibt `sighting.id === 42`, und
+		   eine Fehlfassung `handleStatusChange('reset')` (statt `zurueckNehmen`
+		   über `undoMemory`) läse `sighting.id` — bei stehengebliebener 42 lieferte
+		   das zufällig ebenfalls `(42, 'reset')`, und der Test unten wäre grün,
+		   ohne die eigentliche Verdrahtung zu prüfen. Erst die Überschrift belegt,
+		   dass Sichtung 43 tatsächlich angezeigt wird, wenn `U` gedrückt wird. */
+		await expect
+			.element(page.getByRole('heading', { name: 'Sichtung Details #43' }))
+			.toBeInTheDocument();
+
 		// U: nimmt die letzte Entscheidung zurück, während Sichtung 43 angezeigt wird.
 		await userEvent.keyboard('u');
 		await vi.advanceTimersByTimeAsync(0);
@@ -120,5 +131,30 @@ describe('Detailansicht — Tastatur-Triage: Verdrahtung von U', () => {
 		// der ERSTEN (entschiedenen) Sichtung — nicht gegen die gerade angezeigte.
 		expect(submitVerdict).toHaveBeenCalledWith(42, 'reset');
 		expect(submitVerdict).not.toHaveBeenCalledWith(43, 'reset');
+	});
+
+	/* Befund 8: `hilfeSchliessen` fiel bislang auf `vorherigerFokus?.focus()`
+	   zurück, ohne Ersatzziel. Ist der gemerkte Fokus `document.body` — der
+	   häufigste Fall direkt nach einem `goto()` aus dem Eingang, weil der
+	   Browser den Fokus dort automatisch zurücksetzt, wenn keine Seite ihn
+	   explizit setzt —, ist `body.focus()` ein No-op, und der Fokus bleibt
+	   auf `<body>` stehen. Der Eingang löst denselben Fall über
+	   `hinweisKnopf?.focus()`; die Detailansicht hat kein Bedienelement, das
+	   das Overlay öffnet (nur die Taste `?`), deshalb die Überschrift als
+	   Ersatzziel. */
+	it('gibt den Fokus an die Überschrift zurück, wenn kein Element ihn hatte (document.body)', async () => {
+		const screen = render(AdminSightingDetail, {
+			data: daten(sichtung({ id: 42 }), { queue: null, queueFailed: true })
+		});
+
+		// Kein vorheriger Klick/Fokus auf ein Bedienelement — `document.body`
+		// trägt den Fokus, wie direkt nach einem `goto()` aus dem Eingang.
+		document.body.focus();
+
+		await userEvent.keyboard('?');
+		await userEvent.keyboard('{Escape}');
+
+		const ueberschrift = screen.getByRole('heading', { name: 'Sichtung Details #42' }).element();
+		await vi.waitFor(() => expect(document.activeElement).toBe(ueberschrift));
 	});
 });
