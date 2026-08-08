@@ -59,17 +59,19 @@
 				</span>
 			{/if}
 
-			<!-- `role="status"` statt eines expliziten `aria-live="polite"`: Die Rolle
-			     trägt die Live-Region-Semantik bereits implizit (ARIA 1.2), ein
-			     zusätzliches Attribut wäre redundant. Wirksam ist beides ohnehin nur,
-			     solange der Knoten bestehen bleibt und sich sein Inhalt ändert — nach
-			     einem Sprung über die Tastatur (Task 8, `admin/[id]/+page.svelte`)
-			     wird dieser Absatz neu eingefügt statt aktualisiert, und eine frisch
-			     eingefügte Live-Region wird von Screenreadern nicht zuverlässig
-			     vorgelesen. Das Kürzel bleibt deshalb dauerhaft sichtbar statt nur
+			<!-- Kein `role="status"`: Nach einem Sprung über die Tastatur (Task 8,
+			     `admin/[id]/+page.svelte`) wird dieser Absatz neu eingefügt statt
+			     aktualisiert, und eine frisch eingefügte Live-Region wird von
+			     Screenreadern nicht zuverlässig vorgelesen — die implizite
+			     Live-Region-Semantik der Rolle wäre hier also wirkungslos. Schlimmer:
+			     Bei einem `invalidateAll()` ohne Remount (Reset-Pfad in
+			     `admin/[id]/+page.svelte`) bliebe der Knoten bestehen, und eine echte
+			     Live-Region kündigte dann „… offen alle Kürzel ?" an, obwohl niemand
+			     danach gefragt hat. Das Kürzel bleibt dauerhaft sichtbar statt nur
 			     angesagt — dieselbe Begründung wie beim Eingang (`admin/+page.svelte`):
-			     ein unsichtbares Kürzel ist keines. -->
-			<p class="text-base-content/70 text-support" role="status" aria-label="Warteschlange">
+			     ein unsichtbares Kürzel ist keines. `data-testid` ist reiner
+			     Test-Zugriff, kein Ersatz für eine ARIA-Rolle. -->
+			<p class="text-base-content/70 text-support" data-testid="queue-counter">
 				{zaehler}
 				<span class="ml-2">alle Kürzel <kbd class="kbd kbd-xs">?</kbd></span>
 			</p>

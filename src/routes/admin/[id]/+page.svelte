@@ -71,6 +71,18 @@
 	let emailPending = $state(false);
 	let statusBusy = $state(false);
 	let hilfeOffen = $state(false);
+	/**
+	 * Das Element, das den Fokus trug, bevor `?` das Kürzel-Overlay öffnete —
+	 * einzige Quelle für den Fokus-Rückweg in `hilfeSchliessen`. Anders als im
+	 * Eingang (`admin/+page.svelte`) gibt es hier kein festes Ziel (dort die
+	 * fokussierte Karte oder der Hinweis-Knopf): Wer per Tastatur arbeitet, kann
+	 * beim Öffnen auf `body`, einem Link der Warteschlangen-Leiste oder einer
+	 * Schaltfläche stehen. Ohne diesen Merker fiele der Fokus beim Schließen auf
+	 * `<body>`, und Tab würde danach am Seitenanfang statt an der Arbeitsposition
+	 * fortsetzen — derselbe Fehler, den `InboxShortcutHelp` selbst nicht behebt:
+	 * Sie setzt den Fokus nur *hinein* (`box?.focus()`), nie zurück.
+	 */
+	let vorherigerFokus: HTMLElement | null = null;
 
 	async function handleStatusChange(verdict: SightingVerdict): Promise<void> {
 		if (statusBusy) return;
@@ -188,6 +200,20 @@
 	}
 
 	/**
+	 * Beim Schließen wandert der Fokus zurück auf `vorherigerFokus` — ohne das
+	 * fällt er auf `<body>`, und wer gerade per Tastatur einen Stapel abarbeitet,
+	 * verliert seine Position: Tab setzt danach am Seitenanfang fort statt an der
+	 * Stelle, von der aus `?` gedrückt wurde. Übernommen aus `hilfeSchliessen` in
+	 * `admin/+page.svelte` (dort mit Karten-Index statt Element-Referenz, weil
+	 * die Eingangsseite ein festes Fokusziel kennt und diese Seite nicht).
+	 */
+	function hilfeSchliessen(): void {
+		hilfeOffen = false;
+		vorherigerFokus?.focus();
+		vorherigerFokus = null;
+	}
+
+	/**
 	 * Tastatur-Triage der Detailansicht (Task 8) — dieselbe Zuordnung wie im
 	 * Eingang (`resolveInboxShortcut`), nur wandert nicht der Fokus, sondern die
 	 * Seite: `focusNext`/`focusPrevious` springen über `queueHref` zum Nachbarn.
@@ -201,12 +227,33 @@
 		const aktion: InboxShortcutAction | null = resolveInboxShortcut(event);
 		if (!aktion) return;
 
+		if (aktion === 'closeHelp') {
+			// Nur schlucken, wenn es etwas zu schließen gab — sonst nimmt die Seite
+			// Escape anderen Bedienelementen weg. Derselbe Wächter wie im Eingang.
+			if (!hilfeOffen) return;
+			event.preventDefault();
+			hilfeSchliessen();
+			return;
+		}
+		/* Ab hier bewirkt jede Aktion etwas an der Seite (Navigation, Statuswechsel,
+		   Overlay) — `preventDefault()` unterbindet die Browser-Grundfunktion
+		   derselben Taste (z. B. „/" als Adressleisten-Fokus in manchen Browsern).
+		   Gleiche Stelle wie im Eingang (`admin/+page.svelte`), aus demselben Grund:
+		   ohne erkennbare Fehlwirkung heute, aber die zwei Handler sollen nicht
+		   grundlos auseinanderlaufen. */
+		event.preventDefault();
+
 		switch (aktion) {
 			case 'toggleHelp':
-				hilfeOffen = !hilfeOffen;
-				return;
-			case 'closeHelp':
-				hilfeOffen = false;
+				if (hilfeOffen) {
+					hilfeSchliessen();
+				} else {
+					// Nur beim Öffnen merken: Schließt sich das Overlay über `closeHelp`
+					// (Escape) oder den Knopf, ist `vorherigerFokus` bereits gesetzt.
+					vorherigerFokus =
+						document.activeElement instanceof HTMLElement ? document.activeElement : null;
+					hilfeOffen = true;
+				}
 				return;
 			case 'focusNext':
 				if (queue?.next) void goto(queueHref(queue.next, queueOrder));
@@ -344,7 +391,11 @@
 <svelte:window onkeydown={aufTaste} />
 
 {#if hilfeOffen}
-	<InboxShortcutHelp onClose={() => (hilfeOffen = false)} />
+	<!-- `hilfeSchliessen` und nicht `hilfeOffen = false`: Knopf und Hintergrund
+	     brauchen denselben Fokus-Rückweg wie Escape, sonst bliebe der Fokus nach
+	     einem Maus-Klick auf „Schließen" auf `<body>` — dasselbe Muster wie im
+	     Eingang (`admin/+page.svelte`). -->
+	<InboxShortcutHelp onClose={hilfeSchliessen} />
 {/if}
 
 {#if imArbeitsmodus}
