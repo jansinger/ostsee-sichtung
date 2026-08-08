@@ -477,7 +477,13 @@
 		{/if}
 		{#if status === 'approved'}
 			<span class="text-base-content/70 text-sm">
-				Freigegeben am {formatLocalDateTime(currentSighting.approvedAt, 'datetime')}
+				<!-- „durch …" nur, wenn eine Person bekannt ist: Der Altbestand aus dem
+				     Altsystem trägt kein `freigegeben_von`, ein „durch null" wäre die
+				     sichtbare Folge eines bedingungslosen Templates. -->
+				Freigegeben am {formatLocalDateTime(
+					currentSighting.approvedAt,
+					'datetime'
+				)}{currentSighting.approvedBy ? ` durch ${currentSighting.approvedBy}` : ''}
 			</span>
 		{:else if status === 'rejected'}
 			<span class="text-base-content/70 text-sm">

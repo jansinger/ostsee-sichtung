@@ -124,7 +124,14 @@ export const sightings = pgTable(
 		// PATCH /api/sightings/[id]/verify (ein Update, alle Status-Spalten).
 		// Regeln: .claude/rules/api.md „Prüfstatus einer Sichtung".
 		rejectedAt: timestamp('abgelehnt_am', { mode: 'date' }),
-		rejectedBy: varchar('abgelehnt_von', { length: 255 })
+		rejectedBy: varchar('abgelehnt_von', { length: 255 }),
+		// Wer freigegeben hat — symmetrisch zu abgelehnt_von und Teil desselben
+		// Statusvorgangs. Nullable und ohne Default: Der Altbestand (bis 2025-11
+		// aus dem Altsystem, das auf derselben Datenbank liegt) hat diese
+		// Information nicht, und ein Platzhalter würde eine Person behaupten, die
+		// es nie gab. Geschrieben ausschließlich von
+		// PATCH /api/sightings/[id]/verify, gemeinsam mit allen Status-Spalten.
+		approvedBy: varchar('freigegeben_von', { length: 255 })
 	},
 	(table) => [
 		index('geom_sichtungen').using(

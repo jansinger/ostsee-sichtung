@@ -26,8 +26,9 @@ const logger = createLogger('api:sightings:verify');
  * Die Ablehnung (`abgelehnt_am`/`abgelehnt_von`) ist kein dritter
  * Veröffentlichungszustand, sondern eine Triage-Markierung: abgelehnt heißt
  * ungeprüft und nicht veröffentlicht, nur mit festgehaltener Entscheidung.
- * Deshalb schreibt dieser Endpunkt alle vier Spalten in EINEM Update —
- * `freigegeben_am` und `abgelehnt_am` sind nie gleichzeitig gesetzt.
+ * Deshalb schreibt dieser Endpunkt alle fünf Status-Spalten in EINEM Update —
+ * `freigegeben_am` und `abgelehnt_am` sind nie gleichzeitig gesetzt, und
+ * `freigegeben_von`/`abgelehnt_von` gehören untrennbar zu ihrem Zeitstempel.
  */
 export const PATCH: RequestHandler = async ({ params, request, locals, url, getClientAddress }) => {
 	// Authorization check - nur Admins dürfen prüfen und damit freigeben
@@ -91,15 +92,31 @@ export const PATCH: RequestHandler = async ({ params, request, locals, url, getC
 		// insbesondere sind freigegeben_am und abgelehnt_am nie gleichzeitig gesetzt.
 		const statusColumns =
 			verdict === 'approve'
-				? { verified: 1, approvedAt: now, rejectedAt: null, rejectedBy: null }
+				? {
+						verified: 1,
+						approvedAt: now,
+						// Wer freigibt, wird genauso festgehalten wie wer ablehnt.
+						// Ohne angemeldete Identität bleibt die Spalte NULL statt
+						// einen Platzhalter zu behaupten — wie beim Altbestand.
+						approvedBy: locals.user?.email ?? null,
+						rejectedAt: null,
+						rejectedBy: null
+					}
 				: verdict === 'reject'
 					? {
 							verified: 0,
 							approvedAt: null,
+							approvedBy: null,
 							rejectedAt: now,
 							rejectedBy: locals.user?.email ?? null
 						}
-					: { verified: 0, approvedAt: null, rejectedAt: null, rejectedBy: null };
+					: {
+							verified: 0,
+							approvedAt: null,
+							approvedBy: null,
+							rejectedAt: null,
+							rejectedBy: null
+						};
 
 		await db
 			.update(sightings)

@@ -1,0 +1,1 @@
+ALTER TABLE "sichtungen" ADD COLUMN "freigegeben_von" varchar(255);

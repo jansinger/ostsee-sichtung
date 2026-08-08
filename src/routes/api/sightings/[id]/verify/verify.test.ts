@@ -55,6 +55,7 @@ vi.mock('$lib/server/db/schema', () => ({
 		id: 'id',
 		verified: 'verified',
 		approvedAt: 'approvedAt',
+		approvedBy: 'approvedBy',
 		rejectedAt: 'rejectedAt',
 		rejectedBy: 'rejectedBy'
 	}
@@ -216,14 +217,24 @@ describe('PATCH mit verdict', () => {
 		mockLimit.mockResolvedValue([{ id: 1, verified: 0, approvedAt: null, rejectedAt: null }]);
 	});
 
-	it('approve markiert die Sichtung als geprüft, setzt freigegeben_am und löscht die Ablehnung', async () => {
+	it('approve markiert die Sichtung als geprüft, setzt freigegeben_am/_von und löscht die Ablehnung', async () => {
 		await PATCH(patchEvent('1', { verdict: 'approve' }));
 		expect(mockSet).toHaveBeenCalledWith({
 			verified: 1,
 			approvedAt: expect.any(Date),
+			approvedBy: 'admin@example.com',
 			rejectedAt: null,
 			rejectedBy: null
 		});
+	});
+
+	// Symmetrie zur Ablehnung: Ohne angemeldete Identität bleibt die Spalte
+	// NULL statt einen Platzhalter zu behaupten — genau wie beim Altbestand.
+	it('approve ohne Benutzer-E-Mail lässt freigegeben_von auf null', async () => {
+		const event = createMockEvent('1', { verdict: 'approve' });
+		event.locals.user = { email: undefined as unknown as string, roles: ['admin'] };
+		await PATCH(event as Parameters<typeof PATCH>[0]);
+		expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({ approvedBy: null }));
 	});
 
 	it('reject setzt abgelehnt_am/_von und zieht die Freigabe zurück', async () => {
@@ -231,16 +242,18 @@ describe('PATCH mit verdict', () => {
 		expect(mockSet).toHaveBeenCalledWith({
 			verified: 0,
 			approvedAt: null,
+			approvedBy: null,
 			rejectedAt: expect.any(Date),
 			rejectedBy: 'admin@example.com'
 		});
 	});
 
-	it('reset nullt alle Status-Spalten', async () => {
+	it('reset nullt alle Status-Spalten inklusive beider _von-Spalten', async () => {
 		await PATCH(patchEvent('1', { verdict: 'reset' }));
 		expect(mockSet).toHaveBeenCalledWith({
 			verified: 0,
 			approvedAt: null,
+			approvedBy: null,
 			rejectedAt: null,
 			rejectedBy: null
 		});
