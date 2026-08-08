@@ -56,4 +56,29 @@ describe('planAdvance', () => {
 
 		expect(plan.target).toEqual({ kind: 'inbox' });
 	});
+
+	it('vergibt keinen Rückweg außerhalb des Warteschlangen-Modus', () => {
+		// Aus der Tabelle geöffnet: queue === null, queueFailed === false. Ein
+		// undoHref stempelte hier über `inboxDetailHref` bedingungslos
+		// `?from=inbox` — der Klick auf „Rückgängig" schriebe damit die Herkunft
+		// der Tabellenansicht auf den Eingang um, obwohl gar kein Advance
+		// stattfand (target bleibt `stay`).
+		const plan = planAdvance({
+			sightingId: 500,
+			verdict: 'approve',
+			queue: null,
+			queueFailed: false,
+			order: 'desc'
+		});
+
+		expect(plan.target).toEqual({ kind: 'stay' });
+		expect(plan.undoHref).toBeNull();
+	});
+
+	it('vergibt einen Rückweg, wenn die Warteschlange nur fehlgeschlagen ist', () => {
+		const plan = planAdvance({ ...BASIS, verdict: 'approve', queueFailed: true });
+
+		expect(plan.target).toEqual({ kind: 'stay' });
+		expect(plan.undoHref).toBe('/admin/500?from=inbox&order=desc');
+	});
 });

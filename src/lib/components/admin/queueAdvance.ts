@@ -21,8 +21,16 @@ export interface AdvanceRequest {
 
 export interface AdvancePlan {
 	target: AdvanceTarget;
-	/** Rückweg zur entschiedenen Sichtung — Ziel des „Rückgängig"-Knopfs. */
-	undoHref: string;
+	/**
+	 * Rückweg zur entschiedenen Sichtung — Ziel des „Rückgängig"-Knopfs.
+	 * `null` außerhalb des Warteschlangen-Modus (`queue === null && !queueFailed`,
+	 * die Detailansicht aus der Tabelle geöffnet): `queueHref` stempelt über
+	 * `inboxDetailHref` bedingungslos `?from=inbox` — das schriebe die Herkunft
+	 * der Tabellenansicht auf den Eingang um, obwohl gar kein Advance
+	 * stattfindet (`target` bleibt dort ohnehin `stay`, man steht schon auf der
+	 * entschiedenen Sichtung).
+	 */
+	undoHref: string | null;
 	toastMessage: string;
 }
 
@@ -34,10 +42,11 @@ const VERDICT_WORT: Record<SightingVerdict, string> = {
 
 export function planAdvance(request: AdvanceRequest): AdvancePlan {
 	const { sightingId, verdict, queue, queueFailed, order } = request;
+	const imArbeitsmodus = Boolean(queue) || queueFailed;
 
 	return {
 		target: verdict === 'reset' ? { kind: 'stay' } : advanceTarget(queue, queueFailed, order),
-		undoHref: queueHref({ id: sightingId, referenceId: '' }, order),
+		undoHref: imArbeitsmodus ? queueHref({ id: sightingId, referenceId: '' }, order) : null,
 		toastMessage: `Sichtung #${sightingId} ${VERDICT_WORT[verdict]}`
 	};
 }
