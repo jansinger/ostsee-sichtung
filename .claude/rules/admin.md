@@ -47,19 +47,21 @@ Task-Liste — keine Filter/Spalten dorthin bauen, dafür gibt es
 
 ## Admin-Komponenten
 
-| Komponente                     | Zweck                                     |
-| ------------------------------ | ----------------------------------------- |
-| `AdminSightingEditForm.svelte` | Sichtung bearbeiten                       |
-| `AdminSightingView.svelte`     | Sichtung anzeigen (read-only)             |
-| `SightingInboxCard.svelte`     | Karte der Eingangsseite (`/admin`)        |
-| `inboxVerdict.ts`              | Verdict-Logik der Eingangsseite           |
-| `DataTableRow.svelte`          | Tabellen-Zeile                            |
-| `BooleanStatus.svelte`         | Boolean-Status Anzeige                    |
-| `ExportModal.svelte`           | Export-Dialog                             |
-| `deadFinding.ts`               | Totfund-Auszeichnung                      |
-| `sightingStatus.ts`            | Statusableitung + Wort/Farbe/Icon/Verdict |
-| `sightingStatusFilter.ts`      | Statuswert ↔ Filter-Query (`?verified=`)  |
-| `SightingStatusControl.svelte` | Segmented Control für den Statuswechsel   |
+| Komponente                     | Zweck                                      |
+| ------------------------------ | ------------------------------------------ |
+| `AdminSightingEditForm.svelte` | Sichtung bearbeiten                        |
+| `AdminSightingView.svelte`     | Sichtung anzeigen (read-only)              |
+| `SightingInboxCard.svelte`     | Karte der Eingangsseite (`/admin`)         |
+| `inboxVerdict.ts`              | Verdict-Logik der Eingangsseite            |
+| `inboxShortcuts.ts`            | Tastatur-Triage des Eingangs (J/K/A/R/U/?) |
+| `InboxShortcutHelp.svelte`     | Overlay mit der Kürzel-Übersicht           |
+| `DataTableRow.svelte`          | Tabellen-Zeile                             |
+| `BooleanStatus.svelte`         | Boolean-Status Anzeige                     |
+| `ExportModal.svelte`           | Export-Dialog                              |
+| `deadFinding.ts`               | Totfund-Auszeichnung                       |
+| `sightingStatus.ts`            | Statusableitung + Wort/Farbe/Icon/Verdict  |
+| `sightingStatusFilter.ts`      | Statuswert ↔ Filter-Query (`?verified=`)   |
+| `SightingStatusControl.svelte` | Segmented Control für den Statuswechsel    |
 
 ### Totfund vs. Lebendsichtung
 
