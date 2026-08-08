@@ -24,35 +24,37 @@
 </script>
 
 <svelte:head>
-	<title>Sichtung #{data.sighting?.id} - Bearbeiten - Admin - Ostsee-Tiere</title>
-	<meta 
-		name="description" 
-		content="Bearbeitung der Sichtung #{data.sighting?.id}. Admin-Bereich zur Korrektur und Anpassung von Sichtungsdaten." 
+	<title>Sichtung #{data.sighting?.id} bearbeiten - Admin - Ostsee-Tiere</title>
+	<meta
+		name="description"
+		content="Bearbeitung der Sichtung #{data.sighting
+			?.id}. Admin-Bereich zur Korrektur und Anpassung von Sichtungsdaten."
 	/>
-	<meta 
-		name="keywords" 
-		content="Sichtung, Bearbeiten, Admin, {data.sighting?.species || 'Meerestier'}, Ostsee, Verwaltung" 
+	<meta
+		name="keywords"
+		content="Sichtung, Bearbeiten, Admin, {data.sighting?.species ||
+			'Meerestier'}, Ostsee, Verwaltung"
 	/>
-	
+
 	<!-- Open Graph -->
 	<meta property="og:title" content="Sichtung #{data.sighting?.id} bearbeiten - Admin" />
-	<meta 
-		property="og:description" 
-		content="Bearbeitung einer Meerestier-Sichtung im Admin-Bereich" 
+	<meta
+		property="og:description"
+		content="Bearbeitung einer Meerestier-Sichtung im Admin-Bereich"
 	/>
 	<meta property="og:type" content="website" />
-	
+
 	<!-- Twitter Card -->
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:title" content="Sichtung #{data.sighting?.id} bearbeiten - Admin" />
-	<meta 
-		name="twitter:description" 
-		content="Bearbeitung einer Meerestier-Sichtung im Admin-Bereich" 
+	<meta
+		name="twitter:description"
+		content="Bearbeitung einer Meerestier-Sichtung im Admin-Bereich"
 	/>
 </svelte:head>
 
 <div class="mb-0 flex items-center justify-between">
-	<h2 class="text-xl font-bold">Sichtung Details</h2>
+	<h2 class="text-xl font-bold">Sichtung bearbeiten</h2>
 	<div class="flex gap-2">
 		<button
 			class="btn btn-ghost btn-sm"
@@ -65,7 +67,7 @@
 		</button>
 	</div>
 </div>
-<div class="mb-4 text-sm text-base-content/70">
+<div class="text-base-content/70 mb-4 text-sm">
 	Referenz-ID: {sighting.referenceId}
 </div>
 <AdminSightingEditForm {sighting} {onCancel} onSave={handleSave} />
