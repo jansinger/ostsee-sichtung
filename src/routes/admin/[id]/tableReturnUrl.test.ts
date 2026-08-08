@@ -109,6 +109,17 @@ describe('returnTarget — der Rückweg kennt seine Herkunft', () => {
 		expect(url.hash).toBe('#sichtung-29518');
 	});
 
+	/* `/admin` versteht nur `asc` und `desc` und macht aus allem anderen wieder
+	   `desc` (`admin/+page.server.ts`). Ein durchgereichter Fremdwert wäre damit
+	   folgenlos, stünde aber sichtbar in der Adresszeile und behauptete eine
+	   Sortierung, die es nicht gibt. */
+	it('reicht nur gültige Sortierwerte weiter', () => {
+		const ziel = returnTarget(
+			new URL(`https://x/admin/29518?${HERKUNFT_PARAMETER}=${HERKUNFT_EINGANG}&order=hoch`)
+		);
+		expect(new URL(ziel.href).searchParams.has('order')).toBe(false);
+	});
+
 	it('behandelt eine unbekannte Herkunft wie keine', () => {
 		const ziel = returnTarget(new URL(`https://x/admin/29518?${HERKUNFT_PARAMETER}=irgendwas`));
 		expect(new URL(ziel.href).pathname).toBe('/admin/sichtungen');
@@ -123,6 +134,20 @@ describe('carryReturnParams — der Rundweg über „Bearbeiten"', () => {
 		expect(returnTarget(new URL(`https://x/admin/29518/edit${query}`)).label).toBe(
 			'Zurück zum Eingang'
 		);
+	});
+
+	/* `order` gehört dem Eingang, steht aber trotzdem in TABELLEN_PARAMETER —
+	   die Tabelle sortiert damit ebenfalls. Es reist deshalb auf **beiden**
+	   Wegen mit, ohne Sonderfall für `from=inbox`. Ohne diesen Test liest sich
+	   das wie eine Lücke, und der Rundweg Detail → Bearbeiten → zurück verlöre
+	   bei einer „Korrektur" genau die Sortierung, um die es geht. */
+	it('reicht die Sortierung auch aus dem Eingang weiter', () => {
+		const query = carryReturnParams(
+			new URL(`https://x/admin/29518?${HERKUNFT_PARAMETER}=${HERKUNFT_EINGANG}&order=asc`)
+		);
+		const params = new URLSearchParams(query);
+		expect(params.get(HERKUNFT_PARAMETER)).toBe(HERKUNFT_EINGANG);
+		expect(params.get('order')).toBe('asc');
 	});
 
 	it('reicht die Tabellenfilter weiter', () => {

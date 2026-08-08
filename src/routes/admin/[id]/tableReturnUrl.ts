@@ -78,9 +78,12 @@ export function returnTarget(currentUrl: URL, sightingId?: number | string): Ret
 		   trifft dieselbe Karte an anderer Stelle. Die übrigen
 		   TABELLEN_PARAMETER gehören hier nicht hin: `istTabellenUrl`
 		   (`admin/tableRedirect.ts`) leitete `/admin` mit ihnen sofort auf die
-		   Tabelle um — der Rückweg landete also genau dort, wo er nicht hin soll. */
+		   Tabelle um — der Rückweg landete also genau dort, wo er nicht hin soll.
+		   Nur `asc`/`desc`: Alles andere coerct `+page.server.ts` ohnehin zu
+		   `desc`, stünde aber sichtbar in der Adresszeile und behauptete eine
+		   Sortierung, die es nicht gibt. */
 		const order = currentUrl.searchParams.get('order');
-		if (order) zielUrl.searchParams.set('order', order);
+		if (order === 'asc' || order === 'desc') zielUrl.searchParams.set('order', order);
 		if (sightingId != null) zielUrl.hash = inboxAnchor(sightingId);
 		return { href: zielUrl.toString(), label: 'Zurück zum Eingang' };
 	}
