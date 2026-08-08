@@ -514,6 +514,12 @@ jobs:
             # nicht lokale Zahlen (Begründung im Warnblock bei `smoke`).
             e2e/admin-sighting-status.spec.ts
             e2e/admin-table-mobile-status-overflow.spec.ts
+            # Direkt beim Schwester-Spec darüber: dieselbe Route
+            # (/admin/sichtungen), dieselbe Mobilkarte, derselbe Messhelfer.
+            # Der Kaltkompilier-Aufschlag der Route fällt hier damit kein
+            # weiteres Mal an. Lokal 2 Tests, ~8 s — er legt sich seine
+            # Sichtung selbst an und räumt sie wieder weg.
+            e2e/admin-table-mobile-reference-overflow.spec.ts
             # Fährt /admin/[id]/edit statt der Tabelle — der einzige der drei
             # mit einer eigenen kalt zu kompilierenden Route.
             e2e/admin-edit-toggle-no-wrap-lock.spec.ts

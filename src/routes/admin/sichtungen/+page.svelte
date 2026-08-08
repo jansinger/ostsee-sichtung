@@ -689,9 +689,15 @@
 						     Inline-Badge mit `ml-2` stand nach dem Umbruch eingerückt da. -->
 						<div class="flex flex-wrap items-center gap-2">
 							{#if sighting.referenceId}
+								<!-- `break-all`, weil `flex-wrap` nur zwischen Flex-Items umbricht und
+								     eine Referenz-ID ein Wort ohne Umbruchgelegenheit ist: der Link hielt
+								     ~202px Mindestbreite und schob die ganze Seite über den Viewport
+								     (320px/375px, siehe admin-table-mobile-reference-overflow.spec.ts).
+								     Nicht `truncate` — die Referenz-ID ist der Schlüssel zum Wiederfinden
+								     einer Meldung und wäre abgeschnitten wertlos. -->
 								<a
 									href="/admin/ref/{sighting.referenceId}"
-									class="link link-primary link-hover font-mono text-sm"
+									class="link link-primary link-hover font-mono text-sm break-all"
 								>
 									{sighting.referenceId}
 								</a>
