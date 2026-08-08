@@ -53,19 +53,47 @@ describe('openQueueOrderBy', () => {
 });
 
 describe('queueNeighborCondition', () => {
+	/**
+	 * Prüft die Wertepaar-Form `("created", "id") <op> (...)` — nicht nur, dass
+	 * irgendwo ein `<` oder `>` im SQL-Text steht. Ein spaltenweiser Vergleich
+	 * oder vertauschte Operanden enthielten das Zeichen ebenfalls und blieben
+	 * mit einem reinen `toContain('<')` unbemerkt.
+	 */
+	const wertepaarRegex = (operator: '<' | '>'): RegExp =>
+		new RegExp(`\\("sichtungen"\\."created", "sichtungen"\\."id"\\)\\s*\\${operator}\\s*\\(`);
+
 	it('vergleicht als Wertepaar, nicht spaltenweise', () => {
 		const sql = toSql(queueNeighborCondition('desc', 'next', anchor));
-		expect(sql).toMatch(/\("sichtungen"\."created", "sichtungen"\."id"\)\s*<\s*\(/);
+		expect(sql).toMatch(wertepaarRegex('<'));
 	});
 
-	it('geht bei desc vorwärts zu kleineren Werten', () => {
-		expect(toSql(queueNeighborCondition('desc', 'next', anchor))).toContain('<');
-		expect(toSql(queueNeighborCondition('desc', 'prev', anchor))).toContain('>');
+	it('geht bei desc vorwärts zu kleineren Werten (Wertepaar-Form)', () => {
+		expect(toSql(queueNeighborCondition('desc', 'next', anchor))).toMatch(wertepaarRegex('<'));
 	});
 
-	it('dreht die Richtung bei asc um', () => {
-		expect(toSql(queueNeighborCondition('asc', 'next', anchor))).toContain('>');
-		expect(toSql(queueNeighborCondition('asc', 'prev', anchor))).toContain('<');
+	it('geht bei desc rückwärts zu größeren Werten (Wertepaar-Form)', () => {
+		expect(toSql(queueNeighborCondition('desc', 'prev', anchor))).toMatch(wertepaarRegex('>'));
+	});
+
+	it('dreht bei asc vorwärts zu größeren Werten (Wertepaar-Form)', () => {
+		expect(toSql(queueNeighborCondition('asc', 'next', anchor))).toMatch(wertepaarRegex('>'));
+	});
+
+	it('dreht bei asc rückwärts zu kleineren Werten (Wertepaar-Form)', () => {
+		expect(toSql(queueNeighborCondition('asc', 'prev', anchor))).toMatch(wertepaarRegex('<'));
+	});
+
+	/**
+	 * Dass Parameterreihenfolge und Spaltenreihenfolge zusammenpassen, prüft sonst
+	 * niemand — ein vertauschtes Wertepaar wäre syntaktisch gültiges SQL und bliebe
+	 * ohne diese Assertion unbemerkt. Der Anker-Zeitpunkt muss dabei als
+	 * `timestamp`-Text ankommen (kein rohes `Date`, siehe Docblock in
+	 * `openQueueOrder.ts` und `postgresTypes.ts`) — sonst bindet `postgres.js` ihn
+	 * als `timestamptz` und der Vergleich läuft über die Session-TimeZone.
+	 */
+	it('bindet den Anker als ISO-Text, in Spaltenreihenfolge created vor id', () => {
+		const query = dialect.sqlToQuery(queueNeighborCondition('desc', 'next', anchor).getSQL());
+		expect(query.params).toEqual([anchor.created.toISOString(), anchor.id]);
 	});
 });
 

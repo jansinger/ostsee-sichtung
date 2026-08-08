@@ -55,6 +55,18 @@ export function openQueueOrderBy(order: QueueOrder): SQL[] {
  * Mitgliedschaft in der offenen Menge. Genau deshalb bleibt die Frage „wer
  * kommt danach" beantwortbar, nachdem die aktuelle Sichtung entschieden wurde
  * und den Stapel verlassen hat — der Auto-Advance braucht keinen Sonderfall.
+ *
+ * **Der Anker wird als `::timestamp`-Text gebunden, nicht als rohes `Date`.**
+ * `postgres.js` leitet aus einem `Date`-Parameter OID 1184 (`timestamptz`) ab.
+ * `sichtungen.created` ist aber `timestamp without time zone` (OID 1114) — im
+ * Zeilenvergleich `(created, id) < (anchor, id)` löst PostgreSQL die Mischung
+ * über die **Session-TimeZone** auf, und die Nachbarschaft verschiebt sich um
+ * deren Offset. Das ist genau der stille Übersprung, gegen den dieses Modul
+ * existiert (siehe Docblock oben). `postgresTypes.ts` beseitigt dieselbe
+ * Abhängigkeit bereits für den Lesweg der Spalte; dieselbe Bindung fehlte hier
+ * für den Schreibweg des Parameters. `toISOString()` + `::timestamp`-Cast
+ * bindet den Wert unzweideutig als Text, den Postgres als `timestamp`
+ * interpretiert — unabhängig von TZ.
  */
 export function queueNeighborCondition(
 	order: QueueOrder,
@@ -62,9 +74,10 @@ export function queueNeighborCondition(
 	anchor: QueueAnchor
 ): SQL {
 	const kleinerAlsAnker = (order === 'desc') === (direction === 'next');
+	const ankerZeitpunkt = sql`${anchor.created.toISOString()}::timestamp`;
 	return kleinerAlsAnker
-		? sql`(${sightings.created}, ${sightings.id}) < (${anchor.created}, ${anchor.id})`
-		: sql`(${sightings.created}, ${sightings.id}) > (${anchor.created}, ${anchor.id})`;
+		? sql`(${sightings.created}, ${sightings.id}) < (${ankerZeitpunkt}, ${anchor.id})`
+		: sql`(${sightings.created}, ${sightings.id}) > (${ankerZeitpunkt}, ${anchor.id})`;
 }
 
 /**
