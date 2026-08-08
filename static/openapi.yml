@@ -470,6 +470,7 @@ paths:
         - $ref: '#/components/parameters/ExportMediaUpload'
         - $ref: '#/components/parameters/ExportBalticSea'
         - $ref: '#/components/parameters/ExportDeadFinding'
+        - $ref: '#/components/parameters/ExportSearch'
       responses:
         '200':
           description: Exportdatei
@@ -511,6 +512,7 @@ paths:
         - $ref: '#/components/parameters/ExportMediaUpload'
         - $ref: '#/components/parameters/ExportBalticSea'
         - $ref: '#/components/parameters/ExportDeadFinding'
+        - $ref: '#/components/parameters/ExportSearch'
       responses:
         '200':
           description: JSON-Datei mit Sichtungen
@@ -582,6 +584,7 @@ paths:
         - $ref: '#/components/parameters/ExportMediaUpload'
         - $ref: '#/components/parameters/ExportBalticSea'
         - $ref: '#/components/parameters/ExportDeadFinding'
+        - $ref: '#/components/parameters/ExportSearch'
       responses:
         '200':
           description: CSV-Datei mit Sichtungen
@@ -616,6 +619,7 @@ paths:
         - $ref: '#/components/parameters/ExportMediaUpload'
         - $ref: '#/components/parameters/ExportBalticSea'
         - $ref: '#/components/parameters/ExportDeadFinding'
+        - $ref: '#/components/parameters/ExportSearch'
       responses:
         '200':
           description: XML-Datei mit Sichtungen
@@ -650,6 +654,7 @@ paths:
         - $ref: '#/components/parameters/ExportMediaUpload'
         - $ref: '#/components/parameters/ExportBalticSea'
         - $ref: '#/components/parameters/ExportDeadFinding'
+        - $ref: '#/components/parameters/ExportSearch'
       responses:
         '200':
           description: KML-Datei mit Sichtungen
@@ -2414,6 +2419,18 @@ components:
         type: string
         enum: ["0", "1"]
         example: "1"
+
+    ExportSearch:
+      name: q
+      in: query
+      description: >-
+        Freitext-Suche über Referenz-ID, E-Mail, Vor- und Nachname und
+        Fahrwasser (ILIKE, Teiltreffer; leer = kein Filter). Dieselbe Bedingung
+        wie die Suche in der Admin-Tabelle (sightingSearchFilter.ts) — der
+        Export liefert damit genau die Menge, die dort angezeigt wird.
+      schema:
+        type: string
+        example: "müller"
 
   schemas:
     SpamRescoreReport:

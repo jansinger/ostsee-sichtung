@@ -17,8 +17,10 @@
  * kompiliert.
  */
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { sql, type SQL, type SQLWrapper } from 'drizzle-orm';
+import { and, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
+import { isRedirect, type Redirect } from '@sveltejs/kit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { searchCondition } from '$lib/server/db/sightingSearchFilter';
 import {
 	MEDIA_UPLOAD_ANNOUNCED_MISSING,
 	mediaUploadCondition
@@ -278,6 +280,113 @@ describe('admin/sichtungen/+page.server load() — Datumsfilter mit offenen Gren
 		} as unknown as Parameters<typeof load>[0]);
 
 		expect(recordedSelects[0]?.whereSql).toBeUndefined();
+	});
+});
+
+/**
+ * Freitext-Suche (`?q=`). Die Bedingung selbst ist in `sightingSearchFilter.test.ts`
+ * abgesichert; hier zählt die Verdrahtung — dass der Parameter bis in die
+ * WHERE-Klausel durchschlägt — und der Sonderfall Referenz-ID.
+ */
+describe('admin/sichtungen/+page.server load() — Freitext-Suche', () => {
+	beforeEach(() => {
+		recordedSelects = [];
+		resolvedRows = [[{ id: 1 }], [{ count: 5 }], [{ count: 2 }]];
+	});
+
+	it('?q=… filtert Liste und Zähler mit derselben Bedingung', async () => {
+		await load({
+			url: makeUrl({ q: 'müller' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		const expected = toSqlText(searchCondition('müller') as unknown as SQLWrapper);
+		expect(recordedSelects[0]?.whereSql).toBe(expected);
+		expect(recordedSelects[1]?.whereSql).toBe(expected);
+	});
+
+	it('ein leerer Suchbegriff filtert gar nicht', async () => {
+		await load({
+			url: makeUrl({ q: '   ' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		expect(recordedSelects[0]?.whereSql).toBeUndefined();
+	});
+
+	it('kombiniert die Suche mit einem aktiven Statusfilter', async () => {
+		await load({
+			url: makeUrl({ q: 'müller', verified: 'rejected' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		const expected = toSqlText(
+			and(rejectedOnly(), searchCondition('müller')) as unknown as SQLWrapper
+		);
+		expect(recordedSelects[0]?.whereSql).toBe(expected);
+	});
+
+	it('leitet bei genau einem exakten Referenz-ID-Treffer auf die Detailseite', async () => {
+		// Verhalten wie /admin/ref/[refId]: Wer eine Referenz-ID einfügt, will die
+		// Sichtung sehen, nicht eine einzeilige Trefferliste.
+		resolvedRows = [[{ id: 4711, referenceId: 'abc123xyz' }], [{ count: 1 }], [{ count: 0 }]];
+
+		let fehler: unknown;
+		try {
+			await load({ url: makeUrl({ q: 'ABC123XYZ' }) } as unknown as Parameters<typeof load>[0]);
+		} catch (err) {
+			fehler = err;
+		}
+
+		expect(isRedirect(fehler)).toBe(true);
+		expect((fehler as Redirect).location).toBe('/admin/4711');
+	});
+
+	it('gibt den Suchbegriff beim Weiterleiten NICHT mit', async () => {
+		// Sonst führt der Rückweg aus der Detailansicht (tableReturnUrl.ts nimmt
+		// `q` mit) direkt wieder in dieselbe Weiterleitung: „Zurück zur Tabelle"
+		// landete erneut auf der Detailseite, und die Liste wäre ohne Handarbeit
+		// an der URL nicht mehr erreichbar.
+		resolvedRows = [[{ id: 4711, referenceId: 'abc123xyz' }], [{ count: 1 }], [{ count: 0 }]];
+
+		let fehler: unknown;
+		try {
+			await load({
+				url: makeUrl({ q: 'abc123xyz', verified: 'open' })
+			} as unknown as Parameters<typeof load>[0]);
+		} catch (err) {
+			fehler = err;
+		}
+
+		const ziel = new URL((fehler as Redirect).location, 'https://example.com');
+		expect(ziel.searchParams.has('q')).toBe(false);
+		// Die übrigen Filter bleiben erhalten — der Rückweg führt damit auf die
+		// Tabelle, die der Bearbeiter vor der Suche vor sich hatte.
+		expect(ziel.searchParams.get('verified')).toBe('open');
+	});
+
+	it('leitet nicht weiter, wenn der Begriff nur Teil der Referenz-ID ist', async () => {
+		resolvedRows = [[{ id: 4711, referenceId: 'abc123xyz' }], [{ count: 1 }], [{ count: 0 }]];
+
+		const result = await load({
+			url: makeUrl({ q: 'abc123' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		expect(result).toBeDefined();
+	});
+
+	it('leitet nicht weiter, wenn die Suche mehrere Treffer hat', async () => {
+		resolvedRows = [
+			[
+				{ id: 4711, referenceId: 'abc123xyz' },
+				{ id: 4712, referenceId: 'anderes' }
+			],
+			[{ count: 2 }],
+			[{ count: 0 }]
+		];
+
+		const result = await load({
+			url: makeUrl({ q: 'abc123xyz' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		expect(result).toBeDefined();
 	});
 });
 
