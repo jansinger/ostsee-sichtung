@@ -530,6 +530,13 @@ jobs:
             # Shard. Lokal 1 Test, ~2 s — er legt sich seine Sichtung selbst an
             # und räumt sie per ON DELETE CASCADE wieder weg.
             e2e/admin-status-history.spec.ts
+            # Nach derselben Regel wie die Admin-Specs darüber: `form` ist laut
+            # der Messung oben weiterhin der kürzeste Shard, und
+            # /admin/sichtungen kompiliert der dead-finding-Spec bereits kalt —
+            # der Aufschlag fällt hier kein weiteres Mal an. Lokal 4 Tests,
+            # ~12 s; die Presets liegen in `localStorage`, der Spec räumt sie
+            # in `beforeEach` selbst ab und braucht keine Testzeilen in der DB.
+            e2e/admin-filter-presets.spec.ts
           )
 
           # Die drei Shards laufen parallel; die Laufzeit des Jobs ist die des

@@ -136,7 +136,7 @@ function neueId(): string {
 		return crypto.randomUUID();
 	}
 	idZaehler += 1;
-	return `preset-${idZaehler}-${performance.now()}`;
+	return `preset-${idZaehler}-${Date.now()}`;
 }
 
 /**
@@ -148,13 +148,19 @@ function neueId(): string {
  * unabhängig von Groß-/Kleinschreibung: „Offen" und „offen" sähen im Chip
  * verschieden aus, meinen aber dasselbe und lösen das Problem nicht.
  *
+ * `toLowerCase`, **nicht** `toLocaleLowerCase`: Die Locale-Variante richtet
+ * sich nach der Umgebung des Browsers, und im türkischen Gebietsschema wird
+ * aus „I" ein punktloses „ı" statt „i". Ob zwei Namen als gleich gelten,
+ * hinge damit davon ab, wer die Ansicht anlegt — dieselben zwei Namen wären
+ * für einen Bearbeiter eine Dublette und für den nächsten nicht.
+ *
  * `ausserId` klammert die Ansicht aus, die gerade umbenannt wird — sonst
  * scheiterte das Ändern der reinen Schreibweise am eigenen Namen.
  */
 function nameVergeben(presets: FilterPreset[], name: string, ausserId?: string): boolean {
-	const vergleich = name.toLocaleLowerCase();
+	const vergleich = name.toLowerCase();
 	return presets.some(
-		(preset) => preset.id !== ausserId && preset.name.toLocaleLowerCase() === vergleich
+		(preset) => preset.id !== ausserId && preset.name.toLowerCase() === vergleich
 	);
 }
 
