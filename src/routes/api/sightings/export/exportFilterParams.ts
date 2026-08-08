@@ -5,6 +5,7 @@ import { sightings as sightingsTable } from '$lib/server/db/schema';
 import { mediaUploadCondition } from '$lib/server/db/mediaUploadFilter';
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
+import { statusCondition } from '../../../admin/sichtungen/statusFilter';
 
 export function xmlEscape(str: string | null | undefined): string {
 	if (!str) return '';
@@ -66,10 +67,11 @@ export function buildExportConditions(params: ExportFilterParams) {
 		conditions.push(gte(sightingsTable.sightingDate, start));
 		conditions.push(lt(sightingsTable.sightingDate, endExclusive));
 	}
-	if (verified === '1') {
-		conditions.push(eq(sightingsTable.verified, 1));
-	} else if (verified === '0') {
-		conditions.push(eq(sightingsTable.verified, 0));
+	// Dieselbe Logik wie die Tabelle — sonst enthält die CSV eine andere Menge,
+	// als der Nutzer im Filter gesehen hat.
+	const statusFilter = statusCondition(verified);
+	if (statusFilter) {
+		conditions.push(statusFilter);
 	}
 	if (entryChannel && entryChannel !== 'all') {
 		const channelId = parseInt(entryChannel, 10);

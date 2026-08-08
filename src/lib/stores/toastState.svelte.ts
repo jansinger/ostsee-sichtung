@@ -18,6 +18,13 @@ export interface ToastMessage {
 	 * `$effect`-Timeout neu startet. Ohne `key` verhalten sich Aufrufer wie bisher.
 	 */
 	key?: string;
+	/**
+	 * Optionale Handlung im Toast — heute das „Rückgängig" nach einem
+	 * Statuswechsel im Admin-Bereich. Der Toast schließt sich beim Klick selbst;
+	 * ohne das würde ein zweiter Klick dazu einladen, den Wechsel erneut
+	 * zurückzunehmen.
+	 */
+	action?: { label: string; onClick: () => void };
 }
 
 export const toasts = $state<ToastMessage[]>([]);

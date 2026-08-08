@@ -198,11 +198,10 @@ describe('admin/+page.server load() — Foto-Ankündigungs-Arbeitsliste', () => 
 	});
 
 	// verified=rejected ist die Triage-Sicht auf abgelehnte Sichtungen und muss
-	// exakt die Bedingung von rejectedOnly() tragen — analog zu den beiden
-	// verified=0/1-Fällen, die als Integer-Vergleich direkt in +page.server.ts
-	// gebaut werden. Anders als dort ist rejected KEIN Inline-Prädikat: die
-	// approvalPredicateScan.test.ts verbietet ein selbstgebautes "abgelehnt_am
-	// is not null" außerhalb von approvalFilter.ts.
+	// exakt die Bedingung von rejectedOnly() tragen. Seit der Umstellung auf
+	// statusCondition() (statusFilter.ts) laufen auch verified=0/1 über
+	// dieselben Prädikate (openOnly()/approvedOnly()) statt über die Spalte
+	// `geprueft` — siehe sightingStatusFilter.test.ts und statusFilter.test.ts.
 	it('verified=rejected filtert über rejectedOnly()', async () => {
 		await load({
 			url: makeUrl({ verified: 'rejected' })

@@ -100,9 +100,10 @@ export const GET: RequestHandler = async ({ params, url, request, locals, getCli
 				mimeType: sightingFiles.mimeType,
 				size: sightingFiles.size,
 				originalName: sightingFiles.originalName,
-				// Get sighting approval status
-				approvedAt: sightings.approvedAt,
-				verified: sightings.verified
+				// Get sighting approval status. `verified` (geprueft) wird bewusst nicht
+				// mitselektiert — die Entscheidung unten läuft ausschließlich über
+				// isSightingApproved()/approvedAt (.claude/rules/api.md).
+				approvedAt: sightings.approvedAt
 			})
 			.from(sightingFiles)
 			.innerJoin(sightings, eq(sightingFiles.sightingId, sightings.id))

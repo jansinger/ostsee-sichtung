@@ -140,8 +140,8 @@ describe('sections/SightingDetails — der gewählte Antrieb übersteht den Weg 
 
 			await page.getByRole('radio', { name: label, exact: true }).click();
 
-			const geprueft = await antriebsSchema.validate(get(form));
-			expect(geprueft.boatDrive).toBe(erwartet);
+			const validiert = await antriebsSchema.validate(get(form));
+			expect(validiert.boatDrive).toBe(erwartet);
 		}
 	);
 });

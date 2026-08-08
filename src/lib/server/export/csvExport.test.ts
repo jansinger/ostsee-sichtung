@@ -212,17 +212,6 @@ describe('csvExport', () => {
 			expect(result).toContain('"Area "North""');
 		});
 
-		it('should format verified status correctly', () => {
-			const verifiedSighting = { ...mockSighting, verified: true };
-			const unverifiedSighting = { ...mockSighting, verified: false };
-
-			const resultVerified = generateCsvData([verifiedSighting]);
-			const resultUnverified = generateCsvData([unverifiedSighting]);
-
-			expect(resultVerified).toContain('"Ja"'); // verified
-			expect(resultUnverified).toContain('"Nein"'); // not verified
-		});
-
 		it('should format created date correctly', () => {
 			const result = generateCsvData([mockSighting]);
 
@@ -257,16 +246,21 @@ describe('csvExport', () => {
 			expect(dataColumns.length).toBe(headerColumns.length);
 		});
 
-		it('should place verified status under the Verifiziert header', () => {
-			const verifiedSighting = { ...mockSighting, verified: true };
-			const result = generateCsvData([verifiedSighting]);
-			const lines = result.trim().split('\n');
-			const headers = lines[0].split(';');
-			const dataRow = lines[1].split(';');
-
-			const idx = headers.indexOf('Verifiziert');
+		it('führt den abgeleiteten Status unter der Spalte „Status"', () => {
+			const csv = generateCsvData([
+				{ ...mockSighting, verified: 1, approvedAt: null, rejectedAt: null },
+				{ ...mockSighting, verified: 0, approvedAt: new Date('2026-03-12'), rejectedAt: null },
+				{ ...mockSighting, verified: 0, approvedAt: null, rejectedAt: new Date('2026-03-12') }
+			]);
+			const zeilen = csv.split('\n');
+			const headers = zeilen[0].split(';').map((h) => h.replaceAll('"', ''));
+			const idx = headers.indexOf('Status');
 			expect(idx).toBeGreaterThan(-1);
-			expect(dataRow[idx]).toBe('"Ja"');
+
+			const werte = zeilen.slice(1, 4).map((z) => z.split(';')[idx].replaceAll('"', ''));
+			// geprueft = 1 ohne Freigabe ist NICHT veröffentlicht — die alte Spalte
+			// meldete hier „Ja" (Bestandsbefund 2026-08-07, 22 Zeilen).
+			expect(werte).toEqual(['Offen', 'Freigegeben', 'Abgelehnt']);
 		});
 
 		it('should place created date under Erstellt am header', () => {

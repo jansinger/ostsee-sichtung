@@ -10,7 +10,6 @@
 	import OptionalSightingDetails from '$lib/report/components/sections/OptionalSightingDetails.svelte';
 	import type { FormContext } from '$lib/report/types';
 
-	import BooleanStatus from './BooleanStatus.svelte';
 	import Media from '$lib/report/components/sections/Media.svelte';
 	import SightingDetails from '$lib/report/components/sections/SightingDetails.svelte';
 	import type { FrontendSighting } from '$lib/types';
@@ -18,6 +17,7 @@
 	import { untrack } from 'svelte';
 
 	import { buildAdminEditInitialValues } from './adminEditInitialValues';
+	import { getSightingStatus, SIGHTING_STATUS_PRESENTATION } from './sightingStatus';
 
 	let {
 		sighting = {} as FrontendSighting,
@@ -67,6 +67,10 @@
 	let isValid = $derived(formContext.isValid);
 	let isSubmitting = $derived(formContext.isSubmitting);
 	let errors = $derived(formContext.errors);
+
+	// Abgeleiteter Status, dieselbe Quelle wie Eingang, Tabelle und
+	// Detailansicht — kein Bedienelement hier, die Maske bearbeitet Sachdaten.
+	const status = $derived(getSightingStatus(sighting));
 </script>
 
 <Form class="space-y-6" {...initProps} bind:context={formContext}>
@@ -77,10 +81,20 @@
 				<div class="text-base-content/70 text-sm">
 					<p>Datensatz ID: {sighting.id}</p>
 					<p>Gemeldet: {formatLocalDateTime(sighting.created)}</p>
-					<p>Verifiziert: <BooleanStatus value={sighting.verified} /></p>
-					{#if sighting.approvedAt}
-						<p>Freigegeben am: {formatLocalDateTime(sighting.approvedAt)}</p>
-					{/if}
+					<p>
+						Status:
+						<span class="badge {SIGHTING_STATUS_PRESENTATION[status].badgeClass}">
+							{SIGHTING_STATUS_PRESENTATION[status].label}
+						</span>
+						{#if status === 'approved'}
+							— Freigegeben am {formatLocalDateTime(sighting.approvedAt, 'datetime')}
+						{:else if status === 'rejected'}
+							— Abgelehnt am {formatLocalDateTime(
+								sighting.rejectedAt,
+								'datetime'
+							)}{sighting.rejectedBy ? ` durch ${sighting.rejectedBy}` : ''}
+						{/if}
+					</p>
 				</div>
 			</div>
 

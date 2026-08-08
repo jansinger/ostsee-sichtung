@@ -33,6 +33,9 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { DEAD_FINDING_PRESENTATION, isDeadFinding } from './deadFinding';
 	import { untrack } from 'svelte';
+	import { getSightingStatus, SIGHTING_STATUS_PRESENTATION } from './sightingStatus';
+	import type { SightingVerdict } from './sightingVerdict';
+	import SightingStatusControl from './SightingStatusControl.svelte';
 
 	// Definiere die Struktur einer Datenzeile
 	interface DataRowType {
@@ -44,9 +47,16 @@
 		title?: string;
 	}
 
-	let { sighting, loading = false } = $props<{
+	let {
+		sighting,
+		loading = false,
+		onStatusChange,
+		statusBusy = false
+	} = $props<{
 		sighting: FrontendSighting;
 		loading?: boolean;
+		onStatusChange?: ((verdict: SightingVerdict) => void) | undefined;
+		statusBusy?: boolean;
 	}>();
 
 	// State für die aktuellen Sichtungsdaten mit reaktiver Wetterdaten-Aktualisierung
@@ -181,47 +191,11 @@
 		};
 	}
 
-	/**
-	 * „Abgelehnt am …" — nur, wenn die Meldung abgelehnt wurde.
-	 *
-	 * Als Badge und nicht als Ja/Nein-Zeile: Der Regelfall ist „nicht
-	 * abgelehnt", und ein zweites „Nein" neben „Verifiziert: Nein" hätte den
-	 * Unterschied eingeebnet, um den es hier gerade geht.
-	 */
-	function rejectionRow(): DataRowType | undefined {
-		// `hasValue` und nicht `isSightingRejected` aus `approvalFilter.ts`: Das
-		// Modul importiert `$lib/server/db/schema` und ist damit server-only —
-		// ein Import hier bricht den Build (`npm run check` bemerkt es nicht,
-		// nur `npm run build`). Dieselbe Lösung wie die Zeile „Freigegeben am"
-		// weiter unten, die den Freigabe-Zeitpunkt genauso prüft.
-		if (!hasValue(currentSighting.rejectedAt)) return undefined;
-
-		const wer = currentSighting.rejectedBy ? ` durch ${currentSighting.rejectedBy}` : '';
-		return {
-			label: 'Abgelehnt',
-			value: `${formatLocalDateTime(currentSighting.rejectedAt, 'datetime')}${wer}`,
-			// `badge-outline` und nicht `badge-ghost`: Die Statuskarte hat selbst
-			// eine graue Fläche — eine Ghost-Pille darauf ist unsichtbar
-			// (nachgemessen am 2026-08-07). Der Rahmen macht sie erkennbar, so
-			// wie beim „ohne Position"-Badge zwei Karten weiter oben. Das ist
-			// zugleich die Bedingung dafür, dass der `title` erreichbar ist:
-			// `DataTableRow` rendert ihn nur am Badge.
-			badgeClass: 'badge-outline',
-			title:
-				'Gesichtet und bewusst nicht veröffentlicht. Aufheben lässt sich das in der Sichtungstabelle.'
-		};
-	}
-
 	// Datum & Zeit
 	const dateTimeRows = $derived(
 		[
 			DataRow('Sichtung', formatLocalDateTime(currentSighting.sightingDate, 'datetime')),
-			DataRow('Gemeldet', formatLocalDateTime(currentSighting.created, 'datetime')),
-			DataRow(
-				'Freigegeben am',
-				formatLocalDateTime(currentSighting.approvedAt, 'datetime'),
-				hasValue(currentSighting.approvedAt)
-			)
+			DataRow('Gemeldet', formatLocalDateTime(currentSighting.created, 'datetime'))
 		].filter((row): row is DataRowType => row !== undefined)
 	);
 
@@ -393,18 +367,13 @@
 		].filter((row): row is DataRowType => row !== undefined)
 	);
 
-	// Status
+	// Status — Freigabe/Ablehnung stehen seit Task 7 als eigene Leiste im
+	// Kopfbereich (siehe `{@const status = …}` im Markup unten), nicht mehr
+	// als Zeile hier.
 	const statusRows = $derived(
 		[
 			BooleanDataRow('Namensnennung', currentSighting.nameConsent),
 			BooleanDataRow('Schiffsnennung', currentSighting.shipNameConsent),
-			BooleanDataRow('Verifiziert', currentSighting.verified),
-			// Nur bei abgelehnten Meldungen. Ohne diese Zeile sah eine
-			// abgelehnte Sichtung hier exakt aus wie eine ungeprüfte — die
-			// Triage-Entscheidung war aus der Detailansicht nicht erkennbar.
-			// Aufgehoben wird sie in der Tabelle (`/admin/sichtungen`); diese
-			// Ansicht zeigt Status an und ändert ihn nicht.
-			rejectionRow(),
 			DataRow('Eingangskanal', getEntryChannelLabel(currentSighting.entryChannel))
 		].filter((row): row is DataRowType => row !== undefined)
 	);
@@ -489,6 +458,37 @@
 		</div>
 	</div>
 {:else}
+	{@const status = getSightingStatus(currentSighting)}
+	<div
+		class="border-base-300 bg-base-100 rounded-box mb-4 flex flex-wrap items-center gap-3 border p-3"
+	>
+		{#if onStatusChange}
+			<SightingStatusControl
+				{status}
+				sightingId={currentSighting.id}
+				size="md"
+				busy={statusBusy}
+				onchange={onStatusChange}
+			/>
+		{:else}
+			<span class="badge {SIGHTING_STATUS_PRESENTATION[status].badgeClass}">
+				{SIGHTING_STATUS_PRESENTATION[status].label}
+			</span>
+		{/if}
+		{#if status === 'approved'}
+			<span class="text-base-content/70 text-sm">
+				Freigegeben am {formatLocalDateTime(currentSighting.approvedAt, 'datetime')}
+			</span>
+		{:else if status === 'rejected'}
+			<span class="text-base-content/70 text-sm">
+				Abgelehnt am {formatLocalDateTime(
+					currentSighting.rejectedAt,
+					'datetime'
+				)}{currentSighting.rejectedBy ? ` durch ${currentSighting.rejectedBy}` : ''}
+			</span>
+		{/if}
+	</div>
+
 	{#if isDead}
 		<!-- Steht über allen Angaben und nicht zwischen den Karten: Die Art der
 		     Meldung entscheidet, wie der Datensatz gelesen wird, und muss deshalb

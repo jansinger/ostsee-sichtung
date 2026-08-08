@@ -1,6 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { collectHits, sourceFiles, stripComments } from '$lib/testing/sourceScan.testutil';
+import type { SourceHit } from '$lib/testing/sourceScan.testutil';
 
 /**
  * @fileoverview Das Freigabe-Prädikat darf nur in `approvalFilter.ts` stehen
@@ -131,74 +132,17 @@ const JS_ORDER = new RegExp(
 const PATTERNS = [SQL_ORDER, FUNCTION_ORDER, JS_ORDER] as const;
 
 /**
- * Ersetzt Kommentare durch Leerzeichen — Länge und Zeilenumbrüche bleiben.
- *
- * Kommentare sind ausgenommen, weil die Regel sonst ihre eigene Begründung
- * verböte: Das Datei-Doc von `approvalFilter.ts`, die Regeldateien und die
- * Prosa in `showreports.json/+server.ts` zitieren das Prädikat wörtlich. Der
- * Fall ist auch nicht theoretisch — `api/media/[...path]/+server.ts` trägt
- * hinter `!!file.approvedAt` den Kommentar „File is approved if approvedAt is
- * not null", der ohne diesen Schritt ein Treffer wäre.
- *
- * Ein einziger Durchlauf mit Alternation, damit der **frühere** Kommentaranfang
- * gewinnt: `/* x // y *\/` wird als Block erkannt, `// foo /* bar` als Zeile.
- * Zwei getrennte Läufe hätten je nach Reihenfolge einen der beiden Fälle
- * falsch aufgelöst und im schlimmeren davon echten Code mitgelöscht.
- *
- * Das `(?<!:)` hält `https://` heraus, das `(?<!\w)` den MIME-Glob: `'image/*'`
- * hat sonst einen Blockkommentar eröffnet, der bis zum nächsten `*\/` alles
- * verschluckt hat — gemessen 174 Zeilen ab Zeile 200 in
- * `UnifiedDropzone.svelte.test.ts`, 82 ab Zeile 40 in
- * `DropzoneEnhanced.svelte.test.ts` und zusammen 215 Zeilen in fünf Dateien.
- * Das war genau die Bauart Lücke, gegen die dieser Test antritt: still, grün
- * und im Bestand bereits aktiv — ein dort eingefügtes
- * `isNotNull(sightings.approvedAt)` blieb unentdeckt. Ein echter
- * Blockkommentar steht nie direkt hinter einem Wortzeichen, ein Glob immer.
- *
- * Der verbleibende Rest an Unschärfe — eine Zeichenkette, die `//` enthält und
- * hinter der auf derselben Zeile ein Prädikat steht — ist bekannt und in Kauf
- * genommen; ausgeschlossen wäre er nur mit einem echten Parser.
- *
- * Ersetzt wird längentreu, damit die Zeilennummer in der Fehlermeldung auf die
- * Originaldatei zeigt.
- */
-export function stripComments(source: string): string {
-	return source.replace(/(?<!\w)\/\*[\s\S]*?\*\/|(?<!:)\/\/[^\n]*/g, (comment) =>
-		comment.replace(/[^\n]/g, ' ')
-	);
-}
-
-/** Eine Fundstelle, so wie sie in der Fehlermeldung erscheint. */
-export interface PredicateHit {
-	/** 1-basierte Zeile in der Originaldatei. */
-	readonly line: number;
-	/** Der getroffene Ausdruck, auf eine Zeile normalisiert. */
-	readonly text: string;
-}
-
-/**
  * Meldet jedes selbstgebaute Freigabe-Prädikat in `source`.
+ *
+ * Kommentar-Ausblendung und Trefferbildung stehen seit dem Guard gegen
+ * `geprueft` in `$lib/testing/sourceScan.testutil` — beide Regeln brauchen sie,
+ * und zwei Verfahren im selben Repo altern getrennt. Die Begründungen zu den
+ * URL- und Glob-Fallen sind mit dorthin gewandert.
  *
  * @returns Fundstellen (leer = konform), aufsteigend nach Zeile.
  */
-export function findApprovalPredicates(source: string): PredicateHit[] {
-	const code = stripComments(source);
-	const hits = new Map<number, PredicateHit>();
-
-	for (const pattern of PATTERNS) {
-		for (const match of code.matchAll(pattern)) {
-			const index = match.index ?? 0;
-			const line = code.slice(0, index).split('\n').length;
-			// Derselbe Ausdruck kann beide Muster erfüllen (etwa ein umgebrochenes
-			// `isNotNull(...)` neben einem `IS NULL` darunter). Eine Meldung je
-			// Zeile reicht — zwei wären dieselbe Fundstelle, doppelt gezählt.
-			if (!hits.has(line)) {
-				hits.set(line, { line, text: match[0].replace(/\s+/g, ' ').trim() });
-			}
-		}
-	}
-
-	return [...hits.values()].sort((a, b) => a.line - b.line);
+export function findApprovalPredicates(source: string): SourceHit[] {
+	return collectHits(stripComments(source), PATTERNS);
 }
 
 /**
@@ -259,21 +203,7 @@ const SOURCE_ROOT = 'src';
  * deckt deshalb `freigegeben_am` ab und nicht den Prüfstatus insgesamt.
  */
 function scannedFiles(): string[] {
-	const files: string[] = [];
-
-	const walk = (dir: string): void => {
-		for (const entry of readdirSync(dir).sort()) {
-			const path = join(dir, entry);
-			if (statSync(path).isDirectory()) {
-				walk(path);
-				continue;
-			}
-			if (/\.(ts|js)$/.test(entry)) files.push(path.replaceAll('\\', '/'));
-		}
-	};
-
-	walk(SOURCE_ROOT);
-	return files;
+	return sourceFiles(SOURCE_ROOT, /\.(ts|js)$/);
 }
 
 describe('Mustererkennung', () => {

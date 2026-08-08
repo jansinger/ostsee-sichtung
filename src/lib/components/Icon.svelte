@@ -50,6 +50,7 @@
 	import Home from '~icons/lucide/home';
 	import Image from '~icons/lucide/image';
 	import Images from '~icons/lucide/images';
+	import Inbox from '~icons/lucide/inbox';
 	import Info from '~icons/lucide/info';
 	import LayoutGrid from '~icons/lucide/layout-grid';
 	import List from '~icons/lucide/list';
@@ -122,6 +123,7 @@
 		'lucide:settings': Settings,
 		'lucide:alert-circle': AlertCircle,
 		'lucide:check': Check,
+		'lucide:inbox': Inbox,
 		'lucide:x': X,
 		'lucide:chevron-down': ChevronDown,
 		'lucide:chevron-right': ChevronRight,

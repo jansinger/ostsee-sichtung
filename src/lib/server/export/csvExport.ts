@@ -22,6 +22,10 @@ import { getSpeciesLabel } from '$lib/report/formOptions/species';
 import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
 import type { FrontendSighting } from '$lib/types/index';
 import { formatLocalDateTime } from '$lib/utils/format/dateTime';
+import {
+	getSightingStatus,
+	SIGHTING_STATUS_PRESENTATION
+} from '$lib/components/admin/sightingStatus';
 
 /**
  * Generiert CSV-Daten aus einer Sammlung von Sichtungen
@@ -84,7 +88,7 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 		'Stadt', // Ort
 		'Anmerkungen', // Zusätzliche Notizen
 		'Andere Beobachtungen', // Weitere Beobachtungen
-		'Verifiziert', // Admin-Verifikationsstatus
+		'Status', // Abgeleitet aus freigegeben_am/abgelehnt_am — siehe sightingStatus.ts
 		'Erstellt am' // Erstellungszeitpunkt
 	];
 
@@ -151,7 +155,9 @@ export function generateCsvData(sightings: FrontendSighting[]): string {
 			sighting.city || '',
 			sighting.notes || '',
 			sighting.otherObservations || '',
-			sighting.verified ? 'Ja' : 'Nein',
+			SIGHTING_STATUS_PRESENTATION[
+				getSightingStatus({ approvedAt: sighting.approvedAt, rejectedAt: sighting.rejectedAt })
+			].label,
 			formatLocalDateTime(sighting.created, 'full')
 		];
 

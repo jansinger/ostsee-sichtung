@@ -12,6 +12,7 @@
 		message = '',
 		duration = 5000,
 		dismissible = true,
+		action,
 		onDismiss
 	}: {
 		type?: 'success' | 'error' | 'warning' | 'info';
@@ -19,6 +20,7 @@
 		message: string;
 		duration?: number;
 		dismissible?: boolean;
+		action?: { label: string; onClick: () => void } | undefined;
 		onDismiss?: () => void;
 	} = $props();
 
@@ -47,6 +49,11 @@
 		onDismiss?.();
 	}
 
+	function runAction(): void {
+		action?.onClick();
+		dismiss();
+	}
+
 	// Modern $effect replaces onMount/onDestroy pattern
 	$effect(() => {
 		if (duration > 0) {
@@ -63,7 +70,12 @@
 </script>
 
 {#if visible}
-	<div class="{alertClasses[type]} mb-4 shadow-lg max-w-sm pointer-events-auto" style="animation: slideIn 0.3s ease-out" role="alert" aria-live="polite">
+	<div
+		class="{alertClasses[type]} pointer-events-auto mb-4 max-w-sm shadow-lg"
+		style="animation: slideIn 0.3s ease-out"
+		role="alert"
+		aria-live="polite"
+	>
 		<Icon icon={iconMap[type]} width="20" />
 		<div class="flex-1">
 			{#if title}
@@ -71,6 +83,12 @@
 			{/if}
 			<div>{message}</div>
 		</div>
+
+		{#if action}
+			<button type="button" onclick={runAction} class="btn btn-ghost btn-xs">
+				{action.label}
+			</button>
+		{/if}
 
 		{#if dismissible}
 			<button

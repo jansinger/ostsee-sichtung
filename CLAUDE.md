@@ -43,6 +43,13 @@ Derselbe Endpunkt schreibt seit 2026-08 per Verdict (`approve`/`reject`/`reset`)
 auch `abgelehnt_am`/`abgelehnt_von` — das ist Triage, kein dritter
 Freigabe-Zustand. Details: `.claude/rules/api.md`
 
+Die **Oberfläche** zeigt daraus drei Bearbeitungszustände — Offen, Freigegeben,
+Abgelehnt —, abgeleitet in `src/lib/components/admin/sightingStatus.ts` und
+nirgends gespeichert. Das ist kein dritter Veröffentlichungszustand: Öffentlich
+ist weiterhin genau `freigegeben_am IS NOT NULL`. `geprueft` wird seit 2026-08
+**nicht mehr gelesen** (Guard: `verifiedReadScan.test.ts`); die Spalte bleibt,
+weil das Altsystem auf derselben Datenbank liegt.
+
 ### Design System — PFLICHT bei UI-Änderungen
 
 Theme-Tokens statt hardcodierter Farben, `*-content` ausschließlich auf Vollton-Flächen (auf Tints wie `bg-warning/10` gehört `text-base-content` — sonst weiß auf hell), WCAG 2.1 AA. Regeln laden automatisch bei UI-Dateien: `.claude/rules/design-system.md` (Feld-Pipeline, Button-Hierarchie, A11y-Minima) und `.claude/rules/daisyui.md` (Theme, DaisyUI-Overrides). Hintergrund und verifizierter Ist-Zustand: `docs/DESIGN_GUIDE.md`

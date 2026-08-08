@@ -7,12 +7,12 @@ import {
 } from '$lib/server/db/mediaUploadFilter';
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
-import { rejectedOnly } from '$lib/server/db/approvalFilter';
 import { and, eq, sql, type SQL } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
 import { ServerConfigService } from '$lib/services/configService';
 import { isValidDateParam } from './dateParam';
+import { statusCondition } from './statusFilter';
 
 export const load: PageServerLoad = async ({ url }) => {
 	const page = Math.max(1, Number(url.searchParams.get('page')) || 1);
@@ -47,16 +47,11 @@ export const load: PageServerLoad = async ({ url }) => {
 		);
 	}
 
-	// Verifizierungs-Filter: 0/1 auf geprueft; 'rejected' ist die Triage-Sicht
-	// (abgelehnt_am gesetzt). Abgelehnte haben geprueft=0 und erscheinen damit
-	// auch unter verified=0 — das ist gewollt: „ungeprüft" heißt dort
-	// „nicht freigegeben", die Eingangsseite dagegen zeigt nur wirklich Offene.
-	if (verified === '1') {
-		conditions.push(eq(sightings.verified, 1));
-	} else if (verified === '0') {
-		conditions.push(eq(sightings.verified, 0));
-	} else if (verified === 'rejected') {
-		conditions.push(rejectedOnly());
+	// Statusfilter über dieselben Prädikate wie die öffentlichen Flächen —
+	// Begründung und Alias-Mapping in `sightingStatusFilter.ts`/`statusFilter.ts`.
+	const statusFilter = statusCondition(verified);
+	if (statusFilter) {
+		conditions.push(statusFilter);
 	}
 
 	// Eingangskanal-Filter

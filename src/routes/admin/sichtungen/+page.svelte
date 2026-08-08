@@ -11,8 +11,15 @@
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
 	import { createLogger } from '$lib/logger';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { submitVerdict } from '$lib/components/admin/sightingVerdict';
-	import BaseToggle from '$lib/report/components/form/fields/BaseToggle.svelte';
+	import { submitVerdict, type SightingVerdict } from '$lib/components/admin/sightingVerdict';
+	import SightingStatusControl from '$lib/components/admin/SightingStatusControl.svelte';
+	import {
+		getSightingStatus,
+		SIGHTING_STATUS_PRESENTATION,
+		SIGHTING_STATUS_UNDO_MS,
+		verdictToStatus,
+		type SightingStatus
+	} from '$lib/components/admin/sightingStatus';
 	import { getAnimalBehaviorLabel } from '$lib/report/formOptions/animalBehavior';
 	import { getDistanceLabel } from '$lib/report/formOptions/distance';
 	import { getDistributionLabel } from '$lib/report/formOptions/distribution';
@@ -31,6 +38,7 @@
 		getBalticSeaStatus
 	} from '$lib/utils/geo/balticSeaStatus';
 	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
+	import { normalizeStatusParam } from '$lib/components/admin/sightingStatusFilter';
 
 	const logger = createLogger('SichtungenPage');
 
@@ -40,7 +48,12 @@
 	let sightings = $derived(data.sightings);
 	let fromDate = $state(page.url.searchParams.get('fromDate') || '');
 	let toDate = $state(page.url.searchParams.get('toDate') || '');
-	let verified = $state(page.url.searchParams.get('verified') || '');
+	/* `normalizeStatusParam`, nicht der Rohwert: Der Server versteht die alten
+	   Aliase `verified=1`/`verified=0` weiterhin (Lesezeichen, verlinkte
+	   Filteransichten), aber das `<select>` unten kennt nur `open`/`approved`/
+	   `rejected` — ohne die Normalisierung kam die gefilterte Liste zurück,
+	   während das Feld selbst leer stand. */
+	let verified = $state(normalizeStatusParam(page.url.searchParams.get('verified')) ?? '');
 	let selectedChannel = $state(page.url.searchParams.get('entryChannel') || 'all');
 	let mediaUpload = $state(page.url.searchParams.get('mediaUpload') || '');
 	let balticSea = $state(page.url.searchParams.get('balticSea') || '');
@@ -95,7 +108,7 @@
 		{ key: 'mediaUpload', label: 'Aufnahme', sortKey: null },
 		{ key: 'spamScore', label: 'Spam', sortKey: 'spamScore' },
 		{ key: 'balticSea', label: 'Ostsee', sortKey: null },
-		{ key: 'verified', label: 'Geprüft', sortKey: null },
+		{ key: 'verified', label: 'Status', sortKey: null },
 		{ key: 'actions', label: 'Aktionen', sortKey: null }
 	];
 
@@ -284,80 +297,67 @@
 	}
 
 	/**
-	 * Hebt eine Ablehnung auf: zurück auf „offen", damit die Meldung wieder im
-	 * Eingang erscheint.
+	 * Die Zeilen, deren Statuswechsel gerade läuft — **je Zeile**, nicht global.
 	 *
-	 * Ohne dieses Bedienelement gab es dafür keinen Weg. Der „Geprüft"-Toggle
-	 * hat zwei Stellungen, die Ablehnung ist die dritte Information — an einer
-	 * abgelehnten Zeile steht er bereits auf „aus" und lässt sich nicht noch
-	 * einmal ausschalten. Wer einen Fehlklick korrigieren wollte, musste die
-	 * Meldung erst **freigeben** (also veröffentlichen) und dann zurückziehen.
+	 * Ein einzelner Wert vermischte zwei Zustände: Der Wächter wiese jeden
+	 * weiteren Klick ab, während `disabled` nur am Control der laufenden Zeile
+	 * hinge. Die übrigen sähen bedienbar aus und täten nichts — schlimmer als
+	 * ein sichtbar gesperrtes Element, weil der Fehlschlag unsichtbar bleibt.
+	 * Zwei verschiedene Zeilen dürfen gleichzeitig wechseln; zu verhindern ist
+	 * allein der Doppelklick auf dieselbe.
 	 */
-	/**
-	 * Die Zeilen, deren Reset gerade läuft — **je Zeile**, nicht global.
-	 *
-	 * Ein einzelner Wert hätte hier zwei Zustände vermischt: Der Wächter hätte
-	 * jeden weiteren Klick abgewiesen, während `disabled` nur am Knopf der
-	 * laufenden Zeile hing. Die übrigen Knöpfe sahen damit bedienbar aus und
-	 * taten nichts — schlimmer als ein sichtbar gesperrter Knopf, weil der
-	 * Nutzer den Fehlschlag nicht sieht. Zwei verschiedene Zeilen dürfen ohne
-	 * Weiteres gleichzeitig zurückgesetzt werden; zu verhindern ist allein der
-	 * Doppelklick auf dieselbe.
-	 */
-	const resettingRejection = new SvelteSet<number>();
+	const statusPending = new SvelteSet<number>();
 
-	async function resetRejection(id: number): Promise<void> {
-		if (resettingRejection.has(id)) return;
-		resettingRejection.add(id);
-		const ok = await submitVerdict(id, 'reset');
-		resettingRejection.delete(id);
-		if (ok) await invalidateAll();
-	}
-
-	async function toggleVerifiedStatus(id: number, currentState: boolean): Promise<void> {
-		const newState = currentState ? 0 : 1; // Toggle the state
-
-		logger.debug(
-			{
-				id,
-				currentState,
-				newState
-			},
-			`Toggling verified status for sighting with ID: ${id}`
-		);
-
+	async function changeStatus(
+		id: number,
+		verdict: SightingVerdict,
+		previous: SightingStatus
+	): Promise<void> {
+		if (statusPending.has(id)) return;
+		statusPending.add(id);
+		/* `finally` statt eines Löschens direkt nach `submitVerdict`: Zwischen dem
+		   Entsperren und dem Abschluss von `invalidateAll()` zeigte das Control
+		   schon wieder bedienbar, aber noch die alten Daten — ein Klick in diesem
+		   Fenster hätte `previous` aus einem veralteten Stand berechnet. Der
+		   `finally`-Block deckt zugleich den Fehlerfall (`!ok`) ab, sonst bliebe
+		   die Zeile nach einem gescheiterten Versuch dauerhaft gesperrt. */
 		try {
-			const response = await fetch(`/api/sightings/${id}/verify`, {
-				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ verified: newState })
-			});
+			const ok = await submitVerdict(id, verdict);
+			if (!ok) return;
 
-			if (response.ok) {
-				const result = await response.json();
-				logger.info({ id, result }, 'Prüfstatus erfolgreich geändert');
-
-				// Daten vom Server neu laden
-				await invalidateAll();
-			} else {
-				const error = await response.json();
-				logger.error({ id, error }, 'Fehler beim Ändern des Prüfstatus');
-				toast.error(error.error || 'Prüfstatus konnte nicht geändert werden', {
-					title: 'Fehler',
-					dismissible: true
-				});
-				// Toggle springt zurück: Daten neu laden, damit UI den echten Serverzustand zeigt
-				await invalidateAll();
-			}
-		} catch (error) {
-			logger.error({ id, error }, 'Netzwerkfehler beim Ändern des Prüfstatus');
-			toast.error('Netzwerkfehler beim Ändern des Prüfstatus', {
-				title: 'Verbindungsfehler',
-				dismissible: true
-			});
 			await invalidateAll();
+
+			/* Kein Bestätigungsdialog, auch nicht beim Entzug einer Freigabe: Er
+			   bremste jeden regulären Vorgang aus. Stattdessen ist der Fehlklick in
+			   einem Klick geheilt. Dieselbe Dauer wie das Undo-Fenster der
+			   Eingangsseite (`SIGHTING_STATUS_UNDO_MS`). */
+			const nach = SIGHTING_STATUS_PRESENTATION[verdictToStatus(verdict)];
+			toast.success(`Status: ${nach.label}`, {
+				duration: SIGHTING_STATUS_UNDO_MS,
+				action: {
+					label: 'Rückgängig',
+					onClick: () => {
+						/* Ohne diese Prüfung griff bei einem Klick während eine andere
+						   Aktion auf derselben Zeile noch läuft die `busy`-Wache am Anfang
+						   dieser Funktion: Der Toast schloss sich, `changeStatus` kehrte
+						   sofort zurück, und nichts geschah — ohne jede Rückmeldung. */
+						if (statusPending.has(id)) {
+							toast.error('Diese Zeile wird gerade noch bearbeitet — bitte kurz warten.', {
+								title: 'Rückgängig nicht möglich',
+								dismissible: true
+							});
+							return;
+						}
+						void changeStatus(
+							id,
+							SIGHTING_STATUS_PRESENTATION[previous].verdict,
+							verdictToStatus(verdict)
+						);
+					}
+				}
+			});
+		} finally {
+			statusPending.delete(id);
 		}
 	}
 </script>
@@ -596,8 +596,8 @@
 						bind:value={verified}
 					>
 						<option value="">Alle</option>
-						<option value="1">Geprüft</option>
-						<option value="0">Ungeprüft</option>
+						<option value="open">Offen</option>
+						<option value="approved">Freigegeben</option>
 						<option value="rejected">Abgelehnt</option>
 					</select>
 				</div>
@@ -677,6 +677,10 @@
 	<div class="container mx-auto block space-y-3 px-4 sm:px-6 md:hidden">
 		{#each sightings as sighting (sighting.id)}
 			{@const balticSea = BALTIC_SEA_STATUS_PRESENTATION[getBalticSeaStatus(sighting)]}
+			{@const status = getSightingStatus({
+				approvedAt: sighting.approvedAt,
+				rejectedAt: sighting.rejectedAt
+			})}
 			<div class="bg-base-100 border-base-300 rounded-lg border p-4 shadow-sm">
 				<div class="mb-3 flex items-start justify-between">
 					<div class="flex-1">
@@ -791,27 +795,28 @@
 					<span class="text-base-content/70 text-xs">
 						Gemeldet: {formatLocalDateTime(sighting.created)}
 					</span>
-					<div class="flex items-center gap-2">
-						{#if sighting.rejectedAt}
-							<span class="badge badge-ghost badge-sm">Abgelehnt</span>
-							<button
-								type="button"
-								class="btn btn-ghost btn-xs"
-								disabled={resettingRejection.has(sighting.id)}
-								onclick={() => resetRejection(sighting.id)}
-							>
-								Ablehnung aufheben
-							</button>
-						{/if}
-						<BaseToggle
-							label="Geprüft"
-							name={`verified-mobile-${sighting.id}`}
-							checked={!!sighting.verified}
-							onchange={() => {
-								toggleVerifiedStatus(sighting.id, !!sighting.verified);
-							}}
-						/>
-					</div>
+					<!-- size="sm" statt "md": Gemessen bei 320px/375px lief die Karte mit den
+					     drei beschrifteten Segmenten (`.btn` hat `flex-shrink: 0`, DaisyUI kann
+					     die Gruppe also nicht stauchen) um bis zu 155px horizontal über —
+					     `e2e/admin-table-mobile-status-overflow.spec.ts` hält das als
+					     Regressionstest fest. "sm" zeigt wie die Desktop-Spalte nur Icons; die
+					     Bedeutung tragen dann Icon-Form und Füllung plus das `aria-label` am
+					     Radio-Input (`SightingStatusControl.svelte`) — das erreicht auch
+					     Screenreader. Der `title` am Segment ist eine Zugabe nur für die Maus,
+					     er wirkt bei Tastatur- und Touch-Bedienung nicht.
+					     `groupSuffix="-mobile"`: Ohne ihn teilt sich dieses Control den
+					     Radio-`name` mit dem gleich benannten Control der Desktop-Tabelle
+					     weiter unten — beide stehen für dieselbe Sichtung gleichzeitig im DOM,
+					     nur per CSS getrennt, und HTML gruppiert Radios über den ganzen
+					     Dokumentbaum, nicht pro `fieldset` (siehe `SightingStatusControl.svelte`). -->
+					<SightingStatusControl
+						{status}
+						sightingId={sighting.id}
+						size="sm"
+						groupSuffix="-mobile"
+						busy={statusPending.has(sighting.id)}
+						onchange={(verdict) => changeStatus(sighting.id, verdict, status)}
+					/>
 				</div>
 			</div>
 		{/each}
@@ -894,7 +899,7 @@
 							<th class="hover:bg-base-300">Ostsee</th>
 						{/if}
 						{#if columnVisibility.verified}
-							<th class="hover:bg-base-300">Geprüft</th>
+							<th class="hover:bg-base-300">Status</th>
 						{/if}
 						{#if columnVisibility.actions}
 							<th class="hover:bg-base-300">Aktionen</th>
@@ -903,7 +908,7 @@
 				</thead>
 				<tbody>
 					{#each sightings as sighting (sighting.id)}
-						<tr class="hover:bg-base-200">
+						<tr class="hover:bg-base-200" data-sighting-id={sighting.id}>
 							<!-- Kante und Icon zusammen: Die Kante wirkt beim Überfliegen, das
 							     Icon trägt zusätzlich eine Form — Farbe allein wäre kein
 							     Merkmal (WCAG 1.4.1). Der `sr-only`-Text benennt beides, sonst
@@ -1040,34 +1045,18 @@
 								</td>
 							{/if}
 							{#if columnVisibility.verified}
-								<!-- whitespace-nowrap: BaseToggle gibt seinem Label `overflow-wrap: anywhere`
-								     und `hyphens: auto` mit (bis 2026-08-04 `break-word`) — im Formular
-								     richtig, hier nicht: Die Tabelle staucht die Spalte damit unter die
-								     Wortbreite und trennt „Ge-/prüft".
-								     Die Sperre steht an der Zelle und nicht in der Komponente, damit lange
-								     Labels in der Bearbeitungsmaske weiter umbrechen dürfen. -->
-								<td class="whitespace-nowrap">
-									<div class="flex items-center gap-2">
-										{#if sighting.rejectedAt}
-											<span class="badge badge-ghost badge-sm">Abgelehnt</span>
-											<button
-												type="button"
-												class="btn btn-ghost btn-xs"
-												disabled={resettingRejection.has(sighting.id)}
-												onclick={() => resetRejection(sighting.id)}
-											>
-												Aufheben
-											</button>
-										{/if}
-										<BaseToggle
-											label="Geprüft"
-											name={`verified-${sighting.id}`}
-											checked={!!sighting.verified}
-											onchange={() => {
-												toggleVerifiedStatus(sighting.id, !!sighting.verified);
-											}}
-										/>
-									</div>
+								{@const status = getSightingStatus({
+									approvedAt: sighting.approvedAt,
+									rejectedAt: sighting.rejectedAt
+								})}
+								<td>
+									<SightingStatusControl
+										{status}
+										sightingId={sighting.id}
+										size="sm"
+										busy={statusPending.has(sighting.id)}
+										onchange={(verdict) => changeStatus(sighting.id, verdict, status)}
+									/>
 								</td>
 							{/if}
 							{#if columnVisibility.actions}
