@@ -1,5 +1,6 @@
 import { db } from '$lib/server/db';
 import { openOnly } from '$lib/server/db/approvalFilter';
+import { findDuplicateCandidates } from '$lib/server/db/duplicateCandidates';
 import {
 	MEDIA_UPLOAD_ANNOUNCED_MISSING,
 	mediaUploadCondition
@@ -58,6 +59,10 @@ export const load: PageServerLoad = async ({ url }) => {
 	// zu warten (er hängt nur von der Liste ab).
 	const openWithImagesQuery = openQuery.then(async (open) => {
 		const ids = open.map((s) => s.id);
+		/* Duplikat-Hinweis (Spec B2): ein Zusatz-Query für alle gelisteten IDs
+		   gemeinsam, parallel zur Bild-Abfrage. Beide hängen nur an der Liste; den
+		   Leerfall fängt `findDuplicateCandidates` selbst ab. */
+		const duplicatesPromise = findDuplicateCandidates(ids);
 		const imageRows = ids.length
 			? await db
 					.select({
@@ -71,14 +76,11 @@ export const load: PageServerLoad = async ({ url }) => {
 						and(inArray(sightingFiles.sightingId, ids), like(sightingFiles.mimeType, 'image/%'))
 					)
 			: [];
-		return { open, imageRows };
+		return { open, imageRows, duplicatesBySighting: await duplicatesPromise };
 	});
 
-	const [{ open, imageRows }, openCountResult, pendingPhotoResult] = await Promise.all([
-		openWithImagesQuery,
-		openCountQuery,
-		pendingPhotoQuery
-	]);
+	const [{ open, imageRows, duplicatesBySighting }, openCountResult, pendingPhotoResult] =
+		await Promise.all([openWithImagesQuery, openCountQuery, pendingPhotoQuery]);
 
 	const imagesBySighting: Record<number, { id: number; filePath: string; originalName: string }[]> =
 		{};
@@ -100,6 +102,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		openTotal: Number(openCountResult[0]?.count ?? 0),
 		order,
 		imagesBySighting,
-		pendingPhotoAnnouncements: Number(pendingPhotoResult[0]?.count ?? 0)
+		pendingPhotoAnnouncements: Number(pendingPhotoResult[0]?.count ?? 0),
+		duplicatesBySighting
 	};
 };

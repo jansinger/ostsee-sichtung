@@ -131,6 +131,76 @@ describe('SightingInboxCard', () => {
 			.toBeInTheDocument();
 	});
 
+	/* Duplikat-Hinweis (Spec B2). Er ist ausdrücklich nur ein Hinweis: kein
+	   Auto-Merge, keine Vorauswahl — deshalb prüfen die Tests, dass er ohne
+	   Kandidaten gar nicht erscheint und mit Kandidaten in die Detailansicht
+	   verlinkt, statt selbst etwas zu entscheiden. */
+	describe('Duplikat-Hinweis', () => {
+		const kandidaten = [
+			{ id: 101, sightingDate: '2026-07-30T08:30:00Z', species: 0, reason: 'email' as const },
+			{ id: 102, sightingDate: '2026-07-30T09:15:00Z', species: 1, reason: 'position' as const }
+		];
+
+		it('bleibt ohne Kandidaten unsichtbar', async () => {
+			const screen = render(SightingInboxCard, {
+				sighting: basisSichtung,
+				images: [],
+				duplicates: [],
+				busy: false,
+				onApprove: noop,
+				onReject: noop
+			});
+			await expect.element(screen.getByTestId('duplicate-badge')).not.toBeInTheDocument();
+		});
+
+		it('nennt die Anzahl ähnlicher Meldungen', async () => {
+			const screen = render(SightingInboxCard, {
+				sighting: basisSichtung,
+				images: [],
+				duplicates: kandidaten,
+				busy: false,
+				onApprove: noop,
+				onReject: noop
+			});
+			await expect
+				.element(screen.getByTestId('duplicate-badge'))
+				.toHaveTextContent('2 ähnliche Meldungen');
+		});
+
+		it('sagt bei genau einem Kandidaten „1 ähnliche Meldung"', async () => {
+			const screen = render(SightingInboxCard, {
+				sighting: basisSichtung,
+				images: [],
+				duplicates: kandidaten.slice(0, 1),
+				busy: false,
+				onApprove: noop,
+				onReject: noop
+			});
+			await expect
+				.element(screen.getByTestId('duplicate-badge'))
+				.toHaveTextContent('1 ähnliche Meldung');
+		});
+
+		it('verlinkt jeden Kandidaten auf seine Detailansicht', async () => {
+			const screen = render(SightingInboxCard, {
+				sighting: basisSichtung,
+				images: [],
+				duplicates: kandidaten,
+				busy: false,
+				onApprove: noop,
+				onReject: noop
+			});
+			await screen.getByTestId('duplicate-badge').click();
+
+			await expect
+				.element(screen.getByRole('link', { name: /#101/ }))
+				.toHaveAttribute('href', '/admin/101');
+			await expect
+				.element(screen.getByRole('link', { name: /#102/ }))
+				.toHaveAttribute('href', '/admin/102');
+		});
+	});
+
 	it('rendert Bild-Vorschauen über /api/media', async () => {
 		const screen = render(SightingInboxCard, {
 			sighting: basisSichtung,

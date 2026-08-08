@@ -7,18 +7,31 @@
 	} from '$lib/utils/geo/balticSeaStatus';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import type { SightingSelect } from '$lib/server/db/schema';
+	import type { DuplicateCandidate } from '$lib/server/db/duplicateCandidates';
 	import Icon from '$lib/components/Icon.svelte';
 	import { SIGHTING_STATUS_PRESENTATION } from './sightingStatus';
 
 	interface Props {
 		sighting: SightingSelect;
 		images: { id: number; filePath: string; originalName: string }[];
+		/** Mögliche Doppelmeldungen (Spec B2) — reiner Hinweis, kein Merge. */
+		duplicates?: DuplicateCandidate[];
 		busy: boolean;
 		onApprove: () => void;
 		onReject: () => void;
 	}
 
-	let { sighting, images, busy, onApprove, onReject }: Props = $props();
+	let { sighting, images, duplicates = [], busy, onApprove, onReject }: Props = $props();
+
+	/* „1 ähnliche Meldung" statt „1 ähnliche Meldungen": Die Karte ist die
+	   Arbeitsfläche des Museums, nicht eine Log-Zeile. */
+	const duplicateLabel = $derived(
+		duplicates.length === 1 ? '1 ähnliche Meldung' : `${duplicates.length} ähnliche Meldungen`
+	);
+	const DUPLICATE_REASON_LABEL: Record<DuplicateCandidate['reason'], string> = {
+		email: 'gleiche E-Mail, gleiche Stunde',
+		position: 'nahe Position, ähnliche Zeit'
+	};
 
 	const balticSea = $derived(BALTIC_SEA_STATUS_PRESENTATION[getBalticSeaStatus(sighting)]);
 	/* Gleiche Schwellen wie die Spam-Spalte der Tabelle (/admin/sichtungen) —
@@ -55,6 +68,40 @@
 			</span>
 			<span class="badge badge-sm {balticSea.badgeClass}">{balticSea.label}</span>
 		</div>
+
+		{#if duplicates.length > 0}
+			<!-- Aufklapper statt Direktanzeige: Der Hinweis soll die Karte nicht
+			     länger machen als die Meldung selbst. Zusammengeführt wird nichts —
+			     die Kandidaten sind Links in die Detailansicht, die Entscheidung
+			     bleibt beim Bearbeiter. -->
+			<details class="text-sm">
+				<summary class="btn btn-ghost btn-sm w-fit justify-start" data-testid="duplicate-badge">
+					<Icon icon="lucide:copy" width="16" height="16" aria-hidden="true" />
+					<span class="badge badge-sm badge-warning">{duplicateLabel}</span>
+					<!-- Der eigene Pfeil ersetzt den ::marker: DaisyUIs `btn` macht das
+					     `summary` zu `inline-flex`, und Chrome entfernt den Marker damit.
+					     Ohne ihn kündigt nichts an, dass sich hier etwas aufklappt. -->
+					<span class="duplicate-chevron inline-flex">
+						<Icon icon="lucide:chevron-down" width="16" height="16" aria-hidden="true" />
+					</span>
+				</summary>
+				<ul class="border-warning/30 mt-2 ml-2 space-y-1 border-l pl-3">
+					{#each duplicates as candidate (candidate.id)}
+						<li>
+							<a href={`/admin/${candidate.id}`} class="link link-hover font-medium">
+								#{candidate.id}
+							</a>
+							<span class="text-base-content/70">
+								{getSpeciesLabel(candidate.species)} · {formatLocalDateTime(
+									candidate.sightingDate,
+									'datetime'
+								)} · {DUPLICATE_REASON_LABEL[candidate.reason]}
+							</span>
+						</li>
+					{/each}
+				</ul>
+			</details>
+		{/if}
 
 		<div class="flex flex-wrap items-baseline justify-between gap-2">
 			<h3 class="text-base font-semibold">
@@ -122,3 +169,15 @@
 		</div>
 	</div>
 </article>
+
+<style>
+	/* Dauer und Kurve aus den Motion-Tokens (`design-system.md`): ein Hover-/
+	   Zustandswechsel ist `--motion-instant`, keine eigene Zahl. */
+	.duplicate-chevron {
+		transition: transform var(--motion-instant) var(--motion-ease);
+	}
+
+	details[open] .duplicate-chevron {
+		transform: rotate(180deg);
+	}
+</style>

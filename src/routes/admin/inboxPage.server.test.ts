@@ -73,6 +73,17 @@ vi.mock('$lib/server/db', () => ({
 	}
 }));
 
+/* Der Duplikat-Hinweis (Spec B2) hat seine eigenen Tests in
+   `src/lib/server/db/duplicateCandidates.test.ts`. Hier zählt nur die
+   Verdrahtung: Der Loader reicht **alle** gelisteten IDs in **einem** Aufruf
+   hinein und gibt das Ergebnis unverändert an die Seite weiter. */
+const findDuplicateCandidates = vi
+	.fn<(ids: number[]) => Promise<Record<number, unknown[]>>>()
+	.mockResolvedValue({});
+vi.mock('$lib/server/db/duplicateCandidates', () => ({
+	findDuplicateCandidates: (ids: number[]) => findDuplicateCandidates(ids)
+}));
+
 function makeUrl(params: Record<string, string> = {}): URL {
 	const url = new URL('https://example.com/admin');
 	for (const [key, value] of Object.entries(params)) {
@@ -88,6 +99,7 @@ type InboxData = {
 	order: 'asc' | 'desc';
 	imagesBySighting: Record<number, { id: number; filePath: string; originalName: string }[]>;
 	pendingPhotoAnnouncements: number;
+	duplicatesBySighting: Record<number, unknown[]>;
 };
 
 const { load } = await import('./+page.server');
@@ -103,6 +115,30 @@ describe('Eingangs-Load', () => {
 	beforeEach(() => {
 		recordedSelects = [];
 		resolvedRows = [[{ id: 1 }, { id: 2 }], [{ count: 7 }], [{ count: 3 }], []];
+		findDuplicateCandidates.mockClear();
+		findDuplicateCandidates.mockResolvedValue({});
+	});
+
+	it('sucht Duplikat-Kandidaten für alle gelisteten IDs in einem Aufruf', async () => {
+		findDuplicateCandidates.mockResolvedValue({ 1: [{ id: 99 }] });
+
+		const result = await runLoad(makeUrl());
+
+		expect(findDuplicateCandidates).toHaveBeenCalledTimes(1);
+		expect(findDuplicateCandidates).toHaveBeenCalledWith([1, 2]);
+		expect(result.duplicatesBySighting).toEqual({ 1: [{ id: 99 }] });
+	});
+
+	/* Den Leerfall behandelt `findDuplicateCandidates` selbst (eigener Test:
+	   keine DB-Abfrage ohne IDs). Der Loader muss ihn deshalb nicht doppelt
+	   abfangen — er darf ihn nur nicht in eine leere ID-Liste verdrehen. */
+	it('reicht bei leerer Liste eine leere ID-Liste durch', async () => {
+		resolvedRows = [[], [{ count: 0 }], [{ count: 0 }], []];
+
+		const result = await runLoad(makeUrl());
+
+		expect(findDuplicateCandidates).toHaveBeenCalledWith([]);
+		expect(result.duplicatesBySighting).toEqual({});
 	});
 
 	it('leitet Tabellen-URLs mit 301 nach /admin/sichtungen weiter (Query bleibt erhalten)', async () => {
