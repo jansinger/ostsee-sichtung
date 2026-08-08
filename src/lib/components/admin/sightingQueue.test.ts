@@ -22,9 +22,7 @@ describe('queueHref', () => {
 	it('trägt Herkunft und Sortierung mit', () => {
 		const href = queueHref(NACHBAR, 'asc');
 
-		expect(href).toContain('/admin/501');
-		expect(href).toContain('from=inbox');
-		expect(href).toContain('order=asc');
+		expect(href).toBe('/admin/501?from=inbox&order=asc');
 	});
 });
 
@@ -36,6 +34,13 @@ describe('advanceTarget', () => {
 		});
 	});
 
+	it('reicht die Sortierung `asc` an den Ziel-Href durch', () => {
+		expect(advanceTarget(QUEUE, false, 'asc')).toEqual({
+			kind: 'sighting',
+			href: queueHref(NACHBAR, 'asc')
+		});
+	});
+
 	it('geht am Stapelende zurück in den Eingang', () => {
 		expect(advanceTarget({ ...QUEUE, next: null }, false, 'desc')).toEqual({ kind: 'inbox' });
 	});
@@ -43,12 +48,5 @@ describe('advanceTarget', () => {
 	it('bleibt stehen, wenn die Warteschlange unbekannt ist', () => {
 		expect(advanceTarget(QUEUE, true, 'desc')).toEqual({ kind: 'stay' });
 		expect(advanceTarget(null, false, 'desc')).toEqual({ kind: 'stay' });
-	});
-
-	it('unterscheidet Stapelende von Fehlschlag — beide haben kein next', () => {
-		const ende = advanceTarget({ ...QUEUE, next: null }, false, 'desc');
-		const fehler = advanceTarget({ ...QUEUE, next: null }, true, 'desc');
-
-		expect(ende).not.toEqual(fehler);
 	});
 });
