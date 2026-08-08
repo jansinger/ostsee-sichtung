@@ -15,11 +15,12 @@
  */
 
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { sql, type SQL, type SQLWrapper } from 'drizzle-orm';
+import { gte, sql, type SQL, type SQLWrapper } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
 import { sightings } from '$lib/server/db/schema';
 import { berlinCalendarDate } from '$lib/server/db/sqlTimeZone';
 import { openOnly } from '$lib/server/db/approvalFilter';
+import { EARLIEST_PLAUSIBLE_SIGHTING_DATE } from '$lib/server/db/sightingRepository';
 
 const dialect = new PgDialect();
 const toSqlText = (expression: SQLWrapper): string => dialect.sqlToQuery(expression.getSQL()).sql;
@@ -31,6 +32,15 @@ let recordedSelectColumns: Array<Record<string, unknown>> = [];
 let recordedWhereClauses: SQLWrapper[] = [];
 
 /**
+ * Spalten und Prädikat **derselben** Abfrage, als Paar.
+ *
+ * Die beiden Listen darüber verlieren diese Zuordnung — für die Jahresauswahl
+ * ist sie aber der Kern der Aussage: Die Kopfzahlen müssen das gewählte Jahr
+ * tragen, die Jahrestrends gerade nicht (sie sind der Kontext der Auswahl).
+ */
+let recordedQueries: Array<{ columns: Record<string, unknown>; where?: SQLWrapper }> = [];
+
+/**
  * Minimaler, aufzeichnender Drizzle-Query-Builder.
  *
  * Deckt jede Verkettung ab, die `load()` in `+page.server.ts` verwendet
@@ -38,12 +48,15 @@ let recordedWhereClauses: SQLWrapper[] = [];
  * löst beim `await` auf eine leere Ergebnisliste auf — die Werte selbst sind
  * für diesen Test irrelevant, nur die Spalten-Definitionen zählen.
  */
-function createRecordingBuilder() {
+function createRecordingBuilder(eintrag: { columns: Record<string, unknown>; where?: SQLWrapper }) {
 	const builder = {
 		from: () => builder,
 		innerJoin: () => builder,
 		where: (predicate?: SQLWrapper) => {
-			if (predicate) recordedWhereClauses.push(predicate);
+			if (predicate) {
+				recordedWhereClauses.push(predicate);
+				eintrag.where = predicate;
+			}
 			return builder;
 		},
 		groupBy: () => builder,
@@ -62,7 +75,9 @@ vi.mock('$lib/server/db', () => ({
 	db: {
 		select: (columns?: Record<string, unknown>) => {
 			if (columns) recordedSelectColumns.push(columns);
-			return createRecordingBuilder();
+			const eintrag = { columns: columns ?? {} };
+			recordedQueries.push(eintrag);
+			return createRecordingBuilder(eintrag);
 		}
 	}
 }));
@@ -73,11 +88,27 @@ vi.mock('$lib/logger.server', () => ({
 
 const { load } = await import('./+page.server');
 
+/**
+ * Ruft `load()` mit einer echten URL auf.
+ *
+ * Der Loader liest die Jahresauswahl aus `url.searchParams`; ein leeres
+ * Event-Objekt (wie vor der Jahresauswahl) würde daran scheitern.
+ */
+const ladeSeite = async (suche = '') => {
+	const daten = await load({
+		url: new URL(`https://localhost/admin/statistics${suche}`)
+	} as unknown as Parameters<typeof load>[0]);
+
+	// `PageServerLoad` lässt formal auch `void` zu; dieser Loader liefert in jedem
+	// Pfad ein Objekt oder wirft.
+	return daten as Exclude<typeof daten, void>;
+};
+
 describe('admin/statistics load() — Top-Observers Datumsspalten (M1)', () => {
 	it('berechnet firstSighting/lastSighting in Berlin-Ortszeit statt UTC-Tag', async () => {
 		recordedSelectColumns = [];
 
-		await load({} as unknown as Parameters<typeof load>[0]);
+		await ladeSeite();
 
 		const topObserversColumns = recordedSelectColumns.find(
 			(columns) => 'firstSighting' in columns && 'lastSighting' in columns
@@ -122,7 +153,7 @@ describe('admin/statistics load() — einheitliche Grundmenge', () => {
 	it('bezieht jede Abfrage auf den Freigabestatus und keine mehr auf geprueft', async () => {
 		recordedWhereClauses = [];
 
-		await load({} as unknown as Parameters<typeof load>[0]);
+		await ladeSeite();
 
 		expect(
 			recordedWhereClauses.length,
@@ -150,7 +181,7 @@ describe('admin/statistics load() — einheitliche Grundmenge', () => {
 	it('fährt die Kopfzahlen getrennt für freigegeben und offen', async () => {
 		recordedWhereClauses = [];
 
-		await load({} as unknown as Parameters<typeof load>[0]);
+		await ladeSeite();
 
 		const texte = recordedWhereClauses.map(toSqlText);
 
@@ -178,7 +209,7 @@ describe('admin/statistics load() — „noch offen" schließt Abgelehnte aus', 
 	it('zählt die offene Kopfzahl über openOnly() statt über pendingOnly()', async () => {
 		recordedWhereClauses = [];
 
-		await load({} as unknown as Parameters<typeof load>[0]);
+		await ladeSeite();
 
 		const texte = recordedWhereClauses.map(toSqlText);
 		const offeneAbfragen = texte.filter((t) => /freigegeben_am"? is null/i.test(t));
@@ -188,9 +219,178 @@ describe('admin/statistics load() — „noch offen" schließt Abgelehnte aus', 
 			'keine Abfrage auf die nicht freigegebene Menge gefunden'
 		).toBeGreaterThan(0);
 
+		// Verglichen wird auf **Enthaltensein**, nicht auf Gleichheit: Seit der
+		// Jahresauswahl (B5) tragen Abfragen zusätzliche Bedingungen, die Grundmenge
+		// steckt dann als Teilausdruck darin. Die Aussage bleibt dieselbe — wo
+		// „nicht freigegeben" steht, muss „nicht abgelehnt" danebenstehen, sonst
+		// ist es `pendingOnly()` und zählt die Abgelehnten mit.
 		const erwartet = toSqlText(openOnly());
+		const kern = erwartet.replace(/^\(|\)$/g, '');
 		for (const text of offeneAbfragen) {
-			expect(text, `Abfrage zählt Abgelehnte als „noch offen" mit:\n${text}`).toBe(erwartet);
+			expect(text, `Abfrage zählt Abgelehnte als „noch offen" mit:\n${text}`).toContain(kern);
+		}
+	});
+});
+
+/**
+ * B5 — Jahresauswahl über den URL-Parameter `jahr`.
+ *
+ * Die Auswahl muss **alle** Auswertungen der Seite tragen, sonst stünde eine
+ * Jahreszahl über Zahlen, die einen anderen Zeitraum meinen. Genau zwei
+ * Abfragen sind davon ausgenommen, und beide aus demselben Grund: Sie bilden
+ * den Kontext, aus dem heraus gewählt wird.
+ *
+ * - **Jahrestrends** (`year`/`sightings`): Auf ein Jahr gefiltert bliebe ein
+ *   einzelner Balken übrig — ein Trend über ein Jahr ist kein Trend.
+ * - **Auswahlliste** (`availableYears`): Sie muss die Jahre nennen, die es
+ *   gibt, nicht das gerade gewählte. Wäre sie gefiltert, ließe sich die
+ *   Auswahl nach dem ersten Wechsel nicht mehr verlassen.
+ */
+describe('admin/statistics load() — Jahresauswahl', () => {
+	/** Der Jahresfilter ist die einzige Stelle, an der EXTRACT in ein WHERE gerät. */
+	const hatJahresfilter = (eintrag: { where?: SQLWrapper }): boolean =>
+		eintrag.where !== undefined && /extract\(year/i.test(toSqlText(eintrag.where));
+
+	const abfrageMit = (spalte: string) =>
+		recordedQueries.find((eintrag) => spalte in eintrag.columns);
+
+	it('lässt ohne Parameter jede Abfrage über alle Jahre laufen', async () => {
+		recordedQueries = [];
+
+		const daten = await ladeSeite();
+
+		expect(daten.selectedYear).toBeNull();
+		expect(recordedQueries.filter(hatJahresfilter)).toEqual([]);
+	});
+
+	it('legt das gewählte Jahr auf die Kopfzahlen beider Grundmengen', async () => {
+		recordedQueries = [];
+
+		const daten = await ladeSeite('?jahr=2020');
+
+		expect(daten.selectedYear).toBe(2020);
+
+		const kopfzahlen = recordedQueries.filter((eintrag) => 'totalSightings' in eintrag.columns);
+		expect(kopfzahlen.length, 'beide Grundmengen müssen einzeln laufen').toBe(2);
+		for (const abfrage of kopfzahlen) {
+			expect(hatJahresfilter(abfrage), 'Kopfzahl ohne Jahresfilter').toBe(true);
+		}
+	});
+
+	it('legt das gewählte Jahr auch auf Arten-, Monats- und Qualitätsabfragen', async () => {
+		recordedQueries = [];
+
+		await ladeSeite('?jahr=2020');
+
+		for (const spalte of ['species', 'month', 'uniqueUsers', 'uniqueShips', 'email']) {
+			const abfrage = abfrageMit(spalte);
+			expect(abfrage, `Abfrage mit Spalte „${spalte}" nicht gefunden`).toBeDefined();
+			expect(hatJahresfilter(abfrage!), `Abfrage „${spalte}" ignoriert die Jahresauswahl`).toBe(
+				true
+			);
+		}
+	});
+
+	it('lässt die Jahrestrends als Kontext über alle Jahre laufen', async () => {
+		recordedQueries = [];
+
+		await ladeSeite('?jahr=2020');
+
+		const jahrestrend = recordedQueries.find(
+			(eintrag) => 'year' in eintrag.columns && 'sightings' in eintrag.columns
+		);
+		expect(jahrestrend, 'Jahrestrend-Abfrage nicht gefunden').toBeDefined();
+		expect(hatJahresfilter(jahrestrend!), 'Jahrestrend auf ein Jahr eingedampft').toBe(false);
+	});
+
+	it('lässt den Eingang der letzten 30 Tage unabhängig von der Jahresauswahl', async () => {
+		recordedQueries = [];
+
+		await ladeSeite('?jahr=2020');
+
+		const eingang = recordedQueries.find(
+			(eintrag) => 'date' in eintrag.columns && 'count' in eintrag.columns
+		);
+		expect(eingang, 'Eingangs-Abfrage nicht gefunden').toBeDefined();
+		expect(hatJahresfilter(eingang!), 'Eingang trägt die Jahresauswahl').toBe(false);
+	});
+
+	it('fällt bei einem unplausiblen Jahr auf „Alle Jahre" zurück', async () => {
+		recordedQueries = [];
+
+		const daten = await ladeSeite('?jahr=1970');
+
+		expect(daten.selectedYear).toBeNull();
+		expect(recordedQueries.filter(hatJahresfilter)).toEqual([]);
+	});
+
+	it('liefert die auswählbaren Jahre mit — getrennt erhoben, nie vermischt gezählt', async () => {
+		recordedQueries = [];
+
+		const daten = await ladeSeite();
+
+		expect(Array.isArray(daten.availableYears)).toBe(true);
+
+		// Die Jahresliste entsteht aus beiden Grundmengen, damit ein Jahr, in dem
+		// bisher nur offene Meldungen liegen, wählbar ist. Vermischt wird dabei
+		// nichts: Die Abfragen liefern Jahreszahlen, keine Zählwerte (Vorgabe 2).
+		const jahresListen = recordedQueries.filter(
+			(eintrag) => 'year' in eintrag.columns && !('sightings' in eintrag.columns)
+		);
+		expect(jahresListen.length, 'Jahresliste je Grundmenge erwartet').toBe(2);
+		for (const abfrage of jahresListen) {
+			expect(abfrage.where, 'Jahresliste ohne Freigabebezug').toBeDefined();
+			expect(toSqlText(abfrage.where!)).toContain('freigegeben_am');
+		}
+	});
+});
+
+/**
+ * Der Epoch-Ausschluss gehört an die Kalenderauswertungen — und an sonst nichts.
+ *
+ * In `sichtungen` liegen 280 Zeilen auf dem Platzhalter 1970-01-01. Gemessen am
+ * 2026-08-08 auf der Entwicklungs-DB sind davon **0 freigegeben und alle 280
+ * offen**. Daraus folgt beides:
+ *
+ * - Für die freigegebene Seite gibt es keine Divergenz zwischen Kopfzahl und
+ *   Jahres-/Monatsverteilung — die Menge, um die sie sich unterscheiden könnten,
+ *   ist leer.
+ * - Die Kopfzahl „noch offen" **darf** ihn nicht tragen: Sie muss dieselbe Menge
+ *   zählen wie der Eingang auf `/admin` (`openOnly()`, ohne Datumsgrenze). Mit
+ *   Ausschluss stünden hier 377 gegen 657 dort — exakt die Klasse Divergenz, die
+ *   #800 beseitigt hat, nur um 280 statt um 6 Zeilen.
+ */
+describe('admin/statistics load() — Epoch-Ausschluss nur in den Kalenderauswertungen', () => {
+	const epochGrenze = toSqlText(gte(sightings.sightingDate, EARLIEST_PLAUSIBLE_SIGHTING_DATE));
+
+	it('hält die Kopfzahlen deckungsgleich mit dem Eingang', async () => {
+		recordedQueries = [];
+
+		await ladeSeite();
+
+		const kopfzahlen = recordedQueries.filter((eintrag) => 'totalSightings' in eintrag.columns);
+		expect(kopfzahlen.length).toBe(2);
+		for (const abfrage of kopfzahlen) {
+			expect(
+				toSqlText(abfrage.where!),
+				'Kopfzahl grenzt das Datum ein und weicht damit vom Eingang ab'
+			).not.toContain(epochGrenze);
+		}
+	});
+
+	it('hält die Epoch-Platzhalter aus Jahres- und Monatsverteilung heraus', async () => {
+		recordedQueries = [];
+
+		await ladeSeite();
+
+		const kalender = recordedQueries.filter(
+			(eintrag) => 'year' in eintrag.columns || 'month' in eintrag.columns
+		);
+		expect(kalender.length, 'Kalenderauswertungen nicht gefunden').toBeGreaterThanOrEqual(3);
+		for (const abfrage of kalender) {
+			expect(toSqlText(abfrage.where!), 'Kalenderauswertung ohne Epoch-Ausschluss').toContain(
+				epochGrenze
+			);
 		}
 	});
 });

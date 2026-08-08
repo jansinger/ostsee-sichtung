@@ -2,9 +2,11 @@ import { createLogger } from '$lib/logger.server';
 import { db } from '$lib/server/db';
 import { approvedOnly, openOnly } from '$lib/server/db/approvalFilter';
 import { sightings } from '$lib/server/db/schema';
+import { EARLIEST_PLAUSIBLE_SIGHTING_DATE } from '$lib/server/db/sightingRepository';
 import { berlinCalendarDate, berlinDatePart } from '$lib/server/db/sqlTimeZone';
-import { and, isNotNull, ne, sql, type SQL } from 'drizzle-orm';
+import { and, eq, gte, isNotNull, ne, sql, type SQL } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
+import { YEAR_PARAM, parseYearParam, plausibleYearRange } from './yearFilter';
 
 const logger = createLogger('admin:statistics:page');
 
@@ -66,8 +68,80 @@ async function loadBasicStats(grundmenge: SQL): Promise<AdminBasicStats> {
 	return row ?? EMPTY_BASIC_STATS;
 }
 
-export const load: PageServerLoad = async () => {
+/**
+ * Sichtungen eines Kalenderjahres in deutscher Ortszeit.
+ *
+ * Dieselbe Auslegung wie die Gruppierung darunter: `sichtungsdatum` hält seit
+ * der UTC-Migration echte Zeitpunkte, eine Sichtung am 01.01. um 00:30 Ortszeit
+ * steht darin als 31.12. 23:30 UTC und gehört trotzdem ins neue Jahr.
+ */
+const jahresfilter = (jahr: number): SQL =>
+	eq(berlinDatePart('year', sightings.sightingDate), jahr);
+
+/**
+ * Datensätze mit plausiblem Sichtungsdatum.
+ *
+ * 280 Zeilen des Altbestands liegen auf dem Epoch-Platzhalter (1970-01-01) —
+ * fehlerhafte Importe, die der Jahresauswahl ein Jahr 1970 unterschöben, das es
+ * fachlich nie gab (`statisticsEpochExclusion.test.ts`).
+ *
+ * **Bewusst nur an den Kalenderauswertungen** (Jahres-, Monatsverteilung,
+ * Jahresliste) und nicht an den Kopfzahlen. Das sieht nach einer Inkonsistenz
+ * aus, ist aber die einzig richtige Aufteilung — gemessen am 2026-08-08 sind von
+ * den 280 Zeilen **0 freigegeben und alle 280 offen**:
+ *
+ * - Auf der freigegebenen Seite gibt es deshalb gar keine Divergenz zwischen
+ *   Kopfzahl und Verteilung; die Menge, um die sie abweichen könnten, ist leer.
+ * - Die Kopfzahl „noch offen" muss dieselbe Menge zählen wie der Eingang auf
+ *   `/admin`, und der filtert `openOnly()` ohne Datumsgrenze. Mit Ausschluss
+ *   stünden hier 377 gegen 657 dort — dieselbe Klasse Divergenz, die #800
+ *   beseitigt hat, nur um 280 statt um 6 Zeilen.
+ *
+ * Festgehalten in `page.server.test.ts` („Epoch-Ausschluss nur in den
+ * Kalenderauswertungen") in beide Richtungen.
+ */
+const plausiblesDatum = (): SQL => gte(sightings.sightingDate, EARLIEST_PLAUSIBLE_SIGHTING_DATE);
+
+/**
+ * Die Jahre, in denen eine Grundmenge überhaupt Sichtungen hat.
+ *
+ * Läuft je Grundmenge einmal — nicht, weil hier etwas vermischt werden könnte
+ * (das Ergebnis sind Jahreszahlen, keine Zählwerte), sondern weil eine Abfrage
+ * über die ganze Tabelle keinen Freigabebezug hätte; Vorgabe 3 aus
+ * `approvalFilter.ts` gilt ausnahmslos.
+ */
+async function loadYears(grundmenge: SQL): Promise<number[]> {
+	const rows = await db
+		.select({
+			year: sql<number>`${berlinDatePart('year', sightings.sightingDate)}::integer`
+		})
+		.from(sightings)
+		.where(and(grundmenge, isNotNull(sightings.sightingDate), plausiblesDatum()))
+		.groupBy(berlinDatePart('year', sightings.sightingDate));
+
+	return rows.map((row) => Number(row.year)).filter((jahr) => Number.isFinite(jahr));
+}
+
+export const load: PageServerLoad = async ({ url }) => {
 	try {
+		// Jahresauswahl. `null` heißt „Alle Jahre" und ist der Ausgangszustand;
+		// jeder unplausible Parameter fällt ebenfalls darauf zurück (yearFilter.ts).
+		const selectedYear = parseYearParam(
+			url.searchParams.get(YEAR_PARAM),
+			plausibleYearRange(new Date())
+		);
+
+		/**
+		 * Legt die Jahresauswahl auf eine Grundmenge.
+		 *
+		 * Ohne Auswahl bleibt das Prädikat **unverändert** und wird nicht in ein
+		 * einelementiges `and()` gewickelt: Die Grundmengen sind an anderer Stelle
+		 * zeichengenau gegen `openOnly()` bzw. `approvedOnly()` festgehalten, und
+		 * eine zusätzliche Klammerebene bräche diesen Vergleich ohne fachlichen
+		 * Grund.
+		 */
+		const mitJahr = (grundmenge: SQL): SQL =>
+			selectedYear === null ? grundmenge : (and(grundmenge, jahresfilter(selectedYear)) as SQL);
 		// Basis-Kennzahlen getrennt nach Grundmenge: freigegeben und offen.
 		//
 		// Die zweite Menge lief bis 2026-08-08 über `pendingOnly()` („nicht
@@ -84,8 +158,8 @@ export const load: PageServerLoad = async () => {
 		// aufmachte. Deshalb ändert sich hier die Aufrufstelle und nicht das
 		// gemeinsame Prädikat.
 		const [approvedStats, openStats] = await Promise.all([
-			loadBasicStats(approvedOnly()),
-			loadBasicStats(openOnly())
+			loadBasicStats(mitJahr(approvedOnly())),
+			loadBasicStats(mitJahr(openOnly()))
 		]);
 		const basicStats = { approved: approvedStats, open: openStats };
 
@@ -100,7 +174,7 @@ export const load: PageServerLoad = async () => {
 				deadPercentage: sql<number>`ROUND(COUNT(CASE WHEN ${sightings.isDead} = 1 THEN 1 END) * 100.0 / COUNT(*), 2)::numeric`
 			})
 			.from(sightings)
-			.where(approvedOnly())
+			.where(mitJahr(approvedOnly()))
 			.groupBy(sightings.species)
 			.orderBy(sql`COUNT(*) DESC`);
 
@@ -114,7 +188,11 @@ export const load: PageServerLoad = async () => {
 				sightings: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
-			.where(and(isNotNull(sightings.sightingDate), approvedOnly()))
+			// Bewusst OHNE `mitJahr`: Die Jahrestrends sind der Kontext, aus dem
+			// heraus ein Jahr gewählt wird. Auf das gewählte Jahr gefiltert bliebe
+			// ein einzelner Balken übrig — ein Trend über ein Jahr ist keiner. Das
+			// gewählte Jahr wird im Diagramm stattdessen hervorgehoben.
+			.where(and(isNotNull(sightings.sightingDate), approvedOnly(), plausiblesDatum()))
 			.groupBy(berlinDatePart('year', sightings.sightingDate))
 			.orderBy(berlinDatePart('year', sightings.sightingDate));
 
@@ -125,7 +203,9 @@ export const load: PageServerLoad = async () => {
 				sightings: sql<number>`COUNT(*)`
 			})
 			.from(sightings)
-			.where(and(isNotNull(sightings.sightingDate), approvedOnly()))
+			.where(
+				mitJahr(and(isNotNull(sightings.sightingDate), approvedOnly(), plausiblesDatum()) as SQL)
+			)
 			.groupBy(berlinDatePart('month', sightings.sightingDate))
 			.orderBy(berlinDatePart('month', sightings.sightingDate));
 
@@ -154,6 +234,13 @@ export const load: PageServerLoad = async () => {
 			// Freigabebezug wie überall sonst auf dieser Seite: vorher war dies die
 			// einzige Abfrage ohne Filter und zählte damit als Einzige die gesamte
 			// Tabelle inklusive noch offener Meldungen (Vorgabe 3 in approvalFilter.ts).
+			//
+			// Dritte Ausnahme von der Jahresauswahl, und zwar aus dem umgekehrten
+			// Grund wie die beiden anderen: Dieser Abschnitt bringt seinen Zeitraum
+			// bereits mit. Mit Jahresauswahl entstünde der Schnitt aus „in den
+			// letzten 30 Tagen eingegangen" und „Sichtungsdatum im Jahr X" — für
+			// jedes vergangene Jahr leer, und die Überschrift läse sich als „die
+			// letzten 30 Tage des Jahres X", was etwas ganz anderes wäre.
 			.where(
 				and(
 					approvedOnly(),
@@ -170,7 +257,7 @@ export const load: PageServerLoad = async () => {
 				uniqueUsers: sql<number>`COUNT(DISTINCT email)::integer`
 			})
 			.from(sightings)
-			.where(and(sql`email IS NOT NULL AND email != ''`, approvedOnly()));
+			.where(mitJahr(and(sql`email IS NOT NULL AND email != ''`, approvedOnly()) as SQL));
 
 		// Repeat users count - safe subquery approach
 		const repeatUsers = await db
@@ -179,7 +266,7 @@ export const load: PageServerLoad = async () => {
 				count: sql<number>`COUNT(*)::integer`
 			})
 			.from(sightings)
-			.where(and(sql`email IS NOT NULL AND email != ''`, approvedOnly()))
+			.where(mitJahr(and(sql`email IS NOT NULL AND email != ''`, approvedOnly()) as SQL))
 			.groupBy(sql`email`)
 			.having(sql`COUNT(*) > 1`);
 
@@ -199,7 +286,9 @@ export const load: PageServerLoad = async () => {
 				totalWithShipName: sql<number>`COUNT(*)::integer`
 			})
 			.from(sightings)
-			.where(and(sql`schiffsname IS NOT NULL AND schiffsname != ''`, approvedOnly()));
+			.where(
+				mitJahr(and(sql`schiffsname IS NOT NULL AND schiffsname != ''`, approvedOnly()) as SQL)
+			);
 
 		const shipStats = [
 			{
@@ -221,9 +310,11 @@ export const load: PageServerLoad = async () => {
 			})
 			.from(sightings)
 			.where(
-				and(
-					sql`${sightings.email} IS NOT NULL AND ${sightings.email} != '' AND ${sightings.email} NOT LIKE '%@meeresmuseum.de'`,
-					approvedOnly()
+				mitJahr(
+					and(
+						sql`${sightings.email} IS NOT NULL AND ${sightings.email} != '' AND ${sightings.email} NOT LIKE '%@meeresmuseum.de'`,
+						approvedOnly()
+					) as SQL
 				)
 			)
 			.groupBy(sightings.email)
@@ -235,17 +326,25 @@ export const load: PageServerLoad = async () => {
 		const [totalVerified] = await db
 			.select({ total: sql<number>`COUNT(*)` })
 			.from(sightings)
-			.where(approvedOnly());
+			.where(mitJahr(approvedOnly()));
 
 		const [coordVerified] = await db
 			.select({ count: sql<number>`COUNT(*)` })
 			.from(sightings)
-			.where(and(approvedOnly(), isNotNull(sightings.latitude), isNotNull(sightings.longitude)));
+			.where(
+				mitJahr(
+					and(approvedOnly(), isNotNull(sightings.latitude), isNotNull(sightings.longitude)) as SQL
+				)
+			);
 
 		const [behaviorVerified] = await db
 			.select({ count: sql<number>`COUNT(*)` })
 			.from(sightings)
-			.where(and(approvedOnly(), isNotNull(sightings.behavior), ne(sightings.behavior, 0)));
+			.where(
+				mitJahr(
+					and(approvedOnly(), isNotNull(sightings.behavior), ne(sightings.behavior, 0)) as SQL
+				)
+			);
 
 		const qualityStats = [
 			{
@@ -270,7 +369,19 @@ export const load: PageServerLoad = async () => {
 		// hängen. Sie muss außerdem die vier Zustände abbilden statt zweier: ohne
 		// Koordinaten ist auch `ostsee = 1` keine Aussage.
 
+		// Auswählbare Jahre. Die Vereinigung beider Grundmengen hält ein Jahr
+		// wählbar, in dem bisher nur offene Meldungen liegen — sonst wäre der
+		// Eingang eines frischen Jahres über die Statistik nicht erreichbar.
+		// Absteigend sortiert: Das jüngste Jahr ist das gesuchte.
+		const [approvedYears, openYears] = await Promise.all([
+			loadYears(approvedOnly()),
+			loadYears(openOnly())
+		]);
+		const availableYears = [...new Set([...approvedYears, ...openYears])].sort((a, b) => b - a);
+
 		return {
+			selectedYear,
+			availableYears,
 			basicStats,
 			speciesStats,
 			yearlyStats,

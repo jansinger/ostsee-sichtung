@@ -1,25 +1,11 @@
 <script lang="ts">
+	import BarChart from '$lib/components/charts/BarChart.svelte';
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
 	import Icon from '$lib/components/Icon.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
-
-	const monthNames = [
-		'Januar',
-		'Februar',
-		'März',
-		'April',
-		'Mai',
-		'Juni',
-		'Juli',
-		'August',
-		'September',
-		'Oktober',
-		'November',
-		'Dezember'
-	];
 
 	// Helper function to format numbers
 	function formatNumber(num: number | string | null | undefined): string {
@@ -32,6 +18,48 @@
 		const numValue = typeof num === 'string' ? parseFloat(num) : num || 0;
 		return `${numValue.toFixed(1)}%`;
 	}
+
+	/** Kurzformen für die Achse — „September" passt bei zwölf Balken nicht. */
+	const monthLabelsShort = [
+		'Jan',
+		'Feb',
+		'Mär',
+		'Apr',
+		'Mai',
+		'Jun',
+		'Jul',
+		'Aug',
+		'Sep',
+		'Okt',
+		'Nov',
+		'Dez'
+	];
+
+	/**
+	 * Saisonalität über alle zwölf Monate.
+	 *
+	 * Monate ohne Meldung kommen aus der Datenbank gar nicht zurück. Als Balken
+	 * der Höhe 0 gehören sie trotzdem hin: Eine Lücke im Jahreslauf ist eine
+	 * Aussage, ein stillschweigend übersprungener Monat verfälscht die Kurve.
+	 */
+	const seasonalityData = $derived(
+		monthLabelsShort.map((label, index) => ({
+			label,
+			value: Number(data.monthlyStats.find((m) => Number(m.month) === index + 1)?.sightings ?? 0)
+		}))
+	);
+
+	/** Jahrestrends über alle Jahre; das gewählte Jahr ist hervorgehoben. */
+	const yearlyData = $derived(
+		data.yearlyStats.map((year) => ({
+			label: String(year.year),
+			value: Number(year.sightings),
+			highlighted: Number(year.year) === data.selectedYear
+		}))
+	);
+
+	/** Zusatz für Überschriften, damit keine Zahl ohne ihren Zeitraum dasteht. */
+	const yearSuffix = $derived(data.selectedYear === null ? '' : ` ${data.selectedYear}`);
 
 	// Die Ableitung `scientificInsights` ist 2026-07-30 entfallen; die Begründung
 	// steht an ihrer Anzeigestelle in der Vorlage unten.
@@ -67,11 +95,13 @@
 <div class="container mx-auto p-4">
 	<div class="space-y-8 pt-2">
 		<!-- Header -->
-		<div class="flex items-center justify-between">
+		<div class="flex flex-wrap items-start justify-between gap-4">
 			<div>
-				<h1 class="text-base-content text-3xl font-bold">Statistiken</h1>
+				<h1 class="text-base-content text-3xl font-bold">
+					Statistiken{yearSuffix}
+				</h1>
 				<p class="text-base-content/70 mt-2">
-					Analyse von {formatNumber(data.basicStats?.approved.totalSightings || 0)} freigegebenen Meerestier-Sichtungen
+					Analyse von {formatNumber(data.basicStats?.approved.totalSightings || 0)} freigegebenen Meerestier-Sichtungen{yearSuffix}
 					<!-- „noch offen" und nicht „noch nicht freigegeben": Die Zahl zählt seit
 					     2026-08-08 über `openOnly()`, also ohne die abgelehnten Sichtungen —
 					     dieselbe Menge wie der Eingang auf `/admin`. Wer hier „nicht
@@ -82,6 +112,26 @@
 					</span>
 				</p>
 			</div>
+
+			<!-- Jahresauswahl als GET-Formular: Sie funktioniert damit ohne JavaScript,
+			     das gewählte Jahr steht in der Adresszeile und ist teilbar. Kein
+			     Auto-Absenden beim Ändern der Auswahl — wer per Tastatur durch die
+			     Optionen geht, löste damit bei jedem Zwischenschritt einen Ladevorgang
+			     aus und käme nie am gewünschten Jahr an. -->
+			<form method="GET" class="flex items-end gap-2">
+				<div class="fieldset">
+					<label class="label py-0" for="statistik-jahr">
+						<span class="text-support">Zeitraum</span>
+					</label>
+					<select id="statistik-jahr" name="jahr" class="select select-sm">
+						<option value="alle" selected={data.selectedYear === null}>Alle Jahre</option>
+						{#each data.availableYears as jahr (jahr)}
+							<option value={jahr} selected={data.selectedYear === jahr}>{jahr}</option>
+						{/each}
+					</select>
+				</div>
+				<button type="submit" class="btn btn-outline btn-sm">Anzeigen</button>
+			</form>
 		</div>
 
 		<!--
@@ -273,26 +323,30 @@
 				<div class="card-body">
 					<h2 class="card-title">
 						<Icon icon="lucide:calendar" class="h-6 w-6" />
-						Saisonalität (verifizierte Sichtungen)
+						Saisonalität (freigegebene Sichtungen{yearSuffix})
 					</h2>
-					<div class="space-y-2">
-						{#each data.monthlyStats as month (month.month)}
-							{@const maxSightings = Math.max(...data.monthlyStats.map((m) => m.sightings))}
-							{@const percentage = (month.sightings / maxSightings) * 100}
-							<div class="flex items-center gap-3">
-								<div class="w-16 text-sm">{monthNames[month.month - 1]}</div>
-								<div class="flex-1">
-									<div class="flex items-center gap-2">
-										<progress class="progress progress-primary w-full" value={percentage} max="100"
-										></progress>
-										<span class="min-w-fit text-sm font-medium">
-											{formatNumber(month.sightings)}
-										</span>
-									</div>
-								</div>
-							</div>
-						{/each}
-					</div>
+					<!-- Die Balken standen bis 2026-08-08 als `progress`-Elemente
+					     untereinander. Ein Fortschrittsbalken sagt „so weit von einem Ziel"
+					     — hier gibt es kein Ziel, sondern zwölf vergleichbare Werte. Als
+					     Diagramm mit gemeinsamer Achse ist der Jahreslauf ablesbar, statt
+					     zwölfmal denselben Anteil am Maximum zu behaupten. -->
+					<!-- Leerer Zeitraum: kein Diagramm. `niceAxisMax` liefert für eine leere
+					     Reihe eine Achse mit dem Maximum 1 — zwölf Balken der Höhe 0 unter einer
+					     erfundenen Skala sehen nach einer Aussage aus, wo keine ist. Der Satz
+					     sagt stattdessen, was der Fall ist. -->
+					{#if seasonalityData.every((monat) => monat.value === 0)}
+						<p class="text-base-content/70">
+							Für diesen Zeitraum liegen keine freigegebenen Sichtungen vor.
+						</p>
+					{:else}
+						<BarChart
+							data={seasonalityData}
+							caption={`Saisonalität: freigegebene Sichtungen je Monat${yearSuffix}`}
+							categoryLabel="Monat"
+							valueLabel="Sichtungen"
+							formatValue={formatNumber}
+						/>
+					{/if}
 				</div>
 			</div>
 
@@ -430,8 +484,25 @@
 			<div class="card-body">
 				<h2 class="card-title">
 					<Icon icon="lucide:trending-up" class="h-6 w-6" />
-					Jahrestrends (verifizierte Sichtungen)
+					Jahrestrends (freigegebene Sichtungen, alle Jahre)
 				</h2>
+				<!-- Bewusst NICHT auf das gewählte Jahr gefiltert: Der Trend ist der
+				     Kontext, aus dem heraus gewählt wird — auf ein Jahr eingedampft
+				     bliebe ein einzelner Balken übrig. Das gewählte Jahr ist stattdessen
+				     hervorgehoben (Loader-Kommentar an der Abfrage). -->
+				{#if data.selectedYear !== null}
+					<p class="text-support text-base-content/70">
+						Der Trend zeigt weiterhin alle Jahre; {data.selectedYear} ist hervorgehoben.
+					</p>
+				{/if}
+				<BarChart
+					data={yearlyData}
+					caption="Jahrestrends: freigegebene Sichtungen je Jahr"
+					categoryLabel="Jahr"
+					valueLabel="Sichtungen"
+					highlightNote="ausgewähltes Jahr"
+					formatValue={formatNumber}
+				/>
 				<div class="overflow-x-auto">
 					<table class="table">
 						<thead>
@@ -439,7 +510,6 @@
 								<th>Jahr</th>
 								<th>Sichtungen</th>
 								<th>Entwicklung</th>
-								<th>Visualisierung</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -448,9 +518,7 @@
 								{@const change = prevYear
 									? ((year.sightings - prevYear.sightings) / prevYear.sightings) * 100
 									: 0}
-								{@const maxSightings = Math.max(...data.yearlyStats.map((y) => y.sightings))}
-								{@const barWidth = (year.sightings / maxSightings) * 100}
-								<tr>
+								<tr class={Number(year.year) === data.selectedYear ? 'bg-base-200' : ''}>
 									<td class="font-medium">{year.year}</td>
 									<td>{formatNumber(year.sightings)}</td>
 									<td>
@@ -467,14 +535,6 @@
 										{:else}
 											<span class="text-base-content/70">-</span>
 										{/if}
-									</td>
-									<td class="w-32">
-										<div class="bg-base-200 h-2 w-full rounded-full">
-											<div
-												class="bg-primary h-2 rounded-full transition-all"
-												style="width: {barWidth}%"
-											></div>
-										</div>
 									</td>
 								</tr>
 							{/each}
@@ -494,12 +554,18 @@
 				<div class="card-body">
 					<h2 class="card-title">
 						<Icon icon="lucide:calendar" class="h-6 w-6" />
-						Eingang der letzten 30 Tage — unabhängig vom Freigabestatus
+						Eingang der letzten 30 Tage (freigegebene Sichtungen, alle Jahre)
 					</h2>
-					<!-- Bewusst ohne Freigabefilter: Dieser Abschnitt zeigt den Posteingang,
-					     also gerade auch die noch offenen Meldungen. Der Freigabebezug steht
-					     deshalb in der Überschrift statt in einer Filterbedingung — eine Zahl
-					     ohne erkennbaren Freigabebezug soll es laut Museumsvorgabe nicht geben. -->
+					<!-- Zwei Korrekturen an dieser Zeile, beide aus derselben Regel: Eine
+					     Überschrift darf keine andere Menge versprechen, als die Zahl
+					     darunter zählt.
+					     1. Sie sagte bis 2026-08-08 „unabhängig vom Freigabestatus", während
+					        der Loader längst über `approvedOnly()` filtert.
+					     2. Sie trug kurzzeitig die Jahresauswahl mit — „letzte 30 Tage 2025"
+					        liest sich als „die letzten 30 Tage des Jahres 2025" und meinte in
+					        Wahrheit den Schnitt aus laufendem Fenster und Sichtungsjahr.
+					        Dieser Abschnitt bringt seinen Zeitraum selbst mit und ist von der
+					        Auswahl deshalb ausgenommen (Begründung an der Abfrage). -->
 
 					<!-- Activity Heatmap -->
 					<div class="mb-4">
