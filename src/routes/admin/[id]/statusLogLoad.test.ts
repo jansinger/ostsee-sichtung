@@ -19,7 +19,11 @@ import { load } from './+page';
 
 /** Minimaler Load-Event — mehr liest die Funktion nicht. */
 const ladeEvent = (fetchImpl: typeof fetch) =>
-	({ params: { id: '42' }, fetch: fetchImpl }) as unknown as Parameters<typeof load>[0];
+	({
+		params: { id: '42' },
+		fetch: fetchImpl,
+		url: new URL('https://localhost:4000/admin/42')
+	}) as unknown as Parameters<typeof load>[0];
 
 const antwort = (body: unknown, ok = true) =>
 	vi.fn().mockResolvedValue({ ok, json: () => Promise.resolve(body) }) as unknown as typeof fetch;
@@ -40,13 +44,15 @@ describe('load der Status-Historie', () => {
 
 		const result = await laden(antwort({ history: eintraege }));
 
-		expect(result).toEqual({ statusLog: eintraege, statusLogFailed: false });
+		expect(result).toEqual(
+			expect.objectContaining({ statusLog: eintraege, statusLogFailed: false })
+		);
 	});
 
 	it('meldet einen leeren Altbestand als Erfolg, nicht als Fehler', async () => {
 		const result = await laden(antwort({ history: [] }));
 
-		expect(result).toEqual({ statusLog: [], statusLogFailed: false });
+		expect(result).toEqual(expect.objectContaining({ statusLog: [], statusLogFailed: false }));
 	});
 
 	it('kennzeichnet eine Fehlerantwort als Fehlschlag', async () => {

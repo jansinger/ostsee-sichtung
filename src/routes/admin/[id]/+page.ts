@@ -1,5 +1,19 @@
+import { HERKUNFT_EINGANG, HERKUNFT_PARAMETER } from '$lib/components/admin/adminReturn';
+import type { SightingQueue } from '$lib/components/admin/sightingQueue';
 import type { SightingStatusLogEntry } from '$lib/components/admin/sightingStatusLog';
 import type { PageLoad } from './$types';
+
+type FetchFn = typeof fetch;
+
+interface StatusLogResult {
+	statusLog: SightingStatusLogEntry[];
+	statusLogFailed: boolean;
+}
+
+interface QueueResult {
+	queue: SightingQueue | null;
+	queueFailed: boolean;
+}
 
 /**
  * Status-Historie der Detailansicht (Spec B3).
@@ -22,21 +36,67 @@ import type { PageLoad } from './$types';
  *
  * Eine Antwort ohne `history` zählt dabei als Fehlschlag und nicht als leere
  * Historie: Sie ist ein Vertragsbruch des Endpunkts, kein Altbestand.
+ *
+ * Seit dem Warteschlangen-Modus lädt dieselbe Funktion die Nachbarn im Stapel
+ * offener Meldungen — aber nur bei `?from=inbox`. Aus der Tabelle heraus gibt
+ * es keine Warteschlange, und ein Aufruf „für alle Fälle" wäre eine Abfrage,
+ * deren Ergebnis niemand anzeigt.
  */
-export const load: PageLoad = async ({ params, fetch }) => {
+async function ladeStatusLog(fetchFn: FetchFn, id: string): Promise<StatusLogResult> {
 	try {
-		const response = await fetch(`/api/sightings/${params.id}/verify`);
+		const response = await fetchFn(`/api/sightings/${id}/verify`);
 		if (!response.ok) {
-			return { statusLog: [] as SightingStatusLogEntry[], statusLogFailed: true };
+			return { statusLog: [], statusLogFailed: true };
 		}
 
 		const body = await response.json();
 		if (!Array.isArray(body?.history)) {
-			return { statusLog: [] as SightingStatusLogEntry[], statusLogFailed: true };
+			return { statusLog: [], statusLogFailed: true };
 		}
 
 		return { statusLog: body.history as SightingStatusLogEntry[], statusLogFailed: false };
 	} catch {
-		return { statusLog: [] as SightingStatusLogEntry[], statusLogFailed: true };
+		return { statusLog: [], statusLogFailed: true };
 	}
+}
+
+async function ladeQueue(
+	fetchFn: FetchFn,
+	id: string,
+	order: 'asc' | 'desc'
+): Promise<QueueResult> {
+	try {
+		const response = await fetchFn(`/api/sightings/${id}/queue?order=${order}`);
+		if (!response.ok) {
+			return { queue: null, queueFailed: true };
+		}
+
+		const body = await response.json();
+		/* `total` ist die Pflichtangabe des Vertrags. Eine Antwort ohne sie ist
+		   ein Vertragsbruch und kein leerer Stapel — die Unterscheidung ist
+		   dieselbe wie beim Status-Log, und sie trägt hier den Auto-Advance:
+		   Wer „unbekannt" für „zu Ende" hält, landet bei jedem Fehler im
+		   Eingang und hält den Stapel für abgearbeitet. */
+		if (typeof body?.total !== 'number') {
+			return { queue: null, queueFailed: true };
+		}
+
+		return { queue: body as SightingQueue, queueFailed: false };
+	} catch {
+		return { queue: null, queueFailed: true };
+	}
+}
+
+export const load: PageLoad = async ({ params, fetch, url }) => {
+	const ausEingang = url.searchParams.get(HERKUNFT_PARAMETER) === HERKUNFT_EINGANG;
+	const queueOrder: 'asc' | 'desc' = url.searchParams.get('order') === 'asc' ? 'asc' : 'desc';
+
+	const [statusLogResult, queueResult] = await Promise.all([
+		ladeStatusLog(fetch, params.id),
+		ausEingang
+			? ladeQueue(fetch, params.id, queueOrder)
+			: Promise.resolve<QueueResult>({ queue: null, queueFailed: false })
+	]);
+
+	return { ...statusLogResult, ...queueResult, queueOrder };
 };
