@@ -66,14 +66,27 @@ describe('Warteschlange im Detail-Load', () => {
 	});
 
 	it('lädt die Warteschlange bei from=inbox', async () => {
-		const daten = await ladeDetail('?from=inbox&order=asc', {
+		const routen = {
 			'/verify': { ok: true, body: { history: [] } },
 			'/queue': { ok: true, body: QUEUE_BODY }
-		});
+		};
+		const fetchSpy = fetchMock(routen);
+		const daten = (await load({
+			params: { id: '500' },
+			url: new URL('https://localhost:4000/admin/500?from=inbox&order=asc'),
+			fetch: fetchSpy
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		} as any)) as unknown as LadeErgebnis;
 
 		expect(daten.queue).toEqual(QUEUE_BODY);
 		expect(daten.queueFailed).toBe(false);
 		expect(daten.queueOrder).toBe('asc');
+		// Wächter gegen genau die Lücke, die Fix 1 offen ließ: der `fetchMock`
+		// oben matcht nur den Substring `/queue` — eine Fassung, die `order`
+		// hartcodiert oder weglässt, bliebe ohne diese Zusicherung grün, weil
+		// `queueOrder` im Ergebnis unabhängig von der aufgerufenen URL aus
+		// `url.searchParams` stammt.
+		expect(fetchSpy).toHaveBeenCalledWith('/api/sightings/500/queue?order=asc');
 	});
 
 	it('meldet einen Fehlschlag als unbekannt, nicht als leeren Stapel', async () => {
@@ -84,6 +97,46 @@ describe('Warteschlange im Detail-Load', () => {
 
 		expect(daten.queue).toBeNull();
 		expect(daten.queueFailed).toBe(true);
+	});
+
+	it('kennzeichnet einen Netzwerkfehler der Warteschlange als Fehlschlag', async () => {
+		// Gegenstück zum Netzwerkfehler-Test der Status-Historie
+		// (statusLogLoad.test.ts): `queueFailed` trägt hier zusätzlich den
+		// Auto-Advance — ein Reject darf nicht als „Stapel leer" durchgehen.
+		const fetchSpy = vi.fn(async (pfad: string) => {
+			if (pfad.includes('/verify')) {
+				return { ok: true, json: async () => ({ history: [] }) } as Response;
+			}
+			throw new Error('offline');
+		});
+
+		const daten = (await load({
+			params: { id: '500' },
+			url: new URL('https://localhost:4000/admin/500?from=inbox'),
+			fetch: fetchSpy
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		} as any)) as unknown as LadeErgebnis;
+
+		expect(daten.queue).toBeNull();
+		expect(daten.queueFailed).toBe(true);
+	});
+
+	it('fällt bei fehlendem order-Parameter auf desc zurück', async () => {
+		const daten = await ladeDetail('?from=inbox', {
+			'/verify': { ok: true, body: { history: [] } },
+			'/queue': { ok: true, body: QUEUE_BODY }
+		});
+
+		expect(daten.queueOrder).toBe('desc');
+	});
+
+	it('fällt bei unbekanntem order-Wert auf desc zurück', async () => {
+		const daten = await ladeDetail('?from=inbox&order=huch', {
+			'/verify': { ok: true, body: { history: [] } },
+			'/queue': { ok: true, body: QUEUE_BODY }
+		});
+
+		expect(daten.queueOrder).toBe('desc');
 	});
 
 	it('wertet eine Antwort ohne total als Vertragsbruch', async () => {
