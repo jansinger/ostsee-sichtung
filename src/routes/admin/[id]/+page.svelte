@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll, preloadData } from '$app/navigation';
 	import { page } from '$app/state';
 	import AdminSightingView from '$lib/components/admin/AdminSightingView.svelte';
 	import { carryReturnParams, returnTarget } from './tableReturnUrl';
@@ -8,6 +8,9 @@
 		sendTestEmail,
 		TEST_EMAIL_HINT
 	} from '$lib/components/admin/sightingActions';
+	import { planAdvance } from '$lib/components/admin/queueAdvance';
+	import { queueHref } from '$lib/components/admin/sightingQueue';
+	import SightingQueueNav from '$lib/components/admin/SightingQueueNav.svelte';
 	import {
 		getSightingStatus,
 		SIGHTING_STATUS_PRESENTATION,
@@ -23,6 +26,34 @@
 	let { data } = $props();
 
 	let sighting = $derived(data.sighting);
+	let queue = $derived(data.queue);
+	let queueFailed = $derived(data.queueFailed);
+	let queueOrder = $derived(data.queueOrder);
+	/**
+	 * Ob die Seite gerade aus dem Warteschlangen-Modus heraus bedient wird —
+	 * `SightingQueueNav` blendet sich zwar selbst aus, wenn `queue === null &&
+	 * !queueFailed`, das reicht hier aber nicht: Der Wert entscheidet zusätzlich
+	 * über den Toast-Text (Sichtungsname statt „Status: …") und wird von der
+	 * Tastatursteuerung (Task 8) gebraucht — beides Stellen ohne eigenes
+	 * Rendering, an denen die Selbstausblendung der Komponente nicht greift.
+	 */
+	let imArbeitsmodus = $derived(Boolean(queue) || queueFailed);
+
+	/**
+	 * Die letzte Entscheidung — Ziel von `U` und vom Toast-Knopf. Der Toast-Knopf
+	 * (unten in `handleStatusChange`) liest die Werte direkt aus der lokalen
+	 * `entschiedeneId`/`plan`, nicht aus diesem State — er wird erst mit dem
+	 * Tastenkürzel `U` (Task 8) zum Lesezugriff. Bis dahin bleibt er bewusst
+	 * geschrieben, aber ungelesen: Ihn erst mit Task 8 einzuführen würde
+	 * `zurueckNehmen` von einer noch nicht existenten ID-Quelle abhängig machen,
+	 * statt die beiden Tasks unabhängig testbar zu halten.
+	 */
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Lesezugriff kommt mit Task 8 (Tastenkürzel „U")
+	let letzteEntscheidung = $state<{
+		id: number;
+		href: string;
+		verdict: SightingVerdict;
+	} | null>(null);
 
 	let showDeleteDialog = $state(false);
 	let emailPending = $state(false);
@@ -31,26 +62,89 @@
 	async function handleStatusChange(verdict: SightingVerdict): Promise<void> {
 		if (statusBusy) return;
 		const previous = getSightingStatus(sighting);
+		/* Die ID wird festgehalten, bevor irgendetwas navigiert: `sighting` ist
+		   `$derived` und zeigt nach dem Sprung die nächste Meldung. Ein Undo,
+		   der `sighting.id` erst beim Klick liest, träfe die falsche. */
+		const entschiedeneId = sighting.id;
+		const plan = planAdvance({
+			sightingId: entschiedeneId,
+			verdict,
+			queue,
+			queueFailed,
+			order: queueOrder
+		});
 		statusBusy = true;
 		try {
 			const ok = await submitVerdict(sighting.id, verdict);
 			if (!ok) return;
 
-			await invalidateAll();
+			/* Die letzte Entscheidung wird festgehalten, damit die Taste `U`
+			   dasselbe tut wie der Toast-Knopf: die **letzte Entscheidung**
+			   zurücknehmen — nicht den Status der gerade angezeigten Sichtung.
+			   Nach dem Auto-Advance sind das zwei verschiedene Meldungen, und
+			   die zweite Lesart würde eine unbeteiligte Sichtung anfassen. */
+			letzteEntscheidung = {
+				id: entschiedeneId,
+				href: plan.undoHref,
+				verdict: SIGHTING_STATUS_PRESENTATION[previous].verdict
+			};
+
 			const nach = SIGHTING_STATUS_PRESENTATION[verdictToStatus(verdict)];
-			toast.success(`Status: ${nach.label}`, {
+			const meldung = imArbeitsmodus ? plan.toastMessage : `Status: ${nach.label}`;
+			toast.success(meldung, {
 				duration: SIGHTING_STATUS_UNDO_MS,
+				/* Fester Key: Im Arbeitsmodus fällt ein Toast pro Meldung an, jeder
+				   fünf Sekunden lang. Ohne Dedupe stünden bei zügiger Arbeit zwei
+				   bis drei „Rückgängig"-Knöpfe übereinander — für verschiedene
+				   Sichtungen, ohne dass der oberste zur zuletzt entschiedenen
+				   gehören muss. `addToast` entfernt den vorherigen Toast mit
+				   demselben Key, es bleibt also immer genau der aktuelle. */
+				key: 'sighting-verdict-undo',
 				action: {
 					label: 'Rückgängig',
 					onClick: () => {
-						void handleStatusChange(SIGHTING_STATUS_PRESENTATION[previous].verdict);
+						void zurueckNehmen(
+							entschiedeneId,
+							plan.undoHref,
+							SIGHTING_STATUS_PRESENTATION[previous].verdict
+						);
 					}
 				}
 			});
+
+			/* Kein `invalidateAll()` im Advance-Pfad: Es lädt die Sichtung neu, die
+			   man gerade verlässt — reine Wartezeit vor dem Sprung. Für „Status
+			   zurückgesetzt" (kein Advance) bleibt es unten stehen. */
+			if (plan.target.kind === 'sighting') {
+				await goto(plan.target.href);
+				return;
+			}
+			if (plan.target.kind === 'inbox') {
+				toast.info('Keine weiteren offenen Meldungen');
+				await goto(returnTarget(page.url).href);
+				return;
+			}
+			await invalidateAll();
 		} finally {
 			statusBusy = false;
 		}
 	}
+
+	async function zurueckNehmen(id: number, href: string, verdict: SightingVerdict): Promise<void> {
+		/* Der Verdict geht an die **gemerkte** ID und nicht an `sighting.id`:
+		   Nach dem Auto-Advance zeigt die Seite eine andere Sichtung, und ein
+		   `handleStatusChange()` hier würde den Status der falschen Meldung
+		   ändern. Erst zurücksetzen, dann navigieren — in dieser Reihenfolge
+		   hängt nichts an der Ladezeit der Seite. */
+		if (await submitVerdict(id, verdict)) {
+			await goto(href);
+			await invalidateAll();
+		}
+	}
+
+	$effect(() => {
+		if (queue?.next) void preloadData(queueHref(queue.next, queueOrder));
+	});
 
 	function editSighting() {
 		// Herkunft und Tabellenfilter reisen mit — sonst endet der Rückweg nach
@@ -136,6 +230,18 @@
 		content="Detailansicht einer Meerestier-Sichtung im Admin-Bereich"
 	/>
 </svelte:head>
+
+{#if imArbeitsmodus}
+	<!-- Eigener Außenabstand hier: `SightingQueueNav` trägt seit dem Umbau kein
+	     `mb-4` mehr, und ohne Bedingung stünde bei `queue === null &&
+	     !queueFailed` ein leerer Abstands-Wrapper, obwohl die Komponente selbst
+	     nichts rendert. Aus der Tabelle heraus (kein Arbeitsmodus) gibt es
+	     ohnehin keine Warteschlange — eine Leiste behauptete dort einen Stapel,
+	     den es nicht gibt. -->
+	<div class="mb-4">
+		<SightingQueueNav {queue} {queueFailed} order={queueOrder} />
+	</div>
+{/if}
 
 <div class="mb-0 flex flex-wrap items-center justify-between gap-2">
 	<h2 class="text-xl font-bold">Sichtung Details</h2>
