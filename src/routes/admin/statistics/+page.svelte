@@ -72,8 +72,13 @@
 				<h1 class="text-base-content text-3xl font-bold">Statistiken</h1>
 				<p class="text-base-content/70 mt-2">
 					Analyse von {formatNumber(data.basicStats?.approved.totalSightings || 0)} freigegebenen Meerestier-Sichtungen
+					<!-- „noch offen" und nicht „noch nicht freigegeben": Die Zahl zählt seit
+					     2026-08-08 über `openOnly()`, also ohne die abgelehnten Sichtungen —
+					     dieselbe Menge wie der Eingang auf `/admin`. Wer hier „nicht
+					     freigegeben" schreibt, verspricht die Gegenmenge der Freigabe und
+					     weicht damit wieder um die Abgelehnten vom Eingang ab. -->
 					<span class="text-base-content/70">
-						· {formatNumber(data.basicStats?.pending.totalSightings || 0)} noch nicht freigegeben
+						· {formatNumber(data.basicStats?.open.totalSightings || 0)} noch offen
 					</span>
 				</p>
 			</div>
@@ -132,7 +137,7 @@
 					</div>
 					<div class="stat-desc">
 						<span class="text-warning-strong"
-							>{formatNumber(data.basicStats?.pending.totalSightings || 0)} noch offen</span
+							>{formatNumber(data.basicStats?.open.totalSightings || 0)} noch offen</span
 						>
 					</div>
 				</div>
@@ -172,7 +177,7 @@
 						)} der freigegebenen
 						<br />
 						<span class="text-warning-strong"
-							>{formatNumber(data.basicStats?.pending.deadAnimals || 0)} noch offen</span
+							>{formatNumber(data.basicStats?.open.deadAnimals || 0)} noch offen</span
 						>
 					</div>
 				</div>
