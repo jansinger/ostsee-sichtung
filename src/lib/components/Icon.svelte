@@ -92,6 +92,8 @@
 	import ShieldCheck from '~icons/lucide/shield-check';
 	import Ship from '~icons/lucide/ship';
 	import SkipForward from '~icons/lucide/skip-forward';
+	import BookmarkPlus from '~icons/lucide/bookmark-plus';
+	import EllipsisVertical from '~icons/lucide/ellipsis-vertical';
 	import Skull from '~icons/lucide/skull';
 	import Smartphone from '~icons/lucide/smartphone';
 	import SquarePen from '~icons/lucide/square-pen';
@@ -123,6 +125,8 @@
 		'lucide:mail': Mail,
 		'lucide:eye': Eye,
 		'lucide:trash-2': Trash2,
+		'lucide:bookmark-plus': BookmarkPlus,
+		'lucide:ellipsis-vertical': EllipsisVertical,
 		'lucide:settings': Settings,
 		'lucide:alert-circle': AlertCircle,
 		'lucide:check': Check,
