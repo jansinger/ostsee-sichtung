@@ -117,22 +117,38 @@
 
 	$effect(() => {
 		if (typeof window === 'undefined') return;
-		if (!hatGespeicherteSpaltenGeladen) {
-			// Einmaliges Laden beim Mount. Kaputtes/altes JSON und unbekannte
-			// Schlüssel fallen in `loadColumnPreferences` still auf den Default
-			// zurück; neue Spalten erscheinen mit ihrem eigenen Default-Wert.
-			columnVisibility = loadColumnPreferences(
-				window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY),
-				DEFAULT_COLUMN_VISIBILITY
+		/* try/catch um beide Zugriffe: `localStorage` selbst kann werfen
+		   (Storage per Policy deaktiviert → SecurityError) und `setItem`
+		   ebenso (volle Quota, Safari im privaten Modus). Die Spaltenauswahl
+		   ist eine Bequemlichkeit — ohne Storage läuft die Seite einfach ohne
+		   Persistenz weiter, statt beim Hydratisieren zu crashen. */
+		try {
+			if (!hatGespeicherteSpaltenGeladen) {
+				// Einmaliges Laden beim Mount. Kaputtes/altes JSON und unbekannte
+				// Schlüssel fallen in `loadColumnPreferences` still auf den Default
+				// zurück; neue Spalten erscheinen mit ihrem eigenen Default-Wert.
+				columnVisibility = loadColumnPreferences(
+					window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY),
+					DEFAULT_COLUMN_VISIBILITY
+				);
+				return; // Diesen Durchlauf nicht sofort wieder zurückschreiben.
+			}
+			// Jede weitere Änderung (Checkbox im „Spalten"-Dropdown) wird persistiert.
+			window.localStorage.setItem(
+				COLUMN_PREFERENCES_STORAGE_KEY,
+				serializeColumnPreferences(columnVisibility)
 			);
+		} catch (err) {
+			logger.warn(
+				{ err },
+				'Spaltenauswahl kann nicht gespeichert werden — Storage nicht verfügbar'
+			);
+		} finally {
+			/* Im finally, damit auch ein geworfenes `getItem` den Lade-Versuch
+			   abschließt — sonst überschriebe der nächste Durchlauf jede
+			   Nutzerauswahl erneut mit dem (dann fehlgeschlagenen) Laden. */
 			hatGespeicherteSpaltenGeladen = true;
-			return; // Diesen Durchlauf nicht sofort wieder zurückschreiben.
 		}
-		// Jede weitere Änderung (Checkbox im „Spalten"-Dropdown) wird persistiert.
-		window.localStorage.setItem(
-			COLUMN_PREFERENCES_STORAGE_KEY,
-			serializeColumnPreferences(columnVisibility)
-		);
 	});
 
 	// Available columns configuration

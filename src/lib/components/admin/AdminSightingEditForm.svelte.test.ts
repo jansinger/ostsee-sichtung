@@ -198,6 +198,31 @@ describe('AdminSightingEditForm — Speichern-Knopf', () => {
 		});
 	});
 
+	it('reißt den Fokus beim Korrigieren eines Feldes nicht zurück zur Fehlerliste', async () => {
+		render(AdminSightingEditForm, {
+			sighting: absendbareSichtung(),
+			onSave: vi.fn(),
+			onCancel: vi.fn()
+		});
+
+		await page.getByRole('button', { name: 'Speichern' }).click();
+		await vi.waitFor(() => {
+			expect((document.activeElement as HTMLElement | null)?.textContent).toContain(
+				'Eingabefehler gefunden'
+			);
+		});
+
+		/* Der Nutzer korrigiert ein Feld: `updateField` räumt dessen Eintrag aus
+		   dem errors-Store, die Liste bleibt wegen der übrigen Fehler stehen.
+		   Der Fokus muss im gerade bearbeiteten Feld bleiben — ein Rücksprung
+		   zur Liste risse die Korrektur mitten in der Eingabe ab. */
+		await aendereAnzahl('7');
+		await new Promise((r) => setTimeout(r, 80));
+		expect((document.activeElement as HTMLElement | null)?.textContent ?? '').not.toContain(
+			'Eingabefehler gefunden'
+		);
+	});
+
 	it('verweist ohne Fehlerliste auf nichts', () => {
 		render(AdminSightingEditForm, {
 			sighting: baseSighting(),
