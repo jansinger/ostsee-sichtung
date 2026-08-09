@@ -77,3 +77,24 @@ export function serializeColumnPreferences(columns: Record<string, boolean>): st
 	const preferences: ColumnPreferences = { v: CURRENT_VERSION, columns };
 	return JSON.stringify(preferences);
 }
+
+/**
+ * Prüft, ob die aktuelle Auswahl exakt dem kuratierten Default entspricht —
+ * steuert den „Standard wiederherstellen"-Knopf im Spalten-Dropdown (nur aktiv
+ * bei Abweichung).
+ *
+ * Schlüsselzahl **und** Werte müssen übereinstimmen: Eine fehlende (neue Spalte
+ * seit dem letzten Speichern) oder überzählige (entfernte Spalte im
+ * localStorage-Rest) Spalte zählt als Abweichung, auch wenn alle gemeinsamen
+ * Werte gleich sind — sonst bliebe der Knopf inaktiv, obwohl ein Reset die
+ * fehlende Spalte erst auf ihren Default brächte.
+ */
+export function isDefaultVisibility(
+	current: Record<string, boolean>,
+	defaults: Record<string, boolean>
+): boolean {
+	const currentKeys = Object.keys(current);
+	const defaultKeys = Object.keys(defaults);
+	if (currentKeys.length !== defaultKeys.length) return false;
+	return defaultKeys.every((key) => current[key] === defaults[key]);
+}

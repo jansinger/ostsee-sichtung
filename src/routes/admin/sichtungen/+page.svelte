@@ -44,6 +44,7 @@
 	import { NUR_KOMPAKT, NUR_WEIT_FLEX } from './layoutSwitch';
 	import {
 		COLUMN_PREFERENCES_STORAGE_KEY,
+		isDefaultVisibility,
 		loadColumnPreferences,
 		serializeColumnPreferences
 	} from './columnPreferences';
@@ -128,26 +129,45 @@
 	   `columnPreferences.ts`. */
 	let columnVisibility = $state({ ...DEFAULT_COLUMN_VISIBILITY });
 	let hatGespeicherteSpaltenGeladen = false;
+	let istSpaltenauswahlDefault = $derived(
+		isDefaultVisibility(columnVisibility, DEFAULT_COLUMN_VISIBILITY)
+	);
+
+	/* Zwei getrennte Effekte statt einem: Ein einzelner `$effect`, der beim
+	   ersten Durchlauf per `return` aussteigt, OHNE `columnVisibility` zu
+	   *lesen* (nur zu schreiben), trackt diese Abhängigkeit nie — Svelte
+	   ermittelt die Abhängigkeiten eines Effekts aus den in seinem letzten
+	   Durchlauf gelesenen reaktiven Werten. Der Effekt liefe dadurch nach dem
+	   Laden genau einmal und nie wieder, egal wie oft `columnVisibility`
+	   danach per Checkbox oder „Standard wiederherstellen" geändert wird —
+	   beobachtet beim manuellen Nachstellen des WP7-Buttons (Browser-Check,
+	   `localStorage` blieb nach mehreren Änderungen durchgehend leer). Mit
+	   getrennten Effekten liest der Speicher-Effekt `columnVisibility` in
+	   jedem Durchlauf und bleibt damit dauerhaft abonniert. */
+	$effect(() => {
+		if (typeof window === 'undefined' || hatGespeicherteSpaltenGeladen) return;
+		try {
+			// Einmaliges Laden beim Mount. Kaputtes/altes JSON und unbekannte
+			// Schlüssel fallen in `loadColumnPreferences` still auf den Default
+			// zurück; neue Spalten erscheinen mit ihrem eigenen Default-Wert.
+			columnVisibility = loadColumnPreferences(
+				window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY),
+				DEFAULT_COLUMN_VISIBILITY
+			);
+		} catch (err) {
+			logger.warn({ err }, 'Gespeicherte Spaltenauswahl kann nicht gelesen werden');
+		} finally {
+			hatGespeicherteSpaltenGeladen = true;
+		}
+	});
 
 	$effect(() => {
-		if (typeof window === 'undefined') return;
-		/* try/catch um beide Zugriffe: `localStorage` selbst kann werfen
-		   (Storage per Policy deaktiviert → SecurityError) und `setItem`
-		   ebenso (volle Quota, Safari im privaten Modus). Die Spaltenauswahl
-		   ist eine Bequemlichkeit — ohne Storage läuft die Seite einfach ohne
-		   Persistenz weiter, statt beim Hydratisieren zu crashen. */
+		if (typeof window === 'undefined' || !hatGespeicherteSpaltenGeladen) return;
+		// Jede Änderung (Checkbox im „Spalten"-Dropdown, „Standard
+		// wiederherstellen") wird persistiert. `try/catch`, weil `setItem`
+		// werfen kann (volle Quota, Safari im privaten Modus) — die
+		// Spaltenauswahl ist eine Bequemlichkeit, kein Grund zum Absturz.
 		try {
-			if (!hatGespeicherteSpaltenGeladen) {
-				// Einmaliges Laden beim Mount. Kaputtes/altes JSON und unbekannte
-				// Schlüssel fallen in `loadColumnPreferences` still auf den Default
-				// zurück; neue Spalten erscheinen mit ihrem eigenen Default-Wert.
-				columnVisibility = loadColumnPreferences(
-					window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY),
-					DEFAULT_COLUMN_VISIBILITY
-				);
-				return; // Diesen Durchlauf nicht sofort wieder zurückschreiben.
-			}
-			// Jede weitere Änderung (Checkbox im „Spalten"-Dropdown) wird persistiert.
 			window.localStorage.setItem(
 				COLUMN_PREFERENCES_STORAGE_KEY,
 				serializeColumnPreferences(columnVisibility)
@@ -157,11 +177,6 @@
 				{ err },
 				'Spaltenauswahl kann nicht gespeichert werden — Storage nicht verfügbar'
 			);
-		} finally {
-			/* Im finally, damit auch ein geworfenes `getItem` den Lade-Versuch
-			   abschließt — sonst überschriebe der nächste Durchlauf jede
-			   Nutzerauswahl erneut mit dem (dann fehlgeschlagenen) Laden. */
-			hatGespeicherteSpaltenGeladen = true;
 		}
 	});
 
@@ -792,6 +807,13 @@
 								</label>
 							{/each}
 						</div>
+						<button
+							class="btn btn-ghost btn-xs mt-2 w-full"
+							disabled={istSpaltenauswahlDefault}
+							onclick={() => (columnVisibility = { ...DEFAULT_COLUMN_VISIBILITY })}
+						>
+							Standard wiederherstellen
+						</button>
 					</div>
 				</details>
 				<!-- Zwei Zustände, Begründung am Mobil-Zwilling weiter oben. -->

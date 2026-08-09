@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	COLUMN_PREFERENCES_STORAGE_KEY,
+	isDefaultVisibility,
 	loadColumnPreferences,
 	mergeColumnPreferences,
 	serializeColumnPreferences
@@ -100,5 +101,27 @@ describe('serializeColumnPreferences', () => {
 			v: 1,
 			columns: { a: true }
 		});
+	});
+});
+
+describe('isDefaultVisibility', () => {
+	it('liefert true, wenn die aktuelle Auswahl dem Default entspricht', () => {
+		expect(isDefaultVisibility(DEFAULTS, DEFAULTS)).toBe(true);
+		expect(isDefaultVisibility({ a: true, b: false, c: true }, DEFAULTS)).toBe(true);
+	});
+
+	it('liefert false, wenn eine Spalte vom Default abweicht', () => {
+		expect(isDefaultVisibility({ a: false, b: false, c: true }, DEFAULTS)).toBe(false);
+	});
+
+	it('liefert false, wenn die aktuelle Auswahl einen Schlüssel weniger als der Default hat', () => {
+		const { a: _a, ...rest } = DEFAULTS;
+		expect(isDefaultVisibility(rest as unknown as typeof DEFAULTS, DEFAULTS)).toBe(false);
+	});
+
+	it('liefert false, wenn die aktuelle Auswahl einen Schlüssel mehr als der Default hat', () => {
+		expect(
+			isDefaultVisibility({ ...DEFAULTS, extra: true } as unknown as typeof DEFAULTS, DEFAULTS)
+		).toBe(false);
 	});
 });
