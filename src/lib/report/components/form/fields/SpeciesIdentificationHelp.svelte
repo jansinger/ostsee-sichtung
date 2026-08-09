@@ -269,14 +269,14 @@
 													<div class="text-center">
 														<button
 															type="button"
-															class="group shadow-raised hover:shadow-floating relative overflow-hidden rounded-lg transition-all"
+															class="group shadow-raised hover:shadow-floating duration-instant relative overflow-hidden rounded-lg transition-all"
 															onclick={() => openImageModal(image.src, image.alt, image.copyright)}
 															aria-label={`${image.alt} in Originalgröße anzeigen`}
 														>
 															<img
 																src={image.src}
 																alt={image.alt}
-																class="h-32 w-full object-cover transition-all group-hover:brightness-110"
+																class="duration-instant h-32 w-full object-cover transition-all group-hover:brightness-110"
 																loading="lazy"
 															/>
 															<!-- Schleier über dem Artfoto, kein Theme-Ton: bg-scrim/<n>

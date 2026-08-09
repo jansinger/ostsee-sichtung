@@ -939,7 +939,7 @@
 	<!-- Tastatur-Hilfe Button -->
 	<button
 		onclick={() => (showKeyboardHelp = true)}
-		class="bg-info text-info-content hover:bg-info/80 z-raised shadow-floating duration-panel fixed bottom-4 left-4 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full transition-colors"
+		class="bg-info text-info-content hover:bg-info/80 z-raised shadow-floating duration-instant fixed bottom-4 left-4 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full transition-colors"
 		aria-label="Tastatur-Hilfe anzeigen"
 		title="Tastaturkürzel anzeigen (H oder ?)"
 	>
@@ -965,7 +965,7 @@
 			     Für dunkle Flächen gibt es /logo_dmm_negativ.svg (gleiche Geometrie,
 			     weiß) — das nutzt die About-Seite auf bg-primary. -->
 			<div
-				class="border-primary/10 bg-base-100/95 shadow-floating duration-panel rounded-xl border p-1 backdrop-blur-md transition-all hover:scale-105"
+				class="border-primary/10 bg-base-100/95 shadow-floating duration-instant rounded-xl border p-1 backdrop-blur-md transition-all hover:scale-105"
 				data-testid="map-logo-plate"
 			>
 				<!-- Kein flex-Wrapper um das Bild: Tailwinds Preflight setzt img auf
