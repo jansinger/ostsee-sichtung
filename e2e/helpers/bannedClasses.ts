@@ -71,8 +71,18 @@ export interface BannedRule {
 	 *
 	 * Die Deckkraft-Untergrenze gilt laut `design-system.md` für Zeichen, die
 	 * gelesen werden müssen — ein dekoratives Leerzustands-Icon auf
-	 * `opacity-50` ist zulässig, und die Heatmap-Zelle auf
-	 * `text-base-content/30` in `admin/statistics` ist bei Intensität 0 leer.
+	 * `opacity-50` ist zulässig.
+	 *
+	 * **Wie schmal diese Ausnahme ist**, hat die Heatmap in `admin/statistics`
+	 * vorgeführt: Ihre Nullstufe stand hier bis 2026-08-09 als zweites Beispiel
+	 * („bei Intensität 0 leer") und war damit zulässig. Als die Zelle eine
+	 * `sr-only`-Beschriftung bekam, damit Tage ohne Meldung überhaupt vorlesbar
+	 * werden, war sie nicht mehr leer — dieselbe Klasse, unveränderte Optik, und
+	 * die Regel schlug zu Recht an. Die Lehre ist nicht, dass die Regel zu streng
+	 * ist: `hasText` ist genau die richtige Bedingung, und sie hat den Moment
+	 * bemerkt, in dem die Begründung wegfiel. Auflösen lässt sich so ein Fund
+	 * deshalb an der Aufrufstelle (dort ist die Klasse ersatzlos entfallen),
+	 * nicht durch eine Ausnahme hier.
 	 */
 	readonly textOnly?: boolean;
 }

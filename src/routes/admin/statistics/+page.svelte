@@ -81,12 +81,17 @@
 	 * zwischen `/60` (4,95:1) und `/65` (4,35:1); ab `/75` ist heller Text die
 	 * einzig richtige Wahl — genau wie es die Vollstufe schon tat.
 	 *
-	 * Stufe 0 bleibt `text-base-content/30`: Die Zelle ist ohne Meldung leer, die
-	 * Deckkraft-Untergrenze gilt für Zeichen, die gelesen werden müssen (Docblock
-	 * von `BannedRule.textOnly` in `e2e/helpers/bannedClasses.ts`).
+	 * Stufe 0 trug bis 2026-08-09 zusätzlich `text-base-content/30`. Die Klasse war
+	 * als Ausnahme von der Deckkraft-Untergrenze notiert („die Zelle ist ohne
+	 * Meldung leer", Docblock von `BannedRule.textOnly` in
+	 * `e2e/helpers/bannedClasses.ts`) — und **genau diese Prämisse** hebt die
+	 * `sr-only`-Beschriftung unten auf: Die Zelle trägt jetzt auch ohne Meldung
+	 * Text. Zu färben hatte die Klasse dabei ohnehin nichts, denn das sichtbare
+	 * Span bleibt bei `count === 0` leer. Sie ist deshalb ersatzlos entfallen,
+	 * statt die Regel für sie aufzuweichen.
 	 */
 	const HEATMAP_STEP_CLASSES: Record<HeatmapStep, string> = {
-		0: 'bg-base-200 text-base-content/30',
+		0: 'bg-base-200',
 		1: 'bg-primary/25 text-base-content',
 		2: 'bg-primary/50 text-base-content',
 		3: 'bg-primary/75 text-primary-content',
