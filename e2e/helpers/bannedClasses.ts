@@ -272,9 +272,9 @@ export const TAILWIND_PALETTE: BannedRule = {
  * `shadow-floating`.
  *
  * Die Regeln sind deshalb hier scharf gestellt und über
- * `bannedClasses.test.ts` belegt; der DOM-Scan führt sie vorerst als
- * `test.fixme`, weil der Bestand sie noch nicht erfüllt (Begründung an der
- * Gruppe in `design-tokens.spec.ts`).
+ * `bannedClasses.test.ts` belegt. Im DOM-Scan liefen sie zunächst als
+ * `test.fixme`; seit der Bestand auf Tokens umgestellt ist, sind sie dort
+ * aktiv.
  */
 
 /**
@@ -302,37 +302,38 @@ export const RAW_ELEVATION: BannedRule = {
 /**
  * Freie Z-Index-Utilities — `z-50`, `z-[100]`, auch negativ (`-z-10`).
  *
- * **Der Ersatz ist hier ausnahmsweise keine Utility.** `--layer-raised` bis
- * `--layer-skip` stehen in `src/css/tokens.css` im `:root`, aber **nicht** im
- * `@theme`-Block von `app.css` — es gibt deshalb kein `z-panel`, und wer eines
- * schreibt, bekommt eine tote Klasse (`design-system.md`, „Keine toten
- * Utility-Klassen"). Erreichbar sind die Stufen über `var()`, also per
- * `style="z-index: var(--layer-panel)"` oder aus einem scoped `<style>`-Block.
- * Der Hinweis sagt das ausdrücklich, weil die naheliegende Korrektur sonst von
- * einem Verstoß in einen wirkungslosen Klassennamen führt.
+ * Der Ersatz sind `z-raised`/`-panel`/`-nav`/`-overlay`/`-skip`. Sie kommen
+ * **nicht** aus dem `@theme`-Block: Tailwind 4 hat für Z-Index gar keinen
+ * Theme-Namespace, ein `--layer-panel` dort erzeugte also keine Utility. Sie
+ * stehen deshalb als `@utility`-Definitionen in `app.css` und greifen jeweils
+ * auf `--layer-*` in `tokens.css` zu — der `var()`-Weg
+ * (`style="z-index: var(--layer-panel)"`) bleibt daneben gültig.
  *
  * `z-auto` ist keine Stufenwahl und kommt durch.
  */
 const RAW_Z_INDEX_PATTERN = /^-?z-(?:\[[^\]]*\]|\d+)$/;
 
 export const RAW_Z_INDEX: BannedRule = {
-	hint: 'Z-Index kommt aus den Layer-Tokens (--layer-raised/-panel/-nav/-overlay/-skip). Sie sind KEINE Utilities — sie stehen nur in tokens.css und werden über style="z-index: var(--layer-panel)" oder einen scoped <style>-Block gesetzt. Vorher lagen Navbar und Panel-Toggle beide auf z-50, und die DOM-Position entschied.',
+	hint: 'Z-Index kommt aus den Layer-Tokens: z-raised (10), z-panel (20), z-nav (30), z-overlay (40), z-skip (50) — definiert als @utility in app.css, Werte in tokens.css. Vorher lagen Navbar und Panel-Toggle beide auf z-50, und die DOM-Position entschied.',
 	offends: (className) => RAW_Z_INDEX_PATTERN.test(className)
 };
 
 /**
  * Freie Übergangsdauern — `duration-300`, `duration-[450ms]`.
  *
- * Dieselbe Lage wie beim Z-Index: `--motion-instant`/`-quick`/`-panel`/
- * `-emphasis` sind Variablen, keine Utilities. Die vier Stufen tragen zudem
- * eine Zuständigkeit (Hover/Fokus, Aufklappen, Panel, Überschwung) und die
- * Angabe, mit welcher Kurve sie gefahren werden — eine nackte Zahl im
- * Klassennamen verliert beides.
+ * Dieselbe Lage wie beim Z-Index: `duration-instant`/`-quick`/`-panel`/
+ * `-emphasis` sind `@utility`-Definitionen in `app.css`, weil Tailwind 4 auch
+ * für die Dauer keinen Theme-Namespace kennt. Die vier Stufen tragen eine
+ * Zuständigkeit (Hover/Fokus, Aufklappen, Panel, Überschwung) und die Angabe,
+ * mit welcher Kurve sie gefahren werden — eine nackte Zahl im Klassennamen
+ * verliert beides. Die drei Übergangsstufen bringen `--motion-ease` deshalb
+ * gleich mit; `duration-emphasis` bewusst nicht (die Kurve steckt dort in den
+ * Keyframe-Stops).
  */
 const RAW_MOTION_DURATION_PATTERN = /^duration-(?:\[[^\]]*\]|\d+)$/;
 
 export const RAW_MOTION_DURATION: BannedRule = {
-	hint: 'Übergangsdauern kommen aus den Motion-Tokens (--motion-instant 120ms, --motion-quick 200ms, --motion-panel 300ms, --motion-emphasis 400ms mit linear). Auch sie sind KEINE Utilities — über var() in einem scoped <style>-Block setzen, zusammen mit --motion-ease.',
+	hint: 'Übergangsdauern kommen aus den Motion-Tokens: duration-instant (120ms, Hover/Fokus), duration-quick (200ms, Aufklappen/Toast), duration-panel (300ms, Panel/Bottom-Sheet), duration-emphasis (400ms, Überschwung) — definiert als @utility in app.css.',
 	offends: (className) => RAW_MOTION_DURATION_PATTERN.test(className)
 };
 

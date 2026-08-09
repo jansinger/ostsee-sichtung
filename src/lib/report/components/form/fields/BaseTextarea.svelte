@@ -30,7 +30,7 @@
 
 	// Dynamic CSS classes
 	let textareaClasses = $derived.by(() => {
-		const base = 'textarea w-full transition-all duration-200 resize-y';
+		const base = 'textarea w-full transition-all duration-quick resize-y';
 		const stateClass = hasError ? 'textarea-error' : isValid ? 'textarea-success' : '';
 		const sizeClass = size === 'sm' ? 'textarea-sm' : size === 'lg' ? 'textarea-lg' : '';
 		const focusClass = 'focus:ring-2 focus:ring-primary/20 focus:border-primary';
@@ -54,7 +54,7 @@
 <div class="relative">
 	<!-- Icon (if available) -->
 	{#if icon !== undefined}
-		<div aria-hidden="true" class="pointer-events-none absolute top-3 left-3 z-10">
+		<div aria-hidden="true" class="pointer-events-none absolute top-3 left-3 z-raised">
 			<Icon {icon} width="16" class="text-base-content/60" />
 		</div>
 	{/if}

@@ -75,7 +75,7 @@
 	{#if icon !== undefined}
 		<div
 			aria-hidden="true"
-			class="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center"
+			class="pointer-events-none absolute inset-y-0 left-0 z-raised flex w-10 items-center justify-center"
 		>
 			<Icon {icon} width="16" class="text-base-content/60" />
 		</div>

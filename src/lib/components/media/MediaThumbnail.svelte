@@ -37,7 +37,7 @@
 </script>
 
 <div
-	class="media-thumbnail group bg-base-100 relative cursor-pointer overflow-hidden rounded-lg shadow-sm transition-all hover:scale-105 hover:shadow-md"
+	class="media-thumbnail group bg-base-100 shadow-raised duration-instant hover:shadow-floating relative cursor-pointer overflow-hidden rounded-lg transition-all hover:scale-105"
 	onclick={handleClick}
 	onkeydown={handleKeydown}
 	tabindex="0"
@@ -75,7 +75,7 @@
 			<!-- GPS Badge für Bilder -->
 			{#if hasGPSData()}
 				<div
-					class="bg-success text-success-content absolute top-2 right-2 rounded-full p-1 shadow-md"
+					class="bg-success text-success-content shadow-raised absolute top-2 right-2 rounded-full p-1"
 				>
 					<Icon icon="lucide:map-pin" width="12" />
 				</div>

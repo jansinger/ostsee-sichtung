@@ -159,6 +159,78 @@
 	--text-support: 0.8125rem;
 }
 
+/* ===== Utilities für Z-Index und Bewegungsdauer =====
+   Die Stufen selbst stehen wie alle Werte in css/tokens.css; hier bekommen sie
+   ihren Utility-Namen.
+
+   **Warum `@utility` und nicht der `@theme`-Block darüber.** Tailwind 4 hat für
+   Z-Index und Übergangsdauer gar keinen Theme-Namespace — `z-*` und `duration-*`
+   nehmen nackte Zahlen und arbitrary values, aber keine Theme-Variablen. Ein
+   `--layer-panel` im `@theme`-Block erzeugte deshalb kein `z-panel`, sondern nur
+   eine weitere Variable. Die beiden Zugriffswege aus design-system.md („Zwei
+   Zugriffswege, ein Name") bleiben trotzdem gewahrt: die Utility hier, `var()`
+   über das :root in tokens.css.
+
+   **Warum überhaupt eine Utility.** Bis 2026-08-09 war der dokumentierte Weg
+   `style="z-index: var(--layer-panel)"`. Das trägt nicht überall: Ein Teil der
+   Fundstellen setzt die Stufe aus einem konditional zusammengesetzten
+   Klassen-String oder aus einer JS-Variablen (`titleClass` in
+   `SightingsMapView.svelte` und `LazyMapWrapper.svelte`), und ein inline-`style`
+   kann eine Klasse nicht ersetzen, ohne die Aufrufstelle umzubauen. Bei der
+   Dauer kommt dazu, dass sie im Verbund mit `transition-*` und `hover:`-Varianten
+   steht — dort ist eine Utility die Form, die zum Rest passt.
+
+   Diese neun stehen bewusst NICHT in den UTILITY_GROUPS von
+   `e2e/design-tokens.spec.ts` — aus demselben Grund wie `bg-scrim`: Der Wächter
+   dort zielt auf Utilities, deren einzige Aufrufstelle /styleguide ist. Diese
+   haben Dutzende Aufrufstellen in Komponenten und können nicht still aus dem
+   Build fallen. */
+@utility z-base {
+	z-index: var(--layer-base);
+}
+@utility z-raised {
+	z-index: var(--layer-raised);
+}
+@utility z-panel {
+	z-index: var(--layer-panel);
+}
+@utility z-nav {
+	z-index: var(--layer-nav);
+}
+@utility z-overlay {
+	z-index: var(--layer-overlay);
+}
+@utility z-skip {
+	z-index: var(--layer-skip);
+}
+
+/* Jede Stufe bringt ihre Kurve mit — sie gehört laut design-system.md zur
+   Stufe und soll an der Aufrufstelle nicht getrennt gepflegt werden.
+
+   Für `emphasis` ist diese Kurve `linear`, und das ist keine Auslassung:
+   Betonte Bewegungen bringen ihren Verlauf über die Keyframe-Stops mit
+   (`bounceIn`: .3 → 1.05 → .9 → 1); eine zusätzliche Easing-Funktion böge dort
+   jedes Segment einzeln und ließe den Überschwung hektisch wirken. `linear`
+   muss dabei ausgeschrieben stehen — die Eigenschaft wegzulassen ergäbe den
+   CSS-Default `ease`, also genau das gebogene Verhalten, das die Stufe
+   ausschließen will. */
+@utility duration-instant {
+	transition-duration: var(--motion-instant);
+	transition-timing-function: var(--motion-ease);
+}
+@utility duration-quick {
+	transition-duration: var(--motion-quick);
+	transition-timing-function: var(--motion-ease);
+}
+@utility duration-panel {
+	transition-duration: var(--motion-panel);
+	transition-timing-function: var(--motion-ease);
+}
+@utility duration-emphasis {
+	transition-duration: var(--motion-emphasis);
+	transition-timing-function: linear;
+}
+
 /* ===== Base Styles ===== */
 body {
 	font-family: 'Roboto', 'system-ui', 'sans-serif';

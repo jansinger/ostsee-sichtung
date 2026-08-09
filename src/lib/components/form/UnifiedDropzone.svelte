@@ -268,7 +268,7 @@
 
 			<div class="grid gap-3 {multiple ? 'md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}">
 				{#each files as file, index (file.name + index)}
-					<div class="card bg-base-100 shadow-sm">
+					<div class="card bg-base-100 shadow-raised">
 						<div class="card-body p-3">
 							<!-- File Info -->
 							<div class="flex items-start gap-3">
@@ -325,7 +325,7 @@
 	     der Fläche — und damit das Ziel unter dem Zeiger, der es gerade erst
 	     getroffen hatte. Rahmen und Tint melden die Bereitschaft genauso. -->
 	<div
-		class="rounded-lg border-2 border-dashed transition-all duration-200
+		class="rounded-lg border-2 border-dashed transition-all duration-quick
 			{compact ? 'p-4' : 'p-6'}
 			{actionLabel ? '' : 'cursor-pointer'}
 			{isDragOver

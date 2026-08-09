@@ -318,21 +318,19 @@
 <style>
 	/* Modal styling improvements */
 	.modal-box {
-		box-shadow:
-			0 20px 25px -5px rgb(0 0 0 / 0.1),
-			0 10px 10px -5px rgb(0 0 0 / 0.04);
+		box-shadow: var(--shadow-floating);
 	}
 
 	/* Image styling */
 	img {
 		border-radius: 0.5rem;
-		box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+		box-shadow: var(--shadow-raised);
 	}
 
 	/* Video styling */
 	video {
 		border-radius: 0.5rem;
-		box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+		box-shadow: var(--shadow-raised);
 	}
 
 	/* Better mobile responsiveness */

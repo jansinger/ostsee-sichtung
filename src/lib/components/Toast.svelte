@@ -71,7 +71,7 @@
 
 {#if visible}
 	<div
-		class="{alertClasses[type]} pointer-events-auto mb-4 max-w-sm shadow-lg"
+		class="{alertClasses[type]} pointer-events-auto mb-4 max-w-sm shadow-floating"
 		style="animation: slideIn 0.3s ease-out"
 		role="alert"
 		aria-live="polite"

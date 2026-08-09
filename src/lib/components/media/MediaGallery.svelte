@@ -100,7 +100,7 @@
 				</div>
 				<div class="space-y-2">
 					{#each otherFiles as file (file.id)}
-						<div class="bg-base-100 flex items-center gap-3 rounded-lg p-3 shadow-sm">
+						<div class="bg-base-100 flex items-center gap-3 rounded-lg p-3 shadow-raised">
 							<Icon icon={getFileTypeIcon(file.mimeType)} width="20" class="text-base-content/60" />
 							<div class="min-w-0 flex-1">
 								<p class="text-base-content truncate text-sm font-medium">

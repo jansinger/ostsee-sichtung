@@ -845,7 +845,7 @@
 						Spalten
 					</summary>
 					<div
-						class="dropdown-content menu bg-base-100 rounded-box border-base-300 z-[1] mt-1 w-64 border p-2 shadow-lg"
+						class="dropdown-content menu bg-base-100 rounded-box border-base-300 z-raised shadow-floating mt-1 w-64 border p-2"
 					>
 						<div class="menu-title flex items-center justify-between pb-2">
 							<span class="text-sm font-semibold">Spalten anzeigen</span>
@@ -997,7 +997,7 @@
 								<Icon icon="lucide:ellipsis-vertical" class="h-4 w-4" aria-hidden="true" />
 							</summary>
 							<ul
-								class="dropdown-content menu bg-base-100 rounded-box border-base-300 z-[1] mt-1 w-44 border p-2 shadow-lg"
+								class="dropdown-content menu bg-base-100 rounded-box border-base-300 z-raised shadow-floating mt-1 w-44 border p-2"
 							>
 								<li>
 									<button type="button" onclick={() => umbenennenStarten(preset)}>
@@ -1058,11 +1058,19 @@
 		</div>
 	</div>
 
-	<!-- Filter Panel -->
+	<!-- Filter Panel.
+
+	     Hier stand `transition-all duration-300`. Das ist als einzige der 19
+	     Dauer-Fundstellen NICHT auf ein Motion-Token gewandert, sondern
+	     ersatzlos entfallen: Das Panel hängt an einem `{#if}` und wird ein- und
+	     ausgehängt statt ein- und ausgeblendet — es gibt keinen Zustand, von
+	     dem aus ein Übergang laufen könnte, und die Klasse hat nie gewirkt.
+	     Ein `duration-panel` an ihrer Stelle sähe token-konform aus und täte
+	     weiterhin nichts. Wer hier wirklich animieren will, braucht
+	     `transition:slide` aus `svelte/transition` (design-system.md, „Keine
+	     toten Utility-Klassen"). -->
 	{#if isFilterPanelOpen}
-		<div
-			class="bg-base-200 container mx-auto mb-4 rounded-lg p-3 px-4 shadow-sm transition-all duration-300 sm:px-6"
-		>
+		<div class="bg-base-200 shadow-raised container mx-auto mb-4 rounded-lg p-3 px-4 sm:px-6">
 			<div class="mb-2 flex items-center justify-between">
 				<h2 class="text-base font-semibold">Filter</h2>
 				<button
@@ -1195,7 +1203,7 @@
 				approvedAt: sighting.approvedAt,
 				rejectedAt: sighting.rejectedAt
 			})}
-			<div class="bg-base-100 border-base-300 rounded-lg border p-4 shadow-sm">
+			<div class="bg-base-100 border-base-300 shadow-raised rounded-lg border p-4">
 				<div class="mb-3 flex items-start justify-between">
 					<div class="flex-1">
 						<!-- Referenz und Kennzeichen als eigene Flex-Zeile: Nebeneinander,
@@ -1419,7 +1427,7 @@
 				</div>
 			</div>
 		{/if}
-		<div class="border-base-300 bg-base-100 w-full overflow-x-auto rounded-lg border shadow-sm">
+		<div class="border-base-300 bg-base-100 shadow-raised w-full overflow-x-auto rounded-lg border">
 			<table class="table-zebra table w-full">
 				<thead class="bg-base-200 text-base-content">
 					<tr>

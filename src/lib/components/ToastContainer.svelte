@@ -9,7 +9,7 @@
 </script>
 
 <!-- Toast Container positioned at top right -->
-<div class="toast toast-top toast-end z-50">
+<div class="toast toast-top toast-end z-overlay">
 	{#each toasts as toast (toast.id)}
 		<Toast
 			type={toast.type}

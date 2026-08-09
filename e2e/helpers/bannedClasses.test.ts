@@ -340,17 +340,21 @@ describe('RAW_Z_INDEX', () => {
 		expect(RAW_Z_INDEX.offends('z-50')).toBe(RAW_Z_INDEX.offends('z-[50]'));
 	});
 
-	/* `z-auto` ist keine Stufenwahl. Und: Es gibt bewusst KEIN `z-panel` —
-	   die Layer-Tokens stehen nur in tokens.css. Ein solcher Klassenname wäre
-	   eine tote Utility; die Regel meldet ihn nicht, weil sie über Klassennamen
-	   nicht entscheiden kann, ob eine Utility existiert. Der Hinweis der Regel
-	   nennt deshalb var() als Ersatz und nicht eine Klasse. */
+	/* `z-auto` ist keine Stufenwahl, `z-panel` der vorgesehene Ersatz. */
 	it.each(['z-auto', 'z-panel'])('lässt %s durch', (className) => {
 		expect(RAW_Z_INDEX.offends(className)).toBe(false);
 	});
 
-	it('nennt var() und nicht eine Utility als Ersatz', () => {
-		expect(RAW_Z_INDEX.hint).toContain('var(--layer-panel)');
+	/* Der Hinweis muss die Stufen beim Namen nennen, unter dem sie im Markup
+	   stehen. Bis der Bestand umgestellt war, gab es diese Utilities nicht und
+	   der Hinweis zeigte auf `var(--layer-panel)`; seit sie als `@utility` in
+	   app.css stehen, wäre das der Umweg. Die Zuständigkeiten stehen mit dabei,
+	   weil die Stufe danach gewählt wird und nicht nach der Zahl, die vorher am
+	   Element stand. */
+	it('nennt die Layer-Utilities als Ersatz', () => {
+		for (const utility of ['z-raised', 'z-panel', 'z-nav', 'z-overlay', 'z-skip']) {
+			expect(RAW_Z_INDEX.hint).toContain(utility);
+		}
 	});
 
 	it.each(['size-10', 'gz-10'])('lässt %s durch', (className) => {
@@ -363,12 +367,19 @@ describe('RAW_MOTION_DURATION', () => {
 		expect(RAW_MOTION_DURATION.offends(className)).toBe(true);
 	});
 
-	/* Wie beim Z-Index gibt es keine `duration-quick`-Utility — der Hinweis
-	   muss auf var() zeigen, sonst führt die Korrektur von einem Verstoß in
-	   eine wirkungslose Klasse. */
-	it('nennt die Motion-Tokens und var() als Ersatz', () => {
-		expect(RAW_MOTION_DURATION.hint).toContain('--motion-quick');
-		expect(RAW_MOTION_DURATION.hint).toContain('var()');
+	/* Wie beim Z-Index: die Stufen unter dem Namen, unter dem sie im Markup
+	   stehen. Die Dauer gehört mit in den Hinweis — ohne sie ist „quick oder
+	   panic?" an der Aufrufstelle nicht entscheidbar. */
+	it('nennt die Motion-Utilities samt Dauer als Ersatz', () => {
+		for (const utility of [
+			'duration-instant',
+			'duration-quick',
+			'duration-panel',
+			'duration-emphasis'
+		]) {
+			expect(RAW_MOTION_DURATION.hint).toContain(utility);
+		}
+		expect(RAW_MOTION_DURATION.hint).toContain('200ms');
 	});
 
 	it.each(['duration-quick', 'transition-all', 'delay-300'])('lässt %s durch', (className) => {

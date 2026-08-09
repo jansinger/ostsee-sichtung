@@ -169,7 +169,7 @@
 		     also nicht). Bei 3 Spalten ordnen sich die fünf Karten als 3+2 an — gegenüber 4+1 die
 		     ruhigere Aufteilung, deshalb keine vierte Spalte ab 2xl. -->
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-			<div class="stats w-full shadow">
+			<div class="stats w-full shadow-raised">
 				<div class="stat">
 					<div class="stat-figure text-primary">
 						<Icon icon="lucide:users" class="h-8 w-8" />
@@ -186,7 +186,7 @@
 				</div>
 			</div>
 
-			<div class="stats w-full shadow">
+			<div class="stats w-full shadow-raised">
 				<div class="stat">
 					<div class="stat-figure text-secondary-strong">
 						<Icon icon="lucide:activity" class="h-8 w-8" />
@@ -203,7 +203,7 @@
 				</div>
 			</div>
 
-			<div class="stats w-full shadow">
+			<div class="stats w-full shadow-raised">
 				<div class="stat">
 					<div class="stat-figure text-warning-strong">
 						<Icon icon="lucide:trending-up" class="h-8 w-8" />
@@ -226,7 +226,7 @@
 				</div>
 			</div>
 
-			<div class="stats w-full shadow">
+			<div class="stats w-full shadow-raised">
 				<div class="stat">
 					<div class="stat-figure text-accent-strong">
 						<Icon icon="lucide:calendar" class="h-8 w-8" />
@@ -245,7 +245,7 @@
 				</div>
 			</div>
 
-			<div class="stats w-full shadow">
+			<div class="stats w-full shadow-raised">
 				<div class="stat">
 					<div class="stat-figure text-info-strong">
 						<Icon icon="lucide:users" class="h-8 w-8" />
@@ -265,7 +265,7 @@
 
 		<!-- Species Distribution -->
 		<div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
-			<div class="card bg-base-100 shadow-xl">
+			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
 					<h2 class="card-title">
 						<Icon icon="lucide:chart-pie" class="h-6 w-6" />
@@ -316,7 +316,7 @@
 			</div>
 
 			<!-- Monthly Seasonality -->
-			<div class="card bg-base-100 shadow-xl">
+			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
 					<h2 class="card-title">
 						<Icon icon="lucide:calendar" class="h-6 w-6" />
@@ -348,7 +348,7 @@
 			</div>
 
 			<!-- Data Quality & User Engagement -->
-			<div class="card bg-base-100 shadow-xl">
+			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
 					<h2 class="card-title">
 						<Icon icon="lucide:users" class="h-6 w-6" />
@@ -356,7 +356,7 @@
 					</h2>
 
 					<!-- User Engagement Stats -->
-					<div class="stats stats-vertical lg:stats-horizontal mb-4 shadow">
+					<div class="stats stats-vertical lg:stats-horizontal mb-4 shadow-raised">
 						<div class="stat">
 							<div class="stat-title">Eindeutige Nutzer</div>
 							<div class="stat-value text-primary">
@@ -422,7 +422,7 @@
 
 		<!-- Top Observers -->
 		{#if data.topObservers && data.topObservers.length > 0}
-			<div class="card bg-base-100 shadow-xl">
+			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
 					<h2 class="card-title">
 						<Icon icon="lucide:trending-up" class="h-6 w-6" />
@@ -477,7 +477,7 @@
 		{/if}
 
 		<!-- Yearly Trends -->
-		<div class="card bg-base-100 shadow-xl">
+		<div class="card bg-base-100 shadow-raised">
 			<div class="card-body">
 				<h2 class="card-title">
 					<Icon icon="lucide:trending-up" class="h-6 w-6" />
@@ -547,7 +547,7 @@
 				(sum, a) => sum + Number(a.count),
 				0
 			)}
-			<div class="card bg-base-100 shadow-xl">
+			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
 					<h2 class="card-title">
 						<Icon icon="lucide:calendar" class="h-6 w-6" />
@@ -600,7 +600,7 @@
 					</div>
 
 					<!-- Summary Stats -->
-					<div class="stats stats-vertical lg:stats-horizontal shadow">
+					<div class="stats stats-vertical lg:stats-horizontal shadow-raised">
 						<div class="stat">
 							<div class="stat-title">Neue Sichtungen</div>
 							<div class="stat-value text-primary">{formatNumber(totalRecentSightings)}</div>

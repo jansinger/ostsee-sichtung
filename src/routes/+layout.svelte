@@ -13,7 +13,7 @@
 	<!-- Skip-Link: erster fokussierbarer Inhalt vor der Navigation -->
 	<a
 		href="#main-content"
-		class="btn btn-primary sr-only z-[100] focus:not-sr-only focus:absolute focus:top-2 focus:left-2"
+		class="btn btn-primary sr-only z-skip focus:not-sr-only focus:absolute focus:top-2 focus:left-2"
 	>
 		Zum Hauptinhalt springen
 	</a>

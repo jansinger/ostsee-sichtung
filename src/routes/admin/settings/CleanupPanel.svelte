@@ -47,7 +47,7 @@
 	}
 </script>
 
-<section class="card bg-base-100 border-base-300 border shadow-sm">
+<section class="card bg-base-100 border-base-300 border shadow-raised">
 	<div class="card-body">
 		<h2 class="card-title">
 			<Icon icon="lucide:trash-2" width="20" class="text-primary" aria-hidden="true" />

@@ -87,7 +87,7 @@
 	{:else if openApiSpec}
 		<!-- Quick API Overview -->
 		<div class="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-			<div class="card bg-base-100 shadow-xl">
+			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
 					<h2 class="card-title text-lg">🔍 Sichtungen</h2>
 					<div class="space-y-1 text-sm">
@@ -106,7 +106,7 @@
 				</div>
 			</div>
 
-			<div class="card bg-base-100 shadow-xl">
+			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
 					<h2 class="card-title text-lg">🔐 Authentifizierung</h2>
 					<div class="space-y-1 text-sm">
@@ -117,7 +117,7 @@
 				</div>
 			</div>
 
-			<div class="card bg-base-100 shadow-xl">
+			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
 					<h2 class="card-title text-lg">📁 Dateien</h2>
 					<div class="space-y-1 text-sm">
@@ -127,7 +127,7 @@
 				</div>
 			</div>
 
-			<div class="card bg-base-100 shadow-xl">
+			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
 					<h2 class="card-title text-lg">📊 Export</h2>
 					<div class="space-y-1 text-sm">
@@ -139,7 +139,7 @@
 				</div>
 			</div>
 
-			<div class="card bg-base-100 shadow-xl">
+			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
 					<h2 class="card-title text-lg">⚙️ Admin</h2>
 					<div class="space-y-1 text-sm">
@@ -150,7 +150,7 @@
 				</div>
 			</div>
 
-			<div class="card bg-base-100 shadow-xl">
+			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
 					<h2 class="card-title text-lg">🌍 Geo</h2>
 					<div class="space-y-1 text-sm">

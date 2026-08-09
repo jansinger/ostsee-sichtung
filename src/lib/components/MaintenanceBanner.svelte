@@ -6,7 +6,7 @@
 
 <!-- Maintenance Mode Banner for Admins -->
 {#if isAdmin}
-	<div class="alert alert-warning shadow-lg">
+	<div class="alert alert-warning">
 		<div class="flex items-center gap-2">
 			<Icon icon="lucide:settings" class="size-5" style="animation: spin 3s linear infinite" />
 			<Icon icon="lucide:alert-circle" class="size-5" />
