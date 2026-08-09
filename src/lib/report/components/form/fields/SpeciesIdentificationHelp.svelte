@@ -267,9 +267,15 @@
 											>
 												{#each species.images as image (image.src)}
 													<div class="text-center">
+														<!-- `contrast-more:hover:outline-2` statt eines @media-Blocks im
+														     Style-Block: eine reine Utility, und die Variante erzeugt
+														     `prefers-contrast: more`. Bis 2026-08-09 stand die Regel unter
+														     `prefers-contrast: high` — dem Entwurfsnamen des Merkmals, den
+														     keine Engine auswertet (gemessen in Chromium 151 und WebKit 26.5,
+														     Beleg in e2e/helpers/bannedMediaFeatures.ts). -->
 														<button
 															type="button"
-															class="group shadow-raised hover:shadow-floating duration-instant relative overflow-hidden rounded-lg transition-all"
+															class="group shadow-raised hover:shadow-floating duration-instant relative overflow-hidden rounded-lg transition-all contrast-more:hover:outline-2"
 															onclick={() => openImageModal(image.src, image.alt, image.copyright)}
 															aria-label={`${image.alt} in Originalgröße anzeigen`}
 														>
@@ -505,7 +511,8 @@
 	data-testid="species-image-dialog"
 	onclose={handleDialogClose}
 >
-	<div class="modal-box w-11/12 max-w-5xl p-0">
+	<!-- Rahmen bei erhöhtem Kontrast, siehe die Begründung am Artfoto-Knopf oben. -->
+	<div class="modal-box w-11/12 max-w-5xl p-0 contrast-more:border-2">
 		{#if modalImageSrc}
 			<div class="relative">
 				<!-- Modal Header -->
@@ -656,16 +663,6 @@
 		.avatar .mask,
 		button {
 			transition: none;
-		}
-	}
-
-	@media (prefers-contrast: high) {
-		.group:hover {
-			outline: 2px solid;
-		}
-
-		.modal-box {
-			border: 2px solid;
 		}
 	}
 </style>

@@ -93,6 +93,17 @@ Die Regel prüft den **Quelltext** aller `<style>`-Blöcke und CSS-Dateien auf H
 
 **Was der Scan nicht sieht:** `hover:`-Zustände — er liest den Ruhezustand. Dafür gilt die Regel „`text-error` nicht auf `base-300`" unten.
 
+**Erhöhter Kontrast heißt `prefers-contrast: more`, nie `high`** (seit 2026-08-09). `high` war der Entwurfsname des Merkmals; Media Queries Level 5 kennt `no-preference | more | less | custom`, und Tailwinds Variante `contrast-more:` erzeugt entsprechend `more`. Gemessen mit Playwright 1.62 bei aktiver Kontrasterhöhung (Kontext-Option `contrast: 'more'`):
+
+| Query                      | Chromium 151 | WebKit 26.5 |
+| -------------------------- | ------------ | ----------- |
+| `(prefers-contrast: more)` | ✅ trifft zu | ✅          |
+| `(prefers-contrast: high)` | ❌ nie       | ❌          |
+
+Gegengeprüft nicht nur über `matchMedia`, sondern über eine echte Regel: eine Deklaration unter `high` setzt auch bei aktiver Kontrasterhöhung nichts. Die drei Blöcke im Bestand (`MediaThumbnail`, `MediaModal`, `SpeciesIdentificationHelp`) waren damit seit ihrer Einführung tot — kein Linter und kein Browser meldet das, weil die Regel syntaktisch in Ordnung ist. Gewacht wird jetzt über `e2e/helpers/bannedMediaFeatures.ts` (Quelltext-Scan, läuft in `npm run test:quick`).
+
+**Konsequenz für neue Regeln:** Setzt die Regel nur Utilities (Rahmenbreite, Outline, Deckkraft), gehört sie als `contrast-more:`-Variante ins Markup und nicht als `@media`-Block ins Komponenten-CSS — dort steht der Merkmalsname dann gar nicht mehr von Hand.
+
 **Beim Beheben nicht mechanisch ersetzen:** Erst prüfen, ob die Farbe an der Stelle Bedeutung trägt. Dekorative Icons und Zierelemente gehören auf `base-content/70` — nicht auf eine Statusfarbe mit `-strong`. Trägt ein Zeichen gar keine Bedeutung (Trennpunkt, Zierglyphe), gehört zusätzlich `aria-hidden="true"` daran; Beispiel: die Danksagungs-Trennpunkte in `src/routes/about/+page.svelte`.
 
 Beim Prüfen per `grep` gilt außerdem: **`grep -o` schneidet das `-strong`-Suffix aus der Ausgabezeile**, ein nachgeschaltetes `grep -v -- -strong` filtert dann ins Leere und meldet jede korrekte Verwendung als Verstoß — so entstand die inzwischen korrigierte „32 Fundstellen"-Liste in `docs/DESIGN_SYSTEM.md`. Die Regeln im Scan umgehen das, indem sie die Klassenliste splitten und jede Klasse gegen ein verankertes Muster prüfen.

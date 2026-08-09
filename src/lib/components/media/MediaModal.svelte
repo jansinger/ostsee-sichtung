@@ -81,10 +81,22 @@
 	aria-labelledby="modal-title"
 	aria-describedby="modal-description"
 >
-	<div class="modal-box flex max-h-[90vh] w-11/12 max-w-6xl flex-col overflow-hidden p-0">
+	<!-- `contrast-more:` statt eines @media-Blocks im Style-Block: Beides sind reine
+	     Utilities (Rahmenbreite am Dialog, Rahmenfarbe an Kopf- und Fußleiste), und
+	     die Variante erzeugt `prefers-contrast: more` — den Wert, den die Engines
+	     auswerten. Bis 2026-08-09 stand das unter `prefers-contrast: high`; `high`
+	     war der Entwurfsname des Merkmals und greift nirgends (gemessen in Chromium
+	     151 und WebKit 26.5, Beleg in e2e/helpers/bannedMediaFeatures.ts). Mit dem
+	     Umzug entfällt die Klasse `modal-section`: Sie existierte nur als Anker für
+	     jene Regel — die Leisten stehen im Markup direkt nebeneinander, die beiden
+	     EXIF-Kästchen im Inneren (ebenfalls bg-base-200, aber ohne Rahmen) bleiben
+	     wie zuvor unberührt. -->
+	<div
+		class="modal-box flex max-h-[90vh] w-11/12 max-w-6xl flex-col overflow-hidden p-0 contrast-more:border-2"
+	>
 		<!-- Modal Header -->
 		<div
-			class="bg-base-200 border-base-300 modal-section flex items-center justify-between border-b p-4"
+			class="bg-base-200 border-base-300 flex items-center justify-between border-b p-4 contrast-more:border-current"
 		>
 			<div class="flex min-w-0 flex-1 items-center gap-3">
 				<Icon icon="lucide:file-type" width="20" class="text-primary flex-shrink-0" />
@@ -172,7 +184,7 @@
 		</div>
 
 		<!-- Modal Footer -->
-		<div class="bg-base-200 border-base-300 modal-section space-y-4 border-t p-4">
+		<div class="bg-base-200 border-base-300 space-y-4 border-t p-4 contrast-more:border-current">
 			<!-- Basis-Informationen -->
 			<div class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
 				<div class="flex items-center gap-2">
@@ -362,22 +374,6 @@
 		img,
 		video {
 			transition: none;
-		}
-	}
-
-	/* High contrast mode support */
-	@media (prefers-contrast: high) {
-		.modal-box {
-			border: 2px solid;
-		}
-
-		/* Kopf- und Fußleiste des Dialogs. Zielt auf `.modal-section` und nicht
-		   mehr auf `.bg-base-200`: Die Utility-Klasse trugen auch die beiden
-		   EXIF-Kästchen im Inneren, die gar keinen Rahmen haben — die Regel lief
-		   dort ins Leere und band gleichzeitig eine Zusage an einen Klassennamen,
-		   der jederzeit gegen einen anderen Farbton getauscht werden kann. */
-		.modal-section {
-			border-color: currentColor;
 		}
 	}
 
