@@ -191,6 +191,14 @@ function generateSecureFilename(originalName: string): string {
 
 ## GDPR / DSGVO
 
+> **Fremde Dateien vor dem Commit scannen.** Dieses Repository ist öffentlich;
+> ein Commit ist eine Veröffentlichung und praktisch nicht zurücknehmbar. Die
+> verbindliche Regel dazu steht in `CLAUDE.md` („Fremde Dateien vor dem Commit
+> auf personenbezogene Daten prüfen") — dort und nicht hier, weil diese Datei
+> nur bei Änderungen unter `src/lib/server/auth/**` und
+> `src/lib/server/storage/**` geladen wird und damit genau dann nicht, wenn
+> jemand ein Archiv nach `docs/` legt.
+
 ### Datenminimierung
 
 ```typescript
