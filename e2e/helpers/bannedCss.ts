@@ -37,9 +37,15 @@ export interface CssOffender {
 /**
  * Farbliterale, die am Theme vorbeigreifen.
  *
- * Erfasst sind die vier Schreibweisen, die in CSS eine Farbe *direkt* benennen:
- * Hex (`#0af`, `#00aaff`, `#00aaffcc`), `rgb()`/`rgba()`, `hsl()`/`hsla()` und
- * `oklch()`.
+ * Erfasst sind die Schreibweisen, die in CSS eine Farbe *direkt* benennen: Hex
+ * (`#0af`, `#00aaff`, `#00aaffcc`) und die Farbfunktionen `rgb()`/`rgba()`,
+ * `hsl()`/`hsla()`, `oklch()`, `oklab()`, `lab()`, `lch()` sowie `color()`.
+ *
+ * Die vier letzten haben im Bestand keine Fundstelle und stehen trotzdem im
+ * Muster — aus dem Grund, den `bannedClasses.ts` bei `PALETTE_HUES` ausbuchstabiert:
+ * Eine Regel, die nur die Schreibweisen kennt, die schon jemand benutzt hat,
+ * meldet die erste neue nicht. `color()` ist dabei der wahrscheinlichste
+ * Zuwachs, sobald jemand einen P3-Wert aus einem Design-Tool kopiert.
  *
  * **Warum `oklch()` mit dabei ist, obwohl das Theme selbst darin geschrieben
  * ist:** Genau deshalb. `tokens.css` ist die eine Datei, in der ein `oklch()`
@@ -60,16 +66,57 @@ const COLOR_LITERAL_PATTERN =
 	/#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab|lab|lch|color)\s*\(/g;
 
 /**
- * Zeilen, die trotz Farbliteral in Ordnung gehen.
+ * Aufrufe, in deren Innerem ein Farbliteral in Ordnung geht.
  *
- * `var(` auf derselben Zeile heißt: Der Wert kommt aus einem Token, und das
- * Literal steht allenfalls als Fallback daneben (`var(--x, #fff)`). Das ist die
- * vorgesehene Schreibweise und kein Verstoß.
+ * `var(--x, #fff)` ist die vorgesehene Schreibweise: Der Wert kommt aus einem
+ * Token, das Literal steht nur als Fallback daneben. `color-mix()` erlaubt
+ * dasselbe eine Ebene tiefer.
  *
- * `color-mix(` erlaubt dasselbe eine Ebene tiefer — die Mischung nimmt ihre
- * Farben aus Tokens, der Rest der Zeile ist Prozentangabe.
+ * **Entscheidend ist, dass nur der Aufruf selbst ausgenommen wird, nicht die
+ * Zeile.** Die erste Fassung sprang aus der ganzen Zeile heraus, sobald
+ * irgendwo ein `var(` darin stand — ein Literal daneben blieb damit unsichtbar.
+ * Das ist keine konstruierte Lücke: Genau diese Form hatte das Lade-Muster, das
+ * mit diesem PR aus `MediaThumbnail.svelte` entfallen ist —
+ * `linear-gradient(45deg, transparent 25%, var(--color-base-300) 25%, …)`. Ein
+ * `#fff` an einem dieser Stops wäre nie gemeldet worden, und die Regel hätte
+ * ausgerechnet für die Schreibweise gedeckt, in der Farben tatsächlich
+ * gemischt auftreten.
  */
-const TOKEN_BEARING_PATTERN = /var\(|color-mix\(/;
+const TOKEN_CALL_PATTERN = /\b(?:var|color-mix)\(/;
+
+/**
+ * Entfernt `var(…)`- und `color-mix(…)`-Aufrufe samt Inhalt aus einer Zeile.
+ *
+ * Zählt Klammern, statt bis zur nächsten `)` zu springen — sonst überlebt bei
+ * `var(--a, var(--b, #fff))` der innere Rest und wird als Fundstelle gemeldet.
+ * Bleibt eine Klammer offen (mehrzeiliger Aufruf), fällt der Zeilenrest weg: Was
+ * dahinter steht, gehört dann noch in den Aufruf hinein.
+ */
+function stripTokenCalls(line: string): string {
+	let result = line;
+
+	for (;;) {
+		const match = TOKEN_CALL_PATTERN.exec(result);
+		if (!match) return result;
+
+		const openParen = match.index + match[0].length - 1;
+		let depth = 0;
+		let close = -1;
+
+		for (let i = openParen; i < result.length; i++) {
+			if (result[i] === '(') depth++;
+			else if (result[i] === ')' && --depth === 0) {
+				close = i;
+				break;
+			}
+		}
+
+		result =
+			close === -1
+				? result.slice(0, match.index)
+				: result.slice(0, match.index) + result.slice(close + 1);
+	}
+}
 
 /**
  * Dateien, in denen Farbliterale hingehören.
@@ -133,9 +180,7 @@ export function findCssColorOffenders(css: string, lineOffset = 0): CssOffender[
 	const stripped = stripComments(css).split('\n');
 
 	stripped.forEach((line, index) => {
-		if (TOKEN_BEARING_PATTERN.test(line)) return;
-
-		const matches = line.match(COLOR_LITERAL_PATTERN);
+		const matches = stripTokenCalls(line).match(COLOR_LITERAL_PATTERN);
 		if (!matches) return;
 
 		offenders.push({

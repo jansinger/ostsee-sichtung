@@ -58,6 +58,30 @@ describe('findCssColorOffenders', () => {
 		expect(findCssColorOffenders('color: var(--color-primary, #0af);')).toEqual([]);
 	});
 
+	/* Die Umgehung, die der erste Wurf offenließ: Die Zeile wurde komplett
+	   übersprungen, sobald irgendwo ein `var(` darin stand. Ein Literal daneben
+	   blieb damit unsichtbar — und das ist keine konstruierte Form. Genau so sah
+	   das Lade-Streifenmuster aus, das dieser PR aus MediaThumbnail entfernt hat:
+	   ein linear-gradient() aus var()-Stops. Wer dort ein #fff einsetzt, hätte
+	   einen grünen Test gehabt. */
+	it('meldet ein Literal, das neben einem var() in derselben Zeile steht', () => {
+		const offenders = findCssColorOffenders('background-image: linear-gradient(#0af, var(--x));');
+
+		expect(offenders).toHaveLength(1);
+		expect(offenders[0].literal).toBe('#0af');
+	});
+
+	it('meldet ein Literal neben einem color-mix() in derselben Zeile', () => {
+		expect(
+			findCssColorOffenders('background: color-mix(in oklab, var(--a) 50%, var(--b)) , #abcdef;')
+		).toHaveLength(1);
+	});
+
+	it('sieht durch ein verschachteltes var() hindurch', () => {
+		expect(findCssColorOffenders('color: var(--a, var(--b, #fff));')).toEqual([]);
+		expect(findCssColorOffenders('color: var(--a, var(--b)) #fff;')).toHaveLength(1);
+	});
+
 	it('lässt color-mix() durch — die Farben darin kommen aus Tokens', () => {
 		expect(
 			findCssColorOffenders('background: color-mix(in oklab, var(--color-info) 12%, white);')
