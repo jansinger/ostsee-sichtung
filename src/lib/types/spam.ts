@@ -30,6 +30,64 @@ export interface SpamCheckResult {
 }
 
 /**
+ * Der zum Meldezeitpunkt persistierte Befund (`spam_score`/`spam_indicators`).
+ * Kein `isHighRisk`: Das ist kein gespeichertes Feld, sondern wird überall aus
+ * `HIGH_RISK_THRESHOLD` rekonstruiert — eine zweite, mitgelieferte Fassung
+ * derselben Aussage könnte davon abweichen.
+ */
+export interface SpamStoredFinding {
+	score: number;
+	indicators: string[];
+}
+
+/**
+ * Liest die Spalte `spam_indicators` als das, was sie zusagt: eine Liste von
+ * Strings.
+ *
+ * Die Spalte ist untypisiertes `jsonb`. Ein bloßes
+ * `Array.isArray(v) ? (v as string[]) : []` prüft nur den **Container** — ein
+ * Array mit Zahlen oder Objekten kommt unverändert durch, und die API bricht
+ * damit ihr eigenes Schema (`items: { type: string }`), ohne dass irgendwo
+ * etwas auffällt. Der Cast ist eine Behauptung, die niemand nachprüft; dieser
+ * Helfer macht die Zusage stattdessen wahr.
+ *
+ * **Er sagt nichts über den Score.** Der steht in einer eigenen Spalte und
+ * bleibt auch dann gültig, wenn die Indikatorliste unbrauchbar ist — eine
+ * leere Liste heißt hier „keine lesbaren Indikatoren", nicht „Score 0".
+ *
+ * Heute schreibt ausschließlich eigener Code in die Spalte
+ * (`saveSighting`, `rescoreSightings`), beide aus `SpamCheckResult.indicators`.
+ * Der Fall ist damit nicht erreichbar — nachweisen lässt sich das beim Lesen
+ * aber nicht, und die Datenbank teilt sich die App mit dem Altsystem.
+ */
+export function toStoredIndicators(value: unknown): string[] {
+	return Array.isArray(value)
+		? value.filter((eintrag): eintrag is string => typeof eintrag === 'string')
+		: [];
+}
+
+/**
+ * Antwort von `GET /api/sightings/[id]/spam-check` — **zwei** Befunde, bewusst
+ * nebeneinander statt einer Zahl.
+ *
+ * Vier Indikatoren wiegen je 2 Punkte und existieren nur im Moment des
+ * Absendens: Formular-Token fehlt/ungültig, verdächtig schnell abgeschickt und
+ * die beiden Duplikat-Signale. Ihre Eingangsdaten (Token, Absendedauer,
+ * 24-Stunden- bzw. 7-Tage-Fenster) stehen nirgends in der Zeile, also kann
+ * `recomputed` sie nicht rekonstruieren und liegt entsprechend tiefer.
+ *
+ * Bis 2026-08 lieferte der Endpunkt nur die Neuberechnung. Damit zeigte die
+ * Tabelle „Spam 2" und der Check daneben „0" — beide Zahlen richtig, der
+ * Widerspruch unerklärlich, weil der Vergleichswert fehlte.
+ */
+export interface SpamCheckResponse {
+	/** `null` heißt „nie bewertet" (Altbestand, Legacy-Eingang) — nicht `0`. */
+	stored: SpamStoredFinding | null;
+	/** Frischer Lauf über den aktuellen Datensatz, ohne Meldezeitpunkt-Signale. */
+	recomputed: SpamCheckResult;
+}
+
+/**
  * Minimal input type for spam detection.
  * Accepts only the fields actually used by detectSpamIndicators,
  * so callers don't need to pass a full SightingFormValues.

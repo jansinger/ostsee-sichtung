@@ -445,6 +445,59 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/sightings/{id}/spam-check:
+    get:
+      tags:
+        - sightings
+      summary: Spam-Befund einer Sichtung — gespeichert und neu berechnet
+      description: |
+        Liefert **zwei** Befunde nebeneinander (Admin-Berechtigung erforderlich):
+        `stored` ist der zum Meldezeitpunkt persistierte Score aus
+        `spam_score`/`spam_indicators` — dieselbe Zahl, die Tabelle und Eingang
+        anzeigen. `recomputed` ist ein frischer Lauf der Heuristik über den
+        aktuellen Datensatz.
+
+        Die beiden weichen systematisch voneinander ab, und das ist kein Fehler:
+        Vier Indikatoren wiegen je 2 Punkte und existieren nur im Moment des
+        Absendens — Formular-Token fehlt/ungültig, verdächtig schnell
+        abgeschickt sowie die beiden Duplikat-Signale. Ihre Eingangsdaten
+        (Token, Absendedauer, 24-Stunden- bzw. 7-Tage-Fenster) stehen nirgends
+        in der Zeile, `recomputed` kann sie also nicht rekonstruieren und liegt
+        entsprechend tiefer. Umgekehrt kann er höher liegen, wenn der Datensatz
+        seit der Meldung bearbeitet wurde oder die E-Mail-Domain inzwischen
+        keinen MX-Record mehr hat.
+
+        Maßgeblich für die Triage ist `stored`. `stored: null` heißt „nie
+        bewertet" (Altbestand, Legacy-Eingang) und ist nicht dasselbe wie
+        Score 0 (`docs/SPAM_DETECTION.md`).
+      security:
+        - adminAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID der Sichtung
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Befund ermittelt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpamCheckResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/LoginRedirect'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/sightings/{id}/queue:
     get:
       tags:
@@ -2578,6 +2631,61 @@ components:
             Fachliche Referenz-ID; null bei Altbestand ohne Referenz-ID
             (Spalte `referenz_id` ist nicht `notNull`).
           example: REF-501
+    SpamCheckResponse:
+      type: object
+      required: [stored, recomputed]
+      properties:
+        stored:
+          nullable: true
+          description: >-
+            Persistierter Befund zum Meldezeitpunkt. null heißt "nie bewertet"
+            (Altbestand, Legacy-Eingang) und ist nicht dasselbe wie Score 0.
+            Kein isHighRisk: das ist kein gespeichertes Feld, sondern wird aus
+            der Schwelle 5 rekonstruiert.
+          allOf:
+            - $ref: '#/components/schemas/SpamStoredFinding'
+        recomputed:
+          $ref: '#/components/schemas/SpamCheckResult'
+    SpamStoredFinding:
+      type: object
+      required: [score, indicators]
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 10
+        indicators:
+          type: array
+          items:
+            type: string
+          description: >-
+            Immer Strings: die Spalte spam_indicators ist untypisiertes jsonb
+            und wird beim Lesen auf String-Elemente gefiltert (kein Array-Wert
+            oder ein Element anderen Typs fällt weg). Der Score bleibt davon
+            unberührt gültig — er steht in einer eigenen Spalte.
+          example: ['Formular verdächtig schnell abgeschickt']
+    SpamCheckResult:
+      type: object
+      required: [score, isHighRisk, indicators]
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 10
+        isHighRisk:
+          type: boolean
+          description: Urteil des Servers (Schwelle 5), nicht clientseitig nachrechnen.
+        indicators:
+          type: array
+          items:
+            type: string
+        failed:
+          type: boolean
+          description: >-
+            Die Prüfung selbst ist gescheitert (Fail-Safe). Dann gilt score 0
+            zusammen mit isHighRisk true — beides wörtlich zu nehmen ergäbe
+            "Hochrisiko ohne einen einzigen Indikator". Für die Anzeige ist der
+            ehrliche Zustand derselbe wie stored null: es wurde nichts bewertet.
     SpamRescoreReport:
       type: object
       required: [scored, skippedFailed, lastId, remaining, done, stalled, distribution]

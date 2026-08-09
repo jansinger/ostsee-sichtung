@@ -142,6 +142,7 @@ dieselbe, deshalb steht sie einmal.
 | `deadFinding.ts`               | Totfund-Auszeichnung                        |
 | `sightingStatus.ts`            | Statusableitung + Wort/Farbe/Icon/Verdict   |
 | `spamScorePresentation.ts`     | Spam-Risikostufe + Wort/Farbe/Icon          |
+| `SpamFinding.svelte`           | Ein Spam-Befund (Modal + Detailkarte)       |
 | `sightingStatusFilter.ts`      | Statuswert ↔ Filter-Query (`?verified=`)    |
 | `SightingStatusControl.svelte` | Segmented Control für den Statuswechsel     |
 
@@ -169,6 +170,37 @@ Die Flächen- und Icon-Farbe der Detail-Karte steht als `SpamRisk`-Record an
 ihrer Aufrufstelle — ein Leser, gleiche Begründung wie bei `deadFinding.ts`.
 Über die Stufe und nicht über den Score aufgeschlüsselt, damit die Schwellen
 nicht doch wieder auseinanderlaufen.
+
+### Modal und Detailkarte zeigen zwei Befunde, nicht einen
+
+`GET /api/sightings/[id]/spam-check` liefert seit 2026-08 `{ stored, recomputed }`:
+den persistierten Erstbefund **und** eine Neuberechnung über den aktuellen
+Datensatz. Sie weichen systematisch ab — vier Indikatoren wiegen je 2 Punkte und
+existieren nur beim Absenden (Formular-Token, Absendedauer, beide
+Duplikat-Signale), ihre Eingangsdaten stehen nirgends in der Zeile. Vorher
+lieferte der Endpunkt nur die Neuberechnung, und die Oberfläche zeigte „Spam 2"
+in der Spalte und „0" im Check daneben. Drei Dinge dabei nicht zurückdrehen:
+
+- **`stored` führt, überall.** Es ist die Zahl aus Tabelle und Eingang und hat
+  mehr Information als der Nachlauf. Nur wo es keinen Erstbefund gibt
+  (`stored === null`), führt die Neuberechnung. Denselben Vorrang hat der
+  E-Mail-Versand seit jeher (`persistedSpam ?? detectSpamIndicators(...)`) — die
+  zwei Admin-Flächen waren die Ausreißer, nicht die Regel.
+- **Beide Befunde kommen aus `SpamFinding.svelte`.** Modal und Detailkarte
+  hatten kurzzeitig je eine eigene Fassung, mit abweichendem Wortlaut („Beim
+  Eingang: 2" gegen „Heuristik-Score: 2") und ohne Risiko-Icon am Erstbefund.
+  Das ist dieselbe Fehlerklasse, gegen die `spamScorePresentation.ts` angelegt
+  wurde — eine Ebene höher.
+- **`score: null` und ein fehlgeschlagener Lauf sind nicht dasselbe**, obwohl
+  beide auf `risk === 'unrated'` landen. „Nie bewertet" bekommt gar kein Badge,
+  „geprüft, aber gescheitert" das Badge „Prüfung fehlgeschlagen" ohne Zahl.
+  `SpamFinding` unterscheidet sie daran, ob überhaupt eine Zahl vorliegt.
+
+Die Einordnung der Differenz macht `getSpamDrift`; der erklärende Satz steht in
+`SPAM_DRIFT_PRESENTATION` und bleibt aus, wo eine der beiden Seiten fehlt.
+Abgesichert durch `e2e/admin-spam-check.spec.ts` (Shard `form`) — der Bestand
+enthält keine Zeile mit Meldezeitpunkt-Indikator, der Fall muss geseedet werden.
+Vollständige Herleitung: `docs/SPAM_DETECTION.md`.
 
 ### Totfund vs. Lebendsichtung
 

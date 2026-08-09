@@ -133,6 +133,43 @@ verwendet explizit `NULLS LAST` in **beiden** Richtungen: PostgreSQL sortiert
 `DESC` per Vorgabe `NULLS FIRST`, sonst stünde der unbewertete Altbestand über
 den Treffern.
 
+### Der Nachlauf ist nicht der Erstbefund — beide werden gezeigt
+
+`GET /api/sightings/[id]/spam-check` (Modal der Tabelle, Karte der
+Detailansicht) liefert seit 2026-08 **zwei** Befunde: `stored` aus den beiden
+Spalten und `recomputed` als frischen Lauf über den aktuellen Datensatz.
+
+Sie weichen systematisch voneinander ab. Vier Indikatoren wiegen je 2 Punkte
+und existieren nur im Moment des Absendens:
+
+| Indikator                                       | Herkunft                            |
+| ----------------------------------------------- | ----------------------------------- |
+| Formular-Token fehlt / ungültig                 | `submission.tokenStatus`            |
+| Formular verdächtig schnell abgeschickt (< 5 s) | `submission.ageSeconds`             |
+| Identischer Bemerkungstext wie früher           | `recentDuplicates.sameNotes` (7 d)  |
+| Auffällig viele Meldungen derselben E-Mail      | `recentDuplicates.sameEmail` (24 h) |
+
+Ihre Eingangsdaten stehen nirgends in der Zeile — `recomputed` kann sie nicht
+rekonstruieren und liegt entsprechend tiefer. Umgekehrt kann er höher liegen,
+wenn der Datensatz bearbeitet wurde oder die E-Mail-Domain inzwischen keinen
+MX-Record mehr hat.
+
+**Maßgeblich für die Triage bleibt `stored`** — es ist die Zahl aus Tabelle und
+Eingang, und der Nachlauf hat weniger Information als sie. Die Oberfläche
+richtet Farbe und Überschrift deshalb nach dem Erstbefund und führt nur dort
+mit der Neuberechnung, wo es keinen gibt (`stored: null`).
+
+Bis dahin lieferte der Endpunkt **nur** die Neuberechnung. Die Tabelle zeigte
+damit „Spam 2" und der Check daneben „0" — beide Zahlen richtig, der
+Widerspruch aber unerklärbar, weil der Vergleichswert fehlte. Wer das wieder
+auf eine Zahl zusammenzieht, stellt genau diesen Befund wieder her.
+
+Die Einordnung der Differenz macht `getSpamDrift` in
+`spamScorePresentation.ts`. `incomparable` deckt zwei Fälle ab, die sich gleich
+verhalten: kein Erstbefund (`stored === null`) oder nicht durchgelaufene
+Neuberechnung (`failed`). Beide Male fehlt eine Seite, und eine Differenz zu
+bilden hieße, mit einer Null zu rechnen, die keine ist.
+
 ---
 
 ## Backfill bestehender Daten

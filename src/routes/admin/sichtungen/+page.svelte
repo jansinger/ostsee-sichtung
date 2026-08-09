@@ -18,10 +18,13 @@
 	import { toast } from '$lib/stores/toastState.svelte';
 	import type { PageData } from './$types';
 	import type { SichtungenListRow } from './listColumns';
-	import type { SpamCheckResult } from '$lib/types/spam';
+	import type { SpamCheckResponse } from '$lib/types/spam';
+	import SpamFinding from '$lib/components/admin/SpamFinding.svelte';
 	import {
+		getSpamDrift,
+		getSpamRisk,
 		getSpamRiskFromResult,
-		SPAM_RISK_PRESENTATION
+		SPAM_DRIFT_PRESENTATION
 	} from '$lib/components/admin/spamScorePresentation';
 	import Icon from '$lib/components/Icon.svelte';
 	import { BALTIC_SEA_STATUS_PRESENTATION } from '$lib/utils/geo/balticSeaStatus';
@@ -414,7 +417,7 @@
 		open: false,
 		loading: false,
 		sightingId: null as number | null,
-		result: null as SpamCheckResult | null,
+		result: null as SpamCheckResponse | null,
 		error: null as string | null
 	});
 
@@ -1213,7 +1216,7 @@
 			     Bedienbarkeit zu behaupten; `aria-current="page"` sagt Screenreadern,
 			     wofür die Zahl steht. -->
 			<span
-				class="btn btn-active join-item btn-sm pointer-events-none min-w-32 text-support md:text-label"
+				class="btn btn-active join-item btn-sm text-support md:text-label pointer-events-none min-w-32"
 				aria-current="page"
 			>
 				{data.pagination.page} / {seiten.totalPages}
@@ -1284,39 +1287,41 @@
 				<span>{spamCheckModal.error}</span>
 			</div>
 		{:else if spamCheckModal.result}
-			{@const result = spamCheckModal.result}
-			{@const spam = SPAM_RISK_PRESENTATION[getSpamRiskFromResult(result)]}
+			{@const response = spamCheckModal.result}
+			{@const stored = response.stored}
+			{@const drift = SPAM_DRIFT_PRESENTATION[getSpamDrift(response)]}
 			<!-- Wort, Farbe, Icon und Schwelle kommen aus `spamScorePresentation.ts` —
 			     dieselbe Quelle wie Tabellenspalte, Eingangskarte und Detailansicht.
 			     Vorher stand hier ein eigener Schwellensatz, der Score 1 grün zeigte,
 			     während die Spalte dahinter grau war. -->
-			<div class="mt-4 flex flex-wrap items-center gap-2">
-				{#if spam.badgeClass}
-					<span class="badge {spam.badgeClass}">
-						<Icon icon={spam.icon} width="14" height="14" aria-hidden="true" />
-						{spam.label}
-					</span>
-					<span class="badge badge-ghost">Heuristik-Score: {result.score}</span>
-				{:else}
-					<!-- `failed: true` — Score 0 und `isHighRisk: true` zugleich. Weder
-					     „Hochrisiko" noch „sauber" wäre wahr: geprüft wurde nichts. -->
-					<span class="badge badge-warning">
-						<Icon icon="lucide:triangle-alert" width="14" height="14" aria-hidden="true" />
-						Prüfung fehlgeschlagen
-					</span>
-				{/if}
+
+			<!-- Zwei Befunde, und der Erstbefund steht zuerst: Er ist die Zahl aus
+			     Tabelle und Eingang und die für die Triage maßgebliche. Stand hier
+			     nur die Neuberechnung, widersprach das Modal der Spalte, aus der es
+			     geöffnet wurde (`SpamCheckResponse`). -->
+			<div class="mt-4">
+				<SpamFinding
+					title="Beim Eingang"
+					risk={stored ? getSpamRisk(stored.score) : 'unrated'}
+					score={stored?.score ?? null}
+					indicators={stored?.indicators ?? []}
+				/>
 			</div>
-			<p class="text-base-content/70 mt-2 text-sm">{spam.description}</p>
-			<!-- Indicators list -->
-			{#if result.indicators.length > 0}
-				<p class="mt-4 font-semibold">Indikatoren:</p>
-				<ul class="mt-1 list-inside list-disc text-sm">
-					{#each result.indicators as indicator (indicator)}
-						<li>{indicator}</li>
-					{/each}
-				</ul>
-			{:else}
-				<p class="mt-4 text-sm">Keine Indikatoren gefunden.</p>
+
+			<div class="divider my-3"></div>
+
+			<SpamFinding
+				title="Jetzt nachgerechnet"
+				risk={getSpamRiskFromResult(response.recomputed)}
+				score={response.recomputed.score}
+				indicators={response.recomputed.indicators}
+			/>
+
+			{#if drift.note}
+				<div class="alert alert-info mt-4" role="note">
+					<Icon icon="lucide:info" class="shrink-0" aria-hidden="true" />
+					<span class="text-sm">{drift.note}</span>
+				</div>
 			{/if}
 		{/if}
 
