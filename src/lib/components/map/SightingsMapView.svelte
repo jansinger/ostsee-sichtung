@@ -41,7 +41,7 @@
 		title = 'Sichtungskarte',
 		showLogo = true,
 		containerClass = 'relative h-screen w-screen overflow-hidden',
-		titleClass = 'glass text-base-content text-sm absolute top-4 left-12 z-30 rounded-lg px-3 py-1.5 font-bold shadow-xl backdrop-blur-md flex items-center gap-2'
+		titleClass = 'glass text-base-content text-sm absolute top-4 left-12 z-nav rounded-lg px-3 py-1.5 font-bold shadow-floating backdrop-blur-md flex items-center gap-2'
 	} = $props<{
 		mapContainerId?: string;
 		showTitle?: boolean;
@@ -663,7 +663,7 @@
 	{#if viewMode === 'map'}
 		<a
 			href="#map-skip-target"
-			class="btn btn-primary sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-1/2 focus:z-[70] focus:-translate-x-1/2"
+			class="btn btn-primary focus:z-skip sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-1/2 focus:-translate-x-1/2"
 		>
 			Karte überspringen
 		</a>
@@ -681,7 +681,7 @@
 	     genau diesen Filter; „Alle zurücksetzen" stellt den Grundzustand her. -->
 	{#if hasActiveFilters}
 		<div
-			class="scroll-styled absolute top-16 left-1/2 z-30 flex w-max max-w-[92vw] -translate-x-1/2 flex-nowrap items-center justify-start gap-1.5 overflow-x-auto px-1 pb-1"
+			class="scroll-styled z-nav absolute top-16 left-1/2 flex w-max max-w-[92vw] -translate-x-1/2 flex-nowrap items-center justify-start gap-1.5 overflow-x-auto px-1 pb-1"
 			role="group"
 			aria-label="Aktive Filter"
 		>
@@ -782,7 +782,7 @@
 		</p>
 		<div
 			id="info"
-			class="border-base-300 bg-base-100 pointer-events-none absolute z-10 hidden max-w-sm rounded border p-2 shadow-lg"
+			class="border-base-300 bg-base-100 z-raised shadow-floating pointer-events-none absolute hidden max-w-sm rounded border p-2"
 		></div>
 		<!-- M7: Vollbild-Overlay nur beim Initial-Load — Filter-/Jahreswechsel
 		     zeigen stattdessen den Inline-Spinner im Filter-Panel (isLoading-Prop),
@@ -801,7 +801,7 @@
 		<!-- Keine Sichtungen für das gewählte Jahr -->
 		{#if showNoResults}
 			<div
-				class="bg-base-100 rounded-box absolute top-1/2 left-1/2 z-30 w-[min(24rem,90%)] -translate-x-1/2 -translate-y-1/2"
+				class="bg-base-100 rounded-box z-nav absolute top-1/2 left-1/2 w-[min(24rem,90%)] -translate-x-1/2 -translate-y-1/2"
 				style="box-shadow: var(--shadow-floating)"
 			>
 				<StatusBlock
@@ -822,7 +822,7 @@
 		<!-- Alle Sichtungen durch Filter ausgeblendet -->
 		{#if showNoVisibleResults}
 			<div
-				class="bg-base-100 rounded-box absolute top-1/2 left-1/2 z-30 w-[min(24rem,90%)] -translate-x-1/2 -translate-y-1/2"
+				class="bg-base-100 rounded-box z-nav absolute top-1/2 left-1/2 w-[min(24rem,90%)] -translate-x-1/2 -translate-y-1/2"
 				style="box-shadow: var(--shadow-floating)"
 			>
 				<StatusBlock
@@ -833,11 +833,20 @@
 			</div>
 		{/if}
 
-		<!-- Error-Toast -->
+		<!-- Error-Toast.
+
+		     `z-overlay` wie das Tastatur-Hilfe-Modal weiter unten, und damit
+		     bewusst NICHT mehr darüber: vorher stand hier `z-[60]` gegen dessen
+		     `z-50`, der Toast durchstieß also den Schleier eines
+		     `aria-modal="true"`-Dialogs. Auf derselben Stufe entscheidet die
+		     DOM-Position, und die gibt dem Modal den Vorrang — was ein Modal
+		     gerade ausmacht. Wer den Toast wieder nach oben holen will, hat
+		     kein Z-Index-Problem, sondern die Frage zu klären, ob eine Meldung
+		     einen modalen Dialog überlagern darf. -->
 		{#if errorMessage}
 			<div
 				role="alert"
-				class="alert alert-error fixed top-20 left-1/2 z-[60] max-w-md -translate-x-1/2 transform shadow-lg"
+				class="alert alert-error z-overlay shadow-floating fixed top-20 left-1/2 max-w-md -translate-x-1/2 transform"
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -865,7 +874,7 @@
 		<!-- K3: Listenansicht — barrierefreie Tabellen-Alternative zur Karte -->
 		{#if viewMode === 'list'}
 			<section
-				class="bg-base-100 absolute inset-0 z-20 overflow-y-auto pt-16 pb-24"
+				class="bg-base-100 z-panel absolute inset-0 overflow-y-auto pt-16 pb-24"
 				aria-label="Listenansicht der Sichtungen"
 			>
 				<div class="mx-auto max-w-3xl px-4">
@@ -880,11 +889,11 @@
 
 	<!-- K3: Umschalter Karte/Liste -->
 	<div
-		class="absolute bottom-4 left-1/2 z-30 -translate-x-1/2"
+		class="z-nav absolute bottom-4 left-1/2 -translate-x-1/2"
 		role="group"
 		aria-label="Darstellung der Sichtungen wählen"
 	>
-		<div class="join shadow-lg">
+		<div class="join shadow-floating">
 			<button
 				type="button"
 				class="btn join-item min-h-11 {viewMode === 'map' ? 'btn-primary' : ''}"
@@ -930,7 +939,7 @@
 	<!-- Tastatur-Hilfe Button -->
 	<button
 		onclick={() => (showKeyboardHelp = true)}
-		class="bg-info text-info-content hover:bg-info/80 fixed bottom-4 left-4 z-30 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full shadow-lg transition-colors duration-300"
+		class="bg-info text-info-content hover:bg-info/80 z-nav shadow-floating duration-panel fixed bottom-4 left-4 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full transition-colors"
 		aria-label="Tastatur-Hilfe anzeigen"
 		title="Tastaturkürzel anzeigen (H oder ?)"
 	>
@@ -947,7 +956,7 @@
 		     360, -22px bei 320); bei 375px blieben nur 5px übrig. Die Umschaltung
 		     belegt 16–60px über der Unterkante, bottom-20 setzt die Platte auf 80px
 		     und räumt sie. -->
-		<div class="absolute right-1 bottom-20 z-30 md:bottom-6">
+		<div class="z-nav absolute right-1 bottom-20 md:bottom-6">
 			<!-- Helle Platte, weil /logo_dmm_positiv.svg einfarbig im Markenblau
 			     #003777 zeichnet (relative Luminanz 0,041 — auf Weiß 11,6:1, über
 			     einer dunklen Kachel nur noch ~1,2:1) und dort sonst verschwindet.
@@ -956,7 +965,7 @@
 			     Für dunkle Flächen gibt es /logo_dmm_negativ.svg (gleiche Geometrie,
 			     weiß) — das nutzt die About-Seite auf bg-primary. -->
 			<div
-				class="border-primary/10 bg-base-100/95 rounded-xl border p-1 shadow-lg backdrop-blur-md transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+				class="border-primary/10 bg-base-100/95 shadow-floating duration-panel rounded-xl border p-1 backdrop-blur-md transition-all hover:scale-105"
 				data-testid="map-logo-plate"
 			>
 				<!-- Kein flex-Wrapper um das Bild: Tailwinds Preflight setzt img auf
@@ -978,12 +987,12 @@
 	{#if showKeyboardHelp}
 		<!-- Schleier über der Karte, kein Theme-Ton: bg-scrim/<n>
 		     (--scrim-surface in tokens.css). -->
-		<div class="bg-scrim/50 fixed inset-0 z-50 flex items-center justify-center">
+		<div class="bg-scrim/50 z-overlay fixed inset-0 flex items-center justify-center">
 			<div
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby="help-modal-title"
-				class="bg-base-100 max-h-[80vh] max-w-md rounded-lg p-6 shadow-xl"
+				class="bg-base-100 shadow-floating max-h-[80vh] max-w-md rounded-lg p-6"
 			>
 				<div class="mb-4 flex items-center justify-between">
 					<h3 id="help-modal-title" class="text-lg font-bold">Tastaturkürzel</h3>

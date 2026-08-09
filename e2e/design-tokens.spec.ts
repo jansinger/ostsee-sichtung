@@ -572,36 +572,22 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 		});
 
 		/* ---------------------------------------------------------------- *
-		 * Nicht-Farb-Tokens: Elevation, Z-Index, Motion — noch `fixme`.
+		 * Nicht-Farb-Tokens: Elevation, Z-Index, Motion.
 		 *
-		 * **Warum sie hier stehen, obwohl sie rot sind.** Die drei Regeln
-		 * darüber decken ausschließlich Farbe ab. `design-system.md` schreibt
-		 * Elevation, Z-Index und Bewegungsdauer genauso verbindlich aus Tokens
-		 * vor — dafür gab es bis 2026-08-09 keinen Wächter, und der Scan lief
-		 * grün. Das ist die Sorte Lücke, die `bannedClasses.ts` an drei Stellen
-		 * als Fehlerklasse beschreibt: Sie erzeugt Deckung, die es nicht gibt.
+		 * Die drei Regeln darüber decken ausschließlich Farbe ab.
+		 * `design-system.md` schreibt Elevation, Z-Index und Bewegungsdauer
+		 * genauso verbindlich aus Tokens vor — dafür gab es bis 2026-08-09
+		 * keinen Wächter, und der Scan lief grün. Das ist die Sorte Lücke, die
+		 * `bannedClasses.ts` an drei Stellen als Fehlerklasse beschreibt: Sie
+		 * erzeugt Deckung, die es nicht gibt.
 		 *
-		 * **Warum `fixme` und nicht aktiv.** Gemessen am 2026-08-09 steht der
-		 * Bestand bei 118 rohen Schatten-Utilities in 26 Dateien, 28 freien
-		 * Z-Index- und 19 freien Dauer-Angaben — verteilt über den ganzen
-		 * Frontend, nicht nur den Admin. Das ist ein eigener Aufräum-Schritt und
-		 * kein Beiwerk dieses PR; ihn hier mit hineinzuziehen hieße, 26 Dateien
-		 * ohne Bezug zum Rest der Änderung anzufassen. Die Regeln selbst sind
-		 * scharf gestellt und über `bannedClasses.test.ts` an konstruierten
-		 * Beispielen belegt — sie sind also nicht ungeprüft, nur noch nicht
-		 * durchgesetzt. Dieselbe Reihenfolge wie bei der Farb-Gruppe, die bis
+		 * Scharf gestellt wurden die Regeln in #811, aktiv sind sie seit dem
+		 * Aufräum-Schritt, der den Bestand (118 rohe Schatten-Utilities in 26
+		 * Dateien, 28 freie Z-Index- und 19 freie Dauer-Angaben) auf Tokens
+		 * umgestellt hat. Dieselbe Reihenfolge wie bei der Farb-Gruppe, die bis
 		 * PR #620 `fixme` war.
-		 *
-		 * **Beim Aktivieren zu beachten:** Für Schatten ist der Ersatz eine
-		 * echte Utility (`shadow-raised`/`shadow-floating`, im `@theme`-Block).
-		 * Für Z-Index und Dauer NICHT — `--layer-*` und `--motion-*` stehen nur
-		 * in `tokens.css` und sind über `var()` zu setzen. Wer dort `z-panel`
-		 * schreibt, tauscht einen gemeldeten Verstoß gegen eine tote Klasse.
-		 * Alternative wäre, die Stufen zusätzlich in den `@theme`-Block zu
-		 * heben; das ist eine Design-Entscheidung und gehört in den Aufräum-PR,
-		 * nicht hierher.
 		 * ---------------------------------------------------------------- */
-		test.fixme(`${route.path}: keine rohen Schatten-Utilities`, async ({
+		test(`${route.path}: keine rohen Schatten-Utilities`, async ({
 			page,
 			context,
 			request,
@@ -611,7 +597,7 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 			expect(findOffenders(RAW_ELEVATION, elements), RAW_ELEVATION.hint).toEqual([]);
 		});
 
-		test.fixme(`${route.path}: keine freien Z-Index-Utilities`, async ({
+		test(`${route.path}: keine freien Z-Index-Utilities`, async ({
 			page,
 			context,
 			request,
@@ -621,7 +607,7 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 			expect(findOffenders(RAW_Z_INDEX, elements), RAW_Z_INDEX.hint).toEqual([]);
 		});
 
-		test.fixme(`${route.path}: keine freien Übergangsdauern`, async ({
+		test(`${route.path}: keine freien Übergangsdauern`, async ({
 			page,
 			context,
 			request,
@@ -847,4 +833,115 @@ test.describe('Design-Tokens — Utilities haben einen Vertreter auf /styleguide
 			});
 		}
 	}
+});
+
+/**
+ * Layer- und Motion-Utilities: greifen sie überhaupt?
+ *
+ * **Warum das ein eigener Test ist.** Der Klassen-Scan oben meldet `z-50` und
+ * `duration-300` — er kann aber nicht sehen, ob `z-nav` und `duration-panel`
+ * wirken. Beide Fehler sähen im DOM identisch aus, und der zweite ist der
+ * schlechtere: Ein gemeldeter Verstoß ist sichtbar, eine tote Utility nicht.
+ * Genau davor warnt `design-system.md` („Keine toten Utility-Klassen"), und
+ * genau dieses Risiko ist beim Umstellen des Bestands entstanden — 47
+ * Aufrufstellen hängen daran.
+ *
+ * Die neun stehen als `@utility` in `app.css`, weil Tailwind 4 für Z-Index und
+ * Übergangsdauer keinen Theme-Namespace hat. Sie fallen deshalb nicht in die
+ * UTILITY_GROUPS oben, die aus `tokens.css` ableiten und einen Vertreter auf
+ * /styleguide verlangen — hier ist die Wirkung die bessere Frage als die
+ * Anwesenheit.
+ *
+ * **Was dieser Test belegt — und was nicht.** Er belegt, dass die `@utility`
+ * in `app.css` existiert und auf einen vorhandenen Token zeigt. Vorgeführt am
+ * 2026-08-09: `@utility z-nav` aus `app.css` entfernt → dieser Test rot.
+ *
+ * Er belegt **nicht**, dass die Klasse eine Aufrufstelle in `src/` hat.
+ * Tailwinds Content-Detection scannt das Projekt inklusive `e2e/` (`daisyui.md`:
+ * kein `@source` nötig, weil unter dem Repo nichts ignoriert wird), und die neun
+ * Namen stehen zwangsläufig als Literale in `helpers/bannedClasses.ts` — deren
+ * `hint`-Strings müssen sie ja nennen. Gemessen: `duration-emphasis` kommt in
+ * `src/` an keiner Stelle vor und steht trotzdem im Produktions-CSS, gehalten
+ * allein von diesen Test-Strings.
+ *
+ * Der Klassenname wird hier trotzdem zur Laufzeit zusammengesetzt (`'z-' + stufe`).
+ * Das ist keine Absicherung mehr, sondern nur noch Hygiene: Diese Datei soll
+ * nicht die dritte Stelle sein, die eine Utility am Leben hält. Wer eine echte
+ * Aufrufstellen-Garantie will, braucht dafür einen anderen Wächter — die
+ * UTILITY_GROUPS oben sind der für die `@theme`-Utilities.
+ */
+test.describe('Design-Tokens — Layer- und Motion-Utilities wirken', () => {
+	/** Stufe → erwarteter berechneter Wert. */
+	const LAYERS = { raised: '10', panel: '20', nav: '30', overlay: '40', skip: '50' };
+	const DURATIONS = { instant: '0.12s', quick: '0.2s', panel: '0.3s', emphasis: '0.4s' };
+
+	const computeWith = (page: Page, className: string, property: string) =>
+		page.evaluate(
+			([cls, prop]) => {
+				const probe = document.createElement('div');
+				probe.className = cls;
+				probe.style.position = 'fixed';
+				probe.style.transitionProperty = 'opacity';
+				document.body.appendChild(probe);
+				const value = getComputedStyle(probe).getPropertyValue(prop);
+				probe.remove();
+				return value;
+			},
+			[className, property]
+		);
+
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/styleguide');
+	});
+
+	for (const [step, expected] of Object.entries(LAYERS)) {
+		test(`z-${step} setzt z-index auf ${expected}`, async ({ page }) => {
+			expect(
+				await computeWith(page, `z-${step}`, 'z-index'),
+				`Die Utility z-${step} erzeugt keinen z-index. Sie steht als @utility in src/app.css und greift auf --layer-${step} in src/css/tokens.css zu — fehlt eines von beidem, ist die Klasse tot und jede Aufrufstelle wirkungslos.`
+			).toBe(expected);
+		});
+	}
+
+	for (const [step, expected] of Object.entries(DURATIONS)) {
+		test(`duration-${step} setzt transition-duration auf ${expected}`, async ({ page }) => {
+			expect(
+				await computeWith(page, `duration-${step}`, 'transition-duration'),
+				`Die Utility duration-${step} erzeugt keine transition-duration. Sie steht als @utility in src/app.css und greift auf --motion-${step} in src/css/tokens.css zu.`
+			).toBe(expected);
+		});
+	}
+
+	/* Die Kurve gehört laut design-system.md zur Stufe — sie soll an der
+	   Aufrufstelle nicht getrennt gepflegt werden. `emphasis` fährt dabei
+	   `linear`: betonte Bewegungen bringen ihren Verlauf in den Keyframe-Stops
+	   mit, eine zweite Easing-Funktion böge dort jedes Segment einzeln.
+
+	   **Auf `linear` geprüft und nicht auf „irgendetwas anderes als ease".**
+	   Die erste Fassung dieses Tests verlangte nur `not.toBe(ease)` — damit
+	   wäre auch der CSS-Default `ease` durchgegangen, den man bekommt, wenn die
+	   Utility die Eigenschaft gar nicht setzt. Genau dieser Fall stand hier
+	   kurzzeitig im Code: die Tabelle in design-system.md schreibt `linear`
+	   vor, geliefert wurde `ease`, und der Test war grün. Eine Negativ-Assertion
+	   trifft die Fehlklasse nicht, um die es geht. */
+	test('jede Stufe bringt ihre Kurve mit — die drei Übergänge --motion-ease, emphasis linear', async ({
+		page
+	}) => {
+		const ease = await page.evaluate(() =>
+			getComputedStyle(document.documentElement).getPropertyValue('--motion-ease').trim()
+		);
+		expect(ease, '--motion-ease fehlt in tokens.css').not.toBe('');
+
+		for (const step of ['instant', 'quick', 'panel']) {
+			expect(
+				await computeWith(page, `duration-${step}`, 'transition-timing-function'),
+				`duration-${step} muss --motion-ease mitbringen (design-system.md).`
+			).toBe(ease);
+		}
+
+		expect(
+			await computeWith(page, 'duration-emphasis', 'transition-timing-function'),
+			'duration-emphasis muss linear fahren (design-system.md). Wird die Eigenschaft nicht gesetzt, liefert CSS den Default `ease` — also genau die gebogene Kurve, die die Stufe ausschließen will.'
+		).toBe('linear');
+	});
 });

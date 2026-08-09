@@ -100,7 +100,7 @@
 <div class="bg-base-200 flex min-h-screen items-center justify-center p-4">
 	<div class="w-full max-w-md">
 		<!-- Hauptfehler-Karte -->
-		<div class="card bg-base-100 shadow-xl">
+		<div class="card bg-base-100 shadow-raised">
 			<div class="card-body items-center text-center">
 				<!-- Fehler-Icon -->
 				<div class="avatar placeholder mb-4">
@@ -166,7 +166,7 @@
 		</div>
 
 		<!-- Zusätzliche Hilfe-Karte -->
-		<div class="card bg-base-100 mt-4 shadow-lg">
+		<div class="card bg-base-100 mt-4 shadow-raised">
 			<div class="card-body">
 				<h2 class="card-title text-lg">
 					<Icon icon="lucide:info" class="mr-2 h-5 w-5" />

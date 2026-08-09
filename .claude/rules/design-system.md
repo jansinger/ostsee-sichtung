@@ -199,22 +199,24 @@ Dieselbe semantische Ebene darf nicht in zwei Größen erscheinen — heute ist 
 
 **Zwei Zugriffswege, ein Name.** Jeder Token dieser Ebene ist als Utility (`class="text-warning-strong"`) **und** als Variable (`style="box-shadow: var(--shadow-raised)"`) benutzbar. Die beiden Wege entstehen unterschiedlich, und das hat eine Konsequenz:
 
-| Weg        | Woher                           | Gilt für                                                                                                                  |
-| ---------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Utility    | `@theme`-Block in `app.css`     | wird von Tailwind **on demand** erzeugt — nur wenn der Klassenname als vollständiger String im gescannten Quelltext steht |
-| `var(--…)` | `:root` in `src/css/tokens.css` | steht immer im ausgelieferten CSS                                                                                         |
+| Weg        | Woher                                        | Gilt für                                                                                                                  |
+| ---------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Utility    | `@theme`- oder `@utility`-Block in `app.css` | wird von Tailwind **on demand** erzeugt — nur wenn der Klassenname als vollständiger String im gescannten Quelltext steht |
+| `var(--…)` | `:root` in `src/css/tokens.css`              | steht immer im ausgelieferten CSS                                                                                         |
 
-Ein Token, das **nur** im `@theme`-Block steht, ist über `var()` nicht erreichbar: Tailwind backt Schatten- und Größenwerte direkt in die Utility und referenziert die Theme-Variable nie, sie landet also nicht im `:root`. Deshalb deklariert `tokens.css` jeden Wert selbst — inklusive der Aliase `--shadow-raised`/`--shadow-floating` auf `--elevation-*`. **Neuer Token heißt: Eintrag in `tokens.css` (für `var()`) UND im `@theme`-Block (für die Utility)** — sonst ist einer der beiden Wege still tot.
+Ein Token, das **nur** im `@theme`-Block steht, ist über `var()` nicht erreichbar: Tailwind backt Schatten- und Größenwerte direkt in die Utility und referenziert die Theme-Variable nie, sie landet also nicht im `:root`. Deshalb deklariert `tokens.css` jeden Wert selbst — inklusive der Aliase `--shadow-raised`/`--shadow-floating` auf `--elevation-*`. **Neuer Token heißt: Eintrag in `tokens.css` (für `var()`) UND ein Utility-Name in `app.css`** — sonst ist einer der beiden Wege still tot.
 
-- **Z-Index:** `--layer-raised` (10), `--layer-panel` (20), `--layer-nav` (30), `--layer-overlay` (40), `--layer-skip` (50). Keine freien `z-*`-Utilities. Vorher lagen Navbar und Panel-Toggle beide auf `z-50` — welches Element oben lag, entschied damit die DOM-Position.
+**Welcher der beiden `app.css`-Blöcke, entscheidet Tailwind, nicht der Geschmack.** `@theme` erzeugt nur für die Namespaces eine Utility, die Tailwind kennt (`--color-*`, `--shadow-*`, `--text-*`, …). Für **Z-Index und Übergangsdauer gibt es keinen solchen Namespace** — `--layer-panel` im `@theme`-Block bliebe eine Variable ohne Klasse. Diese neun stehen deshalb als `@utility z-panel { z-index: var(--layer-panel) }` bzw. `@utility duration-quick { … }` in `app.css` und verweisen von dort auf `tokens.css`. Beide Blöcke zusammen sind gemeint, wenn unten „Keine toten Utility-Klassen" von einem Eintrag in `app.css` spricht.
+
+- **Z-Index:** `z-raised` (10), `z-panel` (20), `z-nav` (30), `z-overlay` (40), `z-skip` (50) — bzw. `--layer-*` über `var()`. Keine freien `z-*`-Utilities und keine `z-[…]`. Vorher lagen Navbar und Panel-Toggle beide auf `z-50` — welches Element oben lag, entschied damit die DOM-Position. Die Stufe nach **Zuständigkeit** wählen, nicht nach der Zahl, die vorher dort stand: Was muss dieses Element tatsächlich überlagern?
 - **Dauer:**
 
-  | Token               | Wert  | Wofür                        | Kurve           |
-  | ------------------- | ----- | ---------------------------- | --------------- |
-  | `--motion-instant`  | 120ms | Hover, Fokus                 | `--motion-ease` |
-  | `--motion-quick`    | 200ms | Aufklappen, Toast            | `--motion-ease` |
-  | `--motion-panel`    | 300ms | Panel, Bottom-Sheet, Overlay | `--motion-ease` |
-  | `--motion-emphasis` | 400ms | Überschwung, Federung        | **`linear`**    |
+  | Utility             | Token               | Wert  | Wofür                        | Kurve           |
+  | ------------------- | ------------------- | ----- | ---------------------------- | --------------- |
+  | `duration-instant`  | `--motion-instant`  | 120ms | Hover, Fokus                 | `--motion-ease` |
+  | `duration-quick`    | `--motion-quick`    | 200ms | Aufklappen, Toast            | `--motion-ease` |
+  | `duration-panel`    | `--motion-panel`    | 300ms | Panel, Bottom-Sheet, Overlay | `--motion-ease` |
+  | `duration-emphasis` | `--motion-emphasis` | 400ms | Überschwung, Federung        | **`linear`**    |
 
   Die ersten drei beschreiben **Übergänge** und werden mit `--motion-ease` gefahren. `--motion-emphasis` ist keine Übergangsstufe: betonte Bewegungen bringen ihre Kurve über die Keyframe-Stops mit (`bounceIn`: `.3 → 1.05 → .9 → 1`). Eine zusätzliche Easing-Funktion biegt dort **jedes Segment einzeln** und lässt den Überschwung hektisch wirken — deshalb `linear`. Wer eine neue betonte Keyframe anlegt, nimmt diese Stufe und lässt die Kurve in den Stops.
 
@@ -547,7 +549,7 @@ Vor der Nutzung einer Utility prüfen, ob sie im Setup überhaupt existiert.
 - Für Ein-/Ausblendungen `transition:slide` / `transition:fade` aus `svelte/transition` verwenden (so gelöst in `sections/SightingDetails.svelte`).
 - Gleiches gilt für `dark:`-Varianten (kein Dark-Theme, siehe `daisyui.md`).
 - Umgekehrt gilt: **eine Keyframe ist nicht tot, nur weil keine Klasse sie nennt.** `fadeIn`, `bounceIn`, `loadingPattern` und `spin` in `app.css` hängen an inline-`style="animation: …"` (`map/LoadingOverlay.svelte`, `MaintenanceBanner.svelte`) bzw. an einem scoped `<style>`-Block (`media/MediaThumbnail.svelte`). Vor dem Löschen einer Keyframe deshalb nach dem **Namen** greppen, nicht nach einer Klasse.
-- Neue eigene Utility (`text-*-strong`, `shadow-raised`, `text-support`, …) heißt: Eintrag im `@theme`-Block von `app.css`. Ein Token, das nur in `src/css/tokens.css` steht, ist eine CSS-Variable — **keine** Utility-Klasse. Fehlt der `@theme`-Eintrag, ist `class="text-warning-strong"` genau so tot wie `animate-in`.
+- Neue eigene Utility (`text-*-strong`, `shadow-raised`, `text-support`, …) heißt: Eintrag im `@theme`-Block von `app.css` — oder, wo Tailwind keinen passenden Namespace hat (`z-panel`, `duration-quick`), im `@utility`-Block darunter. Ein Token, das nur in `src/css/tokens.css` steht, ist eine CSS-Variable — **keine** Utility-Klasse. Fehlt der Eintrag in `app.css`, ist `class="text-warning-strong"` genau so tot wie `animate-in`.
 - **Und ein Feld auf `/styleguide`.** Tailwind erzeugt eine Utility nur, wenn ihr Name als vollständiger String im gescannten Quelltext steht — sieben der dreizehn eigenen Utilities haben ihre einzige Aufrufstelle auf dieser Seite. Ein dort gelöschtes Farbfeld nimmt die Klasse still aus dem Build. Abgesichert durch `e2e/design-tokens.spec.ts` → „Utilities haben einen Vertreter auf /styleguide": Der Test liest die Tokens aus `tokens.css` und verlangt für jeden ein Element mit der zugehörigen Klasse.
 
   **`bg-scrim` und `text-on-scrim` stehen bewusst außerhalb dieser Gruppe.** Der Wächter zielt auf Utilities, deren einzige Aufrufstelle `/styleguide` ist — dort nimmt ein gelöschtes Farbfeld die Klasse still aus dem Build. Die Schleier-Utilities haben zehn Aufrufstellen in Komponenten; sie können nicht versehentlich verschwinden. Ein `UTILITY_GROUPS`-Eintrag würde außerdem ein Element mit dem unverdünnten `bg-scrim` auf der Seite erzwingen — eine Klasse, die es sonst nirgends gibt, nur damit ein Test grün wird. Wer den Schleier später auf `/styleguide` zeigen will (die Deckkraft-Tabelle oben wäre der Ort), kann die Gruppe nachziehen.

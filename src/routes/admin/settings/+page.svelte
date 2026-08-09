@@ -427,7 +427,7 @@
 	<div class="grid gap-8 lg:grid-cols-2">
 		{#each Object.entries(groupedConfigs) as [category, configs] (category)}
 			{@const iconName = categoryIcons[category] || 'lucide:settings'}
-			<div class="card bg-base-100 shadow-lg">
+			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
 					<h2 class="card-title mb-4 flex items-center gap-3">
 						<Icon icon={iconName} class="text-primary size-7" />

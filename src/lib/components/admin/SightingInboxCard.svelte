@@ -54,7 +54,7 @@
 	const melderName = $derived([sighting.firstName, sighting.lastName].filter(Boolean).join(' '));
 </script>
 
-<article class="card border-base-300 bg-base-100 border shadow-sm">
+<article class="card border-base-300 bg-base-100 border shadow-raised">
 	<div class="card-body gap-3 p-4">
 		<div class="flex flex-wrap items-center gap-2">
 			{#if isDeadFinding(sighting.isDead)}

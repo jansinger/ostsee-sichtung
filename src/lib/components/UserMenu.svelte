@@ -67,7 +67,7 @@
 
 		<!-- Dropdown Menu -->
 		<div
-			class="dropdown-content bg-base-100 rounded-box border-base-300 z-[100] mt-2 w-64 border p-2 shadow-xl"
+			class="dropdown-content bg-base-100 rounded-box border-base-300 z-overlay mt-2 w-64 border p-2 shadow-floating"
 		>
 			<!-- User Info Header -->
 			<div class="border-base-200 border-b px-4 py-2">

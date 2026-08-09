@@ -573,7 +573,7 @@
 				{#each mediaFiles as mediaFile (mediaFile.uid)}
 					<!-- Media File Card -->
 					{#if mediaFile}
-						<div class="card bg-base-100 shadow-sm">
+						<div class="card bg-base-100 shadow-raised">
 							<div class="card-body p-3">
 								{#await mediaFile.metadata then fileMetadata}
 									<!-- Thumbnail -->

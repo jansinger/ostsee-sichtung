@@ -269,7 +269,7 @@
 													<div class="text-center">
 														<button
 															type="button"
-															class="group relative overflow-hidden rounded-lg shadow-sm transition-all hover:shadow-md"
+															class="group shadow-raised hover:shadow-floating relative overflow-hidden rounded-lg transition-all"
 															onclick={() => openImageModal(image.src, image.alt, image.copyright)}
 															aria-label={`${image.alt} in Originalgröße anzeigen`}
 														>
@@ -546,9 +546,18 @@
 		{/if}
 	</div>
 
-	<!-- Backdrop - click to close -->
+	<!-- Backdrop, Klick schließt. Schleier über der Seite dahinter, kein
+	     Theme-Ton: bg-scrim/<n> (--scrim-surface in tokens.css). Deckkraft an
+	     der Aufrufstelle, Farbton im Token — und /60, weil der Schleier den
+	     Schließen-Bereich trägt. Stand vorher als oklch(0% 0 0 / 0.6) im
+	     scoped <style> und umging das Theme damit vollständig.
+
+	     Der Weichzeichner wird dabei von 4px auf 8px angehoben: `backdrop-blur-sm`
+	     ist unter Tailwind 4 acht Pixel (4px hieße `backdrop-blur-xs`). Das ist
+	     Absicht — MediaModal.svelte fährt denselben Wert, und zwei
+	     Modal-Schleier derselben App sollen nicht unterschiedlich weich sein. -->
 	<div
-		class="modal-backdrop cursor-pointer"
+		class="modal-backdrop bg-scrim/60 cursor-pointer backdrop-blur-sm"
 		onclick={closeImageModal}
 		onkeydown={(e) => e.key === 'Escape' && closeImageModal()}
 		role="button"
@@ -588,19 +597,12 @@
 	}
 
 	.modal-box {
-		box-shadow:
-			0 20px 25px -5px oklch(0% 0 0 / 0.1),
-			0 10px 10px -5px oklch(0% 0 0 / 0.04);
-	}
-
-	.modal-backdrop {
-		backdrop-filter: blur(4px);
-		background-color: oklch(0% 0 0 / 0.6);
+		box-shadow: var(--shadow-floating);
 	}
 
 	.modal img {
 		border-radius: 0.5rem;
-		box-shadow: 0 4px 6px -1px oklch(0% 0 0 / 0.1);
+		box-shadow: var(--shadow-raised);
 	}
 
 	/* Copyright-Links stammen aus {@html} und brauchen daher globale Selektoren.

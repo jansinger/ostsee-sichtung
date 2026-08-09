@@ -44,7 +44,7 @@
 
 	<div class="grid gap-6 md:grid-cols-2">
 		<!-- API Documentation Card -->
-		<div class="card bg-base-100 shadow-xl">
+		<div class="card bg-base-100 shadow-raised">
 			<div class="card-body">
 				<h2 class="card-title">
 					<Icon icon="lucide:zap" width="24" height="24" class="text-primary" />
@@ -73,7 +73,7 @@
 		</div>
 
 		<!-- Getting Started Card -->
-		<div class="card bg-base-100 shadow-xl">
+		<div class="card bg-base-100 shadow-raised">
 			<div class="card-body">
 				<h2 class="card-title">
 					<Icon icon="lucide:play" width="24" height="24" class="text-primary" />
@@ -105,7 +105,7 @@
 		</div>
 
 		<!-- Download Card -->
-		<div class="card bg-base-100 shadow-xl">
+		<div class="card bg-base-100 shadow-raised">
 			<div class="card-body">
 				<h2 class="card-title">
 					<Icon icon="lucide:file-text" width="24" height="24" class="text-primary" />
@@ -133,7 +133,7 @@
 		</div>
 
 		<!-- Authentication Card -->
-		<div class="card bg-base-100 shadow-xl">
+		<div class="card bg-base-100 shadow-raised">
 			<div class="card-body">
 				<h2 class="card-title">
 					<Icon icon="lucide:lock" width="24" height="24" class="text-primary" />

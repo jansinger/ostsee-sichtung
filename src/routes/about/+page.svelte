@@ -96,7 +96,7 @@
 				</div>
 			</div>
 			<div
-				class="card from-primary/5 via-secondary/5 to-accent/5 border-primary/20 bg-gradient-to-br shadow-xl"
+				class="card from-primary/5 via-secondary/5 to-accent/5 border-primary/20 bg-gradient-to-br shadow-raised"
 			>
 				<div class="card-body p-10 text-center">
 					<div class="mb-6 flex justify-center">
@@ -110,7 +110,7 @@
 					<!-- Jahreszahl kommt aus der Datenbank (älteste freigegebene Sichtung),
 					     nicht aus dem Template — Begründung in +page.server.ts. -->
 					{#if data.earliestSightingYear != null}
-						<div class="stats stats-vertical mt-6 shadow-sm">
+						<div class="stats stats-vertical mt-6 shadow-raised">
 							<div class="stat">
 								<div class="stat-title text-xs">Sichtungen seit</div>
 								<div class="stat-value text-primary text-2xl">{data.earliestSightingYear}</div>
@@ -141,10 +141,10 @@
 		</div>
 
 		<div class="grid gap-8 md:grid-cols-3">
-			<div class="card bg-base-100 group shadow-xl transition-all duration-300 hover:shadow-2xl">
+			<div class="card bg-base-100 group shadow-raised transition-all duration-panel hover:shadow-floating">
 				<div class="card-body p-8 text-center">
 					<div
-						class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110"
+						class="mb-6 flex justify-center transition-transform duration-panel group-hover:scale-110"
 					>
 						<Icon icon="lucide:pen-line" width="48" class="text-primary" />
 					</div>
@@ -159,10 +159,10 @@
 				</div>
 			</div>
 
-			<div class="card bg-base-100 group shadow-xl transition-all duration-300 hover:shadow-2xl">
+			<div class="card bg-base-100 group shadow-raised transition-all duration-panel hover:shadow-floating">
 				<div class="card-body p-8 text-center">
 					<div
-						class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110"
+						class="mb-6 flex justify-center transition-transform duration-panel group-hover:scale-110"
 					>
 						<Icon icon="lucide:map" width="48" class="text-secondary-strong" />
 					</div>
@@ -181,10 +181,10 @@
 				</div>
 			</div>
 
-			<div class="card bg-base-100 group shadow-xl transition-all duration-300 hover:shadow-2xl">
+			<div class="card bg-base-100 group shadow-raised transition-all duration-panel hover:shadow-floating">
 				<div class="card-body p-8 text-center">
 					<div
-						class="mb-6 flex justify-center transition-transform duration-300 group-hover:scale-110"
+						class="mb-6 flex justify-center transition-transform duration-panel group-hover:scale-110"
 					>
 						<Icon icon="lucide:chart-pie" width="48" class="text-accent-strong" />
 					</div>
@@ -314,7 +314,7 @@
 			Datenschutz & Sicherheit
 		</h2>
 
-		<div class="card bg-base-100 border-success/20 border shadow-xl">
+		<div class="card bg-base-100 border-success/20 border shadow-raised">
 			<div class="card-body">
 				<p class="text-base-content/80 mb-4">
 					Ihre Meldung verarbeiten wir nach der EU-Datenschutz-Grundverordnung (DSGVO) und dem
@@ -468,7 +468,7 @@
 				<div class="mb-8">
 					<div class="avatar mb-6">
 						<div
-							class="ring-primary ring-offset-base-100 from-primary/10 to-secondary/10 w-32 rounded-full bg-gradient-to-br shadow-xl ring ring-offset-4"
+							class="ring-primary ring-offset-base-100 from-primary/10 to-secondary/10 w-32 rounded-full bg-gradient-to-br shadow-raised ring ring-offset-4"
 						>
 							<OstseeTiereLogo size="lg" showText={false} />
 						</div>
@@ -500,7 +500,7 @@
 					  eine erfundene (siehe .claude/rules/design-system.md, „Zahlen in
 					  Nutzertexten nur mit Quelle").
 				-->
-				<div class="stats stats-vertical sm:stats-horizontal bg-base-100/50 mb-8 w-full shadow-xl">
+				<div class="stats stats-vertical sm:stats-horizontal bg-base-100/50 mb-8 w-full shadow-raised">
 					{#if data.totalSightings != null}
 						<div class="stat">
 							<div class="stat-title">Veröffentlicht</div>
@@ -534,14 +534,14 @@
 				<div class="flex flex-wrap justify-center gap-6">
 					<a
 						href="/"
-						class="btn btn-primary btn-lg px-8 py-4 text-lg shadow-lg transition-all duration-300 hover:shadow-xl"
+						class="btn btn-primary btn-lg px-8 py-4 text-lg shadow-raised transition-all duration-panel hover:shadow-floating"
 					>
 						<Icon icon="custom:porpoise" width="20" height="20" class="mr-2" aria-hidden="true" />
 						Sichtung melden
 					</a>
 					<a
 						href="/map"
-						class="btn btn-secondary btn-outline btn-lg px-8 py-4 text-lg shadow-lg transition-all duration-300 hover:shadow-xl"
+						class="btn btn-secondary btn-outline btn-lg px-8 py-4 text-lg shadow-raised transition-all duration-panel hover:shadow-floating"
 					>
 						<Icon icon="lucide:map" width="20" height="20" class="mr-2" />
 						Karte erkunden
@@ -556,7 +556,7 @@
 					     und mit einer Beschriftung, die es benennt statt zu umschreiben. -->
 					<a
 						href="/bestimmungshilfe"
-						class="btn btn-accent btn-outline btn-lg px-8 py-4 text-lg shadow-lg transition-all duration-300 hover:shadow-xl"
+						class="btn btn-accent btn-outline btn-lg px-8 py-4 text-lg shadow-raised transition-all duration-panel hover:shadow-floating"
 					>
 						<Icon icon="lucide:book-open" width="20" height="20" class="mr-2" />
 						Tiere bestimmen

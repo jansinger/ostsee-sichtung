@@ -82,7 +82,7 @@
 
 {#if isNotIFrame}
 	<!-- Fixed Navbar -->
-	<header class="bg-base-200/95 sticky top-0 z-50 shadow-md backdrop-blur-lg">
+	<header class="bg-base-200/95 sticky top-0 z-nav shadow-floating backdrop-blur-lg">
 		<div class="container mx-auto">
 			<!--
 				`justify-between` + `w-auto` an beiden Seiten ersetzt DaisyUIs feste
@@ -148,7 +148,7 @@
 							<Icon icon="lucide:list" width="24" class="h-6 w-6 shrink-0" />
 						</summary>
 						<ul
-							class="dropdown-content menu menu-sm rounded-box bg-base-100 absolute right-0 z-50 mt-3 w-52 p-2 shadow"
+							class="dropdown-content menu menu-sm rounded-box bg-base-100 absolute right-0 z-overlay mt-3 w-52 p-2 shadow-floating"
 						>
 							{@render publicItems()}
 

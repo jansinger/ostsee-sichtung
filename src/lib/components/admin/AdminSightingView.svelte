@@ -556,7 +556,7 @@
 	<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 		<div class="space-y-4">
 			<!-- Datum & Zeit -->
-			<div class="card bg-base-200 shadow-sm">
+			<div class="card bg-base-200 shadow-raised">
 				<div class="card-body">
 					<h3 class="card-title flex items-center gap-2 text-lg">
 						<Icon icon="lucide:calendar" width="20" class="text-primary" />
@@ -575,7 +575,7 @@
 			</div>
 
 			<!-- Tierinformationen -->
-			<div class="card bg-base-200 shadow-sm">
+			<div class="card bg-base-200 shadow-raised">
 				<div class="card-body">
 					<h3 class="card-title flex items-center gap-2 text-lg">
 						<Icon icon="lucide:eye" width="20" class="text-primary" />
@@ -599,7 +599,7 @@
 				     tragen `text-primary` am Icon, diese hob sich damit in nichts
 				     ab. Die Kante trägt die Farbe, das Icon zusätzlich die Form —
 				     Farbe allein wäre kein Merkmal (WCAG 1.4.1). -->
-				<div class="card bg-base-200 border-error border-l-4 shadow-sm">
+				<div class="card bg-base-200 border-error shadow-raised border-l-4">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon
@@ -625,7 +625,7 @@
 
 			<!-- Sichtungsdetails -->
 			{#if sightingDetailRows.length > 0}
-				<div class="card bg-base-200 shadow-sm">
+				<div class="card bg-base-200 shadow-raised">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon icon="lucide:activity" width="20" class="text-primary" />
@@ -646,7 +646,7 @@
 
 			<!-- Umweltbedingungen -->
 			{#if environmentRows.length > 0 || currentSighting.weatherData}
-				<div class="card bg-base-200 shadow-sm">
+				<div class="card bg-base-200 shadow-raised">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon icon="lucide:waves" width="20" class="text-primary" />
@@ -680,7 +680,7 @@
 
 			<!-- Kontakt -->
 			{#if contactRows.length > 0}
-				<div class="card bg-base-200 shadow-sm">
+				<div class="card bg-base-200 shadow-raised">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon icon="lucide:user" width="20" class="text-primary" />
@@ -703,7 +703,7 @@
 		<div class="space-y-4">
 			<!-- Karte, falls Koordinaten vorhanden -->
 			{#if hasCoordinates}
-				<div class="card bg-base-200 overflow-hidden shadow-sm">
+				<div class="card bg-base-200 shadow-raised overflow-hidden">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon icon="lucide:map-pin" width="20" class="text-primary" />
@@ -724,7 +724,7 @@
 
 			<!-- Ortsangaben -->
 			{#if locationRows.length > 0}
-				<div class="card bg-base-200 shadow-sm">
+				<div class="card bg-base-200 shadow-raised">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon icon="lucide:map-pin" width="20" class="text-primary" />
@@ -745,7 +745,7 @@
 
 			<!-- Schiffs-/Bootsangaben -->
 			{#if shipRows.length > 0}
-				<div class="card bg-base-200 shadow-sm">
+				<div class="card bg-base-200 shadow-raised">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon icon="lucide:anchor" width="20" class="text-primary" />
@@ -766,7 +766,7 @@
 
 			<!-- Status -->
 			{#if statusRows.length > 0}
-				<div class="card bg-base-200 shadow-sm">
+				<div class="card bg-base-200 shadow-raised">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon icon="lucide:settings" width="20" class="text-primary" />
@@ -787,7 +787,7 @@
 
 			<!-- Medien-Gallerie -->
 			{#if currentSighting.uploadedFiles && currentSighting.uploadedFiles.length > 0}
-				<div class="card bg-base-200 shadow-sm">
+				<div class="card bg-base-200 shadow-raised">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon icon="lucide:camera" width="20" class="text-primary" />
@@ -798,7 +798,7 @@
 					</div>
 				</div>
 			{:else if mediaRows.length > 0}
-				<div class="card bg-base-200 shadow-sm">
+				<div class="card bg-base-200 shadow-raised">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon icon="lucide:camera" width="20" class="text-primary" />
@@ -819,7 +819,7 @@
 
 			<!-- Bemerkungen, falls vorhanden -->
 			{#if noteRows.length > 0}
-				<div class="card bg-base-200 shadow-sm">
+				<div class="card bg-base-200 shadow-raised">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon icon="lucide:message-square" width="20" class="text-primary" />
@@ -840,7 +840,7 @@
 
 			<!-- Interner Kommentar, falls vorhanden -->
 			{#if hasValue(currentSighting.internalComment)}
-				<div class="card bg-base-200 shadow-sm">
+				<div class="card bg-base-200 shadow-raised">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon icon="lucide:settings" width="20" class="text-primary" />
@@ -863,7 +863,7 @@
 
 			<!-- Technische Informationen -->
 			{#if techRows.length > 0}
-				<div class="card bg-base-200 shadow-sm">
+				<div class="card bg-base-200 shadow-raised">
 					<div class="card-body">
 						<h3 class="card-title flex items-center gap-2 text-lg">
 							<Icon icon="lucide:file-text" width="20" class="text-primary" />
@@ -886,13 +886,22 @@
 {/if}
 
 <style>
-	/* Card hover effects */
-	.card {
-		transition: all 0.2s ease;
-	}
+	/* Nur das Anheben. Schatten und Übergang der Karten-Hover kommen aus dem
+	   `.card:hover`-Block in app.css (--elevation-floating, --motion-quick) —
+	   hier standen sie als handgeschriebener box-shadow und `transition: all
+	   0.2s ease` daneben und schlugen ihn, weil ein scoped Block ungelayert
+	   ist. Dieselbe Doppelung wurde in SectionCard.svelte schon entfernt.
 
+	   **Bewusst in Kauf genommen:** app.css deklariert den Übergang INNERHALB
+	   von `.card:hover`. Eine solche Regel greift nur beim Betreten — beim
+	   Verlassen springt die Karte hart zurück. Das entfernte `transition: all`
+	   stand in der Basisregel und lief deshalb in beide Richtungen weich.
+	   Diese Karten waren damit die einzigen der App mit symmetrischem Hover;
+	   `.btn:hover` in app.css hat dasselbe einseitige Verhalten. Den Übergang
+	   in eine Basisregel zu heben wäre die richtige Korrektur, ändert aber
+	   jede Karte und jeden Button der Anwendung — das ist eine eigene
+	   Entscheidung und nicht Teil der Token-Migration. */
 	.card:hover {
 		transform: translateY(-1px);
-		box-shadow: 0 8px 25px -8px var(--color-base-300);
 	}
 </style>

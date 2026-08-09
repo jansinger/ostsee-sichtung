@@ -34,7 +34,7 @@
 
 	// Dynamic CSS classes
 	let selectClasses = $derived.by(() => {
-		const base = 'select w-full transition-all duration-200';
+		const base = 'select w-full transition-all duration-quick';
 		const stateClass = hasError ? 'select-error' : isValid ? 'select-success' : '';
 		const sizeClass = size === 'sm' ? 'select-sm' : size === 'lg' ? 'select-lg' : '';
 		const focusClass = 'focus:ring-2 focus:ring-primary/20 focus:border-primary';
@@ -60,7 +60,7 @@
 	{#if icon !== undefined}
 		<div
 			aria-hidden="true"
-			class="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center"
+			class="pointer-events-none absolute inset-y-0 left-0 z-raised flex w-10 items-center justify-center"
 		>
 			<Icon {icon} width="16" class="text-base-content/60" />
 		</div>
