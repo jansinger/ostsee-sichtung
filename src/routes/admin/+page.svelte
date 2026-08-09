@@ -8,7 +8,7 @@
 		nextActionableIndex,
 		resolveInboxShortcut,
 		shiftFocusIndex
-	} from '$lib/components/admin/inboxShortcuts';
+	} from '$lib/components/admin/adminTriageShortcuts';
 	import { submitVerdict, type SightingVerdict } from '$lib/components/admin/sightingVerdict';
 	import {
 		SIGHTING_STATUS_PRESENTATION,
@@ -39,7 +39,7 @@
 	/* Tastatur-Triage (Spec B1). Die Fokusposition ist ein Index und keine ID:
 	   Nachrücken heißt „die nächste Karte in der Liste", und das ist eine Aussage
 	   über Positionen. Die Zuordnung Taste → Aktion und die Fokusarithmetik
-	   stehen in `inboxShortcuts.ts`.
+	   stehen in `adminTriageShortcuts.ts`.
 
 	   **Sie folgt dem echten DOM-Fokus** (`onfocusin`/`onfocusout` an der Liste)
 	   und nicht nur J und K. Sonst entschiede A über eine Karte, die niemand

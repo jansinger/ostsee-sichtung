@@ -8,7 +8,7 @@ import type { PageData } from './$types';
  * @fileoverview Tastatur-Triage des Eingangs (Spec B1) — die Strecke von der
  * echten Taste bis zum Fokus und zum Verdict.
  *
- * Die Tastenzuordnung selbst prüft `inboxShortcuts.test.ts` im Node-Runner.
+ * Die Tastenzuordnung selbst prüft `adminTriageShortcuts.test.ts` im Node-Runner.
  * Hier geht es um das, was nur ein Browser zeigt: Wer hat den Fokus, wandert er
  * nach einer Entscheidung weiter, und öffnet „?" das Overlay.
  */

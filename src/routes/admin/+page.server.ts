@@ -5,9 +5,10 @@ import {
 	MEDIA_UPLOAD_ANNOUNCED_MISSING,
 	mediaUploadCondition
 } from '$lib/server/db/mediaUploadFilter';
+import { openQueueOrderBy, resolveQueueOrder } from '$lib/server/db/openQueueOrder';
 import { sightingFiles, sightings } from '$lib/server/db/schema';
 import { redirect } from '@sveltejs/kit';
-import { and, asc, desc, inArray, like, sql } from 'drizzle-orm';
+import { and, inArray, like, sql } from 'drizzle-orm';
 import { istTabellenUrl } from './tableRedirect';
 import type { PageServerLoad } from './$types';
 
@@ -29,13 +30,13 @@ export const load: PageServerLoad = async ({ url }) => {
 	// unbrauchbar — ~650 offene Meldungen, ein Bearbeiter sähe sonst zuerst
 	// 13 Jahre alte Fälle. `?order=asc` bleibt als bewusste Wahl erhalten,
 	// gehalten in der URL.
-	const order: 'asc' | 'desc' = url.searchParams.get('order') === 'asc' ? 'asc' : 'desc';
+	const order = resolveQueueOrder(url.searchParams.get('order'));
 
 	const openQuery = db
 		.select()
 		.from(sightings)
 		.where(openOnly())
-		.orderBy(order === 'desc' ? desc(sightings.created) : asc(sightings.created))
+		.orderBy(...openQueueOrderBy(order))
 		.limit(INBOX_LIMIT);
 
 	const openCountQuery = db

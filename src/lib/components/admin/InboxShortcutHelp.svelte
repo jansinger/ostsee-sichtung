@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { INBOX_SHORTCUTS } from './inboxShortcuts';
+	import { INBOX_SHORTCUTS } from './adminTriageShortcuts';
 
 	interface Props {
 		onClose: () => void;

@@ -5,7 +5,7 @@ import {
 	resolveInboxShortcut,
 	shiftFocusIndex,
 	type ShortcutTarget
-} from './inboxShortcuts';
+} from './adminTriageShortcuts';
 
 /**
  * @fileoverview Tastatur-Triage des Eingangs (Spec B1) — die Entscheidungen,

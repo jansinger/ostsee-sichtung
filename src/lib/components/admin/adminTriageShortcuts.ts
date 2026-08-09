@@ -1,11 +1,12 @@
 /**
- * @fileoverview Tastatur-Triage der Eingangsseite (`/admin`, Spec B1).
+ * @fileoverview Tastatur-Triage des Admin-Bereichs (Spec B1 + Warteschlange).
  *
- * Der Eingang ist eine Task-Liste, die am Stück abgearbeitet wird — J/K
- * blättert, A gibt frei, R lehnt ab, U nimmt zurück, ? erklärt. Die
- * Entscheidungen dazu (welche Taste, wann gesperrt, wohin der Fokus danach)
- * stehen hier und nicht in `+page.svelte`, damit sie ohne gerenderte Seite
- * prüfbar sind.
+ * Zwei Flächen, ein Kopf: Der Eingang (`/admin`) und die Detailansicht
+ * (`/admin/[id]?from=inbox`) beantworten dieselbe Frage — J/K blättert, A gibt
+ * frei, R lehnt ab, U nimmt zurück, ? erklärt. Was sich unterscheidet, ist nur
+ * die Ausführung: Im Eingang schiebt `focusNext` den Fokus, in der
+ * Detailansicht navigiert es. Die Absicht ist dieselbe, deshalb steht sie
+ * einmal hier und nicht zweimal in zwei Seiten.
  *
  * **Bewusst DOM-frei.** `resolveInboxShortcut` prüft das Ereignisziel per
  * Duck-Typing (`ShortcutTarget`) statt mit `instanceof HTMLElement`: So läuft
