@@ -41,12 +41,14 @@ import { expect, test, type Page } from '@playwright/test';
 test.use({ reducedMotion: 'no-preference' });
 
 /**
- * Wartet auf den Start eines Übergangs für `property` am ersten Treffer von
- * `selector` — und gibt `false` zurück, wenn binnen `timeout` keiner kommt.
+ * Setzt den Listener für `property` am ersten Treffer von `selector` und legt
+ * sein Ergebnis als Versprechen an `window` ab. Diese Funktion **wartet nicht**
+ * — ausgelesen wird das Ergebnis erst von `readTransitionWatch()`, und zwar
+ * `true` bei gestartetem Übergang, `false` nach 1,5 s ohne einen.
  *
- * Der Listener wird VOR der Mausbewegung gesetzt und das Versprechen an
- * `window` gehängt; sonst läge zwischen Bewegung und Listener ein Fenster, in
- * dem der Übergang unbemerkt starten kann.
+ * Die Zweiteilung ist der Punkt: Der Listener muss VOR der Mausbewegung stehen.
+ * Würde eine einzige Funktion erst bewegen und dann horchen, läge dazwischen
+ * ein Fenster, in dem der Übergang unbemerkt startet.
  */
 async function armTransitionWatch(page: Page, selector: string, property: string): Promise<void> {
 	await page.evaluate(
