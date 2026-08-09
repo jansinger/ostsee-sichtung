@@ -30,7 +30,12 @@
 	import { BALTIC_SEA_STATUS_PRESENTATION } from '$lib/utils/geo/balticSeaStatus';
 	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
 	import { readFilterParams, type FilterParams } from './activeFilters';
-	import { buildFilterChips, removeFilterParam } from './filterChips';
+	import {
+		AUFNAHME_LABEL,
+		buildFilterChips,
+		MELDEART_LABEL,
+		removeFilterParam
+	} from './filterChips';
 	import SichtungenCards from './SichtungenCards.svelte';
 	import StatusTabs from './StatusTabs.svelte';
 	import type { StatusTabValue } from './statusTabs';
@@ -1105,7 +1110,7 @@
 					>
 						<option value="">Alle</option>
 						<option value="1">{DEAD_FINDING_PRESENTATION.label}</option>
-						<option value="0">Lebendsichtung</option>
+						<option value="0">{MELDEART_LABEL['0']}</option>
 					</select>
 				</div>
 				<div class="fieldset w-full">
@@ -1135,9 +1140,11 @@
 						bind:value={mediaUpload}
 					>
 						<option value="">Alle</option>
-						<option value="1">Mit</option>
-						<option value="0">Ohne</option>
-						<option value={MEDIA_UPLOAD_ANNOUNCED_MISSING}>Angekündigt, fehlt noch</option>
+						<option value="1">{AUFNAHME_LABEL['1']}</option>
+						<option value="0">{AUFNAHME_LABEL['0']}</option>
+						<option value={MEDIA_UPLOAD_ANNOUNCED_MISSING}
+							>{AUFNAHME_LABEL[MEDIA_UPLOAD_ANNOUNCED_MISSING]}</option
+						>
 					</select>
 				</div>
 				<div class="fieldset w-full">

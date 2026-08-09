@@ -11,10 +11,14 @@
  * denselben Quellen wie die `<select>`-Felder des Panels:
  * `getEntryChannelOptions()`, `DEAD_FINDING_PRESENTATION`,
  * `BALTIC_SEA_STATUS_PRESENTATION`, `SIGHTING_STATUS_PRESENTATION` und
- * `MEDIA_UPLOAD_ANNOUNCED_MISSING`. Ein eigener Wortschatz hier hieße, dass
- * Chip und Panel denselben Filter verschieden benennen, sobald eine der beiden
- * Stellen angefasst wird — derselbe Fehler, gegen den `deadFinding.ts` und
- * `balticSeaStatus.ts` angelegt wurden.
+ * `MEDIA_UPLOAD_ANNOUNCED_MISSING`. Für die beiden Ja/Nein-Wortpaare ohne
+ * eigenes Präsentationsmodul — „Mit"/„Ohne" und „Lebendsichtung" — ist diese
+ * Datei selbst die Quelle: `AUFNAHME_LABEL` und `MELDEART_LABEL` sind exportiert,
+ * und das Panel (`+page.svelte`) rendert seine `<option>`-Beschriftungen daraus,
+ * statt sie ein zweites Mal zu tippen. Ein eigener Wortschatz an einer der
+ * beiden Stellen hieße, dass Chip und Panel denselben Filter verschieden
+ * benennen, sobald eine der beiden angefasst wird — derselbe Fehler, gegen den
+ * `deadFinding.ts` und `balticSeaStatus.ts` angelegt wurden.
  *
  * Client-sicher: **kein** Import aus `$lib/server/**`. Die Seite ist eine
  * Client-Komponente, und der Bruch fiele erst in `npm run build` auf.
@@ -88,20 +92,25 @@ function isSightingStatus(value: string): value is SightingStatus {
 }
 
 /**
- * „Mit"/„Ohne" stehen hier und nicht in einer geteilten Konstante: Sie sind
- * keine Auszeichnung eines Datensatzes, sondern nur die zwei Seiten eines
- * Ja/Nein-Filters, und ihre einzige weitere Fundstelle ist das `<select>` des
- * Panels daneben. Der Sonderwert dagegen kommt aus seinem Modul — er trägt
- * eine fachliche Aussage (`photoAnnouncement.ts`).
+ * „Mit"/„Ohne" sind keine Auszeichnung eines Datensatzes, sondern nur die zwei
+ * Seiten eines Ja/Nein-Filters — kein `deadFinding.ts`/`balticSeaStatus.ts`-Modul
+ * nimmt sie auf. Diese Datei ist deshalb selbst die Quelle, exportiert für das
+ * `<select>` des Panels (`+page.svelte`), das seine `<option>`-Beschriftungen von
+ * hier bezieht statt sie ein zweites Mal zu tippen. Der Sonderwert kommt aus
+ * seinem eigenen Modul — er trägt eine fachliche Aussage (`photoAnnouncement.ts`).
  */
-const AUFNAHME_LABEL: Record<string, string> = {
+export const AUFNAHME_LABEL: Record<string, string> = {
 	'1': 'Mit',
 	'0': 'Ohne',
 	[MEDIA_UPLOAD_ANNOUNCED_MISSING]: 'Angekündigt, fehlt noch'
 };
 
-/** Gegenstück zum Totfund; `deadFinding.ts` führt für den Normalfall bewusst kein Wort. */
-const MELDEART_LABEL: Record<string, string> = {
+/**
+ * Gegenstück zum Totfund; `deadFinding.ts` führt für den Normalfall bewusst kein
+ * Wort, deshalb steht „Lebendsichtung" hier. Exportiert aus demselben Grund wie
+ * `AUFNAHME_LABEL`: Das Panel rendert seine Option daraus.
+ */
+export const MELDEART_LABEL: Record<string, string> = {
 	'1': DEAD_FINDING_PRESENTATION.label,
 	'0': 'Lebendsichtung'
 };

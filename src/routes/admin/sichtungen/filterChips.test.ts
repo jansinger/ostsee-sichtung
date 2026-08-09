@@ -3,9 +3,8 @@ import { DEAD_FINDING_PRESENTATION } from '$lib/components/admin/deadFinding';
 import { SIGHTING_STATUS_PRESENTATION } from '$lib/components/admin/sightingStatus';
 import { getEntryChannelOptions } from '$lib/report/formOptions/entryChannel';
 import { BALTIC_SEA_STATUS_PRESENTATION } from '$lib/utils/geo/balticSeaStatus';
-import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
 import type { FilterParams } from './activeFilters';
-import { buildFilterChips, removeFilterParam } from './filterChips';
+import { AUFNAHME_LABEL, buildFilterChips, MELDEART_LABEL, removeFilterParam } from './filterChips';
 
 /**
  * filterChips.test.ts — was gefiltert ist, muss sichtbar und einzeln
@@ -71,19 +70,22 @@ describe('buildFilterChips', () => {
 		);
 	});
 
-	it.each([
-		['1', 'Mit'],
-		['0', 'Ohne'],
-		[MEDIA_UPLOAD_ANNOUNCED_MISSING, 'Angekündigt, fehlt noch']
-	])('beschriftet den Aufnahme-Filter %s als „%s"', (wert, erwartet) => {
-		expect(buildFilterChips(nur('mediaUpload', wert))[0]?.label).toBe(`Aufnahme: ${erwartet}`);
-	});
+	it.each(Object.keys(AUFNAHME_LABEL))(
+		'beschriftet den Aufnahme-Filter %s wie die exportierte Beschriftung',
+		(wert) => {
+			expect(buildFilterChips(nur('mediaUpload', wert))[0]?.label).toBe(
+				`Aufnahme: ${AUFNAHME_LABEL[wert]}`
+			);
+		}
+	);
 
 	it('nimmt das Totfund-Wort aus der gemeinsamen Auszeichnung', () => {
 		expect(buildFilterChips(nur('deadFinding', '1'))[0]?.label).toBe(
 			`Meldeart: ${DEAD_FINDING_PRESENTATION.label}`
 		);
-		expect(buildFilterChips(nur('deadFinding', '0'))[0]?.label).toBe('Meldeart: Lebendsichtung');
+		expect(buildFilterChips(nur('deadFinding', '0'))[0]?.label).toBe(
+			`Meldeart: ${MELDEART_LABEL['0']}`
+		);
 	});
 
 	it('nimmt das Ostsee-Wort aus der gemeinsamen Statusdarstellung', () => {
