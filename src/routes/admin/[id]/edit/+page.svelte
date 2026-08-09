@@ -60,7 +60,9 @@
 
 <div class="mb-0 flex items-center justify-between">
 	<!-- `h1` aus demselben Grund wie in der Detailansicht nebenan: Ohne sie
-	     begann die Überschriftenstruktur auf Ebene 2 (WCAG 1.3.1). -->
+	     begann die Überschriftenstruktur auf Ebene 2 (WCAG 1.3.1). `text-xl`
+	     ebenfalls wie dort — die Begründung der Ausnahme von `text-display`
+	     steht in `[id]/+page.svelte`. -->
 	<h1 class="text-xl font-bold">Sichtung bearbeiten</h1>
 	<div class="flex gap-2">
 		<button

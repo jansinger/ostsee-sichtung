@@ -25,7 +25,7 @@
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
 	import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
 	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
-	import type { FrontendSighting } from '$lib/types';
+	import type { SichtungenListRow } from './listColumns';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import {
 		BALTIC_SEA_STATUS_PRESENTATION,
@@ -36,7 +36,7 @@
 	import { NUR_WEIT_BLOCK } from './layoutSwitch';
 
 	interface Props {
-		sightings: FrontendSighting[];
+		sightings: SichtungenListRow[];
 		/** Steuert nur das Bedienelement — das Gate steht zusätzlich am Endpunkt. */
 		isSuperAdmin: boolean;
 		columnVisibility: ColumnVisibility;
@@ -48,10 +48,10 @@
 		/** Ids, deren Statuswechsel gerade läuft (je Zeile, nicht global). */
 		statusPending: ReadonlySet<number>;
 		onbulk: (verdict: SightingVerdict) => void;
-		onview: (sighting: FrontendSighting) => void;
+		onview: (sighting: SichtungenListRow) => void;
 		ontestemail: (id: number) => void;
 		onspamcheck: (id: number) => void;
-		ondelete: (sighting: FrontendSighting) => void;
+		ondelete: (sighting: SichtungenListRow) => void;
 		onstatuschange: (id: number, verdict: SightingVerdict, previous: SightingStatus) => void;
 	}
 
@@ -483,8 +483,17 @@
 									>
 										<Icon icon="lucide:shield-alert" class="h-4 w-4" />
 									</button>
+									<!-- Die kanonische destruktive Variante (`btn btn-outline btn-error`,
+									     Button-Hierarchie in `design-system.md`) — vorher stand hier
+									     `btn-ghost text-error`, also genau die zweite Variante, die die
+									     Regel wörtlich als Anti-Pattern nennt. Der Rahmen zwischen drei
+									     rahmenlosen Icons ist dabei nicht Nebenwirkung, sondern Zweck:
+									     Löschen ist die einzige Aktion der Zeile, die man nicht
+									     zurücknehmen kann.
+									     `btn-xs` bleibt: Die Größe trägt die Zeilenhöhe, nicht die
+									     Variante — die 44px Trefferfläche kommen ohnehin aus app.css. -->
 									<button
-										class="btn text-error btn-ghost btn-xs"
+										class="btn btn-outline btn-error btn-xs"
 										onclick={() => ondelete(sighting)}
 										title="Eintrag löschen"
 										aria-label="Eintrag löschen"

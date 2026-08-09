@@ -191,6 +191,23 @@ Größen werden nicht mehr pro Komponente gewählt. Die Rolle bestimmt die Grö�
 
 Dieselbe semantische Ebene darf nicht in zwei Größen erscheinen — heute ist der Abschnittstitel je nach Komponente `text-base`, `text-lg` oder `sm:text-lg`.
 
+### Die eine eingetragene Ausnahme: die Admin-Arbeitsflächen
+
+Die Admin-Seitentitel standen in drei Größen (`text-3xl`, `text-2xl`, `text-xl`),
+je nach Entstehungszeit. Sie sind mit Befund 9 auf `text-display` vereinheitlicht —
+**bis auf `admin/[id]/+page.svelte` (Detailansicht) und `admin/[id]/edit/+page.svelte`,
+die bei `text-xl` bleiben** (Entscheidung Jan, 2026-08-09).
+
+Die beiden Seiten sind Arbeitsflächen, keine Titelblätter: Der Kopf steht dort
+direkt über der Aktionsleiste, mit der entschieden wird, und im
+Warteschlangen-Modus schöbe ein 32px-Titel genau die Knöpfe nach unten, die man
+Meldung für Meldung braucht.
+
+Die Ausnahme ist **eine Zusage und kein Rest**: `adminPageHeadings.test.ts`
+verlangt für die fünf Übersichtsseiten `text-display` und für diese beiden
+`text-xl`. Wer sie mitzieht, macht den Test rot — und muss die Entscheidung
+bewusst umdrehen, statt sie beiläufig aufzuräumen.
+
 ---
 
 ## Elevation, Z-Index, Motion nur aus Tokens

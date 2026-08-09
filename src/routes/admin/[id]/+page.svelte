@@ -463,8 +463,14 @@
 	<!-- `h1` und nicht `h2`: Das Root-Layout bringt keine Überschrift mit, die
 	     Struktur dieser Seite begann damit auf Ebene 2 — wer per Screenreader
 	     über Überschriften navigiert, fand hier keinen Einstieg (WCAG 1.3.1).
-	     Die Größe bleibt `text-xl`; sie ist eine Gestaltungsfrage und keine
-	     Aussage über die Gliederung. Abgesichert in `adminPageHeadings.test.ts`. -->
+	     **Die Größe bleibt `text-xl` und wird bewusst nicht `text-display`.**
+	     Die übrigen Admin-Seitentitel sind mit Befund 9 auf die Rolle `display`
+	     (32px) vereinheitlicht worden; Detailansicht und Bearbeiten-Maske sind
+	     davon ausgenommen (Entscheidung Jan, 2026-08-09). Sie sind
+	     Arbeitsflächen, keine Titelblätter: Der Kopf steht hier direkt über der
+	     Aktionsleiste, mit der entschieden wird, und ein 32px-Titel schöbe im
+	     Warteschlangen-Modus genau die Knöpfe nach unten, die man Meldung für
+	     Meldung braucht. Abgesichert in `adminPageHeadings.test.ts`. -->
 	<h1 class="text-xl font-bold" tabindex="-1" bind:this={ueberschrift}>
 		Sichtung Details #{sighting.id}
 	</h1>

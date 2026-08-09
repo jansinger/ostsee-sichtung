@@ -30,6 +30,7 @@ import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
 import { rejectedOnly } from '$lib/server/db/approvalFilter';
 import { berlinCalendarDate } from '$lib/server/db/sqlTimeZone';
 import { sightings } from '$lib/server/db/schema';
+import { SIGHTING_LIST_FIELDS } from './listColumns';
 
 const dialect = new PgDialect();
 const toSqlText = (condition: SQLWrapper): string => dialect.sqlToQuery(condition.getSQL()).sql;
@@ -107,6 +108,22 @@ describe('admin/+page.server load() — Foto-Ankündigungs-Arbeitsliste', () => 
 		} as unknown as Parameters<typeof load>[0])) as { pendingPhotoAnnouncements: number };
 
 		expect(result.pendingPhotoAnnouncements).toBe(2);
+	});
+
+	/*
+	 * Befund 20: Die Hauptliste lief als `db.select()` über die ganze Zeile und
+	 * lieferte bis zu 100 vollständige Datensätze ins HTML — Telefonnummer,
+	 * Klarname und alle Einwilligungs-Nachweisspalten inklusive. Die Auswahl
+	 * steht jetzt in `listColumns.ts`; hier wird geprüft, dass `load()` sie auch
+	 * tatsächlich übergibt. Ein zurückgedrehtes `db.select()` ohne Argument
+	 * erzeugt `columns === undefined` und fällt damit hier auf — der Test in
+	 * `listColumns.test.ts` allein sähe das nicht, er kennt nur die Konstante.
+	 */
+	it('liest nur die Spalten aus listColumns, nicht die ganze Zeile', async () => {
+		await load({ url: makeUrl() } as unknown as Parameters<typeof load>[0]);
+
+		const hauptliste = recordedSelects[0];
+		expect(Object.keys(hauptliste?.columns ?? {}).sort()).toEqual([...SIGHTING_LIST_FIELDS].sort());
 	});
 
 	it('sortiert die Spam-Spalte absteigend mit NULLS LAST (sonst stünde Altbestand oben)', async () => {

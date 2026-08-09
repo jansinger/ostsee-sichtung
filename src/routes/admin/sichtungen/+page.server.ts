@@ -14,6 +14,7 @@ import type { PageServerLoad } from './$types';
 
 import { ServerConfigService } from '$lib/services/configService';
 import { isValidDateParam } from './dateParam';
+import { SIGHTING_LIST_COLUMNS } from './listColumns';
 import { statusCondition } from './statusFilter';
 
 export const load: PageServerLoad = async ({ url }) => {
@@ -122,8 +123,9 @@ export const load: PageServerLoad = async ({ url }) => {
 		spamScore: sightings.spamScore
 	};
 
-	// Abfrage bauen
-	const baseQuery = db.select().from(sightings);
+	// Abfrage bauen. Explizite Spaltenauswahl statt `db.select()`: Begründung,
+	// Umfang und Absicherung stehen in `listColumns.ts`.
+	const baseQuery = db.select(SIGHTING_LIST_COLUMNS).from(sightings);
 
 	// WHERE-Klausel hinzufügen, wenn Bedingungen vorhanden sind
 	const query = whereCondition ? baseQuery.where(whereCondition) : baseQuery;

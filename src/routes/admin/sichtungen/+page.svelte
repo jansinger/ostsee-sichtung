@@ -16,7 +16,8 @@
 	} from '$lib/components/admin/sightingStatus';
 	import { getEntryChannelOptions } from '$lib/report/formOptions/entryChannel';
 	import { toast } from '$lib/stores/toastState.svelte';
-	import type { FrontendSighting, PageData } from '$lib/types';
+	import type { PageData } from './$types';
+	import type { SichtungenListRow } from './listColumns';
 	import type { SpamCheckResult } from '$lib/types/spam';
 	import Icon from '$lib/components/Icon.svelte';
 	import { BALTIC_SEA_STATUS_PRESENTATION } from '$lib/utils/geo/balticSeaStatus';
@@ -67,7 +68,7 @@
 	let deadFinding = $state(page.url.searchParams.get('deadFinding') || '');
 	let searchTerm = $state(page.url.searchParams.get('q') || '');
 	let showDeleteDialog = $state(false);
-	let sightingToDelete = $state<FrontendSighting | null>(null);
+	let sightingToDelete = $state<SichtungenListRow | null>(null);
 	let isFilterPanelOpen = $state(false);
 	let showExportModal = $state(false);
 	let showColumnDropdown = $state(false);
@@ -385,7 +386,7 @@
 		goto(url);
 	}
 
-	function viewSightingDetails(sighting: FrontendSighting): void {
+	function viewSightingDetails(sighting: SichtungenListRow): void {
 		// Preserve current filter parameters when navigating to detail view
 		const currentParams = page.url.searchParams;
 		const detailUrl = new URL(`/admin/${sighting.id}`, page.url.origin);
@@ -688,7 +689,7 @@
 		     wie bei Kartenliste und Tabelle — vorher schaltete der Kopf bei `sm`,
 		     die Inhaltsfläche bei `md`. -->
 		<div class="{NUR_KOMPAKT} space-y-3">
-			<h1 class="text-2xl font-bold">Sichtungen</h1>
+			<h1 class="text-display font-bold">Sichtungen</h1>
 			<div class="flex flex-col gap-2">
 				<div class="flex items-center gap-2">
 					<button
@@ -731,7 +732,7 @@
 
 		<!-- Weiter Kopf -->
 		<div class="{NUR_WEIT_FLEX} items-center justify-between">
-			<h1 class="text-2xl font-bold">Sichtungen</h1>
+			<h1 class="text-display font-bold">Sichtungen</h1>
 			<div class="flex items-center gap-2">
 				<details
 					class="dropdown dropdown-end"
@@ -909,8 +910,22 @@
 										Umbenennen
 									</button>
 								</li>
+								<!-- Auch hier die kanonische destruktive Variante statt eines
+								     `text-error` am Menüeintrag. Zwei Gründe, und der zweite ist
+								     der härtere:
+								     1. Gleiche Aktion = gleiche Variante (Button-Hierarchie).
+								     2. DaisyUI färbt einen Menüeintrag beim Hovern mit
+								        `base-content` zu 10 % — eine Fläche dunkler als `base-300`,
+								        und dort liegt `text-error` schon bei 4,13:1, also unter AA
+								        (`design-system.md`, „Bekannte Grenze"). Die Menü-Regel
+								        greift ausdrücklich nicht auf `.btn`, der Rahmen-Button
+								        entzieht sich ihr also samt Hover-Fläche. -->
 								<li>
-									<button type="button" class="text-error" onclick={() => ansichtLoeschen(preset)}>
+									<button
+										type="button"
+										class="btn btn-outline btn-error btn-sm w-full justify-start"
+										onclick={() => ansichtLoeschen(preset)}
+									>
 										<Icon icon="lucide:trash-2" class="h-4 w-4" aria-hidden="true" />
 										Löschen
 									</button>
@@ -990,7 +1005,7 @@
 			<div class="grid grid-cols-1 gap-2 md:grid-cols-3 lg:grid-cols-6">
 				<div class="fieldset w-full">
 					<label for="fromDate" class="label py-0">
-						<span class="text-xs">Von</span>
+						<span class="text-support">Von</span>
 					</label>
 					<input
 						type="date"
@@ -1002,7 +1017,7 @@
 				</div>
 				<div class="fieldset w-full">
 					<label for="toDate" class="label py-0">
-						<span class="text-xs">Bis</span>
+						<span class="text-support">Bis</span>
 					</label>
 					<input
 						type="date"
@@ -1014,7 +1029,7 @@
 				</div>
 				<div class="fieldset w-full">
 					<label for="verified" class="label py-0">
-						<span class="text-xs">Status</span>
+						<span class="text-support">Status</span>
 					</label>
 					<select
 						id="verified"
@@ -1030,7 +1045,7 @@
 				</div>
 				<div class="fieldset w-full">
 					<label for="deadFinding" class="label py-0">
-						<span class="text-xs">Meldeart</span>
+						<span class="text-support">Meldeart</span>
 					</label>
 					<select
 						id="deadFinding"
@@ -1045,7 +1060,7 @@
 				</div>
 				<div class="fieldset w-full">
 					<label for="entryChannel" class="label py-0">
-						<span class="text-xs">Kanal</span>
+						<span class="text-support">Kanal</span>
 					</label>
 					<select
 						id="entryChannel"
@@ -1061,7 +1076,7 @@
 				</div>
 				<div class="fieldset w-full">
 					<label for="mediaUpload" class="label py-0">
-						<span class="text-xs">Aufnahme</span>
+						<span class="text-support">Aufnahme</span>
 					</label>
 					<select
 						id="mediaUpload"
@@ -1077,7 +1092,7 @@
 				</div>
 				<div class="fieldset w-full">
 					<label for="balticSea" class="label py-0">
-						<span class="text-xs">Ostsee</span>
+						<span class="text-support">Ostsee</span>
 					</label>
 					<select
 						id="balticSea"
@@ -1194,7 +1209,7 @@
 			     Bedienbarkeit zu behaupten; `aria-current="page"` sagt Screenreadern,
 			     wofür die Zahl steht. -->
 			<span
-				class="btn btn-active join-item btn-sm pointer-events-none min-w-32 text-xs md:text-sm"
+				class="btn btn-active join-item btn-sm pointer-events-none min-w-32 text-support md:text-label"
 				aria-current="page"
 			>
 				{data.pagination.page} / {seiten.totalPages}
