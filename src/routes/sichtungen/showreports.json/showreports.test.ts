@@ -159,6 +159,10 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 	beforeEach(() => {
 		vi.clearAllMocks();
 		captured.where = null;
+		// Ohne diesen Reset sähe `capturedOrderByText()` noch die Sortierung
+		// eines früheren Tests und bliebe grün, selbst wenn die Implementierung
+		// gar kein `orderBy()` mehr aufruft — etwa nach einem frühen Return.
+		captured.orderBy = [];
 	});
 
 	describe('PDF Compliance - Response Format', () => {

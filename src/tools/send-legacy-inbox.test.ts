@@ -272,6 +272,33 @@ describe('erstelleSshSpeicher', () => {
 		expect(gemeldet[0]).toContain('kaputt name.json');
 	});
 
+	it('weist einen Rechnernamen zurück, der als ssh-Option gelesen würde', () => {
+		// `execFile` übergibt den Wert als Argument an ssh; alles mit führendem
+		// Bindestrich liest ssh als Option. `-oProxyCommand=…` wäre ein
+		// beliebiger lokaler Befehl.
+		expect(() =>
+			erstelleSshSpeicher({ host: '-oProxyCommand=touch /tmp/x', datenVerzeichnis: '/daten' })
+		).toThrow('Rechnername nicht verwendbar');
+	});
+
+	it('weist ein Datenverzeichnis zurück, das die entfernte Shell zerlegen würde', () => {
+		expect(() =>
+			erstelleSshSpeicher({ host: 'hawking', datenVerzeichnis: '/mit leerzeichen' })
+		).toThrow('Datenverzeichnis nicht verwendbar');
+		expect(() => erstelleSshSpeicher({ host: 'hawking', datenVerzeichnis: '/a;rm -rf /' })).toThrow(
+			'Datenverzeichnis nicht verwendbar'
+		);
+		expect(() =>
+			erstelleSshSpeicher({ host: 'hawking', datenVerzeichnis: 'relativ/pfad' })
+		).toThrow('Datenverzeichnis nicht verwendbar');
+	});
+
+	it('lässt benutzer@rechner und übliche Pfade durch', () => {
+		expect(() =>
+			erstelleSshSpeicher({ host: 'jan@hawking.example.de', datenVerzeichnis: '/var/www/daten' })
+		).not.toThrow();
+	});
+
 	it('weist einen Dateinamen zurück, der auf der Gegenseite als Kommando wirken könnte', async () => {
 		// ssh setzt seine Argumente auf der Gegenseite wieder zu einer
 		// Kommandozeile zusammen, die dort durch eine Shell läuft. Ohne diese

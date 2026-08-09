@@ -102,6 +102,24 @@ async function existiert(pfad) {
 const ERLAUBTER_DATEINAME = /^[A-Za-z0-9._-]+\.json$/;
 
 /**
+ * Ein Rechnername darf nicht mit `-` beginnen: `execFile` übergibt ihn als
+ * Argument an `ssh`, und alles, was mit `-` anfängt, liest `ssh` als Option.
+ * Ein `host` wie `-oProxyCommand=…` wäre damit ein beliebiger lokaler Befehl.
+ * `@` ist erlaubt (`benutzer@rechner`), `:` nicht — der Trenner gehört in den
+ * Aufrufer, nicht in den Wert.
+ */
+const ERLAUBTER_HOST = /^[A-Za-z0-9._@][A-Za-z0-9._@-]*$/;
+
+/**
+ * Absoluter Pfad aus einem engen Zeichensatz. Anders als die Dateinamen kommt
+ * dieser Wert vom Aufrufer und nicht aus einem fremden Verzeichnis — die
+ * Begründung ist trotzdem dieselbe: Er landet in einer Kommandozeile, die auf
+ * der Gegenseite eine Shell parst. Ein Leerzeichen zerlegte den Pfad still in
+ * zwei Argumente, ein `;` wäre ausführbarer Code.
+ */
+const ERLAUBTES_VERZEICHNIS = /^\/[A-Za-z0-9._/-]*$/;
+
+/**
  * Posteingang auf einem entfernten Rechner, erreichbar über SSH.
  *
  * Der Posteingang gehört dem Anwendungsbenutzer der Domain und ist mit 700
@@ -126,13 +144,27 @@ export function erstelleSshSpeicher({
 	ausfuehren,
 	log = console
 }) {
+	if (!ERLAUBTER_HOST.test(host)) {
+		throw new Error(`Rechnername nicht verwendbar: ${JSON.stringify(host)}`);
+	}
+	if (!ERLAUBTES_VERZEICHNIS.test(datenVerzeichnis)) {
+		throw new Error(
+			`Datenverzeichnis nicht verwendbar: ${JSON.stringify(datenVerzeichnis)} — ` +
+				'erwartet wird ein absoluter Pfad ohne Leerzeichen und Sonderzeichen.'
+		);
+	}
+
 	// `BatchMode=yes`: Ohne das bleibt ssh bei unbekanntem Hostkey oder
 	// passphrasegeschütztem Schlüssel an einer Eingabeaufforderung hängen. In
 	// einem Cron-Lauf wäre das kein Fehler, sondern ein Prozess, der ewig
 	// wartet und nie meldet, warum.
+	//
+	// `--` beendet die Optionsauswertung von ssh. Die Prüfung oben schließt
+	// einen führenden Bindestrich bereits aus; beides zusammen heißt, dass
+	// diese Stelle auch dann hält, wenn jemand das Muster später lockert.
 	const lauf =
 		ausfuehren ??
-		((argumente) => execFileAsync('ssh', ['-o', 'BatchMode=yes', host, ...argumente]));
+		((argumente) => execFileAsync('ssh', ['-o', 'BatchMode=yes', '--', host, ...argumente]));
 	const praefix = sudo ? ['sudo', '-n'] : [];
 	const eingang = `${datenVerzeichnis}/posteingang`;
 	const erledigt = `${datenVerzeichnis}/importiert`;
