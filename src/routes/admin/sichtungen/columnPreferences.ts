@@ -83,11 +83,14 @@ export function serializeColumnPreferences(columns: Record<string, boolean>): st
  * steuert den „Standard wiederherstellen"-Knopf im Spalten-Dropdown (nur aktiv
  * bei Abweichung).
  *
- * Schlüsselzahl **und** Werte müssen übereinstimmen: Eine fehlende (neue Spalte
- * seit dem letzten Speichern) oder überzählige (entfernte Spalte im
- * localStorage-Rest) Spalte zählt als Abweichung, auch wenn alle gemeinsamen
- * Werte gleich sind — sonst bliebe der Knopf inaktiv, obwohl ein Reset die
- * fehlende Spalte erst auf ihren Default brächte.
+ * Schlüsselzahl **und** Werte müssen übereinstimmen. Der Schlüsselzahl-Vergleich
+ * ist reine Verteidigung: `mergeColumnPreferences` (oben) baut sein Ergebnis
+ * immer als `{ ...defaults }` und überschreibt darin nur Schlüssel, die in
+ * `defaults` existieren — der zurückgegebene Schlüsselsatz ist damit immer
+ * exakt der Default-Schlüsselsatz, nie mehr, nie weniger. Ein `current`, das
+ * hier abweicht, kann also nur über einen anderen Aufrufpfad entstehen. Diese
+ * Funktion prüft trotzdem beide Seiten, statt sich auf den einen bekannten
+ * Aufrufer zu verlassen.
  */
 export function isDefaultVisibility(
 	current: Record<string, boolean>,

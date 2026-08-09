@@ -2,6 +2,7 @@ import { render } from 'vitest-browser-svelte';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import type { SightingSelect } from '$lib/server/db/schema';
 import type { PageData } from './$types';
+import { COLUMN_PREFERENCES_STORAGE_KEY } from './columnPreferences';
 
 vi.mock('$app/navigation', () => ({
 	goto: vi.fn(() => Promise.resolve()),
@@ -224,5 +225,50 @@ describe('Sichtungstabelle — Spalten', () => {
 		for (const th of nichtSortierbar) {
 			expect([...th.classList]).not.toContain('hover:bg-base-300');
 		}
+	});
+
+	/* WP7-Bugfix-Regression: Der bestehende Persistenz-`$effect` schrieb vor
+	   der Aufspaltung nie in `localStorage` — er verließ sich beim allerersten
+	   Durchlauf per `return` aus dem Lade-Zweig, OHNE `columnVisibility` zu
+	   *lesen*, und trackte dadurch nie eine Abhängigkeit darauf (Svelte
+	   ermittelt Effekt-Abhängigkeiten aus den im letzten Durchlauf gelesenen
+	   reaktiven Werten). Der mittlere Schritt unten — `localStorage` nach
+	   einer Checkbox-Änderung — ist der, der genau diesen Bug reproduziert;
+	   gegen die unaufgespaltene Fassung schlägt er fehl (siehe Fix-Report). */
+	it('speichert die Spaltenauswahl bei jeder Änderung und setzt sie per Reset-Button zurück', async () => {
+		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+
+		const resetButton = [...screen.container.querySelectorAll('button')].find(
+			(button) => button.textContent?.trim() === 'Standard wiederherstellen'
+		) as HTMLButtonElement;
+		expect(resetButton, 'Reset-Button existiert').toBeTruthy();
+		expect(resetButton.disabled, 'Ruhezustand entspricht dem Default').toBe(true);
+
+		const sichtungsdatumCheckbox = [...screen.container.querySelectorAll('label')]
+			.find((label) => label.textContent?.includes('Sichtungsdatum'))
+			?.querySelector('input[type="checkbox"]') as HTMLInputElement;
+		expect(sichtungsdatumCheckbox, 'Checkbox „Sichtungsdatum" existiert').toBeTruthy();
+		expect(sichtungsdatumCheckbox.checked, 'Spalte ist per Default sichtbar').toBe(true);
+
+		sichtungsdatumCheckbox.click();
+
+		// Reproduziert den Bug: Vor der Effekt-Aufspaltung blieb `localStorage`
+		// hier dauerhaft leer, weil der Speicher-Effekt nie eine Abhängigkeit
+		// auf `columnVisibility` trackte.
+		await vi.waitFor(() => expect(resetButton.disabled).toBe(false));
+		await vi.waitFor(() => {
+			const gespeichert = window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY);
+			expect(gespeichert).toBeTruthy();
+			expect(JSON.parse(gespeichert as string).columns.sightingDate).toBe(false);
+		});
+
+		resetButton.click();
+
+		await vi.waitFor(() => expect(resetButton.disabled).toBe(true));
+		await vi.waitFor(() => {
+			const gespeichert = window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY);
+			expect(JSON.parse(gespeichert as string).columns.sightingDate).toBe(true);
+		});
+		expect(sichtungsdatumCheckbox.checked, 'Checkbox folgt dem Reset').toBe(true);
 	});
 });

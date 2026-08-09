@@ -162,16 +162,28 @@
 	});
 
 	$effect(() => {
+		/* `columnVisibility` MUSS gelesen werden, bevor irgendein `return`
+		   greifen kann — Svelte trackt die Abhängigkeiten eines Effekts nur aus
+		   den in seinem letzten Durchlauf tatsächlich gelesenen reaktiven
+		   Werten. `hatGespeicherteSpaltenGeladen` ist ein einfaches `let`, kein
+		   `$state` — der Effekt läuft heute nur deshalb ein zweites Mal, weil
+		   der Lade-Effekt oben zuerst deklariert ist und das Flag VOR dem
+		   ersten Durchlauf dieses Effekts auf `true` setzt. Stünde die
+		   Serialisierung hinter dem Guard, würde der allererste Durchlauf beim
+		   noch nicht geladenen Stand früh aussteigen, OHNE `columnVisibility`
+		   je zu lesen — der Effekt abonnierte sich dann nie auf Änderungen und
+		   bliebe für immer stumm, egal in welcher Reihenfolge die Effekte
+		   künftig stehen. Genau das war der Bug, der die Aufspaltung oben nötig
+		   gemacht hat; ihn hier wieder einzuführen wäre derselbe Fehler eine
+		   Ebene tiefer. */
+		const serialisiert = serializeColumnPreferences(columnVisibility);
 		if (typeof window === 'undefined' || !hatGespeicherteSpaltenGeladen) return;
 		// Jede Änderung (Checkbox im „Spalten"-Dropdown, „Standard
 		// wiederherstellen") wird persistiert. `try/catch`, weil `setItem`
 		// werfen kann (volle Quota, Safari im privaten Modus) — die
 		// Spaltenauswahl ist eine Bequemlichkeit, kein Grund zum Absturz.
 		try {
-			window.localStorage.setItem(
-				COLUMN_PREFERENCES_STORAGE_KEY,
-				serializeColumnPreferences(columnVisibility)
-			);
+			window.localStorage.setItem(COLUMN_PREFERENCES_STORAGE_KEY, serialisiert);
 		} catch (err) {
 			logger.warn(
 				{ err },
