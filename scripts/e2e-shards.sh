@@ -113,6 +113,14 @@ form=(
 	# weiteres Mal an. Lokal 2 Tests, ~8 s — er legt sich seine
 	# Sichtung selbst an und räumt sie wieder weg.
 	e2e/admin-table-mobile-reference-overflow.spec.ts
+	# Dritter Spec auf /admin/sichtungen in Folge — die Route ist durch
+	# die beiden darüber längst kalt kompiliert, der Aufschlag fällt
+	# hier kein weiteres Mal an. Er prüft, dass Kopf und Inhaltsfläche
+	# bei 700px und 900px dieselbe Layout-Variante zeigen; lokal 2
+	# Tests, ~12 s, ohne eigenen Seed. Nicht nach `smoke`: Der ist laut
+	# der Messung oben mit 249–271 s der längste Shard und soll
+	# entlastet werden, `form` und `map` liegen gleichauf.
+	e2e/admin-table-breakpoint.spec.ts
 	# Fährt /admin/[id]/edit statt der Tabelle — der einzige der drei
 	# mit einer eigenen kalt zu kompilierenden Route.
 	e2e/admin-edit-toggle-no-wrap-lock.spec.ts

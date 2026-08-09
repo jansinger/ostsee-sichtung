@@ -44,18 +44,28 @@ describe('Admin-Seiten — Überschriftenstruktur beginnt bei h1', () => {
 	}
 
 	/*
-	 * Die Sichtungstabelle rendert zwei Kopfzeilen (Mobil und Desktop) und
-	 * damit zwei `<h1>` im Quelltext. Das ist kein Verstoß: Sie hängen an
-	 * `hidden`/`sm:hidden`, also an `display: none` — im Accessibility-Tree
-	 * steht immer genau eine. Der Fall ist hier notiert, weil ein Zählen von
-	 * `<h1`-Vorkommen sonst als „Duplikat" durchginge und jemand die falsche
-	 * der beiden entfernte.
+	 * Die Sichtungstabelle rendert zwei Kopfzeilen (kompakt und weit) und damit
+	 * zwei `<h1>` im Quelltext. Das ist kein Verstoß: Sie hängen an
+	 * `display: none` — im Accessibility-Tree steht immer genau eine. Der Fall
+	 * ist hier notiert, weil ein Zählen von `<h1`-Vorkommen sonst als
+	 * „Duplikat" durchginge und jemand die falsche der beiden entfernte.
+	 *
+	 * Geprüft wird zusätzlich, dass beide Varianten ihre Sichtbarkeit aus
+	 * `layoutSwitch.ts` beziehen. Die Klassennamen selbst stehen hier bewusst
+	 * nicht mehr als Literal: Sie waren an dieser Stelle eine zweite Quelle
+	 * neben dem Markup, und genau daran hing Befund 12 — der Kopf schaltete bei
+	 * `sm`, die Inhaltsfläche bei `md`, und dieser Test bestätigte den Fehler.
+	 * Ob die Umschaltung wirkt, misst `e2e/admin-table-breakpoint.spec.ts`.
 	 */
 	it('die zwei h1 der Tabelle sind Layout-Varianten, keine Dopplung', () => {
 		const quelle = lies('./sichtungen/+page.svelte');
 		expect(quelle.match(/<h1[\s>]/g)).toHaveLength(2);
-		expect(quelle).toContain('block space-y-3 sm:hidden');
-		expect(quelle).toContain('hidden items-center justify-between sm:flex');
+		/* Auf den Import und die Bezeichner, nicht auf `{NUR_KOMPAKT}` als
+		   Zeichenfolge: Die geschweiften Klammern gehören zur heutigen
+		   Schreibweise (`class="{NUR_KOMPAKT} …"`), nicht zur Aussage. */
+		expect(quelle).toMatch(/from '\.\/layoutSwitch'/);
+		expect(quelle).toMatch(/\bNUR_KOMPAKT\b/);
+		expect(quelle).toMatch(/\bNUR_WEIT_FLEX\b/);
 	});
 
 	it('die Dokumentation bezieht ihre h1 aus ApiDocumentation', () => {
