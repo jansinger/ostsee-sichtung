@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.14.0](https://github.com/jansinger/ostsee-tiere/compare/v2.13.0...v2.14.0) (2026-08-09)
+
+
+### Features
+
+* **api:** Posteingang per HTTP nach Prod senden, showreports eindeutig sortieren ([#827](https://github.com/jansinger/ostsee-tiere/issues/827)) ([a76a9ee](https://github.com/jansinger/ostsee-tiere/commit/a76a9ee91828ca97c4d526f4e53f0151043dfd39))
+* **api:** Sprachpräfix /de/ und /en/ vor allen Legacy-Pfaden bedienen ([#828](https://github.com/jansinger/ostsee-tiere/issues/828)) ([379324a](https://github.com/jansinger/ostsee-tiere/commit/379324a529e109313475c33673ac18f44a7c4009))
+
+
+### Bug Fixes
+
+* **admin:** Spam-Check widerspricht der Liste nicht mehr ([#826](https://github.com/jansinger/ostsee-tiere/issues/826)) ([36162b8](https://github.com/jansinger/ostsee-tiere/commit/36162b86cf1ddfacab97d8c73a2487c711081345))
+* **ui:** serve apple-touch-icon-precomposed to stop 404 probes ([#824](https://github.com/jansinger/ostsee-tiere/issues/824)) ([156036c](https://github.com/jansinger/ostsee-tiere/commit/156036c32c7d062e6bddf2ad21102bd3fc195818))
+
 ## [2.13.0](https://github.com/jansinger/ostsee-tiere/compare/v2.12.0...v2.13.0) (2026-08-09)
 
 
