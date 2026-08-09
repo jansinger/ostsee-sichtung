@@ -138,9 +138,10 @@
 		Vorbehalt: Der Lauf ist bei vielen Zeilen NICHT kurz, Tastaturnutzer
 		verlieren für seine Dauer den Fokus. Trotzdem `disabled`, weil ein frei
 		fokussierbarer Knopf während eines Laufs, der gerade dutzende Zeilen
-		schreibt, Bedienbarkeit behauptete, die es nicht gibt (`runBulk` wiese
-		den Klick nur still ab); den Zustand erklärt die aria-live-Fortschritts-
-		anzeige daneben. Ein Doppelklick hätte hier echte Folgen.
+		schreibt, Bedienbarkeit behauptete, die es nicht gibt — der Wächter hinter
+		`onbulk` wiese den Klick nur still ab; den Zustand erklärt die
+		aria-live-Fortschrittsanzeige daneben. Ein Doppelklick hätte hier echte
+		Folgen.
 	-->
 	{#if selectedIds.length > 0}
 		<div

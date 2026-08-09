@@ -1,6 +1,12 @@
 /**
- * Die konfigurierbaren Spalten der Sichtungstabelle: Startzustand, Beschriftung
- * und Sortierschlüssel.
+ * Die konfigurierbaren Spalten der Sichtungstabelle: Startzustand und
+ * Beschriftung.
+ *
+ * Kein Sortierschlüssel: Die Liste speiste bis zum Schnitt der Seite auch ein
+ * `sortKey`-Feld, das nirgends gelesen wurde — sortierbar ist eine Spalte
+ * dadurch, dass ihr Kopf in `SichtungenTable.svelte` über `sortableTh`
+ * gerendert wird. Ein zweites, ungenutztes Feld daneben behauptete einen
+ * Vertrag, den es nicht gibt.
  *
  * Als eigenes Modul und nicht inline in `+page.svelte`: Das Spalten-Dropdown
  * steht im Seitenkopf, die Spalten selbst in `SichtungenTable.svelte`, und

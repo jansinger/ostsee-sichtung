@@ -60,8 +60,12 @@ describe('Admin-Seiten — Überschriftenstruktur beginnt bei h1', () => {
 	it('die zwei h1 der Tabelle sind Layout-Varianten, keine Dopplung', () => {
 		const quelle = lies('./sichtungen/+page.svelte');
 		expect(quelle.match(/<h1[\s>]/g)).toHaveLength(2);
-		expect(quelle).toContain('{NUR_KOMPAKT}');
-		expect(quelle).toContain('{NUR_WEIT_FLEX}');
+		/* Auf den Import und die Bezeichner, nicht auf `{NUR_KOMPAKT}` als
+		   Zeichenfolge: Die geschweiften Klammern gehören zur heutigen
+		   Schreibweise (`class="{NUR_KOMPAKT} …"`), nicht zur Aussage. */
+		expect(quelle).toMatch(/from '\.\/layoutSwitch'/);
+		expect(quelle).toMatch(/\bNUR_KOMPAKT\b/);
+		expect(quelle).toMatch(/\bNUR_WEIT_FLEX\b/);
 	});
 
 	it('die Dokumentation bezieht ihre h1 aus ApiDocumentation', () => {

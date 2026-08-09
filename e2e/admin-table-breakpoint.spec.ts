@@ -1,5 +1,11 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { seedAdminSession } from './helpers/adminSession';
+import {
+	deleteSighting,
+	E2E_REFERENCE_PREFIX,
+	FIRST_PAGE_DATE,
+	seedSighting
+} from './helpers/seedSighting';
 
 /**
  * admin-table-breakpoint.spec.ts — Kopf und Inhaltsfläche der Sichtungstabelle
@@ -51,6 +57,29 @@ async function erwarteVariante(
 }
 
 test.describe('Admin-Sichtungstabelle — Breakpoint-Vertrag', () => {
+	/* Eine eigene Zeile statt eines Verlasses auf den Bestand: Ohne mindestens
+	   eine Sichtung wären Tabelle und Kartenliste beide leer, und der Fall
+	   „Mobilkarte sichtbar" wäre rot, ohne dass am Layout etwas fehlt.
+	   `FIRST_PAGE_DATE` und nicht `NEWEST_ROW_DATE`: Letzteres ist für die
+	   `?perPage=1`-Zeile von `admin-table-mobile-reference-overflow.spec.ts`
+	   reserviert — mit einem zweiten Seed darauf verdeckt man deren Zeile und
+	   macht den fremden Spec rot (in genau dieser Konstellation beobachtet).
+	   Beide Testfälle teilen sich die Zeile, deshalb seriell. */
+	test.describe.configure({ mode: 'serial' });
+
+	let sightingId: number | undefined;
+
+	test.beforeAll(async () => {
+		sightingId = await seedSighting({
+			referenceId: `${E2E_REFERENCE_PREFIX}breakpoint`,
+			sightingDate: FIRST_PAGE_DATE
+		});
+	});
+
+	test.afterAll(async () => {
+		if (sightingId !== undefined) await deleteSighting(sightingId);
+	});
+
 	for (const { breite, variante } of [
 		{ breite: 700, variante: 'kompakt' as const },
 		{ breite: 900, variante: 'weit' as const }
@@ -75,14 +104,11 @@ test.describe('Admin-Sichtungstabelle — Breakpoint-Vertrag', () => {
 				   des Befunds, um den es hier geht. */
 				await expect(page.getByRole('heading', { name: 'Sichtungen' }).first()).toBeVisible();
 
-				/* Ohne mindestens eine Sichtung wären Tabelle und Kartenliste beide leer
-				   und der Fall „Mobilkarte sichtbar" trivial rot bzw. „Tabelle sichtbar"
-				   trivial grün. Kein eigener Seed dafür: Die Referenz-Links stehen in
-				   beiden Layouts, und der Bestand der Entwicklungs-DB trägt sie. Ein
-				   Seed auf `NEWEST_ROW_DATE` kollidierte zudem mit
-				   `admin-table-mobile-reference-overflow.spec.ts`, das denselben Wert
-				   für seine `?perPage=1`-Zeile beansprucht. */
-				await expect(page.locator('a[href^="/admin/ref/"]').first()).toBeAttached();
+				// Ohne diese Zusicherung könnte der Test an einer Seite ohne die
+				// Test-Sichtung grün werden und würde nichts belegen.
+				await expect(
+					page.locator(`a[href$="${E2E_REFERENCE_PREFIX}breakpoint"]`).first()
+				).toBeAttached();
 
 				await erwarteVariante(page, variante, breite);
 			} finally {
