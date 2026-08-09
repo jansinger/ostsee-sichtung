@@ -1,8 +1,8 @@
 <script lang="ts">
 	import BarChart from '$lib/components/charts/BarChart.svelte';
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
-	import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
 	import Icon from '$lib/components/Icon.svelte';
+	import { WEEKDAY_LABELS, buildActivityHeatmap, type HeatmapStep } from './activityHeatmap';
 	import { formatNumber, formatPercentage } from './statisticsFormat';
 	import type { PageData } from './$types';
 
@@ -53,6 +53,50 @@
 
 	/** Zusatz für Überschriften, damit keine Zahl ohne ihren Zeitraum dasteht. */
 	const yearSuffix = $derived(data.selectedYear === null ? '' : ` ${data.selectedYear}`);
+
+	/**
+	 * Wochenraster der Eingangs-Heatmap.
+	 *
+	 * Steht bewusst hier und nicht als `{@const}`-Kette in der Schleife: Maximum
+	 * und Kalenderarithmetik liefen dort 30-mal identisch durch, und ein
+	 * Wochentagsraster braucht Leerzellen am Anfang, die eine Zählschleife nicht
+	 * erzeugen kann. Begründung und Tests in `activityHeatmap.ts`.
+	 */
+	const heatmapWeeks = $derived(buildActivityHeatmap(data.recentActivity, new Date()));
+
+	/**
+	 * Flächen- und Textfarbe je Intensitätsstufe — im Browser gemessen
+	 * (`e2e/helpers/contrast.ts`, Backdrop `base-100`, 2026-08-09):
+	 *
+	 * | Stufe | Klassen                                | Kontrast    | WCAG 1.4.3 |
+	 * | ----- | -------------------------------------- | ----------- | ---------- |
+	 * | 1     | `bg-primary/25` + `base-content`       | 10,54:1     | ✅         |
+	 * | 2     | `bg-primary/50` + `base-content`       | 6,24:1      | ✅         |
+	 * | 3     | `bg-primary/75` + `primary-content`    | 5,79:1      | ✅         |
+	 * | 4     | `bg-primary` + `primary-content`       | 11,00:1     | ✅         |
+	 *
+	 * Stufe 3 trug bis 2026-08-09 `text-base-content` und maß damit **3,39:1** —
+	 * unter AA. `primary` ist dunkel (als Textfarbe auf `base-100` 9,22:1),
+	 * dunkler Text auf 75 % davon hat keinen Kontrast mehr. Der Kipppunkt liegt
+	 * zwischen `/60` (4,95:1) und `/65` (4,35:1); ab `/75` ist heller Text die
+	 * einzig richtige Wahl — genau wie es die Vollstufe schon tat.
+	 *
+	 * Stufe 0 trug bis 2026-08-09 zusätzlich `text-base-content/30`. Die Klasse war
+	 * als Ausnahme von der Deckkraft-Untergrenze notiert („die Zelle ist ohne
+	 * Meldung leer", Docblock von `BannedRule.textOnly` in
+	 * `e2e/helpers/bannedClasses.ts`) — und **genau diese Prämisse** hebt die
+	 * `sr-only`-Beschriftung unten auf: Die Zelle trägt jetzt auch ohne Meldung
+	 * Text. Zu färben hatte die Klasse dabei ohnehin nichts, denn das sichtbare
+	 * Span bleibt bei `count === 0` leer. Sie ist deshalb ersatzlos entfallen,
+	 * statt die Regel für sie aufzuweichen.
+	 */
+	const HEATMAP_STEP_CLASSES: Record<HeatmapStep, string> = {
+		0: 'bg-base-200',
+		1: 'bg-primary/25 text-base-content',
+		2: 'bg-primary/50 text-base-content',
+		3: 'bg-primary/75 text-primary-content',
+		4: 'bg-primary text-primary-content'
+	};
 
 	// Die Ableitung `scientificInsights` ist 2026-07-30 entfallen; die Begründung
 	// steht an ihrer Anzeigestelle in der Vorlage unten.
@@ -169,7 +213,7 @@
 		     also nicht). Bei 3 Spalten ordnen sich die fünf Karten als 3+2 an — gegenüber 4+1 die
 		     ruhigere Aufteilung, deshalb keine vierte Spalte ab 2xl. -->
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-			<div class="stats w-full shadow-raised">
+			<div class="stats shadow-raised w-full">
 				<div class="stat">
 					<div class="stat-figure text-primary">
 						<Icon icon="lucide:users" class="h-8 w-8" />
@@ -186,7 +230,7 @@
 				</div>
 			</div>
 
-			<div class="stats w-full shadow-raised">
+			<div class="stats shadow-raised w-full">
 				<div class="stat">
 					<div class="stat-figure text-secondary-strong">
 						<Icon icon="lucide:activity" class="h-8 w-8" />
@@ -203,7 +247,7 @@
 				</div>
 			</div>
 
-			<div class="stats w-full shadow-raised">
+			<div class="stats shadow-raised w-full">
 				<div class="stat">
 					<div class="stat-figure text-warning-strong">
 						<Icon icon="lucide:trending-up" class="h-8 w-8" />
@@ -226,7 +270,7 @@
 				</div>
 			</div>
 
-			<div class="stats w-full shadow-raised">
+			<div class="stats shadow-raised w-full">
 				<div class="stat">
 					<div class="stat-figure text-accent-strong">
 						<Icon icon="lucide:calendar" class="h-8 w-8" />
@@ -245,7 +289,7 @@
 				</div>
 			</div>
 
-			<div class="stats w-full shadow-raised">
+			<div class="stats shadow-raised w-full">
 				<div class="stat">
 					<div class="stat-figure text-info-strong">
 						<Icon icon="lucide:users" class="h-8 w-8" />
@@ -267,9 +311,17 @@
 		<div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
 			<div class="card bg-base-100 shadow-raised">
 				<div class="card-body">
+					<!-- „freigegeben", nicht „verifiziert" — und mit Jahreszusatz, weil der
+					     Loader `mitJahr(approvedOnly())` filtert. Dieselbe Regel wie beim
+					     „Eingang der letzten 30 Tage" weiter unten: Eine Überschrift darf
+					     keine andere Menge versprechen, als die Zahl darunter zählt. „Verifiziert"
+					     holte zusätzlich die abgeschaffte Vokabel zurück: `geprueft` wird seit
+					     2026-08 nicht mehr gelesen (CLAUDE.md), und die Oberfläche kennt die
+					     drei Zustände Offen/Freigegeben/Abgelehnt. Gilt auch für die beiden
+					     folgenden Überschriften. -->
 					<h2 class="card-title">
 						<Icon icon="lucide:chart-pie" class="h-6 w-6" />
-						Artenverteilung (verifizierte Sichtungen)
+						Artenverteilung (freigegebene Sichtungen{yearSuffix})
 					</h2>
 					<div class="overflow-x-auto">
 						<table class="table-zebra table">
@@ -352,11 +404,11 @@
 				<div class="card-body">
 					<h2 class="card-title">
 						<Icon icon="lucide:users" class="h-6 w-6" />
-						Nutzerengagement & Datenqualität (verifizierte Sichtungen)
+						Nutzerengagement & Datenqualität (freigegebene Sichtungen{yearSuffix})
 					</h2>
 
 					<!-- User Engagement Stats -->
-					<div class="stats stats-vertical lg:stats-horizontal mb-4 shadow-raised">
+					<div class="stats stats-vertical lg:stats-horizontal shadow-raised mb-4">
 						<div class="stat">
 							<div class="stat-title">Eindeutige Nutzer</div>
 							<div class="stat-value text-primary">
@@ -426,7 +478,7 @@
 				<div class="card-body">
 					<h2 class="card-title">
 						<Icon icon="lucide:trending-up" class="h-6 w-6" />
-						Top Beobachter (verifizierte Sichtungen, ohne meeresmuseum.de)
+						Top Beobachter (freigegebene Sichtungen{yearSuffix}, ohne meeresmuseum.de)
 					</h2>
 					<div class="overflow-x-auto">
 						<table class="table">
@@ -565,38 +617,52 @@
 					        Auswahl deshalb ausgenommen (Begründung an der Abfrage). -->
 
 					<!-- Activity Heatmap -->
-					<div class="mb-4">
-						<div class="grid grid-cols-7 gap-1">
-							{#each Array(30)
-								.fill(null)
-								.map((_, i) => i) as dayIndex (dayIndex)}
-								{@const targetDate = new Date(Date.now() - (29 - dayIndex) * 24 * 60 * 60 * 1000)}
-								{@const dateStr = berlinCalendarDayIso(targetDate)}
-								{@const activity = data.recentActivity.find((a) => a.date === dateStr)}
-								{@const count = activity ? Number(activity.count) : 0}
-								{@const maxCount = Math.max(...data.recentActivity.map((a) => Number(a.count)))}
-								{@const intensity = maxCount > 0 ? count / maxCount : 0}
-								<div
-									class="tooltip"
-									data-tip="{dateStr}: {count} Sichtung{count !== 1 ? 'en' : ''}"
-								>
-									<div
-										class="border-base-300 flex h-8 w-8 items-center justify-center rounded-sm border text-xs
-									{intensity === 0
-											? 'bg-base-200 text-base-content/30'
-											: intensity >= 0.75
-												? 'bg-primary text-primary-content'
-												: intensity >= 0.5
-													? 'bg-primary/75 text-base-content'
-													: intensity >= 0.25
-														? 'bg-primary/50 text-base-content'
-														: 'bg-primary/25 text-base-content'}"
-									>
-										{count > 0 ? count : ''}
-									</div>
-								</div>
-							{/each}
-						</div>
+					<!-- Als Tabelle und nicht als `grid-cols-7`: Das alte Raster hatte sieben
+					     Spalten über 30 Tage, war aber nicht an Wochentagen ausgerichtet — die
+					     Spalten bedeuteten nichts. Jetzt ist eine Spalte ein Wochentag (mit
+					     Leerzellen am Anfang), und Screenreader können das Raster zellenweise
+					     lesen, ohne 30 Tabulator-Stopps zu erzeugen.
+					     Das Datum stand vorher ausschließlich im `data-tip` und war damit
+					     mausgebunden; Tage ohne Meldung rendeten eine komplett leere Zelle. Die
+					     Beschriftung steht deshalb zusätzlich als `sr-only`-Text in jeder Zelle —
+					     auch in denen ohne Meldung. Der Tooltip bleibt als Zeigegerät-Komfort. -->
+					<div class="mb-4 overflow-x-auto">
+						<table class="border-separate border-spacing-1">
+							<caption class="text-support text-base-content/70 mb-1 text-left">
+								30 Tage bis heute; eine Spalte ist ein Wochentag, eine Zeile eine Woche.
+							</caption>
+							<thead>
+								<tr>
+									{#each WEEKDAY_LABELS as wochentag (wochentag)}
+										<th scope="col" class="text-support text-base-content/70 w-8 font-normal"
+											>{wochentag}</th
+										>
+									{/each}
+								</tr>
+							</thead>
+							<tbody>
+								{#each heatmapWeeks as woche, wocheIndex (wocheIndex)}
+									<tr>
+										{#each woche as tag, spalte (spalte)}
+											<td class="p-0">
+												{#if tag}
+													<div class="tooltip" data-tip={tag.label}>
+														<div
+															class="border-base-300 flex h-8 w-8 items-center justify-center rounded-sm border text-xs {HEATMAP_STEP_CLASSES[
+																tag.step
+															]}"
+														>
+															<span class="sr-only">{tag.label}</span>
+															<span aria-hidden="true">{tag.count > 0 ? tag.count : ''}</span>
+														</div>
+													</div>
+												{/if}
+											</td>
+										{/each}
+									</tr>
+								{/each}
+							</tbody>
+						</table>
 					</div>
 
 					<!-- Summary Stats -->
