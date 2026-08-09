@@ -157,6 +157,28 @@ describe('Sichtungstabelle — Spalten', () => {
 		expect(kopf.querySelector('button')?.getAttribute('aria-label')).toContain('absteigend');
 	});
 
+	it('zeigt an inaktiven sortierbaren Köpfen ein dezentes Sortier-Icon, an nicht sortierbaren keins', () => {
+		// Default-Sortierung ist Sichtungsdatum absteigend — Meldedatum ist damit
+		// ein sortierbarer, aber inaktiver Kopf; Aufnahme ist gar nicht sortierbar.
+		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+
+		const köpfe = [...screen.container.querySelectorAll('thead th')];
+		const meldedatum = köpfe.find((th) => th.textContent?.includes('Meldedatum')) as HTMLElement;
+		const aufnahme = köpfe.find((th) => th.textContent?.trim() === 'Aufnahme') as HTMLElement;
+
+		expect(meldedatum.getAttribute('aria-sort')).toBe('none');
+		expect(
+			meldedatum.querySelector('svg[aria-hidden="true"]'),
+			'inaktiver sortierbarer Kopf zeigt das Affordance-Icon'
+		).toBeTruthy();
+
+		expect(aufnahme.querySelector('button'), 'Aufnahme ist nicht sortierbar').toBeFalsy();
+		expect(
+			aufnahme.querySelector('svg'),
+			'nicht sortierbarer Kopf bekommt kein Sortier-Icon'
+		).toBeFalsy();
+	});
+
 	it('zentriert die Auswahl-Checkbox in ihrer Zelle', () => {
 		// `app.css` setzt für jedes `label:has(> .checkbox)` ungelayert
 		// `align-items: flex-start` — richtig für mehrzeilige Feld-Labels, in

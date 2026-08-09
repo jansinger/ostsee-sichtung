@@ -21,6 +21,7 @@
 	import ChevronLeft from '~icons/lucide/chevron-left';
 	import ChevronRight from '~icons/lucide/chevron-right';
 	import ChevronUp from '~icons/lucide/chevron-up';
+	import ChevronsUpDown from '~icons/lucide/chevrons-up-down';
 	import CircleAlert from '~icons/lucide/circle-alert';
 	import CircleCheck from '~icons/lucide/circle-check';
 	import CircleHelp from '~icons/lucide/circle-help';
@@ -139,6 +140,7 @@
 		'lucide:chevron-left': ChevronLeft,
 		'lucide:chevron-right': ChevronRight,
 		'lucide:chevron-up': ChevronUp,
+		'lucide:chevrons-up-down': ChevronsUpDown,
 		'lucide:filter': Filter,
 		'lucide:download': Download,
 		'lucide:code': Code,
