@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+# Nur der Shard-Abgleich, nicht test:quick. Der Abgleich kostet rund zwei
+# Sekunden und fängt den einen Fehler ab, der sonst alle drei E2E-Shards rot
+# macht — und zwar erst nach dem Push und vier Minuten Runner-Zeit.
+# lint/type-check hängen bereits an pre-commit.
+npm run test:e2e:shards

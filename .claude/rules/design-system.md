@@ -246,6 +246,19 @@ Ein Token, das **nur** im `@theme`-Block steht, ist über `var()` nicht erreichb
 
   Die ersten drei beschreiben **Übergänge** und werden mit `--motion-ease` gefahren. `--motion-emphasis` ist keine Übergangsstufe: betonte Bewegungen bringen ihre Kurve über die Keyframe-Stops mit (`bounceIn`: `.3 → 1.05 → .9 → 1`). Eine zusätzliche Easing-Funktion biegt dort **jedes Segment einzeln** und lässt den Überschwung hektisch wirken — deshalb `linear`. Wer eine neue betonte Keyframe anlegt, nimmt diese Stufe und lässt die Kurve in den Stops.
 
+### Vor dem Push: die vier Specs fahren, die das abdecken
+
+```bash
+npm run test:e2e -- e2e/map-panels.spec.ts e2e/map-accessibility.spec.ts \
+  e2e/design-tokens.spec.ts e2e/hover-transitions.spec.ts
+```
+
+**Die DOM-Scan-Guards in `design-tokens.spec.ts` belegen die Schichtung nicht.** Sie prüfen, ob überhaupt Tokens verwendet werden („keine freien Z-Index-Utilities", „keine rohen Schatten-Utilities", „keine freien Übergangsdauern") — ob die **richtige Stufe** gewählt ist, sehen sie nicht. Bei #812 waren genau diese Guards grün, während der Vergrößern-Knopf des Sheets unter den Bedienelementen lag: Der Shard `smoke` lief zweimal hintereinander durch, rot war nur `map`.
+
+Dass die Schichtung kippt, zeigt sich deshalb nicht als Schatten- oder Z-Index-Assertion, sondern als **`locator.click: Timeout 15000ms exceeded`** — Playwright wartet darauf, dass das Element klickbar wird, und ein anderes liegt darüber. Betroffen waren „Vergrößern-Button schaltet das Sheet auf expanded" (`e2e/map-panels.spec.ts`) und „Umschalter Karte/Liste zeigt Tabellenansicht" (`e2e/map-accessibility.spec.ts`). In keinem der beiden Specs kommt das Wort `z-index` vor — wer nach dem Begriff sucht, findet die Abdeckung nicht.
+
+Die vier Specs verteilen sich auf alle drei CI-Shards (`map`, `smoke`, `form`), ein einzelner Shard-Lauf genügt also nicht.
+
 ---
 
 ## Breakpoint-Vertrag

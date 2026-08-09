@@ -117,6 +117,33 @@ global.fetch = vi.fn().mockResolvedValue({
 
 ## Playwright E2E Tests
 
+### Neuer Spec → Shard zuordnen (PFLICHT)
+
+E2E-Specs laufen in CI **nicht** über ein Verzeichnis-Glob, sondern über drei
+namentliche Listen in `scripts/e2e-shards.sh` (`form`, `map`, `smoke`). Ein
+neuer Spec, der in keiner Liste steht, liefe nirgends — deshalb bricht der
+Abgleich im Skript ab, und zwar in **allen drei Shards gleichzeitig**, bevor
+ein einziger Test läuft.
+
+Wer einen Spec anlegt, umbenennt oder löscht, pflegt die Liste mit und prüft:
+
+```bash
+npm run test:e2e:shards
+```
+
+Das kostet rund zwei Sekunden (`playwright test --list`, ohne Dev-Server und
+ohne Datenbank), hängt in `npm run test:quick` und in `.husky/pre-push`.
+
+**In welchen Shard?** Die Zuordnung folgt der gemessenen CI-Schrittdauer und
+erst danach dem Thema — die drei Shards laufen parallel, die Job-Laufzeit ist
+die des längsten. Die Begründungen je Spec und die Messanleitung stehen als
+Kommentare im Skript; lokale Laufzeiten taugen dafür nicht (siehe Messblock
+dort).
+
+Das war zwischen dem 2026-08-08 und dem 2026-08-09 die häufigste
+CI-Fehlerursache überhaupt: vier von neun Fehlschlägen, jedes Mal ein beim
+Anlegen vergessener Eintrag.
+
 ### Grundstruktur
 
 ```typescript
@@ -233,5 +260,6 @@ vi.mock('$lib/server/db', () => ({ db: mockDb }));
 Tests werden automatisch in GitHub Actions ausgeführt:
 
 - Unit Tests bei jedem Push
-- E2E Tests bei Pull Requests
+- E2E Tests bei Pull Requests — in drei parallelen Shards, deren Zusammensetzung
+  in `scripts/e2e-shards.sh` steht (siehe „Neuer Spec → Shard zuordnen")
 - Coverage-Report wird generiert

@@ -73,7 +73,7 @@ npm run lint         # ESLint
 npm run type-check   # TypeScript
 npm run check        # Svelte-Check
 
-npm run test:quick   # Schnell-Test (lint + types + check + unit)
+npm run test:quick   # Schnell-Test (E2E-Shard-Abgleich + lint + types + check + unit)
 ```
 
 Vollständige Test-Befehle: `.claude/rules/testing.md`
