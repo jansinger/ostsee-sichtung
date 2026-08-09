@@ -89,6 +89,14 @@ describe('buildActivityHeatmap', () => {
 		expect(wochen.flat().every((tag) => tag === null || tag.step === 0)).toBe(true);
 	});
 
+	it('liefert für einen leeren Zeitraum gar kein Raster', () => {
+		// Ohne Abfangen liefe die Rückwärtsrechnung auf `isoVor(-1)` — das Raster
+		// richtete sich am Wochentag von *morgen* aus und bestünde aus lauter
+		// Leerzellen. Ein Raster ohne einen einzigen Tag ist keine Ausgabe.
+		expect(buildActivityHeatmap([], HEUTE, 0)).toEqual([]);
+		expect(buildActivityHeatmap([], HEUTE, -3)).toEqual([]);
+	});
+
 	it('rechnet über die Sommerzeitumstellung in Kalendertagen', () => {
 		// 2026-10-25 ist der Rückstellungstag (25 h Ortszeit). Eine Rechnung mit
 		// festen 24-h-Schritten würde hier einen Kalendertag doppelt liefern.

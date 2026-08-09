@@ -24,7 +24,11 @@ import { berlinCalendarDayIso } from '$lib/utils/format/dateTime';
 export const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as const;
 
 /**
- * Fünf Intensitätsstufen: 0 = keine Meldung, 4 = Maximum des Zeitraums.
+ * Fünf Intensitätsstufen, gemessen am Maximum des Zeitraums:
+ * 0 = keine Meldung, 1 = bis 25 %, 2 = ab 25 %, 3 = ab 50 %, 4 = ab 75 %.
+ *
+ * Stufe 4 ist damit die oberste **Stufe**, nicht der Spitzentag allein — bei
+ * einem Maximum von 100 landen auch 80 Meldungen darin.
  *
  * Die Schwellen (0,25 / 0,5 / 0,75) sind die des Vorgängers — geändert hat sich
  * nur, dass sie einmal an einer Stelle stehen.
@@ -90,12 +94,19 @@ function labelFor(iso: string, count: number): string {
  * Zurückgezählt wird in **Kalendertagen** (`setUTCDate`) und nicht in
  * 24-h-Schritten: Über die Zeitumstellung hinweg lieferte die Subtraktion fester
  * Millisekunden einen Kalendertag doppelt und ließ einen anderen aus.
+ *
+ * Ein Zeitraum ohne Tage liefert **kein** Raster. Ohne diesen Wächter liefe die
+ * Rückwärtsrechnung auf `isoVor(-1)`: Die Ausrichtung käme vom Wochentag des
+ * *folgenden* Tages, und heraus fiele eine Woche aus lauter Leerzellen — eine
+ * Ausgabe, die nach Daten aussieht und keine enthält.
  */
 export function buildActivityHeatmap(
 	activity: readonly ActivityRow[],
 	today: Date,
 	tage = 30
 ): HeatmapWeek[] {
+	if (tage <= 0) return [];
+
 	const counts = new Map(activity.map((row) => [row.date, Number(row.count)]));
 	const maxCount = activity.reduce((max, row) => Math.max(max, Number(row.count)), 0);
 
