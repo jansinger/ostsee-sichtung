@@ -295,16 +295,29 @@ export async function POST(event: RequestEvent): Promise<Response> {
 }
 
 /**
- * Handle unsupported HTTP methods
+ * GET /rest_sichtungen — der Index der Legacy-API.
+ *
+ * Wörtlich dieselbe Funktion wie `GET /sichtungen/showreports.json`, nicht
+ * eine zweite Umsetzung daneben. Die Vorgänger-Anwendung machte es genauso:
+ * `RestSichtungenController::index()` und `SichtungenController::showReports()`
+ * bestehen aus denselben zwei Zeilen (`parseList()` und `getReports()`), und
+ * `getReports()` schickt jeden Datensatz durch `ReportUtils::mapReport()` —
+ * das erzeugt die kompakte Form, die `showreports.json` hier bereits
+ * ausliefert. Belege liegen unter `docs/archive/legacy-cakephp/`.
+ *
+ * Dass CakePHP bei `_serialize` als Zeichenkette (`'Sichtungen'`) den Wert
+ * direkt serialisiert und nicht in ein Objekt hüllt, steht im Klassenkommentar
+ * von `Cake/View/JsonView.php`. Die Antwort war also auch dort ein blankes
+ * Array — keine Umhüllung `{"Sichtungen": […]}`.
+ *
+ * Bis 2026-08 antwortete dieser Pfad mit `405`. Die angebundene iOS-App fragt
+ * ihn an; er ist die Datenquelle ihrer Karte, und die blieb dadurch leer.
+ *
+ * **Das Rate-Limit gilt bewusst nur für POST.** Es steht am Anfang des
+ * Schreibpfads und begrenzt Meldungen, nicht Abrufe. Eine Karte, die sich nach
+ * 20 Aufrufen abschaltet, wäre schlimmer als gar keine.
  */
-export async function GET() {
-	const errorResponse = {
-		error: 'Method not allowed',
-		message: 'Only POST method is supported for this endpoint'
-	};
-
-	return json(errorResponse, { status: 405 });
-}
+export { GET } from '../sichtungen/showreports.json/+server';
 
 export async function PUT() {
 	const errorResponse = {

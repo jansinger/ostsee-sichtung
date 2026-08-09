@@ -361,6 +361,23 @@ JSON Object:
 
 ## 4. Retrieving Sighting Data
 
+> **Zwei Pfade, ein Endpunkt.** Dieselben Daten sind zusätzlich unter
+> `GET /rest_sichtungen` erreichbar. Das ist keine Erweiterung, sondern eine
+> Lücke dieser Spezifikation, die erst 2026-08 auffiel: Die Vorgänger-Anwendung
+> bildete `/rest_sichtungen` mit `Router::mapResources()` ab, wodurch `GET` auf
+> `RestSichtungenController::index()` traf — und diese Aktion besteht aus
+> denselben zwei Zeilen wie `SichtungenController::showReports()`
+> (`parseList()` + `getReports()`). Die Antwort ist in beiden Fällen dasselbe
+> blanke Array; `_serialize` als Zeichenkette hüllt in CakePHP nichts um.
+>
+> Die angebundene iOS-App (`OstSeeTiere/8`) benutzt **diesen** Pfad für ihre
+> Karte, nicht `showreports.json`. Bis 2026-08 antwortete er mit `405`, womit
+> die Karte in der App leer blieb. Parameter, Filter, Feldnamen und
+> Datenschutz-Regeln unten gelten für beide Pfade unverändert — es ist wörtlich
+> dieselbe Funktion (`src/routes/rest_sichtungen/+server.ts` re-exportiert sie).
+>
+> Belege: `docs/archive/legacy-cakephp/` (Originalquellen der Vorgänger-App).
+
 Returns all reports of a year that are approved and marked as lying in the Baltic Sea. Only "public" data is returned. Name, first name and ship name fields are only included if the user has released this data.
 
 ### Endpoint

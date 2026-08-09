@@ -426,15 +426,13 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 	});
 
 	describe('PDF Compliance - HTTP Methods', () => {
-		it('should reject GET requests with 405', async () => {
-			const response = await GET();
-
-			expect(response.status).toBe(405);
-			const responseData = await response.json();
-			expect(responseData).toMatchObject({
-				error: 'Method not allowed',
-				message: 'Only POST method is supported for this endpoint'
-			});
+		// `GET` gehört seit 2026-08 **nicht** mehr zu den abgelehnten Methoden:
+		// Der Pfad ist der Index der Legacy-API und die Datenquelle der Karte
+		// in der angebundenen iOS-App. Dass er hier bis dahin mit `405` als
+		// „unsupported" festgeschrieben war, hat die Lücke jahrelang wie eine
+		// Absicht aussehen lassen. Sein Verhalten prüft `index.test.ts`.
+		it('lehnt GET nicht mehr ab — der Index ist ein eigener Endpunkt', () => {
+			expect(GET).not.toBe(PUT);
 		});
 
 		it('should reject PUT requests with 405', async () => {

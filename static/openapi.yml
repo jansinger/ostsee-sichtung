@@ -1987,6 +1987,62 @@ paths:
                 error: "Fehler beim Abrufen der verfügbaren Jahre"
 
   /rest_sichtungen:
+    get:
+      tags:
+        - legacy
+      summary: '[LEGACY] Sichtungsdaten abrufen (Index)'
+      description: |
+        **Derselbe Endpunkt wie `GET /sichtungen/showreports.json`, unter dem
+        zweiten Namen der Vorgänger-API.**
+
+        Die abgelöste CakePHP-Anwendung bildete `/rest_sichtungen` mit
+        `Router::mapResources()` ab; `GET` traf dort auf `index()`, und diese
+        Aktion bestand aus denselben zwei Zeilen wie `showReports()`.
+        Parameter, Antwortformat, Sortierung, Limit und die
+        Datenschutz-Regeln sind identisch — maßgeblich ist die Beschreibung
+        unter `/sichtungen/showreports.json`. Es ist wörtlich dieselbe
+        Funktion, keine zweite Umsetzung.
+
+        Die angebundene iOS-App (`OstSeeTiere/8`) lädt ihre Karte über diesen
+        Pfad. Bis 2026-08 antwortete er mit `405`.
+      parameters:
+        - name: year
+          in: query
+          description: 'Jahr der Sichtungen (Standard: aktuelles Jahr bis März, sonst Vorjahr)'
+          schema:
+            type: integer
+            minimum: 2000
+        - name: location
+          in: query
+          description: 'Position als "Breite,Länge" für die Umkreissuche'
+          schema:
+            type: string
+        - name: distance
+          in: query
+          description: 'Radius in Metern, nur zusammen mit location (Standard: 100000)'
+          schema:
+            type: integer
+        - name: bbox
+          in: query
+          description: 'Bereich als "min_x,min_y,max_x,max_y" (OpenLayers-kompatibel)'
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: >-
+            Freitextsuche. Für anonyme Aufrufer eingeschränkt auf freigegebene
+            Namen und Schiffsnamen — siehe /sichtungen/showreports.json.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Liste der Sichtungen im PDF-konformen Kurzformat
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PDFCompliantSightingResponse'
     post:
       tags:
         - legacy
