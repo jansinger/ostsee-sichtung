@@ -54,14 +54,22 @@ export function readWorkflow(): string {
 }
 
 /**
- * Ein Muster gegen einen Pfad prüfen. `!muster` ist bei picomatch die Negation
- * eines einzelnen Musters — sie wird erst zusammen mit
- * `predicate-quantifier: every` sinnvoll, siehe `evaluateFilters`.
+ * Ein Muster gegen einen Pfad prüfen — das Muster geht unverändert an
+ * picomatch, genau wie in paths-filter.
+ *
+ * Das führende `!` selbst abzuschneiden und das Ergebnis zu invertieren wäre
+ * für `!**\/*.md` dasselbe, aber nicht für alles: `!(foo)` ist bei picomatch
+ * ein Extglob („alles außer foo"), keine Negation. Wer es von Hand zerlegt,
+ * macht daraus stillschweigend `(foo)` mit umgedrehtem Ergebnis — der Wächter
+ * würde bei so einem Filter etwas anderes rechnen als CI. picomatch invertiert
+ * negierte Muster ohnehin selbst; das ist die Unterscheidung, die es kennt und
+ * wir nicht nachbauen sollten.
+ *
+ * Negationen werden erst zusammen mit `predicate-quantifier: every` sinnvoll,
+ * siehe `evaluateFilters`.
  */
 export function matchPattern(pattern: string, file: string): boolean {
-	const negated = pattern.startsWith('!');
-	const matches = picomatch(negated ? pattern.slice(1) : pattern, { dot: true })(file);
-	return negated ? !matches : matches;
+	return picomatch(pattern, { dot: true })(file);
 }
 
 function parseFilterBlock(lines: string[], stepId: string): Record<string, string[]> {

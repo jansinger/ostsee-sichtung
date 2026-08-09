@@ -28,6 +28,24 @@ describe('CI-Job-Gating', () => {
 			expect(matchPattern(pattern, file)).toBe(expected);
 		});
 
+		it('hält Extglob und Negation auseinander', () => {
+			// `!(src)/a.ts` ist ein Extglob und heißt „a.ts in einem
+			// Verzeichnis, das nicht src ist" — NICHT „alles außer
+			// src/a.ts". Wer das `!` von Hand abschneidet und das Ergebnis
+			// invertiert, bekommt Letzteres und rechnet damit etwas anderes
+			// als CI. Deshalb geht das Muster unzerlegt an picomatch.
+			expect(matchPattern('!(src)/a.ts', 'docs/a.ts')).toBe(true);
+			expect(matchPattern('!(src)/a.ts', 'src/a.ts')).toBe(false);
+			// Der Fall, der die beiden Lesarten trennt: Eine Datei, die die
+			// Form gar nicht hat. Beim Zerlegen von Hand käme hier `true`
+			// heraus, weil „passt nicht" zu „passt" invertiert wird.
+			expect(matchPattern('!(src)/a.ts', 'README.md')).toBe(false);
+
+			// Zum Vergleich die echte Negation, auf die sich der Workflow stützt.
+			expect(matchPattern('!src/**', 'docs/a.md')).toBe(true);
+			expect(matchPattern('!src/**', 'src/a.ts')).toBe(false);
+		});
+
 		it('weicht bei Punkt-Verzeichnissen von node:path.matchesGlob ab', () => {
 			// Festgehalten, damit niemand die Abhängigkeit „vereinfacht":
 			// matchesGlob kennt kein `{dot: true}` und liefert hier das
