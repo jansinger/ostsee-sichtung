@@ -559,10 +559,13 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 			const event = createMockRequestEvent();
 			await GET(event);
 
-			const orderBy = capturedOrderByText();
-
-			expect(orderBy).toContain('sichtungsdatum');
-			expect(orderBy).toMatch(/"id"/);
+			// Die gesamte Sortierung festschreiben, nicht nur „id kommt vor":
+			// Eine vertauschte Reihenfolge (`id` zuerst) oder ein verlorenes
+			// `DESC` wäre eine andere Antwort für denselben Aufruf — und genau
+			// die Reproduzierbarkeit ist der Zweck dieses Tests.
+			expect(capturedOrderByText()).toBe(
+				'"sichtungen"."sichtungsdatum" DESC, "sichtungen"."id" DESC'
+			);
 		});
 
 		it('should apply reasonable result limit', async () => {

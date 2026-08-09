@@ -26,7 +26,7 @@
  * Modul und führt beim Import nichts aus.
  */
 import { execFile } from 'node:child_process';
-import { readdir, readFile, rename } from 'node:fs/promises';
+import { access, readdir, readFile, rename } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -49,6 +49,23 @@ export function fehlerText(fehler) {
 }
 
 /**
+ * Meldung für den einen Konflikt, den beide Speicher gleich behandeln müssen:
+ * In importiert/ liegt bereits eine Datei dieses Namens.
+ *
+ * Das ist immer ein Hinweis auf einen unterbrochenen früheren Lauf und darf
+ * niemals still hingenommen werden — weder durch Überschreiben (die ältere
+ * Fassung wäre weg) noch durch Nichtstun (die Datei bliebe in posteingang/
+ * liegen und der nächste Lauf legte dieselbe Sichtung ein zweites Mal an).
+ * Deshalb wirft es, und `sende()` bricht den Lauf mit Grund `verschieben` ab.
+ */
+function konflikt(datei) {
+	return new Error(
+		`In importiert/ liegt bereits ${datei} — der Lauf würde die ältere Fassung ` +
+			'überschreiben oder die Datei liegen lassen. Von Hand klären.'
+	);
+}
+
+/**
  * Posteingang im lokalen Dateisystem.
  */
 export function erstelleDateiSpeicher(datenVerzeichnis) {
@@ -59,8 +76,27 @@ export function erstelleDateiSpeicher(datenVerzeichnis) {
 		beschreibung: datenVerzeichnis,
 		liste: async () => (await readdir(eingang)).filter((d) => d.endsWith('.json')).sort(),
 		lies: (datei) => readFile(path.join(eingang, datei), 'utf8'),
-		verschiebe: (datei) => rename(path.join(eingang, datei), path.join(erledigt, datei))
+		verschiebe: async (datei) => {
+			const ziel = path.join(erledigt, datei);
+
+			// `rename()` überschreibt still — deshalb die Prüfung davor. Das ist
+			// kein Schutz gegen einen gleichzeitigen zweiten Lauf (dafür wäre es
+			// ein Wettlauf), sondern gegen den Fall, den es hier wirklich gibt:
+			// Reste eines abgebrochenen Laufs.
+			if (await existiert(ziel)) throw konflikt(datei);
+
+			await rename(path.join(eingang, datei), ziel);
+		}
 	};
+}
+
+async function existiert(pfad) {
+	try {
+		await access(pfad);
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 const ERLAUBTER_DATEINAME = /^[A-Za-z0-9._-]+\.json$/;
@@ -83,8 +119,20 @@ const ERLAUBTER_DATEINAME = /^[A-Za-z0-9._-]+\.json$/;
  * aber diese Zusicherung liegt in einem anderen Projekt und kann sich ändern;
  * die Prüfung hier kostet nichts und hängt von nichts ab.
  */
-export function erstelleSshSpeicher({ host, datenVerzeichnis, sudo = true, ausfuehren }) {
-	const lauf = ausfuehren ?? ((argumente) => execFileAsync('ssh', [host, ...argumente]));
+export function erstelleSshSpeicher({
+	host,
+	datenVerzeichnis,
+	sudo = true,
+	ausfuehren,
+	log = console
+}) {
+	// `BatchMode=yes`: Ohne das bleibt ssh bei unbekanntem Hostkey oder
+	// passphrasegeschütztem Schlüssel an einer Eingabeaufforderung hängen. In
+	// einem Cron-Lauf wäre das kein Fehler, sondern ein Prozess, der ewig
+	// wartet und nie meldet, warum.
+	const lauf =
+		ausfuehren ??
+		((argumente) => execFileAsync('ssh', ['-o', 'BatchMode=yes', host, ...argumente]));
 	const praefix = sudo ? ['sudo', '-n'] : [];
 	const eingang = `${datenVerzeichnis}/posteingang`;
 	const erledigt = `${datenVerzeichnis}/importiert`;
@@ -100,11 +148,20 @@ export function erstelleSshSpeicher({ host, datenVerzeichnis, sudo = true, ausfu
 		beschreibung: `${host}:${datenVerzeichnis}`,
 		liste: async () => {
 			const { stdout } = await lauf([...praefix, 'ls', '-1', eingang]);
-			return stdout
+			const zeilen = stdout
 				.split('\n')
 				.map((zeile) => zeile.trim())
-				.filter((zeile) => ERLAUBTER_DATEINAME.test(zeile))
-				.sort();
+				.filter((zeile) => zeile !== '');
+
+			// Aussortierte Namen laut melden statt still verschlucken: Eine
+			// solche Datei taucht sonst weder in `gesamt` noch in `abgelehnt`
+			// auf, und niemand erfährt, dass im Posteingang etwas liegt, das
+			// nie jemand ansieht.
+			for (const zeile of zeilen.filter((z) => !ERLAUBTER_DATEINAME.test(z))) {
+				log.error(`${zeile}: unerwarteter Dateiname — wird übersprungen und bleibt liegen`);
+			}
+
+			return zeilen.filter((zeile) => ERLAUBTER_DATEINAME.test(zeile)).sort();
 		},
 		lies: async (datei) => {
 			const { stdout } = await lauf([...praefix, 'cat', `${eingang}/${sichererName(datei)}`]);
@@ -112,11 +169,30 @@ export function erstelleSshSpeicher({ host, datenVerzeichnis, sudo = true, ausfu
 		},
 		verschiebe: async (datei) => {
 			sichererName(datei);
-			// `mv -n` überschreibt nichts. Läge in importiert/ schon eine Datei
-			// dieses Namens, wäre das ein Hinweis auf einen doppelten Lauf —
-			// dann soll der Vorgang auffallen und nicht die ältere Fassung
-			// stillschweigend ersetzen.
-			await lauf([...praefix, 'mv', '-n', `${eingang}/${datei}`, `${erledigt}/${datei}`]);
+
+			// Zwei Aufrufe statt `mv -n`, und das ist der Kern der Sache:
+			// `mv -n` verweigert das Überschreiben zwar, endet dabei aber mit
+			// Exit 0 und lässt die Quelle liegen (auf macOS wie unter GNU
+			// nachgemessen). Für den Aufrufer sähe das aus wie ein geglücktes
+			// Verschieben — die Datei bliebe in posteingang/, und der nächste
+			// Lauf schickte dieselbe Sichtung ein zweites Mal an die Produktion.
+			// Ein Duplikat, erzeugt ausgerechnet von der Vorsichtsmaßnahme.
+			//
+			// `test -e` endet bei einem Treffer mit Exit 0 und nur bei fehlender
+			// Datei mit Exit 1. Der Konflikt steht deshalb im `try`-Zweig und
+			// das Weitermachen im `catch` — herum, wie man es zuerst erwartet.
+			// Kein `sh -c '… && …'`: `ssh` fügt seine Argumente auf der
+			// Gegenseite wieder zu einer Kommandozeile zusammen, die dort eine
+			// Shell parst — das `&&` würde dann vor `sh` ausgewertet.
+			let belegt = true;
+			try {
+				await lauf([...praefix, 'test', '-e', `${erledigt}/${datei}`]);
+			} catch {
+				belegt = false;
+			}
+			if (belegt) throw konflikt(datei);
+
+			await lauf([...praefix, 'mv', `${eingang}/${datei}`, `${erledigt}/${datei}`]);
 		}
 	};
 }

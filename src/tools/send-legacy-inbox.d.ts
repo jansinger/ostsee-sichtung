@@ -67,6 +67,8 @@ export function erstelleSshSpeicher(optionen: {
 	sudo?: boolean;
 	/** Nur zum Testen: ersetzt den `ssh`-Aufruf. */
 	ausfuehren?(argumente: string[]): Promise<{ stdout: string }>;
+	/** Nur zum Testen. Default: `console`. */
+	log?: { log(nachricht: string): void; error(nachricht: string): void };
 }): Speicher;
 
 export function fehlerText(fehler: unknown): string;

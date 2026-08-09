@@ -2166,6 +2166,16 @@ paths:
         - ar: Gebiet/Gewässer
         - ta: Tierart als deutsches Label (Erweiterung über Original-PDF hinaus)
         - tf: Totfund-Flag 0/1 (Erweiterung über Original-PDF hinaus)
+
+        **Sortierung und Umfang**
+
+        Sortiert nach `sichtungsdatum` absteigend, bei gleichem Zeitpunkt nach `id`
+        absteigend. Das zweite Kriterium ist notwendig, weil `sichtungsdatum` nicht
+        eindeutig ist; ohne es liefert dieselbe Anfrage unterschiedliche Antworten.
+
+        Die Antwort ist auf **1000 Sichtungen** begrenzt. Diese Grenze greift im
+        Normalbetrieb auch ohne Filter — Clients, die einen vollständigen Bestand
+        erwarten, müssen über `year` einschränken.
       parameters:
         - name: year
           in: query

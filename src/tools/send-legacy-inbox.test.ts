@@ -9,7 +9,10 @@
  * importiert/ wandern.
  */
 import { describe, expect, it, vi } from 'vitest';
-import { erstelleSshSpeicher, sende } from './send-legacy-inbox.js';
+import { mkdtemp, mkdir, writeFile, readdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { erstelleDateiSpeicher, erstelleSshSpeicher, sende } from './send-legacy-inbox.js';
 
 /** Speicher-Attrappe: hält den Posteingang im Arbeitsspeicher. */
 function speicherMit(dateien: Record<string, unknown>) {
@@ -210,19 +213,63 @@ describe('erstelleSshSpeicher', () => {
 		expect(aufrufe[0]).toEqual(['sudo', '-n', 'ls', '-1', '/daten/posteingang']);
 	});
 
-	it('verschiebt mit mv -n, damit nichts überschrieben wird', async () => {
-		const { speicher, aufrufe } = speicherMitAufrufen();
+	it('bricht ab, wenn in importiert/ schon eine Datei dieses Namens liegt', async () => {
+		// `mv -n` wäre hier die naheliegende Wahl und die falsche: Es verweigert
+		// das Überschreiben, endet dabei aber mit Exit 0 und lässt die Quelle
+		// liegen. Der Aufrufer hielte das für ein geglücktes Verschieben, die
+		// Datei bliebe in posteingang/, und der nächste Lauf schickte dieselbe
+		// Sichtung ein zweites Mal an die Produktion.
+		const aufrufe: string[][] = [];
+		const speicher = erstelleSshSpeicher({
+			host: 'hawking',
+			datenVerzeichnis: '/daten',
+			ausfuehren: async (argumente: string[]) => {
+				aufrufe.push(argumente);
+				// `test -e` findet die Datei → Exit 0 → kein Wurf.
+				return { stdout: '' };
+			}
+		});
+
+		await expect(speicher.verschiebe('a.json')).rejects.toThrow('liegt bereits a.json');
+		expect(aufrufe).toEqual([['sudo', '-n', 'test', '-e', '/daten/importiert/a.json']]);
+	});
+
+	it('verschiebt, wenn das Ziel frei ist', async () => {
+		const aufrufe: string[][] = [];
+		const speicher = erstelleSshSpeicher({
+			host: 'hawking',
+			datenVerzeichnis: '/daten',
+			ausfuehren: async (argumente: string[]) => {
+				aufrufe.push(argumente);
+				// `test -e` findet nichts → Exit 1 → execFile wirft.
+				if (argumente.includes('test')) throw new Error('exit 1');
+				return { stdout: '' };
+			}
+		});
 
 		await speicher.verschiebe('a.json');
 
-		expect(aufrufe[0]).toEqual([
+		expect(aufrufe[1]).toEqual([
 			'sudo',
 			'-n',
 			'mv',
-			'-n',
 			'/daten/posteingang/a.json',
 			'/daten/importiert/a.json'
 		]);
+	});
+
+	it('meldet aussortierte Dateinamen, statt sie still zu verschlucken', async () => {
+		const gemeldet: string[] = [];
+		const speicher = erstelleSshSpeicher({
+			host: 'hawking',
+			datenVerzeichnis: '/daten',
+			ausfuehren: async () => ({ stdout: 'a.json\nkaputt name.json\n' }),
+			log: { log: () => {}, error: (n: string) => gemeldet.push(n) }
+		});
+
+		expect(await speicher.liste()).toEqual(['a.json']);
+		expect(gemeldet).toHaveLength(1);
+		expect(gemeldet[0]).toContain('kaputt name.json');
 	});
 
 	it('weist einen Dateinamen zurück, der auf der Gegenseite als Kommando wirken könnte', async () => {
@@ -234,5 +281,37 @@ describe('erstelleSshSpeicher', () => {
 		await expect(speicher.lies('a.json; rm -rf /')).rejects.toThrow('nicht verwendbar');
 		await expect(speicher.verschiebe('$(id).json')).rejects.toThrow('nicht verwendbar');
 		expect(aufrufe).toEqual([]);
+	});
+});
+
+describe('erstelleDateiSpeicher', () => {
+	async function verzeichnisMit(posteingang: string[], importiert: string[]) {
+		const wurzel = await mkdtemp(join(tmpdir(), 'inbox-'));
+		await mkdir(join(wurzel, 'posteingang'));
+		await mkdir(join(wurzel, 'importiert'));
+		for (const name of posteingang) await writeFile(join(wurzel, 'posteingang', name), 'neu');
+		for (const name of importiert) await writeFile(join(wurzel, 'importiert', name), 'alt');
+		return wurzel;
+	}
+
+	it('bricht ab, statt eine Datei in importiert/ zu überschreiben', async () => {
+		// `rename()` überschreibt still — der ältere Umschlag wäre weg, und
+		// weil er der Herkunftsnachweis der Sichtung ist, unwiederbringlich.
+		const wurzel = await verzeichnisMit(['a.json'], ['a.json']);
+		const speicher = erstelleDateiSpeicher(wurzel);
+
+		await expect(speicher.verschiebe('a.json')).rejects.toThrow('liegt bereits a.json');
+
+		expect(await readdir(join(wurzel, 'posteingang'))).toEqual(['a.json']);
+	});
+
+	it('verschiebt, wenn das Ziel frei ist', async () => {
+		const wurzel = await verzeichnisMit(['a.json'], []);
+		const speicher = erstelleDateiSpeicher(wurzel);
+
+		await speicher.verschiebe('a.json');
+
+		expect(await readdir(join(wurzel, 'posteingang'))).toEqual([]);
+		expect(await readdir(join(wurzel, 'importiert'))).toEqual(['a.json']);
 	});
 });

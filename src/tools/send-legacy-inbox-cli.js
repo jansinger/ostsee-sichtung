@@ -23,6 +23,9 @@ const STANDARD_SSH = 'hawking:/var/www/vhosts/schweinswalsichtung.de/legacy-inbo
 
 const argumente = process.argv.slice(2);
 const zielUrl = argumente.find((a) => !a.startsWith('--'));
+// `.find()` liefert das ganze Argument, `undefined` bedeutet also „nicht
+// angegeben" — ein leerer Wert (`--dir=`) ist dagegen eine Angabe und wird
+// unten abgelehnt, statt still auf den SSH-Standard zurückzufallen.
 const dirArg = argumente.find((a) => a.startsWith('--dir='))?.slice('--dir='.length);
 const sshArg = argumente.find((a) => a.startsWith('--ssh='))?.slice('--ssh='.length);
 
@@ -36,7 +39,11 @@ if (!zielUrl) {
 
 let speicher;
 
-if (dirArg) {
+if (dirArg !== undefined) {
+	if (dirArg === '') {
+		console.error('--dir= erwartet einen Pfad.');
+		process.exit(1);
+	}
 	speicher = erstelleDateiSpeicher(dirArg);
 } else {
 	const roh = sshArg ?? STANDARD_SSH;
@@ -58,6 +65,17 @@ console.log(
 		'Bei einem größeren Rückstand vorher notification.email.enabled abschalten — und danach\n' +
 		'wieder einschalten.\n'
 );
+
+// Die Ziel-URL vor dem `try` prüfen. `sende()` baut daraus als Erstes eine
+// `URL` und wirft bei einer unbrauchbaren Eingabe, noch bevor der Posteingang
+// überhaupt angefasst wird — der `catch` unten würde einen Tippfehler in der
+// URL dann als „Posteingang nicht lesbar" melden und in die Irre führen.
+try {
+	new URL('/rest_sichtungen', zielUrl);
+} catch {
+	console.error(`Keine brauchbare Ziel-URL: ${zielUrl}`);
+	process.exit(1);
+}
 
 let ergebnis;
 
