@@ -129,6 +129,11 @@
 	   `columnPreferences.ts`. */
 	let columnVisibility = $state({ ...DEFAULT_COLUMN_VISIBILITY });
 	let hatGespeicherteSpaltenGeladen = false;
+	/* Serialisierter Stand, den der Lade-Effekt zuletzt gesehen hat (geladener
+	   Wert oder unveränderter Default). Der Speicher-Effekt vergleicht dagegen
+	   und überspringt den Schreibvorgang, solange sich nichts geändert hat —
+	   siehe Begründung dort. */
+	let letzterPersistierterStand: string | null = null;
 	let istSpaltenauswahlDefault = $derived(
 		isDefaultVisibility(columnVisibility, DEFAULT_COLUMN_VISIBILITY)
 	);
@@ -157,6 +162,12 @@
 		} catch (err) {
 			logger.warn({ err }, 'Gespeicherte Spaltenauswahl kann nicht gelesen werden');
 		} finally {
+			// Merkt sich den geladenen (oder mangels Storage unveränderten
+			// Default-)Stand, damit der Speicher-Effekt seinen ersten Durchlauf
+			// nicht sofort wieder zurückschreibt (Fix-Runde 2: genau das
+			// passierte vorher bei jedem Seitenaufruf, siehe dortiger
+			// Kommentar).
+			letzterPersistierterStand = serializeColumnPreferences(columnVisibility);
 			hatGespeicherteSpaltenGeladen = true;
 		}
 	});
@@ -175,15 +186,27 @@
 		   bliebe für immer stumm, egal in welcher Reihenfolge die Effekte
 		   künftig stehen. Genau das war der Bug, der die Aufspaltung oben nötig
 		   gemacht hat; ihn hier wieder einzuführen wäre derselbe Fehler eine
-		   Ebene tiefer. */
+		   Ebene tiefer.
+
+		   Zweiter Guard unten (`serialisiert === letzterPersistierterStand`):
+		   Weil `hatGespeicherteSpaltenGeladen` beim Laden bereits synchron auf
+		   `true` steht, passiert dieser Effekt den ersten Guard schon bei
+		   seinem allerersten Durchlauf — ohne den Vergleich schriebe er den
+		   gerade erst geladenen (oder unveränderten Default-)Stand sofort
+		   zurück nach `localStorage`, bei jedem Seitenaufruf, nicht nur bei
+		   einer tatsächlichen Änderung. Da `mergeColumnPreferences` jeden
+		   gespeicherten Schlüssel für immer beibehält, hätte das eine spätere
+		   Änderung von `DEFAULT_COLUMN_VISIBILITY` nie wieder erreicht. */
 		const serialisiert = serializeColumnPreferences(columnVisibility);
 		if (typeof window === 'undefined' || !hatGespeicherteSpaltenGeladen) return;
+		if (serialisiert === letzterPersistierterStand) return;
 		// Jede Änderung (Checkbox im „Spalten"-Dropdown, „Standard
 		// wiederherstellen") wird persistiert. `try/catch`, weil `setItem`
 		// werfen kann (volle Quota, Safari im privaten Modus) — die
 		// Spaltenauswahl ist eine Bequemlichkeit, kein Grund zum Absturz.
 		try {
 			window.localStorage.setItem(COLUMN_PREFERENCES_STORAGE_KEY, serialisiert);
+			letzterPersistierterStand = serialisiert;
 		} catch (err) {
 			logger.warn(
 				{ err },

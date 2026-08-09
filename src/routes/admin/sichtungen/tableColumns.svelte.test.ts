@@ -63,6 +63,11 @@ describe('Sichtungstabelle — Spalten', () => {
 	beforeEach(() => {
 		document.documentElement.style.setProperty('--color-base-100', BASE_100);
 		document.documentElement.style.setProperty('--color-base-200', BASE_200);
+		// Ohne das hier: Der Round-Trip-Test unten schreibt eine geänderte
+		// Spaltenauswahl in denselben `localStorage` (jsdom teilt ihn über alle
+		// Tests der Datei), und ein davor oder danach laufender Test bekäme sie
+		// ungefragt untergeschoben.
+		window.localStorage.clear();
 	});
 
 	afterEach(async () => {
@@ -227,14 +232,23 @@ describe('Sichtungstabelle — Spalten', () => {
 		}
 	});
 
-	/* WP7-Bugfix-Regression: Der bestehende Persistenz-`$effect` schrieb vor
-	   der Aufspaltung nie in `localStorage` — er verließ sich beim allerersten
-	   Durchlauf per `return` aus dem Lade-Zweig, OHNE `columnVisibility` zu
-	   *lesen*, und trackte dadurch nie eine Abhängigkeit darauf (Svelte
-	   ermittelt Effekt-Abhängigkeiten aus den im letzten Durchlauf gelesenen
-	   reaktiven Werten). Der mittlere Schritt unten — `localStorage` nach
-	   einer Checkbox-Änderung — ist der, der genau diesen Bug reproduziert;
-	   gegen die unaufgespaltene Fassung schlägt er fehl (siehe Fix-Report). */
+	/* WP7-Bugfix-Regression: Begründung der Effekt-Aufspaltung steht in
+	   `+page.svelte` beim Speicher-Effekt. Der mittlere Schritt unten —
+	   `localStorage` nach einer Checkbox-Änderung — reproduziert genau den
+	   Bug, den die Aufspaltung behoben hat; gegen die unaufgespaltene Fassung
+	   schlägt er fehl (siehe Fix-Report). */
+	it('lässt localStorage unangetastet, solange niemand die Spaltenauswahl ändert', () => {
+		// Fix-Runde-2-Regression: Die Effekt-Aufspaltung setzte
+		// `hatGespeicherteSpaltenGeladen` synchron im Lade-Effekt, bevor der
+		// Speicher-Effekt zum ersten Mal lief — dessen erster Durchlauf schrieb
+		// dadurch den (unveränderten) Default sofort zurück. Jeder Seitenaufruf
+		// seedete damit `localStorage`, nicht nur der einer Person, die die
+		// Spaltenauswahl tatsächlich ändert.
+		render(SichtungenSeite, { data: daten([sichtung({})]) });
+
+		expect(window.localStorage.getItem(COLUMN_PREFERENCES_STORAGE_KEY)).toBeNull();
+	});
+
 	it('speichert die Spaltenauswahl bei jeder Änderung und setzt sie per Reset-Button zurück', async () => {
 		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
 
