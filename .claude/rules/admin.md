@@ -101,9 +101,15 @@ Drei Dinge dabei nicht zurückdrehen:
 
 **Der Undo-Href gehört ausschließlich dem Arbeitsmodus.** `planAdvance()`
 (`queueAdvance.ts`) liefert `undoHref` nur, wenn tatsächlich ein Advance
-stattgefunden hat (`queue !== null || queueFailed`). Aus der Tabelle heraus
-(`queue === null && !queueFailed`) bleibt er `null`, und der „Rückgängig"-Knopf
-setzt dann nur den Status zurück, ohne zu navigieren. Der Grund: `queueHref()`
+stattgefunden hat — die Bedingung dafür ist `target.kind !== 'stay'` und nicht
+etwa die Mitgliedschaft im Warteschlangen-Modus. `stay` deckt drei Fälle ab:
+aus der Tabelle geöffnet (`queue === null && !queueFailed`), fehlgeschlagene
+Queue-Abfrage (`queueFailed`) und `verdict === 'reset'`. In allen dreien bleibt
+der Href `null`, und der „Rückgängig"-Knopf setzt dann nur den Status zurück,
+ohne zu navigieren. Bei den letzten beiden wäre er zwar korrekt, aber nutzlos:
+Man steht bereits auf der entschiedenen Sichtung, ein `goto` darauf lädt nur neu
+und wirft die Scroll-Position weg. Beim ersten dagegen wäre er schädlich, und
+das ist der eigentliche Grund für die Regel: `queueHref()`
 stempelt über `inboxDetailHref` bedingungslos `?from=inbox` auf die Ziel-URL —
 ein unbedingt vergebener Undo-Href hätte damit auf eine aus der Tabelle
 geöffnete Sichtung die Herkunft des Eingangs geschrieben, und ein Klick darauf

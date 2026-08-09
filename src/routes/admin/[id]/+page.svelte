@@ -291,10 +291,10 @@
 				}
 				return;
 			case 'focusNext':
-				if (queue?.next) void goto(queueHref(queue.next, queueOrder));
+				if (queue?.next) void goto(queueHref(queue.next.id, queueOrder));
 				return;
 			case 'focusPrevious':
-				if (queue?.prev) void goto(queueHref(queue.prev, queueOrder));
+				if (queue?.prev) void goto(queueHref(queue.prev.id, queueOrder));
 				return;
 			case 'approve':
 				void handleStatusChange('approve');
@@ -330,7 +330,7 @@
 	   auch wenn der Nachbar derselbe bleibt. Ein Effect an `queue.next` liefe
 	   dann bei jeder Neu-Identität erneut und lüde denselben Nachbarn nochmal —
 	   `nextHref` ist dagegen wertgleich vergleichbar. */
-	let nextHref = $derived(queue?.next ? queueHref(queue.next, queueOrder) : null);
+	let nextHref = $derived(queue?.next ? queueHref(queue.next.id, queueOrder) : null);
 
 	$effect(() => {
 		if (nextHref) void preloadData(nextHref).catch(() => {});

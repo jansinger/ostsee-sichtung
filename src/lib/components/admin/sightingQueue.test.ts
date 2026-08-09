@@ -20,7 +20,7 @@ const QUEUE: SightingQueue = {
 
 describe('queueHref', () => {
 	it('trägt Herkunft und Sortierung mit', () => {
-		const href = queueHref(NACHBAR, 'asc');
+		const href = queueHref(NACHBAR.id, 'asc');
 
 		expect(href).toBe('/admin/501?from=inbox&order=asc');
 	});
@@ -30,14 +30,14 @@ describe('advanceTarget', () => {
 	it('springt zur nächsten offenen Sichtung', () => {
 		expect(advanceTarget(QUEUE, false, 'desc')).toEqual({
 			kind: 'sighting',
-			href: queueHref(NACHBAR, 'desc')
+			href: queueHref(NACHBAR.id, 'desc')
 		});
 	});
 
 	it('reicht die Sortierung `asc` an den Ziel-Href durch', () => {
 		expect(advanceTarget(QUEUE, false, 'asc')).toEqual({
 			kind: 'sighting',
-			href: queueHref(NACHBAR, 'asc')
+			href: queueHref(NACHBAR.id, 'asc')
 		});
 	});
 

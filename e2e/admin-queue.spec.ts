@@ -37,8 +37,12 @@ function seedQueueSighting(referenceId: string): Promise<number> {
 }
 
 test.describe('Admin-Warteschlange', () => {
-	// Älteste zuerst angelegt, damit bei `order=desc` (Default) C vor B vor A
-	// erscheint — `created` ist der einzige Sortierschlüssel (openQueueOrder.ts).
+	/* Älteste zuerst angelegt, damit bei `order=desc` (Default) C vor B vor A
+	   erscheint. Die Ordnung ist `(created, id)` — `created` allein genügt nicht
+	   und ist hier besonders heikel: Die drei Zeilen entstehen im selben
+	   `beforeEach` und können denselben Zeitstempel tragen. Dass die Reihenfolge
+	   trotzdem feststeht, leistet der Tiebreaker auf `id` (Begründung in
+	   `openQueueOrder.ts`, mechanisch bewacht von `openQueueOrderScan.test.ts`). */
 	let idA: number;
 	let idB: number;
 	let idC: number;
