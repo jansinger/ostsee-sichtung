@@ -22,6 +22,7 @@ jobs:
       needs-e2e: ${{ steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.dependencies == 'true' || steps.filter.outputs.e2e == 'true' || github.event_name == 'push' }}
       has-code-changes: ${{ steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true' }}
       needs-migration-check: ${{ steps.filter.outputs.db-schema == 'true' || steps.filter.outputs.db-migrations == 'true' }}
+      needs-validate: ${{ steps.code-filter.outputs.non-docs == 'true' || github.event_name == 'push' }}
 
     permissions:
       contents: read
@@ -76,10 +77,6 @@ jobs:
               - 'vite.config.ci.ts'
               - 'scripts/seed-e2e.ts'
               - '.github/workflows/ci.yml'
-            docs:
-              - '*.md'
-              - 'docs/**'
-              - '.github/**/*.md'
             dependencies:
               - 'package-lock.json'
               - 'package.json'
@@ -89,12 +86,83 @@ jobs:
             db-migrations:
               - 'drizzle/**'
 
-  # Lint, type-check, unit tests, build — runs in parallel with E2E
+      # Läuft `Validate` überhaupt? Die Frage ist nicht „welcher Code hat sich
+      # geändert", sondern „hat sich irgendetwas geändert, das KEIN Dokument
+      # ist". Deshalb Negationen mit `predicate-quantifier: every`: Der Filter
+      # ist wahr, sobald **eine** geänderte Datei ALLE Muster erfüllt, also
+      # weder Markdown noch Doku noch Claude-Konfiguration ist.
+      #
+      # Eine Positivliste („src/**, scripts/**, .husky/**, Dockerfile, …") wäre
+      # die falsche Richtung: Sie müsste bei jeder neuen Datei am Repo-Rand
+      # nachgezogen werden, und wer das vergisst, überspringt still die
+      # Prüfung. Hier ist das Vergessen harmlos — Unbekanntes zählt als Code
+      # und lässt `Validate` laufen. Der Filter kann nur zu viel prüfen, nie
+      # zu wenig.
+      #
+      # `.claude/**` steht mit drin, weil dort Regeln und Agenten-Konfiguration
+      # liegen; ESLint übergeht Punkt-Verzeichnisse ohnehin, tsc und Vite sehen
+      # sie nicht. Bei `docs/**` gilt dasselbe für das Archiv (PDF, altes
+      # CakePHP) — nichts davon wird gebaut, gelintet oder getestet.
+      - name: Detect non-documentation changes
+        id: code-filter
+        uses: dorny/paths-filter@v4
+        with:
+          predicate-quantifier: every
+          filters: |
+            non-docs:
+              - '!**/*.md'
+              - '!docs/**'
+              - '!.claude/**'
+
+  # Die Commit-Konvention gilt für JEDEN Commit, auch für reine Doku-PRs —
+  # deshalb steht commitlint in einem eigenen Job und nicht mehr in `Validate`,
+  # das seit demselben Umbau bei Doku-Änderungen übersprungen wird. Der Job
+  # installiert mit `--ignore-scripts`: gebraucht wird nur die commitlint-CLI,
+  # `prepare` (husky) hat in CI nichts zu tun.
+  commit-lint:
+    name: Commit Lint
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.draft == false &&
+      !startsWith(github.head_ref, 'release-please') &&
+      github.actor != 'dependabot[bot]'
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Validate commit messages
+        run: npx commitlint --from=origin/main --to=HEAD --verbose
+
+  # Lint, type-check, unit tests, build — runs in parallel with E2E.
+  # Übersprungen, wenn ein PR ausschließlich Dokumentation ändert: Weder
+  # ESLint noch tsc, svelte-check, Vitest oder der Build fassen dann eine
+  # geänderte Datei an, das Ergebnis wäre per Konstruktion das des letzten
+  # Laufs auf `main`. Gemessen an einem Doku-PR sind das rund zwei Minuten
+  # Runner-Zeit ohne Aussage. Das `main`-Ruleset verlangt keine Status-Checks,
+  # ein übersprungener Job blockiert also nichts.
   validate:
     name: Validate
     runs-on: ubuntu-latest
     needs: changes
-    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    if: |
+      (github.event_name == 'push' || github.event.pull_request.draft == false) &&
+      needs.changes.outputs.needs-validate == 'true'
 
     permissions:
       contents: read
@@ -121,16 +189,6 @@ jobs:
 
       - name: Ensure Svelte Kit is in sync
         run: npx svelte-kit sync
-
-      # Commit message validation (skip for release-please and dependabot)
-      - name: Validate commit messages
-        if: |
-          github.event_name == 'pull_request' &&
-          !startsWith(github.head_ref, 'release-please') &&
-          github.actor != 'dependabot[bot]'
-        run: |
-          echo "Validating commit messages..."
-          npx commitlint --from=origin/main --to=HEAD --verbose
 
       - name: Run linting
         run: npm run lint
