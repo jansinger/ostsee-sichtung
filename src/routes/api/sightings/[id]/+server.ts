@@ -14,6 +14,7 @@ import {
 	updateSighting
 } from '$lib/server/db/sightingRepository';
 import type { ExifData } from '$lib/types';
+import { resolveMediaUploadFlag } from '$lib/utils/media/mediaUploadFlag';
 import { createId } from '@paralleldrive/cuid2';
 import { error, isHttpError, json } from '@sveltejs/kit';
 import { ValidationError } from 'yup';
@@ -112,8 +113,21 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 			.where(eq(sightings.id, Number(id)))
 			.limit(1);
 
+		// `mediaUpload` wird abgeleitet, nicht durchgereicht: Das Bearbeitungs-
+		// formular kennt kein Ankreuzfeld dafür, und ein hier hochgeladenes Foto
+		// muss auch in der Spalte „Aufnahme" ankommen. Die Regel ist asymmetrisch
+		// — Begründung in `$lib/utils/media/mediaUploadFlag.ts`.
+		//
+		// `uploadedFiles` ist der vollständige Bestand nach dieser Bearbeitung und
+		// nicht nur der Zuwachs: `saveSightingFiles` ersetzt die Verknüpfungen
+		// unten komplett. Fehlt der Schlüssel im Body, bleibt es beim gemeldeten
+		// Wert — dann wurden auch unten keine Dateien angefasst.
 		const updatedSighting = await updateSighting(Number(id), {
 			...formData,
+			mediaUpload: resolveMediaUploadFlag({
+				current: formData.mediaUpload,
+				attachedFileCount: uploadedFiles?.length ?? 0
+			}),
 			uploadedFiles: uploadedFiles || []
 		});
 
