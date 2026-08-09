@@ -142,25 +142,52 @@ export function isExemptFile(path: string): boolean {
 }
 
 /**
+ * Blendet Svelte-Markup-Kommentare (`<!-- … -->`) aus, **längentreu**.
+ *
+ * Der Inhalt wird durch Leerzeichen ersetzt, die `\n` bleiben stehen: Jeder
+ * Index im Ergebnis zeigt auf dasselbe Zeichen wie im Original, und damit
+ * bleiben auch die Zeilennummern der Fundstellen unverändert. Herausschneiden
+ * würde beides verschieben.
+ *
+ * Dass CSS selbst `<!--` enthält, ist nicht vorgesehen und kommt im Bestand
+ * nicht vor — die Maskierung läuft ohnehin nur über die Trefferfindung, der
+ * Blockinhalt wird unten aus dem **Original** geschnitten.
+ */
+function maskMarkupComments(source: string): string {
+	return source.replace(/<!--[\s\S]*?-->/g, (comment) => comment.replace(/[^\n]/g, ' '));
+}
+
+/**
  * Schneidet die `<style>`-Blöcke aus einer Svelte-Datei.
  *
  * Gibt Paare aus Zeilenversatz und Inhalt zurück, damit die Fundstelle später
  * eine Zeilennummer **in der Datei** tragen kann und nicht im Ausschnitt — eine
  * Meldung, die auf „Zeile 62 des dritten Style-Blocks" zeigt, kostet den Leser
  * genau die Suche, die der Test ihm abnehmen soll.
+ *
+ * **Gesucht wird im maskierten Quelltext, geschnitten wird aus dem Original.**
+ * Ein Muster allein unterscheidet ein `<style>`-Element nicht von der
+ * Zeichenfolge `<style>` in einem Markup-Kommentar — und die steht hier in
+ * Prosa, weil die Begründungen im Bestand erklären, welcher Wert früher „im
+ * scoped <style>" stand. Beginnt der Treffer dort, umfasst der Ausschnitt
+ * Kommentar-Rest, Markup und erst dann den echten Block: Ein Farbwert aus der
+ * Begründung wird als CSS gemeldet (so am 2026-08-09 geschehen), und die
+ * Aufteilung in Blöcke stimmt nicht mehr mit der Datei überein.
  */
 export function extractStyleBlocks(source: string): { offset: number; content: string }[] {
 	const blocks: { offset: number; content: string }[] = [];
-	const pattern = /<style[^>]*>([\s\S]*?)<\/style>/g;
+	const pattern = /<style[^>]*>[\s\S]*?<\/style>/g;
+	const masked = maskMarkupComments(source);
 
 	let match: RegExpExecArray | null;
-	while ((match = pattern.exec(source)) !== null) {
-		// Zeilen vor dem Blockinhalt zählen: der Treffer beginnt beim `<style`,
-		// der Inhalt erst hinter dem `>`.
-		const beforeContent = source.slice(0, match.index + match[0].indexOf('>') + 1);
+	while ((match = pattern.exec(masked)) !== null) {
+		// Der Treffer beginnt beim `<style`, der Inhalt erst hinter dem `>` und
+		// endet vor dem `</style>`.
+		const start = match.index + match[0].indexOf('>') + 1;
+		const end = match.index + match[0].length - '</style>'.length;
 		blocks.push({
-			offset: beforeContent.split('\n').length - 1,
-			content: match[1]
+			offset: source.slice(0, start).split('\n').length - 1,
+			content: source.slice(start, end)
 		});
 	}
 

@@ -140,6 +140,53 @@ describe('extractStyleBlocks', () => {
 	it('findet auch <style lang="postcss">', () => {
 		expect(extractStyleBlocks('<style lang="postcss">a{}</style>')).toHaveLength(1);
 	});
+
+	/* Die Zeichenfolge `<style>` steht im Bestand auch in Prosa: Kommentare
+	   erklären, welcher Wert früher „im scoped <style>" stand. Ohne Maskierung
+	   beginnt der erste Treffer dort — der Ausschnitt trägt dann Kommentar-Rest
+	   und Markup, und ein Farbwert aus der Begründung wird als CSS gemeldet.
+	   Genau das ist am 2026-08-09 passiert. */
+	it('ignoriert die Zeichenfolge <style> in einem Markup-Kommentar', () => {
+		const source = [
+			'<!-- Stand vorher im scoped <style> als #abcdef und umging das Theme. -->',
+			'<div />',
+			'',
+			'<style>',
+			'\tcolor: var(--color-primary);',
+			'</style>'
+		].join('\n');
+
+		const blocks = extractStyleBlocks(source);
+
+		expect(blocks).toHaveLength(1);
+		expect(blocks.flatMap((b) => findCssColorOffenders(b.content, b.offset))).toEqual([]);
+	});
+
+	/* Der teurere Fall: Beginnt ein Treffer im Kommentar, verschmelzen der echte
+	   Block davor und der danach zu einer anderen Aufteilung — die Auswertung
+	   redet dann über etwas anderes als die Datei. Geprüft wird deshalb, dass
+	   genau das echte Literal gemeldet wird, mit seiner Zeile, und sonst nichts. */
+	it('meldet einen echten Block vor einem Kommentar mit der Zeichenfolge <style>', () => {
+		const source = [
+			'<style>',
+			'\tcolor: #123456;',
+			'</style>',
+			'',
+			'<!-- Der Wert stand vorher im <style> als #abcdef. -->',
+			'',
+			'<style>',
+			'\tcolor: var(--color-primary);',
+			'</style>'
+		].join('\n');
+
+		const blocks = extractStyleBlocks(source);
+		expect(blocks).toHaveLength(2);
+
+		const offenders = blocks.flatMap((b) => findCssColorOffenders(b.content, b.offset));
+		expect(offenders).toHaveLength(1);
+		expect(offenders[0].literal).toBe('#123456');
+		expect(offenders[0].line).toBe(2);
+	});
 });
 
 describe('isExemptFile', () => {
