@@ -41,6 +41,32 @@ export interface SpamStoredFinding {
 }
 
 /**
+ * Liest die Spalte `spam_indicators` als das, was sie zusagt: eine Liste von
+ * Strings.
+ *
+ * Die Spalte ist untypisiertes `jsonb`. Ein bloßes
+ * `Array.isArray(v) ? (v as string[]) : []` prüft nur den **Container** — ein
+ * Array mit Zahlen oder Objekten kommt unverändert durch, und die API bricht
+ * damit ihr eigenes Schema (`items: { type: string }`), ohne dass irgendwo
+ * etwas auffällt. Der Cast ist eine Behauptung, die niemand nachprüft; dieser
+ * Helfer macht die Zusage stattdessen wahr.
+ *
+ * **Er sagt nichts über den Score.** Der steht in einer eigenen Spalte und
+ * bleibt auch dann gültig, wenn die Indikatorliste unbrauchbar ist — eine
+ * leere Liste heißt hier „keine lesbaren Indikatoren", nicht „Score 0".
+ *
+ * Heute schreibt ausschließlich eigener Code in die Spalte
+ * (`saveSighting`, `rescoreSightings`), beide aus `SpamCheckResult.indicators`.
+ * Der Fall ist damit nicht erreichbar — nachweisen lässt sich das beim Lesen
+ * aber nicht, und die Datenbank teilt sich die App mit dem Altsystem.
+ */
+export function toStoredIndicators(value: unknown): string[] {
+	return Array.isArray(value)
+		? value.filter((eintrag): eintrag is string => typeof eintrag === 'string')
+		: [];
+}
+
+/**
  * Antwort von `GET /api/sightings/[id]/spam-check` — **zwei** Befunde, bewusst
  * nebeneinander statt einer Zahl.
  *

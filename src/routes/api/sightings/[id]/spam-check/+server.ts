@@ -4,6 +4,7 @@ import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { detectSpamIndicators } from '$lib/server/spam/spamDetector';
 import type { SpamCheckResponse, SpamDetectionInput, SpamStoredFinding } from '$lib/types/spam';
+import { toStoredIndicators } from '$lib/types/spam';
 import { error, isHttpError, json, type RequestHandler } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 
@@ -56,14 +57,14 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 		// Der persistierte Erstbefund kommt mit — ohne ihn stünde die
 		// Neuberechnung unerklärt gegen die Zahl in Tabelle und Eingang
 		// (`SpamCheckResponse`). `spam_indicators` ist untypisiertes `jsonb`;
-		// ein Nicht-Array darf den Score nicht mitreißen, der bleibt gültig.
+		// `toStoredIndicators` macht daraus verlässlich die Liste, die das
+		// OpenAPI-Schema zusagt. Ein unbrauchbarer Wert dort reißt den Score
+		// nicht mit — der steht in einer eigenen Spalte und bleibt gültig.
 		const stored: SpamStoredFinding | null =
 			sighting.spamScore != null
 				? {
 						score: sighting.spamScore,
-						indicators: Array.isArray(sighting.spamIndicators)
-							? (sighting.spamIndicators as string[])
-							: []
+						indicators: toStoredIndicators(sighting.spamIndicators)
 					}
 				: null;
 

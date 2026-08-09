@@ -2659,8 +2659,10 @@ components:
           items:
             type: string
           description: >-
-            Leer, wenn die Spalte spam_indicators keinen Array-Wert trägt — der
-            Score bleibt davon unberührt gültig.
+            Immer Strings: die Spalte spam_indicators ist untypisiertes jsonb
+            und wird beim Lesen auf String-Elemente gefiltert (kein Array-Wert
+            oder ein Element anderen Typs fällt weg). Der Score bleibt davon
+            unberührt gültig — er steht in einer eigenen Spalte.
           example: ['Formular verdächtig schnell abgeschickt']
     SpamCheckResult:
       type: object

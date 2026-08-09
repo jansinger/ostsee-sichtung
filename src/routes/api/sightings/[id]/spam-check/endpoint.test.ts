@@ -145,6 +145,18 @@ describe('GET /api/sightings/[id]/spam-check', () => {
 		expect(body.stored).toEqual({ score: 3, indicators: [] });
 	});
 
+	it('liefert nur Strings als Indikatoren aus', async () => {
+		/* `Array.isArray` prüft den Container, nicht die Elemente. Ein Array mit
+		   Zahlen oder Objekten kam vorher unverändert durch und verletzte damit
+		   die Zusage des eigenen Schemas (`items: { type: string }`) — der
+		   `as string[]` dahinter war eine Behauptung, die niemand prüft. */
+		mockDbResult = [
+			{ ...mockSighting, spamScore: 3, spamIndicators: ['echt', 42, null, { text: 'x' }] }
+		];
+		const body = await (await GET(createEvent('123'))).json();
+		expect(body.stored).toEqual({ score: 3, indicators: ['echt'] });
+	});
+
 	it('setzt Cache-Control: no-store Header', async () => {
 		const response = await GET(createEvent('123'));
 		expect(response.headers.get('cache-control')).toBe('no-store');
