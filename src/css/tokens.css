@@ -22,6 +22,18 @@
 	--brand-sea-300: oklch(0.65 0.04 215.2); /*  #74969f */
 	--brand-sea-200: oklch(0.8 0.047 215); /*    #9cc6d1 */
 
+	/* Reines Weiß als Vordergrund auf Vollton-Flächen (primary, neutral, info,
+	   success, error). Es steht hier und nicht fünfmal als `oklch(1 0 0)` im
+	   Theme-Block von app.css, aus demselben Grund wie jeder andere Wert dieser
+	   Datei: Ein Farbwert existiert genau einmal. Aufgefallen ist die Dopplung
+	   dem CSS-Scan (`e2e/helpers/bannedCss.ts`) — der Klassen-Scan konnte sie
+	   strukturell nicht sehen, weil in einer CSS-Deklaration keine Klasse steht.
+
+	   Es ist bewusst nicht --scrim-foreground: das ist zwar derselbe Wert, aber
+	   eine andere Rolle (Text auf einer Abdunklung von fremdem Inhalt, siehe
+	   unten). Wer eines der beiden je anfasst, soll das andere nicht mitziehen. */
+	--brand-white: oklch(1 0 0);
+
 	--brand-slate-700: oklch(0.37 0.016 251.8); /* #3a4048 */
 	--brand-slate-950: oklch(0.15 0.022 251.8); /* #050c14 */
 	--brand-mist-100: oklch(0.9403 0.0104 247.9); /* #e6ecf2 */
