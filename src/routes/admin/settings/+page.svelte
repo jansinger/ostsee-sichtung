@@ -7,6 +7,7 @@
 	import CleanupPanel from './CleanupPanel.svelte';
 	import ResetSettingsButton from './ResetSettingsButton.svelte';
 	import { ACTIVE_CONFIG_KEYS, getConfigLabel } from './configLabels';
+	import { buildSaveSummary } from './saveSummary';
 
 	const logger = createLogger('admin:settings');
 
@@ -125,8 +126,31 @@
 		}
 	}
 
-	async function saveConfig(config: ConfigItem) {
-		if (savingStates[config.key]) return;
+	/**
+	 * Speichert eine Einstellung.
+	 *
+	 * **Der Rückgabewert ist neu und der Kern des Fixes:** `saveAllChanges` hat
+	 * den Ausgang vorher aus `changedConfigs.size` erschlossen und lag damit bei
+	 * jedem Teilfehlschlag falsch (siehe `saveSummary.ts`). Ein Aufruf, der
+	 * sagt, ob er funktioniert hat, ist die Voraussetzung dafür, dass die
+	 * Zusammenfassung stimmt.
+	 *
+	 * `false` auch beim Doppelklick-Abbruch oben: Aus Sicht des Aufrufers ist
+	 * „läuft schon" kein gespeicherter Wert.
+	 *
+	 * **`silent` unterdrückt Meldung UND Timer.** Im Bulk-Lauf meldet der
+	 * Einzelaufruf nicht — gemeldet wird einmal am Ende über `buildSaveSummary`.
+	 * Es geht dabei nicht nur um die Zahl der Meldungen: Jeder Aufruf plante ein
+	 * `setTimeout` auf dieselbe Variable, in die `saveAllChanges` danach seine
+	 * Zusammenfassung schreibt. Die stand damit in einem Feld, für das bereits
+	 * ein fremder Löschauftrag lief, und verschwand nach fünf Sekunden — obwohl
+	 * sie im Fehlerfall bewusst ohne eigenen Timer gesetzt wird. Gleiche
+	 * Konstruktion und gleiche Begründung wie `submitVerdict(id, v, { silent:
+	 * true })` beim Bulk-Verdict der Sichtungstabelle.
+	 */
+	async function saveConfig(config: ConfigItem, options?: { silent?: boolean }): Promise<boolean> {
+		if (savingStates[config.key]) return false;
+		const silent = options?.silent ?? false;
 
 		savingStates[config.key] = true;
 
@@ -152,6 +176,8 @@
 			newChangedConfigs.delete(config.key);
 			changedConfigs = newChangedConfigs;
 
+			if (silent) return true;
+
 			// Special handling for maintenance mode
 			if (config.key === 'display.maintenanceMode') {
 				const isEnabled = Boolean(config.value);
@@ -163,10 +189,13 @@
 			errorMessage = '';
 
 			setTimeout(() => (saveMessage = ''), 5000);
+			return true;
 		} catch (error) {
 			logger.error({ error, config: config.key }, 'Failed to save configuration');
+			if (silent) return false;
 			errorMessage = `❌ Fehler beim Speichern von ${config.key}`;
 			setTimeout(() => (errorMessage = ''), 5000);
+			return false;
 		} finally {
 			savingStates[config.key] = false;
 		}
@@ -189,12 +218,32 @@
 			return;
 		}
 
+		/* Ausgänge zählen statt sie aus `changedConfigs.size` zu erschließen: Die
+		   frühere Bedingung `=== 0` war bei jedem Teilfehlschlag falsch, und die
+		   Einzelfehlermeldung aus `saveConfig` überschrieb sich dabei selbst — es
+		   erschien am Ende gar nichts, während ein Wert nicht gespeichert war.
+		   Begründung und Wortlaute in `saveSummary.ts`. */
+		let saved = 0;
+		let failed = 0;
 		for (const config of configsToSave) {
-			await saveConfig(config);
+			/* `silent`: Sonst schriebe jeder Einzelaufruf seine eigene Meldung in
+			   dieselbe Variable — und plante einen Timer darauf, der die
+			   Zusammenfassung unten wieder wegräumte (Docblock an `saveConfig`). */
+			if (await saveConfig(config, { silent: true })) saved++;
+			else failed++;
 		}
 
-		if (changedConfigs.size === 0) {
-			saveMessage = `✅ ${configsToSave.length} Einstellungen gespeichert`;
+		const summary = buildSaveSummary(saved, failed);
+		/* Ein Teilerfolg gehört nicht in ein grünes Feld — sonst liest sich
+		   „3 von 5 gespeichert" wie ein abgeschlossener Vorgang. Die
+		   Erfolgsmeldung bekommt weiterhin ihren Timer; der Fehlerfall bleibt
+		   stehen, bis der nächste Versuch ihn ersetzt. */
+		if (summary.hasFailures) {
+			errorMessage = `❌ ${summary.message}`;
+			saveMessage = '';
+		} else {
+			saveMessage = `✅ ${summary.message}`;
+			errorMessage = '';
 			setTimeout(() => (saveMessage = ''), 5000);
 		}
 	}
@@ -206,10 +255,20 @@
 				headers: { 'Content-Type': 'application/json' }
 			});
 
-			if (response.ok) {
-				// Reload page to get fresh data
-				window.location.reload();
+			/* Der `else`-Zweig fehlte: Bei 403 oder 500 passierte gar nichts — kein
+			   Reload, keine Meldung. Für eine destruktive Aktion hinter einem
+			   Bestätigungsdialog ist das die schlechteste Rückmeldung; sie sieht aus
+			   wie ein Klick, der nicht angekommen ist. Der `catch` darunter fängt
+			   nur Netzwerkfehler und hat den Fall nie erreicht. */
+			if (!response.ok) {
+				logger.error({ status: response.status }, 'Failed to reset configurations');
+				errorMessage = `❌ Zurücksetzen fehlgeschlagen (Fehler ${response.status}) — die Einstellungen sind unverändert`;
+				setTimeout(() => (errorMessage = ''), 5000);
+				return;
 			}
+
+			// Reload page to get fresh data
+			window.location.reload();
 		} catch (error) {
 			logger.error({ error }, 'Failed to reset configurations');
 			errorMessage = '❌ Fehler beim Zurücksetzen der Einstellungen';

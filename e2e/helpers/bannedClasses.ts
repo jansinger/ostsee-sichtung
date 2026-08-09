@@ -255,6 +255,87 @@ export const TAILWIND_PALETTE: BannedRule = {
 	offends: (className) => TAILWIND_PALETTE_PATTERN.test(className)
 };
 
+/* ------------------------------------------------------------------------ */
+/* Nicht-Farb-Tokens: Elevation, Z-Index, Motion                             */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * **Warum diese drei Regeln nachgezogen wurden.** Die drei Regeln oben prüfen
+ * ausschließlich *Farbe*. `design-system.md` schreibt Elevation, Z-Index und
+ * Bewegungsdauer aber genauso verbindlich aus Tokens vor („Elevation, Z-Index,
+ * Motion nur aus Tokens") — dafür gab es bis hier keinen Wächter. Das Ergebnis
+ * war der Zustand, den diese Datei an drei Stellen als Fehlerklasse beschreibt,
+ * nur eine Ebene höher: Der Scan lief grün und erzeugte Deckung, die es für
+ * zwei Drittel des Token-Kapitels nie gab. Gemessen am 2026-08-09 standen im
+ * Bestand **118 rohe Schatten-Utilities in 26 Dateien**, 28 freie Z-Index- und
+ * 19 freie Dauer-Angaben — gegenüber 10 konformen `shadow-raised`/
+ * `shadow-floating`.
+ *
+ * Die Regeln sind deshalb hier scharf gestellt und über
+ * `bannedClasses.test.ts` belegt; der DOM-Scan führt sie vorerst als
+ * `test.fixme`, weil der Bestand sie noch nicht erfüllt (Begründung an der
+ * Gruppe in `design-tokens.spec.ts`).
+ */
+
+/**
+ * Rohe Schatten-Utilities.
+ *
+ * Erlaubt sind `shadow-raised` (Karten) und `shadow-floating` (Panels, Modals,
+ * Toasts) — beide existieren als echte Utilities, weil sie im `@theme`-Block
+ * von `app.css` stehen. `shadow-none` ist eine Rücknahme und keine Wahl einer
+ * Elevation-Stufe; es kommt durch, ebenso ein farbiger Schatten
+ * (`shadow-primary`), der eine andere Frage stellt.
+ *
+ * Das nackte `shadow` steht bewusst mit im Muster: Es ist Tailwinds Alias für
+ * `shadow-md` und im Bestand mit 29 Fundstellen die zweithäufigste Form. Eine
+ * Regel, die nur die benannten Stufen kennt, hätte ausgerechnet die
+ * unauffälligste durchgelassen — dieselbe Grammatik-Lücke wie bei `white` und
+ * `black` in `TAILWIND_PALETTE` oben.
+ */
+const RAW_ELEVATION_PATTERN = /^shadow(?:-(?:sm|md|lg|xl|2xl|inner))?$/;
+
+export const RAW_ELEVATION: BannedRule = {
+	hint: 'Schatten kommen aus den Elevation-Tokens: shadow-raised (Karten) oder shadow-floating (Panels, Modals, Toasts). Kein shadow/-sm/-md/-lg/-xl/-2xl und keine handgeschriebenen box-shadow in Komponenten (design-system.md).',
+	offends: (className) => RAW_ELEVATION_PATTERN.test(className)
+};
+
+/**
+ * Freie Z-Index-Utilities — `z-50`, `z-[100]`, auch negativ (`-z-10`).
+ *
+ * **Der Ersatz ist hier ausnahmsweise keine Utility.** `--layer-raised` bis
+ * `--layer-skip` stehen in `src/css/tokens.css` im `:root`, aber **nicht** im
+ * `@theme`-Block von `app.css` — es gibt deshalb kein `z-panel`, und wer eines
+ * schreibt, bekommt eine tote Klasse (`design-system.md`, „Keine toten
+ * Utility-Klassen"). Erreichbar sind die Stufen über `var()`, also per
+ * `style="z-index: var(--layer-panel)"` oder aus einem scoped `<style>`-Block.
+ * Der Hinweis sagt das ausdrücklich, weil die naheliegende Korrektur sonst von
+ * einem Verstoß in einen wirkungslosen Klassennamen führt.
+ *
+ * `z-auto` ist keine Stufenwahl und kommt durch.
+ */
+const RAW_Z_INDEX_PATTERN = /^-?z-(?:\[[^\]]*\]|\d+)$/;
+
+export const RAW_Z_INDEX: BannedRule = {
+	hint: 'Z-Index kommt aus den Layer-Tokens (--layer-raised/-panel/-nav/-overlay/-skip). Sie sind KEINE Utilities — sie stehen nur in tokens.css und werden über style="z-index: var(--layer-panel)" oder einen scoped <style>-Block gesetzt. Vorher lagen Navbar und Panel-Toggle beide auf z-50, und die DOM-Position entschied.',
+	offends: (className) => RAW_Z_INDEX_PATTERN.test(className)
+};
+
+/**
+ * Freie Übergangsdauern — `duration-300`, `duration-[450ms]`.
+ *
+ * Dieselbe Lage wie beim Z-Index: `--motion-instant`/`-quick`/`-panel`/
+ * `-emphasis` sind Variablen, keine Utilities. Die vier Stufen tragen zudem
+ * eine Zuständigkeit (Hover/Fokus, Aufklappen, Panel, Überschwung) und die
+ * Angabe, mit welcher Kurve sie gefahren werden — eine nackte Zahl im
+ * Klassennamen verliert beides.
+ */
+const RAW_MOTION_DURATION_PATTERN = /^duration-(?:\[[^\]]*\]|\d+)$/;
+
+export const RAW_MOTION_DURATION: BannedRule = {
+	hint: 'Übergangsdauern kommen aus den Motion-Tokens (--motion-instant 120ms, --motion-quick 200ms, --motion-panel 300ms, --motion-emphasis 400ms mit linear). Auch sie sind KEINE Utilities — über var() in einem scoped <style>-Block setzen, zusammen mit --motion-ease.',
+	offends: (className) => RAW_MOTION_DURATION_PATTERN.test(className)
+};
+
 /** Standardobergrenze für die Fundliste — mehr als 20 Zeilen liest niemand. */
 const DEFAULT_LIMIT = 20;
 

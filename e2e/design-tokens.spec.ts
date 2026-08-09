@@ -10,6 +10,9 @@ import { seedAdminSession } from './helpers/adminSession';
 import {
 	BELOW_OPACITY_FLOOR,
 	findOffenders,
+	RAW_ELEVATION,
+	RAW_MOTION_DURATION,
+	RAW_Z_INDEX,
 	STATUS_AS_FOREGROUND,
 	TAILWIND_PALETTE,
 	type ScannedElement
@@ -566,6 +569,66 @@ test.describe('Design-Tokens — verbotene Kombinationen im DOM', () => {
 		}) => {
 			const elements = await scanRoute({ page, context, request, baseURL }, route);
 			expect(findOffenders(TAILWIND_PALETTE, elements), TAILWIND_PALETTE.hint).toEqual([]);
+		});
+
+		/* ---------------------------------------------------------------- *
+		 * Nicht-Farb-Tokens: Elevation, Z-Index, Motion — noch `fixme`.
+		 *
+		 * **Warum sie hier stehen, obwohl sie rot sind.** Die drei Regeln
+		 * darüber decken ausschließlich Farbe ab. `design-system.md` schreibt
+		 * Elevation, Z-Index und Bewegungsdauer genauso verbindlich aus Tokens
+		 * vor — dafür gab es bis 2026-08-09 keinen Wächter, und der Scan lief
+		 * grün. Das ist die Sorte Lücke, die `bannedClasses.ts` an drei Stellen
+		 * als Fehlerklasse beschreibt: Sie erzeugt Deckung, die es nicht gibt.
+		 *
+		 * **Warum `fixme` und nicht aktiv.** Gemessen am 2026-08-09 steht der
+		 * Bestand bei 118 rohen Schatten-Utilities in 26 Dateien, 28 freien
+		 * Z-Index- und 19 freien Dauer-Angaben — verteilt über den ganzen
+		 * Frontend, nicht nur den Admin. Das ist ein eigener Aufräum-Schritt und
+		 * kein Beiwerk dieses PR; ihn hier mit hineinzuziehen hieße, 26 Dateien
+		 * ohne Bezug zum Rest der Änderung anzufassen. Die Regeln selbst sind
+		 * scharf gestellt und über `bannedClasses.test.ts` an konstruierten
+		 * Beispielen belegt — sie sind also nicht ungeprüft, nur noch nicht
+		 * durchgesetzt. Dieselbe Reihenfolge wie bei der Farb-Gruppe, die bis
+		 * PR #620 `fixme` war.
+		 *
+		 * **Beim Aktivieren zu beachten:** Für Schatten ist der Ersatz eine
+		 * echte Utility (`shadow-raised`/`shadow-floating`, im `@theme`-Block).
+		 * Für Z-Index und Dauer NICHT — `--layer-*` und `--motion-*` stehen nur
+		 * in `tokens.css` und sind über `var()` zu setzen. Wer dort `z-panel`
+		 * schreibt, tauscht einen gemeldeten Verstoß gegen eine tote Klasse.
+		 * Alternative wäre, die Stufen zusätzlich in den `@theme`-Block zu
+		 * heben; das ist eine Design-Entscheidung und gehört in den Aufräum-PR,
+		 * nicht hierher.
+		 * ---------------------------------------------------------------- */
+		test.fixme(`${route.path}: keine rohen Schatten-Utilities`, async ({
+			page,
+			context,
+			request,
+			baseURL
+		}) => {
+			const elements = await scanRoute({ page, context, request, baseURL }, route);
+			expect(findOffenders(RAW_ELEVATION, elements), RAW_ELEVATION.hint).toEqual([]);
+		});
+
+		test.fixme(`${route.path}: keine freien Z-Index-Utilities`, async ({
+			page,
+			context,
+			request,
+			baseURL
+		}) => {
+			const elements = await scanRoute({ page, context, request, baseURL }, route);
+			expect(findOffenders(RAW_Z_INDEX, elements), RAW_Z_INDEX.hint).toEqual([]);
+		});
+
+		test.fixme(`${route.path}: keine freien Übergangsdauern`, async ({
+			page,
+			context,
+			request,
+			baseURL
+		}) => {
+			const elements = await scanRoute({ page, context, request, baseURL }, route);
+			expect(findOffenders(RAW_MOTION_DURATION, elements), RAW_MOTION_DURATION.hint).toEqual([]);
 		});
 
 		/* Überschrift trägt eine Größen-Utility und rendert trotzdem anders.

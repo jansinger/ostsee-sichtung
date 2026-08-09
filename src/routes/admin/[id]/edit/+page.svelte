@@ -59,7 +59,9 @@
 </svelte:head>
 
 <div class="mb-0 flex items-center justify-between">
-	<h2 class="text-xl font-bold">Sichtung bearbeiten</h2>
+	<!-- `h1` aus demselben Grund wie in der Detailansicht nebenan: Ohne sie
+	     begann die Überschriftenstruktur auf Ebene 2 (WCAG 1.3.1). -->
+	<h1 class="text-xl font-bold">Sichtung bearbeiten</h1>
 	<div class="flex gap-2">
 		<button
 			class="btn btn-ghost btn-sm"
