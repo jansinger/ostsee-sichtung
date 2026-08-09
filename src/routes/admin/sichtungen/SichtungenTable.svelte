@@ -18,6 +18,7 @@
 		type SightingStatus
 	} from '$lib/components/admin/sightingStatus';
 	import type { SightingVerdict } from '$lib/components/admin/sightingVerdict';
+	import { getSpamRisk, SPAM_RISK_PRESENTATION } from '$lib/components/admin/spamScorePresentation';
 	import { getAnimalBehaviorLabel } from '$lib/report/formOptions/animalBehavior';
 	import { getDistanceLabel } from '$lib/report/formOptions/distance';
 	import { getDistributionLabel } from '$lib/report/formOptions/distribution';
@@ -390,30 +391,28 @@
 							</td>
 						{/if}
 						{#if columnVisibility.spamScore}
+							{@const spam = SPAM_RISK_PRESENTATION[getSpamRisk(sighting.spamScore)]}
+							{@const spamIndicators = Array.isArray(sighting.spamIndicators)
+								? (sighting.spamIndicators as string[])
+								: []}
 							<td class="text-center">
-								{#if sighting.spamScore == null}
+								{#if !spam.badgeClass}
 									<!-- NULL heißt „nie bewertet" (Altbestand, Legacy-Eingang) —
 									     bewusst kein Badge, sonst läse es sich wie „geprüft, sauber". -->
-									<span class="text-base-content/70">—</span>
+									<span class="text-base-content/70" title={spam.description}>—</span>
 								{:else}
 									<span
-										class="badge badge-sm whitespace-nowrap {sighting.spamScore >= 5
-											? 'badge-error'
-											: sighting.spamScore >= 2
-												? 'badge-warning'
-												: 'badge-ghost'}"
-										title={Array.isArray(sighting.spamIndicators) &&
-										sighting.spamIndicators.length > 0
-											? sighting.spamIndicators.join(', ')
-											: 'Keine Auffälligkeiten'}
+										class="badge badge-sm whitespace-nowrap {spam.badgeClass}"
+										title={spamIndicators.length > 0 ? spamIndicators.join(', ') : spam.description}
 									>
+										<Icon icon={spam.icon} width="14" height="14" aria-hidden="true" />
 										{sighting.spamScore}
 										<!-- title ist nur per Maus erreichbar — derselbe Text
 										     zusätzlich für Screenreader. -->
 										<span class="sr-only">
-											{Array.isArray(sighting.spamIndicators) && sighting.spamIndicators.length > 0
-												? `Spam-Indikatoren: ${sighting.spamIndicators.join(', ')}`
-												: 'Keine Auffälligkeiten'}
+											{spam.label}{spamIndicators.length > 0
+												? ` — Spam-Indikatoren: ${spamIndicators.join(', ')}`
+												: ''}
 										</span>
 									</span>
 								{/if}

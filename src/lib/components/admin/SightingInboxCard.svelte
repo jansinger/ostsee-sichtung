@@ -11,6 +11,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { inboxDetailHref } from './adminReturn';
 	import { SIGHTING_STATUS_PRESENTATION } from './sightingStatus';
+	import { SPAM_RISK_PRESENTATION, getSpamRisk } from './spamScorePresentation';
 
 	interface Props {
 		sighting: SightingSelect;
@@ -37,24 +38,14 @@
 	};
 
 	const balticSea = $derived(BALTIC_SEA_STATUS_PRESENTATION[getBalticSeaStatus(sighting)]);
-	/* Gleiche Schwellen wie die Spam-Spalte der Tabelle (/admin/sichtungen) —
-	   beide Ansichten müssen denselben Score gleich einfärben. */
-	const spamBadgeClass = $derived(
-		sighting.spamScore == null
-			? 'badge-ghost'
-			: sighting.spamScore >= 5
-				? 'badge-error'
-				: sighting.spamScore >= 2
-					? 'badge-warning'
-					: 'badge-ghost'
-	);
+	const spam = $derived(SPAM_RISK_PRESENTATION[getSpamRisk(sighting.spamScore)]);
 	const spamIndicators = $derived(
 		Array.isArray(sighting.spamIndicators) ? (sighting.spamIndicators as string[]) : []
 	);
 	const melderName = $derived([sighting.firstName, sighting.lastName].filter(Boolean).join(' '));
 </script>
 
-<article class="card border-base-300 bg-base-100 border shadow-raised">
+<article class="card border-base-300 bg-base-100 shadow-raised border">
 	<div class="card-body gap-3 p-4">
 		<div class="flex flex-wrap items-center gap-2">
 			{#if isDeadFinding(sighting.isDead)}
@@ -62,13 +53,28 @@
 					{DEAD_FINDING_PRESENTATION.label}
 				</span>
 			{/if}
-			<span
-				class="badge badge-sm {spamBadgeClass}"
-				data-testid="spam-badge"
-				title={spamIndicators.join(', ')}
-			>
-				Spam: {sighting.spamScore ?? '–'}
-			</span>
+			<!-- Kein Badge für „nie bewertet": Die Karte zeigte hier ein graues
+			     „Spam: –" und behauptete damit ein Prüfergebnis, das es nie gab.
+			     Die Tabellenspalte hatte das schon richtig — jetzt beide gleich
+			     (`spamScorePresentation.ts`). -->
+			{#if spam.badgeClass}
+				<span
+					class="badge badge-sm {spam.badgeClass}"
+					data-testid="spam-badge"
+					title={spamIndicators.length > 0 ? spamIndicators.join(', ') : spam.description}
+				>
+					<Icon icon={spam.icon} width="14" height="14" aria-hidden="true" />
+					Spam: {sighting.spamScore}
+					<!-- title ist nur per Maus erreichbar — dieselbe Aussage zusätzlich
+					     für Screenreader, und das Wort trägt die Bedeutung, die sonst
+					     nur an der Farbe hinge (WCAG 1.4.1). -->
+					<span class="sr-only">
+						{spam.label}{spamIndicators.length > 0
+							? ` — Spam-Indikatoren: ${spamIndicators.join(', ')}`
+							: ''}
+					</span>
+				</span>
+			{/if}
 			<span class="badge badge-sm {balticSea.badgeClass}">{balticSea.label}</span>
 		</div>
 
