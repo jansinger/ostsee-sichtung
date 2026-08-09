@@ -203,14 +203,30 @@
 		<table class="table-zebra table w-full">
 			<thead class="bg-base-200 text-base-content">
 				<tr>
-					<!-- Auswahlspalte, ganz links und wie die Markerspalte daneben fest:
+					<!-- Die Totfund-Kante sitzt an DIESER Spalte, nicht mehr an der
+					     Markerspalte daneben: Dort lag sie zwischen Checkbox und Icon und
+					     las sich als Trennstrich der Auswahlspalte statt als Auszeichnung
+					     der Zeile — eine „linke Kante", die seit Einführung der Auswahl
+					     gar nicht mehr links war. Sie steht weiter an einer Zelle und
+					     nicht am `<tr>`: unter `border-collapse` entscheidet dort sonst
+					     die Konfliktauflösung der Nachbarkanten, ob sie gezeichnet wird.
+
+					     `border-l-error` und nicht `border-error`: Letzteres färbt ALLE
+					     vier Kanten. DaisyUIs Zeilentrenner steht in `:where()` ohne
+					     Spezifität und verliert dagegen — die untere Zellkante lief damit
+					     rot weiter und sah aus wie ein Rendering-Fehler.
+
+					     Die 4px trägt jede Zeile, im Normalfall transparent. Sonst
+					     wanderte die Spalte bei jeder Totfund-Zeile um 4px nach rechts.
+
+					     Auswahlspalte, ganz links und wie die Markerspalte daneben fest:
 					     Sie steht bewusst nicht in `AVAILABLE_COLUMNS`. Abschaltbar wäre die
 					     Bulk-Funktion je nach gespeicherter Spaltenwahl unerreichbar — und
 					     der gespeicherte Stand überlebt seit U2 den Reload.
 					     Nicht `sticky-col`: Der fixierte Bereich liegt rechts (Status,
 					     Aktionen); eine zweite fixierte Kante links stahl auf schmalen
 					     Fenstern zusätzlich Platz vom scrollenden Mittelteil. -->
-					<th class="select-col w-px p-0">
+					<th class="select-col w-px border-l-4 border-l-transparent px-2 py-0">
 						<label class="target-exempt flex cursor-pointer justify-center">
 							<input
 								type="checkbox"
@@ -227,7 +243,13 @@
 					<!-- Feste Markerspalte, nicht in der Spaltenauswahl: Sie steht vor
 					     allen konfigurierbaren Spalten und überlebt damit sowohl jede
 					     Spaltenwahl als auch das horizontale Scrollen der Tabelle. -->
-					<th class="w-px p-0"><span class="sr-only">Art der Meldung</span></th>
+					<!-- „Tot" statt eines `sr-only`-Titels: Die Spalte war für Sehende
+					     unbeschriftet, das Icon darunter musste sich damit selbst
+					     erklären. Kurz gehalten, weil die Spalte nur ein 16px-Icon breit
+					     ist — „Totfund" (die Beschriftung des Badges, `deadFinding.ts`)
+					     verdoppelte ihre Breite für eine Spalte, die in den meisten Zeilen
+					     leer bleibt. Das Wort im Klartext steht weiter am Icon selbst. -->
+					<th class="w-px px-2 text-center">Tot</th>
 					<!-- Kein `hover:bg-base-300` an den nicht sortierbaren Köpfen: Die
 					     Aufhellung unter dem Zeiger versprach eine Sortierung, die es hier
 					     nicht gibt — sortierbare Köpfe tragen sie am <button> in `sortableTh`. -->
@@ -304,7 +326,11 @@
 						<!-- Auswahl-Checkbox, Gegenstück zur Kopfspalte oben. Das `aria-label`
 						     nennt die Referenz-ID und nicht nur „Zeile 3": Beim Vorlesen ist
 						     die Nummer der Meldung das, woran die Zeile erkennbar ist. -->
-						<td class="select-col w-px p-0">
+						<td
+							class="select-col w-px border-l-4 px-2 py-0 {isDeadFinding(sighting.isDead)
+								? 'border-l-error'
+								: 'border-l-transparent'}"
+						>
 							<label class="target-exempt flex cursor-pointer justify-center">
 								<input
 									type="checkbox"
@@ -316,14 +342,12 @@
 								/>
 							</label>
 						</td>
-						<!-- Kante und Icon zusammen: Die Kante wirkt beim Überfliegen, das
-						     Icon trägt zusätzlich eine Form — Farbe allein wäre kein
-						     Merkmal (WCAG 1.4.1). Der `sr-only`-Text benennt beides, sonst
-						     bliebe die Zelle für Screenreader leer.
-						     Die Kante steht an der Zelle und nicht am `<tr>`: unter
-						     `border-collapse` entscheidet dort sonst die Konfliktauflösung
-						     der Nachbarkanten, ob sie überhaupt gezeichnet wird. -->
-						<td class="w-px p-0 {isDeadFinding(sighting.isDead) ? 'border-error border-l-4' : ''}">
+						<!-- Nur noch das Icon: Die rote Kante sitzt seit dem Umbau eine
+						     Zelle weiter links, an der Auswahlspalte (Begründung dort).
+						     Das Icon bleibt trotzdem — Farbe allein wäre kein Merkmal
+						     (WCAG 1.4.1). Der `sr-only`-Text benennt es, sonst bliebe die
+						     Zelle für Screenreader leer. -->
+						<td class="w-px p-0">
 							{#if isDeadFinding(sighting.isDead)}
 								<span class="flex items-center justify-center px-2">
 									<Icon
@@ -543,9 +567,13 @@
 	   Die `min-height: var(--target-min)` aus derselben Regel bleibt
 	   unangetastet — die 44px Trefferfläche trägt weiterhin das Label.
 
-	   Die Breite kommt jetzt allein aus der Checkbox (28px, `--control-size`)
-	   statt zusätzlich aus einem `px-2` am Label: 44px Spaltenbreite für ein
-	   28px-Control war der breiteste Teil einer Zeile, der nichts anzeigt.
+	   Die Breite kommt aus der Checkbox (28px, `--control-size`) plus `px-2` an
+	   der Zelle statt am Label: 44px Spaltenbreite für ein 28px-Control war der
+	   breiteste Teil einer Zeile, der nichts anzeigt. Ganz ohne Polsterung
+	   klebte die Checkbox dagegen an der Außenkante der Tabelle und rechts am
+	   Totfund-Icon. Die Polsterung sitzt an der Zelle und nicht am Label, damit
+	   sie nicht Teil der Trefferfläche wird — ein Klick daneben soll die Zeile
+	   nicht auswählen.
 
 	   Damit ist das Ziel 44px hoch und 28px breit und unterschreitet das
 	   Projekt-Mindestmaß von 44×44 in der Breite. Das Label trägt deshalb

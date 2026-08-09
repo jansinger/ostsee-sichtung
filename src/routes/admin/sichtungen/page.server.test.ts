@@ -3,14 +3,15 @@
  *
  * Der neu gebaute iOS-Client setzt `aufnahmeHochladen`, kann aber kein Foto
  * hochladen — es kommt per E-Mail nach (`$lib/utils/media/photoAnnouncement.ts`).
- * `load()` muss zwei Dinge leisten:
+ * `load()` muss dafür eines leisten: Der Filterwert
+ * `mediaUpload=announced_missing` muss dieselbe Bedingung erzeugen wie
+ * `mediaUploadCondition()` — sonst driftet die Admin-Liste vom zentral
+ * getesteten Filter auseinander.
  *
- * 1. Der Filterwert `mediaUpload=announced_missing` muss dieselbe Bedingung
- *    erzeugen wie `mediaUploadCondition()` — sonst driftet die Admin-Liste vom
- *    zentral getesteten Filter auseinander.
- * 2. Unabhängig vom aktiven Filter liefert `load()` einen globalen Zähler
- *    `pendingPhotoAnnouncements`, damit Admins die Arbeitsliste sehen, ohne
- *    den Filter erst öffnen zu müssen.
+ * Den globalen Zähler `pendingPhotoAnnouncements` gab es hier bis 2026-08-09
+ * zusätzlich. Er ist mit dem Knopf im Tabellenkopf entfallen: Der Eingang
+ * (`/admin`) führt dieselbe Zahl, und die Tabelle erreicht die Arbeitsliste
+ * über den Aufnahme-Filter.
  *
  * Testansatz wie `statisticsApprovalScope.test.ts`: ein aufzeichnender
  * `db.select`-Mock, das WHERE-Prädikat wird über den echten `PgDialect` zu SQL
@@ -99,17 +100,6 @@ describe('admin/+page.server load() — Foto-Ankündigungs-Arbeitsliste', () => 
 		resolvedRows = [[{ id: 1 }], [{ count: 5 }], [{ count: 2 }]];
 	});
 
-	it('liefert pendingPhotoAnnouncements unabhängig vom aktiven Filter', async () => {
-		// `PageServerLoad` erlaubt generisch auch `void` als Rückgabe (Redirects
-		// o.ä.); für diesen Test ist das tatsächlich zurückgegebene Objekt
-		// bekannt, deshalb der Cast statt eines Guards gegen `void`.
-		const result = (await load({
-			url: makeUrl()
-		} as unknown as Parameters<typeof load>[0])) as { pendingPhotoAnnouncements: number };
-
-		expect(result.pendingPhotoAnnouncements).toBe(2);
-	});
-
 	/*
 	 * Befund 20: Die Hauptliste lief als `db.select()` über die ganze Zeile und
 	 * lieferte bis zu 100 vollständige Datensätze ins HTML — Telefonnummer,
@@ -160,19 +150,7 @@ describe('admin/+page.server load() — Foto-Ankündigungs-Arbeitsliste', () => 
 		expect(recordedSelects[0]?.orderBySql).toMatch(/nulls last/i);
 	});
 
-	it('das dritte select() trägt exakt die Bedingung von mediaUploadCondition(announced_missing)', async () => {
-		await load({ url: makeUrl() } as unknown as Parameters<typeof load>[0]);
-
-		const expected = toSqlText(
-			mediaUploadCondition(MEDIA_UPLOAD_ANNOUNCED_MISSING) as unknown as SQLWrapper
-		);
-		const thirdSelect = recordedSelects[2];
-		expect(thirdSelect?.whereSql).toBe(expected);
-	});
-
 	it('?mediaUpload=announced_missing filtert die Hauptliste mit derselben Bedingung', async () => {
-		// Ohne weitere Filter ruft nur die neue Arbeitslisten-Abfrage where()
-		// auf — mit diesem Query-Parameter tut es zusätzlich die Hauptliste.
 		await load({
 			url: makeUrl({ mediaUpload: MEDIA_UPLOAD_ANNOUNCED_MISSING })
 		} as unknown as Parameters<typeof load>[0]);
@@ -180,8 +158,8 @@ describe('admin/+page.server load() — Foto-Ankündigungs-Arbeitsliste', () => 
 		const expected = toSqlText(
 			mediaUploadCondition(MEDIA_UPLOAD_ANNOUNCED_MISSING) as unknown as SQLWrapper
 		);
-		// Erster Select = Hauptliste, zweiter = Pagination-Count — beide
-		// müssen jetzt dieselbe Bedingung tragen wie die Arbeitslisten-Abfrage.
+		// Erster Select = Hauptliste, zweiter = Pagination-Count — beide müssen
+		// dieselbe Bedingung tragen wie `mediaUploadCondition`.
 		expect(recordedSelects[0]?.whereSql).toBe(expected);
 		expect(recordedSelects[1]?.whereSql).toBe(expected);
 	});
@@ -424,24 +402,16 @@ describe('admin/sichtungen/+page.server load() — Freitext-Suche', () => {
 });
 
 /**
- * `count(*)` kommt je nach PG-Treiber als **String** zurück (bigint). Die Seite
- * verglich `pendingPhotoAnnouncements === 1` und zeigte deshalb „1 Fotos
- * ausstehend". Die Normalisierung gehört in den Loader, nicht in jede
- * Aufrufstelle: Ein Loader-Vertrag mit `number` gilt für alle.
+ * `count(*)` kommt je nach PG-Treiber als **String** zurück (bigint). Aufgefallen
+ * ist das am Zähler „1 Fotos ausstehend" (`'1' === 1` ist falsch); der Knopf ist
+ * seit 2026-08-09 weg, die Falle bleibt für `pagination.total` dieselbe. Die
+ * Normalisierung gehört in den Loader, nicht in jede Aufrufstelle: Ein
+ * Loader-Vertrag mit `number` gilt für alle.
  */
 describe('admin/sichtungen/+page.server load() — Zähler sind Zahlen, keine Strings', () => {
 	beforeEach(() => {
 		recordedSelects = [];
 		resolvedRows = [[{ id: 1 }], [{ count: '42' }], [{ count: '1' }]];
-	});
-
-	it('liefert pendingPhotoAnnouncements als Zahl, auch wenn der Treiber einen String liefert', async () => {
-		const result = (await load({
-			url: makeUrl()
-		} as unknown as Parameters<typeof load>[0])) as { pendingPhotoAnnouncements: number };
-
-		expect(result.pendingPhotoAnnouncements).toBe(1);
-		expect(typeof result.pendingPhotoAnnouncements).toBe('number');
 	});
 
 	it('liefert pagination.total als Zahl und rechnet totalPages daraus', async () => {

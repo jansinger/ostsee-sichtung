@@ -60,8 +60,7 @@ function sichtung(): SightingSelect {
 function daten(pagination: Partial<PageData['pagination']>): PageData {
 	return {
 		sightings: [sichtung()],
-		pagination: { page: 1, perPage: 20, total: 1, totalPages: 1, maxPerPage: 100, ...pagination },
-		pendingPhotoAnnouncements: 0
+		pagination: { page: 1, perPage: 20, total: 1, totalPages: 1, maxPerPage: 100, ...pagination }
 	} as unknown as PageData;
 }
 
