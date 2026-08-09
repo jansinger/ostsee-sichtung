@@ -59,8 +59,14 @@
 	}
 </script>
 
+<!-- `contrast-more:border` statt eines @media-Blocks im Style-Block: Die Regel setzt
+     nur eine Rahmenbreite, und die Tailwind-Variante erzeugt dafür das
+     Media-Feature, das die Engines tatsächlich auswerten. Bis 2026-08-09 stand
+     hier `@media (prefers-contrast: high)` — `high` war der Entwurfsname, Level 5
+     kennt `more`, und der Block war deshalb seit seiner Einführung tot (gemessen
+     in Chromium 151 und WebKit 26.5, Beleg in e2e/helpers/bannedMediaFeatures.ts). -->
 <div
-	class="media-thumbnail group bg-base-100 shadow-raised duration-instant hover:shadow-floating relative cursor-pointer overflow-hidden rounded-lg transition-all hover:scale-105"
+	class="media-thumbnail group bg-base-100 shadow-raised duration-instant hover:shadow-floating relative cursor-pointer overflow-hidden rounded-lg transition-all hover:scale-105 contrast-more:border"
 	onclick={handleClick}
 	onkeydown={handleKeydown}
 	tabindex="0"
@@ -98,9 +104,16 @@
 			     dem 2026-07-30 als --scrim-surface in tokens.css. Ein Schleier ist
 			     keine Fläche des Themes, sondern eine Abdunklung des Fotos darunter —
 			     die Begründung, warum das Token neutrales Schwarz ist und nicht
-			     bg-neutral, steht dort. -->
+			     bg-neutral, steht dort.
+
+			     Bei erhöhtem Kontrast wird der Schleier fast undurchsichtig — /90 statt
+			     /60, damit das Icon nicht mehr vom Foto darunter abhängt. Das stand
+			     bis 2026-08-09 als color-mix() in einem toten
+			     `@media (prefers-contrast: high)`-Block; als Deckkraft-Suffix an der
+			     Aufrufstelle hängt der Wert jetzt am Zweig, der ihn braucht. Der
+			     Video-Zweig unten bleibt deshalb bei /20. -->
 			<div
-				class="bg-scrim/60 thumbnail-overlay absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
+				class="bg-scrim/60 thumbnail-overlay contrast-more:group-hover:bg-scrim/90 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
 			>
 				<Icon icon="lucide:eye" width="24" class="text-on-scrim" />
 			</div>
@@ -175,7 +188,7 @@
 			     Foto und Video war das kein „hängt vom Inhalt ab", sondern ein fester,
 			     zu niedriger Wert. Mit /60 sind es 7,34:1. -->
 			<div
-				class="bg-scrim/60 thumbnail-overlay absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
+				class="bg-scrim/60 thumbnail-overlay contrast-more:group-hover:bg-scrim/90 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
 			>
 				<Icon icon="lucide:download" width="20" class="text-on-scrim" />
 			</div>
@@ -275,24 +288,6 @@
 		.thumbnail-overlay {
 			transition: none;
 			transform: none;
-		}
-	}
-
-	/* High contrast mode support */
-	@media (prefers-contrast: high) {
-		.media-thumbnail {
-			border: 1px solid;
-		}
-
-		/* Der Schleier wird im Hochkontrast-Modus fast undurchsichtig. Der Wert
-		   kommt aus --scrim-surface, nicht als rgba(0,0,0,.9) — es ist derselbe
-		   Ton wie beim bg-scrim/60 im Markup, nur dichter, und ein Farbwert
-		   gehört auch hier nur einmal ins Projekt (tokens.css). Bis 2026-08-09
-		   stand hier ein rohes rgba(): Der Klassen-Scan konnte es strukturell
-		   nicht melden, weil in einer CSS-Deklaration keine Klasse steht. Genau
-		   dafür gibt es jetzt e2e/helpers/bannedCss.ts. */
-		.media-thumbnail:hover .thumbnail-overlay {
-			background-color: color-mix(in oklab, var(--scrim-surface) 90%, transparent);
 		}
 	}
 

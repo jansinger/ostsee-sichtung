@@ -277,9 +277,15 @@
 											>
 												{#each species.images as image (image.src)}
 													<div class="text-center">
+														<!-- `contrast-more:hover:outline-2` statt eines @media-Blocks im
+														     Style-Block: eine reine Utility, und die Variante erzeugt
+														     `prefers-contrast: more`. Bis 2026-08-09 stand die Regel unter
+														     `prefers-contrast: high` — dem Entwurfsnamen des Merkmals, den
+														     keine Engine auswertet (gemessen in Chromium 151 und WebKit 26.5,
+														     Beleg in e2e/helpers/bannedMediaFeatures.ts). -->
 														<button
 															type="button"
-															class="group shadow-raised hover:shadow-floating duration-instant relative cursor-pointer overflow-hidden rounded-lg transition-all"
+															class="group shadow-raised hover:shadow-floating duration-instant relative cursor-pointer overflow-hidden rounded-lg transition-all contrast-more:hover:outline-2"
 															onclick={() => openImageModal(image.src, image.alt, image.copyright)}
 															aria-label={`${image.alt} in Originalgröße anzeigen`}
 														>
@@ -521,8 +527,11 @@
 	     — zu wenig für eine dritte Layout-Grenze neben `md` und `lg`
 	     (Breakpoint-Vertrag in .claude/rules/design-system.md). Das `max-w-95%`
 	     der alten Regel entfällt ersatzlos: `max-w-5xl` liegt mit 64rem überall
-	     über 95% und deckelt die Breite nie nach unten. -->
-	<div class="modal-box shadow-floating w-[95%] max-w-5xl p-0">
+	     über 95% und deckelt die Breite nie nach unten.
+
+	     `contrast-more:border-2` trägt den Rahmen bei erhöhtem Kontrast — die
+	     Begründung steht am Artfoto-Knopf oben. -->
+	<div class="modal-box shadow-floating w-[95%] max-w-5xl p-0 contrast-more:border-2">
 		{#if modalImageSrc}
 			<div class="relative">
 				<!-- Modal Header -->
@@ -629,28 +638,4 @@
 		opacity: 0.8;
 	}
 
-	/* Der 640px-Block hatte vier Regeln, zwei davon ohne Wirkung: Die Artnamen
-	   standen inline ohnehin auf `text-sm` (= die 0.875rem der Regel), und
-	   `.collapse-content` bekam die 1rem Innenabstand, die daisyUI dort selbst
-	   setzt und die im Markup zusätzlich als `px-4` stehen. Die beiden echten
-	   Regeln — Dialogbreite und Bildhöhe — sind als Utilities ins Markup
-	   gewandert und dort begründet. Damit gibt es hier keinen dritten
-	   Breakpoint mehr.
-
-	   Bleibt: `prefers-contrast`. Tailwinds Variante dafür heißt `contrast-more`
-	   und fragt `prefers-contrast: more` ab — einen anderen Wert des Merkmals als
-	   die drei Aufrufstellen im Projekt (hier, MediaThumbnail, MediaModal), die
-	   alle `high` verwenden. Der Wechsel des Merkmalswerts ändert, wer die Regel
-	   überhaupt bekommt; das gehört in einen Zug über alle drei Dateien und nicht
-	   beiläufig hierher. `.group` trifft dabei nur den Artfoto-Button — das
-	   Avatar-Vorschaubild ist als `group/avatar` benannt. */
-	@media (prefers-contrast: high) {
-		.group:hover {
-			outline: 2px solid;
-		}
-
-		.modal-box {
-			border: 2px solid;
-		}
-	}
 </style>
