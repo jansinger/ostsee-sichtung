@@ -32,6 +32,44 @@ Beim Erstellen oder Ändern von `.ts`/`.svelte`-Dateien mit Business-Logik MUSS 
 
 Die Legacy-Endpunkte (`/rest_sichtungen`, `/sichtungen/showreports.json`) implementieren den Vertrag der Vorgänger-API für Mobile Clients. **Stand 2026-07-30 ist ein Client angebunden:** eine neu gebaute iOS-App (`OstSeeTiere/8`) sendet Sichtungen über `POST /rest_sichtungen`. Eine Abweichung kostet damit echte Daten und ist von hier aus nicht reparierbar — der alte Client ist nicht mehr testbar. Feldnamen, URL-Pfade und Datentypen deshalb nur bewusst und dokumentiert ändern; offensichtliche Fehler nur ergänzend beheben, nie einen bestehenden Codepfad ersetzen. Das ist ein datierter Stand, keine Dauerzusage — vor größeren Änderungen prüfen, ob weitere Clients dazugekommen sind. Details laden automatisch beim Bearbeiten der betroffenen Routen (`.claude/rules/legacy-api.md`); verbindliche Referenz ist `docs/LEGACY_API_SPECIFICATION.md`.
 
+### Fremde Dateien vor dem Commit auf personenbezogene Daten prüfen — PFLICHT
+
+**Dieses Repository ist öffentlich.** Ein Commit ist eine Veröffentlichung, und
+sie lässt sich praktisch nicht zurücknehmen: Ein Force-Push entfernt einen
+Commit nicht von GitHub, weil Pull-Request-Refs dauerhaft bestehen bleiben.
+Nur der GitHub-Support kann die Objekte löschen.
+
+Deshalb gilt für **jede Datei, die von außerhalb dieses Projekts hereinkommt** —
+Archive, Altsystem-Quellen, Exporte, Fremdkonfigurationen, Beispieldaten — vor
+dem `git add`:
+
+```bash
+grep -rnoE "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}" <pfad> | sort -u
+grep -rniE "password|passwd|secret|api[_-]?key|token|salt" <pfad>
+```
+
+Über den **ganzen** hereingeholten Bestand laufen lassen, nicht über die
+Dateien, die gerade auffallen. Am 2026-08-09 fand ein Review drei
+`@author`-Tags mit einer privaten Adresse; der Scan über das gesamte
+Verzeichnis fand eine vierte Stelle, die niemandem aufgefallen war.
+
+Was gefunden wird, ist nicht automatisch ein Problem — die Unterscheidung ist:
+
+| Fund                                                                   | Umgang                                               |
+| ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| Private Adresse einer Person (`@author`-Tag, Kommentar, Testdatensatz) | entfernen, Name darf bleiben                         |
+| Rolladresse einer Organisation, die ohnehin öffentlich steht           | darf bleiben, im README des Verzeichnisses begründen |
+| Zugangsdaten, Schlüssel, Tokens                                        | entfernen **und** rotieren — sie gelten als bekannt  |
+
+Schwärzungen dort dokumentieren, wo die Dateien liegen (siehe
+`docs/archive/legacy-cakephp/README.md`). Sonst holt der nächste Auszug aus
+derselben Quelle die Daten wieder herein.
+
+Diese Regel steht bewusst hier und nicht in `.claude/rules/security.md`: Jene
+Datei lädt nur bei Änderungen unter `src/lib/server/auth/**` und
+`src/lib/server/storage/**` — also gerade nicht, wenn jemand ein Archiv nach
+`docs/` legt.
+
 ### Sichtungs-Status — genau zwei Zustände
 
 Eine Sichtung ist **ungeprüft oder geprüft; geprüft heißt veröffentlicht**. Kein
