@@ -21,20 +21,33 @@
 const SPRACHKUERZEL = ['de', 'en'] as const;
 
 /**
- * Pfade, für die das Sprachkürzel weiterhin gilt — die Legacy-API und sonst nichts.
+ * Pfade, für die das Sprachkürzel weiterhin gilt — die vier Legacy-Endpunkte
+ * aus `docs/LEGACY_API_SPECIFICATION.md` und sonst nichts.
  *
  * Bewusst **nicht** generisch über alle Routen: Die Anwendung ist einsprachig
  * deutsch, ein `/en/` vor der Startseite wäre ein Sprachversprechen, das sie
  * nicht einlöst. Und `/en/admin/...` wäre ein zweiter Pfad auf geschützte
  * Routen, deren Schutz in `hooks.server.ts` an `event.url.pathname` hängt —
  * die URL bleibt bei `reroute` die vom Client gesendete.
+ *
+ * Bewusst auch **nicht** als Verzeichnis-Präfix (`/sichtungen/**`): Sonst bekäme
+ * jeder künftige Pfad unter `/sichtungen/` oder `/rest_sichtungen/` das
+ * Sprachkürzel stillschweigend mit, auch ein nicht-Legacy-Pfad. Ein neuer
+ * Legacy-Endpunkt gehört hier eingetragen — das ist genau die bewusste
+ * Entscheidung, die der Legacy-Vertrag verlangt.
  */
-const LEGACY_PFADE = ['/rest_sichtungen', '/sichtungen'] as const;
+const LEGACY_PFADE = [
+	'/rest_sichtungen',
+	'/rest_sichtungen/antworten.json',
+	'/rest_sichtungen/inBaltic.json',
+	'/sichtungen/showreports.json'
+] as const;
 
 const PRAEFIX_MUSTER = new RegExp(`^/(?:${SPRACHKUERZEL.join('|')})(/.*)?$`);
 
+/** Trailing Slash zählt mit; über dessen Behandlung entscheidet SvelteKit. */
 function istLegacyPfad(pfad: string): boolean {
-	return LEGACY_PFADE.some((legacy) => pfad === legacy || pfad.startsWith(`${legacy}/`));
+	return LEGACY_PFADE.some((legacy) => pfad === legacy || pfad === `${legacy}/`);
 }
 
 /**

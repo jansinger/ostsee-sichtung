@@ -51,10 +51,15 @@ Pfade ohne Präfix ändern sich dadurch nicht — das Präfix kommt additiv dazu
 **Grenzen der Umsetzung**, bewusst gesetzt:
 
 - Nur `de` und `en`, nur in Kleinschreibung — wie im CakePHP-Muster `de|en`.
-- Nur vor den vier Legacy-Pfaden oben. `/en/` vor der Startseite oder vor
-  `/admin` bleibt 404: Die Anwendung ist einsprachig deutsch, ein `/en/` vor
-  einer Seitenroute wäre ein Sprachversprechen, das sie nicht einlöst — und vor
-  `/admin` zusätzlich ein zweiter Pfad auf geschützte Routen.
+- Nur vor genau den vier Pfaden aus der Tabelle oben — nicht vor deren
+  Verzeichnissen. `/en/rest_sichtungen/view/1840.json` bleibt also 404, und ein
+  neuer Legacy-Endpunkt bekommt das Präfix erst, wenn er in `LEGACY_PFADE`
+  eingetragen wird.
+- `/en/` vor der Startseite oder vor `/admin` bleibt 404: Die Anwendung ist
+  einsprachig deutsch, ein `/en/` vor einer Seitenroute wäre ein
+  Sprachversprechen, das sie nicht einlöst — und vor `/admin` zusätzlich ein
+  zweiter Pfad auf geschützte Routen, deren Schutz an `event.url.pathname`
+  hängt, das `reroute` nicht verändert.
 - `/de` bzw. `/en` allein zeigte in CakePHP auf das Meldeformular
   (`sichtungen/add`) und bleibt aus demselben Grund 404.
 
@@ -207,9 +212,9 @@ Retrieves response options for numeric fields as JSON array.
 - **URL**: `/rest_sichtungen/antworten.json`
 - **Method**: `GET`
 
-Wie jeder Pfad dieser API zusätzlich unter `/de/…` und `/en/…` erreichbar; die
-Response ist in allen Varianten dieselbe deutsche Liste (siehe „Sprachpräfix
-`/de/` und `/en/`" oben).
+Wie jeder Pfad dieser API ist auch dieser zusätzlich unter `/de/…` und `/en/…`
+erreichbar. Die Response ist in allen drei Varianten dieselbe deutsche Liste
+(siehe Abschnitt „Sprachpräfix `/de/` und `/en/`" oben).
 
 ### Response Format
 

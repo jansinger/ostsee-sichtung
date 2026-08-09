@@ -26,6 +26,29 @@ describe('stripLegacyLanguagePrefix', () => {
 
 	it('behält den Trailing Slash bei', () => {
 		expect(stripLegacyLanguagePrefix('/en/rest_sichtungen/')).toBe('/rest_sichtungen/');
+		expect(stripLegacyLanguagePrefix('/de/sichtungen/showreports.json/')).toBe(
+			'/sichtungen/showreports.json/'
+		);
+	});
+
+	describe('bedient genau die vier dokumentierten Pfade, nicht deren Verzeichnisse', () => {
+		// Sonst bekäme jeder künftige Pfad unter /sichtungen/ oder /rest_sichtungen/
+		// das Präfix stillschweigend mit — auch ein nicht-Legacy-Pfad. Ein neuer
+		// Legacy-Endpunkt gehört bewusst in die Liste eingetragen.
+		const keinDokumentierterPfad = [
+			'/en/sichtungen',
+			'/de/sichtungen',
+			// CakePHP-Actions, die es in dieser Anwendung nicht gibt (die URL steht
+			// als Beispiel in der Antwort von POST /rest_sichtungen).
+			'/en/rest_sichtungen/view/1840.json',
+			'/de/rest_sichtungen/add'
+		];
+
+		for (const pfad of keinDokumentierterPfad) {
+			it(`${pfad} bleibt unverändert`, () => {
+				expect(stripLegacyLanguagePrefix(pfad)).toBeUndefined();
+			});
+		}
 	});
 
 	describe('greift nur bei den Legacy-Pfaden', () => {
