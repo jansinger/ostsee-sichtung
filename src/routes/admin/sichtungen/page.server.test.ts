@@ -136,6 +136,22 @@ describe('admin/+page.server load() — Foto-Ankündigungs-Arbeitsliste', () => 
 		expect(recordedSelects[0]?.orderBySql).toMatch(/nulls last/i);
 	});
 
+	it('hängt an jede Sortierung einen eindeutigen Tiebreaker', async () => {
+		// Ohne zweites Kriterium ist die Reihenfolge innerhalb eines
+		// Gleichstands undefiniert — Postgres darf sie je Abfrage anders
+		// wählen. Bei LIMIT/OFFSET über 19.953 Zeilen heißt das: Eine Zeile
+		// erscheint auf Seite 1 UND Seite 2, eine andere fällt still ganz aus
+		// der Liste. `seaState` kennt keine 10 verschiedene Werte, besteht also
+		// aus wenigen riesigen Blöcken. Dieselbe Fehlerklasse wie in
+		// `openQueueOrder.ts`, wo `(created, id)` aus genau diesem Grund
+		// festgeschrieben ist.
+		await load({
+			url: makeUrl({ sort: 'seaState', order: 'asc' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		expect(recordedSelects[0]?.orderBySql).toMatch(/"id"/);
+	});
+
 	it('sortiert auch aufsteigend explizit mit NULLS LAST', async () => {
 		await load({
 			url: makeUrl({ sort: 'spamScore', order: 'asc' })

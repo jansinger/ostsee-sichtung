@@ -62,9 +62,18 @@ describe('Sichtungstabelle — Spalten', () => {
 		document.documentElement.style.setProperty('--color-base-200', BASE_200);
 	});
 
-	afterEach(() => {
+	afterEach(async () => {
 		document.documentElement.style.removeProperty('--color-base-100');
 		document.documentElement.style.removeProperty('--color-base-200');
+		/* Die URL im `$app/state`-Mock ist ein gemeinsames Objekt: Ein Test, der
+		   sie für seinen Fall umsetzt, dürfte sie den übrigen nicht dauerhaft
+		   unterschieben — der Sortier-Test daneben lebt gerade davon, dass keine
+		   Parameter darin stehen. */
+		const { page: appState } = await import('$app/state');
+		// Cast: SvelteKit typisiert `page.url.pathname` als Union aller Routen —
+		// eine frisch gebaute URL kennt diese Verengung nicht.
+		appState.url = new URL('https://localhost:4000/admin/sichtungen') as typeof appState.url;
+		vi.mocked((await import('$app/navigation')).goto).mockClear();
 	});
 
 	it('zeigt E-Mail, Entfernung und Verteilung per Default nicht', () => {
@@ -126,6 +135,58 @@ describe('Sichtungstabelle — Spalten', () => {
 			(el) => el.textContent?.trim() === '—'
 		);
 		expect(strich, 'der Gedankenstrich selbst wird nicht mit vorgelesen').toBeTruthy();
+	});
+
+	it('zeigt schon beim ersten Aufruf, wonach sortiert ist', () => {
+		// Die gemockte URL trägt keine Query-Parameter — genau der erste Aufruf.
+		// Der Loader sortiert dann nach Sichtungsdatum absteigend; vorher stand
+		// an keinem Kopf ein Pfeil.
+		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+
+		const aktiv = [...screen.container.querySelectorAll('thead th')].filter(
+			(th) => th.getAttribute('aria-sort') !== 'none' && th.getAttribute('aria-sort') !== null
+		);
+
+		expect(aktiv).toHaveLength(1);
+		const kopf = aktiv[0] as HTMLElement;
+		expect(kopf.textContent).toContain('Sichtungsdatum');
+		expect(kopf.getAttribute('aria-sort')).toBe('descending');
+		// Die Richtung darf nicht allein am Pfeilzeichen hängen (WCAG 1.4.1).
+		expect(kopf.querySelector('button')?.getAttribute('aria-label')).toContain('absteigend');
+	});
+
+	it('zentriert die Auswahl-Checkbox in ihrer Zelle', () => {
+		// `app.css` setzt für jedes `label:has(> .checkbox)` ungelayert
+		// `align-items: flex-start` — richtig für mehrzeilige Feld-Labels, in
+		// einer Tabellenzeile hängt die Checkbox damit oben. Ein `items-center`
+		// als Utility verliert dagegen.
+		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+
+		const label = screen.container.querySelector('tbody tr td label') as HTMLElement;
+		expect(getComputedStyle(label).alignItems).toBe('center');
+	});
+
+	it('springt beim Umsortieren zurück auf Seite 1', async () => {
+		// Sortierung und Seitenzahl gehören nicht zusammen: Wer auf Seite 7
+		// umsortiert, sah bisher die Mitte der neuen Reihenfolge — eine Stelle,
+		// die mit dem, was er gerade gesucht hat, nichts zu tun hat.
+		const { page: appState } = await import('$app/state');
+		const { goto } = await import('$app/navigation');
+		appState.url = new URL(
+			'https://localhost:4000/admin/sichtungen?page=7&perPage=20'
+		) as typeof appState.url;
+
+		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
+		const tierart = [...screen.container.querySelectorAll('thead th button')].find((b) =>
+			b.textContent?.includes('Tierart')
+		) as HTMLButtonElement;
+		tierart.click();
+
+		const ziel = new URL(vi.mocked(goto).mock.calls.at(-1)?.[0] as URL);
+		expect(ziel.searchParams.get('sort')).toBe('species');
+		expect(ziel.searchParams.has('page'), 'die Seitenzahl fällt weg').toBe(false);
+		// `perPage` ist eine Einstellung, keine Position — die bleibt.
+		expect(ziel.searchParams.get('perPage')).toBe('20');
 	});
 
 	it('verspricht an nicht sortierbaren Spaltenköpfen keine Klickbarkeit', () => {

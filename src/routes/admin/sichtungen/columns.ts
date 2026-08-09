@@ -20,9 +20,19 @@
  * Status und Aktionen — die Spalten, wegen derer man die Tabelle öffnet.
  * Abgeschaltet sind sie nicht weg, sondern eine Checkbox im „Spalten"-Dropdown
  * entfernt.
+ *
+ * `referenceId` startet seit 2026-08-09 ebenfalls aus (Entscheidung Jan). Die
+ * ID selbst bleibt unverzichtbar — sie steht in der Team-Benachrichtigung, das
+ * Suchfeld sucht sie, `/admin/ref/[refId]` löst sie auf, und alle 19.953 Zeilen
+ * haben eine. Als **Spalte** trägt sie trotzdem wenig: Die echten Kennungen
+ * sind 24-stellige Zufallsketten (`fr6j2uikz8zsldhktfez7x3n`; nur die
+ * E2E-Testdaten sehen mit `E2E-024` handlich aus). Damit war sie die breiteste
+ * Spalte der Tabelle für einen Wert, den man weder überfliegen noch vergleichen
+ * kann — der Arbeitsweg ist „ID in die Suche einfügen und landen", und danach
+ * ist es ohnehin die einzige Zeile.
  */
 export const DEFAULT_COLUMN_VISIBILITY = {
-	referenceId: true,
+	referenceId: false,
 	sightingDate: true,
 	created: true,
 	email: false,

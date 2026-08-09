@@ -106,12 +106,15 @@ async function seedeSichtung(referenceId: string, mitErstbefund: boolean): Promi
 	});
 }
 
-/** Die Tabellenzeile einer geseedeten Sichtung. */
-function zeileZu(page: Page, referenceId: string) {
-	return page
-		.locator('tbody tr')
-		.filter({ has: page.locator(`a[href="/admin/ref/${referenceId}"]`) })
-		.first();
+/**
+ * Die Tabellenzeile einer geseedeten Sichtung — über `data-sighting-id` am
+ * `<tr>` und nicht über den Link der Referenz-ID-Spalte: Die ist seit dem
+ * 2026-08-09 standardmäßig abgeschaltet (`columns.ts`), der Link stand dann in
+ * keiner Zeile mehr und der Locator fand nichts. Die Zeilen-Id hängt dagegen an
+ * keiner Spaltenwahl.
+ */
+function zeileZu(page: Page, sichtungId: number) {
+	return page.locator(`tbody tr[data-sighting-id="${sichtungId}"]`).first();
 }
 
 test.describe('Spam-Check — Erstbefund und Neuberechnung nebeneinander', () => {
@@ -180,7 +183,7 @@ test.describe('Spam-Check — Erstbefund und Neuberechnung nebeneinander', () =>
 			   dafür das im Projekt etablierte Signal (`admin-sighting-status.spec.ts`). */
 			await page.waitForLoadState('networkidle');
 
-			const zeile = zeileZu(page, REFERENZ.tabelle);
+			const zeile = zeileZu(page, sichtungId);
 			await expect(zeile).toBeVisible();
 			// Die Spalte zeigt den Erstbefund — unverändert, das war nie der Fehler.
 			await expect(zeile).toContainText(String(ERSTBEFUND_SCORE));

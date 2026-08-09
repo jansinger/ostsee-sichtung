@@ -9,12 +9,14 @@ import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
 import { searchCondition, normalizeSearchTerm } from '$lib/server/db/sightingSearchFilter';
 import { and, eq, sql, type SQL } from 'drizzle-orm';
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 import { ServerConfigService } from '$lib/services/configService';
 import { isValidDateParam } from './dateParam';
 import { SIGHTING_LIST_COLUMNS } from './listColumns';
+import { resolveSort, type SortColumn } from './sortParams';
 import { statusCondition } from './statusFilter';
 
 export const load: PageServerLoad = async ({ url }) => {
@@ -26,8 +28,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	);
 	// Enforce the maximum configured per page limit
 	const perPage = Math.min(requestedPerPage, paginationConfig.maxSightingsPerPage);
-	const sortBy = url.searchParams.get('sort') || 'sightingDate';
-	const sortOrder = url.searchParams.get('order') || 'desc';
+	const { column: sortBy, order: sortOrder } = resolveSort(url.searchParams);
 	const fromDate = url.searchParams.get('fromDate');
 	const toDate = url.searchParams.get('toDate');
 	const verified = url.searchParams.get('verified');
@@ -110,7 +111,16 @@ export const load: PageServerLoad = async ({ url }) => {
 				: and(...conditions)
 			: undefined;
 
-	// Sortierungs-Mapping
+	// Sortierungs-Mapping. Als `Record<SortColumn, …>` typisiert: Die Liste der
+	// sortierbaren Spalten steht in `sortParams.ts` und speist auch die
+	// Spaltenköpfe — ein Eintrag dort ohne Mapping hier bricht `type-check`.
+	//
+	// Vier davon fehlten bis 2026-08 (`behavior`, `seaState`, `wind`,
+	// `visibility`): Ihr Kopf rendert seit jeher über `sortableTh`, also als
+	// Knopf mit `aria-sort` — der Klick landete aber im `|| sightings.sightingDate`
+	// darunter und sortierte still nach Sichtungsdatum. Solange kein Pfeil zu
+	// sehen war, fiel das nicht auf; mit der Anzeige stünde die Behauptung
+	// sichtbar in der Tabelle.
 	const sortingMap = {
 		sightingDate: sightings.sightingDate,
 		created: sightings.created,
@@ -120,8 +130,15 @@ export const load: PageServerLoad = async ({ url }) => {
 		distance: sightings.distance,
 		juvenileCount: sightings.juvenileCount,
 		distribution: sightings.distribution,
+		behavior: sightings.behavior,
+		seaState: sightings.seaState,
+		// `windstaerke` ist varchar(2) — als Text sortiert stünde „10" vor „2".
+		// NULLIF, weil neben 7.591 NULL-Zeilen auch 2.691 leere Strings im
+		// Bestand stehen, die ein blankes CAST mit einem 22P02 quittieren würde.
+		wind: sql`cast(nullif(${sightings.windForce}, '') as integer)`,
+		visibility: sightings.visibility,
 		spamScore: sightings.spamScore
-	};
+	} satisfies Record<SortColumn, AnyPgColumn | SQL>;
 
 	// Abfrage bauen. Explizite Spaltenauswahl statt `db.select()`: Begründung,
 	// Umfang und Absicherung stehen in `listColumns.ts`.
@@ -134,11 +151,21 @@ export const load: PageServerLoad = async ({ url }) => {
 	// sortiert DESC per Default NULLS FIRST — bei der nullbaren Spam-Spalte
 	// stünden sonst die 19.000+ unbewerteten Altzeilen VOR den Treffern. Für
 	// NOT-NULL-Spalten ist der Zusatz wirkungslos.
-	const sortField = sortingMap[sortBy as keyof typeof sortingMap] || sightings.sightingDate;
+	//
+	// `id` als Tiebreaker in beiden Richtungen: Ohne eindeutiges Zweitkriterium
+	// ist die Reihenfolge innerhalb eines Gleichstands undefiniert, und Postgres
+	// darf sie je Abfrage anders wählen. Mit LIMIT/OFFSET über knapp 20.000
+	// Zeilen heißt das, dass eine Zeile auf Seite 1 UND Seite 2 auftaucht,
+	// während eine andere still ganz aus der Liste fällt. Latent war das immer;
+	// scharf wird es mit den vier neu sortierbaren Spalten oben — `seaState`
+	// kennt keine zehn verschiedenen Werte, die Sortierung besteht also aus
+	// wenigen riesigen Blöcken. Dieselbe Entscheidung und dieselbe Begründung
+	// wie `(created, id)` in `openQueueOrder.ts`.
+	const sortField = sortingMap[sortBy];
 	const sortedQuery =
 		sortOrder === 'desc'
-			? query.orderBy(sql`${sortField} desc nulls last`)
-			: query.orderBy(sql`${sortField} asc nulls last`);
+			? query.orderBy(sql`${sortField} desc nulls last, ${sightings.id} desc`)
+			: query.orderBy(sql`${sortField} asc nulls last, ${sightings.id} asc`);
 
 	// Paginierung hinzufügen
 	const paginatedQuery = sortedQuery.limit(perPage).offset((page - 1) * perPage);

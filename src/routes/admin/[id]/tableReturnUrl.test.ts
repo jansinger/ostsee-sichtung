@@ -43,7 +43,10 @@ describe('tableReturnUrl — Rückweg aus der Detailansicht', () => {
 		// Abgleich gegen die Quelle statt gegen eine zweite Liste: Wer der Tabelle
 		// einen Filter hinzufügt, ohne ihn hier nachzuziehen, bekommt genau den
 		// Bug, um den es geht — der Rückweg verlöre ihn still.
-		const quellen = ['+page.server.ts', '+page.svelte'].map((datei) =>
+		// `sortParams.ts` steht mit in der Liste, seit `sort`/`order` nicht mehr
+		// im Loader ausgelesen werden, sondern dort — sonst prüfte der Abgleich
+		// die Sortierung stillschweigend nicht mehr mit.
+		const quellen = ['+page.server.ts', '+page.svelte', 'sortParams.ts'].map((datei) =>
 			readFileSync(new URL(`../sichtungen/${datei}`, import.meta.url), 'utf-8')
 		);
 		const gelesen = new Set<string>();
