@@ -57,7 +57,12 @@
 		   — `/60` ist die Untergrenze für Dekoratives, nicht der Normalwert. Beim
 		   Bündeln in diese Konstante war der richtige Moment, das zu ziehen. */
 		muted: 'text-base-content/70 text-xs',
-		summary: 'collapse-title py-3 text-sm font-medium',
+		/* `min-h-[var(--target-min)]` statt `min-h-11`: WCAG 2.5.5 will die ganze
+		   Zusammenfassungszeile als Ziel, und der zentrale Touch-Target-Block in
+		   `app.css` greift hier nicht — er zielt auf `.btn`, ein
+		   `summary.collapse-title` ist keiner. Über den Token nimmt die Zeile die
+		   56px des Feldmodus mit, ein fester Pixelwert täte das nicht. */
+		summary: 'collapse-title min-h-[var(--target-min)] py-3 text-sm font-medium',
 		iconWidth: '14'
 	} as const;
 
@@ -72,7 +77,8 @@
 		list: 'text-base-content/80 ml-4 list-disc space-y-1 text-base',
 		support: 'text-base-content/70 text-support',
 		muted: 'text-base-content/70 text-support',
-		summary: 'collapse-title py-3 text-lg font-medium',
+		/* Siehe INLINE_STYLE.summary — der Token gilt in beiden Varianten. */
+		summary: 'collapse-title min-h-[var(--target-min)] py-3 text-lg font-medium',
 		iconWidth: '20'
 	} as const;
 
@@ -233,8 +239,12 @@
 								<summary class={styles.summary}>
 									<div class="flex flex-wrap items-center gap-2">
 										{#if species.images.length > 0 && species.images[0]}
-											<div class="avatar">
-												<div class="mask h-6 w-6 mask-circle">
+											<!-- Benannte Gruppe: Das Artfoto weiter unten ist ebenfalls eine
+											     `group`, und die Kontrast-Regel im scoped CSS zielt auf `.group`. -->
+											<div class="avatar group/avatar">
+												<div
+													class="mask duration-quick h-6 w-6 mask-circle transition-transform group-hover/avatar:scale-105"
+												>
 													<img
 														src={species.images[0].src}
 														alt=""
@@ -269,7 +279,7 @@
 													<div class="text-center">
 														<button
 															type="button"
-															class="group shadow-raised hover:shadow-floating duration-instant relative overflow-hidden rounded-lg transition-all"
+															class="group shadow-raised hover:shadow-floating duration-instant relative cursor-pointer overflow-hidden rounded-lg transition-all"
 															onclick={() => openImageModal(image.src, image.alt, image.copyright)}
 															aria-label={`${image.alt} in Originalgröße anzeigen`}
 														>
@@ -505,7 +515,14 @@
 	data-testid="species-image-dialog"
 	onclose={handleDialogClose}
 >
-	<div class="modal-box w-11/12 max-w-5xl p-0">
+	<!-- `w-[95%]` ohne Breakpoint: Die Breite stand vorher auf DaisyUIs 11/12 und
+	     wurde unterhalb 640px per Media-Query auf 95% gehoben. Oberhalb von rund
+	     1077px deckelt ohnehin `max-w-5xl`, dazwischen sind es 3,3 Prozentpunkte
+	     — zu wenig für eine dritte Layout-Grenze neben `md` und `lg`
+	     (Breakpoint-Vertrag in .claude/rules/design-system.md). Das `max-w-95%`
+	     der alten Regel entfällt ersatzlos: `max-w-5xl` liegt mit 64rem überall
+	     über 95% und deckelt die Breite nie nach unten. -->
+	<div class="modal-box shadow-floating w-[95%] max-w-5xl p-0">
 		{#if modalImageSrc}
 			<div class="relative">
 				<!-- Modal Header -->
@@ -521,12 +538,16 @@
 					</button>
 				</div>
 
-				<!-- Modal Image -->
+				<!-- Modal Image.
+				     Die Höhe schaltet bei `md`, nicht mehr bei 640px: Kopf- und Fußzeile
+				     des Dialogs belegen zusammen rund 160px, mit 70vh Bild passt das auf
+				     einem Telefon nicht in den Viewport. `md` ist laut Breakpoint-Vertrag
+				     (design-system.md) die Grenze zwischen kompakt und weit. -->
 				<div class="flex flex-col items-center p-4">
 					<img
 						src={modalImageSrc}
 						alt={modalImageAlt}
-						class="max-h-[70vh] max-w-full object-contain"
+						class="shadow-raised max-h-[60vh] max-w-full rounded-lg object-contain md:max-h-[70vh]"
 					/>
 					{#if modalImageCopyright}
 						<p class="text-base-content/60 mt-3 text-sm">
@@ -567,43 +588,28 @@
 </dialog>
 
 <style>
-	.collapse-content {
-		transition: all 0.2s ease-in-out;
-	}
+	/* Was hier NICHT mehr steht — vier daisyUI-Komponentenklassen wurden lokal
+	   neu definiert, obwohl daisyUI ausdrücklich zuerst zu Modifier-Klassen und
+	   Tailwind-Utilities rät. Sie sind ins Markup gewandert bzw. entfallen:
 
-	/* WCAG 2.5.5: Das Ziel ist die ganze Zusammenfassungszeile, nicht der Text
-	   darin. Der zentrale Touch-Target-Block in `app.css` greift hier nicht — er
-	   zielt auf `.btn`, und ein `summary.collapse-title` ist keiner (dieselbe
-	   Begründung wie beim Skip-Link dort). Der Wert kommt aus dem Token statt aus
-	   einem `min-h-11` an der Aufrufstelle, damit der Feldmodus die 56px
-	   mitnimmt. */
-	.collapse-title {
-		min-height: var(--target-min);
-	}
+	   `.collapse-content { transition: all .2s }` — ersatzlos. Die Kurzschreibweise
+	     ersetzte daisyUIs eigene Eigenschaftsliste für dieselbe Dauer und verlor
+	     dabei deren `allow-discrete` für `overflow`, `content-visibility`,
+	     `visibility` und `min-height` sowie das `padding .1s` (nachgelesen in
+	     node_modules/daisyui/components/collapse.css, 5.7.4). Genau der Fehler,
+	     den design-system.md unter „Dauer" beschreibt — hier ohne Gegenwert.
+	   `.collapse-title { min-height }` — als `min-h-[var(--target-min)]` in
+	     INLINE_STYLE/PAGE_STYLE, Begründung dort.
+	   `.modal-box { box-shadow }` — als `shadow-floating` am Element.
+	   `.avatar .mask { transition/hover }` — als `transition-transform
+	     duration-quick group-hover/avatar:scale-105` am Element.
 
-	.avatar .mask {
-		transition: transform 0.2s ease;
-	}
-
-	.avatar:hover .mask {
-		transform: scale(1.05);
-	}
-
-	button.group {
-		border: none;
-		background: none;
-		padding: 0;
-		cursor: pointer;
-	}
-
-	.modal-box {
-		box-shadow: var(--shadow-floating);
-	}
-
-	.modal img {
-		border-radius: 0.5rem;
-		box-shadow: var(--shadow-raised);
-	}
+	   Ebenfalls entfallen: `button.group { border/background/padding }` (Tailwinds
+	   Preflight setzt alle drei bereits zurück; übrig blieb `cursor-pointer`, das
+	   Tailwind 4 für Buttons nicht mehr mitbringt), `.modal img` (jetzt
+	   `rounded-lg shadow-raised` am Bild), der 640px-Block (siehe Markup) und der
+	   `prefers-reduced-motion`-Block — den entschärft app.css global für alle
+	   Übergänge (`.claude/rules/daisyui.md`, „Vorhandene Overrides respektieren"). */
 
 	/* Copyright-Links stammen aus {@html} und brauchen daher globale Selektoren.
 	   `/70` ist die Deckkraft der Bildunterschriften, `/60` die des
@@ -623,42 +629,21 @@
 		opacity: 0.8;
 	}
 
-	@media (max-width: 640px) {
-		/* Nur die eingebettete Variante. Ungelayerte Scoped-Styles schlagen
-		   Tailwind-Utilities (die in `@layer utilities` liegen) unabhängig von der
-		   Spezifität — ohne die Einschränkung auf `.help-inline` würde diese Regel
-		   das `text-lg` der Seitenvariante überschreiben und die zwölf Artnamen auf
-		   `/bestimmungshilfe` unterhalb 640px auf 14px drücken. Also genau im
-		   Feldfall, für den die Seitenvariante die Typografie-Rollen überhaupt
-		   bekommen hat. Inline ändert die Regel nichts (`text-sm` ist derselbe
-		   Wert) — sie bleibt nur als bewusster Deckel stehen. */
-		.help-inline .collapse-title {
-			font-size: 0.875rem;
-		}
+	/* Der 640px-Block hatte vier Regeln, zwei davon ohne Wirkung: Die Artnamen
+	   standen inline ohnehin auf `text-sm` (= die 0.875rem der Regel), und
+	   `.collapse-content` bekam die 1rem Innenabstand, die daisyUI dort selbst
+	   setzt und die im Markup zusätzlich als `px-4` stehen. Die beiden echten
+	   Regeln — Dialogbreite und Bildhöhe — sind als Utilities ins Markup
+	   gewandert und dort begründet. Damit gibt es hier keinen dritten
+	   Breakpoint mehr.
 
-		.collapse-content {
-			padding-left: 1rem;
-			padding-right: 1rem;
-		}
-
-		.modal-box {
-			width: 95%;
-			max-width: 95%;
-		}
-
-		.modal img {
-			max-height: 60vh;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.collapse-content,
-		.avatar .mask,
-		button {
-			transition: none;
-		}
-	}
-
+	   Bleibt: `prefers-contrast`. Tailwinds Variante dafür heißt `contrast-more`
+	   und fragt `prefers-contrast: more` ab — einen anderen Wert des Merkmals als
+	   die drei Aufrufstellen im Projekt (hier, MediaThumbnail, MediaModal), die
+	   alle `high` verwenden. Der Wechsel des Merkmalswerts ändert, wer die Regel
+	   überhaupt bekommt; das gehört in einen Zug über alle drei Dateien und nicht
+	   beiläufig hierher. `.group` trifft dabei nur den Artfoto-Button — das
+	   Avatar-Vorschaubild ist als `group/avatar` benannt. */
 	@media (prefers-contrast: high) {
 		.group:hover {
 			outline: 2px solid;
