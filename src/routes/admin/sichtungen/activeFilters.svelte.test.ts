@@ -53,8 +53,8 @@ describe('Sichtungstabelle — aktive Filter kommen aus der URL', () => {
 		// Test-DOM (nur per CSS getrennt), `.first()` genügt für beide.
 		await screen.getByRole('button', { name: 'Filter' }).first().click();
 
-		await screen.getByLabelText('Von').fill('2026-01-01');
-		await expect.element(screen.getByLabelText('Von')).toHaveValue('2026-01-01');
+		await screen.getByLabelText('Sichtung von').fill('2026-01-01');
+		await expect.element(screen.getByLabelText('Sichtung von')).toHaveValue('2026-01-01');
 
 		/* Über das Suffix und nicht über „Filter …": Das Panel steht in diesem
 		   Test offen, und sein Schließen-Knopf heißt „Filter ausblenden". */

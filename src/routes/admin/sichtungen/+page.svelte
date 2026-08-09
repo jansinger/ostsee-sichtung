@@ -998,8 +998,8 @@
 			(Button-Hierarchie). Ein Chip ist eine Nebenaktion.
 
 			Die Beschriftung steht im Knopf, das Entfernen sagt das `aria-label` —
-			sonst läse ein Screenreader nur „Von 01.06.2026" und nichts darüber, was
-			ein Klick bewirkt. Das `x`-Icon ist deshalb `aria-hidden`.
+			sonst läse ein Screenreader nur „Sichtung von 01.06.2026" und nichts
+			darüber, was ein Klick bewirkt. Das `x`-Icon ist deshalb `aria-hidden`.
 
 			Kein Status-Chip: `filterChips` wird mit `skipVerified` gebaut, der aktive
 			Statusreiter direkt darunter zeigt ihn bereits.
@@ -1060,7 +1060,7 @@
 			<div class="grid grid-cols-1 gap-2 md:grid-cols-3 lg:grid-cols-6">
 				<div class="fieldset w-full">
 					<label for="fromDate" class="label py-0">
-						<span class="text-support">Von</span>
+						<span class="text-support">Sichtung von</span>
 					</label>
 					<input
 						type="date"
@@ -1072,7 +1072,7 @@
 				</div>
 				<div class="fieldset w-full">
 					<label for="toDate" class="label py-0">
-						<span class="text-support">Bis</span>
+						<span class="text-support">Sichtung bis</span>
 					</label>
 					<input
 						type="date"

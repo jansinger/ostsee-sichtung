@@ -57,9 +57,17 @@ describe('buildFilterChips', () => {
 		expect(chips.map((chip) => chip.param)).toEqual(['fromDate', 'q']);
 	});
 
+	// WP4: „Von"/„Bis" nannten kein Bezugsfeld — die Tabelle zeigt zwei
+	// Datumsspalten (Sichtungsdatum, Meldeeingang). Server-seitig filtert der
+	// Bereich das Sichtungsdatum (`+page.server.ts` → `sightingCalendarDate`),
+	// deshalb heißt der Chip jetzt „Sichtung von"/„Sichtung bis" — Wort für
+	// Wort wie das Filter-Panel (+page.svelte), keine zweite
+	// Beschriftungsvokabular für denselben Filter.
 	it('beschriftet die Datumsgrenzen im Format der Tabelle', () => {
-		expect(buildFilterChips(nur('fromDate', '2026-06-01'))[0]?.label).toBe('Von 01.06.2026');
-		expect(buildFilterChips(nur('toDate', '2026-06-30'))[0]?.label).toBe('Bis 30.06.2026');
+		expect(buildFilterChips(nur('fromDate', '2026-06-01'))[0]?.label).toBe(
+			'Sichtung von 01.06.2026'
+		);
+		expect(buildFilterChips(nur('toDate', '2026-06-30'))[0]?.label).toBe('Sichtung bis 30.06.2026');
 	});
 
 	it('löst den Kanal über die Options-Liste des Panels auf', () => {

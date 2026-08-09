@@ -46,7 +46,9 @@ describe('Sichtungstabelle — Chip-Zeile der aktiven Filter', () => {
 	it('zeigt je gesetztem Filter einen entfernbaren Chip', async () => {
 		const screen = render(SichtungenSeite, { data: daten([]) });
 
-		await expect.element(screen.getByLabelText('Filter Von 01.06.2026 entfernen')).toBeVisible();
+		await expect
+			.element(screen.getByLabelText('Filter Sichtung von 01.06.2026 entfernen'))
+			.toBeVisible();
 		await expect.element(screen.getByLabelText('Filter Suche: „delfin“ entfernen')).toBeVisible();
 	});
 

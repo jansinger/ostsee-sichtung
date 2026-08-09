@@ -39,7 +39,7 @@ import type { FilterParams } from './activeFilters';
 
 export type FilterChip = {
 	param: keyof FilterParams;
-	/** Menschenlesbar und für sich verständlich — „Von 01.06.2026", „Kanal: Web". */
+	/** Menschenlesbar und für sich verständlich — „Sichtung von 01.06.2026", „Kanal: Web". */
 	label: string;
 };
 
@@ -122,8 +122,8 @@ export const MELDEART_LABEL: Record<string, string> = {
  * Wegklicken gäbe.
  */
 const CHIP_LABEL: Record<keyof FilterParams, (value: string) => string> = {
-	fromDate: (value) => `Von ${datum(value)}`,
-	toDate: (value) => `Bis ${datum(value)}`,
+	fromDate: (value) => `Sichtung von ${datum(value)}`,
+	toDate: (value) => `Sichtung bis ${datum(value)}`,
 	verified: (value) => `Status: ${statusLabel(value)}`,
 	deadFinding: (value) => `Meldeart: ${MELDEART_LABEL[value] ?? value}`,
 	entryChannel: (value) => `Kanal: ${kanalLabel(value)}`,

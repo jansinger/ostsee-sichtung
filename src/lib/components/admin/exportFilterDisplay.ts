@@ -35,10 +35,14 @@ export function getActiveFiltersDisplay(
 	// ohne Date-Objekt (sonst bestimmt die Browser-Zone den Tag mit, bis zu
 	// ±1 Tag).
 	if (currentFilters.fromDate) {
-		filterDisplays.push(`Von: ${formatWallClockDateTime(currentFilters.fromDate as string)}`);
+		filterDisplays.push(
+			`Sichtung von: ${formatWallClockDateTime(currentFilters.fromDate as string)}`
+		);
 	}
 	if (currentFilters.toDate) {
-		filterDisplays.push(`Bis: ${formatWallClockDateTime(currentFilters.toDate as string)}`);
+		filterDisplays.push(
+			`Sichtung bis: ${formatWallClockDateTime(currentFilters.toDate as string)}`
+		);
 	}
 	const statusFilter = normalizeStatusParam(currentFilters.verified as string | null);
 	if (statusFilter) {
