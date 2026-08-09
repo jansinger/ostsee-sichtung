@@ -345,7 +345,15 @@ export async function GET(event: RequestEvent): Promise<Response> {
 			})
 			.from(sightings)
 			.where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-			.orderBy(sql`${sightings.sightingDate} DESC`)
+			// `id` als zweites Kriterium ist nicht Kosmetik, sondern das, was die
+			// Antwort überhaupt erst reproduzierbar macht: `sichtungsdatum` ist
+			// nicht eindeutig (81 mehrfach belegte Zeitpunkte im Produktivbestand,
+			// größte Gruppe neun), und PostgreSQL darf gleiche Sortierschlüssel in
+			// beliebiger Reihenfolge liefern. Zusammen mit dem `.limit(1000)`, das
+			// im Normalbetrieb immer greift, entschied das bisher auch darüber,
+			// WELCHE Sichtungen am Rand noch mitkommen — zwei aufeinanderfolgende
+			// Aufrufe gegen dieselbe Datenbank lieferten verschiedene Reihenfolgen.
+			.orderBy(sql`${sightings.sightingDate} DESC`, sql`${sightings.id} DESC`)
 			.limit(1000); // Reasonable limit to prevent abuse
 
 		// Transform to PDF-compliant format with EXACT field names
