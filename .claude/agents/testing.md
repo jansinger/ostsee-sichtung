@@ -122,6 +122,12 @@ src/lib/utils/[name].test.ts
 e2e/[feature].spec.ts
 ```
 
+**Bei einem neuen E2E-Spec zusätzlich PFLICHT:** Ihn in `scripts/e2e-shards.sh`
+einem Shard (`form`/`map`/`smoke`) zuordnen. CI wählt die Specs namentlich aus,
+nicht per Glob — ein nicht zugeordneter Spec macht alle drei Shards rot.
+Danach `npm run test:e2e:shards` (rund zwei Sekunden). Regel mit
+Zuordnungskriterium: `.claude/rules/testing-patterns.md`.
+
 ### Schritt 3: Tests implementieren
 
 - Arrange: Setup
@@ -140,6 +146,7 @@ e2e/[feature].spec.ts
 ```bash
 npm run test:unit        # Unit Tests
 npm run test:e2e         # E2E Tests
+npm run test:e2e:shards  # Shard-Zuordnung prüfen (nach neuem E2E-Spec)
 npm run test:unit:watch  # Watch Mode
 ```
 
