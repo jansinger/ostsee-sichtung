@@ -500,6 +500,20 @@ jobs:
             # /admin und die Tabelle /admin/sichtungen — letztere kompiliert
             # der dead-finding-Spec darüber bereits kalt. Lokal 3 Tests, ~9 s.
             e2e/admin-inbox.spec.ts
+            # Warteschlangen-Modus der Detailansicht: fährt /admin, /admin/[id]
+            # und /admin/sichtungen — alle drei kompilieren die Admin-Specs
+            # darüber bereits kalt. Lokal 4 Tests, ~10 s.
+            #
+            # Die Begründung „`form` ist der kürzeste Shard" aus den Blöcken
+            # darüber stimmt so nicht mehr: Über die letzten drei erfolgreichen
+            # main-Läufe (2026-08-09, aus den CI-Schrittdauern) misst `smoke`
+            # 249–271 s und ist deutlich der längste, während `form` (202–217 s)
+            # und `map` (203–221 s) gleichauf liegen. Der Spec kommt trotzdem
+            # hierher und nicht nach `map`: Bei gleicher Laufzeit entscheidet die
+            # bereits bezahlte Kaltkompilierung der drei Admin-Routen. Wer den
+            # nächsten Spec zuordnet, sollte allerdings `smoke` entlasten statt
+            # der veralteten Regel zu folgen.
+            e2e/admin-queue.spec.ts
             # Die folgenden drei kamen mit der Vereinheitlichung des
             # Sichtungs-Status dazu und stehen aus demselben Grund hier wie die
             # drei Admin-Specs darüber: `form` war nach #769 der kürzeste Shard,
