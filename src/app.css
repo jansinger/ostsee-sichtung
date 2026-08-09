@@ -185,6 +185,9 @@
    dort zielt auf Utilities, deren einzige Aufrufstelle /styleguide ist. Diese
    haben Dutzende Aufrufstellen in Komponenten und können nicht still aus dem
    Build fallen. */
+@utility z-base {
+	z-index: var(--layer-base);
+}
 @utility z-raised {
 	z-index: var(--layer-raised);
 }

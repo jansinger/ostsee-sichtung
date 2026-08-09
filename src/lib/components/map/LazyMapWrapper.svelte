@@ -10,7 +10,7 @@
 		title = 'Sichtungskarte',
 		showLogo = true,
 		containerClass = 'relative h-screen w-screen overflow-hidden',
-		titleClass = 'glass text-base-content text-sm absolute top-4 left-12 z-nav rounded-lg px-3 py-1.5 font-bold shadow-floating backdrop-blur-md flex items-center gap-2'
+		titleClass = 'glass text-base-content text-sm absolute top-4 left-12 z-raised rounded-lg px-3 py-1.5 font-bold shadow-floating backdrop-blur-md flex items-center gap-2'
 	} = $props<{
 		mapContainerId?: string;
 		showTitle?: boolean;

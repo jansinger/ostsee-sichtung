@@ -872,7 +872,7 @@ test.describe('Design-Tokens — Utilities haben einen Vertreter auf /styleguide
  */
 test.describe('Design-Tokens — Layer- und Motion-Utilities wirken', () => {
 	/** Stufe → erwarteter berechneter Wert. */
-	const LAYERS = { raised: '10', panel: '20', nav: '30', overlay: '40', skip: '50' };
+	const LAYERS = { base: '0', raised: '10', panel: '20', nav: '30', overlay: '40', skip: '50' };
 	const DURATIONS = { instant: '0.12s', quick: '0.2s', panel: '0.3s', emphasis: '0.4s' };
 
 	const computeWith = (page: Page, className: string, property: string) =>

@@ -41,7 +41,7 @@
 		title = 'Sichtungskarte',
 		showLogo = true,
 		containerClass = 'relative h-screen w-screen overflow-hidden',
-		titleClass = 'glass text-base-content text-sm absolute top-4 left-12 z-nav rounded-lg px-3 py-1.5 font-bold shadow-floating backdrop-blur-md flex items-center gap-2'
+		titleClass = 'glass text-base-content text-sm absolute top-4 left-12 z-raised rounded-lg px-3 py-1.5 font-bold shadow-floating backdrop-blur-md flex items-center gap-2'
 	} = $props<{
 		mapContainerId?: string;
 		showTitle?: boolean;
@@ -681,7 +681,7 @@
 	     genau diesen Filter; „Alle zurücksetzen" stellt den Grundzustand her. -->
 	{#if hasActiveFilters}
 		<div
-			class="scroll-styled z-nav absolute top-16 left-1/2 flex w-max max-w-[92vw] -translate-x-1/2 flex-nowrap items-center justify-start gap-1.5 overflow-x-auto px-1 pb-1"
+			class="scroll-styled z-raised absolute top-16 left-1/2 flex w-max max-w-[92vw] -translate-x-1/2 flex-nowrap items-center justify-start gap-1.5 overflow-x-auto px-1 pb-1"
 			role="group"
 			aria-label="Aktive Filter"
 		>
@@ -889,7 +889,7 @@
 
 	<!-- K3: Umschalter Karte/Liste -->
 	<div
-		class="z-nav absolute bottom-4 left-1/2 -translate-x-1/2"
+		class="z-raised absolute bottom-4 left-1/2 -translate-x-1/2"
 		role="group"
 		aria-label="Darstellung der Sichtungen wählen"
 	>
@@ -939,7 +939,7 @@
 	<!-- Tastatur-Hilfe Button -->
 	<button
 		onclick={() => (showKeyboardHelp = true)}
-		class="bg-info text-info-content hover:bg-info/80 z-nav shadow-floating duration-panel fixed bottom-4 left-4 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full transition-colors"
+		class="bg-info text-info-content hover:bg-info/80 z-raised shadow-floating duration-panel fixed bottom-4 left-4 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full transition-colors"
 		aria-label="Tastatur-Hilfe anzeigen"
 		title="Tastaturkürzel anzeigen (H oder ?)"
 	>
@@ -956,7 +956,7 @@
 		     360, -22px bei 320); bei 375px blieben nur 5px übrig. Die Umschaltung
 		     belegt 16–60px über der Unterkante, bottom-20 setzt die Platte auf 80px
 		     und räumt sie. -->
-		<div class="z-nav absolute right-1 bottom-20 md:bottom-6">
+		<div class="z-raised absolute right-1 bottom-20 md:bottom-6">
 			<!-- Helle Platte, weil /logo_dmm_positiv.svg einfarbig im Markenblau
 			     #003777 zeichnet (relative Luminanz 0,041 — auf Weiß 11,6:1, über
 			     einer dunklen Kachel nur noch ~1,2:1) und dort sonst verschwindet.

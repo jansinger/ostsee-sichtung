@@ -207,7 +207,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
 	bind:this={mapElement}
-	class="ol-map-container z-raised h-full w-full overflow-hidden"
+	class="ol-map-container z-base h-full w-full overflow-hidden"
 	role="application"
 	data-position={hasPosition ? 'set' : 'unset'}
 	aria-label={readonly
