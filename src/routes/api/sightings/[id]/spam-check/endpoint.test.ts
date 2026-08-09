@@ -15,7 +15,9 @@ const mockSighting = {
 	seaMark: null,
 	notes: null,
 	isDead: null,
-	distribution: 0
+	distribution: 0,
+	spamScore: 2,
+	spamIndicators: ['Formular verdächtig schnell abgeschickt']
 };
 
 // Mutable so individual tests can override the result
@@ -108,13 +110,39 @@ describe('GET /api/sightings/[id]/spam-check', () => {
 		}
 	});
 
-	it('gibt SpamCheckResult als JSON zurück bei gültiger Sichtung', async () => {
+	it('stellt den persistierten Befund der Neuberechnung gegenüber', async () => {
+		// Der Kern des Endpunkts: Die Neuberechnung kennt die Signale des
+		// Meldezeitpunkts nicht (Formular-Token, Absendedauer, Duplikate) und
+		// kommt deshalb regelmäßig tiefer heraus als der gespeicherte Score.
+		// Nur die Neuberechnung auszuliefern hieß, den Erstbefund der Tabelle zu
+		// widersprechen, ohne den Unterschied benennen zu können.
+		mockDetectSpamIndicators.mockResolvedValue({ score: 0, isHighRisk: false, indicators: [] });
+
 		const response = await GET(createEvent('123'));
 		expect(response.status).toBe(200);
 		const body = await response.json();
-		expect(body).toHaveProperty('score');
-		expect(body).toHaveProperty('isHighRisk');
-		expect(body).toHaveProperty('indicators');
+
+		expect(body.stored).toEqual({
+			score: 2,
+			indicators: ['Formular verdächtig schnell abgeschickt']
+		});
+		expect(body.recomputed).toMatchObject({ score: 0, isHighRisk: false, indicators: [] });
+	});
+
+	it('liefert `stored: null` für nie bewerteten Altbestand', async () => {
+		// NULL ist nicht 0 (`docs/SPAM_DETECTION.md`). Ein `{ score: 0 }` hier
+		// läse sich als „damals geprüft, sauber" — das Gegenteil der Aussage.
+		mockDbResult = [{ ...mockSighting, spamScore: null, spamIndicators: null }];
+		const body = await (await GET(createEvent('123'))).json();
+		expect(body.stored).toBeNull();
+	});
+
+	it('lässt einen unbrauchbaren `spam_indicators`-Wert nicht durchschlagen', async () => {
+		// Die Spalte ist untypisiertes `jsonb`. Ein Nicht-Array dort darf den
+		// Befund nicht mitreißen — der Score ist auch ohne Indikatorliste gültig.
+		mockDbResult = [{ ...mockSighting, spamScore: 3, spamIndicators: { kaputt: true } }];
+		const body = await (await GET(createEvent('123'))).json();
+		expect(body.stored).toEqual({ score: 3, indicators: [] });
 	});
 
 	it('setzt Cache-Control: no-store Header', async () => {

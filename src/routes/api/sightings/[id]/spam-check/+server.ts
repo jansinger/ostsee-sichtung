@@ -3,7 +3,7 @@ import { requireUserRole } from '$lib/server/auth/auth';
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { detectSpamIndicators } from '$lib/server/spam/spamDetector';
-import type { SpamDetectionInput } from '$lib/types/spam';
+import type { SpamCheckResponse, SpamDetectionInput, SpamStoredFinding } from '$lib/types/spam';
 import { error, isHttpError, json, type RequestHandler } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 
@@ -51,14 +51,33 @@ export const GET: RequestHandler = async ({ params, locals, url }) => {
 			inBalticSeaGeo: sighting.inBalticSeaGeo
 		};
 
-		const result = await detectSpamIndicators(spamInput);
+		const recomputed = await detectSpamIndicators(spamInput);
+
+		// Der persistierte Erstbefund kommt mit — ohne ihn stünde die
+		// Neuberechnung unerklärt gegen die Zahl in Tabelle und Eingang
+		// (`SpamCheckResponse`). `spam_indicators` ist untypisiertes `jsonb`;
+		// ein Nicht-Array darf den Score nicht mitreißen, der bleibt gültig.
+		const stored: SpamStoredFinding | null =
+			sighting.spamScore != null
+				? {
+						score: sighting.spamScore,
+						indicators: Array.isArray(sighting.spamIndicators)
+							? (sighting.spamIndicators as string[])
+							: []
+					}
+				: null;
 
 		logger.info(
-			{ id, score: result.score, isHighRisk: result.isHighRisk },
+			{
+				id,
+				storedScore: stored?.score ?? null,
+				score: recomputed.score,
+				isHighRisk: recomputed.isHighRisk
+			},
 			'Spam-Check für Sichtung durchgeführt'
 		);
 
-		return json(result, {
+		return json({ stored, recomputed } satisfies SpamCheckResponse, {
 			headers: { 'Cache-Control': 'no-store' }
 		});
 	} catch (err) {

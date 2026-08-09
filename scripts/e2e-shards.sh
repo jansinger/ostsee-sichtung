@@ -145,6 +145,18 @@ form=(
 	# /about eine Route, die in `form` sonst niemand kalt kompiliert —
 	# das ist der Preis dieser Zuordnung. Lokal 3 Tests, ~9 s.
 	e2e/hover-transitions.spec.ts
+	# Fährt /admin/[id] und /admin/sichtungen — beide kompilieren die
+	# Admin-Specs oben bereits kalt, der Aufschlag fällt hier kein
+	# weiteres Mal an. Nicht nach `smoke`, der laut der Messung oben
+	# entlastet werden soll; zwischen `form` und `map` (gleichauf)
+	# entscheidet damit die bereits bezahlte Kaltkompilierung.
+	#
+	# Achtung beim Umhängen: Der Spec seedet eine Zeile auf
+	# FIRST_PAGE_DATE und sucht sie auf Seite 1 der Tabelle. Er
+	# verträgt sich mit `?perPage=1` der Overflow-Specs oben, weil er
+	# nicht die *neueste* Zeile braucht — NEWEST_ROW_DATE bleibt deren
+	# Reservat. Lokal 3 Tests, ~10 s, räumt seine Zeilen selbst weg.
+	e2e/admin-spam-check.spec.ts
 )
 
 # Die drei Shards laufen parallel; die Laufzeit des Jobs ist die des

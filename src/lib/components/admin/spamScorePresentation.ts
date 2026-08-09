@@ -23,7 +23,7 @@
  * Client-sicher: nur Typen und Konstanten aus `$lib/types/spam`, kein Import
  * aus `$lib/server/**` (der Bruch fiele erst in `npm run build` auf).
  */
-import { HIGH_RISK_THRESHOLD, type SpamCheckResult } from '$lib/types/spam';
+import { HIGH_RISK_THRESHOLD, type SpamCheckResponse, type SpamCheckResult } from '$lib/types/spam';
 
 export type SpamRisk = 'unrated' | 'clean' | 'suspicious' | 'high';
 
@@ -74,6 +74,47 @@ export function getSpamRiskFromResult(result: SpamCheckResult): SpamRisk {
 	if (result.isHighRisk) return 'high';
 	return getSpamRisk(result.score);
 }
+
+/**
+ * Verhältnis der Neuberechnung zum persistierten Erstbefund.
+ *
+ * `incomparable` deckt zwei Fälle ab, die sich hier gleich verhalten: Es gibt
+ * keinen Erstbefund (`stored === null`, Altbestand), oder die Neuberechnung ist
+ * gar nicht durchgelaufen (`failed`). Beide Male fehlt eine der zwei Seiten —
+ * eine Differenz zu bilden hieße, mit einer Null zu rechnen, die keine ist.
+ */
+export type SpamDrift = 'incomparable' | 'unchanged' | 'lower' | 'higher';
+
+export function getSpamDrift(response: SpamCheckResponse): SpamDrift {
+	const { stored, recomputed } = response;
+	if (stored == null || recomputed.failed) return 'incomparable';
+	if (recomputed.score === stored.score) return 'unchanged';
+	return recomputed.score < stored.score ? 'lower' : 'higher';
+}
+
+/**
+ * Der Satz, der die Abweichung erklärt — `null`, wo es nichts zu erklären gibt.
+ *
+ * Ohne diesen Text war die Gegenüberstellung nur eine zweite Zahl: Die
+ * Oberfläche zeigte „Spam 2" und „0" nebeneinander, und wer die Herkunft der
+ * Indikatoren nicht kennt, liest darin einen Defekt.
+ */
+export const SPAM_DRIFT_PRESENTATION: Record<SpamDrift, { note: string | null }> = {
+	incomparable: { note: null },
+	unchanged: { note: null },
+	lower: {
+		note:
+			'Niedriger als beim Eingang — das ist der Normalfall: Formular-Token, Absendedauer ' +
+			'und Duplikat-Signale gibt es nur im Moment des Absendens und lassen sich nicht ' +
+			'nachträglich rekonstruieren. Maßgeblich für die Triage bleibt der Erstbefund.'
+	},
+	higher: {
+		note:
+			'Höher als beim Eingang — die Bewertung stützt sich also auf etwas, das beim ' +
+			'Absenden noch nicht galt: bearbeitete Angaben oder eine E-Mail-Domain, die ' +
+			'inzwischen keine Mails mehr annimmt.'
+	}
+};
 
 interface SpamRiskBase {
 	label: string;

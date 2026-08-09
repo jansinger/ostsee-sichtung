@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { SpamCheckResult } from '$lib/types/spam';
+import type { SpamCheckResponse, SpamCheckResult } from '$lib/types/spam';
 import { HIGH_RISK_THRESHOLD } from '$lib/types/spam';
 import {
+	SPAM_DRIFT_PRESENTATION,
 	SPAM_RISK_PRESENTATION,
 	SPAM_SUSPICIOUS_THRESHOLD,
+	getSpamDrift,
 	getSpamRisk,
 	getSpamRiskFromResult
 } from './spamScorePresentation';
@@ -68,6 +70,63 @@ describe('getSpamRiskFromResult', () => {
 			failed: true
 		});
 		expect(getSpamRiskFromResult(fehlgeschlagen)).toBe('unrated');
+	});
+});
+
+describe('getSpamDrift', () => {
+	function antwort(
+		stored: { score: number; indicators: string[] } | null,
+		recomputed: Partial<SpamCheckResult>
+	): SpamCheckResponse {
+		return { stored, recomputed: { score: 0, isHighRisk: false, indicators: [], ...recomputed } };
+	}
+
+	it('meldet keine Abweichung, wenn beide Läufe denselben Score ergeben', () => {
+		expect(getSpamDrift(antwort({ score: 3, indicators: ['a'] }, { score: 3 }))).toBe('unchanged');
+	});
+
+	it('erkennt den Regelfall: die Neuberechnung liegt niedriger', () => {
+		// Genau der Fall, für den es dieses Modul gibt. Vier Indikatoren wiegen je
+		// 2 Punkte und sind nachträglich nicht rekonstruierbar (Formular-Token,
+		// Absendedauer, beide Duplikatsignale) — der Nachlauf kommt dann auf 0,
+		// während die Tabelle weiterhin 2 zeigt.
+		const drift = getSpamDrift(
+			antwort({ score: 2, indicators: ['Formular verdächtig schnell abgeschickt'] }, { score: 0 })
+		);
+		expect(drift).toBe('lower');
+	});
+
+	it('erkennt eine höhere Neuberechnung', () => {
+		expect(getSpamDrift(antwort({ score: 1, indicators: [] }, { score: 4 }))).toBe('higher');
+	});
+
+	it('vergleicht nicht gegen einen Altbestand ohne Bewertung', () => {
+		// `stored: null` heißt „nie bewertet" und nicht „Score 0". Ein Vergleich
+		// dagegen behauptete eine Veränderung, wo es keinen Vorzustand gibt.
+		expect(getSpamDrift(antwort(null, { score: 3 }))).toBe('incomparable');
+		expect(getSpamDrift(antwort(null, { score: 0 }))).toBe('incomparable');
+	});
+
+	it('vergleicht nicht gegen eine fehlgeschlagene Neuberechnung', () => {
+		// Fail-Safe: Score 0 mit `isHighRisk: true`. Als „liegt niedriger"
+		// gelesen wäre das eine Aussage über eine Prüfung, die nie lief.
+		const drift = getSpamDrift(
+			antwort({ score: 3, indicators: [] }, { score: 0, isHighRisk: true, failed: true })
+		);
+		expect(drift).toBe('incomparable');
+	});
+});
+
+describe('SPAM_DRIFT_PRESENTATION', () => {
+	it('erklärt jede echte Abweichung im Klartext', () => {
+		for (const drift of ['lower', 'higher'] as const) {
+			expect(SPAM_DRIFT_PRESENTATION[drift].note).toBeTruthy();
+		}
+	});
+
+	it('schweigt, wo es nichts zu erklären gibt', () => {
+		expect(SPAM_DRIFT_PRESENTATION.unchanged.note).toBeNull();
+		expect(SPAM_DRIFT_PRESENTATION.incomparable.note).toBeNull();
 	});
 });
 

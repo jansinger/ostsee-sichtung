@@ -30,6 +30,38 @@ export interface SpamCheckResult {
 }
 
 /**
+ * Der zum Meldezeitpunkt persistierte Befund (`spam_score`/`spam_indicators`).
+ * Kein `isHighRisk`: Das ist kein gespeichertes Feld, sondern wird überall aus
+ * `HIGH_RISK_THRESHOLD` rekonstruiert — eine zweite, mitgelieferte Fassung
+ * derselben Aussage könnte davon abweichen.
+ */
+export interface SpamStoredFinding {
+	score: number;
+	indicators: string[];
+}
+
+/**
+ * Antwort von `GET /api/sightings/[id]/spam-check` — **zwei** Befunde, bewusst
+ * nebeneinander statt einer Zahl.
+ *
+ * Vier Indikatoren wiegen je 2 Punkte und existieren nur im Moment des
+ * Absendens: Formular-Token fehlt/ungültig, verdächtig schnell abgeschickt und
+ * die beiden Duplikat-Signale. Ihre Eingangsdaten (Token, Absendedauer,
+ * 24-Stunden- bzw. 7-Tage-Fenster) stehen nirgends in der Zeile, also kann
+ * `recomputed` sie nicht rekonstruieren und liegt entsprechend tiefer.
+ *
+ * Bis 2026-08 lieferte der Endpunkt nur die Neuberechnung. Damit zeigte die
+ * Tabelle „Spam 2" und der Check daneben „0" — beide Zahlen richtig, der
+ * Widerspruch unerklärlich, weil der Vergleichswert fehlte.
+ */
+export interface SpamCheckResponse {
+	/** `null` heißt „nie bewertet" (Altbestand, Legacy-Eingang) — nicht `0`. */
+	stored: SpamStoredFinding | null;
+	/** Frischer Lauf über den aktuellen Datensatz, ohne Meldezeitpunkt-Signale. */
+	recomputed: SpamCheckResult;
+}
+
+/**
  * Minimal input type for spam detection.
  * Accepts only the fields actually used by detectSpamIndicators,
  * so callers don't need to pass a full SightingFormValues.

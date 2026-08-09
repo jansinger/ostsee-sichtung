@@ -28,9 +28,13 @@
 	import { onDestroy } from 'svelte';
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
 	import { toast } from '$lib/stores/toastState.svelte';
-	import type { SpamCheckResult } from '$lib/types/spam';
+	import type { SpamCheckResponse } from '$lib/types/spam';
+	import SpamFinding from '$lib/components/admin/SpamFinding.svelte';
 	import {
+		getSpamDrift,
+		getSpamRisk,
 		getSpamRiskFromResult,
+		SPAM_DRIFT_PRESENTATION,
 		SPAM_RISK_PRESENTATION,
 		type SpamRisk
 	} from '$lib/components/admin/spamScorePresentation';
@@ -397,7 +401,7 @@
 		/** Die Sichtung, zu der Ergebnis bzw. Fehler gehören. */
 		sightingId: number;
 		loading: boolean;
-		result: SpamCheckResult | null;
+		result: SpamCheckResponse | null;
 		error: string | null;
 	}
 
@@ -438,7 +442,7 @@
 			if (!response.ok) {
 				throw new Error(`Fehler ${response.status}: ${response.statusText}`);
 			}
-			const result: SpamCheckResult = await response.json();
+			const result: SpamCheckResponse = await response.json();
 			if (spamCheck.sightingId !== sightingId) return;
 			spamCheck = { sightingId, loading: false, result, error: null };
 		} catch (err) {
@@ -607,36 +611,54 @@
 {/if}
 
 {#if spamCheck.result}
-	{@const result = spamCheck.result}
-	{@const risk = getSpamRiskFromResult(result)}
-	{@const spam = SPAM_RISK_PRESENTATION[risk]}
-	<!-- Wort, Farbe, Icon und Schwelle kommen aus `spamScorePresentation.ts` —
-	     dieselbe Quelle wie Modal, Tabellenspalte und Eingangskarte. Vorher zog
-	     diese Karte schon bei Score 1 gelb, während dieselbe Meldung in der
-	     Liste grau und im Modal grün war. -->
+	{@const response = spamCheck.result}
+	{@const stored = response.stored}
+	{@const recomputed = response.recomputed}
+	{@const drift = SPAM_DRIFT_PRESENTATION[getSpamDrift(response)]}
+	<!-- Die Karte richtet Farbe und Überschrift nach dem **Erstbefund**: Er ist
+	     die Zahl, die in Tabelle und Eingang steht, und die für die Triage
+	     maßgebliche. Nur wo es keinen gibt (Altbestand, `stored === null`),
+	     führt die Neuberechnung. Vorher führte sie immer — und widersprach dann
+	     der Liste, aus der man kam (`SpamCheckResponse`). -->
+	{@const risk = stored ? getSpamRisk(stored.score) : getSpamRiskFromResult(recomputed)}
+	<!-- Wort, Farbe, Icon und Schwelle kommen aus `spamScorePresentation.ts`,
+	     die Anordnung der beiden Befunde aus `SpamFinding.svelte` — dieselben
+	     Quellen wie im Modal der Tabelle. Vorher stand hier eine zweite,
+	     handgebaute Fassung mit abweichendem Wortlaut; das war genau die
+	     Divergenz zwischen Anzeigestellen, gegen die beide Module existieren.
+
+	     Die Karte trägt nur noch die Fläche: Farbe und Icon der **führenden**
+	     Stufe, dazu ein neutraler Titel. Stünde hier zusätzlich deren Label,
+	     wiederholte es das Badge des ersten Befunds direkt darunter. -->
 	<div class="card mb-4 border {SPAM_CARD_SURFACE[risk]}">
 		<div class="card-body p-4">
 			<div class="flex items-center gap-2">
-				<Icon icon={spam.icon ?? 'lucide:shield-alert'} class="h-5 w-5 {SPAM_CARD_ICON[risk]}" />
-				<h3 class="card-title text-base">{spam.label}</h3>
-				<div class="ml-auto flex gap-2">
-					{#if spam.badgeClass}
-						<span class="badge {spam.badgeClass}">Score: {result.score}</span>
-					{:else}
-						<!-- `failed: true` — Score 0 und `isHighRisk: true` zugleich. Die
-						     Zahl wäre hier eine Behauptung über eine Prüfung, die gar
-						     nicht durchgelaufen ist. -->
-						<span class="badge badge-warning">Prüfung fehlgeschlagen</span>
-					{/if}
-				</div>
+				<Icon
+					icon={SPAM_RISK_PRESENTATION[risk].icon ?? 'lucide:shield-alert'}
+					class="h-5 w-5 {SPAM_CARD_ICON[risk]}"
+					aria-hidden="true"
+				/>
+				<h3 class="card-title text-base">Spam-Bewertung</h3>
 			</div>
-			<p class="text-base-content/70 text-sm">{spam.description}</p>
-			{#if result.indicators.length > 0}
-				<ul class="mt-2 list-inside list-disc text-sm">
-					{#each result.indicators as indicator (indicator)}
-						<li>{indicator}</li>
-					{/each}
-				</ul>
+
+			<SpamFinding
+				title="Beim Eingang"
+				risk={stored ? getSpamRisk(stored.score) : 'unrated'}
+				score={stored?.score ?? null}
+				indicators={stored?.indicators ?? []}
+			/>
+
+			<div class="divider my-2"></div>
+
+			<SpamFinding
+				title="Jetzt nachgerechnet"
+				risk={getSpamRiskFromResult(recomputed)}
+				score={recomputed.score}
+				indicators={recomputed.indicators}
+			/>
+
+			{#if drift.note}
+				<p class="text-base-content/70 mt-2 text-sm">{drift.note}</p>
 			{/if}
 		</div>
 	</div>

@@ -137,6 +137,22 @@ export interface SeedSightingData {
 	waterway?: string | null;
 	reporter?: SeedReporter;
 	privacyConsent?: boolean;
+	/**
+	 * Spam-Befund zum Meldezeitpunkt.
+	 *
+	 * Beide Felder sind seedbar, weil der interessante Fall im Bestand nicht
+	 * vorkommt: Vier Indikatoren wiegen je 2 Punkte und existieren nur beim
+	 * Absenden (Formular-Token, Absendedauer, Duplikat-Signale), und alle Scores
+	 * der Entwicklungs-DB stammen aus dem Backfill, der sie nie hatte. Wer die
+	 * Gegenüberstellung von gespeichertem und nachgerechnetem Score prüfen will,
+	 * kann sich also auf keine vorhandene Zeile stützen
+	 * (`admin-spam-check.spec.ts`).
+	 *
+	 * `undefined` lässt die Spalte auf `NULL` — „nie bewertet", nicht „Score 0"
+	 * (`docs/SPAM_DETECTION.md`).
+	 */
+	spamScore?: number;
+	spamIndicators?: string[];
 }
 
 /** Postgres kennt kein Boolean an diesen Spalten — `smallint` mit 0/1. */
@@ -172,7 +188,13 @@ function toColumns(data: SeedSightingData): Record<string, unknown> {
 		strasse: reporter.street,
 		plz: reporter.zipCode,
 		ort: reporter.city,
-		datenschutz_einverstaendnis: toFlag(data.privacyConsent)
+		datenschutz_einverstaendnis: toFlag(data.privacyConsent),
+		spam_score: data.spamScore,
+		/* `JSON.stringify` und nicht das Array selbst: `postgres.js` bindet ein
+		   JS-Array als Postgres-Array (`text[]`), und die Spalte ist `jsonb` —
+		   der Insert scheiterte sonst am Typ statt still das Falsche zu tun. */
+		spam_indicators:
+			data.spamIndicators === undefined ? undefined : JSON.stringify(data.spamIndicators)
 	};
 
 	/* `null` bleibt drin und wird geschrieben — „ausdrücklich ohne Position" ist
