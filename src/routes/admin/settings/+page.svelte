@@ -137,9 +137,20 @@
 	 *
 	 * `false` auch beim Doppelklick-Abbruch oben: Aus Sicht des Aufrufers ist
 	 * „läuft schon" kein gespeicherter Wert.
+	 *
+	 * **`silent` unterdrückt Meldung UND Timer.** Im Bulk-Lauf meldet der
+	 * Einzelaufruf nicht — gemeldet wird einmal am Ende über `buildSaveSummary`.
+	 * Es geht dabei nicht nur um die Zahl der Meldungen: Jeder Aufruf plante ein
+	 * `setTimeout` auf dieselbe Variable, in die `saveAllChanges` danach seine
+	 * Zusammenfassung schreibt. Die stand damit in einem Feld, für das bereits
+	 * ein fremder Löschauftrag lief, und verschwand nach fünf Sekunden — obwohl
+	 * sie im Fehlerfall bewusst ohne eigenen Timer gesetzt wird. Gleiche
+	 * Konstruktion und gleiche Begründung wie `submitVerdict(id, v, { silent:
+	 * true })` beim Bulk-Verdict der Sichtungstabelle.
 	 */
-	async function saveConfig(config: ConfigItem): Promise<boolean> {
+	async function saveConfig(config: ConfigItem, options?: { silent?: boolean }): Promise<boolean> {
 		if (savingStates[config.key]) return false;
+		const silent = options?.silent ?? false;
 
 		savingStates[config.key] = true;
 
@@ -165,6 +176,8 @@
 			newChangedConfigs.delete(config.key);
 			changedConfigs = newChangedConfigs;
 
+			if (silent) return true;
+
 			// Special handling for maintenance mode
 			if (config.key === 'display.maintenanceMode') {
 				const isEnabled = Boolean(config.value);
@@ -179,6 +192,7 @@
 			return true;
 		} catch (error) {
 			logger.error({ error, config: config.key }, 'Failed to save configuration');
+			if (silent) return false;
 			errorMessage = `❌ Fehler beim Speichern von ${config.key}`;
 			setTimeout(() => (errorMessage = ''), 5000);
 			return false;
@@ -212,7 +226,10 @@
 		let saved = 0;
 		let failed = 0;
 		for (const config of configsToSave) {
-			if (await saveConfig(config)) saved++;
+			/* `silent`: Sonst schriebe jeder Einzelaufruf seine eigene Meldung in
+			   dieselbe Variable — und plante einen Timer darauf, der die
+			   Zusammenfassung unten wieder wegräumte (Docblock an `saveConfig`). */
+			if (await saveConfig(config, { silent: true })) saved++;
 			else failed++;
 		}
 

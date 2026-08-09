@@ -1769,13 +1769,21 @@
 		     `page === totalPages` war dann `1 === 0` — „Nächste"/„Letzte" blieben
 		     auf einer leeren Trefferliste bedienbar und führten auf Seite 2 bzw. 0.
 		     Der Leerfall ist genau der, den man beim Bauen nicht vor sich hat;
-		     abgesichert in `paginationControls.test.ts`. -->
+		     abgesichert in `paginationControls.test.ts`.
+
+		     `aria-label` an jeder Schaltfläche zusätzlich zum `title`: Die
+		     Beschriftung ist nur ein Zeichen, und nach den Accessible-Name-Regeln
+		     gewinnt der Inhalt eines Buttons gegen sein `title` — der zugängliche
+		     Name war damit „«". Das `title` bleibt für den Maus-Tooltip stehen und
+		     weil `e2e/design-tokens.spec.ts` seine renders-Sonde darüber selektiert.
+		     Abgesichert in `paginationAccessibleNames.test.ts`. -->
 		<nav class="join" aria-label="Seiten-Navigation">
 			<button
 				class="btn join-item btn-sm"
 				onclick={() => changePage(1)}
 				disabled={seiten.atFirst}
 				title="Erste Seite"
+				aria-label="Erste Seite"
 			>
 				«
 			</button>
@@ -1784,6 +1792,7 @@
 				onclick={() => changePage(data.pagination.page - 1)}
 				disabled={seiten.atFirst}
 				title="Vorherige Seite"
+				aria-label="Vorherige Seite"
 			>
 				‹
 			</button>
@@ -1805,6 +1814,7 @@
 				onclick={() => changePage(data.pagination.page + 1)}
 				disabled={seiten.atLast}
 				title="Nächste Seite"
+				aria-label="Nächste Seite"
 			>
 				›
 			</button>
@@ -1813,6 +1823,7 @@
 				onclick={() => changePage(seiten.totalPages)}
 				disabled={seiten.atLast}
 				title="Letzte Seite"
+				aria-label="Letzte Seite"
 			>
 				»
 			</button>
