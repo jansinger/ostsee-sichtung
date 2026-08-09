@@ -34,6 +34,29 @@
 	function hasGPSData(): boolean {
 		return !!(file.exifData?.latitude && file.exifData?.longitude);
 	}
+
+	let imageLoading = $state(true);
+
+	function handleImageLoad() {
+		imageLoading = false;
+	}
+
+	function handleImageError(event: Event) {
+		const img = event.currentTarget as HTMLImageElement;
+		// Die tatsächlich gescheiterte URL, nicht `/api/media/…`: Beim zweiten
+		// Durchlauf ist das der Fallback, und ein Log, das dann weiter den
+		// Endpunkt nennt, schickt die Fehlersuche an die falsche Stelle.
+		console.error('Image loading failed:', img.src, event);
+
+		// Fallback to original URL if secure endpoint fails. `url` ist im Schema
+		// optional — ohne diese Prüfung entstünde daraus eine Anfrage auf
+		// `undefined?fallback=true`, die nur scheitern kann.
+		if (file.url && !img.src.includes('fallback=true')) {
+			img.src = `${file.url}?fallback=true`;
+			return;
+		}
+		imageLoading = false;
+	}
 </script>
 
 <div
@@ -47,19 +70,29 @@
 	{#if isImage(file.mimeType)}
 		<!-- Bild Thumbnail -->
 		<div class="relative aspect-square overflow-hidden">
+			<!-- Ladeanzeige, bis das Bild da ist. Sie hängt an `onload`/`onerror` und
+			     nicht an einem CSS-Selektor: Der Vorgänger an dieser Stelle war eine
+			     Streifen-Animation auf dem `img`, die eine Gegenregel im scoped CSS
+			     weiter unten dauerhaft abschaltete — dass sie nie lief, sah man dem
+			     Stylesheet nicht an (Begründung dort). Nur der Bild-Zweig hat etwas zu
+			     überbrücken: das Video lädt wegen `preload="none"` nichts, der
+			     Datei-Zweig zeigt bloß ein Icon.
+			     Ohne z-Angabe, aber vor dem Bild im Markup: `absolute` malt ohnehin
+			     über das statische `img` und die beiden Overlays danach über sie. -->
+			{#if imageLoading}
+				<div
+					class="skeleton absolute inset-0"
+					data-testid="media-thumbnail-skeleton"
+					aria-hidden="true"
+				></div>
+			{/if}
 			<img
 				src={`/api/media/${file.filePath}`}
 				alt={file.originalName}
 				class="h-full w-full object-contain transition-all group-hover:scale-110"
 				loading="lazy"
-				onerror={(e) => {
-					console.error('Image loading failed:', `/api/media/${file.filePath}`, e);
-					// Fallback to original URL if secure endpoint fails
-					const img = e.target as HTMLImageElement;
-					if (!img.src.includes('fallback=true')) {
-						img.src = `${file.url}?fallback=true`;
-					}
-				}}
+				onload={handleImageLoad}
+				onerror={handleImageError}
 			/>
 			<!-- Hover Overlay. bg-scrim/<n> statt bg-black/<n>: der Wert steht seit
 			     dem 2026-07-30 als --scrim-surface in tokens.css. Ein Schleier ist
@@ -223,7 +256,16 @@
 	   etwas gezeigt — die Gegenregel `.media-thumbnail img[src]` hebt es mit
 	   `background: none !important` wieder auf, und `src` steht im Markup als
 	   Literal, ist also ab dem ersten Paint da. Die Keyframe `loadingPattern`
-	   in app.css hatte hier ihre einzige Aufrufstelle und ist mit entfallen. */
+	   in app.css hatte hier ihre einzige Aufrufstelle und ist mit entfallen.
+
+	   Die Absicht dahinter lebt im Markup weiter, als DaisyUI-`skeleton` hinter
+	   `{#if imageLoading}`. Sie kommt bewusst nicht als CSS-Regel zurück: Ein
+	   Ladezustand, den ein Selektor beschreibt, ist genau dann falsch, wenn der
+	   Selektor den Zustand verfehlt — und dass er das tut, sieht man dem
+	   Stylesheet nicht an. Am Handler ist es prüfbar, und
+	   `MediaThumbnail.svelte.test.ts` prüft es: sichtbar vor `load`, weg danach,
+	   und weg auch dann, wenn der Fallback endgültig scheitert und `load` nie
+	   kommt. */
 
 	/* Animation for scale effect */
 	@media (prefers-reduced-motion: reduce) {
