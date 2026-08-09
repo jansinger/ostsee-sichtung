@@ -48,8 +48,7 @@ function daten(rows: SightingSelect[]): PageData {
 			total: rows.length,
 			totalPages: 1,
 			maxPerPage: 100
-		},
-		pendingPhotoAnnouncements: 0
+		}
 	} as unknown as PageData;
 }
 

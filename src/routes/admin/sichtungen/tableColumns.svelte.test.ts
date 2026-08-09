@@ -39,8 +39,7 @@ function sichtung(overrides: Partial<SightingSelect>): SightingSelect {
 function daten(rows: SightingSelect[]): PageData {
 	return {
 		sightings: rows,
-		pagination: { page: 1, perPage: 20, total: rows.length, totalPages: 1, maxPerPage: 100 },
-		pendingPhotoAnnouncements: 0
+		pagination: { page: 1, perPage: 20, total: rows.length, totalPages: 1, maxPerPage: 100 }
 	} as unknown as PageData;
 }
 

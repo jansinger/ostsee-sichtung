@@ -14,6 +14,7 @@ import {
 	updateSighting
 } from '$lib/server/db/sightingRepository';
 import type { ExifData } from '$lib/types';
+import { resolveMediaUploadFlag } from '$lib/utils/media/mediaUploadFlag';
 import { createId } from '@paralleldrive/cuid2';
 import { error, isHttpError, json } from '@sveltejs/kit';
 import { ValidationError } from 'yup';
@@ -112,8 +113,27 @@ export const PUT: RequestHandler = async ({ params, request, locals, url, getCli
 			.where(eq(sightings.id, Number(id)))
 			.limit(1);
 
+		// `mediaUpload` wird abgeleitet, nicht durchgereicht: Das Bearbeitungs-
+		// formular kennt kein Ankreuzfeld dafür, und ein hier hochgeladenes Foto
+		// muss auch in der Spalte „Aufnahme" ankommen. Die Regel ist asymmetrisch
+		// — Begründung in `$lib/utils/media/mediaUploadFlag.ts`.
+		//
+		// `uploadedFiles` ist der vollständige Bestand nach dieser Bearbeitung und
+		// nicht nur der Zuwachs — aber nur, wenn die Liste etwas enthält:
+		// `saveSightingFiles` ersetzt die Verknüpfungen dann komplett. Bei leerer
+		// Liste UND bei fehlendem Schlüssel läuft der Aufruf unten gar nicht bzw.
+		// steigt sofort aus; die Anhänge bleiben in beiden Fällen unberührt.
+		//
+		// `attachedFileCount: 0` heißt hier also nie „die Dateien wurden
+		// entfernt", sondern „an den Dateien wurde nichts geändert". Genau
+		// deshalb darf die Ableitung das Flag nicht löschen — sie wüsste sonst
+		// gar nicht, worauf sie sich beruft.
 		const updatedSighting = await updateSighting(Number(id), {
 			...formData,
+			mediaUpload: resolveMediaUploadFlag({
+				current: formData.mediaUpload,
+				attachedFileCount: uploadedFiles?.length ?? 0
+			}),
 			uploadedFiles: uploadedFiles || []
 		});
 

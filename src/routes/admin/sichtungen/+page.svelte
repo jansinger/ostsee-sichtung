@@ -336,18 +336,6 @@
 	}
 
 	/**
-	 * Springt direkt zur Arbeitsliste „Foto angekündigt, fehlt noch"
-	 * (siehe `$lib/utils/media/photoAnnouncement.ts`). Setzt nur den
-	 * Aufnahme-Filter — andere aktive Filter bleiben erhalten, damit z. B. ein
-	 * bereits gesetzter Datumsbereich nicht verloren geht.
-	 */
-	function showPendingPhotoAnnouncements(): void {
-		mediaUpload = MEDIA_UPLOAD_ANNOUNCED_MISSING;
-		isFilterPanelOpen = true;
-		applyFilters();
-	}
-
-	/**
 	 * Absenden der Suche. Läuft über `applyFilters()`, damit ein aktiver
 	 * Filter erhalten bleibt und die Seitenzahl auf 1 zurückspringt — sonst
 	 * stünde man mit einer frischen Suche auf einer leeren Seite 7.
@@ -667,30 +655,12 @@
 <div class="pt-6">
 	<!-- Page Header -->
 	<div class="container mx-auto mb-6 px-4 md:px-6">
-		<!--
-			Arbeitslisten-Hinweis „Foto angekündigt, fehlt noch"
-			(siehe $lib/utils/media/photoAnnouncement.ts). Echter `btn btn-outline`
-			statt eines mit `onclick` klickbar gemachten `badge`: Nur `.btn` bzw.
-			`summary.btn` bekommen über app.css automatisch die 44px-Touch-Target-
-			Mindestgröße (design-system.md „Feldmodus und Touch-Targets") — ein
-			`badge` bleibt bei ~24px hoch und wäre auf der Mobile-Kartenansicht
-			dieser Seite nicht zuverlässig zu treffen. `btn-outline` statt eines
-			vollton-farbigen `btn-info`, weil Vollton-Sekundärbuttons neben der
-			Primäraktion „Export" optisch mit ihr konkurrieren würden (Button-
-			Hierarchie-Regel); die Statusfarbe trägt stattdessen nur das Icon
-			(`text-info-strong`, AA-geprüft laut tokens.css).
-		-->
-		{#snippet pendingPhotoBadge()}
-			<button
-				type="button"
-				class="btn btn-sm btn-outline"
-				onclick={showPendingPhotoAnnouncements}
-				title="Sichtungen mit angekündigtem, aber noch nicht eingetroffenem Foto anzeigen"
-			>
-				<Icon icon="lucide:camera" class="text-info-strong mr-1 h-4 w-4" aria-hidden="true" />
-				{data.pendingPhotoAnnouncements} Foto{data.pendingPhotoAnnouncements === 1 ? '' : 's'} ausstehend
-			</button>
-		{/snippet}
+		<!-- Der Arbeitslisten-Knopf „n Fotos ausstehend" stand bis 2026-08-09 hier.
+		     Er ist raus, weil dieselbe Arbeitsliste auf dieser Seite bereits über
+		     den Aufnahme-Filter („Angekündigt, fehlt noch") erreichbar ist und der
+		     Eingang (`/admin`) den Hinweis samt Zähler ohnehin führt — dort gehört
+		     er hin, das ist die Task-Liste. Drei Einstiege in dieselbe Abfrage
+		     hießen drei Stellen, die auseinanderlaufen können. -->
 
 		<!-- Kompakter Kopf. Die Grenze kommt aus `layoutSwitch.ts` und ist dieselbe
 		     wie bei Kartenliste und Tabelle — vorher schaltete der Kopf bei `sm`,
@@ -724,14 +694,9 @@
 						Export
 					</button>
 				</div>
-				{#if (data.pagination && data.pagination.total) || data.pendingPhotoAnnouncements}
+				{#if data.pagination && data.pagination.total}
 					<div class="flex flex-wrap items-center justify-center gap-2">
-						{#if data.pagination && data.pagination.total}
-							<span class="badge badge-outline text-sm">{data.pagination.total} Ergebnisse</span>
-						{/if}
-						{#if data.pendingPhotoAnnouncements}
-							{@render pendingPhotoBadge()}
-						{/if}
+						<span class="badge badge-outline text-sm">{data.pagination.total} Ergebnisse</span>
 					</div>
 				{/if}
 			</div>
@@ -808,9 +773,6 @@
 					<Icon icon="lucide:download" class="mr-1 h-4 w-4" />
 					Export
 				</button>
-				{#if data.pendingPhotoAnnouncements}
-					{@render pendingPhotoBadge()}
-				{/if}
 				{#if data.pagination && data.pagination.total}
 					<span class="badge badge-outline whitespace-nowrap"
 						>{data.pagination.total} Ergebnisse</span

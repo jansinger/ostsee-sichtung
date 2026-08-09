@@ -1,10 +1,7 @@
 import { db } from '$lib/server/db';
 import { sightings } from '$lib/server/db/schema';
 import { berlinCalendarDate } from '$lib/server/db/sqlTimeZone';
-import {
-	MEDIA_UPLOAD_ANNOUNCED_MISSING,
-	mediaUploadCondition
-} from '$lib/server/db/mediaUploadFilter';
+import { mediaUploadCondition } from '$lib/server/db/mediaUploadFilter';
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
 import { searchCondition, normalizeSearchTerm } from '$lib/server/db/sightingSearchFilter';
@@ -176,27 +173,19 @@ export const load: PageServerLoad = async ({ url }) => {
 	// WHERE-Klausel zur Count-Abfrage hinzufügen
 	const countQuery = whereCondition ? countBaseQuery.where(whereCondition) : countBaseQuery;
 
-	// Arbeitslisten-Zähler „Foto angekündigt, fehlt noch" — unabhängig vom
-	// aktiven Filter, damit er als Hinweis im Dashboard-Kopf sichtbar ist, auch
-	// wenn gerade eine andere Ansicht gefiltert ist.
-	const pendingPhotoQuery = db
-		.select({ count: sql<number>`count(*)` })
-		.from(sightings)
-		.where(mediaUploadCondition(MEDIA_UPLOAD_ANNOUNCED_MISSING));
-
 	// Abfragen ausführen — voneinander unabhängig, deshalb parallel statt
-	// sequenziell (drei Round-Trips gleichzeitig statt hintereinander).
-	const [data, countResult, pendingPhotoResult] = await Promise.all([
-		paginatedQuery,
-		countQuery,
-		pendingPhotoQuery
-	]);
+	// sequenziell (zwei Round-Trips gleichzeitig statt hintereinander).
+	//
+	// Der dritte Zähler „Foto angekündigt, fehlt noch" ist mit dem zugehörigen
+	// Knopf im Kopf entfallen (Begründung in `+page.svelte`): Er kostete auf
+	// jedem Seitenaufruf dieser Tabelle eine eigene Abfrage über den gesamten
+	// Bestand, für eine Zahl, die der Eingang ohnehin führt.
+	const [data, countResult] = await Promise.all([paginatedQuery, countQuery]);
 	// `count(*)` ist bigint und kommt je nach PG-Treiber als String zurück. Der
 	// Loader-Vertrag sagt `number`, also wird hier normalisiert und nicht in
 	// jeder Aufrufstelle einzeln: `"1" === 1` ist falsch und ergab in der
 	// Kopfzeile „1 Fotos ausstehend".
 	const count = Number(countResult[0]?.count ?? 0);
-	const pendingPhotoAnnouncements = Number(pendingPhotoResult[0]?.count ?? 0);
 
 	// Wer eine ganze Referenz-ID einfügt (aus einer Bestätigungsmail, einer
 	// Rückfrage), will die Sichtung sehen — nicht eine Trefferliste mit einer
@@ -239,7 +228,6 @@ export const load: PageServerLoad = async ({ url }) => {
 			totalPages: Math.ceil(count / perPage),
 			total: count,
 			maxPerPage: paginationConfig.maxSightingsPerPage
-		},
-		pendingPhotoAnnouncements
+		}
 	};
 };
