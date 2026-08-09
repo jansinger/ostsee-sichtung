@@ -51,7 +51,7 @@ export function planAdvance(request: AdvanceRequest): AdvancePlan {
 
 	return {
 		target,
-		undoHref: target.kind !== 'stay' ? queueHref({ id: sightingId, referenceId: '' }, order) : null,
+		undoHref: target.kind !== 'stay' ? queueHref(sightingId, order) : null,
 		toastMessage: `Sichtung #${sightingId} ${VERDICT_WORT[verdict]}`
 	};
 }

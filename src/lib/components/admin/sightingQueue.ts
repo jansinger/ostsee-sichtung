@@ -33,8 +33,18 @@ export interface SightingQueue {
 	total: number;
 }
 
-export function queueHref(neighbor: QueueNeighbor, order: 'asc' | 'desc'): string {
-	return inboxDetailHref(neighbor.id, order);
+/**
+ * Der Ziel-Href einer Sichtung im Warteschlangen-Modus.
+ *
+ * Nimmt die ID und nicht den ganzen `QueueNeighbor`: Gebraucht wird ohnehin nur
+ * `.id`, und `planAdvance` (`queueAdvance.ts`) baut den Rückweg zur **gerade
+ * entschiedenen** Sichtung — die ist kein Nachbar und hat hier keinen
+ * `referenceId` beizusteuern. Mit der Objekt-Signatur entstand dort eine
+ * Attrappe (`{ id, referenceId: '' }`), deren leeres Feld nur den Typ
+ * befriedigte und einen Wert behauptete, den es nicht gibt.
+ */
+export function queueHref(sightingId: number, order: 'asc' | 'desc'): string {
+	return inboxDetailHref(sightingId, order);
 }
 
 /** Wohin die Seite nach einer Entscheidung geht. */
@@ -57,6 +67,6 @@ export function advanceTarget(
 	order: 'asc' | 'desc'
 ): AdvanceTarget {
 	if (queueFailed || !queue) return { kind: 'stay' };
-	if (queue.next) return { kind: 'sighting', href: queueHref(queue.next, order) };
+	if (queue.next) return { kind: 'sighting', href: queueHref(queue.next.id, order) };
 	return { kind: 'inbox' };
 }

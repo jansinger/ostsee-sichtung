@@ -10,8 +10,8 @@
 
 	let { queue, queueFailed, order }: Props = $props();
 
-	let prevHref = $derived(queue?.prev ? queueHref(queue.prev, order) : null);
-	let nextHref = $derived(queue?.next ? queueHref(queue.next, order) : null);
+	let prevHref = $derived(queue?.prev ? queueHref(queue.prev.id, order) : null);
+	let nextHref = $derived(queue?.next ? queueHref(queue.next.id, order) : null);
 	let zaehler = $derived(
 		queue
 			? queue.position
