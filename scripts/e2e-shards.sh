@@ -137,6 +137,12 @@ form=(
 	# ~12 s; die Presets liegen in `localStorage`, der Spec räumt sie
 	# in `beforeEach` selbst ab und braucht keine Testzeilen in der DB.
 	e2e/admin-filter-presets.spec.ts
+	# Direkt beim Preset-Spec darüber: dieselbe Route (/admin/sichtungen),
+	# dieselbe Leiste über der Tabelle, kein eigener Seed — der Spec liest
+	# nur, was der Bestand hergibt. Der Kaltkompilier-Aufschlag der Route
+	# ist damit längst bezahlt. Lokal 3 Tests, ~10 s. Nicht nach `smoke`:
+	# der ist laut der Messung oben mit 249–271 s der längste Shard.
+	e2e/admin-status-tabs.spec.ts
 	# Hover-Übergänge von .card/.btn. Thematisch stünde der Spec bei
 	# design-tokens.spec.ts in `smoke` — er prüft das Design System,
 	# nicht das Formular. Er kommt trotzdem hierher, weil der Hinweis
