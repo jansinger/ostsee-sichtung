@@ -3,6 +3,9 @@ import {
 	BELOW_OPACITY_FLOOR,
 	findOffenders,
 	OPACITY_FLOOR,
+	RAW_ELEVATION,
+	RAW_MOTION_DURATION,
+	RAW_Z_INDEX,
 	STATUS_AS_FOREGROUND,
 	TAILWIND_PALETTE,
 	type ScannedElement
@@ -287,6 +290,89 @@ describe('TAILWIND_PALETTE', () => {
 	   verankert bleibt und nicht irgendwo in der Klasse sucht. */
 	it.each(['photo-red-500', 'chromatic-white', 'shadow-raised'])('lässt %s durch', (className) => {
 		expect(TAILWIND_PALETTE.offends(className)).toBe(false);
+	});
+});
+
+describe('RAW_ELEVATION', () => {
+	it.each(['shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'shadow-2xl', 'shadow-inner'])(
+		'meldet %s',
+		(className) => {
+			expect(RAW_ELEVATION.offends(className)).toBe(true);
+		}
+	);
+
+	/* Das nackte `shadow` ist Tailwinds Alias für `shadow-md` und mit 29
+	   Fundstellen die zweithäufigste Form im Bestand. Eine Regel, die nur die
+	   benannten Stufen aufzählt, ließe ausgerechnet die unauffälligste durch —
+	   dieselbe Grammatik-Lücke wie `white`/`black` bei TAILWIND_PALETTE. */
+	it('meldet das nackte shadow', () => {
+		expect(RAW_ELEVATION.offends('shadow')).toBe(true);
+	});
+
+	/* Der Ersatz muss durchkommen, sonst ist die Regel unerfüllbar. Beide
+	   existieren als echte Utilities (@theme-Block in app.css). */
+	it.each(['shadow-raised', 'shadow-floating'])('lässt %s durch', (className) => {
+		expect(RAW_ELEVATION.offends(className)).toBe(false);
+	});
+
+	/* `shadow-none` nimmt einen Schatten zurück und wählt keine Stufe; ein
+	   farbiger Schatten stellt eine andere Frage als die Elevation-Stufe. */
+	it.each(['shadow-none', 'shadow-primary'])('lässt %s durch', (className) => {
+		expect(RAW_ELEVATION.offends(className)).toBe(false);
+	});
+
+	/* Verankerung: kein Teilwort-Treffer. */
+	it.each(['drop-shadow-sm', 'shadowbox', 'text-shadow-sm'])('lässt %s durch', (className) => {
+		expect(RAW_ELEVATION.offends(className)).toBe(false);
+	});
+});
+
+describe('RAW_Z_INDEX', () => {
+	it.each(['z-10', 'z-30', 'z-50', 'z-[1]', 'z-[100]', '-z-10'])('meldet %s', (className) => {
+		expect(RAW_Z_INDEX.offends(className)).toBe(true);
+	});
+
+	/* Die beiden Formen stehen ausdrücklich zusammen im Muster: `z-[1]` an den
+	   Admin-Dropdowns und `z-50` an Navbar und Panel-Toggle sind derselbe
+	   Verstoß, und ein Muster für nur eine der beiden erzeugte wieder Deckung,
+	   die es nicht gibt. */
+	it('meldet die Stufen- und die Arbitrary-Form gleichermaßen', () => {
+		expect(RAW_Z_INDEX.offends('z-50')).toBe(RAW_Z_INDEX.offends('z-[50]'));
+	});
+
+	/* `z-auto` ist keine Stufenwahl. Und: Es gibt bewusst KEIN `z-panel` —
+	   die Layer-Tokens stehen nur in tokens.css. Ein solcher Klassenname wäre
+	   eine tote Utility; die Regel meldet ihn nicht, weil sie über Klassennamen
+	   nicht entscheiden kann, ob eine Utility existiert. Der Hinweis der Regel
+	   nennt deshalb var() als Ersatz und nicht eine Klasse. */
+	it.each(['z-auto', 'z-panel'])('lässt %s durch', (className) => {
+		expect(RAW_Z_INDEX.offends(className)).toBe(false);
+	});
+
+	it('nennt var() und nicht eine Utility als Ersatz', () => {
+		expect(RAW_Z_INDEX.hint).toContain('var(--layer-panel)');
+	});
+
+	it.each(['size-10', 'gz-10'])('lässt %s durch', (className) => {
+		expect(RAW_Z_INDEX.offends(className)).toBe(false);
+	});
+});
+
+describe('RAW_MOTION_DURATION', () => {
+	it.each(['duration-300', 'duration-200', 'duration-[450ms]'])('meldet %s', (className) => {
+		expect(RAW_MOTION_DURATION.offends(className)).toBe(true);
+	});
+
+	/* Wie beim Z-Index gibt es keine `duration-quick`-Utility — der Hinweis
+	   muss auf var() zeigen, sonst führt die Korrektur von einem Verstoß in
+	   eine wirkungslose Klasse. */
+	it('nennt die Motion-Tokens und var() als Ersatz', () => {
+		expect(RAW_MOTION_DURATION.hint).toContain('--motion-quick');
+		expect(RAW_MOTION_DURATION.hint).toContain('var()');
+	});
+
+	it.each(['duration-quick', 'transition-all', 'delay-300'])('lässt %s durch', (className) => {
+		expect(RAW_MOTION_DURATION.offends(className)).toBe(false);
 	});
 });
 

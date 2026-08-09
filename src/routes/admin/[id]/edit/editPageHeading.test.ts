@@ -9,8 +9,12 @@ import { describe, expect, it } from 'vitest';
 const quelle = readFileSync(new URL('./+page.svelte', import.meta.url), 'utf-8');
 
 describe('Bearbeitungsseite — Überschrift und Seitentitel', () => {
+	/* `h1` seit dem A11y-Fix: Das Root-Layout bringt keine Überschrift mit, die
+	   Gliederung begann hier also auf Ebene 2. Die Ebene selbst prüft
+	   `adminPageHeadings.test.ts` für alle Admin-Seiten gemeinsam; hier zählt
+	   weiterhin nur der Wortlaut. */
 	it('überschreibt die Seite mit „Sichtung bearbeiten"', () => {
-		expect(quelle).toContain('<h2 class="text-xl font-bold">Sichtung bearbeiten</h2>');
+		expect(quelle).toContain('<h1 class="text-xl font-bold">Sichtung bearbeiten</h1>');
 	});
 
 	it('nennt die Bearbeitung nicht „Details"', () => {

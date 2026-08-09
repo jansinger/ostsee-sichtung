@@ -460,9 +460,14 @@
 	<!-- `tabindex="-1"` macht die Überschrift programmatisch fokussierbar, ohne
 	     sie in die Tab-Reihenfolge aufzunehmen — Ersatzziel für
 	     `hilfeSchliessen`, siehe Docblock an `vorherigerFokus`. -->
-	<h2 class="text-xl font-bold" tabindex="-1" bind:this={ueberschrift}>
+	<!-- `h1` und nicht `h2`: Das Root-Layout bringt keine Überschrift mit, die
+	     Struktur dieser Seite begann damit auf Ebene 2 — wer per Screenreader
+	     über Überschriften navigiert, fand hier keinen Einstieg (WCAG 1.3.1).
+	     Die Größe bleibt `text-xl`; sie ist eine Gestaltungsfrage und keine
+	     Aussage über die Gliederung. Abgesichert in `adminPageHeadings.test.ts`. -->
+	<h1 class="text-xl font-bold" tabindex="-1" bind:this={ueberschrift}>
 		Sichtung Details #{sighting.id}
-	</h2>
+	</h1>
 	<div class="flex flex-wrap gap-2">
 		<button
 			class="btn btn-ghost btn-sm"

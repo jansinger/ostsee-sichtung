@@ -7,6 +7,7 @@
 	import CleanupPanel from './CleanupPanel.svelte';
 	import ResetSettingsButton from './ResetSettingsButton.svelte';
 	import { ACTIVE_CONFIG_KEYS, getConfigLabel } from './configLabels';
+	import { buildSaveSummary } from './saveSummary';
 
 	const logger = createLogger('admin:settings');
 
@@ -125,8 +126,20 @@
 		}
 	}
 
-	async function saveConfig(config: ConfigItem) {
-		if (savingStates[config.key]) return;
+	/**
+	 * Speichert eine Einstellung.
+	 *
+	 * **Der Rückgabewert ist neu und der Kern des Fixes:** `saveAllChanges` hat
+	 * den Ausgang vorher aus `changedConfigs.size` erschlossen und lag damit bei
+	 * jedem Teilfehlschlag falsch (siehe `saveSummary.ts`). Ein Aufruf, der
+	 * sagt, ob er funktioniert hat, ist die Voraussetzung dafür, dass die
+	 * Zusammenfassung stimmt.
+	 *
+	 * `false` auch beim Doppelklick-Abbruch oben: Aus Sicht des Aufrufers ist
+	 * „läuft schon" kein gespeicherter Wert.
+	 */
+	async function saveConfig(config: ConfigItem): Promise<boolean> {
+		if (savingStates[config.key]) return false;
 
 		savingStates[config.key] = true;
 
@@ -163,10 +176,12 @@
 			errorMessage = '';
 
 			setTimeout(() => (saveMessage = ''), 5000);
+			return true;
 		} catch (error) {
 			logger.error({ error, config: config.key }, 'Failed to save configuration');
 			errorMessage = `❌ Fehler beim Speichern von ${config.key}`;
 			setTimeout(() => (errorMessage = ''), 5000);
+			return false;
 		} finally {
 			savingStates[config.key] = false;
 		}
@@ -189,12 +204,29 @@
 			return;
 		}
 
+		/* Ausgänge zählen statt sie aus `changedConfigs.size` zu erschließen: Die
+		   frühere Bedingung `=== 0` war bei jedem Teilfehlschlag falsch, und die
+		   Einzelfehlermeldung aus `saveConfig` überschrieb sich dabei selbst — es
+		   erschien am Ende gar nichts, während ein Wert nicht gespeichert war.
+		   Begründung und Wortlaute in `saveSummary.ts`. */
+		let saved = 0;
+		let failed = 0;
 		for (const config of configsToSave) {
-			await saveConfig(config);
+			if (await saveConfig(config)) saved++;
+			else failed++;
 		}
 
-		if (changedConfigs.size === 0) {
-			saveMessage = `✅ ${configsToSave.length} Einstellungen gespeichert`;
+		const summary = buildSaveSummary(saved, failed);
+		/* Ein Teilerfolg gehört nicht in ein grünes Feld — sonst liest sich
+		   „3 von 5 gespeichert" wie ein abgeschlossener Vorgang. Die
+		   Erfolgsmeldung bekommt weiterhin ihren Timer; der Fehlerfall bleibt
+		   stehen, bis der nächste Versuch ihn ersetzt. */
+		if (summary.hasFailures) {
+			errorMessage = `❌ ${summary.message}`;
+			saveMessage = '';
+		} else {
+			saveMessage = `✅ ${summary.message}`;
+			errorMessage = '';
 			setTimeout(() => (saveMessage = ''), 5000);
 		}
 	}
@@ -206,10 +238,20 @@
 				headers: { 'Content-Type': 'application/json' }
 			});
 
-			if (response.ok) {
-				// Reload page to get fresh data
-				window.location.reload();
+			/* Der `else`-Zweig fehlte: Bei 403 oder 500 passierte gar nichts — kein
+			   Reload, keine Meldung. Für eine destruktive Aktion hinter einem
+			   Bestätigungsdialog ist das die schlechteste Rückmeldung; sie sieht aus
+			   wie ein Klick, der nicht angekommen ist. Der `catch` darunter fängt
+			   nur Netzwerkfehler und hat den Fall nie erreicht. */
+			if (!response.ok) {
+				logger.error({ status: response.status }, 'Failed to reset configurations');
+				errorMessage = `❌ Zurücksetzen fehlgeschlagen (Fehler ${response.status}) — die Einstellungen sind unverändert`;
+				setTimeout(() => (errorMessage = ''), 5000);
+				return;
 			}
+
+			// Reload page to get fresh data
+			window.location.reload();
 		} catch (error) {
 			logger.error({ error }, 'Failed to reset configurations');
 			errorMessage = '❌ Fehler beim Zurücksetzen der Einstellungen';

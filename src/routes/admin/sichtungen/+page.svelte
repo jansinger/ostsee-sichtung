@@ -57,6 +57,7 @@
 		type FilterPreset
 	} from './filterPresets';
 	import { getHeaderState, isSameIdList, setAllSelected, toggleSelection } from './bulkSelection';
+	import { paginationControls } from './paginationControls';
 	import { buildBulkSummary, runBulkVerdict } from './bulkVerdict';
 
 	const logger = createLogger('SichtungenPage');
@@ -316,6 +317,12 @@
 	/* Ohne Aktionsspalte gehört die Statusspalte selbst an den Rand — sonst
 	   bliebe die zuletzt gemessene Breite als Lücke stehen. */
 	let stickyStatusRight = $derived(columnVisibility.actions ? actionsColumnWidth : 0);
+
+	/* Zustand der Seiten-Navigation. Als `$derived` und nicht als `{@const}` im
+	   Markup: Ein `{@const}` muss unmittelbares Kind eines Blocks sein, und die
+	   Navigationsleiste steht in einem gewöhnlichen `<div>`. Begründung der
+	   Rechnung selbst in `paginationControls.ts` (Leerfall `totalPages === 0`). */
+	let seiten = $derived(paginationControls(data.pagination.page, data.pagination.totalPages));
 
 	// Prüft ob irgendwelche Filter aktiv sind
 	let hasActiveFilters = $derived(
@@ -1740,8 +1747,14 @@
 		class="container mx-auto mt-6 flex flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6"
 	>
 		<div class="flex items-center gap-2 text-center sm:text-left">
-			<span class="text-sm font-medium">Einträge pro Seite:</span>
+			<!-- Echtes `label[for]` statt eines `span` daneben: Ohne Verbindung las
+			     ein Screenreader hier „Kombinationsfeld, 20" ohne jede Angabe,
+			     worüber entschieden wird (WCAG 4.1.2). Es war die einzige Stelle im
+			     Admin ohne zugänglichen Namen. -->
+			<label class="text-sm font-medium" for="perPage">Einträge pro Seite:</label>
 			<select
+				id="perPage"
+				name="perPage"
 				class="select select-sm min-h-8 text-sm"
 				onchange={(e) => changeItemsPerPage(Number(e.currentTarget.value))}
 			>
@@ -1751,11 +1764,17 @@
 			</select>
 		</div>
 
-		<div class="join">
+		<!-- Sperren und Seitenzahl kommen aus `seiten` (= `paginationControls`) und
+		     nicht aus Ausdrücken hier: `totalPages` ist bei null Treffern 0, und
+		     `page === totalPages` war dann `1 === 0` — „Nächste"/„Letzte" blieben
+		     auf einer leeren Trefferliste bedienbar und führten auf Seite 2 bzw. 0.
+		     Der Leerfall ist genau der, den man beim Bauen nicht vor sich hat;
+		     abgesichert in `paginationControls.test.ts`. -->
+		<nav class="join" aria-label="Seiten-Navigation">
 			<button
 				class="btn join-item btn-sm"
 				onclick={() => changePage(1)}
-				disabled={data.pagination.page === 1}
+				disabled={seiten.atFirst}
 				title="Erste Seite"
 			>
 				«
@@ -1763,33 +1782,41 @@
 			<button
 				class="btn join-item btn-sm"
 				onclick={() => changePage(data.pagination.page - 1)}
-				disabled={data.pagination.page === 1}
+				disabled={seiten.atFirst}
 				title="Vorherige Seite"
 			>
 				‹
 			</button>
 
-			<button class="btn btn-active join-item btn-sm min-w-32 text-xs sm:text-sm">
-				{data.pagination.page} / {data.pagination.totalPages}
-			</button>
+			<!-- Die Seitenanzeige war ein `<button>` ohne `onclick` — ein Bedienelement,
+			     das nichts bewirkt, gehört entfernt (Button-Hierarchie). Als `<span>`
+			     mit `.btn`-Optik bleibt das Aussehen der Leiste erhalten, ohne
+			     Bedienbarkeit zu behaupten; `aria-current="page"` sagt Screenreadern,
+			     wofür die Zahl steht. -->
+			<span
+				class="btn btn-active join-item btn-sm pointer-events-none min-w-32 text-xs sm:text-sm"
+				aria-current="page"
+			>
+				{data.pagination.page} / {seiten.totalPages}
+			</span>
 
 			<button
 				class="btn join-item btn-sm"
 				onclick={() => changePage(data.pagination.page + 1)}
-				disabled={data.pagination.page === data.pagination.totalPages}
+				disabled={seiten.atLast}
 				title="Nächste Seite"
 			>
 				›
 			</button>
 			<button
 				class="btn join-item btn-sm"
-				onclick={() => changePage(data.pagination.totalPages)}
-				disabled={data.pagination.page === data.pagination.totalPages}
+				onclick={() => changePage(seiten.totalPages)}
+				disabled={seiten.atLast}
 				title="Letzte Seite"
 			>
 				»
 			</button>
-		</div>
+		</nav>
 
 		<div class="text-base-content/70 text-center text-sm sm:text-right">
 			{data.pagination.total} Einträge
