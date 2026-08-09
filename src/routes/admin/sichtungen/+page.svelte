@@ -2,43 +2,30 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import ExportModal from '$lib/components/admin/ExportModal.svelte';
-	import { DEAD_FINDING_PRESENTATION, isDeadFinding } from '$lib/components/admin/deadFinding';
-	import {
-		deleteSighting,
-		sendTestEmail,
-		TEST_EMAIL_HINT
-	} from '$lib/components/admin/sightingActions';
+	import { DEAD_FINDING_PRESENTATION } from '$lib/components/admin/deadFinding';
+	import { deleteSighting, sendTestEmail } from '$lib/components/admin/sightingActions';
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
 	import { createLogger } from '$lib/logger';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { submitVerdict, type SightingVerdict } from '$lib/components/admin/sightingVerdict';
-	import SightingStatusControl from '$lib/components/admin/SightingStatusControl.svelte';
 	import {
-		getSightingStatus,
 		SIGHTING_STATUS_PRESENTATION,
 		SIGHTING_STATUS_UNDO_MS,
 		verdictToStatus,
 		type SightingStatus
 	} from '$lib/components/admin/sightingStatus';
-	import { getAnimalBehaviorLabel } from '$lib/report/formOptions/animalBehavior';
-	import { getDistanceLabel } from '$lib/report/formOptions/distance';
-	import { getDistributionLabel } from '$lib/report/formOptions/distribution';
 	import { getEntryChannelOptions } from '$lib/report/formOptions/entryChannel';
-	import { getSeaStateLabel } from '$lib/report/formOptions/seaState';
-	import { getSpeciesLabel } from '$lib/report/formOptions/species';
-	import { getVisibilityLabel } from '$lib/report/formOptions/visibility';
-	import { getWindStrengthLabel } from '$lib/report/formOptions/windStrength';
 	import { toast } from '$lib/stores/toastState.svelte';
 	import type { FrontendSighting, PageData } from '$lib/types';
 	import type { SpamCheckResult } from '$lib/types/spam';
-	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import Icon from '$lib/components/Icon.svelte';
-	import {
-		BALTIC_SEA_STATUS_PRESENTATION,
-		getBalticSeaStatus
-	} from '$lib/utils/geo/balticSeaStatus';
+	import { BALTIC_SEA_STATUS_PRESENTATION } from '$lib/utils/geo/balticSeaStatus';
 	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
 	import { normalizeStatusParam } from '$lib/components/admin/sightingStatusFilter';
+	import SichtungenCards from './SichtungenCards.svelte';
+	import SichtungenTable from './SichtungenTable.svelte';
+	import { AVAILABLE_COLUMNS, DEFAULT_COLUMN_VISIBILITY } from './columns';
+	import { NUR_KOMPAKT, NUR_WEIT_FLEX } from './layoutSwitch';
 	import {
 		COLUMN_PREFERENCES_STORAGE_KEY,
 		loadColumnPreferences,
@@ -56,7 +43,7 @@
 		serializeFilterPresets,
 		type FilterPreset
 	} from './filterPresets';
-	import { getHeaderState, isSameIdList, setAllSelected, toggleSelection } from './bulkSelection';
+	import { getHeaderState, isSameIdList } from './bulkSelection';
 	import { paginationControls } from './paginationControls';
 	import { buildBulkSummary, runBulkVerdict } from './bulkVerdict';
 
@@ -85,35 +72,6 @@
 	let showExportModal = $state(false);
 	let showColumnDropdown = $state(false);
 
-	/* Column visibility configuration
-	   `email`, `distance` und `distribution` starten aus: Mit ihnen war die
-	   Tabelle in der Default-Auswahl 1456 px breit, und aus dem Viewport liefen
-	   ausgerechnet Status und Aktionen — die Spalten, wegen derer man die
-	   Tabelle öffnet. Abgeschaltet sind sie nicht weg, sondern eine
-	   Checkbox im „Spalten"-Dropdown entfernt.
-	   Als eigene Konstante (statt inline in $state): `loadColumnPreferences`
-	   merged einen gespeicherten Stand gegen genau diese Werte, siehe
-	   `columnPreferences.ts`. */
-	const DEFAULT_COLUMN_VISIBILITY = {
-		referenceId: true,
-		sightingDate: true,
-		created: true,
-		email: false,
-		species: true,
-		distance: false,
-		totalCount: true,
-		juvenileCount: true,
-		distribution: false,
-		behavior: false,
-		seaState: false,
-		wind: false,
-		visibility: false,
-		mediaUpload: true,
-		spamScore: true,
-		balticSea: true,
-		verified: true,
-		actions: true
-	};
 	/* SSR rendert immer mit dem Default — `localStorage` existiert dort nicht
 	   (architecture.md: kein window-Zugriff beim SSR-Rendern). Der `$effect`
 	   unten übernimmt den gespeicherten Stand direkt nach der Hydration; ein
@@ -283,41 +241,6 @@
 		if (umbenennenId === preset.id) umbenennenId = null;
 	}
 
-	// Available columns configuration
-	const availableColumns = [
-		{ key: 'referenceId', label: 'Referenz-ID', sortKey: null },
-		{ key: 'sightingDate', label: 'Sichtungsdatum', sortKey: 'sightingDate' },
-		{ key: 'created', label: 'Meldedatum', sortKey: 'created' },
-		{ key: 'email', label: 'E-Mail', sortKey: 'email' },
-		{ key: 'species', label: 'Tierart', sortKey: 'species' },
-		{ key: 'distance', label: 'Entfernung', sortKey: 'distance' },
-		{ key: 'totalCount', label: 'Anzahl', sortKey: 'totalCount' },
-		{ key: 'juvenileCount', label: 'Jung', sortKey: 'juvenileCount' },
-		{ key: 'distribution', label: 'Verteilung', sortKey: 'distribution' },
-		{ key: 'behavior', label: 'Verhalten', sortKey: 'behavior' },
-		{ key: 'seaState', label: 'Seegang', sortKey: 'seaState' },
-		{ key: 'wind', label: 'Wind', sortKey: 'wind' },
-		{ key: 'visibility', label: 'Sichtweite', sortKey: 'visibility' },
-		// Kein Eintrag für den Totfund: Seine Kennzeichnung steht in einer festen
-		// Spalte ganz links und ist bewusst nicht abschaltbar — als „Totfund
-		// (Ja/Nein)"-Spalte am rechten Rand war sie genau dann weg, wenn man
-		// viele Spalten eingeschaltet hatte und am wenigsten hinsah.
-		{ key: 'mediaUpload', label: 'Aufnahme', sortKey: null },
-		{ key: 'spamScore', label: 'Spam', sortKey: 'spamScore' },
-		{ key: 'balticSea', label: 'Ostsee', sortKey: null },
-		{ key: 'verified', label: 'Status', sortKey: null },
-		{ key: 'actions', label: 'Aktionen', sortKey: null }
-	];
-
-	/* Gemessene Breite der Aktionsspalte — die Statusspalte rastet links davon
-	   ein. Ein fester Wert ginge nicht: die Zahl der Aktions-Buttons hängt an
-	   `isSuperAdmin`, und der Spaltenkopf trägt dieselbe Breite wie die Zellen
-	   darunter (gleiche Tabellenspalte). */
-	let actionsColumnWidth = $state(0);
-	/* Ohne Aktionsspalte gehört die Statusspalte selbst an den Rand — sonst
-	   bliebe die zuletzt gemessene Breite als Lücke stehen. */
-	let stickyStatusRight = $derived(columnVisibility.actions ? actionsColumnWidth : 0);
-
 	/* Zustand der Seiten-Navigation. Als `$derived` und nicht als `{@const}` im
 	   Markup: Ein `{@const}` muss unmittelbares Kind eines Blocks sein, und die
 	   Navigationsleiste steht in einem gewöhnlichen `<div>`. Begründung der
@@ -354,18 +277,6 @@
 		   versprächen sie obendrein. */
 		q: page.url.searchParams.get('q') ?? ''
 	}));
-
-	function updateSort(column: string): void {
-		const currentSort = page.url.searchParams.get('sort');
-		const currentOrder = page.url.searchParams.get('order');
-
-		const newOrder = currentSort === column && currentOrder === 'asc' ? 'desc' : 'asc';
-
-		const url = new URL(page.url);
-		url.searchParams.set('sort', column);
-		url.searchParams.set('order', newOrder);
-		goto(url);
-	}
 
 	function applyFilters(): void {
 		const url = new URL(page.url);
@@ -635,15 +546,6 @@
 	let bulkPending = $state(false);
 	let bulkProgress = $state<{ done: number; total: number } | null>(null);
 
-	/* `indeterminate` ist eine reine DOM-Eigenschaft ohne HTML-Attribut — als
-	   `indeterminate={…}` im Markup wäre nicht verlässlich, dass Svelte sie als
-	   Property und nicht als Attribut setzt. Deshalb explizit über eine
-	   Referenz. */
-	let headerCheckbox = $state<HTMLInputElement | null>(null);
-	$effect(() => {
-		if (headerCheckbox) headerCheckbox.indeterminate = headerState === 'partial';
-	});
-
 	async function runBulkSequence(
 		ids: number[],
 		verdict: SightingVerdict,
@@ -756,7 +658,7 @@
 
 <div class="pt-6">
 	<!-- Page Header -->
-	<div class="container mx-auto mb-6 px-4 sm:px-6">
+	<div class="container mx-auto mb-6 px-4 md:px-6">
 		<!--
 			Arbeitslisten-Hinweis „Foto angekündigt, fehlt noch"
 			(siehe $lib/utils/media/photoAnnouncement.ts). Echter `btn btn-outline`
@@ -782,8 +684,10 @@
 			</button>
 		{/snippet}
 
-		<!-- Mobile Layout -->
-		<div class="block space-y-3 sm:hidden">
+		<!-- Kompakter Kopf. Die Grenze kommt aus `layoutSwitch.ts` und ist dieselbe
+		     wie bei Kartenliste und Tabelle — vorher schaltete der Kopf bei `sm`,
+		     die Inhaltsfläche bei `md`. -->
+		<div class="{NUR_KOMPAKT} space-y-3">
 			<h1 class="text-2xl font-bold">Sichtungen</h1>
 			<div class="flex flex-col gap-2">
 				<div class="flex items-center gap-2">
@@ -825,8 +729,8 @@
 			</div>
 		</div>
 
-		<!-- Desktop Layout -->
-		<div class="hidden items-center justify-between sm:flex">
+		<!-- Weiter Kopf -->
+		<div class="{NUR_WEIT_FLEX} items-center justify-between">
 			<h1 class="text-2xl font-bold">Sichtungen</h1>
 			<div class="flex items-center gap-2">
 				<details
@@ -859,12 +763,12 @@
 							</button>
 						</div>
 						<div class="max-h-80 overflow-y-auto">
-							{#each availableColumns as column (column.key)}
+							{#each AVAILABLE_COLUMNS as column (column.key)}
 								<label class="hover:bg-base-200 flex cursor-pointer items-center gap-2 rounded p-1">
 									<input
 										type="checkbox"
 										class="checkbox checkbox-sm"
-										bind:checked={columnVisibility[column.key as keyof typeof columnVisibility]}
+										bind:checked={columnVisibility[column.key]}
 									/>
 									<span class="flex-1 text-sm">{column.label}</span>
 								</label>
@@ -1070,7 +974,7 @@
 	     `transition:slide` aus `svelte/transition` (design-system.md, „Keine
 	     toten Utility-Klassen"). -->
 	{#if isFilterPanelOpen}
-		<div class="bg-base-200 shadow-raised container mx-auto mb-4 rounded-lg p-3 px-4 sm:px-6">
+		<div class="bg-base-200 shadow-raised container mx-auto mb-4 rounded-lg p-3 px-4 md:px-6">
 			<div class="mb-2 flex items-center justify-between">
 				<h2 class="text-base font-semibold">Filter</h2>
 				<button
@@ -1082,7 +986,8 @@
 					<Icon icon="lucide:x" class="h-4 w-4" />
 				</button>
 			</div>
-			<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+			<!-- Kein `sm:grid-cols-2`: `sm` ist keine Layout-Grenze (Breakpoint-Vertrag). -->
+			<div class="grid grid-cols-1 gap-2 md:grid-cols-3 lg:grid-cols-6">
 				<div class="fieldset w-full">
 					<label for="fromDate" class="label py-0">
 						<span class="text-xs">Von</span>
@@ -1187,574 +1092,52 @@
 					</select>
 				</div>
 			</div>
-			<div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
-				<button class="btn btn-outline btn-sm sm:btn-xs" onclick={resetFilters}>Zurücksetzen</button
+			<div class="mt-3 flex flex-col gap-2 md:flex-row md:justify-end">
+				<button class="btn btn-outline btn-sm md:btn-xs" onclick={resetFilters}>Zurücksetzen</button
 				>
-				<button class="btn btn-primary btn-sm sm:btn-xs" onclick={applyFilters}>Anwenden</button>
+				<button class="btn btn-primary btn-sm md:btn-xs" onclick={applyFilters}>Anwenden</button>
 			</div>
 		</div>
 	{/if}
 
-	<!-- Mobile Card Layout -->
-	<div class="container mx-auto block space-y-3 px-4 sm:px-6 md:hidden">
-		{#each sightings as sighting (sighting.id)}
-			{@const balticSea = BALTIC_SEA_STATUS_PRESENTATION[getBalticSeaStatus(sighting)]}
-			{@const status = getSightingStatus({
-				approvedAt: sighting.approvedAt,
-				rejectedAt: sighting.rejectedAt
-			})}
-			<div class="bg-base-100 border-base-300 shadow-raised rounded-lg border p-4">
-				<div class="mb-3 flex items-start justify-between">
-					<div class="flex-1">
-						<!-- Referenz und Kennzeichen als eigene Flex-Zeile: Nebeneinander,
-						     solange der Platz reicht, und darunter, wenn nicht — ein
-						     Inline-Badge mit `ml-2` stand nach dem Umbruch eingerückt da. -->
-						<div class="flex flex-wrap items-center gap-2">
-							{#if sighting.referenceId}
-								<!-- `break-all`, weil `flex-wrap` nur zwischen Flex-Items umbricht und
-								     eine Referenz-ID ein Wort ohne Umbruchgelegenheit ist: der Link hielt
-								     ~202px Mindestbreite und schob die ganze Seite über den Viewport
-								     (320px/375px, siehe admin-table-mobile-reference-overflow.spec.ts).
-								     Nicht `truncate` — die Referenz-ID ist der Schlüssel zum Wiederfinden
-								     einer Meldung und wäre abgeschnitten wertlos. -->
-								<a
-									href="/admin/ref/{sighting.referenceId}"
-									class="link link-primary link-hover font-mono text-sm break-all"
-								>
-									{sighting.referenceId}
-								</a>
-							{:else}
-								<span class="text-base-content/70 text-sm">Keine Referenz</span>
-							{/if}
-							<!-- In der Kopfzeile und nicht unten in der Badge-Reihe: Dort stand
-							     der Totfund gleichrangig neben „Mit Aufnahme" und dem
-							     Ostsee-Status und ging zwischen ihnen unter. Die Art der Meldung
-							     ist keine Eigenschaft unter anderen. -->
-							{#if isDeadFinding(sighting.isDead)}
-								<span class="badge badge-sm {DEAD_FINDING_PRESENTATION.badgeClass} gap-1">
-									<Icon
-										icon={DEAD_FINDING_PRESENTATION.icon}
-										class="h-3.5 w-3.5"
-										aria-hidden="true"
-									/>
-									{DEAD_FINDING_PRESENTATION.label}
-								</span>
-							{/if}
-						</div>
-						<h3 class="mt-1 text-base font-semibold">{getSpeciesLabel(sighting.species)}</h3>
-					</div>
-					<div class="ml-2 flex gap-1">
-						<button
-							class="btn btn-ghost btn-sm"
-							onclick={() => viewSightingDetails(sighting)}
-							title="Details anzeigen"
-							aria-label="Details anzeigen"
-						>
-							<Icon icon="lucide:eye" class="h-4 w-4" />
-						</button>
-						<!-- Nur Superadmins: Der Klick erzeugt im Team-Postfach eine Mail, die
-						     von einer echten Neu-Meldung nicht zu unterscheiden ist. Das Gate
-						     steht zusätzlich am Endpunkt — hier verschwindet nur das Bedienelement. -->
-						{#if data.isSuperAdmin}
-							<button
-								class="btn btn-ghost btn-sm"
-								onclick={() => sendTestEmail(sighting.id)}
-								title={TEST_EMAIL_HINT}
-								aria-label="Benachrichtigung zu dieser Sichtung an das Team senden"
-							>
-								<Icon icon="lucide:mail" class="h-4 w-4" />
-							</button>
-						{/if}
-						<button
-							class="btn btn-ghost btn-sm"
-							onclick={() => checkSpam(sighting.id)}
-							title="Spam-Check"
-							aria-label="Spam-Check durchführen"
-						>
-							<Icon icon="lucide:shield-alert" class="h-4 w-4" />
-						</button>
-						<button
-							class="btn text-error btn-ghost btn-sm"
-							onclick={() => {
-								sightingToDelete = sighting;
-								showDeleteDialog = true;
-							}}
-							title="Eintrag löschen"
-							aria-label="Eintrag löschen"
-						>
-							<Icon icon="lucide:trash-2" class="h-4 w-4" />
-						</button>
-					</div>
-				</div>
+	<SichtungenCards
+		{sightings}
+		isSuperAdmin={!!data.isSuperAdmin}
+		{statusPending}
+		onview={viewSightingDetails}
+		ontestemail={sendTestEmail}
+		onspamcheck={checkSpam}
+		ondelete={(sighting) => {
+			sightingToDelete = sighting;
+			showDeleteDialog = true;
+		}}
+		onstatuschange={changeStatus}
+	/>
 
-				<div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-					<div>
-						<span class="text-base-content/70">Sichtung:</span>
-						<span class="block">{formatLocalDateTime(sighting.sightingDate)}</span>
-					</div>
-					<div>
-						<span class="text-base-content/70">Anzahl:</span>
-						<span class="block">{sighting.totalCount}</span>
-					</div>
-					<div class="col-span-2">
-						<span class="text-base-content/70">Email:</span>
-						<a href="mailto:{sighting.email}" class="link link-primary link-hover block text-sm">
-							{sighting.email}
-						</a>
-					</div>
-				</div>
-
-				<div class="mt-3 flex flex-wrap gap-2">
-					{#if sighting.mediaUpload}
-						<span class="badge badge-success badge-sm">Mit Aufnahme</span>
-					{/if}
-					<!-- Anders als die Aufnahme immer sichtbar: „außerhalb" und „ohne
-					     Position" sind für die Triage genauso relevant wie „Ostsee", ein
-					     fehlendes Badge wäre hier also keine Aussage. -->
-					<span
-						class="badge badge-sm {balticSea.badgeClass} whitespace-nowrap"
-						title={balticSea.title}
-					>
-						{balticSea.label}
-					</span>
-				</div>
-
-				<div class="mt-3 flex items-center justify-between">
-					<span class="text-base-content/70 text-xs">
-						Gemeldet: {formatLocalDateTime(sighting.created)}
-					</span>
-					<!-- size="sm" statt "md": Gemessen bei 320px/375px lief die Karte mit den
-					     drei beschrifteten Segmenten (`.btn` hat `flex-shrink: 0`, DaisyUI kann
-					     die Gruppe also nicht stauchen) um bis zu 155px horizontal über —
-					     `e2e/admin-table-mobile-status-overflow.spec.ts` hält das als
-					     Regressionstest fest. "sm" zeigt wie die Desktop-Spalte nur Icons; die
-					     Bedeutung tragen dann Icon-Form und Füllung plus das `aria-label` am
-					     Radio-Input (`SightingStatusControl.svelte`) — das erreicht auch
-					     Screenreader. Der `title` am Segment ist eine Zugabe nur für die Maus,
-					     er wirkt bei Tastatur- und Touch-Bedienung nicht.
-					     `groupSuffix="-mobile"`: Ohne ihn teilt sich dieses Control den
-					     Radio-`name` mit dem gleich benannten Control der Desktop-Tabelle
-					     weiter unten — beide stehen für dieselbe Sichtung gleichzeitig im DOM,
-					     nur per CSS getrennt, und HTML gruppiert Radios über den ganzen
-					     Dokumentbaum, nicht pro `fieldset` (siehe `SightingStatusControl.svelte`). -->
-					<SightingStatusControl
-						{status}
-						sightingId={sighting.id}
-						size="sm"
-						groupSuffix="-mobile"
-						busy={statusPending.has(sighting.id)}
-						onchange={(verdict) => changeStatus(sighting.id, verdict, status)}
-					/>
-				</div>
-			</div>
-		{/each}
-	</div>
-
-	<!-- Sortierbarer Spaltenkopf: <button> im <th> mit aria-sort für Screenreader -->
-	{#snippet sortableTh(label: string, key: string)}
-		{@const isActive = page.url.searchParams.get('sort') === key}
-		{@const isDesc = page.url.searchParams.get('order') === 'desc'}
-		<th class="p-0" aria-sort={isActive ? (isDesc ? 'descending' : 'ascending') : 'none'}>
-			<button
-				type="button"
-				class="hover:bg-base-300 flex w-full items-center gap-1 px-4 py-3 text-left font-semibold"
-				onclick={() => updateSort(key)}
-			>
-				{label}
-				{#if isActive}
-					<span aria-hidden="true">{isDesc ? '↓' : '↑'}</span>
-				{/if}
-			</button>
-		</th>
-	{/snippet}
-
-	<!-- Desktop Table Layout -->
-	<div class="hidden px-2 sm:px-4 md:block">
-		<!--
-			Aktionsleiste der Bulk-Auswahl. Sie erscheint nur bei Auswahl > 0 und steht
-			über der Tabelle, nicht als schwebender Balken: Bezugspunkt sind die
-			Checkboxen darunter, und ein Overlay verdeckte auf kurzen Listen die
-			erste Zeile.
-			„Freigeben" ist hier `btn-primary`, obwohl „Export" im Seitenkopf ebenfalls
-			primär ist — die Leiste ist ein eigener, temporärer Handlungsbereich mit
-			genau einer Primäraktion (Button-Hierarchie: eine pro Bereich). „Ablehnen"
-			bleibt `btn-outline`, „Auswahl aufheben" als reine Rücknahme `btn-ghost`.
-			`disabled` und nicht `aria-disabled` während des Laufs — mit offenem
-			Vorbehalt: Der Lauf ist bei vielen Zeilen NICHT kurz, Tastaturnutzer
-			verlieren für seine Dauer den Fokus. Trotzdem `disabled`, weil ein frei
-			fokussierbarer Knopf während eines Laufs, der gerade dutzende Zeilen
-			schreibt, Bedienbarkeit behauptete, die es nicht gibt (`runBulk` wiese
-			den Klick nur still ab); den Zustand erklärt die aria-live-Fortschritts-
-			anzeige daneben. Ein Doppelklick hätte hier echte Folgen.
-		-->
-		{#if selectedIds.length > 0}
-			<div
-				class="bg-base-200 border-base-300 mb-3 flex flex-wrap items-center gap-3 rounded-lg border p-3"
-				role="group"
-				aria-label="Aktionen für die ausgewählten Sichtungen"
-			>
-				<span class="font-semibold">{selectedIds.length} ausgewählt</span>
-				{#if bulkProgress}
-					<span class="text-base-content/70 flex items-center gap-2 text-sm" aria-live="polite">
-						<span class="loading loading-spinner loading-xs" aria-hidden="true"></span>
-						{bulkProgress.done}/{bulkProgress.total} verarbeitet
-					</span>
-				{/if}
-				<div class="ml-auto flex flex-wrap items-center gap-2">
-					<button
-						class="btn btn-sm btn-primary"
-						onclick={() => runBulk('approve')}
-						disabled={bulkPending}
-					>
-						<Icon icon={SIGHTING_STATUS_PRESENTATION.approved.icon} class="mr-1 h-4 w-4" />
-						Freigeben
-					</button>
-					<button
-						class="btn btn-sm btn-outline"
-						onclick={() => runBulk('reject')}
-						disabled={bulkPending}
-					>
-						<Icon icon={SIGHTING_STATUS_PRESENTATION.rejected.icon} class="mr-1 h-4 w-4" />
-						Ablehnen
-					</button>
-					<button
-						class="btn btn-sm btn-ghost"
-						onclick={() => (selectedIds = [])}
-						disabled={bulkPending}
-					>
-						Auswahl aufheben
-					</button>
-				</div>
-			</div>
-		{/if}
-		<div class="border-base-300 bg-base-100 shadow-raised w-full overflow-x-auto rounded-lg border">
-			<table class="table-zebra table w-full">
-				<thead class="bg-base-200 text-base-content">
-					<tr>
-						<!-- Auswahlspalte, ganz links und wie die Markerspalte daneben fest:
-						     Sie steht bewusst nicht in `availableColumns`. Abschaltbar wäre die
-						     Bulk-Funktion je nach gespeicherter Spaltenwahl unerreichbar — und
-						     der gespeicherte Stand überlebt seit U2 den Reload.
-						     Nicht `sticky-col`: Der fixierte Bereich liegt rechts (Status,
-						     Aktionen); eine zweite fixierte Kante links stahl auf schmalen
-						     Fenstern zusätzlich Platz vom scrollenden Mittelteil. -->
-						<th class="w-px p-0">
-							<label class="flex cursor-pointer items-center justify-center px-2">
-								<input
-									type="checkbox"
-									class="checkbox checkbox-sm"
-									bind:this={headerCheckbox}
-									checked={headerState === 'all'}
-									disabled={bulkPending}
-									onchange={(e) =>
-										(selectedIds = setAllSelected(visibleIds, e.currentTarget.checked))}
-									aria-label="Alle Sichtungen auf dieser Seite auswählen"
-								/>
-							</label>
-						</th>
-						<!-- Feste Markerspalte, nicht in der Spaltenauswahl: Sie steht vor
-						     allen konfigurierbaren Spalten und überlebt damit sowohl jede
-						     Spaltenwahl als auch das horizontale Scrollen der Tabelle. -->
-						<th class="w-px p-0"><span class="sr-only">Art der Meldung</span></th>
-						<!-- Kein `hover:bg-base-300` an den nicht sortierbaren Köpfen: Die
-						     Aufhellung unter dem Zeiger versprach eine Sortierung, die es hier
-						     nicht gibt — sortierbare Köpfe tragen sie am <button> in `sortableTh`. -->
-						{#if columnVisibility.referenceId}
-							<th>Referenz-ID</th>
-						{/if}
-						{#if columnVisibility.sightingDate}
-							{@render sortableTh('Sichtungsdatum', 'sightingDate')}
-						{/if}
-						{#if columnVisibility.created}
-							{@render sortableTh('Meldedatum', 'created')}
-						{/if}
-						{#if columnVisibility.email}
-							{@render sortableTh('E-Mail', 'email')}
-						{/if}
-						{#if columnVisibility.species}
-							{@render sortableTh('Tierart', 'species')}
-						{/if}
-						{#if columnVisibility.distance}
-							{@render sortableTh('Entfernung', 'distance')}
-						{/if}
-						{#if columnVisibility.totalCount}
-							{@render sortableTh('Anzahl', 'totalCount')}
-						{/if}
-						{#if columnVisibility.juvenileCount}
-							{@render sortableTh('Jung', 'juvenileCount')}
-						{/if}
-						{#if columnVisibility.distribution}
-							{@render sortableTh('Verteilung', 'distribution')}
-						{/if}
-						{#if columnVisibility.behavior}
-							{@render sortableTh('Verhalten', 'behavior')}
-						{/if}
-						{#if columnVisibility.seaState}
-							{@render sortableTh('Seegang', 'seaState')}
-						{/if}
-						{#if columnVisibility.wind}
-							{@render sortableTh('Wind', 'wind')}
-						{/if}
-						{#if columnVisibility.visibility}
-							{@render sortableTh('Sichtweite', 'visibility')}
-						{/if}
-						{#if columnVisibility.mediaUpload}
-							<th>Aufnahme</th>
-						{/if}
-						{#if columnVisibility.spamScore}
-							{@render sortableTh('Spam', 'spamScore')}
-						{/if}
-						{#if columnVisibility.balticSea}
-							<th>Ostsee</th>
-						{/if}
-						<!-- Status und Aktionen bleiben beim horizontalen Scrollen stehen: Sie
-						     sind der Grund, aus dem die Tabelle geöffnet wird, standen aber bei
-						     vielen aktiven Spalten außerhalb des Viewports. Die Trennkante an der
-						     linken Sticky-Zelle macht sichtbar, dass hier ein fixierter Bereich
-						     beginnt — ohne sie sieht der Durchlauf darunter nach einem Fehler aus. -->
-						{#if columnVisibility.verified}
-							<th class="sticky-col sticky-edge" style="right: {stickyStatusRight}px">Status</th>
-						{/if}
-						{#if columnVisibility.actions}
-							<th
-								class="sticky-col {columnVisibility.verified ? '' : 'sticky-edge'}"
-								style="right: 0"
-								bind:clientWidth={actionsColumnWidth}
-							>
-								Aktionen
-							</th>
-						{/if}
-					</tr>
-				</thead>
-				<tbody>
-					{#each sightings as sighting (sighting.id)}
-						<tr class="hover:bg-base-200" data-sighting-id={sighting.id}>
-							<!-- Auswahl-Checkbox, Gegenstück zur Kopfspalte oben. Das `aria-label`
-							     nennt die Referenz-ID und nicht nur „Zeile 3": Beim Vorlesen ist
-							     die Nummer der Meldung das, woran die Zeile erkennbar ist. -->
-							<td class="w-px p-0">
-								<label class="flex cursor-pointer items-center justify-center px-2">
-									<input
-										type="checkbox"
-										class="checkbox checkbox-sm"
-										checked={selectedIds.includes(sighting.id)}
-										disabled={bulkPending}
-										onchange={() => (selectedIds = toggleSelection(selectedIds, sighting.id))}
-										aria-label="Sichtung {sighting.referenceId ?? sighting.id} auswählen"
-									/>
-								</label>
-							</td>
-							<!-- Kante und Icon zusammen: Die Kante wirkt beim Überfliegen, das
-							     Icon trägt zusätzlich eine Form — Farbe allein wäre kein
-							     Merkmal (WCAG 1.4.1). Der `sr-only`-Text benennt beides, sonst
-							     bliebe die Zelle für Screenreader leer.
-							     Die Kante steht an der Zelle und nicht am `<tr>`: unter
-							     `border-collapse` entscheidet dort sonst die Konfliktauflösung
-							     der Nachbarkanten, ob sie überhaupt gezeichnet wird. -->
-							<td
-								class="w-px p-0 {isDeadFinding(sighting.isDead) ? 'border-error border-l-4' : ''}"
-							>
-								{#if isDeadFinding(sighting.isDead)}
-									<span class="flex items-center justify-center px-2">
-										<Icon
-											icon={DEAD_FINDING_PRESENTATION.icon}
-											class="text-error h-4 w-4"
-											aria-hidden="true"
-										/>
-										<span class="sr-only">{DEAD_FINDING_PRESENTATION.label}</span>
-									</span>
-								{/if}
-							</td>
-							{#if columnVisibility.referenceId}
-								<td>
-									{#if sighting.referenceId}
-										<a
-											href="/admin/ref/{sighting.referenceId}"
-											class="link link-primary link-hover font-mono"
-										>
-											{sighting.referenceId}
-										</a>
-									{:else}
-										<span class="text-base-content/70">—</span>
-									{/if}
-								</td>
-							{/if}
-							{#if columnVisibility.sightingDate}
-								<td>{formatLocalDateTime(sighting.sightingDate)}</td>
-							{/if}
-							{#if columnVisibility.created}
-								<td>{formatLocalDateTime(sighting.created)}</td>
-							{/if}
-							{#if columnVisibility.email}
-								<td>
-									<a
-										href="mailto:{sighting.email}"
-										class="link link-primary link-hover block max-w-32 truncate"
-									>
-										{sighting.email}
-									</a>
-								</td>
-							{/if}
-							{#if columnVisibility.species}
-								<td>{getSpeciesLabel(sighting.species)}</td>
-							{/if}
-							{#if columnVisibility.distance}
-								<td>{getDistanceLabel(sighting.distance)}</td>
-							{/if}
-							{#if columnVisibility.totalCount}
-								<td>{sighting.totalCount}</td>
-							{/if}
-							{#if columnVisibility.juvenileCount}
-								<td>{sighting.juvenileCount || '—'}</td>
-							{/if}
-							{#if columnVisibility.distribution}
-								<td>{getDistributionLabel(sighting.distribution)}</td>
-							{/if}
-							{#if columnVisibility.behavior}
-								<td>{getAnimalBehaviorLabel(sighting.behavior) || '—'}</td>
-							{/if}
-							{#if columnVisibility.seaState}
-								<td>{getSeaStateLabel(sighting.seaState) || '—'}</td>
-							{/if}
-							{#if columnVisibility.wind}
-								<td
-									>{getWindStrengthLabel(
-										sighting.windForce ? Number(sighting.windForce) : undefined
-									) || '—'}</td
-								>
-							{/if}
-							{#if columnVisibility.visibility}
-								<td>{getVisibilityLabel(sighting.visibility) || '—'}</td>
-							{/if}
-							{#if columnVisibility.mediaUpload}
-								<td class="text-center">
-									{#if sighting.mediaUpload}
-										<span class="badge badge-success badge-sm">Ja</span>
-									{:else}
-										<span class="badge badge-ghost badge-sm">Nein</span>
-									{/if}
-								</td>
-							{/if}
-							{#if columnVisibility.spamScore}
-								<td class="text-center">
-									{#if sighting.spamScore == null}
-										<!-- NULL heißt „nie bewertet" (Altbestand, Legacy-Eingang) —
-										     bewusst kein Badge, sonst läse es sich wie „geprüft, sauber". -->
-										<span class="text-base-content/70">—</span>
-									{:else}
-										<span
-											class="badge badge-sm whitespace-nowrap {sighting.spamScore >= 5
-												? 'badge-error'
-												: sighting.spamScore >= 2
-													? 'badge-warning'
-													: 'badge-ghost'}"
-											title={Array.isArray(sighting.spamIndicators) &&
-											sighting.spamIndicators.length > 0
-												? sighting.spamIndicators.join(', ')
-												: 'Keine Auffälligkeiten'}
-										>
-											{sighting.spamScore}
-											<!-- title ist nur per Maus erreichbar — derselbe Text
-											     zusätzlich für Screenreader. -->
-											<span class="sr-only">
-												{Array.isArray(sighting.spamIndicators) &&
-												sighting.spamIndicators.length > 0
-													? `Spam-Indikatoren: ${sighting.spamIndicators.join(', ')}`
-													: 'Keine Auffälligkeiten'}
-											</span>
-										</span>
-									{/if}
-								</td>
-							{/if}
-							{#if columnVisibility.balticSea}
-								{@const balticSea = BALTIC_SEA_STATUS_PRESENTATION[getBalticSeaStatus(sighting)]}
-								<td class="text-center">
-									<!-- whitespace-nowrap: „ohne Position" bricht in der schmalen Spalte sonst
-									     um und läuft aus dem Badge heraus, der Rahmen schneidet durch den Text. -->
-									<span
-										class="badge badge-sm {balticSea.badgeClass} whitespace-nowrap"
-										title={balticSea.title}
-									>
-										{balticSea.label}
-									</span>
-								</td>
-							{/if}
-							{#if columnVisibility.verified}
-								{@const status = getSightingStatus({
-									approvedAt: sighting.approvedAt,
-									rejectedAt: sighting.rejectedAt
-								})}
-								<td class="sticky-col sticky-edge" style="right: {stickyStatusRight}px">
-									<SightingStatusControl
-										{status}
-										sightingId={sighting.id}
-										size="sm"
-										busy={statusPending.has(sighting.id)}
-										onchange={(verdict) => changeStatus(sighting.id, verdict, status)}
-									/>
-								</td>
-							{/if}
-							{#if columnVisibility.actions}
-								<td
-									class="sticky-col w-px whitespace-nowrap {columnVisibility.verified
-										? ''
-										: 'sticky-edge'}"
-									style="right: 0"
-								>
-									<!-- flex-nowrap: sonst brechen die 44px hohen Buttons um und ziehen die Zeile auf -->
-									<div class="flex flex-nowrap items-center gap-1">
-										<button
-											class="btn btn-ghost btn-xs"
-											onclick={() => viewSightingDetails(sighting)}
-											title="Details anzeigen"
-											aria-label="Details anzeigen"
-										>
-											<Icon icon="lucide:eye" class="h-4 w-4" />
-										</button>
-										<!-- Nur Superadmins — Begründung an der Kartenansicht weiter oben. -->
-										{#if data.isSuperAdmin}
-											<button
-												class="btn btn-ghost btn-xs"
-												onclick={() => sendTestEmail(sighting.id)}
-												title={TEST_EMAIL_HINT}
-												aria-label="Benachrichtigung zu dieser Sichtung an das Team senden"
-											>
-												<Icon icon="lucide:mail" class="h-4 w-4" />
-											</button>
-										{/if}
-										<button
-											class="btn btn-ghost btn-xs"
-											onclick={() => checkSpam(sighting.id)}
-											title="Spam-Check"
-											aria-label="Spam-Check durchführen"
-										>
-											<Icon icon="lucide:shield-alert" class="h-4 w-4" />
-										</button>
-										<button
-											class="btn text-error btn-ghost btn-xs"
-											onclick={() => {
-												sightingToDelete = sighting;
-												showDeleteDialog = true;
-											}}
-											title="Eintrag löschen"
-											aria-label="Eintrag löschen"
-										>
-											<Icon icon="lucide:trash-2" class="h-4 w-4" />
-										</button>
-									</div>
-								</td>
-							{/if}
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
-	</div>
+	<SichtungenTable
+		{sightings}
+		isSuperAdmin={!!data.isSuperAdmin}
+		{columnVisibility}
+		bind:selectedIds
+		{headerState}
+		{bulkPending}
+		{bulkProgress}
+		{statusPending}
+		onbulk={runBulk}
+		onview={viewSightingDetails}
+		ontestemail={sendTestEmail}
+		onspamcheck={checkSpam}
+		ondelete={(sighting) => {
+			sightingToDelete = sighting;
+			showDeleteDialog = true;
+		}}
+		onstatuschange={changeStatus}
+	/>
 
 	<div
-		class="container mx-auto mt-6 flex flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6"
+		class="container mx-auto mt-6 flex flex-col items-center justify-between gap-4 px-4 md:flex-row md:px-6"
 	>
-		<div class="flex items-center gap-2 text-center sm:text-left">
+		<div class="flex items-center gap-2 text-center md:text-left">
 			<!-- Echtes `label[for]` statt eines `span` daneben: Ohne Verbindung las
 			     ein Screenreader hier „Kombinationsfeld, 20" ohne jede Angabe,
 			     worüber entschieden wird (WCAG 4.1.2). Es war die einzige Stelle im
@@ -1811,7 +1194,7 @@
 			     Bedienbarkeit zu behaupten; `aria-current="page"` sagt Screenreadern,
 			     wofür die Zahl steht. -->
 			<span
-				class="btn btn-active join-item btn-sm pointer-events-none min-w-32 text-xs sm:text-sm"
+				class="btn btn-active join-item btn-sm pointer-events-none min-w-32 text-xs md:text-sm"
 				aria-current="page"
 			>
 				{data.pagination.page} / {seiten.totalPages}
@@ -1837,7 +1220,7 @@
 			</button>
 		</nav>
 
-		<div class="text-base-content/70 text-center text-sm sm:text-right">
+		<div class="text-base-content/70 text-center text-sm md:text-right">
 			{data.pagination.total} Einträge
 		</div>
 	</div>
@@ -1922,39 +1305,3 @@
 		</button>
 	</form>
 </dialog>
-
-<style>
-	/* Fixierte Spalten (Status, Aktionen) im horizontal scrollenden Container.
-	   Warum die Hintergründe hier von Hand stehen: `table-zebra` und der
-	   Zeilen-Hover färben das <tr>, nicht die Zellen — eine sticky-Zelle bliebe
-	   damit durchsichtig, und der wegscrollende Inhalt liefe sichtbar darunter
-	   durch. DaisyUIs Tabellenregeln setzen an `:where(th, td)` keinen
-	   Hintergrund und stehen zudem in `:where()` ohne Spezifität; diese
-	   ungelayerten Regeln gewinnen also. Farben nur als Theme-Token. */
-	.sticky-col {
-		position: sticky;
-		background-color: var(--color-base-100);
-	}
-
-	/* Zebra: `tbody tr:nth-child(even)` trägt base-200 — die fixierte Zelle muss
-	   dieselbe Fläche mitbringen, sonst blitzt sie beim Scrollen heller auf. */
-	tbody tr:nth-child(even) .sticky-col {
-		background-color: var(--color-base-200);
-	}
-
-	/* Zeilen-Hover (`hover:bg-base-200` am <tr>) — deckungsgleich für gerade und
-	   ungerade Zeilen, weil beide Zustände auf base-200 laufen. */
-	tbody tr:hover .sticky-col {
-		background-color: var(--color-base-200);
-	}
-
-	/* Der Tabellenkopf steht auf `bg-base-200` (am <thead>, nicht an den Zellen). */
-	thead .sticky-col {
-		background-color: var(--color-base-200);
-	}
-
-	/* Trennkante an der linken Kante des fixierten Bereichs. */
-	.sticky-edge {
-		border-left: var(--border, 1px) solid var(--color-base-300);
-	}
-</style>
