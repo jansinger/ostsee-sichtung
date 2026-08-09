@@ -29,7 +29,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { BALTIC_SEA_STATUS_PRESENTATION } from '$lib/utils/geo/balticSeaStatus';
 	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
-	import { normalizeStatusParam } from '$lib/components/admin/sightingStatusFilter';
+	import { hasActiveFilters as hatAktiveFilter, readFilterParams } from './activeFilters';
 	import SichtungenCards from './SichtungenCards.svelte';
 	import SichtungenTable from './SichtungenTable.svelte';
 	import { AVAILABLE_COLUMNS, DEFAULT_COLUMN_VISIBILITY } from './columns';
@@ -61,19 +61,42 @@
 
 	// Reaktive States mit Runes
 	let sightings = $derived(data.sightings);
-	let fromDate = $state(page.url.searchParams.get('fromDate') || '');
-	let toDate = $state(page.url.searchParams.get('toDate') || '');
-	/* `normalizeStatusParam`, nicht der Rohwert: Der Server versteht die alten
-	   Aliase `verified=1`/`verified=0` weiterhin (Lesezeichen, verlinkte
-	   Filteransichten), aber das `<select>` unten kennt nur `open`/`approved`/
-	   `rejected` — ohne die Normalisierung kam die gefilterte Liste zurück,
-	   während das Feld selbst leer stand. */
-	let verified = $state(normalizeStatusParam(page.url.searchParams.get('verified')) ?? '');
-	let selectedChannel = $state(page.url.searchParams.get('entryChannel') || 'all');
-	let mediaUpload = $state(page.url.searchParams.get('mediaUpload') || '');
-	let balticSea = $state(page.url.searchParams.get('balticSea') || '');
-	let deadFinding = $state(page.url.searchParams.get('deadFinding') || '');
-	let searchTerm = $state(page.url.searchParams.get('q') || '');
+	/* Der Filterzustand kommt vollständig aus der URL, nicht aus den Feld-States:
+	   Die Tabelle zeigt, was in der URL steht. Ein im Panel getippter, aber nicht
+	   angewendeter Wert exportierte sonst eine Menge, die die Tabelle nie gezeigt
+	   hat, und markierte die Filter-Schaltfläche schon beim Tippen. Für `q` galt
+	   das schon länger — jetzt für alle acht.
+
+	   Steht bewusst vor den Feld-States: Sie initialisieren sich daraus, statt die
+	   URL ein zweites Mal selbst zu lesen. */
+	let currentFilters = $derived(readFilterParams(page.url.searchParams));
+	let hasActiveFilters = $derived(hatAktiveFilter(currentFilters));
+
+	/* Startwerte des Editier-Puffers. Der `$effect` weiter unten, der ihn nach
+	   einer Navigation nachzieht, läuft im SSR-Durchlauf nicht; ohne diese
+	   Initialisierung stünde das Suchfeld im servergerenderten Frame leer,
+	   obwohl die URL ein `?q=` trägt.
+
+	   Eine eigene, nicht-reaktive Momentaufnahme statt `currentFilters`: Ein
+	   `$derived` in einem `$state`-Initialisierer meldet Svelte als
+	   `state_referenced_locally` — zu Recht, denn genommen wird hier bewusst nur
+	   der Startwert. */
+	const startFilter = readFilterParams(page.url.searchParams);
+	let fromDate = $state(startFilter.fromDate);
+	let toDate = $state(startFilter.toDate);
+	/* Ausnahmsweise über `currentFilters`, obwohl `startFilter` danebensteht:
+	   `verifiedReadScan.test.ts` lässt den Property-Zugriff `.verified` nur an
+	   diesem einen Empfänger zu — er ist dort als Query-Parameter der Tabelle
+	   ausgenommen und nicht als Datenbankspalte. Der Wert ist derselbe. */
+	// svelte-ignore state_referenced_locally
+	let verified = $state(currentFilters.verified);
+	// `all` ist das Sentinel des `<select>` für „egal"; in der URL steht dafür
+	// gar kein Parameter.
+	let selectedChannel = $state(startFilter.entryChannel || 'all');
+	let mediaUpload = $state(startFilter.mediaUpload);
+	let balticSea = $state(startFilter.balticSea);
+	let deadFinding = $state(startFilter.deadFinding);
+	let searchTerm = $state(startFilter.q);
 	let showDeleteDialog = $state(false);
 	let sightingToDelete = $state<SichtungenListRow | null>(null);
 	let isFilterPanelOpen = $state(false);
@@ -255,36 +278,22 @@
 	   Rechnung selbst in `paginationControls.ts` (Leerfall `totalPages === 0`). */
 	let seiten = $derived(paginationControls(data.pagination.page, data.pagination.totalPages));
 
-	// Prüft ob irgendwelche Filter aktiv sind
-	let hasActiveFilters = $derived(
-		!!(
-			fromDate ||
-			toDate ||
-			verified ||
-			(selectedChannel && selectedChannel !== 'all') ||
-			mediaUpload ||
-			balticSea ||
-			deadFinding ||
-			searchTerm
-		)
-	);
-
-	// Aktuelle Filter für Export-Modal
-	let currentFilters = $derived.by(() => ({
-		fromDate: fromDate || '',
-		toDate: toDate || '',
-		verified: verified || '',
-		entryChannel: selectedChannel !== 'all' ? selectedChannel : '',
-		mediaUpload: mediaUpload || '',
-		balticSea: balticSea || '',
-		deadFinding: deadFinding || '',
-		/* Aus der URL, nicht aus dem Feld-State: Das Suchfeld steht dauerhaft im
-		   Kopf, ein getippter, aber nicht abgeschickter Begriff ist damit leicht
-		   stehengelassen. Aus dem Feld gelesen, exportierte der Dialog dann eine
-		   Menge, die die sichtbare Tabelle gar nicht anwendet — und die Badges
-		   versprächen sie obendrein. */
-		q: page.url.searchParams.get('q') ?? ''
-	}));
+	/* Die Feld-States sind der Editier-Puffer des Panels und speisen nur noch
+	   `applyFilters()`. Nach jeder Navigation — Preset-Klick, Zurück-Button,
+	   entfernter Filter — übernehmen sie den URL-Stand, sonst zeigte das Panel
+	   veraltete Werte. Wer mitten im Editieren navigiert, hat den Puffer damit
+	   bewusst verworfen; ein „wird gerade editiert"-Wächter daneben wäre ein
+	   zweiter gemerkter Zustand neben der URL. */
+	$effect(() => {
+		fromDate = currentFilters.fromDate;
+		toDate = currentFilters.toDate;
+		verified = currentFilters.verified;
+		selectedChannel = currentFilters.entryChannel || 'all';
+		mediaUpload = currentFilters.mediaUpload;
+		balticSea = currentFilters.balticSea;
+		deadFinding = currentFilters.deadFinding;
+		searchTerm = currentFilters.q;
+	});
 
 	function applyFilters(): void {
 		const url = new URL(page.url);
