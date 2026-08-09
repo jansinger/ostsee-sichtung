@@ -231,6 +231,19 @@ Ein Token, das **nur** im `@theme`-Block steht, ist über `var()` nicht erreichb
   | `duration-panel`    | `--motion-panel`    | 300ms | Panel, Bottom-Sheet, Overlay | `--motion-ease` |
   | `duration-emphasis` | `--motion-emphasis` | 400ms | Überschwung, Federung        | **`linear`**    |
 
+  **Die `transition` gehört in die Basisregel, nie in die `:hover`-Regel.** Sie gilt sonst nur, solange der Hover aktiv ist, und weil sie eine Kurzschreibweise ist, ersetzt sie außerdem die Eigenschaftsliste, die DaisyUI mitbringt. In `app.css` erzeugte dieselbe Schreibweise dadurch zwei **verschiedene** Fehler — wer nur einen davon sieht, korrigiert am anderen vorbei:
+
+  | Element | Was DaisyUI mitbringt                                                  | Fehler durch die `:hover`-Angabe                                                                                                                                                          |
+  | ------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `.card` | nur `outline .2s`                                                      | Der Schatten hatte außerhalb des Hovers gar keinen Übergang → **sprang beim Verlassen zurück**                                                                                            |
+  | `.btn`  | `color, background-color, border-color, box-shadow, transform` (0,2 s) | Das Anheben lief längst symmetrisch; die Angabe warf alles außer `transform` aus der Liste → **Farb- und Schattenwechsel sprangen beim BETRETEN hinein** und blendeten beim Verlassen aus |
+
+  Daraus folgt für jede neue Regel dieser Art: erst nachsehen, was DaisyUI für das Element bereits deklariert, und dessen Eigenschaften in der eigenen Liste **mitführen** statt sie zu verdrängen (`app.css` tut das jetzt für beide).
+
+  Abgesichert durch `e2e/hover-transitions.spec.ts`. Der Test misst die **Wirkung** — ob der Browser für die Eigenschaft einen Übergang startet (`transitionstart`) —, nicht den Regeltext; eine Quell-Assertion wäre eine zweite Quelle neben `app.css`. Er fragt aus demselben Grund auch **nicht** `transition-duration` im Ruhezustand ab: Der Wert ist dank DaisyUI an beiden Elementen auch ohne Korrektur ungleich `0s`, die Abfrage wäre also grün, ohne etwas zu belegen. Entscheidend ist die Eigenschaftsliste. Jeder Fall fährt zusätzlich die Gegenrichtung als Eigenprobe, damit ein Rot nicht von einem kaputten Test zu unterscheiden ist.
+
+  **Nebenwirkung, die dabei gewollt ist:** Der ungelayerte Block in `app.css` schlägt `transition-*`-Utilities an einzelnen Aufrufstellen (je drei Karten und Buttons auf `/about`, `transition-all duration-instant`). Deren Übergang wird damit 200 ms statt 120 ms — dafür deckt er beide Richtungen ab, was `transition-all` dort nur beim Verlassen tat. Nicht betroffen sind Elemente, die kein `.card`/`.btn` sind: die Vorschaubilder (`MediaThumbnail`), die Logo-Platte der Karte und die Icons der About-Karten bringen ihren `hover:scale-*`-Übergang selbst mit.
+
   Die ersten drei beschreiben **Übergänge** und werden mit `--motion-ease` gefahren. `--motion-emphasis` ist keine Übergangsstufe: betonte Bewegungen bringen ihre Kurve über die Keyframe-Stops mit (`bounceIn`: `.3 → 1.05 → .9 → 1`). Eine zusätzliche Easing-Funktion biegt dort **jedes Segment einzeln** und lässt den Überschwung hektisch wirken — deshalb `linear`. Wer eine neue betonte Keyframe anlegt, nimmt diese Stufe und lässt die Kurve in den Stops.
 
 ---

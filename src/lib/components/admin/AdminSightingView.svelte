@@ -887,20 +887,16 @@
 
 <style>
 	/* Nur das Anheben. Schatten und Übergang der Karten-Hover kommen aus dem
-	   `.card:hover`-Block in app.css (--elevation-floating, --motion-quick) —
-	   hier standen sie als handgeschriebener box-shadow und `transition: all
-	   0.2s ease` daneben und schlugen ihn, weil ein scoped Block ungelayert
-	   ist. Dieselbe Doppelung wurde in SectionCard.svelte schon entfernt.
+	   `.card`/`.card:hover`-Block in app.css (--elevation-floating,
+	   --motion-quick) — hier standen sie als handgeschriebener box-shadow und
+	   `transition: all 0.2s ease` daneben und schlugen ihn, weil ein scoped
+	   Block ungelayert ist. Dieselbe Doppelung wurde in SectionCard.svelte
+	   schon entfernt.
 
-	   **Bewusst in Kauf genommen:** app.css deklariert den Übergang INNERHALB
-	   von `.card:hover`. Eine solche Regel greift nur beim Betreten — beim
-	   Verlassen springt die Karte hart zurück. Das entfernte `transition: all`
-	   stand in der Basisregel und lief deshalb in beide Richtungen weich.
-	   Diese Karten waren damit die einzigen der App mit symmetrischem Hover;
-	   `.btn:hover` in app.css hat dasselbe einseitige Verhalten. Den Übergang
-	   in eine Basisregel zu heben wäre die richtige Korrektur, ändert aber
-	   jede Karte und jeden Button der Anwendung — das ist eine eigene
-	   Entscheidung und nicht Teil der Token-Migration. */
+	   Der Übergang steht seither in der Basisregel `.card` und läuft in beide
+	   Richtungen — das `transform` hier wird davon mitgetragen und braucht
+	   keine eigene `transition`. Bis dahin waren diese Karten die einzigen
+	   der App mit symmetrischem Hover; jetzt sind es alle. */
 	.card:hover {
 		transform: translateY(-1px);
 	}

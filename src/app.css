@@ -427,19 +427,57 @@ h6 {
 	box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-primary) 20%, transparent);
 }
 
+/* Hover-Übergänge stehen in der BASISREGEL, nicht in `:hover`.
+
+   Eine `transition` innerhalb einer `:hover`-Regel gilt nur, solange der Hover
+   aktiv ist — und sie ist eine Kurzschreibweise, ersetzt die Liste der
+   übergehenden Eigenschaften also vollständig. Beides zusammen erzeugte hier
+   zwei verschiedene Fehler, die leicht für einen gehalten werden:
+
+   - **Karte:** DaisyUI gibt `.card` nur `transition: outline .2s` mit. Der
+     Schatten hatte damit außerhalb des Hovers gar keinen Übergang und sprang
+     beim Verlassen hart zurück.
+   - **Button:** DaisyUI gibt `.btn` bereits `color, background-color,
+     border-color, box-shadow, transform` mit. Das Anheben lief also längst in
+     beide Richtungen; die Kurzschreibweise im Hover warf aber alles außer
+     `transform` aus der Liste — Farb- und Schattenwechsel sprangen dadurch
+     beim BETRETEN hinein und blendeten beim Verlassen aus. Derselbe Bruch,
+     nur andersherum.
+
+   Die Listen unten führen deshalb die DaisyUI-Eigenschaften mit, statt sie zu
+   verdrängen: `outline` bei der Karte (Fokusring), die fünf Button-
+   Eigenschaften beim Button. Sie schlagen zusätzlich `transition-*`-Utilities
+   an einzelnen Aufrufstellen (drei Karten und drei Buttons auf /about), weil
+   dieser Block ungelayert steht — gewollt, denn deren `transition-all`
+   deckte den Hover ohnehin nur in eine Richtung ab.
+
+   Abgesichert durch `e2e/hover-transitions.spec.ts`: gemessen wird, ob der
+   Browser den Übergang startet, nicht wie die Regel geschrieben ist. */
+.btn {
+	transition:
+		color var(--motion-instant) var(--motion-ease),
+		background-color var(--motion-instant) var(--motion-ease),
+		border-color var(--motion-instant) var(--motion-ease),
+		box-shadow var(--motion-instant) var(--motion-ease),
+		transform var(--motion-instant) var(--motion-ease);
+}
+
 /* Subtle button hover */
 .btn:hover:not(:disabled) {
 	transform: translateY(-1px);
-	transition: transform var(--motion-instant) var(--motion-ease);
 }
 
 /* Card hover — eine Definition für alle Karten.
    Ersetzt zusätzlich den lokalen <style>-Block in SectionCard.svelte. */
-.card:hover {
-	box-shadow: var(--elevation-floating);
+.card {
 	transition:
 		box-shadow var(--motion-quick) var(--motion-ease),
-		transform var(--motion-quick) var(--motion-ease);
+		transform var(--motion-quick) var(--motion-ease),
+		outline var(--motion-quick) var(--motion-ease);
+}
+
+.card:hover {
+	box-shadow: var(--elevation-floating);
 }
 
 /* ===== Touch-Targets =====
