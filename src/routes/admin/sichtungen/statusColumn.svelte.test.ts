@@ -42,6 +42,9 @@ function sichtung(overrides: Partial<SightingSelect>): SightingSelect {
 function daten(rows: SightingSelect[]): PageData {
 	return {
 		sightings: rows,
+		/* Die Statusreiter über der Tabelle lesen diese Zahlen; ohne sie liefe
+		   die Seite hier gar nicht erst durch. */
+		statusCounts: { all: rows.length, open: rows.length, approved: 0, rejected: 0 },
 		pagination: {
 			page: 1,
 			perPage: 20,

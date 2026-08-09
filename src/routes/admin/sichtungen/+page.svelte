@@ -31,6 +31,8 @@
 	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
 	import { hasActiveFilters as hatAktiveFilter, readFilterParams } from './activeFilters';
 	import SichtungenCards from './SichtungenCards.svelte';
+	import StatusTabs from './StatusTabs.svelte';
+	import type { StatusTabValue } from './statusTabs';
 	import SichtungenTable from './SichtungenTable.svelte';
 	import { AVAILABLE_COLUMNS, DEFAULT_COLUMN_VISIBILITY } from './columns';
 	import { NUR_KOMPAKT, NUR_WEIT_FLEX } from './layoutSwitch';
@@ -373,6 +375,20 @@
 		url.searchParams.delete('balticSea');
 		url.searchParams.delete('deadFinding');
 		url.searchParams.delete('q');
+		url.searchParams.set('page', '1');
+		goto(url);
+	}
+
+	/**
+	 * Statusleiste über der Tabelle. Schreibt denselben Parameter wie das
+	 * `<select>` im Panel — es gibt keinen zweiten gemerkten Zustand, beide
+	 * lesen ihren Stand aus der URL. `page=1`, weil die Trefferzahl mit dem
+	 * Status springt und man sonst auf einer leeren Seite 7 landete.
+	 */
+	function selectStatus(value: StatusTabValue): void {
+		const url = new URL(page.url);
+		if (value) url.searchParams.set('verified', value);
+		else url.searchParams.delete('verified');
 		url.searchParams.set('page', '1');
 		goto(url);
 	}
@@ -1092,6 +1108,18 @@
 			</div>
 		</div>
 	{/if}
+
+	<!-- Statusleiste über beiden Layouts, nicht nur über der Tabelle: Auf Mobil
+	     rendert `SichtungenCards`, und gerade dort soll der wichtigste Filter
+	     ohne Aufklappen des Panels erreichbar sein. `active` kommt aus der URL
+	     (`currentFilters`) — dieselbe Quelle wie das `<select>` im Panel. -->
+	<div class="container mx-auto mb-3 px-4 md:px-6">
+		<StatusTabs
+			counts={data.statusCounts}
+			active={currentFilters.verified as StatusTabValue}
+			onselect={selectStatus}
+		/>
+	</div>
 
 	<SichtungenCards
 		{sightings}
