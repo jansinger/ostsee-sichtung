@@ -244,6 +244,11 @@ Angreifer.
 
 ## Import
 
+Es gibt zwei Wege. Welcher passt, entscheidet die Erreichbarkeit der
+Zieldatenbank — nicht der Geschmack.
+
+### Direkt in die Datenbank (Entwicklung, eigener Server)
+
     npm run import:legacy-inbox -- /var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data
 
 Läuft im Hauptrepo, nicht auf dem Plesk-Server, und ruft dieselben Bausteine
@@ -272,6 +277,45 @@ vergebene Sichtungs-ID auf der Konsole. Die Datei muss dann **von Hand** nach
 `importiert/` verschoben werden, bevor der Import erneut läuft — sonst liegt
 sie beim nächsten Lauf weiterhin in `posteingang/` und wird ein zweites Mal
 angelegt.
+
+### Über HTTP an eine laufende Instanz (Produktion)
+
+    npm run send:legacy-inbox -- https://dmm-prod-ostsee.ha.gecko.de
+
+Ohne weitere Angabe holt der Lauf die Dateien per SSH von
+`hawking:/var/www/vhosts/schweinswalsichtung.de/legacy-inbox-data` und
+verschiebt jede angenommene Datei dort nach `importiert/`. Ein anderer Ort geht
+mit `--ssh=host:/pfad` oder `--dir=/pfad` (lokales Verzeichnis).
+
+Warum nicht der direkte Weg von oben? Weil er eine Verbindung zur
+Produktionsdatenbank braucht. Deren Port ist auf dem Produktionsserver bewusst
+nicht veröffentlicht, und ein Lauf im Container scheidet aus, weil dort kein
+Quellcode liegt. Bleibt der Weg, den die App selbst genommen hat:
+`POST /rest_sichtungen`.
+
+Das ist kein Notbehelf, sondern die strengere Prüfung. Der Endpunkt validiert
+jede Meldung mit demselben Yup-Schema wie eine echte App-Meldung; der direkte
+Import ruft nur Mapping und Repository. Was hier durchkommt, hätte die App auch
+live einliefern können. Gesendet wird `roh` wörtlich — ein Re-Serialisieren aus
+`payload` wäre eine zweite Interpretation der Daten und damit genau die Art
+stiller Abweichung, die der Legacy-Vertrag nicht verträgt.
+
+Der Preis ist das Rate-Limit von **20 Meldungen pro Stunde und IP**. Beim
+ersten `429` bricht der Lauf ab und meldet, wo er stand. Das ist unkritisch,
+weil die Datei das Protokoll ist: Übernommenes liegt in `importiert/`, Offenes
+in `posteingang/`. Ein Neustart nach Ablauf des Fensters macht dort weiter und
+kann nichts doppelt anlegen. Bei 37 wartenden Dateien sind das zwei Läufe im
+Abstand einer Stunde.
+
+Ebenfalls abgebrochen wird bei einem Netzwerkfehler — dann ist unbekannt, ob
+die Sichtung angelegt wurde, und blind weiterzusenden hieße, ein mögliches
+Duplikat zu verstecken. Eine inhaltlich abgelehnte Datei (HTTP 400) hält den
+Lauf dagegen nicht auf: Sie bleibt liegen und wird am Ende aufgeführt — genau
+wie ein Eintrag in `abgewiesen/` ein Warnsignal ist und einen Menschen braucht.
+
+**Auch dieser Weg löst je Sichtung eine Benachrichtigungs-E-Mail aus** (siehe
+den Hinweis oben). Vor einem Rückstand-Lauf `notification.email.enabled`
+abschalten — und danach wieder ein.
 
 ## Tests
 

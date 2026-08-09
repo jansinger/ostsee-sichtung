@@ -20,7 +20,7 @@ import { sightings } from '$lib/server/db/schema';
 // tatsächlich erzeugte SQL prüfen können statt nur den HTTP-Status. Ohne das
 // bleibt der Suchfilter unsichtbar — genau so konnte die ungegatete Suche
 // über personenbezogene Felder unbemerkt bleiben.
-const captured = vi.hoisted(() => ({ where: null as unknown }));
+const captured = vi.hoisted(() => ({ where: null as unknown, orderBy: [] as unknown[] }));
 
 const dialect = new PgDialect();
 
@@ -31,6 +31,14 @@ function capturedWhereQuery(): { text: string; params: unknown[] } {
 	}
 	const query = dialect.sqlToQuery(captured.where as SQL);
 	return { text: query.sql, params: query.params };
+}
+
+/** Rendert die zuletzt erfasste ORDER-BY-Liste als SQL-Text. */
+function capturedOrderByText(): string {
+	if (captured.orderBy.length === 0) {
+		throw new Error('Keine Sortierung erfasst — wurde die Query ausgeführt?');
+	}
+	return captured.orderBy.map((teil) => dialect.sqlToQuery(teil as SQL).sql).join(', ');
 }
 
 // Mock database - simplified approach using partial database operations
@@ -98,9 +106,12 @@ vi.mock('$lib/server/db', () => {
 					where: vi.fn((condition: unknown) => {
 						captured.where = condition;
 						return {
-							orderBy: vi.fn(() => ({
-								limit: vi.fn(() => Promise.resolve(mockSightingData))
-							}))
+							orderBy: vi.fn((...teile: unknown[]) => {
+								captured.orderBy = teile;
+								return {
+									limit: vi.fn(() => Promise.resolve(mockSightingData))
+								};
+							})
 						};
 					})
 				}))
@@ -148,6 +159,10 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 	beforeEach(() => {
 		vi.clearAllMocks();
 		captured.where = null;
+		// Ohne diesen Reset sähe `capturedOrderByText()` noch die Sortierung
+		// eines früheren Tests und bliebe grün, selbst wenn die Implementierung
+		// gar kein `orderBy()` mehr aufruft — etwa nach einem frühen Return.
+		captured.orderBy = [];
 	});
 
 	describe('PDF Compliance - Response Format', () => {
@@ -534,6 +549,27 @@ describe('PDF-Compliant Legacy REST API - GET /sichtungen/showreports.json', () 
 
 			expect(response.status).toBe(200);
 			// Database ordering is tested through integration - query structure is mocked
+		});
+
+		// `sichtungsdatum` allein ist kein eindeutiger Schlüssel: In den
+		// Produktionsdaten teilen sich 81 Zeitpunkte mehrere Sichtungen, die
+		// größte Gruppe neun. Ohne eindeutiges zweites Kriterium ist die
+		// Reihenfolge innerhalb einer solchen Gruppe undefiniert — zwei
+		// aufeinanderfolgende Aufrufe gegen dieselbe Datenbank lieferten
+		// nachweislich verschiedene Reihenfolgen. Weil `.limit(1000)` im
+		// Normalbetrieb immer greift, entscheidet der Zufall damit auch
+		// darüber, WELCHE Sichtungen am Rand noch mitkommen.
+		it('sortiert eindeutig, damit dieselbe Anfrage dieselbe Antwort liefert', async () => {
+			const event = createMockRequestEvent();
+			await GET(event);
+
+			// Die gesamte Sortierung festschreiben, nicht nur „id kommt vor":
+			// Eine vertauschte Reihenfolge (`id` zuerst) oder ein verlorenes
+			// `DESC` wäre eine andere Antwort für denselben Aufruf — und genau
+			// die Reproduzierbarkeit ist der Zweck dieses Tests.
+			expect(capturedOrderByText()).toBe(
+				'"sichtungen"."sichtungsdatum" DESC, "sichtungen"."id" DESC'
+			);
 		});
 
 		it('should apply reasonable result limit', async () => {
