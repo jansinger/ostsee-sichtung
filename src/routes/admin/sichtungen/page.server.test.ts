@@ -28,7 +28,7 @@ import {
 } from '$lib/server/db/mediaUploadFilter';
 import { balticSeaCondition } from '$lib/server/db/balticSeaFilter';
 import { deadFindingCondition } from '$lib/server/db/deadFindingFilter';
-import { rejectedOnly } from '$lib/server/db/approvalFilter';
+import { approvedOnly, openOnly, rejectedOnly } from '$lib/server/db/approvalFilter';
 import { berlinCalendarDate } from '$lib/server/db/sqlTimeZone';
 import { sightings } from '$lib/server/db/schema';
 import { SIGHTING_LIST_FIELDS } from './listColumns';
@@ -398,6 +398,83 @@ describe('admin/sichtungen/+page.server load() — Freitext-Suche', () => {
 		} as unknown as Parameters<typeof load>[0]);
 
 		expect(result).toBeDefined();
+	});
+});
+
+/**
+ * Statusreiter über der Tabelle (WP2): `statusCounts` trägt die Trefferzahlen
+ * für „Alle | Offen | Freigegeben | Abgelehnt".
+ *
+ * Der Punkt, an dem eine naive Umsetzung scheitert: Gezählt wird über die
+ * aktuell gefilterte Menge **ohne den Statusfilter selbst**. Zählte sie mit,
+ * stünde auf jedem inaktiven Reiter eine 0 — und die Leiste wäre als
+ * Übersicht wertlos, gerade wenn ein Filter aktiv ist.
+ */
+describe('admin/sichtungen/+page.server load() — Statusreiter-Zähler', () => {
+	/** Dritter `db.select()`-Aufruf: Liste (0), Pagination-Count (1), Statuszähler (2). */
+	const ZAEHLER = 2;
+
+	beforeEach(() => {
+		recordedSelects = [];
+		resolvedRows = [[{ id: 1 }], [{ count: 5 }], [{ all: 12, open: 7, approved: 4, rejected: 1 }]];
+	});
+
+	it('zählt die drei Zustände über dieselben Prädikate wie der Filter', async () => {
+		await load({ url: makeUrl() } as unknown as Parameters<typeof load>[0]);
+
+		const spalten = (recordedSelects[ZAEHLER]?.columns ?? {}) as Record<string, SQLWrapper>;
+		const spaltenSql = (name: string): string => toSqlText(spalten[name] as SQLWrapper);
+
+		expect(spaltenSql('open')).toContain(toSqlText(openOnly()));
+		expect(spaltenSql('approved')).toContain(toSqlText(approvedOnly()));
+		expect(spaltenSql('rejected')).toContain(toSqlText(rejectedOnly()));
+	});
+
+	it('lässt den Statusfilter aus der Zähler-Grundmenge heraus', async () => {
+		await load({
+			url: makeUrl({ verified: 'approved' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		// Die Liste filtert, die Zähler nicht — sonst stünde auf „Offen" und
+		// „Abgelehnt" jeweils 0, sobald „Freigegeben" gewählt ist.
+		expect(recordedSelects[0]?.whereSql).toBe(toSqlText(approvedOnly()));
+		/* Erst die Existenz, dann die Abwesenheit der WHERE-Klausel: Ohne die
+		   erste Zusicherung wäre der Test auch dann grün, wenn es die
+		   Zähler-Abfrage gar nicht gibt. */
+		expect(recordedSelects).toHaveLength(3);
+		expect(recordedSelects[ZAEHLER]?.whereSql).toBeUndefined();
+	});
+
+	it('nimmt die übrigen Filter dagegen mit', async () => {
+		await load({
+			url: makeUrl({ verified: 'approved', deadFinding: '1' })
+		} as unknown as Parameters<typeof load>[0]);
+
+		const totfund = toSqlText(deadFindingCondition('1') as unknown as SQLWrapper);
+		expect(recordedSelects[0]?.whereSql).toBe(
+			toSqlText(and(approvedOnly(), deadFindingCondition('1')) as unknown as SQLWrapper)
+		);
+		expect(recordedSelects[ZAEHLER]?.whereSql).toBe(totfund);
+	});
+
+	it('liefert die Zahlen als Zahlen, auch wenn der Treiber Strings liefert', async () => {
+		resolvedRows[ZAEHLER] = [{ all: '12', open: '7', approved: '4', rejected: '1' }];
+
+		const result = (await load({ url: makeUrl() } as unknown as Parameters<typeof load>[0])) as {
+			statusCounts: { all: number; open: number; approved: number; rejected: number };
+		};
+
+		expect(result.statusCounts).toEqual({ all: 12, open: 7, approved: 4, rejected: 1 });
+	});
+
+	it('liefert bei fehlender Zeile überall 0 statt NaN', async () => {
+		resolvedRows[ZAEHLER] = [];
+
+		const result = (await load({ url: makeUrl() } as unknown as Parameters<typeof load>[0])) as {
+			statusCounts: { all: number; open: number; approved: number; rejected: number };
+		};
+
+		expect(result.statusCounts).toEqual({ all: 0, open: 0, approved: 0, rejected: 0 });
 	});
 });
 
