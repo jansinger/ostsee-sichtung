@@ -11,7 +11,7 @@
 import type { LegacySightingRequest } from '$lib/legacy-api/types';
 import type { RequestEvent } from '@sveltejs/kit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DELETE, GET, POST, PUT } from './+server';
+import { DELETE, POST, PUT } from './+server';
 
 // Mock dependencies - these need to be hoisted before any imports
 vi.mock('$lib/server/db/sightingRepository', () => ({
@@ -426,14 +426,13 @@ describe('PDF-Compliant Legacy REST API - POST /rest_sichtungen', () => {
 	});
 
 	describe('PDF Compliance - HTTP Methods', () => {
-		// `GET` gehört seit 2026-08 **nicht** mehr zu den abgelehnten Methoden:
-		// Der Pfad ist der Index der Legacy-API und die Datenquelle der Karte
-		// in der angebundenen iOS-App. Dass er hier bis dahin mit `405` als
-		// „unsupported" festgeschrieben war, hat die Lücke jahrelang wie eine
-		// Absicht aussehen lassen. Sein Verhalten prüft `index.test.ts`.
-		it('lehnt GET nicht mehr ab — der Index ist ein eigener Endpunkt', () => {
-			expect(GET).not.toBe(PUT);
-		});
+		// `GET` fehlt hier bewusst. Der Pfad gehört seit 2026-08 nicht mehr zu
+		// den abgelehnten Methoden: Er ist der Index der Legacy-API und die
+		// Datenquelle der Karte in der angebundenen iOS-App. Dass er hier bis
+		// dahin mit `405` als „unsupported" festgeschrieben war, hat die Lücke
+		// jahrelang wie eine Absicht aussehen lassen. Geprüft wird er in
+		// `index.test.ts` — ein zweiter Test an dieser Stelle könnte nur
+		// wiederholen, was dort steht.
 
 		it('should reject PUT requests with 405', async () => {
 			const response = await PUT();

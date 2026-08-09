@@ -1,6 +1,6 @@
 <?php
 /**
- * @author Malte Srocke <maltesrocke@yahoo.de>
+ * @author Malte Srocke (E-Mail-Adresse entfernt, siehe README)
  * 
  */
 App::uses('AppController', 'Controller');

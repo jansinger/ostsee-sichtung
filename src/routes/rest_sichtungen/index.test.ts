@@ -32,13 +32,6 @@ describe('GET /rest_sichtungen', () => {
 		expect(GET).toBe(showreportsGET);
 	});
 
-	it('antwortet nicht mehr mit 405', async () => {
-		// Der frühere Handler gab einen festen 405-Körper zurück, ohne die
-		// Anfrage anzusehen. Ein Test, der nur `GET !== undefined` prüft, wäre
-		// auch damals grün gewesen.
-		expect(GET.toString()).not.toContain('Method not allowed');
-	});
-
 	it('lässt POST unangetastet', () => {
 		// Der Schreibpfad ist der kritische: Er trägt das Rate-Limit von 20
 		// Meldungen pro Stunde und die Yup-Validierung. Der Index darf daran

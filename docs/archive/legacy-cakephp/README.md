@@ -1,8 +1,20 @@
 # Originalquellen der abgelösten CakePHP-Anwendung
 
 Ausschnitt aus `sichtungen.tgz` (1,6 GB, nicht im Repo). Hier liegen nur die
-fünf Dateien, die den Vertrag der Legacy-API festlegen — als Beleg, nicht zum
+Dateien, die den Vertrag der Legacy-API festlegen — als Beleg, nicht zum
 Ausführen.
+
+> **Eine Änderung gegenüber dem Original:** In drei Dateien stand im
+> `@author`-Tag die private E-Mail-Adresse des ursprünglichen Entwicklers. Sie
+> ist entfernt, der Name bleibt stehen. Dieses Repository ist öffentlich, und
+> die Adresse gehört einer dritten Person, die dem nie zugestimmt hat — die
+> Urheberschaft ist ohne sie genauso belegt. Wer die Dateien erneut aus dem
+> Archiv zieht, muss das wiederholen.
+>
+> Die Rolladresse `sichtungen@meeresmuseum.de` in `SichtungenController.php`
+> steht bewusst noch drin: Sie ist die Absenderadresse der damaligen
+> Bestätigungsmails, also Teil des dokumentierten Verhaltens, und keine
+> personenbezogene Adresse.
 
 | Datei                          | wofür                                                    |
 | ------------------------------ | -------------------------------------------------------- |
