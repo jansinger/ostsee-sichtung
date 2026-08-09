@@ -37,7 +37,14 @@ Clients.
 | `/rest_sichtungen/inBaltic.json`  | GET     | Positionsprüfung         |
 | `/sichtungen/showreports.json`    | GET     | Sichtungsdaten abrufen   |
 
-Zusätzlich existiert `/en/rest_sichtungen/antworten.json` (englische Variante).
+**Jeder dieser Pfade ist zusätzlich mit vorangestelltem `/de/` oder `/en/`
+erreichbar** — das Sprachpräfix der CakePHP-Vorgänger-App galt vor jeder Route,
+nicht nur vor `antworten.json`. Es ist keine Übersetzung, sondern Routenkosmetik:
+die Response ist in jeder Variante identisch. Umgesetzt einmalig im
+`reroute`-Hook (`src/hooks.ts` → `src/lib/legacy-api/languagePrefix.ts`), nicht
+als Alias-Route je Endpunkt. Keine weiteren Pfade eintragen — vor Seitenrouten
+und `/admin` bleibt das Präfix bewusst 404. Begründung und Grenzen:
+`docs/LEGACY_API_SPECIFICATION.md`, Abschnitt „Sprachpräfix `/de/` und `/en/`".
 
 ---
 
