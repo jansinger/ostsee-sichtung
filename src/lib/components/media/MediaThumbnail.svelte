@@ -42,10 +42,16 @@
 	}
 
 	function handleImageError(event: Event) {
-		console.error('Image loading failed:', `/api/media/${file.filePath}`, event);
-		// Fallback to original URL if secure endpoint fails
-		const img = event.target as HTMLImageElement;
-		if (!img.src.includes('fallback=true')) {
+		const img = event.currentTarget as HTMLImageElement;
+		// Die tatsächlich gescheiterte URL, nicht `/api/media/…`: Beim zweiten
+		// Durchlauf ist das der Fallback, und ein Log, das dann weiter den
+		// Endpunkt nennt, schickt die Fehlersuche an die falsche Stelle.
+		console.error('Image loading failed:', img.src, event);
+
+		// Fallback to original URL if secure endpoint fails. `url` ist im Schema
+		// optional — ohne diese Prüfung entstünde daraus eine Anfrage auf
+		// `undefined?fallback=true`, die nur scheitern kann.
+		if (file.url && !img.src.includes('fallback=true')) {
 			img.src = `${file.url}?fallback=true`;
 			return;
 		}

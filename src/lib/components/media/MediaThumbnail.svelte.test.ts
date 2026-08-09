@@ -88,6 +88,20 @@ describe('MediaThumbnail — Ladezustand', () => {
 		expect(skeleton()).toBeNull();
 	});
 
+	it('beendet die Ladeanzeige sofort, wenn es keine Fallback-URL gibt', async () => {
+		// `url` ist im Schema optional. Ohne die Prüfung baute der Handler daraus
+		// `undefined?fallback=true` — eine Anfrage, die niemand beantworten kann,
+		// nur damit ihr Fehlschlag die Anzeige abräumt.
+		render(MediaThumbnail, { file: bildDatei({ url: undefined }) });
+		const vorher = bild().src;
+
+		bild().dispatchEvent(new Event('error'));
+		await tick();
+
+		expect(bild().src).toBe(vorher);
+		expect(skeleton()).toBeNull();
+	});
+
 	it('setzt keine Ladeanzeige an Nicht-Bild-Kacheln', () => {
 		// Der Video-Zweig lädt wegen `preload="none"` bewusst nichts, der
 		// Datei-Zweig zeigt nur ein Icon — beide haben nichts zu überbrücken.
