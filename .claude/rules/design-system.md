@@ -209,6 +209,19 @@ Ein Token, das **nur** im `@theme`-Block steht, ist über `var()` nicht erreichb
 **Welcher der beiden `app.css`-Blöcke, entscheidet Tailwind, nicht der Geschmack.** `@theme` erzeugt nur für die Namespaces eine Utility, die Tailwind kennt (`--color-*`, `--shadow-*`, `--text-*`, …). Für **Z-Index und Übergangsdauer gibt es keinen solchen Namespace** — `--layer-panel` im `@theme`-Block bliebe eine Variable ohne Klasse. Diese neun stehen deshalb als `@utility z-panel { z-index: var(--layer-panel) }` bzw. `@utility duration-quick { … }` in `app.css` und verweisen von dort auf `tokens.css`. Beide Blöcke zusammen sind gemeint, wenn unten „Keine toten Utility-Klassen" von einem Eintrag in `app.css` spricht.
 
 - **Z-Index:** `z-raised` (10), `z-panel` (20), `z-nav` (30), `z-overlay` (40), `z-skip` (50) — bzw. `--layer-*` über `var()`. Keine freien `z-*`-Utilities und keine `z-[…]`. Vorher lagen Navbar und Panel-Toggle beide auf `z-50` — welches Element oben lag, entschied damit die DOM-Position. Die Stufe nach **Zuständigkeit** wählen, nicht nach der Zahl, die vorher dort stand: Was muss dieses Element tatsächlich überlagern?
+
+  **Die Karte ist der Fall, an dem das schiefging** (#812). Dort standen die schwebenden Bedienelemente auf `z-30` und wanderten mechanisch auf `z-nav` — dieselbe Zahl, also scheinbar folgenlos. Im selben Schritt fiel das Bottom-Sheet von `z-40` auf `z-panel` (20), und damit lagen Bedienelemente und Leerzustands-Meldungen plötzlich **über** dem Sheet. Auf Mobil war der Vergrößern-Knopf des Sheets nicht mehr klickbar, und die Meldung „Alle Sichtungen durch Filter ausgeblendet" verdeckte das Filter-Panel, mit dem man sie auflöst. Die verbindliche Ordnung auf `/map`:
+
+  | Stufe            | Was dort liegt                                                                                                                  |
+  | ---------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+  | `z-base` (0)     | Karten-Canvas (`ol-map-container`)                                                                                              |
+  | `z-raised` (10)  | Kartenfläche: Titel-Badge, Arten-Leiste, Tooltip, Zoom-Gruppe, Standort-FAB, Logo-Platte, Listenansicht, Leerzustands-Meldungen |
+  | `z-panel` (20)   | Karte/Liste-Umschalter, Panels und Bottom-Sheets                                                                                |
+  | `z-nav` (30)     | Panel-Toggle                                                                                                                    |
+  | `z-overlay` (40) | Fehler-Toast, Tastatur-Hilfe                                                                                                    |
+
+  Umschalter und Sheet liegen bewusst auf derselben Stufe: Der Umschalter muss über der Listenansicht bleiben, das Sheet über dem Umschalter — mit fünf Stufen geht das nur über die DOM-Reihenfolge, und die Panels stehen dafür hinter dem Umschalter im Markup.
+
 - **Dauer:**
 
   | Utility             | Token               | Wert  | Wofür                        | Kurve           |

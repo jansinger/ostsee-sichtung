@@ -801,7 +801,7 @@
 		<!-- Keine Sichtungen für das gewählte Jahr -->
 		{#if showNoResults}
 			<div
-				class="bg-base-100 rounded-box z-nav absolute top-1/2 left-1/2 w-[min(24rem,90%)] -translate-x-1/2 -translate-y-1/2"
+				class="bg-base-100 rounded-box z-raised absolute top-1/2 left-1/2 w-[min(24rem,90%)] -translate-x-1/2 -translate-y-1/2"
 				style="box-shadow: var(--shadow-floating)"
 			>
 				<StatusBlock
@@ -822,7 +822,7 @@
 		<!-- Alle Sichtungen durch Filter ausgeblendet -->
 		{#if showNoVisibleResults}
 			<div
-				class="bg-base-100 rounded-box z-nav absolute top-1/2 left-1/2 w-[min(24rem,90%)] -translate-x-1/2 -translate-y-1/2"
+				class="bg-base-100 rounded-box z-raised absolute top-1/2 left-1/2 w-[min(24rem,90%)] -translate-x-1/2 -translate-y-1/2"
 				style="box-shadow: var(--shadow-floating)"
 			>
 				<StatusBlock
@@ -874,7 +874,7 @@
 		<!-- K3: Listenansicht — barrierefreie Tabellen-Alternative zur Karte -->
 		{#if viewMode === 'list'}
 			<section
-				class="bg-base-100 z-panel absolute inset-0 overflow-y-auto pt-16 pb-24"
+				class="bg-base-100 z-raised absolute inset-0 overflow-y-auto pt-16 pb-24"
 				aria-label="Listenansicht der Sichtungen"
 			>
 				<div class="mx-auto max-w-3xl px-4">
@@ -889,7 +889,7 @@
 
 	<!-- K3: Umschalter Karte/Liste -->
 	<div
-		class="z-raised absolute bottom-4 left-1/2 -translate-x-1/2"
+		class="z-panel absolute bottom-4 left-1/2 -translate-x-1/2"
 		role="group"
 		aria-label="Darstellung der Sichtungen wählen"
 	>
