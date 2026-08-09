@@ -398,8 +398,14 @@
 							<td class="text-center">
 								{#if !spam.badgeClass}
 									<!-- NULL heißt „nie bewertet" (Altbestand, Legacy-Eingang) —
-									     bewusst kein Badge, sonst läse es sich wie „geprüft, sauber". -->
-									<span class="text-base-content/70" title={spam.description}>—</span>
+									     bewusst kein Badge, sonst läse es sich wie „geprüft, sauber".
+									     Der Gedankenstrich allein sagt am Screenreader gar nichts, und
+									     das `title` ist dort nicht verlässlich erreichbar — deshalb
+									     trägt hier die sr-only-Fassung die ganze Aussage. -->
+									<span class="text-base-content/70" title={spam.description} aria-hidden="true"
+										>—</span
+									>
+									<span class="sr-only">{spam.label} — {spam.description}</span>
 								{:else}
 									<span
 										class="badge badge-sm whitespace-nowrap {spam.badgeClass}"
