@@ -863,7 +863,14 @@
 			nicht sehen.
 		-->
 		<div class="mt-3 flex flex-wrap items-center gap-2">
-			<span class="text-support text-base-content/70">Ansichten:</span>
+			{#if filterPresets.length > 0 || zeigeAnsichtFormular}
+				<!-- Ohne gespeicherte Presets und mit geschlossenem Formular stünde das
+				     Label vor einem einzelnen „Ansicht speichern“-Knopf — ein Label ohne
+				     etwas, das es benennt (UX-Review WP6). Der Knopf selbst bleibt in
+				     jedem Fall sichtbar: Er ist der Einstieg ins Feature, nicht Teil der
+				     Aufzählung, die er benennt. -->
+				<span class="text-support text-base-content/70">Ansichten:</span>
+			{/if}
 
 			{#each filterPresets as preset (preset.id)}
 				{#if umbenennenId === preset.id}
