@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.15.0](https://github.com/jansinger/ostsee-tiere/compare/v2.14.0...v2.15.0) (2026-08-09)
+
+
+### Features
+
+* **api:** GET /rest_sichtungen bedienen — der Index der Legacy-API ([#829](https://github.com/jansinger/ostsee-tiere/issues/829)) ([cabb802](https://github.com/jansinger/ostsee-tiere/commit/cabb802f2412178630c8f52fb36c117a3f97c653))
+
+
+### Bug Fixes
+
+* **admin:** sort indicator, selection column and reference id in the table ([#832](https://github.com/jansinger/ostsee-tiere/issues/832)) ([9938859](https://github.com/jansinger/ostsee-tiere/commit/9938859c2a500b706dc58a1a47eb630fe5e2255f))
+
+
+### Documentation
+
+* fremde dateien vor dem commit auf personenbezogene daten prüfen ([#831](https://github.com/jansinger/ostsee-tiere/issues/831)) ([ca9ca49](https://github.com/jansinger/ostsee-tiere/commit/ca9ca490f2cf900496d79d087523f4ec689a29b7))
+
 ## [2.14.0](https://github.com/jansinger/ostsee-tiere/compare/v2.13.0...v2.14.0) (2026-08-09)
 
 
