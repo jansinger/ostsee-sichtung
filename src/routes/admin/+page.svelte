@@ -231,7 +231,7 @@
 
 <div class="container mx-auto max-w-3xl px-4 py-6">
 	<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-		<h1 class="text-2xl font-bold">
+		<h1 class="text-display font-bold">
 			Eingang
 			<span class="badge badge-outline align-middle">{data.openTotal} offen</span>
 		</h1>

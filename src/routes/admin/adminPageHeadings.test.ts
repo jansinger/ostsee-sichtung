@@ -73,3 +73,58 @@ describe('Admin-Seiten — Überschriftenstruktur beginnt bei h1', () => {
 		expect(lies('../../lib/components/docs/ApiDocumentation.svelte')).toMatch(/<h1[^>]*>\{title\}/);
 	});
 });
+
+/**
+ * Befund 9 des Admin-Reviews: Die Seitentitel standen in drei Größen
+ * (`text-3xl`, `text-2xl`, `text-xl`), je nachdem, wann die Seite entstanden
+ * ist. Die Typografie-Tabelle in `design-system.md` kennt für den Seitentitel
+ * genau eine Rolle — `display`, 32px, als Utility `text-display`.
+ *
+ * **Detailansicht und Bearbeiten-Maske sind die begründete Ausnahme**
+ * (Entscheidung Jan, 2026-08-09): Arbeitsflächen, deren Kopf direkt über der
+ * Aktionsleiste steht. Sie stehen deshalb hier mit einer eigenen Erwartung —
+ * damit die Ausnahme eine Zusage ist und nicht ein Rest, den der nächste
+ * Durchgang „vergessen" nennt und mitzieht.
+ *
+ * Quelltext-Scan aus demselben Grund wie oben: Beide Ausnahme-Routen brauchen
+ * einen Server-Load mit Datenbank.
+ */
+describe('Admin-Seiten — der Seitentitel hat eine Größe', () => {
+	/** Die Klassen des ersten `<h1>` einer Datei. */
+	const h1Klassen = (pfad: string): string =>
+		lies(pfad).match(/<h1[^>]*class="([^"]*)"/)?.[1] ?? '';
+
+	const UEBERSICHTEN = [
+		{ name: 'Eingang', pfad: './+page.svelte' },
+		{ name: 'Sichtungstabelle', pfad: './sichtungen/+page.svelte' },
+		{ name: 'Statistik', pfad: './statistics/+page.svelte' },
+		{ name: 'Einstellungen', pfad: './settings/+page.svelte' },
+		{ name: 'Referenz-Lookup', pfad: './ref/[refId]/+page.svelte' }
+	] as const;
+
+	for (const { name, pfad } of UEBERSICHTEN) {
+		it(`${name} trägt die Rolle display`, () => {
+			expect(h1Klassen(pfad).split(/\s+/)).toContain('text-display');
+		});
+	}
+
+	it('beide Kopfvarianten der Tabelle tragen dieselbe Größe', () => {
+		// Die kompakte und die weite Kopfzeile sind dasselbe Element in zwei
+		// Layouts — unterschiedliche Größen wären ein Sprung beim Drehen des
+		// Geräts, nicht eine Anpassung.
+		const treffer = [...lies('./sichtungen/+page.svelte').matchAll(/<h1[^>]*class="([^"]*)"/g)];
+		expect(treffer).toHaveLength(2);
+		expect(treffer[0]?.[1]).toBe(treffer[1]?.[1]);
+	});
+
+	for (const { name, pfad } of [
+		{ name: 'Detailansicht', pfad: './[id]/+page.svelte' },
+		{ name: 'Bearbeiten', pfad: './[id]/edit/+page.svelte' }
+	] as const) {
+		it(`${name} bleibt bewusst bei text-xl`, () => {
+			const klassen = h1Klassen(pfad).split(/\s+/);
+			expect(klassen).toContain('text-xl');
+			expect(klassen).not.toContain('text-display');
+		});
+	}
+});

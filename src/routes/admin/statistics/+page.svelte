@@ -134,7 +134,7 @@
 		<!-- Header -->
 		<div class="flex flex-wrap items-start justify-between gap-4">
 			<div>
-				<h1 class="text-base-content text-3xl font-bold">
+				<h1 class="text-base-content text-display font-bold">
 					Statistiken{yearSuffix}
 				</h1>
 				<p class="text-base-content/70 mt-2">
@@ -515,7 +515,7 @@
 											{observer.lastSighting.slice(0, 4)}
 										</td>
 										<td>
-											<div class="text-xs">
+											<div class="text-support">
 												{Math.round(daysDiff)} Tage aktiv
 											</div>
 										</td>

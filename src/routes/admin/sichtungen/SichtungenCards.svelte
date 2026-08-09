@@ -18,7 +18,7 @@
 	import { TEST_EMAIL_HINT } from '$lib/components/admin/sightingActions';
 	import type { SightingVerdict } from '$lib/components/admin/sightingVerdict';
 	import { getSpeciesLabel } from '$lib/report/formOptions/species';
-	import type { FrontendSighting } from '$lib/types';
+	import type { SichtungenListRow } from './listColumns';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
 	import {
 		BALTIC_SEA_STATUS_PRESENTATION,
@@ -27,15 +27,15 @@
 	import { NUR_KOMPAKT } from './layoutSwitch';
 
 	interface Props {
-		sightings: FrontendSighting[];
+		sightings: SichtungenListRow[];
 		/** Steuert nur das Bedienelement — das Gate steht zusätzlich am Endpunkt. */
 		isSuperAdmin: boolean;
 		/** Ids, deren Statuswechsel gerade läuft (je Zeile, nicht global). */
 		statusPending: ReadonlySet<number>;
-		onview: (sighting: FrontendSighting) => void;
+		onview: (sighting: SichtungenListRow) => void;
 		ontestemail: (id: number) => void;
 		onspamcheck: (id: number) => void;
-		ondelete: (sighting: FrontendSighting) => void;
+		ondelete: (sighting: SichtungenListRow) => void;
 		onstatuschange: (id: number, verdict: SightingVerdict, previous: SightingStatus) => void;
 	}
 
@@ -128,8 +128,11 @@
 					>
 						<Icon icon="lucide:shield-alert" class="h-4 w-4" />
 					</button>
+					<!-- Kanonische destruktive Variante, gleiche Begründung wie in der
+					     Tabellenzeile nebenan (`SichtungenTable.svelte`): dieselbe Aktion,
+					     dieselbe Variante, dasselbe Icon — unabhängig von der Ansicht. -->
 					<button
-						class="btn text-error btn-ghost btn-sm"
+						class="btn btn-outline btn-error btn-sm"
 						onclick={() => ondelete(sighting)}
 						title="Eintrag löschen"
 						aria-label="Eintrag löschen"
@@ -172,7 +175,7 @@
 			</div>
 
 			<div class="mt-3 flex items-center justify-between">
-				<span class="text-base-content/70 text-xs">
+				<span class="text-base-content/70 text-support">
 					Gemeldet: {formatLocalDateTime(sighting.created)}
 				</span>
 				<!-- size="sm" statt "md": Gemessen bei 320px/375px lief die Karte mit den

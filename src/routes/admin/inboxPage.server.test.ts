@@ -25,6 +25,7 @@ import type { SQL, SQLWrapper } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { openOnly } from '$lib/server/db/approvalFilter';
+import { INBOX_FIELDS } from '$lib/server/db/inboxColumns';
 
 const dialect = new PgDialect();
 const toSqlText = (condition: SQLWrapper): string => dialect.sqlToQuery(condition.getSQL()).sql;
@@ -117,6 +118,42 @@ describe('Eingangs-Load', () => {
 		resolvedRows = [[{ id: 1 }, { id: 2 }], [{ count: 7 }], [{ count: 3 }], []];
 		findDuplicateCandidates.mockClear();
 		findDuplicateCandidates.mockResolvedValue({});
+	});
+
+	/*
+	 * Befund 20, Eingangs-Hälfte: Die Liste lief als `db.select()` über die
+	 * ganze Zeile — 50 vollständige Datensätze pro Aufruf, mitsamt Anschrift,
+	 * Telefonnummer und allen acht Einwilligungs-Nachweisspalten. Dass die Karte
+	 * kein Feld liest, das hier fehlt, sichert der Typ `InboxSighting`; dass
+	 * `load()` die Auswahl auch übergibt, sichert dieser Test. Ein
+	 * zurückgedrehtes `db.select()` erzeugt `columns === undefined`.
+	 */
+	it('liest nur die Spalten aus inboxColumns, nicht die ganze Zeile', async () => {
+		await load({ url: makeUrl() } as unknown as Parameters<typeof load>[0]);
+
+		expect(Object.keys(recordedSelects[0]?.columns ?? {}).sort()).toEqual([...INBOX_FIELDS].sort());
+	});
+
+	it('liefert keine Spalte aus, die die Eingangskarte nicht zeigt', () => {
+		// Aufzählung statt Namens-Heuristik: „alles mit Consent im Namen" sähe
+		// nach einer Regel aus, ließe aber `phone` und `internalComment` durch.
+		const nichtAusliefern = [
+			'phone',
+			'fax',
+			'street',
+			'zipCode',
+			'city',
+			'internalComment',
+			'privacyConsentAt',
+			'privacyConsentVersion',
+			'nameConsentAt',
+			'nameConsentVersion',
+			'shipNameConsentAt',
+			'shipNameConsentVersion',
+			'mediaConsentAt',
+			'mediaConsentVersion'
+		];
+		expect(nichtAusliefern.filter((feld) => INBOX_FIELDS.includes(feld as never))).toEqual([]);
 	});
 
 	it('sucht Duplikat-Kandidaten für alle gelisteten IDs in einem Aufruf', async () => {

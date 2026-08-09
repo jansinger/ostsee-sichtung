@@ -2,7 +2,7 @@
 	import { createLogger } from '$lib/logger';
 	import type { ConfigItem, ConfigValue } from '$lib/server/db/configRepository';
 	import Icon from '$lib/components/Icon.svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { untrack } from 'svelte';
 	import CleanupPanel from './CleanupPanel.svelte';
 	import ResetSettingsButton from './ResetSettingsButton.svelte';
@@ -94,13 +94,44 @@
 		return 'text';
 	}
 
-	function handleInputChange(config: ConfigItem, newValue: unknown) {
-		// Update the config value
-		config.value = newValue as ConfigValue;
-		changedConfigs = new SvelteSet(changedConfigs).add(config.key);
+	/**
+	 * Die vom Bearbeiter eingegebenen Werte — **neben** `data`, nicht darin.
+	 *
+	 * Vorher schrieb `handleInputChange` direkt `config.value`, also in ein
+	 * Objekt aus `data.groupedConfigs`. Dass das nicht auffiel, lag an einem
+	 * Zufall mit zwei Hälften:
+	 *
+	 * - Der Schreibvorgang erreichte `data` gar nicht. `groupedConfigs` ist ein
+	 *   `$state`-Proxy; Svelte 5 hält die Werte in eigenen Signalen und schreibt
+	 *   sie **nicht** in das Zielobjekt zurück. Die Eingabe lebte also im Proxy.
+	 * - Genau deshalb ging sie verloren, sobald der Proxy ersetzt wurde. Der
+	 *   „Alle Einstellungen anzeigen"-Toggle tut das (`groupedConfigs =
+	 *   data.groupedConfigs` bzw. das gefilterte Ergebnis): Das Feld sprang auf
+	 *   den Wert des Loaders zurück, `changedConfigs` meldete die Änderung aber
+	 *   weiter — und „Speichern" schrieb den alten Wert in die Datenbank, ohne
+	 *   dass irgendwo etwas rot geworden wäre.
+	 *
+	 * Ein `SvelteMap` über den **Schlüssel** hängt an nichts davon: Weder ein
+	 * neues `data` noch ein neu gebautes gefiltertes Array berührt ihn.
+	 *
+	 * Er wird beim Speichern **nicht** geleert. Der Loader läuft dabei nicht
+	 * erneut, `config.value` trüge also weiter den alten Stand — das Feld
+	 * spränge nach dem Speichern sichtbar zurück. Geleert wird stattdessen
+	 * `changedConfigs`: Das ist die Frage „ungespeichert?", und die ist eine
+	 * andere als „was steht im Feld?".
+	 */
+	const eigeneWerte = new SvelteMap<string, ConfigValue>();
 
-		// Force reactivity update for the specific config object
-		groupedConfigs = { ...groupedConfigs };
+	/** Was im Feld steht: die Eingabe, sonst der Wert des Loaders. */
+	function wertVon(config: ConfigItem): ConfigValue {
+		return eigeneWerte.has(config.key)
+			? (eigeneWerte.get(config.key) as ConfigValue)
+			: config.value;
+	}
+
+	function handleInputChange(config: ConfigItem, newValue: unknown) {
+		eigeneWerte.set(config.key, newValue as ConfigValue);
+		changedConfigs = new SvelteSet(changedConfigs).add(config.key);
 	}
 
 	function handleArrayChange(config: ConfigItem, event: Event) {
@@ -128,6 +159,14 @@
 
 	/**
 	 * Speichert eine Einstellung.
+	 *
+	 * **Die Meldungstexte tragen kein Emoji.** Sie landen im Textknoten eines
+	 * `alert-success`/`alert-error`, und dort trägt laut Alert-Regel
+	 * (`design-system.md`) das **Icon** die Bedeutung — jede Variante hat eine
+	 * eigene Form. Ein vorangestelltes „✅"/„❌" sagte dasselbe ein zweites Mal
+	 * und wurde von Screenreadern als „Häkchensymbol" mitgelesen. Das gilt für
+	 * alle Meldungen dieser Seite, auch die von `saveAllChanges`,
+	 * `resetToDefaults` und den beiden Test-Aktionen.
 	 *
 	 * **Der Rückgabewert ist neu und der Kern des Fixes:** `saveAllChanges` hat
 	 * den Ausgang vorher aus `changedConfigs.size` erschlossen und lag damit bei
@@ -157,7 +196,7 @@
 		try {
 			const requestBody = {
 				key: config.key,
-				value: config.value,
+				value: wertVon(config),
 				description: config.description,
 				category: config.category
 			};
@@ -180,10 +219,10 @@
 
 			// Special handling for maintenance mode
 			if (config.key === 'display.maintenanceMode') {
-				const isEnabled = Boolean(config.value);
-				saveMessage = `✅ Wartungsmodus ${isEnabled ? 'aktiviert' : 'deaktiviert'} - Änderung ist sofort wirksam`;
+				const isEnabled = Boolean(wertVon(config));
+				saveMessage = `Wartungsmodus ${isEnabled ? 'aktiviert' : 'deaktiviert'} - Änderung ist sofort wirksam`;
 			} else {
-				saveMessage = `✅ ${config.key} gespeichert`;
+				saveMessage = `${config.key} gespeichert`;
 			}
 
 			errorMessage = '';
@@ -193,7 +232,7 @@
 		} catch (error) {
 			logger.error({ error, config: config.key }, 'Failed to save configuration');
 			if (silent) return false;
-			errorMessage = `❌ Fehler beim Speichern von ${config.key}`;
+			errorMessage = `Fehler beim Speichern von ${config.key}`;
 			setTimeout(() => (errorMessage = ''), 5000);
 			return false;
 		} finally {
@@ -213,7 +252,7 @@
 		}
 
 		if (configsToSave.length === 0) {
-			saveMessage = 'ℹ️ Keine Änderungen zu speichern';
+			saveMessage = 'Keine Änderungen zu speichern';
 			setTimeout(() => (saveMessage = ''), 3000);
 			return;
 		}
@@ -239,10 +278,10 @@
 		   Erfolgsmeldung bekommt weiterhin ihren Timer; der Fehlerfall bleibt
 		   stehen, bis der nächste Versuch ihn ersetzt. */
 		if (summary.hasFailures) {
-			errorMessage = `❌ ${summary.message}`;
+			errorMessage = summary.message;
 			saveMessage = '';
 		} else {
-			saveMessage = `✅ ${summary.message}`;
+			saveMessage = summary.message;
 			errorMessage = '';
 			setTimeout(() => (saveMessage = ''), 5000);
 		}
@@ -262,7 +301,7 @@
 			   nur Netzwerkfehler und hat den Fall nie erreicht. */
 			if (!response.ok) {
 				logger.error({ status: response.status }, 'Failed to reset configurations');
-				errorMessage = `❌ Zurücksetzen fehlgeschlagen (Fehler ${response.status}) — die Einstellungen sind unverändert`;
+				errorMessage = `Zurücksetzen fehlgeschlagen (Fehler ${response.status}) — die Einstellungen sind unverändert`;
 				setTimeout(() => (errorMessage = ''), 5000);
 				return;
 			}
@@ -271,7 +310,7 @@
 			window.location.reload();
 		} catch (error) {
 			logger.error({ error }, 'Failed to reset configurations');
-			errorMessage = '❌ Fehler beim Zurücksetzen der Einstellungen';
+			errorMessage = 'Fehler beim Zurücksetzen der Einstellungen';
 			setTimeout(() => (errorMessage = ''), 5000);
 		}
 	}
@@ -287,27 +326,28 @@
 			const result = await response.json();
 
 			if (response.ok && result.success) {
-				saveMessage = '✅ Test-E-Mail wurde erfolgreich gesendet';
+				saveMessage = 'Test-E-Mail wurde erfolgreich gesendet';
 				setTimeout(() => (saveMessage = ''), 5000);
 			} else {
-				errorMessage = result.message || '❌ Test-E-Mail konnte nicht gesendet werden';
+				errorMessage = result.message || 'Test-E-Mail konnte nicht gesendet werden';
 				setTimeout(() => (errorMessage = ''), 5000);
 			}
 		} catch (error) {
 			logger.error({ error }, 'Failed to send test email');
-			errorMessage = '❌ Fehler beim Senden der Test-E-Mail';
+			errorMessage = 'Fehler beim Senden der Test-E-Mail';
 			setTimeout(() => (errorMessage = ''), 5000);
 		}
 	}
 
 	function handleTestEmail(_config: unknown) {
-		const recipient = groupedConfigs.email?.find(
-			(c) => c.key === 'notification.email.recipient'
-		)?.value;
+		/* `wertVon`, nicht `.value`: Wer die Empfängeradresse gerade korrigiert
+		   hat und dann „Test-E-Mail" drückt, meint die neue. */
+		const eintrag = groupedConfigs.email?.find((c) => c.key === 'notification.email.recipient');
+		const recipient = eintrag && wertVon(eintrag);
 		if (recipient && typeof recipient === 'string' && recipient.includes('@')) {
 			testEmailConfiguration(recipient);
 		} else {
-			errorMessage = '❌ Bitte konfigurieren Sie zuerst eine gültige Empfänger-E-Mail-Adresse';
+			errorMessage = 'Bitte konfigurieren Sie zuerst eine gültige Empfänger-E-Mail-Adresse';
 			setTimeout(() => (errorMessage = ''), 5000);
 		}
 	}
@@ -323,15 +363,15 @@
 
 			if (response.ok) {
 				const status = result.enabled ? 'aktiviert' : 'deaktiviert';
-				saveMessage = `✅ Wartungsmodus-Status: ${status} (${result.timestamp})`;
+				saveMessage = `Wartungsmodus-Status: ${status} (${result.timestamp})`;
 				setTimeout(() => (saveMessage = ''), 5000);
 			} else {
-				errorMessage = result.message || '❌ Wartungsmodus-Status konnte nicht abgerufen werden';
+				errorMessage = result.message || 'Wartungsmodus-Status konnte nicht abgerufen werden';
 				setTimeout(() => (errorMessage = ''), 5000);
 			}
 		} catch (error) {
 			logger.error({ error }, 'Failed to test maintenance mode');
-			errorMessage = '❌ Fehler beim Testen des Wartungsmodus';
+			errorMessage = 'Fehler beim Testen des Wartungsmodus';
 			setTimeout(() => (errorMessage = ''), 5000);
 		}
 	}
@@ -345,7 +385,7 @@
 	<!-- Header -->
 	<div class="mb-8 flex items-center justify-between">
 		<div>
-			<h1 class="text-base-content flex items-center gap-3 text-3xl font-bold">
+			<h1 class="text-base-content text-display flex items-center gap-3 font-bold">
 				<Icon
 					icon="lucide:settings"
 					width="32"
@@ -465,6 +505,12 @@
 
 					<div class="space-y-6">
 						{#each configs as config (config.key)}
+							<!-- `config.value` und bewusst nicht `wertVon(config)`: Welches
+						     Bedienelement eine Einstellung braucht, entscheidet ihr
+						     gespeicherter Typ, nicht der halb getippte Zwischenstand. Bei
+						     ungültigem JSON legt `handleJsonChange` den Rohtext ab — aus
+						     der Eingabe gelesen wechselte das Feld dabei mitten im Tippen
+						     von der JSON-Textarea auf ein einzeiliges Textfeld. -->
 							{@const inputType = getInputType(config.value)}
 
 							<div
@@ -521,19 +567,19 @@
 											<input
 												type="checkbox"
 												class="checkbox checkbox-primary"
-												checked={Boolean(config.value)}
+												checked={Boolean(wertVon(config))}
 												onchange={(e) =>
 													handleInputChange(config, (e.target as HTMLInputElement).checked)}
 											/>
 											<span>
-												{config.value ? 'Aktiviert' : 'Deaktiviert'}
+												{wertVon(config) ? 'Aktiviert' : 'Deaktiviert'}
 											</span>
 										</label>
 									{:else if inputType === 'number'}
 										<input
 											type="number"
 											class="input w-full"
-											value={Number(config.value)}
+											value={Number(wertVon(config))}
 											oninput={(e) =>
 												handleInputChange(config, Number((e.target as HTMLInputElement).value))}
 											placeholder="Numerischer Wert"
@@ -543,29 +589,31 @@
 											<input
 												type="text"
 												class="input w-full"
-												value={Array.isArray(config.value) ? config.value.join(', ') : ''}
+												value={Array.isArray(wertVon(config))
+													? (wertVon(config) as string[]).join(', ')
+													: ''}
 												oninput={(e) => handleArrayChange(config, e)}
 												placeholder="Werte durch Komma getrennt"
 											/>
 											<div class="label">
 												<span class="text-base-content/60">
-													Aktuelle Werte: {getValueDisplay(config.value) || 'Keine'}
+													Aktuelle Werte: {getValueDisplay(wertVon(config)) || 'Keine'}
 												</span>
 											</div>
 										</div>
 									{:else if inputType === 'json'}
 										<textarea
 											class="textarea h-24 font-mono text-sm"
-											value={typeof config.value === 'object'
-												? JSON.stringify(config.value, null, 2)
-												: String(config.value)}
+											value={typeof wertVon(config) === 'object'
+												? JSON.stringify(wertVon(config), null, 2)
+												: String(wertVon(config))}
 											oninput={(e) => handleJsonChange(config, e)}
 											placeholder="JSON-Format"
 										></textarea>
 									{:else if inputType === 'textarea'}
 										<textarea
 											class="textarea h-32"
-											value={String(config.value)}
+											value={String(wertVon(config))}
 											oninput={(e) =>
 												handleInputChange(config, (e.target as HTMLTextAreaElement).value)}
 											placeholder="Mehrzeiliger Text"
@@ -574,7 +622,7 @@
 										<input
 											type="text"
 											class="input w-full"
-											value={String(config.value)}
+											value={String(wertVon(config))}
 											oninput={(e) =>
 												handleInputChange(config, (e.target as HTMLTextAreaElement).value)}
 											placeholder="Textwert"
@@ -584,9 +632,9 @@
 
 								<!-- Current Value Display (for complex types) -->
 								{#if inputType === 'json' || inputType === 'tags'}
-									<div class="bg-base-200 mt-2 rounded p-2 text-xs">
+									<div class="bg-base-200 text-support mt-2 rounded p-2">
 										<strong>Aktueller Wert:</strong>
-										<pre class="mt-1 whitespace-pre-wrap">{getValueDisplay(config.value)}</pre>
+										<pre class="mt-1 whitespace-pre-wrap">{getValueDisplay(wertVon(config))}</pre>
 									</div>
 								{/if}
 							</div>

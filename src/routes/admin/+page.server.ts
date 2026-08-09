@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { openOnly } from '$lib/server/db/approvalFilter';
 import { findDuplicateCandidates } from '$lib/server/db/duplicateCandidates';
+import { INBOX_COLUMNS } from '$lib/server/db/inboxColumns';
 import {
 	MEDIA_UPLOAD_ANNOUNCED_MISSING,
 	mediaUploadCondition
@@ -32,8 +33,10 @@ export const load: PageServerLoad = async ({ url }) => {
 	// gehalten in der URL.
 	const order = resolveQueueOrder(url.searchParams.get('order'));
 
+	// Explizite Spaltenauswahl statt `db.select()`: Begründung, Umfang und die
+	// Typ-Absicherung über `InboxSighting` stehen in `inboxColumns.ts`.
 	const openQuery = db
-		.select()
+		.select(INBOX_COLUMNS)
 		.from(sightings)
 		.where(openOnly())
 		.orderBy(...openQueueOrderBy(order))

@@ -6,7 +6,11 @@
 		getBalticSeaStatus
 	} from '$lib/utils/geo/balticSeaStatus';
 	import { formatLocalDateTime } from '$lib/utils/format/dateTime';
-	import type { SightingSelect } from '$lib/server/db/schema';
+	/* `InboxSighting` und nicht `SightingSelect`: Der Typ ist der Wächter dafür,
+	   dass der Loader jedes hier gelesene Feld auch wirklich abfragt. Mit der
+	   vollen Zeile ginge ein neu gelesenes Feld still durch und stünde in der
+	   Karte leer da (Begründung in `inboxColumns.ts`). */
+	import type { InboxSighting } from '$lib/server/db/inboxColumns';
 	import type { DuplicateCandidate } from '$lib/server/db/duplicateCandidates';
 	import Icon from '$lib/components/Icon.svelte';
 	import { inboxDetailHref } from './adminReturn';
@@ -14,7 +18,7 @@
 	import { SPAM_RISK_PRESENTATION, getSpamRisk } from './spamScorePresentation';
 
 	interface Props {
-		sighting: SightingSelect;
+		sighting: InboxSighting;
 		images: { id: number; filePath: string; originalName: string }[];
 		/** Mögliche Doppelmeldungen (Spec B2) — reiner Hinweis, kein Merge. */
 		duplicates?: DuplicateCandidate[];
