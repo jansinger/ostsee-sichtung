@@ -263,3 +263,22 @@ Tests werden automatisch in GitHub Actions ausgeführt:
 - E2E Tests bei Pull Requests — in drei parallelen Shards, deren Zusammensetzung
   in `scripts/e2e-shards.sh` steht (siehe „Neuer Spec → Shard zuordnen")
 - Coverage-Report wird generiert
+
+### Was bei reinen Doku-PRs läuft
+
+Ändert ein PR ausschließlich `*.md`, `docs/**` oder `.claude/**`, laufen weder
+`Validate` (Lint, Typen, svelte-check, Unit Tests, Build) noch Component- oder
+E2E-Tests — keiner dieser Schritte fasst dann eine geänderte Datei an. Übrig
+bleibt `Commit Lint`; die Commit-Konvention gilt auch für Doku.
+
+Entschieden wird das über zwei `paths-filter`-Schritte in
+`.github/workflows/ci.yml`. Der zweite arbeitet mit Negationen und
+`predicate-quantifier: every`, fragt also „gibt es eine geänderte Datei, die
+**kein** Dokument ist" — eine Positivliste würde beim Vergessen still zu wenig
+prüfen, diese Richtung prüft im Zweifel zu viel.
+
+Wer daran etwas ändert, hat einen Wächter: `scripts/ciJobGating.test.ts` liest
+den Workflow und rechnet die Gates für Beispiel-Dateimengen nach (in
+`test:quick` enthalten). Er benutzt bewusst **picomatch** wie paths-filter und
+nicht `node:path.matchesGlob` — letzteres lässt `**` nicht in
+Punkt-Verzeichnisse laufen und würde `.github/…md` fälschlich als Code zählen.

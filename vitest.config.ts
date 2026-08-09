@@ -87,7 +87,12 @@ export default defineConfig({
 					include: [
 						'src/**/*.{test,spec}.{js,ts}',
 						'e2e/helpers/*.{test,spec}.{js,ts}',
-						'legacy-inbox/**/*.test.js'
+						'legacy-inbox/**/*.test.js',
+						/* `scripts/` steht hier wegen `ciJobGating.test.ts`: dem Wächter
+						   über die Job-Gates in .github/workflows/ci.yml. Der gehört in
+						   `test:quick`, weil sein Fehlermodus — ein Job läuft still nicht
+						   mehr — sonst erst nach dem Merge sichtbar würde. */
+						'scripts/*.{test,spec}.ts'
 					],
 					// Das node_modules-Muster muss explizit mit: Ein eigenes `exclude`
 					// ersetzt Vitests Default. Ohne den Eintrag würde das
