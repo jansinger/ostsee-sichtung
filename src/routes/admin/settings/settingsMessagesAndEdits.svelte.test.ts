@@ -67,7 +67,17 @@ const daten = (isSuperAdmin = false) =>
 		error: null
 	}) as unknown as PageData;
 
+/*
+ * `respondWith` unten setzt `globalThis.fetch` per Zuweisung, nicht per
+ * `vi.spyOn` — `vi.restoreAllMocks()` kennt deshalb kein Original, zu dem es
+ * zurückkehren könnte, und ließe den Stub stehen. Die echte Referenz wird
+ * hier festgehalten und zurückgeschrieben; gleiche Konstruktion und gleiche
+ * Begründung wie in `sections/Location.svelte.test.ts`.
+ */
+const originalFetch = globalThis.fetch;
+
 afterEach(() => {
+	globalThis.fetch = originalFetch;
 	vi.restoreAllMocks();
 });
 

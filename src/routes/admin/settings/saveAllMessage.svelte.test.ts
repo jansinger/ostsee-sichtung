@@ -52,7 +52,13 @@ const daten = () =>
 		error: null
 	}) as unknown as PageData;
 
+/* Wie nebenan in `settingsMessagesAndEdits.svelte.test.ts`: `respondWith`
+   überschreibt `globalThis.fetch` per Zuweisung, und `vi.restoreAllMocks()`
+   nimmt eine Zuweisung nicht zurück. */
+const originalFetch = globalThis.fetch;
+
 afterEach(() => {
+	globalThis.fetch = originalFetch;
 	vi.useRealTimers();
 	vi.restoreAllMocks();
 });
