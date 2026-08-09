@@ -29,7 +29,8 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { BALTIC_SEA_STATUS_PRESENTATION } from '$lib/utils/geo/balticSeaStatus';
 	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
-	import { hasActiveFilters as hatAktiveFilter, readFilterParams } from './activeFilters';
+	import { readFilterParams, type FilterParams } from './activeFilters';
+	import { buildFilterChips, removeFilterParam } from './filterChips';
 	import SichtungenCards from './SichtungenCards.svelte';
 	import StatusTabs from './StatusTabs.svelte';
 	import type { StatusTabValue } from './statusTabs';
@@ -72,7 +73,10 @@
 	   Steht bewusst vor den Feld-States: Sie initialisieren sich daraus, statt die
 	   URL ein zweites Mal selbst zu lesen. */
 	let currentFilters = $derived(readFilterParams(page.url.searchParams));
-	let hasActiveFilters = $derived(hatAktiveFilter(currentFilters));
+	/* `skipVerified`, solange die Statusreiter über der Tabelle stehen: Der
+	   aktive Reiter zeigt den Status bereits — ein Status-Chip daneben wäre ein
+	   zweites Bedienelement für dieselbe Aussage. */
+	let filterChips = $derived(buildFilterChips(currentFilters, { skipVerified: true }));
 
 	/* Startwerte des Editier-Puffers. Der `$effect` weiter unten, der ihn nach
 	   einer Navigation nachzieht, läuft im SSR-Durchlauf nicht; ohne diese
@@ -335,9 +339,8 @@
 		// ohnehin (normalizeSearchTerm). Der getrimmte Wert geht zurück in den
 		// State, nicht nur in die URL: Sonst zeigte das Feld nach dem Suchen
 		// weiter die ungetrimmte Eingabe, und ein Feld aus lauter Leerzeichen
-		// zählte in `hasActiveFilters` als aktiver Filter — die
-		// Filter-Schaltfläche stünde markiert da, während die URL gar keine
-		// Suche trägt.
+		// zählte als aktiver Filter — es stünde ein Chip „Suche: ‚   '" über der
+		// Tabelle, während die URL gar keine Suche trägt.
 		searchTerm = searchTerm.trim();
 		if (searchTerm) url.searchParams.set('q', searchTerm);
 		else url.searchParams.delete('q');
@@ -391,6 +394,16 @@
 		else url.searchParams.delete('verified');
 		url.searchParams.set('page', '1');
 		goto(url);
+	}
+
+	/**
+	 * Einen einzelnen Filter über seinen Chip zurücknehmen. Dieselbe Bauform wie
+	 * `selectStatus()` und `applyFilters()` — URL abwandeln, `page=1`, `goto` —,
+	 * damit nicht ein zweiter Navigationsweg neben ihnen entsteht; die Rechnung
+	 * selbst steht in `filterChips.ts` und ist dort geprüft.
+	 */
+	function filterEntfernen(param: keyof FilterParams): void {
+		goto(removeFilterParam(page.url, param));
 	}
 
 	function changePage(newPage: number): void {
@@ -694,20 +707,22 @@
 			<h1 class="text-display font-bold">Sichtungen</h1>
 			<div class="flex flex-col gap-2">
 				<div class="flex items-center gap-2">
+					<!-- Zwei Zustände statt drei: offen (`btn-accent`) oder zu (`btn-outline`).
+					     Der frühere `btn-primary`-Zustand „es ist gefiltert" und der
+					     Punkt-Badge daneben sind entfallen — die Chip-Zeile darunter sagt
+					     jetzt, WAS gefiltert ist, und sie steht in jeder Breite da. Das
+					     Punkt-Badge auf Mobil zu behalten hieße, dieselbe Aussage zweimal
+					     zu machen, und zwar in der schwächeren Fassung: Es benennt keinen
+					     Filter und lässt sich nicht anklicken. Die Chip-Zeile bricht um
+					     statt zu scrollen; sie braucht auf schmalen Geräten mehr Höhe,
+					     kostet aber keine Bedienbarkeit. -->
 					<button
-						class="btn btn-sm flex-1 {isFilterPanelOpen
-							? 'btn-accent'
-							: hasActiveFilters
-								? 'btn-primary'
-								: 'btn-outline'}"
+						class="btn btn-sm flex-1 {isFilterPanelOpen ? 'btn-accent' : 'btn-outline'}"
 						onclick={() => (isFilterPanelOpen = !isFilterPanelOpen)}
 						title="Filter ein-/ausblenden"
 					>
 						<Icon icon="lucide:filter" class="mr-1 h-4 w-4" />
 						Filter
-						{#if hasActiveFilters}
-							<span class="badge badge-accent badge-sm ml-1">•</span>
-						{/if}
 					</button>
 					<button
 						class="btn btn-sm btn-primary flex-1"
@@ -774,20 +789,14 @@
 						</div>
 					</div>
 				</details>
+				<!-- Zwei Zustände, Begründung am Mobil-Zwilling weiter oben. -->
 				<button
-					class="btn btn-sm {isFilterPanelOpen
-						? 'btn-accent'
-						: hasActiveFilters
-							? 'btn-primary'
-							: 'btn-outline'}"
+					class="btn btn-sm {isFilterPanelOpen ? 'btn-accent' : 'btn-outline'}"
 					onclick={() => (isFilterPanelOpen = !isFilterPanelOpen)}
 					title="Filter ein-/ausblenden"
 				>
 					<Icon icon="lucide:filter" class="mr-1 h-4 w-4" />
 					Filter
-					{#if hasActiveFilters}
-						<span class="badge badge-accent badge-sm ml-1">•</span>
-					{/if}
 				</button>
 				<button
 					class="btn btn-sm btn-primary"
@@ -969,6 +978,53 @@
 				</button>
 			{/if}
 		</div>
+
+		<!--
+			Aktive Filter (WP3). Unter den Ansichten und über den Statusreitern: Was
+			gefiltert ist, gehört neben die Menge, die es beschreibt — nicht in ein
+			Panel, das man dafür aufklappen muss.
+
+			Echte `btn` statt `badge`, gleiche Begründung wie bei den Ansichten-Chips
+			darüber: Nur `.btn` bekommt über app.css die 44px-Touch-Target-
+			Mindestgröße (design-system.md, „Feldmodus und Touch-Targets").
+
+			`btn-outline` und keine Vollton-Fläche: Die einzige Vollton-Fläche dieses
+			Bereichs ist die aktive Ansicht bzw. der aktive Statusreiter
+			(Button-Hierarchie). Ein Chip ist eine Nebenaktion.
+
+			Die Beschriftung steht im Knopf, das Entfernen sagt das `aria-label` —
+			sonst läse ein Screenreader nur „Von 01.06.2026" und nichts darüber, was
+			ein Klick bewirkt. Das `x`-Icon ist deshalb `aria-hidden`.
+
+			Kein Status-Chip: `filterChips` wird mit `skipVerified` gebaut, der aktive
+			Statusreiter direkt darunter zeigt ihn bereits.
+		-->
+		{#if filterChips.length > 0}
+			<div class="mt-3 flex flex-wrap items-center gap-2">
+				<span class="text-support text-base-content/70">Aktive Filter:</span>
+
+				{#each filterChips as chip (chip.param)}
+					<button
+						type="button"
+						class="btn btn-sm btn-outline"
+						aria-label="Filter {chip.label} entfernen"
+						onclick={() => filterEntfernen(chip.param)}
+					>
+						{chip.label}
+						<Icon icon="lucide:x" class="h-4 w-4" aria-hidden="true" />
+					</button>
+				{/each}
+
+				<!-- Erst ab zwei Chips: Bei einem einzigen Filter ist der Chip selbst
+				     schon der Weg zurück, und ein zweiter Knopf daneben verdoppelte
+				     dieselbe Handlung. -->
+				{#if filterChips.length >= 2}
+					<button type="button" class="btn btn-sm btn-ghost" onclick={resetFilters}>
+						Alle Filter zurücksetzen
+					</button>
+				{/if}
+			</div>
+		{/if}
 	</div>
 
 	<!-- Filter Panel.

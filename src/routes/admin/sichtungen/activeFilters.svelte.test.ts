@@ -8,9 +8,14 @@ import type { PageData } from './$types';
  *
  * Gegenstück zu `activeFilters.test.ts`, das die reine Ableitung aus der URL
  * prüft: Hier hängt die Verdrahtung dran. Ein ins Panel getipptes Datum, das
- * nicht angewendet wurde, darf die Filter-Schaltfläche nicht markieren — die
- * Tabelle darunter zeigt weiterhin die ungefilterte Menge, und derselbe Wert
- * ging vorher auch in den Export.
+ * nicht angewendet wurde, ist kein aktiver Filter — die Tabelle darunter zeigt
+ * weiterhin die ungefilterte Menge, und derselbe Wert ging vorher auch in den
+ * Export.
+ *
+ * Geprüft wird das seit WP3 an der Chip-Zeile: Sie ist die Anzeige, die „es
+ * ist gefiltert" trägt. Vorher stand hier das Punkt-Badge an der
+ * Filter-Schaltfläche — es ist mit den Chips entfallen, und die Zusicherung
+ * darüber wäre seitdem grün, ohne noch etwas zu belegen.
  *
  * Eigene Datei mit eigenem `$app/state`-Mock (URL ohne Filterparameter), aus
  * demselben Grund wie bei `statusFilterParam.svelte.test.ts`: `vi.mock` gilt
@@ -41,7 +46,7 @@ function daten(rows: SightingSelect[]): PageData {
 }
 
 describe('Sichtungstabelle — aktive Filter kommen aus der URL', () => {
-	it('markiert die Filter-Schaltfläche nicht, solange ein Datum nur getippt ist', async () => {
+	it('zeigt keinen Filter-Chip, solange ein Datum nur getippt ist', async () => {
 		const screen = render(SichtungenSeite, { data: daten([]) });
 
 		// Filter-Panel ist standardmäßig zu — Mobile- UND Desktop-Button stehen im
@@ -51,6 +56,8 @@ describe('Sichtungstabelle — aktive Filter kommen aus der URL', () => {
 		await screen.getByLabelText('Von').fill('2026-01-01');
 		await expect.element(screen.getByLabelText('Von')).toHaveValue('2026-01-01');
 
-		expect(screen.container.querySelectorAll('.badge-accent')).toHaveLength(0);
+		/* Über das Suffix und nicht über „Filter …": Das Panel steht in diesem
+		   Test offen, und sein Schließen-Knopf heißt „Filter ausblenden". */
+		expect(screen.container.querySelectorAll('[aria-label$=" entfernen"]')).toHaveLength(0);
 	});
 });
