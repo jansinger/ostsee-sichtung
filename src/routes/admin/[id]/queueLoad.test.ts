@@ -52,7 +52,6 @@ async function ladeDetail(
 		params: { id: '500' },
 		url: new URL(`https://localhost:4000/admin/500${suche}`),
 		fetch: fetchMock(routen)
-		 
 	} as any)) as unknown as LadeErgebnis;
 }
 
@@ -75,7 +74,6 @@ describe('Warteschlange im Detail-Load', () => {
 			params: { id: '500' },
 			url: new URL('https://localhost:4000/admin/500?from=inbox&order=asc'),
 			fetch: fetchSpy
-			 
 		} as any)) as unknown as LadeErgebnis;
 
 		expect(daten.queue).toEqual(QUEUE_BODY);
@@ -114,7 +112,6 @@ describe('Warteschlange im Detail-Load', () => {
 			params: { id: '500' },
 			url: new URL('https://localhost:4000/admin/500?from=inbox'),
 			fetch: fetchSpy
-			 
 		} as any)) as unknown as LadeErgebnis;
 
 		expect(daten.queue).toBeNull();

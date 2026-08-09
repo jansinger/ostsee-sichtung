@@ -88,7 +88,6 @@ function aufrufen(order = 'desc', id = '500') {
 		params: { id },
 		locals: { user: { email: 'admin@example.org', roles: ['admin'] } },
 		url: new URL(`https://localhost:4000/api/sightings/${id}/queue?order=${order}`)
-		 
 	} as any);
 }
 
@@ -260,6 +259,30 @@ describe('GET /api/sightings/[id]/queue', () => {
 	it('lehnt eine unbrauchbare ID ab, bevor sie in die Datenbank geht', async () => {
 		await expect(aufrufen('desc', 'keine-zahl')).rejects.toMatchObject({ status: 400 });
 		expect(recordedSelects).toHaveLength(0);
+	});
+
+	/**
+	 * `static/openapi.yml` deklariert den Pfadparameter als `integer, minimum: 1`.
+	 * Die frühere Prüfung (`Number.isInteger(Number(params.id))`) ließ jeden Fall
+	 * hier durch: `0` und negative Werte widersprechen der Untergrenze direkt,
+	 * `1e3` und ` 500 ` sind keine Ganzzahl-Schreibweisen und trafen nur deshalb
+	 * eine Zeile, weil `Number()` großzügig parst. Alle vier endeten in einer
+	 * DB-Abfrage und im 404 — einer Antwort, die dem eigenen Vertrag widerspricht.
+	 * Der Test prüft zusätzlich, dass gar nicht erst abgefragt wird.
+	 */
+	it.each(['0', '-5', '1e3', ' 500 ', '1.0', ''])(
+		'lehnt die vertragswidrige ID %o mit 400 ab',
+		async (roheId) => {
+			await expect(aufrufen('desc', roheId)).rejects.toMatchObject({ status: 400 });
+			expect(recordedSelects).toHaveLength(0);
+		}
+	);
+
+	it('lässt eine gültige ID weiterhin durch', async () => {
+		resolvedRows = [[OFFENE_SICHTUNG], [], [], [{ count: 0 }], [{ count: 1 }]];
+
+		await expect(aufrufen('desc', '500')).resolves.toBeDefined();
+		expect(recordedSelects.length).toBeGreaterThan(0);
 	});
 
 	it('meldet 404, wenn es die Sichtung nicht gibt', async () => {

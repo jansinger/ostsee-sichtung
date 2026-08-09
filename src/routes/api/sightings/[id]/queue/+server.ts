@@ -64,10 +64,17 @@ async function findNeighbor(
 export const GET: RequestHandler = async ({ params, locals, url }) => {
 	requireUserRole(url, locals.user, ['admin', 'superadmin']);
 
-	const id = Number(params.id);
-	if (!Number.isInteger(id)) {
+	/* Strenger als die Nachbar-Endpunkte (`!id || isNaN(Number(id))`), und das
+	   mit Absicht: `static/openapi.yml` deklariert für diesen Pfadparameter
+	   `type: integer, minimum: 1`. Die lockere Prüfung ließ `0`, negative Werte
+	   und Schreibweisen wie `1e3` oder ` 500 ` durch — sie landeten in einer
+	   DB-Abfrage und endeten im 404 statt im 400, also mit einer Antwort, die
+	   dem eigenen dokumentierten Vertrag widerspricht. Wer die Nachbarn
+	   angleicht, gleicht bitte nach oben an und nicht diese Zeile nach unten. */
+	if (!/^[1-9]\d*$/.test(params.id ?? '')) {
 		throw error(400, 'Keine valide Sichtungs-ID angegeben');
 	}
+	const id = Number(params.id);
 
 	const [current] = await db
 		.select({
