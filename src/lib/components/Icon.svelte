@@ -91,6 +91,7 @@
 	import Settings from '~icons/lucide/settings';
 	import ShieldAlert from '~icons/lucide/shield-alert';
 	import ShieldCheck from '~icons/lucide/shield-check';
+	import ShieldX from '~icons/lucide/shield-x';
 	import Ship from '~icons/lucide/ship';
 	import SkipForward from '~icons/lucide/skip-forward';
 	import BookmarkPlus from '~icons/lucide/bookmark-plus';
@@ -153,6 +154,7 @@
 		'lucide:copy': Copy,
 		'lucide:info': Info,
 		'lucide:shield-alert': ShieldAlert,
+		'lucide:shield-x': ShieldX,
 		'lucide:waves': Waves,
 		'lucide:activity': Activity,
 		'lucide:camera': Camera,

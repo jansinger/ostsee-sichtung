@@ -29,6 +29,11 @@
 	import DeleteDialog from '$lib/components/ui/Dialog/DeleteDialog.svelte';
 	import { toast } from '$lib/stores/toastState.svelte';
 	import type { SpamCheckResult } from '$lib/types/spam';
+	import {
+		getSpamRiskFromResult,
+		SPAM_RISK_PRESENTATION,
+		type SpamRisk
+	} from '$lib/components/admin/spamScorePresentation';
 
 	let { data } = $props();
 
@@ -363,31 +368,87 @@
 		}
 	}
 
-	let spamCheck = $state<{
+	/**
+	 * Flächen- und Icon-Farbe der Spam-Karte — bewusst hier und nicht in
+	 * `spamScorePresentation.ts`, aus demselben Grund wie bei `deadFinding.ts`:
+	 * Beide haben genau einen Leser, und ein gemeinsames Modul mit
+	 * Ein-Leser-Konstanten wäre Indirektion ohne Nutzen. Die **Schwellen**
+	 * driften dadurch nicht — die Aufschlüsselung geht über `SpamRisk`, nicht
+	 * über den Score.
+	 *
+	 * `text-error` ist als Vordergrund zulässig (6,04:1 auf base-100), die
+	 * übrigen Statusfarben nur in ihrer `-strong`-Variante
+	 * (`.claude/rules/design-system.md`, „Statusfarben haben zwei Rollen").
+	 */
+	const SPAM_CARD_SURFACE: Record<SpamRisk, string> = {
+		unrated: 'border-warning bg-warning/10',
+		clean: 'border-base-300 bg-base-200',
+		suspicious: 'border-warning bg-warning/10',
+		high: 'border-error bg-error/10'
+	};
+	const SPAM_CARD_ICON: Record<SpamRisk, string> = {
+		unrated: 'text-warning-strong',
+		clean: 'text-base-content/70',
+		suspicious: 'text-warning-strong',
+		high: 'text-error'
+	};
+
+	interface SpamCheckState {
+		/** Die Sichtung, zu der Ergebnis bzw. Fehler gehören. */
+		sightingId: number;
 		loading: boolean;
 		result: SpamCheckResult | null;
 		error: string | null;
-	}>({
+	}
+
+	/**
+	 * Ein beschreibbares `$derived`: Der Zustand gehört immer zu **einer**
+	 * Sichtung und wird bei einem Wechsel verworfen.
+	 *
+	 * Im Arbeitsmodus springt die Detailansicht nach einer Entscheidung zur
+	 * nächsten Meldung, ohne die Komponente neu zu erzeugen — Karte und
+	 * Fehlermeldung der vorigen Prüfung blieben dabei stehen und lasen sich als
+	 * Aussage über die neue Sichtung. Die Tabelle hatte gegen dieselbe Klasse
+	 * von Fehler seit jeher einen Wächter (`spamCheckModal.sightingId`), hier
+	 * fehlte er ganz.
+	 *
+	 * `$derived` und nicht `$state` + `$effect`: Der Rückfall auf den leeren
+	 * Zustand ist genau das, was ein Derived beschreibt — und die Zuweisungen
+	 * unten überschreiben ihn bis zum nächsten Wechsel. Zugewiesen wird deshalb
+	 * immer das **ganze** Objekt; ein Derived ist kein Proxy, eine
+	 * Feld-Mutation daran löste kein Rerendering aus.
+	 */
+	let spamCheck = $derived<SpamCheckState>({
+		sightingId: sighting.id,
 		loading: false,
 		result: null,
 		error: null
 	});
 
 	async function runSpamCheck() {
-		spamCheck.loading = true;
-		spamCheck.error = null;
-		spamCheck.result = null;
+		/* Zweiter Teil desselben Problems: Eine bereits laufende Anfrage kommt
+		   nach dem Sprung zurück und schriebe ihr Ergebnis auf den inzwischen
+		   angezeigten Nachbarn. Das Derived oben kann sie nicht aufhalten. */
+		const sightingId = sighting.id;
+		spamCheck = { sightingId, loading: true, result: null, error: null };
 
 		try {
-			const response = await fetch(`/api/sightings/${sighting.id}/spam-check`);
+			const response = await fetch(`/api/sightings/${sightingId}/spam-check`);
+			if (spamCheck.sightingId !== sightingId) return;
 			if (!response.ok) {
 				throw new Error(`Fehler ${response.status}: ${response.statusText}`);
 			}
-			spamCheck.result = await response.json();
+			const result: SpamCheckResult = await response.json();
+			if (spamCheck.sightingId !== sightingId) return;
+			spamCheck = { sightingId, loading: false, result, error: null };
 		} catch (err) {
-			spamCheck.error = err instanceof Error ? err.message : 'Unbekannter Fehler';
-		} finally {
-			spamCheck.loading = false;
+			if (spamCheck.sightingId !== sightingId) return;
+			spamCheck = {
+				sightingId,
+				loading: false,
+				result: null,
+				error: err instanceof Error ? err.message : 'Unbekannter Fehler'
+			};
 		}
 	}
 </script>
@@ -541,44 +602,29 @@
 
 {#if spamCheck.result}
 	{@const result = spamCheck.result}
-	<div
-		class="card mb-4 border {result.isHighRisk
-			? 'border-error bg-error/10'
-			: result.score > 0
-				? 'border-warning bg-warning/10'
-				: 'border-success bg-success/10'}"
-	>
+	{@const risk = getSpamRiskFromResult(result)}
+	{@const spam = SPAM_RISK_PRESENTATION[risk]}
+	<!-- Wort, Farbe, Icon und Schwelle kommen aus `spamScorePresentation.ts` —
+	     dieselbe Quelle wie Modal, Tabellenspalte und Eingangskarte. Vorher zog
+	     diese Karte schon bei Score 1 gelb, während dieselbe Meldung in der
+	     Liste grau und im Modal grün war. -->
+	<div class="card mb-4 border {SPAM_CARD_SURFACE[risk]}">
 		<div class="card-body p-4">
 			<div class="flex items-center gap-2">
-				<Icon
-					icon="lucide:shield-alert"
-					class="h-5 w-5 {result.isHighRisk
-						? 'text-error'
-						: result.score > 0
-							? 'text-warning-strong'
-							: 'text-success-strong'}"
-				/>
-				<h3 class="card-title text-base">
-					{#if result.isHighRisk}
-						Spam-Warnung (Hochrisiko)
-					{:else if result.score > 0}
-						Spam-Hinweis (Geringes Risiko)
-					{:else}
-						Kein Spam erkannt
-					{/if}
-				</h3>
+				<Icon icon={spam.icon ?? 'lucide:shield-alert'} class="h-5 w-5 {SPAM_CARD_ICON[risk]}" />
+				<h3 class="card-title text-base">{spam.label}</h3>
 				<div class="ml-auto flex gap-2">
-					<span
-						class="badge {result.isHighRisk
-							? 'badge-error'
-							: result.score > 0
-								? 'badge-warning'
-								: 'badge-success'}"
-					>
-						Score: {result.score}
-					</span>
+					{#if spam.badgeClass}
+						<span class="badge {spam.badgeClass}">Score: {result.score}</span>
+					{:else}
+						<!-- `failed: true` — Score 0 und `isHighRisk: true` zugleich. Die
+						     Zahl wäre hier eine Behauptung über eine Prüfung, die gar
+						     nicht durchgelaufen ist. -->
+						<span class="badge badge-warning">Prüfung fehlgeschlagen</span>
+					{/if}
 				</div>
 			</div>
+			<p class="text-base-content/70 text-sm">{spam.description}</p>
 			{#if result.indicators.length > 0}
 				<ul class="mt-2 list-inside list-disc text-sm">
 					{#each result.indicators as indicator (indicator)}

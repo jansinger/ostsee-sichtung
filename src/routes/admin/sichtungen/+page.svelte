@@ -18,6 +18,10 @@
 	import { toast } from '$lib/stores/toastState.svelte';
 	import type { FrontendSighting, PageData } from '$lib/types';
 	import type { SpamCheckResult } from '$lib/types/spam';
+	import {
+		getSpamRiskFromResult,
+		SPAM_RISK_PRESENTATION
+	} from '$lib/components/admin/spamScorePresentation';
 	import Icon from '$lib/components/Icon.svelte';
 	import { BALTIC_SEA_STATUS_PRESENTATION } from '$lib/utils/geo/balticSeaStatus';
 	import { MEDIA_UPLOAD_ANNOUNCED_MISSING } from '$lib/utils/media/photoAnnouncement';
@@ -1265,33 +1269,39 @@
 				<span>{spamCheckModal.error}</span>
 			</div>
 		{:else if spamCheckModal.result}
-			<!-- Score badges -->
-			<div class="mt-4 flex flex-wrap gap-2">
-				<span
-					class="badge {spamCheckModal.result.isHighRisk
-						? 'badge-error'
-						: spamCheckModal.result.score >= 2
-							? 'badge-warning'
-							: 'badge-success'}"
-				>
-					Heuristik-Score: {spamCheckModal.result.score}
-				</span>
-				{#if spamCheckModal.result.isHighRisk}
-					<span class="badge badge-error">Hochrisiko</span>
+			{@const result = spamCheckModal.result}
+			{@const spam = SPAM_RISK_PRESENTATION[getSpamRiskFromResult(result)]}
+			<!-- Wort, Farbe, Icon und Schwelle kommen aus `spamScorePresentation.ts` —
+			     dieselbe Quelle wie Tabellenspalte, Eingangskarte und Detailansicht.
+			     Vorher stand hier ein eigener Schwellensatz, der Score 1 grün zeigte,
+			     während die Spalte dahinter grau war. -->
+			<div class="mt-4 flex flex-wrap items-center gap-2">
+				{#if spam.badgeClass}
+					<span class="badge {spam.badgeClass}">
+						<Icon icon={spam.icon} width="14" height="14" aria-hidden="true" />
+						{spam.label}
+					</span>
+					<span class="badge badge-ghost">Heuristik-Score: {result.score}</span>
 				{:else}
-					<span class="badge badge-success">Kein Hochrisiko</span>
+					<!-- `failed: true` — Score 0 und `isHighRisk: true` zugleich. Weder
+					     „Hochrisiko" noch „sauber" wäre wahr: geprüft wurde nichts. -->
+					<span class="badge badge-warning">
+						<Icon icon="lucide:triangle-alert" width="14" height="14" aria-hidden="true" />
+						Prüfung fehlgeschlagen
+					</span>
 				{/if}
 			</div>
+			<p class="text-base-content/70 mt-2 text-sm">{spam.description}</p>
 			<!-- Indicators list -->
-			{#if spamCheckModal.result.indicators.length > 0}
+			{#if result.indicators.length > 0}
 				<p class="mt-4 font-semibold">Indikatoren:</p>
 				<ul class="mt-1 list-inside list-disc text-sm">
-					{#each spamCheckModal.result.indicators as indicator (indicator)}
+					{#each result.indicators as indicator (indicator)}
 						<li>{indicator}</li>
 					{/each}
 				</ul>
 			{:else}
-				<p class="text-success-strong mt-4 text-sm">Keine Indikatoren gefunden.</p>
+				<p class="mt-4 text-sm">Keine Indikatoren gefunden.</p>
 			{/if}
 		{/if}
 

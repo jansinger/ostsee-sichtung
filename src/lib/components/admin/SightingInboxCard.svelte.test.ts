@@ -75,7 +75,7 @@ describe('SightingInboxCard', () => {
 		await expect.element(tot.getByText('Totfund')).toBeInTheDocument();
 	});
 
-	it('Spam-Score: null → „–", hoher Score → error-Badge', async () => {
+	it('Spam-Score: hoher Score → error-Badge', async () => {
 		const hoch = render(SightingInboxCard, {
 			sighting: { ...basisSichtung, spamScore: 7 } as SightingSelect,
 			images: [],
@@ -85,6 +85,34 @@ describe('SightingInboxCard', () => {
 		});
 		const badge = hoch.getByTestId('spam-badge');
 		await expect.element(badge).toHaveClass(/badge-error/);
+		// Die Bedeutung hängt nicht allein an der Farbe (WCAG 1.4.1).
+		await expect.element(badge).toHaveTextContent('Hochrisiko');
+	});
+
+	it('Spam-Score null bekommt kein Badge — „nie bewertet" ist kein Prüfergebnis', async () => {
+		// `basisSichtung` trägt `spamScore: null`. Die Karte zeigte dafür ein
+		// graues „Spam: –" und sah damit aus wie Score 0 („geprüft, unauffällig").
+		// Die Tabellenspalte lässt das Badge weg; jetzt beide gleich.
+		const ohne = render(SightingInboxCard, {
+			sighting: basisSichtung,
+			images: [],
+			busy: false,
+			onApprove: noop,
+			onReject: noop
+		});
+		expect(ohne.container.querySelector('[data-testid="spam-badge"]')).toBeNull();
+	});
+
+	it('Spam-Score 0 bekommt ein Badge — bewertet und unauffällig', async () => {
+		const null_ist_nicht_null = render(SightingInboxCard, {
+			sighting: { ...basisSichtung, spamScore: 0 } as SightingSelect,
+			images: [],
+			busy: false,
+			onApprove: noop,
+			onReject: noop
+		});
+		const badge = null_ist_nicht_null.getByTestId('spam-badge');
+		await expect.element(badge).toHaveTextContent('Spam: 0');
 	});
 
 	it('Freigeben/Ablehnen rufen die Callbacks, busy deaktiviert beide', async () => {

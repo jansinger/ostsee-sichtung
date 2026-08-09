@@ -107,6 +107,27 @@ Zwei Spalten in `sichtungen`:
   Gegenteil dessen, was es aussagt.
 - `spam_indicators` (`jsonb`) — Array der ausgelösten Indikatortexte.
 
+### Wie der Score angezeigt wird
+
+Vier Stellen zeigen ihn — Eingangskarte, Spam-Spalte der Tabelle,
+Spam-Check-Modal und Inline-Karte der Detailansicht. Wort, Farbe, Icon und
+Schwelle stehen für alle vier in
+`src/lib/components/admin/spamScorePresentation.ts`:
+
+| Stufe        | Score               | Badge           | Icon                  |
+| ------------ | ------------------- | --------------- | --------------------- |
+| `unrated`    | `NULL`              | **kein Badge**  | —                     |
+| `clean`      | 0–1                 | `badge-ghost`   | `lucide:shield-check` |
+| `suspicious` | 2–4                 | `badge-warning` | `lucide:shield-alert` |
+| `high`       | ab 5 (`isHighRisk`) | `badge-error`   | `lucide:shield-x`     |
+
+`unrated` bekommt bewusst kein Badge: Ein graues „Spam: –" läse sich wie
+„geprüft, sauber" und ist das Gegenteil der Aussage. Ein **fehlgeschlagenes**
+Prüfergebnis (`failed: true`, Score 0 mit `isHighRisk: true`) wird aus demselben
+Grund als `unrated` angezeigt — die Prüfung ist nicht durchgelaufen, „Hochrisiko
+ohne einen einzigen Indikator" wäre keine ehrliche Auskunft. Das Fail-Safe-Flag
+bleibt trotzdem richtig: Es verhindert, dass Score 0 persistiert wird.
+
 In der Admin-Liste gibt es dafür eine sortierbare Spalte „Spam". Die Sortierung
 verwendet explizit `NULLS LAST` in **beiden** Richtungen: PostgreSQL sortiert
 `DESC` per Vorgabe `NULLS FIRST`, sonst stünde der unbewertete Altbestand über

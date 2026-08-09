@@ -114,6 +114,20 @@ describe('Sichtungstabelle — Spalten', () => {
 		expect(getComputedStyle(zweiteAktionen).backgroundColor).toBe(BASE_200);
 	});
 
+	it('sagt am Screenreader, was der Gedankenstrich der Spam-Spalte bedeutet', () => {
+		// Die Zelle einer nie bewerteten Sichtung zeigt nur „—". Die Erklärung
+		// hing allein am `title`, und das ist an einem nicht fokussierbaren
+		// `span` für assistive Technik nicht verlässlich erreichbar.
+		const screen = render(SichtungenSeite, { data: daten([sichtung({ spamScore: null })]) });
+
+		const zeile = screen.container.querySelector('tbody tr') as HTMLElement;
+		expect(zeile.textContent).toContain('Nicht bewertet');
+		const strich = [...zeile.querySelectorAll('[aria-hidden="true"]')].find(
+			(el) => el.textContent?.trim() === '—'
+		);
+		expect(strich, 'der Gedankenstrich selbst wird nicht mit vorgelesen').toBeTruthy();
+	});
+
 	it('verspricht an nicht sortierbaren Spaltenköpfen keine Klickbarkeit', () => {
 		const screen = render(SichtungenSeite, { data: daten([sichtung({})]) });
 

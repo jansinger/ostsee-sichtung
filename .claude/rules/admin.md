@@ -141,8 +141,34 @@ dieselbe, deshalb steht sie einmal.
 | `ExportModal.svelte`           | Export-Dialog                               |
 | `deadFinding.ts`               | Totfund-Auszeichnung                        |
 | `sightingStatus.ts`            | Statusableitung + Wort/Farbe/Icon/Verdict   |
+| `spamScorePresentation.ts`     | Spam-Risikostufe + Wort/Farbe/Icon          |
 | `sightingStatusFilter.ts`      | Statuswert ↔ Filter-Query (`?verified=`)    |
 | `SightingStatusControl.svelte` | Segmented Control für den Statuswechsel     |
+
+### Spam-Score: vier Anzeigestellen, eine Schwelle
+
+Wort, Farbe, Icon und Schwelle kommen aus `spamScorePresentation.ts` — für
+Eingangskarte, Spam-Spalte der Tabelle, Spam-Check-Modal und die Inline-Karte
+der Detailansicht gemeinsam. Vorher lagen dort drei Schwellensätze, und Score 1
+war grau in der Liste, grün im Modal und gelb in der Detailansicht. Drei Dinge
+dabei nicht zurückdrehen:
+
+- **`null` ist nicht `0` und bekommt kein Badge.** `spam_score IS NULL` heißt
+  „nie bewertet" (Altbestand, Legacy-Eingang), `0` heißt „bewertet,
+  unauffällig" (`docs/SPAM_DETECTION.md`). Die Eingangskarte zeigte für NULL ein
+  graues „Spam: –" und behauptete damit ein Prüfergebnis.
+- **`isHighRisk` schlägt die Client-Schwelle, wo es vorliegt.** Für eine
+  geglückte Prüfung sagen beide dasselbe; der Fail-Safe-Zweig des Detektors
+  liefert aber Score 0 **mit** `isHighRisk: true`. Wörtlich genommen wäre das
+  „Hochrisiko ohne einen Indikator" — `getSpamRiskFromResult` liest ein
+  `failed`-Ergebnis deshalb als „nicht bewertet", genauso wie NULL.
+- **Jede bewertete Stufe hat ein eigenes Icon** (WCAG 1.4.1). An allen vier
+  Stellen hing die Bedeutung vorher allein an der Farbe.
+
+Die Flächen- und Icon-Farbe der Detail-Karte steht als `SpamRisk`-Record an
+ihrer Aufrufstelle — ein Leser, gleiche Begründung wie bei `deadFinding.ts`.
+Über die Stufe und nicht über den Score aufgeschlüsselt, damit die Schwellen
+nicht doch wieder auseinanderlaufen.
 
 ### Totfund vs. Lebendsichtung
 
