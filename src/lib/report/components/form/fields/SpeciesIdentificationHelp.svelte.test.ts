@@ -165,6 +165,48 @@ describe('SpeciesIdentificationHelp', () => {
 	});
 
 	/**
+	 * WCAG 2.5.5: Das Ziel ist die ganze Zusammenfassungszeile, nicht der Artname
+	 * darin. Der zentrale Touch-Target-Block in `app.css` greift hier nicht — er
+	 * zielt auf `.btn`, und ein `summary.collapse-title` ist keiner.
+	 *
+	 * Geprüft wird die Bindung an `--target-min` und nicht ein Pixelwert: Der
+	 * Feldmodus (`<html data-density="field">`) hebt den Token auf 56px, ein
+	 * `min-h-11` an der Aufrufstelle nähme diese Anhebung nicht mit. Genau das
+	 * unterscheidet die Zeile von den vier übrigen `collapse-title` im Projekt.
+	 *
+	 * Der Wert stand bis zum daisyUI-Aufräumen als `.collapse-title`-Regel im
+	 * scoped `<style>` — also als Neudefinition einer daisyUI-Komponentenklasse.
+	 * Beide Varianten pflegen ihren Klassenstring getrennt (INLINE_STYLE /
+	 * PAGE_STYLE); ohne diesen Test verlöre eine davon die Trefferfläche still.
+	 */
+	describe('Trefferfläche der Artenzeilen', () => {
+		function summaryClasses(): string[] {
+			return Array.from(root().querySelectorAll('summary.collapse-title')).map(
+				(element) => element.className
+			);
+		}
+
+		it('bindet sie in der Seitenvariante an --target-min', () => {
+			render(SpeciesIdentificationHelp, { variant: 'page' });
+
+			const classes = summaryClasses();
+			expect(classes.length).toBeGreaterThan(0);
+			for (const className of classes) expect(className).toContain('min-h-[var(--target-min)]');
+		});
+
+		it('bindet sie in der eingebetteten Variante an --target-min', async () => {
+			render(SpeciesIdentificationHelp);
+
+			(root().querySelector('button[aria-expanded]') as HTMLButtonElement | null)?.click();
+			await new Promise((resolve) => setTimeout(resolve, 0));
+
+			const classes = summaryClasses();
+			expect(classes.length).toBeGreaterThan(0);
+			for (const className of classes) expect(className).toContain('min-h-[var(--target-min)]');
+		});
+	});
+
+	/**
 	 * Die zwölf Arten bleiben in beiden Varianten zugeklappt: aufgeklappt wären es
 	 * zwölf Steckbriefe mit je ein bis zwei Fotos auf einer Seite.
 	 */
