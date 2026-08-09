@@ -49,14 +49,20 @@ test.describe('Admin-Sichtungstabelle — Totfund-Marker', () => {
 		baseURL
 	}) => {
 		await seedAdminSession(context, baseURL!, ['admin']);
-		createdIds.push(await seedDeadFinding('e2e-tot', true));
-		createdIds.push(await seedDeadFinding('e2e-lebend', false));
+		const totfundId = await seedDeadFinding('e2e-tot', true);
+		const lebendId = await seedDeadFinding('e2e-lebend', false);
+		createdIds.push(totfundId, lebendId);
 
 		await page.setViewportSize({ width: 1280, height: 900 });
 		await page.goto('/admin/sichtungen');
 
-		const totfundZeile = page.getByRole('row').filter({ hasText: 'e2e-tot' });
-		const lebendZeile = page.getByRole('row').filter({ hasText: 'e2e-lebend' });
+		/* Zeilen über `data-sighting-id` statt über die Referenz-ID im Zeilentext:
+		   Die Referenz-ID-Spalte ist seit dem 2026-08-09 standardmäßig
+		   abgeschaltet (`columns.ts`), ihr Text steht dann in keiner Zeile mehr.
+		   Zugesagt wird hier der Totfund-Marker — nicht, über welche Spalte man
+		   die Zeile findet. */
+		const totfundZeile = page.locator(`tbody tr[data-sighting-id="${totfundId}"]`);
+		const lebendZeile = page.locator(`tbody tr[data-sighting-id="${lebendId}"]`);
 
 		// Über den Text und nicht über eine Test-ID: Was der Marker einem
 		// Screenreader mitteilt, ist hier die eigentliche Zusage — ein rein

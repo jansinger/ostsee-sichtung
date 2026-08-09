@@ -35,6 +35,7 @@
 	import { setAllSelected, toggleSelection, type BulkHeaderState } from './bulkSelection';
 	import type { ColumnVisibility } from './columns';
 	import { NUR_WEIT_BLOCK } from './layoutSwitch';
+	import { naechsteRichtung, resolveSort, type SortColumn } from './sortParams';
 
 	interface Props {
 		sightings: SichtungenListRow[];
@@ -94,27 +95,41 @@
 		if (headerCheckbox) headerCheckbox.indeterminate = headerState === 'partial';
 	});
 
-	function updateSort(column: string): void {
-		const currentSort = page.url.searchParams.get('sort');
-		const currentOrder = page.url.searchParams.get('order');
+	/* Die wirksame Sortierung, nicht der rohe Query-Parameter: Beim ersten
+	   Aufruf steht in der URL nichts, sortiert ist die Liste trotzdem
+	   (`sortParams.ts`). */
+	let sort = $derived(resolveSort(page.url.searchParams));
 
-		const newOrder = currentSort === column && currentOrder === 'asc' ? 'desc' : 'asc';
-
+	function updateSort(column: SortColumn): void {
 		const url = new URL(page.url);
 		url.searchParams.set('sort', column);
-		url.searchParams.set('order', newOrder);
+		url.searchParams.set('order', naechsteRichtung(sort, column));
+		/* Die Seitenzahl ist eine Position in *einer* Reihenfolge und überlebt
+		   deren Wechsel nicht: Wer auf Seite 7 umsortiert, landete in der Mitte
+		   der neuen Sortierung — an einer Stelle, die mit dem gerade Gesuchten
+		   nichts zu tun hat. `perPage` bleibt dagegen stehen, das ist eine
+		   Einstellung und keine Position. */
+		url.searchParams.delete('page');
 		goto(url);
 	}
 </script>
 
-<!-- Sortierbarer Spaltenkopf: <button> im <th> mit aria-sort für Screenreader -->
-{#snippet sortableTh(label: string, key: string)}
-	{@const isActive = page.url.searchParams.get('sort') === key}
-	{@const isDesc = page.url.searchParams.get('order') === 'desc'}
+<!-- Sortierbarer Spaltenkopf: <button> im <th> mit aria-sort für Screenreader.
+     Der Pfeil steht an der aktiven Spalte auch dann, wenn sie nur die Vorgabe
+     des Loaders ist — sonst sähe der erste Aufruf unsortiert aus. Die
+     Richtungsangabe im aria-label wiederholt ihn für Screenreader: `aria-sort`
+     am <th> wird von den Browsern nicht überall an den Knopf durchgereicht,
+     und das Zeichen selbst ist als Vorlesetext nutzlos. -->
+{#snippet sortableTh(label: string, key: SortColumn)}
+	{@const isActive = sort.column === key}
+	{@const isDesc = sort.order === 'desc'}
 	<th class="p-0" aria-sort={isActive ? (isDesc ? 'descending' : 'ascending') : 'none'}>
 		<button
 			type="button"
 			class="hover:bg-base-300 flex w-full items-center gap-1 px-4 py-3 text-left font-semibold"
+			aria-label={isActive
+				? `${label}, sortiert ${isDesc ? 'absteigend' : 'aufsteigend'} — Richtung umkehren`
+				: `Nach ${label} sortieren`}
 			onclick={() => updateSort(key)}
 		>
 			{label}
@@ -195,8 +210,8 @@
 					     Nicht `sticky-col`: Der fixierte Bereich liegt rechts (Status,
 					     Aktionen); eine zweite fixierte Kante links stahl auf schmalen
 					     Fenstern zusätzlich Platz vom scrollenden Mittelteil. -->
-					<th class="w-px p-0">
-						<label class="flex cursor-pointer items-center justify-center px-2">
+					<th class="select-col w-px p-0">
+						<label class="target-exempt flex cursor-pointer justify-center">
 							<input
 								type="checkbox"
 								class="checkbox checkbox-sm"
@@ -289,8 +304,8 @@
 						<!-- Auswahl-Checkbox, Gegenstück zur Kopfspalte oben. Das `aria-label`
 						     nennt die Referenz-ID und nicht nur „Zeile 3": Beim Vorlesen ist
 						     die Nummer der Meldung das, woran die Zeile erkennbar ist. -->
-						<td class="w-px p-0">
-							<label class="flex cursor-pointer items-center justify-center px-2">
+						<td class="select-col w-px p-0">
+							<label class="target-exempt flex cursor-pointer justify-center">
 								<input
 									type="checkbox"
 									class="checkbox checkbox-sm"
@@ -516,6 +531,37 @@
 </div>
 
 <style>
+	/* Auswahlspalte: das Label ist hier eine einzeilige Zelle, kein Feld-Label.
+
+	   `items-center` als Utility reicht dafür nicht. `app.css` setzt für jedes
+	   `label:has(> .checkbox)` ungelayert `align-items: flex-start` und schlägt
+	   damit Tailwinds `@layer utilities` — die Checkbox hing oben in der Zelle,
+	   während die Nachbarzellen mittig standen. Die Regel dort ist richtig und
+	   bleibt: Sie hält das Control bei mehrzeiligen Feld-Labels oben bündig.
+	   Genau diesen Fall gibt es in einer Tabellenzeile aber nicht.
+
+	   Die `min-height: var(--target-min)` aus derselben Regel bleibt
+	   unangetastet — die 44px Trefferfläche trägt weiterhin das Label.
+
+	   Die Breite kommt jetzt allein aus der Checkbox (28px, `--control-size`)
+	   statt zusätzlich aus einem `px-2` am Label: 44px Spaltenbreite für ein
+	   28px-Control war der breiteste Teil einer Zeile, der nichts anzeigt.
+
+	   Damit ist das Ziel 44px hoch und 28px breit und unterschreitet das
+	   Projekt-Mindestmaß von 44×44 in der Breite. Das Label trägt deshalb
+	   `target-exempt` — die Klasse verlangt laut `design-system.md` eine
+	   Begründung, und die ist dieser Absatz: Die Tabelle erscheint erst ab
+	   768px (`layoutSwitch.ts`), die Auswahl ist auf einem Tablet im
+	   Touch-Betrieb also die schmalere der beiden Achsen, nicht die einzige
+	   Bedienform. Wer sie nicht trifft, verliert nichts — die Zeile bleibt
+	   über die Aktionsspalte und den Statuswechsel voll bedienbar, und die
+	   Bulk-Auswahl ist eine Abkürzung, kein einziger Weg. Wird die Spalte
+	   wieder breiter gebraucht, gehört das `px-2` zurück und diese Ausnahme
+	   weg — nicht die Regel aufgeweicht. */
+	.select-col label {
+		align-items: center;
+	}
+
 	/* Fixierte Spalten (Status, Aktionen) im horizontal scrollenden Container.
 	   Warum die Hintergründe hier von Hand stehen: `table-zebra` und der
 	   Zeilen-Hover färben das <tr>, nicht die Zellen — eine sticky-Zelle bliebe
