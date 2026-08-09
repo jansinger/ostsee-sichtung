@@ -551,6 +551,14 @@ jobs:
             # ~12 s; die Presets liegen in `localStorage`, der Spec räumt sie
             # in `beforeEach` selbst ab und braucht keine Testzeilen in der DB.
             e2e/admin-filter-presets.spec.ts
+            # Hover-Übergänge von .card/.btn. Thematisch stünde der Spec bei
+            # design-tokens.spec.ts in `smoke` — er prüft das Design System,
+            # nicht das Formular. Er kommt trotzdem hierher, weil der Hinweis
+            # bei admin-queue.spec.ts oben ausdrücklich verlangt, `smoke` zu
+            # entlasten (249–271 s gegen 202–217 s bei `form`). Er fährt mit
+            # /about eine Route, die in `form` sonst niemand kalt kompiliert —
+            # das ist der Preis dieser Zuordnung. Lokal 3 Tests, ~9 s.
+            e2e/hover-transitions.spec.ts
           )
 
           # Die drei Shards laufen parallel; die Laufzeit des Jobs ist die des
