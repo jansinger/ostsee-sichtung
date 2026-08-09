@@ -1987,6 +1987,81 @@ paths:
                 error: "Fehler beim Abrufen der verfügbaren Jahre"
 
   /rest_sichtungen:
+    get:
+      tags:
+        - legacy
+      summary: '[LEGACY] Sichtungsdaten abrufen (Index)'
+      description: |
+        **Derselbe Endpunkt wie `GET /sichtungen/showreports.json`, unter dem
+        zweiten Namen der Vorgänger-API.**
+
+        Zusätzlich unter `/de/…` und `/en/…` erreichbar — Sprachpräfix der abgelösten
+        CakePHP-App, keine Übersetzung (siehe docs/LEGACY_API_SPECIFICATION.md).
+
+        Die abgelöste CakePHP-Anwendung bildete `/rest_sichtungen` mit
+        `Router::mapResources()` ab; `GET` traf dort auf `index()`, und diese
+        Aktion bestand aus denselben zwei Zeilen wie `showReports()`.
+        Antwortformat, Sortierung, Limit und die Datenschutz-Regeln sind
+        identisch — maßgeblich ist die Beschreibung unter
+        `/sichtungen/showreports.json`. Es ist wörtlich dieselbe Funktion,
+        keine zweite Umsetzung; die Parameter unten sind deshalb absichtlich
+        Zeichen für Zeichen dieselben.
+
+        Die angebundene iOS-App (`OstSeeTiere/8`) lädt ihre Karte über diesen
+        Pfad. Bis 2026-08 antwortete er mit `405`.
+      parameters:
+        - name: year
+          in: query
+          description: 'Jahr der Sichtungen (Standard: aktuelles Jahr bis März, sonst Vorjahr)'
+          schema:
+            type: integer
+            minimum: 2000
+            maximum: 2030
+            example: 2024
+        - name: location
+          in: query
+          description: 'Zentrumskoordinaten für Umkreissuche "breitengrad,längengrad"'
+          schema:
+            type: string
+            pattern: '^-?\d+\.?\d*,-?\d+\.?\d*$'
+            example: "54.0,13.0"
+        - name: distance
+          in: query
+          description: 'Suchradius in Metern (nur mit location Parameter)'
+          schema:
+            type: integer
+            minimum: 1000
+            maximum: 500000
+            default: 100000
+            example: 50000
+        - name: bbox
+          in: query
+          description: 'Begrenzungsbox "minLon,minLat,maxLon,maxLat" (OpenLayers-kompatibel)'
+          schema:
+            type: string
+            pattern: '^-?\d+\.?\d*,-?\d+\.?\d*,-?\d+\.?\d*,-?\d+\.?\d*$'
+            example: "9,53,31,66"
+        - name: search
+          in: query
+          description: >
+            Suchtext (Teilstring-Suche). Für nicht angemeldete Aufrufer werden
+            Vorname/Name nur bei vorliegender Namensfreigabe und der Schiffsname
+            nur bei vorliegender Schiffsnamensfreigabe durchsucht; die
+            E-Mail-Adresse wird nicht durchsucht. Angemeldete Admins durchsuchen
+            zusätzlich die E-Mail-Adresse und ohne Freigabe-Filter.
+          schema:
+            type: string
+            maxLength: 100
+            example: "Schneider"
+      responses:
+        '200':
+          description: Liste der Sichtungen im PDF-konformen Kurzformat
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PDFCompliantSightingResponse'
     post:
       tags:
         - legacy
