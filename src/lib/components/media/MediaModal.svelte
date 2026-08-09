@@ -83,7 +83,9 @@
 >
 	<div class="modal-box flex max-h-[90vh] w-11/12 max-w-6xl flex-col overflow-hidden p-0">
 		<!-- Modal Header -->
-		<div class="bg-base-200 border-base-300 flex items-center justify-between border-b p-4">
+		<div
+			class="bg-base-200 border-base-300 modal-section flex items-center justify-between border-b p-4"
+		>
 			<div class="flex min-w-0 flex-1 items-center gap-3">
 				<Icon icon="lucide:file-type" width="20" class="text-primary flex-shrink-0" />
 				<div class="min-w-0 flex-1">
@@ -170,7 +172,7 @@
 		</div>
 
 		<!-- Modal Footer -->
-		<div class="bg-base-200 border-base-300 space-y-4 border-t p-4">
+		<div class="bg-base-200 border-base-300 modal-section space-y-4 border-t p-4">
 			<!-- Basis-Informationen -->
 			<div class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
 				<div class="flex items-center gap-2">
@@ -346,9 +348,12 @@
 			max-height: 40vh;
 		}
 
-		.grid-cols-1 {
-			grid-template-columns: 1fr;
-		}
+		/* Hier stand `.grid-cols-1 { grid-template-columns: 1fr }` — Tailwinds
+		   eigener Wert, auf sich selbst gesetzt, also wirkungslos. Entfernt statt
+		   korrigiert: Eine Utility-Klasse im scoped <style> zu überschreiben ist
+		   auch dann falsch, wenn es auffällt, weil Svelte daraus `.grid-cols-1.s-xyz`
+		   macht und still gegen die Utility-Ebene gewinnt. Wer das Layout hier
+		   ändern will, ändert die Klasse im Markup. */
 	}
 
 	/* Accessibility improvements */
@@ -366,7 +371,12 @@
 			border: 2px solid;
 		}
 
-		.bg-base-200 {
+		/* Kopf- und Fußleiste des Dialogs. Zielt auf `.modal-section` und nicht
+		   mehr auf `.bg-base-200`: Die Utility-Klasse trugen auch die beiden
+		   EXIF-Kästchen im Inneren, die gar keinen Rahmen haben — die Regel lief
+		   dort ins Leere und band gleichzeitig eine Zusage an einen Klassennamen,
+		   der jederzeit gegen einen anderen Farbton getauscht werden kann. */
+		.modal-section {
 			border-color: currentColor;
 		}
 	}

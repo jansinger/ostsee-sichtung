@@ -67,7 +67,7 @@
 			     die Begründung, warum das Token neutrales Schwarz ist und nicht
 			     bg-neutral, steht dort. -->
 			<div
-				class="bg-scrim/60 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
+				class="bg-scrim/60 thumbnail-overlay absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
 			>
 				<Icon icon="lucide:eye" width="24" class="text-on-scrim" />
 			</div>
@@ -120,7 +120,7 @@
 			     eine reine Andeutung über dem Videobild und bleibt deshalb, anders als
 			     im Zweig darunter, unverändert. -->
 			<div
-				class="bg-scrim/20 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
+				class="bg-scrim/20 thumbnail-overlay absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
 			></div>
 		</div>
 	{:else}
@@ -142,7 +142,7 @@
 			     Foto und Video war das kein „hängt vom Inhalt ab", sondern ein fester,
 			     zu niedriger Wert. Mit /60 sind es 7,34:1. -->
 			<div
-				class="bg-scrim/60 absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
+				class="bg-scrim/60 thumbnail-overlay absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
 			>
 				<Icon icon="lucide:download" width="20" class="text-on-scrim" />
 			</div>
@@ -198,25 +198,39 @@
 		opacity: 0.8;
 	}
 
-	/* Badge positioning and styling */
+	/* Bleibt bewusst stehen. Die drei Badges tragen im Markup bereits `badge-xs`;
+	   das hier sind die letzten 0,4px darüber plus das Schriftgewicht — eine
+	   Feinjustierung, für die DaisyUI keine Modifier-Klasse hat. Anders als die
+	   beiden entfernten Regeln unten definiert sie keine Utility neu, sondern
+	   justiert eine Komponentenklasse; das ist der Fall, für den ein scoped
+	   <style> da ist. */
 	.badge {
 		font-size: 0.65rem;
 		font-weight: 500;
 	}
 
-	/* Improved text truncation */
-	.truncate {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
+	/* `.truncate` stand hier als eigene Regel und wiederholte Wort für Wort, was
+	   Tailwinds gleichnamige Utility ohnehin tut — ersatzlos entfernt. Eine
+	   Utility-Klasse im scoped <style> neu zu definieren ist auch dann ein
+	   Fehler, wenn die Werte zufällig übereinstimmen: Svelte macht daraus
+	   `.truncate.s-xyz` und gewinnt still gegen die Utility-Ebene. Wer die
+	   Klasse später im Markup tauscht, verliert eine Zusage, die er hier nicht
+	   vermutet. Dasselbe galt für ein `.p-2` im Mobil-Block unten, das Tailwinds
+	   eigenen Wert (0.5rem) auf sich selbst setzte.
+
+	   Ebenfalls entfernt: ein `img`-Regelpaar, das bis zur Ladung ein
+	   Streifenmuster zeigen sollte (`animation: loadingPattern`). Es hat nie
+	   etwas gezeigt — die Gegenregel `.media-thumbnail img[src]` hebt es mit
+	   `background: none !important` wieder auf, und `src` steht im Markup als
+	   Literal, ist also ab dem ersten Paint da. Die Keyframe `loadingPattern`
+	   in app.css hatte hier ihre einzige Aufrufstelle und ist mit entfallen. */
 
 	/* Animation for scale effect */
 	@media (prefers-reduced-motion: reduce) {
 		.media-thumbnail,
 		.media-thumbnail img,
-		.group:hover img,
-		.group:hover div {
+		.media-thumbnail:hover img,
+		.thumbnail-overlay {
 			transition: none;
 			transform: none;
 		}
@@ -228,9 +242,15 @@
 			border: 1px solid;
 		}
 
-		/* Better visibility for overlays in high contrast mode */
-		.media-thumbnail:hover div {
-			background-color: rgba(0, 0, 0, 0.9) !important;
+		/* Der Schleier wird im Hochkontrast-Modus fast undurchsichtig. Der Wert
+		   kommt aus --scrim-surface, nicht als rgba(0,0,0,.9) — es ist derselbe
+		   Ton wie beim bg-scrim/60 im Markup, nur dichter, und ein Farbwert
+		   gehört auch hier nur einmal ins Projekt (tokens.css). Bis 2026-08-09
+		   stand hier ein rohes rgba(): Der Klassen-Scan konnte es strukturell
+		   nicht melden, weil in einer CSS-Deklaration keine Klasse steht. Genau
+		   dafür gibt es jetzt e2e/helpers/bannedCss.ts. */
+		.media-thumbnail:hover .thumbnail-overlay {
+			background-color: color-mix(in oklab, var(--scrim-surface) 90%, transparent);
 		}
 	}
 
@@ -239,31 +259,5 @@
 		.media-thumbnail {
 			min-height: 100px;
 		}
-
-		.p-2 {
-			padding: 0.5rem;
-		}
-	}
-
-	/* Loading state für Bilder - zeigt Pattern bis Bild geladen ist */
-	img {
-		background-color: var(--color-base-200);
-		background-image: linear-gradient(
-			45deg,
-			transparent 25%,
-			var(--color-base-300) 25%,
-			var(--color-base-300) 50%,
-			transparent 50%,
-			transparent 75%,
-			var(--color-base-300) 75%
-		);
-		background-size: 20px 20px;
-		animation: loadingPattern 1s linear infinite;
-	}
-
-	/* Deaktiviert Loading-Pattern wenn Bild erfolgreich geladen wurde */
-	.media-thumbnail img[src] {
-		background: none !important;
-		animation: none !important;
 	}
 </style>
