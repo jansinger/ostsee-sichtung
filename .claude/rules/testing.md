@@ -62,7 +62,7 @@ npm run test:unit:all     # Alle Unit Tests (Server + Browser)
 npm run test:unit:watch   # Server Unit Tests im Watch-Modus
 npm run test:e2e          # E2E Tests (Playwright)
 npm run test:e2e:shards   # Shard-Zuordnung prüfen — PFLICHT nach neuem E2E-Spec
-npm run test:quick        # Schnell-Test (lint + type-check + unit)
+npm run test:quick        # Schnell-Test (Shard-Abgleich + lint + type-check + svelte-check + unit)
 npm run test:coverage     # Coverage-Report (Server-Tests + v8)
 ```
 

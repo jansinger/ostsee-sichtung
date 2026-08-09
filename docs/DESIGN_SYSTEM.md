@@ -273,7 +273,7 @@ Datenfarben müssen über Theme-Änderungen hinweg stabil bleiben.
 ## Prüfung
 
 ```bash
-npm run test:quick                              # Lint, Types, svelte-check, Unit (inkl. Scan-Regeln)
+npm run test:quick                              # E2E-Shard-Abgleich, Lint, Types, svelte-check, Unit (inkl. Scan-Regeln)
 npx playwright test e2e/design-tokens.spec.ts   # Token-Kontraste + DOM-Scan
 npx playwright test e2e/form-a11y.spec.ts       # Fokus, Alerts, error-Buttons
 ```
