@@ -1993,6 +1993,9 @@ paths:
       summary: '[LEGACY] Sichtung anlegen'
       description: |
         **Legacy REST API Endpunkt für Mobile App Kompatibilität**
+
+        Zusätzlich unter `/de/…` und `/en/…` erreichbar — Sprachpräfix der abgelösten
+        CakePHP-App, keine Übersetzung (siehe docs/LEGACY_API_SPECIFICATION.md).
         
         Erstellt eine neue Sichtung im Legacy-Format der ursprünglichen schweinswalsichtung.de API.
         
@@ -2097,6 +2100,9 @@ paths:
       summary: '[LEGACY] Antwortmöglichkeiten abrufen'
       description: |
         **Legacy REST API Endpunkt für Dropdown-Optionen**
+
+        Zusätzlich unter `/de/…` und `/en/…` erreichbar — Sprachpräfix der abgelösten
+        CakePHP-App, keine Übersetzung (siehe docs/LEGACY_API_SPECIFICATION.md).
         
         Stellt alle verfügbaren Optionen für numerische Felder bereit, genau wie in der ursprünglichen API.
         Die Feldnamen und Werte entsprechen exakt der PDF-Spezifikation.
@@ -2139,6 +2145,9 @@ paths:
       summary: '[LEGACY] Position prüfen'
       description: |
         **Legacy REST API Endpunkt für Koordinaten-Validierung**
+
+        Zusätzlich unter `/de/…` und `/en/…` erreichbar — Sprachpräfix der abgelösten
+        CakePHP-App, keine Übersetzung (siehe docs/LEGACY_API_SPECIFICATION.md).
         
         Überprüft, ob gegebene Koordinaten in der Ostsee bzw. im Kartenbereich liegen.
         
@@ -2202,6 +2211,9 @@ paths:
       summary: '[LEGACY] Sichtungsdaten abrufen'
       description: |
         **Legacy REST API Endpunkt für genehmigte Sichtungen**
+
+        Zusätzlich unter `/de/…` und `/en/…` erreichbar — Sprachpräfix der abgelösten
+        CakePHP-App, keine Übersetzung (siehe docs/LEGACY_API_SPECIFICATION.md).
         
         Gibt alle genehmigten Sichtungen zurück, mit optionaler Filterung nach Jahr, 
         Standort, Entfernung und Suchbegriffen.

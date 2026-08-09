@@ -13,6 +13,62 @@ This is a dated status, not a standing guarantee — re-check whether further cl
 - Test System: `http://test.schweinswalsichtung.de`
 - Production System: `http://schweinswalsichtung.de`
 
+## Sprachpräfix `/de/` und `/en/` — gilt für alle Pfade
+
+Jeder in diesem Dokument genannte Pfad ist **zusätzlich** mit vorangestelltem
+`/de/` oder `/en/` erreichbar. Frühere Fassungen dieses Dokuments nannten das
+Präfix nur bei `antworten.json`; das war eine unvollständige Wiedergabe der
+Vorgänger-Anwendung, keine Einschränkung.
+
+Der CakePHP-Router band das Kürzel vor **jede** Route:
+
+```php
+Router::connect('/:language/:controller/:action/*', array(), array('language' => 'de|en'));
+Router::connect('/:language/:controller', array('action' => 'index'), array('language' => 'de|en'));
+Router::connect('/:language', array('controller' => 'sichtungen', 'action' => 'add'), array('language' => 'de|en'));
+```
+
+Es gab also `/de/rest_sichtungen/antworten.json` genauso wie
+`/en/rest_sichtungen`, `/de/sichtungen/showreports.json` und so weiter.
+
+**Das Präfix ist keine Übersetzung.** Der Übergangsdienst auf hawking
+(`legacy-inbox/src/server.js`) liefert unter `/en/rest_sichtungen/antworten.json`
+byte-identisch dieselbe deutsche Liste. Es ist reine Routenkosmetik — Responses
+unterscheiden sich in keiner Sprachvariante.
+
+| Pfad                              | zusätzlich erreichbar unter                   |
+| --------------------------------- | --------------------------------------------- |
+| `POST /rest_sichtungen`           | `/de/rest_sichtungen`, `/en/rest_sichtungen`  |
+| `/rest_sichtungen/antworten.json` | `/de/rest_sichtungen/antworten.json`, `/en/…` |
+| `/rest_sichtungen/inBaltic.json`  | `/de/rest_sichtungen/inBaltic.json`, `/en/…`  |
+| `/sichtungen/showreports.json`    | `/de/sichtungen/showreports.json`, `/en/…`    |
+
+Umgesetzt ist das in der aktuellen Anwendung durch den `reroute`-Hook in
+`src/hooks.ts`, der das Kürzel abschneidet, bevor SvelteKit die Route auflöst
+(`stripLegacyLanguagePrefix` in `src/lib/legacy-api/languagePrefix.ts`). Die
+Pfade ohne Präfix ändern sich dadurch nicht — das Präfix kommt additiv dazu.
+
+**Grenzen der Umsetzung**, bewusst gesetzt:
+
+- Nur `de` und `en`, nur in Kleinschreibung — wie im CakePHP-Muster `de|en`.
+- Nur vor genau den vier Pfaden aus der Tabelle oben — nicht vor deren
+  Verzeichnissen. `/en/rest_sichtungen/view/1840.json` bleibt also 404, und ein
+  neuer Legacy-Endpunkt bekommt das Präfix erst, wenn er in `LEGACY_PFADE`
+  eingetragen wird.
+- `/en/` vor der Startseite oder vor `/admin` bleibt 404: Die Anwendung ist
+  einsprachig deutsch, ein `/en/` vor einer Seitenroute wäre ein
+  Sprachversprechen, das sie nicht einlöst — und vor `/admin` zusätzlich ein
+  zweiter Pfad auf geschützte Routen, deren Schutz an `event.url.pathname`
+  hängt, das `reroute` nicht verändert.
+- `/de` bzw. `/en` allein zeigte in CakePHP auf das Meldeformular
+  (`sichtungen/add`) und bleibt aus demselben Grund 404.
+
+Ob ein Client das Präfix nutzt, ist offen: Im Zugriffsprotokoll von hawking
+wurde am 2026-08-09 keine Präfix-Variante abgerufen — die Protokolle reichen
+dort aber nur einen Tag zurück (Plesk rotiert ohne Archiv). Die Unterstützung
+kostet nichts und schließt eine Lücke, die von hier aus nicht mehr reparierbar
+wäre.
+
 ## 1. Creating Sightings
 
 ### Endpoint
@@ -154,8 +210,11 @@ Retrieves response options for numeric fields as JSON array.
 ### Endpoint
 
 - **URL**: `/rest_sichtungen/antworten.json`
-- **URL (English)**: `/en/rest_sichtungen/antworten.json`
 - **Method**: `GET`
+
+Wie jeder Pfad dieser API ist auch dieser zusätzlich unter `/de/…` und `/en/…`
+erreichbar. Die Response ist in allen drei Varianten dieselbe deutsche Liste
+(siehe Abschnitt „Sprachpräfix `/de/` und `/en/`" oben).
 
 ### Response Format
 

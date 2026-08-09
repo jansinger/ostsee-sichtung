@@ -185,6 +185,14 @@ map=(
 	# Komponente, die die map-*-Specs fahren.
 	e2e/form-position.spec.ts
 	e2e/form-position-photo.spec.ts
+	# Thematisch bei keinem der drei Shards zu Hause — er fährt gar keine
+	# Seite, sondern nur die Legacy-Endpunkte über `request`. Er kommt
+	# hierher, weil `smoke` laut der Messung vom 2026-08-09 (249–271 s)
+	# deutlich der längste Shard ist und `form` zuletzt alle Neuzugänge
+	# bekam. Kein Browser, kein Seed: 8 Tests, lokal ~2 s. Der
+	# Kaltkompilier-Aufschlag der /rest_sichtungen-Routen fällt einmalig
+	# an; kein anderer Spec fährt sie.
+	e2e/legacy-language-prefix.spec.ts
 )
 
 # design-tokens.spec.ts gehört hierher, nicht zu form: es prüft das
