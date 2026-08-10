@@ -39,24 +39,6 @@ assertProductionSecrets({ NODE_ENV, ENCRYPTION_KEY });
 const setAdditionalHeaders: Handle = createSecurityHeadersHandler(NODE_ENV);
 
 /**
- * Löst die Locale serverseitig auf und ersetzt `%lang%` im ausgelieferten HTML.
- *
- * Ohne diesen Schritt gibt es keine serverseitig bekannte Sprache — SSR rendert
- * dann in der Standardsprache, während der Client umschaltet, und der
- * Platzhalter bliebe wörtlich im Dokument stehen.
- *
- * Steht bewusst NACH der Auth-Prüfung: Die hängt an `event.url.pathname`, und
- * dieser Pfad darf ihr nicht verschoben unter den Händen weggezogen werden.
- */
-const handleParaglide: Handle = ({ event, resolve }) =>
-	paraglideMiddleware(event.request, ({ request, locale }) => {
-		event.request = request;
-		return resolve(event, {
-			transformPageChunk: ({ html }) => html.replace('%lang%', locale)
-		});
-	});
-
-/**
  * Authentication handler
  */
 const authentication: Handle = async ({ event, resolve }) => {
@@ -93,6 +75,32 @@ const authentication: Handle = async ({ event, resolve }) => {
 
 	return resolve(event);
 };
+
+/**
+ * Löst die Locale serverseitig auf und ersetzt `%lang%` im ausgelieferten HTML.
+ *
+ * Ohne diesen Schritt gibt es keine serverseitig bekannte Sprache — SSR rendert
+ * dann in der Standardsprache, während der Client umschaltet, und der
+ * Platzhalter bliebe wörtlich im Dokument stehen.
+ *
+ * Steht bewusst NACH der Auth-Prüfung: Die hängt an `event.url.pathname`, und
+ * dieser Pfad darf ihr nicht verschoben unter den Händen weggezogen werden. Die
+ * Definition steht deshalb absichtlich direkt vor `sequence(...)` — unmittelbar
+ * bei der Stelle, die ihre tatsächliche Ausführungsreihenfolge festlegt, statt
+ * weiter oben in Lesereihenfolge vor `authentication` und damit im Widerspruch
+ * zu genau dieser Aussage.
+ *
+ * `replaceAll` statt `replace`: Heute kommt `%lang%` genau einmal im Dokument
+ * vor, aber ein künftiges zweites Vorkommen (z. B. `og:locale`, `hreflang`)
+ * bliebe mit `replace` stillschweigend unersetzt im ausgelieferten HTML stehen.
+ */
+const handleParaglide: Handle = ({ event, resolve }) =>
+	paraglideMiddleware(event.request, ({ request, locale }) => {
+		event.request = request;
+		return resolve(event, {
+			transformPageChunk: ({ html }) => html.replaceAll('%lang%', locale)
+		});
+	});
 
 /**
  * SvelteKit Handle Hook - Combines multiple middleware in sequence
