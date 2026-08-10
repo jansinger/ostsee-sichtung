@@ -28,6 +28,8 @@ export default defineConfig({
 				'**/*.test.ts',
 				'**/*.spec.ts',
 				'**/*.testutil.ts',
+				// Erzeugter Paraglide-Code (Task 1) — nicht ausgelieferter Quelltext, siehe .gitignore
+				'src/lib/paraglide/**',
 				// Type-only files
 				'src/**/*.d.ts',
 				// OpenLayers map controllers — instantiate OL Map/View/Layer/Canvas, need real DOM+WebGL

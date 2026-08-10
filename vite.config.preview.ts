@@ -2,6 +2,7 @@
  * Vite config for preview server (no HTTPS, port 4000).
  * See also: vite.config.ts (development), vite.config.ci.ts (CI/E2E)
  */
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
@@ -9,6 +10,15 @@ import { defineConfig } from 'vite';
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
+		paraglideVitePlugin({
+			project: './project.inlang',
+			outdir: './src/lib/paraglide',
+			emitTsDeclarations: true,
+			// Ohne `preferredLanguage`: präfixlos ist immer Deutsch. Sonst rendert
+			// dieselbe URL je nach Browser-Header zwei Inhalte — nicht cachebar und
+			// für Suchmaschinen ein Duplikat. Begründung: Entwurf, Abschnitt 4.5.
+			strategy: ['url', 'cookie', 'baseLocale']
+		}),
 		sveltekit()
 		// No basicSsl plugin for preview in CI to avoid HTTPS certificate issues
 	],

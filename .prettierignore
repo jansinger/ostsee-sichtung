@@ -13,3 +13,6 @@ THIRD-PARTY-NOTICES.txt
 # Miscellaneous
 /static/
 /drizzle/
+
+# Erzeugter Paraglide-Code (Task 1) — nicht im Repository, siehe .gitignore
+src/lib/paraglide

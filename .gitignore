@@ -12,6 +12,7 @@ docs/superpowers/
 .netlify
 .wrangler
 /.svelte-kit
+/src/lib/paraglide
 /build
 
 # OS

@@ -2,6 +2,7 @@
  * Vite config for local development (HTTPS, HMR, warmup).
  * See also: vite.config.ci.ts (CI/E2E), vite.config.preview.ts (preview server)
  */
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
@@ -33,6 +34,15 @@ const devCert =
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
+		paraglideVitePlugin({
+			project: './project.inlang',
+			outdir: './src/lib/paraglide',
+			emitTsDeclarations: true,
+			// Ohne `preferredLanguage`: präfixlos ist immer Deutsch. Sonst rendert
+			// dieselbe URL je nach Browser-Header zwei Inhalte — nicht cachebar und
+			// für Suchmaschinen ein Duplikat. Begründung: Entwurf, Abschnitt 4.5.
+			strategy: ['url', 'cookie', 'baseLocale']
+		}),
 		sveltekit(),
 		Icons({
 			compiler: 'svelte',

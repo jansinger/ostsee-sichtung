@@ -70,6 +70,15 @@ if [ ! -f .svelte-kit/tsconfig.json ]; then
 	fi
 fi
 
+# Paraglide erzeugt src/lib/paraglide/ — nicht im Repository, aber von
+# type-check, lint und check vorausgesetzt. Ohne diesen Schritt ist ein frischer
+# Worktree rot, und zwar mit Fehlern, die nach kaputtem Setup aussehen.
+if npx --no-install paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide >/dev/null 2>&1; then
+	say "worktree-setup: src/lib/paraglide/ erzeugt (paraglide-js compile)"
+else
+	warn "paraglide-js compile fehlgeschlagen — 'npm install' im Haupt-Repo nötig?"
+fi
+
 # --- Abhängigkeiten prüfen ---------------------------------------------------
 if [ ! -d node_modules ] && [ ! -d "$MAIN/node_modules" ]; then
 	warn "weder hier noch im Haupt-Repo liegt node_modules — bitte 'npm install' in $MAIN"
