@@ -385,6 +385,8 @@ describe('admin/statistics load() — Kopfzahl „abgelehnt"', () => {
 		const abgelehnt = recordedQueries.find((eintrag) => 'rejectedSightings' in eintrag.columns);
 		expect(abgelehnt, 'Abfrage der abgelehnten Kopfzahl nicht gefunden').toBeDefined();
 
+		expect(abgelehnt!.where, 'Kopfzahl ohne Grundmenge').toBeDefined();
+
 		const text = toSqlText(abgelehnt!.where!);
 		expect(text, 'Kopfzahl ohne Freigabebezug').toMatch(/freigegeben_am"? is null/i);
 		expect(text, 'Kopfzahl ohne Ablehnungsbezug').toMatch(/abgelehnt_am"? is not null/i);
@@ -439,8 +441,9 @@ describe('admin/statistics load() — Meldekanal', () => {
 
 		await ladeSeite();
 
-		const kanaele = recordedQueries.find((eintrag) => 'channel' in eintrag.columns)!;
-		expect(Object.keys(kanaele.columns).sort()).toEqual(['channel', 'count', 'percentage']);
+		const kanaele = recordedQueries.find((eintrag) => 'channel' in eintrag.columns);
+		expect(kanaele, 'Meldekanal-Abfrage nicht gefunden').toBeDefined();
+		expect(Object.keys(kanaele!.columns).sort()).toEqual(['channel', 'count', 'percentage']);
 	});
 });
 
