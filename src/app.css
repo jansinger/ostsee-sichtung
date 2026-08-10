@@ -503,6 +503,18 @@ summary.btn {
 	min-height: var(--target-min);
 }
 
+/* Menüeinträge — jede `.menu`-Instanz, also neben den Admin-Dropdowns
+   (Zeilen-Aktionen, Spalten-Auswahl, Ansichten-Verwaltung) auch beide
+   PublicNavbar-Menüs: DaisyUIs `.menu`-Padding ergibt nur ~32px. Die
+   `.btn`-Regel oben greift nur für Einträge, die selbst ein Button im
+   Button-Sinn sind (z. B. der Löschen-Eintrag) — die einfachen `li > a/button`
+   blieben darunter. Ausgenommen wie bei DaisyUI selbst: Untermenüs,
+   `details`-Wrapper und Titel — die sind keine Ziele.
+   Gemessen abgesichert in SightingActionsMenu.svelte.test.ts. */
+.menu li > :not(ul, details, .menu-title, .target-exempt) {
+	min-height: var(--target-min);
+}
+
 /* Checkbox, Radio und Toggle über --size statt über min-height.
    Die Handoff-Vorlage hatte sie in die min-height-Regel oben aufgenommen —
    das verzerrt sie: DaisyUI setzt für diese drei width UND height fest,
