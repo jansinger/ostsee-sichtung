@@ -66,6 +66,12 @@
 
 	const logger = createLogger('SichtungenPage');
 
+	/* Feste id statt eines generierten Werts: Das Panel existiert genau einmal,
+	   die zwei Auslöser (Mobil-Kopf und Weit-Kopf) verweisen beide per
+	   `aria-controls` darauf — ein `crypto.randomUUID()` o. Ä. wäre hier ohne
+	   Nutzen, weil nichts dynamisch mehrfach gerendert wird. */
+	const FILTER_PANEL_ID = 'sichtungen-filter-panel';
+
 	let { data }: { data: PageData } = $props();
 
 	// Reaktive States mit Runes
@@ -768,6 +774,8 @@
 						class="btn btn-sm flex-1 {isFilterPanelOpen ? 'btn-accent' : 'btn-outline'}"
 						onclick={() => (isFilterPanelOpen = !isFilterPanelOpen)}
 						title="Filter ein-/ausblenden"
+						aria-expanded={isFilterPanelOpen}
+						aria-controls={FILTER_PANEL_ID}
 					>
 						<Icon icon="lucide:filter" class="mr-1 h-4 w-4" />
 						Filter
@@ -849,6 +857,8 @@
 					class="btn btn-sm {isFilterPanelOpen ? 'btn-accent' : 'btn-outline'}"
 					onclick={() => (isFilterPanelOpen = !isFilterPanelOpen)}
 					title="Filter ein-/ausblenden"
+					aria-expanded={isFilterPanelOpen}
+					aria-controls={FILTER_PANEL_ID}
 				>
 					<Icon icon="lucide:filter" class="mr-1 h-4 w-4" />
 					Filter
@@ -869,6 +879,156 @@
 				{/if}
 			</div>
 		</div>
+
+		<!-- Filter Panel.
+
+		     Direkt hinter dem Kopfbereich und vor der Suche: Beide Filter-Auslöser
+		     sitzen im Kopf, ein per Tastatur geöffnetes Panel soll deshalb nicht
+		     erst hinter Suche, Ansichten und Chip-Zeile liegen. Kein eigener
+		     `container mx-auto px-4 md:px-6` mehr — das übernimmt jetzt der
+		     umschließende Kopfbereich-Container, eine zweite Verschachtelung hätte
+		     den Innenabstand verdoppelt. `mt-3` statt des früheren `mb-4`, damit der
+		     Abstand zum Kopf darüber demselben Rhythmus folgt wie Suche, Ansichten
+		     und Chip-Zeile weiter unten (jeweils `mt-3` zum Vorgänger).
+
+		     Hier stand `transition-all duration-300`. Das ist als einzige der 19
+		     Dauer-Fundstellen NICHT auf ein Motion-Token gewandert, sondern
+		     ersatzlos entfallen: Das Panel hängt an einem `{#if}` und wird ein- und
+		     ausgehängt statt ein- und ausgeblendet — es gibt keinen Zustand, von
+		     dem aus ein Übergang laufen könnte, und die Klasse hat nie gewirkt.
+		     Ein `duration-panel` an ihrer Stelle sähe token-konform aus und täte
+		     weiterhin nichts. Wer hier wirklich animieren will, braucht
+		     `transition:slide` aus `svelte/transition` (design-system.md, „Keine
+		     toten Utility-Klassen"). -->
+		{#if isFilterPanelOpen}
+			<div id={FILTER_PANEL_ID} class="bg-base-200 shadow-raised mt-3 rounded-lg p-3">
+				<div class="mb-2 flex items-center justify-between">
+					<h2 class="text-base font-semibold">Filter</h2>
+					<button
+						class="btn btn-ghost btn-xs"
+						onclick={() => (isFilterPanelOpen = false)}
+						title="Filter ausblenden"
+						aria-label="Filter ausblenden"
+					>
+						<Icon icon="lucide:x" class="h-4 w-4" />
+					</button>
+				</div>
+				<!-- Kein `sm:grid-cols-2`: `sm` ist keine Layout-Grenze (Breakpoint-Vertrag). -->
+				<div class="grid grid-cols-1 gap-2 md:grid-cols-3 lg:grid-cols-6">
+					<div class="fieldset w-full">
+						<label for="fromDate" class="label py-0">
+							<span class="text-support">Sichtung von</span>
+						</label>
+						<input
+							type="date"
+							id="fromDate"
+							name="fromDate"
+							class="input input-sm w-full"
+							bind:value={fromDate}
+						/>
+					</div>
+					<div class="fieldset w-full">
+						<label for="toDate" class="label py-0">
+							<span class="text-support">Sichtung bis</span>
+						</label>
+						<input
+							type="date"
+							id="toDate"
+							name="toDate"
+							class="input input-sm w-full"
+							bind:value={toDate}
+						/>
+					</div>
+					<div class="fieldset w-full">
+						<label for="verified" class="label py-0">
+							<span class="text-support">Status</span>
+						</label>
+						<select
+							id="verified"
+							name="verified"
+							class="select select-sm w-full text-sm"
+							bind:value={verified}
+						>
+							<option value="">Alle</option>
+							<option value="open">Offen</option>
+							<option value="approved">Freigegeben</option>
+							<option value="rejected">Abgelehnt</option>
+						</select>
+					</div>
+					<div class="fieldset w-full">
+						<label for="deadFinding" class="label py-0">
+							<span class="text-support">Meldeart</span>
+						</label>
+						<select
+							id="deadFinding"
+							name="deadFinding"
+							class="select select-sm w-full text-sm"
+							bind:value={deadFinding}
+						>
+							<option value="">Alle</option>
+							<option value="1">{DEAD_FINDING_PRESENTATION.label}</option>
+							<option value="0">{MELDEART_LABEL['0']}</option>
+						</select>
+					</div>
+					<div class="fieldset w-full">
+						<label for="entryChannel" class="label py-0">
+							<span class="text-support">Kanal</span>
+						</label>
+						<select
+							id="entryChannel"
+							name="entryChannel"
+							class="select select-sm w-full text-sm"
+							bind:value={selectedChannel}
+						>
+							<option value="all">Alle</option>
+							{#each getEntryChannelOptions() as { value, label } (value)}
+								<option value={String(value)}>{label}</option>
+							{/each}
+						</select>
+					</div>
+					<div class="fieldset w-full">
+						<label for="mediaUpload" class="label py-0">
+							<span class="text-support">Aufnahme</span>
+						</label>
+						<select
+							id="mediaUpload"
+							name="mediaUpload"
+							class="select select-sm w-full text-sm"
+							bind:value={mediaUpload}
+						>
+							<option value="">Alle</option>
+							<option value="1">{AUFNAHME_LABEL['1']}</option>
+							<option value="0">{AUFNAHME_LABEL['0']}</option>
+							<option value={MEDIA_UPLOAD_ANNOUNCED_MISSING}
+								>{AUFNAHME_LABEL[MEDIA_UPLOAD_ANNOUNCED_MISSING]}</option
+							>
+						</select>
+					</div>
+					<div class="fieldset w-full">
+						<label for="balticSea" class="label py-0">
+							<span class="text-support">Ostsee</span>
+						</label>
+						<select
+							id="balticSea"
+							name="balticSea"
+							class="select select-sm w-full text-sm"
+							bind:value={balticSea}
+						>
+							<option value="">Alle</option>
+							{#each Object.entries(BALTIC_SEA_STATUS_PRESENTATION) as [value, presentation] (value)}
+								<option {value}>{presentation.label}</option>
+							{/each}
+						</select>
+					</div>
+				</div>
+				<div class="mt-3 flex flex-col gap-2 md:flex-row md:justify-end">
+					<button class="btn btn-outline btn-sm md:btn-xs" onclick={resetFilters}
+						>Zurücksetzen</button
+					>
+					<button class="btn btn-primary btn-sm md:btn-xs" onclick={applyFilters}>Anwenden</button>
+				</div>
+			</div>
+		{/if}
 
 		<!--
 			Die Freitext-Suche steht bewusst außerhalb des Filter-Panels — sie ist
@@ -1092,146 +1252,6 @@
 			</div>
 		{/if}
 	</div>
-
-	<!-- Filter Panel.
-
-	     Hier stand `transition-all duration-300`. Das ist als einzige der 19
-	     Dauer-Fundstellen NICHT auf ein Motion-Token gewandert, sondern
-	     ersatzlos entfallen: Das Panel hängt an einem `{#if}` und wird ein- und
-	     ausgehängt statt ein- und ausgeblendet — es gibt keinen Zustand, von
-	     dem aus ein Übergang laufen könnte, und die Klasse hat nie gewirkt.
-	     Ein `duration-panel` an ihrer Stelle sähe token-konform aus und täte
-	     weiterhin nichts. Wer hier wirklich animieren will, braucht
-	     `transition:slide` aus `svelte/transition` (design-system.md, „Keine
-	     toten Utility-Klassen"). -->
-	{#if isFilterPanelOpen}
-		<div class="bg-base-200 shadow-raised container mx-auto mb-4 rounded-lg p-3 px-4 md:px-6">
-			<div class="mb-2 flex items-center justify-between">
-				<h2 class="text-base font-semibold">Filter</h2>
-				<button
-					class="btn btn-ghost btn-xs"
-					onclick={() => (isFilterPanelOpen = false)}
-					title="Filter ausblenden"
-					aria-label="Filter ausblenden"
-				>
-					<Icon icon="lucide:x" class="h-4 w-4" />
-				</button>
-			</div>
-			<!-- Kein `sm:grid-cols-2`: `sm` ist keine Layout-Grenze (Breakpoint-Vertrag). -->
-			<div class="grid grid-cols-1 gap-2 md:grid-cols-3 lg:grid-cols-6">
-				<div class="fieldset w-full">
-					<label for="fromDate" class="label py-0">
-						<span class="text-support">Sichtung von</span>
-					</label>
-					<input
-						type="date"
-						id="fromDate"
-						name="fromDate"
-						class="input input-sm w-full"
-						bind:value={fromDate}
-					/>
-				</div>
-				<div class="fieldset w-full">
-					<label for="toDate" class="label py-0">
-						<span class="text-support">Sichtung bis</span>
-					</label>
-					<input
-						type="date"
-						id="toDate"
-						name="toDate"
-						class="input input-sm w-full"
-						bind:value={toDate}
-					/>
-				</div>
-				<div class="fieldset w-full">
-					<label for="verified" class="label py-0">
-						<span class="text-support">Status</span>
-					</label>
-					<select
-						id="verified"
-						name="verified"
-						class="select select-sm w-full text-sm"
-						bind:value={verified}
-					>
-						<option value="">Alle</option>
-						<option value="open">Offen</option>
-						<option value="approved">Freigegeben</option>
-						<option value="rejected">Abgelehnt</option>
-					</select>
-				</div>
-				<div class="fieldset w-full">
-					<label for="deadFinding" class="label py-0">
-						<span class="text-support">Meldeart</span>
-					</label>
-					<select
-						id="deadFinding"
-						name="deadFinding"
-						class="select select-sm w-full text-sm"
-						bind:value={deadFinding}
-					>
-						<option value="">Alle</option>
-						<option value="1">{DEAD_FINDING_PRESENTATION.label}</option>
-						<option value="0">{MELDEART_LABEL['0']}</option>
-					</select>
-				</div>
-				<div class="fieldset w-full">
-					<label for="entryChannel" class="label py-0">
-						<span class="text-support">Kanal</span>
-					</label>
-					<select
-						id="entryChannel"
-						name="entryChannel"
-						class="select select-sm w-full text-sm"
-						bind:value={selectedChannel}
-					>
-						<option value="all">Alle</option>
-						{#each getEntryChannelOptions() as { value, label } (value)}
-							<option value={String(value)}>{label}</option>
-						{/each}
-					</select>
-				</div>
-				<div class="fieldset w-full">
-					<label for="mediaUpload" class="label py-0">
-						<span class="text-support">Aufnahme</span>
-					</label>
-					<select
-						id="mediaUpload"
-						name="mediaUpload"
-						class="select select-sm w-full text-sm"
-						bind:value={mediaUpload}
-					>
-						<option value="">Alle</option>
-						<option value="1">{AUFNAHME_LABEL['1']}</option>
-						<option value="0">{AUFNAHME_LABEL['0']}</option>
-						<option value={MEDIA_UPLOAD_ANNOUNCED_MISSING}
-							>{AUFNAHME_LABEL[MEDIA_UPLOAD_ANNOUNCED_MISSING]}</option
-						>
-					</select>
-				</div>
-				<div class="fieldset w-full">
-					<label for="balticSea" class="label py-0">
-						<span class="text-support">Ostsee</span>
-					</label>
-					<select
-						id="balticSea"
-						name="balticSea"
-						class="select select-sm w-full text-sm"
-						bind:value={balticSea}
-					>
-						<option value="">Alle</option>
-						{#each Object.entries(BALTIC_SEA_STATUS_PRESENTATION) as [value, presentation] (value)}
-							<option {value}>{presentation.label}</option>
-						{/each}
-					</select>
-				</div>
-			</div>
-			<div class="mt-3 flex flex-col gap-2 md:flex-row md:justify-end">
-				<button class="btn btn-outline btn-sm md:btn-xs" onclick={resetFilters}>Zurücksetzen</button
-				>
-				<button class="btn btn-primary btn-sm md:btn-xs" onclick={applyFilters}>Anwenden</button>
-			</div>
-		</div>
-	{/if}
 
 	<!-- Statusleiste über beiden Layouts, nicht nur über der Tabelle: Auf Mobil
 	     rendert `SichtungenCards`, und gerade dort soll der wichtigste Filter
