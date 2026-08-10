@@ -406,3 +406,51 @@ export async function assertServerIdentity({
 		].join('\n')
 	);
 }
+
+/**
+ * Wo Worktrees liegen — je Ort das Pfadstück und das passende Glob-Muster.
+ *
+ * Beide sind unabhängig: `/.claude/worktrees/` enthält **nicht** `/.worktrees/`
+ * (der Punkt sitzt direkt hinter dem Schrägstrich). Deshalb lässt sich je Ort
+ * einzeln entscheiden, ob sein Muster gelten darf.
+ */
+const WORKTREE_LOCATIONS = [
+	{ pathSegment: '/.claude/worktrees/', glob: '**/.claude/worktrees/**' },
+	{ pathSegment: '/.worktrees/', glob: '**/.worktrees/**' }
+] as const;
+
+/**
+ * Glob-Muster, mit denen der Datei-Watcher die Worktrees heraushält.
+ *
+ * Worktrees liegen unter `.claude/worktrees/` **innerhalb** des Repo-Roots.
+ * Ohne diese Muster beobachtete ein Watcher im Haupt-Repo ein Vielfaches an
+ * Dateien, sobald die `.gitignore`-Zeile einmal wegfällt.
+ */
+export const WORKTREE_WATCH_GLOBS = WORKTREE_LOCATIONS.map(({ glob }) => glob);
+
+/**
+ * Dieselben Muster — aber ohne das, das den eigenen Standort trifft.
+ *
+ * **Warum die Fallunterscheidung nötig ist.** Chokidar vergleicht `ignored`
+ * gegen den *absoluten* Pfad. Startet der Server im Worktree, liegt jede
+ * Quelldatei unter `…/.claude/worktrees/<name>/src/…` und matcht damit
+ * `**\/.claude/worktrees/**` — der Watcher ignoriert dann das gesamte Projekt,
+ * und HMR ist tot. Kein Fehler, keine Meldung: Änderungen kommen schlicht nie
+ * an, und wer sie sehen will, muss den Server neu starten.
+ *
+ * Das Muster war als Absicherung gedacht (falls die `.gitignore`-Zeile
+ * wegfällt) und hat in dieser Rolle genau den Arbeitsablauf lahmgelegt, für den
+ * es die Worktrees gibt.
+ *
+ * **Im Haupt-Repo ändert sich nichts:** Dort trifft kein Pfadstück zu, beide
+ * Muster gelten unverändert weiter. Und aussortiert wird nur das Muster, das
+ * den eigenen Standort trifft — wer in `.claude/worktrees/x` arbeitet, hält
+ * ein `.worktrees/` daneben weiterhin heraus. Ein pauschales „im Worktree gar
+ * nichts ignorieren" wäre bequemer und würde mehr wegnehmen als nötig.
+ */
+export function worktreeWatchIgnore(cwd: string = process.cwd()): string[] {
+	const normalized = cwd.replaceAll('\\', '/');
+	return WORKTREE_LOCATIONS.filter(({ pathSegment }) => !normalized.includes(pathSegment)).map(
+		({ glob }) => glob
+	);
+}

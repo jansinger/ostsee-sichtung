@@ -9,7 +9,9 @@ import { describe, expect, it, vi } from 'vitest';
 import {
 	CI_DEV_HOST,
 	DEV_IDENTITY_PATH,
+	WORKTREE_WATCH_GLOBS,
 	assertServerIdentity,
+	worktreeWatchIgnore,
 	ciDevPort,
 	createNodeIdentityFetch,
 	describePortOwner,
@@ -44,6 +46,9 @@ function selfSignedCert(): { cert: Buffer; key: Buffer } | null {
 const MAIN_REPO = '/Users/dev/Code/ostsee-sichtung';
 const WORKTREE_A = '/Users/dev/Code/ostsee-sichtung/.claude/worktrees/hopeful-curie-90f94e';
 const WORKTREE_B = '/Users/dev/Code/ostsee-sichtung/.claude/worktrees/auth0-prod-settings-499d2e';
+/* Die zweite unterstützte Worktree-Lage, ohne `.claude`. Sie hat keinen der
+   Ports-Tests nötig, wird aber von `worktreeWatchIgnore` getrennt behandelt. */
+const WORKTREE_PLAIN = '/Users/dev/Code/ostsee-sichtung/.worktrees/feature-y';
 
 describe('worktreeDevPort', () => {
 	it('liefert für dasselbe Verzeichnis immer denselben Port', () => {
@@ -563,5 +568,44 @@ describe('devServerIdentity plugin', () => {
 
 		expect(next).toHaveBeenCalled();
 		expect(res.end).not.toHaveBeenCalled();
+	});
+});
+
+/**
+ * Der Watcher darf sich nicht selbst aussperren.
+ *
+ * Vorgeschichte: `vite.config.ts` hielt die Worktrees pauschal aus dem Watcher
+ * heraus. Weil Chokidar gegen den absoluten Pfad vergleicht, traf das Muster im
+ * Worktree jede eigene Quelldatei — HMR war dort tot, ohne Fehler und ohne
+ * Meldung. Der Fall lässt sich nur an der Pfadform prüfen; ein laufender Server
+ * würde ihn nicht melden, er täte einfach nichts.
+ */
+describe('worktreeWatchIgnore', () => {
+	it('hält die Worktrees heraus, solange der Server im Haupt-Repo läuft', () => {
+		expect(worktreeWatchIgnore(MAIN_REPO)).toEqual([...WORKTREE_WATCH_GLOBS]);
+	});
+
+	/* Aussortiert wird nur das Muster, das den eigenen Standort trifft — nicht
+	   pauschal alles. Wer in `.claude/worktrees/x` arbeitet, hält ein
+	   `.worktrees/` daneben weiterhin heraus; ein pauschales Leerräumen nähme
+	   mehr weg als nötig. */
+	it('nimmt im Worktree nur das Muster heraus, das den eigenen Pfad trifft', () => {
+		expect(worktreeWatchIgnore(WORKTREE_A)).toEqual(['**/.worktrees/**']);
+		expect(worktreeWatchIgnore(WORKTREE_PLAIN)).toEqual(['**/.claude/worktrees/**']);
+	});
+
+	/* Die beiden Pfadstücke dürfen sich nicht überschneiden, sonst räumte der
+	   eine Standort das Muster des anderen mit ab: `/.claude/worktrees/` enthält
+	   `worktrees/`, aber nicht `/.worktrees/` — der Punkt sitzt direkt hinter
+	   dem Schrägstrich. */
+	it('verwechselt die beiden Worktree-Orte nicht', () => {
+		expect(worktreeWatchIgnore(WORKTREE_B)).toContain('**/.worktrees/**');
+		expect(worktreeWatchIgnore(WORKTREE_PLAIN)).toContain('**/.claude/worktrees/**');
+	});
+
+	/* Der Verzeichnisname allein genügt nicht: Ein Projekt, das zufällig
+	   „worktrees" heißt, ist kein Worktree. Geprüft wird der Pfadabschnitt. */
+	it('lässt sich von einem ähnlich benannten Verzeichnis nicht täuschen', () => {
+		expect(worktreeWatchIgnore(`${MAIN_REPO}-worktrees-doku`)).toEqual([...WORKTREE_WATCH_GLOBS]);
 	});
 });

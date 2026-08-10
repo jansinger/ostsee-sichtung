@@ -9,7 +9,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import Icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
-import { devPortFromEnv, devServerIdentity } from './src/tools/dev-server-identity';
+import {
+	devPortFromEnv,
+	devServerIdentity,
+	worktreeWatchIgnore
+} from './src/tools/dev-server-identity';
 import { stableDepHash } from './src/tools/vite-stable-dep-hash';
 
 const certFile = fileURLToPath(new URL('./certs/localhost.pem', import.meta.url));
@@ -78,9 +82,14 @@ export default defineConfig({
 		 * Der Eintrag hier ist die Absicherung: Fällt die `.gitignore`-Zeile weg,
 		 * beobachtet der Watcher sonst still ein Vielfaches an Dateien.
 		 * Vite ergänzt seine Defaults (`**\/node_modules/**`, `**\/.git/**`).
+		 *
+		 * **Nur im Haupt-Repo.** Chokidar vergleicht `ignored` gegen den absoluten
+		 * Pfad; im Worktree matchte das Muster jede eigene Quelldatei und legte
+		 * HMR still — lautlos, denn ein Watcher, der nichts sieht, meldet nichts.
+		 * Begründung und Prüfung in `worktreeWatchIgnore`.
 		 */
 		watch: {
-			ignored: ['**/.claude/worktrees/**', '**/.worktrees/**']
+			ignored: worktreeWatchIgnore()
 		},
 		// Warmup critical modules for faster initial page load
 		warmup: {
