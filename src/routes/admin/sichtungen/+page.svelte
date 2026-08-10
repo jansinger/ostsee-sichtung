@@ -913,8 +913,16 @@
 						<Icon icon="lucide:x" class="h-4 w-4" />
 					</button>
 				</div>
-				<!-- Kein `sm:grid-cols-2`: `sm` ist keine Layout-Grenze (Breakpoint-Vertrag). -->
-				<div class="grid grid-cols-1 gap-2 md:grid-cols-3 lg:grid-cols-6">
+				<!-- Kein `sm:grid-cols-2`: `sm` ist keine Layout-Grenze (Breakpoint-Vertrag).
+
+				     Vier statt sechs Spalten auf `lg`, zwei statt drei auf `md`: Es sind
+				     sieben Felder. Im Sechser-Raster stand „Ostsee" allein in der zweiten
+				     Zeile und ließ fünf Zellen leer; bei drei Spalten blieb es dieselbe
+				     Waise. Teilerfremd zu 7 ist jede Spaltenzahl — aber bei vier bzw. zwei
+				     bleibt genau EINE Lücke statt fünf, und sie liegt am Zeilenende direkt
+				     über den Knöpfen, wo sie als Abstand liest statt als Loch. Nebenbei
+				     werden die Felder breiter, was den Datumsfeldern zugutekommt. -->
+				<div class="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-4">
 					<div class="fieldset w-full">
 						<label for="fromDate" class="label py-0">
 							<span class="text-support">Sichtung von</span>
@@ -946,7 +954,7 @@
 						<select
 							id="verified"
 							name="verified"
-							class="select select-sm w-full text-sm"
+							class="select select-sm w-full"
 							bind:value={verified}
 						>
 							<option value="">Alle</option>
@@ -962,7 +970,7 @@
 						<select
 							id="deadFinding"
 							name="deadFinding"
-							class="select select-sm w-full text-sm"
+							class="select select-sm w-full"
 							bind:value={deadFinding}
 						>
 							<option value="">Alle</option>
@@ -977,7 +985,7 @@
 						<select
 							id="entryChannel"
 							name="entryChannel"
-							class="select select-sm w-full text-sm"
+							class="select select-sm w-full"
 							bind:value={selectedChannel}
 						>
 							<option value="all">Alle</option>
@@ -993,7 +1001,7 @@
 						<select
 							id="mediaUpload"
 							name="mediaUpload"
-							class="select select-sm w-full text-sm"
+							class="select select-sm w-full"
 							bind:value={mediaUpload}
 						>
 							<option value="">Alle</option>
@@ -1011,7 +1019,7 @@
 						<select
 							id="balticSea"
 							name="balticSea"
-							class="select select-sm w-full text-sm"
+							class="select select-sm w-full"
 							bind:value={balticSea}
 						>
 							<option value="">Alle</option>
@@ -1093,7 +1101,13 @@
 					placeholder="Referenz-ID, E-Mail, Name oder Fahrwasser"
 				/>
 			</label>
-			<button type="submit" class="btn btn-sm btn-outline">Suchen</button>
+			<!-- Kein `btn-sm`: Das Feld daneben trägt seit dem Höhenabgleich 16px Schrift
+			     (`app.css` setzt `.input/.select/.textarea` ungelayert auf `--text-body`
+			     und schlägt damit jeden DaisyUI-Größenmodifier). `btn-sm` brächte 12px —
+			     der Knopf sähe neben dem Feld kleiner aus, als er ist. Die Höhe ändert
+			     sich dadurch nicht: beide standen schon auf den 44px aus dem
+			     Touch-Target-Block. -->
+			<button type="submit" class="btn btn-outline">Suchen</button>
 		</form>
 
 		<!--
